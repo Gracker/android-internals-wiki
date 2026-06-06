@@ -34,8 +34,8 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-22T07:35:00+08:00"
-last_task6_audit: "2026-05-26"
-last_task6_audit_log: "logs/review/2026-05-26-18-audit.md"
+last_task6_audit: "2026-06-06"
+last_task6_audit_log: "logs/review/2026-06-06-15-audit.md"
 last_task9_audit: "2026-05-19"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
