@@ -41,9 +41,9 @@ task2b_fix_notes: "2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_mar
 last_task9_review_log: logs/deep-review/2026-06-07-00-deep-review.md
 status: ready-for-review
 task6_result: "pass-light-edit"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-07
 task6_reviewed_date: "2026-05-08"

@@ -1,7 +1,7 @@
 ---
 title: "SQLite/Room 数据库性能优化"
 chapter: "10.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
