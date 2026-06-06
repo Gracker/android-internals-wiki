@@ -51,6 +51,8 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 last_task6_at: "2026-05-14T07:09:44+08:00"
 last_task6_review_log: logs/review/2026-05-14-07-review.md
+last_task6_audit: "2026-06-06"
+last_task6_audit_log: "logs/review/2026-06-06-09-audit.md"
 ---
 
 # 文件 I/O 优化
