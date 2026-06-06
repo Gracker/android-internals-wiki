@@ -1,5 +1,6 @@
 ---
 
+
 title: "Wi-Fi 评分、网络选择与连接切换性能"
 chapter: "24.9"
 status: ready-for-review
@@ -51,11 +52,11 @@ gap_source: "AOSP结构/研究素材"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: revisiting  # updated by task2b-verifier 2026-06-06
 last_task6_at: "2026-06-04T03:10:02+08:00"
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit（revisit）。L1/L2 禁用词/高频词/AI填充词零命中。无新增回炉项。task9_result=auto-fixed 未达 pass-tech-review 口径，不自动晋升，待 task9 复审。"
 task9_state: 'reviewed'
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending  # updated by task2b-verifier 2026-06-06
 task9_result: 'auto-fixed'
 task2b_state: 'fixed'
 task9_reviewed_by: 'openclaw-task9'

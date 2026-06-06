@@ -1,6 +1,7 @@
 ---
 
 
+
 title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
@@ -73,13 +74,13 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending  # updated by task2b-verifier 2026-06-06
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
 task6_state: "reviewed"
 task9_state: reviewed
 task9_result: auto-fixed
-task2b_state: fixed
+task2b_state: pending  # updated by task2b-verifier 2026-06-06
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"

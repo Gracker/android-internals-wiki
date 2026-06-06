@@ -1,9 +1,10 @@
 ---
 
+
 title: "Crash 上报体系搭建"
 chapter: "26.2"
 section: "26.2"
-status: ready-for-review
+status: finalized  # updated by task2b-verifier 2026-06-06
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers docs, Firebase Crashlytics docs, Clippings structure references"
