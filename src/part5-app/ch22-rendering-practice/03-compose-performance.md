@@ -568,6 +568,14 @@ Android 17（API 37）平台不内置 Compose 工具链，也不决定 Strong Sk
 
 ## 参考资料
 
+### Jetpack Compose 性能优化 — rememberCoroutineScope / produceState / Strong Skipping
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-compose-perf-remember-scopeproducestate.md
+- 类型：DeepResearch 调研结果
+- 摘要：produceState 底层依赖 LaunchedEffect(Unit) 启动 producer 协程，key 为 Unit 固定值故重组不重启。rememberCoroutineScope 通过 remember 存储 CoroutineScope 实例，重组时复用同一实例。Strong Skipping Mode（Compose Compiler 1.10+）对非 restartable Composable 有限制，produceState 的 producer lambda 执行的协程体不受 Strong Skipping 直接控制。
+- 注入时间：2026-06-06
+- 价值：从源码层面揭示了 Compose 副作用 API（produceState/rememberCoroutineScope）在 Strong Skipping 下的行为差异，对 Compose 性能优化实践有直接指导意义
+
+
 - DeepResearch: `2026-05-30-android-17-pausable-composition-compose-toolchain.md`。用于确认 Pausable Composition、LazyLayoutCacheWindow 与 Android 平台版本的边界。
 - DeepResearch: `2026-05-31-android-compose-baseline-profile-integration.md`。用于补充 Baseline Profile、ProfileInstaller 写入链路和 Compose 库内置 profile 的迁移检查项。
 - DeepResearch: `2026-05-27-android-17-art-generational-gc-compose-composition.md`。用于说明 Android 17 ART 分代 GC 与 Compose 短生命周期对象的关系；正文只保留优化优先级判断，不引用未闭合的源码行号。

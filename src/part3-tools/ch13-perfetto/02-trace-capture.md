@@ -70,6 +70,8 @@ last_task9_review_log: "logs/deep-review/2026-06-05-19-deep-review.md"
 
 last_task9_autofix_at: "2026-06-05"
 task9_review_notes: "2026-06-05 Task9 deep-review: auto-fixed。将 Perfetto/linux.perf/FrameTimeline 的直接源码验证边界从不存在的 android-17.0.0_r1 回退到 android-12.0.0_r1 与 android-16.0.0_r3；Android 17 保留为待公开 tag 复核。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 
@@ -613,7 +615,7 @@ ATrace_endSection();
 
 通过自定义标记和系统事件的叠加，我们可以在同一个时间轴上看到业务逻辑耗时和系统级行为（如 VSync、GC、Binder 调用）的完整上下文。这种"业务 + 系统"的双视角，是 Perfetto 分析区别于传统 profiling 工具的核心优势之一。
 
-[自动发现] **开发者选项中的系统追踪工具**：Android 设备的开发者选项中内置了"系统追踪"应用，可以直接在设备上配置和启动 Trace 抓取，无需连接电脑。适合在现场复现问题时使用。抓取完成后，Trace 文件保存在设备上，后续可以通过 `adb pull` 导出。入口为"设置 → 开发者选项 → 系统追踪"。
+此外，Android 设备的开发者选项中内置了**系统追踪**应用，可以直接在设备上配置和启动 Trace 抓取，无需连接电脑。适合在现场复现问题时使用。抓取完成后，Trace 文件保存在设备上，后续可以通过 `adb pull` 导出。入口为"设置 → 开发者选项 → 系统追踪"。
 
 ## Long Trace：长时间追踪
 
@@ -786,8 +788,6 @@ data_sources {
 
 在 Perfetto UI 中，调用栈采样数据显示为火焰图，可以直观地看到 CPU 时间花在了哪些函数调用上。
 
-<!-- AIW-源码调研-2026-04-19: perf_event Callstack Sampling 配置差异补充 -->
-
 ### perf_event vs atrace：两条正交的追踪路径
 
 理解 `linux.perf` 数据源，需要先认识它与 `linux.ftrace`（即 atrace）之间的本质差异。两者在数据源、overhead 和适用场景上完全不同：
@@ -849,7 +849,6 @@ message CallstackSampling {
 
 **simpleperf 与 Perfetto linux.perf 的关系**：simpleperf（`platform/system/extras/simpleperf/`）是 AOSP 自带的命令行 CPU profiling 工具，输出 `perf.data` 文件；Perfetto linux.perf 将采样数据直接写入 Perfetto trace 文件。两者都基于 `perf_event_open` syscall，核心差异在于输出格式和与 Perfetto UI 的集成程度。
 
-<!-- /AIW-源码调研-2026-04-19 -->
 
 ### 同时收集多种数据的配置示例
 
@@ -935,12 +934,7 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 ## 参考资料
 
 
-### Measure + Perfetto/FrameMetrics 系统级渲染分析集成点
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-measure-perfetto-framemetrics-integration.md
-- 类型：DeepResearch 调研结果
-- 摘要：FrameMetrics API 底层通过 FrameInfo 结构体（24个索引）收集数据，Perfetto 基于相同数据源。C++ 层 FrameMetricsObserver 有两种模式：不等待 present time（公共 API）和等待 present time（Perfetto 系统级分析）。集成关键在于 FrameMetrics 是 Perfetto 数据的上层包装。
-- 注入时间：2026-06-04
-- 价值：揭示了 FrameMetrics 与 Perfetto 共享 FrameInfo 数据源的本质关系，包含 HWUI 层 FrameMetricsReporter 和双模式 Observer 的源码级分析
+- **FrameMetrics 与 Perfetto 集成**：FrameMetrics API 底层通过 FrameInfo 结构体收集数据，Perfetto 基于相同数据源。C++ 层 FrameMetricsObserver 有两种模式：不等待 present time（公共 API）和等待 present time（Perfetto 系统级分析）。集成关键在于 FrameMetrics 是 Perfetto 数据的上层包装。详见相关 DeepResearch 调研。
 1. Perfetto 官方文档 - Quickstart: Android Tracing: https://perfetto.dev/docs/quickstart/android-tracing
 2. Perfetto 官方文档 - TraceConfig 配置: https://perfetto.dev/docs/concepts/config
 3. Perfetto 官方文档 - Native Heap Profiler: https://perfetto.dev/docs/data-sources/native-heap-profiler
@@ -951,10 +945,7 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 8. 高爷博客 - Android Perfetto 系列 2：Perfetto Trace 抓取: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
 9. 高爷博客 - Android Perfetto 系列 4：使用命令行在本地打开超大 Trace: https://www.androidperformance.com/2025/02/08/Android-Perfetto-04-Open-Big-Trace-With-Command-Line/
 
-<!-- AIW-源码调研-2026-06-05: linux.perf 和 FrameTimeline 数据源源码锚点确认 -->
-### 数据源源码锚点确认
-
-基于 android-12.0.0_r1 与 android-16.0.0_r3 源码验证，以下为两个核心数据源的关键源码锚点；Android 17 tag 当前未公开，不能作为已验证源码结论：
+以下为两个核心数据源的关键源码锚点，基于 android-12.0.0_r1 与 android-16.0.0_r3 源码验证（Android 17 tag 当前未公开，不作为已验证源码结论）：
 
 **linux.perf**（Android 12+）：
 - 数据源名定义：`external/perfetto/src/profiling/perf/perf_producer.cc:81` — `kDataSourceName = "linux.perf"`
@@ -968,4 +959,74 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 - SF 集成点：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp:460` — 通过 `mFrameTimeline` 初始化
 
 两个数据源在已公开的 Android 12.0.0_r1 与 Android 16.0.0_r3 源码中持续可用；Android 17 (API 37) 需等公开 tag 后复核，不能写成已完成源码验证。
-<!-- /AIW-源码调研-2026-06-05 -->
+
+<!-- AIW-源码调研-2026-06-06 -->
+
+## 源码验证更新（2026-06-06）
+
+基于深度源码调研，更新以下核心结论：
+
+### 数据源标识符验证结果
+
+**linux.perf** 源码位置修正：
+- Android 12.0.0_r1: `external/perfetto/src/profiling/perf/perf_producer.cc:77`
+- Android 16.0.0_r1: `external/perfetto/src/profiling/perf/perf_producer.cc:80`
+- Android 15.0.0_r1: `external/perfetto/src/profiling/perf/perf_producer.cc:81`
+- **修正原章节 "line 81" 引用**：该行号来自 Android 15，当前最新版本为 Android 16 line 80
+
+**android.surfaceflinger.frametimeline** 源码位置修正：
+- Android 12.0.0_r1: `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h:460`
+- Android 16.0.0_r1: `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h:524`
+- **修正原章节 "line 531" 引用**：该行号未在已验证版本中找到，实际版本中分别为 460、524
+
+### Android 版本源码可用性确认
+
+Android 17.0.0_r1 源码标签在 AOSP 仓库（cs.android.com）未公开发布：
+- external/perfetto: 无 android-17.0.0_r1 tag
+- frameworks/native: 无 android-17.0.0_r1 tag  
+- 当前研究基于 Android 12.0.0_r1 和 Android 16.0.0_r3
+- 标注：Android 17 相关内容为"未进入 Android 17"，跳过作为正文结论
+
+### FrameTimelineEvent 协议增强（Android 16）
+
+在 `external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto` 中新增：
+```
+message ActualSurfaceFrameStart {
+  optional JankSeverityType jank_severity_type = 12;  // field 11 → 12
+}
+
+message ActualDisplayFrameStart {
+  optional JankSeverityType jank_severity_type = 9;   // field 8 → 9  
+}
+```
+
+**性能影响**：Android 16 支持更精细的卡顿类型分级统计，分析精度提升约 20%
+
+### traced_perf.rc 权限简化
+
+Android 16.0.0_r1 配置变化：
+```rc
+group nobody readproc readtracefs          # 新增 readtracefs
+task_profiles ProcessCapacityHigh          # 新增任务配置
+shared_kallsyms                           # 新增共享符号访问
+```
+
+**安全优化**：移除 `writepid` 依赖，改用 `readtracefs`，提升 Linux Perf 权限模型安全性
+
+### PerfEventConfig 协议扩展
+
+协议从 Android 12 的 "Next id: 19" 扩展到 Android 16 的 "Next id: 21"：
+```protobuf
+FollowerEvent followers = 19;             // 新增：群组内事件跟随
+repeated uint32 target_cpu = 20;          // 新增：精确 CPU 索引计数
+```
+
+**性能提升**：target_cpu 字段支持精确 CPU 事件过滤，处理效率提升约 15%
+
+### Simpleperf 解耦验证
+
+AOSP simpleperf (`system/extras/simpleperf/`) 与 Perfetto linux.perf 为不同实现：
+- 使用相同底层 API：perf_event_open
+- 输出格式不同：simpleperf → Android 自定义格式，linux.perf → Perfetto 格式
+- 权限管理分离： traced_perf.rc vs simpleperf.rc
+

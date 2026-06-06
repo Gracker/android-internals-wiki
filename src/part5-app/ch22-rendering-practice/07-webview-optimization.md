@@ -67,6 +67,8 @@ task2b_result: fixed
 last_task2b_at: "2026-06-03T04:50:00+08:00"
 last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束、UA 预热边界、离线包白名单、renderer 退出生命周期 guard 与重试预算。"
 last_task9_autofix_at: "2026-06-03"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-06
 ---
 
 # WebView 性能优化实战
@@ -100,7 +102,6 @@ WebView 页面慢，用户通常感知到的是白屏、点不动、滑不顺、
 
 工程侧治理集中在预热、复用、离线包、资源拦截、JS Bridge 和内存回收这些能落到代码里的动作。WebView 的 Chromium 线程模型、GL Functor、`SurfaceControl` 子 Surface 和 Perfetto 识别方式，详见 7.11 与 18.13 节。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md]
 
 ## 先定义 WebView 页面打开时间
@@ -269,7 +270,6 @@ WebView 首屏慢，很多时候来自主文档、CSS、JS 和首屏数据的网
 
 离线包优先放强控制页面：App 内活动页、频道页、内嵌商城、帮助中心。用户输入 URL、第三方 OAuth、支付收银台这类页面不适合离线包拦截。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md]
 
 ### shouldInterceptRequest 的实现边界
 
@@ -338,7 +338,6 @@ fun maybePrefetch(entry: H5Entry, env: RuntimeEnv) {
 
 预请求的指标不能只报页面 T2，也要报未命中流量、服务端 QPS、取消率和过期率。客户端省下 100 ms，如果换来服务端峰值压力和大量废请求，这个方案就不划算。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md]
 
 ## JS Bridge 性能优化
 
@@ -436,7 +435,6 @@ fun WebView.callJsAsync(script: String, onResult: (String?) -> Unit) {
 
 这些约束要进入发布前检查，而不是等线上白屏率升高后再人工排查。页面属于运营活动时，客户端还要把离线包版本、前端 bundle 版本和容器版本一起写入埋点。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md]
 
 ## 扩展：WebView 内存泄漏治理
@@ -472,7 +470,7 @@ fun destroyWebView(webView: WebView?) {
 
 [已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebView.java]
 
-### [自动发现] Renderer 退出后的恢复
+### Renderer 退出后的恢复
 
 Android 8.0 之后，WebView renderer 进程异常退出时，应用可以在 `WebViewClient.onRenderProcessGone()` 里处理。默认实现返回 `false`，可能导致宿主 App 崩溃或被系统杀死；业务应该返回 `true`，移除旧实例，清理引用，再按需重建。
 
@@ -520,7 +518,6 @@ class RecoverableWebViewClient(
 
 多个 WebView 可能关联同一个 renderer；renderer 退出时，系统会对每个受影响的 WebView 分别回调 `onRenderProcessGone()`。每次回调都要移除并销毁参数里的 `view`，不要复用已受影响的实例，也不要把第一轮回调理解成只有这一个实例受影响。重建必须受 Activity/容器生命周期和重试预算约束；如果同一个 URL 模板连续触发 renderer OOM，继续自动重建会形成循环，应该停在错误页或降级页。业务还要记录 `didCrash()`、provider 版本、页面 URL 模板、内存水位、重建结果和预算耗尽原因，这些数据能帮助区分页面内存过高、provider bug 和低内存设备问题。
 
-[来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-webview-render-process-recovery.md]
 [已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebViewClient.java]
 [已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java]
 [已验证: 官方文档, developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone]
@@ -531,7 +528,6 @@ class RecoverableWebViewClient(
 
 本书的建议口径是：优先通过 WebView 独立进程、页面退出释放、renderer 容灾和缓存上限治理内存。对 `libwebview reservation` 的 native 释放方案，只记录为专项研究方向，不进入默认实践清单。
 
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md]
 [待验证: 不同 Android 版本和 provider 下 `libwebview reservation` 命名、大小和释放副作用需要实机验证]
 
 ## 实战检查清单

@@ -93,7 +93,7 @@ last_task6_at: 2026-06-04T12:11:00+08:00
 last_task6_review_log: "logs/review/2026-05-18-02-review.md"
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
+last_deepseek_cn_review_at: 2026-06-06
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 ---
@@ -438,9 +438,9 @@ IBinder.addFrozenStateChangeCallback(executor, callback)
 - `system/core/lmkd/lmkd.cpp` — lmkd 压力触发的回收路径
 - source.android.com — cached-apps-freezer 官方文档
 
-## Binder Freezer Driver 协同机制：源码级补充
+## Binder Freezer Driver 协同机制的实现细节
 
-CachedAppOptimizer 与 Binder Driver 协同冻结时，关键实现细节集中在 Binder 冻结、cgroup freezer 和回调策略这几处。
+CachedAppOptimizer 与 Binder Driver 协同冻结时，关键实现细节集中在 Binder 冻结、cgroup freezer 和回调策略几处。
 
 ### 两步冻结的原子性问题
 
@@ -612,7 +612,6 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 - [Perfetto Power Analysis](https://perfetto.dev/docs/quickstart/android-power)
 - [Perfetto trace 配置与数据源说明](https://perfetto.dev/docs/concepts/config)
 
-### Android 16 CachedAppOptimizer : Freezer 进程冻结机制源码级深度解析
-- 类型：源码级调研资料
-- 摘要：这篇源码级调研聚焦 Android 16 Freezer 演进，覆盖 10 秒 debounce、新拆分的 Freezer 类、FrozenStateChangeCallback API，以及 cgroup v2 freezer 与 Binder freeze driver 的协同约束。
-- 价值：直接补到 5.8 的系统实现层，避免后台限制章节只停留在策略说明。
+### Android 16 CachedAppOptimizer Freezer 进程冻结机制深度解析
+- 类型：源码调研资料
+- 摘要：聚焦 Android 16 Freezer 演进，覆盖 10 秒 debounce、新拆分的 Freezer 类、FrozenStateChangeCallback API，以及 cgroup v2 freezer 与 Binder freeze driver 的协同约束。

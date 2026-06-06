@@ -60,7 +60,8 @@ last_task9_audit_log: "logs/deep-review/2026-05-26-02-audit.md"
 last_task9_audit_result: "p0-source-error"
 task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobScheduler runtime 常量与 location FGS 版本链需回炉。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31---
+last_deepseek_cn_review_at: 2026-05-31
+---
 
 # 案例集
 

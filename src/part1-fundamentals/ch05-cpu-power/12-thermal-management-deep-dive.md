@@ -658,6 +658,141 @@ OEM 在散热设计和软件策略之间需要找到平衡：
 | Android 15 (API 35) | AIDL Thermal HAL 增加 cooling device changed callback；`PowerManager.getThermalHeadroomThresholds()` 开放给 App | HAL 侧可感知 cooling device 的动态变化；App 可以读取 OEM 返回的 headroom threshold，不必硬编码阈值 |
 | Android 16 (API 36) | AIDL Thermal HAL 新增 `forecastSkinTemperature(int forecastSeconds)`；Framework `TemperatureWatcher#getForecast()` 在 HAL 支持 skin forecast 且仅有一路 skin threshold 时优先走 HAL 预测，否则回落到本地 ring buffer + 线性回归；`SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()`，NDK thermal headroom listener | HAL 侧可返回未来 skin 温度预测值，Framework 不再只依赖本地采样回归；App 可区分 CPU/GPU capacity 余量，并在 native 层订阅 headroom 变化 |
 
+
+
+<!-- AIW-源码调研-2026-06-06 -->
+
+## Android 16+ Thermal Headroom Listener（API 36 扩写）
+
+[已验证: `frameworks/base/core/java/android/os/PowerManager.java` (android16-release l.1247-3011), `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` (android16-release l.85-705, l.1830-1870, l.2197-2208), `frameworks/base/core/java/android/os/IThermalHeadroomListener.aidl`, `frameworks/native/include/android/thermal.h`, developer.android.com PowerManager#addThermalHeadroomListener]
+
+§5.12 上一版覆盖了 API 35 `getThermalHeadroomThresholds()`，但**没有覆盖 Android 16 (BAKLAVA / API 36) 引入的 `addThermalHeadroomListener(...)` 事件驱动机制**。Task9 Deep Review（2026-06-06）已指出这一点。本节补齐。
+
+### 公共 API 形态
+
+| 入口 | API Level | 形式 | 说明 |
+| --- | --- | --- | --- |
+| `PowerManager.addThermalHeadroomListener(OnThermalHeadroomChangedListener)` | 36 | 单参重载 | 默认走 `mContext.getMainExecutor()`，callback 在主线程 |
+| `PowerManager.addThermalHeadroomListener(Executor, OnThermalHeadroomChangedListener)` | 36 | 多参重载 | 接收任意 `@CallbackExecutor` |
+| `PowerManager.removeThermalHeadroomListener(OnThermalHeadroomChangedListener)` | 36 | 显式清理 | **必须**显式调用；`RemoteCallbackList` 不会自动清理 binder 死亡后的 stale entry |
+| `AThermal_registerThermalHeadroomListener(...)` | 36 (NDK r28+) | C API | NDK 端等价物，callback 在 system binder 线程池 |
+| `AThermal_unregisterThermalHeadroomListener(...)` | 36 (NDK r28+) | C API | NDK 端清理 |
+
+listener 接口（`OnThermalHeadroomChangedListener`）由 `@FlaggedApi(Flags.FLAG_ALLOW_THERMAL_THRESHOLDS_CALLBACK)` 标记，隐藏的 `@hide` AIDL `IThermalHeadroomListener` 是 binder 桥接，framework 内部用 `IThermalHeadroomListener.Stub` 把跨进程回调 marshal 到 App 端 Executor。
+
+```java
+// 源码锚点：PowerManager.java (android16-release) l.2822-2852
+@FlaggedApi(Flags.FLAG_ALLOW_THERMAL_THRESHOLDS_CALLBACK)
+public interface OnThermalHeadroomChangedListener {
+    void onThermalHeadroomChanged(float headroom,
+            float forecastHeadroom, int forecastSeconds,
+            @NonNull Map<@ThermalStatus Integer, Float> thresholds);
+}
+```
+
+回调只在以下两种条件满足其一才会触发（官方文档 + `ThermalManagerService.HeadroomCallbackData.isSignificantDifferentFrom` 双重确认）：
+
+1. **thermal throttling 事件** —— skin 温度跨过任意 threshold，且上一次回调时间窗未过；
+2. **headroom / forecastHeadroom 变化 ≥ 0.03**（约 0.9°C），或 thresholds 数组变化 ≥ 0.01（约 0.3°C）；
+
+仅当 absolute °C threshold 变化但 headroom 与 thresholds 都没显著变化时**不回调**，避免 App 收到无意义事件。
+
+### 服务端节流与时序
+
+`ThermalManagerService` 用 `RemoteCallbackList<IThermalHeadroomListener>` 维护监听者，关键常量：
+
+```java
+// 源码锚点：ThermalManagerService.java (android16-release) l.101-110
+public static final int DEFAULT_FORECAST_SECONDS = 10;
+public static final int HEADROOM_CALLBACK_MIN_INTERVAL_MILLIS = 5000;
+public static final float HEADROOM_CALLBACK_MIN_DIFFERENCE = 0.03f;
+public static final float HEADROOM_THRESHOLD_CALLBACK_MIN_DIFFERENCE = 0.01f;
+```
+
+`checkAndNotifyHeadroomListenersLocked`（l.329-348）的两道闸门：
+
+- 时间窗：`System.currentTimeMillis() < mLastHeadroomCallbackTimeMillis + 5000ms` 时直接 return；
+- 显著变化：`!data.isSignificantDifferentFrom(mLastHeadroomCallbackData)` 时 return；
+
+只有同时通过这两道闸门才会 `mThermalHeadroomListeners.beginBroadcast()`，把回调投递到每个 listener。`postHeadroomListenerLocked`（l.306-326）进一步把 callback 通过 `FgThread.getHandler().post(...)` 调度到 FgThread（前台线程），**避免阻塞 system_server 的 binder 线程池**。
+
+注册成功后（`registerThermalHeadroomListener`，l.668-705）会**立即触发一次** callback（`postHeadroomListenerLocked(listener, data)`），App 端不必等下一次显著变化就能拿到当前 headroom 快照。
+
+### 与 `getThermalHeadroomThresholds()` 的关系
+
+`getThermalHeadroomThresholds()` 在 Android 16 (BAKLAVA) 文档注释（`PowerManager.java` l.3098-3102）明确说明：
+
+> Starting at `Build.VERSION_CODES.BAKLAVA` the returned map of thresholds can change between calls to this function, one could use the new `addThermalHeadroomListener(...)` API to register a listener and get callback for changes to thresholds.
+
+即 **API 36 起 `getThermalHeadroomThresholds()` 不再 cache**，每次调用都可能返回不同结果。推荐用法：
+
+- **轮询 → 事件驱动**：用 `addThermalHeadroomListener(Executor, ...)` 订阅变化，仍保留 1Hz 以下的 `getThermalHeadroom(forecastSeconds)` 作为预测 sanity check（listener 不会因为 forecast 变化而回调，文档明确要求「periodically polling against `getThermalHeadroom(int)` API should still be used to actively monitor temperature forecast in advance」）。
+- **Main thread 还是 worker？** 单参重载默认 main thread，会进入 UI 消息队列；如果同时在做相机预览 / 游戏渲染，建议重载用单线程 `Executor`，把降分辨率、降帧率动作派发到渲染线程。
+- **清理时机**：在 `Activity.onDestroy()` / `Surface` 释放 / `View.onDetachedFromWindow` 显式 `removeThermalHeadroomListener`；listener binder 死亡不会自动清理，App 端 map 会留下 stale entry。
+
+### 与 API 35 getThermalHeadroomThresholds 的版本差异
+
+| 维度 | API 35 (Android 15) | API 36 (Android 16) |
+| --- | --- | --- |
+| thresholds 获取 | `getThermalHeadroomThresholds()` 首次查询后 cache，**调用间不变** | 不再 cache，**调用间可能变化** |
+| 变化发现方式 | 主动轮询；Cache 失效后阈值变化要重启 App 才能感知 | listener 主动回调（thresholds 维度差异 ≥ 0.01 触发） |
+| 预测 headroom 字段 | 需轮询 `getThermalHeadroom(forecastSeconds)` | listener 回调附带 `forecastHeadroom` + `forecastSeconds` 字段（默认 10s） |
+| NDK 端等价 | `AThermal_getThermalHeadroomThresholds()` 返回常量数组 | `AThermal_registerThermalHeadroomListener` + `AThermal_HeadroomCallback` |
+| callback 线程 | N/A | Java 端由 `Executor` 控制；NDK 端在 binder 线程池，App 需自己切线程 |
+| binder 死亡清理 | N/A | App 端 listener map 不会自动清理，必须显式 `removeThermalHeadroomListener` |
+
+### 跨进程调用链
+
+```
+App 进程                                          system_server
+  │                                                  │
+  │ addThermalHeadroomListener(Executor, listener)   │
+  ├─────────────────────────────────────────────────►│ PowerManager
+  │                                                  │ .addThermalHeadroomListener
+  │                                                  │ → IThermalHeadroomListener.Stub
+  │                                                  │ → mThermalService
+  │                                                  │   .registerThermalHeadroomListener
+  │                                                  │ → ThermalManagerService
+  │                                                  │   .registerThermalHeadroomListener
+  │                                                  │ → mThermalHeadroomListeners.register
+  │                                                  │ → getHeadroomCallbackDataLocked
+  │                                                  │ → postHeadroomListenerLocked
+  │                                                  │ → FgThread.post(...)
+  │                                                  │
+  │ （温度变化触发）                                   │ onTemperatureChanged
+  │                                                  │ → TemperatureWatcher
+  │                                                  │   .onTemperatureChanged
+  │                                                  │ → mHeadroomThresholds 更新
+  │                                                  │ → checkAndNotifyHeadroomListenersLocked
+  │                                                  │   （节流：5s 窗 + 0.03/0.01 阈值）
+  │                                                  │
+  │ ◄─────────────────────────────────────────────────┤ oneway binder
+  │ listener.onHeadroomChange(headroom, forecastHeadroom,      │ IThermalHeadroomListener
+  │     forecastSeconds, thresholds[])                  │ (oneway)
+  │ → Executor.execute(() -> App.onThermalHeadroomChanged(...))
+```
+
+### 工程实践要点
+
+- **零分配 vs GC**：Java 端 `OnThermalHeadroomChangedListener` 的 `thresholds` 参数是 `Map<@ThermalStatus Integer, Float>`，由 `convertThresholdsToMap` 每次新建 `ArrayMap`；高频回调（如 OTA 后台跑温度测试）会触发频繁 GC。NDK 端返回的是常量指针 `AThermalHeadroomThreshold*`（NDK 文档明确说明「`thresholds` pointer will be a constant shared across all callbacks registered from the same process」），NDK 客户端零分配。
+- **binder 死亡 vs listener 清理**：`ThermalManagerService` 内 `mThermalHeadroomListeners` 用 `RemoteCallbackList`，但 `PowerManager.addThermalHeadroomListener` 内部 `IThermalHeadroomListener.Stub` 没有 `linkToDeath`，App 端 `mThermalHeadroomListenerMap` 不会自动清理 binder 死亡后的 entry。**显式 `removeThermalHeadroomListener` 是必须项**。
+- **与其他 thermal API 的关系**：listener 是 `getThermalHeadroom(int)` + `getThermalHeadroomThresholds()` 的事件驱动版本；`OnThermalStatusChangedListener` 仍然只通知 `getCurrentThermalStatus()` 跨级事件（status 变化）。两者并存，listener 粒度更细，status listener 粒度更粗。
+- **OEM 差异**：`TemperatureWatcher.getHeadroomCallbackDataLocked` 内部使用 `getForecast(0)` + `getForecast(DEFAULT_FORECAST_SECONDS=10)`；OEM 如果改 `mForecastSeconds`，listener 回调的 `forecastSeconds` 字段会同步变化（`isSignificantDifferentFrom` 把 `mForecastSeconds` 不一致视为显著差异强制回调）。当前 main 分支注释说 `currently this is always the same as DEFAULT_FORECAST_SECONDS`，未启用动态 forecast。
+
+### 常见问题与误区（本节补充）
+
+- **「headroom listener 会代替 status listener」** ❌：两个 listener 走不同的判定路径，status listener 只在 thermal status 跨级时通知，headroom listener 还会通知 headroom/threshold 数值变化。两者并存。
+- **「listener 触发频率高时应在 App 端去抖」** ✅：server 端有 5s 窗 + 0.03/0.01 阈值去抖，但 App 端的 Executor 可能让多个 listener 串行；建议 App 内部维护一个 `headroomCache` + 上次处理时间，仅在跨过自身业务阈值时降画质。
+
+### 引用
+
+- `frameworks/base/core/java/android/os/PowerManager.java`（android16-release l.1247-3011, l.3098-3126）
+- `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`（android16-release l.85-705, l.1830-1870, l.2197-2208）
+- `frameworks/base/core/java/android/os/IThermalHeadroomListener.aidl`
+- `frameworks/native/include/android/thermal.h`（NDK r28+）
+- developer.android.com PowerManager#addThermalHeadroomListener
+
+
 ## 常见问题与误区
 
 ### 「Thermal throttling 只影响游戏」
