@@ -39,14 +39,14 @@ drafted_by: openclaw-task2
 polish_count: 1
 polish_date: '2026-04-07'
 polish_by: task2b-polish
-task9_result: pass-tech-review
-task9_reviewed_date: '2026-05-13'
-task2b_state: fixed
+task9_result: needs-rework
+task9_reviewed_date: '2026-06-07'
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-13T22:26:00+08:00'
-status: finalized
-pipeline_stage: ready-to-publish
+last_task9_at: '2026-06-07T16:20:00+08:00'
+status: ready-for-review
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -73,8 +73,9 @@ task6_review_notes: 2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-
   16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。
   | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量
   L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。
-last_task9_review_log: logs/deep-review/2026-05-13-22-deep-review.md
-task9_review_notes: "2026-05-13 Task9 22:26：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 已写入 suggestions.md。"
+last_task9_review_log: logs/deep-review/2026-06-07-16-audit.md
+task9_review_notes: "2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
+last_task9_audit: '2026-06-07'
 review_type: task6-writing-quality-review
 ---
 
