@@ -1,7 +1,7 @@
 ---
 title: 系统级功耗优化
 chapter: '11.3'
-status: finalized
+status: ready-for-review
 section: '11.3'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
@@ -40,6 +40,8 @@ sources:
 - type: aosp
   path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
 - type: aosp
+  path: frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java
+- type: aosp
   path: frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java
 - type: aosp
   path: frameworks/base/core/java/android/app/ActivityOptions.java
@@ -50,7 +52,7 @@ sources:
 - type: official
   path: https://developer.android.com/topic/performance/app-hibernation
 - type: official
-  path: https://source.android.com/docs/core/storage/app-archiving
+  path: https://developer.android.com/reference/android/content/pm/PackageInstaller#requestArchive(java.lang.String,android.content.IntentSender)
 - type: official
   path: https://developer.android.com/about/versions/oreo/background
 - type: official
@@ -75,7 +77,7 @@ task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 last_task2b_at: '2026-04-26T10:41:09+08:00'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
@@ -84,18 +86,22 @@ last_task6_review_log: logs/review/2026-05-06-22-review.md
 last_task6_audit: '2026-05-24'
 review_notes: '2026-05-13 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 1；厂商功耗策略数据建议写入 suggestions，不阻塞发布；自动晋升 finalized。'
 review_round: 4
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
-task9_reviewed_date: '2026-05-13'
+task9_reviewed_date: '2026-06-07'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-13T15:31:00+08:00'
-last_task9_review_log: logs/deep-review/2026-05-13-15-deep-review.md
+last_task9_at: '2026-06-07T20:33:00+08:00'
+last_task9_review_log: logs/deep-review/2026-06-07-20-audit.md
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
+last_task9_audit: '2026-06-07'
+last_task9_audit_log: logs/deep-review/2026-06-07-20-audit.md
+last_task9_autofix_at: '2026-06-07'
+task9_review_notes: '2026-06-07 Task9 idle audit: auto-fixed broken App Archiving source URL and added JobScheduler API source anchor; routed to Task6 revisit.'
 ---
 
 
@@ -494,6 +500,7 @@ WorkManager 保证的是"最终一致性"——任务最终会被执行，但不
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby Bucket 评估
 - `frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java` — usage 统计与事件上报
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — Job quota 与 pending reason
+- `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java` — `getPendingJobReasons()` 与 pending reason 常量
 - `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` — Battery Saver / low power mode
 - `frameworks/base/core/java/android/app/ActivityOptions.java` — PendingIntent 后台启动 opt-in API
 - `frameworks/base/core/java/android/os/PowerManager.java` — `isPowerSaveMode()` / `getLocationPowerSaveMode()`
