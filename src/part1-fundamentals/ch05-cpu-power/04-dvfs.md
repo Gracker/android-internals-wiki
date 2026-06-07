@@ -47,16 +47,16 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-07T17:20:00+08:00'
 last_task9_autofix_at: '2026-06-07'
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-07'
 task6_reviewed_date: '2026-06-07'
-last_task6_at: '2026-06-07T17:05:00+08:00'
+last_task6_at: '2026-06-07T18:10:43+08:00'
 last_task6_audit: '2026-05-24'
-review_notes: '2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06
+P26-06-07 Task6 18:10：Task9 auto-fix 后写作复审；L1/L2 全面扫描零命中，无需修复；送 Task9 复核 auto-fix 结果。2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06
   Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
   Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance
   Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0
