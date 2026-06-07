@@ -79,7 +79,7 @@ last_task9_autofix_at: "2026-06-07"
 last_task9_audit: "2026-06-07"
 last_task6_audit: "2026-05-25"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-06-07
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-06-07T12:12:00+08:00"
 ---
@@ -124,15 +124,15 @@ Android App 的生命周期不由 App 自己决定。系统会根据当前运行
 - 内存长尾：cached 进程越多，切回体验越好，但系统可用内存越少，`lmkd` 触发回收的概率越高。
 - 后台任务可靠性：组件已经结束但线程还在跑，系统可能把整个进程回收，线程没有机会收尾。
 
-官方文档把这件事讲得很直接：进程在某段代码需要运行时创建，保留到系统需要回收内存且该进程不再有足够重要性为止；进程寿命由系统根据组件状态、用户感知程度和系统内存共同判断。 [已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
+官方文档把这件事讲得很直接：进程在某段代码需要运行时创建，保留到系统需要回收内存且该进程不再有足够重要性为止；进程寿命由系统根据组件状态、用户感知程度和系统内存共同判断。
 
 ## Android App 的进程边界
 
-默认情况下，一个 Android 应用运行在一个独立 Linux 进程里，同一应用的 Activity、Service、BroadcastReceiver、ContentProvider 也运行在同一个主线程里。组件不会天然拥有独立线程；系统回调、生命周期方法和 UI 事件都进入该进程的 main thread。线程模型详见 1.5 节。 [已验证: 官方文档, https://developer.android.com/guide/components/processes-and-threads]
+默认情况下，一个 Android 应用运行在一个独立 Linux 进程里，同一应用的 Activity、Service、BroadcastReceiver、ContentProvider 也运行在同一个主线程里。组件不会天然拥有独立线程；系统回调、生命周期方法和 UI 事件都进入该进程的 main thread。线程模型详见 1.5 节。
 
-Manifest 可以改变这个默认边界。`<activity>`、`<service>`、`<receiver>`、`<provider>` 都支持 `android:process`，`<application>` 也可以给整包设置默认进程名。进程名以冒号开头时是应用私有进程，例如 `:remote`；使用全限定进程名时，在相同签名和相同 Linux UID 条件下，不同应用可以共享进程。共享进程属于少数系统级或套件级场景，普通业务不应把它当成通用优化手段。 [已验证: 官方文档, https://developer.android.com/guide/topics/manifest/application-element] [已验证: 官方文档, https://developer.android.com/guide/topics/manifest/service-element]
+Manifest 可以改变这个默认边界。`<activity>`、`<service>`、`<receiver>`、`<provider>` 都支持 `android:process`，`<application>` 也可以给整包设置默认进程名。进程名以冒号开头时是应用私有进程，例如 `:remote`；使用全限定进程名时，在相同签名和相同 Linux UID 条件下，不同应用可以共享进程。共享进程属于少数系统级或套件级场景，普通业务不应把它当成通用优化手段。
 
-AOSP 侧的进程创建入口在 `android.os.Process.start()`，它把进程类名、UID / GID、ABI、targetSdk、挂载策略、包名等参数交给 `ZygoteProcess.start()`。AMS 调用这条路径时，会为应用分配 Linux UID、进程名和运行时参数，再等待应用进程通过 `attachApplicationLocked()` 回连。 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Process.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java]
+AOSP 侧的进程创建入口在 `android.os.Process.start()`，它把进程类名、UID / GID、ABI、targetSdk、挂载策略、包名等参数交给 `ZygoteProcess.start()`。AMS 调用这条路径时，会为应用分配 Linux UID、进程名和运行时参数，再等待应用进程通过 `attachApplicationLocked()` 回连。
 
 这段代码只用来确认进程创建边界：`Process.start()` 本身不直接 fork，它把请求发给 Zygote。
 
@@ -165,7 +165,7 @@ public static ProcessStartResult start(@NonNull final String processClass,
 
 ## 组件状态如何变成进程重要性
 
-官方文档把进程重要性分成 foreground、visible、service、cached 四大类。AOSP 实现里还会继续细分，例如 perceptible、previous、home、backup、service B、cached min/max。越接近前台，`oom_score_adj` 越低，越不容易被 `lmkd` 选中；cached 区间的进程最容易被回收。 [已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
+官方文档把进程重要性分成 foreground、visible、service、cached 四大类。AOSP 实现里还会继续细分，例如 perceptible、previous、home、backup、service B、cached min/max。越接近前台，`oom_score_adj` 越低，越不容易被 `lmkd` 选中；cached 区间的进程最容易被回收。
 
 | 状态 | 触发条件 | Android 16 典型 `oom_score_adj` | 性能含义 |
 | --- | --- | --- | --- |
@@ -176,17 +176,15 @@ public static ProcessStartResult start(@NonNull final String processClass,
 | home / previous | Launcher 或上一个应用 | `HOME_APP_ADJ = 600`、`PREVIOUS_APP_ADJ = 700` | 提升返回桌面和最近任务切换体验 |
 | cached | Activity 已 stop，当前没有用户可感知工作 | `CACHED_APP_MIN_ADJ = 900` 到 `CACHED_APP_MAX_ADJ = 999` | 系统优先回收；App 要能无损恢复 |
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
-
 分类规则有两个容易踩坑的地方。
 
-第一，系统按进程内最重要的活跃组件定级。一个进程里同时有 visible Activity 和 started Service 时，它按 visible 处理。Bound service 和 ContentProvider 也会把被依赖进程的级别抬高到调用方所需的保护级别。 [已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
+第一，系统按进程内最重要的活跃组件定级。一个进程里同时有 visible Activity 和 started Service 时，它按 visible 处理。Bound service 和 ContentProvider 也会把被依赖进程的级别抬高到调用方所需的保护级别。
 
-第二，BroadcastReceiver 的 `onReceive()` 返回后，系统就不再认为这个 receiver 处于活跃状态。`onReceive()` 里启动裸线程再返回，线程仍在跑，但进程可能已经降级，内存紧张时会被直接回收。官方建议把这类工作交给 `JobService` / WorkManager 等系统可感知的调度入口。 [已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
+第二，BroadcastReceiver 的 `onReceive()` 返回后，系统就不再认为这个 receiver 处于活跃状态。`onReceive()` 里启动裸线程再返回，线程仍在跑，但进程可能已经降级，内存紧张时会被直接回收。官方建议把这类工作交给 `JobService` / WorkManager 等系统可感知的调度入口。
 
 ## `OomAdjuster` 把组件状态转成系统决策
 
-AMS 不会只保存一个“前台 / 后台”的布尔值。Android 16 的 `OomAdjuster.computeOomAdjLSP()` 会从 top app 开始，按 Activity 可见性、广播执行、Service 执行、前台服务、绑定关系、ContentProvider 依赖、recent task 等条件计算三组结果：`adj`、`procState` 和 `schedGroup`。`ProcessStateRecord` 保存当前值和已提交值，后续再写入内核和 `lmkd` 可见的接口。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessStateRecord.java]
+AMS 不会只保存一个“前台 / 后台”的布尔值。Android 16 的 `OomAdjuster.computeOomAdjLSP()` 会从 top app 开始，按 Activity 可见性、广播执行、Service 执行、前台服务、绑定关系、ContentProvider 依赖、recent task 等条件计算三组结果：`adj`、`procState` 和 `schedGroup`。`ProcessStateRecord` 保存当前值和已提交值，后续再写入内核和 `lmkd` 可见的接口。
 
 这段骨架说明 top app、广播、Service 回调会先拿到较高保护级别，然后才进入 Activity 和前台服务等后续规则。
 
@@ -220,9 +218,9 @@ if (app == topApp && PROCESS_STATE_CUR_TOP == PROCESS_STATE_TOP) {
 
 ## `lmkd` 如何使用 `oom_score_adj`
 
-Android 低内存回收从早期 in-kernel LMK 走向 userspace `lmkd`。官方文档说明，Android 10 及以上支持 PSI（Pressure Stall Information）监控，`ro.lmk.use_psi` 默认启用；PSI 通过任务因内存短缺而停顿的时间衡量压力，比传统 `vmpressure` 更贴近用户体验。 [已验证: 官方文档, https://source.android.com/docs/core/perf/lmkd]
+Android 低内存回收从早期 in-kernel LMK 走向 userspace `lmkd`。官方文档说明，Android 10 及以上支持 PSI（Pressure Stall Information）监控，`ro.lmk.use_psi` 默认启用；PSI 通过任务因内存短缺而停顿的时间衡量压力，比传统 `vmpressure` 更贴近用户体验。
 
-AMS 会把新的 `oom_score_adj` 发送给 `lmkd`。Android 16 的 `ProcessList.setOomAdj()` 通过 `LMK_PROCPRIO` 命令写入 pid、uid、adj；`lmkd` 再结合内存压力、swap、cgroup 统计和设备配置决定 kill 目标。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java] [已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
+AMS 会把新的 `oom_score_adj` 发送给 `lmkd`。Android 16 的 `ProcessList.setOomAdj()` 通过 `LMK_PROCPRIO` 命令写入 pid、uid、adj；`lmkd` 再结合内存压力、swap、cgroup 统计和设备配置决定 kill 目标。
 
 这段代码对应 AMS → `lmkd` 的优先级同步，不代表马上 kill 进程。
 
@@ -249,9 +247,9 @@ public static void setOomAdj(int pid, int uid, int amt) {
 
 ## 调度组和任务 profile 影响 CPU / I/O 资源
 
-进程重要性还会影响调度资源。`OomAdjuster` 在计算 `adj` 的同时给出 `schedGroup`，例如 top app 可进入 `SCHED_GROUP_TOP_APP`，普通后台进程进入 background。`system/core/libprocessgroup` 再把这些抽象 profile 映射到 cpuset、uclamp、I/O priority、timer slack 等内核控制面。 [已验证: AOSP android-16.0.0_r1, system/core/libprocessgroup/processgroup.cpp] [已验证: AOSP android-16.0.0_r1, system/core/libprocessgroup/profiles/task_profiles.json]
+进程重要性还会影响调度资源。`OomAdjuster` 在计算 `adj` 的同时给出 `schedGroup`，例如 top app 可进入 `SCHED_GROUP_TOP_APP`，普通后台进程进入 background。`system/core/libprocessgroup` 再把这些抽象 profile 映射到 cpuset、uclamp、I/O priority、timer slack 等内核控制面。
 
-`task_profiles.json` 里能看到 `SCHED_SP_TOP_APP`、`HighPerformance`、`ProcessCapacityHigh`、`MaxIoPriority` 这类 profile 名称。它们不是 App 可以随意申请的业务开关，而是系统根据进程状态分配的资源策略。对卡顿分析来说，这解释了同一段代码在前台、后台、最近任务切换时 CPU 行为不同的原因：调度组已经变了。
+`task_profiles.json` 定义了 `SCHED_SP_TOP_APP`、`HighPerformance`、`ProcessCapacityHigh`、`MaxIoPriority` 等 profile。它们不是 App 可以随意申请的业务开关,而是系统根据进程状态分配的资源策略。同一个 App,在前台和后台执行同一段代码,CPU 行为可能完全不同——原因就是调度组变了。
 
 这类差异可以在 Perfetto 里通过线程状态、CPU 迁移、调度延迟和 cpuset 观察；也可以在设备上读取 cgroup 文件辅助确认。不同内核版本和厂商配置的 cgroup 路径会变化，排查时以设备实际挂载为准。
 
@@ -295,7 +293,7 @@ Perfetto 适合补上时间维度：进程何时被启动、主线程何时 atta
 
 ## 常见误判
 
-**误判一：进程还在，任务就可靠。** 裸线程、协程、线程池任务如果没有绑定到系统可感知的组件状态，`onReceive()` 或 Activity 生命周期结束后，进程可能降级到 cached。官方文档明确提醒，cached 进程随时可能被杀，`onDestroy()` 在系统 kill 场景下也没有调用保证。 [已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
+**误判一：进程还在，任务就可靠。** 裸线程、协程、线程池任务如果没有绑定到系统可感知的组件状态，`onReceive()` 或 Activity 生命周期结束后，进程可能降级到 cached。官方文档明确提醒，cached 进程随时可能被杀，`onDestroy()` 在系统 kill 场景下也没有调用保证。
 
 **误判二：前台服务等同于前台 App。** 前台服务会提高进程重要性，但 Android 16 源码里 top app、visible、foreground service 是不同层级；短前台服务还有单独的超时和能力限制。性能排查时，前台服务保活和前台交互性能不能画等号。
 
@@ -305,12 +303,12 @@ Perfetto 适合补上时间维度：进程何时被启动、主线程何时 atta
 
 ## 版本边界
 
-- Android 10 及以上：官方 lmkd 文档将 PSI 作为默认内存压力检测机制，前提是内核启用 `CONFIG_PSI=y`。旧设备可能仍依赖 `vmpressure` 或厂商自定义策略。 [已验证: 官方文档, https://source.android.com/docs/core/perf/lmkd]
+- Android 10 及以上：官方 lmkd 文档将 PSI 作为默认内存压力检测机制，前提是内核启用 `CONFIG_PSI=y`。旧设备可能仍依赖 `vmpressure` 或厂商自定义策略。
 - Android 13 及以上：官方文档说明 cached 进程在进入活跃生命周期状态之前，可能获得有限或没有执行时间。后台任务不能依赖 cached 进程持续运行。
 
 ### CachedAppOptimizer / Freezer 机制（Android 11+）
 
-AOSP 在 Android 11（API 30）已经引入 `CachedAppOptimizer` / freezer 代码路径和 `Process.setProcessFrozen()`，但默认未启用；Android 12（API 31）把 `DEFAULT_USE_FREEZER` 改为 true，并加入 Binder freeze / unfreeze 处理。它通过 cgroup v2 freezer 将 adj >= 900 的 cached 进程冻结，使其线程停止执行，而非简单降优先级等待调度。
+前面讨论的 `oom_score_adj` 决定进程被杀的优先级。但在 cached 区间,系统还有一个更精细的手段:直接冻结进程。AOSP 在 Android 11（API 30）引入了 `CachedAppOptimizer` 和 freezer 代码路径,默认未启用;Android 12（API 31）将 `DEFAULT_USE_FREEZER` 改为 true。它通过 cgroup v2 freezer 把 adj >= 900 的 cached 进程冻结,让所有线程停止执行,而不是单纯降低优先级等待调度。
 
 **核心行为：**
 - **冻结条件**：`adj >= CACHED_APP_MIN_ADJ (900)` 时触发 `CachedAppOptimizer.freezeAppAsyncLSP()`
@@ -334,9 +332,7 @@ AOSP 在 Android 11（API 30）已经引入 `CachedAppOptimizer` / freezer 代�
 - `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`
 - `system/core/libprocessgroup/profiles/task_profiles.json`（`FreezerState` / `Frozen` profile）
 - `frameworks/base/services/core/java/com/android/server/am/ProcessList.java`（CACHED_APP_MIN_ADJ = 900）
-
-[已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle] [已验证: AOSP android-11.0.0_r1 / android-12.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java] [已验证: AOSP android-16.0.0_r1, system/core/libprocessgroup/profiles/task_profiles.json]
-- Android 16 源码：`ProcessList` 的 `CACHED_APP_MIN_ADJ = 900`、`CACHED_APP_MAX_ADJ = 999`、`FOREGROUND_APP_ADJ = 0`、`VISIBLE_APP_ADJ = 100`、`SERVICE_ADJ = 500` 等常量仍是 OOM_ADJ 分层的基础；具体 kill 行为还要看设备 lmkd 配置。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
+- Android 16 源码：`ProcessList` 的 `CACHED_APP_MIN_ADJ = 900`、`CACHED_APP_MAX_ADJ = 999`、`FOREGROUND_APP_ADJ = 0`、`VISIBLE_APP_ADJ = 100`、`SERVICE_ADJ = 500` 等常量仍是 OOM_ADJ 分层的基础；具体 kill 行为还要看设备 lmkd 配置。
 
 ## 参考资料
 

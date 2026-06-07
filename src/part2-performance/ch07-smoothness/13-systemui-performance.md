@@ -74,16 +74,16 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-05"
+reviewed_date: 2026-06-07
 last_task6_audit: "2026-05-21"
 task6_result: pass-light-edit
 task9_reviewed_by: "openclaw-task9"
@@ -97,7 +97,7 @@ last_task9_review_log: "logs/deep-review/2026-06-05-18-deep-review.md"
 task9_review_notes: "2026-06-05 Task9 深度复审 AUTO-FIX: 将 Flexiglass/SceneContainer 旧主线锚点收敛到 android-16.0.0_r1；移除未量化的默认视觉特效与内存增幅结论；Foldable 多 Display 性能影响改为需设备基线验证。回到 Task6 复审。"
 last_task2b_by: openclaw-task2b-main
 task2b_fix_summary: "2026-06-05 Task2B main: L3 问题单修复 — Foldable 多 Display 核心结论融入 §Android 16 桌面模式段（NavigationBar 多实例/SparseArray、StatusBar 无多实例、DisplayContent 版本敏感性、TaskbarDelegate wallpaper 分控、双 Display 功耗）；原源码调研块转为 §参考附录并添加上下文衔接。L1 禁用词修复 '这意味着' 1 处。"
-last_task6_at: "2026-06-05T19:14:48.974169+08:00"
+last_task6_at: 2026-06-07T16:07:00+08:00
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 1

@@ -59,7 +59,7 @@ last_task9_audit: "2026-06-06"
 last_task9_audit_log: "logs/deep-review/2026-06-06-18-audit.md"
 last_task9_autofix_at: "2026-06-06"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
+last_deepseek_cn_review_at: 2026-06-07
 ---
 
 # ANR 分析方法
@@ -97,8 +97,6 @@ ANR 是 Android 性能分析里最容易误判的一类问题。和卡顿不同�
 这一节交付一套可执行的 ANR 分析流程：先判断 traces.txt 的可信度，再结合 Perfetto 时间线、CPU 使用率、SystemLog 和线上回捞工具，区分应用侧问题、系统侧问题和两者叠加的场景。
 
 ## traces.txt 的解读方法
-
-[已验证：官方文档， developer.android.com/topic/performance/anrs]
 
 当 ANR 发生时，系统会通过发送 `SIGQUIT` 信号给目标进程，触发 ART 虚拟机 dump 所有线程的调用栈。这份输出就是 traces.txt。在较新的 Android 版本中，可以通过 `adb bugreport` 获取，也可以直接从设备的 `/data/anr/` 目录拉取。
 
@@ -140,8 +138,6 @@ trace 头部包含大量诊断信息，以下是关键字段的含义：
 - **state**：线程状态。`S` 表示 Sleeping，`R` 表示 Running，`B` 表示 Blocked（等待 monitor 锁），`D` 表示 Uninterruptible Sleep（通常是 I/O 等待或被冻结）
 - **utm/stm**：用户态/内核态 CPU 时间（单位约 10ms），可以大致判断线程的 CPU 消耗
 
-[已验证：AOSP android-16.0.0_r1, art/runtime/thread_state.h]
-
 
 ### SIGQUIT 响应延迟与诊断可信度
 
@@ -170,8 +166,6 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
 
 ### 线程状态对照
 
-[已验证：AOSP android-16.0.0_r1, art/runtime/thread_state.h]
-
 | traces.txt 中显示 | 对应 Thread.State | 含义 |
 |---|---|---|
 | Native | RUNNABLE | 正在执行 JNI native 方法，通常是在 epoll_wait 等 |
@@ -190,7 +184,7 @@ traces.txt 能说明 ANR 发生时各个线程在做什么，但它只是一个�
 
 ### 抓取包含 ANR 的 Perfetto Trace
 
-在分析 ANR 时，Perfetto 的抓取需要覆盖 ANR 发生的完整时间窗口。建议包含 sched、binder、input、am、view、wm 等关键 track，抓取时长 60 秒左右。
+分析 ANR 时,Perfetto 的抓取窗口要完整覆盖 ANR 发生前后的时间线。建议打开 sched、binder、input、am、view、wm 等关键 track,抓取时长 60 秒左右。
 
 
 ### 在 Perfetto 中定位 ANR 时间窗口
@@ -252,8 +246,6 @@ binder_sample: [android.view.accessibility.IAccessibilityManager,6,2010,com.xxx.
 
 这条日志表示某进程执行 `IAccessibilityManager` 的 code=6 方法，耗时 2010ms。
 
-[已验证：AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Binder.java]
-
 ### CPU 饥饿
 
 
@@ -298,8 +290,6 @@ CPU usage from 246ms to 1271ms later:
 **user / kernel 比例**：kernel 占比异常高（比如 system_server 的 119% kernel），通常意味着系统在进行大量的系统调用（I/O、Binder、内存操作）。
 
 **faults**：`minor` 表示高速缓存缺页，`major` 表示磁盘缺页。`major` 数量大说明当时 I/O 负载高。
-
-[已验证：AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java（ProcessCpuTracker）]
 
 ### Memory 压力信息
 
@@ -392,8 +382,6 @@ if (Build.VERSION.SDK_INT >= 36) {
 
 系统触发的 profiling 结果只会通过 `registerForAllProfilingResults()` 回来，Android 15 设备还没有 `addProfilingTriggers()` 这个 ANR 注册入口，只能走手动 `requestProfiling()`。
 
-[已验证：developer.android.com/reference/android/app/ApplicationExitInfo, developer.android.com/reference/android/os/ProfilingManager, developer.android.com/reference/android/os/ProfilingTrigger]
-
 ## 系统关键日志信号速查
 
 
@@ -423,7 +411,7 @@ if (Build.VERSION.SDK_INT >= 36) {
 
 **"CPU 使用率里我的应用占比最高，所以一定是我的问题。"** 不一定。前台应用占用高 CPU 本身并不异常，要看应用在做什么。
 
-**"ANR trace 中 D 状态就是死锁。"** 不是。D 状态通常意味着线程在等 I/O 操作或被系统冻结。Java 层面的死锁在 trace 中显示为 `Blocked` 状态。
+**"ANR trace 中 D 状态就是死锁。"** 不是一回事。D 状态(Uninterruptible Sleep)通常意味着线程在等待 I/O 操作完成,或被系统 freezer 冻结。Java 层面的死锁在 trace 中显示为 `Blocked` 状态,两者不能混用。
 
 **"系统负载高，所以 ANR 不是我的问题。"** 高负载暴露了应用主线程中本不应该存在的耗时操作。正确说法是：高负载放大了应用的潜在问题。
 
@@ -441,8 +429,6 @@ if (Build.VERSION.SDK_INT >= 36) {
 - **Android 14（API 34）**：引入 `com.android.internal.os.anr.AnrLatencyTracker`，在 ANR 处理各阶段写入 Perfetto trace slice/counter（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等）和 `ANR_LATENCY_REPORTED` statsd atom，ANR 触发到 dump 的时序可在 Perfetto 中通过这些 slice 精确观察
 - **Android 15（API 35）**：新增 `ProfilingManager`，应用可以主动请求 profiling，并注册全局结果回调
 - **Android 16（API 36）**：新增 `ProfilingTrigger.TRIGGER_TYPE_ANR` 和 `addProfilingTriggers()`，系统触发式 ANR profiling 正式可用
-
-[已验证：developer.android.com/reference/android/app/ApplicationExitInfo, developer.android.com/reference/android/os/ProfilingManager, developer.android.com/reference/android/os/ProfilingTrigger]
 
 ## 参考资料
 

@@ -355,6 +355,66 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 
 实现时，26.5 的问题单只需要新增一个“系统诊断附件”区域：退出记录、ANR trace、native tombstone、profiling result、heap dump、system trace。排障流程不因为新 API 改写；新 API 只让证据更完整。
 
+
+<!-- AIW-源码调研-2026-06-07 -->
+### StatsD 原子数据与诊断能力集成
+
+Android 17 的 StatsD 系统为线上诊断提供了重要的原子数据源，这些数据与现有的 ApplicationExitInfo 和 ProfilingManager 形成互补，共同构建完整的诊断体系。
+
+#### StatsD 架构与数据源
+
+StatsD 在 Android 17 中采用三层架构：
+
+1. **StatsManagerService**：Java 服务层，负责权限管理和配置管理
+2. **StatsCompanionService**：JNI 桥接层，连接 Java 服务与 native daemon
+3. **StatsD daemon**：native 二进制层，运行主循环处理原子事件
+
+原子数据通过 StatsdConfig 配置定义，分为 Pull atom 和 Push atom 两种类型，在 Perfetto 中映射为 `android_*_states` 表。
+
+#### 原子数据与诊断能力的互补关系
+
+在诊断能力分层中，StatsD 原子数据与其他诊断入口形成互补：
+
+| 诊断路径 | 数据类型 | 适用场景 | 与 StatsD 关系 |
+|---|---|---|---|
+| ApplicationExitInfo | 退出原因、退出时间 | 进程死亡分析 | 提供死亡前后原子计数器状态 |
+| ProfilingManager | System trace、heap dump | 运行时 profiling | 原子数据作为 profiling 的上下文 |
+| StatsD 原子数据 | 计数器、状态变化 | 长期监控与趋势分析 | 提供系统级别的性能指标 |
+
+#### Android 17 中的原子数据权限
+
+Android 17 中原子数据访问的权限边界：
+
+- **REGISTER_STATS_PULL_ATOM**：第三方应用注册拉取原子数据
+- **READ_RESTRICTED_STATS**：访问限制性原子数据
+- **PACKAGE_USAGE_STATS**：系统应用级别，作用范围收窄
+
+这些权限边界直接影响线上诊断的数据可用性，需要在诊断能力评估时考虑。
+
+#### 诊断证据中的原子数据字段
+
+在 26.12 节的证据归档表中，建议增加原子数据相关字段：
+
+| 字段 | 类型 | 用途 |
+|---|---|---|
+| `statsd_atoms_before` | object | 进程死亡前的原子计数器状态 |
+| `statsd_atoms_after` | object | 进程死亡后的原子计数器状态 |
+| `atom_config_hash` | string | Statsd 配置版本标识 |
+| `relevant_atoms` | array[] | 与问题相关的原子类型列表 |
+
+#### 版本差异与诊断策略
+
+Android 版本演进对原子数据诊断的影响：
+
+| 版本 | 原子数据能力 | 诊断策略变化 |
+|---|---|---|
+| Android 10-14 | 基础原子计数器 | 依赖第三方 SDK 监控 |
+| Android 15+ | 完整的 Pull/Push 原子 | 结合 Perfetto 表查询 |
+| Android 17 | 细粒度权限控制 | 需要考虑权限边界 |
+
+在制定诊断策略时，需要根据目标设备的 Android 版本选择合适的原子数据采集方式。
+<!-- /AIW-源码调研-2026-06-07 -->
+
 ## 待复核项
 
 - `REASON_APPLICATION_SPECIFIC_ERROR`：本轮 AOSP main 未确认该公开常量，后续以正式 SDK 文档为准。

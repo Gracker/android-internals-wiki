@@ -10,7 +10,7 @@ applicable_versions: "Android 11 (API 30) - Android 16 (API 36); Android 17 待�
 last_verified: "2026-05-19"
 last_verified_against: "AOSP android-16.0.0_r1 frameworks/base CachedAppOptimizer/OomAdjuster/ProcessList/ActivityManagerConstants + ART heap.cc; Android Source/Developers docs 2026-05; Android 17 tag 未公开"
 confidence: medium
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 tags: [cached-app-freezer, gc, lmkd, oom-adj, binder-freezer, memory]
 related_chapters: ["1.18", "4.2", "4.3", "4.4", "4.7", "5.8", "20.5", "26.9"]
 created_by: "task2a-knowledge-gap"
@@ -43,12 +43,12 @@ sources:
     path: "art/runtime/gc/heap.cc"
   - type: research
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-05"
-last_task6_at: "2026-06-05"
+reviewed_date: 2026-06-07
+last_task6_at: 2026-06-07T16:07:00+08:00
 task9_result: auto-fixed
 task2b_state: fixed
 last_task9_autofix_at: "2026-06-05"
