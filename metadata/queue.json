@@ -2125,8 +2125,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-07T11:06:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-07-11-review.md"
+      "status": "done",
+      "original_review_log": "logs/review/2026-06-07-11-review.md",
+      "resolved_by": "task6-review-2026-06-07",
+      "resolved_reason": "task2b已于2026-06-07修复重复块，本条为陈旧条目"
     }
   ],
   "5.18": {

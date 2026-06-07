@@ -3,11 +3,11 @@ status: "ready-for-review"
 title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
-last_task6_at: "2026-06-07T11:06:00+08:00"
+last_task6_at: "2026-06-07T12:12:00+08:00"
 last_task2b_lite_at: "2026-06-07"
 task2b_lite_notes: "2026-06-07 删除重复 H1+outline+intro 块(L55-102);代码块语言标记待后续修复"
 last_task6_review_log: "logs/review/2026-06-07-11-review.md"
-task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。 | 2026-06-07 task6 review 11:06:B类问题-文件存在重复的H1+outline+intro块(第55-102行),需Task2B删除第一个不完整实例;L1/L2无新增小修项。"
+task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。 | 2026-06-07 11:06:B类问题-文件存在重复的H1+outline+intro块(第55-102行),需Task2B删除第一个不完整实例;L1/L2无新增小修项。 | 2026-06-07 12:12:task6 revisiting review(第3轮):修复 13 处代码块语言标记(```text→```cpp/```java + 闭合标签规范化);L1/L2 通过;无 B 类大问题;queue 中 3.1 的 pending 条目为 task2b 已修复的陈旧条目，建议清理。"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -26,10 +26,10 @@ sources:
 path: https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture
 tags: 
 related_chapters: 
-task6_result: "needs-rework"
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
-task6_reviewed_date: "2026-05-30"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+pipeline_stage: "task9_pending"
+task6_reviewed_date: "2026-06-07"
 task9_state: "pending"
 task9_result: pending
 task2b_state: "fixed"
@@ -46,7 +46,7 @@ repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
 task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 6
+task6_l1_l2_fixes: 19
 task6_l3_l4_issues: 1
 task6_new_rework: true
 review_type: "task6-writing-quality-review"
@@ -109,7 +109,7 @@ review_type: "task6-writing-quality-review"
 
 `EventHub` 是整个 Input 系统的入口。它的核心工作是监听 `/dev/input/` 目录下设备文件的变化,并对外提供 `getEvents()` 接口。
 
-```text
+```cpp
 // frameworks/native/services/inputflinger/reader/EventHub.cpp
 EventHub::EventHub(void) {
     mEpollFd = epoll_create(EPOLL_SIZE_HINT);  // 创建 epoll 实例
@@ -125,7 +125,7 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer, size_t bufferSiz
         // 如果没有事件,epoll_wait 会阻塞
     }
 }
-```text
+```
 
 这里有两个机制:
 
@@ -147,7 +147,7 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer, size_t bufferSiz
 
 `InputReader` 的核心职责是"加工"(cook)--把内核上报的原始 `struct input_event` 转换成 Android Framework 能理解的 `KeyEvent`、`MotionEvent` 对象。
 
-```text
+```cpp
 // frameworks/native/services/inputflinger/reader/InputReader.cpp
 void InputReader::loopOnce() {
     size_t count = mEventHub->getEvents(timeoutMillis, mEventBuffer, EVENT_BUFFER_SIZE);
@@ -156,7 +156,7 @@ void InputReader::loopOnce() {
     }
     // ... 配置刷新处理
 }
-```text
+```
 
 `InputReader` 为每种输入设备类型分配了对应的 `InputMapper`:
 
@@ -186,7 +186,7 @@ void InputReader::loopOnce() {
 
 **MotionEvent(触摸事件)** 走触摸区域命中路径。`InputDispatcher` 通过 `findTouchedWindowTargetsLocked()` 遍历所有窗口,找到触摸点坐标落在其 `touchableRegion` 内的那个窗口。窗口的 `touchableRegion` 来自 `WindowState.getTouchableRegion()`,由 WMS 管理。
 
-```text
+```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
 bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
         std::shared_ptr<MotionEntry> entry, DropReason* dropReason, nsecs_t* nextWakeupTime) {
@@ -203,7 +203,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
     // ...
     dispatchEventLocked(currentTime, entry, inputTargets);
 }
-```text
+```
 
 为什么触摸事件不用焦点窗口?因为触摸事件的天然语义就是"点到谁就给谁"。如果用户点了一个悬浮窗下方的按钮,应该由悬浮窗接收事件(因为它在上面),而不是焦点窗口。而按键事件没有空间信息,只能用焦点窗口来决定接收者。
 
@@ -340,7 +340,7 @@ InputStage earlyPostImeStage = new EarlyPostImeInputStage(nativePostImeStage);
 InputStage imeStage = new ImeInputStage(earlyPostImeStage, ...);
 InputStage viewPreImeStage = new ViewPreImeInputStage(imeStage);
 InputStage nativePreImeStage = new NativePreImeInputStage(viewPreImeStage, ...);
-```text
+```
 
 这个责任链的处理顺序是:
 
@@ -362,7 +362,7 @@ InputStage nativePreImeStage = new NativePreImeInputStage(viewPreImeStage, ...);
 
 在 `ViewPostImeInputStage` 中,触摸事件的处理路径如下:
 
-```text
+```
 ViewPostImeInputStage.processPointerEvent()
   → mView.dispatchPointerEvent(event)     // mView 是 DecorView
     → DecorView.dispatchTouchEvent()
@@ -404,7 +404,7 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 **`mFirstTouchTarget` 链表**是整个分发机制的关键数据结构。它记录了消费了 `ACTION_DOWN` 事件的子 View。后续的 `MOVE`、`UP` 事件直接沿着这个链表分发,不再重新查找目标。这保证了整个触摸序列(DOWN → MOVE... → UP)由同一个 View 处理,避免了滑动过程中事件在不同 View 之间跳来跳去的混乱。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewGroup.java]
-```text
+```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
 void InputDispatcher::onWindowInfosChanged(
         const std::vector<WindowInfo>& windowInfos,
@@ -449,14 +449,14 @@ protected void onResume() {
 
 **Dispatch Timeout ANR**:事件通过 `socketpair` 发送给 App 后,放入 `waitQueue` 并在 `mAnrTracker` 中注册超时。App 处理完事件后发送 `FINISHED` 回调,`InputDispatcher` 收到后从 `waitQueue` 和 `mAnrTracker` 中移除。5 秒内没收到 `FINISHED` 就触发 ANR。
 
-```text
+```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
 // 在 startDispatchCycleLocked 中设置 ANR
 if (connection->responsive) {
     mAnrTracker.insert(dispatchEntry->timeoutTime,
                        connection->inputChannel->getConnectionToken());
 }
-```text
+```
 
 ### 5 秒超时的来源
 
@@ -601,7 +601,7 @@ set_sched_policy(0, SP_FOREGROUND);  // 前台调度策略
 
 `AnrTracker`(`services/inputflinger/dispatcher/AnrTracker.cpp`)从 Android 12 起已存在,实现是按 timeout 排序的容器(`std::multimap`),提供 `insert` / `erase` / `eraseToken` / `firstTimeout` / `firstToken` 接口。它用最早超时时间驱动下一次 ANR 检查--`processAnrsLocked()` 只需检查 `mAnrTracker` 中最早到期的时间点,如果已过期就触发 ANR 流程。
 
-```text
+```cpp
 // AnrTracker 核心:按超时时间排序,最早到期的在最前面
 // dispatch 时插入
 mAnrTracker.insert(dispatchEntry->timeoutTime, connection->inputChannel->getConnectionToken());
