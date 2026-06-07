@@ -47,14 +47,14 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-07T18:20:00+08:00'
 last_task9_autofix_at: '2026-06-07'
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-07'
 task6_reviewed_date: '2026-06-07'
-last_task6_at: '2026-06-07T18:10:43+08:00'
+last_task6_at: '2026-06-07T19:14:17+08:00'
 last_task6_audit: '2026-05-24'
 P26-06-07 Task6 18:10：Task9 auto-fix 后写作复审；L1/L2 全面扫描零命中，无需修复；送 Task9 复核 auto-fix 结果。2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06
   Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
@@ -69,7 +69,7 @@ P26-06-07 Task6 18:10：Task9 auto-fix 后写作复审；L1/L2 全面扫描零�
   与 DL bandwidth 重新表述。'
 last_task2b_at: '2026-06-07T16:50:00+08:00'
 last_task6_review_log: logs/review/2026-05-06-18-review.md
-task6_review_notes: 2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B
+task6_review_notes: 2026-06-07 Task6 19:14：Task9 auto-fix 后写作复审（revisiting）；L1/L2 全面扫描零命中，无需修复；送 Task9 做最终 pass 确认。 |  2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B
   修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
   16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。
   | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量
