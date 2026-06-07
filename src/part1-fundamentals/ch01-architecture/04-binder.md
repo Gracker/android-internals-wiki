@@ -467,6 +467,177 @@ oneway 调用避免了 Client 端的阻塞等待，但仍有队列和处理成�
 
 如果线程池经常被打满，主要原因往往不在线程数，而在 Server 端某些方法的执行时间太长（比如在 Binder 线程中做了 IO 操作或等锁）。加大线程池只是延缓症状，正确的方向是缩短单次 Binder 调用的处理时间、减少锁持有时间、避免在 Binder 线程中做耗时操作。
 
+
+
+## 线程池与调度器协同：Android 14+ 协作机制与内核层契约
+
+<!-- AIW-源码调研-2026-06-07 -->
+
+> ⚠️ **版本边界说明**：本节源码锚点基于 AOSP `frameworks/native` tag `android-16.0.0_r4` 与 `kernel/common` branch `android16-6.12`。公开 AOSP 截至 2026-06-07 暂无 `android-17.0.0_r1` tag，本节**未进入 Android 17**。
+
+### Native 侧的协作机制
+
+#### `mOnThreadAvailableCondVar`：客户端线程主动等待
+AOSP 14+ 起 `ProcessState` 引入 `std::condition_variable mOnThreadAvailableCondVar`（`include/binder/ProcessState.h:182`），与旧版 `pthread_cond_*` 实现相比，App 端在发起同步 Binder 时由内核 `binder_thread_read` 等待改为**用户态条件变量等待**。触发函数 `IPCThreadState::blockUntilThreadAvailable()`（`IPCThreadState.cpp:713`）核心逻辑：
+
+```cpp
+void IPCThreadState::blockUntilThreadAvailable() {
+    std::unique_lock lock_guard_(mProcess->mOnThreadAvailableLock);
+    mProcess->mOnThreadAvailableWaiting++;
+    mProcess->mOnThreadAvailableCondVar.wait(lock_guard_, [&] {
+        size_t max = mProcess->mMaxThreads;
+        size_t cur = mProcess->mExecutingThreadsCount;
+        if (cur < max) return true;
+        ALOGW("Waiting for thread to be free. mExecutingThreadsCount=%zu mMaxThreads=%zu\n",
+              cur, max);
+        return false;
+    });
+    mProcess->mOnThreadAvailableWaiting--;
+}
+```
+
+排障含义：当 Perfetto 中看到主线程 Sleeping 但伴随 logcat 出现 `Waiting for thread to be free` 字样，**已不再仅是内核态等待**，而是用户态 + 内核态双重等待；这往往意味着对端进程 worker 池已饱和。
+
+#### 100ms 饥饿告警：`mStarvationStartTime`
+`IPCThreadState::getAndExecuteCommand()`（`IPCThreadState.cpp:747-768`）在 worker 计数达到 `mMaxThreads` 时记录起始时间，回落时计算饥饿时长，超过 **100ms** 阈值打 `ALOGE`：
+
+```cpp
+size_t newThreadsCount = mProcess->mExecutingThreadsCount.fetch_add(1) + 1;
+if (newThreadsCount >= mProcess->mMaxThreads) {
+    auto expected = ProcessState::never();
+    mProcess->mStarvationStartTime
+            .compare_exchange_strong(expected, std::chrono::steady_clock::now());
+}
+```
+
+`ALOGE` 文本格式：
+
+```
+binder thread pool (15 threads) starved for 234 ms
+```
+
+排查命令：`adb logcat -d -s libbinder.IPCThreadState:E | grep "starved"`。配合 Perfetto 主线程 Sleeping 时间戳交叉对位，是 §9.x ANR 体系里"线程池压力"的关键证据。
+
+### 内核侧的线程选择与唤醒
+
+#### `binder_select_thread_ilocked` + `binder_wakeup_thread_ilocked`
+AOSP `kernel/common` branch `android16-6.12` `drivers/android/binder.c:614-672`：
+
+```c
+static struct binder_thread *
+binder_select_thread_ilocked(struct binder_proc *proc)
+{
+    struct binder_thread *thread;
+    assert_spin_locked(&proc->inner_lock);
+    thread = list_first_entry_or_null(&proc->waiting_threads,
+                                      struct binder_thread, waiting_thread_node);
+    if (thread)
+        list_del_init(&thread->waiting_thread_node);
+    return thread;
+}
+
+static void binder_wakeup_thread_ilocked(struct binder_proc *proc,
+                                         struct binder_thread *thread, bool sync)
+{
+    assert_spin_locked(&proc->inner_lock);
+    if (thread) {
+        if (sync)
+            wake_up_interruptible_sync(&thread->wait);
+        else
+            wake_up_interruptible(&thread->wait);
+        return;
+    }
+    binder_wakeup_poll_threads_ilocked(proc, sync);
+}
+```
+
+两个关键事实：
+- **FIFO 队首选取**（`list_first_entry_or_null`），不区分 priority 选取 worker。
+- **同步 vs 异步唤醒**：`sync=true` 用 `wake_up_interruptible_sync`，调用方会等到 worker 进入调度；oneway 用普通 `wake_up_interruptible`。最终都走 `try_to_wake_up()` 与 Linux 调度器握手。
+
+`BINDER_SET_MAX_THREADS` ioctl 落点（`binder.c:6079-6092`）仅写值，**不触发线程创建/销毁**；真正的"按需创建"在 `binder_thread_read()` 收到 `BR_SPAWN_LOOPER` 后由 client 调用 `IPCThreadState::joinThreadPool(false)` 完成。
+
+### 优先级继承：transaction / node / RT 三层合并
+
+#### `flat_binder_object` 编码位
+AOSP `frameworks/native/libs/binder/Parcel.cpp:247-251` `schedPolicyMask`：
+
+```cpp
+static constexpr inline int schedPolicyMask(int policy, int priority) {
+    return (priority & FLAT_BINDER_FLAG_PRIORITY_MASK)
+         | ((policy & 3) << FLAT_BINDER_FLAG_SCHED_POLICY_SHIFT);
+}
+```
+
+对应 `include/uapi/linux/android/binder.h:43-65`：`FLAT_BINDER_FLAG_PRIORITY_MASK=0xff`（低 8 位）、`FLAT_BINDER_FLAG_SCHED_POLICY_SHIFT=9`（bit[9:10]）、`FLAT_BINDER_FLAG_INHERIT_RT` 在 bit[11]。
+
+#### 内核侧三层合并
+`binder.c:3555-3566`（transaction 级：同步事务传播 `current->policy` / `current->prio`，oneway 走 `default_priority`）：
+
+```c
+if (!(t->flags & TF_ONE_WAY) && binder_supported_policy(current->policy)) {
+    t->priority.sched_policy = current->policy;
+    t->priority.prio = current->prio;
+} else {
+    t->priority = target_proc->default_priority;
+}
+```
+
+`binder.c:812-869` `binder_transaction_priority()`：node 级合并时**取更小值**（数值小 = 优先级更高）；`node->inherit_rt=false` 时强制把 RT 策略降级为 SCHED_NORMAL + nice 0。
+
+`binder.c:714-799` `binder_do_set_priority()`：实际调度器调用：
+
+```c
+struct sched_param params;
+params.sched_priority = is_rt_policy(policy) ? priority : 0;
+sched_setscheduler_nocheck(task, policy | SCHED_RESET_ON_FORK, &params);
+if (is_fair_policy(policy))
+    set_user_nice(task, priority);
+```
+
+- **RT 走 `sched_setscheduler_nocheck`**：避免越权检查，信任 caller 已校验。
+- **fair 走 `set_user_nice`**：在 EEVDF 下不直接改 `vruntime`，而是改 `latency_weight` 与 `weight`。
+- **`SCHED_RESET_ON_FORK`**：worker 进程 fork 时 RT 策略自动降级，防止 RT 逃逸。
+
+### 跨进程完整调用链（同步事务示例：App → system_server）
+
+1. App 主线程 `IPCThreadState::transact()` → 写 `BC_TRANSACTION` 到 `mOut`。
+2. `IPCThreadState::talkWithDriver()`（`IPCThreadState.cpp:1268`）`ioctl(mDriverFD, BINDER_WRITE_READ, ...)` 写入驱动。
+3. 驱动把 App 线程挂到 `proc->waiting_threads`，从 `system_server` 的 `waiting_threads` 选 worker。
+4. `binder_wakeup_thread_ilocked(proc, thread, sync=true)` → `wake_up_interruptible_sync`。
+5. system_server worker 在 `joinThreadPool` 循环里收到 `BR_TRANSACTION` → `executeCommand()` → 调业务代码。同步事务入口设置 `t->priority` 为发起方策略。
+6. `binder_do_set_priority()` → `sched_setscheduler_nocheck()` 临时升级 worker 优先级。
+7. 处理完写回 `BC_REPLY`，驱动拷贝 reply 到 App 进程共享 mmap 区，唤醒 App 等待线程。
+8. App 端 `talkWithDriver()` 返回，`mExecutingThreadsCount` 减 1，可能触发 100ms 饥饿告警检查。
+
+### 高并发场景的具体表现
+
+1. **线程池打满**：`system_server` 冷启动峰值常见 15 worker 全部 Running；`LOG_ALWAYS_FATAL_IF(mThreadPoolStarted && maxThreads < mMaxThreads, ...)` 已堵死"先开后缩"路径，单纯调大上限治标不治本。
+2. **优先级继承 vs 锁竞争**：worker 被临时升到高优先级，但抢 `WindowManagerGlobalLock` 仍要排队；高优先级 worker 持锁时间也更长，反而**放大**锁竞争副作用。这是 §9.3 ANR 分析里"Binder + 锁竞争导致 ANR"的核心矛盾。
+3. **`mOnThreadAvailableCondVar` 副作用**：App 端多走一轮 `std::condition_variable::wait`，对高并发启动场景有 1-2% 额外开销（**源码静态分析推断，未做设备级 benchmark**）。
+
+### Perfetto 排障路径更新
+
+主线程 Sleeping 切到 `binder_thread_read` 时，配合以下三步定位：
+
+1. **客户端判断**：`adb logcat -d -s libbinder.IPCThreadState | grep -E "Waiting for thread|starved for"`。
+2. **服务端判断**：对端进程 worker 数是否接近 `setThreadPoolMaxThreadCount()` 上限；剩余 worker 是否在等 Java 锁。
+3. **联合判断**：100ms 饥饿告警 + 主线程 Sleeping > 50ms + 对端 worker 全部 Running + 锁竞争 slice 持续 → "线程池压力"判定成立。
+
+### 章节交叉引用
+
+- §1.4 本章节"Binder 线程池：性能分析的关键变量"段落：补充 `mOnThreadAvailableCondVar` 与 100ms 告警机制。
+- §9.3 ANR 分析方法"主线程处于 Sleep 但非 nativePollAlign"段落：补充"100ms 饥饿日志"作为补充证据。
+- §5.x CPU 调度：补充 `sched_setscheduler_nocheck + set_user_nice` 与 EEVDF 对接点。
+- DeepResearch 报告：`2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md` 给出本节全部源码锚点。
+
+### 来源
+<!-- AIW-源码调研-2026-06-07-sources -->
+- AOSP `frameworks/native/libs/binder/ProcessState.cpp`、`IPCThreadState.cpp`、`Parcel.cpp`、`include/binder/ProcessState.h`（tag `android-16.0.0_r4`）
+- AOSP `kernel/common/drivers/android/binder.c`、`include/uapi/linux/android/binder.h`（branch `android16-6.12`）
+- DeepResearch 报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md`
+- 版本边界：android-16.0.0_r4 为公开 AOSP 最高 tag，**android-17 未进入**
+
 ## 参考资料
 
 - AOSP 源码路径：

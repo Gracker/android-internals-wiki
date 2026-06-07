@@ -61,15 +61,15 @@ related_chapters:
   - "5.1"
   - "5.8"
 task2b_state: fixed
-task6_state: revisiting
+task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-13"
-review_round: 1
-task6_review_notes: "2026-05-13 task6 review: L1/L2 通过；本轮仅补齐 review 元数据，无新增 L3/L4 回炉项。"
-status: ready-for-review
-pipeline_stage: task6_pending
+task6_result: "pass-light-edit"
+task6_reviewed_date: "2026-06-07"
+review_round: 2
+task6_review_notes: "2026-05-13 task6 review: L1/L2 通过；本轮仅补齐 review 元数据，无新增 L3/L4 回炉项。 | 2026-06-07 task6 revisiting review: L1/L2 通过（代码块标签、禁用词、高频词均合规）；无 B 类大问题；自动晋升 finalized（task9 pass + queue 无 pending）。"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-07"
@@ -80,6 +80,8 @@ last_task9_audit: "2026-06-07"
 last_task6_audit: "2026-05-25"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
+task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-06-07T12:12:00+08:00"
 ---
 
 # 进程模型与生命周期管理

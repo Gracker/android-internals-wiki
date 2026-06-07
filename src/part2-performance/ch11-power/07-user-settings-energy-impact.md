@@ -2,7 +2,7 @@
 title: "用户设置对能耗的影响：亮度、刷新率与深色模式"
 chapter: "11.7"
 section: "11.7"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-05-22"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-05-22"
@@ -30,10 +30,17 @@ sources:
     path: "intake/daily-info/2026-05-22.md"
 tags: [power, battery, display, refresh-rate, dark-mode, empirical-study]
 related_chapters: ["2.18", "2.19", "5.6", "11.1", "11.2", "15.6", "25.1"]
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: fixed
+task6_result: "pass-light-edit"
+task6_reviewed_date: "2026-06-07"
+task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-06-07T12:12:00+08:00"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-07"
+task6_review_notes: "2026-06-07 task6 首次 review: L1/L2 通过（禁用词零命中、高频词合规、NOT-X-BUT-Y 仅 2 处且合理）；outline 7/7 锚点全覆盖；叙述风格符合 writing-guide；无需小修。无 B 类大问题。"
 ---
 
 # 11.7 用户设置对能耗的影响：亮度、刷新率与深色模式
