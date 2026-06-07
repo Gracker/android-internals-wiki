@@ -2,7 +2,7 @@
 title: 耗电与发热监控 (Battery & Thermal)
 chapter: '19'
 section: '19.25'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: gemini
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
