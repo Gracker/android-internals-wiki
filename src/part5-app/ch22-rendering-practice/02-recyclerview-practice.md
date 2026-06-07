@@ -54,6 +54,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 task6_reviewed_date: "2026-05-15"
 last_task6_at: "2026-05-15T02:12:00+08:00"
+last_task6_audit: "2026-06-07"
 last_task6_review_log: logs/review/2026-05-15-02-review.md
 task6_reviewed_at: "2026-05-15T02:12:00+08:00"
 task6_reviewed_by: openclaw-task6
@@ -262,7 +263,7 @@ fun RecyclerView.configureHorizontalCards(
 
 局部刷新做完后，还要看 ItemAnimator。`getChangePayload()` 能减少绑定范围，但默认 change animation 仍可能让旧 ViewHolder 和新 ViewHolder 同时参与动画，增加布局和绘制压力。点赞、关注、计数器这类高频状态变更，通常只需要文本或图标状态切换，不需要整行 change animation。
 
-验收方式很简单：在同一台设备上录两段 Perfetto，一段保留 change animation，一段关闭 `supportsChangeAnimations`。如果关闭后 `RV OnLayout`、`RV onBindViewHolder` 和慢帧数量下降，并且交互视觉没有损失，就把关闭范围限定在对应 Adapter 或页面，不要全局一刀切。
+在同一台设备上录两段 Perfetto，一段保留 change animation，一段关闭 `supportsChangeAnimations`。如果关闭后 `RV OnLayout`、`RV onBindViewHolder` 和慢帧数量下降，并且交互视觉没有损失，就把关闭范围限定在对应 Adapter 或页面，不要全局一刀切。
 
 [已验证: AndroidX `SimpleItemAnimator#supportsChangeAnimations`; AIW 7.8 Perfetto 排查顺序]
 
