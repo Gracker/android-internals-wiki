@@ -41,15 +41,15 @@ polish_date: '2026-04-07'
 polish_by: task2b-polish
 task9_result: needs-rework
 task9_reviewed_date: '2026-06-07'
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-07T16:20:00+08:00'
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 task6_reviewed_date: '2026-05-06'
@@ -66,7 +66,7 @@ review_notes: '2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1�
   断行、统一数值单位空格和少量 L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 18:45 Task9：needs-rework。P0
   0 / P1 1 / P2 0。L275 RT/Deadline 任务并非在 Android 15/16 schedutil 中无条件拉到最高频；需按 effective_cpu_util()、uclamp
   与 DL bandwidth 重新表述。'
-last_task2b_at: '2026-05-10T22:21:46+08:00'
+last_task2b_at: '2026-06-07T16:50:00+08:00'
 last_task6_review_log: logs/review/2026-05-06-18-review.md
 task6_review_notes: 2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B
   修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
@@ -548,54 +548,49 @@ schedutil 是一个通用方案，它对典型 Android 应用场景做了优化�
 - RTG 聚合调频分析：OPPO 内核工匠《调度器分支之RTG》
 - GPU 性能原理：腾讯技术工程《GPU 性能原理拆解》
 
-<!-- AIW-源码调研-2026-06-01 -->
-## 补充：Android 17 游戏调度框架与CPU/GPU联合调频机制
+<!-- AIW-源码调研-2026-06-01 · 2026-06-07 Task2B 回炉修复：修正 GameManager/Power HAL 调用链与移除不可验证 android-17 tag -->
+## 补充：游戏调度框架与 Power HAL 协同
 
 *来源：2026-06-01 每日源码调研 | 关联选题：荣耀MUSCHED移动设备调度优化方案*
 
+> **版本说明**：截至 2026-06-07，AOSP 公开 Gitiles `refs/tags/android-17.0.0_r1` 尚未发布。以下源码锚点以 `android-16.0.0_r1` 为最新可验证 tag；Android 17/API 37 的游戏调度行为以上线设备行为为准，AOSP 确认需待 tag 公开后复核。
+
 ### GameManagerService 游戏模式感知层
 
-AOSP android-17.0.0_r1 中，`GameManagerService`（路径：`frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`）负责检测和管理游戏状态。关键函数：
+AOSP android-16.0.0_r1 中，`GameManagerService`（路径：`frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`）负责检测和管理游戏状态。关键函数：
 
-- `setGameMode(int userId, String packageName, int mode)` — 切换游戏模式（标准/性能/省电）
+- `setGameMode(String packageName, @GameMode int gameMode, int userId)` — 切换游戏模式（标准/性能/省电），更新 game mode interventions
 - `getGameMode()` — 查询当前游戏模式
 
-GameManagerService 通过 `GameManagerInternal` 与 PowerManagerService 联动，触发 `powerHint(PERFORMANCE_MODE)` 提示。
+游戏启动/加载阶段的性能提升路径不经过 `powerHint` / `POWER_HINT_*` 常量。可验证链路是：
 
-### PowerManager.powerHint API（性能提示）
-
-路径：`frameworks/base/core/java/android/os/PowerManager.java`（android-17.0.0_r1）
-
-关键常量定义（line 711）：
-
-```java
-public static final int POWER_HINT_INTERACTIVE = 0;
-public static final int POWER_HINT_LOW_POWER = 1;
-public static final int POWER_HINT_PERFORMANCE = 2;
-public static final int POWER_HINT_VIDEO_ENCODE = 3;
-public static final int POWER_HINT_SUSTAINED_PERFORMANCE = 4;
-public static final int POWER_HINT_DYNAMIC_SHUTTLE = 5;
+```
+GameManagerService → PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, isLoading)
 ```
 
-调用链（line 1777）：
+具体地，`setGameMode()` 内部在游戏进入 loading 状态时调用 `mPowerManagerInternal.setPowerMode(Mode.GAME_LOADING, true)`，loading 结束时再设 `false`。`PowerManagerInternal` 是系统服务内部接口（`@hide`），不暴露给第三方应用。
 
-```java
-public void powerHint(int hintId, int data) {
-    mService.powerHint(hintId, data);  // → IPowerManager.aidl → native层
-}
-```
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java — `setGameMode()` / `PowerManagerInternal.setPowerMode(Mode.GAME_LOADING)`]
 
-### PowerManagerService（电源服务中枢）
+> **PowerManager.java / IPowerManager.aidl 复核**：android-16.0.0_r1 的 `PowerManager.java` 和 `IPowerManager.aidl` 未命中 `powerHint` 方法或 `POWER_HINT_*` 常量簇。旧版 Android（API 28 之前）曾存在 `powerHint()` / `POWER_HINT_INTERACTIVE` 等常量，已在后续版本移除，不是 Android 16/17 的公开 API。
 
-路径：`frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`
+### PowerManagerService 与 Power HAL AIDL
 
-`powerHint()` 处理函数最终调用 `nativeSendPowerHint(hintId, data)` 将提示下发到 kernel 层的 cpufreq governor 或 thermal 子系统。
+`PowerManagerService`（路径：`frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`，android-16.0.0_r1）内部通过 `setPowerModeInternal()` 承载游戏/相机/VR 等场景的性能模式请求，JNI 入口为 `nativeSetPowerMode()`（路径：`services/core/jni/com_android_server_power_PowerManagerService.cpp`），最终通过 Power HAL AIDL 接口 `IPower.setMode()` 下发到 HAL 层。
 
-### device-specific powerhint.json
+Power HAL AIDL 的 `Mode` 枚举（如 `GAME_LOADING`、`SUSTAINED_PERFORMANCE`、`CAMERA` 等）取代了旧的 `powerHint` 整型常量机制。这一迁移在 Android 12-14 期间逐步完成，Android 15/16 的主流设备已全部使用 AIDL Power HAL。
 
-路径：`device/google/coral/powerhint.json`（Pixel设备，android-17）
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java + services/core/jni/com_android_server_power_PowerManagerService.cpp — `nativeSetPowerMode()` / `IPower.setMode()`]
 
-定义了 powerHint 与系统实际参数（如 `/proc/cpufreq/sched_dcvs_perf`）的映射关系。厂商可通过修改此配置实现定制化的调频策略。
+### Power HAL 的 vendor 配置边界
+
+Power HAL 如何把 `Mode.GAME_LOADING` 映射到具体的调频/调压动作，由 vendor 实现决定。常见的映射手段包括：
+
+- 向 kernel cpufreq governor 注入 uclamp 下限或性能提示
+- 调整 cpuset cgroup 的 CPU 亲和性（`/dev/cpuset/top-app/cpus`）
+- 通过 SoC 私有接口（如 `/proc/cpufreq/sched_dcvs_perf`，属 vendor 路径）下发调频目标
+
+这些映射逻辑不在 AOSP 主线范围内，不同 SoC 平台和 OEM 的配置差异很大，无法用一条通用调用链覆盖。在 Perfetto 中观察时，可以对比 `power/cpu_frequency` 轨迹与游戏加载区间的时间对齐关系，判断厂商的 GAME_LOADING → 提频映射是否生效，但映射表本身不暴露在 AOSP 的 public API 或 sysfs 标准接口中。
 
 ### Linux cpufreq + cpuset + thermal 协同
 
@@ -619,5 +614,5 @@ thermal 降频路径：`/sys/class/thermal/thermal_zone*/`，通常 40-45°C 开
 
 ### 荣耀 MUSCHED 说明
 
-荣耀 MUSCHED 为厂商私有实现，AOSP 未见源码。已验证 AOSP 路径仅覆盖通用 Android 调度框架，厂商特异调度器（如 MUSCHED）属于 vendor 分支，不在 android-17.0.0_r1 主线范围内。
+荣耀 MUSCHED 为厂商私有实现，AOSP 未见源码。已验证 AOSP 路径仅覆盖通用 Android 调度框架，厂商特异调度器（如 MUSCHED）属于 vendor 分支，不在 android-16.0.0_r1 主线范围内。Android 17 厂商扩展部分待 tag 公开后复核。
 
