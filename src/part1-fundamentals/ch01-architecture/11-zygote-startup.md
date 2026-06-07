@@ -46,7 +46,7 @@ related_chapters: ["1.2", "1.3", "8.2", "8.3"]
 pipeline_stage: ready-to-publish
 finalized_date: "2026-05-18"
 finalized_by: openclaw-task9-auto-promote
-task6_state: revisiting
+task6_state: reviewed  # updated by task2b-verifier 2026-06-07
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review

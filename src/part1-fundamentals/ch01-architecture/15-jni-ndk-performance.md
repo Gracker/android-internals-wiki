@@ -50,7 +50,7 @@ related_chapters:
   - "4.7"
   - "14.2"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed  # updated by task2b-verifier 2026-06-07
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review

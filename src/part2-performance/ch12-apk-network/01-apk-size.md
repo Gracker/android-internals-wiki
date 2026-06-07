@@ -55,7 +55,7 @@ last_task9_at: "2026-05-28T01:28:49+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed  # updated by task2b-verifier 2026-06-07
 task9_state: "reviewed"
 pipeline_stage: "ready-to-publish"
 repaired_date: '2026-04-24'

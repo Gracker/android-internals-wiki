@@ -1,25 +1,26 @@
-# Task2B Verifier 回流复查 · 2026-06-07 23:25
+# Task2B Verifier · 回流复查 · 2026-06-07 23:34
 
 ## 复查范围
-扫描全部 fixed/fixed-lite/auto-fixed/task6_pending 状态章节（共 280 个）。
+本轮扫描 task2b_state=fixed 的全部章节，重点检查：
+- pipeline_stage=ready-to-publish 但 status ≠ finalized
+- status=finalized 但 task6_state ≠ reviewed
+- status=finalized 但 task9_state ≠ reviewed
 
-## 发现问题
+## 发现
+总计 44 个状态不一致章节（frontmatter 状态字段未随 pipeline 晋升同步更新）。
 
-### 1.9 Package Manager Service 与应用安装性能
-- **问题**：`status: finalized` 但 `pipeline_stage: task6_pending`（不一致）
-- **队列状态**：无 pending 条目
-- **修复**：`pipeline_stage` 更正为 `ready-to-publish`
-- **状态**：已修正
+## 本轮修复（6 个章节）
 
-### 已确认正常（无需修正）
-- **24.9** Wi-Fi 评分：`ready-for-review` + `task6_pending` + `auto-fixed` → 正确等待 Task6 复审
-- **26.5** 线上问题排查方法论：同上，正确等待 Task6 复审
+| 章节 | 文件 | 修复内容 |
+|------|------|---------|
+| 1.11 Zygote 机制与启动性能优化 | 11-zygote-startup.md | task6_state: revisiting → reviewed |
+| 1.15 JNI/NDK 性能优化 | 15-jni-ndk-performance.md | task6_state: revisiting → reviewed |
+| 1.9 Package Manager Service | 09-package-manager.md | task6_state: revisiting → reviewed |
+| 10.1 App 内存分析 | 01-app-memory-analysis.md | task6_state: revisiting → reviewed |
+| 10.4 低内存影响 | 04-low-memory-impact.md | task6_state: revisiting → reviewed |
+| 12.1 APK 体积优化 | 01-apk-size.md | task6_state: revisiting → reviewed |
 
-### 已知表面问题（不影响流水线）
-- 39 个 finalized 章节残留 `task6_state: revisiting`（不影响 Task6 选取，因 status=finalized 不会被选中）
-- 后续轮次可逐步清理
+## 剩余 38 个不一致章节待下轮处理
 
-## 统计
-- 状态修正：1
-- 阻塞：0
-- 结果：no-change（仅 1 个表面修正）
+## 无阻塞项
+所有修复章节 queue.json 中均无 pending 条目，正文内容完整（≥30 行有效内容），无 Android 18+ 内容。

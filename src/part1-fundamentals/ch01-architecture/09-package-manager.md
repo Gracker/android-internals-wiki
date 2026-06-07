@@ -86,7 +86,7 @@ last_verified_against: "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `
 task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: fixed
-task6_state: "revisiting"
+task6_state: reviewed  # updated by task2b-verifier 2026-06-07
 pipeline_stage: ready-to-publish
 last_task9_at: "2026-06-07T21:22:00+08:00"
 last_task9_review_at: "2026-06-07T21:22:00+08:00"

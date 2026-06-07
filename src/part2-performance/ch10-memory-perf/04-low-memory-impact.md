@@ -28,7 +28,7 @@ polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed  # updated by task2b-verifier 2026-06-07
 task6_result: pass-light-edit
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External Review 问题单）"

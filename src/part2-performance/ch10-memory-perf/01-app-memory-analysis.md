@@ -33,7 +33,7 @@ sources:
     path: "https://developer.android.com/guide/practices/page-sizes"
 tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
-task6_state: revisiting
+task6_state: reviewed  # updated by task2b-verifier 2026-06-07
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-17"
 section: "10.1"
