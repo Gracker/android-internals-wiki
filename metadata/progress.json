@@ -10759,22 +10759,31 @@
     "section": "3.1",
     "title": "Input 事件分发全流程",
     "file": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-    "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "reviewed",
-    "task6_result": "needs-rework",
+    "task6_result": "pass-light-edit",
     "reviewed_by": "openclaw-task6",
-    "reviewed_date": "2026-05-29",
-    "last_task6_at": "2026-05-29T08:16:26+08:00",
-    "last_task6_review_log": "logs/review/2026-05-29-08-review.md",
+    "reviewed_date": "2026-06-07",
+    "last_task6_at": "2026-06-07T12:12:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-07-11-review.md",
     "task9_state": "reviewed",
-    "task9_result": "needs-rework",
-    "task2b_state": "pending",
+    "task9_result": "pass-tech-review",
+    "task2b_state": "fixed",
     "task6_l1_l2_fixes": 2,
     "task6_l3_l4_issues": 2,
     "task6_new_rework": true,
     "task6_note": "L1/L2 小修 2 处；尾部素材块和待验证技术点回炉。",
-    "task2b_result": "pending"
+    "task2b_result": "fixed-lite",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_reviewed_date": "2026-06-07",
+    "last_task9_at": "2026-06-07T12:24:00+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-06-07-12-deep-review.md",
+    "task9_note": "Task9 deep tech review pass: no P0/P1; auto-promoted finalized because Task6 passed and queue has no pending entry.",
+    "task6_reviewed_date": "2026-06-07",
+    "task6_reviewed_by": "openclaw-task6",
+    "task2b_fixed_at": "2026-06-07T10:50:00+08:00",
+    "task2b_fixed_by": "openclaw-task2b"
   },
   "section_14_18": {
     "section": "14.18",
@@ -11426,8 +11435,8 @@
     "section": "11.7",
     "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
     "file": "src/part2-performance/ch11-power/07-user-settings-energy-impact.md",
-    "status": "draft",
-    "pipeline_stage": "task2a_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-05-22",
     "queue_priority": 80,
@@ -11441,7 +11450,22 @@
     },
     "material_count": 3,
     "last_task2a_at": "2026-05-22T08:45:48+08:00",
-    "task2a_result": "gap-created"
+    "task2a_result": "gap-created",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_reviewed_date": "2026-06-07",
+    "last_task9_at": "2026-06-07T12:24:00+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-06-07-12-deep-review.md",
+    "task2b_state": "fixed",
+    "task9_note": "Task9 deep tech review pass: no P0/P1; auto-promoted finalized because Task6 passed and queue has no pending entry.",
+    "task6_reviewed_date": "2026-06-07",
+    "task6_reviewed_by": "openclaw-task6",
+    "last_task6_at": "2026-06-07T12:12:00+08:00",
+    "reviewed_by": "openclaw-task6",
+    "reviewed_date": "2026-06-07"
   },
   "section_26_17": {
     "section": "26.17",
@@ -13808,7 +13832,9 @@
   "finalized_sections": [
     "19.6",
     "13.2",
-    "1.3"
+    "1.3",
+    "3.1",
+    "11.7"
   ],
   "reviews": [
     {
@@ -13864,5 +13890,30 @@
   },
   "26.5": {
     "verifier_note": "pipeline advanced to task6_pending 2026-06-06"
-  }
+  },
+  "task9_reviews": [
+    {
+      "date": "2026-06-07",
+      "time": "12:24",
+      "sections": [
+        {
+          "section": "3.1",
+          "title": "Input 事件分发全流程",
+          "result": "pass-tech-review",
+          "auto_promoted": true
+        },
+        {
+          "section": "11.7",
+          "title": "用户设置对能耗的影响：亮度、刷新率与深色模式",
+          "result": "pass-tech-review",
+          "auto_promoted": true
+        }
+      ],
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 2,
+      "log": "logs/deep-review/2026-06-07-12-deep-review.md"
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 ---
-status: "ready-for-review"
+status: "finalized"
 title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
@@ -28,23 +28,23 @@ tags:
 related_chapters: 
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_reviewed_date: "2026-06-07"
-task9_state: "pending"
-task9_result: pending
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 task2b_notes: "修复 Task6 2026-05-30 回炉问题:移除未进入 Android 17 的 DeliQueue 推测内容，清理参考资料后未融合的源码调研素材块。2026-06-07 Task2B 主修复：修正 HwTimeoutMultiplier() 版本表入口（Android 13 已存在）；修复 frontmatter 重复 pipeline_stage 键。"
 task2b_fixed_by: openclaw-task2b
 task2b_fixed_at: "2026-06-07T10:50:00+08:00"
-task9_reviewed_date: "2026-05-21"
-task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-05-30T09:20:00+08:00
-review_notes: 2026-04-27 Task9 复审通过:InputClassifier/InputProcessor、WindowInfosListener、stale
+task9_reviewed_date: "2026-06-07"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-07T12:24:00+08:00"
+review_notes: "2026-06-07 Task9 深度技术审计通过：无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task2b_at: "2026-05-30T00:50:00+08:00"
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-21-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-07-12-deep-review.md"
 task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 19
 task6_l3_l4_issues: 1
