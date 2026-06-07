@@ -12,12 +12,7 @@ reviewed_date: "2026-05-28"
 reviewed_by: "openclaw-task6"
 reviewed_at: "2026-05-28T17:18:00+08:00"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-04-18'
-last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `PackageInstallerSession.verifySdmSignatures` / `ArtManagedInstallFileHelper` / `ArtManagerLocal` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + AOSP android-9.0.0_r1 `Installer.java` + Android Developers Baseline Profiles overview
 confidence: medium
 sources:
 - type: aosp
@@ -46,6 +41,16 @@ sources:
   path: art/libartservice/service/java/com/android/server/art/ArtShellCommand.java
 - type: aosp
   path: art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java
+- type: aosp
+  path: frameworks/base/services/incremental/IncrementalService.cpp
+- type: aosp
+  path: system/incremental_delivery/
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/pkg/ArchiveState.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/overview
 - type: official
@@ -62,38 +67,41 @@ tags:
 - cloud-compilation
 - app-installation
 - compilation
-task9_result: "pass-tech-review"
-last_task9_at: "2026-05-28T17:29:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-28"
-last_task9_review_at: "2026-05-30T12:20:00+08:00"
-task9_reviewed_by_current: "openclaw-task9"
-last_task9_audit_date: "2026-05-30"
 task2b_result: "fixed-lite"
-task2b_state: fixed
 last_task2b_at: "2026-05-30T11:36:00+08:00"
 last_task2b_by: "openclaw-task2b-lite"
 last_task2b_summary: "Task2B Lite: Added DeepResearch reference materials to sources section"
 last_task2b_lite_at: "2026-05-30"
-task6_state: "revisiting"
-task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
-task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-28T17:18:00+08:00"
 task6_reviewed_date: "2026-05-28"
-last_task9_review_log: "logs/deep-review/2026-05-28-17-deep-review.md"
 last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-17-review.md"
 task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理编辑痕迹与参考资料表述 3 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
-task9_reviewed_at: "2026-05-28T17:29:00+08:00"
-updated_by: "openclaw-task9"
-updated_date: "2026-05-28"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
+last_verified: '2026-06-07'
+last_verified_against: "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `PackageInstallerSession.verifySdmSignatures` / `ArtManagedInstallFileHelper` / `ArtManagerLocal` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob` / `IncrementalService` / `PackageArchiver` / `ActivityStarter` / `ArchiveState`) + AOSP android-15.0.0_r1 `PackageArchiver` / `ActivityStarter` / `ArchiveState` + AOSP android-9.0.0_r1 `Installer.java` + Android Developers Baseline Profiles overview"
+task9_result: "auto-fixed"
+task9_state: "reviewed"
+task2b_state: fixed
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
+last_task9_at: "2026-06-07T21:22:00+08:00"
+last_task9_review_at: "2026-06-07T21:22:00+08:00"
+task9_reviewed_date: "2026-06-07"
+task9_reviewed_at: "2026-06-07T21:22:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_by_current: "openclaw-task9"
+last_task9_audit: '2026-06-07'
+last_task9_audit_date: "2026-06-07"
+last_task9_autofix_at: '2026-06-07'
+last_task9_review_log: "logs/deep-review/2026-06-07-21-audit.md"
+updated_by: "openclaw-task9"
+updated_date: "2026-06-07"
+task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-07 21 Task9 idle audit: auto-fixed。将 App Archiving 源码锚点从 AOSP mainline 改为 android-15/16 tag；未使用 Android 18/API 38+ 内容。"
 ---
-
 # 1.9 Package Manager Service 与应用安装性能
 
 <!-- outline-start -->
@@ -423,7 +431,7 @@ if (isArchivingEnabled()) {
 
 **与 LMK 的关系**：App Archiving 与 LowMemoryKiller 无直接关联。归档操作通过 `DELETE_ARCHIVE | DELETE_KEEP_DATA` 标志位移除 APK，data 目录保留，归档 App 不直接触发 LMK。
 
-[已验证: AOSP mainline `PackageArchiver.java` / `ActivityStarter.java` / `ArchiveState.java`]
+[已验证: AOSP android-15.0.0_r1 / android-16.0.0_r1 `PackageArchiver.java` / `ActivityStarter.java` / `ArchiveState.java`]
 
 ## 应用更新与 OTA 更新的性能影响
 
