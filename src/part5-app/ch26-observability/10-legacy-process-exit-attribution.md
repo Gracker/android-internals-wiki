@@ -14,6 +14,7 @@ reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-16T03:16:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-03-review.md"
+last_task6_audit: "2026-06-07"
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
