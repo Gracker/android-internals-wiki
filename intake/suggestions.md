@@ -39,3 +39,12 @@
 - **问题**：文件包含两个重复的 H1 + outline + "为什么要了解" + "从硬件到 App" 块。第一个实例（行55-102）只有3段路径描述，缺少第4段（App 侧分发）。第二个实例（行103起）包含完整4段并正确衔接后续 EventHub 章节。这是 Task2B 2026-06-07T10:50 修复后的遗留问题。
 - **建议**：删除第55-102行的整个第一个块，保留行103起的完整版本。同时修正代码块语言标记（约5处 ```text → ```cpp）。
 - **review 日志**：logs/review/2026-06-07-11-review.md
+
+## [Task 2A Gap Mining] 2026-06-07 12:12 (Round 20)
+
+- Direction: 同 Round 18/19 — 无空 draft、TASK2B_BACKLOG=0、412 sections（288 finalized + 83 ready-for-review + 40 index/README + 1 misc）。source-index 284 unmapped 中无新性能主题（interview ref / Tare→ch11.8 / MUSCHED VIP→ch17.5 / PMS→ch01.9+ch01.23 / Compose blind spots→ch22.20 均已映射）。research-feeds 自 4 月无更新。daily-info 06-07 无新性能素材。Clippings 三本参考书已全部覆盖。AOSP 26 chapters 349+ sections 覆盖饱和。
+- No gap scored >= 14
+- Book: 412 sections (288 finalized + 83 ready-for-review + 0 draft + 41 misc)
+- 20+ consecutive empty runs
+- Recommendation: 暂停 gap mining cron 或仅在 new material injection 时触发
+- Bottleneck: Task 6 review of 83 ready-for-review sections
