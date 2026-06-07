@@ -2129,6 +2129,38 @@
       "original_review_log": "logs/review/2026-06-07-11-review.md",
       "resolved_by": "task6-review-2026-06-07",
       "resolved_reason": "task2b已于2026-06-07修复重复块，本条为陈旧条目"
+    },
+    {
+      "section": "5.4",
+      "section_title": "DVFS 与功耗管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review][闲时抽检] Android 17 源码锚点不可验证且游戏调度/Power HAL 链路描述与公开 AOSP 不符",
+      "material_paths": [
+        "logs/deep-review/2026-06-07-16-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误/版本边界",
+          "location": "L551-L591",
+          "detail": "补充块标注 AOSP android-17.0.0_r1 GameManagerService/PowerManager/PowerManagerService 已验证，但本轮复核 android.googlesource.com platform/frameworks/base refs/tags 未命中 android-17.0.0_r1；按 AIW 版本边界，未公开 tag 不能作为 Android 17 正文源码结论。",
+          "suggestion": "移除 android-17.0.0_r1 已验证表述；待 tag 公开后复核，或回退到 android-16.0.0_r1 + Android 17/API 37 官方文档，并明确 Android 17 源码待验证。"
+        },
+        {
+          "type": "P0 源码错误/调用链错误",
+          "location": "L557-L592",
+          "detail": "正文写 GameManagerService 通过 GameManagerInternal 与 PowerManagerService 联动触发 powerHint(PERFORMANCE_MODE)，并由 PowerManager.powerHint()/nativeSendPowerHint() 下发。android-16.0.0_r1 可核到的链路是 GameManagerService#setGameMode(String packageName, int gameMode, int userId) 更新 interventions；game loading 路径调用 PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, isLoading)。PowerManager.java/IPowerManager.aidl 未命中 powerHint 接口或 POWER_HINT_* 常量，PowerManagerService JNI 是 nativeSetPowerMode()/Power HAL setMode。",
+          "suggestion": "重写为 GameManagerService game mode/intervention 与 GAME_LOADING power mode 的可验证链路；不要把旧 PowerHint 常量或 public PowerManager.powerHint 写成 Android 17 源码事实。"
+        },
+        {
+          "type": "P1 源码/设备路径边界",
+          "location": "L593-L597",
+          "detail": "device/google/coral/powerhint.json 在 android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1 的公开 Gitiles 路径未命中，且 coral 设备路径不能证明 Android 17 Pixel 调频配置；/proc/cpufreq/sched_dcvs_perf 属 vendor/SoC 私有路径。",
+          "suggestion": "删除具体设备路径，或替换为可访问 device tag 与 Power HAL AIDL mode 配置证据，并标注 vendor 私有边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-07T16:20:00+08:00",
+      "status": "pending"
     }
   ],
   "5.18": {
