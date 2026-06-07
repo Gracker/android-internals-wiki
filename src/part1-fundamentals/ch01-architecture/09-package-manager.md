@@ -87,7 +87,7 @@ task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: fixed
 task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+pipeline_stage: ready-to-publish
 last_task9_at: "2026-06-07T21:22:00+08:00"
 last_task9_review_at: "2026-06-07T21:22:00+08:00"
 task9_reviewed_date: "2026-06-07"
