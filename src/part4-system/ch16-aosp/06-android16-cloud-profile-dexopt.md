@@ -38,6 +38,7 @@ reviewed_date: "2026-05-15"
 review_type: task6-writing-quality-review
 task6_result: pass-light-edit
 last_task6_at: "2026-05-15T23:21:00+08:00"
+last_task6_audit: "2026-06-07"
 last_task6_review_log: logs/review/2026-05-15-23-review.md
 review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。"
 task9_result: "pass-tech-review"
