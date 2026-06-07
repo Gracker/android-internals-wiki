@@ -1,4 +1,5 @@
 ---
+
 title: 耗电与发热监控 (Battery & Thermal)
 chapter: '19'
 section: '19.25'
@@ -18,13 +19,13 @@ tags:
 related_chapters:
 - '19.0'
 - '19.19'
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-28'
-last_task6_audit: '2026-05-22'
+reviewed_date: 2026-06-07
+last_task6_audit: 2026-06-07
 task6_result: pass-light-edit
 task9_state: reviewed
 sources:
