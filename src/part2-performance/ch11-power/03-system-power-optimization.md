@@ -1,7 +1,7 @@
 ---
 title: 系统级功耗优化
 chapter: '11.3'
-status: ready-for-review
+status: finalized
 section: '11.3'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
@@ -75,18 +75,18 @@ related_chapters:
 - '4.4'
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-06'
+reviewed_date: '2026-06-07'
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 last_task2b_at: '2026-04-26T10:41:09+08:00'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-last_task6_at: '2026-05-06T22:05:00+08:00'
-last_task6_review_log: logs/review/2026-05-06-22-review.md
+last_task6_at: '2026-06-07T21:12:57+08:00'
+last_task6_review_log: logs/review/2026-06-07-21-review.md
 last_task6_audit: '2026-05-24'
 review_notes: '2026-05-13 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 1；厂商功耗策略数据建议写入 suggestions，不阻塞发布；自动晋升 finalized。'
-review_round: 4
-pipeline_stage: task6_pending
+review_round: 5
+pipeline_stage: ready-to-publish
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
