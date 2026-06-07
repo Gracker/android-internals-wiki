@@ -4,7 +4,7 @@
 title: Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
 chapter: '19'
 section: '19.21'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Geekbench 6：官方当前要求 Android 10+ / 4 GB RAM；Vellamo：历史工具，仅用于旧报告；其他 Benchmark
@@ -38,10 +38,10 @@ sources:
   path: https://browserbench.org/announcements/speedometer3/
 - type: official
   path: https://www.antutu.com/en/doc/129591.htm
-pipeline_stage: 'task6_pending'
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-25
+reviewed_date: 2026-06-07
 last_task6_audit: '2026-05-21'
 task6_result: pass-light-edit
 task9_state: 'reviewed'
@@ -61,6 +61,7 @@ last_task9_audit: '2026-06-07'
 last_task9_autofix_at: '2026-06-07'
 last_deepseek_polish_at: 2026-05-25
 deepseek_polish_state: done
+last_task6_at: 2026-06-07T13:06:00+08:00
 ---
 
 

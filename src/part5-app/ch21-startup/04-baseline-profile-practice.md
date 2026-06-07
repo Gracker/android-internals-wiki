@@ -2,7 +2,7 @@
 title: "Baseline Profile 实战"
 chapter: "21.4"
 section: "21.4"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
 last_verified: "2026-06-07"
 last_verified_against: "Android Developers BaselineProfileRule API / Baseline Profiles docs, AOSP android-16.0.0_r1 art/profman + art/dex2oat, AIW 8.7 / 19.15"
@@ -30,14 +30,14 @@ sources:
     path: "src/part3-tools/ch19-apm/15-baseline-profiles.md"
 tags: [baseline-profile, aot, dex-layout, macrobenchmark]
 related_chapters: ["21.1", "8.7", "1.7", "19.15"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-12"
+reviewed_date: 2026-06-07
 task6_result: pass-light-edit
-last_task6_at: "2026-05-12T21:56:00+08:00"
+last_task6_at: 2026-06-07T13:06:00+08:00
 task6_reviewed_date: "2026-05-12"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-17-audit.md"
@@ -79,7 +79,7 @@ task6_autofix_trigger: true
 
 21.1 节已经把启动耗时拆成进程初始化、`Application` 初始化、`Activity` 创建和首帧绘制几段。Baseline Profile 处理的是其中一类成本：启动路径上的类和方法还没被 ART 提前编译，首装、首更、清数据后的前几次启动会经历解释执行、JIT 预热和后台编译等待。
 
-它不能替代延迟初始化，也不能消掉主线程 I/O、锁等待、网络请求和 SDK 同步初始化。它的价值是把已经确认的启动路径和高频路径随包交给 ART，让安装后更早进入 `speed-profile` 编译状态。详见 8.7 节和 19.15 节，本节只写 App 团队怎样生成、接入、验证和维护。
+它不能替代延迟初始化，也不能消掉主线程 I/O、锁等待、网络请求和 SDK 同步初始化。它的价值是把已经确认的启动路径和高频路径随包交给 ART，让安装后更早进入 `speed-profile` 编译状态。详见 8.7 节和 19.15 节，下面围绕 App 团队的生成、接入、验证和维护展开。
 
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
 [已验证: AOSP, art/profman/profman.cc + art/dex2oat/dex2oat.cc]
