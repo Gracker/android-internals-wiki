@@ -58,7 +58,7 @@ related_chapters:
 - '11.2'
 - '15.5'
 pipeline_stage: task6_pending
-task6_state: revisiting  # updated by task2b-verifier 2026-06-05
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: "fixed"

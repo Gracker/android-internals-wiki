@@ -74,13 +74,13 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task6_pending  # updated by task2b-verifier 2026-06-06
+pipeline_stage: task6_pending
 finalized_date: '2026-04-29'
 finalized_by: openclaw-task6-auto-promote
-task6_state: revisiting  # updated by task2b-verifier 2026-06-06
+task6_state: revisiting
 task9_state: reviewed
 task9_result: auto-fixed
-task2b_state: fixed  # updated by task2b-verifier 2026-06-06
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"

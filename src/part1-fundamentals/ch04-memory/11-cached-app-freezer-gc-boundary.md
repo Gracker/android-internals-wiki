@@ -43,7 +43,7 @@ sources:
     path: "art/runtime/gc/heap.cc"
   - type: research
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
-task6_state: revisiting  # updated by task2b-verifier 2026-06-05
+task6_state: revisiting
 task9_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -55,7 +55,7 @@ last_task9_autofix_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
-task2b_result: auto-fixed  # added by task2b-verifier 2026-06-05
+task2b_result: auto-fixed
 ---
 
 # 4.11 Cached App Freezer 与 GC 触发边界
