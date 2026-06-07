@@ -2,7 +2,7 @@
 title: "Native 内存管理与优化"
 chapter: "23.3"
 section: "23.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-14"
 reviewed_date: "2026-05-14"
 reviewed_by: "openclaw-task6"
