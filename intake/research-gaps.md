@@ -40,3 +40,23 @@
   - https://android.googlesource.com/platform/system/core/+/refs/heads/main
   - https://android.googlesource.com/platform/external/selinux/+/refs/heads/main
   - https://cs.android.com/android/_/android/platform/system/core/+/main:fs_mgr
+
+[2026-06-07] 26.x Observability — Android 17 Statsd (StatsService) 与 StatsdConfig/StatsdAtom 链路边界源码验证
+- **章节**：`src/part5-app/ch26-observability/05-online-troubleshooting.md`、`src/part5-app/ch26-observability/12-versioned-diagnostics.md`、`src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md`
+- **问题**：
+  1. 各章节（5.06、5.07、5.10、10.4、11.01、13.x、26.x）频繁引用 `android.surfaceflinger.frametimeline` / `android_job_scheduler_states` / battery/thermal statsd 数据源，但章节都未深挖 Statsd 自身的服务、配置、调度链路
+  2. 章节中 `StatsdConfig` 的 pull atom / push atom 注册、`StatsdAtom.write()` 调用路径与 Perfetto `StatsdTracingConfig` 转换逻辑缺乏源码验证
+  3. Android 17 中 `StatsdService` 的启动顺序、config 持久化（`/data/misc/statsd/`）、权限边界、API level 门控缺乏统一证据
+- **缺口**：
+  - 验证 `frameworks/base/services/core/java/com/android/server/statsd/StatsdService.java` 在 Android 17 中是否仍由 `SystemService` 启动、是否依赖 `statsd.binary`（packages/modules/StatsD）
+  - 验证 `StatsdConfig`（packages/modules/StatsD/service/java/com/android/server/statsd/StatsdConfig.java）核心字段、push/pull atom 注册逻辑
+  - 验证 `StatsdAtom.write()` (frameworks/base/core/java/android/util/StatsdAtom.java) 的 JNI 路径与权限
+  - 验证 `statsd` cmd（packages/modules/StatsD/cmd/statsd/src/main.rs 或 .java）的 `dumpsys statsd` 输出格式
+  - 验证 Perfetto `StatsdTracingConfig` 在 ui.perfetto.dev 中 `android_*_states` 表的来源（`trace_processor/src/tables/statsd_tables.py`）
+  - 验证 Android 17 / API 37 中是否新增 statsd atom（feature flag / build flag）
+- **优先级**：中
+- **路径**：
+  - https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1 services/core/java/com/android/server/statsd/
+  - https://android.googlesource.com/platform/packages/modules/StatsD/+/android-17.0.0_r1
+  - https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1 core/java/android/util/StatsdAtom.java
+  - https://cs.android.com/android/_/android/platform/packages/modules/StatsD/+/main
