@@ -1,7 +1,7 @@
 ---
 
 
-status: ready-for-review
+status: finalized
 title: JobScheduler/WorkManager 调度与后台任务性能
 chapter: '5.10'
 section: '5.10'
@@ -11,7 +11,7 @@ polish_date: '2026-04-09'
 polish_by: task2b-polish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-27'
-reviewed_date: 2026-06-05
+reviewed_date: 2026-06-07
 reviewed_by: openclaw-task6
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev
   stdlib docs, Android Vitals docs
@@ -57,8 +57,8 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: "fixed"
@@ -72,9 +72,9 @@ repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 rework_type: review回炉修复(Task9 问题单)
 task6_result: pass-light-edit
-last_task6_at: 2026-06-05T01:15:01+08:00
+last_task6_at: 2026-06-07T17:05:00+08:00
 last_task6_review_log: "logs/review/2026-05-17-11-review.md"
-task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 小修 2 处 (IO→I/O 一致性); 禁用词/高频词/元叙述全部零命中; 否定-纠正结构 2 处(技术对比,上限内)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
+task6_review_notes: "2026-06-07 17:05 Task6 revisiting #2: pass-light-edit. 禁用词0/高频词0/物理动词0. 否定-纠正2处均为功能性技术对比. 无B类大问题. task9_result=auto-fixed, queue无pending, 自动晋升finalized."
 last_task9_review_log: "logs/deep-review/2026-06-04-18-deep-review.md"
 p0: 1
 p1: 0

@@ -46,14 +46,14 @@ task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-07T16:20:00+08:00'
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-06'
-task6_reviewed_date: '2026-05-06'
-last_task6_at: '2026-05-06T18:18:36+08:00'
+reviewed_date: '2026-06-07'
+task6_reviewed_date: '2026-06-07'
+last_task6_at: '2026-06-07T17:05:00+08:00'
 last_task6_audit: '2026-05-24'
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06
   Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
@@ -74,7 +74,7 @@ task6_review_notes: 2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-
   | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量
   L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。
 last_task9_review_log: logs/deep-review/2026-06-07-16-audit.md
-task9_review_notes: "2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
+task9_review_notes: "2026-06-07 17:05 Task6 revisiting pass-light-edit. L1 禁用词「落地」→「实现于」1处. 送Task9复审. | 2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
 last_task9_audit: '2026-06-07'
 review_type: task6-writing-quality-review
 ---
@@ -594,7 +594,7 @@ Power HAL 如何把 `Mode.GAME_LOADING` 映射到具体的调频/调压动作，
 
 ### Linux cpufreq + cpuset + thermal 协同
 
-Android 的 CPU 调频栈最终落地于 Linux kernel：
+Android 的 CPU 调频栈最终由 Linux kernel 实现：
 
 ```
 /sys/devices/system/cpu/cpu0/cpufreq/
