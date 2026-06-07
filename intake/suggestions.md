@@ -104,3 +104,21 @@
 - 24+ consecutive empty runs
 - Recommendation: 暂停 gap mining cron 或仅在 new material injection 时触发
 - Bottleneck: Task 6 review of 80 ready-for-review sections
+
+## [Task 2A Gap Mining] 2026-06-08 02:05 (Round 24+)
+
+- Direction: 同 Round 18-23 — 无空 draft、TASK2B_BACKLOG=0、417 sections（295 finalized + 81 ready-for-review + 40 unknown/index + 1 misc）。source-index 无高质量未映射素材。research-feeds 自 2026-04 无更新。daily-info 06-07 无新性能素材（掘金 71 篇均为行业趋势/AI工具/非性能话题）。Clippings 三本参考书已全部覆盖。AOSP 26 chapters 覆盖饱和。research-gaps.md 最新为 Statsd 验证需求（ch14.17 已有章节，非新章节缺口）。
+- No gap scored >= 14
+- Book: 417 sections (295 finalized + 81 ready-for-review + 0 draft + 41 misc)
+- 24+ consecutive empty runs
+- Recommendation: 暂停 gap mining cron 或仅在 new material injection 时触发
+- Bottleneck: Task 6 review of 81 ready-for-review sections
+
+## [Task 2A Gap Mining] 2026-06-08 03:08 (Round 25+)
+
+- Direction: 同 Round 18-24 — 无空 draft、TASK2B_BACKLOG=0、417 sections（295 finalized + 81 ready-for-review + 0 draft + 41 misc）。source-index 无高质量未映射素材。research-feeds 自 2026-04 无更新。daily-info 06-08 仅 1 篇 RSS（SwiftUI vibe coding，非性能话题）。Clippings 三本参考书已全部覆盖。AOSP 26 chapters 覆盖饱和。research-gaps.md 最新为 Statsd 验证需求（ch14.17 已有章节，非新章节缺口）。
+- No gap scored >= 14
+- Book: 417 sections (295 finalized + 81 ready-for-review + 0 draft + 41 misc)
+- 25+ consecutive empty runs
+- Recommendation: 暂停 gap mining cron 或仅在 new material injection 时触发
+- Bottleneck: Task 6 review of 81 ready-for-review sections
