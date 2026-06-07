@@ -59,7 +59,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-19"
 last_task9_at: "2026-05-19T17:20:00+08:00"
 last_task6_at: "2026-05-19T16:12:00+08:00"
-last_task6_audit: '2026-05-18'
+last_task6_audit: '2026-06-07'
 last_task6_audit_result: l1-light-edit
 last_task9_audit: "2026-05-19"
 last_task9_audit_result: "p0-source-accuracy"
