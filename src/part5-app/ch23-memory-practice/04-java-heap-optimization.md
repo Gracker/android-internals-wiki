@@ -4,8 +4,8 @@ chapter: "23.4"
 section: "23.4"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + Clippings/Android 性能优化"
+last_verified: "2026-06-08"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ComponentCallbacks2 + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
 reviewed_date: "2026-05-14"
@@ -19,6 +19,10 @@ sources:
     path: "https://developer.android.com/topic/performance/memory-overview"
   - type: official
     path: "https://developer.android.com/topic/performance/memory-management"
+  - type: official
+    path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java"
   - type: official
     path: "https://developer.android.com/studio/profile/capture-heap-dump"
   - type: official
@@ -39,20 +43,22 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]"
 tags: [java-heap, object-pool, gc-friendly, collection-optimization]
 related_chapters: ["23.1", "23.5", "4.3", "4.8"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式表达、缓存预算和 GC 友好段落；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
 last_task6_review_log: "logs/review/2026-05-14-01-review.md"
 last_task6_at: "2026-05-14T01:14:00+08:00"
 last_task6_audit: 2026-06-06
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: 2026-05-14
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-14T01:41:44+08:00"
-last_task9_review_log: logs/deep-review/2026-05-14-01-deep-review.md
-task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞问题。"
+last_task9_at: "2026-06-08T05:20:00+08:00"
+last_task9_audit: 2026-06-08
+last_task9_autofix_at: 2026-06-08
+last_task9_review_log: logs/deep-review/2026-06-08-05-audit.md
+task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX，补充 API 34+/35+ onTrimMemory 等级边界，回到 Task6 复审。"
 task2b_result: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
@@ -184,6 +190,8 @@ fun buildVisibleItems(
 
 缓存预算不要按“最大堆的固定比例”拍脑袋。缓存预算应按业务价值分层：首屏和高频路径拿稳定预算，低频页面用小缓存或弱缓存，后台后响应 `onTrimMemory()` 释放 UI 相关对象。Android Developers 建议应用在内存紧张或生命周期变化时主动释放内存，`onTrimMemory()` 是应用侧接收系统压力信号的标准入口。
 
+版本边界要分开看：从 API 34 开始，`TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 不再投递给 App；API 35 起这些常量在 SDK 中标记为 deprecated。`TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND` 仍可作为 UI 不可见、进入后台 LRU 后的释放入口。
+
 下面这段 `LruCache` 代码保留两个策略：按字节计量，收到系统 trim 信号后主动降级。
 
 ```kotlin
@@ -196,7 +204,6 @@ class StringPayloadCache(
 
     fun trimFor(level: Int) {
         when {
-            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> evictAll()
             level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND -> trimToSize(maxSize() / 2)
             level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> trimToSize(maxSize() * 3 / 4)
         }
@@ -204,7 +211,7 @@ class StringPayloadCache(
 }
 ```
 
-`sizeOf()` 必须贴近对象真实占用，否则 `LruCache` 的上限会失真。字符串、字节数组、图片引用、解析结果不要共用同一套估算方式。收到 `TRIM_MEMORY_UI_HIDDEN` 时，只清 UI 相关缓存；收到更高等级时，再处理跨页面共享缓存。
+`sizeOf()` 必须贴近对象真实占用，否则 `LruCache` 的上限会失真。字符串、字节数组、图片引用、解析结果不要共用同一套估算方式。收到 `TRIM_MEMORY_UI_HIDDEN` 时，只清 UI 相关缓存；收到 `TRIM_MEMORY_BACKGROUND` 后，再处理跨页面共享缓存。兼容 API 33 及以下时，可以单独处理 `TRIM_MEMORY_RUNNING_*` 前台压力等级；API 34+ 设备上不要把它们作为主要内存压力信号。
 
 对象池只适合满足三个条件的对象：创建频繁、初始化成本高、可安全重置。普通 data class、生命周期复杂的对象、持有 `Context` / View / callback 的对象，不建议放进池。池化后的对象一旦忘记清字段，泄漏和脏数据会比原来的分配成本更贵。
 
