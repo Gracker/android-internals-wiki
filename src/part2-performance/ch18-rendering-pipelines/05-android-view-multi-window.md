@@ -2,7 +2,7 @@
 title: Android View 多窗口渲染路径
 chapter: '18.5'
 section: '18.5'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 9 (API 28) - Android 16 (API 36)
 last_verified: '2026-05-07'
 last_verified_against: AOSP Choreographer/ViewRootImpl/RenderThread references + EGL
@@ -19,14 +19,14 @@ related_chapters:
 - '18.2'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-06-07T10:50:00+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: '2026-06-07'
+reviewed_date: 2026-06-07
 task6_result: pass-light-edit
 sources:
 - AOSP frameworks/base/core/java/android/view/Choreographer.java
@@ -37,7 +37,7 @@ task9_result: auto-fixed
 task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题。2026-06-07 Task2B 主修复：修正 PopupWindow 窗口独立性描述；修正交叉引用路径（part1-foundation→part1-fundamentals）。 | 2026-06-07 Task9 auto-fixed:P1 修正 RenderThread syncFrameState/UI 线程释放边界与 Trace 时长判读;回到 Task6 复审。"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-07
-last_task6_at: '2026-06-07T11:06:00+08:00'
+last_task6_at: 2026-06-07T13:06:00+08:00
 last_task6_audit: '2026-05-25T07:06:00+08:00'
 last_task6_review_log: logs/review/2026-06-07-11-review.md
 task6_review_notes: 2026-05-07 task6 review 05:05:补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词;L1/L2 | 2026-06-07 task6 review 11:06:L1小修1处(开头形容词+冒号模式→直接陈述);L1/L2通过,无新增回炉项。
@@ -115,7 +115,7 @@ last_task9_autofix_at: 2026-06-07
 
 ### 跨进程：各自独立跑流水线，但共享一份 SF 帧节奏
 
-跨进程多窗口里，每个进程独立订阅 `vsync-app`，独立跑自己的 MainThread / RenderThread / `BLASTBufferQueue`。Perfetto 里能看到不同进程的 `Choreographer#doFrame` 各自独立出现，不挤在同一个线程里。问题几乎不会表现为"主线程互相挤"，而集中在：
+跨进程多窗口里，每个进程独立订阅 `vsync-app`，独立跑自己的 MainThread / RenderThread / `BLASTBufferQueue`。Perfetto 里能看到不同进程的 `Choreographer#doFrame` 各自独立出现，不挤在同一个线程里。问题集中在：
 
 - 各窗口帧率可能不同（比如主窗口 120 Hz、PiP 30 Hz）；
 - 各窗口的 `BufferTX` / `acquire fence` 节奏不同步；
