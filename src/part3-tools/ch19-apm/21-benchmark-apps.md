@@ -7,11 +7,11 @@ section: '19.21'
 status: 'finalized'
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: Geekbench 6：Android 7.0+（API 24）；Vellamo：历史工具，仅用于旧报告；其他 Benchmark
+applicable_versions: Geekbench 6：官方当前要求 Android 10+ / 4 GB RAM；Vellamo：历史工具，仅用于旧报告；其他 Benchmark
   按工具版本逐项核验
-last_verified: '2026-04-24'
-last_verified_against: Geekbench 6 requirements / Benchmark Internals, Android Performance
-  Class docs, 3DMark official docs, CPDT / PCMark / Vellamo public materials
+last_verified: '2026-06-07'
+last_verified_against: Geekbench 6 download page / Benchmark Internals, Android Performance
+  Class docs, 3DMark / PCMark / Speedometer / AnTuTu official materials
 confidence: medium
 tags:
 - apm
@@ -27,26 +27,38 @@ sources:
 - type: official
   path: https://www.geekbench.com/
 - type: official
+  path: https://www.geekbench.com/download/
+- type: official
+  path: https://www.geekbench.com/doc/geekbench6-benchmark-internals.pdf
+- type: official
   path: https://benchmarks.ul.com/3dmark-android
-pipeline_stage: 'ready-to-publish'
-task6_state: reviewed
+- type: official
+  path: https://benchmarks.ul.com/pcmark-android
+- type: official
+  path: https://browserbench.org/announcements/speedometer3/
+- type: official
+  path: https://www.antutu.com/en/doc/129591.htm
+pipeline_stage: 'task6_pending'
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-25
 last_task6_audit: '2026-05-21'
 task6_result: pass-light-edit
 task9_state: 'reviewed'
 task2b_state: 'fixed'
-task9_result: 'pass-tech-review'
+task9_result: 'auto-fixed'
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-05-13T05:26:00+08:00'
+last_task9_at: '2026-06-07T10:20:00+08:00'
 task2b_result: fixed
 last_task2b_at: '2026-04-25T02:49:32+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
-last_task9_review_log: 'logs/deep-review/2026-05-13-05-deep-review.md'
+last_task9_review_log: 'logs/deep-review/2026-06-07-10-audit.md'
 auto_promoted: true
-task9_review_notes: '2026-05-13 task9 deep-review: pass-tech-review。无 P0/P1；P2 已写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。'
+task9_review_notes: '2026-06-07 idle audit: auto-fixed Geekbench 6 Android requirement drift（官方当前要求 Android 10+ / 4 GB RAM），回到 Task6 复审。'
+last_task9_audit: '2026-06-07'
+last_task9_autofix_at: '2026-06-07'
 last_deepseek_polish_at: 2026-05-25
 deepseek_polish_state: done
 ---
@@ -117,7 +129,7 @@ Benchmark 结果可以帮助做机型分层、竞品对比、性能模式验证�
 
 | 工具 | 当前定位 | Android 版本边界 | 处理方式 |
 |---|---|---|---|
-| Geekbench 6 | CPU / Compute 主流基线 | 官方最低要求 Android 7.0（API 24）；4 GB RAM 是桌面端要求，Android 端无公开 RAM 下限。 | 不同 Android 版本的 Geekbench 6 分数可比较；如需覆盖更早设备，保留 Geekbench 5 历史基线。 |
+| Geekbench 6 | CPU / Compute 主流基线 | 官方下载页和 Benchmark Internals 当前都写 Android 10+；下载页同时写 4 GB RAM。 | Android 10+ 设备可按同一 Geekbench 6 口径比较；如需覆盖更早设备，保留 Geekbench 5 或旧包历史基线，并单独标注工具版本。 |
 | 3DMark / PCMark | 图形、压力、工作负载与续航基线 | 按测试包版本和设备支持列表核验。 | 记录工具版本、测试项目和系统版本，避免跨大版本直接比较。 |
 | 安兔兔 | 综合分和大众设备档位参考 | 分数口径随应用大版本变化。 | 用于沟通设备档位，不用于工程归因。 |
 | Vellamo | 历史网页 / 设备测试工具 | 已属于历史工具。 | 只用于旧报告复盘；新机型分层改用 Geekbench、3DMark、PCMark、Speedometer 等当前工具。 |
