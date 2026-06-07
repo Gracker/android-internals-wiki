@@ -26,9 +26,13 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ProcessStateRecord.java @ android-16.0.0_r1"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java @ android-16.0.0_r1"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/core/java/android/os/Process.java @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java @ android-16.0.0_r1"
   - type: aosp
@@ -56,7 +60,8 @@ related_chapters:
   - "4.4"
   - "5.1"
   - "5.8"
-task6_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
@@ -64,12 +69,14 @@ task6_reviewed_date: "2026-05-13"
 review_round: 1
 task6_review_notes: "2026-05-13 task6 review: L1/L2 通过；本轮仅补齐 review 元数据，无新增 L3/L4 回炉项。"
 status: finalized
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-13"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-07"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T18:28:00+08:00"
+last_task9_at: "2026-06-07T08:20:00+08:00"
+last_task9_autofix_at: "2026-06-07"
+last_task9_audit: "2026-06-07"
 last_task6_audit: "2026-05-25"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
@@ -299,9 +306,9 @@ Perfetto 适合补上时间维度：进程何时被启动、主线程何时 atta
 - Android 10 及以上：官方 lmkd 文档将 PSI 作为默认内存压力检测机制，前提是内核启用 `CONFIG_PSI=y`。旧设备可能仍依赖 `vmpressure` 或厂商自定义策略。 [已验证: 官方文档, https://source.android.com/docs/core/perf/lmkd]
 - Android 13 及以上：官方文档说明 cached 进程在进入活跃生命周期状态之前，可能获得有限或没有执行时间。后台任务不能依赖 cached 进程持续运行。
 
-### CachedAppOptimizer / Freezer 机制（Android 12+）
+### CachedAppOptimizer / Freezer 机制（Android 11+）
 
-Android 12（API 31）引入了 `CachedAppOptimizer`（简称 freezer），它通过 cgroup v2 freezer 将 adj >= 900 的 cached 进程彻底冻结，使其线程完全停止执行（状态为 `TASK_FROZEN`），而非简单降优先级等待调度。
+AOSP 在 Android 11（API 30）已经引入 `CachedAppOptimizer` / freezer 代码路径和 `Process.setProcessFrozen()`，但默认未启用；Android 12（API 31）把 `DEFAULT_USE_FREEZER` 改为 true，并加入 Binder freeze / unfreeze 处理。它通过 cgroup v2 freezer 将 adj >= 900 的 cached 进程冻结，使其线程停止执行，而非简单降优先级等待调度。
 
 **核心行为：**
 - **冻结条件**：`adj >= CACHED_APP_MIN_ADJ (900)` 时触发 `CachedAppOptimizer.freezeAppAsyncLSP()`
@@ -317,15 +324,16 @@ Android 12（API 31）引入了 `CachedAppOptimizer`（简称 freezer），它�
 
 | 特性 | 引入版本 |
 |------|---------|
-| CachedAppOptimizer | Android 12 (API 31) |
-| REASON_FREEZER | Android 13 (API 33) |
+| `CachedAppOptimizer` / freezer 代码路径 | Android 11 (API 30)，AOSP 默认 `DEFAULT_USE_FREEZER = false` |
+| freezer 默认启用与 Binder freeze 处理 | Android 12 (API 31)，AOSP `DEFAULT_USE_FREEZER = true` |
+| `REASON_FREEZER` | Android 13 (API 33) |
 
 **源码锚点：**
 - `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`
-- `system/core/libprocessgroup/task_profiles.cpp`（FreezerCgroup profile）
+- `system/core/libprocessgroup/profiles/task_profiles.json`（`FreezerState` / `Frozen` profile）
 - `frameworks/base/services/core/java/com/android/server/am/ProcessList.java`（CACHED_APP_MIN_ADJ = 900）
 
-[已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
+[已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle] [已验证: AOSP android-11.0.0_r1 / android-12.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java] [已验证: AOSP android-16.0.0_r1, system/core/libprocessgroup/profiles/task_profiles.json]
 - Android 16 源码：`ProcessList` 的 `CACHED_APP_MIN_ADJ = 900`、`CACHED_APP_MAX_ADJ = 999`、`FOREGROUND_APP_ADJ = 0`、`VISIBLE_APP_ADJ = 100`、`SERVICE_ADJ = 500` 等常量仍是 OOM_ADJ 分层的基础；具体 kill 行为还要看设备 lmkd 配置。 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
 
 ## 参考资料
