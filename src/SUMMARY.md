@@ -189,6 +189,7 @@ tags:
   - [10.5 案例集](part2-performance/ch10-memory-perf/05-case-studies.md)
   - [10.6 内存抖动与频繁 GC](part2-performance/ch10-memory-perf/06-memory-churn.md)
   - [10.7 SQLite/Room 数据库性能优化](part2-performance/ch10-memory-perf/07-sqlite-room-performance.md)
+  - [10.8 GPU / 图形内存统计与实战监控](part2-performance/ch10-memory-perf/08-gpu-memory-tracking.md)
 
 - [第 11 章：功耗](part2-performance/ch11-power/README.md)
   - [11.1 Android 功耗模型](part2-performance/ch11-power/01-power-model.md)
@@ -281,6 +282,7 @@ tags:
   - [14.20 R8 Configuration Analyzer 与 keep 规则体积归因](part3-tools/ch14-other-tools/20-r8-configuration-analyzer.md)
   - [14.21 eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织](part3-tools/ch14-other-tools/21-ebpf-bpfloader-architecture.md)
   - [14.22 HPROF Heap Dump 管线与 Perfetto java\_hprof 数据源](part3-tools/ch14-other-tools/22-hprof-heapdump-javahprof-datasource.md)
+  - [14.23 StrictMode 性能检查与开发期诊断](part3-tools/ch14-other-tools/23-strictmode-performance-diagnostics.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)

@@ -108,14 +108,14 @@ p0: 0
 p1: 1
 p2: 3
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
+last_deepseek_cn_review_at: 2026-06-07
 ---
 
 # 7.13 SystemUI 性能分析
 
-前面几节讨论的重点是普通 App 进程里的卡顿。到了 SystemUI，问题会换一种形态。状态栏、通知抽屉、导航栏、Overview 转场几乎天天在用户眼前出现，一旦掉帧，体感会比单个 App 的局部卡顿更刺眼。
+前面几节讨论的重点是普通 App 进程里的卡顿。到了 SystemUI，问题会换一种形态。状态栏、通知抽屉、导航栏这些界面几乎天天出现在用户眼前，一旦掉帧，体感远比单个 App 的局部卡顿刺眼。
 
-本节只讨论 Android 12-17 的现行实现。这个范围里，StatusBar、Notification Shade、NavigationBar 仍在 `com.android.systemui` 进程，Recents / Overview 已经放在 Launcher3 Quickstep。把 Overview 继续算进 SystemUI，会把进程边界、窗口归属和 Perfetto 观察点一起带偏。
+本节只讨论 Android 12-17 的现行实现。Android 15+ 的 Compose 化重构（Flexiglass / SceneContainer）改变了 SystemUI 内部的 UI 组织方式，是分析性能前必须了解的架构背景，因此放在第一节交代。之后回到组件边界和窗口拓扑，一步步拆出 Perfetto 的观察点。这个范围里，StatusBar、Notification Shade、NavigationBar 仍在 `com.android.systemui` 进程，Recents / Overview 已经放在 Launcher3 Quickstep。把 Overview 继续算进 SystemUI，会把进程边界、窗口归属和 Perfetto 观察点一起带偏。
 
 [图：Perfetto 进程视图概览。上半部分标出 `com.android.systemui` 的 MainThread、RenderThread、`NotificationShadeWindowView#onMeasure`；下半部分标出 `com.android.launcher3` 的 MainThread、RenderThread 和 Overview 相关 slice。用于区分 SystemUI 与 Launcher3 Quickstep 的职责边界。]
 
@@ -223,7 +223,7 @@ AOSP android-16.0.0_r1 当前可核对的相邻实现是 `scene/reveal/Container
 
 SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemUI 更接近一组常驻窗口和控制器：状态栏、通知抽屉、锁屏相关视图、导航栏，以及围绕这些窗口的动画、输入、通知绑定过程。Overview / Recents 已经在 Launcher3 Quickstep 侧实现，本章分析 App 启动或最近任务切换时，至少要同时观察 `com.android.systemui`、`com.android.launcher3`、目标 App、SurfaceFlinger，有时还要把 WM Shell 单独拎出来看。
 
-这个边界直接决定排查顺序。通知抽屉掉帧，优先看 SystemUI。最近任务切换掉帧，Launcher3 Quickstep 和 WM Shell 往往比 SystemUI 更接近问题根源。把问题一股脑归到 SystemUI，后面的 Trace 会很难读。
+这个边界直接决定排查顺序。通知抽屉掉帧，优先看 SystemUI。最近任务切换掉帧，Launcher3 Quickstep 和 WM Shell 往往比 SystemUI 更接近问题根源。把所有问题都归到 SystemUI，后面的 Trace 会很难读。
 
 ### Android 16 桌面模式与 Foldable 多 Display：SystemUI 的双重角色
 
@@ -244,7 +244,7 @@ WM Shell 的 desktop mode 组件（当前可核对锚点为 `DesktopTasksControl
 - **Wallpaper 可见性已按 Display 分控**：`TaskbarDelegate.updateWallpaperVisibility(visible, displayId)` 是当前可核对的 displayId 感知入口，`CentralSurfacesImpl` 中未命中带 displayId 的 `onWallpaperVisibilityChanged`。排查 wallpaper 相关绘制问题时，以 `TaskbarDelegate` 为入口比搜索泛化的 `onWallpaperVisibilityChanged` 更准确。
 - **双 Display 亮屏场景**：功耗需单独计入两个显示电源轨和合成负载，不能只用单屏基线外推。
 
-详细的源码路径和 Perfetto 观测点见末尾 §参考附录：Foldable 多 Display 源码索引。
+（详细的源码路径和 Perfetto 观测点见末尾 §参考附录：Foldable 多 Display 源码索引。）
 
 ## 窗口拓扑不要先入为主
 
