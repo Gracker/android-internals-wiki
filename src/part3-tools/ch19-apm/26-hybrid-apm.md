@@ -46,6 +46,7 @@ task9_state: "reviewed"
 title: 混合栈与跨平台 APM (WebView / Flutter)
 last_task9_review_log: "logs/deep-review/2026-05-16-08-deep-review.md"
 last_task6_review_log: logs/review/2026-05-16-08-review.md
+last_task6_audit: "2026-06-07"
 
 ---
 
