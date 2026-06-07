@@ -20,8 +20,8 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-06-07T10:50:00+08:00'
@@ -33,20 +33,19 @@ sources:
 - AOSP frameworks/base/core/java/android/view/ViewRootImpl.java
 - AOSP frameworks/base/libs/hwui/renderthread/RenderThread.cpp
 - EGL 1.5 Specification
-task9_result: pending
-task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题。2026-06-07 Task2B 主修复：修正 PopupWindow 窗口独立性描述；修正交叉引用路径（part1-foundation→part1-fundamentals）。"
+task9_result: auto-fixed
+task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题。2026-06-07 Task2B 主修复：修正 PopupWindow 窗口独立性描述；修正交叉引用路径（part1-foundation→part1-fundamentals）。 | 2026-06-07 Task9 auto-fixed:P1 修正 RenderThread syncFrameState/UI 线程释放边界与 Trace 时长判读;回到 Task6 复审。"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-07'
+task9_reviewed_date: 2026-06-07
 last_task6_at: '2026-06-07T11:06:00+08:00'
 last_task6_audit: '2026-05-25T07:06:00+08:00'
 last_task6_review_log: logs/review/2026-06-07-11-review.md
 task6_review_notes: 2026-05-07 task6 review 05:05:补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词;L1/L2 | 2026-06-07 task6 review 11:06:L1小修1处(开头形容词+冒号模式→直接陈述);L1/L2通过,无新增回炉项。
   通过,无新增回炉项,转 Task9 复审。 | 2026-05-07 task6 review 06:10:清理标题术语与正文提示腔,统一为多窗口渲染路径;L1/L2
   通过,无新增回炉项,转 Task9 复审。
-last_task9_at: '2026-05-07T08:36:00+08:00'
-last_task9_review_log: logs/deep-review/2026-05-07-08-deep-review.md
-task9_review_notes: 2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题,需
-  Task2B 回炉。
+last_task9_at: '2026-06-07T11:22:00+08:00'
+last_task9_review_log: logs/deep-review/2026-06-07-11-deep-review.md
+last_task9_autofix_at: 2026-06-07
 ---
 
 
@@ -204,14 +203,14 @@ graph LR
 
 ### 阶段三:RenderThread 串行执行
 
-1. **Sync A**:RenderThread 同步 Window A 的 DisplayList 和资源
+1. **Sync A**:RenderThread 同步 Window A 的 DisplayList 和资源,UI Thread 在这段 `syncFrameState` 中等待
 2. **Draw A**:生成 Window A 的 GPU 指令,`eglSwapBuffers` → `queueBuffer`(提交 Surface A 的 Buffer)
-3. **Sync B**:RenderThread 同步 Window B 的 DisplayList 和资源(**此时 UI Thread 才被释放**)
+3. **Sync B**:Window B 进入 `ThreadedRenderer` 后,继续在同一个 RenderThread 上同步 DisplayList 和资源
 4. **Draw B**:生成 Window B 的 GPU 指令,`eglSwapBuffers` → `queueBuffer`(提交 Surface B 的 Buffer)
 
-注意:UI Thread 在 Sync A 时会被 `syncFrameState` 阻塞,直到 RenderThread 完成同步。Window B 的 Traversal 需要等 Window A 的 Sync 完成后才能开始--形成了更深的串行依赖链。
+UI Thread 的阻塞边界在 `syncFrameState`。AOSP `DrawFrameTask::run()` 会在 `syncFrameState(info)` 后根据 `canUnblockUiThread` 决定是否先释放 UI Thread,再继续执行 `context->draw()`。因此 Window B 的 Traversal 通常只需要等 Window A 的同步阶段结束,不一定要等 Window A 的 GPU draw 完成。串行约束落在同一 UI Thread 上的多个 Traversal,以及同一 RenderThread 队列里的多个 `DrawFrameTask`。
 
-`syncFrameState` 的阻塞时长因 Android 版本和帧内容而异。`DrawFrameTask::drawFrame()` 通过 `postAndWait()` 向 RenderThread 发起绘制请求,UI Thread 的阻塞时长取决于 RenderThread 完成引用交换和资源同步的速度。不同版本的内部实现会有调整,但 AOSP `DrawFrameTask.cpp` 中未发现 "push 模式" 架构变更--`postAndWait()` 在 android-16.0.0\_r1 中仍然是主要同步机制。判断阻塞时长不要依赖固定数值,直接看 Trace 中 `syncFrameState` / `postAndWait` slice 的持续时间。[已验证: AOSP `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`]
+`syncFrameState` 的阻塞时长因 Android 版本和帧内容而异。`DrawFrameTask::drawFrame()` 通过 `postAndWait()` 向 RenderThread 发起绘制请求,UI Thread 的阻塞时长取决于 RenderThread 完成引用交换和资源同步的速度。不同版本的内部实现会有调整,但 AOSP `DrawFrameTask.cpp` 中未发现 "push 模式" 架构变更--`postAndWait()` 在 android-16.0.0\_r1 中仍然是主要同步机制。判断阻塞时长不要依赖固定数值,直接看 Trace 中 `syncFrameState` / `postAndWait` slice 的持续时间。[已验证: AOSP android-16.0.0_r1, `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`]
 
 ### 时序图
 
@@ -257,6 +256,8 @@ sequenceDiagram
     HWC->>HWC: Scanout
 ```
 
+这张图只表达同一 RenderThread 上的任务顺序。实际 trace 中,UI Thread 可能在 Window A 完成同步后开始 Window B 的 Traversal,同时 RenderThread 继续执行 Window A 的 draw。
+
 ## Trace 视角
 
 ### 识别多窗口的关键信号
@@ -281,7 +282,7 @@ UI Thread:     |--Traversal A (10ms)--|--Traversal B (5ms)--|
 RenderThread:  |--Sync A--|--Draw A (4ms)--|--Sync B--|--Draw B (3ms)--|
 ```
 
-在这种模式下,UI Thread 总耗时 15ms,RenderThread 总耗时约 8ms,两者加起来勉强控制在 16ms 以内。但如果 Window A 的布局再复杂一点,就会直接掉帧。
+这种 trace 不能把 UI Thread 的 15ms 和 RenderThread 的 8ms 简单相加。两条线程之间存在同步等待和部分重叠,是否掉帧要看 Window B 的 `syncFrameState`、`queueBuffer` 是否错过目标 `vsync-sf`,再结合 FrameTimeline 的 present/jank 结果判断。
 
 ## 优化策略
 
