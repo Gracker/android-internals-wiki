@@ -2148,5 +2148,37 @@
     "created_files": [],
     "reason": "第 13 轮 gap mining：0 空 draft，TASK2B_BACKLOG=0；全书 349 节（269 finalized + 79 ready-for-review + 0 draft + 1 misc），finalized 率 77.1%。DeepResearch 06-06 新增 7 篇全部映射已有章节（eBPF→14.10, AppLock→17.7, CP ANR→9.7, HPROF→4.x/19.x, Thermal→5.12, FrameTimeline→13.2, SurfaceTexture→2.x）。source-index 204 条未映射项已在上轮全面扫描。Clippings 三本参考书全覆盖。AOSP/官方文档/研究素材无新话题。连续 9+ 轮空跑。"
   },
-  "completed": []
+  "completed": [],
+  "queue": [
+    {
+      "priority": 80,
+      "status": "pending",
+      "chapter": "9.9",
+      "title": "ContentProvider ANR 双路径：Publish 超时与 Call Hang 检测",
+      "file": "src/part2-performance/ch09-anr/09-contentprovider-anr-double-path.md",
+      "source": "task2a-gap-mining",
+      "created_date": "2026-06-07",
+      "gap_score": 17
+    },
+    {
+      "priority": 80,
+      "status": "pending",
+      "chapter": "14.21",
+      "title": "eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织",
+      "file": "src/part3-tools/ch14-other-tools/21-ebpf-bpfloader-architecture.md",
+      "source": "task2a-gap-mining",
+      "created_date": "2026-06-07",
+      "gap_score": 17
+    },
+    {
+      "priority": 80,
+      "status": "pending",
+      "chapter": "14.22",
+      "title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+      "file": "src/part3-tools/ch14-other-tools/22-hprof-heapdump-javahprof-datasource.md",
+      "source": "task2a-gap-mining",
+      "created_date": "2026-06-07",
+      "gap_score": 17
+    }
+  ]
 }
