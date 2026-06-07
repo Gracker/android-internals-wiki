@@ -38,6 +38,7 @@ task2b_state: fixed
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 last_task6_at: "2026-05-16T08:16:00+08:00"
+last_task6_audit: "2026-06-08"
 last_task6_review_log: logs/review/2026-05-16-08-review.md
 task9_state: reviewed
 task9_result: pass-tech-review
