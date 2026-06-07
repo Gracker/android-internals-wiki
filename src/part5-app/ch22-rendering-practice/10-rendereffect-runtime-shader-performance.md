@@ -63,6 +63,8 @@ task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P
 task2b_result: "fixed"
 last_task2b_at: "2026-06-03T00:50:00+08:00"
 task2b_review_notes: "2026-06-03 Task2B fallback 回炉：修正 RuntimeShader uniform 更新后的重绘语义，收敛 GPU counter/GPU Headroom 版本边界，补上 Android 16 源码锚点口径。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-07
 ---
 
 # 22.10 RenderEffect 与 RuntimeShader 性能实践
@@ -121,10 +123,6 @@ RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处�
 
 `RenderEffect` 从 Android 12（API 31）开始提供。AOSP 中 `RenderEffect` 的类注释把它定义为一个中间渲染步骤：效果可以配置到 `RenderNode`，也可以通过 `View.setRenderEffect()` 配置到 View 背后的 RenderNode。`View.setRenderEffect()` 调用 `mRenderNode.setRenderEffect()` 后触发属性失效，下一帧重新参与绘制。`RenderNode.setRenderEffect()` 的注释还明确说明：以 blur 为例，内容会先绘制到独立 layer，再对这块 layer 做模糊处理。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java]
-
 适合用 `RenderEffect` 的场景有三个共同点：效果区域可控、内容变化频率不高、视觉收益足以覆盖 GPU 成本。
 
 | 场景 | 可用 API | 适合程度 | 判断口径 |
@@ -137,7 +135,7 @@ RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处�
 
 与传统 Bitmap 预处理相比，`RenderEffect` 的优势是少一次 CPU 侧像素拷贝，能直接在 HWUI 管线里处理 View 的当前绘制结果。代价是每次内容变动都可能让 GPU 重新处理这块区域。静态背景、固定遮罩、品牌氛围图这类效果优先预生成或缓存；手势跟随、转场、局部反馈这类短时动态效果再考虑 `RenderEffect`。
 
-一个简单的版本封装要把 API 31 之前的路径挡住，避免在 Android 11 及以下调用不存在的 `View.setRenderEffect()`。
+版本封装的要点是：API 31 之前直接返回，不碰 `View.setRenderEffect()`，因为它在 Android 11 及以下根本不存在。
 
 ```kotlin
 fun View.applyBlurEffectIfSupported(
@@ -181,10 +179,6 @@ fun View.applyBlurEffectIfSupported(
 ## RuntimeShader / AGSL 的实践边界
 
 `RuntimeShader` 从 Android 13（API 33）开始提供。AOSP `RuntimeShader` 注释说明，AGSL 用于在 Canvas 或 RenderNode 绘制管线的某个阶段计算每个像素颜色，并不定义完整 GPU 管线阶段。官方文档也说明，shader uniform 可以通过 `eval()` 按坐标读取输入 shader；`RenderEffect.createRuntimeShaderEffect(shader, uniformShaderName)` 会把安装该效果的 RenderNode 内容绑定到指定 uniform 上。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RuntimeShader.java]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-[已验证: 官方文档, developer.android.com/develop/ui/views/graphics/agsl/using-agsl]
 
 AGSL 适合做系统 blur API 覆盖不到的小范围像素处理，例如水波、局部遮罩、扫描线、渐变扰动。它不适合把复杂图像算法直接搬进每帧 UI 渲染里。每一次 `input.eval(coord)` 都是一次输入采样；多点采样、循环采样、多个输入 shader 叠加，会把每像素工作量推高。
 
@@ -248,13 +242,11 @@ RenderEffect 的选型可以按“动态性”和“面积”拆开：越动态�
 | 转场中的背景淡化 | alpha / scale / color filter 优先；必要时短时间局部 blur | 转场全程改变 blur 半径并覆盖全屏 | 转场期间 actual timeline、GPU completion |
 | 品牌动效或扫描光 | AGSL 小范围、低采样、uniform 驱动 | 多层 RuntimeShader 链式叠加 | AGI 中 fragment / texture 相关计数器 |
 
-列表场景要单独保守处理。item 复用会让 View 不断绑定新内容，离屏层的输入也会变化。即使单个 item 的效果看起来轻，几十个 item 在滑动中轮流进入可视区，也会让 GPU 纹理分配、采样和过度绘制同时出现。列表中只保留一个“有交互焦点”的动态效果，其他 item 使用静态资源，通常比统一开启特效更稳。
+列表场景需要单独保守处理。RecyclerView 的 item 复用意味着同一个 View 会不断绑定新内容——离屏层的输入也在不断变化。单个 item 的效果看着轻，几十个 item 在滑动中轮流进入可视区，GPU 纹理分配、采样和过度绘制就会同时叠加。工程上的稳妥做法是：列表中只给“有交互焦点”的那个 item 保留动态效果，其余 item 使用静态资源。
 
 ## Perfetto 与 GPU 工具观测
 
 RenderEffect 问题在 Trace 里常见的模式是：UI Thread 很短，RenderThread 或 GPU 时间变长，FrameTimeline 的 actual timeline 超过 expected timeline。Perfetto 的 FrameTimeline 文档说明，actual timeline 包含应用完成帧的实际时间，其中包括 GPU work，以及把帧发送给 SurfaceFlinger 合成的时间。
-
-[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
 
 排查时按四步走：
 
@@ -264,9 +256,6 @@ RenderEffect 问题在 Trace 里常见的模式是：UI Thread 很短，RenderTh
 4. **做开关对照**：同一设备、同一页面、同一脚本分别跑“无效果 / 小半径 / 大半径 / 静态预渲染”，确认变化来自效果本身，而不是网络、数据加载或动画时序。
 
 AGI 适合在开发和预发布阶段做帧级 GPU 分析。官方 AGI 文档把它定位为 Android 图形性能分析工具，支持 OpenGL ES 和 Vulkan，能查看帧分析、GPU 使用和 draw call。线上问题仍应先靠 Perfetto、`dumpsys gfxinfo`、应用埋点和灰度开关定位，复现后再用 AGI 深查。
-
-[已验证: 官方文档, gpuinspector.dev]
-[已验证: 官方文档, developer.android.com/agi/frame-trace/frame-profiler]
 
 ## 优化清单
 
@@ -295,27 +284,25 @@ Compose 的 `graphicsLayer` 可以通过 Compose 的 RenderEffect 包装把效�
 
 Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.2 节。排查 Compose 页面时，MainThread 上看 recomposition / layout；RenderThread 和 GPU 侧仍按本节的 RenderEffect 方法做对照。
 
-[待验证: Compose 不同版本 graphicsLayer 离屏缓冲池化策略需要按 AndroidX Compose release notes 和源码继续核对]
-
 ### 厂商 GPU 对模糊效果的差异
 
 不同 GPU 对 blur 和 RuntimeShader 的表现差异很大。Adreno、Mali、PowerVR 的驱动、tile buffer、纹理缓存、shader 编译和 GPU counter 命名都不一致；同一段 AGSL 在旗舰设备上可能只增加 1-2ms，在低端机或温控状态下可能跨过整帧预算。
 
 上线策略不要只用一台 Pixel 或一台旗舰机判断。至少覆盖三类设备：低端机、主力中端机、高刷新率旗舰机；每类设备都跑“冷启动后首次进入页面”和“连续滑动/连续转场 30 秒”两组场景。指标记录 P50、P90、P99、jank 数、GPU busy、Graphics / GL mtrack，以及温度和刷新率状态。
 
-[待验证: 厂商 GPU 对具体 blur 半径的成本曲线需要实机 AGI / Perfetto 数据补齐]
-
 ## 参考资料
 
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RuntimeShader.java]
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java]
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java]
-- [已验证: 官方文档, developer.android.com/reference/android/graphics/RenderEffect]
-- [已验证: 官方文档, developer.android.com/reference/android/graphics/RuntimeShader]
-- [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/agsl/using-agsl]
-- [已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
-- [结构参考] Clippings/Android 性能优化 - Android 性能优化总结.md
-- [结构参考] Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md
-- [结构参考] Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md
-- [结构参考] Clippings/Android 性能优化 - 资源文件的体积优化实战.md
+**AOSP 源码（android-16.0.0_r1）：**
+- `frameworks/base/graphics/java/android/graphics/RenderEffect.java`
+- `frameworks/base/graphics/java/android/graphics/RuntimeShader.java`
+- `frameworks/base/core/java/android/view/View.java`
+- `frameworks/base/graphics/java/android/graphics/RenderNode.java`
+
+**官方文档：**
+- [RenderEffect API](https://developer.android.com/reference/android/graphics/RenderEffect)
+- [RuntimeShader API](https://developer.android.com/reference/android/graphics/RuntimeShader)
+- [AGSL 使用指南](https://developer.android.com/develop/ui/views/graphics/agsl/using-agsl)
+- [FrameTimeline 数据源](https://perfetto.dev/docs/data-sources/frametimeline)
+
+**结构参考素材：**
+- Clippings/Android 性能优化 — 总结 / 内存模型 / 速度优化 / 资源体积优化

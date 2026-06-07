@@ -2106,6 +2106,27 @@
       "completed_at": "2026-06-06T23:28:08",
       "completed_by": "task2b-verifier-stale-cleanup",
       "completed_reason": "fixed-lite: Android 16 JobScheduler quota optimizations added; Android 17 background audio hardening boundary noted"
+    },
+    {
+      "section": "3.1",
+      "section_title": "Input 事件分发全流程",
+      "priority": 90,
+      "reason": "[review回炉] 文件存在重复的 H1 + outline + intro 块（第55-102行为不完整的首实例，第103行起为完整的重复实例），需删除第一个不完整块",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需修复",
+          "location": "第55-102行（首个 H1 标题 + outline 块 + 为什么要了解 + 从硬件到 App 仅3段）",
+          "detail": "文件有两个 '# Input 事件分发全流程' H1 标题（行55和行103），两个 outline 块，两个 '为什么要了解' 段，两个 '从硬件到 App' 段。第一个实例只包含3段路径描述（缺少第4段 App 侧分发），第二个实例包含完整4段并正确衔接后续 EventHub 章节。这是 Task2B 2026-06-07 修复后遗留的重复内容。",
+          "suggestion": "删除第55-102行的第一个不完整块（H1 + outline + 为什么要了解 + 3段路径），保留第103行起的完整实例。同时顺带将 C++ 代码块的 ```text 改为 ```cpp（约5处）。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-07T11:06:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-07-11-review.md"
     }
   ],
   "5.18": {

@@ -46,7 +46,7 @@ last_task2b_at: '2026-05-08T05:42:56+08:00'
 review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。 | 2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task6 06:05：回炉复审通过。L1/L2 无新增问题，16KB thermal 段已保持研究假设口径；切回 Task9 复审。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。 | 2026-05-26 Task6 06:09：闲时抽检。L1 小修 2 处：删去冗余强调词，改写否定纠正式句式；frontmatter 完整，锚点覆盖完整。 | 2026-06-06 Task9 闲时抽检：auto-fixed。P1 1；补齐 Android 15/API 35 `PowerManager#getThermalHeadroomThresholds()` 版本差异，更新 Thermal API 与版本演进表，回到 Task6 复审。 | 2026-06-06 Task6 08:07：revisiting→reviewed。pass-light-edit。L1 小修 2 处：'需要注意几点'→'这个 API 有几条使用边界'，'下面按层拆解'→'逐层来看'。无 L3/L4 大问题。送回 Task9 确认 auto-fix。"
 task9_review_notes: "2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task9 06:20：pass-tech-review。P0/P1 0，P2 1，P3 1；自动晋升 finalized。 | 2026-06-06 Task9 闲时抽检：auto-fixed。P1 1；补齐 Android 15/API 35 `PowerManager#getThermalHeadroomThresholds()` 版本差异，更新 Thermal API 与版本演进表，回到 Task6 复审。 | 2026-06-06 10:21 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
+last_deepseek_cn_review_at: 2026-06-07
 last_task9_autofix_at: "2026-06-06"
 last_task9_audit: "2026-06-06"
 last_task9_audit_log: "logs/deep-review/2026-06-06-07-audit.md"
@@ -444,7 +444,7 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 
 ### 16KB Page Size 与热平衡：研究假设
 
-前面讨论的温控触发条件都与“负载产生了多少热量”直接相关。换个角度想：如果硬件本身因为某些原因做了更少的无用功，热量积累就会变慢。16KB 大页内存对温控可能存在间接贡献，但当前缺乏同设备 4KB/16KB A/B 对照数据（thermal zone 温度曲线、CPU 频率上限变化、time-to-throttle、功耗 rail 读数），以下为研究假设而非已验证结论。
+温控触发条件都与“负载产生了多少热量”直接相关。反过来看：如果硬件本身因为某些原因做了更少的无用功，热量积累就会变慢。16KB 大页内存对温控可能存在间接贡献，但当前缺乏同设备 4KB/16KB A/B 对照数据（thermal zone 温度曲线、CPU 频率上限变化、time-to-throttle、功耗 rail 读数），以下为研究假设而非已验证结论。
 
 大页使页表条目数量减少约 75%，TLB miss 率理论上下降，页表遍历功耗也会减少。社区估算 MMU 功耗可降低约 4.5%，但该数值因 SoC 和工作负载而异，尚无公开的系统性 benchmark 支撑。
 
@@ -630,7 +630,7 @@ if (supported) {
 
 ## 版本演进速览
 
-Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳理：
+Thermal 管控在 Android 各版本中的关键变化：
 
 | Android 版本 | 变化 | 影响 |
 |-------------|------|------|

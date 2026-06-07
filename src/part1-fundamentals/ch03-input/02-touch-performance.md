@@ -57,7 +57,7 @@ finalized_date: "2026-05-08"
 finalized_by: openclaw-task6-auto-promote
 task6_review_notes: "2026-05-08 Task6 15:05：未做重复正文 review；自动晋升检查通过（task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending）。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
+last_deepseek_cn_review_at: 2026-06-07
 last_task9_autofix_at: "2026-06-06"
 last_task9_audit: "2026-06-06"
 ---
@@ -99,14 +99,9 @@ last_task9_audit: "2026-06-06"
 
 ### HCI 感知阈值研究
 
-HCI 领域对触摸延迟的感知研究有几个广泛引用的结论。多项研究确认用户对拖拽操作的端到端延迟感知阈值在 10-25ms 量级，低于这个范围的延迟变化更难被察觉。但具体数值依赖实验条件：任务类型（拖拽 vs 点击 vs 绘图）、显示设备刷新率、输入设备类型、统计口径（JND / 刚可感知 / 刚不可接受）都会影响结果。
+HCI 领域对触摸延迟的感知研究提供了几个方向性参考。用户对拖拽类操作的端到端延迟感知阈值在 10-25ms 量级，但具体数值依赖实验条件——任务类型（拖拽、点击、绘图）、显示设备刷新率、输入设备类型和统计口径不同，结论差异很大。当前可以确认的方向是：直接操作场景（拖拽、绘图）对延迟的敏感度明显高于离散点击；120Hz 高刷配合低延迟采样的感知优于 60Hz，但收益受端到端延迟制约。
 
-目前在公开文献中能确认的方向性结论：
-- 直接操作场景（拖拽、绘图）对延迟的敏感度明显高于离散点击
-- 120Hz 高刷配合低延迟采样在感知上优于 60Hz，但收益受端到端延迟制约
-- 具体阈值数值需要回到原始论文的实验条件，不能简单当作整条管线的优化目标
-
-这些研究为触摸优化提供了方向性参考，但 Android 端到端 touch-to-display 延迟（本节后文表格给出 15-75ms）与 HCI 实验室条件下的端到端延迟是不同口径。两者分开看，不要把实验室阈值直接写成产品 SLA。
+需要注意：这些结论来自实验室条件，和 Android 端到端 touch-to-display 延迟（本节后文表格给出 15-75ms）是不同口径，不要把实验室阈值直接当作产品 SLA 使用。
 
 ## 触摸响应延迟的组成
 
@@ -210,7 +205,7 @@ App 主线程被 Input 事件唤醒后，执行 `ViewRootImpl.deliverInputEvent(
 | 渲染上屏 | 8-50ms | GPU 负载、Buffer 状态、帧率 |
 | **总计** | **~15-75ms** | 诸多因素 |
 
-这也解释了为什么用户对拖动跟手性比点击更敏感。当前素材能确认的结论是，直接操作场景对时延的容忍度明显低于离散点击，拖动时延一旦跨过一两个刷新周期，手指位置和画面位置就更容易出现可感知的脱节。PAMTD 11ms、点击 263ms 这组数字目前还缺少可回溯的原始论文与实验条件，这里先不把它写成定值结论，后续补齐原始研究后再回填。
+这也解释了为什么用户对拖动跟手性比点击更敏感：直接操作场景对时延的容忍度明显低于离散点击，拖动时延一旦跨过一两个刷新周期，手指位置和画面位置就更容易出现可感知的脱节。部分文献中引用的精确延迟阈值（如 PAMTD 11ms）目前还缺少可回溯的原始论文与实验条件，这里先不写成定值结论。
 
 搞清楚了延迟的组成，一个自然的问题就是：在硬件层面，采样率对这 15-75ms 的总延迟有多大影响？是不是采样率越高就越好？
 
@@ -446,13 +441,13 @@ android-16.0.0_r1 源码中，Native 层的 MotionPredictor 实现包含 TFLite 
 
 ## Motion Prediction：面向笔迹/绘图的感知降延迟
 
-这里要把三个概念拆开：
+Motion Prediction 涉及三层概念，各自独立：
 
-- **framework API**：`android.view.MotionPredictor`，开发者文档标注 `Added in API level 34`
-- **AndroidX 库**：`androidx.input:input-motionprediction`
-- **低延迟配套手段**：`requestUnbufferedDispatch()`、front-buffer / low-latency graphics
+- **framework API**：`android.view.MotionPredictor`，系统级 API，Added in API level 34
+- **AndroidX 库**：`androidx.input:input-motionprediction`，兼容封装层
+- **低延迟配套手段**：`requestUnbufferedDispatch()`、front-buffer / low-latency graphics，跟 MotionPrediction 属于不同维度
 
-它们相关，但不是同一个版本能力。
+三层相关但非同一版本能力，使用时要逐层确认。
 
 `android.view.MotionPredictor` 是系统 API。调用前要先用 `isPredictionAvailable(deviceId, source)` 判断当前设备和输入源是否支持，再把系统收到的真实 `MotionEvent` 依次送入 `record(MotionEvent)`，按目标时间调用 `predict(long)` 取回预测事件。文档还特别提醒，预测结果里也要考虑 historical samples。
 
