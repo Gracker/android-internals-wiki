@@ -74,7 +74,7 @@ review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/
   12+ 或拆分 8-11/12+；P2 1：GSI 验证术语 CTS-V 应改为 VTS / CTS-on-GSI。'
 last_task9_review_log: logs/deep-review/2026-06-07-04-deep-review.md
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-06-07
 last_task9_audit: '2026-06-07'
 last_task9_autofix_at: '2026-06-07'
 ---
@@ -129,15 +129,15 @@ Android 4.4（2013 年）是一个特殊的过渡版本。它首次将 ART（And
 
 Android 5.0（2014 年）是 Android 历史上架构变动最大的版本之一，两件事同时发生：
 
-**ART 完全取代 Dalvik。** 从 Android 5.0 开始，Dalvik 被完全移除，ART 成为唯一的运行时。[已验证: Android 5.0 Release Notes, Wikipedia] 所有应用在安装时都会被 dex2oat 编译为本地代码。安装时间因此变长了，但运行时性能更稳定。垃圾回收器也做了重大改进，GC 暂停时间从 Dalvik 时代的上百毫秒降低到了几毫秒。
+**ART 完全取代 Dalvik。** 从 Android 5.0 开始，Dalvik 被完全移除，ART 成为唯一的运行时。所有应用在安装时都会被 dex2oat 编译为本地代码。安装时间因此变长了，但运行时性能更稳定。垃圾回收器也做了重大改进，GC 暂停时间从 Dalvik 时代的上百毫秒降低到了几毫秒。
 
 **64 位支持。** Android 5.0 正式支持 64 位 ARMv8 架构。这不只是为了寻址更大的内存空间。ARMv8 的指令集设计比 ARMv7 更高效，通用整数寄存器从 ARMv7 的 16 个（r0-r15）增加到 31 个（x0-x30），SIMD/NEON 寄存器也从 16 个 Q 寄存器增加到 32 个 V 寄存器，编译器因此能生成质量更高的本地代码。
 
-Zygote 的双进程形态也从这里固定下来：64 位设备上，init 脚本里有两个 service——`zygote`（主）和 `zygote_secondary`（辅）。`init.zygote64.rc` 启动 `/system/bin/app_process64 --socket-name=zygote`，`init.zygote64_32.rc` 补一个 `/system/bin/app_process32 --socket-name=zygote_secondary`。引用 init/service 语义时，写 `zygote` / `zygote_secondary`；在 `ps`、Trace 或 cmdline 中看到的 `zygote64`，是 64 位主 zygote 的进程形态。[已验证: AOSP init.zygote64.rc, init.zygote64_32.rc, ARM Architecture Reference Manual]
+Zygote 的双进程形态也从这里固定下来：64 位设备上，init 脚本里有两个 service——`zygote`（主）和 `zygote_secondary`（辅）。`init.zygote64.rc` 启动 `/system/bin/app_process64 --socket-name=zygote`，`init.zygote64_32.rc` 补一个 `/system/bin/app_process32 --socket-name=zygote_secondary`。引用 init/service 语义时，写 `zygote` / `zygote_secondary`；在 `ps`、Trace 或 cmdline 中看到的 `zygote64`，是 64 位主 zygote 的进程形态。
 
 ### Android 8.0 Oreo（API 26）：Project Treble——模块化的起点
 
-Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演进中最重要的一次重构。[已验证: 官方文档 source.android.com/docs/core/architecture]
+Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演进中最重要的一次重构。
 
 在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星 LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。整个升级链条动辄半年以上，Android 设备系统更新慢的根因就在这里。
 
@@ -163,19 +163,19 @@ Treble 的方案是在 Android Framework 和厂商实现（HAL）之间插入一
 
 ### Android 10（API 29）：Project Mainline 与 APEX
 
-Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Project Mainline**（也叫 Mainline modules）。[已验证: 官方文档 source.android.com/docs/core/ota/modular-system]
+Android 10（2019 年）在 Treble 的基础上更进一步，引入了 **Project Mainline**（也叫 Mainline modules）。
 
 Treble 让 Framework 可以独立于 Vendor 升级，Mainline 又把 Framework 内部的一部分系统组件拆成可独立发布的模块。Android 10 首发的 Mainline 模块包括 DNS Resolver（`com.android.resolv`）、Conscrypt（`com.android.conscrypt`）、Media 组件（`com.android.media` / `com.android.media.swcodec`）、PermissionController 等。这些模块可以通过 Google Play 更新，不必等待整机 OTA。
 
 为了做到这一点，Google 设计了 **APEX**（Android Pony EXpress）——一种类似于 APK、但可以携带本地库和系统服务的打包格式。APEX 模块能在启动早期挂载，所以适合承载运行时和系统组件。Android 10 发布时已经有一批 Mainline 模块进入 APEX / APK 体系，不过 ART 还不在这批首发名单里。
 
-注意一个容易混淆的时间点：Android 10/11 已经有 Mainline 架构，但官方 Mainline 模块表把 `com.android.art` 的引入版本标为 Android 12。也就是说，ART 作为可独立更新的运行时模块要到 Android 12 才成立。分清了这两段时间线，分析编译器、Profile-Guided Compilation 或 dex2oat 行为时就不会把 Android 10/11 的设备误判成"ART 已可通过 Play Store 单独更新"。
+一个容易混淆的时间点：Android 10/11 已经有 Mainline 架构，但 `com.android.art` 模块直到 Android 12 才进入 Mainline。分析编译器、Profile-Guided Compilation 或 dex2oat 行为时，如果误以为 Android 10/11 的 ART 也可通过 Play Store 独立更新，就会得出错误结论。
 
-Google 在 2024 年 Android Summit 上分享过 ART Mainline 的实际数据：ART 14 通过编译器优化和运行时改进，为全球设备累计节省了约 95 PB 存储空间，平均每个应用瘦身约 9.3%。这个数字来自 Play Store 上 dex2oat 编译产物去重与 Profile-Guided 编译的叠加效果——更多设备命中 speed-profile 而非 speed（全量编译）时，OAT 文件体积显著缩小。[来源: Google Android Developer Blog, ART Mainline Updates 2024]
+ART 进入 Mainline 后产生了可量化的收益。根据 Google 2024 年 ART Mainline 更新数据，ART 14 通过编译器优化和运行时改进，为全球设备累计节省了约 95 PB 存储空间，平均每个应用瘦身约 9.3%。这个效果来自 dex2oat 编译产物去重与 Profile-Guided 编译的叠加——更多设备命中 speed-profile 而非 speed（全量编译）时，OAT 文件体积显著缩小。这也解释了为什么理解编译策略的版本差异对性能分析很重要：不同版本的 ART 行为可能已经通过 Mainline 更新发生了变化，而不仅仅是大版本升级才会改。
 
 ### Android 12（API 31）：GKI 与 Material You
 
-Android 12（2021 年）在模块化道路上又迈了一步：**GKI（Generic Kernel Image）**。[已验证: 官方文档 source.android.com/docs/core/architecture/kernel/gki]
+Android 12（2021 年）在模块化道路上又迈了一步：**GKI（Generic Kernel Image）**。
 
 GKI 将模块化的边界推进到了 Linux 内核。在 GKI 之前，每个设备都有一个定制的内核（SoC 厂商 + 设备厂商的各种补丁），导致内核碎片化严重。GKI 的思路与 Treble 一脉相承：定义一个稳定的 **KMI（Kernel Module Interface）**，将 SoC 和设备特定的代码从核心内核中移出到可加载的厂商模块中。
 
@@ -185,7 +185,7 @@ GKI 将模块化的边界推进到了 Linux 内核。在 GKI 之前，每个设�
 
 ### Android 16-17 Baklava（API 36-37）：最新架构变化
 
-Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能优化的趋势。[已验证: 官方文档 developer.android.com/about/versions/16]
+Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能优化的趋势。
 
 几个对性能分析有直接影响的架构变化：
 
@@ -193,11 +193,11 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **16KB 页面大小的兼容模式。** Android 15 开始支持 16KB 内存页面（详见本节扩展内容），Android 16 为此增加了兼容模式——允许为 4KB 页面构建的 App 在 16KB 设备上运行。同时，TLS 相关的缓冲区被隔离到独立的内存页面中，在 16KB 页面大小的设备上可以显著节省内存。
 
-**Cloud Compilation（云端编译产物分发）。** Android 16 开始公开 CloudCompilation 路径——Play 分发侧可能通过 SDM（Secure Dex Metadata）和云端预编译减少本机 dex2oat 开销。官方公开资料中具体集成细节和设备覆盖范围仍有限（同书 §1.9 对该点也标注为待验证）。已确认的能力方向是：设备从 Play Store 获取预编译 `.odex` / `.vdex` 产物后可跳过本地编译，缓解 OTA 后首次开机"正在优化应用"的体验问题。设备侧启用条件、Play 与 ART 模块的协同路径，需以安装 Trace（`cmd package art dump` 编译状态）和 Play Console 数据验证，不应视为所有 Android 16 设备的确定行为。[来源: Android 16 behavior changes, ART dump; 具体 AOSP 集成文档待补]
+**Cloud Compilation（云端编译产物分发）。** Android 16 引入了 Cloud Compilation 路径：设备可以从 Play Store 获取预编译的 `.odex` / `.vdex` 产物，跳过本地 dex2oat，缓解 OTA 后首次开机"正在优化应用"的问题。这一能力的方向已经明确，但具体集成细节和设备覆盖范围在官方公开资料中仍有限——当前不应假定所有 Android 16 设备都启用了云端编译。实际验证可以用 `cmd package art dump` 查看编译状态，结合 Play Console 数据确认。同书 §1.9 对此有更详细的待验证说明。
 
 **更严格的后台限制。** Android 16 将前台服务启动的后台 Job 也纳入了运行时配额管理，进一步收紧了后台执行的自由度。
 
-**性能监控 API 增强。** `ProfilingManager`（Android 15 / API 35 引入，Android 16 增强）支持应用主动请求和系统自动触发两种性能分析模式。应用侧通过 `ProfilingManager.requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)` 请求系统转储 Trace（参数包括分析类型、可选配置 Bundle、取消信号和结果回调）；系统侧可通过 `addProfilingTriggers(List<ProfilingTrigger>)` 注册自动触发条件，`registerForAllProfilingResults(Executor, Consumer)` 接收系统级 Profiling 结果。Android 16 进一步强化了其在 App Startup 阶段的自动化能力，系统可以在 ANR 等关键事件发生时自动捕获背景环形缓冲区中的 Trace 数据。`ApplicationStartInfo` 新增的组件启动信息（可通过 `getStartComponent()` 精确区分冷启动由 Activity / Service / Receiver / Provider 中哪种组件触发）也为启动性能归因提供了更精细的维度。[来源: AOSP android.os.ProfilingManager API 35/36, android-16.0.0_r1]
+**性能监控 API 增强。** `ProfilingManager`（Android 15 / API 35 引入，Android 16 增强）支持两种性能分析模式：应用主动请求和系统自动触发。应用侧调用 `requestProfiling()` 请求系统转储 Trace，系统侧通过 `addProfilingTriggers()` 注册自动触发条件，`registerForAllProfilingResults()` 接收系统级分析结果。Android 16 进一步强化了 App Startup 阶段的自动化——系统可以在 ANR 等关键事件发生时自动捕获背景环形缓冲区中的 Trace。同时 `ApplicationStartInfo.getStartComponent()` 可以精确区分冷启动由 Activity / Service / Receiver / Provider 中哪种组件触发，为启动性能归因提供了更精细的维度。
 
 **修订的 SDK 发布节奏。** Android 16 引入了新的 SDK 发布结构——2025 年内发布两个 API 版本。第一个包含新 API 和行为变更，第二个只增加 API 不改变行为。这对 App 开发者意味着更平滑的适配周期。
 
@@ -205,7 +205,7 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **MessageQueue lock-free 实现。** 对 targetSdkVersion 37+ 的 App，Android 17 会启用新的 lock-free `android.os.MessageQueue`；低 target App 仍受 compat change 控制，可用 `USE_NEW_MESSAGEQUEUE` 开关测试。新实现让主线程 Looper 的消息分发路径不再依赖传统互斥锁。观察 `Looper.loop()` wall duration 时，Android 17 且已启用该变更的进程中，锁竞争导致的尾部延迟应有所减少。[来源: Android 17 behavior changes for target 37]
 
-**ProfilingManager 自动触发条件扩展。** API 37 新增 `ProfilingTrigger` 类型：`TRIGGER_TYPE_OOM`（内存不足）、`TRIGGER_TYPE_ANOMALY`（系统异常）、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（CPU 过量使用被杀）、`TRIGGER_TYPE_COLD_START`（冷启动）和 `TRIGGER_TYPE_APP_COMPAT`（兼容性问题）。这些 trigger 让系统在关键性能事件发生时自动捕获 Trace，无需 App 侧主动请求。[来源: android.os.ProfilingTrigger API 37 参考]
+**ProfilingManager 自动触发条件扩展。** API 37 新增的 `ProfilingTrigger` 类型覆盖了主要性能异常场景：`TRIGGER_TYPE_OOM`（内存不足）、`TRIGGER_TYPE_ANOMALY`（系统异常）、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（CPU 过量被杀）、`TRIGGER_TYPE_COLD_START`（冷启动）和 `TRIGGER_TYPE_APP_COMPAT`（兼容性问题）。系统可以在这些事件发生时自动捕获 Trace，App 侧无需主动请求——这对线上性能问题的复现和定位价值很大。
 
 **JobDebugInfo 与后台任务诊断。** Android 17 新增 `JobDebugInfo` API，提供后台 Job 未运行原因、累计 pending 时长和运行时长等聚合信息。排查后台任务性能问题时，可以把 `getPendingJobReasonStats()` / `getPendingJobReasonsHistory()` 与 `JobParameters.getStopReason()`、standby bucket 一起看，区分“尚未满足约束”和“运行后被系统停止”。[来源: Android 17 Features]
 
@@ -213,9 +213,7 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 ## Project Treble → VINTF → GSI → GKI：模块化的完整链条
 
-这些里程碑落到系统边界上，形成的是一条模块化链条：Treble、VINTF、GSI、GKI 分别处理不同边界。
-
-这条链条的目标只有一个：**让 Android 的每一层都可以独立更新。**
+前面按版本逐个介绍了架构里程碑，但它们之间不是孤立的。Treble、VINTF、GSI、GKI 串起来，形成了一条从 Framework 一直延伸到内核的模块化链条——每层各有边界，但目标一致：**让 Android 的每一层都可以独立更新。**
 
 [图：Android 模块化演进全景]
 
@@ -279,7 +277,7 @@ Android 2.2 引入的 trace-based JIT 让 Dalvik 的性能有了质的飞跃，�
 
 ### ART 初期：全量 AOT 编译（Android 5.0 - 6.0）
 
-ART 在 Android 5.0 取代 Dalvik 后，采取了截然不同的策略——**AOT（Ahead-Of-Time）全量编译**。安装 App 时，dex2oat 工具会将整个 DEX 文件编译为 OAT（Optimized Android applicaTion）格式的本地代码。[已验证: 官方文档 source.android.com/docs/core/runtime]
+ART 在 Android 5.0 取代 Dalvik 后，采取了截然不同的策略——**AOT（Ahead-Of-Time）全量编译**。安装 App 时，dex2oat 工具会将整个 DEX 文件编译为 OAT（Optimized Android applicaTion）格式的本地代码。
 
 全量 AOT 的好处是运行时零编译开销——所有代码都是本地机器码，直接执行。GC 暂停时间也从 Dalvik 时代的"World Pause"（上百毫秒）大幅缩短。App 运行更流畅，这是 5.0 被誉为"最流畅的 Android 版本"的技术基础。
 
@@ -293,7 +291,7 @@ ART 在 Android 5.0 取代 Dalvik 后，采取了截然不同的策略——**AO
 
 ### Profile-Guided 混合编译（Android 7.0 至今）
 
-Android 7.0 引入了**混合编译策略**，这是 ART 编译策略的最终形态，至今仍是 Android 的核心编译方案。[已验证: 官方文档 source.android.com/docs/core/runtime]
+Android 7.0 引入了**混合编译策略**，这是 ART 编译策略的最终形态，至今仍是 Android 的核心编译方案。
 
 核心思路是结合 JIT 和 AOT 的优势：
 
@@ -317,7 +315,7 @@ Android 7.0 引入了**混合编译策略**，这是 ART 编译策略的最终�
 
 ### 包可见性限制（Android 11+）
 
-Android 11（API 30）引入了**包可见性（Package Visibility）限制**。[已验证: 官方文档 developer.android.com/training/package-visibility]
+Android 11（API 30）引入了**包可见性（Package Visibility）限制**。
 
 在此之前，任何 App 都可以通过 `PackageManager.getInstalledApplications()` 获取设备上所有已安装 App 的列表。在 Android 11+ 上，这个方法默认只返回本 App 和少数系统 App。要查询其他 App，必须在 Manifest 中通过 `<queries>` 元素显式声明，或者申请 `QUERY_ALL_PACKAGES` 权限（Google Play 对此权限有严格审查）。
 
@@ -360,7 +358,7 @@ Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程�
 
 **Android 16（2025）——配额扩展。** 从前台服务启动的后台 Job 也必须遵守运行时配额。JobScheduler 的配额根据 App 的 standby bucket 和启动时的状态动态调整。
 
-[已验证: 官方文档 developer.android.com/about/versions]
+
 
 对性能优化的影响：
 
@@ -381,7 +379,7 @@ Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程�
 
 ### 实测性能提升
 
-Google 官方的测试数据显示，在 16KB 页面大小的设备上：[已验证: 官方博客 android-developers.googleblog.com]
+Google 官方的测试数据显示，在 16KB 页面大小的设备上：
 
 - **App 启动时间**平均缩短 3.16%，部分 App 提升达 30%
 - **功耗**在 App 启动场景降低 4.56%

@@ -49,6 +49,8 @@ last_task6_audit: "2026-05-23"
 last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-09-audit.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-07
 ---
 
 # 低内存对系统性能的影响
@@ -307,9 +309,9 @@ Android 使用 cgroup（Control Group）来对进程组施加资源限制，其�
 
 Android 10+ 引入了 cgroup 抽象层和 Task Profiles 机制。厂商可以在 `cgroups.json` 中定义 cgroup 配置，在 `task_profiles.json` 中把不同类型的任务映射到对应的 cgroup。这让系统可以按进程优先级做记账、隔离和资源约束：前台路径尽量宽松，后台进程更容易在压力下被收缩。
 
-这里的版本线要拆开看。早期 Android 主要依赖内核态 `lowmemorykiller` 驱动。Android 9 起，如果设备没有检测到 in-kernel LMK，且内核满足 memcg 等前提，可以启用 userspace `lmkd`。Android 10 起，内核提供 PSI monitor 时，lmkd 默认优先用 PSI 做内存压力检测；缺少 PSI 时再回退到 `vmpressure` 或 `minfree` 路径。
+版本演进上：早期 Android 主要依赖内核态 `lowmemorykiller` 驱动。Android 9 起，如果设备没有检测到 in-kernel LMK，且内核满足 memcg 等前提，可以启用 userspace `lmkd`。Android 10 起，内核提供 PSI monitor 时，lmkd 默认优先用 PSI 做内存压力检测；缺少 PSI 时再回退到 `vmpressure` 或 `minfree` 路径。
 
-cgroup 和 PSI 不是同一层。cgroup 负责进程分组、内存记账和 task profile 约束；PSI 负责把 stall 时间暴露给 lmkd，帮助它决定什么时候该杀后台进程。把这几条线分开看，才不会把“userspace lmkd”、“memcg 依赖”和“PSI 模式”写成同一个版本开关。[已验证: 官方文档, source.android.com]
+cgroup 和 PSI 不是同一层。cgroup 负责进程分组、内存记账和 task profile 约束；PSI 负责把 stall 时间暴露给 lmkd，帮助它决定什么时候该杀后台进程。userspace lmkd、memcg 依赖和 PSI 模式各自独立演进，排查时不要把三者混成一个版本开关。[已验证: 官方文档, source.android.com]
 
 ### 内存规整：内核 kcompactd 与 cached app compaction
 
@@ -321,7 +323,7 @@ Framework 侧看 `frameworks/base/services/core/java/com/android/server/am/Cache
 
 ### onTrimMemory 与系统压力信号的边界
 
-`onTrimMemory()` 只能给 App 一个粗粒度提示，PSI、`mm_vmscan_*` 和 lmkd 日志才是系统压力判断的主证据。特别是在 API 34 之后，`TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这些级别已经不再投递给 App；API 35 又把这些常量标成 deprecated。
+`onTrimMemory()` 只能给 App 一个粗粒度提示，PSI、`mm_vmscan_*` 和 lmkd 日志才是系统压力判断的主证据。注意：从 API 34 开始，`TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这些级别已不再投递给 App；API 35 进一步把它们标为 deprecated。
 
 对现代版本来说，更稳的解释方式只有两类：
 

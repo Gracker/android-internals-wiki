@@ -3,17 +3,17 @@ status: "ready-for-review"
 title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
-last_task6_at: "2026-05-30T01:05:00+08:00"
+last_task6_at: "2026-06-07T11:06:00+08:00"
 last_task2b_lite_at: "2026-05-30"
 task2b_lite_notes: "修复代码块语言标记;小修 4 处裸 ``` 为 ```text;更新 frontmatter 状态"
-last_task6_review_log: "logs/review/2026-05-30-01-review.md"
-task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。"
+last_task6_review_log: "logs/review/2026-06-07-11-review.md"
+task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。 | 2026-06-07 task6 review 11:06:B类问题-文件存在重复的H1+outline+intro块(第55-102行),需Task2B删除第一个不完整实例;L1/L2无新增小修项。"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
 version_note: 已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android
 confidence: high
-reviewed_date: "2026-05-30"
+reviewed_date: "2026-06-07"
 reviewed_by: "openclaw-task6"
 rework2_date: '2026-04-15'
 rework2_by: openclaw-task2b
@@ -26,13 +26,13 @@ sources:
 path: https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture
 tags: 
 related_chapters: 
-task6_result: "pass-light-edit"
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+task6_result: "needs-rework"
+task6_state: "reviewed"
+pipeline_stage: "task2b_pending"
 task6_reviewed_date: "2026-05-30"
 task9_state: pending
 task9_result: pending
-task2b_state: "fixed"
+task2b_state: "pending"
 task2b_result: "fixed"
 task2b_notes: "修复 Task6 2026-05-30 回炉问题:移除未进入 Android 17 的 DeliQueue 推测内容，清理参考资料后未融合的源码调研素材块。2026-06-07 Task2B 主修复：修正 HwTimeoutMultiplier() 版本表入口（Android 13 已存在）；修复 frontmatter 重复 pipeline_stage 键。"
 task2b_fixed_by: openclaw-task2b

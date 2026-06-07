@@ -374,3 +374,56 @@ interface AppMonitor {
 
 **影响商业 APM 选型的关键因素**：优先考虑底层 API 兼容性，SDK 版本门槛需遵循厂商要求。
 
+<!-- AIW-源码调研-2026-06-07 -->
+## 源码调研验证（2026-06-07）
+
+**重点**：AOSP 主线最新 tag 为 `android-16.0.0_r4`，`android-17.0.0_r1` 在 `android.googlesource.com` 公开 refs/tags 中尚未创建。Build.java 中 `VERSION_CODES.BAKLAVA = 36`（Android 16）仍为最新常量，API 37 数值与 codename 均未在 AOSP 落地。
+
+### 1. AOSP 现状（一手验证 @ `refs/tags/android-16.0.0_r4`）
+
+- **`frameworks/base/core/java/android/os/Build.java`**：master 中 `VERSION_CODES_FULL` 末尾注释只到 `BAKLAVA_1`（36_000_001），无 `BAKLAVA_2` / `37` 定义
+- **Sentry SDK（`getsentry/sentry-java/gradle/libs.versions.toml`）**：`targetSdk = "36"`, `compileSdk = "36"`, `minSdk = "21"`——Sentry 主分支 HEAD 自身只声明兼容到 Android 16
+- **Bugly / APMPlus**：官方 SDK 闭源，无法在 AOSP 中验证其 SDK 门槛
+
+### 2. APM 共用运行时 API（API 30+ 起稳定，Android 17 沿用）
+
+| API | 位置 | 关键常量 | 商业 APM 用法 |
+|---|---|---|---|
+| `ApplicationExitInfo` | `app/ApplicationExitInfo.java` | `REASON_FREEZER=14`（API 34+） | Bugly/Sentry 拉取崩溃 + ANR + Freezer |
+| `ActivityManager.getMyMemoryState` | `app/ActivityManager.java` | `mRateLimitedMemState` 5s 缓存 | Koom/Matrix 进程内存采样 |
+| `Trace.beginSection` | `os/Trace.java` | `@CriticalNative` 直通 | Sentry transaction、Matrix 帧耗时打点 |
+
+`ApplicationExitInfo.REASON_FREEZER` 在 android-16.0.0_r4 中仍为最后新增的 `REASON_*` 常量（值 14），无 API 37 专属扩展。
+
+### 3. SDK_INT 兼容模式源码
+
+```java
+// Build.java @ android-16.0.0_r4
+@FlaggedApi(Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+public static final int SDK_INT_FULL;
+static {
+    SDK_INT_FULL = VERSION_CODES_FULL.SDK_INT_MULTIPLIER
+            * SystemProperties.getInt("ro.build.version.sdk", 0)
+            + SystemProperties.getInt("ro.build.version.sdk_minor", 0);
+}
+```
+
+Android 16 已落地 `SDK_INT_FULL`（major × 1_000_000 + minor）。**Android 17 落地后**，`SDK_INT` 将变 37，`SDK_INT_FULL` 携带 minor 偏移；APM 工具若需区分 minor 行为需读 `SDK_INT_FULL` 而非 `SDK_INT`。
+
+### 4. 核心结论更新
+
+- **AOSP 主线尚未发布 `android-17.0.0_r1` tag**——所有 API 37 数值引用标记为「**未进入 Android 17**」，需在 AOSP 落地后重核
+- **Sentry 8.x 主分支已对齐 API 36**，Android 17 设备上将走 `Build.VERSION.SDK_INT > compileSdk` 兼容回退
+- **底层 APM 关键 API（Trace / ApplicationExitInfo / getMyMemoryState）签名在 android-16.0.0_r4 中未变**，Android 17 兼容性回归风险低
+- **SDK 自身版本门槛**仍由商业厂商控制（AOSP 不验证），建议在迁移时按各厂商 release notes 升级
+
+
+
+## 参考资料
+
+### Android 17 商业 APM 平台 SDK/API 版本边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-commercial-apm-sdk-version-boundary.md
+- 类型：DeepResearch 调研结果
+- 摘要：验证 Sentry、Bugly Pro、Android Studio Profiler 在 Android 17 中的 SDK/API 版本限制。核心发现：AOSP 公开 tag 最高为 android-16.0.0_r4，API 37 未定义；Sentry 8.x 声明 compileSdk=36；APM 核心依赖 API（ApplicationExitI
+- 注入时间：2026-06-07
+- 价值：明确商业 APM SDK 在 Android 17 的兼容性边界，为开发者迁移提供依据

@@ -1,7 +1,7 @@
 ---
 title: "Vulkan 原生渲染管线"
 chapter: "18.9"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 section: "18.9"
 last_verified: "2026-06-06"
 last_verified_against: "Android 16.0.0_r4 AOSP frameworks/native/vulkan/libvulkan/swapchain.cpp, Android Vulkan docs, Android Game SDK Swappy API reference, Khronos Vulkan-Profiles"
@@ -11,7 +11,7 @@ task9_reviewed_date: "2026-06-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-07T05:31:04+08:00"
 tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
-related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
+related_chapters: ["2.1", "2.6", "2.14", "16.5", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 sources:
@@ -31,6 +31,9 @@ sources:
     path: "github.com/KhronosGroup/Vulkan-Profiles/profiles/VP_ANDROID_16_minimums.json"
   - type: official
     path: "registry.khronos.org/vulkan/specs/latest/html/vkspec.html#fundamentals-threadingbehavior"
+  - type: research
+    path: "../DeepResearch/2026-06-07-android-17-gpu-render-pipeline-vulkan-graphite.md"
+
 last_task2b_at: "2026-04-27T03:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 P95 + 同章节链接修复）"
@@ -459,6 +462,106 @@ Perfetto 里的默认诊断入口应先看三类证据：
 adb shell setprop debug.vulkan.enable 1
 adb shell setprop debug.vulkan.layers VK_LAYER_KHRONOS_validation
 ```
+
+
+
+## 18.9.8 Android 17 演进：Skia Graphite 后端与 RenderEngineThreaded
+
+> ⚠️ **源码锚点声明**：本节内容来自 AOSP `frameworks/native` 仓库 `refs/heads/main` 分支（2024–2026 commit 范围）。AOSP 公共镜像 `android.googlesource.com` 截至 2026-06-07 尚未发布 `android-17.0.0_r1` 标签分支，最新可见的 tag 分支为 `android16-release`。下列代码代表 **Android 17+ 演进方向**，但 **未经过 android-17.0.0_r1 一手验证**。
+
+### Skia Backend 二选一：GANESH / GRAPHITE
+
+`frameworks/native/libs/renderengine/include/renderengine/RenderEngine.h` 的 `SkiaBackend` 枚举在 main 分支已从仅 `GANESH` 扩展为：
+
+```cpp
+enum class SkiaBackend {
+    GANESH,
+    GRAPHITE,  // 新增
+};
+```
+
+`RenderEngineCreationArgs` 结构体的 `skiaBackend` 字段默认 `GANESH`，OEM 可通过 `debug.renderengine.graphite_preview_optin` system property 灰度切换。`frameworks/native/libs/renderengine/Android.bp` 的 `librenderengine_skia_sources` 已纳入 `skia/GraphiteVkRenderEngine.cpp`，说明它已是可选构建目标。
+
+新增文件清单（Copyright 2024）：
+- `libs/renderengine/skia/GraphiteVkRenderEngine.{h,cpp}`
+- `libs/renderengine/skia/compat/GraphiteBackendTexture.{h,cpp}`
+- `libs/renderengine/skia/compat/GraphiteGpuContext.{h,cpp}`
+
+### Graphite 提交模型：Recording + BackendSemaphore
+
+`GraphiteVkRenderEngine::flushAndSubmit()` 用 `graphite::Recorder::snap()` + `graphite::Context::insertRecording()` + `graphite::Context::submit(SyncToCpu::kNo)` 替代 Ganesh 的 `GrDirectContext` 即时命令路径：
+
+```cpp
+std::unique_ptr<graphite::Recording> recording = context->graphiteRecorder()->snap();
+graphite::InsertRecordingInfo insertInfo;
+insertInfo.fRecording = recording.get();
+VkSemaphore vkSignalSemaphore = vulkanInterface.createExportableSemaphore();
+auto backendSignalSemaphore = graphite::BackendSemaphores::MakeVulkan(vkSignalSemaphore);
+
+insertInfo.fNumWaitSemaphores = mStagedWaitSemaphores.size();
+insertInfo.fWaitSemaphores = mStagedWaitSemaphores.data();
+insertInfo.fNumSignalSemaphores = 1;
+insertInfo.fSignalSemaphores = &backendSignalSemaphore;
+insertInfo.fFinishedProc = unref_semaphore;
+insertInfo.fFinishedContext = destroySemaphoreInfo;
+
+context->graphiteContext()->insertRecording(insertInfo);
+context->graphiteContext()->submit(graphite::SyncToCpu::kNo);
+base::unique_fd drawFenceFd = vulkanInterface.exportSemaphoreSyncFd(vkSignalSemaphore);
+return drawFenceFd;
+```
+
+**与 18.9.3 节 App 侧 Vulkan 流程的对比**：
+
+| 维度 | App 侧 Vulkan（18.9.3） | SurfaceFlinger Graphite（18.9.8） |
+|:---|:---|:---|
+| 命令录制 | `vkBeginCommandBuffer` / `vkCmdDraw*` | `graphite::Recorder::snap()` |
+| 提交 | `vkQueueSubmit`（App 显式） | `graphite::Context::submit(SyncToCpu::kNo)` |
+| 同步 | `VkSemaphore` + `VkFence`（App 拥有） | `graphite::BackendSemaphore`（Skia 内部） + `DestroySemaphoreInfo` 引用计数 |
+| GPU 完成通知 | `vkWaitForFences` 或 `vkQueueWaitIdle` | `fFinishedProc` 回调（GPU 完成后 Skia 触发） |
+| 输出 fence | `VkFence` → `sync_file` | `exportSemaphoreSyncFd` → `sync_file` |
+
+App 侧继续使用原生 `libvulkan` + Swappy，SurfaceFlinger 这层在 Android 17+ 走 Skia Graphite，两条路径相对独立但都依赖 `VkSemaphore ↔ sync_file` 双向转换（`importSemaphoreFromSyncFd` / `exportSemaphoreSyncFd`）。
+
+### RenderEngineThreaded：SCHED_FIFO:2 实时线程
+
+`frameworks/native/libs/renderengine/threaded/RenderEngineThreaded.cpp` 把渲染线程属性固定为：
+
+- 调度策略 `SCHED_FIFO`，优先级 2
+- Cgroup task profile `SFRenderEnginePolicy`（与 `VSyncThread` 同组）
+- 线程名 `RenderEngine`（perfetto/systrace 中可识别）
+- `primeCache` 期间临时切回 `SCHED_OTHER` 避免长任务占用实时配额
+
+所有 RenderEngine 接口（`drawLayers`、`mapExternalTextureBuffer`、`cleanupPostRender` 等）通过 `std::function` 队列 + `std::condition_variable` 异步入队，调用方立即拿到 `std::future` 返回。对于 App 侧 Swappy 来说，这意味着 `VkQueuePresentKHR` 返回后 GPU 实际完成时刻由 `drawFenceFd` 表达，不必再依赖 `vkQueueWaitIdle` 这类粗粒度同步。
+
+### VulkanInterface 进程级单例
+
+`SkiaVkRenderEngine.cpp` 把 `sVulkanInterface` / `sProtectedContentVulkanInterface` 声明为文件作用域 static，整个 SurfaceFlinger 进程共享一对 VkDevice（普通 + protected）。`getContextPriority()` 返回 `EGL_CONTEXT_PRIORITY_REALTIME_NV`（0x3357）由 GPU 驱动决定是否支持。`LOG_ALWAYS_FATAL_IF(!sVulkanInterface.takeOwnership())` 显式禁止多 RenderEngine 实例并发。
+
+### 对 App 侧 Vulkan 性能的实际影响
+
+1. **冷启动时 SurfaceFlinger 自身的 GPU 初始化变重**（Graphite 上下文 + 额外 Skia shader 编译），可观察 `RenderEngine` 线程启动时间增长
+2. **App 通过 SurfaceFlinger 看到的帧 fence 延迟更低**（SCHED_FIFO 调度 + 录制/提交解耦）
+3. **Vulkan 验证层路径未变**，App 仍可走 `debug.vulkan.enable=1` + `debug.vulkan.layers=VK_LAYER_KHRONOS_validation` 启用 validation
+4. **Swappy 帧节奏库（18.9.6）行为不变**，仍由 App 主动调用 `Swappy_swap()` 触发 present
+
+### Trace 视角的新增识别点
+
+| Slice / Track | 含义 |
+|:---|:---|
+| `graphite::Context::insertRecording` | Graphite 后端命令插入 |
+| `graphite::Context::submit` | 提交到 Graphite context |
+| `REThreaded::drawLayers` | RenderEngineThreaded 异步 drawLayers 任务 |
+| `REThreaded::primeCache` | 着色器预热任务（SCHED_OTHER） |
+| `unref_semaphore` 回调 | GPU 完成后 Skia 触发的清理回调 |
+
+---
+
+<!-- AIW-源码调研-2026-06-07 -->
+
+> **本次源码调研出处**：`DeepResearch/2026-06-07-android-17-gpu-render-pipeline-vulkan-graphite.md`
+> **反哺编辑**（openclaw）：在 ch18.9 末尾新增 18.9.8 子节，描述 Android 17 阶段 Skia Graphite 后端、RenderEngineThreaded 调度模型、VulkanInterface 单例，扩展 `applicable_versions` 至 Android 17。
+> **可信度**：medium（main 分支源码锚点；android-17.0.0_r1 标签分支未发布）
 
 ---
 

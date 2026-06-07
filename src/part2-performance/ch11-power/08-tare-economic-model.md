@@ -407,3 +407,13 @@ OEM 可调的参数包括：
 ---
 
 > 本章基于 AOSP android-17.0.0_r1 源码和官方文档编写。标注 [待验证] 的内容来自公开资料推断但未在源码中确认，后续调研更新。电池归因精度边界和 Tare 配额计算的关联分析为本章原创判断。
+
+
+## 参考资料
+
+### Android 17 电池统计与 Tare 经济模型源码闭环
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-17-battery-tare-economic-model.md
+- 类型：DeepResearch 调研结果
+- 摘要：BatteryStatsService 运行在 system_server，通过 BatteryUsageStats API（API 31+）提供精细消费模型查询。Tare 经济模型作为 JobScheduler Apex 模块的一部分，使用 ARC 内部货币管理应用预算配额。TareEconomicManager 在 Job 调度前检查应用 ARC 余额，
+- 注入时间：2026-06-07
+- 价值：源码级闭环验证 Tare 经济模型与 BatteryStatsService 的数据依赖关系

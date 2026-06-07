@@ -96,6 +96,31 @@ last_deepseek_cn_review_at: 2026-06-06
 
 ### OpenClaw 加工指引
 
+
+<!-- AIW-源码调研-2026-06-07 -->
+
+### 🔸 源码深度补充
+
+基于本次源码调研，补充 linux.perf 和 android.surfaceflinger.frametimeline 两个关键数据源在 Android 17 中的实现细节：
+
+#### Linux.perf 数据源实现
+- **守护进程**: `traced_perf` 通过 `ANDROID_SOCKET_traced_perf` 继承 socket 连接到 traced 服务
+- **数据源注册**: `kDataSourceName = "linux.perf"` 在 `perf_producer.cc` 中定义
+- **事件配置**: 支持内置计数器、追踪点和原始事件三种类型，通过 `EventConfig` 结构管理
+- **目标过滤**: `TargetFilter` 支持命令行、PID 和进程分片多重过滤机制
+
+#### FrameTimeline 数据源实现  
+- **服务注册**: SurfaceFlinger 模块注册为 `android.surfaceflinger.frametimeline`
+- **核心功能**: 检测帧卡顿类型（AppDeadlineMissed、BufferStuffing、SurfaceFlingerCpuDeadlineMissed等）
+- **数据结构**: 提供预期时间线（Expected Timeline）和实际时间线（Actual Timeline）两种切片
+- **跨进程追踪**: 通过 surface_frame_token 和 display_frame_token 关联应用与 SurfaceFlinger 帧
+
+#### Android 17 版本兼容性
+两个数据源在 Android 17 (API 37) 中保持与 Android 12+ 相同的配置方式，源码实现稳定。由于 `android-17.0.0_r1` 分支未公开，具体实现细节待公开后验证。
+
+**运行时要求**: userdebug/eng 构建支持大多数进程采样；user 构建需要目标应用声明 `android:profileable="true"`。
+
+
 > **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
 > **扩展**视素材丰富程度选择性深入。
 > 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。

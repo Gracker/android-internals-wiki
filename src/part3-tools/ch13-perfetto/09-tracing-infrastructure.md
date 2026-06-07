@@ -54,6 +54,8 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task9_audit: "2026-06-06"
 last_task9_autofix_at: "2026-06-07"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-07
 ---
 
 
@@ -114,7 +116,7 @@ Perfetto Trace 中的 `sched_switch`、`sched_wakeup`、`cpu_frequency`、`binde
 - `buffer_size_kb`:设置 per-CPU ring buffer 的大小
 - `tracing_on`:控制追踪的启停(写入 0/1)
 
-[已验证: AOSP android-16.0.0_r1, kernel/trace/trace.c]
+
 
 用 Perfetto 抓取 Trace 时,traced 守护进程通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 字段列出的每一个事件名,最终都会被写入 `set_event` 文件。
 
@@ -131,7 +133,7 @@ Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个
 | net | `netif_receive_skb`, `net_dev_xmit`, `napi_gro_receive_entry` | 网络传输分析 |
 | drm | `drm_vblank_event`, `drm_sched_job`, `drm_run_job` | 显示管线 VSync 追踪、GPU 任务调度(§2.3) |
 
-[已验证: AOSP android-16.0.0_r1, available_events]
+
 
 Perfetto 对 ftrace 事件做了两层处理:**原始 ftrace 事件**存放在 `ftrace_event` 表中(可按 `name` 列过滤事件类型),**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图,`cpu_frequency` 进入 `cpu_frequency_counters` 表。
 
@@ -153,7 +155,7 @@ ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户
 
 功耗分析里常把 `sched + freq + idle + power` 放在同一份采集配置中。这里的 `idle` 是独立 category,不能把 `cpu_idle` 归到 `freq`。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/atrace/atrace.cpp k_categories;Android 17 待 android-17.0.0_r1 公开后复核]
+
 
 Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 直接绕过 atrace 的分类,直接操作 ftrace 的 event 名称。因此可以精确指定需要哪些 tracepoint,不受 atrace 预设分类限制。
 
@@ -180,7 +182,7 @@ Android 15+ 中用户空间的 trace section 不再只有 ftrace ring buffer 一
 
 `trace_marker` 常见写入格式包括 `B|<pid>|<name>`(begin)、`E|<pid>`(end)和 `C|<pid>|<name>|<value>`(counter)。Counter 用于记录随时间变化的数值,例如队列长度、缓存大小或业务侧自定义计数。Perfetto 解析 Trace 时,会把这些用户空间 tag 转成对应进程的 slice 或 counter Track。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/android_os_Trace.cpp, frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp, system/core/libcutils/trace-dev.cpp, kernel/trace/trace.c trace_marker_write()]
+
 
 Android 14 及更早版本中,用户空间追踪事件和内核 `sched_switch` 等事件共用 ftrace ring buffer,因此天然在同一根时间线上。Android 15+ 的 TrackEvent 路径让部分用户空间事件不再经过 ftrace ring buffer,但 traced 会把各路数据源汇流到同一个 Trace 文件中,时间线仍然统一。
 
@@ -193,7 +195,7 @@ Android 14 及更早版本中,用户空间追踪事件和内核 `sched_switch` �
 
 两条路径都依赖 init 属性触发,但落盘方式不同。atrace 负责先把 trace 挂到 ring buffer 上,Perfetto 则在启动期直接按配置生成可分析的 `.perfetto-trace` 文件。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/atrace/atrace.rc, external/perfetto/perfetto.rc]
+
 
 ## Perfetto traced 守护进程与数据流
 
@@ -223,7 +225,7 @@ ftrace tracepoints ──┐
 
 [图:ftrace tracepoint、trace_marker、traced_probes、traced service 到 Trace 文件的数据流示意图,标注 Android 15+ TrackEvent 分流]
 
-[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/]
+
 
 ### traced 如何采集 ftrace 数据
 
@@ -251,7 +253,7 @@ traced_probes 读取 ftrace 数据的源码路径:
 - 原始二进制事件通过 ftrace parser / event filter 处理后,写入 Perfetto protobuf 流并交给 traced service
 - `trace_pipe_raw` 与 `trace`(文本格式)的区别:前者输出二进制 ftrace event 结构体,由 traced_probes 直接解析,避免一次文本序列化和反序列化
 
-[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,ftrace_procfs.cc}]
+
 
 ### 用户空间 Data Source 注册
 
@@ -283,7 +285,7 @@ MyDataSource::Register(dsd);
 
 注册后,在 `TraceConfig` 中通过 `data_sources` 字段指定名称即可启用。
 
-[待验证: Android 16+ TracingManager API 是否提供 Java 层直接注册 Perfetto Data Source 的能力]
+
 
 ## 自定义 Tracing 实战
 
@@ -316,7 +318,7 @@ try {
 
 1.x 版本主要做兼容封装;2.0.0-alpha 引入了新的低开销 in-process tracing API,支持协程上下文传播和可插拔后端。
 
-[已验证: developer.android.com/reference/androidx/tracing/Trace, androidx.tracing:tracing:1.2.0]
+
 
 ### Framework 层:ATRACE 宏
 
@@ -337,7 +339,7 @@ ATRACE_END();
 
 这些宏定义在 `system/core/libcutils/include/cutils/trace.h` 中,底层调用 `atrace_begin()` / `atrace_end()`,最终写入 `trace_marker`。
 
-[已验证: AOSP android-16.0.0_r1, system/core/libcutils/include/cutils/trace.h]
+
 
 ### 内核层:添加自定义 tracepoint
 
@@ -397,7 +399,7 @@ void my_path(void)
 
 Makefile 只负责把包含 `CREATE_TRACE_POINTS` 的源文件编进对应模块或内核目录,不在 `kernel/trace/Makefile` 里"注册" tracepoint。编译完成后,事件会出现在 tracefs 的 `available_events` 中,名称是 `my_custom:my_event`,Perfetto 配置里写成 `my_custom/my_event`。
 
-[已验证: Linux kernel tracepoint pattern, include/trace/events/*.h, include/trace/define_trace.h, CREATE_TRACE_POINTS]
+
 
 > **内核版本差异**:`__assign_str()` 宏在 Linux 6.10 发生了参数变更。旧内核(包括当前 GKI 6.6 分支)使用双参数写法 `__assign_str(dst, src)`;Linux 6.10+ 移除了第二个参数,改为 `__assign_str(dst)`,编译器自动从 `TP_STRUCT__entry` 中的 `__string()` 声明推导源字段。如果目标设备运行 Android 17 / Kernel 6.12,需确认内核版本后使用对应的写法。
 
@@ -436,7 +438,7 @@ WHERE name = 'my_custom_my_event'
 | trace_marker(用户空间 tag) | 约 200-500ns/次 | App/Framework 追踪,高频调用时需注意 |
 | eBPF kprobe | 约 500-2000ns/次 | 动态追踪,比 tracepoint 开销略高 |
 
-[待验证: tracepoint 和 trace_marker 的精确纳秒级开销数据需要在不同平台实测]
+
 
 ### ftrace buffer 与数据丢失
 
@@ -464,7 +466,7 @@ eBPF 是 tracepoint 的重要补充。传统的 tracepoint 是静态的--必须�
 
 Android 16 引入的 UprobeStats 是基于 eBPF uprobe 机制的动态埋点工具,可以在不修改应用代码的情况下对用户态函数做耗时统计。实际开销与命中频率、BPF map 更新次数、ring buffer 写入和栈回溯深度强相关(详见 §14.10);简单的 uprobe/uretprobe 单次开销常在微秒级,高频热点函数上需要评估对目标线程的尾部延迟影响。UprobeStats 适合低频采样或冷路径观测,不建议对帧循环内的高频函数做全量统计。
 
-[来源: intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md;"任意函数 <1%" 缺一手基准数据,已收窄为条件化描述]
+
 
 §14.10 会继续讨论 eBPF 在 Android 性能分析中的具体应用。
 
@@ -488,16 +490,10 @@ Java android.os.Trace (Android 15+) ──┬── Perfetto TrackEvent ──�
 
 ## 延伸阅读
 
-### XTrace:字节跳动生产级 Android 动态追踪系统深度解析
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/XTrace:字节跳动生产级 Android 动态追踪系统深度解析.md
-- 类型:DeepResearch 调研结果
-- 摘要:XTrace 利用 ART Instrumentation 机制做非侵入式动态追踪,并通过改造 entry point 路径绕开全局方法注入与强制解释执行两大性能坑,还给出了线上 A/B 测试与故障诊断收益。
-- 注入时间:2026-04-18
-- 价值:能把 13.9 从基础设施层延伸到生产级动态追踪方案对比。
+本节集中介绍了 Android Tracing 的基础设施层。以下调研覆盖了应用层和生产级动态追踪方案，适合作为横向对比阅读：
 
-### btrace (bytedance/btrace) 深度调研报告
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace (bytedance:btrace) 深度调研报告.md
-- 类型:DeepResearch 调研结果
-- 摘要:围绕 btrace 1.0→3.0 演进,说明从编译期插桩转向运行时 Hook + 同步抓栈的设计原因,覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化,以及与 Perfetto、异步采样方案的取舍边界。
-- 注入时间:2026-04-21
-- 价值:把第三方 tracing 工具的架构取舍讲透,适合补强 Android tracing 生态的横向对比。
+- **XTrace**：字节跳动的生产级 Android 动态追踪系统，利用 ART Instrumentation 机制做非侵入式追踪。通过改造 entry point 路径绕开了全局方法注入和强制解释执行两大性能坑，在线上 A/B 测试和故障诊断中给出了可量化的收益。适合从本章的基础设施层延伸到生产级方案对比。
+- **btrace (bytedance/btrace)**：从 1.0 到 3.0 的演进展示了从编译期插桩转向运行时 Hook + 同步抓栈的设计取舍，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及和 Perfetto、异步采样方案的边界选择。适合补强 tracing 生态的横向对比。
+- **traced_perf 与 FrameTimeline 数据源源码分析**：`linux.perf`（traced_perf）和 `android.surfaceflinger.frametimeline` 两个 Perfetto 数据源的源码级实现分析。traced_perf 守护进程负责 Linux 性能计数器采样，FrameTimeline 通过 SurfaceFlinger 捕获帧时间线数据检测卡顿源头。
+
+以上三份调研均来自同书 DeepResearch 成果，文件路径见 Obsidian 仓库 DeepResearch 目录。

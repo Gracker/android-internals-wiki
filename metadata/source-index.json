@@ -3451,6 +3451,781 @@
       ],
       "summary": "Content from Android 启动优化（五）- AnchorTask 1.0.0 版本更新了 at https://juejin.cn/post/6935375820001116196. This would contain the actual article content with technical details.",
       "scored_at": "2026-06-06T09:12:41.673918"
+    },
+    {
+      "path": "Cubox/Android 手机中的锁：一场看不见的性能战争-2026-06-06.md",
+      "title": "Android 手机中的锁：一场看不见的性能战争-2026-06-06.md",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200101"
+    },
+    {
+      "path": "Cubox/openai.com-2026-06-06.md",
+      "title": "openai.com-2026-06-06.md",
+      "score": 14,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200109"
+    },
+    {
+      "path": "Cubox/干货技巧：单模块编译再见adb push迎接sync命令-2026-06-06.md",
+      "title": "干货技巧：单模块编译再见adb push迎接sync命令-2026-06-06.md",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200111"
+    },
+    {
+      "path": "DeepResearch/2026-06-06-android17-contentprovider-anr-double-path.md",
+      "title": "源码调研：Android 16/17 ContentProvider ANR 双路径机制源码深度分析",
+      "score": 20,
+      "chapter": "ch03",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200113"
+    },
+    {
+      "path": "DeepResearch/2026-06-06-android17-ebpf-loader-architecture.md",
+      "title": "源码调研：Android 17 eBPF 系统级实现 — bpfloader Rust 化与 BPF 程序架构",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200115"
+    },
+    {
+      "path": "DeepResearch/2026-06-06-android17-hprof-heapdump-javahprof-datasource.md",
+      "title": "源码调研：Android 17 HPROF Heap Dump 与 java_hprof 数据源实现机制源码分析",
+      "score": 19,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200116"
+    },
+    {
+      "path": "DeepResearch/2026-06-06-android17-native-app-lock-aosp-verification.md",
+      "title": "源码调研：Android 17 原生应用锁 AOSP 源码层验证",
+      "score": 16,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200117"
+    },
+    {
+      "path": "DeepResearch/2026-06-06-linux-perf-frametimeline-android17-verify.md",
+      "title": "源码调研：Android 17 linux.perf 和 FrameTimeline 需源码验证",
+      "score": 17,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200119"
+    },
+    {
+      "path": "DeepResearch/2026-06-06-thermal-headroom-listener-android16-verify.md",
+      "title": "源码调研：Android 16/17 Thermal Headroom Listener API（addThermalHeadroomListener）",
+      "score": 18,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200120"
+    },
+    {
+      "path": "OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-06-06-AK-RSS-Digest（89源精选）.md",
+      "title": "AK RSS Digest（89 源精选）· 2026-06-06",
+      "score": 12,
+      "chapter": "ch03",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200121"
+    },
+    {
+      "path": "OpenClaw定时任务/Agent实践探索/2026-06-06-Agent实践探索.md",
+      "title": "2026-06-06-Agent实践探索.md",
+      "score": 14,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200123"
+    },
+    {
+      "path": "OpenClaw定时任务/ClawFeed24小时高价值一览/2026-06-07-ClawFeed24小时高价值一览.md",
+      "title": "ClawFeed 24小时高价值一览 · 2026-06-07",
+      "score": 15,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200124"
+    },
+    {
+      "path": "OpenClaw定时任务/Gracker的Rss订阅/2026-06-07-Gracker的Rss订阅.md",
+      "title": "Gracker 的 Rss 订阅 · 2026-06-07",
+      "score": 15,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200125"
+    },
+    {
+      "path": "OpenClaw定时任务/Obsidian定时任务目录卫生巡检/2026-06-06-Obsidian定时任务目录卫生巡检.md",
+      "title": "Obsidian 定时任务目录卫生巡检 · 2026-06-06",
+      "score": 12,
+      "chapter": "ch06",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200127"
+    },
+    {
+      "path": "OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-06-06-Obsidian新增文件与今日总结（22点）.md",
+      "title": "Obsidian新增文件与今日总结（22点） · 2026-06-06",
+      "score": 17,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200129"
+    },
+    {
+      "path": "OpenClaw定时任务/Perfetto每日提交监控/2026-06-06-Perfetto每日提交监控.md",
+      "title": "2026-06-06-Perfetto每日提交监控.md",
+      "score": 14,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200131"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/2026-06-05-SmartPerfetto日报.md",
+      "title": "SmartPerfetto / perfetto 协作日报 · 2026-06-05",
+      "score": 13,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200132"
+    },
+    {
+      "path": "OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-06-06-今天干了啥日报（OpenClaw）.md",
+      "title": "今天 OpenClaw 帮我干了点啥？！· 2026-06-06",
+      "score": 10,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200133"
+    },
+    {
+      "path": "OpenClaw定时任务/掘金Android技术文章抓取/2026-06-07-掘金Android技术文章抓取.md",
+      "title": "掘金 Android 日报 · 2026-06-07",
+      "score": 17,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200134"
+    },
+    {
+      "path": "OpenClaw定时任务/每日Task巡检与自修复/2026-06-07-每日Task巡检与自修复.md",
+      "title": "每日 Task 巡检 · 2026-06-07",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200136"
+    },
+    {
+      "path": "OpenClaw定时任务/每日内容流水线选题提案/2026-06-07-每日内容流水线选题提案.md",
+      "title": "2026-06-07-每日内容流水线选题提案.md",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200137"
+    },
+    {
+      "path": "OpenClaw定时任务/每日深度研究选题/2026-06-06-每日深度研究选题.md",
+      "title": "每日深度研究选题 · 2026-06-06",
+      "score": 19,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200138"
+    },
+    {
+      "path": "OpenClaw定时任务/每日深度研究选题/2026-06-07-每日深度研究选题.md",
+      "title": "📋 每日深度研究选题 · 2026-06-07",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200139"
+    },
+    {
+      "path": "OpenClaw定时任务/每日论文精读（AI）/2026-06-06-每日论文精读（AI）.md",
+      "title": "2026-06-06-每日论文精读（AI）.md",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200141"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-06-知识加工(新).md",
+      "title": "Task 2A 知识加工 — 2026-06-06 06:08",
+      "score": 14,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200142"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-07-08-知识加工(新).md",
+      "title": "2026-06-06-07-08-知识加工(新).md",
+      "score": 16,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200143"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-08-知识加工(新).md",
+      "title": "知识加工 Task 2A 执行记录 — 2026-06-06 08:07",
+      "score": 11,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200144"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-09-知识加工(新).md",
+      "title": "Task 2A · 知识加工 — 2026-06-06 09:07",
+      "score": 16,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200145"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-1108-知识加工(新).md",
+      "title": "知识加工（Task 2A）— 2026-06-06 11:08",
+      "score": 10,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200147"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-12-知识加工(新).md",
+      "title": "知识加工（Task 2A）— 2026-06-06 12:04",
+      "score": 10,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200148"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-14-深度技术Review(新).md",
+      "title": "深度技术 Review（Task 9）— 2026-06-06 14:25",
+      "score": 16,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200149"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-15-知识加工(新).md",
+      "title": "Task 2A · 知识加工 — 2026-06-06 15:38",
+      "score": 14,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200150"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-16-深度技术Review.md",
+      "title": "2026-06-06-16-深度技术Review.md",
+      "score": 16,
+      "chapter": "ch07",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200151"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-16-知识加工(新).md",
+      "title": "2026-06-06-16-知识加工(新).md",
+      "score": 10,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200153"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-17-知识加工(新).md",
+      "title": "知识加工日志 — 2026-06-06 17:09",
+      "score": 15,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200154"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-18-深度技术Review.md",
+      "title": "2026-06-06-18-深度技术Review.md",
+      "score": 16,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200160"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-19-深度技术Review.md",
+      "title": "2026-06-06-19-深度技术Review.md",
+      "score": 12,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200161"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-19-知识加工(新).md",
+      "title": "Task 2A · 知识加工 — 2026-06-06 19:04",
+      "score": 10,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200163"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-20-深度技术Review.md",
+      "title": "2026-06-06-20-深度技术Review.md",
+      "score": 14,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200164"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-22-深度技术Review.md",
+      "title": "2026-06-06-22-深度技术Review.md",
+      "score": 16,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200165"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-06-22-知识加工(新).md",
+      "title": "知识加工报告 — 2026-06-06 22:09",
+      "score": 10,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200166"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-07-00-知识加工(新).md",
+      "title": "Task 2A 知识加工日志 — 2026-06-07 00:07",
+      "score": 10,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200167"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-07-01-09-知识加工(新).md",
+      "title": "2026-06-07-01-09-知识加工(新).md",
+      "score": 10,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200169"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-07-02-深度技术Review.md",
+      "title": "深度技术 Review · 2026-06-07 02:20",
+      "score": 15,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200170"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-07-02-知识加工(新).md",
+      "title": "Task 2A 知识加工报告 — 2026-06-07 02:09",
+      "score": 15,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200171"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-07-03-深度技术Review.md",
+      "title": "2026-06-07-03-深度技术Review.md",
+      "score": 17,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200172"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-07-03-知识加工(新).md",
+      "title": "Task 2A · 知识加工 — 2026-06-07 03:08",
+      "score": 17,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200173"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-07-04-深度技术Review.md",
+      "title": "2026-06-07-04-深度技术Review.md",
+      "score": 17,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200175"
+    },
+    {
+      "path": "OpenClaw定时任务/资讯简报（综合）/2026-06-06-资讯简报（综合）.md",
+      "title": "资讯简报（综合）· 2026-06-06",
+      "score": 15,
+      "chapter": "ch03",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200176"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-nontech/2026-06-07_RSS_5f67edfe46.md",
+      "title": "2026-06-07_RSS_5f67edfe46.md",
+      "score": 12,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200177"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_00dce882e8.md",
+      "title": "2026-06-07_RSS_00dce882e8.md",
+      "score": 12,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200178"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_2d934d3406.md",
+      "title": "2026-06-07_RSS_2d934d3406.md",
+      "score": 12,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200179"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_6233b512de.md",
+      "title": "2026-06-07_RSS_6233b512de.md",
+      "score": 14,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200181"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_7581a5a998.md",
+      "title": "2026-06-07_RSS_7581a5a998.md",
+      "score": 12,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200182"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_84c6e5c233.md",
+      "title": "2026-06-07_RSS_84c6e5c233.md",
+      "score": 14,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200183"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_8fa442dbe2.md",
+      "title": "2026-06-07_RSS_8fa442dbe2.md",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200184"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_9036fe5b64.md",
+      "title": "2026-06-07_RSS_9036fe5b64.md",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200186"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_93029fd141.md",
+      "title": "2026-06-07_RSS_93029fd141.md",
+      "score": 16,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200187"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_95deae8d35.md",
+      "title": "2026-06-07_RSS_95deae8d35.md",
+      "score": 15,
+      "chapter": "ch03",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200188"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_ba9ae71dae.md",
+      "title": "2026-06-07_RSS_ba9ae71dae.md",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200189"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_dd7c2070fc.md",
+      "title": "2026-06-07_RSS_dd7c2070fc.md",
+      "score": 12,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200190"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-06-07_RSS_f99b2936c4.md",
+      "title": "2026-06-07_RSS_f99b2936c4.md",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200192"
+    },
+    {
+      "path": "X 文章/2026-06-06-1234-BetterCallMedhi-华为新物理定律.md",
+      "title": "华为发布全新物理定律，颠覆半导体行业格局",
+      "score": 15,
+      "chapter": "ch07",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200193"
+    },
+    {
+      "path": "X 文章/2026-06-06-1234-Xudong07452910-Codex网络优化.md",
+      "title": "高级提示技巧：用成功案例驱动Codex精准优化",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200194"
+    },
+    {
+      "path": "X 文章/2026-06-06-1234-realCaigu-Codex正确用法.md",
+      "title": "Codex的正确使用方式：目标导向的Agent工作流",
+      "score": 12,
+      "chapter": "ch03",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200195"
+    },
+    {
+      "path": "X 文章/2026-06-06-1234-xiaogaifun-Harness工程.md",
+      "title": "Harness工程：让AI Agent稳定工作的核心框架",
+      "score": 12,
+      "chapter": "ch03",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200196"
+    },
+    {
+      "path": "awesome-ai-field-notes/CHANGELOG.md",
+      "title": "Changelog",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200198"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/3b737038.md",
+      "title": "Gemini macOS 隐藏技巧: 双击 把当前窗口丢进对话",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200199"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/6f3a3f33.md",
+      "title": "反思\"AI-First\": 99% 代码由 AI 写, 为什么产品还是输了?",
+      "score": 14,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200201"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/ddb3d201.md",
+      "title": "Paul Smith 现场观察: 普通企业数据团队也能自动化 95% 分析查询",
+      "score": 12,
+      "chapter": "ch05",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200203"
+    },
+    {
+      "path": "论文/AI-2026-06-06-SAHOO-Recursive-Self-Improvement/03-精读.md",
+      "title": "03-精读.md",
+      "score": 10,
+      "chapter": "ch04",
+      "type": "incremental",
+      "scored_at": "2026-06-07T05:52:34.200204"
+    },
+    {
+      "title": "Android NativeCrash 捕获与解析",
+      "path": "AndroidWeekly/#16/Android NativeCrash 捕获与解析",
+      "source_url": "https://juejin.cn/post/6932757164003950599",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android NativeCrash捕获与解析方法介绍...",
+      "scored_at": "2026-06-07T09:00:00"
+    },
+    {
+      "title": "带你全面了解 Flutter，它好在哪里？它的坑在哪里？ 应该怎么学？",
+      "path": "AndroidWeekly/#16/带你全面了解 Flutter",
+      "source_url": "https://juejin.cn/post/6932033252320346126",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter跨平台框架全面介绍与分析...",
+      "scored_at": "2026-06-07T09:00:00"
+    },
+    {
+      "title": "声明式 UI？Android 官方怒推的 Jetpack Compose 到底是什么",
+      "path": "AndroidWeekly/#16/声明式 UI？Android 官方怒推的 Jetpack Compose",
+      "source_url": "https://mp.weixin.qq.com/s/5mJdn-HhZ89GesWIjjYQ2A",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Jetpack Compose声明式UI框架介绍...",
+      "scored_at": "2026-06-07T09:00:00"
+    },
+    {
+      "title": "为数不多的人知道的 Kotlin 技巧以及原理解析 | 开发者说·DTalk",
+      "path": "AndroidWeekly/#16/为数不多的人知道的 Kotlin 技巧",
+      "source_url": "https://mp.weixin.qq.com/s/-Zcth8uO10jAMH1BIghq6w",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin语言技巧及原理解析...",
+      "scored_at": "2026-06-07T09:00:00"
+    },
+    {
+      "title": "Android 开发挑战赛 | 第 2 周: 倒计时器",
+      "path": "AndroidWeekly/#16/Android 开发挑战赛 | 第 2 周: 倒计时器",
+      "source_url": "https://mp.weixin.qq.com/s/EUmpzlub4p0zqM4t32oXmQ",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-性能",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android开发挑战赛倒计时器实现...",
+      "scored_at": "2026-06-07T09:00:00"
+    },
+    {
+      "title": "【译】Flutter 2.0 正式版发布，全平台 Stable",
+      "path": "AndroidWeekly/#16/【译】Flutter 2.0 正式版发布",
+      "source_url": "https://juejin.cn/post/6935621027116531720",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter 2.0正式版发布特性介绍...",
+      "scored_at": "2026-06-07T09:00:00"
+    },
+    {
+      "title": "【译】Flutter 2 正式版的新功能，一睹为快",
+      "path": "AndroidWeekly/#16/【译】Flutter 2 正式版的新功能",
+      "source_url": "https://juejin.cn/post/6935642154853203982",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter 2.0新功能特性详解...",
+      "scored_at": "2026-06-07T09:00:00"
+    },
+    {
+      "title": "Android 启动优化（四）- 手把手教你实现 AnchorTask",
+      "path": "AndroidWeekly/#16/Android 启动优化（四）- 手把手教你实现 AnchorTask",
+      "source_url": "https://juejin.cn/post/6931905215733956616",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-性能",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android启动优化AnchorTask实现指南...",
+      "scored_at": "2026-06-07T09:00:00"
+    },
+    {
+      "title": "Android 启动优化（五）- AnchorTask 1.0.0 版本更新了",
+      "path": "AndroidWeekly/#16/Android 启动优化（五）- AnchorTask 1.0.0 版本更新",
+      "source_url": "https://juejin.cn/post/6935375820001116196",
+      "weekly_issue": "#16",
+      "weekly_date": "2021-03-05",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-性能",
+          "confidence": "high"
+        }
+      ],
+      "summary": "AnchorTask 1.0.0版本更新介绍...",
+      "scored_at": "2026-06-07T09:00:00"
     }
   ]
 }

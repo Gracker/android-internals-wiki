@@ -20,13 +20,13 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-06-07T10:50:00+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-07'
+reviewed_date: '2026-06-07'
 task6_result: pass-light-edit
 sources:
 - AOSP frameworks/base/core/java/android/view/Choreographer.java
@@ -37,10 +37,10 @@ task9_result: pending
 task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题。2026-06-07 Task2B 主修复：修正 PopupWindow 窗口独立性描述；修正交叉引用路径（part1-foundation→part1-fundamentals）。"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-07'
-last_task6_at: '2026-05-07T06:10:00+08:00'
+last_task6_at: '2026-06-07T11:06:00+08:00'
 last_task6_audit: '2026-05-25T07:06:00+08:00'
-last_task6_review_log: logs/review/2026-05-07-06-review.md
-task6_review_notes: 2026-05-07 task6 review 05:05:补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词;L1/L2
+last_task6_review_log: logs/review/2026-06-07-11-review.md
+task6_review_notes: 2026-05-07 task6 review 05:05:补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词;L1/L2 | 2026-06-07 task6 review 11:06:L1小修1处(开头形容词+冒号模式→直接陈述);L1/L2通过,无新增回炉项。
   通过,无新增回炉项,转 Task9 复审。 | 2026-05-07 task6 review 06:10:清理标题术语与正文提示腔,统一为多窗口渲染路径;L1/L2
   通过,无新增回炉项,转 Task9 复审。
 last_task9_at: '2026-05-07T08:36:00+08:00'
@@ -68,7 +68,7 @@ task9_review_notes: 2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分
 
 <!-- outline-end -->
 
-这是一个在性能分析中极易被忽视的场景:同一个 App 进程同时显示两个窗口。表面上看起来只是"弹了个 Dialog",底层渲染路径里却变成同一个 UI Thread 和同一个 RenderThread 串行处理两套独立绘制任务。理解这个瓶颈,是排查"为什么弹 Dialog 后 Activity 也卡了"这类问题的关键。
+同一个 App 进程同时显示两个窗口——表面看起来只是弹了个 Dialog,底层渲染路径里却变成同一个 UI Thread 和同一个 RenderThread 串行处理两套独立绘制任务。理解这个瓶颈,是排查"为什么弹 Dialog 后 Activity 也卡了"这类问题的关键。
 
 多窗口性能分析的第一步是判断拓扑:同进程还是跨进程。这两种拓扑产生的瓶颈位置完全不同--同进程卡在 App 内部的串行竞争,跨进程卡在 SurfaceFlinger 合成侧。下文先列出常见场景并标注拓扑归属,再分别展开分析。
 
