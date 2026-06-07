@@ -1,11 +1,12 @@
 ---
+
 title: "Native 内存管理与优化"
 chapter: "23.3"
 section: "23.3"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-14"
-reviewed_date: "2026-05-14"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-06-08
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-06-08"
@@ -33,13 +34,13 @@ sources:
     path: "Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md"
 tags: [native-memory, malloc, asan, hwasan, so-memory]
 related_chapters: ["23.2", "4.1", "4.2", "10.1", "14.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-task6_review_notes: "2026-05-14 task6 review: 修正 malloc_debug 限制表述，替换禁用语境下的抽象词；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
-last_task6_review_log: "logs/review/2026-05-14-01-review.md"
-last_task6_at: "2026-05-14T01:14:00+08:00"
+task6_review_notes: "2026-05-14 task6 review: 修正 malloc_debug 限制表述，替换禁用语境下的抽象词；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。 | 2026-06-08 Task6 (revisiting→finalized): pass-light-edit. Task9 auto-fixed malloc_debug nested quotes + AOSP anchor downgrade. L1/L2 clean. No B-class issues. Auto-promoted: task6=pass-light-edit, task9=auto-fixed, queue clear."
+last_task6_review_log: logs/review/2026-06-08-04-review.md
+last_task6_at: "2026-06-08T04:12:56+08:00"
 last_task6_audit: "2026-06-06"
 task9_result: auto-fixed
 task9_reviewed_date: 2026-05-14
