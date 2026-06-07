@@ -4,8 +4,8 @@ title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
 last_task6_at: "2026-06-07T11:06:00+08:00"
-last_task2b_lite_at: "2026-05-30"
-task2b_lite_notes: "修复代码块语言标记;小修 4 处裸 ``` 为 ```text;更新 frontmatter 状态"
+last_task2b_lite_at: "2026-06-07"
+task2b_lite_notes: "2026-06-07 删除重复 H1+outline+intro 块(L55-102);代码块语言标记待后续修复"
 last_task6_review_log: "logs/review/2026-06-07-11-review.md"
 task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。 | 2026-06-07 task6 review 11:06:B类问题-文件存在重复的H1+outline+intro块(第55-102行),需Task2B删除第一个不完整实例;L1/L2无新增小修项。"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
@@ -27,13 +27,13 @@ path: https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture
 tags: 
 related_chapters: 
 task6_result: "needs-rework"
-task6_state: "reviewed"
-pipeline_stage: "task2b_pending"
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
 task6_reviewed_date: "2026-05-30"
-task9_state: pending
+task9_state: "pending"
 task9_result: pending
-task2b_state: "pending"
-task2b_result: "fixed"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
 task2b_notes: "修复 Task6 2026-05-30 回炉问题:移除未进入 Android 17 的 DeliQueue 推测内容，清理参考资料后未融合的源码调研素材块。2026-06-07 Task2B 主修复：修正 HwTimeoutMultiplier() 版本表入口（Android 13 已存在）；修复 frontmatter 重复 pipeline_stage 键。"
 task2b_fixed_by: openclaw-task2b
 task2b_fixed_at: "2026-06-07T10:50:00+08:00"
@@ -51,54 +51,6 @@ task6_l3_l4_issues: 1
 task6_new_rework: true
 review_type: "task6-writing-quality-review"
 ---
-
-# Input 事件分发全流程
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 输入事件完整路径:硬件 → Kernel InputDriver → EventHub → InputReader → InputClassifier/InputProcessor → InputDispatcher → App ViewRootImpl → View 树
-- 🔹 InputDispatcher 的分发策略:焦点窗口、触摸窗口、ANR 超时
-- 🔹 App 侧的事件分发:ViewRootImpl → DecorView → Activity.dispatchTouchEvent → ViewGroup → View
-- 🔹 InputChannel 与 Socket pair 机制
-- 🔹 关键超时参数:5s ANR for Key, 5s for Touch (Android 不同版本变化)
-
-### 扩展(可选深入)
-
-- 🔸 InputFlinger 的角色与演进
-- 🔸 输入事件在 Systrace 中的完整追踪:deliverInputEvent → input event latency
-- 🔸 Pointer Event 与 Motion Event 的区别
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
-<!-- outline-end -->
-
-## 为什么要了解 Input 事件分发
-
-当我们在 Perfetto 中追踪一次点击卡顿或滑动不跟手的问题时,最常看到的线索之一就是 `deliverInputEvent` 这个 Trace tag--它对应的就是 App 侧 UI 线程被 Input 事件唤醒并开始处理的那段时间。如果我们不理解 Input 事件是怎么从硬件一路走到这个 tag 的,就无法判断问题出在哪个环节:是底层报点延迟?是 InputDispatcher 分发不及时?还是 App 主线程本身卡住了?
-
-理解 Input 事件分发的完整路径,就是为了在分析这类问题时,能够在 Perfetto 的每一个关键 Track 上精确定位:事件在哪个环节被延迟了,延迟了多少,以及为什么。
-
-## 从硬件到 App:一条完整的事件传递路径
-
-一次触摸事件从手指触碰屏幕到 App 开始处理,要经历一条很长的路径。我们可以把这条路径分成四段来看:
-
-[图:Input 事件分发全路径架构图--从触控 IC 到 App View 树]
-
-**第一段:硬件 → Linux 内核**。触摸屏的触控 IC 芯片捕获电压/电流变化,计算出触摸坐标,通过 I2C 总线通知 CPU。Linux 内核的 Input 子系统按照统一的协议规范,将原始事件写入 `/dev/input/eventX` 设备文件。这一段对 Android Framework 来说是透明的,我们用 `adb shell getevent` 命令看到的就是这一层的原始数据。
-
-**第二段:EventHub → InputReader**。这是 Android Framework 层的第一道关卡。`EventHub` 利用 Linux 的 `epoll` 机制监听 `/dev/input/` 目录下的设备文件,当有新事件时可读取。`InputReader` 是一个跑在 `system_server` 进程中的 Native 循环线程,它不断从 `EventHub` 读取原始的 `struct input_event`,然后根据设备类型(触摸屏、键盘、鼠标等)交给对应的 `InputMapper` 做"加工"(cook)--把原始数据转成 Android 层认识的 `KeyEvent`、`MotionEvent`。
-
-**第三段:InputClassifier/InputProcessor → InputDispatcher → 目标窗口**。触摸事件在进入分发线程前还有一层版本化处理:Android 12/13 的代码路径是 `InputReader → InputClassifier → InputDispatcher`,Android 14+ 演进为 `InputReader → InputProcessor → InputDispatcher`。这一层负责触摸分类、palm rejection、stylus 等处理;不需要分类的事件会直接透传到 queued listener,然后进入 `InputDispatcher`。`InputDispatcher` 再找到目标窗口(焦点窗口或触摸区域命中的窗口),通过 `InputChannel`(底层是 `socketpair`)跨进程把事件发送给 App。
-
-
 
 # Input 事件分发全流程
 
