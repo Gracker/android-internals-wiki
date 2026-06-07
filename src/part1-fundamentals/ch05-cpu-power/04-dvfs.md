@@ -39,17 +39,18 @@ drafted_by: openclaw-task2
 polish_count: 1
 polish_date: '2026-04-07'
 polish_by: task2b-polish
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_date: '2026-06-07'
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-06-07T16:20:00+08:00'
+last_task9_at: '2026-06-07T17:20:00+08:00'
+last_task9_autofix_at: '2026-06-07'
 status: ready-for-review
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-07'
 task6_reviewed_date: '2026-06-07'
@@ -73,10 +74,10 @@ task6_review_notes: 2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-
   16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。
   | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量
   L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。
-last_task9_review_log: logs/deep-review/2026-06-07-16-audit.md
-task9_review_notes: "2026-06-07 17:05 Task6 revisiting pass-light-edit. L1 禁用词「落地」→「实现于」1处. 送Task9复审. | 2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
+last_task9_review_log: logs/deep-review/2026-06-07-17-deep-review.md
+task9_review_notes: "2026-06-07 17:20 Task9 auto-fixed：P0 2；修正 GameManagerService loading power mode 入口为 setGameState/notifyGraphicsEnvironmentSetup，并将 Power HAL Mode 枚举 CAMERA 修为 CAMERA_STREAMING_*。回到 Task6 复审。 | 2026-06-07 17:05 Task6 revisiting pass-light-edit. L1 禁用词「落地」→「实现于」1处. 送Task9复审. | 2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
 last_task9_audit: '2026-06-07'
-review_type: task6-writing-quality-review
+review_type: task9-deep-tech-review
 ---
 
 
@@ -568,9 +569,9 @@ AOSP android-16.0.0_r1 中，`GameManagerService`（路径：`frameworks/base/se
 GameManagerService → PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, isLoading)
 ```
 
-具体地，`setGameMode()` 内部在游戏进入 loading 状态时调用 `mPowerManagerInternal.setPowerMode(Mode.GAME_LOADING, true)`，loading 结束时再设 `false`。`PowerManagerInternal` 是系统服务内部接口（`@hide`），不暴露给第三方应用。
+具体地，游戏进入 loading 状态有两条可验证入口：`setGameState(...)` 在应用上报 loading 状态时通过 handler 设置 `Mode.GAME_LOADING`；`notifyGraphicsEnvironmentSetup(...)` 在游戏启动的 graphics env 初始化后按配置开启 loading boost，并通过延迟消息关闭。`setGameMode(...)` 本身只更新模式与 interventions，不直接下发 loading power mode。`PowerManagerInternal` 是系统服务内部接口（`@hide`），不暴露给第三方应用。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java — `setGameMode()` / `PowerManagerInternal.setPowerMode(Mode.GAME_LOADING)`]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java — `setGameState()` / `notifyGraphicsEnvironmentSetup()` / `PowerManagerInternal.setPowerMode(Mode.GAME_LOADING)`]
 
 > **PowerManager.java / IPowerManager.aidl 复核**：android-16.0.0_r1 的 `PowerManager.java` 和 `IPowerManager.aidl` 未命中 `powerHint` 方法或 `POWER_HINT_*` 常量簇。旧版 Android（API 28 之前）曾存在 `powerHint()` / `POWER_HINT_INTERACTIVE` 等常量，已在后续版本移除，不是 Android 16/17 的公开 API。
 
@@ -578,7 +579,7 @@ GameManagerService → PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, isLo
 
 `PowerManagerService`（路径：`frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`，android-16.0.0_r1）内部通过 `setPowerModeInternal()` 承载游戏/相机/VR 等场景的性能模式请求，JNI 入口为 `nativeSetPowerMode()`（路径：`services/core/jni/com_android_server_power_PowerManagerService.cpp`），最终通过 Power HAL AIDL 接口 `IPower.setMode()` 下发到 HAL 层。
 
-Power HAL AIDL 的 `Mode` 枚举（如 `GAME_LOADING`、`SUSTAINED_PERFORMANCE`、`CAMERA` 等）取代了旧的 `powerHint` 整型常量机制。这一迁移在 Android 12-14 期间逐步完成，Android 15/16 的主流设备已全部使用 AIDL Power HAL。
+Power HAL AIDL 的 `Mode` 枚举（如 `GAME_LOADING`、`GAME`、`SUSTAINED_PERFORMANCE`、`CAMERA_STREAMING_HIGH` 等）取代了旧的 `powerHint` 整型常量机制。Android 15/16 的系统侧下发路径使用 AIDL Power HAL，具体模式到频率、调度或功耗策略的映射由 vendor 实现决定。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java + services/core/jni/com_android_server_power_PowerManagerService.cpp — `nativeSetPowerMode()` / `IPower.setMode()`]
 
