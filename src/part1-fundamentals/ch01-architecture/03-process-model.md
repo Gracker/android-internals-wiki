@@ -68,7 +68,7 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-13"
 review_round: 1
 task6_review_notes: "2026-05-13 task6 review: L1/L2 通过；本轮仅补齐 review 元数据，无新增 L3/L4 回炉项。"
-status: finalized
+status: ready-for-review
 pipeline_stage: task6_pending
 task9_state: reviewed
 task9_result: auto-fixed
