@@ -272,6 +272,129 @@ Android 17 中原子数据采集的权限边界：
 这些数据与 Perfetto Trace 中的事件时间戳结合，可以构建更完整的线上问题诊断模型。
 <!-- /AIW-源码调研-2026-06-07 -->
 
+<!-- AIW-源码调研-2026-06-08 -->
+### StatsD 配置缓存与重注册机制（对 2026-06-07 调研的延伸）
+
+⚠️ 版本说明：本节源码基于 android-16.0.0_r4（AOSP 公开仓库截至 2026-06-08 仍以 `android-16.0.0_r4` 为最高 tag，未发布 `android-17.0.0_r1`）。StatsD 模块在 Mainline 化后位于 `platform/packages/modules/StatsD/`，Android 17 内部结构预期保持一致。
+
+#### 五类本地缓存表
+
+`StatsManagerService` 在系统服务侧维护五类订阅缓存，作为 native statsd 的 authoritative state mirror：
+
+| 缓存字段 | 用途 | 注册入口 |
+|---|---|---|
+| `mPullers` | Pull atom 回调（含 coolDown / timeout / additiveFields） | `registerPullAtomCallback` |
+| `mDataFetchPirMap` | 数据拉取完成通知的 PendingIntent | `setDataFetchOperation` |
+| `mActiveConfigsPirMap` | 当前激活 config 变更通知 | `setActiveConfigsChangedOperation` |
+| `mBroadcastSubscriberPirMap` | 广播订阅者（嵌套：config → subscriberId → PIR） | `setBroadcastSubscriber` |
+| `mRestrictedMetricsPirMap` | 受限指标变更通知（嵌套：configPackage → uid → PIR） | `setRestrictedMetricsChangedOperation` |
+
+**关键设计**：调用方注册时本地缓存是 authoritative state，native 端是 mirror。`registerPullAtomCallback` 的源码片段（`StatsManagerService.java` 第 232-249 行）：
+
+```java
+// Always cache the puller in StatsManagerService. If statsd is down, we will register the
+// puller when statsd comes back up.
+synchronized (mLock) {
+    mPullers.put(key, val);
+}
+IStatsd statsd = getStatsdNonblocking();
+if (statsd == null) {
+    return;   // 不抛异常，等下次 statsdReady 时回灌
+}
+```
+
+这意味着 native statsd 崩溃重启期间，业务方的 puller / config 不会被丢弃，重启后自动恢复。
+
+#### statsdReady → sayHiToStatsd 重注链路
+
+`StatsManagerService.statsdReady(IStatsd)` 由 `StatsCompanionService` 在收到 native statsd 的 `statsdReady()` binder 调用时触发（第 715-722 行）：
+
+```java
+void statsdReady(IStatsd statsd) {
+    synchronized (mLock) {
+        mStatsd = statsd;
+        mLock.notify();   // 唤醒 waitForStatsd 中的客户端
+    }
+    sayHiToStatsd(statsd);  // 全量重注
+}
+```
+
+`sayHiToStatsd()` 串联五个 `registerAll*` 方法（第 729-742 行），每个方法都是**先在锁内拷贝 ArrayMap、释放锁、再做 IPC**，避免持锁 binder 调用。`registerAllPullers` 末尾还会调用 `statsd.allPullersFromBootRegistered()`，告诉 native 端启动期所有 puller 都已注完，native 才能放行这些 atom 的事件通过 `LogEventFilter`。
+
+#### waitForStatsd 阻塞 vs 非阻塞路径
+
+`StatsManagerService` 提供两套入口：
+
+| 入口 | 行为 | 适用 |
+|---|---|---|
+| `waitForStatsd()` | `mLock.wait(STATSD_TIMEOUT_MILLIS)`（硬编码 5 秒） | `getData`、`getDataFd`、`getMetadata`、`querySql`、`removeConfiguration` |
+| `getStatsdNonblocking()` | 不等待，立即返回（可能 null） | `registerPullAtomCallback`、`setBroadcastSubscriber`、`removeRestrictedMetricsChangedOperation` 等本地写操作 |
+
+非阻塞路径的设计意图：业务方在 boot 早期或 statsd 崩溃期间注册不应失败；阻塞路径用于真正需要从 statsd 取数据的客户端，超时后抛 `IllegalStateException("Failed to connect to statsd to ...")`。
+
+#### native 启动序列（main.cpp，170 行全量）
+
+`platform/packages/modules/StatsD/statsd/src/main.cpp` 中的 `main()` 记录了 native daemon 完整启动顺序：
+
+1. `Looper::prepare(0)` + `ABinderProcess_setThreadPoolMaxThreadCount(9)` + `ABinderProcess_startThreadPool()`
+2. `FlagProvider::getInstance().initBootFlags({})`
+3. 创建 `LogEventQueue`（buffer 上限 **50000**，未预分配）
+4. 创建 `UidMap` 和 `LogEventFilter`
+5. **早于** StatsService 启动 `gSocketListener->startListener()`（接收 logd 推送）；注释解释："Start reading events from the socket as early as possible. Processing from the queue is delayed until StatsService::startup to allow config initialization to occur before we start processing atoms."
+6. 创建 `StatsService` 并通过 `AServiceManager_addService(binder.get(), "stats")` 注册为 AIDL 服务
+7. `gStatsService->sayHiToStatsCompanion()` —— native 主动发起反向 binder 调用，触发 `StatsCompanionService.statsdReady()`，最终回灌 `StatsManagerService` 的本地缓存
+8. `gStatsService->Startup()` 初始化 config / metric 处理器
+
+Android 14+ 的 `flags::use_iouring()` 在内核支持时切换 `StatsSocketListenerIoUring`（基于 io_uring），降低事件接收延迟。
+
+#### 完整调用链
+
+```
+native statsd main()
+  └─> gSocketListener->startListener()        // 接收 logd 推送的 logd -> statsd socket
+  └─> AServiceManager_addService("stats")     // 注册为 binder 服务
+  └─> StatsService::sayHiToStatsCompanion()
+        └─> binder 到 StatsCompanionService.statsdReady()
+              └─> StatsCompanionService.sayHiToStatsd()     // 建立反向 IStatsd 引用
+              └─> sendStatsdReadyBroadcast()                // SdkLevel ≥ S 时 broadcast
+              └─> StatsManagerService.statsdReady(IStatsd)
+                    └─> mLock.notify()                       // 唤醒 waitForStatsd
+                    └─> StatsManagerService.sayHiToStatsd(statsd)
+                          ├─> registerAllPullers()
+                          ├─> registerAllDataFetchOperations()
+                          ├─> registerAllActiveConfigsChangedOperations()
+                          ├─> registerAllBroadcastSubscribers()
+                          └─> registerAllRestrictedMetricsChangedOperations()
+                                └─> 最后调用 statsd.allPullersFromBootRegistered()
+```
+
+#### 权限校验细节
+
+`StatsManagerService` 中四个权限检查点（`StatsManagerService.java` 第 645-693 行）：
+
+- `enforceDumpAndUsageStatsPermission(packageName)`：DUMP + PACKAGE_USAGE_STATS + AppOps `android:get_usage_stats`。`callingPid == Process.myPid()` 时直接返回（系统服务自身调用跳过）。
+- `enforceRestrictedStatsPermission()`：READ_RESTRICTED_STATS，用于受限指标 / querySql。
+- `enforceRegisterStatsPullAtomPermission()`：REGISTER_STATS_PULL_ATOM。
+- 客户端进程必须先获得 `PACKAGE_USAGE_STATS` 签名权限，再拿到 AppOps 授权，才能 addConfiguration / getData。
+
+#### 性能特征
+
+- **重注开销**：statsd 重启时 `sayHiToStatsd()` 是 O(N) IPC（N 为注册项数）。业务方在 boot 早期注册成百上千个 puller 时，重启期间 binder 调用会成为短时瓶颈。
+- **内存**：`LogEventQueue` 上限 50000 条，每条几十到几百字节；满载时 native RSS 数十 MB。
+- **权限校验**：`enforceDumpAndUsageStatsPermission` 每次 addConfiguration / getData 都会触发 DUMP + PACKAGE_USAGE_STATS 双权限检查 + AppOps 查询。
+- **wake lock**：`getData` / `getDataFd` 持 `PARTIAL_WAKE_LOCK` 直到 binder 返回，避免 statsd 在数据 flush 期间被休眠中断。
+
+#### 对线上排查的指导意义
+
+理解这条缓存重注链路后，可以更准确判断 StatsD 相关的线上问题：
+
+- "业务调用了 `registerPullAtomCallback` 但 native 端没收到"：检查 native statsd 是否重启过；如果是，配置会在 `sayHiToStatsd` 后自动回灌，但中间窗口期（最长 5 秒阻塞 + IPC 时间）数据会有缺失。
+- "addConfiguration 偶尔报 IllegalStateException"：statsd 重启期间调用 `waitForStatsd()` 超时返回 null 抛出；可在客户端加重试，但要注意幂等性。
+- "受限指标拿不到数据"：检查 `READ_RESTRICTED_STATS` 权限是否授予以及 AppOps `android:get_usage_stats` 是否启用。
+- "statsd 进程 OOM"：`LogEventQueue` 50000 上限在高频 atom 推送场景可能成为瓶颈；可通过 config 的 metric 过滤或 pull 化降低事件流。
+<!-- /AIW-源码调研-2026-06-08 -->
+
+
 ## 小结
 
 线上排障要把“猜问题”改成“补证据”。远程日志提供业务现场，用户反馈提供复现入口，Trace 提供时间线，灰度环境提供风险隔离。四件事连在一起，才能把偶发问题从一次投诉变成可验证、可回滚、可复盘的工程事件。

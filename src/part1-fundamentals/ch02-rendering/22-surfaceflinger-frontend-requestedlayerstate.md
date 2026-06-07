@@ -47,7 +47,7 @@ last_task9_autofix_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
 task2b_result: auto-fixed
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
+last_deepseek_cn_review_at: 2026-06-08
 ---
 
 # 2.22 SurfaceFlinger FrontEnd 与 RequestedLayerState
@@ -93,7 +93,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 旧版 SurfaceFlinger 资料通常从 `Layer`、BufferQueue、HWC 协商开始讲。这个视角适合解释“画面怎么合成”，但不够解释 Android 15 之后越来越常见的另一个问题：大量 `SurfaceControl.Transaction` 到达 SurfaceFlinger 之后，系统怎样判断哪些事务能进本帧、哪些 Layer 状态需要重新计算、哪些信息可以直接交给合成引擎。
 
-FrontEnd 补上的就是这段状态处理路径。AOSP `FrontEnd/readme.md` 对它的定位是：接收描述 buffer 合成方式的客户端 API，消费 transaction，维护 layer 生命周期，并在每一帧给 CompositionEngine 提供一份 snapshot。换成排查语言：FrontEnd 把 App、WMS、Shell 提交的请求整理成层级和快照，供后续合成阶段直接使用。
+FrontEnd 补上的就是这段状态处理路径。按 AOSP `FrontEnd/readme.md` 的定位，FrontEnd 接收客户端对 buffer 合成方式的描述，处理 transaction，维护 layer 生命周期，并在每一帧为 CompositionEngine 提供 snapshot。换成排查语言：FrontEnd 把 App、WMS、Shell 提交的请求整理成层级和快照，供后续合成阶段直接使用。
 
 [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/FrontEnd/readme.md`]
 
@@ -132,7 +132,7 @@ FrontEnd 的设计把两类状态拆开：`RequestedLayerState` 保存客户端�
 
 `RequestedLayerState` 继承自 `layer_state_t`。`layer_state_t` 是 transaction 里携带的属性集合，`RequestedLayerState` 在此基础上增加了 layer id、name、owner uid / pid、父子关系 id、mirror id、acquire fence、external texture、请求帧率、debugName、pending buffer 计数等服务器端字段。
 
-AOSP 代码注释里还有一个容易忽略的设计点：与其他 layer 的关系用 layer id 表示，而不是继续持有 layer handle。这样做可以避免状态对象无意中延长 handle 生命周期，销毁逻辑交给 `LayerLifecycleManager` 管理。
+AOSP 代码注释里还有一个容易忽略的设计点：与其他 layer 的关系用 layer id 表示，而不是继续持有 layer handle。这样状态对象不会因持有 handle 而无意延长其生命周期，销毁逻辑统一由 `LayerLifecycleManager` 管理。
 
 [已验证: AOSP android-15.0.0_r1 / android-16.0.0_r1, `RequestedLayerState.h`]
 

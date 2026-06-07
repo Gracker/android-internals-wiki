@@ -408,6 +408,7 @@ tags:
   - [22.19 RuntimeColorFilter 与 RuntimeXfermode 性能实践](part5-app/ch22-rendering-practice/19-runtimecolorfilter-runtimexfermode-performance.md)
   - [22.20 Jetpack Compose 性能优化盲区：rememberCoroutineScope、produceState 与 Strong Skipping](part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md)
   - [22.21 Jetpack Compose 动画性能深度优化](part5-app/ch22-rendering-practice/21-compose-animation-performance.md)
+  - [22.22 Compose LazyList/LazyGrid 滑动性能深度优化](part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)

@@ -2179,6 +2179,27 @@
       "priority": 80,
       "source": "task2a-gap-20260607",
       "status": "pending"
+    },
+    {
+      "section": "4.6",
+      "section_title": "内存相关的版本演进",
+      "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "priority": 90,
+      "reason": "[时效性巡检 2026-06-08] last_verified=2026-03-31 (69天逾期, 30天阈值), 缺少 Android 17/API 37 覆盖; 需要补充 ART Generational GC 稳定版、App Memory Limiter、CMC 版本边界更正",
+      "status": "pending",
+      "added_by": "task3-freshness-check",
+      "added_at": "2026-06-08T02:00:00+08:00",
+      "missing_content": [
+        "Android 17 API 37: ART Generational GC 稳定版",
+        "Android 17 API 37: App Memory Limiter (应用内存限制器)",
+        "CMC 版本边界更正: android-14.0.0_r1 已有源码路径 (Task9 2026-05-13 已确认)",
+        "applicable_versions 需要扩展到 Android 17 (API 37)"
+      ],
+      "last_verified": "2026-03-31",
+      "days_overdue": 69,
+      "threshold_days": 30,
+      "category": "version_evolution",
+      "risk_level": "high"
     }
   ],
   "5.18": {
@@ -2229,6 +2250,16 @@
       "source": "task2a-gap-mining",
       "created_date": "2026-06-07",
       "gap_score": 17
+    },
+    {
+      "id": "task2a-gap-20260608-22.22-compose-lazylist-performance",
+      "section": "22.22",
+      "title": "Compose LazyList/LazyGrid 滑动性能深度优化",
+      "file": "src/part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md",
+      "priority": 80,
+      "source": "task2a-gap-mining",
+      "created_at": "2026-06-08T05:05:00+08:00",
+      "status": "pending"
     }
   ]
 }

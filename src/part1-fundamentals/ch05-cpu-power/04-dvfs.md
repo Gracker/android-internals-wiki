@@ -78,6 +78,8 @@ last_task9_review_log: logs/deep-review/2026-06-07-19-deep-review.md
 task9_review_notes: "2026-06-07 19:20 Task9 pass-tech-review：P0 0 / P1 0 / P2 0；复核今日 auto-fix 结果通过，queue 无 pending，自动晋升 finalized。 | 2026-06-07 18:20 Task9 auto-fixed：P2 3；收紧 Perfetto/SCMI 频率口径、修正 7.3 相对链接、修正 scaling_cur_freq 与 thermal trip point 设备边界。回到 Task6 复审。 | 2026-06-07 17:20 Task9 auto-fixed：P0 2；修正 GameManagerService loading power mode 入口为 setGameState/notifyGraphicsEnvironmentSetup，并将 Power HAL Mode 枚举 CAMERA 修为 CAMERA_STREAMING_*。回到 Task6 复审。 | 2026-06-07 17:05 Task6 revisiting pass-light-edit. L1 禁用词「落地」→「实现于」1处. 送Task9复审. | 2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
 last_task9_audit: '2026-06-07'
 review_type: task9-deep-tech-review
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-08
 ---
 
 
@@ -550,9 +552,8 @@ schedutil 是一个通用方案，它对典型 Android 应用场景做了优化�
 - GPU 性能原理：腾讯技术工程《GPU 性能原理拆解》
 
 <!-- AIW-源码调研-2026-06-01 · 2026-06-07 Task2B 回炉修复：修正 GameManager/Power HAL 调用链与移除不可验证 android-17 tag -->
-## 补充：游戏调度框架与 Power HAL 协同
+## 游戏调度框架与 Power HAL 协同
 
-*来源：2026-06-01 每日源码调研 | 关联选题：荣耀MUSCHED移动设备调度优化方案*
 
 > **版本说明**：截至 2026-06-07，AOSP 公开 Gitiles `refs/tags/android-17.0.0_r1` 尚未发布。以下源码锚点以 `android-16.0.0_r1` 为最新可验证 tag；Android 17/API 37 的游戏调度行为以上线设备行为为准，AOSP 确认需待 tag 公开后复核。
 
