@@ -2163,6 +2163,22 @@
       "status": "completed",
       "completed_at": "2026-06-07T16:52:35+08:00",
       "completed_by": "task2b-main"
+    },
+    {
+      "section": "10.8",
+      "title": "GPU / 图形内存统计与实战监控",
+      "file": "src/part2-performance/ch10-memory-perf/08-gpu-memory-tracking.md",
+      "priority": 80,
+      "source": "task2a-gap-20260607",
+      "status": "pending"
+    },
+    {
+      "section": "14.23",
+      "title": "StrictMode 性能检查与开发期诊断",
+      "file": "src/part3-tools/ch14-other-tools/23-strictmode-performance-diagnostics.md",
+      "priority": 80,
+      "source": "task2a-gap-20260607",
+      "status": "pending"
     }
   ],
   "5.18": {

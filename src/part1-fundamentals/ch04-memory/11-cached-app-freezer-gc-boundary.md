@@ -54,7 +54,7 @@ task2b_state: fixed
 last_task9_autofix_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
+last_deepseek_cn_review_at: 2026-06-07
 task2b_result: auto-fixed
 ---
 
@@ -99,11 +99,11 @@ task2b_result: auto-fixed
 
 ## 冻结处理 CPU 空转，保留进程内存
 
-Cached App Freezer 处理的是 cached 进程退到后台后仍然消耗 CPU 的问题。进程已经没有可见界面，也没有前台服务这类活跃组件，却可能因为定时器、线程池、回调分发或遗留 Binder 引用继续运行。系统如果直接杀掉它，可以释放内存；如果只把它留在 LRU 列表里，它仍可能消耗调度时间。
+Cached App Freezer 要解决的问题很明确：cached 进程退到后台后，虽然没有可见界面也没有前台服务这类活跃组件，却可能因为定时器、线程池、回调分发或遗留 Binder 引用继续消耗 CPU。系统如果直接杀掉它，可以释放内存；如果只把它留在 LRU 列表里，它仍可能消耗调度时间。
 
 Freezer 给 Android 增加了一个中间态：进程还在 RAM 里，Java Heap、Native Heap、mmap 区域、文件描述符和运行时状态仍保留，但线程被迁移到 frozen cgroup 后不再获得 CPU 时间。AOSP 文档把这个动作描述为“将 cached 进程迁移到 frozen cgroup”，目标是减少 active cached apps 带来的 active/idle CPU 消耗。[已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer]
 
-这个定位决定了排障边界：
+这个定位划出了几条排障边界：
 
 | 现象 | Freezer 的作用 | 不该推导出的结论 |
 | --- | --- | --- |
@@ -116,7 +116,7 @@ Android Developers 的进程生命周期文档也给了同一层语义：cached 
 
 ## OOM Adj 只是入口条件
 
-Freezer 和 LMK 都会参考进程重要性，但两者的动作不同。Freezer 暂停执行，LMK/lmkd 杀进程释放内存。把这两条路径合成“低内存处理”会让线上归因跑偏。
+决定“冻谁”之前，先要搞清楚“怎么判断谁该冻”。Freezer 和 LMK 都会参考进程重要性，但两者的动作不同。Freezer 暂停执行，LMK/lmkd 杀进程释放内存。把这两条路径合成“低内存处理”会让线上归因跑偏。
 
 `ProcessList.java` 与 `ActivityManagerConstants.java` 里与本节相关的值很少：
 
@@ -211,7 +211,7 @@ Binder Freezer 是 cached app freezer 最容易在业务侧显形的部分。应
 
 ## 16KB Page Size 改变页粒度，不改变 freezer 语义
 
-16KB Page Size 与 Freezer 容易被放到一起讨论，因为二者都会影响内存观测口径。官方 16KB 文档说明，从 Android 15 开始 AOSP 支持 16KB page size 设备；Google Play 从 2025-11-01 起要求 target Android 15+ 的 64 位新应用和更新支持 16KB page sizes。文档也给出方向性测试结果：16KB 设备平均使用稍多内存，但在启动耗时、启动功耗、相机启动和系统启动方面有收益。[已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
+Binder Freezer 解决的是 frozen 进程的 IPC 行为问题；还有一个话题在内存分析中经常被和 freezer 并列提起：16KB Page Size。两者容易被放到一起讨论，因为二者都会影响内存观测口径。官方 16KB 文档说明，从 Android 15 开始 AOSP 支持 16KB page size 设备；Google Play 从 2025-11-01 起要求 target Android 15+ 的 64 位新应用和更新支持 16KB page sizes。文档也给出方向性测试结果：16KB 设备平均使用稍多内存，但在启动耗时、启动功耗、相机启动和系统启动方面有收益。[已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
 
 这类变化影响的是页表、TLB 覆盖范围、ELF segment 对齐、native allocation 对齐和 page fault 计数。它会改变 `dumpsys meminfo`、RSS/PSS、匿名页、zRAM 回收这类指标的观察粒度，但不会把 freezer 变成 GC 触发器。
 

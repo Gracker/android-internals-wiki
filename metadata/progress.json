@@ -1,6 +1,6 @@
 {
-  "total": 352,
-  "draft": 0,
+  "total": 354,
+  "draft": 2,
   "ready-for-review": 78,
   "finalized": 271,
   "task9_result": "auto-fixed/pass-tech-review",
@@ -7561,6 +7561,32 @@
       "task6_state": "revisiting",
       "verifier_note": "fixed inconsistent t2b_state",
       "verifier_updated": "2026-06-06T19:28"
+    },
+    "10.8": {
+      "section": "10.8",
+      "title": "GPU / 图形内存统计与实战监控",
+      "file": "src/part2-performance/ch10-memory-perf/08-gpu-memory-tracking.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-06-07",
+      "gap_source": "AOSP结构/章节深挖/官方文档",
+      "gap_score": 16,
+      "material_count": 4,
+      "queue_priority": 80
+    },
+    "14.23": {
+      "section": "14.23",
+      "title": "StrictMode 性能检查与开发期诊断",
+      "file": "src/part3-tools/ch14-other-tools/23-strictmode-performance-diagnostics.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-06-07",
+      "gap_source": "AOSP结构/官方文档/章节深挖",
+      "gap_score": 15,
+      "material_count": 3,
+      "queue_priority": 80
     }
   },
   "task2b_rounds": [
@@ -9945,21 +9971,19 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-07",
-    "time": "16:07",
+    "time": "22:04",
     "mode": "gap-mining",
     "created_sections": [
-      "9.9",
-      "14.21",
-      "14.22"
+      "10.8",
+      "14.23"
     ],
     "created_files": [
-      "src/part2-performance/ch09-anr/09-contentprovider-anr-double-path.md",
-      "src/part3-tools/ch14-other-tools/21-ebpf-bpfloader-architecture.md",
-      "src/part3-tools/ch14-other-tools/22-hprof-heapdump-javahprof-datasource.md"
+      "src/part2-performance/ch10-memory-perf/08-gpu-memory-tracking.md",
+      "src/part3-tools/ch14-other-tools/23-strictmode-performance-diagnostics.md"
     ],
-    "candidate_count": 6,
-    "qualified_count": 3,
-    "source": "素材驱动/DeepResearch/AOSP结构"
+    "candidate_count": 4,
+    "qualified_count": 2,
+    "source": "AOSP结构/章节深挖/官方文档/Clippings结构参考"
   },
   "task9_last_sections": [
     "11.2"

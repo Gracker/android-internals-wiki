@@ -81,7 +81,7 @@ p1: 0
 p2: 1
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
+last_deepseek_cn_review_at: 2026-06-07
 ---
 
 
@@ -116,7 +116,7 @@ last_deepseek_cn_review_at: 2026-06-05
 
 ## 为什么需要了解后台任务调度
 
-在 Perfetto 中分析功耗问题时,我们经常看到一个现象:CPU 被频繁唤醒,每次只运行几十毫秒,然后又回到低功耗状态。这些碎片化的唤醒往往来自 App 的后台任务--定时同步、数据上报、日志上传、资源预取。单独看每个任务的 CPU 时间都不长,但累积起来,它们阻止了 CPU 进入深度休眠,导致待机功耗飙升。
+在 Perfetto 中分析功耗时，反复出现一种模式：CPU 被频繁唤醒，每次只跑几十毫秒，然后又落回低功耗状态。这些碎片化唤醒往往来自 App 的后台任务——定时同步、数据上报、日志上传、资源预取。单独看每个任务的 CPU 时间都不长,但累积起来,它们阻止了 CPU 进入深度休眠,导致待机功耗飙升。
 
 Android 提供了多种后台执行方式:Thread + Handler、Service、AlarmManager、JobScheduler、WorkManager、Foreground Service。选择哪一种不只是 API 偏好问题--选错了会直接导致系统级功耗问题,而且从 Android 8.0 开始,很多"老办法"已经被系统限制甚至禁止。
 
@@ -130,7 +130,7 @@ JobScheduler 和 WorkManager 是 Google 推荐的后台任务方案。JobSchedul
 
 在 JobScheduler 出现之前,Android 开发者通常用 AlarmManager + WakeLock 的组合做周期性后台任务。这种模式有一个直接问题:每个 App 各自为政,各自唤醒设备,系统没有机会做批量优化。
 
-假设设备上有 10 个 App 都设置了每 15 分钟一次的 AlarmManager 唤醒,最坏情况下,系统每 1.5 分钟就要被唤醒一次。而如果系统有全局视野,它可以把这些任务攒在一起,每隔 15 分钟集中执行一批,中间让 CPU 安静地休眠。
+假设设备上有 10 个 App 都设置了每 15 分钟一次的 AlarmManager 唤醒,结果系统每 1.5 分钟就要被唤醒一次。而如果系统有全局视野,它可以把这些任务攒在一起,每隔 15 分钟集中执行一批,中间让 CPU 安静地休眠。
 
 JobScheduler 的设计目标是:**把调度权交给系统**。开发者声明"我的任务需要什么条件才能跑",系统在全局范围内优化执行时机。
 
@@ -244,7 +244,7 @@ val request = OneTimeWorkRequestBuilder<SyncWorker>()
 
 ### 为什么有了 JobScheduler 还需要 WorkManager
 
-JobScheduler 是系统 API,从 Android 5.0 开始可用。但实际开发中存在几个问题:
+JobScheduler 是系统 API,从 Android 5.0 开始可用。但工程上还有几个实际困难：
 
 1. **版本兼容性**:JobScheduler 的很多特性(如配额控制、Expedited Job)在高版本才加入,低版本行为不一致
 2. **任务持久化**:虽然 JobStore 会持久化任务,但 App 被强制停止后任务可能丢失
@@ -456,7 +456,7 @@ Android Studio 提供了 **WorkManager Inspector**(View → Tool Windows → App
 
 [来源: 实战经验总结]
 
-技术优化做到位之后,还有一层约束来自应用分发侧:Google Play Store 从 2026 年开始对后台行为实施惩罚性政策。App 的后台 WakeLock 使用超标,不仅系统侧会被限制执行,Play Store 的搜索和推荐权重也会下降。
+技术优化做完之后，还有一层约束来自分发侧：Google Play Store 对后台行为施加了惩罚性政策。App 的后台 WakeLock 超标，不仅系统侧限制执行，Play Store 的搜索和推荐权重也会跟着下降。
 
 ## Play Store 后台行为政策
 
