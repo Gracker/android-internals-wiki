@@ -2,7 +2,7 @@
 title: Android View 多窗口渲染路径
 chapter: '18.5'
 section: '18.5'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 9 (API 28) - Android 16 (API 36)
 last_verified: '2026-05-07'
 last_verified_against: AOSP Choreographer/ViewRootImpl/RenderThread references + EGL
@@ -19,12 +19,12 @@ related_chapters:
 - '18.2'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-05-10T07:17:00+08:00'
+last_task2b_at: '2026-06-07T10:50:00+08:00'
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-07'
 task6_result: pass-light-edit
@@ -33,7 +33,8 @@ sources:
 - AOSP frameworks/base/core/java/android/view/ViewRootImpl.java
 - AOSP frameworks/base/libs/hwui/renderthread/RenderThread.cpp
 - EGL 1.5 Specification
-task9_result: needs-rework
+task9_result: pending
+task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题。2026-06-07 Task2B 主修复：修正 PopupWindow 窗口独立性描述；修正交叉引用路径（part1-foundation→part1-fundamentals）。"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-07'
 last_task6_at: '2026-05-07T06:10:00+08:00'
@@ -80,7 +81,7 @@ task9_review_notes: 2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分
 以下场景中,多个活跃窗口共享同一个进程的 UI Thread 和 RenderThread:
 
 1. **Dialog / AlertDialog / BottomSheetDialog**:打开 Dialog 时,背后的 Activity 依然可见且仍在绘制。`WindowManager` 会为 Dialog 创建独立的 Surface,但绘制仍然排在同一个 UI Thread 上 [已验证: Android WindowManager 源码]。
-2. **PopupWindow**:虽然不是独立 Window,但在某些实现中会有独立的 Surface。
+2. **PopupWindow**:通过 `WindowManager.addView()` 创建独立 Window，拥有独立 Surface。与 Dialog 同理——两者都走 `WindowManager.addView()` 路径挂载窗口，均产生独立 Window 和 Surface。
 3. **同 App 多 Activity 可见**:同一 App 内两个 Activity 同时处于可见/RESUMED 状态(如 TaskFragment / Activity Embedding)。
 4. **Activity Embedding(Android 12L+)**:在同一个 Task 内嵌入多个 Activity,常用于大屏 / 折叠屏的 list-detail 布局。仍然是同进程,串行竞争规则适用;WMS 层把这些 Activity 组织进同一个 `Task`,几何变化要用 `WindowContainerTransaction` 协调。
 
@@ -347,5 +348,5 @@ getWindow().getDecorView().post(() -> {
 
 > **交叉引用**:
 > - 标准 BLAST 管线中的 Choreographer 和 SyncFrameState 详见 [18.2 Android View 标准管线](02-android-view-standard.md)
-> - EGLContext 与 EGLSurface 的管理详见 [2.14 图形 API 演进](../../part1-foundation/ch02-graphics-foundation/)
-> - SurfaceFlinger 多 Layer 合成详见 [2.5 SurfaceFlinger](../../part1-foundation/ch02-graphics-foundation/)
+> - EGLContext 与 EGLSurface 的管理详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
+> - SurfaceFlinger 多 Layer 合成详见 [2.6 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)

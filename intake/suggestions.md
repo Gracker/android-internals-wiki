@@ -1,66 +1,24 @@
-## [2026-06-07 04:05] Task 2A Gap Mining（第 15 轮）
+## [Task 2A Gap Mining] 2026-06-07 09:07 (Round 18)
 
-- 检查方向：source-index 219 条（204 条未映射，均已扫描或非性能主题）、DeepResearch 06-07 新增 1 篇（commercial APM SDK 版本边界 → 已映射 19.18）、06-06 新增 8 篇（均映射已有章节）、daily-info 06-05~06-06（掘金/ClawFeed/增量扫描均映射已有章节）、research-feeds（2026-04-14 后无新更新）、Clippings 三本参考书（全覆盖）、AOSP 框架/系统/模块层（26 Chapter 372 节全覆盖）
-- 无评分 ≥ 14 的知识缺口
-- 全书 372 节（289 finalized + 83 ready-for-review + 0 draft + 40 misc/no-fm），覆盖率饱和
-- 连续 11+ 轮空跑
-- 重申建议：暂停 gap mining cron 频次或转为仅在有新素材注入时触发
-- 当前首要瓶颈：Task 6 审核 83 节 ready-for-review
-- ready-for-review 分布：ch22(8节) > ch24(7节) > ch14(6节) = ch04(6节) > ch26(5节) > ch17(3节) = ch11(3节) = ch20(3节) = ch23(3节) = ch25(3节) = ch05(3节) = ch03(3节)
-
-## [2026-06-07 03:13] Task 2A Gap Mining（第 14 轮）
-
-- 检查方向：source-index 213 条未映射（全面扫描，均已有对应章节或非性能主题）、DeepResearch 06-06~06-07 新增 8 篇（commercial APM/eBPF loader/native app lock/ContentProvider ANR/HPROF heap dump/thermal/SurfaceTexture/FinalizerDaemon — 全部映射已有章节）、daily-info 06-06（ClawFeed+增量扫描均映射已有章节）、research-feeds（无新更新）、Clippings 三本参考书（全覆盖）、AOSP 框架/系统/模块层（372 节全覆盖）
-- 无评分 ≥ 14 的知识缺口
-- 全书 372 节（291 finalized + 80 ready-for-review + 0 draft + 1 misc），覆盖率饱和
-- 连续 10+ 轮空跑
-- 重申建议：暂停 gap mining cron 频次或转为仅在有新素材注入时触发
-- 当前首要瓶颈：Task 6 审核 80 节 ready-for-review
-- ready-for-review 分布：ch22(8节) > ch24(7节) > ch14(6节) = ch04(6节) > ch26(5节) > ch17(3节) = ch11(3节) = ch20(3节) = ch23(3节) = ch25(3节) = ch05(3节) = ch03(3节)
+- Direction: source-index 6 high-quality unmapped (interview ref->not chapter material; Tare->ch11.8; ltrace->niche; MUSCHED VIP->ch17.5; PMS Staged Install->ch01.9+ch01.23; Compose blind spots->ch22.20), DeepResearch 5 unmapped (all mapped to existing chapters), daily-info 06-07 (no new performance content), research-feeds (no update since April), Clippings (fully covered), AOSP (all 26 chapters 349 sections covered)
+- No gap scored >= 14
+- Book: 349 sections (269 finalized + 79 ready-for-review + 0 draft + 1 misc), coverage saturated
+- 18+ consecutive empty runs
+- Recommendation: pause gap mining cron or trigger only on new material injection
+- Bottleneck: Task 6 review of 79 ready-for-review sections
 
 
-## [2026-06-07 00:07] Task 2A Gap Mining
+## [Task2B 主修复] 2026-06-07 10:50 — 状态不一致清理
 
-- AOSP/Clippings/DeepResearch/daily-info 全方向已检查
-- 无评分 >= 14 的知识缺口
-- 全书 349 节（269 finalized + 80 ready-for-review），覆盖率饱和
-- 首要任务：推进 ready-for-review 进入 Task 6 审核
+本轮发现 5 个章节存在 `task9_result: needs-rework` 但 `pipeline_stage: ready-to-publish` 的状态不一致：
 
-## [2026-06-07 01:09] Task 2A Gap Mining（第 12 轮）
+**已修复（2 章）：**
+- 3.1 Input 事件分发：修正 `HwTimeoutMultiplier()` 版本表入口（Android 13 已存在，非 14+）；修复 frontmatter 重复 `pipeline_stage` 键。
+- 18.5 Android View 多窗口：修正 PopupWindow "不是独立 Window" 为准确描述；修正交叉引用路径（`part1-foundation` → `part1-fundamentals`）。
 
-- 检查方向：source-index 6 条高质未映射（均已有对应章节）、DeepResearch 06-06 新增 7 篇（均为已有章节源码验证）、daily-info 06-06（ClawFeed+增量扫描均映射已有章节）、research-feeds（4 月后无更新）、Clippings 三本参考书（全覆盖）、AOSP 框架/系统/模块层（17 Chapter 372 节全覆盖）
-- 无评分 ≥ 14 的知识缺口
-- 全书 372 节（291 finalized + 80 ready-for-review + 1 misc），覆盖率饱和
-- 连续 8+ 轮空跑
-- 建议：暂停 gap mining cron 频次或转为仅在有新素材注入时触发
+**待处理（3 章，缺 task9 问题上下文）：**
+- 4.4 Low Memory Killer：`task9_result: needs-rework`，无 `last_task9_review_log`，无 `task9_review_notes`。需确认 Task9 问题来源。
+- 8.10 ProfilingManager：`task9_result: needs-rework`，无 `last_task9_review_log`，无 `task9_review_notes`。需确认 Task9 问题来源。
+- 14.2 Simpleperf：`task9_result: needs-rework`，无 `last_task9_review_log`，无 `task9_review_notes`。需确认 Task9 问题来源。
 
-## [2026-06-07 02:04] Task 2A Gap Mining（第 13 轮）
-
-- 检查方向：source-index 204 条未映射项（已全面扫描）、DeepResearch 06-06 新增 7 篇（均映射已有章节）、daily-info 06-06（均映射已有章节）、research-feeds（无更新）、Clippings 三本参考书（全覆盖）、AOSP 框架/系统/模块层（349 节全覆盖）
-- 无评分 ≥ 14 的知识缺口
-- 全书 349 节（269 finalized + 79 ready-for-review + 0 draft + 1 misc），覆盖率饱和
-- 连续 9+ 轮空跑
-- 重申建议：暂停 gap mining cron 频次或转为仅在有新素材注入时触发
-- 当前首要瓶颈：Task 6 审核 79 节 ready-for-review
-
-## [2026-06-07 05:20] Task 2A Gap Mining（第 14 轮）
-
-- 检查方向：research-feeds（无更新，最后 4 月）、daily-info 06-07（无新性能相关素材可挖掘）、source-index 高质未映射均已映射已有章节、AOSP 框架/系统/模块层（17 Chapter 372 节全覆盖）
-- 无评分 ≥ 14 的知识缺口
-- 全书 372 节（291 finalized + 81 ready-for-review + 0 draft），覆盖率饱和
-- 连续 10+ 轮空跑
-- 重申建议：暂停 gap mining cron 频次或转为仅在有新素材注入时触发
-- 当前首要瓶颈：Task 6 审核 81 节 ready-for-review
-
-
-## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-06-07
-- **类型**：数据缺失/示例准确性
-- **位置**：4.2 EXPLAIN QUERY PLAN 的使用
-- **问题**：示例 SQL 对 `conversation_id = 42 ORDER BY date` 且存在 `(conversation_id, date)` 复合索引时，实际输出更接近 `SEARCH messages USING INDEX idx_msg_conv_date (conversation_id=?)`；正文示例写成 `SCAN messages USING INDEX idx_msg_conv_date`，会弱化等值条件命中索引的判断。
-- **建议**：把示例输出和解读区分为 `SEARCH ...` 精确查找、`SCAN ... USING INDEX` 索引顺序扫描、无索引全表扫描三类，并标注 SQLite 版本输出文本可能略有差异。
-
-## [Task9 Deep Review] 18.9 Vulkan 原生渲染管线 — 2026-06-07
-- **类型**：源码准确性/官方命令
-- **位置**：Trace 视角 / 调试工具 / Validation Layers 示例命令
-- **问题**：示例仍包含 `adb shell setprop debug.vulkan.enable 1`，官方 Android Vulkan validation layer 文档的稳定流程是 per-app GPU debug layer settings，或全局 `debug.vulkan.layers` 到下次重启；未使用 `debug.vulkan.enable` 作为稳定入口。
-- **建议**：后续修文时改为 `settings put global enable_gpu_debug_layers 1`、`gpu_debug_app`、`gpu_debug_layers`、`gpu_debug_layer_app`，并保留 `setprop debug.vulkan.layers` 作为全局临时方案。
+建议：这 3 章如果在最近的 deep-review audit log 中有记录，可由后续 Task2B 轮次索引修复；若无记录，考虑重置 `task9_result` 为 `pending` 并重新走 Task9。

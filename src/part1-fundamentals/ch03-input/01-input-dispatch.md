@@ -6,12 +6,8 @@ section: '3.1'
 last_task6_at: "2026-05-30T01:05:00+08:00"
 last_task2b_lite_at: "2026-05-30"
 task2b_lite_notes: "修复代码块语言标记;小修 4 处裸 ``` 为 ```text;更新 frontmatter 状态"
-pipeline_stage: "task6_pending"
-task2b_state: "fixed"
-task2b_result: "fixed-lite"
 last_task6_review_log: "logs/review/2026-05-30-01-review.md"
 task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。"
-pipeline_stage: "ready-to-publish"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -31,15 +27,16 @@ path: https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture
 tags: 
 related_chapters: 
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
 task6_reviewed_date: "2026-05-30"
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: "finalized"
-task2b_result: "completed"
-task2b_notes: "修复 Task6 2026-05-30 回炉问题:移除未进入 Android 17 的 DeliQueue 推测内容，清理参考资料后未融合的源码调研素材块。"
+task9_state: pending
+task9_result: pending
+task2b_state: "fixed"
+task2b_result: "fixed"
+task2b_notes: "修复 Task6 2026-05-30 回炉问题:移除未进入 Android 17 的 DeliQueue 推测内容，清理参考资料后未融合的源码调研素材块。2026-06-07 Task2B 主修复：修正 HwTimeoutMultiplier() 版本表入口（Android 13 已存在）；修复 frontmatter 重复 pipeline_stage 键。"
 task2b_fixed_by: openclaw-task2b
-task2b_fixed_at: "2026-05-30T18:55:00+08:00"
+task2b_fixed_at: "2026-06-07T10:50:00+08:00"
 task9_reviewed_date: "2026-05-21"
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-05-30T09:20:00+08:00
@@ -610,8 +607,8 @@ Input 事件通过 `socketpair` 传递,不是 `Binder`。这一点在面试中�
 | 版本 | 已核验变化 |
 |------|------------|
 | Android 12 (API 31) | `InputDispatcher.cpp` 中的 stale 判定是静态 `isStaleEvent(...)`;窗口信息仍走 `setInputWindows()` 路径;触摸分类使用 `InputClassifier.cpp` |
-| Android 13 (API 33) | 引入 `DispatcherWindowListener` / `addWindowInfosListener()`;`setInputWindows()` 仍作为兼容入口存在 |
-| Android 14 (API 34) | 触摸分类路径演进为 `InputProcessor.cpp`;默认 dispatch timeout 使用 `std::chrono` + `HwTimeoutMultiplier()` |
+| Android 13 (API 33) | 引入 `DispatcherWindowListener` / `addWindowInfosListener()`;`setInputWindows()` 仍作为兼容入口存在;stale/dispatch timeout 路径已出现 `HwTimeoutMultiplier()` |
+| Android 14 (API 34) | 触摸分类路径演进为 `InputProcessor.cpp`;默认 dispatch timeout 改用 `std::chrono` 写法,`HwTimeoutMultiplier()` 延续 Android 13 已引入的机制 |
 | Android 15 (API 35) | stale 判定改为 `mPolicy.isStaleEvent(currentTime, entry.eventTime)` |
 | Android 16 (API 36) | stale 判定路径延续 Android 15;AOSP 主线仍没有默认把 inputflinger 独立成单独进程 |
 
