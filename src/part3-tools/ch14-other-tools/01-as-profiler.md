@@ -53,6 +53,8 @@ p1: 0
 p2: 0
 updated_date: "2026-05-28"
 updated_by: openclaw-task9
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-08
 ---
 
 
@@ -135,7 +137,7 @@ Method Trace 给出的时间数据不能直接当真。它更适合用来理解"
 
 实际使用中，建议将 Method Trace 的录制时间控制在 5 秒以内。超过 5 秒，一方面数据量会非常庞大导致 Profiler 界面卡顿，另一方面长时间的开销累积会使数据的失真更加严重。
 
-Paulina Sadowska 在对比测试中发现，同一个 `onBindViewHolder` 方法，在 Sample 模式下报告约 10ms，在 Trace 模式下报告约 130ms，而用 Systrace（System Trace）测量只有约 5.5ms。这个差距直观地说明了 Method Trace 的开销影响。[引用: proandroiddev.com/can-you-trust-time-measurements-in-profiler]
+一个直观的例子来自社区对比测试：同一个 `onBindViewHolder` 方法，Callstack Sample 报告约 10ms，Java Method Trace 报告约 130ms，而用 Systrace（System Trace）测量只有约 5.5ms。这个差距足以说明 Method Trace 的插桩开销有多严重。
 
 ### Callstack Sample（调用栈采样）
 
@@ -230,7 +232,6 @@ Profiler 的优势在于"App 开发者的日常工具"。它集成在 IDE 中，
 
 Perfetto 的优势在于"系统级全局视野"。它能同时展示多个进程、CPU 所有核心的调度情况、内核事件、SurfaceFlinger 的合成过程——这些是 Profiler 看不到的。当怀疑性能问题的根源不在 App 自身，而在系统调度、其他进程的干扰、或者 GPU 合成过程时，Perfetto 是唯一能给出答案的工具。
 
-[图：Profiler 与 Perfetto 的定位对比——Profiler 关注单个 App 的 CPU/内存/网络/功耗，Perfetto 关注整个系统的全局状态]
 
 Profiler 的 System Trace 模式底层就是 Perfetto。在 Profiler 中抓取的 System Trace 可以导出为 `.perfetto-trace` 文件，直接在 Perfetto UI 中打开。在 Profiler 中完成第一轮快速分析、定位大致问题范围后，导出 Trace 到 Perfetto UI 做系统级深入分析——这个工作流在实践中非常高效。
 
