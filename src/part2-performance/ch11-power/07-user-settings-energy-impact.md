@@ -31,6 +31,9 @@ sources:
 tags: [power, battery, display, refresh-rate, dark-mode, empirical-study]
 related_chapters: ["2.18", "2.19", "5.6", "11.1", "11.2", "15.6", "25.1"]
 pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: fixed
 ---
 
 # 11.7 用户设置对能耗的影响：亮度、刷新率与深色模式

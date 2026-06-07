@@ -4,7 +4,7 @@
 title: Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
 chapter: '19'
 section: '19.21'
-status: 'finalized'
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Geekbench 6：官方当前要求 Android 10+ / 4 GB RAM；Vellamo：历史工具，仅用于旧报告；其他 Benchmark
