@@ -49,6 +49,7 @@ task2b_state: fixed
 task2b_result: fixed
 pipeline_stage: ready-to-publish
 last_task6_at: "2026-05-16T16:10:00+08:00"
+last_task6_audit: "2026-06-08"
 last_task6_review_log: "logs/review/2026-05-16-16-review.md"
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
