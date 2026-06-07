@@ -36,7 +36,7 @@ related_chapters:
 - '15.3'
 - '15.7'
 pipeline_stage: "ready-to-publish"
-task6_state: revisiting
+task6_state: reviewed  # updated by task2b-verifier 2026-06-08
 task9_state: "reviewed"
 task2b_result: fixed
 task2b_state: fixed
