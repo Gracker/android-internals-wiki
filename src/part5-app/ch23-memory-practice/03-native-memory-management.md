@@ -8,8 +8,8 @@ reviewed_date: "2026-05-14"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP main / Android Developers docs / Perfetto docs"
+last_verified: "2026-06-08"
+last_verified_against: "AOSP android-16.0.0_r1 / Android Developers docs / Perfetto docs"
 confidence: medium
 polish_count: 1
 sources:
@@ -24,27 +24,31 @@ sources:
   - type: official
     path: "https://developer.android.com/ndk/guides/gwp-asan"
   - type: aosp
-    path: "bionic/libc/malloc_debug/README.md"
+    path: "android.googlesource.com/platform/bionic/+/android-16.0.0_r1/libc/malloc_debug/README.md"
   - type: aosp
-    path: "frameworks/base/core/jni/android_os_Debug.cpp"
+    path: "android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/jni/android_os_Debug.cpp"
+  - type: aosp
+    path: "android.googlesource.com/platform/system/memory/libmeminfo/+/android-16.0.0_r1/androidprocheaps.cpp"
   - type: blog
     path: "Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md"
 tags: [native-memory, malloc, asan, hwasan, so-memory]
 related_chapters: ["23.2", "4.1", "4.2", "10.1", "14.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task6_review_notes: "2026-05-14 task6 review: 修正 malloc_debug 限制表述，替换禁用语境下的抽象词；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
 last_task6_review_log: "logs/review/2026-05-14-01-review.md"
 last_task6_at: "2026-05-14T01:14:00+08:00"
 last_task6_audit: "2026-06-06"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: 2026-05-14
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-14T01:41:44+08:00"
-last_task9_review_log: logs/deep-review/2026-05-14-01-deep-review.md
-task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 源码锚点补充已写入 suggestions.md。"
+last_task9_at: "2026-06-08T03:20:00+08:00"
+last_task9_autofix_at: "2026-06-08"
+last_task9_audit: "2026-06-08"
+last_task9_review_log: logs/deep-review/2026-06-08-03-audit.md
+task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 源码锚点补充已写入 suggestions.md。 | 2026-06-08 Task9 idle audit 03:20:auto-fixed。P0 1 / P1 0 / P2 1; 修正 malloc_debug wrap.<APP> 示例缺少嵌套引号的问题，并将旧 AOSP 锚点降到 android-16.0.0_r1；回到 Task6 复审。"
 task2b_result: fixed
 ---
 
@@ -88,7 +92,7 @@ Java Heap 没有持续增长，不代表进程内存安全。使用 JNI、音视
 - **SO / ELF 映射**：`.so` 文件被动态链接器映射到进程地址空间后，会产生代码段、只读数据、可写数据、重定位相关页面。共享只读页面通常按 PSS 分摊，可写脏页由当前进程承担。
 - **图形与硬件缓冲**：Bitmap 像素、OpenGL/Vulkan 纹理、Surface buffer、`dma-buf` 等可能计入 Native Heap、Graphics、GL 或 memtrack 相关分类。图片内存详见 23.2 节。
 
-AOSP 的 `android_os_Debug.cpp` 在汇总 `dumpsys meminfo` 时，会扫描 `/proc/<pid>/smaps` 并按 VMA 名称分类，例如 `[heap]`、`[anon:libc_malloc]`、`[anon:scudo:*]`、`[anon:GWP-ASan*]` 会进入 Native Heap 相关统计，`.so`、`.jar`、`.apk` 等文件映射进入 code 相关统计。[已验证: AOSP main, frameworks/base/core/jni/android_os_Debug.cpp]
+AOSP 的 `android_os_Debug.cpp` 在汇总 `dumpsys meminfo` 时会通过 libmeminfo 读取 `/proc/<pid>/smaps`；VMA 名称分类规则在 `androidprocheaps.cpp`，例如 `[heap]`、`[anon:libc_malloc]`、`[anon:scudo:*]`、`[anon:GWP-ASan*]` 会进入 Native Heap 相关统计，`.so`、`.jar`、`.apk` 等文件映射进入 code 相关统计。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp; system/memory/libmeminfo/androidprocheaps.cpp]
 
 这四类的处理动作不同：Native Heap 用分配栈定位；SO 映射看装载数量、重定位和脏页；图形缓冲看图像解码和渲染资源释放；匿名 `mmap` 要追调用方或自定义 VMA 名称。把它们混在一起，只会得到“Native 内存很大”这种不可执行的结论。
 
@@ -148,7 +152,7 @@ data_sources: {
 这组命令展示的是调试思路：用 wrap 属性让目标应用冷启动时加载 malloc 调试配置，再复现操作并抓日志。具体选项要按 Android 版本核对 Bionic README。
 
 ```bash
-adb shell setprop wrap.com.example.app 'LIBC_DEBUG_MALLOC_OPTIONS=backtrace logwrapper'
+adb shell setprop wrap.com.example.app '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace logwrapper"'
 adb shell am force-stop com.example.app
 adb shell monkey -p com.example.app 1
 adb logcat | grep -i malloc
@@ -156,7 +160,7 @@ adb logcat | grep -i malloc
 
 `malloc_debug` 的限制来自系统属性、进程重启和运行开销，部分能力还需要 root、userdebug 或可调试设备。工程上常把它放在“本地复现后进一步确认”的位置，而不是第一入口。
 
-[已验证: AOSP main, bionic/libc/malloc_debug/README.md]
+[已验证: AOSP android-16.0.0_r1, bionic/libc/malloc_debug/README.md]
 
 ## ASan、HWASan、GWP-ASan、MTE 怎么选
 
@@ -242,5 +246,6 @@ Scudo 的设计目标是提高 native heap 对越界、use-after-free、double f
 - [已验证: 官方文档, Memory error debugging and mitigation, https://developer.android.com/ndk/guides/memory-debug]
 - [已验证: 官方文档, GWP-ASan, https://developer.android.com/ndk/guides/gwp-asan]
 - [已验证: 官方文档, Arm MTE, https://developer.android.com/ndk/guides/arm-mte]
-- [已验证: AOSP main, bionic/libc/malloc_debug/README.md]
-- [已验证: AOSP main, frameworks/base/core/jni/android_os_Debug.cpp]
+- [已验证: AOSP android-16.0.0_r1, bionic/libc/malloc_debug/README.md]
+- [已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp]
+- [已验证: AOSP android-16.0.0_r1, system/memory/libmeminfo/androidprocheaps.cpp]
