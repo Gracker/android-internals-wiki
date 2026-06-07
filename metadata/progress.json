@@ -7566,14 +7566,20 @@
       "section": "10.8",
       "title": "GPU / 图形内存统计与实战监控",
       "file": "src/part2-performance/ch10-memory-perf/08-gpu-memory-tracking.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-06-07",
-      "gap_source": "AOSP结构/章节深挖/官方文档",
-      "gap_score": 16,
-      "material_count": 4,
-      "queue_priority": 80
+      "drafted_by": "openclaw-task2a",
+      "drafted_date": "2026-06-07",
+      "last_verified": "2026-06-07",
+      "last_verified_against": "AOSP android-16.0.0_r1 / android-17.0.0_r1, perfetto.dev, developer.android.com",
+      "confidence": "medium",
+      "task2a_state": "processed",
+      "task2a_result": "processed-draft",
+      "last_task2a_at": "2026-06-07T23:13:03.453154",
+      "queue_priority": 80,
+      "gap_source": "AOSP结构/章节深挖/官方文档"
     },
     "14.23": {
       "section": "14.23",
@@ -9960,14 +9966,14 @@
     }
   },
   "task2a_last_processed": {
-    "section": "6.7",
-    "title": "Linux 6.12 FUSE Passthrough 内核机制与 Android Scoped Storage I/O",
-    "file": "src/part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md",
+    "section": "10.8",
+    "title": "GPU / 图形内存统计与实战监控",
+    "file": "src/part2-performance/ch10-memory-perf/08-gpu-memory-tracking.md",
     "result": "ready-for-review",
     "pipeline_stage": "task6_pending",
-    "processed_at": "2026-06-05T21:18:53",
+    "processed_at": "2026-06-07T23:13:03.453161",
     "status": "ready-for-review",
-    "note": "原 FUSE-BPF 前提经源码验证不存在，已基于 Linux 6.12 实际 FUSE passthrough 重写"
+    "note": "GPU/图形内存统计与实战监控，7个锚点全部覆盖，3个扩展点覆盖"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-07",
@@ -10030,7 +10036,7 @@
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
     "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
-  "last_task2a_date": "2026-06-05",
+  "last_task2a_date": "2026-06-07",
   "task9_last_review_summary": "11.2 App 耗电优化：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "task2b_history": [
     {
