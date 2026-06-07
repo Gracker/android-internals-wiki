@@ -43,8 +43,8 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]"
 tags: [java-heap, object-pool, gc-friendly, collection-optimization]
 related_chapters: ["23.1", "23.5", "4.3", "4.8"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish  # updated by task2b-verifier 2026-06-08
+task6_state: reviewed  # updated by task2b-verifier 2026-06-08
 task9_state: reviewed
 task2b_state: fixed
 task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式表达、缓存预算和 GC 友好段落；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
