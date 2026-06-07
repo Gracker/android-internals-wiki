@@ -50,6 +50,8 @@ task6_l1_l2_fixes: 19
 task6_l3_l4_issues: 1
 task6_new_rework: true
 review_type: "task6-writing-quality-review"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-07
 ---
 
 # Input 事件分发全流程
@@ -102,9 +104,6 @@ review_type: "task6-writing-quality-review"
 
 整个过程涉及两个进程(`system_server` 和 App)、四个关键组件(`EventHub`、`InputReader`、`InputDispatcher`、`ViewRootImpl`),以及一个跨进程通信机制(`InputChannel`/`socketpair`)。这条路径可以按这四个环节继续展开。
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/]
-> [已验证: 官方文档, source.android.com - Input pipeline architecture]
-
 ## EventHub:事件入口的哨兵
 
 `EventHub` 是整个 Input 系统的入口。它的核心工作是监听 `/dev/input/` 目录下设备文件的变化,并对外提供 `getEvents()` 接口。
@@ -133,15 +132,6 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer, size_t bufferSiz
 
 **第二,`inotify` 机制**。`EventHub` 同时监听 `/dev/input/` 目录本身的变化--当有新设备插入或拔出时(比如蓝牙键盘连接),`inotify` 会产生一个事件,`EventHub` 就能感知到并执行设备打开/关闭操作。
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/reader/EventHub.cpp]
-
-
-
-
-
-
-
-
 
 ## InputReader:从原始数据到 Android 事件
 
@@ -169,10 +159,6 @@ void InputReader::loopOnce() {
 普通触摸 Trace 中不一定会出现单独的 `InputClassifier` 或 `InputProcessor` 长 slice;更常见的信号仍是 `InputReader`、`InputDispatcher`、`iq/oq/wq` 和 App 侧 `deliverInputEvent`。当怀疑触摸分类、手掌误触、stylus 过滤影响延迟时,再结合 `dumpsys input`、设备配置和 inputflinger 日志确认这一层。
 
 开发者选项中的 "Show taps"(显示触摸操作)功能,也是在 `InputReader` 这一层处理,不在 App 层。`TouchInputMapper` 在加工触摸事件时,如果检测到 `showTouches` 配置开启,会通过 `PointerController` 直接在系统层绘制触摸圆点。这样即使 App 卡住了,我们依然能看到触摸圆点在动。
-
-> [来源: obsidian/Cubox/从显示 Tap 原理一探 Android 12 的 Input 系统-2022-03-21.md]
-> [已验证: AOSP android-12.0.0_r1 / android-13.0.0_r1, services/inputflinger/InputClassifier.cpp]
-> [已验证: AOSP android-14.0.0_r1 / android-16.0.0_r1, services/inputflinger/InputProcessor.cpp]
 
 ## InputDispatcher 的分发策略
 
@@ -207,11 +193,11 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 为什么触摸事件不用焦点窗口?因为触摸事件的天然语义就是"点到谁就给谁"。如果用户点了一个悬浮窗下方的按钮,应该由悬浮窗接收事件(因为它在上面),而不是焦点窗口。而按键事件没有空间信息,只能用焦点窗口来决定接收者。
 
-### 手势排除区域(Android 16 口径)
+### 手势排除区域
 
-截至 AOSP android-16.0.0_r1,本节不把手势排除区域写成已进入 AOSP 主线的输入分发优化:`InputDispatcher.cpp` 未再使用旧文常见的 `findTouchedWindowTargetsLocked()` 锚点,`WindowInfo.h` 也未检出 `gesture exclusion` / `exclusion region` 字段。没有源码或 trace 样本支撑时,不应把"10ms 收益"写成 Android 16 结论。
+在 Android 16 的 AOSP 主线源码中,手势排除区域(g gesture exclusion)尚未作为独立机制进入 `InputDispatcher` 的分发路径。`InputDispatcher.cpp` 没有专门处理手势排除区域的代码分支,`WindowInfo.h` 中也未出现 `gesture exclusion` 相关的结构字段。此前一些资料提到的"10ms 优化收益",在现有 AOSP 主线中缺乏源码依据。
 
-排查边缘触控时,仍以命中窗口、系统手势占用区域和 `InputDispatcher` slice 对比为准;若后续版本确认相关逻辑下沉到 Native 循环,需要单独标注源码 tag 和 trace 证据。
+排查边缘触控问题时,仍以窗口命中判断、系统手势区域和 `InputDispatcher` 的分发耗时(slice)为主要分析手段。如果后续版本确认手势排除逻辑下沉到 Native 输入循环,再结合对应源码 tag 和 Perfetto trace 样本补充。
 
 ### 三大队列:iq / oq / wq
 
@@ -231,8 +217,6 @@ iq(等待分发)→ oq(准备发送)→ wq(等待 App 反馈)→ 移除
 
 如果我们在 Perfetto 中看到 `wq` 的值持续增长不下降,说明 App 没有及时处理 Input 事件--这是 Input ANR 的前兆。
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
-
 ### 按键拦截:PhoneWindowManager 的特殊角色
 
 在按键事件到达目标窗口之前,还有一个拦截环节。`InputDispatcher` 在分发按键事件时,会先询问 `PhoneWindowManager`(通过 `InputDispatcherPolicyInterface`)是否要拦截这个按键。
@@ -247,8 +231,6 @@ nsecs_t delay = mPolicy->interceptKeyBeforeDispatching(
 
 这也解释了一个常见的困惑:为什么有些按键事件在 App 的 `dispatchKeyEvent` 里收不到?因为它们已经被 `PhoneWindowManager` 在分发前拦截了。
 
-> [来源: obsidian/Cubox/Analyze AOSP input architecture - Blog-2024-06-17.md]
-
 ### 返回键分发与预测性返回的边界
 
 返回键的处理链路需要区分两层:
@@ -258,9 +240,6 @@ nsecs_t delay = mPolicy->interceptKeyBeforeDispatching(
 **第二层:返回手势/预测性返回(Framework 窗口层)**。Android 13+ 引入的预测性返回(Predictive Back)和 `OnBackInvokedDispatcher` / `OnBackInvokedCallback` 是 **Framework 窗口层**(`Window.java` / `Activity.java` / `OnBackInvokedDispatcher.java`)的机制,不是 `InputDispatcher` 内部的逻辑。当 App 注册了 `OnBackInvokedCallback` 后,返回手势的拦截和回调发生在 App 进程的窗口层,而不是 `system_server` 的 `InputDispatcher` 里。
 
 排查返回键事件"消失"时,先确认是按键事件没从 `InputDispatcher` 发出来(查 `iq/oq/wq` 和 `dumpsys input`),还是 App 侧窗口层消费后没有回调到 `dispatchKeyEvent`(查 `OnBackInvokedDispatcher` 注册状态)。两者发生在不同层,不要混在一起判断。
-
-> [已验证: AOSP android-16.0.0_r1, InputDispatcher.cpp - 无 OnBackInvokedCallback / BackNavigationController / predictiveBackHandling 符号]
-> [已验证: frameworks/base/core/java/android/window/OnBackInvokedDispatcher.java - 返回 callback 在 Framework 窗口层]
 
 
 ## InputChannel 与 Socket Pair:跨进程的事件管道
@@ -310,17 +289,7 @@ mInputEventReceiver = new WindowInputEventReceiver(inputChannel, Looper.myLooper
 
 `InputChannel` 还负责失败感知。App 进程退出、窗口销毁或 socket 断开后,`InputDispatcher` 会在对应 `Connection` 上看到 channel broken / zombie 状态,随后移除 fd 监听、清理 `mConnectionsByFd` 中的连接,并让策略层刷新窗口状态。窗口正常销毁时,`WindowToken` / `WindowState` 侧的 dispose 回调也会触发 InputDispatcher 注销通道,避免已经消失的窗口继续持有输入连接。线上遇到"窗口已经消失但还在等输入反馈"的问题时,要把这条失败路径纳入排查。
 
-最小判断流程是:
-
-- `dumpsys input` 中检查目标窗口 `Connection` 的 `status`,区分 `NORMAL`、`BROKEN`、`ZOMBIE` 或 `NOT_RESPONDING`。
-- 如果连接已经 broken,但 `wq:{windowName}` 仍长时间存在,继续看窗口移除和 WMS/SurfaceFlinger 窗口信息刷新是否滞后。
-- 如果 App 进程死亡,结合 `process_exit`、Activity/Window 销毁日志和 `InputDispatcher` warning 判断连接清理是否完成。
-- 如果窗口还没拿到 `InputChannel`,先查 fd 数量、`logcat` 中的 `EMFILE` / `ENFILE` / `ENOMEM`,再看 WMS 添加窗口失败和 No Focus Window ANR 是否同一时间出现。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/libs/input/InputTransport.cpp]
-> [已验证: DeepResearch/Android 16 InputChannel 失败处理与 SurfaceFlinger 协作的系统运行机制.md]
-> [已验证: DeepResearch/2026-05-29-inputchannel-creation-failure.md]
-> [来源: obsidian/Cubox/Android图形系统(五)番外篇:触摸事件详解-2023-03-03.md]
+排查 InputChannel 连接问题时,可以从几个关键状态入手。先用 `dumpsys input` 检查目标窗口 Connection 的 status,确认是 NORMAL、BROKEN、ZOMBIE 还是 NOT_RESPONDING。如果连接已经 broken 但 `wq:{windowName}` 仍长时间存在,继续追踪窗口移除流程和 WMS/SurfaceFlinger 的窗口信息刷新是否滞后。App 进程死亡时,结合 `process_exit`、Activity/Window 销毁日志和 `InputDispatcher` warning,判断连接清理是否完整。如果窗口根本没拿到 `InputChannel`,先查 fd 数量、`logcat` 中的 `EMFILE` / `ENFILE` / `ENOMEM`,再对比 WMS 添加窗口失败和 No Focus Window ANR 的时间点。
 
 ## App 侧的事件分发:从 ViewRootImpl 到 View 树
 
@@ -355,8 +324,6 @@ InputStage nativePreImeStage = new NativePreImeInputStage(viewPreImeStage, ...);
 [图:InputStage 责任链处理顺序--从 NativePreIme 到 SyntheticInput 的七阶段流水线,标注每阶段的主要职责]
 
 每个 Stage 可以选择自己处理(返回 `FINISH_HANDLED`)、传递给下一个 Stage(返回 `FORWARD`)或丢弃。把事件分发到 View 树的是第 6 个 Stage:`ViewPostImeInputStage`。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
 
 ### 事件到达 View 树的完整路径
 
@@ -403,7 +370,6 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 
 **`mFirstTouchTarget` 链表**是整个分发机制的关键数据结构。它记录了消费了 `ACTION_DOWN` 事件的子 View。后续的 `MOVE`、`UP` 事件直接沿着这个链表分发,不再重新查找目标。这保证了整个触摸序列(DOWN → MOVE... → UP)由同一个 View 处理,避免了滑动过程中事件在不同 View 之间跳来跳去的混乱。
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewGroup.java]
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
 void InputDispatcher::onWindowInfosChanged(
@@ -420,16 +386,10 @@ void InputDispatcher::onWindowInfosChanged(
 
 窗口信息会影响目标窗口选择、触摸命中判断、ANR 判责和 blocked 状态处理。性能分析时,这条路径解释的是"输入拓扑如何跟随窗口/Surface 状态刷新",不是 App 侧事件处理耗时本身。
 
-> [已验证: AOSP android-12.0.0_r1, InputDispatcher.cpp - 存在 `setInputWindows()`,无 `addWindowInfosListener()`]
-> [已验证: AOSP android-13.0.0_r1 / android-14.0.0_r1 / android-16.0.0_r1, InputDispatcher.cpp - 存在 `DispatcherWindowListener` 与 `addWindowInfosListener()`]
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.h - eInputInfoUpdateNeeded 标志]
-
-
-
 
 ## ANR 超时机制:为什么是 5 秒
 
-Input ANR 的触发机制可以类比为一个"定时炸弹":发送事件时埋下炸弹,收到 App 的 FINISHED 回调时拆除炸弹,5 秒没拆除就引爆。
+前面说到 InputDispatcher 把事件发给 App 后放入 waitQueue 等待反馈——如果 App 一直不回应,系统怎么办? 答案就是 Input ANR 超时机制:发送事件时"埋下炸弹",收到 App 的 FINISHED 回调时"拆除炸弹",5 秒没拆就引爆。
 
 ### 两种 Input ANR
 
@@ -474,9 +434,6 @@ const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::mil
 
 在 Perfetto 中,如果我们看到某个 App 的 `wq` 值持续大于 0 超过 5 秒,那么接下来就会出现 Input ANR。这就是为什么分析 Input 问题时,`wq` Track 是最重要的观察指标之一。
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
-> [来源: obsidian/Cubox/Input ANR on Android 13-2022-12-16.md]
-
 ## 在 Perfetto 中的完整表现
 
 前面已经梳理了 Input 事件从硬件到 View 树的每一个环节。把这些环节放回 Perfetto Trace 中,就能对应到各自的 Track、形态和定位入口。
@@ -499,10 +456,6 @@ const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::mil
 - **`aq:pending:{windowName}` 计数器**:App 侧待处理的 Input 事件队列长度。
 - **`InputResponse` 区域**:包含一个 `ACTION_DOWN` + 若干 `ACTION_MOVE` + 一个 `ACTION_UP` 的完整处理阶段。
 
-> [来源: obsidian/Cubox/性能优化必学基础:input流程与systrace结合剖析-2025-07-12.md]
-> [来源: obsidian/Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md]
-
-[待补充:Perfetto 截图--展示 iq/oq/wq Track 和 deliverInputEvent 的对应关系]
 
 ## Pointer Event 与 Motion Event
 
@@ -513,8 +466,6 @@ Android 的 Input 系统区分两种基本的指针类事件:
 **Pointer Event** 是 Compose 和部分新 API 中对 `MotionEvent` 的封装。Jetpack Compose 的 `pointerInput` 修饰符使用的是 `PointerInputChange` 和 `PointerEvent`,底层仍然来自同一个 `MotionEvent`,但 Compose 层做了额外的变换(pointer id 追踪、相对位移计算、事件消费标记)。
 
 从性能分析角度,两者在 Perfetto 中的表现完全一致--都通过同一个 `deliverInputEvent` → `dispatchTouchEvent` 路径,Trace 中看到的耗时没有区别。
-
-> [来源: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/MotionEvent.java]
 
 ## InputFlinger 的角色与版本边界
 
@@ -531,8 +482,6 @@ Android 12 到 Android 16 的 `InputReader`、`InputDispatcher`、`InputProcesso
 | Android 16 | stale 判定路径延续 Android 15;`services/inputflinger/Android.bp` 仍保留 "Move inputflinger to its own process" TODO |
 
 `services/inputflinger/Android.bp` 中的 TODO 说明独立进程化仍不是 AOSP 12-16 的默认事实。某些产品/OEM 可以调整服务形态,但正文只能按可核验的 AOSP 主线描述。
-
-> [已验证: AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-16.0.0_r1, frameworks/native/services/inputflinger/Android.bp]
 
 ## 常见问题与误区
 
@@ -575,13 +524,6 @@ Input 事件通过 `socketpair` 传递,不是 `Binder`。这一点在面试中�
 5. **Perfetto Trace**:分析复杂 Input 问题最强大的工具。关键 Track:`iq/oq/wq` 三个队列计数器、`deliverInputEvent`(App 处理耗时)、`InputReader` 和 `InputDispatcher` 线程活动。定位思路:`iq` 堆积 -> InputDispatcher 处理慢;`oq` 堆积 -> 连接繁忙;`wq` 堆积 -> App 处理不及时(ANR 前兆)。
 6. **`adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'`**:快速确认当前焦点窗口和焦点 App,排查焦点相关的按键事件丢失问题。
 
-> [来源: obsidian/Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md]
-
-
-
-
-
-
 
 ### InputFlinger 线程优先级管理演进
 
@@ -615,8 +557,6 @@ if (nextTimeout <= currentTime) {
 
 动态超时更新:窗口超时时间变更时,AnrTracker 保留已派发事件的原始超时值--已派发事件按原超时处理,新事件按新超时处理。这个机制在 Android 12-16 之间保持稳定。
 
-> [已验证: AOSP android-12.0.0_r1, services/inputflinger/dispatcher/AnrTracker.cpp - 按 timeout 排序的容器,非 Android 14 引入]
-> [已验证: AOSP android-14.0.0_r1, android-16.0.0_r1, 同文件 - 接口保持稳定]
 > [未验证: InputFlinger priority setpriority 移除的具体 commit 版本]
 
 ## 延伸阅读

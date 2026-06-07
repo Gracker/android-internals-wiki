@@ -10,7 +10,7 @@ applicable_versions: "Android 15 (API 35) - Android 16 (API 36); Android 17 待�
 last_verified: "2026-05-18"
 last_verified_against: "AOSP android-15.0.0_r1 / android-16.0.0_r1 frameworks/native/services/surfaceflinger/FrontEnd + source.android.com graphics docs; Android 17 tag 未公开"
 confidence: medium
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 tags: [rendering, surfaceflinger, frontend, requestedlayerstate, transaction]
 related_chapters: ["2.6", "2.12", "2.13", "2.16", "18.10", "13.3"]
 created_by: "task2a-knowledge-gap"
@@ -35,12 +35,12 @@ sources:
     path: "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
   - type: research
     path: "DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-05"
-last_task6_at: "2026-06-05"
+reviewed_date: 2026-06-07
+last_task6_at: 2026-06-07T16:07:00+08:00
 task9_result: auto-fixed
 task2b_state: fixed
 last_task9_autofix_at: "2026-06-05"

@@ -179,6 +179,7 @@ tags:
   - [9.6 Notification 性能与 ANR](part2-performance/ch09-anr/06-notification-performance-anr.md)
   - [9.7 ANR 非技术故障诊断](part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md)
   - [9.8 ANR Kernel Trace 联合诊断与系统事件关联](part2-performance/ch09-anr/08-anr-kernel-trace-joint-diagnosis.md)
+  - [9.9 ContentProvider ANR 双路径：Publish 超时与 Call Hang 检测](part2-performance/ch09-anr/09-contentprovider-anr-double-path.md)
 
 - [第 10 章：内存性能](part2-performance/ch10-memory-perf/README.md)
   - [10.1 App 内存分析](part2-performance/ch10-memory-perf/01-app-memory-analysis.md)
@@ -278,6 +279,8 @@ tags:
   - [14.18 Android Performance Analyzer 与系统性能分析](part3-tools/ch14-other-tools/18-android-performance-analyzer.md)
   - [14.19 Android CLI 与 Agent 化性能调试工作流](part3-tools/ch14-other-tools/19-android-cli-agent-performance-workflow.md)
   - [14.20 R8 Configuration Analyzer 与 keep 规则体积归因](part3-tools/ch14-other-tools/20-r8-configuration-analyzer.md)
+  - [14.21 eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织](part3-tools/ch14-other-tools/21-ebpf-bpfloader-architecture.md)
+  - [14.22 HPROF Heap Dump 管线与 Perfetto java\_hprof 数据源](part3-tools/ch14-other-tools/22-hprof-heapdump-javahprof-datasource.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)

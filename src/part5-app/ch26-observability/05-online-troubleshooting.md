@@ -207,6 +207,71 @@ Google Play 的 staged rollout 支持暂停发布；Firebase Remote Config rollo
 
 这个模板的作用是减少遗漏。排障人员拿到单子后，能直接判断缺哪类证据，少一些“还有没有日志”的反复追问。
 
+
+<!-- AIW-源码调研-2026-06-07 -->
+### StatsD 原子数据源与线上问题排查
+
+Android 17 的 StatsD 系统为线上问题排查提供了重要的原子数据源，这些数据与 Perfetto 追踪形成互补关系，共同构成完整的线上诊断体系。
+
+#### StatsD 三层架构数据流
+
+StatsD 在 Android 17 中采用三层架构，确保原子数据的可靠收集和权限控制：
+
+1. **StatsManagerService (Java 服务层)**：负责权限管理和配置管理，通过 `hasPermission()` 验证 `DUMP`、`PACKAGE_USAGE_STATS`、`REGISTER_STATS_PULL_ATOM`、`READ_RESTRICTED_STATS` 权限
+2. **StatsCompanionService (JNI 桥接层)**：连接 Java 服务与 native statsd daemon，提供原子数据转换和传递
+3. **StatsD daemon (native 二进制层)**：在 `statsd/src/main.cpp` 中运行主循环，通过 StatsSocketListener 监听事件
+
+#### 线上问题中的原子数据应用
+
+在 26.5 节的证据包模板中，可以增加 StatsD 原子数据字段：
+
+| 字段 | 数据来源 | 用途 |
+|---|---|---|
+| `statsd_atoms` | StatsD atom 数据 | 系统级原子计数器、业务指标监控 |
+| `perfetto_states` | Perfetto `android_*_states` 表 | 结合 StatsD 原子数据的时序分析 |
+| `atom_timestamps` | StatsD atom 时间戳 | 与会话 ID 关联的原子事件时间线 |
+
+#### 原子数据与 Trace 的互补关系
+
+线上问题排查中，StatsD 原子数据和 Perfetto Trace 形成互补：
+
+- **原子数据**：提供系统级别的计数器、状态变化和业务指标，适合长期监控和趋势分析
+- **Trace 数据**：提供线程级别的时序信息、函数调用和调度细节，适合问题复现和性能瓶颈定位
+
+例如排查启动问题时：
+- 原子数据：`app_start_time`、`main_thread_ready`、`first_drawn` 等关键时间点的原子计数
+- Trace 数据：主线程调度、Binder 调用、渲染管线的详细时序
+
+#### 权限边界与数据采集
+
+Android 17 中原子数据采集的权限边界：
+
+- 第三方应用注册 Pull atom 需要 `REGISTER_STATS_PULL_ATOM` 权限
+- 访问限制性原子数据需要 `READ_RESTRICTED_STATS` 权限
+- `PACKAGE_USAGE_STATS` 权限作用范围收窄到系统应用
+
+这意味着在线上排查中，系统应用可以获取完整的原子数据，而第三方应用需要通过特殊权限或间接方式获取相关数据。
+
+#### 数据归档与去重
+
+在 26.5 节的证据包基础上，建议增加原子数据相关字段：
+
+```json
+{
+  "statsd_atoms": {
+    "battery_drain_rate": 0.5,
+    "cpu_usage_percent": 15.2,
+    "network_bytes_sent": 1024000,
+    "app_launch_count": 42
+  },
+  "atom_collection_time": "2026-06-07T14:50:00Z",
+  "statsd_config_version": "1.2"
+}
+```
+
+这些数据与 Perfetto Trace 中的事件时间戳结合，可以构建更完整的线上问题诊断模型。
+<!-- /AIW-源码调研-2026-06-07 -->
+
 ## 小结
 
 线上排障要把“猜问题”改成“补证据”。远程日志提供业务现场，用户反馈提供复现入口，Trace 提供时间线，灰度环境提供风险隔离。四件事连在一起，才能把偶发问题从一次投诉变成可验证、可回滚、可复盘的工程事件。
