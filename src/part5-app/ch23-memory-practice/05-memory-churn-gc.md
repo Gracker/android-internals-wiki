@@ -53,6 +53,7 @@ task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。无 P0/P1�
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
 last_task6_audit: "2026-06-06"
+last_task9_audit: "2026-06-08"
 ---
 
 # 内存抖动与 GC 治理
