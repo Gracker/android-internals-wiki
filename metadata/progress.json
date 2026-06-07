@@ -13918,7 +13918,11 @@
     "verifier_note": "pipeline corrected to ready-to-publish 2026-06-06"
   },
   "4.2": {
-    "verifier_note": "reverted to task2b_pending, queue has P95 pending 2026-06-06"
+    "verifier_note": "reverted to task2b_pending, queue has P95 pending 2026-06-06",
+    "status": "finalized",
+    "task6_status": "reviewed",
+    "task6_date": "2026-06-07",
+    "pipeline_stage": "ready-to-publish"
   },
   "7.13": {
     "verifier_note": "reverted to task2b_pending, queue has P50 pending 2026-06-06"
