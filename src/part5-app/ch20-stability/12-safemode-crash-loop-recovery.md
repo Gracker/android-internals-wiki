@@ -49,6 +49,7 @@ reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-16"
 last_task6_at: "2026-05-16T15:12:00+08:00"
+last_task6_audit: "2026-06-08"
 task6_review_notes: "2026-05-16 task6 review: 完成 L1/L2 轻修 4 处；无 Task2B 回炉项，进入 Task9 技术审查。"
 task9_state: reviewed
 task9_result: pass-tech-review
