@@ -1,6 +1,6 @@
 {
   "total": 352,
-  "draft": 2,
+  "draft": 1,
   "ready-for-review": 78,
   "finalized": 270,
   "task9_result": "auto-fixed/pass-tech-review",
@@ -2416,7 +2416,7 @@
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
-  "ready_for_review": 79,
+  "ready_for_review": 80,
   "last_updated": "2026-06-04",
   "last_updated_by": "task2a",
   "task6_last_review": {
