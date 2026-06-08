@@ -3752,13 +3752,15 @@
       "last_task2a_at": "2026-05-13T19:04:00+08:00"
     },
     "19.27": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "last_task6_at": "2026-05-13T20:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-20-review.md"
+      "last_task6_review_log": "logs/review/2026-05-13-20-review.md",
+      "last_verifier_action": "2026-06-08 promoted to finalized by task2b-verifier",
+      "title": "千万级DAU APM端侧架构"
     },
     "2.15": {
       "status": "finalized",
@@ -5749,10 +5751,10 @@
       "task2b_result": "fixed"
     },
     "4.11": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "queue_priority": 80,
-      "title": "Cached App Freezer 与 GC 触发边界",
+      "title": "Cached App Freezer与GC触发边界",
       "file": "src/part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-19",
@@ -5760,7 +5762,8 @@
       "gap_score": 16,
       "material_count": 5,
       "task6_state": "revisiting",
-      "last_verified": "2026-06-05T19:31"
+      "last_verified": "2026-06-05T19:31",
+      "last_verifier_action": "2026-06-08 promoted to finalized by task2b-verifier"
     },
     "12.3": {
       "title": "网络性能深入：连接池、TLS 与传输优化",
@@ -7557,10 +7560,13 @@
     },
     "7.13": {
       "task2b_state": "fixed",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "revisiting",
       "verifier_note": "fixed inconsistent t2b_state",
-      "verifier_updated": "2026-06-06T19:28"
+      "verifier_updated": "2026-06-06T19:28",
+      "status": "finalized",
+      "last_verifier_action": "2026-06-08 promoted to finalized by task2b-verifier",
+      "title": "SystemUI性能分析"
     },
     "10.8": {
       "section": "10.8",
@@ -7612,6 +7618,18 @@
       },
       "material_count": 5,
       "queue_priority": 80
+    },
+    "19.25": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_verifier_action": "2026-06-08 promoted to finalized by task2b-verifier",
+      "title": "耗电与发热监控"
+    },
+    "2.22": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_verifier_action": "2026-06-08 promoted to finalized by task2b-verifier",
+      "title": "SurfaceFlinger FrontEnd"
     }
   },
   "task2b_rounds": [

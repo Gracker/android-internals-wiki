@@ -1,9 +1,11 @@
 ---
 
+
 title: 耗电与发热监控 (Battery & Thermal)
 chapter: '19'
 section: '19.25'
-status: ready-for-review
+status: finalized  # promoted by task2b-verifier 2026-06-08
+finalized_by: openclaw-task2b-verifier
 drafted_date: '2026-04-24'
 drafted_by: gemini
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
