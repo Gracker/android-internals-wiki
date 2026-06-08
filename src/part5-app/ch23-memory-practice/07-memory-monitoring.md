@@ -1,8 +1,9 @@
 ---
+
 title: "内存监控与线上治理"
 chapter: "23.7"
 section: "23.7"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers Debug/ActivityManager/ComponentCallbacks2 + Clippings/Android 性能优化"

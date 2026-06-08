@@ -1,8 +1,9 @@
 ---
+
 title: "大内存与多进程策略"
 chapter: "23.6"
 section: "23.6"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ComponentCallbacks2 + Android Developers memory docs + Clippings/Android 性能优化"
