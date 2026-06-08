@@ -2,10 +2,11 @@
 
 
 
+
 title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
-status: ready-for-review
+status: finalized  # promoted by task2b-verifier 2026-06-08
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - systemui
@@ -76,7 +77,7 @@ sources:
   path: https://developer.android.com/guide/topics/ui/splash-screen
 pipeline_stage: ready-to-publish
 finalized_date: '2026-04-29'
-finalized_by: openclaw-task6-auto-promote
+finalized_by: openclaw-task2b-verifier
 task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed

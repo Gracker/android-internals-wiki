@@ -1,6 +1,8 @@
 ---
 
-status: ready-for-review
+
+status: finalized  # promoted by task2b-verifier 2026-06-08
+finalized_by: openclaw-task2b-verifier
 title: 千万级 DAU 的 APM 端侧架构
 chapter: '19'
 section: '19.27'
