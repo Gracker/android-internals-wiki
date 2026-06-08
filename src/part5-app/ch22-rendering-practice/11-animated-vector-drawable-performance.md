@@ -5,8 +5,8 @@ section: "22.11"
 status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 7.1 (API 25) - Android 16 (API 36)"
-last_verified: "2026-05-16"
-last_verified_against: "AOSP platform/frameworks/base master, Android Developers AnimatedVectorDrawable reference"
+last_verified: "2026-06-08"
+last_verified_against: "AOSP platform/frameworks/base android-16.0.0_r1, Android Developers AnimatedVectorDrawable reference"
 confidence: medium
 tags: ["animated-vector-drawable", "renderthread", "animation", "jank", "ui-thread"]
 related_chapters: ["2.5", "7.5", "18.2", "22.5", "22.8"]
@@ -24,18 +24,21 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
   - type: structure
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-16"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-08"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-16T01:26:00+08:00"
+last_task9_at: "2026-06-08T21:09:20+08:00"
+last_task9_autofix_at: "2026-06-08"
+last_task9_audit: "2026-06-08"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 last_task6_at: "2026-05-16T02:11:00+08:00"
 last_task6_audit: "2026-06-07"
+task2b_state: fixed
 
 ---
 
@@ -47,7 +50,7 @@ AnimatedVectorDrawable 适合做小型矢量图标动效，但它的性能边界
 
 Android 官方文档把版本边界放在 API 25：从 API 25 开始，AnimatedVectorDrawable 默认运行在 RenderThread；更早版本运行在 UI 线程。[已验证: 官方文档, developer.android.com/reference/android/graphics/drawable/AnimatedVectorDrawable]
 
-AOSP 代码里的构造路径也对应这个判断。`AnimatedVectorDrawable` 构造时创建的是 `VectorDrawableAnimatorRT`，`ensureAnimatorSet()` 再把 XML 解析出的 `AnimatorSet` 初始化进当前动画器。RT 路径仍依赖 View 系统中的硬件加速 Canvas 记录到 `RenderNode`：`VectorDrawableAnimatorRT.onDraw()` 只有在 `canvas.isHardwareAccelerated()` 为真时才会调用 `recordLastSeenTarget((RecordingCanvas) canvas)`，再把 native animator 注册到最近一次看到的 `RenderNode` 上。[已验证: AOSP master, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java]
+AOSP 代码里的构造路径也对应这个判断。`AnimatedVectorDrawable` 构造时创建的是 `VectorDrawableAnimatorRT`，`ensureAnimatorSet()` 再把 XML 解析出的 `AnimatorSet` 初始化进当前动画器。RT 路径仍依赖 View 系统中的硬件加速 Canvas 记录到 `RenderNode`：`VectorDrawableAnimatorRT.onDraw()` 只有在 `canvas.isHardwareAccelerated()` 为真时才会调用 `recordLastSeenTarget((RecordingCanvas) canvas)`，再把 native animator 注册到最近一次看到的 `RenderNode` 上。[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java]
 
 这带来一个实战判断：AVD 能走 RT 的前提是宿主绘制路径仍在硬件加速 View 管线里，单纯使用 vector XML 不够。只要宿主把 Drawable 画到 Bitmap-backed `Canvas`、软件 layer，或全局关闭硬件加速，AVD 就失去 RT 的目标节点，动画调度会落回 UI 线程。
 
@@ -55,9 +58,9 @@ AOSP 代码里的构造路径也对应这个判断。`AnimatedVectorDrawable` �
 
 ## fallbackOntoUI 的触发条件
 
-`fallbackOntoUI()` 的自动触发条件比“RT 不支持”窄。AOSP `draw(Canvas canvas)` 中同时满足三项才会退化：当前 Canvas 不是硬件加速；当前动画器还是 `VectorDrawableAnimatorRT`；RT 动画尚未运行，并且 `mPendingAnimationActions` 中已有 start / reverse / reset / end 等挂起动作。[已验证: AOSP master, AnimatedVectorDrawable.java draw()]
+`fallbackOntoUI()` 的自动触发条件比“RT 不支持”窄。AOSP `draw(Canvas canvas)` 中同时满足三项才会退化：当前 Canvas 不是硬件加速；当前动画器还是 `VectorDrawableAnimatorRT`；RT 动画尚未运行，并且 `mPendingAnimationActions` 中已有 start / reverse / reset / end 等挂起动作。[已验证: AOSP android-16.0.0_r1, AnimatedVectorDrawable.java draw()]
 
-这段逻辑排除了一个常见误判：已经在 RT 上开始执行的动画，不会在中途因为某一帧拿到软件 Canvas 就被自动迁移。隐藏 API `forceAnimationOnUI()` 也遵守这个边界，动画已经在 RenderThread 上启动时会抛出 `UnsupportedOperationException`，错误信息写明不能把已经开始的 RT 动画强制切到 UI 线程。[已验证: AOSP master, AnimatedVectorDrawable.java forceAnimationOnUI()]
+这段逻辑排除了一个常见误判：已经在 RT 上开始执行的动画，不会在中途因为某一帧拿到软件 Canvas 就被自动迁移。隐藏 API `forceAnimationOnUI()` 也遵守这个边界，动画已经在 RenderThread 上启动时会抛出 `UnsupportedOperationException`，错误信息写明不能把已经开始的 RT 动画强制切到 UI 线程。[已验证: AOSP android-16.0.0_r1, AnimatedVectorDrawable.java forceAnimationOnUI()]
 
 自动退化发生后，`fallbackOntoUI()` 会把动画器替换成 `VectorDrawableAnimatorUI`，用原始 XML 的 `AnimatorSet` 重新初始化，再迁移监听器和挂起动作。自动退化迁移的只是“还没执行的动作队列”，RT 已经推进到的每一帧状态不会被同步过去。工程排查时要把它理解成启动前路径选择，避免误判成运行中热切换。
 
@@ -69,7 +72,7 @@ AVD 退化样本通常来自三类宿主场景：
 - 软件 layer：宿主 View 使用 `setLayerType(View.LAYER_TYPE_SOFTWARE, ...)`，常见诱因是阴影、Mask、旧版 PorterDuff 混合或兼容性兜底。
 - 硬件加速关闭：Activity、Window 或某个容器关闭硬件加速后，AVD 即使资源本身没变，也只能走 UI 线程路径。
 
-状态迁移只处理挂起动作，这一点会影响问题复现。`VectorDrawableAnimatorRT.start()` 在没有可用 `RenderNode` 时会调用 `addPendingAction(START_ANIMATION)`；下一次硬件加速 `onDraw()` 看到目标节点，就处理挂起动作并清空队列。若下一次 draw 仍是软件 Canvas，`draw()` 会触发 `fallbackOntoUI()`，再由 `transferPendingActions()` 把 start / reverse / reset / end 转给 UI 动画器执行。[已验证: AOSP master, AnimatedVectorDrawable.java VectorDrawableAnimatorRT]
+状态迁移只处理挂起动作，这一点会影响问题复现。`VectorDrawableAnimatorRT.start()` 在没有可用 `RenderNode` 时会调用 `addPendingAction(START_ANIMATION)`；下一次硬件加速 `onDraw()` 看到目标节点，就处理挂起动作并清空队列。若下一次 draw 仍是软件 Canvas，`draw()` 会触发 `fallbackOntoUI()`，再由 `transferPendingActions()` 把 start / reverse / reset / end 转给 UI 动画器执行。[已验证: AOSP android-16.0.0_r1, AnimatedVectorDrawable.java VectorDrawableAnimatorRT]
 
 这条路径解释了“本地点一下不卡，线上某个页面偶发卡”的原因：AVD XML 没有变化，变化的是宿主 Canvas 类型和启动时机。比如同一个加载动效，直接放在普通 `ImageView` 上走 RT；放进截图缓存、圆角蒙版软件 layer 或旧代码自绘容器里，就可能退回 UI 线程。
 
@@ -94,7 +97,7 @@ AVD 优化要分两层处理：资源复杂度控制和宿主路径控制。
 
 - 控制 path 数量和 pathData 长度。复杂 path morph 会增加属性采样、路径插值和 GPU 绘制成本，小图标动效不要用完整插画级路径。
 - 优先动画 `alpha`、`rotation`、`scale`、`translationX/Y` 等成本可控的属性；颜色、pathData、clipPath 等属性要用实机 trace 验证。
-- 避免把多个长时序动画塞进同一个 AVD。AOSP RT 动画器会解析 `AnimatorSet`，包含顺序动画或子动画 startDelay 时会影响 reverse 能力；复杂时间线更适合 Lottie 或 View 属性动画组合。[已验证: AOSP master, AnimatedVectorDrawable.java parseAnimatorSet()/canReverse()]
+- 避免把多个长时序动画塞进同一个 AVD。AOSP RT 动画器会解析 `AnimatorSet`，包含顺序动画或子动画 startDelay 时会影响 reverse 能力；复杂时间线更适合 Lottie 或 View 属性动画组合。[已验证: AOSP android-16.0.0_r1, AnimatedVectorDrawable.java parseAnimatorSet()/canReverse()]
 - 对启动图标、支付加载、发送中状态这类高频动效，保留一份静态兜底资源。低端机或软件 Canvas 场景直接切静态图，常比在 UI 线程硬跑矢量动画更稳。
 
 运行时侧先保证硬件路径：
@@ -141,7 +144,7 @@ AVD 适合小图标、状态切换和短时长矢量动效；View 属性动画�
 
 ## 参考资料
 
-- [已验证: AOSP master, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java]
+- [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java]
 - [已验证: 官方文档, https://developer.android.com/reference/android/graphics/drawable/AnimatedVectorDrawable]
 - [来源: DeepResearch/2026-05-08-animatedvectordrawable-thread-degradation.md]
 - [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
