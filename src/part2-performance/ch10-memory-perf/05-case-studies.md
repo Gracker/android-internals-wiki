@@ -3,7 +3,7 @@ title: "案例集"
 chapter: "10.5"
 section: "10.5"
 drafted_date: "2026-04-02"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-27"
 last_verified_against: "AOSP android-16.0.0_r1; Android Developers ProfilingManager/ProfilingTrigger API reference"
 confidence: medium
@@ -29,7 +29,7 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
-last_task6_audit: "2026-05-18"
+last_task6_audit: "2026-06-08"
 review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-07 Task9 01:20：pass-tech-review。无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2：ProfilingTrigger API37 版本边界、案例效果量化占位仍建议补。"
 task9_reviewed_date: "2026-05-27"
 task2b_state: "fixed"
