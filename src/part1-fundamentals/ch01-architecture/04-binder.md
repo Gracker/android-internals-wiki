@@ -57,7 +57,7 @@ last_task6_audit: "2026-05-19"
 task6_review_log: "logs/review/2026-05-13-19-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-09
 task2b_state: "fixed"
 last_task9_autofix_at: "2026-06-09"
 ---
@@ -473,9 +473,7 @@ oneway 调用避免了 Client 端的阻塞等待，但仍有队列和处理成�
 
 ## 线程池与调度器协同：Android 14-16 源码观察与内核层契约
 
-<!-- AIW-源码调研-2026-06-07 -->
-
-> ⚠️ **版本边界说明**：本节源码锚点基于 AOSP `frameworks/native` tag `android-16.0.0_r4` 与 `kernel/common` branch `android16-6.12`。本轮抽检通过 `git ls-remote` 核查 `platform/manifest`、`frameworks/base`、`frameworks/native`、`external/perfetto` 与 `kernel/common`，截至 2026-06-09 暂无 `android-17.0.0_r1` tag 或 `android17-6.12` branch，本节**未进入 Android 17**。
+> ⚠️ **版本边界说明**：本节源码锚点基于 AOSP `frameworks/native` tag `android-16.0.0_r4` 与 `kernel/common` branch `android16-6.12`，未涉及 Android 17。
 
 ### Native 侧的协作机制
 
@@ -634,7 +632,6 @@ if (is_fair_policy(policy))
 - DeepResearch 报告：`2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md` 给出本节全部源码锚点。
 
 ### 来源
-<!-- AIW-源码调研-2026-06-07-sources -->
 - AOSP `frameworks/native/libs/binder/ProcessState.cpp`、`IPCThreadState.cpp`、`Parcel.cpp`、`include/binder/ProcessState.h`（tag `android-16.0.0_r4`）
 - AOSP `kernel/common/drivers/android/binder.c`、`include/uapi/linux/android/binder.h`（branch `android16-6.12`）
 - DeepResearch 报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md`
@@ -662,10 +659,3 @@ if (is_fair_policy(policy))
 - [来源: obsidian/Cubox/Binder驱动中的流程详解-2024-07-12.md]（OPPO 内核工匠：Binder 驱动中的流程详解）
 - [引用: https://paul.pub/android-binder-driver/]
 - [引用: https://perfetto.dev/docs/data-sources/android-binder]
-
-### Android Binder IPC 机制 — 从 Java 层到 Kernel Driver 源码调研
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-binder-ipc-mechanism-source-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 Java 层 BinderProxy.transact() 到 JNI 层 android_util_Binder.cpp、Native 层 BpBinder/BBinder、IPCThreadState.talkWithDriver() ioctl 全链路源码级分析。该调研材料标题与摘要声称源码锚点基于 `android-17.0.0_r1`；本轮抽检未在公开 AOSP `platform/manifest`、`frameworks/base`、`frameworks/native`、`external/perfetto` 中查到该 tag，因此不能把其中的 `android-17.0.0_r1` 锚点作为正文结论。
-- 注入时间：2026-06-02
-- 价值：作为 Binder Java→JNI→Native→Kernel 全链路待复核线索使用；正式引用以公开 tag/branch 可验证源码为准

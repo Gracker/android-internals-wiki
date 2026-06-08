@@ -31,7 +31,7 @@ sources:
     path: "packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java"
 reviewed_date: "2026-05-17"
 reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed  # updated by task2b-verifier 2026-06-09
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task2b_state: "fixed"
