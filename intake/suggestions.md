@@ -174,3 +174,9 @@
 - 24+ consecutive empty runs
 - Recommendation: 暂停 gap mining cron 或仅在 new material injection 时触发
 - Bottleneck: Task 6 review of 82 ready-for-review sections
+
+## [Task9 Deep Review] 26.4 ANR 监控体系 — 2026-06-08
+- **类型**：源码准确性 / 版本边界
+- **位置**：`Android 11+：用 ApplicationExitInfo 补系统确认`
+- **问题**：章节只写了 `reason == REASON_ANR` 时读取 `getTraceInputStream()`，但 Android 官方 API 与 AOSP `ApplicationExitInfo#getTraceInputStream()` 注释还覆盖一种边界：进程发生 ANR 后恢复，之后因其他原因退出时，先前 ANR trace 仍可能出现在该退出记录里。这不是当前正文的事实硬伤，但监控实现按 reason 单点过滤时容易漏读 trace。
+- **建议**：后续轻量补一句边界条件：优先按 `REASON_ANR` 归类系统确认；同时对历史退出记录中非 ANR reason 但 `getTraceInputStream()` 非空的样本保留 trace 摘要，并在服务端按“历史 ANR trace 附带”单独标记，避免误归因为本次退出原因。
