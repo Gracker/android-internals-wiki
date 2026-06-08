@@ -56,7 +56,7 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-27T16:50:00+08:00"
 task2b_notes: "2026-05-27 Task2B：清理文末 AIW 源码调研原始块，将 AMS mGlobalLock/mProcLock 双锁与 PI-futex 边界合并入正文。"
-last_task6_audit: "2026-05-17"
+last_task6_audit: "2026-06-08"
 last_task6_at: "2026-05-27T17:16:52+08:00"
 last_task6_review_log: "logs/review/2026-05-27-17-review.md"
 review_type: "task6-writing-quality-review"
