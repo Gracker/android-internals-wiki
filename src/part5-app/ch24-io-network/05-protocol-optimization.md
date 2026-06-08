@@ -66,6 +66,7 @@ last_task9_review_log: "logs/deep-review/2026-05-14-10-deep-review.md"
 task9_review_notes: "2026-05-14 Task9：pass-tech-review。P0 0 / P1 0 / P2 1；协议主线通过，需补 API36/Android16 源码或文档验证口径；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 
 last_task6_audit: "2026-05-24"
+last_task9_audit: "2026-06-08"
 ---
 
 # 网络协议优化（HTTP/2、HTTP/3、gRPC）
