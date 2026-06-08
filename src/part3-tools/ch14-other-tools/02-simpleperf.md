@@ -7,7 +7,7 @@ reviewed_date: '2026-04-15'
 reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
+applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-04-22'
 last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs + Android profileable docs
 confidence: high
@@ -36,12 +36,13 @@ task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
 task6_result: pass-light-edit
-task9_result: "needs-rework"
+task9_result: "pass-tech-review"
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T03:17:47+08:00"
 last_task2b_at: "2026-04-22T08:06:44+08:00"
+last_task2b_lite_at: "2026-06-08"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-08-audit.md"
 last_task9_audit: "2026-05-18"
@@ -106,7 +107,7 @@ NDK 环境要先就位。Simpleperf 的可执行文件在 NDK 目录的 `simplep
 
 App 侧的权限边界要按版本看。debug build 自带 `debuggable`，本地排查最省事。release build 的工作流从 Android 10 开始明显变好，可以在 `AndroidManifest.xml` 里声明 `<profileable android:shell="true" />`，adb 下发的 simpleperf 会转调系统镜像里的 simpleperf 做采样。Android 8-9 如果没有 root，常见做法是保留 `debuggable` 并配合 `wrap.sh`；再早的版本，或者需要看系统进程、内核栈时，通常要 root 或 userdebug / eng 设备。
 
-[已验证: 官方文档, developer.android.com/topic/performance/profileable]
+[已验证: 官方文档, developer.android.com/guide/topics/manifest/profileable-element]
 
 ### 版本能力边界
 
@@ -454,4 +455,4 @@ Perfetto 的 external format importer 也能读取 Firefox Profiler JSON，但�
 - Speedscope 在线工具：[www.speedscope.app](https://www.speedscope.app)
 - Firefox Profiler：[profiler.firefox.com](https://profiler.firefox.com/)
 - Perfetto CPU Profiler 文档：[perfetto.dev/docs/data-sources/cpu-profiler](https://perfetto.dev/docs/data-sources/cpu-profiler)
-- profileable 清单配置：[developer.android.com/topic/performance/profileable](https://developer.android.com/topic/performance/profileable)
+- profileable 清单配置：[developer.android.com/guide/topics/manifest/profileable-element](https://developer.android.com/guide/topics/manifest/profileable-element)
