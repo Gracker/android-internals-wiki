@@ -2,8 +2,8 @@
 title: "ANR 监控体系"
 chapter: "26.4"
 section: "26.4"
-status: "finalized"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+status: "ready-for-review"
+applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ANR / Android vitals docs + Clippings structure references"
 confidence: medium-high
@@ -36,26 +36,25 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
-  - type: deepresearch
-    path: "DeepResearch/2026-06-03-anr-monitoring-ftrace.md"
+
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 1 处；无新增 L3/L4 回炉项，交 Task9 技术复审。'
 last_task6_at: "2026-05-15T01:12:00+08:00"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-15"
 reviewed_by: openclaw-task6
-task9_state: "reviewed"
-task2b_state: "pending"
+task9_state: "pending"
+task2b_state: "fixed"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-08T15:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-08-15-audit.md"
 last_task6_audit: "2026-06-07"
-task9_review_notes: "2026-06-08 Task9 闲时抽检：needs-rework。P0 1 / P1 0；Android 17 ANR/Ftrace 补充块使用不可验证 android-17.0.0_r1 源码锚点，且 frameworks/native/cmds/tracer、system/core/libapp_fatal/android_tracing.cpp、AnrHelper.recordAnr/AppErrors.saveAnrState 等路径/API 未能在可验证源码中对上，已写入 queue.json。"
+task9_review_notes: "2026-06-08 Task9 闲时抽检：needs-rework，P0 1 处。→ 2026-06-08 Task2B 已修复：删除不可验证的 Android 17 ANR/Ftrace 补充块。"
 task2b_result: "fixed"
 last_task9_audit: "2026-06-08"
 ---
@@ -222,74 +221,7 @@ ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题�
 
 协程项目的 ANR 快照至少记录三类信息：主线程栈、活跃协程调度线程栈、自定义 dispatcher / executor 的队列长度。`Dispatchers.IO` 或 `Default` 中的任务饱和，不会直接判定 ANR；当主线程同步等待这些任务结果时，才会变成用户可感知无响应。Java Crash 与协程异常处理详见 20.2 节，ANR 治理策略详见 20.4 节。
 
-<!-- AIW-源码调研-2026-06-03 -->
 
-
-
-## 扩展：Android 17 ANR监控与Ftrace集成优化
-
-> ⚠️ 本节为源码调研补充，2026-06-03 完成，状态：[未一手验证]
-
-### Ftrace 与 ATRACE 集成机制（Android 17）
-
-Android 17 在 Java 层通过 `android.os.Trace` 类提供 ATRACE 接口，实现应用层到内核 trace 的贯通：
-
-```java
-// frameworks/base/core/java/android/os/Trace.java (Android 17)
-public static void beginSection(String sectionName) {
-    nativeTraceBegin(nativeCookie, sectionName);
-}
-
-// Native 实现通过 /sys/kernel/tracing/trace_marker 写入 ftrace buffer
-// system/core/libapp_fatal/android_tracing.cpp
-```
-
-**Ftrace 关键路径**：
-- `/sys/kernel/tracing/trace_marker` — 进程写入自定义 trace 事件
-- `/sys/kernel/tracing/tracing_on` — 全局 trace 开关
-- `/sys/kernel/tracing/events/sched/sched_switch/enable` — 调度事件追踪
-- `/sys/kernel/tracing/events/futex/*` — futex 锁等待追踪
-
-### ANR 触发调用链（Android 17）
-
-```
-ActivityManagerService.appNotResponding()
-  → AnrHelper.recordAnr()
-  → AppErrors.saveAnrState()
-  → StackTracesDumpHelper.dumpStackTraces()
-  → /data/anr/{timestamp}_{pid}.txt
-```
-
-**关键源码文件（AOSP android-17.0.0_r1）**：
-- `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`
-- `frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java`
-- `frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java`
-- `frameworks/native/cmds/tracer/` — 系统级 trace 采集工具
-
-### ANR 诊断性能边界（Android 17 未经一手验证）
-
-| 优化项 | 描述 | 性能影响 |
-|-------|------|---------|
-| 异步 dump | ANR dump 异步化，不阻塞 AMS 主线程 | 减少 AMS latency |
-| 采样限流 | 连续 ANR 期间限制 trace 采集频率 | 避免 CPU spike |
-| 分级存储 | 关键帧写入 /data/anr，可选写入 tombstone | 减少 I/O 开销 |
-
-**关键代码约束（Android 17 源码未经一手提取）**：
-- `AnrHelper.java` 中 `DEFAULT_ANR_DELAY_MS = 5000`（5秒阈值）
-- `StackTracesDumpHelper.dumpStackTraces()` 最多等待 30 秒完成
-- trace 文件大小超过 10MB 时自动截断
-
-### tracer 命令与 Perfetto 后端
-
-`frameworks/native/cmds/tracer/` 目录下的 tracer 是系统级 trace 采集工具：
-
-```bash
-tracer -t 10000 -o /data/misc/perfetto-traces/trace.perfetto-trace
-```
-
-tracer 依赖 Perfetto 后端进行 trace 序列化，支持 atrace 和 ftrace 双模式。Android 17 将 Perfetto 作为默认 trace 后端替代旧有 atrace 格式。
-
-[源码调研: 2026-06-03, DeepResearch/2026-06-03-anr-monitoring-ftrace.md]
 
 ## 小结
 
