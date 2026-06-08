@@ -11,7 +11,7 @@ task6_state: revisiting
 last_task6_audit: 2026-05-21
 last_task6_audit_log: logs/review/2026-05-21-21-audit.md
 last_task6_at: 2026-05-21T21:06:00+08:00
-task9_state: pending
+task9_state: reviewed
 pipeline_stage: task6_pending
 polish_count: 1
 polish_date: 2026-04-05
@@ -23,13 +23,14 @@ confidence: medium-high
 sources: 
 tags: 
 related_chapters: 
-task9_result: needs-rework
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: 2026-05-05
+task9_reviewed_date: 2026-06-08
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-05-05T18:55:00+08:00
+last_task9_at: 2026-06-08T22:20:00+08:00
 review_notes: 2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace
+last_task9_autofix_at: 2026-06-08
 last_task2b_at: 2026-06-08T21:06:43+08:00
 task2b_fixed_by: openclaw-task2b
 repaired_date: 2026-04-27
@@ -218,7 +219,7 @@ PSI 是 Linux 内核在 4.20（主线合入）中引入的一个机制，Android
 - **Android 10**：PSI 阈值硬编码在 `lmkd.c` 中，`psi_thresholds` 数组为 some=70ms / some=100ms / full=70ms，不支持通过系统属性调整
 - **Android 11+**：引入 `ro.lmk.psi_partial_stall_ms`（默认 70ms）和 `ro.lmk.psi_complete_stall_ms`（默认 700ms）属性。低内存设备（`ro.config.low_ram=true`）的 partial stall 默认值为 200ms。AOSP `lmkd.cpp` 中定义为 `DEF_PARTIAL_STALL=70`、`DEF_COMPLETE_STALL=700`
 
-[已验证: AOSP android-10.0.0_r1 system/memory/lmkd/lmkd.c 硬编码阈值; android-11.0.0_r1 system/memory/lmkd/lmkd.cpp DEF_PARTIAL_STALL/DEF_COMPLETE_STALL]
+[已验证: AOSP android-10.0.0_r1 system/core/lmkd/lmkd.c 硬编码阈值; android-11.0.0_r1 system/memory/lmkd/lmkd.cpp DEF_PARTIAL_STALL/DEF_COMPLETE_STALL]
 
 PSI 相比旧版 `vmpressure` 信号有本质区别。`vmpressure` 基于内存回收事件的数量来判断压力，但它经常产生误报——内核正常的后台内存回收也会触发信号，导致 `lmkd` 在没有真正压力时就启动杀进程。PSI 则直接度量了"任务被阻塞了多久"，这是一个更直接、更准确的压力指标。
 
@@ -433,25 +434,21 @@ Android 15 引入了对 16KB 内存页的支持（传统为 4KB）。这不会�
 
 [已验证: AOSP android-12.0.0_r1 ~ android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
 
-### Android 16/17：可见性感知与配额制
+### Android 16/17：可验证边界与配额制
 
-#### 可见性感知保护（Android 16）
+#### Android 16：桌面多窗场景的可见性边界
 
-桌面模式下多个窗口同时出现在屏幕上，传统的 `oom_score_adj` 无法完整表达"这个窗口用户正在看"的语义。Android 16 的 lmkd 开始利用 HWC（Hardware Composer）反馈来识别屏幕上的可见窗口。
+AOSP android-16.0.0_r1 的 `system/memory/lmkd/lmkd.cpp` 没有 HWC、Layer 或 Display 可见性输入，不能把“HWC 可见图层直接参与 lmkd kill 决策”写成 AOSP 默认行为。公开可验证的保护仍来自 AMS / ATMS 计算出的 `oom_score_adj`、可见 Activity、前台服务和绑定关系；如果厂商实现把显示可见性接入 lmkd，应按 OEM 定制单独验证。
 
-在内存压力下，即使某个进程的 `oom_score_adj` 较高（按传统规则应该被优先回收），只要它的窗口在 HWC 的可见图层列表中（比如桌面模式下的侧边栏应用），lmkd 就会跳过这个进程。没有这个机制，桌面模式下的后台应用更容易被误杀——传统 lmkd 只看 adj 数字，加了可见性维度后，kill 决策多了一个来源：屏幕上到底有什么。
-
-[待验证: AOSP android-16.0.0_r1 lmkd 可见性感知的具体实现路径和配置开关]
+[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp / frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java]
 
 #### 内存配额制：MemoryLimiter（Android 17）
 
-Android 17（API 37）引入了单应用 AnonSwap 硬限制（MemoryLimiter）。传统 lmkd 只在整体内存不足时才杀进程，是"压力响应"模式。MemoryLimiter 改为"配额管控"——应用 PSS 超过阈值后，系统直接杀掉，不等整体内存压力信号。
+Android 17（API 37）引入了基于设备总 RAM 的 app memory limits，并且只在部分设备上启用。它和传统 `lmkd` 的整体内存压力响应不同：当进程触发系统设定的内存限制时，`ApplicationExitInfo.getDescription()` 会包含 `MemoryLimiter:AnonSwap`，退出原因是 `REASON_OTHER`。
 
-被杀进程的 `ExitInfo` 中会包含 MemoryLimiter 描述，方便排查。系统通过 `ProfilingManager` 的 ANOMALY 触发器进行预警，应用可以在被杀前收到信号。
+排查这类退出时，不能只看 `oom_score_adj` 和整体水位，还要看 memory limiter 状态与被杀进程的退出描述。Android 17 还支持用 `ProfilingManager` 的 `TRIGGER_TYPE_ANOMALY` 在系统处理异常内存使用前采集 heap dump。
 
-MemoryLimiter 改变了"谁会被杀"的判断逻辑。以前只看 `oom_score_adj` 和整体水位，现在还要看单个应用的内存用量是否超限。排查应用被杀问题时，除了查 lmkd 日志，还要查 MemoryLimiter 相关的进程退出原因。
-
-[待验证: AOSP API 37 MemoryLimiter 具体阈值配置和 ProfilingManager ANOMALY 触发器细节]
+[已验证: Android 17 官方文档, Behavior changes: all apps / Manage your app's memory]
 
 
 
@@ -512,6 +509,7 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 - [Memory Management — developer.android.com](https://developer.android.com/topic/performance/memory)
 - [ComponentCallbacks2 — developer.android.com](https://developer.android.com/reference/android/content/ComponentCallbacks2)
 - [16KB Page Size — developer.android.com](https://developer.android.com/guide/practices/page-sizes)
+- [Android 17 App memory limits — developer.android.com](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
 
 ### 技术博客
 - [Userspace lmkd — Android Developers Blog](https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html)
