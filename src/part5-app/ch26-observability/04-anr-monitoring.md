@@ -2,7 +2,7 @@
 title: "ANR 监控体系"
 chapter: "26.4"
 section: "26.4"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ANR / Android vitals docs + Clippings structure references"
@@ -39,22 +39,22 @@ sources:
 
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task6_review_notes: '2026-06-08 task6 re-review (revisiting): pass-light-edit。L1 小修 3 处（禁用词"对齐"×2 + 中英文间距×1）；无 L2/L3/L4 新增问题。Task9 needs-rework 已由 Task2B 修复，待 Task9 复审。'
 last_task6_at: "2026-06-08T17:17:44+08:00"
 task6_result: pass-light-edit
 reviewed_date: "2026-06-08"
 reviewed_by: openclaw-task6
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-15"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-06-08"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-08T15:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-08-15-audit.md"
+last_task9_at: "2026-06-08T17:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-08-17-deep-review.md"
 last_task6_audit: "2026-06-07"
-task9_review_notes: "2026-06-08 Task9 闲时抽检：needs-rework，P0 1 处。→ 2026-06-08 Task2B 已修复：删除不可验证的 Android 17 ANR/Ftrace 补充块。"
+task9_review_notes: "2026-06-08 Task9 复审：pass-tech-review，P0/P1 0；P2 1（ApplicationExitInfo trace 保留细节已写入 suggestions）。自动晋升 finalized。"
 task2b_result: "fixed"
 last_task9_audit: "2026-06-08"
 ---
