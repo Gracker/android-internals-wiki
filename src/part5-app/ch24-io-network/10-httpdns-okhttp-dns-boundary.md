@@ -4,8 +4,8 @@ chapter: "24.10"
 section: "24.10"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x"
-last_verified: "2026-05-16"
-last_verified_against: "OkHttp 5.x docs + OkHttp master source + DeepResearch 2026-05-14 + Clippings 结构参考"
+last_verified: "2026-06-09"
+last_verified_against: "OkHttp 5.x docs + OkHttp source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab + DeepResearch 2026-05-14 + Clippings 结构参考"
 confidence: medium
 sources:
   - type: official
@@ -15,15 +15,15 @@ sources:
   - type: official
     path: "https://square.github.io/okhttp/features/events/"
   - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt"
+    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt"
   - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt"
+    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt"
   - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt"
+    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt"
   - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/master/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt"
+    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt"
   - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/master/okhttp-dnsoverhttps/README.md"
+    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp-dnsoverhttps/README.md"
   - type: blog
     path: "DeepResearch/2026-05-14-okhttp-dns-lookup-httpdns-engineering.md"
   - type: clippings
@@ -41,13 +41,13 @@ last_task2a_at: "2026-05-16T16:04:00+08:00"
 status: finalized
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 last_task6_at: "2026-05-16T16:10:00+08:00"
 last_task6_audit: "2026-06-08"
 last_task6_review_log: "logs/review/2026-05-16-16-review.md"
@@ -57,8 +57,10 @@ task6_review_notes: "2026-05-16 Task6：首次写作质检通过；修复 outlin
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-16"
 last_task9_at: "2026-05-16T16:30:00+08:00"
+last_task9_audit: "2026-06-09"
+last_task9_autofix_at: "2026-06-09"
 last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
-task9_review_notes: "2026-05-16 Task9：深度技术审计通过；OkHttp Dns.lookup()、RouteSelector、DnsOverHttps bootstrap、EventListener 与 fast fallback 口径已核对；无 P0/P1/P2，自动晋升 finalized / ready-to-publish。"
+task9_review_notes: "2026-05-16 Task9：深度技术审计通过；OkHttp Dns.lookup()、RouteSelector、DnsOverHttps bootstrap、EventListener 与 fast fallback 口径已核对；无 P0/P1/P2，自动晋升 finalized / ready-to-publish。 | 2026-06-09 Task9 闲时抽检：auto-fixed。P0 源码锚点 2 处；修正 OkHttp Dns.kt master 路径、RealRoutePlanner commit 归属，并将 frontmatter OkHttp raw source pin 到 source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab。"
 ---
 
 # 24.10 HTTPDNS 与 OkHttp Dns 执行边界
@@ -418,7 +420,7 @@ fun interface Dns {
 
 `fun interface` = Kotlin SAM（Single Abstract Method）接口，只能有一个抽象方法，编译后生成 `$DefaultImpls` 静态内部类。实现可以是 lambda：`Dns { hostname -> Dns.SYSTEM.lookup(hostname) }`。
 
-来源：`github.com/square/okhttp/blob/master/okhttp/src/main/kotlin/okhttp3/Dns.kt`
+来源：`github.com/square/okhttp/blob/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt`
 
 <!-- AIW-源码调研-2026-05-17 end -->
 ## 工程检查清单
@@ -439,7 +441,7 @@ fun interface Dns {
 <!-- AIW-源码调研-2026-05-25 -->
 ## 源码补充：ExchangeFinder.findConnection() 与 RealRoutePlanner 同步调用链（2026-05-25 验证）
 
-> 以下补充于 2026-05-25 每日源码调研，基于 square/okhttp commit 19cb19ab4ac31aa789bc94759d13898f64f93ce3 源码验证。
+> 以下补充于 2026-05-25 每日源码调研，基于 square/okhttp commit 19cb19ab4ac31aa789bc94759d13898f64f93ce3 的 ExchangeFinder 源码，以及 OkHttp 5.x source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab 的 RealRoutePlanner 源码验证。
 
 ### RealRoutePlanner.planConnect() 阻塞注释
 
@@ -498,7 +500,8 @@ Fast Fallback 可以缓解 DNS 解析慢导致的建连延迟，但无法消除 
 
 - `github.com/square/okhttp` commit `19cb19ab4ac31aa789bc94759d13898f64f93ce3`
   - `okhttp/src/main/java/okhttp3/internal/connection/ExchangeFinder.kt`（335 行，raw 源码）
-  - `okhttp/src/main/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt`（注释来源）
+- `github.com/square/okhttp` source `728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab`
+  - `okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt`（注释来源）
 - square.github.io/okhttp/features/connections/（Fast Fallback 文档）
 
 <!-- AIW-源码调研-2026-05-25 end -->
