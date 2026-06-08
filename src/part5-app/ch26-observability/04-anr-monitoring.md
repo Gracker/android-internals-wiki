@@ -39,12 +39,12 @@ sources:
 
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 1 处；无新增 L3/L4 回炉项，交 Task9 技术复审。'
-last_task6_at: "2026-05-15T01:12:00+08:00"
+pipeline_stage: "task9_pending"
+task6_state: reviewed
+task6_review_notes: '2026-06-08 task6 re-review (revisiting): pass-light-edit。L1 小修 3 处（禁用词"对齐"×2 + 中英文间距×1）；无 L2/L3/L4 新增问题。Task9 needs-rework 已由 Task2B 修复，待 Task9 复审。'
+last_task6_at: "2026-06-08T17:17:44+08:00"
 task6_result: pass-light-edit
-reviewed_date: "2026-05-15"
+reviewed_date: "2026-06-08"
 reviewed_by: openclaw-task6
 task9_state: "pending"
 task2b_state: "fixed"
@@ -145,11 +145,11 @@ Play 当前把 user-perceived ANR rate 列为 core vitals。公开阈值是：�
 
 | 指标 | 推荐口径 | 用途 |
 |---|---|---|
-| 用户 ANR 率 | 当日遇到至少一次 ANR 的用户数 / DAU | 对齐 Play Vitals，评估用户伤害 |
+| 用户 ANR 率 | 当日遇到至少一次 ANR 的用户数 / DAU | 与 Play Vitals 口径一致，评估用户伤害 |
 | 会话 ANR 率 | 出现 ANR 的前台会话数 / 前台会话数 | 观察发布后回归 |
 | 场景 ANR 率 | 某页面或操作下 ANR 用户数 / 进入该场景用户数 | 定位问题入口 |
 | 设备 ANR 率 | 设备型号 + Android 版本维度的用户 ANR 率 | 发现 ROM、低端机和特定芯片问题 |
-| 可恢复长卡顿率 | 主线程卡住超过阈值但未形成系统 ANR的会话占比 | 提前预警输入超时风险 |
+| 可恢复长卡顿率 | 主线程卡住超过阈值但未形成系统 ANR 的会话占比 | 提前预警输入超时风险 |
 
 告警规则按“全量 + 分桶”两层设计。全量指标盯版本发布质量，分桶指标盯机型、系统版本、页面、实验组。某个低端机型超过 8% 的 Play 线，哪怕全量 ANR 率还低，也要按 P1 处理；全量 user-perceived ANR rate 接近 0.47% 时，发版节奏应暂停，先确认增量版本、实验组和场景分布。
 
@@ -180,7 +180,7 @@ ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题�
 |---|---|---|
 | event_id / session_id | 端侧生成，贯穿一次前台会话 | 串起日志、性能指标和崩溃记录 |
 | 前台状态 | Activity / Fragment / Compose 页面可见状态 | 区分前台交互 ANR 与后台任务超时 |
-| last_user_action | 点击、滑动、返回、输入框编辑等最近动作 | 对齐 input dispatch ANR 的入口 |
+| last_user_action | 点击、滑动、返回、输入框编辑等最近动作 | 匹配 input dispatch ANR 的入口 |
 | main_thread_stack | 超阈值时抓取主线程栈 | 判断卡在 I/O、锁、Binder、布局、数据库还是业务逻辑 |
 | peer_thread_stacks | Binder 线程、持锁线程、线程池活跃任务 | 找到主线程等待的对端 |
 | looper_message | message target、callback、耗时、队列积压 | 找到阻塞主线程的任务来源 |
