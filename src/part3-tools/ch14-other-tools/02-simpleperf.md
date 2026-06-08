@@ -45,8 +45,8 @@ last_task2b_at: "2026-04-22T08:06:44+08:00"
 last_task2b_lite_at: "2026-06-08"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-08-audit.md"
-last_task9_audit: "2026-05-18"
-last_task9_audit_log: "logs/deep-review/2026-05-18-16-audit.md"
+last_task9_audit: "2026-06-09"
+last_task9_audit_log: "logs/deep-review/2026-06-09-05-audit.md"
 ---
 # Simpleperf
 
