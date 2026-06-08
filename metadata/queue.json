@@ -2200,6 +2200,27 @@
       "threshold_days": 30,
       "category": "version_evolution",
       "risk_level": "high"
+    },
+    {
+      "section": "26.4",
+      "section_title": "ANR 监控体系",
+      "priority": 95,
+      "reason": "[Deep Tech Review][闲时抽检] Android 17 ANR/Ftrace 补充块使用不可验证源码锚点且存在源码路径/API 名称错误",
+      "material_paths": [
+        "logs/deep-review/2026-06-08-15-audit.md",
+        "DeepResearch/2026-06-03-anr-monitoring-ftrace.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误/版本边界",
+          "location": "扩展：Android 17 ANR监控与Ftrace集成优化",
+          "detail": "该补充块写入 AOSP android-17.0.0_r1、frameworks/native/cmds/tracer/、system/core/libapp_fatal/android_tracing.cpp、AnrHelper.recordAnr()、AppErrors.saveAnrState() 等源码锚点/调用链。本轮一手复核显示 frameworks/base、frameworks/native、system/core 未返回 android-17.0.0_r1 tag；android-16.0.0_r4 中 frameworks/native/cmds/tracer/ 与 system/core/libapp_fatal/android_tracing.cpp 为 404；Android 16 可验证路径是 AnrHelper.appNotResponding()/ProcessErrorStateRecord.appNotResponding() 调 StackTracesDumpHelper.dumpStackTraces*，未命中 recordAnr/saveAnrState。按 AIW 版本边界，不能把不可验证 tag 或 main/master 资料作为 Android 17 正文结论。",
+          "suggestion": "Task2B 删除或重写该 Android 17/Ftrace 补充块：正文保留已验证的 Android 16 ANR 处理路径与 ApplicationExitInfo/API30+ 边界；Android 17 相关内容仅在拿到 android-17.0.0_r1 或官方 Android 17 文档后一手复核。若保留 trace 采集讨论，改用可验证的 Perfetto/atrace/Trace.java 官方或 AOSP tag 锚点，并移除不存在的 tracer 路径和未验证性能边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-08T15:20:00+08:00",
+      "status": "pending"
     }
   ],
   "5.18": {

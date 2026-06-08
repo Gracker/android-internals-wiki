@@ -40,7 +40,7 @@ sources:
     path: "DeepResearch/2026-06-03-anr-monitoring-ftrace.md"
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 1 处；无新增 L3/L4 回炉项，交 Task9 技术复审。'
 last_task6_at: "2026-05-15T01:12:00+08:00"
@@ -48,15 +48,16 @@ task6_result: pass-light-edit
 reviewed_date: "2026-05-15"
 reviewed_by: openclaw-task6
 task9_state: "reviewed"
-task2b_state: "fixed"
-task9_result: "pass-tech-review"
+task2b_state: "pending"
+task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-15T01:36:05+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-15-01-deep-review.md"
+last_task9_at: "2026-06-08T15:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-08-15-audit.md"
 last_task6_audit: "2026-06-07"
-task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-06-08 Task9 闲时抽检：needs-rework。P0 1 / P1 0；Android 17 ANR/Ftrace 补充块使用不可验证 android-17.0.0_r1 源码锚点，且 frameworks/native/cmds/tracer、system/core/libapp_fatal/android_tracing.cpp、AnrHelper.recordAnr/AppErrors.saveAnrState 等路径/API 未能在可验证源码中对上，已写入 queue.json。"
 task2b_result: "fixed"
+last_task9_audit: "2026-06-08"
 ---
 # ANR 监控体系
 
