@@ -5,8 +5,8 @@ chapter: "1.1"
 section: "1.1"
 status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-27"
-last_verified_against: "AOSP android-17.0.0_r1 SurfaceFlinger.cpp; developer.android.com 16 KB page-size compatibility; source.android.com 16 KB page-size architecture; source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
+last_verified: "2026-06-08"
+last_verified_against: "AOSP android-15.0.0_r1/android-16.0.0_r1 SurfaceFlinger.cpp; developer.android.com 16 KB page-size compatibility; source.android.com 16 KB page-size architecture; source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
 confidence: high
 sources:
   - type: official
@@ -36,30 +36,31 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-27"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-08"
 task2b_state: fixed
 task2b_result: fixed  # 2026-05-27 rework: SurfaceFlinger trace version matrix, 16 KB page-size scope, quantified-data source boundaries
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-27T05:28:00+08:00"
-task9_review_notes: "2026-05-27 Task9 05:28：pass-tech-review。复核 SurfaceFlinger 版本切片、Treble/AIDL HAL、16KB page size、Binder/SELinux 与 Perfetto 映射；无新增 P0/P1。既有 Binder/JNI 量化数据 P2 已在 suggestions.md 记录，不重复新增。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX。复核 android-15.0.0_r1 / android-16.0.0_r1 SurfaceFlinger.cpp，Android 15 没有 postComposition trace 名；已拆分 Android 15 与 Android 13-14 的 SurfaceFlinger 搜索词，回到 Task6 复审。"
 last_task6_at: "2026-05-27T05:14:00+08:00"
 last_task6_audit: "2026-06-06"
 last_task6_review_log: "logs/review/2026-05-27-05-review.md"
 last_task6_audit_log: "logs/review/2026-06-06-14-audit.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
-last_task9_audit: "2026-05-17"
-task9_review_log: "logs/deep-review/2026-05-18-08-deep-review.md"
+last_task9_audit: "2026-06-08"
+task9_review_log: "logs/deep-review/2026-06-08-20-audit.md"
 reviewed_at: "2026-05-18T08:31:45+08:00"
 task6_reviewed_date: "2026-05-27"
-last_task9_review_log: "logs/deep-review/2026-05-27-05-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-08-20-audit.md"
 last_task2b_at: "2026-05-27T04:50:00+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+last_task9_autofix_at: "2026-06-08"
 ---
 
 
@@ -196,7 +197,8 @@ SurfaceFlinger 的工作由 VSync 信号驱动：每个 VSync 周期，它收集
 | Android 版本 | Perfetto / ATrace 中优先搜索的 SurfaceFlinger 切片 | 说明 |
 | --- | --- | --- |
 | Android 16 | `commit <vsyncId>` → `composite <vsyncId>` → `postComposition` | `commit()` 负责 layer 状态提交与 WorkloadTracer 记录，`composite()` 进入 CompositionEngine 合成路径。 |
-| Android 13–15 | `commit` / `composite` / `postComposition` | 这几版已经进入 `SurfaceFlinger::commit()` + `SurfaceFlinger::composite()` 的主路径，trace 名称会带或不带 vsync id。 |
+| Android 15 | `commit <vsyncId>` / `composite <vsyncId>` | android-15.0.0_r1 已进入 `SurfaceFlinger::commit()` + `SurfaceFlinger::composite()` 主路径；该版本源码中没有 `postComposition` trace 名，排查时不要把它作为 Android 15 搜索词。 |
+| Android 13–14 | `commit` / `composite` / `postComposition` | 这两版已经进入 `SurfaceFlinger::commit()` + `SurfaceFlinger::composite()` 的主路径，trace 名称会带或不带 vsync id。 |
 | Android 11–12 | `onMessageInvalidate` → `onMessageRefresh` → `CompositionEngine::present` / `postComposition` | Android 11 和 12 的刷新路径仍由消息驱动，`onMessageRefresh()` 内部组装 `CompositionRefreshArgs` 并调用 CompositionEngine。 |
 | Android 10 及之前 | `onMessageReceived` → `handleMessageRefresh` → `doComposition` → `postComposition` | 旧路径仍能在历史设备或旧 trace 中看到，不能直接套用 Android 13+ 的 `commit` / `composite` 搜索词。 |
 
@@ -335,7 +337,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 **Framework 层**主要体现在 `system_server` 进程中。展开它会看到几十个线程，每个线程对应一个或多个系统服务。比如 `ActivityManager` 线程处理 Activity 相关请求，`WindowManager` 线程处理窗口相关请求。当 App 向这些服务发起 Binder 调用时，Trace 中会出现一条从 App 进程指向 `system_server` 对应线程的箭头。如果这个箭头很长（等待时间长），需要到 `system_server` 对应线程中看它在忙什么。`surfaceflinger` 虽然与 Framework 层的 WMS 紧密协作，但它是独立的 Native 进程，在 Trace 中需要单独查看它的进程 Track。
 
-`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。Android 16 的 SurfaceFlinger 主路径经过 `SurfaceFlinger::commit()`（触发 layer 采集与 WorkloadTracer Commit）→ `SurfaceFlinger::composite()`（异步合成，CompositionEngine 路径）→ `postComposition`（帧提交与 vsync 偏移计算）。Android 13–15 也主要搜索 `commit` / `composite` / `postComposition`；Android 11–12 要改查 `onMessageInvalidate`、`onMessageRefresh`、`CompositionEngine::present` 和 `postComposition`；Android 10 及之前才主要查 `onMessageReceived`、`handleMessageRefresh` 和 `doComposition`。如果合成阶段耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接定位合成层问题，避免把根因误归到 App 层。
+`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。Android 16 的 SurfaceFlinger 主路径经过 `SurfaceFlinger::commit()`（触发 layer 采集与 WorkloadTracer Commit）→ `SurfaceFlinger::composite()`（异步合成，CompositionEngine 路径）→ `postComposition`（帧提交与 vsync 偏移计算）。Android 15 主要搜索带 vsync id 的 `commit` / `composite`；android-15.0.0_r1 中没有 `postComposition` trace 名。Android 13–14 主要搜索 `commit` / `composite` / `postComposition`；Android 11–12 要改查 `onMessageInvalidate`、`onMessageRefresh`、`CompositionEngine::present` 和 `postComposition`；Android 10 及之前才主要查 `onMessageReceived`、`handleMessageRefresh` 和 `doComposition`。如果合成阶段耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接定位合成层问题，避免把根因误归到 App 层。
 
 **Native/HAL 层**的表现比较分散。Treble 之后的 HAL 服务按传输模式区分：binderized HAL（AIDL HAL 和部分 HIDL HAL）以独立进程运行，名字类似 `android.hardware.camera.provider@2.4-service`；passthrough HAL（仅限 HIDL C++ 实现）则以共享库形式加载到调用方进程内，Trace 中不会出现独立的 HAL 进程。对于 binderized HAL，需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category，才能看到完整的 Framework → HAL 调用路径。如果独立 HAL 进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。对于 passthrough HAL，排查时要留在调用方进程内看 native slice 和锁竞争，不要去外面找不存在的 HAL 服务进程。
 
