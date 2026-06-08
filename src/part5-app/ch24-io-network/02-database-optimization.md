@@ -45,6 +45,7 @@ task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-14
 last_task9_at: 2026-05-14T07:24:00+08:00
+last_task9_audit: "2026-06-08"
 task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；源码锚点需 pin 到稳定 tag，16KB page size 与 SQLite page_size/checkpoint 数据量关系需补 PRAGMA 验证。"
 task2b_state: fixed
 last_task2a_at: "2026-05-14T07:12:00+08:00"
