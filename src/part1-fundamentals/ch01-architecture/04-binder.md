@@ -5,8 +5,8 @@ section: "1.4"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-05-13"
 drafted_by: openclaw-task2a
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android-16.0.0_r1 / android-mainline / Perfetto main / source.android / developer.android"
+last_verified: "2026-06-09"
+last_verified_against: "AOSP android-16.0.0_r4 / kernel android16-6.12 / external/perfetto android-16.0.0_r1 / source.android / developer.android"
 confidence: medium
 sources:
   - type: blog
@@ -35,19 +35,19 @@ sources:
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-task6_state: reviewed
+task6_state: "revisiting"
 last_task2a_at: "2026-05-13T18:20:00+08:00"
 last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
 status: finalized
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-13"
+pipeline_stage: "task6_pending"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-06-09"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T18:28:00+08:00"
-last_task9_audit: "2026-05-26"
-last_task9_audit_at: "2026-05-26T15:34:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-26-15-audit.md"
+last_task9_at: "2026-06-09T01:20:00+08:00"
+last_task9_audit: "2026-06-09"
+last_task9_audit_at: "2026-06-09T01:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-09-01-audit.md"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
@@ -58,6 +58,8 @@ task6_review_log: "logs/review/2026-05-13-19-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+task2b_state: "fixed"
+last_task9_autofix_at: "2026-06-09"
 ---
 
 
@@ -140,7 +142,7 @@ Android 8 引入 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_REPLY_SG`）�
 
 当 Parcel 中包含多个独立对象（多个 Bundle、文件描述符数组等）时，scatter-gather 省掉了 gather 步骤的一次额外内存分配和 memcpy。单对象小 payload 的场景收益不明显，多对象大 payload 的场景能减少发送端的 CPU 时间和内存峰值。两种事务到目标 buffer 的数据量一致，接收端不需要区分事务类型。
 
-[已验证: AOSP android-mainline, include/uapi/linux/android/binder.h 中 `binder_transaction_data_sg` 结构体、`BINDER_TYPE_PTR` 定义; drivers/android/binder.c 中 `binder_transaction()` 的 offsets 遍历与 `copy_from_user` 逐段拷贝逻辑]
+[已验证: AOSP kernel/common android16-6.12, include/uapi/linux/android/binder.h 中 `binder_transaction_data_sg` 结构体、`BINDER_TYPE_PTR` 定义; drivers/android/binder.c 中 `binder_transaction()` 的 offsets 遍历与 `copy_from_user` 逐段拷贝逻辑]
 
 这个 mmap 缓冲区的大小限制是 Binder 的一个重要约束。每个进程的所有 Binder 事务共享这块约 1MB 的缓冲区。如果一次性传输一个大 Bitmap 或一个超长列表，就可能撞到 `TransactionTooLargeException`。传输大数据应该使用 `SharedMemory`（基于 ashmem/memfd）或 `ParcelFileDescriptor`，只通过 Binder 传递文件描述符句柄。
 
@@ -276,7 +278,7 @@ Perfetto 的 Binder 分析要分清两层：
 
 `client_dur` 和 `server_dur` 的差值反映 Binder 驱动排队和上下文切换开销。`is_sync` 可以快速过滤出阻塞型调用。
 
-[已验证: AOSP Perfetto main, src/trace_processor/perfetto_sql/stdlib/android/binder.sql 中 `android_binder_txns` 表字段] [来源: obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md]
+[已验证: AOSP external/perfetto android-16.0.0_r1, src/trace_processor/perfetto_sql/stdlib/android/binder.sql 中 `android_binder_txns` 表字段] [来源: obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md]
 
 ### 三步分析流程
 
@@ -380,7 +382,7 @@ Perfetto 的 `BinderTracker`（`src/trace_processor/importers/ftrace/binder_trac
 - `client_dur == -1`：事务被 `_binder_txn_merged` 过滤，切片已排除
 - 只有发起侧没有 reply slice：server 进程崩溃或被冻结
 
-[已验证: AOSP main, src/trace_processor/importers/ftrace/binder_tracker.cc]
+[已验证: AOSP external/perfetto android-16.0.0_r1, src/trace_processor/importers/ftrace/binder_tracker.cc]
 
 ## Binder 风暴与系统负载
 
@@ -469,16 +471,16 @@ oneway 调用避免了 Client 端的阻塞等待，但仍有队列和处理成�
 
 
 
-## 线程池与调度器协同：Android 14+ 协作机制与内核层契约
+## 线程池与调度器协同：Android 14-16 源码观察与内核层契约
 
 <!-- AIW-源码调研-2026-06-07 -->
 
-> ⚠️ **版本边界说明**：本节源码锚点基于 AOSP `frameworks/native` tag `android-16.0.0_r4` 与 `kernel/common` branch `android16-6.12`。公开 AOSP 截至 2026-06-07 暂无 `android-17.0.0_r1` tag，本节**未进入 Android 17**。
+> ⚠️ **版本边界说明**：本节源码锚点基于 AOSP `frameworks/native` tag `android-16.0.0_r4` 与 `kernel/common` branch `android16-6.12`。本轮抽检通过 `git ls-remote` 核查 `platform/manifest`、`frameworks/base`、`frameworks/native`、`external/perfetto` 与 `kernel/common`，截至 2026-06-09 暂无 `android-17.0.0_r1` tag 或 `android17-6.12` branch，本节**未进入 Android 17**。
 
 ### Native 侧的协作机制
 
-#### `mOnThreadAvailableCondVar`：客户端线程主动等待
-AOSP 14+ 起 `ProcessState` 引入 `std::condition_variable mOnThreadAvailableCondVar`（`include/binder/ProcessState.h:182`），与旧版 `pthread_cond_*` 实现相比，App 端在发起同步 Binder 时由内核 `binder_thread_read` 等待改为**用户态条件变量等待**。触发函数 `IPCThreadState::blockUntilThreadAvailable()`（`IPCThreadState.cpp:713`）核心逻辑：
+#### `mOnThreadAvailableCondVar`：本进程线程池可用性等待
+AOSP 13-15 的 `IPCThreadState::blockUntilThreadAvailable()` 已经在用户态用 `pthread_cond_wait()` 等待本进程可执行 Binder 线程数低于上限。Android 16（`android-16.0.0_r1` 起）把这段实现迁移到 `std::condition_variable mOnThreadAvailableCondVar`（`include/binder/ProcessState.h:182`）；它不是从内核 `binder_thread_read` 等待切到用户态等待，而是用户态线程池等待实现从 pthread 条件变量迁移到 C++ 条件变量。Android 16 中的核心逻辑：
 
 ```cpp
 void IPCThreadState::blockUntilThreadAvailable() {
@@ -496,7 +498,7 @@ void IPCThreadState::blockUntilThreadAvailable() {
 }
 ```
 
-排障含义：当 Perfetto 中看到主线程 Sleeping 但伴随 logcat 出现 `Waiting for thread to be free` 字样，**已不再仅是内核态等待**，而是用户态 + 内核态双重等待；这往往意味着对端进程 worker 池已饱和。
+排障含义：当 Perfetto 中看到主线程 Sleeping 且 logcat 出现 `Waiting for thread to be free`，能说明发出日志的进程内正在执行的 Binder 线程数已经达到 `mMaxThreads`。它不能单独证明对端进程 worker 池饱和；还需要结合目标进程的 `binder:` / `hwbinder:` worker 数量、线程状态和事务延迟一起判断。
 
 #### 100ms 饥饿告警：`mStarvationStartTime`
 `IPCThreadState::getAndExecuteCommand()`（`IPCThreadState.cpp:747-768`）在 worker 计数达到 `mMaxThreads` 时记录起始时间，回落时计算饥饿时长，超过 **100ms** 阈值打 `ALOGE`：
@@ -553,7 +555,7 @@ static void binder_wakeup_thread_ilocked(struct binder_proc *proc,
 
 两个关键事实：
 - **FIFO 队首选取**（`list_first_entry_or_null`），不区分 priority 选取 worker。
-- **同步 vs 异步唤醒**：`sync=true` 用 `wake_up_interruptible_sync`，调用方会等到 worker 进入调度；oneway 用普通 `wake_up_interruptible`。最终都走 `try_to_wake_up()` 与 Linux 调度器握手。
+- **同步 vs 异步唤醒**：`sync=true` 用 `wake_up_interruptible_sync`，向调度器传递 `WF_SYNC` 唤醒提示，表示唤醒方预计很快会让出 CPU，可减少跨 CPU 迁移或额外抢占；它不表示调用方会等待 worker 实际运行。oneway 用普通 `wake_up_interruptible`。最终都走 `try_to_wake_up()` 与 Linux 调度器握手。
 
 `BINDER_SET_MAX_THREADS` ioctl 落点（`binder.c:6079-6092`）仅写值，**不触发线程创建/销毁**；真正的"按需创建"在 `binder_thread_read()` 收到 `BR_SPAWN_LOOPER` 后由 client 调用 `IPCThreadState::joinThreadPool(false)` 完成。
 
@@ -650,7 +652,7 @@ if (is_fair_policy(policy))
   - `drivers/android/binder.c`（内核 Binder 驱动 实现）
 - [已验证: 官方文档, developer.android.com/reference/android/os/IBinder]
 - [已验证: 官方文档, developer.android.com/guide/components/aidl]
-- [已验证: AOSP Perfetto main, `src/trace_processor/perfetto_sql/stdlib/android/binder.sql` 中 `android_binder_txns` 表字段]
+- [已验证: AOSP external/perfetto android-16.0.0_r1, `src/trace_processor/perfetto_sql/stdlib/android/binder.sql` 中 `android_binder_txns` 表字段]
 - [引用: https://source.android.com/docs/core/architecture/aidl/aidl-hals]
 - [引用: https://source.android.com/docs/core/architecture/ipc/priority-inheritance]
 - [引用: https://source.android.com/docs/core/architecture/ipc/binder-freezer]
@@ -664,6 +666,6 @@ if (is_fair_policy(policy))
 ### Android Binder IPC 机制 — 从 Java 层到 Kernel Driver 源码调研
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-binder-ipc-mechanism-source-analysis.md
 - 类型：DeepResearch 调研结果
-- 摘要：从 Java 层 BinderProxy.transact() 到 JNI 层 android_util_Binder.cpp、Native 层 BpBinder/BBinder、IPCThreadState.talkWithDriver() ioctl 全链路源码级分析。涵盖 BC_/BR_ 命令码协议、flat_binder_object 跨进程编码、Parcel 序列化、handle=0 Context Manager 保留、线程池管理（spawn_thread_on_demand）、oneway 异步与同步事务差异，所有源码锚点均基于 android-17.0.0_r1。
+- 摘要：从 Java 层 BinderProxy.transact() 到 JNI 层 android_util_Binder.cpp、Native 层 BpBinder/BBinder、IPCThreadState.talkWithDriver() ioctl 全链路源码级分析。该调研材料标题与摘要声称源码锚点基于 `android-17.0.0_r1`；本轮抽检未在公开 AOSP `platform/manifest`、`frameworks/base`、`frameworks/native`、`external/perfetto` 中查到该 tag，因此不能把其中的 `android-17.0.0_r1` 锚点作为正文结论。
 - 注入时间：2026-06-02
-- 价值：Binder Java→JNI→Native→Kernel 全链路源码锚定于 android-17.0.0_r1，对 AIW Binder 章节的源码引用有直接补充价值
+- 价值：作为 Binder Java→JNI→Native→Kernel 全链路待复核线索使用；正式引用以公开 tag/branch 可验证源码为准
