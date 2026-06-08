@@ -15,7 +15,7 @@ last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
 reviewed_date: "2026-06-01"
 reviewed_by: "openclaw-task6"
-last_task6_audit: "2026-05-18"
+last_task6_audit: "2026-06-08"
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
 last_task9_at: "2026-06-03T01:26:00+08:00"
 last_task9_audit: "2026-05-17"
