@@ -37,6 +37,7 @@ task9_state: "reviewed"
 pipeline_stage: "ready-to-publish"
 review_type: task6-writing-quality-review
 last_task6_at: "2026-05-17T12:11:00+08:00"
+last_task6_audit: "2026-06-08"
 task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处（补 section 元数据、弱化口语化表述 2 处）；无回炉项，待 Task9 技术审查。"
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
