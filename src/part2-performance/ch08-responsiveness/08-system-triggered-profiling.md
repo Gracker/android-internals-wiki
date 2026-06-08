@@ -19,7 +19,7 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-10'
 gap_source: 研究素材
 last_verified: '2026-04-20'
-last_verified_against: AOSP main + Android Developers
+last_verified_against: AOSP main + Android Developers + Task9 audit 2026-06-06 (4.8/5, P0/P1=0)
 confidence: medium
 sources:
 - type: blog
@@ -57,12 +57,13 @@ task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-09T13:40:00+08:00'
+last_task2b_lite_at: '2026-06-08'
 repaired_date: '2026-05-09'
 repaired_by: openclaw-task2b
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-23'
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-06T14:25:00+08:00'
