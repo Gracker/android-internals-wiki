@@ -1,4 +1,5 @@
 ---
+
 title: "WebView Renderer OOM 与白屏恢复"
 chapter: "20.10"
 section: "20.10"
@@ -42,12 +43,10 @@ gap_source: "素材驱动/官方文档"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
-task6_state: revisiting
-last_task6_audit: "2026-05-24"
+task6_state: reviewed  # updated by task2b-verifier 2026-06-08last_task6_audit: "2026-05-24"
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: task6_pending
-task9_result: auto-fixed
+pipeline_stage: ready-to-publish  # promoted by task2b-verifier 2026-06-08task9_result: auto-fixed
 task9_reviewed_date: '2026-06-08'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-08T16:24:00+08:00'

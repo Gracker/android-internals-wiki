@@ -1,4 +1,5 @@
 ---
+
 title: "移动端 LLM 推理的 DVFS 与能效边界"
 chapter: "5.13"
 section: "5.13"
@@ -14,12 +15,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/研究素材/官方文档"
 gap_score: 17
-pipeline_stage: task6_pending
-reviewed_by: openclaw-task6
+pipeline_stage: ready-to-publish  # promoted by task2b-verifier 2026-06-08reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task6_state: revisiting
-task9_state: reviewed
+task6_state: reviewed  # updated by task2b-verifier 2026-06-08task9_state: reviewed
 last_task6_at: "2026-05-16T19:11:00+08:00"
 last_task6_audit: "2026-06-06"
 task9_result: auto-fixed
