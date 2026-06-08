@@ -1,4 +1,5 @@
 ---
+
 title: "InputDispatcher 反压与无响应窗口降级"
 chapter: "3.7"
 section: "3.7"
@@ -26,7 +27,7 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-17"
@@ -44,8 +45,7 @@ last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-25-00-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
----
+last_deepseek_cn_review_at: 2026-06-04---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
 

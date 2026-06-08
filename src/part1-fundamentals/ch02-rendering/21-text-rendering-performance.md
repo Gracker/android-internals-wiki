@@ -70,6 +70,8 @@ last_task9_autofix_at: "2026-05-28"
 task9_review_notes: "2026-05-28 Task9 04:30：pass-tech-review；无 P0/P1；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task6_at: '2026-05-28T01:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-28-01-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-09
 ---
 
 
@@ -89,7 +91,7 @@ last_task6_review_log: "logs/review/2026-05-28-01-review.md"
 
 打开手机上任何一个 App（微信聊天、微博信息流、新闻客户端），占据屏幕面积最大的元素是什么？文字。
 
-文字看起来简单,像是把几个字画到屏幕上。但在 Android 的渲染管线中,文字往往是 CPU 开销最高的绘制类型之一。原因很直接,文字渲染不是简单的像素拷贝,而是要经过"整形→测量→换行→光栅化→绘制"这一整套流程。其中"整形"(text shaping)和"测量"(measurement)尤其昂贵,需要根据字体、语言、上下文计算每个字符的精确位置,背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
+文字看起来简单，像只是把几个字画到屏幕上。但在 Android 的渲染管线中,文字往往是 CPU 开销最高的绘制类型之一。原因很直接,文字渲染不是简单的像素拷贝,而是要经过"整形→测量→换行→光栅化→绘制"这一整套流程。其中"整形"(text shaping)和"测量"(measurement)尤其昂贵,需要根据字体、语言、上下文计算每个字符的精确位置,背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
 
 对于列表类 App(聊天、社交、新闻),一屏可能同时存在几十个 TextView。在滑动过程中,每个 TextView 都需要在 8.33ms (120Hz) 或 16.67ms (60Hz) 的帧预算内完成 measure → layout → draw 全流程。如果某个 TextView 的文字测量耗时超标,帧就掉了。
 
@@ -121,7 +123,7 @@ void SkiaCanvas::drawGlyphs(...) {
 }
 ```
 
-这个区别直接影响我们怎么描述调用链。公开 API 层可以说是 `Canvas.drawGlyphs()`;HWUI 提交层在当前 tag 上仍然是 `SkiaCanvas::drawGlyphs()` → `SkTextBlobBuilder` → `SkCanvas::drawTextBlob()`。把两层合成一句"直接下沉到 SkCanvas.drawGlyphs"会把 API 名称和 HWUI 内部实现写混。
+这个区别直接影响我们怎么描述调用链。公开 API 层可以说是 `Canvas.drawGlyphs()`;HWUI 提交层在当前 tag 上仍然是 `SkiaCanvas::drawGlyphs()` → `SkTextBlobBuilder` → `SkCanvas::drawTextBlob()`。把这两层合并成一句“直接下沉到 SkCanvas.drawGlyphs”，会混淆公开 API 名称和 HWUI 内部实现。
 
 Glyph atlas 仍然存在,首次出现的字形也仍可能触发 atlas miss、CPU 光栅化和纹理上传。但这些属于 Skia / HWUI 的内部实现细节,具体函数名会随版本变化;写到书里时保留到可直接核对的层级更稳。
 [图:文字渲染管线架构图 - 展示 TextView.setText() → Layout 选择(BoringLayout / StaticLayout / DynamicLayout)→ Minikin 整形 + LineBreaker 换行 → HWUI drawGlyphs() → Skia drawTextBlob() → GPU glyph atlas 的完整路径,标注 measure 和 draw 两个瓶颈区间]

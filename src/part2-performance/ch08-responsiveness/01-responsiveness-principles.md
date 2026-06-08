@@ -1,5 +1,6 @@
 ---
 
+
 title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
@@ -30,7 +31,7 @@ sources:
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
 P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-task6_state: revisiting
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
@@ -324,7 +325,6 @@ RAIL 的核心思想——根据用户的感知阈值设定性能目标——是
 task2b_fixed_date: "2026-06-06"
 finalized_date: 2026-06-06
 finalized_by: openclaw-task9-auto-promote
-
 ---
 
 > **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-16.0.0_r1 源码修正。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。

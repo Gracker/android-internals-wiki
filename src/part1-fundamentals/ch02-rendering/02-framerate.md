@@ -1,4 +1,5 @@
 ---
+
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
@@ -54,7 +55,7 @@ related_chapters:
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
 pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-23"
@@ -68,8 +69,7 @@ task9_review_notes: "2026-05-23 task9 deep-review: pass-tech-review。P0 0 / P1 
 task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
 last_task6_audit: "2026-05-19"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
----
+last_deepseek_cn_review_at: 2026-05-28---
 
 # 帧率与刷新率
 

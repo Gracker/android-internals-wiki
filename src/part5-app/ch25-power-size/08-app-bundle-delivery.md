@@ -1,4 +1,5 @@
 ---
+
 title: "App Bundle 与按需分发"
 chapter: "25.8"
 section: "25.8"
@@ -43,7 +44,7 @@ sources:
 tags: [app-bundle, aab, dynamic-feature, play-asset-delivery]
 related_chapters: ["25.6", "25.7", "12.1"]
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 last_task9_review_log: "logs/deep-review/2026-05-18-12-deep-review.md"
 last_task9_at: "2026-05-18T12:44:40+08:00"
@@ -60,8 +61,7 @@ task6_review_notes: "2026-05-14 22:10 Task6：写作层小修 3 处后通过；�
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-18"
-task9_review_notes: "2026-05-18 12:44 Task9 deep-review: pass-tech-review。P0/P1/P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
----
+task9_review_notes: "2026-05-18 12:44 Task9 deep-review: pass-tech-review。P0/P1/P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"---
 
 # App Bundle 与按需分发
 

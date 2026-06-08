@@ -1,4 +1,5 @@
 ---
+
 title: "ConnectivityService 与网络状态监听性能"
 chapter: "12.5"
 section: "12.5"
@@ -31,11 +32,11 @@ sources:
     path: "packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java"
 reviewed_date: "2026-05-17"
 reviewed_by: openclaw-task6
-task6_state: reviewed  # updated by task2b-verifier 2026-06-09
+task6_state: "reviewed"  # updated by task2b-verifier 2026-06-09
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task2b_state: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 review_type: task6-writing-quality-review
 last_task6_at: "2026-05-17T12:11:00+08:00"
 last_task6_audit: "2026-06-08"
@@ -50,8 +51,7 @@ last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-00-audit.md"
 last_task9_autofix_at: "2026-06-09"
 task9_result: "auto-fixed"
-task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。将 ConnectivityManager / ConnectivityService / NetworkCapabilities 的源码锚点从 AOSP main 收敛到已复核的 android-16.0.0_r1；Android 17 tag 当前未在 android.googlesource 公开，适用范围暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 0。"
----
+task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。将 ConnectivityManager / ConnectivityService / NetworkCapabilities 的源码锚点从 AOSP main 收敛到已复核的 android-16.0.0_r1；Android 17 tag 当前未在 android.googlesource 公开，适用范围暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 0。"---
 
 # 12.5 ConnectivityService 与网络状态监听性能
 

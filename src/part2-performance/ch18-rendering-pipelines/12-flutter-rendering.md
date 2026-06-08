@@ -2,6 +2,7 @@
 
 
 
+
 title: Flutter 渲染管线
 chapter: '18.12'
 status: finalized
@@ -29,7 +30,7 @@ sources:
   - Flutter engine 仓库：shell/platform/android/
 section: '18.12'
 review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 10 L1 fixes (禁用词「链路」→「管线」全量替换: 标题/tags/大纲/正文). 无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
-task6_state: revisiting
+task6_state: "reviewed"
 pipeline_stage: ready-to-publish
 task9_state: reviewed
 task2b_state: fixed
@@ -55,8 +56,7 @@ task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。本轮无 L1/L2 问题，无新增 L3/L4 回炉项。"
 last_task9_review_log: "logs/deep-review/2026-06-05-00-deep-review.md"
-task9_review_notes: "2026-06-05 00:20 Task9 deep-review: pass-tech-review。Flutter 3.29 merged threads、3.27 Impeller Android API 29+、3.44 HCPP API 34+ Vulkan 边界经官方文档复核；无 P0/P1，自动晋升 finalized。"
----
+task9_review_notes: "2026-06-05 00:20 Task9 deep-review: pass-tech-review。Flutter 3.29 merged threads、3.27 Impeller Android API 29+、3.44 HCPP API 34+ Vulkan 边界经官方文档复核；无 P0/P1，自动晋升 finalized。"---
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**

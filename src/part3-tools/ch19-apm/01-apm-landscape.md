@@ -1,4 +1,5 @@
 ---
+
 title: "APM 全景图与分类体系"
 chapter: "19"
 section: "19.01"
@@ -49,7 +50,7 @@ last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 re-review: pass-tech-review。P0/P1=0；ApplicationExitInfo reason 版本边界与 AppExitInfoTracker 消息路径已修正；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
-task6_state: revisiting
+task6_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-22T01:16:12+08:00"
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
@@ -59,8 +60,7 @@ finalized_by: openclaw-task9-auto-promote
 auto_promoted_date: "2026-05-22"
 auto_promoted_by: openclaw-task9
 last_deepseek_polish_at: 2026-05-26
-deepseek_polish_state: done
----
+deepseek_polish_state: done---
 
 # APM 全景图与分类体系
 

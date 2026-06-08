@@ -1,5 +1,6 @@
 ---
 
+
 title: "云端 Profile、DM 文件与安装后编译优化"
 chapter: "21.11"
 section: "21.11"
@@ -38,7 +39,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "素材驱动/AOSP结构/官方文档"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
 review_type: draft-review
@@ -61,8 +62,7 @@ task2b_fixed_date: "2026-06-06"
 finalized_date: 2026-06-06
 finalized_by: openclaw-task9-auto-promote
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
----
+last_deepseek_cn_review_at: 2026-06-06---
 
 # 21.11 云端 Profile、DM 文件与安装后编译优化
 

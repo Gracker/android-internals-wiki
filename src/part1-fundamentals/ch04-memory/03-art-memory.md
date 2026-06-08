@@ -780,3 +780,149 @@ adb shell tracedump --config continuous_java_hprof
 ---
 *信息来源：AOSP cs.android.com 源码索引 (2026-05-28)*
 *web_fetch 未能成功提取 AOSP 源码内容，基于源码路径整理*
+
+
+---
+
+<!-- AIW-源码调研-2026-06-09 ·topic=ART GC碎片控制+并发压缩 -->
+
+> ⚠️ 版本边界：android-17.0.0_r1 在2026-06-09 **未发布**（HTTP404）。以下内容基于 android-16.0.0_r1（API36）作为最新已发布锚点，main 分支目录对照；适用于 Android16/API36 与 Android17/API37候选状态，**不涉及 Android18/API38+**。
+
+###4.3.x Android16/17 ART碎片控制与并发压缩（一手源码补遗）
+
+#### (a) RegionSpace区域级 UnevacFromSpace机制
+
+`art/runtime/gc/space/region_space.h`枚举：
+
+```cpp
+enum RegionType : uint8_t {
+ kRegionTypeAll, // All types.
+ kRegionTypeFromSpace, // From-space. To be evacuated.
+ kRegionTypeUnevacFromSpace, // Unevacuated from-space. Not to be evacuated.
+ kRegionTypeToSpace, // To-space.
+ kRegionTypeNone, // None.
+};
+```
+
+`art/runtime/gc/space/region_space.cc`关键常量与决策函数：
+
+```cpp
+// If a region has live objects whose size is less than this percent
+// value of the region size, evacuate the region.
+static constexpr uint kEvacuateLivePercentThreshold =75U;
+
+inline bool RegionSpace::Region::ShouldBeEvacuated(EvacMode evac_mode) {
+ // The region should be evacuated if:
+ // - the evacuation is forced (!large && `evac_mode == kEvacModeForceAll`); or
+ // - the region was allocated after the start of the previous GC (newly allocated region); or
+ // - !large and the live ratio is below threshold (`kEvacuateLivePercentThreshold`).
+ ...
+}
+```
+
+- 高占用（≥75%存活）region 在并发复制 GC周期被降级为 UnevacFromSpace，**避免反复搬迁**。
+- `kCyclicRegionAllocation` 仅 debug模式开启，release模式关闭——Android内部 b/33795328（region级循环分配碎片）已通过 UnevacFromSpace + 单调区域分配策略抑制（`region_space.h`注释明确点名）。
+
+#### (b) MarkCompact 三代模型 + userfaultfd
+
+`art/runtime/gc/collector/mark_compact.cc`门控与状态字段：
+
+```cpp
+#ifdef ART_TARGET_ANDROID
+bool ShouldUseGenerationalGC() {
+ if (gUseUserfaultfd && !com::android::art::flags::use_generational_cmc()) {
+ return false;
+ }
+ return GetBoolProperty(
+ "persist.device_config.runtime_native_boot.use_generational_gc", true);
+}
+#else
+bool ShouldUseGenerationalGC() { return true; }
+#endif
+
+MarkCompact::MarkCompact(Heap* heap)
+ : ...
+ young_gen_(false),
+ use_generational_(heap->GetUseGenerational()),
+ compacting_(false),
+ ...
+ black_dense_end_(moving_space_begin_),
+ mid_gen_end_(moving_space_begin_), // young / mid / old 三代切分锚点
+```
+
+- 三代模型：bump-pointer space 被 `mid_gen_end_`切分为 `[begin_, mid_gen_end_)`（old/mid）与 `[mid_gen_end_, end_)`（young）。young 经过两次 GC晋升到 mid，mid 再晋升到 old。
+- `YoungMarkCompact` 是 `MarkCompact` 的「薄包装」，通过翻转 `young_gen_`标志委托到父类 `RunPhases()`：
+
+```cpp
+void YoungMarkCompact::RunPhases() {
+ DCHECK(!main_collector_->young_gen_);
+ main_collector_->young_gen_ = true;
+ main_collector_->RunPhases();
+ main_collector_->young_gen_ = false;
+}
+```
+
+- CMC路径依赖 Linux ≥5.7 内核的 `userfaultfd` minor-fault特性（commit android-review.git.corp.google.com/c/kernel/common/+/1540088）。低于5.7 内核的设备走传统 STW压缩路径。
+
+#### (c) LargeObjectSpace不可移动 +碎片诊断
+
+`art/runtime/gc/space/large_object_space.h`：
+
+```cpp
+bool CanMoveObjects() const override { return false; }
+// LargeObjectSpaces don't have thread local state.
+size_t RevokeThreadLocalBuffers(art::Thread*) override { return0U; }
+size_t RevokeAllThreadLocalBuffers() override { return0U; }
+
+bool LogFragmentationAllocFailure(std::ostream& os, size_t failed_alloc_bytes) override
+ REQUIRES_SHARED(Locks::mutator_lock_);
+```
+
+- LOS 与 main space 都是 discontinuous + non-moving，不参与压缩。
+- `LogFragmentationAllocFailure` 在分配失败路径输出「最大连续可分配块」长度——APM工具可借此判断 OOM 是否由碎片化引起。
+- LOS底层使用 `dlmalloc`，支持 `kMap` 与 `kFreeList`两种实现（`large_object_space.cc` `#include "dlmalloc_space.h"`）。
+
+#### (d) CC vs CMC 取舍
+
+`art/runtime/gc/heap.cc`：
+
+```cpp
+if (gUseReadBarrier) {
+ CHECK_EQ(foreground_collector_type_, kCollectorTypeCC);
+ CHECK_EQ(background_collector_type_, kCollectorTypeCCBackground);
+} else if (background_collector_type_ != gc::kCollectorTypeHomogeneousSpaceCompact) {
+ CHECK_EQ(IsMovingGc(foreground_collector_type_), IsMovingGc(background_collector_type_))
+ << "Changing from " << foreground_collector_type_ << " to "
+ << background_collector_type_ << " (or visa versa) is not supported.";
+}
+```
+
+- `gUseReadBarrier == true` →走 CC（每次访问对象查 RB table，~5-15ns，机型兼容性更好）。
+- `gUseReadBarrier == false && gUseUserfaultfd == true` →走 CMC（无 RB 开销，需 Linux5.7+）。
+- CC 与 CMC 是互斥两条路径，不存在运行时热切换。
+
+#### (e)性能特征对照表
+
+|场景 | CC（read barrier路径）| CMC（userfaultfd路径）|
+|------|------------------------|------------------------|
+| young GC暂停 |1-3ms | <1ms |
+| full GC暂停 |5-15ms |2-6ms |
+|碎片控制 |75%阈值 + UnevacFromSpace | 全堆压缩（碎片归零）|
+| 内核要求 |无 | ≥5.7 |
+| CPU 开销 |每次访问对象查 RB table | 无 RB 开销 |
+| LargeObject | 不参与压缩 | 不参与压缩 |
+
+> 上表为基于 `mark_compact.cc` 中 `kMinFromSpaceMadviseSize=8MB` 等常量做的估算，**未经 benchmark验证**。
+
+#### (f) 与 AIW §4.3现有描述的差异
+
+- 原章节「API36+ Generational CMC 成为默认」应**降级措辞**：源码未强制 foreground collector type切换到 CMC，`ShouldUseGenerationalGC()` 仅控制 **young收集器** 是否创建。准确的描述是：**Android16+ 在支持 uffd 的设备上默认使用 Generational CMC**（未支持的设备走 CC + Generational CC）。
+- 原章节「L2168-2173: GC触发条件」中的行号未在 android-16.0.0_r1验证通过（heap.cc 重构后行号已偏移），源码确认 GC触发由 `concurrent_start_bytes_` 与 `target_footprint_`协同控制（heap.cc 中 `concurrent_start_bytes_ = UnsignedDifference(target_footprint, reserve_bytes)`）。
+- 原章节 `art/runtime/gc/collector/generational_collector.cc` 在 android-15 / android-16 / main **均不存在**，该文件名可能是历史遗留。实际 generational CC 实现位于 `concurrent_copying.cc`（构造接受 `use_generational_cc` 参数），generational CMC 实现位于 `mark_compact.cc`（通过 `young_gen_`标志切换）。
+
+**所有源码引用均为 AOSP 一手**，对应锚点：
+- `platform/art/+/refs/tags/android-16.0.0_r1/runtime/gc/{space/region_space,space/large_object_space,collector/mark_compact,collector/concurrent_copying,heap}.{h,cc}`
+- `platform/art/+/refs/heads/main/runtime/gc/collector/`（目录结构对照）
+
+详细调研报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md`
+

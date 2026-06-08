@@ -570,3 +570,13 @@ App 侧继续使用原生 `libvulkan` + Swappy，SurfaceFlinger 这层在 Androi
 > - SurfaceControl API 与 FrameTimeline 详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)
 > - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
 > - BufferQueue 与 Transaction 机制详见 [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+
+
+## 延伸阅读
+
+### Android 17 GPU 渲染管线：Skia Graphite 后端与 Vulkan 性能优化（方向性参考）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-gpu-render-pipeline-vulkan-graphite.md
+- 类型：DeepResearch 调研结果
+- 摘要：AOSP main 分支 SurfaceFlinger RenderEngine 层引入 Skia Graphite 作为新 GPU 后端，新增 GraphiteVkRenderEngine 实现。Graphite 用 Recording + BackendSemaphore 的录制-提交分离模型替代 Ganesh 的即时命令模式，配合 RenderEngineThreaded 异步任务队列(SCHED_FIFO:2)构成录制/提交线程分离的新执行模型。⚠️ 该代码仅存在于 main 分支，尚未进入 Android 17 已发布 tag。
+- 注入时间：2026-06-09
+- 价值：Graphite 是 AOSP 图形栈近五年最重大架构变更，作为 §18.9 的延伸方向参考，提前建立 Skia Ganesh→Graphite 迁移认知

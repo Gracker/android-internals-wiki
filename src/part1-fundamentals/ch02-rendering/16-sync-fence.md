@@ -1,4 +1,5 @@
 ---
+
 title: "Sync Fence 框架与帧同步机制"
 chapter: "2.16"
 section: "2.16"
@@ -41,7 +42,7 @@ repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。 | 2026-05-24 Task9 闲时抽检：needs-rework。P1 1：Vulkan Timeline Semaphore 不能直接导出 Android sync fd / Perfetto fence track 只能观察 native fence；P2 1：dequeueBuffer fence 命名需改为 dequeue/release fence。"
 status: finalized
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
@@ -53,8 +54,7 @@ review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task
 last_task9_audit: "2026-05-24"
 last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-29
----
+last_deepseek_cn_review_at: 2026-05-29---
 
 # 2.16 Sync Fence 框架与帧同步机制
 

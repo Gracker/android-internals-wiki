@@ -1,4 +1,5 @@
 ---
+
 title: "Perfetto Profile 导入与 Flamegraph 分析"
 chapter: "13.12"
 section: "13.12"
@@ -32,7 +33,7 @@ gap_source: "研究素材/官方发布说明"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-26"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 last_task6_at: '2026-05-15T14:12:00+08:00'
 task6_result: pass-light-edit
 reviewed_date: "2026-05-15"
@@ -44,8 +45,7 @@ task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-18T15:25:00+08:00"
 task9_review_notes: "2026-05-15 task9 deep-review: P0 1 / P1 1 / P2 1，需 Task2B 修正 v54 Data Explorer 命名、linux.perf Android 版本/权限边界与 ch13 交叉引用。；2026-05-18 task9 deep-review: P0 0 / P1 0 / P2 1（既有 ch13 README/related_chapters 交叉引用建议已在 suggestions.md 记录）；无阻塞技术问题，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
----
+last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"---
 
 # 13.12 Perfetto Profile 导入与 Flamegraph 分析
 

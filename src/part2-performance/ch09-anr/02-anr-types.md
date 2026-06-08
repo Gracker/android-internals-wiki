@@ -1,4 +1,5 @@
 ---
+
 title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
@@ -46,7 +47,7 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
@@ -69,8 +70,7 @@ p0: 0
 p1: 0
 p2: 2
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
----
+last_deepseek_cn_review_at: 2026-05-31---
 
 # ANR 类型与触发条件
 

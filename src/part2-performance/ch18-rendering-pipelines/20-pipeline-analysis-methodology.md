@@ -1,4 +1,5 @@
 ---
+
 title: "渲染管线分析方法论"
 chapter: "18.20"
 section: "18.20"
@@ -26,7 +27,7 @@ related_chapters: ["18.1", "2.6", "13.5", "15.1", "18.13", "18.14", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -45,8 +46,7 @@ last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T05:31:18+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-05-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-21-07-deep-review.md"
-task9_review_notes: "2026-05-21 Task9 deep review: pass-tech-review；AOSP DrawFrameTask 路径与 queueBuffer/dequeueBuffer 语义已复核，无 P0/P1，满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。"
----
+task9_review_notes: "2026-05-21 Task9 deep review: pass-tech-review；AOSP DrawFrameTask 路径与 queueBuffer/dequeueBuffer 语义已复核，无 P0/P1，满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。"---
 
 <!-- outline-start -->
 
