@@ -610,6 +610,175 @@
       "completed_at": "2026-06-07T06:51:58.870113+08:00",
       "completed_by": "openclaw-task2b",
       "completed_reason": "素材已注入：参考资料追加到章节pending延伸阅读"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7589903499599347766"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "聊聊2026年Android开发会是什么样 — 探讨 2026 年 Android 开发的新趋势，涵盖端侧 AI 集成、Android Studio 智能化、Kotlin Multiplatform 成熟化等方向，展现 Android 开发向更智能...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-08T05:39:01.573145",
+      "status": "completed",
+      "completed_at": "2026-06-08T14:56:10.214550+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
+    },
+    {
+      "section": "04-memory",
+      "section_title": "ch04-memory",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612812060795093002"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android17 为什么重写 MessageQueue — Android 17 对传统 MessageQueue 进行了全面重写，解决了 synchronized 锁的性能瓶颈，采用无锁队列和对象池技术，消息传递效率提升 30%，同时减少内存占用，为 And...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-08T05:39:01.582742",
+      "status": "completed",
+      "completed_at": "2026-06-08T14:56:10.214550+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7610233341305389099"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — Android 17 引入更严格的权限管理和后台执行限制，2026年起在部分设备禁止侧载应用，Google 通过强制 Play Store 安装提升安全性和应用质量，这将对开发者生态和用户使用习惯产生...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-08T05:39:01.589770",
+      "status": "completed",
+      "completed_at": "2026-06-08T14:56:10.214550+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612905767059800074"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 协程时代，Handler 应该退休了吗？ — 探讨 Android 协程时代 Handler 的定位变化，分析在异步编程场景中 Handler 的适用性，以及协程如何简化线程间通信和延迟任务执行，为 Android 开发提供更现代的异步编程范式。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-08T05:39:01.597271",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7638297326452441134"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Kotlin 官网为什么不再强调协程是轻量级线程了？ — 分析 Kotlin 官方弱化\"协程是轻量级线程\"宣传的原因，揭示协程的本质是编程模型而非并发单元，在 Android 环境中协程的优势在于代码组织和异步逻辑处理，而非简单的资源节省。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-08T05:39:01.604114",
+      "status": "pending"
+    },
+    {
+      "section": "17-oem",
+      "section_title": "ch17-oem",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7638897090145075246"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "为什么 Android 不用接口做 Activity 通信？ — 深入探讨 Android 为何不采用接口进行 Activity 通信，从生命周期管理、会话抽象和系统设计角度分析 Android 的组件通信机制，解释其与 iOS 设计哲学的根本差异。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-08T05:39:01.611321",
+      "status": "pending"
+    },
+    {
+      "section": "ch01",
+      "section_title": "Binder IPC 机制与性能影响",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Binder IPC 线程池调度协同（ProcessState/IPCThreadState/内核 binder_select_thread） — 基于 android-16.0.0_r4 锚点的 Binder 线程池调度深度分析：DEFAULT_MAX_BINDER_THREADS=15 上限只能增大不能缩小，blockUntilThreadA",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-07T22:13:47.009991+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch18",
+      "section_title": "Vulkan 原生渲染管线",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-gpu-render-pipeline-vulkan-graphite.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 GPU 渲染管线 Skia Graphite 后端集成（Vulkan Graphite RenderEngine） — AOSP main 分支出现 GraphiteVkRenderEngine 新文件，标志着 Skia GPU 后端从 Ganesh 向 Graphite 迁移进入集成阶段。架构用 Recording+",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-07T22:13:47.009991+00:00",
+      "status": "pending"
     }
   ],
   "items": [
@@ -2220,7 +2389,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-08T15:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-08T17:51:12",
+      "completed_by": "task2b-lite-queue-cleanup",
+      "completion_reason": "chapter already ready-to-publish/finalized with task2b_state=fixed"
     }
   ],
   "5.18": {
