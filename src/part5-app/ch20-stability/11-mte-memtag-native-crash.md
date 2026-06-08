@@ -47,6 +47,7 @@ finalized_by: openclaw-task9
 last_task6_audit: "2026-05-24"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: "2026-06-01"
+last_task9_audit: "2026-06-09"
 ---
 
 # 20.11 MTE memtagMode 与 Native 崩溃治理
