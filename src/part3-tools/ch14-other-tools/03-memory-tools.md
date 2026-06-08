@@ -34,6 +34,7 @@ last_task9_at: 2026-05-30T09:20:00+08:00
 task9_review_notes: "2026-05-30 Task9 deep-review: pass-tech-review。P0 1 / P1 0 / P2 0；修正 Android 17 源码引用边界，确认 libmeminfo、malloc_debug、malloc_hooks 在 Android 17 中的稳定性，满足自动晋升 finalized 条件。"
 last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
 last_task6_at: "2026-05-30T01:05:00+08:00"
+last_task6_audit: "2026-06-09"
 task6_reviewed_date: "2026-05-30"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: logs/review/2026-05-30-01-review.md
@@ -232,7 +233,7 @@ Android Studio 自带的 Memory Profiler 也能分析 hprof 文件，提供了�
 
 前面两个工具（LeakCanary 和 MAT）处理的是 Java/Kotlin 堆的内存问题。但 Android 应用的内存不止 Java 堆——Native 堆（通过 `malloc`/`new` 分配的 C/C++ 内存）、Graphic Buffer、共享库的 mmap 区域等，都可能成为内存问题的来源。特别是使用 JNI、游戏引擎、音视频库的应用，Native 堆的占比往往超过 Java 堆。
 
-heapprofd 是 Perfetto 内置的 Native 堆采样分析器。它的工作方式不是抓一次完整的堆转储，而是在运行过程中持续采样内存分配行为。这种方式的开销很低（通常不超过 2%），适合在真实场景中长时间采集。
+heapprofd 是 Perfetto 内置的 Native 堆采样分析器。它通过在运行过程中持续采样内存分配行为来工作，不需要抓取完整的堆转储。这种方式的开销很低（通常不超过 2%），适合在真实场景中长时间采集。
 
 ### 工作机制
 
