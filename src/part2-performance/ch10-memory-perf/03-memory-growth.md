@@ -51,8 +51,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-28"
 last_task9_at: "2026-05-28T04:30:00+08:00"
 last_task6_at: "2026-05-27T23:15:00+08:00"
-last_task6_audit: '2026-05-18'
-last_task6_audit_result: l1-light-edit
+last_task6_audit: '2026-06-08'
+last_task6_audit_result: l1-clean
 last_task9_audit: "2026-05-19"
 last_task2b_lite_at: "2026-05-27"
 last_task6_review_log: "logs/review/2026-05-27-23-review.md"
