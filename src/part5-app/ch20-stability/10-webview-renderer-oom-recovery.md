@@ -4,8 +4,8 @@ chapter: "20.10"
 section: "20.10"
 status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-15"
-last_verified_against: "AOSP master frameworks/base, Android Developers docs, Clippings structure reference"
+last_verified: "2026-06-08"
+last_verified_against: "AOSP android-16.0.0_r1 frameworks/base WebView APIs, Android Developers API refs through API 37, AndroidX WebKit API reference, Clippings structure reference"
 confidence: medium
 drafted_date: "2026-05-15"
 polish_count: 0
@@ -15,19 +15,25 @@ sources:
   - type: research-note
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/WebViewClient.java"
+    path: "android-16.0.0_r1: frameworks/base/core/java/android/webkit/WebViewClient.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java"
+    path: "android-16.0.0_r1: frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/WebView.java"
+    path: "android-16.0.0_r1: frameworks/base/core/java/android/webkit/WebView.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java"
+    path: "android-16.0.0_r1: frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java"
   - type: official
     path: "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview"
   - type: official
     path: "https://developer.android.com/reference/android/webkit/WebViewClient"
   - type: official
     path: "https://developer.android.com/reference/android/webkit/WebView"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+  - type: official
+    path: "https://developer.android.com/reference/androidx/webkit/WebViewCompat"
 tags: [webview, oom, stability, renderer-process, recovery]
 related_chapters: ["7.11", "18.13", "22.7", "26.2"]
 created_by: "task2a-knowledge-gap"
@@ -36,16 +42,20 @@ gap_source: "素材驱动/官方文档"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 last_task6_audit: "2026-05-24"
 task9_state: reviewed
-pipeline_stage: ready-to-publish
-task9_result: pass-tech-review
-task9_reviewed_date: '2026-05-15'
+task2b_state: fixed
+pipeline_stage: task6_pending
+task9_result: auto-fixed
+task9_reviewed_date: '2026-06-08'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-15T11:41:46+08:00'
-task9_review_notes: '2026-05-15 task9 deep-review: pass-tech-review。无 P0/P1；P2 3；满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。'
-last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
+last_task9_at: '2026-06-08T16:24:00+08:00'
+last_task9_audit: '2026-06-08'
+last_task9_audit_log: 'logs/deep-review/2026-06-08-16-audit.md'
+last_task9_autofix_at: '2026-06-08'
+task9_review_notes: '2026-05-15 task9 deep-review: pass-tech-review。无 P0/P1；P2 3；满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。 | 2026-06-08 16 Task9 idle audit: auto-fixed。将 AOSP master 源码锚点收敛到 android-16.0.0_r1；补正 rendererPriorityAtExit 共享 Renderer 语义、WebViewCompat(context) 签名和 ApplicationExitInfo 证据标签；未使用 Android 18/API 38+ 内容。'
+last_task9_review_log: 'logs/deep-review/2026-06-08-16-audit.md'
 ---
 
 # 20.10 WebView Renderer OOM 与白屏恢复
@@ -107,19 +117,19 @@ WebView Renderer OOM 的现场经常表现为页面突然白屏，宿主 Activit
 
 ## Renderer 进程退出的稳定性风险
 
-WebView 多进程模式下，宿主 App 进程承载 `WebView` Java 对象、Activity 生命周期、业务状态和部分 browser-side 代码；网页内容所在的 Renderer 进程负责 HTML、CSS、JavaScript、布局和合成。Renderer 被系统回收时，宿主进程不一定退出，但当前 WebView 的页面内容已经不可用。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewClient.java]
+WebView 多进程模式下，宿主 App 进程承载 `WebView` Java 对象、Activity 生命周期、业务状态和部分 browser-side 代码；网页内容所在的 Renderer 进程负责 HTML、CSS、JavaScript、布局和合成。Renderer 被系统回收时，宿主进程不一定退出，但当前 WebView 的页面内容已经不可用。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/WebViewClient.java]
 
 这类问题有三种表现，恢复动作不能混在一起：
 
 - **Renderer crash**：`RenderProcessGoneDetail.didCrash()` 返回 `true`。这通常来自 Renderer 内部错误，端侧应记录 URL、provider 版本、前后台状态和最近一次页面动作，把样本交给 WebView / H5 侧继续分析。
-- **Renderer 被系统 kill**：`didCrash()` 返回 `false`。AOSP 注释说明 killed 场景多半与系统低内存有关；端侧要把它放进 OOM / LMK 归因，而不是当成 Java Crash。[已验证: AOSP master, frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java]
-- **宿主进程跟着退出**：没有处理 `onRenderProcessGone()`，或者回调返回 `false`。AOSP `WebViewClient` 的默认实现返回 `false`，系统会在 Renderer crash 时让应用崩溃，在 Renderer 被系统 kill 时结束应用。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewClient.java]
+- **Renderer 被系统 kill**：`didCrash()` 返回 `false`。AOSP 注释说明 killed 场景多半与系统低内存有关；端侧要把它放进 OOM / LMK 归因，而不是当成 Java Crash。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java]
+- **宿主进程跟着退出**：没有处理 `onRenderProcessGone()`，或者回调返回 `false`。AOSP `WebViewClient` 的默认实现返回 `false`，系统会在 Renderer crash 时让应用崩溃，在 Renderer 被系统 kill 时结束应用。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/WebViewClient.java]
 
 白屏的危险点在于业务状态仍然留在宿主进程。用户看到页面空白，App 侧可能还保留登录态、订单状态、支付回调、Fragment back stack 和旧 JS Bridge 对象。恢复策略必须把“旧 WebView 不可再用”作为边界。
 
 ## `onRenderProcessGone()` 的处理契约
 
-`onRenderProcessGone(view, detail)` 是 WebView Renderer 退出后的宿主入口。AOSP 注释给出三个约束：回调里的 `view` 已经不能继续使用；宿主要把它从 View 层级移除并清理引用；多个 WebView 可能共用一个 Renderer，回调会分别发给受影响的 WebView。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewClient.java]
+`onRenderProcessGone(view, detail)` 是 WebView Renderer 退出后的宿主入口。AOSP 注释给出三个约束：回调里的 `view` 已经不能继续使用；宿主要把它从 View 层级移除并清理引用；多个 WebView 可能共用一个 Renderer，回调会分别发给受影响的 WebView。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/WebViewClient.java]
 
 返回值决定宿主命运：
 
@@ -128,7 +138,7 @@ WebView 多进程模式下，宿主 App 进程承载 `WebView` Java 对象、Act
 | `true` | 宿主声明已处理，App 继续运行 | 已完成旧 WebView 移除、引用清理和兜底展示 |
 | `false` | 走默认行为；Renderer crash 时 App crash，Renderer 被 kill 时 App 被结束 | 没有恢复能力，宁愿让系统退出并保留崩溃语义 |
 
-`RenderProcessGoneDetail` 只提供 Renderer 退出的有限上下文：`didCrash()` 用于区分 crash 与 killed，`rendererPriorityAtExit()` 返回退出时 Renderer 优先级。它不会给出页面内存、JS heap、最近一次网络请求或业务栈，这些字段要由宿主自己采集。[已验证: AOSP master, frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java]
+`RenderProcessGoneDetail` 只提供 Renderer 退出的有限上下文：`didCrash()` 用于区分 crash 与 killed，`rendererPriorityAtExit()` 返回退出时 Renderer 的最终优先级；多个 WebView 共享同一 Renderer 时，这个值可能高于任一单个 WebView 通过 `setRendererPriorityPolicy()` 请求的优先级。它不会给出页面内存、JS heap、最近一次网络请求或业务栈，这些字段要由宿主自己采集。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java]
 
 多 WebView 场景要按实例处理。AOSP 注释要求实现只清理参数传入的 `view`，不要假设其他实例一定受影响；但业务容器层可以在更高层做统一降级，例如关闭同一个 H5 容器栈里的所有页面，避免用户在半恢复状态下继续操作。
 
@@ -219,7 +229,7 @@ Clippings 中的 OOM 章节把 OutOfMemoryError 路径分成 Java 堆限制与�
 - **系统维度**：设备内存档位、前后台状态、App 进程 PSS、最近一次 `onTrimMemory()` 等级、同时间段是否有 ApplicationExitInfo 样本。
 - **WebView 维度**：provider package、provider version、Chromium milestone、`rendererPriorityAtExit()`、`didCrash()`。
 
-`setRendererPriorityPolicy()` 会影响 Renderer 在低内存场景下的回收优先级。AOSP `WebView` 注释说明，默认策略是 `RENDERER_PRIORITY_IMPORTANT`；改成更低优先级会让 Renderer 比宿主 App 更容易被系统杀掉，因此只有在已经正确处理 `onRenderProcessGone()` 后才应调整。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebView.java]
+`setRendererPriorityPolicy()` 会影响 Renderer 在低内存场景下的回收优先级。AOSP `WebView` 注释说明，默认策略是 `RENDERER_PRIORITY_IMPORTANT`；改成更低优先级会让 Renderer 比宿主 App 更容易被系统杀掉，因此只有在已经正确处理 `onRenderProcessGone()` 后才应调整。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/WebView.java]
 
 Android Developers 的 Managing WebView Objects 文档给出的典型策略是：长时间不展示 WebView 时，可把 Renderer 优先级设为 `RENDERER_PRIORITY_BOUND`，并在不可见时降为 `RENDERER_PRIORITY_WAIVED`，让系统在内存紧张时优先回收它；文档同时警告，修改优先级前必须接入 Termination Handling API。[已验证: 官方文档, developer.android.com/develop/ui/views/layout/webapps/managing-webview]
 
@@ -249,17 +259,17 @@ WebView Renderer OOM 的复盘要把用户路径、系统状态和恢复动作�
 4. **恢复动作**：是否移除旧 WebView、是否 `destroy()`、是否重建、是否重载 URL、是否展示兜底页。
 5. **结果验证**：白屏恢复成功率、二次 gone 率、页面转化漏斗、Crash 率和 ANR 率是否有副作用。
 
-ApplicationExitInfo 可补宿主进程退出原因，但它不能直接替代 Renderer gone 上报。Renderer 被杀时宿主进程可能继续运行，ApplicationExitInfo 未必出现对应样本；如果宿主因回调返回 `false` 被结束，ApplicationExitInfo 才更适合用于补偿宿主退出归因。进程退出归因详见 26.9 节，Crash 上报字段设计详见 26.2 节。[已验证: 官方文档, developer.android.com/reference/android/webkit/WebViewClient]
+ApplicationExitInfo 可补宿主进程退出原因，但它不能直接替代 Renderer gone 上报。Renderer 被杀时宿主进程可能继续运行，ApplicationExitInfo 未必出现对应样本；如果宿主因回调返回 `false` 被结束，ApplicationExitInfo 才更适合用于补偿宿主退出归因。进程退出归因详见 26.9 节，Crash 上报字段设计详见 26.2 节。[已验证: 官方文档, ActivityManager#getHistoricalProcessExitReasons / ApplicationExitInfo / WebViewClient#onRenderProcessGone]
 
 ## WebViewRenderProcessClient 的提前降载策略
 
-`WebViewRenderProcessClient` 提供 Renderer 卡死前后的回调：`onRenderProcessUnresponsive()` 会在 Renderer 因长时间阻塞任务变得无响应时触发，后续若任务完成会收到 `onRenderProcessResponsive()`。AOSP 注释说明，无响应期间回调会按固定间隔继续触发，最小间隔为 5 秒。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java]
+`WebViewRenderProcessClient` 提供 Renderer 卡死前后的回调：`onRenderProcessUnresponsive()` 会在 Renderer 因长时间阻塞任务变得无响应时触发，后续若任务完成会收到 `onRenderProcessResponsive()`。AOSP 注释说明，无响应期间回调会按固定间隔继续触发，最小间隔为 5 秒。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java]
 
-这个 API 适合做提前降载，不适合替代 `onRenderProcessGone()`。可选动作包括暂停业务轮询、停止继续注入 JS、提示用户刷新、对非关键页面调用 Renderer 终止能力。只要主动终止 Renderer，就必须保证所有相关 WebView 都能正确处理后续 `onRenderProcessGone()`；AOSP 注释明确说明，未正确处理会导致应用终止。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java]
+这个 API 适合做提前降载，不适合替代 `onRenderProcessGone()`。可选动作包括暂停业务轮询、停止继续注入 JS、提示用户刷新、对非关键页面调用 Renderer 终止能力。只要主动终止 Renderer，就必须保证所有相关 WebView 都能正确处理后续 `onRenderProcessGone()`；AOSP 注释明确说明，未正确处理会导致应用终止。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java]
 
 ## WebView Provider 版本差异跟踪
 
-WebView provider 独立于系统镜像更新，Renderer OOM 问题常常只集中在某个 provider version、某个厂商包名或某段 Chromium milestone。线上上报至少包含：`WebViewCompat.getCurrentWebViewPackage()` 返回的 package name / version name、Android 版本、ABI、设备型号、是否低内存设备、页面 URL pattern。
+WebView provider 独立于系统镜像更新，Renderer OOM 问题常常只集中在某个 provider version、某个厂商包名或某段 Chromium milestone。线上上报至少包含：`WebViewCompat.getCurrentWebViewPackage(context)` 返回的 package name / version name、Android 版本、ABI、设备型号、是否低内存设备、页面 URL pattern。
 
 版本差异不适合只靠用户反馈归因。灰度期间可以按 provider version 切分白屏恢复成功率和二次 gone 率；如果某个版本集中异常，客户端先用远程配置降低高风险页面的自动重载频率，同时把样本交给 H5 / provider 兼容性排查。
 
@@ -269,4 +279,4 @@ Renderer OOM 治理要回到页面内存预算。客户端可提供三条约束�
 
 预算不要写成固定 MB 结论。设备内存档位、WebView provider、页面内容和并发 WebView 数都会改变阈值。更稳妥的做法是按页面类型建立基线：记录进入页面后 5 秒、首屏完成、滚动 30 秒、后台 5 分钟四个阶段的 Renderer gone 率与宿主 PSS，再用线上 p95 / p99 找异常页面。[待验证: Renderer 侧精确内存采集方案需结合 provider / Chromium 调试能力]
 
-测试环境要保留故障演练入口。`chrome://crash` 可触发 Renderer crash，用于验证 `onRenderProcessGone()` 的清理路径；低内存 kill 需要结合压力工具或真机内存场景演练，不能只用 crash 场景代替 OOM 场景。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewClient.java]
+测试环境要保留故障演练入口。`chrome://crash` 可触发 Renderer crash，用于验证 `onRenderProcessGone()` 的清理路径；低内存 kill 需要结合压力工具或真机内存场景演练，不能只用 crash 场景代替 OOM 场景。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/webkit/WebViewClient.java]
