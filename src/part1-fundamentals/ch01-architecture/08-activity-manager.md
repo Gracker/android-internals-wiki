@@ -85,7 +85,7 @@ reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task6_audit: "2026-05-17"
+last_task6_audit: "2026-06-08"
 task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: "fixed"
@@ -289,7 +289,7 @@ ANR 检测可以先按三步理解:**开始计时、取消计时、超时上报*
 2. **取消计时**:目标操作完成时,App 通过 Binder 通知 AMS,AMS 取消对应计时。
 3. **超时上报**:如果计时到期时操作还没有完成,系统进入 ANR 处理流程。
 
-> [来源: 掘金《Android ANR的设计原理》]
+> [来源: 掘金《Android ANR 的设计原理》]
 
 这个模式贯穿所有 ANR 类型,后面按类型说明。
 
