@@ -6,7 +6,7 @@ status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-16"
-last_verified_against: "AOSP main + Android 官方文档 + Perfetto docs + arXiv 2507.02135"
+last_verified_against: "AOSP android-16.0.0_r1 + Android 官方文档 + Google AI Edge LLM docs 2026-05-28 + Perfetto docs + arXiv 2507.02135"
 confidence: medium
 tags: [android, dvfs, eas, adpf, llm, on-device-ai, power]
 related_chapters: ["5.2", "5.4", "5.9", "5.11", "5.12", "11.3"]
@@ -14,19 +14,22 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/研究素材/官方文档"
 gap_score: 17
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 last_task6_at: "2026-05-16T19:11:00+08:00"
 last_task6_audit: "2026-06-06"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 last_task9_at: "2026-05-16T19:31:25+08:00"
+last_task9_audit: "2026-06-08"
+last_task9_autofix_at: "2026-06-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-16"
-last_task9_review_log: "logs/deep-review/2026-05-16-19-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-08-19-audit.md"
+task9_review_notes: "2026-06-08 Task9 idle audit AUTO-FIX：将 AOSP main 锚点改为 android-16.0.0_r1；修正 MediaPipe LLM Inference 的 Android 版本边界，回到 Task6 复审。"
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2507.02135"
@@ -38,6 +41,10 @@ sources:
     path: "https://source.android.com/docs/core/perf/performance-hint-api"
   - type: official
     path: "https://developer.android.com/games/optimize/adpf"
+  - type: official
+    path: "https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference/android"
+  - type: official
+    path: "https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/llm_inference/android/README.md"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/cpu-freq"
   - type: official
@@ -74,7 +81,7 @@ prefill 和 decode 的差异还会改变 trace 解读方式。单看 GPU utiliza
 
 Android 设备上的频率控制通常分散在多个层级：CPU 由 cpufreq 与调度器信号驱动，GPU 常由厂商 devfreq / GPU governor 管理，内存频率由内存控制器与厂商策略决定。EAS 负责 CPU 选核与能量估算，Power HAL 接收系统模式和性能提示，Thermal HAL 再把温度约束反馈给框架与内核。各部分共享同一块电池和散热空间，却未必共享同一个推理任务目标。[已验证: 官方文档, source.android.com/docs/core/power/performance]
 
-AOSP 的 `PerformanceHintManager` 把一组线程作为 `Session` 提交给系统，AIDL Power HAL 也有 `createHintSession(tgid, uid, threadIds, durationNanos)`。公开 API 的设计单位是“线程组 + 目标时长”，不能指定某个 CPU/GPU 频点。[已验证: AOSP main, frameworks/base/core/java/android/os/PerformanceHintManager.java][已验证: AOSP main, hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
+AOSP 的 `PerformanceHintManager` 把一组线程作为 `Session` 提交给系统，AIDL Power HAL 也有 `createHintSession(tgid, uid, threadIds, durationNanos)`。公开 API 的设计单位是“线程组 + 目标时长”，不能指定某个 CPU/GPU 频点。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PerformanceHintManager.java][已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
 
 LLM 推理会碰到一个调度错位：GPU governor 往往根据 GPU 自身忙闲判断频率，CPU 调度器根据 CPU 近期负载判断算力需求，内存频率策略又按带宽和访问模式响应。decode 阶段如果 GPU kernel 很短，GPU 侧可能判断负载偏低；CPU 侧又因为周期性等待 GPU 或内存而看起来不够忙。两个判断叠在一起，就可能把频率组合推到不适合 decode 的位置。
 
@@ -112,7 +119,7 @@ Android 7 以后有 sustained performance mode，OEM 可以通过 Power HAL 做 
 
 ## ADPF、Power HAL 与应用可控边界
 
-ADPF 给 App 的能力是表达目标和反馈工作时长。`PerformanceHintManager.createHintSession()` 绑定一组线程和目标时长，`setThreads()` 可更新线程集合，`reportActualWorkDuration()` 把本轮工作耗时回报给系统。官方文档明确说明 App 不能直接指定 CPU 频率，也不应该用 busy loop 伪造负载。[已验证: 官方文档, source.android.com/docs/core/perf/performance-hint-api][已验证: AOSP main, frameworks/base/core/java/android/os/PerformanceHintManager.java]
+ADPF 给 App 的能力是表达目标和反馈工作时长。`PerformanceHintManager.createHintSession()` 绑定一组线程和目标时长，`setThreads()` 可更新线程集合，`reportActualWorkDuration()` 把本轮工作耗时回报给系统。官方文档明确说明 App 不能直接指定 CPU 频率，也不应该用 busy loop 伪造负载。[已验证: 官方文档, source.android.com/docs/core/perf/performance-hint-api][已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PerformanceHintManager.java]
 
 端侧 LLM 可以把 hint session 用在推理线程组上，但要处理两个问题。线程集合必须稳定，推理框架如果频繁创建销毁 worker，需要在框架层收敛线程生命周期；目标时长也要按阶段设置，prefill 的目标和 decode 的目标不应混用。Android 15 的 Power Efficiency Mode 允许 session 表达“优先能效”的调度偏好，适合在连续推理、后台摘要或低电量模式里测试。[已验证: 官方文档, developer.android.com/games/optimize/adpf]
 
@@ -167,7 +174,7 @@ data_sources: {
 }
 ```
 
-这份配置只能解决观测入口，不能保证每台设备都有 GPU、NPU、内存频率和 rail 级能耗。Perfetto 的 power rails 依赖设备厂商暴露的硬件计量能力，平台侧通过 `IPowerStats` HAL 读取能耗数据；AIDL `IPowerStats` 也说明 `EnergyConsumerResult`、`EnergyMeasurement` 不保证每次请求都有结果。[已验证: 官方文档, perfetto.dev/docs/data-sources/battery-counters][已验证: AOSP main, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl]
+这份配置只能解决观测入口，不能保证每台设备都有 GPU、NPU、内存频率和 rail 级能耗。Perfetto 的 power rails 依赖设备厂商暴露的硬件计量能力，平台侧通过 `IPowerStats` HAL 读取能耗数据；AIDL `IPowerStats` 也说明 `EnergyConsumerResult`、`EnergyMeasurement` 不保证每次请求都有结果。[已验证: 官方文档, perfetto.dev/docs/data-sources/battery-counters][已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl]
 
 实验报告建议固定这几个口径：
 
@@ -214,7 +221,7 @@ GPU delegate、LiteRT / TFLite delegate、NNAPI 或厂商 NPU runtime 的频率�
 ### Android 端侧适配分四个层面
 
 1. **Embedding 层**：`mem0/embeddings/fastembed.py` 的 `FastEmbedEmbedding` 用 `thenlper/gte-large`（1024 维 ONNX 模型），可经 `onnxruntime-android` + NNAPI 跑在 Android 8.1+（API 27）；量化后 ~250 MB。
-2. **LLM 层**：替换云端 GPT/Qwen 为 `MediaPipe LLM Inference`（Android 14+/API 34+）或 `LiteRT-LM`；M3-Agent 的 7B 模型量化为 4-bit 约 4 GB，端侧只能跑量化蒸馏版。
+2. **LLM 层**：替换云端 GPT/Qwen 时优先评估 `LiteRT-LM`；`MediaPipe LLM Inference` 仍可作为兼容路径，但 Google AI Edge 文档已标记为 deprecated 并推荐迁移到 LiteRT-LM，官方示例最低系统版本是 SDK 24（Android 7.0）。Android 14+/API 34+ 这类边界应只用于 AICore / Gemini Nano 等系统级能力。M3-Agent 的 7B 模型量化为 4-bit 约 4 GB，端侧只能跑量化蒸馏版。
 3. **存储层**：`mem0/memory/storage.py` 的 `SQLiteManager`（history + messages 双表）可直接映射为 `SQLiteOpenHelper`；`mmagent/videograph.py:30-65` 的 `VideoGraph` 用 `androidx.room` 关系表（nodes / edges / embeddings 分表）实现，**避免用 `pickle`**（ndarray 体积大且 NDK 不可控）。
 4. **触发层**：`android.app.Application.OnProvideAssistDataListener`（AOSP `Application.java`，自 API 23 引入）允许 App 在系统 `ACTION_ASSIST` 时把当前 Session 的 Mem0 摘要塞进 `EXTRA_ASSIST_CONTEXT`，作为「App 暴露给系统级 Assistant 的官方通道」。
 
@@ -232,5 +239,5 @@ GPU delegate、LiteRT / TFLite delegate、NNAPI 或厂商 NPU runtime 的频率�
 - M3-Agent 的 `mmagent/retrieve.py:back_translate` 在端侧要砍掉笛卡尔积（用一次 top-k 反向翻译替代全展开），把 100 query 限制改成 10。
 - `pickle` 不可用，推荐用 LiteRT 自带的 `TensorBuffer` 序列化 embedding，或用 FlatBuffers（参见 MediaPipe Tasks 现有 `.task` 文件格式）。
 
-[已验证: Mem0 仓库 `mem0/memory/storage.py`、`mem0/embeddings/fastembed.py`、`mem0/vector_stores/configs.py`][已验证: M3-Agent 仓库 `m3_agent/memorization_memory_graphs.py`、`mmagent/videograph.py`、`mmagent/retrieve.py`][已验证: AOSP main `Application.OnProvideAssistDataListener`]
+[已验证: Mem0 仓库 `mem0/memory/storage.py`、`mem0/embeddings/fastembed.py`、`mem0/vector_stores/configs.py`][已验证: M3-Agent 仓库 `m3_agent/memorization_memory_graphs.py`、`mmagent/videograph.py`、`mmagent/retrieve.py`][已验证: AOSP android-16.0.0_r1 `Application.OnProvideAssistDataListener`]
 [待验证: AOSP `android-17.0.0_r1` 标签下 `ApplicationAiContext.java` 的 API 形态（cs.android.com 渲染被重定向到 main，未直接抓到目标文件）][待验证: Mem0 v3 `ADDITIVE_EXTRACTION_PROMPT` 完整 prompt 内容]
