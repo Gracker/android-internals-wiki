@@ -2364,7 +2364,7 @@
       "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
       "priority": 90,
       "reason": "[时效性巡检 2026-06-08] last_verified=2026-03-31 (69天逾期, 30天阈值), 缺少 Android 17/API 37 覆盖; 需要补充 ART Generational GC 稳定版、App Memory Limiter、CMC 版本边界更正",
-      "status": "pending",
+      "status": "completed",
       "added_by": "task3-freshness-check",
       "added_at": "2026-06-08T02:00:00+08:00",
       "missing_content": [
@@ -2377,7 +2377,10 @@
       "days_overdue": 69,
       "threshold_days": 30,
       "category": "version_evolution",
-      "risk_level": "high"
+      "risk_level": "high",
+      "completed_at": "2026-06-09T01:40:34+08:00",
+      "completed_by": "openclaw-task2b-lite",
+      "completed_reason": "Content already up-to-date. Queue entry was stale."
     },
     {
       "section": "26.4",
