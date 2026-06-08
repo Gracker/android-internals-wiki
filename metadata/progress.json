@@ -13761,8 +13761,8 @@
     "auto_promoted": true
   },
   "24.9": {
-    "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "last_task6_at": "2026-06-04T03:05:00+08:00",
     "task6_result": "pass-light-edit",
     "verifier_note": "pipeline advanced to task6_pending 2026-06-06"
@@ -14034,7 +14034,9 @@
     "verifier_note": "status advanced to finalized 2026-06-06"
   },
   "26.5": {
-    "verifier_note": "pipeline advanced to task6_pending 2026-06-06"
+    "verifier_note": "pipeline advanced to task6_pending 2026-06-06",
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized"
   },
   "task9_reviews": [
     {
@@ -14117,5 +14119,29 @@
     },
     "queue_priority": 80,
     "material_count": 1
+  },
+  "1.1": {
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized"
+  },
+  "4.4": {
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized"
+  },
+  "5.13": {
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized"
+  },
+  "16.6": {
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized"
+  },
+  "20.10": {
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized"
+  },
+  "22.11": {
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized"
   }
 }

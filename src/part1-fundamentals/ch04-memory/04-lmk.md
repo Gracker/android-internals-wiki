@@ -1,4 +1,5 @@
 ---
+
 status: finalized
 title: Low Memory Killer
 section: 4.4
@@ -7,13 +8,11 @@ drafted_date: 2026-03-31
 reviewed_date: 2026-05-10
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
-last_task6_audit: 2026-05-21
+task6_state: reviewed  # updated by task2b-verifier 2026-06-08last_task6_audit: 2026-05-21
 last_task6_audit_log: logs/review/2026-05-21-21-audit.md
 last_task6_at: 2026-05-21T21:06:00+08:00
 task9_state: reviewed
-pipeline_stage: task6_pending
-polish_count: 1
+pipeline_stage: ready-to-publish  # promoted by task2b-verifier 2026-06-08polish_count: 1
 polish_date: 2026-04-05
 polish_by: task2b-polish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)

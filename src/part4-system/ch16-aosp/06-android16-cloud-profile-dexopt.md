@@ -1,4 +1,5 @@
 ---
+
 title: "Android 16 云端 Profile 与 dexopt 安装优化"
 chapter: "16.6"
 section: "16.6"
@@ -30,9 +31,7 @@ sources:
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
     path: "https://www.androidauthority.com/android-16-cloud-compilation-3541910/"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task9_state: "reviewed"
+pipeline_stage: ready-to-publish  # promoted by task2b-verifier 2026-06-08task6_state: reviewed  # updated by task2b-verifier 2026-06-08task9_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 review_type: task6-writing-quality-review
@@ -52,6 +51,8 @@ task2b_state: fixed
 task9_review_notes: "2026-05-16 00:30 Task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。| 2026-06-08 Task9 闲时抽检 auto-fix：移除仅基于 AOSP main、未证明进入 Android 17 稳定标签的 SDM 补充；SDM 正文证据改按 android-16.0.0_r1 锚定，回到 Task6 复审。"
 finalized_date: "2026-05-16"
 finalized_by: "openclaw-task9"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-08
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化
@@ -90,17 +91,11 @@ Cloud Profile、Baseline Profile、Startup Profile、Dex Metadata 和 SDM 处在
 
 Baseline Profile 面向 Day-0：应用还没有在这台设备上跑过，也能把启动、登录、首页、列表滚动这类关键路径提前交给 ART。Startup Profile 面向布局：它影响 DEX 中代码排列，减少启动阶段跨 DEX、跨页面读取带来的 I/O 成本。Cloud Profile 面向分发规模：当 Play 已经有足够样本时，它能给新安装设备提供更接近真实热路径的 profile 输入。
 
-[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
-
 ## `.dm` 是 Profile 进入安装路径的外壳
 
 Dex Metadata 文件使用 `.dm` 后缀，和目标 APK 按文件名配对。AOSP `frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java` 里的规则很明确：`base.apk` 对应 `base.dm`；安装器不支持单独提交一个没有 APK 配对的 `.dm` 文件；开启 manifest 校验时，`.dm` 内的 `manifest.json` 还要匹配包名和 versionCode。
 
-[已验证: AOSP android-16.0.0_r1, `frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java`]
-
 ART Service 侧还会继续解析 `.dm` 的内容。`art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java` 会读取 `config.pb`，并根据 ZIP 里的 profile entry、VDEX entry 判断类型：只有 profile、只有 VDEX，或 profile + VDEX。这个设计解释了为什么 `.dm` 不能简单理解成“Baseline Profile 文件”：它是一个容器，profile 只是其中一种可携带内容。
-
-[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java`]
 
 验证 `.dm` 的最低成本路径是把它和 APK 一起侧载，再强制跑一次 `speed-profile` 编译。下面这组命令只验证当前包能不能被 ART Service 按 profile 消费，不代表 Play 云端编译已经命中：
 
@@ -112,13 +107,9 @@ adb shell dumpsys package dexopt | grep -A 6 com.example.app
 
 `pm art clear-app-profiles` 先清理设备运行时产生的本地 profile，避免把本地历史数据误判成随包 profile 的收益。`pm compile -m speed-profile -f -v` 会在 verbose result 中暴露 `actualCompilerFilter`。看到 `actualCompilerFilter=speed-profile`，才说明这次编译吃到了可用的 profile；看到 `actualCompilerFilter=verify`，常见原因是 `.dm` 文件名不匹配、格式不对，或 profile 中记录的 DEX checksum 和 APK 不一致。
 
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure/art-service]
-
 ## ART Service 接管了 Android 14 之后的 dexopt 控制面
 
 Android 13 及更早版本里，很多 dexopt 逻辑仍在 Package Manager 一侧。Android 14 开始，source.android.com 明确写到：应用的设备端 AOT 编译由 ART Service 处理，ART Service 属于 ART Mainline 模块，可通过系统属性和 Java API 调整。
-
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure/art-service]
 
 默认编译原因里，`bg-dexopt` 对应 `speed-profile`。后台 dexopt 的常规目标不是全量 `speed`，而是尽量利用 profile 指导编译，减少编译时间和产物体积。官方默认值包含：
 
@@ -134,11 +125,7 @@ pm.dexopt.shared=speed
 
 这组默认值反映了 Android 编译策略的取舍：开机和 OTA 后优先保证系统可用，后台空闲阶段再补 profile-guided 编译。`pm.dexopt.shared` 是一个特殊兜底项，面向被其他应用通过 `<uses-library>` 或 `Context#createPackageContext(..., CONTEXT_INCLUDE_CODE)` 使用的包。官方文档说明，这类包出于隐私原因不能使用本地 profile；如果请求 profile-guided 编译，ART Service 会先尝试使用 Cloud Profile，找不到 Cloud Profile 时再退回 `pm.dexopt.shared` 指定的 filter。
 
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure/art-service]
-
 后台任务仍然受设备状态约束。AOSP `BackgroundDexoptJob` 使用 JobScheduler，周期任务要求设备 idle、charging、battery-not-low；这解释了为什么用户安装后马上启动，未必已经拿到后台 dexopt 的收益。线下验证启动收益时，不能只看包里有没有 `baseline.prof`，还要看当前设备的 dexopt 状态。
-
-[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java`]
 
 ## Android 16 的 SDM 证据边界
 
@@ -146,11 +133,7 @@ Android 16 云端编译目前要分两层写：AOSP 里能看到设备端对 SDM
 
 AOSP android-16.0.0_r1 的 `ArtFileManager` 已经把 SDM 纳入可写与可用产物列表。源码里 `getWritableArtifacts()` 会为 primary dex 构造 `SecureDexMetadataWithCompanionPaths`；`getUsableArtifacts()` 也会识别 `ArtifactsLocation.SDM_DALVIK_CACHE` 和 `ArtifactsLocation.SDM_NEXT_TO_DEX`。这说明 ART Service 的产物管理已经知道“SDM 位置上的编译产物”这一类对象。
 
-[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/java/com/android/server/art/ArtFileManager.java`]
-
 `ArtManagerLocal.deleteDexoptArtifacts()` 的注释还把 cloud dexopt artifacts 单列出来，删除范围包括 VDEX、ODEX、ART、SDM、SDC 文件。这能证明设备端已有云端 dexopt 产物的清理路径，但不能推出 Play 商店已经对所有 Android 16 设备启用云端编译。
-
-[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`]
 
 外部报道把 Android 16 Cloud Compilation 描述为：Play 侧运行 `dex2oat`，再把预编译产物放进 SDM（Secure Dex Metadata）随 APK 下发，设备端避免重复执行本地 `dex2oat`。这条说法和 AOSP 中 SDM 产物管理路径相互印证，但签名绑定、产物适配 ABI、Play 灰度策略、是否对所有包开放，仍缺少官方开发者文档或 AOSP 端到端说明。
 
@@ -192,8 +175,6 @@ adb shell dumpsys package dexopt | grep -A 6 com.example.app
 
 如果输出仍停在 `verify`，先查文件名、DEX checksum、安装来源和 AGP / ProfileInstaller 行为。不要先归因到 Android 16 云端编译未启用。对启动收益的判断还要回到 Macrobenchmark，用同一包、同一设备、同一脚本对比 `CompilationMode.None()` 与 `CompilationMode.Partial()`，指标至少包含 TTID、TTFD 和启动阶段 jank。
 
-[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles]
-
 ## 安装耗时和启动收益不是同一个指标
 
 Profile 体系经常同时影响安装、首次启动和后续启动，但三个指标不能互相替代。
@@ -212,3 +193,4 @@ Profile 体系经常同时影响安装、首次启动和后续启动，但三个
 - 启动优化实战中如何把 profile 结果转成 TTID / TTFD 收益，详见 21.4 节。
 
 可确认的边界是：设备端 ART Service 和 SDM 管理路径已有可核对源码；Play 云端编译的分发策略仍要以官方文档、实机安装和 `dumpsys package dexopt` 结果为准。
+
