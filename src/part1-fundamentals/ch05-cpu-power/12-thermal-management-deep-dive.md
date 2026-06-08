@@ -49,7 +49,7 @@ gap_score: "18/20"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_date: 2026-06-04
-last_task6_audit: "2026-05-18"
+last_task6_audit: "2026-06-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 task9_state: reviewed
