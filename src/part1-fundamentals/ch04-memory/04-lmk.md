@@ -1,75 +1,38 @@
 ---
 status: finalized
 title: Low Memory Killer
-section: '4.4'
-chapter: '4.4'
-drafted_date: '2026-03-31'
-reviewed_date: '2026-05-10'
+section: 4.4
+chapter: 4.4
+drafted_date: 2026-03-31
+reviewed_date: 2026-05-10
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
-last_task6_audit: '2026-05-21'
+task6_state: revisiting
+last_task6_audit: 2026-05-21
 last_task6_audit_log: logs/review/2026-05-21-21-audit.md
-last_task6_at: '2026-05-21T21:06:00+08:00'
-task9_state: reviewed
-pipeline_stage: ready-to-publish
+last_task6_at: 2026-05-21T21:06:00+08:00
+task9_state: pending
+pipeline_stage: task6_pending
 polish_count: 1
-polish_date: '2026-04-05'
+polish_date: 2026-04-05
 polish_by: task2b-polish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-05-09'
+last_verified: 2026-05-09
 last_verified_against: AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1
-  ProcessList/lmkd socket, android-10 lmkd PSI, android-11/12/14/16 CachedAppOptimizer,
-  Android 16 lmkd/reaper, developer.android.com 16KB Page Size
 confidence: medium-high
-sources:
-- type: aosp
-  path: system/memory/lmkd/
-- type: aosp
-  path: system/memory/lmkd/reaper.cpp
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/am/ProcessList.java
-- type: official
-  path: https://source.android.com/docs/core/perf/lmkd
-- type: official
-  path: https://developer.android.com/topic/performance/memory
-- type: blog
-  path: https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html
-- type: aosp
-  path: frameworks/base/core/java/android/content/pm/ApplicationInfo.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
-tags:
-- lmk
-- lmkd
-- oom_adj
-- oom_score_adj
-- PSI
-- memory-pressure
-- process-kill
-related_chapters:
-- '4.1'
-- '4.2'
-- '4.3'
-- '1.3'
-- '10.4'
+sources: 
+tags: 
+related_chapters: 
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: '2026-05-05'
+task9_reviewed_date: 2026-05-05
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-05T18:55:00+08:00'
-review_notes: '2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace
-  lmkd 版本、oom_score_adj/HEAVY_WEIGHT_ADJ/minfree、16KB 数据、CachedAppOptimizer 版本表，并补
-  Perfetto SQL 观察点。2026-04-27 03:40 task2b: 修复 Task9 P95 HEAVY_WEIGHT_APP_ADJ manifest
-  属性，改为 android:cantSaveState / PRIVATE_FLAG_CANT_SAVE_STATE，并补 AMS/ATMS 源码锚点。；2026-04-28
-  task9 deep-review: needs-rework。P0 0，P1 1，P2 3。 | 2026-05-05 task9 deep-review:
-  needs-rework。P0 0，P1 1，P2 0；另复核并关闭一条无 AOSP 证据的 external-review 旧队列项。'
-last_task2b_at: '2026-04-27T03:40:00+08:00'
+last_task9_at: 2026-05-05T18:55:00+08:00
+review_notes: 2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace
+last_task2b_at: 2026-06-08T21:06:43+08:00
 task2b_fixed_by: openclaw-task2b
-repaired_date: '2026-04-27'
+repaired_date: 2026-04-27
 repaired_by: openclaw-task2b
 ---
 
@@ -174,7 +137,7 @@ AMS 为不同状态进程分配的 `oom_score_adj` 值如下。理解这个层�
 
 **不会被杀的层级（oom_score_adj < 0）：**
 
-- **NATIVE_ADJ（-1000）**：纯 Native 进程，不在 AMS 管理范围内。比如 `lmkd` 自身就运行在这个优先级——杀进程的守护进程不能把自己杀了。
+- **NATIVE_ADJ（-1000）**：AMS 对"不由系统管理、没有 AMS 分配 oom adj 的 native 进程"的内部分类/打印值，定义在 `ProcessList.java` 中。这类进程不受 AMS 优先级调整，AMS 仅为其赋 `NATIVE_ADJ` 作为内部记值。`lmkd` 的保护依赖于 init 进程的 service 管理机制（`lmkd.rc` 中声明），而非依赖 oom_score_adj 值防止被杀。
 - **SYSTEM_ADJ（-900）**：`system_server` 进程。杀死它等于让整个 Android Framework 停摆。
 - **PERSISTENT_PROC_ADJ（-800）**：在 Manifest 中声明了 `android:persistent="true"` 的进程。通常是电话、系统 UI 等核心服务。
 
@@ -559,5 +522,4 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 - 本章 4.3 节「ART 虚拟机内存管理」— Java 堆的内存分配与回收
 - 第 1 章第 3 节「进程模型与生命周期管理」— 进程优先级的生命周期管理
 - 第 10 章第 4 节「低内存对系统性能的影响」— 低内存场景的深度分析
-
 
