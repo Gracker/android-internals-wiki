@@ -4,9 +4,9 @@ chapter: "12.5"
 section: "12.5"
 status: "finalized"
 drafted_date: "2026-05-17"
-applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
-last_verified: "2026-05-17"
-last_verified_against: "AOSP main / developer.android.com"
+applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
+last_verified: "2026-06-09"
+last_verified_against: "AOSP android-16.0.0_r1 / developer.android.com; Android 17 tag not public on android.googlesource at audit time"
 confidence: high
 tags: [connectivity, network-callback, network-performance, power, android-16]
 related_chapters: ["12.2", "12.3", "12.4", "24.4", "25.2"]
@@ -31,29 +31,33 @@ sources:
     path: "packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java"
 reviewed_date: "2026-05-17"
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
+task2b_state: "fixed"
+pipeline_stage: "task6_pending"
 review_type: task6-writing-quality-review
 last_task6_at: "2026-05-17T12:11:00+08:00"
 last_task6_audit: "2026-06-08"
 task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处（补 section 元数据、弱化口语化表述 2 处）；无回炉项，待 Task9 技术审查。"
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-17T12:32:07+08:00"
+last_task9_at: "2026-06-09T00:20:00+08:00"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
-last_task9_review_log: "logs/deep-review/2026-05-17-12-deep-review.md"
-task9_result: "pass-tech-review"
-task9_review_notes: "2026-05-17 Task9 12: pass-tech-review。未发现 P0/P1；ConnectivityManager/ConnectivityService/NetworkCapabilities 源码路径、100 outstanding request 限额、CONNECTIVITY_ACTION 限制和 5G slicing 边界与 AOSP main / 官方文档一致；Task6 已通过且无 pending queue，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-09-00-audit.md"
+last_task9_audit: "2026-06-09"
+last_task9_audit_log: "logs/deep-review/2026-06-09-00-audit.md"
+last_task9_autofix_at: "2026-06-09"
+task9_result: "auto-fixed"
+task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。将 ConnectivityManager / ConnectivityService / NetworkCapabilities 的源码锚点从 AOSP main 收敛到已复核的 android-16.0.0_r1；Android 17 tag 当前未在 android.googlesource 公开，适用范围暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 0。"
 ---
 
 # 12.5 ConnectivityService 与网络状态监听性能
 
 网络状态监听看起来只是一个 `NetworkCallback`，放到性能问题里涉及三类成本：系统侧要维护请求和回调，应用侧要避免重复注册与后台唤醒，网络请求侧要把“网络可用”转成可执行的降级策略。12.2、12.3、12.4 已经讲请求耗时、连接池和 TLS，本节补平台连接状态这一层；连接池、HTTPDNS 和 TLS 细节只做交叉引用，不重复展开。
 
-[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state] 官方建议用 `ConnectivityManager` 与 `NetworkCallback` 监听网络状态变化，而不是靠高频轮询。`NetworkCapabilities` 的 AOSP 注释也提醒，一次性读取到的能力可能很快过期，生产代码应通过回调持续接收变化。[已验证: AOSP main, packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java]
+[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state] 官方建议用 `ConnectivityManager` 与 `NetworkCallback` 监听网络状态变化，而不是靠高频轮询。`NetworkCapabilities` 的 AOSP 注释也提醒，一次性读取到的能力可能很快过期，生产代码应通过回调持续接收变化。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java]
 
 ## 平台网络状态模型
 
@@ -81,11 +85,11 @@ task9_review_notes: "2026-05-17 Task9 12: pass-tech-review。未发现 P0/P1；C
 | `registerNetworkCallback(NetworkRequest, callback)` | 监听满足特定能力的网络，例如未计费网络、蜂窝网络、低延迟能力 | 过宽的请求会收到多条网络事件，过窄的请求会漏掉可用路径 |
 | `WorkManager` 网络约束 | 延迟下载、日志补报、离线队列同步 | 不适合要求秒级响应的前台交互 |
 
-平台 API 本身也把成本边界写得很清楚。`ConnectivityManager` 文档说明，`registerDefaultNetworkCallback()`、`registerNetworkCallback()`、`requestNetwork()` 与 `ConnectivityDiagnosticsManager` 回调共享每 UID 100 个 outstanding request 限额，超过后抛异常；AOSP 的 `ConnectivityService.MAX_NETWORK_REQUESTS_PER_UID` 同样是 100。[已验证: AOSP main, packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java; packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java]
+平台 API 本身也把成本边界写得很清楚。`ConnectivityManager` 文档说明，`registerDefaultNetworkCallback()`、`registerNetworkCallback()`、`requestNetwork()` 与 `ConnectivityDiagnosticsManager` 回调共享每 UID 100 个 outstanding request 限额，超过后抛异常；AOSP 的 `ConnectivityService.MAX_NETWORK_REQUESTS_PER_UID` 同样是 100。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java; packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java]
 
 ## NetworkCallback 的注册成本与生命周期
 
-`NetworkCallback` 的成本不在回调对象本身，而在“注册一次”会穿过 Binder 进入系统服务，系统要保存 `NetworkRequest`、`Messenger`、`Binder` 和回调映射，再把网络变化分发回应用进程。AOSP 中 `ConnectivityManager.sendRequestForNetwork()` 会把 `NetworkCallback` 包进 `Messenger`，`LISTEN` 类型调用 `mService.listenForNetwork()`，其他请求调用 `mService.requestNetwork()`；`unregisterNetworkCallback()` 会释放对应 `NetworkRequest` 并从 `sCallbacks` 移除映射。[已验证: AOSP main, packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java]
+`NetworkCallback` 的成本不在回调对象本身，而在“注册一次”会穿过 Binder 进入系统服务，系统要保存 `NetworkRequest`、`Messenger`、`Binder` 和回调映射，再把网络变化分发回应用进程。AOSP 中 `ConnectivityManager.sendRequestForNetwork()` 会把 `NetworkCallback` 包进 `Messenger`，`LISTEN` 类型调用 `mService.listenForNetwork()`，其他请求调用 `mService.requestNetwork()`；`unregisterNetworkCallback()` 会释放对应 `NetworkRequest` 并从 `sCallbacks` 移除映射。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java]
 
 回调生命周期按“应用级单例 + 显式注销”管理，页面不要各自注册一份。回调里只更新内存态状态或发轻量事件，DNS 重刷、连接池清理、接口重试放到单独的调度层。默认回调运行在内部 Handler 上；如果回调要做更多工作，使用带 `Handler` 的重载，把执行线程交给应用控制。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state]
 
@@ -146,7 +150,7 @@ Android 7.0 开始，面向 API 24 及以上的应用如果在 manifest 里声�
 
 ## 网络计量、漫游与请求降级策略
 
-`NET_CAPABILITY_NOT_METERED` 表示用户通常不按流量计费或不敏感，官方与 AOSP 都建议应用根据它控制大流量行为；`hasTransport(TRANSPORT_WIFI)`、`hasTransport(TRANSPORT_CELLULAR)` 只能说明传输类型，不能等价于“便宜”或“稳定”。热点、企业无线局域网、漫游蜂窝、临时不限量套餐都会让传输类型和计费状态不一致。[已验证: AOSP main, packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java]
+`NET_CAPABILITY_NOT_METERED` 表示用户通常不按流量计费或不敏感，官方与 AOSP 都建议应用根据它控制大流量行为；`hasTransport(TRANSPORT_WIFI)`、`hasTransport(TRANSPORT_CELLULAR)` 只能说明传输类型，不能等价于“便宜”或“稳定”。热点、企业无线局域网、漫游蜂窝、临时不限量套餐都会让传输类型和计费状态不一致。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java]
 
 应用网络调度层可以把平台能力转成策略表：
 
@@ -162,7 +166,7 @@ Android 7.0 开始，面向 API 24 及以上的应用如果在 manifest 里声�
 
 ## ConnectivityService 的系统侧分发路径
 
-应用调用 `registerDefaultNetworkCallback()` 后，路径大致是：应用进程的 `ConnectivityManager` 通过 Binder 调到 `ConnectivityService`，系统服务保存请求和回调通道；Wi-Fi、蜂窝、VPN 等网络由各自的 `NetworkAgent` 上报状态；`NetworkMonitor` 做验证探测并更新 `VALIDATED` 等能力；`ConnectivityService` 选择默认网络并向匹配的 `NetworkCallback` 分发 `onAvailable()`、`onCapabilitiesChanged()`、`onLinkPropertiesChanged()`、`onLost()` 等事件。[已验证: AOSP main, packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java]
+应用调用 `registerDefaultNetworkCallback()` 后，路径大致是：应用进程的 `ConnectivityManager` 通过 Binder 调到 `ConnectivityService`，系统服务保存请求和回调通道；Wi-Fi、蜂窝、VPN 等网络由各自的 `NetworkAgent` 上报状态；`NetworkMonitor` 做验证探测并更新 `VALIDATED` 等能力；`ConnectivityService` 选择默认网络并向匹配的 `NetworkCallback` 分发 `onAvailable()`、`onCapabilitiesChanged()`、`onLinkPropertiesChanged()`、`onLost()` 等事件。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java]
 
 ```mermaid
 sequenceDiagram
