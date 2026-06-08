@@ -1,3 +1,12 @@
+## [Task 2A Gap Mining] 2026-06-08 13:07 (Round 32)
+
+- Direction: 同 Round 31 — 无空 draft、TASK2B_BACKLOG=0、418 sections（296+6 finalized + 76 ready-for-review + 0 draft + 40 misc）。source-index 10 条素材中 0 条高质量未映射。research-feeds 自 2026-04 无更新。daily-info 06-08 已在 Round 31 完整分析（6 篇 DeepResearch 全部映射已有章节）。Clippings 三本参考书已全部覆盖。AOSP 26 chapters 覆盖饱和。research-gaps.md 最新条目为 Statsd 验证需求（ch14.17 已有章节，非新章节缺口）。
+- No gap scored >= 14
+- Book: 418 sections (302 finalized + 76 ready-for-review + 0 draft + 40 misc)
+- 32 consecutive empty runs
+- Recommendation: 暂停 gap mining cron 或仅在 new material injection 时触发
+- Bottleneck: Task 6 review of 76 ready-for-review sections
+
 # Research Gaps
 
 > ℹ️ **2026-06-05 同步**：以下 3 条已在 `researched-gaps.json` 完成（19.18 商业 APM 完成于 2026-06-06、19.06 BlockCanary 完成于 2026-06-05、13.2 Trace 抓取完成于 2026-06-05），仅 `research-gaps.md` 未同步。本轮已加入新选题。
