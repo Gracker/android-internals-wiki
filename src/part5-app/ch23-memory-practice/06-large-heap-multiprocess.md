@@ -4,8 +4,8 @@ chapter: "23.6"
 section: "23.6"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + Clippings/Android 性能优化"
+last_verified: "2026-06-08"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ComponentCallbacks2 + Android Developers memory docs + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -19,11 +19,15 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/memory-management"
   - type: official
+    path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
+  - type: official
     path: "https://developer.android.com/google/play/requirements/64-bit"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityThread.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityManager.java @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java @ android-16.0.0_r1"
   - type: aosp
     path: "art/runtime/thread.cc @ android-16.0.0_r1"
   - type: blog
@@ -36,8 +40,8 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]"
 tags: [large-heap, multiprocess, memory-budget, 64bit]
 related_chapters: ["23.4", "4.4", "1.3", "4.7"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-05-14"
@@ -48,11 +52,14 @@ task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 11 处（术语格式
 last_task6_review_log: "logs/review/2026-05-14-04-review.md"
 last_task6_at: "2026-05-14T04:08:00+08:00"
 last_task6_audit: "2026-06-07"
-task9_result: pass-tech-review
-last_task9_at: "2026-05-14T04:36:12+08:00"
-task9_reviewed_date: "2026-05-14"
+task9_result: auto-fixed
+last_task9_at: "2026-06-08T10:20:00+08:00"
+task9_reviewed_date: "2026-06-08"
 task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-05-14-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-08-10-audit.md"
+last_task9_audit: "2026-06-08"
+last_task9_autofix_at: "2026-06-08"
+task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX，补充 Android 14-16 onTrimMemory 等级边界，回到 Task6 复审。"
 auto_finalized_by_task9: "2026-05-14T04:36:12+08:00"
 ---
 
@@ -168,7 +175,7 @@ adb shell cat /proc/$(adb shell pidof com.example.app:editor)/smaps_rollup
 | WebView 进程 | 限制页面缓存和 JS bridge 对象 | renderer PSS、GPU 内存、磁盘缓存分开看 | 页面关闭后延迟回收 | 低端机禁用预热、减少并发页面 |
 | 批处理进程 | 按批大小线性估算 | 文件 mmap、Native buffer 单独计数 | 每批结束释放，异常时杀进程重试 | 缩小批大小、暂停后台任务 |
 
-预算的触发点要接系统信号。`onTrimMemory()` 收到 `TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_BACKGROUND`、`TRIM_MEMORY_UI_HIDDEN` 等信号时，主进程应缩小缓存；子进程若没有前台任务，应尽快释放大对象或退出。低 RAM 设备通过 `ActivityManager.isLowRamDevice()` 单独配置预算，不能沿用高端机阈值。[已验证: 官方文档, developer.android.com/topic/performance/memory]
+预算的触发点要接系统信号。在本节适用范围内，Android 14-16（API 34-36）的 `onTrimMemory()` 实现应聚焦 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`；`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 从 API 34 起不再投递，并在 API 35 被废弃。Android 13 及以下兼容代码可以保留旧等级分支。低 RAM 设备通过 `ActivityManager.isLowRamDevice()` 单独配置预算，不能沿用高端机阈值。[已验证: 官方文档, developer.android.com/topic/performance/memory; developer.android.com/reference/android/content/ComponentCallbacks2; AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/ComponentCallbacks2.java]
 
 [自动发现] 线程栈也要进入虚拟内存预算。ART 在 `Thread::CreateNativeThread()` 路径里会修正线程栈大小，并通过 `pthread_attr_setstacksize()` 传给 `pthread_create()`；参考书把“线程数量 × 栈空间”作为 32 位虚拟内存压力来源，是一个适合落到治理清单里的观察点。工程上优先收敛线程池和野线程，谨慎改线程栈大小；栈缩小后要覆盖递归、JNI、复杂解析和三方库调用，避免把 OOM 变成 StackOverflowError 或 native crash。[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc] [结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
 
