@@ -3,7 +3,7 @@
 title: "内存监控与线上治理"
 chapter: "23.7"
 section: "23.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers Debug/ActivityManager/ComponentCallbacks2 + Clippings/Android 性能优化"
@@ -47,8 +47,8 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]"
 tags: [memory-monitoring, pss, rss, heap-dump, oom-alert]
 related_chapters: ["23.1", "20.5", "26.3", "10.1", "19.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed
@@ -62,14 +62,18 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-14"
 task6_reviewed_by: "openclaw-task6"
 task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 3 处（第二人称收束、API 35+ 边界标注、结尾措辞）；四层质检通过，无新增 L3/L4 回炉项。Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
-last_task6_review_log: "logs/review/2026-05-14-05-review.md"
-last_task6_at: "2026-05-14T05:17:39+08:00"
-last_task6_audit: "2026-06-06"
+last_task6_review_log: "logs/review/2026-06-08-16-review.md"
+last_task6_at: "2026-06-08T16:14:59+08:00"
+last_task6_audit: "2026-06-08"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-14"
 last_task9_audit: "2026-06-08"
 last_task9_autofix_at: "2026-06-08"
 task9_review_notes: "2026-05-14 Task9 04: pass-tech-review。P0/P1 0；P2 1：Debug.getRss() API 35+ 边界，后续已由 Task6 标注并自动晋升 finalized。 | 2026-06-08 Task9 idle audit: auto-fixed。P0 0 / P1 1 / P2 1；补充 Android 14/API 34 起 TRIM_MEMORY_RUNNING_* 等旧低内存等级不再投递、API 35 废弃的版本边界；Android 17/API 37 ProfilingTrigger OOM/anomaly 属于本节未来扩展 P2，未写入正文。"
+task6_state: reviewed
+last_task6_at: "2026-06-08T16:14:59+08:00"
+last_task6_review_log: "logs/review/2026-06-08-16-review.md"
+last_task6_audit: "2026-06-08"
 ---
 
 # 内存监控与线上治理

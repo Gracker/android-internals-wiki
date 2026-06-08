@@ -3,7 +3,7 @@
 title: "大内存与多进程策略"
 chapter: "23.6"
 section: "23.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ComponentCallbacks2 + Android Developers memory docs + Clippings/Android 性能优化"
@@ -41,8 +41,8 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]"
 tags: [large-heap, multiprocess, memory-budget, 64bit]
 related_chapters: ["23.4", "4.4", "1.3", "4.7"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-05-14"
@@ -50,9 +50,9 @@ reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-14"
 task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 11 处（术语格式、填充表达、维护成本表述）；四层质检通过，无新增 L3/L4 回炉项，送 Task9 技术复审。"
-last_task6_review_log: "logs/review/2026-05-14-04-review.md"
-last_task6_at: "2026-05-14T04:08:00+08:00"
-last_task6_audit: "2026-06-07"
+last_task6_review_log: "logs/review/2026-06-08-16-review.md"
+last_task6_at: "2026-06-08T16:14:59+08:00"
+last_task6_audit: "2026-06-08"
 task9_result: auto-fixed
 last_task9_at: "2026-06-08T10:20:00+08:00"
 task9_reviewed_date: "2026-06-08"
@@ -62,6 +62,10 @@ last_task9_audit: "2026-06-08"
 last_task9_autofix_at: "2026-06-08"
 task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX，补充 Android 14-16 onTrimMemory 等级边界，回到 Task6 复审。"
 auto_finalized_by_task9: "2026-05-14T04:36:12+08:00"
+task6_state: reviewed
+last_task6_at: "2026-06-08T16:14:59+08:00"
+last_task6_review_log: "logs/review/2026-06-08-16-review.md"
+last_task6_audit: "2026-06-08"
 ---
 
 # 大内存与多进程策略
