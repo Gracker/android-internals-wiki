@@ -497,3 +497,11 @@ Java android.os.Trace (Android 15+) ──┬── Perfetto TrackEvent ──�
 - **traced_perf 与 FrameTimeline 数据源源码分析**：`linux.perf`（traced_perf）和 `android.surfaceflinger.frametimeline` 两个 Perfetto 数据源的源码级实现分析。traced_perf 守护进程负责 Linux 性能计数器采样，FrameTimeline 通过 SurfaceFlinger 捕获帧时间线数据检测卡顿源头。
 
 以上三份调研均来自同书 DeepResearch 成果，文件路径见 Obsidian 仓库 DeepResearch 目录。
+
+
+### Perfetto 关键数据源 linux.perf 与 frametimeline 的 AOSP 17 边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-08-android-17-perfetto-data-sources-boundary-verification.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-16.0.0_r3 锚点验证：linux.perf(traced_perf 守护进程)与 android.surfaceflinger.frametimeline 两个数据源在 Android 16 中保持完整实现，包括 kDataSourceName 常量、注册入口、FrameTimeline jank 分类状态机(11 种 JankType 枚举)与阈值参数。基于 AOSP API 兼容性政策，两者在 Android 17/API 37 中预期仍可用，需等公开 tag 后二次确认。
+- 注入时间：2026-06-09
+- 价值：精确到文件+行号+函数名的一手源码证据，补全 §13.9 对 linux.perf 和 frametimeline 数据源的验证边界声明

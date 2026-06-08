@@ -1,5 +1,6 @@
 ---
 
+
 title: ANGLE（GLES-over-Vulkan 翻译层）
 chapter: '18.11'
 section: '18.11'
@@ -22,7 +23,7 @@ sources:
 - AOSP external/angle/
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-task6_state: reviewed
+task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 last_task6_audit: "2026-05-21"
@@ -32,7 +33,7 @@ review_round: 1
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-21T23:22:00+08:00"
-task6_state: revisiting
+task6_state: "reviewed"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9 问题单）"
@@ -51,8 +52,7 @@ auto_promoted_date: "2026-05-22"
 auto_promoted_by: openclaw-task9
 task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1；P2 2 写入 suggestions。满足 task6_result pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
----
+last_deepseek_cn_review_at: 2026-06-02---
 
 <!-- outline-start -->
 

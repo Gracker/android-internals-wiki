@@ -1,4 +1,5 @@
 ---
+
 title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
 section: "1.4"
@@ -35,11 +36,11 @@ sources:
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-task6_state: "revisiting"
+task6_state: "reviewed"
 last_task2a_at: "2026-05-13T18:20:00+08:00"
 last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
 status: finalized
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-09"
@@ -59,8 +60,7 @@ auto_promoted_at: "2026-05-13T19:10:00+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
 task2b_state: "fixed"
-last_task9_autofix_at: "2026-06-09"
----
+last_task9_autofix_at: "2026-06-09"---
 
 
 # Binder IPC 机制与性能影响
@@ -659,3 +659,11 @@ if (is_fair_policy(policy))
 - [来源: obsidian/Cubox/Binder驱动中的流程详解-2024-07-12.md]（OPPO 内核工匠：Binder 驱动中的流程详解）
 - [引用: https://paul.pub/android-binder-driver/]
 - [引用: https://perfetto.dev/docs/data-sources/android-binder]
+
+
+### Android 17 Binder IPC 线程调度协同与性能优化
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md
+- 类型：DeepResearch 调研结果
+- 摘要：AOSP libbinder 线程池由 ProcessState + IPCThreadState 双单例协同实现：setThreadPoolMaxThreadCount 通过 ioctl 写入内核 max_threads 且启动后不可缩减；blockUntilThreadAvailable 用 std::condition_variable 等待空闲 worker，配合 mExecutingThreadsCount 原子计数与 100ms 饥饿告警；内核侧 binder_select_thread_ilocked 在 inner_lock 自旋锁下从 waiting_threads 链表取 worker，优先级继承通过 sched_setscheduler_nocheck + set_user_nice 实现。
+- 注入时间：2026-06-09
+- 价值：源码级详解 ProcessState/IPCThreadState 双单例线程池机制、饥饿检测与优先级继承三层调度，补强 §1.4 Binder 性能分析维度

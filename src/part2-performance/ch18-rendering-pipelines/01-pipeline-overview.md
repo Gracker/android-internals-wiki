@@ -1,4 +1,5 @@
 ---
+
 title: "渲染管线分类与选择对照表"
 chapter: "18.1"
 section: "18.1"
@@ -12,7 +13,7 @@ related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", 
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -34,8 +35,7 @@ p2: 2
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-04-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-24-07-deep-review.md"
-auto_promoted: true
----
+auto_promoted: true---
 
 <!-- outline-start -->
 

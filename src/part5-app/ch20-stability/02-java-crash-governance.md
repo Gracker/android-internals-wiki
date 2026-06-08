@@ -1,4 +1,5 @@
 ---
+
 title: Java Crash 治理
 chapter: '20.2'
 section: '20.2'
@@ -13,7 +14,7 @@ task2b_result: fixed
 reviewed_date: "2026-05-18"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: "reviewed"
 task9_result: pass-tech-review
 task9_state: reviewed
 task2b_state: fixed
@@ -49,8 +50,7 @@ last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。补齐 outline 锚点、去重来源、小修 Kotlin 协程段落间距并补验证标注；无新增 B 类问题。Task9 仍需复核，未自动晋升。"
 task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
 finalized_date: "2026-05-18"
-finalized_by: openclaw-task9-auto-promote
----
+finalized_by: openclaw-task9-auto-promote---
 
 # Java Crash 治理
 

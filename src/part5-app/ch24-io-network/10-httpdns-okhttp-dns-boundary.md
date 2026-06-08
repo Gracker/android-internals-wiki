@@ -1,4 +1,5 @@
 ---
+
 title: "HTTPDNS 与 OkHttp Dns 执行边界"
 chapter: "24.10"
 section: "24.10"
@@ -41,13 +42,13 @@ last_task2a_at: "2026-05-16T16:04:00+08:00"
 status: finalized
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
-task6_state: revisiting
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: "ready-to-publish"
 last_task6_at: "2026-05-16T16:10:00+08:00"
 last_task6_audit: "2026-06-08"
 last_task6_review_log: "logs/review/2026-05-16-16-review.md"
@@ -60,8 +61,7 @@ last_task9_at: "2026-05-16T16:30:00+08:00"
 last_task9_audit: "2026-06-09"
 last_task9_autofix_at: "2026-06-09"
 last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
-task9_review_notes: "2026-05-16 Task9：深度技术审计通过；OkHttp Dns.lookup()、RouteSelector、DnsOverHttps bootstrap、EventListener 与 fast fallback 口径已核对；无 P0/P1/P2，自动晋升 finalized / ready-to-publish。 | 2026-06-09 Task9 闲时抽检：auto-fixed。P0 源码锚点 2 处；修正 OkHttp Dns.kt master 路径、RealRoutePlanner commit 归属，并将 frontmatter OkHttp raw source pin 到 source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab。"
----
+task9_review_notes: "2026-05-16 Task9：深度技术审计通过；OkHttp Dns.lookup()、RouteSelector、DnsOverHttps bootstrap、EventListener 与 fast fallback 口径已核对；无 P0/P1/P2，自动晋升 finalized / ready-to-publish。 | 2026-06-09 Task9 闲时抽检：auto-fixed。P0 源码锚点 2 处；修正 OkHttp Dns.kt master 路径、RealRoutePlanner commit 归属，并将 frontmatter OkHttp raw source pin 到 source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab。"---
 
 # 24.10 HTTPDNS 与 OkHttp Dns 执行边界
 

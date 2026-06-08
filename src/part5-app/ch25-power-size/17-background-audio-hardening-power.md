@@ -1,4 +1,5 @@
 ---
+
 title: "Android 17 后台音频硬化与播放功耗治理"
 chapter: "25.17"
 section: "25.17"
@@ -46,7 +47,7 @@ drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-24"
@@ -66,8 +67,7 @@ p0: 0
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
----
+last_deepseek_cn_review_at: 2026-06-08---
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
 

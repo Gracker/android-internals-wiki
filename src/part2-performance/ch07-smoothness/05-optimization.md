@@ -1,5 +1,6 @@
 ---
 
+
 title: "优化策略"
 section: "7.5"
 chapter: "7.5"
@@ -51,7 +52,7 @@ rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 last_task6_audit: "2026-05-22"
 task9_state: reviewed
 task9_result: auto-fixed
@@ -75,8 +76,7 @@ p1: 0
 p2: 4
 last_task9_autofix_at: "2026-06-05"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
----
+last_deepseek_cn_review_at: 2026-06-05---
 
 # 优化策略
 

@@ -1,4 +1,5 @@
 ---
+
 title: "SafeMode 崩溃循环判定与启动补偿链路"
 chapter: "20.12"
 section: "20.12"
@@ -42,8 +43,8 @@ related_chapters: ["20.2", "20.3", "20.6", "20.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/参考书素材"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
@@ -63,8 +64,7 @@ task2b_state: "fixed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-04-audit.md"
 last_task9_autofix_at: "2026-06-09"
-task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。AOSP android-17.0.0_r1 未在 android.googlesource 公开；本轮将 AtomicFile / RuntimeInit / ActivityManager / ApplicationExitInfo / WebView 相关源码锚点从 AOSP master 收敛到已复核的 android-16.0.0_r4，并将适用上限暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 1（日志记录）。"
----
+task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。AOSP android-17.0.0_r1 未在 android.googlesource 公开；本轮将 AtomicFile / RuntimeInit / ActivityManager / ApplicationExitInfo / WebView 相关源码锚点从 AOSP master 收敛到已复核的 android-16.0.0_r4，并将适用上限暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 1（日志记录）。"---
 
 # 20.12 SafeMode 崩溃循环判定与启动补偿链路
 

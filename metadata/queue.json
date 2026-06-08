@@ -788,6 +788,246 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-07T22:13:47.009991+00:00",
       "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android 17 来了！新特性介绍与适配建议",
+      "priority": 63,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612545160434188297"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 来了！新特性介绍与适配建议 — Android 17（API level 37，代号 CinnamonBun）的 Beta 2 已经发布，目前正快速推进到 Platform Stability 阶段 该文章详细探讨了Android ...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:35:49.192204",
+      "status": "pending"
+    },
+    {
+      "section": "ch01-architecture",
+      "section_title": "聊聊2026年Android开发会是什么样",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7589903499599347766"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "聊聊2026年Android开发会是什么样 — 最近在思考Android开发的未来走向，正好现在是2026年初，不如就结合这两年的变化，聊聊我对今年Android开发趋势的一些看法。 该文章详细探讨了聊聊2026年Android开发会是什么样相关技...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209268",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "用 AI 写 Android 需求：少踩坑的实战心得",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7604964464690184255"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "用 AI 写 Android 需求：少踩坑的实战心得 — 先说结论 用 AI 写 Android 代码这事，我折腾了一段时间，最大的感受就是——AI 写出来的代码质量，八成取决于你怎么\"喂\"它。 该文章详细探讨了用 AI 写 Android 需求：少踩坑的实...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209310",
+      "status": "pending"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了",
+      "priority": 63,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7605097326727266350"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了 — 每次换电脑、拉新项目，最让 Android 开发者头疼的是什么？ 不是 Gradle 同步慢，不是模拟器卡——是 JDK 版本又不对了。 明明本地装了 JDK 17，但项目要 JDK 21；CI 机器...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209332",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android17 为什么重写 MessageQueue",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612812060795093002"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android17 为什么重写 MessageQueue — Android 的消息机制，从第一个版本到 Android 16，核心实现没怎么变过。 一个 synchronized 锁，守着一条单链表，所有线程排队等着往里塞消息。跑了二十年，终于在 Androi...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209374",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7610233341305389099"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — Android 官方已经发布了 Android 17 的相关适配文档，其中有不少值得提前关注的内容，另外在去年谷歌也发布过 Android 开发者认证的通告，没认证的应用将无法安装，而时间节点也正好是...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209418",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android 要变天：桌面端这次真的来了！",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7622696665740558386"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 要变天：桌面端这次真的来了！ — 键盘、鼠标、多窗口、外接显示器。 这些词放在一起，你会想到什么？Windows？macOS？ 不，Google 说：这是 Android 的未来。 上周，Android 官方博客发布了一篇重磅文章，正...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209456",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "Android 17 来了！新特性介绍与适配建议",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612545160434188297"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 来了！新特性介绍与适配建议 — Android 17（API level 37，代号 CinnamonBun）的 Beta 2 已经发布，目前正快速推进到 Platform Stability 阶段 该文章详细探讨了Android ...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209492",
+      "status": "pending"
+    },
+    {
+      "section": "ch09-anr",
+      "section_title": "Android 协程时代，Handler 应该退休了吗？",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612905767059800074"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 协程时代，Handler 应该退休了吗？ — 在 Android 早期开发中，Handler 几乎是“线程切换”的代名词。 更新 UI？ 用 Handler。 延迟执行？ 用 Handler。 子线程和主线程通信？ 还是 Handler。 该文章...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209524",
+      "status": "pending"
+    },
+    {
+      "section": "ch01-architecture",
+      "section_title": "Android 现代架构不需要事件总线",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7625074868355973147"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 现代架构不需要事件总线 — 前言 EventBus、Otto，这些曾经风靡 Android 社区的事件总线框架确实在某个时代解决了组件间通信的难题。但随着 Kotlin 协程、Flow、ViewModel 的成熟，事件总线的种种...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-09T05:37:23.209565",
+      "status": "pending"
+    },
+    {
+      "section": "4.3/4.8",
+      "section_title": "ART 虚拟机内存管理 / ART 分代 GC",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 ART GC：RegionSpace UnevacFromSpace 与 MarkCompact 三代模型 — Android 16/17 ART 在 GC 栈上有两条碎片控制机制：RegionSpace 的 UnevacFromSpace 按75%存活率阈值决定 region 搬迁或原地保留，消除循环分配碎片",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-09T06:11:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.6",
+      "section_title": "SurfaceFlinger",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 SurfaceFlinger 事务队列与 LocklessQueue 无锁架构 — Android 16/17 的 FrontEnd 重构将客户端事务提交与合成状态读取完全解耦，事务先入无锁 MPSC 队列(LocklessQueue)再由主线程批量 drain 过滤后落地。Lock",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-09T06:11:00+08:00",
+      "status": "pending"
     }
   ],
   "items": [
