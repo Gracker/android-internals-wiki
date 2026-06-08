@@ -80,7 +80,7 @@ task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-17-review.md"
 task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理编辑痕迹与参考资料表述 3 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
+last_deepseek_cn_review_at: 2026-06-08
 last_verified: '2026-06-07'
 last_verified_against: "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `PackageInstallerSession.verifySdmSignatures` / `ArtManagedInstallFileHelper` / `ArtManagerLocal` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob` / `IncrementalService` / `PackageArchiver` / `ActivityStarter` / `ArchiveState`) + AOSP android-15.0.0_r1 `PackageArchiver` / `ActivityStarter` / `ArchiveState` + AOSP android-9.0.0_r1 `Installer.java` + Android Developers Baseline Profiles overview"
 task9_result: "auto-fixed"
@@ -101,6 +101,7 @@ last_task9_review_log: "logs/deep-review/2026-06-07-21-audit.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-07"
 task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-07 21 Task9 idle audit: auto-fixed。将 App Archiving 源码锚点从 AOSP mainline 改为 android-15/16 tag；未使用 Android 18/API 38+ 内容。"
+last_deepseek_polish_at: 2026-06-08
 ---
 # 1.9 Package Manager Service 与应用安装性能
 
@@ -577,3 +578,20 @@ Package Manager Service 与全书多个章节有交叉：
 - **§4.3 ART 虚拟机内存管理**：dex2oat 编译过程的内存占用和 JIT 代码缓存在 ART 的内存预算中
 
 ## 版本演进
+
+## SDM 在 PMS 侧的集成细节
+
+上一节讲了 SDM 在安装会话中的校验和 ART 生命周期管理。从 PMS 调度面看，`DexOptHelper` 也在安装阶段参与识别 SDM 文件（`DEXOPT_INSTALL_WITH_DEX_METADATA_FILE`），负责在编译决策中把 SDM 纳入安装期产物管理。
+
+**产物管理分工**：
+- Package Manager：APK、Split、.dm 文件的安装配对和基础校验
+- ART Service：管理 SDM、SDC、VDEX、ART 等编译产物；`ArtManagerLocal.deleteDexoptArtifacts()` 清理时一并移除 SDM/SDC
+
+**调用链**：
+```
+PackageDexOptimizer → ArtManagerLocal.deleteDexoptArtifacts() →
+mInjector.getArtFileManager().getWritableArtifacts() →
+SecureDexMetadataWithCompanionPaths → deleteSdmSdcFiles()
+```
+
+> ⚠️ 以上调用链基于 AOSP main 分支，尚未确认是否进入 Android 17 稳定版本。生产分析时以 android-17.0.0_r1 或更早 tag 的源码为准。

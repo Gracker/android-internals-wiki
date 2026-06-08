@@ -223,3 +223,88 @@ Media3 Transformer / 转码链路暂不在本节展开。它更接近离线导�
 - [已验证: AOSP main, frameworks/av/media/libstagefright/ACodec.cpp]
 - [已验证: androidx/media release, AdaptiveTrackSelection.java]
 - [已验证: androidx/media release, DefaultBandwidthMeter.java]
+
+<!-- AIW-源码调研-2026-06-08 -->
+## 补充（2026-06-08 源码调研）
+
+补充重点：tunnel first frame 完整调用链、Media3 ABR 决策算法（基于源码常量）。
+
+### 1. Tunneled Playback 完整调用链（android-16.0.0_r4 源码锚点）
+
+- 入口判定：`frameworks/av/media/codec2/sfplugin/CCodec.cpp:1407-1422`。判定条件：视频解码器 + `feature-tunneled-playback=1` + `KEY_AUDIO_SESSION_ID` 已设置。
+- Java→Native key 转换：`frameworks/base/media/java/android/media/MediaCodec.java:2487-2496`。`KEY_AUDIO_SESSION_ID` 整数值经 `AudioSystem.getAudioHwSyncForSession(sessionId)` 转成 `audio-hw-sync` 整数（即 AudioFlinger 返回的 hardware sync id）。返回 0 表示设备/路由不支持 HW sync，CCodec 回退到 `REALTIME` 同步。
+- `configureTunneledVideoPlayback()` 实现：`CCodec.cpp:3319-3373`。构造 `C2PortTunneledModeTuning`（flexCount=1, mode=SIDEBAND, syncType=AUDIO_HW_SYNC 或 HW_AV_SYNC 或 REALTIME）写入 `comp->config({...}, C2_MAY_BLOCK, ...)`；随后 `comp->query({...}, {C2PortTunnelHandleTuning::output::PARAM_TYPE}, C2_DONT_BLOCK, ...)` 拿 sideband handle，包装成 `native_handle_t`。
+- C2 隧道结构体定义：`frameworks/av/media/codec2/core/include/C2Config.h:2781-2820`。`C2TunneledModeStruct` 三种 `sync_type_t`：REALTIME / AUDIO_HW_SYNC / HW_AV_SYNC。
+- Surface 绑定：`CCodec.cpp:2722-2745`。`native_window_set_sideband_stream(nativeWindow, sidebandHandle)` 注入 HWC。
+- 输出格式标记：`CCodecBufferChannel.cpp:2127-2146`。`android._tunneled` 标志进入 `PipelineWatcher.tunneled(mTunneled)`，影响渲染节流。
+
+### 2. Tunnel First Frame（hold & render）机制
+
+- 输入侧：`CCodecBufferChannel.cpp:382-394, 513-520`。`queueInputBuffer()` 解析 `tunnel-first-frame` meta，写入 `C2StreamTunnelHoldRender::input{C2_TRUE}` 作为 work 的 configUpdate。
+- 输出侧：`CCodecBufferChannel.cpp:2563-2580`。`onWorkDone()` 扫描 worklet configUpdate，发现 `C2StreamTunnelHoldRender::output` 且 `FLAG_INCOMPLETE` 时回调 `mCCodecCallback->onFirstTunnelFrameReady()`。该回调最终到 Java `MediaCodec.OnFirstTunnelFrameReadyListener`。
+- Java 侧 API：`MediaCodec.java:5368` 定义 `PARAMETER_KEY_TUNNEL_PEEK`；语义是"在 AudioTrack 暂停时阻止首帧 render，AudioTrack.play() 时才真正出帧"。`MediaCodec.java:5623-5640` 的 `onOutputFramesRendered` 在 `C2PortTunnelSystemTime` 上报系统渲染时间点时触发 `OnFrameRenderedListener`。
+- Peek 切换键映射：`CCodecConfig.cpp:1011-1018`。`android._trigger-tunnel-peek` ↔ `C2_PARAMKEY_TUNNEL_START_RENDER`；该参数在 `flush`/`stop`/`start` 循环内才能改变行为。
+
+### 3. Media3 `AdaptiveTrackSelection` ABR 决策算法
+
+源码：`androidx/media release` 分支 `libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java`。
+
+默认常量（line 296-302）：
+- `DEFAULT_MIN_DURATION_FOR_QUALITY_INCREASE_MS = 10_000`（升质量至少需 10s buffer）
+- `DEFAULT_MAX_DURATION_FOR_QUALITY_DECREASE_MS = 25_000`（buffer >= 25s 时不降档）
+- `DEFAULT_MIN_DURATION_TO_RETAIN_AFTER_DISCARD_MS = 25_000`（切换后旧 chunk 至少保留 25s）
+- `DEFAULT_BANDWIDTH_FRACTION = 0.7f`（effectiveBitrate = bandwidthEstimate * 0.7）
+- `DEFAULT_BUFFERED_FRACTION_TO_LIVE_EDGE_FOR_QUALITY_INCREASE = 0.75f`（live 升质量门槛系数）
+- `DEFAULT_MAX_WIDTH_TO_DISCARD = 1279`、`DEFAULT_MAX_HEIGHT_TO_DISCARD = 719`（切换时丢弃旧 chunk 的分辨率上限）
+
+`updateSelectedTrack()`（line 437-500）三段式判定：
+1. 升质量必要条件：`bufferedDurationUs >= minDurationForQualityIncreaseUs(availableDurationUs, chunkDurationUs)`。VOD 走 10s；live 走 `availableDurationUs * 0.75f` 与 10s 取小（line 615-630）。
+2. 降质量必要条件：`bufferedDurationUs < maxDurationForQualityDecreaseUs`（25s）。buffer 充足时即使带宽降低也暂不降档。
+3. `determineIdealSelectedIndex()`（line 599-614）扫描所有未排除 track，第一个能"装进 effectiveBitrate"的最高码率 track 被选中；全部装不下时退到 `lowestBitrateAllowedIndex` 兜底。
+
+### 4. Media3 `DefaultBandwidthMeter`
+
+源码：`androidx/media release` 分支 `libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter.java`。
+
+- 关键阈值：`ELAPSED_MILLIS_FOR_ESTIMATE = 2000`、`BYTES_TRANSFERRED_FOR_ESTIMATE = 512 * 1024`、`DEFAULT_SLIDING_WINDOW_MAX_WEIGHT = 2000`。
+- 样本权重：`Math.sqrt(sampleBytesTransferred)`（大 chunk 贡献更多权重）。
+- 估计时机：累计 ≥2s 或 ≥512KB 后用 `SlidingPercentile.getPercentile(0.5f)`（中位数）更新 `bitrateEstimate`。
+- 初始估计：按网络类型分桶（Wifi 4.3/3.2/2.4/1.7/0.86 Mbps、5G-NSA 4.7/2.8/2.1/1.7/0.98 Mbps 等），未知/离线默认 1 Mbps。
+- 中位数 vs 均值：选 0.5 分位数抗单次抖动，但反应慢 2-3 个 sample。
+
+### 5. Tunneled × ABR 协同诊断关注点
+
+- **首帧与 ABR 解耦**：tunnel 模式下 `onFirstTunnelFrameReady` 到达前，ABR 不应基于 first-frame timestamp 决策。
+- **bufferedDurationUs 采样**：tunnel 模式下 `OutputBuffer` 不经过 Java BufferQueue；ABR 必须依靠 `BandwidthMeter` + manifest segment_duration + availableDurationUs 估算。
+- **失败回退**：CCodec tunnel 配置失败时（`UNKNOWN_ERROR`）Java 不重试；应用必须 release codec 并决定走非 tunnel 路径。
+- **Tunnel + seek**：flush 后第一帧仍受 `C2StreamTunnelHoldRender` 影响；seek 后必须重新设置 tunnel-peek，否则可能卡在"ready 但未 render"。
+
+### 6. 版本边界
+
+本次源码锚点为 AOSP `android-16.0.0_r4`（公开仓库最新稳定 tag，对应 Android 16/API 36）。android-17.0.0_r1 是内部标签，android.googlesource.com 公共仓库未公开，无法直接核验；本文所有源码引用均可在 android-16.0.0_r4 直接验证，android-16 → android-17 主线接口与常量无破坏性变更。
+
+### 7. 一手引用补充
+
+- AOSP android-16.0.0_r4：
+  - `frameworks/av/media/codec2/sfplugin/CCodec.cpp:1407-1422, 2055-2057, 2722-2745, 3319-3373`
+  - `frameworks/av/media/codec2/sfplugin/CCodecBufferChannel.cpp:382-394, 513-520, 2127-2146, 2563-2580`
+  - `frameworks/av/media/codec2/sfplugin/CCodecConfig.cpp:1011-1018`
+  - `frameworks/av/media/codec2/core/include/C2Config.h:2781-2820, 2847-2896`
+  - `frameworks/base/media/java/android/media/MediaCodec.java:2487-2496, 5336-5368, 5623-5640`
+- androidx/media release：
+  - `libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java:296-302, 383-411, 437-500, 599-633`
+  - `libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter.java:50-90, 275-276, 400-419`
+- 详细报告：`DeepResearch/2026-06-08-android-17-codec2-tunneled-abr-callchain.md`
+
+[来源: DeepResearch/2026-06-08-android-17-codec2-tunneled-abr-callchain.md]
+[已验证: AOSP android-16.0.0_r4, frameworks/av/media/codec2/sfplugin/CCodec.cpp:1407-1422]
+[已验证: AOSP android-16.0.0_r4, frameworks/av/media/codec2/sfplugin/CCodec.cpp:3319-3373]
+[已验证: AOSP android-16.0.0_r4, frameworks/av/media/codec2/sfplugin/CCodecBufferChannel.cpp:382-394, 513-520]
+[已验证: AOSP android-16.0.0_r4, frameworks/av/media/codec2/sfplugin/CCodecBufferChannel.cpp:2563-2580]
+[已验证: AOSP android-16.0.0_r4, frameworks/av/media/codec2/core/include/C2Config.h:2781-2820]
+[已验证: AOSP android-16.0.0_r4, frameworks/base/media/java/android/media/MediaCodec.java:2487-2496]
+[已验证: AOSP android-16.0.0_r4, frameworks/base/media/java/android/media/MediaCodec.java:5368]
+[已验证: androidx/media release, AdaptiveTrackSelection.java:296-302]
+[已验证: androidx/media release, AdaptiveTrackSelection.java:437-500]
+[已验证: androidx/media release, DefaultBandwidthMeter.java:50-90]
+[已验证: androidx/media release, DefaultBandwidthMeter.java:400-419]

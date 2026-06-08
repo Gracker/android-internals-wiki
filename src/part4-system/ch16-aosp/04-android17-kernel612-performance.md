@@ -49,6 +49,8 @@ review_notes: "2026-04-27 Task2B:修正 EEVDF 版本分界,拆开 Android 17/API
 last_task9_review_log: "logs/deep-review/2026-05-26-01-deep-review.md"
 last_task6_review_log: "logs/review/2026-05-26-01-review.md"
 task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（禁用词、标题标点、中英文间距）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-08
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
@@ -68,19 +70,11 @@ task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小
 - 🔹 Android 平台版本与 GKI 分支的版本边界
 - 🔹 常见误区与排查结论
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> 本节涉及 Android 平台版本、GKI release branch 和 Linux mainline 版本三层边界。
-> `android16-6.12` 和 `android17-6.18` 是两条并行的 GKI release branch，本节同时覆盖两者。
-> 后续加工或复审时，所有性能收益都必须保留来源、设备、分支和适用条件。
-<!-- outline-end -->
-
 ## 为什么要了解 Android 17 + Kernel 6.12 的性能变化
 
 升级系统版本后出现的冷启动、滑动和安装速度改善,常常来自内核与运行时的共同演进。GKI (Generic Kernel Image) 的价值,是把通用内核与 SoC / 板级代码分开:核心内核由 Google 提供 release build,厂商特定能力放进 vendor modules,并通过 stable KMI 约束接口。同一条 LTS / Android 分支内的内核更新更容易独立交付,但某台设备能否收到更新,仍取决于它是否采用兼容的 GKI release build,以及 vendor modules 是否满足对应 KMI 边界。
 
-本节把三类事实分开写。第一类是 ACK / GKI 源码分支事实,例如 `android15-6.6`、`android16-6.12`、`android17-6.18` 中 `kernel/sched/fair.c`、`fs/f2fs/`、`drivers/md/dm-verity-target.c` 的实现变化。第二类是 Android 17 / API 37 平台行为,例如 targetSdk 37 应用启用新的 lock-free `MessageQueue`。第三类是 GKI 分支与 Android 平台版本的对应关系:`android16-6.12` 和 `android17-6.18` 是两条并行的 GKI release branch,后者 Makefile 为 6.18.21,是当前 Android 17 的 common-kernel 分支。不能把 Android 17 / API 37 平台行为与 `android16-6.12` 内核线绑定过紧。[已验证: AOSP kernel/common refs/heads/android17-6.18 Makefile 6.18.21]
+本节把三类事实分开写。第一类是 ACK / GKI 源码分支事实,例如 `android15-6.6`、`android16-6.12`、`android17-6.18` 中 `kernel/sched/fair.c`、`fs/f2fs/`、`drivers/md/dm-verity-target.c` 的实现变化。第二类是 Android 17 / API 37 平台行为,例如 targetSdk 37 应用启用新的 lock-free `MessageQueue`。第三类是 GKI 分支与 Android 平台版本的对应关系:`android16-6.12` 和 `android17-6.18` 是两条并行的 GKI release branch,后者 Makefile 为 6.18.21,是当前 Android 17 的 common-kernel 分支。不能把 Android 17 / API 37 平台行为与 `android16-6.12` 内核线绑定过紧。
 
 调度器、存储栈、编译优化、内存管理是 Kernel 6.12 相关变化的四条主线。凡是缺少官方公开数据或源码采用证据的性能数字,只保留为待验证线索,不写成确定收益。
 
@@ -88,7 +82,7 @@ task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小
 
 公开资料里的性能数字来自不同来源,不能混成一张"Android 17 必然收益"表。这里按可核验程度拆开。
 
-| 类别 | 可核验来源 | 本节采用口径 |
+| 类别 | 来源 | 本节采用口径 |
 |------|------------|--------------|
 | AutoFDO for GKI | Android Developers Blog: Boosting Android Performance - AutoFDO for GKI Kernel;`android15-6.6` 与 `android16-6.12` 的 GKI AFDO 目录 | 保留官方公开的 cold start 与 Binder microbenchmark 数据,限定在对应 GKI profile / build。 |
 | DeliQueue | Android Developers Blog: Under the hood: Android 17's lock-free MessageQueue;Android 17 MessageQueue behavior change | 保留内测设备上的 lock contention、missed frames 与 first frame P95 数据,限定在 targetSdk 37+ 新 `MessageQueue`。 |
@@ -97,31 +91,27 @@ task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小
 
 对某台设备做验证时,至少要同时记录平台版本、GKI branch、kernel release、设备型号、benchmark 名称和样本口径。缺一项时,数据只能用于排查线索,不能当作跨设备结论。
 
-[待补充:GKI Mainline 推送范围的设备列表截图]
-
 ## 调度器变革：EEVDF fair scheduler + sched_ext 可扩展框架
 
 ### EEVDF：fair scheduler 的 lag / deadline 模型
 
-Linux fair scheduler 的 6.6 系列已经能看到 EEVDF 代码路径。复核 AOSP `kernel/common` 的 `android15-6.6/kernel/sched/fair.c`,`pick_eevdf()`、`entity_eligible()` 和 `place_entity()` 已存在;`android16-6.12/kernel/sched/fair.c` 继续保留这些路径。因此本节不能把 `android16-6.12` 写成 EEVDF 从"可选"走向"默认"的分界。
+Linux fair scheduler 的 6.6 系列已经能看到 EEVDF 代码路径。复核 AOSP `kernel/common` 的 `android15-6.6/kernel/sched/fair.c`,`pick_eevdf()`、`entity_eligible()` 和 `place_entity()` 已存在;`android16-6.12/kernel/sched/fair.c` 继续保留这些路径。因此注意:`android16-6.12` 不是 EEVDF 从"可选"走向"默认"的分界。
 
 本节把 CFS 当作 fair scheduler 子系统的历史名称使用;EEVDF 改的是 fair class 内部选择下一个 runnable entity 的策略。`update_curr()` 继续推进当前 entity 的 vruntime,`entity_lag()` / `entity_eligible()` 用实际服务时间与权重期望服务时间的差值判断 lag,`pick_eevdf()` 再从 eligible entity 中选择虚拟 deadline 最早的对象。正 lag 表示 entity 获得的 CPU 时间少于应得份额,负 lag 表示已经多拿了服务时间。
 
 这个模型更利于移动设备的延迟控制。短任务(例如 UI 线程的 `doFrame` 回调)运行时间短,lag 更容易回到 eligible 区间,deadline 也更容易排到前面;后台长任务执行时间更长,lag 变负后会暂时退出候选集合,等 lag 恢复后再参与选择。
 
-[已验证: AOSP `kernel/common` `android15-6.6/kernel/sched/fair.c` 和 `android16-6.12/kernel/sched/fair.c` 均包含 `pick_eevdf()` / `entity_eligible()`;Kernel 6.12 changelog]
-
 ### sched_ext：用 BPF 实现可扩展调度器
+
+EEVDF 优化了 fair scheduler 内部的调度决策,sched_ext 则从另一个方向打开调度能力——允许用 BPF 程序自定义调度策略,不必修改内核代码。
 
 sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开发者用 BPF (Berkeley Packet Filter) 程序实现自定义调度策略,不需要修改内核代码。
 
 不同场景对调度器的目标不同:游戏更重视延迟,数据库更重视吞吐,Android 更重视 UI 响应。sched_ext 让 OEM 或系统开发者可以为特定场景定制调度策略,但这类策略仍需要按设备和负载单独验证。
 
-[已验证: AOSP android16-6.12, kernel/sched/ext.c + include/linux/sched/ext.h]
-
 在 Android 17 的讨论里,sched_ext 的边界要单独写清。`android16-6.12` 的 sched_ext 实现在 `kernel/sched/ext.c`(单文件),常量和公开头文件在 `include/linux/sched/ext.h`,参考调度器示例在 `tools/sched_ext/`。这项能力提供给 OEM 和系统开发者做实验或定制,Google 官方构建仍以 fair scheduler / EEVDF 为主。若某个 ROM 启用了自定义 sched_ext 调度器并出现性能回退,排查方向是确认 sched_ext tracepoint 是否存在,再检查对应 BPF 调度器的行为。
 
-`android17-6.18` 的 sched_ext kfunc API 已从 `scx_bpf_dispatch()` / `scx_bpf_dispatch_vtime()` 重命名为 `scx_bpf_dsq_insert()` / `scx_bpf_dsq_insert_vtime()`;参考调度器示例也同步更新了 API 调用。跨分支阅读源码或移植 BPF 调度器时,要注意这个命名差异。[已验证: AOSP kernel/common refs/heads/android17-6.18 kernel/sched/ext.c]
+`android17-6.18` 的 sched_ext kfunc API 已从 `scx_bpf_dispatch()` / `scx_bpf_dispatch_vtime()` 重命名为 `scx_bpf_dsq_insert()` / `scx_bpf_dsq_insert_vtime()`;参考调度器示例也同步更新了 API 调用。跨分支阅读源码或移植 BPF 调度器时,要注意这个命名差异。
 
 ### sched_ext 源码结构与 OEM 采用边界
 
@@ -219,7 +209,7 @@ OPPO/一加 SM8750 的 `vendor/oplus/kernel/cpu/sched_ext/main.c`(开源于 GitH
 4. `/sys/kernel/sched_ext/root/ops` - 当前注册的调度器名称
 5. `nr_rejected`、`hotplug_seq` 等 sysfs 全局属性 - 可用于判断调度器是否在拒绝任务或经历热插拔
 
-与第 5 章(5.1 Linux 进程调度基础)的关系可以压缩成一句:EEVDF 继续使用虚拟时间体系,但调度决策从"vruntime 最小"转向"eligible entity 中 virtual deadline 最早"。
+EEVDF 继续使用虚拟时间体系,但调度决策从"vruntime 最小"转向"eligible entity 中 virtual deadline 最早"。详见 5.1 节。
 
 ## 存储栈三项优化
 
@@ -227,13 +217,11 @@ Kernel 6.12 对 Android 存储栈引入了三项相互配合的优化:减少重�
 
 ### F2FS Checkpoint Merge:减少重复 checkpoint 写入
 
-F2FS 是 Android 设备的主流文件系统(4.2 节)。它的 checkpoint 机制在 fsync()/sync() 路径需要 checkpoint 时,将 NAT(Node Address Table)、SIT(Segment Information Table)、CURSEG(Current Segment)等元数据刷盘--但并非每次 fsync 都触发完整 checkpoint,`f2fs_do_sync_file()` 会根据脏数据量和内部状态决定是否执行 checkpoint。如果多个线程同时触发需要 checkpoint 的 fsync,就会产生多次完整 checkpoint,带来冗余的元数据写入。
+F2FS 是 Android 设备的主流文件系统(见 4.2 节)。它的 checkpoint 机制在 fsync()/sync() 路径需要 checkpoint 时,将 NAT(Node Address Table)、SIT(Segment Information Table)、CURSEG(Current Segment)等元数据刷盘--但并非每次 fsync 都触发完整 checkpoint,`f2fs_do_sync_file()` 会根据脏数据量和内部状态决定是否执行 checkpoint。如果多个线程同时触发需要 checkpoint 的 fsync,就会产生多次完整 checkpoint,带来冗余的元数据写入。
 
-在 `android16-6.12` 中,可核验的源码锚点是 `fs/f2fs/super.c`、`fs/f2fs/checkpoint.c` 和 `fs/f2fs/f2fs.h`。`checkpoint_merge` 挂载选项开启后,`f2fs_issue_checkpoint()` 会把并发的 `CP_SYNC` 请求挂到 `cprc->issue_list`,再由 `issue_checkpoint_thread` 统一执行;`struct ckpt_req_control` 里还能看到 `queued_ckpt`、`ckpt_wait_queue` 和 `ckpt_thread_ioprio` 这些配套字段。机制上的要点是:多个同步 checkpoint 请求会被串到同一个 checkpoint 线程里统一落盘,各个进程不再各自触发一轮完整 checkpoint。
+在 `android16-6.12` 中,源码锚点在 `fs/f2fs/super.c`、`fs/f2fs/checkpoint.c` 和 `fs/f2fs/f2fs.h`。`checkpoint_merge` 挂载选项开启后,`f2fs_issue_checkpoint()` 会把并发的 `CP_SYNC` 请求挂到 `cprc->issue_list`,再由 `issue_checkpoint_thread` 统一执行;`struct ckpt_req_control` 里还能看到 `queued_ckpt`、`ckpt_wait_queue` 和 `ckpt_thread_ioprio` 这些配套字段。机制上的要点是:多个同步 checkpoint 请求会被串到同一个 checkpoint 线程里统一落盘,各个进程不再各自触发一轮完整 checkpoint。
 
 对 SQLite WAL 模式的 commit 性能有潜在影响(Android 中 SQLite 是最常见的同步 I/O 模式之一)。ContentProvider 写操作走 SQLite WAL + fsync 路径,当 fsync 触发 checkpoint 时,`checkpoint_merge` 可以将并发的 `CP_SYNC` 请求合并到 `issue_checkpoint_thread` 统一执行。具体写放大下降比例需要补齐设备、内核分支、挂载参数和写入模型后再写入正文。
-
-[已验证: AOSP android16-6.12, fs/f2fs/super.c + fs/f2fs/checkpoint.c + fs/f2fs/f2fs.h; Linux F2FS checkpoint_merge mount option]
 
 ### io_uring multishot 与 zero-copy:内核能力不等于框架默认采用
 
@@ -247,15 +235,11 @@ io_uring 是 Linux 5.1 引入的高性能异步 I/O 框架(6.3 节有基础介�
 
 multishot 的稳定结论是减少重复提交 SQE 的开销;zero-copy 的稳定结论要落到具体操作类型、registered buffers、send / receive zero-copy 支持和设备内核配置。对 App 性能分析来说,先看 trace 里是否真的出现 io_uring 相关 syscall / tracepoint,再判断网络或文件 I/O 是否使用了这条路径。
 
-[已验证: AOSP `kernel/common` `android16-6.12/io_uring/io_uring.c`; AOSP `platform/external/liburing/Android.bp`; Cronet / SQLite / OkHttp 默认采用状态待逐项核验]
-
 ### dm-verity multi-buffer hashing：ARM64 吞吐提升 35%
 
 dm-verity 是 Android 用于验证系统分区完整性的内核模块。传统路径按块计算哈希,热点函数是 `verity_hash()`。在 `android16-6.12` 中,对应源码文件是 `drivers/md/dm-verity-target.c`,多块哈希路径落在 `verity_hash_mb()`,shash 分支会调用 `crypto_shash_finup_mb(desc, data, len, digests, num_blocks)`,ahash 分支则保留逐块 fallback。
 
-公开 patch 讨论把这组改动的收益表述为 dm-verity / fsverity 的 cold-cache read 吞吐提升,ARM64 场景约在 35% 左右。可保留的结论是:6.12 把哈希热点从单块计算扩展到多块交错计算,对安装、首读和 OTA 校验这类需要连续完整性验证的路径更敏感。
-
-[已验证: AOSP android16-6.12, drivers/md/dm-verity-target.c; dm-verity multi-buffer hashing patch discussion]
+公开 patch 讨论给出的收益方向是 dm-verity / fsverity 的 cold-cache read 吞吐提升,ARM64 场景在 35% 左右。可以确认的结论是:6.12 把哈希热点从单块计算扩展到多块交错计算,对安装、首读和 OTA 校验这类需要连续完整性验证的路径更敏感。
 
 ### 三项优化的协同观察
 
@@ -267,16 +251,14 @@ dm-verity 是 Android 用于验证系统分区完整性的内核模块。传统�
 
 随机 I/O 延迟这类全局百分比需要完整 benchmark 条件支撑。缺少设备、内核分支、fio 参数、UFS 型号和样本口径时,本节不保留固定百分比。
 
-在 Perfetto 中观察存储优化时,重点看三类信号:
+Perfetto 中观察存储优化时,重点看三类信号:
 - **block tracepoint**(`block:block_rq_issue` / `block:block_rq_complete`):单个 I/O 请求的延迟分布
 - **f2fs tracepoint**(`f2fs:f2fs_sync_file_enter/exit`):fsync 延迟
 - **dm-crypt/dm-verity track**:加密和验证耗时
 
-[待补充:Kernel 6.12 前后存储 I/O Trace 对比截图]
-
 ## AutoFDO Profile-Guided Optimization 的内核应用
 
-在 1.12 节中我们讨论过 AutoFDO (Automatic Feedback-Directed Optimization) 的基本原理:用运行时的 CPU profiling 数据(硬件性能计数器采样)指导编译器做代码布局优化。Kernel 6.12 将 AutoFDO 的覆盖范围从用户空间扩展到了内核本身。
+1.12 节介绍过 AutoFDO (Automatic Feedback-Directed Optimization) 的基本原理:用运行时的 CPU profiling 数据(硬件性能计数器采样)指导编译器做代码布局优化。Kernel 6.12 将 AutoFDO 的覆盖范围从用户空间扩展到了内核本身。
 
 ### 量化数据
 
@@ -287,7 +269,7 @@ Google 在官方博客中公开的 AutoFDO 覆盖 GKI 内核后的收益(限定�
 
 > **版本差异**:部分第三方资料引用了更精确的分项数据(如 P50 4.3%、P95 6.8%、Binder-rpc 21.7% 等),但这些精确数字在当前可访问的官方博客正文中无法逐一核验。本节保留官方公开口径,分项数据可在 Google 内部的 GKI profile 仓库或后续公开 benchmark 中进一步确认。
 
-`android17-6.18` 分支的 `gki/aarch64/afdo/README.md` 公开了基于 6.18.16 profile 与 Pixel 8 的 preliminary benchmark 数据:Boot time 1.9%、Cold App launch 3.4%、Binder-rpc 13.9%、Binder-addints 17.1%、Hwbinder 23.9%。这些结果明确标注为 preliminary,不能外推到所有设备或所有 GKI build。[已验证: AOSP kernel/common refs/heads/android17-6.18 gki/aarch64/afdo/README.md]
+`android17-6.18` 分支的 `gki/aarch64/afdo/README.md` 公开了基于 6.18.16 profile 与 Pixel 8 的 preliminary benchmark 数据:Boot time 1.9%、Cold App launch 3.4%、Binder-rpc 13.9%、Binder-addints 17.1%、Hwbinder 23.9%。这些结果明确标注为 preliminary,不能外推到所有设备或所有 GKI build。
 
 Binder 调用路径是 AutoFDO 优化的重点之一。Android 的跨进程通信几乎全部走 Binder(1.4 节),冷启动过程中一个典型 App 会发起数百次 Binder 调用。AutoFDO 将内核中 Binder 热路径的代码布局优化后,每次调用的开销降低可以累积为整体冷启动延迟的降低。官方博客给出的整体改善约 4%。
 
@@ -301,8 +283,6 @@ AutoFDO 对内核的优化路径与用户空间相同:
 
 区别在于:用户空间的 AutoFDO 只优化 App 代码(通过 dex2oat / ART),而内核的 AutoFDO 优化的是 GKI kernel 的编译产物。设备是否拿到这批优化,取决于对应 GKI release build 是否已经下发到该设备的兼容分支。Android 12+ 只是平台下限,不代表设备会进入同一条 6.12 内核线。
 
-[已验证: Google Android Developers Blog, "Boosting Android Performance: Introducing AutoFDO for GKI Kernel", 2026-03]
-
 ### 与 Cloud Compilation 的关系
 
 1.12 节介绍了 Android 16 的 Cloud Compilation -- 将 dex2oat 从设备端迁移到 Google Play 云端。AutoFDO for kernel 和 Cloud Compilation 形成了完整的编译优化链:
@@ -314,6 +294,8 @@ AutoFDO 对内核的优化路径与用户空间相同:
 
 ## ART 运行时优化
 
+调度器和存储栈的变化来自内核侧,ART 运行时优化则落在 Android 平台侧——内核和运行时两条线同时演进,才能解释完整的性能变化。
+
 Android 17 的 ART 运行时引入了两项与性能直接相关的变化。
 
 ### Concurrent Mark-Compact + Generational GC
@@ -324,13 +306,11 @@ Android 17 的 ART 运行时引入了两项与性能直接相关的变化。
 
 把版本演进压缩来看:Android 8.0 先把 pause time 大幅压短;Android 10 之后的 Concurrent Copying 路径已经带有分代回收;Android 17 在 CMC 路径上继续强化 generational GC。对 RecyclerView 滑动和启动阶段的直接收益,是 GC 暂停与并发 GC 的 CPU 抢占都更容易被压到较小范围内。
 
-[已验证: AOSP art/runtime/gc/; Android 17 Beta 3 release notes; §4.8 ART 分代垃圾回收与 GC 暂停优化]
-
 ### DeliQueue lock-free MessageQueue
 
 DeliQueue 属于 Android 17 / API 37 平台行为,不属于 `android16-6.12` 内核分支本身。官方博客给出的适用条件是:targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue` 实现;依赖反射读取 `MessageQueue` 私有字段的代码需要专项验证。
 
-可核验源码锚点在 AOSP `frameworks/base/core/java/android/os/`:历史实现可以看 `LockedMessageQueue/MessageQueue.java`,新实现可以看 `ConcurrentMessageQueue/MessageQueue.java`,`CombinedMessageQueue/MessageQueue.java` 负责兼容选择。博客描述的实现模型是生产者侧 lock-free Treiber stack + Looper 侧 min-heap:多个线程插入消息时不再抢同一把 monitor lock,Looper 仍由单线程维护到期消息的顺序。
+源码锚点在 AOSP `frameworks/base/core/java/android/os/`:历史实现可以看 `LockedMessageQueue/MessageQueue.java`,新实现可以看 `ConcurrentMessageQueue/MessageQueue.java`,`CombinedMessageQueue/MessageQueue.java` 负责兼容选择。博客描述的实现模型是生产者侧 lock-free Treiber stack + Looper 侧 min-heap:多个线程插入消息时不再抢同一把 monitor lock,Looper 仍由单线程维护到期消息的顺序。
 
 官方博客给出的数据来自内部 beta traces,适合写成限定条件下的观测结果:
 
@@ -343,7 +323,7 @@ DeliQueue 属于 Android 17 / API 37 平台行为,不属于 `android16-6.12` 内
 
 ## MGLRU 与页面回收优化
 
-Multi-Gen LRU (MGLRU) 在 Kernel 6.1 引入。它在 `android16-6.12` 中通过 `CONFIG_LRU_GEN` 和 `CONFIG_LRU_GEN_ENABLED` Kconfig 选项控制;是否在特定设备的 GKI defconfig 中默认启用,需要查看对应分支的 `defconfig` 文件。它与 Android 的 LMK 机制(4.4 节)直接协同。
+Multi-Gen LRU (MGLRU) 在 Kernel 6.1 引入。它在 `android16-6.12` 中通过 `CONFIG_LRU_GEN` 和 `CONFIG_LRU_GEN_ENABLED` Kconfig 选项控制;是否在特定设备的 GKI defconfig 中默认启用,需要查看对应分支的 `defconfig` 文件。它与 Android 的 LMK 机制(见 4.4 节)直接协同。
 
 ### 传统 LRU 的问题
 
@@ -361,13 +341,11 @@ MGLRU 将单一 active/inactive 链表拆分为多个 generation(代),每代有�
 
 对具体设备做验证时,需要补齐测试口径(内核分支、内存配置、负载模型、样本量)后再写入精确百分比。
 
-落到 Android 上,MGLRU 更准确地识别活跃页面,减少错误回收(把正在使用的页面回收导致后续 page fault)。在内存紧张的设备上,前台 App 被误杀的概率会随之下降。
-
-[已验证: CONFIG_LRU_GEN / CONFIG_LRU_GEN_ENABLED Kconfig 选项存在; 量化数据已降级为方向性表述]
+对 Android 而言,MGLRU 更准确地识别活跃页面,减少错误回收(把正在使用的页面回收导致后续 page fault)。在内存紧张的设备上,前台 App 被误杀的概率会随之下降。
 
 ### 与 LMK 的协同
 
-在 4.4 节中我们讨论过 LMK 的机制:`lmkd` 守护进程根据 PSI/vmpressure 信号、内存水位和 `oom_score_adj` 做杀进程决策,不直接读取 MGLRU 的 generation 信息。MGLRU 的作用落在内核回收层--更准确地识别活跃页面、减少误回收,从而降低内存压力信号的触发频率。`lmkd` 收到的压力信号减少,杀进程的频率自然下降。如果要写"kill 频率下降 N%",需要补同设备前后 trace 或统计。
+MGLRU 的改进最终要落到与 Android LMK 机制的协同上。在 4.4 节中我们讨论过 LMK 的机制:`lmkd` 守护进程根据 PSI/vmpressure 信号、内存水位和 `oom_score_adj` 做杀进程决策,不直接读取 MGLRU 的 generation 信息。MGLRU 的作用落在内核回收层--更准确地识别活跃页面、减少误回收,从而降低内存压力信号的触发频率。`lmkd` 收到的压力信号减少,杀进程的频率自然下降。如果要写"kill 频率下降 N%",需要补同设备前后 trace 或统计。
 
 ## 在 Perfetto 中的可观测性
 
@@ -394,11 +372,9 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度:
 2. 在 Memory track 中观察 `kswapd` 的 CPU 占比是否降低
 3. 在 block tracepoint 中观察 fsync 的延迟分布是否改善
 
-[待补充:Kernel 6.12 前后冷启动 Trace 对比截图]
-
 ## 版本演进：把平台版本和 GKI 分支分开
 
-| 维度 | 可核验锚点 | 本节结论 |
+| 维度 | 锚点 | 本节结论 |
 |------|------------|----------|
 | Android 15 相关 GKI | `kernel/common` `android15-6.6/kernel/sched/fair.c` | 已存在 `pick_eevdf()`、`entity_eligible()`、`place_entity()`,不能写成"6.6 仍是纯 CFS 默认"。 |
 | Android 16 相关 GKI | `kernel/common` `android16-6.12/kernel/sched/fair.c`、`kernel/sched/ext.c` | fair scheduler 继续使用 EEVDF 路径;6.12 的明确新增点是 sched_ext 等能力。sched_ext kfunc 使用 `scx_bpf_dispatch()` / `scx_bpf_dispatch_vtime()` 命名。 |
@@ -411,7 +387,7 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度:
 
 **误区 1:"Kernel 6.12 的优化只影响新设备"**
 
-不准确。6.12 的优化先落在对应的 GKI release branch 上,再由兼容这条 branch 的设备去接收。能否看到收益,取决于设备是否采用对应的 GKI 内核、vendor modules 是否满足 stable KMI 约束,以及 OEM 是否真的把这条 release build 交付到量产版本。把"GKI 支持独立更新"理解成"所有 Android 12+ 设备都会自动收到同一条 6.12 更新",会把边界讲错。
+不准确。6.12 的优化先落在对应的 GKI release branch 上,再由兼容这条 branch 的设备去接收。能否看到收益,取决于设备是否采用对应的 GKI 内核、vendor modules 是否满足 stable KMI 约束,以及 OEM 是否真的把这条 release build 交付到量产版本。把"GKI 支持独立更新"理解成"所有 Android 12+ 设备都会自动收到同一条 6.12 更新",是错误的。
 
 **误区 2:"EEVDF 进入 fair scheduler 是因为 CFS 有 bug"**
 

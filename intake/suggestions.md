@@ -1,3 +1,21 @@
+## [Task 2A Gap Mining] 2026-06-08 22:04 (Round 40)
+
+- Direction: 同 Round 39 — 无空 draft、TASK2B_BACKLOG=0、378 sections（296 finalized + 76 ready-for-review + 0 draft + 6 misc）。source-index 素材全部已映射。research-feeds 自 2026-04 无更新（最新文件 2026-04-14）。daily-info 最近 3 天含 DeepResearch 和掘金内容，均已映射已有章节。Clippings 三本参考书已全部覆盖。AOSP 26 chapters 覆盖饱和。research-gaps.md 最新缺口条目已全部覆盖。
+- No gap scored >= 14
+- Book: 378 sections (296 finalized + 76 ready-for-review + 0 draft + 6 misc)
+- 40 consecutive empty runs
+- Recommendation: 暂停 Task 2A gap mining cron 或仅在 new material injection 时触发
+- Bottleneck: Task 6/9 review of 76 ready-for-review sections
+
+## [Task 2A Gap Mining] 2026-06-08 12:07 (Round 31)
+
+- Direction: 同 Round 18-30 — 无空 draft、TASK2B_BACKLOG=0、418 sections（296 finalized + 76 ready-for-review + 0 draft + 41 misc）。source-index 10 条素材全部已映射已有章节。research-feeds 自 2026-04 无更新。daily-info 06-08 含 6 篇 DeepResearch（art-memory-optimization→ch04、binder-ipc-thread-scheduling→ch01.4+ch20.17、gpu-render-pipeline-vulkan→ch02.10+ch18.9、trace-mechanism-frametimeline→ch13.2、statsd-service-chain→ch14.17+ch26、statsd-config-cache→ch14.17）全部映射已有章节。掘金 6 篇（Android 17 MessageQueue 重写→ch01.13、2026 趋势→非性能深度、Android 17 适配→ch17、协程 Handler→非章节素材、Kotlin 协程轻量级→非章节素材、Activity 通信→非章节素材）均已映射或非性能深度。AK RSS/ClawFeed/DailyDigest 均非性能话题。Clippings 三本参考书已全部覆盖。AOSP 26 chapters 覆盖饱和。research-gaps.md 最新条目为 Statsd 验证需求（ch14.17 已有章节，非新章节缺口）。
+- No gap scored >= 14
+- Book: 418 sections (296 finalized + 76 ready-for-review + 0 draft + 41 misc)
+- 31 consecutive empty runs
+- Recommendation: 暂停 gap mining cron 或仅在 new material injection 时触发
+- Bottleneck: Task 6 review of 76 ready-for-review sections
+
 ## [Task 2A Gap Mining] 2026-06-08 11:09 (Round 30)
 
 - Direction: 同 Round 18-29 — 无空 draft、TASK2B_BACKLOG=0、418 sections（296 finalized + 81 ready-for-review + 0 draft + 41 misc）。source-index 10 条素材全部已映射已有章节。research-feeds 自 2026-04 无更新。daily-info 06-08 含 6 篇 DeepResearch（art-memory-optimization→ch04、binder-ipc-thread-scheduling→ch01.4+ch20.17、gpu-render-pipeline-vulkan→ch02.10+ch18.9、trace-mechanism-frametimeline→ch13.2、statsd-service-chain→ch14.17+ch26、statsd-config-cache→ch14.17）全部映射已有章节。掘金 6 篇（Android 17 MessageQueue 重写→ch01.13、2026 趋势→非性能深度、Android 17 适配→ch17、协程 Handler→非章节素材、Kotlin 协程轻量级→非章节素材、Activity 通信→非章节素材）均已映射或非性能深度。AK RSS/ClawFeed/DailyDigest 均非性能话题。Clippings 三本参考书已全部覆盖。AOSP 26 chapters 覆盖饱和。research-gaps.md 最新条目为 Statsd 验证需求（ch14.17 已有章节，非新章节缺口）。

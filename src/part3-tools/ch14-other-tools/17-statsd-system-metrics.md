@@ -233,3 +233,24 @@ CTS 也依赖 statsd 验证平台 atom 和 StatsD 功能。AOSP Statsd 官方文
 - 固定降级策略：目标设备没有对应 atom、权限不足或 report 为空时，明确回退到 Perfetto、dumpsys、logcat 或 App 侧指标。
 
 这样处理后，statsd 才能成为排障体系的一层稳定索引，而不是另一个口径不清的指标来源。
+
+## 延伸阅读
+
+
+### Android 17 StatsD 三层架构链路边界验证（StatsManagerService/StatsCompanionService/native daemon）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-statsd-service-chain-validation.md
+- 类型：DeepResearch 调研结果
+- 摘要：StatsD 系统三层架构源码验证：Java 层 StatsManagerService 负责权限管理，StatsCompanionService 作为 JNI 桥接，native statsd 通过 StatsSocketListener 主循环处理事件。StatsdConfig 的 pull/push atom 需严格权限验证，数据通过 atrace.pbtxt 与 Perfetto 集成。Android 17 新增 DeviceConfig.NAMESPACE_STATSD_JAVA 命名空间和 READ_RESTRICTED_STATS 权限。
+- 注入时间：2026-06-08
+- 价值：验证 StatsD 三层架构的源码实现和权限边界，补齐 ch14.17 缺少的服务链路验证
+
+## 延伸阅读
+
+
+### Android 16 StatsD 缓存与配置重注册链路（statsdReady 全量回灌机制）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-08-android-statsd-config-cache-reregister.md
+- 类型：DeepResearch 调研结果
+- 摘要：StatsManagerService 维护五类 ArrayMap 订阅缓存（puller/dataFetch/activeConfig/broadcastSubscriber/restrictedMetrics），native statsd 重启时通过 statsdReady() 信号触发 sayHiToStatsd() 全量重注册。客户端侧缓存是 authoritative state，native 端是 mirror，registerAll* 方法采用锁内浅拷贝+锁外 binder 调用模式避免 IPC 死锁。
+- 注入时间：2026-06-08
+- 价值：补充 statsd 缓存恢复与配置持久化机制的源码级细节，是理解 statsd 服务可用性设计的关键材料
+

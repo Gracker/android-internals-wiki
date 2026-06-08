@@ -45,13 +45,15 @@ sources:
 task2b_fixed_at: "2026-06-03T08:56:35+08:00"
 last_task9_autofix_at: '2026-06-04'
 task9_review_notes: '2026-06-04 Task9 00:20：auto-fixed。修正线程优先级权限说明，并把参考摘要里的 WorkDuration API 边界校正为 API 35 flagged；回到 Task6 复审。'
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-08
 ---
 
 # 25.11 ADPF Hint Session 与协程线程迁移
 
 Kotlin Coroutine 会让业务代码在挂起、恢复之间跨线程执行，ADPF 的 `PerformanceHintManager.Session` 又要求同一组 Linux tid 持续表达周期性负载。两者放在一起时，工程约束落在三项条件上：ADPF 适合周期固定、线程稳定、能持续上报耗时的工作；协程默认调度器的线程迁移会削弱这个前提。读完本节，应该能判断哪些协程任务适合接入 ADPF，哪些场景继续用线程池、优先级和常规功耗治理更稳。
 
-[结构参考: Cubox/速度优化：任务调度优化 - 掘金-2024-02-02.md] 参考书把任务调度优化放在线程优先级、CPU 利用率和大核绑定这一组问题下讨论。这里不沿用绑核方案，原因是 Android 公开 API 不允许应用直接指定 CPU 频点或稳定绑核；现代做法是把工作周期、目标耗时和线程集合交给系统，由系统结合 DVFS、调度器和温控状态决定资源分配。详见 5.9 节。
+参考书把任务调度优化放在线程优先级、CPU 利用率和大核绑定这一组问题下讨论。这里不沿用绑核方案，原因是 Android 公开 API 不允许应用直接指定 CPU 频点或稳定绑核；现代做法是把工作周期、目标耗时和线程集合交给系统，由系统结合 DVFS、调度器和温控状态决定资源分配。详见 5.9 节。
 
 ## PerformanceHintManager Session 的线程绑定模型
 
@@ -205,16 +207,9 @@ ADPF 与 Coroutine 可以组合，但前提是把“协程代码”落到稳定�
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-17-kotlin-coroutine-adpf-hint-engineering.md
 - 类型：DeepResearch 调研结果
 - 摘要：ADPF hint session 基于 TID 绑定，Kotlin 协程线程迁移导致无法精确绑定 hint。API 33 只能重建 session，API 34 支持 setThreads 动态调整。评估了 Dispatchers.Default/IO 场景下 ADPF IPC 开销与工程化约束。
-- 注入时间：2026-05-17
-- 价值：建立 ADPF TID 绑定与协程调度的工程化边界，指导 ADPF 在 Kotlin 协程场景下的正确使用策略
-
-<!-- AIW-源码调研-2026-05-27: ADPF API 版本边界修正 -->
-> **源码调研修正**：Session.setThreads() 为 API 34 公开方法（非 flagged API）。setPreferPowerEfficiency() 和 WorkDuration 分离上报为 flagged API，需运行时 flag 判断。详见 [DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md](DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md)
 
 ### ADPF PerformanceHintManager Session API 版本边界与 Kotlin 协程协同约束
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md
 - 类型：DeepResearch 调研结果
 - 摘要：PerformanceHintManager（ADPF）从 API 31 公开，但各子 API 版本边界差异显著。Session.setThreads() 为 API 34 公开 API 非 flagged；setPreferPowerEfficiency 为 API 35 FlaggedApi；reportActualWorkDuration(WorkDuration) 为 API 35 FlaggedApi。纠正了此前将 setThreads 标注为 flagged 的版本判断错误。Binder IPC 单次约 1ms。
-- 注入时间：2026-05-27
-- 价值：源码级验证 ADPF hint session 版本边界，纠正 AIW 章节中的版本标注错误，含 AOSP android-16.0.0_r1 锚点
 

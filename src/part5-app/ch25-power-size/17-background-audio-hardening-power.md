@@ -32,13 +32,13 @@ sources:
   - type: official
     path: "https://developer.android.com/tools/perfetto"
   - type: clippings-structure
-    path: "[结构参考: Clippings/Android 性能优化 - Android 性能优化总结.md]"
+    path: "结构参考：Clippings/Android 性能优化 - Android 性能优化总结.md"
   - type: clippings-structure
-    path: "[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]"
+    path: "结构参考：Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
   - type: clippings-structure
-    path: "[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]"
+    path: "结构参考：Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md"
   - type: clippings-structure
-    path: "[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]"
+    path: "结构参考：Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power, audio, foreground-service, android-17, media-playback]
 related_chapters: ["1.16", "5.8", "8.8", "11.2", "16.5", "25.13", "26.17"]
 created_by: "task2a-knowledge-gap"
@@ -65,6 +65,8 @@ auto_promoted: true
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-08
 ---
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
@@ -115,7 +117,6 @@ Android 17 的后台音频硬化把一类旧播放方案推到了系统边界上
 这里聚焦应用侧适配和排障动作。AudioFlinger、AAudio、低延迟路径和音频线程调度，详见 1.16 节；后台执行规则详见 5.8 与 25.13 节；Media3、Codec2 与多媒体管线详见 8.8 节。
 
 [已验证: 官方文档, developer.android.com/about/versions/17/changes/bg-audio]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
 ## 后台音频硬化的触发条件
 
@@ -191,8 +192,6 @@ Android 17 的难点在于部分失败是静默的。定位时要同时看播放
 
 [已验证: 官方文档, developer.android.com/media/media3/exoplayer/battery-consumption]
 [已验证: 官方文档, developer.android.com/media/media3/exoplayer/track-selection]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 
 Media3 文档给出的边界是：短音频或亮屏播放通常不用把电量放在第一位；屏幕关闭后的长时间播放，可以评估 ExoPlayer audio offload。audio offload 把部分音频处理交给专用硬件，能降低 CPU 参与度，但会限制部分音效、变速和静音跳过能力，也需要在目标设备和媒体格式上测试。
 
@@ -282,7 +281,7 @@ Android 17 后台音频硬化要求应用把“用户想继续听”的意图表
 - [Track selection: Audio Offload | Android media | Android Developers](https://developer.android.com/media/media3/exoplayer/track-selection)
 - [perfetto | Android Studio | Android Developers](https://developer.android.com/tools/perfetto)
 - [dumpsys | Android Studio | Android Developers](https://developer.android.com/studio/command-line/dumpsys)
-- [结构参考: Clippings/Android 性能优化 - Android 性能优化总结.md]
-- [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
-- [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-- [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
+- 结构参考：Clippings/Android 性能优化 - Android 性能优化总结.md
+- 结构参考：Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md
+- 结构参考：Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md
+- 结构参考：Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md

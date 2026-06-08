@@ -58,6 +58,8 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-24T01:38:24+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-24-01-deep-review.md"
 task9_review_notes: "2026-05-24 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；ADPF power efficiency / PowerMonitor / Perfetto power rails 版本边界已复核；自动晋升 finalized；详见 logs/deep-review/2026-05-24-01-deep-review.md。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-08
 ---
 # 25.16 ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证
 
@@ -80,14 +82,6 @@ task9_review_notes: "2026-05-24 Task9 deep review: pass-tech-review。P0 0 / P1 
 - 🔸 PowerMonitor 与 Android Studio Power Profiler 数据口径
 - 🔸 PowerMonitorReadings 与 Perfetto power rails 一致性待验证
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，审校时需确认每个锚点在正文中有对应展开。
-> 涉及能耗收益的表述必须绑定设备、场景、时间窗口和验证方式，无法闭合时保留 `[待验证]`。
-<!-- outline-end -->
-
-ADPF 的 Power Efficiency Mode 不负责给线程“降速”，它只是让系统知道这组线程允许优先按能效调度。它适合长时间、周期稳定、允许少量延迟弹性的任务；不适合输入响应、帧渲染提交、音视频低延迟播放这类 deadline 紧的路径。本节把 `PerformanceHintManager.Session.setPreferPowerEfficiency(true)`、`PowerMonitor` 读数和 Perfetto power rails 放在同一个验证流程里，目标是判断节能 hint 有没有带来单位任务能耗下降，而不是只看电池百分比。
-
 ## 适用场景：什么时候该把线程标成节能优先
 
 Power Efficiency Mode 的前提是工作有稳定周期，并且业务结果不要求最短延迟。线程在 target duration 之前完成即可，系统有空间把它安排到更省电的执行形态。
@@ -104,17 +98,17 @@ Power Efficiency Mode 的前提是工作有稳定周期，并且业务结果不�
 
 ## ADPF Session 的线程集合与生命周期
 
-`PerformanceHintManager.Session` 表示一组共同完成同一类工作的 Linux 线程。官方 API reference 写明，session 中的线程应是 long-lived，不适合动态创建、销毁；使用 work duration API 时，创建 session 时传入初始 target duration，随后每个周期用 `reportActualWorkDuration()` 上报实际耗时。[已验证: 官方文档, developer.android.com/reference/android/os/PerformanceHintManager.Session]
+`PerformanceHintManager.Session` 表示一组共同完成同一类工作的 Linux 线程。官方 API reference 写明，session 中的线程应是 long-lived，不适合动态创建、销毁；使用 work duration API 时，创建 session 时传入初始 target duration，随后每个周期用 `reportActualWorkDuration()` 上报实际耗时。
 
 这几个 API 的分工要分开：
 
-- `createHintSession(int[] tids, long initialTargetWorkDurationNanos)`: 创建 session，`tids` 必须属于当前进程，目标耗时必须为正；设备不支持时可能返回 `null`。[已验证: 官方文档, developer.android.com/reference/android/os/PerformanceHintManager]
-- `setThreads(int[] tids)`: 替换 session 的线程列表，不是在原列表上追加；AOSP 注释还说明它不是 oneway 调用，不应放到热路径高频执行。[已验证: AOSP main, frameworks/base/core/java/android/os/PerformanceHintManager.java]
+- `createHintSession(int[] tids, long initialTargetWorkDurationNanos)`: 创建 session，`tids` 必须属于当前进程，目标耗时必须为正；设备不支持时可能返回 `null`。
+- `setThreads(int[] tids)`: 替换 session 的线程列表，不是在原列表上追加；AOSP 注释还说明它不是 oneway 调用，不应放到热路径高频执行。
 - `updateTargetWorkDuration(long)`: 只在目标周期改变时调用，例如刷新率、batch 大小或业务 deadline 变化。
-- `reportActualWorkDuration(long)` / `reportActualWorkDuration(WorkDuration)`: 周期结束后上报实际耗时，时间基准按 `SystemClock.uptimeNanos()` 理解。[已验证: 官方文档, developer.android.com/reference/android/os/PerformanceHintManager.Session]
+- `reportActualWorkDuration(long)` / `reportActualWorkDuration(WorkDuration)`: 周期结束后上报实际耗时，时间基准按 `SystemClock.uptimeNanos()` 理解。
 - `close()`: 释放 session；不要把 close 当暂停开关，下一轮长期工作重新创建 session。
 
-Power Efficiency Mode 对应的公开方法是 `setPreferPowerEfficiency(boolean)`，API reference 标注 Added in API level 35。AOSP main 中同名方法调用 native 层 `nativeSetPreferPowerEfficiency()`，注释说明它表达“这些线程可以安全地偏向能效而不是性能”。[已验证: 官方文档, developer.android.com/reference/android/os/PerformanceHintManager.Session] [已验证: AOSP main, frameworks/base/core/java/android/os/PerformanceHintManager.java]
+Power Efficiency Mode 对应的公开方法是 `setPreferPowerEfficiency(boolean)`，API reference 标注 Added in API level 35。AOSP main 中同名方法调用 native 层 `nativeSetPreferPowerEfficiency()`，注释说明它表达“这些线程可以安全地偏向能效而不是性能”。
 
 这段代码展示固定 worker 的组织方式，重点看 tid 采集、session 创建、节能偏好和周期上报的位置；生产代码还要补错误处理、埋点、灰度开关和 API 版本判断。
 
@@ -158,7 +152,7 @@ class PowerEfficientBatchWorker(
 
 ## Power Efficiency Mode 的系统语义
 
-`setPreferPowerEfficiency(true)` 表达的是调度偏好，不承诺具体 CPU 频点、大小核选择、GPU 频率或能耗下降比例。官方 ADPF 文档的基本模型是：App 提供工作目标和实际耗时，系统结合 SoC 与热设计决定如何使用这些 hint。[已验证: 官方文档, source.android.com/docs/core/perf/performance-hint-api]
+`setPreferPowerEfficiency(true)` 表达的是调度偏好，不承诺具体 CPU 频点、大小核选择、GPU 频率或能耗下降比例。官方 ADPF 文档的基本模型是：App 提供工作目标和实际耗时，系统结合 SoC 与热设计决定如何使用这些 hint。
 
 发布时要把三层边界写清楚：
 
@@ -170,16 +164,16 @@ class PowerEfficientBatchWorker(
 
 ## PowerMonitor 与 SystemHealthManager 读数模型
 
-Android 15（API 35）新增的 `PowerMonitor` / `PowerMonitorReadings` 让 App 能按设备提供的 monitor 读取累计能耗。入口在 `SystemHealthManager`：先调用 `getSupportedPowerMonitors()` 拿到列表，再把列表传给 `getPowerMonitorReadings()`，结果通过 `OutcomeReceiver<PowerMonitorReadings, RuntimeException>` 返回。[已验证: 官方文档, developer.android.com/reference/android/os/health/SystemHealthManager]
+Android 15（API 35）新增的 `PowerMonitor` / `PowerMonitorReadings` 让 App 能按设备提供的 monitor 读取累计能耗。入口在 `SystemHealthManager`：先调用 `getSupportedPowerMonitors()` 拿到列表，再把列表传给 `getPowerMonitorReadings()`，结果通过 `OutcomeReceiver<PowerMonitorReadings, RuntimeException>` 返回。
 
-AOSP main 中 `SystemHealthManager.getSupportedPowerMonitors()` 的注释把 monitor 分成 raw ODPM rails 和 modeled energy consumers；如果设备不支持 ODPM，方法返回空列表。`getPowerMonitorReadings()` 通过 PowerStats service 取指定 monitor 的累计读数，失败时走 `onError()`。[已验证: AOSP main, frameworks/base/core/java/android/os/health/SystemHealthManager.java]
+AOSP main 中 `SystemHealthManager.getSupportedPowerMonitors()` 的注释把 monitor 分成 raw ODPM rails 和 modeled energy consumers；如果设备不支持 ODPM，方法返回空列表。`getPowerMonitorReadings()` 通过 PowerStats service 取指定 monitor 的累计读数，失败时走 `onError()`。
 
 `PowerMonitor` 有两类类型：
 
-- `POWER_MONITOR_TYPE_CONSUMER`: 子系统或建模能耗消费者。它可能由多个 rail 组合而来，也可能代表共享 rail 的一部分，例如 Wi-Fi 与 Bluetooth 共用芯片供电时的模型拆分。[已验证: 官方文档, developer.android.com/reference/android/os/PowerMonitor]
-- `POWER_MONITOR_TYPE_MEASUREMENT`: 直接测量的电源轨。rail 名称和来源是设备特有的，不能跨设备用同名 rail 做绝对对比。[已验证: 官方文档, developer.android.com/reference/android/os/PowerMonitor]
+- `POWER_MONITOR_TYPE_CONSUMER`: 子系统或建模能耗消费者。它可能由多个 rail 组合而来，也可能代表共享 rail 的一部分，例如 Wi-Fi 与 Bluetooth 共用芯片供电时的模型拆分。
+- `POWER_MONITOR_TYPE_MEASUREMENT`: 直接测量的电源轨。rail 名称和来源是设备特有的，不能跨设备用同名 rail 做绝对对比。
 
-`PowerMonitorReadings.getConsumedEnergy(powerMonitor)` 返回自启动以来的累计能耗，单位是 microwatt-seconds（μWs），不跨重启保留，包含电池供电和插电状态下的总能耗。`getTimestampMillis(powerMonitor)` 返回快照时刻，时间基准是 `SystemClock.elapsedRealtime()`。找不到对应 monitor 时，AOSP main 返回 `ENERGY_UNAVAILABLE = -1`。[已验证: 官方文档, developer.android.com/reference/android/os/PowerMonitorReadings] [已验证: AOSP main, frameworks/base/core/java/android/os/PowerMonitorReadings.java]
+`PowerMonitorReadings.getConsumedEnergy(powerMonitor)` 返回自启动以来的累计能耗，单位是 microwatt-seconds（μWs），不跨重启保留，包含电池供电和插电状态下的总能耗。`getTimestampMillis(powerMonitor)` 返回快照时刻，时间基准是 `SystemClock.elapsedRealtime()`。找不到对应 monitor 时，AOSP main 返回 `ENERGY_UNAVAILABLE = -1`。
 
 这段代码展示一次实验窗口的读数差值。重点是用两次累计值相减，不要把单次累计值当成场景能耗。
 
@@ -227,7 +221,7 @@ fun measurePowerWindow(
 
 ## Perfetto power rails 作为交叉验证通道
 
-Perfetto 的 power rails 与 `PowerMonitor` 底层都依赖设备提供的 power stats 能力。Perfetto 文档说明，power rail counter 的存在和分辨率取决于设备厂商；平台侧通过 Android `IPowerStats` HAL 轮询获取数据。[已验证: 官方文档, perfetto.dev/docs/data-sources/battery-counters]
+Perfetto 的 power rails 与 `PowerMonitor` 底层都依赖设备提供的 power stats 能力。Perfetto 文档说明，power rail counter 的存在和分辨率取决于设备厂商；平台侧通过 Android `IPowerStats` HAL 轮询获取数据。
 
 最小采集配置里，Perfetto 使用 `android.power` 数据源，并在 `android_power_config` 中打开 `collect_power_rails`。同时采 CPU frequency、sched 和自定义 trace marker，才能把节能 hint 窗口、线程运行、频率变化和 rail 能耗放到同一条时间线上。
 
@@ -287,7 +281,7 @@ Power Efficiency Mode 的验收对象不是“是否更省电”这一句泛化�
 
 ## 线上灰度与指标设计
 
-线上灰度不适合把 `PowerMonitor` 当作高频采样接口。它是异步读数 API，返回的是累计能耗，设备支持度也不一致。线上更稳的做法是把节能 hint 当成实验变量，采集轻量业务指标，再用实验室 power rails 做解释。
+线上灰度不应把 `PowerMonitor` 当作高频采样接口。它是异步读数 API，返回的是累计能耗，设备支持度也不一致。线上更稳的做法是把节能 hint 当成实验变量，采集轻量业务指标，再用实验室 power rails 做解释。
 
 灰度字段建议至少包含这些维度：
 
@@ -301,7 +295,7 @@ Power Efficiency Mode 的验收对象不是“是否更省电”这一句泛化�
 
 ## OEM 差异与降级策略
 
-`PowerMonitor` 与 Perfetto power rails 都绕不开 OEM 实现差异。设备可能返回空 monitor 列表，也可能只提供少量 modeled consumer；同名 rail 在不同设备上也可能对应不同硬件范围。`PowerMonitor` 源码还说明 monitor index 不保证跨重启稳定，不应持久化 index。[已验证: AOSP main, frameworks/base/core/java/android/os/PowerMonitor.java]
+`PowerMonitor` 与 Perfetto power rails 都绕不开 OEM 实现差异。设备可能返回空 monitor 列表，也可能只提供少量 modeled consumer；同名 rail 在不同设备上也可能对应不同硬件范围。`PowerMonitor` 源码还说明 monitor index 不保证跨重启稳定，不应持久化 index。
 
 降级策略按三档处理：
 
@@ -315,7 +309,7 @@ Power Efficiency Mode 的开关也要做设备级降级。灰度中发现某些�
 
 ## 与 Thermal API 的联合治理
 
-Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的两个阶段：前者在任务开始时表达能效偏好，后者在设备热状态变化时调整策略。`PowerManager.addThermalStatusListener()` 可监听热状态变化，`getCurrentThermalStatus()` 可读取当前状态；热管理机制详见 5.9 节与 11.2 节。[已验证: 官方文档, developer.android.com/reference/android/os/PowerManager]
+Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的两个阶段：前者在任务开始时表达能效偏好，后者在设备热状态变化时调整策略。`PowerManager.addThermalStatusListener()` 可监听热状态变化，`getCurrentThermalStatus()` 可读取当前状态；热管理机制详见 5.9 节与 11.2 节。
 
 组合策略可以按热状态分层：
 
@@ -324,7 +318,7 @@ Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的
 - 中度升温：暂停非必要 batch，降低后台同步频率，避免继续推高热状态。
 - 严重升温：关闭非关键长时任务，只保留用户可感知路径和系统要求任务。
 
-这类策略要和业务 SLA 绑定。照片备份、日志压缩、离线索引可以主动让路；实时通话、导航、录制不能只按能耗目标降级。
+上述策略要和业务 SLA 绑定。照片备份、日志压缩、离线索引可以主动让路；实时通话、导航、录制不能只按能耗目标降级。
 
 ## 常见误区
 
@@ -342,7 +336,7 @@ Power Efficiency Mode 和 Thermal API 处理的是同一类长期负载问题的
 
 ### 误区四：插电测试不影响结论
 
-Perfetto 文档说明，电池 counter 在 USB 插电时会反映充电电流，实验室功耗测试要隔离充电状态。Power rail counter 位于电池下游，受充电状态影响小一些，但测试仍要记录 USB、电量、屏幕亮度和温度起点。[已验证: 官方文档, perfetto.dev/docs/data-sources/battery-counters]
+Perfetto 文档说明，电池 counter 在 USB 插电时会反映充电电流，实验室功耗测试要隔离充电状态。Power rail counter 位于电池下游，受充电状态影响小一些，但测试仍要记录 USB、电量、屏幕亮度和温度起点。
 
 ## 扩展
 

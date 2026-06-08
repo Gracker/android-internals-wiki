@@ -706,3 +706,95 @@ Android 16 在 Choreographer 中引入 **Buffer Stuffing Recovery** 机制，新
 - **Buffer Stuffing Recovery**：解决 Buffer Dequeue 阻塞导致的帧节拍错位
 
 两者共同改善滑动流畅性，但针对的问题根源不同。
+
+
+<!-- AIW-源码调研-2026-06-08-strictmode-safer-intent -->
+
+## 安全相关：Safer Intent 与 StrictMode 新违规检测（Android 17）
+
+> ⚠️ **未进入 Android 17**：android-17.0.0_r1 公开 tag 未发布，本节基于 `frameworks/base` 的 `main` 分支 commit 抓取。android.googlesource.com 的 `android-17.0.0_r1` 直接访问返回 `NOT_FOUND`（需要登录后的 `+android-17.0.0_r1` 命名空间路径）。最终行为以 release tag 为准。
+
+Android 17 在 `android.os.StrictMode` 中新增了两类 VM 策略违规检测位，与 Safer Intent 主线在 system_server 端的 hook 配合：
+
+### 1. `DETECT_VM_UNSAFE_INTENT_LAUNCH`（bit 13）
+
+检测从外部 app 进入并被本进程二次启动的 `Intent`，对应 `Builder.detectUnsafeIntentLaunch()`（`frameworks/base/core/java/android/os/StrictMode.java`，main HEAD l.1137-1138）。三类具体事件通过 `FrameworkStatsLog.UNSAFE_INTENT_EVENT_REPORTED` 原子从 system_server 端 statsd 上报：
+
+| 事件类型枚举 | 含义 | StrictMode 消息 |
+|--------------|------|-----------------|
+| `EXPLICIT_INTENT_FILTER_UNMATCH` | 显式 Intent 目标 component 的 `<intent-filter>` 不匹配 | `Intent mismatch target component intent filter: <intent>` |
+| `INTERNAL_NON_EXPORTED_COMPONENT_MATCH` | 隐式 Intent 命中 `android:exported=false` 的内部组件 | `Implicit intent matching internal non-exported component: <intent>` |
+| `NULL_ACTION_MATCH` | Intent 缺 action | `Launch of intent with null action: <intent>` |
+
+### 2. `DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED`（bit 14）
+
+对应 `Builder.detectBlockedBackgroundActivityLaunch()`，**额外门控**：`@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)` + `targetSdk > Build.VERSION_CODES.VANILLA_ICE_CREAM`（API 35）。AMS BAL 决策拒绝 Activity/PendingIntent 启动时调用 `StrictMode.onBackgroundActivityLaunchAborted(String)` 上抛 `BackgroundActivityLaunchViolation`。
+
+### 完整调用链
+
+```
+[app 进程]                              [system_server]
+                                         
+StrictMode.Builder                          SaferIntentUtils
+  .detectUnsafeIntentLaunch()                 .reportUnsafeIntentEvent(...)
+       │                                       (PMS/AMS intent resolution hook)
+       ▼                                       │
+StrictMode 实例                               ├──▶ FrameworkStatsLog.write(
+  .setVmPolicy(...)                              UNSAFE_INTENT_EVENT_REPORTED, ...)
+       │                                       │
+       ▼                                       └──▶ ActivityManagerInternal
+registerIntentMatchingRestrictionCallback()              .triggerUnsafeIntentStrictMode(
+  注册 IUnsafeIntentStrictModeCallback.Stub              callingPid, event, intent)
+       │                                       │
+       ▼                                       ▼
+ AMS.registerStrictModeCallback(IBinder)     binder 跨进程回调
+   mStrictModeCallbacks.put(pid, stub)             │
+       │                                       ▼
+       ▼                            UnsafeIntentStrictModeCallback
+ [后续违规触发]                            .onUnsafeIntent(type, intent)
+       │                              → StrictMode.onUnsafeIntentLaunch(type, intent)
+       ▼                              → onVmPolicyViolation(
+   onVmPolicyViolation(                     new UnsafeIntentLaunchViolation(
+     new UnsafeIntentLaunchViolation(...))     intent, msg + intent))
+   默认 PENALTY_LOG                        默认 PENALTY_LOG
+```
+
+### 关键源码位置
+
+| 项 | 文件 | 关键行（main HEAD） |
+|---|------|---------------------|
+| `DETECT_VM_*` 位定义 | `frameworks/base/core/java/android/os/StrictMode.java` | l.320-322 |
+| Builder API | `StrictMode.java` | l.1137-1186 |
+| 默认启用条件 | `StrictMode.java` | l.914-918 |
+| 回调 Stub | `StrictMode.java` | l.2206-2213 |
+| 事件类型 dispatch | `StrictMode.java` | l.2467-2482 |
+| BAL violation 入口 | `StrictMode.java` | l.2486-2488 |
+| 实体类 | `frameworks/base/core/java/android/os/strictmode/UnsafeIntentLaunchViolation.java` | 完整文件（2021 copyright，扩展） |
+| AMS 注册端点 | `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` | l.9471-9480，`mStrictModeCallbacks` l.719-721 |
+| SaferIntentUtils 上报 | `frameworks/base/services/core/java/com/android/server/pm/SaferIntentUtils.java` | `reportUnsafeIntentEvent` 函数（l.115-150 区段） |
+| Filter mismatch 标记 | `frameworks/base/core/java/android/content/Intent.java` | `EXTENDED_FLAG_FILTER_MISMATCH = 1 << 0`（l.7737） |
+
+### 性能与诊断影响
+
+- **statsd 写入轻量**：走 FrameworkStatsLog 原子通道，批处理、不阻塞 PMS/AMS 锁内调用方。
+- **binder 回调开销**：AMS `mStrictModeCallbacks` 是 `SparseArray` 按 `callingPid` 索引，O(1) 注册。binder Intent 走 Parcel 序列化，频次低。
+- **app 端 penalty**：默认 `PENALTY_LOG`，不杀进程；APM 想截获需开启 `PENALTY_DROPBOX` 或自实现 `OnVmViolationListener`。
+- **APM 序列化约束**：`UnsafeIntentLaunchViolation.mIntent` 标注 `transient`，跨进程上传后 `getIntent()` 返回 null。回放原始 Intent 必须在 app 端序列化。
+- **过滤位持久化**：`Intent.EXTENDED_FLAG_FILTER_MISMATCH` 在 startService / startActivity 调用前由 AMS `removeExtendedFlags` 清掉再 resolve（`ActivityManagerService.java` l.13706, l.13948），可作为 APM 流程的 hook 点。
+
+### 适配清单
+
+- [ ] 在 StrictMode 调试构建中开启 `detectUnsafeIntentLaunch()`，对三类事件做本地日志落盘（注意 `transient` Intent 限制）。
+- [ ] 业务涉及 `PendingIntent` 且 targetSdk ≥ 34：检查是否使用 mutable+implicit 组合，Android 17 仍阻断（与 StrictMode 检测位无直接耦合，但共用 `SaferIntentUtils.reportUnsafeIntentEvent` 管线）。
+- [ ] 若依赖 `mStrictModeCallbacks` 做自定义 BAL 决策观察：需注意它是 AMS `SparseArray` 按 PID 索引，进程死亡会清除条目。
+- [ ] `ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS`（ChangeId 161252188）当前 `@Disabled`，可通过 `cmd compat enable <change-id>` 临时开启验证。
+
+### 待验证
+
+- `BackgroundActivityLaunchViolation` 完整 Javadoc 与 reason 字段。
+- `IUnsafeIntentStrictModeCallback.aidl` 的 `@VintfStability` 标注与 version 字段。
+- AMS 端 `mStrictModeCallbacks` 是否在 binder death 时主动清理。
+- `balStrictModeRo` flag 的默认值与灰度路径。
+- `vmUnsafeIntentLaunchEnabled()` 全局开关的 DeviceConfig 入口与默认值。
+
+更完整的源码分析与未验证项见 DeepResearch 报告：`2026-06-08-android-17-strictmode-safer-intent-violations.md`。
