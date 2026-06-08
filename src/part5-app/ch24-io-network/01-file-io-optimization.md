@@ -1,8 +1,9 @@
 ---
+
 title: "文件 I/O 优化"
 chapter: "24.1"
 section: "24.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 (SharedPreferencesImpl / QueuedWork / ActivityThread / StrictMode / AtomicFile) + Android Developers docs"
