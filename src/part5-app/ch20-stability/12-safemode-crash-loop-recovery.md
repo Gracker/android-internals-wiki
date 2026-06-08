@@ -4,9 +4,9 @@ chapter: "20.12"
 section: "20.12"
 status: finalized
 drafted_date: "2026-05-16"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-16"
-last_verified_against: "AOSP master, Android Developers docs, Clippings structure references"
+applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+last_verified: "2026-06-09"
+last_verified_against: "AOSP android-16.0.0_r4 / developer.android.com; Android 17 tag not public on android.googlesource at audit time"
 confidence: medium
 sources:
   - type: clippings-structure-ref
@@ -42,8 +42,8 @@ related_chapters: ["20.2", "20.3", "20.6", "20.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/参考书素材"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
@@ -51,14 +51,19 @@ task6_reviewed_date: "2026-05-16"
 last_task6_at: "2026-05-16T15:12:00+08:00"
 last_task6_audit: "2026-06-08"
 task6_review_notes: "2026-05-16 task6 review: 完成 L1/L2 轻修 4 处；无 Task2B 回炉项，进入 Task9 技术审查。"
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task9_reviewed_date: 2026-05-16
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-16T15:38:55+08:00"
-last_task9_review_log: logs/deep-review/2026-05-16-15-deep-review.md
+last_task9_at: "2026-06-09T04:26:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-09-04-audit.md"
 auto_promoted_by: task9-deep-tech-review
 auto_promoted_at: "2026-05-16T15:38:55+08:00"
+task2b_state: "fixed"
+last_task9_audit: "2026-06-09"
+last_task9_audit_log: "logs/deep-review/2026-06-09-04-audit.md"
+last_task9_autofix_at: "2026-06-09"
+task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。AOSP android-17.0.0_r1 未在 android.googlesource 公开；本轮将 AtomicFile / RuntimeInit / ActivityManager / ApplicationExitInfo / WebView 相关源码锚点从 AOSP master 收敛到已复核的 android-16.0.0_r4，并将适用上限暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 1（日志记录）。"
 ---
 
 # 20.12 SafeMode 崩溃循环判定与启动补偿链路
@@ -137,7 +142,7 @@ class LaunchMarkerStore(private val file: File) {
 }
 ```
 
-AOSP `AtomicFile` 的 `finishWrite()` 会对输出流做 sync，关闭后把 `.new` 文件 rename 到目标文件；`failWrite()` 会 sync、关闭并删除 `.new` 文件。应用侧如果不用 `AtomicFile`，也要遵守同一套协议：写临时文件、`fsync` 文件内容、关闭、rename 到正式文件，必要时再处理父目录持久化。[已验证: AOSP master, frameworks/base/core/java/android/util/AtomicFile.java]
+AOSP `AtomicFile` 的 `finishWrite()` 会对输出流做 sync，关闭后把 `.new` 文件 rename 到目标文件；`failWrite()` 会 sync、关闭并删除 `.new` 文件。应用侧如果不用 `AtomicFile`，也要遵守同一套协议：写临时文件、`fsync` 文件内容、关闭、rename 到正式文件，必要时再处理父目录持久化。[已验证: AOSP android-16.0.0_r4, frameworks/base/core/java/android/util/AtomicFile.java]
 
 启动成功点不要放得太早。`Application.onCreate()` 结束只说明初始化函数返回了，不代表用户能进入页面。常见做法是设两个标记：
 
@@ -160,7 +165,7 @@ SafeMode 的误判大多来自证据混用。Java Crash、Native Crash、ANR 和
 | LMK / 低内存 kill | App 内 handler 不会执行 | 支持设备返回 `REASON_LOW_MEMORY`；不支持时可能表现为 `REASON_SIGNALED` + `SIGKILL` | 只作为内存降级依据，通常不直接计入崩溃循环 |
 | 用户强杀 / 任务移除 | 没有 crash 现场 | `REASON_USER_REQUESTED`、`REASON_USER_STOPPED` 或相关 subreason | 排除，不触发 SafeMode |
 
-Java Crash 的系统默认路径在 `RuntimeInit` 中：`LoggingHandler` 记录 fatal exception，`KillApplicationHandler` 设置 `mCrashing` 防止重入，调用 `ActivityManager` 上报后执行 `killProcess()` 和 `System.exit(10)`。应用自定义 handler 要做的不是“救回”进程，而是在系统终止前写下足够小的 envelope。[已验证: AOSP master, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java][结构参考: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md]
+Java Crash 的系统默认路径在 `RuntimeInit` 中：`LoggingHandler` 记录 fatal exception，`KillApplicationHandler` 设置 `mCrashing` 防止重入，调用 `ActivityManager` 上报后执行 `killProcess()` 和 `System.exit(10)`。应用自定义 handler 要做的不是“救回”进程，而是在系统终止前写下足够小的 envelope。[已验证: AOSP android-16.0.0_r4, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java][结构参考: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md]
 
 Native Crash 的证据重心在系统侧。参考书把 Native Crash 拆成信号监听和 backtrace 获取两段，这个拆法适合作为 APM 结构参考；生产环境里，信号处理器不应做复杂序列化、锁、分配内存或网络请求。SafeMode 只需要拿到最小摘要，完整 tombstone 和符号化交给 20.3、26.2 的链路处理。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md][结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Backtrace：Native 堆栈信息获取.md]
 
@@ -168,7 +173,7 @@ ANR 和 LMK 更依赖下次启动补偿。Android Vitals 文档也把 `Applicati
 
 ## ApplicationExitInfo 的补偿入口
 
-`ApplicationExitInfo` 从 Android 11（API 30）开始可用，适合在新进程启动早期读取上一进程的系统退出记录。`ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 返回匹配记录，顺序是从近到远；系统保存的是环形缓冲，旧记录可能被覆盖。[已验证: AOSP master, frameworks/base/core/java/android/app/ActivityManager.java]
+`ApplicationExitInfo` 从 Android 11（API 30）开始可用，适合在新进程启动早期读取上一进程的系统退出记录。`ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 返回匹配记录，顺序是从近到远；系统保存的是环形缓冲，旧记录可能被覆盖。[已验证: AOSP android-16.0.0_r4, frameworks/base/core/java/android/app/ActivityManager.java]
 
 `ApplicationExitInfo` 里与 SafeMode 相关的字段主要有四类：
 
@@ -179,7 +184,7 @@ ANR 和 LMK 更依赖下次启动补偿。Android Vitals 文档也把 `Applicati
 | `getProcessStateSummary()` | 读取进程死亡前写入的 128 字节状态摘要 | 官方要求不要写 PII / SPII，只适合放枚举和短摘要 |
 | `getTraceInputStream()` | 读取 ANR trace；API 31+ Native tombstone protobuf | trace 保存在全局环形缓冲里，可能返回 null |
 
-AOSP 注释说明，`getTraceInputStream()` 通常在 `REASON_ANR` 时可用；从 API 31 开始，`REASON_CRASH_NATIVE` 可返回 tombstone protobuf；由于 trace 存在独立的全局环形缓冲里，可能被新的 crash 覆盖，因此调用方必须处理 null。[已验证: AOSP master, frameworks/base/core/java/android/app/ApplicationExitInfo.java][已验证: 官方文档, developer.android.com/ndk/guides/debug]
+AOSP 注释说明，`getTraceInputStream()` 通常在 `REASON_ANR` 时可用；从 API 31 开始，`REASON_CRASH_NATIVE` 可返回 tombstone protobuf；由于 trace 存在独立的全局环形缓冲里，可能被新的 crash 覆盖，因此调用方必须处理 null。[已验证: AOSP android-16.0.0_r4, frameworks/base/core/java/android/app/ApplicationExitInfo.java][已验证: 官方文档, developer.android.com/ndk/guides/debug]
 
 这段示例代码展示补偿读取的最小逻辑，重点看“只处理 marker 时间窗口内的退出记录”。
 
@@ -216,13 +221,13 @@ fun collectExitCompensation(
 
 补偿逻辑不要把“最近一条退出记录”直接绑定到“上一轮启动失败”。多进程 App、外部 service、后台进程、预加载进程都可能留下记录。稳妥做法是按 `processName`、marker 时间、`session_id` 摘要和启动阶段一起匹配；匹配不上就只上报，不触发 SafeMode。
 
-LMK 还要判断设备是否支持低内存 kill 上报。AOSP `ActivityManager.isLowMemoryKillReportSupported()` 读取 `persist.sys.lmk.reportkills`；不支持时，内存压力下的 kill 可能退化为 `REASON_SIGNALED` 和 `SIGKILL`。这类样本可以推动内存预算和 WebView 降级，不能直接等同于代码崩溃。[已验证: AOSP master, frameworks/base/core/java/android/app/ActivityManager.java]
+LMK 还要判断设备是否支持低内存 kill 上报。AOSP `ActivityManager.isLowMemoryKillReportSupported()` 读取 `persist.sys.lmk.reportkills`；不支持时，内存压力下的 kill 可能退化为 `REASON_SIGNALED` 和 `SIGKILL`。这类样本可以推动内存预算和 WebView 降级，不能直接等同于代码崩溃。[已验证: AOSP android-16.0.0_r4, frameworks/base/core/java/android/app/ActivityManager.java]
 
 ## WebView renderer 退出的单独处理
 
 WebView Renderer 退出要从 App 进程崩溃里拆出来。Renderer 属于 WebView 多进程模型的一部分，它退出时宿主进程可以继续运行；只有没有正确处理 `onRenderProcessGone()`，或者回调返回 `false`，宿主应用才会崩溃或被系统结束。
 
-AOSP `WebViewClient.onRenderProcessGone()` 的注释给出三个处理契约：多个 WebView 可能共用一个 Renderer，受影响的 WebView 会分别收到回调；回调参数里的 `view` 已不可继续使用；宿主要把它从 View 树移除并清理所有引用。默认实现返回 `false`。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewClient.java]
+AOSP `WebViewClient.onRenderProcessGone()` 的注释给出三个处理契约：多个 WebView 可能共用一个 Renderer，受影响的 WebView 会分别收到回调；回调参数里的 `view` 已不可继续使用；宿主要把它从 View 树移除并清理所有引用。默认实现返回 `false`。[已验证: AOSP android-16.0.0_r4, frameworks/base/core/java/android/webkit/WebViewClient.java]
 
 这段示例代码把 Renderer 退出记录成页面级证据，而不是直接升级成进程级 SafeMode。
 
@@ -252,7 +257,7 @@ SafeMode 的策略应分两层：
 - 单个页面 Renderer gone：页面级兜底，重建 WebView 或展示轻量页，不影响整个 App。
 - 启动期反复 Renderer gone：只关闭 H5 首页、WebView 池、预加载、离线包注入或高风险 JS Bridge，不要把所有 Native / Java 功能一起关掉。
 
-`WebViewRenderProcessClient` 提供 Renderer 无响应和恢复回调，最小无响应回调间隔为 5 秒；应用可以选择终止 Renderer，但必须同时处理所有相关 WebView 的 `onRenderProcessGone()`，否则会导致应用终止。这个 API 适合提前降载，不适合替代退出后的恢复路径。[已验证: AOSP master, frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java]
+`WebViewRenderProcessClient` 提供 Renderer 无响应和恢复回调，最小无响应回调间隔为 5 秒；应用可以选择终止 Renderer，但必须同时处理所有相关 WebView 的 `onRenderProcessGone()`，否则会导致应用终止。这个 API 适合提前降载，不适合替代退出后的恢复路径。[已验证: AOSP android-16.0.0_r4, frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java]
 
 20.10 节已经展开 WebView Renderer OOM 与白屏恢复，本节只把它接入 SafeMode 证据链：Renderer gone 是页面 / 容器证据，只有当它让宿主进程退出，或启动 marker 多次停在同一 H5 路径上，才进入进程级保护。
 
@@ -273,7 +278,7 @@ SafeMode 的动作要按故障半径分级。降级过重会把可恢复的小�
 
 恢复条件要比进入条件更保守。一次成功启动只说明当前路径通过，不说明问题消失。推荐同时满足：同一版本连续成功启动 N 次、没有新的同签名失败、修复配置版本已更新、关键页面进入过一次。版本升级可以清理旧签名，但要保留“升级前进入过 SafeMode”的事件，方便灰度复盘。
 
-用户强杀、系统更新、权限变更、包状态变化、任务移除不应触发 SafeMode。Android 14 之后 `ApplicationExitInfo` 对用户请求、用户停止、包状态变化等 reason / subreason 拆得更细；低版本或厂商 ROM 上拿不到完整分类时，宁可只上报，也不要按崩溃处理。[已验证: AOSP master, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+用户强杀、系统更新、权限变更、包状态变化、任务移除不应触发 SafeMode。Android 13 已有 `REASON_USER_STOPPED`，Android 14 起新增 `REASON_PACKAGE_STATE_CHANGE`，并继续细化 reason / subreason；低版本或厂商 ROM 上拿不到完整分类时，宁可只上报，也不要按崩溃处理。[已验证: AOSP android-16.0.0_r4, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
 SafeMode 事件本身也要进入 Crash 上报体系。建议至少包含：进入等级、触发规则、上一轮 marker、退出原因、关联 issue、被关闭模块、恢复条件、是否成功退出。26.2 节的 Crash 上报体系负责聚合和告警，20.8 节负责把重复样本归并成可处理 issue。
 
