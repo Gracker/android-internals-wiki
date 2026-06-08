@@ -5,8 +5,8 @@ section: "16.6"
 status: "finalized"
 drafted_date: "2026-05-15"
 applicable_versions: "Android 14 (API 34) - Android 16 (API 36)"
-last_verified: "2026-05-15"
-last_verified_against: "AOSP main / source.android.com ART Service configuration / Android Developers Baseline Profiles docs"
+last_verified: "2026-06-08"
+last_verified_against: "AOSP android-16.0.0_r1 ArtFileManager.java / PrimaryDexopter.java / DexMetadataHelper.java; source.android.com ART Service configuration; Android Developers Baseline Profiles docs"
 confidence: medium
 tags: ["android-16", "art", "dexopt", "baseline-profile", "cloud-profile", "package-manager"]
 related_chapters: ["1.7", "1.9", "8.7", "16.5", "21.4"]
@@ -30,8 +30,8 @@ sources:
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
     path: "https://www.androidauthority.com/android-16-cloud-compilation-3541910/"
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task9_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
@@ -41,11 +41,15 @@ last_task6_at: "2026-05-15T23:21:00+08:00"
 last_task6_audit: "2026-06-07"
 last_task6_review_log: logs/review/2026-05-15-23-review.md
 review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-16"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-16T00:30:00+08:00"
-task9_review_notes: "2026-05-16 00:30 Task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。"
+last_task9_audit: "2026-06-08"
+last_task9_audit_log: "logs/deep-review/2026-06-08-18-audit.md"
+last_task9_autofix_at: "2026-06-08"
+task2b_state: fixed
+task9_review_notes: "2026-05-16 00:30 Task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。| 2026-06-08 Task9 闲时抽检 auto-fix：移除仅基于 AOSP main、未证明进入 Android 17 稳定标签的 SDM 补充；SDM 正文证据改按 android-16.0.0_r1 锚定，回到 Task6 复审。"
 finalized_date: "2026-05-16"
 finalized_by: "openclaw-task9"
 ---
@@ -92,11 +96,11 @@ Baseline Profile 面向 Day-0：应用还没有在这台设备上跑过，也能
 
 Dex Metadata 文件使用 `.dm` 后缀，和目标 APK 按文件名配对。AOSP `frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java` 里的规则很明确：`base.apk` 对应 `base.dm`；安装器不支持单独提交一个没有 APK 配对的 `.dm` 文件；开启 manifest 校验时，`.dm` 内的 `manifest.json` 还要匹配包名和 versionCode。
 
-[已验证: AOSP main, `frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java`]
+[已验证: AOSP android-16.0.0_r1, `frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java`]
 
 ART Service 侧还会继续解析 `.dm` 的内容。`art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java` 会读取 `config.pb`，并根据 ZIP 里的 profile entry、VDEX entry 判断类型：只有 profile、只有 VDEX，或 profile + VDEX。这个设计解释了为什么 `.dm` 不能简单理解成“Baseline Profile 文件”：它是一个容器，profile 只是其中一种可携带内容。
 
-[已验证: AOSP main, `art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java`]
+[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java`]
 
 验证 `.dm` 的最低成本路径是把它和 APK 一起侧载，再强制跑一次 `speed-profile` 编译。下面这组命令只验证当前包能不能被 ART Service 按 profile 消费，不代表 Play 云端编译已经命中：
 
@@ -134,19 +138,19 @@ pm.dexopt.shared=speed
 
 后台任务仍然受设备状态约束。AOSP `BackgroundDexoptJob` 使用 JobScheduler，周期任务要求设备 idle、charging、battery-not-low；这解释了为什么用户安装后马上启动，未必已经拿到后台 dexopt 的收益。线下验证启动收益时，不能只看包里有没有 `baseline.prof`，还要看当前设备的 dexopt 状态。
 
-[已验证: AOSP main, `art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java`]
+[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java`]
 
 ## Android 16 的 SDM 证据边界
 
 Android 16 云端编译目前要分两层写：AOSP 里能看到设备端对 SDM 产物的支持；Play 侧如何生成、签名、下发和灰度，公开资料还不完整。
 
-AOSP main 的 `ArtFileManager` 已经把 SDM 纳入可写与可用产物列表。源码里 `getWritableArtifacts()` 会为 primary dex 构造 `SecureDexMetadataWithCompanionPaths`；`getUsableArtifacts()` 也会识别 `ArtifactsLocation.SDM_DALVIK_CACHE` 和 `ArtifactsLocation.SDM_NEXT_TO_DEX`。这说明 ART Service 的产物管理已经知道“SDM 位置上的编译产物”这一类对象。
+AOSP android-16.0.0_r1 的 `ArtFileManager` 已经把 SDM 纳入可写与可用产物列表。源码里 `getWritableArtifacts()` 会为 primary dex 构造 `SecureDexMetadataWithCompanionPaths`；`getUsableArtifacts()` 也会识别 `ArtifactsLocation.SDM_DALVIK_CACHE` 和 `ArtifactsLocation.SDM_NEXT_TO_DEX`。这说明 ART Service 的产物管理已经知道“SDM 位置上的编译产物”这一类对象。
 
-[已验证: AOSP main, `art/libartservice/service/java/com/android/server/art/ArtFileManager.java`]
+[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/java/com/android/server/art/ArtFileManager.java`]
 
 `ArtManagerLocal.deleteDexoptArtifacts()` 的注释还把 cloud dexopt artifacts 单列出来，删除范围包括 VDEX、ODEX、ART、SDM、SDC 文件。这能证明设备端已有云端 dexopt 产物的清理路径，但不能推出 Play 商店已经对所有 Android 16 设备启用云端编译。
 
-[已验证: AOSP main, `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`]
+[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`]
 
 外部报道把 Android 16 Cloud Compilation 描述为：Play 侧运行 `dex2oat`，再把预编译产物放进 SDM（Secure Dex Metadata）随 APK 下发，设备端避免重复执行本地 `dex2oat`。这条说法和 AOSP 中 SDM 产物管理路径相互印证，但签名绑定、产物适配 ABI、Play 灰度策略、是否对所有包开放，仍缺少官方开发者文档或 AOSP 端到端说明。
 
