@@ -1,4 +1,5 @@
 ---
+
 title: Linux 进程调度基础
 chapter: '5.1'
 section: '5.1'
@@ -72,6 +73,7 @@ last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
+last_task6_audit: 2026-06-08
 ---
 
 <!-- outline-start -->
