@@ -4,8 +4,8 @@ chapter: "23.7"
 section: "23.7"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + Clippings/Android 性能优化"
+last_verified: "2026-06-08"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers Debug/ActivityManager/ComponentCallbacks2 + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -14,6 +14,8 @@ sources:
     path: "https://developer.android.com/reference/android/os/Debug.MemoryInfo"
   - type: official
     path: "https://developer.android.com/reference/android/app/ActivityManager.MemoryInfo"
+  - type: official
+    path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
   - type: official
     path: "https://developer.android.com/reference/android/app/ActivityManager#getProcessMemoryInfo(int[])"
   - type: official
@@ -29,6 +31,8 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityManager.java @ android-16.0.0_r1"
   - type: aosp
+    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java @ android-16.0.0_r1"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
@@ -42,15 +46,15 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]"
 tags: [memory-monitoring, pss, rss, heap-dump, oom-alert]
 related_chapters: ["23.1", "20.5", "26.3", "10.1", "19.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
-task9_result: pass-tech-review
-last_task9_at: "2026-05-14T04:36:12+08:00"
-task9_reviewed_date: "2026-05-14"
+task9_result: auto-fixed
+last_task9_at: "2026-06-08T10:32:00+08:00"
+task9_reviewed_date: "2026-06-08"
 task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-05-14-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-08-10-audit.md"
 reviewed_date: "2026-05-14"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
@@ -62,6 +66,9 @@ last_task6_at: "2026-05-14T05:17:39+08:00"
 last_task6_audit: "2026-06-06"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-14"
+last_task9_audit: "2026-06-08"
+last_task9_autofix_at: "2026-06-08"
+task9_review_notes: "2026-05-14 Task9 04: pass-tech-review。P0/P1 0；P2 1：Debug.getRss() API 35+ 边界，后续已由 Task6 标注并自动晋升 finalized。 | 2026-06-08 Task9 idle audit: auto-fixed。P0 0 / P1 1 / P2 1；补充 Android 14/API 34 起 TRIM_MEMORY_RUNNING_* 等旧低内存等级不再投递、API 35 废弃的版本边界；Android 17/API 37 ProfilingTrigger OOM/anomaly 属于本节未来扩展 P2，未写入正文。"
 ---
 
 # 内存监控与线上治理
@@ -194,7 +201,7 @@ OOM 预警不是等 `OutOfMemoryError` 抛出来。线上更有价值的窗口�
 | 等级 | 信号 | 端侧动作 | 上报动作 |
 |---|---|---|---|
 | L1 观察 | Java Heap 或 PSS 高于该设备档位 P90 | 记录页面和业务状态，不打扰用户 | 普通采样上报 |
-| L2 降级 | 连续采样高位，收到 `onTrimMemory(TRIM_MEMORY_RUNNING_LOW)` 或 `lowMemory=true` | 清理可重建缓存、暂停预取、降低图片内存缓存、停止后台批处理 | 上报内存压力事件 |
+| L2 降级 | 连续采样高位；Android 13 及以下可结合 `TRIM_MEMORY_RUNNING_LOW`，Android 14+ 主要看 `MemoryInfo.lowMemory` / `availMem` 接近 `threshold` | 清理可重建缓存、暂停预取、降低图片内存缓存、停止后台批处理 | 上报内存压力事件 |
 | L3 保留现场 | 清理后仍未回落，或接近 Java Heap 上限 | 在采样命中、前台安全、磁盘充足时触发 heap dump / 专项工具 | 上报快照摘要与触发原因 |
 | L4 保护 | 低端机、前台高交互、短时间已 dump、剩余磁盘不足 | 放弃 dump，只保留轻量指标 | 上报放弃原因，避免重复触发 |
 
@@ -228,7 +235,7 @@ fun classifyJavaHeapPressure(samples: List<MemorySample>): String {
 
 这段逻辑的判断点在“连续窗口”。一次峰值只记录，连续高位才降级或保留现场。实际工程还要叠加前后台、页面类型、用户交互状态、磁盘容量和远程开关。
 
-[自动发现] `onTrimMemory()` 适合做低内存背景信号，不适合单独作为 OOM 预警。系统回调说明设备整体内存压力或进程状态变化，业务侧仍要结合自身 PSS / RSS / Java Heap 曲线判断该释放什么。详见 20.5 节对 OOM 分类与系统回收路径的讨论。
+[自动发现] `onTrimMemory()` 适合做进程状态和可回收资源信号，不适合单独作为 OOM 预警。Android 14/API 34 起，系统不再向 App 投递 `TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 等旧低内存等级；这些常量在 API 35 被废弃。线上策略应把 `TRIM_MEMORY_UI_HIDDEN` / `TRIM_MEMORY_BACKGROUND` 作为缓存收缩时机，把设备级低内存判断交给 `ActivityManager.MemoryInfo` 与自身 PSS / RSS / Java Heap 曲线。详见 20.5 节对 OOM 分类与系统回收路径的讨论。[已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2; AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/ComponentCallbacks2.java]
 
 ## 内存快照（Heap Dump）线上采集方案
 
