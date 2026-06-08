@@ -505,6 +505,13 @@ dumpsys surfaceflinger layers   # Layer 详细信息
 - 摘要：分析 SurfaceFlinger 双缓冲状态模型（mCurrentState/mDrawingState 原子更新）、MessageQueue INVALIDATE/REFRESH 双消息机制、BufferQueue 状态机完整循环（FREE→QUEUED→DEQUEUED→ACQUIRED→FREE），以及 Android 13 mScheduler 替代和 Android 17 DeliQueue 无锁 MessageQueue 重构。
 - 注意：部分 android-17.0.0_r1 源码锚点待 AOSP 公开 tag 确认
 
+
+
+### Android 17 SurfaceFlinger LocklessQueue 与 TransactionHandler 流水线（源码级调研，2026-06-08 补完）
+- 来源：DeepResearch 调研（2026-06-08）— `2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md`
+- 摘要：在 2026-05-29 报告（双缓冲 MessageQueue）基础上，补完 FrontEnd 重构后的事务队列与处理路径。`frameworks/native/services/surfaceflinger/LocklessQueue.h` 提供真正无锁 MPSC 队列（CAS-based push + 单消费者 pop），binder 线程事务入队不再持 `mStateLock`；`FrontEnd/TransactionHandler.h` 用双层队列（LocklessQueue + per-applyToken FIFO）配合三个 TransactionFilter 槽位完成事务批过滤；`SurfaceFlinger::setTransactionState` 与 `applyTransactionState` 通过 LocklessQueue 解耦；barrier TTL 默认 5s 防止永久卡死。⚠️ 边界说明：`android-17.0.0_r1` 公开 tag 截至 2026-06-08 尚未发布，所有"Android 17"声明均基于 android-16.0.0_r4 已就位代码的延续性推断。
+- 关键调用链：`setTransactionState` → `mTransactionHandler.queueTransaction` (LocklessQueue push) → `setTransactionFlags(eTransactionFlushNeeded)` → 主线程 `flushTransactions` → `applyTransactions` → `applyTransactionsLocked` → `applyTransactionState` (持 mStateLock)。
+
 ### BufferQueue 内部锁竞争机制（源码级调研）
 - 来源：DeepResearch 调研（2026-05-08）
 - 摘要：详述 BufferQueue 单一 mutex + 多 condition variable 锁架构，分析 dequeueBuffer 等待、ActiveBuffer O(n) 扫描、Allocation 期间锁释放三个关键竞争路径，以及 Android 14 BUFFER_RELEASE_CHANNEL 精确唤醒优化。

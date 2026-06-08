@@ -419,6 +419,78 @@ Android 16 已落地 `SDK_INT_FULL`（major × 1_000_000 + minor）。**Android 
 
 
 
+
+
+<!-- AIW-源码调研-2026-06-08 -->
+## 源码调研验证（2026-06-08）— Sentry SDK 运行时 API 守卫点源码验证
+
+**重点**：在 Sentry Android SDK 主分支（`getsentry/sentry-java` main HEAD）的 5 个关键位置命中 `Build.VERSION_CODES.*` 显式分支，下面以源码为准给出与章节表的对照。
+
+### 1. Sentry 主分支 5 个 API 守卫点（一手源码验证）
+
+| 能力 | 源码位置 | 守卫 | 含义 |
+|---|---|---|---|
+| Session Replay 录制 | `sentry-android-replay/.../ReplayIntegration.kt:132` | `Build.VERSION.SDK_INT < Build.VERSION_CODES.O` | API < 26 早退，log "Session replay is only supported on API 26 and above" |
+| ANR V2 (ApplicationExitInfo 路径) | `sentry-android-core/.../AnrIntegrationFactory.java:23-26` | `getSdkInfoVersion() >= Build.VERSION_CODES.R` | API ≥ 30 选 `AnrV2Integration`，否则回退 `AnrIntegration`（旧 ANRWatchDog） |
+| FrameMetrics 帧采集 | `sentry-android-core/.../SentryFrameMetricsCollector.java:111` | `getSdkInfoVersion() < Build.VERSION_CODES.N` | API < 24 直接 return，`isAvailable = false`；同文件 l.156 API ≥ 30 切到 `window.getContext().getDisplay().getRefreshRate()` |
+| Continuous Profiler | `sentry-android-core/.../AndroidContinuousProfiler.java:173` | `getSdkInfoVersion() < Build.VERSION_CODES.LOLLIPOP_MR1` | API < 22 早退；注释明确 "Android Profiler causes crashes on api 21 → issue 3392" |
+| Transaction Profiler | `sentry-android-core/.../AndroidTransactionProfiler.java:156` | `getSdkInfoVersion() < Build.VERSION_CODES.LOLLIPOP_MR1` | 同上 |
+
+### 2. Sentry 主分支 compileSdk 状态
+
+`gradle/libs.versions.toml` 一手验证：
+
+```toml
+targetSdk = "36"
+compileSdk = "36"
+minSdk = "21"
+```
+
+**Android 17 落地后行为**：Sentry main 自身只声明对 API 36 编译期可见。Android 17 (API 37) 设备运行时触发 `Build.VERSION.SDK_INT > compileSdk` 兼容回退，接入评审应保持 SDK ≥ main HEAD，**不要在 fork 上锁定旧 compileSdk**。
+
+### 3. 与章节表格的对照修订
+
+| 章节行 | 章节原断言 | 源码实测 | 修订建议 |
+|---|---|---|---|
+| line 122 "ApplicationExitInfo (API 29+) 稳定可用" | API 29+ 即可 | Sentry AnrIntegrationFactory 实际门槛 **API 30 (R)** | 改为 "ApplicationExitInfo (API 30+)，Sentry 等主流 SDK 实际门槛 API 30" |
+| line 116 "Session Replay 录制 \| Android 8 (API 26) +" | API 26+ | 一致 ✅ | 附 Sentry ReplayIntegration.kt:132 一手引用 |
+| FrameMetrics 帧采集 | 章节未列 | 实际门槛 **API 24 (N)** | line 242 PoC 验收表"慢帧 / 卡顿"行加注 "Sentry FrameMetrics 实际 API 24+；Android 7.0/7.1 设备需独立验证" |
+| Profiling 起点 | 章节未明确 | 实际门槛 **API 22 (LOLLIPOP_MR1)** | Profiling 章节可写 "Sentry 实际可下探到 Android 5.1"，修正"Profiling 需 Android 8+"的过度保守说法 |
+
+### 4. Bugly SDK API 名复核
+
+task9 复核 line 33 提到 `BuglyBuilder.setEnableRecordAnrMainStack` 未在官方文档出现。**当前章节**统一使用正名 `builder.enableAllThreadStackAnr = true`（line 136、line 221、line 343），task9 关单不再需要修改。
+
+`setEnableRecordAnrMainStack` 实为旧版误写。Bugly SDK 闭源无法在 GitHub 找到 Java 源文件直接验证，但 Bugly Android SDK 公开 changelog 中仅列 `enableAllThreadStackAnr`、`enableAllThreadJavaStackAnr` 等 setter。
+
+### 5. AOSP 主线状态（与 2026-06-07 调研一致）
+
+`frameworks/base/core/java/android/os/Build.java` @ `android-16.0.0_r4` 一手验证：
+
+```java
+public static final int UPSIDE_DOWN_CAKE = 34;
+public static final int VANILLA_ICE_CREAM = 35;
+public static final int BAKLAVA = 36;
+public static final int BAKLAVA_1 = VERSION_CODES.BAKLAVA * SDK_INT_MULTIPLIER + 1;  // 36_000_001
+
+@FlaggedApi(Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+public static final int SDK_INT_FULL;
+static {
+    SDK_INT_FULL = VERSION_CODES_FULL.SDK_INT_MULTIPLIER
+            * SystemProperties.getInt("ro.build.version.sdk", 0)
+            + SystemProperties.getInt("ro.build.version.sdk_minor", 0);
+}
+```
+
+AOSP 主线 tag 截止 `android-16.0.0_r4`，**android-17.0.0_r1 仍未发布**——所有 API 37 数值引用标记为「**未进入 Android 17**」。
+
+### 6. 核心结论更新
+
+- **Sentry 5 个运行时 API 门槛已源码验证**：Session Replay API 26、ANR V2 API 30、FrameMetrics API 24、Continuous/Transaction Profiler API 22
+- **与章节一致性**：Session Replay 门槛与章节一致；ANR V2 门槛章节表写 API 29 误，应修订为 API 30；FrameMetrics 与 Profiler 实际起点比章节更激进，可下探到 Android 7.0 / 5.1
+- **Android 17 设备兼容性**：5 个守卫在 API 37 上自然通过，**Sentry main HEAD 在 Android 17 上无运行时降级**
+- **Bugly / APMPlus**：仍是闭源，门槛需依赖厂商 changelog；本轮不引入新断言
+
 ## 参考资料
 
 ### Android 17 商业 APM 平台 SDK/API 版本边界验证

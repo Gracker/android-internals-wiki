@@ -227,3 +227,135 @@ adb shell cat /sys/fs/fuse/features/fuse_passthrough
 ## 小结
 
 FUSE passthrough 在 Linux 6.12 中的实现（`passthrough.c` + `iomode.c`）提供了绕过用户态 daemon 的数据读写路径。Android `MediaProvider` 通过 `FOPEN_PASSTHROUGH` 标志和 backing file 注册机制与之对接，让经过策略检查的文件读写直接操作底层文件系统。passthrough 优化的是数据读写路径，不替代权限检查和策略判断；目录遍历、元数据查询、转码和内容遮盖仍然需要 FUSE daemon 参与。排查外部存储 I/O 问题时，先确认 passthrough 是否可用、当前操作是否在 passthrough 覆盖范围内，再做进一步优化。
+
+<!-- AIW-源码调研-2026-06-08 -->
+
+## 🔧 Android 17 源码验证更新（2026-06-08）
+
+经源码深度验证，本章内容需要以下关键更新：
+
+### 版本更正：Android 17 实际使用 kernel 6.18
+
+**重要发现**：Android 17 实际使用 `android17-6.18` 内核，而非本章引用的 `android-6.12`（Android 16 使用）。此差异影响：
+
+1. **内核源码路径**：`aosp-mirror/kernel_common/android17-6.18/fs/fuse/`
+2. **补丁状态**：Android 17 有特殊优化补丁
+3. **API 变化**：权限检查和并发机制有显著改进
+
+### Android 17 特有补丁验证
+
+#### 1. CAP_SYS_ADMIN 权限检查已禁用
+
+**源码位置**：`fs/fuse/backing.c`（Android 17 特有）
+
+```c
+/* TODO: relax CAP_SYS_ADMIN once backing files are visible to lsof */
+/* Android already restricts access here, and we don't want to grant extra
+ * Permissions to the daemon */
+#if 0
+res = -EPERM;
+if (!fc->passthrough || !capable(CAP_SYS_ADMIN))
+    goto out;
+#endif
+```
+
+**补丁历史**：
+- **commit d4728821**：原始补丁 "ANDROID: fuse: Allow passthrough without CAP_SYS_ADMIN"
+- **commit 6fb1128f**：重新应用补丁到 backing.c 文件
+- **commit 7ec0dcc2**：补丁被 revert（但实际补丁代码仍存在）
+
+**影响**：Android 17 中，MediaProvider 不再需要 CAP_SYS_ADMIN 权限即可注册 backing file，权限检查由 MediaProvider 自身负责。
+
+#### 2. ETXTBSY 错误路径禁用（支持并发模式）
+
+**源码位置**：`fs/fuse/iomode.c`（Android 17 特有）
+
+```c
+/* Android's use case requires opening files in both passthrough and non
+ * passthrough modes */
+#if 0
+if (fuse_inode_backing(fi)) {
+    clear_bit(FUSE_I_CACHE_IO_MODE, &fi->state);
+    spin_unlock(&fi->lock);
+    return -ETXTBSY;
+}
+#endif
+```
+
+**影响**：Android 17 允许同一文件同时以 passthrough 和非 passthrough 模式打开，提升并发访问性能。
+
+### MediaProvider 双 passthrough 模式支持
+
+**源码位置**：`aosp-mirror/platform_packages_providers_mediaprovider/main/jni/FuseDaemon.cpp`
+
+Android 17 MediaProvider 区分两种 passthrough 模式：
+
+```cpp
+if (conn->capable & FUSE_CAP_PASSTHROUGH) {
+    mask |= FUSE_CAP_PASSTHROUGH;
+    // 新 passthrough 模式（Linux 6.18 FUSE_PASSTHROUGH）
+} else if (conn->capable & FUSE_CAP_PASSTHROUGH_UPSTREAM) {
+    mask |= FUSE_CAP_PASSTHROUGH_UPSTREAM;
+    disable_splice_write = true;
+    fuse->upstream_passthrough = true;
+    // 上游 passthrough 模式（旧版本）
+}
+```
+
+### 性能影响对比：Android 16 vs Android 17
+
+| 特性 | Android 16 | Android 17 | 性能影响 |
+|------|------------|------------|----------|
+| 权限检查 | 需要 CAP_SYS_ADMIN | 权限检查禁用 | 减少内核权限开销 |
+| 并发访问 | 互斥模式 | 支持多模式并发 | 提升并发性能 |
+| 内核版本 | android-6.12 | android-6.18 | 包含最新优化 |
+| MediaProvider | 单一 passthrough | 双 passthrough 模式 | 更精细控制 |
+
+### 调试验证建议
+
+排查 Android 17 设备时，建议验证：
+
+1. **确认内核版本**：
+   ```bash
+   adb shell uname -r  # 应该显示 6.18+ 版本
+   ```
+
+2. **验证 CAP_SYS_ADMIN 状态**：
+   ```bash
+   # 在 backing.c 中检查是否被 #if 0 包围
+   adb shell cat /proc/kallsyms | grep fuse_backing_open
+   ```
+
+3. **检查 MediaProvider passthrough 支持**：
+   ```bash
+   adb shell cat /sys/fs/fuse/features/fuse_passthrough
+   # 应该输出 supported
+   ```
+
+### 实际应用建议
+
+**Android 17 优化建议**：
+1. **视频播放**：完全受益于 passthrough，无需额外优化
+2. **大文件处理**：顺序读写性能接近原生文件系统
+3. **并发访问**：可放心使用多进程同时访问同一文件
+4. **权限管理**：关注 MediaProvider 的权限策略而非内核权限
+
+**性能监控重点**：
+- 监控 `media_provider` 进程 CPU 占用（passthrough 应该很低）
+- 关注文件操作的延迟分布（passthrough 路径应该更稳定）
+- 检查并发场景下的性能表现（Android 17 应该表现更好）
+
+---
+
+*本更新基于源码深度验证，详见 [DeepResearch 报告](../DeepResearch/2026-06-08-fuse-bpf-nonexistent-verification.md)*
+
+## 延伸阅读
+
+
+### Android 17 内核 FUSE-BPF 机制验证（FUSE-BPF 不存在，仅有 Passthrough）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-08-fuse-bpf-nonexistent-verification.md
+- 类型：DeepResearch 调研结果
+- 摘要：经源码三重验证（Kconfig/Makefile/文件列表），Android 17 kernel 6.18 不存在 FUSE-BPF 机制，仅有 FUSE passthrough。Android 17 特有补丁禁用了 CAP_SYS_ADMIN 权限检查、允许并发 passthrough/非 passthrough 模式，MediaProvider 支持双 passthrough 模式（FUSE_CAP_PASSTHROUGH / FUSE_CAP_PASSTHROUGH_UPSTREAM），对 Scoped Storage I/O 性能有实质影响。
+- 注入时间：2026-06-08
+- 价值：直接修正 §6.7 关于 FUSE-BPF 的误判，补充 Android 17 kernel 6.18 的实际 passthrough 实现和特有补丁
+

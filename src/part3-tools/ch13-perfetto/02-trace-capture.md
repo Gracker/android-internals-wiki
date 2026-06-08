@@ -127,6 +127,102 @@ last_deepseek_cn_review_at: 2026-06-06
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
+
+
+<!-- AIW-源码调研-2026-06-08 补充 -->
+### 🔸 2026-06-08 源码锚点强化与 Linux.Perf 完整调用链
+
+#### FrameTimeline 架构细节（基于 android-16.0.0_r3）
+
+1. **数据源注册**：`frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp:933-939`
+   ```cpp
+   void FrameTimeline::onBootFinished() {
+       perfetto::TracingInitArgs args;
+       args.backends = perfetto::kSystemBackend;
+       perfetto::Tracing::Initialize(args);
+       registerDataSource();
+   }
+   void FrameTimeline::registerDataSource() {
+       perfetto::DataSourceDescriptor dsd;
+       dsd.set_name(kFrameTimelineDataSource);  // "android.surfaceflinger.frametimeline"
+       FrameTimelineDataSource::Register(dsd);
+   }
+   ```
+
+2. **SurfaceFrame Jank 分类矩阵**：`FrameTimeline.cpp:600-680`
+   ```cpp
+   uint32_t SurfaceFrame::classifyJankLocked() {
+       // 基础状态：OnTimePresent = None
+       if (frame->frameStateFlags & PresentState::OnTimePresent) {
+           return JankType::None;
+       }
+       // 晚期 present 的分类逻辑
+       if (frame->presentStateFlags & PresentState::LatePresent) {
+           if (mPredictions.endTime <= mLastLatchTime) {
+               return JankType::BufferStuffing;
+           }
+           if (!frame->gpuFenceValid) {
+               return JankType::SurfaceFlingerCpuDeadlineMissed;
+           }
+           return JankType::AppDeadlineMissed;
+       }
+   }
+   ```
+
+3. **Trace Cookie 机制**：`FrameTimeline.h:122-130`
+   - `mTraceCookie = std::atomic<int64_t>`（单 FrameTimeline 实例）
+   - `getCookieForTracing()` 返回唯一标识符，用于精确定位 start/end packet 对
+
+4. **Feature Flag 机制**：`frameworks/native/services/surfaceflinger/common/FlagManager.cpp:150,251`
+   ```cpp
+   DUMP_ACONFIG_FLAG(filter_frames_before_trace_starts);
+   FLAG_MANAGER_ACONFIG_FLAG(filter_frames_before_trace_starts, "")
+   // 通过 server_configurable_flags 控制"trace 启动前的 frame 是否写入 packet"
+   ```
+
+#### Linux.Perf 守护进程架构（基于 lineage-18.1 ≈ android-12.0.0_r1）
+
+1. **Socket 继承机制**：`external/perfetto/src/profiling/perf/traced_perf.cc:24-50`
+   ```cpp
+   static constexpr char kTracedPerfSocketEnvVar[] = "ANDROID_SOCKET_traced_perf";
+   int GetRawInheritedListeningSocket() {
+       const char* sock_fd = getenv(kTracedPerfSocketEnvVar);
+       if (sock_fd == nullptr) PERFETTO_FATAL("Did not inherit socket from init.");
+   }
+   ```
+
+2. **Producer 注册**：`external/perfetto/src/profiling/perf/perf_producer.cc:50-51`
+   ```cpp
+   constexpr char kProducerName[] = "perfetto.traced_perf";
+   constexpr char kDataSourceName[] = "linux.perf";
+   ```
+
+3. **进程过滤实现**：`perf_producer.cc:80-103`
+   ```cpp
+   bool ShouldRejectDueToFilter(pid_t pid, const TargetFilter& filter) {
+       std::string cmdline;
+       if (GetCmdlineForPID(pid, &cmdline)) {
+           // 白名单检查或黑名单匹配
+           reject_cmd = (filter.cmdlines.size() && !filter.cmdlines.count(cmdline)) ||
+                        filter.exclude_cmdlines.count(cmdline);
+       }
+       bool reject_pid = (filter.pids.size() && !filter.pids.count(pid)) ||
+                        filter.exclude_pids.count(pid);
+   }
+   ```
+
+4. ** execve 保护延迟**：`perf_producer.cc:47`
+   ```cpp
+   constexpr uint32_t kProcDescriptorsAndroidDelayMs = 50;  // 防止 execve 期间 signal disposition 默认 terminate
+   ```
+
+#### Android 17 边界声明
+- **锚点确认**：所有源码基于 `android-16.0.0_r3`（LineageOS-22.2），`android-17.0.0_r1` tag 截至 2026-06-08 未公开
+- **预期兼容性**：基于 API 37 政策，两个数据源预期保持可用，但需公开 tag 后二次验证
+- **结论标注**：本章节所有 Android 17 相关断语均标注"需公开 tag 后复核"
+
+
+
 ## 为什么要了解 Trace 抓取
 
 性能分析的第一步永远是"拿到数据"。不管我们是排查卡顿、分析启动速度、还是调查 ANR，都需要先抓取一份 Trace 文件，然后在 Perfetto UI 中打开它。如果抓取的配置不对——比如漏掉了关键的 atrace category，或者 buffer 太小导致数据被覆盖——后续分析就无从谈起。

@@ -97,7 +97,7 @@ last_task9_review_log: logs/deep-review/2026-06-07-20-audit.md
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-30
+last_deepseek_cn_review_at: 2026-06-08
 last_task9_audit: '2026-06-07'
 last_task9_audit_log: logs/deep-review/2026-06-07-20-audit.md
 last_task9_autofix_at: '2026-06-07'
@@ -389,7 +389,7 @@ Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布�
 
 AOSP 提供的功耗管理机制（Doze、Standby、省电模式）只是“官方基线”。在中国市场，几乎所有主流厂商都会在此基础上叠加自研的、更激进的后台管控策略。这些策略通常不在 AOSP 代码中，也不遵循标准的 Standby Bucket 配额，是 Android 碎片化问题中最让开发者头疼的一环。
 
-网站 dontkillmyapp.com 专门跟踪了各大厂商的后台杀进程行为，并给出了"杀伤力"评分，从侧面反映了这个问题的严重性。
+dontkillmyapp.com 持续跟踪各厂商的后台杀进程行为，其"杀伤力"评分直观反映了厂商策略的激进程度。
 
 ### 小米（MIUI / HyperOS）
 

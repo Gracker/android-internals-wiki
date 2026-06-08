@@ -68,8 +68,9 @@ task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-06T14:25:00+08:00'
 last_task6_audit: '2026-05-19'
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-08
 ---
-
 
 
 # ProfilingManager 系统触发式性能追踪
@@ -124,12 +125,7 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 
 Android 15 引入 `ProfilingManager`，先解决“应用怎样在公开设备上请求 profiling”这个问题。到了 Android 16，系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`，让应用可以提前声明自己关心哪些系统事件。事件真的发生时，系统把结果文件落到应用目录，再把文件路径和触发器类型通过 `ProfilingResult` 回传。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
-[已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
-
 源码位置也要先摆正。公开 API 不在 `frameworks/base/core/java/android/os/`，而在 Mainline Profiling 模块：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`。服务端实现位于 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 不是老式 framework 服务路径上的普通类。
-
-[已验证: AOSP main, packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java]
 
 ### 结果是怎么回来的
 
@@ -141,9 +137,6 @@ system-triggered profiling 有一个容易写错的地方，结果只会发给�
 2. `getResultFilePath()`，拿到结果文件路径
 
 如果这两个字段都没先看清，后面的分析工具就很容易选错。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingResult]
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
 
 ### 最小可用流程
 
@@ -191,9 +184,6 @@ public final class TriggeredProfilingRegistrar {
 
 这段代码还顺带说明了两个边界。其一，`setRateLimitingPeriodHours()` 是“同一种 trigger 两次结果之间最短间隔”的应用侧约束，0 代表不加应用侧限流。其二，同一种 trigger 同时只能保留一个注册项，新注册会覆盖旧注册。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger.Builder]
-[已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
-
 ### trigger、产物和停止条件要分开看
 
 这一节最容易混淆的地方，是把所有 trigger 都写成“抓一份 Trace”。公开 API 不是这么设计的。
@@ -210,13 +200,9 @@ public final class TriggeredProfilingRegistrar {
 
 这张表比散落的清单更有用，因为后续分析的入口已经固定下来了。`APP_FULLY_DRAWN` 和 `ANR` 的结果都可以走 Perfetto UI，`OOM` 该走 heap dump 分析，`COLD_START` 既有 system trace，也有 stack sampling。`ANOMALY` 和 `APP_COMPAT` 的产物不固定，收到结果后要先读 `getTag()` 判断异常类别，再根据文件扩展名（`.perfetto-trace` / `.hprof`）选择分析工具。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger]
-
 ### 36.1 trigger 还要单独判 extension version
 
 `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` 都挂在 36.1 扩展上。运行时不能只看 API level，还要再用 `SdkExtensions.getExtensionVersion()` 或等价封装确认对应的 platform extension 已经到位。扩展值不够时，应用侧只能回退到 API 36 公开的 `APP_FULLY_DRAWN` 和 `ANR`。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/ext/SdkExtensions]
 
 ### `APP_FULLY_DRAWN` 和 `COLD_START` 不是同一件事
 
@@ -224,15 +210,11 @@ Android 16 的 `TRIGGER_TYPE_APP_FULLY_DRAWN = 1`，语义是“冷启动里已�
 
 Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求系统在应用冷启动尽早阶段就开始录制，并持续到 `reportFullyDrawn()`，或者在没有调用 `reportFullyDrawn()` 时按默认 5 秒截止。公开文档还说明这类 trigger 使用 discard buffer，缓冲区满时会丢新事件，优先保留最早阶段的 tracepoint。写启动章节时，如果把这两个 trigger 混成一个名字，读者对采样窗口的判断就会直接错位。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger]
-
 ### OOM 说的是 Java 层 OOM，不是 LMK
 
 `TRIGGER_TYPE_OOM` 的公开语义非常具体，应用发生 Out Of Memory Exception 时，系统返回 Java heap dump。它和 `lmkd`、LMK、`Low Memory Killer` 不是一条问题路径。LMK 处理的是系统内存压力下的杀进程策略，章节 §4.4 已经单独展开；这里说的是应用自己因为堆分配失败抛出 OOM。
 
 这里还有一个经常漏写的条件。官方文档明确要求，如果应用自定义了 `Thread.UncaughtExceptionHandler`，它仍然要继续调用默认的 `UncaughtExceptionHandler`。不然这个 trigger 不会生效。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger]
 
 ### ANOMALY：在进程终止之前拿到现场
 
@@ -244,15 +226,11 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 **边界**：公开 API 文档没有列出 `AnomalyDetectionService` 的全部判定规则和触发阈值，这些属于系统内部策略。同一 UID 下多个进程注册 ANOMALY trigger 时，系统可能只为其中一个进程返回产物，不保证每个注册进程都能收到独立的 profiling 结果。线上接入时要考虑这种不确定性，不能假设注册了就一定能拿到产物。
 
-[已验证: AOSP packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java]
-
 ### ANR 和 excessive CPU 也不要发明内部阈值
 
 `TRIGGER_TYPE_ANR` 的公开定义是“ANR 已被识别，但系统还没准备按公开契约结束该应用”。文档没有给出上一版草稿里那组预警数值。`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 也只公开到了“应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被杀后返回 running system trace snapshot”这一层，没有把 CPU 百分比、持续时间、采样窗口当成 API 契约。
 
 所以这一类章节不该写成一组固定百分比、固定时长和固定预警窗口。如果没有源码、实验或 device_config 证据支撑，那就是把内部策略猜想写成公开合同。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger]
 
 ## 在工具中的表现与验证路径
 
@@ -303,8 +281,6 @@ device_config put profiling_testing system_triggered_profiling.testing_package_n
 device_config delete profiling_testing system_triggered_profiling.testing_package_name
 ```
 
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
-
 ## 与其他机制的关系
 
 ### 和 `Activity.reportFullyDrawn()` 的关系
@@ -329,8 +305,6 @@ device_config delete profiling_testing system_triggered_profiling.testing_packag
 | Android 17 (API 37) | `OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=10`、`APP_COMPAT=11` | 触发器不再只返回 running trace，开始出现新开 trace、stack sampling、heap dump 和“artifact varies” 这类更细分的模型。`AnomalyDetectionService` 新增设备端异常检测，ANOMALY trigger 在进程终止之前触发，tag 和产物类型随异常类别动态变化 |
 
 `ANOMALY` 和 `APP_COMPAT` 也要点一下。文档没有把它们都固定成某一种结果文件，而是明确写了 artifact 会按 anomaly 类型变化，`ProfilingResult#getTag()` 里会带额外信息。写版本表时，如果把 Android 17 只概括成 OOM 和 excessive CPU，就把 public surface 少写了一截。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger]
 
 ## 常见问题与误区
 
