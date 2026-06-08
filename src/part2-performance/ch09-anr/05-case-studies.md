@@ -66,6 +66,7 @@ last_task9_review_log: "logs/deep-review/2026-05-18-20-deep-review.md"
 task6_reviewed_at: "2026-05-18T20:16:50+08:00"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-18T20:16:50+08:00"
+last_task6_audit: "2026-06-08"
 last_task6_review_log: "logs/review/2026-05-18-20-review.md"
 task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 4 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 0 项（未改正文，仅更新 review 元数据）；无新增回炉项，Task9 复审状态继续阻止自动晋升。"
 ---
