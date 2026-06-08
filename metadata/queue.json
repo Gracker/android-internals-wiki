@@ -698,7 +698,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-08T05:39:01.597271",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-08T18:51:51.411473+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "17-oem",
@@ -718,7 +721,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-08T05:39:01.604114",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-08T18:51:51.411473+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "17-oem",
@@ -738,7 +744,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-08T05:39:01.611321",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-08T18:51:51.411473+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch01",
