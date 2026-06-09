@@ -30,7 +30,7 @@ gap_source: "素材驱动/章节深挖"
 pipeline_stage: "task6_pending"
 task2b_state: "fixed"
 task6_state: "revisiting"
-last_task6_at: "2026-06-05"
+last_task6_at: "2026-06-09"
 reviewed_date: "2026-06-05"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
@@ -48,8 +48,8 @@ task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task9-deep-tech-review"
-task6_review_notes: "2026-05-26 Task6 revisiting review: pass-light-edit。L1/L2 小修 2 处(延伸阅读中抽象黑话改为「版本对照表」);outline 锚点覆盖 6/6;无新增 Task6 回炉。既有 Task9 P0 Cleaner 延伸阅读摘要问题仍在 queue pending,保持 task2b_pending。"
-task6_reviewed_date: "2026-06-05"
+task6_review_notes: "2026-06-09 Task6 revisiting re-review: pass-light-edit。L1 小修 1 处(移除正文内[自动发现]编辑标签);outline 锚点覆盖 6/6+2/2;无新增 B 类大问题。queue 仍有 Task9 P0 pending 条目,需 Task 9 复审后流转。"
+task6_reviewed_date: "2026-06-09"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-09T14:52:28+08:00"
 ----
@@ -440,7 +440,7 @@ Native 资源问题通常来自"小 wrapper 持有大资源",不一定对应 Jav
 
 这张表的作用是防止排查过程只在 Java heap 里绕圈。`ReferenceQueue` 和 `FinalizerDaemon` 能解释"为什么释放滞后",但不能替业务代码决定资源什么时候释放。工程治理要把释放动作前移到生命周期边界:页面销毁、请求结束、图片解码完成、Camera session 关闭、数据库 cursor 用完。
 
-[自动发现] 对 Camera、WebView、Bitmap、SQLite 这类模块,finalizer 堆积往往只是表象。排查重点是 owner 生命周期和异常路径:页面退出时有没有释放,失败回调有没有释放,缓存淘汰有没有释放,native 层有没有引用环。
+对 Camera、WebView、Bitmap、SQLite 这类模块,finalizer 堆积往往只是表象。排查重点是 owner 生命周期和异常路径:页面退出时有没有释放,失败回调有没有释放,缓存淘汰有没有释放,native 层有没有引用环。
 
 ## 小结
 
