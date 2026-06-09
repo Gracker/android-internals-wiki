@@ -51,6 +51,10 @@ task2b_state: "fixed"
 last_task9_at: "2026-05-17T15:29:34+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-17-15-deep-review.md"
 task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。Perfetto android.input stdlib schema 已修正；AOSP Resampler/GameMode/RefreshRatePolicy 边界复核通过。预算表与 HCI 阈值 P2 既有 suggestions 保留。自动晋升 finalized。"
+last_task9_audit: "2026-06-09"
+last_task9_audit_log: "logs/deep-review/2026-06-09-16-audit.md"
+last_task9_audit_result: "pass-source-version-audit"
+last_task9_audit_notes: "idle audit: no P0/P1 in source anchors or version-drift check; Android 17 tag unavailable in Gitiles, no Android 17-specific source conclusion added."
 p0: 0
 p1: 0
 p2: 2
