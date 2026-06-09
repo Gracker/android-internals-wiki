@@ -10,7 +10,7 @@ drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 35)
 last_verified: '2026-04-22'
 last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs + Android profileable docs
-confidence: high
+confidence: needs-review
 sources:
 tags:
   - simpleperf
@@ -24,12 +24,6 @@ tags:
   path: developer.android.com/ndk/guides/simpleperf
 - type: official
   path: developer.android.com/guide/topics/profiling/perfetto
-- type: source
-  path: system/extras/simpleperf/CMakeLists.txt
-  version: android-16.0.0_r1
-- type: source
-  path: external/perfetto/docs/data-sources/android-perfetto.md
-  version: android-16.0.0_r1
 last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task2b_at: '2026-06-10T04:50:00+08:00'
 last_task2b_lite_at: '2026-06-10'
@@ -37,9 +31,9 @@ task9_result: needs-rework
 task6_result: needs-rework
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 last_task9_at: '2026-06-10T05:35:00+08:00'
 ---
 
@@ -108,12 +102,14 @@ adb shell simpleperf --version
 
 #### 工具包准备
 
-```bash
-# 从设备获取 simpleperf
-adb pull /system/bin/simpleperf ~/android-tools/simpleperf
+Simpleperf 通过 NDK 分发，不在系统镜像中预装。获取方式：
 
-# 或者从 Android NDK 获取
+```bash
+# 从 Android NDK 获取 simpleperf（推荐）
 $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/simpleperf
+
+# 部分定制 ROM 可能内置系统级 simpleperf（非常规路径，多数设备不可用）
+# 先确认是否存在：adb shell which simpleperf
 ```
 
 ### 推荐配置
@@ -239,7 +235,11 @@ simpleperf record --trace-fg com.example.app -f 1000
 
 ### Perfetto 数据收集
 
-Simpleperf 支持 Perfetto 格式的数据收集，这是 Android 系统推荐的现代性能分析格式：
+Simpleperf 支持输出 Perfetto 格式，这是 Android 10+ 推荐的现代性能分析格式。相比旧版 `perf.data`：
+- **统一分析面**：Perfetto 将 CPU profiling、atrace、ftrace、heap profiles、power rails 合并到同一时间轴，消除了跨工具拼图的碎片化问题。
+- **在线可视化**：`perfetto.trace` 文件可直接拖入 <https://ui.perfetto.dev>，无需本地安装工具。
+- **低开销 SQL 查询**：通过 `trace_processor` 用标准 SQL 做跨维度聚合，替代手工 grep 脚本。
+- **与系统 trace 无缝合并**：`simpleperf record --perfetto` 产出的 trace 可与 `perfetto` 系统 tracing 共用同一个 session。
 
 ```bash
 # 使用 Perfetto 格式
@@ -326,105 +326,10 @@ simpleperf report --top 10
 
 ## 14.7 性能优化实践
 
-### CPU 优化
-
-#### 函数内联优化
-
-```java
-// 优化前
-public int calculateSum(List<Integer> numbers) {
-    int sum = 0;
-    for (int num : numbers) {
-        sum += num;
-    }
-    return sum;
-}
-
-// 优化后（使用更高效的算法）
-public int calculateSumOptimized(List<Integer> numbers) {
-    return numbers.stream().mapToInt(Integer::intValue).sum();
-}
-```
-
-#### 循环优化
-
-```java
-// 优化前
-for (int i = 0; i < list.size(); i++) {
-    Object item = list.get(i);
-    // 处理 item
-}
-
-// 优化后
-for (Object item : list) {
-    // 处理 item
-}
-```
-
-### 内存优化
-
-#### 对象池化
-
-```java
-// 对象池实现
-public class TexturePool {
-    private final Queue<Texture> texturePool = new ConcurrentLinkedQueue<>();
-    private final int maxPoolSize;
-    
-    public Texture borrow() {
-        Texture texture = texturePool.poll();
-        return texture != null ? texture : new Texture();
-    }
-    
-    public void returnTexture(Texture texture) {
-        if (texturePool.size() < maxPoolSize) {
-            texturePool.offer(texture);
-        }
-    }
-}
-```
-
-#### 内存泄漏预防
-
-```java
-// 避免静态引用
-public class MemoryLeakExample {
-    private static Context context; // ❌ 内存泄漏
-    
-    // ✅ 使用 Application Context
-    public static void setContext(Context appContext) {
-        context = appContext.getApplicationContext();
-    }
-}
-```
-
-### 线程优化
-
-#### 线程池配置
-
-```java
-// 优化的线程池配置
-ExecutorService optimizedExecutor = new ThreadPoolExecutor(
-    4, // 核心线程数
-    8, // 最大线程数
-    60, // 空闲线程存活时间
-    TimeUnit.SECONDS,
-    new LinkedBlockingQueue<>(100), // 任务队列大小
-    new ThreadPoolExecutor.CallerRunsPolicy() // 拒绝策略
-);
-```
-
-#### 异步处理优化
-
-```java
-// 使用 RxJava 进行异步处理
-Observable.just(data)
-    .subscribeOn(Schedulers.io())
-    .observeOn(AndroidSchedulers.mainThread())
-    .subscribe(result -> {
-        // 更新 UI
-    });
-```
+> **⚠️ [Task2B 回炉中]** 此节内容根据 Task 6 第二轮 review 意见进行重写。
+> 旧版内容为通用 Java 优化模式（对象池、WeakReference、线程池），与 Simpleperf 分析流程脱节，
+> 且代码示例中的 Stream API（`numbers.stream()...`）要求 API 24+，与声明的 API 21 下限矛盾。
+> 目标重写：simpleperf report 发现热点 → 调用栈解读 → 定位优化方向 → 优化后再用 simpleperf 验证的完整流程。
 
 ---
 
@@ -494,287 +399,42 @@ simpleperf record -g --trace-fg com.example.app --com.example.app.MainActivity
 
 ## 14.9 性能案例分析
 
-### 案例 1：应用启动优化
-
-#### 问题背景
-某 Android 应用启动时间过长，用户反馈启动缓慢。
-
-#### 分析过程
-```bash
-# 启动应用并记录启动过程
-adb shell am force-stop com.example.app
-simpleperf record --trace-fg com.example.app --duration 30 -o startup.data
-
-# 生成启动分析报告
-simpleperf report --sort comm,dso,symbol --show-total-period startup.data
-```
-
-#### 发现问题
-- 主线程阻塞时间过长
-- 静态初始化耗时较高
-- 重复的视图创建
-
-#### 优化方案
-```java
-// 延迟初始化
-public class LazyInitializer {
-    private static volatile LazyInitializer instance;
-    
-    public static LazyInitializer getInstance() {
-        if (instance == null) {
-            synchronized (LazyInitializer.class) {
-                if (instance == null) {
-                    instance = new LazyInitializer();
-                }
-            }
-        }
-        return instance;
-    }
-}
-
-// 使用 ViewStub 延迟加载视图
-<ViewStub
-    android:id="@+id/lazyViewStub"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout="@layout/lazy_layout" />
-```
-
-### 案例 2：内存泄漏修复
-
-#### 问题背景
-应用长时间使用后内存占用持续增长，最终导致 OOM。
-
-#### 分析过程
-```bash
-# 监控内存分配
-simpleperf record -e alloc_count,alloc_size --trace-fg com.example.app -o memory.data
-
-# 分析内存分配模式
-simpleperf report --show-alloc-stats memory.data
-
-# 使用 MAT 分析
-adb pull /data/local/tmp/memory.hprof ~/analysis/
-```
-
-#### 发现问题
-- Handler 导致的内存泄漏
-- 静态集合持有 Activity 引用
-- 资源未正确释放
-
-#### 优化方案
-```java
-// 使用静态内部类避免内存泄漏
-public class SafeHandler extends Handler {
-    private final WeakReference<Activity> activityReference;
-    
-    public SafeHandler(Activity activity) {
-        activityReference = new WeakReference<>(activity);
-    }
-    
-    @Override
-    public void handleMessage(Message msg) {
-        Activity activity = activityReference.get();
-        if (activity != null) {
-            // 处理消息
-        }
-    }
-}
-
-// 使用弱引用集合
-private static final Map<String, WeakReference<Context>> contextCache = new ConcurrentHashMap<>();
-
-public void putContext(String key, Context context) {
-    contextCache.put(key, new WeakReference<>(context));
-}
-```
+> **⚠️ [Task2B 回炉中]** 此节内容根据 Task 6 第二轮 review 意见进行重写。
+> 旧版案例（LazyInitializer 延迟加载、SafeHandler 内存泄漏）为通用 Android 知识，
+> 缺少 Simpleperf 特有信息：无 report 输出、无调用栈解读、无 `--show-call-graph` 结果。
+> 目标重写：`simpleperf record → report` 完整输出 → 调用栈解读 → 优化 → 验证的全流程案例。
 
 ---
 
 ## 14.10 工具集成与自动化
 
-### 与 Android Studio 集成
+Simpleperf 通过标准 `adb` 接口与 CI/CD 管道集成，无需额外 Gradle 插件：
 
-#### Simpleperf 插件
-
-```gradle
-// build.gradle 配置
-plugins {
-    id 'com.android.application'
-    id 'simpleperf-plugin'
-}
-
-simpleperf {
-    enabled true
-    traceLevel 'function'
-    outputPath 'build/reports/simpleperf'
-}
+```bash
+# CI 脚本中直接调用 simpleperf（命令行工具，不依赖 Gradle 插件）
+adb shell simpleperf record --trace-fg com.example.app --duration 60 -o /data/local/tmp/perf.data
+adb pull /data/local/tmp/perf.data
+simpleperf report --csv perf.data > perf_report.csv
 ```
 
-#### 自定义配置
-
-```xml
-<!-- simpleperf_config.xml -->
-<config>
-    <buffersize>8192</buffersize>
-    <duration>30</duration>
-    <target>com.example.app</target>
-    <events>
-        <event>cpu-cycles</event>
-        <event>cache-misses</event>
-        <event>branch-misses</event>
-    </events>
-</config>
-```
-
-### CI/CD 集成
-
-#### Jenkins Pipeline
-
-```groovy
-pipeline {
-    agent any
-    stages {
-        stage('Performance Test') {
-            steps {
-                sh '''
-                    # 启动设备
-                    adb devices
-                    
-                    # 运行性能测试
-                    simpleperf record --trace-fg com.example.app --duration 60 -o perf-test.data
-                    
-                    # 生成报告
-                    simpleperf report --sort comm,dso,symbol perf-test.data
-                    
-                    # 上传报告
-                    cp perf-report.html $BUILD_ARTIFACTS/
-                '''
-            }
-        }
-    }
-}
-```
-
-#### GitHub Actions
-
-```yaml
-name: Performance Test
-on: [push, pull_request]
-jobs:
-  performance:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run performance test
-        run: |
-          # Android 设备模拟器设置
-          avdmanager create avd -n test-device -k "system-images;android-30;google_apis;x86_64"
-          emulator -avd test-device -no-window &
-          
-          # 等待启动
-          adb wait-for-device
-          
-          # 运行测试
-          simpleperf record --trace-fg com.example.app --duration 60
-          simpleperf report --html perf-report.html
-```
+> **注意**：`id 'simpleperf-plugin'` 并非官方 Gradle 插件，Android 官方文档未记录此插件。
+> Simpleperf 是命令行工具，直接在 shell 中调用即可。
 
 ---
 
 ## 14.11 性能基准测试
 
-### 基准测试框架
-
-#### Simpleperf 基准测试脚本
-
-```bash
-#!/bin/bash
-# benchmark.sh
-
-APP_PACKAGE="com.example.app"
-DURATION=30
-OUTPUT_DIR="benchmarks"
-
-mkdir -p $OUTPUT_DIR
-
-# 基准测试函数
-run_benchmark() {
-    local test_name=$1
-    local events=$2
-    local output_file="$OUTPUT_DIR/${test_name}_$(date +%Y%m%d_%H%M%S).data"
-    
-    echo "Running benchmark: $test_name"
-    echo "Events: $events"
-    echo "Output: $output_file"
-    
-    simpleperf record --trace-fg $APP_PACKAGE --duration $DURATION -e $events -o "$output_file"
-    
-    # 生成报告
-    simpleperf report --sort comm,dso,symbol "$output_file" > "$output_dir/${test_name}_report.txt"
-}
-
-# 运行不同场景的基准测试
-run_benchmark "cpu_heavy" "cpu-cycles,instructions,cache-misses"
-run_benchmark "memory_heavy" "alloc_count,alloc_size,page-faults"
-run_benchmark "io_heavy" "io_read,io_write"
-run_benchmark "network_heavy" "net_bytes_sent,net_bytes_recv"
-```
-
-### 性能基准指标
-
-#### CPU 性能基准
-
-| 测试场景 | 预期性能 | 可接受范围 | 优化目标 |
-|---------|---------|-----------|---------|
-| 密集计算 | < 100ms/iteration | < 150ms | < 80ms |
-| UI 渲染 | < 16ms/frame | < 20ms | < 12ms |
-| 内存分配 | < 1ms/alloc | < 2ms | < 0.5ms |
-
-#### 内存使用基准
-
-| 测试场景 | 预期内存 | 可接受范围 | 优化目标 |
-|---------|---------|-----------|---------|
-| 启动内存 | < 50MB | < 80MB | < 40MB |
-| 运行内存 | < 100MB | < 150MB | < 80MB |
-| 内存泄漏 | 0KB/session | < 10KB | 0KB |
+> **⚠️ [Task2B 回炉中]** 旧版基准数据（`io_read`/`io_write`/`net_bytes_sent`/`net_bytes_recv` 事件名
+> 及 benchmark 数值）无法通过 Simpleperf 官方文档验证，已移除。
+> 目标重写为基于 `simpleperf stat` 实测的基准流程。
 
 ---
 
 ## 14.12 总结与最佳实践
 
-### 关键要点总结
-
-1. **工具选择**：根据分析需求选择合适的 Simpleperf 功能和参数
-2. **性能影响**：平衡数据详细程度和性能开销
-3. **数据解读**：结合多种分析维度，避免单一指标判断
-4. **持续优化**：建立性能监控体系，定期进行性能分析
-5. **团队协作**：制定性能标准和规范，统一优化目标
-
-### 最佳实践建议
-
-#### 分析流程优化
-
-```mermaid
-graph TD
-    A[确定性能目标] --> B[选择分析方法]
-    B --> C[设置测试环境]
-    C --> D[收集性能数据]
-    D --> E[分析识别瓶颈]
-    E --> F[制定优化方案]
-    F --> G[实施优化]
-    G --> H[验证优化效果]
-    H --> I[记录优化过程]
-    I --> B
-```
-
-#### 团队协作建议
-
-1. **建立性能标准**：制定明确的性能指标和优化目标
-2. **统一工具链**：团队统一使用 Simpleperf 和分析工具
-3. **知识共享**：建立性能分析案例库和最佳实践文档
-4. **自动化监控**：集成 CI/CD 中的性能测试环节
-5. **定期审查**：定期进行性能审查和优化
+> **⚠️ [Task2B 回炉中]** 旧版总结为通用建议 + 流程图，未紧扣 Simpleperf 特有能力。
+> 重写方向：以 "如何用 Simpleperf 建立日常性能监控节奏" 为主线，
+> 落实到 `record → report → 定位热点 → 验证` 的具体步骤。
 
 ---
 
@@ -794,6 +454,15 @@ graph TD
 
 ### 相关书籍
 
-- [Android 性能优化大师](https://book.douban.com/subject/30275785/)
-- [高性能 Android 应用开发](https://book.douban.com/subject/27126143/)
-- [Android 系统级性能调优](https://book.douban.com/subject/35528770/)
+> 相关书籍推荐待核实后补充。
+
+> 相关书籍推荐待核实后补充。
+
+## 参考资料
+
+### Android Simpleperf 性能分析工具架构（main分支快照）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-10-simpleperf-android17-architecture.md
+- 类型：DeepResearch 调研结果
+- 摘要：Simpleperf在2026年main分支呈现「内核↔用户态ABI对齐+模块化命令管道+多架构同构」三大特征：三段式权限模型（<11/11+/13+）、自适应ring buffer（64MB/256MB按内存分级）、ARM CoreSight ETM指令追踪集成、跨平台同构编译（device native与host offline分析分离）。
+- 注入时间：2026-06-10
+- 价值：包含源码级分析（AOSP锚点），对理解框架内部机制和性能调优有直接参考意义

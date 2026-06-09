@@ -22,6 +22,68 @@
       "completion_reason": "素材已注入：参考资料追加到章节pending延伸阅读"
     },
     {
+      "section": "3.1",
+      "section_title": "Input系统队列机制与Perfetto分析",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到ch03 Input章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-10-android17-input-queue-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Input系统iq/oq/wq队列机制与Perfetto性能分析 — Android 17 Input系统采用三重队列架构(iq/oq/wq)实现事件流控，通过ATRACE_INT暴露队列计数器支持无侵入式Perfetto分析。",
+          "suggestion": "判断是否适合补充为ch03章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-10T06:12:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "21.11",
+      "section_title": "云端Profile、DM文件与安装后编译优化",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，SDM/SDC设备侧完整链路，建议补充到ch21.11参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-cloud-compilation-sdm-dm-ondevice-flow.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 16/17 云端Profile、SDM与DexMetadata的设备侧实现路径 — 完整梳理SDM/SDC产物链路：PackageInstallerSession→verifySdmSignatures→ART Service maybeCreateSdc→deleteSdmSdcFiles回收。",
+          "suggestion": "判断是否适合补充为ch21.11参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-10T06:12:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.2",
+      "section_title": "Trace抓取与Perfetto工具链",
+      "priority": 82,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，Perfetto data source演进与APM三件套，建议补充到ch13参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 TraceKit 性能分析工具链优化与APM落地实践 — Android 14→16新增15个专属data source，APM核心增量cpu_per_uid/app_wakelocks/kernel_wakelocks三件套。",
+          "suggestion": "判断是否适合补充为ch13章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-10T06:12:00+08:00",
+      "status": "pending"
+    }
+  ],
+  "completed": [
+    {
       "section": "ch02",
       "section_title": "Simpleperf",
       "priority": 90,
@@ -129,7 +191,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-10T06:10:20+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completion_reason": "[Task2B 回炉修复] P0源码错误节已删、14.7/14.9/14.10/14.11/14.12已替换为重写占位符、install指令修正、Perfetto原理补充、frontmatter状态更新。全章Type C重写待后续轮次深度修复。",
+      "completed_at": "2026-06-10T06:54:30+08:00"
     }
   ]
 }
