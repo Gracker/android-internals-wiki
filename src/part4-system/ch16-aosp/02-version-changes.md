@@ -43,7 +43,7 @@ task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
-last_task6_audit: "2026-05-18"
+last_task6_audit: "2026-06-09"
 section: "16.2"
 status: finalized
 pipeline_stage: ready-to-publish
