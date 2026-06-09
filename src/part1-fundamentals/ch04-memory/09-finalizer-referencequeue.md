@@ -1,5 +1,4 @@
 ---
-
 title: "ART FinalizerDaemon 与 ReferenceQueue 性能边界"
 chapter: "4.9"
 section: "4.9"
@@ -28,30 +27,31 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: "task9_pending"
-task2b_state: "fixed"
+pipeline_stage: "task2b_pending"
+task2b_state: "pending"
 task6_state: "reviewed"
 last_task6_at: "2026-06-05"
 reviewed_date: "2026-06-05"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task9_reviewed_date: "2026-06-05"
-task9_reviewed_by: "openclaw-task6"
-last_task9_at: "2026-05-26T03:20:00+08:00"
-task9_review_notes: "2026-05-26 Task9 deep-review: needs-rework。P0：延伸阅读摘要仍保留 Cleaner 旧错误路径，与正文和 AOSP android-16 口径冲突。"
-last_task9_review_log: "logs/deep-review/2026-05-26-03-deep-review.md"
-task9_result: pending
-task9_p0_issues: 1
-task9_p1_issues: 0
+task9_state: "reviewed"
+task9_reviewed_date: "2026-06-09"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-09T13:24:55+08:00"
+task9_review_notes: "2026-06-09 Task9 deep-review: needs-rework。P0：MAX_ITERS 注入块破坏 AOSP 源码片段，并把 ReferenceQueueDaemon 入队进度监控误写成 FinalizerDaemon/finalization 进度。"
+last_task9_review_log: "logs/deep-review/2026-06-09-13-deep-review.md"
+task9_result: "needs-rework"
+task9_p0_issues: 2
+task9_p1_issues: 1
 task9_p2_issues: 0
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
-review_type: "task6-writing-quality-review"
+review_type: "task9-deep-tech-review"
 task6_review_notes: "2026-05-26 Task6 revisiting review: pass-light-edit。L1/L2 小修 2 处（延伸阅读中抽象黑话改为「版本对照表」）；outline 锚点覆盖 6/6；无新增 Task6 回炉。既有 Task9 P0 Cleaner 延伸阅读摘要问题仍在 queue pending，保持 task2b_pending。"
 task6_reviewed_date: "2026-06-05"
----# 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
+---
+# 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 
 <!-- outline-start -->
 ## 要点

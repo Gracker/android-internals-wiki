@@ -1028,6 +1028,38 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-09T06:11:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "4.9",
+      "section_title": "ART FinalizerDaemon 与 ReferenceQueue 性能边界",
+      "priority": 95,
+      "reason": "[Deep Tech Review] MAX_ITERS 补全块混入源码片段，且把 ReferenceQueueDaemon 入队进度监控误写成 FinalizerDaemon/finalization 监控",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误/原理断裂",
+          "location": "L228-L318 enqueuePending MAX_ITERS=100 选择依据补全",
+          "detail": "补全块被插入在 ReferenceQueue.java 代码围栏内部，导致源码片段混入 Markdown 段落；同时把 ReferenceQueue.enqueuePending(list, progressCounter) 的 progressCounter 解释为 FinalizerDaemon 的 finalization 进度。AOSP android-16.0.0_r1 显示该 counter 属于 ReferenceQueueDaemon，用于监控 Cleaner 或单个 ReferenceQueue 入队处理进度；FinalizerDaemon 另有独立 progressCounter。",
+          "suggestion": "移出或重写该注入块，保持 ReferenceQueue.java 源码片段完整；把 MAX_ITERS 解释限定为“同队列连续引用批量入队，并让 RQD progressCounter 偶尔递增”，不要写成 finalization 进度。"
+        },
+        {
+          "type": "P0 源码错误",
+          "location": "L287-L293 FinalizerDaemon.run() 示例",
+          "detail": "示例注释把 progressCounter.lazySet(++localProgressCounter) 标为“每批100个后递增”。AOSP Daemons.java 中 FinalizerDaemon 的 lazySet 发生在每次 queue.poll() 取到一个待 finalization/clean 的 reference 后，和 ReferenceQueue.enqueuePending() 的 MAX_ITERS 批量入队不是同一条路径。",
+          "suggestion": "删除这段错误示例，或改为分别展示 ReferenceQueueDaemon progressCounter 与 FinalizerDaemon progressCounter 的两个独立监控点。"
+        },
+        {
+          "type": "P1 数据缺失/版本差异",
+          "location": "L267-L310 MAX_ITERS 设计考量与 Android 17 说明",
+          "detail": "“工程权衡阈值”“100 个对象效率接近理论最大值”“性能影响实测”“Android 17 尚未正式发布”没有一手数据或发布资料支撑；android-17.0.0_r1 tag 缺失只能说明本轮没有可引用 tag，不能扩展成正式发布结论。",
+          "suggestion": "删除性能实测表和理论最大值表述；版本段改成“截至本轮复核，platform/libcore 与 platform/art 未见 android-17.0.0_r1 tag，Android 17 不作为正文结论”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-09T13:24:55+08:00",
+      "status": "pending"
     }
   ],
   "items": [
