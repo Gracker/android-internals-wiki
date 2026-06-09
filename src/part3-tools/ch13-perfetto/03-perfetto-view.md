@@ -2,20 +2,20 @@
 title: "Perfetto View 解读"
 chapter: "13.3"
 section: "13.3"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-28"
 last_verified_against: "perfetto.dev FrameTimeline docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-12.1.0_r1/android-13.0.0_r1/android-16.0.0_r1"
 confidence: medium-high
-reviewed_date: "2026-05-28"
+reviewed_date: "2026-06-09"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 4
 task6_l3_l4_issues: 0
-last_task6_at: "2026-05-28T12:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-12-review.md"
+last_task6_at: "2026-06-09T20:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-09-20-review.md"
 task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 4 处，清理重复表述、冗余强调和少量术语化表达；无 L3/L4 回炉项，送 Task9 技术复审。"
 sources:
   - type: blog
@@ -46,8 +46,8 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
