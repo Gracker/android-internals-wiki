@@ -1,4 +1,5 @@
 ---
+
 title: APK 体积优化
 section: '12.1'
 chapter: '12.1'
@@ -71,6 +72,7 @@ last_task9_audit: '2026-05-24'
 last_task9_audit_log: logs/deep-review/2026-05-24-22-audit.md
 rework_type: review回炉修复（Task9 闲时抽检问题单）
 last_task2b_lite_at: '2026-05-27'
+pipeline_stage: ready-to-publish
 ---
 
 # APK 体积优化
