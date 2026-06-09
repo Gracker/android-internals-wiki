@@ -14143,5 +14143,19 @@
   "22.11": {
     "pipeline_stage": "ready-to-publish",
     "status": "finalized"
-  }
+  },
+  "task2b_runs": [
+    {
+      "timestamp": "2026-06-09T14:52:28+08:00",
+      "chapter": "4.9",
+      "source": "frontmatter-backlog-fallback",
+      "result": "fixed",
+      "issues": [
+        "removed-injected-block-from-code",
+        "fixed-progressCounter-attribution",
+        "fixed-android-17-wording",
+        "removed-unsupported-performance-claims"
+      ]
+    }
+  ]
 }
