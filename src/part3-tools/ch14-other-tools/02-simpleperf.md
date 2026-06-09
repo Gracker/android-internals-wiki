@@ -8,7 +8,7 @@ reviewed_date: '2026-06-10'
 reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-applicable_versions: Android 5.0 (API 21) - Android 16 (API 35)
+applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-22'
 last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs + Android profileable docs
 confidence: needs-review
@@ -30,18 +30,19 @@ last_task2b_at: '2026-06-10T04:50:00+08:00'
 last_task2b_lite_at: '2026-06-10'
 task9_result: needs-rework
 task6_result: needs-rework
-task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task2b_pending
-last_task9_at: '2026-06-10T05:35:00+08:00'
+pipeline_stage: task6_pending
+last_task9_at: '2026-06-10T07:20:00+08:00'
+last_task9_reviewed_at: '2026-06-10T07:20:00+08:00'
 ---
 
 
 # Chapter 14.2 - Simpleperf
 
-## 14.1 简介与用途
+## 14.2.1 简介与用途
 
 Simpleperf 是 Android 系统自带的高性能分析工具，专为开发者设计。它能够深入分析应用程序在 Android 设备上的运行性能，包括 CPU 使用率、内存占用、函数调用栈等关键指标。
 
@@ -74,7 +75,7 @@ Simpleperf 适用于：
 
 ---
 
-## 14.2 安装与配置
+## 14.2.2 安装与配置
 
 ### 设备要求
 
@@ -138,7 +139,7 @@ adb shell simpleperf version
 
 ---
 
-## 14.3 基本使用方法
+## 14.2.3 基本使用方法
 
 ### 命令格式
 
@@ -186,7 +187,7 @@ simpleperf report --show-call-graph
 
 ---
 
-## 14.4 高级功能与选项
+## 14.2.4 高级功能与选项
 
 ### 采样选项
 
@@ -232,7 +233,7 @@ simpleperf record --trace-fg com.example.app -f 1000
 
 ---
 
-## 14.5 数据收集方法
+## 14.2.5 数据收集方法
 
 ### Perfetto 数据收集
 
@@ -279,7 +280,7 @@ simpleperf record --system-wide --pid 1234 --duration 60
 
 ---
 
-## 14.6 数据分析与解读
+## 14.2.6 数据分析与解读
 
 ### CPU 分析报告
 
@@ -325,7 +326,7 @@ simpleperf report --top 10
 
 ---
 
-## 14.7 性能优化实践
+## 14.2.7 性能优化实践
 
 > **⚠️ [Task2B 回炉中]** 此节内容根据 Task 6 第二轮 review 意见进行重写。
 > 旧版内容为通用 Java 优化模式（对象池、WeakReference、线程池），与 Simpleperf 分析流程脱节，
@@ -334,7 +335,7 @@ simpleperf report --top 10
 
 ---
 
-## 14.8 常见问题与解决方案
+## 14.2.8 常见问题与解决方案
 
 ### 设备相关问题
 
@@ -398,7 +399,7 @@ simpleperf record -g --trace-fg com.example.app --com.example.app.MainActivity
 
 ---
 
-## 14.9 性能案例分析
+## 14.2.9 性能案例分析
 
 > **⚠️ [Task2B 回炉中]** 此节内容根据 Task 6 第二轮 review 意见进行重写。
 > 旧版案例（LazyInitializer 延迟加载、SafeHandler 内存泄漏）为通用 Android 知识，
@@ -407,7 +408,7 @@ simpleperf record -g --trace-fg com.example.app --com.example.app.MainActivity
 
 ---
 
-## 14.10 工具集成与自动化
+## 14.2.10 工具集成与自动化
 
 Simpleperf 通过标准 `adb` 接口与 CI/CD 管道集成，无需额外 Gradle 插件：
 
@@ -423,7 +424,7 @@ simpleperf report --csv perf.data > perf_report.csv
 
 ---
 
-## 14.11 性能基准测试
+## 14.2.11 性能基准测试
 
 > **⚠️ [Task2B 回炉中]** 旧版基准数据（`io_read`/`io_write`/`net_bytes_sent`/`net_bytes_recv` 事件名
 > 及 benchmark 数值）无法通过 Simpleperf 官方文档验证，已移除。
@@ -431,7 +432,7 @@ simpleperf report --csv perf.data > perf_report.csv
 
 ---
 
-## 14.12 总结与最佳实践
+## 14.2.12 总结与最佳实践
 
 > **⚠️ [Task2B 回炉中]** 旧版总结为通用建议 + 流程图，未紧扣 Simpleperf 特有能力。
 > 重写方向：以 "如何用 Simpleperf 建立日常性能监控节奏" 为主线，
@@ -439,7 +440,7 @@ simpleperf report --csv perf.data > perf_report.csv
 
 ---
 
-## 14.13 参考资源
+## 14.2.13 参考资源
 
 ### 官方文档
 
@@ -465,3 +466,4 @@ simpleperf report --csv perf.data > perf_report.csv
 - 摘要：Simpleperf在2026年main分支呈现「内核↔用户态ABI对齐+模块化命令管道+多架构同构」三大特征：三段式权限模型（<11/11+/13+）、自适应ring buffer（64MB/256MB按内存分级）、ARM CoreSight ETM指令追踪集成、跨平台同构编译（device native与host offline分析分离）。
 - 注入时间：2026-06-10
 - 价值：包含源码级分析（AOSP锚点），对理解框架内部机制和性能调优有直接参考意义
+- ⚠️ 来源基于 main/master 分支快照，部分内容可能未进入 Android 17 正式分支，仅供参考不作为正文结论

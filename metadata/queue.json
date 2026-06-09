@@ -80,93 +80,6 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-10T06:12:00+08:00",
       "status": "pending"
-    },
-    {
-      "section": "14.2",
-      "section_title": "Simpleperf",
-      "priority": 95,
-      "reason": "[Task6 Review 回炉] 第二轮 review 仍发现重大问题：4个核心章节仍为占位符、全文为API文档风格而非叙述体、多处命令参数待Task9技术验证",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "需重写",
-          "location": "14.2.1 开头（原14.1）",
-          "detail": "开头为百科词条式定义（'Simpleperf是Android系统自带的...'），违反writing-guide.md Type C工具篇要求。应以'没有这个工具你会多痛苦'切入，从CPU profiling痛点引入",
-          "suggestion": "参照writing-guide.md类型C模板重写开头：先描述没有simpleperf时native性能分析的困境（只有top/strace、看不到函数级热点、无法关联调用栈），再引出simpleperf定位"
-        },
-        {
-          "type": "需重写",
-          "location": "全文结构（14.2.1-14.2.6）",
-          "detail": "全文为命令速查表风格：每个小节以 bullet list + 代码块为主，缺乏连贯叙述。违反writing-guide.md '叙述为主，列表为辅'铁律。读者读完知道有哪些命令但不知道怎么用它们解决实际问题",
-          "suggestion": "以一个完整的性能分析案例为主线贯穿全文：发现问题→选择工具→配置采集→解读report→定位热点→优化→验证。命令和参数在流程中自然引出"
-        },
-        {
-          "type": "需补充内容",
-          "location": "14.2.7 性能优化实践（原14.7）",
-          "detail": "仍为占位符（⚠️ Task2B回炉中），上次review指出旧版为通用Java优化模式且API版本矛盾，但重写尚未完成",
-          "suggestion": "按回炉方向重写：simpleperf report发现热点→调用栈解读→定位优化方向→优化后再用simpleperf验证"
-        },
-        {
-          "type": "需补充内容",
-          "location": "14.2.9 性能案例分析（原14.9）",
-          "detail": "仍为占位符（⚠️ Task2B回炉中），缺少simpleperf特有的report输出、调用栈解读、--show-call-graph结果",
-          "suggestion": "提供完整案例：record → report原始输出 → 调用栈图 → 热点函数定位 → 优化 → 验证全流程"
-        },
-        {
-          "type": "需补充内容",
-          "location": "14.2.11 性能基准测试（原14.11）",
-          "detail": "仍为待重写，旧版benchmark数据已移除，新内容未写入",
-          "suggestion": "基于simpleperf stat实测重写，展示如何建立性能基线"
-        },
-        {
-          "type": "需补充内容",
-          "location": "14.2.12 总结与最佳实践（原14.12）",
-          "detail": "仍为占位符（⚠️ Task2B回炉中），旧版通用建议已移除",
-          "suggestion": "以'如何用Simpleperf建立日常性能监控节奏'为主线，落实到record→report→定位热点→验证的具体步骤"
-        },
-        {
-          "type": "需确认",
-          "location": "14.2.5（原14.5）Perfetto数据收集",
-          "detail": "使用--perfetto、--config perfetto_config.xml、--out perfetto.traces等参数，需Task9验证这些是否为simpleperf真实支持的参数名",
-          "suggestion": "Task9对照NDK simpleperf文档验证命令参数真实性"
-        },
-        {
-          "type": "需确认",
-          "location": "14.2.6（原14.6）内存分析与多维度分析",
-          "detail": "alloc_count/alloc_size/malloc_count/malloc_size事件名、--show-alloc-stats/--show-branch-miss/--show-cache-miss/--show-timeline/--top 10等report参数，需Task9验证是否存在",
-          "suggestion": "Task9对照simpleperf官方文档验证所有事件名和report参数"
-        },
-        {
-          "type": "结构性问题",
-          "location": "章节内编号",
-          "detail": "章节为14.2 Simpleperf，但内部标题使用14.1-14.13编号（与章节号14.2冲突）。应使用14.2.1-14.2.13子编号",
-          "suggestion": "修正所有内部章节编号为14.2.x子编号格式，并检查SUMMARY.md交叉引用"
-        },
-        {
-          "type": "版本边界",
-          "location": "参考资料/DeepResearch引用",
-          "detail": "参考资料引用的DeepResearch材料标注为'main分支快照'，包含可能未进入Android 17的内容。按AIW版本边界规则，main/master资料需标注'未进入Android 17'并不可作为正文结论",
-          "suggestion": "审查DeepResearch材料中的断言，确认哪些已进入Android 17正式分支；applicable_versions当前为API 21-35，若正文无Android 17内容则维持"
-        },
-        {
-          "type": "P0 事实错误",
-          "location": "applicable_versions字段",
-          "detail": "章节声明适用 Android 5.0(API 21)-Android 16(API 35)，违反AIW版本边界规则（最高只到Android 17/API 37），且Android 16实际是API 35（声明冗余）",
-          "suggestion": "修正为 Android 5.0(API 21)-Android 17(API 35-37)，补充Android 17新增特性或注明未进入Android 17的内容"
-        },
-        {
-          "type": "P0 源码错误",
-          "location": "参考资料/DeepResearch引用",
-          "detail": "参考资料引用的DeepResearch材料标注为'main分支快照'，包含可能未进入Android 17的内容。按AIW版本边界规则，main/master资料需标注'未进入Android 17'并不可作为正文结论",
-          "suggestion": "审查DeepResearch材料中的断言，确认哪些已进入Android 17正式分支；无法进入Android 17的内容需降级为架构预测"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-06-10T07:11:49+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-10-07-review.md"
     }
   ],
   "completed": [
@@ -281,6 +194,94 @@
       "status": "completed",
       "completion_reason": "[Task2B 回炉修复] P0源码错误节已删、14.7/14.9/14.10/14.11/14.12已替换为重写占位符、install指令修正、Perfetto原理补充、frontmatter状态更新。全章Type C重写待后续轮次深度修复。",
       "completed_at": "2026-06-10T06:54:30+08:00"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Task6 Review 回炉] 第二轮 review 仍发现重大问题：4个核心章节仍为占位符、全文为API文档风格而非叙述体、多处命令参数待Task9技术验证",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "14.2.1 开头（原14.1）",
+          "detail": "开头为百科词条式定义（'Simpleperf是Android系统自带的...'），违反writing-guide.md Type C工具篇要求。应以'没有这个工具你会多痛苦'切入，从CPU profiling痛点引入",
+          "suggestion": "参照writing-guide.md类型C模板重写开头：先描述没有simpleperf时native性能分析的困境（只有top/strace、看不到函数级热点、无法关联调用栈），再引出simpleperf定位"
+        },
+        {
+          "type": "需重写",
+          "location": "全文结构（14.2.1-14.2.6）",
+          "detail": "全文为命令速查表风格：每个小节以 bullet list + 代码块为主，缺乏连贯叙述。违反writing-guide.md '叙述为主，列表为辅'铁律。读者读完知道有哪些命令但不知道怎么用它们解决实际问题",
+          "suggestion": "以一个完整的性能分析案例为主线贯穿全文：发现问题→选择工具→配置采集→解读report→定位热点→优化→验证。命令和参数在流程中自然引出"
+        },
+        {
+          "type": "需补充内容",
+          "location": "14.2.7 性能优化实践（原14.7）",
+          "detail": "仍为占位符（⚠️ Task2B回炉中），上次review指出旧版为通用Java优化模式且API版本矛盾，但重写尚未完成",
+          "suggestion": "按回炉方向重写：simpleperf report发现热点→调用栈解读→定位优化方向→优化后再用simpleperf验证"
+        },
+        {
+          "type": "需补充内容",
+          "location": "14.2.9 性能案例分析（原14.9）",
+          "detail": "仍为占位符（⚠️ Task2B回炉中），缺少simpleperf特有的report输出、调用栈解读、--show-call-graph结果",
+          "suggestion": "提供完整案例：record → report原始输出 → 调用栈图 → 热点函数定位 → 优化 → 验证全流程"
+        },
+        {
+          "type": "需补充内容",
+          "location": "14.2.11 性能基准测试（原14.11）",
+          "detail": "仍为待重写，旧版benchmark数据已移除，新内容未写入",
+          "suggestion": "基于simpleperf stat实测重写，展示如何建立性能基线"
+        },
+        {
+          "type": "需补充内容",
+          "location": "14.2.12 总结与最佳实践（原14.12）",
+          "detail": "仍为占位符（⚠️ Task2B回炉中），旧版通用建议已移除",
+          "suggestion": "以'如何用Simpleperf建立日常性能监控节奏'为主线，落实到record→report→定位热点→验证的具体步骤"
+        },
+        {
+          "type": "需确认",
+          "location": "14.2.5（原14.5）Perfetto数据收集",
+          "detail": "使用--perfetto、--config perfetto_config.xml、--out perfetto.traces等参数，需Task9验证这些是否为simpleperf真实支持的参数名",
+          "suggestion": "Task9对照NDK simpleperf文档验证命令参数真实性"
+        },
+        {
+          "type": "需确认",
+          "location": "14.2.6（原14.6）内存分析与多维度分析",
+          "detail": "alloc_count/alloc_size/malloc_count/malloc_size事件名、--show-alloc-stats/--show-branch-miss/--show-cache-miss/--show-timeline/--top 10等report参数，需Task9验证是否存在",
+          "suggestion": "Task9对照simpleperf官方文档验证所有事件名和report参数"
+        },
+        {
+          "type": "结构性问题",
+          "location": "章节内编号",
+          "detail": "章节为14.2 Simpleperf，但内部标题使用14.1-14.13编号（与章节号14.2冲突）。应使用14.2.1-14.2.13子编号",
+          "suggestion": "修正所有内部章节编号为14.2.x子编号格式，并检查SUMMARY.md交叉引用"
+        },
+        {
+          "type": "版本边界",
+          "location": "参考资料/DeepResearch引用",
+          "detail": "参考资料引用的DeepResearch材料标注为'main分支快照'，包含可能未进入Android 17的内容。按AIW版本边界规则，main/master资料需标注'未进入Android 17'并不可作为正文结论",
+          "suggestion": "审查DeepResearch材料中的断言，确认哪些已进入Android 17正式分支；applicable_versions当前为API 21-35，若正文无Android 17内容则维持"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "applicable_versions字段",
+          "detail": "章节声明适用 Android 5.0(API 21)-Android 16(API 35)，违反AIW版本边界规则（最高只到Android 17/API 37），且Android 16实际是API 35（声明冗余）",
+          "suggestion": "修正为 Android 5.0(API 21)-Android 17(API 35-37)，补充Android 17新增特性或注明未进入Android 17的内容"
+        },
+        {
+          "type": "P0 源码错误",
+          "location": "参考资料/DeepResearch引用",
+          "detail": "参考资料引用的DeepResearch材料标注为'main分支快照'，包含可能未进入Android 17的内容。按AIW版本边界规则，main/master资料需标注'未进入Android 17'并不可作为正文结论",
+          "suggestion": "审查DeepResearch材料中的断言，确认哪些已进入Android 17正式分支；无法进入Android 17的内容需降级为架构预测"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-10T07:11:49+08:00",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-10-07-review.md",
+      "completion_reason": "fixed-lite: section numbering (14.1-14.13 → 14.2.1-14.2.13), applicable_versions API level fix (35→36), DeepResearch version boundary annotation"
     }
   ]
 }
