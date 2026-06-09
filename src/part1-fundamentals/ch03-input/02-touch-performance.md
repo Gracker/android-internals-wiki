@@ -1,5 +1,6 @@
 ---
 
+
 title: "触摸响应的性能分析"
 chapter: "3.2"
 section: "3.2"
@@ -59,6 +60,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
 last_task9_autofix_at: "2026-06-06"
 last_task9_audit: "2026-06-06"
+pipeline_stage: ready-to-publish
 ---
 
 # 触摸响应的性能分析

@@ -1,4 +1,5 @@
 ---
+
 title: "ANR 分析方法"
 chapter: "9.3"
 section: "9.3"
@@ -59,6 +60,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-06-18-audit.md"
 last_task9_autofix_at: "2026-06-06"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
+pipeline_stage: ready-to-publish
 ---
 
 # ANR 分析方法
