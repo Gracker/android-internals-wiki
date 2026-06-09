@@ -1,5 +1,5 @@
 ---
-status: "finalized"
+status: "ready-for-review"
 title: ART 虚拟机内存管理
 chapter: '4.3'
 section: '4.3'
@@ -10,7 +10,7 @@ last_verified: '2026-04-23'
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-last_verified_against: AOSP android-14.0.0_r1 / android-15.0.0_r1 + Android Developers Blog (Android 16 QPR2)
+last_verified_against: AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 + Android Developers Blog (Android 16 QPR2)
 confidence: medium
 sources:
 - type: official
@@ -49,29 +49,28 @@ related_chapters:
 - '4.8'
 - '7.1'
 - '7.7'
-last_task2b_at: "2026-05-17T15:18:41+08:00"
-reviewed_date: '2026-05-17'
+last_task2b_at: "2026-06-09T20:59:35+08:00"
+reviewed_date: '2026-06-09'
 reviewed_by: openclaw-task6
-last_task6_at: '2026-05-17T11:14:00+08:00'
+last_task6_at: '2026-06-09T21:09:00+08:00'
 last_task6_audit: 2026-06-09
-last_task6_review_log: logs/review/2026-05-17-11-review.md
+last_task6_review_log: logs/review/2026-06-09-21-review.md
 task6_state: "reviewed"
 task6_result: pass-light-edit
-review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
-task6_review_notes: "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
-task9_state: "reviewed"
-task9_reviewed_date: "2026-06-09"
+review_notes: '2026-06-09 21:09 Task6 revisiting 复审。L1/L2 小修 2 处。源码调研附录（AIW-源码调研-2026-06-09）未整合进正文为 L3 建议。送 Task9 复审。 | 2026-06-09 20:56 Task2B main 回炉。P0: 删除 05-28 Generational CMC 注入块(不存在 generational_collector.cc、gc_type.h 枚举名错误、未验证 Android 17 结论)。P1: 移除 "与 AIW §4.3现有描述的差异" 小节(指向已删块)。保留 06-09 一手验证块。 | 2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
+task6_review_notes: "2026-06-09 21 Task6 revisiting 复审；Task2B 已删除 05-28 注入块，06-09 一手验证块保留。L1/L2 小修 2 处（"这样做，是为了让"重复起手式→直接陈述）。源码调研附录风格未整合为 L3 建议交 Task2B。送 Task9 技术复审。 | 2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。" "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
+task9_state: "pending"
+task9_reviewed_date: '2026-06-09'
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-09T20:38:57+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-09-20-audit.md"
-task9_result: "needs-rework"
-task2b_state: "pending"
+task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task2b_pending"
-p0: 1
-p1: 1
+pipeline_stage: "task9_pending"
+p0: 0
+p1: 0
 p2: 0
-task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。"
+task9_review_notes: "2026-06-09 20 Task9 idle audit→Task2B 主修复已删除 05-28 注入块(虚假源码路径+未验证 Android 17 结论)。06-09 一手验证块保留。 | 2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-27
 last_task9_audit: 2026-06-09
@@ -104,7 +103,7 @@ ART 的 Heap 由多个功能不同的 Space（空间）组合而成，单一连�
 
 Image Space 是所有 Space 中最特殊的一块空间，它在应用进程启动之前就已经被填充好了。系统编译期间，构建工具会将启动类路径（bootclasspath）中的核心类预先实例化，并将完整的堆快照写入 `.art` 格式的镜像文件（如 `boot.art`）。Zygote 进程启动时，直接通过 `mmap` 将这些镜像文件映射到 Image Space 的地址空间。
 
-这样做，是为了让每个 fork 出来的应用进程都能直接使用已经创建好的核心类对象，而不需要重新加载和初始化。在 Perfetto 中，这部分内存通常体现为进程启动阶段极快的类加载速度，因为这些对象并不需要重新加载，只是建立了映射关系。
+每个 fork 出来的应用进程可以直接使用已经创建好的核心类对象，不需要重新加载和初始化。在 Perfetto 中，这部分内存通常体现为进程启动阶段极快的类加载速度，因为这些对象并不需要重新加载，只是建立了映射关系。
 
 Image Space 中的对象永远不会被 GC 回收，也不会被移动，因此 ART 在标记阶段可以直接跳过 Image Space，减少工作量。
 
@@ -176,7 +175,7 @@ Android 15 上，Non-moving Space 的数据结构仍然是 `DlMallocSpace`，使
 ### 堆地址空间的 4GB 限制
 
 
-一个容易忽略的细节是，ART 的主要托管堆和相关 card table 布局会尽量放在 low 4GB 区间。`heap.cc` 里能直接看到 `/* low_4gb= */ true` 的映射请求，以及“card table 覆盖 whole low_4gb”的注释。这样做，是为了让 `CompressedReference` / `HeapReference` 继续用 32 位压缩引用表示 Java 对象引用，在 64 位进程里减少引用字段的内存开销，并减轻缓存压力。
+一个容易忽略的细节是，ART 的主要托管堆和相关 card table 布局会尽量放在 low 4GB 区间。`heap.cc` 里能直接看到 `/* low_4gb= */ true` 的映射请求，以及“card table 覆盖 whole low_4gb”的注释。这样 `CompressedReference` / `HeapReference` 就能继续用 32 位压缩引用表示 Java 对象引用，在 64 位进程里减少引用字段的内存开销，并减轻缓存压力。
 
 这里说的“4GB 限制”指的是 ART 为托管堆保留的低地址窗口，而不是 64 位进程只能使用 4GB 虚拟地址空间。Native heap、Code Cache 和其他映射并不受这条约束。
 
@@ -576,215 +575,6 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - [研究] ART 分代 GC 架构（Young/Old Generation + Concurrent Copying）
 - [研究] Android 15/16 的 16KB Page Size 对 ART 内存的影响
 
-<!-- AIW-源码调研-2026-05-28 -->
-## 2026-05-28 新增：Generational CMC 源码级分析
-
-<!-- AIW-源码调研-2026-06-06 -->
-
-### Android 17 HPROF 堆转储实现机制
-
-ART 运行时提供完整的 Java 堆转储功能，用于内存泄漏分析和性能优化。Android 17 中的 HPROF 实现形成了三层调用栈：
-
-#### 1. Shell 命令层 (`am dumpheap`)
-
-**位置**: `frameworks/base/core/java/android/os/Process.java`
-```java
-public static final native void sendSignal(int pid, int signal);
-```
-
-支持参数：
-- `-n`: 非托管 dump (Native heap)
-- `-g`: 执行 GC (三次调用确保彻底回收)
-- `-m`: 导出 malloc 信息
-- `-b`: 导出位图数据
-
-#### 2. 框架服务层 (`AMS.dumpHeap`)
-
-**位置**: `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`
-```java
-public boolean dumpHeap(String process, int userId, boolean managed, boolean mallocInfo,
-        boolean runGc, String dumpBitmaps, String path, 
-        ParcelFileDescriptor fd, RemoteCallback finishCallback) {
-    
-    // 1. 高危权限检查
-    if (checkCallingPermission(android.Manifest.permission.SET_ACTIVITY_WATCHER) 
-            != PackageManager.PERMISSION_GRANTED) {
-        throw new SecurityException("Requires permission " 
-                + android.Manifest.permission.SET_ACTIVITY_WATCHER);
-    }
-    
-    // 2. 关键保护：禁用 Freezer
-    mOomAdjuster.mCachedAppOptimizer.enableFreezer(false);
-    
-    // 3. 异步执行
-    thread.dumpHeap(managed, mallocInfo, runGc, dumpBitmaps, path, fd, 
-                    intermediateCallback);
-}
-```
-
-#### 3. 应用线程层 (`ActivityThread.handleDumpHeap`)
-
-**位置**: `frameworks/base/core/java/android/app/ActivityThread.java`
-```java
-static void handleDumpHeap(DumpHeapData dhd) {
-    // 1. 可选 GC
-    if (dhd.runGc) {
-        System.gc(); System.runFinalization(); System.gc();
-    }
-    
-    // 2. 导出位图（如果需要）
-    if (dhd.dumpBitmaps != null) {
-        Bitmap.dumpAll(dhd.dumpBitmaps);
-    }
-    
-    // 3. 根据类型选择导出方式
-    try (ParcelFileDescriptor fd = dhd.fd) {
-        if (dhd.managed) {
-            Debug.dumpHprofData(dhd.path, fd.getFileDescriptor());  // Java 堆
-        } else if (dhd.mallocInfo) {
-            Debug.dumpNativeMallocInfo(fd.getFileDescriptor());     // Malloc 信息
-        } else {
-            Debug.dumpNativeHeap(fd.getFileDescriptor());           // Native 堆
-        }
-    }
-}
-```
-
-#### 4. ART 运行时层 (`Hprof::Dump`)
-
-**位置**: `art/runtime/hprof/hprof.cc`
-```cpp
-void DumpHeap(const char* filename, int fd, bool direct_to_ddms) {
-    // 1. 双重保护：GC 临界区 + 全线程暂停
-    gc::ScopedGCCriticalSection gcs(self, 
-                                    gc::kGcCauseHprof,
-                                    gc::kCollectorTypeHprof);
-    ScopedSuspendAll ssa(__FUNCTION__, true /* long suspend */);
-    
-    // 2. 构建堆图并导出
-    Hprof hprof(filename, fd, direct_to_ddms);
-    hprof.Dump();
-}
-```
-
-**核心机制**：
-- **内存保护**: `gc::ScopedGCCriticalSection` 防止 GC 干扰
-- **线程安全**: `ScopedSuspendAll` 暂停所有线程确保堆快照一致性
-- **输出格式**: 标准 JAVA PROFILE 1.0.3 格式 + Android 扩展标签
-
-**Android 扩展标签**：
-- `HPROF_ROOT_JNI_GLOBAL = 0x01` - JNI 全局引用
-- `HPROF_ROOT_INTERNED_STRING = 0x89` - 字符串驻留
-- `HPROF_ROOT_VM_INTERNAL = 0x8d` - VM 内部对象
-
-#### 5. Perfetto 集成 (`art_hprof` 数据源)
-
-Android 17 通过 Perfetto 实现了结构化的堆图数据收集：
-
-**配置**: `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`
-```proto
-message JavaHprofConfig {
-    message ContinuousDumpConfig {
-        uint32 dump_phase_ms = 1;      // 首次延迟
-        uint32 dump_interval_ms = 2;   // 连续间隔
-    }
-    repeated string process_cmdline = 1;  // 目标进程
-    uint32 min_anonymous_memory_kb = 4; // 内存下限过滤
-}
-```
-
-**解析器**: `external/perfetto/src/trace_processor/importers/art_hprof/art_hprof_parser.cc`
-```cpp
-base::Status ArtHprofParser::Parse(TraceBlobView blob) {
-    parser_->PushBlob(std::move(blob));
-    parser_->Parse();
-    return base::OkStatus();
-}
-```
-
-#### 性能影响
-- **内存开销**: dump 期间需额外 2-3 倍堆空间
-- **暂停时间**: 50-200ms 性能归零期
-- **I/O 优化**: 直接文件描述符写入，避免用户空间拷贝
-
-#### 调试实践
-```bash
-# 基础 Java 堆 dump
-adb shell am dumpheap -g <pid> /data/local/tmp/heap.hprof
-
-# 非托管堆 dump  
-adb shell am dumpheap -n <pid> /data/local/tmp/native-heap.hprof
-
-# 连续监控 dump
-adb shell tracedump --config continuous_java_hprof
-```
-
-
-基于 AOSP 源码索引，Android 16/17 ART 引入的 Generational CMC（Concurrent Marking Compacting）收集器实现细节如下：
-
-### 关键源码文件路径验证
-
-- **收集器类型定义**：`art/runtime/gc/collector/gc_type.h`
-  - `kGcTypeConcurrentCopying` - 并发复制类型枚举
-  - `kGcTypeStickyConcurrentCopying` - 粘性并发复制（仅 young generation）
-  - `kGcTypePartial` - 部分收集
-
-- **并发复制收集器基类**：`art/runtime/gc/collector/concurrent_copying.h`
-  - `ConcurrentCopyingCollector` 所有并发复制收集器的基类
-  - `RevokeThreadUnsafeMarkStack()` - 线程不安全地撤销标记栈
-  - `ProcessReferences()` - 处理引用
-  - `BindLiveBytes()` / `UnBindLiveBytes()` - 绑定/解绑存活字节
-
-- **分代收集器实现**：`art/runtime/gc/collector/generational_collector.cc`
-  - `CollectGarbageInternal()` 分代垃圾回收核心实现
-  - Young Generation: Semi-space 复制收集器（from-space → to-space）
-  - Old Generation: CMC 标记-压缩收集器
-
-- **堆内存管理**：`art/runtime/gc/heap.cc`
-  - L2168-2173: GC 触发条件（分配失败或达到阈值）
-  - 堆初始化和配置流程
-  - `RecordAllocation()` / `RecordFree()` 追踪分配和释放
-
-- **分代空间管理**：`art/runtime/gc/space/image_space.cc`
-  - L2650: 分代空间布局定义
-  - Image Space（boot image）、Zygote Space、Primary Space、Large Object Space
-
-- **编译优化链路**：`frameworks/native/cmds/installd/dexopt.cpp`
-  - L97: dexopt 入口
-  - L509: dex2oat 编译参数生成
-  - L729: VDEX/ADEX 格式转换处理
-
-### 分代模型演进（Android 15+/17）
-
-- **三代模型**：young, mid, old（非传统两代）
-  - mid generation 需要 survive 两次 GC 才晋升到 old generation
-  - 目的：减少刚分配不久对象的过早晋升
-
-- **Young GC 触发机制**：
-  - 优先扫描 young / mid generation
-  - 配合 card table 扫描 old generation 中被标脏的区域
-  - WriteBarrier 在写引用时进行 card mark
-
-- **版本差异**：
-  - API 33: Generational GC 正式引入
-  - API 35: CMS 废弃，全面转向 CMC
-  - API 36+: Generational CMC 成为默认
-  - targetSdk >= 33: 部分优化前提条件
-
-### 性能影响验证
-
-基于 AOSP 源码的 GC 策略分析：
-- **内存碎片整理**: CMC 压缩消除内存碎片，适合内存受限设备
-- **GC 暂停时间**: 并发标记阶段与应用线程并发执行
-- **吞吐量**: Young Generation 复制算法开销低
-- **大对象处理**: Large Object Space 独立管理，减少碎片
-
----
-*信息来源：AOSP cs.android.com 源码索引 (2026-05-28)*
-*web_fetch 未能成功提取 AOSP 源码内容，基于源码路径整理*
-
-
----
 
 <!-- AIW-源码调研-2026-06-09 ·topic=ART GC碎片控制+并发压缩 -->
 
@@ -915,16 +705,4 @@ if (gUseReadBarrier) {
 | LargeObject | 不参与压缩 | 不参与压缩 |
 
 > 上表为基于 `mark_compact.cc` 中 `kMinFromSpaceMadviseSize=8MB` 等常量做的估算，**未经 benchmark验证**。
-
-#### (f) 与 AIW §4.3现有描述的差异
-
-- 原章节「API36+ Generational CMC 成为默认」应**降级措辞**：源码未强制 foreground collector type切换到 CMC，`ShouldUseGenerationalGC()` 仅控制 **young收集器** 是否创建。准确的描述是：**Android16+ 在支持 uffd 的设备上默认使用 Generational CMC**（未支持的设备走 CC + Generational CC）。
-- 原章节「L2168-2173: GC触发条件」中的行号未在 android-16.0.0_r1验证通过（heap.cc 重构后行号已偏移），源码确认 GC触发由 `concurrent_start_bytes_` 与 `target_footprint_`协同控制（heap.cc 中 `concurrent_start_bytes_ = UnsignedDifference(target_footprint, reserve_bytes)`）。
-- 原章节 `art/runtime/gc/collector/generational_collector.cc` 在 android-15 / android-16 / main **均不存在**，该文件名可能是历史遗留。实际 generational CC 实现位于 `concurrent_copying.cc`（构造接受 `use_generational_cc` 参数），generational CMC 实现位于 `mark_compact.cc`（通过 `young_gen_`标志切换）。
-
-**所有源码引用均为 AOSP 一手**，对应锚点：
-- `platform/art/+/refs/tags/android-16.0.0_r1/runtime/gc/{space/region_space,space/large_object_space,collector/mark_compact,collector/concurrent_copying,heap}.{h,cc}`
-- `platform/art/+/refs/heads/main/runtime/gc/collector/`（目录结构对照）
-
-详细调研报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md`
 
