@@ -1,9 +1,4 @@
 ---
-
-
-
-
-
 status: finalized
 task9_reviewed_date: "2026-06-07"
 task9_reviewed_by: openclaw-task9
@@ -74,6 +69,8 @@ task9_review_notes: "2026-06-06 Task9 deep review: auto-fixed。AOSP tag 检查�
 last_task2b_at: 2026-06-05T20:51:54
 last_task9_autofix_at: "2026-06-06"
 task6_reviewed_by: openclaw-task6
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-09
 ---
 
 
@@ -113,8 +110,6 @@ task6_reviewed_by: openclaw-task6
 
 理解内核内存管理的机制，我们就能从 Perfetto 中读出更多信号：为什么 kswapd 突然活跃了？为什么 direct reclaim 导致了卡顿？为什么图形缓冲区分配失败？这些都是做 Android 性能分析时绕不开的问题。
 
-[来源: Cubox/五万字 - 深入理解Linux内存管理-2022-08-05.md]
-[来源: Cubox/Android 系统 内存不足时，kswapd 导致的性能问题之冷热文件回收方案-2025-05-31.md]
 
 ## 虚拟内存与物理内存映射
 
@@ -145,7 +140,6 @@ Page Fault 在 Android 上有几类典型场景：
 - **写时复制（Copy-on-Write）**：`fork()` 创建子进程时，内核只复制父进程的页表，两个进程指向相同的物理页。当其中一方尝试写入时，触发 Page Fault，内核此时才复制那个页面。Android 的 Zygote 进程正是利用这个机制——所有从 Zygote fork 出来的应用进程共享同一份物理内存页，直到它们需要修改时才各自持有副本。
 
 [已验证: 官方文档, kernel.org — Demand Paging 和 Copy-on-Write 机制]
-[来源: Cubox/为什么 Linux 需要虚拟内存 - 面向信仰编程-2024-06-25.md]
 
 ### 在 Perfetto 中的表现
 
@@ -212,7 +206,6 @@ Linux 内核历史上出现过三种 Slab 实现：
 
 在 Android 的性能分析中，如果发现 `vmalloc` 占用异常增大，可能是某些内核模块（如 GPU 驱动、相机驱动）在大量分配虚拟连续内存。
 
-[来源: Cubox/五万字 - 深入理解Linux内存管理-2022-08-05.md]
 
 ## 页面回收（Page Reclaim）
 
@@ -253,7 +246,6 @@ kswapd 被唤醒后，会持续回收页面，直到空闲内存恢复到 High W
 另一种思路是常态化少量回收——每分钟定时少量回收页面，避免内存不足时 kswapd 的突发性高开销。这种做法用可预测的低开销替代不可预测的高开销，与渲染优化中"分帧加载"的思路类似。
 
 [已验证: L4 交叉验证, Nubia案例 + OPPO内存反碎片优化 + 荣耀MGLRU实践经验]
-[来源: Cubox/Android 系统 内存不足时，kswapd 导致的性能问题之冷热文件回收方案-2025-05-31.md]
 
 ### Direct Reclaim：同步回收的代价
 
@@ -298,8 +290,7 @@ Android 16 (GKI 6.12) 的 common kernel 包含 MGLRU 基础设施。是否作为
 [待验证: Android 16/17 非 GKI 低端设备的 MGLRU 覆盖率]
 
 [已验证: 官方文档, kernel.org — MGLRU 自 Linux 6.1 合入主线]
-[来源: Cubox/荣耀在MGLRU内存回收上的发力或恰到好处-2026-02-25.md]
-[来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md]
+
 
 #### 源码分析：MGLRU vs 传统双级 LRU 锁竞争
 
@@ -356,9 +347,8 @@ static int evict_folios(struct lruvec *lruvec, ...)
 
 **sysfs 监控接口**：`/sys/kernel/mm/lru_gen/enabled`（bitmask 主开关）+ `/sys/kernel/mm/lru_gen/lru_gen`（各代页面数量直方图）。
 
-[来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md]
 
-### [自动发现] Silk：GC 与内核页面回收的协同优化
+### Silk：GC 与内核页面回收的协同优化
 
 华中科技大学在 TACO '25 上发表的 Silk 论文提出了一个更深层的观察：ART 虚拟机的 GC 行为会严重干扰内核的 LRU 判断。论文发现了"Object Hotness Inversion"（对象热度倒置）问题：
 
@@ -369,11 +359,10 @@ Silk 的解决方案是在对象级别跟踪热度信息，并将其传递给内
 
 这个工作展示了 Android 内存优化的一个前沿方向：让虚拟机层和内核层协同工作，而不是各自为政。
 
-[来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)]
 
 #### 待验证方向：madvise(MADV_COLD) 作为 GC-内核协同路径
 
-[状态: 截至 android-16.0.0_r1，ART runtime/gc 中未找到对 `MADV_COLD` 的直接调用；android-17.0.0_r1 尚未公开，不能作为正文源码锚点。以下描述基于 Silk 论文方向和社区提案，不是已进入 AOSP 公开树的实现。]
+截至 android-16.0.0_r1，ART runtime/gc 中尚未包含对 `MADV_COLD` 的直接调用；android-17.0.0_r1 尚未公开。以下描述基于 Silk 论文方向和社区提案，不是已进入 AOSP 公开树的实现。
 
 Silk（TACO '25）论文提出了一种 GC-内核协同思路：ART 虚拟机在 GC 标记阶段识别出对象冷热信息后，由 GC 向内核传达哪些页面近期不会再被访问，从而帮助内核更准确地回收冷页。
 
@@ -384,7 +373,6 @@ Silk（TACO '25）论文提出了一种 GC-内核协同思路：ART 虚拟机在
 
 **版本边界**：AOSP `platform/art`（android-16.0.0_r1）未发现 ART runtime/gc 中对 `MADV_COLD` 的显式调用点；主线（main）资料未进入 Android 17 tag，不能作为 Android 17 正文结论。ART GC 触发 `MADV_COLD` 的精确调用点、触发条件、频率和指标口径目前仍是待研究项（已在 `research-gaps.md` 中记录）。在没有 AOSP commit、release note 或独立 benchmark 支撑之前，本节不将 MADV_COLD 路径作为正文结论。
 
-[来源: external-review 2026-04-28-ch04-02-linux-memory 与 Silk 论文（TACO '25）概念参考]
 
 ## 内存压缩（Memory Compaction）与碎片化
 
@@ -402,7 +390,6 @@ OPPO 曾经详细分析过这个问题，并提出了两种反碎片化机制：
 - **Multi-Freearea（MF）**：将空闲物理页面集中在某段物理页帧号（pfn）范围内，增大空闲页面合并成大块物理页面的概率。
 - **Centralize-Small-VirtualMem（CSVM）**：将小段虚拟内存分配集中在特定的虚拟地址范围，减少虚拟地址空间被"污染"。
 
-[来源: Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
 
 ### kcompactd 和 Direct Compaction
 
@@ -469,7 +456,6 @@ Android 12+ 的 DMA-BUF 统计主要通过 `/sys/kernel/dmabuf/buffers/`、`libd
 
 Google 在 LPC 2025 上介绍了使用 eBPF 替代 sysfs 来统计 DMA-BUF 使用量的工作，目标是提供更精确、更低开销的图形内存监控能力。
 
-[来源: Cubox/LPC2025-Android MC主题-2026-01-10.md]
 [待补充: Perfetto 中 DMA-BUF 相关 Track 和事件的 Trace 截图]
 
 了解了图形内存的底层机制后，我们再来看一个影响整个内存管理架构的系统性变更：16KB 页面大小。前面讨论的 Buddy 分配器、TLB、Page Fault 等机制，在页面大小从 4KB 增大到 16KB 后，行为都会发生变化。
@@ -513,7 +499,6 @@ Google 在 LPC 2025 上分享了为 16KB 页面适配旧 ELF 库的技术探索�
 
 从 2025 年 11 月 1 日起，提交到 Google Play 且面向 Android 15（API 35）及以上设备的新应用和既有应用更新必须支持 16KB 页面大小。
 
-[来源: Cubox/LPC2025-Android MC主题-2026-01-10.md]
 [已验证: 官方文档, developer.android.com — 16KB page size 要求]
 
 ### 在 Perfetto 中的表现
@@ -534,9 +519,6 @@ Google 在 LPC 2025 上分享了为 16KB 页面适配旧 ELF 库的技术探索�
 
 **Huge Pages**：Transparent Huge Pages（THP）在服务器场景中已被广泛采用，但在 Android 上仍处于实验阶段。THP 需要 2MB 连续物理内存（512 个 4KB 页），碎片化严重的移动设备很难满足。Android 15 的 pKVM（Protected Kernel Virtual Machine）对 THP 的支持也在探索中。大页面的核心权衡是：TLB miss 率降低带来的性能收益 vs. 内存浪费（内部碎片增加）vs. 碎片化加剧的风险。对于移动场景，16KB page size 可能是比 THP 更务实的折中方案。
 
-[来源: Cubox/Andriod Native - 采样型内存调试工具GWP-ASan - 掘金-2022-01-14.md]
-[来源: Cubox/内存检测工具KASAN：精准定位内存越界的"幽灵"-2025-05-29.md]
-[来源: Cubox/Android内存安全革命性改变：快手MTE探索与实践-2023-05-23.md]
 
 ## 与其他机制的关系
 

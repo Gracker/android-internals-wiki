@@ -57,6 +57,8 @@ last_task9_autofix_at: "2026-05-27"
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-09
 ---
 
 # 1.19 Zygote 图形驱动预加载与启动性能

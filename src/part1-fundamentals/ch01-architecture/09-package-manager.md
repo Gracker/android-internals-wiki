@@ -405,6 +405,154 @@ Startup Profiles 作用在 DEX 布局。它们告诉构建工具哪些启动关�
 
 [已验证: AOSP android-16.0.0_r1 `PackageInstallerSession.verifySdmSignatures()` / `maybeStageArtManagedInstallFilesLocked()`; `art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java`; `ArtManagerLocal.deleteDexoptArtifacts()`]
 
+
+
+<!-- AIW-源码调研-2026-06-09 -->
+## 源码补遗：SDM / SDC 与 DexMetadata 的设备侧实现路径
+
+> 来源：AOSP android-16-release 源码（`PackageInstallerSession.java`、`PrimaryDexopter.java`、`artd.cc`、`ArtManagedInstallFileHelper.java`、`ArtManagerLocal.java`、`DexMetadataHelper.java`）
+> 适用版本：Android 16（API 36）；Android 17 为延续性推断
+> 一手状态：以下每条结论均给出文件路径与行号
+
+### SDM 文件命名与 ISA 维度
+
+SDM（Secure Dex Metadata）按 ISA 分文件命名，与 `.dm`/`.prof` 单一文件不同：
+
+```cpp
+// art/libartbase/base/file_utils.h line 41
+static constexpr const char* kSdmExtension = ".sdm";
+
+// art/libartbase/base/file_utils.cc line 718-721
+std::string GetSdmFilename(const std::string& dex_location, InstructionSet isa) {
+    return ReplaceFileExtension(dex_location,
+        StringPrintf("%s%s", GetInstructionSetString(isa), kSdmExtension));
+}
+```
+
+`base.apk` 对应 `base.arm64.sdm`、`base.x86_64.sdm` 等 per-ISA 文件。SDM 文件名是设备侧识别 cloud compilation artifact 的入口。
+
+### ART-managed install files 三类后缀
+
+```java
+// art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java line 41-44
+private static final List<String> FILE_TYPES = List.of(ArtConstants.DEX_METADATA_FILE_EXT,
+        ArtConstants.PROFILE_FILE_EXT, ArtConstants.SECURE_DEX_METADATA_FILE_EXT);
+```
+
+三类后缀：`.dm`、`.prof`、`.sdm`（以及 per-ISA 的 `.<isa>.sdm`）。匹配规则是纯字符串判断，不涉及 I/O，因此可在 `PackageInstallerSession` 早期调用。
+
+### 安装会话的签名校验
+
+```java
+// frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java line 4330-4360
+private static void verifySdmSignatures(List<String> artManagedFilePaths,
+        SigningDetails expectedSigningDetails) throws PackageManagerException {
+    ...
+    int minSignatureScheme = SigningDetails.SignatureSchemeVersion.SIGNING_BLOCK_V3;
+    ParseResult<SigningDetails> verified =
+            ApkSignatureVerifier.verify(input, path, minSignatureScheme);
+    ...
+    if (!expectedSigningDetails.signaturesMatchExactly(verified.getResult())) {
+        throw new PackageManagerException(
+                INSTALL_FAILED_INVALID_APK, "SDM signatures are inconsistent with APK");
+    }
+}
+```
+
+SDM 强制 v3 签名块（`SIGNING_BLOCK_V3`），校验失败抛 `INSTALL_FAILED_INVALID_APK`。注释明示："SDM is a file format that contains the cloud compilation artifacts. As a requirement, the SDM file should be signed with the same key as the APK."——这是公开源码中 SDM 与 cloud compilation 直接对应的唯一注释。
+
+### ART Service 端的 SDC 创建与立即清理
+
+```java
+// art/libartservice/service/java/com/android/server/art/PrimaryDexopter.java line 183-217
+@Override
+protected void onDexoptStart(@NonNull DetailedPrimaryDexInfo dexInfo) throws RemoteException {
+    if (!mInjector.isPreReboot() && android.content.pm.Flags.cloudCompilationPm()) {
+        boolean isInDalvikCache = isInDalvikCache();
+        for (Abi abi : getAllAbis(dexInfo)) {
+            maybeCreateSdc(dexInfo, abi.isa(), isInDalvikCache);
+        }
+    }
+}
+
+@Override
+protected void onDexoptTargetResult(@NonNull DexoptTarget<DetailedPrimaryDexInfo> target,
+        @DexoptResult.DexoptResultStatus int status) throws RemoteException {
+    if (status == DexoptResult.DEXOPT_PERFORMED && !mInjector.isPreReboot()) {
+        mInjector.getArtd().deleteSdmSdcFiles(
+                AidlUtils.buildSecureDexMetadataWithCompanionPaths(
+                        target.dexInfo().dexPath(), target.isa(), target.isInDalvikCache()));
+    }
+}
+```
+
+`cloudCompilationPm()` flag 是整套 SDM 链路的 gate；OEM 默认可关闭。dexopt 完成后立刻 `deleteSdmSdcFiles()`，注释解释为 "release disk space as soon as possible"——SDM/SDC 在本地 dexopt 完成后并不被本地运行时直接消费。
+
+### artd Native 端：SDC 的 mtime 比对
+
+```cpp
+// art/artd/artd.cc line 1000-1030
+ndk::ScopedAStatus Artd::maybeCreateSdc(const OutputSecureDexMetadataCompanion& in_outputSdc) {
+  ...
+  std::string sdm_path = OR_RETURN_FATAL(BuildSdmPath(in_outputSdc.sdcPath));
+  std::string sdc_path = OR_RETURN_FATAL(BuildSdcPath(in_outputSdc.sdcPath));
+
+  Result<std::unique_ptr<File>> sdm_file = OpenFileForReading(sdm_path);
+  if (!sdm_file.ok()) {
+    if (sdm_file.error().code() == ENOENT) {
+      // No SDM file found. That's typical.
+      return ScopedAStatus::ok();
+    }
+    return NonFatal(sdm_file.error().message());
+  }
+  struct stat sdm_st = OR_RETURN_NON_FATAL(Fstat(*sdm_file.value()));
+
+  std::unique_ptr<SdcReader> sdc_reader = SdcReader::Load(sdc_path, &error_msg);
+  if (sdc_reader != nullptr && sdc_reader->GetSdmTimestampNs() == TimeSpecToNs(sdm_st.st_mtim)) {
+    // Already has an SDC file for the SDM file.
+    return ScopedAStatus::ok();
+  }
+  ...
+```
+
+注释 "No SDM file found. That's typical." 直接说明：本地绝大多数包都不命中 `.sdm`，仅极少数由 Play 分发带 cloud compilation artifact 的包才走完整路径。SDC 通过 SDM 文件的 mtime 比对决定是否需要重写。
+
+### `DexMetadataHelper` 的两个 system property
+
+```java
+// frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java line 44-53
+private static final String PROPERTY_DM_JSON_MANIFEST_REQUIRED = "pm.dexopt.dm.require_manifest";
+private static final String PROPERTY_DM_FSVERITY_REQUIRED = "pm.dexopt.dm.require_fsverity";
+private static final String DEX_METADATA_FILE_EXTENSION = ".dm";
+```
+
+`pm.dexopt.dm.require_manifest` 控制 `.dm` 是否必须内嵌 JSON manifest；`pm.dexopt.dm.require_fsverity` 控制是否必须携带 fs-verity 摘要。两个 prop 默认 false；调试时可通过 `adb shell setprop` 临时打开。
+
+### 调试与验证命令
+
+```bash
+# 查看包当前 dexopt 状态（Android 14+ 优先；旧设备退回 dumpsys）
+adb shell pm art dump com.example.app
+adb shell dumpsys package dexopt | grep -A 12 com.example.app
+
+# 看 ART Service 是否尝试创建 SDC（cloudCompilationPm flag 开启时）
+adb shell setprop log.tag.ArtService VERBOSE
+adb logcat -v time | grep -E "ArtService|maybeCreateSdc|sdc"
+
+# 强制 DM 校验严格度（默认 false）
+adb shell setprop pm.dexopt.dm.require_manifest true
+adb shell setprop pm.dexopt.dm.require_fsverity true
+```
+
+### 与 AIW 现有章节的关系
+
+- 本节是 §1.9 安装会话与 SDM/SDC 链路的源码补遗，串联了 PMS（`PackageInstallerSession`）→ ART Service（`PrimaryDexopter`）→ artd native（`Artd::maybeCreateSdc`）三层调用。
+- §21.11 已讲清 `.dm` 与 Baseline/Cloud Profile 在启动优化里的位置；本节补 `.sdm` 与 SDC 的产物管理细节。
+- §1.7（ART 编译管线）继续关注 dex2oat 本身机制，不重复 SDM/SDC 的产物路径。
+
+[已验证: AOSP android-16-release `PackageInstallerSession.java` L4025/L4330-4360、`PrimaryDexopter.java` L178-217、`artd.cc` L1000-1030/L1435-1442、`ArtManagedInstallFileHelper.java` L41-58、`ArtManagerLocal.java` L200-250、`DexMetadataHelper.java` L44-53、`file_utils.h/cc` L41/L178/L718-721]
+
+
 ## App Archiving 机制（Android 15+）
 
 Android 15 引入 OS 级 App Archiving，通过 `PackageArchiver`（`services/core/java/com/android/server/pm/PackageArchiver.java`）实现。归档后的应用移除 APK 和缓存文件，但保留用户数据，Launcher 显示灰显图标。

@@ -57,6 +57,8 @@ last_task9_audit_log: 'logs/deep-review/2026-06-08-16-audit.md'
 last_task9_autofix_at: '2026-06-08'
 task9_review_notes: '2026-05-15 task9 deep-review: pass-tech-review。无 P0/P1；P2 3；满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。 | 2026-06-08 16 Task9 idle audit: auto-fixed。将 AOSP master 源码锚点收敛到 android-16.0.0_r1；补正 rendererPriorityAtExit 共享 Renderer 语义、WebViewCompat(context) 签名和 ApplicationExitInfo 证据标签；未使用 Android 18/API 38+ 内容。'
 last_task9_review_log: 'logs/deep-review/2026-06-08-16-audit.md'
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-09
 ---
 
 # 20.10 WebView Renderer OOM 与白屏恢复
@@ -113,8 +115,6 @@ last_task9_review_log: 'logs/deep-review/2026-06-08-16-audit.md'
 WebView Renderer OOM 的现场经常表现为页面突然白屏，宿主 Activity 还在，按钮和导航栏也可能还能响应。客户端不能把它当成普通页面加载失败处理；旧 WebView 已经失效，继续调用 `reload()`、`goBack()` 或 JS Bridge 容易把问题拖成二次异常。
 
 本节处理的是 Renderer 退出后的恢复路径：识别退出原因、销毁旧实例、重建页面、补齐上报字段。WebView 的 Chromium 渲染管线和线程模型详见 7.11 与 18.13 节；WebView 打开速度、离线包和 JS Bridge 优化详见 22.7 节；Crash 样本上报详见 26.2 节。
-
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
 
 ## Renderer 进程退出的稳定性风险
 
@@ -221,7 +221,7 @@ class H5Activity : AppCompatActivity() {
 
 ## OOM 诱因排查
 
-Clippings 中的 OOM 章节把 OutOfMemoryError 路径分成 Java 堆限制与虚拟内存限制两类。WebView Renderer OOM 不等同于宿主 Java 堆 OOM，但这个分类适合做排查索引：页面大图、视频、Canvas、长列表和复杂 JS 对象更容易推高 Renderer 侧内存；宿主侧 WebView 池、离线包缓存和 JS Bridge 引用更容易推高 App 进程内存。[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
+WebView Renderer OOM 不等同于宿主 Java 堆 OOM，但排查时可以沿用 OOM 的两条分类思路：页面大图、视频、Canvas、长列表和复杂 JS 对象更容易推高 Renderer 侧内存；宿主侧 WebView 池、离线包缓存和 JS Bridge 引用更容易推高 App 进程内存。
 
 排查时至少记录这些字段：
 

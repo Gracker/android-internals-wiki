@@ -1151,3 +1151,112 @@ AOSP simpleperf (`system/extras/simpleperf/`) 与 Perfetto linux.perf 为不同�
 - 输出格式不同：simpleperf → Android 自定义格式，linux.perf → Perfetto 格式
 - 权限管理分离： traced_perf.rc vs simpleperf.rc
 
+
+
+<!-- AIW-源码调研-2026-06-09 -->
+
+## 源码验证更新（2026-06-09）
+
+基于 Android 16.0.0_r4 一手源码补充 Android 14 → Android 16 Perfetto APM 工具链演进结论。**Android 17.0.0_r1 tag 公开未发布**，所有"Android 17"字段以 android-16.0.0_r4 为最新锚点做延续性推断。
+
+### DataSourceConfig 协议版本演进
+
+源码：`external/perfetto/protos/perfetto/config/data_source_config.proto`
+
+| Android 版本 | tag | Next id | 备注 |
+|---|---|---|---|
+| Android 14 | android-14.0.0_r1 | 123 | 基线（含 android.network_packets 124、Android 14 QPR1+ android.sdk_sysprop_guard 125）|
+| Android 15 | android-15.0.0_r1 | 130 | 新增 android.protolog(127)、android.input.inputevent(128)、android.pixel.modem(130) |
+| Android 16 | android-16.0.0_r4 | 138 | 新增 android.windowmanager(131)、org.chromium.system_metrics(132)、android.kernel_wakelocks(133)、gpu.renderstages(134)、org.chromium.histogram_samples(135)、android.app_wakelocks(136)、android.cpu_per_uid(137) |
+
+### Android 16 APM 三件套源码定位
+
+- **`android.cpu_per_uid`**：`external/perfetto/protos/perfetto/config/android/cpu_per_uid_config.proto`（Copyright 2025）
+  ```protobuf
+  message CpuPerUidConfig {
+    optional uint32 poll_ms = 1;
+  }
+  ```
+- **`android.app_wakelocks`**：`external/perfetto/protos/perfetto/config/android/app_wakelock_config.proto`（Copyright 2025）
+  ```protobuf
+  message AppWakelocksConfig {
+    optional int32 write_delay_ms = 1;     // 建议 5000ms
+    optional int32 filter_duration_below_ms = 2;
+    optional bool drop_owner_pid = 3;
+  }
+  ```
+- **`android.kernel_wakelocks`**：`external/perfetto/protos/perfetto/config/android/kernel_wakelocks_config.proto`
+
+### traced_probes 权限模型升级
+
+源码：`external/perfetto/traced_perf.rc`（android-16.0.0_r4）
+
+```rc
+service traced_perf /system/bin/traced_perf
+    class late_start
+    disabled
+    socket traced_perf stream 0666 root root
+    user nobody
+    group nobody readproc readtracefs
+    capabilities KILL DAC_READ_SEARCH
+    task_profiles ProcessCapacityHigh
+    shared_kallsyms
+```
+
+`traced_probes.rc`（同版本）：
+
+```rc
+service traced_probes /system/bin/traced_probes
+    class late_start
+    disabled
+    user nobody
+    group nobody readproc log readtracefs
+    task_profiles ProcessCapacityHigh
+    onrestart exec_background - nobody shell -- /system/bin/traced_probes --cleanup-after-crash
+    file /dev/kmsg w
+    capabilities DAC_READ_SEARCH SYS_NICE
+    shared_kallsyms
+```
+
+`readtracefs` group + `DAC_READ_SEARCH` capability 替代旧版 `writepid`，Linux Perf / ftrace 路径只读。
+
+### android.input.inputevent 数据源
+
+源码：`external/perfetto/protos/perfetto/config/android/android_input_event_config.proto`（Copyright 2024）
+
+- TraceMode: TRACE_MODE_TRACE_ALL（仅 userdebug/eng）/ TRACE_MODE_USE_RULES
+- TraceLevel: NONE / REDACTED（抹去坐标+keycode）/ COMPLETE
+- TraceRule 支持 match_all_packages / match_any_packages / match_secure / match_ime_connection_active
+- `trace_dispatcher_input_events` + `trace_dispatcher_window_dispatch` 双开关可独立启用
+
+### FtraceConfig atrace 集成新增
+
+源码：`external/perfetto/protos/perfetto/config/ftrace/ftrace_config.proto`（android-16.0.0_r4，Next id: 36）
+
+```protobuf
+repeated string atrace_categories_prefer_sdk = 28;
+optional bool atrace_userspace_only = 34;   // perfetto v52+
+```
+
+`atrace_userspace_only=true` 关闭 vendor-specific ftrace 事件注入；`atrace_categories_prefer_sdk` 让混合路径切到纯 perfetto SDK track_event。
+
+### Producer IPC 零拷贝路径
+
+源码：`external/perfetto/src/tracing/ipc/producer/producer_ipc_client_impl.h`（android-16.0.0_r4）
+
+```cpp
+SharedMemoryArbiter* MaybeSharedMemoryArbiter() override;
+bool IsShmemProvidedByProducer() const override;
+void OnConnectionInitialized(bool connection_succeeded,
+                             bool using_shmem_provided_by_producer,
+                             bool direct_smb_patching_supported,
+                             bool use_shmem_emulation);
+```
+
+`direct_smb_patching_supported` 决定 producer→traced 是否走 SMB 直接 patch，APM SDK 在 Android 16+ 可借此减少一次数据拷贝。
+
+### Android 17 边界说明
+
+- android-17.0.0_r1 tag 在 `external/perfetto` 公开仓库未发布
+- 所有「Android 17」字段标注「基于 android-16.0.0_r4 锚点的延续性推断，未进入 Android 17」
+- 待公开 tag 后第一时间复核 DataSourceConfig.Next id、traced_probes init.rc、android.cpu_per_uid poll 默认值是否进一步变化

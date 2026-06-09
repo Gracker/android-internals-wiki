@@ -59,7 +59,7 @@ task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Cho
 
 task2b_result: "fixed"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-06-09
 last_task6_audit: "2026-06-09"
 task9_state: "reviewed"
 last_task9_audit: "2026-06-09"
@@ -101,7 +101,6 @@ last_task9_autofix_at: "2026-06-09"
 VSync 决定了渲染延迟的基准线。不理解 VSync，你无法解释为什么同一帧从 App 绘制完成到屏幕显示可能需要 1~3 个 VSync 周期；无法理解纳秒级偏移量调整如何直接影响跟手性；也无法把握 Android 从 4.1 到 16 的渲染演进逻辑。掌握 VSync 是解决渲染时序问题的根本前提。
 
 本章将从 VSync 解决画面撕裂问题的历史说起,经过软件虚拟化实现、相位偏移调优,一直到 Android 15/16 的自适应刷新率(ARR)。学完后,你将能够读懂 Perfetto 中的 VSync Track,准确定位渲染时序问题的根源。
-
 ---
 
 ## 一、VSync 的起源:画面撕裂问题
@@ -586,8 +585,6 @@ DispSync 的软件锁相环模型在这一时期逐渐稳定,成为 Android VSyn
 
 ### 9.5 Android 15 ~ 16:自适应刷新率(ARR)
 
-**[自动发现: 来源 intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md + intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md]**
-
 Android 15 引入、Android 16 显著增强的**自适应刷新率(Adaptive Refresh Rate, ARR)**从根本上改变了 VSync 的行为模式。
 
 ARR 允许兼容硬件上的显示刷新率通过**离散 VSync 步进(Discrete VSync Steps)**动态调整到内容帧率。例如:
@@ -615,8 +612,6 @@ Android 16 新增的 API:
 `[已验证: 官方文档, developer.android.com/about/versions/16 features + developer.android.com/about/versions/15 features]`
 
 ### 9.6 Android 17:消息队列演进对 VSync 的影响
-
-**[自动发现: 来源 intake/research-feeds/2026-04-02-11-ch02-android17-deltique-lockfree-messagequeue.md]**
 
 Android 17 的消息队列优化属于 `Looper` / `MessageQueue` 层,不直接影响 SurfaceFlinger 的 VSync 生成机制。它的价值在于减少 `VSYNC-app` 到达应用进程后的排队成本:`DisplayEventReceiver` → `Choreographer` → 主线程消息队列的传递效率提升。
 
@@ -722,7 +717,6 @@ Offset 过小会导致 App 或 SF 来不及完成工作,错过 VSync 窗口,反�
 
 前面第三章讲 DispSync 时，关注的是系统"用模型预测 VSync"的整体思路。如果你需要深入到预测算法的具体实现——比如模型怎么从历史样本算出下一次 VSync 时间、异常样本怎么被过滤、VRR 下怎么适应变化的刷新率——下面这部分是对 android-16.0.0_r1 源码的逐段分析，可以作为第三章的源码级对照阅读。
 
-**[自动发现: 来源 AOSP mainline VSyncPredictor.cpp 源码分析]**
 
 AOSP mainline 的 `VSyncPredictor.cpp`（路径 `services/surfaceflinger/Scheduler/VSyncPredictor.cpp`）实现了基于**简单线性回归**的软件 VSync 周期预测算法，替代了早期 DispSync 使用的简单平均方法。
 
@@ -869,7 +863,3 @@ Choreographer#doFrame() / SurfaceFlinger 合成消息
 ```
 
 VSync Offset 在当前实现中的落点是 `VsyncConfig { workDuration, readyDuration }` 和分发队列的触发时间。它不再表现为一个单独写死的纳秒偏移值；调度器根据预测时间、工作时长和准备时长算出 App 与 SurfaceFlinger 各自的回调时间。
-
----
-
-**本节贡献者**: AutoResearchClaw | **调研日期**: 2026-04-24 | **源码版本**: AOSP mainline

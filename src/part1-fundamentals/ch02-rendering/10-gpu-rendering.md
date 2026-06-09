@@ -1055,6 +1055,52 @@ Mali 的 `gpu_render_stages` 在 Perfetto 中通常比 Adreno 更细粒度--ARM 
 - 修复后用 Perfetto 确认 GPU 时间下降
 - 用 AGI 确认修复后的指标(shader 时间、带宽等)已经改善
 
+
+
+<!-- AIW-源码调研-2026-06-09 -->
+
+### AIW 源码调研：Vulkan 1.3/1.4 加载器协商与 ANGLE 命名空间隔离（android-16.0.0_r4 锚点）
+
+> **版本边界**：android-17.0.0_r1 tag 公开未发布，本节所有源码锚点基于 `android-16.0.0_r4` 分支（即 `refs/heads/android16-release`），Android 17 差异为延续性推断。
+
+#### Vulkan Loader 的 ApiVersion 协商（核心机制）
+
+AOSP 自有 loader `frameworks/native/vulkan/libvulkan/driver.cpp` 的 `CreateInfoWrapper` 默认 `loader_api_version_ = VK_API_VERSION_1_3`，可通过 `flags::vulkan_1_4_instance_api()` 切换到 1.4。`SanitizeApiVersion()` 显式处理"1.3 ICD + 1.4 app"降级——强制把 `VkApplicationInfo.apiVersion` 降回 ICD 声明的 1.3，因为**"no actual instance api differences between these versions"**（AOSP 源码注释原文）：
+
+```cpp
+// driver.cpp L438-L466
+if (icd_api_version_ >= VK_API_VERSION_1_3 &&
+        icd_api_version_ < VK_API_VERSION_1_4 &&
+        instance_info_.pApplicationInfo->apiVersion >= VK_API_VERSION_1_4) {
+    application_info_ = *instance_info_.pApplicationInfo;
+    application_info_.apiVersion = icd_api_version_;  // 降级到 1.3
+    instance_info_.pApplicationInfo = &application_info_;
+    return VK_SUCCESS;
+}
+```
+
+**性能影响**：避免了"app 申请 1.4 但 driver 只有 1.3"导致的 `VK_ERROR_INCOMPATIBLE_DRIVER`，但 1.3 ICD 在 1.4 app 下可能行为异常（AOSP 注释明确警告"may misbehave"）——这是 Android 16 升级到 1.4 时灰度策略保守的根源。`SanitizeExtensions` 在 `icd_api_version < loader_api_version` 时**自动启用被 promote 到新核心版本的 instance extensions**（如 `VK_KHR_dynamic_rendering`、`VK_KHR_synchronization2`），让 1.3 ICD 看起来像是支持 1.4 的功能。
+
+#### ANGLE 命名空间隔离
+
+`frameworks/native/libs/graphicsenv/GraphicsEnv.cpp` 的 `getAngleNamespace()` 用 `android_create_namespace("ANGLE", ..., ANDROID_NAMESPACE_TYPE_SHARED_ISOLATED, ...)` 创建独立命名空间，把 ANGLE 的 `libEGL.so` / `libGLESv2.so` 符号与 SoC vendor 的同名 so 隔离，避免 `dlopen` 时的符号冲突。`linkDriverNamespaceLocked` 在此 namespace 上链接 LLNDK/VNDK-SP/SPHAL 三类库，构成完整可执行的 ANGLE runtime。
+
+`GraphicsEnvironment.java` 的 `getVulkanVersion()` 自高到低枚举 `PackageManager.FEATURE_VULKAN_HARDWARE_VERSION`，把最高可用版本（Android 16 起包含 `VULKAN_1_4 = 0x00404000`）回填到 `GpuStats.vulkanVersion`——这是 app 进程 GPU stats 上报的入口。
+
+#### Android ↔ Vulkan 版本对应（[source.android.com](https://source.android.com/docs/core/graphics/implement-vulkan)）
+
+| Android 版本 | Vulkan API Level |
+|-------------|-----------------|
+| Android 7 (API 24) | 1.0 |
+| Android 9 (API 28) | 1.1 |
+| Android 13 (API 33) | 1.3 |
+| Android 16 (API 36) | 1.4 |
+| Android 17 (API 37) | 推断 1.4（延续 Android 16） |
+
+> Vulkan 1.4 increases the hardware requirements compared with Vulkan 1.3, with most of the implementation in the SoC-specific graphics driver, not in the framework.（source.android.com 原文）
+
+**详细调研**：[2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md)
+
 ### 系统性排查流程:CPU-GPU 同步 / 内存带宽 / 着色器编译
 
 #### 完整排查流程
