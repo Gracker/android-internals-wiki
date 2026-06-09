@@ -7591,21 +7591,23 @@
       "section": "14.23",
       "title": "StrictMode 性能检查与开发期诊断",
       "file": "src/part3-tools/ch14-other-tools/23-strictmode-performance-diagnostics.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-06-07",
       "gap_source": "AOSP结构/官方文档/章节深挖",
       "gap_score": 15,
       "material_count": 3,
-      "queue_priority": 80
+      "queue_priority": 80,
+      "fixed_stale_draft": true,
+      "fixed_at": "2026-06-10T03:08:00+08:00"
     },
     "22.22": {
       "section": "22.22",
       "title": "Compose LazyList/LazyGrid 滑动性能深度优化",
       "file": "src/part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-06-08",
       "gap_source": "参考书结构/章节深挖/官方文档/社区热点",
@@ -7617,7 +7619,9 @@
         "total": 18
       },
       "material_count": 5,
-      "queue_priority": 80
+      "queue_priority": 80,
+      "fixed_stale_draft": true,
+      "fixed_at": "2026-06-10T03:08:00+08:00"
     },
     "19.25": {
       "status": "finalized",
@@ -7635,8 +7639,8 @@
       "section": "17.8",
       "title": "MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播",
       "file": "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md",
-      "status": "draft",
-      "pipeline_stage": "task2a_pending",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-06-09",
       "gap_source": "Clippings参考书/Chinasys2026论文/社区热点",
@@ -7648,7 +7652,9 @@
         "total": 17
       },
       "material_count": 2,
-      "queue_priority": 80
+      "queue_priority": 80,
+      "fixed_stale_draft": true,
+      "fixed_at": "2026-06-10T03:08:00+08:00"
     }
   },
   "task2b_rounds": [
@@ -10509,20 +10515,17 @@
   },
   "last_task9_review_summary": "11.2 App 耗电优化：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "last_task2a_gap_mining": {
-    "date": "2026-06-09",
-    "time": "15:04",
+    "date": "2026-06-10",
+    "time": "03:08",
     "mode": "gap-mining",
-    "created_sections": [
-      "17.8"
-    ],
-    "created_files": [
-      "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md"
-    ],
-    "candidate_count": 1,
-    "qualified_count": 1,
-    "source": "Clippings参考书/Chinasys2026论文/社区热点"
+    "created_sections": [],
+    "created_files": [],
+    "candidate_count": 0,
+    "qualified_count": 0,
+    "source": "daily-info/research-feeds/source-index/AOSP/Clippings",
+    "note": "Round 66: 连续 66 轮无合格缺口，修复 3 个过期 draft 条目，推荐暂停 gap mining"
   },
-  "last_task2a_gap_mining_at": "2026-06-09T15:04:00+08:00",
+  "last_task2a_gap_mining_at": "2026-06-10T03:08:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
