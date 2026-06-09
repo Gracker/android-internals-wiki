@@ -6,7 +6,7 @@
 title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
-status: finalized  # promoted by task2b-verifier 2026-06-08
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - systemui

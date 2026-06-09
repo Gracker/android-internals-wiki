@@ -5,7 +5,7 @@
 title: "Cached App Freezer 与 GC 触发边界"
 chapter: "4.11"
 section: "4.11"
-status: finalized  # promoted by task2b-verifier 2026-06-08
+status: finalized
 finalized_by: openclaw-task2b-verifier
 drafted_date: "2026-05-19"
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36); Android 17 待公开 tag 复核; 16KB Page Size 从 Android 15 起覆盖设备侧兼容"
