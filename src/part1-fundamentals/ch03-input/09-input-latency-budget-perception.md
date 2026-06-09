@@ -56,6 +56,7 @@ p1: 0
 p2: 2
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
+last_task6_audit: "2026-06-09"
 ---
 
 # 3.9 端到端输入延迟预算与感知阈值
