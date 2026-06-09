@@ -35,7 +35,7 @@ tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
 task6_state: "reviewed"
 task6_result: pass-light-edit
-last_task6_audit: "2026-05-17"
+last_task6_audit: "2026-06-10"
 section: "10.1"
 status: finalized
 pipeline_stage: "ready-to-publish"
