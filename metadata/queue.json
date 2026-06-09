@@ -767,7 +767,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-07T22:13:47.009991+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:58:25.984928+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已在前序轮次注入目标章节参考资料，本轮确认后标记完成"
     },
     {
       "section": "ch18",
@@ -787,7 +790,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-07T22:13:47.009991+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:58:25.984928+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已在前序轮次注入目标章节参考资料，本轮确认后标记完成"
     },
     {
       "section": "ch17-oem",
@@ -807,7 +813,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:35:49.192204",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch01-architecture",
@@ -827,7 +836,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209268",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch17-oem",
@@ -847,7 +859,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209310",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch04-memory",
@@ -867,7 +882,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209332",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch17-oem",
@@ -887,7 +905,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209374",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch17-oem",
@@ -907,7 +928,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209418",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch17-oem",
@@ -927,7 +951,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209456",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch17-oem",
@@ -947,7 +974,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209492",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch09-anr",
@@ -967,7 +997,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209524",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "ch01-architecture",
@@ -987,7 +1020,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-09T05:37:23.209565",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:57:32.347472+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "URL 不可访问（juejin.cn 被 web_fetch 阻止），跳过"
     },
     {
       "section": "4.3/4.8",
@@ -1007,7 +1043,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-09T06:11:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:58:25.984928+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已在前序轮次注入目标章节参考资料，本轮确认后标记完成"
     },
     {
       "section": "2.6",
@@ -1027,7 +1066,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-09T06:11:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-09T08:58:25.984928+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "素材已在前序轮次注入目标章节参考资料，本轮确认后标记完成"
     },
     {
       "section": "4.9",
