@@ -175,6 +175,134 @@
       ],
       "summary": "使用trace32工具分析Linux内核死机问题",
       "scored_at": "2026-06-08T09:10:44.447765"
+    },
+    {
+      "path": "DeepResearch/2026-06-08-android-17-codec2-tunneled-abr-callchain.md",
+      "title": "2026-06-08-android-17-codec2-tunneled-abr-callchain",
+      "score": 19,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408189"
+    },
+    {
+      "path": "DeepResearch/2026-06-08-android-17-commercial-apm-sentry-runtime-api-guards.md",
+      "title": "2026-06-08-android-17-commercial-apm-sentry-runtime-api-guards",
+      "score": 19,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408196"
+    },
+    {
+      "path": "DeepResearch/2026-06-08-android-17-perfetto-data-sources-boundary-verification.md",
+      "title": "2026-06-08-android-17-perfetto-data-sources-boundary-verification",
+      "score": 19,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408198"
+    },
+    {
+      "path": "DeepResearch/2026-06-08-android-17-sdm-mechanism-source-analysis.md",
+      "title": "2026-06-08-android-17-sdm-mechanism-source-analysis",
+      "score": 18,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408200"
+    },
+    {
+      "path": "DeepResearch/2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md",
+      "title": "2026-06-08-android-17-sf-transaction-queue-lockless-architecture",
+      "score": 17,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408202"
+    },
+    {
+      "path": "DeepResearch/2026-06-08-android-17-strictmode-safer-intent-violations.md",
+      "title": "2026-06-08-android-17-strictmode-safer-intent-violations",
+      "score": 18,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408203"
+    },
+    {
+      "path": "DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md",
+      "title": "2026-06-09-android17-art-gc-fragmentation-region-mc",
+      "score": 19,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408204"
+    },
+    {
+      "path": "source/juejin-android/2026-06-09-76050973-Android Studio Panda.md",
+      "title": "2026-06-09-76050973-Android Studio Panda",
+      "score": 10,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408206"
+    },
+    {
+      "path": "Cubox/智能手机行业竞争力分析报告-2026-06-08.md",
+      "title": "智能手机行业竞争力分析报告-2026-06-08",
+      "score": 14,
+      "date": "2026-06-09 05:46",
+      "type": "incremental_scan",
+      "scored_at": "2026-06-09T05:46:57.408207"
+    },
+    {
+      "title": "2026-06-09-每日深度研究选题",
+      "path": "每日深度研究选题/2026-06-09-每日深度研究选题.md",
+      "score": 20,
+      "chapter": "ch16",
+      "date": "2026-06-09T05:48:00",
+      "type": "incremental",
+      "scored_at": "2026-06-09T05:51:15.121599"
+    }
+  ],
+  "deepresearch_injected": [
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md",
+      "title": "Android 17 ART GC：RegionSpace UnevacFromSpace 与 MarkCompact 三代模型",
+      "summary": "Android 16/17 ART 在 GC 栈上有两条碎片控制机制：RegionSpace 的 UnevacFromSpace 按75%存活率阈值决定 region 搬迁或原地保留，消除循环分配碎片(b/33795328)；MarkCompact 利用 Linux userfaultfd 实现页级 fault-retry 并发压缩，配合 YoungMarkCompact 实现 young/mid/old 三代半空间-压缩混合模型。整套方案将 GC 暂停压到 sub-2ms，对端侧 AI 推理等长生命周期对象密集的应用尤其友好。",
+      "chapter_mapping": "ch04",
+      "section": "4.3/4.8",
+      "processed_at": "2026-06-09T06:11:00+08:00",
+      "action": "queue"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md",
+      "title": "Android 17 SurfaceFlinger 事务队列与 LocklessQueue 无锁架构",
+      "summary": "Android 16/17 的 FrontEnd 重构将客户端事务提交与合成状态读取完全解耦，事务先入无锁 MPSC 队列(LocklessQueue)再由主线程批量 drain 过滤后落地。LocklessQueue 仅用 compare_exchange_weak 实现无锁入队，省掉 futex 系统调用。TransactionHandler::flushTransactions() 按时间、buffer barrier、unsignaled fence 三维过滤未就绪事务，避免主线程持全局 mStateLock 临界区。",
+      "chapter_mapping": "ch02",
+      "section": "2.6",
+      "processed_at": "2026-06-09T06:11:00+08:00",
+      "action": "queue"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md",
+      "title": "Android 17 Binder IPC 线程调度协同与性能优化",
+      "summary": "AOSP libbinder 线程池由 ProcessState + IPCThreadState 双单例协同实现：setThreadPoolMaxThreadCount 通过 ioctl 写入内核 max_threads 且启动后不可缩减；blockUntilThreadAvailable 用 std::condition_variable 等待空闲 worker，配合 mExecutingThreadsCount 原子计数与 100ms 饥饿告警；内核侧 binder_select_thread_ilocked 在 inner_lock 自旋锁下从 waiting_threads 链表取 worker，优先级继承通过 sched_setscheduler_nocheck + set_user_nice 实现。",
+      "chapter_mapping": "ch01",
+      "section": "1.4",
+      "processed_at": "2026-06-09T06:11:00+08:00",
+      "action": "inject"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-gpu-render-pipeline-vulkan-graphite.md",
+      "title": "Android 17 GPU 渲染管线：Skia Graphite 后端与 Vulkan 性能优化（方向性参考）",
+      "summary": "AOSP main 分支 SurfaceFlinger RenderEngine 层引入 Skia Graphite 作为新 GPU 后端，新增 GraphiteVkRenderEngine 实现。Graphite 用 Recording + BackendSemaphore 的录制-提交分离模型替代 Ganesh 的即时命令模式，配合 RenderEngineThreaded 异步任务队列(SCHED_FIFO:2)构成录制/提交线程分离的新执行模型。⚠️ 该代码仅存在于 main 分支，尚未进入 Android 17 已发布 tag。",
+      "chapter_mapping": "ch18",
+      "section": "18.9",
+      "processed_at": "2026-06-09T06:11:00+08:00",
+      "action": "inject"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-08-android-17-perfetto-data-sources-boundary-verification.md",
+      "title": "Perfetto 关键数据源 linux.perf 与 frametimeline 的 AOSP 17 边界验证",
+      "summary": "基于 android-16.0.0_r3 锚点验证：linux.perf(traced_perf 守护进程)与 android.surfaceflinger.frametimeline 两个数据源在 Android 16 中保持完整实现，包括 kDataSourceName 常量、注册入口、FrameTimeline jank 分类状态机(11 种 JankType 枚举)与阈值参数。基于 AOSP API 兼容性政策，两者在 Android 17/API 37 中预期仍可用，需等公开 tag 后二次确认。",
+      "chapter_mapping": "ch13",
+      "section": "13.9",
+      "processed_at": "2026-06-09T06:11:00+08:00",
+      "action": "inject"
     }
   ]
 }

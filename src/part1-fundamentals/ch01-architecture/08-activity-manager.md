@@ -109,7 +109,7 @@ last_task9_review_log: "logs/deep-review/2026-06-09-09-deep-review.md"
 last_task9_autofix_at: "2026-06-09"
 task9_review_notes: "2026-06-09 Task9 deep-review: pass-tech-review。复核 Task9 idle-audit auto-fix 与 Task6 回流；AOSP android-16.0.0_r1 源码锚点、Android 17 官方行为边界、queue pending 状态均通过；P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-09 Task9 idle-audit: auto-fixed P0 source anchors: ProcessAnrTimer is an inner class of ActiveServices, not a standalone source file; activity cold-start process launch uses ATMS.startProcessAsync() -> ActivityManagerInternal.startProcess(), not AMS.startProcessAsync(); P0 2 / P1 0 / P2 0; returned to Task6 review. | 2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-09
 task6_l1_l2_fixes: 5
 task6_l3_l4_issues: 0
 last_task9_audit_log: "logs/deep-review/2026-06-09-08-audit.md"
@@ -510,12 +510,9 @@ Android 16+ 上,用 `ApplicationStartInfo.getStartComponent()` 直接获取组�
 
 Google 的推荐替代方案是使用 `WorkManager` 来调度可延迟的后台任务,只在需要用户可感知的长时间运行时才使用 FGS。
 
----
-
+除了版本演进带来的行为变更，Service 管理还有一个容易在 Perfetto 中暴露的点：`mServices`（`ActiveServices` 实例）上的锁竞争。当多个 App 同时调起或绑定 Service 时，Binder 线程池的线程会在 AMS 的 synchronized 方法上排队，这是 `system_server` 响应的常见瓶颈。下面从结构位置和诊断路径展开。
 
 ### AMS mServices 锁竞争与 Perfetto 诊断
-
-Service 管理还有一个容易在性能分析中暴露的点:`mServices`(`ActiveServices` 实例)内部锁竞争。它的结构性来源和 Perfetto 识别方法如下。
 
 **结构位置**:`ActivityManagerService` 持有 `ActiveServices mServices` 引用,`ActiveServices` 构造时保存 `final ActivityManagerService mAm`:
 

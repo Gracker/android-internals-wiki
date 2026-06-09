@@ -60,6 +60,8 @@ last_task9_autofix_at: "2026-05-27"
 task6_review_notes: "2026-05-27 23:15 Task6：revisiting 写作复审通过；L1/L2 小修 3 项（删除正文编辑标记 2 处，压缩否定-纠正式句式 1 处）；无新增 L3/L4 回炉项。"
 last_task9_review_log: "logs/deep-review/2026-05-28-04-deep-review.md"
 task9_review_notes: "2026-05-28 Task9 04:30：pass-tech-review；无 P0/P1；queue 无 pending，Task6 已通过，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-09
 ---
 
 # 内存持续增长
@@ -149,7 +151,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 16KB 页面设备上的 `meminfo` 粒度更粗，匿名映射尾页的浪费也更容易抬高 `Private Other` 一类条目。跨设备比对这类指标前，先确认页大小。
 
-排查 Unnamed / Private Other 增长时，`dmabuf_dump -b` 可以先覆盖 DMA-BUF 这一类来源。它能按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，帮助确认匿名页增长是否来自图形 buffer。操作步骤：
+增长源确认后，下一步要定位具体来源。排查 Unnamed / Private Other 增长时，`dmabuf_dump -b` 可以先覆盖 DMA-BUF 这一类来源。它能按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，帮助确认匿名页增长是否来自图形 buffer。操作步骤：
 
 1. `adb shell dmabuf_dump -b` 获取全系统 DMA-BUF 快照
 2. 按进程名过滤目标 App，看其名下的 buffer 尺寸分布
@@ -309,8 +311,7 @@ Android 15 的 16KB Page Size 还会改变这组指标的解释方式。页变�
 
 PSS 保留给低频校准和回归比对。如果线上需要在异常发生时补抓现场，Android 15+ 的 `ProfilingManager` 更适合触发 system trace / heap profile，而不是靠高频轮询 PSS。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/Debug#getPss()]
-[来源: intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md; src/part3-tools/ch14-other-tools/07-profiling-manager.md]
+[已验证: 官方文档, developer.android.com/reference/android/os/Debug#getPss()；另见 src/part3-tools/ch14-other-tools/07-profiling-manager.md（ProfilingManager）]
 
 ### Java Heap 使用率趋势
 
