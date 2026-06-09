@@ -45,7 +45,7 @@ task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-05-20"
+last_task6_audit: "2026-06-10"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -99,7 +99,7 @@ last_deepseek_cn_review_at: 2026-05-28
 
 所以本节讲清楚：什么数字值得长期盯、什么数字适合拿来诊断、什么数字适合做发布门禁。
 
-## 指标体系不是"多几个数字",而是决策接口
+## 指标体系的核心是决策接口
 
 指标体系的价值在于它能不能支持决策。一个好的指标至少要回答下面三个问题中的一个:
 
