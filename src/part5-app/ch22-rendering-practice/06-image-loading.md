@@ -53,6 +53,7 @@ reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-13T09:12:00+08:00"
+last_task6_audit: "2026-06-09"
 last_task6_review_log: "logs/review/2026-05-13-09-review.md"
 task6_review_notes: "2026-05-13 Task6：L1/L2 轻修（术语、指标中文化、兜底表述）；四层质检通过，无新增回炉项，转入 Task9。"
 task9_result: pass-tech-review
