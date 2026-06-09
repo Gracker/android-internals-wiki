@@ -25,7 +25,7 @@
       "section": "ch02",
       "section_title": "Simpleperf",
       "priority": 90,
-      "reason": "[Task6 Review回炉] 文体不符合writing-guide，14.7/14.9内容与Simpleperf脱节，14.10/14.2技术准确性存疑",
+      "reason": "[Task6 Review回炉(第二轮)] 文体仍为命令参考手册，14.7/14.9通用填充内容未修复，14.10-14.12技术准确性待验证，缺少report解读和原理说明",
       "material_paths": [
         "logs/deep-review/2026-06-10-04-audit.md"
       ],
@@ -89,14 +89,47 @@
           "location": "版本差异覆盖",
           "detail": "缺少Android 12-16中关键性能分析机制变化说明，如Perfetto引入和Profileable应用改进",
           "suggestion": "补充Android 12-16版本间性能分析机制的关键变化"
+        },
+        {
+          "type": "需重写",
+          "location": "全章结构",
+          "detail": "第二轮review确认：全章仍为命令参考手册风格，49.6%为代码块（373/753行）。writing-guide Type C要求'没有这个工具你会多痛苦'开篇+连贯叙述+工程师对话视角，当前完全未实现。前轮Task2B仅删除了虚假源码节，未触及文体问题",
+          "suggestion": "按Type C结构完全重写：1)开篇从'不用simpleperf时你用什么？'引入 2)叙述体解释采样原理 3)用真实分析流程串联命令 4)删除通用Java优化填充"
+        },
+        {
+          "type": "需删除/重写",
+          "location": "Section 14.7 性能优化实践",
+          "detail": "第二轮review确认：此节仍为通用Java优化模式（stream替代for、对象池TexturePool、WeakReference Handler），与前轮review问题完全相同，Task2B未修复。这些内容与simpleperf分析结果完全脱节",
+          "suggestion": "删除此节，或重写为：simpleperf report发现热点→调用栈解读→定位优化方向→优化后再用simpleperf验证"
+        },
+        {
+          "type": "需删除/重写",
+          "location": "Section 14.9 性能案例分析",
+          "detail": "第二轮review确认：案例仍缺乏simpleperf特有信息（无report输出、无调用栈分析、无--show-call-graph结果）。LazyInitializer和SafeHandler是通用Android知识，不是simpleperf分析流程",
+          "suggestion": "重写案例：包含simpleperf record→report完整输出→调用栈解读→优化→验证全流程，展示工程师分析思维"
+        },
+        {
+          "type": "需验证",
+          "location": "Section 14.10 工具集成 (14.10-14.12)",
+          "detail": "Gradle插件'simpleperf-plugin'真实性仍存疑（前轮已标记，未修复）。14.11基准测试中的io_read/io_write/net_bytes_sent/net_bytes_recv事件和benchmark数值疑似编造。14.12总结为通用建议+mermaid流程图，非simpleperf特有",
+          "suggestion": "Task9验证：1)simpleperf-plugin是否真实存在 2)验证这些事件名 3)14.11-14.12建议删除或大幅精简"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "Section 14.6 数据分析与解读",
+          "detail": "只有命令列表，没有解释simpleperf report输出的含义。读者看完不知道如何解读self time vs total time、如何从调用栈判断瓶颈、如何区分应用代码vs系统代码",
+          "suggestion": "补充report输出示例+逐行解读，教读者看懂simpleperf输出"
+        },
+        {
+          "type": "格式问题",
+          "location": "章节编号",
+          "detail": "frontmatter标记chapter/section为14.2，但正文内标题从14.1开始编至14.13，编号体系混乱。且无<!-- outline-start/end -->大纲块",
+          "suggestion": "统一编号为14.2.x子节格式，或去掉内部二级编号改为无编号标题"
         }
       ],
       "added_by": "task6-review",
-      "added_at": "2026-06-10T05:10:38+08:00",
-      "status": "pending",
-      "completed_at": "2026-06-10T04:52:19+08:00",
-      "completed_by": "task2b-main",
-      "completion_reason": "P0 Android 17 源码误报已修复：删除虚假源码分析节、version range 修正为 Android 16、frontmatter 状态回流入 task6_pending"
+      "added_at": "2026-06-10T06:10:20+08:00",
+      "status": "pending"
     }
   ]
 }

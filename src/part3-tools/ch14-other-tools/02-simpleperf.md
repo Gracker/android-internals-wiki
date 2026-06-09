@@ -12,6 +12,12 @@ last_verified: '2026-04-22'
 last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs + Android profileable docs
 confidence: high
 sources:
+tags:
+  - simpleperf
+  - cpu-profiling
+  - performance-analysis
+  - ndk
+  - native-profiling
 - type: official
   path: android.googlesource.com/platform/system/extras/+/master/simpleperf/doc/README.md
 - type: official
@@ -24,7 +30,6 @@ sources:
 - type: source
   path: external/perfetto/docs/data-sources/android-perfetto.md
   version: android-16.0.0_r1
-last_task9_at: '2026-04-20T03:17:47+08:00'
 last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task2b_at: '2026-06-10T04:50:00+08:00'
 last_task2b_lite_at: '2026-06-10'
@@ -32,9 +37,9 @@ task9_result: needs-rework
 task6_result: needs-rework
 task2b_result: fixed
 task2b_state: fixed
-task6_state: pending
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 last_task9_at: '2026-06-10T05:35:00+08:00'
 ---
 
