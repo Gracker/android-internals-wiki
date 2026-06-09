@@ -2,7 +2,7 @@
 title: "SensorService 与传感器批处理功耗模型"
 chapter: "5.15"
 section: "5.15"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-19"
 applicable_versions: "Android 4.4 (API 19) - Android 16 (API 36)"
 last_verified: "2026-06-09"

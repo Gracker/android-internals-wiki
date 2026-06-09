@@ -1,10 +1,9 @@
 ---
-
-
 title: "线上问题排查方法论"
 chapter: "26.5"
 section: "26.5"
-status: finalized  # promoted by task2b-verifier 2026-06-08applicable_versions: "Android 10 (API 29) - Android 16 (API 36 / 36.1)"
+status: finalized
+applicable_versions: "Android 10 (API 29) - Android 16 (API 36 / 36.1)"
 last_verified: "2026-05-15"
 last_verified_against: "Android Developers / AOSP docs / Firebase docs / Play Console docs / Clippings structure references"
 confidence: medium

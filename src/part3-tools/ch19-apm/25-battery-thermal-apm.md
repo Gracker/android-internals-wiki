@@ -4,7 +4,7 @@
 title: 耗电与发热监控 (Battery & Thermal)
 chapter: '19'
 section: '19.25'
-status: finalized  # promoted by task2b-verifier 2026-06-08
+status: finalized
 finalized_by: openclaw-task2b-verifier
 drafted_date: '2026-04-24'
 drafted_by: gemini

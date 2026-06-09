@@ -1,10 +1,9 @@
 ---
-
-
-
 title: "Wi-Fi 评分、网络选择与连接切换性能"
 chapter: "24.9"
-status: finalized  # promoted by task2b-verifier 2026-06-08drafted_date: "2026-05-15"
+section: "24.9"
+status: finalized
+drafted_date: "2026-05-15"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: '2026-06-04'
 last_verified_against: 'AOSP android-16.0.0_r1 (packages/modules/Wifi, packages/modules/Connectivity, packages/modules/NetworkStack) + Android Developers / source.android.com docs'
@@ -71,6 +70,7 @@ task9_review_notes: '2026-06-04 Task9 00:20：auto-fixed。将 Wi-Fi / Connectiv
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
 task6_l1_l2_fixes: 0
+pipeline_stage: ready-to-publish
 ---
 
 # 24.9 Wi-Fi 评分、网络选择与连接切换性能

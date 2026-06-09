@@ -5,7 +5,7 @@
 title: "SurfaceFlinger FrontEnd 与 RequestedLayerState"
 chapter: "2.22"
 section: "2.22"
-status: finalized  # promoted by task2b-verifier 2026-06-08
+status: finalized
 finalized_by: openclaw-task2b-verifier
 drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 16 (API 36); Android 17 待公开 tag 复核"
