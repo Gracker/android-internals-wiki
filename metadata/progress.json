@@ -1,7 +1,7 @@
 {
-  "total": 378,
+  "total": 419,
   "draft": 0,
-  "ready-for-review": 78,
+  "ready-for-review": 74,
   "finalized": 295,
   "task9_result": "auto-fixed/pass-tech-review",
   "task9_reviewed_date": "2026-05-29",
@@ -14176,5 +14176,6 @@
         "removed-unsupported-performance-claims"
       ]
     }
-  ]
+  ],
+  "completed": 281
 }
