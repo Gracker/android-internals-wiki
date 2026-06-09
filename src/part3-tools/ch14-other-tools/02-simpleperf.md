@@ -27,13 +27,15 @@ sources:
 last_task9_at: '2026-04-20T03:17:47+08:00'
 last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task2b_at: '2026-06-10T04:50:00+08:00'
-task9_result: pass-tech-review
+last_task2b_lite_at: '2026-06-10'
+task9_result: needs-rework
 task6_result: needs-rework
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
-task9_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task6_state: pending
+task9_state: reviewed
+pipeline_stage: task6_pending
+last_task9_at: '2026-06-10T05:35:00+08:00'
 ---
 
 
