@@ -57,6 +57,7 @@ last_task6_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-18-review.md"
+last_task6_audit: "2026-06-09"
 task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；修复启动拆解表格被 blockquote 截断、Python SDK 示例 config 省略占位；L1/L2 通过；outline 15/15 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
 p0: 0
 p1: 0
