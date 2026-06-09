@@ -60,20 +60,21 @@ task6_result: pass-light-edit
 review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
 task6_review_notes: "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
 task9_state: "reviewed"
-task9_reviewed_date: "2026-05-17"
+task9_reviewed_date: "2026-06-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-17T15:29:34+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-17-15-deep-review.md"
-task9_result: "pass-tech-review"
-task2b_state: "fixed"
+last_task9_at: "2026-06-09T20:38:57+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-09-20-audit.md"
+task9_result: "needs-rework"
+task2b_state: "pending"
 task2b_result: "fixed"
-pipeline_stage: "ready-to-publish"
-p0: 0
-p1: 0
-p2: 1
-task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。"
+pipeline_stage: "task2b_pending"
+p0: 1
+p1: 1
+p2: 0
+task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-27
+last_task9_audit: 2026-06-09
 ---
 
 # ART 虚拟机内存管理

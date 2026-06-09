@@ -1080,6 +1080,35 @@
       "status": "ready-for-review",
       "source": "task2a-gap-mining",
       "created": "2026-06-09T15:04:00+08:00"
+    },
+    {
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 闲时抽检发现 2026-05-28 Generational CMC/HPROF 注入块存在已确认的 AOSP 源码路径与版本边界问题，需回炉清理或重写。",
+      "material_paths": [
+        "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/runtime/gc/collector/gc_type.h",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/runtime/gc/collector/mark_compact.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/runtime/gc/heap.cc"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "2026-05-28 新增：Generational CMC 源码级分析 / 关键源码文件路径验证",
+          "detail": "`art/runtime/gc/collector/generational_collector.cc` 在 AOSP android-16.0.0_r1 返回 404；同段把 `art/runtime/gc/collector/gc_type.h` 写成包含 `kGcTypeConcurrentCopying` / `kGcTypeStickyConcurrentCopying`，但该文件实际只定义 `kGcTypeNone`、`kGcTypeSticky`、`kGcTypePartial`、`kGcTypeFull`、`kGcTypeMax`。",
+          "suggestion": "删除 2026-05-28 未整合块，或改为以 `mark_compact.cc`、`concurrent_copying.cc`、`collector_type.h` / `gc_type.h` 的真实职责重写；避免把后续 2026-06-09 块已否定的路径继续留在正文。"
+        },
+        {
+          "type": "版本差异",
+          "location": "2026-05-28 新增：Generational CMC 源码级分析 / 分代模型演进（Android 15+/17）与 Android 17 HPROF 小节",
+          "detail": "该块使用 Android 17 口径和 “API 36+ Generational CMC 成为默认”等结论，但本轮 `git ls-remote` 未发现 `android-17.0.0_r1` tag；`android-16.0.0_r1` 中 `ShouldUseGenerationalGC()` 受 `gUseUserfaultfd`、`use_generational_cmc` flag 和 `persist.device_config.runtime_native_boot.use_generational_gc` 影响，不能写成无条件默认。",
+          "suggestion": "正文结论限定到 Android 16/API 36 的已发布 tag 与 Android 16 QPR2 官方发布说明；Android 17/API 37 只能写“候选/待正式 tag 验证”，不能以 main/cs 索引作为正文确定结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-09T20:38:57+08:00",
+      "status": "pending"
     }
   ],
   "items": [
