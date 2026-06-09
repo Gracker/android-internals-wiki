@@ -1077,7 +1077,7 @@
       "title": "MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播",
       "file": "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md",
       "priority": 80,
-      "status": "pending",
+      "status": "ready-for-review",
       "source": "task2a-gap-mining",
       "created": "2026-06-09T15:04:00+08:00"
     }
@@ -2704,7 +2704,7 @@
       "title": "MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播",
       "file": "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md",
       "priority": 80,
-      "status": "pending",
+      "status": "ready-for-review",
       "source": "task2a-gap-mining",
       "created": "2026-06-09T15:04:00+08:00"
     }
