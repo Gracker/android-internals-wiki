@@ -59,7 +59,7 @@ task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-29T12:42:48.185623"
-last_task6_audit: "2026-05-17"
+last_task6_audit: "2026-06-09"
 reviewed_at: "2026-05-18T03:31:27+08:00"
 task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
