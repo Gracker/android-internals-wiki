@@ -2,11 +2,11 @@
 title: "Activity Manager Service 与性能分析"
 chapter: "1.8"
 section: "1.8"
-status: finalized
+status: "ready-for-review"
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-27"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers behavior changes 11/12/13/14/17"
+last_verified: "2026-06-09"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Developers behavior changes 11/12/13/14/17 (2026-06-09 audit)"
 confidence: medium
 sources:
   - type: aosp
@@ -14,11 +14,13 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ProcessAnrTimer.java"
+    path: "frameworks/base/services/core/java/com/android/server/utils/AnrTimer.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags"
   - type: aosp
@@ -83,18 +85,18 @@ rework_by: "task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 last_task6_audit: "2026-06-08"
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
-last_task9_at: "2026-05-28T03:32:12+08:00"
-task9_reviewed_date: "2026-05-28"
+last_task9_at: "2026-06-09T08:20:00+08:00"
+task9_reviewed_date: "2026-06-09"
 task9_reviewed_by: "openclaw-task9"
-review_round: "5"
-last_task9_audit: "2026-05-18"
+review_round: "6"
+last_task9_audit: "2026-06-09"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-18T20:16:50+08:00"
 last_task6_at: "2026-05-28T03:16:00+08:00"
@@ -103,13 +105,14 @@ task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过
 last_task2b_at: "2026-05-27T22:50:00+08:00"
 last_task2b_log: "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md"
 task2b_notes: "修复 Task9 P95：top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
-last_task9_review_log: "logs/deep-review/2026-05-28-03-deep-review.md"
-last_task9_autofix_at: "2026-05-28"
-task9_review_notes: "2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-09-08-audit.md"
+last_task9_autofix_at: "2026-06-09"
+task9_review_notes: "2026-06-09 Task9 idle-audit: auto-fixed P0 source anchors: ProcessAnrTimer is an inner class of ActiveServices, not a standalone source file; activity cold-start process launch uses ATMS.startProcessAsync() -> ActivityManagerInternal.startProcess(), not AMS.startProcessAsync(); P0 2 / P1 0 / P2 0; returned to Task6 review. | 2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
 task6_l1_l2_fixes: 5
 task6_l3_l4_issues: 0
+last_task9_audit_log: "logs/deep-review/2026-06-09-08-audit.md"
 ---
 
 
@@ -248,14 +251,15 @@ AMS 调整 oom_adj 的核心方法是 `ActivityManagerService.updateOomAdjLocked
 Launcher / Instrumentation.execStartActivity()
   → ActivityTaskManager.getService().startActivity()   // Binder 到 system_server
     → ATMS.startActivity() / ActivityStarter.execute() // 先决定 Task / DisplayArea / 启动模式
-      → 若目标进程不存在,AMS.startProcessAsync()
-        → ZygoteProcess.start()
-          → Zygote fork 新进程
-            → ActivityThread.main()
-              → ActivityThread.attach()
-                → AMS.attachApplicationLocked()
-                  → Application.onCreate()
-                  → ATMS 继续调度 ActivityRecord 启动与可见化
+      → 若目标进程不存在,ATMS.startProcessAsync()
+        → ActivityManagerInternal.startProcess() / ProcessList.startProcessLocked()
+          → ZygoteProcess.start()
+            → Zygote fork 新进程
+              → ActivityThread.main()
+                → ActivityThread.attach()
+                  → AMS.attachApplicationLocked()
+                    → Application.onCreate()
+                    → ATMS 继续调度 ActivityRecord 启动与可见化
 ```
 
 在 Perfetto 中,这个过程通常表现为:
@@ -265,7 +269,7 @@ Launcher / Instrumentation.execStartActivity()
 4. `android_logs` 里出现 `am_proc_bound`
 5. `system_server` 侧出现 ATMS / WindowManager 的启动 slice,应用主线程进入 `Activity` 生命周期并准备首帧
 
-> [已验证: AOSP android-16.0.0_r1,`frameworks/base/core/java/android/app/Instrumentation.java` 的 `execStartActivity()` 调用 `ActivityTaskManager.getService().startActivity()`;`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 中 `startActivity()` 为委托到 `mActivityTaskManager.startActivity()` 的兼容转发]
+> [已验证: AOSP android-16.0.0_r1,`frameworks/base/core/java/android/app/Instrumentation.java` 的 `execStartActivity()` 调用 `ActivityTaskManager.getService().startActivity()`;`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 中 `startActivity()` 委托到 `mActivityTaskManager.startActivity()`;`frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` 的 `startProcessAsync()` 通过 `ActivityManagerInternal::startProcess` 进入 AMS 进程启动路径]
 
 ### 进程回收策略
 
@@ -358,7 +362,7 @@ void scheduleServiceTimeoutLocked(ProcessRecord proc) {
 
 完成回调不发生在 `service.onCreate()` 之前。AOSP android-16.0.0_r1 的 `ActivityThread.handleCreateService()` 先执行 `service.onCreate()`,完成 Service 创建,然后才通过 `ActivityManager.getService().serviceDoneExecuting()` 通知 AMS 本次执行结束。`ActiveServices.serviceDoneExecutingLocked()` 在进程没有执行中的 Service 后调用 `mActiveServiceAnrTimer.cancel(r.app)`;如果计时先到期,`ActiveServices.serviceTimeout()` 会生成 `TimeoutRecord` 并交给 `mAnrHelper.appNotResponding()`。
 
-> [已验证: AOSP android-16.0.0_r1,`frameworks/base/core/java/android/app/ActivityThread.java` 的 `handleCreateService()`、`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `scheduleServiceTimeoutLocked()` / `serviceDoneExecutingLocked()` / `serviceTimeout()`、`frameworks/base/services/core/java/com/android/server/am/ProcessAnrTimer.java`]
+> [已验证: AOSP android-16.0.0_r1,`frameworks/base/core/java/android/app/ActivityThread.java` 的 `handleCreateService()`、`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `scheduleServiceTimeoutLocked()` / `serviceDoneExecutingLocked()` / `serviceTimeout()` 与内部 `ProcessAnrTimer`、`frameworks/base/services/core/java/com/android/server/utils/AnrTimer.java`]
 
 在 `startForegroundService()` 这段超时判责里,现代版本不能直接写成"固定 5 秒未调用 `startForeground()` 就 ANR"。AOSP android-16.0.0_r1 把这段窗口拆成了两段:`ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30000`,`DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS = 10000`。系统先给 Service 30 秒完成前台提升,超时后再进入额外 10 秒的 ANR 判责缓冲,对应 `ActiveServices.serviceForegroundTimeout()` 这条处理路径。更早版本里常见的 5 秒说法,只能带着版本前提使用。
 
@@ -709,7 +713,7 @@ Android 14 对广播做的变化,重点不在 Extra 大小,而在**投递时机*
 - `frameworks/base/services/core/java/com/android/server/wm/Task.java` - Task 定义与 Recents 语义
 - `frameworks/base/core/res/res/values/attrs_manifest.xml` - `recreateOnConfigChanges` 定义
 - `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` - Service 管理与 create-service ANR
-- `frameworks/base/services/core/java/com/android/server/am/ProcessAnrTimer.java` - Service ANR 计时器抽象
+- `frameworks/base/services/core/java/com/android/server/utils/AnrTimer.java` - ANR 计时器基类;`ActiveServices.java` 内部定义 `ProcessAnrTimer` / `ServiceAnrTimer`
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java` - startForegroundService 相关超时配置
 - `frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java` - `oom_adj` / `procState` 动态计算
 - `frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java` - 广播超时与调度参数
