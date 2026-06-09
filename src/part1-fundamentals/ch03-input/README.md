@@ -4,8 +4,8 @@ chapter: "3.0"
 section: "3.0"
 status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-23"
-last_verified_against: "AOSP frameworks/native/services/inputflinger main 分支、Android 15 ARR / Predictive Back 文档、ch03 子章节"
+last_verified: "2026-06-09"
+last_verified_against: "AOSP android-16.0.0_r4 frameworks/native/services/inputflinger、Android 15 ARR / Predictive Back 文档、ch03 子章节"
 confidence: "medium"
 tags:
   - input
@@ -21,12 +21,17 @@ related_chapters:
   - "3.4"
   - "3.5"
   - "3.6"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+  - "3.7"
+  - "3.8"
+  - "3.9"
+  - "3.10"
+  - "3.11"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-10T01:10:00+08:00"
+last_task2b_at: "2026-06-09T10:55:26+08:00": "2026-05-10T01:10:00+08:00"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-09
@@ -36,6 +41,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-28"
 last_task6_at: "2026-05-09T04:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-04-review.md"
+task2b_rework_notes: "2026-06-09 Task2B main:补全缺失子章节 3.7-3.11 列表与阅读建议;修复 last_verified_against 源码版本锚点;合并重复延伸阅读;修复 InputClassifier 后括号无空格;响应 deep-review 2026-05-10-03 P1 反压/背压/优先级/异步回调覆盖缺口。送 Task6 复审。"
 task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正验证锚点路径格式,L1/L2 通过;无新增 L3/L4 回炉项,送 Task9 复审。"
 ---
 
@@ -75,18 +81,24 @@ task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正�
 
 ## 本章内容
 
-- `3.1` Input 事件分发全流程:从 EventHub / InputReader,经由 `InputClassifier`(Android 10+ 的触摸事件必经路由点,负责多指/手掌/触控笔分类与分流),再到 InputDispatcher 和应用窗口的投递路径。Android 16+ 的 AOT 返回键拦截和 Native 手势排除判定也落在这一节。
+- `3.1` Input 事件分发全流程:从 EventHub / InputReader,经由 `InputClassifier` (Android 10+ 的触摸事件必经路由点,负责多指/手掌/触控笔分类与分流),再到 InputDispatcher 和应用窗口的投递路径。Android 16+ 的 AOT 返回键拦截和 Native 手势排除判定也落在这一节。
 - `3.2` 触摸响应的性能分析:看采样、批处理、主线程消费和 UI 反馈之间的时间差。
 - `3.3` 手势导航与系统交互:重点放在系统手势截获、Predictive Back 回调模型和返回动画时序。
 - `3.4` 输入延迟与预测输入技术:把 Motion 预测、低延迟渲染路径和 Android 15 ARR 的高刷协同放在一起看。
 - `3.5` 输入事件拦截与安全机制:看焦点窗口、权限边界、遮挡与注入限制。
 - `3.6` 手势识别算法与性能优化:看去抖、阈值、误触处理和复杂手势识别的代价。
+- `3.7` InputDispatcher 反压机制:事件积压时如何降级无响应窗口、如何通过 Dispatch 超时触发 ANR,以及 backpressure 在实际 trace 中的表现。
+- `3.8` InputFlinger Rust 迁移与 ARR 协同:Android 15+ InputFlinger 引入 Rust 替换部分 C++ 分发路径,ARR 动态刷新率下输入采样周期的自适应调整。
+- `3.9` 端到端延迟预算与感知阈值:把输入延迟拆成各阶段,结合 HCI 感知阈值研究给每段分派预算;回答"多快才算快"。
+- `3.10` InputDispatcher stale event 判定:高负载下旧事件如何被标记 stale 并丢弃,优先级窗口 (foreground/background) 对事件存活时间的影响。
+- `3.11` InputMethodManager 与软键盘性能:输入法会话的建立开销、IME 进程调度对输入响应的影响,以及软键盘弹出/收起期间的输入事件排队行为。
 
 ## 阅读建议
 
-- 如果你在查"点了没反应""滑动不跟手",先读 `3.1`、`3.2`、`3.4`,把输入进入系统、进入应用、变成视觉反馈的时间顺序串起来。
+- 如果你在查"点了没反应""滑动不跟手",先读 `3.1`、`3.2`、`3.4`,把输入进入系统、进入应用、变成视觉反馈的时间顺序串起来;遇到应用频繁 ANR 或事件积压,再补 `3.7` 和 `3.10`。
 - 如果你在查系统手势冲突、返回手势掉帧或动画接不上的问题,继续读 `3.3` 和 `3.5`。Android 14/15 的 Predictive Back 已经把输入分发和返回动画预览绑得更紧。
-- 如果你在查高刷设备上的触控延迟、采样节奏或功耗波动,重点看 `3.4`,再和 `2.18` 的 ARR 机制对照。输入采样和刷新周期是否同步,会直接影响"跟手感"。
+- 如果你在查高刷设备上的触控延迟、采样节奏或功耗波动,重点看 `3.4` 和 `3.8`,再和 `2.18` 的 ARR 机制对照。输入采样和刷新周期是否同步,会直接影响"跟手感";需要量化"多快才算快"时看 `3.9` 的延迟预算模型。
+- IME 相关的输入卡顿(键盘弹起慢、切换输入法时掉帧)看 `3.11`。
 
 ## 延伸阅读
 
@@ -97,9 +109,3 @@ task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正�
 - 注入时间：2026-06-01
 - 价值：输入链路最完整的源码级分析，Resampling 常量和 MotionPredictor TFLite 架构细节在公开资料中罕见
 
-### Android Input/Touch/Scroll 性能与延迟深度调研
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Input:Touch:Scroll 性能与延迟深度调研 —— 服务 SmartPerfetto 分析 Skill.md
-- 类型：DeepResearch 调研结果
-- 摘要：系统梳理 Android input 全链路：从硬件中断→内核 evdev→InputReader/InputDispatcher(socketpair 非 Binder)→App InputChannel→ViewRootImpl InputStage 责任链→Choreographer CALLBACK_INPUT 批量消费。量化三种延迟口径(end-to-end/InputDispatcher 分段/jank 归因)，给出 MotionPredictor(TFLite 模型)、触摸 resampling 精确常量、FrameTimeline jank_type 归因方案。是 SmartPerfetto 输入分析的高价值参考。
-- 注入时间：2026-06-03
-- 价值：为输入系统章节提供端到端链路梳理和 Perfetto 可观测性方案参考
