@@ -46,23 +46,23 @@ related_chapters: ["13.1", "13.2", "13.4", "2.6", "14.2", "14.3"]
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-updated_date: "2026-05-28"
+updated_date: "2026-06-09"
 updated_by: openclaw-task9
-last_task9_audit: "2026-05-17"
-last_task9_at: "2026-05-28T12:26:35+08:00"
+last_task9_audit: "2026-06-09"
+last_task9_at: "2026-06-09T17:25:15+08:00"
 last_task6_audit: "2026-05-19"
-last_task9_review_log: "logs/deep-review/2026-05-28-12-deep-review.md"
-last_task9_autofix_at: "2026-05-28"
-task9_review_notes: "2026-05-28 11 Task9 auto-fix: 修正 Perfetto UI 404 文档链接/打开入口说明，并修正 SurfaceFlinger Android 13+ commit/composite/present 排查入口；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。"
-task9_reviewed_date: "2026-05-28"
+last_task9_review_log: "logs/deep-review/2026-06-09-17-audit.md"
+last_task9_autofix_at: "2026-06-09"
+task9_review_notes: "2026-05-28 11 Task9 auto-fix: 修正 Perfetto UI 404 文档链接/打开入口说明，并修正 SurfaceFlinger Android 13+ commit/composite/present 排查入口；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-09 17 Task9 idle audit auto-fix: 修正 Perfetto v52 暗色主题实验状态与当前 UI Theme 命令说明；未发现 Android/API 38+ 越界内容，回到 Task6 复审。"
+task9_reviewed_date: "2026-06-09"
 task9_reviewed_by: openclaw-task9
 p0: 0
 p1: 0
@@ -387,7 +387,7 @@ Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：Ap
 
 实际情况往往比这组判断更复杂——可能一个 Slice 里同时有绿色、灰色和深橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
 
-Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起正式支持（不再是实验性的），通过命令面板 `Ctrl/Cmd+Shift+P` 搜索 "Dark mode" 即可切换。两种主题下颜色编码的对应关系不变：绿色 = Running、浅绿 = Runnable、灰色 = Sleep、红色 = 锁竞争、深橙色 = Uninterruptible。暗色主题在长时间分析 Trace 时对眼睛更友好，建议默认开启。
+Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起引入，但 v52 发布说明仍标记为 experimental；当前 UI 可在 Settings 的 `UI Theme` 中切换，或通过命令面板 `Ctrl/Cmd+Shift+P` 执行 `Toggle UI Theme (Dark/Light)`。两种主题下颜色编码的对应关系不变：绿色 = Running、浅绿 = Runnable、灰色 = Sleep、红色 = 锁竞争、深橙色 = Uninterruptible。暗色主题在长时间分析 Trace 时对眼睛更友好，建议默认开启。
 
 [图：线程状态条颜色编码对照——Running(绿)/Runnable(浅绿)/Sleep(灰)/Blocked 锁竞争(红)/Uninterruptible(深橙)，附 Perfetto Trace 实际截图]
 
@@ -492,7 +492,7 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 Perfetto 在 2025-2026 年的版本迭代中引入了多项影响分析体验的改进（基于 [Perfetto Releases](https://github.com/google/perfetto/releases)）：
 
-- **UI 层**：暗色主题正式支持（v52+）、触摸屏手势操作、多 Track 批量折叠/展开
+- **UI 层**：暗色主题（v52 引入，v52 发布说明仍标记为 experimental）、触摸屏手势操作、多 Track 批量折叠/展开
 - **分析层**：`android_anrs` 表新增 `anr_type` 字段用于 ANR 分类、`slice_self_dur` 辅助能力直接计算 Self Duration（不再需要手动减去子 Slice）、`regexp_extract()` 函数增强 SQL 文本处理
 - **数据源**：`android.bitmaps` 表提供位图时序数据，可用于追踪 Bitmap 生命周期
 
