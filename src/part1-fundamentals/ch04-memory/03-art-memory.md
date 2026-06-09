@@ -52,21 +52,21 @@ related_chapters:
 last_task2b_at: "2026-06-09T20:59:35+08:00"
 reviewed_date: '2026-06-09'
 reviewed_by: openclaw-task6
-last_task6_at: '2026-06-09T21:09:00+08:00'
+last_task6_at: '2026-06-09T23:13:33+08:00'
 last_task6_audit: 2026-06-09
-last_task6_review_log: logs/review/2026-06-09-21-review.md
-task6_state: "revisiting"
+last_task6_review_log: logs/review/2026-06-09-23-review.md
+task6_state: "reviewed"
 task6_result: pass-light-edit
-review_notes: '2026-06-09 21:09 Task6 revisiting 复审。L1/L2 小修 2 处。源码调研附录（AIW-源码调研-2026-06-09）未整合进正文为 L3 建议。送 Task9 复审。 | 2026-06-09 20:56 Task2B main 回炉。P0: 删除 05-28 Generational CMC 注入块(不存在 generational_collector.cc、gc_type.h 枚举名错误、未验证 Android 17 结论)。P1: 移除 "与 AIW §4.3现有描述的差异" 小节(指向已删块)。保留 06-09 一手验证块。 | 2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
-task6_review_notes: "2026-06-09 21 Task6 revisiting 复审；Task2B 已删除 05-28 注入块，06-09 一手验证块保留。L1/L2 小修 2 处（"这样做，是为了让"重复起手式→直接陈述）。源码调研附录风格未整合为 L3 建议交 Task2B。送 Task9 技术复审。 | 2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。" "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
-task9_state: "reviewed"
+review_notes: '2026-06-09 23:00 Task6 revisiting 第三轮复审。L1 小修 4 处（3 处口水过渡词"更合适/更准确"，1 处附录格式）。无新增 L3/L4 回炉项。送 Task9 复审 auto-fixed 内容。 | 2026-06-09 21:09 Task6 revisiting 复审。L1/L2 小修 2 处。源码调研附录（AIW-源码调研-2026-06-09）未整合进正文为 L3 建议。送 Task9 复审。 | 2026-06-09 20:56 Task2B main 回炉。P0: 删除 05-28 Generational CMC 注入块(不存在 generational_collector.cc、gc_type.h 枚举名错误、未验证 Android 17 结论)。P1: 移除 "与 AIW §4.3现有描述的差异" 小节(指向已删块)。保留 06-09 一手验证块。 | 2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
+task6_review_notes: "2026-06-09 23: Task6 revisiting 第三轮复审；L1 小修 4 处（口水过渡词 3 + 附录格式 1），无 L3/L4 回炉项，送 Task9 复审 auto-fixed 内容。 | 2026-06-09 21 Task6 revisiting 复审；Task2B 已删除 05-28 注入块，06-09 一手验证块保留。L1/L2 小修 2 处（"这样做，是为了让"重复起手式→直接陈述）。源码调研附录风格未整合为 L3 建议交 Task2B。送 Task9 技术复审。 | 2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。" "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
+task9_state: "pending"
 task9_reviewed_date: '2026-06-09'
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-09T22:25:14+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-09-22-deep-review.md"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 p0: 0
 p1: 0
 p2: 0
@@ -143,7 +143,7 @@ Allocation Space 的实现和分代策略要按平台版本拆开看。Android 8
 
 ### Large Object Space：大对象的特殊处理
 
-如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-15.0.0_r1` 为例，`Heap::kMinLargeObjectThreshold`（定义在 `art/runtime/gc/heap.h`）的默认值是 `12 * KB`。大对象判断入口在 `Heap::ShouldAllocLargeObject(ObjPtr<mirror::Class>, size_t)`（定义在 `art/runtime/gc/heap-inl.h`），它会检查对象类型是否为 primitive array 或 `String`。旧资料常把这个阈值写成 `3 * kPageSize`，但在 Android 15 的平台源码里它已经固定成 12KB。结合 16KB page size 的适配背景，更合适的理解是：AOSP 主动把 LOS 入口从页大小解耦，避免不同页大小设备出现不同的大对象分配边界。
+如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-15.0.0_r1` 为例，`Heap::kMinLargeObjectThreshold`（定义在 `art/runtime/gc/heap.h`）的默认值是 `12 * KB`。大对象判断入口在 `Heap::ShouldAllocLargeObject(ObjPtr<mirror::Class>, size_t)`（定义在 `art/runtime/gc/heap-inl.h`），它会检查对象类型是否为 primitive array 或 `String`。旧资料常把这个阈值写成 `3 * kPageSize`，但在 Android 15 的平台源码里它已经固定成 12KB。结合 16KB page size 的适配背景，AOSP 把 LOS 入口从页大小解耦，避免不同页大小设备出现不同的大对象分配边界。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.h]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap-inl.h]
@@ -241,7 +241,7 @@ AOSP 源码路径：`art/runtime/gc/collector/concurrent_copying.cc`
 
 CC GC 解决了碎片问题，但代价也很具体。拷贝式回收需要同时保留 from-space 和 to-space，回收窗口里的物理内存压力更高。Read Barrier 还会插入到对象引用读取路径上，GC 不运行时这层开销也在。
 
-从 `android-14.0.0_r1` 开始，ART 平台源码已经有 `kCollectorTypeCMC` 和 `art/runtime/gc/collector/mark_compact.cc`。到 `android-15.0.0_r1`，`kCollectorTypeCMCBackground`、`BumpPointerSpace` 和 `MarkCompact::GetUffdAndMinorFault()` 这类配套实现更完整。这里更合适的版本线是：Android 14 / 15 已进入 UFFD 驱动的 Mark Compact / CMC 路径，但不要把这条路线直接写成 Generational CMC。
+从 `android-14.0.0_r1` 开始，ART 平台源码已经有 `kCollectorTypeCMC` 和 `art/runtime/gc/collector/mark_compact.cc`。到 `android-15.0.0_r1`，`kCollectorTypeCMCBackground`、`BumpPointerSpace` 和 `MarkCompact::GetUffdAndMinorFault()` 这类配套实现更完整。Android 14 / 15 已进入 UFFD 驱动的 Mark Compact / CMC 路径，但不要把这条路线直接写成 Generational CMC。
 
 UFFD 允许用户空间监听一段虚拟内存的缺页事件。GC 压缩对象时，如果应用线程访问到尚未整理完成的页，内核会把 fault 交给 ART 处理，ART 先把这一页整理到位，再把控制权交还给应用线程。这样做的目的，是把对象迁移和应用继续运行拆到页级别协调，而不是在每次引用读取时都依赖 Read Barrier。
 
@@ -414,7 +414,7 @@ Baseline Profiles 的时间线要拆成两段，不能收在 Android 13 一个�
 
 对 Android 7-8.1（API 24-27），如果应用集成了 `androidx.profileinstaller`，Baseline Profile 会在首次启动时安装到设备上，ART 后续再结合空闲期编译继续优化。
 
-对 Android 9（API 28）及以上，Google Play 在安装阶段就会使用 Baseline Profiles 优化 APK；如果后续还有 Cloud Profiles，可继续把真实用户的热点路径分发给后续安装者。所以更准确的版本线是：Android 7-8.1 有 ProfileInstaller 驱动的 Baseline Profile，Android 9+ 进入 Baseline + Cloud Profile 的安装期 AOT 路径，而不是把这件事压成 Android 13 才出现。
+对 Android 9（API 28）及以上，Google Play 在安装阶段就会使用 Baseline Profiles 优化 APK；如果后续还有 Cloud Profiles，可继续把真实用户的热点路径分发给后续安装者。版本线拆开看：Android 7-8.1 有 ProfileInstaller 驱动的 Baseline Profile，Android 9+ 进入 Baseline + Cloud Profile 的安装期 AOT 路径。不应该把整件事压到 Android 13 才出现。
 
 官方文档给出的直接表述是，Baseline Profiles 可以让包含的代码路径从第一次启动开始提速约 30%。这类收益描述适合放在安装期和启动过程里理解，和 §8.7 的编译优化实践要保持同一口径。
 
@@ -665,8 +665,8 @@ void YoungMarkCompact::RunPhases() {
 ```cpp
 bool CanMoveObjects() const override { return false; }
 // LargeObjectSpaces don't have thread local state.
-size_t RevokeThreadLocalBuffers(art::Thread*) override { return0U; }
-size_t RevokeAllThreadLocalBuffers() override { return0U; }
+size_t RevokeThreadLocalBuffers(art::Thread*) override { return 0U; }
+size_t RevokeAllThreadLocalBuffers() override { return 0U; }
 
 bool LogFragmentationAllocFailure(std::ostream& os, size_t failed_alloc_bytes) override
  REQUIRES_SHARED(Locks::mutator_lock_);
