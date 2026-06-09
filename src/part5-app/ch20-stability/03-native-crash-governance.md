@@ -42,7 +42,7 @@ task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone 
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-01"
 last_task6_at: "2026-06-01T18:10:00+08:00"
-last_task6_audit: "2026-05-18"
+last_task6_audit: "2026-06-09"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
 last_task6_review_log: "logs/review/2026-06-01-18-review.md"
