@@ -66,4 +66,10 @@
 - **问题**：引用的 DeepResearch 标注为"main分支快照"，包含可能未进入 Android 17 的内容。按 AIW 版本边界规则需标注"未进入 Android 17"。
 - **建议**：审查材料中哪些断言已进入 Android 17 正式分支，确定是否需要更新 applicable_versions。
 
+## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10
+- **类型**：源码准确性/数据缺失/交叉引用
+- **位置**：多个维度的问题
+- **问题**：1) 缺少AOSP源码具体路径和验证的代码片段 2) 没有实际simpleperf输出示例和解读 3) 缺少与Android安全模型的集成说明 4) 没有ARM/x86架构特有行为说明 5) 缺少与其他Android profiling工具的比较
+- **建议**：1) 补充具体AOSP源码路径和关键类/方法名 2) 提供真实report输出示例并逐行解读 3) 增加安全权限和隐私保护机制章节 4) 添加架构特有行为说明和限制 5) 补充与Systrace/Traceview等工具的对比表格
+
 - **review 日志**：logs/review/2026-06-10-07-review.md
