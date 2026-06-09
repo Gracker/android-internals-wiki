@@ -25,7 +25,7 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
   - type: structure
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md"
-pipeline_stage: ready-to-publish  # promoted by task2b-verifier 2026-06-08task6_state: reviewed  # updated by task2b-verifier 2026-06-08task9_state: reviewed
+pipeline_stage: "ready-to-publish"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-08"
 task9_reviewed_by: openclaw-task9

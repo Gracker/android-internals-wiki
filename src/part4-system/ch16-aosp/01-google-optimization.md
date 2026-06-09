@@ -54,6 +54,8 @@ sources:
     path: "platform/frameworks/native/libs/binder/ProcessState.cpp (refs/heads/master)"
   - type: aosp
     path: "platform/frameworks/native/libs/gui/BLASTBufferQueue.cpp (refs/heads/master)"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-09
 ---
 
 # Google 官方的性能优化思路
@@ -212,7 +214,7 @@ Android Go Edition 是 Project Svelte 思路的延续版。它把低内存、低
 
 一块是 AOSP 与平台测试仓库里的基准测试，用来守住启动时间、渲染耗时、系统服务行为这些基础指标。第二块是持续回归监控，也就是每次平台代码变更之后，都要确认关键性能指标没有被悄悄拉坏。第三块是覆盖不同 SoC、不同内存规模、不同分辨率配置的设备池，避免性能结论只在单一测试机上成立。
 
-这部分公开细节不算多，所以这里我们只保留工程上能确定的结论，不去硬写内部平台名称和实现细节。[待补充：公开演讲中关于内部 Perfetto Dashboard 与大规模设备回归的更多材料]
+这部分公开细节不算多，所以这里我们只保留工程上能确定的结论，不去硬写内部平台名称和实现细节。
 
 ## 常见问题与误区
 ### “系统已经越来越快了，App 端不用太管”

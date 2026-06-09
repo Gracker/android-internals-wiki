@@ -33,7 +33,7 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
 pipeline_stage: "ready-to-publish"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task9_result: "pass-tech-review"

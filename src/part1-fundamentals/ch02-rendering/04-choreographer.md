@@ -45,7 +45,7 @@ polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"

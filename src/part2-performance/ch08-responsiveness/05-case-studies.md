@@ -35,7 +35,7 @@ sources:
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 pipeline_stage: "ready-to-publish"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
 task9_state: "reviewed"

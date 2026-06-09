@@ -49,11 +49,9 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: ready-to-publish
-task6_state: reviewed  # updated by task2b-verifier 2026-06-07
+pipeline_stage: "ready-to-publish"
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
 task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-20T11:41:31+08:00"

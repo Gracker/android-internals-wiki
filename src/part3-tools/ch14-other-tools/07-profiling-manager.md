@@ -37,17 +37,14 @@ related_chapters:
   - "15.5"
   - "9.1"
   - "8.2"
-pipeline_stage: ready-to-publish
-task6_state: reviewed  # updated by task2b-verifier 2026-06-08
+pipeline_stage: "ready-to-publish"
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-30
 task2b_state: fixed
 task2b_result: fixed-lite
-pipeline_stage: ready-to-publish
-last_task2b_lite_at: "2026-05-30T15:35:00+08:00"
+pipeline_stage: "ready-to-publish"
 task2b_result: fixed-lite
 last_task2b_at: "2026-05-18T15:23:37+08:00"
 reviewed_by: openclaw-task6
