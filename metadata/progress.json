@@ -7630,6 +7630,25 @@
       "pipeline_stage": "ready-to-publish",
       "last_verifier_action": "2026-06-08 promoted to finalized by task2b-verifier",
       "title": "SurfaceFlinger FrontEnd"
+    },
+    "17.8": {
+      "section": "17.8",
+      "title": "MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播",
+      "file": "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md",
+      "status": "draft",
+      "pipeline_stage": "task2a_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-06-09",
+      "gap_source": "Clippings参考书/Chinasys2026论文/社区热点",
+      "gap_score": {
+        "素材丰富度": 3,
+        "与全书目标相关性": 5,
+        "读者需求度": 4,
+        "时效性": 5,
+        "total": 17
+      },
+      "material_count": 2,
+      "queue_priority": 80
     }
   },
   "task2b_rounds": [
@@ -10488,20 +10507,20 @@
   },
   "last_task9_review_summary": "11.2 App 耗电优化：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "last_task2a_gap_mining": {
-    "date": "2026-05-26",
-    "time": "06:16",
-    "mode": "create-new-section",
+    "date": "2026-06-09",
+    "time": "15:04",
+    "mode": "gap-mining",
     "created_sections": [
-      "8.13"
+      "17.8"
     ],
     "created_files": [
-      "src/part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md"
+      "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md"
     ],
-    "candidate_count": 6,
+    "candidate_count": 1,
     "qualified_count": 1,
-    "source": "AOSP结构/官方文档/素材驱动"
+    "source": "Clippings参考书/Chinasys2026论文/社区热点"
   },
-  "last_task2a_gap_mining_at": "2026-06-08T05:05:00+08:00",
+  "last_task2a_gap_mining_at": "2026-06-09T15:04:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"

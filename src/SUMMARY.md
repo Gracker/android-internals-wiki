@@ -347,6 +347,7 @@ tags:
   - [17.5 OEM 游戏模式输入优先级与触控调度](part4-system/ch17-oem/05-oem-game-mode-input-priority.md)
   - [17.6 Media Performance Class 与设备能力分级](part4-system/ch17-oem/06-media-performance-class-device-capability.md)
   - [17.7 Private Space 与应用锁的兼容性边界](part4-system/ch17-oem/07-private-space-app-lock-boundary.md)
+  - [17.8 MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播](part4-system/ch17-oem/08-musched-vip-scheduling-practice.md)
 
 ---
 

@@ -1102,6 +1102,16 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-09T13:24:55+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task2a-gap-20260609-17.8-musched-vip-scheduling",
+      "section": "17.8",
+      "title": "MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播",
+      "file": "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md",
+      "priority": 80,
+      "status": "pending",
+      "source": "task2a-gap-mining",
+      "created": "2026-06-09T15:04:00+08:00"
     }
   ],
   "items": [
@@ -2719,6 +2729,16 @@
       "completed_at": "2026-06-08T17:51:12",
       "completed_by": "task2b-lite-queue-cleanup",
       "completion_reason": "chapter already ready-to-publish/finalized with task2b_state=fixed"
+    },
+    {
+      "id": "task2a-gap-20260609-17.8-musched-vip-scheduling",
+      "section": "17.8",
+      "title": "MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播",
+      "file": "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md",
+      "priority": 80,
+      "status": "pending",
+      "source": "task2a-gap-mining",
+      "created": "2026-06-09T15:04:00+08:00"
     }
   ],
   "5.18": {
@@ -2731,12 +2751,18 @@
     "source": "task2a-gap-mining"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-06-07",
-    "time": "02:09",
+    "date": "2026-06-09",
+    "time": "15:04",
     "mode": "gap-mining",
-    "created_sections": [],
-    "created_files": [],
-    "reason": "第 13 轮 gap mining：0 空 draft，TASK2B_BACKLOG=0；全书 349 节（269 finalized + 79 ready-for-review + 0 draft + 1 misc），finalized 率 77.1%。DeepResearch 06-06 新增 7 篇全部映射已有章节（eBPF→14.10, AppLock→17.7, CP ANR→9.7, HPROF→4.x/19.x, Thermal→5.12, FrameTimeline→13.2, SurfaceTexture→2.x）。source-index 204 条未映射项已在上轮全面扫描。Clippings 三本参考书全覆盖。AOSP/官方文档/研究素材无新话题。连续 9+ 轮空跑。"
+    "created_sections": [
+      "17.8"
+    ],
+    "created_files": [
+      "src/part4-system/ch17-oem/08-musched-vip-scheduling-practice.md"
+    ],
+    "candidate_count": 1,
+    "qualified_count": 1,
+    "source": "Clippings参考书/Chinasys2026论文/社区热点"
   },
   "completed": [],
   "queue": [
