@@ -24,8 +24,8 @@
     {
       "section": "ch02",
       "section_title": "Simpleperf",
-      "priority": 95,
-      "reason": "[Deep Tech Review][闲时抽检] P0 Android 17 源码误报，需要修正章节源码引用和版本范围",
+      "priority": 90,
+      "reason": "[Task6 Review回炉] 文体不符合writing-guide，14.7/14.9内容与Simpleperf脱节，14.10/14.2技术准确性存疑",
       "material_paths": [
         "logs/deep-review/2026-06-10-04-audit.md"
       ],
@@ -35,11 +35,41 @@
           "location": "第462-553行 Android 17 Simpleperf 源码深度分析节",
           "detail": "该节声称基于\"Android 17 main branch simpleperf 源码\"，但实际包含大量未经验证的架构推断：RecordMemoryPool 类不存在、EventSelectionSetAndroid17/SampleTreeAndroid17/ELFReaderAndroid17 等 Android17 后缀类均未在源码中找到、30+ 新增 PMU 事件声明缺乏支撑、enable_real_time_jit_debugging() API 未确认、Vulkan 渲染管线性能分析集成与源码事实不符",
           "suggestion": "删除该整节或将内容降级为\"基于架构的演进预测\"，删除具体源码类名等无法验证的细节，将适用版本从 Android 17 降级为 Android 16，并标注内容为架构推断而非已验证源码"
+        },
+        {
+          "type": "需重写",
+          "location": "全章（14.1-14.13）",
+          "detail": "文体严重违反 writing-guide：全章37个代码块几乎全为列表+命令堆砌，属于writing-guide反面教材1(百科词条式)+反面教材3(概述式)。writing-guide要求'叙述为主、列表为辅'，Type C工具篇要求从'没有这个工具你会多痛苦'开篇，当前完全没有做到",
+          "suggestion": "按 writing-guide Type C（工具使用篇）结构重写，以工程师对话叙述方式替代命令列表"
+        },
+        {
+          "type": "需重写",
+          "location": "Section 14.7 性能优化实践",
+          "detail": "展示的是通用Java优化模式（对象池TexturePool、内存泄漏WeakReference、线程池配置），与Simpleperf分析结果完全脱节。读者学不到'怎么从simpleperf report输出定位到这些优化点'",
+          "suggestion": "重写为：先用simpleperf report发现热点函数→解读调用栈→定位优化方向→展示优化后再用simpleperf验证的闭环"
+        },
+        {
+          "type": "需重写",
+          "location": "Section 14.9 性能案例分析",
+          "detail": "两个案例缺乏Simpleperf特有信息：无report输出、无调用栈分析、无热点函数解读、无--show-call-graph结果。案例中的LazyInitializer和SafeHandler是通用Android知识，不是Simpleperf分析流程",
+          "suggestion": "重写案例：包含simpleperf record→report完整输出→调用栈解读→优化→验证的全流程"
+        },
+        {
+          "type": "需验证",
+          "location": "Section 14.10 Gradle插件",
+          "detail": "声称存在 id 'simpleperf-plugin' Gradle插件，该插件真实性存疑。Android官方文档未记录此插件",
+          "suggestion": "验证simpleperf-plugin是否存在，不存在则删除该节或替换为真实集成方案"
+        },
+        {
+          "type": "需验证",
+          "location": "Section 14.2 设备端simpleperf路径",
+          "detail": "adb pull /system/bin/simpleperf 在多数设备上不存在。simpleperf通常通过NDK分发，而非预装在系统镜像中",
+          "suggestion": "修正安装说明，以NDK为主要获取渠道，删除或标注设备端路径的特殊情况"
         }
       ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-10T04:21:00+08:00",
-      "status": "completed",
+      "added_by": "task6-review",
+      "added_at": "2026-06-10T05:10:38+08:00",
+      "status": "pending",
       "completed_at": "2026-06-10T04:52:19+08:00",
       "completed_by": "task2b-main",
       "completion_reason": "P0 Android 17 源码误报已修复：删除虚假源码分析节、version range 修正为 Android 16、frontmatter 状态回流入 task6_pending"

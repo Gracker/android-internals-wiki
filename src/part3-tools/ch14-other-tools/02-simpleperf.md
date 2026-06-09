@@ -3,7 +3,7 @@ title: Simpleperf
 chapter: '14.2'
 section: '14.2'
 status: ready-for-review
-reviewed_date: '2026-04-15'
+reviewed_date: '2026-06-10'
 reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
@@ -19,7 +19,7 @@ sources:
 - type: official
   path: developer.android.com/guide/topics/profiling/perfetto
 - type: source
-  path: base/core/java/android/view/View.java
+  path: system/extras/simpleperf/CMakeLists.txt
   version: android-16.0.0_r1
 - type: source
   path: external/perfetto/docs/data-sources/android-perfetto.md
@@ -28,12 +28,12 @@ last_task9_at: '2026-04-20T03:17:47+08:00'
 last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task2b_at: '2026-06-10T04:50:00+08:00'
 task9_result: pass-tech-review
-task6_result: pass-light-edit
+task6_result: needs-rework
 task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
+task2b_state: pending
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 ---
 
 
@@ -788,5 +788,5 @@ graph TD
 ### 相关书籍
 
 - [Android 性能优化大师](https://book.douban.com/subject/30275785/)
-- [高性能 Android 应用开发](https://book.douban.com subject/27126143/)
+- [高性能 Android 应用开发](https://book.douban.com/subject/27126143/)
 - [Android 系统级性能调优](https://book.douban.com/subject/35528770/)
