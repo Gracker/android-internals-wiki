@@ -303,6 +303,62 @@
       "section": "13.9",
       "processed_at": "2026-06-09T06:11:00+08:00",
       "action": "inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-10-android17-input-queue-analysis.md",
+      "title": "Android 17 Input系统iq/oq/wq队列机制与Perfetto性能分析",
+      "summary": "Android 17 Input系统三重队列架构(iq/oq/wq)与Perfetto集成分析",
+      "chapter": "ch03",
+      "processed": "2026-06-10"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-10-simpleperf-android17-architecture.md",
+      "title": "Android Simpleperf 性能分析工具架构（main分支快照）",
+      "summary": "Simpleperf模块化命令管道、三段式权限、自适应buffer、ETM追踪架构分析",
+      "chapter": "ch14",
+      "processed": "2026-06-10"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-cloud-compilation-sdm-dm-ondevice-flow.md",
+      "title": "Android 16/17 云端Profile、SDM与DexMetadata的设备侧实现路径",
+      "summary": "SDM/SDC设备侧完整链路梳理（安装→校验→dexopt→回收）",
+      "chapter": "ch21",
+      "processed": "2026-06-10"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md",
+      "title": "Android 17 TraceKit 性能分析工具链优化与APM落地实践",
+      "summary": "Perfetto data source演进(14→16)与APM三件套(cpu_per_uid/wakelocks)分析",
+      "chapter": "ch13",
+      "processed": "2026-06-10"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-binder-transaction-queue-frozen-async-arch.md",
+      "title": "Android 16/17 Binder事务队列与跨进程通信性能（kernel binder角度）",
+      "summary": "内核Binder驱动三层FIFO队列、frozen进程async处理、TF_UPDATE_TXN事务替换",
+      "chapter": "ch01",
+      "processed": "2026-06-10"
     }
-  ]
+  ],
+  "https://juejin.cn/post/7589903499599347766": {
+    "title": "聊聊2026年Android开发会是什么样",
+    "chapter": "ch14-other-tools",
+    "chapter_title": "其他工具",
+    "score": 12,
+    "added_at": "2026-06-10T05:44:02.075162"
+  },
+  "https://juejin.cn/post/7612812060795093002": {
+    "title": "Android17 为什么重写 MessageQueue",
+    "chapter": "ch01-architecture",
+    "chapter_title": "Android架构概览",
+    "score": 12,
+    "added_at": "2026-06-10T05:44:02.075166"
+  },
+  "https://juejin.cn/post/7610233341305389099": {
+    "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+    "chapter": "ch14-other-tools",
+    "chapter_title": "其他工具",
+    "score": 12,
+    "added_at": "2026-06-10T05:44:02.075168"
+  }
 }

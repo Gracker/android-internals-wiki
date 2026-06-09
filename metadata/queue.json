@@ -84,7 +84,7 @@
     {
       "section": "14.2",
       "section_title": "Simpleperf",
-      "priority": 90,
+      "priority": 95,
       "reason": "[Task6 Review 回炉] 第二轮 review 仍发现重大问题：4个核心章节仍为占位符、全文为API文档风格而非叙述体、多处命令参数待Task9技术验证",
       "material_paths": [
         "intake/suggestions.md"
@@ -117,7 +117,7 @@
         {
           "type": "需补充内容",
           "location": "14.2.11 性能基准测试（原14.11）",
-          "detail": "仍为占位符（⚠️ Task2B回炉中），旧版benchmark数据已移除，新内容未写入",
+          "detail": "仍为待重写，旧版benchmark数据已移除，新内容未写入",
           "suggestion": "基于simpleperf stat实测重写，展示如何建立性能基线"
         },
         {
@@ -149,6 +149,18 @@
           "location": "参考资料/DeepResearch引用",
           "detail": "参考资料引用的DeepResearch材料标注为'main分支快照'，包含可能未进入Android 17的内容。按AIW版本边界规则，main/master资料需标注'未进入Android 17'并不可作为正文结论",
           "suggestion": "审查DeepResearch材料中的断言，确认哪些已进入Android 17正式分支；applicable_versions当前为API 21-35，若正文无Android 17内容则维持"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "applicable_versions字段",
+          "detail": "章节声明适用 Android 5.0(API 21)-Android 16(API 35)，违反AIW版本边界规则（最高只到Android 17/API 37），且Android 16实际是API 35（声明冗余）",
+          "suggestion": "修正为 Android 5.0(API 21)-Android 17(API 35-37)，补充Android 17新增特性或注明未进入Android 17的内容"
+        },
+        {
+          "type": "P0 源码错误",
+          "location": "参考资料/DeepResearch引用",
+          "detail": "参考资料引用的DeepResearch材料标注为'main分支快照'，包含可能未进入Android 17的内容。按AIW版本边界规则，main/master资料需标注'未进入Android 17'并不可作为正文结论",
+          "suggestion": "审查DeepResearch材料中的断言，确认哪些已进入Android 17正式分支；无法进入Android 17的内容需降级为架构预测"
         }
       ],
       "added_by": "task6-review",
