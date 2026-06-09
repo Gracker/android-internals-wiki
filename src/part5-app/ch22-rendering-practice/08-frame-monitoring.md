@@ -54,6 +54,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-19T07:31:24+08:00'
 task2b_result: "fixed"
 last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
+last_task6_audit: "2026-06-09"
 task9_review_notes: "2026-05-19 Task9：复核 6 维度无 P0/P1；queue 无 pending，task6_result=pass-light-edit，自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md，不重复写入。"
 ---
 
