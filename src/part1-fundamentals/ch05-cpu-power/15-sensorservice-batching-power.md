@@ -4,9 +4,9 @@ chapter: "5.15"
 section: "5.15"
 status: finalized
 drafted_date: "2026-05-19"
-applicable_versions: "Android 4.4 (API 19) - Android 17 (API 37)"
-last_verified: "2026-05-19"
-last_verified_against: "AOSP main + Android Source sensors docs"
+applicable_versions: "Android 4.4 (API 19) - Android 16 (API 36)"
+last_verified: "2026-06-09"
+last_verified_against: "AOSP android-16.0.0_r1 + Android Source sensors docs"
 confidence: medium-high
 sources:
   - type: official
@@ -32,17 +32,29 @@ related_chapters: ["5.6", "11.2", "25.5", "14.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
 gap_source: "AOSP 结构/官方文档"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_date: "2026-05-19"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task9_state: reviewed
 last_task6_at: "2026-05-19T16:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-19-16-review.md"
-task9_result: pass-tech-review
-last_task9_at: "2026-05-19T16:30:07+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-19-16-deep-review.md"
+task9_result: auto-fixed
+last_task9_at: "2026-06-09T19:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-09-19-audit.md"
+task2b_state: fixed
+task2b_result: fixed
+updated_date: "2026-06-09"
+updated_by: openclaw-task9
+last_task9_audit: "2026-06-09"
+last_task9_autofix_at: "2026-06-09"
+task9_reviewed_date: "2026-06-09"
+task9_reviewed_by: openclaw-task9
+p0: 0
+p1: 1
+p2: 0
+task9_review_notes: "2026-06-09 19 Task9 idle audit auto-fix: AOSP main 源码锚点不满足 Android 17 边界；android-17.0.0_r1 Gitiles 查询返回 404，已改为 android-16.0.0_r1 复核锚点并把适用范围收窄到 Android 16；回到 Task6 复审。"
 ---
 
 # 5.15 SensorService 与传感器批处理功耗模型
@@ -100,7 +112,7 @@ Android Source 对 batching 的定义是：事件先缓存在 sensor hub 或硬�
 
 ## SensorService 在系统功耗路径里的位置
 
-App 侧调用 `SensorManager.registerListener()` 后，参数先进入 `SystemSensorManager.registerListenerImpl()`，再通过 `SensorEventQueue.addSensor()` 传到 native 层。Native `SensorService::enable()` 取到 sensor handle、采样周期和最大批量延迟后，调用具体 sensor 接口的 `batch()`；底层 `SensorDevice::batch()` 把每个客户端的请求记录在 `batchParams` 中，再计算当前硬件需要执行的最小采样周期和最小批量窗口。[已验证: AOSP main, frameworks/base/core/java/android/hardware/SystemSensorManager.java; frameworks/native/services/sensorservice/SensorService.cpp; frameworks/native/services/sensorservice/SensorDevice.cpp]
+App 侧调用 `SensorManager.registerListener()` 后，参数先进入 `SystemSensorManager.registerListenerImpl()`，再通过 `SensorEventQueue.addSensor()` 传到 native 层。Native `SensorService::enable()` 取到 sensor handle、采样周期和最大批量延迟后，调用具体 sensor 接口的 `batch()`；底层 `SensorDevice::batch()` 把每个客户端的请求记录在 `batchParams` 中，再计算当前硬件需要执行的最小采样周期和最小批量窗口。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/hardware/SystemSensorManager.java; frameworks/native/services/sensorservice/SensorService.cpp; frameworks/native/services/sensorservice/SensorDevice.cpp]
 
 ```mermaid
 flowchart LR
@@ -116,15 +128,15 @@ flowchart LR
     SS --> App
 ```
 
-这条路径里，SensorService 会聚合多个客户端，不做简单转发。`SensorDevice::updateBatchParamsLocked()` 会从同一个 handle 的所有客户端里选出一组“硬件能同时满足”的参数：采样周期取更紧的请求，批量延迟也取更紧的请求。只要有一个客户端要求低延迟或高频，底层 sensor 的整体配置就会被拉到更高成本的档位。[已验证: AOSP main, frameworks/native/services/sensorservice/SensorDevice.cpp]
+这条路径里，SensorService 会聚合多个客户端，不做简单转发。`SensorDevice::updateBatchParamsLocked()` 会从同一个 handle 的所有客户端里选出一组“硬件能同时满足”的参数：采样周期取更紧的请求，批量延迟也取更紧的请求。只要有一个客户端要求低延迟或高频，底层 sensor 的整体配置就会被拉到更高成本的档位。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/sensorservice/SensorDevice.cpp]
 
-`dumpsys sensorservice` 能看到这个聚合结果。`SensorDevice::dump()` 会输出每个活跃 sensor 的 active-count、各客户端 `sampling_period(ms)`、各客户端 `batching_period(ms)`，以及 selected 值。分析“为什么明明传了 10 秒批量延迟，回调仍然很密”时，先看 selected batching period 是否被其他客户端压到更小值。[已验证: AOSP main, frameworks/native/services/sensorservice/SensorDevice.cpp]
+`dumpsys sensorservice` 能看到这个聚合结果。`SensorDevice::dump()` 会输出每个活跃 sensor 的 active-count、各客户端 `sampling_period(ms)`、各客户端 `batching_period(ms)`，以及 selected 值。分析“为什么明明传了 10 秒批量延迟，回调仍然很密”时，先看 selected batching period 是否被其他客户端压到更小值。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/sensorservice/SensorDevice.cpp]
 
 ## `samplingPeriodUs` 与 `maxReportLatencyUs`
 
-`samplingPeriodUs` 描述事件产生或期望交付的频率。`SensorManager` 注释把它称为一个 hint：事件可能比指定值更快或更慢到达，具体取决于传感器类型、HAL、其他客户端和系统状态。[已验证: AOSP main, frameworks/base/core/java/android/hardware/SensorManager.java]
+`samplingPeriodUs` 描述事件产生或期望交付的频率。`SensorManager` 注释把它称为一个 hint：事件可能比指定值更快或更慢到达，具体取决于传感器类型、HAL、其他客户端和系统状态。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/hardware/SensorManager.java]
 
-`maxReportLatencyUs` 描述事件允许在硬件 FIFO 中暂存多久。`SensorManager.registerListener(listener, sensor, samplingPeriodUs, maxReportLatencyUs)` 的注释说明，事件最多可在硬件 FIFO 中保存 `maxReportLatencyUs` 微秒；一旦 FIFO 中某个事件需要上报，FIFO 里的事件会顺序交付，所以部分事件会早于最大延迟到达。`maxReportLatencyUs = 0` 时，行为等价于尽快交付；`sensor.maxFifoEventCount() = 0` 时，设备没有可用 FIFO，传入正数也不会产生批处理收益。[已验证: AOSP main, frameworks/base/core/java/android/hardware/SensorManager.java]
+`maxReportLatencyUs` 描述事件允许在硬件 FIFO 中暂存多久。`SensorManager.registerListener(listener, sensor, samplingPeriodUs, maxReportLatencyUs)` 的注释说明，事件最多可在硬件 FIFO 中保存 `maxReportLatencyUs` 微秒；一旦 FIFO 中某个事件需要上报，FIFO 里的事件会顺序交付，所以部分事件会早于最大延迟到达。`maxReportLatencyUs = 0` 时，行为等价于尽快交付；`sensor.maxFifoEventCount() = 0` 时，设备没有可用 FIFO，传入正数也不会产生批处理收益。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/hardware/SensorManager.java]
 
 | 参数 | 控制对象 | 设为更大时的效果 | 失效条件 |
 |---|---|---|---|
@@ -137,7 +149,7 @@ flowchart LR
 
 Android Source 把 suspend 下的行为分成两类。non-wake-up sensor 不阻止 SoC 进入 suspend，也不会为了上报数据唤醒 SoC；SoC 睡眠期间事件继续产生并进入 FIFO，SoC 醒来后再交付。App 如果要求灭屏期间稳定收到 non-wake-up sensor 事件，要么持有 partial wake lock，要么接受 suspend 期间事件可能丢失，要么在不需要时注销监听。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/suspend-mode]
 
-wake-up sensor 的约束更强。SoC 睡眠时，wake-up sensor 必须在最大上报延迟到达或 FIFO 将满前唤醒 SoC 并交付事件。`SensorManager` 注释也说明，每个 wake-up sensor 事件都可能让 AP wake-up，因此注册 wake-up sensor 有明显功耗影响；如果使用这类传感器，应结合 batching 参数减少唤醒频次。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/suspend-mode; AOSP main, frameworks/base/core/java/android/hardware/SensorManager.java]
+wake-up sensor 的约束更强。SoC 睡眠时，wake-up sensor 必须在最大上报延迟到达或 FIFO 将满前唤醒 SoC 并交付事件。`SensorManager` 注释也说明，每个 wake-up sensor 事件都可能让 AP wake-up，因此注册 wake-up sensor 有明显功耗影响；如果使用这类传感器，应结合 batching 参数减少唤醒频次。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/suspend-mode; AOSP android-16.0.0_r1, frameworks/base/core/java/android/hardware/SensorManager.java]
 
 Sensor hub 的价值在这一步体现出来。Android 传感器栈允许设备在低功耗微控制器上执行低层计算，例如 step counting、sensor fusion 和 batching；SoC 可以处于 suspend，事件暂存在 hub/FIFO 中。Android Source 还提到一种常见硬件组织：sensor hub 到 SoC 可以有两条中断线，一条用于 wake-up sensor，一条用于 non-wake-up sensor。这类设计决定了同一段 App 代码在不同机型上的唤醒形态会不一样。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/sensor-stack]
 
@@ -153,7 +165,7 @@ Sensor hub 的价值在这一步体现出来。Android 传感器栈允许设备�
 - **生命周期未退订**：`SensorManager` 注释要求 Activity 在 `onPause()` 注销 listener。未注销时，即使 non-wake-up sensor 事件可能在 suspend 中丢失，传感器仍会继续耗电。
 - **HAL 能力和厂商策略差异**：Sensors HAL 2.0 要求 sensor 在激活前通过 `batch()` 配置采样周期和最大上报延迟，也允许 framework 调用 `flush()` 立即冲刷批量事件；具体 FIFO 深度、flush 行为、hub 算法和 vendor 限制仍由设备实现决定。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/sensors-hal2]
 
-`SensorService::enable()` 中还有一个细节：多个连接共享 continuous sensor 时，服务会在合适条件下先 `flush()`，再 `activate()`，避免旧批量事件被新连接误收。这个行为解释了部分测试中“注册后马上收到一批历史事件”的现象，也说明 flush 只是交付控制，不代表采样停止。[已验证: AOSP main, frameworks/native/services/sensorservice/SensorService.cpp]
+`SensorService::enable()` 中还有一个细节：多个连接共享 continuous sensor 时，服务会在合适条件下先 `flush()`，再 `activate()`，避免旧批量事件被新连接误收。这个行为解释了部分测试中“注册后马上收到一批历史事件”的现象，也说明 flush 只是交付控制，不代表采样停止。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/sensorservice/SensorService.cpp]
 
 ## Perfetto、Battery Historian 与 `dumpsys sensorservice` 观察点
 
