@@ -65,6 +65,30 @@
           "location": "Section 14.2 设备端simpleperf路径",
           "detail": "adb pull /system/bin/simpleperf 在多数设备上不存在。simpleperf通常通过NDK分发，而非预装在系统镜像中",
           "suggestion": "修正安装说明，以NDK为主要获取渠道，删除或标注设备端路径的特殊情况"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "applicable_versions 字段",
+          "detail": "章节声明适用 Android 5.0(API 21)-Android 16(API 35)，但多处使用 Android 5.0 不支持的语言特性（如Stream API），且缺少 Android 12-16 关键变化说明",
+          "suggestion": "修正版本声明，补充版本差异说明，移除与最低版本不兼容的代码示例"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "源码引用准确性",
+          "detail": "引用 system/extras/simpleperf/CMakeLists.txt 和 external/perfetto/docs/data-sources/android-perfetto.md 作为源码锚点，但没有提供具体源码片段或关键类/方法的准确名称",
+          "suggestion": "补充具体的源码类名、方法名和关键代码片段，或移除无法验证的源码引用"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "数据收集方法章节",
+          "detail": "解释了如何使用Simpleperf收集数据，但没有充分说明为什么选择Perfetto格式作为推荐格式，以及与旧格式相比的技术优势",
+          "suggestion": "补充Perfetto格式技术原理和优势说明，完善原理链"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "版本差异覆盖",
+          "detail": "缺少Android 12-16中关键性能分析机制变化说明，如Perfetto引入和Profileable应用改进",
+          "suggestion": "补充Android 12-16版本间性能分析机制的关键变化"
         }
       ],
       "added_by": "task6-review",
