@@ -61,6 +61,7 @@ task9_result: "pass-tech-review"
 task2b_state: fixed
 task2b_result: fixed
 last_task9_at: "2026-05-27T09:40:09+08:00"
+last_task9_audit: "2026-06-09"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
 review_notes: "2026-05-27 task6 review: needs-rework。L1/L2 已小修；2026-05-27 Task2B 已合并清理后半段调研素材，回流 Task6 复审；2026-05-27 Task6复审：pass-light-edit，L1/L2 小修 10 处，无回炉项，等待 Task9 复审。 | 2026-05-27 Task6 复审：pass-light-edit；queue 中 7.8 无 pending 项，outline 覆盖完整，DeliQueue/GapWorker 调研块已收敛，无新增回炉项，等待 Task9 复审。"
