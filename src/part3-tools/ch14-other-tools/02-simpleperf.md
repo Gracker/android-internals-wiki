@@ -1,4 +1,5 @@
 ---
+
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
@@ -12,28 +13,28 @@ last_verified: '2026-04-22'
 last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs + Android profileable docs
 confidence: needs-review
 sources:
+  - type: official
+    path: android.googlesource.com/platform/system/extras/+/master/simpleperf/doc/README.md
+  - type: official
+    path: developer.android.com/ndk/guides/simpleperf
+  - type: official
+    path: developer.android.com/guide/topics/profiling/perfetto
 tags:
   - simpleperf
   - cpu-profiling
   - performance-analysis
   - ndk
   - native-profiling
-- type: official
-  path: android.googlesource.com/platform/system/extras/+/master/simpleperf/doc/README.md
-- type: official
-  path: developer.android.com/ndk/guides/simpleperf
-- type: official
-  path: developer.android.com/guide/topics/profiling/perfetto
 last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task2b_at: '2026-06-10T04:50:00+08:00'
 last_task2b_lite_at: '2026-06-10'
 task9_result: needs-rework
 task6_result: needs-rework
 task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
+task2b_state: pending
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 last_task9_at: '2026-06-10T05:35:00+08:00'
 ---
 
@@ -42,7 +43,7 @@ last_task9_at: '2026-06-10T05:35:00+08:00'
 
 ## 14.1 简介与用途
 
-Simpleperf 是 Android 系统自带的高性能性能分析工具，专为开发者设计。它能够深入分析应用程序在 Android 设备上的运行性能，包括 CPU 使用率、内存占用、函数调用栈等关键指标。
+Simpleperf 是 Android 系统自带的高性能分析工具，专为开发者设计。它能够深入分析应用程序在 Android 设备上的运行性能，包括 CPU 使用率、内存占用、函数调用栈等关键指标。
 
 ### 主要用途
 
@@ -453,8 +454,6 @@ simpleperf report --csv perf.data > perf_report.csv
 - [Android 性能分析工具集](https://developer.android.com/studio/profile)
 
 ### 相关书籍
-
-> 相关书籍推荐待核实后补充。
 
 > 相关书籍推荐待核实后补充。
 
