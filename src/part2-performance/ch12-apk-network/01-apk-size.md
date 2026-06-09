@@ -55,10 +55,8 @@ last_task9_at: "2026-05-28T01:28:49+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-06'
 task6_result: pass-light-edit
-task6_state: reviewed  # updated by task2b-verifier 2026-06-07
+task6_state: "reviewed"
 task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
-repaired_date: '2026-04-24'
 repaired_by: openclaw-task2b
 last_task2b_at: '2026-05-06T04:41:00+08:00'
 task9_review_notes: "2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；Dynamic Feature Module 仍使用旧 Play Core Library 1.6+ 口径，需更新为 Play Feature Delivery Library 2.1.0+ 并标注 Android 14+ target SDK 版本边界。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"

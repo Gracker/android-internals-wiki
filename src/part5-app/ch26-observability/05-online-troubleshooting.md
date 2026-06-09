@@ -37,10 +37,9 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/6346149"
 tags: [troubleshooting, remote-logging, user-feedback, online-trace]
 related_chapters: ["26.1", "15.5", "13.2"]
-pipeline_stage: ready-to-publish  # promoted by task2b-verifier 2026-06-08
-task6_state: reviewed  # updated by task2b-verifier 2026-06-08
-task9_state: reviewed
-task2b_state: fixed
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
+task9_state: "reviewed"
 task6_review_notes: '2026-06-04 task6 re-review (round 2): pass-light-edit. L1/L2 clean. Fixed frontmatter formatting (leading blank lines). All 4 anchors + 1 extension covered. task9_result=auto-fixed. Score: structure 4/5, wording 4/5, consistency 4/5, verification 4/5, metadata 4/5.'
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-15T03:11:00+08:00"

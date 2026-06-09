@@ -45,7 +45,7 @@ sources:
 tags: [image-loading, glide, coil, bitmap-decode, image-cache]
 related_chapters: ["22.1", "23.2", "7.10"]
 pipeline_stage: "ready-to-publish"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6

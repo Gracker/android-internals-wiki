@@ -38,7 +38,7 @@ related_chapters: ["3.2", "3.4", "7.9", "13.8", "15.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"

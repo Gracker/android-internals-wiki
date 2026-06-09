@@ -62,7 +62,7 @@ last_task9_review_log: "logs/deep-review/2026-05-22-19-deep-review.md"
 task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1/P2；16KB plugin 合规链路已拆清 AGP zip alignment、ELF p_align 与 native 4KB 假设。queue 无 pending，Task6 已通过，自动晋升 finalized。"
 reviewed_date: "2026-05-22"
 reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-22T16:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-16-review.md"

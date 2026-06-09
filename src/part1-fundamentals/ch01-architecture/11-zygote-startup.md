@@ -43,13 +43,11 @@ sources:
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: ready-to-publish
-finalized_date: "2026-05-18"
+pipeline_stage: "ready-to-publish"
 finalized_by: openclaw-task9-auto-promote
-task6_state: reviewed  # updated by task2b-verifier 2026-06-07
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
 last_task9_at: "2026-05-18T03:31:27+08:00"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T14:20:00+08:00"

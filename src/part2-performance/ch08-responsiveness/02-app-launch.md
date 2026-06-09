@@ -53,11 +53,9 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: ready-to-publish
-task6_state: reviewed  # updated by task2b-verifier 2026-06-08
+pipeline_stage: "ready-to-publish"
 task6_result: "pass-light-edit"
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-04T10:50:00+08:00"

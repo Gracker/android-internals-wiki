@@ -31,7 +31,7 @@ sources:
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
     path: "https://www.androidauthority.com/android-16-cloud-compilation-3541910/"
-pipeline_stage: ready-to-publish  # promoted by task2b-verifier 2026-06-08task6_state: reviewed  # updated by task2b-verifier 2026-06-08task9_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 review_type: task6-writing-quality-review

@@ -47,7 +47,7 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-task6_state: "revisiting"
+task6_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-25"

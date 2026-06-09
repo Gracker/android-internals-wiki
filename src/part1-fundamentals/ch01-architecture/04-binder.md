@@ -667,3 +667,37 @@ if (is_fair_policy(policy))
 - 摘要：AOSP libbinder 线程池由 ProcessState + IPCThreadState 双单例协同实现：setThreadPoolMaxThreadCount 通过 ioctl 写入内核 max_threads 且启动后不可缩减；blockUntilThreadAvailable 用 std::condition_variable 等待空闲 worker，配合 mExecutingThreadsCount 原子计数与 100ms 饥饿告警；内核侧 binder_select_thread_ilocked 在 inner_lock 自旋锁下从 waiting_threads 链表取 worker，优先级继承通过 sched_setscheduler_nocheck + set_user_nice 实现。
 - 注入时间：2026-06-09
 - 价值：源码级详解 ProcessState/IPCThreadState 双单例线程池机制、饥饿检测与优先级继承三层调度，补强 §1.4 Binder 性能分析维度
+
+
+### 注入块：Binder 事务队列机制与跨进程性能（2026-06-09 补充）
+
+<!-- AIW-源码调研-2026-06-09-02 -->
+
+AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 链表**结构，**所有 enqueue/dequeue 都是 O(1) list_head 操作**——`binder_enqueue_work_ilocked` 用 `list_add_tail`，`binder_dequeue_work_head_ilocked` 用 `list_first_entry_or_null`。三层的分工：
+
+| 队列 | 字段 | 用途 |
+|------|------|------|
+| 进程级 | `proc->todo` | 没有空闲 worker 时暂存；新 worker 拉取后入 `thread->todo` |
+| 线程级 | `thread->todo` | 单线程工作队列，**被 `binder_thread_read` 优先读取** |
+| Node 级 | `node->async_todo` | 每个 binder node 挂一个；**专门给 frozen 进程的 async 事务排队** |
+
+`binder_thread_read()` 读取顺序严格 "**先 thread-local，再 process-wide**"——当 `thread->transaction_stack` 非空（同步调用栈中）或 `thread->todo` 非空时不读 `proc->todo`。这是单线程同步串行的根本保证。`binder_available_for_proc_work_ilocked()` 是判定核心：`!thread->transaction_stack && list_empty(&thread->todo)`。
+
+**Frozen 进程的关键路径**（cached app freezer）：
+- 同步调用立即返回 `BR_FROZEN_REPLY`，不排队
+- oneway 调用通过 `pending_async=true` 强制入 `node->async_todo`，返回 `BR_TRANSACTION_PENDING_FROZEN`
+- `proc->outstanding_txns` 记录未完成事务数，是 freezer 决定能否冻结的指标
+- `TF_UPDATE_TXN` flag + `binder_can_update_transaction()` 允许 frozen 队列中"同 code + 同 pid + 同 target"的旧事务被新事务**替换**（supersede），避免解冻时被积压状态推送淹没
+
+**用户态批处理优化**：`IPCThreadState::mOut` 累积多次 `BC_*` 命令后用单次 `ioctl(BINDER_WRITE_READ)` 提交。内核 `binder_thread_write` 是 `while (ptr < end)` 循环逐条处理。N 条事务从 N 次 syscall 降到 1 次，system_server 在启动峰值（16ms 内 50-200 条事务）的 syscall 开销可从 100-400μs 降到 ~4μs。
+
+**epoll worker 的显式唤醒**：`binder_enqueue_thread_work_ilocked` 中有专门为 `BINDER_LOOPER_STATE_POLL` worker 触发 `wake_up_interruptible_sync` 的代码路径（kernel v6.12 codeline 52624-52641）——epoll worker 不通过普通调度器自然唤醒，必须显式信号。这是 eBPF 在线追踪 Binder 调用章节里"Binder epoll 线程调度"的关键钩子点。
+
+源码位置：
+- `kernel/common/include/linux/android/binder_internal.h`（v6.12）`struct binder_proc.todo`、`struct binder_thread.todo`、`struct binder_node.async_todo`
+- `kernel/common/drivers/android/binder.c`（v6.12）`binder_enqueue_work_ilocked:52577`、`binder_proc_transaction:2847-2923`、`binder_thread_read:4652-4700`、`binder_available_for_proc_work_ilocked:52718`
+- `frameworks/native/libs/binder/IPCThreadState.cpp`（android-16.0.0_r4）`transact`、`flushCommands`、`talkWithDriver`
+
+- 注入时间：2026-06-09
+- 价值：源码级详解 Binder 事务队列的"三层 FIFO + 两级读 + frozen async 缓冲 + 用户态批处理"四大机制，与 §1.4 既有"线程池 + 优先级继承"形成完整的事务生命周期视角
+- 关联 DeepResearch：`DeepResearch/2026-06-09-android17-binder-transaction-queue-frozen-async-arch.md`

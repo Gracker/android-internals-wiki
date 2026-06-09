@@ -45,7 +45,7 @@ sources:
 tags: [frame-rate, jankstats, choreographer, online-monitoring]
 related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.06", "19.11", "19.12", "26.3"]
 pipeline_stage: "ready-to-publish"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task9_result: pass-tech-review

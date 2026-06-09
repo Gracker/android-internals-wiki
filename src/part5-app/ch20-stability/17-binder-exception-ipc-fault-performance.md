@@ -326,3 +326,19 @@ APM SDK 对 Binder 异常的归因通常分三层：
 ---
 
 > [自动发现] Binder 异常在 crash 归因中容易被忽略。部分 APM SDK 只统计 `UncaughtExceptionHandler` 捕获的异常，但 `RemoteException` 作为 checked exception 通常被 catch 后降级处理——它不会出现在 crash 列表里，但可能导致功能异常或用户体验降级。稳定性治理需要把"IPC 失败率"作为独立指标跟踪，不能只看 crash 率。
+
+
+### 交叉引用：Binder 事务队列机制（详见 §1.4 注入块）
+
+<!-- AIW-源码调研-2026-06-09-02 -->
+
+本节聚焦"异常体系"，但异常处理的根源往往在事务队列的设计中。补充几个与异常相关的队列机制（**详见 §1.4 章节末尾 2026-06-09-02 注入块**）：
+
+- **frozen 进程异常**：`proc->is_frozen` 状态下同步调用走 `BR_FROZEN_REPLY`（不抛 RemoteException，但客户端表现为卡死直到解冻）；oneway 走 `BR_TRANSACTION_PENDING_FROZEN` + `node->async_todo` 缓冲。详见 §1.18 Binder Freezer 章节。
+- **`BR_DEAD_REPLY` 异常**：发往 `proc->is_dead` 或 `thread->is_dead` 的事务直接返回此值，对应应用侧的 `DeadObjectException`。
+- **`BR_ONEWAY_SPAM_SUSPECT` 告警**：`binder_thread_read` 收到 `BINDER_WORK_TRANSACTION_ONEWAY_SPAM_SUSPECT` 时转换为 `BR_ONEWAY_SPAM_SUSPECT` 给用户态，是 §20.17 "oneway 性能陷阱"的诊断信号。
+- **`TF_UPDATE_TXN` supersede**：frozen 队列中"同 code + 同 pid + 同 target"的旧事务可被新事务替换，**避免解冻时异常积压**——这是 Android 14 起针对 frozen 进程累积的关键优化。
+
+- 注入时间：2026-06-09
+- 价值：把 §20.17 的"异常现象"与 §1.4 注入块的"队列机制"建立显式引用，便于读者交叉查阅
+- 关联 DeepResearch：`DeepResearch/2026-06-09-android17-binder-transaction-queue-frozen-async-arch.md`

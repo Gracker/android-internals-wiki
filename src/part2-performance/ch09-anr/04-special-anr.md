@@ -25,7 +25,7 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-task6_state: revisiting
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-22T19:18:14+08:00"

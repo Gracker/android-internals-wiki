@@ -45,6 +45,8 @@ last_task6_review_log: "logs/review/2026-05-08-21-review.md"
 task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理 L1/L2 用词 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-08-21-deep-review.md"
 task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 4 处记录在 deep-review/suggestions，不阻塞发布；自动晋升 finalized / ready-to-publish。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-09
 ---
 
 # Hardware Layer
@@ -85,7 +87,6 @@ Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启
 
 **硬件加速（Hardware Acceleration）** 指的是 Android 的渲染管线使用 GPU 来完成图形绘制，而不是用 CPU 调用 Skia 软件渲染。从 Android 4.0 开始，硬件加速默认开启。开启后，App 的渲染工作由主线程（记录 DisplayList）和 RenderThread（将 DisplayList 提交给 GPU 执行）协同完成。
 
-[已验证: 官方文档, developer.android.com/guide/topics/graphics/hardware-accel]
 
 **Hardware Layer** 指的是在硬件加速开启时，把某个 View 子树的绘制结果放进一块离屏 GPU render target，后续以纹理的形式参与合成。官方文档把它描述为 hardware layer 或 hardware texture。它解决的是“同一批绘制结果要被连续复用”的问题，例如 alpha、translation、scale、rotation 这些变换持续发生，但内容本身没有变化的场景。
 
@@ -97,9 +98,6 @@ Hardware Layer 能减少的是 RenderThread 侧对这棵子树 DisplayList 的�
 - **单个 View 使用 `LAYER_TYPE_SOFTWARE`**：只有这个 View 子树改走软件缓存，先生成 Bitmap，再参与窗口合成；窗口其他部分仍然可以保持硬件加速。
 - **整个 window/app 关闭硬件加速**：窗口没有 ThreadedRenderer，整帧绘制都回到软件管线，这才是“整个窗口没有 RenderThread”的情形。
 
-[待补充：Trace 截图——默认硬件加速、单 View software layer、整窗软件渲染的 Perfetto 对比]
-
-[来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 
 ## 三种 LayerType：NONE、SOFTWARE、HARDWARE
 
@@ -202,7 +200,6 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 高爷通过一个完整的实验（使用 gfxinfo 统计数据）对比了六种场景下的性能表现，数据展示了 Hardware Layer 的正反两面。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 
 ### 场景一：属性动画 + 不修改内容
 
@@ -242,7 +239,6 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 在性能优化的实际工作中，这条规律可以转化为一条操作原则：评估某个 View 是否该使用 Hardware Layer 时，先确认动画期间内容是否会变化。内容不变时，Hardware Layer 通常能提升性能；内容会变时，优先把内容变化和动画分离到不同的 View 上，再评估是否使用 Hardware Layer。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 
 ## 在 Perfetto 中识别 Hardware Layer 问题
 
@@ -251,8 +247,6 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 ### Software Layer 缓存失效
 
 在主线程（MainThread）的 slice 中看到重复出现的 `buildDrawingCache/SW Layer for XXXView`，说明 Software Layer 每帧都在重建。排查重点是：这个 View 是不是每帧都在调用 `invalidate()` 或者修改内容？
-
-[待补充：Trace 截图——Software Layer 缓存失效的 Perfetto 表现]
 
 ### Hardware Layer 缓存失效
 
@@ -267,7 +261,6 @@ Android 开发者选项中有一个"显示硬件层更新"（Show hardware layer
 
 两个工具配合使用：先用"显示硬件层更新"快速定位问题 View，再用 Perfetto 的 `buildLayer`/`buildDrawingCache` slice 确认根因。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 
 ## 与 RenderNode compositing layer 的关系
 
@@ -322,7 +315,7 @@ Box(
 
 Compose 1.10 对 `graphicsLayer` 的纹理复用机制做了进一步优化：离屏缓冲池化（offscreen buffer pooling）。之前每次 `graphicsLayer` 需要离屏渲染时都会重新分配 GPU 纹理，用完即释放；1.10 开始，这些纹理会被池化复用。对 LazyLayout 滑动场景，item 离开可视区后其 layer 纹理不销毁，新 item 进入时直接从池中取用，省去了纹理分配和上传的开销；收益需要用掉帧率、GPU 纹理分配次数和 RenderThread 耗时一起确认。
 
-## 与 RenderEffect 的关系 [AIW-源码调研-2026-04-22]
+## 与 RenderEffect 的关系
 
 RenderEffect（API 31, Android 12+）与 Hardware Layer 都会用到 **offscreen rendering**，但它们服务的语义不同。
 

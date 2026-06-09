@@ -85,10 +85,8 @@ last_verified: '2026-06-07'
 last_verified_against: "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `PackageInstallerSession.verifySdmSignatures` / `ArtManagedInstallFileHelper` / `ArtManagerLocal` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob` / `IncrementalService` / `PackageArchiver` / `ActivityStarter` / `ArchiveState`) + AOSP android-15.0.0_r1 `PackageArchiver` / `ActivityStarter` / `ArchiveState` + AOSP android-9.0.0_r1 `Installer.java` + Android Developers Baseline Profiles overview"
 task9_result: "auto-fixed"
 task9_state: "reviewed"
-task2b_state: fixed
-task6_state: reviewed  # updated by task2b-verifier 2026-06-07
-pipeline_stage: ready-to-publish
-last_task9_at: "2026-06-07T21:22:00+08:00"
+task6_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 last_task9_review_at: "2026-06-07T21:22:00+08:00"
 task9_reviewed_date: "2026-06-07"
 task9_reviewed_at: "2026-06-07T21:22:00+08:00"

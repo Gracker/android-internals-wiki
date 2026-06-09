@@ -35,7 +35,7 @@ task2b_result: fixed
 last_task2b_at: "2026-05-22T19:18:14+08:00"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "pass-tech-review"
 task9_reviewed_by: "openclaw-task9"

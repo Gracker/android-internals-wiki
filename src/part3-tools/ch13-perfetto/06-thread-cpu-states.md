@@ -38,10 +38,8 @@ related_chapters:
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-26"
 pipeline_stage: "ready-to-publish"
-task6_state: reviewed  # updated by task2b-verifier 2026-06-08
 task6_result: pass-light-edit
 task9_state: "reviewed"
-task2b_state: "fixed"
 task9_result: pass-tech-review
 task9_reviewed_date: '2026-05-19'
 task9_reviewed_by: openclaw-task9
