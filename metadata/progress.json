@@ -14228,6 +14228,8 @@
     "task6_result": "needs-rework",
     "task6_state": "reviewed",
     "last_task6_review": "2026-06-10T06:06:00+08:00",
-    "review_round": 2
+    "review_round": 2,
+    "task2b_state": "pending",
+    "last_task6_at": "2026-06-10T07:07:00+08:00"
   }
 }
