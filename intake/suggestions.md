@@ -1,36 +1,69 @@
-## [Task9 Idle Audit] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — 2026-06-10
-- **类型**：源码准确性
-- **位置**：step_wise governor - throttle 参数描述
-- **问题**：章节提到 android16-6.12 中的 throttle 参数控制 cooling state 增加，但未明确标注该参数的 Android 分支特异性。mainline kernel 6.12+ 可能不包含相同参数实现。
-- **建议**：在 step_wise 代码示例旁添加版本注释，说明该参数为 Android 分支特有，mainline kernel 可能有不同实现。
-
-## [Task9 Idle Audit] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — 2026-06-10
-- **类型**：版本差异
-- **位置**：power_allocator governor pid_controller 签名描述
-- **问题**：章节将 android-mainline/common 的 pid_controller() 签名误描述为通用实现，但实际上 android16-6.12 分支仍使用旧风格参数 (trip_switch_on, trip_temp, MAX_K*)，存在显著差异。
-- **建议**：分开描述 mainline 和 Android 分支的 pid_controller() 签名差异，明确标注不同版本的参数结构。
-
-## [Task9 Idle Audit] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — 2026-06-10
-- **类型**：数据缺失
-- **位置**：Framework TemperatureWatcher 实现
-- **问题**：getHeadroomCallbackDataLocked() 内部使用 getForecast(0) + getForecast(10) 但未说明 forecastSeconds 参数可能动态变化。
-- **建议**：补充说明 TemperatureWatcher 中 mForecastSeconds 参数的动态性，以及其对 listener 回调频率的影响。
-
-## [Task9 Idle Audit] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — 2026-06-10
-- **类型**：知识盲区
-- **位置**：Governor 参数差异
-- **问题**：章节仅泛泛提及 power_allocator PID 参数调优原则，但未包含 Qualcomm/SoC vendor 对默认参数的具体差异。
-- **建议**：增加表格对比主流 SoC 厂商 (Qualcomm, MediaTek, Samsung) 的 power_allocator 默认 PID 参数差异，并提供调优建议。
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-06-10
+- **类型**：知识表述更新
+- **位置**：章节中关于 preloaded classes 数量的历史对比表述
+- **问题**：文中提到"老文章常把 preloaded classes 写成'3000-4000 个常用类'"，虽然正文已正确说明当前版本为18431，但这种过时参考的对比表述可能让读者困惑当前实际值
+- **建议**：直接删除"3000-4000"这个过时数字的对比，或改为更明确的版本标注，如"Android 8/9时代的3000-4000个类已扩展到当前版本的18431个"
 
 ## [Task6 Review] 14.2 Simpleperf — 2026-06-10
 
-- **类型**：需重写（文体）+ 需验证（技术准确性）
-- **位置**：全章，重点 14.7、14.9、14.10、14.2
-- **问题**：
-  1. **文体违反 writing-guide（全章）**：37个代码块全部是命令/代码堆砌，无连贯叙述。属于 writing-guide 反面教材1（百科词条式）+ 反面教材3（概述式）。writing-guide 要求 Type C 工具篇以"没有这个工具你会多痛苦"开篇，实际是"Simpleperf是Android系统自带的高性能性能分析工具"这种百科开头。
-  2. **14.7 性能优化实践与 Simpleperf 无关**：展示 TexturePool 对象池、WeakReference 防泄漏、线程池配置——全是通用 Java 知识，不是"从 simpleperf report 定位到优化点"的分析闭环。
-  3. **14.9 案例缺乏 Simpleperf 特有输出**：案例里没有 simpleperf report 的调用栈、--show-call-graph 结果、热点函数排名。LazyInitializer 和 SafeHandler 是 Android 通用知识，不是 Simpleperf 分析流程。
-  4. **14.10 Gradle 插件存疑**：`id 'simpleperf-plugin'` 未在官方文档中找到对应记录。
-  5. **14.2 设备端路径错误**：`adb pull /system/bin/simpleperf` 在多数设备上不存在，simpleperf 通过 NDK 分发。
-- **建议**：按 writing-guide Type C 结构重写全章；14.7/14.9 重写为 simpleperf 分析闭环；验证 14.10 和 14.2 的技术准确性。
-- **review 日志**：logs/review/2026-06-10-05-review.md
+### B1 需重写 — 全文叙述风格
+- **类型**：需重写
+- **位置**：全文（14.2.1-14.2.6）
+- **问题**：命令速查表风格，缺乏连贯叙述和因果关系。违反 writing-guide.md "叙述为主，列表为辅"铁律。读者读完知道有哪些命令但不知道怎么用它们解决实际问题。整篇可被 simpleperf --help 替代。
+- **建议**：以完整性能分析案例为主线贯穿全文：发现问题→选择工具→配置采集→解读report→定位热点→优化→验证。命令和参数在流程中自然引出。
+
+### B2 需重写 — 开头
+- **类型**：需重写
+- **位置**：14.2.1 第一段
+- **问题**：百科词条式定义（"Simpleperf是Android系统自带的高性能分析工具，专为开发者设计"），违反 writing-guide Type C 工具使用篇模板。
+- **建议**：从"没有 simpleperf 时 native 性能分析只有 top/strace、看不到函数级热点、无法关联调用栈"的痛点切入。
+
+### B3 需补充内容 — 性能优化实践
+- **类型**：需补充内容
+- **位置**：14.2.7
+- **问题**：仍为 Task2B 回炉占位符，无实质内容。上次 review 已指出旧版为通用 Java 优化模式且 API 版本矛盾。
+- **建议**：按回炉方向重写：simpleperf report 发现热点→调用栈解读→定位优化方向→优化后再用 simpleperf 验证。
+
+### B4 需补充内容 — 性能案例分析
+- **类型**：需补充内容
+- **位置**：14.2.9
+- **问题**：仍为 Task2B 回炉占位符，缺少 simpleperf 特有信息。
+- **建议**：完整案例：record → report 原始输出 → 调用栈图 → 热点函数定位 → 优化 → 验证全流程。
+
+### B5 需补充内容 — 性能基准测试
+- **类型**：需补充内容
+- **位置**：14.2.11
+- **问题**：仍为 Task2B 回炉占位符。
+- **建议**：基于 simpleperf stat 实测重写，展示如何建立性能基线。
+
+### B6 需补充内容 — 总结与最佳实践
+- **类型**：需补充内容
+- **位置**：14.2.12
+- **问题**：仍为 Task2B 回炉占位符。
+- **建议**：以"如何用 Simpleperf 建立日常性能监控节奏"为主线，落实到 record→report→定位热点→验证的具体步骤。
+
+### B7 需确认 — Perfetto 相关参数真实性（交 Task 9）
+- **类型**：需确认
+- **位置**：14.2.5 Perfetto 数据收集
+- **问题**：使用 --perfetto、--config perfetto_config.xml、--out perfetto.traces 等参数，需 Task 9 对照 NDK simpleperf 文档验证这些是否为真实支持的参数名。
+- **建议**：Task 9 源码验证后给出正确参数名。
+
+### B8 需确认 — 内存分析事件名和 report 参数真实性（交 Task 9）
+- **类型**：需确认
+- **位置**：14.2.6 数据分析与解读
+- **问题**：alloc_count/alloc_size/malloc_count/malloc_size 事件名及 --show-alloc-stats/--show-branch-miss/--show-cache-miss/--show-timeline/--top 10 等 report 参数，需 Task 9 验证是否存在。
+- **建议**：Task 9 对照 simpleperf 官方文档验证。
+
+### B9 结构性 — 内部章节编号冲突
+- **类型**：需确认
+- **位置**：全文标题
+- **问题**：章节为 14.2 Simpleperf，但内部标题使用 14.1-14.13（与 14.2 章节号冲突）。
+- **建议**：修正为 14.2.1-14.2.13，并检查 SUMMARY.md 交叉引用一致性。
+
+### B10 版本边界 — DeepResearch main 分支引用
+- **类型**：需确认
+- **位置**：参考资料/DeepResearch引用
+- **问题**：引用的 DeepResearch 标注为"main分支快照"，包含可能未进入 Android 17 的内容。按 AIW 版本边界规则需标注"未进入 Android 17"。
+- **建议**：审查材料中哪些断言已进入 Android 17 正式分支，确定是否需要更新 applicable_versions。
+
+- **review 日志**：logs/review/2026-06-10-07-review.md
