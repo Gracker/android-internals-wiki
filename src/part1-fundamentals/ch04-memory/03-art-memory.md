@@ -55,25 +55,27 @@ reviewed_by: openclaw-task6
 last_task6_at: '2026-06-09T21:09:00+08:00'
 last_task6_audit: 2026-06-09
 last_task6_review_log: logs/review/2026-06-09-21-review.md
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 review_notes: '2026-06-09 21:09 Task6 revisiting 复审。L1/L2 小修 2 处。源码调研附录（AIW-源码调研-2026-06-09）未整合进正文为 L3 建议。送 Task9 复审。 | 2026-06-09 20:56 Task2B main 回炉。P0: 删除 05-28 Generational CMC 注入块(不存在 generational_collector.cc、gc_type.h 枚举名错误、未验证 Android 17 结论)。P1: 移除 "与 AIW §4.3现有描述的差异" 小节(指向已删块)。保留 06-09 一手验证块。 | 2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
 task6_review_notes: "2026-06-09 21 Task6 revisiting 复审；Task2B 已删除 05-28 注入块，06-09 一手验证块保留。L1/L2 小修 2 处（"这样做，是为了让"重复起手式→直接陈述）。源码调研附录风格未整合为 L3 建议交 Task2B。送 Task9 技术复审。 | 2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。" "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
-task9_state: "pending"
+task9_state: "reviewed"
 task9_reviewed_date: '2026-06-09'
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-09T20:38:57+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-09-20-audit.md"
+last_task9_at: "2026-06-09T22:25:14+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-09-22-deep-review.md"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: "2026-06-09 20 Task9 idle audit→Task2B 主修复已删除 05-28 注入块(虚假源码路径+未验证 Android 17 结论)。06-09 一手验证块保留。 | 2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。"
+task9_review_notes: '2026-06-09 22 Task9 deep-review auto-fixed。P0: 修正 06-09 源码调研块中 CMC kernel/userfaultfd 条件（Linux 5.13/MREMAP_DONTUNMAP + SIGBUS，minor-fault 非启用前提）；P1: 删除 Android17 候选结论口径；P2: 移除未 benchmark 的 CC/CMC 暂停时间表。回 Task6 复审。 | 2026-06-09 20 Task9 idle audit→Task2B 主修复已删除 05-28 注入块(虚假源码路径+未验证 Android 17 结论)。06-09 一手验证块保留。 | 2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-27
 last_task9_audit: 2026-06-09
+task9_result: auto-fixed
+last_task9_autofix_at: 2026-06-09
 ---
 
 # ART 虚拟机内存管理
@@ -578,9 +580,9 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 
 <!-- AIW-源码调研-2026-06-09 ·topic=ART GC碎片控制+并发压缩 -->
 
-> ⚠️ 版本边界：android-17.0.0_r1 在2026-06-09 **未发布**（HTTP404）。以下内容基于 android-16.0.0_r1（API36）作为最新已发布锚点，main 分支目录对照；适用于 Android16/API36 与 Android17/API37候选状态，**不涉及 Android18/API38+**。
+> ⚠️ 版本边界：android-17.0.0_r1 在 2026-06-09 **未发布**（AOSP tag 查询为空）。以下内容只基于 android-16.0.0_r1（API 36）一手源码；main 分支仅作目录对照，不作为 Android 17/API 37 正文结论，**不涉及 Android 18/API 38+**。
 
-###4.3.x Android16/17 ART碎片控制与并发压缩（一手源码补遗）
+### 4.3.x Android 16 ART 碎片控制与并发压缩（一手源码补遗）
 
 #### (a) RegionSpace区域级 UnevacFromSpace机制
 
@@ -654,7 +656,7 @@ void YoungMarkCompact::RunPhases() {
 }
 ```
 
-- CMC路径依赖 Linux ≥5.7 内核的 `userfaultfd` minor-fault特性（commit android-review.git.corp.google.com/c/kernel/common/+/1540088）。低于5.7 内核的设备走传统 STW压缩路径。
+- CMC 启用条件不能简化成 Linux ≥5.7 或 minor-fault。`android-16.0.0_r1` 的 `KernelSupportsUffd()` 先检查 `MREMAP_DONTUNMAP`（源码注释写明该能力在 Linux 5.13 引入并可 backport 到 GKI）和 userfaultfd SIGBUS；minor-fault 特性只用于 minor-fault mode。未满足条件时会回退到非 UFFD 路径，不能直接写成“低于 5.7 走传统 STW 压缩”。
 
 #### (c) LargeObjectSpace不可移动 +碎片诊断
 
@@ -672,7 +674,7 @@ bool LogFragmentationAllocFailure(std::ostream& os, size_t failed_alloc_bytes) o
 
 - LOS 与 main space 都是 discontinuous + non-moving，不参与压缩。
 - `LogFragmentationAllocFailure` 在分配失败路径输出「最大连续可分配块」长度——APM工具可借此判断 OOM 是否由碎片化引起。
-- LOS底层使用 `dlmalloc`，支持 `kMap` 与 `kFreeList`两种实现（`large_object_space.cc` `#include "dlmalloc_space.h"`）。
+- LOS 不参与移动压缩；`kFreeList` 路径复用 `dlmalloc_space` 相关实现，`kMap` 路径则按对象 `mmap` / `munmap`，不能把两种实现都概括成“底层使用 dlmalloc”。
 
 #### (d) CC vs CMC 取舍
 
@@ -689,20 +691,11 @@ if (gUseReadBarrier) {
 }
 ```
 
-- `gUseReadBarrier == true` →走 CC（每次访问对象查 RB table，~5-15ns，机型兼容性更好）。
-- `gUseReadBarrier == false && gUseUserfaultfd == true` →走 CMC（无 RB 开销，需 Linux5.7+）。
+- `gUseReadBarrier == true` →走 CC。具体读屏障形态按 ART 构建配置区分 Baker read barrier / table-lookup read barrier，不能把所有设备写成“查 RB table”，也不能在缺少 benchmark 时给出纳秒级固定开销。
+- `gUseReadBarrier == false && gUseUserfaultfd == true` →可走 CMC；实际还要满足 `ShouldUseUserfaultfd()` / `KernelSupportsUffd()`、`use_generational_cmc()` 与 device_config 等条件。
 - CC 与 CMC 是互斥两条路径，不存在运行时热切换。
 
-#### (e)性能特征对照表
+#### (e) 性能特征边界
 
-|场景 | CC（read barrier路径）| CMC（userfaultfd路径）|
-|------|------------------------|------------------------|
-| young GC暂停 |1-3ms | <1ms |
-| full GC暂停 |5-15ms |2-6ms |
-|碎片控制 |75%阈值 + UnevacFromSpace | 全堆压缩（碎片归零）|
-| 内核要求 |无 | ≥5.7 |
-| CPU 开销 |每次访问对象查 RB table | 无 RB 开销 |
-| LargeObject | 不参与压缩 | 不参与压缩 |
-
-> 上表为基于 `mark_compact.cc` 中 `kMinFromSpaceMadviseSize=8MB` 等常量做的估算，**未经 benchmark验证**。
+本补遗不保留 Young GC / Full GC 暂停时间的固定数值。`mark_compact.cc` 中的常量只能说明实现阈值，不能推出跨设备的暂停耗时。若要比较 CC 与 CMC 的 pause / CPU / battery，应使用同一设备、同一系统版本、同一负载下的 Perfetto GC slice、ART GC histogram 或公开 benchmark。
 
