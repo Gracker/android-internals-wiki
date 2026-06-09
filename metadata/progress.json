@@ -14218,5 +14218,16 @@
     "last_run": "2026-06-09T21:00:24+08:00",
     "last_chapter": "4.3",
     "last_action": "P0:删除05-28虚假源码注入块; P1:移除差异小节; 保留06-09验证块"
+  },
+  "section_14_2": {
+    "section": "14.2",
+    "title": "Simpleperf",
+    "file": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_result": "needs-rework",
+    "task6_state": "reviewed",
+    "last_task6_review": "2026-06-10T06:06:00+08:00",
+    "review_round": 2
   }
 }
