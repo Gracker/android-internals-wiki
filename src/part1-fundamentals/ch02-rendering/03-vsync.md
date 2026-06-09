@@ -39,7 +39,7 @@ sources:
     path: "https://developer.android.com/about/versions/16/features"
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-09"
 review_round: 4
@@ -47,20 +47,24 @@ repaired_date: "2026-05-09"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-09T12:43:00+08:00"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-18"
+pipeline_stage: "task6_pending"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-06-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-18T00:25:00+08:00"
+last_task9_at: "2026-06-09T14:20:00+08:00"
 task2b_state: "fixed"
 last_task2b_at: "2026-05-15T03:17:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
-task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；无新增 P0/P1；既有 P2（Perfetto/ARR trace 样例）不重复入 suggestions；Task6 已 pass 且 queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-09-14-audit.md"
+task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Choreographer API 名 `AChoreographer_vsyncCallback`；AOSP android-16.0.0_r1 header 已复核，Android 17 tag 当前未在 android.googlesource 公开，章节 Android 17 内容保留待验证边界。P0 1（已修）/ P1 0 / P2 1（既有 suggestions，不重复）。"
 
 task2b_result: "fixed"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
 last_task6_audit: "2026-06-09"
+task9_state: "reviewed"
+last_task9_audit: "2026-06-09"
+last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"
+last_task9_autofix_at: "2026-06-09"
 ----
 
 # VSync 机制
@@ -324,7 +328,7 @@ vsync-appSf 将这两个职责彻底分离:
 - **vsync-sf**:专用于驱动 SurfaceFlinger 合成
 - **vsync-appSf**:专用于需要与 SurfaceFlinger 内部状态紧密同步的 Choreographer 客户端
 
-同时,从 API 33 开始,Android 提供了 NDK Choreographer API(`A Choreographer_vsyncCallback`),允许应用使用正确的帧节奏(Frame Pacing),甚至可以选择渲染到未来的某一帧。这个 API 提供多个可能的帧时间线信息,App 可以根据渲染截止时间和期望的展示时间来选择最合适的时间线。
+同时,从 API 33 开始,Android 提供了 NDK Choreographer API(`AChoreographer_vsyncCallback`),允许应用使用正确的帧节奏(Frame Pacing),甚至可以选择渲染到未来的某一帧。这个 API 提供多个可能的帧时间线信息,App 可以根据渲染截止时间和期望的展示时间来选择最合适的时间线。
 
 `[已验证: 官方文档 Android NDK Choreographer + AOSP android-16.0.0_r1, Scheduler/EventThread.cpp]`
 
