@@ -5,9 +5,9 @@ section: "4.9"
 status: "ready-for-review"
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36), Android 17 preview 待复核"
-last_verified: "2026-05-15"
-last_verified_against: "AOSP android-16.0.0_r1 libcore + Android Developers API reference + Oracle Java SE 8 ReferenceQueue API"
+applicable_versions: "Android 8 (API 26) - Android 16 (API 36), Android 17/API 37 源码 tag 待复核"
+last_verified: "2026-06-09"
+last_verified_against: "AOSP android-16.0.0_r1 libcore + Android Developers API reference (Cleaner/CloseGuard/SystemCleaner) + Oracle Java SE 8 ReferenceQueue API"
 confidence: medium
 sources:
   - type: research
@@ -34,16 +34,16 @@ last_task6_at: "2026-06-09"
 reviewed_date: "2026-06-05"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_state: "pending"
+task9_state: "reviewed"
 task9_reviewed_date: "2026-06-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-09T13:24:55+08:00"
-task9_review_notes: "2026-06-09 Task9 deep-review: needs-rework。P0:MAX_ITERS 注入块破坏 AOSP 源码片段,并把 ReferenceQueueDaemon 入队进度监控误写成 FinalizerDaemon/finalization 进度。"
-last_task9_review_log: "logs/deep-review/2026-06-09-13-deep-review.md"
-task9_result: "needs-rework"
-task9_p0_issues: 2
-task9_p1_issues: 1
-task9_p2_issues: 0
+last_task9_at: "2026-06-09T15:22:00+08:00"
+task9_review_notes: "2026-06-09 Task9 deep-review: auto-fixed。P0: RQD watchdog timeout 常量归属错误、FinalizerReference 源码路径/行号错误、sun.misc.Cleaner/createSystemCleaner 路径归属错误；P2: java.lang.ref.Cleaner API33 待验证标记过期。"
+last_task9_review_log: "logs/deep-review/2026-06-09-15-deep-review.md"
+task9_result: "auto-fixed"
+task9_p0_issues: 3
+task9_p1_issues: 0
+task9_p2_issues: 1
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
@@ -52,6 +52,7 @@ task6_review_notes: "2026-06-09 Task6 revisiting re-review: pass-light-edit。L1
 task6_reviewed_date: "2026-06-09"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-09T14:52:28+08:00"
+last_task9_autofix_at: "2026-06-09"
 ----
 # 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 
@@ -88,7 +89,7 @@ last_task2b_at: "2026-06-09T14:52:28+08:00"
 
 `finalize()`、`ReferenceQueue`、`Cleaner` 和资源泄漏经常出现在同一类问题里:内存没有降、FD 数持续涨、日志里出现 CloseGuard 警告,Trace 里还能看到 `FinalizerDaemon` 在忙。本节把这条路径拆清楚:哪些工作由 GC 和 ART 守护线程完成,哪些工作必须由应用显式释放,遇到队列堆积时该采集哪些证据。
 
-本节的判断基于 AOSP `android-16.0.0_r1` 的 libcore 源码。结论边界也要写在前面:Android 16 的 `ReferenceQueue` 仍是带锁 FIFO 队列,未找到它接入 `ConcurrentMessageQueue` 或无锁投递路径的证据;Android 17 preview 后续还要按公开源码重新复核。
+本节的判断基于 AOSP `android-16.0.0_r1` 的 libcore 源码。结论边界也要写在前面:Android 16 的 `ReferenceQueue` 仍是带锁 FIFO 队列,未找到它接入 `ConcurrentMessageQueue` 或无锁投递路径的证据;Android 17/API 37 的公开源码 tag 仍需后续复核；在 tag 出现前，本节不把 Android 17 行为写成正文结论。
 
 [已验证: AOSP android-16.0.0_r1, platform/libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java]
 [已验证: AOSP android-16.0.0_r1, platform/libcore/libart/src/main/java/java/lang/Daemons.java]
@@ -144,7 +145,7 @@ public Reference<? extends T> remove(long timeout)
 
 ## 从 GC 标记到 finalize 执行的路径
 
-带 `finalize()` 的对象在分配/构造阶段就通过 `FinalizerReference.add()` 注册了对应的 `FinalizerReference` 链表节点(参见 `FinalizerReference.java` L33-L45)。GC 判定对象不可达后,不会重新创建引用,只是把已有 `FinalizerReference` 的 referent 置为 zombie 状态,然后挂到 `ReferenceQueue.unenqueued`。`ReferenceQueueDaemon` 再通过 `enqueuePending()` 把这批引用转移到 `FinalizerReference.queue`,`FinalizerDaemon` 才能取出并调用 `object.finalize()`。
+带 `finalize()` 的对象在分配/构造阶段就通过 `FinalizerReference.add()` 注册了对应的 `FinalizerReference` 链表节点(参见 `luni/src/main/java/java/lang/ref/FinalizerReference.java` L25-L45、L59-L70)。GC 判定对象不可达后,不会重新创建引用,只是把已有 `FinalizerReference` 的 referent 置为 zombie 状态,然后挂到 `ReferenceQueue.unenqueued`。`ReferenceQueueDaemon` 再通过 `enqueuePending()` 把这批引用转移到 `FinalizerReference.queue`,`FinalizerDaemon` 才能取出并调用 `object.finalize()`。
 
 这条路径按四段排查:
 
@@ -200,7 +201,7 @@ Android 的 `ReferenceQueue` 和 OpenJDK 的实现有一个结构差异:Android 
 
 Android 16 的 `enqueuePending()` 已经做了批处理优化。它会把同一个 `ReferenceQueue` 的连续引用放在一次 `synchronized (queue.lock)` 里处理，并用 `MAX_ITERS = 100` 限制单次持锁时间。这个优化减少重复加锁，但没有改变"同一个队列同一时间只有一个线程修改队列"的约束。
 
-> **MAX_ITERS=100 的进度监控归属**：`enqueuePending()` 接收的 `AtomicInteger progressCounter` 属于 `ReferenceQueueDaemon`（`Daemons.java` L250-L267），由 RQD 每完成一次 `enqueuePending()` 调用后 `incrementAndGet()`。`FinalizerWatchdogDaemon` 分别监控 RQD 和 FinalizerDaemon 的 counter：RQD 超时检查走 `ReferenceQueueDaemon.MAX_FINALIZE_NANOS`（500ms），FinalizerDaemon 超时检查走 `FinalizerDaemon.MAX_FINALIZE_NANOS`（10s）。两者是两个独立的监控通道，不要把 RQD 入队进度当成 finalization 速度。
+> **MAX_ITERS=100 的进度监控归属**：`enqueuePending()` 接收的 `AtomicInteger progressCounter` 属于 `ReferenceQueueDaemon`（`Daemons.java` L224-L229、L275-L277；`ReferenceQueue.java` L236-L275）。它在每处理一个 `sun.misc.Cleaner` 或同队列批次后递增；`FinalizerDaemon` 另有独立 counter（`Daemons.java` L295-L352）。`FinalizerWatchdogDaemon` 用 `VMRuntime.getFinalizerTimeoutMs()` 推导 timeout 窗口，同时读取两个 counter；RQD 超时需要超过 `TOLERATED_REFERENCE_QUEUE_TIMEOUTS = 5` 才构造异常（`Daemons.java` L563-L648）。两者是两个独立的监控对象，不要把 RQD 入队进度当成 finalization 速度。
 
 > **Android 17 源码状态**：截至本轮复核，`platform/libcore` 与 `platform/art` 仓库的 `git ls-remote` 未返回 `android-17*` tag，无法引用 android-17.0.0_r1 源码。本节正文结论仅基于 `android-16.0.0_r1`，Android 17 不作为正文结论。
 
@@ -326,7 +327,7 @@ adb shell debuggerd -b <pid> > threads_after.txt
 
 - `sun.misc.Cleaner`(API 26+):在 `ReferenceQueueDaemon` 的 `enqueuePending()` 中,检测到引用的 queue 是 `Cleaner` 队列时直接调用 `Cleaner.clean()`。不存在独立的 `CleanerDaemon` 线程。
 - `java.lang.ref.Cleaner.create()`(API 33 公开):通过 `CleanerImpl.start()` 创建名为 `Cleaner-N` 的独立 daemon 线程执行清理,不经过 `FinalizerDaemon`。
-- Android 隐藏的 system cleaner(`Cleaner.createSystemCleaner()` / `SystemCleaner.cleaner()`):把 queue 设为 `FinalizerReference.queue`,由 `FinalizerDaemon.processReference()` 中的 `doClean()` 执行。
+- Android system cleaner(`android.system.SystemCleaner.cleaner()` API 33 公开入口,内部使用隐藏的 `Cleaner.createSystemCleaner()`):把 queue 设为 `FinalizerReference.queue`,由 `FinalizerDaemon.processReference()` 中的 `doClean()` 执行。
 
 三条路径都不提供确定性执行时间。对 FD、socket、数据库 cursor、GraphicBuffer、Bitmap native allocation 这类资源,主路径仍然是显式关闭。
 
@@ -385,11 +386,12 @@ CI 里可以把资源泄漏测试写成固定复现脚本:执行 N 轮打开/关
 
 - `libcore/libart/src/main/java/java/lang/Daemons.java` - 四个 daemon 定义(L59-L64 `HeapTaskDaemon`/`ReferenceQueueDaemon`/`FinalizerDaemon`/`FinalizerWatchdogDaemon`),L363-L411 `processReference()`/`doFinalize()`/`doClean()`
 - `libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java` - `enqueuePending()` 批量入队与 `sun.misc.Cleaner` 清理触发,L236-L279
-- `libcore/ojluni/src/main/java/java/lang/ref/FinalizerReference.java` - `FinalizerReference.add()`、`queue` 字段
-- `libcore/ojluni/src/main/java/sun/misc/Cleaner.java` - 旧版 Cleaner,在 `ReferenceQueueDaemon.enqueuePending()` 中由 `isCleanerQueue(queue)` 分支直接 `clean()`,L178-L221 `create()`/`createSystemCleaner()`
-- `libcore/ojluni/src/main/java/java/lang/ref/Cleaner.java` - API 33 公开 Cleaner,`Cleaner.Cleanable` 接口
+- `libcore/luni/src/main/java/java/lang/ref/FinalizerReference.java` - `FinalizerReference.add()`、`queue` 字段,L25-L45、L59-L70
+- `libcore/ojluni/src/main/java/sun/misc/Cleaner.java` - 旧版 Cleaner,在 `ReferenceQueueDaemon.enqueuePending()` 中由 `isCleanerQueue(queue)` 分支直接 `clean()`,L123-L166 `isCleanerQueue()`/`create()`/`clean()`
+- `libcore/ojluni/src/main/java/java/lang/ref/Cleaner.java` - API 33 公开 Cleaner,L178-L221 `create()`/`createSystemCleaner()`,L234-L237 `register()`
 - `libcore/ojluni/src/main/java/jdk/internal/ref/CleanerImpl.java` - `CleanerImpl.start()` 创建独立 daemon 线程,L113-L144
 - `frameworks/base/core/java/android/util/CloseGuard.java` - API 30 公开 CloseGuard,应用层泄漏检测
+- `libcore/luni/src/main/java/android/system/SystemCleaner.java` - API 33 公开 `SystemCleaner.cleaner()`,L39-L50
 - `libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java` - API 26+ 非公开 CloseGuard,Dalvik 内部使用
 
 **Cleaner 三条执行路径**:
@@ -415,14 +417,14 @@ FinalizerDaemon.processReference()
     → SystemCleaner 的 queue 上引用执行清理
 ```
 
-关键区别:`sun.misc.Cleaner` 不经过独立线程,在 `ReferenceQueueDaemon` 的入队循环中直接执行;`java.lang.ref.Cleaner.create()` 使用 `CleanerImpl` 创建的独立线程,不经过 `FinalizerDaemon`;只有 Android 隐藏的 system cleaner 才走 `FinalizerReference.queue` + `FinalizerDaemon#doClean()` 路径。
+关键区别:`sun.misc.Cleaner` 不经过独立线程,在 `ReferenceQueueDaemon` 的入队循环中直接执行;`java.lang.ref.Cleaner.create()` 使用 `CleanerImpl` 创建的独立线程,不经过 `FinalizerDaemon`;`android.system.SystemCleaner.cleaner()` 这个共享 Cleaner 才通过内部 `createSystemCleaner()` 走 `FinalizerReference.queue` + `FinalizerDaemon#doClean()` 路径。
 
 **Core Library Desugaring 影响**: `java.lang.ref.Cleaner` 可通过 AGP 8.0+ `coreLibraryDesugaring` 在 API 26+ 设备上使用,需要在 `build.gradle` 中添加 `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.x")` 依赖。但 desugared Cleaner 的每次清理调用会增加桥接层开销,且运行时语义不保证与原生实现完全一致(例如线程调度、异常处理路径可能有差异);对 FD、GraphicBuffer 这类高频资源,建议用 `AutoCloseable` 显式关闭,不依赖 desugared Cleaner。
 
 [已验证: AOSP android-16.0.0_r1, Daemons.java L59-L64 (四个 daemon), L363-L411 (processReference/doFinalize/doClean)]
 [已验证: AOSP android-16.0.0_r1, ReferenceQueue.java L236-L278]
 [已验证: 官方文档, developer.android.com/reference/android/util/CloseGuard - Added in API 30]
-[待验证: `java.lang.ref.Cleaner` 在 API 33 的具体添加版本,建议交叉核 android-developer-preview 文档]
+[已验证: Android Developers API reference, `java.lang.ref.Cleaner` / `android.system.SystemCleaner` Added in API level 33]
 
 ## Native 资源释放与 Java wrapper 生命周期
 
