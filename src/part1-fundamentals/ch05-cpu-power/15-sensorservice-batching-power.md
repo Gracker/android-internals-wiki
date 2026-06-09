@@ -2,7 +2,7 @@
 title: "SensorService 与传感器批处理功耗模型"
 chapter: "5.15"
 section: "5.15"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-19"
 applicable_versions: "Android 4.4 (API 19) - Android 16 (API 36)"
 last_verified: "2026-06-09"
@@ -32,14 +32,14 @@ related_chapters: ["5.6", "11.2", "25.5", "14.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-19"
 gap_source: "AOSP 结构/官方文档"
-pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_date: "2026-05-19"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+reviewed_date: "2026-06-09"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task9_state: reviewed
-last_task6_at: "2026-05-19T16:12:00+08:00"
-last_task6_review_log: "logs/review/2026-05-19-16-review.md"
+last_task6_at: "2026-06-09T20:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-09-20-review.md"
 task9_result: auto-fixed
 last_task9_at: "2026-06-09T19:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-09-19-audit.md"

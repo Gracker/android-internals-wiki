@@ -13928,6 +13928,34 @@
         }
       ],
       "log": "logs/review/2026-06-07-12-review.md"
+    },
+    {
+      "date": "2026-06-09",
+      "section": "13.3",
+      "action": "auto-promoted to finalized",
+      "title": "Perfetto View 解读",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "last_task6_at": "2026-06-09T20:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-09-20-review.md"
+    },
+    {
+      "date": "2026-06-09",
+      "section": "5.15",
+      "action": "auto-promoted to finalized",
+      "title": "SensorService 与传感器批处理功耗模型",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "last_task6_at": "2026-06-09T20:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-09-20-review.md"
     }
   ],
   "21.13": {
