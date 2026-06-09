@@ -2,7 +2,7 @@
 title: "ART FinalizerDaemon 与 ReferenceQueue 性能边界"
 chapter: "4.9"
 section: "4.9"
-status: "ready-for-review"
+status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36), Android 17/API 37 源码 tag 待复核"
@@ -27,9 +27,9 @@ related_chapters: ["4.3", "4.5", "10.2", "23.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/章节深挖"
-pipeline_stage: "task6_pending"
+pipeline_stage: ready-to-publish
 task2b_state: "fixed"
-task6_state: "revisiting"
+task6_state: reviewed
 last_task6_at: "2026-06-09"
 reviewed_date: "2026-06-05"
 reviewed_by: "openclaw-task6"
