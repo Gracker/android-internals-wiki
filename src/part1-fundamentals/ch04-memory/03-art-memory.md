@@ -6,11 +6,11 @@ section: '4.3'
 drafted_date: '2026-03-31'
 drafted_by: openclaw-task2
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-23'
+last_verified: '2026-06-10'
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-last_verified_against: AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 + Android Developers Blog (Android 16 QPR2)
+last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 + Android Developers Blog (Android 16 QPR2); android-17.0.0_r1 tag unavailable on 2026-06-10"
 confidence: medium
 sources:
 - type: official
@@ -55,27 +55,27 @@ reviewed_by: openclaw-task6
 last_task6_at: '2026-06-09T23:13:33+08:00'
 last_task6_audit: 2026-06-09
 last_task6_review_log: logs/review/2026-06-09-23-review.md
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 review_notes: '2026-06-09 23:00 Task6 revisiting 第三轮复审。L1 小修 4 处（3 处口水过渡词"更合适/更准确"，1 处附录格式）。无新增 L3/L4 回炉项。送 Task9 复审 auto-fixed 内容。 | 2026-06-09 21:09 Task6 revisiting 复审。L1/L2 小修 2 处。源码调研附录（AIW-源码调研-2026-06-09）未整合进正文为 L3 建议。送 Task9 复审。 | 2026-06-09 20:56 Task2B main 回炉。P0: 删除 05-28 Generational CMC 注入块(不存在 generational_collector.cc、gc_type.h 枚举名错误、未验证 Android 17 结论)。P1: 移除 "与 AIW §4.3现有描述的差异" 小节(指向已删块)。保留 06-09 一手验证块。 | 2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
 task6_review_notes: "2026-06-09 23: Task6 revisiting 第三轮复审；L1 小修 4 处（口水过渡词 3 + 附录格式 1），无 L3/L4 回炉项，送 Task9 复审 auto-fixed 内容。 | 2026-06-09 21 Task6 revisiting 复审；Task2B 已删除 05-28 注入块，06-09 一手验证块保留。L1/L2 小修 2 处（"这样做，是为了让"重复起手式→直接陈述）。源码调研附录风格未整合为 L3 建议交 Task2B。送 Task9 技术复审。 | 2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。" "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
-task9_state: "pending"
-task9_reviewed_date: '2026-06-09'
+task9_state: "reviewed"
+task9_reviewed_date: '2026-06-10'
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-09T22:25:14+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-09-22-deep-review.md"
+last_task9_at: "2026-06-10T00:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-10-00-deep-review.md"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: '2026-06-09 22 Task9 deep-review auto-fixed。P0: 修正 06-09 源码调研块中 CMC kernel/userfaultfd 条件（Linux 5.13/MREMAP_DONTUNMAP + SIGBUS，minor-fault 非启用前提）；P1: 删除 Android17 候选结论口径；P2: 移除未 benchmark 的 CC/CMC 暂停时间表。回 Task6 复审。 | 2026-06-09 20 Task9 idle audit→Task2B 主修复已删除 05-28 注入块(虚假源码路径+未验证 Android 17 结论)。06-09 一手验证块保留。 | 2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。'
+task9_review_notes: "2026-06-10 00:20 Task9 deep-review auto-fixed。P0: 修正 Zygote Space 源码锚点为 Heap::PreZygoteFork()，修正 LOS/main moving space 移动属性误写。P1: 收窄 Android17/Generational CMC 口径（android-17.0.0_r1 tag 仍为空），回 Task6 复审。 | 2026-06-09 22 Task9 deep-review auto-fixed。P0: 修正 06-09 源码调研块中 CMC kernel/userfaultfd 条件（Linux 5.13/MREMAP_DONTUNMAP + SIGBUS，minor-fault 非启用前提）；P1: 删除 Android17 候选结论口径；P2: 移除未 benchmark 的 CC/CMC 暂停时间表。回 Task6 复审。 | 2026-06-09 20 Task9 idle audit→Task2B 主修复已删除 05-28 注入块(虚假源码路径+未验证 Android 17 结论)。06-09 一手验证块保留。 | 2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-27
 last_task9_audit: 2026-06-09
-task9_result: auto-fixed
-last_task9_autofix_at: 2026-06-09
+task9_result: "auto-fixed"
+last_task9_autofix_at: 2026-06-10
 ---
 
 # ART 虚拟机内存管理
@@ -120,7 +120,7 @@ Zygote Space 中的对象同样不会被 GC 移动和回收。这样做的好处
 
 在 Perfetto 的内存统计中，一个应用进程的 Zygote Space 通常占几 MB 到十几 MB，这些内存是与其他进程共享的（直到被写入）。
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc InitializeZygoteSpace]
+[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc Heap::PreZygoteFork()]
 
 ### Allocation Space：应用的主要分配区域
 
@@ -251,11 +251,11 @@ CMC 的另一处变化，是主分配路径可以配合 `BumpPointerSpace` 这�
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
 
-### Android 16 QPR2 / Android 17：官方对外明确 Generational CMC
+### Android 16 QPR2：官方对外明确 Generational CMC
 
-Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响 GC 路线的写法。写 Android 16 QPR2 和 Android 17 时，可以把 Generational CMC 当成正式能力来讨论；写 Android 14 / 15 时，表述应收在 Mark Compact / CMC 路径本身。
+Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响 GC 路线的写法。写 Android 16 QPR2 时，可以把 Generational CMC 当成正式能力来讨论；截至 2026-06-10，AOSP platform/art 仍没有 android-17.0.0_r1 tag，本节不把 Android 17 单独作为源码结论。写 Android 14 / 15 时，表述应收在 Mark Compact / CMC 路径本身。
 
-这条时间线更适合记成：Android 8.0-13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 / Android 17 再谈 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
+这条时间线更适合记成：Android 8.0-13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 之后再谈 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
 
 Generational CMC 的分代策略配合 CMC 的压缩能力，在高刷新率环境和高计算负载场景下有潜力释放可观的 CPU 吞吐量。官方博客确认了 ART includes Generational CMC and reduces CPU/battery 的定性描述，但博客原文未给出量化 benchmark 数字。如需引用具体性能数据（如 PCMark 跑分、Young GC 延迟、能效百分比），必须补充可公开访问的一手测试报告（含设备型号、系统版本、负载场景和采样条件）。
 
@@ -580,7 +580,7 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 
 <!-- AIW-源码调研-2026-06-09 ·topic=ART GC碎片控制+并发压缩 -->
 
-> ⚠️ 版本边界：android-17.0.0_r1 在 2026-06-09 **未发布**（AOSP tag 查询为空）。以下内容只基于 android-16.0.0_r1（API 36）一手源码；main 分支仅作目录对照，不作为 Android 17/API 37 正文结论，**不涉及 Android 18/API 38+**。
+> ⚠️ 版本边界：android-17.0.0_r1 在 2026-06-10 **未发布**（AOSP tag 查询为空）。以下内容只基于 android-16.0.0_r1（API 36）一手源码；main 分支仅作目录对照，不作为 Android 17/API 37 正文结论，**不涉及 Android 18/API 38+**。
 
 ### 4.3.x Android 16 ART 碎片控制与并发压缩（一手源码补遗）
 
@@ -672,7 +672,7 @@ bool LogFragmentationAllocFailure(std::ostream& os, size_t failed_alloc_bytes) o
  REQUIRES_SHARED(Locks::mutator_lock_);
 ```
 
-- LOS 与 main space 都是 discontinuous + non-moving，不参与压缩。
+- LOS 是 discontinuous + non-moving space，和 main moving space（`RegionSpace` / `BumpPointerSpace`）分离，不参与 CC/CMC 的移动压缩。
 - `LogFragmentationAllocFailure` 在分配失败路径输出「最大连续可分配块」长度——APM工具可借此判断 OOM 是否由碎片化引起。
 - LOS 不参与移动压缩；`kFreeList` 路径复用 `dlmalloc_space` 相关实现，`kMap` 路径则按对象 `mmap` / `munmap`，不能把两种实现都概括成“底层使用 dlmalloc”。
 
