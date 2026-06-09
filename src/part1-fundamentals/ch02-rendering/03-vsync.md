@@ -39,7 +39,7 @@ sources:
     path: "https://developer.android.com/about/versions/16/features"
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
-task6_state: "revisiting"
+task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-09"
 review_round: 4
@@ -47,7 +47,7 @@ repaired_date: "2026-05-09"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-09T12:43:00+08:00"
 status: "finalized"
-pipeline_stage: "task6_pending"
+pipeline_stage: ready-to-publish
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-09"
 task9_reviewed_by: "openclaw-task9"
