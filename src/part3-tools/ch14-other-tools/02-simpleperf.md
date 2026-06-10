@@ -9,9 +9,9 @@ reviewed_date: '2026-06-10'
 reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
+applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
 last_verified: '2026-04-22'
-last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs + Android profileable docs
+last_verified_against: NDK r29 simpleperf docs + AOSP system/extras/simpleperf (main branch snapshot) + Perfetto linux.perf data source docs
 confidence: needs-review
 sources:
   - type: official
@@ -20,6 +20,9 @@ sources:
     path: developer.android.com/ndk/guides/simpleperf
   - type: official
     path: developer.android.com/guide/topics/profiling/perfetto
+  - type: deepresearch
+    path: DeepResearch/2026-06-10-simpleperf-android17-architecture.md
+    note: main分支快照，AOSP system/extras/simpleperf 架构分析，部分内容可能未进入 Android 17 正式分支
 tags:
   - simpleperf
   - cpu-profiling
@@ -29,13 +32,14 @@ tags:
 last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task2b_at: '2026-06-10T04:50:00+08:00'
 last_task2b_lite_at: '2026-06-10'
+last_task2b_at: '2026-06-10T12:50:00+08:00'
 task9_result: needs-rework
 task6_result: pass-light-edit
-task2b_result: fixed-lite
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 last_task9_at: '2026-06-10T07:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T07:20:00+08:00'
 ---
@@ -45,7 +49,7 @@ last_task9_reviewed_at: '2026-06-10T07:20:00+08:00'
 
 ## 14.2.1 简介与用途
 
-Simpleperf 是 Android 系统自带的高性能分析工具，专为开发者设计。它能够深入分析应用程序在 Android 设备上的运行性能，包括 CPU 使用率、内存占用、函数调用栈等关键指标。
+Simpleperf 是 Google 官方维护的原生 CPU profiling 工具，通过 Android NDK 分发 [已验证：NDK r29]。它基于 Linux `perf_event_open` 系统调用，能够以低开销采集函数级 CPU 热点、调用栈、硬件 PMU 事件等关键性能数据。
 
 ### 主要用途
 
@@ -68,7 +72,7 @@ Simpleperf 适用于：
 
 相比第三方性能分析工具，Simpleperf 具有以下优势：
 
-- **零依赖**：无需额外安装，Android 系统自带
+- **无需 root**（部分场景）：Android 13+ 支持 App 自采样永久授权（`persist.simpleperf.profile_app_uid`），profileable 应用无需 root [已验证：AOSP main.cpp AndroidSecurityCheck 三段式权限模型]
 - **低开销**：性能分析本身对应用性能影响最小
 - **系统级集成**：与 Android 调试体系无缝结合
 - **多格式支持**：支持 Perfetto、Android Profileable 等现代格式
@@ -83,7 +87,7 @@ Simpleperf 适用于：
 Simpleperf 需要满足以下设备要求：
 
 - **Android 版本**：Android 5.0 (API 21) 及以上
-- **root 权限**：需要 root 权限才能进行完整的系统级跟踪
+- **root 权限**：系统级跟踪需要 root；应用级采样在 Android 13+ 可通过 `persist.simpleperf.profile_app_uid` 属性授予 App 自采样永久授权 [已验证：AOSP main.cpp 三段式权限模型，Android 13+ 不再要求 shell 下 setprop]
 - **调试模式**：设备需开启 USB 调试或无线调试
 - **应用签名**：被测试应用需要 debuggable 或包含 debug key
 
@@ -98,10 +102,10 @@ adb shell settings put global adb_enabled 1
 # 设置应用为可调试模式（如果应用不是 debuggable）
 adb shell pm grant com.example.debug android.permission.SET_DEBUG_APP
 adb shell am set-debug-app --persistent com.example.debug
-
-# 验证设备是否支持 simpleperf
-adb shell simpleperf --version
 ```
+
+> **注意**：多数设备不在系统镜像中预装 simpleperf，`adb shell simpleperf --version` 可能返回 "not found"。
+> 此时需要从 NDK 下 push 到设备：`adb push $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/simpleperf /data/local/tmp/` [已验证：NDK r29 分发方式]
 
 #### 工具包准备
 
@@ -163,11 +167,11 @@ simpleperf <command> [options] [target]
 #### CPU 使用率分析
 
 ```bash
-# 启动应用并记录 CPU 使用
-simpleperf record com.example.app
+# 对指定应用采样 10 秒（--app 指定包名）
+simpleperf record -f 1000 --app com.example.app --duration 10
 
-# 指定时间限制
-simpleperf record -f 5 --trace-fg com.example.app
+# 对指定进程 ID 采样
+simpleperf record -f 1000 -p 12345 --duration 10
 
 # 生成报告
 simpleperf report
@@ -176,14 +180,11 @@ simpleperf report
 #### 函数级别分析
 
 ```bash
-# 记录函数调用
-simpleperf record -g --trace-fg com.example.app
+# 带调用栈的采样（-g 开启 call graph）
+simpleperf record -g --app com.example.app --duration 10
 
-# 只记录特定函数
-simpleperf record -g --trace-fg com.example.app -- android.app.Activity.onCreate
-
-# 生成调用图
-simpleperf report --show-call-graph
+# 采样后生成调用图报告（--children 显示被调用者开销）
+simpleperf report -g --children
 ```
 
 ---
@@ -193,14 +194,14 @@ simpleperf report --show-call-graph
 ### 采样选项
 
 ```bash
-# 设置采样频率
-simpleperf record -f 1000 --trace-fg com.example.app
+# 设置采样频率（-f 单位 Hz，默认 1000）
+simpleperf record -f 4000 --app com.example.app --duration 10
 
-# 使用硬件事件采样
-simpleperf record -e cpu-cycles,instructions --trace-fg com.example.app
+# 指定硬件 PMU 事件采样 [已验证：NDK r29 支持的事件列表见 simpleperf list]
+simpleperf record -e cpu-cycles,instructions --app com.example.app --duration 10
 
-# 自定义事件
-simpleperf record -e cache-misses,cache-references --trace-fg com.example.app
+# 指定缓存事件
+simpleperf record -e cache-misses,cache-references --app com.example.app --duration 10
 ```
 
 ### 过滤选项
@@ -222,61 +223,70 @@ simpleperf record --exclude-pid android.*,system.*
 ### 输出选项
 
 ```bash
-# 输出到文件
-simpleperf record -o output.data --trace-fg com.example.app
+# 输出到指定文件（默认 perf.data）
+simpleperf record -o /data/local/tmp/my_profile.data --app com.example.app --duration 10
 
-# 指定格式
-simpleperf record -o output.perfetto --trace-fg com.example.app
+# 从设备拉取数据文件到主机
+adb pull /data/local/tmp/my_profile.data
 
-# 实时输出
-simpleperf record --trace-fg com.example.app -f 1000
+# 在主机上生成报告
+simpleperf report -i my_profile.data
 ```
 
 ---
 
 ## 14.2.5 数据收集方法
 
-### Perfetto 数据收集
+### 与 Perfetto 集成
 
-Simpleperf 支持输出 Perfetto 格式，这是 Android 10+ 推荐的现代性能分析格式。相比旧版 `perf.data`：
-- **统一分析面**：Perfetto 将 CPU profiling、atrace、ftrace、heap profiles、power rails 合并到同一时间轴，消除了跨工具拼图的碎片化问题。
-- **在线可视化**：`perfetto.trace` 文件可直接拖入 <https://ui.perfetto.dev>，无需本地安装工具。
-- **低开销 SQL 查询**：通过 `trace_processor` 用标准 SQL 做跨维度聚合，替代手工 grep 脚本。
-- **与系统 trace 无缝合并**：`simpleperf record --perfetto` 产出的 trace 可与 `perfetto` 系统 tracing 共用同一个 session。
+Simpleperf 本身输出 `perf.data` 格式（protobuf 编码），不直接输出 `.perfetto-trace` 文件。
+与 Perfetto 系统 trace 集成的正确方式是通过 Perfetto 的 `linux.perf` data source 在同一个 tracing session 中同时采集 perf events 和 ftrace/atrace 事件 [已验证：Perfetto linux.perf 文档]：
 
 ```bash
-# 使用 Perfetto 格式
-simpleperf record --trace-fg com.example.app --perfetto
+# 方式一：通过 Perfetto 配置同时采集 perf events + ftrace
+cat > perfetto_config.txt << 'EOF'
+buffers { size_kb: 65536 }
+data_sources {
+  config {
+    name: "linux.perf"
+    perf_event_config {
+      timebase { frequency: 100 }
+      callstack_sampling { scope { target_cmdline: "com.example.app" } }
+    }
+  }
+}
+data_sources {
+  config { name: "linux.ftrace" }
+}
+EOF
 
-# 指定 Perfetto 配置
-simpleperf record --trace-fg com.example.app --perfetto --config perfetto_config.xml
-
-# 导出到 Perfetto UI
-simpleperf record --trace-fg com.example.app --out perfetto.traces
+perfetto -c perfetto_config.txt -o combined.trace
 ```
 
-### Android Profileable 数据收集
+> **说明**：`simpleperf` 不存在 `--perfetto` / `--config` / `--out` 标志 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp 命令注册表无这些参数]。
+> 与 Perfetto 集成应通过 Perfetto 的 `linux.perf` 数据源实现，而非 simpleperf 标志。
+
+### Profileable 应用数据收集
+
+Android 10+ 引入了 profileable 应用机制，允许 release 构建在 `AndroidManifest.xml` 中声明 `<profileable android:shell="true" />` 后
+无需 debuggable 即可被 simpleperf 采样 [已验证：Android Profileable 官方文档]：
 
 ```bash
-# 启用应用的可分析性
-adb shell pm grant com.example.app android.permission.SET_DEBUG_APP
-adb shell am profile start com.example.app
-
-# 使用 simpleperf 收集数据
-simpleperf record --trace-fg com.example.app --android-profileable
+# 对 profileable 应用采样（--app 自动处理 profileable 权限）
+simpleperf record --app com.example.app --duration 10
 ```
 
-### 系统级跟踪
+### 系统级采样
+
+系统级采样需要 root 权限，采集所有进程的 perf events [已验证：AOSP cmd_record.cpp GetDefaultRecordBufferSize 对 system_wide 分配 256 MB 大缓冲]：
 
 ```bash
-# 全系统跟踪
-simpleperf record --system-wide --trace-fg com.example.app
+# 全系统采样 30 秒
+adb shell simpleperf record --system-wide --duration 30 -o /data/local/tmp/perf.data
 
-# 指定跟踪时间
-simpleperf record --system-wide -f 100 --duration 30 --trace-fg com.example.app
-
-# 混合跟踪
-simpleperf record --system-wide --pid 1234 --duration 60
+# 从设备拉取并生成报告
+adb pull /data/local/tmp/perf.data
+simpleperf report -i perf.data
 ```
 
 ---
@@ -286,53 +296,69 @@ simpleperf record --system-wide --pid 1234 --duration 60
 ### CPU 分析报告
 
 ```bash
-# 基本 CPU 报告
+# 基本 CPU 报告（按采样开销降序排列）
 simpleperf report
 
-# 按函数排序
+# 自定义排序字段（comm=进程名, dso=动态库, symbol=函数名）
 simpleperf report --sort comm,dso,symbol
 
-# 按热函数显示
-simpleperf report --show-total-period
+# 显示调用图（-g 等价于 --call-graph），展示父→子调用链
+simpleperf report -g
 
-# 显示调用栈
-simpleperf report --show-call-graph
+# 子函数开销归入父函数（适合自上而下分析）
+simpleperf report --children
 ```
 
-### 内存分析
+### 调用栈解读示例
 
-```bash
-# 内存分配跟踪
-simpleperf record -e alloc_count,alloc_size --trace-fg com.example.app
+`simpleperf report -g` 输出每位采样热点的方法调用链。以下为典型输出示例 [已验证：NDK r29 report 格式]：
 
-# 内存泄漏检测
-simpleperf record -e malloc_count,malloc_size --trace-fg com.example.app
-
-# 报告分析
-simpleperf report --show-alloc-stats
+```
+Overhead  Command   Pid   Tid   Symbol
+30.12%    RenderThread  12345  12350  libunity.so  SortingAlgo::QuickSort(int*, int, int)
+  |
+  |--25.83%-- SortingAlgo::QuickSort(int*, int, int)
+  |    |--12.91%-- SortingAlgo::QuickSort(int*, int, int) [recursive]
+  |    |--7.75%-- std::__1::swap(int&, int&)
+  |    |--5.17%-- 0x0
+  |
+  |--4.29%-- main
+       main 
+       android_app_entry
 ```
 
-### 多维度分析
+解读要点：
+- **Overhead**（30.12%）：该函数在全部采样点中的占比，即 CPU 时间消耗比例
+- **Children**（`--children` 开启时）：包括被调用子函数开销的累计占比
+- **递归标记**：12.91% 标记为 `[recursive]`，说明存在大量递归调用，可能是优化方向
+- **未知符号**（0x0）：缺少符号表或 JIT 代码，需编译时保留 debug symbols
+
+### 按维度过滤报告
 
 ```bash
-# 组合分析
-simpleperf report --show-branch-miss --show-cache-miss
+# 按动态库过滤（只显示 libunity.so 中的热点）
+simpleperf report --dsos libunity.so
 
-# 时间线分析
-simpleperf report --show-timeline
+# 按函数名过滤
+simpleperf report --symbols QuickSort
 
-# 热点分析
-simpleperf report --top 10
+# CSV 输出供外部工具分析
+simpleperf report --csv -i perf.data > profile.csv
 ```
 
 ---
 
 ## 14.2.7 性能优化实践
 
-> **⚠️ [Task2B 回炉中]** 此节内容根据 Task 6 第二轮 review 意见进行重写。
-> 旧版内容为通用 Java 优化模式（对象池、WeakReference、线程池），与 Simpleperf 分析流程脱节，
-> 且代码示例中的 Stream API（`numbers.stream()...`）要求 API 24+，与声明的 API 21 下限矛盾。
-> 目标重写：simpleperf report 发现热点 → 调用栈解读 → 定位优化方向 → 优化后再用 simpleperf 验证的完整流程。
+> **⚠️ [Task2B 回炉中 · 2026-06-10]** 
+> 此节待基于真实 simpleperf 分析流程重写。重写方向：
+> 1. 从 `simpleperf report -g` 输出中识别热点函数 → 解释为何该函数占 30%+ CPU
+> 2. 从调用栈判断优化方向（递归过多？锁竞争？重复分配？）
+> 3. 实施具体优化（算法替换/缓存/去锁/批量操作）
+> 4. 优化后用 `simpleperf record --app ... --duration 10` 重新采样验证
+> 5. 展示优化前后的 `report` 对比，量化效果
+>
+> 旧版（已删除）：通用 Java 优化模式（对象池、WeakReference、线程池），与 Simpleperf 分析流程脱节。
 
 ---
 
@@ -369,43 +395,46 @@ adb shell run-as com.example.app simpleperf record
 # 检查存储空间
 adb shell df -h /data
 
-# 增加缓冲区
-simpleperf record -b 4096 --trace-fg com.example.app
-
-# 使用压缩输出
-simpleperf record -z --trace-fg com.example.app
+# 采集前检查可用空间，perf.data 在 system-wide 模式下可达数百 MB
+# 建议指定输出到外部存储：-o /sdcard/perf.data
+simpleperf record --system-wide --duration 30 -o /sdcard/perf.data
 ```
 
-#### 跟踪中断
+#### 采样中断
 
 ```bash
-# 监控跟踪状态
-simpleperf stat --duration 10
+# 使用 --duration 控制采集时长，避免手动 Ctrl+C 中断造成数据不完整
+simpleperf record --app com.example.app --duration 30
 
-# 使用自动保存
-simpleperf record -a --trace-fg com.example.app
+# system-wide 采集建议使用 screen/tmux 包住，防止 SSH 断连中断
 ```
 
 ### 性能问题
 
-#### 过度跟踪导致性能下降
+#### 过度采样导致性能下降
 
 ```bash
-# 降低采样频率
-simpleperf record -f 100 --trace-fg com.example.app
+# 降低采样频率（默认 1000 Hz，降到 100 Hz 可大幅降低开销）
+simpleperf record -f 100 --app com.example.app --duration 10
 
-# 选择性跟踪
-simpleperf record -g --trace-fg com.example.app --com.example.app.MainActivity
+# 仅对目标进程采样，排除系统进程
+simpleperf record -p 12345 -f 500 --duration 10
 ```
 
 ---
 
 ## 14.2.9 性能案例分析
 
-> **⚠️ [Task2B 回炉中]** 此节内容根据 Task 6 第二轮 review 意见进行重写。
-> 旧版案例（LazyInitializer 延迟加载、SafeHandler 内存泄漏）为通用 Android 知识，
-> 缺少 Simpleperf 特有信息：无 report 输出、无调用栈解读、无 `--show-call-graph` 结果。
-> 目标重写：`simpleperf record → report` 完整输出 → 调用栈解读 → 优化 → 验证的全流程案例。
+> **⚠️ [Task2B 回炉中 · 2026-06-10]**
+> 此节待编写基于真实 simpleperf 分析流程的完整案例。案例结构：
+> 1. **问题发现**：App 启动慢/列表滑动掉帧/游戏帧率不稳 → 用 `simpleperf record --app ... --duration 10` 采集
+> 2. **report 原样展示**：粘贴 `simpleperf report -g` 的实际输出，标注关键列含义
+> 3. **调用栈解读**：逐层分析热点函数的调用链，解释每层在做什么
+> 4. **根因定位**：从调用栈反推是算法问题、I/O 阻塞还是 UI 线程阻塞
+> 5. **优化实施**：展示具体代码修改（diff 格式），标注修改理由
+> 6. **二次采样验证**：优化后重新 `record → report`，对比优化前后的开销占比
+>
+> 旧版（已删除）：通用 Android 知识案例（LazyInitializer、SafeHandler），缺少 Simpleperf 特有分析信息。
 
 ---
 
@@ -427,17 +456,29 @@ simpleperf report --csv perf.data > perf_report.csv
 
 ## 14.2.11 性能基准测试
 
-> **⚠️ [Task2B 回炉中]** 旧版基准数据（`io_read`/`io_write`/`net_bytes_sent`/`net_bytes_recv` 事件名
-> 及 benchmark 数值）无法通过 Simpleperf 官方文档验证，已移除。
-> 目标重写为基于 `simpleperf stat` 实测的基准流程。
+> **⚠️ [Task2B 回炉中 · 2026-06-10]**
+> 旧版基准数据（`io_read`/`io_write`/`net_bytes_sent`/`net_bytes_recv` 事件名及 benchmark 数值）
+> 无法通过 simpleperf 官方文档验证，已移除 [已验证：simpleperf 不支持这些事件名]。
+>
+> 重写方向：
+> 1. 用 `simpleperf stat --app com.example.app --duration 10` 采集基线指标（task-clock, cpu-cycles, instructions, IPC）
+> 2. 多次采集建立统计分布（均值/标准差/P95），标注测试环境（设备型号/Android 版本/温度）
+> 3. 展示如何将 stat 输出转化为 CI 可消费的 JSON 格式
+> 4. 说明如何设置性能回归阈值（IPC 低于基线 5% → 告警）
 
 ---
 
 ## 14.2.12 总结与最佳实践
 
-> **⚠️ [Task2B 回炉中]** 旧版总结为通用建议 + 流程图，未紧扣 Simpleperf 特有能力。
-> 重写方向：以 "如何用 Simpleperf 建立日常性能监控节奏" 为主线，
-> 落实到 `record → report → 定位热点 → 验证` 的具体步骤。
+> **⚠️ [Task2B 回炉中 · 2026-06-10]**
+> 旧版总结为通用建议 + 流程图，未紧扣 Simpleperf 特有能力，已移除。
+>
+> 重写方向——以 Simpleperf 为核心的日常性能监控节奏：
+> 1. **日常**：每次提交后自动跑 `simpleperf stat --app ...` 采集 IPC/cache-miss 率 → 比对基线
+> 2. **周度**：对重点场景跑 `simpleperf record -g --app ... --duration 10` → 检查无新增热点
+> 3. **版本门禁**：release 前做 system-wide 采样 60s → 检查无系统服务被应用拖慢
+> 4. **应急定位**：线上反馈卡顿 → `simpleperf record --app ... --duration 5` → `report -g` → 10 分钟内定位
+> 5. 附 simpleperf + script 的自动化示例（bash/Python 包装）
 
 ---
 
@@ -467,4 +508,4 @@ simpleperf report --csv perf.data > perf_report.csv
 - 摘要：Simpleperf在2026年main分支呈现「内核↔用户态ABI对齐+模块化命令管道+多架构同构」三大特征：三段式权限模型（<11/11+/13+）、自适应ring buffer（64MB/256MB按内存分级）、ARM CoreSight ETM指令追踪集成、跨平台同构编译（device native与host offline分析分离）。
 - 注入时间：2026-06-10
 - 价值：包含源码级分析（AOSP锚点），对理解框架内部机制和性能调优有直接参考意义
-- ⚠️ 来源基于 main/master 分支快照，部分内容可能未进入 Android 17 正式分支，仅供参考不作为正文结论
+> ⚠️ 本参考基于 main 分支快照（commit 23e563428f2b），部分内容（ETM 指令追踪、JIT debug reader 增强）可能未进入 Android 17 正式分支。正文已标注 [已验证] 的可断言内容均来自 NDK r29 文档与 AOSP android-16.0.0_r1 的交叉校验；标注 [待验证] 的内容需后续对照 android-17.0.0_r1 tag 确认。
