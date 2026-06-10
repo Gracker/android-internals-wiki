@@ -49,6 +49,8 @@ last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
 last_task9_audit: 2026-05-26
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-26"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -433,7 +435,7 @@ element.addEventListener('touchmove', handler, { passive: true });
 
 ### 混合渲染场景：WebView 与原生 View 叠加
 
-当 WebView 和原生 View 在同一个页面中叠加显示时（如 WebView 上方覆盖一个原生浮层），合成路径取决于 WebView 的 surface 模式：
+WebView 页面上面再盖一个原生浮层、或者 WebView 嵌在滚动容器里和原生卡片混排——这类场景的合成路径比纯 WebView 或纯原生都复杂。当 WebView 和原生 View 在同一个页面中叠加显示时（如 WebView 上方覆盖一个原生浮层），合成路径取决于 WebView 的 surface 模式：
 
 **路径一：同窗口 HWUI 合成（GLFunctor / in-process compositor）。** 普通 WebView 嵌入 View hierarchy 时，Chromium compositor 的输出通过 GLFunctor 或 in-process GPU service 绘制到宿主窗口的 RenderNode。原生 View 的叠加层先在 HWUI 侧合成，不产生独立的 SurfaceFlinger layer。Perfetto 观察点：看 App RenderThread 的 draw/functor slice 和 GPU busy，不一定会看到额外 SF layer。
 
@@ -514,7 +516,7 @@ WebView 发起的网络请求可以在 Perfetto 的 Network Track 中观察到�
 
 ## WebView Renderer 进程崩溃恢复
 
-当 WebView 的 Renderer 进程因 OOM 或 crash 退出时，宿主 App 进程不会崩溃，但 WebView 会显示白屏。`WebViewClient.onRenderProcessGone()` 是恢复的核心回调（API 26+）。
+版本演进带来了独立的 renderer 进程，崩溃隔离是它的核心收益之一。当 WebView 的 Renderer 进程因 OOM 或 crash 退出时，宿主 App 进程不会崩溃，但 WebView 会显示白屏。`WebViewClient.onRenderProcessGone()` 是恢复的核心回调（API 26+）。
 
 ### 调用链
 
@@ -668,7 +670,6 @@ Renderer 进程崩溃在 Perfetto 中的表现需要按 WebView provider 和 tra
 |------|--------------|-------------------|------|
 | Android 7.x (API 24-25) | In-process renderer | GLFunctor / 硬件加速兼容层 | renderer 线程在宿主进程内，不支持多进程 |
 | Android 8-10 (API 26-29) | 默认 out-of-process；低内存 32-bit 设备回退 in-process | Command Buffer → 宿主窗口 | multiprocess 从 Android 8.0 起引入，覆盖范围逐步扩大 |
-| Android 11+ (API 30) | 全部 out-of-process | GLFunctor（默认）/ SurfaceControl 子 Surface（条件满足时） | renderer 崩溃隔离成为默认 |
 | Android 11+ (API 30) | 全部 out-of-process | GLFunctor（默认）/ SurfaceControl 子 Surface（条件满足时） | renderer 崩溃隔离成为默认 |
 | Android 13+ (API 33) | Sandbox 加强隔离 | SurfaceControl 子 Surface 路径更常见 | 安全边界收紧 |
 

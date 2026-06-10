@@ -70,6 +70,8 @@ task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 小修 2 处（形容词+冒号起手式 1、「很关键」填充 1）。无新增 L3/L4 回炉项。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # Thermal 管控深度：从内核子系统到 ADPF 主动降频
@@ -660,13 +662,13 @@ OEM 在散热设计和软件策略之间需要找到平衡：
 
 
 
-<!-- AIW-源码调研-2026-06-06 -->
+## Android 16+ Thermal Headroom Listener：事件驱动的 headroom 监控
 
-## Android 16+ Thermal Headroom Listener（API 36 扩写）
+上一节的版本演进表里，Android 16 多了 `SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 和 NDK thermal headroom listener。其中 headroom listener 改变了 App 获取温控信息的方式——从轮询变成事件驱动。下面展开这条新路径。
 
 [已验证: `frameworks/base/core/java/android/os/PowerManager.java` (android16-release l.1247-3011), `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` (android16-release l.85-705, l.1830-1870, l.2197-2208), `frameworks/base/core/java/android/os/IThermalHeadroomListener.aidl`, `frameworks/native/include/android/thermal.h`, developer.android.com PowerManager#addThermalHeadroomListener]
 
-§5.12 上一版覆盖了 API 35 `getThermalHeadroomThresholds()`，但**没有覆盖 Android 16 (BAKLAVA / API 36) 引入的 `addThermalHeadroomListener(...)` 事件驱动机制**。Task9 Deep Review（2026-06-06）已指出这一点。本节补齐。
+API 35 的 `getThermalHeadroomThresholds()` 让 App 能读到 OEM 返回的 headroom 阈值。Android 16 (BAKLAVA / API 36) 在此基础上补了事件驱动机制——`addThermalHeadroomListener(...)`，让 App 不需要轮询就能收到 headroom 变化。本节展开这个新机制。
 
 ### 公共 API 形态
 
@@ -779,7 +781,7 @@ App 进程                                          system_server
 - **与其他 thermal API 的关系**：listener 是 `getThermalHeadroom(int)` + `getThermalHeadroomThresholds()` 的事件驱动版本；`OnThermalStatusChangedListener` 仍然只通知 `getCurrentThermalStatus()` 跨级事件（status 变化）。两者并存，listener 粒度更细，status listener 粒度更粗。
 - **OEM 差异**：`TemperatureWatcher.getHeadroomCallbackDataLocked` 内部使用 `getForecast(0)` + `getForecast(DEFAULT_FORECAST_SECONDS=10)`；OEM 如果改 `mForecastSeconds`，listener 回调的 `forecastSeconds` 字段会同步变化（`isSignificantDifferentFrom` 把 `mForecastSeconds` 不一致视为显著差异强制回调）。当前 main 分支注释说 `currently this is always the same as DEFAULT_FORECAST_SECONDS`，未启用动态 forecast。
 
-### 常见问题与误区（本节补充）
+### 常见误区
 
 - **「headroom listener 会代替 status listener」** ❌：两个 listener 走不同的判定路径，status listener 只在 thermal status 跨级时通知，headroom listener 还会通知 headroom/threshold 数值变化。两者并存。
 - **「listener 触发频率高时应在 App 端去抖」** ✅：server 端有 5s 窗 + 0.03/0.01 阈值去抖，但 App 端的 Executor 可能让多个 listener 串行；建议 App 内部维护一个 `headroomCache` + 上次处理时间，仅在跨过自身业务阈值时降画质。

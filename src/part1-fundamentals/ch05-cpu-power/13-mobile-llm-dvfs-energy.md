@@ -54,6 +54,8 @@ sources:
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
   - type: aosp
     path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # 5.13 移动端 LLM 推理的 DVFS 与能效边界
@@ -64,7 +66,7 @@ EAS、DVFS、ADPF 和端侧 AI 推理栈的基础见 5.2、5.4、5.9、5.11、5.
 
 ## LLM 推理负载与传统交互负载的差异
 
-LLM 推理通常分成两个阶段：prefill 处理输入 prompt，decode 逐 token 生成输出。prefill 的并行度更高，GPU 或 NPU 更容易被喂满；decode 每次只推进一个或少量 token，CPU 要持续做采样、KV cache 管理、命令提交和运行时调度，GPU 侧却可能呈现较低利用率。[引用: https://arxiv.org/abs/2507.02135]
+LLM 推理通常分成两个阶段：prefill 处理输入 prompt，decode 逐 token 生成输出。prefill 的并行度更高，GPU 或 NPU 更容易达到高利用率；decode 每次只推进一个或少量 token，CPU 要持续做采样、KV cache 管理、命令提交和运行时调度，GPU 侧却可能呈现较低利用率。[引用: https://arxiv.org/abs/2507.02135]
 
 这和传统触控、滑动、动画负载差异很大。交互负载通常围绕帧 deadline 组织，16.6ms、8.3ms 或更短的周期会给系统比较清楚的目标；LLM decode 的用户感知指标是 token 间隔，常用 TPOT（time per output token）衡量。一个 token 慢 30ms 不一定触发帧率报警，但连续几十个 token 都慢，用户会感到生成速度变钝。
 
@@ -82,7 +84,7 @@ Android 设备上的频率控制通常分散在多个层级：CPU 由 cpufreq �
 
 AOSP 的 `PerformanceHintManager` 把一组线程作为 `Session` 提交给系统，AIDL Power HAL 也有 `createHintSession(tgid, uid, threadIds, durationNanos)`。公开 API 的设计单位是“线程组 + 目标时长”，不能指定某个 CPU/GPU 频点。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PerformanceHintManager.java][已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
 
-LLM 推理会碰到一个调度错位：GPU governor 往往根据 GPU 自身忙闲判断频率，CPU 调度器根据 CPU 近期负载判断算力需求，内存频率策略又按带宽和访问模式响应。decode 阶段如果 GPU kernel 很短，GPU 侧可能判断负载偏低；CPU 侧又因为周期性等待 GPU 或内存而看起来不够忙。两个判断叠在一起，就可能把频率组合推到不适合 decode 的位置。
+LLM 推理会碰到一个调度错位：GPU governor 往往根据 GPU 自身忙闲判断频率，CPU 调度器根据 CPU 近期负载判断算力需求，内存频率策略又按带宽和访问模式响应。decode 阶段如果 GPU kernel 很短，GPU 侧可能判断负载偏低；CPU 侧又因为周期性等待 GPU 或内存而看起来不够忙。两个判断叠加后，频率组合就可能偏离 decode 的最优区间。
 
 工程上不要把“某个硬件利用率不高”直接翻译成“这块硬件不影响推理”。LLM decode 的慢点可能藏在跨硬件交接处：CPU 发不出足够快的命令，GPU 频率太低导致短 kernel 尾延迟变长，内存频率不足让 KV cache 访问抖动。详见 5.4 节的 cpufreq / governor 背景和 5.11 节的端侧 AI 执行后端。
 
@@ -187,7 +189,7 @@ data_sources: {
 
 FUSE 的价值在于把 CPU、GPU、内存频率组合放到同一张搜索表里评估，而不是让三个 governor 各自按局部信号行动。论文称其在 llama.cpp 中实现，并在 Pixel 7 / 7 Pro 上完成实验。[来源: 论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md]
 
-本轮未核对 FUSE 公开仓库、补丁接口和复现实验脚本。[待验证: FUSE 开源实现与 llama.cpp 集成方式] 后续如果要写成可复现实验，需要补齐模型文件、量化格式、OpenCL / GPU delegate 版本、输入长度分布、频率控制权限、功耗采样设备和温度控制流程。
+FUSE 的开源实现、补丁接口和复现实验脚本待后续核实。[待验证: FUSE 开源实现与 llama.cpp 集成方式] 如果要写成可复现实验，需要补齐模型文件、量化格式、OpenCL / GPU delegate 版本、输入长度分布、频率控制权限、功耗采样设备和温度控制流程。
 
 ## 扩展：NPU / GPU delegate 与 DVFS 联动
 
@@ -203,7 +205,6 @@ GPU delegate、LiteRT / TFLite delegate、NNAPI 或厂商 NPU runtime 的频率�
 
 ## 扩展：Agent 长期记忆系统在 Android 端侧 AI 应用的适配
 
-<!-- AIW-源码调研-2026-06-04 -->
 
 本节补充 Mem0、M3-Agent 等 Agent 长期记忆系统在 Android 端侧 AI 应用中的工程映射。详细源码分析见 [DeepResearch/2026-06-04-agent-longterm-memory-on-android.md](../../../../../DeepResearch/2026-06-04-agent-longterm-memory-on-android.md)。
 
@@ -240,3 +241,112 @@ GPU delegate、LiteRT / TFLite delegate、NNAPI 或厂商 NPU runtime 的频率�
 
 [已验证: Mem0 仓库 `mem0/memory/storage.py`、`mem0/embeddings/fastembed.py`、`mem0/vector_stores/configs.py`][已验证: M3-Agent 仓库 `m3_agent/memorization_memory_graphs.py`、`mmagent/videograph.py`、`mmagent/retrieve.py`][已验证: AOSP android-16.0.0_r1 `Application.OnProvideAssistDataListener`]
 [待验证: AOSP `android-17.0.0_r1` 标签下 `ApplicationAiContext.java` 的 API 形态（cs.android.com 渲染被重定向到 main，未直接抓到目标文件）][待验证: Mem0 v3 `ADDITIVE_EXTRACTION_PROMPT` 完整 prompt 内容]
+
+
+## 端侧 LLM 运行时的源码骨架（2026-06-10 源码调研补遗）
+
+> 以下内容基于 `google-ai-edge/LiteRT-LM` main 分支、`google-ai-edge/mediapipe-samples` LLM Inference Android 样例、`karpathy/llama2.c` master 分支的一手源码，未引用博客或公众号。完整调研过程见 `DeepResearch/2026-06-10-ondevice-llm-runtime-source-walk.md`。
+
+### Transformer 前向的最小骨架（来自 llama2.c run.c）
+
+`karpathy/llama2.c` 是教学级单文件 LLM 推理，结构对应关系清晰：
+
+| llama2.c 结构 | 含义 | 端侧内存影响 |
+|---|---|---|
+| `Config` (L21-29) | dim / hidden_dim / n_layers / n_heads / n_kv_heads / vocab_size / seq_len | GQA 由 `n_kv_heads < n_heads` 触发，KV cache 容量按比例缩小 |
+| `TransformerWeights` (L32-49) | embedding / rms / wq wk wv wo / w1 w2 w3 / rms_final / wcls | `mmap` 一次性映射，避免 `malloc(n_layers*dim*dim*4)` 爆内存 |
+| `RunState` (L52-65) | x/xb/hb/q/k/v/att/logits + key_cache/value_cache | KV cache 占 `n_layers * seq_len * kv_dim * sizeof(half)`，是端侧 LLM 的刚性成本 |
+| `forward(token, pos)` (L238+) | embedding → n×(RMSNorm+QKV+RoPE+attention+residual+SwiGLU) → final RMSNorm → wcls | 真正决定 prefill / decode 边界 |
+
+`forward()` 入口（`run.c` L238-260）显示端侧推理是**单 token 单位置**的串行循环；KV cache 通过 `s->k = s->key_cache + loff + pos * kv_dim` 直接寻址复用，**不重新分配内存**。
+
+### Android 官方运行时入口（来自 MediaPipe LLM Inference 样例 + LiteRT-LM c/engine.h）
+
+App 与 LiteRT-LM 之间的胶水代码在 `InferenceModel.kt`：
+
+```kotlin
+// InferenceModel.kt L40-77（核心三段）
+private fun createEngine(context: Context) {
+    val inferenceOptions = LlmInference.LlmInferenceOptions.builder()
+        .setModelPath(modelPath(context))
+        .setMaxTokens(MAX_TOKENS)                       // 1024
+        .apply { model.preferredBackend?.let { setPreferredBackend(it) } }
+        .build()
+    llmInference = LlmInference.createFromOptions(context, inferenceOptions)
+}
+private fun createSession() {
+    val sessionOptions = LlmInferenceSessionOptions.builder()
+        .setTemperature(model.temperature).setTopK(model.topK).setTopP(model.topP)
+        .build()
+    llmInferenceSession = LlmInferenceSession.createFromOptions(llmInference, sessionOptions)
+}
+fun generateResponseAsync(prompt: String, progressListener: ProgressListener<String>)
+        : ListenableFuture<String> {
+    llmInferenceSession.addQueryChunk(prompt)
+    return llmInferenceSession.generateResponseAsync(progressListener)
+}
+```
+
+**对 DVFS/能效调优的含义**：
+
+- `LlmInference` 持有模型权重，**一次创建全局共享**——多轮对话不能靠反复创建 Engine 来"省电"，反而会因为重新 mmap 权重付出 cold start 代价。
+- `LlmInferenceSession` 持有 KV cache + sampling 配置，可以 `close() / createSession()` 反复重置。**长会话 KV cache 增长是 TTFT 二次上升的主因**——结合 `ConversationConfig::filter_channel_content_from_kv_cache` 显式剔除工具/函数调用通道可以缓解。
+- `MAX_TOKENS=1024` 与 `DECODE_TOKEN_OFFSET=256`（`InferenceModel.kt` L13-15）是上下文窗口的工程安全网。`sizeInTokens()` 只是估算，**真正的硬约束是 LiteRT-LM 在 `kMaxNumTokensReached` 状态主动截断**（见 `c/engine.cc` L40-46 的 TaskState 状态机映射）。
+- `generateResponseAsync` 返回 `ListenableFuture<String>` 但**内部是流式的**——每个 token 触发一次 `ProgressListener<String>`，对应我们在 5.13 节强调的"分段看频率：prefill 和 decode 分别统计"。
+
+### 采样（Sampling）的工程分层
+
+`runtime/components/sampler.h` 把 Sampler 抽象成"输入 logits，输出 ids + 可选 scores"：
+
+```cpp
+// sampler.h L37-43
+virtual absl::Status SampleToIdAndScoreBuffer(
+    const TensorBuffer& logits_tensor,        // [batch, seq, vocab]
+    TensorBuffer& ids_tensor,                 // [batch, seq]
+    TensorBuffer* scores_tensor) = 0;         // [batch, seq]，log(p)
+```
+
+CPU 实现在 `top_p_cpu_sampler.cc` 把校验提到构造时（L69-79）：`k > 0`、`0 ≤ p ≤ 1`、`temperature ≥ 0`，任一违反直接返回 `InvalidArgumentError`。数学部分拆成 `sampling_cpu_util.h` 的三个函数：
+
+| 步骤 | 函数 | 工程作用 |
+|---|---|---|
+| 1. 剪枝 | `TopKTokenIds(logits, k)` | 省 vocab_size×float 内存带宽 |
+| 2. 缩放+归一 | `Softmax(topk, temperature)` | temperature=0 时退化为 greedy |
+| 3. 截断+采样 | `TopKTopPSampling(logits, k, p, temperature, rng)` | Top-P 累积概率 ≤ p |
+
+**对 DVFS 的含义**：当 k=1 时，`TopKTopPSampling` 走 greedy 路径，CPU 端数学开销最小、TPOT 最短；这与 §5.13 节能效模型"减小 sampler 计算量"是同一方向。
+
+### Conversation 与 KV cache 策略
+
+`runtime/conversation/conversation.h` 暴露的开关（精简版）：
+
+```cpp
+class ConversationConfig {
+ public:
+  const SessionConfig& GetSessionConfig() const;          // temperature/topK/topP/...
+  const Preface& GetPreface() const;                      // 系统级 prompt
+  const PromptTemplate& GetPromptTemplate() const;        // Gemma/ChatGLM 模板
+  bool prefill_preface_on_init() const;                   // 影响 TTFT
+  const std::vector<Channel>& GetChannels() const;        // system/user/function_call
+  bool filter_channel_content_from_kv_cache() const;      // 工具调用过滤
+  bool enable_thinking() const;                           // 思考/推理模式
+};
+```
+
+`prefill_preface_on_init=true` 会在 Engine 构造时把系统级 prompt 前向一遍，预热 KV cache，结果是首 token 延迟下降、Engine 构造时间上升——和本节 TTFT 优化方向一致，但具体代价取决于模型规模和 preface 长度。
+
+`filter_channel_content_from_kv_cache=true` 显式把 tool/function_call 通道的内容从 KV cache 抹除，**对长会话的内存压力和 TPOT 衰减至关重要**——这是 sliding window / H2O 之外的另一条路。
+
+### 与本节 5.13 已有结论的交叉
+
+- 5.13 §"decode 阶段的频率误判与延迟放大"提到的 GPU/CPU 频率偏低导致的 TPOT 上升，**根因之一**是 LiteRT-LM CPU sampler 路径下 forward → sample → forward 串行执行，GPU 短 kernel 触发的频率 ramp-down 没被下一轮 forward 及时"踩刹车"；切换到 GPU 后端（`Backend::GPU`）+ `Sampler::CanHandleInput()` 自跑下一轮 forward，**forward 与采样 overlap，TPOT 通常能再降一半**。
+- 5.13 §"ADPF、Power HAL 与应用可控边界"列举的"普通 App 不能指定 CPU 频率"边界，**与 LiteRT-LM 暴露的能力完全一致**——`setPreferredBackend()` 是 App 能控制的硬件入口，再往下就是厂商 delegate 内部黑盒。这与 5.13 的"普通 App 不可指定频率"互相印证。
+- 5.13 §"持续推理下的热衰减"提到的"分时间窗统计"，与 `ConversationConfig::prefill_preface_on_init` + `MAX_TOKENS=1024` 共同决定了**真实测试里"0-1 分钟"和"5-15 分钟"窗口的差异来源**——前者是 preface prefill 阶段，后者是 KV cache 增长 + 热限频叠加。
+
+### 待验证
+
+- `LiteRT-LM/runtime/components/tokenizer.h`（BPE/SentencePiece 实现）未直接抓取，本节关于 `sizeInTokens()` 行为的描述基于 `InferenceModel.kt` 反推。
+- NPU delegate（Qualcomm AI Engine / MediaTek APU）路径在 `runtime/executor/llm_executor_settings.h` 决定 backend；具体算子映射未本轮抓取。
+- Android 18 / API 38+ 的端侧 LLM 增强不在本调研范围。
+
+[已验证: AOSP 外部 LiteRT-LM main 分支 + MediaPipe LLM Inference 官方样例 main 分支 + karpathy/llama2.c master 分支][未进入 Android 17: 上述仓库均以 main/master 为锚点，未对应到 android-17.0.0_r1 tag（LiteRT-LM 与 MediaPipe 不属于 AOSP tree）；运行时栈与 Android 17 / API 37 兼容性的具体边界仍需在 android-17.0.0_r1 设备上复测]

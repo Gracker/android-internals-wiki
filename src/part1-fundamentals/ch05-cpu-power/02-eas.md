@@ -61,6 +61,8 @@ last_task6_review_log: "logs/review/2026-05-28-01-review.md"
 task6_review_notes: "2026-05-28 Task6 review: pass-light-edit。L1/L2 小修 2 处；既有 Task9 needs-rework 技术项不由 Task6 裁决，继续流转 task9_pending。"
 last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
 task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 
@@ -119,7 +121,6 @@ EAS 覆盖了 CFS 的默认唤醒逻辑。当 EAS 启用时，`select_task_rq_fa
 
 传统 CFS 会发现大核更空闲,选择大核。但 EAS 会计算:这个任务放在小核上刚好能"装下"(util 200 ≤ capacity 200),不需要拉高大核的频率,整体能耗更低。于是 EAS 选择小核。这就是 EAS 的核心逻辑:**优先找一个既省电又够用的核,而不是单纯追求最空闲的核**。
 
-[图:EAS 选核对比示意 - 传统 CFS 选最空闲大核 vs EAS 选最省电小核,标注 util/capacity/energy delta]
 
 [已验证: 官方文档, https://docs.kernel.org/scheduler/sched-energy.html - EAS uses capacity and utilization to estimate "busyness" for performance-vs-energy trade-offs]
 
@@ -156,7 +157,6 @@ EAS 并非在所有设备上都生效。它需要满足以下条件:
 
 [已验证: 官方文档, Documentation/power/energy-model.rst - EM provides power cost tables for performance domains]
 
-[图:OPP 功耗曲线示例 - 频率-功耗非线性关系可视化,标注动态功耗公式 P ∝ CV2f]
 
 OPP 数据通常定义在 Device Tree（设备树）中,使用 `operating-points-v2` 属性。内核启动时解析这些数据,构建出每个“性能域”（Performance Domain）的功耗曲线。一个性能域通常对应一个 CPU 簇，同簇内的核心共享频率和电压调节,因此它们的 OPP 表相同。
 
@@ -211,7 +211,6 @@ PELT 使用指数加权移动平均(EWMA)来平滑 utilization 信号。它的�
 - 如果一个任务突然空闲,它的 `util_avg` 会在约 32ms 内缓慢下降
 - 这个设计让调度器既能快速响应负载变化,又不会被瞬时波动干扰
 
-[图:PELT 信号衰减示意 - 32ms 窗口指数加权移动平均,展示信号上升/下降的响应速度]
 
 PELT 的 `util_avg` 被归一化到 0~1024 的范围。其中 1024 代表"一个最大 capacity 的 CPU 满负荷运行"。这个归一化的作用是让 `util_avg` 可以直接与 CPU 的 `capacity` 比较:如果任务的 `util_avg` 是 300,而小核的 `capacity` 是 400,EAS 就知道这个任务放在小核上"装得下"。
 
@@ -271,8 +270,6 @@ EAS 对轻任务和重任务有不同的处理方式:
 这种架构下，EAS 的能耗优化空间变小，因为核心之间的能效差异本身就小了。调度器更倾向于负载均衡而非节能压制,迁核决策的容错窗口也变宽。在 Perfetto 中表现为:线程在不同核心间的分布更均匀,迁移更频繁但每次迁移的性能波动更小。
 
 排查这类设备时,重点关注的是频率和热约束,而不是选核。因为所有核心性能接近,"跑错了核"的惩罚比传统大小核架构轻得多。
-
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md - EAS 选核逻辑与 Task Placement 部分]
 
 ### 负载均衡与任务迁移
 
@@ -335,7 +332,6 @@ overutilized 对 EAS 的影响随内核版本有差异:
 
 ### 三条关键 Track
 
-[图:Perfetto 全局视图 - CPU Frequency + CPU Scheduling + CPU Idle 三条 Track 同时可见,标注大小核分布]
 
 在 Perfetto 中观察 EAS 的行为,主要关注以下三条 Track:
 
@@ -348,8 +344,6 @@ overutilized 对 EAS 的影响随内核版本有差异:
 - 同簇 CPU 的频率是否同步变化，移动 SoC 通常以簇为单位调频
 - 任务运行期间频率是否合理，如果一个高负载任务运行时频率被限制在低位,性能瓶颈可能不在代码而在系统策略
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md - CPU Frequency 深度解析部分]
-
 **2. CPU Scheduling Track（sched_switch）**
 
 CPU Scheduling Track 显示每个时刻哪个线程在哪个 CPU 核心上运行。这是观察 EAS 选核和迁移行为的直接窗口。
@@ -358,8 +352,6 @@ CPU Scheduling Track 显示每个时刻哪个线程在哪个 CPU 核心上运行
 - **关键线程是否在合适的核心上**:主线程和 RenderThread 是否被分配到了大核?如果被长时间限制在小核上,可能是 EAS 误判了任务的 util,或者系统处于 overutilized 状态
 - **迁移频率**:一个线程在大小核之间"反复横跳"(ping-pong)通常不是好现象，每次迁移都会带来 cache miss 开销
 - **唤醒关系**:通过点击一个 sched slice,能追到是谁唤醒了这个线程(wakeup from),以及它被唤醒后的目标 CPU
-
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md - 选核与迁移逻辑部分]
 
 **3. CPU Idle States Track**
 
@@ -472,8 +464,6 @@ EAS 看的是"有效 util 信号 + capacity + EM"。SchedTune 或 uclamp 只是�
 ### "厂商的定制调度器比原版 EAS 好"
 
 不一定,但也不一定差。厂商的定制调度器通常在原版 EAS 的基础上增加了更多场景感知(如游戏模式、性能模式)和更精细的绑核策略。有些厂商的定制带来了更好的用户体验,但也有厂商的定制引入了新的问题(如过度激进的上核策略导致功耗飙升)。分析 Perfetto Trace 时,需要了解测试设备的厂商调度策略,才能准确判断行为是否正常。
-
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md - 选核与迁移逻辑、厂商定制化部分]
 
 ## 版本演进
 

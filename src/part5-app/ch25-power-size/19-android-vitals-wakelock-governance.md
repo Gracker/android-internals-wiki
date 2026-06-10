@@ -55,6 +55,8 @@ task9_reviewed_date: "2026-06-05"
 last_task9_at: "2026-06-05T11:24:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
 task9_review_notes: "2026-06-05 Task9：源码/API/版本边界复核无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # 25.19 Android Vitals 过度 WakeLock 指标与治理
@@ -78,7 +80,7 @@ task9_review_notes: "2026-06-05 Task9：源码/API/版本边界复核无 P0/P1�
 按「不要持锁」「缩短持锁」「可观测持锁」三层处理：优先使用系统托管 API，手动持锁必须设置 timeout，释放路径覆盖异常、取消、进程退出和生命周期切换。
 
 ### 🔹 线上监控：比 Vitals 多拿现场
-参考 Clippings 中的耗电监控结构，补充端侧采集：申请堆栈、释放堆栈、持锁时长、前后台状态、充电状态、电量、任务类型、SDK 来源，用内部阈值提前发现 Vitals 风险。
+补充端侧采集：申请堆栈、释放堆栈、持锁时长、前后台状态、充电状态、电量、任务类型、SDK 来源，用内部阈值提前发现 Vitals 风险。
 
 ### 🔹 版本与分发影响：2026 Play 质量信号
 整理 2025/2026 Android Vitals wake lock 指标的分发影响、beta 状态、店铺警告风险，以及国内渠道缺少 Vitals 数据时如何用自建指标替代。
@@ -100,11 +102,11 @@ task9_review_notes: "2026-06-05 Task9：源码/API/版本边界复核无 P0/P1�
 
 25.3 节已经覆盖 `PowerManager.WakeLock` 和 Alarm 的 API 使用，11.5 节覆盖系统 WakeLock 机制。25.19 只处理一个更窄的工程问题：当 Play Console 报出 excessive partial wake lock 后，团队怎样判断它是否真实影响发布质量，怎样把一个 wake lock tag 找回到业务代码或 SDK 调用点。
 
-Android Vitals 的价值在于外部质量裁决。它按 Google Play 的采集口径统计用户设备上的耗电风险，能告诉团队“哪些 tag 已经越线”，但不会给出完整堆栈、任务上下文、充电状态、业务 trace id 或 SDK 版本。线上治理必须同时依赖 Play 指标和端侧监控。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md]
+Android Vitals 的价值在于外部质量裁决。它按 Google Play 的采集口径统计用户设备上的耗电风险，能告诉团队“哪些 tag 已经越线”，但不会给出完整堆栈、任务上下文、充电状态、业务 trace id 或 SDK 版本。线上治理必须同时依赖 Play 指标和端侧监控。
 
 ## 指标口径：Android Vitals 统计的是非豁免 partial wake lock
 
-Android Vitals 的 excessive partial wake lock 口径包含四个条件：`PARTIAL_WAKE_LOCK`、非豁免、熄屏、应用在后台或处于 foreground service。统计窗口是 24 小时内所有符合条件 wake lock 的累计时长，达到 2 小时及以上就进入 excessive 判定；如果 28 天内超过 5% 的 app sessions 命中该问题，Play 质量信号可能影响推荐面和店铺提示。[已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock][已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric]
+Android Vitals 对 excessive partial wake lock 的判定基于四个条件：`PARTIAL_WAKE_LOCK`、非豁免、熄屏、应用在后台或处于 foreground service。统计窗口是 24 小时内所有符合条件 wake lock 的累计时长，达到 2 小时及以上就进入 excessive 判定；如果 28 天内超过 5% 的 app sessions 命中该问题，Play 质量信号可能影响推荐面和店铺提示。[已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock][已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric]
 
 | 维度 | Android Vitals excessive 口径 | 本地排查口径 |
 | --- | --- | --- |
@@ -205,7 +207,7 @@ inline fun <T> PowerManager.WakeLock.useFor(
 
 ## 线上监控：比 Vitals 多拿现场
 
-参考耗电监控的结构，内部 SDK 应记录“系统关心的资源”和“排查需要的现场”。WakeLock 事件至少包含：tag、task type、业务 trace id、申请堆栈 hash、释放堆栈 hash、持锁时长、前后台状态、FGS 类型、屏幕状态、充电状态、电量、网络类型、进程名、版本、SDK 来源、WorkManager job id 或 Alarm request code。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md]
+内部 SDK 应围绕两个维度记录 WakeLock 事件：系统关心的资源（时长、类型、前后台状态、屏幕/充电状态），排查需要的现场（tag、task type、业务 trace id、申请/释放堆栈 hash、电量、网络类型、进程名、版本、SDK 来源、WorkManager job id 或 Alarm request code）。
 
 上报策略分两层：
 

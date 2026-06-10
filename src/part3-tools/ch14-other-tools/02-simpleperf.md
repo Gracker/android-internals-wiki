@@ -408,6 +408,123 @@ adb shell simpleperf record --system-wide --duration 30 -m 16384 -o /data/local/
 ```
 
 > `-m` 值不足会导致采样丢失（`LOST` 事件），表现为 report 中特定进程/线程数据稀疏。若 `simpleperf report` 输出大量 `LOST` 行，优先增大 `-m` 值。[已验证：AOSP system/extras/simpleperf/cmd_record.cpp, `-m` 选项注册为 `OptionUintOption("m", "Set mmap pages used by record, the unit is page (4K).")`]
+### 多进程应用采样
+
+现代 Android 应用常拆为多个进程（主进程 + :bg 后台 + :remote 远端等）。Simpleperf 提供四种进程选择接口，定位多进程场景的热点分布。
+
+#### 四种选程方式
+
+| 选项 | 语义 | 适用场景 |
+|------|------|----------|
+| `--app <package>` | 按包名，自动派生所有该 app 的进程 | 冷启动 profiling；不需要提前知道 PID |
+| `-p <pid_or_name_regex>` | 按 PID 或进程名正则 | 已知目标 PID；按进程名批量选中同类进程 |
+| `-t <tid1,tid2,...>` | 按 TID 精确指定线程 | 单线程热点定位；与其他工具（如 `ps -t`）联动 |
+| `-a` | 全系统范围（system-wide） | 排查系统级抖动；定位 jank 在哪个进程 |
+
+四者**互斥**：`-a` 与 `-p` / `-t` 互斥（help 字符串明示）；`--app` 与 workload 子命令互斥。
+
+```bash
+# --app 模式：自动等待 app 启动，包名前缀匹配 com.example 的所有派生进程
+adb shell simpleperf record --app com.example.app --duration 10 -o /data/local/tmp/p.data
+
+# -p 模式：精确指定多个 PID（也支持进程名正则）
+adb shell simpleperf record -p 1234,5678,com.example.app:search --duration 10
+
+# -a 模式：全系统 30s 采样（需 root）
+adb shell simpleperf record -a --duration 30 -o /data/local/tmp/p.data
+```
+
+> `--app` 触发的是**阻塞等待**而非报错。先启 simpleperf 再启 app 的冷启动 profiling 流程可正常工作：`WaitForAppProcesses()` 在 1ms 轮询 `/proc` 直到发现目标包进程 [已验证：AOSP system/extras/simpleperf/environment.cpp, WaitForAppProcesses 在 usleep(1000) 循环内调用 GetAllProcesses + HasOpenedAppApkFile]。
+
+#### Android 多进程派生协议
+
+`WaitForAppProcesses()` 不是简单 `pidof` 检索，而是通过**冒号后缀截断 + APK 句柄反查**排除 logwrapper / sh / wrap.sh 等中间壳层：
+
+1. **`process_name` 取自 `/proc/<pid>/cmdline`**——Android 上 cmdline 第一行就是 process name
+2. **冒号后缀进程**：`com.example.app:search` 这种 `<package>:<processName>` 派生进程在 Manifest 的 `android:process=":search"` 声明。simpleperf 把冒号截断后只比前缀，所以多进程应用的所有派生进程一次性全部加入监控集合
+3. **`HasOpenedAppApkFile()` 是关键过滤器**：遍历 `/proc/<pid>/fd/*` 找以 `/data/app/...` 或 `/system/app/...` 开头的符号链接，过滤掉 wrap.sh → logwrapper → sh → app 链路中的中间进程 [已验证：environment.cpp 522-536，注释引用 b/79114763 修复日志]
+4. **轮询策略**：`usleep(1000)` 1ms 间隔，无超时上限
+
+> **实战陷阱**：Android Studio Debug 模式注入的 `wrap.sh` 启动链路下，logwrapper/sh/wrap.sh 进程都会被过滤掉，**只有真正执行 `app_process` 的进程被加入**。profileable 应用（release + `<profileable android:shell="true" />`）不走 wrap.sh，直接通过 `run-as` 切换 uid，无此问题。
+
+#### 子进程继承：inherit 标志
+
+`--no-inherit` 通过 `perf_event_attr.inherit=0` 让 fork 出的子进程脱离监控：
+
+```bash
+# 默认 inherit=1：fork 子进程自动继承父进程 perf 上下文
+adb shell simpleperf record --app com.example.app --duration 10
+
+# 不监控子进程（适合 fork 频繁但只需关注主进程的场景）
+adb shell simpleperf record --app com.example.app --no-inherit --duration 10
+```
+
+**行为规则**（Linux kernel 4.2+）：
+- `inherit=1`：fork 时子进程自动获得父进程 event 的 `task_ctx`，子线程也继承
+- `inherit=0`：fork 出的子进程立即脱离监控
+- `inherit=1 + 线程组`：同进程所有线程共享同一 `task_ctx` 计数
+
+> System-wide 模式（`-a`）默认 `--no-inherit`：kernel 不支持 per-cpu event 的 inherit 语义（仅 per-task event 有 inherit），故 `-a` 强制 `inherit=0` [已验证：cmd_record.cpp 1174-1177，注释 "For system wide collection, which monitors all threads running on selected cpus."]
+
+#### 进程死亡自停止
+
+`StopWhenNoMoreTargets()` 是个 1s 周期的后台检查，挂在 IOEventLoop 上 [已验证：event_selection_set.cpp 945-965，CheckMonitoredTargets 遍历 threads_ + processes_ 集合]：
+
+- `IsThreadAlive(tid)` 通过 `/proc/<tid>` 目录存在性判断
+- **最后一个 target 退出后自动 `ExitLoop()`**——`--app com.x.y --duration 60` + app 在 30s 被 LMK 杀掉，simpleperf 在 30s 自动退出，不会傻等 60s
+
+> **冷启动 profiling 陷阱**：如果 simpleperf 比 app 早启 1ms 且 `--no-inherit`，`processes_` 在 `WaitForAppProcesses` 返回后才有元素，app 死后 child 进程**不会**自动被纳入监控——这是冷启动漏采的常见原因。
+
+#### 跨进程符号归并：`PERF_RECORD_FORK` 处理链
+
+`ThreadTree::ForkThread()` 处理 fork 产生的子线程/子进程，把父进程 `MapSet` 共享/拷贝给子实体：
+
+```
+perf_event_open(inherit=1)
+        ↓
+   父进程 fork
+        ↓
+   内核写入 PERF_RECORD_FORK
+        ↓
+   IOEventLoop → RecordCommand::ProcessRecord
+        ↓
+   ThreadTree::ForkThread(pid, tid, ppid, ptid)
+        ↓
+   子线程（pid==ppid）→ 共享父进程 MapSet（std::shared_ptr，零拷贝）
+   子进程（pid!=ppid）→ 浅拷贝父进程 MapSet（独立但同步）
+```
+
+**MapSet 共享优化** [已验证：thread_tree.cpp 52-75 + 96-108]：
+
+```cpp
+// CreateThread 内：同进程线程共享 MapSet 共享指针
+} else {
+  ThreadEntry* process = FindThreadOrNew(pid, pid);
+  comm = process->comm;
+  maps = process->maps;  // std::shared_ptr<MapSet> 共享，无拷贝
+}
+```
+
+**多进程应用的内存占用**：1000 线程 + 5 进程的应用，map 数据只占 5 份（不是 5000 份）。
+
+#### 报告阶段按 pid 聚合
+
+`cmd_report_sample.cpp` 用 `std::unordered_map<ThreadId, ThreadData, ThreadIdHash>` 索引，key 是 `(pid, tid)` 二元组 [已验证：cmd_report_sample.cpp 133-155]：
+
+```bash
+# 按 pid 过滤（多进程应用只看主进程热点）
+simpleperf report --pid 1234
+
+# 跨进程对比（定位主进程和 :bg 进程同函数的开销差异）
+simpleperf report --sort pid,symbol
+```
+
+> `simpleperf report` 不指定 --pid 时按 (pid, tid) 联合维度展示，多进程应用的 report 输出天然按进程分组隔离。
+
+<!-- AIW-源码调研-2026-06-10 -->
+
+---
+
 
 ---
 

@@ -57,6 +57,8 @@ last_task9_audit_log: "logs/deep-review/2026-05-23-16-audit.md"
 task9_review_notes: "2026-05-23 Task9 re-review：pass-tech-review。已复核 16 点抽检 P0（AutoFDO Cold App Launch/Boot/Binder-rpc/Hwbinder 指标）修复；本轮无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # 案例集
@@ -84,9 +86,9 @@ last_deepseek_polish_at: 2026-05-27
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面的章节我们讨论了响应速度的原理、启动流程和优化策略。但原理归原理，动手做优化的时候，每个 App 面临的约束千差万别——有的受限于包体积，有的卡在第三方 SDK 初始化，有的则是历史代码的技术债。这一节我们来看几个真实的优化案例，看看不同团队在不同的约束下是怎么做的，以及最终取得了什么效果。
+前面的章节讨论了响应速度的原理、启动流程和优化策略。但每个 App 做优化时面临的约束千差万别——有的受限于包体积，有的卡在第三方 SDK 初始化，有的则是历史代码的技术债。这一节来看几个真实案例，了解不同团队在不同约束下怎么做的、最终拿到了什么效果。
 
-需要说明的是，以下案例中的部分数据来自公开的技术分享和官方博客，而非本团队的实测。数据的准确性取决于原始报告的测试环境和度量方式，我们在每个案例中标注了数据来源和可信度。
+以下案例中的部分数据来自公开的技术分享和官方博客，不是本团队的实测数据。数据的准确性取决于原始报告的测试环境和度量方式，每个案例中已标注数据来源和可信度。
 
 ---
 
@@ -426,7 +428,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，取得一次优化不容易，守住不退步更难——每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
 
-**第五，利用系统级自动采集减少人工排查。** Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（内存超限）等触发类型，配合 `ProfilingResult.getTag()` 可以区分不同触发源产出的 trace 文件。接入时注意：系统触发受采样策略和设备版本约束，不能保证每次事件都产出 trace；线上仍需补充采样率控制和隐私脱敏。
+**第五，利用系统级自动采集减少人工排查。** Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（内存超限）等触发类型，`ProfilingResult.getTag()` 可以区分不同触发源产出的 trace 文件。系统触发受采样策略和设备版本约束，不能保证每次事件都产出 trace；线上使用仍需采样率控制和隐私脱敏。
 
 [自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 主动请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件；这类系统触发与 App 主动调用共用结果回调模型，但是否生成、保存和上报仍受采样策略、设备版本、权限边界和隐私策略约束。
 
@@ -462,7 +464,7 @@ fun requestStartupSystemTrace(context: Context) {
 
 **误区一：“启动优化就是减少 Application.onCreate() 的耗时。”**
 
-这是一个过于狭隘的认知。从本章的案例中，启动耗时分布在多个阶段——Reddit 的瓶颈是 JIT 编译，抖音的瓶颈是 MultiDex 和主线程同步消息，电商案例的瓶颈是 View 层级的 measure/layout。`Application.onCreate()` 只是一个环节。正确的做法是先用 Perfetto/Macrobenchmark 建立完整的耗时分布图，找到瓶颈再针对性优化，而不是一上来就砍 `onCreate()`。
+这个认知范围太窄了。从本章的案例看，启动耗时分布在多个阶段——Reddit 的瓶颈是 JIT 编译，抖音的瓶颈是 MultiDex 和主线程同步消息，电商案例的瓶颈是 View 层级的 measure/layout。`Application.onCreate()` 只是一个环节。正确的做法是先用 Perfetto/Macrobenchmark 建立完整的耗时分布图，找到瓶颈再针对性优化，而不是一上来就砍 `onCreate()`。
 
 **误区二：“Baseline Profiles 只对首次启动有效，之后就失效了。”**
 

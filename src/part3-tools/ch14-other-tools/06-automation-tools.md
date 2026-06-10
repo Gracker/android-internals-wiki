@@ -41,6 +41,8 @@ pipeline_stage: "ready-to-publish"
 title: 自动化测试工具
 updated_by: openclaw-task2b
 updated_date: 2026-04-26
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 
@@ -73,7 +75,7 @@ updated_date: 2026-04-26
 
 ## 为什么要用自动化工具做性能测试
 
-我们在前面章节中介绍了 Perfetto、Android Studio Profiler 等手动分析工具——它们帮助我们在发现性能问题后深入定位根因。但手动测试有一个根本性的局限：**无法持续**。团队不可能在每次代码提交后都手动跑一遍启动速度测试，也不可能安排人盯着每一帧的渲染时间。性能回归往往是在不知不觉中发生的——某次合并引入了一个多余的布局层级，某次依赖升级拖慢了冷启动——等到用户反馈"变卡了"的时候，问题可能已经累积了好几个版本。
+前面章节介绍了 Perfetto、Android Studio Profiler 等手动分析工具——它们适合在发现性能问题后深入定位根因。但手动测试有一个根本局限：**无法持续**。团队不可能每次代码提交后都手动跑一遍启动速度测试，也不可能安排人盯着每一帧的渲染时间。性能回归往往不知不觉就发生了——某次合并多了一层布局，某次依赖升级拖慢了冷启动——等到用户反馈"变卡了"，问题可能已经累积了好几个版本。
 
 自动化性能测试解决的就是这个问题。它让性能指标变成一个**可量化、可追踪、可回归**的工程信号，而不是依赖主观感受。Google 从 2020 年开始陆续推出 Jetpack Benchmark 库（Macrobenchmark 和 Microbenchmark），就是要把性能测试从"高级工程师的直觉"变成"CI 管线里的一行命令"。
 
@@ -87,7 +89,7 @@ Google 为 Android 提供了两个互补的基准测试库，分别针对不同�
 
 ### Macrobenchmark：端到端的用户体验测量
 
-Macrobenchmark 的设计目标是测量**用户能感知到的性能**——启动时间、页面滚动流畅度、动画帧率。它不是在代码内部插桩测量某个函数的执行时间，而是从外部操控应用，模拟用户的真实操作，然后测量整个操作流程的耗时。
+Macrobenchmark 测量的是**用户能感知到的性能**——启动时间、页面滚动流畅度、动画帧率。它不是从代码内部插桩测量某个函数的执行时间，而是从外部操控应用、模拟真实用户操作，再测量整个流程的耗时。
 
 Macrobenchmark 运行在一个独立的测试模块（`com.android.test`）中，与被测应用完全分离。这种外部测量的方式意味着测试结果反映的是用户实际体验到的性能，而不是某个优化过的代码路径的理想表现。
 
@@ -106,7 +108,7 @@ Macrobenchmark 常用指标如下：
 
 ### Microbenchmark：代码级热点分析
 
-Microbenchmark 关注的是**代码片段的执行效率**。当我们用 Macrobenchmark 或 Profiler 定位到一个性能热点后（比如一个耗时的 JSON 解析方法、一个频繁调用的布局 inflate），就可以用 Microbenchmark 精确测量这段代码在不同实现方案下的性能差异。
+Microbenchmark 关注**代码片段的执行效率**。用 Macrobenchmark 或 Profiler 定位到性能热点后（比如耗时的 JSON 解析方法、频繁调用的布局 inflate），就可以用 Microbenchmark 精确测量这段代码在不同实现方案下的性能差异。
 
 Microbenchmark 直接运行在应用进程内部，通过循环执行被测代码来获取稳定的测量结果。它的 API 同样基于 JUnit4 规则：
 
@@ -446,9 +448,9 @@ connected_android_test_additional_output/
 
 ## 常见问题与误区
 
-**"基准测试可以在模拟器上运行"**——这是最常见的错误。模拟器的 CPU 特性、GPU 渲染路径、内存架构与真机完全不同。在模拟器上测出的启动时间可能比真机快 2 倍也可能慢 3 倍，完全不可靠。Macrobenchmark 库在检测到模拟器环境时会主动报错。
+**"基准测试可以在模拟器上运行"**——这是最常见的错误。模拟器的 CPU 特性、GPU 渲染路径、内存架构与真机完全不同。在模拟器上测出的启动时间可能比真机快 2 倍也可能慢 3 倍，完全没有参考价值。Macrobenchmark 在检测到模拟器环境时会主动报错。
 
-**"Microbenchmark 比 Macrobenchmark 更精确所以更好"**——这是混淆了精度和价值。Microbenchmark 测量的是代码片段的理想执行时间，但用户感知不到一个函数快了 2 微秒。Macrobenchmark 虽然单次测量噪声更大，但它测量的是端到端用户体验，性能优化最终要回到这个口径。
+**"Microbenchmark 比 Macrobenchmark 更精确所以更好"**——这是把精度和价值搞混了。Microbenchmark 测量的是代码片段的理想执行时间，但用户感知不到一个函数快了 2 微秒。Macrobenchmark 虽然单次测量噪声更大，但它测量的是端到端的用户体验，性能优化最终要回到这个口径上。
 
 **"把基准测试放在应用模块里就行"**——Macrobenchmark 必须放在独立的 `com.android.test` 模块中。因为它需要从外部控制应用的启动和停止，如果和应用在同一个模块，就无法保证测试环境的独立性。Microbenchmark 则可以放在 library 模块中。
 
