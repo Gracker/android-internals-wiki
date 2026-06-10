@@ -44,7 +44,7 @@ review_round: 6
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-27T04:23:00+08:00"
-last_task6_audit: '2026-05-19'
+last_task6_audit: '2026-06-11'
 last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 task9_review_notes: "2026-05-27 Task9 04:23：pass-tech-review。未发现 P0/P1；Baseline/ProfileInstaller/Startup Profile 版本边界通过，另记录 1 条 P2 量化数据建议，自动晋升 finalized。"
