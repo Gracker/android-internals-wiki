@@ -258,19 +258,19 @@
         {
           "type": "P0 源码错误",
           "location": "第462-553行 Android 17 源码分析节",
-          "detail": "该节声称基于"Android 17 main branch simpleperf 源码"，但实际包含大量未经验证的架构推断：RecordMemoryPool 类不存在、EventSelectionSetAndroid17/SampleTreeAndroid17/ELFReaderAndroid17 等 Android17 后缀类均未在AOSP源码中找到、30+ 新增 PMU 事件声明缺乏支撑、enable_real_time_jit_debugging() API 未确认、Vulkan 渲染管线性能分析集成与源码事实不符",
-          "suggestion": "删除该整节或将内容降级为"基于架构的演进预测"，删除具体源码类名等无法验证的细节，将适用版本从 Android 17 降级为 Android 16，并标注内容为架构推断而非已验证源码"
+          "detail": "该节声称基于\"Android 17 main branch simpleperf 源码\"，但实际包含大量未经验证的架构推断：RecordMemoryPool 类不存在、EventSelectionSetAndroid17/SampleTreeAndroid17/ELFReaderAndroid17 等 Android17 后缀类均未在AOSP源码中找到、30+ 新增 PMU 事件声明缺乏支撑、enable_real_time_jit_debugging() API 未确认、Vulkan 渲染管线性能分析集成与源码事实不符",
+          "suggestion": "删除该整节或将内容降级为\"基于架构的演进预测\"，删除具体源码类名等无法验证的细节，将适用版本从 Android 17 降级为 Android 16，并标注内容为架构推断而非已验证源码"
         },
         {
           "type": "P0 事实错误",
           "location": "多处AOSP源码引用",
-          "detail": "文中多次引用AOSP具体源码细节（如cmd_record.cpp、main.cpp、GetDefaultRecordBufferSize）但基于main分支快照而非官方android-17.0.0_r1 tag，不符合AIW版本边界规则。所有源码引用需明确标注"未进入Android 17"或重新锚定到已验证版本",
+          "detail": "文中多次引用AOSP具体源码细节（如cmd_record.cpp、main.cpp、GetDefaultRecordBufferSize）但基于main分支快照而非官方android-17.0.0_r1 tag，不符合AIW版本边界规则。所有源码引用需明确标注\"未进入Android 17\"或重新锚定到已验证版本",
           "suggestion": "审查所有源码引用，将main分支内容降级为架构预测，或锚定到android-16.0.0_r1等已公开版本"
         },
         {
           "type": "P0 事实错误",
           "location": "14.2.5 Perfetto数据收集",
-          "detail": "命令参数声明不准确：不存在 `--perfetto` / `--config` / `--out` 标志，但支持标准 `-o/--output` 参数。引用的DeepResearch材料虽标注"main分支快照"，但错误细节已多次出现且未修正",
+          "detail": "命令参数声明不准确：不存在 `--perfetto` / `--config` / `--out` 标志，但支持标准 `-o/--output` 参数。引用的DeepResearch材料虽标注\"main分支快照\"，但错误细节已多次出现且未修正",
           "suggestion": "修正为说明 simpleperf 不存在特有标志但支持标准输出参数，移除所有不存在的参数"
         },
         {
@@ -330,7 +330,7 @@
         {
           "type": "P0 方法签名未验证",
           "location": "14.2.5 命令参数验证",
-          "detail": `cmd_record.cpp 中的命令注册表声明未提供具体方法签名，无法确认 --perfetto/--config/--out 等参数是否存在。引用的 \"cmd_record.cpp\" 需要具体方法签名验证`,
+          "detail": "cmd_record.cpp 中的命令注册表声明未提供具体方法签名，无法确认 --perfetto/--config/--out 等参数是否存在。引用的 \"cmd_record.cpp\" 需要具体方法签名验证",
           "suggestion": "提供 cmd_record.cpp 中具体命令注册的方法签名，验证所有声明参数的实际存在性"
         },
         {
