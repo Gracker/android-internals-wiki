@@ -1,4 +1,5 @@
 ---
+
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
@@ -36,12 +37,12 @@ task9_result: needs-rework
 task6_result: pass-light-edit
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 reviewed_by: openclaw-task6
-reviewed_date: '2026-06-10'
-last_task6_at: '2026-06-10T17:05:00+08:00'
+reviewed_date: 2026-06-10
+last_task6_at: 2026-06-10T18:10:06+08:00
 ---
 
 # Chapter 14.2 - Simpleperf
@@ -469,6 +470,73 @@ Overhead  Command   Pid   Tid   Symbol
 
 > FP 回溯是默认方式。Android NDK Clang 默认保留 FP（`-fno-omit-frame-pointer`），大多数场景下 FP 回溯即可满足需求。选择决策：先跑一次 `simpleperf report -g`，若调用栈满足分析需求则不需要切换；若栈经常出现 `0x0` 断点或深度明显不足（预期 10 层实际只有 3 层），表明 FP 回溯受限，用 `--call-graph dwarf` 重新采集对比。
 
+
+<!-- AIW-源码调研-2026-06-10：simpleperf 调用栈重建机制源码级补充 -->
+
+#### 源码级展开：FP/DWARF 在 simpleperf 内部的实现分叉
+
+`--call-graph fp` 与 `--call-graph dwarf` 在 AOSP `system/extras/simpleperf/` 内的差异落到 **`EventSelectionSet::EnableFpCallChainSampling()` vs `EnableDwarfCallChainSampling(uint32_t dump_stack_size)`** 两个开关上（`event_selection_set.cpp:558-581`）：
+
+- **FP 模式**只追加 `PERF_SAMPLE_CALLCHAIN`，由 Linux 内核在硬件中断路径上沿 `x29` 链逐帧回溯
+- **DWARF 模式**追加 `PERF_SAMPLE_CALLCHAIN | PERF_SAMPLE_REGS_USER | PERF_SAMPLE_STACK_USER`，并设 `exclude_callchain_user=1`（让内核放弃用户态 FP 链避免重复）。展开工作在用户态由 `unwindstack::Unwinder` 用 `.eh_frame` 段完成
+
+`IsDwarfCallChainSamplingSupported()`（`event_selection_set.cpp:53-69`）的硬阈值是 **kernel ≥ 3.18**——更早的内核需主动用 `IsEventAttrSupported()` 探测。`-g` 在源码里是 `--call-graph dwarf` 的硬编码别名（`cmd_record.cpp:1341-1343`），不暴露 dump_stack_size 旋钮。
+
+**32-bit ARM 警告**（`cmd_record.cpp:1377-1382`）是这条对比表的来源——`LOG(WARNING) << "--callgraph fp option doesn't work well on arm architecture, consider using -g option or profiling on aarch64 architecture."` 直接印证了"Thumb 代码 FP 约定断裂"。
+
+#### 三种 record 落盘路径
+
+参数选定后，`cmd_record.cpp::ProcessRecord()`（`cmd_record.cpp:1638-1644`）在三条路径上分流：
+
+```cpp
+if (unwind_dwarf_callchain_) {
+  if (post_unwind_) return SaveRecordForPostUnwinding(record);   // 留 raw regs+stack
+  return SaveRecordAfterUnwinding(record);                       // 在线展开
+}
+return SaveRecordWithoutUnwinding(record);                        // FP 模式原样落盘
+```
+
+`--post-unwind=yes`（`cmd_record.cpp:1952-1972`）的核心收益是把 `MaxFrames=512`（`OfflineUnwinder.cpp:78` 注释引用 b/110923759 实际见过 463 帧）的栈展开工作推迟到 recording 结束后，recording 期间只 dump 寄存器+栈，CPU 开销从 3-5x 降到 1.2-1.5x，代价是 perf.data 体积变大。
+
+#### ARM64 PAC（ARMv8.3-A）兼容
+
+`OfflineUnwinder::CollectMetaInfo`（`OfflineUnwinder.cpp:215-229`）用 XPACLRI 指令（汇编 `hint 0x7`）计算 PAC mask 并写 meta info：
+
+```cpp
+register uint64_t x30 __asm("x30") = ~(1ULL << 55);
+asm("hint 0x7" : "+r"(x30));          // XPACLRI
+uint64_t pac_mask = ~x30 & ~(1ULL << 55);
+```
+
+bit 55 不属于 PAC 范围（用户态地址用 TTBR0），需要从 mask 中清除。`OfflineUnwinderImpl::LoadMetaInfo`（`OfflineUnwinder.cpp:231-236`）在 report 阶段读回 `META_KEY_ARM64_PAC_MASK` 并 `regs->SetPACMask()`。这条机制让 simpleperf 在开启 PAC 的设备上仍能正确回溯 `x30`。
+
+#### JIT 帧：JITDebugReader 协议
+
+ART 把 JIT 编译后的代码挂到 `[anon:dalvik-jit-code-cache]` mmap 区，普通 unwinder 看不到。`JITDebugReader`（`JITDebugReader.h:48-66`）持续从 ART 拉 `Descriptor{type:kJIT/kDEX, action_seqlock, first_entry_addr}` 链表，按 symfile 协议：
+
+1. `JITDebugReader::ReadJITCodeDebugInfo`（`JITDebugReader.cpp:620-674`）读取 `symfile_addr/symfile_size` 区域
+2. 验证 ELF magic 后写到 `kJITAppCacheFile`（app 独立）或 `kJITZygoteCacheFile`（zygote 共享，由 `/memfd:jit-zygote-cache` mmap 识别）
+3. 解析每个 ElfFileSymbol，构造 `path:offset-len` 路径交给 `OfflineUnwinder`
+
+`OfflineUnwinder.cpp:188-202` 显式剥掉 `:offset-len` 后缀喂给 libunwindstack：`if (entry->flags & map_flags::PROT_JIT_SYMFILE_MAP)` + `name_holder = path.substr(0, colon_pos)`。`map_flags::PROT_JIT_SYMFILE_MAP` 与 `unwindstack::MAPS_FLAGS_JIT_SYMFILE_MAP` 在 `OfflineUnwinder.cpp:53-54` 用 `static_assert` 强制相等。
+
+**补救机制**：`OfflineUnwinderImpl::UnwindCallChain` 把 `map_info==nullptr` 或 `last_jit_method_frame + 3 > ips->size()` 标记为 `is_callchain_broken_for_incomplete_jit_debug_info_`（`OfflineUnwinder.cpp:269-285`），`cmd_record.cpp:1880-1890` 看到该标志后会主动 `jit_debug_reader_->ReadProcess(pid)` 拉新 descriptor 并重展开——这就是为什么 Java 方法栈经常能补全。
+
+#### CallChainJoiner：跨样本拼接
+
+单次 sample 栈深常只有 3-4 帧，根因看不到。`CallChainJoiner` 用 LRU cache 把同一线程跨 sample 的栈拼起来（`CallChainJoiner.cpp:44-101`）：
+
+- Key 是 `(tid, ip, sp)` 三元组——`sp` 决定深度匹配，精度高于 `tid+ip`
+- `matched_node_count_to_extend_callchain` 控制顶部节点需要多少个父子关系匹配才允许向上扩展
+- 检测 `top->sp == chain.back()->sp` 防止 `A→B→A→B` 环形扩展
+
+`--no-callchain-joiner`（`cmd_record.cpp:1165`）就是把这个 LRU 拼接器关掉，恢复纯 unwinding 行为。
+
+#### 落盘前压缩
+
+`--call-graph dwarf` 的 raw 数据（`PERF_SAMPLE_REGS_USER` + `PERF_SAMPLE_STACK_USER`）每条 sample 几十 KB。`cmd_record.cpp:1491-1496` 在落盘前 `ReplaceRegAndStackWithCallChain(attr.attr)`，把 raw regs+stack 替换成 callchain 数组——从几十 KB 压到几百字节。
+
+
 ### 按维度过滤报告
 
 ```bash
@@ -740,3 +808,6 @@ simpleperf report --csv perf.data > perf_report.csv
 - 注入时间：2026-06-10
 - 价值：包含源码级分析（AOSP锚点），对理解框架内部机制和性能调优有直接参考意义
 > ⚠️ 本参考基于 main 分支快照（commit 23e563428f2b），部分内容（ETM 指令追踪、JIT debug reader 增强）可能未进入 Android 17 正式分支。正文已标注 [已验证] 的可断言内容均来自 NDK r29 文档与 AOSP android-16.0.0_r1 的交叉校验；标注 [待验证] 的内容需后续对照 android-17.0.0_r1 tag 确认。
+
+
+<!-- AIW-源码调研-2026-06-10 引用：完整报告见 DeepResearch/2026-06-10-simpleperf-call-stack-unwinding.md -->
