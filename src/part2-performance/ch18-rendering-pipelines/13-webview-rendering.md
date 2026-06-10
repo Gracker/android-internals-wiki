@@ -32,7 +32,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
 task9_result: pass-tech-review
 last_task9_at: "2026-06-03T02:20:00+08:00"
-last_task6_audit: "2026-05-19"
+last_task6_audit: "2026-06-11"
 review_round: 4
 task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
