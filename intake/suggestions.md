@@ -223,3 +223,56 @@
 - Task 2B/6/9 对 74 个 ready-for-review 章节的 review/回炉/终审
 - §14.2 Simpleperf 的集中修复（queue 中已有 11 条）
 - 已有章节的内容深化和交叉引用完善
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-11 05:05
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**（连续第 72 轮）
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 422 章，draft=0，ready-for-review=74，finalized=289，NO_STATUS=59）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **research-gaps.md 新增条目评估**：沿用上一轮结论，2 条补充建议均 < 14 分
+4. **source-index.json 高质量未映射素材**：所有 DeepResearch 产出均已有 target_file 映射到现有章节
+5. **AOSP 服务/组件覆盖**：沿用连续多轮结论，所有性能相关服务已覆盖
+6. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+7. **daily-info 热点（2026-06-11）**：
+   - Skills/AI 工具排名 → 非性能核心
+   - Android Studio Panda → 非性能核心
+   - Android 17 MessageQueue 重写 → §1.13 已覆盖
+   - Android 桌面端 → §2.20/§22.14 已覆盖
+   - Android 17 适配指南 → §16.5 等已覆盖
+   - 无新增性能核心主题
+8. **research-feeds**：最新文件为 2026-04-14，无新产出
+9. **Part 5 Clippings 对照**：三本参考书知识点已全部覆盖
+10. **queue.json**：12 条 pending 均为 §14.2 Simpleperf 修复项，无新章节需求
+
+### 结论
+全书 422 节中 86% 已有实质内容（289 finalized + 74 ready-for-review）。知识库高度饱和，连续 72 轮缺口挖掘未产出新章节。建议后续侧重：
+- Task 2B/6/9 对 74 个 ready-for-review 章节的 review/回炉/终审
+- §14.2 Simpleperf 的集中修复（queue 中已有 12 条）
+- 已有章节的内容深化和交叉引用完善
+
+
+## [Task9 Deep Review] 14.1 Android Studio Profiler — 2026-06-11 05:36
+- **类型**：源码准确性
+- **位置**：使用 ProfilingManager API 的代码示例
+- **问题**：代码片段中使用 `result.errorCode == ProfilingResult.ERROR_NONE` 但 ProfilingResult 实际使用 `getError()` 方法而非 `errorCode` 字段
+- **建议**：修正为 `result.getError() == ProfilingResult.ERROR_NONE`
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-06-11 06:08
+- **类型**：源码准确性
+- **位置**：FrontEnd 架构补充（源码级）
+- **问题**：文中引用 `frameworks/native/services/surfaceflinger/FrontEnd/LayerHierarchyBuilder.h` 但实际文件名为 `LayerHierarchy.h`
+- **建议**：修正AOSP源码引用路径为正确路径
+
+- **类型**：版本差异覆盖
+- **位置**：Android 15+ 的输出变化
+- **问题**：文中提到 Android 15+ 的 dumpsys SurfaceFlinger 输出格式变化，但未明确说明 Android 17 中 `--frontend` 参数的具体行为是否有进一步变化
+- **建议**：补充 Android 17 中 `--frontend` 参数的行为说明和可能的额外输出字段
+
+## [Task9 Deep Review] 26.1 App 可观测性架构设计 — 2026-06-11 06:00
+- **类型**：版本差异覆盖
+- **位置**：版本适用范围声明
+- **问题**：章节声明适用 Android 10 (API 29) - Android 17 (API 37)，但未说明在这个8个版本的跨度中隐私和权限限制的演变对可观测性架构的具体影响
+- **建议**：补充Android 10-17版本间隐私政策变化对可观测性架构的影响，包括后台执行限制、运行时权限、数据采集限制等关键变化点

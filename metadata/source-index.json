@@ -338,6 +338,46 @@
       "summary": "内核Binder驱动三层FIFO队列、frozen进程async处理、TF_UPDATE_TXN事务替换",
       "chapter": "ch01",
       "processed": "2026-06-10"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-simpleperf-mmap-munmap-analysis.md",
+      "title": "Android 17 Simpleperf 内存映射分析：mmap/munmap 性能影响与端侧 AI 内存优化",
+      "summary": "深入分析 Android 17 Simpleperf 中 mmap/munmap 双重含义、Ring Buffer 物理锁定模型、MapRecordReader 的 PROT_EXEC 过滤策略、ThreadTree DSO 折叠机制，给出端侧 AI 推理场景下长采样 60s+ 的内存膨胀根因与 mlock 预算计算公式。",
+      "chapter": "14.2",
+      "action": "queue",
+      "processed_at": "2026-06-11T06:18:47.990521+08:00"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-10-simpleperf-call-stack-unwinding.md",
+      "title": "Simpleperf 调用栈重建：FP 回溯 vs DWARF 展开 vs JIT 拼接源码级分析",
+      "summary": "拆解 Simpleperf 三种调用栈重建通道（OfflineUnwinder + JITDebugReader + CallChainJoiner），给出 FP/DWARF 模式在 sample_type、内核契约、32-bit ARM 兼容性上的源码级差异，以及 post-unwind 离线展开的完整落盘路径。",
+      "chapter": "14.2",
+      "action": "queue",
+      "processed_at": "2026-06-11T06:18:47.990521+08:00"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-10-ondevice-llm-runtime-source-walk.md",
+      "title": "端侧 LLM 运行时原理：基于 LiteRT-LM 与 llama2.c 的源码解读",
+      "summary": "从 llama2.c 最小 Transformer 前向骨架出发，经 LiteRT-LM Conversation/Engine/Sampler 三层封装，到 Android LlmInference/LlmInferenceSession 公开 API，完整还原端侧 LLM 推理的 mmap 权重映射、KV cache 常驻、Sampler TopK→Softmax→TopP 三步采样链路。",
+      "chapter": "5.11",
+      "action": "queue",
+      "processed_at": "2026-06-11T06:18:47.990521+08:00"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-06-android17-contentprovider-anr-double-path.md",
+      "title": "Android 16/17 ContentProvider ANR 双路径机制源码深度分析",
+      "summary": "还原 ContentProvider 两条正交 ANR 路径：publish 超时（10s×HW_MULTIPLIER，进程初始化失败杀进程）与 call hang 超时（setDetectNotResponding 触发真 ANR），精确到常量定义位置、Handler 消息码、Perfetto SQL 查询、HW_TIMEOUT_MULTIPLIER 对低端机的影响。",
+      "chapter": "9.9",
+      "action": "direct_inject",
+      "processed_at": "2026-06-11T06:18:47.990521+08:00"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md",
+      "title": "Android 17 GPU Vulkan 1.3/1.4 协商机制与 Vulkan Loader 源码分析",
+      "summary": "分析 AOSP Vulkan Loader 的 ApiVersion 协商（CreateInfoWrapper 默认 1.3，vulkan_1_4_instance_api flag 升 1.4）、SanitizeApiVersion 降级保护、ANGLE 命名空间隔离、GraphicsEnvironment 版本检测链、HWUI RenderThread Vulkan 后端初始化路径。",
+      "chapter": "2.14",
+      "action": "queue",
+      "processed_at": "2026-06-11T06:18:47.990521+08:00"
     }
   ],
   "https://juejin.cn/post/7589903499599347766": {
@@ -360,5 +400,11 @@
     "chapter_title": "其他工具",
     "score": 12,
     "added_at": "2026-06-10T05:44:02.075168"
+  },
+  "掘金Android技术文章抓取": {
+    "chapter": "ch12-apk-network",
+    "title": "Android 17 来了！新特性介绍与适配建议",
+    "score": 12,
+    "added_at": "2026-06-11T05:39:54.153277"
   }
 }
