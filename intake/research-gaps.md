@@ -1,3 +1,12 @@
+
+## [Task 2A Gap Mining] 2026-06-10 17:10 (Round 81)
+
+- Direction: 无空 draft、TASK2B_BACKLOG=0。422 files（288 finalized + 75 ready-for-review + 0 draft + 59 misc）。queue.json 0 条 pending。source-index 20 files 全部已映射（0 high-quality unmapped）。research-feeds 最近 2026-04-14，无新素材。daily-info 2026-06-10：掘金文章（Skills/AI工具、Android Studio Panda、MessageQueue 重写、Android 17 适配）+ DeepResearch 今日新增（on-device LLM runtime → ch05 §11/13/14 已覆盖、on-device agent ADPF → ch05 §9 已覆盖、LRU lock optimization → ch01 §14 已覆盖、input queue analysis → ch03 已覆盖、Simpleperf architecture → ch14 §2 已覆盖）均映射到现有章节。AOSP 26 chapters 覆盖饱和。连续 81 轮无合格缺口（≥14 分）。
+- No gap scored >= 14
+- Book: 422 files (288 finalized + 75 ready-for-review + 0 draft + 59 misc)
+- 81 consecutive empty runs (after Round 56 success on 17.8 MUSCHED → Round 57-81 confirmed)
+- Bottleneck: Task 6/9 review pipeline for 75 ready-for-review sections
+- Recommendation: 暂停 Task 2A gap mining cron 或仅在 new material injection 时触发；优先推进 Task 6/9 pipeline 处理 75 个 ready-for-review 章节
 ## [Task 9 Deep Review] 2026-06-10 15:23 — 14.2 Simpleperf — 功耗分析盲区（新增）
 
 ### 盲区描述
@@ -236,5 +245,31 @@ Simpleperf章节未说明在ARM/Intel等不同CPU架构下的使用差异和注�
 - No gap scored >= 14
 - Book: 422 files (288 finalized + 75 ready-for-review + 0 draft + 59 misc)
 - 80 consecutive empty runs (after Round 56 success on 17.8 MUSCHED → Round 57-80 confirmed)
+- Bottleneck: Task 6/9 review pipeline for 75 ready-for-review sections
+- Recommendation: 暂停 Task 2A gap mining cron 或仅在 new material injection 时触发；优先推进 Task 6/9 pipeline 处理 75 个 ready-for-review 章节
+
+## [2026-06-10] 14.2 Simpleperf — 知识盲区
+
+### 盲区描述
+章节缺少Android 12+隐私沙盒对profiling的限制说明和跨进程分析的最佳实践指导。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 12+隐私沙盒如何限制simpleperf的数据采集权限
+- 跨进程应用和服务profiling的技术方案
+- 在隐私限制下的替代profiling方法
+
+### 关联章节
+Chapter 3.5 (Android Runtime)
+Chapter 7.2 (Memory Profiling)
+
+## [Task 2A Gap Mining] 2026-06-10 19:04 (Round 82)
+
+- Direction: 无空 draft、TASK2B_BACKLOG=0。422 files（288 finalized + 75 ready-for-review + 0 draft + 59 misc）。queue.json 无 pending 条目。source-index 8 篇高评分未映射 DeepResearch 均为已有章节补充素材（ART GC 碎片化→§4.8、SDM 机制→§16.6、StrictMode Intent→§16.5、SF 事务队列→§2.6、Codec2→§18.23、Sentry→§19.18、Perfetto→§13.x），无独立新章节候选。research-feeds 最近 2026-04-14，无新素材。daily-info 2026-06-10：300 条增量扫描均映射到现有 ch02-ch06 章节 + 8 条掘金文章（Skills/AI 工具、Android Studio Panda、MessageQueue 重写、Android 17 适配）均非性能优化核心话题。AOSP 26 chapters 覆盖饱和。连续 82 轮无合格缺口（≥14 分）。
+- No gap scored >= 14
+- Book: 422 files (288 finalized + 75 ready-for-review + 0 draft + 59 misc)
+- 82 consecutive empty runs
 - Bottleneck: Task 6/9 review pipeline for 75 ready-for-review sections
 - Recommendation: 暂停 Task 2A gap mining cron 或仅在 new material injection 时触发；优先推进 Task 6/9 pipeline 处理 75 个 ready-for-review 章节
