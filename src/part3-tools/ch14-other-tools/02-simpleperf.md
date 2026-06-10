@@ -460,7 +460,7 @@ Overhead  Command   Pid   Tid   Symbol
 
 **FP 回溯 vs DWARF 展开对比**：
 
-| 特性 | FP 回溯（默认） | DWARF 展开（`--call-graph dwarf`） |
+| 特性 | FP 回溯（ARM64 内核默认机制） | DWARF 展开（`--call-graph dwarf`，等价于 `-g`，simpleperf 默认启用） |
 |------|----------------|-----------------------------------|
 | CPU 开销 | 基准（仅记录 FP 链遍历） | 约 2x（需解析 `.eh_frame` 段逐条查表） |
 | 精度 | 可能丢失内联帧——编译器将小函数内联后不生成独立栈帧 | 可还原内联帧和部分尾调用（`.eh_frame` + `.debug_info` 内联记录） |
@@ -468,7 +468,7 @@ Overhead  Command   Pid   Tid   Symbol
 | 可靠性 | ARM64 稳定；32-bit ARM 可能因 Thumb 代码 FP 约定不一致而断裂 | 不受 FP 约定影响，按规范编码的 `.eh_frame` 均可正确展开 |
 | 适用场景 | 默认首选，开销可控 | 以下情况应切换 DWARF：① 第三方库编译选项不可控且 FP 回溯断裂 ② 需内联帧精度判断优化效果 ③ `simpleperf report -g` 输出栈深明显偏短 |
 
-> FP 回溯是默认方式。Android NDK Clang 默认保留 FP（`-fno-omit-frame-pointer`），大多数场景下 FP 回溯即可满足需求。选择决策：先跑一次 `simpleperf report -g`，若调用栈满足分析需求则不需要切换；若栈经常出现 `0x0` 断点或深度明显不足（预期 10 层实际只有 3 层），表明 FP 回溯受限，用 `--call-graph dwarf` 重新采集对比。
+> ⚠️ **注意区分两个"默认"**：ARM64 内核的 `PERF_SAMPLE_CALLCHAIN` 默认走 FP 寄存器链回溯；但 simpleperf 的 `-g` 短参数等价于 `--call-graph dwarf`，即默认启用 DWARF 展开 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp:218，help 字符串明确标注 `-g Same as '--call-graph dwarf'`]。Android NDK Clang 默认保留 FP（`-fno-omit-frame-pointer`），因此大多数场景下 FP 回溯即可满足需求。选择决策：先跑一次 `simpleperf report -g`，若调用栈满足分析需求则不需要切换；若栈经常出现 `0x0` 断点或深度明显不足（预期 10 层实际只有 3 层），表明 FP 回溯受限，用 `--call-graph dwarf` 重新采集对比。
 
 
 <!-- AIW-源码调研-2026-06-10：simpleperf 调用栈重建机制源码级补充 -->
@@ -480,7 +480,7 @@ Overhead  Command   Pid   Tid   Symbol
 - **FP 模式**只追加 `PERF_SAMPLE_CALLCHAIN`，由 Linux 内核在硬件中断路径上沿 `x29` 链逐帧回溯
 - **DWARF 模式**追加 `PERF_SAMPLE_CALLCHAIN | PERF_SAMPLE_REGS_USER | PERF_SAMPLE_STACK_USER`，并设 `exclude_callchain_user=1`（让内核放弃用户态 FP 链避免重复）。展开工作在用户态由 `unwindstack::Unwinder` 用 `.eh_frame` 段完成
 
-`IsDwarfCallChainSamplingSupported()`（`event_selection_set.cpp:53-69`）的硬阈值是 **kernel ≥ 3.18**——更早的内核需主动用 `IsEventAttrSupported()` 探测。`-g` 在源码里是 `--call-graph dwarf` 的硬编码别名（`cmd_record.cpp:1341-1343`），不暴露 dump_stack_size 旋钮。
+`IsDwarfCallChainSamplingSupported()`（`event_selection_set.cpp:53-69`）的硬阈值是 **kernel ≥ 3.18**——更早的内核需主动用 `IsEventAttrSupported()` 探测。`-g` 在源码里是 `--call-graph dwarf` 的硬编码别名 [已验证：AOSP cmd_record.cpp:218 help 字符串 `-g Same as '--call-graph dwarf'`，实现见 `cmd_record.cpp:1343-1344` 设置 `dwarf_callchain_sampling_ = true; fp_callchain_sampling_ = false`]，不暴露 dump_stack_size 旋钮。
 
 **32-bit ARM 警告**（`cmd_record.cpp:1377-1382`）是这条对比表的来源——`LOG(WARNING) << "--callgraph fp option doesn't work well on arm architecture, consider using -g option or profiling on aarch64 architecture."` 直接印证了"Thumb 代码 FP 约定断裂"。
 

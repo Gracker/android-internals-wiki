@@ -393,6 +393,29 @@
       "completed_reason": "fixed-lite: P0 --output corrected to -o only",
       "completed_at": "2026-06-10T17:37:00+08:00",
       "completed_by": "task2b-lite"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 默认--call-graph dwarf的声明需要验证，可能与实际AOSP行为不符",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Call graph reconstruction mechanism",
+          "detail": "默认--call-graph dwarf的声明需要验证，可能应为--call-graph fp",
+          "suggestion": "验证AOSP android-16.0.0_r1中simpleperf默认call graph行为，更新文档"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T18:20:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-10T18:53:52+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "verified: AOSP cmd_record.cpp:218 confirms -g is alias for --call-graph dwarf. Chapter claim verified correct. Added [已验证] annotation with source line numbers and disambiguation note between kernel FP default vs simpleperf -g default."
     }
   ]
 }
