@@ -30,15 +30,15 @@ tags:
   - ndk
   - native-profiling
 last_task9_audit: '2026-06-10T04:21:00+08:00'
-last_task2b_lite_at: '2026-06-10'
+last_task2b_lite_at: '2026-06-10T13:42'
 last_task2b_at: '2026-06-10T12:50:00+08:00'
 task9_result: needs-rework
 task6_result: pass-light-edit
-task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 last_task9_at: '2026-06-10T07:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T07:20:00+08:00'
 ---
@@ -443,7 +443,7 @@ Simpleperf 通过标准 `adb` 接口与 CI/CD 管道集成，无需额外 Gradle
 
 ```bash
 # CI 脚本中直接调用 simpleperf（命令行工具，不依赖 Gradle 插件）
-adb shell simpleperf record --trace-fg com.example.app --duration 60 -o /data/local/tmp/perf.data
+adb shell simpleperf record --app com.example.app --duration 60 -o /data/local/tmp/perf.data
 adb pull /data/local/tmp/perf.data
 simpleperf report --csv perf.data > perf_report.csv
 ```
