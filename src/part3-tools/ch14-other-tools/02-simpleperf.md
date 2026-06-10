@@ -30,16 +30,15 @@ tags:
   - ndk
   - native-profiling
 last_task9_audit: '2026-06-10T04:21:00+08:00'
-last_task2b_at: '2026-06-10T04:50:00+08:00'
 last_task2b_lite_at: '2026-06-10'
 last_task2b_at: '2026-06-10T12:50:00+08:00'
 task9_result: needs-rework
 task6_result: pass-light-edit
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_at: '2026-06-10T07:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T07:20:00+08:00'
 ---
