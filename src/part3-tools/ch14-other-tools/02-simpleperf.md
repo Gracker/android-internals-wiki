@@ -36,10 +36,10 @@ task9_result: needs-rework
 task6_result: pass-light-edit
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-last_task6_at: '2026-06-10T14:15:43+08:00'
+task6_state: reviewed
+last_task6_at: '2026-06-10T15:20:12+08:00'
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_at: '2026-06-10T14:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T14:20:00+08:00'
 ---

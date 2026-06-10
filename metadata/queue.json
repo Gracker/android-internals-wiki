@@ -259,7 +259,7 @@
           "type": "P0 事实错误",
           "location": "多处AOSP源码引用",
           "detail": "文中多次引用AOSP具体源码细节（如cmd_record.cpp、main.cpp、GetDefaultRecordBufferSize）但缺乏可验证的一手源码证据，存在过度依赖不可验证的内部实现细节的风险",
-          "suggestion": "删除无法验证的源码引用或降级为"架构推测"，只保留官方文档中可验证的内容"
+          "suggestion": "删除无法验证的源码引用或降级为「架构推测」，只保留官方文档中可验证的内容"
         },
         {
           "type": "P1 重要缺失",
@@ -278,11 +278,31 @@
           "location": "14.2.4 内存分析",
           "detail": "声称支持内存分析但未说明具体的数据采集机制、采样点和解读方法",
           "suggestion": "补充内存分配跟踪的具体实现和解读指南"
+        },
+        {
+          "type": "需确认",
+          "location": "14.2.1 主要用途列表",
+          "detail": "3项用途描述过度夸大：①'内存使用分析：跟踪内存分配和释放模式，发现内存泄漏'——Simpleperf不跟踪个体内存分配，这是malloc debug/ASan的能力；②'系统调用跟踪：记录应用程序与系统内核的交互'——Simpleperf可计数但不是syscall tracer；③'功耗分析：通过追踪CPU、内存、网络等硬件使用来估算应用功耗'——Simpleperf测的是PMU计数不是瓦特数，14.2.8功耗分析节已做nuance处理但列表未对齐",
+          "suggestion": "Task9验证后修正：①改为'通过PMU事件采样间接关联内存访问热点'；②改为'通过sched事件和上下文切换计数分析线程行为'；③与14.2.8功耗分析节保持一致，注明是间接推算"
+        },
+        {
+          "type": "需确认",
+          "location": "14.2.2 设备端设置示例",
+          "detail": "pm grant com.example.debug android.permission.SET_DEBUG_APP——SET_DEBUG_APP是signature|privileged权限，pm grant在非root设备上无法授予",
+          "suggestion": "Task9验证：替换为debuggable构建或run-as方式，或标注此命令仅root设备有效"
+        },
+        {
+          "type": "需确认",
+          "location": "14.2.8 设备不支持Simpleperf的fallback",
+          "detail": "fallback命令（setprop debug.perfetto.enable true + am profile start）不是simpleperf的替代方案，am profile使用的是ART内置采样profiler而非simpleperf",
+          "suggestion": "Task9验证：删除此fallback或明确标注am profile是ART profiler而非simpleperf"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-10T14:20:00",
-      "status": "pending"
+      "status": "pending",
+      "last_updated_by": "task6-review",
+      "last_updated_at": "2026-06-10T15:20:50.178542"
     }
   ]
 }
