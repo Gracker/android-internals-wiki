@@ -4,6 +4,12 @@
 - **问题**：文中提到"老文章常把 preloaded classes 写成'3000-4000 个常用类'"，虽然正文已正确说明当前版本为18431，但这种过时参考的对比表述可能让读者困惑当前实际值
 - **建议**：直接删除"3000-4000"这个过时数字的对比，或改为更明确的版本标注，如"Android 8/9时代的3000-4000个类已扩展到当前版本的18431个"
 
+## [Task9 Deep Review] 14.1 Android Studio Profiler — 2026-06-10
+- **类型**：版本差异覆盖
+- **位置**：ProfilingManager API 版本判断部分
+- **问题**：未提及 Android SDK minor version (36.1) 的支持判断逻辑
+- **建议**：在触发器版本判断中补充 `Build.VERSION.SDK_INT_FULL` 检查，例如：`fun supportsKillTriggeredProfiling(): Boolean { if (Build.VERSION.SDK_INT < 36) return false; return Build.VERSION.SDK_INT_FULL >= 3601 }`
+
 ## [Task6 Review] 14.2 Simpleperf — 2026-06-10
 
 ### B1 需重写 — 全文叙述风格
@@ -105,7 +111,7 @@
 - **建议**：补充与Android Studio的集成方案，提供CI/CD脚本示例，说明如何在自动化环境中使用simpleperf
 
 
-## [Task6 Review] 14.2 Simpleperf — 2026-06-10 (第三轮)
+## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10 (第三轮)
 
 ### N1 需确认 — 事实矛盾（交 Task 9）
 - **类型**：需确认
@@ -132,3 +138,43 @@
 - **问题**：所有技术断言（命令参数、事件名、标志含义）无 [已验证]/[待验证] 标注
 - **建议**：Task 2B 在重写时补充验证标注
 - **review 日志**：logs/review/2026-06-10-08-review.md
+
+## [Task9 Deep Review] 14.7 ProfilingManager — 2026-06-10
+- **类型**：源码准确性
+- **位置**：关于 ProfilingResult 类归属的说明
+- **问题**：章节中提到"结果类 ProfilingResult 来自平台包 android.os"，但未提供完整的类访问路径
+- **建议**：补充精确的类路径说明，指出 ProfilingResult 通过 android.os.ProfilingManager.ProfilingResult 或通过 ProfilingManager 实例访问，增强 API 使用准确性
+
+## [Task9 Idle Audit] 26.3 性能指标采集与上报 — 2026-06-10
+- **类型**：源码准确性
+- **位置**："内存水位"章节
+- **问题**：文中提到 `ActivityManager.getProcessMemoryInfo(int[])` 适合记录页级数据，但未说明该方法需要 MANAGE_USERS 权限（Android 12+）且在后台场景可能受限
+- **建议**：补充权限说明和替代方案（如 Debug.MemoryInfo 在无需权限场景），以及在不同 Android 版本中的权限要求变化
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-06-10
+- **类型**：源码准确性
+- **位置**：ContentResolver.getProviderMimeTypeAsync() API 引用部分
+- **问题**：引用了不存在的公开 API ContentResolver.getProviderMimeTypeAsync()。该 API 仅存在于 framework 内部，不是公开 SDK 接口，普通应用无法使用。
+- **建议**：移除对该不存在的 API 的引用，明确说明应用侧超时控制应通过 CancellationSignal 和后台线程实现，而非依赖系统提供的统一超时机制。
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-06-10
+- **类型**：版本差异
+- **位置**：版本演进章节和适用版本声明
+- **问题**：章节声明支持 Android 17 (API 37) 但内容中未明确提及此版本，可能让读者疑惑最新版本的支持情况。
+- **建议**：在版本演进章节末尾补充说明 Android 17 (API 37) 的行为延续性，或明确指出截至 API 37 的关键特性保持稳定。
+
+
+## [Task6 Review] 14.2 Simpleperf — 2026-06-10 13:08（第三轮 revisiting）
+
+- **类型**：需确认（技术准确性）
+- **位置**：14.2.8 "设备不支持 Simpleperf" 子节
+- **问题**：替代方案使用 `adb shell setprop debug.perfetto.enable true` + `adb shell am profile start com.example.app`，这是 ART method tracing 命令，与 simpleperf 无关。14.2.2 已说明正确做法（从 NDK push simpleperf 到设备）。此节"替代方案"误导读者，让人以为 am profile 可以替代 simpleperf。
+- **建议**：删除 `setprop` + `am profile` 替代方案块，改为引用 14.2.2 的 NDK push 方法，或注明"如设备无 simpleperf，需从 NDK 推送到设备（见 14.2.2）"
+- **review 日志**：logs/review/2026-06-10-13-review.md
+
+## [Task6 Review] 14.2 Simpleperf — 2026-06-10 13:08（第三轮 revisiting）
+
+- **类型**：需确认（技术准确性）
+- **位置**：14.2.8 "Root 权限问题" 子节
+- **问题**：`adb shell run-as com.example.app simpleperf record` 仅适用于 debuggable 应用，且受 SELinux policy 限制，在多数 Android 11+ 设备上即使 debuggable 也可能失败。14.2.1 和 14.2.2 已覆盖 profileable 标志和 `persist.simpleperf.profile_app_uid` 方案。
+- **建议**：删除或限制 run-as 方案的适用范围（标注"仅 debuggable 应用 + SELinux permissive"），引导读者优先使用 profileable 或 profile_app_uid 方案
+- **review 日志**：logs/review/2026-06-10-13-review.md
