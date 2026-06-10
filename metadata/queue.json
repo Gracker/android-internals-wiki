@@ -107,6 +107,24 @@
           "location": "全文",
           "detail": "所有技术断言无验证标注",
           "suggestion": "Task 2B 重写时补充 [已验证]/[待验证]"
+        },
+        {
+          "type": "P0 源码错误",
+          "location": "14.2.5 Perfetto数据收集",
+          "detail": "--perfetto/--android-profileable/--system-wide/--trace-fg 标志在官方文档中未找到验证，源码引用准确性存疑",
+          "suggestion": "对照官方文档修正或删除无法验证的命令参数"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "applicable_versions字段",
+          "detail": "章节声明适用 Android 5.0(API 21)-Android 16(API 36)，但 Android 17 (API 37) 已经发布，版本范围过时且违反AIW版本边界规则",
+          "suggestion": "修正为 Android 5.0(API 21)-Android 17(API 35-37) 或明确说明未覆盖Android 17的内容"
+        },
+        {
+          "type": "P0 源码错误",
+          "location": "AOSP源码路径",
+          "detail": "引用的源码路径 android.googlesource.com/platform/system/extras/+/master/simpleperf 只验证了 main 分支，未确认在 Android 17 中的具体路径",
+          "suggestion": "验证或标注内容基于main分支快照，可能未进入Android 17正式版本"
         }
       ],
       "added_by": "task6-review",

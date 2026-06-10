@@ -1,4 +1,13 @@
-## [Task 9 Deep Review] 2026-06-10 07:20 — 14.2 Simpleperf — 知识盲区
+## [Task 2A Gap Mining] 2026-06-10 08:06 (Round 71)
+
+- Direction: 无空 draft、TASK2B_BACKLOG=0。422 files（288 finalized + 75 ready-for-review + 0 draft + 59 misc）。source-index 全部已映射（20 files, 0 high-quality unmapped）。DeepResearch 最新 2026-06-10 两篇（android17-input-queue-analysis/simpleperf-android17-architecture）全部映射 ch03/ch14。daily-info 2026-06-10 掘金 8 篇 + 增量扫描 2 篇（ProfilingManager+Datadog/Input iq/oq/wq Perfetto），全部映射已有章节或非性能深度方向。queue.json 4 条 pending（均为 DeepResearch 注入现有章节，非新章节）。Clippings 三本参考书已全面覆盖。AOSP 26 chapters 覆盖饱和。连续 71 轮无合格缺口（≥14 分）。
+- No gap scored >= 14
+- Book: 422 files (288 finalized + 75 ready-for-review + 0 draft + 59 misc)
+- 71 consecutive empty runs (after Round 56 success on 17.8 MUSCHED → Round 57-71 confirmed)
+- Bottleneck: Task 6/9 review pipeline for 75 ready-for-review sections
+- Recommendation: 暂停 Task 2A gap mining cron 或仅在 new material injection 时触发；优先推进 Task 6/9 pipeline 处理 75 个 ready-for-review 章节
+
+## [Task 9 Deep Review] 2026-06-10 08:20 — 14.2 Simpleperf — 知识盲区
 
 ### 盲区描述
 Simpleperf章节缺失安全和隐私相关的深入讨论，包括权限模型、数据敏感性、用户隐私保护机制等关键议题。
@@ -11,6 +20,40 @@ Simpleperf章节缺失安全和隐私相关的深入讨论，包括权限模型�
 - 分析不同Android版本中profiling数据的敏感性和访问控制
 - 调查simpleperf与其他Android安全机制（如SELinux、App Sandbox）的交互
 - 研究企业环境中性能分析的安全合规要求
+
+### 关联章节
+14.2 Simpleperf, 3.1 Android安全模型
+
+## [Task 9 Deep Review] 2026-06-10 08:20 — 14.2 Simpleperf — 版本差异盲区
+
+### 盲区描述
+Simpleperf章节缺少Android 17中关键性能分析特性的覆盖，以及与Perfetto系统工具深度集成的说明。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研Android 17中simpleperf与Perfetto的新集成机制
+- 研究Android 17中性能分析权限模型的变化
+- 分析Android 17中native profiling与系统trace的融合方式
+- 确认Android 17中simpleperf支持的新事件类型和采样机制
+
+### 关联章节
+14.2 Simpleperf, 13.2 Trace抓取与Perfetto工具链
+
+## [Task 9 Deep Review] 2026-06-10 08:20 — 14.2 Simpleperf — 兼容性盲区
+
+### 盲区描述
+Simpleperf章节缺少对不同Android设备厂商定制化ROM的兼容性问题处理指导。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 调研主流厂商（小米、华为、OPPO等）对simpleperf的定制和限制
+- 分析不同设备上simpleperf路径和权限的差异
+- 研究厂商定制ROM中性能分析工具的替代方案
+- 收集real-world使用中的常见兼容性问题
 
 ### 关联章节
 14.2 Simpleperf, 3.1 Android安全模型
