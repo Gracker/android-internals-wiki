@@ -1,12 +1,8 @@
 ---
-
-
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
 status: ready-for-review
-reviewed_date: '2026-06-10'
-reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
@@ -15,10 +11,6 @@ last_verified: '2026-04-22'
 last_verified_against: NDK r29 simpleperf docs + AOSP system/extras/simpleperf (main branch snapshot) + Perfetto linux.perf data source docs
 confidence: needs-review
 sources:
-
-last_task9_audit_at: '2026-06-10T16:20:00+08:00'
-
-last_task9_reviewed_at: '2026-06-10T16:20:00+08:00'
   - type: official
     path: android.googlesource.com/platform/system/extras/+/master/simpleperf/doc/README.md
   - type: official
@@ -35,21 +27,22 @@ tags:
   - ndk
   - native-profiling
 last_task9_audit: '2026-06-10T04:21:00+08:00'
+last_task9_audit_at: '2026-06-10T16:20:00+08:00'
+last_task9_reviewed_at: '2026-06-10T16:20:00+08:00'
+last_task9_at: '2026-06-10T16:50:00+08:00'
 last_task2b_lite_at: '2026-06-10T15:41'
-last_task2b_at: '2026-06-10T14:50:00+08:00'
+last_task2b_at: '2026-06-10T16:50:00+08:00'
 task9_result: needs-rework
 task6_result: pass-light-edit
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
-last_task2b_at: '2026-06-10T16:50:00+08:00'
-last_task9_at: '2026-06-10T16:50:00+08:00'
-last_task2b_at: '2026-06-10T16:50:00+08:00'
-last_task9_reviewed_at: '2026-06-10T15:30:00+08:00'
+pipeline_stage: task9_pending
+reviewed_by: openclaw-task6
+reviewed_date: '2026-06-10'
+last_task6_at: '2026-06-10T17:05:00+08:00'
 ---
-
 
 # Chapter 14.2 - Simpleperf
 
@@ -70,7 +63,7 @@ Simpleperf 是 Google 官方维护的原生 CPU profiling 工具，通过 Androi
 - **内存使用分析**：跟踪内存分配和释放模式，发现内存泄漏
 - **线程行为分析**：分析线程调度、锁竞争、上下文切换等
 - **系统调用跟踪**：记录应用程序与系统内核的交互
-- **功耗分析**：通过追踪 CPU、内存、网络等硬件使用来估算应用功耗
+- **功耗分析**：通过采集 CPU、缓存、总线等 PMU 硬件计数来估算功耗
 
 ### 适用范围
 

@@ -7600,7 +7600,10 @@
       "material_count": 3,
       "queue_priority": 80,
       "fixed_stale_draft": true,
-      "fixed_at": "2026-06-10T03:08:00+08:00"
+      "fixed_at": "2026-06-10T03:08:00+08:00",
+      "task6_reviewed": "2026-06-10",
+      "task6_result": "pass-light-edit",
+      "last_review_log": "logs/review/2026-06-10-17-review.md"
     },
     "22.22": {
       "section": "22.22",
