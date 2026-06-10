@@ -358,6 +358,41 @@
       "completed_at": "2026-06-10T16:54:49+08:00",
       "completed_by": "task2b-main",
       "completion_reason": "fixed: P0×3 + P1×3 — version_boundary frontmatter加固、cmd_record.cpp验证来源补细节、FP vs DWARF展开对比表、JIT符号map格式+ART写入时机、采样开销测试环境补充，1项P0(View.java)确认Lite已修复"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Task9 Deep Review] 源码引用准确性和原理链完整性问题",
+      "material_paths": [
+        "logs/deep-review/2026-06-10-17-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 事实错误",
+          "location": "第14.2.5节 - simpleperf record 参数选项",
+          "detail": "原文声称 simpleperf record 支持 --output 参数，但实际仅支持 -o 短选项。在 NDK r29 中，simpleperf record --help 显示只有 -o，无 --output 长选项。",
+          "suggestion": "修正原文，删除 --output 的提及，仅保留 -o 选项"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "第14.2.8节 - PMU 硬件事件采集",
+          "detail": "声称采集 cache-misses 等硬件 PMU 事件，但未说明在非 Root 设备上的权限限制。现代 Android 默认将 kernel.perf_event_paranoid 设为 2-3，非 Root 用户通常无法访问硬件 PMU 事件。",
+          "suggestion": "补充说明：采集硬件 PMU 事件通常需要 Root 权限，在非 Root 设备上只能使用 cpu-clock 等软件事件"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "第14.2.5节 - Perfetto 集成说明",
+          "detail": "笼统说明通过 linux.perf data source 集成，但缺少具体的配置示例和限制条件。",
+          "suggestion": "补充具体的 Perfetto 配置示例，说明权限要求和内核配置依赖"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T17:20:00+08:00",
+      "status": "completed",
+      "completed_reason": "fixed-lite: P0 --output corrected to -o only",
+      "completed_at": "2026-06-10T17:37:00+08:00",
+      "completed_by": "task2b-lite"
     }
   ]
 }

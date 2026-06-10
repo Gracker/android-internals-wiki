@@ -30,15 +30,15 @@ last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task9_audit_at: '2026-06-10T16:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T16:20:00+08:00'
 last_task9_at: '2026-06-10T16:50:00+08:00'
-last_task2b_lite_at: '2026-06-10T15:41'
+last_task2b_lite_at: '2026-06-10'
 last_task2b_at: '2026-06-10T16:50:00+08:00'
 task9_result: needs-rework
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-10'
 last_task6_at: '2026-06-10T17:05:00+08:00'
@@ -279,7 +279,7 @@ EOF
 perfetto -c perfetto_config.txt -o combined.trace
 ```
 
-> **说明**：`simpleperf` 支持标准输出参数 `-o` / `--output`（指定输出文件路径）；不存在 `--perfetto` / `--config` 这类 Perfetto 专用标志 [验证来源：NDK r29 `simpleperf record --help` 输出 + AOSP system/extras/simpleperf/cmd_record.cpp, android-16.0.0_r1 — `CreateRecordCmdOptions` 通过 `RegisterOption` 注册 `-o`/`-p`/`-t`/`-f`/`-e`/`-g`/`-m`/`--duration` 等标准选项，无 Perfetto 特有标志]。
+> **说明**：`simpleperf` 支持输出参数 `-o`（指定输出文件路径），不存在 `--output` 长选项；也不存在 `--perfetto` / `--config` 这类 Perfetto 专用标志 [验证来源：AOSP system/extras/simpleperf/cmd_record.cpp, android-16.0.0_r1 — help 字符串仅列出 `-o record_file_name`，无 `--output` 长选项注册]。
 > 与 Perfetto 集成应通过 Perfetto 的 `linux.perf` 数据源实现，而非期望 simpleperf 提供 Perfetto 特有标志。
 
 **完整 Perfetto 集成配置示例**：
