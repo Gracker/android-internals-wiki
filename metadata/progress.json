@@ -14225,11 +14225,13 @@
     "file": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
     "status": "ready-for-review",
     "pipeline_stage": "task2b_pending",
-    "task6_result": "needs-rework",
+    "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "last_task6_review": "2026-06-10T06:06:00+08:00",
     "review_round": 2,
     "task2b_state": "pending",
-    "last_task6_at": "2026-06-10T07:07:00+08:00"
+    "last_task6_at": "2026-06-10T07:07:00+08:00",
+    "task6_reviewed_at": "2026-06-10T08:06:00",
+    "last_review_log": "logs/review/2026-06-10-08-review.md"
   }
 }

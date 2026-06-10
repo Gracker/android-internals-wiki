@@ -80,6 +80,38 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-10T06:12:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 80,
+      "reason": "[Task6 Review] 第三轮发现：事实矛盾（系统自带 vs NDK 分发）+ 多个命令参数待验证",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认（Task 9）",
+          "location": "14.2.1 vs 14.2.2",
+          "detail": "14.2.1 称系统自带，14.2.2 称不在系统镜像预装，互相矛盾",
+          "suggestion": "查源确认 simpleperf 在各版本的分发方式"
+        },
+        {
+          "type": "需确认（Task 9）",
+          "location": "14.2.5, 14.2.6",
+          "detail": "--perfetto/--config/--out 标志及 alloc_count/malloc_count 事件名可能不存在",
+          "suggestion": "对照 NDK simpleperf 文档逐一验证"
+        },
+        {
+          "type": "需补充",
+          "location": "全文",
+          "detail": "所有技术断言无验证标注",
+          "suggestion": "Task 2B 重写时补充 [已验证]/[待验证]"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-10T08:06:00",
+      "status": "pending"
     }
   ],
   "completed": [

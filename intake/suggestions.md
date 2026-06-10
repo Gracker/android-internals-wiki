@@ -73,3 +73,32 @@
 - **建议**：1) 补充具体AOSP源码路径和关键类/方法名 2) 提供真实report输出示例并逐行解读 3) 增加安全权限和隐私保护机制章节 4) 添加架构特有行为说明和限制 5) 补充与Systrace/Traceview等工具的对比表格
 
 - **review 日志**：logs/review/2026-06-10-07-review.md
+
+
+## [Task6 Review] 14.2 Simpleperf — 2026-06-10 (第三轮)
+
+### N1 需确认 — 事实矛盾（交 Task 9）
+- **类型**：需确认
+- **位置**：14.2.1 vs 14.2.2
+- **问题**：14.2.1 称"Android 系统自带"+"零依赖：无需额外安装"，14.2.2 却写"Simpleperf 通过 NDK 分发，不在系统镜像中预装"。两处描述互相矛盾
+- **建议**：由 Task 9 查源确认 simpleperf 在各 Android 版本的分发方式，统一描述
+- **review 日志**：logs/review/2026-06-10-08-review.md
+
+### N2 需确认 — 命令参数准确性（交 Task 9）
+- **类型**：需确认
+- **位置**：14.2.5（Perfetto 数据收集）、14.2.6（数据分析）
+- **问题**：以下命令参数可能不存在于 simpleperf：
+  - `--perfetto` 标志
+  - `--config perfetto_config.xml`
+  - `--out perfetto.traces`
+  - `alloc_count`/`alloc_size`/`malloc_count`/`malloc_size` 事件名
+  - `--show-alloc-stats`/`--show-timeline`/`--top` 报告标志
+- **建议**：Task 9 对照 NDK simpleperf 文档逐一验证
+- **review 日志**：logs/review/2026-06-10-08-review.md
+
+### N3 需补充 — 验证标注
+- **类型**：需补充
+- **位置**：全文
+- **问题**：所有技术断言（命令参数、事件名、标志含义）无 [已验证]/[待验证] 标注
+- **建议**：Task 2B 在重写时补充验证标注
+- **review 日志**：logs/review/2026-06-10-08-review.md
