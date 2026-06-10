@@ -245,6 +245,44 @@
       "status": "completed",
       "completion_reason": "fixed-lite: P0 (--perfetto/--config/--out) 已在前轮修复确认；本轮修复 14.2.10 残留 --trace-fg 假标志 → --app。P1 x4（Perfetto集成细节、simpleperf vs perf、采样频率原理、符号解析）需新增内容，超出 Lite 范围，留待主 Task2B。",
       "completed_at": "2026-06-10T13:47:06"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Task9 Deep Review] 源码引用准确性和原理链完整性问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 事实错误",
+          "location": "多处AOSP源码引用",
+          "detail": "文中多次引用AOSP具体源码细节（如cmd_record.cpp、main.cpp、GetDefaultRecordBufferSize）但缺乏可验证的一手源码证据，存在过度依赖不可验证的内部实现细节的风险",
+          "suggestion": "删除无法验证的源码引用或降级为"架构推测"，只保留官方文档中可验证的内容"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.5 Perfetto集成",
+          "detail": "解释了simpleperf不输出.perfetto-trace文件，但未说明如何将perf.data转换为perfetto格式或与Perfetto trace整合的具体方法",
+          "suggestion": "补充perf.data到perfetto格式的转换方法和整合策略"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.6 调用栈解读",
+          "detail": "提供了调用栈示例但未解释未知符号(0x0)的成因、如何获取符号表、如何处理JIT编译代码等关键信息",
+          "suggestion": "补充符号解析机制说明，包括调试符号准备和JIT代码处理方法"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.4 内存分析",
+          "detail": "声称支持内存分析但未说明具体的数据采集机制、采样点和解读方法",
+          "suggestion": "补充内存分配跟踪的具体实现和解读指南"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T14:20:00",
+      "status": "pending"
     }
   ]
 }
