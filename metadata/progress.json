@@ -14224,14 +14224,16 @@
     "title": "Simpleperf",
     "file": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
+    "pipeline_stage": "task9_pending",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "last_task6_review": "2026-06-10T06:06:00+08:00",
-    "review_round": 2,
+    "review_round": 3,
     "task2b_state": "pending",
-    "last_task6_at": "2026-06-10T07:07:00+08:00",
+    "last_task6_at": "2026-06-10T15:21:08+08:00",
     "task6_reviewed_at": "2026-06-10T08:06:00",
-    "last_review_log": "logs/review/2026-06-10-08-review.md"
+    "last_review_log": "logs/review/2026-06-10-15-review.md",
+    "task9_state": "pending",
+    "task6_review_notes": "2026-06-10 15:20 Task6 revisiting round 3：pass-light-edit。L1/L2扫描全部通过（禁用词0命中、高频词0命中、AI套话0命中）；已有内容写作质量合格；4个已知占位节（14.2.7/9/11/12）仍通过queue追踪；新增3条技术准确性确认项到已有pending queue entry；Task9 needs-rework未变，送Task9复审。"
   }
 }

@@ -132,3 +132,9 @@
 - **位置**：14.2.8 常见问题
 - **问题**：功耗分析部分缺少具体的PMU事件选择和功耗计算方法
 - **建议**：补充与功耗相关的具体PMU事件和计算公式，以及实际功耗数据的获取方法
+## [Task6 Review] 14.2 Simpleperf — 2026-06-10
+- **类型**：需确认（3 项技术准确性）
+- **位置**：14.2.1 主要用途列表 / 14.2.2 设备端设置 / 14.2.8 fallback 命令
+- **问题**：①主要用途列表中"内存使用分析""系统调用跟踪""功耗分析"三项描述过度夸大了 Simpleperf 的能力范围；②设备端设置示例使用 `pm grant SET_DEBUG_APP` 该权限为 signature 级无法通过 pm grant 授予；③"设备不支持 Simpleperf"的 fallback 命令 `am profile start` 是 ART profiler 而非 simpleperf 替代方案
+- **建议**：Task 9 对照 NDK simpleperf 文档验证后修正：主要用途列表降级为 Simpleperf 实际能力描述；设备端设置标注 root 前提或替换为 run-as 方式；fallback 节明确区分 ART profiler 和 simpleperf
+- **review 日志**：logs/review/2026-06-10-15-review.md
