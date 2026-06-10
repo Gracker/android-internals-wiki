@@ -504,6 +504,66 @@
       "completed_at": "2026-06-10T19:43:01",
       "completed_by": "task2b-lite",
       "completion_reason": "fixed-lite: -m buffer unit comment corrected from pages to MB. Remaining P0/P1 issues (source path, JIT symbol path, DWARF explanation, Android 17 coverage) require content additions beyond Lite scope, deferred to main Task2B."
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码引用错误：View.java/ViewRootImpl.java与Simpleperf无关",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "14.2.1节",
+          "detail": "错误引用frameworks/base/core/java/android/view/View.java和android.view/ViewRootImpl.java，但这些UI框架类与Simpleperf工具无关",
+          "suggestion": "移除这些不相关的源码引用，专注于system/extras/simpleperf/下的实际代码路径"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T20:29:08.738154",
+      "status": "pending"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 版本边界违规：Android 17特性作为结论性内容呈现",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本边界错误",
+          "location": "全文多处",
+          "detail": "frontmatter明确说明Android 17特性基于main分支快照推断，未在android-17.0.0_r1上确认，但多处将Android 17特性作为结论性内容呈现",
+          "suggestion": "将所有Android 17相关内容改为\"预测性\"或\"可能\"的表述，或明确标注\"未进入Android 17\""
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T20:29:08.738161",
+      "status": "pending"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 关键技术数据无法验证",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据支撑缺失",
+          "location": "14.2.11节",
+          "detail": "性能基准测试数据（CPU开销2-5%、内存占用~40MB/分钟）缺少具体测量环境、样本量、统计方法，无法重现验证",
+          "suggestion": "补充详细测试环境描述、样本量大小、统计方法，或移除无法验证的具体数值"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T20:29:08.738163",
+      "status": "pending"
     }
   ]
 }
