@@ -59,6 +59,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-21-13-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-28-19-deep-review.md"
 review_notes: "2026-05-21 Task9 deep review: needs-rework。P0：FrameMetrics 指标表使用不存在的公开常量名；P1：GPU_DURATION/API31 版本边界与 ANR 触发口径需补。"
 task9_review_notes: "2026-05-28 Task9 deep review: pass-tech-review; no P0/P1; P2 suggestions written to intake/suggestions.md; auto-promoted finalized."
+last_task6_audit: "2026-06-10"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
 ---
