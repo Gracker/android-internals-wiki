@@ -402,7 +402,7 @@ simpleperf report -i perf.data
 | > 8 GB | 256 MB | `-m 256` | 适用于 60s+ 长时间全系统采样 |
 
 ```bash
-# 自定义缓冲区大小（单位：页，1 页 = 4 KB）
+# 自定义缓冲区大小（单位：MB）
 adb shell simpleperf record --system-wide --duration 30 -m 64 -o /data/local/tmp/perf.data
 ```
 
