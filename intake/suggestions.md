@@ -276,3 +276,14 @@
 - **位置**：版本适用范围声明
 - **问题**：章节声明适用 Android 10 (API 29) - Android 17 (API 37)，但未说明在这个8个版本的跨度中隐私和权限限制的演变对可观测性架构的具体影响
 - **建议**：补充Android 10-17版本间隐私政策变化对可观测性架构的影响，包括后台执行限制、运行时权限、数据采集限制等关键变化点
+
+## [Task9 Idle Audit] 26.3 性能指标采集与上报 — 2026-06-11 07:20
+- **类型**：源码准确性
+- **位置**：Trace API 使用说明
+- **问题**：章节提到 `Trace.beginSection()` / `Trace.endSection()` 用于系统 trace，但没有明确说明这些是 Android 10 引入的基础 tracing API，与后续的 Perfetto 系统的关系和演进路径
+- **建议**：补充版本差异说明：Android 10-13 使用 `android.os.Trace`，Android 14+ 建议优先考虑 Perfetto 但兼容性不变
+
+- **类型**：版本差异覆盖
+- **位置**：Android 14+ 的 Perfetto 演进
+- **问题**：章节提到性能指标采集与上报，但没有说明 Android 14 及更高版本中，Perfetto 如何替代传统的 `android.os.Trace` API，以及在线上监控中如何处理新旧 tracing 系统的兼容性
+- **建议**：补充版本迁移路径：Android 14+ 中 Perfetto 的优势、新旧系统共存策略、线上监控中的兼容处理方案
