@@ -195,3 +195,31 @@
 - Task 2B/6/9 对 ready-for-review 章节的 review/回炉/终审
 - §14.2 Simpleperf 的集中修复（queue 中已有 12 条）
 - 已有章节的内容深化和交叉引用完善
+
+---
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-11 04:04
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**（连续第 71 轮）
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 422 章，draft=0，ready-for-review=74，finalized=289，NO_STATUS=59）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **research-gaps.md 新增条目评估**：
+   - Android 15 Battery Historian 与性能指标集成（→ 26.3）→ 上一轮已评估 **11** < 14
+   - Android 14 精细内存跟踪 API（→ 23.7/26.1）→ 上一轮已评估 **13** < 14
+   - 无新增条目
+4. **source-index.json 高质量未映射素材**：所有 DeepResearch 产出均已有 target_file 映射到现有章节
+5. **AOSP 服务/组件覆盖**：沿用连续多轮结论，所有性能相关服务已覆盖
+6. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+7. **daily-info 热点（2026-06-11）**：骁龙 8 系芯片新闻、Claude Desktop VM 安全问题、GitHub 认证故障，无新增性能核心主题
+8. **research-feeds**：最新文件为 2026-04-14，无新产出
+9. **Part 5 Clippings 对照**：三本参考书知识点已全部覆盖
+10. **queue.json**：12 条 pending 均为现有章节修复项（§14.2×11、ch02×1），无新章节需求
+
+### 结论
+全书 422 节中 86% 已有实质内容（289 finalized + 74 ready-for-review）。知识库高度饱和，连续 71 轮缺口挖掘未产出新章节。建议后续侧重：
+- Task 2B/6/9 对 74 个 ready-for-review 章节的 review/回炉/终审
+- §14.2 Simpleperf 的集中修复（queue 中已有 11 条）
+- 已有章节的内容深化和交叉引用完善
