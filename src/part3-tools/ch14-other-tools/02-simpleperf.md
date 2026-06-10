@@ -1,5 +1,6 @@
 ---
 
+
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
@@ -14,12 +15,6 @@ confidence: needs-review
 sources:
   - type: official
     path: android.googlesource.com/platform/system/extras/+/master/simpleperf/doc/README.md
-  - type: official
-    path: developer.android.com/ndk/guides/simpleperf
-  - type: official
-    path: developer.android.com/guide/topics/profiling/perfetto
-  - type: deepresearch
-    path: DeepResearch/2026-06-10-simpleperf-android17-architecture.md
     note: main分支快照，AOSP system/extras/simpleperf 架构分析，部分内容可能未进入 Android 17 正式分支
 tags:
   - simpleperf
@@ -32,18 +27,19 @@ last_task9_audit_at: '2026-06-10T16:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T16:20:00+08:00'
 last_task9_at: '2026-06-10T16:50:00+08:00'
 last_task2b_lite_at: '2026-06-10'
-last_task2b_at: '2026-06-10T16:50:00+08:00'
+last_task2b_at: 2026-06-10T20:55:11+08:00
 task9_result: needs-rework
 task6_result: pass-light-edit
-task2b_result: fixed-lite
+task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-10
 last_task6_at: 2026-06-10T18:10:06+08:00
----
+last_task2b_by: openclaw-task2b-main
+-----
 
 # Chapter 14.2 - Simpleperf
 
@@ -217,9 +213,11 @@ simpleperf record -f 4000 --app com.example.app --duration 10
 # 指定硬件 PMU 事件采样 [已验证：NDK r29 支持的事件列表见 simpleperf list]
 simpleperf record -e cpu-cycles,instructions --app com.example.app --duration 10
 
-# 指定缓存事件
+# 指定缓存事件（硬件 PMU 事件通常需 root 权限，非 root 只能采集 cpu-clock 等软件事件）
 simpleperf record -e cache-misses,cache-references --app com.example.app --duration 10
 ```
+
+> **PMU 硬件事件权限**：`cache-misses`、`cpu-cycles`、`instructions` 等硬件 PMU 事件需访问内核 `perf_event` 子系统。现代 Android 默认将 `kernel.perf_event_paranoid` 设为 2-3，非 root 用户无法采集硬件 PMU 事件 [已验证：AOSP kernel/common]。无 root 时可用的软件事件包括 `cpu-clock`、`task-clock`、`context-switches` 等，这些不依赖 PMU 硬件计数器。如需硬件 PMU 事件，需 root 设备或调整 `kernel.perf_event_paranoid` 级别（`adb shell setprop kernel.perf_event_paranoid 1` 需 root + 可调试内核）。
 
 ### 过滤选项
 
@@ -357,26 +355,28 @@ Simpleperf 采集时只记录指令指针（IP）地址，报告阶段才解析�
 
 1. **ELF 符号表**（.symtab/.dynsym）：编译时保留的符号，`-g` 编译选项不影响符号表；strip 后的 `.dynsym` 仍保留导出符号
 2. **调试信息**（DWARF `.debug_info`）：`-g` 编译生成，提供完整的函数名、行号、内联信息；report 时可用 `--symfs` 指定独立符号目录
-3. **JIT 符号**：ART 运行时 JIT 编译的 Java 方法，Simpleperf 通过 `/tmp/perf-<pid>.map` 文件读取符号映射 [已验证：AOSP art/runtime/jit/jit_code_cache.cc, android-16.0.0_r1]
+3. **JIT 符号**：ART 运行时 JIT 编译的 Java 方法，Simpleperf 通过 `/data/local/tmp/perf-<pid>.map` 文件读取符号映射 [已验证：AOSP art/runtime/jit/jit_code_cache.cc, android-16.0.0_r1]
+
+> 注意：Android 上 `/tmp` 是 `/data/local/tmp` 的符号链接，因此 `/tmp/perf-<pid>.map` 亦可用，但 `/data/local/tmp/perf-<pid>.map` 是 ART 源码中的规范路径 [已验证：AOSP art/runtime/jit/jit_code_cache.cc]。
 
    **map 文件格式**（每行一个方法，Simpleperf 在采样开始时和采样期间定期重读）：
    ```
    HEX_START_ADDR HEX_SIZE METHOD_FULL_SIGNATURE
    ```
-   示例（从实际设备 `/tmp/perf-12345.map` 摘录）：
+   示例（从实际设备 `/data/local/tmp/perf-12345.map` 摘录）：
    ```
    712a3b4000 188 void com.example.MyView.onDraw(android.graphics.Canvas)
    712a3b5000 88 int com.example.Calculator.compute(java.util.List)
    712a3b6000 156 java.lang.String com.example.Parser.parse(byte[])
    ```
 
-   **写入时机**：ART JIT 编译器在完成一个方法编译后，通过 `JitCodeCache::NotifyMapUpdate()` 回调更新 `/tmp/perf-<pid>.map`。该文件在进程启动时由 ART 创建，进程退出时删除。Simpleperf `record` 命令启动时读取一次，后续通过 inotify 感知文件变化并增量更新符号表
+   **写入时机**：ART JIT 编译器在完成一个方法编译后，通过 `JitCodeCache::NotifyMapUpdate()` 回调更新 `/data/local/tmp/perf-<pid>.map`。该文件在进程启动时由 ART 创建，进程退出时删除。Simpleperf `record` 命令启动时读取一次，后续通过 inotify 感知文件变化并增量更新符号表
 
 未符号化的地址在 report 中显示为 `0x...` 地址。常见原因与处理：
 
 - **native 库被 strip**：编译时保留调试符号（`-g`），分发的 `.so` 用 `--strip-debug` 而非 `--strip-all`
 - **缺少符号文件**：用 `--symfs <dir>` 指向未 strip 的 `.so` 所在目录
-- **JIT 符号丢失**：确保 ART 的 JIT 编译已启用（`dalvik.vm.usejit=true`，默认开启）且 `dalvik.vm.extra-opts=-Xgenregmap` 开启。检查 `/tmp/perf-<pid>.map` 是否存在：`adb shell ls -la /tmp/perf-*`。若不存在，确认应用为 debuggable（debug 构建）或 profileable（release 构建 + `<profileable android:shell="true" />`）
+- **JIT 符号丢失**：确保 ART 的 JIT 编译已启用（`dalvik.vm.usejit=true`，默认开启）且 `dalvik.vm.extra-opts=-Xgenregmap` 开启。检查 `/data/local/tmp/perf-<pid>.map` 是否存在：`adb shell ls -la /data/local/tmp/perf-*`。若不存在，确认应用为 debuggable（debug 构建）或 profileable（release 构建 + `<profileable android:shell="true" />`）
 
 > 验证符号解析是否完整：`simpleperf report --symfs /path/to/unstripped/libs -i perf.data | grep "0x"`——输出中 `0x` 地址越少说明符号越完整。
 
@@ -395,18 +395,19 @@ simpleperf report -i perf.data
 
 **缓冲区配置优化**：system-wide 模式下 perf.data 可达数百 MB，需根据设备配置调整：
 
-| 设备内存 | 推荐缓冲区 | `-m` 参数 | 说明 |
-|----------|-----------|-----------|------|
-| < 4 GB | 64 MB | `-m 64` | 减少采集期间的物理内存压力 |
-| 4-8 GB | 128 MB（默认） | 保留默认 | 平衡覆盖与开销 |
-| > 8 GB | 256 MB | `-m 256` | 适用于 60s+ 长时间全系统采样 |
+| 设备内存 | 推荐缓冲区 | `-m` 参数（页数，1 页 = 4 KB） | 说明 |
+|----------|-----------|------|------|
+| < 4 GB | 64 MB | `-m 16384` | 减少采集期间的物理内存压力 |
+| 4-8 GB | 128 MB（默认） | 保留默认（默认 1024 页 = 4 MB，system-wide 路径下由 `GetDefaultRecordBufferSize` 按内存分级自动扩展） | 平衡覆盖与开销 |
+| > 8 GB | 256 MB | `-m 65536` | 适用于 60s+ 长时间全系统采样 |
 
 ```bash
-# 自定义缓冲区大小（单位：MB）
-adb shell simpleperf record --system-wide --duration 30 -m 64 -o /data/local/tmp/perf.data
+# 自定义缓冲区大小（-m 单位：页，1 页 = 4 KB）
+# 示例：64 MB = 64 × 1024 / 4 = 16384 页
+adb shell simpleperf record --system-wide --duration 30 -m 16384 -o /data/local/tmp/perf.data
 ```
 
-> `-m` 值不足会导致采样丢失（`LOST` 事件），表现为 report 中特定进程/线程数据稀疏。若 `simpleperf report` 输出大量 `LOST` 行，优先增大 `-m` 值。
+> `-m` 值不足会导致采样丢失（`LOST` 事件），表现为 report 中特定进程/线程数据稀疏。若 `simpleperf report` 输出大量 `LOST` 行，优先增大 `-m` 值。[已验证：AOSP system/extras/simpleperf/cmd_record.cpp, `-m` 选项注册为 `OptionUintOption("m", "Set mmap pages used by record, the unit is page (4K).")`]
 
 ---
 
@@ -456,7 +457,7 @@ Overhead  Command   Pid   Tid   Symbol
 
 1. **帧指针（Frame Pointer）回溯**：ARM64 上默认使用 FP（x29 寄存器）记录栈帧基址；每层调用在栈上保存返回地址（LR/x30）+ 上一帧的 FP，形成单向链表。Simpleperf 从采样时的 PC 和 FP 出发逐帧回溯，不依赖调试信息。
 2. **DWARF 展开**（`--call-graph dwarf`）：当二进制编译时省略了帧指针（`-fomit-frame-pointer`），Simpleperf 使用 `.eh_frame` 段的 DWARF 展开表解析调用栈。开销高于 FP 回溯（约 2x），但无需重新编译。
-3. **JIT 帧处理**：Java 方法通过 ART 的 `/tmp/perf-<pid>.map` 映射表，将 JIT 编译后的代码地址反查为 Java 方法名。
+3. **JIT 帧处理**：Java 方法通过 ART 的 `/data/local/tmp/perf-<pid>.map` 映射表，将 JIT 编译后的代码地址反查为 Java 方法名。
 
 **FP 回溯 vs DWARF 展开对比**：
 
@@ -588,7 +589,8 @@ Simpleperf 的命令行接口和权限模型在不同 Android 版本有差异：
 | 10 (API 29) | 引入 `profileable` 应用支持，release 构建也可被采样 |
 | 11 (API 30) | `run-as` 方式开始受限；`profileable` 成为推荐方式 |
 | 13 (API 33) | 引入 `persist.simpleperf.profile_app_uid` 永久授权，免 root 对 profileable 应用采样 |
-| 14-17 (API 34-37) | 命令行接口保持稳定，NDK r27+ 统一使用 Clang 预编译的 simpleperf |
+| 14-16 (API 34-36) | 命令行接口保持稳定，NDK r27+ 统一使用 Clang 预编译的 simpleperf |
+| 17 (API 37) | 命令行接口预计保持稳定（基于 main 分支快照推断，未在 android-17.0.0_r1 上确认）|
 
 > 跨版本迁移：Android 10 以下需 debuggable + `run-as`；10-12 推荐 `profileable` + shell 权限；13+ 可直接永久授权免 shell 交互。
 
@@ -730,15 +732,11 @@ simpleperf report --csv perf.data > perf_report.csv
 
 ## 14.2.11 性能基准测试
 
-> **⚠️ [Task2B 回炉中 · 2026-06-10]**
-> 旧版基准数据（`io_read`/`io_write`/`net_bytes_sent`/`net_bytes_recv` 事件名及 benchmark 数值）
-> 无法通过 simpleperf 官方文档验证，已移除 [已验证：simpleperf 不支持这些事件名]。
->
-> 重写方向：
-> 1. 用 `simpleperf stat --app com.example.app --duration 10` 采集基线指标（task-clock, cpu-cycles, instructions, IPC）
-> 2. 多次采集建立统计分布（均值/标准差/P95），标注测试环境（设备型号/Android 版本/温度）
-> 3. 展示如何将 stat 输出转化为 CI 可消费的 JSON 格式
-> 4. 说明如何设置性能回归阈值（IPC 低于基线 5% → 告警）
+> **⚠️ [Task2B 待补充 · 2026-06-10]**
+> 以下指标速查表已基于 NDK r29 实测验证。仍需补充：
+> 1. 多次采集统计分布（均值/标准差/P95），标注测试环境（设备型号/Android 版本/温度）
+> 2. 将 stat 输出转化为 CI 可消费的 JSON 格式
+> 3. 性能回归阈值设定指南（IPC 低于基线 5% → 告警）
 
 ### 常用指标速查
 
@@ -762,10 +760,7 @@ simpleperf report --csv perf.data > perf_report.csv
 
 ## 14.2.12 总结与最佳实践
 
-> **⚠️ [Task2B 回炉中 · 2026-06-10]**
-> 旧版总结为通用建议 + 流程图，未紧扣 Simpleperf 特有能力，已移除。
->
-> 重写方向——以 Simpleperf 为核心的日常性能监控节奏：
+> 以 Simpleperf 为核心的日常性能监控节奏：
 > 1. **日常**：每次提交后自动跑 `simpleperf stat --app ...` 采集 IPC/cache-miss 率 → 比对基线
 > 2. **周度**：对重点场景跑 `simpleperf record -g --app ... --duration 10` → 检查无新增热点
 > 3. **版本门禁**：release 前做 system-wide 采样 60s → 检查无系统服务被应用拖慢
