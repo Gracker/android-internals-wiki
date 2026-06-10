@@ -53,6 +53,7 @@ last_task9_at: "2026-05-20T14:28:39+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-20-14-deep-review.md"
 task9_review_notes: "2026-05-20 task9 deep review：无 P0/P1；记录 2 条 P2 技术补强建议（ART/native loader 源码锚点、厂商 linker config 样本）；满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-20T14:13:00+08:00"
+last_task6_audit: "2026-06-11"
 last_task6_review_log: "logs/review/2026-05-20-14-review.md"
 task6_review_notes: "2026-05-20 task6 review 14:13：首次 review Native 库加载与动态链接性能；L1/L2 术语和表述小修，无新增 L3/L4 回炉项；转 Task9 技术复核。"
 ---
