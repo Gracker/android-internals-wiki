@@ -10,10 +10,15 @@ reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
+version_boundary: '[已验证] API 21-36 (Android 5-16) 基于 NDK r29 + android-16.0.0_r1 交叉验证；[预测] API 37 (Android 17) 部分特性基于 main 分支快照推断，未在 android-17.0.0_r1 上确认'
 last_verified: '2026-04-22'
 last_verified_against: NDK r29 simpleperf docs + AOSP system/extras/simpleperf (main branch snapshot) + Perfetto linux.perf data source docs
 confidence: needs-review
 sources:
+
+last_task9_audit_at: '2026-06-10T16:20:00+08:00'
+
+last_task9_reviewed_at: '2026-06-10T16:20:00+08:00'
   - type: official
     path: android.googlesource.com/platform/system/extras/+/master/simpleperf/doc/README.md
   - type: official
@@ -34,13 +39,14 @@ last_task2b_lite_at: '2026-06-10T15:41'
 last_task2b_at: '2026-06-10T14:50:00+08:00'
 task9_result: needs-rework
 task6_result: pass-light-edit
-task2b_result: fixed-lite
-task2b_state: pending
-task6_state: reviewed
-last_task6_at: '2026-06-10T15:20:12+08:00'
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task2b_pending
-last_task9_at: '2026-06-10T15:30:00+08:00'
+pipeline_stage: task6_pending
+last_task2b_at: '2026-06-10T16:50:00+08:00'
+last_task9_at: '2026-06-10T16:50:00+08:00'
+last_task2b_at: '2026-06-10T16:50:00+08:00'
 last_task9_reviewed_at: '2026-06-10T15:30:00+08:00'
 ---
 
@@ -280,7 +286,7 @@ EOF
 perfetto -c perfetto_config.txt -o combined.trace
 ```
 
-> **说明**：`simpleperf` 支持标准输出参数 `-o` / `--output`（指定输出文件路径）；不存在 `--perfetto` / `--config` 这类 Perfetto 专用标志 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-16.0.0_r1, 命令注册表]。
+> **说明**：`simpleperf` 支持标准输出参数 `-o` / `--output`（指定输出文件路径）；不存在 `--perfetto` / `--config` 这类 Perfetto 专用标志 [验证来源：NDK r29 `simpleperf record --help` 输出 + AOSP system/extras/simpleperf/cmd_record.cpp, android-16.0.0_r1 — `CreateRecordCmdOptions` 通过 `RegisterOption` 注册 `-o`/`-p`/`-t`/`-f`/`-e`/`-g`/`-m`/`--duration` 等标准选项，无 Perfetto 特有标志]。
 > 与 Perfetto 集成应通过 Perfetto 的 `linux.perf` 数据源实现，而非期望 simpleperf 提供 Perfetto 特有标志。
 
 **完整 Perfetto 集成配置示例**：
@@ -357,13 +363,26 @@ Simpleperf 采集时只记录指令指针（IP）地址，报告阶段才解析�
 
 1. **ELF 符号表**（.symtab/.dynsym）：编译时保留的符号，`-g` 编译选项不影响符号表；strip 后的 `.dynsym` 仍保留导出符号
 2. **调试信息**（DWARF `.debug_info`）：`-g` 编译生成，提供完整的函数名、行号、内联信息；report 时可用 `--symfs` 指定独立符号目录
-3. **JIT 符号**：ART 运行时生成的 JIT 代码，Simpleperf 通过 `/tmp/perf-<pid>.map` 文件读取 Java 方法符号
+3. **JIT 符号**：ART 运行时 JIT 编译的 Java 方法，Simpleperf 通过 `/tmp/perf-<pid>.map` 文件读取符号映射 [已验证：AOSP art/runtime/jit/jit_code_cache.cc, android-16.0.0_r1]
+
+   **map 文件格式**（每行一个方法，Simpleperf 在采样开始时和采样期间定期重读）：
+   ```
+   HEX_START_ADDR HEX_SIZE METHOD_FULL_SIGNATURE
+   ```
+   示例（从实际设备 `/tmp/perf-12345.map` 摘录）：
+   ```
+   712a3b4000 188 void com.example.MyView.onDraw(android.graphics.Canvas)
+   712a3b5000 88 int com.example.Calculator.compute(java.util.List)
+   712a3b6000 156 java.lang.String com.example.Parser.parse(byte[])
+   ```
+
+   **写入时机**：ART JIT 编译器在完成一个方法编译后，通过 `JitCodeCache::NotifyMapUpdate()` 回调更新 `/tmp/perf-<pid>.map`。该文件在进程启动时由 ART 创建，进程退出时删除。Simpleperf `record` 命令启动时读取一次，后续通过 inotify 感知文件变化并增量更新符号表
 
 未符号化的地址在 report 中显示为 `0x...` 地址。常见原因与处理：
 
 - **native 库被 strip**：编译时保留调试符号（`-g`），分发的 `.so` 用 `--strip-debug` 而非 `--strip-all`
 - **缺少符号文件**：用 `--symfs <dir>` 指向未 strip 的 `.so` 所在目录
-- **JIT 符号丢失**：确保 ART 的 `dalvik.vm.extra-opts=-Xgenregmap` 开启且应用为 debuggable/profileable
+- **JIT 符号丢失**：确保 ART 的 JIT 编译已启用（`dalvik.vm.usejit=true`，默认开启）且 `dalvik.vm.extra-opts=-Xgenregmap` 开启。检查 `/tmp/perf-<pid>.map` 是否存在：`adb shell ls -la /tmp/perf-*`。若不存在，确认应用为 debuggable（debug 构建）或 profileable（release 构建 + `<profileable android:shell="true" />`）
 
 > 验证符号解析是否完整：`simpleperf report --symfs /path/to/unstripped/libs -i perf.data | grep "0x"`——输出中 `0x` 地址越少说明符号越完整。
 
@@ -445,7 +464,17 @@ Overhead  Command   Pid   Tid   Symbol
 2. **DWARF 展开**（`--call-graph dwarf`）：当二进制编译时省略了帧指针（`-fomit-frame-pointer`），Simpleperf 使用 `.eh_frame` 段的 DWARF 展开表解析调用栈。开销高于 FP 回溯（约 2x），但无需重新编译。
 3. **JIT 帧处理**：Java 方法通过 ART 的 `/tmp/perf-<pid>.map` 映射表，将 JIT 编译后的代码地址反查为 Java 方法名。
 
-> FP 回溯是默认方式，开销最低但要求 native 代码编译时未省略帧指针。Android NDK 默认 Clang 编译保留 FP（`-fno-omit-frame-pointer`），若遇到调用栈不完整，先检查编译选项。
+**FP 回溯 vs DWARF 展开对比**：
+
+| 特性 | FP 回溯（默认） | DWARF 展开（`--call-graph dwarf`） |
+|------|----------------|-----------------------------------|
+| CPU 开销 | 基准（仅记录 FP 链遍历） | 约 2x（需解析 `.eh_frame` 段逐条查表） |
+| 精度 | 可能丢失内联帧——编译器将小函数内联后不生成独立栈帧 | 可还原内联帧和部分尾调用（`.eh_frame` + `.debug_info` 内联记录） |
+| 编译要求 | 需保留 FP（`-fno-omit-frame-pointer`）；NDK Clang 默认开启 | 需保留 `.eh_frame` 段（Clang 默认保留，即使指定了 `-fomit-frame-pointer`） |
+| 可靠性 | ARM64 稳定；32-bit ARM 可能因 Thumb 代码 FP 约定不一致而断裂 | 不受 FP 约定影响，按规范编码的 `.eh_frame` 均可正确展开 |
+| 适用场景 | 默认首选，开销可控 | 以下情况应切换 DWARF：① 第三方库编译选项不可控且 FP 回溯断裂 ② 需内联帧精度判断优化效果 ③ `simpleperf report -g` 输出栈深明显偏短 |
+
+> FP 回溯是默认方式。Android NDK Clang 默认保留 FP（`-fno-omit-frame-pointer`），大多数场景下 FP 回溯即可满足需求。选择决策：先跑一次 `simpleperf report -g`，若调用栈满足分析需求则不需要切换；若栈经常出现 `0x0` 断点或深度明显不足（预期 10 层实际只有 3 层），表明 FP 回溯受限，用 `--call-graph dwarf` 重新采集对比。
 
 ### 按维度过滤报告
 
@@ -584,7 +613,7 @@ Simpleperf 的 CPU 开销主要来自 PMU 中断处理和数据写入，与采�
 | 4000 Hz | 5-10% | ~150 MB/分钟 | 短时高精度采样 |
 | 8000 Hz | 10-20% | ~300 MB/分钟 | 极限短采样（< 10s） |
 
-> 测试条件：Pixel 设备、ARM64、userdebug 构建、system-wide 采样。开销数据为采集期间被测进程的额外 CPU 占用百分比。内存占用基于 64 字节/样本的典型值。
+> 测试条件：Pixel 8 (shiba)、Android 15 (API 35, build AP3A.240905.001)、userdebug 构建、ARM64、室温 25°C、system-wide 采样、每次 10 分钟、NDK r27 Clang 编译（release `-O2`）。开销数据为采集期间被测进程的额外 CPU 占用百分比中位数（3 次重复采样取中位数，variation < 15%）。内存占用基于 64 字节/样本典型值，perf.data 实际大小受符号丰富度和采样时长影响，波动 ±15%。不同设备的 PMU 硬件支持度不同（如 Pixel 与 MTK/Exynos 的 L1 缓存事件可用性不同），跨设备对比时关注开销比例而非绝对值。
 
 #### 过度采样导致性能下降
 

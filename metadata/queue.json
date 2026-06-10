@@ -354,7 +354,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-10T16:20:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-10T16:54:49+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "fixed: P0×3 + P1×3 — version_boundary frontmatter加固、cmd_record.cpp验证来源补细节、FP vs DWARF展开对比表、JIT符号map格式+ART写入时机、采样开销测试环境补充，1项P0(View.java)确认Lite已修复"
     }
   ]
 }
