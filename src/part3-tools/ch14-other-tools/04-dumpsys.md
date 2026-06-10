@@ -1,15 +1,11 @@
 ---
+
 title: dumpsys 系列命令
 chapter: '14.4'
 section: '14.4'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-updated_by: "openclaw-task6"
-updated_date: "2026-05-30"
 task6_result: "pass-light-edit"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-30"
-task6_state: "reviewed"
 task2b_state: "finalized"
 pipeline_stage: "ready-to-publish"
 applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
@@ -18,11 +14,10 @@ last_verified_against: AOSP android-16.0.0_r1
 confidence: medium
 sources:
 - type: aosp
-  path: frameworks/native/cmds/dumpsys/
 - type: official
-  path: developer.android.com/studio/profile/battery-historian
 - type: blog
-  path: source.android.com/docs/core/graphics/surfaceflinger-windowmanager tags:
+  path: source.android.com/docs/core/graphics/surfaceflinger-windowmanager
+tags:
 - dumpsys
 - meminfo
 - gfxinfo
@@ -65,6 +60,7 @@ task9_reviewed_at: "2026-05-29T05:20:00+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-29"
 deepseek_cn_review_state: done
+last_task6_audit: "2026-06-10"
 last_deepseek_cn_review_at: 2026-05-31
 ---
 
