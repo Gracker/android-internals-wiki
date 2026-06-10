@@ -57,9 +57,9 @@ last_task9_at: "2026-05-23T03:35:03+08:00"
 task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: "openclaw-task9"
 last_task6_at: "2026-05-18T18:06:00+08:00"
-last_task6_audit: "2026-05-18"
-last_task6_audit_result: l1-light-edit
-last_task6_audit_log: "logs/review/2026-05-18-18-audit.md"
+last_task6_audit: "2026-06-10"
+last_task6_audit_result: pass-clean
+last_task6_audit_log: "logs/review/2026-06-10-10-audit.md"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T16:25:11+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-16-audit.md"
