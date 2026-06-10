@@ -305,6 +305,56 @@
       "completed_at": "2026-06-10T15:49:30",
       "last_updated_by": "task2b-lite",
       "last_updated_at": "2026-06-10T15:49:30"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Task9 Deep Review] 源码引用准确性和原理链完整性问题 (2026-06-10)",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "14.2.5 Perfetto集成",
+          "detail": "引用错误路径 `frameworks/base/core/java/android/view/View.java` 与 simpleperf 无关，实际 AOSP 路径应为 `system/extras/simpleperf/`。这属于 AOSP 源码路径引用错误",
+          "suggestion": "修正所有 AOSP 源码引用路径为正确路径：`system/extras/simpleperf/`"
+        },
+        {
+          "type": "P0 源码版本混淆",
+          "location": "全文多处源码引用",
+          "detail": "多处引用 `android-16.0.0_r1` 但适用版本标注到 Android 17 (API 37)，版本边界不清晰。main 分支快照内容与已验证版本混用",
+          "suggestion": "明确区分已验证内容和预测内容：将 main 分支快照内容标注为架构预测，锚定到 android-16.0.0_r1 等已公开版本"
+        },
+        {
+          "type": "P0 方法签名未验证",
+          "location": "14.2.5 命令参数验证",
+          "detail": `cmd_record.cpp 中的命令注册表声明未提供具体方法签名，无法确认 --perfetto/--config/--out 等参数是否存在。引用的 \"cmd_record.cpp\" 需要具体方法签名验证`,
+          "suggestion": "提供 cmd_record.cpp 中具体命令注册的方法签名，验证所有声明参数的实际存在性"
+        },
+        {
+          "type": "P1 原理链断裂",
+          "location": "14.2.6 调用栈重建",
+          "detail": "未解释 FP 回溯与 DWARF 展开的具体选择条件和开销差异。读者不知道何时使用哪种方式，以及不同方式对精度的影响",
+          "suggestion": "补充 FP 回溯 vs DWARF 展开的详细对比：编译选项选择、开销差异（约2x）、精度差异、适用场景"
+        },
+        {
+          "type": "P1 符号解析机制不完整",
+          "location": "14.2.5 符号解析",
+          "detail": "未说明 JIT 符号的具体生成时机和 /tmp/perf-<pid>.map 文件格式。缺少 JIT 代码的具体处理流程",
+          "suggestion": "补充 JIT 符号生成时机和 map 文件格式说明，提供 ART 配置参数和符号映射的具体方法"
+        },
+        {
+          "type": "P1 数据支撑不足",
+          "location": "14.2.8 采样开销数据",
+          "detail": "CPU 开销百分比数据未提供测试环境：设备型号、Android 版本、温度条件、测试时长。不同设备的 PMU 性能差异很大",
+          "suggestion": "补充采样开销测试环境说明，并标注不同设备的典型开销范围"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T16:20:00",
+      "status": "pending"
     }
   ]
 }

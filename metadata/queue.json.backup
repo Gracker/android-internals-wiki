@@ -1,662 +1,310 @@
-[
-  {
-    "section": "11.4",
-    "section_title": "案例集",
-    "priority": 95,
-    "reason": "[task9 deep-review] P0 JobScheduler quota 错误，P2 WakeLock 定义与 URL 错误",
-    "review_issues": [
-      {
-        "type": "P0 源码错误/运行时边界",
-        "location": "L650-L662",
-        "detail": "正文把 JobScheduler quota / restricted 状态写成可能让 timeout 短于最小保障值",
-        "suggestion": "按 JobServiceContext Math.max(maxRuntime,minGuarantee) 修正"
-      },
-      {
-        "type": "P2 指标口径",
-        "location": "L644",
-        "detail": "\"Stuck WakeLock\" 被解释成\"没有超过 2 小时的 WakeLock\"",
-        "suggestion": "应为后台 partial wake lock 单次持续超过 1 小时"
-      },
-      {
-        "type": "P2 参考链接",
-        "location": "L901",
-        "detail": "Excessive Wakeups 官方链接仍写 `/vitals/wakeups`",
-        "suggestion": "正确路径是 `/vitals/wakeup`"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-05-31T00:50:00+08:00",
-    "status": "completed",
-    "review_type": "task9-deep-tech-review",
-    "completed_at": "2026-05-31T00:50:00+08:00",
-    "completed_by": "openclaw-task2b"
-  },
-  {
-    "section": "2.10",
-    "section_title": "GPU 渲染深入",
-    "priority": 90,
-    "reason": "Fixed Task 6 / Task 9 review issues",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需补充素材",
-        "location": "实战案例章节",
-        "detail": "缺少真实的 Perfetto Trace 截图、AGI 分析截图或可复现的测试条件",
-        "suggestion": "补配一手 Trace/AGI 证据，或明确标注为示例场景"
-      },
-      {
-        "type": "需补充素材",
-        "location": "ASTC vs ETC2 带宽对比章节",
-        "detail": "依赖厂商优化指南，缺少实际测试数据验证",
-        "suggestion": "在目标设备上用 `adb shell cmd gpu vkjson` 确认支持并测试对比"
-      },
-      {
-        "type": "需重写",
-        "location": "多个技术分析章节",
-        "detail": "论述偏理论化，缺少个人调试经验分享",
-        "suggestion": "增加实际排查案例中的观察细节和个人判断过程"
-      },
-      {
-        "type": "需重写",
-        "location": "GPU Headroom API 使用说明、Vulkan 优势解释等",
-        "detail": "表达过于模板化，缺少个人视角",
-        "suggestion": "重写为更具个人经验的表达方式"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-05-30T22:05:00+08:00",
-    "status": "completed",
-    "fixed_at": "2026-05-31T08:57:00+08:00"
-  },
-  {
-    "section": "18.13",
-    "section_title": "WebView 渲染管线",
-    "priority": 90,
-    "reason": "[review回炉] Task6 发现发布稿仍有写作/证据闭环问题",
-    "material_paths": [
-      "intake/research-gaps.md",
-      "logs/review/2026-05-31-03-review.md",
-      "intake/suggestions.md（含 review 意见）",
-      "logs/review/2026-06-01-18-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异",
-        "location": "平台版本说明部分",
-        "detail": "仅提到 Android 15+ 但未说明具体更新内容对渲染路径的影响",
-        "suggestion": "补充 Android 15-17 中 WebView provider 的关键更新及其对 SurfaceControl/Functor 路径的影响"
-      },
-      {
-        "type": "需重写",
-        "location": "章节整体组织",
-        "detail": "锚点覆盖严重不足，仅1/9个必须锚点被覆盖。章节内容虽然技术质量高，但没有按照outline要求组织结构",
-        "suggestion": "重新按照outline组织章节内容，确保所有必须锚点都有对应内容，并修复格式问题"
-      },
-      {
-        "type": "需补充素材",
-        "location": "“实际性能数据对比”表格",
-        "detail": "表格声称 Pixel 8 Pro、Android 17、WebView provider milestone 123 的实测数据，但缺少 trace、样本、日志或验证记录路径。",
-        "suggestion": "补齐可复查数据来源；无法补齐时改为待验证案例或删除具体数值。"
-      },
-      {
-        "type": "需确认",
-        "location": "“Android 15-17 WebView provider 更新差异”",
-        "detail": "“Android 17 全量支持”“Overlay/Fence 优化”等属于版本差异判断，当前没有 Chromium milestone、AOSP/Chromium commit 或 external-review 证据。",
-        "suggestion": "交 Task9 复核版本边界；Task2B 按可验证证据改写为保守判断。"
-      },
-      {
-        "type": "需确认",
-        "location": "“实际排查要点”Kotlin 示例",
-        "detail": "示例使用 `Display.Hardware()`、`display.getHardware()`、`hardware.overlaySupport` 判断 overlay 能力，需确认这些是否为 Android 17 公开 API 或内部/伪代码。",
-        "suggestion": "Task9 核对 API 真实性；若不是公开 API，Task2B 改为 `dumpsys SurfaceFlinger`、Perfetto 或明确标注伪代码。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-05-31T03:11:41.189400",
-    "status": "completed",
-    "fixed_at": "2026-05-31T08:57:00+08:00",
-    "updated_by": "task6-review",
-    "updated_at": "2026-06-01T18:10:00+08:00",
-    "original_review_log": "logs/review/2026-06-01-18-review.md",
-    "completed_at": "2026-06-01T22:58:00+08:00",
-    "completed_by": "task2b-main",
-    "fix_summary": "删除无可复查来源的 Pixel 8 Pro / Android 17 / milestone 123 实测表；将 Android 15-17 provider 差异改为 Android 12-17 平台/provider 双版本边界；移除非公开 overlay API 示例，改为 provider、Perfetto、SurfaceFlinger 证据链。"
-  },
-  {
-    "section": "18.15",
-    "section_title": "视频叠加与 HWC",
-    "priority": 90,
-    "reason": "[review回炉] HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需重写",
-        "location": "SKIP_VALIDATE 相关技术说明",
-        "detail": "Task9 已多次指出 SKIP_VALIDATE 版本边界与 canSkipValidate 条件未修正，存在技术事实风险",
-        "suggestion": "需 Task9 审核 AOSP 源码中的 SKIP_VALIDATE 实际逻辑和版本边界，Task2B 修正技术准确性"
-      },
-      {
-        "type": "需重写",
-        "location": "术语使用不一致",
-        "detail": "SurfaceFlinger 在全文中时而使用全称，时而简写为 SF，术语不一致影响可读性",
-        "suggestion": "统一使用全称 'SurfaceFlinger' 保持术语一致性"
-      },
-      {
-        "type": "需补充素材",
-        "location": "Tunnel Mode 启用条件",
-        "detail": "关键的技术断言缺少具体的验证来源和 AOSP 源码引用",
-        "suggestion": "补充 MediaCodec TunneledPlayback 的具体 AOSP 实现路径和版本差异"
-      },
-      {
-        "type": "P1 原理断裂",
-        "location": "skip_validate 优化必要性说明",
-        "detail": "缺少 skip_validate 优化必要性的解释 - 验证开销在什么情况下变得显著到值得优化？",
-        "suggestion": "补充 skip_validate 在什么场景下带来明显性能提升的量化分析"
-      },
-      {
-        "type": "P1 版本差异",
-        "location": "Android 17 支持情况",
-        "detail": "章节声称覆盖到 Android 16，但未涵盖 Android 17 对 HWC 行为和 skip_validate 实现的潜在影响",
-        "suggestion": "明确说明章节内容适用范围，补充或标注 Android 17 相关变化"
-      },
-      {
-        "type": "P1 知识盲区",
-        "location": "厂商特定 HWC 实现",
-        "detail": "缺少厂商特定 HWC 实现及其对合成决策影响的讨论（常见现实问题）",
-        "suggestion": "增加常见厂商 HWC 实现差异及其对开发者的实际影响"
-      },
-      {
-        "type": "P1 知识盲区",
-        "location": "HDR 视频合成",
-        "detail": "缺少 HDR 视频合成及其如何影响 HWC 决策的讨论",
-        "suggestion": "补充 HDR 视频在 HWC 合成中的特殊考虑和限制"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-05-31T04:17:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-05-31-04-review.md",
-    "completed_at": "2026-05-31T04:50:00+08:00",
-    "completed_by": "openclaw-task2b"
-  },
-  {
-    "section": "08.0",
-    "section_title": "ch08-responsiveness",
-    "priority": 76,
-    "reason": "URL不可访问，跳过",
-    "material_paths": [
-      "https://developer.android.com/newsletter/play-monthly/2026/02"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考",
-        "location": "参考资料小节",
-        "detail": "Android 17 Beta 发布：增强相机和媒体功能 — Android 17测试版发布，重点增强相机和媒体处理能力，体现了移动平台在多媒体功能上的持续优化和用户需求的响应。",
-        "suggestion": "判断是否适合作为章节参考，如适合请补充"
-      }
-    ],
-    "added_by": "task8-classifier",
-    "added_at": "2026-05-31T05:35:42.079832",
-    "status": "completed",
-    "completed_at": "2026-05-31T10:50:00+08:00",
-    "completed_by": "openclaw-task2b"
-  },
-  {
-    "section": "18.19",
-    "section_title": "可变刷新率渲染管线",
-    "priority": 80,
-    "reason": "章节已包含完整 Android 17 VRR 源码分析，无需额外注入",
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "Android 17 VRR 自适应刷新率与 RefreshRateSelector 实现 — 源码级分析 Scheduler.cpp、RefreshRateSelector LayerVote 投票机制、FrameRateRecord 历史帧追踪、DisplayModeDirector DisplayMode 切换策略",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-05-30T22:12:26.099775+00:00",
-    "status": "completed",
-    "completed_at": "2026-05-31T10:50:00+08:00",
-    "completed_by": "openclaw-task2b"
-  },
-  {
-    "section": "2.6",
-    "section_title": "SurfaceFlinger 与合成",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] Android 17 SurfaceFlinger 事务与缓冲区生命周期源码分析，含双缓冲状态模型、INVALIDATE/REFRESH 双消息机制、BufferQueue 状态机、DeliQueue 无锁重构",
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "Android 17 SurfaceFlinger 事务与缓冲区生命周期 — 双缓冲 mCurrentState/mDrawingState 原子更新、INVALIDATE/REFRESH 分离、BufferQueue 状态机循环、Android 17 DeliQueue 无锁 MessageQueue",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-05-30T22:12:26.099775+00:00",
-    "status": "pending"
-  },
-  {
-    "section": "17.4",
-    "section_title": "sched_ext 与 OEM BPF 调度器",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] sched_ext 与 EEVDF 调度器版本边界源码锚点验证，含 sched_ext_ops 核心字段、GameManagerService→BPF map 联动、EEVDF 版本差异",
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "sched_ext 与 EEVDF 版本边界 — struct sched_ext_ops、GameManagerService BPF map 联动、android16-6.12 示例调度器、EEVDF vs CFS 版本差异",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-05-30T22:12:26.099775+00:00",
-    "status": "pending"
-  },
-  {
-    "section": "6.2",
-    "section_title": "文件系统",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] F2FS Adaptive Logging 机制与 I/O 调度性能分析，含 6 持久化日志温度分类、segment 分配策略 LFS/SSR/AT_SSR",
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "F2FS Adaptive Logging — 6 持久化日志温度分类、active_logs 配置、f2fs_balance_fs 前台 GC、LFS/SSR/AT_SSR 分配模式",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料。注意基于 Linux main/master"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-05-30T22:12:26.099775+00:00",
-    "status": "pending"
-  },
-  {
-    "section": "22.3",
-    "section_title": "Jetpack Compose 性能优化",
-    "priority": 95,
-    "reason": "fixed-lite",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "CacheWindowLogic.calculateAheadWindow() 和 calculateBehindWindow() 方法签名",
-        "detail": "章节描述的方法签名与实际 AOSP 源码不符：实际为 abstract fun calculateAheadWindow(viewport: Int): Int，非函数体内计算",
-        "suggestion": "修正方法签名描述，明确返回值类型和参数含义"
-      },
-      {
-        "type": "P0 源码错误",
-        "location": "PausableComposition 源码引用",
-        "detail": "章节引用 `androidx/compose/runtime/PausableComposition` 返回 HTTP 404，该路径不存在",
-        "suggestion": "修正为正确的 AOSP 源码路径或说明该功能的实际实现位置"
-      },
-      {
-        "type": "P0 源码错误",
-        "location": "LazyLayoutPrefetchState 源码引用",
-        "detail": "章节引用 `androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt` 返回 HTTP 404",
-        "suggestion": "修正为正确的 AOSP 源码路径或说明该功能的实际实现位置"
-      },
-      {
-        "type": "P0 源码错误",
-        "location": "Snapshot 源码引用",
-        "detail": "章节引用 `androidx/compose/runtime/snapshots/Snapshot.kt` 返回 HTTP 404",
-        "suggestion": "修正为正确的 AOSP 源码路径或说明该功能的实际实现位置"
-      },
-      {
-        "type": "P0 源码错误",
-        "location": "DerivedState 源码引用",
-        "detail": "章节引用 `androidx/compose/runtime/DerivedState.kt` 返回 HTTP 404",
-        "suggestion": "修正为正确的 AOSP 源码路径或说明该功能的实际实现位置"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-05-31T12:25:43.861951",
-    "status": "completed",
-    "completed_at": "2026-05-31T15:35:00+08:00",
-    "completed_by": "openclaw-task2b-lite"
-  },
-  {
-    "section": "18.15",
-    "section_title": "视频叠加与 HWC",
-    "priority": 90,
-    "reason": "[review回炉] HWC Overlay 功耗/带宽/性能比例缺少测试条件与原始记录",
-    "material_paths": [
-      "intake/suggestions.md（含 review 意见）"
-    ],
-    "review_issues": [
-      {
-        "type": "需补充素材",
-        "location": "开头功耗/带宽对比表、HDR 性能影响、常见性能问题、同步开销段落",
-        "detail": "章节使用多组'实测'或百分比数据（带宽 1200-1800MB/s、Overlay 功耗 -30%、HDR 合成时间增加 15-30%、Overlay 失效功耗增加 30-50%、同步开销 20-30%），但缺少设备型号、SoC、刷新率、视频规格、亮度、采样工具、样本次数和原始记录路径。",
-        "suggestion": "补齐测试记录并把数据表改成'设备/条件/采样工具/结果'格式；无法补齐的数字降级为定性描述或明确标注为示例量级。"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-01T02:05:00+08:00",
-    "status": "completed",
-    "review_type": "task6-light-edit",
-    "original_review_log": "logs/review/2026-06-01-02-review.md",
-    "completed_at": "2026-06-01T06:52:00+08:00",
-    "completed_by": "openclaw-task2b-main",
-    "completion_reason": "缺少原始测试条件的功耗/带宽/性能数字已降级为定性趋势；补充同设备同条件测试记录模板，等待 Task6 复审。"
-  },
-  {
-    "section": "2.1",
-    "section_title": "Android 渲染架构全景",
-    "priority": 95,
-    "reason": "[Deep Tech Review] P0 RenderNode 架构演进错误，P1 三缓冲机制原理不完整",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "P0 源码错误",
-        "location": "版本演进段落",
-        "detail": "将 Android 3.0 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 混合描述，需按两个独立架构演进拆开",
-        "suggestion": "按 AOSP android-4.4.4_r2 的 DisplayList/DisplayListRenderer 与 android-5.0.0_r1 的 RenderNode/renderthread 分工修正版本演进描述"
-      },
-      {
-        "type": "P0 源码错误",
-        "location": "BufferQueue 伪代码",
-        "detail": "文中示意性伪代码 `BufferItem item = consumer.acquireBuffer();` 不对应实际 AOSP 方法签名",
-        "suggestion": "移除或替换为真实 AOSP BufferQueue.cpp 中的实际方法引用"
-      },
-      {
-        "type": "P1 原理断裂",
-        "location": "三缓冲机制原理",
-        "detail": "从双缓冲问题到三缓冲解决方案的因果链基本完整，但缺少对'为什么三缓冲会增加显示延迟'这一关键副作用的分析",
-        "suggestion": "补充三缓冲增加一帧显示延迟的副作用说明"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-01T03:20:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-01T04:50:00+08:00",
-    "completed_by": "openclaw-task2b-main",
-    "completion_reason": "Task2B main fixed: RenderNode/RenderThread version split, BufferQueue acquireBuffer signature, triple buffering latency side effect."
-  },
-  {
-    "section": "2.5",
-    "section_title": "MainThread 与 RenderThread 协作",
-    "priority": 95,
-    "reason": "[Deep Tech Review] P0 ADPF 性能反馈机制版本错误，P1 同步栅栏解释不准确",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "P0 源码错误",
-        "location": "ADPF 性能反馈机制",
-        "detail": "文中提到 Android 16 的 headroom API，但实际 ADPF hint session 上报机制在 Android 14 就已存在于 CanvasContext.cpp 中",
-        "suggestion": "Android 16 应单独说明 headroom API，与已存在的 hint session 机制区分"
-      },
-      {
-        "type": "P1 原理断裂",
-        "location": "同步栅栏解释",
-        "detail": "syncFrameState 的阻塞点解释不够准确，UI 线程等的是 RenderThread 完成本帧同步阶段，不一定等上一帧 GPU 完成",
-        "suggestion": "修正为 UI 线程等待 RenderThread 完成本帧同步阶段，包括 prepareTree、layer update、makeCurrent、纹理准备等"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-01T03:20:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-01T04:50:00+08:00",
-    "completed_by": "openclaw-task2b-main",
-    "completion_reason": "Task2B main fixed: syncFrameState wait semantics and ADPF hint session vs Android 16 headroom boundary; conflicting research note cleaned."
-  },
-  {
-    "section": "2.10",
-    "section_title": "GPU 渲染深入",
-    "priority": 90,
-    "reason": "[review回炉] 实战案例缺少可复核 Trace/AGI 证据且局部重复，需补证据或改成示例边界",
-    "material_paths": [
-      "intake/suggestions.md（含 review 意见）"
-    ],
-    "review_issues": [
-      {
-        "type": "需补充素材",
-        "location": "实战案例：一手 AGI 与 Perfetto Trace 证据 / 一手 Trace 证据 / 效果验证",
-        "detail": "章节仍以占位图、示例命令和自称保存 Trace 来支撑 22-28ms→8-12ms、ASTC 带宽降低等数据，缺少可复核的 trace 文件、截图、测试条件或样本说明；同一社交应用案例在多个小节重复叙述。",
-        "suggestion": "补配真实 Perfetto/AGI 截图或 trace artifact，并写清设备、场景、采样方式；若没有一手证据，应改为示例场景并合并重复段落。"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-01T16:05:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-06-01-16-review.md",
-    "completed_at": "2026-06-02T22:50:00+08:00",
-    "completed_by": "task2b-main",
-    "completion_reason": "已改为示例场景，删除无 artifact 支撑的实测数字和重复效果验证。"
-  },
-  {
-    "section": "3.5",
-    "section_title": "输入事件拦截与安全机制",
-    "priority": 90,
-    "reason": "[review回炉] 厂商游戏模式输入优先级段落与源码验证附录存在结构/证据冲突 | fixed-lite: 厂商游戏模式输入优先级改为非 AOSP 边界说明",
-    "material_paths": [
-      "intake/suggestions.md（含 review 意见）"
-    ],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "厂商定制的拦截增强方案 / 扩展：厂商游戏模式输入优先级机制（源码级验证）",
-        "detail": "正文先列出“事件优先队列”“提升触摸事件分发优先级”等厂商实现，后文源码验证又说明 AOSP 标准 GameMode 不包含独立输入优先级提升机制，读者会难以区分 AOSP 结论、厂商推测和已验证事实。",
-        "suggestion": "Task2B 将厂商定制内容改成明确的非 AOSP 边界说明；无公开材料的实现项删除或标为待证；把源码验证附录整合回正文相应位置，避免参考资料后再出现正文级结论。"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-01T16:05:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-06-01-16-review.md",
-    "completed_at": "2026-06-01T21:35:00+08:00",
-    "completed_by": "openclaw-task2b-lite",
-    "fixed_at": "2026-06-01T21:35:00+08:00"
-  },
-  {
-    "section": "5.14",
-    "section_title": "Android 17 ML Runtime 与 NPU 访问边界",
-    "priority": 90,
-    "reason": "[review回炉] Task6 发现发布稿仍有写作/证据链问题",
-    "material_paths": [
-      "intake/suggestions.md（含 review 意见）",
-      "logs/review/2026-06-01-18-review.md",
-      "logs/review/2026-06-02-10-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需重写",
-        "location": "小结之后的“源码调研补充”块",
-        "detail": "发布稿在小结后保留多段原始调研补充，包含推测位置、需进一步确认、未一手验证等编辑态内容，破坏正文收束和可发布性。",
-        "suggestion": "Task2B 将已验证事实整合回正文或参考资料；无法确认的项目保留为 Task9 待复核问题，不放在发布正文中。"
-      },
-      {
-        "type": "需确认",
-        "location": "NNAPI HAL 版本演进口径",
-        "detail": "正文与补充材料同时出现 HIDL 1.3、Android 12+ AIDL、API 35/37 等口径，读者难以判断 Android 17 范围内的准确结论。",
-        "suggestion": "Task9 复核 Android 17/API 37 范围内 NN HAL 的可发布口径，Task2B 按复核结果统一正文和参考资料。"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-01T18:10:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-06-02-10-review.md",
-    "updated_by": "task6-review",
-    "updated_at": "2026-06-02T10:05:00+08:00",
-    "completed_at": "2026-06-02T22:50:00+08:00",
-    "completed_by": "task2b-main",
-    "completion_reason": "已删除发布稿中的编辑态源码调研补充，统一 NN HAL 可发布口径。"
-  },
-  {
-    "section": "5.6",
-    "section_title": "Android 功耗管理",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Tare 经济模型引用不存在的源码/API，且 Android 17 Energy Limiter 仍为未证实机制",
-    "material_paths": [
-      "logs/deep-review/2026-06-02-03-deep-review.md",
-      "intake/research-gaps.md"
-    ],
-    "review_issues": [
-      {
-        "type": "P0 源码错误",
-        "location": "Tare 经济模型:Job 配额的底层管控（L358-L375）",
-        "detail": "正文标注 AOSP android-17.0.0_r1 中存在 frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java 与 AppBudgetManager.java，并写入 EconomyManager.setAppBudgetoyant()/getRemainingBudget() 等公开 API；本轮复核发现 android.googlesource 未发布 android-17.0.0_r1 tag，android-16.0.0_r1 / android-15.0.0_r1 的 frameworks/base/apex/jobscheduler/service/java/com/android/server/ 下已无 tare 目录，android-14.0.0_r1 的 tare 目录仅有 InternalResourceService、EconomicPolicy、JobSchedulerEconomicPolicy、EconomyManager 等历史实现，未命中 TareEconomicManager/AppBudgetManager/setAppBudgetoyant。",
-        "suggestion": "删除或重写该小节：若保留 TARE，只能按 Android 14 及更低历史实现说明 InternalResourceService/EconomyManager 边界；不得标注 android-17.0.0_r1 已验证，也不得把不存在的应用自设预算 API 写成公开能力。"
-      },
-      {
-        "type": "P1 版本差异",
-        "location": "Android 17 能量限额制（Energy Limiter）[待验证]（L476-L487）",
-        "detail": "该段明确写成研究假设，缺少 Android 17 CDD、AOSP PowerStats/ODPM 调用链、CTS 或官方特性页支撑；ready-for-review 章节中不能保留“按 App μJ 能量超额强杀后台进程”这类未验证平台机制。",
-        "suggestion": "发布稿删除该段或移入 research-gaps；若后续补到一手证据，再按 Android 17 / API 37 范围重新注入。"
-      },
-      {
-        "type": "P2 版本差异",
-        "location": "Linux 电源管理架构与 eBPF 微架构能效分析（补充）/ Power HAL（L598-L704）",
-        "detail": "补充区把 Power HAL 主体写成 android.hardware.power@1.0-1.3 / hwbinder，同时下文又使用 PowerHAL.setMode(Mode::INTERACTIVE)。Android 16 可复核源码已存在 hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl，正文前部也采用 AIDL IPower 口径，补充区会造成当前版本仍以 HIDL @1.x 为主的误读。",
-        "suggestion": "统一成“Legacy HIDL 1.0-1.3 是历史接口；Android 16/17 口径优先看 AIDL IPower.setMode()/setBoost()，厂商实现可存在兼容层”。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-02T03:20:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-02T08:50:00+08:00",
-    "completed_by": "openclaw-task2b-main",
-    "completion_reason": "Task9 P0/P1/P2 回炉完成：TARE 改为 Android 14 历史实现边界，删除 Android 17 Energy Limiter 未验证段，Power HAL 统一为 AIDL IPower 优先口径。"
-  },
-  {
-    "section": "ch17-oem",
-    "section_title": "章节ch17-oem",
-    "priority": 13,
-    "reason": "[素材注入] 新增参考文章，建议补充到章节",
-    "material_paths": [
-      "https://juejin.cn/post/7604694326518104115"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考",
-        "location": "参考资料小节",
-        "detail": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了 — Android 17 首次引入原生应用锁功能，解决用户隐私保护痛点，与厂商差异化功能形成鲜明对比，为原生 Android 用户体验提升提供新方案。",
-        "suggestion": "判断是否适合作为章节参考，如适合请补充"
-      }
-    ],
-    "added_by": "task8-classifier",
-    "added_at": "2026-06-02T05:31:52.010011",
-    "status": "pending"
-  },
-  {
-    "section": "17.4",
-    "section_title": "sched_ext 与 OEM BPF 调度器",
-    "priority": 85,
-    "reason": "[DeepResearch 注入] 新增 OSDI '26 论文级 OEM 调度器深度调研材料，涵盖 sched_ext VIP 分层机制与 Binder 优先级传播路径，建议补充到章节参考资料",
-    "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "荣耀 MUSCHED VIP 与 Binder 优先级传递深度调研 — 基于 USENIX OSDI '26 论文，分析 sched_ext full-switch 模式下 VIP 内部分层实现，Binder 优先级继承只传播 sched_policy+prio 的限制，以及 eBPF/rtmutex vendor hooks 两条实现路径",
-        "suggestion": "判断是否适合补充为 ch17.4 章节参考资料，特别是 sched_ext VIP 分层与厂商 Binder 优先级传播部分"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-06-02T06:15:23.038257",
-    "status": "pending"
-  },
-  {
-    "section": "22.3",
-    "section_title": "Jetpack Compose 性能优化",
-    "priority": 90,
-    "reason": "[review回炉] 源码调研补遗仍以编辑态进入正文，版本/源码边界未闭合",
-    "material_paths": [
-      "intake/suggestions.md（含 review 意见）",
-      "logs/review/2026-06-02-11-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需重写",
-        "location": "outline-end 后的 AIW-源码调研块、参考资料后的 2026-06-02 调研补遗、GC-Composition/Android 17 ART 分代 GC 补充块",
-        "detail": "章节正文仍保留多段编辑态调研补遗和 AIW 源码调研标记，且 2026-06-02 Strong Skipping 材料出现在正式开头之前，破坏文章主线；后半部分还有 Baseline Profile、Compose Multiplatform、ART GC 等补充块堆在参考资料前后，读者难以区分正文结论、附录素材和待验证材料。",
-        "suggestion": "Task2B 将已验证结论合并回 Strong Skipping、Pausable Composition、工具链和检查清单等对应小节；未闭合的调研素材移入 research-gaps 或保留为问题单，不放在发布正文中。"
-      },
-      {
-        "type": "需确认",
-        "location": "PausableComposition 版本口径与 AOSP/androidx-main 源码锚点（约 L267-L282、L730-L767、L882-L919）",
-        "detail": "正文同时出现“PausableComposition（Compose 1.7+ / Android 17）”和“无 Android 平台版本门槛、取决于 Foundation 版本”的说法；ART GC 与 Compose Snapshot 部分仍引用 AOSP master / androidx-main，并已标注需要替换为 android-17.0.0_r1 或标注未进入 Android 17。Task6 不裁决技术真伪，但这些未闭合标注会阻断发布态。",
-        "suggestion": "Task9 复核 Android 17/API 37 范围内可发布口径；Task2B 按复核结果统一版本边界，无法证明进入 Android 17 的 main/master 资料只作为“未进入 Android 17”背景或移出正文结论。"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-02T11:05:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-06-02-11-review.md",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-02T12:54:00+08:00",
-    "completion_reason": "删除编辑态调研补遗；统一 Pausable Composition 版本口径；移出未闭合的 AOSP master/androidx-main 正文结论；章节回流 Task6。"
-  },
-  {
-    "section": "19",
-    "section_title": "APM 工具与性能监控生态",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-    "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/字节跳动 Android:移动端 性能·功耗·稳定性 全栈技术方案深度调研.md"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "字节跳动 Android 性能·功耗·稳定性全栈技术方案 — 系统梳理字节跳动开源工具链(btrace 3.0 同步抓栈、ByteHook/ShadowHook hook 三件套、Raphael Native 泄漏、Tailor 等)及闭源 APM 平台(Sla",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-06-02T22:16:25.663725+00:00",
-    "status": "pending"
-  },
-  {
-    "section": "17",
-    "section_title": "OEM 性能优化",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-    "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研 .md"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "荣耀 MUSCHED VIP 调度与 Binder 优先级传递深度调研 — 深度分析荣耀 OSDI'26 论文 MUSCHED 调度器：论证 VIP 调度类基于 sched_ext full-switch 而非新增 sched_class，在 sched_ext 内部划分 V",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-06-02T22:16:25.663725+00:00",
-    "status": "pending"
-  },
-  {
-    "section": "22.3",
-    "section_title": "渲染优化实战 / Jetpack Compose 性能优化",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-    "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-02-android-compose-110-strong-skipping-optimization-gaps.md"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "Compose 1.10+ Strong Skipping 盲区与 produceState 内存机制 — 深度分析 Strong Skipping Mode(Compose Compiler 1.5.4+实验→Kotlin 2.0.20 全面启用)的设计规范：所有 restartable Composab",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-06-02T22:16:25.663725+00:00",
-    "status": "pending"
-  }
-]
+{
+  "pending": [
+    {
+      "section": "ch02",
+      "section_title": "Simpleperf",
+      "priority": 90,
+      "reason": "[Task6 Review回炉(第二轮)] 文体仍为命令参考手册，14.7/14.9通用填充内容未修复，14.10-14.12技术准确性待验证，缺少report解读和原理说明",
+      "material_paths": [
+        "logs/deep-review/2026-06-10-04-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "第462-553行 Android 17 Simpleperf 源码深度分析节",
+          "detail": "该节声称基于\"Android 17 main branch simpleperf 源码\"，但实际包含大量未经验证的架构推断：RecordMemoryPool 类不存在、EventSelectionSetAndroid17/SampleTreeAndroid17/ELFReaderAndroid17 等 Android17 后缀类均未在源码中找到、30+ 新增 PMU 事件声明缺乏支撑、enable_real_time_jit_debugging() API 未确认、Vulkan 渲染管线性能分析集成与源码事实不符",
+          "suggestion": "删除该整节或将内容降级为\"基于架构的演进预测\"，删除具体源码类名等无法验证的细节，将适用版本从 Android 17 降级为 Android 16，并标注内容为架构推断而非已验证源码"
+        },
+        {
+          "type": "需重写",
+          "location": "全章（14.1-14.13）",
+          "detail": "文体严重违反 writing-guide：全章37个代码块几乎全为列表+命令堆砌，属于writing-guide反面教材1(百科词条式)+反面教材3(概述式)。writing-guide要求'叙述为主、列表为辅'，Type C工具篇要求从'没有这个工具你会多痛苦'开篇，当前完全没有做到",
+          "suggestion": "按 writing-guide Type C（工具使用篇）结构重写，以工程师对话叙述方式替代命令列表"
+        },
+        {
+          "type": "需重写",
+          "location": "Section 14.7 性能优化实践",
+          "detail": "展示的是通用Java优化模式（对象池TexturePool、内存泄漏WeakReference、线程池配置），与Simpleperf分析结果完全脱节。读者学不到'怎么从simpleperf report输出定位到这些优化点'",
+          "suggestion": "重写为：先用simpleperf report发现热点函数→解读调用栈→定位优化方向→展示优化后再用simpleperf验证的闭环"
+        },
+        {
+          "type": "需重写",
+          "location": "Section 14.9 性能案例分析",
+          "detail": "两个案例缺乏Simpleperf特有信息：无report输出、无调用栈分析、无热点函数解读、无--show-call-graph结果。案例中的LazyInitializer和SafeHandler是通用Android知识，不是Simpleperf分析流程",
+          "suggestion": "重写案例：包含simpleperf record→report完整输出→调用栈解读→优化→验证的全流程"
+        },
+        {
+          "type": "需验证",
+          "location": "Section 14.10 Gradle插件",
+          "detail": "声称存在 id 'simpleperf-plugin' Gradle插件，该插件真实性存疑。Android官方文档未记录此插件",
+          "suggestion": "验证simpleperf-plugin是否存在，不存在则删除该节或替换为真实集成方案"
+        },
+        {
+          "type": "需验证",
+          "location": "Section 14.2 设备端simpleperf路径",
+          "detail": "adb pull /system/bin/simpleperf 在多数设备上不存在。simpleperf通常通过NDK分发，而非预装在系统镜像中",
+          "suggestion": "修正安装说明，以NDK为主要获取渠道，删除或标注设备端路径的特殊情况"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "applicable_versions 字段",
+          "detail": "章节声明适用 Android 5.0(API 21)-Android 16(API 35)，但多处使用 Android 5.0 不支持的语言特性（如Stream API），且缺少 Android 12-16 关键变化说明",
+          "suggestion": "修正版本声明，补充版本差异说明，移除与最低版本不兼容的代码示例"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "源码引用准确性",
+          "detail": "引用 system/extras/simpleperf/CMakeLists.txt 和 external/perfetto/docs/data-sources/android-perfetto.md 作为源码锚点，但没有提供具体源码片段或关键类/方法的准确名称",
+          "suggestion": "补充具体的源码类名、方法名和关键代码片段，或移除无法验证的源码引用"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "数据收集方法章节",
+          "detail": "解释了如何使用Simpleperf收集数据，但没有充分说明为什么选择Perfetto格式作为推荐格式，以及与旧格式相比的技术优势",
+          "suggestion": "补充Perfetto格式技术原理和优势说明，完善原理链"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "版本差异覆盖",
+          "detail": "缺少Android 12-16中关键性能分析机制变化说明，如Perfetto引入和Profileable应用改进",
+          "suggestion": "补充Android 12-16版本间性能分析机制的关键变化"
+        },
+        {
+          "type": "需重写",
+          "location": "全章结构",
+          "detail": "第二轮review确认：全章仍为命令参考手册风格，49.6%为代码块（373/753行）。writing-guide Type C要求'没有这个工具你会多痛苦'开篇+连贯叙述+工程师对话视角，当前完全未实现。前轮Task2B仅删除了虚假源码节，未触及文体问题",
+          "suggestion": "按Type C结构完全重写：1)开篇从'不用simpleperf时你用什么？'引入 2)叙述体解释采样原理 3)用真实分析流程串联命令 4)删除通用Java优化填充"
+        },
+        {
+          "type": "需删除/重写",
+          "location": "Section 14.7 性能优化实践",
+          "detail": "第二轮review确认：此节仍为通用Java优化模式（stream替代for、对象池TexturePool、WeakReference Handler），与前轮review问题完全相同，Task2B未修复。这些内容与simpleperf分析结果完全脱节",
+          "suggestion": "删除此节，或重写为：simpleperf report发现热点→调用栈解读→定位优化方向→优化后再用simpleperf验证"
+        },
+        {
+          "type": "需删除/重写",
+          "location": "Section 14.9 性能案例分析",
+          "detail": "第二轮review确认：案例仍缺乏simpleperf特有信息（无report输出、无调用栈分析、无--show-call-graph结果）。LazyInitializer和SafeHandler是通用Android知识，不是simpleperf分析流程",
+          "suggestion": "重写案例：包含simpleperf record→report完整输出→调用栈解读→优化→验证全流程，展示工程师分析思维"
+        },
+        {
+          "type": "需验证",
+          "location": "Section 14.10 工具集成 (14.10-14.12)",
+          "detail": "Gradle插件'simpleperf-plugin'真实性仍存疑（前轮已标记，未修复）。14.11基准测试中的io_read/io_write/net_bytes_sent/net_bytes_recv事件和benchmark数值疑似编造。14.12总结为通用建议+mermaid流程图，非simpleperf特有",
+          "suggestion": "Task9验证：1)simpleperf-plugin是否真实存在 2)验证这些事件名 3)14.11-14.12建议删除或大幅精简"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "Section 14.6 数据分析与解读",
+          "detail": "只有命令列表，没有解释simpleperf report输出的含义。读者看完不知道如何解读self time vs total time、如何从调用栈判断瓶颈、如何区分应用代码vs系统代码",
+          "suggestion": "补充report输出示例+逐行解读，教读者看懂simpleperf输出"
+        },
+        {
+          "type": "格式问题",
+          "location": "章节编号",
+          "detail": "frontmatter标记chapter/section为14.2，但正文内标题从14.1开始编至14.13，编号体系混乱。且无<!-- outline-start/end -->大纲块",
+          "suggestion": "统一编号为14.2.x子节格式，或去掉内部二级编号改为无编号标题"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-10T06:10:20+08:00",
+      "status": "completed",
+      "completion_reason": "[Task2B 回炉修复] P0源码错误节已删、14.7/14.9/14.10/14.11/14.12已替换为重写占位符、install指令修正、Perfetto原理补充、frontmatter状态更新。全章Type C重写待后续轮次深度修复。",
+      "completed_at": "2026-06-10T06:54:30+08:00"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Task6 Review 回炉] 第二轮 review 仍发现重大问题：4个核心章节仍为占位符、全文为API文档风格而非叙述体、多处命令参数待Task9技术验证",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "14.2.1 开头（原14.1）",
+          "detail": "开头为百科词条式定义（'Simpleperf是Android系统自带的...'），违反writing-guide.md Type C工具篇要求。应以'没有这个工具你会多痛苦'切入，从CPU profiling痛点引入",
+          "suggestion": "参照writing-guide.md类型C模板重写开头：先描述没有simpleperf时native性能分析的困境（只有top/strace、看不到函数级热点、无法关联调用栈），再引出simpleperf定位"
+        },
+        {
+          "type": "需重写",
+          "location": "全文结构（14.2.1-14.2.6）",
+          "detail": "全文为命令速查表风格：每个小节以 bullet list + 代码块为主，缺乏连贯叙述。违反writing-guide.md '叙述为主，列表为辅'铁律。读者读完知道有哪些命令但不知道怎么用它们解决实际问题",
+          "suggestion": "以一个完整的性能分析案例为主线贯穿全文：发现问题→选择工具→配置采集→解读report→定位热点→优化→验证。命令和参数在流程中自然引出"
+        },
+        {
+          "type": "需补充内容",
+          "location": "14.2.7 性能优化实践（原14.7）",
+          "detail": "仍为占位符（⚠️ Task2B回炉中），上次review指出旧版为通用Java优化模式且API版本矛盾，但重写尚未完成",
+          "suggestion": "按回炉方向重写：simpleperf report发现热点→调用栈解读→定位优化方向→优化后再用simpleperf验证"
+        },
+        {
+          "type": "需补充内容",
+          "location": "14.2.9 性能案例分析（原14.9）",
+          "detail": "仍为占位符（⚠️ Task2B回炉中），缺少simpleperf特有的report输出、调用栈解读、--show-call-graph结果",
+          "suggestion": "提供完整案例：record → report原始输出 → 调用栈图 → 热点函数定位 → 优化 → 验证全流程"
+        },
+        {
+          "type": "需补充内容",
+          "location": "14.2.11 性能基准测试（原14.11）",
+          "detail": "仍为待重写，旧版benchmark数据已移除，新内容未写入",
+          "suggestion": "基于simpleperf stat实测重写，展示如何建立性能基线"
+        },
+        {
+          "type": "需补充内容",
+          "location": "14.2.12 总结与最佳实践（原14.12）",
+          "detail": "仍为占位符（⚠️ Task2B回炉中），旧版通用建议已移除",
+          "suggestion": "以'如何用Simpleperf建立日常性能监控节奏'为主线，落实到record→report→定位热点→验证的具体步骤"
+        },
+        {
+          "type": "需确认",
+          "location": "14.2.5（原14.5）Perfetto数据收集",
+          "detail": "使用--perfetto、--config perfetto_config.xml、--out perfetto.traces等参数，需Task9验证这些是否为simpleperf真实支持的参数名",
+          "suggestion": "Task9对照NDK simpleperf文档验证命令参数真实性"
+        },
+        {
+          "type": "需确认",
+          "location": "14.2.6（原14.6）内存分析与多维度分析",
+          "detail": "alloc_count/alloc_size/malloc_count/malloc_size事件名、--show-alloc-stats/--show-branch-miss/--show-cache-miss/--show-timeline/--top 10等report参数，需Task9验证是否存在",
+          "suggestion": "Task9对照simpleperf官方文档验证所有事件名和report参数"
+        },
+        {
+          "type": "结构性问题",
+          "location": "章节内编号",
+          "detail": "章节为14.2 Simpleperf，但内部标题使用14.1-14.13编号（与章节号14.2冲突）。应使用14.2.1-14.2.13子编号",
+          "suggestion": "修正所有内部章节编号为14.2.x子编号格式，并检查SUMMARY.md交叉引用"
+        },
+        {
+          "type": "版本边界",
+          "location": "参考资料/DeepResearch引用",
+          "detail": "参考资料引用的DeepResearch材料标注为'main分支快照'，包含可能未进入Android 17的内容。按AIW版本边界规则，main/master资料需标注'未进入Android 17'并不可作为正文结论",
+          "suggestion": "审查DeepResearch材料中的断言，确认哪些已进入Android 17正式分支；applicable_versions当前为API 21-35，若正文无Android 17内容则维持"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "applicable_versions字段",
+          "detail": "章节声明适用 Android 5.0(API 21)-Android 16(API 35)，违反AIW版本边界规则（最高只到Android 17/API 37），且Android 16实际是API 35（声明冗余）",
+          "suggestion": "修正为 Android 5.0(API 21)-Android 17(API 35-37)，补充Android 17新增特性或注明未进入Android 17的内容"
+        },
+        {
+          "type": "P0 源码错误",
+          "location": "参考资料/DeepResearch引用",
+          "detail": "参考资料引用的DeepResearch材料标注为'main分支快照'，包含可能未进入Android 17的内容。按AIW版本边界规则，main/master资料需标注'未进入Android 17'并不可作为正文结论",
+          "suggestion": "审查DeepResearch材料中的断言，确认哪些已进入Android 17正式分支；无法进入Android 17的内容需降级为架构预测"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-10T07:11:49+08:00",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-10-07-review.md",
+      "completion_reason": "fixed-lite: section numbering (14.1-14.13 → 14.2.1-14.2.13), applicable_versions API level fix (35→36), DeepResearch version boundary annotation"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Task9 Deep Review] 源码引用准确性和原理链完整性问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 事实错误",
+          "location": "14.2.5 Perfetto数据收集",
+          "detail": "命令参数声明不准确：不存在 `--perfetto` / `--config` / `--out` 标志，但支持标准 `-o/--output` 参数",
+          "suggestion": "修正为说明 simpleperf 不存在特有标志但支持标准输出参数"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.5 Perfetto集成",
+          "detail": "缺少关键技术细节：Perfetto服务状态检查、权限配置、完整tracing session命令示例",
+          "suggestion": "补充Perfetto环境准备和完整配置示例"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.1 简介",
+          "detail": "未解释 simpleperf 与 Linux perf 的关系和差异，以及Android特有的优化和限制",
+          "suggestion": "补充 simpleperf 与 Linux perf 的关系说明"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.3 基本使用方法",
+          "detail": "缺少采样频率（-f参数）对精度/开销影响的原理说明",
+          "suggestion": "补充采样频率选择原理和权衡说明"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.5 Profileable应用",
+          "detail": "未解释符号表解析机制和未符号化代码处理",
+          "suggestion": "补充符号解析机制和调试符号准备说明"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T13:20:00",
+      "status": "completed",
+      "completion_reason": "fixed-lite: P0 (--perfetto/--config/--out) 已在前轮修复确认；本轮修复 14.2.10 残留 --trace-fg 假标志 → --app。P1 x4（Perfetto集成细节、simpleperf vs perf、采样频率原理、符号解析）需新增内容，超出 Lite 范围，留待主 Task2B。",
+      "completed_at": "2026-06-10T13:47:06"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Task9 Deep Review] 源码引用准确性和原理链完整性问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "第462-553行 Android 17 源码分析节",
+          "detail": "该节声称基于"Android 17 main branch simpleperf 源码"，但实际包含大量未经验证的架构推断：RecordMemoryPool 类不存在、EventSelectionSetAndroid17/SampleTreeAndroid17/ELFReaderAndroid17 等 Android17 后缀类均未在AOSP源码中找到、30+ 新增 PMU 事件声明缺乏支撑、enable_real_time_jit_debugging() API 未确认、Vulkan 渲染管线性能分析集成与源码事实不符",
+          "suggestion": "删除该整节或将内容降级为"基于架构的演进预测"，删除具体源码类名等无法验证的细节，将适用版本从 Android 17 降级为 Android 16，并标注内容为架构推断而非已验证源码"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "多处AOSP源码引用",
+          "detail": "文中多次引用AOSP具体源码细节（如cmd_record.cpp、main.cpp、GetDefaultRecordBufferSize）但基于main分支快照而非官方android-17.0.0_r1 tag，不符合AIW版本边界规则。所有源码引用需明确标注"未进入Android 17"或重新锚定到已验证版本",
+          "suggestion": "审查所有源码引用，将main分支内容降级为架构预测，或锚定到android-16.0.0_r1等已公开版本"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "14.2.5 Perfetto数据收集",
+          "detail": "命令参数声明不准确：不存在 `--perfetto` / `--config` / `--out` 标志，但支持标准 `-o/--output` 参数。引用的DeepResearch材料虽标注"main分支快照"，但错误细节已多次出现且未修正",
+          "suggestion": "修正为说明 simpleperf 不存在特有标志但支持标准输出参数，移除所有不存在的参数"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.5 Perfetto集成",
+          "detail": "解释了simpleperf不输出.perfetto-trace文件，但未说明如何将perf.data转换为perfetto格式或与Perfetto trace整合的具体方法。原理链断裂，无法指导用户完成完整的trace分析流程",
+          "suggestion": "补充perf.data到perfetto格式的转换方法和整合策略，包含实际命令示例"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.6 调用栈解读",
+          "detail": "提供了调用栈示例但未解释未知符号(0x0)的成因、如何获取符号表、如何处理JIT编译代码等关键信息。JIT符号解析是simpleperf的核心能力，但章节中缺乏实际操作指南",
+          "suggestion": "补充符号解析机制说明，包括调试符号准备、JIT代码处理、符号表重建的具体方法"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.4 内存分析",
+          "detail": "声称支持内存分析但未说明具体的数据采集机制、采样点和解读方法。simpleperf主要通过PMU事件间接关联内存热点，而非直接跟踪malloc/free，当前描述不准确",
+          "suggestion": "补充内存分配跟踪的实现原理：通过PMU采样+栈展开间接定位内存访问热点，提供实际分析案例"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "版本差异覆盖",
+          "detail": "缺少Android 12-16中关键性能分析机制变化说明：Perfetto引入、Profileable应用改进、权限模型演进等。仅声明支持API 21-37但缺乏版本演进说明",
+          "suggestion": "补充Android 12-16版本间性能分析机制的关键变化时间线和特性说明"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T14:20:00",
+      "status": "completed",
+      "completion_reason": "fixed-lite: 4 AOSP [verified] annotations add version anchors (android-16.0.0_r1). P1 deferred to main Task2B.",
+      "completed_at": "2026-06-10T15:49:30",
+      "last_updated_by": "task2b-lite",
+      "last_updated_at": "2026-06-10T15:49:30"
+    }
+  ]
+}
