@@ -58,7 +58,7 @@ updated_date: "2026-06-09"
 updated_by: openclaw-task9
 last_task9_audit: "2026-06-09"
 last_task9_at: "2026-06-09T17:25:15+08:00"
-last_task6_audit: "2026-05-19"
+last_task6_audit: "2026-06-10"
 last_task9_review_log: "logs/deep-review/2026-06-09-17-audit.md"
 last_task9_autofix_at: "2026-06-09"
 task9_review_notes: "2026-05-28 11 Task9 auto-fix: 修正 Perfetto UI 404 文档链接/打开入口说明，并修正 SurfaceFlinger Android 13+ commit/composite/present 排查入口；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-09 17 Task9 idle audit auto-fix: 修正 Perfetto v52 暗色主题实验状态与当前 UI Theme 命令说明；未发现 Android/API 38+ 越界内容，回到 Task6 复审。"
