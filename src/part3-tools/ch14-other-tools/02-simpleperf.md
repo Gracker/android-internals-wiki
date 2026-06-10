@@ -36,9 +36,10 @@ task9_result: needs-rework
 task6_result: pass-light-edit
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
+last_task6_at: '2026-06-10T14:15:43+08:00'
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_at: '2026-06-10T07:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T07:20:00+08:00'
 ---
@@ -504,7 +505,7 @@ simpleperf report --csv perf.data > perf_report.csv
 ### Android Simpleperf 性能分析工具架构（main分支快照）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-10-simpleperf-android17-architecture.md
 - 类型：DeepResearch 调研结果
-- 摘要：Simpleperf在2026年main分支呈现「内核↔用户态ABI对齐+模块化命令管道+多架构同构」三大特征：三段式权限模型（<11/11+/13+）、自适应ring buffer（64MB/256MB按内存分级）、ARM CoreSight ETM指令追踪集成、跨平台同构编译（device native与host offline分析分离）。
+- 摘要：Simpleperf 在 2026 年 main 分支呈现「内核↔用户态 ABI 对齐 + 模块化命令管道 + 多架构同构」三大特征：三段式权限模型（<11/11+/13+）、自适应 ring buffer（64 MB/256 MB 按内存分级）、ARM CoreSight ETM 指令追踪集成、跨平台同构编译（device native 与 host offline 分析分离）。
 - 注入时间：2026-06-10
 - 价值：包含源码级分析（AOSP锚点），对理解框架内部机制和性能调优有直接参考意义
 > ⚠️ 本参考基于 main 分支快照（commit 23e563428f2b），部分内容（ETM 指令追踪、JIT debug reader 增强）可能未进入 Android 17 正式分支。正文已标注 [已验证] 的可断言内容均来自 NDK r29 文档与 AOSP android-16.0.0_r1 的交叉校验；标注 [待验证] 的内容需后续对照 android-17.0.0_r1 tag 确认。
