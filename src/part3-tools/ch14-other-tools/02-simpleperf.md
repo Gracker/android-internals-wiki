@@ -30,18 +30,18 @@ tags:
   - ndk
   - native-profiling
 last_task9_audit: '2026-06-10T04:21:00+08:00'
-last_task2b_lite_at: '2026-06-10T13:42'
+last_task2b_lite_at: '2026-06-10T15:41'
 last_task2b_at: '2026-06-10T14:50:00+08:00'
 task9_result: needs-rework
 task6_result: pass-light-edit
-task2b_result: fixed
-task2b_state: fixed
+task2b_result: fixed-lite
+task2b_state: pending
 task6_state: reviewed
 last_task6_at: '2026-06-10T15:20:12+08:00'
 task9_state: pending
-pipeline_stage: task9_pending
-last_task9_at: '2026-06-10T14:20:00+08:00'
-last_task9_reviewed_at: '2026-06-10T14:20:00+08:00'
+pipeline_stage: task2b_pending
+last_task9_at: '2026-06-10T15:30:00+08:00'
+last_task9_reviewed_at: '2026-06-10T15:30:00+08:00'
 ---
 
 
@@ -79,7 +79,7 @@ Simpleperf 适用于：
 
 以下特性使 Simpleperf 成为 Android 平台性能分析的首选工具（对比维度：权限获取难度、采样开销、系统集成度、数据格式开放性、维护方）：
 
-- **无需 root（部分场景）**：Android 13+ 支持 App 自采样永久授权（`persist.simpleperf.profile_app_uid`），profileable 应用无需 root [已验证：AOSP main.cpp AndroidSecurityCheck 三段式权限模型]
+- **无需 root（部分场景）**：Android 13+ 支持 App 自采样永久授权（`persist.simpleperf.profile_app_uid`），profileable 应用无需 root [已验证：AOSP system/extras/simpleperf/main.cpp, android-16.0.0_r1, AndroidSecurityCheck 三段式权限模型]
 - **低开销**：基于 `perf_event_open` 内核接口，PMU 硬件计数器驱动，对被测应用 CPU 占用 < 5%（1000 Hz 采样下）
 - **系统级集成**：与 Android 调试体系（adb、profileable、Perfetto linux.perf data source）无缝结合
 - **多格式支持**：输出标准 `perf.data` 格式，可通过 Perfetto linux.perf data source 与 ftrace/atrace 事件合并为 `.perfetto-trace`
@@ -94,7 +94,7 @@ Simpleperf 适用于：
 Simpleperf 需要满足以下设备要求：
 
 - **Android 版本**：Android 5.0 (API 21) 及以上
-- **root 权限**：系统级跟踪需要 root；应用级采样在 Android 13+ 可通过 `persist.simpleperf.profile_app_uid` 属性授予 App 自采样永久授权 [已验证：AOSP main.cpp 三段式权限模型，Android 13+ 不再要求 shell 下 setprop]
+- **root 权限**：系统级跟踪需要 root；应用级采样在 Android 13+ 可通过 `persist.simpleperf.profile_app_uid` 属性授予 App 自采样永久授权 [已验证：AOSP system/extras/simpleperf/main.cpp, android-16.0.0_r1, 三段式权限模型，Android 13+ 不再要求 shell 下 setprop]
 - **调试模式**：设备需开启 USB 调试或无线调试
 - **应用签名**：被测试应用需要 debuggable 或包含 debug key
 
@@ -280,7 +280,7 @@ EOF
 perfetto -c perfetto_config.txt -o combined.trace
 ```
 
-> **说明**：`simpleperf` 支持标准输出参数 `-o` / `--output`（指定输出文件路径）；不存在 `--perfetto` / `--config` 这类 Perfetto 专用标志 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp 命令注册表]。
+> **说明**：`simpleperf` 支持标准输出参数 `-o` / `--output`（指定输出文件路径）；不存在 `--perfetto` / `--config` 这类 Perfetto 专用标志 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-16.0.0_r1, 命令注册表]。
 > 与 Perfetto 集成应通过 Perfetto 的 `linux.perf` 数据源实现，而非期望 simpleperf 提供 Perfetto 特有标志。
 
 **完整 Perfetto 集成配置示例**：
@@ -369,7 +369,7 @@ Simpleperf 采集时只记录指令指针（IP）地址，报告阶段才解析�
 
 ### 系统级采样
 
-系统级采样需要 root 权限，采集所有进程的 perf events [已验证：AOSP cmd_record.cpp GetDefaultRecordBufferSize 对 system_wide 分配 256 MB 大缓冲]：
+系统级采样需要 root 权限，采集所有进程的 perf events [已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-16.0.0_r1, GetDefaultRecordBufferSize 对 system_wide 分配 256 MB 大缓冲]：
 
 ```bash
 # 全系统采样 30 秒
