@@ -64,6 +64,8 @@ task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P1 版本边界�
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-06-04
 last_task9_autofix_at: 2026-06-04
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # 可观测性案例集
@@ -86,19 +88,16 @@ last_task9_autofix_at: 2026-06-04
 > **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
 > **扩展**视素材丰富程度选择性深入。
 > 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 可**就地插入**最相关的锚点之后，并用 `` 标注，方便后续 review。
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-可观测性案例集承接 26.1 的架构分层和 26.5 的排障方法论，聚焦三个工程问题：一个团队怎样从零搭建可用的 APM，怎样把性能回归挡在发布前后，遇到线上疑难问题时怎样把指标、日志、Trace 和发布记录拼成证据链。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
+可观测性体系的价值不是纸面架构，是事故来的时候能多快拿出证据。本节用可交付的路线回答三个工程问题：团队从零搭建 APM 要做对哪些事，性能回归怎样在 CI 和灰度两道门拦下来，线上疑难问题怎样把指标、日志、Trace 和发布记录拼成完整证据链。架构分层和排障方法论见 26.1 和 26.5。
 
 ## 从零搭建 APM 体系
 
 APM 的第一版目标不该是“大而全”，而是让团队在三类事故里有证据：崩溃和 ANR 能定位线程与场景，启动和卡顿能定位页面与版本，网络和 I/O 能定位请求阶段与设备环境。26.1 节已经说明 Metrics / Logs / Traces 的分工，本案例把它压成可交付路线。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
 ### 第 0 周：统一事件模型
@@ -121,9 +120,7 @@ APM 平台先收敛字段，再接入模块。每个事件至少带这组公共�
 
 第一批事件只接低频、高价值、强行动性的信号：Java Crash、Native Crash、ANR、启动耗时、关键页面慢帧、网络请求错误、上报 SDK 自监控。它们有几个共同点：事件数量可控，事故优先级高，服务端能用它们触发告警。
 
-Crash 和 ANR 的最小 envelope 包括异常类型、主线程堆栈、崩溃线程堆栈、进程名、前后台状态、最近场景、最近 20 条关键操作、内存摘要、线程数、fd 数、磁盘剩余空间。Native Crash 不要在 signal handler 里做复杂 I/O；更稳妥的方案是用成熟 crash handler 生成 minidump，再在下次启动补充业务上下文。Android 11 (API 30) 起可通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取系统记录的退出原因（CRASH、ANR、LMK 等）。Android 12 (API 31) 起，native crash 对应的 `ApplicationExitInfo.getTraceInputStream()` 可返回 tombstone protobuf，作为 native crash 堆栈的补偿证据；API 30 虽然有 `ApplicationExitInfo`，但 `getTraceInputStream()` 对 `REASON_CRASH_NATIVE` 返回 null。[已验证: 官方文档, developer.android.com/ndk/guides/debug]
-
-启动、卡顿和网络事件只存阶段耗时，不存完整日志。启动事件拆成 process start、Application、首个 Activity、首帧、首页 ready、TTFD。卡顿事件记录页面、帧时间分位、主线程长任务、GC、Binder 等待摘要。网络事件记录 DNS、connect、TLS、TTFB、总耗时、HTTP 状态码、错误类型、网络类型和运营商维度。
+Crash 和 ANR 的最小 envelope 包括异常类型、主线程堆栈、崩溃线程堆栈、进程名、前后台状态、最近场景、最近 20 条关键操作、内存摘要、线程数、fd 数、磁盘剩余空间。Native Crash 不要在 signal handler 里做复杂 I/O；更稳妥的方案是用成熟 crash handler 生成 minidump，再在下次启动补充业务上下文。Android 11 (API 30) 起可通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取系统记录的退出原因（CRASH、ANR、LMK 等）。Android 12 (API 31) 起，native crash 对应的 `ApplicationExitInfo.getTraceInputStream()` 可返回 tombstone protobuf，作为 native crash 堆栈的补偿证据；API 30 虽然有 `ApplicationExitInfo`，但 `getTraceInputStream()` 对 `REASON_CRASH_NATIVE` 返回 null。启动、卡顿和网络事件只存阶段耗时，不存完整日志。启动事件拆成 process start、Application、首个 Activity、首帧、首页 ready、TTFD。卡顿事件记录页面、帧时间分位、主线程长任务、GC、Binder 等待摘要。网络事件记录 DNS、connect、TLS、TTFB、总耗时、HTTP 状态码、错误类型、网络类型和运营商维度。
 
 ### 第 2 周：让端侧上报不影响业务线程
 
@@ -133,8 +130,6 @@ Crash 和 ANR 的最小 envelope 包括异常类型、主线程堆栈、崩溃�
 - 内存队列有上限，队列满时保留 Crash、ANR、启动和告警触发事件，丢弃普通性能样本，并把丢弃计数写入 SDK 自监控。
 - 本地文件按优先级分片，Crash / ANR 摘要单独目录，Perfetto trace、HPROF、日志包这类大文件单独配额。
 - 上传进程按优先级、网络类型、前后台状态和服务端限流组包，弱网下先传摘要，再传大文件。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
 这套设计和 19.27 节的 APM SDK 存储设计一致：端侧只负责可靠写入、有限缓存、批量发送；聚合、告警、索引、归因放到服务端。
 
@@ -150,9 +145,7 @@ APM 第一张看板不追求展示漂亮，字段要能支撑排障。
 | 样本列表 | 从聚合指标跳到单条事件、日志、Trace、发布记录 | 补齐证据包 |
 | SDK 自监控 | 上报成功率、丢弃数、本地文件积压、配置版本 | 排除监控系统自身失真 |
 
-Android Vitals 可作为外部基线。Play 质量页覆盖 user-perceived crash rate、user-perceived ANR rate、启动、慢渲染、耗电、LMK 等指标，并用最近 28 天数据评估应用质量。自建 APM 要补上内部维度：业务场景、灰度批次、配置版本、渠道、实验分组和用户日志。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
-
-### 从零搭建的验收标准
+Android Vitals 可作为外部基线。Play 质量页覆盖 user-perceived crash rate、user-perceived ANR rate、启动、慢渲染、耗电、LMK 等指标，并用最近 28 天数据评估应用质量。自建 APM 要补上内部维度：业务场景、灰度批次、配置版本、渠道、实验分组和用户日志。### 从零搭建的验收标准
 
 第一版 APM 上线后，用三类演练验收：
 
@@ -160,22 +153,19 @@ Android Vitals 可作为外部基线。Play 质量页覆盖 user-perceived crash
 2. 在测试环境把启动链路注入一段 300 ms 的延迟，确认启动 P95、受影响场景、版本和设备维度能在看板上出现。
 3. 让网络请求返回固定 5xx 或超时，确认端侧 requestId 能跳到服务端日志索引。
 
-能通过这三类演练，APM 就具备处理日常事故的最低能力。后续再补 ANR 专项、线上 Trace、功耗、I/O、远程日志和动态诊断。
+能通过这三类演练，APM 就具备处理日常事故的最低能力。后续再按事故频率依次补齐 ANR 专项、线上 Trace、功耗、I/O 和远程日志。
 
 ## 性能回归检测实践
 
 性能回归要同时拦两条线：代码合入前的确定性退化，发布后的真实用户退化。CI 能控制环境，适合做基准测试；线上能覆盖机型、网络、数据量和厂商系统，适合发现长尾问题。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
 
 ### CI 门禁：用固定场景测稳定指标
 
 CI 门禁只测少量固定场景，目标是判断“这次改动是否让基线变差”。适合纳入门禁的场景：冷启动、首页首屏、核心列表滚动、搜索结果页、支付或播放入口、数据库迁移、图片密集页面。
 
-Macrobenchmark 适合承担这类任务。官方 `StartupTimingMetric` 会采集启动时间，包括 time to initial display；`FrameTimingMetric` 会输出帧耗时分位，Android 12 (API 31)+ 还会提供 frame overrun，正数表示超过帧期限的时间。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
-
-门禁不要只看一次运行结果。建议每个场景至少保留最近 N 次绿色构建的基线，比较当前构建和基线分布。启动类指标看 P50/P90/P95，渲染类指标看 frameDuration / frameOverrun 的 P90/P95/P99 和慢帧比例，I/O 类指标看主线程 I/O 次数、总时长和最大单次时长。
+Macrobenchmark 适合承担这类任务。官方 `StartupTimingMetric` 会采集启动时间，包括 time to initial display；`FrameTimingMetric` 会输出帧耗时分位，Android 12 (API 31)+ 还会提供 frame overrun，正数表示超过帧期限的时间。门禁不要只看一次运行结果。建议每个场景至少保留最近 N 次绿色构建的基线，比较当前构建和基线分布。启动类指标看 P50/P90/P95，渲染类指标看 frameDuration / frameOverrun 的 P90/P95/P99 和慢帧比例，I/O 类指标看主线程 I/O 次数、总时长和最大单次时长。
 
 门禁结论分三档：
 
@@ -207,8 +197,6 @@ Android Vitals 的 28 天口径适合看发布后的外部质量变化；灰度�
 
 以启动 P95 上升为例，排查不要从“谁改了启动代码”开始，而是先按版本、机型、系统、渠道、用户数据量分组。低端机和重度用户变差，优先看磁盘 I/O、数据库迁移、SharedPreferences、资源加载和类加载。所有机型同幅度变差，优先看 Application、ContentProvider、初始化任务编排和远程配置。只有某个渠道变差，优先看加固、渠道包、动态加载和资源变体。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
-
 以卡顿回归为例，慢会话比例上升后要先定位页面和操作，再看主线程长任务、GC、锁等待、I/O、网络等待和渲染阶段。卡顿监控只给堆栈还不够，最好同时带 CPU、线程状态、内存、I/O 和网络摘要。参考素材里的卡顿现场分析思路可以借鉴为证据清单，但正文实现要以团队已有 APM 和 Perfetto 能力为准。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md]
 
 ### 性能回归的止损规则
@@ -226,8 +214,6 @@ Android Vitals 的 28 天口径适合看发布后的外部质量变化；灰度�
 
 线上疑难问题的共同特点是现场短、复现弱、责任边界不清。排查时不要按模块争论，先把证据补齐。26.5 节已经给出通用方法，本节用三个案例说明证据如何组织。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
-
 ### 案例一：文件下载卡在 99%
 
 用户反馈“文件下载到 99% 后无法继续”。这个现象可能来自网络、服务端、磁盘、断点续传协议、校验逻辑或 UI 状态。排查入口不要直接改下载逻辑，先让证据覆盖每个分支。
@@ -242,8 +228,6 @@ Android Vitals 的 28 天口径适合看发布后的外部质量变化；灰度�
 | 校验阶段 | hash 类型、校验耗时、期望 hash、实际 hash 摘要 | 完整性校验失败 |
 | UI 状态 | progress 来源、最近一次进度事件、按钮状态 | 下载完成但 UI 未更新 |
 | 关联 ID | `request_id`、`download_id`、`session_id`、服务端日志索引 | 端到端串起证据 |
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
 
 如果同一地区、同一运营商集中发生，先看网络和 CDN；如果同一文件集中发生，先看服务端 range / etag / content-length；如果低存储空间设备集中发生，先看临时文件写入和 rename；如果只有某版本发生，回查下载组件和 UI 状态机变更。
 
@@ -261,7 +245,6 @@ Android Vitals 的 28 天口径适合看发布后的外部质量变化；灰度�
 - I/O：主线程读写次数、最大连续读写时长、文件类型、buffer 大小。
 - 用户分桶：低内存设备、低存储空间、重度用户、首次安装、覆盖安装、升级后首次启动。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md]
 
 排查路径建议从分桶开始。只有重度用户变差，优先看数据库迁移、缓存扫描、SharedPreferences 全量解析和首页数据预加载。只有覆盖安装后首次启动变差，优先看 dexopt、资源解压、配置迁移和兼容逻辑。所有低端机变差，优先看 Application 同步初始化、线程池竞争、主线程 I/O 和启动阶段 Binder 等待。
@@ -283,21 +266,15 @@ Android Vitals 的 28 天口径适合看发布后的外部质量变化；灰度�
 | 渲染 | FrameTimeline、UI thread、RenderThread、SurfaceFlinger | 详见 22.x 和 13.2 节 |
 | 系统负载 | CPU busy、线程 runnable、iowait、温控状态 | 区分 App 自身耗时和设备环境 |
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md]
 
 这个案例重点是“补现场”。如果只保留发生卡顿时的一个堆栈，容易把采样点当根因。更稳的做法是保留卡顿窗口前后的时间线：用户点击、网络请求、数据库访问、主线程消息、GC、I/O 和帧信息。能抓 Perfetto 就用 Perfetto；不能抓系统 Trace 时，端侧至少保留同一时间窗的轻量事件。
 
-Android 15 (API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发 profiling session，官方文档列出 system trace、Java heap dump、heap profile、stack sampling 等类型；采集可能受 rate limiter 限制。Android 16 引入 system-triggered profiling，应用可注册 cold start fully drawn、ANR 等触发器，由系统管理采集并把结果交给 App。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture；developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture]
-
-这些新能力适合补齐“线上 Trace 难采”的缺口，但不能替代日常轻量埋点。APM 要先用 Metrics 发现受影响分组，再对目标用户或目标触发器采集 profile，避免把系统级采集当全量监控。
+Android 15 (API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发 profiling session，官方文档列出 system trace、Java heap dump、heap profile、stack sampling 等类型；采集可能受 rate limiter 限制。Android 16 引入 system-triggered profiling，应用可注册 cold start fully drawn、ANR 等触发器，由系统管理采集并把结果交给 App。这些新能力适合补齐“线上 Trace 难采”的缺口，但不能替代日常轻量埋点。APM 要先用 Metrics 发现受影响分组，再对目标用户或目标触发器采集 profile，避免把系统级采集当全量监控。
 
 ### 案例四：后台耗电投诉无法复现
 
 耗电问题的难点是用户现场常常只剩一张系统耗电截图。没有调用栈、没有时间线、没有后台任务记录，团队只能猜。排查要把后台行为拆成系统关心的资源：WakeLock、Alarm、后台网络、定位、传感器、Wi-Fi 扫描、JobScheduler / WorkManager。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md]
-[已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
 证据包字段：
 
@@ -310,7 +287,7 @@ Android 15 (API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发
 
 处置路径按“后台是否必要”判断。用户无感知的后台轮询、重复唤醒、失败重试和无约束任务优先关闭；用户可感知的导航、通话、播放、下载要保留前台服务通知和明确场景标记。修复后同时看 Android Vitals、电量投诉、后台任务次数和业务成功率，避免只压低耗电却损伤功能。
 
-## [自动发现] Android 版本化诊断能力表
+## Android 版本化诊断能力表
 
 26.5 的 research-gaps 已记录：线上 Trace 与证据包模板需要按 Android 版本拆分官方诊断入口。本节把它放进案例集，作为后续排障 Runbook 的版本表。
 
@@ -322,16 +299,11 @@ Android 15 (API 35)+ 的 `ProfilingManager.requestProfiling()` 支持 App 触发
 | Android 15 (API 35)+ | `ProfilingManager.requestProfiling()` | 目标用户或目标场景的系统 trace / heap / stack 采集 | 有 rate limiter，不适合全量常驻采集 |
 | Android 16 (API 36) | system-triggered profiling / `ProfilingTrigger` | cold start fully drawn、ANR 等系统触发采集 | 触发类型和支持范围按平台版本变化，接入前要做能力检测 |
 
-[已验证: 官方文档, developer.android.com/ndk/guides/debug]
-[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture]
-[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture]
 [来源: intake/research-gaps.md]
 
 这个表的用法是降级：高版本设备走系统能力，低版本设备走 App 内日志、轻量 trace、用户反馈和人工 bug report。Runbook 里要把“采不到系统 Trace 时的替代证据”写清楚，否则排障会卡在权限和版本上。
 
 ## 扩展：Runbook 模板
-
-[自动发现]
 
 每个高频事故类型都要有一份 Runbook。模板如下：
 
@@ -353,17 +325,6 @@ APM、性能回归和线上排障不是三套孤立系统。APM 提供统一事�
 
 ## 参考资料
 
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
 - Android Vitals: https://developer.android.com/topic/performance/vitals
 - Macrobenchmark metrics: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics
 - App-driven profiling: https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture

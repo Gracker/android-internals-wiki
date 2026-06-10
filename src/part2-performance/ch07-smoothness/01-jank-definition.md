@@ -76,6 +76,8 @@ last_task6_at: "2026-05-08T18:20:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-18-review.md"
 last_task6_audit: "2026-05-26"
 review_notes: '2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 task6 revisit: pass-light-edit。清理重复 frontmatter 并复审 Task2B 修复后的 Binder SQL 段；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。'
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 # 卡顿的定义与分类
 
@@ -206,9 +208,11 @@ Perfetto 文档把 `BufferStuffing` 描述为一种状态，而不是独立的 j
 
 这类问题先看 FrameTimeline 的 `Jank Type` 和高延迟状态（`High latency state`），再用 BufferQueue 轨道、dequeue blocking、SurfaceFlinger 侧 flow event 做佐证。不要把 `queued > 1` 这类经验信号写成唯一判据。
 
-### 扩展 JankType：Android 12+ 已有与较新 tag 补充
+### 其他 JankType：Android 12 已定义与后续版本补充
 
-AOSP `frameworks/native/libs/gui/include/gui/JankInfo.h` 中定义了除 `None` / `DisplayHAL` / `SurfaceFlingerCpuDeadlineMissed` / `SurfaceFlingerGpuDeadlineMissed` / `AppDeadlineMissed` / `PredictionError` / `BufferStuffing` 之外的其他 JankType。下表列出 Android 12（android-12.0.0_r1）已存在的枚举：
+上面六种是 FrameTimeline 中最常遇到的归因类型。AOSP `JankInfo.h` 里还定义了另外几个 JankType，遇到的时候不至于在 details 面板里找不到对应解释。
+
+下表列出 Android 12（android-12.0.0_r1）的 `JankInfo.h` 中除前面六种之外已定义的枚举：
 
 | JankType | 值 | 触发条件 | 排查入口 |
 |----------|------|----------|----------|
@@ -218,9 +222,9 @@ AOSP `frameworks/native/libs/gui/include/gui/JankInfo.h` 中定义了除 `None` 
 
 [已验证: AOSP android-12.0.0_r1 ~ android-16.0.0_r1, frameworks/native/libs/gui/include/gui/JankInfo.h]
 
-另外，`Dropped`（值 0x200）在 Android 14 QPR 及后续 tag (android-15.0.0_r1、android-16.0.0_r1) 的 JankInfo.h 中出现，Android 12/13 的公开 tag 中不一定暴露。在分析 Android 14 以下设备的 FrameTimeline 时，如果看到 `Dropped Frame` 归因，以实际 Perfetto details 面板输出为准。
+`Dropped`（值 0x200）在 Android 14 QPR 及后续 tag 的 JankInfo.h 中出现，Android 12/13 的公开 tag 中不一定暴露。分析 Android 14 以下设备时，看到 `Dropped Frame` 归因以 Perfetto details 面板实际输出为准。
 
-> **待验证**：外部 Review 提供了 `JANK_NON_ANIMATING`（0x800）、`JANK_APP_RESYNCED_JITTER`（0x1000）、`JANK_DISPLAY_NOT_ON`（0x2000）三个枚举，声称来源于 Android 15/16 JankInfo.h。复核公开 AOSP tag (android-15.0.0_r1 / android-16.0.0_r1) 的 JankInfo.h 未找到这三个常量定义。可能存在于厂商内部分支或后续 QPR 版本。如读者在实际设备 FrameTimeline 中观察到这些类型，欢迎补充验证。
+> **待验证**：外部 Review 提到 `JANK_NON_ANIMATING`（0x800）、`JANK_APP_RESYNCED_JITTER`（0x1000）、`JANK_DISPLAY_NOT_ON`（0x2000）三个枚举，称来自 Android 15/16 JankInfo.h。复核公开 AOSP tag 未找到这三个常量定义，可能存在于厂商内部分支或后续 QPR 版本。读者在实际设备 FrameTimeline 中观察到这些类型欢迎补充验证。
 
 ### Dropped Frame
 

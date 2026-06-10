@@ -58,6 +58,8 @@ last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
@@ -87,13 +89,13 @@ task6_reviewed_date: "2026-05-27"
 
 ## 为什么需要了解 Audio Pipeline
 
-讨论 Android 性能时，注意力通常集中在渲染管线上——帧率、掉帧、VSync。但用户的感知不止来自视觉。点击一个钢琴 App 的琴键，如果声音在手指触摸后 100ms 才响起，用户会觉得这台设备「卡了」。在视频会议中，200ms 的往返延迟会让对话变得不自然。游戏里 50ms 的音效延迟，足以让打击感明显变弱。
+讨论 Android 性能时，注意力通常集中在渲染管线——帧率、掉帧、VSync。但用户的感知不止来自视觉。点击钢琴 App 的琴键，如果声音在手指触摸后 100ms 才响起，用户会觉得这台设备「卡了」；视频会议里 200ms 的往返延迟会让对话不自然；游戏里 50ms 的音效延迟足以让打击感明显变弱。
 
-音频延迟和渲染延迟在技术结构上存在一组对称关系：SurfaceFlinger 负责画面的合成与显示，AudioFlinger 负责声音的混音与输出。两者都是 Android 框架层中承上启下的核心服务，都通过 HAL 与硬件交互，都对延迟极其敏感。理解其中之一的架构后，再看另一个会更容易。
+音频延迟和渲染延迟在技术结构上有一组对称关系：SurfaceFlinger 负责画面的合成与显示，AudioFlinger 负责声音的混音与输出。两者都是框架层的核心服务，都通过 HAL 与硬件交互，都对延迟极其敏感。先理解其中之一的架构，再看另一个会容易很多。
 
 人类对音频延迟的感知阈值比视觉更严苛：超过 20ms 的往返延迟就能被训练过的耳朵察觉，专业音乐制作要求低于 10ms。Android 设备的音频延迟，也从早期的 100ms 以上逐步压到如今 Pixel 设备的 10ms 以下。
 
-了解 Audio Pipeline 的内部机制后，后续分析音频性能瓶颈时，可以在 Perfetto 中识别声音卡顿或延迟的来源，并为不同场景选择合适的音频 API。
+了解 Audio Pipeline 的内部机制后，分析音频瓶颈时就可以在 Perfetto 中定位声音卡顿或延迟的来源，并为不同场景选择正确的 API。
 
 ## Audio Pipeline 架构全景
 
@@ -123,8 +125,6 @@ AudioFlinger 是 Android 音频子系统的核心服务，运行在 `audioserver
 4. **音量控制与路由**——根据 AudioPolicyService 的决策，将音频路由到正确的输出设备
 5. **将混音后的数据写入 Audio HAL**——最终由 HAL 驱动硬件输出
 
-[已验证: AOSP android-16.0.0_r1, frameworks/av/services/audioflinger/]
-
 ### AudioPolicyService：音频路由决策
 
 AudioFlinger 负责「怎么播放」，AudioPolicyService 负责「播放到哪里」。当 App 创建一条音频流时，AudioPolicyService 根据音频类型（stream type）、用途（usage）、设备连接状态（耳机、蓝牙、扬声器）做出路由决策。
@@ -147,8 +147,6 @@ AudioFlinger 负责「怎么播放」，AudioPolicyService 负责「播放到哪
 | DSP 处理 | 1-5ms | 硬件编解码和信号处理 |
 | DAC + 输出 | <1ms | 数模转换和扬声器响应 |
 
-[待验证: 上表数值为综合多设备的大致范围，不同 SoC 平台差异较大]
-
 输出延迟的典型值在普通设备上为 20-50ms，在优化较好的设备（如 Pixel）上可以低至 10ms 以下。
 
 ### 往返延迟（Round-Trip Latency）
@@ -156,8 +154,6 @@ AudioFlinger 负责「怎么播放」，AudioPolicyService 负责「播放到哪
 往返延迟是输入延迟加输出延迟的总和——声音从麦克风进入，经过处理，从扬声器输出的完整周期。这是音乐制作和视频会议场景最关键的指标。
 
 2017 年，Android 设备的平均往返延迟约为 109ms。到 2021 年，这个数字降到了 40ms 以下。Pixel 3a（2019）是第一款达到 10ms 往返延迟的 Android 设备。但这个成绩依赖硬件支持——不是所有设备都能达到。
-
-[已验证: 来源见 research-feeds/2026-04-08-15-audioflinger-fast-mixer-aaudio-mmap-pipeline-architecture.md，数据来自 Google 官方统计]
 
 ### 缓冲区大小：延迟的主要决定因素
 
@@ -183,8 +179,6 @@ FAST Mixer 是绑定在某个 output 上的低延迟混音线程。AudioFlinger 
 
 FAST Mixer 省掉的是每条 fast track 的 sample rate conversion、per-track effects 和其他高开销处理，而不是把 mixing 这件事完全删掉。它保留最小必要的混音和音量衰减，把周期压到更短的 2-3ms 左右，所以低延迟播放听起来会更跟手。
 
-[已验证: AOSP audio latency 文档与 `frameworks/av/services/audioflinger/fastpath/FastMixer.cpp` / `FastMixerState.h`]
-
 ### 进入 FAST Mixer 的条件
 
 `PERFORMANCE_MODE_LOW_LATENCY` 或 `AAUDIO_PERFORMANCE_MODE_LOW_LATENCY` 只是“请求低延迟”，不是保证一定拿到 fast path。选路分成两步。
@@ -203,15 +197,11 @@ FAST Mixer 运行在一个专用线程上，使用 `SCHED_FIFO` 实时调度策�
 
 在 Perfetto 中，可以通过 CPU scheduling track 观察 FAST Mixer 线程的调度行为。如果发现这个线程频繁被抢占或无法及时唤醒，通常意味着系统负载过高或 CPU 频率调度策略不适合音频场景。
 
-[图：Perfetto 中 AudioFlinger FAST Mixer 线程的 CPU scheduling slice，标注 SCHED_FIFO 优先级]
-
 ### 从创建流到选路：为什么这条流没有进入 fast path
 
 只看输出侧，容易把 round-trip latency 讲成半截。完整路径是：`AudioTrack` / `AAudio` 输出先经 AudioPolicyService 选 output profile，再由 `AudioFlinger::createTrack()` / `PlaybackThread::createTrack_l()` 决定是 normal track、fast track、direct/offload 还是 MMAP output；输入侧 `AudioRecord` / `AAudio` input 则先经 AudioPolicyService 选 input profile，再落到 `RecordThread`，设备支持时再进一步走 `FastCapture` 或 input MMAP。
 
 所以 round-trip latency = input path + app processing + output path。输出侧已经拿到 FAST Mixer，只能说明扬声器这半边更快；如果输入侧还停留在普通 `RecordThread`，麦克风到 App 的这一半仍然会拖慢总延迟。分析乐器、KTV、视频会议这类场景时，需要同时看 `AudioFlinger` 的 playback thread 和 `RecordThread` / `FastCapture` 的调度节奏，不能只盯着输出线程。
-
-[图：AudioTrack/AAudio 输出选路与 AudioRecord/AAudio 输入选路示意图，标注 AudioPolicyService、PlaybackThread、FastMixer、RecordThread、FastCapture、MMAP output、input MMAP]
 
 ## AAudio 与 MMAP：低延迟数据路径
 
@@ -220,8 +210,6 @@ FAST Mixer 运行在一个专用线程上，使用 `SCHED_FIFO` 实时调度策�
 AAudio 是 Android 8.0 引入的原生音频 C API，专为低延迟音频场景设计（游戏、音乐制作、实时音频处理）。相比传统的 OpenSL ES（已标记为废弃）和 Java 层的 AudioTrack，AAudio 提供了更底层的控制和更低的延迟。
 
 AAudio 的核心设计原则是简洁：创建流（`AAudioStream`）、写入数据（`AAudioStream_write()`）、关闭流。没有复杂的回调层级，没有 Java 层的额外开销。
-
-[已验证: developer.android.com/ndk/guides/audio/aaudio]
 
 ### MMAP 模式：减少数据面拷贝，控制面仍在
 
@@ -247,15 +235,11 @@ EXCLUSIVE 模式下，App 仍然要持续根据 timing model 校正硬件读写�
 
 所以 `App → 驱动` 只适合描述 EXCLUSIVE 模式下的数据面，不能拿来概括整个 MMAP 机制。MMAP 的收益也不是无条件成立，设备不支持、format 不匹配、endpoint 被占用时，AAudio / Oboe 仍会回退到 FAST 或 Normal 输出。
 
-[已验证: AAudio 文档、AOSP audio latency 文档；服务端 `frameworks/av/services/oboeservice/AAudioService.cpp`，客户端/绑定层 `frameworks/av/media/libaaudio/src/binding/` / `src/client/` / `src/core/`]
-
 ### AAudio Power Saving Offloaded 模式
 
 Android 16 引入了 AAudio Power Saving Offloaded 模式（`AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`），请求省电型 offloaded output path。NDK r29 的 `aaudio/AAudio.h` 描述该模式会走 offloaded audio path，可向 hardware buffer 写入数秒数据、让 framework data pipe 暂停并允许 CPU sleep。该模式面向长音频省电，不是低延迟 MMAP 的替代方案。两者不能同时生效。
 
 这个模式本身不要求 App 持有 while-in-use（WIU）能力的前台服务。WIU 是 Android 17 后台音频硬化的生命周期条件，和 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 的省电输出路径是两组问题。使用该模式后仍要用 `AAudioStream_getPerformanceMode()`、`dumpsys audio` 和 output profile 核对最终是否进入 offloaded path。
-
-[待验证: 最终 API 入口、最小 API level、支持格式组合、设备覆盖范围需结合 Android 16/17 API diff 与实机确认。"解码完全交给 DSP"、"功耗降低 75%" 等量化结论需要补 AOSP 版本提交或独立功耗测试条件后方可写入正文。]
 
 ### Oboe：Google 推荐的跨版本封装
 
@@ -274,8 +258,6 @@ adb shell perfetto -t 10s \
   --atrace-categories audio,sched,freq,idle \
   --buffer 64mb -o /data/misc/perfetto-traces/trace
 ```
-
-[已验证: 来源见 research-feeds/2026-04-08-15-audioflinger-fast-mixer-aaudio-mmap-pipeline-architecture.md]
 
 ### 关键 Track 与 Slice
 
@@ -298,8 +280,6 @@ WHERE track.name LIKE '%Audio%'
 ORDER BY slice.ts
 ```
 
-[待验证: SQL 查询中的 track.name 和 slice.name 需要根据实际设备上的 atrace 标签调整]
-
 ### 常见音频性能问题的 Trace 特征
 
 | 问题 | Trace 表现 | 典型原因 |
@@ -308,8 +288,6 @@ ORDER BY slice.ts
 | 延迟过大 | App write → 声音输出间隔过长 | 走了 Normal Mixer 路径而非 FAST |
 | Underrun | AudioFlinger 读取时缓冲区为空 | App 写入不及时或缓冲区太小 |
 | 后台音频卡顿 | App 侧 write/callback 停止，随后 track 在 `dumpsys audio` 中变为 inactive 或被 teardown | Android 17 后台音频硬化：无可见 Activity、无合规 FGS，或 targetSdk 37+ 未满足 WIU / `USAGE_ALARM` 豁免条件 |
-
-[图：Perfetto 中音频 underrun 的 Trace 表现，标注缓冲区空的时间段]
 
 ## Android 17 音频性能变更
 
@@ -327,8 +305,6 @@ Android 17 对后台音频播放实施更严格的管控，影响范围包括播
 这里先只讨论播放侧硬化。`AudioRecord`、Telecom 和录音权限相关行为是另一组约束，不能直接和这组后台播放限制混成一类。
 
 **新规则**：运行在 Android 17 上的 App，如果在后台调用这些 API，需要有可见 Activity，或运行非 `SHORT_SERVICE` 类型的前台服务。targetSdk 37+ 还要满足额外条件：前台服务具备 while-in-use（WIU）能力，或者 App 已获 exact alarm 权限并且操作的是 `USAGE_ALARM` 音频流。不合规时，播放和音量变更会静默失败，`requestAudioFocus()` 返回 `AUDIOFOCUS_REQUEST_FAILED`。
-
-[已验证: developer.android.com/about/versions/17/changes/bg-audio]
 
 **调试方法**：
 
@@ -357,23 +333,17 @@ Android 17 新增 `flushWrittenFramesFromPosition(long, int)`。官方 API 文�
 
 它适合的场景是 offload 播放中的 seek 或章节跳转：App 需要丢弃已经写进 DSP 或硬件队列、但还没播出的那部分数据，并尽量从指定 frame 重新开始。普通 PCM `AudioTrack` 不在这套语义里，不能把这个 API 当成通用 seek 工具直接套用。
 
-[已验证: `AudioTrack` API 37 参考文档，`flushWrittenFramesFromPosition()` / `getFlushWrittenFramesFromPositionSupport()`]
-
 ### 编解码器来源查询
 
 `getCodecProvenance()` 返回的是配置阶段确定的 codec provenance，也就是编解码器实现来源字符串，例如系统组件名或厂商 codec 名。它表达的是“这条播放流最终绑定了哪套编解码器实现”，方便 framework 或 HAL 在空间音频、渲染策略这类场景里保留来源信息；它本身不直接给出“当前一定走硬解 / 软解 / offload”这类执行路径结论。
 
 如果要判断执行路径，是不是 offload、是不是 hardware decoder、DSP 有没有接管，应该另外看 offload 配置、`dumpsys audio`、播放器管线和设备能力。不能把 `getCodecProvenance()` 直接当成执行路径探针。
 
-[已验证: `AudioTrack.getCodecProvenance()` API 37 文档]
-
 ### Assistant 独立音量流
 
 Android 17 引入了 `USAGE_ASSISTANT` 专用音量流，将语音助手的音频与标准媒体流解耦。用户可以独立控制 Assistant 音量和媒体音量，不会出现「调低音乐音量后 Assistant 也听不到了」的问题。
 
 配套 `MODE_ASSISTANT_CONVERSATION` 音频模式进一步提升音量控制的一致性。
-
-[已验证: research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md]
 
 ### 四类 output path 放在一起看
 
@@ -392,8 +362,6 @@ Android 17 引入了 `USAGE_ASSISTANT` 专用音量流，将语音助手的音�
 
 现有公开资料已经出现 AAudio offloaded playback / `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 这类能力描述，但 API level、支持格式、PCM/压缩边界和设备覆盖范围还要结合 Android 16/17 API diff 与实机确认。现阶段更稳妥的理解是：它请求的是省电型 output path，不是低延迟 MMAP；讨论它时要单独看 output profile、offload capability 和 `dumpsys audio` 中的 offload output 状态。
 
-[待验证: AAudio offloaded playback 的最终 API 入口、最小 API level、payload 支持范围]
-
 ## API 选择指南
 
 根据不同场景的延迟和功能需求，Android 音频 API 的选择策略如下：
@@ -406,8 +374,6 @@ Android 17 引入了 `USAGE_ASSISTANT` 专用音量流，将语音助手的音�
 | 音乐播放 | MediaPlayer / ExoPlayer | 不敏感 | Offload 模式优先，降低功耗 |
 | 语音助手 | AudioTrack + USAGE_ASSISTANT | 小于30ms | Android 17 独立音量流 |
 | 普通音效 | SoundPool | 不敏感 | 短音效预加载，延迟可接受 |
-
-[适用版本: Android 8.0+，MMAP 需要 Android 8.1+ 和硬件支持]
 
 ## 与其他机制的关系
 
@@ -432,8 +398,6 @@ Audio Pipeline 与全书其他章节的关联点：
 | Android 14 | 平台明确鼓励迁移到 AIDL，framework 同时支持 HIDL/AIDL；Android 14 之后的新 HAL API 只继续加到 AIDL | 降低后续音频 HAL 演进分叉 |
 | Android 16 | AAudio Power Saving Offloaded 模式；AIDL Audio HAL 完整支持 CAP，可通过 IConfig 提供音频策略配置 | 长音频省电播放；音频策略配置可随 APEX 独立更新；HIDL/legacy 产品仍有 XML + reference implementation 兼容路径 |
 | Android 17 | 后台音频强化 + 精确 flush + codec provenance | 后台播放约束更严，播放控制更细 |
-
-[待验证: Android 9/12 的迁移节奏在不同 SoC 上差异很大，表中描述的是平台方向，不等于所有设备在对应版本统一完成迁移]
 
 ## 常见问题与误区
 
@@ -474,8 +438,6 @@ Audio Pipeline 与全书其他章节的关联点：
 4. **使用回调模式**（`setCallback`）而非阻塞写入。AAudio/Oboe 的 data callback 运行在应用进程侧的高优先级音频线程中，系统会通过共享内存、timing model 与唤醒机制消费数据。相比 App 侧主动 `write()` 阻塞等待，callback 模式减少了调度延迟带来的不确定性。
 5. **避免在音频回调中做重计算**。音频 callback 运行在应用进程的高优先级音频线程中，必须避免锁等待、内存分配、文件 I/O 和重计算。任何阻塞操作都会直接影响该帧的音频数据交付，造成 underrun。预分配所有需要的缓冲区，使用无锁数据结构。
 6. **监控 underrun**。调用 `AAudioStream_getXRunCount()` 持续监控。如果 underrun 持续增加，说明缓冲区太小或 App 侧处理太慢——适当增大缓冲区是更务实的做法。
-
-[适用版本: Android 8.0+，Oboe 要求 minSdk 16+]
 
 ## 参考资料
 

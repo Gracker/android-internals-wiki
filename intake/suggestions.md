@@ -120,3 +120,26 @@
 1. 已 ready-for-review 的 75 节进入 Task6/Review 管线加速定稿
 2. 对已定稿但时间较早的章节做 Android 17 源码交叉验证
 3. f2fs 深度调优可作为储备选题，待素材积累后重新评估
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-10 23:10
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 422 章，draft=0，ready-for-review=75，finalized=288）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **source-index.json 高质量未映射素材**：
+   - 8 篇 score≥16 且 mapped_chapters=[] 的 DeepResearch 输出
+   - 全部已有 target_file 指向现有章节（codec2→ch18、sentry→ch19、perfetto→ch13、sdm→ch21、sf-queue→ch2、strictmode→ch14、art-gc→ch4）
+   - 无真正"未覆盖"的知识点
+4. **AOSP 服务/组件覆盖**：沿用上一轮结论（2026-06-10 20:04），未发现新缺口
+5. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+6. **DeepResearch 近期产出**：2026-06-09 至 2026-06-10 的产出均映射至现有章节
+7. **daily-info 热点**：2026-06-10 无新增性能相关主题（Skills/AI 工具/Android Studio Panda 等，非性能核心）
+8. **Part 5 Clippings 对照**：ch20-ch26 各章节数量充足（总计 121 节），三本参考书的知识点已被充分覆盖
+
+### 结论
+全书 422 章中 86% 已有实质内容（288 finalized + 75 ready-for-review），剩余 59 个"unknown"状态文件为 README/preface 等非正文。当前 AIW 的知识覆盖面已高度完整，知识缺口挖掘连续两轮未产出新章节，建议后续侧重：
+- Task 2B/6/9 对 75 个 ready-for-review 章节的 review/回炉/终审
+- 已有章节的内容深化和交叉引用完善

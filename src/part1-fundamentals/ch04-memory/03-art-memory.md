@@ -73,7 +73,7 @@ p1: 0
 p2: 0
 task9_review_notes: "2026-06-10 00:20 Task9 deep-review auto-fixed。P0: 修正 Zygote Space 源码锚点为 Heap::PreZygoteFork()，修正 LOS/main moving space 移动属性误写。P1: 收窄 Android17/Generational CMC 口径（android-17.0.0_r1 tag 仍为空），回 Task6 复审。 | 2026-06-09 22 Task9 deep-review auto-fixed。P0: 修正 06-09 源码调研块中 CMC kernel/userfaultfd 条件（Linux 5.13/MREMAP_DONTUNMAP + SIGBUS，minor-fault 非启用前提）；P1: 删除 Android17 候选结论口径；P2: 移除未 benchmark 的 CC/CMC 暂停时间表。回 Task6 复审。 | 2026-06-09 20 Task9 idle audit→Task2B 主修复已删除 05-28 注入块(虚假源码路径+未验证 Android 17 结论)。06-09 一手验证块保留。 | 2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-27
+last_deepseek_cn_review_at: 2026-06-10
 last_task9_audit: 2026-06-09
 task9_result: "pass-tech-review"
 ---
@@ -84,7 +84,7 @@ task9_result: "pass-tech-review"
 
 在 Perfetto 中分析应用卡顿时，经常会看到这样的现象：主线程突然被挂起几十毫秒，时间片上标注着 `GC`；或者更隐蔽地，应用的帧率在滑动过程中逐渐下降，同时 `HeapTaskDaemon` 线程的 CPU 占用越来越多。这些表现背后，都是 ART 虚拟机的内存管理机制在工作。
 
-如果不知道 ART 的堆结构、GC 策略和对象分配路径，面对这些问题就像在黑暗中摸索——你不知道 GC 为什么在这个时候暂停，不清楚对象分配为什么会阻塞，也无法判断当前的内存使用模式是否正常。
+不了解 ART 的堆结构、GC 策略和对象分配路径，分析这些问题就只能靠猜——不知道 GC 为什么在这个时刻暂停、不知道对象分配为什么会阻塞、也判断不了当前的内存使用模式是否正常。
 
 理解这些机制后，可以：
 1. 在 Trace 中准确识别 ART GC 活动，区分正常的 Young GC 和有问题的 Full GC
@@ -116,7 +116,7 @@ AOSP 源码路径：`art/runtime/gc/space/image_space.cc`
 
 当 Zygote 进程完成预加载、即将 fork 第一个子进程之前，它会将自己分配的对象整理一番：把在 Allocation Space 中分配的、仍然存活的对象拷贝到 Non-moving Space 的尾部，然后把这些对象和 Non-moving Space 中原有的对象合并，形成 Zygote Space。原来的 Allocation Space 被清空，留给 fork 出来的子进程使用。
 
-Zygote Space 中的对象同样不会被 GC 移动和回收。这样做的好处有两层：第一，由于 Zygote Space 在所有应用进程间通过 Copy-on-Write 共享，不移动这些对象避免了 COW 页的额外拷贝；第二，GC 可以跳过对 Zygote Space 的扫描，减少标记阶段的耗时。
+Zygote Space 中的对象同样不会被 GC 移动和回收。这样做的意义在于：Zygote Space 在所有应用进程间通过 Copy-on-Write 共享，不移动对象意味着不会触发 COW 页的额外拷贝；同时 GC 可以直接跳过 Zygote Space 的扫描，标记阶段耗时更短。
 
 在 Perfetto 的内存统计中，一个应用进程的 Zygote Space 通常占几 MB 到十几 MB，这些内存是与其他进程共享的（直到被写入）。
 
@@ -444,7 +444,7 @@ AOT 编译后的机器码存储在 `.oat` 和 `.vdex` 文件中，运行时通�
 
 对 ART 来说，页大小变化会影响 `mmap` 粒度、堆页管理和 native 库兼容性边界。它当然会反映到运行时内存行为，但官方页面公开的数字是整机测试结果，不是 ART 内部某个分配器的单独 benchmark。
 
-官方文档当前给出的平均结果是：内存压力下的应用启动时间降低 3.16%，启动期功耗降低 4.56%，相机热启动快 4.48%，相机冷启动快 6.60%，开机时间改善 8%。这些数据更适合放在 §4.7《16KB Page Size 与 Android 性能》里展开。在 ART 内存管理语境里，如果讨论 16KB page 对 TLAB、Region 或 TLB miss 的具体影响，必须给出设备、版本和实验条件，不能把它直接写成 ART 的默认事实。
+官方文档当前给出的平均结果是：内存压力下的应用启动时间降低 3.16%，启动期功耗降低 4.56%，相机热启动快 4.48%，相机冷启动快 6.60%，开机时间改善 8%。这些数据更适合放在 §4.7《16KB Page Size 与 Android 性能》里展开。在 ART 内存管理语境里讨论 16KB page 对 TLAB、Region 或 TLB miss 的具体影响时，需要给出设备、版本和实验条件——不应把未经验证的影响直接当作 ART 的默认表现。
 
 [已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
 
@@ -577,8 +577,6 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - [研究] ART 分代 GC 架构（Young/Old Generation + Concurrent Copying）
 - [研究] Android 15/16 的 16KB Page Size 对 ART 内存的影响
 
-
-<!-- AIW-源码调研-2026-06-09 ·topic=ART GC碎片控制+并发压缩 -->
 
 > ⚠️ 版本边界：android-17.0.0_r1 在 2026-06-10 **未发布**（AOSP tag 查询为空）。以下内容只基于 android-16.0.0_r1（API 36）一手源码；main 分支仅作目录对照，不作为 Android 17/API 37 正文结论，**不涉及 Android 18/API 38+**。
 

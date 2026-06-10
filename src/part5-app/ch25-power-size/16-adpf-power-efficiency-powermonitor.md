@@ -356,6 +356,114 @@ Perfetto 文档说明，电池 counter 在 USB 插电时会反映充电电流，
 
 [待验证] 当前缺少 Pixel 与至少一个 OEM 设备上的同窗对比数据。后续实验应在同一时间窗口内同时记录 `PowerMonitorReadings.getConsumedEnergy()` 差值、Perfetto power rails 差值、CPU frequency、thermal status 和任务计数，确认两类读数在同一设备上是否能互相解释。
 
+
+
+<!-- AIW-源码调研-2026-06-10 -->
+## 扩展：系统层硬件协同设计架构
+
+ADPF 的端到端效果不仅依赖应用侧代码，更依赖系统层的硬件感知能力。本节基于 AOSP 源码分析系统组件如何实现硬件协同，包括 Power HAL 接口、HintManagerService 调度、CPU/GPU headroom 跟踪等核心机制。
+
+### Power HAL ML_ACC Boost：硬件加速器协同接口
+
+**源码位置**: hardware/interfaces/power/aidl/android/hardware/power/Boost.aidl (android16-release)
+
+`ML_ACC` boost 是 Power HAL 层专门为机器学习硬件加速器设计的协同接口：
+```aidl
+/** This boost indicates that the device is interacting with ML accelerator */
+ML_ACC = 20,  // OEM可选择实现此boost用于性能优化
+```
+
+**注意**: 该 boost 在 Android framework 中暂未主动发送，但为 OEM 提供了与 NPU/GPU 硬件协同的标准化接口。手机厂商可在此实现芯片级优化，例如：
+- 在 CPU 预处理阶段增加 boost
+- 在 AI 推理阶段动态调整时钟频率
+- 在后处理阶段释放资源
+
+### HintManagerService：系统层会话调度中心
+
+**源码位置**: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java (main branch)
+
+系统通过 HintManagerService 统一管理所有 ADPF 会话，其核心功能包括：
+
+**1. 会话状态管理**:
+```java
+// 四个核心状态映射
+Map<Integer, Map<IBinder, HintSessionInternal>> mActiveSessions;  // uid → token → session
+Map<IBinder, ISfHintSession> mChannelMap;                         // SurfaceFlinger 会话通道
+Map<IBinder, SessionSnapshotInternal> mSessionSnapshotMap;       // 会话快照
+Map<Integer, Map<Integer, HintSessionThreadUsage>> mThreadsUsageMap; // 线程使用统计
+```
+
+**2. CPU/GPU Headroom 跟踪**:
+```java
+public CpuHeadroomResult getCpuHeadroom(@NonNull CpuHeadroomParamsInternal params) {
+    // 获取 CPU 可用资源余量，用于决策是否接受 ADPF hint
+    final CpuHeadroomResult result = mPowerHal.getCpuHeadroom(halParams);
+    // 返回包含当前负载、温度、频率等信息的 headroom 结果
+    return result;
+}
+```
+
+**3. 版本感知的调度策略**:
+- Power HAL V4: 5 hints 基础支持
+- Power HAL V5: 8 hints + 1 mode + 5 tags (支持会话标签分类)
+- Power HAL V6: session hints/modes/tags (完整支持)
+
+### 会话标签与硬件感知调度
+
+**SessionTag**: 系统支持对不同类型的工作负载进行标签分类：
+- `HWUI`: 渲染相关线程
+- `APP`: 普通应用线程
+- `GRAPHICS_PIPELINE`: 图形管线线程（最多支持 5 个线程/UID）
+
+**硬件感知决策**:
+```java
+// 基于硬件状态决定是否接受 hint
+if (mPowerHal.getCpuHeadroom(params).available > THRESHOLD) {
+    // 接受 ADPF hint，进行硬件调度
+    return true;
+} else {
+    // 硬件资源紧张，暂缓 hint 处理
+    return false;
+}
+```
+
+### 电源状态跟踪与统计
+
+系统通过 `FrameworkStatsLog.ADPF_SESSION_SNAPSHOT` 跟踪全局 ADPF 使用状态：
+- 最大并发会话数
+- 最大线程数  
+- 能效优先会话数
+- graphics pipeline 会话数
+- 目标持续时间分布（统计前 5 个最常见的持续时间）
+
+**自动清理机制**:
+```java
+// 每 10 秒清理一次 background UIDs 的会话
+mCleanUpHandler.postDelayed(mCleanUpRunnable, CLEAN_UP_INTERVAL_MILLIS);
+```
+
+### FMQ (Framework Message Queue) 支持
+
+Android 16 引入 FMQ 优化 hint 性能：
+- `PROPERTY_SF_ENABLE_CPU_HINT`: "debug.sf.enable_adpf_cpu_hint" (SurfaceFlinger CPU hint)
+- `PROPERTY_HWUI_ENABLE_HINT_MANAGER`: "debug.hwui.use_hint_manager" (HWUI 使用 hint manager)
+
+这些属性允许 OEM 调试和优化硬件交互性能。
+
+### 版本演进总结
+
+| Android 版本 | 系统层能力 | 硬件协同增强 |
+|-------------|----------|-------------|
+| Android 12 | ADPF v1 基础 API | CPU hint 基础支持 |
+| Android 14 | Headroom 计算 | CPU/GPU 资源感知调度 |
+| Android 16 | GPU hint API, ML_ACC boost | ML 加速器硬件协同，FMQ 优化 |
+
+**硬件协同最佳实践**:
+1. 长周期工作使用 SessionTag 分类，让系统区分不同硬件需求
+2. 关注 CPU/GPU headroom 状态，避免过度调度
+3. 利用 ML_ACC boost 与芯片厂商定制特性协同
+4. 通过 Perfetto 验证硬件资源分配策略
+
 ## 小结
 
 ADPF Power Efficiency Mode 的价值在于把长期周期任务的 deadline 余量告诉系统。`setPreferPowerEfficiency(true)` 负责表达偏好，`PowerMonitorReadings` 和 Perfetto power rails 负责验证，线上灰度负责守住尾部耗时和失败率。没有稳定线程、稳定周期和能耗数据，这个能力就不该写成优化结论。

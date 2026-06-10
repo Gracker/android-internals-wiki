@@ -200,3 +200,182 @@ InputDispatcher 反压由 channel 可写性、`outboundQueue`、`waitQueue`、`m
 - Android Developers: [dumpsys](https://developer.android.com/tools/dumpsys)
 - [来源: obsidian/DeepResearch/2026-05-10-inputdispatcher-backpressure.md]
 - [来源: intake/daily-info/2026-05-16.md]
+
+<!-- AIW-源码调研-2026-06-10 -->
+
+## 扩展：Android 17 三重队列架构的源码级解析
+
+本节基于AOSP源码深入分析InputDispatcher核心数据结构，为排查输入性能问题提供底层依据。
+
+### 队列架构层次
+
+Android InputDispatcher采用三层队列设计实现完整的事件流控制：
+
+#### 1. InboundQueue (iq) - 事件接收层
+- **数据结构**: `std::deque<std::shared_ptr<const EventEntry>>` (InputDispatcher.h:193)
+- **访问控制**: 由`mLock`保护，线程安全
+- **生产者**: `enqueueInboundEventLocked()` - 接收InputReader传递的事件
+- **消费者**: `drainInboundQueueLocked()` - 按序处理队列事件
+- **监控**: `traceInboundQueueLengthLocked()` → ATRACE_INT("iq", size)
+
+```cpp
+// 源码位置: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp:1367
+bool InputDispatcher::enqueueInboundEventLocked(std::unique_ptr<EventEntry> newEntry) {
+    bool needWake = mInboundQueue.empty();
+    mInboundQueue.push_back(std::move(newEntry));
+    traceInboundQueueLengthLocked();  // 关键监控点
+    return needWake;
+}
+```
+
+#### 2. OutboundQueue (oq) - 事件分发层
+- **数据结构**: 每个Connection独立维护`std::deque<std::unique_ptr<DispatchEntry>>` (Connection.h:55)
+- **状态含义**: 准备发送至应用层，等待通道写入
+- **生产者**: `enqueueDispatchEntryLocked()` - 创建DispatchEntry
+- **消费者**: `startDispatchCycleLocked()` - 调用inputPublisher.publish
+- **监控**: `traceOutboundQueueLength()` → ATRACE_INT("oq:<channelName>", size)
+
+```cpp
+// 源码位置: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp:3659
+void InputDispatcher::enqueueDispatchEntryLocked(...) {
+    connection->outboundQueue.emplace_back(std::move(dispatchEntry));
+    // ...
+    if (wasEmpty && !connection->outboundQueue.empty()) {
+        startDispatchCycleLocked(currentTime, connection);
+    }
+}
+```
+
+#### 3. WaitQueue (wq) - 事件回执层
+- **数据结构**: 每个Connection独立维护，与oq配对
+- **状态含义**: 已发送至应用层，等待"finished"回执
+- **生产者**: `startDispatchCycleLocked()` - 移动oq→wq（成功发送后）
+- **消费者**: `doDispatchCycleFinishedCommand()` - 收到应用回执后移除
+- **监控**: `traceWaitQueueLength()` → ATRACE_INT("wq:<channelName>", size)
+
+```cpp
+// 源码位置: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp:3946-3947
+connection->waitQueue.emplace_back(std::move(dispatchEntry));
+connection->outboundQueue.erase(connection->outboundQueue.begin());
+traceOutboundQueueLength(*connection);
+```
+
+### 事件流控制机制
+
+#### 管道满溢处理
+输入通道的`sendMessage()`采用非阻塞模式：
+```cpp
+// 源码位置: frameworks/native/libs/input/InputTransport.cpp:386
+status_t InputChannel::sendMessage(const InputMessage* msg) {
+    ssize_t nWrite = ::send(getFd(), &cleanMsg, msgLength, MSG_DONTWAIT | MSG_NOSIGNAL);
+    if (nWrite < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        return WOULD_BLOCK;  // 触发队列回退
+    }
+    return OK;
+}
+```
+
+#### 队列回退逻辑
+当`sendMessage`返回`WOULD_BLOCK`时，事件从outboundQueue移回waitQueue，等待应用消费空闲后再尝试发送。
+
+### ANR检测机制
+
+#### 时间追踪策略
+```cpp
+// 源码位置: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp:6923-6932
+void InputDispatcher::traceOutboundQueueLength(const Connection& connection) {
+    if (ATRACE_ENABLED()) {
+        char counterName[40];
+        snprintf(counterName, sizeof(counterName), "oq:%s", 
+                 connection.getInputChannelName().c_str());
+        ATRACE_INT(counterName, connection.outboundQueue.size());
+    }
+}
+void InputDispatcher::traceWaitQueueLength(const Connection& connection) {
+    if (ATRACE_ENABLED()) {
+        char counterName[40];
+        snprintf(counterName, sizeof(counterName), "wq:%s", 
+                 connection.getInputChannelName().c_str());
+        ATRACE_INT(counterName, connection.waitQueue.size());
+    }
+}
+```
+
+#### AnrTracker实现
+```cpp
+// 源码位置: frameworks/native/services/inputflinger/dispatcher/AnrTracker.h:41
+std::multiset<std::pair<nsecs_t, sp<IBinder>>> mAnrTimeouts;
+```
+- 插入超时点: `mAnrTracker.insert(timeoutTime, connectionToken)`
+- 查找最早ANR: `nsecs_t firstTimeout()` 返回最小超时值
+- 移除完成事件: `mAnrTracker.erase(timeoutTime, token)`
+
+#### ANR触发判据
+```cpp
+// 源码位置: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp:6565
+DispatchEntry& oldestEntry = *connection->waitQueue.front();
+const nsecs_t currentWait = now() - oldestEntry.deliveryTime;
+std::string reason = StringPrintf("%s is not responding. Waited %" PRId64 "ms for %s",
+                                  connection->getInputChannelName().c_str(),
+                                  ns2ms(currentWait),
+                                  oldestEntry.eventEntry->getDescription().c_str());
+```
+
+### 性能追踪集成
+
+#### Perfetto数据源
+```cpp
+// 源码位置: frameworks/native/services/inputflinger/dispatcher/trace/InputTracingPerfettoBackend.h:30
+class PerfettoBackend : public InputTracingBackendInterface {
+    // 数据源名称: "android.input.inputevent"
+    // 缓冲区: size_kb: 5000, fill_policy: RING_BUFFER
+};
+```
+
+#### 异步写入模式
+```cpp
+// 源码位置: frameworks/native/services/inputflinger/dispatcher/trace/ThreadedBackend.h:45
+template <typename Backend>
+class ThreadedBackend : public InputTracingBackendInterface {
+    InputThread mTracerThread;      // 专用trace线程
+    std::vector<TraceEntry> mQueue;  // 批量写入队列
+};
+```
+设计优势：确保trace操作不会影响主dispatch循环的实时性能。
+
+### 调试实践指导
+
+#### Perfetto trace命令
+```bash
+adb shell perfetto \
+  -c - --txt \
+  -o /data/misc/perfetto-traces/trace.input-trace \
+  <<END
+  buffers: {
+    size_kb: 5000
+    fill_policy: RING_BUFFER
+  }
+  data_sources: {
+    config {
+        name: "android.input.inputevent"
+    }
+  }
+  END
+```
+
+#### 关键监控点
+1. `iq` counter: 系统接收事件积压情况
+2. `oq:<channel>` counter: 各应用通道待发送事件数
+3. `wq:<channel>` counter: 各应用已发送未回执事件数
+4. `waitQueue.front()`时间: ANR倒计时起点
+
+### 实际问题定位示例
+
+当游戏触控卡顿时，可用以下方法定位瓶颈：
+
+1. 检查`oq:com.game.app`是否持续增长
+2. 观察`wq:com.game.app`事件是否长时间存在
+3. 配合`cat /proc/<pid>/sched`查看主线程状态
+4. 若waitQueue存在且主线程空闲，检查是否被Binder阻塞或调度异常
+
+源码验证边界: 本分析基于aosp/frameworks/native主分支，适用于Android 17及之前版本。

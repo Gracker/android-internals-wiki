@@ -61,6 +61,8 @@ task9_reviewed_date: "2026-06-06"
 last_task9_at: "2026-06-06T10:21:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-06-10-deep-review.md"
 task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 JSON 字段 keep-rule 示例中的 allowobfuscation 误用；证据为 Android Developers R8 full-mode / keep rules 文档。回 Task6 复审。 | 2026-06-06 10:21 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-10
 ---
 
 # R8 与资源优化
@@ -90,15 +92,11 @@ task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 JSO
 
 ## 为什么要了解 R8 与资源优化
 
-25.6 节已经把包体积分析、R8 开关、资源缩减和 ABI 策略放进同一套体积排查流程。这里聚焦两个更容易出线上事故的细节：R8 规则怎样既保留运行时入口又不放弃优化空间，资源怎样在格式、命名、字体和动态加载之间做取舍。包结构、APK Analyzer 和 `.so` 策略详见 12.1 与 25.6 节。
-
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md]
+R8 与资源优化的主线只有两件事：规则怎么写才能既保留运行时入口又不浪费优化空间，以及图片、字体、资源表该选什么格式才能把包体积压下来。前一篇 25.6 已经把包体积分析、R8 开关和 ABI 策略放进统一排查流程，本节不再重复这些；包结构和 `.so` 策略详见 12.1。
 
 ## R8 全模式（Full Mode）与兼容模式
 
-[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/full-mode]
-
-R8 全模式从 AGP 8.0 起成为默认模式。它比旧兼容模式更积极：会更大胆地做类合并、方法内联、泛型签名属性裁剪、注解属性裁剪和无用成员删除。体积收益来自这些优化，但风险也集中在同一批地方：反射、序列化、依赖注入、JNI、枚举名、`ServiceLoader`、框架通过注解或泛型读取类型信息的路径。
+R8 全模式从 AGP 8.0 起成为默认模式。它比旧兼容模式更积极：会更积极地做类合并、方法内联、泛型签名属性裁剪、注解属性裁剪和无用成员删除。体积收益来自这些优化，但风险也集中在同一批地方：反射、序列化、依赖注入、JNI、枚举名、`ServiceLoader`、框架通过注解或泛型读取类型信息的路径。
 
 R8 全模式、资源缩减和库 keep rules 的版本边界要按工具链拆开：
 
@@ -119,13 +117,9 @@ R8 全模式、资源缩减和库 keep rules 的版本边界要按工具链拆�
 android.enableR8.fullMode=false
 ```
 
-如果关闭全模式后崩溃消失，下一步不是保留这个开关，而是收窄到具体规则：找出被裁剪的类、成员或属性，再用最小 keep 规则保留它。长期停留在兼容模式会让后续 AGP 升级更难，也会让 R8 的体积和运行时优化空间变小。[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/adopt-optimizations-incrementally]
-
-Gson、Moshi、Jackson、Room、Hilt、Retrofit、JNI 注册和自研插件框架是全模式迁移的高风险区。以 Gson `TypeToken` 为例，官方 full mode 文档给出的失败原因是 `Signature` 属性被裁剪后，运行时拿不到泛型类型信息；对应规则要保留 `Signature`，同时允许类继续被混淆和优化。这个例子说明 keep 规则不是越宽越安全，规则写宽会把整片代码从优化器手里拿走。
+如果关闭全模式后崩溃消失，下一步不是保留这个开关，而是收窄到具体规则：找出被裁剪的类、成员或属性，再用最小 keep 规则保留它。长期停留在兼容模式会让后续 AGP 升级更难，也会让 R8 的体积和运行时优化空间变小。Gson、Moshi、Jackson、Room、Hilt、Retrofit、JNI 注册和自研插件框架是全模式迁移的高风险区。以 Gson `TypeToken` 为例，官方 full mode 文档给出的失败原因是 `Signature` 属性被裁剪后，运行时拿不到泛型类型信息；对应规则要保留 `Signature`，同时允许类继续被混淆和优化。这个例子说明 keep 规则不是越宽越安全，规则写宽会把整片代码从优化器手里拿走。
 
 ## Keep 规则编写与优化
-
-[已验证: 官方文档, developer.android.com/build/shrink-code；developer.android.com/topic/performance/app-optimization/keep-rule-examples]
 
 R8 规则要围绕“谁在运行时访问它”来写。Activity、Service、Provider 这类 manifest 入口由构建工具识别；反射、JSON 字段、JNI 方法、注解处理器生成的注册表、跨进程协议类，才需要额外规则。工程里最伤体积的写法通常是 `-keep class com.company.** { *; }`，它让包名下的类、字段和方法一起逃过裁剪、混淆和内联。
 
@@ -170,15 +164,9 @@ R8 规则要围绕“谁在运行时访问它”来写。Activity、Service、Pr
 
 consumer rules 也要纳入体积排查。AAR 里的 `consumer-proguard-rules.pro` 会传递到 App，三方 SDK 为了降低接入失败率，常把规则写得很保守。遇到 dex 增长异常时，先从 `build/outputs/mapping/release/configuration.txt` 查看最终合并后的规则，再决定是升级 SDK、覆盖规则，还是向 SDK 方反馈更细的 consumer rules。
 
-[结构参考: Clippings/Android 性能优化 - dex 文件的体积优化实战.md]
-
 ## 资源格式优化：WebP / VectorDrawable / AVIF
 
-[已验证: 官方文档, developer.android.com/topic/performance/reduce-apk-size；developer.android.com/develop/ui/views/graphics/reduce-image-sizes]
-
-资源优化要先区分“引用关系”和“文件格式”。`isShrinkResources = true` 处理的是不可达资源，WebP、VectorDrawable、AVIF 处理的是已使用资源的单文件大小。两者互补，不能互相替代。资源缩减还依赖 R8 的代码缩减结果；只打开资源缩减，构建工具没有足够的代码引用图可用。[已验证: 官方文档, developer.android.com/build/shrink-code]
-
-这段 Gradle 配置是 release 包的基线。读者重点看两个开关必须同时启用。
+资源优化要先区分“引用关系”和“文件格式”。`isShrinkResources = true` 处理的是不可达资源，WebP、VectorDrawable、AVIF 处理的是已使用资源的单文件大小。两者互补，不能互相替代。资源缩减还依赖 R8 的代码缩减结果；只打开资源缩减，构建工具没有足够的代码引用图可用。这段 Gradle 配置是 release 包的基线。读者重点看两个开关必须同时启用。
 
 ```kotlin
 android {
@@ -204,9 +192,7 @@ android {
     tools:discard="@drawable/debug_*" />
 ```
 
-`tools:keep` 和 `tools:discard` 是给资源缩减器的显式规则。它们有全局作用域，库模块里的 keep 文件要带上包名或模块名前缀，避免规则互相覆盖。[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep]
-
-格式选择可以按下表处理：
+`tools:keep` 和 `tools:discard` 是给资源缩减器的显式规则。它们有全局作用域，库模块里的 keep 文件要带上包名或模块名前缀，避免规则互相覆盖。格式选择可以按下表处理：
 
 | 资源类型 | 推荐格式 | 适用场景 | 风险边界 |
 | --- | --- | --- | --- |
@@ -217,13 +203,7 @@ android {
 
 VectorDrawable 的收益来自去掉多套密度位图，而不是来自压缩算法。它适合图标和简单插画；如果把复杂 SVG 全量转成 VectorDrawable，XML 路径数据可能比原 WebP 更大，还会把解析成本挪到运行时。WebP 适合替换多数 PNG / JPG，但转换要按资源类型分批做：启动页、登录页、品牌图和支付图标先人工验收，再进入批处理。AVIF 在 Android 12 及以上有系统支持，适合新系统占比高、图片体积压力大的渠道；低版本要保留 WebP 或 PNG 兜底。[已更新至 Android 16]
 
-resources.arsc 相关优化要谨慎。参考书把资源去重、资源名压缩和字符串池处理放在同一类问题里，这个结构是合理的：AOSP `ResourceTypes.h` 也能印证资源表由字符串池、package、type spec、type item 等二进制块组成，不是普通文本文件。工程上更稳的顺序是：先开官方资源缩减，再做图片格式转换，再评估资源名压缩或重复图片去重。直接改 `resources.arsc` 的工具必须覆盖换肤、多语言、动态资源名和热修资源路径。[已验证: AOSP android-16.0.0_r1, frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h]
-
-[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
-
-## 字体子集化与按需加载
-
-[已验证: 官方文档, developer.android.com/develop/ui/views/text-and-emoji/downloadable-fonts]
+resources.arsc 相关优化要谨慎。参考书把资源去重、资源名压缩和字符串池处理放在同一类问题里，这个结构是合理的：AOSP `ResourceTypes.h` 也能印证资源表由字符串池、package、type spec、type item 等二进制块组成，不是普通文本文件。工程上更稳的顺序是：先开官方资源缩减，再做图片格式转换，再评估资源名压缩或重复图片去重。直接改 `resources.arsc` 的工具必须覆盖换肤、多语言、动态资源名和热修资源路径。## 字体子集化与按需加载
 
 字体文件经常被低估。一个完整 CJK 字体可能比多张运营图还大；如果 App 只在少数页面使用品牌字体，直接把全量 `.ttf` 放进 `assets/` 或 `res/font/`，会让所有用户为少数场景付下载成本。字体治理先做两件事：确认每个字体文件的使用页面和字重，再确认它是否需要随安装包交付。
 
@@ -244,8 +224,6 @@ resources.arsc 相关优化要谨慎。参考书把资源去重、资源名压�
 接入后要补两类验证：冷启动首屏是否因为字体等待而抖动，弱网或 provider 不可用时 fallback 是否稳定。对于国内分发渠道，Google Play services 不一定可用，Downloadable Fonts 不能作为唯一方案；更稳的做法是“基础字体随包、低频字体按需下载、品牌字体按页面缓存”。
 
 ## 扩展：资源优化与 AAB 分发的分工
-
-[已验证: 官方文档, developer.android.com/guide/app-bundle；developer.android.com/guide/playcore/feature-delivery]
 
 AAB 和 Play Feature Delivery 解决的是“按设备、语言、密度、ABI 或功能模块分发”的问题；R8 和资源优化解决的是“产物本身是否还有无用代码和资源”的问题。二者不能互相替代。一个没有开 R8 的 AAB 仍会把无用代码带进 base module；一个只做 WebP 转换的 APK 也不会自动减少未使用语言包或 ABI 副本。
 

@@ -45,6 +45,8 @@ task6_state: "reviewed"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task9_result: "pass-tech-review"
+task9_audit_date: "2026-06-10"
+task9_audit_type: "idle-audit"
 task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: "2026-05-29T06:50:00+08:00"
