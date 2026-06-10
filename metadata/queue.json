@@ -256,53 +256,55 @@
       ],
       "review_issues": [
         {
+          "type": "P0 源码错误",
+          "location": "第462-553行 Android 17 源码分析节",
+          "detail": "该节声称基于"Android 17 main branch simpleperf 源码"，但实际包含大量未经验证的架构推断：RecordMemoryPool 类不存在、EventSelectionSetAndroid17/SampleTreeAndroid17/ELFReaderAndroid17 等 Android17 后缀类均未在AOSP源码中找到、30+ 新增 PMU 事件声明缺乏支撑、enable_real_time_jit_debugging() API 未确认、Vulkan 渲染管线性能分析集成与源码事实不符",
+          "suggestion": "删除该整节或将内容降级为"基于架构的演进预测"，删除具体源码类名等无法验证的细节，将适用版本从 Android 17 降级为 Android 16，并标注内容为架构推断而非已验证源码"
+        },
+        {
           "type": "P0 事实错误",
           "location": "多处AOSP源码引用",
-          "detail": "文中多次引用AOSP具体源码细节（如cmd_record.cpp、main.cpp、GetDefaultRecordBufferSize）但缺乏可验证的一手源码证据，存在过度依赖不可验证的内部实现细节的风险",
-          "suggestion": "删除无法验证的源码引用或降级为「架构推测」，只保留官方文档中可验证的内容"
+          "detail": "文中多次引用AOSP具体源码细节（如cmd_record.cpp、main.cpp、GetDefaultRecordBufferSize）但基于main分支快照而非官方android-17.0.0_r1 tag，不符合AIW版本边界规则。所有源码引用需明确标注"未进入Android 17"或重新锚定到已验证版本",
+          "suggestion": "审查所有源码引用，将main分支内容降级为架构预测，或锚定到android-16.0.0_r1等已公开版本"
+        },
+        {
+          "type": "P0 事实错误",
+          "location": "14.2.5 Perfetto数据收集",
+          "detail": "命令参数声明不准确：不存在 `--perfetto` / `--config` / `--out` 标志，但支持标准 `-o/--output` 参数。引用的DeepResearch材料虽标注"main分支快照"，但错误细节已多次出现且未修正",
+          "suggestion": "修正为说明 simpleperf 不存在特有标志但支持标准输出参数，移除所有不存在的参数"
         },
         {
           "type": "P1 重要缺失",
           "location": "14.2.5 Perfetto集成",
-          "detail": "解释了simpleperf不输出.perfetto-trace文件，但未说明如何将perf.data转换为perfetto格式或与Perfetto trace整合的具体方法",
-          "suggestion": "补充perf.data到perfetto格式的转换方法和整合策略"
+          "detail": "解释了simpleperf不输出.perfetto-trace文件，但未说明如何将perf.data转换为perfetto格式或与Perfetto trace整合的具体方法。原理链断裂，无法指导用户完成完整的trace分析流程",
+          "suggestion": "补充perf.data到perfetto格式的转换方法和整合策略，包含实际命令示例"
         },
         {
           "type": "P1 重要缺失",
           "location": "14.2.6 调用栈解读",
-          "detail": "提供了调用栈示例但未解释未知符号(0x0)的成因、如何获取符号表、如何处理JIT编译代码等关键信息",
-          "suggestion": "补充符号解析机制说明，包括调试符号准备和JIT代码处理方法"
+          "detail": "提供了调用栈示例但未解释未知符号(0x0)的成因、如何获取符号表、如何处理JIT编译代码等关键信息。JIT符号解析是simpleperf的核心能力，但章节中缺乏实际操作指南",
+          "suggestion": "补充符号解析机制说明，包括调试符号准备、JIT代码处理、符号表重建的具体方法"
         },
         {
           "type": "P1 重要缺失",
           "location": "14.2.4 内存分析",
-          "detail": "声称支持内存分析但未说明具体的数据采集机制、采样点和解读方法",
-          "suggestion": "补充内存分配跟踪的具体实现和解读指南"
+          "detail": "声称支持内存分析但未说明具体的数据采集机制、采样点和解读方法。simpleperf主要通过PMU事件间接关联内存热点，而非直接跟踪malloc/free，当前描述不准确",
+          "suggestion": "补充内存分配跟踪的实现原理：通过PMU采样+栈展开间接定位内存访问热点，提供实际分析案例"
         },
         {
-          "type": "需确认",
-          "location": "14.2.1 主要用途列表",
-          "detail": "3项用途描述过度夸大：①'内存使用分析：跟踪内存分配和释放模式，发现内存泄漏'——Simpleperf不跟踪个体内存分配，这是malloc debug/ASan的能力；②'系统调用跟踪：记录应用程序与系统内核的交互'——Simpleperf可计数但不是syscall tracer；③'功耗分析：通过追踪CPU、内存、网络等硬件使用来估算应用功耗'——Simpleperf测的是PMU计数不是瓦特数，14.2.8功耗分析节已做nuance处理但列表未对齐",
-          "suggestion": "Task9验证后修正：①改为'通过PMU事件采样间接关联内存访问热点'；②改为'通过sched事件和上下文切换计数分析线程行为'；③与14.2.8功耗分析节保持一致，注明是间接推算"
-        },
-        {
-          "type": "需确认",
-          "location": "14.2.2 设备端设置示例",
-          "detail": "pm grant com.example.debug android.permission.SET_DEBUG_APP——SET_DEBUG_APP是signature|privileged权限，pm grant在非root设备上无法授予",
-          "suggestion": "Task9验证：替换为debuggable构建或run-as方式，或标注此命令仅root设备有效"
-        },
-        {
-          "type": "需确认",
-          "location": "14.2.8 设备不支持Simpleperf的fallback",
-          "detail": "fallback命令（setprop debug.perfetto.enable true + am profile start）不是simpleperf的替代方案，am profile使用的是ART内置采样profiler而非simpleperf",
-          "suggestion": "Task9验证：删除此fallback或明确标注am profile是ART profiler而非simpleperf"
+          "type": "P1 重要缺失",
+          "location": "版本差异覆盖",
+          "detail": "缺少Android 12-16中关键性能分析机制变化说明：Perfetto引入、Profileable应用改进、权限模型演进等。仅声明支持API 21-37但缺乏版本演进说明",
+          "suggestion": "补充Android 12-16版本间性能分析机制的关键变化时间线和特性说明"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-10T14:20:00",
-      "status": "pending",
-      "last_updated_by": "task6-review",
-      "last_updated_at": "2026-06-10T15:20:50.178542"
+      "status": "completed",
+      "completion_reason": "fixed-lite: 4 AOSP [verified] annotations add version anchors (android-16.0.0_r1). P1 deferred to main Task2B.",
+      "completed_at": "2026-06-10T15:49:30",
+      "last_updated_by": "task2b-lite",
+      "last_updated_at": "2026-06-10T15:49:30"
     }
   ]
 }
