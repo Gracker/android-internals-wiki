@@ -1,180 +1,91 @@
-## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-06-10
-- **类型**：知识表述更新
-- **位置**：章节中关于 preloaded classes 数量的历史对比表述
-- **问题**：文中提到"老文章常把 preloaded classes 写成'3000-4000 个常用类'"，虽然正文已正确说明当前版本为18431，但这种过时参考的对比表述可能让读者困惑当前实际值
-- **建议**：直接删除"3000-4000"这个过时数字的对比，或改为更明确的版本标注，如"Android 8/9时代的3000-4000个类已扩展到当前版本的18431个"
+## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10 13:20
 
-## [Task9 Deep Review] 14.1 Android Studio Profiler — 2026-06-10
-- **类型**：版本差异覆盖
-- **位置**：ProfilingManager API 版本判断部分
-- **问题**：未提及 Android SDK minor version (36.1) 的支持判断逻辑
-- **建议**：在触发器版本判断中补充 `Build.VERSION.SDK_INT_FULL` 检查，例如：`fun supportsKillTriggeredProfiling(): Boolean { if (Build.VERSION.SDK_INT < 36) return false; return Build.VERSION.SDK_INT_FULL >= 3601 }`
+### A1 源码准确性改进
+- **类型**：源码准确性
+- **位置**：14.2.5 Perfetto数据收集
+- **问题**：章节声明 simpleperf 不存在 `--perfetto` / `--config` / `--out` 标志，但实际支持标准 `-o/--output` 参数
+- **建议**：修正为说明 simpleperf 不存在特有标志但支持标准输出参数，补充标准参数的正确用法
 
-## [Task6 Review] 14.2 Simpleperf — 2026-06-10
-
-### B1 需重写 — 全文叙述风格
-- **类型**：需重写
-- **位置**：全文（14.2.1-14.2.6）
-- **问题**：命令速查表风格，缺乏连贯叙述和因果关系。违反 writing-guide.md "叙述为主，列表为辅"铁律。读者读完知道有哪些命令但不知道怎么用它们解决实际问题。整篇可被 simpleperf --help 替代。
-- **建议**：以完整性能分析案例为主线贯穿全文：发现问题→选择工具→配置采集→解读report→定位热点→优化→验证。命令和参数在流程中自然引出。
-
-### B2 需重写 — 开头
-- **类型**：需重写
-- **位置**：14.2.1 第一段
-- **问题**：百科词条式定义（"Simpleperf是Android系统自带的高性能分析工具，专为开发者设计"），违反 writing-guide Type C 工具使用篇模板。
-- **建议**：从"没有 simpleperf 时 native 性能分析只有 top/strace、看不到函数级热点、无法关联调用栈"的痛点切入。
-
-### B3 需补充内容 — 性能优化实践
-- **类型**：需补充内容
-- **位置**：14.2.7
-- **问题**：仍为 Task2B 回炉占位符，无实质内容。上次 review 已指出旧版为通用 Java 优化模式且 API 版本矛盾。
-- **建议**：按回炉方向重写：simpleperf report 发现热点→调用栈解读→定位优化方向→优化后再用 simpleperf 验证。
-
-### B4 需补充内容 — 性能案例分析
-- **类型**：需补充内容
-- **位置**：14.2.9
-- **问题**：仍为 Task2B 回炉占位符，缺少 simpleperf 特有信息。
-- **建议**：完整案例：record → report 原始输出 → 调用栈图 → 热点函数定位 → 优化 → 验证全流程。
-
-### B5 需补充内容 — 性能基准测试
-- **类型**：需补充内容
-- **位置**：14.2.11
-- **问题**：仍为 Task2B 回炉占位符。
-- **建议**：基于 simpleperf stat 实测重写，展示如何建立性能基线。
-
-### B6 需补充内容 — 总结与最佳实践
-- **类型**：需补充内容
-- **位置**：14.2.12
-- **问题**：仍为 Task2B 回炉占位符。
-- **建议**：以"如何用 Simpleperf 建立日常性能监控节奏"为主线，落实到 record→report→定位热点→验证的具体步骤。
-
-### B7 需确认 — Perfetto 相关参数真实性（交 Task 9）
-- **类型**：需确认
-- **位置**：14.2.5 Perfetto 数据收集
-- **问题**：使用 --perfetto、--config perfetto_config.xml、--out perfetto.traces 等参数，需 Task 9 对照 NDK simpleperf 文档验证这些是否为真实支持的参数名。
-- **建议**：Task 9 源码验证后给出正确参数名。
-
-### B8 需确认 — 内存分析事件名和 report 参数真实性（交 Task 9）
-- **类型**：需确认
-- **位置**：14.2.6 数据分析与解读
-- **问题**：alloc_count/alloc_size/malloc_count/malloc_size 事件名及 --show-alloc-stats/--show-branch-miss/--show-cache-miss/--show-timeline/--top 10 等 report 参数，需 Task 9 验证是否存在。
-- **建议**：Task 9 对照 simpleperf 官方文档验证。
-
-### B9 结构性 — 内部章节编号冲突
-- **类型**：需确认
-- **位置**：全文标题
-- **问题**：章节为 14.2 Simpleperf，但内部标题使用 14.1-14.13（与 14.2 章节号冲突）。
-- **建议**：修正为 14.2.1-14.2.13，并检查 SUMMARY.md 交叉引用一致性。
-
-### B10 版本边界 — DeepResearch main 分支引用
-- **类型**：需确认
-- **位置**：参考资料/DeepResearch引用
-- **问题**：引用的 DeepResearch 标注为"main分支快照"，包含可能未进入 Android 17 的内容。按 AIW 版本边界规则需标注"未进入 Android 17"。
-- **建议**：审查材料中哪些断言已进入 Android 17 正式分支，确定是否需要更新 applicable_versions。
-
-## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10
-- **类型**：源码准确性/数据缺失/交叉引用
-- **位置**：多个维度的问题
-- **问题**：1) 缺少AOSP源码具体路径和验证的代码片段 2) 没有实际simpleperf输出示例和解读 3) 缺少与Android安全模型的集成说明 4) 没有ARM/x86架构特有行为说明 5) 缺少与其他Android profiling工具的比较
-- **建议**：1) 补充具体AOSP源码路径和关键类/方法名 2) 提供真实report输出示例并逐行解读 3) 增加安全权限和隐私保护机制章节 4) 添加架构特有行为说明和限制 5) 补充与Systrace/Traceview等工具的对比表格
-
-- **review 日志**：logs/review/2026-06-10-07-review.md
-
-## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10 08:20
-- **类型**：原理链完整性
-- **位置**：14.2.1-14.2.3
-- **问题**：Simpleperf与Android Profiling体系的集成原理不完整，缺少与atrace、Perfetto系统工具的关系说明，未解释权限模型的演进
-- **建议**：补充Simpleperf在Android性能分析生态中的定位，与系统级工具的协作原理，以及不同Android版本的权限模型变化
-
-## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10 08:20
-- **类型**：数据与案例支撑
-- **位置**：14.2.6 数据分析与解读
-- **问题**：缺少实际性能数据的基准测试结果，命令示例未包含预期输出格式和解读说明
-- **建议**：提供真实的simpleperf report输出示例，包含self time vs total time的解读，教读者如何从调用栈判断瓶颈，区分应用代码vs系统代码
-
-## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10 08:20
-- **类型**：数据与案例支撑
-- **位置**：14.2.8 常见问题与解决方案
-- **问题**：缺少具体性能问题的量化数据和优化前后的对比数据
-- **建议**：添加真实案例的性能基准数据，如采样频率对结果的影响、不同跟踪方式的性能开销对比
-
-## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10 08:20
-- **类型**：交叉引用一致性
-- **位置**：章节状态标记
-- **问题**：14.2.7、14.2.9、14.2.11、14.2.12、14.2.13 标记为"[Task2B 回炉中]"，与当前章节状态（ready-for-review）不一致
-- **建议**：更新这些章节的状态，或确认Task2B的实际处理状态
-
-## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10 08:20
-- **类型**：知识盲区
+### A2 CI/CD 集成完善
+- **类型**：工具集成与自动化
 - **位置**：14.2.10 工具集成与自动化
-- **问题**：缺少与Android Studio Profiler集成的说明，以及CI/CD环境中的自动化最佳实践
-- **建议**：补充与Android Studio的集成方案，提供CI/CD脚本示例，说明如何在自动化环境中使用simpleperf
+- **问题**：CI/CD 集成示例缺少环境依赖说明和具体实施步骤
+- **建议**：补充 CI 环境中需要预安装的依赖（Android SDK、adb 路径配置等）和完整的自动化脚本示例
 
+### A3 性能基准测试指标完善
+- **类型**：数据与案例支撑
+- **位置**：14.2.11 性能基准测试
+- **问题**：性能基准测试部分缺少具体可执行的统计指标名称和解读方法
+- **建议**：列出常用统计指标（task-clock、cpu-cycles、instructions、IPC、cache-misses 等）及其含义，并补充实际的分析示例
 
-## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-10 (第三轮)
+### A4 工具对比标准统一
+- **类型**：交叉引用一致性
+- **位置**：14.2.1 基本优势部分
+- **问题**：与第三方工具对比缺乏统一标准和明确依据
+- **建议**：明确对比标准（如准确性、开销、易用性、功能完整性等），或删除对比，专注于 simpleperf 特有功能说明
 
-### N1 需确认 — 事实矛盾（交 Task 9）
-- **类型**：需确认
-- **位置**：14.2.1 vs 14.2.2
-- **问题**：14.2.1 称"Android 系统自带"+"零依赖：无需额外安装"，14.2.2 却写"Simpleperf 通过 NDK 分发，不在系统镜像中预装"。两处描述互相矛盾
-- **建议**：由 Task 9 查源确认 simpleperf 在各 Android 版本的分发方式，统一描述
-- **review 日志**：logs/review/2026-06-10-08-review.md
+### A5 参考资源版本对应
+- **类型**：交叉引用一致性
+- **位置**：14.2.13 参考资源
+- **问题**：参考资源与正文内容对应关系不明确，缺少版本信息
+- **建议**：建立参考资料与正文中具体内容的对应关系，按 Android 版本分类标注适用性
 
-### N2 需确认 — 命令参数准确性（交 Task 9）
-- **类型**：需确认
-- **位置**：14.2.5（Perfetto 数据收集）、14.2.6（数据分析）
-- **问题**：以下命令参数可能不存在于 simpleperf：
-  - `--perfetto` 标志
-  - `--config perfetto_config.xml`
-  - `--out perfetto.traces`
-  - `alloc_count`/`alloc_size`/`malloc_count`/`malloc_size` 事件名
-  - `--show-alloc-stats`/`--show-timeline`/`--top` 报告标志
-- **建议**：Task 9 对照 NDK simpleperf 文档逐一验证
-- **review 日志**：logs/review/2026-06-10-08-review.md
+### A6 Linux perf 关系说明
+- **类型**：原理链完整性
+- **位置**：14.2.1 简介部分
+- **问题**：未解释 simpleperf 与 Linux perf 的关系和差异
+- **建议**：补充简单perf与Linux perf的关系说明，包括Android特有的优化、限制和适配差异
 
-### N3 需补充 — 验证标注
-- **类型**：需补充
-- **位置**：全文
-- **问题**：所有技术断言（命令参数、事件名、标志含义）无 [已验证]/[待验证] 标注
-- **建议**：Task 2B 在重写时补充验证标注
-- **review 日志**：logs/review/2026-06-10-08-review.md
+### A7 采样频率原理说明
+- **类型**：原理链完整性
+- **位置**：14.2.3 基本使用方法
+- **问题**：缺少采样频率对精度和开销影响的原理说明
+- **建议**：补充采样频率选择原理，包括不同频率的精度/开销权衡和建议
 
-## [Task9 Deep Review] 14.7 ProfilingManager — 2026-06-10
-- **类型**：源码准确性
-- **位置**：关于 ProfilingResult 类归属的说明
-- **问题**：章节中提到"结果类 ProfilingResult 来自平台包 android.os"，但未提供完整的类访问路径
-- **建议**：补充精确的类路径说明，指出 ProfilingResult 通过 android.os.ProfilingManager.ProfilingResult 或通过 ProfilingManager 实例访问，增强 API 使用准确性
+### A8 符号解析机制说明
+- **类型**：原理链完整性
+- **位置**：14.2.5 Profileable应用数据收集
+- **问题**：未解释符号表解析机制和未符号化代码处理
+- **建议**：补充符号解析机制说明，包括调试符号准备和符号表重建过程
 
-## [Task9 Idle Audit] 26.3 性能指标采集与上报 — 2026-06-10
-- **类型**：源码准确性
-- **位置**："内存水位"章节
-- **问题**：文中提到 `ActivityManager.getProcessMemoryInfo(int[])` 适合记录页级数据，但未说明该方法需要 MANAGE_USERS 权限（Android 12+）且在后台场景可能受限
-- **建议**：补充权限说明和替代方案（如 Debug.MemoryInfo 在无需权限场景），以及在不同 Android 版本中的权限要求变化
-## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-06-10
-- **类型**：源码准确性
-- **位置**：ContentResolver.getProviderMimeTypeAsync() API 引用部分
-- **问题**：引用了不存在的公开 API ContentResolver.getProviderMimeTypeAsync()。该 API 仅存在于 framework 内部，不是公开 SDK 接口，普通应用无法使用。
-- **建议**：移除对该不存在的 API 的引用，明确说明应用侧超时控制应通过 CancellationSignal 和后台线程实现，而非依赖系统提供的统一超时机制。
+### A9 调用栈重建原理
+- **类型**：原理链完整性
+- **位置**：14.2.6 调用栈解读示例
+- **问题**：缺少调用栈重建的原理说明
+- **建议**：补充调用栈重建原理，包括帧指针、DWARF调试信息等技术机制
 
-## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-06-10
-- **类型**：版本差异
-- **位置**：版本演进章节和适用版本声明
-- **问题**：章节声明支持 Android 17 (API 37) 但内容中未明确提及此版本，可能让读者疑惑最新版本的支持情况。
-- **建议**：在版本演进章节末尾补充说明 Android 17 (API 37) 的行为延续性，或明确指出截至 API 37 的关键特性保持稳定。
+### A10 优化实践理论基础
+- **类型**：原理链完整性
+- **位置**：14.2.7 性能优化实践
+- **问题**：性能优化实践部分原理与实践脱节，缺少理论基础
+- **建议**：补充性能优化的理论基础（如Amdahl定律、缓存局部性原理）并与simpleperf分析结果结合
 
+### A11 版本兼容性说明
+- **类型**：版本差异覆盖
+- **位置**：14.2.8 设备相关问题
+- **问题**：设备兼容性部分缺少版本相关的兼容性说明
+- **建议**：按版本说明simpleperf支持的变化，如Android 11+的权限模型变化和兼容性差异
 
-## [Task6 Review] 14.2 Simpleperf — 2026-06-10 13:08（第三轮 revisiting）
+### A12 基线性能数据补充
+- **类型**：数据与案例支撑
+- **位置**：14.2.8 性能影响说明
+- **问题**：采样频率对应用性能影响缺乏量化数据
+- **建议**：补充不同采样频率下的性能影响对比数据，提供具体的数值参考
 
-- **类型**：需确认（技术准确性）
-- **位置**：14.2.8 "设备不支持 Simpleperf" 子节
-- **问题**：替代方案使用 `adb shell setprop debug.perfetto.enable true` + `adb shell am profile start com.example.app`，这是 ART method tracing 命令，与 simpleperf 无关。14.2.2 已说明正确做法（从 NDK push simpleperf 到设备）。此节"替代方案"误导读者，让人以为 am profile 可以替代 simpleperf。
-- **建议**：删除 `setprop` + `am profile` 替代方案块，改为引用 14.2.2 的 NDK push 方法，或注明"如设备无 simpleperf，需从 NDK 推送到设备（见 14.2.2）"
-- **review 日志**：logs/review/2026-06-10-13-review.md
+### A13 真实性能案例
+- **类型**：数据与案例支撑
+- **位置**：14.2.9 性能案例分析
+- **问题**：性能案例分析缺少量化结果和真实数据
+- **建议**：补充优化前后的具体性能数据对比，展示真实的性能提升效果
 
-## [Task6 Review] 14.2 Simpleperf — 2026-06-10 13:08（第三轮 revisiting）
+### A14 完整Perfetto配置
+- **类型**：Perfetto集成完善
+- **位置**：14.2.5 Perfetto数据收集
+- **问题**：Perfetto集成部分缺少完整的配置示例和环境要求
+- **建议**：补充完整的Perfetto配置文件示例、服务检查命令和完整的数据采集流程
 
-- **类型**：需确认（技术准确性）
-- **位置**：14.2.8 "Root 权限问题" 子节
-- **问题**：`adb shell run-as com.example.app simpleperf record` 仅适用于 debuggable 应用，且受 SELinux policy 限制，在多数 Android 11+ 设备上即使 debuggable 也可能失败。14.2.1 和 14.2.2 已覆盖 profileable 标志和 `persist.simpleperf.profile_app_uid` 方案。
-- **建议**：删除或限制 run-as 方案的适用范围（标注"仅 debuggable 应用 + SELinux permissive"），引导读者优先使用 profileable 或 profile_app_uid 方案
-- **review 日志**：logs/review/2026-06-10-13-review.md
+### A15 JIT符号处理指导
+- **类型**：符号解析机制完善
+- **位置**：14.2.5 Profileable应用
+- **问题**：未说明如何处理JIT代码的符号解析问题
+- **建议**：补充JIT代码符号处理方法，包括调试信息保存和符号表管理

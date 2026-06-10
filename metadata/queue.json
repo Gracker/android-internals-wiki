@@ -134,7 +134,7 @@
       "completed_at": "2026-06-10T12:50:00+08:00"
     }
   ],
-  "completed": [
+  "pending": [
     {
       "section": "ch02",
       "section_title": "Simpleperf",
@@ -334,6 +334,48 @@
       "status": "completed",
       "original_review_log": "logs/review/2026-06-10-07-review.md",
       "completion_reason": "fixed-lite: section numbering (14.1-14.13 → 14.2.1-14.2.13), applicable_versions API level fix (35→36), DeepResearch version boundary annotation"
+    },
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Task9 Deep Review] 源码引用准确性和原理链完整性问题",
+      "material_paths": ["intake/suggestions.md"],
+      "review_issues": [
+        {
+          "type": "P0 事实错误",
+          "location": "14.2.5 Perfetto数据收集",
+          "detail": "命令参数声明不准确：不存在 `--perfetto` / `--config` / `--out` 标志，但支持标准 `-o/--output` 参数",
+          "suggestion": "修正为说明 simpleperf 不存在特有标志但支持标准输出参数"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.5 Perfetto集成",
+          "detail": "缺少关键技术细节：Perfetto服务状态检查、权限配置、完整tracing session命令示例",
+          "suggestion": "补充Perfetto环境准备和完整配置示例"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.1 简介",
+          "detail": "未解释 simpleperf 与 Linux perf 的关系和差异，以及Android特有的优化和限制",
+          "suggestion": "补充 simpleperf 与 Linux perf 的关系说明"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.3 基本使用方法",
+          "detail": "缺少采样频率（-f参数）对精度/开销影响的原理说明",
+          "suggestion": "补充采样频率选择原理和权衡说明"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "14.2.5 Profileable应用",
+          "detail": "未解释符号表解析机制和未符号化代码处理",
+          "suggestion": "补充符号解析机制和调试符号准备说明"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-10T13:20:00",
+      "status": "pending"
     }
   ]
 }
