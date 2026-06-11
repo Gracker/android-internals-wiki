@@ -282,3 +282,33 @@ Android 10 到 14 的线上 heap dump 仍多依赖 `Debug.dumpHprofData()`、专
 ## 小结
 
 内存监控的有效性取决于指标拆分和触发策略。PSS / RSS 看进程对系统和物理内存的压力，Java Heap / Native Heap 用于判断增长来源，`ActivityManager.MemoryInfo` 提供设备低内存背景信号。线上治理按“指标 → 水位线 → 降级 → 快照 → 专项分析”推进，少量高质量现场比大量单点数值更有用。
+
+<!-- AIW-源码调研-2026-06-11 -->
+
+## 🔬 源码调研发现 (2026-06-11)
+
+### ProfilingManager.java API 验证
+经源码级调研验证，Android 14/15 中 **ProfilingManager.java API 在实际AOSP源码中不存在**。章节23.7提到的该API可能属于以下情况之一：
+
+- 该API仅存在于官方文档，未实际实现到AOSP框架层
+- 实现后被移除或重命名为其他类名
+- 仅在特定厂商分支或mainline模块中存在
+
+**建议：** 如需使用内存跟踪功能，应使用已验证的以下替代方案：
+
+### 实际可用的内存跟踪 API
+#### 1. ProfilingServiceManager (Android 15)
+- **源码位置：** frameworks/base/core/java/android/os/ProfilingServiceManager.java
+- **版本要求：** Android 15 (API 35)，需@FlaggedApi权限
+- **功能：** 提供profiling mainline module的系统服务访问接口
+- **限制：** 仅在android-15.0.0_r1 tag中存在，未进入Android 17主干
+
+#### 2. ProcessMemoryState 扩展 (Android 14/15)
+- **源码位置：** frameworks/base/core/java/android/app/ProcessMemoryState.java
+- **功能：** Parcelable数据结构，包含uid/pid/processName/oomScore/hostingComponentTypes
+- **增强：** Android 14/15新增HostingComponentType枚举，精确标识进程托管状态
+
+#### 3. GC后内存指标上报控制
+- **源码位置：** frameworks/base/core/java/android/app/metrics.aconfig
+- **Feature Flag：** report_postgc_memory_metrics (bug 331243037)
+- **功能：** 控制垃圾回收后的内存指标数据上报
