@@ -25,5 +25,34 @@
     "status": "pending",
     "created": "2026-06-11",
     "source": "task2a-gap-mining"
+  },
+  {
+    "section": "4.8",
+    "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+    "title": "ART 分代垃圾回收与 GC 暂停优化",
+    "file": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Generational CMC 源码归属与 Android 15+/17 版本边界存在 P0/P1，需要回炉清理附录和版本表。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md:L706-L732",
+        "detail": "附录把 Android 16 QPR2 Generational CMC 写成基于 ConcurrentCopying 收集器扩展，并写成通过 use_generational_gc_ 创建 concurrent_copying_collector_/young_concurrent_copying_collector_。android-16.0.0_r1 的 CMC 路径实际在 heap.cc 创建 MarkCompact 与 YoungMarkCompact，YoungMarkCompact::RunPhases() 复用 MarkCompact::RunPhases() 并切换 young_gen_；CC 的 young_concurrent_copying_collector_ 只属于 CC 路径。",
+        "suggestion": "清理附录中把 Gen-CMC 归到 ConcurrentCopying 的段落；正文只保留 CC Generational 与 CMC Generational 两条路径的明确边界，并以 android-16.0.0_r1 的 mark_compact.cc/heap.cc 为源码锚点。"
+      },
+      {
+        "type": "版本差异",
+        "location": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md:L117, L459-L460, L638-L644, L748-L754",
+        "detail": "正文和附录多处使用 Android 15+ / Android 16 QPR2+/17 口径。实测 refs/tags/android-14.0.0_r1 与 android-15.0.0_r1 的 art/runtime/gc/collector/mark_compact.*、heap.cc 未包含 YoungMarkCompact、mid_gen_end_、ShouldUseGenerationalGC、use_generational_cmc；android-16.0.0_r1 才包含这些 Gen-CMC 锚点。本轮 git ls-remote 未发现 android-17.0.0_r1 tag。",
+        "suggestion": "把 “Android 15+ 的 CMC 路径” 修正为已核到 android-16.0.0_r1 的 Gen-CMC 代码；Android 17 只保留官方 release note/blog 能支撑的产品口径。凡仅来自 AOSP main/master 的结论必须标注“未进入 Android 17”，不得作为正文确定结论。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-11T17:25:11+08:00",
+    "created": "2026-06-11",
+    "status": "pending"
   }
 ]
