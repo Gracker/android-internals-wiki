@@ -3,14 +3,14 @@
 title: Linux 进程调度基础
 chapter: '5.1'
 section: '5.1'
-status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-18"
+reviewed_date: "2026-06-12"
 reviewed_at: "2026-05-18T01:08:00+08:00"
-last_task6_at: "2026-05-18T01:08:00+08:00"
+last_task6_at: "2026-06-12T01:08:00+08:00"
 task6_reviewed_date: "2026-05-18"
 review_round: 5
 task2b_fixed_date: '2026-05-16T11:26:08+08:00'
@@ -73,7 +73,7 @@ last_task9_review_log: "logs/deep-review/2026-06-11-15-audit.md"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
-last_task6_audit: 2026-06-08
+last_task6_audit: "2026-06-12"
 last_task9_audit: "2026-06-11"
 last_task9_autofix_at: "2026-06-11"
 updated_date: "2026-06-11"

@@ -2,7 +2,7 @@
 title: 图形缓冲区管理 (BufferQueue)
 chapter: '2.13'
 section: '2.13'
-status: ready-for-review
+status: "finalized"
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 tags:
 - BufferQueue
@@ -28,7 +28,7 @@ gap_score: 14/20
 drafted_by: openclaw-task2a
 drafted_date: '2026-04-04'
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-28"
+reviewed_date: "2026-06-12"
 last_verified: '2026-05-08'
 last_verified_against: AOSP main + android-16.0.0_r1 + android-14.0.0_r1 + android-12/11/10/4.1 tags + external review
 confidence: high
@@ -57,9 +57,9 @@ sources:
   path: https://source.android.com/docs/core/graphics/architecture
 - type: official
   path: https://perfetto.dev/docs/analysis/stdlib-docs#android-monitor_contention
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task9_result: "auto-fixed"
@@ -68,8 +68,8 @@ task9_reviewed_date: 2026-05-19
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-11T12:39:21+08:00"
 last_task9_audit: "2026-06-11"
-last_task6_at: "2026-05-21T09:08:00+08:00"
-last_task6_audit: "2026-05-21"
+last_task6_at: "2026-06-12T01:08:00+08:00"
+last_task6_audit: "2026-06-12"
 last_task6_audit_result: l1-light-edit
 last_task6_audit_log: "logs/review/2026-05-21-09-audit.md"
 review_round: 1
@@ -78,6 +78,8 @@ task9_review_notes: "2026-06-11 Task9 闲时抽检：AUTO-FIX。修正 Perfetto 
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
 last_task9_autofix_at: "2026-06-11"
+task6_result: "pass-light-edit"
+task6_reviewed_date: "2026-06-12"
 ---
 
 # 2.13 图形缓冲区管理 (BufferQueue)
@@ -176,15 +178,15 @@ AOSP 注释给出的状态表很清楚。正常模式下,FREE、DEQUEUED、QUEUE
 
 在 BLAST 路径里,`BLASTBufferQueue::onFirstRef()` 设置 `maxDequeuedBufferCount`。Android 14 及更早版本默认值为 2,配上 consumer 侧的一块已 acquire buffer,形成三缓冲工作形态。android-16.0.0_r1 的默认值仍为 2,并未提升至 3;不同 Surface 类型、async mode、consumer 约束都可能让上限变化。
 
-## Sync Fence 决定"状态变了"和"真的能碰这块内存"不是一回事
+## Sync Fence：slot 状态变化不等于 buffer 可读写
 
-只看 slot 状态,我们最多知道 buffer 的所有权大概在谁手里;只看 fence,我们才知道它是不是已经真的可以读写。这两件事必须放在一起看。
+只看 slot 状态,我们最多知道 buffer 的所有权大概在谁手里;只看 fence,我们才知道它是不是已经可以读写。这两件事必须放在一起看。
 
 先看 producer 这一侧。`dequeueBuffer()` 返回的 fence 标记的是上一位使用者是否已经结束使用。slot 已经回到 producer 这边，不代表立刻就能覆盖旧内容——还必须等这条 fence signal。
 
 再看 consumer 这一侧。producer 调 `queueBuffer()` 时会把 `QueueBufferInput::fence` 一起交出去。这个 fence 的意思是：slot 交给你了，但 GPU 可能还没把最后几笔写完，等到 fence signal 才能读。所以 slot 进入 QUEUED，不等于 SurfaceFlinger 这一刻就能安全合成。
 
-最后是回收。consumer 处理完成后会走 `releaseBuffer(..., releaseFence)`。这个 release fence 会在下一次 producer `dequeueBuffer()` 这块 slot 时回到 producer 手里,告诉它"现在这块内存真的空了,可以重写"。
+最后是回收。consumer 处理完成后会走 `releaseBuffer(..., releaseFence)`。这个 release fence 会在下一次 producer `dequeueBuffer()` 这块 slot 时回到 producer 手里,告诉它"现在这块内存空了,可以重写"。
 
 AOSP 在 `BufferItem.h` 里把 `mFence` 注释为"buffer idle 时 signal 的 fence",在 `IGraphicBufferConsumer.h` 里又把 `releaseBuffer()` 的 `releaseFence` 明确成 consumer 归还 buffer 时携带的同步信息。光看 FREE / QUEUED / ACQUIRED 这些字面状态,不足以解释为什么某个 buffer 明明已经 release 了,producer 还要再等一会儿才能复用,原因就在 fence。
 

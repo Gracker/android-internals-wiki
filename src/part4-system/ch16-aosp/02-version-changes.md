@@ -39,14 +39,14 @@ sources:
     path: "android-developers.googleblog.com (ADPF updates)"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-29"
-last_task6_audit: "2026-06-09"
+reviewed_date: "2026-06-12"
+last_task6_audit: "2026-06-12"
 section: "16.2"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
@@ -58,7 +58,7 @@ last_task9_at: "2026-06-11T13:20:00+08:00"
 last_task9_audit: "2026-06-11"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-29T07:07:00+08:00"
+last_task6_at: "2026-06-12T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-07-review.md"
 task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
 last_task9_autofix_at: "2026-06-11"
@@ -507,12 +507,12 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 ### Android 17 有什么需要适配的？
 - 来源：https://juejin.cn/post/7610233341305389099
 - 类型：技术文章
-- 摘要：Android 17 官方适配文档解读：隐私沙箱要求、更严格的后台限制、Predictive Back强制适配、禁止侧载政策详解。
+- 摘要：Android 17 官方适配文档解读：隐私沙箱要求、更严格的后台限制、Predictive Back 强制适配、禁止侧载政策详解。
 - 入库时间：2026-04-06
 ### 了解一下Android16更新事项
 - 来源：https://juejin.cn/post/7595053284915822632
 - 类型：技术文章
-- 摘要：Android 16 主要更新事项：照片权限细分、Notification权限、后台服务限制、预测性返回手势。
+- 摘要：Android 16 主要更新事项：照片权限细分、Notification 权限、后台服务限制、预测性返回手势。
 - 入库时间：2026-04-06
 
 ## 附录：Android 16 ART Generational CMC / userfaultfd GC 机制源码调研
