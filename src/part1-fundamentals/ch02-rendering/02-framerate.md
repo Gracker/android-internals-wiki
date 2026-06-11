@@ -67,7 +67,7 @@ last_task9_audit: "2026-05-22"
 last_task9_audit_log: "logs/deep-review/2026-05-22-22-audit.md"
 task9_review_notes: "2026-05-23 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3；仅留下官方文档 URL、Perfetto SQL 可执行性与功耗数据口径建议。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
-last_task6_audit: "2026-05-19"
+last_task6_audit: "2026-06-12"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
 ---
@@ -126,7 +126,7 @@ FPS(Frames Per Second)是我们最熟悉的帧率指标:一秒钟内 App 成功�
 
 在 Perfetto 中,我们可以直接看到每一帧的帧时间。正常的帧时间应该在预算以内且波动很小(比如 60Hz 下每帧都在 10-16ms 之间)。如果某一帧突然跳到 30ms 或 50ms,那就是一个 Jank。
 
-### 帧间隔一致性:流畅度的真正决定因素
+### 帧间隔一致性:流畅度的决定因素
 
 帧间隔(Frame Interval)是连续两帧之间的时间差。这是决定用户感知流畅度的**最关键指标**。
 
