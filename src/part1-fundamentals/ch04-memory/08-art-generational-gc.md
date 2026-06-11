@@ -38,10 +38,10 @@ tags:
 reviewed_date: "2026-06-11"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "auto-fixed"
 last_task9_at: "2026-06-11T20:40:49+08:00"
 task2b_state: "fixed"
@@ -55,9 +55,9 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_review_log: "logs/deep-review/2026-06-11-20-deep-review.md"
 task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Perfetto FrameTimeline jank_type 过滤大小写、LOS/old-gen 归属和 CMC 晋升阈值口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-11"
-last_task6_at: "2026-06-11T19:08:00+08:00"
-last_task6_review_log: "logs/review/2026-06-11-19-review.md"
-task6_review_notes: "2026-06-11 Task6 19:08：pass-light-edit（revisiting re-review after task9 auto-fix）。L1 否定-纠正标题修正 1 处、悬空 path 字段删除 1 处；无新增 L3/L4 回炉。task9_result=auto-fixed 非 pass-tech-review，不满足自动晋升条件。"
+last_task6_at: "2026-06-11T21:15:43+08:00"
+last_task6_review_log: "logs/review/2026-06-11-21-review.md"
+task6_review_notes: "2026-06-11 Task6 21:10: pass-light-edit（revisiting re-review after task9 auto-fix round 2）。L1 形容词+冒号起手式修正 1 处（card_table 注释描述）；无其他新增问题，无回炉项。task9_result=auto-fixed 非 pass-tech-review，不满足自动晋升条件，退回 task9 做正式通过。"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 deepseek_cn_review_state: needs-structure-rework
@@ -150,7 +150,7 @@ inline void WriteBarrier::ForFieldWrite(ObjPtr<mirror::Object> dst,
 
 ### Card Table：记录最近被改过的堆区域
 
-`art/runtime/gc/accounting/card_table.cc` 的文件注释写得很直接：所有对 heap object 的非空对象指针写入，都应该经过 WriteBarrier；heap 按 `kCardSize` 划成 card；card byte 用来表示 clean / dirty 状态。Young GC 不会重新扫完整个 old generation，而是先看这些 dirty card。
+`art/runtime/gc/accounting/card_table.cc` 文件注释写明：所有对 heap object 的非空对象指针写入，都应该经过 WriteBarrier；heap 按 `kCardSize` 划成 card；card byte 用来表示 clean / dirty 状态。Young GC 不会重新扫完整个 old generation，而是先看这些 dirty card。
 
 很多资料会把这一步统称为 Remembered Set。对 4.8 这一节来说，写成“由 dirty card 导出的跨代引用候选集合”更稳，因为这部分在 CMC 代码里能直接落到 card scanning，而不是依赖一个尚未核实到类名的抽象名词。
 
