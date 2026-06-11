@@ -3,7 +3,7 @@
 title: "InputDispatcher 反压与无响应窗口降级"
 chapter: "3.7"
 section: "3.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 16 (API 36)"
 last_verified: "2026-05-16"
@@ -27,13 +27,16 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: "reviewed"
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
+task2b_result: fixed-lite
+task2b_state: fixed
+pipeline_stage: task6_pending
+last_task2b_lite_at: "2026-06-12"
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
-pipeline_stage: ready-to-publish
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: openclaw-task9
@@ -379,4 +382,4 @@ adb shell perfetto \
 3. 配合`cat /proc/<pid>/sched`查看主线程状态
 4. 若waitQueue存在且主线程空闲，检查是否被Binder阻塞或调度异常
 
-源码验证边界: 本分析基于aosp/frameworks/native主分支，适用于Android 17及之前版本。
+源码验证边界：本分析基于 aosp/frameworks/native 主分支快照，未对应具体 release tag；结论适用于已验证版本（Android 13–16），Android 17 相关内容尚未在 android-17.0.0_r1 上确认，不可直接作为正文确定结论。
