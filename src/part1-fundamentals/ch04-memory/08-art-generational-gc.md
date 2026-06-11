@@ -38,14 +38,15 @@ tags:
 reviewed_date: "2026-05-27"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
 last_task9_at: "2026-06-11T17:25:11+08:00"
-task2b_state: "pending"
-task2b_result: "fixed"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-06-11"
 last_task6_audit: "2026-06-09"
 last_task9_audit: "2026-06-11"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
@@ -114,7 +115,7 @@ ART 的实测数据支撑了这个假设：在典型的 Android 应用中，超�
 
 **Android 10 前后的 CC 路径**：当前主线 AOSP 的 `art/runtime/gc/collector/concurrent_copying.cc` 构造函数带有 `young_gen` 和 `use_generational_cc` 两个参数，`art/runtime/gc/heap.cc` 也会在 `use_generational_gc_` 为 true 时同时创建 `concurrent_copying_collector_` 和 `young_concurrent_copying_collector_`。这说明 CC 的分代模式在运行时已经是正式实现，不是概念示意。至于“最早对应到哪一个 Android 10 tag”这一点，本节暂时不写死，等补 Android 10 分支源码再回填。
 
-**Android 15+ 的 CMC 路径（含 Android 17 Generational CMC）**：`art/runtime/gc/collector/mark_compact.h` 和 `art/runtime/gc/collector/mark_compact.cc` 已经能直接看到 `YoungMarkCompact`、`young_gen_`、`old_gen_end_`、`mid_gen_end_` 这些字段和类型。`ShouldUseGenerationalGC()` 还会检查 `persist.device_config.runtime_native_boot.use_generational_gc`；UFFD 路径下还要看 `com::android::art::flags::use_generational_cmc()`。这组代码说明 Android 17 对外宣传的 generational CMC 能在代码中找到对应落点，但具体设备是否启用，还得看版本、内核能力和 runtime flag。
+**Android 16+ 的 CMC 路径（含 Android 17 Generational CMC）**：`refs/tags/android-16.0.0_r1` 的 `art/runtime/gc/collector/mark_compact.h` 和 `art/runtime/gc/collector/mark_compact.cc` 包含 `YoungMarkCompact`、`young_gen_`、`old_gen_end_`、`mid_gen_end_` 这些字段和类型（android-14.0.0_r1 / android-15.0.0_r1 未包含）。`ShouldUseGenerationalGC()` 还会检查 `persist.device_config.runtime_native_boot.use_generational_gc`；UFFD 路径下还要看 `com::android::art::flags::use_generational_cmc()`。这组代码说明 Android 17 对外宣传的 generational CMC 能在代码中找到对应落点，但具体设备是否启用，还得看版本、内核能力和 runtime flag。
 
 本节后面谈 Android 17 时，默认语境是“CMC 路径下可见的分代实现”，不再把它和 Android 10 的分代 CC 混成一个机制。
 
@@ -456,7 +457,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 |---|---|---|
 | 8.0 (Oreo) | CC 成为默认 moving collector，pause time 明显短于 Android 7.0。 | 流畅性问题开始更多表现为短 pause 与 CPU 争抢，不再只有几十毫秒的长停顿。 |
 | 10 前后 | CC 路径进入分代模式，`ConcurrentCopying` 已区分 `young_gen` 和 non-young collector。首次对应的精确 tag 待补源码核对。 | 分析 GC 时要区分 young collection 和 whole-heap collection，不能把所有 GC 都当成 full GC。 |
-| 15+ | CMC 路径包含 `YoungMarkCompact`、`use_generational_gc` 和 `persist.device_config.runtime_native_boot.use_generational_gc`。 | 设备是否启用 generational CMC，需要结合版本、flag、内核和 build 配置一起判断。 |
+| 16+ | CMC 路径包含 `YoungMarkCompact`、`use_generational_gc` 和 `persist.device_config.runtime_native_boot.use_generational_gc`（源码锚点验证至 `android-16.0.0_r1`，android-15.0.0_r1 未包含）。 | 设备是否启用 generational CMC，需要结合版本、flag、内核和 build 配置一起判断。 |
 | 17 Beta | Android 17 对外把 “Concurrent Mark-Compact collector enhanced with generational GC” 当成性能特性来讲。 | 做问题归因时，先确认设备是否已启用这条路径，再决定是否把观测到的行为套用到更早版本。 |
 
 [已验证: AOSP main, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
@@ -708,13 +709,13 @@ Young GC pause 通常 10-50ms，full GC pause 可达 100-500ms。对于高频 re
 
 ### 调研结论
 
-**核心发现**：Android 16 QPR2 引入的 Generational CMC 并非独立 GC 类型，而是基于 `ConcurrentCopying` 收集器扩展的分代模式。开关机制位于收集器类型选择层，设备能力判断路径在 `heap.cc` 收集器初始化逻辑中。
+**核心发现**：Android 16 QPR2 引入的 Generational CMC 并非独立 GC 类型，而是基于 `MarkCompact` 收集器扩展的分代模式（源码锚点：`refs/tags/android-16.0.0_r1` 的 `mark_compact.cc`/`heap.cc`）。开关机制位于收集器类型选择层，设备能力判断路径在 `heap.cc` 收集器初始化逻辑中。
 
 ### 源码锚点
 
 | 文件 | 行号 | 内容 |
 |------|------|------|
-| `art/runtime/gc/collector/concurrent_copying.h` | ~108 | `ConcurrentCopying` collector 类定义（含 generational 支持） |
+| `art/runtime/gc/collector/mark_compact.h` | — | `MarkCompact` / `YoungMarkCompact` collector 类定义（CMC Gen 路径） |
 | `art/runtime/gc/heap.cc` | ~197 | 堆初始化与年轻代相关参数 |
 | `art/runtime/gc/heap.cc` | 2168-2173 | 年轻代字节管理（young_generation bytes） |
 | `art/runtime/gc/heap.cc` | ~2793 | 堆大小调整与分代策略 |
@@ -725,9 +726,11 @@ Young GC pause 通常 10-50ms，full GC pause 可达 100-500ms。对于高频 re
 
 **非独立 flag，而是收集器类型选择**：
 
-Generational CMC 的启用并非通过独立 system property 或 DeviceConfig flag 直接控制。其本质是：当 ART 选择 `ConcurrentCopying` 类型的 GC 收集器时，通过 `use_generational_gc_` 变量同时创建两个 collector 实例：
-- `concurrent_copying_collector_`：whole-heap GC
-- `young_concurrent_copying_collector_`：young GC
+Generational CMC 的启用并非通过独立 system property 或 DeviceConfig flag 直接控制。其本质是：当 ART 选择 CMC (Mark-Compact) 收集器时，`heap.cc` 通过 `use_generational_gc_` 变量同时创建两个 collector 实例（`refs/tags/android-16.0.0_r1`）：
+- `MarkCompact`：whole-heap GC
+- `YoungMarkCompact`：young GC（复用 `MarkCompact::RunPhases()` 并切换 `young_gen_`）
+
+注：`concurrent_copying_collector_` / `young_concurrent_copying_collector_` 只属于 CC 路径，与 CMC Gen 路径无关。
 
 开关路径可以写成：堆初始化 → 收集器类型选择 → generational 模式启用/禁用。
 
