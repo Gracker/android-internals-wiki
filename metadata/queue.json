@@ -57,5 +57,32 @@
     "completed_reason": "fixed-lite: 版本限定修正(Android 15+→16+, 源码锚点 pin 至 android-16.0.0_r1); 附录开关段落 CC→MarkCompact/YoungMarkCompact 归属修正",
     "completed_at": "2026-06-11T17:35:00+08:00",
     "completed_by": "task2b-lite"
+  },
+  {
+    "section": "3.7",
+    "section_title": "InputDispatcher 反压与无响应窗口降级",
+    "priority": 80,
+    "reason": "[Task6闲时抽检] 扩展节'Android 17三重队列架构'写作风格违反writing-guide（API文档式罗列vs叙述风格），源码基于main分支未标注版本边界",
+    "material_paths": [
+      "logs/review/2026-06-12-05-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "扩展节（AIW-源码调研-2026-06-10之后）",
+        "detail": "整节为 API 文档风格（数据结构罗列、行号标注），违反 writing-guide 叙述为主原则；37处中英文间距缺失；形容词+冒号起手式",
+        "suggestion": "按叙述风格重写扩展节，融入主正文或独立补充"
+      },
+      {
+        "type": "需确认",
+        "location": "扩展节末尾",
+        "detail": "源码基于 main 分支但标注'适用于Android 17及之前版本'，违反版本边界规则（main/master须标注未进入Android 17）",
+        "suggestion": "收窄源码锚点到 android-17.0.0_r1 或标注为未验证内容"
+      }
+    ],
+    "added_by": "task6-audit",
+    "added_at": "2026-06-12T05:06:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-12-05-audit.md"
   }
 ]
