@@ -45,7 +45,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
 last_task6_audit: "2026-06-09"
 section: "16.2"
-status: finalized
+status: ready-for-review
 pipeline_stage: task6_pending
 task9_state: reviewed
 task9_result: auto-fixed
