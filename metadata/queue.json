@@ -83,6 +83,7 @@
     "added_by": "task6-audit",
     "added_at": "2026-06-12T05:06:00",
     "status": "pending",
+    "task2b_lite_partial_fix": "2026-06-12 fixed-lite: 版本边界修正(扩展节源码验证边界从'适用于Android 17及之前版本'改为明确标注 main 分支未验证，Android 17 结论不可用)，重写问题仍 pending",
     "original_review_log": "logs/review/2026-06-12-05-audit.md"
   }
 ]
