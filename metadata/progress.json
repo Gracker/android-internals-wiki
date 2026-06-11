@@ -7658,6 +7658,26 @@
       "queue_priority": 80,
       "fixed_stale_draft": true,
       "fixed_at": "2026-06-10T03:08:00+08:00"
+    },
+    "1.25": {
+      "section": "1.25",
+      "title": "AMS 双锁架构与 system_server 锁竞争优化",
+      "file": "src/part1-fundamentals/ch01-architecture/25-ams-dual-lock-system-server-contention.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-06-11",
+      "gap_source": "研究素材/DeepResearch",
+      "drafted_date": "2026-06-11",
+      "drafted_by": "openclaw-task2a",
+      "last_verified": "2026-06-11",
+      "last_verified_against": "AOSP android-16.0.0_r4 frameworks/base/services/core/java/com/android/server/am/",
+      "confidence": "medium",
+      "task2a_state": "processed",
+      "task2a_result": "processed-draft",
+      "last_task2a_at": "2026-06-11T13:04:00+08:00",
+      "task6_state": "pending",
+      "queue_priority": 80
     }
   },
   "task2b_rounds": [
@@ -10031,13 +10051,13 @@
     }
   },
   "task2a_last_processed": {
-    "section": "14.23",
-    "title": "StrictMode 性能检查与开发期诊断",
-    "file": "src/part3-tools/ch14-other-tools/23-strictmode-performance-diagnostics.md",
+    "section": "1.25",
+    "title": "AMS 双锁架构与 system_server 锁竞争优化",
+    "file": "src/part1-fundamentals/ch01-architecture/25-ams-dual-lock-system-server-contention.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-08T00:05:00",
+    "processed_at": "2026-06-11T13:04:00",
     "status": "ready-for-review",
-    "note": "StrictMode ThreadPolicy/VmPolicy 配置、违规日志分析、临时豁免、CI/CD 集成、局限性与 Perfetto 互补，7 个锚点全部覆盖，3 个扩展点覆盖"
+    "note": "7 个锚点全部覆盖，3 个扩展点全部覆盖，素材来自 DeepResearch/2026-06-10-lru-lock-optimization.md + AOSP android-16.0.0_r4 源码验证"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-08",
