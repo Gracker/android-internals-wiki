@@ -481,3 +481,4 @@ public final class NetworkMonitor {
 - HTTP/3 (QUIC) 规范: <https://www.rfc-editor.org/rfc/rfc9114>
 - Uber Engineering — 迁移到 QUIC: <https://eng.uber.com/en/better-http-3/>
 - Google Chromium Blog — HTTP/3 性能数据（通用参考）: <https://blog.chromium.org/>
+- Android 17 运营商数据限速查询与本地网络权限: <https://juejin.cn/post/7612545160434188297>，张拭心，2026-03。涵盖 Android 17 新增的 `getStreamingAppMaxDownlinkKbps/UplinkKbps`（查询运营商为流媒体分配的最大速率，用于动态调整媒体质量）和 `ACCESS_LOCAL_NETWORK` 运行时权限（保护 LAN 访问，投屏/智能家居场景需适配）

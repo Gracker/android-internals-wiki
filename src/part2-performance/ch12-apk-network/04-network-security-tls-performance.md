@@ -328,3 +328,4 @@ Android 9（API 28）引入了 Private DNS（DoT）设置，Android 11 扩展支
 - [Android Certificate Transparency Policy](https://source.android.com/docs/security/cert-transparency)，Android CT Policy 的 SCT 与日志状态要求
 - [OkHttp Protocols API](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/protocols.html)，OkHttp 5 公开协议配置面
 - [Conscrypt Security Provider](https://developer.android.com/training/articles/security-gms-provider)，Android TLS 实现说明
+- [Android 17 适配：usesCleartextTraffic 弃用与 CT 默认开启](https://juejin.cn/post/7610233341305389099)，恋猫de小郭，2026-02。涵盖 Android 17 中 `usesCleartextTraffic` 的未来弃用计划（建议迁移到 Network Security Config）、Certificate Transparency 默认强制开启、`USE_LOOPBACK_INTERFACE` 本地网络保护等网络安全相关变更
