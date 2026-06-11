@@ -4,8 +4,8 @@ title: Linux 进程调度基础
 chapter: '5.1'
 section: '5.1'
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-18"
@@ -19,17 +19,17 @@ task2b_fixed_issues:
   - eevdf-sysctl-params-and-rt-version-timeline-added
   - diagnostic-decision-framework-added
 task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。完成标点/中英文间距/SQL 别名等 L1/L2 小修；无新增 B 类问题。Task9 已 pass-tech-review 且 queue.json 无 pending，自动晋升 finalized。"
-task9_state: "reviewed"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-18"
+task9_state: reviewed
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-11"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-18T00:25:00+08:00"
-task2b_state: "fixed"
-task2b_result: "fixed"
+last_task9_at: "2026-06-11T15:20:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
-last_verified: '2026-04-14'
-last_verified_against: Linux kernel 6.6 sched-design-CFS/EEVDF + sched priority headers,
-  bionic pthread.h mainline, libprocessgroup task profiles
+last_verified: '2026-06-11'
+last_verified_against: Linux 6.6 sched-design-CFS + kernel/sched/fair.c/debug.c,
+  bionic pthread.h android-16.0.0_r1, libprocessgroup task_profiles.json android-16.0.0_r1
 confidence: high
 sources:
 - type: blog
@@ -68,12 +68,16 @@ polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 review_type: post-polish-quality-gate
-task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；前轮 P0/P1 已修复，剩余 P2（SoC 迁移数据、SQL 聚合、sched_base_slice 默认值边界）沿用既有 suggestions，不重复入队；等待 Task6 回炉。"
-last_task9_review_log: "logs/deep-review/2026-05-18-00-deep-review.md"
+task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；前轮 P0/P1 已修复，剩余 P2（SoC 迁移数据、SQL 聚合、sched_base_slice 默认值边界）沿用既有 suggestions，不重复入队；等待 Task6 回炉。 | 2026-06-11 15 Task9 idle audit auto-fix: 修正 Linux 6.6 EEVDF base_slice debugfs 路径、默认值边界与 AOSP source tag 锚点；未发现 Android/API 38+ 越界内容，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-11-15-audit.md"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
 last_task6_audit: 2026-06-08
+last_task9_audit: "2026-06-11"
+last_task9_autofix_at: "2026-06-11"
+updated_date: "2026-06-11"
+updated_by: openclaw-task9
 ---
 
 <!-- outline-start -->
@@ -312,11 +316,11 @@ Native 层最常见的做法还是直接调用 `sched_setaffinity()`。这里传
 
 **2. `pthread_setaffinity_np()`:Android 16 / API 36 起可用的 pthread 封装**
 
-bionic mainline 的 `libc/include/pthread.h` 已经声明了 `pthread_getaffinity_np()` 和 `pthread_setaffinity_np()`，并标成 `__INTRODUCED_IN(36)`，注释里也写了 "Available since API level 36"。所以"Android 上没有 `pthread_setaffinity_np()`"这句话只适用于旧版本。面向 API 36 之前的设备或旧 NDK target 时，兼容写法仍然是 `sched_setaffinity(gettid(), ...)`;面向新平台时，直接按 `pthread_t` 调 `pthread_setaffinity_np()` 也成立。
+AOSP android-16.0.0_r1 的 `bionic/libc/include/pthread.h` 已经声明了 `pthread_getaffinity_np()` 和 `pthread_setaffinity_np()`，并标成 `__INTRODUCED_IN(36)`，注释里也写了 "Available since API level 36"。所以"Android 上没有 `pthread_setaffinity_np()`"这句话只适用于旧版本。面向 API 36 之前的设备或旧 NDK target 时，兼容写法仍然是 `sched_setaffinity(gettid(), ...)`;面向新平台时，直接按 `pthread_t` 调 `pthread_setaffinity_np()` 也成立。
 
 **3. cpuset / task profiles：系统级 CPU 可用范围**
 
-Android 更常见的控制入口是 task profiles。Framework 通过 `libprocessgroup` 的 `SetTaskProfiles()` / `SetProcessProfiles()` 把逻辑状态写进 cgroup controller。AOSP mainline 的 `task_profiles.json` 里，`ProcessCapacityHigh` 会加入 `cpuset/foreground`，`ProcessCapacityMax` 会加入 `cpuset/top-app`;`HighPerformance` / `MaxPerformance` 则映射到 `cpu/foreground` / `cpu/top-app`。
+Android 更常见的控制入口是 task profiles。Framework 通过 `libprocessgroup` 的 `SetTaskProfiles()` / `SetProcessProfiles()` 把逻辑状态写进 cgroup controller。AOSP android-16.0.0_r1 的 `system/core/libprocessgroup/profiles/task_profiles.json` 里，`ProcessCapacityHigh` 会加入 `cpuset/foreground`，`ProcessCapacityMax` 会加入 `cpuset/top-app`;`HighPerformance` / `MaxPerformance` 则映射到 `cpu/foreground` / `cpu/top-app`。
 
 ```text
 /dev/cpuset/
@@ -497,25 +501,25 @@ LIMIT 100;
 
 ### 调度器关键可调参数
 
-EEVDF 将 CFS 的多个启发式 sysctl 参数收敛为 `sched_base_slice_ns` 一个核心参数。Linux 6.6+ fair class 的关键可调项：
+EEVDF 将 CFS 的多个启发式调度参数收敛到 debugfs 暴露的 `base_slice_ns`（源码变量 `sysctl_sched_base_slice`）这个核心参数。Linux 6.6+ fair class 的关键可调项：
 
 | 参数 | 默认值 | 作用 | 对 Android 性能分析的意义 |
 |------|--------|------|--------------------------|
-| `sched_base_slice_ns` | 3 000 000 (3ms) | 替代旧 `sched_min_granularity_ns`，定义调度实体申请的基本时间片长度 | 直接影响任务在 CPU 上的最短驻留时间；调大→吞吐优先，调小→响应优先 |
+| `base_slice_ns` / `sysctl_sched_base_slice` | 0.75ms × (1 + ilog(ncpus))，8 核设备约 3ms | 替代旧 `sched_min_granularity_ns`，定义调度实体申请的基本时间片长度 | 直接影响任务在 CPU 上的最短驻留时间；调大→吞吐优先，调小→响应优先 |
 | `sched_wakeup_granularity_ns` | 已移除 (EEVDF) | 旧 CFS 参数，控制唤醒抢占粒度 | EEVDF 下通过 lag/virtual deadline 自动处理唤醒抢占，不再需要手动调整 |
-| `sched_latency_ns` | 已弱化 (EEVDF) | 旧 CFS 参数，定义调度周期的目标延迟 | EEVDF 用 `sched_base_slice_ns` × runnable 数量推导，不再作为独立 tunable |
+| `sched_latency_ns` | 已弱化 (EEVDF) | 旧 CFS 参数，定义调度周期的目标延迟 | EEVDF 用 `base_slice_ns` × runnable 数量推导，不再作为独立 tunable |
 | `sched_nr_migrate` | 8 | 控制 RT 任务迁移时最多移动多少个 fair class 任务 | 大核负载均衡场景下可能影响迁移效率，一般不需要调整 |
 
 检查设备实际值：
 
 ```bash
-# 查看当前调度器参数（需要 root）
-cat /proc/sys/kernel/sched_base_slice_ns
-# EEVDF 内核 6.6+ 查看 sched 特色参数
-ls /proc/sys/kernel/sched_*
+# Linux 6.6+，需要 root、CONFIG_SCHED_DEBUG 且已挂载 debugfs
+cat /sys/kernel/debug/sched/base_slice_ns
+# 查看 sched debugfs 下暴露的调度参数
+ls /sys/kernel/debug/sched/
 ```
 
-在 Perfetto 中观察调度行为时，如果发现大量短时间 Runnable→Running→Runnable 切换（微秒级），先检查 `sched_base_slice_ns` 是否偏小——slice 偏小会让 EEVDF 更频繁地在 eligible entity 之间切换。`sched_base_slice_ns` 偏大则倾向于增加单次驻留和响应延迟。这类分析需要对照 `sched_switch` 事件的时间间隔与 `sched_base_slice_ns` 的关系。
+在 Perfetto 中观察调度行为时，如果发现大量短时间 Runnable→Running→Runnable 切换（微秒级），先检查 `/sys/kernel/debug/sched/base_slice_ns` 是否偏小——slice 偏小会让 EEVDF 更频繁地在 eligible entity 之间切换。`base_slice_ns` 偏大则倾向于增加单次驻留和响应延迟。这类分析需要对照 `sched_switch` 事件的时间间隔与 `base_slice_ns` 的关系。
 
 ### Real-time 调度在 Android 版本中的演进
 
@@ -774,7 +778,7 @@ ORDER BY cpu;
 | CPU 满载 + 关键线程 Runnable 等待长 | 减少非关键线程的 CPU 占用（降低 nice 值、裁剪后台任务） |
 | 关键线程被困在小核 | 检查 cpuset profile 是否正确应用到 top-app 组 |
 | CPU 频率爬升慢 | 检查 UClamp_MIN 是否配置、schedutil governor 是否生效 |
-| 大量短时间 Runnable↔Running 切换 | 检查 `sched_base_slice_ns` 是否偏小，EEVDF 内核下考虑调整 |
+| 大量短时间 Runnable↔Running 切换 | 检查 `/sys/kernel/debug/sched/base_slice_ns` 是否偏小，EEVDF 内核下考虑调整 |
 | RenderThread 在关键帧期间被抢占 | 绑核到大核（需 Perfetto 对比绑核前后 wall time 差异） |
 
 > ⚠️ 本框架覆盖的是基于 Perfetto 可观测信号的诊断路径。针对特定应用场景的调度优化经验（如大型社交应用的消息队列线程调度策略、游戏引擎的渲染线程调度配置等）需要结合具体应用架构和实测数据，不在本节讨论范围内。
