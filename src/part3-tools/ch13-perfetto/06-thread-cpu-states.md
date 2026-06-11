@@ -37,17 +37,21 @@ related_chapters:
 - '13.5'
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-26"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 task6_result: pass-light-edit
+task6_state: revisiting
 task9_state: "reviewed"
-task9_result: pass-tech-review
-task9_reviewed_date: '2026-05-19'
+task9_result: auto-fixed
+task9_reviewed_date: '2026-06-12'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-19T07:31:24+08:00'
+last_task9_at: '2026-06-12T02:24:45+08:00'
+last_task9_audit: '2026-06-12'
+last_task9_autofix_at: '2026-06-12'
 task2b_result: "fixed"
+task2b_state: fixed
 last_task2b_at: '2026-04-28T01:40:00+08:00'
-task9_review_notes: "2026-05-19 Task9:复核 6 维度无 P0/P1;queue 无 pending,task6_result=pass-light-edit,自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md,不重复写入。"
-last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
+task9_review_notes: "2026-06-12 Task9 idle audit:auto-fixed state-code outline and blocked_function availability boundary;no queue entry. 2026-05-19 Task9:复核 6 维度无 P0/P1;queue 无 pending,task6_result=pass-light-edit,自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md,不重复写入。"
+last_task9_review_log: "logs/deep-review/2026-06-12-02-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
 ---
@@ -60,7 +64,7 @@ last_deepseek_cn_review_at: 2026-06-11
 
 ### 锚点(必须覆盖)
 
-- 🔹 线程 CPU 状态定义:Running (R)、Runnable (R+)、Sleeping (S)、Uninterruptible Sleep (D)、Stopped (T)
+- 🔹 线程 CPU 状态定义:Running、Runnable (R)、Runnable (R+)、Sleeping (S)、Uninterruptible Sleep (D)、Stopped (T)
 - 🔹 在 Perfetto 中读取线程状态:sched_switch events、thread state track
 - 🔹 Runnable 过长的常见含义:CPU 争抢、核数不足、优先级过低
 - 🔹 Uninterruptible Sleep 的常见含义:I/O 等待、内核锁、Page Fault
@@ -458,7 +462,7 @@ ORDER BY dur DESC
 LIMIT 20;
 ```
 
-`blocked_function` 来自 `sched/sched_blocked_reason` ftrace 事件,记录线程进入 D 状态前最后一个非调度器内核函数。如果 `blocked_function` 为空,说明这份 trace 没有启用 `sched_blocked_reason` 事件,需要回到抓取配置补上。
+`blocked_function` 来自 `sched/sched_blocked_reason` ftrace 事件,记录线程进入 D 状态前最后一个非调度器内核函数。如果 `blocked_function` 为空,不能直接判定这份 trace 没有启用该事件;还要检查当前是否为 userdebug/eng build、内核是否包含 `sched_blocked_reason` tracepoint,以及抓取配置是否启用了该事件。
 
 **查询某线程在各 CPU 核心上的运行时间分布(判断是否被调度到小核):**
 
