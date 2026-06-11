@@ -61,29 +61,35 @@
   {
     "section": "3.7",
     "section_title": "InputDispatcher 反压与无响应窗口降级",
-    "priority": 80,
-    "reason": "[Task6闲时抽检] 扩展节'Android 17三重队列架构'写作风格违反writing-guide（API文档式罗列vs叙述风格），源码基于main分支未标注版本边界",
+    "priority": 90,
+    "reason": "[Task6 Review回炉] 扩展节「Android 17 三重队列架构」写作风格违反 writing-guide（API 文档式罗列 vs 叙述风格），源码基于 main 分支未标注具体 release tag，与主正文内容重复",
     "material_paths": [
+      "logs/review/2026-06-12-06-review.md",
       "logs/review/2026-06-12-05-audit.md"
     ],
     "review_issues": [
       {
         "type": "需重写",
-        "location": "扩展节（AIW-源码调研-2026-06-10之后）",
-        "detail": "整节为 API 文档风格（数据结构罗列、行号标注），违反 writing-guide 叙述为主原则；37处中英文间距缺失；形容词+冒号起手式",
-        "suggestion": "按叙述风格重写扩展节，融入主正文或独立补充"
+        "location": "扩展节全文（AIW-源码调研-2026-06-10 之后）",
+        "detail": "整节为 API 文档式风格：数据结构罗列 + 行号标注 + 代码块堆砌，违反 writing-guide「叙述为主、列表为辅」原则。主正文已用连贯叙述覆盖 iq/oq/wq 三队列机制，扩展节内容高度重复且质量更低。",
+        "suggestion": "方案 A：删除整个扩展节（主正文已充分覆盖三队列机制）。方案 B：如保留，按叙述风格重写，去掉行号式罗列，改为逐层展开的连贯叙述，并确保不与主正文重复。"
       },
       {
         "type": "需确认",
-        "location": "扩展节末尾",
-        "detail": "源码基于 main 分支但标注'适用于Android 17及之前版本'，违反版本边界规则（main/master须标注未进入Android 17）",
-        "suggestion": "收窄源码锚点到 android-17.0.0_r1 或标注为未验证内容"
+        "location": "扩展节标题与源码锚点",
+        "detail": "标题写「Android 17 三重队列架构」但源码基于 main 分支快照，未对应具体 release tag。底部声明已注明，但标题仍具误导性。违反版本边界规则：main/master 资料必须标注「未进入 Android 17」并跳过作为正文结论。",
+        "suggestion": "标题改为反映 main 分支实际来源，或删除本节。如保留，所有行号引用须对应到具体 AOSP tag。"
+      },
+      {
+        "type": "需重写",
+        "location": "扩展节中多处",
+        "detail": "「设计优势：确保trace操作不会影响主dispatch循环的实时性能」——评价性短语，违反 writing-guide「从事实到判断」原则。「设计优势」为 AI 式总结词。",
+        "suggestion": "改为客观描述：ThreadedBackend 使用独立 trace 线程和批量写入队列，trace 操作在 dispatch 线程之外执行。"
       }
     ],
-    "added_by": "task6-audit",
-    "added_at": "2026-06-12T05:06:00",
+    "added_by": "task6-review",
+    "added_at": "2026-06-12T06:08:00",
     "status": "pending",
-    "task2b_lite_partial_fix": "2026-06-12 fixed-lite: 版本边界修正(扩展节源码验证边界从'适用于Android 17及之前版本'改为明确标注 main 分支未验证，Android 17 结论不可用)，重写问题仍 pending",
-    "original_review_log": "logs/review/2026-06-12-05-audit.md"
+    "original_review_log": "logs/review/2026-06-12-06-review.md"
   }
 ]
