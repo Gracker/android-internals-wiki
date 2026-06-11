@@ -229,3 +229,13 @@ Jetpack App Startup 通过合并多个 CP 为单个 `InitializationProvider` 来
 - 在系统应用中使用 `ContentProviderClient` 时考虑 call hang 检测的开启条件
 
 > [自动发现] 路径 2 的 `setDetectNotResponding()` 在 Android 11（API 30）加入 AOSP，但始终是 hidden/system API。排查线上 ContentProvider ANR 时，如果 Reason 行包含 "ContentProvider not responding"，应优先检查系统框架或系统应用的调用链，而非应用代码。
+
+
+## 延伸阅读
+
+### Android 16/17 ContentProvider ANR 双路径机制源码深度分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-06-android17-contentprovider-anr-double-path.md
+- 类型：DeepResearch 调研结果
+- 摘要：还原 ContentProvider 两条正交 ANR 路径：publish 超时（10s×HW_MULTIPLIER，进程初始化失败杀进程）与 call hang 超时（setDetectNotResponding 触发真 ANR），精确到常量定义位置、Handler 消息码、Perfetto SQL 查询、HW_TIMEOUT_MULTIPLIER 对低端机的影响。
+- 注入时间：2026-06-11
+- 价值：与 ch09/09 章节主题完全吻合，补充了源码级常量定位、HW_TIMEOUT_MULTIPLIER 分析和 Perfetto SQL 排查查询

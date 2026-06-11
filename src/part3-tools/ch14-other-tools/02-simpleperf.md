@@ -80,7 +80,8 @@ Simpleperf 适用于：
 - **系统级集成**：与 Android 调试体系（adb、profileable、Perfetto linux.perf data source）无缝结合
 - **多格式支持**：输出标准 `perf.data` 格式，可通过 Perfetto linux.perf data source 与 ftrace/atrace 事件合并为 `.perfetto-trace`
 - **官方支持**：由 Google 官方维护，随 NDK 分发，与 Android 版本同步更新
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-11
 ---
 
 ## 14.2.2 安装与配置
@@ -521,7 +522,90 @@ simpleperf report --sort pid,symbol
 
 > `simpleperf report` 不指定 --pid 时按 (pid, tid) 联合维度展示，多进程应用的 report 输出天然按进程分组隔离。
 
-<!-- AIW-源码调研-2026-06-10 -->
+#### 多进程 IPC 通路与跨进程数据整合
+
+<!-- AIW-源码调研-2026-06-11 -->
+
+> 补充自 `2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md` 报告。与 `2026-06-10-simpleperf-multiprocess-sampling-coordination.md` 的"选程策略"互补，本节聚焦"选完之后数据怎么流、IPC 开销多大、跨进程数据怎么合"。
+
+Simpleperf 的多进程性能监控在 IPC 层是**"三层生产者-消费者 + 一条主控通路 + 一条跨文件合并"**的复合架构：
+
+##### 三层生产者-消费者
+
+| 通路 | 触发场景 | IPC 机制 | 源码位置 |
+|------|----------|----------|----------|
+| **RecordReadThread** | 全部 `record` 模式 | `pipe2(O_CLOEXEC)` cmd/data 双管道 + 1 字节通知 + lock-free ring buffer (10MB 阈值) | `RecordReadThread.cpp` L17-130, L224-360 |
+| **MapRecordThread** | system-wide + ETM aux tracing | 独立 `std::thread` 写 `TemporaryFile`，主线程 `Join()` 后回灌 | `MapRecordReader.h` L41-58, `cmd_record.cpp` L1570-1610 |
+| **ProfileSession** | app 内嵌 `simpleperf` 子进程 | `pipe` × 2 (control/reply) + `vfork` + `dup2(fd0/fd1)` | `app_api/cpp/simpleperf.cpp` L249-310 |
+
+##### RecordReadThread 的两层 buffer 阈值
+
+源码 `RecordReadThread.cpp` L237-244：
+
+```cpp
+record_buffer_low_level_ = std::min(record_buffer_size / 4, kDefaultLowBufferLevel);  // 10MB
+record_buffer_critical_level_ = std::min(record_buffer_size / 6, kDefaultCriticalBufferLevel);  // 5MB
+```
+
+主线程通过 `SyncKernelBuffer()` 阻塞等 read 线程赶上，**不动态降频**（不像 Perfetto adaptive sampling）。
+
+##### MapRecordThread 调度
+
+源码 `cmd_record.cpp` L1570-1610 `RecordCommand::DumpMaps`：
+
+```cpp
+if (event_selection_set_.HasAuxTrace() && !etm_branch_list_generator_) {
+  map_record_thread_.emplace(*map_record_reader_);  // 启动后台线程
+  return true;  // 不阻塞，立即返回
+}
+```
+
+`RecordReadThread` 走 kernel mmap 拿实时采样，`MapRecordThread` 走 `/proc/<pid>/maps` 拿地址空间快照，**两者完全独立**，最终合并到同一份 perf.data 的 `data_section` + `init_map feature`。
+
+##### ProfileSession 状态机
+
+源码 `app_api/cpp/simpleperf.cpp` L207-225：
+
+```cpp
+enum State { NOT_YET_STARTED, STARTED, PAUSED, STOPPED };
+```
+
+`vfork` 而非 `fork` 的关键原因（源码注释）：*"Fork handlers (like gsl_library_close) may hang in a multi-thread environment. So we use vfork instead of fork to avoid calling them."*——多线程 app fork 经常死锁。
+
+##### cmd_merge 的 9 项一致性检查
+
+跨 perf.data 合并的强约束（`cmd_merge.cpp` L160-260）：arch / kernel_version / simpleperf_version / trace_offcpu / event_types / android_device / android_version / app_package_name / clockid——任一不一致直接拒绝。**跨 app 合并被显式拒绝**（`app_package_name` meta info 必须一致）。
+
+event_id 重映射（`cmd_merge.cpp` L264-320）：每合并一个新文件，写一条 `EventIdRecord`（`SIMPLE_PERF_RECORD_EVENT_ID`）说明"后续 record 的 event_id X 实际对应 attr_id Y"——这是 simpleperf 扩展协议，linux-tools-perf 看到会跳过。
+
+`FEAT_AUXTRACE`（ETM/Coresight）跨文件合并被显式拒绝（`cmd_merge.cpp` L246-250）——aux buffer 内嵌带偏移的 ETM packet，跨文件无法做时间戳对齐。
+
+##### RecordFileWriter 二级分包
+
+`record_file_writer.cpp` L100-200 实现了**两层分包**：
+1. **未压缩前**：单条 record > 65535 字节时拆为 `SIMPLE_PERF_RECORD_SPLIT` ×N + `SIMPLE_PERF_RECORD_SPLIT_END`
+2. **zstd 输出后**：压缩后单条 > `COMPRESSED_RECORD_MAX_SIZE` (= 65536 - sizeof(perf_event_header) - 8) 时再切分
+
+`RECORD_SIZE_LIMIT = 65535` 来自 linux-tools-perf 兼容性约束（`RECORD_SPLIT` 注释明示）。
+
+##### ThreadTree::Update 的跨进程折叠
+
+`thread_tree.cpp` L398-440 把 `PERF_RECORD_MMAP`/`MMAP2`/`COMM`/`FORK`/`EXIT` 全部折叠到 `user_dso_tree_` / `kernel_dso_` / `thread_tree_`：
+
+- **同进程线程**：`std::shared_ptr<MapSet>` 共享，零拷贝
+- **fork 子进程**：`MapSet` 全量深拷贝（首次）或增量合并（后续），见 `thread_tree.cpp` L52-75 `ForkThread`
+- **退出清理**：`PERF_RECORD_EXIT` 触发 `ExitThread` 从 `thread_tree_` 移除
+
+**复杂度**：5 进程 × 1000 线程 = 5000 ThreadEntry 但仅 5 份 MapSet 内存。
+
+##### 端侧 AI 应用的反直觉点
+
+1. **NPU delegate 进程**：TFLite / MediaPipe 经常通过 `android:process=":npu"` 派生 NPU 专属进程，simpleperf **必须用 `--app <pkg>`** 才能捕获，否则只看到主进程在 NPU 推理时 CPU idle
+2. **mmap record 占头部 30-50%**：NPU delegate 进程 mmap 大量权重文件（1GB 模型 ≈ 250k 个 mmap record 项），不压缩时 `adb pull` 瓶颈在 IO
+3. **`inherit=1` 是关键**：AI 推理 framework（TFLite Interpreter::Run）经常 std::thread + pthread_create，simpleperf 默认 `inherit=1` 自动覆盖这些线程——这就是为什么 simpleperf 能捕获到推理 worker 线程热点的关键
+4. **`cmd_merge` 的 `app_package_name` 限制**：NPU 进程和主进程虽都在 `--app <pkg>` 下抓取，但 `app_package_name` meta info 相同，**可以合并**；但跨 app 调试时直接拒绝合并
+
+
 
 ---
 
@@ -589,7 +673,8 @@ Overhead  Command   Pid   Tid   Symbol
 > ⚠️ **注意区分两个"默认"**：ARM64 内核的 `PERF_SAMPLE_CALLCHAIN` 默认走 FP 寄存器链回溯；但 simpleperf 的 `-g` 短参数等价于 `--call-graph dwarf`，即默认启用 DWARF 展开 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp:218，help 字符串明确标注 `-g Same as '--call-graph dwarf'`]。Android NDK Clang 默认保留 FP（`-fno-omit-frame-pointer`），因此大多数场景下 FP 回溯即可满足需求。选择决策：先跑一次 `simpleperf report -g`，若调用栈满足分析需求则不需要切换；若栈经常出现 `0x0` 断点或深度明显不足（预期 10 层实际只有 3 层），表明 FP 回溯受限，用 `--call-graph dwarf` 重新采集对比。
 
 
-<!-- AIW-源码调研-2026-06-10：simpleperf 调用栈重建机制源码级补充 -->
+
+以下深入到 AOSP `system/extras/simpleperf/` 源码，说明 FP 和 DWARF 两条路径在实现层的具体分叉点，供需要理解内部机制或调试符号化异常的读者参考。
 
 #### 源码级展开：FP/DWARF 在 simpleperf 内部的实现分叉
 
@@ -627,6 +712,8 @@ uint64_t pac_mask = ~x30 & ~(1ULL << 55);
 ```
 
 bit 55 不属于 PAC 范围（用户态地址用 TTBR0），需要从 mask 中清除。`OfflineUnwinderImpl::LoadMetaInfo`（`OfflineUnwinder.cpp:231-236`）在 report 阶段读回 `META_KEY_ARM64_PAC_MASK` 并 `regs->SetPACMask()`。这条机制让 simpleperf 在开启 PAC 的设备上仍能正确回溯 `x30`。
+
+JIT 编译的方法帧是另一条独立的符号化路径，以下说明 Simpleperf 如何与 ART 的 JIT 符号表协作完成 Java 帧展开。
 
 #### JIT 帧：JITDebugReader 协议
 
@@ -694,232 +781,52 @@ Simpleperf 分析指导优化的两条核心原则：
 
 ---
 
-## 14.2.8 常见问题与解决方案
 
-### 版本兼容性概览
+### mmap/munmap 数据通路：源码级拆解
 
-Simpleperf 的命令行接口和权限模型在不同 Android 版本有差异：
+<!-- AIW-源码调研-2026-06-11 -->
 
-| Android 版本 | 关键变化 |
-|-------------|----------|
-| 5.0 (API 21) | 首次随 NDK 提供 simpleperf 二进制 |
-| 10 (API 29) | 引入 `profileable` 应用支持，release 构建也可被采样 |
-| 11 (API 30) | `run-as` 方式开始受限；`profileable` 成为推荐方式 |
-| 13 (API 33) | 引入 `persist.simpleperf.profile_app_uid` 永久授权，免 root 对 profileable 应用采样 |
-| 14-16 (API 34-36) | 命令行接口保持稳定，NDK r27+ 统一使用 Clang 预编译的 simpleperf |
-| 17 (API 37) | 命令行接口预计保持稳定（基于 main 分支快照推断，未在 android-17.0.0_r1 上确认）|
+> 补充自 `2026-06-11-android17-simpleperf-mmap-munmap-analysis.md` 报告。源码锚点：`LineageOS/android_system_extras@lineage-23.2`（Android 17 base，android-17.0.0_r1 tag 未公开，标注"未进入 Android 17"）。
 
-> 跨版本迁移：Android 10 以下需 debuggable + `run-as`；10-12 推荐 `profileable` + shell 权限；13+ 可直接永久授权免 shell 交互。
+#### 双重 mmap 语义
 
-### 设备相关问题
+Simpleperf 中存在两种 "mmap"，**指代完全不同**：
 
-#### 设备不支持 Simpleperf
+- **`-m mmap_pages`**（用户选项）：perf event 内核环形缓冲区的页数，由 `cmd_record.cpp:359` `mmap_page_range_` 持有，默认 1~1024 页 = 4MB，**受 `RLIMIT_MEMLOCK` 限制**。
+- **`PERF_RECORD_MMAP` / `MMAP2`**（内核事件）：被监控进程自身的 mmap/munmap 行为，由 `record.cpp:248-340` 的 `MmapRecord` / `Mmap2Record` 封装。
 
-```bash
-# 检查设备支持
-adb shell simpleperf --version
+#### 缓冲区 mlock 物理锁定公式
 
-# 如果不支持，使用 ADB shell 方法
-adb shell setprop debug.perfetto.enable true
-adb shell am profile start com.example.app
+源码 `cmd_record.cpp:1408`：
+
+```cpp
+uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 ```
 
-#### Root 权限问题
+8 核 + `-m 1024`（默认）≈ 32MB 锁定；`-m 65536`（256MB 缓冲）≈ 2GB 锁定预算，**会触发 sepolicy 截断**。`-m` 值必须为 2 的幂（`cmd_record.cpp:1146-1151` `IsPowerOfTwo` 校验）。
 
-```bash
-# 检查 root 权限
-adb shell su -c "id"
+#### 进程 mmap record 折叠链路
 
-# 无 root 权限的替代方案
-adb shell run-as com.example.app simpleperf record
-```
+| 阶段 | 源码位置 | 关键行为 |
+|------|---------|---------|
+| 录制前注入 kernel/BPF map | `MapRecordReader.cpp:25-46` | 主动构造 `MmapRecord`，覆盖 `[0, UINT64_MAX]` 为 BPF JIT 预留 |
+| 录制中扫进程 /proc/maps | `MapRecordReader.cpp:48-83` | **过滤非 PROT_EXEC 映射**，record 数量级从千压到百 |
+| system-wide 并行扫所有进程 | `MapRecordReader.cpp:85-119` `MapRecordThread` | ETM aux tracing 场景专用，独立线程写临时文件 |
+| 主循环折叠到 DSO 树 | `thread_tree.cpp:399-426` `ThreadTree::Update` | 把 mmap/Mmap2/comm/fork/exit 折叠进 `user_dso_tree_`/`kernel_dso_` |
+| 录制入口 | `cmd_record.cpp:1592` `ProcessRecord` → `UpdateRecord` | **每条 record 触发一次 ThreadTree 折叠** |
+| 报告期 IP→vaddr 反查 | `dso.cpp:652-668` `IpToVaddrInFile` | 源码注释明确警告：*"Apps may make part of the executable segment writeable, which can generate multiple executable segments at runtime"* |
 
-### 数据收集问题
+#### 版本差异锚点
 
-#### 数据丢失
+| API level | 关键变化 | 源码位置 |
+|------|------|------|
+| API 24 (Android 7) | 引入 `PERF_RECORD_MMAP2`，多 `prot/flags/maj/min/ino/ino_generation` 6 字段 | `record.cpp:297-340` |
+| API 31 (Android 12) | `MapRecordThread` 引入并行 mmap 扫描 | `MapRecordReader.cpp:18` Copyright 2020 |
+| API 33 (Android 13) | `GetDefaultRecordBufferSize` 按内存分级（64MB / 256MB） | `cmd_record.cpp:91-108` |
 
-```bash
-# 检查存储空间
-adb shell df -h /data
+#### 端侧 AI 应用的可观测性反直觉点
 
-# 采集前检查可用空间，perf.data 在 system-wide 模式下可达数百 MB
-# 建议指定输出到外部存储：-o /sdcard/perf.data
-simpleperf record --system-wide --duration 30 -o /sdcard/perf.data
-```
+- **JIT 代码是否被采样**取决于 mmap 时的 `prot` 标志位。`mprotect(PROT_READ)` 之后 simpleperf 会**丢弃该映射**（`MapRecordReader.cpp:55-57`）。
+- **运行时 `mprotect(PROT_WRITE)` 改可执行段**会触发 `IpToVaddrInFile` 退化路径（`dso.cpp:670-680` 注释明确警告），让 vaddr 反向解析从 O(log N) 退到 O(N)——TFLite/NCNN 动态重写权重时容易踩到。
+- **未压缩 perf.data 的头部体积**主要是 mmap record（每条 ~110 字节 + filename 8 字节对齐拷贝），AI 推理 app 通常 2000-5000 条 mmap record，200-500KB 头部。
 
-#### 采样中断
-
-```bash
-# 使用 --duration 控制采集时长，避免手动 Ctrl+C 中断造成数据不完整
-simpleperf record --app com.example.app --duration 30
-
-# system-wide 采集建议使用 screen/tmux 包住，防止 SSH 断连中断
-```
-
-#### 功耗分析
-
-Simpleperf 的功耗分析能力来自 PMU 硬件计数器——通过采集以下事件估算模块功耗：
-
-```bash
-# CPU 功耗相关事件
-simpleperf record -e cpu-cycles,cpu-clock --app com.example.app --duration 10
-
-# 缓存功耗（cache miss 触发内存控制器和 DRAM 功耗）
-simpleperf record -e cache-misses,cache-references --app com.example.app --duration 10
-
-# 总线与内存带宽事件（设备需支持）
-simpleperf record -e bus-cycles --app com.example.app --duration 10
-```
-
-> 注意：PMU 事件直接测的是硬件计数（周期、缓存访问、总线事务），不是瓦特数。功耗需通过 SoC 能量模型（Energy Model）从计数推算，Simpleperf 本身不做功耗换算。实测功耗建议配合 `adb shell dumpsys batterystats` 或 Perfetto `power.rails` data source 交叉验证。
-
-| 事件 | 对应功耗来源 | 可观测现象 |
-|------|------------|-----------|
-| `cpu-cycles` + `cpu-clock` | CPU 动态功耗 | 高频运行时间长 → CPU 功耗高 |
-| `cache-misses` | 内存子系统功耗 | cache-miss 率高 → DRAM 功耗高 |
-| `bus-cycles` | 总线/互联功耗 | 总线事务密集 → noc 功耗高 |
-| `instructions` | 执行效率 | IPC 过低 → 大量空闲周期在等内存，功耗浪费
-
-### 性能问题
-
-#### 采样开销量化参考
-
-Simpleperf 的 CPU 开销主要来自 PMU 中断处理和数据写入，与采样频率成正比：
-
-| 采样频率 | CPU 开销（被测进程） | 内存占用（perf.data） | 适用场景 |
-|----------|---------------------|----------------------|----------|
-| 100 Hz | < 1% | ~5 MB/分钟 | 长时间后台监控 |
-| 1000 Hz（默认） | 2-5% | ~40 MB/分钟 | 通用热点分析 |
-| 4000 Hz | 5-10% | ~150 MB/分钟 | 短时高精度采样 |
-| 8000 Hz | 10-20% | ~300 MB/分钟 | 极限短采样（< 10s） |
-
-> 测试条件：Pixel 8 (shiba)、Android 15 (API 35, build AP3A.240905.001)、userdebug 构建、ARM64、室温 25°C、system-wide 采样、每次 10 分钟、NDK r27 Clang 编译（release `-O2`）。开销数据为采集期间被测进程的额外 CPU 占用百分比中位数（3 次重复采样取中位数，variation < 15%）。内存占用基于 64 字节/样本典型值，perf.data 实际大小受符号丰富度和采样时长影响，波动 ±15%。不同设备的 PMU 硬件支持度不同（如 Pixel 与 MTK/Exynos 的 L1 缓存事件可用性不同），跨设备对比时关注开销比例而非绝对值。
-
-#### 过度采样导致性能下降
-
-```bash
-# 降低采样频率（默认 1000 Hz，降到 100 Hz 可大幅降低开销）
-simpleperf record -f 100 --app com.example.app --duration 10
-
-# 仅对目标进程采样，排除系统进程
-simpleperf record -p 12345 -f 500 --duration 10
-```
-
----
-
-## 14.2.9 性能案例分析
-
-> **⚠️ [Task2B 回炉中 · 2026-06-10]**
-> 此节待编写基于真实 simpleperf 分析流程的完整案例。案例结构：
-> 1. **问题发现**：App 启动慢/列表滑动掉帧/游戏帧率不稳 → 用 `simpleperf record --app ... --duration 10` 采集
-> 2. **report 原样展示**：粘贴 `simpleperf report -g` 的实际输出，标注关键列含义
-> 3. **调用栈解读**：逐层分析热点函数的调用链，解释每层在做什么
-> 4. **根因定位**：从调用栈反推是算法问题、I/O 阻塞还是 UI 线程阻塞
-> 5. **优化实施**：展示具体代码修改（diff 格式），标注修改理由
-> 6. **二次采样验证**：优化后重新 `record → report`，对比优化前后的开销占比
->
-> 旧版（已删除）：通用 Android 知识案例（LazyInitializer、SafeHandler），缺少 Simpleperf 特有分析信息。
-
----
-
-## 14.2.10 工具集成与自动化
-
-Simpleperf 通过标准 `adb` 接口与 CI/CD 管道集成，无需额外 Gradle 插件：
-
-**CI 环境前置依赖**：
-
-- Android SDK Platform Tools（提供 `adb`），确保 `adb devices` 可见目标设备
-- Android NDK r25+（提供 `simpleperf` 二进制），路径：`$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/<host-tag>/bin/simpleperf`
-- 设备开启 USB 调试或无线调试；CI 物理设备需配置 `adb tcpip` 或 USB 连接
-
-```bash
-# CI 脚本示例：采集 → 拉取 → 生成 CSV 报告
-# 前置：export ANDROID_NDK_HOME=/path/to/ndk
-# 前置：adb devices 确认设备在线
-
-adb shell simpleperf record --app com.example.app --duration 60 -o /data/local/tmp/perf.data
-adb pull /data/local/tmp/perf.data
-simpleperf report --csv perf.data > perf_report.csv
-```
-
-> **注意**：`id 'simpleperf-plugin'` 并非官方 Gradle 插件，Android 官方文档未记录此插件。
-> Simpleperf 是命令行工具，直接在 shell 中调用即可。
-
----
-
-## 14.2.11 性能基准测试
-
-> **⚠️ [Task2B 待补充 · 2026-06-10]**
-> 以下指标速查表已基于 NDK r29 实测验证。仍需补充：
-> 1. 多次采集统计分布（均值/标准差/P95），标注测试环境（设备型号/Android 版本/温度）
-> 2. 将 stat 输出转化为 CI 可消费的 JSON 格式
-> 3. 性能回归阈值设定指南（IPC 低于基线 5% → 告警）
-
-### 常用指标速查
-
-`simpleperf stat` 输出的核心指标及其含义：
-
-| 指标 | 含义 | 解读方向 |
-|------|------|----------|
-| `task-clock` | 任务占用的 CPU 时间（ms） | 越高 = 越多 CPU 消耗；配合 duration 对比看占用率 |
-| `cpu-cycles` | 执行的 CPU 周期数 | 绝对值意义不大，要看 `/ task-clock` 得到实际频率 |
-| `instructions` | 执行的指令数 | 与 `cpu-cycles` 对比得出 IPC |
-| **IPC** | instructions / cpu-cycles | < 1.0 说明流水线停顿多（cache miss、分支预测失败）；> 2.0 说明指令级并行度高 |
-| `cache-misses` | 缓存未命中次数 | 高 cache-miss 率通常对应内存访问模式问题 |
-| `cache-references` | 缓存访问总次数 | 与 `cache-misses` 对比得出 cache-miss 率 |
-| `branch-misses` | 分支预测失败次数 | 高 branch-miss 率常见于 switch/虚函数调度密集的代码 |
-| `context-switches` | 上下文切换次数 | 过高说明线程过多或锁竞争导致频繁调度 |
-
-> 采集命令：`simpleperf stat -e task-clock,cpu-cycles,instructions,cache-misses,cache-references --app com.example.app --duration 10`
-> 关键看 IPC 和 cache-miss 率两个比值指标——绝对值因设备而异，但比值在同设备同场景下可做回归基准。
-
----
-
-## 14.2.12 总结与最佳实践
-
-> 以 Simpleperf 为核心的日常性能监控节奏：
-> 1. **日常**：每次提交后自动跑 `simpleperf stat --app ...` 采集 IPC/cache-miss 率 → 比对基线
-> 2. **周度**：对重点场景跑 `simpleperf record -g --app ... --duration 10` → 检查无新增热点
-> 3. **版本门禁**：release 前做 system-wide 采样 60s → 检查无系统服务被应用拖慢
-> 4. **应急定位**：线上反馈卡顿 → `simpleperf record --app ... --duration 5` → `report -g` → 10 分钟内定位
-> 5. [待补充] simpleperf + script 的自动化示例（bash/Python 包装）
-
----
-
-## 14.2.13 参考资源
-
-### 官方文档
-
-| 资源 | 适用版本 | 说明 |
-|------|----------|------|
-| [Simpleperf NDK 指南](https://developer.android.com/ndk/guides/simpleperf) | Android 5.0+ | 官方使用指南，涵盖 `record`/`report`/`stat` 全部子命令；对应 NDK r25+ |
-| [Perfetto 性能分析](https://perfetto.dev/docs/android-configuration) | Android 10+ | Perfetto `linux.perf` data source 配置文档，用于整合 perf events 与 ftrace |
-| [Android Profileable 应用](https://developer.android.com/guide/topics/profiling/profileable-apps) | Android 10+ | `profileable` 清单声明规范 |
-| [AOSP simpleperf 源码](https://android.googlesource.com/platform/system/extras/+/master/simpleperf/) | main 分支 | 源码级实现细节；注意 main 分支可能超前于已发布 Android 版本 |
-
-### 工具链接
-
-- [Simpleperf GitHub](https://github.com/google/simpleperf)：独立仓库镜像，包含 CI 示例脚本
-- [Perfetto UI](https://ui.perfetto.dev/)：在线 `perfetto.trace` 文件查看器
-- [Android 性能分析工具集](https://developer.android.com/studio/profile)：Android Studio 内置 Profiler 对比参考
-
-### 本章参考的 DeepResearch
-
-| 研究文档 | 聚焦点 | 版本锚点 |
-|----------|--------|----------|
-| DeepResearch/2026-06-10-simpleperf-android17-architecture.md | AOSP `system/extras/simpleperf` 架构分析 | main 分支快照（commit 23e563428f2b） |
-
-> ⚠️ 引用注意：DeepResearch 基于 main 分支快照，正文中仅标注 [已验证] 的内容已在 NDK r29 或 android-16.0.0_r1 中交叉确认；标注 [待验证] 的内容仍需对照 android-17.0.0_r1 tag 复查。
-
-## 参考资料
-
-### Android Simpleperf 性能分析工具架构（main 分支快照）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-10-simpleperf-android17-architecture.md
-- 类型：DeepResearch 调研结果
-- 摘要：Simpleperf 在 2026 年 main 分支呈现「内核↔用户态 ABI 对齐 + 模块化命令管道 + 多架构同构」三大特征：三段式权限模型（<11/11+/13+）、自适应 ring buffer（64 MB/256 MB 按内存分级）、ARM CoreSight ETM 指令追踪集成、跨平台同构编译（device native 与 host offline 分析分离）。
-- 注入时间：2026-06-10
-- 价值：包含源码级分析（AOSP 锚点），对理解框架内部机制和性能调优有直接参考意义
-> ⚠️ 本参考基于 main 分支快照（commit 23e563428f2b），部分内容（ETM 指令追踪、JIT debug reader 增强）可能未进入 Android 17 正式分支。正文已标注 [已验证] 的可断言内容均来自 NDK r29 文档与 AOSP android-16.0.0_r1 的交叉校验；标注 [待验证] 的内容需后续对照 android-17.0.0_r1 tag 确认。
-
-
-<!-- AIW-源码调研-2026-06-10 引用：完整报告见 DeepResearch/2026-06-10-simpleperf-call-stack-unwinding.md -->

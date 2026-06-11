@@ -39,7 +39,7 @@ related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-28T12:26:35+08:00"
+last_task9_at: "2026-06-11"
 last_task6_at: "2026-05-28T12:10:00+08:00"
 last_task6_audit: "2026-06-05"
 task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 1 处，将绝对化排查建议改为优先级表达；无 L3/L4 回炉项，送 Task9 技术复审。"
@@ -54,7 +54,8 @@ p2: 0
 updated_date: "2026-05-28"
 updated_by: openclaw-task9
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
+last_deepseek_cn_review_at: 2026-06-11
+last_task9_audit: "2026-06-11"
 ---
 
 
@@ -147,7 +148,7 @@ Callstack Sample 是在精度和开销之间取得平衡的模式。它不是记
 
 Callstack Sample 最适合找"CPU 热点"——那些长时间占用 CPU 的方法。对于一个耗时 200ms 的排序方法，无论采样间隔怎么设，它都会被反复命中。但对于一个快速但被频繁调用的小方法（比如 `String.charAt()`），它可能完全不出现在采样结果中，即使它被调用了一万次、累计耗时可能很可观。
 
-在 Android Studio Meercat (2024.3) 及后续版本中，Google 持续改进采样引擎的准确性，降低 debug profiling 时的误报率，使 Callstack Sample 在 debug 构建中的数据更加可靠。[待验证: 具体版本对应的采样引擎改进细节]
+在 Android Studio Meerkat (2024.3) 及后续版本中，Google 持续改进采样引擎的准确性，降低 debug profiling 时的误报率，使 Callstack Sample 在 debug 构建中的数据更加可靠。[待验证: 具体版本对应的采样引擎改进细节]
 
 ### 三种模式的选择决策
 

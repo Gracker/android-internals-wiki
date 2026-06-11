@@ -56,6 +56,8 @@ last_task6_at: "2026-05-20T14:13:00+08:00"
 last_task6_audit: "2026-06-11"
 last_task6_review_log: "logs/review/2026-05-20-14-review.md"
 task6_review_notes: "2026-05-20 task6 review 14:13：首次 review Native 库加载与动态链接性能；L1/L2 术语和表述小修，无新增 L3/L4 回炉项；转 Task9 技术复核。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-11
 ---
 
 # 8.11 Native 库加载与动态链接性能
@@ -106,7 +108,7 @@ task6_review_notes: "2026-05-20 task6 review 14:13：首次 review Native 库加
 
 ## Native 库加载在启动链路里的位置
 
-应用侧最常见的入口是 `System.loadLibrary("xxx")`。它从 Java 层进入运行时，再走到 Bionic 的 `dlopen()` / `android_dlopen_ext()`。NDK 文档里把 `android_dlopen_ext()` 定义为带 Android 扩展参数的库打开接口，`android_dlextinfo` 可以携带文件描述符、RELRO、namespace 等参数。[已验证: 官方文档, https://developer.android.com/ndk/reference/group/libdl]
+App 层最常见的入口是 `System.loadLibrary("xxx")`。它从 Java 层进入运行时，再走到 Bionic 的 `dlopen()` / `android_dlopen_ext()`。`android_dlopen_ext()` 是 Bionic 带 Android 扩展参数的库打开接口，通过 `android_dlextinfo` 可以携带文件描述符、RELRO、namespace 等参数。[已验证: 官方文档, https://developer.android.com/ndk/reference/group/libdl]
 
 启动阶段触发 native 库加载的地方通常有四类：
 
@@ -180,8 +182,7 @@ Native 库加载问题在三方 SDK 中最麻烦，因为 App 团队不一定能
 | 静态链接 NDK r27 `libc.a` | 是否出现 `WriteProtected mprotect ... Invalid argument` | 升级 NDK r28+ 或换已修复的预编译库 |
 | 监控 / 崩溃 SDK | 是否使用 Hook、signal handler、`/proc/self/maps` 解析 | 确认 Android 15+、16KB、MTE 下的官方兼容声明 |
 
-[来源: DeepResearch/2026-05-08-16kb-page-size-third-party-library-impact.md]
-[来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-android-16kb-page-size-ndk-compatibility.md]
+
 
 NDK r27 的 `libc.a` 问题需要单独记。`android/ndk#2026` 记录了 `WriteProtected mprotect ... Invalid argument` 的崩溃，反馈中确认 NDK r28 可用。这个问题影响的是静态链接到有问题 libc.a 的产物；不能把它泛化成“所有 r27 构建库都会崩”。如果线上看到这个崩溃签名，先确认库的 NDK 版本和静态链接方式。[已验证: GitHub issue, https://github.com/android/ndk/issues/2026]
 
