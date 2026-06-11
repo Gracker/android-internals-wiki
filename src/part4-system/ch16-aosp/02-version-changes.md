@@ -1,10 +1,10 @@
 ---
 title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-04"
-last_verified: "2026-05-29"
-last_verified_against: "developer.android.com API reference + AOSP android-16.0.0_r1 SystemHealthManager / Display / packages/modules/Profiling"
+last_verified: "2026-06-11"
+last_verified_against: "developer.android.com API reference (ProfilingTrigger API 36/36.1/37) + AOSP android-16.0.0_r1 SystemHealthManager / Display / packages/modules/Profiling"
 confidence: medium
 sources:
   - type: official
@@ -39,31 +39,31 @@ sources:
     path: "android-developers.googleblog.com (ADPF updates)"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
 last_task6_audit: "2026-06-09"
 section: "16.2"
 status: finalized
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-05-29T06:27:31+08:00"
-last_task9_audit: "2026-05-18"
+last_task9_at: "2026-06-11T13:20:00+08:00"
+last_task9_audit: "2026-06-11"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-05-29T07:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-07-review.md"
 task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
-last_task9_autofix_at: "2026-05-29"
-last_task9_review_log: "logs/deep-review/2026-05-29-06-deep-review.md"
-task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 Android 15 FGS timeout 处理、Android 14/15 低 targetSdk 安装限制与 Google Play target API 政策边界；无 queue P0/P1。"
+last_task9_autofix_at: "2026-06-11"
+last_task9_review_log: "logs/deep-review/2026-06-11-13-audit.md"
+task9_review_notes: "2026-06-11 Task9 idle audit: auto-fixed。补齐 ProfilingTrigger API 36.1 与 API 37 触发器列表；AOSP android-17 tag 未发布，未使用 main/master 作为正文结论；无 queue P0/P1。"
 task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
@@ -270,7 +270,7 @@ Android 16 在性能分析工具链上的突破比在性能机制本身更大。
 
 ### 系统触发式 Profiling
 
-Android 16 把 `ProfilingManager` 从手动抓取扩展到系统触发式采样。App 先通过 `registerForAllProfilingResults()` 注册全局结果监听，再用 `addProfilingTriggers(List<ProfilingTrigger>)` 声明自己关心的系统事件。API 36 公开的触发器包括 `TRIGGER_TYPE_ANR` 和 `TRIGGER_TYPE_APP_FULLY_DRAWN`。`TRIGGER_TYPE_COLD_START` 要到 API 37 才出现在公开参考页里，所以不能把它写成 Android 16 的稳定接口。
+Android 16 把 `ProfilingManager` 从手动抓取扩展到系统触发式采样。App 先通过 `registerForAllProfilingResults()` 注册全局结果监听，再用 `addProfilingTriggers(List<ProfilingTrigger>)` 声明自己关心的系统事件。API 36 公开的触发器包括 `TRIGGER_TYPE_ANR` 和 `TRIGGER_TYPE_APP_FULLY_DRAWN`；API 36.1 继续补入 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`、`TRIGGER_TYPE_KILL_FORCE_STOP`、`TRIGGER_TYPE_KILL_RECENTS` 和 `TRIGGER_TYPE_KILL_TASK_MANAGER`。`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`、`TRIGGER_TYPE_APP_COMPAT` 与 `TRIGGER_TYPE_ANOMALY` 要到 API 37 才出现在公开参考页里，所以不能把它们写成 Android 16 的稳定接口。
 
 ```java
 // Imports are omitted.
@@ -372,7 +372,9 @@ Android 16 是 `FrameMetrics` 的一次实质更新：`FRAME_TIMELINE_VSYNC_ID` 
 
 **Android 16（API 36）**：系统触发式 profiling 进入公开 API。公开参考页里的 API 36 触发器包括 `TRIGGER_TYPE_ANR` 和 `TRIGGER_TYPE_APP_FULLY_DRAWN`。
 
-**Android 17（API 37）**：触发类型继续扩展，公开参考页新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 和 `TRIGGER_TYPE_APP_COMPAT`。冷启动场景从 `reportFullyDrawn()` 时点前移到“尽早捕获冷启动路径”，触发器边界也更完整。
+**Android 16 SDK 36.1**：触发器扩展到运行中 trace 请求和 kill 类事件，新增 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`、`TRIGGER_TYPE_KILL_FORCE_STOP`、`TRIGGER_TYPE_KILL_RECENTS` 和 `TRIGGER_TYPE_KILL_TASK_MANAGER`。
+
+**Android 17（API 37）**：触发类型继续扩展，公开参考页新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`、`TRIGGER_TYPE_APP_COMPAT` 和 `TRIGGER_TYPE_ANOMALY`。冷启动场景从 `reportFullyDrawn()` 时点前移到“尽早捕获冷启动路径”，触发器边界也更完整。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager ; developer.android.com/reference/android/os/ProfilingTrigger]
 
