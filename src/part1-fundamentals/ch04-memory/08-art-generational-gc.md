@@ -7,7 +7,7 @@ status: "ready-for-review"
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
-last_verified_against: AOSP main (art/runtime/gc) + perfetto.dev stdlib/docs + developer.android.com/topic/performance/graphics/manage-memory
+last_verified_against: AOSP android-16.0.0_r1 (art/runtime/gc) + Android 17 release notes + perfetto.dev stdlib/docs + developer.android.com/topic/performance/graphics/manage-memory
 last_task2b_lite_at: "2026-05-30"
 confidence: medium
 sources: 
@@ -38,12 +38,12 @@ tags:
 reviewed_date: "2026-06-11"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task9_result: "needs-rework"
-last_task9_at: "2026-06-11T17:25:11+08:00"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+last_task9_at: "2026-06-11T18:20:00+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-11"
@@ -52,8 +52,9 @@ last_task9_audit: "2026-06-11"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
 task9_reviewed_date: "2026-06-11"
 task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-06-11-17-audit.md"
-task9_review_notes: "2026-06-11 Task9 idle audit：发现 P0/P1。附录将 Generational CMC 误归到 ConcurrentCopying，并把 Android 15+ 写成已含 YoungMarkCompact；已写入 queue 回炉。"
+last_task9_review_log: "logs/deep-review/2026-06-11-18-deep-review.md"
+task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-11"
 last_task6_at: "2026-06-11T18:17:46+08:00"
 last_task6_review_log: "logs/review/2026-06-11-18-review.md"
 task6_review_notes: "2026-06-11 Task6 18:17：pass-light-edit（revisiting re-review）。L1 否定-纠正结构 3→2 修复 1 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
@@ -119,17 +120,17 @@ ART 的实测数据支撑了这个假设：在典型的 Android 应用中，超�
 
 本节后面谈 Android 17 时，默认语境是“CMC 路径下可见的分代实现”，不再把它和 Android 10 的分代 CC 混成一个机制。
 
-[已验证: AOSP main, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
+[已验证: AOSP android-16.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
 [已验证: 官方文档, https://source.android.com/docs/core/runtime/configure]
 [待补充: Android 10 首次引入分代 CC 的精确 tag]
 
 ## Android 17 分代 GC 的内部实现
 
-这一节只保留当前 AOSP 能直接定位到的实现，不把概念图里的函数名写成源码事实。4.8 覆盖 Android 14-17，所以这里把“通用分代 GC 思路”和“Android 15+/17 的 CMC 细节”分开写。
+这一节只保留当前 AOSP 能直接定位到的实现，不把概念图里的函数名写成源码事实。4.8 覆盖 Android 14-17，所以这里把“通用分代 GC 思路”和“Android 16+/17 的 CMC 细节”分开写。
 
 ### Write Barrier：写引用时先做 card mark
 
-在 AOSP main 中，Write Barrier 更稳的源码锚点是 `art/runtime/write_barrier-inl.h`。这一节直接落到 `WriteBarrier::ForFieldWrite()` 这一层，不再追一个分支间容易变化的 quick entrypoint 符号。
+在 `android-16.0.0_r1` 中，Write Barrier 更稳的源码锚点是 `art/runtime/write_barrier-inl.h`。这一节直接落到 `WriteBarrier::ForFieldWrite()` 这一层，不再追一个分支间容易变化的 quick entrypoint 符号。
 
 ```cpp
 // art/runtime/write_barrier-inl.h
@@ -153,7 +154,7 @@ inline void WriteBarrier::ForFieldWrite(ObjPtr<mirror::Object> dst,
 
 很多资料会把这一步统称为 Remembered Set。对 4.8 这一节来说，写成“由 dirty card 导出的跨代引用候选集合”更稳，因为这部分在 CMC 代码里能直接落到 card scanning，而不是依赖一个尚未核实到类名的抽象名词。
 
-### Android 15+/17 的 CMC 不是两代，而是三代
+### Android 16+/17 的 CMC 不是两代，而是三代
 
 `art/runtime/gc/collector/mark_compact.h` 的注释已经把分代模型写明了：
 
@@ -191,7 +192,7 @@ void YoungMarkCompact::RunPhases() {
 
 这比原来“young 对象直接 young→old 提升”的说法更贴近 CMC 当前代码。
 
-[已验证: AOSP main, art/runtime/write_barrier-inl.h + art/runtime/gc/accounting/card_table.cc + art/runtime/gc/collector/mark_compact.h + art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-16.0.0_r1, art/runtime/write_barrier-inl.h + art/runtime/gc/accounting/card_table.cc + art/runtime/gc/collector/mark_compact.h + art/runtime/gc/collector/mark_compact.cc]
 
 ## GC 对应用性能的实际影响
 
@@ -460,7 +461,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 | 16+ | CMC 路径包含 `YoungMarkCompact`、`use_generational_gc` 和 `persist.device_config.runtime_native_boot.use_generational_gc`（源码锚点验证至 `android-16.0.0_r1`，android-15.0.0_r1 未包含）。 | 设备是否启用 generational CMC，需要结合版本、flag、内核和 build 配置一起判断。 |
 | 17 Beta | Android 17 对外把 “Concurrent Mark-Compact collector enhanced with generational GC” 当成性能特性来讲。 | 做问题归因时，先确认设备是否已启用这条路径，再决定是否把观测到的行为套用到更早版本。 |
 
-[已验证: AOSP main, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
+[已验证: AOSP android-16.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
 [已验证: 官方文档, https://developer.android.com/about/versions/17 + https://source.android.com/docs/core/runtime/configure]
 [待补充: Android 10 引入分代 CC 的 tag 级证据]
 
@@ -523,7 +524,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 ### Android 17 ART 分代 GC：Concurrent Mark-Compact
 - 来源：https://cs.android.com/android/platform/superproject/+/master/art/runtime/gc/
 - 类型：research
-- 摘要：Android 17 引入 Concurrent Mark-Compact + Generational GC，专门优化年轻代对象的快速回收。目标是减少 RecyclerView 场景中的 GC jank，并与 DeliQueue 一起降低 UI 停顿。
+- 摘要：AOSP master 仅作为实现线索；本轮未发现公开 `android-17.0.0_r1` tag，正文结论以 Android 17 release notes 和 `android-16.0.0_r1` 可核源码为准。DeliQueue 联动未作为本节确定结论。
 - 入库时间：2026-04-08
 
 ### Android 16 QPR2 Gen-CMC 源码级深度技术分析
@@ -550,7 +551,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 **核心结论**：
 
-基于 AOSP `art/runtime/gc/collector/mark_compact.h` 的注释和 Web 搜索结果，Android 10+ 的 ART 分代 GC 晋升逻辑如下：
+基于 `refs/tags/android-16.0.0_r1` 的 AOSP `art/runtime/gc/collector/mark_compact.h` 注释，CMC 分代路径的晋升逻辑如下。这个三代模型不能直接套到 Android 10+ 的 Generational CC 路径上：
 
 | 晋升路径 | 触发条件 | 阈值是否可动态调整 |
 |---|---|---|
@@ -606,8 +607,8 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
    - DeviceConfig 覆盖：`persist.device_config.runtime_native_boot.enable_uffd_gc_2` 可控制 UFFD GC 启用（`gUseUserfaultfd` 变量）
 
 4. **对 Compose 性能的影响**
-   - young GC pause 低（10-50ms）：短生命周期 lambda/state 对象被快速回收
-   - old GC pause 高（100-500ms）：大量 recomposition 累积的 state 对象需 full-heap 标记
+   - Young GC 暂停区间需要用目标设备 trace 实测；短生命周期 lambda/state 对象通常更容易被 young collection 覆盖
+   - Whole-heap GC 暂停区间需要结合堆大小、设备负载和 collector 路径判断，不能直接套用固定毫秒范围
    - 关键路径：`Compose.onUserInteraction` → `Snapshot.enter` → `SlotTable.commit` → GC 触发
 
 **源码证据**：
@@ -638,11 +639,11 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 1. **Generational CC 扩展**：ART CC GC 在 Android 10（API 29）扩展为 Generational CC，通过 Sticky Mark Sweep 专门收集自上次 GC 以来分配的新对象（young objects），增加 GC throughput 并延迟 full-heap GC 触发。
 
-2. **Android 17 Gen-CMC**：Android 16 QPR2+ 引入 Generational CMC，底层使用 UFFD（userfaultfd）实现页级别零拷贝压缩，区别于传统 CC 的 Baker read barrier 逐引用拦截。
+2. **Android 17 Gen-CMC**：`android-16.0.0_r1` 已能核到 Gen-CMC 源码锚点；Android 17 release notes 对外把 CMC 的 generational GC 支持列为运行时性能特性。具体设备是否启用还要看 UFFD、runtime flag 和 build 配置。
 
 3. **Compose 场景优化**：Compose Composition 阶段短生命周期可组合对象密集分配，恰好落在 Young Generation 高频收集窗口，与 Generational CMC 协同降低对象分配开销。
 
-4. **版本表**：Android 8.0-13 → CC；Android 14/15 → UFFD-driven CMC；Android 16 QPR2+/17 → Generational CMC。
+4. **版本表**：Android 8.0-13 → CC / Generational CC 路径；Android 14/15 未核到 `YoungMarkCompact` 三代模型；Android 16 源码锚点与 Android 17 release notes 支撑 Gen-CMC 口径。
 
 ### 源码来源
 
@@ -653,7 +654,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ### 待验证
 
-- Generational CMC 开关链路（ART_USE_READ_BARRIER 配置路径）
+- Generational CMC 开关链路（`use_generational_cmc` flag 与 `persist.device_config.runtime_native_boot.use_generational_gc` 生效路径）
 - UFFD write_range 在 concurrent_copying.cc 中的具体调用
 - 20%+ 对象分配开销降低的设备/场景 benchmark 数据
 - §4.5 章节（Compose Composition 与 GC 因果链）需进一步补充
@@ -669,7 +670,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 **核心结论**：
 
-基于 `art/runtime/gc/collector/mark_compact.h` 注释和源码分析，Android 16 QPR2+/17 的 Generational CMC 晋升路径如下：
+基于 `android-16.0.0_r1` 的 `art/runtime/gc/collector/mark_compact.h` 注释和源码分析，CMC 分代路径的晋升路径如下；Android 17 口径以 release notes 作为产品层证据：
 
 | 晋升路径 | 触发条件 | 阈值是否可动态调整 |
 |---|---|---|
@@ -691,7 +692,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 Compose recomposition 产生的短期对象（不稳定 lambda、Snapshot、remember 值）生命周期极短，通常在 1-2 次 Young GC 后即成为垃圾。Generational CMC 的 young/mid 分代设计使这些对象在 Young GC 阶段被吸收，无需进入 full-heap GC 流程，从而减少对 doFrame() 时间预算的侵蚀。
 
-Young GC pause 通常 10-50ms，full GC pause 可达 100-500ms。对于高频 recomposition 场景（如动画状态更新、传感器数据驱动 UI），Generational CMC 可显著减少 GC 触发的掉帧概率。
+具体暂停时间需要用目标设备 trace 或 benchmark 验证，不能把固定毫秒范围当成通用结论。对于高频 recomposition 场景（如动画状态更新、传感器数据驱动 UI），Generational CMC 的价值在于优先处理 young generation，降低频繁短命对象进入 whole-heap GC 的概率。
 
 ### "20% 对象分配开销降低" 验证状态
 
@@ -737,7 +738,7 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 **设备能力判断路径**（未经一手源码验证）：
 - 设备 RAM 容量（触发阈值待验证）
 - 支持的 ABI（64-bit vs 32-bit）
-- 厂商 `ro.art.gc` 系统属性
+- 厂商自定义 ART GC 属性（名称待核）
 
 ### 年轻代参数
 
@@ -752,16 +753,16 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 |------|---------|---------|
 | Android 8.0-9 | Concurrent Copying | 无（moving collector） |
 | Android 10-13 | CC + Generational CC | Sticky Mark Sweep 收集 young objects |
-| Android 14-15 | UFFD-driven CMC | partial generational（基于 UFFD minor fault） |
-| Android 16 QPR2 | **Generational CMC** | young/mid/old 三代，明确命名 |
-| Android 17+ | Generational CMC | 持续演进 |
+| Android 14-15 | UFFD/CMC 相关能力需按 ART Mainline、内核和设备配置判定 | 未核到 `YoungMarkCompact` / `mid_gen_end_` 三代模型 |
+| Android 16 | **Generational CMC** | `android-16.0.0_r1` 可核到 young/mid/old 三代模型 |
+| Android 17 | Generational GC | release notes 对外列为 ART CMC collector 的 generational GC 支持；公开 `android-17.0.0_r1` tag 缺失时不使用 AOSP main 写源码结论 |
 
 ### 待验证
 
-1. `ro.art.gc` 或类似厂商 property 的具体名称和启用值
+1. 厂商 ART GC 属性的具体名称和启用值
 2. 年轻代大小的具体默认值（AOSP 默认值可能因设备厂商而异）
 3. `heap.cc` 中设备能力判断的 RAM 阈值具体数值
-4. 与 Android 17 GC 的具体差异（需对比 AOSP main 分支）
+4. 与 Android 17 GC 的具体差异（需等待公开 Android 17 tag；不能直接用 AOSP main 分支写正文结论）
 
 **报告来源**：
 `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md`
@@ -771,7 +772,6 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 ### Android 17 Generational CMC 与 ART 虚拟机内存管理
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-17-generational-cmc-art-gc.md
 - 类型：DeepResearch 调研结果
-- 摘要：Android 17 正式将 Generational GC 引入 ART 的 CMC 收集器，新增年轻代收集路径（仅扫描最近分配对象），降低整体 GC CPU 开销和停顿时长。调试开关 persist.art.gc.type 可控制启用/禁用。ART 改进通过 Google Play System Updates 下发至 Android 12+ 设备。
+- 摘要：Android 17 release notes 把 ART CMC collector 的 generational GC 支持列为运行时性能特性；源码细节需用公开 Android 17 tag 或已核的 `android-16.0.0_r1` 锚点约束。调试开关和 Mainline 下发范围仍需一手资料复核，不作为正文结论。
 - 注入时间：2026-05-31
 - 价值：提供 Generational CMC 的官方博客一手来源、调试属性、版本差异矩阵和向后兼容下发机制，填补章节中源码级开关与版本边界细节
-
