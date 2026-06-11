@@ -7,23 +7,29 @@ tags: ["VRR", "ARR", "Variable-Refresh-Rate", "LTPO", "setFrameRate", "FrameTime
 related_chapters: ["2.3", "2.18", "2.19"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 last_task6_audit: "2026-05-20"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_state: reviewed
-task9_reviewed_date: "2026-04-24"
+task9_reviewed_date: 2026-06-12
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-24T08:27:00+08:00"
-last_task9_audit: "2026-05-19"
+last_task9_at: "2026-06-12T00:20:00+08:00"
+last_task9_audit: 2026-06-12
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-26T14:46:27+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
+last_task9_autofix_at: 2026-06-12
+last_task9_review_log: "logs/deep-review/2026-06-12-00-audit.md"
+updated_date: 2026-06-12
+updated_by: openclaw-task9
+task9_review_notes: "2026-06-12 00:20 Task9 idle audit auto-fix: 修正 18.19 源码补充段的版本锚点与两个源码符号名；AOSP android-16.0.0_r4 与官方 ARR/Perfetto 文档复核无新增 P0/P1，回到 Task6 复审。"
+
 ---
 
 <!-- outline-start -->
@@ -216,11 +222,11 @@ LIMIT 20;
 
 
 <!-- AIW-源码调研-2026-05-31 -->
-**源码锚点补充（android-17.0.0_r1）：**
+**源码锚点补充（android-16.0.0_r4 复核）：**
 - `Scheduler.cpp` 的 `chooseRefreshRateForContent()` 实际通过 `RefreshRateSelector::getRankedFrameRates()` 计算分数
 - `RefreshRateSelector.cpp` 的 `calculateLayerScore()` 中，`FrameRateCategory::NoPreference` 或 `isNoVote()` 的 Layer 直接跳过（关键剪枝逻辑）
-- LayerVote 优先级：ExplicitExact(1.0) > ExplicitGT(0.75f 阈值) > Heuristic(计算 divisor 距离) > Min(跳过)
+- LayerVote 优先级：ExplicitExact(1.0) > ExplicitGte(0.75f 阈值) > Heuristic(计算 divisor 距离) > Min(跳过)
 - VRR 启用时 `VSYNC-app/sf` 周期动态变化，但 missed deadline **仍表现为 jank**，ARR 只改变目标节拍不补救慢帧
-- IdlethreadTimer kernel timer 只在刷新率 ≤65Hz 时启用，用于降功耗
+- `KernelIdleTimerController` / `IdleTimer` 控制 kernel idle timer；`Scheduler.cpp` 里 `FPS_THRESHOLD_FOR_KERNEL_TIMER = 65_Hz`，刷新率 ≤65Hz 时用于降功耗
 
 <!-- AIW-源码调研-2026-05-31 -->
