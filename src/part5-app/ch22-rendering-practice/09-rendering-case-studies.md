@@ -48,6 +48,7 @@ last_task9_review_log: logs/deep-review/2026-05-14-06-deep-review.md
 task9_review_notes: "2026-05-14 Task9 06: pass-tech-review。无 P0/P1；P2 1：FrameTimingMetric 验收建议补 frameOverrunMs / deadline miss 口径。未自动晋升：Task6/queue 仍有 pending。 已写入 logs/deep-review/2026-05-14-06-deep-review.md。"
 task2b_result: "fixed"
 last_task6_at: "2026-05-19T08:16:46+08:00"
+last_task6_audit: "2026-06-11"
 last_task6_review_log: logs/review/2026-05-19-08-review.md
 ---
 
