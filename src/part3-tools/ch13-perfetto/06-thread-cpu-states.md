@@ -2,7 +2,7 @@
 title: 线程 CPU 状态分析
 section: '13.6'
 chapter: '13.6'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 reviewed_date: '2026-04-22'
