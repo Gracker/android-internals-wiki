@@ -27,7 +27,7 @@ sources:
 - type: research
 - type: research
 - type: research
-path: intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md
+
 tags: 
 - android
 - memory
@@ -38,8 +38,8 @@ tags:
 reviewed_date: "2026-06-11"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "reviewed"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
@@ -55,9 +55,9 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_review_log: "logs/deep-review/2026-06-11-18-deep-review.md"
 task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-11"
-last_task6_at: "2026-06-11T18:17:46+08:00"
-last_task6_review_log: "logs/review/2026-06-11-18-review.md"
-task6_review_notes: "2026-06-11 Task6 18:17：pass-light-edit（revisiting re-review）。L1 否定-纠正结构 3→2 修复 1 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
+last_task6_at: "2026-06-11T19:08:00+08:00"
+last_task6_review_log: "logs/review/2026-06-11-19-review.md"
+task6_review_notes: "2026-06-11 Task6 19:08：pass-light-edit（revisiting re-review after task9 auto-fix）。L1 否定-纠正标题修正 1 处、悬空 path 字段删除 1 处；无新增 L3/L4 回炉。task9_result=auto-fixed 非 pass-tech-review，不满足自动晋升条件。"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 deepseek_cn_review_state: needs-structure-rework
@@ -154,7 +154,7 @@ inline void WriteBarrier::ForFieldWrite(ObjPtr<mirror::Object> dst,
 
 很多资料会把这一步统称为 Remembered Set。对 4.8 这一节来说，写成“由 dirty card 导出的跨代引用候选集合”更稳，因为这部分在 CMC 代码里能直接落到 card scanning，而不是依赖一个尚未核实到类名的抽象名词。
 
-### Android 16+/17 的 CMC 不是两代，而是三代
+### Android 16+/17 的 CMC 三代模型
 
 `art/runtime/gc/collector/mark_compact.h` 的注释已经把分代模型写明了：
 
@@ -399,7 +399,6 @@ class ObjectPool<T>(private val factory: () -> T, private val maxSize: Int = 16)
 - **池大小要合理**：过大的池等于另一种形式的内存泄漏，过小的池起不到复用效果
 - **注意线程安全**：如果对象在多线程间共享，需要用 `ConcurrentLinkedDeque` 或加锁
 
-
 ### 避免 finalize()
 
 `finalize()` 方法会在 GC 回收对象前被调用。它的代价是：包含 `finalize()` 的对象需要经过额外的 Finalizer 队列处理，这增加了 GC 的工作量，也延迟了对象被回收的时间。一个有 `finalize()` 的对象至少要经过两次 GC 才能被回收。
@@ -490,7 +489,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 摘要：ART CC 收集器分代架构（Young Gen BumpPointerSpace + Old Gen MarkCompactSpace）源码分析，Compose Composition 阶段 SlotTable/LayoutNode/Snapshot 短生命周期对象分配模式，年轻代 STW copy 快速回收对帧停顿的影响路径，含完整调用链和 Perfetto 可观测性指标。
 - 价值：建立 ART 分代 GC 与 Compose Composition 对象分配的完整因果链，含可观测性指标
 
-
 ### Android 17 ART 分代 GC 与 Compose Composition 性能链路
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md
 - 类型：DeepResearch 调研结果
@@ -520,7 +518,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - intake/research-feeds/2026-04-02-07-ch04-art-gc-pause-time-data.md
 - intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md
 
-
 ### Android 17 ART 分代 GC：Concurrent Mark-Compact
 - 来源：https://cs.android.com/android/platform/superproject/+/master/art/runtime/gc/
 - 类型：research
@@ -533,9 +530,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 摘要：围绕 Android 16 QPR2 的 Gen-CMC，追溯 CC→Gen-CC→CMC→Gen-CMC 演进，分析分代假说、card table/write barrier 回归、young/old 回收边界，以及对 jank、CPU 与续航的潜在收益。
 - 价值：能帮助理解 Android 16 ART GC 变化对卡顿与功耗的影响。
 
-
 ---
-
 
 ### Android 17 ART 分代 GC 与 Compose Composition 阶段分配/停顿因果验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-17-art-generational-gc-compose-composition.md
@@ -578,7 +573,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 **待深入**：
 - 晋升阈值常量 `kPromotionAgeThreshold` 的精确定义位置
 - Young/Mid/Old 各自默认堆空间占比配置（AOSP 默认值可能因设备厂商而异）
-
 
 ---
 
@@ -634,7 +628,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ## 附录：Android 17 ART Generational CMC 调研补充
 
-
 ### 调研结论
 
 1. **Generational CC 扩展**：ART CC GC 在 Android 10（API 29）扩展为 Generational CC，通过 Sticky Mark Sweep 专门收集自上次 GC 以来分配的新对象（young objects），增加 GC throughput 并延迟 full-heap GC 触发。
@@ -662,7 +655,6 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 ---
 
 ## 附录：三代晋升阈值精化
-
 
 ### 三代晋升阈值：硬编码为 1，无动态调整
 
@@ -701,12 +693,9 @@ Compose recomposition 产生的短期对象（不稳定 lambda、Snapshot、reme
 **报告来源**：
 `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md`
 
-
-
 ---
 
 ## 附录：Generational CMC 开关与年轻代参数
-
 
 ### 调研结论
 
