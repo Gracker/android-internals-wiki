@@ -2,7 +2,7 @@
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: "task6_pending"
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-05-10"
