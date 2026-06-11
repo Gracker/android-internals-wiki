@@ -3,7 +3,7 @@
 title: ART 分代垃圾回收与 GC 暂停优化
 chapter: '4.8'
 section: '4.8'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
@@ -38,12 +38,12 @@ tags:
 reviewed_date: "2026-06-11"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task9_result: "auto-fixed"
-last_task9_at: "2026-06-11T20:40:49+08:00"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+last_task9_at: "2026-06-11T21:23:00+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-11"
@@ -52,8 +52,8 @@ last_task9_audit: "2026-06-11"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
 task9_reviewed_date: "2026-06-11"
 task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-06-11-20-deep-review.md"
-task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Perfetto FrameTimeline jank_type 过滤大小写、LOS/old-gen 归属和 CMC 晋升阈值口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-11-21-deep-review.md"
+task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Perfetto FrameTimeline jank_type 过滤大小写、LOS/old-gen 归属和 CMC 晋升阈值口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review: pass-tech-review；复核 20:40 auto-fix 与 21:10 Task6 复审后无 P0/P1，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-11"
 last_task6_at: "2026-06-11T21:15:43+08:00"
 last_task6_review_log: "logs/review/2026-06-11-21-review.md"
