@@ -526,3 +526,67 @@
 - 稳定性（ch20）、启动/渲染/内存/IO/功耗实战（ch21-ch25）、可观测性（ch26）均已有对应章节
 
 结论：连续 75 轮无合格缺口，知识库高度饱和。
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 02:07
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**（连续第 78 轮）
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 426 文件，draft=0，ready-for-review=79，finalized=288，NO_STATUS=59）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **DeepResearch 最新产出（2026-06-11，6 篇新增）**：
+   - BatteryUsageStats + statsd pipeline → §26.3 已有章节（素材补充性质）
+   - Android 14 内存跟踪 API → §23.7 已有章节（素材补充性质）
+   - Linux LRU dead folios → 明确标注「未进入 Android 17」，不可作为正文结论
+   - GPU Vulkan libvulkan flags → §2.10/18.9 已有章节
+   - Binder transaction queue optimization → §20.17 已有章节
+   - Simpleperf mmap/munmap + multiprocess IPC → §14.2 已有章节
+4. **source-index.json 高质量未映射素材**：8 条 score≥16 但无 mapped_chapters 的条目，全部已验证有对应章节文件（2.27、4.14、14.23、16.9、18.23、19.18、13.17）
+5. **AOSP 服务/组件覆盖**：沿用连续多轮结论，所有性能相关服务已覆盖
+6. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+7. **daily-info 热点**：2026-06-12 尚无文件（当前 02:04，daily task 未执行）；2026-06-11 热点（Skills/AI基准/MessageQueue/Studio Panda/Android 17 适配/桌面端）均已在前轮评估覆盖
+8. **research-feeds**：最新文件为 2026-04-14，无新产出
+9. **Part 5 Clippings 对照**：三本参考书知识点已全部覆盖
+10. **research-gaps.md**：2 条补充建议（Battery Historian 集成 → §26.3；内存跟踪 API → §23.7），均为现有章节补充项，评分 < 14
+
+### 候选缺口评分
+
+| 候选 | 素材 | 相关性 | 需求 | 时效 | 总分 | 结果 |
+|------|------|--------|------|------|------|------|
+| f2fs 深度调优 | 4 | 4 | 3 | 3 | 14 | 边界线，前轮已评估，实战素材不足 |
+| EEVDF 独立章节 | 3 | 4 | 3 | 5 | 15 | 已在 5.1 大幅覆盖（130+ 行），不构成缺口 |
+| oom_adj 评分深度 | 3 | 4 | 4 | 2 | 13 | 已在 4.4 和 5.1 覆盖，不构成独立缺口 |
+| BatteryUsageStats 独立章节 | 4 | 3 | 3 | 4 | 14 | 已在 §26.3 有对应章节，素材为补充性质，不构成新缺口 |
+| Android 14 内存跟踪 API 独立章节 | 4 | 4 | 4 | 3 | 15 | 已在 §23.7 有对应章节，素材为补充性质，不构成新缺口 |
+
+### 结论
+全书 426 文件中 86% 已有实质内容（288 finalized + 79 ready-for-review）。知识库高度饱和，连续 78 轮缺口挖掘未产出新章节。建议后续侧重：
+- Task 2B/6/9 对 79 个 ready-for-review 章节的 review/回炉/终审
+- 已有章节的内容深化和交叉引用完善
+- DeepResearch 新产出（BatteryUsageStats、内存跟踪 API）作为素材注入 §26.3 和 §23.7
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 03:07
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**（连续第 79 轮）
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 426 文件，draft=0，ready-for-review=78，finalized=297，NO_STATUS=51）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **DeepResearch 最新产出（2026-06-12，1 篇新增）**：
+   - Battery Historian 与性能指标深度集成 → §14.11 已有章节（素材补充性质）
+4. **daily-info 热点（2026-06-12，2 条 RSS）**：
+   - "Android 17 新调度器减少 30% 启动时间" → RSS 摘要内容可疑（Android 17 无 ML 调度器），若属实映射 ch05+ch21，但素材未经验证，不宜创建新章节
+   - "Linux 6.10 内存碎片整理" → Linux 6.10 非 Android 17 内核版本(6.12)，ch04 已有 4.10，评分 9 < 14
+5. **source-index.json 高质量未映射素材**：所有 DeepResearch 产出均已有 target_file 映射到现有章节
+6. **AOSP 服务/组件覆盖**：沿用连续多轮结论，所有性能相关服务已覆盖
+7. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+8. **research-gaps.md**：无新增条目（沿用 2 条补充建议，均 < 14 分）
+9. **Part 5 Clippings 对照**：三本参考书知识点已全部覆盖
+
+### 结论
+全书 426 文件中 88% 已有实质内容（297 finalized + 78 ready-for-review）。知识库高度饱和，连续 79 轮缺口挖掘未产出新章节。建议后续侧重：
+- Task 2B/6/9 对 78 个 ready-for-review 章节的 review/回炉/终审
+- 已有章节的内容深化和交叉引用完善
+- 2026-06-12 RSS 中 Android 17 调度器文章可由 Task 5 验证后作为 ch05/ch21 的补充素材
