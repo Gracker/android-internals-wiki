@@ -38,12 +38,12 @@ tags:
 reviewed_date: "2026-06-11"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: "pending"
+task9_state: "reviewed"
 task9_result: "auto-fixed"
-last_task9_at: "2026-06-11T18:20:00+08:00"
+last_task9_at: "2026-06-11T20:40:49+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-11"
@@ -52,8 +52,8 @@ last_task9_audit: "2026-06-11"
 last_task2b_at: "2026-05-19T11:32:33+08:00"
 task9_reviewed_date: "2026-06-11"
 task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-06-11-18-deep-review.md"
-task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-11-20-deep-review.md"
+task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Perfetto FrameTimeline jank_type 过滤大小写、LOS/old-gen 归属和 CMC 晋升阈值口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-11"
 last_task6_at: "2026-06-11T19:08:00+08:00"
 last_task6_review_log: "logs/review/2026-06-11-19-review.md"
@@ -291,7 +291,7 @@ JOIN actual_frame_timeline_slice ft
  AND gc.gc_ts < ft.ts + ft.dur
  AND gc.gc_ts + gc.gc_dur > ft.ts
 WHERE gc.process_name = 'com.example.app'
-  AND ft.jank_type != 'none'
+  AND COALESCE(LOWER(ft.jank_type), 'none') != 'none'
 ORDER BY gc.gc_ts;
 ```
 
@@ -565,13 +565,13 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 **大对象的直接晋升**：
 
-当对象大小超过 Young Generation 最大单次分配阈值时，对象直接分配到 Old Generation，绕过 Young/Mid 晋升路径。
+当基本类型数组或 String 的大小达到 `large_object_threshold_`（默认 `12 * KB`）时，ART 会走 Large Object Space 分配路径，绕过 Young/Mid 晋升路径；这不是直接晋升到 CMC 的 old generation。
 
 **报告来源**：
 `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-art-gc-mid-generation-promotion-threshold.md`
 
 **待深入**：
-- 晋升阈值常量 `kPromotionAgeThreshold` 的精确定义位置
+- 是否存在独立 `kPromotionAgeThreshold`：android-16.0.0_r1 未发现该符号，当前证据只支持“存活过两次 young collection 后进入 old-gen”的注释语义
 - Young/Mid/Old 各自默认堆空间占比配置（AOSP 默认值可能因设备厂商而异）
 
 ---
@@ -731,10 +731,10 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 
 ### 年轻代参数
 
-年轻代的默认大小和对象晋升阈值定义在堆配置结构中：
-- 年轻代初始比例：通常为堆的 10-20%（未经一手源码验证）
-- 对象晋升年龄：由 GC 迭代次数决定而非时间
-- 晋升阈值：`heap.cc` 中动态计算，基于分配速率和 GC 频率
+年轻代参数需要分开看：
+- Large Object Space 阈值来自 `Heap::kDefaultLargeObjectThreshold` / `large_object_threshold_`，默认 `12 * KB`，只适用于基本类型数组或 String 的 LOS 分配判断。
+- CMC 三代晋升没有核到独立的动态年龄阈值；`mark_compact.h` 注释支持的口径是对象需要存活两次 young collection 才进入 old-gen。
+- Young/Mid/Old 的空间边界会随压缩周期推进，默认占比和设备策略仍需单独验证。
 
 ### 版本表更新
 

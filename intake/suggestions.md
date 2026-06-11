@@ -439,3 +439,9 @@
 全书 426 文件中 86% 已有实质内容（288 finalized + 79 ready-for-review）。知识库高度饱和，连续 73 轮缺口挖掘未产出新章节。progress.json 中 draft=1 的陈旧数据已修正为 0（§14.18 实际状态为 ready-for-review）。建议后续侧重：
 - Task 2B/6/9 对 79 个 ready-for-review 章节的 review/回炉/终审
 - 已有章节的内容深化和交叉引用完善
+
+## [Task9 Deep Review] 4.8 ART 分代垃圾回收与 GC 暂停优化 — 2026-06-11
+- **类型**：数据缺失
+- **位置**：GC pause、对象短命比例和高刷新率影响相关经验数字
+- **问题**：正文给出 “1-5ms / 1-3ms”、“超过 90% 对象短命”、“Young GC 每 2-5 秒 / 每秒 3 次以上”等经验范围，部分已有待补图标记，但还缺少同一设备 trace/benchmark 或明确一手数据来源。
+- **建议**：补一组 Android 16/17 设备 Perfetto + `android_garbage_collection_events` 样本，列出刷新率、堆大小、GC 类型、wall/running/runnable 分布，以及是否与 jank frame 重叠；无样本前保留为经验范围，不作为普适性能结论。
