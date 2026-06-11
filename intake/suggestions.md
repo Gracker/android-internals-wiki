@@ -440,8 +440,89 @@
 - Task 2B/6/9 对 79 个 ready-for-review 章节的 review/回炉/终审
 - 已有章节的内容深化和交叉引用完善
 
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-11 20:04
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**（连续第 76 轮）
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 426 文件，draft=0，ready-for-review=79，finalized=288，NO_STATUS=59）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **DeepResearch 今日新增（2026-06-11，5 篇）**：
+   - Binder 事务队列优化 → §20.17 已有章节
+   - GPU Vulkan libvulkan 旗标 → §2.10 已有章节
+   - Simpleperf 多进程 IPC 数据集成 → §14.2 已有章节
+   - Simpleperf mmap/munmap 分析 → §14.2 已有章节
+   - Linux 内核 LRU dead folio → §4.2 补充，该 patch 在 mm-unstable 分支未进入 Android 17，需跳过
+4. **research-gaps.md 新增条目评估**：沿用连续多轮结论，2 条补充建议均 < 14 分
+5. **source-index.json 高质量未映射素材**：所有 31 条 DeepResearch 产出均已有 target_file 映射到现有章节
+6. **AOSP 服务/组件覆盖**：沿用连续多轮结论，所有性能相关服务已覆盖
+7. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+8. **daily-info 热点（2026-06-11）**：Skills 排名/AI 基准测试/MessageQueue 重写（→ 1.13）/Android Studio Panda/Android 17 适配（→ 16.5）/Android 桌面端（→ 2.20+22.14）— 无新增性能核心主题
+9. **research-feeds**：最新文件为 2026-04-14，无新产出
+10. **Part 5 Clippings 对照**：三本参考书知识点已全部覆盖
+
+### 结论
+全书 426 文件中 86% 已有实质内容（288 finalized + 79 ready-for-review）。知识库高度饱和，连续 76 轮缺口挖掘未产出新章节。建议后续侧重：
+- Task 2B/6/9 对 79 个 ready-for-review 章节的 review/回炉/终审
+- 已有章节的内容深化和交叉引用完善
+
 ## [Task9 Deep Review] 4.8 ART 分代垃圾回收与 GC 暂停优化 — 2026-06-11
 - **类型**：数据缺失
 - **位置**：GC pause、对象短命比例和高刷新率影响相关经验数字
 - **问题**：正文给出 “1-5ms / 1-3ms”、“超过 90% 对象短命”、“Young GC 每 2-5 秒 / 每秒 3 次以上”等经验范围，部分已有待补图标记，但还缺少同一设备 trace/benchmark 或明确一手数据来源。
 - **建议**：补一组 Android 16/17 设备 Perfetto + `android_garbage_collection_events` 样本，列出刷新率、堆大小、GC 类型、wall/running/runnable 分布，以及是否与 jank frame 重叠；无样本前保留为经验范围，不作为普适性能结论。
+
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-11 22:04
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**（连续第 77 轮）
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 426 文件，draft=0，ready-for-review=79，finalized=288，NO_STATUS=59）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **research-gaps.md 新增条目评估**：沿用连续多轮结论，2 条补充建议均 < 14 分
+4. **source-index.json 高质量未映射素材**：所有 31 条 DeepResearch 产出均已有 target_file 映射到现有章节
+5. **AOSP 服务/组件覆盖**：沿用连续多轮结论，所有性能相关服务已覆盖
+6. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+7. **daily-info 热点（2026-06-11）**：Skills 排名/AI 基准测试/MessageQueue 重写（→ 1.13）/Android Studio Panda/Android 17 适配（→ 16.5）/Android 桌面端（→ 2.20+22.14）— 无新增性能核心主题
+8. **research-feeds**：最新文件为 2026-04-14，无新产出
+9. **Part 5 Clippings 对照**：三本参考书知识点已全部覆盖
+
+### 结论
+全书 426 文件中 86% 已有实质内容（288 finalized + 79 ready-for-review）。知识库高度饱和，连续 77 轮缺口挖掘未产出新章节。建议后续侧重：
+- Task 2B/6/9 对 79 个 ready-for-review 章节的 review/回炉/终审
+- 已有章节的内容深化和交叉引用完善
+
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-11 23:09
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. DeepResearch 2026-06-11 四篇最新调研
+- android-14-memory-tracking-api → 映射 23.7 内存监控（已有章节，素材补充性质）
+- linux-kernel-lru-dead-folios → 明确标注「未进入 Android 17」，不可作为正文结论
+- android17-gpu-vulkan-libvulkan-flags → 映射 2.10/18.9（已有章节）
+- android17-binder-transaction-queue-optimization → 映射 20.17（已有章节）
+
+### 2. daily-info 2026-06-11 七篇掘金文章
+- MessageQueue 重写 → 已覆盖于 1.13
+- Android 17 适配 → 已覆盖于 16.5
+- 桌面模式 → 已覆盖于 2.20 + 22.14
+- Android Studio Panda → 工具更新，非性能核心
+- Skills/AI 基准 → 非性能核心
+
+### 3. research-gaps.md 两条盲区
+- 26.3 Android 15 电池历史与性能指标集成 → 补充建议性质，评分 < 14
+- 26.3 Android 14 内存跟踪 API → 补充建议性质，评分 < 14
+
+### 4. AOSP 核心服务/系统组件（同前轮结论）
+- frameworks/base 核心服务已全部覆盖
+- system/ 核心组件已全部覆盖
+- 无新发现
+
+### 5. Clippings 三本参考书
+- 稳定性（ch20）、启动/渲染/内存/IO/功耗实战（ch21-ch25）、可观测性（ch26）均已有对应章节
+
+结论：连续 75 轮无合格缺口，知识库高度饱和。
