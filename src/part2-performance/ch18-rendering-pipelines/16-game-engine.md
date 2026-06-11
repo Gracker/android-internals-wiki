@@ -7,10 +7,10 @@ tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GL
 related_chapters: ["2.5", "8.9", "18.6", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
@@ -22,10 +22,12 @@ last_task9_at: '2026-04-22T20:50:00+08:00'
 last_task2b_lite_at: "2026-05-31"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
-last_task9_audit: "2026-05-19"
+last_task9_audit: "2026-06-11"
 last_task6_audit: "2026-05-20"
 last_task6_at: "2026-05-31T08:08:00+08:00"
 last_task6_reviewed_by: openclaw-task6
+last_task9_audit_log: "logs/deep-review/2026-06-11-10-audit.md"
+last_task9_autofix_at: "2026-06-11"
 ---
 
 <!-- outline-start -->
@@ -215,20 +217,21 @@ Swappy 解决的是帧节奏，不解决"系统该给我多少 CPU/GPU 资源"�
 
 ADPF **不是单一 API**，而是几组 API 的集合。常用的有：
 
-- **Performance Hint API**（`PerformanceHintManager`，Android 12+ / API 31）：App 通过 `createHintSession(threadIds, targetDurationNanos)` 告诉系统哪些是关键线程和期望帧时；每帧调 `reportActualWorkDuration(actualDurationNanos)` 反馈实际耗时。系统据此动态调整 CPU 频率和核心分配。Android 13 增加了动态更新 target 的能力，Android 14+ 增加了 CPU load up/down hint 等。
+- **Performance Hint API**（`PerformanceHintManager`，Android 12+ / API 31）：App 通过 `createHintSession(threadIds, targetDurationNanos)` 告诉系统哪些是关键线程和期望帧时；每帧调 `reportActualWorkDuration(actualDurationNanos)` 反馈实际耗时，也可以用 `updateTargetWorkDuration(targetDurationNanos)` 更新目标耗时。Android 14 / API 34 增加 `setThreads(int[])`，Android 15 / API 35 增加 `setPreferPowerEfficiency(boolean)`；公开 API 中没有名为 “CPU load up/down hint” 的入口。
 - **Thermal API**（`PowerManager#getCurrentThermalStatus`，`addThermalStatusListener`）：让 App 感知设备热状态，主动降低画质或帧率以避免 throttling。
 - **Game Mode / Game State API**：见下文。
 
 主流引擎都有官方 ADPF 集成（Unity 2023.2+、UE 5.3+），开启后 Perfetto 上能看到 `PerformanceHintManager` 相关系统调用。判断 App 是否接入 ADPF，比起单看 trace 标签，更可靠的是看引擎版本和构建配置。
 
-[已验证: AOSP `frameworks/base/core/java/android/os/PerformanceHintManager.java` API 31+ + Android Developers ADPF 文档]
+[已验证: Android Developers `PerformanceHintManager.Session` API Reference；`frameworks/base/core/java/android/os/PerformanceHintManager.java` 为源码锚点，android-17.0.0_r1 Gitiles tag 本轮未公开可取。]
 
 ### Frame Rate API（Android 11+）
 
 App 显式告知系统期望帧率：
 
-- **Java 侧**：`Surface.setFrameRate(float frameRate, int compatibility, int changeFrameRateStrategy)`
-- **Native 侧**：`ANativeWindow_setFrameRate`
+- **Java 侧**：Android 11 / API 30 是 `Surface.setFrameRate(float, int)`；Android 12 / API 31 起可用 `Surface.setFrameRate(float, int, int)` 指定 change strategy。Android 16 / API 36 增加 `FRAME_RATE_COMPATIBILITY_AT_LEAST`，但游戏内容仍优先使用 `FRAME_RATE_COMPATIBILITY_DEFAULT`。
+- **Native 侧**：`ANativeWindow_setFrameRate()` 从 API 30 可用，`ANativeWindow_setFrameRateWithChangeStrategy()` 从 API 31 可用；`ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_AT_LEAST` 不适合游戏或视频内容。
+- **Android 17 / API 37**：`Surface.setProducerThrottlingEnabled(boolean)` 允许控制 Vulkan / EGL producer 在 `eglSwapBuffers()` / `vkPresentKHR()` 附近的 CPU throttling。默认行为仍可能让 producer 在 consumer 处理上一帧时阻塞；游戏引擎只有在自己做好同步时才应该关闭它。
 
 App 把期望帧率告知系统后，display stack 可以据此切换 VRR 档位、调度合成节奏。Perfetto 上能看到 refresh rate 切换和 `setFrameRate` 注册相关的 slice。这与 Swappy 的 swap interval 是两件事——前者表达**意图**（让系统知道我要多快），后者控制**提交时机**。
 
@@ -236,18 +239,19 @@ App 把期望帧率告知系统后，display stack 可以据此切换 VRR 档位
 
 ### Game Mode API（Android 12+）
 
-`GameManager#getGameMode()` 返回当前 GameMode intervention 的四种状态：
+`GameManager#getGameMode()` 返回当前 GameMode intervention 状态：
 
-| GameMode | 含义 |
-|:---|:---|
-| `GAME_MODE_PERFORMANCE` | 用户偏好性能（最高帧率 / 画质） |
-| `GAME_MODE_BATTERY` | 用户偏好省电（降帧 / 降分辨率） |
-| `GAME_MODE_STANDARD` | 默认 |
-| `GAME_MODE_CUSTOM` | OEM 自定义干预 |
+| GameMode | 版本边界 | 含义 |
+|:---|:---|:---|
+| `GAME_MODE_UNSUPPORTED` | API 31+ | 当前应用不是 game，或平台不支持该应用的 Game Mode |
+| `GAME_MODE_STANDARD` | API 31+ | 默认 |
+| `GAME_MODE_PERFORMANCE` | API 31+ | 用户偏好性能（最高帧率 / 画质） |
+| `GAME_MODE_BATTERY` | API 31+ | 用户偏好省电（降帧 / 降分辨率） |
+| `GAME_MODE_CUSTOM` | API 34+ | OEM 自定义干预；targetSdk <= 33 时会兼容返回 `GAME_MODE_STANDARD` |
 
 系统或 OEM 会据此对特定包做帧率、分辨率、HDR 等调优。**写 trace 分析报告时要先确认当前包是不是被 Game Mode 干预过**——同一台设备不同 GameMode 下的同一段游戏 trace，行为可能差异很大。看到帧率被压制 / 分辨率被改写而 App 自己什么都没设时，先查 GameMode。
 
-[已验证: AOSP `frameworks/base/core/java/android/app/GameManager.java` API 31+]
+[已验证: Android Developers `GameManager` API Reference；`frameworks/base/core/java/android/app/GameManager.java` 为源码锚点，android-17.0.0_r1 Gitiles tag 本轮未公开可取。]
 
 ## DrawCall 合批（Batching）
 
@@ -289,6 +293,10 @@ DrawCall 是 GPU 渲染的基本单元。每次 `glDrawElements` 或 `vkCmdDraw`
   https://developer.android.com/games/sdk/frame-pacing
 - SwappyVk API Reference（`SwappyVk_setSwapIntervalNS` / `SwappyVk_initAndGetRefreshCycleDuration` / `SwappyTracer` 等）  
   https://developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk
+- Surface / Frame Rate API Reference（API 30/31/36/37 帧率与 producer throttling 边界）：https://developer.android.com/reference/android/view/Surface
+- Native Window NDK Reference（`ANativeWindow_setFrameRate*` 与 compatibility 边界）：https://developer.android.com/ndk/reference/group/a-native-window
+- PerformanceHintManager.Session API Reference（API 31/34/35 方法边界）：https://developer.android.com/reference/android/os/PerformanceHintManager.Session
+- GameManager API Reference（API 31/34 GameMode 边界）：https://developer.android.com/reference/android/app/GameManager
 - SurfaceView API Reference（Android N 起位置同步，Android 14 起 arbitrary alpha）：https://developer.android.com/reference/android/view/SurfaceView
 - Unity 文档：Android Player Settings — Optimized Frame Pacing 选项说明  
   https://docs.unity3d.com/Manual/class-PlayerSettingsAndroid.html
