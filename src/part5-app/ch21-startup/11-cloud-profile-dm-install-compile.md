@@ -62,7 +62,8 @@ task2b_fixed_date: "2026-06-06"
 finalized_date: 2026-06-06
 finalized_by: openclaw-task9-auto-promote
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06---
+last_deepseek_cn_review_at: 2026-06-06
+---
 
 # 21.11 云端 Profile、DM 文件与安装后编译优化
 

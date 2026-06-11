@@ -54,7 +54,8 @@ review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task
 last_task9_audit: "2026-05-24"
 last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-29---
+last_deepseek_cn_review_at: 2026-05-29
+---
 
 # 2.16 Sync Fence 框架与帧同步机制
 

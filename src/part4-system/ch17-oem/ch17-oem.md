@@ -195,3 +195,17 @@
 - 摘要：字节跳动移动端性能工具链全景梳理，涵盖 btrace 3.0 同步抓栈（ShadowHook 动态插桩+ART StackVisitor vptr swap）、ByteHook/ShadowHook/bytesig 三件套、Raphael/Liko/Kenzo 多层内存监控、ANR SIGQUIT 信号归因、功耗模型，以及豆包手机助手端云协同架构。
 - 注入时间：2026-06-01
 - 价值：国内头部 Android 厂商最完整的公开性能工具链文档，btrace 3.0 同步抓栈原理对理解 ART 内部机制有直接参考价值
+
+### 什么 AI 写 Android 最好用？官方做了一个基准测试排名
+- 来源：https://juejin.cn/post/7614897667961143347
+- 类型：None
+- 摘要：近日，谷歌发布一个了 Android Bench ，目的是衡量大语言模型在 Android 开发里的表现，而结果上是 Gemini-3.1 pro 遥遥领先，这个结论你认可吗？ Android Ben...文章详细介绍了什么 AI 写 Android 最好用？官方做了一个基准测试排名的核心技术要点和实践经验，为 Android 开发者提供了宝贵的参考价值。
+- 入库时间：2026-06-12
+- 评分：12/20
+
+### Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？
+- 来源：https://juejin.cn/post/7610233341305389099
+- 类型：None
+- 摘要：解析 Android 17 的重要适配变化和 2026 年禁止侧载政策的技术细节，分析对开发者生态系统的影响和应对策略。
+- 入库时间：2026-06-12
+- 评分：16/20

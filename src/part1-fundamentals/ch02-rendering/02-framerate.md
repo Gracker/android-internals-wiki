@@ -69,7 +69,8 @@ task9_review_notes: "2026-05-23 task9 deep-review: pass-tech-review。P0 0 / P1 
 task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
 last_task6_audit: "2026-05-19"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28---
+last_deepseek_cn_review_at: 2026-05-28
+---
 
 # 帧率与刷新率
 

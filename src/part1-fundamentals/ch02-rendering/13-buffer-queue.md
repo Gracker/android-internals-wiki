@@ -76,7 +76,7 @@ review_round: 1
 last_task9_review_log: logs/deep-review/2026-06-11-12-audit.md
 task9_review_notes: "2026-06-11 Task9 闲时抽检：AUTO-FIX。修正 Perfetto android.monitor_contention 误用于 native BufferQueueCore::mMutex 的诊断口径；回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-06-12
 last_task9_autofix_at: "2026-06-11"
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-06-12"
@@ -190,13 +190,13 @@ AOSP 注释给出的状态表很清楚。正常模式下,FREE、DEQUEUED、QUEUE
 
 AOSP 在 `BufferItem.h` 里把 `mFence` 注释为"buffer idle 时 signal 的 fence",在 `IGraphicBufferConsumer.h` 里又把 `releaseBuffer()` 的 `releaseFence` 明确成 consumer 归还 buffer 时携带的同步信息。光看 FREE / QUEUED / ACQUIRED 这些字面状态,不足以解释为什么某个 buffer 明明已经 release 了,producer 还要再等一会儿才能复用,原因就在 fence。
 
-这一层和 §2.16 Sync Fence 框架与帧同步机制是同一件事的两个切面。§2.16 解释 fence 在内核和 SurfaceFlinger 里的同步意义,这一节更关心 fence 怎样把 BufferQueue 的 slot 状态变成"可写、可读、可复用"的时间边界。
+这一层与 §2.16 Sync Fence 框架是互补关系。§2.16 侧重 fence 在内核和 SurfaceFlinger 中的同步语义，本节侧重 fence 如何在 BufferQueue 的 slot 流转中界定"可写、可读、可复用"的时间边界。
 
 ## BLASTBufferQueue 解决的是 buffer 与 geometry transaction 落在同一帧
 
-如果BLAST 的核心价值不是"少了一次 Binder hop"。它解决的是 buffer 提交和 geometry transaction 走两条线的问题：窗口尺寸、crop、transform 和 buffer 内容以前不一定落在同一帧。
+BLAST 的核心价值不是"少了一次 Binder hop"。它解决的是 buffer 提交和 geometry transaction 走两条线的问题：窗口尺寸、crop、transform 和 buffer 内容以前不一定落在同一帧。
 
-AOSP tag 只能说明 BLAST 代码首次出现的时间，不能直接等同于所有窗口都走了这条路径。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`,`android-11.0.0_r48` 已经有这个文件,`ViewRootImpl.java` 里也能看到 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。Android 11 可以确认已有 BLAST 窗口提交流程;常规 Activity 窗口全面转向 BLAST,要按 Android 12(S)作为默认分界更稳。
+AOSP tag 只能说明 BLAST 代码首次出现的时间，不代表所有窗口都默认走了这条路径。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`,`android-11.0.0_r48` 已经有这个文件,`ViewRootImpl.java` 里也能看到 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。Android 11 可以确认已有 BLAST 窗口提交流程;常规 Activity 窗口全面转向 BLAST,要按 Android 12(S)作为默认分界更稳。
 
 ```java
 // frameworks/base/core/java/android/view/ViewRootImpl.java
@@ -232,7 +232,7 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 
 ### BufferQueue 内部锁架构:mCore->mMutex 是 producer-consumer 共享的唯一锁
 
-这一小节专门补齐 BufferQueue 内部的锁竞争架构,是 §7.2 "BufferQueue 内部的锁竞争机制"盲区的源码级答案。
+了解 BufferQueue 的锁架构，对判断 dequeueBuffer / acquireBuffer 阻塞位置至关重要。以下从源码层面展开。
 
 #### BufferQueueCore::mMutex 中心锁
 
@@ -368,7 +368,7 @@ BufferQueue 的等待时间强依赖刷新率、Surface 类型和系统负载。
 
 ### 正常路径长什么样
 
-正常情况下,App 这边 `queueBuffer()` 之后,consumer 会在接下来的合成周期里把它消费掉。BLAST 路径下,AOSP 还会把 trace 名字拼成 `QueuedBuffer - {windowName}BLAST#{producerId}`,这给我们把 app 侧提交和窗口消费对应起来提供了一个很实用的锚点。
+正常情况下,App 这边 `queueBuffer()` 之后,consumer 会在接下来的合成周期里把它消费掉。BLAST 路径下，AOSP 会把 trace 名称拼成 `QueuedBuffer - {windowName}BLAST#{producerId}`，用这个名称可以直接把 App 侧提交和窗口消费对应起来。
 
 在 Perfetto 中排查帧对齐问题时,可以利用 vsyncId 关联不同轨道的数据。vsyncId 出现在 `BLASTBufferQueue::acquireNextBufferLocked()` 的 `ATRACE_FORMAT` 中（Android 14 已存在）,配合 FrameTimeline 可以把 App 侧提交、SurfaceFlinger 合成周期和实际呈现时间串到同一个 vsync 周期。排查“App 以为自己交了帧但 SF 没合成”这类问题时,vsyncId 比时间戳对齐更可靠。注意 `queueBuffer` 本身的 trace 名称不会携带 vsyncId 后缀；vsyncId 关联入口在 BLAST 层和 FrameTimeline。
 
