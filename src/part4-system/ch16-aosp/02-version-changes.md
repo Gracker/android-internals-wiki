@@ -68,7 +68,7 @@ task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-06-12
 ---
 
 # 各 Android 版本性能变更追踪
@@ -170,7 +170,7 @@ Android 14 对后台进程管理做了迄今为止最大的调整——**冻结�
 
 Android 14 引入了对缓存应用（cached app）的冻结机制。当 App 进入缓存状态一段时间后，系统会冻结其进程，使其完全不能使用 CPU。据 Google 公开数据，这一机制使缓存应用的 CPU 占用降低了约 50%。
 
-这对分析有直接意义：如果你的 App 在后台有周期性工作（如定时采样、日志上报），在 Android 14+ 上这些工作会被冻结。你需要在 Trace 中看到 App 进程从 "Running" 变为 "Sleeping" 再到被冻结（frozen 状态），这不是 bug，是系统行为。
+这意味着：如果你的 App 在后台有周期性工作（如定时采样、日志上报），在 Android 14+ 上这些工作会被冻结。你需要在 Trace 中看到 App 进程从 "Running" 变为 "Sleeping" 再到被冻结（frozen 状态），这不是 bug，是系统行为。
 
 冻结机制配合广播队列化（queued broadcasts）一起工作：缓存 App 注册的上下文广播会被排队，在 App 回到前台时一次性投递。如果你依赖广播来触发性能数据采集，在 Android 14+ 上这些广播可能延迟到 App 回到前台才投递。
 
@@ -279,7 +279,7 @@ Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法�
 
 Android 16 对大屏设备（smallest width ≥ 600dp）强制忽略 `screenOrientation`、`resizableActivity="false"`、`minAspectRatio`、`maxAspectRatio` 以及对应的 runtime API（`setRequestedOrientation()` / `getRequestedOrientation()`）。
 
-从性能角度看，Activity 因窗口尺寸变化会更频繁地 recreate。如果你的 App 在配置变更时没有正确保存和恢复 UI 状态（通过 ViewModel + `rememberSaveable`），用户会感知到界面闪烁和数据丢失——这不只是功能 bug，也是响应速度的退化。
+Activity 会因窗口尺寸变化更频繁地 recreate，这对性能有直接影响。如果你的 App 在配置变更时没有正确保存和恢复 UI 状态（通过 ViewModel + `rememberSaveable`），用户会感知到界面闪烁和数据丢失——这不只是功能 bug，也是响应速度的退化。
 
 ### Predictive Back 默认启用
 
@@ -491,14 +491,6 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 - ActiveServices (前台服务超时): frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
 
 ### 研究素材
--
--
--
--
--
--
--
--
 ### Android15适配之targetSdkVersion升到35后全是坑
 - 来源：https://juejin.cn/post/7584295332340858943
 - 类型：技术文章
@@ -514,6 +506,8 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 - 类型：技术文章
 - 摘要：Android 16 主要更新事项：照片权限细分、Notification 权限、后台服务限制、预测性返回手势。
 - 入库时间：2026-04-06
+
+---
 
 ## 附录：Android 16 ART Generational CMC / userfaultfd GC 机制源码调研
 

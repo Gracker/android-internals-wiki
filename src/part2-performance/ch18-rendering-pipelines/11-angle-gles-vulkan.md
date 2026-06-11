@@ -52,7 +52,8 @@ auto_promoted_date: "2026-05-22"
 auto_promoted_by: openclaw-task9
 task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1；P2 2 写入 suggestions。满足 task6_result pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02---
+last_deepseek_cn_review_at: 2026-06-02
+---
 
 <!-- outline-start -->
 

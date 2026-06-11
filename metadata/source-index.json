@@ -509,6 +509,1007 @@
       ],
       "summary": "深入Android系统（十二）Android图形显示...",
       "scored_at": "2026-06-11T09:06:41.524623"
+    },
+    {
+      "path": "Cubox/Perfetto官方文档教你查询数据又不想写sql语句的方法Data Explorer-2026-06-11.md",
+      "title": "Perfetto官方文档教你查询数据又不想写sql语句的方法Data Explorer",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429201"
+    },
+    {
+      "path": "DeepResearch/2026-06-11-android-14-memory-tracking-api.md",
+      "title": "源码调研：Android 14 内存跟踪 API 精细化研究",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429208"
+    },
+    {
+      "path": "DeepResearch/2026-06-11-android15-batteryusagestats-statsd-pipeline.md",
+      "title": "源码调研：Android 15 BatteryUsageStats 数据模型与 statsd 集成的性能采集通道",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 18
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429210"
+    },
+    {
+      "path": "DeepResearch/2026-06-11-android17-binder-transaction-queue-optimization.md",
+      "title": "源码调研：Android 17 Binder 事务队列优化与高频 IPC 性能提升机制",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 19
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429212"
+    },
+    {
+      "path": "DeepResearch/2026-06-11-android17-gpu-vulkan-libvulkan-flags-enumerate-instance-version.md",
+      "title": "源码调研：Android 17 GPU 渲染流水线 libvulkan 旗标系统与 EnumerateInstanceVersion 公开 API 协商",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429213"
+    },
+    {
+      "path": "DeepResearch/2026-06-11-android17-simpleperf-mmap-munmap-analysis.md",
+      "title": "源码调研：Android 17 Simpleperf 内存映射分析机制与 mmap/munmap 性能影响",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429215"
+    },
+    {
+      "path": "DeepResearch/2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md",
+      "title": "源码调研：Android 17 Simpleperf 多进程 IPC 性能与跨进程数据整合分析",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "chapter": "ch03",
+      "scored_at": "2026-06-12T05:49:04.429216"
+    },
+    {
+      "path": "DeepResearch/2026-06-11-linux-kernel-lru-dead-folios-preemptive-free.md",
+      "title": "源码调研：Linux 内核 LRU 锁竞争优化 patch 深度分析（dead folio 预回收）",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 17
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429217"
+    },
+    {
+      "path": "DeepResearch/2026-06-12-android15-battery-historian-power-metrics-integration.md",
+      "title": "源码调研：Android 15 Battery Historian 与性能指标的深度集成机制",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 19
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429218"
+    },
+    {
+      "path": "OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-06-11-AK-RSS-Digest（89源精选）.md",
+      "title": "AK RSS Digest（89 源精选）· 2026-06-11",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 17
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429220"
+    },
+    {
+      "path": "OpenClaw定时任务/Agent实践探索/2026-06-11-Agent实践探索.md",
+      "title": "每日 Agent 实践 · 2026-06-11",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "chapter": "ch05",
+      "scored_at": "2026-06-12T05:49:04.429222"
+    },
+    {
+      "path": "OpenClaw定时任务/Evolver周检只读/2026-06-12-Evolver周检只读.md",
+      "title": "Evolver 周检（只读）· 2026-06-12",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 12
+      },
+      "chapter": "ch05",
+      "scored_at": "2026-06-12T05:49:04.429224"
+    },
+    {
+      "path": "OpenClaw定时任务/GitHub自仓库IssuePR监控/2026-06-11-GitHub自仓库IssuePR监控.md",
+      "title": "GitHub 自仓库监控 · 2026-06-11",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 16
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429225"
+    },
+    {
+      "path": "OpenClaw定时任务/Gracker的Rss订阅/2026-06-12-Gracker的Rss订阅.md",
+      "title": "Gracker 的 Rss 订阅 · 2026-06-12",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 19
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429226"
+    },
+    {
+      "path": "OpenClaw定时任务/Obsidian定时任务目录卫生巡检/2026-06-11-Obsidian定时任务目录卫生巡检.md",
+      "title": "Obsidian 定时任务目录卫生巡检 · 2026-06-11",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 10
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429227"
+    },
+    {
+      "path": "OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-06-11-Obsidian新增文件与今日总结（22点）.md",
+      "title": "第035章-月度审查\n\n## 今日总结\n\n今日 Obsidian 新增文件数量为 68 个，其中定时任务产生的文件有 37 个，其他来源的文件有 31 个。定时任务文件主要集中在知识加工任务（21个文件）、SmartPerfetto日报（3个文件）、以及各种监控和摘要类任务。其他文件则分布在Android性能优化研究、AI领域笔记、小说创作等多个领域，体现了多元化的知识管理活动。\n\n## 一句话结论\n\n今日知识管理活动活跃，定时任务正常运行并产生大量结构化内容，同时个人研究创作活动同步推进，形成技术文档与研究创作并重的知识生态。",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 19
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429228"
+    },
+    {
+      "path": "OpenClaw定时任务/Perfetto每日提交监控/2026-06-11-Perfetto每日提交监控.md",
+      "title": "2026-06-11-Perfetto每日提交监控",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 17
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429230"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/2026-06-10-SmartPerfetto日报.md",
+      "title": "SmartPerfetto / perfetto 协作日报 · 2026-06-10",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 18
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429231"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-11/daily-report.md",
+      "title": "SmartPerfetto 日报结构化摘要 - 2026-06-10",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 3,
+        "total": 10
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429232"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-12/perfetto-pr-check.md",
+      "title": "SmartPerfetto日报 - Perfetto PR与CI检查报告",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 16
+      },
+      "chapter": "ch03",
+      "scored_at": "2026-06-12T05:49:04.429233"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-12/perfetto-pr-ci-gate.md",
+      "title": "SmartPerfetto日报 · perfetto PR与CI轻量检查 - 2026-06-12",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 15
+      },
+      "chapter": "ch05",
+      "scored_at": "2026-06-12T05:49:04.429235"
+    },
+    {
+      "path": "OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-12/smartperfetto-test.md",
+      "title": "SmartPerfetto Local Validation Report - 2026-06-12",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 3,
+        "total": 10
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429236"
+    },
+    {
+      "path": "OpenClaw定时任务/X每日草稿/2026-06-11-X草稿.md",
+      "title": "X每日草稿 · 2026-06-11",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429237"
+    },
+    {
+      "path": "OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-06-11-今天干了啥日报（OpenClaw）.md",
+      "title": "今天 OpenClaw 帮我干了点啥？！· 2026-06-11",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429238"
+    },
+    {
+      "path": "OpenClaw定时任务/掘金Android技术文章抓取/2026-06-12-掘金Android技术文章抓取.md",
+      "title": "掘金 Android 日报 · 2026-06-12",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 18
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429239"
+    },
+    {
+      "path": "OpenClaw定时任务/时效性巡检/2026-06-12-时效性巡检.md",
+      "title": "🔍 时效性巡检报告",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 16
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429241"
+    },
+    {
+      "path": "OpenClaw定时任务/每周深度文草稿/2026-06-11-coding-agent-metaprogramming.md",
+      "title": "最强 Coding Agent 遇到不会的语言，不写目标代码——写 Python 帮它写",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 17
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429242"
+    },
+    {
+      "path": "OpenClaw定时任务/每日Task巡检与自修复/2026-06-11-每日Task巡检与自修复.md",
+      "title": "每日 Task 巡检 · 2026-06-11",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "chapter": "ch08",
+      "scored_at": "2026-06-12T05:49:04.429243"
+    },
+    {
+      "path": "OpenClaw定时任务/每日内容流水线选题提案/2026-06-12-每日内容流水线选题提案.md",
+      "title": "munmap性能分析功能，帮助开发者识别可观测性盲区。\n\n",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429244"
+    },
+    {
+      "path": "OpenClaw定时任务/每日冥想流程/2026-06-11-每日冥想流程.md",
+      "title": "2026-06-11-每日知识进化`记录连续70轮无合格缺口（\"No gap scored >= 14\"），但仍有4个pending选题\n- **建议**：建立缺口挖掘与质量保证的动态平衡机制，当ready-for-review超过50时自动降低评分阈值\n\n- **问题**：向量索引模型版本不匹配影响所有agent搜索质量\n- **证据**：`openclaw memory status --json`显示所有agent的indexIdentity状态为\"mismatched\"\n- **建议**：重新构建所有agent的向量索引，验证搜索质量恢复情况\n\n## 明天最值的一刀（只允许 1 条）\n\n- **动作**：修复记忆晋升算法的阈值过滤问题\n- **原因**：记忆系统是整个知识体系的基础设施，当前完全停滞导致512个知识条目无法沉淀，影响长期知识积累和复用价值，是比任何单个功能故障更基础的系统问题\n- **第一锤**：分析short-term-recall.json中512个条目的score分布，找出被0.58阈值过滤的具体原因，重新设计动态评分机制\n",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429246"
+    },
+    {
+      "path": "OpenClaw定时任务/每日深度研究选题/2026-06-12-每日深度研究选题.md",
+      "title": "每日深度研究选题 · 2026-06-12",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429247"
+    },
+    {
+      "path": "OpenClaw定时任务/每日论文速报/2026-06-11-论文.md",
+      "title": "每日 AI + Android 论文速报 2026-06-11",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 15
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429248"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-06-知识加工(新).md",
+      "title": "Task 2A 知识加工 — 2026-06-11 06:08",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 10
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429249"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-08-知识加工(新).md",
+      "title": "知识加工(新) — 2026-06-11 08:05",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429251"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-10-深度技术Review.md",
+      "title": "深度技术 Review 闲时抽检 · 2026-06-11 10:20",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 18
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429252"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-11-知识加工(新).md",
+      "title": "知识加工报告 — 2026-06-11 11:04",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429253"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-12-知识加工(新).md",
+      "title": "Task 2A · 知识加工报告 — 2026-06-11 12:17",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429254"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-13-深度技术Review.md",
+      "title": "Task 9 · 深度技术Review · 2026-06-11 13:20",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 14
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429255"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-13-知识加工(新).md",
+      "title": "知识加工日志 — 2026-06-11 13:04",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429256"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-14-深度技术Review.md",
+      "title": "suggestions。\n",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429258"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-14-知识加工(新).md",
+      "title": "知识加工日志 · 2026-06-11 14:00",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 18
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429259"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-15-知识加工(新).md",
+      "title": "知识加工日志 — 2026-06-11 15:14",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429260"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-16-深度技术Review.md",
+      "title": "trace-processor-python。\n",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 17
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429261"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-16-知识加工(新).md",
+      "title": "知识加工日志 — 2026-06-11 16:17",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429262"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-17-知识加工(新).md",
+      "title": "知识加工报告 — 2026-06-11 17:04",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 16
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429263"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-18-深度技术Review.md",
+      "title": "2026-06-11-18-deep-review\n",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 13
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429265"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-21-深度技术Review.md",
+      "title": "2026-06-11-21-deep-review`。P2 数据样本建议已在上一轮写入 suggestions，本轮不重复追加。\n",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 13
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429267"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-11-23-09-知识加工(新).md",
+      "title": "知识加工 Task 2A — 2026-06-11 23-09",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 1,
+        "total": 15
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429268"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-12-00-深度技术Review.md",
+      "title": "Task 9 闲时抽检 · 2026-06-12 00:20",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 20
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429269"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-12-0010-知识加工(新).md",
+      "title": "知识加工报告 — 2026-06-12 00:10",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429302"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-12-02-07-知识加工(新).md",
+      "title": "Task 2A · 知识加工 — 2026-06-12 02:07",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429304"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-12-03-知识加工(新).md",
+      "title": "知识加工（Task 2A）— 2026-06-12 03:08",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 3,
+        "total": 14
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429305"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-06-12-05-知识加工(新).md",
+      "title": "netd） |\n| Clippings 参考书 | 三本全覆盖 |\n| Android 17 行为变更 | 16.5 + 各专项章节全覆盖 |\n\n### 评分结论\n\n本轮候选缺口：**0 个**（≥ 14 分：0 个）\n已录入缺口：**0 个**\n\n### 全书进度\n- 总文件：426\n- finalized：297（69.7%）\n- ready-for-review：78（18.3%）\n- draft：0\n- 无 status（附录等）：51\n- 完成率：**88.0%**\n\n### 连续空跑统计\n连续 **81 轮**无合格缺口。知识库高度饱和。\n",
+      "scores": {
+        "relevance": 4,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 4,
+        "total": 15
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429306"
+    },
+    {
+      "path": "OpenClaw定时任务/资讯简报（综合）/2026-06-11-资讯简报（综合）.md",
+      "title": "资讯简报（综合）· 2026-06-11",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 18
+      },
+      "chapter": "ch02",
+      "scored_at": "2026-06-12T05:49:04.429308"
+    },
+    {
+      "path": "Twitter/AI影响力日报/2026-06-11.md",
+      "title": "AI 影响力日报 · 2026-06-11",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 4,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 16
+      },
+      "chapter": "ch05",
+      "scored_at": "2026-06-12T05:49:04.429309"
+    },
+    {
+      "path": "awesome-ai-field-notes/README.md",
+      "title": "God of GPT",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 4,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 13
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429310"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/6y9as42r.md",
+      "title": "高效注意力机制研究：@pmdd22",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 12
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429311"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/8r23c9vz.md",
+      "title": "高效注意力机制研究：@christoschristofi",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 12
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429312"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/alpei1sc.md",
+      "title": "高效注意力机制研究：@AndrewYNg",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 12
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429314"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/anthropic_emotion_concepts_2026_001.md",
+      "title": "Emotion Concepts and Their Function in a Large Language Model",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429315"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/baoyu_claude_code_session_2026_001.md",
+      "title": "宝玉：Claude Code 会话管理与100万上下文窗口使用策略",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429316"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/baoyu_multi_agent_collab_2026_001.md",
+      "title": "宝玉：多智能体协作指南——五种主流协作模式深度拆解",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 15
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429317"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/claude_personal_guidance_2026_001.md",
+      "title": "How People Ask Claude for Personal Guidance",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "chapter": "ch05",
+      "scored_at": "2026-06-12T05:49:04.429319"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/d8un0sxz.md",
+      "title": "高效注意力机制研究：@gdb",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 12
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429320"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/y3018yzx.md",
+      "title": "高效注意力机制研究：@ylecun",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 3,
+        "timeliness": 2,
+        "verifiability": 5,
+        "total": 12
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429321"
+    },
+    {
+      "path": "source/juejin-android/2026-06-12-76049644-用AI写Android需求少踩坑的实战心.md",
+      "title": "用 AI 写 Android 需求：少踩坑的实战心得",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "chapter": "ch16",
+      "scored_at": "2026-06-12T05:49:04.429322"
+    },
+    {
+      "path": "source/juejin-android/2026-06-12-76050973-AndroidStudioPanda1正.md",
+      "title": "Android Studio Panda 1 正式版来了：JDK 终于不用手动配了，内存泄漏也有原生方案了",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "chapter": "ch04",
+      "scored_at": "2026-06-12T05:49:04.429323"
+    },
+    {
+      "path": "source/juejin-android/2026-06-12-76102333-Android17有什么需要适配的202.md",
+      "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "chapter": "ch16",
+      "scored_at": "2026-06-12T05:49:04.429324"
+    },
+    {
+      "path": "source/juejin-android/2026-06-12-76128120-Android17为什么重写Messag.md",
+      "title": "Android17 为什么重写 MessageQueue",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "chapter": "ch16",
+      "scored_at": "2026-06-12T05:49:04.429326"
+    },
+    {
+      "path": "source/juejin-android/2026-06-12-76132827-你的AndroidApp还没接AIGem.md",
+      "title": "你的 Android App 还没接 AI？Gemini API 接入全攻略",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 14
+      },
+      "chapter": "ch16",
+      "scored_at": "2026-06-12T05:49:04.429327"
+    },
+    {
+      "path": "source/juejin-android/2026-06-12-76148976-什么AI写Android最好用官方做了一.md",
+      "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "chapter": "ch16",
+      "scored_at": "2026-06-12T05:49:04.429328"
+    },
+    {
+      "path": "source/juejin-android/2026-06-12-76226966-Android要变天桌面端这次真的来了.md",
+      "title": "Android 要变天：桌面端这次真的来了！",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "chapter": "ch16",
+      "scored_at": "2026-06-12T05:49:04.429329"
+    },
+    {
+      "path": "source/juejin-android/2026-06-12-76388970-为什么Android不用接口做Activ.md",
+      "title": "为什么 Android 不用接口做 Activity 通信？",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 1,
+        "timeliness": 5,
+        "verifiability": 5,
+        "total": 13
+      },
+      "chapter": "ch16",
+      "scored_at": "2026-06-12T05:49:04.429330"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第003章-情绪样本.md",
+      "title": "第003章-情绪样本",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 5,
+        "timeliness": 1,
+        "verifiability": 3,
+        "total": 11
+      },
+      "chapter": "ch08",
+      "scored_at": "2026-06-12T05:49:04.429331"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第016章-镜中镜.md",
+      "title": "第016章-镜中镜",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 5,
+        "timeliness": 1,
+        "verifiability": 4,
+        "total": 12
+      },
+      "chapter": "ch06",
+      "scored_at": "2026-06-12T05:49:04.429332"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第067章-传导启动.md",
+      "title": "第067章-传导启动",
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 1,
+        "verifiability": 3,
+        "total": 12
+      },
+      "chapter": "ch05",
+      "scored_at": "2026-06-12T05:49:04.429334"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第068章-递归观察.md",
+      "title": "第068章-递归观察",
+      "scores": {
+        "relevance": 2,
+        "technical_depth": 5,
+        "timeliness": 1,
+        "verifiability": 3,
+        "total": 11
+      },
+      "chapter": "ch05",
+      "scored_at": "2026-06-12T05:49:04.429335"
     }
   ]
 }

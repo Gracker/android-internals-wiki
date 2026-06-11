@@ -76,7 +76,8 @@ p1: 0
 p2: 4
 last_task9_autofix_at: "2026-06-05"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05---
+last_deepseek_cn_review_at: 2026-06-05
+---
 
 # 优化策略
 

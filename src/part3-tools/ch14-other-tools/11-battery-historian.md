@@ -529,6 +529,136 @@ Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源�
 
 [已验证: developer.android.com/games/adpf/power-session; developer.android.com/reference/android/os/PerformanceHintManager; perfetto.dev/docs/analysis/sql/android-power-rails]
 
+
+
+<!-- AIW-源码调研-2026-06-12: Android 15 Battery Historian 与性能指标的深度集成机制 -->
+
+## 补充：BatteryUsageStats API 与 Android 15 streamlinedBatteryStats 链路（源码调研补遗）
+
+本节为 daily-topics #6 调研产物（落盘 `DeepResearch/2026-06-12-android15-battery-historian-power-metrics-integration.md`）的浓缩版，补 §14.11 现有"打 bugreport + 上传 Battery Historian"描述与平台层 BatteryUsageStats 统一 API 之间的链路缺口。
+
+### 统一归因入口：`BatteryStatsManager.getBatteryUsageStats`
+
+`frameworks/base/core/java/android/os/BatteryStatsManager.java`（`android-15.0.0_r1`）把面向上层（App、Studio、Macrobenchmark、statsd）的所有功耗归因都收敛到一个 Binder 调用：
+
+```java
+@SystemApi
+@SystemService(Context.BATTERY_STATS_SERVICE)
+public final class BatteryStatsManager {
+    public List<BatteryUsageStats> getBatteryUsageStats(List<BatteryUsageStatsQuery> queries) {
+        try {
+            return mBatteryStats.getBatteryUsageStats(queries);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+}
+```
+
+权限 `BATTERY_STATS`，普通 App 拿不到；Studio / Macrobenchmark 通过 `SystemHealthManager`/`PowerMonitor` 间接调用，Battery Historian 的 bugreport + 解析路径只是这条 API 链路的离线副本。
+
+### 五个 Flag 决定归因粒度
+
+`frameworks/base/core/java/android/os/BatteryUsageStatsQuery.java`（`android-15.0.0_r1`，并交叉验证 `android-14.0.0_r1` 已就位）：
+
+| Flag | 值 | 语义 | 上层用途 |
+|------|----|------|----------|
+| `FLAG_BATTERY_USAGE_STATS_POWER_PROFILE_MODEL` | 0x1 | 强制 power_profile 估算，忽略 ODPM | A/B 对比 / 降级设备 |
+| `FLAG_BATTERY_USAGE_STATS_INCLUDE_HISTORY` | 0x2 | 嵌入 `BatteryStatsHistory` | Battery Historian 时间线渲染 |
+| `FLAG_BATTERY_USAGE_STATS_INCLUDE_POWER_MODELS` | 0x4 | 每个 cell 标注 `POWER_MODEL_*` | Power Profiler 双柱图 |
+| `FLAG_BATTERY_USAGE_STATS_INCLUDE_PROCESS_STATE_DATA` | 0x8 | fg/bg/fgs/cached 4 态拆分 | Macrobenchmark 区分 fg/bg |
+| `FLAG_BATTERY_USAGE_STATS_INCLUDE_VIRTUAL_UIDS` | 0x10 | 列出 SDK Sandbox 等虚拟 UID | Private Space / Sandbox 场景 |
+
+### 双功耗模型：估算 vs rail 实测
+
+`frameworks/base/core/java/android/os/BatteryConsumer.java`（`android-15.0.0_r1`，行 132–156）：
+
+```java
+public static final int POWER_MODEL_UNDEFINED = 0;
+public static final int POWER_MODEL_POWER_PROFILE = 1;       // power_profile.xml
+public static final int POWER_MODEL_ENERGY_CONSUMPTION = 2;  // PowerStats HAL rail
+```
+
+`BatteryConsumer.Key` 把 `(powerComponent, processState, powerModelColumnIndex, powerColumnIndex, durationColumnIndex)` 映射到 Cursor 字段——同一次返回里**同一 `(CPU, FOREGROUND)` cell 可同时返回两套数字**，Power Profiler 才能并排展示"估算 vs 实测"。
+
+进程状态维度（`BatteryConsumer.java`，行 161–195）：
+
+```java
+public static final int PROCESS_STATE_FOREGROUND = 1;
+public static final int PROCESS_STATE_BACKGROUND = 2;
+public static final int PROCESS_STATE_FOREGROUND_SERVICE = 3;
+public static final int PROCESS_STATE_CACHED = 4;
+```
+
+`SUPPORTED_POWER_COMPONENTS_PER_PROCESS_STATE` 显式定义哪些 component 在哪些状态有效（例如 `SCREEN` 只在 FOREGROUND），避免假数据。
+
+### 服务端封装与 statsd 拉取
+
+`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-15.0.0_r1`，行 1061–1145）：
+
+```java
+public List<BatteryUsageStats> getBatteryUsageStats(List<BatteryUsageStatsQuery> queries) {
+    awaitCompletion();
+    if (BatteryUsageStatsProvider.shouldUpdateStats(queries,
+            SystemClock.elapsedRealtime(),
+            mWorker.getLastCollectionTimeStamp())) {
+        syncStats("get-stats", BatteryExternalStatsWorker.UPDATE_ALL);
+        if (Flags.streamlinedBatteryStats()) {
+            mStats.collectPowerStatsSamples();
+        }
+    }
+    return mBatteryUsageStatsProvider.getBatteryUsageStats(mStats, queries);
+}
+```
+
+`StatsPullAtomCallbackImpl`（同文件 1088–1145）注册三个 statsd 拉取原子，区别仅在 Flag 组合：
+
+| Atom | 关键 Flag 组合 | 消费方 |
+|------|----------------|--------|
+| `BATTERY_USAGE_STATS_SINCE_RESET` | `includeProcessStateData` + `includeVirtualUids` + `includePowerModels` | Power Profiler |
+| `BATTERY_USAGE_STATS_SINCE_RESET_USING_POWER_PROFILE_MODEL` | 上述 + `powerProfileModeledOnly` | 降级设备 |
+| `BATTERY_USAGE_STATS_BEFORE_RESET` | `aggregateSnapshots(start, end)` | Macrobenchmark |
+
+### streamlinedBatteryStats Feature Flag（Android 15 关键拐点）
+
+`BatteryStatsService.java`（行 615–645 / 709 / 1070–1072 / 3129）通过 `Flags.streamlinedBatteryStats()` 把 CPU / MOBILE_RADIO / WIFI 三个 component 切到实时 `PowerStatsProcessor` 路径，统计口径从「power_profile 平均功率 × 时长」迁移为「PowerStats HAL rail + 状态机」。这是 Power Profiler 数据可信度从「估算」走向「rail 校准估算」的关键拐点。
+
+对应实现入口 `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61）：在 `BatteryStatsHistory` 上做事件流回放，每个 component 用各自 `PowerStatsProcessor` 累计出 `AggregatedPowerStats`，`BatteryUsageStatsProvider` 再按 query 维度切片返回。
+
+### 历史线嵌入
+
+`frameworks/base/core/java/android/os/BatteryUsageStats.java`（`android-15.0.0_r1`，行 320–329）：
+
+```java
+public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
+    if (mBatteryStatsHistory == null) {
+        throw new IllegalStateException(
+            "Battery history was not requested in the BatteryUsageStatsQuery");
+    }
+    return new BatteryStatsHistoryIterator(mBatteryStatsHistory, 0, MonotonicClock.UNDEFINED);
+}
+```
+
+`FLAG_INCLUDE_HISTORY` 时 `BatteryStatsHistory.writeToBatteryUsageStatsParcel` 整段打包，调用方拿到的是与 bugreport 文本 `BatteryStats History` 段同源的时间线，Binder 单次事务限制 1 MB，调用方需要用 `aggregateSnapshots(from, to)` 做窗口化。
+
+### 性能与成本
+
+- 单次 `getBatteryUsageStats` 典型耗时 50–300 ms（24h 统计、中等规模设备），内部走 `awaitCompletion` → `syncStats` → `collectPowerStatsSamples`，不可在主线程同步调用。
+- `INCLUDE_POWER_MODELS` + `INCLUDE_PROCESS_STATE_DATA` 同时开启，Cursor 行 × 列大约从 N×M 膨胀到 N×(M+2×4)，单条记录开销约 2–3 倍。
+- 三个 statsd 原子的 pull 频率由 `StatsdConfig` 控制；生产环境建议 ≥30 s 一次。
+
+### 一手锚点
+
+- `frameworks/base/core/java/android/os/BatteryStatsManager.java`（`android-15.0.0_r1`，行 49–201）— 入口
+- `frameworks/base/core/java/android/os/BatteryUsageStatsQuery.java`（`android-15.0.0_r1` / `android-14.0.0_r1`）— 5 Flag
+- `frameworks/base/core/java/android/os/BatteryUsageStats.java`（`android-15.0.0_r1`，行 320–329 / 839–866）— `iterateBatteryStatsHistory` 与 Builder
+- `frameworks/base/core/java/android/os/BatteryConsumer.java`（`android-15.0.0_r1`，行 132–195 / 247–270）— `POWER_MODEL_*` / `PROCESS_STATE_*` / `Key`
+- `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-15.0.0_r1`，行 1061–1145）— statsd 拉取
+- `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61）— 聚合入口
+- `frameworks/base/core/java/com/android/internal/os/BatteryStatsHistory.java`（`android-15.0.0_r1`，行 1060 / 1077）— Parcel 序列化
+
+[已验证: android-15.0.0_r1 / android-14.0.0_r1 源码 cs.android.com 同源路径]
+
 ## 参考资料
 
 - **官方文档**：

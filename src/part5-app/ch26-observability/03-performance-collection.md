@@ -56,6 +56,8 @@ task9_idle_audit: true
 last_idle_audit_at: "2026-06-11"
 task2b_state: done
 last_task6_audit: "2026-06-07"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-12
 ---
 # 性能指标采集与上报
 
@@ -86,10 +88,7 @@ last_task6_audit: "2026-06-07"
 
 性能指标采集解决的是线上治理的入口问题：哪些数字要长期记录，哪些样本要保留现场，哪些变化应该拦截发版。26.1 节已经讲过 Metrics / Logs / Traces 的架构分层；这里聚焦性能 Metrics 的端侧采集、上报口径、分位值计算和劣化检测。
 
-Part 5 的启动、渲染、内存章节已经分别展开单项监控方法。这些单项监控最终要放回同一个 App 可观测性系统里：启动耗时、慢帧、内存水位、业务耗时都要走统一事件模型，否则后端很难把同一版本、同一页面、同一用户会话里的性能变化关联起来。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+Part 5 各章已经分别讲了启动、渲染、内存的单点监控方法。但这些单点监控最终要放进同一个可观测性系统：启动耗时、慢帧、内存水位、业务耗时必须走统一事件模型，否则后端没法把同一个版本、同一个页面、同一会话里的性能变化串起来看。
 
 ## 启动耗时、帧率、内存水位等指标采集
 
@@ -102,11 +101,11 @@ Part 5 的启动、渲染、内存章节已经分别展开单项监控方法。�
 | 内存水位 | 前台每 3-5 分钟、页面切换、低内存回调、OOM 前后 | PSS、Java Heap、Native Heap、RSS、图片缓存、进程名、前后台 | 发现泄漏、缓存膨胀和 OOM 前兆 | 23.7 |
 | 业务耗时 | 用户操作开始 / 结束、网络请求完成、关键任务完成 | trace 名称、场景 ID、耗时、结果码、是否缓存命中、网络类型 | 把性能退化定位到业务路径 | 26.1 |
 
-启动指标要采用系统口径和业务口径两套字段。Android Vitals 使用 TTID 判断首帧展示；`Activity.reportFullyDrawn()` 对应的 TTFD 更接近首屏内容可用。线上采集时，TTID 用来和 Vitals 对标，TTFD 用来判断业务体验。两者不能互相替代。[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
+启动指标要采用系统口径和业务口径两套字段。Android Vitals 使用 TTID 判断首帧展示；`Activity.reportFullyDrawn()` 对应的 TTFD 更接近首屏内容可用。线上采集时，TTID 用来和 Vitals 对标，TTFD 用来判断业务体验。两者不能互相替代。
 
-渲染指标默认不要逐帧上报。AndroidX JankStats 会报告耗时过长的应用帧，并支持给帧附加 UI 状态。线上更适合按页面停留窗口聚合：总帧数、jank 帧数、frozen 帧数、P90/P99、最大连续慢帧时长。命中阈值后再抽样上传慢帧现场或 Perfetto 片段。[已验证: 官方文档, developer.android.com/topic/performance/jankstats]
+渲染指标默认不要逐帧上报。AndroidX JankStats 会报告耗时过长的应用帧，并支持给帧附加 UI 状态。线上更适合按页面停留窗口聚合：总帧数、jank 帧数、frozen 帧数、P90/P99、最大连续慢帧时长。命中阈值后再抽样上传慢帧现场或 Perfetto 片段。
 
-内存指标要把页口径和对象口径分开。`Debug.MemoryInfo` / `ActivityManager.getProcessMemoryInfo()` 适合记录 PSS、dalvik / native / other PSS 等页级数据；`Runtime.totalMemory() - Runtime.freeMemory()` 适合记录 Java Heap 对象使用量。两个口径都叫“内存”，但它们解释的问题不同，不能相加后当作单一结论。[已验证: 官方文档, developer.android.com/reference/android/os/Debug.MemoryInfo；developer.android.com/reference/android/app/ActivityManager#getProcessMemoryInfo(int[])]
+内存指标要把页口径和对象口径分开。`Debug.MemoryInfo` / `ActivityManager.getProcessMemoryInfo()` 适合记录 PSS、dalvik / native / other PSS 等页级数据；`Runtime.totalMemory() - Runtime.freeMemory()` 适合记录 Java Heap 对象使用量。两个口径都叫“内存”，但它们解释的问题不同，不能相加后当作单一结论。)]
 
 采集入口要足够轻。主线程上只记录时间戳、枚举字段和少量数值；序列化、压缩、落盘和上传放到后台线程。Clippings 里的上报组件章节把高频埋点拆成采样、存储、上报、容灾四块，这个拆法适合性能指标系统复用：采集入口不要负责存储和网络。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
@@ -122,30 +121,30 @@ Part 5 的启动、渲染、内存章节已经分别展开单项监控方法。�
 | 技术阶段 | `db.query`、`image.decode`、`layout.bind`、`network.request` | 对应可归因的执行阶段 |
 | 结果状态 | `success`、`timeout`、`cache_hit`、`fallback` | 用于区分慢和失败是否同源 |
 
-Android 官方 tracing 文档支持在 Java / Kotlin 代码里用 `Trace.beginSection()` / `Trace.endSection()` 添加自定义 trace section，native 代码里用 `ATrace_beginSection()` / `ATrace_endSection()`。这些切片会出现在系统 trace 里，适合线下和灰度诊断；线上常规上报只记录同名阶段的摘要耗时，避免把完整 trace 文件变成常驻数据。[已验证: 官方文档, developer.android.com/topic/performance/tracing/custom-events；developer.android.com/topic/performance/tracing/custom-events-native]
+Android 官方 tracing 文档支持在 Java / Kotlin 代码里用 `Trace.beginSection()` / `Trace.endSection()` 添加自定义 trace section，native 代码里用 `ATrace_beginSection()` / `ATrace_endSection()`。这些切片会出现在系统 trace 里，适合线下和灰度诊断；线上常规上报只记录同名阶段的摘要耗时，避免把完整 trace 文件变成常驻数据。
 
 这段代码只演示采集边界：`Trace` 用于系统 trace，`metrics` 用于线上摘要。线上摘要要在后台聚合后再上报。
 
 ```kotlin
 inline fun <T> tracedMetric(
-    name: String,
-    sceneId: String,
-    metrics: PerformanceMetricSink,
-    block: () -> T
+ name: String,
+ sceneId: String,
+ metrics: PerformanceMetricSink,
+ block: () -> T
 ): T {
-    val startNs = System.nanoTime()
-    android.os.Trace.beginSection(name)
-    return try {
-        block()
-    } finally {
-        android.os.Trace.endSection()
-        val durationMs = (System.nanoTime() - startNs) / 1_000_000.0
-        metrics.recordDuration(
-            name = name,
-            sceneId = sceneId,
-            durationMs = durationMs
-        )
-    }
+ val startNs = System.nanoTime()
+ android.os.Trace.beginSection(name)
+ return try {
+ block()
+ } finally {
+ android.os.Trace.endSection()
+ val durationMs = (System.nanoTime() - startNs) / 1_000_000.0
+ metrics.recordDuration(
+ name = name,
+ sceneId = sceneId,
+ durationMs = durationMs
+ )
+ }
 }
 ```
 
@@ -174,7 +173,7 @@ inline fun <T> tracedMetric(
 
 端侧采样会改变分位值解释。性能事件如果按用户采样，服务端要记录 `sample_rate`、`sampling_policy_version` 和命中时间窗。计算 UV / PV 比例时按采样规则还原；做单次样本回查时保留原始耗时。缺少采样字段时，后端很容易把“没有采到”判断成“没有发生”。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
-Macrobenchmark 的 `StartupTimingMetric`、`FrameTimingMetric`、`TraceSectionMetric` 适合做线下基准和 CI 门禁。线上指标负责观察真实用户分布，线下 benchmark 负责在可控设备和场景里复现变化。二者使用同名指标和同名场景，可以减少“实验室变快、线上没变化”的对账成本。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
+Macrobenchmark 的 `StartupTimingMetric`、`FrameTimingMetric`、`TraceSectionMetric` 适合做线下基准和 CI 门禁。线上指标负责观察真实用户分布，线下 benchmark 负责在可控设备和场景里复现变化。二者使用同名指标和同名场景，可以减少“实验室变快、线上没变化”的对账成本。
 
 ## 性能基线与劣化检测
 
@@ -194,10 +193,7 @@ Macrobenchmark 的 `StartupTimingMetric`、`FrameTimingMetric`、`TraceSectionMe
 
 劣化归因要把指标和样本连起来。每条告警至少带上：指标名、版本、场景、受影响用户数、样本量、基线值、当前值、变化幅度、Top 设备 / Android 版本、可回查样本列表。没有样本列表，告警只能说明“变差了”，不能支持工程团队立刻排查。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
-
-## [自动发现] 上报组件自监控
+## 上报组件自监控
 
 性能指标系统本身也要被监控。采集 SDK 如果写入过慢、队列堆积、上传失败或本地文件膨胀，会反过来制造性能问题。高可用上报组件章节已经提到数据自监控；在性能采集里，它也是必要配套能力。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
@@ -213,11 +209,7 @@ Macrobenchmark 的 `StartupTimingMetric`、`FrameTimingMetric`、`TraceSectionMe
 
 这些字段不需要高频上报。每次 App 启动、配置更新、上传批次结束或 SDK 熔断时上报摘要即可。它们的作用是解释监控系统的盲区：某个版本指标样本突然减少，可能是体验变好，也可能是采集 SDK 被熔断或上传失败。
 
-
-## [AIW-源码调研-2026-06-11] Android 15 BatteryUsageStats 数据模型与 statsd 集成通道
-
-> 调研日期：2026-06-11 ｜ 锚点版本：android-platform-15.0.0_r17（Android 15 / API 35）｜ 报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android15-batteryusagestats-statsd-pipeline.md`
-> 适用范围：≤ Android 17 / API 37，符合 [AIW_ANDROID_VERSION_CAP_2026_05_29] 边界
+## Android 15 BatteryUsageStats：平台级电池归因数据通道
 
 ### 平台侧电池归因数据通路（系统级）
 
@@ -243,12 +235,12 @@ Android 15 引入的 `BatteryUsageStats` 体系是平台给端侧 APM 的**第�
 **调用链**：
 ```
 App 进程 (BatteryUsageStatsManager.getBatteryUsageStats)
-    → IBatteryStats.getBatteryUsageStats(queries)  [Binder, 需 BATTERY_STATS 权限]
-        → system_server: BatteryStatsService$BinderService.getBatteryUsageStats (L729-731)
-            → BatteryStatsService.getBatteryUsageStats (L1061-1075)
-                → BatteryUsageStatsProvider.getBatteryUsageStats(mStats, queries)
-                    → mStats (BatteryStatsImpl) 从 mHistoryBuffer 重建快照
-                        → BatteryUsageStats 实例 (Parcelable, Closeable)
+ → IBatteryStats.getBatteryUsageStats(queries) [Binder, 需 BATTERY_STATS 权限]
+ → system_server: BatteryStatsService$BinderService.getBatteryUsageStats (L729-731)
+ → BatteryStatsService.getBatteryUsageStats (L1061-1075)
+ → BatteryUsageStatsProvider.getBatteryUsageStats(mStats, queries)
+ → mStats (BatteryStatsImpl) 从 mHistoryBuffer 重建快照
+ → BatteryUsageStats 实例 (Parcelable, Closeable)
 ```
 
 **statsd 集成关键路径**（`BatteryUsageStats.getStatsProto()` L431-461）：
@@ -280,15 +272,15 @@ App 进程 (BatteryUsageStatsManager.getBatteryUsageStats)
 
 ```protobuf
 message PowerComponentUsageSlice {
-    optional PowerComponentUsage power_component = 1;
-    enum ProcessState {
-        UNSPECIFIED = 0;
-        FOREGROUND = 1;
-        BACKGROUND = 2;
-        FOREGROUND_SERVICE = 3;
-        CACHED = 4;
-    }
-    optional ProcessState process_state = 2;
+ optional PowerComponentUsage power_component = 1;
+ enum ProcessState {
+ UNSPECIFIED = 0;
+ FOREGROUND = 1;
+ BACKGROUND = 2;
+ FOREGROUND_SERVICE = 3;
+ CACHED = 4;
+ }
+ optional ProcessState process_state = 2;
 }
 ```
 
