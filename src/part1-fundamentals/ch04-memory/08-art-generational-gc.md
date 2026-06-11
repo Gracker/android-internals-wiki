@@ -35,11 +35,11 @@ tags:
 - art
 - gc
 - perfetto
-reviewed_date: "2026-05-27"
+reviewed_date: "2026-06-11"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 task9_state: "pending"
 task9_result: "needs-rework"
@@ -54,9 +54,9 @@ task9_reviewed_date: "2026-06-11"
 task9_reviewed_by: "openclaw-task9"
 last_task9_review_log: "logs/deep-review/2026-06-11-17-audit.md"
 task9_review_notes: "2026-06-11 Task9 idle audit：发现 P0/P1。附录将 Generational CMC 误归到 ConcurrentCopying，并把 Android 15+ 写成已含 YoungMarkCompact；已写入 queue 回炉。"
-last_task6_at: "2026-05-27T04:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-04-review.md"
-task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 7 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
+last_task6_at: "2026-06-11T18:17:46+08:00"
+last_task6_review_log: "logs/review/2026-06-11-18-review.md"
+task6_review_notes: "2026-06-11 Task6 18:17：pass-light-edit（revisiting re-review）。L1 否定-纠正结构 3→2 修复 1 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 deepseek_cn_review_state: needs-structure-rework
@@ -70,7 +70,7 @@ last_deepseek_cn_review_at: 2026-05-27
 
 ## GC 暂停为什么会影响流畅性
 
-§4.3 提到，ART 的 Concurrent Copying GC 将大部分 GC 工作放在应用线程之外并发执行，stop-the-world 暂停只有 1-5ms。这个数字看起来很小——但问题不在单次暂停的长度，而在 GC 活动与渲染管线的**时间冲突**。
+§4.3 提到，ART 的 Concurrent Copying GC 将大部分 GC 工作放在应用线程之外并发执行，stop-the-world 暂停只有 1-5ms。这个数字看起来很小——但掉帧的主因是 GC 活动与渲染管线的**时间冲突**。
 
 在一个 120Hz 的设备上，帧间隔只有 8.33ms。主线程的 `doFrame()` 需要在这个窗口内完成 input 处理、animation 计算、measure、layout、draw，然后交给 RenderThread 进行 GPU 渲染。如果一次 Young GC 的暂停恰好发生在这个窗口内，主线程被暂停的 2-3ms 直接吃掉了整个帧预算的 25-36%。更严重的情况是：GC 并发阶段虽然不暂停主线程，但会与主线程争抢 CPU 时间，导致 `doFrame()` 执行变慢，间接造成掉帧。
 
