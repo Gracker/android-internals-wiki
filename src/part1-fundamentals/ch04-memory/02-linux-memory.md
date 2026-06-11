@@ -347,6 +347,43 @@ static int evict_folios(struct lruvec *lruvec, ...)
 
 **sysfs 监控接口**：`/sys/kernel/mm/lru_gen/enabled`（bitmask 主开关）+ `/sys/kernel/mm/lru_gen/lru_gen`（各代页面数量直方图）。
 
+<!-- AIW-源码调研-2026-06-11 -->
+**4. dead folio 预回收：减少 24% lruvec 锁竞争（-mm 树未合入主线）**
+
+上述三类机制都属于 MGLRU 对回收路径的优化。**classic LRU 自身的 lruvec 锁竞争**也有独立优化路径：Meta 工程师 JP Kobryn 在 -mm 树（`git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git` `mm-unstable` commit `9669b87065a6fe96198f3df2c3d125c5f5c1f210`，2026-04-24）提交了 `mm/lruvec: preemptively free dead folios during lru_add drain` patch。**该 patch 截至 2026-06-11 仍在 -mm 树，未进入 `mm-stable` / `mainline` / `android17-6.18`，本节作为前瞻性分析，不作为 Android 17 正文结论。**
+
+核心问题：classic LRU 通过 per-CPU `cpu_fbatches` 把分散的 `lru_add` 攒成 batch。`mm/swap.c:folio_batch_move_lru()`（line 160-179）在 batch drain 时，对每个 folio 调 `lru_add()` 加入 LRU（持 lruvec 锁①），然后立即调 `folios_put_refs()` 释放 batch 引用——若该 folio 引用数仅剩 batch 这 1 个，`folios_put_refs()` 会再次进入 `__page_cache_release()` 重新拿 lruvec 锁② 删除它。**一个 dead folio 的一生内两次进入 lruvec 锁**。Meta 在 fleet 上统计：约 24% 的 lruvec 锁竞争来自这条路径。
+
+修复思路：在 `folio_batch_move_lru()` 的循环中、获取 lruvec 锁之前，用 `folio_ref_freeze(folio, 1)` 探测 dead folio。`folio_ref_freeze()` 来自 `include/linux/page_ref.h`，基于 `atomic_cmpxchg(&page->_refcount, count, 0)`，仅当 refcount 恰好为 1 时将其原子置 0 并返回 1。返回 1 即说明该 folio 引用数只剩 batch 这一个，可以直接绕过 LRU 加入流程。patch 把 dead folio 从 `fbatch->folios[i]` 移到临时 `free_fbatch`（同时把 `fbatch->folios[i] = NULL` 留给 `folios_put_refs()` 跳过），循环结束后统一 `mem_cgroup_uncharge_folios()` + `free_unref_folios()` 回收。
+
+```c
+// mm/swap.c:folio_batch_move_lru() — patch 关键插入（-mm 树版本，line 174-188）
+if (is_lru_add && folio_ref_freeze(folio, 1)) {
+    __folio_clear_active(folio);             // 绕过 lru_add 内部清理路径
+    __folio_clear_unevictable(folio);
+    folio_unqueue_deferred_split(folio);     // 避免 huge page deferred split 悬挂
+    fbatch->folios[i] = NULL;                // 与 folios_put_refs() 的契约
+    folio_batch_add(&free_fbatch, folio);
+    continue;                                // 跳过 lruvec 锁
+}
+```
+
+A/B 测试（生产 Instagram 高频短请求负载，95% CPU，60 host / 3 × 60s）：
+
+| 指标 | unpatched | patched | 变化 |
+|------|----------|---------|------|
+| dead folios/min per host | 1,297,785 | 14 | -99.99% |
+| 节省 lruvec lock acquisitions/min per host | — | ~2.6M | — |
+| direct reclaim 扫描 | 基线 | -7% | — |
+| allocation stalls | 基线 | -5.2% | — |
+| compaction stalls | 基线 | -12.3% | — |
+| page frees | 基线 | -4.9% | — |
+| RPS / p99 延迟 | 基线 | 无回归 | — |
+
+**对端侧 AI 应用的含义**（仅当 patch 进入 mainline 后有效）：高频短生命周期 buffer（RecyclerView item view holder、Bitmap decode-then-discard、推理中间张量）产生的 dead folio 比例高，可观测地降低 kswapd CPU 占用与 lmkd 触发频率。**注意 commit message 明示测试在 classic LRU 下完成**，MGLRU 设备（`CONFIG_LRU_GEN_ENABLED=y`）下的具体收益需独立验证。
+
+**AIW 版本边界**：本节内容基于 -mm 树 patch，**未进入 Android 17 / API 37**。写入 AIW 章节的目的：记录一个具体可引用的源码级 patch（commit + 文件 + 函数 + 行号），便于 Android 17 GKI 后续 backport 时回查。
+
 
 ### Silk：GC 与内核页面回收的协同优化
 

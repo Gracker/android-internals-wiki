@@ -213,6 +213,101 @@ Macrobenchmark 的 `StartupTimingMetric`、`FrameTimingMetric`、`TraceSectionMe
 
 这些字段不需要高频上报。每次 App 启动、配置更新、上传批次结束或 SDK 熔断时上报摘要即可。它们的作用是解释监控系统的盲区：某个版本指标样本突然减少，可能是体验变好，也可能是采集 SDK 被熔断或上传失败。
 
+
+## [AIW-源码调研-2026-06-11] Android 15 BatteryUsageStats 数据模型与 statsd 集成通道
+
+> 调研日期：2026-06-11 ｜ 锚点版本：android-platform-15.0.0_r17（Android 15 / API 35）｜ 报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android15-batteryusagestats-statsd-pipeline.md`
+> 适用范围：≤ Android 17 / API 37，符合 [AIW_ANDROID_VERSION_CAP_2026_05_29] 边界
+
+### 平台侧电池归因数据通路（系统级）
+
+Android 15 引入的 `BatteryUsageStats` 体系是平台给端侧 APM 的**第一条标准化的电池归因数据通道**，重要性等同于 §26.1 提到的 Metrics / Logs / Traces 三层架构在功耗维度的落地。
+
+**核心数据模型**（`frameworks/base/core/java/android/os/BatteryUsageStats.java` android-platform-15.0.0_r17）：
+
+| 字段 | 类型 | 含义 |
+| --- | --- | --- |
+| `mStatsStartTimestampMs` / `mStatsEndTimestampMs` | long | 统计会话起止（UTC 毫秒） |
+| `mBatteryCapacityMah` | double | 电池容量 mAh |
+| `mDischargePercentage` | int | 累计放电百分比（可 >100） |
+| `mDischargedPowerLower/Upper` | double | 实际放电功率区间 |
+| `mUidBatteryConsumers` | `List<UidBatteryConsumer>` | 每 UID 功耗归因（CursorWindow 存储） |
+| `mAggregateBatteryConsumers[2]` | 数组 | 设备级 + 全应用聚合 |
+| `mBatteryStatsHistory` | `BatteryStatsHistory` | 可选 history 序列 |
+
+**关键常量**（同文件 L123-129）：
+- `BATTERY_CONSUMER_CURSOR_WINDOW_SIZE = 5_000 * 700` ≈ **3.5 MB** CursorWindow
+- `STATSD_PULL_ATOM_MAX_BYTES = 45000` —— statsd 单次 pull atom 硬上限
+- `UID_USAGE_TIME_PROCESS_STATES = {FOREGROUND, BACKGROUND, FOREGROUND_SERVICE}` —— 进程态时间维度
+
+**调用链**：
+```
+App 进程 (BatteryUsageStatsManager.getBatteryUsageStats)
+    → IBatteryStats.getBatteryUsageStats(queries)  [Binder, 需 BATTERY_STATS 权限]
+        → system_server: BatteryStatsService$BinderService.getBatteryUsageStats (L729-731)
+            → BatteryStatsService.getBatteryUsageStats (L1061-1075)
+                → BatteryUsageStatsProvider.getBatteryUsageStats(mStats, queries)
+                    → mStats (BatteryStatsImpl) 从 mHistoryBuffer 重建快照
+                        → BatteryUsageStats 实例 (Parcelable, Closeable)
+```
+
+**statsd 集成关键路径**（`BatteryUsageStats.getStatsProto()` L431-461）：
+1. **三段式降级**：起始 `maxRawSize = STATSD_PULL_ATOM_MAX_BYTES * 1.75 = 78,750` 字节；最多 3 次尝试，每次按 `maxRawSize = 45000 * rawSize / protoOutput.length - 1024` 比例回退；兜底用 `rawSize = 45000` 强切
+2. **UID 排序权重**：`weight = consumedPower + timeInFG * (100/3600000) + timeInBG * (300/3600000)`，**1 小时前台 ≈ 100 mAh、1 小时后台 ≈ 300 mAh**（L558-567）
+3. **截断条件**：`if (proto.getRawSize() >= maxRawSize) break;` —— **只保留最耗电 + 最久前台/后台的 UID，长尾小应用被丢弃**
+4. **过滤条件**：`(fgMs == 0 && bgMs == 0 && !hasBaseData)` 的 UID 跳过
+
+**对端侧 APM 的启示**：
+- App 不应再自造"估算功耗"体系。直接走 `BatteryStatsManager.getBatteryUsageStats(BatteryUsageStatsQuery)`（系统 API）拿 UID 级 power 归因
+- 监听 statsd atom 时注意**长尾小应用归因数据被截断**——这是 45 KB 容量限制下的**有意取舍**，不是 bug
+- 想拿完整数据应走 Binder API 拉 `BatteryUsageStats` 实例（`CursorWindow` 零拷贝传输），而非监听 statsd pull atom
+
+**PowerStats 路径**（`frameworks/base/services/core/java/com/android/server/powerstats/StatsPullAtomCallbackImpl.java`）：
+- 注册 `SUBSYSTEM_SLEEP_STATE` 和 `ON_DEVICE_POWER_MEASUREMENT` 两个 statsd pull atom
+- 每次 pull 通过 `PowerStatsInternal` → `android.hardware.power.stats` HAL 读取底层实测数据
+- **2 秒同步超时**（`STATS_PULL_TIMEOUT_MILLIS = 2000`）—— 超过 2 秒 statsd 标记 pull 失败
+
+**History 持久化**（`frameworks/base/core/java/com/android/internal/os/BatteryStatsHistory.java`）：
+- `mHistoryBuffer`（Parcel-backed）达到 `BatteryStatsImpl.Constants.MAX_HISTORY_BUFFER` 时刷新到 `/data/system/battery-history/battery-history-N.bh`
+- 文件数达 `MAX_HISTORY_FILES` 时**FIFO 淘汰最旧文件**
+- `VERSION = 210`（Parcel 格式版本号）
+- `EXTRA_BUFFER_SIZE_WHEN_DIR_LOCKED = 100_000` —— 目录锁竞争时允许 100 KB 溢出，避免 watchdog 杀 system_server
+- Delta 编码：`DELTA_TIME_MASK = 0x7ffff` 区分 4 字节 int / 8 字节 long / 完整 absolute update 三种时间 delta 格式
+
+### 进程态功耗切片（关键 API 升级）
+
+`BatteryUsageStatsAtomsProto.PowerComponentUsageSlice`（`frameworks/base/core/proto/android/os/batteryusagestats.proto` L75-92）首次引入**按进程态的功耗切片**：
+
+```protobuf
+message PowerComponentUsageSlice {
+    optional PowerComponentUsage power_component = 1;
+    enum ProcessState {
+        UNSPECIFIED = 0;
+        FOREGROUND = 1;
+        BACKGROUND = 2;
+        FOREGROUND_SERVICE = 3;
+        CACHED = 4;
+    }
+    optional ProcessState process_state = 2;
+}
+```
+
+这是 Android 15 相对 Android 14 最大的能力升级：**「cpu 在后台」** 这类细粒度归因数据可被平台直接产出，端侧 APM 无需自行估算。
+
+### 与 §26.3 已有内容的衔接
+
+§26.3 现有的「启动耗时、帧率、内存水位、业务耗时」四类指标都是**应用侧自采**。Android 15 的 `BatteryUsageStats` 体系是**系统侧归因**——解决「我这个 App 到底消耗了多少 mAh」的根本问题，建议在 APM 端把两者通过 `trace_id` / `session_id` 关联，形成「**业务耗时 × 系统功耗**」的二维分析能力。
+
+### 反哺要点（建议加入正文）
+
+1. 电池归因指标应优先复用 `BatteryUsageStats`（系统 API），不要自造估算体系
+2. UID 切片按 weight 排序截断，长尾小应用数据**不会被 statsd 拉取到**
+3. PowerStats HAL 路径只在设备支持 `android.hardware.power.stats` 时才有数据，否则回退 PowerProfile
+4. 进程态功耗切片是 Android 15 首次平台级提供，建议 APM 端接入
+
+> 一手资料：`BatteryUsageStats.java` (L1-600)、`BatteryUsageStatsQuery.java` (L1-330)、`BatteryStatsHistory.java` (L1-180)、`batteryusagestats.proto` (L1-105)、`BatteryStatsService.java` (grep 关键行)、`StatsPullAtomCallbackImpl.java` (L1-80)
+> 详细报告：`DeepResearch/2026-06-11-android15-batteryusagestats-statsd-pipeline.md`
+
 ## 小结
 
 性能指标采集要服务于治理动作。启动、帧率、内存、业务耗时都要使用统一事件模型，字段要能关联版本、场景、设备和用户会话；分位值要按场景和分群计算；劣化检测要同时看相对变化、绝对阈值和分群异常。

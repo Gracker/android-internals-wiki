@@ -1101,6 +1101,112 @@ if (icd_api_version_ >= VK_API_VERSION_1_3 &&
 
 **详细调研**：[2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md)
 
+
+
+<!-- AIW-源码调研-2026-06-11 -->
+
+### AIW 源码调研补充：libvulkan Aconfig 旗标与 EnumerateInstanceVersion 公开 API（android-17 main 锚点）
+
+> **版本边界**：android-17.0.0_r1 tag 公开未发布，本节所有源码锚点基于 `refs/heads/main` 分支（与 `android-16.0.0_r4` 在 `frameworks/native/vulkan/libvulkan/` 路径下内容一致），Android 17 差异为延续性推断。
+
+#### Aconfig 旗标系统：build-time 钉死的 Vulkan 1.4 开关
+
+`frameworks/native/vulkan/libvulkan/libvulkan_flags.aconfig` 完整声明（仅 24 行）：
+
+```aconfig
+package: "com.android.graphics.libvulkan.flags"
+container: "system"
+
+flag {
+  name: "swapchain_mutable_format_ext"
+  namespace: "core_graphics"
+  description: "Enable the VK_KHR_swapchain_mutable_format vulkan extension"
+  bug: "341978292"
+  is_fixed_read_only: true
+}
+
+flag {
+  name: "vulkan_1_4_instance_api"
+  namespace: "core_graphics"
+  description: "Enable support for the Vulkan 1.4 instance API"
+  bug: "370568136"
+  is_fixed_read_only: true
+}
+```
+
+**关键事实**：
+- `is_fixed_read_only: true` 意味着旗标在 **build 时**就被钉死，运行时无法通过 `device_config` / `settings` 翻转——只有 vendor 在编译时选 `--flag-value` 才能控制，是 Android 16 起"灰度发布"策略的工具化体现。
+- 新版 aconfig（取代旧 `aconfig_jar`）在编译期生成 `com_android_graphics_libvulkan_flags.h`，`flags::vulkan_1_4_instance_api()` 是**内联函数**——0 运行时反射开销。旧 aconfig_jar 模式的 `flag().value()` 反射调用 ~10us，新 aconfig 模式压到 ~0ns。
+- 两个 flag 都在 `core_graphics` namespace 下，反映出 Google 把"Vulkan 实例版本"和"swapchain mutable format"看作一组 core graphics 开关统一管理。
+- `Android.bp` 把 `libvulkan_flags.aconfig` 编译为 `libvulkanflags` 静态库，`libvulkan` NDK 共享库在 link 时把它钉进 `static_libs`（`vulkan/libvulkan/Android.bp` L150）。
+
+#### `EnumerateInstanceVersion` 公开 API：app 视角的版本探测
+
+`frameworks/native/vulkan/libvulkan/api.cpp` L1471-1481 源码原文：
+
+```cpp
+VkResult EnumerateInstanceVersion(uint32_t* pApiVersion) {
+    ATRACE_CALL();
+
+    // Load the driver here if not done yet. This api will be used in Zygote
+    // for Vulkan driver pre-loading because of the minimum overhead.
+    if (!EnsureInitialized())
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+
+    *pApiVersion = flags::vulkan_1_4_instance_api() ? VK_API_VERSION_1_4 : VK_API_VERSION_1_3;
+    return VK_SUCCESS;
+}
+```
+
+**与 2026-06-09 报告的"driver.cpp 内部协商"互补关系**：
+- 2026-06-09 报告：`driver.cpp` 的 `CreateInfoWrapper::SanitizeApiVersion()`——处理"loader 与 ICD 版本不匹配时如何降级"。
+- **本节：`api.cpp` 的 `EnumerateInstanceVersion()`——app 视角的版本探测**（Vulkan 1.1 起规定的公开 API）。
+
+**端到端调用链**（AOSP main 分支源码拼合）：
+
+```
+app 进程
+  └─ vkCreateInstance(VK_API_VERSION_1_3, ...)
+       │  (Vulkan API 公开符号，由 libvulkan.map.txt 暴露)
+       ▼
+  libvulkan.so::api::CreateInstance            (api.cpp)
+       ├─ CreateInfoWrapper(create_info, icd_api_version, allocator)
+       │     └─ loader_api_version_ = flags::vulkan_1_4_instance_api() ? 1.4 : 1.3  (driver.cpp L381)
+       ├─ CreateInfoWrapper::SanitizeApiVersion()
+       │     └─ 若 icd 是 1.3 + app 是 1.4 → 强制降级 app 到 1.3  (driver.cpp L438)
+       └─ drv::EnumeratePhysicalDevices() → 查所有 ICD → 调 vendor ICD
+```
+
+**Zygote 预加载路径**（独立支线）：
+- 源码注释明确："This api will be used in Zygote for Vulkan driver pre-loading because of the minimum overhead"
+- Zygote fork 后首次任意 Vulkan 调用触发 `EnumerateInstanceVersion` → `EnsureInitialized()` → `dlopen` vendor ICD + `dlsym` 关键 entry → driver 驻留 process memory
+- 后续所有 `fork()` 出的子进程**继承已加载的 driver.so**，省去 `dlopen` 的毫秒级开销
+- 内存代价：每个进程常驻 5-20 MB 共享库——是显式的"以内存换首次渲染零延迟"工程权衡
+
+#### libvulkan.map.txt 入口点版本历史：API surface 演进证据
+
+`frameworks/native/vulkan/libvulkan/libvulkan.map.txt` 记录 NDK `libvulkan.so` 公开符号及 `# introduced=NN` 标记：
+
+| 入口点 | introduced | 含义 |
+|---|---|---|
+| `vkCreateAndroidSurfaceKHR` | 24 | Vulkan 1.0（Android 7） |
+| `vkAcquireNextImage2KHR` / `vkBindImageMemory2` | 28 | KHR 扩展（Android 9） |
+| `vkCmdBeginRenderPass2` | 31 | VK_KHR_create_renderpass2（Android 12） |
+| `vkCmdBeginRendering` / `vkCmdEndRendering` | 33 | VK_KHR_dynamic_rendering（**Vulkan 1.3 核心**） |
+| `vkCmdPipelineBarrier2` | 33 | VK_KHR_synchronization2（**Vulkan 1.3 核心**） |
+| `vkCmdSetCullMode` / `vkCmdSetDepthTestEnable` 等 | 33 | VK_EXT_extended_dynamic_state（**Vulkan 1.3 核心**） |
+| `vkCmdBindDescriptorSets2` | 36 | Android 16 |
+| `vkCmdBindIndexBuffer2` / `vkCmdPushConstants2` | 36 | Android 16 |
+| `vkCmdPushDescriptorSet2` / `vkCmdSetLineStipple` | 36 | Android 16 |
+
+**Android 17 (API 37) 增量分析**：在 main 分支 `libvulkan.map.txt` 上执行 `grep "introduced=37"` 返回 **0 行命中**——这是反直觉但合理解释的发现：
+
+- Vulkan 1.4 = Vulkan 1.3 + 一组 promote 到核心的扩展（`VK_KHR_dynamic_rendering_local_read`、`VK_KHR_maintenance5`、`VK_KHR_push_descriptor` 等），**核心 API surface 1.3 vs 1.4 没有新增 entry point**，区别在于"哪些扩展被默认开启"。
+- Android 17 即使升级到 Vulkan 1.4 实例 API，NDK 公开符号表**无需新增**——升级通过旗标切换 + ICD 实现能力披露完成。
+- 性能含义：N 个 Vulkan 入口点 = N 个 dlsym 查找项，map 文件控制查找表大小。`libvulkan.so` 总符号数被 map 限制在约 200 个，`dlopen` 时间稳定在毫秒级，Android 17 不会因为 Vulkan 1.4 升级膨胀此表。
+
+**详细调研**：[2026-06-11-android17-gpu-vulkan-libvulkan-flags-enumerate-instance-version.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-gpu-vulkan-libvulkan-flags-enumerate-instance-version.md)
+
 ### 系统性排查流程:CPU-GPU 同步 / 内存带宽 / 着色器编译
 
 #### 完整排查流程

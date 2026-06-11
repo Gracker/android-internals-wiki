@@ -72,6 +72,8 @@ last_task6_at: "2026-05-18T20:16:50+08:00"
 last_task6_audit: "2026-06-08"
 last_task6_review_log: "logs/review/2026-05-18-20-review.md"
 task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 4 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 0 项（未改正文，仅更新 review 元数据）；无新增回炉项，Task9 复审状态继续阻止自动晋升。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-11
 ---
 
 # 案例集
@@ -124,11 +126,10 @@ Event log 中的 ANR 记录：
 
 ```text
 04-07 03:13:49.417 1444 8816 I am_anr : [0,2135,com.android.launcher,
-  751550021, Input dispatching timed out 
-  (Application does not have a focused window)]
+ 751550021, Input dispatching timed out 
+ (Application does not have a focused window)]
 ```
 
-[已验证: 来源见 Obsidian/Cubox/ANR-实例分析-负载过高-2024-12-18.md]
 
 ### 分析过程
 
@@ -136,10 +137,10 @@ Event log 中的 ANR 记录：
 
 ```text
 "main" prio=5 tid=1 Native
-  | state=S schedstat=( 10985995408825 3939822638104 29985904 )
-  native: #00 pc 0009013c libc.so (syscall+28)
-  native: #01 pc 0022cfac libart.so (art::ConditionVariable::WaitHoldingLocks+140)
-  at android.os.MessageQueue.nativePollOnce(Native method)
+ | state=S schedstat=( 10985995408825 3939822638104 29985904 )
+ native: #00 pc 0009013c libc.so (syscall+28)
+ native: #01 pc 0022cfac libart.so (art::ConditionVariable::WaitHoldingLocks+140)
+ at android.os.MessageQueue.nativePollOnce(Native method)
 ```
 
 主线程处于 `Native` 状态，堆栈指向 `nativePollOnce`。注意在 `nativePollOnce` 之前经过了 `dispatchVsync` → `CallObjectMethod` → `WaitHoldingLocks`，说明主线程在处理 VSync 回调时进入了 ART 内部的锁等待，可能是因为 GC 正在进行。
@@ -149,11 +150,11 @@ Event log 中的 ANR 记录：
 ```text
 Load: 56.48 / 30.74 / 22.68
 ----- Output from /proc/pressure/memory -----
-  some avg10=82.71 avg60=58.68 avg300=20.55
-  full avg10=51.17 avg60=34.93 avg300=12.29
+ some avg10=82.71 avg60=58.68 avg300=20.55
+ full avg10=51.17 avg60=34.93 avg300=12.29
 ----- Output from /proc/pressure/io -----
-  some avg10=85.37 avg60=63.13 avg300=23.13
-  full avg10=38.46 avg60=20.76 avg300=7.13
+ some avg10=85.37 avg60=63.13 avg300=23.13
+ full avg10=38.46 avg60=20.76 avg300=7.13
 ```
 
 系统 1 分钟平均负载 30.74，远超正常范围。内存压力 `avg10=82.71` 说明最近 10 秒有 82% 的时间在等待内存回收。I/O 压力 `avg10=85.37`，意味着 85% 的时间里至少有一个进程在等 I/O。
@@ -161,10 +162,10 @@ Load: 56.48 / 30.74 / 22.68
 再看 CPU 使用分布：
 
 ```text
-80% 84/kswapd0          ← 内核回收线程吃了 80% CPU
-55% 1444/system_server  ← system_server 占 55%，29% kernel 态
-21% com.ss.android.ugc.aweme  ← 抖音，17% kernel 态，大量 major faults
-CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
+80% 84/kswapd0 ← 内核回收线程吃了 80% CPU
+55% 1444/system_server ← system_server 占 55%，29% kernel 态
+21% com.ss.android.ugc.aweme ← 抖音，17% kernel 态，大量 major faults
+CPU usage TOTAL: 99% 14% user + 36% kernel + 43% iowait
 ```
 
 全局 CPU 使用率 99%，其中 **43% 是 iowait**——CPU 在等磁盘。`kswapd0` 占了 80% CPU 在持续回收内存。
@@ -193,14 +194,13 @@ CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 
 ```text
 07-20 15:01:37.293 1385 20230 I am_anr : [0,3450,com.android.launcher,
-  Input dispatching timed out 
-  ([Gesture Monitor] swipe-up (server) is not responding. 
-   Waited 5001ms for MotionEvent)]
+ Input dispatching timed out 
+ ([Gesture Monitor] swipe-up (server) is not responding. 
+ Waited 5001ms for MotionEvent)]
 ```
 
 注意不是"没有焦点窗口"，而是 **"(server) is not responding"**。
 
-[已验证: 来源见 Obsidian/Cubox/ANR-实例分析-Input dispatching timed out-2024-12-18.md]
 
 ### 分析过程
 
@@ -212,8 +212,8 @@ CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 
 ```text
 07-20 15:00:45.316 1385 1385 W Looper : 
-  Slow dispatch took 10578ms main 
-  h=com.android.server.power.Notifier$NotifierHandler
+ Slow dispatch took 10578ms main 
+ h=com.android.server.power.Notifier$NotifierHandler
 ```
 
 system_server 的主线程在处理 `Notifier$NotifierHandler` 的消息时花了 **10578ms**。时间点和 ANR 几乎重合。
@@ -222,7 +222,6 @@ system_server 的主线程在处理 `Notifier$NotifierHandler` 的消息时花�
 
 **典型的系统侧 ANR。** Gesture Monitor 的输入事件回调运行在 system_server 进程中。system_server 的主线程正被 `Notifier$NotifierHandler` 阻塞了 10.5 秒，Gesture Monitor 的回调无法执行，InputDispatcher 等了 5 秒就触发了 ANR，Launcher 会出现在 ANR 记录里。
 
-[已验证: AOSP android-14.0.0_r1, Notifier 路径为 frameworks/base/services/core/java/com/android/server/power/Notifier.java]
 
 ### 修复方案
 
@@ -242,11 +241,10 @@ Input ANR 中 "(server) is not responding" 子类型，根因几乎一定在 sys
 
 ```text
 "main" prio=5 tid=1 WAIT
-  at android.app.QueuedWork.waitToFinish(QueuedWork.java:176)
-  at android.app.ActivityThread.handlePauseActivity(ActivityThread.java:4640)
+ at android.app.QueuedWork.waitToFinish(QueuedWork.java:176)
+ at android.app.ActivityThread.handlePauseActivity(ActivityThread.java:4640)
 ```
 
-[已验证: 来源见 Obsidian/Cubox/今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md]
 
 ### 分析过程
 
@@ -258,7 +256,6 @@ Input ANR 中 "(server) is not responding" 子类型，根因几乎一定在 sys
 
 当 App 中存在大量 `apply()` 调用但后台写入还没完成时，主线程在生命周期切换时就会被卡住。
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/app/SharedPreferencesImpl.java]
 
 ### 根因
 
@@ -285,13 +282,12 @@ Android 14 设备，使用手势导航时偶发 ANR：
 
 ```text
 02-18 20:08:25.283 WindowManager: 
-  ANR in input window owned by pid=3930. 
-  Reason: Input dispatching timed out 
-  ([Gesture Monitor] Screenshot 0 (server) is not responding. 
-   Waited 5000ms for MotionEvent)
+ ANR in input window owned by pid=3930. 
+ Reason: Input dispatching timed out 
+ ([Gesture Monitor] Screenshot 0 (server) is not responding. 
+ Waited 5000ms for MotionEvent)
 ```
 
-[已验证: 来源见 Obsidian/Cubox/疑难ANR原因分析-冻结导致直播讲解相关完整笔记-2025-02-22.md]
 
 ### 分析过程
 
@@ -306,7 +302,6 @@ Android 14 设备，使用手势导航时偶发 ANR：
 
 Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。系统在用户正在进行手势操作时冻结了 screenshot 进程，导致 Input 事件无法被消费，触发 ANR。这是**系统设计缺陷**：进程冻结策略没有考虑 Gesture Monitor 需要持续接收 Input 事件。
 
-[版本边界：此案例基于 Android 14 MTK 平台的 CachedAppsFreezer 行为。冻结逻辑由 `ActivityManager` 侧的 `CachedAppOptimizer` / `ProcessCachedOptimizerRecord` 驱动，不在 `InputDispatcher` 中。Cached Apps Freezer 自 Android 11（API 30）起在 AOSP 中支持；Android 14 补充了 10 秒后冻结、生命周期事件立即解冻、`UI_HIDDEN` / `GC` 等 robust 行为。不同设备是否默认启用仍受系统配置、开发者选项和 OEM 策略影响。生产环境排查冻结 ANR 时，应通过 event log 的 `am_freeze` / `am_unfreeze`、Perfetto ActivityManager Freezer track 或 `dumpsys activity processes` 的 frozen 状态字段确认目标进程的冻结状态]
 
 ### 修复方案
 
@@ -326,11 +321,10 @@ Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。
 
 ```text
 05-30 12:15:49.544 am_anr : [0,2758,com.android.launcher,
-  Input dispatching timed out 
-  (Application does not have a focused window)]
+ Input dispatching timed out 
+ (Application does not have a focused window)]
 ```
 
-[已验证: 来源见 Obsidian/Cubox/ANR-实例分析-启动应用失败-2024-12-18.md]
 
 ### 分析过程
 
@@ -377,7 +371,7 @@ Event log 中的 ANR 记录：
 
 ```text
 09-12 14:37:22.815 1000 2451 I am_anr : [0,18932,com.example.app,
-  852340012, executing service com.example.app.sync.SyncService]
+ 852340012, executing service com.example.app.sync.SyncService]
 ```
 
 Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超时）。
@@ -388,10 +382,10 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
 
 ```text
 "main" prio=5 tid=1 BLOCKED
-  | waiting to lock <0x0f3c2a81> (a com.example.app.data.DatabaseHelper)
-  | held by thread "SyncWorker-2"
-  at com.example.app.data.DataManager.flushCache(DataManager.java:187)
-  at com.example.app.sync.SyncService.onBind(SyncService.java:45)
+ | waiting to lock <0x0f3c2a81> (a com.example.app.data.DatabaseHelper)
+ | held by thread "SyncWorker-2"
+ at com.example.app.data.DataManager.flushCache(DataManager.java:187)
+ at com.example.app.sync.SyncService.onBind(SyncService.java:45)
 ```
 
 主线程处于 `BLOCKED` 状态，在 `DataManager.flushCache()` 中等待获取 `DatabaseHelper` 实例的锁（地址 `0x0f3c2a81`），这把锁被 `SyncWorker-2` 线程持有。
@@ -400,10 +394,10 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
 
 ```text
 "SyncWorker-2" prio=5 tid=23 BLOCKED
-  | waiting to lock <0x0a1b7d43> (a com.example.app.data.DataManager)
-  | held by thread "main"
-  at com.example.app.data.DatabaseHelper.query(DatabaseHelper.java:92)
-  at com.example.app.sync.SyncWorker.syncContacts(SyncWorker.java:134)
+ | waiting to lock <0x0a1b7d43> (a com.example.app.data.DataManager)
+ | held by thread "main"
+ at com.example.app.data.DatabaseHelper.query(DatabaseHelper.java:92)
+ at com.example.app.sync.SyncWorker.syncContacts(SyncWorker.java:134)
 ```
 
 死锁关系已经明确：
@@ -421,8 +415,8 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
 // DataManager.java
 // 方法入口时已持有 this（DataManager）的 synchronized 锁
 public synchronized void flushCache() {
-    // ...
-    databaseHelper.write(cache);  // 调用 DatabaseHelper 方法，尝试获取 DatabaseHelper 的锁
+ // ...
+ databaseHelper.write(cache); // 调用 DatabaseHelper 方法，尝试获取 DatabaseHelper 的锁
 }
 ```
 
@@ -432,14 +426,13 @@ public synchronized void flushCache() {
 // DatabaseHelper.java
 // 方法入口时已持有 this（DatabaseHelper）的 synchronized 锁
 public synchronized Cursor query(String table, String selection) {
-    // ...
-    return dataManager.buildCursor(rawData);  // 回调 DataManager，尝试获取 DataManager 的锁
+ // ...
+ return dataManager.buildCursor(rawData); // 回调 DataManager，尝试获取 DataManager 的锁
 }
 ```
 
 问题根源是 `DatabaseHelper.query()` 在持有自身锁的情况下回调 `DataManager`，而 `DataManager.flushCache()` 在持有自身锁的情况下调用 `DatabaseHelper`。两条代码路径的锁获取顺序相反。
 
-[待验证: Android Studio 的 Thread Dump 分析工具可以直接可视化这种循环等待关系]
 
 ### 根因
 
@@ -460,7 +453,6 @@ trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死�
 
 另一类常见的 Android 死锁是 **Binder 线程池被同步调用压满**：主线程同步调用其他进程的 Binder 接口，而对方进程又回调到本进程，这时本进程需要有空闲 Binder 线程继续接收事务。AOSP android-14.0.0_r1 的 `frameworks/native/libs/binder/ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，这是 `setThreadPoolMaxThreadCount()` 下发给 Binder driver 的默认上限。调用方线程如果主动 `joinThreadPool()`，总可用处理线程可能比这个值再多 1 个，所以实战里不要把它硬记成“固定 16 个 Binder 线程”。这类问题在 trace 中更常见的表现，是大量 `Binder:XXX_X` 线程堵在事务等待上，主线程也卡在同步 Binder 调用链里。
 
-[已验证: AOSP android-14.0.0_r1, `frameworks/native/libs/binder/ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `setThreadPoolMaxThreadCount()` 设置线程池上限。文中已删除不存在的 `SP_BUNDLE_THREADS` 常量与 `persist.device_config.bundle_threads` 属性名。]
 
 ## 分析方法总结
 
