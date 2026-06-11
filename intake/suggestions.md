@@ -287,3 +287,63 @@
 - **位置**：Android 14+ 的 Perfetto 演进
 - **问题**：章节提到性能指标采集与上报，但没有说明 Android 14 及更高版本中，Perfetto 如何替代传统的 `android.os.Trace` API，以及在线上监控中如何处理新旧 tracing 系统的兼容性
 - **建议**：补充版本迁移路径：Android 14+ 中 Perfetto 的优势、新旧系统共存策略、线上监控中的兼容处理方案
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-11 08:05
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**（连续第 73 轮）
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 422 章，draft=0，ready-for-review=74，finalized=289，unknown=59）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **research-gaps.md 新增条目评估**：沿用上一轮结论，2 条补充建议均 < 14 分
+4. **source-index.json 高质量未映射素材**：所有 DeepResearch 产出均已有 target_file 映射到现有章节
+5. **DeepResearch 最新产出（2026-06-11）**：simpleperf mmap/munmap 分析 → §14.2 已有章节
+6. **AOSP 服务/组件覆盖**：沿用连续多轮结论，所有性能相关服务已覆盖
+7. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+8. **daily-info 热点（2026-06-11）**：
+   - Skills Top 10 → 非性能核心
+   - AI Android 基准测试 → 非性能核心
+   - MessageQueue 重写 → §1.13 已覆盖
+   - Android Studio Panda → 非性能核心
+   - Android 17 适配指南 → §16.5 等已覆盖
+   - Android 桌面端 → §2.20/§22.14 已覆盖
+   - 无新增性能核心主题
+9. **Part 5 Clippings 对照**：三本参考书知识点已全部覆盖
+10. **queue.json**：pending 条目均为现有章节修复项，无新章节需求
+
+### 结论
+全书 422 节中 86% 已有实质内容（289 finalized + 74 ready-for-review）。知识库高度饱和，连续 73 轮缺口挖掘未产出新章节。建议后续侧重：
+- Task 2B/6/9 对 74 个 ready-for-review 章节的 review/回炉/终审
+- §14.2 Simpleperf 的集中修复（queue 中已有 11 条）
+- 已有章节的内容深化和交叉引用完善
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-11 09:07
+
+本轮知识缺口挖掘结论：**未发现评分 ≥ 14 的候选缺口，跳过新章节创建。**（连续第 74 轮）
+
+### 检查方向与结果
+
+1. **空 draft 章节**：0 个（全书 422 章，draft=0，ready-for-review=74，finalized=289，NO_STATUS=59）
+2. **Task2B backlog**：0 个（限流检查通过）
+3. **research-gaps.md 新增条目评估**：沿用上一轮结论，2 条补充建议均 < 14 分
+4. **source-index.json 高质量未映射素材**：所有 DeepResearch 产出均已有 target_file 映射到现有章节
+5. **DeepResearch 最新产出**：simpleperf mmap/munmap → §14.2；simpleperf call-stack → §14.2；LLM runtime → §5.11；Vulkan loader → §2.14，均为已有章节
+6. **queue.json pending 条目**：4 条均为 DeepResearch 素材注入（§14.2×2、§5.11×1、§2.14×1），非新章节
+7. **AOSP 服务/组件覆盖**：沿用连续多轮结论，所有性能相关服务已覆盖
+8. **Android 17 行为变更**：所有性能相关变更均已有对应章节
+9. **daily-info 热点（2026-06-11）**：
+   - Skills Top 10 → 非性能核心
+   - AI Android 基准测试 → 非性能核心
+   - MessageQueue 重写 → §1.13 已覆盖
+   - Android Studio Panda → 非性能核心
+   - Android 17 适配指南 → §16.5 等已覆盖
+   - Android 桌面端 → §2.20/§22.14 已覆盖
+   - 无新增性能核心主题
+10. **Part 5 Clippings 对照**：三本参考书知识点已全部覆盖
+
+### 结论
+全书 422 节中 86% 已有实质内容（289 finalized + 74 ready-for-review）。知识库高度饱和，连续 74 轮缺口挖掘未产出新章节。建议后续侧重：
+- Task 2B/6/9 对 74 个 ready-for-review 章节的 review/回炉/终审
+- §14.2 Simpleperf DeepResearch 素材注入（queue 中 2 条 pending）
+- 已有章节的内容深化和交叉引用完善
