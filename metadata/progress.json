@@ -1886,7 +1886,14 @@
       "task6_reviewed_at": "2026-05-27T04:06:00+08:00",
       "task6_log": "logs/review/2026-05-27-04-review.md",
       "task6_new_rework": false,
-      "task6_note": "复审通过；L1/L2 小修 7 处。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
+      "task6_note": "复审通过；L1/L2 小修 7 处。Task9 仍为 needs-rework/pending，未自动晋升 finalized。",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "last_task2b_lite_at": "2026-06-11",
+      "task2b_lite_note": "Task9 P0/P1: 版本限定修正(Android 15+→16+, 锚点 pin android-16.0.0_r1); 附录开关段落 CC→MarkCompact/YoungMarkCompact 归属修正; 回流 Task6。",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending"
     },
     "14.8": {
       "task6_result": "pass-light-edit",

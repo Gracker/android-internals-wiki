@@ -53,6 +53,9 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-11T17:25:11+08:00",
     "created": "2026-06-11",
-    "status": "pending"
+    "status": "completed",
+    "completed_reason": "fixed-lite: 版本限定修正(Android 15+→16+, 源码锚点 pin 至 android-16.0.0_r1); 附录开关段落 CC→MarkCompact/YoungMarkCompact 归属修正",
+    "completed_at": "2026-06-11T17:35:00+08:00",
+    "completed_by": "task2b-lite"
   }
 ]
