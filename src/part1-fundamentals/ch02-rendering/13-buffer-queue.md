@@ -76,7 +76,7 @@ review_round: 1
 last_task9_review_log: logs/deep-review/2026-06-11-12-audit.md
 task9_review_notes: "2026-06-11 Task9 闲时抽检：AUTO-FIX。修正 Perfetto android.monitor_contention 误用于 native BufferQueueCore::mMutex 的诊断口径；回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-06-11
 last_task9_autofix_at: "2026-06-11"
 ---
 
@@ -121,8 +121,6 @@ BufferQueue 的基本角色没有什么花哨的地方。producer 负责写入�
 
 这也是很多文章最容易写歪的地方。BufferQueue 的核心动作是把某个 slot 里已经存在的那块 buffer 交给下一方，并告诉对方什么时候可以安全地读写。
 
-[已验证:AOSP main `frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h`、`frameworks/native/libs/gui/include/gui/BufferItem.h`]
-
 ## `dequeueBuffer()` → `requestBuffer()` → `queueBuffer()` 的真实链路
 
 把 `queueBuffer()` 写成"每帧把 binder handle 传给 SurfaceFlinger",这个说法不对。AOSP 的 producer 接口把"选 slot"和"取 buffer 句柄"拆成了两个步骤:先 `dequeueBuffer()`,必要时再 `requestBuffer()`。
@@ -146,9 +144,7 @@ virtual status_t queueBuffer(int slot, const QueueBufferInput& input,
 
 第三步,producer 把内容画到这块 `GraphicBuffer` 里。等 GPU 或 CPU 写完以后,调用 `queueBuffer(slot, QueueBufferInput)` 把 slot 放回队列。这次 `queueBuffer()` 一起提交的是 slot 编号、时间戳、crop、transform、dataspace,以及 `QueueBufferInput::fence`。AOSP 对这个 fence 的注释也很明确,它是"consumer 在读取这个 buffer 之前必须等待的 fence"。
 
-高频流转的是 slot 编号、metadata（时间戳、crop、transform）和 fence——不是完整的 `GraphicBuffer` handle。把这条链路说准，后面讨论阻塞和掉帧才不会偏。
-
-[已验证:AOSP main `frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h`]
+每次流转的实际内容是 slot 编号、metadata（时间戳、crop、transform）和 fence，而不是完整的 `GraphicBuffer` handle。把这条链路说准，后面讨论阻塞和掉帧才不会偏。
 
 ## `BufferSlot::BufferState` 不是单一 enum
 
@@ -172,9 +168,7 @@ struct BufferState {
 
 AOSP 注释给出的状态表很清楚。正常模式下,FREE、DEQUEUED、QUEUED、ACQUIRED 这些状态看起来还是互斥的,但实现层面已经换成了计数器。原因是 shared buffer mode 允许 `mShared` 和其他状态并存,一个 slot 可以一边 shared,一边仍然处在 dequeued、queued 或 acquired 计数不为 0 的状态。
 
-排查问题时,不能再把 `mBufferState == FREE` 这种老口径当成今天的源码事实。更稳妥的说法是,普通路径里 slot 大多数时候呈现为单状态流转,shared buffer mode 下状态会叠加,源码判断应以 `isFree()`、`isDequeued()`、`isQueued()`、`isAcquired()`、`isShared()` 这几组方法为准。
-
-[已验证:AOSP main `frameworks/native/libs/gui/include/gui/BufferSlot.h`]
+排查问题时，不能继续用 `mBufferState == FREE` 这种基于旧实现的判断口径。更稳妥的说法是,普通路径里 slot 大多数时候呈现为单状态流转,shared buffer mode 下状态会叠加,源码判断应以 `isFree()`、`isDequeued()`、`isQueued()`、`isAcquired()`、`isShared()` 这几组方法为准。
 
 ### 三缓冲通常怎么出现
 
@@ -196,13 +190,11 @@ AOSP 在 `BufferItem.h` 里把 `mFence` 注释为"buffer idle 时 signal 的 fen
 
 这一层和 §2.16 Sync Fence 框架与帧同步机制是同一件事的两个切面。§2.16 解释 fence 在内核和 SurfaceFlinger 里的同步意义,这一节更关心 fence 怎样把 BufferQueue 的 slot 状态变成"可写、可读、可复用"的时间边界。
 
-[已验证:AOSP main `frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h`、`frameworks/native/libs/gui/include/gui/IGraphicBufferConsumer.h`、`frameworks/native/libs/gui/include/gui/BufferItem.h`]
-
 ## BLASTBufferQueue 解决的是 buffer 与 geometry transaction 落在同一帧
 
 如果BLAST 的核心价值不是"少了一次 Binder hop"。它解决的是 buffer 提交和 geometry transaction 走两条线的问题：窗口尺寸、crop、transform 和 buffer 内容以前不一定落在同一帧。
 
-AOSP tag 只能说明 BLAST 的代码进入时间,不能直接等同于所有窗口的默认路径。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`,`android-11.0.0_r48` 已经有这个文件,`ViewRootImpl.java` 里也能看到 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。Android 11 可以确认已有 BLAST 窗口提交流程;常规 Activity 窗口全面转向 BLAST,要按 Android 12(S)作为默认分界更稳。
+AOSP tag 只能说明 BLAST 代码首次出现的时间，不能直接等同于所有窗口都走了这条路径。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`,`android-11.0.0_r48` 已经有这个文件,`ViewRootImpl.java` 里也能看到 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。Android 11 可以确认已有 BLAST 窗口提交流程;常规 Activity 窗口全面转向 BLAST,要按 Android 12(S)作为默认分界更稳。
 
 ```java
 // frameworks/base/core/java/android/view/ViewRootImpl.java
@@ -233,8 +225,6 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 第五,如果这一帧还有窗口大小、裁剪区域、alpha、z-order 之类的 geometry 变化,BLAST 会把它们先放进 pending transaction,后面通过 `mergeWithNextTransaction(frameNumber)` 和 `applyPendingTransactions(frameNumber)` 按 frame number 归到同一帧再统一 apply。这样一来,buffer 和 geometry 就不会错帧。
 
 所以,BLAST 的核心价值不是一句"跨进程更少,所以更快"就能讲完的。它做的是把"这一帧的内容"和"这一帧的窗口状态"绑在一起,减少内容已经更新了、窗口属性却还停在上一帧的错位。
-
-[已验证:AOSP `android-10.0.0_r47`、`android-11.0.0_r48`、main 的 `ViewRootImpl.java` 与 `BLASTBufferQueue.cpp`]
 
 ## Legacy vs BLASTBufferQueue:Consumer 端驻留位置的架构差异
 
@@ -311,9 +301,6 @@ struct BufferState {
 
 `libgui_bufferqueue_dequeueBuffer`、`libgui_bufferqueue_queueBuffer`、`libgui_bufferqueue_acquireBuffer`、`libgui_bufferqueue_releaseBuffer` slice 可以观察各端函数耗时和等待形态,但不要把它们等同于 `mCore->mMutex` 的持锁时间。`android.monitor_contention` 是 Java/Kotlin monitor contention 模块,不能定位 `BufferQueueCore::mMutex` 这类 native `std::mutex` 争用;这类问题需要结合 libgui slice、thread_state / sched blocked reason、SurfaceFlinger/HWC release 时序间接判断。
 
-[已验证:AOSP android14-release `BufferQueueCore.h`、`BufferQueueProducer.cpp`、`BufferQueueConsumer.cpp`、`BufferSlot.h`; Perfetto 官方 `android_monitor_contention` stdlib 文档]
-
-
 本节前面描述了 BLAST 的行为特征,这一小节专门对比 Legacy 路径和 Android 12+ 常规窗口默认 BLAST 路径在 **Consumer 端驻留位置** 这一维度上的差异。这是理解 BLAST 解决了什么问题的前提。
 
 ### Legacy 模式:Consumer 在 SurfaceFlinger 进程
@@ -371,8 +358,6 @@ mBlastBufferQueue = new BLASTBufferQueue(mTag, mSurfaceControl,
 
 **为什么这个区别对性能分析重要**:当我们在 Perfetto 中看到 App 侧 `dequeueBuffer()` 阻塞,Legacy 路径通常来自 SF 进程的 Consumer release 延迟;BLAST 路径还要检查 App 进程内 `BLASTBufferItemConsumer` 的 acquire/release 延迟。判断是哪一层的问题,需要先确认当前窗口是否运行在 Android 12+ 默认 BLAST 模型下。
 
-[已验证:AOSP `android-11.0.0_r48`、`android-14.0.0_r1` 的 BLASTBufferQueue.cpp/BBQBufferQueueProducer commit (f982044859e, d8b3d5f056)]
-
 ---
 
 ## 在 Perfetto 中怎么读 BufferQueue
@@ -416,8 +401,6 @@ AOSP 源码里,Producer 线程先在 `BufferQueueProducer::waitForFreeSlotThenRe
 
 **Jank 场景的 backpressure 链**:SurfaceFlinger / HWC 合成耗时超过刷新周期 → `releaseBuffer()` 延迟 → `mFreeBuffers` 为空 → Producer(RenderThread)在 `waitForFreeSlotThenRelock()` 中阻塞或收到 `WOULD_BLOCK` → 本帧无法按时开始渲染。这条链的根因在上游 SF / HWC,`dequeueBuffer()` 的等待或返回错误只是下游症状。
 
-[已验证:AOSP main `BufferQueueProducer.cpp` 行 330-405、`BufferQueueConsumer.cpp` release 路径、`BufferQueueCore.h` 的 `mDequeueCondition` / `mDequeueBufferCannotBlock` 字段]
-
 ### Perfetto 里的 BufferQueue counters
 
 除了 slice,Perfetto 里还应看 BufferQueue 相关 counter。不同版本和厂商的命名会有差异,通常可以先搜索 `BufferQueue`、`buffer_count`、`dequeued`、`queued` 这几类名字,再把 counter 变化和 RenderThread 的 `dequeueBuffer()` / `queueBuffer()` slice 放在同一段时间线里。
@@ -449,8 +432,6 @@ AOSP 源码里,Producer 线程先在 `BufferQueueProducer::waitForFreeSlotThenRe
 | Android 16 (API 36) | vsyncId 关联入口在 `BLASTBufferQueue::acquireNextBufferLocked()` (Android 14 已存在),`queueBuffer` 本身不携带 vsyncId 名称 | 跨进程帧对齐追踪仍依赖 BLAST 层 + FrameTimeline,`queueBuffer` slice 不变 |
 
 Android 12 之后还有持续演进,但 `frame rate override`、`maxBufferCount`、以及"无锁 MessageQueue 与 BLAST 协同优化"这些说法,必须分别拿 release note、commit 或源码落点来支撑,不能因为它们听起来合理就先写进版本表。当前素材还不足以把这些结论稳稳地归因到 BufferQueue 本身,所以这里先不展开。
-
-[已验证:AOSP `android-4.1.2_r1`、`android-10.0.0_r47`、`android-11.0.0_r48`、`android-14.0.0_r1`、AOSP main `BufferQueueProducer.cpp` / `BLASTBufferQueue.cpp`]
 
 ## 常见问题与误区
 
