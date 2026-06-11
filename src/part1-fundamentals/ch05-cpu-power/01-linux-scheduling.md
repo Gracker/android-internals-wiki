@@ -3,7 +3,7 @@
 title: Linux 进程调度基础
 chapter: '5.1'
 section: '5.1'
-status: "finalized"
+status: ready-for-review
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit

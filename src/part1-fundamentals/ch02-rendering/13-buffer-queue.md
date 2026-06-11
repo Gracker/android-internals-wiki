@@ -2,7 +2,7 @@
 title: 图形缓冲区管理 (BufferQueue)
 chapter: '2.13'
 section: '2.13'
-status: "finalized"
+status: ready-for-review
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 tags:
 - BufferQueue
