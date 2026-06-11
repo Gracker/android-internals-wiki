@@ -3,7 +3,7 @@ title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-05-10"
 drafted_date: 2026-03-30
@@ -18,7 +18,9 @@ polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-19T11:45:22+08:00"
+last_task9_at: "2026-06-12T03:20:00+08:00"
+last_task9_audit: "2026-06-12"
+last_task9_autofix_at: "2026-06-12"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
@@ -30,9 +32,9 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-05T04:53:38+08:00"
@@ -41,8 +43,8 @@ task6_reviewed_date: "2026-05-31"
 last_task6_at: "2026-05-31T15:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-15-review.md"
 task6_review_notes: "2026-05-18 Task6：L1 高频词「真正」压降至 2 次，修正结构性过渡语并清理重复 frontmatter；保留 Task9 已登记 Android 13 主循环版本边界回炉项，等待 Task2B。"
-task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；Android 13 SurfaceFlinger 主循环误归入 INVALIDATE/REFRESH 旧模型，需 Task2B 修正；多显示 composite 并行/Perfetto 分组说法降级为建议。；2026-05-19 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Android 13+ commit/composite、Android 15+ FrameTargeter 与 HWC 待验证项复核通过；自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-19-11-deep-review.md"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；Android 13 SurfaceFlinger 主循环误归入 INVALIDATE/REFRESH 旧模型，需 Task2B 修正；多显示 composite 并行/Perfetto 分组说法降级为建议。；2026-05-19 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Android 13+ commit/composite、Android 15+ FrameTargeter 与 HWC 待验证项复核通过；自动晋升 finalized。；2026-06-12 task9 idle audit: auto-fixed HWC2 getRequests 示例、composer Composition HIDL/AIDL 路径与枚举边界、Android 17 未公开 tag 引用边界。"
+last_task9_review_log: "logs/deep-review/2026-06-12-03-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
 ---
@@ -410,29 +412,20 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 
 **源码位置**：`frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp` (Android 14 tag: `android-14.0.0_r1`)
 
-Android 设备通常支持 4 个 Overlay Plane（官方文档声明），但实际数量取决于 SoC 和显示控制器。HWC2 通过 `validateDisplay()` / `presentDisplay()` 两阶段流程与 SurfaceFlinger 交互：
+Overlay Plane 数量没有 Android 通用基线，取决于 SoC、DPU / display controller 能力、分辨率、刷新率和当前 Layer 组合。HWC2 通过 `validateDisplay()` / `presentDisplay()` 两阶段流程与 SurfaceFlinger 交互：
 
 ```cpp
-// HWC2.cpp, getRequests() — SurfaceFlinger 向 HWC 查询本帧合成策略
-Error Display::getRequests(DisplayRequest* outDisplayRequests,
-                          std::unordered_map<HWC2::Layer, LayerRequest>* outLayerRequests) {
-    auto intError = mComposer.getRequests(mId, &displayRequests, &layerRequests);
-    // layerRequests 包含每个 Layer 的 DEVICE/CLIENT 请求
+// frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp
+// @ AOSP android-14.0.0_r1, Display::getRequests() 节选
+Error Display::getRequests(HWC2::DisplayRequest* outDisplayRequests,
+                           std::unordered_map<HWC2::Layer*, LayerRequest>* outLayerRequests) {
+    auto intError = mComposer.getDisplayRequests(
+            mId, &intDisplayRequests, &layerIds, &layerRequests);
+    // layerRequests 由 HWC 返回，用于表达本轮 Layer 请求。
 }
 ```
 
-**Composition 类型**（`hardware/interfaces/graphics/composer/2.1/IComposerClient.aidl`）：
-```java
-enum Composition : int32_t {
-    INVALID = 0,
-    CLIENT = 1,        // SurfaceFlinger GLES 合成
-    DEVICE = 2,         // HWC 硬件 Overlay 合成
-    SOLID_COLOR = 3,   // 纯色填充
-    CURSOR = 4,         // 光标层（异步位置更新）
-    BACKGROUND = 5,     // 背景层（单例）
-    DISPLAY_DECORATION = 6,  // Android 14+ 圆角/挖孔装饰
-};
-```
+**Composition 类型锚点**：HIDL composer 2.1 的 `Composition` 定义在 `hardware/interfaces/graphics/composer/2.1/IComposerClient.hal`，包含 `CLIENT`、`DEVICE`、`SOLID_COLOR`、`CURSOR`、`SIDEBAND`。AIDL composer3 的定义在 `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl`，继续保留这些值，并包含 `DISPLAY_DECORATION = 6`。HIDL 2.1 没有 `BACKGROUND` 或 `DISPLAY_DECORATION`，不要把 HIDL 和 AIDL 的枚举混在同一个版本锚点里。
 
 ### 合成降级的完整触发链
 
@@ -506,6 +499,8 @@ dumpsys surfaceflinger layers   # Layer 详细信息
 - 注意：部分 android-17.0.0_r1 源码锚点待 AOSP 公开 tag 确认
 
 
+
+> Android 17 边界：截至 2026-06-12 未核到 `android-17.0.0_r1` 公开 tag；下面几条 Android 17 相关材料只作为“未进入 Android 17”的研究线索，不作为本节正文结论。
 
 ### Android 17 SurfaceFlinger LocklessQueue 与 TransactionHandler 流水线（源码级调研，2026-06-08 补完）
 - 来源：DeepResearch 调研（2026-06-08）— `2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md`
