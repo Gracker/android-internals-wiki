@@ -55,26 +55,29 @@ sources:
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
-pipeline_stage: "ready-to-publish"
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs#android-monitor_contention
+pipeline_stage: "task6_pending"
 task6_result: "pass-light-edit"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: "reviewed"
 task2b_state: "fixed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_result: "fixed"
 task9_reviewed_date: 2026-05-19
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-19T00:30:02+08:00"
-last_task9_audit: "2026-05-18"
+last_task9_at: "2026-06-11T12:39:21+08:00"
+last_task9_audit: "2026-06-11"
 last_task6_at: "2026-05-21T09:08:00+08:00"
 last_task6_audit: "2026-05-21"
 last_task6_audit_result: l1-light-edit
 last_task6_audit_log: "logs/review/2026-05-21-09-audit.md"
 review_round: 1
-last_task9_review_log: logs/deep-review/2026-05-19-00-deep-review.md
-task9_review_notes: "2026-05-19 Task9 00:20：pass-tech-review。无 P0/P1；P2 2 处已写入 suggestions；Task6 pass 且 queue 无 pending，保持 finalized 并自动标记 ready-to-publish。"
+last_task9_review_log: logs/deep-review/2026-06-11-12-audit.md
+task9_review_notes: "2026-06-11 Task9 闲时抽检：AUTO-FIX。修正 Perfetto android.monitor_contention 误用于 native BufferQueueCore::mMutex 的诊断口径；回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
+last_task9_autofix_at: "2026-06-11"
 ---
 
 # 2.13 图形缓冲区管理 (BufferQueue)
@@ -306,9 +309,9 @@ struct BufferState {
 
 #### Perfetto 观测点
 
-`libgui_bufferqueue_dequeueBuffer`、`libgui_bufferqueue_queueBuffer`、`libgui_bufferqueue_acquireBuffer`、`libgui_bufferqueue_releaseBuffer` slice 可直接观察各端持锁时间。`android.monitor_contention` 表通过 `lock_class_name` 可定位 `BufferQueueCore::mMutex` 争用。
+`libgui_bufferqueue_dequeueBuffer`、`libgui_bufferqueue_queueBuffer`、`libgui_bufferqueue_acquireBuffer`、`libgui_bufferqueue_releaseBuffer` slice 可以观察各端函数耗时和等待形态,但不要把它们等同于 `mCore->mMutex` 的持锁时间。`android.monitor_contention` 是 Java/Kotlin monitor contention 模块,不能定位 `BufferQueueCore::mMutex` 这类 native `std::mutex` 争用;这类问题需要结合 libgui slice、thread_state / sched blocked reason、SurfaceFlinger/HWC release 时序间接判断。
 
-[已验证:AOSP android14-release `BufferQueueCore.h`、`BufferQueueProducer.cpp`、`BufferQueueConsumer.cpp`、`BufferSlot.h`]
+[已验证:AOSP android14-release `BufferQueueCore.h`、`BufferQueueProducer.cpp`、`BufferQueueConsumer.cpp`、`BufferSlot.h`; Perfetto 官方 `android_monitor_contention` stdlib 文档]
 
 
 本节前面描述了 BLAST 的行为特征,这一小节专门对比 Legacy 路径和 Android 12+ 常规窗口默认 BLAST 路径在 **Consumer 端驻留位置** 这一维度上的差异。这是理解 BLAST 解决了什么问题的前提。
