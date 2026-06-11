@@ -38,10 +38,10 @@ tags:
 reviewed_date: "2026-06-11"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "reviewed"
+pipeline_stage: "task9_pending"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "auto-fixed"
 last_task9_at: "2026-06-11T18:20:00+08:00"
 task2b_state: "fixed"
