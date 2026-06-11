@@ -39,6 +39,9 @@ reviewed_by: openclaw-task9
 reviewed_date: 2026-06-10
 last_task6_at: 2026-06-10T21:13:04+08:00
 last_task2b_by: openclaw-task2b-main
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: '2026-06-11'
+last_task6_audit: '2026-06-12'
 -----
 
 # Chapter 14.2 - Simpleperf
@@ -80,8 +83,6 @@ Simpleperf 适用于：
 - **系统级集成**：与 Android 调试体系（adb、profileable、Perfetto linux.perf data source）无缝结合
 - **多格式支持**：输出标准 `perf.data` 格式，可通过 Perfetto linux.perf data source 与 ftrace/atrace 事件合并为 `.perfetto-trace`
 - **官方支持**：由 Google 官方维护，随 NDK 分发，与 Android 版本同步更新
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
 ---
 
 ## 14.2.2 安装与配置
@@ -758,16 +759,6 @@ simpleperf report --csv -i perf.data > profile.csv
 ---
 
 ## 14.2.7 性能优化实践
-
-> **⚠️ [Task2B 回炉中 · 2026-06-10]** 
-> 此节待基于真实 simpleperf 分析流程重写。重写方向：
-> 1. 从 `simpleperf report -g` 输出中识别热点函数 → 解释为何该函数占 30%+ CPU
-> 2. 从调用栈判断优化方向（递归过多？锁竞争？重复分配？）
-> 3. 实施具体优化（算法替换/缓存/去锁/批量操作）
-> 4. 优化后用 `simpleperf record --app ... --duration 10` 重新采样验证
-> 5. 展示优化前后的 `report` 对比，量化效果
->
-> 旧版（已删除）：通用 Java 优化模式（对象池、WeakReference、线程池），与 Simpleperf 分析流程脱节。
 
 ### 优化理论基础
 
