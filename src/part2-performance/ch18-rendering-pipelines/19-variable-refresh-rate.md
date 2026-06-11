@@ -1,17 +1,17 @@
 ---
 title: "可变刷新率渲染管线"
 chapter: "18.19"
-status: ready-for-review
+status: finalized
 applicable_versions: "多刷新率背景：Android 11 (API 30) - Android 14；ARR 主体：Android 15-QPR1+；Display 查询 API：Android 16 (API 36)"
 tags: ["VRR", "ARR", "Variable-Refresh-Rate", "LTPO", "setFrameRate", "FrameTimeline", "渲染管线"]
 related_chapters: ["2.3", "2.18", "2.19"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: "2026-06-12"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 last_task6_audit: "2026-05-20"
 task9_result: auto-fixed
 task9_state: reviewed
@@ -30,6 +30,7 @@ updated_date: 2026-06-12
 updated_by: openclaw-task9
 task9_review_notes: "2026-06-12 00:20 Task9 idle audit auto-fix: 修正 18.19 源码补充段的版本锚点与两个源码符号名；AOSP android-16.0.0_r4 与官方 ARR/Perfetto 文档复核无新增 P0/P1，回到 Task6 复审。"
 
+last_task6_at: "2026-06-12T04:05:00+08:00"
 ---
 
 <!-- outline-start -->

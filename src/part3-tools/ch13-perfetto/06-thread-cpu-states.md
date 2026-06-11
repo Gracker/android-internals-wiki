@@ -2,10 +2,10 @@
 title: 线程 CPU 状态分析
 section: '13.6'
 chapter: '13.6'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-04-22'
+reviewed_date: "2026-06-12"
 reviewed_by: openclaw-task6
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-03'
@@ -37,9 +37,9 @@ related_chapters:
 - '13.5'
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-26"
-pipeline_stage: "task6_pending"
+pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
 task9_result: auto-fixed
 task9_reviewed_date: '2026-06-12'
@@ -54,6 +54,7 @@ task9_review_notes: "2026-06-12 Task9 idle audit:auto-fixed state-code outline a
 last_task9_review_log: "logs/deep-review/2026-06-12-02-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
+last_task6_at: "2026-06-12T04:05:00+08:00"
 ---
 
 
