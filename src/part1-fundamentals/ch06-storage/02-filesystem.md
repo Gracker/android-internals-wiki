@@ -41,7 +41,7 @@ task9_result: "pass-tech-review"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T19:26:00+08:00"
-last_task6_audit: "2026-05-19"
+last_task6_audit: "2026-06-11"
 task2b_state: "fixed"
 p0: 0
 p1: 0
