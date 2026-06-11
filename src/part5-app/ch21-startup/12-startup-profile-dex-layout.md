@@ -60,6 +60,8 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 last_task6_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-11
 ---
 
 # 21.12 Startup Profile 与 DEX Layout 启动优化
@@ -101,17 +103,17 @@ last_task9_at: "2026-06-05T05:28:04+08:00"
 
 <!-- outline-end -->
 
-Startup Profile 解决的是启动代码在 DEX 文件里的排布问题。它通常和 Baseline Profile 一起生成，但消费方不同：Baseline Profile 交给 ART 做 profile-guided AOT 编译，Startup Profile 交给构建系统和 R8 调整 DEX layout。前者减少解释执行和 JIT 热身，后者减少启动阶段加载 DEX 时的随机访问、页故障和缓存失配。[已验证: 官方文档, developer.android.com/topic/performance/startupprofiles/overview][已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/difference-baseline-startup]
+Startup Profile 解决的是启动代码在 DEX 文件里的排布问题。它通常和 Baseline Profile 一起生成，但消费方不同：Baseline Profile 交给 ART 做 profile-guided AOT 编译，Startup Profile 交给构建系统和 R8 调整 DEX layout。前者减少解释执行和 JIT 热身，后者减少启动阶段加载 DEX 时的随机访问、页故障和缓存失配。
 
 21.4 已经覆盖 Baseline Profile 的生成、打包和验证主线。本节只处理启动路径 DEX layout：哪些路径应该带 `includeInStartupProfile = true`，怎样确认 `startup-prof.txt` 被构建系统消费，怎样把收益和业务初始化、I/O、网络等待区分开。ART 编译管线详见 1.7，Baseline Profile 的系统机制详见 8.7，APM 视角详见 19.15。
 
-Clippings 的《Android 性能优化》把速度问题拆成 CPU 时间、缓存命中率和任务调度三个视角，并把 Dex 类文件重排序放在缓存局部性一类。这里借用这个组织方式：Startup Profile 不直接减少业务代码指令数，也不改变线程调度，它把“启动会读到的类和方法”放得更集中，让同一段冷启动更少等 DEX 页加载。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md][结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+Clippings 的《Android 性能优化》把速度问题拆成 CPU 时间、缓存命中率和任务调度三个视角，并把 Dex 类文件重排序放在缓存局部性一类。这里借用这个组织方式：Startup Profile 不直接减少业务代码指令数，也不改变线程调度，它把“启动会读到的类和方法”放得更集中，让同一段冷启动更少等 DEX 页加载。
 
 ## Startup Profile 与 Baseline Profile 的边界
 
-Baseline Profile 的规则面向 ART。构建阶段会把 `baseline-prof.txt` 编成二进制 `baseline.prof` / `baseline.profm`，APK 中位于 `/assets/dexopt/`，AAB 中位于 `/BUNDLE-METADATA/com.android.tools.build.profiles/`。安装或后台 dexopt 阶段，`profman` 和 `dex2oat --compiler-filter=speed-profile` 消费这些规则，生成 OAT / VDEX 产物。[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles][已验证: AOSP, art/profman/profman.cc + art/dex2oat/dex2oat.cc]
+Baseline Profile 的规则面向 ART。构建阶段会把 `baseline-prof.txt` 编成二进制 `baseline.prof` / `baseline.profm`，APK 中位于 `/assets/dexopt/`，AAB 中位于 `/BUNDLE-METADATA/com.android.tools.build.profiles/`。安装或后台 dexopt 阶段，`profman` 和 `dex2oat --compiler-filter=speed-profile` 消费这些规则，生成 OAT / VDEX 产物。
 
-Startup Profile 的规则面向构建期 DEX layout。生成出来的文本文件通常是 `src/<variant>/generated/baselineProfiles/startup-prof.txt`，AGP 在构建 release 包时把它交给 R8 / D8，使启动路径里的类和方法更集中地落在前面的 DEX 区域。官方文档把它称为 Baseline Profile 的一个子集，但它不等同于 `speed-profile` 编译，也不需要等设备端后台 dexopt 才生效。[已验证: 官方文档, developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations][已验证: R8, StartupOptions.java]
+Startup Profile 的规则面向构建期 DEX layout。生成出来的文本文件通常是 `src/<variant>/generated/baselineProfiles/startup-prof.txt`，AGP 在构建 release 包时把它交给 R8 / D8，使启动路径里的类和方法更集中地落在前面的 DEX 区域。官方文档把它称为 Baseline Profile 的一个子集，但它不等同于 `speed-profile` 编译，也不需要等设备端后台 dexopt 才生效。
 
 两者的关系适合按收益来源来分：
 
@@ -129,7 +131,7 @@ Baseline Profile 可以覆盖启动之后的核心操作；Startup Profile 应�
 
 冷启动期间，系统要加载 APK 中的 DEX，解析类、方法、字符串、类型索引，并执行入口 Activity、依赖注入、首屏 UI 和必要 SDK 初始化。即使这些方法后续会被 AOT 编译，启动时仍然要访问 DEX 元数据和类定义；访问顺序越分散，越容易产生额外的磁盘读取和页故障。
 
-Dex 类文件重排序的旧做法通常要收集类加载顺序，再用外部工具改 APK。Startup Profile 把这件事合入官方构建路径：Macrobenchmark 记录启动测试中触达的类和方法，生成 `S` 标记规则，R8 根据这些规则调整 DEX 中的布局。Clippings 的 Dex 重排序章节强调空间局部性，本节沿用这个判断：启动阶段连续访问的类和方法越集中，CPU 等待数据进入缓存和内存映射页的时间越少。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+Dex 类文件重排序的旧做法通常要收集类加载顺序，再用外部工具改 APK。Startup Profile 把这件事合入官方构建路径：Macrobenchmark 记录启动测试中触达的类和方法，生成 `S` 标记规则，R8 根据这些规则调整 DEX 中的布局。从空间局部性的角度理解：启动阶段连续访问的类和方法越集中，CPU 等待数据进入缓存和内存映射页的时间就越少。
 
 这类优化只处理代码位置，不能替代启动治理：
 
@@ -142,7 +144,7 @@ Dex 类文件重排序的旧做法通常要收集类加载顺序，再用外部�
 
 ## `includeInStartupProfile` 的场景选择
 
-Macrobenchmark 生成 Baseline Profile 时，可以在 `rule.collect()` 里用 `includeInStartupProfile = true` 标记启动路径。官方建议把启动相关测试放进这个标记，非启动路径不要放进去。[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/create-baselineprofile]
+Macrobenchmark 生成 Baseline Profile 时，可以在 `rule.collect()` 里用 `includeInStartupProfile = true` 标记启动路径。官方建议把启动相关测试放进这个标记，非启动路径不要放进去。
 
 下面的代码只展示参数位置，重点是把入口路径和启动路径标出来：
 
@@ -184,11 +186,11 @@ class StartupProfileGenerator {
 - 低频活动入口：规则会挤占 `classes.dex` 空间。
 - 依赖网络状态的分支：启动 Profile 需要稳定可复现，网络分支会放大噪声。
 
-官方文档给的选择顺序是从最常见启动入口开始，再沿启动 funnel 添加入口；当启动代码快要占满 `classes.dex` 时停止。复杂应用不要追求“所有入口都覆盖”，应该先保证主入口和最高频深链入口稳定命中。[已验证: 官方文档, developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations]
+合理的做法是从最常见启动入口开始，沿启动 funnel 逐步添加入口，在启动代码快要占满 `classes.dex` 时收住。复杂应用不要追求“所有入口都覆盖”，应该先保证主入口和最高频深链入口稳定命中。
 
 ## 构建条件与产物检查
 
-Startup Profile 对工具链有要求。官方推荐 Jetpack Macrobenchmark 1.2.0+、AGP 8.2+ 和 Android Studio Iguana+；Release 构建需要启用 R8，也就是 `isMinifyEnabled = true`。DEX layout optimization 从 AGP 8.1 开始提供，AGP 8.3 起默认启用；AGP 8.1 到 8.2 需要在 `baselineProfile {}` 中显式开启 `dexLayoutOptimization = true`。[已验证: 官方文档, developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations]
+Startup Profile 对工具链有要求。官方推荐 Jetpack Macrobenchmark 1.2.0+、AGP 8.2+ 和 Android Studio Iguana+；Release 构建需要启用 R8，也就是 `isMinifyEnabled = true`。DEX layout optimization 从 AGP 8.1 开始提供，AGP 8.3 起默认启用；AGP 8.1 到 8.2 需要在 `baselineProfile {}` 中显式开启 `dexLayoutOptimization = true`。
 
 配置检查可以按四层做：
 
@@ -199,7 +201,7 @@ Startup Profile 对工具链有要求。官方推荐 Jetpack Macrobenchmark 1.2.
 | 构建层 | R8 是否启用，`dexLayoutOptimization` 是否开启 | Debug / non-minified 包验证 layout，结果不代表发布包 |
 | DEX 层 | 启动类是否留在 `classes.dex`，AGP 8.8+ 可看 R8 输出元数据 | 启动路径过大，溢出到后续 DEX 文件 |
 
-AGP 8.8+ 的项目可以检查生成的 `r8.json`，确认 Startup Profile 是否应用到 DEX layout。旧项目没有这个元数据时，只能结合 DEX 文件数量、反编译顺序和 Macrobenchmark 结果判断。官方还提醒：如果启用 Startup Profile 后单 DEX 应用变成两个 DEX，末尾 desugared DEX 不参与 DEX layout 优化，排查时不要把它误读成启动代码溢出。[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles]
+AGP 8.8+ 的项目可以检查生成的 `r8.json`，确认 Startup Profile 是否应用到 DEX layout。旧项目没有这个元数据时，只能结合 DEX 文件数量、反编译顺序和 Macrobenchmark 结果判断。官方还提醒：如果启用 Startup Profile 后单 DEX 应用变成两个 DEX，末尾 desugared DEX 不参与 DEX layout 优化，排查时不要把它误读成启动代码溢出。
 
 验证命令要把“包内 profile 存在”和“设备端已编译”分开。Startup Profile 关注前者和 DEX layout，Baseline Profile 还要看设备端编译状态：
 
@@ -214,7 +216,7 @@ zipinfo app-release.aab | grep 'BUNDLE-METADATA/com.android.tools.build.profiles
 adb shell dumpsys package dexopt | grep -A 3 com.example.app
 ```
 
-`baseline.prof` 存在只说明 ART 有机会收到预编译材料。`status = speed-profile` 才表示设备端已有按 Profile 编译的产物；`status = verify` 可能是还没进入后台 dexopt，也可能是安装来源没有触发编译。[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles]
+`baseline.prof` 存在只说明 ART 有机会收到预编译材料。`status = speed-profile` 才表示设备端已有按 Profile 编译的产物；`status = verify` 可能是还没进入后台 dexopt，也可能是安装来源没有触发编译。
 
 ## 度量方式与回归判断
 
@@ -227,7 +229,7 @@ Startup Profile 的收益需要用同一套 release 包、同一设备、同一�
 | Baseline + Startup Profile | 看 DEX layout 增量收益 | 在 Baseline 之上继续下降，方差也可能收窄 |
 | 业务优化后 Profile | 验证延迟初始化、删同步 I/O 后的组合收益 | 判断 Profile 是否仍覆盖新启动路径 |
 
-指标不要只看平均值。启动优化更适合看 P50 / P90 / P95、标准差和冷启动首轮数据。TTID 衡量首帧，TTFD 衡量可交互；如果 App 没正确调用 full display 上报，TTFD 会失真。官方调试文档也提醒，启动期间的网络和重 I/O 会增加 benchmark 方差，最好在测试环境用假实现固定这些依赖。[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles]
+指标不要只看平均值。启动优化更适合看 P50 / P90 / P95、标准差和冷启动首轮数据。TTID 衡量首帧，TTFD 衡量可交互；如果 App 没正确调用 full display 上报，TTFD 会失真。官方调试文档也提醒，启动期间的网络和重 I/O 会增加 benchmark 方差，最好在测试环境用假实现固定这些依赖。
 
 Perfetto 侧可以看这些信号：
 
@@ -237,7 +239,7 @@ Perfetto 侧可以看这些信号：
 - 主线程 I/O、SQLite、网络等待是否仍占主导；如果是，Startup Profile 不是主矛盾。
 - 多次迭代的页故障和磁盘读取是否更稳定；DEX layout 的收益常体现在方差收窄。
 
-官方文档提到 Startup Profile 在部分应用中可带来相对 Baseline Profile 的额外启动提升，但影响大小取决于 App 结构。工程里不要直接把官方比例写进目标 KPI，应使用本项目 release 包实测。
+Startup Profile 在部分应用中可带来相对 Baseline Profile 的额外启动提升，但实际幅度强依赖 App 结构。工程里不要直接把官方比例写进目标 KPI，应使用本项目 release 包实测。
 
 ## 维护风险与发布策略
 
@@ -266,7 +268,7 @@ Startup Profile 的维护成本来自“路径变化”。首页改成 Compose�
 | Android Studio / Gradle 自动编译 | AGP 8.4+ non-debuggable build | 适合本地验证，不代表 Play 安装的即时行为 |
 | Android 16 云端编译材料 | 当前公开材料仍需更多一手证据 | 可写成 Play 分发增强方向，不写成所有设备本地 dex2oat 被替代 |
 
-第三方商店和企业内部分发要重点验证 `ProfileInstaller` 状态。官方文档写明：非 Play、非现代 Gradle 安装路径下，Jetpack ProfileInstaller 通常负责把 profile 入队，等待下一轮后台 DEX 优化。`RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION` 只表示已入队，`RESULT_CODE_COMPILED_WITH_PROFILE` 才表示编译完成。这个边界对启动 A/B 很重要，尤其是中国区多商店分发。[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles]
+第三方商店和企业内部分发要重点验证 `ProfileInstaller` 状态。官方文档写明：非 Play、非现代 Gradle 安装路径下，Jetpack ProfileInstaller 通常负责把 profile 入队，等待下一轮后台 DEX 优化。`RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION` 只表示已入队，`RESULT_CODE_COMPILED_WITH_PROFILE` 才表示编译完成。这个边界对启动 A/B 很重要，尤其是中国区多商店分发。
 
 ## 与 21.4 Baseline Profile 实战的分工
 
@@ -276,7 +278,7 @@ Startup Profile 的维护成本来自“路径变化”。首页改成 Compose�
 
 ## AOSP `profman` / `dex2oat` 验证入口
 
-Baseline Profile 的设备端消费可以从 AOSP `art/profman/` 和 `art/dex2oat/` 验证。`profman` 负责读取、合并和分析 Profile；`dex2oat` 在 `speed-profile` 这类依赖 Profile 的编译模式下，只编译 Profile 命中的方法和类加载相关内容。系统编译策略的总览见 1.7。[已验证: AOSP, art/profman/profman.cc + art/dex2oat/dex2oat.cc]
+Baseline Profile 的设备端消费可以从 AOSP `art/profman/` 和 `art/dex2oat/` 验证。`profman` 负责读取、合并和分析 Profile；`dex2oat` 在 `speed-profile` 这类依赖 Profile 的编译模式下，只编译 Profile 命中的方法和类加载相关内容。系统编译策略的总览见 1.7。
 
 Startup Profile 的 DEX layout 不在 `dex2oat` 里完成。它的公开验证入口更靠近 AGP / R8：生成的 `startup-prof.txt`、R8 的 startup profile 选项、AGP 8.8+ 的 `r8.json` 和最终 DEX 排布。排查时把这两条路径分开，能避免把“ART 是否编译”误当成“DEX layout 是否生效”。
 

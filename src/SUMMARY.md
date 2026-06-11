@@ -73,6 +73,7 @@ tags:
   - [2.24 Android 16/17 图形内存分配边界：DMA-BUF、Gralloc 与 16KB Page](part1-fundamentals/ch02-rendering/24-graphic-memory-dmabuf-gralloc-16kb-boundary.md)
   - [2.25 Choreographer Buffer Stuffing Recovery 与帧节拍修正](part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md)
   - [2.26 Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能](part1-fundamentals/ch02-rendering/26-edge-to-edge-inset-rendering-performance.md)
+  - [2.27 SurfaceFlinger Transaction Queue 无锁架构与消息分流](part1-fundamentals/ch02-rendering/27-sf-transaction-queue-lockless.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -101,6 +102,7 @@ tags:
   - [4.11 Cached App Freezer 与 GC 触发边界](part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md)
   - [4.12 ZRAM 压缩交换与应用重启延迟](part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md)
   - [4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能](part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md)
+  - [4.14 ART GC Region 碎片化与 Compaction 策略](part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
@@ -339,6 +341,7 @@ tags:
   - [16.6 Android 16 云端 Profile 与 dexopt 安装优化](part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md)
   - [16.7 Android 系统启动耗时优化与 bootanalyze](part4-system/ch16-aosp/07-system-boot-time-optimization.md)
   - [16.8 AppFlow：GB 级应用冷启动内存联合调度](part4-system/ch16-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md)
+  - [16.9 Android 17 SDM 安装编译链路性能](part4-system/ch16-aosp/09-android17-sdm-install-performance.md)
 
 - [第 17 章：厂商优化实践](part4-system/ch17-oem/README.md)
   - [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)

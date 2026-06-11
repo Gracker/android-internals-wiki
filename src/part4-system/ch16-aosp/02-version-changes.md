@@ -68,7 +68,7 @@ task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-29
+last_deepseek_cn_review_at: 2026-06-11
 ---
 
 # 各 Android 版本性能变更追踪
@@ -116,13 +116,9 @@ Android 12 在性能方面的影响，主要集中在**后台执行限制**和**
 
 替代方案是使用 `WorkManager`。对于需要在后台执行的性能分析任务（如定期采样 CPU 使用率、上报 ANR 统计），`WorkManager` 的约束调度机制是更合适的方案，因为它与系统的 Doze 模式和 App Standby Bucket 配合工作，不会触发系统限制。
 
-[已验证: 官方文档, developer.android.com/about/versions/12/behavior-changes-12#foreground-service-launch-restrictions]
-
 ### 精确闹钟需要权限
 
 Android 12 要求 App 声明 `SCHEDULE_EXACT_ALARM` 权限才能设置精确闹钟。如果你的性能监控框架使用 `AlarmManager.setExact()` 来定时采集数据，在 Android 12+ 上需要检查这个权限是否已授予。对于大多数性能分析场景，`setAndAllowWhileIdle()` 或 `WorkManager` 的周期任务已经够用，不需要精确闹钟。
-
-[已验证: 官方文档, developer.android.com/about/versions/12/behavior-changes-12#exact-alarm-permission]
 
 ### 通知跳板被禁用
 
@@ -134,13 +130,11 @@ Android 12 禁止通过通知的 `PendingIntent` 启动 Service 或 BroadcastRec
 
 ### Stretch Overscroll
 
-Android 12 将过度滚动（overscroll）效果从旧的 Glow 效果改为 Stretch（拉伸）效果。如果你在 Trace 中看到滚动边缘有额外的渲染工作，部分原因可能是新的 Stretch 动画计算。这个变化本身对性能影响很小，但如果你的 App 自定义了 overscroll 行为，需要注意新效果可能引入额外的 `draw()` 调用。
+Android 12 将过度滚动（overscroll）效果从旧的 Glow 效果改为 Stretch（拉伸）效果。如果你在 Trace 中看到滚动边缘有额外的渲染工作，部分原因可能是新的 Stretch 动画计算。这个变化本身的性能开销可以忽略。但如果你的 App 自定义了 overscroll 行为，需要注意新效果可能额外触发 `draw()`。
 
 ### Game Mode API
 
 Android 12 引入了 Game Mode API，允许游戏根据用户选择的模式（性能优先/省电优先）调整渲染策略。这是 Android Dynamic Performance Framework（ADPF）的起点。如果你的游戏支持 Game Mode，可以在不同模式下对比 Perfetto Trace，观察 CPU 频率和帧时间的变化。
-
-[已验证: 官方文档, developer.android.com/about/versions/12/features/game-mode]
 
 ## Android 13（API 33）：通知权限与 ART 优化
 
@@ -150,8 +144,6 @@ Android 13 的性能相关变更集中在**通知权限**、**ART 运行时优�
 
 Android 13 引入了 `POST_NOTIFICATIONS` 运行时权限。如果你的性能监控框架通过通知栏展示实时性能数据（如 FPS 计数器、内存使用量），在 Android 13+ 上需要先获取这个权限。用户拒绝后，通知不会展示，但你的代码不会崩溃——只是数据推送变得无声无息。
 
-[已验证: 官方文档, developer.android.com/about/versions/13/behavior-changes-13#notification-permission]
-
 ### ART 运行时更新
 
 Android 13 包含了 ART 运行时的性能优化，这些优化通过 Google Play 系统更新推送到 Android 12+ 的设备上。关键改进包括更快的类查找和改进的垃圾回收调度。这些优化是全局性的，不需要 App 做任何修改就能受益。在 Perfetto 中，你可能会观察到 GC 事件的持续时间略有减少。
@@ -160,13 +152,9 @@ Android 13 包含了 ART 运行时的性能优化，这些优化通过 Google Pl
 
 Android 13 改进了 `JobScheduler` 的预取（prefetch）任务调度。系统会尝试预测 App 的下一次启动时间，并在此之前的合适窗口执行 prefetch 任务。如果你的 App 使用 prefetch 任务来预热缓存或预加载资源，这个改进意味着预热操作更有可能在用户实际启动 App 之前完成，从而减少冷启动耗时。
 
-[已验证: 官方文档, developer.android.com/about/versions/13/behavior-changes-13#jobScheduler]
-
 ### 断字性能大幅提升
 
 Android 13 将 `TextView` 的断字（hyphenation）性能提升了约 200%。如果你的 App 之前因为断字开销大而禁用了断字功能，Android 13+ 上可以重新启用，对渲染性能的影响已经微乎其微。在 Trace 中，这表现为 `measure()` 阶段中文字布局相关操作的耗时减少。
-
-[已验证: 官方文档, developer.android.com/about/versions/13/features#hyphenation]
 
 ### Choreographer API 的关键里程碑
 
@@ -174,21 +162,17 @@ Android 13 在 Choreographer 的演进中是一个重要节点。它引入了 `C
 
 在 Android 13+ 上，App 可以在渲染截止时间过近时动态简化渲染（比如跳过某些非关键绘制），而不必总是努力在下一个 VSync 前完成所有工作。这个能力是后续版本中 Frame Pacing 和自适应刷新率的基础。
 
-[已验证: 官方文档, developer.android.com/reference/android/view/Choreographer.VsyncCallback]
-
 ## Android 14（API 34）：冻结缓存应用与前台服务类型
 
 Android 14 对后台进程管理做了迄今为止最大的调整——**冻结缓存应用**，同时对前台服务增加了类型声明要求。
 
 ### 缓存应用冻结
 
-Android 14 引入了对缓存应用（cached app）的冻结机制。当 App 进入缓存状态一段时间后，系统会冻结其进程，使其完全不能使用 CPU。Google 官方数据显示，这一机制使缓存应用的 CPU 占用减少了约 50%。
+Android 14 引入了对缓存应用（cached app）的冻结机制。当 App 进入缓存状态一段时间后，系统会冻结其进程，使其完全不能使用 CPU。据 Google 公开数据，这一机制使缓存应用的 CPU 占用降低了约 50%。
 
-这对性能分析有直接意义：如果你的 App 在后台有周期性工作（如定时采样、日志上报），在 Android 14+ 上这些工作会被冻结。你需要在 Trace 中看到 App 进程从 "Running" 变为 "Sleeping" 再到被冻结（frozen 状态），这不是 bug，是系统行为。
+这对分析有直接意义：如果你的 App 在后台有周期性工作（如定时采样、日志上报），在 Android 14+ 上这些工作会被冻结。你需要在 Trace 中看到 App 进程从 "Running" 变为 "Sleeping" 再到被冻结（frozen 状态），这不是 bug，是系统行为。
 
 冻结机制配合广播队列化（queued broadcasts）一起工作：缓存 App 注册的上下文广播会被排队，在 App 回到前台时一次性投递。如果你依赖广播来触发性能数据采集，在 Android 14+ 上这些广播可能延迟到 App 回到前台才投递。
-
-[已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#freeze-cached-apps]
 
 ### 前台服务必须声明类型
 
@@ -196,19 +180,13 @@ Android 14 要求每个前台服务声明至少一个 `foregroundServiceType`，
 
 还有个类型值得留意：`shortService`：它有严格的大约 3 分钟生命周期限制。超时后系统会调用 `Service.onTimeout()`，如果 App 没有在短时间内调用 `stopSelf()`，会触发 ANR。这个机制是全新的——以前前台服务没有这种硬超时。
 
-[已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#fgs-types]
-
 ### JobScheduler 对 ANR 的惩罚
 
 Android 14 引入了新的限制：如果一个 App 的 `JobService` 在 `onStartJob()`、`onStopJob()` 或 `onBind()` 中反复导致 ANR，系统会将该 App 的所有 Job 放入受限的 standby bucket。你的后台任务执行窗口会被大幅压缩。如果你的性能分析框架使用 `JobScheduler`，需要确保 `onStartJob()` 在主线程上的工作量极小，耗时操作放到后台线程。
 
-[已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#jobScheduler-anr]
-
 ### 非线性字体缩放
 
 Android 14 支持字体缩放至 200%，但对大字号采用非线性缩放——文本越大，缩放比例越小。如果你的 App 在性能分析中关注布局耗时，需要知道：200% 字体缩放不等于所有文本面积翻倍。非线性缩放减少了极端字号下的布局计算量，但也意味着你不能简单地用线性关系估算字体缩放对布局性能的影响。
-
-[已验证: 官方文档, developer.android.com/about/versions/14/features#non-linear-font-scaling]
 
 ## Android 15（API 35）：ADPF 深化与 ProfilingManager 诞生
 
@@ -232,15 +210,11 @@ pm.registerForAllProfilingResults(
 );
 ```
 
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
-
 ### ApplicationStartInfo：启动分析的数据基础
 
 Android 15 引入了 `ApplicationStartInfo` 类，提供 App 启动的详细信息，包括启动类型（冷/温/热）、各阶段耗时、启动时间戳等。这是启动优化分析（见 §8.2）的重要数据来源。
 
 之前，开发者需要手动在 `Application.onCreate()` 和各 Activity 的生命周期中打点来测量启动耗时。`ApplicationStartInfo` 提供了系统视角的启动数据，包含了从进程创建到 `Application.onCreate()` 之前的系统开销（如 Zygote fork、ClassLoader 初始化），这些是手动打点无法覆盖的。
-
-[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationStartInfo]
 
 ### ADPF 能力扩展
 
@@ -250,19 +224,13 @@ Android 15 在 ADPF 中引入了两个重要增强：
 
 第二，hint session 可以**同时报告 GPU 和 CPU 工作时长**。在此之前，ADPF 主要关注 CPU 调度。现在 App 可以告诉系统 GPU 端的负载情况，系统据此同时调整 CPU 和 GPU 频率，实现更均衡的性能-功耗权衡。
 
-[已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-15#adpf]
-
 ### 前台服务时间限制
 
 Android 15 对 `dataSync` 和 `mediaProcessing` 类型的前台服务引入了 6 小时的时间上限。超过这个时间后，系统会调用 `Service.onTimeout(int, int)`；服务需要在回调里调用 `stopSelf()` 或停止前台状态收尾，否则会进入前台服务超时错误。若配额已经耗尽，继续启动同类型前台服务会抛出 `ForegroundServiceStartNotAllowedException`。如果性能数据同步任务依赖 `dataSync` 前台服务，需要设计成能在 6 小时内完成，或者改用 `WorkManager` 分批处理。
 
-[已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-15#fgs-time-limit]
-
 ### 16KB 页面大小支持
 
 Android 15 开始支持 16KB 内存页面大小。这对 App 性能有几个影响：内存分配更粗粒度（每个页 16KB 而不是 4KB），但 TLB miss 减少，大内存访问性能可能提升。如果你的 App 使用 NDK 库，需要重新编译以支持 16KB 页面对齐。未重新编译的库在 16KB 页面设备上可能导致内存使用增加和性能退化。
-
-[已验证: 官方文档, developer.android.com/about/versions/15/behavior-changes-15#16kb]
 
 ## Android 16（API 36）：系统触发式 Profiling 与自适应应用
 
@@ -297,8 +265,6 @@ pm.addProfilingTriggers(
 
 `addProfilingTriggers()` 不带 request-scoped callback，系统触发结果要靠 `registerForAllProfilingResults()` 接收。对于线上偶发 ANR 和启动路径抖动，这类结果比事后手工复现更接近现场。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager ; developer.android.com/reference/android/os/ProfilingTrigger]
-
 ### ApplicationStartInfo.getStartComponent()
 
 Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法，返回触发进程启动的具体组件类型（Activity / BroadcastReceiver / ContentProvider / Service / Other）。
@@ -309,15 +275,11 @@ Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法�
 
 有了 `getStartComponent()`，你可以精确区分并分别优化每条启动路径。
 
-[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationStartInfo#getStartComponent()]
-
 ### 自适应应用：大屏强制可调整
 
 Android 16 对大屏设备（smallest width ≥ 600dp）强制忽略 `screenOrientation`、`resizableActivity="false"`、`minAspectRatio`、`maxAspectRatio` 以及对应的 runtime API（`setRequestedOrientation()` / `getRequestedOrientation()`）。
 
 从性能角度看，Activity 因窗口尺寸变化会更频繁地 recreate。如果你的 App 在配置变更时没有正确保存和恢复 UI 状态（通过 ViewModel + `rememberSaveable`），用户会感知到界面闪烁和数据丢失——这不只是功能 bug，也是响应速度的退化。
-
-[已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16#adaptive-apps]
 
 ### Predictive Back 默认启用
 
@@ -327,13 +289,9 @@ Android 16 将 Predictive Back（预测性返回）设为默认启用。系统�
 
 `onBackPressed()` 在 Android 16 中被进一步标记为废弃。如果你还在用旧 API，建议迁移到 `OnBackInvokedDispatcher`。
 
-[已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16#predictive-back]
-
 ### FrameMetrics 新增 FRAME_TIMELINE_VSYNC_ID
 
 Android 16 在 `FrameMetrics` 中新增了 `FRAME_TIMELINE_VSYNC_ID` 字段。这个字段提供了一个 ID，将 HWUI 生成的帧与 SurfaceFlinger 中的时间线数据关联起来。之前要追踪一帧从 App 端到 SurfaceFlinger 的完整生命周期需要靠时间戳做模糊匹配，现在有了精确的关联 ID，帧分析会可靠得多。
-
-[已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
 ### ADPF：SystemHealthManager 余量 API
 
@@ -341,18 +299,13 @@ Android 16 在 `android.os.health.SystemHealthManager` 中放入了 `getCpuHeadr
 
 源码实现会同步调用 `IHintManager` 获取结果，调用路径带 binder 往返成本，不适合放在每帧热点路径里轮询。游戏或重计算场景可以把它当作降档辅助信号，再配合 FrameTimeline、Perfetto 和温控日志做交叉判断。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/health/SystemHealthManager]
-[已验证: AOSP, android-16.0.0_r1 frameworks/base/core/java/android/os/health/SystemHealthManager.java]
-
 ### JobScheduler 配额优化
 
 Android 16 调整了 `JobScheduler` 的配额计算方式，基于 App 的 standby bucket 和是否以前台服务启动来动态调整运行时间配额。新增的 `getPendingJobReasons()` 和 `getPendingJobReasonsHistory()` API 让开发者可以查询 Job 未执行的具体原因（如待机桶限制、电量不足、网络不可用等），不再只能靠猜测。
 
-[已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16#jobscheduler]
-
 ## 新增性能 API 的演进脉络
 
-上面按版本走了一遍关键变更。现在我们换个视角，按 API 家族纵向梳理它们的演进路径，帮助你理解 Google 在每个性能领域的设计意图。
+以上是按版本时间线梳理的关键变更。下面换个视角，按 API 家族纵向追溯 FrameMetrics、ProfilingManager、ADPF 和 Choreographer 的演进路径——这比零散的版本条目更能看出 Google 在每个性能领域的设计意图。
 
 ### FrameMetrics 演进
 
@@ -361,8 +314,6 @@ Android 16 调整了 `JobScheduler` 的配额计算方式，基于 App 的 stand
 在 Android 12-15 期间，`FrameMetrics` 类本身没有新增字段。但周边的渲染管线持续演进——Android 13 的 `Choreographer.VsyncCallback` 和 `FrameTimeline` 提供了更丰富的帧调度信息，Android 14 的缓存冻结减少了后台进程对帧渲染的干扰，Android 15 的 ADPF 省电模式让系统在调度时有了更多选择。
 
 Android 16 是 `FrameMetrics` 的一次实质更新：`FRAME_TIMELINE_VSYNC_ID` 字段让帧追踪跨越了 App↔SurfaceFlinger 的边界。配合 `Choreographer` 的多时间线选择（API 33 引入），开发者现在可以精确知道：我选了哪条时间线渲染这一帧，这一帧最终在 SurfaceFlinger 端是否按时合成。
-
-[已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
 
 ### ProfilingManager 演进
 
@@ -375,8 +326,6 @@ Android 16 是 `FrameMetrics` 的一次实质更新：`FRAME_TIMELINE_VSYNC_ID` 
 **Android 16 SDK 36.1**：触发器扩展到运行中 trace 请求和 kill 类事件，新增 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`、`TRIGGER_TYPE_KILL_FORCE_STOP`、`TRIGGER_TYPE_KILL_RECENTS` 和 `TRIGGER_TYPE_KILL_TASK_MANAGER`。
 
 **Android 17（API 37）**：触发类型继续扩展，公开参考页新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`、`TRIGGER_TYPE_APP_COMPAT` 和 `TRIGGER_TYPE_ANOMALY`。冷启动场景从 `reportFullyDrawn()` 时点前移到“尽早捕获冷启动路径”，触发器边界也更完整。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager ; developer.android.com/reference/android/os/ProfilingTrigger]
 
 ### ADPF / Dynamic Performance 演进
 
@@ -392,9 +341,6 @@ ADPF（Android Dynamic Performance Framework）从 Android 12 开始逐步构建
 
 **Android 16**：`android.os.health.SystemHealthManager` 中加入 CPU / GPU headroom 查询接口，`Display` 中也出现了 `hasArrSupport()` / `getSuggestedFrameRate()` 这组 ARR 相关入口。它们在 android-16.0.0_r1 里都带 feature flag，是否可用还取决于 framework 开关和设备实现，迁移代码时要先做 API level 与能力探测。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/health/SystemHealthManager ; developer.android.com/reference/android/view/Display]
-[已验证: AOSP, android-16.0.0_r1 frameworks/base/core/java/android/view/Display.java]
-
 ### Choreographer 演进
 
 Choreographer 的 API 演进是理解 Android 渲染调度演进的最佳切入点：
@@ -409,9 +355,6 @@ Choreographer 的 API 演进是理解 Android 渲染调度演进的最佳切入�
 
 **Android 16（API 36）**：与帧率策略相关的新增接口更多落在 `Display`，例如 `hasArrSupport()` / `getSuggestedFrameRate()`。这组 ARR 接口仍带 flag，只有系统打开功能且设备实现支持时才可用。
 
-[已验证: 官方文档, developer.android.com/reference/android/view/Display]
-[已验证: AOSP, android-16.0.0_r1 frameworks/base/core/java/android/view/Display.java]
-
 ## 废弃 API 与替代方案
 
 以下是 Android 12-16 中与性能分析直接相关的废弃 API，以及推荐替代方案：
@@ -422,25 +365,17 @@ Choreographer 的 API 演进是理解 Android 渲染调度演进的最佳切入�
 
 替代方案：使用 `OnBackInvokedDispatcher` 注册 `OnBackInvokedCallback`。如果你需要观察（但不拦截）系统返回事件，使用 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 优先级。
 
-[已验证: 官方文档, developer.android.com/guide/navigation/custom-back/predictive-back]
-
 ### WebView.setForceDark() → prefers-color-scheme
 
 Android 13 废弃了 `WebView.setForceDark()`。对于 Web 内容的深色模式渲染，WebView 现在会根据 App 的 `isLightTheme` 属性自动设置 `prefers-color-scheme` CSS 媒体查询。如果你的 App 手动调用了 `setForceDark()`，在 Android 13+ 上调用无效，需要改为通过主题设置。
-
-[已验证: 官方文档, developer.android.com/about/versions/13/behavior-changes-13#webview-force-dark]
 
 ### windowOptOutEdgeToEdgeEnforcement → 正确处理 insets
 
 Android 16 移除了 `windowOptOutEdgeToEdgeEnforcement` 属性。如果你的 App 之前用这个属性来避免边到边显示带来的 UI 遮挡问题，现在必须正确处理 WindowInsets。从性能角度看，正确的 insets 处理避免了不必要的布局重算——错误处理 insets 会导致 `measure()` 和 `layout()` 被触发多次。
 
-[已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16#edge-to-edge]
-
 ### elegantTextHeight → 废弃
 
 Android 16 废弃了 `elegantTextHeight` 属性，在 targetSdkVersion 36+ 上该属性被忽略。如果你的布局依赖这个属性来控制文本高度，需要测试在 Android 16 上的实际显示效果。
-
-[已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16]
 
 ## targetSdkVersion 升级的性能影响
 
@@ -479,8 +414,6 @@ Android 16 废弃了 `elegantTextHeight` 属性，在 targetSdkVersion 36+ 上�
 - `windowOptOutEdgeToEdgeEnforcement` 被移除：处理 WindowInsets。
 - `elegantTextHeight` 被废弃：检查文本布局。
 - Intent 重定向保护增强：检查是否有通过 `PendingIntent` 或 `Intent` 传递组件名的代码。
-
-[已验证: 官方文档, 各版本 behavior-changes 页面]
 
 ## 在 Perfetto 中的表现
 
@@ -527,7 +460,7 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 
 ### "ProfilingManager 能替代 adb 抓取 Perfetto"
 
-不能完全替代。`ProfilingManager` 目前支持的 trace 类型有限（system trace、heap dump、stack sample），而且采集范围主要由系统控制。对于需要精细配置的 Perfetto 抓取（如自定义 data source、特定的 buffer size），`adb perfetto` 仍然是不可替代的。`ProfilingManager` 的优势在于**线上**和**自动触发**，不是开发阶段的替代品。
+不能完全替代。`ProfilingManager` 目前支持的 trace 类型有限（system trace、heap dump、stack sample），而且采集范围主要由系统控制。对于需要精细配置的 Perfetto 抓取（自定义 data source、特定 buffer size），`adb perfetto` 仍然不可替代。`ProfilingManager` 的优势在于**线上**和**自动触发**，不是开发阶段的替代品。
 
 ## 参考资料
 
