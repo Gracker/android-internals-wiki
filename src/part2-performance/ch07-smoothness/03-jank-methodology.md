@@ -66,7 +66,7 @@ last_task9_at: '2026-05-13T02:51:35+08:00'
 last_task9_audit: '2026-05-25'
 task9_review_notes: '2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1 / P2 1。 | 2026-05-13 02:51 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。'
 last_task6_at: '2026-05-05T11:05:00+08:00'
-last_task6_audit: '2026-06-09'
+last_task6_audit: '2026-06-11'
 review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。'
 ---
 
