@@ -595,7 +595,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-11T05:40:13.080011",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-11T08:52:03.034872+08:00",
+      "completed_by": "openclaw-task2b-main",
+      "completion_reason": "[Task2B 素材注入] 文章覆盖 usesCleartextTraffic弃用/CT默认开启/localhost保护，与 04-network-security-tls-performance.md 直接关联。已追加到参考资料小节。"
     },
     {
       "section": "12",
@@ -615,7 +618,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-06-11T05:40:13.080020",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-11T08:52:03.034872+08:00",
+      "completed_by": "openclaw-task2b-main",
+      "completion_reason": "[Task2B 素材注入] 文章覆盖运营商数据限速查询/本地网络权限，与 02-network-performance.md 直接关联。已追加到参考资料小节。"
     },
     {
       "section": "14.2",
