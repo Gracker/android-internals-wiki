@@ -27,22 +27,23 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-task6_result: pass-light-edit
+task6_result: needs-rework
 last_task6_audit: "2026-06-12"
-task2b_result: fixed-lite
-task2b_state: fixed
-pipeline_stage: task6_pending
+last_task6_at: "2026-06-12"
+task2b_result: 
+task2b_state: pending
+pipeline_stage: task2b_pending
 last_task2b_lite_at: "2026-06-12"
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-06-12"
 reviewed_by: "openclaw-task6"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-25T00:20:00+08:00"
 task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。 | 2026-05-25 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；版本边界已收窄到 Android 13-16，Task6 pass 且 queue 无 pending，自动晋升 finalized。"
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-17-audit.md"
