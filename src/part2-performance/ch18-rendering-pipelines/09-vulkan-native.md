@@ -59,6 +59,8 @@ last_task9_audit: "2026-06-06"
 last_task9_autofix_at: "2026-06-06"
 last_task9_audit_log: "logs/deep-review/2026-06-06-22-audit.md"
 task6_reviewed_date: "2026-06-07"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-11
 ---
 
 # 18.9 Vulkan 原生渲染管线
@@ -325,7 +327,7 @@ vkCmdPipelineBarrier(
 
 ## Presentation Mode
 
-Vulkan 规范定义多种 Presentation Mode，但 Android native WSI 暴露给 `ANativeWindow` surface 的集合更窄。本节按 Android native WSI 的实际返回集合理解这些 mode。
+Vulkan 规范定义多种 Presentation Mode，但 Android native WSI 对 `ANativeWindow` surface 实际开放的 mode 更少。本节按 Android native WSI 的实际返回集合理解这些 mode。
 
 | Mode | 行为 | Android native WSI 边界 | 适用判断 |
 |:---|:---|:---|:---|
@@ -555,13 +557,7 @@ App 侧继续使用原生 `libvulkan` + Swappy，SurfaceFlinger 这层在 Androi
 | `REThreaded::primeCache` | 着色器预热任务（SCHED_OTHER） |
 | `unref_semaphore` 回调 | GPU 完成后 Skia 触发的清理回调 |
 
----
 
-<!-- AIW-源码调研-2026-06-07 -->
-
-> **本次源码调研出处**：`DeepResearch/2026-06-07-android-17-gpu-render-pipeline-vulkan-graphite.md`
-> **反哺编辑**（openclaw）：在 ch18.9 末尾新增 18.9.8 子节，描述 Android 17 阶段 Skia Graphite 后端、RenderEngineThreaded 调度模型、VulkanInterface 单例，扩展 `applicable_versions` 至 Android 17。
-> **可信度**：medium（main 分支源码锚点；android-17.0.0_r1 标签分支未发布）
 
 ---
 
@@ -574,9 +570,6 @@ App 侧继续使用原生 `libvulkan` + Swappy，SurfaceFlinger 这层在 Androi
 
 ## 延伸阅读
 
-### Android 17 GPU 渲染管线：Skia Graphite 后端与 Vulkan 性能优化（方向性参考）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-gpu-render-pipeline-vulkan-graphite.md
-- 类型：DeepResearch 调研结果
-- 摘要：AOSP main 分支 SurfaceFlinger RenderEngine 层引入 Skia Graphite 作为新 GPU 后端，新增 GraphiteVkRenderEngine 实现。Graphite 用 Recording + BackendSemaphore 的录制-提交分离模型替代 Ganesh 的即时命令模式，配合 RenderEngineThreaded 异步任务队列(SCHED_FIFO:2)构成录制/提交线程分离的新执行模型。⚠️ 该代码仅存在于 main 分支，尚未进入 Android 17 已发布 tag。
-- 注入时间：2026-06-09
-- 价值：Graphite 是 AOSP 图形栈近五年最重大架构变更，作为 §18.9 的延伸方向参考，提前建立 Skia Ganesh→Graphite 迁移认知
+### Android 17 GPU 渲染管线：Skia Graphite 后端与 Vulkan 性能优化
+
+AOSP main 分支 SurfaceFlinger RenderEngine 层引入 Skia Graphite 作为新 GPU 后端，新增 GraphiteVkRenderEngine 实现。Graphite 用 Recording + BackendSemaphore 的录制-提交分离模型替代 Ganesh 的即时命令模式，配合 RenderEngineThreaded 异步任务队列（SCHED_FIFO:2）构成录制/提交线程分离的新执行模型。⚠️ 该代码仅存在于 main 分支，尚未进入 Android 17 已发布 tag。详见 DeepResearch 调研结果。

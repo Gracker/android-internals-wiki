@@ -342,3 +342,24 @@ APM SDK 对 Binder 异常的归因通常分三层：
 - 注入时间：2026-06-09
 - 价值：把 §20.17 的"异常现象"与 §1.4 注入块的"队列机制"建立显式引用，便于读者交叉查阅
 - 关联 DeepResearch：`DeepResearch/2026-06-09-android17-binder-transaction-queue-frozen-async-arch.md`
+
+
+### 源码级补充：Android 17 Binder 事务队列优化机制（2026-06-11 调研）
+
+<!-- AIW-源码调研-2026-06-11-01 -->
+
+承接 §20.17 末尾"交叉引用"块，补充 Binder 事务队列**调度与优先级**层面的源码级细节（**完整调研见 `DeepResearch/2026-06-11-android17-binder-transaction-queue-optimization.md`**）：
+
+- **三层 todo 队列**（`kernel/common/drivers/android/binder.c` android17-6.18_r1, `binder_proc_transaction` l.3012-3128）：目标空闲线程 → `thread->todo`；目标无空闲线程且非 oneway → `proc->todo`；oneway 且目标无空闲 → `node->async_todo`（**避免污染 sync 路径**）。入队时检查 `thread->process_todo` 防止重复唤醒。
+- **线程选择 = FIFO**（`binder_select_thread_ilocked` l.617-628）：直接取 `proc->waiting_threads` 队首。**没有优先级感知**。`max_threads=15`（ProcessState.cpp:55）由 `BR_SPAWN_LOOPER` 路径动态扩张，system_server 承载 50+ 服务时易打满——是端侧 AI 应用高频跨服务调用延迟累积的根因。
+- **Deferred TRANSACTION_COMPLETE**（binder.c:3994-4007）：sync 事务把 caller 侧的 `BR_TRANSACTION_COMPLETE` 挂到 `thread->deferred_work`，等 target 回 `BR_REPLY` 时合并返回。**省一次 kernel ↔ userspace 切换**——Perfetto trace 中表现为 `BINDER transaction` 后立即出现 target `Java onTransact`，无 `IPCThreadState waiting for reply` 间隙。
+- **Android 17 新增 vendor hook**：`binder_do_set_priority` 头部新增 `trace_android_vh_binder_skip_set_priority`（a17 binder.c:724-728），让 SOC 厂商可在自家调度体系下完全跳过内核优先级继承。`t->is_async` / `t->is_reply` 取代 `t->need_reply` 显式区分事务类型。
+- **TF_UPDATE_TXN supersede**（binder.c:2960-2998）：frozen 期间 oneway 累积时，同 `code + pid + target_node` 的旧事务可被新事务替换。**frozen 期间省下 N-1 次解冻时的 onTransact 与 binder_alloc 释放**——降低 §20.4 ANR 治理中的解冻 ANR 风险。
+- **BR_ONEWAY_SPAM_SUSPECT 判定**（binder.c:5083-5085）：所有 libbinder 进程默认开启（`DEFAULT_ENABLE_ONEWAY_SPAM_DETECTION=1`），是 §20.17 "oneway 性能陷阱" 的诊断信号。
+
+- 注入时间：2026-06-11
+- 价值：把 §20.17 异常体系与底层 "todo 队列 + 优先级 + deferred 优化" 建立显式源码对应；端侧 AI 应用调 IPC 时可据此定位"为什么频繁卡顿"
+- 关联 DeepResearch：`DeepResearch/2026-06-11-android17-binder-transaction-queue-optimization.md`
+- 一手源码：`kernel/common/drivers/android/binder.c` (android17-6.18_r1, 7460 行) + `frameworks/native/libs/binder/ProcessState.cpp` + `IPCThreadState.cpp`
+- 对比锚点：a17 vs a16 binder.c `diff -u` 共 288 行变更，最显著新增为 `binder_pick.c/h`（Rust/C 后端解耦）、`binder_devices_lock` 自旋锁、`guard(mutex)` scoped guard
+

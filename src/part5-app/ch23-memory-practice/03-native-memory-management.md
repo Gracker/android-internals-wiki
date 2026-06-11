@@ -51,6 +51,8 @@ last_task9_audit: "2026-06-08"
 last_task9_review_log: logs/deep-review/2026-06-08-03-audit.md
 task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 源码锚点补充已写入 suggestions.md。 | 2026-06-08 Task9 idle audit 03:20:auto-fixed。P0 1 / P1 0 / P2 1; 修正 malloc_debug wrap.<APP> 示例缺少嵌套引号的问题，并将旧 AOSP 锚点降到 android-16.0.0_r1；回到 Task6 复审。"
 task2b_result: fixed
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-11
 ---
 
 # Native 内存管理与优化
@@ -82,7 +84,7 @@ task2b_result: fixed
 
 Java Heap 没有持续增长，不代表进程内存安全。使用 JNI、音视频 SDK、地图 SDK、游戏引擎、图片库、加密库的应用，Native Heap、匿名 `mmap`、共享库映射和图形缓冲都可能把 PSS 推高，进而触发后台保活变差、前台卡顿、低内存杀进程，甚至 native crash。
 
-本节面向应用侧排查：先把 Native 内存拆成能观察的几类，再选择 heapprofd、malloc_debug、ASan、HWASan、GWP-ASan、MTE 等工具定位问题。底层内存模型详见 4.1、4.2 节；工具细节详见 14.3 节。[结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
+本节面向应用侧排查：先把 Native 内存拆成能观察的几类，再选择 heapprofd、malloc_debug、ASan、HWASan、GWP-ASan、MTE 等工具定位问题。底层内存模型详见 4.1、4.2 节；工具细节详见 14.3 节。
 
 ## Native 内存由哪些部分组成
 
@@ -180,7 +182,7 @@ ASan / HWASan 偏测试构建，GWP-ASan 和 MTE 更适合在较低开销下扩�
 [已验证: 官方文档, https://developer.android.com/ndk/guides/gwp-asan]
 [已验证: 官方文档, https://developer.android.com/ndk/guides/arm-mte]
 
-## SO 库内存优化从三个口径入手
+## SO 库内存优化从三个维度入手
 
 SO 库相关内存要拆成装载成本、运行时分配和可写脏页。三者对应不同动作。
 
@@ -223,7 +225,7 @@ SO 库相关内存要拆成装载成本、运行时分配和可写脏页。三�
 
 Android 应用通常不直接选择系统 allocator，但 allocator 会影响碎片率、释放回收、错误检测和 `smaps` 命名。排查时关注现象，不要把问题写成“换 allocator 就能解决”。
 
-Scudo 的设计目标是提高 native heap 对越界、use-after-free、double free 等问题的抵抗能力，并在内存映射名称中留下 `[anon:scudo:*]` 一类线索。jemalloc 更强调通用分配性能和碎片控制。不同 Android 版本、设备配置和进程状态下，系统默认 allocator 与安全开关可能不同，应用侧结论要以设备上的 `smaps`、系统属性和 crash tombstone 为准。
+Scudo 的设计目标是在 native heap 层面更好地检测越界、use-after-free、double free 等内存错误，并在内存映射名称中留下 `[anon:scudo:*]` 一类线索。jemalloc 更强调通用分配性能和碎片控制。不同 Android 版本、设备配置和进程状态下，系统默认 allocator 与安全开关可能不同，应用侧结论要以设备上的 `smaps`、系统属性和 crash tombstone 为准。
 
 [已验证: 官方文档, https://source.android.com/devices/tech/debug/scudo]
 [待验证: 不同厂商 Android 14-16 user 版本默认 allocator 与安全开关清单]
@@ -241,7 +243,7 @@ Scudo 的设计目标是提高 native heap 对越界、use-after-free、double f
 ## 参考资料
 
 - [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+-
 - [已验证: 官方文档, Debug native memory use, https://source.android.com/docs/core/tests/debug/native-memory]
 - [已验证: 官方文档, Perfetto Native Heap Profiler, https://perfetto.dev/docs/data-sources/native-heap-profiler]
 - [已验证: 官方文档, Memory error debugging and mitigation, https://developer.android.com/ndk/guides/memory-debug]

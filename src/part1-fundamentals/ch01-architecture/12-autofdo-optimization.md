@@ -60,6 +60,8 @@ last_task6_at: "2026-05-19T16:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-19-16-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-19-17-deep-review.md"
 task9_review_notes: "2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；AutoFDO kernel profile 命令链、GKI 分支路径、android15/android16 数据口径复核通过；模块化 AutoFDO Android17 段落仅作为 P3 roadmap 口径收紧建议记录。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-11
 ---
 
 # 1.12 AutoFDO 反馈导向编译优化
@@ -220,7 +222,7 @@ Google 采用了"保守策略"：profile 中没有覆盖到的函数（冷函数
 
 ### 与 dex2oat 的关系
 
-这里最容易混的是“谁决定编什么”和“谁自己被编得更好”。
+容易混淆的是“谁决定编什么”和“谁自己被编得更好”。
 
 Baseline Profiles 和 `speed-profile` 解决的是前者。App 安装或后台 dexopt 时，ART 根据 profile 决定哪些 Java/Kotlin 方法值得做 AOT 编译，重点是**编译范围**。这一层发生在 `dex2oat` 处理 DEX / OAT 的时候。这部分内容我们已经在 [1.7 ART 编译管线](07-art-compilation.md) 里展开过。
 
@@ -282,7 +284,7 @@ AutoFDO 解决的是后者。它不告诉 ART “哪些 Java 方法要编译”�
 
 ### 系统级集成
 
-这里要先把两类对象分开。Android 12 起，Google 已经在 userspace / native binary 上使用 AutoFDO；Android 15 和 Android 16 则把同样的思路推进到 GKI 内核。读 AOSP 时最容易犯的错，就是把不同 GKI 分支的 profile 目录写成同一路径。
+这里要先区分两类对象。Android 12 起，Google 已经在 userspace / native binary 上使用 AutoFDO；Android 15 和 Android 16 则把同样的思路推进到 GKI 内核。读 AOSP 时最容易犯的错，就是把不同 GKI 分支的 profile 目录写成同一路径。
 
 | 方向 | 版本 / 分支 | 主要对象 | AOSP 验证锚点 |
 |------|-------------|----------|---------------|
@@ -305,7 +307,7 @@ userspace 这一层不是抽象描述。AOSP 里已经有 `hwui`、`libartbase`�
 
 对于直接使用 GKI 的 OEM，内核 AutoFDO 的基础收益会跟着 Google 维护的 profile 一起进入构建流程。真正需要自己处理的，主要是 vendor module 和自研内核这两类额外目标。
 
-在动手之前，我们先确认四个前置条件：
+在动手之前，先确认四个前置条件：
 
 - 设备是 ARM64，并且具备 Coresight 分支追踪能力；较早的平台常见 ETM，新一些 ARMv9 平台则是 ETE + TRBE。
 - 构建版本至少是 `userdebug` / `eng`，并能 `adb root`，否则 ETM 采集往往拿不到完整数据。
