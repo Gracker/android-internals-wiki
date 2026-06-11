@@ -89,7 +89,110 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-12T06:08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-12-06-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-12-06-review.md",
+    "completed_reason": "fixed: 删除重复扩展节（主正文已充分覆盖三队列机制；扩展节基于main分支无release tag）",
+    "completed_at": "2026-06-12T07:05:00+08:00",
+    "completed_by": "task2b-main"
+  },
+  {
+    "section": "23.7",
+    "section_title": "内存监控与线上治理",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android14-memory-tracking-apis-leak-detection.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 14 高精度内存跟踪 API 与泄漏检测增强机制 — 分析 Android 14 setWatchHeapLimit PSS 阈值自动 dump Hprof 机制、ApplicationExitInfo 新增 REASON_FREEZER/REASON_",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-12T06:15:38.474889+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.11",
+    "section_title": "Battery Historian 与功耗分析工具",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android15-battery-historian-power-metrics-integration.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 15 Battery Historian 与功耗指标深度集成机制 — Android 15 功耗归因统一收敛到 BatteryStatsManager.getBatteryUsageStats API，5 个 Flag 控制归因粒度（含历史回放 POWER_MODEL ",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-12T06:15:38.474889+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.4",
+    "section_title": "Binder IPC 机制与性能影响",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-binder-transaction-queue-optimization.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 Binder 事务队列优化与高频 IPC 性能提升 — Android 17 Binder 驱动三层 todo 队列（thread/proc/node.async_todo）详解，优先级继承 binder_transaction_priority 防反转机",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-12T06:15:38.474889+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.2",
+    "section_title": "Simpleperf",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 Simpleperf 多进程 IPC 性能与跨进程数据整合 — Simpleperf 三层生产者-消费者架构：RecordReadThread 用无锁环形 buffer + pipe2 解耦 kernel mmap buffer、MapRecordThread 持",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-12T06:15:38.474889+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "4.2",
+    "section_title": "Linux 内核内存管理",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-linux-kernel-lru-dead-folios-preemptive-free.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Linux 内核 LRU 锁竞争优化：dead folio 预回收（Meta patch） — Meta 工程师提交的 Linux 内核 mm/swap.c patch，通过 folio_ref_freeze() 在 drain 前剥离 dead folio，将「加锁加入 LRU → 加锁删除」",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-12T06:15:38.474889+08:00",
+    "status": "pending"
   }
 ]
