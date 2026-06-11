@@ -50,6 +50,7 @@ task9_reviewed_date: "2026-05-19"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task6_at: "2026-05-19T08:16:46+08:00"
+last_task6_audit: "2026-06-11"
 last_task6_review_log: logs/review/2026-05-19-08-review.md
 last_task9_at: "2026-05-19T08:27:59+08:00"
 last_task9_review_log: logs/deep-review/2026-05-19-08-deep-review.md
