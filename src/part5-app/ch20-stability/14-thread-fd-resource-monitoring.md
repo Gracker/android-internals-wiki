@@ -9,8 +9,8 @@ related_chapters: ["20.5", "20.7", "26.2", "26.5", "14.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
 gap_source: "参考书素材 + research-gaps + AOSP/官方文档对照"
-last_verified: "2026-05-23"
-last_verified_against: "AOSP android-16.0.0_r1 / AOSP main 搜索结果 / Android Developers API reference"
+last_verified: "2026-06-13"
+last_verified_against: "AOSP android-16.0.0_r1 / Android Developers API reference"
 confidence: medium
 sources:
   - type: blog
@@ -20,17 +20,17 @@ sources:
   - type: blog
     path: "Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md"
   - type: aosp
-    path: "https://android.googlesource.com/platform/libcore/+/refs/heads/main/ojluni/src/main/java/java/lang/Thread.java"
+    path: "https://android.googlesource.com/platform/libcore/+/refs/tags/android-16.0.0_r1/ojluni/src/main/java/java/lang/Thread.java"
   - type: aosp
-    path: "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/native/java_lang_Thread.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/runtime/native/java_lang_Thread.cc"
   - type: aosp
-    path: "https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/private/bionic_fortify.h"
+    path: "https://android.googlesource.com/platform/bionic/+/refs/tags/android-16.0.0_r1/libc/private/bionic_fortify.h"
   - type: official
     path: "https://developer.android.com/reference/java/io/FileDescriptor"
   - type: official
     path: "https://developer.android.com/ndk/reference/group/file-descriptor"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 last_task2a_at: "2026-05-23T03:09:00+08:00"
 section: "20.14"
 task9_state: "reviewed"
@@ -40,10 +40,13 @@ task6_result: "pass-light-edit"
 last_task6_at: "2026-05-23T04:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-23-04-review.md"
 task6_review_notes: "2026-05-23 Task6 first review: pass-light-edit。L1/L2 小修 2 处（frontmatter 补 section/chapter，outline 禁用词替换），无回炉项；进入 Task9 技术审查。"
-task9_result: "pass-tech-review"
-last_task9_at: "2026-05-23T04:36:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-23-04-deep-review.md"
-task9_review_notes: "2026-05-23 Task9 deep review: no P0/P1; P2 建议 3 处已写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_result: "auto-fixed"
+last_task9_at: "2026-06-13T05:21:00+08:00"
+task2b_state: "fixed"
+last_task9_audit: "2026-06-13"
+last_task9_autofix_at: "2026-06-13"
+last_task9_review_log: "logs/deep-review/2026-06-13-05-audit.md"
+task9_review_notes: "2026-06-13 Task9 idle audit: auto-fixed AOSP main anchors to android-16.0.0_r1; Android 17 tag unavailable during audit, no P0/P1 queue item."
 ---
 
 # 20.14 线程与 FD 资源监控治理
@@ -106,7 +109,7 @@ task9_review_notes: "2026-05-23 Task9 deep review: no P0/P1; P2 建议 3 处已�
 
 `Thread.getAllStackTraces()` 返回所有存活线程到栈数组的映射。AOSP `java.lang.Thread` 的 Android 实现会先从 `ThreadGroup.systemThreadGroup.activeCount()` 估算线程数，再枚举系统线程组并逐个调用 `getStackTrace()`。它适合低频采样，适合在资源阈值触发、Crash 前置采样或线上诊断开关打开时执行；不适合在高频路径里持续运行。
 
-[已验证: AOSP main, libcore/ojluni/src/main/java/java/lang/Thread.java, `Thread.getAllStackTraces()`]
+[已验证: AOSP android-16.0.0_r1, libcore/ojluni/src/main/java/java/lang/Thread.java, `Thread.getAllStackTraces()`]
 [已验证: 官方文档, developer.android.com/reference/java/lang/Thread#getAllStackTraces()]
 
 这段示意代码只表达采集字段。线上实现应当把调用频率、线程数阈值和上传采样率放到远程配置里。
@@ -142,7 +145,7 @@ fun collectThreadSnapshot(): List<ThreadSnapshotItem> {
 
 `new Thread()` 和 `new Thread(Runnable)` 在 AOSP `Thread.java` 中会生成 `Thread-` 加递增数字的默认名称；带 `String name` 的构造函数才会写入业务可识别的名称。匿名线程治理的入口应前移到创建阶段，给线程留下来源，避免崩溃后只能靠线程名猜测模块。
 
-[已验证: AOSP main, libcore/ojluni/src/main/java/java/lang/Thread.java, `Thread()` / `Thread(Runnable)` / `Thread(String name)`]
+[已验证: AOSP android-16.0.0_r1, libcore/ojluni/src/main/java/java/lang/Thread.java, `Thread()` / `Thread(Runnable)` / `Thread(String name)`]
 
 推荐按可控程度分三层处理：
 
@@ -178,7 +181,7 @@ fun buildThreadName(className: String, methodName: String): String {
 
 插桩落到生产前，要处理四个边界：R8 混淆后类名是否还能定位模块、三方库是否允许改写、增量编译缓存是否污染、动态加载代码是否绕过构建期处理。现代 AGP 中旧 Transform API 已退场，新插件应走 Android Gradle Plugin instrumentation / ASM visitor 能力；这部分需要按项目 AGP 版本验证接入方式。[待验证: AGP 8.x instrumentation API 在目标工程中的接入细节]
 
-native 线程也要单独处理。Java `Thread.start()` 在 ART 里会进入 `Thread_nativeCreate()`，随后调用 `Thread::CreateNativeThread()`；纯 native 侧的 `pthread_create()` 不一定经过 Java 命名体系。对 native SDK，可通过统一线程创建封装、SDK 接入规范或灰度 hook 记录创建堆栈。[已验证: AOSP main, art/runtime/native/java_lang_Thread.cc, `Thread_nativeCreate()`]
+native 线程也要单独处理。Java `Thread.start()` 在 ART 里会进入 `Thread_nativeCreate()`，随后调用 `Thread::CreateNativeThread()`；纯 native 侧的 `pthread_create()` 不一定经过 Java 命名体系。对 native SDK，可通过统一线程创建封装、SDK 接入规范或灰度 hook 记录创建堆栈。[已验证: AOSP android-16.0.0_r1, art/runtime/native/java_lang_Thread.cc, `Thread_nativeCreate()`]
 
 ## FD 快照：从 `/proc/$pid/fd` 建立类型分布
 
@@ -265,7 +268,7 @@ Android NDK 提供 `AFileDescriptor_create()`、`AFileDescriptor_getFd()`、`AFi
 | ANR 伴随 Binder 线程池耗尽 | 线程池等待、同步调用堆积 | `traces.txt`、Binder 线程状态、业务请求量 | 20.4 / 26.5 处理 ANR 证据包 |
 | 日志、图片、数据库异常集中出现 | 文件或 mmap 相关 FD 泄漏 | FD 类型分布、路径聚合、模块版本 | 本节定位泄漏来源，20.7 处理降级 |
 
-bionic `__check_fd_set()` 会在 fd 小于 0、fd 大于等于 `FD_SETSIZE`、`fd_set` 空间不足时触发 FORTIFY fatal。这里的 `FD_SETSIZE` 是 `select` / `fd_set` 使用边界，不等同于进程可打开 FD 的总上限。把它写成“FD 总数超过 1024 就必崩”会误导排查；准确说法是：某个 fd 值进入 `FD_SET` 时超出 `fd_set` 可表达范围，bionic fortify 触发 abort。[已验证: AOSP main, bionic/libc/private/bionic_fortify.h, `__check_fd_set()`]
+bionic `__check_fd_set()` 会在 fd 小于 0、fd 大于等于 `FD_SETSIZE`、`fd_set` 空间不足时触发 FORTIFY fatal。这里的 `FD_SETSIZE` 是 `select` / `fd_set` 使用边界，不等同于进程可打开 FD 的总上限。把它写成“FD 总数超过 1024 就必崩”会误导排查；准确说法是：某个 fd 值进入 `FD_SET` 时超出 `fd_set` 可表达范围，bionic fortify 触发 abort。[已验证: AOSP android-16.0.0_r1, bionic/libc/private/bionic_fortify.h, `__check_fd_set()`]
 
 [结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
 [交叉引用: 详见 20.3、20.4、20.5、20.7、26.2、26.5 节]
@@ -310,7 +313,7 @@ Crash 当下只写最小文件，上传、符号化、聚合和告警放到 26.2
 
 两处内容需要在后续 Task9 或实机验证中继续补证：
 
-- `FD_SET` 触发路径：当前已验证 AOSP main 的 bionic FORTIFY 检查，但不同厂商 libc、目标 SDK、老设备 `select` 使用方式可能存在差异。线上结论要同时看 tombstone、设备系统版本和触发库。
+- `FD_SET` 触发路径：当前已验证 AOSP android-16.0.0_r1 的 bionic FORTIFY 检查，但不同厂商 libc、目标 SDK、老设备 `select` 使用方式可能存在差异。线上结论要同时看 tombstone、设备系统版本和触发库。
 - AGP 插桩接入：线程命名插桩的字节码规则已经明确，但 AGP 8.x instrumentation API、R8 混淆、增量编译和三方库处理需要在目标工程里验证。
 
 [待验证: 厂商 libc / 目标 SDK 对 `FD_SET` 触发路径的影响]
