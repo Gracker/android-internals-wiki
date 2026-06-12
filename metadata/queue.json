@@ -237,5 +237,185 @@
     "created": "2026-06-12",
     "status": "completed",
     "completed_at": "2026-06-12T16:52:52.182670+08:00"
+  },
+  {
+    "section": "04-memory.0",
+    "section_title": "内存管理",
+    "priority": 60,
+    "reason": "URL 不可访问（404），跳过",
+    "material_paths": [
+      "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少 30%。新调度器采用机器学习模型预测用户行为，优先启动高频使用的应用。同时，系统资源分配更加智能，...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-13T05:34:34.257796",
+    "status": "completed"
+  },
+  {
+    "section": "16-aosp.0",
+    "section_title": "AOSP与源码",
+    "priority": 60,
+    "reason": "已在 ch01-architecture.md 参考资料中，跳过",
+    "material_paths": [
+      "https://juejin.cn/post/7614897667961143347"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "什么 AI 写 Android 最好用？官方做了一个基准测试排名 — 谷歌发布 Android Bench 基准测试，衡量大模型在 Android 开发中的表现，Gemini-3.1 pro 排名第一，测试涵盖代码生成、Bug 修复、UI构建等场景...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-13T05:34:34.257807",
+    "status": "completed"
+  },
+  {
+    "section": "04-memory.0",
+    "section_title": "内存管理",
+    "priority": 60,
+    "reason": "与章节内容无关（文章讲 MessageQueue 重写，不属于内存管理主题），跳过",
+    "material_paths": [
+      "https://juejin.cn/post/7612812060795093002"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android17 为什么重写 MessageQueue — Android 17 重写 MessageQueue 为 DeliQueue，采用 Treiber Stack+CAS 无锁架构解决多线程锁竞争，真实案例显示优化前主线程等锁可达 18ms 导致掉帧...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-13T05:34:34.257812",
+    "status": "completed"
+  },
+  {
+    "section": "01-aritecture.0",
+    "section_title": "Android架构与启动流程",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7610233341305389099"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — 梳理 Android 17 需要适配的关键变更（API level、行为变更），并解读 2026 年谷歌开发者认证与侧载限制政策时间线...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-13T05:34:34.257815",
+    "status": "pending"
+  },
+  {
+    "section": "03-input.0",
+    "section_title": "输入系统",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7638897090145075246"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "为什么 Android 不用接口做 Activity 通信？ — 对比 iOS 协议式回调，深入剖析 Android 选择 Intent/Bundle/ViewModel 而非接口回调做 Activity 通信的架构原因...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-13T05:34:34.257818",
+    "status": "pending"
+  },
+  {
+    "section": "2.10",
+    "section_title": "GPU 渲染深入 — Vulkan 异步编译 Pacing",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：Skia Graphite PipelineManager 三步查找去重算法 + DrawPass 双 buffer 瘦身 + ANGLE L1 dirty bit 跳转表 + ShareGroupVk 2ms 节流，建议补充到 GPU 渲染章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-gpu-vulkan-async-compile-pipeline-manager-pacing.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "GPU Vulkan 异步编译 Pacing — Skia Graphite PipelineManager createHandle 三步查找（findTask→findGraphicsPipeline→findOrCreateTask）、DrawPass 双 buffer 切换（fPipelineDescs→handle→fFullPipelines）、ANGLE 44-bit dirty bit 跳转表、ShareGroupVk 2ms 单 in-flight 节流",
+        "suggestion": "判断是否适合补充为 §2.10 GPU 渲染深入章节的参考资料或正文背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-13T06:12:05.620345",
+    "status": "pending"
+  },
+  {
+    "section": "2.10",
+    "section_title": "GPU 渲染深入 — 四级 PSO 缓存与异步编译",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：Skia Graphite PipelineCreationTask 异步任务 + DrawPass 三步生命周期 + ANGLE 四级 PSO 缓存（L0-L3），建议补充到 GPU 渲染章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android17-gpu-driver-pipeline-async-compilation.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "GPU 驱动渲染管线异步编译 — Skia Graphite PipelineCreationTask（std::variant<task,pipeline> + atomic<bool> fCompleted + SkSpinlock）、DrawPass snap→insertRecording 两阶段、ANGLE L0(active PSO)/L1(transition table)/L2(hash map)/L3(driver VkPipelineCache) 四级缓存",
+        "suggestion": "判断是否适合补充为 §2.10 GPU 渲染深入章节的参考资料，与 06-13 pacing 报告互补"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-13T06:12:05.620345",
+    "status": "pending"
+  },
+  {
+    "section": "14.2",
+    "section_title": "Simpleperf 多进程 IPC 性能与跨进程数据整合",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：Simpleperf RecordReadThread 无锁环形 buffer + MapRecordThread + ProfileSession 三层生产者-消费者 IPC + cmd_merge 九项一致性校验，建议补充到 Simpleperf 章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Simpleperf 多进程 IPC 数据整合 — RecordReadThread lock-free ring buffer（10MB/5MB 双阈值）+ pipe2(O_CLOEXEC) cmd/data 双 pipe + ProfileSession vfork 嵌入 + cmd_merge 九项校验 + zstd 流式压缩 + RECORD_SPLIT 分包",
+        "suggestion": "判断是否适合补充为 §14.2 Simpleperf 章节的参考资料或正文背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-13T06:12:05.620345",
+    "status": "pending"
+  },
+  {
+    "section": "13.2",
+    "section_title": "Perfetto TraceKit APM 工具链 — Data Source 演进与端侧三件套",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：Perfetto data_source_config Next id 从 123→138 演进 + cpu_per_uid/app_wakelocks/kernel_wakelocks APM 三件套 + traced_probes 权限升级，建议补充到 Perfetto 章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Perfetto APM 工具链 — Android 14→16 累计新增 15 个 data source（Next id 123→138）、APM 端侧三件套（cpu_per_uid_config/app_wakelock_config/kernel_wakelocks_config）、traced_probes readtracefs 权限升级、traced.rc perfetto_trace_on_boot 新增",
+        "suggestion": "判断是否适合补充为 §13.2 Trace 抓取章节的参考资料或 APM 拓展阅读"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-13T06:12:05.620345",
+    "status": "pending"
   }
 ]
