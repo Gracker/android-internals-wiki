@@ -56,8 +56,20 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
   title: Content provider ANR entry
   date: android-16.0.0_r1
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+- type: aosp
+  path: frameworks/base/core/java/android/content/ContentResolver.java
+  title: ContentProvider timeout constants
+  date: android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/content/ContentProviderClient.java
+  title: Provider not-responding detector
+  date: android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+  title: ContentProvider timeout messages
+  date: android-16.0.0_r1
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -66,19 +78,20 @@ section: '9.7'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_result: rework-fixed
 last_verified: '2026-04-14'
 last_verified_against: AOSP android-16.0.0_r1
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-04"
-last_task9_at: "2026-06-04T22:20:00+08:00"
+task9_reviewed_date: 2026-06-13
+last_task9_at: "2026-06-13T01:20:00+08:00"
 review_notes: "2026-05-18 task9 idle audit: needs-rework。P1 2(ContentProvider timeout/source semantics;Android 15+ 16KB page-size version boundary),P2 1(InputDispatcher Android 8-10 path note);已写入 queue/suggestions,等待 Task2B 回炉。 | 2026-05-23 task6 idle audit: queue 中仍有 pending 回炉项,撤销 finalized 状态,保持 task2b_pending。"
 auto_promoted: true
-last_task9_audit: "2026-05-18"
+last_task9_autofix_at: 2026-06-13
+last_task9_audit: 2026-06-13
 last_task6_audit: "2026-06-04"
-last_task9_review_log: "logs/deep-review/2026-05-18-21-audit.md"
-task9_review_notes: "2026-06-04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Provider timeout 源码锚点建议已写入 suggestions。自动晋升 finalized。"
+last_task9_review_log: logs/deep-review/2026-06-13-01-audit.md
+task9_review_notes: "2026-06-13 Task9 idle audit auto-fix: 修正 ContentProvider WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG 与 setDetectNotResponding 路径混用。P0 1(auto-fixed) / P1 0 / P2 0；回到 Task6 复审。"
 finalized_date: "2026-06-04"
 finalized_by: openclaw-task9-auto-promote
 ---
@@ -118,9 +131,9 @@ ANR 报告把责任先落在"超时的进程"上,这一步只够告诉我们谁�
 **⚠️ 重要源码锚点修正**：ContentProvider 实际存在两条正交的超时路径，当前表格表述不够精确：
 
 - **路径 1：Provider 进程 publish 超时（10s）**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（10s × HW_TIMEOUT_MULTIPLIER）在 `attachApplicationLocked` 中发送 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57`，超时后调用 `ContentProviderHelper.processContentProviderPublishTimedOutLocked` → `removeProcessLocked` + `REASON_INITIALIZATION_FAILURE`（杀进程，**不弹 ANR 对话框**，Perfetto 中只见 `am_proc_died` 无 `am_anr`）。
-- **路径 2：Provider call hang 检测**：仅当系统服务调用 `ContentProviderClient.setDetectNotResponding()` 时开启，实际入口是 `ContentProviderHelper.appNotRespondingViaProvider` → `AnrHelper.appNotResponding` → `AppNotRespondingDialog`（**真 ANR**，会弹框，Perfetto 标记 `am_anr`）。
+- **路径 2：Provider call hang 检测**：仅当具备系统权限的调用方配置 `ContentProviderClient.setDetectNotResponding()` 时开启，`ContentProviderClient.NotRespondingRunnable` 会经 `ContentResolver.appNotRespondingViaProvider()` 进入 `ContentProviderHelper.appNotRespondingViaProvider` → `AnrHelper.appNotResponding`（**真 ANR**；是否弹框取决于后续 ANR 策略）。
 
-**常量定义位置修正**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 等常量定义在 `ContentResolver`（l.786-806），非 `ContentProviderHelper`。两条路径的消息码分别为 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57` 和 `WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG=73`（`ActivityManagerService.java:1551,1561`）。
+**常量定义位置修正**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 等常量定义在 `ContentResolver`（android-16 为 l.788-807），非 `ContentProviderHelper`。`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57` 用于 provider publish 超时；`WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG=73` 只用于等待 provider publish 状态超时，不是 `setDetectNotResponding()` 的 call-hang ANR 消息。
 
 **排查入口区分**：若遇到 "Unable to launch app ... for provider ... launching app became null" 或 `REASON_INITIALIZATION_FAILURE`，应查路径 1；若遇到 ANR 对话框且 subject 包含 "ContentProvider not responding"，应查路径 2 + `setDetectNotResponding` 的调用方。
 <!-- AIW-源码调研-2026-06-06 -->
