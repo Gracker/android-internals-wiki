@@ -213,3 +213,202 @@ utf-8
 
 ### 总结
 连续 82 轮无合格缺口。管线堵点在 Task 6/Task 9 复审（78 ready-for-review）。
+---
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 17:05
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 426 章节，0 draft（296 finalized + 79 ready-for-review + 51 附录/前言无 status）
+- 连续 89 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. source-index.json 未映射素材
+- 109 条记录中 8 条 score≥16 且 mapped_chapters 为空
+- 但全部 8 条经手动验证均有对应章节（18.23/19.18/13.x/16.9/2.27/14.23/4.14 + 1 条元数据文件）
+- 属于 source-index.json 映射字段缺失，非知识缺口
+
+### 4. daily-info 2026-06-12 热点扫描
+- Android 17 新调度器 → ch05 已覆盖
+- Linux 6.10 碎片整理 → 非 Android 内核主线
+- MessageQueue 重写 → 1.13 已覆盖
+- 桌面端 → 2.20/22.14 已覆盖
+- Android Studio Panda → ch14 已覆盖
+- AI/Gemini → 非 AIW 范畴
+
+### 5. research-gaps.md 需求
+- 2 条盲区（Battery Historian + Memory Tracking API）均映射到 §26.3/§23.7
+- 评分 < 14，不构成新章节候选
+
+### 6. Clippings 三本参考书对照
+- 稳定性书（20 篇）→ ch20 全部 17 小节已覆盖
+- 性能优化书（20 篇）→ ch05/ch08/ch12/ch21/ch23/ch25 全部已覆盖
+- 线上疑难问题书（59 篇）→ 全部主题已有对应章节
+
+### 总结
+全书 426 小节、0 draft、79 ready-for-review、296 finalized。经过 6 个方向全面扫描，本轮未发现评分 ≥ 14 的知识缺口。管线堵点在 Task 6 复审环节（79 个 ready-for-review 待处理），非内容缺口。
+
+---
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 18:05
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 375 章节，0 draft（296 finalized + 79 ready-for-review + 51 附录/前言无 status）
+- 连续 90 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. source-index.json 未映射素材
+- 109 条记录中所有 high/medium 素材已有对应章节映射
+- 无评分 ≥ 16 且 mapped_chapters 为空的素材
+
+### 4. daily-info 2026-06-12 热点扫描
+- Android 17 新调度器 → ch05 已覆盖
+- Linux 6.10 碎片整理 → 非 Android 内核主线
+- MessageQueue 重写 → 1.13 已覆盖
+- 桌面端 → 2.20/22.14 已覆盖
+- Android Studio Panda → ch14 已覆盖
+- AI/Gemini → 非 AIW 范畴
+
+### 5. research-gaps.md 需求
+- 2 条盲区（Battery Historian + Memory Tracking API）均映射到 §26.3/§23.7
+- 评分 < 14，不构成新章节候选
+
+### 6. Clippings 三本参考书对照
+- 稳定性书 → ch20 全部 17 小节已覆盖
+- 性能优化书 → ch05/ch08/ch12/ch21/ch23/ch25 全部已覆盖
+- 线上疑难问题书 → 全部主题已有对应章节
+
+### 总结
+全书 375 小节、0 draft、79 ready-for-review、296 finalized。经过 6 个方向全面扫描，本轮未发现评分 ≥ 14 的知识缺口。管线堵点在 Task 6 复审环节（79 个 ready-for-review 待处理），非内容缺口。
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 19:04
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 426 章节，0 draft（193 finalized + 78 ready-for-review + 155 其他状态/附录/前言）
+- 连续 91 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. DeepResearch 最新产出增量扫描（6 月 12 日 17:55 新增 1 篇）
+- android17-system-server-binder-ipc-startup-optimization → §20.17/§1.2/§1.4/§1.8 已覆盖
+
+### 4. source-index.json 未映射素材
+- 8 条 score ≥ 16 且 mapped_chapters 为空
+- 但全部 8 条经手动验证均有对应已 finalized 章节（§18.23/§19.18/§13.17/§16.9/§2.27/§14.23/§4.14 + 1 条选题元数据文件）
+- 属于 source-index.json 映射字段缺失，非知识缺口
+
+### 5. daily-info 2026-06-12 热点扫描
+- Android 17 新调度器 → ch05 已覆盖
+- Linux 6.10 碎片整理 → 非 Android 内核主线（ch04.10 已覆盖内存规整）
+- MessageQueue 重写 → 1.13 已覆盖
+- 桌面端 → 2.20/22.14 已覆盖
+- Android Studio Panda/Quail → ch14 已覆盖
+- AI/Gemini → 非 AIW 范畴
+- Homebrew 6.0 → 非 AIW 范畴
+
+### 6. research-gaps.md 需求
+- 2 条盲区（Android 15 Battery Historian + Android 14 Memory Tracking API）均映射到 §26.3/§23.7
+- 评分 < 14，不构成新章节候选
+
+### 7. Clippings 三本参考书对照
+- 稳定性书（15 篇）→ ch20 全部 17 小节已覆盖
+- 性能优化书（16 篇）→ ch05/ch08/ch12/ch21/ch23/ch25 全部已覆盖
+- 线上疑难问题书（59 篇）→ 全部主题已有对应章节
+
+### 总结
+全书 426 小节、0 draft、78 ready-for-review、193 finalized。经过 7 个方向全面扫描，本轮未发现评分 ≥ 14 的知识缺口。管线堵点在 Task 6 复审环节（78 个 ready-for-review 待处理），非内容缺口。
+
+
+## DeepSeek 中文读者终审建议 — 2026-06-12
+
+**章节**: src/part5-app/ch26-observability/05-online-troubleshooting.md
+
+**问题**: 章末有两个以 `<!-- AIW-源码调研-... -->` 标记注入的 StatsD 源码调研块,合计约 200 行,内容为 raw research notes(含完整调用链、源码行号、五类本地缓存表等),与本章"线上问题排查方法论"的写作风格、深度和读者预期完全不匹配。
+
+**具体表现**:
+1. 两个注入块带 HTML 注释标记 `<!-- AIW-源码调研-2026-06-07 -->` 和 `<!-- AIW-源码调研-2026-06-08 -->`,属于编辑过程语言,暴露给读者影响阅读体验。
+2. 内容密度远高于本章其他部分——完整 binder 调用链、源码行号、五类缓存表——读起来像是 AOSP 源码调研笔记直接贴进正文,缺少面向中文读者的加工。
+3. 出现在"小结"之后,结构上像硬塞进来的附录,打乱了本章的收束节奏。
+4. 标题称"Android 17 的 StatsD 系统",但源码注释自述基于 android-16.0.0_r4,且本章 applicable_versions 仅到 Android 16。
+
+**建议**:
+- 如果 StatsD 原子数据确实属于 26.5 的排障方法论范畴,应至少精简到 10-15 行,去掉调用链、源码行号和缓存表细节,只保留对排障有直接指导意义的结论。
+- 如果不属于本章,考虑移至 Part 1 或独立的源码调研附录章节。
+- 两种情况下,`<!-- AIW-源码调研-... -->` 标记都应清除,内容按本章风格改写。
+- 标题中的"Android 17"与正文自述的 android-16.0.0_r4 矛盾,需统一口径。
+
+**来源**: DeepSeek 中文读者终审 #872d00b4
+
+
+---
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 21:08
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 426 章节，0 draft（297 finalized + 78 ready-for-review + 51 附录/索引/README）
+- 连续 N 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. DeepResearch 最新产出增量扫描（6 月 12 日 12:00 后新增 4 篇）
+- android17-gpu-driver-pipeline-async-compilation → §2.10 已映射
+- android17-system-server-binder-ipc-startup-optimization → §20.17 / §1.2 已映射
+- android17-looper-sync-barrier-async-priority-wakeup → §1.13 已映射
+- android14-cold-start-warmup-mechanism → ch21 已映射
+
+### 4. daily-info 热点扫描（6 月 12 日）
+- Android 17 MessageQueue 重写 → ch01.13 已覆盖
+- Android Studio Panda → ch14 已覆盖
+- Android 17 桌面端 → ch02.20 / ch22.14 已覆盖
+- AI 写 Android 基准测试 → 非性能优化范畴，跳过
+- Homebrew 6.0 → 非性能优化范畴，跳过
+
+### 5. source-index.json 未映射素材
+- 109 篇索引，0 篇高质量未映射素材
+
+### 6. 现有章节扩展点
+- 54 处 🔸 扩展标记属于 Task 2B 范畴（内容深化），非新章节候选
+
+### 总结
+全书 426 小节、0 draft、78 ready-for-review、297 finalized。经过增量扫描（DeepResearch 12:00 后新产出 + daily-info 今日热点），本轮未发现评分 ≥ 14 的知识缺口。管线堵点仍在 Task 6 复审环节。
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 22:07
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 426 章节，0 draft（297 finalized + 78 ready-for-review + 51 unknown/preface/appendix）
+- 连续 88 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. progress.json 与 frontmatter 一致性校验
+- progress.json 中 10 条 stale draft 条目，实际 frontmatter 均为 ready-for-review/finalized
+- 以 frontmatter 实际状态为准
+
+### 4. 增量素材扫描
+- DeepResearch：最新 4 篇（gpu-driver-pipeline-async-compilation, android14-memory-tracking, battery-historian-power-metrics, batteryusagestats-statsd）均已映射到现有章节
+- daily-info 2026-06-12 热点：Android 17 调度器→ch05 已覆盖，MessageQueue 重写→§1.13 已覆盖，桌面模式→§2.20/22.14 已覆盖，AI 工具→非 AIW 范畴
+- research-gaps 2 条（Android 15 Battery Historian + Android 14 内存跟踪 API）均映射到现有章节，不足独立成节
+
+### 5. Clippings 三本参考书对照（延续上轮结论）
+- 稳定性书 15 篇 → 全部已覆盖
+- 性能优化书 16 篇 → 全部已覆盖
+- 线上疑难问题书 59 篇 → 全部已覆盖
+
+### 总结
+全书 426 小节、0 draft、297 finalized + 78 ready-for-review。知识库高度饱和，连续 88 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节，非内容缺口。
+
