@@ -61,8 +61,8 @@ last_task9_at: "2026-05-19T17:20:00+08:00"
 last_task6_at: "2026-05-19T16:12:00+08:00"
 last_task6_audit: '2026-06-07'
 last_task6_audit_result: l1-light-edit
-last_task9_audit: "2026-05-19"
-last_task9_audit_result: "p0-source-accuracy"
+last_task9_audit: "2026-06-13"
+last_task9_audit_result: "pass-idle-audit"
 last_task9_review_log: "logs/deep-review/2026-05-19-17-deep-review.md"
 task9_review_notes: "2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；FrameTimeline、Binder stdlib、process_stats 内存 Counter、sched_blocked_reason 与 linux.block_io 口径复核通过。"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
