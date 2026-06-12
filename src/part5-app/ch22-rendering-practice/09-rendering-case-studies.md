@@ -50,6 +50,8 @@ task2b_result: "fixed"
 last_task6_at: "2026-05-19T08:16:46+08:00"
 last_task6_audit: "2026-06-11"
 last_task6_review_log: logs/review/2026-05-19-08-review.md
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-12
 ---
 
 
@@ -84,7 +86,7 @@ last_task6_review_log: logs/review/2026-05-19-08-review.md
 
 Android 官方把慢帧定义为渲染时间超过设备刷新周期的帧。60Hz 设备的单帧预算约 16ms，90Hz 约 11ms，120Hz 约 8ms；超过 700ms 的帧会被 Android vitals 单独归为 frozen frame。线上排查不能只看平均帧率，至少要看 P90/P95/P99、慢帧比例、frozen frame 数量和用户场景标签。`JankStats` 适合端侧带场景标签采集，`Macrobenchmark` 的 `FrameTimingMetric` 适合回归测试，Perfetto 负责解释为什么某几帧变慢。[已验证: 官方文档, developer.android.com/topic/performance/vitals/render][已验证: 官方文档, developer.android.com/topic/performance/jankstats][已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
 
-参考书给出的结构线索是「CPU 时间、缓存、任务调度」三类因素：减少主线程工作量、把可提前准备的数据放到空闲期、把 CPU 型任务和 I/O 型任务分池处理、避免后台任务抢主线程和 RenderThread 的时间片。这里借用这个分析顺序，具体建议重新对照 Android 官方文档和已有章节组织，不搬运参考书原文。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md][结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md][结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md][结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+排查渲染卡顿，通常按「CPU 时间、缓存、任务调度」三类因素切入：减少主线程工作量、把可提前准备的数据放到空闲期、把 CPU 型任务和 I/O 型任务分池处理、避免后台任务抢主线程和 RenderThread 的时间片。具体建议对照 Android 官方文档和已有章节组织。
 
 ## 列表滑动卡顿优化实战
 
@@ -191,7 +193,7 @@ Compose 页面还要补两类测试：一类是 Macrobenchmark 滚动测试，�
 - 首帧后立即补齐: 推荐卡片、价格细节、轻量状态。用主线程空闲期或协程调度，分批提交 UI 更新，避免一次性插入大量节点。
 - 滑动到附近才加载: 评论、相关推荐、富文本、WebView、视频播放器。用占位高度稳定滚动位置，进入可见范围前再预取数据和资源。
 
-这个拆分来自参考书中的 CPU 空闲期、I/O 分离和线程池分型思路，但页面侧必须加上帧指标约束：每批 UI 更新都要能在目标设备刷新预算内完成。60Hz 设备给 16ms 预算，120Hz 设备只有 8ms 左右；如果团队只在 60Hz 设备上验收，线上高刷设备仍可能暴露慢帧。[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md][已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
+按 CPU 空闲期、I/O 分离和线程池分型来拆解页面任务，同时加上帧指标约束：每批 UI 更新都要能在目标设备刷新预算内完成。60Hz 设备给 16ms 预算，120Hz 设备只有 8ms 左右；如果团队只在 60Hz 设备上验收，线上高刷设备仍可能暴露慢帧。[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
 下面的流程适合作为复杂页面排查单：
 

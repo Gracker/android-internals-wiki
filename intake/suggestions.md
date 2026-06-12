@@ -145,3 +145,71 @@ utf-8
 
 ### 总结
 全书 426 小节、0 draft、79 ready-for-review、296 finalized。经过 7 个方向全面扫描，本轮未发现评分 ≥ 14 的知识缺口。管线堵点在 Task 6 复审环节（79 个 ready-for-review 待处理），非内容缺口。
+
+---
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 15:04
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 426 章节，0 draft（297 finalized + 78 ready-for-review + 51 附录/前言无 status）
+- 连续 88 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. DeepResearch 最新产出增量扫描（6 月 12 日 14:54 新增 1 篇）
+- android14-cold-start-warmup-mechanism（Zygote lazy preload / ApplicationLoaders ClassLoader 缓存 / 预热策略）→ §21.1 / §21.3 / §21.4 / §1.11 已覆盖
+
+### 4. source-index.json 未映射素材
+- 109 条记录中 104 条无 target_file，但全部为旧素材/增量扫描记录
+- 无评分 ≥ 16 且 mapped_chapters 为空的素材
+
+### 5. daily-info 2026-06-12 热点扫描
+- Android 17 新调度器 → ch05 已覆盖
+- Linux 6.10 碎片整理 → 非 Android 内核主线
+- Homebrew 6.0 → 非 AIW 范畴
+- AI/Android Bench → 非 AIW 范畴
+- AI 写 Android → 非 AIW 范畴
+
+### 6. research-gaps.md 需求
+- 2 条盲区（Battery Historian + Memory Tracking API）均映射到 §26.3/§23.7
+- 评分 < 14，不构成新章节候选
+
+### 7. Clippings 三本参考书对照
+- 稳定性书（15+篇）→ ch20 全部 17 小节已覆盖
+- 性能优化书（16 篇）→ ch05/ch08/ch12/ch21/ch23/ch25 全部已覆盖
+- 线上疑难问题书（59 篇）→ 全部主题已有对应章节
+
+### 总结
+全书 426 小节、0 draft、78 ready-for-review、297 finalized。经过 7 个方向全面扫描，本轮未发现评分 ≥ 14 的知识缺口。管线堵点在 Task 6 复审环节（78 个 ready-for-review 待处理），非内容缺口。
+
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 16:12
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 426 章节，0 draft（193 finalized + 78 ready-for-review）
+- 连续 82 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. DeepResearch 最新产出（6 月 12 日新增 2 篇）
+- android14-cold-start-warmup-mechanism → §21.1/21.3/21.4 已覆盖
+- android17-gpu-driver-pipeline-async-compilation → §2.10 已 finalized
+
+### 4. daily-info 热点（2026-06-12）
+- Android 17 新调度器 → ch21 已覆盖
+- Linux 6.10 内存碎片 → ch04.10 已覆盖
+- MessageQueue 重写 → ch01.13 已覆盖
+- Android Studio Panda → ch14 已覆盖
+- Android 17 适配/桌面端 → ch16.5/ch02.20 已覆盖
+
+### 5. source-index.json / Clippings / AOSP / 章节扩展点
+- 与上轮（2026-06-12 11:04）结论一致，无新增
+
+### 总结
+连续 82 轮无合格缺口。管线堵点在 Task 6/Task 9 复审（78 ready-for-review）。

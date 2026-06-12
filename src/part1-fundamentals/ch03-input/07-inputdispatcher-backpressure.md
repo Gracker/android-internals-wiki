@@ -48,7 +48,7 @@ last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-12-07-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
+last_deepseek_cn_review_at: 2026-06-12
 task6_reviewed_date: "2026-06-12"
 ---
 
@@ -180,11 +180,10 @@ InputDispatcher 的 waitQueue 是症状入口，不是根因结论。一个输�
 
 ### 游戏/高频触控场景下的反压放大
 
-高频触控会放大队列现象。240Hz / 480Hz 报点下，单位时间进入系统的 MOVE 更多；如果 App 主线程一段时间不读 channel，`waitQueue` 的增长更快，`WOULD_BLOCK` 更容易出现。反过来，只要 App 侧能按帧批量消费，InputDispatcher 侧未必成为瓶颈，延迟瓶颈可能出现在 `InputConsumer` batching、`Choreographer`、渲染线程或 GPU 队列。
+高频触控会放大队列现象。240Hz / 480Hz 报点下，单位时间进入系统的 MOVE 更多；如果 App 主线程一段时间不读 channel，`waitQueue` 的增长更快，`WOULD_BLOCK` 更容易出现。反过来，只要 App 侧能按帧批量消费，InputDispatcher 侧通常不会成为瓶颈——延迟更可能出现在 `InputConsumer` batching、`Choreographer`、渲染线程或 GPU 队列。
 
 游戏场景还有一个分析边界：公开 Android API 没有提供“把某个 App 的 InputDispatcher 优先级提高”这样的能力。`View.requestUnbufferedDispatch()` 影响的是 App 侧 MotionEvent batching 行为，不等于提升触控 IC 报点率，也不等于绕过 InputDispatcher 的 `waitQueue` / ANR 机制。厂商 ROM 可能有游戏模式或触控调度定制，但没有公开源码或实机 trace 时，只能标为 OEM 差异，不能写成 AOSP 通用行为。
 
-> [来源: intake/daily-info/2026-05-16.md]
 > [待验证: 不同厂商游戏模式对 InputDispatcher 线程优先级、触控报点和事件过滤策略的实机差异]
 
 ### 厂商输入调度策略与可验证边界
@@ -203,5 +202,5 @@ InputDispatcher 反压由 channel 可写性、`outboundQueue`、`waitQueue`、`m
 - AOSP docs: `frameworks/native/services/inputflinger/docs/anr.md`
 - Android Developers: [ANRs](https://developer.android.com/topic/performance/vitals/anr)
 - Android Developers: [dumpsys](https://developer.android.com/tools/dumpsys)
-- [来源: obsidian/DeepResearch/2026-05-10-inputdispatcher-backpressure.md]
-- [来源: intake/daily-info/2026-05-16.md]
+- [DeepResearch: 2026-05-10-inputdispatcher-backpressure]
+-

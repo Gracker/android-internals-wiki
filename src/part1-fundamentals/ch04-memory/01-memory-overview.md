@@ -87,7 +87,7 @@ last_task9_review_log: 'logs/deep-review/2026-06-12-12-deep-review.md'
 last_task6_audit: '2026-06-12'
 task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-12 11:20 Task9 idle audit auto-fix: 修正 16 KB page 小对象表述、HPROF 小节 Perfetto Java heap dump 版本边界与旧的 traced Java heap dump 采集命令，改为 Android 11+ `android.java_hprof` / Android 14+ OOME trigger / `adb shell perfetto -c` 配置；回到 Task6 复审。 | 2026-06-12 12:26 Task9 deep-review auto-fix: 修正 `am dumpheap -g` 注释，按 AOSP android-16.0.0_r1 ActivityManagerShellCommand/ActivityThread 口径明确为 dump 前强制 GC；回到 Task6 复审。'
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-12
 ---
 
 
@@ -395,7 +395,7 @@ Locked:             0 kB
 
 smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 `dumpsys meminfo` 的分类无法定位具体原因时，逐项查看 smaps 来找到那个异常大的映射区域。**跨设备比对 `smaps`、Perfetto 内存曲线或 native 崩溃现场时，用 `adb shell getconf PAGE_SIZE` 或 `smaps` 里的页大小字段确认当前页大小，再解释页粒度带来的页内碎片、页表开销和 PSS / RSS 跳变。
 
-16 KB 页环境下页内碎片会增加：被触碰并提交的匿名页、`mmap` 页面和 allocator span 会按 16 KB 粒度进入 RSS/PSS；多个小对象仍可能共享同一页，不能把“1 KB 对象”理解成必然独占 16 KB。全系统总 PSS 通常上涨 5% 到 10%。这是架构层面的正常开销，不代表应用存在泄漏。跨版本或跨设备对比 PSS 基线时，需要先确认页大小，再判断增量是否在合理范围内。
+16 KB 页环境下的页内碎片比 4 KB 页更明显：被触碰的匿名页和 `mmap` 页面都按 16 KB 粒度进入 RSS/PSS。但多个小对象仍然可能落在同一页内，不能把“1 KB 对象”理解成必然独占 16 KB。全系统 PSS 通常会因此上涨 5% 到 10%，这是架构层面的正常开销，不等同于泄漏。跨版本或跨设备对比 PSS 基线时，先确认页大小，再判断增量是否在合理范围。
 
 读取 `/proc/<pid>/smaps` 需要足够的权限（通常是 root，或者目标 App 是 debuggable 的），且读取操作本身有性能开销（内核需要遍历所有页表），不建议在高频循环中调用。
 
@@ -403,7 +403,7 @@ smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 
 
 ## dumpsys meminfo：日常内存分析的主力工具
 
-<!-- AIW-源码调研-2026-06-06 -->
+在深入 `dumpsys meminfo` 各项输出之前，先看与之配合的堆转储工具。HPROF 堆转储和 `dumpsys meminfo` 分别回答两类问题：前者告诉你"堆里有哪些对象、谁引用了谁"，后者告诉你"进程各部分用了多少物理内存"。
 
 ### HPROF 堆转储分析
 
@@ -423,7 +423,9 @@ adb shell am dumpheap -n <pid> /data/local/tmp/native-heap.hprof
 adb shell am dumpheap -m <pid> /data/local/tmp/malloc-info.txt
 ```
 
-#### 三层调用架构
+#### 调用链路
+
+`am dumpheap` 的调用经过三层：
 
 1. **Shell 命令** → ActivityManagerService.dumpHeap()
    - 需要高危权限 `SET_ACTIVITY_WATCHER`
