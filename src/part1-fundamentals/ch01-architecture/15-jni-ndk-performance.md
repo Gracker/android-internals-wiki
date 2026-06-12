@@ -68,6 +68,7 @@ last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
 task9_review_notes: "2026-05-20 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 3；P2 为 CriticalNative public API 边界、16KB page size NDK 版本口径、Propeller 待验证段。已自动同步 pipeline_stage=ready-to-publish。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
+task6_state: "reviewed"
 ---
 
 # 1.15 JNI/NDK 性能优化

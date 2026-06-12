@@ -56,6 +56,7 @@ task9_review_notes: "2026-05-18 13:20 Task9 闲时抽检:needs-rework。P0 1 / P
 last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
+task6_state: "reviewed"
 ---
 
 # 14.7 ProfilingManager

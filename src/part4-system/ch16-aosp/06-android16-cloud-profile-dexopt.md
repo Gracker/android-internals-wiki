@@ -53,6 +53,8 @@ finalized_date: "2026-05-16"
 finalized_by: "openclaw-task9"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
+task6_state: "reviewed"
+task9_state: "reviewed"
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化

@@ -55,6 +55,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-23-08-audit.md"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
+task6_state: "reviewed"
 ---
 # 性能优化的术、道、器
 

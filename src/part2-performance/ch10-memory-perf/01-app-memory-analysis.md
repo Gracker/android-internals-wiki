@@ -50,6 +50,7 @@ last_task9_audit: "2026-05-19"
 last_task9_review_log: "logs/deep-review/2026-05-19-20-deep-review.md"
 review_notes: "2026-05-19 task9 idle audit: needs-rework。P0 1(malloc debug 命令/选项无效),P1 2(ASan API 版本;PSS/largeHeap 指标口径),P2 1(Bitmap API10 历史口径);已写入 queue/suggestions,等待 Task2B 回炉。"
 task9_review_notes: "2026-05-19 20 Task9 复核: needs-rework。P0 1: malloc debug 仍把 package 写入 libc.debug.malloc.program；P1 1: PSS 仍与 memoryClass/largeHeap 预算混用且单位口径错误；P2 2: Bitmap 历史分段、Native OOM 表述需补正。"
+task9_state: "reviewed"
 ---
 
 # App 内存分析

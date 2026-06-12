@@ -56,6 +56,7 @@ sources:
     path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
+task9_state: "reviewed"
 ---
 
 # 5.13 移动端 LLM 推理的 DVFS 与能效边界
