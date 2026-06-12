@@ -72,20 +72,20 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '10.1'
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-12'
-last_task9_at: '2026-06-12T11:20:00+08:00'
+last_task9_at: '2026-06-12T12:26:16+08:00'
 last_task9_audit: '2026-06-12'
 last_task9_autofix_at: '2026-06-12'
-last_task9_review_log: 'logs/deep-review/2026-06-12-11-audit.md'
+last_task9_review_log: 'logs/deep-review/2026-06-12-12-deep-review.md'
 last_task6_audit: '2026-06-12'
-task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-12 11:20 Task9 idle audit auto-fix: 修正 16 KB page 小对象表述、HPROF 小节 Perfetto Java heap dump 版本边界与旧的 traced Java heap dump 采集命令，改为 Android 11+ `android.java_hprof` / Android 14+ OOME trigger / `adb shell perfetto -c` 配置；回到 Task6 复审。'
+task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-12 11:20 Task9 idle audit auto-fix: 修正 16 KB page 小对象表述、HPROF 小节 Perfetto Java heap dump 版本边界与旧的 traced Java heap dump 采集命令，改为 Android 11+ `android.java_hprof` / Android 14+ OOME trigger / `adb shell perfetto -c` 配置；回到 Task6 复审。 | 2026-06-12 12:26 Task9 deep-review auto-fix: 修正 `am dumpheap -g` 注释，按 AOSP android-16.0.0_r1 ActivityManagerShellCommand/ActivityThread 口径明确为 dump 前强制 GC；回到 Task6 复审。'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
 ---
@@ -413,7 +413,7 @@ Android 的堆转储要分两条路径看：`am dumpheap` 通过 ActivityManager
 
 基础命令用于触发堆转储：
 ```bash
-# Java 堆 dump（包含 GC 数据）
+# Java 堆 dump（dump 前强制触发 GC）
 adb shell am dumpheap -g <pid> /data/local/tmp/heap.hprof
 
 # Native 堆 dump
