@@ -35,7 +35,8 @@ p2: 2
 last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-04-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-24-07-deep-review.md"
-auto_promoted: true---
+auto_promoted: true
+---
 
 <!-- outline-start -->
 
