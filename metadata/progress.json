@@ -2693,12 +2693,11 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-03T04:50:00+08:00",
+  "last_task2b_at": "2026-06-12T16:53:15+08:00",
   "last_task2b_sections": [
-    "22.7",
-    "24.8"
+    "14.8"
   ],
-  "last_task2b_action": "frontmatter backlog fallback rework",
+  "last_task2b_action": "task9 audit rework - APA system profiler boundary update",
   "sections": {
     "17.2": {
       "status": "finalized",
@@ -5761,15 +5760,15 @@
     },
     "14.8": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-19T17:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-19-17-review.md",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "last_task9_audit": "2026-06-12",
       "last_task9_audit_log": "logs/deep-review/2026-06-12-16-audit.md",
       "queue_entry": "task9-audit-20260612-14.8-apa-system-profiler-boundary"
@@ -12564,6 +12563,15 @@
       "returned_to": "task6_pending",
       "source_log": "logs/deep-review/2026-05-14-13-deep-review.md",
       "log": "logs/rework/2026-06-03-04-task2b-main.md"
+    },
+    {
+      "section": "14.8",
+      "chapter": "14.8",
+      "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
+      "result": "fixed",
+      "at": "2026-06-12T16:53:15+08:00",
+      "source": "task9-deep-tech-review",
+      "issues": "P1: APA system profiling tool boundary update; P3: Perfetto proto source anchor"
     }
   ],
   "last_task2b_completed_at": "2026-06-03T04:50:00+08:00",
@@ -12895,8 +12903,7 @@
     }
   ],
   "last_task2b_files": [
-    "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
-    "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
+    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
   ],
   "last_task2b_completed_entry": {
     "at": "2026-06-03T04:50:00+08:00",
@@ -13593,8 +13600,8 @@
     "13.2",
     "8.6"
   ],
-  "last_task2b_section": "24.8",
-  "last_task2b_file": "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
+  "last_task2b_section": "14.8",
+  "last_task2b_file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
   "last_task2b_result": "fixed-returned-to-task6",
   "section_6_1": {
     "section": "6.1",
@@ -14283,7 +14290,7 @@
     "task9_state": "pending",
     "task6_review_notes": "2026-06-10 15:20 Task6 revisiting round 3：pass-light-edit。L1/L2扫描全部通过（禁用词0命中、高频词0命中、AI套话0命中）；已有内容写作质量合格；4个已知占位节（14.2.7/9/11/12）仍通过queue追踪；新增3条技术准确性确认项到已有pending queue entry；Task9 needs-rework未变，送Task9复审。"
   },
-  "last_task2b_main_at": "2026-06-10T20:55:11+08:00",
-  "last_task2b_main_chapter": "14.2",
+  "last_task2b_main_at": "2026-06-12T16:53:15+08:00",
+  "last_task2b_main_chapter": "14.8",
   "last_task2b_main_status": "fixed"
 }
