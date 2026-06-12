@@ -56,6 +56,7 @@ last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
 task6_state: "reviewed"
+last_task6_audit: "2026-06-12"
 ---
 # 性能优化的术、道、器
 
@@ -87,7 +88,8 @@ task6_state: "reviewed"
 
 ## 为什么这一章要从「术、道、器」讲起
 
-性能问题最容易把人陷入细节。  
+性能问题最容易把人陷入细节。
+
 App 启动慢、列表滑动卡顿、ANR、功耗高，这些问题都很重要，后面也都有专门章节。但如果一上来只学"怎么抓 trace、怎么改代码、怎么调参数"，很容易出现一种很熟悉的状态：问题看过很多，方法也学了不少，换个场景还是像第一次遇到。
 
 所以第 15 章不再继续补系统细节,而是把前面那些知识重新整合成一套思维框架:遇到性能问题时,先怎么想,怎么判断轻重缓急,怎么选工具,怎么验证结果。它讲的是工程师在现场会用到的判断顺序。
@@ -341,7 +343,7 @@ Google 对性能的重视可以追溯到公司成立之初。两个经典的案�
 
 **搜索速度**:Google 发现搜索结果页生成时间每增加 0.5 秒,流量会下降 20% [已验证: 来源见 Google, Marissa Mayer, Web 2.0 Summit, 2006]。这个发现直接推动了 Google 在搜索性能上的持续投入--从服务端渲染优化到 AMP 项目的推出,背后都是「速度即用户价值」的理念。
 
-**Android Performance Patterns**:2015 年 Google 推出的这个系列视频,虽然每集只有 3-5 分钟,但覆盖了 Android 性能优化最核心的知识点:渲染性能、过度绘制、VSync、GPU 分析、内存管理。它的定位不是教具体的优化技巧,而是帮助开发者建立正确的性能意识--了解系统是怎么工作的,知道该用什么工具,该关注什么指标 [已验证: 来源见 androidperformance.com/2015/04/19/Android-Performance-Patterns/; YouTube Android Performance Patterns playlist]。
+**Android Performance Patterns**:2015 年 Google 推出的这个系列视频,虽然每集只有 3-5 分钟,但覆盖了 Android 性能优化最核心的知识点:渲染性能、过度绘制、VSync、GPU 分析、内存管理。它的定位是帮开发者建立正确的性能意识--了解系统是怎么工作的,知道该用什么工具,该关注什么指标 [已验证: 来源见 androidperformance.com/2015/04/19/Android-Performance-Patterns/; YouTube Android Performance Patterns playlist]。
 
 这种「工具 + 意识」的组合,是把性能从「事后补救」变成「开发过程中的基本素养」。Google 还通过 Play Console 的 Vitals 面板,把性能数据直接暴露给开发者,让「用户在实际设备上的体验」成为开发流程的一部分。
 
@@ -363,7 +365,7 @@ Google 对性能的重视可以追溯到公司成立之初。两个经典的案�
 
 **沟通影响力**:性能优化往往涉及多个团队--App 团队、系统团队、SDK 团队。推动优化实施需要清晰地表达问题、量化影响、说服利益相关者。
 
-Brendan Gregg 在讨论性能工程团队的价值时,特别强调了性能工程师的一个独特作用:他们的作用远不止修 bug--更重要的价值在于帮助整个团队建立性能意识和能力 [已验证: 来源见 Brendan Gregg, Performance Engineering Teams, 2025]。Netflix 的火焰图自助服务工具就是一个成功的例子--它不是一个团队关起门来优化性能,而是把性能分析的能力交给所有开发者,让每个人都能在自己的代码中找到优化机会。
+Brendan Gregg 在讨论性能工程团队的价值时,特别强调了性能工程师的一个独特作用:他们的作用远不止修 bug--更重要的价值在于帮助整个团队建立性能意识和能力 [已验证: 来源见 Brendan Gregg, Performance Engineering Teams, 2025]。Netflix 的火焰图自助服务工具就是一个成功的例子--它把性能分析的能力交给所有开发者,让每个人都能在自己的代码中找到优化机会。
 
 ## 小结
 
