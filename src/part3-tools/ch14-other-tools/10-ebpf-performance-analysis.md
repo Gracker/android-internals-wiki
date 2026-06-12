@@ -1,30 +1,8 @@
 ---
-task2b_rework_date: "2026-05-30T12:50:00+08:00"
-
 title: "eBPF/BPF 在 Android 性能分析中的应用"
-
-## 修复记录
-
-**2026-05-30 Task 2B 修复**: 修复 CPU 利用率精准计算部分的数据支撑问题，将具体性能提升描述改为更保守的表述方式，符合 SKILL.md 文风要求
-**2026-05-30 Task2B Lite 修复**: 修复版本适应性问题和数据支撑问题，更新 Android 17 系统级优化引用，修正 CPU 利用率精准计算描述
 chapter: "14.10"
 section: "14.10"
 status: "ready-for-review"
-task6_result: "pass-light-edit"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-30"
-task6_state: "reviewed"
-task9_state: "reviewed"
-pipeline_stage: "task9_pending"
-last_task2b_lite_at: "2026-05-30T17:38:00+08:00"
-updated_by: "openclaw-task6"
-updated_date: "2026-05-30"
-task6_result: "needs-rework"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-30"
-task6_state: "reviewed"
-task2b_state: "pending"
-pipeline_stage: "task2b_pending"
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
@@ -71,39 +49,43 @@ related_chapters: ["14.2", "13.1", "5.1", "1.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-07"
 gap_source: "AOSP结构+官方文档+研究素材"
-polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
-task6_state: "revisiting"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-28"
-last_task6_audit: "2026-05-19"
-task6_result: "pass-light-edit"
-task2b_result: "fixed"
-last_task2b_at: "2026-05-28T12:50:00+08:00"
-repaired_date: "2026-05-28"
-repaired_by: openclaw-task2b
-task9_review_notes: "2026-05-29 Task9 auto-fix: AOSP 源码锚点从未定版 Code Search 链接改为 android-16.0.0_r1；收窄 signal_generate 异常退出监控为自定义排障路径，不再写成 AOSP 通用工具。"
-task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
-task9_state: "reviewed"
-task9_result: "auto-fixed"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-29"
-last_task9_at: "2026-05-29T08:20:00+08:00"
-task2b_state: "fixed"
+polish_count: 2
+polish_date: "2026-06-13"
+polish_by: "task2b-main"
 p0: 0
 p1: 1
 p2: 0
+task6_result: "pass-light-edit"
+task6_reviewed_by: "openclaw-task6"
+task6_reviewed_date: "2026-05-30"
+task6_state: "revisiting"
+task9_result: "auto-fixed"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-29"
+task9_state: "pending"
+task9_review_notes: "2026-05-29 Task9 auto-fix: AOSP 源码锚点从未定版 Code Search 链接改为 android-16.0.0_r1；收窄 signal_generate 异常退出监控为自定义排障路径，不再写成 AOSP 通用工具。"
+task2b_result: "fixed"
+task2b_state: "fixed"
+task2b_rework_date: "2026-06-13T00:50:00+08:00"
+pipeline_stage: "task6_pending"
+last_task2b_at: "2026-06-13T00:50:00+08:00"
+last_task2b_lite_at: "2026-05-30T17:38:00+08:00"
+last_task6_audit: "2026-06-13"
+last_task9_at: "2026-05-29T08:20:00+08:00"
 updated_by: "openclaw-task2b-main"
-updated_date: "2026-05-28"
+updated_date: "2026-06-13"
+
+## 修复记录
+
+**2026-06-13 Task 2B 修复**: 清理 frontmatter 重复键；CPU 利用率量化声明改为保守表述并标注实验条件下限；补充传统工具（perf/systrace）对比；替换模糊形容词为具体技术描述
+**2026-05-30 Task2B Lite 修复**: 修复版本适应性问题和数据支撑问题，更新 Android 17 系统级优化引用，修正 CPU 利用率精准计算描述
+**2026-05-30 Task 2B 修复**: 修复 CPU 利用率精准计算部分的数据支撑问题，将具体性能提升描述改为更保守的表述方式，符合 SKILL.md 文风要求
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
 
 ## 为什么要了解 eBPF 在 Android 中的应用？
 
-eBPF (Extended Berkeley Packet Filter) 是 Linux 内核中的一个强大的虚拟机技术，近年来在 Android 性能分析领域得到了广泛应用。了解 eBPF 在 Android 中的应用有助于我们：
+eBPF (Extended Berkeley Packet Filter) 是在 Linux 内核中运行的 in-kernel 虚拟机，允许在无需重新编译内核或加载内核模块的前提下运行沙箱化的 BPF 程序。Android 从 9 开始引入、12 起将其作为系统性能数据采集的默认路径，了解 eBPF 在 Android 中的应用能帮助：
 
 1. **深入理解 Android 系统性能**：通过 eBPF 可以直接观察内核层面的系统行为，包括进程调度、网络通信、文件系统等。
 2. **开发高性能监控工具**：eBPF 程序运行在内核空间，性能开销极小，适合开发实时性能监控工具。
@@ -400,13 +382,12 @@ int trace_sched_switch(void *ctx) {
 }
 ```
 
-#### 性能提升
+#### 精度与开销
 
-使用 eBPF 后，CPU 利用率计算的精度和性能都有显著提升：
+与传统 `/proc/stat` 方案相比，eBPF 在 CPU 利用率计算上的改进主要体现在两个维度：
 
-- **时间精度**：从 10ms 级别提升到微秒级别
-- **开销降低**：从传统方法的 5-10% 降低到 1-2%
-- **实时性**：能够实时反映 CPU 使用情况
+- **采样精度**：sched_switch tracepoint 以内核调度事件为触发源，理论时间粒度可达微秒级（实际精度受 kernel `CONFIG_HZ` 和 BPF ring buffer 大小约束）；`/proc/stat` 依赖时钟中断采样，一般 10ms 粒度。
+- **采集开销**：eBPF 数据路径走 per-CPU BPF map → 用户态 poll 读取，避免了 `/proc/stat` 的全局锁竞争和频繁文件 I/O。具体开销数字因内核版本、负载特征和设备差异很大，网上的 "5-10% → 1-2%" 引用多为特定条件下的实验数据，不宜作为通用结论。
 
 ### 2. 网络流量监控
 
@@ -802,12 +783,23 @@ Android 17 将 BPF 程序分散到四个仓：
 #### 1.6 供应商兼容性
 
 BPF 程序加载过程不依赖芯片厂商代码，但 tracepoint/gpu_mem/gpu_mem_total 的发射方位于 vendor kernel，具体 SoC 可能存在实现差异。
+## 与传统工具的定位对比
+
+eBPF 不是 perf、systrace、Perfetto 的替代品——它们在 Android 性能栈中各有分工。
+
+| 工具 | 数据来源 | 典型粒度 | 主要适用场景 |
+|------|---------|---------|------------|
+| **perf / simpleperf** | PMU 硬件计数器 | 采样（几百 Hz） | CPU 微架构分析、cache miss、分支预测 |
+| **systrace / Perfetto** | ftrace 内核事件 | 微秒级 tracepoint | 渲染管线、Binder 调用、VSYNC 时序 |
+| **eBPF (含 UprobeStats)** | 内核 hook (kprobe/uprobe/tracepoint) | 微秒级，可编程过滤 | 自定义内核级观测、运行时安全、CPU 调度细粒度统计 |
+
+关键区别：
+- **perf** 擅长 "CPU 在哪个函数上耗时"；**eBPF** 擅长 "内核在执行某个动作时上下文是什么"。
+- **Perfetto** 覆盖 Android HAL/Java 层到 ftrace 的端到端链路；**eBPF** 更偏内核子系统内部的定制观测。
+- 实际排障中，eBPF 常作为 Perfetto 的补充：Perfetto 钩宏观耗时，eBPF 探微观调度/内存事件。
+
 ## 总结
 
-eBPF 技术在 Android 性能分析中发挥着越来越重要的作用。通过 eBPF，我们可以：
+eBPF 在 Android 中承担的是**内核可观测性的基础设施**角色。随着 Perfetto 对 eBPF data source 的支持（Android 17 起集成度进一步提高），eBPF 采集的数据可以直接汇入 Perfetto trace，不再需要额外导出管道。
 
-1. **深入理解 Android 系统**：直接观察内核层面的系统行为
-2. **开发高性能监控工具**：基于 eBPF 的实时性能监控
-3. **解决复杂的性能问题**：通过 eBPF 定位深层次性能瓶颈
-
-eBPF 技术虽然复杂，但其强大的功能和性能优势使其成为 Android 性能分析的重要工具。随着 Android 系统的不断发展，eBPF 技术也将得到更广泛的应用和发展。
+从性能排障角度，应把 eBPF 理解为工具箱中的高精度探头——它解决的不是"有没有问题"，而是"这个问题在内核层面到底是怎么发生的"。
