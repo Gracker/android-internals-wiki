@@ -611,3 +611,9 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
 ### MGLRU vs 传统双级 LRU 锁竞争差异
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md
 - 摘要：Linux 6.12 / Android common kernel MGLRU 与传统双级 LRU 的锁竞争对比。传统 LRU 每次页面引用做 `list_move()`（持 `lruvec->lru_lock`），多核时成为瓶颈；MGLRU 用 generation 编号替代 `list_move()`（`folio_update_gen()` 无锁），`lru_gen_look_around()` 批量 PTE 扫描，`evict_folios()` 持锁时间从 O(n) 降到 O(1)。含关键数据结构与调用链。
+
+
+### Linux 内核 LRU dead folio 预回收优化（Meta patch，前瞻性参考）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-linux-kernel-lru-dead-folios-preemptive-free.md
+- 摘要：Meta 工程师 JP Kobryn 提交的 mm/swap.c LRU 锁竞争优化 patch（+40/-1 行），通过 folio_ref_freeze() 在 lru_add drain 前探测并剥离 dead folio，把"加锁加入 LRU → 加锁删除"的二次锁压缩为"加锁前直接释放"。Meta 生产环境实测单台 host 节省 ~2.6M lock acquisitions/min，dead folio 比例从 6.71% 降至 0.0001%，system 级 direct reclaim 扫描 -7%、allocation stalls -5.2%、compaction stalls -12.3%。
+- ⚠️ 版本边界：此 patch 当前仍在 Linux mm-unstable 分支（-mm 树），未进入 mm-stable，**未进入 Android 17 / API 37**。仅作为 LRU 锁竞争优化的前瞻性技术参考。
