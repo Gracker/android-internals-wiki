@@ -1,7 +1,7 @@
 ---
 title: "线程与 FD 资源监控治理"
 chapter: "20"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-05-23"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [stability, thread, fd, oom, observability]
