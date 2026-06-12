@@ -709,3 +709,4 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 - 摘要：内核Binder驱动采用三层FIFO list_head结构：proc->todo(进程级)/thread->todo(线程级优先)/node->async_todo(frozen进程累积)。binder_thread_read严格先thread-local后process-wide。frozen进程下oneway事务入node->async_todo返回BR_TRANSACTION_PENDING_FROZEN，解冻时批量搬移。TF_UPDATE_TXN支持同code同pid同target旧事务替换。
 - 注入时间：2026-06-10
 - 价值：包含源码级分析（AOSP锚点），对理解框架内部机制和性能调优有直接参考意义
+- [Android 17 Binder 事务队列优化与高频 IPC 性能提升](DeepResearch/2026-06-11-android17-binder-transaction-queue-optimization.md) — 分析 Android 17 Binder 驱动三层 todo 队列（thread/proc/node.async_todo）的优先级继承 binder_transaction_priority 防反转机制、deferred TRANSACTION_COMPLETE 重叠执行优化、vendor 跳过优先级 tracehook，以及 Rust/C Binder 选择器模块化重构。

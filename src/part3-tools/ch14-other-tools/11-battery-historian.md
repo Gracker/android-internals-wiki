@@ -677,3 +677,4 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
   - §11.5 Wakelock 机制与功耗分析 — Battery Historian 可视化 Wakelock 的技术原理
   - §14.1 Android Studio Profiler — Power Profiler 是 AS Profiler 套件的一部分
   - §15.5 线上性能监控 — 线下功耗测试与线上监控的结合
+- [Android 15 Battery Historian 与功耗指标深度集成](DeepResearch/2026-06-12-android15-battery-historian-power-metrics-integration.md) — 分析 Android 15 统一功耗归因入口 BatteryStatsManager.getBatteryUsageStats、5 个 Flag 控制归因粒度（POWER_PROFILE_MODEL / INCLUDE_HISTORY / INCLUDE_POWER_MODELS / INCLUDE_PROCESS_STATE_DATA / INCLUDE_VIRTUAL_UIDS）、PowerStatsProcessor 实时功耗模型替代经验 power_profile 的演进路线。
