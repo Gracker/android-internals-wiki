@@ -3,8 +3,8 @@
   "draft": 0,
   "ready-for-review": 78,
   "finalized": 193,
-  "task9_result": "auto-fixed/pass-tech-review",
-  "task9_reviewed_date": "2026-05-29",
+  "task9_result": "pass-tech-review",
+  "task9_reviewed_date": "2026-06-12",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
@@ -2466,7 +2466,7 @@
     "l3_l4_issues": 0,
     "new_rework": false
   },
-  "task9_last_review": "2026-06-12T16:20:00+08:00",
+  "task9_last_review": "2026-06-12T18:20:00+08:00",
   "ready_to_publish": 192,
   "rework_history": [
     {
@@ -5759,19 +5759,26 @@
       "material_count": 7
     },
     "14.8": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-19T17:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-19-17-review.md",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task9_audit": "2026-06-12",
       "last_task9_audit_log": "logs/deep-review/2026-06-12-16-audit.md",
-      "queue_entry": "task9-audit-20260612-14.8-apa-system-profiler-boundary"
+      "queue_entry": "task9-audit-20260612-14.8-apa-system-profiler-boundary",
+      "title": "GPU 图形调试与分析工具",
+      "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-06-12",
+      "last_task9_at": "2026-06-12T18:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-06-12-18-deep-review.md",
+      "task9_review_summary": "pass-tech-review；queue 无 pending；自动晋升 finalized。"
     },
     "4.11": {
       "status": "finalized",
@@ -7784,59 +7791,59 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md",
   "last_task2a_processed_date": "2026-06-04",
   "task9_last_review_detail": {
-    "date": "2026-06-06",
-    "time": "19:20",
-    "reviewed_at": "2026-06-06T19:20:00+08:00",
+    "date": "2026-06-12",
+    "time": "18:20",
+    "reviewed_at": "2026-06-12T18:20:00+08:00",
     "mode": "deep-review",
     "sections": [
-      "11.2"
+      "14.8"
     ],
     "files": [
-      "src/part2-performance/ch11-power/02-app-power-optimization.md"
+      "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
     ],
-    "log": "logs/deep-review/2026-06-06-19-deep-review.md",
+    "log": "logs/deep-review/2026-06-12-18-deep-review.md",
     "p0": 0,
     "p1": 0,
     "p2": 0,
-    "p3": 1,
+    "p3": 3,
     "queue_added": 0,
     "suggestions_added": 0,
     "result": "pass-tech-review",
     "auto_promoted": [
-      "11.2"
+      "14.8"
     ],
-    "notes": "Android 16 JobScheduler quota 与 Android 17 background audio hardening 已在正文补齐；未发现 Android 18/API 38+ 越界内容。"
+    "notes": "APA/AGI/Perfetto/Sokatoa 工具边界已按 2026-05-19 官方资料复核；未发现 Android 18/API 38+ 越界内容。"
   },
-  "last_task9_review": "2026-06-06T19:20:00+08:00",
+  "last_task9_review": "2026-06-12T18:20:00+08:00",
   "last_task9_sections": [
-    "11.2"
+    "14.8"
   ],
   "last_task9_review_detail": {
-    "date": "2026-06-06",
-    "time": "19:20",
-    "reviewed_at": "2026-06-06T19:20:00+08:00",
+    "date": "2026-06-12",
+    "time": "18:20",
+    "reviewed_at": "2026-06-12T18:20:00+08:00",
     "mode": "deep-review",
     "sections": [
-      "11.2"
+      "14.8"
     ],
     "files": [
-      "src/part2-performance/ch11-power/02-app-power-optimization.md"
+      "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
     ],
-    "log": "logs/deep-review/2026-06-06-19-deep-review.md",
+    "log": "logs/deep-review/2026-06-12-18-deep-review.md",
     "p0": 0,
     "p1": 0,
     "p2": 0,
-    "p3": 1,
+    "p3": 3,
     "queue_added": 0,
     "suggestions_added": 0,
     "result": "pass-tech-review",
     "auto_promoted": [
-      "11.2"
+      "14.8"
     ],
-    "notes": "Android 16 JobScheduler quota 与 Android 17 background audio hardening 已在正文补齐；未发现 Android 18/API 38+ 越界内容。"
+    "notes": "APA/AGI/Perfetto/Sokatoa 工具边界已按 2026-05-19 官方资料复核；未发现 Android 18/API 38+ 越界内容。"
   },
   "task9_last_reviewed_files": [
-    "src/part2-performance/ch11-power/02-app-power-optimization.md"
+    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
   ],
   "total_review_files": 132,
   "last_task2a_at": "2026-06-04T22:04:00+08:00",
@@ -7874,9 +7881,9 @@
     "review_round": 2
   },
   "last_task9_reviewed_files": [
-    "src/part2-performance/ch11-power/02-app-power-optimization.md"
+    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
   ],
-  "last_task9_at": "2026-06-06T19:20:00+08:00",
+  "last_task9_at": "2026-06-12T18:20:00+08:00",
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "1.24",
@@ -8818,14 +8825,21 @@
     "14.8": {
       "title": "GPU 图形调试与分析工具",
       "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-19T17:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-19-17-review.md",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-06-12",
+      "last_task9_at": "2026-06-12T18:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-06-12-18-deep-review.md",
+      "task9_review_summary": "pass-tech-review；queue 无 pending；自动晋升 finalized。"
     },
     "4.11": {
       "status": "draft",
@@ -10094,15 +10108,15 @@
     "note": "连续 87 轮无合格缺口。0 draft 章节。"
   },
   "task9_last_sections": [
-    "11.2"
+    "14.8"
   ],
   "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
   "last_task9_files": [
-    "src/part2-performance/ch11-power/02-app-power-optimization.md"
+    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-06-06-19-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-06-12-18-deep-review.md",
   "task9_last_files": [
-    "src/part2-performance/ch11-power/02-app-power-optimization.md"
+    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
   ],
   "last_task2b_run": "2026-06-03T04:50:00+08:00",
   "task2b_sections_fixed": [
@@ -10139,7 +10153,7 @@
     "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
   "last_task2a_date": "2026-06-07",
-  "task9_last_review_summary": "11.2 App 耗电优化：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
+  "task9_last_review_summary": "14.8 GPU 图形调试与分析工具：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "task2b_history": [
     {
       "date": "2026-05-18T00:17:19.407328",
@@ -10556,7 +10570,7 @@
     "reviewed_date": "2026-06-01",
     "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
   },
-  "last_task9_review_summary": "11.2 App 耗电优化：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
+  "last_task9_review_summary": "14.8 GPU 图形调试与分析工具：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "last_task2a_gap_mining": {
     "date": "2026-06-12",
     "time": "06:08",
@@ -10790,7 +10804,7 @@
       "summary": "修复 PreferenceWriteBuffer flush 后无条件清空 pending 导致并发新增写入丢失的问题。"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-06-04-21-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-06-12-18-deep-review.md",
   "last_task6_review_log": "logs/review/2026-06-07-21-review.md",
   "section_19_09": {
     "section": "19.09",
@@ -12937,16 +12951,10 @@
     "log": "logs/rework/2026-06-03-04-task2b-main.md"
   },
   "last_task9_reviewed_sections": [
-    "26.8",
-    "9.6",
-    "18.3",
-    "18.14"
+    "14.8"
   ],
   "task9_last_reviewed_sections": [
-    "26.8",
-    "9.6",
-    "18.3",
-    "18.14"
+    "14.8"
   ],
   "section_10_3": {
     "section": "10.3",
@@ -14170,6 +14178,23 @@
       "p2": 0,
       "p3": 2,
       "log": "logs/deep-review/2026-06-07-12-deep-review.md"
+    },
+    {
+      "date": "2026-06-12",
+      "time": "18:20",
+      "sections": [
+        {
+          "section": "14.8",
+          "title": "GPU 图形调试与分析工具",
+          "result": "pass-tech-review",
+          "auto_promoted": true
+        }
+      ],
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 3,
+      "log": "logs/deep-review/2026-06-12-18-deep-review.md"
     }
   ],
   "9.9": {
