@@ -8,8 +8,8 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-19"
 reviewed_by: openclaw-task6
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36); kernel/GKI AutoFDO 覆盖 android15-6.6、android16-6.12"
-last_verified: "2026-04-20"
-last_verified_against: "Google blog 2026-03 + AOSP android16-6.12/android15-6.6 + simpleperf ETM doc + AOSP userspace afdo: true examples"
+last_verified: "2026-06-12"
+last_verified_against: "Google blog 2026-03 + AOSP branch HEAD 2026-06-12 (android16-6.12/android15-6.6) + simpleperf ETM doc + AOSP userspace afdo: true examples"
 confidence: medium
 sources:
   - type: blog
@@ -41,25 +41,26 @@ related_chapters:
   - "1.7"
   - "8.3"
   - "8.7"
-task9_reviewed_date: "2026-05-19"
+task9_reviewed_date: "2026-06-12"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-19T17:20:00+08:00"
-pipeline_stage: ready-to-publish
+last_task9_at: "2026-06-12T14:20:00+08:00"
+pipeline_stage: task6_pending
 finalized_date: "2026-05-19"
 finalized_by: openclaw-task9-auto-promote
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task2b_result: "fixed"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
 task2b_state: "fixed"
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-08"
-task9_result: pass-tech-review
-last_task9_audit: "2026-05-19"
+task9_result: auto-fixed
+last_task9_audit: "2026-06-12"
+last_task9_autofix_at: "2026-06-12"
 last_task6_at: "2026-05-19T16:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-19-16-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-19-17-deep-review.md"
-task9_review_notes: "2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；AutoFDO kernel profile 命令链、GKI 分支路径、android15/android16 数据口径复核通过；模块化 AutoFDO Android17 段落仅作为 P3 roadmap 口径收紧建议记录。"
+last_task9_review_log: "logs/deep-review/2026-06-12-14-audit.md"
+task9_review_notes: "2026-06-12 Task9 idle audit: auto-fixed android15-6.6 branch HEAD benchmark drift and Android17/module roadmap boundary; no queue entry; return to Task6. | 2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；AutoFDO kernel profile 命令链、GKI 分支路径、android15/android16 数据口径复核通过；模块化 AutoFDO Android17 段落仅作为 P3 roadmap 口径收紧建议记录。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
 ---
@@ -238,22 +239,22 @@ AutoFDO 解决的是后者。它不告诉 ART “哪些 Java 方法要编译”�
 
 ## 实测性能数据
 
-2026 年 3 月的官方 blog 没有给出“开机 2.1% / 冷启动 4.3% / 几何平均 10.5%”这一组统一口径。公开的原始 benchmark 按 GKI 分支分别放在 `android16-6.12` 和 `android15-6.6` 的 README 里，读的时候要按分支看。
+2026 年 3 月的官方 blog 没有给出“开机 2.1% / 冷启动 4.3% / 几何平均 10.5%”这一组统一口径。公开的原始 benchmark 按 GKI 分支分别放在 `android16-6.12` 和 `android15-6.6` 的 README 里；这些 branch README 会随 profile 刷新更新，下表按 2026-06-12 的 branch HEAD 记录，读的时候要按分支和日期看。
 
 | 指标 | `android16-6.12` | `android15-6.6` |
 |------|------------------|-----------------|
-| 开机时间 | **1.3%** | **1.5%** |
-| 冷启动时间 | **4.8%** | **3.0%** |
-| Binder RPC | **20.7%** | **19.5%** |
-| Binder addints | **17.0%** | **37.7%** |
-| HWBinder | **26.4%** | **11.7%** |
+| 开机时间 | **1.3%** | **1.7%** |
+| 冷启动时间 | **4.8%** | **2.9%** |
+| Binder RPC | **20.7%** | **17%** |
+| Binder addints | **17.0%** | **15.5%** |
+| HWBinder | **26.4%** | **18.9%** |
 | Bionic `syscall_mmap` | **9.3%** | **3.8%** |
 
 官方 blog 还给了 userspace native AutoFDO 的历史收益，口径是冷启动约 **4%**、开机约 **1%**。这组数字对应系统原生可执行文件和原生库，与 2026 年这次 kernel rollout 的 README 表格属于两套口径。
 
 `10.5%` 这类几何平均数字要单独看待。它更接近早期 AutoFDO 论文和大规模部署经验里的聚合指标，不属于这篇 Android kernel blog 的原始 benchmark 项。
 
-`[来源: Google 官方 blog（2026-03） + AOSP android16-6.12/android15-6.6 AutoFDO README]`
+`[来源: Google 官方 blog（2026-03） + AOSP android16-6.12/android15-6.6 AutoFDO README，branch HEAD 复核时间 2026-06-12]`
 
 这组数据适合这样解读：
 
@@ -391,9 +392,9 @@ simpleperf stat -e cycles,instructions,cache-misses,branch-misses --app com.exam
 | Android 12 | userspace native AutoFDO 已用于系统 native executable 和 native library |
 | Android 15 / `android15-6.6` | kernel AutoFDO 进入 GKI `vmlinux`，profile 路径为 `android/gki/aarch64/afdo/` |
 | Android 16 / `android16-6.12` | kernel AutoFDO 扩展到 `gki/aarch64/afdo/`，官方 blog 公布了 Boot、Cold Launch、Binder RPC、HWBinder、`syscall_mmap` 等基准数据 |
-| 后续 roadmap | 官方 blog 提到 `android17-6.18`、GKI module、vendor module 和更多构建目标；这些计划还没进入本文的已验证适用范围 |
+| 后续 roadmap | 官方 blog 提到 newer GKI versions（如 `android17-6.18`）、GKI module、vendor module 和更多构建目标；这些计划还没进入本文的已验证适用范围 |
 
-Android 17 的一个重要演进方向是 **模块化 AutoFDO**：AFDO 覆盖范围从单体 `vmlinux` 扩展到独立编译的 GKI 内核模块（`*.ko`）。vendor module 和 GKI module 可以各自拥有独立的 AFDO profile，不再依赖 `vmlinux` 全局 profile 的间接覆盖。OEM 可以针对自研模块单独采集、生成和应用 profile，粒度更细，收益更可控。
+后续 roadmap 里，模块化 AutoFDO 还只是扩展方向：官方 blog 明确说当前优化集中在 `vmlinux`，后续可能扩展到 GKI module 和 vendor module。`android17-6.18` 只是 newer GKI versions 的示例，不代表模块化 AutoFDO 已经进入 Android 17 已验证适用范围；本文只把它作为后续观察点。
 
 Baseline Profiles / ART Service 的演进放在相关章节单独讨论，这里不再并表。
 
