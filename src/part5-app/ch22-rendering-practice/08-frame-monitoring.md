@@ -2,14 +2,14 @@
 title: "帧率监控与线上卡顿治理"
 chapter: "22.8"
 section: "22.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1, AndroidX JankStats docs, Android FrameMetrics docs"
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 0
-reviewed_date: "2026-05-13"
+reviewed_date: "2026-06-13"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
 task6_result: pass-light-edit
@@ -44,8 +44,9 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [frame-rate, jankstats, choreographer, online-monitoring]
 related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.06", "19.11", "19.12", "26.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+last_task6_at: '2026-06-13'
 task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed
@@ -87,9 +88,6 @@ last_task9_autofix_at: "2026-06-12"
 
 22.8 节讲应用侧怎样在线上发现、聚合、定位卡顿。7.2 节已经讲过卡顿成因，19.11 和 19.12 节分别介绍了 JankStats、FrameMetrics。这里的目标是把工具接入转成可执行的线上流程：采什么字段、怎样降噪、怎样把一组慢帧转成可分派的问题。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
 ## 监控数据的三层口径
 
@@ -459,8 +457,8 @@ public void setAsynchronous(boolean async) {
 ```
 
 **性能影响：**
-- 屏障设置开销：~100ns (MessageQueue.postSyncBarrier)
-- 异步消息优先级：在高负载场景下 UI 响应性提升 20-30%
+- 屏障设置开销：~100ns (MessageQueue.postSyncBarrier) [待验证：具体测量来源未确认]
+- 异步消息优先级：在高负载场景下 UI 响应性提升 20-30% [待验证：测试场景与基准未确认]
 - 系统进程优化：ConcurrentMessageQueue 提供更高消息吞吐量
 
 #### 4. Choreographer 的实际应用
