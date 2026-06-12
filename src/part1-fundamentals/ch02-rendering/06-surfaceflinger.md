@@ -2,8 +2,8 @@
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-05-10"
 drafted_date: 2026-03-30
@@ -32,21 +32,21 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-task6_state: "revisiting"
+task6_state: reviewed
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-05T04:53:38+08:00"
 review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。；2026-05-31 task6 revisiting review: pass-light-edit，L1/L2 问题修复完成，L3/L4 标注等待 Task2B。"
-task6_reviewed_date: "2026-05-31"
-last_task6_at: "2026-05-31T15:05:00+08:00"
+task6_reviewed_date: "2026-06-12"
+last_task6_at: "2026-06-12T08:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-15-review.md"
 task6_review_notes: "2026-05-18 Task6：L1 高频词「真正」压降至 2 次，修正结构性过渡语并清理重复 frontmatter；保留 Task9 已登记 Android 13 主循环版本边界回炉项，等待 Task2B。"
 task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；HWC Android 16 DisplayLuts/CLIENT_BYPASS、Android 12 onMessageReceived 签名、Pacesetter/FrameTargeter 版本线需回炉。；2026-05-15 task2b: fixed DisplayLuts 降级为待验证, CLIENT_BYPASS 修正为 vendor-specific, onMessageReceived 签名修正, Pacesetter 版本线修正为 Android 14+。；2026-05-15 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；Android 13 SurfaceFlinger 主循环误归入 INVALIDATE/REFRESH 旧模型，需 Task2B 修正；多显示 composite 并行/Perfetto 分组说法降级为建议。；2026-05-19 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Android 13+ commit/composite、Android 15+ FrameTargeter 与 HWC 待验证项复核通过；自动晋升 finalized。；2026-06-12 task9 idle audit: auto-fixed HWC2 getRequests 示例、composer Composition HIDL/AIDL 路径与枚举边界、Android 17 未公开 tag 引用边界。"
 last_task9_review_log: "logs/deep-review/2026-06-12-03-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
+last_deepseek_cn_review_at: 2026-06-12
 ---
 
 # SurfaceFlinger 与合成
@@ -80,7 +80,7 @@ last_deepseek_cn_review_at: 2026-06-05
 
 ## 为什么要了解 SurfaceFlinger
 
-打开 Perfetto 抓一段 Trace，在进程列表里总能看到一个名为 `surfaceflinger` 的进程。它的主线程 Track 上，每隔一帧都会出现一组和版本相关的 slice。Android 12 常见 `INVALIDATE`、`REFRESH`，Android 13+ 更常见 `commit`、`composite`、`present`。做过 Android 性能优化的工程师，大概率在排查系统级卡顿时被这块区域吸引过，但往往不知道该怎么读。
+打开 Perfetto 抓一段 Trace，在进程列表里总能看到一个名为 `surfaceflinger` 的进程。它的主线程 Track 上，每隔一帧都会出现一组 slice，具体名称因 Android 版本而异：Android 12 常见 `INVALIDATE`、`REFRESH`，Android 13+ 更常见 `commit`、`composite`、`present`。做过 Android 性能优化的工程师，大概率在排查系统级卡顿时留意过这块区域，但往往不知道该怎么读。
 
 这就是 SurfaceFlinger——Android 图形系统的合成器。它接收各应用提交的图形缓冲区，按 z-order 叠加后输出到显示设备。
 
@@ -352,7 +352,7 @@ Android 12 没有“才引入 BLAST”，它做的是把既有 BLAST 路径和 F
 
 ## 与其他机制的关系
 
-SurfaceFlinger 位于 App producer、HWC、显示硬件之间。上下游关系可以这样梳理：
+SurfaceFlinger 位于 App（producer）、HWC 和显示硬件之间：
 
 - **VSync 机制（§2.3）**：VSYNC-sf 信号驱动 SurfaceFlinger 的合成时机，VSYNC-app 信号驱动 App 的渲染时机。两个信号的 offset 配置直接决定了整条管线的效率。
 - **Choreographer（§2.4）**：Choreographer 在收到 VSYNC-app 后调度 App 的 measure/layout/draw 工作。App 渲染完的 Buffer 通过 BufferQueue 提交给 SurfaceFlinger。如果 App 端的 Choreographer 回调执行太慢，Buffer 就来不及在下一个 VSYNC-sf 前准备好。
@@ -406,7 +406,7 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 
 
 
-## HWC Overlay Plane Capability 与合成降级（补充）
+## HWC Overlay Plane Capability 与合成降级
 
 ### HWC2 Overlay Capability 查询机制
 
@@ -466,7 +466,6 @@ dumpsys surfaceflinger layers   # Layer 详细信息
 | 高通 QdX | 最大化 DEVICE 合成，Video overlay 优化，120Hz 高刷优先 DEVICE |
 | 联发科 MTK | 功耗优先策略，低电量请求 CLIENT，Frame Rate Migration |
 
-> 来源：DeepResearch 调研（2026-05-22）— `2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md`
 
 ## 参考资料
 
@@ -496,7 +495,7 @@ dumpsys surfaceflinger layers   # Layer 详细信息
 ### SurfaceFlinger 事务与缓冲区生命周期（源码级调研）
 - 来源：DeepResearch 调研（2026-05-29）
 - 摘要：分析 SurfaceFlinger 双缓冲状态模型（mCurrentState/mDrawingState 原子更新）、MessageQueue INVALIDATE/REFRESH 双消息机制、BufferQueue 状态机完整循环（FREE→QUEUED→DEQUEUED→ACQUIRED→FREE），以及 Android 13 mScheduler 替代和 Android 17 DeliQueue 无锁 MessageQueue 重构。
-- 注意：部分 android-17.0.0_r1 源码锚点待 AOSP 公开 tag 确认
+- ⚠️ `android-17.0.0_r1` 公开 tag 截至 2026-06-12 尚未发布，本节不将其作为正文结论。
 
 
 
