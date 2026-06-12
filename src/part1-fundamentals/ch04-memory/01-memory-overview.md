@@ -7,7 +7,7 @@ drafted_date: '2026-03-31'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-12'
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & Android 17 app memory limits docs / Perfetto Java heap profiler & OOME docs / 16 KB page size docs / kernel zram docs"
-reviewed_date: '2026-05-07'
+reviewed_date: '2026-06-12'
 reviewed_by: openclaw-task6
 review_notes: 'task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack
   物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in
@@ -72,9 +72,9 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '10.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
@@ -84,7 +84,7 @@ last_task9_at: '2026-06-12T11:20:00+08:00'
 last_task9_audit: '2026-06-12'
 last_task9_autofix_at: '2026-06-12'
 last_task9_review_log: 'logs/deep-review/2026-06-12-11-audit.md'
-last_task6_audit: '2026-05-21'
+last_task6_audit: '2026-06-12'
 task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-12 11:20 Task9 idle audit auto-fix: 修正 16 KB page 小对象表述、HPROF 小节 Perfetto Java heap dump 版本边界与旧的 traced Java heap dump 采集命令，改为 Android 11+ `android.java_hprof` / Android 14+ OOME trigger / `adb shell perfetto -c` 配置；回到 Task6 复审。'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
@@ -136,7 +136,7 @@ Android 的内存体系可以分成三层来看：物理内存、内核管理、
 
 手机上的 RAM 就是物理内存。一台 8GB 内存的设备，实际可用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
 
-需要留意的是，开启了 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，加上粒度开销，全系统 PSS 大约会上涨 5%。这是安全硬件的固定开销，在做内存基线对比时先把这部分扣除，避免误判为泄漏。
+开启了 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，加上粒度开销，全系统 PSS 大约会上涨 5%。这是安全硬件的固定开销，在做内存基线对比时先把这部分扣除，避免误判为泄漏。
 
 和桌面系统不同，Android 设备通常没有磁盘级别的 Swap 空间。它使用的是 ZRAM——在内存中划出一块区域做压缩交换。这样做的好处是避免了闪存的写入磨损和 IO 延迟，代价是消耗 CPU 来做压缩和解压。当内存紧张时，内核通过 `kswapd` 线程把不太活跃的内存页压缩到 ZRAM 中，腾出物理内存。
 
