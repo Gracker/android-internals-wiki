@@ -1,3 +1,44 @@
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 00:04
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 375 章节，0 draft（296 finalized + 79 ready-for-review）
+- 连续 88 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. DeepResearch 最新产出增量扫描（6 月 12 日 12:01 后新增 3 篇）
+- android17-looper-sync-barrier-async-priority-wakeup → §1.13 已覆盖 CombinedMessageQueue + §22.8 已覆盖 sync barrier
+- android17-system-server-binder-ipc-startup-optimization → §20.17 已覆盖 SystemServer phases + §1.4 已覆盖 Binder threadpool
+- android14-cold-start-warmup-mechanism → §21.1 已覆盖 Zygote 预热 + §1.11 已覆盖 Zygote 启动
+- 以上 3 篇均为现有章节的素材增量，非新章节候选
+
+### 4. source-index.json 未映射素材
+- 109 条记录中，所有 high/medium 素材已有对应章节映射
+- 无评分 ≥ 16 且 mapped_chapters 为空的素材
+
+### 5. daily-info 2026-06-12 热点扫描
+- Android 17 新调度器 → ch05 已覆盖
+- Linux 6.10 碎片整理 → 非 Android 内核主线
+- MessageQueue 重写 → §1.13 已覆盖
+- 桌面端 → §2.20/§22.14 已覆盖
+- Android Studio Panda/Quail → ch14 已覆盖
+- AI/Gemini 相关 → 非 AIW 范畴（端侧 AI 推理在 §5.11/§5.14 已覆盖）
+
+### 6. research-gaps.md 需求
+- 2 条盲区（Battery Historian + Memory Tracking API）均映射到 §26.3/§23.7
+- 评分 < 14，不构成新章节候选
+
+### 7. 现有章节扩展点（🔸 标记）扫描
+- 扩展标记属现有章节内容深化需求（Task 2B 范畴），非新章节候选
+
+### 总结
+知识库高度饱和（296 finalized + 79 ready-for-review = 100% 非 draft），连续 88 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（79 个 ready-for-review 待推进），非内容缺口。
+
+---
+
 utf-8
 
 ## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-12 07:05
