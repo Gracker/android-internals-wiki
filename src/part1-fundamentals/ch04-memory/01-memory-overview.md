@@ -2,7 +2,7 @@
 title: Android 内存模型全景
 chapter: '4.1'
 section: '4.1'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-03-31'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-12'
