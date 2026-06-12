@@ -111,7 +111,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 #### FrameTimeline 数据源实现  
 - **服务注册**: SurfaceFlinger 模块注册为 `android.surfaceflinger.frametimeline`
-- **核心功能**: 检测帧卡顿类型（AppDeadlineMissed、BufferStuffing、SurfaceFlingerCpuDeadlineMissed等）
+- **核心功能**: 检测帧卡顿类型（AppDeadlineMissed、BufferStuffing、SurfaceFlingerCpuDeadlineMissed 等）
 - **数据结构**: 提供预期时间线（Expected Timeline）和实际时间线（Actual Timeline）两种切片
 - **跨进程追踪**: 通过 surface_frame_token 和 display_frame_token 关联应用与 SurfaceFlinger 帧
 
@@ -642,7 +642,7 @@ Perfetto UI 把配置分成了几个直观的 Tab：
 
 ### 导出配置为命令行
 
-Perfetto UI 有个很实用的功能：在 UI 上配好参数后，切到 "Recording command" Tab，就会显示对应的命令行和 `.pbtxt` 配置文件。
+Perfetto UI 可以把可视化配置导出为命令行：在 UI 上配好参数后，切到 "Recording command" Tab，就会显示对应的命令行和 `.pbtxt` 配置文件。
 
 这样我们就能把 UI 上的可视化配置直接转成可重复执行的脚本命令。在团队协作中，可以把这份配置文件提交到代码仓库，确保所有人使用相同的 Trace 配置。
 
