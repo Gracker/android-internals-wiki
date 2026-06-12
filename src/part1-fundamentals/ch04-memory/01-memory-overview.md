@@ -2,14 +2,14 @@
 title: Android 内存模型全景
 chapter: '4.1'
 section: '4.1'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-03-31'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-12'
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & Android 17 app memory limits docs / Perfetto Java heap profiler & OOME docs / 16 KB page size docs / kernel zram docs"
 reviewed_date: '2026-06-12'
 reviewed_by: openclaw-task6
-review_notes: 'task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack
+review_notes: 'task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack；2026-06-12 13:08 Task6 复审（Task9 auto-fix 后）：L1/L2 全部通过，0 处禁用词，0 处需修问题，无 B 类问题。Task9 已 pass（auto-fixed），queue 无 pending，自动晋升 finalized。'
   物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in
   swap/total swap）；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9；2026-05-07 20:08
   Task6 复审：L1/L2 小修 12 处，锚点覆盖完整，无新增回炉项，交回 Task9'
@@ -72,8 +72,8 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '10.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
