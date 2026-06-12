@@ -265,6 +265,60 @@ VPA16 里与性能关系最直接的一项是 Host Image Copy。它允许 CPU �
 
 这个转变背后的一个直接原因是 OpenGL ES 驱动实现质量长期参差不齐。不同 GPU 厂商(Qualcomm Adreno、ARM Mali、Imagination PowerVR)各自维护 OpenGL ES 驱动,bug 和性能差异都不小。Google 通过 ANGLE 将大量 OpenGL ES 调用统一翻译为 Vulkan,只需要维护一套 Vulkan 后端的质量,碎片化问题也随之收敛。但要注意:ANGLE 的启用取决于设备/应用级别的配置策略(`ro.hardware.egl`、Settings.Global、Angle APK allowlist),不是所有 GLES 应用在所有 Android 16 设备上都自动走 ANGLE。
 
+
+<!-- AIW-源码调研-2026-06-12 -->
+### ANGLE Vulkan Backend 四级 PSO 缓存（Android 17 优化）
+
+对于仍使用 OpenGL ES 的应用，ANGLE 层在 Android 17 上通过四级 PSO 缓存进一步减少了编译开销：
+
+1. **L3（VkPipelineCache）**：vendor driver 内部哈希，支持跨进程持久化。ANGLE 通过 `glLinkProgram` 预热 driver 的 VkPipelineCache，让首次 `vkCreateGraphicsPipelines` 命中预热 hash，避免 cold compile。
+
+2. **L2（GraphicsPipelineCache）**：ANGLE 进程内的哈希表，使用 `GraphicsPipelineDesc` + xxHash 计算整 state vector 的 hash。相比 OpenGL ES 的运行时编译，ANGLE 通过 L2 缓存避免了重复 state vector 的重复编译。
+
+3. **L1（transition table）**：Context 局部的跳转表，针对"相邻 state vector 间的变化位"做 O(1) 查找。典型应用每次 state change 只改动 10-16 个 bit，L1 跳过整 state vector 的 xxHash + memcmp，直接扫描变化位，大幅提升切换效率。
+
+4. **L0（当前 active PSO）**：ContextVk 当前持有 handle，避免重复创建。
+
+> [来源: chromium/angle refs/heads/main/src/libANGLE/renderer/vulkan/doc/FastOpenGLStateTransitions.md]
+
+#### Deferred Clears：TBR 架构下的优化策略
+
+Android 17 上的 ANGLE 引入了 Deferred Clears 机制：将 `vkCmdClearAttachments` 推迟到后续 render pass 的 loadOp 执行。在 TBR 移动 GPU（Adreno/Mali）上，`VK_ATTACHMENT_LOAD_OP_CLEAR` 会直接清空 tile buffer，避免 tile 写回再 load 的开销，相当于"免费清屏"。
+
+```cpp
+// ANGLE 延迟 clear 策略
+// 传统：glClear() → vkCmdClearAttachments
+// 优化：glClear() → 暂存 vk::ImageHelper → 后续 render pass loadOp: CLEAR
+```
+
+> [来源: chromium/angle refs/heads/main/src/libANGLE/renderer/vulkan/doc/DeferredClears.md]
+
+### Skia Graphite PipelineManager：异步任务模式（Android 17）
+
+Android 17 在 Skia Graphite 实现了显式的异步管线编译模式，彻底改变了传统同步编译模型：
+
+#### 核心机制
+
+- **PipelineCreationTask**：可委托给线程的工作单元，持有 `std::atomic<bool> fCompleted` 和 `sk_sp<GraphicsPipeline> fPipeline`
+- **GraphicsPipelineHandle**：`std::variant<sk_sp<PipelineCreationTask>, sk_sp<GraphicsPipeline>>`，既可包装 task 也可包装 pipeline
+- **PipelineManager**：用 `SkSpinlock` + `THashTable<sk_sp<PipelineCreationTask>>` 管理 in-flight tasks
+
+#### 三段式调用链
+
+```cpp
+// 1. Recorder::snap 时（无锁探测）
+GraphicsPipelineHandle handle = createGraphicsPipelineHandle(...); // 返回 task 或 pipeline
+startPipelineCreationTask(...); // 派发异步编译
+
+// 2. Context::insertRecording 时（同步等待）
+sk_sp<GraphicsPipeline> pipeline = resolveHandle(handle); // 等 fCompleted=true
+```
+
+这一机制将 pipeline 编译从"draw 时同步阻塞"改为"snap 时派发 + insertRecording 时统一等待"，**不再出现孤立的长编译帧**。
+
+> [来源: google/skia refs/heads/main/src/gpu/graphite/PipelineManager.h/.cpp]
+<!-- AIW-源码调研-2026-06-12 结束 -->
+
 ### Vulkan 渲染管线的核心组件
 
 Vulkan 渲染帧需要应用显式组装三个核心对象:VkCommandBuffer、VkRenderPass 和 VkFramebuffer。

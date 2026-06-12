@@ -533,3 +533,89 @@ Baseline Profile 的制作和使用在 21.4 节详细介绍。从 dex 加载角�
 一种替代方案是使用 `Debug.startMethodTracingSampling()` 在启动阶段做采样 profiling，然后分析采样结果中 `ClassLoader.loadClass` 的出现频率。高频出现说明类加载是瓶颈。
 
 更轻量的方式：在 `Application.attachBaseContext` 中记录时间戳，在 `Application.onCreate` 中分 SDK 记录时间戳，看哪些 SDK 初始化耗时异常长。如果某个 SDK 初始化耗时远超其文档声称的时间，类加载（首次引用 + 依赖类的级联加载）可能是隐藏的原因。
+
+
+<!-- AIW-源码调研-2026-06-12 -->
+### 源码级补充：Zygote 预热与 ClassLoader 缓存（Android 14+）
+
+> 本节为 AutoResearchClaw · 每日源码调研反哺，原始报告：[DeepResearch/2026-06-12-android14-cold-start-warmup-mechanism.md](../../../../../../../../../Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android14-cold-start-warmup-mechanism.md)。源码锚点统一在 `android-14.0.0_r1`。
+
+冷启动"预热"在系统侧由 Zygote 集中承担，并由 system_server 触发。三条相互衔接的路径共同决定首进程耗时：
+
+1. **Zygote 预热（`ZygoteInit.preload`）** —— 在 `ZygoteInit.java#main` 中根据 `--enable-lazy-preload` 决定是开机即预热还是推迟到首次 fork 前。lazy 模式下开机只跑 `RuntimeInit.preForkInit()` + `gcAndFinalize()`，把后续 600–900 ms 的 `preload()` 工作延后到 `bootCompleted` 之后。
+2. **ZygoteProcess 触发** —— `ZygoteProcess.preloadDefault(abi)` 走 socket 向 zygote 发 `--preload-default` 命令；`ZygoteConnection.handlePreload` 调 `ZygoteInit.lazyPreload()` 并回包 0/1。
+3. **应用侧 ClassLoader 复用** —— `ApplicationLoaders.getClassLoader` 以 APK 路径为 cacheKey 命中 `mLoaders` 缓存，省去 dex 解析/校验/define 流程。
+
+#### preload() 内部 10 段 Trace 清单
+
+| 顺序 | Trace 标签 | 关键动作 | 源码位置 |
+| --- | --- | --- | --- |
+| 1 | BeginPreload | `ZygoteHooks.onBeginPreload()`（native 触发 ART pre-fork） | `ZygoteInit.java:140-141` |
+| 2 | PreloadClasses | `preloadClasses()` 读 `/system/etc/preloaded-classes`，逐行 `Class.forName(line, true, null)` 触发 `<clinit>` | `ZygoteInit.java:270-356` |
+| 3 | CacheNonBootClasspathClassLoaders | 把 `android.hidl.base-V1.0-java` 等系统共享库的 ClassLoader 缓存到 `mSystemLibsCacheMap` | `ZygoteInit.java:357-...` |
+| 4 | PreloadResources | `Resources.getSystem().startPreloading()` + `preloadDrawables` / `preloadColorStateLists` | `ZygoteInit.java:148-149` |
+| 5 | PreloadAppProcessHALs | `nativePreloadAppProcessHALs()` | `ZygoteInit.java:151-153` |
+| 6 | PreloadGraphicsDriver | `nativePreloadGraphicsDriver()`（触发一次 OpenGL/Vulkan 初始化） | `ZygoteInit.java:154-156` |
+| 7 | preloadSharedLibraries | `loadLibrary("android")` / `loadLibrary("jnigraphics")` | `ZygoteInit.java:188-200` |
+| 8 | preloadTextResources | `Hyphenator.init()` + `TextView.preloadFontCache()` | `ZygoteInit.java:217-220` |
+| 9 | WebViewFactory.prepareWebViewInZygote | WebView 共享内存段预初始化 | `ZygoteInit.java:160-162` |
+| 10 | warmUpJcaProviders | `AndroidKeyStoreProvider.install()` + `Security.getProviders()` 遍历 `warmUpServiceProvision()` | `ZygoteInit.java:232-256` |
+
+末尾 `runtime.preloadDexCaches()` 把已加载的类、字段、方法填到 dex cache，fork 后子进程走 `Class.isResolved()` 快速路径。
+
+#### 懒预热的 socket 协议
+
+`ZygoteProcess.java#preloadDefault` 是 system_server 的调用入口：
+
+```java
+public boolean preloadDefault(String abi) throws ZygoteStartFailedEx, IOException {
+    synchronized (mLock) {
+        ZygoteState state = openZygoteSocketIfNeeded(abi);
+        state.mZygoteOutputWriter.write("1");
+        state.mZygoteOutputWriter.newLine();
+        state.mZygoteOutputWriter.write("--preload-default");
+        state.mZygoteOutputWriter.newLine();
+        state.mZygoteOutputWriter.flush();
+        return (state.mZygoteInputStream.readInt() == 0);
+    }
+}
+```
+
+`ZygoteConnection.handlePreload` 接收命令后判 `isPreloadComplete()`：若已预热回 1，否则调 `ZygoteInit.lazyPreload()` 回 0。该调用**同步阻塞**——这是 system_server 编排启动顺序的关键工具。
+
+#### ClassLoader 缓存命中路径
+
+`ApplicationLoaders.getClassLoader()` 在 `parent == baseParent` 时的快路径：
+
+```java
+synchronized (mLoaders) {
+    if (parent == baseParent) {
+        ClassLoader loader = mLoaders.get(cacheKey);  // cacheKey == zip (APK 路径)
+        if (loader != null) {
+            return loader;  // 命中：零开销
+        }
+        ...
+    }
+}
+```
+
+多进程 App 同样受益：每个子进程启动时 `ActivityThread` 走 `LoadedApk.getClassLoader()` → `ApplicationLoaders.getClassLoader()`，第二次起直接命中。
+
+#### 协同关系
+
+- 与 **ART GC 抑制**（见 `13-art-gc-suppression-startup-performance.md`）：zygote preloading 完成后，fork 后 2s 内 `TriggerPostForkCCGcTask` 抑制并发 GC，保证 `<clinit>` 触发的对象分配不被并发回收打断。
+- 与 **Baseline Profile**（见 `04-baseline-profile-practice.md`）：zygote preloading 处理 framework/系统类，Baseline Profile 处理 App hot class，两者不重叠。
+- 与 **ContentProvider 启动治理**（见 `03-contentprovider-optimization.md`）：ContentProvider.onCreate 早于 Application.onCreate，依赖 zygote 已预热的 framework 类（`ContentProviderClient`、Binder 客户端 stub 等），因此 ContentProvider 治理的可行性建立在 zygote preload 之上。
+
+#### 版本差异（与本节相关）
+
+| API level | 变化 | 证据 |
+| --- | --- | --- |
+| 26 | 引入 fork 后 2s GC 抑制 | `13-art-gc-suppression-startup-performance.md` |
+| 29 | `--enable-lazy-preload` 引入 | `ZygoteInit.java#main` 参数解析 |
+| 31 | App Zygote 引入 `preloadApp` | `ZygoteProcess.java#preloadApp` |
+| 34 | `ZygoteHooks.preFork` / `postForkCommon` 钩子独立 | `ZygoteInit.java:336-350` 周边 |
+| 35 | `Resources.preloadResources()` 静态化 | `ZygoteInit15.java#preload` |
+
+> **Android 17 / API 37 为本文最高版本边界**。未读取或引用 Android 18 / API 38+ 内容。
+<!-- AIW-源码调研-2026-06-12-end -->
