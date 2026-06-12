@@ -53,6 +53,7 @@ last_task6_at: "2026-05-19T08:16:46+08:00"
 last_task6_audit: "2026-06-11"
 last_task6_review_log: logs/review/2026-05-19-08-review.md
 last_task9_at: "2026-05-19T08:27:59+08:00"
+last_task9_audit: "2026-06-12"
 last_task9_review_log: logs/deep-review/2026-05-19-08-deep-review.md
 task9_review_notes: "2026-05-19 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点、App Startup、Baseline Profile 与 TTFD 链路复核通过；满足 Task6+Task9+queue 条件，自动晋升 finalized。"
 auto_promoted_by: task9-deep-tech-review
