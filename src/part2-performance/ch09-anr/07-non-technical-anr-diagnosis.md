@@ -1,4 +1,5 @@
 ---
+
 title: ANR 非技术故障诊断
 chapter: '9.7'
 status: finalized
@@ -68,8 +69,8 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
   title: ContentProvider timeout messages
   date: android-16.0.0_r1
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
