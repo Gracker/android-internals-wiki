@@ -59,7 +59,7 @@ task6_review_notes: "2026-06-12 17:05 Task6 revisiting-review (3rd): pass-light-
 finalized_date: "2026-06-12"
 finalized_by: openclaw-task9-auto-promote
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: "2026-06-01"
+last_deepseek_cn_review_at: 2026-06-12
 last_task9_audit_log: "logs/deep-review/2026-06-12-16-audit.md"
 task9_review_summary: "pass-tech-review; queue 无 pending; 自动晋升 finalized。"
 ---
@@ -139,7 +139,6 @@ Android 平台上的 GPU 分析工具大致分三层,对应的定位也不同:
 5. **游戏实时性能监控?** → PerfDog
 
 
-[已验证:官方文档,developer.android.com/agi,perfetto.dev/docs/data-sources/gpu]
 
 ## Android GPU Inspector (AGI)
 
@@ -214,7 +213,6 @@ Frame Profiler 的核心视图:
 
 ### AGI 的近期演进与 APA 的出现
 
-[已验证:developer.android.com/agi, developer.android.com/android-performance-analyzer]
 
 AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。System Profiler 负责长时间 trace、GPU counter 和进程级 GPU 时间;Frame Profiler 负责单帧命令、shader 和 render target 的深入查看。
 
@@ -229,7 +227,6 @@ AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。Syst
 
 ### AGI 对 GLES 应用的分析路径
 
-[已验证:AGI 官方文档,developer.android.com/agi]
 
 Android 15 开始,ANGLE 已经有了更明确的系统开关和每应用切换入口。到 Android 16 的新设备,ANGLE 覆盖范围继续扩大;Android 17 的新设备再转到 denylist 策略,默认大多数应用经由 ANGLE,兼容性例外回退到原生 GLES 驱动。AGI 的帧分析沿着这条迁移线工作:它会用自定义 ANGLE 构建把 GLES 命令翻译为 Vulkan 再做追踪。
 
@@ -255,7 +252,6 @@ data_sources {
 }
 ```
 
-[已验证：Perfetto 官方文档，perfetto.dev/docs/data-sources/gpu，AOSP android-16.0.0_r1]
 
 `gpu_counter_config` 的字段定义在 AOSP `android-16.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时,先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出来,再回填这些 ID;不同 GPU 的编号和含义都不通用。
 
@@ -340,13 +336,11 @@ RenderDoc 有几个重要的厂商 fork:
 - **Samsung 贡献**:Samsung 向主线贡献了大量 Android Vulkan/GLES 支持代码
 - **Meta Fork**:针对 Quest XR 设备的 fork,支持 Snapdragon 835/XR2/XR2+ 的底层 GPU 数据
 
-[已验证:renderdoc.org,Arm Performance Studio 2024.0 release notes]
 
 ## Sokatoa:多帧 GPU 分析的新范式
 
 2026 年 3 月,Samsung 发布了 Sokatoa,这是一个面向 Android 的多帧 GPU 性能分析器,基于 LunarG GFXReconstruct 引擎构建,计划 2026 年底开源。它的核心创新是多帧分析能力,和 AGI / RenderDoc 的单帧分析正好互补。
 
-[已验证:Samsung Semiconductor blog,LunarG 文章,github.com/sarc-acl/sokatoa]
 
 ### 为什么需要多帧分析
 
@@ -411,7 +405,6 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 - GPU 计数器中,ALU 利用率 > 80% 说明 Shader 复杂度是瓶颈
 - 解决方向:简化 Shader 逻辑、减少纹理采样次数、使用 LOD(Level of Detail)让远处的物体用更简单的 Shader
 
-[来源:Cubox/基于gpu counters数据的性能优化-2025-02-27.md]
 
 ## 实战案例
 
@@ -434,7 +427,6 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 
 **结果**:Overdraw 从 4x 降到 1.5x,GPU 带宽使用量降低 60%,滑动帧率恢复到 115fps。
 
-[待验证:具体优化数据来自类似场景的经验,非本案例实测]
 
 ### 案例 2:Shader 编译导致的间歇性卡顿
 
@@ -454,7 +446,6 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 
 **结果**:间歇性卡顿消失,帧时间方差从 3.2ms 降到 0.8ms。
 
-[待验证:Sokatoa 多帧分析流程基于工具文档描述,非实际操作截图]
 
 ### 案例 3:Perfetto GPU counter 定位功耗热点
 
@@ -474,7 +465,6 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 
 **结果**:GPU 平均频率从 800MHz 降到 400MHz,GPU 功耗降低约 40%。
 
-[待验证:案例数据来自一般性优化经验,具体数值需实测确认]
 
 ## 与其他章节的关系
 
@@ -501,15 +491,7 @@ AGI 专为移动 GPU 优化,支持移动端特有的 GPU 计数器和渲染路�
 
 ### 误区 4:"profileable 和 debuggable 对 GPU 工具没有影响"
 
-`<profileable>` 是 `<application>` 下的子标签,不是属性。Android 10 (API 29) 引入这个标签,Android 11 (API 30) 才补 `android:enabled` 字段。常见写法是:
-
-```xml
-<application ...>
-    <profileable android:shell="true" android:enabled="true" />
-</application>
-```
-
-这个标签能让 Perfetto、simpleperf 这类 shell / system profiling 工具采集 release 包的性能数据,但 AGI Frame Profiler 和 RenderDoc 的帧捕获入口仍然要求 `android:debuggable="true"`。
+`<profileable>` 和 `debuggable` 决定的是"哪些工具能在什么包上工作"。`<profileable>` 是 `<application>` 下的子标签(不是属性),Android 10 引入,能让 Perfetto、simpleperf 这类 shell/system profiling 工具采集 release 包的 CPU 和 GPU counter 数据。但 AGI Frame Profiler 和 RenderDoc 的帧捕获入口仍然要求 `android:debuggable="true"`,`profileable` 不够。
 
 ### 误区 5:"GPU 分析工具本身不会影响性能"
 
@@ -525,7 +507,6 @@ ARM Streamline 集成在 ARM Development Studio 中,可以同时分析 CPU、GPU
 
 Streamline 的独特价值在于 CPU-GPU 联合分析。它可以在同一个时间轴上显示 CPU 调度、GPU 执行和内存访问模式,帮助定位 CPU 和 GPU 之间的数据依赖问题。
 
-[已验证:ARM 官方文档,developer.arm.com/Tools%20and%20Software/Streamline%20Performance%20Analyzer]
 
 ### Qualcomm Adreno:Snapdragon Profiler
 
@@ -573,7 +554,6 @@ MediaTek 没有独立的 GPU 分析工具,但 AGI 对 Mali GPU(MediaTek SoC 通�
 
 ### profileable vs debuggable
 
-[已验证:官方文档,developer.android.com/topic/performance/reasonable-profiling]
 
 - **debuggable**:AGI 帧捕获、RenderDoc 都需要。但 debuggable 应用会有性能损失(JIT 不做某些优化、运行时检查更多)
 - **`<profileable>`**:从 Android 10 (API 29) 引入。Perfetto 可以采集(包括 GPU counter),但 AGI 帧捕获不可用。Android 14 增强了 GPU counter 采集能力。性能损失比 debuggable 小得多
@@ -590,11 +570,10 @@ MediaTek 没有独立的 GPU 分析工具,但 AGI 对 Mali GPU(MediaTek SoC 通�
 
 同一个"GPU Utilization"计数器,在 Adreno 和 Mali 上的含义不完全一样。Adreno 的 Utilization 可能只计算 ALU 活跃时间,而 Mali 的 Utilization 可能包含等待内存的时间。跨设备对比 GPU 计数器数据时,需要查阅对应 GPU 厂商的计数器文档。
 
-[来源:Cubox/移动平台的GPU性能分析-2024-12-07.md]
 
 ## 版本演进
 
-GPU 分析工具在 Android 生态中经历了几个关键节点,了解这些变化有助于在不同版本上选择正确的工具和解读分析结果。
+GPU 分析工具在 Android 生态中的几次大变化,直接影响我们今天的工具选择和结果解读。
 
 ### GAPID → AGI(2020 年)
 

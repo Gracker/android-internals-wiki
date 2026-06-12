@@ -62,7 +62,7 @@ last_task6_review_log: "logs/review/2026-05-19-16-review.md"
 last_task9_review_log: "logs/deep-review/2026-06-12-14-audit.md"
 task9_review_notes: "2026-06-12 Task9 idle audit: auto-fixed android15-6.6 branch HEAD benchmark drift and Android17/module roadmap boundary; no queue entry; return to Task6. | 2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；AutoFDO kernel profile 命令链、GKI 分支路径、android15/android16 数据口径复核通过；模块化 AutoFDO Android17 段落仅作为 P3 roadmap 口径收紧建议记录。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-06-12
 ---
 
 # 1.12 AutoFDO 反馈导向编译优化
@@ -134,13 +134,12 @@ AutoFDO 的采样过程要分成两层看。
 
 对内核 AutoFDO 来说，真正需要的是可还原 branch history 的 Coresight trace，而不是普通 PMU 周期采样。simpleperf 的事件名仍常写成 `cs-etm`，因为它暴露的是 Coresight trace 入口；落到具体 SoC 时，底层可能是 ETM，也可能是 ETE + TRBE。
 
-`[适用版本: Android 12+ 用户态/native AutoFDO；kernel/GKI AutoFDO 当前公开 profile 覆盖 android15-6.6、android16-6.12，后续扩展 android17-6.18]`
 
 ### 数据采集流程
 
 这里最容易写错的是顺序。设备侧先把 Coresight trace 录成 `perf.data`，host 侧转成 `branch_list.data`，再继续生成 AutoFDO text profile，随后才由 `create_llvm_prof` 为单个 binary 生成 LLVM sample profile。把这几个阶段写反，后面的命令和文件名就会全部错位。
 
-[图：AutoFDO 数据流程示意。设备侧运行 `simpleperf record` 产出 `perf.data`；host 侧运行 `simpleperf inject --output branch-list` 产出 `branch_list.data`；随后继续转成 `perf_inject.data` / `perf_inject_kernel.data`；再由 `create_llvm_prof` 针对 `vmlinux` 生成 `kernel.afdo`，构建系统在 Kleaf / DDK 中消费。]
+整个数据流的顺序是:设备侧 `simpleperf record` → `perf.data`,host 侧 `simpleperf inject --output branch-list` → `branch_list.data`,再转成 `perf_inject.data` / `perf_inject_kernel.data`,最后由 `create_llvm_prof` 针对 `vmlinux` 生成 `kernel.afdo`,交给构建系统在 Kleaf / DDK 中消费。
 
 **Step 1：构建代表性工作负载**
 

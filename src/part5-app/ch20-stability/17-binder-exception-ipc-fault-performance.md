@@ -363,3 +363,34 @@ APM SDK 对 Binder 异常的归因通常分三层：
 - 一手源码：`kernel/common/drivers/android/binder.c` (android17-6.18_r1, 7460 行) + `frameworks/native/libs/binder/ProcessState.cpp` + `IPCThreadState.cpp`
 - 对比锚点：a17 vs a16 binder.c `diff -u` 共 288 行变更，最显著新增为 `binder_pick.c/h`（Rust/C 后端解耦）、`binder_devices_lock` 自旋锁、`guard(mutex)` scoped guard
 
+
+### 源码级补充：Android 17 系统服务启动顺序与 Binder 线程池协同（2026-06-12 调研）
+
+<!-- AIW-源码调研-2026-06-12-03 -->
+
+承接 §20.17 末尾 Binder 事务队列 / 优先级机制，补充「**系统服务启动期**」的源码级细节（**完整调研见 `DeepResearch/2026-06-12-android17-system-server-binder-ipc-startup-optimization.md`**）：
+
+- **SystemServer 四阶段分段**（`frameworks/base/services/java/com/android/server/SystemServer.java`）：`startBootstrapServices → startCoreServices → startOtherServices → startApexServices`。每段末尾通过 `mSystemServiceManager.startBootPhase(t, SystemService.PHASE_xxx)` 触发**单调递增的阶段广播**，让已注册的 100+ 服务按序回调 `onBootPhase(int)`。`PHASE_*` 共 8 个：100(`WAIT_FOR_DEFAULT_DISPLAY`) / 200 / 480(`LOCK_SETTINGS_READY`) / 500(`SYSTEM_SERVICES_READY`) / 520(`DEVICE_SPECIFIC_SERVICES_READY`) / 550(`ACTIVITY_MANAGER_READY`) / 600(`THIRD_PARTY_APPS_CAN_START`) / 1000(`BOOT_COMPLETED`)——每一档解锁一组能力（PowerManager、PackageManager、第三方应用拉起等）。
+- **`SystemServerInitThreadPool`**（`SystemServerInitThreadPool.java` 226 行）：SystemServer.run() 入口处立即启动，线程数 = `Runtime.getRuntime().availableProcessors()`，优先级 `THREAD_PRIORITY_FOREGROUND`。典型 `submit()` 任务：`SecondaryZygotePreload`(L1555)、`SystemConfig::getInstance`(L1090)、`START_SENSOR_MANAGER_SERVICE`(L1724)、`START_HIDL_SERVICES`(L1731)、`WEBVIEW_PREPARATION`(L3229)。池在 `PHASE_BOOT_COMPLETED` 后由 `shutdownInitThreadPool()` 关闭（timeout 20s）。
+- **User Lifecycle 并行化**（`SystemServiceManager.useThreadPool()` L618-641）：通过 `sOtherServicesStartIndex`（在 `updateOtherServicesStartIndex()` L363 设置）把服务分为 bootstrap+core 与 other 两组。**只有 index ≥ 阈值的「other」类服务在 `onUserStarting` 时并行执行**，且仅在「非低 RAM 设备 && 非 system user」生效。`USER_COMPLETED_EVENT` 路径默认全并行。
+- **Binder 线程池配置**（`frameworks/native/libs/binder/ProcessState.cpp`）：system_server 启动早期由 `android_servers` 库调用 `ProcessState::self()->startThreadPool()` + `setThreadPoolMaxThreadCount(N)`。`setThreadPoolMaxThreadCount` 通过 ioctl `BINDER_SET_MAX_THREADS` 把「内核按需可派生线程上限」告知 binder 驱动；启动后**禁止收缩**（`LOG_ALWAYS_FATAL_IF(... maxThreads < mMaxThreads)` L443）。这正是 onBootPhase 阶段 100+ 服务回调能「真正并发跑」的物理基础——单纯靠 `SystemServerInitThreadPool` 不够，因为多数服务回调走 main looper + binder 主线程池。
+- **`BR_FROZEN_*` 系列命令与启动期冻结语义**（`IPCThreadState.cpp`）：`BR_FROZEN_BINDER`(L1558) 让进程感知远端 handle 被冻结；`BR_TRANSACTION_PENDING_FROZEN`(L1090-1091) 让 oneway 在目标 frozen 期间不阻塞发端；`BR_FROZEN_REPLY`(L1102-1103) 是 sync 事务在 frozen 状态下的失败回执。与 §1.18 Binder Freezer 配合，**避免 system_server 启动期被 cached app 的 binder 调用拖累**。
+- **PHASE_BOOT_COMPLETED 收尾**（`SystemServiceManager.startBootPhase` L334-337）：到达 1000 后 `t.logDuration("TotalBootTime", SystemClock.uptimeMillis() - mRuntimeStartUptime)` 写入 trace，并 `shutdownInitThreadPool()`。这是 Boot to Launcher 优化的「终点标记」——Perfetto trace 中对应 `t.traceEnd("startOtherServices")` 之后。
+
+**反哺结论**：§20.17 关注的是 Binder 运行期的「异常/IPC 故障」治理；本节补充的是「**启动期**」的同类治理锚点。在 system_server 启动过程中：
+1. 阶段广播（PHASE_*）保证服务依赖按拓扑顺序初始化；
+2. InitThreadPool + User Lifecycle 池并行化耗时子任务与多用户回调；
+3. Binder 线程池上限通过 ioctl 预先配置，让内核按需派生；
+4. `BR_FROZEN_*` 命令让 frozen app 不阻塞启动期 IPC。
+
+**端侧 AI 应用性能调优视角**：
+- 若自有服务注册到 SystemServer 上，应**严格按 phase 边界分组**——避免把重 onBootPhase 放到 500 之前，否则会拖慢 PHASE_SYSTEM_SERVICES_READY 广播。
+- 跨服务高频 Binder 调用（如模型推理服务 ↔ SensorService ↔ PowerManager）应**复用 system_server binder 线程池**，不要在自己的进程中再 fork pool。
+- 若做多用户/工作空间场景（如端侧 AI agent 多 profile），AMS `onUserStarting` 期间 own service 落入 `sOtherServicesStartIndex` 之后才会并行回调——这是优化开机多账户切换的关键设计点。
+
+- 注入时间：2026-06-12
+- 价值：把 §20.17 的「Binder 异常治理」扩展到「**启动期**」系统服务顺序 / 阶段广播 / InitThreadPool / Binder 线程池配置 / frozen 协同五个维度的源码级细节
+- 关联 DeepResearch：`DeepResearch/2026-06-12-android17-system-server-binder-ipc-startup-optimization.md`
+- 一手源码：`frameworks/base/services/java/com/android/server/SystemServer.java` (main 分支, 3663 行) + `frameworks/base/services/core/java/com/android/server/SystemService.java` + `SystemServiceManager.java` (806 行) + `SystemServerInitThreadPool.java` (226 行) + `frameworks/native/libs/binder/ProcessState.cpp` + `IPCThreadState.cpp`
+- 关联章节交叉引用：§1.4 Binder 事务队列（2026-06-09 注入块）+ §1.18 Binder Freezer + 本节（2026-06-11 注入块）
+
