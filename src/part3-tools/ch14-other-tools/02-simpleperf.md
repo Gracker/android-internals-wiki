@@ -821,3 +821,11 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 - **运行时 `mprotect(PROT_WRITE)` 改可执行段**会触发 `IpToVaddrInFile` 退化路径（`dso.cpp:670-680` 注释明确警告），让 vaddr 反向解析从 O(log N) 退到 O(N)——TFLite/NCNN 动态重写权重时容易踩到。
 - **未压缩 perf.data 的头部体积**主要是 mmap record（每条 ~110 字节 + filename 8 字节对齐拷贝），AI 推理 app 通常 2000-5000 条 mmap record，200-500KB 头部。
 
+
+
+## 参考资料
+
+### Android 17 Simpleperf 多进程 IPC 架构：三层生产者-消费者设计
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md
+- 摘要：Simpleperf 内部三层生产者-消费者复合架构：(1) RecordReadThread 用 lock-free 环形 buffer（默认 10MB）+ pipe2(O_CLOEXEC) 将 kernel mmap buffer 与用户态处理线程解耦；(2) MapRecordThread 在 system-wide + ETM aux tracing 场景用独立线程扫 /proc/<pid>/maps 写临时文件；(3) ProfileSession 用 pipe + vfork + dup2 在 app 进程内嵌 simpleperf 子进程。跨进程数据整合通过 cmd_merge 按特征段元数据 + 符号表一致性校验合并多份 perf.data。所有 IPC 走 pipe2 + 无锁 ring buffer 而非 socket，避免 AF_UNIX 协议栈开销。
+- 关联子节：§14.2.5 数据收集方法、§14.2.6 数据分析与解读
