@@ -36,9 +36,9 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
   - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
+    path: ""
   - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]"
+    path: ""
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]"
   - type: blog
@@ -74,6 +74,8 @@ task6_state: reviewed
 last_task6_at: "2026-06-08T16:14:59+08:00"
 last_task6_review_log: "logs/review/2026-06-08-16-review.md"
 last_task6_audit: "2026-06-08"
+deepseek_cn_review_state: needs-structure-rework
+last_deepseek_cn_review_at: 2026-06-12
 ---
 
 # 内存监控与线上治理
@@ -107,7 +109,7 @@ last_task6_audit: "2026-06-08"
 
 这里的边界是监控与治理策略。Java 泄漏引用链详见 23.1 节，OOM 分类详见 20.5 节，内存分析工具详见 10.1 节，KOOM 这类专项工具详见 19.3 节。原理部分不重复展开，重点放在可持续采集、告警和现场保存。
 
-参考书把 Android App 内存拆成 Java Heap、Native Heap、图形/文件映射、线程栈、多进程共享页等多个来源，这个拆法适合作为线上指标体系的结构参考。线上面板不能只放一个“内存占用”，否则 Java 泄漏、Native 泄漏、图片缓存、线程栈增长、mmap 增长都会混在同一条曲线上。[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+参考书把 Android App 内存拆成 Java Heap、Native Heap、图形/文件映射、线程栈、多进程共享页等多个来源，这个拆法适合作为线上指标体系的结构参考。线上面板不能只放一个“内存占用”，否则 Java 泄漏、Native 泄漏、图片缓存、线程栈增长、mmap 增长都会混在同一条曲线上。
 
 ## 内存指标采集：PSS / RSS / Java Heap / Native Heap
 
@@ -212,7 +214,7 @@ OOM 预警不是等 `OutOfMemoryError` 抛出来。线上更有价值的窗口�
 
 主动回收只处理“业务可控资源”。图片内存缓存、页面级大对象、预加载队列、临时 byte buffer、播放器预缓冲、WebView 预热实例，都可以按优先级释放；不应该尝试频繁调用 `System.gc()` 作为常规治理手段。GC 只能处理不可达对象，不能释放仍被缓存或单例持有的对象，频繁触发还会带来停顿。
 
-参考书把 Java Heap 优化拆成减少缓存、按需加载、优化数据结构和释放无效对象，这个顺序适合线上回收策略：先删业务缓存，再降低后续分配，再进入专项分析。[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+参考书把 Java Heap 优化拆成减少缓存、按需加载、优化数据结构和释放无效对象，这个顺序适合线上回收策略：先删业务缓存，再降低后续分配，再进入专项分析。
 
 一段端侧判断逻辑要保守，只在连续窗口里触发。下面代码只展示规则形状，不代表阈值可以照搬。
 
@@ -283,139 +285,6 @@ Android 10 到 14 的线上 heap dump 仍多依赖 `Debug.dumpHprofData()`、专
 
 内存监控的有效性取决于指标拆分和触发策略。PSS / RSS 看进程对系统和物理内存的压力，Java Heap / Native Heap 用于判断增长来源，`ActivityManager.MemoryInfo` 提供设备低内存背景信号。线上治理按“指标 → 水位线 → 降级 → 快照 → 专项分析”推进，少量高质量现场比大量单点数值更有用。
 
-<!-- AIW-源码调研-2026-06-11 -->
+## 延伸阅读
 
-## 🔬 源码调研发现 (2026-06-11)
-
-### ProfilingManager.java API 验证
-经源码级调研验证，Android 14/15 中 **ProfilingManager.java API 在实际AOSP源码中不存在**。章节23.7提到的该API可能属于以下情况之一：
-
-- 该API仅存在于官方文档，未实际实现到AOSP框架层
-- 实现后被移除或重命名为其他类名
-- 仅在特定厂商分支或mainline模块中存在
-
-**建议：** 如需使用内存跟踪功能，应使用已验证的以下替代方案：
-
-### 实际可用的内存跟踪 API
-#### 1. ProfilingServiceManager (Android 15)
-- **源码位置：** frameworks/base/core/java/android/os/ProfilingServiceManager.java
-- **版本要求：** Android 15 (API 35)，需@FlaggedApi权限
-- **功能：** 提供profiling mainline module的系统服务访问接口
-- **限制：** 仅在android-15.0.0_r1 tag中存在，未进入Android 17主干
-
-#### 2. ProcessMemoryState 扩展 (Android 14/15)
-- **源码位置：** frameworks/base/core/java/android/app/ProcessMemoryState.java
-- **功能：** Parcelable数据结构，包含uid/pid/processName/oomScore/hostingComponentTypes
-- **增强：** Android 14/15新增HostingComponentType枚举，精确标识进程托管状态
-
-#### 3. GC后内存指标上报控制
-- **源码位置：** frameworks/base/core/java/android/app/metrics.aconfig
-- **Feature Flag：** report_postgc_memory_metrics (bug 331243037)
-- **功能：** 控制垃圾回收后的内存指标数据上报
-
-
-<!-- AIW-源码调研-2026-06-12 -->
-
-## 🔬 源码调研发现 (2026-06-12)
-
-### 主题：Android 14 高精度内存跟踪 API 与泄漏检测增强机制
-
-> 本节对 AIW §23.7「内存监控与线上治理」进行 AOSP 源码级补充，源码锚点全部来自 `android-14-release` 标签。深度报告见 `DeepResearch/2026-06-12-android14-memory-tracking-apis-leak-detection.md`。
-
-#### 1. `setWatchHeapLimit` + `ACTION_REPORT_HEAP_LIMIT`：PSS 阈值触发的"自动 dump"
-
-这是 Android 14 上最被低估的"泄漏疑似现场保留"能力。`ActivityManager.java` @ android-14-release（L5270-5300）：
-
-```java
-public void setWatchHeapLimit(long pssSize) {
-    try {
-        getService().setDumpHeapDebugLimit(null, 0, pssSize, mContext.getPackageName());
-    } catch (RemoteException e) { throw e.rethrowFromSystemServer(); }
-}
-public static final String ACTION_REPORT_HEAP_LIMIT = "android.app.action.REPORT_HEAP_LIMIT";
-public void clearWatchHeapLimit() {
-    try { getService().setDumpHeapDebugLimit(null, 0, 0, null); }
-    catch (RemoteException e) { throw e.rethrowFromSystemServer(); }
-}
-```
-
-调用链（`AppProfiler.java` @ android-14-release L879-1000）：
-```
-App.setWatchHeapLimit(pss) → AMS.setDumpHeapDebugLimit() → AppProfiler.setDumpHeapDebugLimit()
-  写入 ProcessMap<Pair<Long,String>> mMemWatchProcesses
-  PSS 采样线程命中阈值 → Debug.dumpHprofData() 写到
-    content://com.android.shell.heapdump/<procName>_javaheap.bin
-  → dumpHeapFinished() → handlePostDumpHeapNotification()
-    → 广播 Intent(ACTION_HEAP_DUMP_FINISHED) → App 端 Activity
-```
-
-> ⚠️ **API 边界**：仅 `FLAG_DEBUGGABLE` 包或 `userdebug`/`eng` 构建生效，公开 release 包不能依赖它的稳定性。**灰度包/内测包线上取证**是该 API 的最佳使用场景。
-
-#### 2. `ApplicationExitInfo` 在 Android 14 的归因增强
-
-`ApplicationExitInfo.java` @ android-14-release 在主原因枚举上新增 3 档：
-
-| 常量 | 值 | 含义 |
-|---|---|---|
-| `REASON_FREEZER` | 14 | App Freezer 杀进程（详见 §20.5 冻结） |
-| `REASON_PACKAGE_STATE_CHANGE` | 15 | 包状态变更（替代旧 `REASON_USER_REQUESTED`） |
-| `REASON_PACKAGE_UPDATED` | 16 | 包更新 |
-
-子原因补到 28（`SUBREASON_SDK_SANDBOX_NOT_NEEDED=28`），**对内存归因最相关**的几个：
-
-- `SUBREASON_LARGE_CACHED=5`（`REASON_OTHER`）：cached 占用大被杀——典型内存压力
-- `SUBREASON_MEMORY_PRESSURE=6`（`REASON_OTHER`）：idle 后仍处于低内存
-- `SUBREASON_TRIM_EMPTY=4`（`REASON_OTHER`）：empty 进程被 trim
-- `SUBREASON_FREEZER_BINDER_IOCTL=19` / `SUBREASON_FREEZER_BINDER_TRANSACTION=20`（`REASON_FREEZER`）：被冻结时 binder 失败——**泄漏分析时必须排除**
-
-线上归因面板推荐用 `ActivityManager.getHistoricalProcessExitReasons(pkg, pid, maxNum)` 取代 `logcat | grep "Killing"` 自解析，关键字段：
-
-```java
-info.getReason();        // 主原因
-info.getSubReason();     // @hide 反射/系统签名
-info.getImportance();    // 退时重要性
-info.getPss();           // 退时 PSS（kB）  ← Android 11+ 新增
-info.getRss();           // 退时 RSS（kB）  ← Android 11+ 新增
-info.getDescription();   // 文本描述
-info.getIntent();        // 启动 Intent 备份
-```
-
-#### 3. Native 侧 API 34 新增 `M_PURGE_ALL`
-
-`bionic/libc/include/malloc.h` @ android-14-release 在 API 34 新增：
-
-```c
-/* Available since API level 34. */
-#define M_PURGE_ALL (-104)   // 比 M_PURGE 扫描面更广，耗时通常 2x
-```
-
-Scudo 专属（jemalloc 设备不生效），只能在**后台线程**调用，开销 50-200 ms。Heap Tagging 等级 `M_HEAP_TAGGING_LEVEL_*`（NONE/TBI/ASYNC/SYNC）保持 API 31 引入，API 34 未新增 level 常量。
-
-#### 4. `Debug.MemoryInfo` 分桶精度
-
-`Debug.java` @ android-14-release（L116-450）维持 9 类分桶（`dalvikPss/nativePss/otherPss + swappable/rss/privateDirty/...`）+ 9 个 `NUM_CATEGORIES` 的 otherStats 数组。**`getTotalPss()` 等派生字段单位是 kB**（不是 byte），线上与 PSS 基线对比时注意单位换算。
-
-`getProcessMemoryInfo(int[])` 行为约束（API 30 维持到 14）：仅同 uid 可见；采样频率被系统节流，**线上应取 1-5 分钟级**而非秒级。
-
-#### 5. 迁移路径建议
-
-| 旧实践 | Android 14 推荐 | 理由 |
-|---|---|---|
-| `logcat` grep `Killing` 自解析 | `getHistoricalProcessExitReasons()` | 拿到结构化 REASON/SUBREASON + PSS/RSS |
-| `TRIM_MEMORY_RUNNING_LOW` 单独做 OOM 预警 | `MemoryInfo.lowMemory` + 自有 PSS 曲线 | 旧等级在 API 35 废弃 |
-| 公开 release 触发 `Debug.dumpHprofData()` | 灰度包 `setWatchHeapLimit` + 公开 release 走 LeakCanary/KOOM | 灰度包走系统 dump，release 走自管 |
-| `Runtime.getRuntime().gc()` 做"主动回收" | 业务缓存清理 + `M_PURGE`/`M_PURGE_ALL` | GC 不能释放仍可达对象，频繁触发带来停顿 |
-
-#### 6. API 等级与版本差异速查
-
-| 能力 | 引入版本 | 14 状态 |
-|---|---|---|
-| `Debug.MemoryInfo` 9 类分桶 | API 1 | 维持 |
-| `setWatchHeapLimit` | API 26 | 维持（仅 debug/eng） |
-| `ApplicationExitInfo` PSS/RSS 字段 | API 30 | 维持 |
-| `ApplicationExitInfo` 新 REASON 14/15/16 | API 34 | **新增** |
-| `M_PURGE_ALL` | **API 34** | **新增** |
-| `M_HEAP_TAGGING_LEVEL_*` | API 31 | 维持 |
-| `RateLimitingCache` 包裹 `getMemoryInfo` | main 分支（API 36+） | **未在 14 默认开启** |
-
-> 报告全文与代码引用见 `DeepResearch/2026-06-12-android14-memory-tracking-apis-leak-detection.md`。
+- [Android 14 高精度内存跟踪 API 与泄漏检测增强机制](DeepResearch/2026-06-12-android14-memory-tracking-apis-leak-detection.md) — 分析 Android 14 新增的 setWatchHeapLimit PSS 阈值自动 dump Hprof 机制、ApplicationExitInfo REASON_FREEZER 等退出原因细分、bionic M_PURGE_ALL 激进回收指令，以及 App 端内存泄漏检测从 Debug API 向系统级委托的迁移路径。
