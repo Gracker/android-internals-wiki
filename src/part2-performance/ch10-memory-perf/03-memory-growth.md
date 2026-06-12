@@ -40,26 +40,26 @@ related_chapters:
 - '4.1'
 - '4.3'
 - '4.5'
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: "pass-light-edit"
 task9_state: reviewed
 task2b_result: "fixed-lite"
-task2b_state: "fixed"
-task9_result: pass-tech-review
+task2b_state: fixed
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-05-28T04:30:00+08:00"
+last_task9_at: "2026-06-13T03:24:38+08:00"
 last_task6_at: "2026-05-27T23:15:00+08:00"
 last_task6_audit: '2026-06-08'
 last_task6_audit_result: l1-clean
-last_task9_audit: "2026-05-19"
+last_task9_audit: "2026-06-13"
 last_task2b_lite_at: "2026-05-27"
 last_task6_review_log: "logs/review/2026-05-27-23-review.md"
-last_task9_autofix_at: "2026-05-27"
+last_task9_autofix_at: "2026-06-13"
 task6_review_notes: "2026-05-27 23:15 Task6：revisiting 写作复审通过；L1/L2 小修 3 项（删除正文编辑标记 2 处，压缩否定-纠正式句式 1 处）；无新增 L3/L4 回炉项。"
-last_task9_review_log: "logs/deep-review/2026-05-28-04-deep-review.md"
-task9_review_notes: "2026-05-28 Task9 04:30：pass-tech-review；无 P0/P1；queue 无 pending，Task6 已通过，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-13-03-audit.md"
+task9_review_notes: "2026-06-13 03:20 Task9 闲时抽检：AUTO-FIX Bitmap 缓存像素数据 Java Heap/Native Heap 版本边界；回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
 ---
@@ -107,9 +107,9 @@ last_deepseek_cn_review_at: 2026-06-09
 
 这是最常见的非泄漏性内存增长原因。开发者为了提升用户体验，会使用各种缓存：图片缓存、接口数据缓存、列表项缓存。这些缓存的初衷是好的——避免重复加载、减少网络请求、加快页面渲染。但问题在于，如果缓存没有合理的容量限制，随着用户不断浏览新内容，缓存中的条目只会越来越多。
 
-一个典型的场景是图片加载框架的内存缓存。如果直接使用 HashMap 或 ArrayList 来缓存 Bitmap，没有任何淘汰策略，那么用户每加载一张新图片，这张图片的像素数据就会一直驻留在 Java Heap 中。对于资讯类应用，用户可能在一个会话中浏览数百张图片，即使很多图片对应的页面已经关闭，它们依然占据着内存。
+一个典型的场景是图片加载框架的内存缓存。如果直接使用 HashMap 或 ArrayList 来缓存 Bitmap，没有任何淘汰策略，那么用户每加载一张新图片，Bitmap 对象及缓存索引会留在 Java Heap 中；对本章覆盖的 API 26+，像素数据主要留在 Native Heap、RSS 和 PSS 中。对于资讯类应用，用户可能在一个会话中浏览数百张图片，即使很多图片对应的页面已经关闭，它们依然占据着内存。
 
-这种情况在 `dumpsys meminfo` 中的表现是 Java Heap 的 Alloc 值持续增长，而且 GC 后回落不明显——因为被缓存引用的 Bitmap 属于可达对象，GC 不会回收它们。
+这种情况在 `dumpsys meminfo` 中的表现是 Java Heap 的 Alloc、Native Heap、RSS 或 PSS 随缓存规模增长，而且 GC 后回落不明显——因为被缓存引用的 Bitmap 属于可达对象，GC 不会回收它们。
 
 另一个常见变体是"无限追加的列表"。有些应用在首页信息流中持续加载新数据，把所有已加载的数据都保存在内存中的列表里。用户下拉加载越多，列表越长，内存占用越大。虽然每个数据对象本身不大，但数千条数据加上其中的嵌套对象（图片 URL、富文本、嵌套 JSON）会逐步抬高 Java Heap 和 PSS。
 
