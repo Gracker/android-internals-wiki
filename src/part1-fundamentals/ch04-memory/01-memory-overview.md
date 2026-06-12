@@ -5,9 +5,8 @@ section: '4.1'
 status: finalized
 drafted_date: '2026-03-31'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-21'
-last_verified_against: AOSP android-16.0.0_r1 / Android Developers bitmap memory &
-  16 KB page size docs / kernel zram docs
+last_verified: '2026-06-12'
+last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & Android 17 app memory limits docs / Perfetto Java heap profiler & OOME docs / 16 KB page size docs / kernel zram docs"
 reviewed_date: '2026-05-07'
 reviewed_by: openclaw-task6
 review_notes: 'task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack
@@ -40,6 +39,20 @@ sources:
   path: system/memory/lmkd/lmkd.cpp
 - type: official
   path: https://docs.kernel.org/admin-guide/blockdev/zram.html
+- type: official
+  path: https://perfetto.dev/docs/data-sources/java-heap-profiler
+- type: official
+  path: https://perfetto.dev/docs/case-studies/android-outofmemoryerror
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityThread.java
+- type: aosp
+  path: art/runtime/hprof/hprof.cc
+- type: aosp
+  path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
 - type: blog
   path: https://androidperformance.com/
 - type: blog
@@ -59,18 +72,20 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '10.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-12'
-last_task9_at: '2026-05-12T22:15:00+08:00'
-last_task9_audit: '2026-05-19'
+task9_reviewed_date: '2026-06-12'
+last_task9_at: '2026-06-12T11:20:00+08:00'
+last_task9_audit: '2026-06-12'
+last_task9_autofix_at: '2026-06-12'
+last_task9_review_log: 'logs/deep-review/2026-06-12-11-audit.md'
 last_task6_audit: '2026-05-21'
-task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。'
+task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。 | 2026-05-12 22:15 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-12 11:20 Task9 idle audit auto-fix: 修正 16 KB page 小对象表述、HPROF 小节 Perfetto Java heap dump 版本边界与旧的 traced Java heap dump 采集命令，改为 Android 11+ `android.java_hprof` / Android 14+ OOME trigger / `adb shell perfetto -c` 配置；回到 Task6 复审。'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
 ---
@@ -380,7 +395,7 @@ Locked:             0 kB
 
 smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 `dumpsys meminfo` 的分类无法定位具体原因时，逐项查看 smaps 来找到那个异常大的映射区域。**跨设备比对 `smaps`、Perfetto 内存曲线或 native 崩溃现场时，用 `adb shell getconf PAGE_SIZE` 或 `smaps` 里的页大小字段确认当前页大小，再解释页粒度带来的页内碎片、页表开销和 PSS / RSS 跳变。
 
-16 KB 页环境下页内碎片会增加——一个只使用 1 KB 的对象也要占用整个 16 KB 页面，全系统总 PSS 通常上涨 5% 到 10%。这是架构层面的正常开销，不代表应用存在泄漏。跨版本或跨设备对比 PSS 基线时，需要先确认页大小，再判断增量是否在合理范围内。
+16 KB 页环境下页内碎片会增加：被触碰并提交的匿名页、`mmap` 页面和 allocator span 会按 16 KB 粒度进入 RSS/PSS；多个小对象仍可能共享同一页，不能把“1 KB 对象”理解成必然独占 16 KB。全系统总 PSS 通常上涨 5% 到 10%。这是架构层面的正常开销，不代表应用存在泄漏。跨版本或跨设备对比 PSS 基线时，需要先确认页大小，再判断增量是否在合理范围内。
 
 读取 `/proc/<pid>/smaps` 需要足够的权限（通常是 root，或者目标 App 是 debuggable 的），且读取操作本身有性能开销（内核需要遍历所有页表），不建议在高频循环中调用。
 
@@ -392,7 +407,7 @@ smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 
 
 ### HPROF 堆转储分析
 
-Android 17 提供了多层次的堆转储机制，用于内存问题诊断和性能分析：
+Android 的堆转储要分两条路径看：`am dumpheap` 通过 ActivityManager 转发到目标进程；Perfetto 的 ART heap dump 数据源从 Android 11 起提供引用图采集，Android 14 起可以配合 OOM trigger 等待 `OutOfMemoryError`。Android 17 的 app memory limits 命中后，开发者侧更适合用 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` 或事后 `ApplicationExitInfo` 判断触发原因。
 
 #### Shell 命令层 (`am dumpheap`)
 
@@ -426,37 +441,49 @@ adb shell am dumpheap -m <pid> /data/local/tmp/malloc-info.txt
      ```
    - 输出标准 JAVA PROFILE 1.0.3 格式
 
-#### Perfetto 集成 (Android 17)
+#### Perfetto ART heap dump（Android 11+；OOM trigger Android 14+）
 
-Android 17 通过 Perfetto 实现了现代化的堆图分析：
+Perfetto 的 `android.java_hprof` 数据源从 Android 11 起可用。它采集 ART 堆引用图，不等同于 `am dumpheap` 导出的标准 HPROF 对象数据：
 
 **配置数据源**：
 ```proto
 message JavaHprofConfig {
     message ContinuousDumpConfig {
-        uint32 dump_interval_ms = 2;   // 连续导出间隔
-        bool scan_pids_only_on_start = 3;  // 进程扫描策略
+        optional uint32 dump_interval_ms = 2;   // 连续导出间隔
+        optional bool scan_pids_only_on_start = 3;  // 进程扫描策略
     }
     repeated string process_cmdline = 1;  // 目标进程
-    uint32 min_anonymous_memory_kb = 4;  // 内存下限过滤
+    optional ContinuousDumpConfig continuous_dump_config = 3;
+    optional uint32 min_anonymous_memory_kb = 4;  // 内存下限过滤
 }
 ```
 
 **解析流程**：
-1. `ArtHprofParser` 解析 HPROF 二进制格式
-2. 构建 `HeapGraph` 对象结构
-3. 填充 `Object`、`ClassDefinition`、`StringId` 等数据
-4. 存储到 Perfetto 表格供后续分析
+1. ART heap dump 数据源把 Java 对象引用图写入 Perfetto trace。
+2. Trace Processor 导入 heap graph 数据。
+3. SQL 层通过 `heap_graph_class`、`heap_graph_object`、`heap_graph_reference` 查询。
+4. Perfetto UI 在 Heap Profile track / Heap Dump Explorer 中展示这些对象关系。
 
 #### 内存分析实践
 
 **配置连续监控**：
 ```bash
-# 配置 Traced 系统进行连续堆监控
-adb shell traced enable java_hprof continuous --interval 5000 --target com.example.app
-
-# 导出堆图数据
-adb shell traced dump java_hprof /data/local/tmp/continuous-heap.hprof
+# 采集 ART heap dump 引用图，输出为 Perfetto trace
+cat <<'EOF' | adb shell perfetto -c - --txt -o /data/misc/perfetto-traces/java-heap.pftrace
+buffers: { size_kb: 65536 fill_policy: DISCARD }
+duration_ms: 30000
+data_source_stop_timeout_ms: 100000
+data_sources: {
+  config {
+    name: "android.java_hprof"
+    java_hprof_config {
+      process_cmdline: "com.example.app"
+      continuous_dump_config { dump_interval_ms: 5000 }
+    }
+  }
+}
+EOF
+adb pull /data/misc/perfetto-traces/java-heap.pftrace .
 ```
 
 **数据解读**：
@@ -466,16 +493,17 @@ adb shell traced dump java_hprof /data/local/tmp/continuous-heap.hprof
 
 #### 性能影响
 
-堆转储会对应用性能产生以下影响：
-- **暂停时间**: 50-200ms 全线程暂停
-- **内存开销**: 需要 2-3 倍堆空间用于临时数据
-- **I/O 压力**: 直接文件写入，避免用户空间拷贝
+堆转储会对应用性能产生以下影响，具体数值取决于堆大小、对象数量、设备 I/O 和是否触发 GC：
+- **线程暂停**：`am dumpheap` 的 Java HPROF 路径会进入 GC critical section 并执行 `ScopedSuspendAll`，停顿随堆规模变化。
+- **内存 / CPU 开销**：Perfetto ART heap dump 和 native heap profiling 都会消耗额外 buffer 与解析资源，连续采集要控制间隔和目标进程。
+- **I/O 压力**：`am dumpheap` 直接写文件描述符；Perfetto 写 `.pftrace` 到 `/data/misc/perfetto-traces/` 后再 pull。
 
 **优化建议**：
 - 在非关键时间点进行 dump
 - 避免在性能敏感期连续多次调用
 - 使用过滤条件减少导出数据量
 
+[已验证: AOSP android-16.0.0_r1 ActivityManagerShellCommand / ActivityManagerService / ActivityThread / art/runtime/hprof/hprof.cc；Perfetto ART heap dump 与 OOME docs]
 
 前面已经多次用到 `dumpsys meminfo` 的输出，这里把它的用法系统地过一遍。
 
