@@ -4,27 +4,30 @@
     "title": "ART GC Region 碎片化与 Compaction 策略",
     "file": "src/part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "created": "2026-06-11",
-    "source": "task2a-gap-mining"
+    "source": "task2a-gap-mining",
+    "completed_note": "stale-cleanup: file already processed"
   },
   {
     "section": "16.9",
     "title": "Android 17 SDM 安装编译链路性能",
     "file": "src/part4-system/ch16-aosp/09-android17-sdm-install-performance.md",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "created": "2026-06-11",
-    "source": "task2a-gap-mining"
+    "source": "task2a-gap-mining",
+    "completed_note": "stale-cleanup: file already processed"
   },
   {
     "section": "2.27",
     "title": "SurfaceFlinger Transaction Queue 无锁架构与消息分流",
     "file": "src/part1-fundamentals/ch02-rendering/27-sf-transaction-queue-lockless.md",
     "priority": 80,
-    "status": "pending",
+    "status": "completed",
     "created": "2026-06-11",
-    "source": "task2a-gap-mining"
+    "source": "task2a-gap-mining",
+    "completed_note": "stale-cleanup: file already processed"
   },
   {
     "section": "4.8",
