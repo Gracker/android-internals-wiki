@@ -6,9 +6,9 @@ section: '3.6'
 status: finalized
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 drafted_by: openclaw-task
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 version_notes: "DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用"

@@ -44,10 +44,10 @@ related_chapters:
 task9_reviewed_date: "2026-06-12"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-12T14:20:00+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 finalized_date: "2026-05-19"
 finalized_by: openclaw-task9-auto-promote
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_result: "fixed"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
