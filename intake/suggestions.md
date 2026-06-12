@@ -486,3 +486,8 @@ utf-8
 ### 总结
 知识库高度饱和（297 finalized + 78 ready-for-review = 88.0%），连续 90 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（78 个 ready-for-review 待推进），非内容缺口。
 
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-06-13
+- **类型**：源码准确性
+- **位置**：L204 `GraphicsEnv.cpp` ANGLE rules string 调用链
+- **问题**：正文说 `frameworks/native/libs/graphicsenv/GraphicsEnv.cpp` 暴露 `ANGLEAndroidParseRulesString()` / `ANGLEShouldBeUsedForApplication()` 这条调用链，用来解释 ANGLE 包基于 rules string、设备信息和 app 包名进一步判断。复核 AOSP `android-16.0.0_r1` 时，这两个符号只作为函数指针 typedef 保留，文件内未见实际调用链；当前 framework 选路主线是 `GraphicsEnvironment.queryAngleChoice()` → `setAngleInfo()` → EGL `Loader.cpp`。
+- **建议**：后续 Task2B 小修时，将该句改成“ANGLE APK / system ANGLE 内部可能还有 rules 评估，需以对应 ANGLE 版本源码验证”；不要把 rules-string 决策写成 `GraphicsEnv.cpp` 已执行的 framework 调用链。
