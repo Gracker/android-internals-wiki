@@ -1,4 +1,5 @@
 ---
+
 title: 内存持续增长
 chapter: '10.3'
 section: '10.3'
@@ -40,8 +41,8 @@ related_chapters:
 - '4.1'
 - '4.3'
 - '4.5'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: "pass-light-edit"
 task9_state: reviewed
 task2b_result: "fixed-lite"
