@@ -39,6 +39,8 @@ last_task6_at: "2026-05-16T02:11:00+08:00"
 last_task6_audit: "2026-06-07"
 task2b_state: fixed
 
+task6_state: "reviewed"
+task9_state: "reviewed"
 ---
 
 # 22.11 AnimatedVectorDrawable 线程退化与动画卡顿

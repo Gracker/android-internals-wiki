@@ -39,8 +39,8 @@ related_chapters: ["1.15", "4.7", "8.2", "8.3", "14.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-20"
 task6_result: pass-light-edit

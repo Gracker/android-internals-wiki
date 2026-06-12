@@ -76,6 +76,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-24-02-audit.md"
 task6_reviewed_date: "2026-05-24"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
+task6_state: "reviewed"
 ---
 
 
