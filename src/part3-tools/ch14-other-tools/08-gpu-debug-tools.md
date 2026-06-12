@@ -2,7 +2,7 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, Sokatoa 要求 Android 13+)"
 last_verified: "2026-04-22"
 last_verified_against: "developer.android.com/agi, developer.android.com/guide/topics/manifest/profileable-element, perfetto.dev, AOSP gpu_counter_config.proto"
@@ -33,23 +33,23 @@ drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
-task2b_result: "fixed"
+task2b_result: "pending"
 reviewed_date: "2026-05-19"
 task6_result: "pass-light-edit"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: "reviewed"
 task9_state: reviewed
-task2b_state: "fixed"
-task9_result: pass-tech-review
+task2b_state: "pending"
+task9_result: needs-rework
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-19T17:20:00+08:00"
 last_task6_audit: "2026-06-10"
 last_task6_audit_log: "logs/review/2026-05-19-02-audit.md"
-last_task9_audit: "2026-05-19"
+last_task9_audit: "2026-06-12"
 last_task9_review_log: "logs/deep-review/2026-05-19-17-deep-review.md"
-queue_entry: "task9-audit-14.8-gpu-tools-version-source-20260519"
-task9_review_notes: "2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；AGI validation layer、Perfetto GPU datasource、Sokatoa 版本/设备要求复核通过；AGI/RenderDoc roadmap 表述仅作为 P3 建议记录。"
+queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
+task9_review_notes: "2026-06-12 Task9 闲时抽检：needs-rework；P0 0 / P1 1；Android Performance Analyzer 已成为官方推荐 system profiling 工具，需回炉更新 AGI/APA/GFXReconstruct 边界。"
 last_task6_at: "2026-05-19T17:09:00+08:00"
 task6_reviewed_at: "2026-05-19T17:09:00+08:00"
 task6_reviewed_by: "openclaw-task6"
@@ -59,6 +59,7 @@ finalized_date: "2026-05-19"
 finalized_by: openclaw-task9-auto-promote
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: "2026-06-01"
+last_task9_audit_log: "logs/deep-review/2026-06-12-16-audit.md"
 ---
 
 # 14.8 GPU 图形调试与分析工具

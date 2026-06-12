@@ -2436,8 +2436,8 @@
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
   "ready_for_review": 82,
-  "last_updated": "2026-06-08",
-  "last_updated_by": "task2a",
+  "last_updated": "2026-06-12T16:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2466,7 +2466,7 @@
     "l3_l4_issues": 0,
     "new_rework": false
   },
-  "task9_last_review": "2026-06-06T19:20:00+08:00",
+  "task9_last_review": "2026-06-12T16:20:00+08:00",
   "ready_to_publish": 192,
   "rework_history": [
     {
@@ -5761,15 +5761,18 @@
     },
     "14.8": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-19T17:09:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-19-17-review.md",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "last_task9_audit": "2026-06-12",
+      "last_task9_audit_log": "logs/deep-review/2026-06-12-16-audit.md",
+      "queue_entry": "task9-audit-20260612-14.8-apa-system-profiler-boundary"
     },
     "4.11": {
       "status": "finalized",

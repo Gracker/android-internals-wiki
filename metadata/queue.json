@@ -212,5 +212,29 @@
     "completed_reason": "素材注入: 在参考资料中追加 Linux LRU dead folio 预回收前瞻性引用（标注未进入 Android 17）",
     "completed_at": "2026-06-12T14:52:47+08:00",
     "completed_by": "task2b-main"
+  },
+  {
+    "id": "task9-audit-20260612-14.8-apa-system-profiler-boundary",
+    "section": "14.8",
+    "section_title": "GPU 图形调试与分析工具",
+    "title": "GPU 图形调试与分析工具",
+    "file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Android Performance Analyzer 已成为官方推荐的 system profiling 工具，14.8 仍以 AGI System Profiler 作为当前主线，并把 GFXReconstruct / RenderDoc 方向挂在 AGI roadmap，工具版本边界过期。",
+    "material_paths": [
+      "logs/deep-review/2026-06-12-16-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md:L112-L123, L211-L223, L322-L328, L533-L552, L615-L617",
+        "detail": "Android Developers AGI quickstart / System Profiler / GPU counters 页面在 2026-05-19 更新后明确提示 Android Performance Analyzer 是新的 system profiling 推荐工具；APA 官方博客与文档说明 open beta System Profiler 覆盖 CPU/GPU/Memory/power，基于 Perfetto，Android 12+ 体验最佳，并带 Vulkan layers；其后续 frame profiling/debugging 才由 GFXReconstruct 提供。正文仍把 AGI System Profiler 作为当前主线，工具表缺少 APA，并写“AGI 2026 H2 的 Frame Profiler Alpha 将支持导出到 RenderDoc”，容易把 APA/GFXReconstruct 路线误归到 AGI。",
+        "suggestion": "回炉时新增 APA 到工具全景、选型表、工具数据对比和版本演进：system profiling 首选写为 Perfetto GPU / APA System Profiler，AGI System Profiler 保留为现有可用工具或兼容路径；把 GFXReconstruct 相关 frame profiling/debugging 改写为 APA beta/roadmap 边界；删除或降级“AGI 导出 RenderDoc”断言，除非找到 Google 官方 release notes；同时把 Perfetto GPU proto 源码锚点 pin 到 android-16.0.0_r1 或可用的 Android 17 以内 tag。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-12T16:20:00+08:00",
+    "created": "2026-06-12",
+    "status": "pending"
   }
 ]
