@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-05-20"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
-last_verified: "2026-05-20"
-last_verified_against: "AOSP bionic main/linker, Android Developers 16KB page size docs, Android NDK libdl/MTE docs, NDK GitHub issues"
+last_verified: "2026-06-12"
+last_verified_against: "AOSP bionic android-16.0.0_r1/linker, Android Developers 16KB page size docs, Android NDK libdl/MTE docs, NDK GitHub issues"
 confidence: medium
 sources:
   - type: blog
@@ -23,13 +23,13 @@ sources:
   - type: official
     path: "https://developer.android.com/ndk/guides/arm-mte"
   - type: aosp
-    path: "platform/bionic/+/main/linker/linker_namespaces.cpp"
+    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker_namespaces.cpp"
   - type: aosp
-    path: "platform/bionic/+/main/linker/linker_namespaces.h"
+    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker_namespaces.h"
   - type: aosp
-    path: "platform/bionic/+/main/linker/linker_phdr.cpp"
+    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker_phdr.cpp"
   - type: aosp
-    path: "platform/bionic/+/main/linker/linker_phdr_16kib_compat.cpp"
+    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker_phdr_16kib_compat.cpp"
   - type: blog
     path: "https://github.com/android/ndk/issues/2026"
   - type: blog
@@ -39,19 +39,23 @@ related_chapters: ["1.15", "4.7", "8.2", "8.3", "14.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-20"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-20"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-20"
-last_task9_at: "2026-05-20T14:28:39+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-20-14-deep-review.md"
-task9_review_notes: "2026-05-20 task9 deep review：无 P0/P1；记录 2 条 P2 技术补强建议（ART/native loader 源码锚点、厂商 linker config 样本）；满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-06-12"
+last_task9_at: "2026-06-12T19:20:00+08:00"
+last_task9_audit: "2026-06-12"
+last_task9_audit_log: "logs/deep-review/2026-06-12-19-audit.md"
+last_task9_autofix_at: "2026-06-12"
+last_task9_review_log: "logs/deep-review/2026-06-12-19-audit.md"
+task9_review_notes: "2026-05-20 task9 deep review：无 P0/P1；记录 2 条 P2 技术补强建议（ART/native loader 源码锚点、厂商 linker config 样本）；满足 Task6 pass 与 queue 无 pending，自动晋升 finalized。 | 2026-06-12 Task9 闲时抽检：auto-fixed。将 Bionic linker 源码锚点从未固定版本收敛到 android-16.0.0_r1；复核 `ElfReader::LoadSegments()`、`CompatMapSegment()`、`android_namespace_t::is_accessible()` 在 Android 16 tag 存在。Android 17 tag 未公开，未使用未固定版本源码作为正文结论。"
 last_task6_at: "2026-05-20T14:13:00+08:00"
 last_task6_audit: "2026-06-11"
 last_task6_review_log: "logs/review/2026-05-20-14-review.md"
@@ -94,7 +98,7 @@ last_deepseek_cn_review_at: 2026-06-11
 - [来源: DeepResearch/2026-05-08-16kb-page-size-third-party-library-impact.md]
 - [引用: https://developer.android.com/guide/practices/page-sizes]
 - [引用: https://developer.android.com/ndk/reference/group/libdl]
-- [引用: https://cs.android.com/android/platform/superproject/+/master:bionic/linker]
+- [引用: https://android.googlesource.com/platform/bionic/+/refs/tags/android-16.0.0_r1/linker/]
 
 <!-- outline-end -->
 
@@ -123,7 +127,7 @@ App 层最常见的入口是 `System.loadLibrary("xxx")`。它从 Java 层进入
 
 Bionic linker 处理一个 `.so` 时，大体会经历这条路径：读取 ELF header 和 program header，检查 `PT_LOAD` 段对齐，预留地址空间，把各个 segment 映射到进程地址空间，处理 `DT_NEEDED` 依赖，做符号查找和重定位，设置 RELRO / 段权限，调用 `DT_INIT` / `DT_INIT_ARRAY`，完成后返回库句柄。
 
-AOSP `bionic/linker/linker_phdr.cpp` 中的 `ElfReader::LoadSegments()` 负责把 `PT_LOAD` 段映射进来；`linker_phdr_16kib_compat.cpp` 中的 compat 分支处理 4KB ELF 在 16KB 设备上的特殊路径。这些代码解释了为什么库加载不只是一次文件打开：它会触发地址空间预留、文件映射、匿名页、权限切换和初始化代码执行。[已验证: AOSP main, `bionic/linker/linker_phdr.cpp`, `bionic/linker/linker_phdr_16kib_compat.cpp`]
+AOSP `bionic/linker/linker_phdr.cpp` 中的 `ElfReader::LoadSegments()` 负责把 `PT_LOAD` 段映射进来；`linker_phdr_16kib_compat.cpp` 中的 compat 分支处理 4KB ELF 在 16KB 设备上的特殊路径。这些代码解释了为什么库加载不只是一次文件打开：它会触发地址空间预留、文件映射、匿名页、权限切换和初始化代码执行。[已验证: AOSP android-16.0.0_r1, `bionic/linker/linker_phdr.cpp`, `bionic/linker/linker_phdr_16kib_compat.cpp`]
 
 可观测边界要分层看：
 
@@ -139,7 +143,7 @@ AOSP `bionic/linker/linker_phdr.cpp` 中的 `ElfReader::LoadSegments()` 负责�
 
 ## Linker Namespace 的隔离规则
 
-Android 7 引入 Linker Namespace 后，`dlopen()` 不再是“知道路径就能打开”。namespace 约束决定当前库能访问哪些搜索路径、哪些 public library、哪些跨 namespace 共享库。AOSP `android_namespace_t::is_accessible(const std::string& file)` 的路径判断很直接：非 isolated namespace 直接放行；isolated namespace 先看 `allowed_libs_`，再检查 `ld_library_paths_`、`default_library_paths_`、`permitted_paths_`。[已验证: AOSP main, `bionic/linker/linker_namespaces.cpp`, `bionic/linker/linker_namespaces.h`]
+Android 7 引入 Linker Namespace 后，`dlopen()` 不再是“知道路径就能打开”。namespace 约束决定当前库能访问哪些搜索路径、哪些 public library、哪些跨 namespace 共享库。AOSP `android_namespace_t::is_accessible(const std::string& file)` 的路径判断很直接：非 isolated namespace 直接放行；isolated namespace 先看 `allowed_libs_`，再检查 `ld_library_paths_`、`default_library_paths_`、`permitted_paths_`。[已验证: AOSP android-16.0.0_r1, `bionic/linker/linker_namespaces.cpp`, `bionic/linker/linker_namespaces.h`]
 
 这条规则对性能排查有两个影响。
 
@@ -159,7 +163,7 @@ Android 15 开始支持 16KB page size 设备。Google Play 的公开要求是�
 
 **APK / AAB 包内 zip 对齐。** 对 uncompressed shared libraries，AGP 8.5.1+ 可以请求 16KB zip alignment；`bundletool dump config --bundle <app.aab> | grep alignment` 看到 `PAGE_ALIGNMENT_16K` 才能确认 bundle 配置。官方文档特别指出，AGP 8.3 到 8.5 可能本地看起来可用，但 bundletool 默认不做 16KB zipalign，走 Play 产物时仍可能安装失败。[已验证: 官方文档, https://developer.android.com/guide/practices/page-sizes]
 
-Bionic 还有一条兼容路径。AOSP `CompatMapSegment()` 的实现说明，4KB max-page-size ELF 不能直接按文件 `mmap()` 成 16KB 映射，linker 会把 ELF 内容读进匿名 RW 映射，并给 VMA 标成 “compat loaded”。这能让部分旧库继续加载，但它的目标是兼容，不是提速。匿名拷贝会减少可共享文件页，PSS 可能上升，启动阶段也会多一次读入和拷贝路径。[已验证: AOSP main, `bionic/linker/linker_phdr_16kib_compat.cpp`]
+Bionic 还有一条兼容路径。AOSP `CompatMapSegment()` 的实现说明，4KB max-page-size ELF 不能直接按文件 `mmap()` 成 16KB 映射，linker 会把 ELF 内容读进匿名 RW 映射，并给 VMA 标成 “compat loaded”。这能让部分旧库继续加载，但它的目标是兼容，不是提速。匿名拷贝会减少可共享文件页，PSS 可能上升，启动阶段也会多一次读入和拷贝路径。[已验证: AOSP android-16.0.0_r1, `bionic/linker/linker_phdr_16kib_compat.cpp`]
 
 ```bash
 # 检查 APK 中 native 库的 ELF segment alignment 和 zip alignment。
