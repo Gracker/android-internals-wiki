@@ -6,9 +6,9 @@ section: '3.6'
 status: finalized
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 drafted_by: openclaw-task
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 version_notes: "DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用"
@@ -43,7 +43,7 @@ related_chapters:
 - '3.4'
 - '2.4'
 
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: 2026-06-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-06T09:20:00+08:00"
@@ -54,11 +54,12 @@ task6_result: "pass-light-edit"
 review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatter 标签、禁用词替换、段落拆分、代码注释格式统一）。回炉
   4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
   3/5·元数据 4/5。'
-last_task9_audit: "2026-05-18"
+last_task9_audit: "2026-06-12"
 last_task2b_lite_at: "2026-06-06"
 last_task2b_at: "2026-06-03T21:33:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-06-09-deep-review.md"
-task9_review_notes: "2026-06-06 09:20 Task9 deep-review: pass-tech-review。VelocityTracker Android 10-16 策略演进与 View/GestureDetector/ViewConfiguration 源码锚点复核通过；仅写入 P2 数据支撑建议。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_autofix_at: "2026-06-12"
+task9_review_notes: "2026-06-06 09:20 Task9 deep-review: pass-tech-review。VelocityTracker Android 10-16 策略演进与 View/GestureDetector/ViewConfiguration 源码锚点复核通过；仅写入 P2 数据支撑建议。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 13:20 Task9 idle audit: auto-fixed。修正 VelocityTracker.getXVelocity() 源码片段与 Compose MotionEventAdapter/PointerInputEvent 命名；Android 17 tag 未公开，未扩展为 Android 17 已验证结论。"
 ---
 
 # 手势识别算法与性能优化
@@ -130,7 +131,7 @@ public void computeCurrentVelocity(int units, float maxVelocity) {
 }
 
 public float getXVelocity() {
-    return getAxisVelocity(MotionEvent.AXIS_X, ACTIVE_POINTER_ID);
+    return getXVelocity(ACTIVE_POINTER_ID);
 }
 
 public void recycle() {
@@ -542,8 +543,8 @@ Modifier.pointerInput(Unit) {
 }
 ```
 
-**性能特点**：Compose 的手势系统在底层仍然依赖 Android 的 MotionEvent（通过 `AndroidPointerInputEvent` 转换），但手势判定的逻辑运行在 Compose 的合成层中。
+**性能特点**：Compose 的手势系统在底层仍然依赖 Android 的 `MotionEvent`，但手势判定逻辑运行在 Compose 的 pointer input 层中。
 
-因此，Compose 的手势识别可以更细粒度地与 Composable 的重组和布局阶段集成，但也引入了额外的转换开销。
+因此，Compose 的手势识别可以更细粒度地与 Composable 的重组和布局阶段集成，但 Android 平台层仍需要通过 `MotionEventAdapter` 把 `MotionEvent` 转换为 Compose 内部的 `PointerInputEvent` / `PointerInputChange`，这一步会带来额外转换开销。
 
 > [已验证: Jetpack Compose 1.6+, androidx.compose.ui.input.pointer]
