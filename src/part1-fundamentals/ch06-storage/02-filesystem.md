@@ -34,25 +34,26 @@ task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-22T19:18:14+08:00"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T19:26:00+08:00"
+last_task9_at: "2026-06-13T10:30:00+08:00"
 last_task6_audit: "2026-06-11"
 task2b_state: "fixed"
 p0: 0
 p1: 0
 p2: 1
 updated_by: "openclaw-task9"
-updated_date: "2026-05-22"
+updated_date: "2026-06-13"
 review_notes: "2026-05-22 task9 idle audit: needs-rework。P0 1 / P1 1 / P2 0。f2fs 前台 GC 源码片段过期，EROFS ZSTD 需补 Android 16/6.12+ 版本边界。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 11 处；压掉高频强调词和翻译腔表达；既有 Task9 P0/P1/P2（f2fs curseg_space、EROFS ZSTD、性能数据条件）queue 保留，保持 task2b_pending。 2026-05-22 19:26 Task9 re-review: pass-tech-review，P0/P1=0；P2 EROFS/dm-verity 数据条件已在 suggestions 保留；queue 无 pending，自动晋升 finalized。"
 auto_promoted: true
-last_task9_audit: "2026-05-22"
-last_task9_review_log: "logs/deep-review/2026-05-22-19-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1；P2 1：EROFS/ dm-verity 百分比仍缺完整测试条件，既有 suggestions 已记录，不重复追加。queue 无 pending，Task6 已通过，自动晋升 finalized。"
+last_task9_audit: "2026-06-13"
+last_task9_review_log: "logs/deep-review/2026-06-13-10-30-audit.md"
+task9_review_notes: "2026-06-13 Task9 闲时抽检：AUTO-FIX。补齐 f2fs has_not_enough_free_secs() 源码片段中 lower/upper 阈值叠加 needed + reserved_sections 的两行；回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-13"
 last_task6_at: "2026-05-22T16:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-16-review.md"
 finalized_date: "2026-05-22"
@@ -227,14 +228,16 @@ f2fs 的前台 GC 触发决策由 `has_not_enough_free_secs()` 函数（`fs/f2fs
 static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi,
         int freed, int needed)
 {
-    unsigned int free_secs = free_sections(sbi) + freed;
-    unsigned int lower_secs, upper_secs;
+    unsigned int free_secs, lower_secs, upper_secs;
     bool curseg_space;
 
     if (unlikely(is_sbi_flag_set(sbi, SBI_POR_DOING)))
         return false;
 
     __get_secs_required(sbi, &lower_secs, &upper_secs, &curseg_space);
+    free_secs = free_sections(sbi) + freed;
+    lower_secs += needed + reserved_sections(sbi);
+    upper_secs += needed + reserved_sections(sbi);
     // 情况 1：空闲充裕，直接返回 false
     if (free_secs > upper_secs)
         return false;
