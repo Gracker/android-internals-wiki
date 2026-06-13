@@ -41,9 +41,9 @@ gap_source: "素材驱动/官方文档/AOSP 结构"
 title: "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证"
 chapter: "25.16"
 section: "25.16"
-status: "finalized"
+status: "ready-for-review"
 drafted_by: "task2a-knowledge-gap"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task9_state: "reviewed"
 reviewed_by: "openclaw-task6"
@@ -52,14 +52,16 @@ task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 8 处（补 section/drafted_by 元数据、补 outline 锚点、降低否定-纠正式开头、修 frontmatter 中英文间距、去重 Thermal 扩展标题、移除正文结构参考编辑痕迹）。无新增 Task6 回炉，等待 Task9 技术复审。"
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-24T01:38:24+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-24-01-deep-review.md"
-task9_review_notes: "2026-05-24 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；ADPF power efficiency / PowerMonitor / Perfetto power rails 版本边界已复核；自动晋升 finalized；详见 logs/deep-review/2026-05-24-01-deep-review.md。"
+last_task9_at: "2026-06-13T14:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-13-14-audit.md"
+task9_review_notes: "2026-06-13 Task9 闲时抽检: needs-rework。P0 1 / P1 2 / P2 0；6/10 注入的系统层扩展存在 Power HAL Boost 枚举值、SessionTag/SessionMode 混用和 main branch 版本锚点越界问题，已写入 queue.json 回炉。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
+task2b_state: "pending"
+last_task9_audit: 2026-06-13
 ---
 # 25.16 ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证
 
