@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-17-beta3"
+last_verified: "2026-06-14"
+last_verified_against: "Android Developers docs: Android 17/API 37, Android 10 TLS, CT Policy"
 confidence: medium
 sources:
   - type: official
@@ -17,20 +17,24 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/android/crypto/hpke/HpkeSpi"
   - type: official
-    path: "https://developer.android.com/training/articles/security-gms-provider"
+    path: "https://developer.android.com/privacy-and-security/security-gms-provider"
+  - type: official
+    path: "https://developer.android.com/about/versions/10/features#tls-1.3"
+  - type: official
+    path: "https://developer.android.com/privacy-and-security/certificate-transparency-policy"
 tags: [network-security, tls, ech, hpke, certificate-transparency, cleartext, performance]
 related_chapters: ["12.2", "12.3", "1.6"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-task6_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: revisiting
+pipeline_stage: task6_pending
 task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
 finalized_by: openclaw-task9-auto-promote
 finalized_date: "2026-05-28"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
@@ -40,22 +44,22 @@ task6_result: pass-light-edit
 review_round: 3
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-05-28T10:20:00+08:00"
+task9_reviewed_date: "2026-06-14"
+last_task9_at: "2026-06-14T06:20:00+08:00"
 last_task2b_at: "2026-05-28T06:50:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
-last_task9_audit: "2026-05-20"
-last_task9_audit_log: "logs/deep-review/2026-05-20-19-audit.md"
-task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 2。AUTO-FIX: 删除 ECH CPU 固定比例无源断言，替换 CT Policy stale 待验证注记，回到 Task6 复审。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；复核 Android 17 ECH/CT、HPKE SPI、cleartext 默认策略、DNS 加密传输边界；无 P0/P1。 自动晋升 finalized。"
+last_task9_audit: "2026-06-14"
+last_task9_audit_log: "logs/deep-review/2026-06-14-06-audit.md"
+task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 2。AUTO-FIX: 删除 ECH CPU 固定比例无源断言，替换 CT Policy stale 待验证注记，回到 Task6 复审。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；复核 Android 17 ECH/CT、HPKE SPI、cleartext 默认策略、DNS 加密传输边界；无 P0/P1。 自动晋升 finalized。 | 2026-06-14 06 Task9 idle audit: auto-fixed。P0 2 / P1 0 / P2 0 / P3 1。AUTO-FIX: 修正 Android 10 TLS 1.3 已验证链接（旧 /about/versions/10/security 404 -> /about/versions/10/features#tls-1.3）；修正 Android CT Policy 参考资料链接（旧 source.android.com/docs/security/cert-transparency 404 -> developer.android.com/privacy-and-security/certificate-transparency-policy）；同步规范化 Conscrypt Security Provider 重定向链接。回到 Task6 复审。"
 last_task6_review_log: "logs/review/2026-05-28-09-review.md"
 task6_l3_l4_issues: 0
 task6_l1_l2_fixes: 0
 task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-05-28-10-deep-review.md"
-updated_by: openclaw-task6
-updated_date: "2026-05-28"
-last_task9_autofix_at: "2026-05-28"
+updated_by: openclaw-task9
+updated_date: "2026-06-14"
+last_task9_autofix_at: "2026-06-14"
 p0: 0
 p1: 0
 p2: 0
@@ -90,7 +94,7 @@ TLS 1.3 把这个流程压缩到了 1-RTT。核心变化在于密钥交换机制
 
 [图：TLS 1.2 vs TLS 1.3 握手时序对比。左栏 TLS 1.2：ClientHello → ServerHello+Cert+ServerHelloDone → ClientKeyExchange+ CCS + Finished → CCS + Finished（2-RTT）。右栏 TLS 1.3：ClientHello+KeyShare → ServerHello+KeyShare+Cert+Finished（1-RTT）。标出每段 RTT 和关键差异]
 
-Google 在 Android 10（API 29）上默认启用 TLS 1.3 后报告，相比 TLS 1.2 有最高 40% 的速度提升。[已验证: 官方文档, developer.android.com/about/versions/10/security]
+Google 在 Android 10（API 29）上默认启用 TLS 1.3 后报告，相比 TLS 1.2 有最高 40% 的速度提升。[已验证: 官方文档, developer.android.com/about/versions/10/features#tls-1.3]
 
 TLS 1.3 还定义了 0-RTT（Zero Round-Trip Time）恢复模式。当客户端之前连接过某个服务器并获得 session ticket 后，下次连接时可以在 ClientHello 中携带加密的 "early data"。Android 客户端能不能使用这条路径，取决于网络库是否公开 early data / QUIC / HTTP/3 能力。
 
@@ -325,7 +329,7 @@ Android 9（API 28）引入了 Private DNS（DoT）设置，Android 11 扩展支
 - [HPKE RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)，HPKE 标准规范
 - [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)，TLS 1.3 标准规范
 - [Certificate Transparency RFC 6962](https://www.rfc-editor.org/rfc/rfc6962)，CT 标准规范
-- [Android Certificate Transparency Policy](https://source.android.com/docs/security/cert-transparency)，Android CT Policy 的 SCT 与日志状态要求
+- [Android Certificate Transparency Policy](https://developer.android.com/privacy-and-security/certificate-transparency-policy)，Android CT Policy 的 SCT 与日志状态要求
 - [OkHttp Protocols API](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/protocols.html)，OkHttp 5 公开协议配置面
-- [Conscrypt Security Provider](https://developer.android.com/training/articles/security-gms-provider)，Android TLS 实现说明
+- [Conscrypt Security Provider](https://developer.android.com/privacy-and-security/security-gms-provider)，Android TLS 实现说明
 - [Android 17 适配：usesCleartextTraffic 弃用与 CT 默认开启](https://juejin.cn/post/7610233341305389099)，恋猫de小郭，2026-02。涵盖 Android 17 中 `usesCleartextTraffic` 的未来弃用计划（建议迁移到 Network Security Config）、Certificate Transparency 默认强制开启、`USE_LOOPBACK_INTERFACE` 本地网络保护等网络安全相关变更
