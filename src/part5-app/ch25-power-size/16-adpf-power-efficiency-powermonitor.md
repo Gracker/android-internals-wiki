@@ -2,8 +2,8 @@
 
 drafted_date: "2026-05-24"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-05-24"
-last_verified_against: "Android Developers API reference + AOSP android-16.0.0_r1"
+last_verified: "2026-06-13"
+last_verified_against: "Android Developers API reference + AOSP main 分支（PowerStatsService/StatsPullAtomCallbackImpl/IPowerStats.aidl）"
 confidence: medium-high
 sources:
   - type: official
@@ -28,6 +28,22 @@ sources:
     path: "frameworks/base/core/java/android/os/PowerMonitor.java"
   - type: aosp
     path: "frameworks/base/core/java/android/os/PowerMonitorReadings.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/powerstats/StatsPullAtomCallbackImpl.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsLogger.java"
+  - type: aosp
+    path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
+  - type: aosp
+    path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/Channel.aidl"
+  - type: aosp
+    path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/EnergyMeasurement.aidl"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/IPowerStatsService.aidl"
+  - type: report
+    path: "DeepResearch/2026-06-13-android17-powerstats-service-statsd-pull-atoms.md"
   - type: structure
     path: "Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md"
   - type: structure
@@ -456,6 +472,52 @@ enum SessionMode {
 - `debug.hwui.use_hint_manager`：HWUI hint manager 开关
 
 Android 15 起 Power HAL AIDL 已提供 `getSessionChannel()`，Android 16 的服务端增加 FMQ 支持状态统计。它们都属于系统级调试和 OEM 适配面，不直接暴露给 App。
+
+
+<!-- AIW-源码调研-2026-06-13 -->
+
+### PowerStatsService 完整数据通路（系统服务 → IPowerStats HAL → statsd）
+
+25.16 节「PowerMonitor 与 SystemHealthManager 读数模型」描述了 App 端如何通过 `SystemHealthManager.getPowerMonitorReadings()` 拿到 ODPM rails 与 EnergyConsumer 累计读数；本节补齐该链路在系统服务层的实现细节，作为 2026-06-13 端侧 AI 资源调度报告（覆盖 ADPF + Power HAL 应用层）到硬件层的下行补充。
+
+**入口分发与缓存阈值**（`frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java` L540-606）：
+
+`IPowerStatsService.Stub.getPowerMonitorReadings()` 只做参数校验后 `getHandler().post(...)`，HAL 调用不占用 Binder 线程。`getPowerMonitorReadingsImpl` 走 **30 秒缓存**：`MAX_POWER_MONITOR_AGE_MILLIS = 30_000`（同文件 L52）。如果 30 秒内已读过的 monitor（`mPowerMonitorStates[].timestampMs` 差值）则直接复用；超阈值时才调 `updateEnergyConsumers()` / `updateEnergyMeasurements()` 真正走 HAL。
+
+**异步路径与噪声注入**（同文件 L608-678）：
+
+`LocalService` 暴露 `getEnergyConsumedAsync` / `getStateResidencyAsync` / `readEnergyMeterAsync` 三个 `CompletableFuture` 入口。**关键设计**：`getEnergyConsumedAsync` 在 HAL 返回 `null` 或长度不匹配时，**走 `Slog.wtf` 级别告警但仍用部分数据 `future.complete(results)` 兜底**（L673-675），与 statsd pull 路径的 `PULL_SKIP` 语义不同——Binder 调用方拿到「数据可能不完整」是设计意图，避免 App 端 `getPowerMonitorReadings` 因 HAL 瞬时失败而 crash；statsd pull 路径则是「本次跳过，下次再来」。
+
+能量计算注入 `IntervalRandomNoiseGenerator` Beta 分布噪声（`INTERVAL_RANDOM_NOISE_GENERATION_ALPHA = 50`、`MAX_RANDOM_NOISE_UWS = 10_000_000` 即 10 MJ，约 1W 设备 2.78 小时功耗上限），避免多 App 同步轮询撞峰时上报一致值（k-anonymity 隐私保护）。
+
+**statsd pull atom 注册**（`frameworks/base/services/core/java/com/android/server/powerstats/StatsPullAtomCallbackImpl.java`）：
+
+`StatsPullAtomCallbackImpl` 在 `StatsPullAtomCallbackImpl(Context, PowerStatsInternal)` 构造时（L150-175）一次性注册两个 atom：
+
+- `FrameworkStatsLog.ON_DEVICE_POWER_MEASUREMENT` —— 对应 `IPowerStats.readEnergyMeter`（ODPM 实测 rail）
+- `FrameworkStatsLog.SUBSYSTEM_SLEEP_STATE` —— 对应 `IPowerStats.getStateResidency`（State 驻留时间）
+
+**`STATS_PULL_TIMEOUT_MILLIS = 2_000`**（L41）是 statsd 硬性窗口。`ConcurrentUtils.DIRECT_EXECUTOR`（L165）让 `onPullAtom` 在 statsd binder 线程同步执行，**避免排队时间被算进 2s 窗口**。`ON_DEVICE_POWER_MEASUREMENT` 关键过滤：`if (energyMeasurement.durationMs == energyMeasurement.timestampMs)` 才上报——HAL 在设备刚 boot 时把这两字段都置 0，等价于「累积能量为 0」的另一种表达。
+
+**持久化层**（`PowerStatsLogger.java`）：
+
+3 个 Handler 消息 `MSG_LOG_TO_DATA_STORAGE_BATTERY_DROP / LOW_FREQUENCY / HIGH_FREQUENCY` 写到 `/data/system/powerstats/` 下 6 个 `.pb` 文件（meter / meterCache / model / modelCache / residency / residencyCache）。`EnergyMeasurementUtils.adjustTimeSinceBootToEpoch(measurements, mStartWallTime)` 把 HAL 的 `CLOCK_BOOTTIME` 时间戳转换为 wall clock，便于跨重启对比；`*Cache.0` 后缀是 `AtomicFile` 临时文件，写入完成 rename 为正式文件，避免半写状态被读取。
+
+**HAL 接口契约**（`hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl`）：
+
+6 个方法（`@VintfStability` 稳定）：`getPowerEntityInfo` / `getStateResidency` / `getEnergyConsumerInfo` / `getEnergyConsumed` / `getEnergyMeterInfo` / `readEnergyMeter`。`Channel` parcelable 3 字段（`id` / `name` / `subsystem`），`EnergyMeasurement` 4 字段（`id` / `timestampMs` / `durationMs` / `energyUWs` μWs）。
+
+**远程开关**：`KEY_POWER_MONITOR_API_ENABLED = "power_monitor_api_enabled"` device config 在 `mDeviceConfigListener` 监听下变化时调 `refreshFlags()`，可一键 disable 并清空 `mPowerMonitors` / `mPowerMonitorStates`（L624-635），给厂商回归测试提供不开销的 PowerMonitor API 关闭路径。
+
+**反哺要点**：
+1. App 不应假设 `getPowerMonitorReadings()` 实时调用 HAL；30s 阈值期间复用 `mPowerMonitorStates` 缓存
+2. `STOPSHIP(253292374)`（L515）—— getEnergyConsumedAsync 偶发返回 null 是已知问题，线上要监控 `Slog.wtf` 频率而非直接报错
+3. statsd pull atom 的 2s 超时是硬约束，HAL 异常时 `PULL_SKIP` 是正确行为；不能改用后台 executor 反而把 2s 用在排队上
+4. PowerStats 数据是 `IPowerStats` AIDL `@VintfStability` 稳定接口，跨 Android 主版本兼容；vendor 端实现差异在 `Channel.name` 等设备特定字段上，跨设备对比前要先确认字段语义
+
+> 一手资料：`PowerStatsService.java` (L1-800+)、`StatsPullAtomCallbackImpl.java` (L1-175)、`PowerStatsLogger.java` (L1-120+)、`IPowerStatsService.aidl` (L1-34)、`PowerMonitor.java` (L1-120)、`IPowerStats.aidl` (L1-124)、`Channel.aidl` (L1-28)、`EnergyMeasurement.aidl` (L1-33)
+> 详细报告：`DeepResearch/2026-06-13-android17-powerstats-service-statsd-pull-atoms.md`
+
 
 ### 版本演进总结
 

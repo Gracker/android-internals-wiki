@@ -64,7 +64,8 @@ task6_reviewed_date: "2026-06-03"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
 last_task9_autofix_at: "2026-06-03"
 task9_review_notes: "2026-06-03 Task9 14:20 auto-fixed：修正 OkHttp Dispatcher 排队时间观测口径，使用 OkHttp 5.x dispatcherQueueStart/dispatcherQueueEnd；旧版 OkHttp 需自定义队列埋点，不能用 callStart 代表出队。P0 0 / P1 0 / AUTO-FIX 1；回到 Task6 复审。"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # I/O 与网络优化案例集
@@ -97,7 +98,7 @@ I/O 与网络优化最怕只改一个点。SP 写入从调用点看很快，生�
 
 24.1 到 24.7 已经分别讲过文件 I/O、数据库、序列化、网络架构、协议、缓存和离线优先。落到项目里，问题通常会混在一起：SP ANR、页面网络慢、大文件传输。三个案例都沿着“现象 → 观测 → 根因 → 改法 → 验收”展开，方便在项目里复用排查路径。
 
-速度问题先拆 CPU 等待、I/O 等待和缓存命中，再回到线程池与任务调度。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md][结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md][结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+速度问题先拆 CPU 等待、I/O 等待和缓存命中，再回到线程池与任务调度。
 
 ## SharedPreferences ANR 治理实战
 
@@ -105,7 +106,7 @@ I/O 与网络优化最怕只改一个点。SP 写入从调用点看很快，生�
 
 一个常见现场是页面退出、切后台或服务停止时出现 ANR，主线程堆栈停在 `QueuedWork.waitToFinish()`，后台线程堆栈能看到 `SharedPreferencesImpl.writeToFile()`、`FileUtils.sync()` 或 XML 写入。业务侧通常会说“这里只是 `apply()`，不是 `commit()`”，但 ANR 发生点已经离调用点很远。
 
-SP 的风险分两段。读取时，首次访问可能等待 XML 加载；写入时，`apply()` 会更新内存并排队写磁盘，生命周期收尾可能等待队列清空。AOSP `SharedPreferencesImpl` 和 `QueuedWork` 可以说明这条路径：`apply()` 创建写入任务，`QueuedWork` 保存 pending work，框架在部分组件收尾路径调用 `waitToFinish()`。[已验证: AOSP android-35 SDK sources, android/app/SharedPreferencesImpl.java, android/app/QueuedWork.java]
+SP 的风险在两个阶段。读取阶段，首次访问可能等待 XML 加载；写入阶段，`apply()` 更新内存并排队写磁盘，生命周期收尾时可能等待队列清空。从 AOSP `SharedPreferencesImpl` 和 `QueuedWork` 源码可以看到这条路径：`apply()` 创建写入任务，`QueuedWork` 保存 pending work，框架在部分组件收尾路径调用 `waitToFinish()`。[已验证: AOSP android-35 SDK sources, android/app/SharedPreferencesImpl.java, android/app/QueuedWork.java]
 
 ### 观测路径
 
@@ -183,6 +184,8 @@ class PreferenceWriteBuffer(
 
 ## 网络请求性能优化案例
 
+SP ANR 的根因在 I/O 路径上；另一种常见的性能退化则来自网络路径——请求本身不慢，但端到端耗时被 DNS、建连和调度排队吃掉了一大块。
+
 ### 现象
 
 页面接口 P95 从 800 ms 涨到 2 s，服务端日志只显示处理耗时 200 ms。客户端抓包和 OkHttp EventListener 拆分后，慢在三个位置：DNS 偶发 300 ms 以上，部分请求没有复用连接，首屏接口被图片预取和日志上报挤在 Dispatcher 队列后面。
@@ -206,7 +209,7 @@ OkHttp 文档把一次 Call 拆成请求、重定向、重试和响应过程；�
 
 ### 根因
 
-这个案例的问题在于网络层没有隔离请求等级。API、图片预取、日志上报、大文件都共用一个 `OkHttpClient` 和 Dispatcher；业务方为了“多发一点”调大总并发，反而让同 host 并发和移动网络带宽竞争变得不可控。参考资料把速度问题拆成 CPU、缓存和任务调度；放到网络层，对应的治理动作是限制低优先级请求，不让它抢占首屏等待窗口。[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
+这个案例的问题在于网络层没有隔离请求等级。API、图片预取、日志上报、大文件都共用一个 `OkHttpClient` 和 Dispatcher；业务方为了“多发一点”调大总并发，反而让同 host 并发和移动网络带宽竞争变得不可控。把速度问题拆成 CPU、缓存和任务调度；放到网络层，对应的治理动作是限制低优先级请求，不让它抢占首屏等待窗口。
 
 HTTPDNS 接入也有一个边界：自定义 `Dns.lookup()` 同步参与 OkHttp 路由规划，不能在 `lookup()` 里实时发一次依赖同一 client 的 HTTPDNS 请求。更稳的方式是异步预取、内存/磁盘缓存读取、TTL 刷新、失败 IP 隔离，并保留系统 DNS 兜底。HTTPDNS 的完整设计边界见 24.4；这个案例只取异步预取、缓存读取和兜底这三个处置动作。
 
@@ -252,6 +255,8 @@ object HttpClients {
 如果优化后总耗时下降，但失败率、重试次数或耗电上升，这个方案不能算通过。弱网下的重试尤其要限制次数和退避窗口，避免接口慢变成重试风暴。
 
 ## 大文件上传下载优化
+
+网络请求优化解决的是"多而碎"的请求被排队和建连拖慢的问题；大文件是"少而大"——单次传输拉长、占用连接更久、失败恢复成本更高。
 
 ### 现象
 

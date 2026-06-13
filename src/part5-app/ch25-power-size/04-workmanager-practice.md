@@ -55,6 +55,8 @@ last_task9_review_log: logs/deep-review/2026-06-03-13-deep-review.md
 task9_review_notes: "2026-06-03 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；源码路径、版本边界、官方功耗/后台任务口径复核通过；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task2b_at: "2026-06-03T12:50:00+08:00"
 task2b_fix_summary: "Fixed P1: UIDT 版本边界 (API 34+/29-33 fallback) + §5.10 交叉引用；P2: GreedyScheduler WorkConstraintsTracker 约束追踪、requiresDeviceIdle+backoff 不兼容、getStopReason 版本边界 (WorkManager 2.9.0+/API 31+)"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # WorkManager 实战与后台任务调度
@@ -88,7 +90,7 @@ WorkManager 适合两类后台工作：用户离开页面后仍要可靠完成�
 
 这里聚焦 App 侧的建模、约束、排重和降级。Doze、App Standby、Job 配额和后台限制的系统层细节见 §25.2；WakeLock 和 Alarm 的使用边界见 §25.3；JobScheduler / WorkManager 的系统调度机制见 §5.10。
 
-Clippings 的《Android 性能优化》没有单独设置 WorkManager 章节，但它对线程池、任务优先级、CPU 等待和调度开销的组织方式可以作为本节结构参考：按任务是否用户可见、是否可延后、是否需要跨进程可靠执行分类，再决定约束、排重和观测字段。本文只借用这套结构，不复用参考书原文或代码。 [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+后台任务的分类可以从三个维度判断：是否用户可见、是否可延后、是否需要跨进程可靠执行。明确了这三条，再决定用什么约束、怎么排重、记录哪些观测字段。
 
 ## WorkManager 架构与约束条件
 
@@ -211,9 +213,9 @@ WorkManager 和 JobScheduler 的选择取决于任务契约，而不是“哪个
 
 一个实战判断法：能等待系统选择窗口，就用 WorkManager；必须用户立刻看见持续运行状态，就用 Foreground Service 或 UIDT；必须到点提醒，就用 AlarmManager；只在当前页面有效，就别进后台调度系统。
 
-## 自动发现：停止原因与回归守门
+## 停止原因与回归守门
 
-[自动发现] Android 官方电量优化文档建议记录 `WorkInfo.getStopReason()`（WorkManager 2.9.0+），JobScheduler 对应 `JobParameters.getStopReason()`（Android 12 / API 31 起公开）。Android 10-11 设备或旧版 WorkManager 中，需退化使用 `WorkInfo.getState()` 与运行时长联合判断停止原因。停止原因不只是排错字段，也是后台任务质量门禁：如果任务频繁因 timeout、quota、constraints 变化或系统资源压力停止，说明任务粒度、约束或重试策略有问题。Android 14 及以上，如果任务频繁超时，系统可能把 App 放入 restricted standby bucket。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/optimize-battery]
+Android 官方电量优化文档建议记录 `WorkInfo.getStopReason()`（WorkManager 2.9.0+），JobScheduler 对应 `JobParameters.getStopReason()`（Android 12 / API 31 起公开）。Android 10-11 设备或旧版 WorkManager 中，需退化使用 `WorkInfo.getState()` 与运行时长联合判断停止原因。停止原因不只是排错字段，也是后台任务质量门禁：如果任务频繁因 timeout、quota、constraints 变化或系统资源压力停止，说明任务粒度、约束或重试策略有问题。Android 14 及以上，如果任务频繁超时，系统可能把 App 放入 restricted standby bucket。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/optimize-battery]
 
 工程上可以把 WorkManager 守门整理成三组指标：每类任务的入队次数和去重命中率、每个 tag 的成功 / 失败 / 取消 / retry 分布、停止原因和运行时长分位数。上线前用这三组指标回答两个问题：有没有重复入队，是否存在长期运行到被系统停止的后台任务。
 

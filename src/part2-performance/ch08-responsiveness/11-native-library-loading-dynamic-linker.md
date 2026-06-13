@@ -61,7 +61,7 @@ last_task6_audit: "2026-06-11"
 last_task6_review_log: "logs/review/2026-05-20-14-review.md"
 task6_review_notes: "2026-05-20 task6 review 14:13：首次 review Native 库加载与动态链接性能；L1/L2 术语和表述小修，无新增 L3/L4 回炉项；转 Task9 技术复核。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # 8.11 Native 库加载与动态链接性能
@@ -90,15 +90,6 @@ last_deepseek_cn_review_at: 2026-06-11
 ### 🔸 厂商 linker 配置与预装库差异
 
 ### 🔸 Play 16KB 合规与 CI 自动化
-
-## 素材线索
-
-- [来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-bionic-linker-namespace-hook-bypass.md]
-- [来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-android-16kb-page-size-ndk-compatibility.md]
-- [来源: DeepResearch/2026-05-08-16kb-page-size-third-party-library-impact.md]
-- [引用: https://developer.android.com/guide/practices/page-sizes]
-- [引用: https://developer.android.com/ndk/reference/group/libdl]
-- [引用: https://android.googlesource.com/platform/bionic/+/refs/tags/android-16.0.0_r1/linker/]
 
 <!-- outline-end -->
 
@@ -187,7 +178,6 @@ Native 库加载问题在三方 SDK 中最麻烦，因为 App 团队不一定能
 | 监控 / 崩溃 SDK | 是否使用 Hook、signal handler、`/proc/self/maps` 解析 | 确认 Android 15+、16KB、MTE 下的官方兼容声明 |
 
 
-
 NDK r27 的 `libc.a` 问题需要单独记。`android/ndk#2026` 记录了 `WriteProtected mprotect ... Invalid argument` 的崩溃，反馈中确认 NDK r28 可用。这个问题影响的是静态链接到有问题 libc.a 的产物；不能把它泛化成“所有 r27 构建库都会崩”。如果线上看到这个崩溃签名，先确认库的 NDK 版本和静态链接方式。[已验证: GitHub issue, https://github.com/android/ndk/issues/2026]
 
 React Native 的典型风险来自 prefab / CMake 参数传递。`facebook/react-native#54073` 提到，某些构建路径没有把 `max-page-size` 传到最终 prefab 产物，导致 Play 16KB 合规失败。排查时不要只看 App 模块的 `CMAKE_SHARED_LINKER_FLAGS`，要直接检查最终 `.so`。[已验证: GitHub issue, https://github.com/facebook/react-native/issues/54073]
@@ -230,8 +220,6 @@ done
 ## 扩展：厂商配置与预装库差异
 
 Linker Namespace 的具体配置来自系统镜像中的 linker config。AOSP 提供基础规则，但厂商可以根据分区、VNDK、APEX 和预装库做调整。App 不应依赖某台设备上可访问的私有库路径；那只是该 ROM 的偶然暴露，不是 Android API 契约。
-
-[待补充: 不同厂商 `ld.config.txt` / linkerconfig 产物的对比样本]
 
 ## 小结
 

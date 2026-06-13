@@ -171,6 +171,124 @@ fun collectMemorySample(context: Context): MemorySample {
 
 [自动发现] RSS 曲线要单独入库。Android Studio 2026 年文档把 Process Memory（RSS）拆成 Total、Allocated、File Mappings、Shared，用来解释物理驻留内存来自匿名私有分配、文件映射还是共享内存。线上不一定能拿到 Studio 的完整拆分，但至少要区分 `VmRSS`、PSS 和 Java Heap，避免把 RSS 抬升误判成 Java 泄漏。[已验证: 官方文档, developer.android.com/studio/profile/chart-glossary/process-memory]
 
+<!-- AIW-源码调研-2026-06-13 -->
+### Android 14+ 高精度内存跟踪 API 源码补充
+
+本节正文与延伸阅读已点名 `setWatchHeapLimit`、`ApplicationExitInfo.REASON_FREEZER`、`bionic M_PURGE_ALL` 等概念。下列源码锚点用于把这些概念落到具体的调用链。
+
+#### setWatchHeapLimit → setDumpHeapDebugLimit → AppProfiler
+
+App 侧入口：`frameworks/base/core/java/android/app/ActivityManager.java` 行 5810-5843
+```java
+public void setWatchHeapLimit(long pssSize) {
+    try {
+        getService().setDumpHeapDebugLimit(null, 0, pssSize,
+                mContext.getPackageName());
+    } catch (RemoteException e) {
+        throw e.rethrowFromSystemServer();
+    }
+}
+```
+AIDL 定义：`frameworks/base/core/java/android/app/IActivityManager.aidl` 行 581
+```
+void setDumpHeapDebugLimit(in String processName, int uid, long maxMemSize,
+        in String reportPackage);
+```
+
+服务端注册：`frameworks/base/services/core/java/com/android/server/am/AppProfiler.java` 行 287、行 1159-1172
+```java
+private final ProcessMap<Pair<Long, String>> mMemWatchProcesses = new ProcessMap<>();
+
+void setDumpHeapDebugLimit(String processName, int uid, long maxMemSize,
+        String reportPackage) {
+    synchronized (mProfilerLock) {
+        if (maxMemSize > 0) {
+            mMemWatchProcesses.put(processName, uid, new Pair(maxMemSize, reportPackage));
+        } else {
+            if (uid != 0) {
+                mMemWatchProcesses.remove(processName, uid);
+            } else {
+                mMemWatchProcesses.getMap().remove(processName);
+            }
+        }
+    }
+}
+```
+
+阈值命中逻辑：`AppProfiler.recordPssSampleLPf` 行 938-960
+```java
+if ((pss * 1024) >= check && profile.getThread() != null
+        && mMemWatchDumpProcName == null) {
+    if (Build.IS_DEBUGGABLE || proc.isDebuggable()) {
+        Slog.w(TAG, "Process " + proc + " exceeded pss limit " + check + "; reporting");
+        startHeapDumpLPf(profile, false);
+    }
+}
+```
+关键约束：① `mMemWatchDumpProcName == null` 互斥，同一时刻只能一个进程 dump；② release 包（`!Build.IS_DEBUGGABLE && !proc.isDebuggable()`）只写日志不 dump；③ watch 状态在 system_server，进程被 kill + 重启后仍生效。
+
+Android 15 起 `recordRssSampleLPf`（行 998-1042）走同样的 `mMemWatchProcesses` 检查，覆盖 `Flags.removeAppProfilerPssCollection()` 启用后的 RSS 路径。
+
+#### PSS 采样的高效路径：smaps_rollup
+
+JNI：`frameworks/base/core/jni/android_os_Debug.cpp` 行 264-329 调 `::android::meminfo::ProcMemInfo::SmapsOrRollup(&stats)`。
+
+`platform/system/memory/libmeminfo/procmeminfo.cpp` 行 334-338
+```cpp
+bool ProcMemInfo::SmapsOrRollup(MemUsage* stats) const {
+    std::string path = ::android::base::StringPrintf(
+            "/proc/%d/%s", pid_, IsSmapsRollupSupported() ? "smaps_rollup" : "smaps");
+    return SmapsOrRollupFromFile(path, stats);
+}
+```
+`IsSmapsRollupSupported()`（行 657-677）一次性探测 `/proc/self/smaps_rollup` 并把结果原子化缓存：kernel 支持时单次 readline 即可拿到 PSS / Private_Clean / Private_Dirty / SwapPss 汇总，VMA 全量扫描的旧路径降级为 fallback。这是 `setWatchHeapLimit` 能落到 AMS 周期性 PSS 采样上不被 I/O 拖垮的前提。
+
+#### 客户端节流：RateLimitingCache
+
+`ActivityManager.java` 行 243-244、行 3509-3527
+```java
+private static final RateLimitingCache<MemoryInfo> mMemoryInfoCache =
+        new RateLimitingCache<MemoryInfo>();
+
+public void getMemoryInfo(MemoryInfo outInfo) {
+    if (Flags.rateLimitGetMemoryInfo()) {
+        synchronized (mMemoryInfoCache) {
+            mMemoryInfoCache.get(() -> {
+                getMemoryInfoInternal(mRateLimitedMemInfo);
+                return mRateLimitedMemInfo;
+            });
+            mRateLimitedMemInfo.copyTo(outInfo);
+        }
+    } else {
+        getMemoryInfoInternal(outInfo);
+    }
+}
+```
+`Flags.rateLimitGetMemoryInfo()` 是 aconfig flag，启用后即使 App 内部高频调用 `getMemoryInfo()`，穿透到 system_server 的频率也会被 `RateLimitingCache` 压制。
+
+服务端 `ActivityManagerService.getProcessMemoryInfo`（行 3947-4037）另有 `mConstants.MEMORY_INFO_THROTTLE_TIME` 节流：非 shell 调用且距上次采样未过期则直接返回 `ProcessProfileRecord.lastMemInfo`。两层节流叠加决定了线上只能「分钟级或事件触发式」采样。
+
+#### ApplicationExitInfo 退出原因细分
+
+`frameworks/base/core/java/android/app/ApplicationExitInfo.java` 行 165-183
+```java
+public static final int REASON_FREEZER = 14;
+public static final int REASON_PACKAGE_STATE_CHANGE = 15;
+public static final int REASON_PACKAGE_UPDATED = 16;
+```
+subreason（行 200-261）补齐 `SUBREASON_MEMORY_PRESSURE = 6`、`SUBREASON_LARGE_CACHED = 5` 等低内存子原因；`getPss()` / `getRss()` 字段携带被杀瞬间的 PSS / RSS 快照，等价于「被杀瞬间的精确 PSS 样本」。
+
+线上策略升级：App 启动时 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 拉取最近 N 次退出原因，遇到 `REASON_LOW_MEMORY` + `SUBREASON_LARGE_CACHED` / `SUBREASON_MEMORY_PRESSURE` 直接归因到 LMK，无须依赖 fork dump 或第三方 KOOM。
+
+#### 范围边界与未验证项
+
+本补充基于 AOSP main 分支，`refs/heads/android-17.0.0_r1` tag 在 2026-06-13 调研时点尚未公开合并（googlesource.com 上未返回 200），因此 23.7 节正文里以 main 分支为锚点描述 Android 17 行为时需要保留这层不确定性标注，待 Android 17 release tag 上线后单独 rebase 验证。
+
+未在本报告验证：`Flags.rateLimitGetMemoryInfo()` 默认窗口、`mConstants.MEMORY_INFO_THROTTLE_TIME` 字面量、`bionic M_PURGE_ALL` 在 libc 的具体路径。建议下一轮专题分别覆盖。
+
+[已验证: 一手 AOSP main 分支源码锚点，见 DeepResearch/2026-06-13-android14-memory-tracking-apis-leak-detection.md]
+
+
 ## 内存水位线与告警策略
 
 水位线不要写成固定百分比。不同设备的 `memoryClass`、前后台行为、64 位比例、图片规格、页面复杂度和厂商 LMK 策略都不一样，固定“80% 报警”会在低端机上过晚，在高端机上过早。

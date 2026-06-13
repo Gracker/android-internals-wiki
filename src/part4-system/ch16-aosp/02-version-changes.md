@@ -509,6 +509,50 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 
 ---
 
+## 附录：Android 17 端侧 AI 资源调度（ADPF + PowerHAL）源码调研
+
+<!-- AIW-源码调研-2026-06-13 -->
+
+**调研时间**：2026-06-13
+**来源选题**：daily-topics.json id=15
+
+### 关键源码发现
+
+**1. 端侧 AI 在 Android 17 上的资源调度不是新 `AIService`，而是 ADPF 主线的延伸**
+
+SDK 端入口仍是 `PerformanceHintManager`（`frameworks/base/core/java/android/os/PerformanceHintManager.java`），`Session` 内部类承载全部 hint 语义。`CPU_LOAD_*` 是稳态负载提示，`POWER_EFFICIENCY` 是会话级省电优先模式，Android 15 起 `reportActualWorkDuration(WorkDuration)` 已能同时上报 CPU 与 GPU 耗时。`GPU_LOAD_UP/DOWN/RESET` 在 SDK 端挂 `@FlaggedApi(Flags.FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION)`，需要系统与 App 同时打开 flag 才可见。
+
+**2. PowerHAL AIDL 把"端侧 AI 可调用边界"显式化了**
+
+Android 17 的 PowerHAL 走 AIDL v6（`hardware/interfaces/power/aidl/android/hardware/power/`），关键文件：`IPower.aidl`、`IPowerHintSession.aidl`、`SessionHint.aidl`、`SessionMode.aidl`、`SessionTag.aidl`、`CpuHeadroomParams.aidl`、`GpuHeadroomParams.aidl`、`WorkDuration.aidl`、`ChannelMessage.aidl`。`CpuHeadroomParams.calculationWindowMillis` 是 v6 新增，HAL 须支持 `[50, 10000]`ms 超集；v6 之前 HAL 不报错但回 `Float.NaN`。
+
+**3. `HintManagerService` 的 3 个隐藏陷阱**
+
+- `mCpuHeadroomCache` / `mGpuHeadroomCache` 缓存窗口至少 1s（`DEFAULT_GPU_HEADROOM_INTERVAL_MILLIS = 1000`），每 token 调 `getGpuHeadroom` 不会拿到更高刷新率。
+- `MyUidObserver.onUidStateChanged` 在 uid 退出 `PROCESS_STATE_IMPORTANT_FOREGROUND` 时把所有 session 的 hint 推送静默丢弃；后台 ASR / OCR 的 hint 形同虚设，需前台服务保活。
+- `AppHintSessionSnapshot.mTag` 把 session 分类（OTHER/SURFACEFLINGER/HWUI/GAME/APP/SYSUI）写入 statsd；端侧 AI 实时滤镜建议用 `GAME`，离线推理用 `APP`，分类错会丢调度策略。
+
+**4. `SessionMode` / `SessionTag` 对端侧 AI 的实务选择**
+
+| 场景 | 推荐 `SessionTag` | 推荐 `SessionMode` |
+|------|------------------|-------------------|
+| 实时 AR 滤镜 / AI 美颜 | `GAME` | `GRAPHICS_PIPELINE`（如要接 SF 时序） |
+| 离线 OCR / 文档解析 | `APP` | `POWER_EFFICIENCY` |
+| 多模态模型（并行推理） | `APP` | `AUTO_CPU` / `AUTO_GPU`（让 SF 反推时序） |
+| 长时间后台 ASR | `APP` | `POWER_EFFICIENCY`（**且需前台服务**保持 `IMPORTANT_FOREGROUND`） |
+
+**5. FMQ `ChannelMessage` 不是默认必用**
+
+`IPower.getSessionChannel(tgid, uid)` 拿到 `ChannelConfig` 一次，多 session 共享 FMQ 通道；注释明确写 "HAL must validate all data"，App 自行构造的 `ChannelMessage` 不会被信任。单推理线程场景仍走 `IPowerHintSession` Binder 即可；FMQ 收益主要在多模态 / 多 NPU+GPU 并行的复杂负载。
+
+**版本历史**：
+- Android 12 (API 31)：`PerformanceHintManager` 初版，CPU only。
+- Android 15 (API 35)：`POWER_EFFICIENCY` mode + `WorkDuration.cpuDurationNanos/gpuDurationNanos` 同报。
+- Android 16 (API 36)：`SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 公开（带 `FLAG_CPU_GPU_HEADROOMS`）。
+- Android 17 (API 37)：PowerHAL AIDL v6，`CpuHeadroomParams.calculationWindowMillis` 落地，`ChannelMessage` 落地；SDK 端 flag 与 AIDL 字段对齐，端侧 AI 推理可按场景精细选 hint / mode / tag。
+
+**信息源**：AOSP `frameworks/base/core/java/android/os/PerformanceHintManager.java`（main）、`frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java`（main）、`hardware/interfaces/power/aidl/android/hardware/power/`（main）。AOSP `android-17.0.0_r1` tag 在 2026-06-13 抓取时未发布，本节以 main 分支代表 Android 17 当前方向，**不直接引用行号**；tag 发布后应优先 diff tag 版本。
+
 ## 附录：Android 16 ART Generational CMC / userfaultfd GC 机制源码调研
 
 **调研时间**：2026-05-18

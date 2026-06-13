@@ -53,6 +53,8 @@ reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
 last_task6_review_log: logs/review/2026-05-14-16-review.md
 last_task6_audit: "2026-05-25"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # WakeLock 与 Alarm 管理
@@ -86,7 +88,7 @@ last_task6_audit: "2026-05-25"
 
 WakeLock 和 Alarm 很容易被写成“保活工具”，这类写法会把功耗问题带进线上：锁忘记释放，灭屏后 CPU 不能休眠；Alarm 频繁唤醒，Doze 维护窗口被不断打散；Exact Alarm 权限没处理好，Android 14 之后直接抛 `SecurityException` 或功能降级失控。
 
-Clippings 的《Android 性能优化》没有单独写 WakeLock / Alarm 章节，但它对任务调度、线程池、CPU 等待和闲时利用的组织方式可迁移到这里：先按用户可见度判断任务类型，再选择调度 API，并补齐观测字段。WakeLock 与 Alarm 的治理也应该按这条顺序写进工程规范。 [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+后台任务的治理可以按一条顺序展开：先按用户可见度判断任务类型，是用户正在等的结果还是可以延后的收尾；再选择调度 API；最后补齐观测字段。WakeLock 与 Alarm 的管理也要落进这条顺序。
 
 ## WakeLock 类型与使用规范
 
@@ -148,7 +150,7 @@ WakeLock 泄漏通常不来自 `release()` 这一行代码缺失，而来自生�
 
 Android Developers 的 WakeLock 归因文档还提醒了一类容易漏掉的情况：App 没有直接调用 `PowerManager.newWakeLock()`，但系统 API 或三方库替 App 持有了锁。`AlarmManager` 触发广播时会获取名为 `*alarm*` 的 WakeLock，并把归因记到调用 App；`JobScheduler`、WorkManager、定位、FCM、媒体播放等也可能在系统侧产生可归因到 App 的 WakeLock。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls]
 
-[自动发现] `AlarmManager` 的广播持锁窗口只覆盖 `BroadcastReceiver.onReceive()`。API 文档写明，Alarm 触发时系统会持有 CPU WakeLock，直到 `onReceive()` 返回；如果接收器里启动 service 或提交异步任务，`onReceive()` 返回后系统会释放这把锁，后续工作要有自己的调度或持锁策略。 [已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager]
+`AlarmManager` 的广播持锁窗口只覆盖 `BroadcastReceiver.onReceive()`。API 文档写明，Alarm 触发时系统会持有 CPU WakeLock，直到 `onReceive()` 返回；如果接收器里启动 service 或提交异步任务，`onReceive()` 返回后系统会释放这把锁，后续工作要有自己的调度或持锁策略。 [已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager]
 
 实战里可以把 WakeLock 接入统一审计表，字段不要只记 tag：
 
@@ -263,7 +265,7 @@ fun scheduleExactReminder(
 
 这段代码不能单独作为产品交互。用户拒绝权限时，业务必须有降级路径：改用 `setWindow()`、延后到 WorkManager、在 App 打开时补偿提醒，或者明确告诉用户该功能依赖精确提醒权限。Android 14 的行为变更页也要求监听 `AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`，权限被授予后重新检查并重建必要的精确 Alarm。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/schedule-exact-alarms]
 
-Exact Alarm 的工程审查清单可以写成六项：
+Exact Alarm 在工程上需要审查六项：
 
 - 是否由用户明确设置了精确时间，例如闹钟、日历、药物提醒；如果只是后台同步，改用 WorkManager。
 - 是否能接受时间窗口；能接受就用 `setWindow()`，窗口不小于 10 分钟。
