@@ -2706,7 +2706,7 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-12T16:53:15+08:00",
+  "last_task2b_at": "2026-06-14T02:53:35",
   "last_task2b_sections": [
     "14.8"
   ],
@@ -12558,7 +12558,9 @@
       "returned_to": "task6_pending",
       "source_log": "logs/deep-review/2026-05-14-13-deep-review.md",
       "log": "logs/rework/2026-06-03-04-task2b-main.md"
-    }
+    },
+    "task9-20260614-1410-ebpf-source-api-regression",
+    "task6-20260614-1410-ebpf-revisit-rework"
   ],
   "last_task2b_completed": [
     {
