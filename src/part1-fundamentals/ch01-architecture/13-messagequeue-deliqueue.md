@@ -2,7 +2,7 @@
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
 section: "1.13"
-status: finalized
+status: ready-for-review
 applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现公开源码:Android 16;面向应用默认启用:Android 17 (API 37)"
 drafted_date: "2026-04-04"
 reviewed_date: "2026-05-27"
