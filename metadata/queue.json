@@ -512,33 +512,6 @@
     "completed_by": "task2b-main"
   },
   {
-    "section": "14.10",
-    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
-    "priority": 85,
-    "reason": "[Task6 L3 问题] 发展历程节百科式列表需改叙述体；未来发展趋势节属空话填充需补实质内容或删除",
-    "material_paths": [
-      "logs/review/2026-06-14-01-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "内容深度-百科式列表",
-        "location": "eBPF 在 Android 中的发展历程（Android 9-14 部分）",
-        "detail": "每个版本仅 2 个 bullet 无展开叙述，符合 writing guide 反面教材1百科词条式",
-        "suggestion": "改为连贯叙述，重点展开有实质变化的版本"
-      },
-      {
-        "type": "内容深度-空话填充",
-        "location": "eBPF 在 Android 中的未来发展趋势（全节）",
-        "detail": "三小节均为模糊预测，无数据/版本计划/工程证据支撑",
-        "suggestion": "补充有据可查的趋势如 Perfetto eBPF datasource roadmap，或删除该节"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-14T01:10:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-14-01-review.md"
-  },
-  {
     "id": "task9-20260614-1410-ebpf-source-api-regression",
     "section": "14.10",
     "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
@@ -589,5 +562,60 @@
       "remaining_issues": 4,
       "note": "Lite 修复了 Rust bpfloader 调用序列和版本边界标注；其余 4 个源码错误仍需主 Task2B 处理"
     }
+  },
+  {
+    "id": "task6-20260614-1410-ebpf-revisit-rework",
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "priority": 90,
+    "reason": "[Task6 回炉复审] Task2B Lite 修复了 bpfloader 版本锚点和 Android 17 边界标注，但 4 个 Task9 源码/API 错误仍待修；本轮复审另发现多处虚构伪代码、缺失 trace 观测和重复浅薄结构问题",
+    "material_paths": [
+      "logs/review/2026-06-14-02-review.md",
+      "logs/deep-review/2026-06-14-01-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "内容深度-百科式列表（保留自前轮）",
+        "location": "eBPF 在 Android 中的发展历程（Android 9-14 部分）",
+        "detail": "每个版本仅 2-3 个 bullet 无展开叙述，无源码引用、无 AOSP 代码路径验证，符合 writing guide 反面教材#1 百科词条式",
+        "suggestion": "改为连贯叙述，合并变化较小的版本，重点展开有实质变化的版本（如 Android 12 eBPF 全面采用、Android 16 sched-ext）"
+      },
+      {
+        "type": "内容深度-空话填充（保留自前轮）",
+        "location": "eBPF 在 Android 中的未来发展趋势（全节）",
+        "detail": "三小节（精细化/工具链完善/技术集成）均为模糊预测，无数据/版本计划/工程证据支撑，属于 writing guide 禁止的空话",
+        "suggestion": "补充有据可查的趋势（如 Perfetto eBPF datasource roadmap、BCC/bpftrace 在 Android 上的进展），或删除该节"
+      },
+      {
+        "type": "虚构伪代码",
+        "location": "§Android 中的 eBPF 工具链 > BPF 程序开发工具 + §错误处理和恢复",
+        "detail": "BPFLoader 类的 loadProgram() 方法、unload_ebpf_program()、log_error() 均为非真实 AOSP 代码；semanage fcontext/restorecon 是 Linux 命令不是 Android 命令；error handling 部分的 fopen(\"/dev/kmsg\") 写法不符合 Android logging 实践",
+        "suggestion": "删除虚构伪代码，替换为真实 AOSP BPF 加载流程说明（bpfloader → .o/.bpf 程序 → pin to /sys/fs/bpf），或标注为概念性伪代码"
+      },
+      {
+        "type": "缺失 Trace 观测",
+        "location": "全章",
+        "detail": "writing-guide 要求'在 Perfetto/工具中的表现'，全章未描述 eBPF 数据在 Perfetto trace 中的具体 track/counter 表现，读者无法将内容与实际 trace 对照",
+        "suggestion": "补充关键段落：eBPF 采集的数据在 Perfetto 中对应哪个 track、长什么样、正常 vs 异常的对比"
+      },
+      {
+        "type": "内容深度-重复浅薄结构",
+        "location": "§eBPF 在 Android 中的核心应用（§1-4）+ §eBPF 在 Android 性能分析中的实际应用（§1-4）",
+        "detail": "两个章节的 8 个子节都是'一句话 intro + 一段代码 + 一个 bullet list'的重复模式，无因果关系、无实战场景、无经验判断。进程调度/系统调用/网络/内存/GPU 之间无逻辑递进，像是 AI 按模板批量生成",
+        "suggestion": "合并'核心应用'和'实际应用'为统一的实战段落，每个应用场景至少包含：问题现象→eBPF 方案→trace 观测→注意事项"
+      },
+      {
+        "type": "开头列表违反叙述优先原则",
+        "location": "§为什么要了解 eBPF 在 Android 中的应用？",
+        "detail": "开头用 3 项编号列表列举理由，违反 writing guide '叙述为主，列表为辅'核心原则",
+        "suggestion": "改为 2-3 段连贯叙述，从具体场景或现象引入"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-14T02:08:00+08:00",
+    "created": "2026-06-14",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-14-02-review.md",
+    "note": "合并前轮 Task6 entry (priority 85) 的 2 个 issue + 本轮新增 4 个 issue。Task9 entry (priority 95, id: task9-20260614-1410-ebpf-source-api-regression) 的 4 个源码/API 问题仍 pending，需一并处理。"
   }
 ]

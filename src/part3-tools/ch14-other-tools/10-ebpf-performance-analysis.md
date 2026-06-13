@@ -56,20 +56,20 @@ polish_by: "task2b-main"
 p0: 5
 p1: 1
 p2: 1
-task6_result: "pass-light-edit"
+task6_result: "needs-rework"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-14"
-task6_state: "revisiting"
-last_task6_at: "2026-06-14T01:10:00+08:00"
+task6_state: "reviewed"
+last_task6_at: "2026-06-14T02:08:00+08:00"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-14"
 task9_state: "pending"
 task9_review_notes: "2026-06-14 Task9 deep review：needs-rework。P0/P1：syscall/vmalloc 示例上下文错误，UprobeStats 误写成 syscall 监控，Perfetto 配置字段无效，bpfloader 版本锚点不符，Android 17 main 结论需移除或标注未进入 Android 17。"
-task2b_result: "fixed-lite"
-task2b_state: "fixed"
+task2b_result: "needs-rework"
+task2b_state: "pending"
 task2b_rework_date: "2026-06-14T00:52:40+08:00"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 last_task2b_at: "2026-06-14T00:52:40+08:00"
 last_task2b_lite_at: "2026-06-14T01:35:00+08:00"
 last_task6_audit: "2026-06-13"
@@ -173,7 +173,7 @@ AOSP main 分支中 eBPF 相关的变化：
 
 ### 1. 进程调度监控
 
-eBPF 可以监控进程调度行为，包括：
+通过 sched_switch tracepoint 可以捕获每次进程切换事件：
 
 ```c
 // eBPF 程序：监控进程调度
@@ -196,7 +196,7 @@ int trace_sched_switch(struct trace_event_raw_sched_switch *ctx) {
 
 ### 2. 系统调用监控
 
-eBPF 可以监控系统调用的执行情况：
+通过 syscall tracepoint 可以捕获系统调用的入口和参数：
 
 ```c
 // eBPF 程序：监控系统调用
@@ -224,7 +224,7 @@ int trace_sys_enter_openat(struct trace_event_raw_sys_enter *ctx) {
 
 ### 3. 网络流量监控
 
-eBPF 可以监控网络流量，包括：
+通过 syscall tracepoint 可以捕获 socket 创建和网络发送事件：
 
 ```c
 // eBPF 程序：监控网络流量
@@ -250,7 +250,7 @@ int trace_sys_enter_socket(struct trace_event_raw_sys_enter *ctx) {
 
 ### 4. 内存访问监控
 
-eBPF 可以监控内存访问模式：
+通过 kprobe 挂载 vmalloc/vfree 可以捕获内存分配与释放：
 
 ```c
 // eBPF 程序：监控内存访问
@@ -418,7 +418,7 @@ int trace_sched_switch(struct trace_event_raw_sched_switch *ctx) {
 
 ### 2. 网络流量监控
 
-eBPF 可以实现细粒度的网络流量监控：
+eBPF 在网络流量监控上可以实现进程级粒度：
 
 ```c
 // eBPF 程序：网络流量监控
@@ -449,7 +449,7 @@ int trace_sys_enter_sendto(struct trace_event_raw_sys_enter *ctx) {
 
 ### 3. 内存泄漏检测
 
-eBPF 可以实现内存泄漏的早期检测：
+通过跟踪内存分配与释放的配对，可以检测未释放的分配：
 
 ```c
 // eBPF 程序：内存泄漏检测
@@ -494,7 +494,7 @@ int trace_vfree(void *ctx) {
 
 ### 4. GPU 性能监控
 
-eBPF 可以实现 GPU 性能的全面监控：
+通过 GPU 相关 tracepoint 可以采集 GPU 命令提交和执行数据：
 
 ```c
 // eBPF 程序：GPU 性能监控
