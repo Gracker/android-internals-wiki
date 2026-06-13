@@ -23,14 +23,16 @@ related_chapters: ["7.1", "7.3", "8.2", "9.3", "13.3", "15.2", "15.5", "15.6"]
 task9_state: reviewed
 repaired_date: "2026-04-21"
 repaired_by: "codex"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-05-23T07:24:00+08:00"
+last_task9_at: "2026-06-13T13:28:50+08:00"
+last_task9_audit: "2026-06-13"
+last_task9_autofix_at: "2026-06-13"
 task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: revisiting
+pipeline_stage: task6_pending
 task2b_fixed_date: "2026-06-05T02:50:00+08:00"
 task2b_fixed_by: "openclaw-task2b-main"
 task2b_fix_summary: "P0: fixed SurfaceFlinger version-specific observation entries (8-10 handleMessageRefresh, 11-12 onMessageRefresh, 13+ commit/composite); P1: added power/heat troubleshooting chain (thermal, cpufreq, wakelock, JobScheduler, Battery Historian); P2: softened BufferStuffing criteria with cross-validation requirement; updated applicable_versions to Android 17/API 37"
@@ -38,13 +40,13 @@ task2b_fix_summary: "P0: fixed SurfaceFlinger version-specific observation entri
 reviewed_date: "2026-06-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 review_notes: "2026-05-05 Task2B:补充版本边界专节(FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback),Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30:revisiting 写作复审,清理禁用词并统一路径表达,修复重复 frontmatter;发现大纲要求的功耗排障入口正文缺失,已写入 Task2B queue。 | 2026-05-05 Task9 08:37:Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误;功耗入口缺失已有 queue pending。"
 last_task6_at: "2026-06-05T03:05:00+08:00"
 auto_promoted_date: "2026-06-05"
 auto_promoted_by: "openclaw-task6"
-last_task9_review_log: "logs/deep-review/2026-05-23-07-deep-review.md"
-task9_review_notes: "2026-05-23 Task9 07: needs-rework。P0 1 / P1 1 / P2 1;Android 14+ SurfaceFlinger slice 锚点仍写 onMessageReceived;功耗/发热投诉入口仍是待补素材;BufferStuffing 判据需证据收敛。"
+last_task9_review_log: "logs/deep-review/2026-06-13-13-audit.md"
+task9_review_notes: "2026-06-13 Task9 闲时抽检 auto-fixed。修正 FrameTimeline SQL:非 jank 过滤需排除 None,BufferStuffing 在 actual_frame_timeline_slice.jank_type 中的字段值为 Buffer Stuffing;同步收敛 BufferStuffing 候选判据。"
 task6_reviewed_date: "2026-06-05"
 last_task6_review_log: "logs/review/2026-05-23-08-review.md"
 task6_review_notes: "2026-05-23 Task6 08: revisiting 复审;L1/L2 无新增小修;功耗入口缺口和 Task9 技术问题已有 pending queue,保持 task2b_pending。"
@@ -269,7 +271,7 @@ task6_review_notes: "2026-05-23 Task6 08: revisiting 复审;L1/L2 无新增小�
 
 - Input 事件到 `doFrame` 的时差
 - 主线程是否长时间 Runnable
-- 是否出现 BufferStuffing 或 high latency state。Android 15+ 的 Perfetto UI 为 BufferStuffing 赋予了标准颜色--浅绿色(Light Green),表示"帧流畅但呈现延迟高"。在 FrameTimeline 轨道中,凡是 Actual Present 稳定落后 Expected Present 固定 N 个周期的帧,都按 BufferStuffing 处理,责任链在显示反馈链积压
+- 是否出现 BufferStuffing 或 high latency state。Perfetto UI 的 FrameTimeline 轨道用浅绿色(Light Green)表示 high latency state:帧率看起来平滑,但帧整体晚呈现,输入延迟升高。Actual Present 稳定落后 Expected Present 只能作为 BufferStuffing 候选信号,需要结合 `jank_type`、BufferQueue slot 状态或 `dequeueBuffer()` 阻塞一起确认
 
 再排:
 
@@ -346,7 +348,7 @@ status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &foun
 
 #### 特征 3:mQueue.size() > 1(队列积压)
 
-`NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND` 查询(行 1239)返回 `true` 时,`mQueue.size() > 1`,说明 Consumer 消费速度跟不上 Producer 生产速度。Perfetto 中搜索 `BufferQueueConsumer::acquireBuffer` 的 `PRESENT_LATER` 返回值频率可判断积压程度。
+`NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND` 查询(行 1197)返回 `true` 时,`mQueue.size() > 1`,说明 Consumer 消费速度跟不上 Producer 生产速度。Perfetto 中搜索 `BufferQueueConsumer::acquireBuffer` 的 `PRESENT_LATER` 返回值频率可判断积压程度。
 
 #### 特征 4:TIMED_OUT 返回值
 
@@ -507,8 +509,8 @@ status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &foun
 
 | 场景 | 关键 SQL | 说明 |
 |---|---|---|
-| 掉帧 / jank | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type IS NOT NULL` | 捞出所有 jank 帧,按 jank_type 分类 |
-| BufferStuffing | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type = 'BufferStuffing'` | Perfetto UI 中 FrameTimeline 轨道显示为浅绿色 |
+| 掉帧 / jank | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type IS NOT NULL AND jank_type != 'None'` | 捞出所有 jank 帧,按 jank_type 分类 |
+| BufferStuffing | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type = 'Buffer Stuffing'` | SQL 字段值为 `Buffer Stuffing`; Perfetto UI 中 FrameTimeline 轨道显示为浅绿色 |
 | 冷启动 | `SELECT name, ts, dur FROM slice WHERE name LIKE '%ActivityManager%' AND name LIKE '%start%'` | 定位 AMS 启动调度链 |
 | ANR | `SELECT * FROM slice WHERE name LIKE '%ANR%'` | 结合 `ApplicationExitInfo` 时间线 |
 | Input 延迟 | `SELECT (doFrame_ts - input_ts) AS latency FROM ...` | 输入事件到 `doFrame` 的时差 |
