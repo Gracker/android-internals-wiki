@@ -77,13 +77,14 @@ task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-04
 last_task9_at: "2026-05-04T12:41:40+08:00"
-last_task9_audit: "2026-05-23"
+last_task9_audit: "2026-06-13"
 last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line."
 review_log: "logs/review/2026-04-11-11-review.md"
-task9_review_notes: "2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 Task6 pass 与 queue 无 pending 条目，自动晋升 finalized。"
+task9_review_notes: "2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 Task6 pass 与 queue 无 pending 条目，自动晋升 finalized。 2026-06-13 Task9 idle audit: pass-tech-audit。P0 0 / P1 0 / P2 3（仅日志：InputDispatcher WindowInfo 快照表述、源码参考 master 链接、recreateOnConfigChanges 版本归因）。未改正文。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
+last_task9_audit_log: "logs/deep-review/2026-06-13-15-audit.md"
 ---
 # 2.12 Window Manager Service 与窗口管理
 
