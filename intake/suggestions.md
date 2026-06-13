@@ -616,3 +616,38 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 - **位置**：`精度与开销` 与 `1.5 性能与安全影响`
 - **问题**：`sched_switch` 事件频率、亚毫瓦级功耗、`/proc/stat` 10ms 粒度等结论缺少设备型号、kernel tag/config、负载、采样窗口和 trace 证据；`sched_switch` 事件触发与时间戳精度也不应简单归因到 `CONFIG_HZ`。
 - **建议**：补一组可复核的 Perfetto/ftrace/eBPF map 读取实验条件，或把这些数字降级为“示例量级/待验证”，并拆清 `/proc/stat` jiffies 粒度与 tracepoint timestamp 的边界。
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-14 03:05 (Round 106)
+
+### 1. Phase 0 空章节扫描
+- 413 章节文件（296 finalized + 81 ready-for-review + 49 README/附录/前言），0 draft
+- 连续 106 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. 增量扫描
+- research-feeds/：最新文件 2026-04-14，无新增（已过期 2 个月）
+- daily-info/：2026-06-14 仅 2 条 RSS（Android 17 调度器 + Linux 6.10 内存碎片），均已被覆盖
+- source-index.json：全部已有对应章节映射
+- queue.json：24 条全部 completed，0 pending
+- 距 Round 105（02:04）仅 1 小时，无新素材进入
+
+### 4. daily-info 热点复核（2026-06-14）
+- Android 17 新调度器减少启动时间 → §5.x / §8.2 / §16.2 已覆盖
+- Linux 6.10 内存碎片整理 → §4.10 / §4.13 已覆盖
+
+### 5. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节
+- 评分 < 14，不满足新章节创建条件
+
+### 6. 全书覆盖度评估
+- Part 1（Ch1-Ch6）：104+1 节，系统机制全面覆盖
+- Part 2（Ch7-Ch12,Ch18）：88 节，性能专题深度充分
+- Part 3（Ch13-Ch15,Ch19）：78 节，工具方法论完整
+- Part 4（Ch16-Ch17）：18 节，系统级与 OEM 实践
+- Part 5（Ch20-Ch26）：121 节，应用层优化实战覆盖最广
+- 全书已有 405 编号小节 + 26 章 README + 前言/附录
+
+### 总结
+全书 413 章节文件、0 draft、296 finalized + 81 ready-for-review（编号章节 100% 已有内容）。连续 106 轮无合格缺口。queue.json 24 条全部 completed。管线堵点在 Task 6/Task 9 复审环节（81 个 ready-for-review 待推进），非内容缺口。知识库已进入收尾维护阶段。
