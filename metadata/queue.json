@@ -510,5 +510,32 @@
     "status": "completed",
     "completed_at": "2026-06-14T00:52:40+08:00",
     "completed_by": "task2b-main"
+  },
+  {
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "priority": 85,
+    "reason": "[Task6 L3 问题] 发展历程节百科式列表需改叙述体；未来发展趋势节属空话填充需补实质内容或删除",
+    "material_paths": [
+      "logs/review/2026-06-14-01-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "内容深度-百科式列表",
+        "location": "eBPF 在 Android 中的发展历程（Android 9-14 部分）",
+        "detail": "每个版本仅 2 个 bullet 无展开叙述，符合 writing guide 反面教材1百科词条式",
+        "suggestion": "改为连贯叙述，重点展开有实质变化的版本"
+      },
+      {
+        "type": "内容深度-空话填充",
+        "location": "eBPF 在 Android 中的未来发展趋势（全节）",
+        "detail": "三小节均为模糊预测，无数据/版本计划/工程证据支撑",
+        "suggestion": "补充有据可查的趋势如 Perfetto eBPF datasource roadmap，或删除该节"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-14T01:10:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-14-01-review.md"
   }
 ]

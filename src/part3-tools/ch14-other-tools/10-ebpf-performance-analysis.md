@@ -58,8 +58,9 @@ p1: 2
 p2: 0
 task6_result: "pass-light-edit"
 task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-30"
-task6_state: "revisiting"
+task6_reviewed_date: "2026-06-14"
+task6_state: "reviewed"
+last_task6_at: "2026-06-14T01:10:00+08:00"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-14"
@@ -68,7 +69,7 @@ task9_review_notes: "2026-06-14 Task9 deep review：needs-rework。P0/P1：Andro
 task2b_result: "fixed"
 task2b_state: "fixed"
 task2b_rework_date: "2026-06-14T00:52:40+08:00"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 last_task2b_at: "2026-06-14T00:52:40+08:00"
 last_task2b_lite_at: "2026-05-30T17:38:00+08:00"
 last_task6_audit: "2026-06-13"
@@ -91,7 +92,7 @@ updated_date: "2026-06-14"
 eBPF (Extended Berkeley Packet Filter) 是在 Linux 内核中运行的 in-kernel 虚拟机，允许在无需重新编译内核或加载内核模块的前提下运行沙箱化的 BPF 程序。Android 从 9 开始引入、12 起将其作为系统性能数据采集的默认路径，了解 eBPF 在 Android 中的应用能帮助：
 
 1. **深入理解 Android 系统性能**：通过 eBPF 可以直接观察内核层面的系统行为，包括进程调度、网络通信、文件系统等。
-2. **开发高性能监控工具**：eBPF 程序运行在内核空间，性能开销极小，适合开发实时性能监控工具。
+2. **开发高性能监控工具**：eBPF 程序运行在内核空间，采集开销低于用户态轮询方案，适合开发实时性能监控工具。
 3. **解决复杂的性能问题**：通过 eBPF 可以捕获通常难以观测的系统行为，帮助定位深层次性能瓶颈。
 
 ## eBPF 在 Android 中的发展历程

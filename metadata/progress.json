@@ -441,6 +441,19 @@
       "auto_promoted": true,
       "issues_found": 0,
       "fixes_applied": 0
+    },
+    {
+      "date": "2026-06-14",
+      "task": "task6",
+      "sections": [
+        "14.10",
+        "19.18",
+        "1.18"
+      ],
+      "result": "pass-light-edit",
+      "auto_promoted": false,
+      "issues_found": 2,
+      "fixes_applied": 6
     }
   ],
   "task6_review_summary": {

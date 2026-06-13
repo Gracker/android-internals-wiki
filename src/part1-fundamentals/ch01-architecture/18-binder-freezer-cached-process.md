@@ -13,15 +13,15 @@ related_chapters: ["1.3", "1.4", "5.8", "11.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-06-13"
+task6_reviewed_date: "2026-06-14"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
-last_task6_at: "2026-06-13T18:10:00+08:00"
+last_task6_at: "2026-06-14T01:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-13-18-review.md"
-task6_review_notes: "2026-06-13 Task6：Task9 闲时抽检 auto-fix 后复审通过；修正计数错误（两个→三个）与术语一致性（package state→包状态）；无 L3/L4 回炉项。"
+task6_review_notes: "2026-06-14 Task6 round 3 re-review: pass-light-edit. Task9 auto-fixed kernel source anchors (Linux main→Android common kernel android17-6.18-2026-04_r1). L1: clean (no banned words). L2: clean (good narrative, proper structure, clear tables). All 6 anchors covered. No B-class issues. Writing quality high. Score: structure 5/5, wording 5/5, consistency 5/5, verification 4/5, metadata 5/5."
 task9_state: reviewed
 last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 last_task9_at: "2026-06-14T00:24:00+08:00"

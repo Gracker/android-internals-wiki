@@ -21,8 +21,8 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
@@ -35,7 +35,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-14"
 last_task9_at: "2026-06-14T00:30:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-05"
+reviewed_date: "2026-06-14"
 
 review_notes: "2026-04-24 task6 review: pass-light-edit. L1 fix x1 (frontmatter YAML line merge). 写作质量良好，商业平台对比清晰，接入建议实用。B类问题已在queue.json由task9录入（私有化责任表/PoC验收表/成本模型/迁移案例），等task2b处理。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task2b_result: "fixed"
@@ -43,7 +43,8 @@ last_task2b_at: "2026-06-04T22:53:28+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
 review_notes_3: "2026-06-04 task6 re-review (round 3): pass-light-edit. L1/L2 clean. All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
-last_task6_at: "2026-06-05T06:13:36+08:00"
+review_notes_4: "2026-06-14 task6 re-review (round 4): pass-light-edit after task9 auto-fix. L1: fixed 落地→发布/引入 in research notes (5 instances). L2: clean. All 10 anchors covered. No B-class issues. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
+last_task6_at: "2026-06-14T01:10:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 
 last_task6_review_log: "logs/review/2026-06-05-06-review.md"
@@ -379,7 +380,7 @@ interface AppMonitor {
 <!-- AIW-源码调研-2026-06-07 -->
 ## 源码调研验证（2026-06-07）
 
-**重点**：AOSP 主线最新 tag 为 `android-16.0.0_r4`，`android-17.0.0_r1` 在 `android.googlesource.com` 公开 refs/tags 中尚未创建。Build.java 中 `VERSION_CODES.BAKLAVA = 36`（Android 16）仍为最新常量，API 37 数值与 codename 均未在 AOSP 落地。
+**重点**：AOSP 主线最新 tag 为 `android-16.0.0_r4`，`android-17.0.0_r1` 在 `android.googlesource.com` 公开 refs/tags 中尚未创建。Build.java 中 `VERSION_CODES.BAKLAVA = 36`（Android 16）仍为最新常量，API 37 数值与 codename 均未在 AOSP 发布。
 
 ### 1. AOSP 现状（一手验证 @ `refs/tags/android-16.0.0_r4`）
 
@@ -410,11 +411,11 @@ static {
 }
 ```
 
-Android 16 已落地 `SDK_INT_FULL`（major × 100_000 + minor）。**Android 17 落地后**，`SDK_INT` 将变 37，`SDK_INT_FULL` 携带 minor 偏移；APM 工具若需区分 minor 行为需读 `SDK_INT_FULL` 而非 `SDK_INT`。
+Android 16 已引入 `SDK_INT_FULL`（major × 100_000 + minor）。**Android 17 发布后**，`SDK_INT` 将变 37，`SDK_INT_FULL` 携带 minor 偏移；APM 工具若需区分 minor 行为需读 `SDK_INT_FULL` 而非 `SDK_INT`。
 
 ### 4. 核心结论更新
 
-- **AOSP 主线尚未发布 `android-17.0.0_r1` tag**——所有 API 37 数值引用标记为「**未进入 Android 17**」，需在 AOSP 落地后重核
+- **AOSP 主线尚未发布 `android-17.0.0_r1` tag**——所有 API 37 数值引用标记为「**未进入 Android 17**」，需在 AOSP 发布后重核
 - **Sentry 8.x 主分支已对齐 API 36**，Android 17 设备上将走 `Build.VERSION.SDK_INT > compileSdk` 兼容回退
 - **底层 APM 关键 API（Trace / ApplicationExitInfo / getMyMemoryState）签名在 android-16.0.0_r4 中未变**，Android 17 兼容性回归风险低
 - **SDK 自身版本门槛**仍由商业厂商控制（AOSP 不验证），建议在迁移时按各厂商 release notes 升级
@@ -448,7 +449,7 @@ compileSdk = "36"
 minSdk = "21"
 ```
 
-**Android 17 落地后行为**：Sentry main 自身只声明对 API 36 编译期可见。Android 17 (API 37) 设备运行时触发 `Build.VERSION.SDK_INT > compileSdk` 兼容回退，接入评审应保持 SDK ≥ main HEAD，**不要在 fork 上锁定旧 compileSdk**。
+**Android 17 发布后行为**：Sentry main 自身只声明对 API 36 编译期可见。Android 17 (API 37) 设备运行时触发 `Build.VERSION.SDK_INT > compileSdk` 兼容回退，接入评审应保持 SDK ≥ main HEAD，**不要在 fork 上锁定旧 compileSdk**。
 
 ### 3. 与章节表格的对照修订
 
