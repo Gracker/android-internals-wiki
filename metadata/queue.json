@@ -316,7 +316,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-06-13T05:34:34.257815",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-13T10:51:00+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "URL 不可访问（Juejin SPA 无 API 访问），跳过"
   },
   {
     "section": "03-input.0",
@@ -336,7 +339,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-06-13T05:34:34.257818",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-13T10:51:00+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "URL 不可访问（Juejin SPA 无 API 访问），跳过"
   },
   {
     "section": "2.10",
@@ -356,7 +362,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-13T06:12:05.620345",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-13T08:52:21+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加为章节参考资料/延伸阅读引用"
   },
   {
     "section": "2.10",
@@ -376,7 +385,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-13T06:12:05.620345",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-13T08:52:15+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加为章节参考资料/延伸阅读引用"
   },
   {
     "section": "14.2",
@@ -396,7 +408,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-13T06:12:05.620345",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-13T08:52:15+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 章节参考资料已含同文件引用，标记完成"
   },
   {
     "section": "13.2",
@@ -416,6 +431,9 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-13T06:12:05.620345",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-13T08:52:15+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加为章节参考资料/延伸阅读引用"
   }
 ]
