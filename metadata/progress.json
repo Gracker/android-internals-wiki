@@ -1,8 +1,8 @@
 {
   "total": 426,
   "draft": 0,
-  "ready-for-review": 77,
-  "finalized": 194,
+  "ready-for-review": 76,
+  "finalized": 195,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-12",
   "task9_reviewed_by": "openclaw-task9",
@@ -6273,7 +6273,7 @@
     },
     "20.14": {
       "status": "finalized",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "title": "线程与 FD 资源监控治理",
       "file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
       "reviewed_by": "openclaw-task6",
@@ -6283,10 +6283,13 @@
       "last_task6_at": "2026-05-23T04:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-23-04-review.md",
       "task6_new_rework": false,
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task6_note": "Task6 04:05 首审 pass-light-edit；补 section/chapter 与禁用词小修，进入 Task9 pending。",
       "task6_reviewed_by": "openclaw-task6",
-      "task6_reviewed_date": "2026-06-13"
+      "task6_reviewed_date": "2026-06-13",
+      "task9_result": "auto-fixed",
+      "last_updated": "2026-06-13T11:25:00+08:00",
+      "verifier_note": "2026-06-13 Verifier auto-promoted: task6 pass + task9 auto-fix + no queue pending"
     },
     "7.15": {
       "status": "finalized",
