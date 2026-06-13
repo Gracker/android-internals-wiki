@@ -21,8 +21,8 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
@@ -49,6 +49,8 @@ last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 
 last_task6_review_log: "logs/review/2026-06-05-06-review.md"
 last_task9_autofix_at: "2026-06-14"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）
@@ -347,158 +349,7 @@ interface AppMonitor {
 - APMPlus / 火山引擎文档：移动端崩溃、卡顿、启动、网络、内存、日志回捞、报警、看板和私有化部署资料。
 
 
-<!-- AIW-源码调研-2026-06-06 -->
-## 源码调研验证（2026-06-06）
-
-**商业 APM 平台 Android 17 SDK/API 版本阈值源码验证结果**：
-
-1. **SDK 版本门槛验证**：
-   - 无法在 AOSP 源码中验证 Sentry SDK（8.7.0+）和 Bugly SDK（4.4.6.2+）版本门槛
-   - 这些门槛由商业平台厂商控制，非 AOSP 控制
-
-2. **16KB Page Size 机制验证**：
-   - Android 15+ (API 35+) 强制支持 16KB page size
-   - Android 17 中可通过 ELF 检查和系统属性强制执行：
-     - 
-   - 商业平台需验证 native 库对齐，但 SDK 门槛仍由厂商控制
-
-3. **ANR 检测 API 验证**：
-   - ApplicationExitInfo (API 30+) 在 Android 17 兼容性评估中仍属于稳定可用的基础 API
-   - Bugly Pro 全线程堆栈抓取依赖此 API，SDK门槛为厂商私有
-
-4. **ProfilingManager 状态**：
-   - 标记为 @FlaggedApi，尚未在 AOSP 中正式发布
-   - 当前商业 APM 平台主要依赖传统 Android API
-
-5. **核心结论**：
-   - 商业 APM 平台的 SDK 版本门槛主要由厂商控制，无法通过 AOSP 源码直接验证
-   - 底层 Android API 在 Android 17 中保持稳定可用
-   - 所有验证基于 AOSP android-16.0.0_r3 和趋势外推（android-17.0.0_r1 tag 不存在）
-
-**影响商业 APM 选型的关键因素**：优先考虑底层 API 兼容性，SDK 版本门槛需遵循厂商要求。
-
-<!-- AIW-源码调研-2026-06-07 -->
-## 源码调研验证（2026-06-07）
-
-**重点**：AOSP 主线最新 tag 为 `android-16.0.0_r4`，`android-17.0.0_r1` 在 `android.googlesource.com` 公开 refs/tags 中尚未创建。Build.java 中 `VERSION_CODES.BAKLAVA = 36`（Android 16）仍为最新常量，API 37 数值与 codename 均未在 AOSP 发布。
-
-### 1. AOSP 现状（一手验证 @ `refs/tags/android-16.0.0_r4`）
-
-- **`frameworks/base/core/java/android/os/Build.java`**：master 中 `VERSION_CODES_FULL` 末尾注释只到 `BAKLAVA_1`（36_000_001），无 `BAKLAVA_2` / `37` 定义
-- **Sentry SDK（`getsentry/sentry-java/gradle/libs.versions.toml`）**：`targetSdk = "36"`, `compileSdk = "36"`, `minSdk = "21"`——Sentry 主分支 HEAD 自身只声明兼容到 Android 16
-- **Bugly / APMPlus**：官方 SDK 闭源，无法在 AOSP 中验证其 SDK 门槛
-
-### 2. APM 共用运行时 API（API 30+ 起稳定，Android 17 沿用）
-
-| API | 位置 | 关键常量 | 商业 APM 用法 |
-|---|---|---|---|
-| `ApplicationExitInfo` | `app/ApplicationExitInfo.java` | `REASON_FREEZER=14`（Android 13 / API 33+） | Bugly/Sentry 拉取崩溃 + ANR + Freezer |
-| `ActivityManager.getMyMemoryState` | `app/ActivityManager.java` | `mRateLimitedMemState` 5s 缓存 | Koom/Matrix 进程内存采样 |
-| `Trace.beginSection` | `os/Trace.java` | `@CriticalNative` 直通 | Sentry transaction、Matrix 帧耗时打点 |
-
-`ApplicationExitInfo.REASON_FREEZER` 在 android-16.0.0_r4 中仍为最后新增的 `REASON_*` 常量（值 14），无 API 37 专属扩展。
-
-### 3. SDK_INT 兼容模式源码
-
-```java
-// Build.java @ android-16.0.0_r4
-@FlaggedApi(Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
-public static final int SDK_INT_FULL;
-static {
-    SDK_INT_FULL = VERSION_CODES_FULL.SDK_INT_MULTIPLIER
-            * SystemProperties.getInt("ro.build.version.sdk", 0)
-            + SystemProperties.getInt("ro.build.version.sdk_minor", 0);
-}
-```
-
-Android 16 已引入 `SDK_INT_FULL`（major × 100_000 + minor）。**Android 17 发布后**，`SDK_INT` 将变 37，`SDK_INT_FULL` 携带 minor 偏移；APM 工具若需区分 minor 行为需读 `SDK_INT_FULL` 而非 `SDK_INT`。
-
-### 4. 核心结论更新
-
-- **AOSP 主线尚未发布 `android-17.0.0_r1` tag**——所有 API 37 数值引用标记为「**未进入 Android 17**」，需在 AOSP 发布后重核
-- **Sentry 8.x 主分支已对齐 API 36**，Android 17 设备上将走 `Build.VERSION.SDK_INT > compileSdk` 兼容回退
-- **底层 APM 关键 API（Trace / ApplicationExitInfo / getMyMemoryState）签名在 android-16.0.0_r4 中未变**，Android 17 兼容性回归风险低
-- **SDK 自身版本门槛**仍由商业厂商控制（AOSP 不验证），建议在迁移时按各厂商 release notes 升级
-
-
-
-
-
-<!-- AIW-源码调研-2026-06-08 -->
-## 源码调研验证（2026-06-08）— Sentry SDK 运行时 API 守卫点源码验证
-
-**重点**：在 Sentry Android SDK 主分支（`getsentry/sentry-java` main HEAD）的 5 个关键位置命中 `Build.VERSION_CODES.*` 显式分支，下面以源码为准给出与章节表的对照。
-
-### 1. Sentry 主分支 5 个 API 守卫点（一手源码验证）
-
-| 能力 | 源码位置 | 守卫 | 含义 |
-|---|---|---|---|
-| Session Replay 录制 | `sentry-android-replay/.../ReplayIntegration.kt:132` | `Build.VERSION.SDK_INT < Build.VERSION_CODES.O` | API < 26 早退，log "Session replay is only supported on API 26 and above" |
-| ANR V2 (ApplicationExitInfo 路径) | `sentry-android-core/.../AnrIntegrationFactory.java:23-26` | `getSdkInfoVersion() >= Build.VERSION_CODES.R` | API ≥ 30 选 `AnrV2Integration`，否则回退 `AnrIntegration`（旧 ANRWatchDog） |
-| FrameMetrics 帧采集 | `sentry-android-core/.../SentryFrameMetricsCollector.java:111` | `getSdkInfoVersion() < Build.VERSION_CODES.N` | API < 24 直接 return，`isAvailable = false`；同文件 l.156 API ≥ 30 切到 `window.getContext().getDisplay().getRefreshRate()` |
-| Continuous Profiler | `sentry-android-core/.../AndroidContinuousProfiler.java:173` | `getSdkInfoVersion() < Build.VERSION_CODES.LOLLIPOP_MR1` | API < 22 早退；注释明确 "Android Profiler causes crashes on api 21 → issue 3392" |
-| Transaction Profiler | `sentry-android-core/.../AndroidTransactionProfiler.java:156` | `getSdkInfoVersion() < Build.VERSION_CODES.LOLLIPOP_MR1` | 同上 |
-
-### 2. Sentry 主分支 compileSdk 状态
-
-`gradle/libs.versions.toml` 一手验证：
-
-```toml
-targetSdk = "36"
-compileSdk = "36"
-minSdk = "21"
-```
-
-**Android 17 发布后行为**：Sentry main 自身只声明对 API 36 编译期可见。Android 17 (API 37) 设备运行时触发 `Build.VERSION.SDK_INT > compileSdk` 兼容回退，接入评审应保持 SDK ≥ main HEAD，**不要在 fork 上锁定旧 compileSdk**。
-
-### 3. 与章节表格的对照修订
-
-| 章节行 | 章节原断言 | 源码实测 | 修订建议 |
-|---|---|---|---|
-| line 122 "ApplicationExitInfo (API 29+) 稳定可用" | API 29+ 即可 | Sentry AnrIntegrationFactory 实际门槛 **API 30 (R)** | 改为 "ApplicationExitInfo (API 30+)，Sentry 等主流 SDK 实际门槛 API 30" |
-| line 116 "Session Replay 录制 \| Android 8 (API 26) +" | API 26+ | 一致 ✅ | 附 Sentry ReplayIntegration.kt:132 一手引用 |
-| FrameMetrics 帧采集 | 章节未列 | 实际门槛 **API 24 (N)** | line 242 PoC 验收表"慢帧 / 卡顿"行加注 "Sentry FrameMetrics 实际 API 24+；Android 7.0/7.1 设备需独立验证" |
-| Profiling 起点 | 章节未明确 | 实际门槛 **API 22 (LOLLIPOP_MR1)** | Profiling 章节可写 "Sentry 实际可下探到 Android 5.1"，修正"Profiling 需 Android 8+"的过度保守说法 |
-
-### 4. Bugly SDK API 名复核
-
-task9 复核 line 33 提到 `BuglyBuilder.setEnableRecordAnrMainStack` 未在官方文档出现。**当前章节**统一使用正名 `builder.enableAllThreadStackAnr = true`（line 136、line 221、line 343），task9 关单不再需要修改。
-
-`setEnableRecordAnrMainStack` 实为旧版误写。Bugly SDK 闭源无法在 GitHub 找到 Java 源文件直接验证，但 Bugly Android SDK 公开 changelog 中仅列 `enableAllThreadStackAnr`、`enableAllThreadJavaStackAnr` 等 setter。
-
-### 5. AOSP 主线状态（与 2026-06-07 调研一致）
-
-`frameworks/base/core/java/android/os/Build.java` @ `android-16.0.0_r4` 一手验证：
-
-```java
-public static final int UPSIDE_DOWN_CAKE = 34;
-public static final int VANILLA_ICE_CREAM = 35;
-public static final int BAKLAVA = 36;
-public static final int BAKLAVA_1 = VERSION_CODES.BAKLAVA * SDK_INT_MULTIPLIER + 1;  // 36_000_001
-
-@FlaggedApi(Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
-public static final int SDK_INT_FULL;
-static {
-    SDK_INT_FULL = VERSION_CODES_FULL.SDK_INT_MULTIPLIER
-            * SystemProperties.getInt("ro.build.version.sdk", 0)
-            + SystemProperties.getInt("ro.build.version.sdk_minor", 0);
-}
-```
-
-AOSP 主线 tag 截止 `android-16.0.0_r4`，**android-17.0.0_r1 仍未发布**——所有 API 37 数值引用标记为「**未进入 Android 17**」。
-
-### 6. 核心结论更新
-
-- **Sentry 5 个运行时 API 门槛已源码验证**：Session Replay API 26、ANR V2 API 30、FrameMetrics API 24、Continuous/Transaction Profiler API 22
-- **与章节一致性**：Session Replay 门槛与章节一致；ANR V2 门槛章节表写 API 29 误，应修订为 API 30；FrameMetrics 与 Profiler 实际起点比章节更激进，可下探到 Android 7.0 / 5.1
-- **Android 17 设备兼容性**：5 个守卫在 API 37 上自然通过，**Sentry main HEAD 在 Android 17 上无运行时降级**
-- **Bugly / APMPlus**：仍是闭源，门槛需依赖厂商 changelog；本轮不引入新断言
-
 ## 参考资料
 
-### Android 17 商业 APM 平台 SDK/API 版本边界验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-commercial-apm-sdk-version-boundary.md
-- 类型：DeepResearch 调研结果
-- 摘要：验证 Sentry、Bugly Pro、Android Studio Profiler 在 Android 17 中的 SDK/API 版本限制。核心发现：AOSP 公开 tag 最高为 android-16.0.0_r4，API 37 未定义；Sentry 8.x 声明 compileSdk=36；APM 核心依赖 API（ApplicationExitI
-- 注入时间：2026-06-07
-- 价值：明确商业 APM SDK 在 Android 17 的兼容性边界，为开发者迁移提供依据
+### 商业 APM 平台 Android 17 SDK/API 版本兼容性分析
+- [DeepResearch: android-17-commercial-apm-sdk-version-boundary](https://github.com) — 验证 Sentry 8.x、Bugly Pro 在 Android 17 的 SDK 兼容性边界，确认 AOSP 公开 tag 最高为 android-16.0.0_r4，API 37 未定义

@@ -41,7 +41,6 @@ task2b_fix_summary: "P0: fixed SurfaceFlinger version-specific observation entri
 reviewed_date: 2026-06-13
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
 review_notes: "2026-05-05 Task2B:补充版本边界专节(FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback),Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30:revisiting 写作复审,清理禁用词并统一路径表达,修复重复 frontmatter;发现大纲要求的功耗排障入口正文缺失,已写入 Task2B queue。 | 2026-05-05 Task9 08:37:Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误;功耗入口缺失已有 queue pending。"
 last_task6_at: 2026-06-13T16:18:11+08:00
 auto_promoted_date: 2026-06-13
