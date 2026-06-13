@@ -537,5 +537,59 @@
     "added_at": "2026-06-14T01:10:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-06-14-01-review.md"
+  },
+  {
+    "id": "task9-20260614-1410-ebpf-source-api-regression",
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] eBPF 章节回炉后仍存在 BPF 示例上下文、UprobeStats、Perfetto TraceConfig 与 bpfloader 版本锚点的源码/API 错误。",
+    "material_paths": [
+      "logs/deep-review/2026-06-14-01-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L196-L247, L418-L440, L530-L546",
+        "detail": "syscall tracepoint 示例仍把 syscall-specific tracepoint 写成通用 trace_event_raw_sys_enter + ctx->args[]。Android common kernel 的通用 sys_enter 属于 raw_syscalls/sys_enter，syscalls/sys_enter_openat 等 syscall-specific 事件由 syscall metadata 生成字段；正文中的 openat 注释还把 args[0] 同时写成 syscall_nr 和 fd。",
+        "suggestion": "统一改成 raw_syscalls/sys_enter + id/args[6]，或给每个 syscalls/sys_enter_* 事件定义匹配字段结构；无法保证可编译时应标明伪代码并删除“可直接用”的语义。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L250-L270, L449-L486, L585-L610",
+        "detail": "vmalloc/vfree 示例把 kprobe/vmalloc 的 PT_REGS_PARM1 当返回地址、PT_REGS_PARM2 当 size。Android common kernel include/linux/vmalloc.h 中 vmalloc_noprof(unsigned long size) 只有 size 入参，分配地址是返回值；entry kprobe 取不到返回地址。",
+        "suggestion": "改用 kretprobe 记录返回地址，或换成内核已有 tracepoint/更合适 hook；内存泄漏检测示例需同时说明分配入口、返回值、释放入口和失败路径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L274-L310",
+        "detail": "UprobeStats 被写成系统调用监控工具，并给出 UprobeStats --pid/--syscall CLI。AOSP packages/modules/UprobeStats android-16.0.0_r4 的 binary 名为 uprobestats，oneshot service 从 /data/misc/uprobestats-configs/config 读配置；Bpf.cpp 通过 /sys/bus/event_source/devices/uprobe/type 和 perf_event_open 附加 uprobe BPF 程序，UprobeStats.cpp 无 argparse/--syscall 入口。",
+        "suggestion": "把 UprobeStats 改成受 guardrail/config 控制的 user-space uprobe 统计框架，删除 syscall 监控和手写 CLI 示例；如要讲 syscall 监控，另用 raw_syscalls/sys_enter 或 tracefs 事件示例。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L344-L374",
+        "detail": "Perfetto 配置示例使用 linux_perfetto_config/sys_events_config/sys_events 字段。external/perfetto android-16.0.0_r4 的 DataSourceConfig 中没有这些字段；ftrace 数据源应使用 name: \"linux.ftrace\" + ftrace_config，perf 采样使用 name: \"linux.perf\" + perf_event_config。",
+        "suggestion": "替换为有效 TraceConfig 文本 proto 示例，至少锚到 data_source_config.proto 和 ftrace_config.proto；不要把无效 JSON 当 Perfetto 配置示例。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L756-L775",
+        "detail": "Rust bpfloader 小节写“Android 从 16 开始引入”，并称 android-16.0.0_r4 main() 调用 legacyBpfLoader()/execNetBpfLoadDone()。复核 platform/system/bpf：android-15.0.0_r17 已有 loader/bpfloader.rs；android-16.0.0_r4 的 main() 在 load_libbpf_progs() 后调用 vendorBpfLoader()，不再是正文列出的调用序列。NetBpfLoad.cpp 在 android-15/16 tag 下也不是可验证路径。",
+        "suggestion": "按 tag 拆分：Android 15 后期 tag 已出现 Rust 入口雏形，Android 16 r1/r4 行为不同；引用 android-16.0.0_r4 时必须改成 vendorBpfLoader() 实际路径，并删除 NetBpfLoad.cpp 说法。"
+      },
+      {
+        "type": "版本差异",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L161-L169, L838-L840",
+        "detail": "正文仍把 AOSP main 上的 Perfetto/eBPF 集成写进 Android 17 演进和总结。当前 platform/system/bpf、packages/modules/UprobeStats 未见 android-17.0.0_r1 tag；只有 main/master 资料时，AIW 规则要求标注“未进入 Android 17”并跳过作为正文结论。",
+        "suggestion": "删除 Android 17 平台结论，或仅保留为“未进入 Android 17 的 main 分支观察”；正文结论锚到 android-16.0.0_r4 或 Android common kernel android17-6.18 tag 中实际存在的内容。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-14T01:30:47+08:00",
+    "created": "2026-06-14",
+    "status": "pending"
   }
 ]
