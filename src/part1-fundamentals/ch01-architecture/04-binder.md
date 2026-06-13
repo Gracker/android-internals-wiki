@@ -710,3 +710,11 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 - 注入时间：2026-06-10
 - 价值：包含源码级分析（AOSP锚点），对理解框架内部机制和性能调优有直接参考意义
 - [Android 17 Binder 事务队列优化与高频 IPC 性能提升](DeepResearch/2026-06-11-android17-binder-transaction-queue-optimization.md) — 分析 Android 17 Binder 驱动三层 todo 队列（thread/proc/node.async_todo）的优先级继承 binder_transaction_priority 防反转机制、deferred TRANSACTION_COMPLETE 重叠执行优化、vendor 跳过优先级 tracehook，以及 Rust/C Binder 选择器模块化重构。
+
+### Android 17 Binder IPC 异步 oneway / 冻结回执 / 内核批处理流水线
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-binder-ipc-async-oneway-frozen-reply-pipeline.md
+- 类型：DeepResearch 调研结果
+- 摘要：深入分析 Android 17 Binder 的四级流水线：用户态自动批处理（flushCommands 双次 talkWithDriver 确保 mOut 清空）、异步 oneway 通道（TF_ONE_WAY 零阻塞 + 内核 spam 抑制 BINDER_WORK_TRANSACTION_ONEWAY_SPAM_SUSPECT）、frozen 回执机制（BR_TRANSACTION_PENDING_FROZEN / BR_FROZEN_REPLY 瞬时错误而非长阻塞）、优先级继承传递（binder_do_set_priority 临时借用 nice/RT prio）。全部在 BC_*/BR_* 命令序列层完成，对应用代码零侵入。
+- 注入时间：2026-06-13
+- 价值：源码级详解 IPCThreadState::transact 同步/异步两条完整路径，与 §1.4 已有"线程池+事务队列"形成用户态执行机制闭环
+

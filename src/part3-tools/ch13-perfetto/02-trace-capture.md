@@ -1065,6 +1065,7 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 7. AOSP Trace.java 源码: frameworks/base/core/java/android/os/Trace.java
 8. 高爷博客 - Android Perfetto 系列 2：Perfetto Trace 抓取: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
 9. 高爷博客 - Android Perfetto 系列 4：使用命令行在本地打开超大 Trace: https://www.androidperformance.com/2025/02/08/Android-Perfetto-04-Open-Big-Trace-With-Command-Line/
+10. **Perfetto APM 工具链演进（Android 14→16）**：Android 14 至 16 累计新增 15 个 data source（Next id 123→138），APM 端侧三件套（cpu_per_uid_config / app_wakelock_config / kernel_wakelocks_config），traced_probes readtracefs 权限升级，traced.rc perfetto_trace_on_boot 新增。详见 DeepResearch：[2026-06-09-android17-tracekit-perfetto-apm-toolchain.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md)
 
 以下为两个核心数据源的关键源码锚点，基于 android-12.0.0_r1 与 android-16.0.0_r3 源码验证（Android 17 tag 当前未公开，不作为已验证源码结论）：
 

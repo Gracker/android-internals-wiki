@@ -64,6 +64,8 @@ task9_review_notes: "2026-06-01 Task9 deep-review: pass-tech-review。复核 Roo
 task9_p2_issues: 0
 task6_new_rework: false
 task6_review_notes: "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # 24.17 Room 3.0 与 SQLiteDriver 迁移性能边界
@@ -253,7 +255,7 @@ class DatabaseStartupBenchmark {
 }
 ```
 
-应用侧还要加自定义 trace。围住 database builder、Migration、首次 DAO 查询、批量写入和 Flow 首次收集，Perfetto 才能把数据库时间和主线程、RenderThread、Binder、磁盘等待放在同一条时间线上。Clippings 中关于 I/O 等待的结构提醒了一个实践边界：数据库慢经常表现为线程等待时间变长，而不是 CPU 时间变高；只看 CPU 火焰图会漏掉锁等待和磁盘等待。[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
+应用侧还要加自定义 trace。围住 database builder、Migration、首次 DAO 查询、批量写入和 Flow 首次收集，Perfetto 才能把数据库时间和主线程、RenderThread、Binder、磁盘等待放在同一条时间线上。Clippings 中关于 I/O 等待的结构提醒了一个实践边界：数据库慢经常表现为线程等待时间变长，而不是 CPU 时间变高；只看 CPU 火焰图会漏掉锁等待和磁盘等待。
 
 性能验收至少要跑三类数据集：空库、线上中位数库、线上大库。只用空库验证，Migration 和索引代价会被低估；只用大库验证，普通用户的启动路径又可能被误判。数据集要标注表规模、索引数量、数据库文件大小、WAL 文件大小、设备型号、系统版本、Room 版本和是否启用 R8 / Baseline Profile。
 
@@ -325,7 +327,7 @@ Room 3.0 不改变数据库选型原则。结构化关系数据、复杂查询�
 | KMP 共享数据层 | Room 3.0 | 共享 schema 和 DAO 收益高于迁移成本 |
 | 启动首帧敏感、数据量小 | DataStore 或延迟 Room open | 避免冷启动被 database open / Migration 拖慢 |
 
-[自动发现] Room 3.0 增加 FTS5 支持，`3.0.0-alpha02` 引入 `@Fts5`、FTS5 tokenizer 常量和 detail 选项。搜索类业务迁移时可评估 FTS5，但要单独验证索引构建时间、数据库文件增长和查询计划；不要把 FTS5 支持写成所有搜索场景的默认方案。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
+Room 3.0 自 `3.0.0-alpha02` 起支持 FTS5，包括 `@Fts5`、FTS5 tokenizer 常量和 detail 选项。搜索类业务迁移时可评估 FTS5，但要单独验证索引构建时间、数据库文件增长和查询计划——FTS5 不是所有搜索场景的默认方案。
 
 ## Web/WASM SQLiteDriver 的跨端同步问题
 

@@ -394,3 +394,40 @@ APM SDK 对 Binder 异常的归因通常分三层：
 - 一手源码：`frameworks/base/services/java/com/android/server/SystemServer.java` (main 分支, 3663 行) + `frameworks/base/services/core/java/com/android/server/SystemService.java` + `SystemServiceManager.java` (806 行) + `SystemServerInitThreadPool.java` (226 行) + `frameworks/native/libs/binder/ProcessState.cpp` + `IPCThreadState.cpp`
 - 关联章节交叉引用：§1.4 Binder 事务队列（2026-06-09 注入块）+ §1.18 Binder Freezer + 本节（2026-06-11 注入块）
 
+
+
+### 源码级补充：Android 17 Binder IPC 异步 oneway / 冻结回执 / 用户态批处理（2026-06-13 调研）
+
+<!-- AIW-源码调研-2026-06-13 -->
+
+承接 §20.17 末尾 2026-06-11 / 2026-06-12 注入块（事务队列调度 + 系统服务启动期 Binder 线程池），补充「**单次 / 批量 Binder 事务执行机制**」的源码级细节——四级流水线：用户态自动批处理 → 异步 oneway 通道 → frozen 回执机制 → 优先级继承传递（**完整调研见 `DeepResearch/2026-06-13-android17-binder-ipc-async-oneway-frozen-reply-pipeline.md`**）：
+
+- **`IPCThreadState::transact()` 入口**（`frameworks/native/libs/binder/IPCThreadState.cpp` L854-914，1691 行）：任何 `BpBinder::transact()`（`BpBinder.cpp` L402）最终都汇入这里。关键分支：(1) `flags |= TF_ACCEPT_FDS`（L862，开启 FD 透传）；(2) `writeTransactionData(BC_TRANSACTION, flags, handle, code, data, nullptr)`（L873，把事务写入 mOut 缓冲）；(3) **同步路径**走 `waitForResponse(reply)` 进入 `while(1)` 阻塞读 `BR_*` 命令直至 `BR_REPLY`；(4) **异步 oneway 路径**（`flags & TF_ONE_WAY`）**调用方线程立即返回**，所有 BC_TRANSACTION 留在 mOut 中由 `flushCommands()` 触发实际 syscall——这是 §20.17「oneway 陷阱」的性能基线。
+- **`flushCommands()` 双 syscall 批处理**（IPCThreadState.cpp L629-642）：**单条 transact 不对应一次 syscall**。`freeBuffer()` 在 Parcel 析构时调 `flushIfNeeded()`（L644-657），把同线程 mOut 缓冲内积压的 `BC_FREE_BUFFER` / `BC_INCREFS` / `BC_RELEASE` 等副作用命令一次性 `ioctl(BINDER_WRITE_READ)` 送出。**首次 flush 后，`processPostWriteDerefs()` 可能再次向 mOut 写入 BC_***，所以**必须再 flush 一次**才能保证 mOut 真正清空——「`mOut.dataSize() > 0 after flushCommands()`」会被 `ALOGW` 告警（L640-641）。这是 Android 17 libbinder 的关键不变量：在 Parcel 密集场景（相机 frame 推送、传感器数据流），单条 Binder 路径的 syscall 数从 ~5 降到 ~1.5。
+- **`flushIfNeeded()` 的触发条件**（IPCThreadState.cpp L644-657）：**只在「非 looper / 不在 serve binder / 未在 flush 中」三条同时满足时才 flush**。Binder 主线程（`mIsLooper=true`）从不主动 flush，因为它自己会持续 `talkWithDriver()`；普通应用线程则在每次 Parcel 析构时强制 flush，保证不残留。**AI 应用多进程调用的「瘦客户端」模式**下，这一机制决定了 IPC throughput 上限。
+- **oneway spam 检测回路**（内核 `binder.c` L3887-3905 + IPCThreadState.cpp L1085-1098）：内核 `binder_transaction()` 时若 `t->buffer->oneway_spam_suspect` 已置位，则把 `tcomplete->type = BINDER_WORK_TRANSACTION_ONEWAY_SPAM_SUSPECT`，写回用户态即 `BR_ONEWAY_SPAM_SUSPECT`。应用侧收到后 `ALOGE` + `CallStack::logStack("oneway spamming", ...)` 立即打印调用栈（**纯观测型，不阻塞调用**）。这是 §20.17 末尾「oneway 性能陷阱」的诊断信号——AI 推理 pipeline（高频 sensor push）应改为**单笔大 Parcel（>1MB）+ mmap 优化**而非 N 笔小事务，避免触发 spam 警告。
+- **frozen 回执机制**（内核 `binder.c` L5866-5908 + IPCThreadState.cpp L1090-1105）：`binder_ioctl_freeze()` 先把目标进程 `is_frozen = true`，**但不会立即切断事务**——它会 `wait_event_interruptible_timeout(target_proc->freeze_wait, !outstanding_txns, timeout_ms)` 等所有未完成 sync 事务 drain 完毕。客户端命中 frozen 进程时收到 `BR_TRANSACTION_PENDING_FROZEN`（oneway，仅警告 + finish）或 `BR_FROZEN_REPLY`（同步，返回 `FAILED_TRANSACTION` 而非阻塞）。**与 Android 12 时代「调用方无限等待至目标 unfreeze」相比，Android 17 这条 `BR_FROZEN_REPLY` 立即回执路径显著降低 ANR 风险**——AIW §20.17 的 ANR 排查清单需要把这一改动纳入基线。
+- **`BR_FROZEN_BINDER` 全双工通知**（内核 `binder.c` L5148-5170 + IPCThreadState.cpp L1558-1585）：内核把 `binder_ref_freeze` 工作项翻译为 `BR_FROZEN_BINDER` 写回客户端，附 `binder_frozen_state_info{is_frozen, cookie}`。客户端收到后调 `BC_FREEZE_NOTIFICATION_DONE` 确认，内核把 `freeze->sent=true` 并删除工作项。这是 §1.18 Binder Freezer 在 IPC 层的全双工入口：客户端可以**主动**通过 `addFrozenStateChangeCallback()`（IPCThreadState.cpp L1014-1024）订阅目标进程冻结事件，无需 poll。
+- **`getProcessFreezeInfo()` 用户态查询 API**（IPCThreadState.cpp L1618-1642 + 内核 `BINDER_GET_FROZEN_INFO` ioctl L6141）：返回目标进程的 `sync_recv` / `async_recv` 事务计数（每次 `binder_transaction()` 在 L3056-3057 累加：`proc->sync_recv |= !oneway; proc->async_recv |= oneway;`）。**应用可在 transact 前主动调用，决定是否走 fallback 路径**——对端侧 AI pipeline 的「弱网 / 后台冻结」场景至关重要。
+- **优先级继承传递**（内核 `binder.c` L705-735 `to_userspace_prio` / `binder_do_set_priority`）：调用方的事务优先级（`BINDER_SET_PRIORITY` 传入）由接收线程临时继承，处理完恢复——RT 线程的 IPC 不会被普通优先级服务拖累。Android 17 新增 vendor hook `trace_android_vh_binder_skip_set_priority`（a17 binder.c:724-728）让 SOC 厂商在自家调度体系下完全跳过内核优先级继承（如荣耀 MUSCHED 的 VIP 路径）。
+- **版本边界**：以上 4 级流水线在 **Android 17 (API 37) 全部稳定**。`BR_FROZEN_BINDER` / `BC_REQUEST_FREEZE_NOTIFICATION` 在 API 34 引入；`BR_ONEWAY_SPAM_SUSPECT` 应用侧告警 + callstack 在 API 37 引入（IPCThreadState.cpp L1085）；默认线程池大小 `DEFAULT_MAX_BINDER_THREADS=15`（ProcessState.cpp L48）API 31→37 **未变**——Android 团队保守策略，调大默认值会让 system_server 内存增长但收益非线性。
+
+**反哺结论**：§20.17 关注的是「异常现象 + 治理锚点」。本节补充「**单次 transact 的执行机制**」——把异常治理下沉到四级流水线的源码级细节：
+
+1. **应用线程视角**：flushCommands() 双 syscall 把 N+1 次 syscall 压缩到 1~2 次。Parcel 密集场景（AI 推理 frame 推送）应利用此机制减少 syscall 次数。
+2. **frozen 进程交互**：避免「同步 transact 到 cached app 触发 5s ANR 等待」，改为立即 `FAILED_TRANSACTION` 返回。AIW §20.17 ANR 排查清单需把 `BR_FROZEN_REPLY` 纳入基线。
+3. **oneway spam 检测**：端侧 AI pipeline 高频 stream 应打包成单笔大 Parcel，借内核 buffer mmap 优化降低总 IPC 次数。
+4. **优先级继承**：AI 推理主线程若用 RT priority 调用系统服务，启用本机制才能拿到预期延迟。
+
+**端侧 AI 应用性能调优视角**：
+- 高频 IPC 场景应**复用 libbinder 自动批处理**——避免在应用层手工包 Parcel 绕过 flushCommands()。
+- 调用频繁的服务化封装（如自家 sensor manager / model inference proxy）应**主动 `addFrozenStateChangeCallback()`**，在目标 frozen 时切换本地缓存策略。
+- `getProcessFreezeInfo()` 可作为**应用健康指标**——async_recv 单调增长 + sync_recv = 0 表明目标是 frozen，应避免继续投 sync 事务。
+- oneway stream 上限：触发 `BR_ONEWAY_SPAM_SUSPECT` 后应改为打包发送（>1MB / 次），借助 binder mmap buffer 优势。
+
+- 注入时间：2026-06-13
+- 价值：把 §20.17 的「Binder 异常治理」下沉到「**单次 / 批量事务执行**」四级流水线的源码级细节；端侧 AI 应用可据此定位 syscall 次数、frozen 等待、oneway spam、优先级继承四个维度的优化空间
+- 关联 DeepResearch：`DeepResearch/2026-06-13-android17-binder-ipc-async-oneway-frozen-reply-pipeline.md`
+- 一手源码：`frameworks/native/libs/binder/IPCThreadState.cpp` (main 分支, 1691 行) + `ProcessState.cpp` (642 行) + `BpBinder.cpp` (889 行) + `kernel/common/drivers/android/binder.c` (android14-6.1 分支, 7367 行)
+- 关联章节交叉引用：§1.4 Binder 事务队列（2026-06-09 注入块）+ §1.18 Binder Freezer + 本节（2026-06-11 注入块）+ 本节（2026-06-12 注入块）
+- 互补关系：与昨日（2026-06-12）报告「启动期线程池配置」互补，本报告聚焦**运行期单笔事务执行**

@@ -50,6 +50,8 @@ task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。�
 last_task9_review_log: "logs/deep-review/2026-06-01-18-deep-review.md"
 task9_review_notes: "2026-06-01 Task9 18:21：pass-tech-review。复核 Task6 回流后的 Native Crash 链路；SignalChain、debuggerd/crash_dump、ApplicationExitInfo tombstone、Breakpad 符号化与线程级安全点边界经 AOSP android-16.0.0_r1 复核，无新增 P0/P1，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-01"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # Native Crash 分析与治理
@@ -94,7 +96,6 @@ Android 上常见的崩溃信号：
 | SIGFPE | 8 | 整数除零（浮点除零通常返回 NaN，不触发信号） |
 | SIGTRAP | 5 | 断点指令、`__builtin_trap()`、调试器中断 |
 
-[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp — 信号编号定义见 `asm-generic/signal.h`]
 
 ### Android 的信号处理链：SignalChain 机制
 
@@ -110,7 +111,6 @@ chains[SIGSEGV] → [art::HandleSigsegvFault] → [应用注册的 handler 1] �
 
 SignalChain 的拦截发生在 `sigaction()` 调用时：应用通过 JNI 调用的 `sigaction()` 实际执行的是 `art/sigchainlib/sigchain.cc` 中的包装函数，而非直接调用 libc 的 `sigaction`。这个包装函数将新的 handler 追加到链表末尾。
 
-[已验证: AOSP android-16.0.0_r1, art/sigchainlib/sigchain.cc — `AddSpecialSignalHandlerFn()` 保证 special handler 在链头]
 
 ### 崩溃收集流程：debuggerd → crash_dump
 
@@ -124,7 +124,6 @@ SignalChain 的拦截发生在 `sigaction()` 调用时：应用通过 JNI 调用
 
 `ptrace` + 独立进程的设计是关键：崩溃进程的内存空间可能已经损坏，如果在进程内部做堆栈回溯，可能二次崩溃。`crash_dump` 通过 `ptrace` 从外部读取，安全性更高。pseudothread 机制保证崩溃线程在 fork+exec 期间不会阻塞在信号处理上下文中。
 
-[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp — `_Fork()` + `execle(CRASH_DUMP_PATH)`; system/core/debuggerd/crash_dump.cpp — `CrashDump()` 执行 ptrace attach 和堆栈收集; tombstone 生成在 libdebuggerd/tombstone.cpp]
 
 ## Tombstone 结构解读
 
@@ -193,7 +192,6 @@ stack:
 - **API 30+**：`ActivityManager.getHistoricalProcessExitReasons()` 返回 `ApplicationExitInfo`，可用于确认进程退出原因、时间、PSS/RSS 等元数据；API 31+ 的 `REASON_CRASH_NATIVE` 才能通过 `getTraceInputStream()` 读取 native tombstone 数据。该接口返回 tombstone protobuf 输入流，不提供 tombstone 文本原文；底层历史记录可能被系统循环缓冲覆盖，调用方要处理 `null`。
 - **dropbox**：系统将 tombstone 同时写入 `dropbox`（`adb shell dumpsys dropbox --print` 可查看）
 
-[已验证: AOSP android-16.0.0_r1 — tombstone 格式由 `system/core/debuggerd/libdebuggerd/tombstone.cpp` 生成，`crash_dump.cpp` 是调用方/调度入口]
 
 ## 堆栈还原与符号化
 
@@ -211,7 +209,6 @@ Android 上 Native 堆栈获取有三种底层机制：
 
 `debuggerd/crash_dump` 的 native 栈解卷依赖 `libunwindstack` 读取 CFI、EH 或 FP 信息；Java / Dex / JIT / interpreter 帧由 `libunwindstack` 结合 ART runtime、Dex/JIT 元数据和 maps 信息识别，不能归因给 `.eh_frame` 符号化。排查混合栈时，要把 native so 的行号还原和 Java 方法帧解析分开看。
 
-[结构参考: Clippings/《Android 应用稳定性剖析与优化》— Native Backtrace 篇]
 
 ### addr2line / ndk-stack 实战
 
@@ -326,7 +323,6 @@ Build ID 格式转换逻辑在 `external/cronet/stable/base/profiler/module_cach
 
 这个流程是 `minidump_stackwalk` 工具在 server 端离线执行的。设备上 `crash_dump` 生成 tombstone 时只记录 pc 偏移，符号化在 host 端完成。
 
-<!-- AIW-源码调研-2026-05-11 -->
 ### breakpad / crashpad 集成
 
 Google Breakpad 是跨平台的崩溃收集库，Android 上主要用于应用层自主捕获 Native Crash（不依赖系统的 `debuggerd`）。
@@ -346,7 +342,6 @@ Google Breakpad 是跨平台的崩溃收集库，Android 上主要用于应用�
 - 信号处理器中只能调用**异步信号安全**（async-signal-safe）的函数。`malloc()`、`std::string`、JNI 调用都不能在信号处理器中执行。Breakpad 的信号处理器内部使用预分配的内存和自定义的 `minidump` 写入逻辑规避这一限制
 - 与 SignalChain 的交互：如果 Breakpad 的 `ExceptionHandler` 在 `crash_dump` 之前截获信号，系统 tombstone 可能不会生成。需要在 Breakpad handler 中将信号传递给下一个 handler（通过 `old_action` 参数保存的原始 handler）
 
-[已验证: AOSP android-16.0.0_r1, art/sigchainlib/sigchain.cc — SignalChain 保证系统 handler 不被跳过]
 
 ## 常见 Native 崩溃模式
 
@@ -440,7 +435,6 @@ real_sigaction(SIGSEGV, &sa, &old_sa);
 
 建议做法：APM handler 只做最小工作（收集 pc 列表、写入共享内存），然后将信号传递给原始 handler，让 `debuggerd` 照常生成 tombstone。两条路径并行，互不干扰。
 
-[结构参考: Clippings/《Android 应用稳定性剖析与优化》— Native Crash 监控篇，信号捕获策略已根据 AOSP 源码验证重写]
 
 ## JNI 边界崩溃的排查
 
@@ -665,14 +659,9 @@ hook pthread_mutex_lock/trylock/unlock/timedlock/clocklock，在每个函数入�
 | JNI_OnLoad 缓存 JVM | 让信号处理器能调用 Java 层回调 |
 | shadowhook inline hook | art.so 等内部符号的 hook，ART OOM 拦截等高级功能 |
 
-<!-- AIW-源码调研-2026-05-12 -->
-
 ## 参考资料
 
 ### Native Crash / ApplicationExitInfo 补偿链路与 Signal Handler 边界
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-native-crash-applicationexitinfo-compensation-chain.md
-- 类型：DeepResearch 调研结果
-- 摘要：完整分析了 debuggerd → crash_dump → tombstone 三层 native crash 处理链路，重点厘清 signal handler 的 async-signal-safe 边界（禁止 malloc/printf/堆分配），ApplicationExitInfo 对 native tombstone 的补偿入口及版本差异（API 30-34），Crashpad/Breakpad/debuggerd 的职责边界，SDK envelope 与系统 exit reason 的去重机制。
-- 注入时间：2026-05-20
-- 价值：为 §20.3 native crash 治理提供完整的系统级补偿链路和 signal handler 安全约束的源码级分析
+
+完整分析了 debuggerd → crash_dump → tombstone 三层 native crash 处理链路，重点厘清 signal handler 的 async-signal-safe 边界（禁止 malloc/printf/堆分配），ApplicationExitInfo 对 native tombstone 的补偿入口及版本差异（API 30–34），Crashpad/Breakpad/debuggerd 的职责边界，SDK envelope 与系统 exit reason 的去重机制。
 

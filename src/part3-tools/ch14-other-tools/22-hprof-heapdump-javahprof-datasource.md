@@ -197,27 +197,48 @@ trace_processor 导入后生成 heap_graph 系列表
 Perfetto UI 可视化（火焰图、对象统计、Retained Size）
 ```
 
-[待验证: art_hprof 数据源在 Android 17 (API 37) 中的具体配置方式和可用性状态]
+[已验证: AOSP 数据源名为 `android.java_hprof`（`src/profiling/memory/java_hprof_producer.cc:25` 常量 `kJavaHprofDataSource`），与 `android.heapprofd` 共存于 `heapprofd` daemon。Producer 通过 `sigqueue(pid, __SIGRTMIN+6, ...)` 触发目标进程 ART runtime 写 hprof；连续 dump 由 `DumpIntervalMs`/`DumpPhaseMs` 控制（`DoContinuousDump` 在 `java_hprof_producer.cc:40`）。]
 
 ### 配置方式
 
 在 TraceConfig 中启用 `java_hprof` 数据源：
 
+<!-- AIW-源码调研-2026-06-13：以下配置示例与 AOSP 实际 proto 不一致，下方为纠正版本。 -->
+
 ```protobuf
 data_sources: {
   config: {
-    name: "linux.java_hprof"
+    // 实际数据源名（来自 src/profiling/memory/java_hprof_producer.cc:25）
+    // 常量 kJavaHprofDataSource = "android.java_hprof"
+    // 不是 linux.java_hprof。
+    name: "android.java_hprof"
     java_hprof_config: {
-      // 可配置连续 dump 间隔
-      dump_interval_ms: 60000
-      // 可配置是否跟踪分配栈
-      track_allocations: true
+      // 命令行白名单（proto 字段 1）
+      process_cmdline: "com.example.app"
+      // pid 直连（proto 字段 2，调试用）
+      pid: 1234
+      // 安装者限制（proto 字段 7）：@system / @product / @null
+      target_installed_by: "@system"
+      // 连续 dump 嵌套配置（proto 字段 3）
+      continuous_dump_config: {
+        dump_phase_ms: 1000       // 首次 dump 前等多久（必为非零才会启用连续模式）
+        dump_interval_ms: 60000   // 后续间隔
+        scan_pids_only_on_start: false  // S- 默认 true；T+ 默认 false（每次 dump 重扫）
+      }
+      // 跳过 anon RSS + swap < 阈值的进程（proto 字段 4）
+      min_anonymous_memory_kb: 10240
+      // 顺带抓 /proc/self/smaps（proto 字段 5）
+      dump_smaps: true
+      // 排除对象类型（proto 字段 6，例如 sun.misc.Cleaner）
+      ignored_types: "sun.misc.Cleaner"
     }
   }
 }
 ```
 
-[待验证: Android 17 中此配置字段的准确名称和默认值]
+字段编号与类型见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`（Next id: 7）。**`track_allocations` 字段在 AOSP proto 中不存在**——该能力由 `android.heapprofd` 的 `sampling_interval_bytes` 体系提供。
+
+[已验证: 见上方 protobuf 注释。字段编号与含义见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`。]
 
 ### heap_graph 系列表
 
@@ -225,25 +246,47 @@ data_sources: {
 
 | 表名 | 内容 | 用途 |
 |------|------|------|
-| `heap_graph_object` | 每个堆对象的类型、大小、引用列表 | 查找特定类型的对象实例 |
-| `heap_graph_class` | 类名、类大小、实例数量统计 | 统计各类实例数量和总大小 |
-| `heap_graph_reference` | 对象间的引用关系 | 追踪引用链、计算 Retained Size |
+| `heap_graph` | 每次 dump 的元信息（ts / upid / dump_reason / heap_size） | 一次 dump 作为一个样本 |
+| `heap_graph_object` | 堆对象实例，列：upid / graph_sample_ts / self_size / native_size / reference_set_id / reachable / heap_type / type_id / root_type / root_distance / object_data_id | 查对象大小、GC 可达性、所属堆类型 |
+| `heap_graph_class` | 类元信息，列：name / deobfuscated_name / location / superclass_id / classloader_id / kind | 通过 type_id 关联，统计类实例 |
+| `heap_graph_reference` | set-id 多对多：reference_set_id / owner_id / owned_id / field_name / field_type_name / deobfuscated_field_name | 沿 reference_set_id 找 owned 集合，组 retained size |
+| `heap_graph_primitive` | 原始类型字段值（HPROF 专属） | 读 String/int/float 等字段值 |
+| `heap_graph_object_data` | 字符串内容解码 + 数组数据 hash（HPROF 专属） | 读 String 实例内容、对比数组内容 |
 
-`heap_graph_object` 表的核心字段：
+表 schema 定义见 `external/perfetto/src/trace_processor/tables/profiler_tables.py`（HEAP_GRAPH_*_TABLE 段，~行 595-1230）。
+
+`heap_graph_object` 表**没有**显式 `id` 列（主键靠 `(upid, graph_sample_ts)` 复合关系），也**没有** `type_name` 列——类型关联通过 `type_id` 外键到 `heap_graph_class`：
 
 ```sql
--- 示例：查找所有 Activity 实例及其 retained size
+-- 修正版：查找所有 Activity 实例及其 retained size
 SELECT
-  o.id,
-  o.type_name,
+  c.name AS class_name,
   o.self_size,
-  o.reachable
+  o.reachable,
+  o.heap_type
 FROM heap_graph_object o
-WHERE o.type_name LIKE '%Activity%'
+JOIN heap_graph_class c ON o.type_id = c.id
+WHERE c.name LIKE '%Activity%'
 ORDER BY o.self_size DESC;
+
+-- AOSP 推荐的标准 retained size 计算
+WITH rc AS (
+  SELECT
+    reference.owner_id AS obj_id,
+    SUM(obj.self_size) AS retained
+  FROM heap_graph_reference reference
+  JOIN heap_graph_object obj ON reference.owned_id = obj.id
+  GROUP BY reference.owner_id
+)
+SELECT c.name, rc.retained
+FROM rc
+JOIN heap_graph_object o ON o.id = rc.obj_id
+JOIN heap_graph_class c ON o.type_id = c.id
+ORDER BY rc.retained DESC
+LIMIT 50;
 ```
 
-[待验证: Perfetto 表名和字段在 android-17.0.0_r1 trace_processor 版本中是否完全一致]
+> [已纠正: 章节原文中 `id` / `type_name` 字段名与 AOSP `profiler_tables.py` 不符。实际表见 `external/perfetto/src/trace_processor/tables/profiler_tables.py` 行 950-1112（HEAP_GRAPH_OBJECT_TABLE）和行 1116-1175（HEAP_GRAPH_REFERENCE_TABLE）。]
 
 heap_graph 与 Perfetto 其他数据源的关联分析是它最有价值的场景——可以把堆大小变化和同一时间轴上的 GC 事件、帧渲染耗时、内存压力信号对齐，判断内存问题对 UI 性能的影响。
 
@@ -345,3 +388,45 @@ KOOM 的 fork-dump 方案有几个限制：
 - **文件格式补全**：strip 后的 hprof 文件不能直接在 MAT 中打开，需要 PC 端的 `koom-fill-crop.jar` 补全 STRING 和 CLASS 表。
 
 [已验证: Obsidian/DeepResearch/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md]
+
+
+<!-- AIW-源码调研-2026-06-13：以下内容来自对 `android.java_hprof` 数据源的源码级调研，关联报告 `DeepResearch/2026-06-13-android17-perfetto-java-hprof-data-source-heap-graph-tables.md`。 -->
+
+## 附录 A · Java 堆抓取的版本差异
+
+| Android 版本 | `scan_pids_only_on_start` 默认 | `process_cmdline` 匹配 | `target_installed_by` |
+| --- | --- | --- | --- |
+| 11 (API 30) - | true（启动时扫一次） | 归一化后精确字符串比较 | 不支持（字段未引入） |
+| 12 (API 31) | true | 归一化后精确字符串比较 | 支持（`@system` / `@product` / `@null`） |
+| 13 (API 33) + | **false**（每次 dump 重扫） | 支持 `*` 通配（argv0 全路径 / binary name） | 支持 |
+| 14-17 (API 34-37) | false | 通配行为扩展 | 支持 |
+
+实战含义：在 Android 14/15/16/17 上配置 `dump_interval_ms = 60000` 抓 long-running 服务时，heapprofd 每分钟会扫一次 `/proc`（CPU 开销 ~1-5ms），能抓到启动后才出现的进程；在 Android 12 上只扫一次后只看首次匹配的 pid（轻量但漏抓新进程）。
+
+## 附录 B · Producer 侧抓取时序
+
+```
+traced 接收 TraceConfig 中含 android.java_hprof 数据源
+  ↓
+heapprofd 进程（不是 traced）中 JavaHprofProducer::StartDataSource
+  ↓
+注册 DataSourceDescriptor(name="android.java_hprof")
+  ↓
+StartDataSource 立即 SendSignal() + PostDelayedTask(dump_phase_ms)
+  ↓
+DataSource::SendSignal():
+  for pid in pids_:
+    sigqueue(pid, __SIGRTMIN+6, signal_value)  ← ART runtime signal_catcher.cc
+  ↓
+ART 在主线程处理 SIGRTMIN+6，调用 hprof::DumpHeap(filename) 写 hprof
+  ↓
+heapprofd 接收 ART 回传的 hprof 文件描述符 / 路径
+  ↓
+通过 traced IPC 通道写入 trace buffer 的 ProfilePacket
+  ↓
+trace_processor 导入时 ArtHprofParser::Parse 解析为 HeapGraph
+  ↓
+OnPushDataToSorter 阶段 Populate{Classes,Objects,References,FieldValues} 写 SQL 表
+```
+
+`__SIGRTMIN+4` 被 native heapprofd 占用（`heapprofd_producer.cc:64`），`__SIGRTMIN+6` 是 java_hprof 专用（`java_hprof_producer.cc:24`）；bionic 实时信号区为 SIGRTMIN..SIGRTMAX，Android 默认留 SIGRTMIN+0..+3 给 libc。Java 堆抓取走信号而非 LD_PRELOAD，因为 hprof 格式由 ART 直接产生，绕过了 native unwinding 的栈回溯开销。

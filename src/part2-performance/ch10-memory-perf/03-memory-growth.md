@@ -62,7 +62,7 @@ task6_review_notes: "2026-05-27 23:15 Task6：revisiting 写作复审通过；L1
 last_task9_review_log: "logs/deep-review/2026-06-13-03-audit.md"
 task9_review_notes: "2026-06-13 03:20 Task9 闲时抽检：AUTO-FIX Bitmap 缓存像素数据 Java Heap/Native Heap 版本边界；回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
+last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # 内存持续增长
@@ -130,7 +130,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 内存碎片化是指可用内存被分割成许多不连续的小块，虽然总量上还有足够的空闲内存，但无法满足连续内存的分配请求。
 
-在 Android 上，Native 碎片化主要发生在 Native Heap 层面。应用使用的 C/C++ 库（音视频解码器、图形引擎、JNI 调用的 Native 代码）通过 malloc/free 或 new/delete 管理内存。当频繁分配和释放不同大小的内存块时，空闲内存会被切割成不连续的片段。这就是为什么有时候 Native Heap 的 Alloc 值看起来不大，但 PSS 却居高不下——碎片化的内存虽然已经被释放回 malloc 的空闲链表，但由于碎片化，无法归还给操作系统。
+在 Android 上，Native 碎片化主要发生在 Native Heap 层面。应用使用的 C/C++ 库（音视频解码器、图形引擎、JNI 调用的 Native 代码）通过 malloc/free 或 new/delete 管理内存。当频繁分配和释放不同大小的内存块时，空闲内存会被切割成不连续的片段。所以有时 Native Heap 的 Alloc 值看起来不大，PSS 却居高不下：碎片化的内存已被释放回 malloc 的空闲链表，但由于不连续，无法归还给操作系统。
 
 [已验证: 来源见 Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
 
@@ -152,7 +152,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 16KB 页面设备上的 `meminfo` 粒度更粗，匿名映射尾页的浪费也更容易抬高 `Private Other` 一类条目。跨设备比对这类指标前，先确认页大小。
 
-增长源确认后，下一步要定位具体来源。排查 Unnamed / Private Other 增长时，`dmabuf_dump -b` 可以先覆盖 DMA-BUF 这一类来源。它能按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，帮助确认匿名页增长是否来自图形 buffer。操作步骤：
+增长源确认后，下一步定位具体来源。排查 Unnamed / Private Other 增长时，先用 `dmabuf_dump -b` 覆盖 DMA-BUF 这一类来源——它按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，可以确认匿名页增长是否来自图形 buffer。操作步骤：
 
 1. `adb shell dmabuf_dump -b` 获取全系统 DMA-BUF 快照
 2. 按进程名过滤目标 App，看其名下的 buffer 尺寸分布
@@ -167,7 +167,7 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 内存泄漏的核心特征是：即使触发 GC，增长的那部分内存也不会被回收。因为泄漏的对象仍然有可达引用链，GC 认为它们是"活的"。
 
-而非泄漏性增长的情况是：如果手动清除缓存（比如调用 `cache.evictAll()`）或释放相关资源，内存会立刻回落。换言之，这些对象在技术上是可以被 GC 回收的，只是业务逻辑上一直没有触发回收条件。
+而非泄漏性增长的情况是：如果手动清除缓存（比如调用 `cache.evictAll()`）或释放相关资源，内存会立刻回落。简单说，这些对象在技术上可以被 GC 回收，只是业务逻辑一直没有触发回收条件。
 
 在 Android Studio Memory Profiler 中，可以通过以下方式验证：触发一次 GC（点击垃圾桶图标），观察 Heap 的大小变化。如果 GC 后 Heap 明显缩小但随后又快速增长回来，大概率是非泄漏性的缓存增长；如果 GC 后 Heap 几乎不变，更可能是泄漏。
 

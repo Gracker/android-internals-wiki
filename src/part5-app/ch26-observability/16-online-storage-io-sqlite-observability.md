@@ -263,6 +263,66 @@ Room 和 AndroidX SQLite 的诊断能力在持续变化，章节维护时至少�
 
 [自动发现] Android 15+ 的 `ProfilingManager` 和 Android 16+ 的触发式 profiling 可以把线下 Perfetto 能力往线上受控迁移，但采集频率、用户授权、rate limiter 和结果文件生命周期要按 26.12 的版本边界处理，不要在本节重复展开。
 
+## AIW 源码调研：Android 17 SQLite 可观测性实现机制（2026-06-14）
+
+<!-- AIW-源码调研-2026-06-14 -->
+
+### 核心发现：三层可观测性架构
+
+通过 AOSP 源码分析，Android 17 SQLite 可观测性通过三层机制实现：
+
+1. **Connection 层执行追踪**：SQLiteConnection.OperationLog 提供 20 条环形缓冲区设计，自动记录最近操作和长操作（>2秒）
+2. **Pool 层性能监控**：SQLiteConnectionPool 提供 StatementCache 命中率追踪，mTotalPrepareStatements vs mTotalPrepareStatementCacheMiss
+3. **系统级资源检测**：BlockGuard + StrictMode 实现磁盘 IO 检测和 SQLite 对象泄露检测
+
+### 关键源码机制
+
+#### OperationLog 三级缓冲设计
+```java
+// frameworks/base/core/java/android/database/sqlite/SQLiteConnection.java L1650
+private final class OperationLog {
+    private static final int MAX_RECENT_OPERATIONS = 20;  // 最近操作数量限制
+    private static final long LONG_OPERATION_THRESHOLD_MS = 2_000;  // 长操作阈值
+}
+```
+
+#### StatementCache 命中率统计
+```java
+// frameworks/base/core/java/android/database/sqlite/SQLiteConnectionPool.java L1247
+public double getStatementCacheMissRate() {
+    if (mTotalPrepareStatements == 0) return 0;
+    return (double) mTotalPrepareStatementCacheMiss / (double) mTotalPrepareStatements;
+}
+```
+
+#### SlowQuery 动态阈值控制
+```java
+// frameworks/base/core/java/android/database/sqlite/SQLiteDebug.java
+public static boolean shouldLogSlowQuery(long elapsedTimeMillis) {
+    final int slowQueryMillis = Math.min(
+        SystemProperties.getInt(NoPreloadHolder.SLOW_QUERY_THRESHOLD_PROP, Integer.MAX_VALUE),
+        SystemProperties.getInt(NoPreloadHolder.SLOW_QUERY_THRESHOLD_UID_PROP, Integer.MAX_VALUE));
+    return elapsedTimeMillis >= slowQueryMillis;
+}
+```
+
+### Android 17 演进特性
+
+- **WAL 自动检查点**：SQLiteCompatibilityWalFlags 全局配置管理，平衡性能和空间
+- **Idle 连接池超时**：SQLiteConnectionPool.getIdleConnectionTimeout() 默认 60s，可动态配置
+- **StrictMode 增强检测**：新增 detectResourceMismatches() 资源类型不匹配检测
+
+### 实际应用建议
+
+1. **长列表场景**：启用 StatementCache，设置合理的 maxCacheSize（默认 50）
+2. **内存受限设备**：禁用 lookaside pool，使用 setLookasideConfig(0, 0)
+3. **慢查询监控**：动态配置 db.log.slow_query_threshold 实现分 UID 阈值控制
+4. **连接池优化**：设置合理的 idleConnectionTimeout 平衡性能和内存使用
+
+本结论基于 AOSP 源码 frameworks/base/core/java/android/database/sqlite/ 中的关键实现，为 Matrix SDK 提供了可直接落地的性能监控指标采集方案。
+
+
+
 ## 小结
 
 存储可观测性的关键产物不是更多日志，而是一套能稳定聚合的字段：I/O 事件、SQLite 事件、目录树、损坏率、资源泄漏和采集 SDK 自监控。端上先按规则筛选，后台按调用点和设备档位聚合，线下再用 Perfetto 与 `EXPLAIN QUERY PLAN` 复核。

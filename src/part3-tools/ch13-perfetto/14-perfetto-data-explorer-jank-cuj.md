@@ -232,7 +232,7 @@ Perfetto v54 让 Android 性能分析里的三类证据开始使用同一套工�
 
 ## DataGrid 适合做什么
 
-Perfetto v54 release notes 在 UI 部分写到的是 DataGrid table viewer 的改进：pivot table、glob / contains / not-contains filters、distinct value picker，以及 snap-to-boundaries。DataGrid 是 SQL 结果表的交互层；分析口径仍由 SQL 和标准库决定。节点式数据流不属于 v54 release notes 描述的功能。
+Perfetto v54 release notes 在 UI 部分写到的是 DataGrid table viewer 的改进：pivot table、glob / contains / not-contains filters、distinct value picker，以及 snap-to-boundaries。DataGrid 是 SQL 结果表的交互层；分析口径仍由 SQL 和标准库决定。**节点式数据流（node-based query builder）在 v54.0 已存在**，只是 id 是 `dev.perfetto.ExplorePage` 而非 `dev.perfetto.DataExplorer`；v55.0 才完成重命名 + 加入 Dashboard/TraceSummary/Group 节点。详见本节末「节点式数据流补注」。
 
 DataGrid 的价值在三类场景里最明显：
 
@@ -388,6 +388,91 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 6. 如果怀疑内存或图形 buffer，把同一时间窗接到 `android_heap_graph_stats`、RSS、DMA-BUF 和 OOM score。
 
 这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。[待验证: 需要结合真实 trace 案例复核排障顺序]
+
+## 节点式数据流补注：DataExplorer（节点图编辑器）
+
+<!-- AIW-源码调研-2026-06-13 -->
+
+> **纠正**：上一节原写「节点式数据流不属于 v54 release notes 描述的功能」，该表述与 v54.0 源码不符。
+> Perfetto 节点图编辑器在 v54.0 早已落地，**只是 plugin id 是 `dev.perfetto.ExplorePage` 而非 `dev.perfetto.DataExplorer`**。
+> 本补注以 v54.0 / v55.0 源码对比给出准确边界。
+
+### 1. 命名变迁
+
+| 版本 | plugin id | 源码根目录 | 关键文件 |
+|---|---|---|---|
+| v54.0（Android 17 出厂基线） | `dev.perfetto.ExplorePage` | `ui/src/plugins/dev.perfetto.ExplorePage/` | `index.ts` / `explore_page.ts` / `core_nodes.ts`（18 节点） |
+| v55.0 | `dev.perfetto.DataExplorer` | `ui/src/plugins/dev.perfetto.DataExplorer/` | `index.ts` / `data_explorer.ts` / `core_nodes.ts`（22 节点） |
+
+v54.0 已有 `index.ts` + `explore_page.ts` + 完整的 `query_builder/` 子目录、节点注册表、节点图渲染、Undo/Redo、Recent Graphs，**只是缺少**：`dashboard/` 子目录、`data_explorer_tabs_storage.ts`（多 tab）、`pbtxt_import.ts`、DashboardNode / TraceSummaryNode / GroupNode。
+
+### 2. 节点类型矩阵
+
+`nodeRegistry.register(id, descriptor)` 集中注册节点，`descriptor` 包含 `name` / `description` / `icon` / `hotkey` / `type: 'source' | 'modification'` / `nodeType: NodeType` / 可选 `preCreate`（弹窗预创建）/ `factory()` / `deserialize()`。
+
+| 节点 id | 显示名 | 类型 | v54.0 | v55.0 变化 |
+|---|---|---|---|---|
+| `slice` | Slices | source | ✓ | — |
+| `table` | Table | source | ✓ | — |
+| `sql` | Query | source | ✓ | — |
+| `timerange` | Time Range | source | ✓ | — |
+| `add_columns` / `modify_columns` | Add/Modify Columns | modification | ✓ | — |
+| `aggregation` / `filter_node` / `filter_during` / `filter_in` | 聚合 + 过滤 | modification | ✓ | — |
+| `interval_intersect` / `join` / `union_node` / `create_slices` / `sort_node` / `limit_and_offset_node` | 多节点算子 | modification | ✓ | — |
+| `metrics` / `counter_to_intervals` | 度量/计数器 | modification | ✓ | — |
+| `visualisation` | **Visualisation**（v54.0）/ **Charts**（v55.0） | modification | ✓ | 仅改名 |
+| `dashboard` | Export to Dashboard | modification | ✗ | **v55.0 新增** |
+| `trace_summary` | Trace Summary | modification | ✗ | **v55.0 新增** |
+| `group` | Group | group | ✗ | **v55.0 新增** |
+
+### 3. 两阶段执行模型
+
+`QueryExecutionService`（`query_builder/query_execution_service.ts`）定义两阶段：
+
+- **Phase 1 Analysis**：`NodePanel.updateQuery()` → `service.processNode({ manual: false })` → `engine.analyzeStructuredQuery` 验证并返回 `{sql, textproto, modules, preambles, columns}`，**不执行**。
+- **Phase 2 Execution**：把 `modules + preambles + query.sql` 物化成 `_exp_materialized_{sanitizedNodeId}` 表，再通过 `SQLDataSource` 提供 server-side 分页/过滤/排序。
+
+**v55.0 关键设计**：把整张节点图一次性提交到 `TraceSummarySpec.query`，由 `engine.updateSummarizerSpec(summarizerId, spec)` 统一协调；每个 query 的 `wasUpdated` 标志位判定是否需要重算，`nodeStaleMap` 缓存判定结果，未变更节点直接复用已物化表。`executionQueue` 串行化 processNode 防止 race。
+
+### 4. 与 DataGrid / 手写 SQL 的关系
+
+`DataExplorer` 不是 DataGrid 的替代品，而是把「写 PerfettoSQL 文本 + 单次 query」重构为「拖拽节点 + 图形化连边 + 自动生成 SQL + 物化中间结果」：
+
+| 维度 | 手写 SQL | DataGrid | DataExplorer |
+|---|---|---|---|
+| 适用对象 | 熟悉 PerfettoSQL 的工程师 | 任意人 | 任意人 |
+| 中间结果可见性 | 一次 query 一个结果 | 一个 SQL 一个 DataGrid | 节点图每个节点一个物化表 |
+| 可视化程度 | 纯文本 | 表格 + pivot | 节点图 + 表格 + 仪表盘 |
+| 跨会话复用 | 保存 SQL 文件 | 保存 permalink | 保存 permalink + 节点图 JSON + Dashboard |
+
+**最佳实践**：节点图编辑器出快速验证、CUJ/卡顿 trace 的探索性分析；明确的口径化 SQL（§13.10 cookbook、§13.14 现有内容）放仓库里，DataGrid + 节点图当作交互式验证入口。
+
+### 5. Android 17 平台能力边界
+
+| Perfetto 版本 | Android 出厂基线 | 节点式工具 | 可用节点 |
+|---|---|---|---|
+| v54.0 | Android 17 / API 37 | `dev.perfetto.ExplorePage` | 18（无 Dashboard/TraceSummary/Group） |
+| v55.0 | 后续主线（**非 Android 17 范围**） | `dev.perfetto.DataExplorer` | 22（含 Dashboard/TraceSummary/Group） |
+
+**结论**：AIW 章节叙述「节点式数据流属于 v54 之后演进」是正确的；但不能说「v54 完全没有节点式数据流」——v54.0 已经提供基础 18 节点编辑器，只是名字和扩展能力有差异。
+
+[已验证: google/perfetto v54.0 `ui/src/plugins/dev.perfetto.ExplorePage/` + google/perfetto v55.0 `ui/src/plugins/dev.perfetto.DataExplorer/`, 2026-06-13]
+
+### 补充：节点图编辑器最佳实践（源码调研反哺，2026-06-13）
+
+**来源**：Perfetto Data Explorer 节点式可视化分析工具深度实践 · 源码调研（2026-06-13）
+
+**验证状态**：一手源码验证完成
+
+围绕 `QueryExecutionService` 的两阶段执行模型，整理出三个可落地最佳实践：
+
+1. **SqlSourceNode 关闭 autoExecute**：v55.0 源码 `query_execution_service.ts` 注释明确把 `SqlSourceNode` 列为默认 `autoExecute=false` 的节点之一。理由：用户写 SQL 时频繁重构查询，自动跑会浪费 IO；让用户点 Ctrl+Enter 显式触发。
+2. **多输入节点用 LEFT JOIN + 物化中间表**：`IntervalIntersectNode` / `UnionNode` / `FilterDuringNode` 这三个多输入节点同样默认手动执行，结果集可能很大。Debug 阶段应把中间节点单独物化（点击节点 → 切到 Result 视图看物化表的行数）确认输入符合预期后再下游 join。
+3. **导出 Dashboard 时为 sourceNodeId 命名稳定**：v55.0 `dashboard_node.ts` 把 `getExportName()` 默认值取自 `primaryInput.getTitle()`，所以节点标题会沿用到 Dashboard 卡片标题。团队协作时为最终导出节点取稳定标题（如 `Final: widgets_per_cuj`），避免下游 Dashboard 卡片名漂移。
+
+[已验证: google/perfetto v55.0 `ui/src/plugins/dev.perfetto.DataExplorer/query_builder/query_execution_service.ts` + `query_builder/nodes/dashboard_node.ts` + `query_builder/builder.ts`, 2026-06-13]
+
+---
 
 ## 参考资料
 
