@@ -100,6 +100,7 @@ updated_by: "openclaw-task9"
 updated_date: "2026-06-07"
 task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-07 21 Task9 idle audit: auto-fixed。将 App Archiving 源码锚点从 AOSP mainline 改为 android-15/16 tag；未使用 Android 18/API 38+ 内容。"
 last_deepseek_polish_at: 2026-06-08
+last_task6_audit: "2026-06-14"
 ---
 # 1.9 Package Manager Service 与应用安装性能
 
@@ -546,7 +547,7 @@ adb shell setprop pm.dexopt.dm.require_fsverity true
 
 ### 与 AIW 现有章节的关系
 
-- 本节是 §1.9 安装会话与 SDM/SDC 链路的源码补遗，串联了 PMS（`PackageInstallerSession`）→ ART Service（`PrimaryDexopter`）→ artd native（`Artd::maybeCreateSdc`）三层调用。
+- 本节是 §1.9 安装会话与 SDM/SDC 链路的源码补遗，串起 PMS（`PackageInstallerSession`）→ ART Service（`PrimaryDexopter`）→ artd native（`Artd::maybeCreateSdc`）三层调用。
 - §21.11 已讲清 `.dm` 与 Baseline/Cloud Profile 在启动优化里的位置；本节补 `.sdm` 与 SDC 的产物管理细节。
 - §1.7（ART 编译管线）继续关注 dex2oat 本身机制，不重复 SDM/SDC 的产物路径。
 

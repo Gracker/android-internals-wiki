@@ -652,5 +652,24 @@
     "note": "合并前轮 Task6 entry (priority 85) 的 2 个 issue + 本轮新增 4 个 issue。Task9 entry (priority 95, id: task9-20260614-1410-ebpf-source-api-regression) 的 4 个源码/API 问题仍 pending，需一并处理。",
     "completed_at": "2026-06-14T02:53:35",
     "completed_by": "task2b-main"
+  },
+  {
+    "section": "1.9",
+    "section_title": "Package Manager Service 与应用安装性能",
+    "file": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+    "priority": 60,
+    "reason": "[Task6 抽检] 版本演进章节为空（outline 声明锚点但正文无内容），需补写 Android 10→17 的包管理/编译调度/OTA 优化演进",
+    "review_issues": [
+      {
+        "type": "内容缺失",
+        "location": "## 版本演进（正文末尾，在 SDM PMS 集成细节之前）",
+        "detail": "'## 版本演进' 标题下 0 行内容，紧接着就是 '## SDM 在 PMS 侧的集成细节'。outline 中声明了该锚点但正文为空。正文中版本信息散落在各节（如 Computer 模式 Android 13、SDM Android 16、App Archiving Android 15），缺少集中梳理。",
+        "suggestion": "补写版本演进段落，集中梳理 Android 10→17 在包管理（Computer 无锁读、Computer 模式演进）、编译调度（verify-only 默认化、ART Service 独立化、Baseline/Cloud Profiles 引入）、OTA 优化（mass dexopt 策略变化、A/B 更新）等方面的关键变化。"
+      }
+    ],
+    "added_by": "task6-audit",
+    "added_at": "2026-06-14T05:05:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-14-05-audit.md"
   }
 ]
