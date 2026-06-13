@@ -52,28 +52,30 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 2
 polish_date: "2026-06-13"
 polish_by: "task2b-main"
-p0: 0
-p1: 1
+p0: 1
+p1: 2
 p2: 0
 task6_result: "pass-light-edit"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-30"
 task6_state: "revisiting"
-task9_result: "auto-fixed"
+task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-29"
-task9_state: "pending"
-task9_review_notes: "2026-05-29 Task9 auto-fix: AOSP 源码锚点从未定版 Code Search 链接改为 android-16.0.0_r1；收窄 signal_generate 异常退出监控为自定义排障路径，不再写成 AOSP 通用工具。"
+task9_reviewed_date: "2026-06-14"
+task9_state: "reviewed"
+task9_review_notes: "2026-06-14 Task9 deep review：needs-rework。P0/P1：Android 15 sched-ext、Android 16 API 号、Android 17 bpfloader/Perfetto 结论与可验证源码不一致；示例 BPF tracepoint 代码上下文模型需回炉。"
 task2b_result: "fixed"
-task2b_state: "fixed"
+task2b_state: "pending"
 task2b_rework_date: "2026-06-13T00:50:00+08:00"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 last_task2b_at: "2026-06-13T00:50:00+08:00"
 last_task2b_lite_at: "2026-05-30T17:38:00+08:00"
 last_task6_audit: "2026-06-13"
-last_task9_at: "2026-05-29T08:20:00+08:00"
+last_task9_at: "2026-06-14T00:30:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 updated_by: "openclaw-task2b-main"
 updated_date: "2026-06-13"
+---
 
 ## 修复记录
 

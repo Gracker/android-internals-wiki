@@ -7,8 +7,8 @@ status: "ready-for-review"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "Sentry Android docs / Volcengine APMPlus docs / Bugly docs"
+last_verified: "2026-06-14"
+last_verified_against: "Sentry Android docs 2026-06-14 + Bugly Pro Android SDK docs 2026-06-14 + AOSP android-16.0.0_r4 Build/ApplicationExitInfo; APMPlus docs not reverified"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -21,19 +21,19 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
+task9_result: auto-fixed
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-13-audit.md"
-task9_review_notes: "2026-06-05 00:20 Task9 deep-review: needs-rework。P0 1 / P1 1：BuglyBuilder.setEnableRecordAnrMainStack 未在官方 Android SDK 文档中出现；Page Replay 与 4.4.7.3+ 门槛未找到公开官方证据，已写入 queue.json。"
+task9_review_notes: "2026-06-14 Task9 deep review：AUTO-FIX ApplicationExitInfo / SDK_INT_FULL 附录错误；Sentry profiling、Session Replay 与 Bugly Pro 16KB / ANR 全线程堆栈门槛经官方文档复核通过，回到 Task6 复审。"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T00:20:00+08:00"
+task9_reviewed_date: "2026-06-14"
+last_task9_at: "2026-06-14T00:30:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 
@@ -44,9 +44,11 @@ task2b_fixed_by: openclaw-task2b
 review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
 review_notes_3: "2026-06-04 task6 re-review (round 3): pass-light-edit. L1/L2 clean. All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
 last_task6_at: "2026-06-05T06:13:36+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-05-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 
-last_task6_review_log: "logs/review/2026-06-05-06-review.md"---
+last_task6_review_log: "logs/review/2026-06-05-06-review.md"
+last_task9_autofix_at: "2026-06-14"
+---
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）
 
@@ -360,7 +362,7 @@ interface AppMonitor {
    - 商业平台需验证 native 库对齐，但 SDK 门槛仍由厂商控制
 
 3. **ANR 检测 API 验证**：
-   - ApplicationExitInfo (API 29+) 在 Android 17 中稳定可用
+   - ApplicationExitInfo (API 30+) 在 Android 17 兼容性评估中仍属于稳定可用的基础 API
    - Bugly Pro 全线程堆栈抓取依赖此 API，SDK门槛为厂商私有
 
 4. **ProfilingManager 状态**：
@@ -389,7 +391,7 @@ interface AppMonitor {
 
 | API | 位置 | 关键常量 | 商业 APM 用法 |
 |---|---|---|---|
-| `ApplicationExitInfo` | `app/ApplicationExitInfo.java` | `REASON_FREEZER=14`（API 34+） | Bugly/Sentry 拉取崩溃 + ANR + Freezer |
+| `ApplicationExitInfo` | `app/ApplicationExitInfo.java` | `REASON_FREEZER=14`（Android 13 / API 33+） | Bugly/Sentry 拉取崩溃 + ANR + Freezer |
 | `ActivityManager.getMyMemoryState` | `app/ActivityManager.java` | `mRateLimitedMemState` 5s 缓存 | Koom/Matrix 进程内存采样 |
 | `Trace.beginSection` | `os/Trace.java` | `@CriticalNative` 直通 | Sentry transaction、Matrix 帧耗时打点 |
 
@@ -408,7 +410,7 @@ static {
 }
 ```
 
-Android 16 已落地 `SDK_INT_FULL`（major × 1_000_000 + minor）。**Android 17 落地后**，`SDK_INT` 将变 37，`SDK_INT_FULL` 携带 minor 偏移；APM 工具若需区分 minor 行为需读 `SDK_INT_FULL` 而非 `SDK_INT`。
+Android 16 已落地 `SDK_INT_FULL`（major × 100_000 + minor）。**Android 17 落地后**，`SDK_INT` 将变 37，`SDK_INT_FULL` 携带 minor 偏移；APM 工具若需区分 minor 行为需读 `SDK_INT_FULL` 而非 `SDK_INT`。
 
 ### 4. 核心结论更新
 
