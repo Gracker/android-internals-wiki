@@ -10124,7 +10124,7 @@
   "task9_last_files": [
     "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
   ],
-  "last_task2b_run": "2026-06-03T04:50:00+08:00",
+  "last_task2b_run": "2026-06-14T00:52:40+08:00",
   "task2b_sections_fixed": [
     "13.10",
     "13.15",
@@ -14326,5 +14326,6 @@
   "backlog": {
     "task2b_pending": 0
   },
-  "last_task2b_main_run": "2026-06-12T22:50:00+08:00"
+  "last_task2b_main_run": "2026-06-12T22:50:00+08:00",
+  "task2b_queue_remaining": 0
 }
