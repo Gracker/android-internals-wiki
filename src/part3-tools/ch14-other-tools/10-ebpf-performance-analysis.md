@@ -59,19 +59,19 @@ p2: 1
 task6_result: "pass-light-edit"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-14"
-task6_state: "reviewed"
+task6_state: "revisiting"
 last_task6_at: "2026-06-14T01:10:00+08:00"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-14"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_review_notes: "2026-06-14 Task9 deep review：needs-rework。P0/P1：syscall/vmalloc 示例上下文错误，UprobeStats 误写成 syscall 监控，Perfetto 配置字段无效，bpfloader 版本锚点不符，Android 17 main 结论需移除或标注未进入 Android 17。"
-task2b_result: "fixed"
-task2b_state: "pending"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
 task2b_rework_date: "2026-06-14T00:52:40+08:00"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 last_task2b_at: "2026-06-14T00:52:40+08:00"
-last_task2b_lite_at: "2026-05-30T17:38:00+08:00"
+last_task2b_lite_at: "2026-06-14T01:35:00+08:00"
 last_task6_audit: "2026-06-13"
 last_task9_at: "2026-06-14T01:30:47+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-14-01-deep-review.md"
@@ -82,6 +82,7 @@ updated_date: "2026-06-14"
 ## 修复记录
 
 **2026-06-13 Task 2B 修复**: 清理 frontmatter 重复键；CPU 利用率量化声明改为保守表述并标注实验条件下限；补充传统工具（perf/systrace）对比；替换模糊形容词为具体技术描述
+**2026-06-14 Task2B Lite 修复**: 修复 Rust bpfloader 调用序列（legacyBpfLoader→vendorBpfLoader，删除 NetBpfLoad.cpp 不可验证路径，补 android-15.0.0_r17 雏形锚点）；收紧 Android 17 版本边界标注（heading + summary 明确标注"未进入 Android 17 release"）
 **2026-05-30 Task2B Lite 修复**: 修复版本适应性问题和数据支撑问题，更新 Android 17 系统级优化引用，修正 CPU 利用率精准计算描述
 **2026-05-30 Task 2B 修复**: 修复 CPU 利用率精准计算部分的数据支撑问题，将具体性能提升描述改为更保守的表述方式，符合 SKILL.md 文风要求
 
@@ -158,11 +159,11 @@ Android 16（Android common kernel 6.12）引入 sched-ext 调度器扩展，并
 - **网络监控**：全面的网络流量监控
 - **GPU 监控**：GPU 性能数据的 eBPF 收集
 
-### Android 17 (API 37): eBPF 生态演进
+### Android 17 (API 37): eBPF 生态演进（main 分支观察，未进入 Android 17 release）
 
-> ⚠️ **版本说明**：截至复核时 `platform/frameworks/base` 尚无 `android-17.0.0_r1` tag，以下内容基于 AOSP main 分支规划，仅标注为方向性描述，不构成已发布版本结论。
+> ⚠️ **版本说明**：截至复核时 `platform/frameworks/base`、`platform/system/bpf`、`packages/modules/UprobeStats` 尚无 `android-17.0.0_r1` tag。以下内容基于 AOSP main 分支观察，**不构成 Android 17 已发布版本结论**。
 
-Android 17 中 eBPF 生态持续演进：
+AOSP main 分支中 eBPF 相关的变化：
 
 - **Perfetto 集成增强**：eBPF data source 与 Perfetto trace 的集成度在持续提高（已在 main 分支开发中）
 - **BPF loader 演进**：Rust bpfloader（android-16.0.0_r4 已引入）继续完善
@@ -757,21 +758,20 @@ eBPF 将与其他技术深度融合：
 
 > ⚠️ **版本说明**：Rust bpfloader 在 `platform/system/bpf` 的 `android-16.0.0_r4` tag 中已存在（`loader/bpfloader.rs`），非 Android 17 专属特性。以下描述基于 `android-16.0.0_r4` 复核，部分内容引用 main 分支需标注"待验证"。
 
-Android 从 16 开始在 `system/bpf/loader/` 引入了 bpfloader Rust 重构：
+Android 15 后期 tag（android-15.0.0_r17）已出现 Rust 入口雏形，Android 16（android-16.0.0_r4）进一步完善了 `system/bpf/loader/` 下的 Rust bpfloader 重构：
 
 #### 1.1 C++ 主入口完全替换
 
-- **传统入口**: `NetBpfLoad.cpp`（C++，Android 9-16 传统入口，android-16.0.0_r4 仍保留）
-- **Rust 入口**: `bpfloader.rs`（Rust，android-16.0.0_r4 已存在，在 main 分支中已替代 C++ 入口）
-- **保留**: `Loader.cpp` → 编译为 `libbpf_android.so`，被 Rust 端通过 `bindgen` 调用
+- **C++ 加载逻辑**: `Loader.cpp` → 编译为 `libbpf_android.so`，被 Rust 端通过 `bindgen` 调用（android-16.0.0_r4 可验证）
+- **Rust 入口**: `bpfloader.rs`（android-15.0.0_r17 已出现雏形，android-16.0.0_r4 完善，main 分支中已替代 C++ 入口）
 
 #### 1.2 混合加载器架构
 
 ```rust
-// bpfloader.rs:main() — android-16.0.0_r4 已存在此入口
+// bpfloader.rs:main() — android-16.0.0_r4 调用序列
 load_libbpf_progs();           // 加载 .bpf 风格（timeInState.bpf 等）
-legacyBpfLoader();             // 调用 C++ 加载器加载 .o 风格
-execNetBpfLoadDone();           // execve 退出
+vendorBpfLoader();             // 加载 vendor .o 风格 BPF 程序
+// main 分支调用序列与 r4 不同，此处锚定 android-16.0.0_r4
 ```
 
 #### 1.3 BPF 程序目录分布（android-16.0.0_r4 观察）
@@ -835,8 +835,8 @@ eBPF 不是 perf、systrace、Perfetto 的替代品——它们在 Android 性�
 
 ## 总结
 
-eBPF 在 Android 中承担的是**内核可观测性的基础设施**角色。Perfetto 对 eBPF data source 的支持在持续演进中，eBPF 采集的数据可以直接汇入 Perfetto trace（Android 17 main 分支已包含相关集成代码，具体 release 版本以 AOSP tag 为准）。
+eBPF 在 Android 中承担的是**内核可观测性的基础设施**角色。Perfetto 对 eBPF data source 的支持在持续演进中，eBPF 采集的数据可以直接汇入 Perfetto trace。
 
-> ⚠️ **版本说明**：Android 17 Perfetto eBPF 集成在 main 分支中可见，但 `platform/frameworks/base` 尚无 `android-17.0.0_r1` release tag，该结论暂标注"基于 main 分支"。
+> ⚠️ **版本说明**：Perfetto eBPF data source 集成代码在 AOSP main 分支中可见，但 `platform/frameworks/base`、`platform/system/bpf` 尚无 `android-17.0.0_r1` release tag，**未进入 Android 17 release**，不可作为正文结论引用。正文中的源码锚点应优先参照 `android-16.0.0_r4`。
 
 从性能排障角度，应把 eBPF 理解为工具箱中的高精度探头——它解决的不是"有没有问题"，而是"这个问题在内核层面到底是怎么发生的"。
