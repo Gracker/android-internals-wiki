@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "KwaiAppTeam/KOOM README.zh-CN and module READMEs, Android ApplicationExitInfo docs"
+last_verified: "2026-06-13"
+last_verified_against: "KwaiAppTeam/KOOM README.zh-CN and module READMEs, Android ApplicationExitInfo docs, Android 16KB page-size docs"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -22,8 +22,10 @@ sources:
     path: "https://github.com/KwaiAppTeam/KOOM/tree/master/koom-thread-leak"
   - type: official
     path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-04-24"
@@ -31,14 +33,20 @@ reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-25T07:04:06+08:00"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-24T13:23:00+08:00"
-last_task9_audit: "2026-05-20"
+last_task9_at: "2026-06-13T10:20:00+08:00"
+last_task9_audit: "2026-06-13"
 last_task6_audit: "2026-06-11"
 last_deepseek_polish_at: 2026-05-25
 deepseek_polish_state: done
+last_task9_autofix_at: "2026-06-13"
+last_task9_review_log: "logs/deep-review/2026-06-13-10-audit.md"
+task9_review_notes: "2026-06-13 闲时抽检 AUTO-FIX: 补 Android 15+/17 16KB page-size 对 KOOM native/thread/fastdump .so 的验证边界；无遗留 P0/P1。"
+p0: 0
+p1: 1
+p2: 0
 ---
 
 # KOOM
@@ -152,6 +160,8 @@ KOOM 不适合“先全量开起来看看”。更稳的接入方式是：
 Native 模块的依赖模式也要提前定。KOOM Native 模块支持 `c++_shared` 和 `c++_static` 两种模式，多个 KOOM 模块不能混用 shared / static。`c++_shared` 包体小，但 `libc++_shared.so` 版本冲突可能引发 `dlopen failed` 或符号缺失；`c++_static` 包体更大，隔离性更好。`pickFirst` 只适合临时解决打包冲突，不能替代 STL 版本治理。
 
 KOOM 的强项是把线上内存现场保下来。它的边界也清楚：它不能替代本地 heap 分析、native 符号化、Perfetto memory 轨道和业务缓存治理。
+
+Android 15+ 的 16KB page size 还要单独验。KOOM native / thread / fast dump 路径都会带 `.so` 或依赖 xhook，接入 Android 15/API 35 以上、特别是 Android 17 16KB backcompat 可强制关闭的环境时，不能只看 minSdk 和 ABI。上游 master 当前已把 NDK pin 到 r28.2，按 Android 官方文档 r28+ 默认产出 16KB-aligned ELF；但最终 APK/AAB 还要看业务工程的 AGP、bundletool、`libc++_shared.so` 和第三方预编译 so。上线前用 `llvm-objdump -p lib*.so | grep LOAD` 看 LOAD segment 是否为 `2**14`，再用 `zipalign -c -P 16 -v 4 app.apk` 验证包内对齐。
 
 ## Java heap 泄漏的触发策略
 
