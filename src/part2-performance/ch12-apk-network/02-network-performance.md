@@ -43,7 +43,7 @@ related_chapters:
 - '12.1'
 - '6.1'
 - '8.1'
-last_task9_audit: '2026-05-20'
+last_task9_audit: '2026-06-13'
 last_task6_audit: '2026-05-22'
 last_task2b_at: "2026-05-28T04:50:00+08:00"
 last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
