@@ -2,7 +2,7 @@
 title: "KOOM"
 chapter: "19"
 section: "19.03"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
