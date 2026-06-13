@@ -6273,7 +6273,7 @@
     },
     "20.14": {
       "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task9_pending",
       "title": "线程与 FD 资源监控治理",
       "file": "src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md",
       "reviewed_by": "openclaw-task6",
@@ -6284,7 +6284,9 @@
       "last_task6_review_log": "logs/review/2026-05-23-04-review.md",
       "task6_new_rework": false,
       "task9_state": "pending",
-      "task6_note": "Task6 04:05 首审 pass-light-edit；补 section/chapter 与禁用词小修，进入 Task9 pending。"
+      "task6_note": "Task6 04:05 首审 pass-light-edit；补 section/chapter 与禁用词小修，进入 Task9 pending。",
+      "task6_reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-06-13"
     },
     "7.15": {
       "status": "finalized",
