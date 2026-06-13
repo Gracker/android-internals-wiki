@@ -58,6 +58,7 @@ task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余�
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
 last_task6_at: "2026-05-27T16:08:00+08:00"
+last_task6_audit: "2026-06-14"
 last_task6_review_log: "logs/review/2026-05-27-16-review.md"
 review_type: "task6-writing-quality-review"
 p0: 0
