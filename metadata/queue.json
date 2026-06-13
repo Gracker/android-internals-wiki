@@ -472,5 +472,41 @@
     "status": "completed",
     "completed_at": "2026-06-13T14:50:00+08:00",
     "completed_by": "task2b-main"
+  },
+  {
+    "id": "task9-20260614-1410-ebpf-version-source-boundary",
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] eBPF 章节存在 Android 版本/源码锚点错误：Android 15 sched-ext、Android 16 API 号、Android 17 bpfloader/Perfetto 结论与可验证源码不一致。",
+    "material_paths": [
+      "logs/deep-review/2026-06-14-00-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L138-L159",
+        "detail": "正文写 Android 15 开始支持 sched-ext，且把 Android 16 标成 API 35。复核 AOSP Build.java 可见 Android 15=API 35、Android 16=API 36；Android common kernel android15-6.6 无 kernel/sched/ext.c，android16-6.12 才有 sched_ext 代码。",
+        "suggestion": "修正 Android 16 API 号；把 sched-ext 口径改为 Android common kernel 6.12/Android 16 侧锚点或设备内核能力边界，不要写成 Android 15 平台结论。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L735-L780, L803",
+        "detail": "章节写 Android 17 在 system/bpf/loader 完成 Rust bpfloader 重构，并以 main 分支当前主入口和固定功耗数字作正文结论。复核 platform/system/bpf android-16.0.0_r4 已存在 loader/bpfloader.rs；platform/frameworks/base 仍无 android-17.0.0_r1 tag。L780 的 sched_switch 频率、map lookup 次数和 0.3-0.5 mW 功耗未给出可复核测试条件。",
+        "suggestion": "将 bpfloader Rust 化锚点 pin 到 android-16.0.0_r4，删除或降级 Android 17 结论；未进入 Android 17 的 main/master 信息只保留为待验证材料；功耗/频率数字须补测试来源或删除。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L169-L218, L365-L386 等示例代码",
+        "detail": "多个 SEC(\"tracepoint/...\") 示例使用 PT_REGS_PARM* 或直接把 tracepoint ctx 当 pt_regs/task_struct 参数读取；这更像 kprobe/pt_regs 写法，不是可编译的 tracepoint 程序上下文。",
+        "suggestion": "改成 tracepoint ctx 结构体 / BPF CO-RE 读取方式，或明确标为伪代码并移除“已验证源码示例”语义。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-14T00:30:00+08:00",
+    "created": "2026-06-14",
+    "status": "pending"
   }
 ]

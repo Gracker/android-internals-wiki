@@ -5,16 +5,16 @@ section: "1.18"
 status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 11 QPR3 - Android 17 (API 37)"
-last_verified: "2026-06-13"
-last_verified_against: "AOSP android-15.0.0_r1 / android-16.0.0_r1 frameworks/base + Linux binder/freezer docs + AOSP docs 2026-04; android-17 tag not public"
+last_verified: "2026-06-14"
+last_verified_against: "AOSP android-15.0.0_r1 / android-16.0.0_r1 frameworks/base + Android common kernel android17-6.18-2026-04_r1 Binder/freezer + Linux cgroup docs + AOSP docs 2026-04; platform android-17 tag not public"
 confidence: medium
 tags: [binder, process-freezer, cached-apps, cgroup, performance]
 related_chapters: ["1.3", "1.4", "5.8", "11.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-06-13"
 reviewed_by: openclaw-task6
@@ -22,11 +22,11 @@ reviewed_date: "2026-05-27"
 last_task6_at: "2026-06-13T18:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-13-18-review.md"
 task6_review_notes: "2026-06-13 Task6：Task9 闲时抽检 auto-fix 后复审通过；修正计数错误（两个→三个）与术语一致性（package state→包状态）；无 L3/L4 回炉项。"
-task9_state: pending
-last_task9_review_log: "logs/deep-review/2026-06-13-17-audit.md"
-last_task9_at: "2026-06-13T17:20:00+08:00"
+task9_state: reviewed
+last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
+last_task9_at: "2026-06-14T00:24:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-13"
+task9_reviewed_date: "2026-06-14"
 task9_result: auto-fixed
 task2b_result: fixed
 task2b_state: fixed
@@ -52,19 +52,19 @@ sources:
   - type: aosp
     path: "core/java/android/app/ApplicationExitInfo.java"
   - type: kernel
-    path: "drivers/android/binder.c"
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/drivers/android/binder.c"
   - type: kernel
-    path: "include/uapi/linux/android/binder.h"
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/include/uapi/linux/android/binder.h"
   - type: kernel
-    path: "kernel/cgroup/freezer.c"
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/kernel/cgroup/freezer.c"
   - type: obsidian
     path: "../DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md"
-task9_review_notes: "2026-06-13 Task9 闲时抽检：AUTO-FIX 冻结阈值源码锚点与 Android 16 版本边界；AOSP main 不作为 Android 17 正文结论，回到 Task6 复审。"
+task9_review_notes: "2026-06-14 Task9 deep review：AUTO-FIX Binder/cgroup freezer 内核源码锚点，从 Linux main/master 切到 Android common kernel android17-6.18-2026-04_r1；framework android-17 tag 仍不可取，回到 Task6 复审。"
 p0: 0
 p1: 0
 p2: 0
 last_task9_audit: "2026-06-13"
-last_task9_autofix_at: "2026-06-13"
+last_task9_autofix_at: "2026-06-14"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 ---
@@ -170,7 +170,7 @@ write cgroup.freeze = 1
             └─ 所有任务进入 frozen 计数后设置 CGRP_FROZEN
 ```
 
-`JOBCTL_TRAP_FREEZE` 是任务进入冻结检查点的信号。任务进入 `cgroup_enter_frozen()` 后，内核设置 `current->frozen = true`，并增加 cgroup 的 frozen task 计数；解冻走 `cgroup_leave_frozen()`，清计数并唤醒任务。[已验证: Linux mainline, kernel/cgroup/freezer.c]
+`JOBCTL_TRAP_FREEZE` 是任务进入冻结检查点的信号。任务进入 `cgroup_enter_frozen()` 后，内核设置 `current->frozen = true`，并增加 cgroup 的 frozen task 计数；解冻走 `cgroup_leave_frozen()`，清计数并唤醒任务。[已验证: Android common kernel android17-6.18-2026-04_r1, kernel/cgroup/freezer.c]
 
 性能判断要抓住两点：
 
@@ -193,7 +193,7 @@ AOSP 文档给出了平台口径：
 - `BR_FROZEN_REPLY`：上一次同步事务的目标进程或线程处于 frozen 状态。
 - `BR_TRANSACTION_PENDING_FROZEN`：上一次异步事务的目标进程处于 frozen 状态，事务已经排队。
 
-`binder_proc_transaction()` 的处理逻辑是：发现 `proc->is_frozen` 后记录 `sync_recv` / `async_recv`；同步事务直接返回 `BR_FROZEN_REPLY`；异步事务可以进入队列，并返回 `BR_TRANSACTION_PENDING_FROZEN`。[已验证: Linux mainline, include/uapi/linux/android/binder.h][已验证: Linux mainline, drivers/android/binder.c]
+`binder_proc_transaction()` 的处理逻辑是：发现 `proc->is_frozen` 后记录 `sync_recv` / `async_recv`；同步事务直接返回 `BR_FROZEN_REPLY`；异步事务可以进入队列，并返回 `BR_TRANSACTION_PENDING_FROZEN`。[已验证: Android common kernel android17-6.18-2026-04_r1, include/uapi/linux/android/binder.h][已验证: Android common kernel android17-6.18-2026-04_r1, drivers/android/binder.c]
 
 ```text
 目标进程 frozen
@@ -263,7 +263,7 @@ AOSP 文档写明 Android 11 QPR3 或更高版本支持 cached apps freezer；�
 | Android 13 | `ApplicationExitInfo.REASON_FREEZER` 可用于线上归因 | 不把所有厂商后台冻结都归为 AOSP freezer |
 | Android 14/15 | 包状态 / 更新原因与 freezer subreason 继续补齐 | `SUBREASON_FREEZER_BINDER_ASYNC_FULL` 属于 Android 15+ 边界；subreason 多为 hidden/internal，应用侧能拿到的字段受 API 和权限限制 |
 | Android 16 | `FREEZER_CUTOFF_ADJ` 由 `ActivityManagerConstants` / DeviceConfig 管理，默认仍以 cached 边界为基线；`CachedAppOptimizer`、Binder freezer、cgroup v2 freezer 主路径与本节一致 | 以 `android-16.0.0_r1` 为源码锚点；不要把 AOSP main 直接当作 Android 17 结论 |
-| Android 17 | 本轮未取到公开 `android-17.0.0_r1` tag | 保留适用范围，正文结论只使用 Android 16 及以下可验证源码；待公开 tag 后复核 |
+| Android 17 | framework `android-17.0.0_r1` tag 本轮仍未取到；Binder/cgroup 内核锚点已核到 Android common kernel `android17-6.18-2026-04_r1` | framework 结论只使用 Android 16 及以下可验证源码；内核侧只引用 Android common kernel tag，不使用 Linux main/master 作为 Android 17 结论 |
 
 本节没有把 freezer 写成万能后台治理方案。它解决 cached 进程 CPU 空转，但会暴露跨进程协议设计问题：冻结期间还在同步调用远端，就会把后台节能问题变成稳定性问题；冻结期间不断发 oneway 回调，就会把 CPU 问题变成异步缓冲区压力和过期事件问题。
 
@@ -298,6 +298,7 @@ AOSP 冻结资格从 oom_adj 进入，组件状态会通过 adj、capability 和
 - [AOSP android-16.0.0_r1: OomAdjuster.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/am/OomAdjuster.java)
 - [AOSP android-16.0.0_r1: ActivityManagerConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)
 - [AOSP android-15.0.0_r1: ProcessList.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ProcessList.java)
-- [Linux: Binder driver UAPI](https://github.com/torvalds/linux/blob/master/include/uapi/linux/android/binder.h)
-- [Linux: cgroup freezer](https://github.com/torvalds/linux/blob/master/kernel/cgroup/freezer.c)
+- [Android common kernel android17-6.18-2026-04_r1: Binder driver](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/drivers/android/binder.c)
+- [Android common kernel android17-6.18-2026-04_r1: Binder UAPI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/include/uapi/linux/android/binder.h)
+- [Android common kernel android17-6.18-2026-04_r1: cgroup freezer](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/kernel/cgroup/freezer.c)
 - [DeepResearch: Cached App Freezer 机制与 GC 触发路径] — 厘清 Freezer/LMK/GC 三机制独立决策关系，补充冻结解冻触发链与 Binder 协作细节
