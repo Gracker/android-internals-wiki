@@ -570,7 +570,7 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-14T01:30:47+08:00",
     "created": "2026-06-14",
-    "status": "pending",
+    "status": "completed",
     "lite_partial_fix": {
       "fixed_at": "2026-06-14T01:35:00+08:00",
       "fixed_by": "task2b-lite",
@@ -592,7 +592,9 @@
       "new_issues_added": 3,
       "remaining_issue_count": 7,
       "note": "Task2B Lite 后复审：原 4 个源码/API 问题仍未修；本轮新增 GPU tracepoint、Android loader 伪代码、map owner/group 默认值三项。"
-    }
+    },
+    "completed_at": "2026-06-14T02:53:35",
+    "completed_by": "task2b-main"
   },
   {
     "id": "task6-20260614-1410-ebpf-revisit-rework",
@@ -645,8 +647,10 @@
     "added_by": "task6-review",
     "added_at": "2026-06-14T02:08:00+08:00",
     "created": "2026-06-14",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-06-14-02-review.md",
-    "note": "合并前轮 Task6 entry (priority 85) 的 2 个 issue + 本轮新增 4 个 issue。Task9 entry (priority 95, id: task9-20260614-1410-ebpf-source-api-regression) 的 4 个源码/API 问题仍 pending，需一并处理。"
+    "note": "合并前轮 Task6 entry (priority 85) 的 2 个 issue + 本轮新增 4 个 issue。Task9 entry (priority 95, id: task9-20260614-1410-ebpf-source-api-regression) 的 4 个源码/API 问题仍 pending，需一并处理。",
+    "completed_at": "2026-06-14T02:53:35",
+    "completed_by": "task2b-main"
   }
 ]
