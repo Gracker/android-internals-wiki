@@ -14,14 +14,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-27"
+task6_reviewed_date: "2026-06-13"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
-last_task6_at: "2026-05-27T19:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-19-review.md"
-task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 Task9 指出的冻结资格、ApplicationExitInfo、Freezer trace 与 addFrozenStateChangeCallback 边界；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。"
+last_task6_at: "2026-06-13T18:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-13-18-review.md"
+task6_review_notes: "2026-06-13 Task6：Task9 闲时抽检 auto-fix 后复审通过；修正计数错误（两个→三个）与术语一致性（package state→包状态）；无 L3/L4 回炉项。"
 task9_state: reviewed
 last_task9_review_log: "logs/deep-review/2026-06-13-17-audit.md"
 last_task9_at: "2026-06-13T17:20:00+08:00"
@@ -30,7 +30,7 @@ task9_reviewed_date: "2026-06-13"
 task9_result: auto-fixed
 task2b_result: fixed
 task2b_state: fixed
-task6_l1_l2_fixes: 0
+task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 sources:
   - type: official
@@ -145,7 +145,7 @@ CachedAppOptimizer.freezeProcess(proc)
   └─ EventLogTags.AM_FREEZE / statsd APP_FREEZE_CHANGED
 ```
 
-这段顺序有两个工程含义。
+这段顺序有三个工程含义。
 
 - oom_adj 仍是入口条件。Freezer 不重新定义进程重要性，它沿用 ActivityManager 计算出的 cached 边界；前台、可见、perceptible、service 等状态变化会先改变 adj，再影响冻结资格。
 - capability 和 `shouldNotFreeze()` 是 adj 之外的保护链。前台服务、绑定重要进程、正在执行关键交互或其他仍应获得 CPU 时间的进程，可能先通过 `PROCESS_CAPABILITY_CPU_TIME` 或 `ProcessCachedOptimizerRecord.shouldNotFreeze()` 被排除，不必等到 adj 变化后才避免冻结。
@@ -261,7 +261,7 @@ AOSP 文档写明 Android 11 QPR3 或更高版本支持 cached apps freezer；�
 | Android 11 QPR3 | 支持 cached apps freezer，框架通过 frozen cgroup 暂停 cached 进程 | 设备是否启用取决于 kernel / DeviceConfig / 开发者选项 |
 | Android 12 | freezer 进入更多设备实现，Binder frozen 状态开始影响跨进程调用设计 | 无公开 `REASON_FREEZER` 时，要保留日志、description 和内部 subreason 证据 |
 | Android 13 | `ApplicationExitInfo.REASON_FREEZER` 可用于线上归因 | 不把所有厂商后台冻结都归为 AOSP freezer |
-| Android 14/15 | package state / update reason 与 freezer subreason 继续补齐 | `SUBREASON_FREEZER_BINDER_ASYNC_FULL` 属于 Android 15+ 边界；subreason 多为 hidden/internal，应用侧能拿到的字段受 API 和权限限制 |
+| Android 14/15 | 包状态 / 更新原因与 freezer subreason 继续补齐 | `SUBREASON_FREEZER_BINDER_ASYNC_FULL` 属于 Android 15+ 边界；subreason 多为 hidden/internal，应用侧能拿到的字段受 API 和权限限制 |
 | Android 16 | `FREEZER_CUTOFF_ADJ` 由 `ActivityManagerConstants` / DeviceConfig 管理，默认仍以 cached 边界为基线；`CachedAppOptimizer`、Binder freezer、cgroup v2 freezer 主路径与本节一致 | 以 `android-16.0.0_r1` 为源码锚点；不要把 AOSP main 直接当作 Android 17 结论 |
 | Android 17 | 本轮未取到公开 `android-17.0.0_r1` tag | 保留适用范围，正文结论只使用 Android 16 及以下可验证源码；待公开 tag 后复核 |
 
