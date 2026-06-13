@@ -50,7 +50,7 @@ task2b_result: fixed
 last_task2b_at: "2026-05-22T19:18:14+08:00"
 last_task9_audit: "2026-06-13"
 last_task9_audit_log: "logs/deep-review/2026-06-13-20-audit.md"
-last_task6_audit: '2026-05-20'
+last_task6_audit: '2026-06-13'
 status: "finalized"
 task9_state: "reviewed"
 task9_result: "pass-tech-review"
