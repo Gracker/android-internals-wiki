@@ -51,32 +51,37 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 4
 polish_date: "2026-06-14"
 polish_by: "task2b-main"
-p0: 5
-p1: 2
+p0: 0
+p1: 0
 p2: 1
 task6_result: "pass-light-edit"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-14"
-task6_state: "reviewed"
+task6_state: "revisiting"
 last_task6_at: "2026-06-14T03:05:00+08:00"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-14"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_result: "fixed"
 task2b_state: "fixed"
 task2b_rework_date: "2026-06-14T02:50:00+08:00"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 last_task2b_at: "2026-06-14T02:50:00+08:00"
 last_task2b_lite_at: "2026-06-14T01:35:00+08:00"
 last_task6_audit: "2026-06-14"
-last_task9_at: "2026-06-14T02:24:08+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-14-02-deep-review.md"
-updated_by: "openclaw-task2b-main"
+last_task9_at: "2026-06-14T03:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-14-03-deep-review.md"
+updated_by: "openclaw-task9"
 updated_date: "2026-06-14"
+last_task9_autofix_at: "2026-06-14"
 ---
 
 ## 修复记录
+
+**2026-06-14 Task9 Auto-fix**:
+- 修正 sched-ext loader 表述：`tools/sched_ext` 示例由用户态调度器程序加载为 `struct sched_ext_ops`，不归入 Android `system/bpf` 的 `bpfloader`。
+- 修正 Perfetto `linux.ebpf` 表述：Android 16 release tag 中没有稳定 `linux.ebpf` data source；自定义 eBPF 事件需经用户态 reader 或系统服务中转进入 trace。
 
 **2026-06-14 Task2B 主修复（完整回炉）**:
 - 重写开头：编号列表改为叙事段落（Task6#5）
@@ -138,7 +143,7 @@ Android 15 延续了对 bpfloader 稳定性的投入，同时 `android-15.0.0_r1
 
 Android 16（基于 Android common kernel 6.12）在 eBPF 上有两个重要变化：
 
-**sched-ext 调度器扩展**：允许通过 BPF 程序在不修改内核的情况下实现自定义调度策略。这是一个内核侧能力，依赖 Android common kernel 6.12+（android16-6.12 分支），与 Android API level 解耦——同一 API 36 设备可能运行不同的 GKI 版本。sched-ext 的具体调度策略通过 `tools/sched_ext/scx_simple.bpf.c` 等示例程序定义，由 `bpfloader` 加载并附加到 `sched_ext` 调度类。
+**sched-ext 调度器扩展**：允许通过 BPF 程序在不修改内核的情况下实现自定义调度策略。这是一个内核侧能力，依赖 Android common kernel 6.12+（android16-6.12 分支），与 Android API level 解耦——同一 API 36 设备可能运行不同的 GKI 版本。sched-ext 的具体调度策略通过 `tools/sched_ext/scx_simple.bpf.c` 等示例程序定义，由对应的用户态调度器程序加载为 `struct sched_ext_ops`；Android `system/bpf` 的 `bpfloader` 只负责平台和 vendor BPF 程序加载，不能把它写成 sched-ext 调度器 loader。
 
 **Rust bpfloader**：`android-16.0.0_r4` 中 `system/bpf/loader/bpfloader.rs` 已完成对 C++ `Loader.cpp` 的替代。调用序列为 `load_libbpf_progs()`（加载 `.bpf` 风格程序，如 `timeInState.bpf`）→ `vendorBpfLoader()`（加载 vendor `.o` 风格程序）。Rust 端通过 `bindgen` 调用编译为 `libbpf_android.so` 的 C++ 函数来操作 BPF 对象。这一重构提升了类型安全和 panic 控制面，但对上层使用 BPF map 的系统服务是透明的。
 
@@ -249,8 +254,7 @@ int trace_sys_enter_openat(struct trace_event_raw_sys_enter_openat *ctx) {
 // 不要写成 ctx->args[0] = fd, ctx->args[1] = filename。
 ```
 
-**
-在 Perfetto 中的表现**：通过 `bpf_perf_event_output` 输出的 eBPF 数据汇入 Perfetto 的 eBPF ring buffer。在 Perfetto trace 中显示为 `linux.ebpf` data source 的 counter track 或 slice track，每条事件带 pid、syscall id、参数和纳秒时间戳。在 Perfetto UI 里可以按 pid 过滤，对比不同进程的 syscall 调用频率。
+**在 Perfetto 中的表现**：Android 16 release tag 中没有稳定的 `linux.ebpf` data source。通过 `bpf_perf_event_output()` 输出的事件需要由用户态 reader 消费，再用 Perfetto SDK 或自定义 data source 写成 counter 或 slice track；如果只抓系统自带 trace，仍应使用 `linux.ftrace` 的 `raw_syscalls/*` 事件观察 syscall 频率。
 
 **注意事项**：`raw_syscalls/sys_enter` 在 Android common kernel 中默认开启，而 `syscalls/sys_enter_openat` 等特定事件能否使用取决于内核编译选项。生产环境需先通过 `adb shell ls /sys/kernel/debug/tracing/events/syscalls/` 确认可用事件列表。
 
@@ -347,7 +351,7 @@ int trace_vfree_entry(struct pt_regs *ctx) {
 
 这个三段式模型（entry 记 size → return 拿 addr 配对 → vfree 清掉）能完整追踪每笔分配的完整生命周期。
 
-**在 Perfetto 中的表现**：内存分配 eBPF 数据通过 ring buffer 提交到用户态，在 Perfetto trace 中显示为 `linux.ebpf` data source 的 events。`alloc_map` 中超过阈值未释放的条目可用于生成 memory leak 告警 track。与 Perfetto 自带的 `kmem/rss_stat` ftrace 事件不同，eBPF 版本可以自定义跟踪的分配函数（不限于 vmalloc，也可以是 kmalloc 或驱动专用分配器），自由度更高但需要手动编写程序。
+**在 Perfetto 中的表现**：Android 16 没有可直接配置的 `linux.ebpf` data source；内存分配 eBPF 数据要先由用户态 reader 从 ring buffer 或 map 读取，再写入 Perfetto 自定义 track。只依赖系统 trace 时，应使用 `kmem/rss_stat` 等 ftrace 事件；自写 eBPF 程序的价值在于可以选择 vmalloc、kmalloc 或驱动专用分配器，但这条路径需要配套用户态采集进程。
 
 **注意事项**：`vmalloc` 在 Android 内核中通过 `vmalloc_noprof` 定义。生产环境 BPF 程序需要 BTF 信息来验证函数签名——Android common kernel 的 GKI 构建默认包含 BTF。非 GKI 设备的 BTF 支持取决于 vendor kernel 配置。
 
@@ -605,4 +609,4 @@ eBPF 在 Android 中承担**内核可观测性基础设施**的角色。从 Andr
 
 > ⚠️ **版本说明**：Perfetto eBPF data source 集成代码在 AOSP main 分支中可见，但尚无 `android-17.0.0_r1` release tag，**未进入 Android 17 release**，不可作为正文结论引用。正文中的源码锚点优先参照 `android-16.0.0_r4`。
 
-从性能排障角度，应把 eBPF 理解为工具箱中的高精度探头——它解决的不是"有没有问题"，而是"这个问题在内核层面到底是怎么发生的"。Perfetto 对 eBPF data source 的支持在持续演进中，eBPF 采集的数据可以直接汇入 Perfetto trace。
+从性能排障角度，应把 eBPF 理解为工具箱中的高精度探头——它解决的不是"有没有问题"，而是"这个问题在内核层面到底是怎么发生的"。Perfetto 对 eBPF data source 的支持仍在演进；在 Android 16 release 口径下，eBPF 数据进入 trace 需要系统服务或自定义用户态 reader 做中转。
