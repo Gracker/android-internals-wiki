@@ -43,9 +43,9 @@ chapter: "25.16"
 section: "25.16"
 status: "ready-for-review"
 drafted_by: "task2a-knowledge-gap"
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 task2b_result: "fixed"
 task2b_rework_date: "2026-06-13"
 last_task2b_at: "2026-06-13T14:50:00+08:00"
@@ -56,12 +56,13 @@ last_task6_at: "2026-06-13T15:11:42+08:00"
 last_task6_review_log: "logs/review/2026-06-13-15-review.md"
 task6_review_notes: "2026-06-13 Task6 回炉重审(revisiting): pass-light-edit。Task2B rework 已修复 ML_ACC 枚举值、SessionTag/SessionMode 区分、main branch 锚点越界问题。L1/L2 无新增问题，文档整体写作质量良好。L3 备注系统层扩展中"版本感知调度策略"与"FMQ 优化"两小节内容偏薄，建议后续补充。待 Task9 对 rework 内容做技术复审。"
 
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-13"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-13T14:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-13-14-audit.md"
-task9_review_notes: "2026-06-13 Task9 闲时抽检: needs-rework。P0 1 / P1 2 / P2 0；6/10 注入的系统层扩展存在 Power HAL Boost 枚举值、SessionTag/SessionMode 混用和 main branch 版本锚点越界问题，已写入 queue.json 回炉。"
+last_task9_at: "2026-06-13T15:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-13-15-deep-review.md"
+task9_review_notes: "2026-06-13 Task9 深度技术复审: auto-fixed。P0 1 / P1 1 / P2 1；已修复 SessionMode 枚举、headroom 版本与返回值边界、FMQ/版本演进表，回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-13"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 task2b_state: "fixed"
@@ -397,15 +398,15 @@ ML_ACC,
 系统通过 HintManagerService 统一管理所有 ADPF 会话。核心职责包括：
 
 - **会话生命周期管理**：维护 uid → token → session 的映射，处理 session 的创建、更新和清理。
-- **CPU/GPU headroom 查询**：通过 Power HAL 的 `getCpuHeadroom()` 获取当前可用资源余量，用于决策是否接受 ADPF hint。返回结果包含当前负载、温度和频率信息。
+- **CPU/GPU headroom 查询**：Android 16 的 `SystemHealthManager` 通过 `IHintManager` 转发到 Power HAL `getCpuHeadroom()` / `getGpuHeadroom()`。Java API 返回 0-100 的 headroom 数值或 `Float.NaN`，HAL 的 `CpuHeadroomResult` / `GpuHeadroomResult` 也只暴露 `globalHeadroom`，不提供负载、温度或频率明细。
 - **版本感知调度**：根据 Power HAL 版本调整可用的 hint 数量和调度策略。
 
 HintManagerService 的内部实现细节（如具体状态映射结构、清理间隔）随版本演进，应以对应 tag 的源码为准。本章不粘贴 main branch 特有的内部代码。
 
 **版本感知的调度策略**：
-- Power HAL V4：基础 hint 支持
-- Power HAL V5：扩展 hint + session tag/mode 支持
-- Power HAL V6：完整 session hints/modes/tags
+- Power HAL V4：基础 hint session 支持。
+- Power HAL V5：`createHintSessionWithConfig()`、`SessionTag`、`SessionMode.POWER_EFFICIENCY` 与 `getSessionChannel()` 支持。
+- Power HAL V6：CPU/GPU headroom 查询，以及 `GRAPHICS_PIPELINE`、`AUTO_CPU`、`AUTO_GPU` session mode 支持。
 
 ### SessionTag 与 SessionMode：两个不同的 HAL 内部枚举
 
@@ -427,11 +428,12 @@ enum SessionTag {
 **SessionMode**（`hardware/interfaces/power/aidl/android/hardware/power/SessionMode.aidl`，android-16.0.0_r1）：
 ```aidl
 @VintfStability
+@Backing(type="int")
 enum SessionMode {
-    POWER_EFFICIENCY = 0,
-    SUSTAINED = 1,
-    GRAPHICS_PIPELINE = 2,
-    // ...
+    POWER_EFFICIENCY,
+    GRAPHICS_PIPELINE,
+    AUTO_CPU,
+    AUTO_GPU,
 }
 ```
 
@@ -446,19 +448,20 @@ enum SessionMode {
 
 ### FMQ (Fast Message Queue) 优化
 
-Android 16 引入 FMQ 优化 hint 性能的相关属性：
+`android-16.0.0_r1` 的 `HintManagerService` 中可见系统组件接入 ADPF 的调试开关；这两个属性在 `android-15.0.0_r1` 已存在，不能当成 Android 16 新增公开 API：
 - `debug.sf.enable_adpf_cpu_hint`：SurfaceFlinger CPU hint 开关
 - `debug.hwui.use_hint_manager`：HWUI hint manager 开关
 
-这些属性允许 OEM 调试和优化硬件交互性能，属于系统级调试接口。
+Android 15 起 Power HAL AIDL 已提供 `getSessionChannel()`，Android 16 的服务端增加 FMQ 支持状态统计。它们都属于系统级调试和 OEM 适配面，不直接暴露给 App。
 
 ### 版本演进总结
 
 | Android 版本 | 系统层能力 | 硬件协同增强 |
 |-------------|----------|-------------|
-| Android 12 | ADPF v1 基础 API | CPU hint 基础支持 |
-| Android 14 | Headroom 计算 | CPU/GPU 资源感知调度 |
-| Android 16 | GPU hint API, ML_ACC boost | ML 加速器硬件协同，FMQ 优化 |
+| Android 12 | ADPF v1 `PerformanceHintManager` / `createHintSession()` | CPU hint session 基础支持 |
+| Android 14 | `setThreads()` 等 session 线程管理 API | 更完整的线程集合维护 |
+| Android 15 | `setPreferPowerEfficiency()`、`PowerMonitor`、Power HAL `SessionTag` / `SessionConfig` 与 `getSessionChannel()` | 能效偏好和 monitor 读数进入公开验证链路 |
+| Android 16 | `getCpuHeadroom()` / `getGpuHeadroom()`、`GRAPHICS_PIPELINE` / `AUTO_CPU` / `AUTO_GPU` SessionMode | CPU/GPU headroom 查询与图形管线自动计时模式 |
 
 **硬件协同要点**：
 1. SessionTag 和 SessionMode 是 HAL 内部概念，App 通过公开 ADPF API（`createHintSession`、`reportActualWorkDuration`、`setPreferPowerEfficiency`）表达意图，不直接选择 tag/mode。
