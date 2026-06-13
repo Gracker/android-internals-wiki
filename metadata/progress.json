@@ -14372,11 +14372,25 @@
     "section": "14.10",
     "title": "eBPF/BPF 在 Android 性能分析中的应用",
     "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
-    "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "last_task6_at": "2026-06-14T03:05:00+08:00",
+    "last_task6_at": "2026-06-14T04:08:15+08:00",
     "last_task6_review_log": "logs/review/2026-06-14-03-review.md"
+  },
+  "19.18": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-06-14T04:08:15+08:00"
+  },
+  "1.18": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-06-14T04:08:15+08:00"
   }
 }
