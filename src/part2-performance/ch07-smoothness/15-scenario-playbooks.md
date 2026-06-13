@@ -2,7 +2,7 @@
 title: "场景化性能作战手册"
 chapter: "7.15"
 section: "7.15"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
