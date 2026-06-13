@@ -10,7 +10,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-26"
 reviewed_at: "2026-05-26T01:12:00+08:00"
 last_task6_at: "2026-05-26T01:12:00+08:00"
-last_task6_audit: '2026-05-21'
+last_task6_audit: '2026-06-14'
 task6_reviewed_date: "2026-05-26"
 review_round: 10
 task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（元叙述、禁用/高频词、直接提示语、Perfetto 观察句）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
