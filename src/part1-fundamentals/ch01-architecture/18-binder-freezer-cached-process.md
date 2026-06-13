@@ -2,19 +2,19 @@
 title: "Binder Freezer 与缓存进程冻结性能"
 chapter: "1.18"
 section: "1.18"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 11 QPR3 - Android 17 (API 37)"
-last_verified: "2026-05-15"
-last_verified_against: "AOSP main frameworks/base + Linux mainline binder/freezer + Android Open Source Project docs 2026-04"
+last_verified: "2026-06-13"
+last_verified_against: "AOSP android-15.0.0_r1 / android-16.0.0_r1 frameworks/base + Linux binder/freezer docs + AOSP docs 2026-04; android-17 tag not public"
 confidence: medium
 tags: [binder, process-freezer, cached-apps, cgroup, performance]
 related_chapters: ["1.3", "1.4", "5.8", "11.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
@@ -23,11 +23,11 @@ last_task6_at: "2026-05-27T19:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-19-review.md"
 task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 Task9 指出的冻结资格、ApplicationExitInfo、Freezer trace 与 addFrozenStateChangeCallback 边界；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。"
 task9_state: reviewed
-last_task9_review_log: "logs/deep-review/2026-05-27-19-deep-review.md"
-last_task9_at: "2026-05-27T19:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-13-17-audit.md"
+last_task9_at: "2026-06-13T17:20:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-27"
-task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-13"
+task9_result: auto-fixed
 task2b_result: fixed
 task2b_state: fixed
 task6_l1_l2_fixes: 0
@@ -44,6 +44,8 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java"
@@ -57,10 +59,12 @@ sources:
     path: "kernel/cgroup/freezer.c"
   - type: obsidian
     path: "../DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md"
-task9_review_notes: "2026-05-27 Task9：pass-tech-review。复核 OomAdjuster 冻结资格、CachedAppOptimizer freeze/unfreeze、ApplicationExitInfo freezer reason/subreason、IBinder frozen callback 边界；此前 P1/P2 均已补齐。 P0 0 / P1 0 / P2 0；Task6 已通过且 queue.json 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-06-13 Task9 闲时抽检：AUTO-FIX 冻结阈值源码锚点与 Android 16 版本边界；AOSP main 不作为 Android 17 正文结论，回到 Task6 复审。"
 p0: 0
 p1: 0
 p2: 0
+last_task9_audit: "2026-06-13"
+last_task9_autofix_at: "2026-06-13"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-29
 ---
@@ -74,7 +78,7 @@ last_deepseek_cn_review_at: 2026-05-29
 说明 Android 为什么在 LMK 之外引入 cached app freezer：降低 cached 进程空转 CPU、减少后台异常唤醒，并保持比杀进程更低的恢复成本。
 
 ### 🔹 CachedAppOptimizer 的冻结入口
-梳理 `OomAdjuster`、`ProcessList.FREEZER_CUTOFF_ADJ` 与 `CachedAppOptimizer` 的协作边界，区分 oom_adj 计算、冻结资格判断和实际冻结执行。
+梳理 `OomAdjuster`、`FREEZER_CUTOFF_ADJ` 与 `CachedAppOptimizer` 的协作边界，区分 oom_adj 计算、冻结资格判断和实际冻结执行。
 
 ### 🔹 cgroup v2 freezer 状态机
 解释 `cgroup.freeze`、`CGRP_FREEZE`、`CGRP_FROZEN`、`JOBCTL_TRAP_FREEZE` 与任务调度状态之间的关系，说明冻结态线程为什么不消耗 CPU。
@@ -120,7 +124,7 @@ Cached app freezer 处理的是一类很具体的浪费：进程已经退到 cac
 
 ## 冻结入口：OomAdjuster 决定资格，CachedAppOptimizer 执行动作
 
-AOSP 把冻结资格放在 oom_adj 计算结果之后处理。`ProcessList.FREEZER_CUTOFF_ADJ` 定义了进入 freezer 候选池的阈值，当前主线源码中它等于 `CACHED_APP_MIN_ADJ`。进程的 `curAdj` 达到这个阈值，并且没有被标记为 freezer exempt，`OomAdjuster` 才会把它交给 `CachedAppOptimizer`。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/ProcessList.java][已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java]
+AOSP 把冻结资格放在 oom_adj 计算结果之后处理。Android 15 的 `ProcessList.FREEZER_CUTOFF_ADJ` 等于 `CACHED_APP_MIN_ADJ`；Android 16 改为 `ActivityManagerConstants.FREEZER_CUTOFF_ADJ`，默认值仍以 `CACHED_APP_MIN_ADJ` 为基线，但 `prototypeAggressiveFreezing` 和 DeviceConfig `freezer_cutoff_adj` 可以改变阈值。进程的 `curAdj` 达到当前阈值，并且没有被标记为 freezer exempt，`OomAdjuster` 才会把它交给 `CachedAppOptimizer`。[已验证: AOSP android-15.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java][已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java][已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java]
 
 关键路径可以概括为三段：
 
@@ -145,9 +149,9 @@ CachedAppOptimizer.freezeProcess(proc)
 
 - oom_adj 仍是入口条件。Freezer 不重新定义进程重要性，它沿用 ActivityManager 计算出的 cached 边界；前台、可见、perceptible、service 等状态变化会先改变 adj，再影响冻结资格。
 - capability 和 `shouldNotFreeze()` 是 adj 之外的保护链。前台服务、绑定重要进程、正在执行关键交互或其他仍应获得 CPU 时间的进程，可能先通过 `PROCESS_CAPABILITY_CPU_TIME` 或 `ProcessCachedOptimizerRecord.shouldNotFreeze()` 被排除，不必等到 adj 变化后才避免冻结。
-- Binder 先于进程冻结。`CachedAppOptimizer.freezeProcess()` 在 `setProcessFrozen()` 前调用 `freezeBinder(pid, true, ...)`，目的是先处理 Binder 接口和未完成事务，再让线程进入冻结态。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
+- Binder 先于进程冻结。`CachedAppOptimizer.freezeProcess()` 在 `setProcessFrozen()` 前调用 `freezeBinder(pid, true, ...)`，目的是先处理 Binder 接口和未完成事务，再让线程进入冻结态。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
 
-`CachedAppOptimizer` 还给冻结安排了 debounce。进程刚进入 cached 状态时，系统不会立刻冻结；默认配置会延迟一段时间，避免 Activity 刚退后台、Service 刚结束、Binder 事务还在收尾时反复 freeze/unfreeze。源码里的 `DEFAULT_FREEZER_DEBOUNCE_TIMEOUT = 10_000L` 是当前 AOSP 主线默认值，设备侧仍可能通过 DeviceConfig 或厂商配置调整。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
+`CachedAppOptimizer` 还给冻结安排了 debounce。进程刚进入 cached 状态时，系统不会立刻冻结；默认配置会延迟一段时间，避免 Activity 刚退后台、Service 刚结束、Binder 事务还在收尾时反复 freeze/unfreeze。Android 16 源码里的 `DEFAULT_FREEZER_DEBOUNCE_TIMEOUT = 10_000L` 是默认值，设备侧仍可能通过 DeviceConfig 或厂商配置调整。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
 
 ## cgroup v2 freezer：线程停止调度，进程仍然存在
 
@@ -197,13 +201,13 @@ AOSP 文档给出了平台口径：
   └─ oneway 事务：记录 async_recv → 事务进入 async 队列 → 解冻后处理；缓冲区不足时 kill 目标进程
 ```
 
-这条规则对应用架构有直接约束：不要把“通知 cached 进程一声”写成同步 Binder 调用。对回调、监听器、跨进程缓存刷新这类场景，优先使用可暂停的异步分发，并在远端 frozen 时停止发送或合并事件。Android 最新 API / flag 可用时，可以用 `IBinder.addFrozenStateChangeCallback` 跟踪远端 frozen/unfrozen 状态；实现上要捕获 `UnsupportedOperationException`，低版本或 flag 不可用时退回生命周期状态、注册/退订策略、事件合并和 Binder death 等降级方案。[已验证: 官方文档, source.android.com/docs/core/architecture/ipc/binder-freezer][已验证: AOSP main, core/java/android/os/IBinder.java]
+这条规则对应用架构有直接约束：不要把“通知 cached 进程一声”写成同步 Binder 调用。对回调、监听器、跨进程缓存刷新这类场景，优先使用可暂停的异步分发，并在远端 frozen 时停止发送或合并事件。Android 16 的 flagged API 可用时，可以用 `IBinder.addFrozenStateChangeCallback` 跟踪远端 frozen/unfrozen 状态；实现上要捕获 `UnsupportedOperationException`，低版本或 flag 不可用时退回生命周期状态、注册/退订策略、事件合并和 Binder death 等降级方案。[已验证: 官方文档, source.android.com/docs/core/architecture/ipc/binder-freezer][已验证: AOSP android-16.0.0_r1, core/java/android/os/IBinder.java]
 
 ## 失败归因：ApplicationExitInfo 能看到 freezer kill
 
-从线上稳定性看，freezer kill 不应该被混进普通 OOM、ANR 或用户强杀。`ApplicationExitInfo.REASON_FREEZER = 14` 的公开说明是“Application process was killed by App Freezer”，示例场景是 frozen 状态下收到同步 Binder 事务；但这个字段不是 Android 11/12 的通用口径，线上归因要先按 API 版本分段。[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo][已验证: AOSP main, core/java/android/app/ApplicationExitInfo.java]
+从线上稳定性看，freezer kill 不应该被混进普通 OOM、ANR 或用户强杀。`ApplicationExitInfo.REASON_FREEZER = 14` 的公开说明是“Application process was killed by App Freezer”，示例场景是 frozen 状态下收到同步 Binder 事务；但这个字段不是 Android 11/12 的通用口径，线上归因要先按 API 版本分段。[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo][已验证: AOSP android-16.0.0_r1, core/java/android/app/ApplicationExitInfo.java]
 
-AOSP 主线还定义了几个内部 subreason，应用侧可见性受 API、权限和系统实现影响：
+Android 16 源码还定义了几个内部 subreason，应用侧可见性受 API、权限和系统实现影响：
 
 | reason / subreason | 场景 | 排查方向 |
 | --- | --- | --- |
@@ -214,7 +218,7 @@ AOSP 主线还定义了几个内部 subreason，应用侧可见性受 API、权�
 | `SUBREASON_FREEZER_BINDER_IOCTL` | freeze/unfreeze Binder 或查询 frozen info 失败 | 查内核 Binder 状态、pid 生命周期、AMS 日志 |
 | API 35+ `SUBREASON_FREEZER_BINDER_ASYNC_FULL` | frozen 期间异步 Binder 缓冲区接近耗尽 | 查 callback 风暴、监听器未退订、事件是否可合并 |
 
-`CachedAppOptimizer` 里能看到这些归因的使用：解冻前查询 `getBinderFreezeInfo(pid)`，如果发现 `SYNC_RECEIVED_WHILE_FROZEN`，会用 `REASON_FREEZER` + `SUBREASON_FREEZER_BINDER_TRANSACTION` 杀进程；异步缓冲区不足时，走 `SUBREASON_FREEZER_BINDER_ASYNC_FULL`。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
+`CachedAppOptimizer` 里能看到这些归因的使用：解冻前查询 `getBinderFreezeInfo(pid)`，如果发现 `SYNC_RECEIVED_WHILE_FROZEN`，会用 `REASON_FREEZER` + `SUBREASON_FREEZER_BINDER_TRANSACTION` 杀进程；异步缓冲区不足时，走 `SUBREASON_FREEZER_BINDER_ASYNC_FULL`。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
 
 26.9 节负责 `ApplicationExitInfo` 的完整归因模型。这里保留 freezer 相关的最小判断：看到 `REASON_FREEZER` 时，不要按“系统随机杀后台”处理；它通常指向 frozen 状态下仍有跨进程交互。
 
@@ -228,7 +232,7 @@ AOSP 主线还定义了几个内部 subreason，应用侧可见性受 API、权�
 | sched | 目标进程线程轨道 | frozen 窗口内线程没有 Running 切片 | frozen 后仍有频繁 Running，说明未进入 freezer 或被频繁解冻 |
 | Binder | 调用端线程、binder transaction latency | oneway 事务可能排队到解冻后处理 | 同步调用命中 frozen 目标，目标进程出现 freezer kill |
 
-`CachedAppOptimizer.traceAppFreeze()` 会在 `Trace.TRACE_TAG_ACTIVITY_MANAGER` 下写入 `Freezer` track，事件名模板是 `Freeze <processName>:<pid> <reason>` 或 `Unfreeze <processName>:<pid> <reason>`；重排冻结时还会出现 `Reschedule freeze <processName>:<pid> timeout=..., reason=...`。这个 reschedule 事件常见于 Binder outstanding transaction 或新 pending transaction 让冻结延后，排查 freeze/unfreeze 抖动时要和 Binder 事务时间线一起看。成功冻结后还会写 `EventLogTags.AM_FREEZE`，解冻时写 `AM_UNFREEZE`。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
+`CachedAppOptimizer.traceAppFreeze()` 会在 `Trace.TRACE_TAG_ACTIVITY_MANAGER` 下写入 `Freezer` track，事件名模板是 `Freeze <processName>:<pid> <reason>` 或 `Unfreeze <processName>:<pid> <reason>`；重排冻结时还会出现 `Reschedule freeze <processName>:<pid> timeout=..., reason=...`。这个 reschedule 事件常见于 Binder outstanding transaction 或新 pending transaction 让冻结延后，排查 freeze/unfreeze 抖动时要和 Binder 事务时间线一起看。成功冻结后还会写 `EventLogTags.AM_FREEZE`，解冻时写 `AM_UNFREEZE`。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
 
 排查时可以按这个顺序拿证据：
 
@@ -258,7 +262,8 @@ AOSP 文档写明 Android 11 QPR3 或更高版本支持 cached apps freezer；�
 | Android 12 | freezer 进入更多设备实现，Binder frozen 状态开始影响跨进程调用设计 | 无公开 `REASON_FREEZER` 时，要保留日志、description 和内部 subreason 证据 |
 | Android 13 | `ApplicationExitInfo.REASON_FREEZER` 可用于线上归因 | 不把所有厂商后台冻结都归为 AOSP freezer |
 | Android 14/15 | package state / update reason 与 freezer subreason 继续补齐 | `SUBREASON_FREEZER_BINDER_ASYNC_FULL` 属于 Android 15+ 边界；subreason 多为 hidden/internal，应用侧能拿到的字段受 API 和权限限制 |
-| Android 16/17 | AOSP 主线 `CachedAppOptimizer`、Binder freezer、cgroup v2 freezer 路径稳定 | 公开 AOSP 发布节奏变化后，分支名以 `android-latest-release` / 公开 tag 为准 |
+| Android 16 | `FREEZER_CUTOFF_ADJ` 由 `ActivityManagerConstants` / DeviceConfig 管理，默认仍以 cached 边界为基线；`CachedAppOptimizer`、Binder freezer、cgroup v2 freezer 主路径与本节一致 | 以 `android-16.0.0_r1` 为源码锚点；不要把 AOSP main 直接当作 Android 17 结论 |
+| Android 17 | 本轮未取到公开 `android-17.0.0_r1` tag | 保留适用范围，正文结论只使用 Android 16 及以下可验证源码；待公开 tag 后复核 |
 
 本节没有把 freezer 写成万能后台治理方案。它解决 cached 进程 CPU 空转，但会暴露跨进程协议设计问题：冻结期间还在同步调用远端，就会把后台节能问题变成稳定性问题；冻结期间不断发 oneway 回调，就会把 CPU 问题变成异步缓冲区压力和过期事件问题。
 
@@ -289,9 +294,10 @@ AOSP 冻结资格从 oom_adj 进入，组件状态会通过 adj、capability 和
 - [官方文档: Handle cached and frozen apps](https://source.android.com/docs/core/architecture/ipc/binder-freezer)
 - [官方 API: ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
 - [Linux Kernel Documentation: Control Group v2](https://docs.kernel.org/admin-guide/cgroup-v2.html)
-- [AOSP: CachedAppOptimizer.java](https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java)
-- [AOSP: OomAdjuster.java](https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java)
-- [AOSP: ProcessList.java](https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/services/core/java/com/android/server/am/ProcessList.java)
+- [AOSP android-16.0.0_r1: CachedAppOptimizer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)
+- [AOSP android-16.0.0_r1: OomAdjuster.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/am/OomAdjuster.java)
+- [AOSP android-16.0.0_r1: ActivityManagerConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)
+- [AOSP android-15.0.0_r1: ProcessList.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ProcessList.java)
 - [Linux: Binder driver UAPI](https://github.com/torvalds/linux/blob/master/include/uapi/linux/android/binder.h)
 - [Linux: cgroup freezer](https://github.com/torvalds/linux/blob/master/kernel/cgroup/freezer.c)
 -
