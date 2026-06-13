@@ -1,4 +1,5 @@
 ---
+
 title: 文件系统
 chapter: '6.2'
 section: '6.2'
@@ -11,7 +12,7 @@ drafted_by: openclaw-task2a
 polish_count: 1
 polish_date: '2026-04-07'
 polish_by: task2b-polish
-reviewed_date: "2026-05-22"
+reviewed_date: 2026-06-13
 reviewed_by: openclaw-task6
 review_type: scheduled-review
 review_round: 4
@@ -33,15 +34,15 @@ tags:
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-22T19:18:14+08:00"
-status: ready-for-review
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-06-13T10:30:00+08:00"
-last_task6_audit: "2026-06-11"
+last_task6_audit: 2026-06-13
 task2b_state: "fixed"
 p0: 0
 p1: 0
@@ -54,12 +55,12 @@ last_task9_audit: "2026-06-13"
 last_task9_review_log: "logs/deep-review/2026-06-13-10-30-audit.md"
 task9_review_notes: "2026-06-13 Task9 闲时抽检：AUTO-FIX。补齐 f2fs has_not_enough_free_secs() 源码片段中 lower/upper 阈值叠加 needed + reserved_sections 的两行；回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-13"
-last_task6_at: "2026-05-22T16:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-22-16-review.md"
+last_task6_at: 2026-06-13T16:18:11+08:00
+last_task6_review_log: "logs/review/2026-06-13-16-review.md"
 finalized_date: "2026-05-22"
 finalized_by: "openclaw-task9-auto-promote"
-auto_promoted_by: "openclaw-task9"
-auto_promoted_date: "2026-05-22"
+auto_promoted_by: openclaw-task6
+auto_promoted_date: 2026-06-13
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 ---
@@ -473,7 +474,7 @@ Android 设备上的文件系统选型并非完全统一，各厂商有不同的
 **小米**：跟进 Google 的 AOSP 标准，新机型上 `system` 使用 EROFS，`data` 使用 f2fs。
 
 
-开发者可以通过 `adb shell mount` 或 `adb shell cat /proc/mounts` 命令查看设备上各分区实际使用的文件系统类型。在 Perfetto trace 中，如果 I/O 延迟异常，首先确认 `data` 分区的文件系统类型——如果是 ext4，很多 fsync 相关的性能问题在 f2fs 上可能不存在。
+开发者可以通过 `adb shell mount` 或 `adb shell cat /proc/mounts` 命令查看设备上各分区实际使用的文件系统类型。在 Perfetto trace 中，如果 I/O 延迟异常，先确认 `data` 分区的文件系统类型——如果是 ext4，很多 fsync 相关的性能问题在 f2fs 上可能不存在。
 
 ## 扩展：文件系统碎片化与长期性能退化
 
