@@ -545,7 +545,7 @@
     "title": "eBPF/BPF 在 Android 性能分析中的应用",
     "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
     "priority": 95,
-    "reason": "[Deep Tech Review] eBPF 章节回炉后仍存在 BPF 示例上下文、UprobeStats、Perfetto TraceConfig 与 bpfloader 版本锚点的源码/API 错误。",
+    "reason": "[Deep Tech Review] eBPF 章节回炉后仍存在 BPF 示例上下文、UprobeStats、Perfetto TraceConfig 与 bpfloader 版本锚点的源码/API 错误。 | [Task2B Lite 2026-06-14] 已修复 issue#5(bpfloader 版本锚点) 和 issue#6(版本边界标注)，剩余 4 个源码/API 问题待主 Task2B。",
     "material_paths": [
       "logs/deep-review/2026-06-14-01-deep-review.md"
     ],
@@ -573,23 +573,21 @@
         "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L344-L374",
         "detail": "Perfetto 配置示例使用 linux_perfetto_config/sys_events_config/sys_events 字段。external/perfetto android-16.0.0_r4 的 DataSourceConfig 中没有这些字段；ftrace 数据源应使用 name: \"linux.ftrace\" + ftrace_config，perf 采样使用 name: \"linux.perf\" + perf_event_config。",
         "suggestion": "替换为有效 TraceConfig 文本 proto 示例，至少锚到 data_source_config.proto 和 ftrace_config.proto；不要把无效 JSON 当 Perfetto 配置示例。"
-      },
-      {
-        "type": "源码错误",
-        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L756-L775",
-        "detail": "Rust bpfloader 小节写“Android 从 16 开始引入”，并称 android-16.0.0_r4 main() 调用 legacyBpfLoader()/execNetBpfLoadDone()。复核 platform/system/bpf：android-15.0.0_r17 已有 loader/bpfloader.rs；android-16.0.0_r4 的 main() 在 load_libbpf_progs() 后调用 vendorBpfLoader()，不再是正文列出的调用序列。NetBpfLoad.cpp 在 android-15/16 tag 下也不是可验证路径。",
-        "suggestion": "按 tag 拆分：Android 15 后期 tag 已出现 Rust 入口雏形，Android 16 r1/r4 行为不同；引用 android-16.0.0_r4 时必须改成 vendorBpfLoader() 实际路径，并删除 NetBpfLoad.cpp 说法。"
-      },
-      {
-        "type": "版本差异",
-        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L161-L169, L838-L840",
-        "detail": "正文仍把 AOSP main 上的 Perfetto/eBPF 集成写进 Android 17 演进和总结。当前 platform/system/bpf、packages/modules/UprobeStats 未见 android-17.0.0_r1 tag；只有 main/master 资料时，AIW 规则要求标注“未进入 Android 17”并跳过作为正文结论。",
-        "suggestion": "删除 Android 17 平台结论，或仅保留为“未进入 Android 17 的 main 分支观察”；正文结论锚到 android-16.0.0_r4 或 Android common kernel android17-6.18 tag 中实际存在的内容。"
       }
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-14T01:30:47+08:00",
     "created": "2026-06-14",
-    "status": "pending"
+    "status": "pending",
+    "lite_partial_fix": {
+      "fixed_at": "2026-06-14T01:35:00+08:00",
+      "fixed_by": "task2b-lite",
+      "fixed_issues": [
+        "源码错误",
+        "版本差异"
+      ],
+      "remaining_issues": 4,
+      "note": "Lite 修复了 Rust bpfloader 调用序列和版本边界标注；其余 4 个源码错误仍需主 Task2B 处理"
+    }
   }
 ]
