@@ -435,5 +435,40 @@
     "completed_at": "2026-06-13T08:52:15+08:00",
     "completed_by": "task2b-main",
     "completed_reason": "素材注入: 已追加为章节参考资料/延伸阅读引用"
+  },
+  {
+    "section": "25.16",
+    "section_title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
+    "title": "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证",
+    "file": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 6/10 注入的 ADPF 系统层扩展存在 Power HAL 枚举、SessionTag/SessionMode 和 main branch 版本锚点错误，需要回炉清理。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md:L368-L374",
+        "detail": "新增扩展把 Power HAL `Boost.ML_ACC` 写成 `ML_ACC = 20`。AOSP android-16.0.0_r1 的 `hardware/interfaces/power/aidl/android/hardware/power/Boost.aidl` 中 `ML_ACC` 没有显式数值，位于 `INTERACTION`、`DISPLAY_UPDATE_IMMINENT` 之后；正文代码块会误导读者按不存在的常量值做适配。",
+        "suggestion": "删除手写数值，只引用 `ML_ACC` 枚举名与 AOSP 注释；如需数值必须以对应 tag 生成代码为准。"
+      },
+      {
+        "type": "版本差异",
+        "location": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md:L361-L465, frontmatter:L5",
+        "detail": "6/10 注入的“系统层硬件协同设计架构”扩展使用 `main branch` / `AOSP main source snapshot` 作为正文源码锚点。当前 AIW 最高范围只到 Android 17/API 37；仅来自 main/master 的结论不得写成正文结论，必须标注“未进入 Android 17”并跳过。",
+        "suggestion": "整段回炉到 Task2B：能用 android-16.0.0_r1 或 android-17.0.0_r1 复核的内容重新锚定 tag；只能在 main 中看到的结论移出正文或标注未进入 Android 17。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md:L411-L464",
+        "detail": "正文把 `GRAPHICS_PIPELINE` 写成 `SessionTag`，并建议长周期工作“使用 SessionTag 分类”。AOSP `SessionTag.aidl` 只有 OTHER/SURFACEFLINGER/HWUI/GAME/APP/SYSUI；`GRAPHICS_PIPELINE` 属于 `SessionMode.aidl`。公开 `PerformanceHintManager.createHintSession(int[], long)` 也没有让普通 App 选择 tag/mode 的参数。",
+        "suggestion": "拆清 HAL 内部 tag/mode 与 App 公开 ADPF API：普通 App 只能通过公开 Session API、work duration 与 `setPreferPowerEfficiency()` 表达意图，不要建议业务代码直接选择 `SessionTag` 或 `GRAPHICS_PIPELINE`。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-13T14:20:00+08:00",
+    "created": "2026-06-13",
+    "status": "pending"
   }
 ]
