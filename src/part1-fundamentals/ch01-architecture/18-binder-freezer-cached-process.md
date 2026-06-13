@@ -13,7 +13,7 @@ related_chapters: ["1.3", "1.4", "5.8", "11.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-06-13"
@@ -22,7 +22,7 @@ reviewed_date: "2026-05-27"
 last_task6_at: "2026-06-13T18:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-13-18-review.md"
 task6_review_notes: "2026-06-13 Task6：Task9 闲时抽检 auto-fix 后复审通过；修正计数错误（两个→三个）与术语一致性（package state→包状态）；无 L3/L4 回炉项。"
-task9_state: reviewed
+task9_state: pending
 last_task9_review_log: "logs/deep-review/2026-06-13-17-audit.md"
 last_task9_at: "2026-06-13T17:20:00+08:00"
 task9_reviewed_by: openclaw-task9
@@ -66,7 +66,7 @@ p2: 0
 last_task9_audit: "2026-06-13"
 last_task9_autofix_at: "2026-06-13"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-29
+last_deepseek_cn_review_at: 2026-06-13
 ---
 
 # 1.18 Binder Freezer 与缓存进程冻结性能
@@ -254,7 +254,7 @@ adb shell dumpsys activity exit-info <package-name>
 
 ## 版本边界：Android 11 QPR3 起有 cached app freezer，后续重点在 Binder 交互
 
-AOSP 文档写明 Android 11 QPR3 或更高版本支持 cached apps freezer；设备还要有兼容内核，并可通过系统配置或开发者选项启用。[已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer]
+AOSP 文档写明 Android 11 QPR3 或更高版本支持 cached apps freezer；设备还需要兼容内核，可通过系统配置或开发者选项启用。[已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer]
 
 | 版本 | 可确认变化 | 写作边界 |
 | --- | --- | --- |
@@ -300,10 +300,4 @@ AOSP 冻结资格从 oom_adj 进入，组件状态会通过 adj、capability 和
 - [AOSP android-15.0.0_r1: ProcessList.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ProcessList.java)
 - [Linux: Binder driver UAPI](https://github.com/torvalds/linux/blob/master/include/uapi/linux/android/binder.h)
 - [Linux: cgroup freezer](https://github.com/torvalds/linux/blob/master/kernel/cgroup/freezer.c)
--
-### Android Cached App Freezer 机制与 GC 触发路径
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md
-- 类型：DeepResearch 调研结果
-- 摘要：深入分析 CachedAppOptimizer 的冻结/解冻触发链路，厘清 Freezer 与 LMK、GC 三者的独立决策机制。涵盖 OOM Adj 边界（CACHED_APP_MIN_ADJ=900）、Binder freezer 协作、30+ 种解冻原因，以及 16KB 页大小对内存分配粒度的影响。
-- 注入时间：2026-05-19
-- 价值：源码级厘清 Freezer/LMK/GC 三机制独立决策关系，补充冻结解冻触发链与 Binder 协作细节
+- [DeepResearch: Cached App Freezer 机制与 GC 触发路径] — 厘清 Freezer/LMK/GC 三机制独立决策关系，补充冻结解冻触发链与 Binder 协作细节
