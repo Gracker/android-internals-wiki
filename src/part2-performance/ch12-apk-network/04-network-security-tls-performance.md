@@ -2,7 +2,7 @@
 title: "Android 网络安全与 TLS 性能优化"
 chapter: "12.4"
 section: "12.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
