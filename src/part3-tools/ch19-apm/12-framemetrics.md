@@ -26,7 +26,8 @@ last_task2b_at: '2026-05-31T17:35:00+08:00'
 last_task2b_lite_at: '2026-05-31'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
-last_task9_audit: "2026-05-19"
+last_task9_audit: "2026-06-13"
+last_task9_audit_log: "logs/deep-review/2026-06-13-09-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-02-04-deep-review.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
 task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。复核 FrameMetrics API 24-37 字段、API 31 DEADLINE/GPU_DURATION 与 Android 12/13+ duration 边界；无 P0/P1，自动晋升 finalized。"
