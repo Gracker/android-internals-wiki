@@ -1,7 +1,7 @@
 ---
 title: "线程与 FD 资源监控治理"
 chapter: "20"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-05-23"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [stability, thread, fd, oom, observability]
@@ -29,7 +29,7 @@ sources:
     path: "https://developer.android.com/reference/java/io/FileDescriptor"
   - type: official
     path: "https://developer.android.com/ndk/reference/group/file-descriptor"
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 last_task2a_at: "2026-05-23T03:09:00+08:00"
 section: "20.14"
@@ -47,6 +47,7 @@ last_task9_audit: "2026-06-13"
 last_task9_autofix_at: "2026-06-13"
 last_task9_review_log: "logs/deep-review/2026-06-13-05-audit.md"
 task9_review_notes: "2026-06-13 Task9 idle audit: auto-fixed AOSP main anchors to android-16.0.0_r1; Android 17 tag unavailable during audit, no P0/P1 queue item."
+task2b_verifier_note: "2026-06-13 Verifier: auto-promoted to finalized (task6 pass-light-edit + task9 auto-fixed + no queue pending + content sufficient)"
 ---
 
 # 20.14 线程与 FD 资源监控治理
