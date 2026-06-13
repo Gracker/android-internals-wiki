@@ -1,4 +1,5 @@
 ---
+
 title: "eBPF/BPF 在 Android 性能分析中的应用"
 chapter: "14.10"
 section: "14.10"
@@ -49,7 +50,7 @@ related_chapters: ["14.2", "13.1", "5.1", "1.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-07"
 gap_source: "AOSP结构+官方文档+研究素材"
-polish_count: 2
+polish_count: 3
 polish_date: "2026-06-13"
 polish_by: "task2b-main"
 p0: 1
@@ -62,19 +63,19 @@ task6_state: "revisiting"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-14"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_review_notes: "2026-06-14 Task9 deep review：needs-rework。P0/P1：Android 15 sched-ext、Android 16 API 号、Android 17 bpfloader/Perfetto 结论与可验证源码不一致；示例 BPF tracepoint 代码上下文模型需回炉。"
 task2b_result: "fixed"
-task2b_state: "pending"
-task2b_rework_date: "2026-06-13T00:50:00+08:00"
-pipeline_stage: "task2b_pending"
-last_task2b_at: "2026-06-13T00:50:00+08:00"
+task2b_state: "fixed"
+task2b_rework_date: "2026-06-14T00:52:40+08:00"
+pipeline_stage: "task6_pending"
+last_task2b_at: "2026-06-14T00:52:40+08:00"
 last_task2b_lite_at: "2026-05-30T17:38:00+08:00"
 last_task6_audit: "2026-06-13"
 last_task9_at: "2026-06-14T00:30:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 updated_by: "openclaw-task2b-main"
-updated_date: "2026-06-13"
+updated_date: "2026-06-14"
 ---
 
 ## 修复记录
@@ -94,6 +95,8 @@ eBPF (Extended Berkeley Packet Filter) 是在 Linux 内核中运行的 in-kernel
 3. **解决复杂的性能问题**：通过 eBPF 可以捕获通常难以观测的系统行为，帮助定位深层次性能瓶颈。
 
 ## eBPF 在 Android 中的发展历程
+
+> ⚠️ **阅读提示**：以下时间轴混合了三种不同性质的能力——**AOSP 平台内置的 BPF 子系统**（如 `system/bpf/`、UprobeStats）、**Android common kernel 侧能力**（如 sched-ext 依赖内核版本而非 Android API level）、**Perfetto/工具侧的数据消费**（如 eBPF data source 集成）。判断某项能力是否可用时，需要同时核对 Android API level、GKI 内核版本和设备厂商是否开启了对应 tracepoint/kprobe。
 
 ### Android 9 (Pie): 引入 BPF 支持
 
@@ -137,28 +140,32 @@ Android 14 扩展了 eBPF 的应用范围：
 - **GPU 监控**：eBPF 驱动的 GPU 性能监控
 - **内存管理**：基于 eBPF 的内存使用监控
 
-### Android 15 (V): sched-ext 支持
+### Android 15 (V / API 35): eBPF 基础设施增强
 
-Android 15 开始支持 sched-ext：
+Android 15 继续完善 eBPF 基础设施：
 
-- **调度器扩展**：基于 eBPF 的自定义调度器
-- **性能优化**：更灵活的进程调度策略
+- **UprobeStats 集成**：系统内置的 eBPF uprobe 统计框架
+- **BPF loader 增强**：BPF 程序加载器稳定性改进
 
-### Android 16 (API 35): eBPF 监控体系完善
+### Android 16 (API 36): sched-ext 与 eBPF 监控体系完善
 
-Android 16 进一步完善了 eBPF 监控体系：
+Android 16（Android common kernel 6.12）引入 sched-ext 调度器扩展，并进一步完善了 eBPF 监控体系：
 
+- **调度器扩展（sched-ext）**：基于 eBPF 的可加载 BPF 调度器，允许在不修改内核的前提下实现自定义调度策略
 - **UprobeStats**：基于 eBPF 的系统调用监控
+
 - **网络监控**：全面的网络流量监控
 - **GPU 监控**：GPU 性能数据的 eBPF 收集
 
-### Android 17 (API 37): eBPF 与性能工具深度集成
+### Android 17 (API 37): eBPF 生态演进
 
-Android 17 实现了 eBPF 与性能工具的深度集成：
+> ⚠️ **版本说明**：截至复核时 `platform/frameworks/base` 尚无 `android-17.0.0_r1` tag，以下内容基于 AOSP main 分支规划，仅标注为方向性描述，不构成已发布版本结论。
 
-- **Perfetto 整合**：eBPF 数据与 Perfetto 的无缝集成
-- **简单性能分析**：基于 eBPF 的简单性能分析工具
-- **实时监控**：支持实时性能监控和分析
+Android 17 中 eBPF 生态持续演进：
+
+- **Perfetto 集成增强**：eBPF data source 与 Perfetto trace 的集成度在持续提高（已在 main 分支开发中）
+- **BPF loader 演进**：Rust bpfloader（android-16.0.0_r4 已引入）继续完善
+- **实时监控增强**：更完善的 eBPF 实时监控能力
 
 ## eBPF 在 Android 中的核心应用
 
@@ -168,12 +175,19 @@ eBPF 可以监控进程调度行为，包括：
 
 ```c
 // eBPF 程序：监控进程调度
+// tracepoint 的 ctx 是事件参数结构体指针，不是 pt_regs，
+// 因此不能使用 PT_REGS_PARM* 宏
 SEC("tracepoint/sched/sched_switch")
-int trace_sched_switch(void *ctx) {
-    struct task_struct *prev = bpf_get_current_task();
-    struct task_struct *next = (struct task_struct *)PT_REGS_PARM1(ctx);
+int trace_sched_switch(struct trace_event_raw_sched_switch *ctx) {
+    u32 prev_pid = ctx->prev_pid;
+    u32 next_pid = ctx->next_pid;
     
-    bpf_map_update_elem(&task_map, &prev->pid, &next->pid, BPF_ANY);
+    struct sched_info info = {
+        .prev_pid = prev_pid,
+        .next_pid = next_pid,
+        .cpu = (u32)bpf_get_smp_processor_id(),
+    };
+    bpf_map_update_elem(&task_map, &prev_pid, &info, BPF_ANY);
     return 0;
 }
 ```
@@ -184,18 +198,22 @@ eBPF 可以监控系统调用的执行情况：
 
 ```c
 // eBPF 程序：监控系统调用
+// syscall tracepoint 的参数通过 ctx->args[] 数组访问，而非 PT_REGS_PARM*
+// args[0]=syscall_nr, args[1]=fd, args[2]=filename, ...
 SEC("tracepoint/syscalls/sys_enter_openat")
-int trace_sys_enter_openat(void *ctx) {
-    int pid = bpf_get_current_pid_tgid() >> 32;
+int trace_sys_enter_openat(struct trace_event_raw_sys_enter *ctx) {
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+    int fd = (int)ctx->args[0];
+    const char *filename_uptr = (const char *)ctx->args[1];
+    
     char filename[256] = {};
-    bpf_probe_read_user_str(filename, sizeof(filename), 
-                          (void *)PT_REGS_PARM2(ctx));
+    bpf_probe_read_user_str(filename, sizeof(filename), filename_uptr);
     
     struct syscall_info info = {};
     info.pid = pid;
+    info.fd = fd;
     bpf_get_current_comm(info.comm, sizeof(info.comm));
-    bpf_probe_read_user_str(info.filename, sizeof(info.filename), 
-                          (void *)PT_REGS_PARM2(ctx));
+    __builtin_memcpy(info.filename, filename, sizeof(info.filename));
     
     bpf_map_update_elem(&syscall_map, &pid, &info, BPF_ANY);
     return 0;
@@ -208,12 +226,14 @@ eBPF 可以监控网络流量，包括：
 
 ```c
 // eBPF 程序：监控网络流量
+// syscall tracepoint 参数通过 ctx->args[] 访问
+// sys_enter_socket args: family(0), type(1), protocol(2)
 SEC("tracepoint/syscalls/sys_enter_socket")
-int trace_sys_enter_socket(void *ctx) {
-    int pid = bpf_get_current_pid_tgid() >> 32;
-    int domain = PT_REGS_PARM1(ctx);
-    int type = PT_REGS_PARM2(ctx);
-    int protocol = PT_REGS_PARM3(ctx);
+int trace_sys_enter_socket(struct trace_event_raw_sys_enter *ctx) {
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+    int domain = (int)ctx->args[0];
+    int type = (int)ctx->args[1];
+    int protocol = (int)ctx->args[2];
     
     struct socket_info info = {};
     info.pid = pid;
@@ -366,18 +386,21 @@ eBPF 可以实现更精准的 CPU 利用率计算：
 ```c
 // eBPF 程序：CPU 利用率计算
 SEC("tracepoint/sched/sched_switch")
-int trace_sched_switch(void *ctx) {
-    u32 pid = bpf_get_current_pid_tgid() >> 32;
-    u32 cpu = bpf_get_smp_processor_id();
+int trace_sched_switch(struct trace_event_raw_sched_switch *ctx) {
+    u32 prev_pid = ctx->prev_pid;
+    u32 next_pid = ctx->next_pid;
+    u32 cpu = (u32)bpf_get_smp_processor_id();
     
     // 记录任务切换时间
     u64 ts = bpf_ktime_get_ns();
-    bpf_map_update_elem(&task_switch_time, &cpu, &ts, BPF_ANY);
+    struct sched_key key = {.cpu = cpu, .pid = prev_pid};
+    bpf_map_update_elem(&task_switch_time, &key, &ts, BPF_ANY);
     
     // 更新 CPU 使用时间
     struct cpu_usage *usage = bpf_map_lookup_elem(&cpu_usage_map, &cpu);
     if (usage) {
         usage->total_time += ts - usage->last_switch_time;
+        usage->last_switch_time = ts;
     }
     
     return 0;
@@ -397,16 +420,12 @@ eBPF 可以实现细粒度的网络流量监控：
 
 ```c
 // eBPF 程序：网络流量监控
+// sys_enter_sendto args: fd(0), buff(1), len(2), flags(3), ...
 SEC("tracepoint/syscalls/sys_enter_sendto")
-int trace_sys_enter_sendto(void *ctx) {
-    int pid = bpf_get_current_pid_tgid() >> 32;
-    int fd = PT_REGS_PARM1(ctx);
-    size_t len = PT_REGS_PARM4(ctx);
-    
-    // 获取进程信息
-    struct task_struct *task = bpf_get_current_task();
-    char comm[16] = {};
-    bpf_get_current_comm(comm, sizeof(comm));
+int trace_sys_enter_sendto(struct trace_event_raw_sys_enter *ctx) {
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+    int fd = (int)ctx->args[0];
+    size_t len = (size_t)ctx->args[2];
     
     // 记录网络流量
     struct net_flow flow = {};
@@ -509,15 +528,16 @@ int trace_amdgpu_cs_ioctl(void *ctx) {
 
 ```c
 // eBPF 程序：系统调用频率统计
+// sys_enter args: syscall_nr(0), ...
 SEC("tracepoint/syscalls/sys_enter")
-int trace_sys_enter(void *ctx) {
-    int syscall_id = PT_REGS_PARM1(ctx);
-    int pid = bpf_get_current_pid_tgid() >> 32;
+int trace_sys_enter(struct trace_event_raw_sys_enter *ctx) {
+    u32 syscall_id = (u32)ctx->args[0];   // __syscall_nr 在 ctx->args[0]
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
     
     // 统计系统调用频率
     struct syscall_count *count = bpf_map_lookup_elem(&syscall_count_map, &syscall_id);
     if (count) {
-        count->count++;
+        __sync_fetch_and_add(&count->count, 1);
         count->last_pid = pid;
     }
     
@@ -540,15 +560,13 @@ int trace_sys_enter(void *ctx) {
 ```c
 // eBPF 程序：进程调度分析
 SEC("tracepoint/sched/sched_switch")
-int trace_sched_switch(void *ctx) {
+int trace_sched_switch(struct trace_event_raw_sched_switch *ctx) {
     u64 ts = bpf_ktime_get_ns();
-    struct task_struct *prev = bpf_get_current_task();
-    struct task_struct *next = (struct task_struct *)PT_REGS_PARM1(ctx);
     
-    // 记录调度事件
+    // tracepoint 直接提供 prev_pid / next_pid 字段
     struct sched_event event = {};
-    event.pid = prev->pid;
-    event.new_pid = next->pid;
+    event.prev_pid = ctx->prev_pid;
+    event.next_pid = ctx->next_pid;
     event.timestamp = ts;
     
     bpf_map_update_elem(&sched_map, &event.timestamp, &event, BPF_ANY);
@@ -734,28 +752,30 @@ eBPF 将与其他技术深度融合：
 
 <!-- AIW-源码调研-2026-06-06 -->
 
-### 5. Android 17 eBPF 加载器架构重构（2024 Rust 化）
+### 5. Android eBPF 加载器架构重构（Rust 化，android-16 引入）
 
-Android 17 在 `system/bpf/loader/` 完成了 bpfloader 的重大架构变化：
+> ⚠️ **版本说明**：Rust bpfloader 在 `platform/system/bpf` 的 `android-16.0.0_r4` tag 中已存在（`loader/bpfloader.rs`），非 Android 17 专属特性。以下描述基于 `android-16.0.0_r4` 复核，部分内容引用 main 分支需标注"待验证"。
+
+Android 从 16 开始在 `system/bpf/loader/` 引入了 bpfloader Rust 重构：
 
 #### 1.1 C++ 主入口完全替换
 
-- **移除**: `NetBpfLoad.cpp`（C++，Android 9-16 主入口）
-- **新增**: `bpfloader.rs`（Rust，2024，main 分支当前主入口）
+- **传统入口**: `NetBpfLoad.cpp`（C++，Android 9-16 传统入口，android-16.0.0_r4 仍保留）
+- **Rust 入口**: `bpfloader.rs`（Rust，android-16.0.0_r4 已存在，在 main 分支中已替代 C++ 入口）
 - **保留**: `Loader.cpp` → 编译为 `libbpf_android.so`，被 Rust 端通过 `bindgen` 调用
 
 #### 1.2 混合加载器架构
 
 ```rust
-// bpfloader.rs:main()
+// bpfloader.rs:main() — android-16.0.0_r4 已存在此入口
 load_libbpf_progs();           // 加载 .bpf 风格（timeInState.bpf 等）
 legacyBpfLoader();             // 调用 C++ 加载器加载 .o 风格
 execNetBpfLoadDone();           // execve 退出
 ```
 
-#### 1.3 BPF 程序目录重组
+#### 1.3 BPF 程序目录分布（android-16.0.0_r4 观察）
 
-Android 17 将 BPF 程序分散到四个仓：
+以下 BPF 程序目录分布基于 `android-16.0.0_r4` tag 复核：
 
 1. **`system/bpfprogs/`** - 通用 BPF 程序（新建独立仓）
    - `timeInState.c`: 每 UID CPU 频率时间追踪
@@ -779,12 +799,24 @@ Android 17 将 BPF 程序分散到四个仓：
 
 #### 1.5 性能与安全影响
 
-- **性能**: sched_switch ~8000 次/s，hash lookup ~4-5 个 map，整机功耗影响 0.3-0.5 mW
+> ⚠️ **数据说明**：以下数字为粗略估算值，实际表现因设备 SoC、内核版本（GKI / vendor kernel）、系统负载和 tracepoint 开关状态而异。缺少可复核的测试条件（设备型号、内核编译选项、采样时间段），不建议作为通用性能结论引用。
+
+- **性能**: sched_switch 事件频率随系统负载波动，典型场景约数千次/秒；`timeInState.c` 在 sched_switch 路径上执行若干次 BPF map hash lookup。整机层面的额外功耗增量很小（约亚毫瓦级，具体取决于硬件和 SoC）
 - **权限**: 所有 map AID_SYSTEM 拥有，确保 Power Stats HAL 只读
 
 #### 1.6 供应商兼容性
 
 BPF 程序加载过程不依赖芯片厂商代码，但 tracepoint/gpu_mem/gpu_mem_total 的发射方位于 vendor kernel，具体 SoC 可能存在实现差异。
+## eBPF 在 Android 中的可用性边界
+
+在实际设备上使用 eBPF 受到多层约束，理解这些边界对排障和工具开发很重要：
+
+- **SELinux 与权限**：生产设备上加载 BPF 程序通常需要 `bpfloader` 或等效系统服务间接完成；非 root 用户态进程直接调用 `bpf()` 系统调用在大多数 Android 设备上受限。
+- **BPF loader 权限模型**：Android BPF loader 以系统服务身份运行，创建的 BPF map 默认由 `AID_SYSTEM` 拥有；普通应用无法直接读写这些 map。
+- **Vendor kernel tracepoint 差异**：部分 tracepoint（如 GPU memory tracepoint `gpu_mem/gpu_mem_total`）的发射方位于 vendor kernel，具体 SoC 可能未实现或未开启。在非 Google 设备上使用这些 tracepoint 前需要先确认内核编译配置。
+- **GKI 版本耦合**：sched-ext 等特性依赖 Android common kernel 版本（如 6.12+）而非 Android API level。同一 API level 的设备可能运行不同 GKI 版本。
+- **Google Play System Update 路径**：UprobeStats 等 Mainline 模块通过 Google Play System Update 单独更新，其 eBPF 程序版本可能超前于设备出厂系统版本。
+
 ## 与传统工具的定位对比
 
 eBPF 不是 perf、systrace、Perfetto 的替代品——它们在 Android 性能栈中各有分工。
@@ -802,6 +834,8 @@ eBPF 不是 perf、systrace、Perfetto 的替代品——它们在 Android 性�
 
 ## 总结
 
-eBPF 在 Android 中承担的是**内核可观测性的基础设施**角色。随着 Perfetto 对 eBPF data source 的支持（Android 17 起集成度进一步提高），eBPF 采集的数据可以直接汇入 Perfetto trace，不再需要额外导出管道。
+eBPF 在 Android 中承担的是**内核可观测性的基础设施**角色。Perfetto 对 eBPF data source 的支持在持续演进中，eBPF 采集的数据可以直接汇入 Perfetto trace（Android 17 main 分支已包含相关集成代码，具体 release 版本以 AOSP tag 为准）。
+
+> ⚠️ **版本说明**：Android 17 Perfetto eBPF 集成在 main 分支中可见，但 `platform/frameworks/base` 尚无 `android-17.0.0_r1` release tag，该结论暂标注"基于 main 分支"。
 
 从性能排障角度，应把 eBPF 理解为工具箱中的高精度探头——它解决的不是"有没有问题"，而是"这个问题在内核层面到底是怎么发生的"。
