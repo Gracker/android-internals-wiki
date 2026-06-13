@@ -610,3 +610,9 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
   2. **[Task6 本轮×6]** 发展历程百科式列表、未来趋势空话、多处虚构伪代码（BPFLoader/error handling/SELinux 命令）、缺失 Perfetto trace 观测、核心/实际应用重复浅薄结构、开头违反叙述优先 — 详见 queue.json entry `task6-20260614-1410-ebpf-revisit-rework`
 - **建议**：需完整 Task2B 重写（非 lite），优先解决 Task9 的 4 个源码/API P0/P1 问题，再按 writing-guide 重写结构和叙述
 - **review 日志**：logs/review/2026-06-14-02-review.md
+
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-06-14
+- **类型**：数据缺失
+- **位置**：`精度与开销` 与 `1.5 性能与安全影响`
+- **问题**：`sched_switch` 事件频率、亚毫瓦级功耗、`/proc/stat` 10ms 粒度等结论缺少设备型号、kernel tag/config、负载、采样窗口和 trace 证据；`sched_switch` 事件触发与时间戳精度也不应简单归因到 `CONFIG_HZ`。
+- **建议**：补一组可复核的 Perfetto/ftrace/eBPF map 读取实验条件，或把这些数字降级为“示例量级/待验证”，并拆清 `/proc/stat` jiffies 粒度与 tracepoint timestamp 的边界。
