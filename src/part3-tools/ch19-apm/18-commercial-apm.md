@@ -21,8 +21,8 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
@@ -44,7 +44,7 @@ task2b_fixed_by: openclaw-task2b
 review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
 review_notes_3: "2026-06-04 task6 re-review (round 3): pass-light-edit. L1/L2 clean. All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
 review_notes_4: "2026-06-14 task6 re-review (round 4): pass-light-edit after task9 auto-fix. L1: fixed 落地→发布/引入 in research notes (5 instances). L2: clean. All 10 anchors covered. No B-class issues. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
-last_task6_at: "2026-06-14T01:10:00+08:00"
+last_task6_at: "2026-06-14T04:07:46+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 
 last_task6_review_log: "logs/review/2026-06-05-06-review.md"

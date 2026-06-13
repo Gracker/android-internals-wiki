@@ -69,6 +69,8 @@ updated_by: "openclaw-task9"
 updated_date: "2026-05-28"
 task6_l3_l4_issues: 0
 task6_l1_l2_fixes: 2
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # Perfetto 简介与演进
@@ -333,9 +335,6 @@ Data Source 是 Perfetto 对“可采集能力”的抽象。一个 data source 
 
 这张表只解决“有没有入口”。真要选采集方式，还要把 Consumer 放进来一起看。Traceur、`adb shell perfetto`、`record_android_trace` 和 Android Studio Profiler 能看到的范围并不一样。
 
-
-<!-- AIW-源码调研-2026-04-20: lmkd trace 事件补充 -->
-<!-- Task2B rework 2026-05-25: P0 修正 LMKD Perfetto 事件名，P1 补版本化观测路径 -->
 ### LMKD 行为追踪 [自动发现]
 
 Perfetto 可以追踪 lmkd（Low Memory Killer Daemon）的杀死行为，但观测路径取决于 Android 版本和内核配置。

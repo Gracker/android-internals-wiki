@@ -300,6 +300,88 @@ message PowerComponentUsageSlice {
 > 一手资料：`BatteryUsageStats.java` (L1-600)、`BatteryUsageStatsQuery.java` (L1-330)、`BatteryStatsHistory.java` (L1-180)、`batteryusagestats.proto` (L1-105)、`BatteryStatsService.java` (grep 关键行)、`StatsPullAtomCallbackImpl.java` (L1-80)
 > 详细报告：`DeepResearch/2026-06-11-android15-batteryusagestats-statsd-pipeline.md`
 
+## 源码级实现细节（AIW-源码调研-2026-06-14）
+
+> 关联报告：`DeepResearch/2026-06-14-androidx-jankstats-macrobenchmark-metric-internals.md`
+> 锚点版本：androidx/androidx @ androidx-main (2026-06-14 snapshot)，最高边界 Android 17 / API 37
+> 一手资料：androidx 仓库 metrics-performance + benchmark-macro 模块源码
+
+### AndroidX JankStats：4 个 API 分支的实现差异
+
+JankStats 在初始化时按 `Build.VERSION.SDK_INT` 分发到不同实现（`JankStats.kt` L82-99）：
+
+| API 级别 | 实现类 | 帧数据来源 | 关键限制 |
+| --- | --- | --- | --- |
+| 16-23 | `JankStatsApi16Impl` | `Choreographer` + `OnPreDraw` 估算 | 无 FrameMetrics，精度低 |
+| 24-30 | `JankStatsApi24Impl` | `Window.OnFrameMetricsAvailableListener` | 6 段 UI 子阶段，无 deadline / GPU 拆分 |
+| 31-37 | `JankStatsApi31Impl` | + `FrameMetrics.DEADLINE` / `GPU_DURATION` | 完整 7 段 + overrun 判定 |
+
+**核心实现要点**：
+
+1. **零分配 hot path**：4 个 Impl 类都**复用同一个 `FrameData` 对象**，每帧只 `update()` 原地写新数据（`JankStatsApi31Impl.kt` L26 / `JankStatsApi24Impl.kt` L75 / `JankStatsApi16Impl.kt` L51）
+2. **`uiDuration` = 6 个 FrameMetrics 子阶段之和**（`JankStatsApi24Impl.kt` L93-100）：
+   ```
+   UNKNOWN_DELAY + INPUT_HANDLING + ANIMATION +
+   LAYOUT_MEASURE + DRAW + SYNC
+   ```
+3. **API 31+ 才有的精确 jank 判定**（`JankStatsApi31Impl.kt` L29-49）：
+   - `cpuDuration = TOTAL - GPU + SWAP`（SWAP 在 CPU 和 GPU 中都计了一次，加回）
+   - `overrun = TOTAL - DEADLINE`（超期多少纳秒，单帧正数表示 jank）
+   - `getExpectedFrameDuration` 直接返回 `FrameMetrics.DEADLINE`，不再用 refresh rate 推算
+4. **`isJank = uiDuration > expectedDuration`**（`JankStatsApi24Impl.kt` L102），expected 默认 `frameDuration * jankHeuristicMultiplier`，**默认乘数 2.0**
+5. **重要 bug workaround**（`JankStatsApi24Impl.kt` L62-68）：平台有时发送完全重复的 FrameMetrics 事件（`b/206956036`），通过 `if (startTime != prevStart)` 跳过
+6. **`DelegatingFrameMetricsListener` 单例**：避免同一 Window 上多个 JankStats 实例各自挂 listener 引起重复计算，listener 列表通过 view tags 缓存
+
+### Macrobenchmark Metric：Perfetto TraceProcessor 上的 SQL 查询
+
+Macrobenchmark 不直接读 `dumpsys`，而是**录 Perfetto trace → trace processor 跑 SQL → 输出 metric**。关键源码在 `benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/Metric.kt` 和 `perfetto/FrameTimingQuery.kt`。
+
+**`FrameTimingMetric` 输出 3 个指标**（`Metric.kt` L205-243）：
+
+| Metric 名 | 含义 | API 要求 |
+| --- | --- | --- |
+| `frameDurationCpuMs` | UI slice start → RT slice end | API 24+ |
+| `frameOverrunMs` | max(actualSlice.endTs, rtSlice.endTs) - expectedSlice.endTs | **API 31+** |
+| `frameCount` | 帧总数 | API 24+ |
+
+**`StartupTimingMetric` 输出 2 个指标**（`Metric.kt` L375-393）：
+
+| Metric 名 | 含义 | API 要求 |
+| --- | --- | --- |
+| `timeToInitialDisplayMs` | 系统 TTID | 全部 |
+| `timeToFullDisplayMs` | `reportFullyDrawn()` 后 TTFD | **API 29+** |
+
+**SQL 查询关键 slice 名**（`FrameTimingQuery.kt` L23-58 / `StartupTimingQuery.kt` L23-58）：
+
+- `Choreographer#doFrame%` —— UI 线程帧切片（API S 起附加 frame id）
+- `DrawFrame%` —— RenderThread 帧
+- `actual frame{N}` / `expected frame{N}` —— **API 31+** FrameTimeline 提供的 actual/expected 时间窗
+- `MetricsLogger:launchObserverNotifyIntentStarted` —— API 29+ 启动信号
+- `reportFullyDrawn() for %` —— API 29+ 首屏就绪
+
+### `dumpsys gfxinfo` vs FrameMetrics：口径分歧
+
+`FrameTimingGfxInfoMetric` 类注释（`Metric.kt` L256-264）直接说明：
+
+> Version of FrameTimingMetric based on 'dumpsys gfxinfo' instead of trace data.
+> Added for experimentation in contrast to FrameTimingMetric, as the **platform accounting of frame drops currently behaves differently from that of FrameMetrics**.
+
+**含义**：
+
+1. **gfxinfo jank 百分比 ≠ FrameMetrics jank 计数**：线上指标（用 FrameMetrics）和 CI 门禁（用 gfxinfo）可能给出不同 jank 数
+2. `JankCollectionHelper.java` L49+ 列举的 gfxinfo 解析字段：`Janky frames`（含 legacy 变体）、`50th/90th/95th percentile`、`HISTOGRAM: ...`
+3. 趋势上看，Macrobenchmark 社区正逐步从 gfxinfo 转向 Perfetto SQL（API 31+ 后完全可用）
+
+### 反哺要点（建议 APM 端侧实现时复用）
+
+1. **API < 31 不要承诺精确 overrun 指标**，改用 `uiDuration / frameDuration` 比值作为退化指标
+2. **FrameData 对象必须 zero-alloc**，否则 60-120Hz 设备上 GC 压力会反过来制造 jank
+3. **TTFD 采集需要 API 29+**，`Activity.reportFullyDrawn()` 在低版本是空操作
+4. **dumpsys gfxinfo 适用于 CI 门禁**（一次性、高分位聚合），**FrameMetrics 适用于线上**（逐帧精确），**两者口径不可直接对账**
+5. **PerformanceMetricsState**（`JankStats.kt` L84 自动 attach）让 Compose / RecyclerView 等 AndroidX 库自动声明 UI state，与 FrameData 一起上报到业务侧
+
+---
+
 ## 小结
 
 性能指标采集要服务于治理动作。启动、帧率、内存、业务耗时都要使用统一事件模型，字段要能关联版本、场景、设备和用户会话；分位值要按场景和分群计算；劣化检测要同时看相对变化、绝对阈值和分群异常。
