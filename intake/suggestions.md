@@ -564,3 +564,49 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 全书 375 编号章节、0 draft、296 finalized + 79 ready-for-review（100% 已有内容）。连续 104 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（79 个 ready-for-review 待推进），非内容缺口。知识库已进入收尾维护阶段。
 
 ---
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-14 02:04 (Round 105)
+
+### 1. Phase 0 空章节扫描
+- 413 章节文件（296 finalized + 81 ready-for-review + 49 README/附录/前言），0 draft
+- 连续 105 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. 增量扫描
+- research-feeds/：最新文件 2026-04-14，无新增（已过期 2 个月）
+- daily-info/：最新文件 2026-06-13，已被 Round 101-104 覆盖
+- source-index.json：115 条记录，全部已有对应章节映射
+- 距 Round 104（23:10）仅 3 小时，无新素材进入
+
+### 4. daily-info 热点复核（2026-06-13）
+- Android 17 新调度器减少启动时间 → §5.x / §8.2 / §16.2 已覆盖
+- DeliQueue/MessageQueue 重写 → §1.13 / §22.16 已覆盖
+- 桌面端能力升级 → §2.20 / §22.14 已覆盖
+- AI/Gemini 基准测试/接入攻略 → 非 AIW 核心范畴
+- Android 17 适配/侧载 → §1.20-1.23 + §16.5 已覆盖
+
+### 5. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节
+- 评分 < 14，不满足新章节创建条件
+
+### 6. 全书覆盖度评估
+- Part 1（Ch1-Ch6）：102 节，系统机制全面覆盖
+- Part 2（Ch7-Ch12,Ch18）：87 节，性能专题深度充分
+- Part 3（Ch13-Ch15,Ch19）：78 节，工具方法论完整
+- Part 4（Ch16-Ch17）：17 节，系统级与 OEM 实践
+- Part 5（Ch20-Ch26）：121 节，应用层优化实战覆盖最广
+- 全书已有 405 编号小节 + 26 章 README + 前言/附录
+
+### 总结
+全书 413 章节文件、0 draft、296 finalized + 81 ready-for-review（编号章节 100% 已有内容）。连续 105 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（81 个 ready-for-review 待推进），非内容缺口。知识库已进入收尾维护阶段。
+
+## [Task6 Review 回炉] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-06-14
+- **类型**：needs-rework（回炉复审，Task2B Lite 修复后仍有大量未解问题）
+- **位置**：全章多处
+- **问题汇总**：
+  1. **[Task9 遗留×4]** syscall tracepoint 上下文错误、vmalloc kprobe 取值方式错误、UprobeStats 误写成 syscall 监控（含虚构 CLI）、Perfetto 配置 JSON 字段无效 — 详见 queue.json entry `task9-20260614-1410-ebpf-source-api-regression`
+  2. **[Task6 本轮×6]** 发展历程百科式列表、未来趋势空话、多处虚构伪代码（BPFLoader/error handling/SELinux 命令）、缺失 Perfetto trace 观测、核心/实际应用重复浅薄结构、开头违反叙述优先 — 详见 queue.json entry `task6-20260614-1410-ebpf-revisit-rework`
+- **建议**：需完整 Task2B 重写（非 lite），优先解决 Task9 的 4 个源码/API P0/P1 问题，再按 writing-guide 重写结构和叙述
+- **review 日志**：logs/review/2026-06-14-02-review.md
