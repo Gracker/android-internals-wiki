@@ -23,7 +23,7 @@ last_task2b_lite_at: "2026-05-31"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 last_task9_audit: "2026-06-11"
-last_task6_audit: "2026-05-20"
+last_task6_audit: "2026-06-13"
 last_task6_at: "2026-05-31T08:08:00+08:00"
 last_task6_reviewed_by: openclaw-task6
 last_task9_audit_log: "logs/deep-review/2026-06-11-10-audit.md"
