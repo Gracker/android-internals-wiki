@@ -1534,6 +1534,68 @@
       "chapter": "ch23",
       "processed_at": "2026-06-12T06:15:38.474889+08:00",
       "processed_by": "task-deepresearch-injector"
+    },
+    {
+      "path": "DeepResearch/2026-06-12-android14-cold-start-warmup-mechanism.md",
+      "title": "2026-06-12-android14-cold-start-warmup-mechanism",
+      "score": 16,
+      "relevance": 3,
+      "tech_depth": 3,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapter": "ch04",
+      "indexed_at": "2026-06-13 05:45",
+      "scored_at": "2026-06-13T05:48:26.354084"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-binder-ipc-async-oneway-frozen-reply-pipeline.md",
+      "title": "Android 17 Binder IPC 异步 oneway / 冻结回执 / 内核批处理流水线",
+      "summary": "深入分析 Android 17 Binder 的四级流水线：用户态自动批处理（flushCommands 双次 talkWithDriver）、异步 oneway 通道（TF_ONE_WAY 零阻塞 + 内核 spam 抑制）、frozen 回执机制（BR_TRANSACTION_PENDING_FROZEN / BR_FROZEN_REPLY）、优先级继承传递。全部在 BC_*/BR_* 命令序列层完成，对应用代码零侵入。",
+      "section": "ch01",
+      "target_file": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "processed_at": "2026-06-13T06:12:05.620345",
+      "type": "DeepResearch 调研结果",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-gpu-vulkan-async-compile-pipeline-manager-pacing.md",
+      "title": "Android 17 GPU Vulkan 异步编译 PipelineManager Pacing 策略",
+      "summary": "Skia Graphite PipelineManager 三步查找去重算法 + DrawPass 双 buffer 瘦身 + ANGLE L1 44-bit dirty bit 跳转表 + ShareGroupVk 2ms 单 in-flight 节流。源码级分析 UniqueKey 派生与无锁并发。",
+      "section": "ch02",
+      "target_file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "processed_at": "2026-06-13T06:12:05.620345",
+      "type": "DeepResearch 调研结果",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android17-gpu-driver-pipeline-async-compilation.md",
+      "title": "Android 17 GPU 驱动渲染管线异步编译优化策略",
+      "summary": "Skia Graphite PipelineCreationTask 异步任务 + DrawPass 三步生命周期 + ANGLE 四级 PSO 缓存（L0-L3）。录制时无锁提交，提交时一次性等待的并行模式。",
+      "section": "ch02",
+      "target_file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "processed_at": "2026-06-13T06:12:05.620345",
+      "type": "DeepResearch 调研结果",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md",
+      "title": "Android 17 Simpleperf 多进程 IPC 性能与跨进程数据整合",
+      "summary": "Simpleperf 三层生产者-消费者 IPC 架构：RecordReadThread 无锁环形 buffer + pipe2 双 pipe、MapRecordThread、ProfileSession。跨进程 cmd_merge 九项校验 + zstd 流式压缩。",
+      "section": "ch14",
+      "target_file": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+      "processed_at": "2026-06-13T06:12:05.620345",
+      "type": "DeepResearch 调研结果",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md",
+      "title": "Android 17 Perfetto APM 工具链优化与 Data Source 演进",
+      "summary": "Perfetto data_source_config Next id 123→138 演进 + APM 端侧三件套 cpu_per_uid/app_wakelocks/kernel_wakelocks + traced_probes readtracefs 权限升级 + traced.rc perfetto_trace_on_boot。",
+      "section": "ch13",
+      "target_file": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+      "processed_at": "2026-06-13T06:12:05.620345",
+      "type": "DeepResearch 调研结果",
+      "action": "queue"
     }
   ]
 }
