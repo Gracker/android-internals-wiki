@@ -1,3 +1,45 @@
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 15:04
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 426 文件（296 finalized + 79 ready-for-review），0 draft
+- 连续 99 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. source-index.json 未映射素材
+- 115 条记录，所有高分（score≥16）素材均已有对应章节映射
+- 27 条有评分的条目全部已映射到现有章节
+- 无评分 ≥ 14 且无映射的素材
+
+### 4. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节（§14.11/§23.7）
+- 评分 < 14，不满足新章节创建条件
+
+### 5. daily-info 热点扫描（2026-06-13）
+- Android 17 新调度器减少 30% 启动时间 → ch05/ch16 已覆盖
+- MessageQueue/DeliQueue 重写 → 1.13/22.16 已覆盖
+- 桌面端能力升级 → 2.20/22.14 已覆盖
+- Android Studio Quail + LeakCanary → ch14 已覆盖
+- AI/Gemini 基准测试/接入攻略 → 非 AIW 核心范畴
+- 本地 Coding Agent/PostgreSQL 19 → 非 AIW 范畴
+
+### 6. Clippings 参考书交叉对照
+- 三本参考书核心知识点已全部被现有章节覆盖
+- ch20 全 17 节、ch21-25、ch26 全 19 节均已有内容
+
+### 7. 现有章节扩展点
+- 属 Task 2B 范畴，本轮不处理
+
+### 8. research-feeds 时效性
+- 最近更新 2026-04-14，已过期 2 个月
+- 最新素材通过 daily-info 增量扫描补充，daily-info 持续更新
+
+### 总结
+全书 426 文件、0 draft、296 finalized + 79 ready-for-review（78.9% finalized）。连续 99 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（79 个 ready-for-review 待推进），非内容缺口。知识库已进入收尾维护阶段。
+
 
 ## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 13:04
 
@@ -291,4 +333,46 @@
 
 ---
 
-utf-8
+utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 100)
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 405 编号章节文件（293 finalized + 82 ready-for-review + 30 no-status/appendix），0 draft
+- 连续 100 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. 今日新增 DeepResearch（5 篇）逐一映射验证
+- `2026-06-13-perfetto-data-explorer-node-based-analysis.md` → §13.14 已覆盖（报告发现 §13.14 第 235 行存在 v54 事实性断言偏差，属 Task 2B 修复范畴，非新缺口）
+- `2026-06-13-end-side-ai-android17-resource-scheduling-adpf-powerhal.md` → §5.9 ADPF + §5.14 ML Runtime + §16.2 版本变更已覆盖（报告指出 §16.2 对 PowerHAL/SessionTag/headroom 源码层覆盖不足，属现有章节深度补充，非新缺口）
+- `2026-06-13-android14-memory-tracking-apis-leak-detection.md` → §23.7 内存监控已覆盖（报告补齐 setWatchHeapLimit / ApplicationExitInfo / smaps_rollup 源码细节，属现有章节素材补充）
+- `2026-06-13-android17-binder-ipc-async-oneway-frozen-reply-pipeline.md` → §20.17 Binder 异常与 IPC 故障已覆盖
+- `2026-06-13-android17-gpu-vulkan-async-compile-pipeline-manager-pacing.md` → §2.10 GPU 渲染深入已覆盖
+
+### 4. source-index.json 未映射素材
+- 全部素材已有对应章节映射
+- 无评分 ≥ 16 且无映射的素材
+
+### 5. daily-info 热点扫描（2026-06-13）
+- Android 17 DeliQueue/MessageQueue → §1.13 / §22.16 已覆盖
+- 桌面端能力升级 → §2.20 / §22.14 已覆盖
+- Android Studio Quail + LeakCanary → §14.x 已覆盖
+- AI/Gemini 基准测试/接入攻略 → 非 AIW 核心范畴
+- Handler vs 协程 → §8.6 已覆盖
+- Activity 通信架构 → 非 AIW 性能范畴
+- PostgreSQL 19 / 本地 Coding Agent → 非 AIW 范畴
+
+### 6. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节
+- 评分 < 14，不满足新章节创建条件
+
+### 7. Clippings 参考书交叉对照
+- 三本参考书核心知识点已全部被现有章节覆盖（ch20 全 17 节、ch21-25、ch26 全 19 节均已有内容）
+
+### 总结
+全书 405 编号章节、0 draft、293 finalized + 82 ready-for-review（92.6% 已有内容）。连续 100 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（82 个 ready-for-review 待推进），非内容缺口。知识库已进入收尾维护阶段。
+
+---
+
