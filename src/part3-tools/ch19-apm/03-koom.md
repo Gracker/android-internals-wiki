@@ -1,8 +1,9 @@
 ---
+
 title: "KOOM"
 chapter: "19"
 section: "19.03"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -24,11 +25,11 @@ sources:
     path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
   - type: official
     path: "https://developer.android.com/guide/practices/page-sizes"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_date: "2026-04-24"
+reviewed_date: 2026-06-13
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
@@ -38,7 +39,7 @@ task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-13T10:20:00+08:00"
 last_task9_audit: "2026-06-13"
-last_task6_audit: "2026-06-11"
+last_task6_audit: 2026-06-13
 last_deepseek_polish_at: 2026-05-25
 deepseek_polish_state: done
 last_task9_autofix_at: "2026-06-13"
@@ -47,6 +48,8 @@ task9_review_notes: "2026-06-13 闲时抽检 AUTO-FIX: 补 Android 15+/17 16KB p
 p0: 0
 p1: 1
 p2: 0
+finalized_date: "2026-06-13"
+finalized_by: "openclaw-task6-auto-promote"
 ---
 
 # KOOM

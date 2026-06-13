@@ -1,8 +1,9 @@
 ---
+
 title: "场景化性能作战手册"
 chapter: "7.15"
 section: "7.15"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -31,25 +32,27 @@ last_task9_audit: "2026-06-13"
 last_task9_autofix_at: "2026-06-13"
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 task2b_fixed_date: "2026-06-05T02:50:00+08:00"
 task2b_fixed_by: "openclaw-task2b-main"
 task2b_fix_summary: "P0: fixed SurfaceFlinger version-specific observation entries (8-10 handleMessageRefresh, 11-12 onMessageRefresh, 13+ commit/composite); P1: added power/heat troubleshooting chain (thermal, cpufreq, wakelock, JobScheduler, Battery Historian); P2: softened BufferStuffing criteria with cross-validation requirement; updated applicable_versions to Android 17/API 37"
 
-reviewed_date: "2026-06-05"
+reviewed_date: 2026-06-13
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: revisiting
 review_notes: "2026-05-05 Task2B:补充版本边界专节(FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback),Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30:revisiting 写作复审,清理禁用词并统一路径表达,修复重复 frontmatter;发现大纲要求的功耗排障入口正文缺失,已写入 Task2B queue。 | 2026-05-05 Task9 08:37:Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误;功耗入口缺失已有 queue pending。"
-last_task6_at: "2026-06-05T03:05:00+08:00"
-auto_promoted_date: "2026-06-05"
-auto_promoted_by: "openclaw-task6"
+last_task6_at: 2026-06-13T16:18:11+08:00
+auto_promoted_date: 2026-06-13
+auto_promoted_by: openclaw-task6
 last_task9_review_log: "logs/deep-review/2026-06-13-13-audit.md"
 task9_review_notes: "2026-06-13 Task9 闲时抽检 auto-fixed。修正 FrameTimeline SQL:非 jank 过滤需排除 None,BufferStuffing 在 actual_frame_timeline_slice.jank_type 中的字段值为 Buffer Stuffing;同步收敛 BufferStuffing 候选判据。"
 task6_reviewed_date: "2026-06-05"
-last_task6_review_log: "logs/review/2026-05-23-08-review.md"
-task6_review_notes: "2026-05-23 Task6 08: revisiting 复审;L1/L2 无新增小修;功耗入口缺口和 Task9 技术问题已有 pending queue,保持 task2b_pending。"
+last_task6_review_log: "logs/review/2026-06-13-16-review.md"
+task6_review_notes: "2026-06-13 Task6 回炉复审(revisiting→reviewed): pass-light-edit。L1 修复见 review 日志；L2/L3/L4 无新增问题；Task9 已 auto-fixed；queue 无 pending；自动晋升 finalized。"
+finalized_date: "2026-06-13"
+finalized_by: "openclaw-task6-auto-promote"
 ---
 
 # 场景化性能作战手册

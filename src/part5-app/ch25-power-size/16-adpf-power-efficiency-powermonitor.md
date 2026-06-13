@@ -1,4 +1,5 @@
 ---
+
 drafted_date: "2026-05-24"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-24"
@@ -41,20 +42,20 @@ gap_source: "素材驱动/官方文档/AOSP 结构"
 title: "ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证"
 chapter: "25.16"
 section: "25.16"
-status: "ready-for-review"
+status: finalized
 drafted_by: "task2a-knowledge-gap"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_result: "fixed"
 task2b_rework_date: "2026-06-13"
 last_task2b_at: "2026-06-13T14:50:00+08:00"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-13"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-06-13T15:11:42+08:00"
-last_task6_review_log: "logs/review/2026-06-13-15-review.md"
-task6_review_notes: "2026-06-13 Task6 回炉重审(revisiting): pass-light-edit。Task2B rework 已修复 ML_ACC 枚举值、SessionTag/SessionMode 区分、main branch 锚点越界问题。L1/L2 无新增问题，文档整体写作质量良好。L3 备注系统层扩展中"版本感知调度策略"与"FMQ 优化"两小节内容偏薄，建议后续补充。待 Task9 对 rework 内容做技术复审。"
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-13
+task6_result: pass-light-edit
+last_task6_at: 2026-06-13T16:18:11+08:00
+last_task6_review_log: "logs/review/2026-06-13-16-review.md"
+task6_review_notes: "2026-06-13 Task6 回炉复审(revisiting→reviewed): pass-light-edit。L1 修复见 review 日志；L2/L3/L4 无新增问题；Task9 已 auto-fixed；queue 无 pending；自动晋升 finalized。"
 
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-13"
@@ -67,6 +68,8 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 task2b_state: "fixed"
 last_task9_audit: 2026-06-13
+finalized_date: "2026-06-13"
+finalized_by: "openclaw-task6-auto-promote"
 ---
 # 25.16 ADPF Power Efficiency Mode 与 PowerMonitor 能耗验证
 
