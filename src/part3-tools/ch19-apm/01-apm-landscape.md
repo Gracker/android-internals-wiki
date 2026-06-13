@@ -34,7 +34,7 @@ sources:
     path: "https://github.com/measure-sh/measure"
 task2b_result: fixed
 last_task2b_at: "2026-05-22T11:21:56+08:00"
-last_task6_audit: "2026-05-20"
+last_task6_audit: "2026-06-13"
 last_task9_audit: "2026-05-21"
 last_task9_audit_at: "2026-05-21T15:48:06+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-21-15-audit.md"
@@ -60,7 +60,8 @@ finalized_by: openclaw-task9-auto-promote
 auto_promoted_date: "2026-05-22"
 auto_promoted_by: openclaw-task9
 last_deepseek_polish_at: 2026-05-26
-deepseek_polish_state: done---
+deepseek_polish_state: done
+---
 
 # APM 全景图与分类体系
 
