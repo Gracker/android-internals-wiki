@@ -13,8 +13,8 @@ related_chapters: ["1.3", "1.4", "5.8", "11.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-06-14"
 reviewed_by: openclaw-task6
@@ -66,7 +66,7 @@ p2: 0
 last_task9_audit: "2026-06-13"
 last_task9_autofix_at: "2026-06-14"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # 1.18 Binder Freezer 与缓存进程冻结性能
@@ -107,7 +107,7 @@ last_deepseek_cn_review_at: 2026-06-13
 
 ## 冻结保留进程状态，降低恢复成本
 
-Cached app freezer 处理的是一类很具体的浪费：进程已经退到 cached 状态，对用户不可见，却还通过定时器、线程循环、异步回调或 Binder 事务消耗 CPU。LMK 可以回收内存，但杀进程会丢掉运行时状态；下次回到前台时，应用要重新启动、重新建对象、重新加载缓存。
+Cached app freezer 要解决的是一个很具体的问题：进程已经退到 cached 状态，对用户不可见，却还在通过定时器、线程循环、异步回调或 Binder 事务消耗 CPU。LMK 可以回收内存，但杀进程会丢掉运行时状态——下次回到前台时，应用要重新启动、重新建对象、重新加载缓存。
 
 冻结给系统增加了一个中间态：进程地址空间和 Java/Native 堆仍在，线程暂停调度，不再拿 CPU 时间。AOSP 文档把它描述为“将 cached 进程迁移到 frozen cgroup”，目标是降低 active cached apps 带来的 active/idle CPU 消耗。[已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer]
 
@@ -120,7 +120,7 @@ Cached app freezer 处理的是一类很具体的浪费：进程已经退到 cac
 | Doze / App Standby | 设备空闲或应用待机 | 限制网络、Job、Alarm 等后台能力 | 进程不一定暂停 | 降低后台唤醒和网络成本 | 任务延迟执行 |
 | 前台服务限制 | FGS / 后台启动场景 | 限制组件能力或超时 | 依组件状态变化 | 控制长期后台执行 | 误用会触发异常或 ANR |
 
-1.3 节已经解释进程优先级和 cached 状态，1.4 节负责 Binder IPC 的基本语义。这里关心的是两者交叉后出现的新边界：一个 cached 进程被冻结后，系统如何避免它继续消耗 CPU，以及 Binder 事务在冻结状态下如何处理。
+前文 1.3 节讲了进程优先级和 cached 状态，1.4 节讲了 Binder IPC 的基本语义。本文关注的是两者交叉后出现的新问题：一个 cached 进程被冻结后，系统如何阻止它继续消耗 CPU，Binder 事务在冻结状态下又该怎么处理。
 
 ## 冻结入口：OomAdjuster 决定资格，CachedAppOptimizer 执行动作
 
@@ -301,4 +301,4 @@ AOSP 冻结资格从 oom_adj 进入，组件状态会通过 adj、capability 和
 - [Android common kernel android17-6.18-2026-04_r1: Binder driver](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/drivers/android/binder.c)
 - [Android common kernel android17-6.18-2026-04_r1: Binder UAPI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/include/uapi/linux/android/binder.h)
 - [Android common kernel android17-6.18-2026-04_r1: cgroup freezer](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/kernel/cgroup/freezer.c)
-- [DeepResearch: Cached App Freezer 机制与 GC 触发路径] — 厘清 Freezer/LMK/GC 三机制独立决策关系，补充冻结解冻触发链与 Binder 协作细节
+- [DeepResearch: Cached App Freezer 机制与 GC 触发路径] — Freezer、LMK、GC 三机制的独立决策关系，冻结/解冻触发链与 Binder 协作细节
