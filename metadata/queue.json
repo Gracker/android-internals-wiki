@@ -518,9 +518,10 @@
     "title": "eBPF/BPF 在 Android 性能分析中的应用",
     "file": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
     "priority": 95,
-    "reason": "[Deep Tech Review] eBPF 章节回炉后仍存在 BPF 示例上下文、UprobeStats、Perfetto TraceConfig 与 bpfloader 版本锚点的源码/API 错误。 | [Task2B Lite 2026-06-14] 已修复 issue#5(bpfloader 版本锚点) 和 issue#6(版本边界标注)，剩余 4 个源码/API 问题待主 Task2B。",
+    "reason": "[Deep Tech Review] eBPF 章节回炉后仍存在 BPF 示例上下文、UprobeStats、Perfetto TraceConfig 与 Android GPU/BPF loader 权限模型的源码/API 错误；Task2B Lite 仅修复了 bpfloader 版本锚点和 Android 17 边界。",
     "material_paths": [
-      "logs/deep-review/2026-06-14-01-deep-review.md"
+      "logs/deep-review/2026-06-14-01-deep-review.md",
+      "logs/deep-review/2026-06-14-02-deep-review.md"
     ],
     "review_issues": [
       {
@@ -546,6 +547,24 @@
         "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L344-L374",
         "detail": "Perfetto 配置示例使用 linux_perfetto_config/sys_events_config/sys_events 字段。external/perfetto android-16.0.0_r4 的 DataSourceConfig 中没有这些字段；ftrace 数据源应使用 name: \"linux.ftrace\" + ftrace_config，perf 采样使用 name: \"linux.perf\" + perf_event_config。",
         "suggestion": "替换为有效 TraceConfig 文本 proto 示例，至少锚到 data_source_config.proto 和 ftrace_config.proto；不要把无效 JSON 当 Perfetto 配置示例。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L495-L521",
+        "detail": "GPU 性能监控示例使用 SEC(\"tracepoint/amdgpu/amdgpu_cs_ioctl\")，这是 AMDGPU 驱动事件，不是 Android AOSP GPU 监控路径。android-16.0.0_r4 的 gpuservice BPF 程序锚点是 frameworks/native/services/gpuservice/bpfprogs/gpuMem.c，挂载 tracepoint/gpu_mem/gpu_mem_total，只维护 (gpu_id,pid)->size 的 GPU memory total map，不能支撑“GPU 命令提交/执行时间/利用率”三项结论。",
+        "suggestion": "删除 amdgpu 示例，改为 AOSP gpuMem.c 的 gpu_mem/gpu_mem_total 内存统计边界；如要讲命令提交耗时，转到 Perfetto GPU track/driver ftrace 事件并标明设备依赖，不要写成 Android 通用 eBPF 能力。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L313-L342, L666-L725",
+        "detail": "BPFLoader::loadProgram()、unload_ebpf_program()、log_error() 和 SELinux semanage/restorecon 示例不是 Android AOSP BPF loader API；system/bpf android-16.0.0_r4 的 loader/bpfloader.rs 在 early init 通过 load_libbpf_progs() + vendorBpfLoader() 加载并 pin 到 /sys/fs/bpf，C++ Loader.cpp 负责 vendor .o 路径。正文把泛 libbpf 伪代码写成 Android 工具链会误导读者。",
+        "suggestion": "删除这些伪代码，改成 Android 官方 bpfloader 流程：/system/etc/bpf 或 system/bpfprogs 编译产物、DEFINE_BPF_MAP/DEFINE_BPF_PROG、bpfloader pin 路径和 map/prog owner/group。SELinux 例子应改为 Android sepolicy/rc/文件上下文边界。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md:L801-L817",
+        "detail": "正文写“所有 map AID_SYSTEM 拥有 / 默认由 AID_SYSTEM 拥有”。AOSP 反例直接存在：frameworks/native gpuservice/gpuMem.c 的 gpu_mem_total_map 使用 AID_GRAPHICS；packages/modules/Connectivity/bpf/progs/netd.c 中 netd map 使用 AID_NET_BW_ACCT、AID_NET_ADMIN 等组；system/bpfprogs/timeInState.c 才是 AID_SYSTEM。权限模型是按 map/prog 宏和 loader descriptor 配置，不是全局默认 AID_SYSTEM。",
+        "suggestion": "改成“owner/group 由 DEFINE_BPF_MAP_* 宏或 bpfloader descriptor 指定；常见消费者包括 AID_SYSTEM、AID_GRAPHICS、AID_NET_BW_ACCT 等”，并分别列出 timeInState、gpuMem、netd 的 AOSP 锚点。"
       }
     ],
     "added_by": "task9-deep-tech-review",
@@ -561,6 +580,18 @@
       ],
       "remaining_issues": 4,
       "note": "Lite 修复了 Rust bpfloader 调用序列和版本边界标注；其余 4 个源码错误仍需主 Task2B 处理"
+    },
+    "last_task9_review_at": "2026-06-14T02:24:08+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-06-14-02-deep-review.md",
+    "task9_followup": {
+      "reviewed_at": "2026-06-14T02:24:08+08:00",
+      "result": "needs-rework",
+      "p0": 5,
+      "p1": 2,
+      "p2": 1,
+      "new_issues_added": 3,
+      "remaining_issue_count": 7,
+      "note": "Task2B Lite 后复审：原 4 个源码/API 问题仍未修；本轮新增 GPU tracepoint、Android loader 伪代码、map owner/group 默认值三项。"
     }
   },
   {

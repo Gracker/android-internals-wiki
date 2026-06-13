@@ -54,7 +54,7 @@ polish_count: 3
 polish_date: "2026-06-13"
 polish_by: "task2b-main"
 p0: 5
-p1: 1
+p1: 2
 p2: 1
 task6_result: "needs-rework"
 task6_reviewed_by: "openclaw-task6"
@@ -64,8 +64,8 @@ last_task6_at: "2026-06-14T02:08:00+08:00"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-14"
-task9_state: "pending"
-task9_review_notes: "2026-06-14 Task9 deep review：needs-rework。P0/P1：syscall/vmalloc 示例上下文错误，UprobeStats 误写成 syscall 监控，Perfetto 配置字段无效，bpfloader 版本锚点不符，Android 17 main 结论需移除或标注未进入 Android 17。"
+task9_state: "reviewed"
+task9_review_notes: "2026-06-14 02:24 Task9 复审：needs-rework。Lite 只修复 bpfloader/Android 17 边界；syscall/vmalloc/UprobeStats/Perfetto 四项仍未修，新增 GPU amdgpu tracepoint 与 Android loader/权限模型源码问题。"
 task2b_result: "needs-rework"
 task2b_state: "pending"
 task2b_rework_date: "2026-06-14T00:52:40+08:00"
@@ -73,8 +73,8 @@ pipeline_stage: "task2b_pending"
 last_task2b_at: "2026-06-14T00:52:40+08:00"
 last_task2b_lite_at: "2026-06-14T01:35:00+08:00"
 last_task6_audit: "2026-06-13"
-last_task9_at: "2026-06-14T01:30:47+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-14-01-deep-review.md"
+last_task9_at: "2026-06-14T02:24:08+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-14-02-deep-review.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-14"
 ---
