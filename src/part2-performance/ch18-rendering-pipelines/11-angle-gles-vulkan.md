@@ -23,7 +23,7 @@ sources:
 - AOSP external/angle/
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-task6_state: "reviewed"
+task6_state: "revisiting"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 last_task6_audit: "2026-05-21"
@@ -33,27 +33,29 @@ review_round: 1
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-21T23:22:00+08:00"
-task6_state: "reviewed"
+task6_state: "revisiting"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9 问题单）"
-last_task9_audit: "2026-05-21"
+last_task9_audit: "2026-06-14"
 status: finalized
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-22"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-14"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T00:27:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-00-deep-review.md"
+last_task9_at: "2026-06-14T17:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-14-17-audit.md"
 finalized_date: "2026-05-22"
 finalized_by: openclaw-task9-auto-promote
 auto_promoted_date: "2026-05-22"
 auto_promoted_by: openclaw-task9
-task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1；P2 2 写入 suggestions。满足 task6_result pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-06-14 Task9 闲时抽检 auto-fix：AOSP android-16.0.0_r1 SyncVk.cpp 复核发现 serverWait() 代码片段仍带 Chromium/main 口径，已改为 Android 16 tag 行号、init(device) 调用，并补回 addGarbage 生命周期处理；回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
+last_task9_autofix_at: "2026-06-14"
 ---
+
 
 <!-- outline-start -->
 
@@ -345,13 +347,13 @@ ANGLE 在 `SyncHelperNativeFence::initializeWithFd()` 中接收来自 EGL 层的
 **关键函数**：`SyncHelperNativeFence::serverWait()` — 当 Vulkan command buffer 需要等待 native fence 信号时执行：
 
 ```cpp
-// external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp:521-551
-// 注：Chromium ANGLE main 行号；AOSP android-16.0.0_r1 同一逻辑在 L508-L538
+// external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp:508-538
+// AOSP android-16.0.0_r1
 angle::Result SyncHelperNativeFence::serverWait(ContextVk *contextVk)
 {
-    // 创建 Binary 类型 Vulkan Semaphore
+    // 创建默认 Binary 类型 Vulkan Semaphore
     DeviceScoped<Semaphore> waitSemaphore(device);
-    ANGLE_VK_TRY(contextVk, waitSemaphore.get().init(device, VK_SEMAPHORE_TYPE_BINARY));
+    ANGLE_VK_TRY(contextVk, waitSemaphore.get().init(device));
 
     // 将 Android sync fd 导入 Vulkan Semaphore
     VkImportSemaphoreFdInfoKHR importFdInfo = {};
@@ -365,6 +367,7 @@ angle::Result SyncHelperNativeFence::serverWait(ContextVk *contextVk)
     // 添加到下一次 vkQueueSubmit 的等待列表
     contextVk->addWaitSemaphore(waitSemaphore.get().getHandle(),
                                 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+    contextVk->addGarbage(&waitSemaphore.get());  // 释放 handle 的生命周期交给 ANGLE 回收
     return angle::Result::Continue;
 }
 ```
