@@ -30,16 +30,20 @@ sources:
     path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
   - type: official
     path: "https://source.android.com/docs/core/perf/lmkd"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/battery-counters"
+  - type: official
+    path: "https://source.android.com/docs/core/power/power-stats-hal"
 tags:
   - android
   - research
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
-task9_state: reviewed
-task9_result: pass-tech-review
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T23:27:38+08:00"
+last_task9_at: "2026-06-14T18:20:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
@@ -53,13 +57,16 @@ section: "15.3"
 related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1', '15.5', '15.9', '15.10']
 review_round: 5
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned-word cleanup in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-last_task9_audit: '2026-05-21'
-last_task9_audit_at: '2026-05-21T01:46:24+08:00'
-last_task9_audit_log: 'logs/deep-review/2026-05-21-01-audit.md'
+last_task9_audit: '2026-06-14'
+last_task9_audit_at: '2026-06-14T18:20:00+08:00'
+last_task9_audit_log: 'logs/deep-review/2026-06-14-18-audit.md'
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+last_task9_autofix_at: '2026-06-14'
+task9_review_notes: "2026-06-14 Task9 idle audit: auto-fixed FrameMetrics.DEADLINE duration-budget wording and Perfetto Power Rails / Energy Consumer unit semantics; no P0/P1 queue item."
+last_task9_review_log: "logs/deep-review/2026-06-14-18-audit.md"
 ---
 
 
@@ -164,7 +171,7 @@ Google 在 Android Vitals 中把 slow rendering 定义为单帧渲染时间落�
 
 ### Frame Overrun(Deadline 超限)
 
-在 Android 12(API 31)之后,帧诊断可以从"耗时有没有超过固定 16ms"前进到"这一帧有没有错过系统给它的 deadline"。`FrameMetrics.DEADLINE` 给出本帧应完成的截止时间,`TOTAL_DURATION` 给出实际耗时。二者相减得到 overrun:正值表示帧晚于 deadline,负值表示还有余量。
+在 Android 12(API 31)之后,帧诊断可以从"耗时有没有超过固定 16ms"前进到"这一帧有没有错过系统给它的 deadline"。`FrameMetrics.DEADLINE` 给出系统分配给 App 生成这一帧的时间预算,`TOTAL_DURATION` 给出实际耗时。用 `TOTAL_DURATION - DEADLINE` 得到 overrun:正值表示帧晚于 deadline,负值表示还有余量。
 
 这个口径更适合高刷和可变刷新率设备。120Hz 的单帧预算约 8.3ms,一帧耗时 10ms 时仍低于 Android Vitals 的 16ms slow rendering 口径,但已经可能错过本轮刷新窗口。线下门禁和 Macrobenchmark 更适合看 `frameOverrunMs`,Play Console 报表仍按 Android Vitals 的 slow / frozen frames 口径解释。
 
@@ -405,14 +412,14 @@ Battery Drain Rate 度量的是 App 在单位时间内的电池消耗量,通常�
 
 Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GPU 渲染、屏幕刷新和网络通信组成。Idle Power 是 App 在后台时的功耗,理想情况下应该趋近于零--但在实践中,后台同步、推送接收、定位更新等都会消耗电量。
 
-做功耗分析时,一个有效的思路是"归因分析":把总功耗分解到各个子系统(CPU、GPU、屏幕、网络、传感器),找出占比最高的那个子系统,然后针对性地优化。Perfetto 的 Power track 提供了各电源轨的电流曲线和子系统功耗分布。
+做功耗分析时,一个有效的思路是"归因分析":把总功耗分解到各个子系统(CPU、GPU、屏幕、网络、传感器),找出占比最高的那个子系统,然后针对性地优化。Perfetto 的电源数据主要来自 Battery counters、Power Rails(ODPM)和 Energy Consumer;具体轨道和精度取决于设备硬件与 HAL 支持。
 
 在 Perfetto 中观察功耗数据,主要使用以下 Track:
 
-- **Power Rails track**:显示各电源轨(如 VDD_CPU、VDD_GPU、VDD_DDR)的实时电流和电压数据,单位为 mW。通过它可以定位功耗峰值对应的子系统。
-- **Battery track**:显示电池电量和充放电状态的变化曲线。
+- **Power Rails track**:显示各电源轨(如 CPU cluster、display、modem 等)的累计能量计数;原始轨道常以 `_uws` 标识微瓦秒,需要按时间窗口做差分后再换算功耗。
+- **Battery track**:显示电池电量、剩余电荷和瞬时电流等 battery counters。
 - **CPU Frequency track**:与 Power track 对照查看,可以确认功耗上升是否对应 CPU 频率提升。
-- **Energy Consumer track**(Android 12+):按子系统(CPU cluster、Display、GPU、Radio 等)拆分能量消耗,直接给出各子系统的功耗占比。
+- **Energy Consumer track**(Android 12+):按子系统(CPU cluster、Display、GPU、Radio 等)报告能量消耗;分析占比时同样按窗口差分计算。
 
 使用方法:在 Perfetto UI 中搜索 `power` 或 `energy`,即可找到相关 Track。将功耗曲线与 CPU/GPU 活动时间对齐,就能看到哪个子系统在什么时间段消耗了最多电量。
 
@@ -551,6 +558,8 @@ Android Vitals 的核心指标(Core Vitals)包括:
 - [FrameTimingMetric | developer.android.com](https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric)
 - [ApplicationExitInfo | developer.android.com](https://developer.android.com/reference/android/app/ApplicationExitInfo)
 - [Low memory killer daemon | source.android.com](https://source.android.com/docs/core/perf/lmkd)
+- [Perfetto Power data sources | perfetto.dev](https://perfetto.dev/docs/data-sources/battery-counters)
+- [Power stats HAL | source.android.com](https://source.android.com/docs/core/power/power-stats-hal)
 - [Android Vitals bad behavior thresholds | support.google.com](https://support.google.com/googleplay/android-developer/answer/9844476)
 - [Investigate RAM usage | developer.android.com](https://developer.android.com/studio/profile/memory)
 - [Manage your app's memory | developer.android.com](https://developer.android.com/topic/performance/memory)
