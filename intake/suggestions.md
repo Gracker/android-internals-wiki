@@ -1119,3 +1119,50 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 
 ### 总结
 全书 426 文件、0 draft、295 finalized + 82 ready-for-review（69.2% finalized）。连续 114 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（82 个 ready-for-review 待推进），非内容缺口。知识库已进入收尾维护阶段。
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-15 04:05 (Round 115)
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 全书 377 小节，0 draft（295 finalized + 80 ready-for-review + 2 其他）
+- 连续 115 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. source-index.json 未映射素材
+- source-index 无条目（素材索引已全部映射到现有章节）
+
+### 4. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节
+- 评分 < 14，不满足新章节创建条件
+
+### 5. daily-info 热点扫描（2026-06-14/15）
+- Android 17 MessageQueue 重写 → 已覆盖（§1.13, §22.16）
+- Android 17 适配 → 已覆盖（§16.5）
+- AI/IDE 工具 → 非 AIW 范畴
+- Compose Modifier/Pager → 已覆盖（§22.20-22.22）
+- 桌面端 Android → 已覆盖（§2.20, §22.14）
+- Android Paper Daily 线程调度论文 3 篇 → 学术论文，非工程实践 API/工具，评分不足
+
+### 6. queue.json 状态
+- 28 条记录，26 条 completed，2 条 pending
+- 无 priority ≥ 85 的 pending 条目
+
+### 7. research-feeds 时效性
+- 最近更新 2026-04-14，无新增文件
+
+### 8. Clippings 参考书交叉对照
+- 三本参考书核心知识点已全部被现有章节覆盖
+
+### 9. AOSP 系统服务覆盖检查
+- 本轮扫描 CameraService、AudioFlinger、MediaCodec、LocationManager、NotificationManager、AlarmManager 等核心服务
+- 均已在现有章节中以不同命名覆盖（§14.9 Camera、§1.16 Audio、§9.6 Notification、§25.3 AlarmManager 等）
+
+### 10. 新增章节追踪（2026-06-01 以来）
+- 6 月新增 26 个小节，覆盖 AMS 锁竞争、SF Transaction Queue、ART GC Region、MUSCHED、Compose 动画/LazyList、StrictMode、eBPF bpfloader、HPROF、GPU 内存、ContentProvider ANR 等
+- 缺口挖掘持续产出但已趋于收窄
+
+### 总结
+全书 377 小节、0 draft、295 finalized（78.3%）、80 ready-for-review（21.2%）。连续 115 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（80 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
