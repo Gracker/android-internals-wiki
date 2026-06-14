@@ -8,7 +8,7 @@ drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-14"
-last_verified_against: "Sentry Android docs 2026-06-14 + Bugly Pro Android SDK docs 2026-06-14 + AOSP android-16.0.0_r4 Build/ApplicationExitInfo; APMPlus docs not reverified"
+last_verified_against: "Sentry Android docs 2026-06-14 + Bugly Pro Android SDK docs/change log 2026-06-14 + APMPlus docs/search index 2026-06-14 + Android 16KB page size docs + Android API reference API 37"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -21,19 +21,19 @@ sources:
     path: "https://bugly.qq.com/docs/"
   - type: official
     path: "https://bugly.tds.qq.com/docs/"
-pipeline_stage: "task9_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
-task9_result: auto-fixed
+task9_result: "auto-fixed"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-13-audit.md"
-task9_review_notes: "2026-06-14 Task9 deep review：AUTO-FIX ApplicationExitInfo / SDK_INT_FULL 附录错误；Sentry profiling、Session Replay 与 Bugly Pro 16KB / ANR 全线程堆栈门槛经官方文档复核通过，回到 Task6 复审。"
+task9_review_notes: "2026-06-14 Task9 deep review：AUTO-FIX 16KB prebuilt alignment 版本归因与参考资料 API37 过期口径；Sentry profiling、Session Replay、Bugly Pro 16KB/ANR、APMPlus 能力目录经官方资料复核，无新增 P0/P1，回到 Task6 复审。"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-14"
-last_task9_at: "2026-06-14T00:30:00+08:00"
+last_task9_at: "2026-06-14T16:20:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-14"
 
@@ -45,7 +45,7 @@ review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after tas
 review_notes_3: "2026-06-04 task6 re-review (round 3): pass-light-edit. L1/L2 clean. All 10 anchors covered. task9_result=needs-rework, pipeline routes to task9. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
 review_notes_4: "2026-06-14 task6 re-review (round 4): pass-light-edit after task9 auto-fix. L1: fixed 落地→发布/引入 in research notes (5 instances). L2: clean. All 10 anchors covered. No B-class issues. Score: structure 4/5, wording 4/5, consistency 4/5, verification 3/5, metadata 4/5."
 last_task6_at: "2026-06-14T04:07:46+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-14-16-deep-review.md"
 
 last_task6_review_log: "logs/review/2026-06-05-06-review.md"
 last_task9_autofix_at: "2026-06-14"
@@ -159,7 +159,7 @@ Bugly Pro 不能按普通版边界评估。公开资料和 review 记录显示�
 |---|---|---|
 | SDK 覆盖 | Android 版本、targetSdk、ABI、主流网络库、Flutter / RN / WebView 是否支持 | 用试点 App 接入，覆盖 release、debug、混淆、multi-ABI 包 |
 | 稳定性 | SDK 自身 crash、ANR、启动开销、线程数、包体积 | 灰度 1% 用户，跟踪 SDK crash、启动 P95、主线程耗时、包体积增量 |
-| 16KB Page Size 兼容（Android 15+） | SDK 内置 `.so` 是否 16KB ELF alignment，是否说明支持 16KB page size 设备（Android 15 起支持构建 16KB，Android 16 增加 prebuilt alignment 检查，Google Play 要求面向 Android 15+ 提交支持 16KB） | 用 16KB page size 模拟器或真机启动 App；对 Native SDK 检查 `readelf -l` 的 LOAD alignment；关注 `SIGSEGV`、`SIGBUS`、`UnsatisfiedLinkError` |
+| 16KB Page Size 兼容（Android 15+） | SDK 内置 `.so` 是否 16KB ELF alignment，是否说明支持 16KB page size 设备（Android 15 起 AOSP 支持 16KB 设备；Android Studio / APK Analyzer / Lint 可检查 prebuilt 或 APK alignment；Google Play 要求面向 Android 15+ 的 64 位应用支持 16KB） | 用 16KB page size 模拟器或真机启动 App；对 Native SDK 检查 `readelf -l` 的 LOAD alignment；关注 `SIGSEGV`、`SIGBUS`、`UnsatisfiedLinkError` |
 | 性能数据 | 启动、慢帧、卡顿、ANR、OOM、网络、磁盘、功耗是否有清晰口径 | 用已知慢帧、弱网、OOM、ANR 样本回放，核对平台展示与本地 trace / log 是否一致 |
 | 现场能力 | 堆栈、日志回捞、trace、截图、session replay、用户路径 | 检查是否有授权流程、脱敏规则、采样上限和故障时的人工取证路径 |
 | 符号化 | ProGuard mapping、native symbol、版本和 build id 绑定 | 用一个已知混淆 crash 和一个 Native crash 验证还原率 |
@@ -354,4 +354,4 @@ interface AppMonitor {
 ## 参考资料
 
 ### 商业 APM 平台 Android 17 SDK/API 版本兼容性分析
-- [DeepResearch: android-17-commercial-apm-sdk-version-boundary](https://github.com) — 验证 Sentry 8.x、Bugly Pro 在 Android 17 的 SDK 兼容性边界，确认 AOSP 公开 tag 最高为 android-16.0.0_r4，API 37 未定义
+- [DeepResearch: android-17-commercial-apm-sdk-version-boundary](https://github.com) — 验证 Sentry 8.x、Bugly Pro 在 Android 17 的 SDK 兼容性边界；AOSP 源码锚点优先使用已公开 release tag，API 37 能力以 Android Developers API reference 和 Android 17 版本资料为准
