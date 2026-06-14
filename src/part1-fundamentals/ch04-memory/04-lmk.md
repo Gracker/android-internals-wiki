@@ -12,6 +12,7 @@ task6_result: pass-light-edit
 task6_state: "reviewed"
 _audit: 2026-05-21
 last_task6_audit_log: logs/review/2026-05-21-21-audit.md
+last_task6_audit: 2026-06-14
 last_task6_at: 2026-05-21T21:06:00+08:00
 task9_state: "reviewed"
 polish_count: 1
@@ -21,9 +22,9 @@ applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: 2026-05-09
 last_verified_against: AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1
 confidence: medium-high
-sources: 
-tags: 
-related_chapters: 
+sources: AOSP ProcessList.java, lmkd.cpp, reaper.cpp, OomAdjuster.java, CachedAppOptimizer.java; source.android.com/docs/core/perf/lmkd; developer.android.com/about/versions/17/behavior-changes-all
+tags: LMK, lmkd, OOM, oom_score_adj, PSI, memory-pressure, process-priority, CachedAppOptimizer, Android-17
+related_chapters: 4.1, 4.3, 1.3, 10.4
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
@@ -85,7 +86,7 @@ Linux 内核有自己的 OOM Killer，但它的设计面向服务器场景——
 
 ### 第一代：in-kernel LowMemoryKiller
 
-早期的 Android（从 Android 1.0 到大约 Android 8）使用的是一个内核驱动 `drivers/staging/android/lowmemorykiller.c`。它的工作方式很直接：
+早期的 Android（从 Android 1.0 到大约 Android 8）使用的是一个内核驱动 `drivers/staging/android/lowmemorykiller.c`。
 
 系统启动时，`init.rc` 只把 `/sys/module/lowmemorykiller/parameters/{adj,minfree}` 的 owner 和权限交给 `system`。实际阈值不由 init 写入，而是由 `frameworks/base/services/.../ProcessList.java` 根据设备内存和屏幕尺寸计算，再通过 `updateOomLevels()` / `writeFile()` 写入 `adj` 和 `minfree`。当系统空闲内存低于某个阈值时，内核模块遍历进程，按候选门槛选择 `oom_adj` 较高的进程并发送 `SIGKILL`。
 
@@ -465,7 +466,7 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 | Android 11 | 已存在 `CachedAppOptimizer.java`、`KEY_USE_FREEZER`、`Process.setProcessFrozen()` |
 | Android 12/13 | `DEFAULT_FREEZER_DEBOUNCE_TIMEOUT = 600_000L`，默认 debounce 为 10 分钟 |
 | Android 14/15 | `DEFAULT_FREEZER_DEBOUNCE_TIMEOUT = 10_000L`，默认 debounce 调整为 10 秒 |
-| Android 16 | 仍保留 cached app freezer 机制，冻结/解冻封装进一步收口到 `Freezer` 辅助对象 |
+| Android 16 | 仍保留 cached app freezer 机制，冻结/解冻操作统一封装到 `Freezer` 辅助对象 |
 
 **Perfetto 区分**：被 LMK 杀死 = 进程消失 + lmkd kill / process exit 信号；被 Freezer 冻结 = 进程 Track 仍在 + 线程长期无 Slice。支持对应 ftrace 事件的设备上，可结合 `linux.process_freeze_state` 确认冻结状态。
 
