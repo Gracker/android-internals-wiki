@@ -33,6 +33,8 @@ sources:
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
 - type: official
+  path: https://source.android.com/docs/core/graphics/reduce-consumption
+- type: official
   path: https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps
 - type: official
   path: https://developer.android.com/guide/practices/page-sizes
@@ -58,25 +60,26 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-27"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-14"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T05:28:00+08:00"
+last_task9_at: "2026-06-14T13:20:00+08:00"
+last_task9_audit: "2026-06-14"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
-task9_review_notes: "2026-05-27 Task9 05:28：pass-tech-review。复核前轮 libdmabufheap pooling、Binder FDA、allocator AIDL/stable-C mapper、16KB reservedSize 与 Perfetto dmabuf 表述；无新增 P0/P1。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-06-14 Task9 闲时抽检：auto-fixed。复核 DMA-BUF exporter 与 buffer_handle_t 边界、Android 14 buffer cache purge 官方文档路径；无新增 queue。已回到 Task6 复审。"
 last_task6_at: "2026-05-27T05:14:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-05-review.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-27-05-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-14-13-audit.md"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
-last_task9_autofix_at: "2026-05-27"
+last_task9_autofix_at: "2026-06-14"
 task6_reviewed_date: "2026-05-27"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
@@ -132,7 +135,7 @@ DMA-BUF 是 Linux 内核提供的一套 buffer sharing framework，定义在 `in
 
 DMA-BUF 的核心是一个 exporter-importer 模型：
 
-- **Exporter（导出方）**：拥有这块内存的组件。它负责分配物理内存，并将其导出为 `buffer_handle_t`。这个 handle 底层是 native handle，可以携带多个 fd 和 ints；常见图形 buffer 往往只带一个主 DMA-BUF fd。
+- **Exporter（导出方）**：拥有这块内存的组件。它负责分配物理内存，在内核里通过 `dma_buf_export()` 导出为 DMA-BUF fd；在 Android 图形栈里，这个 fd 通常再由 Gralloc 包装进 `buffer_handle_t` / native handle。这个 handle 可以携带多个 fd 和 ints；常见图形 buffer 往往只带一个主 DMA-BUF fd。
 - **Importer（导入方）**：需要访问这块内存的组件。它拿到 handle 后，通过其中的 fd 把物理内存映射到自己的地址空间，或者通过 `dma_buf_attach()` + `dma_buf_map_attachment()` 让硬件设备直接访问。
 
 整个过程的关键点在于：跨 Binder 传递的是 native handle 里的 fd 数组和整数元数据。fd 本身只是整数，通过 `BINDER_TYPE_FD` 在目标进程里创建新的引用；物理内存在整个生命周期中只存在一份。
@@ -433,7 +436,7 @@ Android 13 引入 AutoSingleLayer 配置，允许 SurfaceFlinger 在只有一个
 
 Android 14 引入了 per-layer buffer cache 强制清除机制。此前，当 GraphicBufferProducer（如 MediaCodec）从 SurfaceFlinger 的 GraphicBufferConsumer 断开时，Composer HAL 和 SurfaceFlinger 之间的 buffer cache 会保留 buffer 不释放。新机制在 disconnect 时强制 purge 该 cache，减少高分辨率屏幕设备的显存消耗。需要实现 Composer HAL API v3.2 才能获得最大内存节省。
 
-[已验证: 官方文档, source.android.com/docs/core/graphics/bufferqueue — Android 14 Graphics Changes]
+[已验证: 官方文档, source.android.com/docs/core/graphics/reduce-consumption — Android 14 Buffer Cache purge]
 
 ### Android 15：16KB page size 开始进入图形内存预算
 
