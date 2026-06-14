@@ -2,7 +2,7 @@
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2'
 section: '2.15'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-26'
 last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
@@ -82,7 +82,7 @@ task2b_verifier_result: "ready-for-task6"
 last_task9_autofix_at: "2026-06-14"
 task6_reviewed_date: "2026-05-27"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
@@ -498,9 +498,6 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
 
 ## 参考资料
 
-### 补充参考：DMA-BUF、Gralloc 与跨进程图形内存共享
-- 来源：DeepResearch 调研（2026-05-22）
-- 摘要：分析 Android 16/17 图形内存三层体系：AOSP libdmabufheap 用户端库（BufferAllocator/DmaBufHeap）、Gralloc4 IAllocator AIDL 接口、vendor 实现（mali_gralloc 等）。明确 AOSP vs Vendor 边界，16KB 页大小对 Gralloc 的影响，DMA-BUF fd 通过 Binder Parcel 传递的零拷贝路径，以及 Pool/carveout/system heap 分配策略差异。
 
 - AOSP 源码：
   - `frameworks/native/libs/ui/GraphicBuffer.cpp` — GraphicBuffer 的 flatten/unflatten 实现
@@ -517,7 +514,3 @@ DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap �
   - [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
 - Linux 内核文档：
   - [DMA-BUF documentation](https://www.kernel.org/doc/html/latest/driver-api/dma-buf.html)
-
-### 补充参考：Android 16/17 图形内存优化
-- 来源：DeepResearch 调研（2026-05-19）
-- 摘要：验证 libdmabufheap pooling、Gralloc4 IMapper additionalOptions、Binder FDA 批量 fd 安装在 16KB 页大小下的版本实现边界。涵盖 ION→DMA-BUF heap 迁移路径、BufferQueue 分配链路，以及厂商 gralloc 实现对物理对齐的决定性作用。

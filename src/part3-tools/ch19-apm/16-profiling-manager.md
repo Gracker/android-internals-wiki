@@ -34,7 +34,7 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
 pipeline_stage: "task9_pending"
 task6_state: "reviewed"
-task9_state: "reviewed"
+task9_state: pending
 task2b_state: fixed
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
