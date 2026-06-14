@@ -1790,6 +1790,535 @@
       "processed_at": "2026-06-14T06:12:00.869305",
       "processor": "task-deepresearch-injector",
       "action": "queued"
+    },
+    {
+      "title": "从软件架构分析 Android 图形系统 (1)",
+      "path": "AndroidWeekly/#21/从软件架构分析 Android 图形系统 (1)",
+      "source_url": "https://zhuanlan.zhihu.com/p/404805031",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android图形系统架构分析，深入讲解系统组件...",
+      "scored_at": "2026-06-14T09:05:26.578591"
+    },
+    {
+      "title": "从 软件架构分析 Android 图形系统 (2)",
+      "path": "AndroidWeekly/#21/从 软件架构分析 Android 图形系统 (2)",
+      "source_url": "https://zhuanlan.zhihu.com/p/404809099",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android图形系统架构分析第二部分，继续深入...",
+      "scored_at": "2026-06-14T09:05:26.578598"
+    },
+    {
+      "title": "从软件架构分析 Android 图形系统 (3)",
+      "path": "AndroidWeekly/#21/从软件架构分析 Android 图形系统 (3)",
+      "source_url": "https://zhuanlan.zhihu.com/p/404894957",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android图形系统架构分析第三部分...",
+      "scored_at": "2026-06-14T09:05:26.578600"
+    },
+    {
+      "title": "从软件架构分析 Android 图形系统 (4)",
+      "path": "AndroidWeekly/#21/从软件架构分析 Android 图形系统 (4)",
+      "source_url": "https://zhuanlan.zhihu.com/p/404905280",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android图形系统架构分析第四部分...",
+      "scored_at": "2026-06-14T09:05:26.578602"
+    },
+    {
+      "title": "从软件架构分析 Android 图形系统 (5)",
+      "path": "AndroidWeekly/#21/从软件架构分析 Android 图形系统 (5)",
+      "source_url": "https://zhuanlan.zhihu.com/p/404928753",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android图形系统架构分析第五部分...",
+      "scored_at": "2026-06-14T09:05:26.578603"
+    },
+    {
+      "title": "从软件架构分析 Android 图形系统 (6)",
+      "path": "AndroidWeekly/#21/从软件架构分析 Android 图形系统 (6)",
+      "source_url": "https://zhuanlan.zhihu.com/p/404949161",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android图形系统架构分析第六部分...",
+      "scored_at": "2026-06-14T09:05:26.578604"
+    },
+    {
+      "title": "从软件架构分析 Android 图形系统 (7)",
+      "path": "AndroidWeekly/#21/从软件架构分析 Android 图形系统 (7)",
+      "source_url": "https://zhuanlan.zhihu.com/p/405009272",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android图形系统架构分析第七部分...",
+      "scored_at": "2026-06-14T09:05:26.578605"
+    },
+    {
+      "title": "Android 源码 —— Bitmap 位图内存的演进流程",
+      "path": "AndroidWeekly/#21/Android 源码 —— Bitmap 位图内存的演进流程",
+      "source_url": "https://sharrychoo.github.io/blog/android-source/bitmap-memory-evolution",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析Android Bitmap内存优化演进历程...",
+      "scored_at": "2026-06-14T09:05:26.578607"
+    },
+    {
+      "title": "天下苦 Android Native 调试久矣",
+      "path": "AndroidWeekly/#21/天下苦 Android Native 调试久矣",
+      "source_url": "https://mp.weixin.qq.com/s/pYdF_b-Z7WMB2I6XGYF8hA",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-调试",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android Native调试工具和实践方法分享...",
+      "scored_at": "2026-06-14T09:05:26.578608"
+    },
+    {
+      "title": "Android 应用启动 全流程分析（源码深度剖析 + Systrace 展示）",
+      "path": "AndroidWeekly/#21/Android 应用启动 全流程分析（源码深度剖析 + Systrace 展示）",
+      "source_url": "https://mp.weixin.qq.com/s/8WR6YfnJrQmRWTbY4s0b7Q",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-性能优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android应用启动全流程源码分析，包含Systrace...",
+      "scored_at": "2026-06-14T09:05:26.578609"
+    },
+    {
+      "title": "一文讲述 | kernel 图显系统的 DRM FRAMEBUFFER",
+      "path": "AndroidWeekly/#21/一文讲述 | kernel 图显系统的 DRM FRAMEBUFFER",
+      "source_url": "https://mp.weixin.qq.com/s/F6uEYFIGfodTg6M2-pJ-MA",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核DRM framebuffer系统原理介绍...",
+      "scored_at": "2026-06-14T09:05:26.578610"
+    },
+    {
+      "title": "Linux 中的等待 队列机制",
+      "path": "AndroidWeekly/#21/Linux 中的等待 队列机制",
+      "source_url": "https://zhuanlan.zhihu.com/p/97107297",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Linux内核等待队列机制原理与实现...",
+      "scored_at": "2026-06-14T09:05:26.578611"
+    },
+    {
+      "title": "Flutter 2.5 更新一览",
+      "path": "AndroidWeekly/#21/Flutter 2.5 更新一览",
+      "source_url": "https://mp.weixin.qq.com/s/HCUOfTDsMvrlGRJJ96F9GA",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Flutter 2.5版本新特性介绍...",
+      "scored_at": "2026-06-14T09:05:26.578612"
+    },
+    {
+      "title": "王小二图解 Android【003】ANR",
+      "path": "AndroidWeekly/#21/王小二图解 Android【003】ANR",
+      "source_url": "https://www.bilibili.com/video/BV1nJ411n7L2",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-调试",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "ANR问题分析与解决方案视频教程...",
+      "scored_at": "2026-06-14T09:05:26.578614"
+    },
+    {
+      "title": "Flutter 手势探索 —— 原理与实现的背后",
+      "path": "AndroidWeekly/#21/Flutter 手势探索 —— 原理与实现的背后",
+      "source_url": "https://mp.weixin.qq.com/s/rUcWz7Rx5T34WyYoCDLh8Q",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Flutter手势系统原理深度解析...",
+      "scored_at": "2026-06-14T09:05:26.578615"
+    },
+    {
+      "title": "Android PLT hook 概述",
+      "path": "AndroidWeekly/#21/Android PLT hook 概述",
+      "source_url": "https://github.com/iqiyi/xHook/blob/master/docs/overview/android_plt_hook_overview.zh-CN.md",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android PLT hook技术原理与实现分析...",
+      "scored_at": "2026-06-14T09:05:26.578616"
+    },
+    {
+      "title": "进程间通信的五种方式",
+      "path": "AndroidWeekly/#21/进程间通信的五种方式",
+      "source_url": "https://zhuanlan.zhihu.com/p/405664139",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android进程间通信机制对比分析...",
+      "scored_at": "2026-06-14T09:05:26.578617"
+    },
+    {
+      "title": "超硬核，进程在内存中的样子！以及进程的一生",
+      "path": "AndroidWeekly/#21/超硬核，进程在内存中的样子！以及进程的一生",
+      "source_url": "https://zhuanlan.zhihu.com/p/401087855",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析Android进程生命周期和内存布局...",
+      "scored_at": "2026-06-14T09:05:26.578618"
+    },
+    {
+      "title": "内存管理：小结",
+      "path": "AndroidWeekly/#21/内存管理：小结",
+      "source_url": "https://zhuanlan.zhihu.com/p/404704147",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android内存管理机制总结与优化建议...",
+      "scored_at": "2026-06-14T09:05:26.578619"
+    },
+    {
+      "title": "Android TTI 治理经验分享",
+      "path": "AndroidWeekly/#21/Android TTI 治理经验分享",
+      "source_url": "https://mp.weixin.qq.com/s/FNoEWSB9YCMjbKsk-5OmLA",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-性能优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android TTI（Time To Interactive）治理实践...",
+      "scored_at": "2026-06-14T09:05:26.578620"
+    },
+    {
+      "title": "Introduction to Hilt in the MAD Skills series",
+      "path": "AndroidWeekly/#21/Introduction to Hilt in the MAD Skills series",
+      "source_url": "https://medium.com/androiddevelopers/introduction-to-hilt-in-the-mad-skills-series-40f0908f2fc0",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Hilt依赖注入框架入门教程...",
+      "scored_at": "2026-06-14T09:05:26.578621"
+    },
+    {
+      "title": "Memory Models",
+      "path": "AndroidWeekly/#21/Memory Models",
+      "source_url": "https://research.swtch.com/mm",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "内存模型原理与设计模式深度解析...",
+      "scored_at": "2026-06-14T09:05:26.578623"
+    },
+    {
+      "title": "Using WorkManager on Android 12",
+      "path": "AndroidWeekly/#21/Using WorkManager on Android 12",
+      "source_url": "https://medium.com/androiddevelopers/using-workmanager-on-android-12-f7d483ca0ecb",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 0
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android 12下WorkManager使用指南...",
+      "scored_at": "2026-06-14T09:05:26.578624"
     }
   ]
 }

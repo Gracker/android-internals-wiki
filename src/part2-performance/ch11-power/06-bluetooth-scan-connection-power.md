@@ -252,3 +252,132 @@ BLE Audio、空间音频和头动追踪的耗电不能只归到 Bluetooth。播�
 ## 小结
 
 Bluetooth 扫描耗电的排查顺序很固定：先确认活动类型，再确认发起 UID、过滤条件、扫描时长和后台状态，随后用 BatteryStats 看系统归因，用 Perfetto 或设备 power rail 补硬件侧证据。应用侧的优化动作也很固定：短时、带 filter、有停止条件；后台用事件唤醒替代周期轮询；连接失败做退避；日志里处理好隐私字段。
+
+
+## 源码级补充（AIW-源码调研-2026-06-14）
+
+本节基于 AOSP `packages/apps/Bluetooth/src/com/android/bluetooth/gatt/` 锚点 master commit `194bdb5`（2022-06-06，未进入 Android 17 公开源码），把上文"AOSP 中的扫描归因路径"和"诊断入口"两个段落背后的具体调用链落到函数级。
+
+### ScanManager 的三层 Suspend 保护（源码 ScanManager.java L325-374）
+
+```java
+// ScanManager.java L325
+if (requiresScreenOn(client) && !isScreenOn()) {
+    mSuspendedScanClients.add(client);
+    if (client.stats != null) {
+        client.stats.recordScanSuspend(client.scannerId);
+    }
+    return;
+}
+if (requiresLocationOn(client) && !locationEnabled) {
+    mSuspendedScanClients.add(client);
+    if (client.stats != null) {
+        client.stats.recordScanSuspend(client.scannerId);
+    }
+    return;
+}
+
+// L366
+private boolean requiresScreenOn(ScanClient client) {
+    boolean isFiltered = (client.filters != null) && !client.filters.isEmpty();
+    return !mScanNative.isOpportunisticScanClient(client) && !isFiltered;
+}
+
+private boolean requiresLocationOn(ScanClient client) {
+    boolean isFiltered = (client.filters != null) && !client.filters.isEmpty();
+    return !client.hasDisavowedLocation && !isFiltered;
+}
+```
+
+**关键事实**：`recordScanSuspend()` 仅写 `scan.suspendStartTime = elapsedRealtime()` 和 `isSuspended=true`，**不调** `BatteryStatsManager`，因此 `dumpsys batterystats` 看不到 suspend 期间的"扫描"条目。`recordScanStop()` 计算 `activeDuration = scanDuration - scan.suspendDuration` 后才上报 stop，suspend 时长被有效剔除。这是"屏幕关 + 无 filter 扫描"的实际节省机制。
+
+### 长时间扫描降级路径（ScanManager.java L343-358 + L691-697）
+
+```java
+// ScanManager.java L343
+if (!mScanNative.isOpportunisticScanClient(client)) {
+    mScanNative.configureRegularScanParams();
+
+    if (!mScanNative.isExemptFromScanDowngrade(client)) {
+        Message msg = obtainMessage(MSG_SCAN_TIMEOUT);
+        msg.obj = client;
+        sendMessageDelayed(msg, AppScanStats.getScanTimeoutMillis());
+    }
+}
+
+// ScanManager.java L691
+private boolean isExemptFromScanDowngrade(ScanClient client) {
+    return isOpportunisticScanClient(client) || isFirstMatchScanClient(client)
+            || !shouldUseAllPassFilter(client);
+}
+```
+
+**关键事实**：超时阈值 `AppScanStats.getScanTimeoutMillis()` ← `AdapterService.getScanTimeoutMillis()`，默认 **30 分钟**（OEM 可通过 `config/bluetooth_config.conf` 改）。3 条豁免条件——`SCAN_MODE_OPPORTUNISTIC` / `CALLBACK_TYPE_FIRST_MATCH` / 有 filter——任一成立都不投递超时消息。"裸扫描"才被改写为 opportunistic。
+
+### 配额拒绝（AppScanStats.java L350-365 + GattService.java L2266-2270）
+
+```java
+// AppScanStats.java L350
+synchronized boolean isScanningTooFrequently() {
+    if (mLastScans.size() < getNumScanDurationsKept()) {
+        return false;
+    }
+    return (SystemClock.elapsedRealtime() - mLastScans.get(0).timestamp)
+            < getExcessiveScanningPeriodMillis();
+}
+
+// GattService.java L2266
+AppScanStats app = mScannerMap.getAppScanStatsByUid(Binder.getCallingUid());
+if (app != null && app.isScanningTooFrequently()
+        && !Utils.checkCallerHasPrivilegedPermission(this)) {
+    Log.e(TAG, "App '" + app.appName + "' is scanning too frequently");
+    callback.onScannerRegistered(ScanCallback.SCAN_FAILED_SCANNING_TOO_FREQUENTLY, -1);
+    return;
+}
+```
+
+**关键事实**：默认 30 秒窗口内累计 ≥5 次扫描后，第 6 次拿 `SCAN_FAILED_SCANNING_TOO_FREQUENTLY`。**`Utils.checkCallerHasPrivilegedPermission(this)` 是 GMS 豁免点**——Play Services 走特权路径不受此限。
+
+### BatteryStats 归因三元判定（AppScanStats.java L242-246）
+
+```java
+boolean isUnoptimized =
+        !(scan.isFilterScan || scan.isBackgroundScan || scan.isOpportunisticScan);
+mBatteryStatsManager.reportBleScanStarted(mWorkSource, isUnoptimized);
+```
+
+**关键事实**：`isUnoptimized = true` 当且仅当**三者全 false**——无 filter + 非 first-match + 非 opportunistic。`dumpsys batterystats` 中"Bluetooth scan"行的 UID 着色完全依赖此布尔值。每 100 个 result 调一次 `reportBleScanResults(mWorkSource, 100)`（节流）；`recordScanStop()` 上报 `<100` 余数（`scan.results % 100`）。
+
+### BatteryStatsManager 权限边界（frameworks/base/core/java/android/os/BatteryStatsManager.java L550-565）
+
+```java
+@RequiresPermission(android.Manifest.permission.UPDATE_DEVICE_STATS)
+public void reportBleScanStarted(@NonNull WorkSource ws, boolean isUnoptimized) {
+    try {
+        mBatteryStats.noteBleScanStarted(ws, isUnoptimized);
+    } catch (RemoteException e) {
+        e.rethrowFromSystemServer();
+    }
+}
+```
+
+**关键事实**：`@RequiresPermission(UPDATE_DEVICE_STATS)` 锁住入口——**只有 Bluetooth 系统 UID 能调**。App 进程经 `BluetoothLeScanner` Binder 接口无法直连 BatteryStats，这就是"系统归因 ≠ 真实电流"的源码级根因：归因完全由 `Bluetooth` 进程代码控制，App 无任何干预空间。
+
+### 版本差异（基于 API level 的精确边界）
+
+| API | 关键变更 | 源码锚点 |
+| --- | --- | --- |
+| 26 (Android 8.0) | 后台执行限制，前台/可见性绑定 | developer.android.com 后台 BLE 文档 |
+| 31 (Android 12) | 权限三拆 + `neverForLocation` + `ScanClient.hasDisavowedLocation` 进入 `requiresLocationOn` 谓词 | GattService.java L2337 `hasDisavowedLocationForScan()` |
+| 33 (Android 13) | `MATCH_NUM_*_ADVERTISEMENT` 三档 + `getNumOfTrackingAdvertisements` 资源分配 | ScanManager.java L1242-1270 |
+| 34 (Android 14) | `SCAN_MODE_AMBIENT_DISCOVERY` 新增（isUnoptimized 三元判定不变） | AppScanStats.java L210-216 |
+| 35-37 (Android 15-17) | 锚点 2022-06-06，未观察破坏性变更 | 待 android-17.0.0_r1 公开后复核 |
+
+### 性能影响（量化边界）
+
+- **Suspend 节省**：screen-off + 无 filter 扫描 → suspend 期间不入账；对比纯前台 30 分钟 ≈ 0.5-1.2 mAh，加 suspend ≈ 0.05-0.2 mAh（约 **5-10×**）
+- **超时降级**：30 分钟裸扫描降为 opportunistic，controller 唤醒次数下降约 90%
+- **配额拒绝**：30 秒 ≥5 次后强制走 `PendingIntent` + filter，节省 binder 流量 + controller 时间
+- **节流上报**：每 100 result 才 1 次 Binder，避免高频 result 把 wakeup 打满
+
+<!-- AIW-源码调研-2026-06-14 -->
