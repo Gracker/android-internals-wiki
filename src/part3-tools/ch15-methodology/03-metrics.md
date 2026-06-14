@@ -1,7 +1,7 @@
 ---
 title: "性能指标体系"
 chapter: "15.3"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-25"
@@ -37,8 +37,8 @@ sources:
 tags:
   - android
   - research
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-04-26"
@@ -49,7 +49,7 @@ task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-06-12"
+last_task6_audit: "2026-06-14"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -63,7 +63,7 @@ last_task9_audit_log: 'logs/deep-review/2026-06-14-18-audit.md'
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-14
 last_task9_autofix_at: '2026-06-14'
 task9_review_notes: "2026-06-14 Task9 idle audit: auto-fixed FrameMetrics.DEADLINE duration-budget wording and Perfetto Power Rails / Energy Consumer unit semantics; no P0/P1 queue item."
 last_task9_review_log: "logs/deep-review/2026-06-14-18-audit.md"
@@ -461,9 +461,7 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 
 一个健康的指标分布应该是:P90 接近 P50,P99 略高于 P90。如果 P99 远高于 P50(比如 P50=8ms 但 P99=150ms),说明系统存在偶发的严重问题,需要排查。
 
-## 线上 vs 线下:不要用一套指标打天下
-
-同一个名字的指标,在线上和线下的职责经常不同:
+同一个名字的指标,在不同场景下职责经常不同。这里用一个对照表收束前面的讨论:
 
 | 指标 | 线下更关注 | 线上更关注 |
 |---|---|---|
@@ -472,7 +470,7 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 | ANR / Crash | 复现条件和线程状态 | 受影响用户比例、机型 / 版本趋势 |
 | PSS / Java Heap | 场景峰值和增长曲线 | 分布、异常版本、设备聚类 |
 
-如果直接把线下单次结果当成线上结论,或把线上聚合指标拿来替代线下分析,都会出偏差。
+把线下单次结果直接当成线上结论,或者拿线上聚合指标替代线下 trace 分析,都会跑偏。
 
 ## Android Vitals 与 Google Play Console
 
