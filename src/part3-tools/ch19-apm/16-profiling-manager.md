@@ -32,15 +32,15 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: fixed
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-14"
-last_task6_at: "2026-05-31T19:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-31-19-review.md"
+last_task6_at: "2026-06-14T11:12:23+08:00"
+last_task6_review_log: "logs/review/2026-06-14-11-review.md"
 task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 4 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task9_at: "2026-06-14T10:20:00+08:00"
 last_task9_audit: "2026-06-14"
@@ -52,14 +52,15 @@ task2b_rework_source: "frontmatter backlog fallback; logs/deep-review/2026-05-20
 task2b_rework_notes: "修复 Task9 19.16：拆开 profileable/shell 与线上 ProfilingManager 前提；补 OOM trigger 默认 uncaught handler 透传要求；补 rate limiter cost/hour/day/week 模型；替换 404 官方 guide URL。"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-31"
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-14"
 last_task9_review_log: "logs/deep-review/2026-06-14-10-audit.md"
-task6_reviewed_date: "2026-05-31"
+task6_reviewed_date: "2026-06-14"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 last_task9_autofix_at: "2026-06-14"
+task6_review_notes: "2026-06-14 Task6 revisiting review: pass-light-edit；terminology 一致性修复 artifact→产物 (5处)；Task9 auto-fix SDK_INT_FULL 已验证正确；无新增 Task2B 回炉项。"
 ---
 
 
@@ -80,7 +81,7 @@ last_task9_autofix_at: "2026-06-14"
 
 - 🔸 用 AndroidX `Profiling` / `ProfilingRequest` 包装请求构造
 - 🔸 补一张 request listener / global listener 的结果分发表
-- 🔸 给 trigger 场景补版本对照表和 artifact 对照表
+- 🔸 给 trigger 场景补版本对照表和 产物对照表
 <!-- outline-end -->
 
 ## 适用范围按版本区分
@@ -157,7 +158,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 | API 37 | `TRIGGER_TYPE_COLD_START` | newly started system trace + stack sampling | 冷启动全窗口取证 |
 | API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 因资源占用异常被系统终止 |
 | API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java 层 OOM 根因定位 |
-| API 37 | `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT` | 依异常类型返回不同 artifact | 异常行为与兼容性问题采样 |
+| API 37 | `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT` | 依异常类型返回不同产物 | 异常行为与兼容性问题采样 |
 
 `TRIGGER_TYPE_OOM` 还有一个接入前提：应用自定义 `Thread.UncaughtExceptionHandler` 时，handler 必须继续调用默认 handler。吞掉默认处理会让系统侧 OOM trigger 收不到应有的终止路径，Java heap dump 也就不会按这个 trigger 产出。做不到这一点时，只能把 OOM 后的补抓降级为应用主动请求 `JavaHeapDumpRequestBuilder`，并把成功率按采样项单独统计。
 
@@ -184,7 +185,7 @@ fun supportsKillTriggeredProfiling(): Boolean {
 1. `JankStats`、`FrameMetrics`、启动/ANR 指标、APM 事件先把异常样本筛出来
 2. 满足条件时用 `ProfilingManager` 抓一份重样本
 3. `System trace` 进 Perfetto，heap dump / heap profile 进 Android Studio Profiler、MAT 或内部解析流程
-4. 最终把 profiling artifact 和 session、版本、页面、实验分组重新关联回 APM 事件
+4. 最终把 profiling 产物 和 session、版本、页面、实验分组重新关联回 APM 事件
 
 这样分工之后，轻量指标负责发现问题，`ProfilingManager` 负责取证，Perfetto / Profiler 负责复盘。
 
@@ -209,7 +210,7 @@ fun supportsKillTriggeredProfiling(): Boolean {
 
 ## 结果文件生命周期
 
-结果文件不能按普通埋点处理。稳定做法是把它们当成独立 artifact 管理。
+结果文件不能按普通埋点处理。稳定做法是把它们当成独立产物管理。
 
 ```mermaid
 sequenceDiagram
@@ -223,7 +224,7 @@ sequenceDiagram
     PM-->>App: ProfilingResult
     App->>Store: 落 metadata 与文件引用
     Upload->>Store: 校验 Wi-Fi / 充电 / 文件大小 / 预算
-    Upload->>Server: 上传 artifact + metadata
+    Upload->>Server: 上传产物 + metadata
     Server-->>Upload: 返回 sample id
     Upload->>Store: 删除文件或标记已归档
 ```
