@@ -2,27 +2,27 @@
 title: 渲染机制的版本演进
 chapter: '2.9'
 section: '2.9'
-status: finalized
+status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 task6_reviewed_date: "2026-05-27"
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
-applicable_versions: Android 3.0 (API 11) ~ Android 16 (API 36)
-last_verified: '2026-04-23'
-last_verified_against: AOSP android-16.0.0_r1 + external/perfetto + developer.android.com
+applicable_versions: Android 3.0 (API 11) ~ Android 17 (API 37)
+last_verified: '2026-06-15'
+last_verified_against: AOSP android-16.0.0_r1 + android-5.0.0_r1 Choreographer/ThreadedRenderer + developer.android.com 17 beta
 confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed-lite
-last_task2b_at: "2026-05-13T23:35:47+08:00"
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-06-15T06:50:00+08:00"
+pipeline_stage: task6_pending
 last_task2b_lite_at: '2026-05-27'
 sources:
 - type: official
@@ -39,6 +39,12 @@ sources:
   path: frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java
 - type: aosp
   path: frameworks/base/graphics/java/android/graphics/RuntimeXfermode.java
+- type: official
+  path: developer.android.com/about/versions/17/summary
+- type: official
+  path: developer.android.com/games/develop/vulkan/overview
+- type: aosp
+  path: frameworks/base/core/java/android/view/Choreographer.java (android-5.0.0_r1)
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-15"
 last_task9_at: "2026-06-15T06:20:00+08:00"
@@ -255,14 +261,27 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 [待高爷补充：支持 ARR 的设备上 VSYNC-app 间隔动态变化的 Perfetto 截图]
 
+## Android 17：WebGPU 与 Vulkan 路线深化
+
+Android 17（API 37，2026 年）图形侧的更新集中在三个方向，以下基于 Android 17 Beta 官方文档：
+
+**WebGPU on Android。** Android 17 是第一个在系统级引入 WebGPU 支持的 Android 版本。WebGPU 是新一代 Web 图形 API，定位为 WebGL 的继任者，为 Web 应用提供接近原生 Vulkan 的 GPU 访问能力。Android 端 Web 内容（WebView、PWA）因此也能利用 Vulkan 后端的现代 GPU 特性，而非停留在 OpenGL ES 的 WebGL 路径。
+
+**OpenGL ES 维护模式继续。** OpenGL ES 不再接受新特性开发，这一方向从 Android 16 延续到 Android 17。新图形特性开发转向 Vulkan 和 WebGPU。OpenGL ES 仍可正常运行，但长远看，对图形性能有要求的应用应优先评估 Vulkan 或 WebGPU 路径。
+
+**Vulkan 偏好信号：`com.android.graphics.driver.prefer_angle`。** Android 17 Vulkan 文档新增了一个 manifest metadata：应用在 `<application>` 中声明 `<meta-data android:name="com.android.graphics.driver.prefer_angle" android:value="true"/>` 即可表达优先使用 ANGLE 的偏好。ANGLE 将 OpenGL ES 调用翻译为 Vulkan，这个 metadata 提供了一种声明偏好的方式——但不保证 ANGLE 一定启用，实际是否走 ANGLE 仍由设备配置、系统属性和驱动支持共同决定。
+
+> 以上基于 Android 17 Beta 官方文档。WebGPU 的系统级可用性、`prefer_angle` 的设备覆盖面等细节，以 Android 17 正式发布后的文档为准。
+
 ## Choreographer 与 FrameMetrics API 的演进
 
 ### Choreographer 的版本变化
 
 从 Android 4.1 引入到 Android 16，Choreographer 的核心职责未变——在 VSync 信号到来时调度帧工作。但实现细节在持续优化:
 
-- Android 4.1：引入 `Choreographer`，VSync 信号通过 `DisplayEventReceiver` 的 native 层接收
-- Android 5.0：与 RenderThread 协作，`doFrame()` 的 `CALLBACK_COMMIT` 阶段将帧提交给 RenderThread
+- Android 4.1：引入 `Choreographer`，VSync 信号通过 `DisplayEventReceiver` 的 native 层接收；回调类型为 `CALLBACK_INPUT` / `CALLBACK_ANIMATION` / `CALLBACK_TRAVERSAL`
+- Android 5.0：引入 RenderThread，帧提交路径经 `ViewRootImpl.draw()` → `ThreadedRenderer.draw()` → `nSyncAndDrawFrame()`，而非 Choreographer callback 驱动
+- Android 6.0：Choreographer 新增 `CALLBACK_COMMIT`，作为 `TRAVERSAL` 之后的提交回调阶段，此时帧已通过 draw 路径进入 HWUI
 - Android 16：配合 ARR，Choreographer 需要适应动态的 VSync 周期，帧节奏库(Frame Pacing Library / Swappy)也相应更新
 
 ### FrameMetrics API：量化每一帧的"慢"在哪里
@@ -433,6 +452,7 @@ Unreal Engine 已集成 Swappy。
 | 13 | 2022 | vsync-appSf 解耦 + AGSL 引入 | Choreographer 同步精度提升;自定义图形着色器可用 |
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
 | 16 | 2025 | VP_ANDROID_16_minimums Vulkan 最低要求 profile + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan 1.4 新设备准入 + VP_ANDROID_16_minimums 强制扩展集；帧率动态切换更频繁；Graphite 为 Skia 方向性后端，HWUI 侧启用路径待后续版本 |
+| 17 | 2026 | WebGPU on Android + `prefer_angle` manifest metadata + OpenGL ES 维护模式继续 | WebGPU 为 Web 内容提供 Vulkan 后端 GPU 能力；App 可通过 manifest metadata 声明 ANGLE 偏好（不保证启用） |
 
 > [已验证: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
 
