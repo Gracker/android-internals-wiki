@@ -39,9 +39,9 @@ repaired_by: openclaw-task2b
 task6_reviewed_date: "2026-05-31"
 last_task6_review_log: "logs/review/2026-05-31-21-review.md"
 task6_review_notes: "2026-05-31 Task6 revisiting-review: L1/L2 小修 3 处；Compose 示例补齐 state 清理，送 Task9 复核。"
-last_task9_audit: 2026-05-21
-last_task9_audit_at: "2026-05-21T10:23:28+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-21-10-audit.md"
+last_task9_audit: 2026-06-15
+last_task9_audit_at: "2026-06-15T04:25:57+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-15-04-audit.md"
 task9_review_notes: "2026-05-31 Task9 deep review: AndroidX metrics-performance 1.0.0 / JankStatsApi16/24/26/31 / FrameMetrics.DEADLINE 复核通过，无 P0/P1，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
 last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-21 Task9 fallback 问题修正 JankStats API16/24/26/31 实现分层与 FrameMetrics.DEADLINE API31 版本边界。"
