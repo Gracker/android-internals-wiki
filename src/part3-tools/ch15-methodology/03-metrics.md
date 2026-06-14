@@ -1,7 +1,7 @@
 ---
 title: "性能指标体系"
 chapter: "15.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-25"
@@ -67,6 +67,8 @@ last_deepseek_cn_review_at: 2026-05-28
 last_task9_autofix_at: '2026-06-14'
 task9_review_notes: "2026-06-14 Task9 idle audit: auto-fixed FrameMetrics.DEADLINE duration-budget wording and Perfetto Power Rails / Energy Consumer unit semantics; no P0/P1 queue item."
 last_task9_review_log: "logs/deep-review/2026-06-14-18-audit.md"
+last_task2b_verifier_at: "2026-06-14T19:31:17"
+task2b_verifier_result: "status-fix-ready-for-task6"
 ---
 
 

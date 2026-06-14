@@ -59,7 +59,7 @@ related_chapters:
 - '3.3'
 pipeline_stage: "task9_pending"
 task6_state: "reviewed"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 reviewed_date: "2026-06-14"
@@ -87,6 +87,8 @@ task9_review_notes: "2026-06-14 Task9 idle audit: auto-fixed。修复 Perfetto s
 p0: 0
 p1: 0
 p2: 0
+last_task2b_verifier_at: "2026-06-14T19:31:17"
+task2b_verifier_result: "task9-state-reset-ready-for-task9"
 ---
 
 # 2.20 多窗口与桌面模式渲染性能

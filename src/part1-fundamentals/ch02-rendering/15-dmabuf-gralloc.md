@@ -63,7 +63,7 @@ gap_score: 17/20
 pipeline_stage: "task9_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: "pending"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-14"
 task9_reviewed_by: openclaw-task9
@@ -77,8 +77,8 @@ last_task6_at: "2026-06-14T16:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-14-16-review.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-06-14-13-audit.md"
-last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
-task2b_verifier_result: "ready-for-task6"
+last_task2b_verifier_at: "2026-06-14T19:31:17"
+task2b_verifier_result: "task9-state-reset-ready-for-task9"
 last_task9_autofix_at: "2026-06-14"
 task6_reviewed_date: "2026-06-14"
 deepseek_cn_review_state: done
