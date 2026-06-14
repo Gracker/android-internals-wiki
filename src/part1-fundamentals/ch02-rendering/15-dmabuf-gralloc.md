@@ -2,9 +2,9 @@
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2'
 section: '2.15'
-status: ready-for-review
+status: "finalized"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
-last_verified: '2026-04-26'
+last_verified: '2026-06-14'
 last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
 confidence: medium
 drafted_date: '2026-04-05'
@@ -60,29 +60,36 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: auto-fixed
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-06-14"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-14T13:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-14T20:37:52+08:00"
 last_task9_audit: "2026-06-14"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
-task9_review_notes: "2026-06-14 Task9 闲时抽检：auto-fixed。复核 DMA-BUF exporter 与 buffer_handle_t 边界、Android 14 buffer cache purge 官方文档路径；无新增 queue。已回到 Task6 复审。"
+task9_review_notes: "2026-06-14 Task9 full review: pass-tech-review。复核 DMA-BUF Heap、GraphicBuffer transport、allocator/mapper AIDL/stable-C 边界、BufferQueue/BLAST handle 传递、Android 14 buffer cache purge、16KB page size 与 Perfetto dmabuf 观测；未发现新增 P0/P1/P2，queue 无本章节 pending，自动晋升 finalized。"
 last_task6_at: "2026-06-14T16:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-14-16-review.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-06-14-13-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-14-20-deep-review.md"
 last_task2b_verifier_at: "2026-06-14T19:31:17"
 task2b_verifier_result: "task9-state-reset-ready-for-task9"
 last_task9_autofix_at: "2026-06-14"
 task6_reviewed_date: "2026-06-14"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
+finalized_date: "2026-06-14"
+finalized_by: "openclaw-task9-auto-promote"
+auto_promoted_date: "2026-06-14"
+auto_promoted_by: "openclaw-task9"
+p0: 0
+p1: 0
+p2: 0
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
