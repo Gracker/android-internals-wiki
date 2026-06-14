@@ -55,6 +55,7 @@ task9_review_notes: "2026-05-27 Task9：pass-tech-review。复核 ZygoteInit pre
 last_task2b_lite_at: "2026-05-27"
 last_task9_autofix_at: "2026-05-27"
 last_task9_audit: "2026-06-14"
+last_task6_audit: "2026-06-15"
 p0: 0
 p1: 0
 p2: 0
