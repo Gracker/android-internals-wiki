@@ -61,6 +61,9 @@ task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX，补充 API 34+/35+
 task2b_result: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
+task2b_state: fixed
+last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
 
 # Java Heap 优化策略
