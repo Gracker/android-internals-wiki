@@ -24,7 +24,7 @@ sources:
 pipeline_stage: "task9_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: auto-fixed

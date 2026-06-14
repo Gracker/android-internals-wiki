@@ -3,7 +3,7 @@
 title: 多窗口与桌面模式渲染性能
 chapter: '2.20'
 section: '2.20'
-status: "finalized"
+status: ready-for-review
 drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
