@@ -47,7 +47,7 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-task6_state: "reviewed"
+task6_state: "revisiting"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-25"
@@ -60,20 +60,22 @@ task6_reviewed_date: "2026-05-25"
 last_task6_at: "2026-05-25T08:15:00+08:00"
 last_task6_review_log: "logs/review/2026-05-25-08-review.md"
 task6_review_notes: "2026-05-25 Task6：小修 L1/L2 1 处；未新增 Task6 L3/L4 回炉。既有 Task9 P1 队列仍 pending：display_frame_token gap 不能单独定责 Scheduler。"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-25"
-last_task9_at: "2026-05-25T11:41:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-25-11-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-06-14"
+last_task9_at: "2026-06-14T12:30:44+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-14-12-audit.md"
+task9_review_notes: "2026-06-14 Task9 idle audit:auto-fixed VsyncModulator config name EarlyGl -> EarlyGpu against AOSP android-16.0.0_r1;no queue entry;returned to Task6."
 p0: 0
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+last_task9_audit: "2026-06-14"
+last_task9_autofix_at: "2026-06-14"
 ---
 
 
@@ -134,7 +136,7 @@ DisplayManager 这一层先决定系统允许在哪些显示模式里做选择�
 
 到了 SurfaceFlinger 这一层，`mScheduler->chooseRefreshRateForContent(...)` 才开始根据当前可见 Layer 的内容节奏做 content-based selection。这里的输入已经带着前面那层收窄后的 allowed ranges，所以 Battery Saver、用户峰值刷新率和 App 请求范围会先影响候选集合，再交给 Scheduler 做评分。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 
-`VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`，阅读入口可以从 `VsyncModulator::setVsyncConfigSet()` 和 `VsyncModulator::updateVsyncConfig()` 开始。前者装载 Early / EarlyGl / Late 等 offset 配置，后者根据 transaction、刷新率变化和调度状态选择本轮使用哪组配置。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
+`VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`，阅读入口可以从 `VsyncModulator::setVsyncConfigSet()` 和 `VsyncModulator::updateVsyncConfig()` 开始。前者装载 Early / EarlyGpu / Late 等 offset 配置，后者根据 transaction、刷新率变化和调度状态选择本轮使用哪组配置。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
 ## App 侧可以用的 ARR API
 
