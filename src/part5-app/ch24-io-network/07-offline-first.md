@@ -48,7 +48,8 @@ last_task6_review_log: logs/review/2026-05-14-13-review.md
 task6_review_notes: "2026-05-14 Task6：四层质检通过；吸收 Task9 P2 的示例代码接入边界，轻修术语和无数据基线的批量窗口表述。满足 Task6/Task9 通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-05-26"
 last_task9_audit_log: "logs/deep-review/2026-05-26-09-audit.md"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # 离线优先架构
@@ -80,13 +81,12 @@ last_task9_audit_log: "logs/deep-review/2026-05-26-09-audit.md"
 
 离线优先处理数据层约束：读取路径必须有不依赖网络的数据源，写路径必须能在网络不可用时保住用户操作，并在恢复连接后完成同步。Android 官方架构文档把离线优先放在数据层讨论。UI 不需要关心数据来自网络、数据库还是同步队列，它只消费 Repository 暴露出来的状态。[已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
 
-24.6 已经讲过 HTTP 缓存、磁盘缓存和业务缓存的边界。24.7 往前走一步：把缓存从“加速读取”升级成“支撑产品流程”。如果用户在地铁、电梯、海外漫游、弱网切换时仍要浏览、收藏、提交、撤销，缓存层就不能只保存接口响应快照，还要保存操作日志、同步状态、冲突元数据和错误恢复入口。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
-
+24.6 已经讲过 HTTP 缓存、磁盘缓存和业务缓存的边界。24.7 往前走一步：把缓存从“加速读取”升级成“支撑产品流程”。如果用户在地铁、电梯、海外漫游、弱网切换时仍要浏览、收藏、提交、撤销，缓存层就不能只保存接口响应快照，还要保存操作日志、同步状态、冲突元数据和错误恢复入口。
 离线优先的性能收益来自减少等待。页面先读本地，网络同步转成后台任务；用户操作先落本地，远端提交转成可重试队列。代价也会增加：本地数据可能过期，同一对象可能被多端修改，后台任务会受电量、网络、系统调度限制。设计时要先挑出“必须离线可用”的业务对象，别把所有接口都塞进同一套同步框架。
 
 ## 离线优先的设计原则
 
-离线优先以本地数据源作为读取入口。Repository 对上层暴露 `Flow`、`StateFlow` 或 Paging 数据流，UI 从 Room、DataStore 或文件索引拿数据；网络请求只负责刷新本地数据源。Android 官方文档明确建议：离线优先场景下，Repository 至少要有一个不依赖网络的数据源，本地数据源应作为 App 的权威事实源。[已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
+离线优先的读取入口是本地数据源。Repository 向上层暴露 `Flow`、`StateFlow` 或 Paging 数据流，UI 从 Room、DataStore 或文件索引拿数据；网络请求只负责刷新本地数据源。Android 官方文档明确建议：离线优先场景下，Repository 至少要有一个不依赖网络的数据源，本地数据源应作为 App 的权威事实源。[已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
 
 工程上可以按三类数据拆开处理：
 
@@ -98,8 +98,7 @@ last_task9_audit_log: "logs/deep-review/2026-05-26-09-audit.md"
 
 离线优先还要把读写模型分开。读模型面向 UI 展示，强调快速、可观察、可分页；写模型面向同步，强调幂等、顺序、重试和冲突处理。不要让“提交按钮”直接调用网络层再更新 UI，也不要让 UI 直接拼同步状态。Repository 负责把本地表、网络模型、同步队列映射成稳定的业务模型。[已验证: 官方文档, developer.android.com/topic/architecture/data-layer]
 
-缓存价值要靠指标判断。参考 24.6 的缓存命中率思路，离线优先也要记录本地命中率、冷启动首屏可读比例、同步成功率、冲突率、队列堆积时长、失败重试次数。只看接口成功率会漏掉同步问题：用户已经看到本地数据，但同步队列可能连续失败；或者本地列表能打开，但数据已经长时间没有刷新。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
-
+离线优先架构的收益要靠指标来验证。参考 24.6 的缓存命中率思路，离线优先也要记录本地命中率、冷启动首屏可读比例、同步成功率、冲突率、队列堆积时长、失败重试次数。只看接口成功率会漏掉同步问题：用户已经看到本地数据，但同步队列可能连续失败；或者本地列表能打开，但数据已经长时间没有刷新。
 ## Room + WorkManager 的离线架构
 
 Room 适合作为离线优先的结构化本地数据源。官方 Room 文档说明，Room 基于 SQLite 提供抽象层，适合保存非平凡结构化数据；当设备无法访问网络时，用户仍能浏览本地缓存内容。24.2 已经讲过 WAL、索引、DAO 和 Migration，这里只引用结论：离线优先的数据表要按查询路径和同步路径共同设计，别只照接口 JSON 建表。[已验证: 官方文档, developer.android.com/training/data-storage/room；详见 24.2 节]
@@ -157,11 +156,13 @@ class SyncOutboxWorker(
 
 Worker 不应直接拼 SQL、直接调用 Retrofit、直接更新 UI 状态。实践中，让 Worker 调 Repository 的同步接口，Repository 再协调 DAO、网络数据源和冲突处理器。默认 WorkManager 不能直接实例化带 Repository 参数的构造函数，上面的写法需要配合依赖注入或自定义 WorkerFactory。这样单元测试可以绕开 WorkManager，直接验证 `drainOutbox()` 在成功、超时、401、409、服务端幂等命中时如何更新本地状态。
 
-[自动发现] 分页列表建议使用 Paging 3 的 `RemoteMediator`。官方文档说明，`RemoteMediator` 在本地分页数据耗尽或缓存失效时从网络加载新数据，并写入 Room；UI 仍从 Room 生成的 `PagingSource` 读取。这个模式适合 feed、消息列表、商品列表：列表读取不被网络阻塞，远端刷新通过数据库失效通知推给 UI。[已验证: 官方文档, developer.android.com/topic/libraries/architecture/paging/v3-network-db]
+分页列表建议使用 Paging 3 的 `RemoteMediator`。官方文档说明，`RemoteMediator` 在本地分页数据耗尽或缓存失效时从网络加载新数据，并写入 Room；UI 仍从 Room 生成的 `PagingSource` 读取。这个模式适合 feed、消息列表、商品列表：列表读取不被网络阻塞，远端刷新通过数据库失效通知推给 UI。[已验证: 官方文档, developer.android.com/topic/libraries/architecture/paging/v3-network-db]
+
+本地写入和远端同步的框架搭建好之后，下一个必须面对的问题是冲突。
 
 ## 冲突解决策略
 
-冲突来自两个事实：本地可以先写，远端也可能被别的设备修改。Android 官方离线优先文档把 conflict resolution 放在同步之后讨论，并给出 versioning 和 last write wins 作为常见方向。工程里不能只写“服务端为准”四个字，要把冲突类型、检测字段、自动合并条件和人工处理入口写进协议。[已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
+冲突的根源很简单：本地可以先写，远端也可能被别的设备修改。Android 官方离线优先文档把 conflict resolution 放在同步之后讨论，并给出 versioning 和 last write wins 作为常见方向。工程里不能只写“服务端为准”四个字，要把冲突类型、检测字段、自动合并条件和人工处理入口写进协议。[已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
 
 常见策略可以按风险分层：
 

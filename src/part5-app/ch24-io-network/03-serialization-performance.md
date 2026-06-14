@@ -57,6 +57,8 @@ last_task9_at: "2026-05-14T08:47:50+08:00"
 last_task9_audit: "2026-06-08"
 last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
 task9_review_notes: "2026-05-14 Task9：pass-tech-review。P0 0 / P1 0 / P2 2；技术主线通过，Moshi Codegen benchmark 示例和 AOSP 源码 tag 建议补强；Task6 尚未审，未晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # 序列化性能对比与选型
@@ -86,21 +88,18 @@ task9_review_notes: "2026-05-14 Task9：pass-tech-review。P0 0 / P1 0 / P2 2；
 
 ## 为什么要了解序列化性能对比与选型
 
-序列化选型会同时影响 CPU、分配量、包体积、混淆稳定性和协议演进。它不像数据库慢查询那样容易在 trace 里留下一个醒目的 slice，更多时候表现为冷启动阶段的短时 CPU 峰值、一次网络响应后的对象洪峰、Binder 调用前后多出来的复制成本，或者线上只在混淆包里复现的字段丢失。
+序列化选型会同时影响 CPU、内存分配、包体积、混淆稳定性和协议演进。它不像数据库慢查询那样容易在 trace 里留下一个醒目的耗时片段，更多时候表现为冷启动阶段的短时 CPU 峰值、一次网络响应后的对象洪峰、Binder 调用前后多出来的复制成本，或者线上只在混淆包里复现的字段丢失。
 
 应用侧选型要回答几个问题：JSON 库怎么选，什么时候换成 Protocol Buffers 或 FlatBuffers，进程间传对象该用 Parcelable 还是 Serializable，序列化工作怎么从启动路径和 Binder 路径里移出去。Binder 事务模型和线程池竞争详见 1.4 节；启动阶段的 TTID/TTFD 观测详见 21.1 节；连接池、弱网重试和协议层设计详见 24.4 节。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 
 ## JSON（Gson / Moshi / kotlinx.serialization）性能对比
 
-JSON 的优势是可读、调试方便、后端兼容成本低。它的代价来自两部分：文本格式本身需要 token 扫描和字符串处理；对象绑定还会产生字段匹配、构造对象、集合扩容和临时字符串。小请求里这部分成本通常被网络延迟盖住，大列表、配置下发、启动预拉取和离线缓存恢复时，序列化就会进入用户可感知路径。
+JSON 的优势是可读、调试方便、后端兼容成本低。代价是文本格式本身需要 token 扫描和字符串处理，对象绑定还会产生字段匹配、构造对象、集合扩容和临时字符串。小请求里这部分成本通常被网络延迟盖住，大列表、配置下发、启动预拉取和离线缓存恢复时，序列化就会进入用户可感知路径。
 
 Gson 的主要问题不只在速度。Gson README 已明确说明，它不推荐作为 Android JSON 方案；原因是运行时开放反射与 shrink/optimization/obfuscation 不好配合，Android 场景更适合 Kotlin Serialization 或 Moshi Codegen 这类代码生成方案。已有 Gson 存量项目可以保留在非关键路径，但新模型不要继续把 Gson 放进启动、列表首屏或大批量缓存恢复路径。[已验证: 官方文档, github.com/google/gson/blob/main/README.md]
 
-Moshi 适合 Kotlin/Java 混合项目。Moshi README 说明，Kotlin 场景可以用 reflection、codegen 或二者混用；Codegen 通过 KSP 为每个 Kotlin class 生成小而快的 adapter。它不保证所有场景最快；主要收益是把字段访问和构造逻辑前移到编译期，减少运行时反射、降低混淆风险。对 Android 业务代码，默认把 `@JsonClass(generateAdapter = true)` 作为数据模型约束更稳。[已验证: 官方文档, github.com/square/moshi/blob/master/README.md]
+Moshi 适合 Kotlin/Java 混合项目。Moshi README 说明，Kotlin 场景可以用 reflection、codegen 或二者混用；Codegen 通过 KSP 为每个 Kotlin class 生成小而快的 adapter。Moshi 的价值不在于所有场景都最快；主要收益是把字段访问和构造逻辑提前到编译期，减少运行时反射、降低混淆风险。对 Android 业务代码，默认把 `@JsonClass(generateAdapter = true)` 作为数据模型约束更稳。[已验证: 官方文档, github.com/square/moshi/blob/master/README.md]
 
 kotlinx.serialization 的定位是 Kotlin 多平台、多格式、无反射序列化。它通过 `@Serializable` 和编译器插件生成序列化器，JSON 只是其中一种格式。纯 Kotlin 模块、共享模型、需要同时支持 JSON/CBOR/ProtoBuf 的场景更适合这条路线。代价是模型要遵守插件约束，第三方 Java bean 或动态字段很多的接口迁移成本较高。[已验证: 官方文档, kotlinlang.org/docs/serialization.html]
 
@@ -145,6 +144,8 @@ class FeedJsonBenchmark {
 
 Jetpack Microbenchmark 文档提供了 Android 端小段代码性能测量工具。序列化 benchmark 要跟随 release 构建、R8、目标 API、样本 payload 和机型一起记录；只拿 debug 包结果做选型，会把反射、内联、类加载和 JIT 状态都混在一起。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/microbenchmark-overview]
 
+JSON 适合可读性优先、协议快速迭代的场景。当协议稳定、需要更小的传输体积和更快的解析速度时，二进制格式就该纳入考虑。
+
 ## Protocol Buffers 与 FlatBuffers
 
 Protocol Buffers 适合端到端协议可控的结构化数据。官方概览把它定义为 language-neutral、platform-neutral、extensible 的结构化数据序列化机制，并说明它类似 JSON，但更小、更快，并会生成对应语言的 binding。对 Android 来说，它常见于网络协议、磁盘缓存、跨端共享模型和 gRPC 通信。[已验证: 官方文档, protobuf.dev/overview]
@@ -160,6 +161,8 @@ FlatBuffers 的目标不同。FlatBuffers README 说明，它面向内存效率�
 - 后端字段仍在频繁试验、排查依赖可读文本、接口体积不大：保留 JSON，等协议稳定后再迁移。
 
 迁移时不要把 JSON DTO 原样翻成 `.proto`。更安全的做法是为网络层定义独立 schema，再在仓储层转换成 UI/domain model。这样能把协议演进、默认值、未知字段处理和 UI 状态分开，也避免一个字段名调整牵动页面模型。
+
+网络和存储的序列化选型讨论到这里。Android 还有一类特殊的序列化场景：进程间通信。
 
 ## Parcelable vs Serializable
 
@@ -186,7 +189,7 @@ class UserServiceProxy(private val remote: IUserService) {
 }
 ```
 
-`@Parcelize` 可以减少手写样板代码，但它不会替应用处理大对象、跨版本兼容和 Binder 事务大小。性能问题仍要回到字段数量、字符串长度、集合规模、是否包含 Bitmap/byte array、调用频率和线程位置。
+`@Parcelize` 可以减少手写样板代码，但它不会自动处理大对象、跨版本兼容和 Binder 事务大小——这些仍需开发者自己关注。性能问题仍要回到字段数量、字符串长度、集合规模、是否包含 Bitmap/byte array、调用频率和线程位置。
 
 ## 序列化在启动和 IPC 中的性能影响
 
@@ -196,15 +199,15 @@ class UserServiceProxy(private val remote: IUserService) {
 
 IPC 路径要控制 Parcel 大小和调用频率。`TransactionTooLargeException.java` 说明，Binder 事务 buffer 当前固定大小为 1 MB，并由进程内进行中的事务共享；异常只能作为大事务失败的启发式信号，无法判断请求没发出去还是响应没回去。规避方式是让事务保持小，避免传巨大字符串数组或大 Bitmap，把大结果拆页返回，或者先返回必要字段再让客户端按需请求。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
 
-序列化问题在 Perfetto 里可以从三个方向定位：
+序列化问题在 Perfetto 中可以从三个方向定位：
 
 - 主线程或启动关键线程出现连续 CPU slice，但没有明显 I/O 等待：结合方法 trace 或 simpleperf 查 JSON/Proto/Parcel 相关栈。
 - `binder transaction` 前后耗时变长：查参数对象大小、列表长度、是否重复传完整 DTO。
 - GC 在接口返回或缓存恢复后变密：查一次解析生成的对象数量，优先处理大集合和嵌套对象。
 
-一旦确认是序列化成本，不要只换库。更稳的改法是缩小 payload、减少字段、延迟解析、拆页、复用 adapter、把大对象放到文件/数据库后传 key，再比较 JSON/Proto/FlatBuffers 的库差异。
+一旦确认是序列化成本，不要一上来就换库。更稳的改法是先缩小 payload、减少字段、延迟解析、拆页、复用 adapter、把大对象放到文件/数据库后传 key；库替换放在后面，用这些优化后的场景再去比较 JSON/Proto/FlatBuffers 的实际差异。
 
-## [自动发现] 建立序列化选型基线
+## 建立序列化选型基线
 
 序列化库的公开 benchmark 只能作为方向参考。应用自己的模型、R8 规则、payload 分布、字段默认值、字符串长度和设备 CPU 都会改写结果。选型前至少补三组基线：
 

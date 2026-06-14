@@ -323,6 +323,17 @@ public static boolean shouldLogSlowQuery(long elapsedTimeMillis) {
 
 
 
+
+
+## 参考资料
+
+### Android 17 SQLite 性能可观测性与 IO 监测核心机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-android17-sqlite-performance-observability-io-monitoring.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 SQLite 性能可观测性三层机制源码分析：Connection 层 OperationLog 20 条环形缓冲区 + 2 秒慢查询阈值自动归类；Pool 层 StatementCache 命中率追踪与动态内存池配置；系统级 BlockGuard/StrictMode 检测 IO 操作与 SQLite 对象泄露。涵盖 SQLiteDebug 动态阈值（全局/UID 级别）、WAL 自动检查点配置、SQLiteOpenHelper OpenParams 优化选项（lookaside/idle connection timeout/WAL）。
+- 注入时间：2026-06-14
+- 价值：为本节 SQLite 可观测性内容提供 AOSP 源码级支撑，OperationLog 环形缓冲区设计与 StatementCache 命中率监控可直接落地为端侧采集方案
+
 ## 小结
 
 存储可观测性的关键产物不是更多日志，而是一套能稳定聚合的字段：I/O 事件、SQLite 事件、目录树、损坏率、资源泄漏和采集 SDK 自监控。端上先按规则筛选，后台按调用点和设备档位聚合，线下再用 Perfetto 与 `EXPLAIN QUERY PLAN` 复核。

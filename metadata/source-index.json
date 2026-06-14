@@ -1596,6 +1596,200 @@
       "processed_at": "2026-06-13T06:12:05.620345",
       "type": "DeepResearch 调研结果",
       "action": "queue"
+    },
+    {
+      "title": "【带源码】我写了个局域网微信",
+      "path": "https://juejin.cn/post/7621443853845594154",
+      "date": "2026-03-26 22:13",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 12
+      },
+      "chapter": "ch16-aosp",
+      "scored_at": "2026-06-14T05:30:00"
+    },
+    {
+      "title": "Android 开发者再不转Kotlin，真的来不及了",
+      "path": "https://juejin.cn/post/7641229739893784622",
+      "date": "2026-05-19 12:30",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3,
+        "total": 12
+      },
+      "chapter": "ch17-oem",
+      "scored_at": "2026-06-14T05:30:00"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android14-memory-tracking-apis-leak-detection.md",
+      "title": "2026-06-13-android14-memory-tracking-apis-leak-detection",
+      "score": 20,
+      "chapter": "ch04",
+      "type": "DeepResearch",
+      "scored_at": "2026-06-14T05:46:31.310293"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-perfetto-java-hprof-data-source-heap-graph-tables.md",
+      "title": "2026-06-13-android17-perfetto-java-hprof-data-source-heap-graph-tables",
+      "score": 20,
+      "chapter": "ch04",
+      "type": "DeepResearch",
+      "scored_at": "2026-06-14T05:46:31.444634"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-powerstats-service-statsd-pull-atoms.md",
+      "title": "2026-06-13-android17-powerstats-service-statsd-pull-atoms",
+      "score": 20,
+      "chapter": "ch03",
+      "type": "DeepResearch",
+      "scored_at": "2026-06-14T05:46:31.533417"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-end-side-ai-android17-resource-scheduling-adpf-powerhal.md",
+      "title": "2026-06-13-end-side-ai-android17-resource-scheduling-adpf-powerhal",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "DeepResearch",
+      "scored_at": "2026-06-14T05:46:31.623353"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-perfetto-data-explorer-node-based-analysis.md",
+      "title": "2026-06-13-perfetto-data-explorer-node-based-analysis",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "DeepResearch",
+      "scored_at": "2026-06-14T05:46:31.719056"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-android17-sqlite-performance-observability-io-monitoring.md",
+      "title": "2026-06-14-android17-sqlite-performance-observability-io-monitoring",
+      "score": 20,
+      "chapter": "ch04",
+      "type": "DeepResearch",
+      "scored_at": "2026-06-14T05:46:31.819299",
+      "processed_at": "2026-06-14T06:12:00.869305",
+      "processor": "task-deepresearch-injector",
+      "action": "injected-ch26.16"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-androidx-jankstats-macrobenchmark-metric-internals.md",
+      "title": "2026-06-14-androidx-jankstats-macrobenchmark-metric-internals",
+      "score": 20,
+      "chapter": "ch02",
+      "type": "DeepResearch",
+      "scored_at": "2026-06-14T05:46:31.916028"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-14-76102333-Android_17_有什么需要适配的？.md",
+      "title": "2026-06-14-76102333-Android_17_有什么需要适配的？",
+      "score": 16,
+      "chapter": "ch16",
+      "type": "JuejinArticle",
+      "scored_at": "2026-06-14T05:47:33.140112"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-14-76128120-Android17_为什么重写_Mess.md",
+      "title": "2026-06-14-76128120-Android17_为什么重写_Mess",
+      "score": 16,
+      "chapter": "ch16",
+      "type": "JuejinArticle",
+      "scored_at": "2026-06-14T05:47:33.229037"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-14-76132301-2026_Flutter_VS_Reac.md",
+      "title": "2026-06-14-76132301-2026_Flutter_VS_Reac",
+      "score": 16,
+      "chapter": "ch16",
+      "type": "JuejinArticle",
+      "scored_at": "2026-06-14T05:47:33.318109"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-14-76148976-什么_AI_写_Android_最好用？.md",
+      "title": "2026-06-14-76148976-什么_AI_写_Android_最好用？",
+      "score": 14,
+      "chapter": "ch16",
+      "type": "JuejinArticle",
+      "scored_at": "2026-06-14T05:47:33.406198"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-14-76150608-你还用_IDE_吗？_AI_狂欢时代下.md",
+      "title": "2026-06-14-76150608-你还用_IDE_吗？_AI_狂欢时代下",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "JuejinArticle",
+      "scored_at": "2026-06-14T05:47:33.494916"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-14-76226966-Android_要变天：桌面端这次真的来.md",
+      "title": "2026-06-14-76226966-Android_要变天：桌面端这次真的来",
+      "score": 12,
+      "chapter": "ch16",
+      "type": "JuejinArticle",
+      "scored_at": "2026-06-14T05:47:33.583598"
+    },
+    {
+      "path": "DeepResearch/2026-06-13-android17-binder-ipc-async-oneway-frozen-reply-pipeline.md",
+      "title": "Android 17 Binder IPC 异步 oneway / 冻结回执 / 内核批处理流水线",
+      "score": 19,
+      "quality": "high",
+      "chapter": "20",
+      "keywords": [
+        "Android",
+        "Binder",
+        "IPC",
+        "跨进程通信",
+        "性能优化",
+        "Android 17",
+        "oneway",
+        "冻结",
+        "批处理"
+      ],
+      "scored_at": "2026-06-14T05:51:06.474205"
+    },
+    {
+      "path": "source/juejin-android/2026-06-14-76102333-Android_17_有什么需要适配的？.md",
+      "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "score": 13,
+      "quality": "medium",
+      "chapter": "16",
+      "keywords": [
+        "Android",
+        "适配",
+        "Android 17",
+        "侧载"
+      ],
+      "scored_at": "2026-06-14T05:51:06.474213"
+    },
+    {
+      "path": "source/juejin-android/2026-06-14-76128120-Android17_为什么重写_Mess.md",
+      "title": "Android17 为什么重写 MessageQueue",
+      "score": 17,
+      "quality": "high",
+      "chapter": "02",
+      "keywords": [
+        "Android",
+        "MessageQueue",
+        "Android 17",
+        "消息机制",
+        "重写",
+        "渲染",
+        "SurfaceFlinger"
+      ],
+      "scored_at": "2026-06-14T05:51:06.474215"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-android17-neuralnetworks-hal-inference-acceleration.md",
+      "title": "Android 17 AI 推理加速与 NeuralNetworks HAL 优化",
+      "summary": "NN HAL 1.3 接口族源码分析，fenced execution/burst execution/compilation caching/QoS priority 等加速特性均通过 HAL 层实现。NNAPI NDK API deprecated 后的系统级推理加速路径。",
+      "chapter_mapping": "ch05",
+      "processed_at": "2026-06-14T06:12:00.869305",
+      "processor": "task-deepresearch-injector",
+      "action": "queued"
     }
   ]
 }

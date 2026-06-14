@@ -47,6 +47,8 @@ task9_review_notes: "2026-06-02 Task9 03: pass-tech-review。复核 ANR 阈值�
 last_task9_review_log: "logs/deep-review/2026-06-02-03-deep-review.md"
 task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。"
 task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # ANR 治理策略
@@ -70,7 +72,7 @@ task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatcher
 
 ANR 的分析和定位方法在 9.1-9.3 节已经讲过。这一节回答一个不同的问题：已知 ANR 的成因，怎么在工程里系统性地消除它。
 
-ANR 治理围绕一条约束：主线程要在对应超时窗口内完成系统要求的响应。工程上主要对应五个方向：主线程瘦身、IPC 调用治理、锁竞争治理、四大组件超时治理，以及应用侧 Watchdog 搭建。每个方向都需要明确治理手段和验证方法。
+ANR 治理的核心约束是：主线程必须在对应超时窗口内完成系统要求的响应。工程上可以从五个方向入手：主线程瘦身、IPC 调用治理、锁竞争治理、四大组件超时治理，以及应用侧 Watchdog 搭建。每个方向都需要明确治理手段和验证方法。
 
 ## ANR 触发场景与超时阈值
 
@@ -91,7 +93,7 @@ ANR 治理围绕一条约束：主线程要在对应超时窗口内完成系统�
 
 ## 主线程瘦身策略与异步化
 
-主线程上任何超过超时阈值的同步操作都是 ANR 候选项。治理时先列出不该出现在主线程的操作，再看这些操作是否需要优化。
+主线程上任何超过超时阈值的同步操作都是 ANR 候选项。治理的第一步是识别哪些操作不应该出现在主线程上，再判断这些操作是否可以优化。
 
 ### 主线程耗时操作的分类
 
@@ -167,7 +169,7 @@ WorkManager.getInstance(context).enqueue(uploadWork)
 
 ### Kotlin 协程 ANR 治理：源码级细节
 
-以下发现基于 kotlinx-coroutines 1.9.x 源码（GitHub master 分支）。
+以上是协程在主线程瘦身中的应用方式。但要准确判断协程在什么时候会间接导致 ANR，需要理解它的调度器内部行为。以下分析基于 kotlinx-coroutines 1.9.x 源码（GitHub master 分支）。
 
 #### Dispatchers.IO 与 Default 共享线程池
 
@@ -284,7 +286,6 @@ suspend fun updateUI() = withContext(Dispatchers.Main) {
 }
 ```
 
-[AIW-源码调研-2026-05-11 — 基于 kotlinx-coroutines 1.9.x 源码]
 
 
 ## IPC（Binder）调用治理
@@ -320,7 +321,6 @@ try {
 
 **监控 Binder 调用耗时。** 在线上环境中，通过 `BinderProxy.transact()` 的 Hook 或者 AOP 方式记录每次 Binder 调用的耗时。微信团队的实践是：在 `BinderProxy.transactNative()` 的入口和出口插桩，统计调用次数和耗时分布，发现异常 Binder 调用后推动对应模块治理。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
 
 ## 锁竞争与死锁预防
 
@@ -432,7 +432,7 @@ Service 的前台生命周期超时是 `SERVICE_TIMEOUT` 默认 20 秒，后台 
 
 ANR Watchdog 是应用侧的 ANR 检测机制，用于在系统弹出 ANR 对话框之前就发现主线程阻塞。
 
-**注意区分两层检测**：系统的 ANR 检测（上表所列）是按组件类型分场景检测的，每种组件有独立的超时阈值和检测逻辑。应用侧的 Watchdog 是另一套独立的监测线程，不依赖系统信号，通过主动探测主线程的响应性来判断。两者的关系是：Watchdog 的检测间隔和阈值由应用自己设定，通常设得比系统阈值低，目的是在系统判定 ANR 之前发出预警。
+这里需要区分两层检测。第一层是系统的 ANR 检测——上表所列的六种组件各有独立的超时阈值和检测逻辑。第二层是应用侧的 Watchdog，它是一套独立的监测线程，不依赖系统信号，通过主动探测主线程的响应性来判断。Watchdog 的检测间隔和阈值由应用自己设定，通常比系统阈值低，目的是在系统判定 ANR 之前发出预警。
 
 ### 工作原理
 
@@ -472,7 +472,7 @@ public class ANRWatchdog {
 }
 ```
 
-**监测线程与主线程的交互时序**：
+监测线程与主线程的交互时序如下：
 
 1. 监测线程将 `mainThreadTick` 置 0（`volatile` 写，对所有线程立即可见）
 2. 监测线程通过 `mainHandler.post(ticker)` 将 ticker 投递到主线程的 Handler 队列
@@ -512,7 +512,6 @@ Watchdog 检测到主线程阻塞后，上报的数据应该包含：
 
 这些数据聚合后，按堆栈签名聚类，就能看到哪些代码路径是高频的 ANR 嫌疑点。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
 
 ## ANR 预警与主动发现
 
@@ -582,11 +581,11 @@ ANR 的严重程度取决于触发时应用的状态。前台 ANR 用户可以�
 
 ## 系统负载导致的 ANR 识别与过滤
 
-不是所有 ANR 都是应用代码的问题。在低端设备、内存紧张、或者系统服务繁忙时，应用的正常操作也可能被系统拖慢到触发 ANR。这类 ANR 如果当成应用 bug 治理，投入产出比极低。
+ANR 不一定都是应用代码的问题。低端设备、内存紧张、系统服务繁忙时，应用的正常操作也可能被系统拖慢到触发 ANR。这类 ANR 如果当成应用 bug 治理，投入产出比极低。
 
 ### 系统负载 ANR 的特征
 
-在 traces.txt 和 event log 中，以下特征暗示系统负载是主因：
+在 traces.txt 和 event log 中，如果看到以下特征，系统负载很可能是主因：
 
 - **主线程堆栈显示 `nativePollOnce`**：主线程在 Looper 中等待下一个 Message，没有在执行应用回调。它只能说明应用主线程当时处于空闲等待状态，还要结合 system_server、Binder 线程和 input dispatch 相关堆栈确认是否为系统侧阻塞。
 - **event log 中 `am_anr` 前后有大量 `am_proc_died` / `am_kill`**：系统在密集杀进程，内存压力极大。

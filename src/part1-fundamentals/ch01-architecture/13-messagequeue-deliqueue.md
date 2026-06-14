@@ -35,10 +35,10 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_review_log: "logs/review/2026-05-27-13-review.md"
-task9_state: reviewed
+last_task6_review_log: "logs/review/2026-06-14-08-review.md"
+task9_state: pending
 task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-14"
 last_task9_at: "2026-05-27T13:20:00+08:00"
@@ -46,12 +46,12 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-05-27T12:50:00+08:00"
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 Android 16 Combined/Concurrent/Legacy MessageQueue 路径、Android 17 行为变更页、DeliQueue 官方性能数据；未发现 P0/P1，自动晋升 finalized。"
-task6_reviewed_date: "2026-05-27"
-last_task6_at: "2026-05-27T13:05:00+08:00"
-task6_review_notes: "2026-05-27 13:05 Task6 revisiting：pass-light-edit。将参考资料中的 DeepResearch 注入块整理为普通来源条目；outline 5/5 覆盖；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_reviewed_date: "2026-06-14"
+last_task6_at: "2026-06-14T08:08:21+08:00"
+task6_review_notes: "06-14 08 Task6 revisiting：pass-light-edit。L1 小修 3 处（3.3.9 形容词+冒号起手式 ×3）；outline 5/5 覆盖；无新增 L3/L4 回炉项。Task9 idle audit auto-fixed 链接修正已确认，送 Task9 复审。"
 last_task9_audit: "2026-06-14"
 last_task9_audit_log: "logs/deep-review/2026-06-14-04-audit.md"
 task9_audit_notes: "2026-06-14 Task9 idle audit: auto-fixed。P0 1：将不可定位的 `ConcurrentMessageQueue.java` 文件名修正为 AOSP android-16.0.0_r1 实际路径 `ConcurrentMessageQueue/MessageQueue.java`。"
@@ -139,7 +139,7 @@ boolean enqueueMessage(Message msg, long when) {
 }
 ```
 
-这里的竞争点很直接:
+这里的竞争点：
 
 1. 后台线程往主线程 `post` 消息时,要抢这把 monitor。
 2. 主线程调用 `next()` 扫描队列、处理同步屏障时,也要抢这把 monitor。
@@ -201,7 +201,7 @@ Message next() {
 
 ### Android 16:公开源码里已经有并发实现,但默认范围很窄
 
-`android-16.0.0_r1` 的 `CombinedMessageQueue/MessageQueue.java` 注释写得很直接:
+`android-16.0.0_r1` 的 `CombinedMessageQueue/MessageQueue.java` 注释写道：
 
 - **legacy implementation is used by default**
 - **concurrent implementation is used for system processes**
@@ -254,7 +254,7 @@ Android 的公开实现里,相关处理分散在 state node、取消路径、`ne
 
 ### 3. barrier 和 async queue 仍然存在,而且逻辑被保留下来了
 
-`nextMessage()` 的分支很清楚:
+`nextMessage()` 的分支：
 
 - 如果普通队列头部是 barrier,就优先从 `mAsyncPriorityQueue` 里挑 ready 的异步消息。
 - 如果没有 barrier,就在普通队列和异步队列里选 `when` 更早的那个。
