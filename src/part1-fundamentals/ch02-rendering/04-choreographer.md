@@ -60,9 +60,9 @@ last_task6_at: "2026-05-18T18:06:00+08:00"
 last_task6_audit: "2026-06-10"
 last_task6_audit_result: pass-clean
 last_task6_audit_log: "logs/review/2026-06-10-10-audit.md"
-last_task9_audit: "2026-05-21"
-last_task9_audit_at: "2026-05-21T16:25:11+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-21-16-audit.md"
+last_task9_audit: "2026-06-14"
+last_task9_audit_at: "2026-06-14T09:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-14-09-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
 task9_review_notes: "2026-05-23 Task9 deep review: pass-tech-review。无 P0/P1；P2：回调类型“四种/五类”内部表述需统一，已写入 suggestions.md。满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
