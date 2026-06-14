@@ -8,7 +8,7 @@ confidence: medium
 drafted_date: 2026-04-04
 last_task2b_at: 2026-05-22T07:21:00+08:00
 last_task6_at: "2026-06-04T05:07:00+08:00"
-last_task6_audit: 2026-05-21
+last_task6_audit: 2026-06-15
 last_task6_review_log: logs/review/2026-05-22-08-review.md
 last_task9_at: 2026-05-22T07:43:01+08:00
 last_task9_audit: 2026-05-22
