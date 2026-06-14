@@ -75,7 +75,7 @@ last_task2b_lite_at: "2026-05-30"
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
 last_task6_at: "2026-05-28T17:18:00+08:00"
 task6_reviewed_date: "2026-05-28"
-last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
+last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-17-review.md"
 task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理编辑痕迹与参考资料表述 3 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
@@ -101,6 +101,8 @@ updated_date: "2026-06-07"
 task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-07 21 Task9 idle audit: auto-fixed。将 App Archiving 源码锚点从 AOSP mainline 改为 android-15/16 tag；未使用 Android 18/API 38+ 内容。"
 last_deepseek_polish_at: 2026-06-08
 last_task6_audit: "2026-06-14"
+task2b_state: fixed
+last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
 # 1.9 Package Manager Service 与应用安装性能
 

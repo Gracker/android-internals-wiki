@@ -65,6 +65,9 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task9_autofix_at: "2026-06-06"
 last_task9_audit: "2026-06-06"
+task2b_state: fixed
+last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
 
 # 启动优化策略

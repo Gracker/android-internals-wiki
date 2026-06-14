@@ -57,6 +57,9 @@ last_task9_autofix_at: "2026-06-04"
 task9_review_notes: "2026-06-04 Task9 auto-fix: clarified ProfilingTrigger API 36 vs version 36.1 boundary for APP_REQUEST_RUNNING_TRACE."
 deepseek_cn_review_state: needs-structure-rework
 last_deepseek_cn_review_at: 2026-06-12
+task2b_state: fixed
+last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
 
 # 线上问题排查方法论
