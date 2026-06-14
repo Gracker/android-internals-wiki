@@ -737,5 +737,37 @@
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-14T06:12:00.869305",
     "status": "pending"
+  },
+  {
+    "section": "2.9",
+    "section_title": "渲染机制的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review][闲时抽检] Choreographer/RenderThread 版本锚点错误，且缺 Android 17/API 37 图形演进更新",
+    "file": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+    "material_paths": [
+      "logs/deep-review/2026-06-15-06-audit.md",
+      "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-5.0.0_r1/core/java/android/view/Choreographer.java",
+      "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-6.0.0_r1/core/java/android/view/Choreographer.java",
+      "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-5.0.0_r1/core/java/android/view/ThreadedRenderer.java",
+      "https://developer.android.com/about/versions/17/summary",
+      "https://developer.android.com/games/develop/vulkan/overview"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "L260-L264 Choreographer 的版本变化",
+        "detail": "正文写 Android 5.0 的 doFrame() CALLBACK_COMMIT 阶段将帧提交给 RenderThread。AOSP android-5.0.0_r1 的 Choreographer 只有 CALLBACK_INPUT / CALLBACK_ANIMATION / CALLBACK_TRAVERSAL，CALLBACK_COMMIT 到 android-6.0.0_r1 才出现；Android 5.0 的 RenderThread 提交路径在 ViewRootImpl.draw -> ThreadedRenderer.draw -> nSyncAndDrawFrame，而不是 Choreographer 的 commit callback。",
+        "suggestion": "改为 Android 5.0 引入 ThreadedRenderer/RenderThread，帧提交由 traversal/draw 路径进入 HWUI；另补充 Android 6.0 起 CALLBACK_COMMIT 是 traversal 之后的提交回调阶段，不能写成 5.0 的 RenderThread 提交点。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions、§Android 16：图形 API 演进、版本演进时间线",
+        "detail": "章节仍限定到 Android 16/API 36。Android 17/API 37 已在官方 Beta 文档中列出图形相关变化：WebGPU on Android，OpenGL ES 继续进入维护模式，新特性开发转向 Vulkan + WebGPU；Vulkan 文档还新增 Android 17+ manifest metadata com.android.graphics.driver.prefer_angle，可表达优先使用 ANGLE 的偏好。",
+        "suggestion": "在不触及 Android 18/API 38+ 的前提下补 Android 17/API 37 小节，更新 applicable_versions、sources 与时间线；明确 Android 17 仍是 Beta/API 37 文档口径，prefer_angle 只是偏好信号，不保证 ANGLE 一定启用。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-15T06:20:00+08:00",
+    "status": "pending"
   }
 ]

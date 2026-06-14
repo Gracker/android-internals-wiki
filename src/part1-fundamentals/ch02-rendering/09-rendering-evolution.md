@@ -18,11 +18,11 @@ polish_by: task2b-polish
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed-lite
 last_task2b_at: "2026-05-13T23:35:47+08:00"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 last_task2b_lite_at: '2026-05-27'
 sources:
 - type: official
@@ -40,9 +40,9 @@ sources:
 - type: aosp
   path: frameworks/base/graphics/java/android/graphics/RuntimeXfermode.java
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T12:21:00+08:00"
-task9_review_notes: "2026-05-27 task9 deep-review: pass-tech-review。复核 HWUI/RenderThread/BLAST/FrameTimeline/ARR/Android 16 图形 API 版本链，未发现 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-06-15"
+last_task9_at: "2026-06-15T06:20:00+08:00"
+task9_review_notes: "2026-06-15 idle audit: needs-rework。命中 P0 Choreographer CALLBACK_COMMIT Android 5.0 版本错误；P1 Android 17/API 37 图形演进缺失，已写入 queue。"
 task6_review_notes: "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除源码调研 HTML 注释，统一正文中文标点与中英文混排；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-27-12-review.md"
 last_task6_at: "2026-05-27T12:06:00+08:00"
@@ -50,6 +50,8 @@ last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
+last_task9_audit: "2026-06-15"
+last_task9_audit_log: "logs/deep-review/2026-06-15-06-audit.md"
 ---
 # 渲染机制的版本演进
 
