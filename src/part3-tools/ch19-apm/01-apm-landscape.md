@@ -35,22 +35,23 @@ sources:
 task2b_result: fixed
 last_task2b_at: "2026-05-22T11:21:56+08:00"
 last_task6_audit: "2026-06-13"
-last_task9_audit: "2026-05-21"
-last_task9_audit_at: "2026-05-21T15:48:06+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-21-15-audit.md"
+last_task9_audit: "2026-06-15"
+last_task9_audit_at: "2026-06-15T03:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-15-03-audit.md"
 status: finalized
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-22"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T11:40:27+08:00"
+last_task9_at: "2026-06-15T03:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-22-11-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 re-review: pass-tech-review。P0/P1=0；ApplicationExitInfo reason 版本边界与 AppExitInfoTracker 消息路径已修正；queue 无 pending，Task6 已通过，自动晋升 finalized。"
+task9_review_notes: "2026-05-22 Task9 re-review: pass-tech-review。P0/P1=0；ApplicationExitInfo reason 版本边界与 AppExitInfoTracker 消息路径已修正；queue 无 pending，Task6 已通过，自动晋升 finalized。 2026-06-15 Task9 idle audit: AUTO-FIX source anchor boundary; AppExitInfoTracker / ProcessList / ApplicationExitInfo references pinned from AOSP mainline/android-15 note to android-16.0.0_r1 after direct source verification; P0/P1=0, Task6 revisiting."
+last_task9_autofix_at: "2026-06-15"
 reviewed_date: "2026-05-22"
 reviewed_by: "openclaw-task6"
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-22T01:16:12+08:00"
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
@@ -270,7 +271,7 @@ APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适�
 
 ### AppExitInfoTracker 在 AOSP 中的位置
 
-`AppExitInfoTracker` 是 `services/core/java/com/android/server/am/AppExitInfoTracker.java` 中的顶层 `public final` 类，由 `ActivityManagerService` 实例化，`ProcessList` 持有并创建 `mAppExitInfoTracker` 字段（`ProcessList.java` L525, AOSP android-15.0.0_r1）。
+`AppExitInfoTracker` 是 `services/core/java/com/android/server/am/AppExitInfoTracker.java` 中的顶层 `public final` 类，由 `ActivityManagerService` 实例化，`ProcessList` 持有并创建 `mAppExitInfoTracker` 字段（`ProcessList.java` L525, AOSP android-16.0.0_r1）。
 
 它在系统侧维护每个包名的进程退出记录环形缓冲区。`KillHandler` 处理的消息分为基础记录来源和外部修正来源两层：
 
@@ -315,9 +316,9 @@ APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适�
 ---
 
 **调研来源**：
-- `services/core/java/com/android/server/am/AppExitInfoTracker.java` (AOSP mainline) — 顶层类，进程退出记录管理与持久化
-- `services/core/java/com/android/server/am/ProcessList.java` (AOSP mainline) — 持有 `mAppExitInfoTracker` 字段（L525）
-- `core/java/android/app/ApplicationExitInfo.java` (API 30+) — 应用层 API，reason 常量定义
+- `services/core/java/com/android/server/am/AppExitInfoTracker.java` (AOSP android-16.0.0_r1) — 顶层类，进程退出记录管理与持久化
+- `services/core/java/com/android/server/am/ProcessList.java` (AOSP android-16.0.0_r1) — 持有 `mAppExitInfoTracker` 字段（L525）
+- `core/java/android/app/ApplicationExitInfo.java` (AOSP android-16.0.0_r1 / API 30+) — 应用层 API，reason 常量定义
 - `github.com/KwaiAppTeam/KOOM` — koom-java-leak 模块 fork dump HPROF 机制
 
 <!-- AIW-源码调研-2026-04-25 -->
