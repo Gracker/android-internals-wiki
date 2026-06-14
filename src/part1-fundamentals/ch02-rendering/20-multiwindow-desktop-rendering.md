@@ -7,10 +7,11 @@ status: "finalized"
 drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-04-26'
+last_verified: '2026-06-14'
 last_verified_against: AOSP android-16.0.0_r1 attrs_manifest.xml + Android Developers
-  multi-window/desktop/connected displays/behavior changes 16/17 + android.R.attr#recreateOnConfigChanges
-  + Perfetto stdlib docs
+  multi-window/desktop/connected displays/behavior changes 16/17/release notes
+  + Android Developers Blog first beta Android 17 + Perfetto stdlib/FrameTimeline docs
+  + Source Android SurfaceFlinger/HWC docs
 confidence: medium
 sources:
 - type: official
@@ -20,6 +21,12 @@ sources:
 - type: official
   path: https://developer.android.com/about/versions/17/behavior-changes-all
 - type: official
+  path: https://developer.android.com/about/versions/17/behavior-changes-17
+- type: official
+  path: https://developer.android.com/about/versions/17/release-notes
+- type: official
+  path: https://developer.android.com/blog/posts/the-first-beta-of-android-17
+- type: official
   path: https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges
 - type: official
   path: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing
@@ -28,7 +35,11 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/analysis/stdlib-docs
 - type: official
-  path: https://source.android.com/docs/core/graphics/surfaceflinger
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager
+- type: official
+  path: https://source.android.com/docs/core/graphics/hwc
 - type: aosp
   path: frameworks/base/core/res/res/values/attrs_manifest.xml
 tags:
@@ -46,10 +57,10 @@ related_chapters:
 - '2.13'
 - '7.4'
 - '3.3'
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 reviewed_date: "2026-06-01"
 finalized_date: "2026-06-01"
@@ -63,15 +74,16 @@ task9_reviewed_date: "2026-06-01"
 last_task9_at: "2026-06-01T07:20:00+08:00"
 last_task2b_at: '2026-05-09T17:20:00+08:00'
 task9_reviewed_by: "openclaw-task9"
-last_task9_audit: "2026-05-21"
-last_task9_audit_at: "2026-05-21T06:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-21-06-audit.md"
+last_task9_audit: "2026-06-14"
+last_task9_audit_at: "2026-06-14T14:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-14-14-audit.md"
 last_task2b_lite_at: "2026-05-31"
 last_task6_at: "2026-06-01T01:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-01-review.md"
 task6_review_notes: "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-01-07-deep-review.md"
-task9_review_notes: "2026-06-01 Task9 deep review: pass-tech-review。源码/官方文档/Perfetto schema 口径复核通过；P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_autofix_at: "2026-06-14"
+task9_review_notes: "2026-06-14 Task9 idle audit: auto-fixed。修复 Perfetto surfaceflinger_layer.display_id 不存在导致 SQL 不可执行、Source Android SurfaceFlinger 文档 404 两处源码/路径问题；无 queue pending，回到 Task6 复审。"
 p0: 0
 p1: 0
 p2: 0
@@ -255,15 +267,17 @@ ORDER BY 1;
 ```sql
 SELECT
   s.ts / 1e6 AS ts_ms,
-  l.layer_name
+  l.layer_name,
+  l.is_visible,
+  l.hwc_composition_type
 FROM surfaceflinger_layers_snapshot s
 JOIN surfaceflinger_layer l ON l.snapshot_id = s.id
-WHERE l.display_id = 0 -- 按目标 display 调整；0 通常是内屏
+WHERE l.is_visible = 1
 ORDER BY s.ts DESC, l.layer_name
 LIMIT 100;
 ```
 
-这个查询适合先看“当前有多少 layer、名字是什么”。connected display trace 里要先区分 display；不按 `display_id` 过滤，内屏和外屏的 layer 会混在一起，统计出来的 layer 数量和窗口归属都容易偏。后面如果要继续和窗口拖拽、分屏切换、PiP 播放关联，再按时间区间收窄。
+这个查询适合先看“当前有哪些可见 layer、名字是什么、HWC composition type 是什么”。Perfetto stdlib 的 `surfaceflinger_layer` 表没有 `display_id` 列，connected display trace 里不能直接写 `WHERE l.display_id = 0`。需要区分 display 时，先在 Winscope SurfaceFlinger 视图，或 `android_surfaceflinger_display` / transaction 表里确认 display id 与 layer 归属，再按目标时间片收窄。
 
 ### 3. FrameTimeline 的 jank 名称要写全
 
@@ -311,7 +325,12 @@ FrameTimeline 里，App 侧和 SurfaceFlinger 侧至少要分成三类：
 - 官方文档：
   - <https://developer.android.com/guide/topics/large-screens/multi-window-support>
   - <https://developer.android.com/about/versions/16/behavior-changes-16>
+  - <https://developer.android.com/about/versions/17/behavior-changes-17>
+  - <https://developer.android.com/about/versions/17/release-notes>
+  - <https://developer.android.com/blog/posts/the-first-beta-of-android-17>
   - <https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing>
   - <https://developer.android.com/develop/ui/compose/layouts/adaptive/support-connected-displays>
   - <https://perfetto.dev/docs/analysis/stdlib-docs>
-  - <https://source.android.com/docs/core/graphics/surfaceflinger>
+  - <https://perfetto.dev/docs/data-sources/frametimeline>
+  - <https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager>
+  - <https://source.android.com/docs/core/graphics/hwc>
