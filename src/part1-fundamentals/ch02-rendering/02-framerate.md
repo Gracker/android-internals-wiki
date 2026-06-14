@@ -3,7 +3,7 @@
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
-status: finalized
+status: ready-for-review
 reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
 review_note: Task 6 三审(2026-04-30):移除 AIW 编辑注释 3 处、frontmatter 去重 1 处;task9 仍 needs-rework
@@ -73,7 +73,7 @@ task9_review_notes: "2026-06-15 idle audit auto-fixed: corrected SurfaceControl.
 task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
 last_task6_audit: "2026-06-12"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-15
 last_task9_autofix_at: 2026-06-15
 ---
 
@@ -405,7 +405,7 @@ Choreographer.getInstance().postVsyncCallback(new Choreographer.VsyncCallback() 
 
 `FrameData` 是 API 33 新增的类,它封装了 VSync 相关的全部信息。相比之前只有一个 `frameTimeNanos`,现在 App 能拿到多个候选的帧时间线(`FrameTimeline`),每个时间线包含预期的呈现时间和渲染截止时间。这让 App 可以更智能地选择"我这帧应该在哪个 VSync 时刻显示"--如果渲染比较重,可以选择一个稍晚的时间线,避免匆忙提交导致掉帧。
 
-`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成,可以主动选择一个更晚的时间线,通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。但 `Choreographer.FrameTimeline` 的读取能力(API 33 `FrameData.getFrameTimelines()`)和向 SurfaceFlinger 设置目标呈现时间的能力版本门槛不同:API 33 起可读取候选 vsyncId 和预期呈现时间;`SurfaceControl.Transaction.setFrameTimeline(long)` 的公开 SDK 入口是 Android 15(API 35)。Android Developers API reference 标注 Added in API level 35;AOSP android-15.0.0_r1 中该方法由 `@FlaggedApi(FLAG_SDK_DESIRED_PRESENT_TIME)` 保护;Android 13-14 只有内部/系统路径或 NDK `SurfaceControl` 受限接口可用。
+`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成,可以主动选择一个更晚的时间线,通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。这里要注意版本边界。读取能力从 API 33 开始:`FrameData.getFrameTimelines()` 可以拿到候选 vsyncId 和预期呈现时间。但向 SurfaceFlinger 设置目标呈现时间的公开 SDK 入口 `SurfaceControl.Transaction.setFrameTimeline(long)` 到 Android 15(API 35)才开放。Android Developers API reference 标注 Added in API level 35;AOSP android-15.0.0_r1 中该方法由 `@FlaggedApi(FLAG_SDK_DESIRED_PRESENT_TIME)` 保护。Android 13-14 只有内部/系统路径或 NDK `SurfaceControl` 受限接口可用。
 
 
 这个机制的目的是让 App 告诉 SurfaceFlinger:"我这帧在哪个 VSync 时刻显示最合适"。SurfaceFlinger 会据此在正确的时间提交帧,实现更精确的 Frame Pacing。
@@ -675,6 +675,8 @@ LTPO 面板的像素驱动电路中混合使用了两种 TFT 技术:
 [已验证: AOSP 源码 + 官方文档, 详见底部引用]
 
 ### 源码深度:VRR vs ARR 分层 + RefreshRateSelector 评分算法
+
+前面讲了 LTPO 在各层的适配逻辑,这里从源码层面把 RefreshRateSelector 的评分规则拆开。这部分偏细节,只关心应用层帧率排查的读者可以直接跳到下一节。
 
 **VRR(Variable Refresh Rate)≠ ARR(Adaptive Refresh Rate)**,两者是不同层级的概念:
 

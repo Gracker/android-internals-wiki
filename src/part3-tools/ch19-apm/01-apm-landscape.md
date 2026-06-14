@@ -38,7 +38,7 @@ last_task6_audit: "2026-06-13"
 last_task9_audit: "2026-06-15"
 last_task9_audit_at: "2026-06-15T03:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-15-03-audit.md"
-status: finalized
+status: ready-for-review
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
