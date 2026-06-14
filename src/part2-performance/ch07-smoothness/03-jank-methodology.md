@@ -68,6 +68,8 @@ task9_review_notes: '2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P
 last_task6_at: '2026-05-05T11:05:00+08:00'
 last_task6_audit: '2026-06-11'
 review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。'
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 
@@ -106,7 +108,7 @@ review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审�
 
 因此需要一套稳定的分析流程。它是一个有经验的工程师面对卡顿问题时脑子里的决策路径：先判断问题类型，再确定分析工具，然后沿着正确的路径追踪，最终定位到根因。掌握这套方法，拿到一份 Trace 后应该在 10 分钟内给出初步结论——是 App 自身的问题还是系统环境的问题，瓶颈在主线程还是渲染线程还是 GPU，是代码执行慢还是 CPU 没给够。
 
-本节的内容基于大量的实战经验总结。其中分析流程和方法论框架主要参考了高爷在 androidperformance.com 上的 Systrace 流畅性实战系列文章 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md] [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]，以及 Perfetto 系列中关于 Trace 解读的方法 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md]。
+本节的内容基于大量的实战经验总结。其中分析流程和方法论框架主要参考了高爷在 androidperformance.com 上的 Systrace 流畅性实战系列文章，以及 Perfetto 系列中关于 Trace 解读的方法。
 
 ## 流畅性问题的完整分析流程
 
@@ -157,7 +159,7 @@ data_sources: {
 
 ### 第三步：在 Trace 中定位问题帧
 
-打开 Trace 后的第一步是看全局环境 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md]，确认环境正常后再进入帧级定位 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md]。
+打开 Trace 后的第一步是看全局环境，确认环境正常后再进入帧级定位。
 
 在 Perfetto 顶部的 CPU 区域扫一眼：CPU 频率是否正常（有没有被温控压低），整体负载是否很高（是不是高负载场景），有没有频繁的 CPU 迁移。这些信息能帮助快速判断是"App 自己慢"还是"系统环境差导致 App 被拖累"。
 
@@ -169,19 +171,19 @@ data_sources: {
 
 [已验证: Perfetto FrameTimeline 功能在 Android 12 (S) 及以上版本可用, developer.android.com]
 
-**单看主线程的帧颜色，不能确定是否产生用户可见掉帧**。在 [流畅性实战 3](https://www.androidperformance.com/2021/04/24/android-systrace-smooth-in-action-3/) 中，高爷详细解释了为什么会出现"黄帧但不掉帧"和"黄帧且掉帧"两种情况。原因是 Android 的多缓冲机制（Triple Buffer 或更多 Buffer）提供了缓冲空间——即使 App 某一帧画得慢了一点，只要 BufferQueue 中还有之前准备好但未消费的帧，屏幕上就不会出现空白，用户也就感知不到卡顿 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]。
+**单看主线程的帧颜色，不能确定是否产生用户可见掉帧**。在 [流畅性实战 3](https://www.androidperformance.com/2021/04/24/android-systrace-smooth-in-action-3/) 中，高爷详细解释了为什么会出现"黄帧但不掉帧"和"黄帧且掉帧"两种情况。原因是 Android 的多缓冲机制（Triple Buffer 或更多 Buffer）提供了缓冲空间——即使 App 某一帧画得慢了一点，只要 BufferQueue 中还有之前准备好但未消费的帧，屏幕上就不会出现空白，用户也就感知不到卡顿。
 
 所以，**判断掉帧是否会被用户感知，必须看 SurfaceFlinger**。
 
 ### 第四步：确认掉帧是否会被用户感知——看 SurfaceFlinger
 
-要确认一帧是否会导致用户可见卡顿，需要切换到 SurfaceFlinger 进程看两个东西 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md]：
+要确认一帧是否会导致用户可见卡顿，需要切换到 SurfaceFlinger 进程看两个东西：
 
 第一，看 App 对应的 BufferQueue 中 Buffer 的状态。如果在某个 VSync-sf 周期内，SurfaceFlinger 要合成这一帧却发现 BufferQueue 里没有可用的 Buffer（即 App 还没画完），那这一帧就会被丢掉。
 
 第二，看 SurfaceFlinger 主线程在 VSync-sf 到来时是否执行了合成。如果 SurfaceFlinger 在某个 VSync 周期没有合成操作，而 App 侧仍在渲染，但 BufferQueue 为空——这就是卡顿的铁证。
 
-在 Perfetto 中，可以把 App 的 MainThread、RenderThread 和 SurfaceFlinger 主线程 Pin 到一起（点击线程名左边的图钉按钮），这样就能在同一个视图中看到三者之间的时间关系 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md]。高爷在文章中提到，这是他日常分析掉帧问题最常用的技巧——把从 App 到 SF 的关键线程放在一起，一眼就能看出是 App 画得慢还是 SF 合成慢。
+在 Perfetto 中，可以把 App 的 MainThread、RenderThread 和 SurfaceFlinger 主线程 Pin 到一起（点击线程名左边的图钉按钮），这样就能在同一个视图中看到三者之间的时间关系。高爷在文章中提到，这是他日常分析掉帧问题最常用的技巧——把从 App 到 SF 的关键线程放在一起，一眼就能看出是 App 画得慢还是 SF 合成慢。
 
 [待补充：Trace 截图 — 主线程、RenderThread、SurfaceFlinger 三线程 Pin 在一起的视图，标注掉帧处 BufferQueue 为空的时刻]
 
@@ -221,7 +223,7 @@ FrameTimeline 的核心价值是：它把"是否卡顿"的判断标准化了。�
 
 如果分析的设备还在 Android 11 或更早的版本，没有 FrameTimeline Track，可以回到经典方法：看主线程上方的帧颜色标记 + SurfaceFlinger 的 BufferQueue 状态。这套方法虽然繁琐一些，但逻辑上是等价的——都是在回答"这一帧有没有在 VSync 周期内完成"这个问题。
 
-在 Systrace 中（Perfetto 的前身），关键的标记包括 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md]：
+在 Systrace 中（Perfetto 的前身），关键的标记包括：
 
 - **Choreographer#doFrame**：主线程处理一帧的入口。现代 Android 常见的回调顺序是 Input → Animation → Insets Animation → Traversal → Commit，分别对应输入、普通动画、Insets 动画、measure/layout/draw 与提交后的收尾
 - **DrawFrame**：渲染线程的绘制入口，将主线程构建的 DisplayList 转化为 GPU 指令
@@ -241,9 +243,9 @@ FrameTimeline 的核心价值是：它把"是否卡顿"的判断标准化了。�
 
 Runnable 状态表示线程已经准备好执行，正在排队等 CPU 分配时间片。如果一段任务前面有一段很长的蓝色（Runnable），意味着线程虽然被唤醒了，但 CPU 在忙别的事情，没顾上执行它。
 
-在 Perfetto 中，通过点击 Runnable 状态可以查看唤醒源（Waker），了解是谁唤醒了这个线程 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md]。更强大的功能是 **Critical Path**——Perfetto 会自动追踪与当前任务有依赖关系的整条依赖路径。点击一个 Running 状态，在下方信息区点击 "Critical path"，就能看到从最初唤醒到当前执行的全部依赖关系。
+在 Perfetto 中，通过点击 Runnable 状态可以查看唤醒源（Waker），了解是谁唤醒了这个线程。更强大的功能是 **Critical Path**——Perfetto 会自动追踪与当前任务有依赖关系的整条依赖路径。点击一个 Running 状态，在下方信息区点击 "Critical path"，就能看到从最初唤醒到当前执行的全部依赖关系。
 
-高爷在 Perfetto 系列第三篇中详细介绍了这个功能的用法 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md]：比如想追踪 RenderThread 的唤醒路径：点击 Running 前面的 Runnable 状态，在下方信息区的 Related thread states 中就能看到 Waker 信息。连续追踪，就能还原出完整的唤醒路径：SurfaceFlinger → MainThread → RenderThread。
+高爷在 Perfetto 系列第三篇中详细介绍了这个功能的用法：比如想追踪 RenderThread 的唤醒路径：点击 Running 前面的 Runnable 状态，在下方信息区的 Related thread states 中就能看到 Waker 信息。连续追踪，就能还原出完整的唤醒路径：SurfaceFlinger → MainThread → RenderThread。
 
 [待补充：Trace 截图 — Critical Path 功能演示，展示从 SF 唤醒到 RT 执行的完整依赖链]
 
@@ -253,10 +255,9 @@ Runnable 过长的典型场景包括：整机高负载（所有核心都满了�
 
 Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程在等待 I/O 操作完成且不能被信号中断。这在流畅性分析中经常出现，尤其是在低内存场景下。
 
-当系统内存紧张时，App 在主线程执行过程中可能触发 page fault（访问的内存页被回收了），需要从磁盘或 ZRAM 中把数据读回来。这个过程中主线程就处于 Uninterruptible Sleep 状态，看起来像是"卡住了但没有执行业务代码"。在 Perfetto 中，如果主线程出现大量深橙色片段，且时间点恰好与 kswapd（内核内存回收线程）或 lmkd（Low Memory Killer）的活动重合，那基本可以确定是低内存导致的 I/O 阻塞 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]。
+当系统内存紧张时，App 在主线程执行过程中可能触发 page fault（访问的内存页被回收了），需要从磁盘或 ZRAM 中把数据读回来。这个过程中主线程就处于 Uninterruptible Sleep 状态，看起来像是"卡住了但没有执行业务代码"。在 Perfetto 中，如果主线程出现大量深橙色片段，且时间点恰好与 kswapd（内核内存回收线程）或 lmkd（Low Memory Killer）的活动重合，那基本可以确定是低内存导致的 I/O 阻塞。
 
 
-<!-- AIW-源码调研-2026-04-20: Android TrimMemory 机制补充 -->
 #### TrimMemory 机制与 Jank 的关联（源码级补充）
 
 上述低内存导致的 Uninterruptible Sleep 背后，是一条从内核 PSI 监控到应用组件回调的完整路径。Android 14 源码验证了以下关键细节：
@@ -273,7 +274,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 ### 分析 CPU 调度问题的工具技巧
 
-在 Perfetto 中分析 CPU 调度问题，有几个非常实用的技巧 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]：
+在 Perfetto 中分析 CPU 调度问题，有几个非常实用的技巧：
 
 **Pin 线程到顶部**：把最关注的线程（如 MainThread、RenderThread、SurfaceFlinger 主线程）Pin 到一起，方便在一个视图中对比它们的状态变化。这是分析掉帧问题时最常用的操作。
 
@@ -310,7 +311,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 - [ ] **主线程 doFrame**：耗时是否超过 VSync 周期？如果是，哪个阶段（Input / Animation / Insets Animation / Traversal / Commit）最耗时？
 - [ ] **渲染线程 DrawFrame**：耗时是否过长？GPU 负载如何？
-- [ ] **主线程等待渲染线程**：主线程有没有因为 syncFrameState 阻塞在等待渲染线程？如果是，说明前一帧的渲染还没完成 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]
+- [ ] **主线程等待渲染线程**：主线程有没有因为 syncFrameState 阻塞在等待渲染线程？如果是，说明前一帧的渲染还没完成
 - [ ] **Binder 调用**：主线程有没有被 Binder 调用阻塞？点击 Binder Slice 会显示对端进程
 
 ### 第四阶段：调度级排查（3-5 分钟）
@@ -332,7 +333,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 回到开头的问题——"拿到 Trace 后从哪里下手"——经过这五个阶段，答案应该已经清晰了。
 
-[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md] 腾讯音乐技术团队在 Wesing（全民 K 歌国际版）的卡顿治理实践中，总结了一套"横纵结合"的分析方法：横向看一个阶段内所有方法调用的时序分布（用 CPU Profiler），纵向看单个方法在不同条件下的耗时变化。这种"先定位帧，再定位方法，再定位场景"的三级逐层深入思路，和我们的 Checklist 框架是一致的。
+腾讯音乐技术团队在 Wesing（全民 K 歌国际版）的卡顿治理实践中，总结了一套"横纵结合"的分析方法：横向看一个阶段内所有方法调用的时序分布（用 CPU Profiler），纵向看单个方法在不同条件下的耗时变化。这种"先定位帧，再定位方法，再定位场景"的三级逐层深入思路，和我们的 Checklist 框架是一致的。
 
 ## FrameMetrics API：线上卡顿监控的基石
 
@@ -409,7 +410,7 @@ Google 在 2022 年推出了 **JankStats** 库（`androidx.metrics:metrics-perfo
 
 JankStats 降低了线上卡顿监控的接入成本，但它的判定逻辑与手写 FrameMetrics 判断不完全等价——`jankHeuristicMultiplier` 会在系统 deadline 基础上做偏移调整，且 API 24 与 API 31 实现的判断路径不同。
 
-[自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md] 业界的卡顿监测方案还包括基于 Handler 消息执行时间的监测（如 BlockCanary、Matrix）和基于 Choreographer 回调间隔的监测。这些方案的优势在于可以在卡顿发生时抓取主线程的调用栈，帮助定位具体的代码路径；劣势在于采样精度不如 FrameMetrics，且有一定的性能开销。如果团队已有成熟的 APM 框架，可以将 FrameMetrics 数据和堆栈采集结合起来，实现更完整的线上卡顿诊断能力。
+业界的卡顿监测方案还包括基于 Handler 消息执行时间的监测（如 BlockCanary、Matrix）和基于 Choreographer 回调间隔的监测。这些方案的优势在于可以在卡顿发生时抓取主线程的调用栈，帮助定位具体的代码路径；劣势在于采样精度不如 FrameMetrics，且有一定的性能开销。如果团队已有成熟的 APM 框架，可以将 FrameMetrics 数据和堆栈采集结合起来，实现更完整的线上卡顿诊断能力。
 
 ## [自动发现] 线上动态 Trace：Perfetto SDK 方案
 
@@ -746,21 +747,21 @@ Perfetto 标准库提供了预构建的模块和视图（如 `android.binder`、
 
 SQL 分析的好处是能快速处理整份 Trace 的数据，给出统计级别的结论。比如，可以用第一个查询快速统计出"这次 10 秒的滑动操作中，总共出现了 23 次卡顿帧，其中 5 次超过 32ms"——这种宏观信息是手动点击很难得到的。
 
-高爷在 Perfetto 系列 CPU 篇中也提到了 SQL 分析的重要性 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]：通过 SQL 查询各线程的 CPU 时间占用，可以发现一些在 UI 中不容易注意到的异常——比如某个后台线程的 CPU 占用竟然超过了主线程，那它很可能在抢主线程的时间片。
+高爷在 Perfetto 系列 CPU 篇中也提到了 SQL 分析的重要性：通过 SQL 查询各线程的 CPU 时间占用，可以发现一些在 UI 中不容易注意到的异常——比如某个后台线程的 CPU 占用竟然超过了主线程，那它很可能在抢主线程的时间片。
 
 ## 常见问题与误区
 
 ### 误区："帧率 FPS 可以直接反映是否卡顿"
 
-帧率高不代表不卡。一个 FPS 为 50 的页面，如果前 200ms 画了一帧、后 800ms 画了 49 帧，平均帧率是 50，但用户会明显感到不流畅。反过来，一个均匀的 15fps（比如视频播放），帧率虽低但不会让人觉得卡。所以衡量卡顿，看的是帧间隔的均匀性（掉帧次数和掉帧程度），而不是平均帧率 [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]。
+帧率高不代表不卡。一个 FPS 为 50 的页面，如果前 200ms 画了一帧、后 800ms 画了 49 帧，平均帧率是 50，但用户会明显感到不流畅。反过来，一个均匀的 15fps（比如视频播放），帧率虽低但不会让人觉得卡。所以衡量卡顿，看的是帧间隔的均匀性（掉帧次数和掉帧程度），而不是平均帧率。
 
 ### 误区："没有红帧就没有卡顿"
 
-在分析中，黄帧（超过一个 VSync 周期但不到两个）同样需要关注。连续的黄帧可能在多缓冲机制的保护下不导致掉帧，但如果连续出现，缓冲迟早会被消耗完，最终还是会出现可见的卡顿 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]。而且黄帧还说明渲染已经到了极限边缘，任何微小的波动都可能把它推过阈值。
+在分析中，黄帧（超过一个 VSync 周期但不到两个）同样需要关注。连续的黄帧可能在多缓冲机制的保护下不导致掉帧，但如果连续出现，缓冲迟早会被消耗完，最终还是会出现可见的卡顿。而且黄帧还说明渲染已经到了极限边缘，任何微小的波动都可能把它推过阈值。
 
 ### 误区："主线程 Sleep 就不是主线程的问题"
 
-这个误区很常见。看到主线程长时间处于 Sleep 状态，就下结论"不是主线程的问题"。但主线程 Sleep 的原因可能是等待前一帧的 RenderThread 完成——syncFrameState 操作会阻塞主线程直到渲染线程把前一帧的数据同步完成。所以虽然主线程在等，但根因可能是渲染线程太慢，而渲染线程慢又可能是前一帧绘制命令太复杂。追根溯源，问题还是在 App 自身的绘制逻辑 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]。
+这个误区很常见。看到主线程长时间处于 Sleep 状态，就下结论"不是主线程的问题"。但主线程 Sleep 的原因可能是等待前一帧的 RenderThread 完成——syncFrameState 操作会阻塞主线程直到渲染线程把前一帧的数据同步完成。所以虽然主线程在等，但根因可能是渲染线程太慢，而渲染线程慢又可能是前一帧绘制命令太复杂。追根溯源，问题还是在 App 自身的绘制逻辑。
 
 ### 误区："抓 Trace 一定要抓很长时间"
 
@@ -789,8 +790,7 @@ Trace 不是越长越好。5-10 秒的精简 Trace 远比 60 秒的"大杂烩"�
   - [Android 中的卡顿丢帧原因概述 - 方法论](https://www.androidperformance.com/2019/09/05/Android-Jank-Debug/)
 - 官方文档：
   - [Perfetto Trace Processor SQL Documentation](https://perfetto.dev/docs/analysis/sql-tables)
-- [Perfetto Docs - Analyzing Android Binder Transactions](https://perfetto.dev/docs/analysis/binder) — 官方 Binder 分析指南，含 `android.binder` 模块用法 [AIW-源码调研-2026-04-29] — SQL 查询 Trace 数据的完整参考
-  - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline) — FrameTimeline 的可用版本、轨道含义与 SurfaceView 使用边界
+- [Perfetto Docs - Analyzing Android Binder Transactions](https://perfetto.dev/docs/analysis/binder) — 官方 Binder 分析指南，含 `android.binder` 模块用法(https://perfetto.dev/docs/data-sources/frametimeline) — FrameTimeline 的可用版本、轨道含义与 SurfaceView 使用边界
   - [Android FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics) — FrameMetrics 各指标的官方说明
   - [JankStats Library](https://developer.android.com/topic/performance/jankstats) — Google 官方的线上卡顿监控库
 - 其他参考：

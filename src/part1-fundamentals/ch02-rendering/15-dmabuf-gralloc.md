@@ -60,8 +60,8 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
@@ -73,14 +73,14 @@ task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-09T14:40:00+08:00"
 task9_review_notes: "2026-06-14 Task9 闲时抽检：auto-fixed。复核 DMA-BUF exporter 与 buffer_handle_t 边界、Android 14 buffer cache purge 官方文档路径；无新增 queue。已回到 Task6 复审。"
-last_task6_at: "2026-05-27T05:14:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-05-review.md"
+last_task6_at: "2026-06-14T16:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-14-16-review.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-06-14-13-audit.md"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task9_autofix_at: "2026-06-14"
-task6_reviewed_date: "2026-05-27"
+task6_reviewed_date: "2026-06-14"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
 ---

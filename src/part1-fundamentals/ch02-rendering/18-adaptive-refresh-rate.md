@@ -73,7 +73,7 @@ p0: 0
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-14
 last_task9_audit: "2026-06-14"
 last_task9_autofix_at: "2026-06-14"
 ---
@@ -136,7 +136,7 @@ DisplayManager 这一层先决定系统允许在哪些显示模式里做选择�
 
 到了 SurfaceFlinger 这一层，`mScheduler->chooseRefreshRateForContent(...)` 才开始根据当前可见 Layer 的内容节奏做 content-based selection。这里的输入已经带着前面那层收窄后的 allowed ranges，所以 Battery Saver、用户峰值刷新率和 App 请求范围会先影响候选集合，再交给 Scheduler 做评分。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 
-`VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`，阅读入口可以从 `VsyncModulator::setVsyncConfigSet()` 和 `VsyncModulator::updateVsyncConfig()` 开始。前者装载 Early / EarlyGpu / Late 等 offset 配置，后者根据 transaction、刷新率变化和调度状态选择本轮使用哪组配置。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
+`VsyncModulator` 负责在特定阶段调整 VSYNC offset，为事务提交和合成留出时间余量。源码在 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`，阅读入口是 `VsyncModulator::setVsyncConfigSet()` 和 `VsyncModulator::updateVsyncConfig()`。前者装载 Early / EarlyGpu / Late 等 offset 配置；后者根据 transaction、刷新率变化和调度状态，选择本轮使用哪组配置。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
 ## App 侧可以用的 ARR API
 
@@ -326,7 +326,7 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
 
 ## 扩展：Swappy 为什么还值得单独讲
 
-游戏场景经常不直接跟着 Java UI 的节拍走，这时 Android Frame Pacing Library（Swappy）仍然很有价值。官方文档给出的说明很直接，它用 Android Choreographer 做同步，用 presentation timestamps 保证展示时机，再用 sync fences 避免 buffer stuffing。设备支持多刷新率时，Swappy 也会帮游戏把帧节奏对准当前显示能力。[已验证: 官方文档, developer.android.com/games/sdk/frame-pacing]
+ARR 的 View 层 API 解决的是普通 UI 的帧率适配。游戏场景的渲染循环通常由引擎自己驱动，不依赖 Choreographer 的 doFrame 回调，所以需要一套不同的帧节奏控制机制。Android Frame Pacing Library（Swappy）就是为这个场景设计的。官方文档给出的说明很直接，它用 Android Choreographer 做同步，用 presentation timestamps 保证展示时机，再用 sync fences 避免 buffer stuffing。设备支持多刷新率时，Swappy 也会帮游戏把帧节奏对准当前显示能力。[已验证: 官方文档, developer.android.com/games/sdk/frame-pacing]
 
 这部分和普通 View UI 的 ARR 不是同一层。前者更接近游戏渲染循环和 Surface / EGL / Vulkan 的提交时序，后者更偏向 View、Compose 和系统滚动组件的刷新率投票。
 

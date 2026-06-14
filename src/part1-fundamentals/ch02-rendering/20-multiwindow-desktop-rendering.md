@@ -57,12 +57,12 @@ related_chapters:
 - '2.13'
 - '7.4'
 - '3.3'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
-reviewed_date: "2026-06-01"
+reviewed_date: "2026-06-14"
 finalized_date: "2026-06-01"
 finalized_by: "openclaw-task9-auto-promote"
 auto_promoted_date: "2026-06-01"
@@ -70,7 +70,7 @@ auto_promoted_by: "openclaw-task9"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed-lite
-task9_reviewed_date: "2026-06-01"
+task9_reviewed_date: "2026-06-14"
 last_task9_at: "2026-06-01T07:20:00+08:00"
 last_task2b_at: '2026-05-09T17:20:00+08:00'
 task9_reviewed_by: "openclaw-task9"
@@ -78,9 +78,9 @@ last_task9_audit: "2026-06-14"
 last_task9_audit_at: "2026-06-14T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-14-14-audit.md"
 last_task2b_lite_at: "2026-05-31"
-last_task6_at: "2026-06-01T01:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-01-review.md"
-task6_review_notes: "2026-06-01 Task6 01:05：回炉后写作复审；清理禁用/高风险措辞与否定纠正句式 10 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-06-14T16:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-14-16-review.md"
+task6_review_notes: "2026-06-14 Task6 16:05：Task9 auto-fixed 后写作复审。L1 禁用词/高频词/翻译腔扫描全干净。L2 修 1 处空标题（Android 16 桌面模式公开边界段落归位）。锚点 5/5 覆盖。无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。"
 last_task9_review_log: "logs/deep-review/2026-06-01-07-deep-review.md"
 last_task9_autofix_at: "2026-06-14"
 task9_review_notes: "2026-06-14 Task9 idle audit: auto-fixed。修复 Perfetto surfaceflinger_layer.display_id 不存在导致 SQL 不可执行、Source Android SurfaceFlinger 文档 404 两处源码/路径问题；无 queue pending，回到 Task6 复审。"
@@ -167,9 +167,9 @@ Android 17 的 DeliQueue 是 `android.os.MessageQueue` 的无锁实现，公开�
 
 ### Android 16 桌面模式公开边界
 
-### 16KB 页在多窗口下的内存叠加效应
-
 Android 16 desktop windowing 的公开特性应按官方文档写成 customizable header insets 和 app instance management。当前公开资料不能支撑"SurfaceControl 属性持久化缓存"或 Perfetto 中存在通用 `applyCachedState` slice 的结论。
+
+### 16KB 页在多窗口下的内存叠加效应
 
 Android 15 起 AOSP 支持 16KB page size，Google Play 从 2025-11-01 要求 targeting Android 15+ 的新应用和更新支持 16KB page sizes；AOSP 文档不支持把它写成 Android 16 旗舰设备强制默认。多窗口下的内存影响可以讨论，但 PSS +9%、四窗口额外内存接近一个完整应用 PSS 这类固定数字，需要绑定设备、构建、页面大小、进程常驻集和测量方法后再写。
 

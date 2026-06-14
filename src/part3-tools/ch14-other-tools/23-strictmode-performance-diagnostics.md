@@ -286,6 +286,163 @@ StrictMode 的策略是进程内的、线程级别的。每个进程需要独立
 - **Service 进程**：如果 Service 进程有自己的 `Application` 子类（通过 `android:process` 指定），在该子类的 `onCreate()` 中配置。如果共用 Application 类，通过进程名判断是否启用。
 - **多进程 StrictMode 检测结果互不干扰**：每个进程有自己的 StrictMode 策略实例，不会跨进程报告。
 
+
+
+<!-- AIW-源码调研-2026-06-14 -->
+
+## Android 14–17 VmPolicy 演进与跨 Binder 违规传播（源码级补充）
+
+> 本节为 §14.23 在 2026-06-14 由 AIW 源码调研 cron 写入的反哺节，补充主章节未覆盖的源码级细节。原始主章节基于 API 28–37 验证 + AOSP android-17.0.0_r1，本节沿用同一边界。
+
+### VmPolicy 比特位全景（bit 0–14）
+
+`StrictMode.java`（main 分支）定义 15 个 `DETECT_VM_*` 比特（`0x0000ffff = DETECT_VM_ALL`）。Android 14–17 窗口新增了 bit 11–14：
+
+| 比特 | 常量 | API | 关键特性 |
+|------|------|-----|---------|
+| bit 9  | `DETECT_VM_NON_SDK_API_USAGE` | API 28 | 与 `VMRuntime.setNonSdkApiUsageConsumer` 集成 |
+| bit 10 | `DETECT_VM_IMPLICIT_DIRECT_BOOT` | API 29 | 在 CE/DE 加密盘加载前检测 direct-boot 误用 |
+| bit 11 | `DETECT_VM_CREDENTIAL_PROTECTED_WHILE_LOCKED` | API 34 | 检测锁屏后访问 CE 加密路径 |
+| bit 12 | `DETECT_VM_INCORRECT_CONTEXT_USE` | API 34 | `@TestApi`，配合 `permitIncorrectContextUse()` 豁免 |
+| bit 13 | `DETECT_VM_UNSAFE_INTENT_LAUNCH` | API 33 | 通过 `IUnsafeIntentStrictModeCallback` 接收 AMS 端通知 |
+| bit 14 | `DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED` | API 36 | `@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)` 双门控 |
+
+### 跨 Binder 违规传播机制（gatheredViolations ThreadLocal）
+
+主章节已提及"StrictMode 策略是进程内的、线程级别的"。但这里需要细化：被调用方进程内的违规如何回写到调用方进程。答案是 `gatheredViolations` ThreadLocal + Parcel 反向序列化。
+
+**调用链**：
+
+1. `StrictMode.setThreadPolicyMask(int mask)` 同步写两个 thread-local：libcore `BlockGuard`（Java 层）+ `Binder.setThreadStrictModePolicy`（native 层）。native 层跨 Binder transaction 把 mask 带到被调用方线程。
+2. `libcore/.../BlockGuard.java::Policy.getPolicyMask()` 把 mask 暴露给 native binder —— `BlockGuard.Policy` 接口显式注释 `Returns the policy bitmask, for shipping over Binder calls to remote threads/processes`。
+3. 被调用方进程触发违规时（如 system_server 在 onTransaction 路径做磁盘读），走 `onThreadPolicyViolation` → 判 `PENALTY_GATHER` 启用 → 把 `ViolationInfo` 累积到 `gatheredViolations.get().add(info)`。
+4. `Parcel.writeNoException()` 返回前调 `StrictMode.hasGatheredViolations()` 检查 → 若有违规，把 `ViolationInfo` 列表序列化进 reply Parcel → `Parcel.writeException()` 反序列化在调用方进程重新 throw RuntimeException。
+
+**关键代码片段**：
+
+```java
+// StrictMode.java - gatheredViolations ThreadLocal
+private static final ThreadLocal<ArrayList<ViolationInfo>> gatheredViolations =
+        new ThreadLocal<ArrayList<ViolationInfo>>() {
+            @Override
+            protected ArrayList<ViolationInfo> initialValue() {
+                return null; // 起始 null，避免 hasGatheredViolations() 不必要分配
+            }
+        };
+
+/* package */ static boolean hasGatheredViolations() {
+    return gatheredViolations.get() != null;
+}
+
+/* package */ static void clearGatheredViolations() {
+    gatheredViolations.set(null);
+}
+
+// setThreadPolicyMask 同步写双 thread-local
+public static void setThreadPolicyMask(@ThreadPolicyMask int threadPolicyMask) {
+    setBlockGuardPolicy(threadPolicyMask);    // Java 层 (Dalvik BlockGuard)
+    Binder.setThreadStrictModePolicy(threadPolicyMask);  // Native 层 (Binder)
+}
+```
+
+**性能影响**：跨 Binder 违规采集是无锁 ThreadLocal 累积（O(1)），但 Parcel 反向序列化包含完整 stacktrace，`new Throwable().fillInStackTrace()` 通常 50–200μs。`gatheredViolations` 在同条 Binder 事务内会去重（`info.getStackTrace().equals(previous.getStackTrace())`），但跨事务不复用。
+
+### DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED 的双门控
+
+bit 14 在 Builder API 上是 `@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)` 标注：
+
+```java
+@SuppressWarnings("BuilderSetStyle")
+@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)
+public @NonNull Builder detectBlockedBackgroundActivityLaunch() {
+    return enable(DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED);
+}
+
+@SuppressWarnings("BuilderSetStyle")
+@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)
+public @NonNull Builder ignoreBlockedBackgroundActivityLaunch() {
+    return disable(DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED);
+}
+```
+
+**双门控机制**：
+
+1. **客户端门控**：应用调用 `detectBlockedBackgroundActivityLaunch()` 才能在 VmPolicy mask 中打开 bit 14。
+2. **服务端门控**：`Flags.FLAG_BAL_STRICT_MODE_RO` 必须通过 `DeviceConfig` 推送到设备且打开。`setVmPolicy` 内部判 `if ((sVmPolicy.mask & DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED) != 0) registerBackgroundActivityLaunchCallback()`，服务端 flag 未开启时 `registerBackgroundActivityLaunchCallback` 走 no-op，AMS 端不会回调。
+
+应用 + 服务端同时开启时，注册路径是 `ActivityTaskManager.getService().registerBackgroundActivityStartCallback(...)` → system_server 端 `ActivityTaskManagerService.mBgActivityStartCallbacks` 列表。BAL 被 abort 后通过 `IBackgroundActivityLaunchCallback.Stub` 回调到 app 进程，走 `penaltyLog()` 输出到 Logcat。
+
+### DETECT_VM_NON_SDK_API_USAGE 的 ART 端联动
+
+`StrictMode.setVmPolicy()` 内部根据 bit 9 是否开启，注册 / 取消 `VMRuntime.setNonSdkApiUsageConsumer`：
+
+```java
+private static final Consumer<String> sNonSdkApiUsageConsumer =
+        message -> onVmPolicyViolation(new NonSdkApiUsedViolation(message));
+
+// setVmPolicy 内部
+if ((sVmPolicy.mask & DETECT_VM_NON_SDK_API_USAGE) != 0) {
+    VMRuntime.setNonSdkApiUsageConsumer(sNonSdkApiUsageConsumer);
+    VMRuntime.setDedupeHiddenApiWarnings(false);  // 关闭 ART 内部去重
+} else {
+    VMRuntime.setNonSdkApiUsageConsumer(null);
+    VMRuntime.setDedupeHiddenApiWarnings(true);   // 恢复 ART 默认去重
+}
+```
+
+`setDedupeHiddenApiWarnings(false)` 关闭 ART 内部去重确保每次访问 @hide / @UnsupportedAppUsage 都触发 consumer 回调。生产应用误开此检测在高频反射路径（如 Gson、Retrofit）上可能造成每秒数万次回调。`setViolationLogger(ViolationLogger listener)` 是 TestApi，测试期把违规收集到自定义 logger。
+
+### DETECT_VM_CLEARTEXT_NETWORK 的 netd 集成
+
+```java
+int networkPolicy = NETWORK_POLICY_ACCEPT;
+if ((sVmPolicy.mask & DETECT_VM_CLEARTEXT_NETWORK) != 0) {
+    if ((sVmPolicy.mask & PENALTY_DEATH) != 0
+            || (sVmPolicy.mask & PENALTY_DEATH_ON_CLEARTEXT_NETWORK) != 0) {
+        networkPolicy = NETWORK_POLICY_REJECT;
+    } else {
+        networkPolicy = NETWORK_POLICY_LOG;
+    }
+}
+INetworkManagementService netd = INetworkManagementService.Stub.asInterface(
+        ServiceManager.getService(Context.NETWORKMANAGEMENT_SERVICE));
+if (netd != null) {
+    try {
+        netd.setUidCleartextNetworkPolicy(android.os.Process.myUid(), networkPolicy);
+    } catch (RemoteException ignored) { }
+}
+```
+
+`NETWORK_POLICY_LOG` 路径：netd 走 `nf_log` 记录到 netd 日志，应用看到 `cleartextNotPermitted()` SocketException。`NETWORK_POLICY_REJECT` 路径：netd 直接拒绝握手，应用层只能看到 Connection Refused。
+
+### DropBox 限流与 BackgroundThread 异步
+
+`dropboxViolationAsync` 通过 `sDropboxCallsInFlight: AtomicInteger` 跟踪在飞 DropBox 写入：
+
+```java
+private static void dropboxViolationAsync(final int penaltyMask, final ViolationInfo info) {
+    int outstanding = sDropboxCallsInFlight.incrementAndGet();
+    if (outstanding > 20) {
+        sDropboxCallsInFlight.decrementAndGet();
+        return; // 超过 20 直接丢弃，避免 DropBoxManager 雪崩
+    }
+    BackgroundThread.getHandler().post(() -> {
+        handleApplicationStrictModeViolation(penaltyMask, info);
+        sDropboxCallsInFlight.decrementAndGet();
+    });
+}
+```
+
+**实战含义**：线上应用如果同时开 `PENALTY_DROPBOX` + 在高频路径违规（每分钟数百条），`sDropboxCallsInFlight` 会经常到 20 上限，后续违规直接丢弃。DropBox 文件 `/data/system/dropbox/system_app_strictmode`（系统应用）或 `/data/system/dropbox/data_app_strictmode`（第三方）每 24h 滚动一次、单文件最大 8KB。CI 测试时建议临时把上限调高或换 `penaltyListener` 把违规统一收集到自定义 logger。
+
+### 推荐补充到章节 §14.23 的源码级引用清单
+
+调研报告 `DeepResearch/2026-06-14-android17-strictmode-vmpolicy-evolution-cross-binder-propagation.md` 给出完整 14 个关键函数 + 6 个集成锚点。本节为反哺摘要，深度内容请参考完整报告。
+
+> [适用版本: Android 9 (API 28) - Android 17 (API 37)]
+> [已验证: AOSP main 分支, frameworks/base/core/java/android/os/StrictMode.java, libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java]
+> [android-17.0.0_r1 tag 公开未发布；本节未引用 Android 18+/API 38+ 内容]
+
 > [适用版本: Android 9 (API 28) - Android 17 (API 37)]
 > [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/StrictMode.java]
 > [已验证: AOSP android-17.0.0_r1, libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java]

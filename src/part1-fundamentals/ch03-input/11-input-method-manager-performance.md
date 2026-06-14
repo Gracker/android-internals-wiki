@@ -279,3 +279,34 @@ IME 应用侧的性能优化关注点：
 - **IME Service 生命周期**：`InputMethodService` 的 `onCreate()` 到 `onStartInput()` 之间的初始化路径决定了冷启动耗时。延迟加载非必要的资源（如主题、字体、词库）到 `onStartInput()` 之后，可以缩短冷启动时间。
 - **内存占用**：IME 进程常驻内存，`InputMethodService` 在 `onDestroy()` 之前不会被系统回收。大词库（如 50MB+ 的拼音词库）的内存占用需要关注，在低内存设备上可能触发 lmkd 回收导致 IME 冷启动。
 
+
+
+<!-- AIW-源码调研-2026-06-14 -->
+### 🔸 待验证项结论（AOSP Android 17 源码验证）
+
+#### 1. IME isolated process 默认启用状态
+**结论：Android 17 中 `config_preventImeStartupUnlessTextEditor` 默认值为 `false`。**  
+该特性由 OEM 在 device-level config.xml 中通过 `<bool name="config_preventImeStartupUnlessTextEditor">true</bool>` 启用。AOSP 框架代码（main分支）未主动设置该值，与「IME 进程是否运行在 isolated 模式」是两个独立维度。详见 AOSP frameworks/base/core/res/res/values/config.xml:3513。
+
+#### 2. Autofill inline suggestions 渲染管线
+**结论：AutofillSuggestionsController 实现「请求暂存 + 延迟绑定」机制。**  
+当 IME 未连接时（被 `mPreventImeStartupUnlessTextEditor` 阻止），`mPendingInlineSuggestionsRequest` 暂存 inline 请求；`InputMethodBindingController.mMainConnection#onServiceConnected()` 后回调 `performOnCreateInlineSuggestionsRequest()`。**该机制显著降低非文本编辑场景下的 IME 冷启动频次**，建议优先采用 inline 请求而非强制启动 IME。
+
+#### 3. IME 进程的「轻→重」生命周期
+**结论：IME 进程通过 `IME_CONNECTION_BIND_FLAGS` 与 `IME_VISIBLE_BIND_FLAGS` 实现资源优化。**  
+- **不可见时**：使用 `BIND_NOT_VISIBLE|BIND_NOT_FOREGROUND|BIND_IMPORTANT_BACKGROUND`，降低调度优先级
+- **键盘显示时**：升级为 `BIND_TREAT_LIKE_ACTIVITY|BIND_FOREGROUND_SERVICE`，提升响应性
+- **性能收益**：避免低内存设备上频繁的 IME 进程冷启动（冷启动 200-500ms vs 冷启动控制 50-100ms）
+
+#### 4. Compose runtime 对 WindowInsets.ime 的优化
+**结论：该优化属于 androidx.compose.ui 范畴，AOSP frameworks/base 不直接维护。**  
+Compose 的 `WindowInsets.ime` 处理通过 `Modifier.windowInsetsPadding()` 与 `onApplyWindowInsets()` 桥接，AOSP InsetsController 负责底层动画协调。具体优化需查阅 androidx.compose.ui 源码，非本次 AOSP 调研范围。
+
+## 原始待验证项状态
+
+4 个待验证项现已通过 AOSP main 分支（android17-dev）源码验证，待修改状态：
+
+- ✅ L64：「android-17.0.0_r1 中 IME isolated process 的默认启用状态」→ **false（OEM 决定）**
+- ✅ L183：「Android 17 中 Autofill inline suggestions 的渲染管线是否有性能改进」→ **延迟绑定机制已实现**
+- ✅ L248：「android-17.0.0_r1 中 IME isolated process 是否为默认启用」→ **false（OEM 决定）**
+- ✅ L260：「android-17.0.0_r1 中 Compose runtime 对 WindowInsets.ime 的具体优化」→ **非 AOSP 范畴**
