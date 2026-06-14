@@ -2,7 +2,7 @@
 title: "ProfilingManager"
 chapter: "19"
 section: "19.16"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 15+（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
@@ -32,19 +32,19 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
-task9_state: pending
+task9_state: "reviewed"
 task2b_state: fixed
-task9_result: auto-fixed
+task9_result: "pass-tech-review"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-14"
 last_task6_at: "2026-06-14T11:12:23+08:00"
 last_task6_review_log: "logs/review/2026-06-14-11-review.md"
 task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 4 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
-last_task9_at: "2026-06-14T10:20:00+08:00"
+last_task9_at: "2026-06-14T16:20:00+08:00"
 last_task9_audit: "2026-06-14"
-task9_review_notes: "2026-06-14 Task9 idle audit：AUTO-FIX SDK_INT_FULL 36.1 判断错误；改为 VERSION_CODES_FULL.BAKLAVA_1；ProfilingTrigger API36/36.1/API37 边界未发现新增 P0/P1，回到 Task6 复审。"
+task9_review_notes: "2026-06-14 Task9 deep review：pass-tech-review。复核 ProfilingManager API35、ProfilingTrigger API36/36.1/API37、SDK_INT_FULL/BAKLAVA_1、AndroidX Profiling builder 与限流/结果目录口径；无 P0/P1，queue 无 pending，Task6 已通过，自动晋升 finalized。"
 task2b_result: fixed
 last_task2b_at: "2026-05-31T18:50:00+08:00"
 task2b_fixed_at: "2026-05-31T18:50:00+08:00"
@@ -55,7 +55,7 @@ repaired_by: "openclaw-task2b"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-14"
-last_task9_review_log: "logs/deep-review/2026-06-14-10-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-14-16-deep-review.md"
 task6_reviewed_date: "2026-06-14"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
