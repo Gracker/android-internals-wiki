@@ -54,6 +54,7 @@ last_task9_review_log: "logs/deep-review/2026-05-27-19-deep-review.md"
 task9_review_notes: "2026-05-27 Task9：pass-tech-review。复核 ZygoteInit preload 顺序、GraphicBufferMapper preloadHal、zygote_preload_graphics Android 13-16 分支、GraphicsEnvironment chooseDriverInternal；18 点 AUTO-FIX 后口径正确。 P0 0 / P1 0 / P2 0；Task6 已通过且 queue.json 无 pending，自动晋升 finalized。"
 last_task2b_lite_at: "2026-05-27"
 last_task9_autofix_at: "2026-05-27"
+last_task9_audit: "2026-06-14"
 p0: 0
 p1: 0
 p2: 0
