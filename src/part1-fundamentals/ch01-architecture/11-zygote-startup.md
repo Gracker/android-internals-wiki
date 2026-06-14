@@ -234,7 +234,7 @@ maybePreloadGraphicsDriver();
 
 同样不要把 `preloaded-classes` 想成"所有常用 UI 类都在里面"。它主要是 bootclasspath / framework 侧的高频类。至少在 android-16 的 `frameworks/base/config/preloaded-classes` 里,并没有 `androidx.recyclerview.widget.RecyclerView` 这种 AndroidX 控件。也就是说,framework 预热和应用侧库预热是两回事。
 
-再补一个经常看错的点:这些 preload trace 发生在 **zygote 进程**,不是 `system_server` 进程。原因很简单,代码就是在 `ZygoteInit.main()` 的 preload 阶段执行的,此时 `system_server` 还没被 fork 出来。所以如果你在开机 trace 里想分析 preload 过慢,不要跑到 `system_server` track 上找这些 slice。
+再补一个经常看错的点:这些 preload trace 发生在 **zygote 进程**,不是 `system_server` 进程。代码就是在 `ZygoteInit.main()` 的 preload 阶段执行的,此时 `system_server` 还没被 fork 出来。所以如果你在开机 trace 里想分析 preload 过慢,不要跑到 `system_server` track 上找这些 slice。
 
 ## fork 之后到 Application.onCreate() 之前,实际发生了什么
 
