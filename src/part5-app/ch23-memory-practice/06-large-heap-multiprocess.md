@@ -66,6 +66,8 @@ task6_state: reviewed
 last_task6_at: "2026-06-08T16:14:59+08:00"
 last_task6_review_log: "logs/review/2026-06-08-16-review.md"
 last_task6_audit: "2026-06-08"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-15
 ---
 
 # 大内存与多进程策略
@@ -99,7 +101,7 @@ last_task6_audit: "2026-06-08"
 
 `android:largeHeap`、多进程和 64 位迁移经常被放在同一个讨论里，但它们的收益和代价不一样。`largeHeap` 扩大的是当前应用进程的 Dalvik / ART heap 增长上限；多进程把不同业务拆到多个 Linux 进程，各自拥有独立地址空间和运行时；64 位迁移把地址空间瓶颈从 32 位用户态的 GB 级抬到 TB 级。三者都可能降低 OOM 发生率，也都可能增加 PSS、启动耗时和维护成本。
 
-实战里不要把它们当成“加内存开关”。先确认 OOM 类型，再决定手段：Java Heap OOM 优先回到 23.4 节处理对象和缓存；低内存杀进程优先看 4.4 节的 LMKD / oom_adj；32 位虚拟地址耗尽、线程栈过多、WebView / 图形 / Native 映射过大，才进入本篇的策略选择。[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+实战里不要把它们当成“加内存开关”。先确认 OOM 类型，再决定手段：Java Heap OOM 优先回到 23.4 节处理对象和缓存；低内存杀进程优先看 4.4 节的 LMKD / oom_adj；32 位虚拟地址耗尽、线程栈过多、WebView / 图形 / Native 映射过大，才进入本篇的策略选择。
 
 ## largeHeap 的使用场景与代价
 
@@ -142,7 +144,7 @@ largeHeap 的代价主要有四类：
 
 Android 默认让同一应用的组件运行在同一进程和主线程。组件可以通过 manifest 的 `android:process` 放到其他进程；远程 Binder 调用进入服务进程后，由系统维护的 Binder 线程池执行，服务端方法必须按并发调用设计。[已验证: 官方文档, developer.android.com/guide/components/processes-and-threads]
 
-多进程的价值是隔离地址空间和故障域。大对象解析、WebView、地图、相机预览、图片编辑、插件运行时、短时批处理这类模块，放到子进程后可以在任务结束时退出整个进程，让 Java Heap、Native heap、线程栈、JIT 缓存、`.so` 映射和图形资源一起释放。对 32 位进程来说，这比在主进程里反复释放对象更干净，因为虚拟地址碎片也随进程退出消失。[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+多进程的价值是隔离地址空间和故障域。大对象解析、WebView、地图、相机预览、图片编辑、插件运行时、短时批处理这类模块，放到子进程后可以在任务结束时退出整个进程，让 Java Heap、Native heap、线程栈、JIT 缓存、`.so` 映射和图形资源一起释放。对 32 位进程来说，这比在主进程里反复释放对象更干净，因为虚拟地址碎片也随进程退出消失。
 
 多进程不会自动降低总内存。每个进程都会有独立的 ART 运行时、ClassLoader、线程、Binder 线程池、Native allocator 状态和业务缓存。`.so`、`.dex`、framework 代码页可以共享，脏页、Java 对象、线程栈和多数 Native 分配不能共享。官方文档对 PSS 的定义也说明了这一点：共享页按进程数量分摊，非共享页完整计入当前进程；RSS 统计更快，但会把共享页完整算进每个进程。[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
 
@@ -182,13 +184,15 @@ adb shell cat /proc/$(adb shell pidof com.example.app:editor)/smaps_rollup
 
 预算的触发点要接系统信号。在本节适用范围内，Android 14-16（API 34-36）的 `onTrimMemory()` 实现应聚焦 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`；`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 从 API 34 起不再投递，并在 API 35 被废弃。Android 13 及以下兼容代码可以保留旧等级分支。低 RAM 设备通过 `ActivityManager.isLowRamDevice()` 单独配置预算，不能沿用高端机阈值。[已验证: 官方文档, developer.android.com/topic/performance/memory; developer.android.com/reference/android/content/ComponentCallbacks2; AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/ComponentCallbacks2.java]
 
-[自动发现] 线程栈也要进入虚拟内存预算。ART 在 `Thread::CreateNativeThread()` 路径里会修正线程栈大小，并通过 `pthread_attr_setstacksize()` 传给 `pthread_create()`；参考书把“线程数量 × 栈空间”作为 32 位虚拟内存压力来源，是一个适合落到治理清单里的观察点。工程上优先收敛线程池和野线程，谨慎改线程栈大小；栈缩小后要覆盖递归、JNI、复杂解析和三方库调用，避免把 OOM 变成 StackOverflowError 或 native crash。[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc] [结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+线程栈也要进入虚拟内存预算。ART 在 `Thread::CreateNativeThread()` 路径里会修正线程栈大小，并通过 `pthread_attr_setstacksize()` 传给 `pthread_create()`；参考书把“线程数量 × 栈空间”作为 32 位虚拟内存压力来源，是一个适合落到治理清单里的观察点。工程上优先收敛线程池和野线程，谨慎改线程栈大小；栈缩小后要覆盖递归、JNI、复杂解析和三方库调用，避免把 OOM 变成 StackOverflowError 或 native crash。[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc]
 
 ## 64 位迁移与内存空间扩展
 
+多进程和预算管理解决的是“怎么分”的问题，64 位迁移解决的是“地址空间够不够”的问题——两者常常需要一起评估。
+
 64 位迁移对内存策略有两层影响。第一层是兼容要求：Google Play 要求发布的 App 支持 64 位架构；如果 App 或 SDK 包含 C/C++ native code，就要检查 APK / AAB 里的 ABI 目录，为每个支持的 32 位 ABI 提供对应 64 位 ABI，例如 `armeabi-v7a` 对应 `arm64-v8a`，`x86` 对应 `x86_64`。[已验证: 官方文档, developer.android.com/google/play/requirements/64-bit]
 
-第二层是地址空间：64 位进程能显著降低 32 位虚拟地址耗尽导致的 mmap 失败。线程多、`.so` 多、`.dex` / `.oat` 映射多、WebView / 图形 / Native buffer 多的 App，在 32 位进程里可能还没耗尽物理内存就先耗尽连续虚拟地址；64 位迁移后，这类失败会少很多。[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]
+第二层是地址空间：64 位进程能显著降低 32 位虚拟地址耗尽导致的 mmap 失败。线程多、`.so` 多、`.dex` / `.oat` 映射多、WebView / 图形 / Native buffer 多的 App，在 32 位进程里可能还没耗尽物理内存就先耗尽连续虚拟地址；64 位迁移后，这类失败会少很多。
 
 64 位不是免费扩容。指针宽度增加会放大部分对象、表结构和 Native 数据结构；`.so` 体积、冷启动 I/O、指令缓存和内存局部性也可能变化。只用 Java / Kotlin 的 App 通常已经能在 64 位设备上运行；包含 native code 的 App 要把 ABI、三方 SDK、插件、热修复、`.so` 加载路径、崩溃符号表和性能基线一起迁移。
 

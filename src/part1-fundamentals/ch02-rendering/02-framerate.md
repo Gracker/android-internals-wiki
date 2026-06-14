@@ -3,7 +3,7 @@
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
-status: ready-for-review
+status: finalized
 reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
 review_note: Task 6 三审(2026-04-30):移除 AIW 编辑注释 3 处、frontmatter 去重 1 处;task9 仍 needs-rework
@@ -57,9 +57,9 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_date: 2026-06-15
@@ -75,6 +75,14 @@ last_task6_audit: "2026-06-12"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
 last_task9_autofix_at: 2026-06-15
+last_task6_at: "2026-06-15T04:09:51+08:00"
+last_task6_review_log: logs/review/2026-06-15-04-review.md
+task6_reviewed_date: 2026-06-15
+task6_reviewed_by: openclaw-task6
+finalized_date: 2026-06-15
+finalized_by: openclaw-task6
+auto_promoted_date: 2026-06-15
+auto_promoted_by: openclaw-task6
 ---
 
 # 帧率与刷新率
@@ -788,7 +796,7 @@ SurfaceFlinger 会根据前台 App 的类型自动决定是否使用高刷新率
 
 ### "高刷新率屏幕 = 更流畅"--不一定
 
-这是一个非常常见的误解。高刷新率屏幕只有在 App 的帧率能跟上时才更流畅,帧率跟不上时反而可能更卡。原因很简单:120Hz 屏幕每 8.3ms 就要刷新一次,如果 App 的帧时间是 12ms(在 60Hz 下完全够用),在 120Hz 下每帧都会超时,导致持续掉帧。用户看到的往往是卡顿更明显了。在 Perfetto 中,这种情况表现为 Frame Timeline 中大量红色帧。
+这是一个非常常见的误解。高刷新率屏幕只有在 App 的帧率能跟上时才更流畅,帧率跟不上时反而可能更卡。120Hz 屏幕每 8.3ms 就要刷新一次,如果 App 的帧时间是 12ms(在 60Hz 下完全够用),在 120Hz 下每帧都会超时,导致持续掉帧。用户看到的往往是卡顿更明显了。在 Perfetto 中,这种情况表现为 Frame Timeline 中大量红色帧。
 
 更反直觉的是,有些 App 在 60Hz 设备上流畅但在 120Hz 设备上反而卡顿--不是设备不行,是 App 的渲染能力在 8.3ms 的预算下力不从心。
 
@@ -804,7 +812,7 @@ FPS 是一个统计指标,60 FPS 只说明"一秒钟内渲染了 60 帧",但不�
 
 ### "掉帧 = 主线程卡了"--只说对了一半
 
-主线程确实是掉帧的最常见原因(复杂的 layout、主线程 I/O、频繁 GC 等),但 RenderThread 的 GPU 命令堆积、SurfaceFlinger 合成延迟、CPU 调度不及时(线程被抢占或优先级过低)同样会导致掉帧。在 Perfetto 中区分它们的方法是:主线程 Jank 表现为 `doFrame` 切片内部某个子阶段过长;RenderThread Jank 表现为 `DrawFrame` 切片过长;调度延迟表现为 `doFrame` 开始时间比 VSync 时刻晚很多。
+主线程是掉帧的最常见原因(复杂的 layout、主线程 I/O、频繁 GC 等),但 RenderThread 的 GPU 命令堆积、SurfaceFlinger 合成延迟、CPU 调度不及时(线程被抢占或优先级过低)同样会导致掉帧。在 Perfetto 中区分它们的方法是:主线程 Jank 表现为 `doFrame` 切片内部某个子阶段过长;RenderThread Jank 表现为 `DrawFrame` 切片过长;调度延迟表现为 `doFrame` 开始时间比 VSync 时刻晚很多。
 
 ### "setFrameRate() 是命令"--它只是建议
 

@@ -8,7 +8,7 @@ task9_reviewed_date: "2026-06-05"
 title: "Thermal 管控深度：从内核子系统到 ADPF 主动降频"
 chapter: "5.12"
 section: "5.12"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
@@ -46,12 +46,12 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_date: 2026-06-04
 last_task6_audit: "2026-06-08"
 reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
@@ -64,15 +64,20 @@ task9_review_notes: "2026-06-15 Task9 idle audit: auto-fixed。收紧 android16-
 last_task2b_by: openclaw-task2b-main
 task2b_fix_summary: "2026-06-04 Task2B main: P1 Linux thermal kernel source branch disambiguated from generic 6.1 to android16-6.12; critical trip handler symbols corrected for branch consistency; step_wise get_target_state() added bool throttle parameter; Thermal HAL version table split into AIDL basics (14), cooling callback (15), forecastSkinTemperature + Framework fallback (16)."
 last_task2b_at: "2026-06-04T14:54:52+08:00"
-last_task6_at: "2026-06-04T15:21:59.742576+08:00"
-task6_reviewed_date: 2026-06-04
-task6_reviewed_by: "openclaw-task6"
+last_task6_at: "2026-06-15T04:09:51+08:00"
+task6_reviewed_date: 2026-06-15
+task6_reviewed_by: openclaw-task6
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 小修 2 处（形容词+冒号起手式 1、「很关键」填充 1）。无新增 L3/L4 回炉项。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
 last_task9_autofix_at: "2026-06-15"
+last_task6_review_log: logs/review/2026-06-15-04-review.md
+finalized_date: 2026-06-15
+finalized_by: openclaw-task6
+auto_promoted_date: 2026-06-15
+auto_promoted_by: openclaw-task6
 ---
 
 # Thermal 管控深度：从内核子系统到 ADPF 主动降频
@@ -191,7 +196,7 @@ cpu_thermal: cpu-thermal {
 
 **Hot trip point** 表示温度已经进入危险区间，但它还不是“立刻关机”的同义词。`thermal_core.c` 在温度向上跨过 `THERMAL_TRIP_HOT` 或 `THERMAL_TRIP_CRITICAL` 时，都会先走 `handle_critical_trips()`。如果 trip 类型是 `THERMAL_TRIP_HOT`，并且该 thermal zone 实现了 `tz->ops.hot()`，内核只会调用 hot 回调，让平台记录告警或触发更激进的缓解动作；是否继续限频、通知用户空间，要看 zone 的实现。
 
-**Critical trip point** 才是硬件保护真正开始执行的那一层。`android16-6.12` 的 `handle_critical_trips()` 在 `THERMAL_TRIP_CRITICAL` 分支调用 `tz->ops.critical(tz)`。如果平台注册 thermal zone 时没有提供 `critical` 回调，thermal core 会默认填成 `thermal_zone_device_critical()`；这个函数再调用 `thermal_zone_device_halt(tz, true)`，最终走 `hw_protection_shutdown(...)`。同文件还导出了 `thermal_zone_device_critical_reboot()`，它走 `thermal_zone_device_halt(tz, false)`，用于 reboot 保护路径；Android 16 这条主路径里没有 `thermal_zone_device_critical_shutdown()` 这个符号。
+**Critical trip point** 才是硬件保护开始执行的那一层。`android16-6.12` 的 `handle_critical_trips()` 在 `THERMAL_TRIP_CRITICAL` 分支调用 `tz->ops.critical(tz)`。如果平台注册 thermal zone 时没有提供 `critical` 回调，thermal core 会默认填成 `thermal_zone_device_critical()`；这个函数再调用 `thermal_zone_device_halt(tz, true)`，最终走 `hw_protection_shutdown(...)`。同文件还导出了 `thermal_zone_device_critical_reboot()`，它走 `thermal_zone_device_halt(tz, false)`，用于 reboot 保护路径；Android 16 这条主路径里没有 `thermal_zone_device_critical_shutdown()` 这个符号。
 
 不同 linux-stable 分支的热保护代码形态存在差异——`android14-6.1` / `android15-6.6` 的 `handle_critical_trips()` 仍接收 `trip`、`trip_temp`、`trip_type` 分散参数，并通过 `tz->ops->critical(tz)` 访问回调；`android16-6.12` 改成 `const struct thermal_trip *trip`，并通过复制到 `tz->ops` 的结构体成员调用 `tz->ops.critical(tz)`。本章源码锚点以 `android16-6.12` 为主，跨分支对比前要先确认对应分支。
 
@@ -309,7 +314,7 @@ Cooling device 是 thermal 子系统的执行机构。每个 cooling device 有�
 
 #### cpufreq cooling：限制 CPU 频率
 
-最常见的 cooling device。它通过限制 CPU 的最大允许频率来实现降温。在 `android16-6.12` 中，这部分实现位于 `drivers/thermal/cpufreq_cooling.c`。thermal governor 设定 target state 后，cpufreq cooling 会把该 state 映射到受限频点或受限功耗区间，再通过 cpufreq QoS 和频率表收紧 CPU 的最高频率。
+最常见的 cooling device。它通过限制 CPU 的最大允许频率来实现降温。在 `android16-6.12` 中，这部分实现位于 `drivers/thermal/cpufreq_cooling.c`。thermal governor 设定 target state 后，cpufreq cooling 会把该 state 映射到受限频点或受限功耗区间，再通过 cpufreq QoS 和频率表限制 CPU 的最高频率。
 
 ```bash
 # 查看 CPU cooling device 的当前 state
@@ -331,7 +336,7 @@ state 和实际频点之间没有统一的线性关系。cpufreq cooling 更常�
 
 #### devfreq cooling：限制 GPU/NPU 频率
 
-`devfreq` 是 `cpufreq` 的“设备版”，管 GPU、NPU、DSP 等非 CPU 设备。真正把 thermal governor 接到这些设备上的代码在 `drivers/thermal/devfreq_cooling.c`；`drivers/devfreq/devfreq.c` 只提供通用 devfreq 框架和 OPP/QoS 管理，不是 thermal cooling device 本体。`CONFIG_DEVFREQ_THERMAL` 打开后，thermal 子系统才能通过 devfreq cooling 收紧这些设备的最高频率。
+`devfreq` 是 `cpufreq` 的“设备版”，管 GPU、NPU、DSP 等非 CPU 设备。真正把 thermal governor 接到这些设备上的代码在 `drivers/thermal/devfreq_cooling.c`；`drivers/devfreq/devfreq.c` 只提供通用 devfreq 框架和 OPP/QoS 管理，不是 thermal cooling device 本体。`CONFIG_DEVFREQ_THERMAL` 打开后，thermal 子系统才能通过 devfreq cooling 限制这些设备的最高频率。
 
 在 Android 设备上，GPU 的 devfreq cooling 是游戏场景 thermal throttling 的主要机制之一。当 GPU 温度升高时，thermal governor 同时提高 CPU cpufreq cooling state 和 GPU devfreq cooling state，两面夹击降低发热量。
 
@@ -442,9 +447,9 @@ float normalized = normalizeTemperature(
         severeThreshold);
 ```
 
-真正做预测时，Framework 维护每个 skin sensor 最近一段时间的 ring buffer 样本。`getSlopeOf(samples)` 用线性回归算温升斜率，然后用 `currentTemperature + slope * forecastSeconds * 1000` 预测未来温度，再按 severe threshold 归一化。多个 skin sensor 同时存在时，`getForecast()` 会取 normalized 值最大的那个，把最坏的一路当成当前 headroom。
+做预测时，Framework 维护每个 skin sensor 最近一段时间的 ring buffer 样本。`getSlopeOf(samples)` 用线性回归算温升斜率，然后用 `currentTemperature + slope * forecastSeconds * 1000` 预测未来温度，再按 severe threshold 归一化。多个 skin sensor 同时存在时，`getForecast()` 会取 normalized 值最大的那个，把最坏的一路当成当前 headroom。
 
-API 35 新增 `PowerManager.getThermalHeadroomThresholds()`，把这些 normalized threshold 直接开放给 App。官方文档也写得很清楚，`getThermalHeadroom()` 跟踪的是 skin 这类慢变传感器，没有必要高于约 1Hz 轮询，调用太频繁可能返回 `NaN`。如果设备还没有积累出足够样本，Framework 会先返回当前 headroom，而不是给一个激进的远期预测。
+API 35 新增 `PowerManager.getThermalHeadroomThresholds()`，把这些 normalized threshold 直接开放给 App。官方文档说明，`getThermalHeadroom()` 跟踪的是 skin 这类慢变传感器，没有必要高于约 1Hz 轮询，调用太频繁可能返回 `NaN`。如果设备还没有积累出足够样本，Framework 会先返回当前 headroom，而不是给一个激进的远期预测。
 
 [已验证: frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java (TemperatureWatcher), developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int), developer.android.com/reference/android/os/PowerManager#getThermalHeadroomThresholds()]
 
@@ -456,7 +461,7 @@ API 35 新增 `PowerManager.getThermalHeadroomThresholds()`，把这些 normaliz
 
 最有效的主动降载手段。当 thermal headroom 下降时，游戏引擎动态降低渲染分辨率（比如从 1080p 降到 720p），然后通过 GPU 的空间放大（spatial upscaling）恢复到显示分辨率。帧率基本不受影响，但 GPU 的渲染负载降低了约 50%（像素数从 207 万降到 92 万）。
 
-从 Android 16 / API 36 开始，`SystemHealthManager.getCpuHeadroom()` 和 `getGpuHeadroom()` 可以补一层 capacity signal。它们告诉我们 CPU 和 GPU 还剩多少可用算力，不直接等同于 thermal headroom。如果 GPU capacity headroom 已经很低，而 thermal headroom 还没有逼近 severe，通常先降分辨率更合适；如果 CPU、GPU 和 thermal headroom 一起收紧，再考虑同时降分辨率和帧率目标。
+从 Android 16 / API 36 开始，`SystemHealthManager.getCpuHeadroom()` 和 `getGpuHeadroom()` 可以补一层 capacity signal。它们告诉我们 CPU 和 GPU 还剩多少可用算力，不直接等同于 thermal headroom。如果 GPU capacity headroom 已经很低，而 thermal headroom 还没有逼近 severe，通常先降分辨率更合适；如果 CPU、GPU 和 thermal headroom 一起下降，再考虑同时降分辨率和帧率目标。
 
 ### 帧率目标动态降级
 
@@ -490,7 +495,7 @@ void adjustForThermal(float headroom) {
 
 Google 和 MediaTek 的公开材料，把 MAGT（MediaTek Adaptive Gaming Technology）放在 ADPF 协同优化的案例里。正文更稳妥的读法，是把它当成 vendor case study：同样是“更早感知热余量，再更早降载”，Dimensity 平台在 Unity Boat Attack、Lineage W、Ares: Rise of Guardians 这些 workload 上展示了帧率稳定性和功耗改善的方向。
 
-这一组材料能证明的重点，是厂商确实在做芯片级热数据和游戏负载控制的联动；它还不能直接推出“所有 SoC 都能拿到同样的 FPS、功耗、续航收益”。原始页面没有同时给出完整的环境温度、测试时长、分辨率 / 帧率档位和 baseline 配置，正文不再把 8.5 FPS、12% 功耗、25 分钟续航这类数字写成通用结论。
+这一组材料能证明的重点，是厂商在做芯片级热数据和游戏负载控制的联动；它还不能直接推出“所有 SoC 都能拿到同样的 FPS、功耗、续航收益”。原始页面没有同时给出完整的环境温度、测试时长、分辨率 / 帧率档位和 baseline 配置，正文不再把 8.5 FPS、12% 功耗、25 分钟续航这类数字写成通用结论。
 
 如果要把这类案例转成项目内的决策依据，至少要补四类测试元数据：workload 场景、环境温度、单次测试时长、对照组的分辨率 / 帧率 / 画质档位。条件没补齐之前，MAGT 更适合作为“厂商做过这类协同优化”的参考，不适合直接拷贝阈值或收益百分比。
 
