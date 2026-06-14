@@ -13,8 +13,8 @@ polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 applicable_versions: Android 4.1 (API 16) - Android 16 (API 36)
-last_verified: '2026-04-24'
-last_verified_against: AOSP android-16.0.0_r1, 官方文档最新版本, Android 35 SDK sources
+last_verified: 2026-06-15
+last_verified_against: "AOSP android-16.0.0_r1, AOSP android-15.0.0_r1 SurfaceControl.java, Android Developers API reference through API 37"
 confidence: high
 sources:
 - type: official
@@ -29,8 +29,12 @@ sources:
   path: https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float)
 - type: official
   path: https://developer.android.com/reference/android/view/Window#setFrameRatePowerSavingsBalanced(boolean)
+- type: official
+  path: https://developer.android.com/reference/android/view/SurfaceControl.Transaction#setFrameTimeline(long)
 - type: aosp
   path: frameworks/base/core/java/android/view/DisplayEventReceiver.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/SurfaceControl.java
 - type: research
   path: Android-Internal-Wiki/intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md
 - type: aosp
@@ -53,23 +57,24 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: revisiting
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-23"
+task9_result: auto-fixed
+task9_reviewed_date: 2026-06-15
 task2b_result: fixed
-task2b_state: "fixed"
+task2b_state: fixed
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-23T00:20:00+08:00"
-last_task9_audit: "2026-05-22"
-last_task9_audit_log: "logs/deep-review/2026-05-22-22-audit.md"
-task9_review_notes: "2026-05-23 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3；仅留下官方文档 URL、Perfetto SQL 可执行性与功耗数据口径建议。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-06-15T00:20:00+08:00"
+last_task9_audit: 2026-06-15
+last_task9_audit_log: "logs/deep-review/2026-06-15-00-audit.md"
+task9_review_notes: "2026-06-15 idle audit auto-fixed: corrected SurfaceControl.Transaction.setFrameTimeline(long) public SDK boundary from Android 16 to Android 15/API 35. P0 1 auto-fixed / P1 0 / P2 1 log-only; returned to Task6 revisit."
 task2b_rework_note: "2026-05-22 2B修复: getSnapshot→summarize+chooseRefreshRateForContent; LayerVoteType 7→9种(补ExplicitGte/ExplicitCategory); ExplicitExact条件化(supportsAppFrameRateOverrideByContent). 前轮: Frame Time口径拆分; setFrameTimeline版本边界拆分"
 last_task6_audit: "2026-06-12"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+last_task9_autofix_at: 2026-06-15
 ---
 
 # 帧率与刷新率
@@ -400,7 +405,7 @@ Choreographer.getInstance().postVsyncCallback(new Choreographer.VsyncCallback() 
 
 `FrameData` 是 API 33 新增的类,它封装了 VSync 相关的全部信息。相比之前只有一个 `frameTimeNanos`,现在 App 能拿到多个候选的帧时间线(`FrameTimeline`),每个时间线包含预期的呈现时间和渲染截止时间。这让 App 可以更智能地选择"我这帧应该在哪个 VSync 时刻显示"--如果渲染比较重,可以选择一个稍晚的时间线,避免匆忙提交导致掉帧。
 
-`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成,可以主动选择一个更晚的时间线,通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。但 `Choreographer.FrameTimeline` 的读取能力(API 33 `FrameData.getFrameTimelines()`)和向 SurfaceFlinger 设置目标呈现时间的能力版本门槛不同:API 33 起可读取候选 vsyncId 和预期呈现时间;`SurfaceControl.Transaction.setFrameTimeline(long)` 的公开入口则是 Android 16 通过 `@FlaggedApi(FLAG_SDK_DESIRED_PRESENT_TIME)` 释放的,Android 13-15 只有内部/系统路径或 NDK `SurfaceControl` 受限接口可用。
+`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成,可以主动选择一个更晚的时间线,通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。但 `Choreographer.FrameTimeline` 的读取能力(API 33 `FrameData.getFrameTimelines()`)和向 SurfaceFlinger 设置目标呈现时间的能力版本门槛不同:API 33 起可读取候选 vsyncId 和预期呈现时间;`SurfaceControl.Transaction.setFrameTimeline(long)` 的公开 SDK 入口是 Android 15(API 35)。Android Developers API reference 标注 Added in API level 35;AOSP android-15.0.0_r1 中该方法由 `@FlaggedApi(FLAG_SDK_DESIRED_PRESENT_TIME)` 保护;Android 13-14 只有内部/系统路径或 NDK `SurfaceControl` 受限接口可用。
 
 
 这个机制的目的是让 App 告诉 SurfaceFlinger:"我这帧在哪个 VSync 时刻显示最合适"。SurfaceFlinger 会据此在正确的时间提交帧,实现更精确的 Frame Pacing。
@@ -427,6 +432,7 @@ LIMIT 50;
 
 [已验证: 官方文档, developer.android.com/games/sdk/frame-pacing]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
+[已验证: Android Developers API reference + AOSP android-15.0.0_r1, frameworks/base/core/java/android/view/SurfaceControl.java]
 
 ## 掉帧(Missed Frame / Janky Frame)的定义与量化
 
