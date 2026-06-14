@@ -46,21 +46,21 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 reviewed_date: 2026-06-04
 last_task6_audit: "2026-06-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_state: reviewed
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
-task9_result: pass-tech-review
-last_task9_audit: "2026-05-22"
-last_task9_audit_at: "2026-05-22T05:34:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-22-05-audit.md"
+task9_result: "auto-fixed"
+last_task9_audit: "2026-06-15"
+last_task9_audit_at: "2026-06-15T01:26:52+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-15-01-audit.md"
 last_task9_review_log: logs/deep-review/2026-06-05-07-deep-review.md
-task9_review_notes: "2026-06-05 Task9 deep review: pass-tech-review。AOSP android-16.0.0_r1 Thermal HAL / ThermalManagerService / PowerManager / SystemHealthManager 复核通过；仅有 P2 数据口径建议写入 suggestions。自动晋升 finalized。"
+task9_review_notes: "2026-06-15 Task9 idle audit: auto-fixed。收紧 android16-6.12/android-16.0.0_r1 源码锚点；修正 critical trip 保护路径、headroom listener 去抖逻辑、PowerManager listener 清理描述；回到 Task6 复审。"
 last_task2b_by: openclaw-task2b-main
 task2b_fix_summary: "2026-06-04 Task2B main: P1 Linux thermal kernel source branch disambiguated from generic 6.1 to android16-6.12; critical trip handler symbols corrected for branch consistency; step_wise get_target_state() added bool throttle parameter; Thermal HAL version table split into AIDL basics (14), cooling callback (15), forecastSkinTemperature + Framework fallback (16)."
 last_task2b_at: "2026-06-04T14:54:52+08:00"
@@ -72,6 +72,7 @@ task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1 小修 2 处（形容词+冒号起手式 1、「很关键」填充 1）。无新增 L3/L4 回炉项。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
+last_task9_autofix_at: "2026-06-15"
 ---
 
 # Thermal 管控深度：从内核子系统到 ADPF 主动降频
@@ -92,7 +93,7 @@ last_deepseek_cn_review_at: 2026-06-10
 
 - 🔸 `power_allocator` 的 PID 参数与 `sustainable_power`
 - 🔸 MediaTek MAGT 与多传感器融合策略
-- 🔸 Thermal 能力从 Android 7 到 Android 17 的版本演进
+- 🔸 Thermal 能力从 Android 7 到 Android 16 的版本演进
 
 ### OpenClaw 加工指引
 
@@ -190,11 +191,11 @@ cpu_thermal: cpu-thermal {
 
 **Hot trip point** 表示温度已经进入危险区间，但它还不是“立刻关机”的同义词。`thermal_core.c` 在温度向上跨过 `THERMAL_TRIP_HOT` 或 `THERMAL_TRIP_CRITICAL` 时，都会先走 `handle_critical_trips()`。如果 trip 类型是 `THERMAL_TRIP_HOT`，并且该 thermal zone 实现了 `tz->ops.hot()`，内核只会调用 hot 回调，让平台记录告警或触发更激进的缓解动作；是否继续限频、通知用户空间，要看 zone 的实现。
 
-**Critical trip point** 才是硬件保护真正开始执行的那一层。`handle_critical_trips()` 在 `THERMAL_TRIP_CRITICAL` 分支调用 `tz->ops.critical(tz)`，而平台通常把这个回调绑定到 `thermal_zone_device_critical()`、`thermal_zone_device_critical_shutdown()` 和 `thermal_zone_device_critical_reboot()`。这三个包装函数最终触发 shutdown 或 reboot，通过各自调用 `do_orderly_poweroff()` / `do_orderly_reboot()` 完成。强制保护动作绑定在 `thermal_zone_device_critical*()` 这一层。
+**Critical trip point** 才是硬件保护真正开始执行的那一层。`android16-6.12` 的 `handle_critical_trips()` 在 `THERMAL_TRIP_CRITICAL` 分支调用 `tz->ops.critical(tz)`。如果平台注册 thermal zone 时没有提供 `critical` 回调，thermal core 会默认填成 `thermal_zone_device_critical()`；这个函数再调用 `thermal_zone_device_halt(tz, true)`，最终走 `hw_protection_shutdown(...)`。同文件还导出了 `thermal_zone_device_critical_reboot()`，它走 `thermal_zone_device_halt(tz, false)`，用于 reboot 保护路径；Android 16 这条主路径里没有 `thermal_zone_device_critical_shutdown()` 这个符号。
 
-不同 linux-stable 分支的热关机符号存在差异——`android14-6.1` 使用 `thermal_zone_device_critical()` 和 `do_orderly_poweroff()`，`android-mainline` 中 `handle_critical_trips()` 新增了 `tz->ops.critical(tz)` 回调路径。本章的源码锚点以 `android16-6.12` 为主，与 `android14-6.1` 或 `android-mainline` 的符号直接对比前请先确认对应分支。
+不同 linux-stable 分支的热保护代码形态存在差异——`android14-6.1` / `android15-6.6` 的 `handle_critical_trips()` 仍接收 `trip`、`trip_temp`、`trip_type` 分散参数，并通过 `tz->ops->critical(tz)` 访问回调；`android16-6.12` 改成 `const struct thermal_trip *trip`，并通过复制到 `tz->ops` 的结构体成员调用 `tz->ops.critical(tz)`。本章源码锚点以 `android16-6.12` 为主，跨分支对比前要先确认对应分支。
 
-[已验证: Linux kernel drivers/thermal/thermal_core.c (handle_critical_trips(), thermal_zone_device_critical*()), include/linux/thermal.h]
+[已验证: Linux kernel drivers/thermal/thermal_core.c (handle_critical_trips(), thermal_zone_device_critical(), thermal_zone_device_critical_reboot()), include/linux/thermal.h]
 
 ### Thermal Governor：温控策略的大脑
 
@@ -254,7 +255,7 @@ static unsigned long get_target_state(struct thermal_instance *instance,
 
 `power_allocator` 更像一个按功耗预算工作的反馈控制器。它先估算 thermal zone 在下一轮能承受多少功耗，再把这个预算分给 CPU、GPU、NPU 等 power actor，而不是像 `step_wise` 那样一次只升降一个 state。
 
-android-mainline/common 当前的 `pid_controller()` 签名是 `pid_controller(struct thermal_zone_device *tz, int control_temp, u32 max_allocatable_power)`。它不再接收文中原来那组 `trip_switch_on`、`trip_temp` 或 `MAX_K*` 风格的参数，P/I/D 三项都直接围绕当前 zone 的目标温度、历史误差和最大可分配功耗展开。
+`android16-6.12` 的 `pid_controller()` 签名是 `pid_controller(struct thermal_zone_device *tz, int control_temp, u32 max_allocatable_power)`。它不再接收文中原来那组 `trip_switch_on`、`trip_temp` 或 `MAX_K*` 风格的参数，P/I/D 三项都直接围绕当前 zone 的目标温度、历史误差和最大可分配功耗展开。
 
 ```c
 // drivers/thermal/gov_power_allocator.c
@@ -308,7 +309,7 @@ Cooling device 是 thermal 子系统的执行机构。每个 cooling device 有�
 
 #### cpufreq cooling：限制 CPU 频率
 
-最常见的 cooling device。它通过限制 CPU 的最大允许频率来实现降温。在 android-mainline/common 中，这部分实现位于 `drivers/thermal/cpufreq_cooling.c`。thermal governor 设定 target state 后，cpufreq cooling 会把该 state 映射到受限频点或受限功耗区间，再通过 cpufreq QoS 和频率表收紧 CPU 的最高频率。
+最常见的 cooling device。它通过限制 CPU 的最大允许频率来实现降温。在 `android16-6.12` 中，这部分实现位于 `drivers/thermal/cpufreq_cooling.c`。thermal governor 设定 target state 后，cpufreq cooling 会把该 state 映射到受限频点或受限功耗区间，再通过 cpufreq QoS 和频率表收紧 CPU 的最高频率。
 
 ```bash
 # 查看 CPU cooling device 的当前 state
@@ -666,7 +667,7 @@ OEM 在散热设计和软件策略之间需要找到平衡：
 
 上一节的版本演进表里，Android 16 多了 `SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 和 NDK thermal headroom listener。其中 headroom listener 改变了 App 获取温控信息的方式——从轮询变成事件驱动。下面展开这条新路径。
 
-[已验证: `frameworks/base/core/java/android/os/PowerManager.java` (android16-release l.1247-3011), `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` (android16-release l.85-705, l.1830-1870, l.2197-2208), `frameworks/base/core/java/android/os/IThermalHeadroomListener.aidl`, `frameworks/native/include/android/thermal.h`, developer.android.com PowerManager#addThermalHeadroomListener]
+[已验证: `frameworks/base/core/java/android/os/PowerManager.java` (android-16.0.0_r1 l.1247-3011), `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` (android-16.0.0_r1 l.85-705, l.1830-1870, l.2197-2208), `frameworks/base/core/java/android/os/IThermalHeadroomListener.aidl`, `frameworks/native/include/android/thermal.h`, developer.android.com PowerManager#addThermalHeadroomListener]
 
 API 35 的 `getThermalHeadroomThresholds()` 让 App 能读到 OEM 返回的 headroom 阈值。Android 16 (BAKLAVA / API 36) 在此基础上补了事件驱动机制——`addThermalHeadroomListener(...)`，让 App 不需要轮询就能收到 headroom 变化。本节展开这个新机制。
 
@@ -676,14 +677,14 @@ API 35 的 `getThermalHeadroomThresholds()` 让 App 能读到 OEM 返回的 head
 | --- | --- | --- | --- |
 | `PowerManager.addThermalHeadroomListener(OnThermalHeadroomChangedListener)` | 36 | 单参重载 | 默认走 `mContext.getMainExecutor()`，callback 在主线程 |
 | `PowerManager.addThermalHeadroomListener(Executor, OnThermalHeadroomChangedListener)` | 36 | 多参重载 | 接收任意 `@CallbackExecutor` |
-| `PowerManager.removeThermalHeadroomListener(OnThermalHeadroomChangedListener)` | 36 | 显式清理 | **必须**显式调用；`RemoteCallbackList` 不会自动清理 binder 死亡后的 stale entry |
+| `PowerManager.removeThermalHeadroomListener(OnThermalHeadroomChangedListener)` | 36 | 显式清理 | **必须**显式调用；`PowerManager` 端仍保存 listener → Stub 映射，生命周期结束后要释放本地引用 |
 | `AThermal_registerThermalHeadroomListener(...)` | 36 (NDK r28+) | C API | NDK 端等价物，callback 在 system binder 线程池 |
 | `AThermal_unregisterThermalHeadroomListener(...)` | 36 (NDK r28+) | C API | NDK 端清理 |
 
 listener 接口（`OnThermalHeadroomChangedListener`）由 `@FlaggedApi(Flags.FLAG_ALLOW_THERMAL_THRESHOLDS_CALLBACK)` 标记，隐藏的 `@hide` AIDL `IThermalHeadroomListener` 是 binder 桥接，framework 内部用 `IThermalHeadroomListener.Stub` 把跨进程回调 marshal 到 App 端 Executor。
 
 ```java
-// 源码锚点：PowerManager.java (android16-release) l.2822-2852
+// 源码锚点：PowerManager.java (android-16.0.0_r1) l.2822-2852
 @FlaggedApi(Flags.FLAG_ALLOW_THERMAL_THRESHOLDS_CALLBACK)
 public interface OnThermalHeadroomChangedListener {
     void onThermalHeadroomChanged(float headroom,
@@ -694,7 +695,7 @@ public interface OnThermalHeadroomChangedListener {
 
 回调只在以下两种条件满足其一才会触发（官方文档 + `ThermalManagerService.HeadroomCallbackData.isSignificantDifferentFrom` 双重确认）：
 
-1. **thermal throttling 事件** —— skin 温度跨过任意 threshold，且上一次回调时间窗未过；
+1. **thermal throttling 事件** —— skin 温度跨过任意 threshold，且短时间内没有发送过相似值的 callback；
 2. **headroom / forecastHeadroom 变化 ≥ 0.03**（约 0.9°C），或 thresholds 数组变化 ≥ 0.01（约 0.3°C）；
 
 仅当 absolute °C threshold 变化但 headroom 与 thresholds 都没显著变化时**不回调**，避免 App 收到无意义事件。
@@ -704,19 +705,14 @@ public interface OnThermalHeadroomChangedListener {
 `ThermalManagerService` 用 `RemoteCallbackList<IThermalHeadroomListener>` 维护监听者，关键常量：
 
 ```java
-// 源码锚点：ThermalManagerService.java (android16-release) l.101-110
+// 源码锚点：ThermalManagerService.java (android-16.0.0_r1) l.101-110
 public static final int DEFAULT_FORECAST_SECONDS = 10;
 public static final int HEADROOM_CALLBACK_MIN_INTERVAL_MILLIS = 5000;
 public static final float HEADROOM_CALLBACK_MIN_DIFFERENCE = 0.03f;
 public static final float HEADROOM_THRESHOLD_CALLBACK_MIN_DIFFERENCE = 0.01f;
 ```
 
-`checkAndNotifyHeadroomListenersLocked`（l.329-348）的两道闸门：
-
-- 时间窗：`System.currentTimeMillis() < mLastHeadroomCallbackTimeMillis + 5000ms` 时直接 return；
-- 显著变化：`!data.isSignificantDifferentFrom(mLastHeadroomCallbackData)` 时 return；
-
-只有同时通过这两道闸门才会 `mThermalHeadroomListeners.beginBroadcast()`，把回调投递到每个 listener。`postHeadroomListenerLocked`（l.306-326）进一步把 callback 通过 `FgThread.getHandler().post(...)` 调度到 FgThread（前台线程），**避免阻塞 system_server 的 binder 线程池**。
+`checkAndNotifyHeadroomListenersLocked`（l.329-348）只有一个合并去抖条件：如果 `!data.isSignificantDifferentFrom(mLastHeadroomCallbackData)`，并且 `System.currentTimeMillis() < mLastHeadroomCallbackTimeMillis + 5000ms`，这一轮相似数据会被跳过。只要 headroom / forecastHeadroom / thresholds 差异达到阈值，或者 5s 窗口已经过去，就会更新 `mLastHeadroomCallbackTimeMillis` 和 `mLastHeadroomCallbackData`，再通过 `mThermalHeadroomListeners.beginBroadcast()` 投递到每个 listener。`postHeadroomListenerLocked`（l.306-326）进一步把 callback 通过 `FgThread.getHandler().post(...)` 调度到 FgThread（前台线程），**避免阻塞 system_server 的 binder 线程池**。
 
 注册成功后（`registerThermalHeadroomListener`，l.668-705）会**立即触发一次** callback（`postHeadroomListenerLocked(listener, data)`），App 端不必等下一次显著变化就能拿到当前 headroom 快照。
 
@@ -728,9 +724,9 @@ public static final float HEADROOM_THRESHOLD_CALLBACK_MIN_DIFFERENCE = 0.01f;
 
 即 **API 36 起 `getThermalHeadroomThresholds()` 不再 cache**，每次调用都可能返回不同结果。推荐用法：
 
-- **轮询 → 事件驱动**：用 `addThermalHeadroomListener(Executor, ...)` 订阅变化，仍保留 1Hz 以下的 `getThermalHeadroom(forecastSeconds)` 作为预测 sanity check（listener 不会因为 forecast 变化而回调，文档明确要求「periodically polling against `getThermalHeadroom(int)` API should still be used to actively monitor temperature forecast in advance」）。
+- **轮询 → 事件驱动**：用 `addThermalHeadroomListener(Executor, ...)` 订阅变化，仍保留 1Hz 以下的 `getThermalHeadroom(forecastSeconds)` 作为预测 sanity check。listener 不是预测轮询器，不会单独为了 forecast 温度变化启动周期回调；但一旦进入回调判断，`HeadroomCallbackData.isSignificantDifferentFrom()` 会把 `forecastHeadroom` 差异也纳入 0.03 的去抖阈值。
 - **Main thread 还是 worker？** 单参重载默认 main thread，会进入 UI 消息队列；如果同时在做相机预览 / 游戏渲染，建议重载用单线程 `Executor`，把降分辨率、降帧率动作派发到渲染线程。
-- **清理时机**：在 `Activity.onDestroy()` / `Surface` 释放 / `View.onDetachedFromWindow` 显式 `removeThermalHeadroomListener`；listener binder 死亡不会自动清理，App 端 map 会留下 stale entry。
+- **清理时机**：在 `Activity.onDestroy()` / `Surface` 释放 / `View.onDetachedFromWindow` 显式 `removeThermalHeadroomListener`；否则 `PowerManager` 端本地 map 会一直保留业务 listener → Stub 映射。
 
 ### 与 API 35 getThermalHeadroomThresholds 的版本差异
 
@@ -777,9 +773,9 @@ App 进程                                          system_server
 ### 工程实践要点
 
 - **零分配 vs GC**：Java 端 `OnThermalHeadroomChangedListener` 的 `thresholds` 参数是 `Map<@ThermalStatus Integer, Float>`，由 `convertThresholdsToMap` 每次新建 `ArrayMap`；高频回调（如 OTA 后台跑温度测试）会触发频繁 GC。NDK 端返回的是常量指针 `AThermalHeadroomThreshold*`（NDK 文档明确说明「`thresholds` pointer will be a constant shared across all callbacks registered from the same process」），NDK 客户端零分配。
-- **binder 死亡 vs listener 清理**：`ThermalManagerService` 内 `mThermalHeadroomListeners` 用 `RemoteCallbackList`，但 `PowerManager.addThermalHeadroomListener` 内部 `IThermalHeadroomListener.Stub` 没有 `linkToDeath`，App 端 `mThermalHeadroomListenerMap` 不会自动清理 binder 死亡后的 entry。**显式 `removeThermalHeadroomListener` 是必须项**。
+- **binder 死亡 vs listener 清理**：`ThermalManagerService` 内 `mThermalHeadroomListeners` 用 `RemoteCallbackList` 维护跨进程回调；App 进程里的 `PowerManager.addThermalHeadroomListener` 还会把业务 listener 和内部 `IThermalHeadroomListener.Stub` 存到 `mThermalHeadroomListenerMap`，这个本地映射只在 `removeThermalHeadroomListener` 成功后删除。**显式 `removeThermalHeadroomListener` 是必须项**。
 - **与其他 thermal API 的关系**：listener 是 `getThermalHeadroom(int)` + `getThermalHeadroomThresholds()` 的事件驱动版本；`OnThermalStatusChangedListener` 仍然只通知 `getCurrentThermalStatus()` 跨级事件（status 变化）。两者并存，listener 粒度更细，status listener 粒度更粗。
-- **OEM 差异**：`TemperatureWatcher.getHeadroomCallbackDataLocked` 内部使用 `getForecast(0)` + `getForecast(DEFAULT_FORECAST_SECONDS=10)`；OEM 如果改 `mForecastSeconds`，listener 回调的 `forecastSeconds` 字段会同步变化（`isSignificantDifferentFrom` 把 `mForecastSeconds` 不一致视为显著差异强制回调）。当前 main 分支注释说 `currently this is always the same as DEFAULT_FORECAST_SECONDS`，未启用动态 forecast。
+- **OEM 差异**：`TemperatureWatcher.getHeadroomCallbackDataLocked` 内部使用 `getForecast(0)` + `getForecast(DEFAULT_FORECAST_SECONDS=10)`；OEM 如果改 `mForecastSeconds`，listener 回调的 `forecastSeconds` 字段会同步变化（`isSignificantDifferentFrom` 把 `mForecastSeconds` 不一致视为显著差异强制回调）。`android-16.0.0_r1` 源码注释说 `currently this is always the same as DEFAULT_FORECAST_SECONDS`，未启用动态 forecast。
 
 ### 常见误区
 
@@ -788,8 +784,8 @@ App 进程                                          system_server
 
 ### 引用
 
-- `frameworks/base/core/java/android/os/PowerManager.java`（android16-release l.1247-3011, l.3098-3126）
-- `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`（android16-release l.85-705, l.1830-1870, l.2197-2208）
+- `frameworks/base/core/java/android/os/PowerManager.java`（android-16.0.0_r1 l.1247-3011, l.3098-3126）
+- `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`（android-16.0.0_r1 l.85-705, l.1830-1870, l.2197-2208）
 - `frameworks/base/core/java/android/os/IThermalHeadroomListener.aidl`
 - `frameworks/native/include/android/thermal.h`（NDK r28+）
 - developer.android.com PowerManager#addThermalHeadroomListener
