@@ -56,7 +56,7 @@ last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
 task6_state: "reviewed"
-last_task6_audit: "2026-06-13"
+last_task6_audit: "2026-06-14"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 ---
