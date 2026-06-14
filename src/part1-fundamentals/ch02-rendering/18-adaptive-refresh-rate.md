@@ -47,21 +47,21 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-task6_state: "revisiting"
+task6_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-25"
+reviewed_date: "2026-06-14"
 task6_result: pass-light-edit
 task2b_result: "fixed"
 last_task2b_at: '2026-05-17T19:17:39'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-task6_reviewed_date: "2026-05-25"
-last_task6_at: "2026-05-25T08:15:00+08:00"
-last_task6_review_log: "logs/review/2026-05-25-08-review.md"
-task6_review_notes: "2026-05-25 Task6：小修 L1/L2 1 处；未新增 Task6 L3/L4 回炉。既有 Task9 P1 队列仍 pending：display_frame_token gap 不能单独定责 Scheduler。"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+task6_reviewed_date: "2026-06-14"
+last_task6_at: "2026-06-14T13:08:00+08:00"
+last_task6_review_log: "logs/review/2026-06-14-13-review.md"
+task6_review_notes: "2026-06-14 Task6 revisiting review: 全文 L1-L4 扫描通过，零禁用词，零填充词，零翻译腔。确实(1次)功能用法。2个[待验证]标注合理。Task9 auto-fix(EarlyGpu)已纳入。无L1/L2需修，无B类大问题。自动晋升finalized。"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
