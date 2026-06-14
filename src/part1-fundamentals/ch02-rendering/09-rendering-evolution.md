@@ -2,7 +2,7 @@
 title: 渲染机制的版本演进
 chapter: '2.9'
 section: '2.9'
-status: ready-for-review
+status: finalized
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 task6_reviewed_date: "2026-05-27"
@@ -10,15 +10,15 @@ reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 applicable_versions: Android 3.0 (API 11) ~ Android 17 (API 37)
 last_verified: '2026-06-15'
-last_verified_against: AOSP android-16.0.0_r1 + android-5.0.0_r1 Choreographer/ThreadedRenderer + developer.android.com 17 beta
+last_verified_against: AOSP android-16.0.0_r1 FrameMetrics/ARR/AGSL + android-5.0.0_r1/android-6.0.0_r1 Choreographer + Android 16 CDD + Android 17 docs
 confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-15T06:50:00+08:00"
@@ -42,22 +42,34 @@ sources:
 - type: official
   path: developer.android.com/about/versions/17/summary
 - type: official
+  path: developer.android.com/reference/android/view/Choreographer.FrameTimeline
+- type: official
   path: developer.android.com/games/develop/vulkan/overview
+- type: official
+  path: developer.android.com/ndk/guides/graphics/android-vulkan-profile
+- type: official
+  path: source.android.com/docs/compatibility/16/android-16-cdd
+- type: official
+  path: source.android.com/docs/core/graphics/implement-vulkan
+- type: official
+  path: github.com/KhronosGroup/Vulkan-Profiles/blob/main/profiles/VP_ANDROID_16_minimums.json
 - type: aosp
   path: frameworks/base/core/java/android/view/Choreographer.java (android-5.0.0_r1)
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-15"
-last_task9_at: "2026-06-15T06:20:00+08:00"
-task9_review_notes: "2026-06-15 idle audit: needs-rework。命中 P0 Choreographer CALLBACK_COMMIT Android 5.0 版本错误；P1 Android 17/API 37 图形演进缺失，已写入 queue。"
+last_task9_at: "2026-06-15T07:26:56+08:00"
+task9_review_notes: "2026-06-15 Task9 re-review: AUTO-FIX。修正 FrameMetrics 常量 COMMANDS_DURATION -> COMMAND_ISSUE_DURATION；修正 Android 16 Vulkan 1.4、VP_ANDROID_16_minimums 与 AVP 2025 的层级边界；移除 Android 17 Choreographer 新增帧控制接口的无证据断言。P0/P1 已局部修复，queue 无新增 pending，回到 Task6 复审。"
 task6_review_notes: "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除源码调研 HTML 注释，统一正文中文标点与中英文混排；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-27-12-review.md"
-last_task6_at: "2026-05-27T12:06:00+08:00"
+last_task6_at: "2026-06-15T07:08:00+08:00"
 last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
 last_task9_audit: "2026-06-15"
 last_task9_audit_log: "logs/deep-review/2026-06-15-06-audit.md"
+last_task9_autofix_at: "2026-06-15"
+last_task9_review_log: "logs/deep-review/2026-06-15-07-deep-review.md"
 ---
 # 渲染机制的版本演进
 
@@ -183,7 +195,7 @@ Vulkan 后端相比 OpenGL ES 的具体改进:
 
 - Android 10（API 29）：64 位设备必须支持 Vulkan 1.1
 - Android 13（API 33）：新设备必须支持 Vulkan 1.3
-- Android 16（API 36）：新设备必须支持 Vulkan 1.4（CDD 平台要求）。Khronos 为此定义了两层 profile：① **VP_ANDROID_16_minimums**（Android 16 最低要求 profile），profile api-version 为 1.3.276，强制扩展包括 `VK_EXT_host_image_copy` 等，代表 Android 16 设备准入的最低 Vulkan 能力；② **VP_ANDROID_vulkan_profile_2025**（Android Vulkan Profile 2025），profile api-version 为 1.1.128，代表在 Android 设备上广泛支持的兼容性 profile。两者是不同层面的要求：Vulkan 1.4 是新设备准入门槛；VP_ANDROID_16_minimums 是 CDD 侧的最低强制扩展集；VP_ANDROID_vulkan_profile_2025 是跨版本广泛兼容的推荐 profile。
+- Android 16（API 36）：source.android.com 的 Vulkan 实现文档把“launch with Android 16 and higher”的非 low-memory 64 位设备要求提升到 Vulkan 1.4；Android 16 CDD 中的 form-factor 基础条款仍会列出 Vulkan 1.1 条件，落到具体设备时要看 `FEATURE_VULKAN_HARDWARE_VERSION`、profile 和 extension 上报。`VP_ANDROID_16_minimums` 是 Android 16 的 profile 级能力集合，profile api-version 为 1.3.276，并包含 `VK_EXT_host_image_copy` 等能力；Android Vulkan Profile 2025 是面向广泛设备兼容性的开发者 profile，不是设备准入门槛。
 
 ## BLASTBufferQueue：统一的 Buffer 管理(Android 11+)
 
@@ -210,14 +222,14 @@ Vulkan 后端相比 OpenGL ES 的具体改进:
 
 Android 16 在图形 API 方面有几个变化，但需要把不同层面拆开看。
 
-**Vulkan Profile 要求加严。** Android 16 对新设备提出了更高的 Vulkan 能力要求：新设备必须支持 Vulkan 1.4，并满足 `VP_ANDROID_16_minimums` profile 的强制扩展集（如 `VK_EXT_host_image_copy`）。这是对新设备的能力门槛，不等于现有设备的 OpenGL ES App 自动切换到 Vulkan 后端。`VP_ANDROID_vulkan_profile_2025` 是另一层面向广泛设备兼容的 profile，两者不要混用。
+**Vulkan Profile 要求加严。** Android 16 的 Vulkan 实现文档把“launch with Android 16 and higher”的非 low-memory 64 位设备基线提升到 Vulkan 1.4；`VP_ANDROID_16_minimums` 则是 profile 级能力集合，包含 `VK_EXT_host_image_copy` 等扩展，profile api-version 为 1.3.276。这两个口径不要混用：Vulkan 1.4 是 API version / driver capability，profile 还约束 extensions、features、formats 和 limits；Android Vulkan Profile 2025 是面向广泛活跃设备的开发者兼容 profile。是否可用 Host Image Copy 或 Vulkan 1.4，要看设备实际上报的 Vulkan version、profile 和 extension，而不能只按系统版本判断。这同样不等于现有 OpenGL ES App 会自动切到 Vulkan 后端。
 
 **OpenGL ES 进入维护模式。** Khronos 已明确 OpenGL ES 不再接受新特性开发。但"OpenGL ES 进入维护模式"和"ANGLE 系统级翻译已默认启用"是两件事。ANGLE 在 Android 上的部署状态取决于设备厂商和系统配置，不能写成 Android 16 的统一行为。
 
 **ANGLE 的实际部署情况。** ANGLE（Almost Native Graphics Layer Engine）是一个将 OpenGL ES 调用翻译为 Vulkan 的兼容层，Google 在多个版本中持续推动其集成。但截至 Android 16，ANGLE 的系统级启用仍受设备白名单和系统属性控制，不是所有 OpenGL ES App 的调用都默认经过 ANGLE 翻译。排查时可通过 `adb shell getprop persist.graphics.angle.enabled` 和 `adb shell dumpsys gfxinfo` 确认当前设备的 ANGLE 状态。
 
 对开发者的影响:
-- 新设备需要满足 `VP_ANDROID_16_minimums` 的 Vulkan 最低能力要求
+- 需要按设备实际 profile / extension 判断是否满足 `VP_ANDROID_16_minimums`、Host Image Copy 等能力
 - 游戏和图形密集型应用应优先使用 Vulkan API
 - OpenGL ES App 不需要改代码，但不要假设系统已自动切换到 ANGLE/Vulkan 后端
 - 可通过 `VP_ANDROID_vulkan_profile_2025`（Android Vulkan Profile 2025）确保跨版本设备兼容性
@@ -277,12 +289,13 @@ Android 17（API 37，2026 年）图形侧的更新集中在三个方向，以�
 
 ### Choreographer 的版本变化
 
-从 Android 4.1 引入到 Android 16，Choreographer 的核心职责未变——在 VSync 信号到来时调度帧工作。但实现细节在持续优化:
+从 Android 4.1 引入到 Android 17，Choreographer 的核心职责未变——在 VSync 信号到来时调度帧工作。但实现细节在持续优化:
 
 - Android 4.1：引入 `Choreographer`，VSync 信号通过 `DisplayEventReceiver` 的 native 层接收；回调类型为 `CALLBACK_INPUT` / `CALLBACK_ANIMATION` / `CALLBACK_TRAVERSAL`
 - Android 5.0：引入 RenderThread，帧提交路径经 `ViewRootImpl.draw()` → `ThreadedRenderer.draw()` → `nSyncAndDrawFrame()`，而非 Choreographer callback 驱动
 - Android 6.0：Choreographer 新增 `CALLBACK_COMMIT`，作为 `TRAVERSAL` 之后的提交回调阶段，此时帧已通过 draw 路径进入 HWUI
 - Android 16：配合 ARR，Choreographer 需要适应动态的 VSync 周期，帧节奏库(Frame Pacing Library / Swappy)也相应更新
+- Android 17：图形侧更新主要落在 WebGPU、ANGLE 偏好和 Vulkan 路线；Choreographer 公开帧时间线 API 仍延续 Android 13 的 `FrameTimeline`，未见新的 API 37 帧控制接口
 
 ### FrameMetrics API：量化每一帧的"慢"在哪里
 
@@ -301,13 +314,13 @@ FrameMetrics 将一帧的渲染划分为以下阶段:
 | `LAYOUT_MEASURE_DURATION` | measure + layout 耗时 |
 | `DRAW_DURATION` | draw(录制 DisplayList)耗时 |
 | `SYNC_DURATION` | 主线程与 RenderThread 同步耗时 |
-| `COMMANDS_DURATION` | RenderThread 执行 GPU 命令耗时 |
+| `COMMAND_ISSUE_DURATION` | RenderThread 向 GPU 发出 draw commands 的耗时 |
 | `SWAP_BUFFERS_DURATION` | 提交 Buffer 耗时 |
 | `TOTAL_DURATION` | 总耗时 |
 
 实际分析通常关注两个层面:
 
-第一是**单帧瓶颈定位**。如果 `LAYOUT_MEASURE_DURATION` 占比最高，说明 View 层级过深或 layout 逻辑过重；如果 `COMMANDS_DURATION` 高，说明 GPU 是瓶颈；如果 `SYNC_DURATION` 异常，可能是主线程和 RenderThread 之间的同步出了问题（常见于大量 RenderNode 变更的场景）。
+第一是**单帧瓶颈定位**。如果 `LAYOUT_MEASURE_DURATION` 占比最高，说明 View 层级过深或 layout 逻辑过重；如果 `COMMAND_ISSUE_DURATION` 高，说明 GPU 命令提交阶段可能是瓶颈；如果 `SYNC_DURATION` 异常，可能是主线程和 RenderThread 之间的同步出了问题（常见于大量 RenderNode 变更的场景）。
 
 第二是**整体帧率趋势**。通过持续收集 FrameMetrics 数据，可以建立帧耗时的时间线，发现哪些场景出现规律性 Jank。Android 12 的 `FrameTimeline` Track 在 Perfetto 中直观地展示了这一点——每一帧都有"预期完成时间"和"实际完成时间"的对比，绿色表示准时，红色表示 Jank。FrameMetrics 的阶段数据与 FrameTimeline 的视觉表现结合起来，就能精确定位 Jank 的根因。
 
@@ -451,7 +464,7 @@ Unreal Engine 已集成 Swappy。
 | 12 | 2021 | BLAST 扩展 + FrameTimeline | BLAST 覆盖更多 Surface 类型;FrameTimeline 可精确对比预期/实际帧时间 |
 | 13 | 2022 | vsync-appSf 解耦 + AGSL 引入 | Choreographer 同步精度提升;自定义图形着色器可用 |
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
-| 16 | 2025 | VP_ANDROID_16_minimums Vulkan 最低要求 profile + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan 1.4 新设备准入 + VP_ANDROID_16_minimums 强制扩展集；帧率动态切换更频繁；Graphite 为 Skia 方向性后端，HWUI 侧启用路径待后续版本 |
+| 16 | 2025 | Vulkan 1.4 launch-device 基线 + VP_ANDROID_16_minimums profile + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan version、profile、extension 口径需要分开验证；帧率动态切换更频繁；Graphite 为 Skia 方向性后端，HWUI 侧启用路径待后续版本 |
 | 17 | 2026 | WebGPU on Android + `prefer_angle` manifest metadata + OpenGL ES 维护模式继续 | WebGPU 为 Web 内容提供 Vulkan 后端 GPU 能力；App 可通过 manifest metadata 声明 ANGLE 偏好（不保证启用） |
 
 > [已验证: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
@@ -511,7 +524,7 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 
 ## 总结
 
-回看这段从 Android 3.0 到 16 的渲染演进，有一条清晰的线索:**把更多工作交给 GPU，把主线程解放出来**。
+回看这段从 Android 3.0 到 17 的渲染演进，有一条清晰的线索:**把更多工作交给 GPU，把主线程解放出来**。
 
 最初，CPU 包揽了从 Measure/Layout/Draw 到像素生成的全部工作。OpenGL ES 硬件加速把像素生成交给了 GPU；RenderThread 把 GPU 命令提交从主线程剥离出去；SkiaGL/SkiaVulkan 统一了 GPU 后端；BLASTBufferQueue 让 Buffer 提交变成异步操作。每一步都在减轻主线程的负担——这也是为什么在 Perfetto 中，现代 Android 的主线程 `performTraversals` 可以非常短：它只需要录制 RenderNode，GPU 工作全部在 `RenderThread` Track 上执行。
 
