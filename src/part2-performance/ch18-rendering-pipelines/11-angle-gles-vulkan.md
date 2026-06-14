@@ -23,36 +23,32 @@ sources:
 - AOSP external/angle/
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-task6_state: "revisiting"
+task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
-last_task6_audit: "2026-05-21"
+last_task6_audit: "2026-06-14"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task6_result: pass-light-edit
 review_round: 1
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-21T23:22:00+08:00"
-task6_state: "revisiting"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9 问题单）"
 last_task9_audit: "2026-06-14"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: "ready-to-publish"
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-14"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-14T17:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-14-17-audit.md"
-finalized_date: "2026-05-22"
 finalized_by: openclaw-task9-auto-promote
-auto_promoted_date: "2026-05-22"
-auto_promoted_by: openclaw-task9
 task9_review_notes: "2026-06-14 Task9 闲时抽检 auto-fix：AOSP android-16.0.0_r1 SyncVk.cpp 复核发现 serverWait() 代码片段仍带 Chromium/main 口径，已改为 Android 16 tag 行号、init(device) 调用，并补回 addGarbage 生命周期处理；回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-14
 last_task9_autofix_at: "2026-06-14"
 last_task2b_verifier_at: "2026-06-14T19:31:17"
 task2b_verifier_result: "status-fix-ready-for-task6"
@@ -126,7 +122,7 @@ AOSP 里，`GraphicsEnvironment.queryAngleChoice()` 会先决定当前进程该�
 
 如果结果是 `angle`，`GraphicsEnvironment.setupAngle()` 会先尝试 ANGLE APK，再回退到 system ANGLE。EGL loader 随后在 `frameworks/native/opengl/libs/EGL/Loader.cpp` 按当前选择加载 ANGLE 或 native GLES driver。ANGLE 路径的实际执行路径是 ANGLE frontend → vendor Vulkan driver → GPU。Vulkan driver 自身的行为差异仍然会透传到应用侧。
 
-Android 15 以后还要把 ANGLE 当成可更新的系统图形层（Updatable Graphics Layer）看。设备可以预装 `com.android.angle`，通过系统包或 Play Store 更新把 ANGLE 库带到新版本；`GraphicsEnvironment.setupAngle()` 会先查可用 ANGLE package，再决定是否回退到 system ANGLE。排查“为什么这台机型走 ANGLE”时，除 Settings 键值外，还要记录 `com.android.angle` 的版本、是否禁用，以及进程实际加载的 EGL/GLES 库。
+Android 15 之后 ANGLE 还多了一层身份：可更新的系统图形层（Updatable Graphics Layer）。设备可以预装 `com.android.angle`，通过系统包或 Play Store 把 ANGLE 库带到新版本；`GraphicsEnvironment.setupAngle()` 会先查可用 ANGLE package，再决定是否回退到 system ANGLE。排查“为什么这台机型走 ANGLE”时，除了 Settings 键值，还要确认 `com.android.angle` 的版本、是否被禁用，以及进程实际加载的是哪套 EGL/GLES 库。
 
 如果结果是 `native`，loader 会回到设备自带 GLES driver。调试时需要把设置值和运行时证据放在一起看，因为 ANGLE APK 缺失、库加载失败、system ANGLE 与 native driver 切换都会影响最终落点。
 

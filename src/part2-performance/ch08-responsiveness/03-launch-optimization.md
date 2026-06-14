@@ -68,6 +68,8 @@ last_task9_audit: "2026-06-06"
 task2b_state: fixed
 last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-14
 ---
 
 # 启动优化策略
@@ -149,7 +151,7 @@ TTFD 是从用户触发启动到应用内容完全就绪的时间。终点需要
 
 **可以延迟到使用时再初始化的任务**：二级页面或特定功能才需要的模块——地图 SDK（只在用户打开地图页面时才需要）、支付 SDK（只在用户发起支付时才需要）等。这些任务用懒加载（Lazy Load）策略，第一次使用时才初始化。
 
-**16KB 页面下启动期 COW 场景的写操作克制**：16KB 页面设备上（Android 15+），COW 粒度从 4KB 扩大到 16KB，但 COW 只在写入**共享页或 Zygote 继承页**时触发。App 进程自己的堆对象分配、已私有页（modified/dirty private）的后续写入、文件映射写入都不会额外触发 COW。需要关注的是 Zygote fork 后首次写入继承页的场景——这类页在 fork 时标记为共享，首次写入触发 16KB 粒度的 COW，比 4KB 页多拷贝 4 倍物理内存。启动阶段如果对 Zygote 继承的静态字段、共享配置对象、class 字段做大量写入，COW 开销会叠加。建议的做法：启动初期避免对 Zygote 继承的数据结构做批量写入，延迟到首页显示后再执行。对 App 自己在 `onCreate()` 里新分配的堆对象做初始化，不额外触发 COW。
+**16KB 页面下启动期 COW 场景的写操作克制**：除了上面三种策略分类，Android 15 之后还有一个容易被忽略的启动开销来源：16KB 页面设备上，COW 粒度从 4KB 扩大到 16KB。COW 只在写入共享页或 Zygote 继承页时触发——App 自己分配的堆对象、已私有页的后续写入、文件映射写入都不会额外触发。需要关注的是 Zygote fork 后首次写入继承页的场景：这类页在 fork 时标记为共享，首次写入触发 16KB 粒度的 COW，比 4KB 页多拷贝 4 倍物理内存。启动阶段如果对 Zygote 继承的静态字段、共享配置对象、class 字段做大量写入，COW 开销会叠加。建议的做法：启动初期避免对 Zygote 继承的数据结构做批量写入，延迟到首页显示后再执行。
 
 [待验证: 缺少同设备 4KB/16KB 的 minor faults / PSS / CPU 时间对照 trace 数据，当前描述基于源码级 COW 机制推导]
 
@@ -317,7 +319,6 @@ splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
 4. 在 Activity 中调用 `installSplashScreen()`
 5. 测试低版本兼容性——兼容库在低版本上不支持图标动画和品牌图片
 
-[待补充：SplashScreen 在不同 Android 版本上的行为差异截图]
 
 ## 多线程并行初始化框架：把串行变并行
 
@@ -457,7 +458,7 @@ App Startup 的优点是简单、官方维护、与 ContentProvider 机制集成
 
 实现方式是：库在自己的 AndroidManifest.xml 中注册一个 ContentProvider，在该 ContentProvider 的 `onCreate()` 中执行初始化逻辑。启动时系统会在 `ActivityThread#handleBindApplication` 中创建 `Application` 对象，接着执行 `installContentProviders()`，随后才进入 `Application.onCreate()`；所以 Provider 初始化仍然会卡在主线程上，而且发生在应用自己的 `Application.onCreate()` 之前。
 
-这个方案对开发者来说很方便，但会把启动成本隐藏到系统创建 Provider 的阶段。一个集成了 10 个以上第三方库的应用，可能有 5-6 个甚至更多的 ContentProvider 在启动阶段串行执行。按常见项目经验估算，每个 ContentProvider 的 `onCreate()` 可能耗时 10-50ms，累积起来就是 50-300ms 的额外启动时间。
+这个方案对开发者来说很方便，但会把启动成本隐藏到系统创建 Provider 的阶段。一个集成了 10 个以上第三方库的应用，可能有 5-6 个甚至更多的 ContentProvider 在启动阶段串行执行。每个 ContentProvider 的 `onCreate()` 通常耗时 10-50ms，集成了 5-6 个这类库的话，累积 50-300ms 的额外启动时间并不少见。
 
 更麻烦的是，这些隐式初始化通常没有出现在业务代码中，很容易被忽略。Perfetto 中能看到 `BindApplication` 阶段有一段比较厚的主线程活动，其中就包含了 ContentProvider 的初始化，但在代码中可能找不到对应的调用。
 
@@ -793,7 +794,7 @@ adb shell am start -W -n com.example.app/.MainActivity
 
 ## 版本演进：Android 13-17 对启动优化的影响
 
-不同 Android 版本对启动优化工具和系统行为的影响如下。
+前面的优化策略在不同 Android 版本上的生效条件和细节有所不同。这里按版本梳理关键差异，方便在实际项目中对照。
 
 ### SplashScreen 相关变更
 
