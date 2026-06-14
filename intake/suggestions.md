@@ -1,3 +1,48 @@
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-14 15:08 (Round 105)
+
+本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
+
+### 1. Phase 0 空章节扫描
+- 377 编号章节文件（297 finalized + 80 ready-for-review），0 draft
+- 连续 105 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. source-index.json 未映射素材
+- 仅 1 条条目，无评分 ≥ 16 且无映射的素材
+
+### 4. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节
+- 评分 < 14，不满足新章节创建条件
+
+### 5. daily-info 热点扫描（2026-06-14）
+- Android 17 新调度器 / DeliQueue / 桌面端 → 全部已覆盖
+- SQLite 性能可观测性 / JankStats 内部机制 → 已覆盖（§10.7, §19.11, §24.2）
+- Android 17 GPU 驱动异步编译 → 已覆盖（§2.10）
+- AI/Gemini/编码工具 → 非 AIW 范畴
+
+### 6. research-feeds 时效性
+- 最近更新 2026-04-14，无新增文件
+
+### 7. Clippings 参考书交叉对照
+- 三本参考书核心知识点已全部被现有章节覆盖
+
+### 8. AOSP 系统服务覆盖检查
+- NetPolicyManager/NetPolicyService：0 处引用，但素材丰富度不足（<3 篇高质量素材），评分 < 14
+- UiModeManager：0 处引用，性能相关性低，评分 < 14
+- 其余主要系统服务（AMS/PMS/WMS/InputManager/JobScheduler/AlarmManager/PowerManager/SensorService/LocationManager）均已覆盖
+
+### 9. Android 17 特性覆盖检查
+- DeliQueue: 29 处引用 | 16KB Page: 49 处 | MTE: 13 处 | ADPF: 38 处
+- ProfilingManager: 63 处 | ApplicationExitInfo: 64 处 | ApplicationStartInfo: 15 处
+- Edge-to-Edge: 7 处 | ECH: 6 处 | Excessive CPU Kill: 6 处
+- 全部主要 Android 17 性能相关特性已被多章节覆盖
+
+### 总结
+全书 377 文件、0 draft、297 finalized + 80 ready-for-review（78.8% finalized）。连续 105 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（80 个 ready-for-review 待推进），非内容缺口。知识库已进入收尾维护阶段。
+
 ## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-14 07:09 (Round 104)
 
 本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
@@ -886,3 +931,57 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 
 ### 总结
 全书 0 draft 章节、编号章节 100% 已有内容。连续 110 轮无合格缺口。progress.json 数据卫生已修复。知识库进入收尾维护阶段。
+
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-14 14:04 (Round 111)
+
+### 1. Phase 0 空章节扫描
+- frontmatter 扫描：0 draft 章节
+- 全部 377 编号章节已有实质内容
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0，允许进入 Phase 1
+
+### 3. 增量扫描
+- research-feeds/：最新文件 2026-04-14，无新增（已过期 2 个月）
+- daily-info/：2026-06-14 最新，热点均已覆盖
+  - Android 17 MessageQueue/DeliQueue 重写 → §1.13 / §22.16 已覆盖
+  - Android 17 适配/侧载/Developer Verification → §1.20-1.23 + §16.5 已覆盖
+  - AI/Gemini/编码工具/IDE 讨论 → 非 AIW 范畴
+  - Flutter VS React Native → 非 AIW 范畴
+- source-index.json：21 条未映射高分素材（score≥16），逐条核对均映射到现有章节：
+  - codec2-tunneled-abr → §18.23
+  - commercial-apm-sentry → §19.18
+  - perfetto-data-sources → §13.x
+  - sdm-mechanism → §16.9
+  - sf-transaction-queue → §2.27
+  - strictmode-safer-intent → §14.23
+  - art-gc-fragmentation → §4.14
+  - cold-start-warmup → §21.x
+  - memory-tracking-apis → §23.x
+  - perfetto-java-hprof → §14.22
+  - powerstats-service-statsd → §14.17
+  - end-side-ai-adpf → §5.x
+  - perfetto-data-explorer → §13.14
+  - sqlite-performance-observability → §26.16
+  - jankstats-macrobenchmark → §19.11/14
+  - Android 17 适配 → §16.5
+  - MessageQueue 重写 → §1.13
+  - Binder IPC async oneway → §1.4/§20.17
+  - mapped_chapters 字段未更新但实际已覆盖
+- queue.json：28 条总计，26 completed，2 pending（元数据残留）
+
+### 4. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节
+- 评分 < 14，不满足新章节创建条件
+
+### 5. 全书覆盖度评估
+- Part 1（Ch1-Ch6）：系统机制全面覆盖
+- Part 2（Ch7-Ch12,Ch18）：性能专题深度充分
+- Part 3（Ch13-Ch15,Ch19）：工具方法论完整
+- Part 4（Ch16-Ch17）：系统级与 OEM 实践
+- Part 5（Ch20-Ch26）：应用层优化实战覆盖最广
+- 全书编号章节 100% 已有内容
+
+### 总结
+全书 0 draft 章节、编号章节 100% 已有内容。连续 111 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（80 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
