@@ -7472,7 +7472,15 @@
     "19.18": {
       "task6_reviewed": "2026-06-04",
       "task6_result": "pass-light-edit",
-      "task6_round": 3
+      "task6_round": 3,
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "task2b_state": "fixed",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-06-14T17:06:00+08:00",
+      "last_task6_review_log": "logs/review/2026-06-14-17-review.md"
     },
     "19.06": {
       "task6_reviewed": "2026-06-04",
