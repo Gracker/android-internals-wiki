@@ -1166,3 +1166,63 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 
 ### 总结
 全书 377 小节、0 draft、295 finalized（78.3%）、80 ready-for-review（21.2%）。连续 115 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（80 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+
+
+---
+
+## [2026-06-15 07:04] Task 2A 知识缺口挖掘 — 第 N 轮
+
+### 全书状态
+- 总小节：426 | draft：0 | ready-for-review：78 | finalized：299
+- TASK2B_BACKLOG：0（≤ 20，允许挖掘）
+- queue.json：28 条（26 completed，3 pending material injection）
+
+### 本轮挖掘方向与结论
+
+#### 1. DeepResearch 近期产出对照（2026-06-14/15）
+- PerformanceHintManager setThreads IPC 链路 → 已覆盖（§5.9, §25.11, §25.16），pending 注入条目已存在于 queue
+- Perfetto DataGrid Jank CUJ v54 进程过滤 → 已覆盖（§13.14），pending 注入条目已存在于 queue
+- AMS 双锁架构延伸（CachedAppOptimizer / AppProfiler / CPU Booster）→ 已覆盖（§1.25 AMS 双锁）
+- Android 17 StrictMode VmPolicy cross-binder 传播 → §14.23 已覆盖 StrictMode；cross-binder 传播属 Android 17 main 分支特性，评分不足
+- Android 17 IMMS / InputMethodBinding / Autofill / InsetsController → §3.11 已覆盖 IME 性能；Autofill 性能角度偏冷门
+- AOSP Bluetooth scan power attribution protection → §11.6 已覆盖蓝牙扫描功耗；attribution/protection 属系统内部细节
+- Android 17 NeuralNetworks HAL → §5.14 已覆盖 ML Runtime + NPU；pending 注入条目已存在于 queue
+- JobScheduler quota management → §25.13 已覆盖 FGS 超时与 JobScheduler 配额
+
+#### 2. AOSP 系统服务覆盖检查（本轮新扫描）
+- PowerManagerService 内部架构 → §5.6 已从系统功耗角度覆盖
+- AlarmManagerService → §25.3 + §25.20 已覆盖
+- SensorManagerService → §5.15 已覆盖
+- LocationManagerService → §25.5 已覆盖
+- AudioManager/AudioService → §1.16 已覆盖
+- 无遗漏的核心性能相关系统服务
+
+#### 3. 官方文档 topic 逐项对照
+- developer.android.com/topic/performance 全部主题均已有对应章节
+- Baseline Profiles、App Startup、Rendering、Memory、Power、Network、Storage 均充分覆盖
+
+#### 4. 新技术方向评估
+| 候选方向 | 素材 | 相关性 | 需求 | 时效 | 总分 | 判定 |
+|---------|------|--------|------|------|------|------|
+| Compose Multiplatform / KMP 性能 | 2 | 3 | 4 | 5 | 14 | 边界候选；KMP 偏跨平台，与 AIW Android 系统内部分析定位有偏差 |
+| Paging 3 / PagedListView 性能 | 3 | 4 | 4 | 3 | 14 | 边界候选；Paging 3 更偏库使用指南，非系统级性能分析 |
+| Android Virtualization Framework 性能 | 1 | 2 | 2 | 3 | 8 | 跳过 |
+| Wear OS 性能优化 | 2 | 3 | 3 | 2 | 10 | 跳过 |
+| Foldable/双屏渲染性能 | 2 | 3 | 3 | 3 | 11 | 跳过 |
+| Android Privacy Sandbox 性能 | 2 | 2 | 2 | 3 | 9 | 跳过 |
+
+#### 5. 结论
+两个边界候选（KMP、Paging 3）评分为 14 但与 AIW 定位存在偏差：
+- KMP 聚焦跨平台而非 Android 系统内部机制
+- Paging 3 是 Jetpack 库使用层面，AIW 已有 §7.8/§22.2/§22.16/§22.22 覆盖列表性能
+
+**本轮未发现评分 ≥ 14 的合格知识缺口，跳过新章节创建。**
+
+### 已检查方向（避免下次重复）
+- DeepResearch 全部 2026-06-14/15 产出已对照
+- AOSP system/ 核心服务全覆盖确认
+- 官方文档 topic 全对照
+- 跨平台/Wear/折叠屏/Privacy Sandbox 等边缘方向已评估
+
+### 管线状态
+全书 426 小节，0 draft，299 finalized（70.2%），78 ready-for-review（18.3%），49 其他状态（11.5%）。连续 N 轮无合格缺口。内容覆盖已饱和，核心堵点在 Task 6/Task 9 复审和 Task 2B 回炉环节。知识库进入收尾维护阶段。
