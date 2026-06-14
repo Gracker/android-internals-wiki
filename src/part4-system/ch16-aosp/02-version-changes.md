@@ -303,6 +303,139 @@ Android 16 在 `android.os.health.SystemHealthManager` 中放入了 `getCpuHeadr
 
 Android 16 调整了 `JobScheduler` 的配额计算方式，基于 App 的 standby bucket 和是否以前台服务启动来动态调整运行时间配额。新增的 `getPendingJobReasons()` 和 `getPendingJobReasonsHistory()` API 让开发者可以查询 Job 未执行的具体原因（如待机桶限制、电量不足、网络不可用等），不再只能靠猜测。
 
+## Android 17（API 37）：NN HAL 1.3 稳态与 ProfilingManager 异常检测
+
+<!-- AIW-源码调研-2026-06-14 -->
+
+Android 17 的性能侧改动集中在 **ProfilingManager 触发器扩展** 和 **系统级 AI 异常检测**，NN HAL 本身仍维持 1.3 不变（自 Android 13 起的稳定状态）。下面把与 AI 推理直接相关的两条线拆开讲。
+
+### NeuralNetworks HAL 1.3 在 Android 17 的实际状态
+
+NN HAL 1.3 是 AOSP `main` 分支（含 Android 17）唯一的 HAL 主版本，未发布 1.4 或 2.0。HAL 接口族由四个文件组成：
+
+- `hardware/interfaces/neuralnetworks/1.3/IDevice.hal`：设备能力声明（`getCapabilities_1_3`）、op 支持查询（`getSupportedOperations_1_3`）、model 准备入口（`prepareModel_1_3` / `prepareModelFromCache_1_3`）、driver-managed buffer 分配（`allocate`）
+- `hardware/interfaces/neuralnetworks/1.3/IPreparedModel.hal`：执行入口族——`execute_1_3`（异步）/ `executeSynchronously_1_3`（同步）/ `executeFenced`（fenced）
+- `hardware/interfaces/neuralnetworks/1.3/IExecutionCallback.hal` / `IFencedExecutionCallback.hal`：异步与 fenced 回调
+- `hardware/interfaces/neuralnetworks/1.3/types.hal`：`Capabilities` / `Model` / `Request` / `OutputShape` / `Timing` 等共用结构
+
+NDK API（`frameworks/ml/nn/runtime/include/NeuralNetworks.h`，8153 行）是 **stable header**——第三方 native 代码依赖，**不允许修改 enum / 宏 / 函数签名 / 结构体布局**。其 API level 标签最高只到 API 30（Android 11），HAL 1.3 自 API 33 起至今无新增 NDK 符号：
+
+> API 27（Android 8.1）：基础 NNAPI
+> API 28（Android 9）：AHardwareBuffer 集成
+> API 29（Android 10）：Capabilities 向量化、quant8/16、float16、BURST、QHIGH-priority
+> API 30（Android 11）：Fenced execution、IF/WHILE、QoS priority、MeasureTiming
+
+Android 15 起 NNAPI NDK API 被官方标记 deprecated（[source.android.com/docs/core/interaction/neural-networks](https://source.android.com/docs/core/interaction/neural-networks)）：
+
+> Starting in Android 15, the NNAPI (NDK API) is deprecated. The Neural Networks HAL interface continues to be supported.
+
+对 app 端的实际含义：**NNAPI HAL 仍是 vendor driver 的官方扩展点**，但 NDK 公共入口已经不再演进；Google 推荐的迁移路径是 [NNAPI Migration Guide](https://developer.android.com/ndk/reference/group/neural-networks)（指向 TensorFlow Lite delegate / LiteRT 路线）。§16.2 在版本变更梳理里首次明确这一边界对 AI 推理加速策略的影响。
+
+### Framework 端 compilation caching 的实现机制
+
+`frameworks/ml/nn/runtime/ExecutionPlan.cpp` 中的 `compile()`（行 60-93）是 framework 端编译入口，关键逻辑：
+
+```cpp
+if (device.isCachingSupported() && token->ok() &&
+    token->updateFromString(device.getName().c_str()) &&
+    token->updateFromString(device.getVersionString().c_str()) &&
+    token->update(&executionPreference, sizeof(executionPreference)) &&
+    token->update(&compilationPriority, sizeof(compilationPriority)) &&
+    token->finish()) {
+    cacheToken = CacheToken{};
+    device.prepareModel(makeModel, preference, priority, deadline, cacheDir, cacheToken);
+}
+```
+
+CacheToken 由 framework 哈希组成包括：`device.getName()` + `device.getVersionString()` + `executionPreference` + `compilationPriority` + 已被 framework 在 SIMPLE/COMPOUND body 阶段哈希过的 op index。这意味着：
+
+- 同一 model + 同一 driver 同一执行偏好 → 直接复用 prepared model 文件
+- driver 升级到不同 versionString → cache 失效，需重新编译
+- 同一个 app 在不同 SoC 上的 cache 不通用（device name 不同）
+
+HAL 接口约定 token 碰撞由 app 承担风险：
+
+> The driver cannot detect a collision; a collision will result in a failed execution or in a successful execution that produces incorrect output values.
+
+所以 app 选 cache token 时应"低碰撞概率"——典型做法是 hash(model id + version + driver package name)。
+
+### 对 AI 推理加速的"加速"在哪
+
+既然 HAL 1.3 不变、Android 17 的"加速"主要体现在以下四点：
+
+1. **driver 端缓存复用**：第二次起的 prepare 走 `prepareModelFromCache_1_3`，避免 NPU/GPU 端重编译（数十 ms~数 s 级）
+2. **fenced execution**：NNAPI execute 与 `SyncFence` 链结合，消除 CPU↔NPU/GPU 的 polling wait；适合流式推理（语音、相机帧）pipeline
+3. **burst execution**：app↔driver 进程间通信绕过 binder，改用 FMQ；单次 execute 通信开销从 ~100 μs 降到 ~10 μs
+4. **executeSynchronously_1_3**：driver 无需单独的 callback 通知机制，省去 thread 切换——HAL 层支持与 NDK 层独立，HAL 同步不强制 NDK 同步
+
+### Android 17 异常检测 trigger 与 AI 推理
+
+Android 17 的 ProfilingManager 公开参考页新增的 4 个 trigger（API 37）：
+
+- `TRIGGER_TYPE_COLD_START`：app 冷启动触发，附带 call stack sample + system trace
+- `TRIGGER_TYPE_OOM`：`OutOfMemoryError` 触发，返回 Java Heap Dump——对大模型推理 / KV cache 溢出场景特别有用
+- `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：异常高 CPU 触发，返回 call stack sample
+- `TRIGGER_TYPE_ANOMALY`：**异常检测 service**，监视 binder spam、excessive memory usage；在系统强杀前回调 app，可用于 AI 推理的内存/算力异常自我诊断
+
+最后一个 trigger 与 AI 推理直接相关——它把"系统判定资源滥用 → 强杀"的单向路径变成"先通知 app → app 自报异常数据 → 再判定"的闭环。AI 推理 app 注册这个 trigger 后，可以在被 system 强杀前拿到 call stack + heap dump，反推推理 pipeline 哪一步异常（如 LLM 的 KV cache 持续增长触顶、端侧 diffusion 推理中某 layer 内存峰值溢出）。
+
+### HAL 接口签名（关键源码摘录）
+
+`IDevice.hal` 1.3（节选）：
+```hal
+interface IDevice extends @1.2::IDevice {
+    getCapabilities_1_3() generates (ErrorStatus status, Capabilities capabilities);
+    getSupportedOperations_1_3(Model model)
+        generates (ErrorStatus status, vec<bool> supportedOperations);
+    prepareModel_1_3(Model model, ExecutionPreference preference,
+                     Priority priority, OptionalTimePoint deadline,
+                     vec<handle> modelCache, vec<handle> dataCache,
+                     uint8_t[BYTE_SIZE_OF_CACHE_TOKEN] token,
+                     IPreparedModelCallback callback)
+        generates (ErrorStatus status);
+    prepareModelFromCache_1_3(OptionalTimePoint deadline,
+                              vec<handle> modelCache, vec<handle> dataCache,
+                              uint8_t[BYTE_SIZE_OF_CACHE_TOKEN] token,
+                              IPreparedModelCallback callback)
+        generates (ErrorStatus status);
+    allocate(BufferDesc desc, vec<IPreparedModel> preparedModels,
+             vec<BufferRole> inputRoles, vec<BufferRole> outputRoles)
+        generates (ErrorStatus status, IBuffer buffer, uint32_t token);
+}
+```
+
+`IPreparedModel.hal` 1.3 的执行入口族：
+```hal
+interface IPreparedModel extends @1.2::IPreparedModel {
+    execute_1_3(Request request, MeasureTiming measure, OptionalTimePoint deadline,
+                OptionalTimeoutDuration loopTimeoutDuration, IExecutionCallback callback)
+        generates (ErrorStatus status);
+    executeSynchronously_1_3(Request request, MeasureTiming measure,
+                             OptionalTimePoint deadline,
+                             OptionalTimeoutDuration loopTimeoutDuration)
+        generates (ErrorStatus status, vec<OutputShape> outputShapes,
+                   Timing timing);
+    executeFenced(Request request, vec<handle> waitFor, MeasureTiming measure,
+                  OptionalTimePoint deadline,
+                  OptionalTimeoutDuration loopTimeoutDuration,
+                  IFencedExecutionCallback callback)
+        generates (ErrorStatus status, handle syncFence);
+}
+```
+
+注：HAL 1.3 引入 `loopTimeoutDuration` 参数（HAL 1.2 及更早没有），约束 `OperationType::WHILE` 单次执行时长；上限 `LoopTimeoutDurationNs::MAXIMUM`，默认 `DEFAULT`。
+
+### 信息源（全部为一手）
+
+- `android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/neuralnetworks/1.3/IDevice.hal`
+- `android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/neuralnetworks/1.3/IPreparedModel.hal`
+- `android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/neuralnetworks/1.3/types.hal`
+- `android.googlesource.com/platform/frameworks/ml/+/refs/heads/main/nn/runtime/include/NeuralNetworks.h`
+- `android.googlesource.com/platform/frameworks/ml/+/refs/heads/main/nn/runtime/ExecutionPlan.cpp`
+- [source.android.com/docs/core/interaction/neural-networks](https://source.android.com/docs/core/interaction/neural-networks)
+- [developer.android.com/about/versions/17/features](https://developer.android.com/about/versions/17/features)
+- 关联 DeepResearch 报告：`DeepResearch/2026-06-14-android17-neuralnetworks-hal-inference-acceleration.md`
+
 ## 新增性能 API 的演进脉络
 
 以上是按版本时间线梳理的关键变更。下面换个视角，按 API 家族纵向追溯 FrameMetrics、ProfilingManager、ADPF 和 Choreographer 的演进路径——这比零散的版本条目更能看出 Google 在每个性能领域的设计意图。
