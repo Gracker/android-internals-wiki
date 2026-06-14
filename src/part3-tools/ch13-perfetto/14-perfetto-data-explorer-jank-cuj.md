@@ -222,6 +222,123 @@ Choreographer#doFrame()
 
 **版本备注**：sched_ext 调度器可能影响 CUJ 帧时间判断（线程调度延迟 → 帧耗时），此方向有待进一步验证。
 
+
+<!-- AIW-源码调研-2026-06-15 -->
+### 补充：android.cujs.base 进程名过滤两层结构 + FrameTracker/CUJ 协作链（源码验证）
+
+**来源**：Perfetto DataGrid 与 Jank CUJ 标准库 · 二次深挖（2026-06-15）  
+**验证状态**：一手源码验证完成（10 个 SQL 文件 + JankTracker.cpp/.h）
+
+#### 进程名过滤是两层（不是一层）
+
+**第一层 · `cujs/base.sql` `_is_jank_slice` 宏**：
+
+```sql
+$slice.name GLOB 'J<*>'
+AND (
+  $process.name GLOB 'com.google.android*' OR $process.name GLOB 'com.android.*'
+);
+```
+
+**第二层 · `jank/internal/counters.sql` `cujs_ordered` CTE 决定 counter 起点**：
+
+```sql
+CASE
+  WHEN process_name GLOB 'com.android.*' THEN ts_end
+  WHEN process_name = 'com.google.android.apps.nexuslauncher' THEN ts_end
+  -- Some processes publish counters just before logging the CUJ end
+  ELSE MAX(ts, ts_end - 4000000)
+END AS ts_earliest_allowed_counter
+```
+
+三层覆盖：
+- `com.android.*` 系统服务：CUJ 进主表 + counter 0 回溯
+- `com.google.android.*` 预装系统 App：CUJ 进主表 + counter 0 回溯
+- `com.google.android.apps.nexuslauncher`：仅 Pixel Launcher 显式白名单，counter 0 回溯
+- 其他进程（如第三方 `com.example.*`）：CUJ **不进** 主表；如果硬要进，counter 需要回溯 4ms
+
+#### CUJ counter 命名规范（`cujs/cuj_frame_counters.sql`）
+
+counter track 名必须满足 `GLOB 'J<*>#*'`，CUJ 名提取用 `str_split(str_split(track.name, '>#', 0), '<', 1)`，counter 名用 `str_split(track.name, '#', 1)`。这意味着第三方 App 只要按 `J<MyCuj>#totalFrames` 这套命名写 `process_counter_track`，就会被 CUJ 管线消费。
+
+支持的 counter 名（从 `internal/counters.sql` 引用）：`totalFrames` / `missedFrames` / `missedAppFrames` / `missedSfFrames` / `maxSuccessiveMissedFrames` / `totalAnimTime` / `weightedAppJank` / `weightedSfJank` / `maxFrameTimeMillis`。
+
+weighted jank 在 counter 内部按 `janks/ms × 1000` 整数存储，SQL 层还原为「总 jank 数」。
+
+#### Frame type 判定（`frames/jank_type.sql`）
+
+```sql
+android_is_sf_jank_type(jank_type) :=
+  GLOB '*SurfaceFlinger CPU Deadline Missed*'
+  OR GLOB '*SurfaceFlinger GPU Deadline Missed*'
+  OR GLOB '*SurfaceFlinger Scheduling*'
+  OR GLOB '*Prediction Error*'
+  OR GLOB '*Display HAL*'
+
+android_is_app_jank_type(jank_type) :=
+  GLOB '*App Deadline Missed*'
+  OR GLOB '*App Resynced Jitter*'
+```
+
+`jank_type` 原始值来自 `frame_timeline_event.args.display_value['Jank type']`，由 SurfaceFlinger 写 frame timeline 时填入。
+
+#### JankTracker.cpp 与 CUJ 的关系
+
+`frameworks/base/libs/hwui/JankTracker.cpp` 在 native 层做**实时**判定，五种 JankType：
+
+| JankType | 阈值 | 时序范围 |
+|----------|------|----------|
+| `kMissedVsync` | 1 ns | IntendedVsync → Vsync |
+| `kSlowUI` | 0.5× frameInterval | Vsync → SyncStart |
+| `kSlowSync` | 0.2× frameInterval | SyncStart → IssueDrawCommandsStart |
+| `kSlowRT` | 0.75× frameInterval | IssueDrawCommandsStart → FrameCompleted |
+| `kHighInputLatency` | 0.1× frameInterval | 触发条件：triple buffered |
+
+报告链路：`JankTracker::finishFrame` → `ProfileDataContainer` + `FrameMetricsReporter::reportFrameMetrics` → 第三方 App 通过 `Window.OnFrameMetricsAvailableListener` 接收（也是 AndroidX JankStats 内部数据源）。
+
+**JankTracker 与 CUJ 标准库独立运行**：JankTracker 的 jank 计数不会自动映射到 `android_jank_cuj_counter` 的 `missedFrames`；CUJ 事后聚合依赖 `J<CUJ_NAME>` slice + frame timeline counter。两层的数据要一致需通过 StatsD 端 `frame_missed` 原子数据 join。
+
+#### `relevant_threads.sql` 迁移策略
+
+旧表 `android_jank_cuj_sf_main_thread` / `android_jank_cuj_sf_thread(...)` 是对内部 `_android_sf_*` 的薄包装，保留向后兼容。**注释明确写「TODO(devianb): Removed once we migrate google3 pipelines away」**——第三方生产脚本不应长期依赖旧名，应直接用 `_android_sf_process` / `_android_sf_thread(thread_name)`。
+
+#### 调用链总图
+
+```
+Choreographer#doFrame vsync=N
+  → ViewRootImpl.doTraversals
+     → HWUI rendering
+        → RenderThread DrawFrames vsync=N
+           → GPU completion fence_N
+  ← JankTracker::finishFrame  (libs/hwui/JankTracker.cpp)
+     ├─ calculateLegacyJank → ProfileDataContainer
+     └─ reporter->reportFrameMetrics  → FrameMetricsReporter
+                                        → 第三方 App OnFrameMetricsAvailableListener
+Trace.beginSection("J<my_cuj>") ... Trace.endSection()
+  → atrace process counter track: J<my_cuj>#totalFrames
+                                ↓
+                Perfetto trace_processor
+                                ↓
+_is_jank_slice!(slice, process)  ← cujs/base.sql 进程名过滤
+                                ↓
+_jank_cujs_slices / _cuj_state_markers / _cuj_instant_events
+                                ↓
+android_jank_cuj_main_thread / render_thread / gpu_completion_thread  (relevant_threads.sql)
+                                ↓
+android_jank_cuj_vsync_boundary / _main_thread_frame_boundary  (cujs_boundaries.sql)
+                                ↓
+android_jank_cuj_frame_timeline  (frames.sql + frames/jank_type.sql)
+android_jank_cuj_frame  (do_frame + draw_frame + gpu_fence join)
+                                ↓
+android_jank_cuj_counter_metrics  (internal/counters.sql)
+   ts_earliest_allowed_counter: com.android.*=ts_end / NexusLauncher=ts_end / else=ts_end-4ms
+                                ↓
+AndroidJankCujMetric proto  (android/android_jank_cuj.sql)
+   counter_metrics / trace_metrics / timeline_metrics / frame / sf_frame
+```
+
+[已验证: Perfetto v54.0 ab21398 + android-15-release JankTracker.cpp/h]
+
 <!-- outline-end -->
 
 Perfetto v54 让 Android 性能分析里的三类证据开始使用同一套工作流：UI 里的 DataGrid / pivot table 让 SQL 结果可以交互式探索，Jank CUJ 相关模块把交互场景变成结构化对象，weighted jank counter 让“掉了几帧”继续追到“这次卡顿有多重”。

@@ -89,6 +89,8 @@ p1: 0
 p2: 0
 last_task2b_verifier_at: "2026-06-14T19:31:17"
 task2b_verifier_result: "task9-state-reset-ready-for-task9"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-15
 ---
 
 # 2.20 多窗口与桌面模式渲染性能
@@ -160,6 +162,8 @@ task2b_verifier_result: "task9-state-reset-ready-for-task9"
 这里不要脱离设备条件写固定毫秒数。把某组固定毫秒数直接写成通用规律，离开 trace、设备型号、刷新率和显示分辨率，就没有复用价值。直接回到观察面：看 layer 数量、看 compositionType、看 FrameTimeline，再决定是不是已经到了 SurfaceFlinger 侧瓶颈。
 
 `dumpsys SurfaceFlinger` 适合做静态快照。它能帮我们核对当前有哪些可见 layer、哪些 layer 走 HWC、哪些 layer 走 GLES。Perfetto 适合看动态变化，尤其是窗口切换、拖拽缩放、PiP 持续播放、外接显示器插拔这些过程。
+
+多窗口分析中还有几个容易跟 SurfaceFlinger 混淆的边界,下面分开说清楚。
 
 ### Android 17 MessageQueue 优化不要外推到多 display 合成
 
