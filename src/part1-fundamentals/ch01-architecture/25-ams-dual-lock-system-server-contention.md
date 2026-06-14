@@ -291,4 +291,57 @@ AMS 双锁架构是一个具体的锁拆分案例。其他 system_server 服务�
 4. **批量操作优于多次单独操作**：如果需要查询多个进程状态，优先考虑一次 `dumpsys` 或一次 Perfetto trace，而不是多次 IPC 调用
 5. **使用 `UsageStatsManager` 替代进程列表查询**：查询应用使用情况时，`UsageStatsManager` 不经过 AMS 全局锁
 
+
+<!-- AIW-源码调研-2026-06-14 — Android 17 main 分支扩展（CachedAppOptimizer / AppProfiler / CPU booster） -->
+
+> 本节基于 AOSP refs/heads/main（与 android-17.0.0_r1 共享同一主干）补充。配套报告：[DeepResearch/2026-06-14-ams-dual-lock-android17-main-extensions.md](../../../../../../../DeepResearch/2026-06-14-ams-dual-lock-android17-main-extensions.md)
+
+### 🔹 Android 17 main：mProcLock 推广到 CachedAppOptimizer 与 AppProfiler
+
+`ActivityManagerService.java:670-712` 把双锁骨架固化。Android 14+ 起，`mProcLock` 跨类扩散：
+
+| 类 | 关键 @GuardedBy("mProcLock") / @CompositeRWLock 字段 | 行号 |
+|---|---|---|
+| CachedAppOptimizer | `mPendingCompactionProcesses`、`mFrozenProcesses` | CachedAppOptimizer.java:363-378 |
+| AppProfiler | `mLowRamTimeSinceLastIdle`、`mLowRamStartTime` | AppProfiler.java:251-258 |
+| ActivityManagerService | `mActiveInstrumentation`、`mBackgroundAppIdAllowlist`、`mDeviceIdleAllowlist`、`mDeviceIdleExceptIdleAllowlist`、`mDeviceIdleTempAllowlist`、`mPendingTempAllowlist`、`mFgsStartTempAllowList` | AMS.java:664, 845, 1204, 1210, 1216, 1281, 1607 |
+| ProcessList | `mLruProcesses`、`mLruProcessActivityStart`、`mLruProcessServiceStart`、`mLruSeq`、`mActiveUids` | ProcessList.java:479-507 |
+| OomAdjuster | `updateOomAdjLSP` / `performUpdateOomAdjLSP` / `updateOomAdjInnerLSP`（LSP 配对） | OomAdjuster.java:610-633 |
+
+调用方写法（典型 LPr 入口）：
+
+```java
+// CachedAppOptimizer dumpsys 路径
+synchronized (mProcLock) { ... dump mFrozenProcesses ... }
+// AppProfiler 测试模式切换
+void setTestPssMode(boolean enabled) {
+    synchronized (mProcLock) { ... }
+}
+```
+
+### 🔹 CPU booster critical-section 钩子
+
+`ActivityManagerProcLock.java:18-28` 注释明确写明：
+
+> Class that is used to generate an instance of the ActivityManagerService#mProcLock, so the CPU booster can identify the critical section.
+
+该类没有任何字段，仅作为类型标签存在。CPU booster 通过 ART 的 monitor enter/exit 事件识别当前持锁对象类型，若为 `ActivityManagerProcLock` 实例，则在临界区内拉高 system_server 进程的 CPU 频率 + 短窗口 SCHED_FIFO，使 OOM adj 与冻结判定更快完成。源码证据：AMS.java:1789-1807（UPDATE_TIME_ZONE 仅持 `mProcLock` 即可遍历 LRU，是 booster 高频触发场景）。
+
+### 🔹 Self-Locked 旁路：双锁之外的窄锁
+
+`ActivityManagerService.java:914-997`：
+
+```java
+@GuardedBy("sActiveProcessInfoSelfLocked")
+static final SparseArray<ProcessInfo> sActiveProcessInfoSelfLocked = new SparseArray<>();
+
+final PidMap mPidsSelfLocked = new PidMap();  // PidMap 自身即 lock object
+```
+
+Self-Locked 模式把 PidMap 与 sActiveProcessInfo 完全脱离 AMS 主锁，适用于「按 pid 查 ProcessRecord」的高频查询场景，进一步削弱双锁的临界区压力。
+
+### 🔹 本节插入与原章节关系
+
+原章节（android-16.0.0_r4 锚点）覆盖双锁骨架、LOSP/LSP 命名、UPDATE_TIME_ZONE / OomAdjuster 路径、Perfetto 观测。本节补充 Android 17 main 在 CachedAppOptimizer / AppProfiler / 临时白名单三块的新增 mProcLock 现场，并揭示 `ActivityManagerProcLock` 空壳类的 CPU booster 用途。两者结合即得 AMS 双锁架构的完整视图。
+
 <!-- outline-end -->
