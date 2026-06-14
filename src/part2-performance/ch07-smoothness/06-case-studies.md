@@ -82,6 +82,7 @@ task9_state: reviewed
 task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
+last_task9_audit: "2026-06-14"
 ---
 # 案例集
 
