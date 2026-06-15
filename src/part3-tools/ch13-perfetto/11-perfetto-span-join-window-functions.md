@@ -1,5 +1,4 @@
 ---
-
 title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
 chapter: "13.11"
 section: "13.11"
@@ -30,12 +29,14 @@ related_chapters: ["13.10", "13.6", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/研究素材"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-15"
-task6_reviewed_date: "2026-06-15"
-pipeline_stage: task6_pending
+reviewed_date: "2026-06-16"
+task6_reviewed_date: "2026-06-16"
+last_task6_at: "2026-06-16T03:07:00+08:00"
+task6_review_notes: "2026-06-16 Task6 复审:pass-light-edit。无禁用词/高频词/AI套话命中。frontmatter 格式清理(删除空行)。L1/L2 全部通过,无B类问题。Task9 needs-rework 状态保持,不可自动晋升。"
+pipeline_stage: task9_pending
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -44,7 +45,6 @@ last_task9_at: "2026-06-16T00:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-16-00-deep-review.md"
 task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2。frame/cpufreq 查询残留错误警告、GC pause window 合并算法仍会产生重叠窗口。"
 task2b_state: fixed
-
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00
 ---
