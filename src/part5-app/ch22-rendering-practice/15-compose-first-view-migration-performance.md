@@ -60,6 +60,7 @@ last_task9_review_log: "logs/deep-review/2026-05-21-19-deep-review.md"
 task9_result: pass-tech-review
 task9_review_notes: "2026-05-21 task9 deep-review: 无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: 2026-06-06
+last_task6_audit: 2026-06-15
 ---
 
 # 22.15 Compose First 与 View/Compose 混合迁移性能边界
