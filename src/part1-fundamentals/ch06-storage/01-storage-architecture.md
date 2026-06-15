@@ -34,23 +34,23 @@ last_task6_audit: 2026-06-09
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: pending-review
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_result: fixed
 task2b_state: fixed
-task9_reviewed_date: "2026-06-03"
+task9_reviewed_date: "2026-06-15"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-03T02:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-03-02-deep-review.md"
+last_task9_at: "2026-06-15T17:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-15-17-deep-review.md"
 last_task9_audit: "2026-06-15"
 last_task9_audit_at: "2026-06-15T16:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-15-16-audit.md"
-task9_review_notes: "2026-06-15 Task9 闲时抽检：发现 P1 版本差异，Virtual A/B / VABC 小节仍按 dm-snapshot + super COW 统一模型描述，未区分 Android 11 / 12 / 13+ snapshot 与 snapuserd 边界；已写入 queue，回到 Task2B。"
+task9_review_notes: "2026-06-15 Task9 deep review：AUTO-FIX。复核上一轮 Virtual A/B 修复后，发现 Android 12 compressed snapshots 被写成已移除 dm-snapshot；已按官方文档改为 Android 12 过渡期（Android COW + snapuserd，但 merge 仍依赖 kernel COW / dm-snapshot）与 Android 13+ userspace merge 分界，回到 Task6 复审。"
 
 last_task2b_at: "2026-06-15T16:52:36+08:00"
-last_task9_autofix_at: "2026-06-02"
+last_task9_autofix_at: "2026-06-15"
 last_task6_at: "2026-06-15T17:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-15-17-review.md"
 task6_review_notes: "2026-06-15 17:10 Task6 revisiting-review（Task2B 修复后）：Virtual A/B 版本拆分（Android 11/12+/13+）写作质量良好，逻辑清晰；L1 小修 1 处（第一人称「我更建议」→「建议」）；outline 7/7 覆盖；无新增 L3/L4 回炉项。Task2B 已修复 Task9 P1（版本差异），送 Task9 复核。"
@@ -172,7 +172,7 @@ device-mapper 的工作基于三个概念：
 
 - **dm-linear**：线性映射，把一个连续的扇区范围映射到另一个设备的连续扇区。这是 Dynamic Partition 的基础——`system`、`vendor` 等分区是通过 dm-linear 从一个名为 `super` 的大物理分区中"切"出来的逻辑分区。
 - **dm-verity**：完整性校验，通过预先计算的哈希树（hash tree）验证只读分区（如 `system`）的数据没有被篡改。
-- **dm-snapshot**：快照设备，用于 Virtual A/B 升级，在升级过程中通过 Copy-on-Write（COW）设备记录变更。
+- **dm-snapshot / dm-user**：Virtual A/B 的快照层要按版本拆开。Android 11 使用 `dm-snapshot` / kernel COW；Android 12 compressed snapshots 引入 Android COW format 和 `snapuserd`，但仍需要转换到 kernel COW / `dm-snapshot`；Android 13+ userspace merge 才移除对 kernel COW 和 `dm-snapshot` 的依赖。
 - **dm-default-key**：元数据加密，对 `data` 分区进行块级加密。
 
 这些 dm 目标层层叠加，最终形成了 Android 的分区布局。后面要说明的，就是这些分区各自负责什么、怎么挂载、对性能有什么影响。
@@ -333,13 +333,13 @@ Dynamic Partition 通过 `super` 物理分区和 `dm-linear` 在运行时切出�
 
 Android 11 引入 Virtual A/B 的早期形态，差异记录在 `dm-snapshot` COW 设备上。COW 空间从 `super` 分区中分配，内核 snapshot 模块负责 redirect write——写入新数据前先把旧数据复制到 COW 设备，再将新数据写到目标位置，一次写入变成两次 I/O。
 
-### Android 12+：Android COW Format + snapuserd
+### Android 12：compressed snapshots 与 dm-snapshot 过渡期
 
-Android 12 起，Virtual A/B 转用 **Android COW format**（Android 自己的 COW 格式），不再依赖内核 `dm-snapshot`。COW 空间从 `super` 内分配改为主要落在 `/data`，由 `dm-user`（用户态 device mapper 接口）配合 `snapuserd` 守护进程处理压缩快照（compressed snapshots）。`snapuserd` 负责读取 COW 数据并以用户态响应读取——当系统需要读取旧版本数据时，`snapuserd` 判断该数据是否已被 COW 覆盖，未覆盖则直接读 base 分区。
+Android 12 起，Virtual A/B 可以启用 **compressed snapshots**。这一版引入 Android COW format 和 `snapuserd`，COW 空间主要落在 `/data`，`dm-user` 让用户态组件实现块设备读写。但 Android 12 还不是纯 userspace merge：Android COW 仍需要转换到 kernel COW format，snapshot merge 仍会用到 `dm-snapshot`。分析 Android 12 设备时，要同时看 `snapuserd`、`dm-user` 和 `dm-snapshot`。
 
 ### Android 13+：userspace merge
 
-Android 13 将 snapshot merge 完全移入 `snapuserd` 用户态，移除了对内核 `dm-snapshot` 和 kernel COW 的依赖。升级成功后，`snapuserd` 执行 userspace merge 将 COW 数据写回正式分区；升级失败时，丢弃 COW 区回退到旧版本，不需要额外还原操作。[已验证: AOSP 官方 Virtual A/B 文档, source.android.com/docs/core/ota/virtual_ab]
+Android 13 将 snapshot merge 移入 `snapuserd` 用户态，移除了对内核 `dm-snapshot` 和 kernel COW 的依赖。launching with Android 13 and higher 的设备默认启用 userspace merge；从旧版本升级到 Android 13+ 的设备需要用属性显式启用。升级成功后，`snapuserd` 执行 userspace merge 将 COW 数据写回正式分区；升级失败时，丢弃 COW 区回退到旧版本，不需要额外还原操作。[已验证: AOSP 官方 Virtual A/B 文档, source.android.com/docs/core/ota/virtual_ab; source.android.com/docs/core/ota/virtual_ab/implement]
 
 ```text
 Virtual A/B 存储模型演进：
@@ -347,26 +347,26 @@ Virtual A/B 存储模型演进：
 Android 11（kernel COW）：
   snapshot delta → dm-snapshot COW → super 内分配
 
-Android 12+（Android COW format）：
-  snapshot delta → /data（compressed）→ dm-user + snapuserd
+Android 12（compressed snapshots 过渡期）：
+  snapshot delta → /data（compressed Android COW）→ dm-user + snapuserd → kernel COW / dm-snapshot merge
 
 Android 13+（userspace merge）：
-  merge 由 snapuserd 用户态执行，移除 kernel COW 依赖
+  snapshot mount / merge 由 dm-user + snapuserd 执行，移除 kernel COW / dm-snapshot 依赖
 ```
 
-这次演进的实质是把 COW 空间从 `super` 分区解放出来，放到容量更充裕的 `/data` 分区。Android 12+ 的 COW 空间属于临时的 transient space——升级完成后可以被回收。升级期间，`/data` 上的 COW 写入会和用户 I/O 竞争；如果 `/data` 已经接近满载，性能影响会更明显。
+从 Android 12 compressed snapshots 开始，一个重要变化是 COW 空间从 `super` 分区压力中转向 `/data` transient space。升级完成后这部分空间可以被回收。升级期间，`/data` 上的 COW 写入会和用户 I/O 竞争；如果 `/data` 已经接近满载，性能影响会更明显。
 
 在 Perfetto Trace 中，OTA 升级期间的 Virtual A/B 活动有几个可观测信号，集中在三组进程：
 
 | 进程 | 角色 | Trace 特征 |
 | --- | --- | --- |
 | `update_engine` | 下载包、写 COW、触发 merge | 持有 `/data` COW 空间的写入流量；升级完成后停止 |
-| `snapuserd` | Android 12+ 的 COW 读写与 merge 执行 | 用户态 dm-user worker，持续占用 CPU 和 `/data` I/O；升级成功后 merge 阶段仍活跃 |
+| `snapuserd` | Android 12 compressed snapshots 的 COW 读写；Android 13+ 的 userspace merge 执行 | 用户态 dm-user worker，持续占用 CPU 和 `/data` I/O；Android 13+ merge 阶段仍活跃 |
 | 前台 App | 受影响方 | 主线程 `fsync`/`read` 延迟明显拉长，时间与 `snapuserd`/`update_engine` 活动对齐 |
 
 [图：Virtual A/B 后台 I/O 竞争的 Trace。标出 `update_engine`、`snapuserd` dm-user worker、以及前台 App 主线程被拉长的 `fsync`/`read`，同时展示 `/data` 上的稳定写入流量。]
 
-合并大多在后台完成，但存储空间紧张或后台写入密集时，`snapuserd` 和前台 App 争抢 `/data` 的 IOPS，会明显拉长前台 App 的 I/O 等待。
+Android 13+ userspace merge 大多在后台完成；Android 12 设备还要把 `dm-snapshot` merge 路径单独看。存储空间紧张或后台写入密集时，`snapuserd` 和前台 App 争抢 `/data` 的 IOPS，会明显拉长前台 App 的 I/O 等待。
 
 ## 存储寿命与写入放大
 
