@@ -6,7 +6,7 @@ section: "25.8"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
-last_verified_against: "Android Developers docs 2026-02/2026-03 + AOSP master code search"
+last_verified_against: "Android Developers docs 2026-02/2026-03 + AOSP android-16.0.0_r1 source anchors"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -26,11 +26,13 @@ sources:
   - type: official
     path: "https://developer.android.com/tools/bundletool"
   - type: aosp
-    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/content/pm/PackageInstaller.java"
+    path: "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/content/pm/PackageInstaller.java"
   - type: aosp
-    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
+    path: "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
   - type: aosp
-    path: "https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java"
+    path: "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java"
+  - type: aosp
+    path: "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/content/pm/parsing/ApkLiteParseUtils.java"
   - type: book-structure
     path: "Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md"
   - type: book-structure
@@ -43,12 +45,12 @@ sources:
     path: "Clippings/Android 性能优化 - 通过插件化来优化包体积（下）.md"
 tags: [app-bundle, aab, dynamic-feature, play-asset-delivery]
 related_chapters: ["25.6", "25.7", "12.1"]
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-last_task9_review_log: "logs/deep-review/2026-05-18-12-deep-review.md"
-last_task9_at: "2026-05-18T12:44:40+08:00"
-task9_result: pass-tech-review
+last_task9_review_log: "logs/deep-review/2026-06-15-22-audit.md"
+last_task9_at: "2026-06-15T22:23:00+08:00"
+task9_result: auto-fixed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
@@ -60,8 +62,12 @@ last_task6_review_log: "logs/review/2026-05-14-22-review.md"
 task6_review_notes: "2026-05-14 22:10 Task6：写作层小修 3 处后通过；无新增 L3/L4 回炉项；既有 Task9 P0/P1 队列保留，等待 Task2B。"
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-18"
-task9_review_notes: "2026-05-18 12:44 Task9 deep-review: pass-tech-review。P0/P1/P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"---
+task9_reviewed_date: "2026-06-15"
+task9_review_notes: "2026-05-18 12:44 Task9 deep-review: pass-tech-review。P0/P1/P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-15 22:23 Task9 idle audit auto-fix：AOSP 源码锚点从未固定 tag 改为 android-16.0.0_r1，补 `ApkLiteParseUtils.java` 锚点并修复 frontmatter 结束标记；无 P0/P1。"
+last_task9_audit: "2026-06-15"
+last_task9_autofix_at: "2026-06-15"
+
+---
 
 # App Bundle 与按需分发
 
@@ -122,7 +128,7 @@ bundletool get-size total \
 
 `build-apks` 复现 Google Play 的服务端拆包过程，`get-size total` 给出某台设备需要下载的 APK 组合大小。CI 里应保存几个代表性设备配置：主流 arm64 高密度设备、低密度设备、多语言设备、平板或折叠屏设备。只用 universal APK 做体积门禁，会把 AAB 分发收益全部抹掉。[已验证: 官方文档, developer.android.com/tools/bundletool]
 
-Android 平台侧接收 APK 组合，`.aab` 停在发布和拆包阶段。`PackageInstaller` 提供 `createSession()` / `openSession()` / `write()` / `commit()` 接口，安装会进入 `PackageInstallerSession.installNonStaged()` → Package Manager 的解析、split 校验（`ApkLiteParseUtils.composePackageLiteFromApks()`）、复制流程；缺少 required split 时返回 `INSTALL_FAILED_MISSING_SPLIT`。这些入口在 AOSP `PackageInstaller.java` 和 `PackageInstallerSession.java` 中。[已验证: AOSP master, frameworks/base/core/java/android/content/pm/PackageInstaller.java; frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java]
+Android 平台侧接收 APK 组合，`.aab` 停在发布和拆包阶段。`PackageInstaller` 提供 `createSession()` / `openSession()` / `write()` / `commit()` 接口，安装会进入 `PackageInstallerSession.installNonStaged()` → Package Manager 的解析、split 校验（`ApkLiteParseUtils.composePackageLiteFromApks()`）、复制流程；缺少 required split 时返回 `INSTALL_FAILED_MISSING_SPLIT`。这些入口在 AOSP `PackageInstaller.java` 和 `PackageInstallerSession.java` 中。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/pm/PackageInstaller.java; frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java; frameworks/base/core/java/android/content/pm/parsing/ApkLiteParseUtils.java]
 
 AAB 对包体积治理有两个边界。第一，AAB 不会替代 R8 和资源缩减；无用代码如果留在 base module，仍会进入所有用户的基础包。第二，AAB 不能自动判断业务功能冷热；模块边界、资源归属和下载时机仍由工程决定。详见 25.6、25.7 节。
 
