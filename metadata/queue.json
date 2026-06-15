@@ -969,12 +969,15 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-16T00:20:00+08:00",
-    "status": "pending",
+    "status": "completed",
     "task2b_lite_partial": {
       "fixed_at": "2026-06-16T01:35:00+08:00",
       "fixed_issue": "版本差异/源码边界: getTraceInputStream API 30/31 版本边界",
       "remaining_issues": 2
-    }
+    },
+    "completed_at": "2026-06-16T02:50:00+08:00",
+    "completed_by": "task2b-main",
+    "completed_note": "Task2B 回炉修复完成"
   },
   {
     "section": "13.11",
@@ -1005,6 +1008,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-16T00:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-16T02:50:00+08:00",
+    "completed_by": "task2b-main",
+    "completed_note": "Task2B 回炉修复完成"
   }
 ]
