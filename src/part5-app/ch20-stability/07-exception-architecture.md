@@ -56,7 +56,8 @@ last_task9_at: "2026-05-15T05:50:05+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-15-05-deep-review.md"
 task9_review_notes: "2026-05-15 Task9：needs-rework。P0 1：WebView renderer 进程模型误写为可安装 Crash handler 的 App 进程；P1 3：ApplicationExitInfo native tombstone API 边界、SafeMode launch marker/退出补偿链路、崩溃文件 fsync/rename 持久化边界。"
 
-task2b_result: fixed---
+task2b_result: fixed
+---
 
 # 异常处理架构设计
 

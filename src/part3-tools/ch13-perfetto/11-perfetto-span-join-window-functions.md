@@ -44,7 +44,8 @@ last_task9_review_log: logs/deep-review/2026-05-15-09-deep-review.md
 task9_review_notes: "2026-05-15 Task9 09: needs-rework。P0 1 / P1 1 / P2 1；帧 × CPU 频率统计未按 frame 裁剪 joined.dur，GC pause 示例可能违反 SPAN_JOIN 同分区不重叠约束。"
 task2b_state: fixed
 
-task2b_result: fixed---
+task2b_result: fixed
+---
 
 # 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
 

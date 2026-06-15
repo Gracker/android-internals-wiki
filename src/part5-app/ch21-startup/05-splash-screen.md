@@ -43,7 +43,8 @@ last_task6_review_log: "logs/review/2026-05-15-12-review.md"
 last_task6_at: "2026-05-15T12:11:00+08:00"
 last_task9_review_log: 'logs/deep-review/2026-05-15-11-deep-review.md'
 
-task2b_result: fixed---
+task2b_result: fixed
+---
 
 # Splash Screen 与感知启动速度
 
