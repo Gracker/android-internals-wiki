@@ -2,7 +2,7 @@
   "total": 426,
   "draft": 0,
   "ready-for-review": 78,
-  "finalized": 299,
+  "finalized": 300,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-12",
   "task9_reviewed_by": "openclaw-task9",
@@ -2448,8 +2448,8 @@
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
-  "ready_for_review": 82,
-  "last_updated": "2026-06-15T04:10:00+08:00",
+  "ready_for_review": 81,
+  "last_updated": "2026-06-15T13:16:24+08:00",
   "last_updated_by": "task6-draft-review",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
@@ -2480,7 +2480,7 @@
     "new_rework": false
   },
   "task9_last_review": "2026-06-12T18:20:00+08:00",
-  "ready_to_publish": 192,
+  "ready_to_publish": 193,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -5370,7 +5370,7 @@
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-17",
       "task9_state": "reviewed",
-      "task9_result": "pass-tech-review",
+      "task9_result": "auto-fixed",
       "last_task9_at": "2026-05-27T19:20:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-27-19-deep-review.md",
       "task2b_state": "fixed",
@@ -5381,7 +5381,7 @@
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
-      "last_task6_at": "2026-05-27T19:05:00+08:00",
+      "last_task6_at": "2026-06-15T13:16:24+08:00",
       "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
       "last_task2b_at": "2026-05-27T18:50:00+08:00",
       "last_task2b_by": "task2b-content-processing-rework",
@@ -7879,14 +7879,14 @@
   "last_task2a_at": "2026-06-04T22:04:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-06-14T03:05:00+08:00",
+  "last_task6_review": "2026-06-15T13:16:24+08:00",
   "last_task6_sections": [
     "14.10"
   ],
   "last_task6_reviewed_files": [
     "src/part2-performance/ch11-power/03-system-power-optimization.md"
   ],
-  "last_task6_at": "2026-06-14T03:05:00+08:00",
+  "last_task6_at": "2026-06-15T13:16:24+08:00",
   "last_task6_review_detail": {
     "reviewed_at": "2026-06-07T12:12:00+08:00",
     "reviewed_by": "openclaw-task6",
@@ -8536,7 +8536,7 @@
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
-      "last_task6_at": "2026-05-27T19:05:00+08:00",
+      "last_task6_at": "2026-06-15T13:16:24+08:00",
       "last_task6_review_log": "logs/review/2026-05-27-19-review.md",
       "last_task2b_at": "2026-05-27T18:50:00+08:00",
       "last_task2b_by": "task2b-content-processing-rework",
@@ -10832,7 +10832,7 @@
     }
   ],
   "last_task9_review_log": "logs/deep-review/2026-06-12-18-deep-review.md",
-  "last_task6_review_log": "logs/review/2026-06-14-03-review.md",
+  "last_task6_review_log": "logs/review/2026-06-15-13-review.md",
   "section_19_09": {
     "section": "19.09",
     "title": "Measure",
@@ -12276,7 +12276,7 @@
   "last_task2a_created_files": [
     "src/part5-app/ch22-rendering-practice/17-hardware-bitmap-rendernode.md"
   ],
-  "last_task6_reviewed_at": "2026-06-03T04:08:00+08:00",
+  "last_task6_reviewed_at": "2026-06-15T13:16:24+08:00",
   "task2b_completed": [
     {
       "section": "18.3",
@@ -14115,7 +14115,15 @@
     "25.14",
     "25.11",
     "26.13",
-    "1.3"
+    "1.3",
+    {
+      "section": "1.20",
+      "title": "App Archiving 机制与恢复性能",
+      "date": "2026-06-15",
+      "result": "pass-light-edit",
+      "auto_promoted": true,
+      "reason": "task6 pass + task9 auto-fixed + queue completed"
+    }
   ],
   "finalized_sections": [
     "11.3",
