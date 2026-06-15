@@ -38,33 +38,34 @@ sources:
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
 reviewed_at: "2026-05-11T19:05:00+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-05-28T03:32:12+08:00"
+task9_reviewed_date: "2026-06-16"
+last_task9_at: "2026-06-16T07:20:00+08:00"
 last_task2b_at: "2026-05-28T00:50:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。 | 2026-06-16 Task9 闲时抽检 auto-fix：将 Android common kernel wakeup source 参考锚点统一为 `kernel/common/kernel/power/wakelock.c` 与 `kernel/common/drivers/base/power/wakeup.c`；P0 0 / P1 0 / P2 1，回到 Task6 复审。"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-28-03-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-16-07-audit.md"
 status: finalized
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: "task6_pending"
 last_task6_at: "2026-05-28T03:16:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-03-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 1 处；无 L3/L4 回炉项，送 Task9 复核。"
 review_round: 6
-last_task9_autofix_at: "2026-05-28"
+last_task9_autofix_at: "2026-06-16"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: "2026-06-01"
+last_task9_audit: "2026-06-16"
 ---
 
 # 11.5 Wakelock 机制与功耗分析
@@ -276,7 +277,7 @@ alarmtimer      890              890              890              0            
 
 **Android 10 之前（旧版路径）：**
 
-`PowerManagerService` 直接通过 `libpower` 库向 `/sys/power/wake_lock` 写入 wakelock 名称，内核在 `kernel/power/wakelock.c` 中根据写入的字符串创建对应的 wakeup_source。`release()` 时向 `/sys/power/wake_unlock` 写入同一名称，内核注销对应的 wakeup_source。
+`PowerManagerService` 直接通过 `libpower` 库向 `/sys/power/wake_lock` 写入 wakelock 名称，内核在 `kernel/common/kernel/power/wakelock.c` 中根据写入的字符串创建对应的 wakeup_source。`release()` 时向 `/sys/power/wake_unlock` 写入同一名称，内核注销对应的 wakeup_source。
 
 **Android 10 起（现代路径）：**
 
@@ -853,8 +854,8 @@ ADPF 的适用范围包括游戏，也包括视频剪辑、AI 推理、后台批
 - `frameworks/base/core/java/android/os/WorkSource.java` — 功耗归因
 - `frameworks/base/core/java/android/app/AlarmManager.java` — `OnAlarmListener` 与 exact alarm 重载（Android 15+ 路径 `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java`）
 - `frameworks/base/services/core/java/com/android/server/AlarmManagerService.java` — Alarm 触发与 wakelock
-- `kernel/power/wakelock.c` — 内核 wakelock 实现（旧版）
-- `kernel/drivers/base/power/wakeup.c` — 内核 wakeup_source 实现（当前）
+- `kernel/common/kernel/power/wakelock.c` — Android common kernel wakelock 实现（旧版）
+- `kernel/common/drivers/base/power/wakeup.c` — Android common kernel wakeup_source 实现（当前）
 - `system/hardware/interfaces/suspend/1.0/default/SystemSuspend.cpp` — `SystemSuspend` 参考实现
 
 ### 官方文档
