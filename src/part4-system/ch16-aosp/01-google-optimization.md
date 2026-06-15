@@ -2,7 +2,7 @@
 title: "Google 官方的性能优化思路"
 section: "16.1"
 chapter: "16.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-15"
@@ -15,8 +15,8 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-15"
@@ -34,7 +34,7 @@ last_task2b_at: "2026-06-15T14:50:00+08:00"
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 last_task6_audit_log: "logs/review/2026-05-22-03-audit.md"
-last_task6_at: "2026-06-15T15:10:00+08:00"
+last_task6_at: "2026-06-15T16:13:21+08:00"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/release-notes"
@@ -91,7 +91,7 @@ Google 对性能的判断,基本可以拆成两层。
 AutoFDO 就是典型例子。它优化的是内核和系统 native binary 的机器码布局与分支预测,不要求 App 配合,但会影响冷启动、Binder 调用、系统服务执行这些底层热点路径。这个方向的细节可以继续看 §1.12《AutoFDO 反馈导向编译优化》和本章的 §16.4《Android 17 + Kernel 6.12 系统级性能优化》。Google 在系统层做的其他长期工作也属于这一类,比如 ART 编译与 GC 的持续演进、Binder 调度与线程池模型的调整、SurfaceFlinger 合成与 Buffer 管线重构。
 
 ### 用户感知层(User-Perceived Performance)
-第二层是用户能直接感知到的性能。Google 一直把启动是否拖、滑动是否卡、点击是否迟、ANR 是否出现放在指标前面。CPU 利用率和函数耗时承担证据角色,最终仍要回到用户动作。
+第二层是用户能直接感知到的性能。Google 一直把启动是否拖、滑动是否卡、点击是否迟、ANR 是否出现放在指标前面。CPU 利用率和函数耗时只作为参考,最终仍要回到用户动作。
 
 这层思路决定了 Google 的工具形态。Android Vitals 追踪 ANR 率、崩溃率、卡顿率这类用户感知指标,而非只看某个线程的平均 CPU 占用。Macrobenchmark 的目标是复现冷启动、滚动、页面切换这些用户动作,然后确认优化前后用户能否感到差别。
 
@@ -129,11 +129,11 @@ Mainline 的最大价值在于把"系统能力更新如何送达设备"做成了
 
 这里最容易写错的地方,是把"性能特性本身"与"特性怎么交付"混成一条线。至少要把下面三条路径分开看。
 
-- Mainline / APEX / APK 模块更新。这是 ART、DNS Resolver、Permission Controller 这类系统模块的交付方式。像 ART runtime 的能力演进,才可能走这条路。
+- Mainline / APEX / APK 模块更新。这是 ART、DNS Resolver、Permission Controller 这类系统模块的交付方式。像 ART 运行时的能力演进,才可能走这条路。
 - GKI kernel 分支与设备 OTA。AutoFDO 属于内核与系统 native binary 的构建优化,落在 `android15-6.6`、`android16-6.12` 这类内核分支和对应构建产物里,最终通过厂商 kernel OTA 或完整 OTA 到达设备,不属于 ART Mainline。
 - Google Play 安装期编译。Baseline Profiles 由 App 自己随 APK/AAB 打包,Cloud Profiles 由 Google Play 聚合用户行为后参与安装或后台编译。这条流程作用在 App 的安装与编译阶段,归属 Play 编译路径。
 
-这样再回头看 Android 17 的 runtime 变化,很多表述就会自然变准。比如 generational GC 是 Android 17 release notes 里写出的 runtime 能力变化,但不能因此把它直接写成"Mainline 推送的特性";它是否回推到旧设备,要看对应 ART 模块版本、设备集成和 Google Play system update 的实际覆盖范围。Cloud Profiles 也是一样,它服务于 Play 安装期编译,不属于 ART Mainline 本身。
+这样再回头看 Android 17 的运行时变化,很多表述就会自然变准。比如 generational GC 是 Android 17 release notes 里写出的 运行时能力变化,但不能因此把它直接写成"Mainline 推送的特性";它是否回推到旧设备,要看对应 ART 模块版本、设备集成和 Google Play system update 的实际覆盖范围。Cloud Profiles 也是一样,它服务于 Play 安装期编译,不属于 ART Mainline 本身。
 
 ## ART 的持续优化方向
 ART 这些年的优化,最值得我们盯住的是三条线,编译策略、GC、构建期工具链。

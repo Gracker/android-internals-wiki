@@ -67,7 +67,7 @@ finalized_date: "2026-06-15"
 finalized_by: "openclaw-task9-auto-promote"
 auto_promoted: true
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
+last_deepseek_cn_review_at: 2026-06-15
 last_task9_autofix_at: "2026-06-15"
 ---
 # 特殊场景的 ANR
@@ -88,8 +88,6 @@ last_task9_autofix_at: "2026-06-15"
 第二，**往往涉及多个因素叠加**。一个 SharedPreferences apply() 引起的 ANR，背后可能是磁盘 I/O 慢、系统负载高、加上 Activity 切换时机三者的综合作用。
 
 第三，**在 Trace 中的表现比较隐蔽**。需要知道该看哪里——CPU 全局利用率、D 状态线程、Binder 调用的对端。
-
-[已验证: 来源见 综合分析 AOSP 源码与 Perfetto 实践经验] [已验证: AOSP android-14.0.0_r1]
 
 ## 系统负载高导致的 ANR
 
@@ -120,7 +118,7 @@ CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比�
 
 在 Perfetto 中，这类问题的特征是主线程在 ANR 时间窗内有 `__refrigerator` 或 `D (frozen)` 状态段，说明进程当时被系统冻结了。
 
-**Android 16+ 的变化**：Android 16 的 `BroadcastQueueImpl` 在调度 receiver 前会调用 `unfreezeTemporarily(... START_RECEIVER)` 临时解冻目标进程，广播 ANR 计时使用 `BroadcastAnrTimer`（`AnrTimer.Args` 配置 `extend(true)` 和 `freeze(true)`），`extend(true)` 表示可按 CPU delay 做一次软超时延长。广播/回调调度对 freezer 更敏感——投递前先解冻，并可基于 CPU starvation 延长超时。排查广播 ANR 时仍要看 freezer/unfreeze 事件、binder callback 是否在冻结期积压、以及具体 ANR 类型。这个结论只适用于广播 ANR 路径。Input、Service、ContentProvider 等场景的 freezer 处理逻辑各自独立，排查时需要分别确认对应路径的行为。
+**Android 16+ 的变化**：Android 16 的 `BroadcastQueueImpl` 在调度 receiver 前会调用 `unfreezeTemporarily(... START_RECEIVER)` 临时解冻目标进程，广播 ANR 计时使用 `BroadcastAnrTimer`（`AnrTimer.Args` 配置 `extend(true)` 和 `freeze(true)`），`extend(true)` 表示可按 CPU delay 做一次软超时延长。广播和回调调度对 freezer 更敏感：投递前先解冻，并且可以用 CPU starvation 延长超时。排查广播 ANR 时，看 freezer/unfreeze 事件、binder callback 在冻结期是否积压、以及具体 ANR 类型。注意这个结论只适用于广播 ANR 路径。Input、Service、ContentProvider 等场景的 freezer 处理逻辑各自独立，排查时需要分别确认对应路径的行为。
 
 ### 在 Perfetto 中怎么分析
 
@@ -150,16 +148,13 @@ AOSP 会对每个 receiver 单独计时，不存在“前面排队太久，后�
 
 在 Perfetto 中，广播风暴的典型表现是：system_server 的 Binder 线程中看到大量连续的 `broadcastIntent` 调用；多个 App 进程几乎同时出现主线程被阻塞；ANR traces 中多个 App 的主线程都停在 `ActivityThread.handleReceiver()`。
 
-[已验证: 来源见 AOSP ActivityManagerService 广播分发机制] [已验证: AOSP android-14.0.0_r1]
-
-
 ### 异步广播的优先级反转陷阱
 
 Android 14+ 引入了 Modern Broadcast Queue（`BroadcastQueueModernImpl` + `BroadcastProcessQueue`，Android 16 侧为 `BroadcastQueueImpl`），将广播按目标进程组织成队列，解决了旧模型中串行分发导致的"队头阻塞"问题。这一改动发生在 system_server 侧——system_server 按进程维度排队与调度广播投递，不再让同一个进程的多个 receiver 互相阻塞。
 
 App 侧 `onReceive()` 的线程模型没有变。Manifest 注册的 receiver 仍由 `IApplicationThread.scheduleReceiver()` 投递到 `ActivityThread.H.RECEIVER`，再在 `ActivityThread.handleReceiver()` 中直接调用 `receiver.onReceive(...)`——跑在主线程上。动态注册 receiver 默认也是注册线程或主线程 Handler，除非调用方显式传入其他 Handler。framework 没有把 `onReceive()` 投递到进程内部的线程池。
 
-如果 trace 里看到 BG Thread 池的 Runnable 执行了广播相关逻辑，应归因到 App 自己的 `goAsync()` / executor / SDK 内部线程池，而不是 framework 的 ModernBroadcastQueue。
+trace 里如果看到后台线程池执行了广播相关逻辑，根因是 App 自己的 `goAsync()`、executor 或 SDK 内部线程池，不是 framework 的 ModernBroadcastQueue。
 
 排查 Modern Broadcast Queue 相关问题时，Perfetto 中要看两个层面：system_server 侧按进程排队的投递节奏（`BroadcastQueueModernImpl` / `BroadcastQueueImpl` 的调度 slice），以及目标 App 主线程 `handleReceiver()` 的执行耗时。整机负载高时，ANR 的根因可能是主线程被其他工作占满，也可能是 system_server 调度延迟导致投递本身推后——两种情况在 trace 里表现不同。
 
@@ -182,8 +177,6 @@ ContentProvider 有一个容易被忽视的特性：**它在 `Application.onCrea
 ### Jetpack App Startup 的解决方案
 
 Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvider 统一管理所有 SDK 的初始化，减少 ContentProvider 数量，同时支持按依赖顺序和懒加载初始化。（关于 ContentProvider 初始化的完整时序分析，参见 §1.10。）
-
-[已验证: 来源见 AOSP ActivityThread.handleBindApplication()] [已验证: AOSP android-14.0.0_r1]
 
 ## SharedPreferences apply() 导致的 ANR
 
@@ -241,8 +234,6 @@ public void apply() {
 
 短期缓解方案：减少 `apply()` 调用频率，把多次修改合并成一次；对必须立刻落盘的状态单独安排时机；避开广播、服务收尾和其他容易触发 `QueuedWork.waitToFinish()` 的边界。
 
-[已验证: 来源见 AOSP SharedPreferencesImpl.java + QueuedWork.java + ActivityThread.java] [已验证: AOSP android-14.0.0_r1]
-
 ## 多进程场景的 Binder 死锁 ANR
 
 ### Binder 死锁的经典模型
@@ -262,8 +253,6 @@ public void apply() {
 ### 预防和解决方案
 
 核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 15 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
-
-[已验证: AOSP Binder 驱动机制, android-14.0.0_r1]
 
 ## 低内存触发频繁 GC 导致的 ANR
 
@@ -305,8 +294,6 @@ Concurrent Copying 仍然包含短暂停顿，例如暂停线程处理 roots、�
 ### 与 §4.3 的关系
 
 这一节讨论的 GC 机制在 §4.3（ART 虚拟机内存管理）中有完整的原理分析。这里聚焦的是 GC 在极端情况下如何成为 ANR 的间接推手——问题本质不在 GC 本身，而在于 App 的内存抖动或系统内存压力导致 GC 频率失控。
-
-[已验证: 来源见 ART GC 机制分析 + AOSP art/runtime/gc/heap.cc] [已验证: AOSP android-14.0.0_r1 + android-15.0.0_r1] [待验证: Android 17 CMC GC 在极端内存压力下的暂停时间是否有进一步优化]
 
 ## 前台服务的启动超时与后台启动限制
 
@@ -397,8 +384,6 @@ public void beginTransactionNonExclusive() {
 这段代码只能说明 Android framework 层事务模式的入口，不能拿来替代 SQLite WAL 锁模型。实践里更稳的策略是：主线程不执行数据库写事务；大事务拆小；Room 使用异步 DAO；跨进程访问通过 ContentProvider 统一调度；批量写入场景评估 `beginTransactionNonExclusive()` 和 `yieldIfContendedSafely()`，并把 checkpoint 时机放到后台窗口。
 
 多进程共用数据库时，还要监控 WAL 文件大小、checkpoint 耗时、SQLite busy / locked 次数、连接池等待时间。只有把这些信号放到同一个 ANR 时间窗里检查，才能区分“业务主线程误用数据库”和“后台写入 / checkpoint 把系统拖慢”。
-
-[已验证: 来源见 AOSP SQLiteDatabase.java / SQLiteConnectionPool.java + SQLite WAL 文档] [已验证: AOSP android-14.0.0_r1 + SQLite 官方文档 wal.html / fileformat.html#walformat]
 
 ## 在 Perfetto / 工具中的表现
 
