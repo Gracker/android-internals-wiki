@@ -446,3 +446,13 @@ private static void dropboxViolationAsync(final int penaltyMask, final Violation
 > [适用版本: Android 9 (API 28) - Android 17 (API 37)]
 > [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/StrictMode.java]
 > [已验证: AOSP android-17.0.0_r1, libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java]
+
+
+## 参考资料
+
+### Android 14–17 StrictMode VmPolicy 演进与跨 Binder 违规传播机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-android17-strictmode-vmpolicy-evolution-cross-binder-propagation.md
+- 类型：DeepResearch 调研结果
+- 摘要：StrictMode VmPolicy 从 Android 14 的 10 个 DETECT_VM_* 比特扩展到 Android 17 的 15 个，新增 credential-protected-while-locked、incorrect-context-use、BAL-aborted 等。跨 Binder 违规传播靠 gatheredViolations ThreadLocal + Parcel.writeNoException() 反向序列化；BlockGuard.Policy 通过 getPolicyMask() 把策略位图打包进 Binder native thread-local。定位 14 个关键函数与 6 个集成锚点。
+- 注入时间：2026-06-15
+- 价值：补齐 VmPolicy 从 API 28 到 API 37 的完整演进与跨进程违规传播源码级证据链

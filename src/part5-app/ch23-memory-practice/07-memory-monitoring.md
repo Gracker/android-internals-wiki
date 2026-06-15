@@ -406,3 +406,66 @@ Android 10 到 14 的线上 heap dump 仍多依赖 `Debug.dumpHprofData()`、专
 ## 延伸阅读
 
 - [Android 14 高精度内存跟踪 API 与泄漏检测增强机制](DeepResearch/2026-06-12-android14-memory-tracking-apis-leak-detection.md) — 分析 Android 14 新增的 setWatchHeapLimit PSS 阈值自动 dump Hprof 机制、ApplicationExitInfo REASON_FREEZER 等退出原因细分、bionic M_PURGE_ALL 激进回收指令，以及 App 端内存泄漏检测从 Debug API 向系统级委托的迁移路径。
+
+
+<!-- AIW-源码调研-2026-06-15 -->
+
+## 工具实现层补充：dumpsys meminfo 与 heapprofd 的源码骨架
+
+本节上文写"内存分析工具详见 10.1 节"，并已在 23.3 节进一步指向 14.3 节。在 14.3 节实体落盘之前，把这两条核心工具的源码锚点补在这里，方便做线上 dump 时直接定位。
+
+### dumpsys meminfo 调用链（自顶向下）
+
+```
+shell → dumpsys meminfo <pkg>
+  → ServiceManager.getService("activity") → IActivityManager
+  → Binder transact → ActivityManagerService.handleDumpMemInfo()
+    → ActivityManagerService.dumpMemInfo(PrintWriter, args, ...)
+      → for each pid: ActivityManagerService.getProcessMemoryInfoNative(intArrayOf(pid))
+        → Debug.getMemoryInfo() JNI → android_os_Debug.cpp::native_get_process_memory_info()
+          → libmeminfo::ProcMemInfo::SmapsOrRollup(pid)
+            // kernel 4.14+ 走 smaps_rollup（一次 syscall 拿到进程级 PSS / Private_Clean / Private_Dirty / SwapPss 汇总）
+            // 老设备 fallback：逐 VMA 读 /proc/<pid>/smaps
+              → for each VMA: libmeminfo::ClassifyVma(vma_name, vma_flags)
+                // [heap] / [anon:libc_malloc] / [anon:scudo:*] / [anon:GWP-ASan*] → Native Heap
+                // [stack] → Stack
+                // .so / .jar / .apk / .dex / .vdex / .odex → Code
+                // [anon:dmabuf*] / "dmabuf_*" → Graphics
+                // [vdso] / [vvar] / 其他 [anon:*] → Other
+          → 汇总 → androidprocheaps.cpp::PrintProcessMemoryInfo()
+          → 回写 Debug.MemoryInfo (Parcelable): dalvikPss / nativePss / graphicsPss / codePss / stackPss / otherPss
+        → dumpMemInfo(PrintWriter, MemoryInfo[]) → 文本输出
+```
+
+关键源码锚点：AOSP android-16.0.0_r1 的 `system/memory/libmeminfo/androidprocheaps.cpp`、`system/memory/libmeminfo/procmeminfo.cpp`、`frameworks/base/core/jni/android_os_Debug.cpp`、`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`。`smaps_rollup` 路径在 kernel 4.14+ 设备上约 1-5 ms 完成；老设备逐 VMA 路径约 50-300 ms（依映射数量）。[已验证: AOSP android-16.0.0_r1 锚点，与本报告 23.3 / 4.1 章节一致]
+
+### heapprofd 调用链（与 dumpsys meminfo 完全独立）
+
+```
+Perfetto trace config: data_source.name = "android.java_hprof" 或 "android.heapprofd"
+  → JavaHprofProducer 或 HeapprofdProducer 接入 traced
+  → App 进程内嵌 libheapprofd.so（client lib）
+    → client_api_factory_android.cc::ConstructClient()
+      → Client::ConnectToHeapprofd(kHeapprofdSocketFile) → /dev/socket/heapprofd abstract unix socket
+  → 一次 malloc → bionic MallocDispatch → heapprofd_malloc
+    → wrap_malloc → Sampler::SampleSize → 命中采样
+      → unwindstack 取调用栈 → 写 shared_ring_buffer
+  → central heapprofd 守护进程从 ring buffer 读
+    → 写 heap_profile_packet 到 perfetto producer
+    → traced → TraceBuffer → /data/misc/perfetto-traces/...
+```
+
+关键源码锚点：Perfetto `src/profiling/memory/heapprofd.cc`（守护进程入口）、`malloc_interceptor_bionic_hooks.cc`（bionic hook 注册）、`sampler.h`（Poisson 采样算法）、`java_hprof_producer.cc`（Java HPROF 信号触发）。守护进程独立走 init.rc + abstract unix socket，**不依赖 dumpsys / AMS / binder**，这就是它能在不重启 app 的情况下持续 profile 多个进程的基础。`JavaHprofProducer` 与 `HeapprofdProducer` 是两个独立 producer，各连一次 traced（heapprofd.cc TODO 标了"未来合成一个"），所以 Java HPROF 与 native heapprofd 的会话在 Perfetto trace 里属于两条独立 data source stream。[已验证: 一手, 本地 Perfetto main 分支]
+
+### 工具选型对照表（按问题类型）
+
+| 排查场景 | 首选工具 | 入口 | 触发开销 | 备注 |
+|---|---|---|---|---|
+| 单进程 PSS / RSS / Private 总量 | `dumpsys meminfo` | shell 命令 | 1-300 ms | 一次性的，不持续采样 |
+| 进程分类趋势（fg/bg/cached/frozen/idle） | `dumpsys procstats --hours N` | shell 命令 | 30-80 ms | 读 `/data/system/procstats/`，无运行时开销 |
+| Java 对象分布 / 泄漏 | Perfetto `android.java_hprof` data source（SIGRTMIN+6） | Perfetto UI | dump 期间 200-800 ms 全线程挂起 | 需 `android:profileable` 或 debuggable |
+| native 分配热点 | Perfetto `android.heapprofd` data source（SIGRTMIN+4） | Perfetto UI | malloc 路径 +50-100 ns；总 CPU ~0.5% | bionic dispatch 路径，无 LD_PRELOAD |
+| 高频持续指标采集 | 自研 PSS/RSS 探针 | App 端 `Debug.MemoryInfo` | 单次 ~5 ms | Android Q 起 `getProcessMemoryInfo()` 平台限速 |
+| Hprof 自动 dump（API 37） | `ProfilingTrigger.TRIGGER_TYPE_OOM/ANOMALY` | ProfilingManager | 同 Java HPROF | API 37 落地（详见 26.12 / 23.10） |
+
+[调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §1-§6]

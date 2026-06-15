@@ -18,7 +18,7 @@ material_paths:
   - "developer.android.com/about/versions/15/features"
   - "cs.android.com frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java"
   - "cs.android.com frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java"
-task6_reviewed_date: "2026-05-27"
+task6_reviewed_date: "2026-06-15"
 task6_l1_l2_fixes: 17
 task6_l3_l4_issues: 0
 sources:
@@ -36,7 +36,7 @@ sources:
     path: "https://android-developers.googleblog.com/2024/04/the-first-beta-of-android-15.html#app-archiving"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-06-15"
@@ -52,12 +52,12 @@ p1: 0
 p2: 0
 task9_review_notes: "2026-06-15 Task9 闲时抽检：needs-rework。发现 AOSP main/GitHub Mirror 锚点推断 Android 17 覆盖、Android 15/16 Launcher 恢复调用者范围差异未进入正文版本口径；已写 queue.json（P1:2）。此前记录：2026-05-27 Task9 pass-tech-review，复核 PackageInstaller/PackageArchiver/ActivityStarter 主链路。"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-27"
-task6_state: revisiting
+reviewed_date: "2026-06-15"
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: "2026-05-27T19:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-19-review.md"
-task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。"
+last_task6_at: "2026-06-15T12:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-15-12-review.md"
+task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。 2026-06-15 Task6 revisiting→reviewed：pass-light-edit。L1/L2 无新问题（经多轮 review 已清洁）；L3/L4 无写作质量回炉项。Task9 闲时抽检 needs-rework（P1:2 技术口径），待 Task9 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
 last_task9_audit: "2026-06-15"

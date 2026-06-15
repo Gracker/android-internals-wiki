@@ -223,3 +223,34 @@ Scudo 负责服务 Android 默认 native heap 分配并提供堆安全缓解；h
 - [已验证: 官方文档, developer.android.com/ndk/guides/gwp-asan]
 - [已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
 - [已验证: AOSP MTE 文档, source.android.com/docs/security/test/memory-safety/arm-mte]
+
+
+<!-- AIW-源码调研-2026-06-15 -->
+
+## 工具实现层补充：Scudo 在 dumpsys meminfo 与 heapprofd 中的可见形态
+
+本节上文已说明 Scudo 通过 `[anon:scudo:primary]` / `[anon:scudo:secondary]` VMA 名留下可识别痕迹。补一组实现层细节方便排查时直接定位。
+
+### Scudo VMA 在 libmeminfo 中的分类
+
+**源码位置**：AOSP `system/memory/libmeminfo/androidprocheaps.cpp`（android-16.0.0_r1 锚点，AIW §23.3 已引用）。
+
+`ClassifyVma()` 把 `[anon:scudo:*]` 全部归入 Native Heap 分类，与 `[heap]` / `[anon:libc_malloc]` / `[anon:GWP-ASan*]` 同级。在 `dumpsys meminfo` 输出里它们共同计入 `Native Heap` 行的 PSS / Private Dirty，不区分 allocator。区分 allocator 需要看 smaps 行尾的 VMA 名，例如：
+
+```
+[已验证: AOSP android-16.0.0_r1, system/memory/libmeminfo/androidprocheaps.cpp]
+564dca440000-564dca660000 rw-p 00000000 00:00 0
+Name:   [anon:scudo:primary]
+```
+
+### Scudo 在 heapprofd 中的采样
+
+**源码位置**：Perfetto `src/profiling/memory/malloc_interceptor_bionic_hooks.cc`（本地 main 分支）。
+
+Scudo 作为 bionic 默认 allocator（Android 11+），在 `heapprofd_initialize` 接收的 `MallocDispatch*` 中本身就是 `scudo_malloc/free/calloc` 等。当 heapprofd 采样开启后，`heapprofd_malloc(size)` → `wrap_malloc` → Poisson 采样 → 命中时取调用栈。这意味着 **heapprofd 能直接抓到 Scudo 分配热点**，不需要替换 allocator 或重新编译 app。线上选 4096 字节间隔即可同时覆盖 Scudo 与旧 libc malloc 的分配点。[已验证: 一手, 本地 Perfetto main 分支]
+
+### Scudo 与 GWP-ASan 的区分
+
+GWP-ASan 的 VMA 名是 `[anon:GWP-ASan*]`（前缀可配），libmeminfo 同样归入 Native Heap，但在 heapprofd 火焰图中一般采样率低（每 128 次分配抽样一次）；Scudo 自己的抽样（`gwp_asan_sample_rate` 默认 250）与 heapprofd 采样是两个独立机制，**不要混淆**——一个触发崩溃 sample（带 backtrace + tombstone），一个触发 perf sample（写 ring buffer）。[已验证: 一手, 本地 Perfetto main 分支, sampler.h + malloc_interceptor_bionic_hooks.cc]
+
+[调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §2, §3, §5]

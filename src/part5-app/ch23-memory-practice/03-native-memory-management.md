@@ -252,3 +252,44 @@ Scudo 的设计目标是在 native heap 层面更好地检测越界、use-after-
 - [已验证: AOSP android-16.0.0_r1, bionic/libc/malloc_debug/README.md]
 - [已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp]
 - [已验证: AOSP android-16.0.0_r1, system/memory/libmeminfo/androidprocheaps.cpp]
+
+
+<!-- AIW-源码调研-2026-06-15 -->
+
+## 工具实现层源码补充
+
+本章前文引用"工具细节详见 14.3 节"。在 14.3 节实体落盘之前，本节先把 `heapprofd` 与 `dumpsys meminfo` 的源码骨架落地，方便排查时直接定位文件而不是停留在概念。
+
+### heapprofd 是常驻中央守护进程（不是按需进程）
+
+**源码位置**：Perfetto `src/profiling/memory/main.cc`（21 行 wrapper）+ `heapprofd.cc::StartCentralHeapprofd()`（行 50-83）。
+
+入口是 init.rc 拉起的常驻守护进程，通过 `kHeapprofdSocketEnvVar` 环境变量继承 init 阶段传入的 unix socket fd，随后用 `base::UnixSocket::Listen()` 监听来自各 app 进程内嵌 client lib（`client_api_factory_android.cc::ConstructClient()`）的连接请求。守护进程注册 `SIGUSR1` handler（行 73-78），在 userdebug 设备上可以用 `kill -SIGUSR1 $(pidof heapprofd)` 触发 `producer.DumpAll()`，对所有活跃 data source 做全量 dump。[已验证: 一手, 本地 Perfetto main 分支, src/profiling/memory/heapprofd.cc 行 50-83]
+
+### native 分配拦截走 bionic MallocDispatch，不是 LD_PRELOAD
+
+**源码位置**：Perfetto `src/profiling/memory/malloc_interceptor_bionic_hooks.cc`。
+
+`heapprofd_initialize(const MallocDispatch*, bool*, const char*)`（行 142-149）接收 bionic 传入的 `MallocDispatch*`（Android 7.0 / API 24 起 bionic 提供的官方 hook 表），把 `heapprofd_malloc/free/calloc/realloc/memalign/aligned_alloc/malloc_usable_size` 等注册到 bionic dispatch 层。这套接口在 `heapprofd_client_api.map.txt` 中以 `HEAPPROFD_API_S` version script 暴露给 `systemapi`，核心入口 `AHeapProfile_registerHeap` 把 heap 挂到 libperfetto 的中央 bookkeeping；外部 module 拿不到 `AHeapProfile_initSession`（PRIVATE 段）。bionic 保证 `android_mallopt(M_RESET_HOOKS)` 和 `heapprofd_initialize` 互斥，所以"profile-on / profile-off"切换不会出现双 hook。[已验证: 一手, 本地 Perfetto main 分支, src/profiling/memory/malloc_interceptor_bionic_hooks.cc 行 76-156]
+
+`heapprofd_get_malloc_leak_info` / `heapprofd_malloc_backtrace(void*, frames[], count)` 是 LeakCanary、native leak SDK 的底层接口——遇到 native 泄漏要查"指针回溯栈"时，可以直接定位到这里。
+
+### Java HPROF 触发信号 SIGRTMIN+6，native heapprofd 触发信号 SIGRTMIN+4，两路独立
+
+**源码位置**：Perfetto `src/profiling/memory/java_hprof_producer.cc`（行 32）+ `heapprofd_producer.cc`（行 71）。
+
+`kJavaHeapprofdSignal = __SIGRTMIN + 6`、`kProfilingSignal = __SIGRTMIN + 4`，二者各自注册独立的 sigaction，互不冲突。Java HPROF 用 `sigqueue(pid, kJavaHeapprofdSignal, signal_value)` 投递，`signal_value.sival_int = tracing_session_id % INT32_MAX`，让 ART 端的 SIGRTMIN+6 handler 能识别归属会话。`JavaHprofProducer::DataSource::SendSignal()`（行 53-93）在发信号前还会先 `ReadStatus(pid)` + `GetUids()` + `CanProfile(target_installed_by)`，做 `android:profileable` / debuggable 检查——这是为什么生产构建下大部分 app 用 `am dumpheap` 仍然能拿到 Hprof，但 Perfetto HPROF data source 抓不到。[已验证: 一手, 本地 Perfetto main 分支, src/profiling/memory/java_hprof_producer.cc 行 30-100]
+
+### Poisson 采样（Chromium-style）
+
+**源码位置**：Perfetto `src/profiling/memory/sampler.h`（80+ 行）+ `sampler.cc`（28 行）。
+
+`Sampler::SampleSize(alloc_sz)` 用 `std::exponential_distribution<double> dist(sampling_rate_)` 抽取"下次采样间隔字节数"，分配按字节累减 `interval_to_next_sample_`，归零则累计 `num_samples++`。`alloc_sz >= sampling_interval` 时直接整笔采样，保证大对象不漏。算法来自 `go/chrome-shp`（Chromium Sampling Heap Profiler），与 Android Studio Profiler 的"按分配数采样"最大的差异：**采样以字节为单位，不是以分配为单位**。`sampling_interval = 4096` 字节时，每 4096 字节平均采样 1 次，单次 8 KB 分配有 50% 概率被采样到 2 次，1 MB 分配会被采样到 250 次左右。线上选 4096 字节间隔，覆盖率约 0.024%，开销 ~0.5% CPU；不建议 < 512 字节，CPU 开销 > 5%。[已验证: 一手, 本地 Perfetto main 分支, src/profiling/memory/sampler.h 行 30-80]
+
+### dumpsys meminfo 的 VMA 分类全部在 libmeminfo，不在 AMS
+
+`adb shell dumpsys meminfo` 的分类（Native Heap / Code / Stack / Graphics / Other）不是在 `ActivityManagerService` 里算的，而是 libmeminfo 的活。**源码位置**：AOSP `system/memory/libmeminfo/androidprocheaps.cpp`（VMA 名 → 分类）+ `system/memory/libmeminfo/procmeminfo.cpp`（`SmapsOrRollup()` 入口，kernel 4.14+ 走 `smaps_rollup`，否则逐 VMA 读 smaps fallback）+ `frameworks/base/core/jni/android_os_Debug.cpp`（JNI 把分类结果塞进 `Debug.MemoryInfo` Parcelable）+ `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java::dumpMemInfo()`（把 Parcelable 序列化成 dumpsys 文本）。
+
+排查 smaps 看到 `[anon:scudo:*]` / `[anon:libc_malloc]` / `[anon:GWP-ASan*]` 等 VMA 名时，直接对应到 libmeminfo 分类即可。kernel 5.10+ 会把 dma-buf 显式标记成 `[anon:dmabuf*]`，归到 Graphics 分类——这是 23.2 节 DMA-BUF 在 meminfo 中可见的前提。
+
+[调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §1-§5]
