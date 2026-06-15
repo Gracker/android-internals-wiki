@@ -19,23 +19,23 @@ sources:
   - type: official
     path: "developer.android.com/topic/performance"
   - type: official
-    path: "developer.android.com/topic/performance/vitals/anr"
+    path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
   - type: official
     path: "perfetto.dev/docs/data-sources/frametimeline"
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 last_task6_audit: "2026-05-21"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
-last_task9_at: "2026-05-28T18:28:00+08:00"
-task9_reviewed_date: "2026-05-28"
+task9_result: auto-fixed
+last_task9_at: "2026-06-16T04:50:00+08:00"
+task9_reviewed_date: "2026-06-16"
 task9_reviewed_by: openclaw-task9
 task2b_state: "fixed"
 task2b_result: fixed-lite
@@ -46,8 +46,8 @@ last_task2b_at: "2026-04-27T14:50:00+08:00"
 last_task2b_lite_at: "2026-05-28"
 finalized_date: "2026-05-28"
 finalized_by: openclaw-task9
-last_task9_audit: "2026-05-22"
-last_task9_audit_log: "logs/deep-review/2026-05-22-20-audit.md"
+last_task9_audit: "2026-06-16"
+last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
 last_task6_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_by: "openclaw-task6"
@@ -55,11 +55,12 @@ last_task6_review_log: "logs/review/2026-05-28-18-review.md"
 task6_l1_l2_fixes: 8
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
-last_task9_review_log: "logs/deep-review/2026-05-28-18-deep-review.md"
-task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 FGS timeout 版本边界、ANR 阈值、Perfetto scheduling/FrameTimeline、SF commit/composite；未发现阻断问题，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-16-04-audit.md"
+task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 FGS timeout 版本边界、ANR 阈值、Perfetto scheduling/FrameTimeline、SF commit/composite；未发现阻断问题，自动晋升 finalized。 | 2026-06-16 04 Task9 idle audit auto-fix: 修正失效/不精确的一手资料链接：内存管理改为 Android Developers memory-management + source.android lmkd；ANR 阈值改为 diagnose-and-fix-anrs；SurfaceFlinger 源码锚点从 master 固定到 android-16.0.0_r1。未发现 P0/P1 或 Android 18/API 38+ 越界内容，回到 Task6 复审。"
 p0: 0
 p1: 0
-p2: 0
+p2: 3
+last_task9_autofix_at: "2026-06-16"
 ---
 
 # 如何区分系统问题和 App 问题
@@ -177,7 +178,7 @@ LIMIT 10;
 
 在 Perfetto 中，如果你在 CPU 区域看到 `kswapd0`（或 `kswapd1`、`kswapd2`，取决于 NUMA 节点数）频繁且持续地出现在 CPU 上，说明系统正在经历持续的内存压力。
 
-[已验证: 官方文档, source.android.com/docs/core/admin/memory]
+[已验证: 官方文档, developer.android.com/topic/performance/memory-management；source.android.com/docs/core/perf/lmkd]
 
 这种内存压力会导致一系列连锁反应：
 
@@ -413,7 +414,7 @@ AOSP 默认的 ANR 窗口要按组件类型拆开看，不能压成一个统一�
 
 具体值仍以当版 `ActiveServices`、Broadcast 常量和官方 ANR 文档为准。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+[已验证: 官方文档, developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
 
 如果主线程被调度延迟阻塞了 3 秒，再加上自身代码耗时 2 秒，总共就超过了 5 秒的 Input ANR 阈值。这种情况下，如果只看 App 代码可能只看到了 2 秒，漏掉了调度延迟的 3 秒。分析 ANR 时要把主线程、Binder 对端、系统负载和组件类型一起看。
 
@@ -425,11 +426,12 @@ SurfaceFlinger 合成延迟的原因有很多，不一定是 GPU 硬件的问题
 
 - [Perfetto CPU Scheduling 官方文档](https://perfetto.dev/docs/data-sources/cpu-scheduling) — CPU 调度数据采集与分析
 - [Perfetto Thread State 分析](https://perfetto.dev/docs/data-sources/cpu-scheduling#thread-states) — 线程状态详解
-- [Android Memory Management 官方文档](https://source.android.com/docs/core/admin/memory) — kswapd、LMK、zRAM 机制
+- [Android Memory allocation 官方文档](https://developer.android.com/topic/performance/memory-management) — kswapd 与 zRAM 机制
+- [AOSP lmkd 官方文档](https://source.android.com/docs/core/perf/lmkd) — userspace lmkd、PSI 与低内存杀进程策略
 - [Android Performance 官方指南](https://developer.android.com/topic/performance) — 性能优化最佳实践
-- [Android vitals, Diagnose and fix ANRs](https://developer.android.com/topic/performance/vitals/anr) — ANR 类型与超时口径
+- [Diagnose and fix ANRs 官方文档](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs) — ANR 类型与超时口径
 - [Perfetto FrameTimeline 官方文档](https://perfetto.dev/docs/data-sources/frametimeline) — App / SurfaceFlinger jank 归因
-- [AOSP SurfaceFlinger 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/native/services/surfaceflinger/) — 合成流程源码
+- [AOSP SurfaceFlinger 源码](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) — Android 16 tag 下的合成流程源码
 
 ---
 
