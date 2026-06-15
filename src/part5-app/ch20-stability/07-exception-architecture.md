@@ -46,16 +46,16 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-16T02:10:13+08:00"
 last_task6_review_log: "logs/review/2026-06-16-02-review.md"
 task6_review_notes: "2026-06-16 Task6 复审：pass-light-edit。Task2B Lite 已修复 getTraceInputStream 版本边界（API 30/31），写作质量保持通过。清理重复 task2b_result 字段。Task9 remaining 2 issues（SafeMode 状态机、crash 文件持久化协议）仍在 queue，待 Task2B 补齐。"
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T00:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-00-deep-review.md"
-task9_review_notes: "2026-06-16 Task9：needs-rework。P1 3。ApplicationExitInfo native tombstone 边界、SafeMode launch marker 状态机、crash 文件持久化协议需回炉。"
+last_task9_at: "2026-06-16T02:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-16-02-deep-review.md"
+task9_review_notes: "2026-06-16 Task9 复审：needs-rework。getTraceInputStream API 30/31 与 native tombstone API 31+ 边界已通过复核；P1 2 仍未闭环：SafeMode launch marker 状态机、crash 文件持久化协议，沿用 queue pending。"
 
 task2b_result: fixed
 ---
