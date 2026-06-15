@@ -1380,3 +1380,14 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 ### 管线状态
 全书 377 编号小节、0 draft、298 finalized（79.0%）、79 ready-for-review（21.0%）。连续 125 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（79 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
 
+## [Task9 Deep Review] 21.5 Splash Screen 与感知启动速度 — 2026-06-16
+- **类型**：数据缺失
+- **位置**：L125 SplashActivity 首帧绘制耗时
+- **问题**：正文写 SplashActivity 的 `onCreate` → `setContentView` → 首帧绘制“本身就要几百毫秒”，但没有设备档位、布局复杂度、Trace 样本或统计区间。该判断方向成立，但数字口径需要证据。
+- **建议**：补一组匿名 Perfetto / Macrobenchmark 样本，至少注明设备、构建类型、冷/温启动、布局复杂度和 P50/P90；没有样本时改成“这段耗时需要按页面实测”。
+
+## [Task9 Deep Review] 21.5 Splash Screen 与感知启动速度 — 2026-06-16
+- **类型**：数据缺失
+- **位置**：L356-L358 Baseline Profile 收益与 JIT/AOT 差异
+- **问题**：官方 Baseline Profiles 文档支持“约 30% 代码执行速度提升 / 很多应用约 30% 性能提升”的口径，但正文“解释执行或 JIT 边跑边编译比编译后的机器码慢 2-5 倍”没有对应实验条件。
+- **建议**：保留官方约 30% 的收益描述；如要保留 2-5 倍，需要补 ART / 设备 / 方法级 microbenchmark 条件，或改成非量化表述。
