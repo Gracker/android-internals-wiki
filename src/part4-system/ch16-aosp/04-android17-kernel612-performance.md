@@ -8,21 +8,21 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-26"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: revisiting
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 last_task9_at: "2026-05-26T01:27:00+08:00"
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
 task9_review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2;sched_ext dsq_insert 版本边界残留说明与 AutoFDO 官方链接写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
-last_task9_audit: "2026-05-25"
-last_task9_audit_at: "2026-05-25T21:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-25-21-audit.md"
-last_task9_audit_result: "p1-version-difference"
-task9_audit_notes: "2026-05-25 Task9 idle audit: P1 1;AOSP android17-6.18 已存在,Kernel 6.12/android16-6.12 与 Android 17/API37 口径需拆分。"
-task2b_state: "fixed"
-task2b_result: "fixed"
-pipeline_stage: "ready-to-publish"
+last_task9_audit: 2026-06-16
+last_task9_audit_at: "2026-06-16T06:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-16-06-audit.md"
+last_task9_audit_result: auto-fixed-p1-source-drift
+task9_audit_notes: "2026-06-16 Task9 idle audit: AUTO-FIX P1 1; android17-6.18 AutoFDO README 已更新到 6.18.21 与新 benchmark 口径,正文已同步后回到 Task6 复审。"
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-05-07T01:44:08+08:00"
 last_task6_at: "2026-05-26T01:12:00+08:00"
@@ -51,6 +51,7 @@ last_task6_review_log: "logs/review/2026-05-26-01-review.md"
 task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（禁用词、标题标点、中英文间距）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
+last_task9_autofix_at: 2026-06-16
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
@@ -269,7 +270,7 @@ Google 在官方博客中公开的 AutoFDO 覆盖 GKI 内核后的收益(限定�
 
 > **版本差异**:部分第三方资料引用了更精确的分项数据(如 P50 4.3%、P95 6.8%、Binder-rpc 21.7% 等),但这些精确数字在当前可访问的官方博客正文中无法逐一核验。本节保留官方公开口径,分项数据可在 Google 内部的 GKI profile 仓库或后续公开 benchmark 中进一步确认。
 
-`android17-6.18` 分支的 `gki/aarch64/afdo/README.md` 公开了基于 6.18.16 profile 与 Pixel 8 的 preliminary benchmark 数据:Boot time 1.9%、Cold App launch 3.4%、Binder-rpc 13.9%、Binder-addints 17.1%、Hwbinder 23.9%。这些结果明确标注为 preliminary,不能外推到所有设备或所有 GKI build。
+`android17-6.18` 分支的 `gki/aarch64/afdo/README.md` 公开了基于 6.18.21 profile 与 Pixel 8 的 preliminary benchmark 数据:Boot time 1.1%、Cold App launch 6.6%、Binder-rpc 15%、Binder-addints 23%、Hwbinder 23%。README 同时说明 Pixel 设备尚未针对该内核版本完成电源管理、CPU 频率调节和调度优化,这些结果不能外推到所有设备或所有 GKI build。
 
 Binder 调用路径是 AutoFDO 优化的重点之一。Android 的跨进程通信几乎全部走 Binder(1.4 节),冷启动过程中一个典型 App 会发起数百次 Binder 调用。AutoFDO 将内核中 Binder 热路径的代码布局优化后,每次调用的开销降低可以累积为整体冷启动延迟的降低。官方博客给出的整体改善约 4%。
 
