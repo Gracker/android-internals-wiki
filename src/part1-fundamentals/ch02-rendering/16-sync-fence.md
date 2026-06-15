@@ -49,7 +49,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
 last_task6_at: "2026-05-06T01:05:00+08:00"
-last_task6_audit: "2026-05-24"
+last_task6_audit: "2026-06-15"
 review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 HWC2 fence 语义、libsync merge、HWUI GL/Vulkan release fence、Timeline Semaphore 边界；无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Vulkan native fence 边界已改为 Binary Semaphore → sync fd 桥接，dequeue fence 命名已修正；仅留 Binary Semaphore reset 语义 P2 建议；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task9_audit: "2026-06-14"
 last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
@@ -59,7 +59,7 @@ last_deepseek_cn_review_at: 2026-05-29
 
 # 2.16 Sync Fence 框架与帧同步机制
 
-当我们在 Perfetto 里看到 `latchBuffer`、`presentDisplay()` 或 `dequeueBuffer()` 旁边挂着一段 `fence wait` 时，重点在于追清楚这个 buffer 现在归谁用、什么时候才能安全换手，而不是只记录这里卡了多少毫秒。Fence 就是这条换手协议。
+当我们在 Perfetto 里看到 `latchBuffer`、`presentDisplay()` 或 `dequeueBuffer()` 旁边挂着一段 `fence wait` 时，重点在于追清楚这个 buffer 现在归谁用、什么时候才能安全换手。光记一个“这里卡了 X 毫秒”对排查没有帮助。Fence 就是这条换手协议。
 
 App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App 调完 `queueBuffer()`，不等于 GPU 已经把像素写完；`presentDisplay()` 返回了，也不等于屏幕已经完成这一帧扫描显示。如果没有显式同步，系统只能靠猜时机来复用 buffer，不是撕裂，就是白等。Fence 把“还没完成但迟早会完成”的状态封装成一个可传递、可等待、可调试的 fd，于是我们才能既避免读半成品，又把等待精确归因到 producer、consumer 或 display 侧。
 
@@ -225,7 +225,7 @@ Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。要�
 
 ### Android 7：HWC2 已经把 acquire / release / present fence 语义钉清楚
 
-这一版最重要的变化，是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这个拆分让我们可以明确问：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后，而不是把所有等待都糊成一个“显示慢”。
+这一版最重要的变化，是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这个拆分让我们可以明确问：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后。把所有等待都糊成一个“显示慢”，排查就失去了方向。
 
 ### Android 8+：userspace 已经能看到 modern `sync_file` API，legacy 名词继续保留
 
