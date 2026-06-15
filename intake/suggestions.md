@@ -1,3 +1,49 @@
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-15 10:15 (Round 123)
+
+本轮按 `task2a-content-processing-new.md` Step 1.1-1.12 完成知识缺口挖掘，未产出评分 ≥ 14 的候选。
+
+### 1. 全书结构
+- 当前 SUMMARY 为 5 个 Part、26 个 Chapter、405 个目录小节。
+- src 状态统计：299 finalized、78 ready-for-review、0 draft、49 个无状态/附录类文件。
+
+### 2. Phase 0 / 0.5
+- 空 draft：0。
+- TASK2B_BACKLOG = 0，允许进入 Phase 1。
+
+### 3. source-index 高质量未映射项
+- 7 条 `score >= 16` 且缺少 `mapped_chapters` 的 DeepResearch 条目已复核。
+- Codec2 tunneled playback → 已覆盖 §18.23。
+- 商业 APM / Sentry runtime API guards → 已覆盖 §19.18。
+- Perfetto linux.perf / FrameTimeline data source → 已覆盖 §13.2 / §13.9。
+- SDM / cloud compilation → 已覆盖 §1.9 / §16.6 / §16.9。
+- SurfaceFlinger LocklessQueue / TransactionHandler → 已覆盖 §2.27。
+- StrictMode safer intent / BAL aborted → 已覆盖 §16.5 / §14.23。
+- ART RegionSpace / MarkCompact fragmentation → 已覆盖 §4.14。
+
+### 4. research-feeds 最近 5 篇
+- Perfetto v54 Data Explorer / Jank CUJ / heap_graph_stats → 已覆盖 ch13 / ch7 / ch10。
+- Perfetto v53 pprof / Simpleperf / Rust SDK → 已覆盖 ch13 / ch14。
+- Frame Timeline API 33 可视化 → 已覆盖 §2.4。
+- Compose PausableComposition → 已覆盖 §2.4 / §7.7 / §22。
+- View hierarchy measure/layout → 已覆盖 §7.12。
+
+### 5. daily-info 与 DeepResearch 热点
+- 2026-06-15 热点：PerformanceHintManager setThreads、Perfetto Jank CUJ、AMS 双锁、StrictMode VmPolicy、Android 17 MessageQueue、Android 17 适配、桌面模式。均已有对应章节。
+- AI 编码/Android Bench 属于工具生态，不是 AIW 性能主线，不创建新章。
+
+### 6. AOSP / 官方文档对照
+- AOSP 服务缺口：Telephony / NFC 暂无足够高质量性能素材；lmkd、installd、PowerStats、Connectivity、Bluetooth、Biometric、Notification 等已在现有章节覆盖。
+- Android 17 官方性能/运行时变更：App Memory Limits、lock-free MessageQueue、Generational GC、ProfilingTrigger、JobDebugInfo、ECH、BluetoothSocket read、后台音频、Keystore 配额、通知模板/RemoteViews、Camera/Media 新能力均已有覆盖或素材不足，不满足新章阈值。
+
+### 7. 评分结论
+- 发现可创建候选缺口：0 个。
+- 评分 ≥ 14：0 个。
+- 本轮不创建新章节、不更新 SUMMARY、不更新 queue。
+
+### 总结
+连续 123 轮无合格缺口。当前 AIW 已进入收尾维护阶段，优先推进 ready-for-review 复审与发布，而不是继续扩张新目录。
+
+
 ## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-15 01:04 (Round 107)
 
 本轮知识缺口挖掘已覆盖以下方向，均未产出评分 ≥ 14 的候选：
@@ -1226,3 +1272,111 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 
 ### 管线状态
 全书 426 小节，0 draft，299 finalized（70.2%），78 ready-for-review（18.3%），49 其他状态（11.5%）。连续 N 轮无合格缺口。内容覆盖已饱和，核心堵点在 Task 6/Task 9 复审和 Task 2B 回炉环节。知识库进入收尾维护阶段。
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-15 12:05 (Round 124)
+
+### 1. Phase 0 空章节扫描
+- 全书 377 编号小节，0 draft（299 finalized + 78 ready-for-review）
+- 连续 124 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0（≤ 20），允许进入 Phase 1
+
+### 3. source-index.json 未映射素材
+- source-index 0 条记录（素材索引已全部映射到现有章节）
+
+### 4. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节
+- 评分 < 14，不满足新章节创建条件
+
+### 5. daily-info 热点扫描（2026-06-15）
+- Android 17 MessageQueue 重写 → 已覆盖（§1.13, §22.16）
+- Android 17 适配/侧载 → 已覆盖（§16.5, §1.20-1.23）
+- Android 桌面端 → 已覆盖（§2.20, §22.14）
+- Handler vs 协程 → 已覆盖（§8.6）
+- PerformanceHintManager setThreads IPC → 已覆盖（§5.9），queue 中有 pending 注入条目
+- Perfetto Jank CUJ v54 → 已覆盖（§13.14），queue 中有 pending 注入条目
+- AMS 双锁 CachedAppOptimizer → 已覆盖（§1.25）
+- StrictMode VmPolicy cross-binder → 已覆盖（§14.23）
+- View Layout 性能论文 3 篇 → 学术论文，非工程实践 API/工具，评分不足
+- AI 编码基准/Android Bench → 非 AIW 范畴
+
+### 6. queue.json 状态
+- 32 条记录，28 completed，4 pending（3 个 DeepResearch 注入 + 1 个 Task6 审计）
+- 无 priority ≥ 85 的 pending 条目
+
+### 7. 本轮新增评估方向
+| 候选方向 | 素材 | 相关性 | 需求 | 时效 | 总分 | 判定 |
+|---------|------|--------|------|------|------|------|
+| Play Integrity API 验证延迟优化 | 2 | 3 | 3 | 3 | 11 | 跳过；Play Services 云 API 非系统内部机制 |
+| Android Virtualization Framework 性能 | 1 | 2 | 2 | 3 | 8 | 跳过 |
+| ContentCapture/Autofill 性能 | 2 | 3 | 3 | 3 | 11 | 跳过 |
+| Compose Snapshot 系统性能内幕 | 2 | 4 | 3 | 3 | 12 | 跳过；已有 6 个 Compose 性能章节 |
+| DropBoxManager 诊断性能 | 1 | 2 | 2 | 2 | 7 | 跳过 |
+| FCM/Push 投递延迟 | 2 | 3 | 3 | 3 | 11 | 跳过 |
+
+### 8. 结论
+本轮未发现评分 ≥ 14 的合格知识缺口，跳过新章节创建。
+
+### 管线状态
+全书 377 编号小节、0 draft、299 finalized（79.3%）、78 ready-for-review（20.7%）。连续 124 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（78 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-15 13:04 (Round 125)
+
+### 1. Phase 0 空章节扫描
+- 全书 377 编号小节，0 draft（298 finalized + 79 ready-for-review）
+- 连续 125 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0（≤ 20），允许进入 Phase 1
+
+### 3. source-index.json 未映射素材
+- source-index 164 条记录，全部已有对应章节映射
+- 无评分 ≥ 16 且 mapped_chapters 为空的素材
+
+### 4. DeepResearch 最新产出增量扫描（2026-06-15）
+- `2026-06-15-performancehint-setthreads-ipc-chain-newly-flags.md` → §5.9 ADPF 已覆盖；queue 中有 pending 注入条目
+- `2026-06-15-perfetto-jank-cuj-v54-process-filter-and-frametracker-join.md` → §13.14 Perfetto DataGrid 已覆盖；queue 中有 pending 注入条目
+- `2026-06-15-memory-analysis-tools-source-code-stack.md` → §14.3 内存分析工具 + §14.22 HPROF 已覆盖；报告补齐 dumpsys meminfo / heapprofd / procstats 源码调用链，属现有章节素材补充
+- `2026-06-15-blast-buffferqueue-canunblockuithread-and-pipeline-pitfalls.md` → §18.2 BLAST 标准管线 + §2.13 BufferQueue 已覆盖；报告关闭 canUnblockUiThread + releaseBuffer 回调链遗留验证项
+
+### 5. daily-info 热点扫描（2026-06-15）
+- Android 17 MessageQueue 重写 → 已覆盖（§1.13, §22.16）
+- Android 17 适配/侧载 → 已覆盖（§16.5, §1.20-1.23）
+- Android 桌面端 → 已覆盖（§2.20, §22.14）
+- Handler vs 协程 → 已覆盖（§8.6）
+- PerformanceHintManager/Perfetto/AMS 双锁/StrictMode → 均已覆盖
+- View Layout 性能论文 3 篇 → 学术论文，非工程实践，评分不足
+- AI 编码基准/Android Bench → 非 AIW 范畴
+
+### 6. research-gaps.md 需求
+- 2 条盲区（BatteryUsageStats 集成 + Android 14 内存跟踪 API）均映射到现有章节
+- 评分 < 14，不满足新章节创建条件
+
+### 7. queue.json 状态
+- 32 条记录，28 completed，4 pending（3 个 DeepResearch 注入 + 1 个 Task6 审计）
+- 无 priority ≥ 85 的 pending 条目
+
+### 8. research-feeds 时效性
+- 最近更新 2026-04-14，无新增文件（已过期 2 个月）
+
+### 9. Clippings 参考书交叉对照
+- 三本参考书核心知识点已全部被现有章节覆盖
+
+### 10. 本轮新增评估方向
+| 候选方向 | 素材 | 相关性 | 需求 | 时效 | 总分 | 判定 |
+|---------|------|--------|------|------|------|------|
+| Compose Snapshot 系统性能内幕 | 2 | 4 | 3 | 3 | 12 | 跳过；已有 6 个 Compose 性能章节 |
+| Play Integrity API 验证延迟 | 2 | 3 | 3 | 3 | 11 | 跳过；云 API 非系统内部机制 |
+| ContentCapture/Autofill 性能 | 2 | 3 | 3 | 3 | 11 | 跳过 |
+| FCM/Push 投递延迟 | 2 | 3 | 3 | 3 | 11 | 跳过 |
+| Compose Multiplatform / KMP 性能 | 2 | 3 | 4 | 5 | 14 | 边界候选；KMP 偏跨平台，与 AIW Android 系统内部分析定位有偏差 |
+| Paging 3 / PagedListView 性能 | 3 | 4 | 4 | 3 | 14 | 边界候选；Paging 3 偏库使用指南，已有 §7.8/§22.2/§22.16/§22.22 覆盖列表性能 |
+
+### 11. 结论
+本轮未发现评分 ≥ 14 的合格知识缺口，跳过新章节创建。两个边界候选（KMP 14 分、Paging 3 14 分）因与 AIW 定位偏差不创建。
+
+### 管线状态
+全书 377 编号小节、0 draft、298 finalized（79.0%）、79 ready-for-review（21.0%）。连续 125 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（79 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+
