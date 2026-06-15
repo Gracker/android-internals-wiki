@@ -48,6 +48,7 @@ task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review
 last_task6_at: "2026-05-21T01:15:21+08:00"
+last_task6_audit: 2026-06-15
 last_task6_review_log: logs/review/2026-05-21-01-review.md
 task6_review_notes: "2026-05-21 Task6 01: L1/L2 无需正文修改；结构、锚点、验证标注通过，转 Task9 pending。"
 task2b_state: fixed
