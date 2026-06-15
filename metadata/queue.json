@@ -1012,5 +1012,151 @@
     "completed_at": "2026-06-16T02:50:00+08:00",
     "completed_by": "task2b-main",
     "completed_note": "Task2B 回炉修复完成"
+  },
+  {
+    "section": "5.1",
+    "section_title": "CPU调度与功耗管理",
+    "priority": 85,
+    "reason": "URL 不可访问，跳过",
+    "material_paths": [
+      "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少 30%。新调度器采用机器学习模型预测用户行为，优先启动高频使用的应用。同时，系统资源分配更加智能，...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-16T05:32:55",
+    "status": "completed",
+    "completed_at": "2026-06-16T06:51:39+08:00",
+    "completed_by": "task2b"
+  },
+  {
+    "section": "17.1",
+    "section_title": "OEM适配指南",
+    "priority": 70,
+    "reason": "URL 不可访问，跳过",
+    "material_paths": [
+      "https://juejin.cn/post/7610233341305389099"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — 文章全面解析Android 17的主要变化，特别是针对侧载限制的新政策，为开发者提供了详细的适配指南。",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-16T05:32:55",
+    "status": "completed",
+    "completed_at": "2026-06-16T06:51:39+08:00",
+    "completed_by": "task2b"
+  },
+  {
+    "section": "17.1",
+    "section_title": "OEM适配指南",
+    "priority": 60,
+    "reason": "URL 不可访问，跳过",
+    "material_paths": [
+      "https://juejin.cn/post/7622696665740558386"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 要变天：桌面端这次真的来了！ — 文章介绍了Android向桌面端的重大转型，探讨了多窗口、外接显示器等新特性的实现方案和技术挑战。",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-16T05:32:55",
+    "status": "completed",
+    "completed_at": "2026-06-16T06:51:39+08:00",
+    "completed_by": "task2b"
+  },
+  {
+    "section": "14.11",
+    "section_title": "Battery Historian 与性能指标深度集成",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-16-android15-battery-historian-perf-metrics-integration.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 15 Battery Historian 与性能指标的深度集成机制 — Battery Historian 实际数据入口为 dumpsys batterystats --proto，Android 15 新增 Streamlined Battery Stats 三层 flag 体系（CPU/Misc/Connectivity），PowerStatsService→PowerStatsStore→BatteryUsageStatsProvider 完整功耗归因链路，WakeupReason 与 Perfetto POWER track 联动实现功耗×性能时间轴对齐",
+        "suggestion": "判断是否适合补充到 ch14-other-tools/11-battery-historian.md 或 ch26/03-performance-collection.md 作为参考资料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-16T06:12:01.599869",
+    "status": "pending"
+  },
+  {
+    "section": "12.3",
+    "section_title": "移动数据 quota 限速机制（NetworkStatsService + NetworkPolicyManagerService）",
+    "priority": 75,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-android17-network-quota-limit-enforcement.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径 — 双服务架构（采集+策略执行），BPF/eBPF FastDataInput 模式 4 个 BpfMap 绕过 procfs，quota 超限触发链路：内核 BPF map → netd.bandwidthSetGlobalAlert → AlertObserver.onQuotaLimitReached → performPollLocked → firewall chain 隔离",
+        "suggestion": "判断是否适合补充到 ch12-apk-network/03-network-performance-deep.md 作为移动数据 quota 管理参考"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-16T06:12:01.599869",
+    "status": "pending"
+  },
+  {
+    "section": "23.7",
+    "section_title": "内存监控（PSS/RSS 快速路径与 smaps_rollup 优化）",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-android-pss-rss-fastpath-smaps-rollup-status-vmrss-throttle.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 14/15+ PSS/RSS 快速路径：smaps_rollup / StatusVmRSS 优化、Debug.getRss() 新 API 与 getProcessMemoryInfo 限速 — 三层采样降级（smaps→smaps_rollup→VmRSS），IsSmapsRollupSupported 全局原子缓存，getProcessMemoryInfo 5 分钟限速（SHELL_UID bypass），Debug.getRss() + FLAG_REMOVE_APP_PROFILER_PSS_COLLECTION 暗示 PSS 采集长期演进方向，PROCESS_MEMORY_STAT_REPORTED statsd 上报链",
+        "suggestion": "判断是否适合补充到 ch23-memory-practice/07-memory-monitoring.md 或 ch26/03-performance-collection.md 作为内存采样实现层参考"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-16T06:12:01.599869",
+    "status": "pending"
+  },
+  {
+    "section": "18.2",
+    "section_title": "Android View 标准管线（BLAST 深入）",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-blast-buffferqueue-canunblockuithread-and-pipeline-pitfalls.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "BLASTBufferQueue 关键回调链与 canUnblockUiThread 提前释放机制 — canUnblockUiThread 实际等于 info.prepareTextures（纹理缓存未耗尽），修正了之前文档的猜测；BLASTBufferQueue 区分 transactionCommittedCallback 与 transactionCallback；Android 17 引入 WB_CONSUMER_BASE_OWNS_BQ 与 BUFFER_RELEASE_CHANNEL 编译期开关，BufferQueue 所有权下沉到 Consumer；PictureProfileHandle 新增",
+        "suggestion": "判断是否适合补充到 ch18-rendering-pipelines/02-android-view-standard.md 作为 BLAST 回调链源码级参考，同时可作为正文修正线索（canUnblockUiThread 条件描述）"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-16T06:12:01.599869",
+    "status": "pending"
   }
 ]
