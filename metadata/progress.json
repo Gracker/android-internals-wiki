@@ -1395,13 +1395,15 @@
       "p3": 0
     },
     "20.7": {
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "p0": 1,
       "p1": 3,
       "p2": 0,
       "reviewed_at": "2026-05-15T06:05:00+08:00",
       "log": "logs/review/2026-05-15-06-review.md",
-      "summary": "Task6 标注 4 处：WebView renderer 进程模型、ApplicationExitInfo native tombstone API 边界、SafeMode launch marker、crash 文件持久化协议。"
+      "summary": "Task6 标注 4 处：WebView renderer 进程模型、ApplicationExitInfo native tombstone API 边界、SafeMode launch marker、crash 文件持久化协议。",
+      "task6_state": "reviewed",
+      "last_task6_at": "2026-06-16T02:10:13+08:00"
     },
     "26.7": {
       "p0": 0,
@@ -10154,16 +10156,16 @@
     "note": "7 个锚点全部覆盖，3 个扩展点全部覆盖，素材来自 DeepResearch/2026-06-10-lru-lock-optimization.md + AOSP android-16.0.0_r4 源码验证"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-06-15",
-    "time": "23:11",
+    "date": "2026-06-16",
+    "time": "02:04",
     "mode": "gap-mining-skip",
-    "round": 128,
+    "round": 129,
     "created_sections": [],
     "created_files": [],
     "candidate_count": 0,
     "qualified_count": 0,
-    "source": "Round 128: Phase 0 无空 draft (426 章节). Phase 0.5 TASK2B_BACKLOG=0. 上轮 mining Round 127 (2026-06-15 17:13). 本轮新增 2 篇 DeepResearch: (1) 2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md (21:02) → 映射 ch09 9.1/9.2/9.3/9.5 已有章节; (2) 2026-06-15-android-pss-rss-fastpath-smaps-rollup-status-vmrss-throttle.md (17:59) → 映射 §23.7/§26.3 已有章节. 2 篇均为已有章节的源码深化，不构成新缺口. daily-info 06-15 热点 (MessageQueue 重写/Android17 适配/桌面端/Handler vs 协程/PerformanceHintManager) 全部已被现有章节覆盖. 连续 128 轮无合格缺口, 跳过创建.",
-    "note": "连续 128 轮无合格缺口。0 draft 章节。全书 426 文件：298 finalized + 82 ready-for-review + 46 无状态/附录。管线堵点仍在复审/发布环节，非内容缺口。"
+    "source": "Round 129: Phase 0 无空 draft (426 章节, 0 draft). Phase 0.5 TASK2B_BACKLOG=1 ≤ 20. 上轮 mining Round 128 (2026-06-15 23:11). 本轮新增 1 篇 DeepResearch: 2026-06-17-android17-network-quota-limit-enforcement.md (00:02) → 关联章节 §12.3/§11.x 已有章节覆盖, 为 NetworkStatsService/NPMSeBPF 流量采集与 quota 限速源码深化, 不构成新缺口. research-gaps 06-16 新增 2 条均为 §20.7 既有章节的改进建议 (SafeMode 状态机/Crash 文件持久化), 非新章节候选. 连续 129 轮无合格缺口, 跳过创建.",
+    "note": "连续 129 轮无合格缺口。0 draft 章节。全书 426 文件：301 finalized + 80 ready-for-review + 45 无状态/附录。管线堵点在复审/发布环节，非内容缺口。"
   },
   "task9_last_sections": [
     "21.5"
