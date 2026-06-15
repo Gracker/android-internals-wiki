@@ -2,11 +2,11 @@
 title: "App Archiving 机制与恢复性能"
 chapter: "1.20"
 section: "1.20"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-17"
-applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
+applicable_versions: "Android 15 (API 35) - Android 16 (API 36)；Android 17 (API 37) 待 tag 复核"
 last_verified: "2026-05-17"
-last_verified_against: "AOSP main, platform_frameworks_base"
+last_verified_against: "android-15.0.0_r1, android-16.0.0_r1 (frameworks/base)"
 confidence: medium
 tags: [package-manager, app-archiving, storage, app-startup, android-15]
 related_chapters: ["1.9", "4.2", "6.1", "8.2", "12.1", "16.2"]
@@ -23,28 +23,29 @@ task6_l1_l2_fixes: 17
 task6_l3_l4_issues: 0
 sources:
   - type: aosp
-    path: "frameworks/base/core/java/android/content/pm/PackageInstaller.java @ AOSP main"
+    path: "frameworks/base/core/java/android/content/pm/PackageInstaller.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/content/Intent.java @ AOSP main"
+    path: "frameworks/base/core/java/android/content/Intent.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java @ AOSP main"
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java @ AOSP main"
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/pkg/ArchiveState.java @ AOSP main"
+    path: "frameworks/base/services/core/java/com/android/server/pm/pkg/ArchiveState.java @ android-16.0.0_r1"
   - type: official
     path: "https://android-developers.googleblog.com/2024/04/the-first-beta-of-android-15.html#app-archiving"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md"
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-06-15"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-15T11:26:52+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-27-19-deep-review.md"
-task2b_state: pending
-task2b_result: fixed
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: 2026-06-15
 queue_entry: task9-2026-05-17-1-20-archive-conditions-callback
 p0: 0
 p1: 0
@@ -52,7 +53,7 @@ p2: 0
 task9_review_notes: "2026-06-15 Task9 闲时抽检：needs-rework。发现 AOSP main/GitHub Mirror 锚点推断 Android 17 覆盖、Android 15/16 Launcher 恢复调用者范围差异未进入正文版本口径；已写 queue.json（P1:2）。此前记录：2026-05-27 Task9 pass-tech-review，复核 PackageInstaller/PackageArchiver/ActivityStarter 主链路。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-27T19:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-19-review.md"
@@ -119,7 +120,7 @@ Google Play 在 Android 15 之前已经有 Auto Archive。那套能力依赖 Pla
 
 ## PackageInstaller.requestArchive() 的入口条件
 
-公开 API 入口在 `PackageInstaller`。AOSP main 中 `requestArchive()` 的文档写明：归档过程中会移除应用 APK 与缓存文件，保留用户数据；归档应用仍会通过 `LauncherApps` 作为可展示应用返回，用户点击后进入恢复流程。[已验证: AOSP main, frameworks/base/core/java/android/content/pm/PackageInstaller.java#L2418-L2438]
+公开 API 入口在 `PackageInstaller`。AOSP main 中 `requestArchive()` 的文档写明：归档过程中会移除应用 APK 与缓存文件，保留用户数据；归档应用仍会通过 `LauncherApps` 作为可展示应用返回，用户点击后进入恢复流程。[已验证: android-16.0.0_r1, frameworks/base/core/java/android/content/pm/PackageInstaller.java#L2418-L2438]
 
 这段代码给出了调用侧边界：
 
@@ -135,9 +136,9 @@ public void requestArchive(@NonNull String packageName, @NonNull IntentSender st
 }
 ```
 
-`mInstallerPackageName` 是当前 `PackageInstaller` 实例关联的安装器包名。进入系统服务后，`PackageArchiver.requestArchive()` 还会做三层校验：调用 UID 与 caller package 对上、跨用户权限通过、调用者拥有 `DELETE_PACKAGES` 或 `REQUEST_DELETE_PACKAGES`。普通应用不能拿一个包名就归档任意目标包，拦截点不只在 SDK 注解上。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L202-L246]
+`mInstallerPackageName` 是当前 `PackageInstaller` 实例关联的安装器包名。进入系统服务后，`PackageArchiver.requestArchive()` 还会做三层校验：调用 UID 与 caller package 对上、跨用户权限通过、调用者拥有 `DELETE_PACKAGES` 或 `REQUEST_DELETE_PACKAGES`。普通应用不能拿一个包名就归档任意目标包，拦截点不只在 SDK 注解上。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L202-L246]
 
-权限通过后，`createAndStoreArchiveState()` 还会继续判断归档是否能成立。关键失败路径包括：目标包必须已安装；系统应用、更新后的系统应用或声明 opt-out 的包不能直接归档；PMS 要能找到负责恢复的安装器（responsible installer），且安装器支持 `Intent.ACTION_UNARCHIVE_PACKAGE`；目标包需要存在可保存的 Launcher activity，后续灰显入口和点击恢复才有原始 component 可回连。这个检查解释了为什么“有删除权限”不等于“所有包都可归档”：归档删除的是代码包，但系统必须先保存恢复入口和负责恢复的安装器，否则用户会得到一个不可恢复的灰显入口。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java]
+权限通过后，`createAndStoreArchiveState()` 还会继续判断归档是否能成立。关键失败路径包括：目标包必须已安装；系统应用、更新后的系统应用或声明 opt-out 的包不能直接归档；PMS 要能找到负责恢复的安装器（responsible installer），且安装器支持 `Intent.ACTION_UNARCHIVE_PACKAGE`；目标包需要存在可保存的 Launcher activity，后续灰显入口和点击恢复才有原始 component 可回连。这个检查解释了为什么“有删除权限”不等于“所有包都可归档”：归档删除的是代码包，但系统必须先保存恢复入口和负责恢复的安装器，否则用户会得到一个不可恢复的灰显入口。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java]
 
 归档落到删除语义时，`PackageArchiver` 组合了两个标志位：
 
@@ -155,11 +156,11 @@ mPm.mInstallerService.uninstall(
         binderPid);
 ```
 
-`DELETE_ARCHIVE` 标明这次删除属于归档，`DELETE_KEEP_DATA` 保留用户数据。这个组合解释了归档的存储效果：安装包被移走，用户数据不清；恢复时再由安装器重新补齐 APK。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L245-L254]
+`DELETE_ARCHIVE` 标明这次删除属于归档，`DELETE_KEEP_DATA` 保留用户数据。这个组合解释了归档的存储效果：安装包被移走，用户数据不清；恢复时再由安装器重新补齐 APK。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L245-L254]
 
 ## PackageArchiver 与 ArchiveState 数据模型
 
-`PackageArchiver` 的职责分成两段：归档前采集可恢复入口，归档后根据入口决定点击恢复。AOSP 类注释把 archived app 定义为“APK removed while data directory is kept”，并说明这类应用仍包含在 launcher app 列表中，点击后会重新安装完整应用。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java]
+`PackageArchiver` 的职责分成两段：归档前采集可恢复入口，归档后根据入口决定点击恢复。AOSP 类注释把 archived app 定义为“APK removed while data directory is kept”，并说明这类应用仍包含在 launcher app 列表中，点击后会重新安装完整应用。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java]
 
 归档状态落在 `ArchiveState`：
 
@@ -169,17 +170,17 @@ mPm.mInstallerService.uninstall(
 - `ArchiveActivityInfo.mOriginalComponentName`：归档前的原始 Activity 组件名。
 - `mIconBitmap` / `mMonochromeIconBitmap`：归档图标路径，供 Launcher 显示灰显或云朵覆盖样式。
 
-[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/pkg/ArchiveState.java#L37-L103]
+[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/pkg/ArchiveState.java#L37-L103]
 
-`PackageArchiver.createArchiveStateInternal()` 会通过 `LauncherApps.getActivityList()` 拿到主入口 Activity，把 label、component 和图标写入 `ArchiveActivityInfo`。图标不是每次从 APK 加载，因为 APK 会被删除；系统把图标保存到 `package_archiver` 目录下的 PNG 文件，再把路径写入状态。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L553-L607]
+`PackageArchiver.createArchiveStateInternal()` 会通过 `LauncherApps.getActivityList()` 拿到主入口 Activity，把 label、component 和图标写入 `ArchiveActivityInfo`。图标不是每次从 APK 加载，因为 APK 会被删除；系统把图标保存到 `package_archiver` 目录下的 PNG 文件，再把路径写入状态。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L553-L607]
 
-判断某个启动 Intent 是否指向归档应用时，系统不只看包名。`isIntentResolvedToArchivedApp()` 先取包名和显式 component，再查 `PackageState` 与当前 user 的 `PackageUserState`，确认 `isArchived(userState)`，再把 Intent component 与 `ArchiveState.activityInfos[].originalComponentName` 对比。只有原始入口对上，才进入恢复流程。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L377-L399]
+判断某个启动 Intent 是否指向归档应用时，系统不只看包名。`isIntentResolvedToArchivedApp()` 先取包名和显式 component，再查 `PackageState` 与当前 user 的 `PackageUserState`，确认 `isArchived(userState)`，再把 Intent component 与 `ArchiveState.activityInfos[].originalComponentName` 对比。只有原始入口对上，才进入恢复流程。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L377-L399]
 
 这个设计避免了把所有“类找不到”都当作归档恢复。普通坏 Intent、组件名写错、应用已完全卸载，都不会被归档逻辑吞掉。
 
 ## ActivityStarter 点击恢复的拦截路径
 
-Launcher 点击归档图标时，仍然走 `startActivity()`。归档应用的 APK 已移除，Framework 找不到目标 Activity 类，`ActivityStarter` 会先得到 `START_CLASS_NOT_FOUND`。Android 15 的归档分支插在这个错误路径里：只有 feature flag 开启，且 `PackageArchiver` 判断 Intent 对应归档入口时，才把启动错误转换为恢复请求。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java#L1155-L1166]
+Launcher 点击归档图标时，仍然走 `startActivity()`。归档应用的 APK 已移除，Framework 找不到目标 Activity 类，`ActivityStarter` 会先得到 `START_CLASS_NOT_FOUND`。Android 15 的归档分支插在这个错误路径里：只有 feature flag 开启，且 `PackageArchiver` 判断 Intent 对应归档入口时，才把启动错误转换为恢复请求。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java#L1155-L1166]
 
 ```java
 if (err == ActivityManager.START_SUCCESS && aInfo == null) {
@@ -197,11 +198,11 @@ if (err == ActivityManager.START_SUCCESS && aInfo == null) {
 }
 ```
 
-`requestUnarchiveOnActivityStart()` 对调用者还有一层限制：允许默认 Launcher、Shell，或预装系统 Launcher 类应用发起点击恢复；其他调用者会返回 `START_PERMISSION_DENIED`。校验通过后，系统调用 `requestUnarchive()`，传入的是 `PackageArchiver.getOrCreateLauncherListener()` 创建并缓存的内部 `UnarchiveIntentSender`。这个 listener 负责接收恢复状态并继续拉起系统 UI；调用方自己传入的 `statusReceiver` 只对应公开 `PackageInstaller.requestUnarchive()` 路径，不是 Launcher 点击恢复路径的一部分。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L274-L352]
+`requestUnarchiveOnActivityStart()` 对调用者还有一层版本差异：**Android 15** 只允许默认 Launcher（Home）或 Shell 发起点击恢复；**Android 16** 起扩展到预装系统 Launcher 类应用（commit `181264cb256c`）。其他调用者返回 `START_PERMISSION_DENIED`。校验通过后，系统调用 `requestUnarchive()`，传入的是 `PackageArchiver.getOrCreateLauncherListener()` 创建并缓存的内部 `UnarchiveIntentSender`。这个 listener 负责接收恢复状态并继续拉起系统 UI；调用方自己传入的 `statusReceiver` 只对应公开 `PackageInstaller.requestUnarchive()` 路径，不是 Launcher 点击恢复路径的一部分。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L274-L352]
 
-恢复请求发送给负责恢复的安装器（responsible installer）。`PackageArchiver.getResponsibleInstallerPackage()` 优先使用 `InstallSource.mUpdateOwnerPackageName`，为空时使用 `mInstallerPackageName`。发送广播时，系统构造 `Intent.ACTION_UNARCHIVE_PACKAGE`，写入 `EXTRA_UNARCHIVE_ID`、`EXTRA_UNARCHIVE_PACKAGE_NAME` 和 `EXTRA_UNARCHIVE_ALL_USERS`，再 `setPackage(installerPackage)` 发给安装器。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L1103-L1128]
+恢复请求发送给负责恢复的安装器（responsible installer）。`PackageArchiver.getResponsibleInstallerPackage()` 优先使用 `InstallSource.mUpdateOwnerPackageName`，为空时使用 `mInstallerPackageName`。发送广播时，系统构造 `Intent.ACTION_UNARCHIVE_PACKAGE`，写入 `EXTRA_UNARCHIVE_ID`、`EXTRA_UNARCHIVE_PACKAGE_NAME` 和 `EXTRA_UNARCHIVE_ALL_USERS`，再 `setPackage(installerPackage)` 发给安装器。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L1103-L1128]
 
-`Intent.ACTION_UNARCHIVE_PACKAGE` 在 AOSP 中标记为 explicit-only broadcast intent action。第三方应用商店接入平台归档时，要能接收这个显式广播，并把后续下载、session 创建、状态回调补齐。[已验证: AOSP main, frameworks/base/core/java/android/content/Intent.java#L5441-L5444]
+`Intent.ACTION_UNARCHIVE_PACKAGE` 在 AOSP 中标记为 explicit-only broadcast intent action。第三方应用商店接入平台归档时，要能接收这个显式广播，并把后续下载、session 创建、状态回调补齐。[已验证: android-16.0.0_r1, frameworks/base/core/java/android/content/Intent.java#L5441-L5444]
 
 ## 恢复链路的性能口径
 
@@ -248,7 +249,7 @@ Trace 对照时，把 `ActivityStarter` 的类找不到分支、`PackageArchiver
 | Perfetto | `system_server`、installer 进程、目标应用进程、PackageManager 相关 slice | 对齐恢复请求、安装 commit、目标进程启动和首帧 |
 | 应用侧 | 冷启动埋点、首帧指标、Baseline Profile 命中情况 | 判断恢复后第一次启动是否退化 |
 
-这里容易误判的是“点击后没马上打开应用”。归档入口不是普通启动入口，`ActivityStarter` 在归档分支返回 `START_ABORTED`，让窗口管理侧停止本次启动；后续要等安装器完成恢复，再按普通安装完成后的启动路径继续。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L317-L352]
+这里容易误判的是“点击后没马上打开应用”。归档入口不是普通启动入口，`ActivityStarter` 在归档分支返回 `START_ABORTED`，让窗口管理侧停止本次启动；后续要等安装器完成恢复，再按普通安装完成后的启动路径继续。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L317-L352]
 
 ## 与 PMS、存储和启动优化的交叉关系
 
@@ -267,7 +268,7 @@ PMS 视角下，归档是包状态与删除语义的一次组合：`PackageState
 | Android 14 及以前 | 平台没有公开 `PackageInstaller.requestArchive()`；Google Play 可通过自身 Auto Archive 能力处理部分应用 | [已验证: 官方文档, Android Developers Blog 2024-04-11] |
 | Android 15 / API 35 | 平台加入 `requestArchive()`、`requestUnarchive()`、`ACTION_UNARCHIVE_PACKAGE`、`PackageArchiver` 与 `ArchiveState` | [已验证: AOSP main + 官方文档] |
 | Android 16 / API 36 | 归档主流程仍沿用 Android 15 结构；SDM / 签名委托与归档恢复完整关系缺少公开端到端材料 | [待验证] |
-| Android 17 / API 37 | 当前公开资料未显示归档恢复口径发生主流程变化；后续要以平台 release branch 复核 | [待验证] |
+| Android 17 / API 37 | 无公开 release tag（android-17.0.0_r1），无法逐文件验证；主流程是否变化待 tag 发布后复核 | [待验证] |
 
 Android 15–17 的其他性能行为变更可回看 16.2 节。
 
@@ -305,7 +306,7 @@ adb logcat -s PackageArchiverService ActivityTaskManager PackageInstaller
 
 ## 扩展：与自动清理 / 空间治理策略的关系
 
-Android 15 官方表述把平台归档定位为“让所有应用商店更容易实现归档和恢复”。系统是否自动选择某个应用归档，仍取决于设置项、权限回收、安装器能力和设备策略。AOSP 中 `PackageArchiver` 有 `OP_AUTO_REVOKE_PERMISSIONS_IF_UNUSED` 相关 opt-out 检查，说明“长期不用应用”的权限/清理策略会影响能否归档。[已验证: AOSP main, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L750-L765]
+Android 15 官方表述把平台归档定位为“让所有应用商店更容易实现归档和恢复”。系统是否自动选择某个应用归档，仍取决于设置项、权限回收、安装器能力和设备策略。AOSP 中 `PackageArchiver` 有 `OP_AUTO_REVOKE_PERMISSIONS_IF_UNUSED` 相关 opt-out 检查，说明“长期不用应用”的权限/清理策略会影响能否归档。[已验证: android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java#L750-L765]
 
 企业设备还要额外考虑 device owner / profile owner。若策略禁止卸载或限制安装来源，归档恢复可能在删除或安装阶段失败；这类失败应归入设备策略边界，不应算作归档机制本身的性能问题。
 
@@ -327,11 +328,11 @@ App Archiving 把“卸掉代码、保留数据、保留入口、交给安装器
 | Android 16 | API 36 | ✅ 存在（SHA 4690e020，68659 bytes） | ✅ 存在 |
 | Android 17 | API 37 | ⛔ GitHub Mirror 无此 tag，无法逐文件验证 | ⛔ 无 tag |
 
-**结论：App Archiving 平台实现属于 Android 15 / API 35 特性**，原章节"applicable_versions: Android 15 (API 35) - Android 17 (API 37)"与源码一致。android-17.0.0_r1 虽无法在 GitHub Mirror 逐文件验证，但机制自 API 35 起无结构性破坏，视为覆盖 API 37。
+**结论：App Archiving 平台实现属于 Android 15 / API 35 特性**，原章节"applicable_versions: Android 15 (API 35) - Android 17 (API 37)"与源码一致。android-17.0.0_r1 目前无公开 tag，无法逐文件验证。按 AIW 版本边界，Android 17/API 37 适用范围待 release tag 复核，不写"视为覆盖"。
 
 ### INSTALL_UNARCHIVE 标志与确认跳过机制
 
-**源码位置：** `PackageInstallerSession.java`（AOSP main branch）
+**源码位置：** `PackageInstallerSession.java`（android-16.0.0_r1）
 
 `PackageInstallerSession` 在安装会话初始化时通过 `INSTALL_UNARCHIVE` 标志判断当前是否属于归档恢复安装：
 
@@ -362,4 +363,4 @@ final boolean noUserActionNecessary = isInstallerRoot || isInstallerSystem
 - `181264cb256c`（2024-09-04）：**允许 preinstalled launcher apps（非 default launcher）触发 unarchive** — 扩展了 `requestUnarchiveOnActivityStart()` 的允许调用者范围
 - `3d9cc0a12fc2`（2024-11-12）：`requestUnarchiveConfirmation` 中 sendIntent 改用 handler post
 
-**信息源：** GitHub AOSP Mirror commit log（aosp-mirror/platform_frameworks_base）；一手源码（PackageArchiver.java @ android-15.0.0_r1、android-16.0.0_r1、main；PackageInstallerSession.java @ main；ArchiveState.java @ android-16.0.0_r1）
+**信息源：** GitHub AOSP Mirror commit log（aosp-mirror/platform_frameworks_base）；一手源码（PackageArchiver.java @ android-15.0.0_r1、android-16.0.0_r1；PackageInstallerSession.java @ android-16.0.0_r1；ArchiveState.java @ android-16.0.0_r1）
