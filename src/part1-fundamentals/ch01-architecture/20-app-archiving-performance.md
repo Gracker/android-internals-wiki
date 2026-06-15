@@ -5,7 +5,7 @@ section: "1.20"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 15 (API 35) - Android 16 (API 36)；Android 17 (API 37) 待 tag 复核"
-last_verified: "2026-05-17"
+last_verified: "2026-06-15"
 last_verified_against: "android-15.0.0_r1, android-16.0.0_r1 (frameworks/base)"
 confidence: medium
 tags: [package-manager, app-archiving, storage, app-startup, android-15]
@@ -32,17 +32,20 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/pm/pkg/ArchiveState.java @ android-16.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java @ android-16.0.0_r1"
   - type: official
     path: "https://android-developers.googleblog.com/2024/04/the-first-beta-of-android-15.html#app-archiving"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md"
-pipeline_stage: task9_pending
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task9_state: reviewed
+task9_result: auto-fixed
 task9_reviewed_date: "2026-06-15"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-15T11:26:52+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-27-19-deep-review.md"
+last_task9_at: "2026-06-15T12:34:44+08:00"
+last_task9_autofix_at: "2026-06-15"
+last_task9_review_log: "logs/deep-review/2026-06-15-12-deep-review.md"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-06-15
@@ -50,10 +53,10 @@ queue_entry: task9-2026-05-17-1-20-archive-conditions-callback
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: "2026-06-15 Task9 闲时抽检：needs-rework。发现 AOSP main/GitHub Mirror 锚点推断 Android 17 覆盖、Android 15/16 Launcher 恢复调用者范围差异未进入正文版本口径；已写 queue.json（P1:2）。此前记录：2026-05-27 Task9 pass-tech-review，复核 PackageInstaller/PackageArchiver/ActivityStarter 主链路。"
+task9_review_notes: "2026-06-15 12:34 Task9 auto-fixed：清理上一轮回炉后残留的未限定源码锚点表述，并补正 SDM 校验边界：PackageArchiver 主路径无 SDM 特判，PackageInstallerSession android-16.0.0_r1 存在 verifySdmSignatures()，恢复安装是否携带 .sdm 仍待端到端验证。此前：2026-06-15 闲时抽检 P1:2 已由 Task2B Lite 修复；2026-05-27 Task9 pass-tech-review。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-15"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-06-15T12:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-15-12-review.md"
@@ -89,7 +92,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-15-11-audit.md"
 回连 1.9 PMS、6.1 存储架构、8.2 App 启动全流程和 12.1 APK 体积优化：归档节省的是安装包和缓存文件，不等于减少已运行进程的 RSS，也不直接改变 LMK 选择。
 
 ### 🔹 版本与生态边界
-整理 Android 15-17 的公开 API、AOSP main 实现、第三方应用商店需要处理 `ACTION_UNARCHIVE_PACKAGE` 的条件，以及 Android 16 以后 SDM / 签名校验线索的待验证边界。
+整理 Android 15-17 的公开 API、Android 15/16 release tag 实现、第三方应用商店需要处理 `ACTION_UNARCHIVE_PACKAGE` 的条件，以及 Android 16 以后 SDM / 签名校验线索的待验证边界。
 
 ## 扩展
 
@@ -120,7 +123,7 @@ Google Play 在 Android 15 之前已经有 Auto Archive。那套能力依赖 Pla
 
 ## PackageInstaller.requestArchive() 的入口条件
 
-公开 API 入口在 `PackageInstaller`。AOSP main 中 `requestArchive()` 的文档写明：归档过程中会移除应用 APK 与缓存文件，保留用户数据；归档应用仍会通过 `LauncherApps` 作为可展示应用返回，用户点击后进入恢复流程。[已验证: android-16.0.0_r1, frameworks/base/core/java/android/content/pm/PackageInstaller.java#L2418-L2438]
+公开 API 入口在 `PackageInstaller`。android-16.0.0_r1 中 `requestArchive()` 的文档写明：归档过程中会移除应用 APK 与缓存文件，保留用户数据；归档应用仍会通过 `LauncherApps` 作为可展示应用返回，用户点击后进入恢复流程。[已验证: android-16.0.0_r1, frameworks/base/core/java/android/content/pm/PackageInstaller.java#L2418-L2438]
 
 这段代码给出了调用侧边界：
 
@@ -266,7 +269,7 @@ PMS 视角下，归档是包状态与删除语义的一次组合：`PackageState
 | 版本 | 行为边界 | 验证状态 |
 |---|---|---|
 | Android 14 及以前 | 平台没有公开 `PackageInstaller.requestArchive()`；Google Play 可通过自身 Auto Archive 能力处理部分应用 | [已验证: 官方文档, Android Developers Blog 2024-04-11] |
-| Android 15 / API 35 | 平台加入 `requestArchive()`、`requestUnarchive()`、`ACTION_UNARCHIVE_PACKAGE`、`PackageArchiver` 与 `ArchiveState` | [已验证: AOSP main + 官方文档] |
+| Android 15 / API 35 | 平台加入 `requestArchive()`、`requestUnarchive()`、`ACTION_UNARCHIVE_PACKAGE`、`PackageArchiver` 与 `ArchiveState` | [已验证: AOSP android-15.0.0_r1 / android-16.0.0_r1 + 官方文档] |
 | Android 16 / API 36 | 归档主流程仍沿用 Android 15 结构；SDM / 签名委托与归档恢复完整关系缺少公开端到端材料 | [待验证] |
 | Android 17 / API 37 | 无公开 release tag（android-17.0.0_r1），无法逐文件验证；主流程是否变化待 tag 发布后复核 | [待验证] |
 
@@ -281,7 +284,7 @@ Android 15–17 的其他性能行为变更可回看 16.2 节。
 
 ## 扩展：SDM 签名校验与归档恢复安全性
 
-现有素材提到 Android 16 之后存在 `.sdm` 签名文件和恢复包完整性校验线索，但本轮没有在 AOSP main 的归档主路径中完成端到端验证。正文只记录一个待查方向：如果安装器通过签名委托或增量包恢复归档应用，需要确认 `.sdm` 与 APK 签名校验、update owner、安装器身份（installer identity）的交互点。[待验证]
+现有素材提到 Android 16 之后存在 `.sdm` 签名文件和恢复包完整性校验线索。android-16.0.0_r1 的 `PackageInstallerSession` 确有 `verifySdmSignatures()`，但它属于 `cloudCompilationVerification()` 下的安装会话校验；本轮没有在 `PackageArchiver` 归档入口中看到专门的 SDM 恢复分支。正文只记录一个待查方向：如果安装器通过签名委托或增量包恢复归档应用，需要确认 `.sdm` 与 APK 签名校验、update owner、安装器身份（installer identity）的交互点。[待验证]
 
 后续验证路径：
 
@@ -319,14 +322,14 @@ App Archiving 把“卸掉代码、保留数据、保留入口、交给安装器
 
 ### 版本边界确认
 
-**PackageArchiver.java 版本存在感通过 GitHub AOSP Mirror 逐 tag 验证：**
+**PackageArchiver.java 版本存在感通过 AOSP release tag 验证：**
 
 | Android 版本 | API Level | PackageArchiver.java | ArchiveState.java |
 |---|---|---|---|
 | Android 14 | API 34 | ❌ 不存在（404 Not Found） | ❌ 不存在 |
 | **Android 15** | **API 35** | ✅ **首次出现**（SHA 0d1095f5，66121 bytes） | ✅ 存在 |
 | Android 16 | API 36 | ✅ 存在（SHA 4690e020，68659 bytes） | ✅ 存在 |
-| Android 17 | API 37 | ⛔ GitHub Mirror 无此 tag，无法逐文件验证 | ⛔ 无 tag |
+| Android 17 | API 37 | ⛔ android.googlesource 未检出此 tag，无法逐文件验证 | ⛔ 无 tag |
 
 **结论：App Archiving 平台实现属于 Android 15 / API 35 特性**，原章节"applicable_versions: Android 15 (API 35) - Android 17 (API 37)"与源码一致。android-17.0.0_r1 目前无公开 tag，无法逐文件验证。按 AIW 版本边界，Android 17/API 37 适用范围待 release tag 复核，不写"视为覆盖"。
 
@@ -348,13 +351,13 @@ final boolean noUserActionNecessary = isInstallerRoot || isInstallerSystem
 
 `isInstallUnarchive` 为 true 时，`noUserActionNecessary` 成立，`PackageInstallerSession` 跳过用户确认阶段（因为 unarchive 确认已在 `requestUnarchiveConfirmation()` 流程中完成）。这是恢复安装性能优于普通安装（需要额外弹窗确认）的关键机制。
 
-### SDM 签名校验：源码中不存在
+### SDM 签名校验：PackageArchiver 主路径未接 SDM 特判
 
-**验证结果（源码路径）：** `PackageArchiver.java`（main branch + android-16.0.0_r1）中搜索 `sdm`、`SDM`、`signature`、`verifySdm` 关键字，**均无匹配**。`PackageInstallerSession` 中 `INSTALL_UNARCHIVE` 仅涉及安装标志位判断，不涉及包完整性签名校验。
+**验证结果（源码路径）：** `PackageArchiver.java`（android-16.0.0_r1）中搜索 `sdm`、`SDM`、`signature`、`verifySdm` 关键字无匹配；它只负责创建归档/恢复 session，并设置 `INSTALL_UNARCHIVE_DRAFT | INSTALL_UNARCHIVE`。`PackageInstallerSession.java`（android-16.0.0_r1）中存在 `verifySdmSignatures()`，调用点在 `cloudCompilationVerification()` 分支，用于校验 `.sdm` 与 APK 的签名一致性；这不是 `PackageArchiver` 针对归档恢复单独增加的安全分支。
 
-**原章节该待验证条目修订：SDM 签名校验与恢复包完整性校验在 AOSP PackageArchiver 主路径中无源码支撑，应标注为「超出 AIW 范围」，不作为正文结论。**
+**原章节该待验证条目修订：SDM 签名校验可作为 Android 16 安装会话的独立线索保留，但不能写成 App Archiving 主链路的既定恢复校验。若要进入正文结论，需要继续验证恢复安装 session 携带 `.sdm` / art-managed files 时是否走同一条 `PackageInstallerSession` 校验路径。**
 
-### android-15 → android-16 后续演进（main branch commit history）
+### android-15 → android-16 后续演进（AOSP commit history，release tag 行为已复核）
 
 关键 commit（2024-04 至 2024-11）：
 
@@ -363,4 +366,4 @@ final boolean noUserActionNecessary = isInstallerRoot || isInstallerSystem
 - `181264cb256c`（2024-09-04）：**允许 preinstalled launcher apps（非 default launcher）触发 unarchive** — 扩展了 `requestUnarchiveOnActivityStart()` 的允许调用者范围
 - `3d9cc0a12fc2`（2024-11-12）：`requestUnarchiveConfirmation` 中 sendIntent 改用 handler post
 
-**信息源：** GitHub AOSP Mirror commit log（aosp-mirror/platform_frameworks_base）；一手源码（PackageArchiver.java @ android-15.0.0_r1、android-16.0.0_r1；PackageInstallerSession.java @ android-16.0.0_r1；ArchiveState.java @ android-16.0.0_r1）
+**信息源：** AOSP commit log；一手源码（PackageArchiver.java @ android-15.0.0_r1、android-16.0.0_r1；PackageInstallerSession.java @ android-16.0.0_r1；ArchiveState.java @ android-16.0.0_r1）
