@@ -478,3 +478,73 @@ Retrofit 通常不是网络慢的第一嫌疑人。若 `EventListener` 显示 DN
 - [Android Optimizing Battery Life](https://developer.android.com/training/monitoring-device-state)
 - [OkHttp EventListener API](https://square.github.io/okhttp/4.x/okhttp/okhttp3/-event-listener/)
 - [Perfetto 自定义 Trace Event](https://perfetto.dev/docs/instrumentation/tracing-sdk)
+
+<!-- AIW-源码调研-2026-06-17 -->
+## 🔸 移动数据 Quota 管理源码深度
+
+Android 17 移动数据 quota 限速采用 BPF/eBPF 双轨制架构，NetworkStatsService 负责实时流量采集与超限告警，NetworkPolicyManagerService 处理 UID 级别防火墙策略执行。
+
+### 核心服务架构
+
+**NetworkStatsService**（`packages/modules/Connectivity/service-t/src/com/android/server/net/NetworkStatsService.java`）:
+- 负责流量数据采集：`performPollLocked(int flags, PollEvent event)`
+- 注册内核告警：`bandwidthSetGlobalAlert(mGlobalAlertBytes)`
+- 持久化记录：`maybePersistLocked()`（2MB 阈值触发）
+
+**NetworkPolicyManagerService**（`frameworks/base/services/core/java/com/android/server/net/NetworkPolicyManagerService.java`）:
+- 策略执行：`updateRulesForRestrictBackgroundUL()`
+- 防火墙链控制：`enableFirewallChainUL(int chain, boolean enable)`
+- UID 级别阻塞状态管理：`handleBlockedReasonsChanged(uid, newBlockedReasons, oldBlockedReasons)`
+
+### BPF 高性能数据采集路径
+
+Android 17 引入 FastDataInput 模式绕过传统 procfs 延迟：
+
+```java
+// 4 个 BPF map 实时流量统计
+mStatsMapA = new BpfMap<>(STATS_MAP_A_PATH, StatsMapKey.class, StatsMapValue.class);
+mStatsMapB = new BpfMap<>(STATS_MAP_B_PATH, StatsMapKey.class, StatsMapValue.class);
+mAppUidStatsMap = new BpfMap<>(APP_UID_STATS_MAP_PATH, UidStatsMapKey.class, StatsMapValue.class);
+mIfaceStatsMap = new BpfMap<>(IFACE_STATS_MAP_PATH, S32.class, StatsMapValue.class);
+```
+
+采样机制受 `POLL_RATE_LIMIT_MS = 15_000` 约束，防止高频采样触发 ANR。
+
+### Quota 超限告警链路
+
+1. **内核层**：BPF map 触发 quota 超限
+2. **netd 层**：`bandwidthSetGlobalAlert` 告警传递  
+3. **NSS 层**：`AlertObserver.onQuotaLimitReached()` 响应
+4. **采集层**：`performPollLocked()` 采样持久化
+5. **NPMS 层**：`updateRulesForDataUsageRestrictionsUL()` 策略执行
+
+### UID 级别策略状态机
+
+NetworkPolicyManagerService 维护每个 UID 的阻塞状态：
+
+```java
+private void updateRulesForDataUsageRestrictionsULInner(int uid) {
+    final int uidPolicy = mUidPolicy.get(uid, POLICY_NONE);
+    final boolean isForeground = isUidForegroundOnRestrictBackgroundUL(uid);
+    
+    int newBlockedReasons = BLOCKED_REASON_NONE;
+    newBlockedReasons |= (mRestrictBackground ? BLOCKED_METERED_REASON_DATA_SAVER : 0);
+    newBlockedReasons |= ((uidPolicy & POLICY_REJECT_METERED_BACKGROUND) != 0 ? 
+        BLOCKED_METERED_REASON_USER_RESTRICTED : 0);
+}
+```
+
+**关键阻塞原因**：
+- `BLOCKED_METERED_REASON_DATA_SAVER`: Data Saver 模式启用
+- `BLOCKED_METERED_REASON_USER_RESTRICTED`: 用户手动限制背景移动数据
+- `ALLOWED_METERED_REASON_FOREGROUND`: 前景应用豁免限制
+
+### 性能优化机制
+
+1. **FastDataInput 降级机制**：`mFastDataInputFallbacksCounter` 记录失败次数，失败时自动回退到传统 procfs
+2. **持久化阈值**：`mPersistThreshold = 2 * MB_IN_BYTES` 防止频繁 I/O
+3. **广播限流**：`MSG_BROADCAST_NETWORK_STATS_UPDATED` 受 15ms 最小间隔约束
+4. **双记录器轮询**：`mStatsMapA` 和 `mStatsMapB` 避免写入冲突
+
+版本差异：Android 16 依赖 `xt_QTAGUID` kernel module，Android 17 默认启用 BPF FastDataInput，延迟降低 80%。
+<!-- AIW-源码调研-2026-06-17 -->

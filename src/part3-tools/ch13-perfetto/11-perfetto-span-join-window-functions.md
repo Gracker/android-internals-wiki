@@ -328,6 +328,8 @@ ORDER BY frame.frame_id;
 
 这个统计能回答两个问题：帧的墙上时间里主线程占用 CPU 跑了多久；主线程运行期间 CPU 频率处在哪个区间。如果 `frame_wall_ms` 很高但 `main_cpu_ms` 很低，瓶颈更可能是等锁、等 Binder、等 I/O 或调度排队，详见 §13.6。若 `main_cpu_ms` 高且 `avg_freq_khz` 长期偏低，需要继续看温控、后台功耗限制、线程优先级和厂商调度策略，eBPF 侧的频率驻留统计可作为补充，详见 §14.10。
 
+**注意：** 上述查询使用普通 JOIN 做重叠判断但聚合 `joined.dur`，当 sched/cpufreq 交集段跨过 frame 边界时，frame 外时长会被错误算进当前帧。推荐改为 `SPAN_JOIN(frame_span PARTITIONED utid, sched_with_freq PARTITIONED utid)` 后聚合，或用 `MIN(joined.ts + joined.dur, frame.ts + frame.dur) - MAX(joined.ts, frame.ts)` 计算精确的重叠时长。
+
 ## 帧 × Binder / 锁 / GC 的交叉分析
 
 `SPAN_JOIN` 的价值不只在 CPU 频率。只要把事件整理成 `ts + dur + 分区键`，就能把帧窗口与 Binder、锁竞争、GC pause 关联起来。
