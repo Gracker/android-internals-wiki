@@ -946,23 +946,24 @@
     "title": "异常处理架构设计",
     "file": "src/part5-app/ch20-stability/07-exception-architecture.md",
     "priority": 85,
-    "reason": "[Deep Tech Review] 异常处理架构仍保留 Task9 回炉占位，SafeMode 状态机和 crash 文件持久化协议未闭环。（版本/API 边界问题已由 Task2B Lite 于 2026-06-16 修复）",
+    "reason": "[Deep Tech Review] Task9 02:20 复审确认：SafeMode 状态机和 crash 文件持久化协议仍未闭环；getTraceInputStream 版本/API 边界已通过复核。",
     "material_paths": [
+      "logs/deep-review/2026-06-16-02-deep-review.md",
       "logs/deep-review/2026-06-16-00-deep-review.md",
       "https://developer.android.com/reference/android/app/ApplicationExitInfo",
-      "https://android.googlesource.com/platform/frameworks/base.git/+/master/core/java/android/app/ApplicationExitInfo.java"
+      "https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)"
     ],
     "review_issues": [
       {
         "type": "原理断裂/知识盲区",
-        "location": "L140-L170 SafeMode 判定",
-        "detail": "正文只有 recent crashes 按 stackFingerprint 达阈值后 enable safe_mode 的示意，仍标注缺 launch marker 状态机、启动成功标记、退出原因过滤和离线补偿链路。没有这些环节，无法区分“启动过程中崩溃”“后台/页面崩溃”“用户主动退出”“系统杀进程”，SafeMode 可能误触发或漏触发。",
-        "suggestion": "补 launch_attempt/launch_success/crash_before_success 三态或等价 marker；把 ApplicationExitInfo reason、版本号、进程名、崩溃指纹、启动窗口时间纳入判定；说明远程配置不可用时本地默认规则如何继续生效。"
+        "location": "L141-L171 SafeMode 判定",
+        "detail": "正文只有 recent crashes 按 stackFingerprint 达阈值后 enable safe_mode 的示意，仍以占位说明缺 launch marker 状态机、启动成功标记、退出原因过滤和离线补偿链路。没有这些环节，无法区分启动阶段崩溃、后台/页面崩溃、用户主动退出和系统杀进程，SafeMode 可能误触发或漏触发。",
+        "suggestion": "补 launch_attempt / launch_success / crash_before_success 三态或等价 marker；把 ApplicationExitInfo reason、版本号、进程名、崩溃指纹和启动窗口时间纳入判定；说明远程配置不可用时本地默认规则如何继续生效。"
       },
       {
         "type": "原理断裂/数据持久化边界",
-        "location": "L272-L274 多进程记录文件",
-        "detail": "正文仍只写临时文件 + rename，并用占位说明缺 flush/fsync、rename 后父目录 fsync、completed/tmp 扫描和 partial 清理规则。Crash 入口写文件时如果缺目录 fsync 或恢复扫描协议，断电/进程死亡后仍可能出现“文件名已替换但目录项未落盘”或 tmp 残留无法归类。",
+        "location": "L273-L275 多进程记录文件",
+        "detail": "正文仍只写临时文件 + rename，并以占位说明缺 flush/fsync、rename 后父目录 fsync、completed/tmp 扫描和 partial 清理规则。Crash 入口写文件时如果缺目录 fsync 或恢复扫描协议，断电/进程死亡后仍可能出现目录项未落盘、tmp 残留无法归类或记录不可补报。",
         "suggestion": "补最小可靠写入协议：tmp 写入、flush/FileDescriptor.sync、rename 到 completed、父目录 fsync；下次启动扫描 completed/tmp/partial 并按校验字段清理或补报；多进程按进程分文件或加文件锁。"
       }
     ],
