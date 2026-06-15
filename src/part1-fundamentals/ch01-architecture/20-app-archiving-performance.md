@@ -2,7 +2,7 @@
 title: "App Archiving 机制与恢复性能"
 chapter: "1.20"
 section: "1.20"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-17"
 applicable_versions: "Android 15 (API 35) - Android 16 (API 36)；Android 17 (API 37) 待 tag 复核"
 last_verified: "2026-06-15"
@@ -38,7 +38,7 @@ sources:
     path: "https://android-developers.googleblog.com/2024/04/the-first-beta-of-android-15.html#app-archiving"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-15"
@@ -56,11 +56,11 @@ p2: 0
 task9_review_notes: "2026-06-15 12:34 Task9 auto-fixed：清理上一轮回炉后残留的未限定源码锚点表述，并补正 SDM 校验边界：PackageArchiver 主路径无 SDM 特判，PackageInstallerSession android-16.0.0_r1 存在 verifySdmSignatures()，恢复安装是否携带 .sdm 仍待端到端验证。此前：2026-06-15 闲时抽检 P1:2 已由 Task2B Lite 修复；2026-05-27 Task9 pass-tech-review。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-15"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: "2026-06-15T12:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-15-12-review.md"
-task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。 2026-06-15 Task6 revisiting→reviewed：pass-light-edit。L1/L2 无新问题（经多轮 review 已清洁）；L3/L4 无写作质量回炉项。Task9 闲时抽检 needs-rework（P1:2 技术口径），待 Task9 复审。"
+last_task6_at: "2026-06-15T13:15:35+08:00"
+last_task6_review_log: "logs/review/2026-06-15-13-review.md"
+task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。 2026-06-15 Task6 revisiting→reviewed：pass-light-edit。L1/L2 无新问题（经多轮 review 已清洁）；L3/L4 无写作质量回炉项。Task9 闲时抽检 needs-rework（P1:2 技术口径），待 Task9 复审。 2026-06-15 Task6 revisiting→reviewed：pass-light-edit，自动晋升 finalized。Task9 auto-fixed（源码锚点已重定向 android-15/16.0.0_r1，版本边界已修正，调用者范围已拆分 Android 15 vs 16）；Task2B fixed-lite；queue.json 1.20 条目 completed。L1 全量扫描零命中（禁用词/汇报腔/AI套话/翻译腔/高频词/元叙述），L2 结构与节奏良好，L3/L4 无写作质量回炉项。✅ 自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
 last_task9_audit: "2026-06-15"
