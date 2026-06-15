@@ -3,7 +3,7 @@
 title: "App Bundle 与按需分发"
 chapter: "25.8"
 section: "25.8"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-02/2026-03 + AOSP android-16.0.0_r1 source anchors"

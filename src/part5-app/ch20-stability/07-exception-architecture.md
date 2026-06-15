@@ -46,7 +46,7 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-15T16:13:21+08:00"
 last_task6_review_log: "logs/review/2026-05-15-06-review.md"
 task6_review_notes: "2026-05-15 Task6 06:05：needs-rework。完成 L1/L2 小修 6 处；沿用 Task9 风险信号标注 4 处并合并 queue，交 Task2B。"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: "needs-rework"
