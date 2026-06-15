@@ -25,7 +25,7 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-05-22T19:18:14+08:00"
@@ -36,31 +36,31 @@ rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-22"
-last_task9_at: "2026-05-22T19:26:00+08:00"
+task9_reviewed_date: "2026-06-15"
+last_task9_at: "2026-06-15T09:27:19+08:00"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-22"
-task2b_state: "fixed"
+task2b_state: fixed
 p0: 0
 p1: 0
-p2: 1
+p2: 0
 updated_by: "openclaw-task9"
-updated_date: "2026-05-22"
+updated_date: "2026-06-15"
 review_notes: "2026-05-22 task2b rework: P0×2 IActivityManager.aidl路径+ModernBroadcastQueue线程模型；P1×2 Freezer广播口径收窄+16KB SQLite条件化。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 2 处（ContentProvider 顺序句式、占位提示改为 Trace 观察点）。既有 Task9 16KB SQLite P1 queue pending，保持 task2b_pending。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 1 处；修复版本演进里的物理动词式表达；既有 Task9 P0（16KB SQLite 页大小排查路径）queue 保留，保持 task2b_pending。 2026-05-22 19:26 Task9 re-review: pass-tech-review，P0/P1=0；P2 低内存/LMK 因果链精度已写 suggestions；queue 无 pending，自动晋升 finalized。"
 rework_round_2: "2026-05-04"
-last_task9_audit: "2026-05-22"
-task9_audit_notes: "2026-05-22 idle audit: P0×2 / P1×2; see logs/deep-review/2026-05-22-08-audit.md."
+last_task9_audit: "2026-06-15"
+task9_audit_notes: "2026-05-22 idle audit: P0×2 / P1×2; see logs/deep-review/2026-05-22-08-audit.md. 2026-06-15 idle audit auto-fix: ART GC cause 常量修正，见 logs/deep-review/2026-06-15-09-audit.md。"
 last_task6_audit: "2026-05-22"
 task6_audit_notes: "2026-05-22 idle audit: L1 wording fixes; status changed from finalized to ready-for-review because Task9 queue has pending P0/P1 issues."
 auto_promotion_revoked_by: "openclaw-task6"
 auto_promotion_revoked_date: "2026-05-22"
 auto_promotion_revoked_reason: "Task9 audit queue pending; finalized status was inconsistent."
-last_task9_review_log: "logs/deep-review/2026-05-22-19-deep-review.md"
-task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1；P2 1：低内存/LMK 段需收窄 kswapd 与磁盘 I/O 的因果表述（已写 suggestions）。queue 无 pending，Task6 已通过，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-15-09-audit.md"
+task9_review_notes: "2026-06-15 Task9 idle audit auto-fix: 修正 ART GC cause 常量 kGcCauseNativeAlloc -> kGcCauseForNativeAlloc；证据：AOSP art/runtime/gc/gc_cause.h android-14.0.0_r1/15.0.0_r1/16.0.0_r1。未发现需写 queue 的 P0/P1。"
 last_task6_at: "2026-05-22T16:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-16-review.md"
 finalized_date: "2026-05-22"
@@ -68,6 +68,7 @@ finalized_by: "openclaw-task9-auto-promote"
 auto_promoted: true
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
+last_task9_autofix_at: "2026-06-15"
 ---
 # 特殊场景的 ANR
 
@@ -276,7 +277,7 @@ ART 的 GC 触发不能按固定 50% 线理解。`TargetHeapUtilization` 是 GC 
 
 触发链路上的关键源码：
 
-`art/runtime/gc/heap.cc` 中，`Heap::GrowForUtilization()` 在每次 GC 后更新 `target_footprint_` 和 `concurrent_start_bytes_`，决定了下一次 concurrent GC 的触发距离。分配慢路径会对比 footprint / growth limit 和 concurrent start 阈值，按需请求 concurrent GC 或 for-alloc GC。`art/runtime/gc/gc_cause.h` 定义了 `kGcCauseForAlloc`、`kGcCauseBackground`、`kGcCauseExplicit`、`kGcCauseNativeAlloc` 等触发原因，不同 cause 对应不同的暂停特征和排查方向。
+`art/runtime/gc/heap.cc` 中，`Heap::GrowForUtilization()` 在每次 GC 后更新 `target_footprint_` 和 `concurrent_start_bytes_`，决定了下一次 concurrent GC 的触发距离。分配慢路径会对比 footprint / growth limit 和 concurrent start 阈值，按需请求 concurrent GC 或 for-alloc GC。`art/runtime/gc/gc_cause.h` 定义了 `kGcCauseForAlloc`、`kGcCauseBackground`、`kGcCauseExplicit`、`kGcCauseForNativeAlloc` 等触发原因，不同 cause 对应不同的暂停特征和排查方向。
 
 下面是概念伪代码，用来说明判断顺序，不是 AOSP 函数体摘录：
 
