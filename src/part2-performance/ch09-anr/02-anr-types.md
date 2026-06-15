@@ -358,3 +358,40 @@ adb shell cat /data/anr/anr_* | tail -200
   - https://developer.android.com/guide/components/fg-services
 - 研究素材：
   - intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md
+
+<!-- AIW-源码调研-2026-06-15 -->
+## 源码映射：ANR 类型与 InputDispatcher/AMS 路径
+
+> 关联 DeepResearch：`2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md`
+
+| ANR 类型 | 触发源 | 关键源码 | 阈值 |
+|---------|--------|---------|------|
+| **Input 派发超时** | `InputDispatcher::onAnrLocked(connection)` @ `InputDispatcher.cpp:6546` | mAnrTracker.firstTimeout() 命中 | `UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000` × HwTimeoutMultiplier |
+| **无焦点窗口** | `InputDispatcher::onAnrLocked(application)` @ `InputDispatcher.cpp:6581` | mNoFocusedWindowTimeoutTime 到期 | 同上 |
+| **Watchdog (system_server hang)** | `Watchdog.java:getCompletionStateLocked()` @ line 320 | 60s default / 15s pre-watchdog | `PRE_WATCHDOG_TIMEOUT_RATIO = 4` |
+| **Provider 超时** | `AMS.appNotRespondingViaProvider` @ `ActivityManagerService.java:7152` | `mCpHelper.appNotRespondingViaProvider(connection)` | 沿用 AnrHelper 流程 |
+| **Broadcast / Service 超时** | `ActiveServices.scheduleServiceTimeoutLocked` / `BroadcastQueue` | mAnrHelper.appNotResponding 经 mAmInternal | 详见各模块 |
+
+**Input 派发超时细分**：
+
+- **Connection ANR**（App 进程无响应）：waitQueue 头元素 `deliveryTime` 超 threshold → `connection->responsive = false` → `cancelEventsForAnrLocked` 清空后续事件。
+- **No Focused Window ANR**（启动期无窗口）：focusedApplicationHandle 存在但 focusedWindowHandle 为空 → 启动超时 → 等待焦点窗口出现；若超时则归咎 application 而非窗口。
+
+**关键 ANR 路径在 `AnrHelper` 内有 4 类 skip**（`AnrHelper.java:118-181`）：
+
+1. zero pid（zygote 等极端）
+2. mProcessingPid 命中（同一 pid 重复处理）
+3. mTempDumpedPids 已 add（已被 earlyDump 处理）
+4. mAnrRecords 队列里已有同 pid（已排队，避免并发 dump）
+
+**`isContinuousAnr=true` 触发条件**：CONSECUTIVE_ANR_TIME_MS = 2min 内同一应用再次 ANR，AppNotRespondingDialog 文案会带 "持续无响应" 提示。
+
+**Dropbox tag 命名规则**（`AMS.addErrorToDropBox` @ `ActivityManagerService.java:9806-9840`）：
+
+- `dropboxTag = processClass(process) + "_" + eventType`
+- `processClass(process)` 返回值：`system_server`（PID=system_server）/ `system_app`（system UID）/ `data_app`（其他）
+- ANR tag 示例：`system_server_anr`、`system_app_anr`、`data_app_anr`
+- 受 `Settings.Global.MAX_ERROR_BYTES_PREFIX + dropboxTag` 控制单条最大字节数
+
+---
+

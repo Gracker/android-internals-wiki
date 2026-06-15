@@ -511,3 +511,143 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
 - 素材来源：
   - [钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498818)
   - Android 16/17 ProfilingManager 系统触发式追踪（[ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)、[ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger)、[Android 17 features](https://developer.android.com/about/versions/17/features)）
+
+<!-- AIW-源码调研-2026-06-15 -->
+## 源码级补充：Android 14-17 ANR 检测链路（InputDispatcher → AMS → AnrHelper → ProcessErrorStateRecord）
+
+> 关联 DeepResearch：`2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md`
+
+### 默认派发超时阈值
+
+**`frameworks/native/libs/input/android/os/IInputConstants.aidl`**：
+
+```aidl
+interface IInputConstants {
+    const int UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000; // 5 seconds
+}
+```
+
+`InputDispatcher.cpp:140-142` 引用并乘以 `HwTimeoutMultiplier()`（ro.hw_timeout_multiplier 系统属性，默认 1）：
+
+```cpp
+const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::milliseconds(
+        android::os::IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS *
+        HwTimeoutMultiplier());
+```
+
+SLOW_EVENT_PROCESSING_WARNING_TIMEOUT = 2s（仅 logcat warning 不 ANR）；STALE_EVENT_TIMEOUT = 10s。
+
+### 三类 ANR 触发路径（InputDispatcher.cpp）
+
+1. **派发超时**（`InputDispatcher::onAnrLocked(connection)` @ line 6546）：mAnrTracker.firstTimeout() 命中 → 组装 reason（"Waited Xms for <event>"） → `updateLastAnrStateLocked()` 写入 mLastAnrState → `processConnectionUnresponsiveLocked` → `sendWindowUnresponsiveCommandLocked` 跨 binder 给 Java 侧。
+
+2. **无焦点窗口**（`InputDispatcher::onAnrLocked(application)` @ line 6581）：focusedWindowHandle == nullptr 且 focusedApplicationHandle != nullptr 时启动 `mNoFocusedWindowTimeoutTime = currentTime + getDispatchingTimeout(DEFAULT_INPUT_DISPATCHING_TIMEOUT)`；超时后 → `mPolicy.notifyNoFocusedWindowAnr(app)`。
+
+3. **mLastAnrState 诊断快照**（`InputDispatcher::updateLastAnrStateLocked` @ line 6605）：保留最近一次 ANR 的完整 dispatcher state，便于 dumpsys input 复盘。
+
+### Java 侧路由：AnrController
+
+`InputManagerCallback.notifyNoFocusedWindowAnr/notifyWindowUnresponsive`（line 108-119）→ `AnrController.notifyAppUnresponsive/notifyWindowUnresponsive`（line 68-220）。
+
+**关键 blamePendingFocusRequest 逻辑**（line 104-122）：input 焦点在 5s dispatch timeout 内切换则归咎焦点目标窗口而非原 ANR 应用，避免用户切到新 app 时新 app 的 ANR 被旧 app 误标（Android 15+ 引入）。
+
+### ActivityRecord → ActivityManagerService
+
+`ActivityRecord.inputDispatchingTimedOut`（line 7225）→ `ActivityManagerService.inputDispatchingTimedOut`（line 18115-18166）→ `mAnrHelper.appNotResponding`。后者会做 instrumentation 路径短路（line 18156）—— 进程正在 instrumentation 则 `finishInstrumentationLocked` 而非 ANR 流程。
+
+### AnrHelper 异步 trace dump 编排（Android 14+ 抽离）
+
+**核心常量**（`frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`）：
+
+| 常量 | 值 | 含义 |
+|------|-----|------|
+| `EXPIRED_REPORT_TIME_MS` | 10s | ANR 报告延迟 > 10s 只 dump 自己不 dump 其他进程 |
+| `CONSECUTIVE_ANR_TIME_MS` | 2min | 短时间内连续 ANR 视为 continuous |
+| `SELF_ONLY_AFTER_BOOT_MS` | 10min | 开机后 10min 内 ANR 仅 dump 自己 |
+| `DEFAULT_THREAD_KEEP_ALIVE_SECOND` | 10s | AnrHelper 线程池空闲线程过期时间 |
+
+**线程池**：`mAuxiliaryTaskExecutor`（1 线程，做 early dump）+ `mMainProcessDumpThreadPool`（2 线程，main dump）+ `AnrConsumerThread` 单消费者。
+
+**appNotResponding skip 逻辑**（line 118-181）：zero pid / duplicate / pre-dumped / queued 全部跳过。**AnrConsumerThread.run**（line 215-274）：单线程串行处理 mAnrRecords 队列，处理前 `scheduleBinderHeavyHitterAutoSamplerIfNecessary()` 拍 binder heavy hitter；处理后 `currentPid != r.mPid` 检查防止进程已重启处理陈旧 ANR。
+
+### ProcessErrorStateRecord.appNotResponding
+
+`frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java:293-673`，关键路径：
+
+1. `appEarlyNotResponding`（line 318）— 早期 kill 路径，WindowProcessController 可决定是否立即 `killLocked("anr", REASON_ANR, true)`；
+2. `skipAnrLocked`（line 270-289）— shutdown / duplicate / 正在 crash / 已被 AM kill / 已死亡 等场景跳过；
+3. 写 `FrameworkStatsLog.ANR_OCCURRED`（line 608-620，含 FOREGROUND_STATE + IS_INSTANT_APP + loadingProgress + incrementalMetrics）；
+4. `addErrorToDropBox("anr", ...)`（line 646）→ dropboxTag = `processClass(process) + "_anr"`，例如 `system_server_anr`、`system_app_anr`、`data_app_anr`；AMS 入口在 `ActivityManagerService.java:9806-9840`，dropboxTag 受 `mDropboxRateLimiter.shouldRateLimit(eventType, processName)` 控制避免洪泛；
+5. `WindowProcessController.appNotResponding` 返回 true 则跳过 dialog 直接 kill（早期 kill 路径）；
+6. `isSilentAnr() && !isDebugging()`（line 672）→ 后台应用 `killLocked("bg anr", REASON_ANR, true)` 不弹 dialog；
+7. `makeAppNotRespondingLSP` + `mUiHandler.sendMessageDelayed(SHOW_NOT_RESPONDING_UI_MSG, anrDialogDelayMs)`（line 685-692）弹 "App Not Responding" dialog。
+
+**isSilentAnr = !getShowBackground() && !isInterestingForBackgroundTraces()**（line 781-783），`isInterestingForBackgroundTraces` 判断 system_server PID / 显示 Activity / SystemUI / hasTopUi / hasOverlayUi 之一。
+
+### Watchdog（system_server 独立 ANR 守护）
+
+`frameworks/base/services/core/java/com/android/server/Watchdog.java`：
+
+```java
+private static final long DEFAULT_TIMEOUT = DB ? 10 * 1000 : 60 * 1000;  // 60s
+private static final int PRE_WATCHDOG_TIMEOUT_RATIO = 4;  // pre-watchdog = 60/4 = 15s
+
+public int getCompletionStateLocked() {
+    if (mCompleted) return COMPLETED;
+    long latency = mClock.millis() - mStartTimeMillis;
+    if (latency < mWaitMaxMillis / PRE_WATCHDOG_TIMEOUT_RATIO) return WAITING;     // <15s
+    else if (latency < mWaitMaxMillis) return WAITED_UNTIL_PRE_WATCHDOG;           // 15-60s
+    return OVERDUE;                                                                 // ≥60s
+}
+```
+
+Android 14+ 引入 PRE_WATCHDOG_TIMEOUT_RATIO 阶段：15s 时先 dump stacktrace 但不杀进程（避免误杀正在做长 GC 的 system_server），60s 时才真正 crash。
+
+### 完整调用链
+
+```
+[Native] InputDispatcher::dispatchOnce
+  → processAnrsLocked
+    → mNoFocusedWindowTimeoutTime 命中 → processNoFocusedWindowAnrLocked
+      → onAnrLocked(application)
+        → mPolicy.notifyNoFocusedWindowAnr(app)
+    → mAnrTracker.firstTimeout() 命中 → onAnrLocked(connection)
+      → updateLastAnrStateLocked → mLastAnrState
+      → processConnectionUnresponsiveLocked → sendWindowUnresponsiveCommandLocked
+        → mPolicy.notifyWindowUnresponsive(token, pid, reason)
+
+[Java - WindowManagerService]
+InputManagerCallback.notifyXxx → AnrController.notifyAppUnresponsive/notifyWindowUnresponsive
+  → activity.inputDispatchingTimedOut 或 mAmInternal.inputDispatchingTimedOut
+
+[Java - ActivityTaskManagerService]
+ActivityRecord.inputDispatchingTimedOut → ActivityManagerService.inputDispatchingTimedOut
+
+[Java - ActivityManagerService]
+ActivityManagerService.inputDispatchingTimedOut → mAnrHelper.appNotResponding
+
+[Java - AnrHelper]
+mAnrRecords.add(AnrRecord) → startAnrConsumerIfNeeded → AnrConsumerThread 单消费者
+  → r.appNotResponding(onlyDumpSelf)
+    → ProcessErrorStateRecord.appNotResponding
+      → appEarlyNotResponding (early kill)
+      → skipAnrLocked
+      → FrameworkStatsLog.ANR_OCCURRED (statsd)
+      → addErrorToDropBox("anr", ...) (dropbox)
+      → WindowProcessController.appNotResponding (early kill)
+      → isSilentAnr → killLocked("bg anr")
+      → mUiHandler.sendMessageDelayed(SHOW_NOT_RESPONDING_UI_MSG)
+```
+
+### 版本差异要点
+
+| 版本 | 关键变化 |
+|------|---------|
+| Android 8.0 (API 26) | IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000 已有；AnrHelper 未抽离 |
+| Android 11 (API 30) | mLastAnrState 引入（dumpsys input 复用最近 ANR 状态） |
+| Android 14 (API 34) | AnrHelper 抽离（Copyright 2020）+ 三段时间阈值 + early kill + ANR_OCCURRED atom 上报 |
+| Android 15 (API 35) | blamePendingFocusRequest 引入（line 104-122）解决焦点切换误报 |
+| Android 16/17 (API 36/37) | mTempDumpedPids 防止 preDump 与 queue 同 pid 竞争；currentPid != r.mPid 防止陈旧 ANR；mDropboxRateLimiter rate-limit |
+
+---
+

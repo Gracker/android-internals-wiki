@@ -49,17 +49,17 @@ last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 last_task9_autofix_at: "2026-06-15"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_reviewed_date: "2026-06-15"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-15T20:16:42+08:00"
+last_task6_at: "2026-06-15T21:14:47+08:00"
 last_task6_review_log: "logs/review/2026-05-27-09-review.md"
 review_type: task6-writing-quality-review
-task9_state: "reviewed"
+task9_state: "pending"
 last_task9_audit: "2026-06-15"
 last_task9_audit_log: "logs/deep-review/2026-06-15-19-audit.md"
 task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。修正术语括号格式；L1 禁用词与高频词扫描无命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-06-15 20:16 Task6 复审:pass-light-edit。Task9 idle-audit 补充 android17-6.18 kernel 分支口径后文风复扫;L1 禁用词/高频词/翻译腔动词均无命中;outline 5/5 + 扩展 2/2 覆盖;待验证 26.7% < 30%;无 L1/L2 新增问题;无 L3/L4 回炉项。Task9 result 为 auto-fixed,未满足自动晋升 finalized 条件,送 Task9 复审。"
@@ -149,7 +149,7 @@ CPU 是性能分析时最关注的组件。不同 SoC 在 CPU 核心的拓扑结
 
 同样是 ARMv9 指令集,不同核心的微架构设计会导致 IPC（Instructions Per Cycle）有显著差异。这直接影响在 Perfetto 中分析 CPU 利用率时的判断。
 
-高通的 Oryon 核心是自研微架构,开发团队背景来自 Nuvia,创始成员有 Apple CPU 团队经历。二手微架构分析文章称 Oryon 采用大容量 L1 缓存和私有 L2 缓存设计(每个核心独占 L2),但缓存拓扑的具体参数(容量、延迟周期)尚未有 Qualcomm 官方白皮书、Hot Chips/ISSCC 演讲、芯片拆解报告或可信 benchmark 数据确认,容易把 Snapdragon X Elite 与 8 Elite 的 cache 拓扑混用。当前能确认的方向性特征是:大容量 L1 带来更好的命中率,私有 L2 消除了多核共享缓存带来的竞争延迟,但 L2 容量和延迟周期仍待一手资料确认。在 Perfetto 中,Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰,但整体吞吐量很好。
+高通的 Oryon 核心是自研微架构,开发团队背景来自 Nuvia,创始成员有 Apple CPU 团队经历。二手微架构分析文章称 Oryon 采用大容量 L1 缓存和私有 L2 缓存设计(每个核心独占 L2),但缓存拓扑的具体参数(容量、延迟周期)尚未有 Qualcomm 官方白皮书、Hot Chips/ISSCC 演讲、芯片拆解报告或可信 benchmark 数据确认,容易把 Snapdragon X Elite 与 8 Elite 的 缓存拓扑混用。当前能确认的方向性特征是:大容量 L1 带来更好的命中率,私有 L2 消除了多核共享缓存带来的竞争延迟,但 L2 容量和延迟周期仍待一手资料确认。在 Perfetto 中,Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰,但整体吞吐量很好。
 
 [待验证: Oryon L1/L2 容量和访问延迟周期:Qualcomm 公开产品页未披露具体数字,待官方白皮书、Hot Chips/ISSCC 或芯片拆解报告确认;L2 已确认为私有(非共享),但容量和延迟数值仍待验证]
 
@@ -214,7 +214,7 @@ LIMIT 20;
 
 3. **sched_waking / sched_wakeup 事件**中观察唤醒目标 CPU 的分布。大小核架构下,低优先级唤醒偏向小核(CPU 4-7);全大核架构下唤醒目标分布更均匀,没有明显的「小核汇聚」现象。
 
-需要区分的是:迁移频繁不等于调度效率低。全大核的核心间性能差距小,同性能级别核心间的迁移开销较低(Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存,但任务迁移仍然会损失私有 L1 / L2 的局部性)。实际迁移成本要看缓存未命中、`uclamp`、集群策略、唤醒路径和具体工作负载,不能简单用 DSU 的存在推论"跨核迁移成本低"。在 Perfetto 中,只有迁移导致缓存抖动(例如 `cpu_cycles / instructions` 比值突然上升)时才需要关注。
+需要区分的是:迁移频繁不等于调度效率低。全大核的核心间性能差距小,同性能级别核心间的迁移开销较低(Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存,但任务迁移仍然会损失私有 L1 / L2 的局部性)。实际迁移成本要看缓存未命中、`uclamp`、集群策略、唤醒路径和具体工作负载,不能简单用 DSU 的存在推论"跨核迁移成本低 | 2026-06-15 21:14 Task6 复审:pass-light-edit。Task9 auto-fix 修正 Cortex-X925 L2/ROB 口径、Tensor G5/Pixel 10 RAM 机型差异、Geekbench 工具名后文风复扫;L1 禁用词/高频词/翻译腔动词均无命中;2 处 cache 未翻译英文已修正为缓存(L1 小修);outline 5/5 + 扩展 2/2 覆盖;待验证 23.5% < 30%;无 L1/L2 新增问题;无 L3/L4 回炉项。Task9 result 为 auto-fixed,未满足自动晋升 finalized 条件,送 Task9 复审。"。在 Perfetto 中,只有迁移导致缓存抖动(例如 `cpu_cycles / instructions` 比值突然上升)时才需要关注。
 
 [已验证: ARM DSU-120 架构手册:DSU 提供一致性协议和可选共享缓存,但不等于跨核复用对方私有 L2]
 
@@ -240,7 +240,7 @@ GPU 是 Android 渲染管线的核心执行单元。§2.10 已经分析过 GPU �
 
 高通的 **Adreno** GPU 是移动端综合性能最强的 GPU 之一。Adreno 起源于早期收购 ATI/AMD 的 Imageon 移动 GPU IP,经过多年自研迭代,形成了独特的 TBR（Tile-Based Rendering）架构。高通称其渲染方式为 FlexRender:它可以根据场景动态选择直接渲染或分块渲染模式。Adreno 的驱动优化非常成熟,对 Vulkan 和 OpenGL ES 的支持都很完善。在高端游戏和复杂 UI 渲染场景下,Adreno 通常有最好的帧率稳定性。
 
-ARM 的 **Mali** 和 **Immortalis** GPU 是使用最广泛的移动 GPU IP。Immortalis 曾是 ARM 旗舰 GPU 分支(支持硬件光追),Mali 覆盖高端和中端 GPU。Mali 也是 TBR 架构,通过 Transaction Elimination 等技术减少内存带宽消耗。联发科旗舰芯片的 GPU 命名已随代际变化:Dimensity 9400 是 Immortalis-G925,Dimensity 9500 是 Arm Mali-G1 Ultra MC12。三星的部分 Exynos 芯片也使用 Mali GPU。Mali GPU 的特点是可配置性强(厂商可以调整着色器核心数量和 L2 Cache 大小),但驱动优化的成熟度有时不如 Adreno。
+ARM 的 **Mali** 和 **Immortalis** GPU 是使用最广泛的移动 GPU IP。Immortalis 曾是 ARM 旗舰 GPU 分支(支持硬件光追),Mali 覆盖高端和中端 GPU。Mali 也是 TBR 架构,通过 Transaction Elimination 等技术减少内存带宽消耗。联发科旗舰芯片的 GPU 命名已随代际变化:Dimensity 9400 是 Immortalis-G925,Dimensity 9500 是 Arm Mali-G1 Ultra MC12。三星的部分 Exynos 芯片也使用 Mali GPU。Mali GPU 的特点是可配置性强(厂商可以调整着色器核心数量和 L2 缓存大小),但驱动优化的成熟度有时不如 Adreno。
 
 三星的 **Xclipse** GPU 是移动 GPU 中的异类:它基于 AMD 的 RDNA 架构,这是 PC 和主机显卡的架构。Xclipse 940(Exynos 2400)使用 RDNA 3,支持硬件光追和可变分辨率渲染(VRS)等桌面级特性。Xclipse 的理论性能很强,但由于移动端的功耗和散热限制,持续性能输出可能不如 Adreno 稳定。在驱动方面,Xclipse 的 Vulkan 支持被认为与 Adreno 接近。
 

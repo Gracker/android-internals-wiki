@@ -53,6 +53,8 @@ task2b_fixed_by: openclaw-task2b-main
 task2b_fix_round: 2026-06-04-00
 last_task9_autofix_at: "2026-06-04"
 last_task9_review_log: "logs/deep-review/2026-06-04-03-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-15
 ---
 
 # A/B Test 与性能回归防护
@@ -86,9 +88,6 @@ last_task9_review_log: "logs/deep-review/2026-06-04-03-deep-review.md"
 
 26.3 节已经讲过性能指标采集与上报，本节不重复指标采集方法，只处理实验设计、回归检测、CI/CD 门禁和劣化归因。Part 5 的侧重点是实战动作：怎样把线下 benchmark、线上分流实验、灰度监控和发布决策放到同一套判断流程里。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
-
 ## 性能 A/B Test 的设计与统计方法
 
 性能 A/B Test 不能只看“新方案平均耗时更低”。启动、渲染、内存、功耗都带有明显长尾，同一个方案在高端机上变快，在低端机上变慢也很常见。实验开始前要把主指标、护栏指标、分群维度和停止条件写清楚。
@@ -101,9 +100,9 @@ last_task9_review_log: "logs/deep-review/2026-06-04-03-deep-review.md"
 | 分群维度 | 至少拆设备档位、Android 版本、国家 / 地区、网络类型、启动入口 | 全量指标正常时，单一低端机分群可能已经劣化 |
 | 停止条件 | 样本量、运行天数、最小可接受收益和回滚阈值提前确定 | 边看边停会抬高误判概率 |
 
-Clippings 的发布章节把 A/B Test 的难点放在人群和时间窗上：实验组和对照组要在同一时间运行，人群分布要足够接近，差异才有资格归到方案本身。性能实验还要多一层设备分布约束：低端机、老系统、弱网用户不能被平均值掩盖。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
+Clippings 的发布章节把 A/B Test 的难点放在人群和时间窗上：实验组和对照组要在同一时间运行，人群分布要足够接近，差异才有资格归到方案本身。性能实验还要多一层设备分布约束：低端机、老系统、弱网用户不能被平均值掩盖。
 
-Firebase A/B Testing 的 Remote Config 实验提供了一个可参照的产品形态：配置目标用户、目标用户百分比、基线版本和实验版本，并选择主指标与附加指标；目标用户可以按版本、语言、国家 / 地区、Analytics audience、user property 等条件筛选。官方文档也要求 activation event 发生在配置值生效之后，否则实验数据会把未使用新配置的用户算进去。[已验证: 官方文档, firebase.google.com/docs/ab-testing/abtest-config]
+Firebase A/B Testing 的 Remote Config 实验提供了一个可参照的产品形态：配置目标用户、目标用户百分比、基线版本和实验版本，并选择主指标与附加指标；目标用户可以按版本、语言、国家 / 地区、Analytics audience、user property 等条件筛选。官方文档也要求 activation event 发生在配置值生效之后，否则实验数据会把未使用新配置的用户算进去。
 
 性能实验的统计口径需要区分指标类型，不同指标对应的检验对象和样本量估计方式不一样：
 
@@ -130,13 +129,13 @@ A/A Test 还要检查多重比较风险。日常看板频繁窥探、多分群�
 - **SRM（Sample Ratio Mismatch）**：每个关键分群内检查配置比例与实际样本比例是否一致。
 - **假阳性率验证**：按实际看板频率模拟检查，确认 α=0.05 设定下实际误判率不超预期。
 - **多重比较校正**：多护栏指标或多分群同时检查时，使用 Bonferroni 校正或 FDR（Benjamini-Hochberg）控制整体错误率。
-- **sequential testing / alpha spending**：针对中途看数需求，预注册检查窗口并使用 alpha spending function（如 Lan-DeMets O'Brien-Fleming），避免每次按 α=0.05 直接判断、等效于多轮重复测试。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
+- **sequential testing / alpha spending**：针对中途看数需求，预注册检查窗口并使用 alpha spending function（如 Lan-DeMets O'Brien-Fleming），避免每次按 α=0.05 直接判断、等效于多轮重复测试。
 
 ## 性能回归自动检测
 
 性能回归检测分成两条线：实验室基线和线上分布。实验室基线负责在代码合入、候选包、发版前发现确定性退化；线上分布负责发现真实用户环境里的长尾问题。两条线不能互相替代。
 
-Android 官方性能测试文档把 runtime performance 分成 local testing 和 field testing。field testing 观察真实用户环境，local testing 使用 benchmark 库在可控设备上复现用户流程；官方也建议频繁运行性能测试，并把结果保存下来做时间序列对比。[已验证: 官方文档, developer.android.com/training/testing/instrumented-tests/performance]
+Android 官方性能测试文档把 runtime performance 分成 local testing 和 field testing。field testing 观察真实用户环境，local testing 使用 benchmark 库在可控设备上复现用户流程；官方也建议频繁运行性能测试，并把结果保存下来做时间序列对比。
 
 回归检测适合采用三类规则组合：
 
@@ -146,13 +145,13 @@ Android 官方性能测试文档把 runtime performance 分成 local testing 和
 | 绝对阈值 | 冷启动 P90 超过 5 s，冻帧率超过 0.1% | 已经接近用户可感知的问题 | 进入 P0/P1 风险评估 |
 | 分群异常 | Android 13 + 4 GB 内存设备慢帧率翻倍 | 全量指标被平均值盖住的设备问题 | 限制放量范围，派发给相关模块 |
 
-Macrobenchmark 适合承担实验室基线。`StartupTimingMetric` 输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`；其中 `timeToFullDisplayMs` 依赖应用通过 `reportFullyDrawn()` 报告完全绘制，官方文档说明该测量在 Android 10（API 29）及以下可能不可用。`FrameTimingMetric` 的基础输出 `frameDurationCpuMs` 在所有受支持版本上可用；`frameOverrunMs` 仅在 Android 12（API 31）+ 上可用，它反映帧实际耗时超出预期帧间隔的部分。Android 10/11（API 29/30）设备上的 CI 门禁不能依赖 TTFD 或 overrun 作为唯一口径，应改用 `timeToInitialDisplayMs`、`frameDurationCpuMs`、慢帧率（slow frame rate）或冻结帧率（frozen frame rate）作为替代口径。`TraceSectionMetric` 按自定义 trace section 统计次数和耗时；`PowerMetric` 在支持的 Pixel 设备上记录测试期间的能耗变化。门禁配置中需补 `metric_available_api` 字段，避免跨版本混算同一阈值。官方文档要求 benchmark 输出 JSON 和 Perfetto trace，产物应进入 CI 存档，不留在本地控制台。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics；developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
+Macrobenchmark 适合承担实验室基线。`StartupTimingMetric` 输出 `timeToInitialDisplayMs` 和 `timeToFullDisplayMs`；其中 `timeToFullDisplayMs` 依赖应用通过 `reportFullyDrawn()` 报告完全绘制，官方文档说明该测量在 Android 10（API 29）及以下可能不可用。`FrameTimingMetric` 的基础输出 `frameDurationCpuMs` 在所有受支持版本上可用；`frameOverrunMs` 仅在 Android 12（API 31）+ 上可用，它反映帧实际耗时超出预期帧间隔的部分。Android 10/11（API 29/30）设备上的 CI 门禁不能依赖 TTFD 或 overrun 作为唯一口径，应改用 `timeToInitialDisplayMs`、`frameDurationCpuMs`、慢帧率（slow frame rate）或冻结帧率（frozen frame rate）作为替代口径。`TraceSectionMetric` 按自定义 trace section 统计次数和耗时；`PowerMetric` 在支持的 Pixel 设备上记录测试期间的能耗变化。门禁配置中需补 `metric_available_api` 字段，避免跨版本混算同一阈值。官方文档要求 benchmark 输出 JSON 和 Perfetto trace，产物应进入 CI 存档，不留在本地控制台。
 
 线上回归检测要沿用 26.3 节的分位值和采样字段。检测任务至少按 `metric_name`、`scene_id`、`app_version`、`experiment_id`、`variant_id`、`device_tier`、`android_version` 分桶。没有分桶的 P90 只代表混合分布，不能支持版本决策。
 
 告警去噪比阈值本身更影响体验。样本量不足时只记录风险，连续多个时间窗异常再升级；服务端故障、活动流量、配置切换和采样策略更新要能标记为外部事件。性能告警一旦变成噪音，发布团队会绕过它。
 
-Android Vitals 可以作为外部校验源。官方文档列出了 user-perceived crash rate、user-perceived ANR rate、excessive partial wake locks 等 core vitals，也包含启动时间、慢渲染、Slow Sessions 等质量信号；Play 会使用最近 28 天数据评估质量，并对 bad behavior threshold 给出警告。自建 APM 和 Vitals 的统计口径不同，发布报告要保留两套数字的定义，避免把 Vitals 的每日活跃用户口径和内部 session 口径混用。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+Android Vitals 可以作为外部校验源。官方文档列出了 user-perceived crash rate、user-perceived ANR rate、excessive partial wake locks 等 core vitals，也包含启动时间、慢渲染、Slow Sessions 等质量信号；Play 会使用最近 28 天数据评估质量，并对 bad behavior threshold 给出警告。自建 APM 和 Vitals 的统计口径不同，发布报告要保留两套数字的定义，避免把 Vitals 的每日活跃用户口径和内部 session 口径混用。
 
 ## CI/CD 集成性能卡点
 
@@ -166,7 +165,7 @@ CI/CD 里的性能卡点要分层，不能把所有 benchmark 都塞进每个 PR
 | 主干夜间 | 固定设备上的启动、滚动、TraceSection benchmark，多轮采样 | 生成回归任务，必要时冻结主干 | JSON、Perfetto trace、趋势图 |
 | Release 候选 | 覆盖低 / 中 / 高端设备、目标系统版本、主业务路径 | 阻断发包或降级为小流量灰度 | 签名包、报告、门禁结论 |
 
-官方 CI 文档里，Macrobenchmark 需要分别构建目标 APK 和测试 APK，再通过 `adb shell am instrument` 运行；benchmark 结果包含测量 JSON 和 trace 文件。CI 系统要把这些产物按 commit、branch、device、benchmark name 归档，后端才能做趋势对比。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
+官方 CI 文档里，Macrobenchmark 需要分别构建目标 APK 和测试 APK，再通过 `adb shell am instrument` 运行；benchmark 结果包含测量 JSON 和 trace 文件。CI 系统要把这些产物按 commit、branch、device、benchmark name 归档，后端才能做趋势对比。
 
 这段配置示例只说明门禁表达方式：阈值要带场景、设备和处理动作，不要写成一个全项目共享的数字。
 
@@ -230,26 +229,21 @@ TraceSectionMetric 和业务 trace 名称要提前统一。线下 benchmark 里 
 
 这套流程不会消除人工分析，但能避免每次告警都从群里问“最近谁改了”。工程团队拿到的是可复核的候选清单，而不是单个结论。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 31.md]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
-
-## [自动发现] 样本比例失衡与实验污染
+## 样本比例失衡与实验污染
 
 性能 A/B Test 要监控 SRM（Sample Ratio Mismatch，样本比例失衡）。如果平台配置是 50% / 50%，实际样本却变成 60% / 40%，实验结果就不能直接使用。常见原因包括分桶 hash 变更、安装 ID 重置、版本过滤条件写错、某个 variant 启动崩溃导致样本上报减少。
 
-SRM 检查应该先于性能指标判断。实验平台每天输出分桶比例、配置命中率、activation event 触发率、上报成功率；这些基础检查不通过时，性能收益或退化都只能标成无效数据。Clippings 的数据评估章节强调上报组件和数据平台的准确性，放到性能实验里，SRM 就是最早暴露数据问题的信号之一。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+SRM 检查应该先于性能指标判断。实验平台每天输出分桶比例、配置命中率、activation event 触发率、上报成功率；这些基础检查不通过时，性能收益或退化都只能标成无效数据。Clippings 的数据评估章节强调上报组件和数据平台的准确性，放到性能实验里，SRM 就是最早暴露数据问题的信号之一。
 
-## [自动发现] 实验平台自身也要设护栏
+## 实验平台自身也要设护栏
 
 实验平台、Remote Config、灰度平台都可能制造性能事故。一个错误配置可能让启动阶段多拉接口、打开高频日志、扩大图片预加载、调整线程池参数。平台自身要支持配置审计、灰度放量、紧急关闭和指标回看。
 
-Firebase Remote Config 实验会在 variant 中修改参数；官方文档也提醒变体权重开始后不能修改，不均匀权重会增加数据收集时间。自建平台同样要记录参数快照和权重变化，否则归因时无法确认用户拿到的究竟是哪一版配置。[已验证: 官方文档, firebase.google.com/docs/ab-testing/abtest-config]
+Firebase Remote Config 实验会在 variant 中修改参数；官方文档也提醒变体权重开始后不能修改，不均匀权重会增加数据收集时间。自建平台同样要记录参数快照和权重变化，否则归因时无法确认用户拿到的究竟是哪一版配置。
 
+## 系统进程死亡证据：ApplicationExitInfo
 
-
-## [自动发现] 系统进程死亡证据：ApplicationExitInfo 源码机制
-
-[已验证: AOSP frameworks/base 源码 android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1]
+除了前文讨论的分位值、慢帧率、启动耗时这些主动采集指标，Android 系统侧还提供了一类不依赖 App 主动上报的证据：进程死亡原因记录。`ApplicationExitInfo`（API 30+）会保存每次进程退出的原因、内存快照和 trace 流——在 A/B 灰度中，这些记录可以直接回答"某个 variant 为什么被杀、死在哪个阶段"。下面梳理这条系统 API 的机制、版本边界和在回归检测中的用法。
 
 线上回归检测除了"分位值 + 慢帧率 + 启动耗时"这些主动指标，还可以从**系统侧的进程死亡证据**获得关键判据。Android 在 `android.app.ApplicationExitInfo`（API 30，Android 11）暴露了进程死亡原因、PSS/RSS、trace 流入和自定义状态快照——这是 A/B 灰度阶段"为什么这个 variant 变卡"最直接的证据来源。
 
@@ -336,7 +330,7 @@ A/B 平台实践清单（基于以上源码）：
 - **A16 起的 RSS 字段直接进内存压力归因**，避免与"实验包内存泄漏"混淆。
 - **每包 16 条是硬上限**：短时间高频崩溃（同一 pid 覆盖）需要在上报侧做补全，否则 16 条以外的数据无法恢复。
 
-<!-- AIW-源码调研-2026-06-15 -->
+A/B 平台接入 `ApplicationExitInfo` 之后，回归检测就多了一条与埋点无关的系统侧证据线。进程死亡原因、被杀瞬间的内存水位和实验变体快照一起落盘，即使 App 侧上报链路断了也能找回关键判据。结合 CI 门禁和线上分位值，实验决策就不再只依赖"看起来变快"这一条信号。
 
 ## 小结
 
@@ -346,13 +340,13 @@ A/B 平台实践清单（基于以上源码）：
 
 ## 参考资料
 
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 31.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
-- [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
-- [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
-- [已验证: 官方文档, developer.android.com/training/testing/instrumented-tests/performance]
-- [已验证: 官方文档, developer.android.com/topic/performance/vitals]
-- [已验证: 官方文档, firebase.google.com/docs/ab-testing/abtest-config]
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
