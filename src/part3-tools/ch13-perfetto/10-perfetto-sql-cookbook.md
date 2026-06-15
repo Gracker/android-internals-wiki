@@ -51,7 +51,7 @@ rework_date: "2026-05-28"
 rework_by: openclaw-task2b
 review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices.；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-05-28 task2b: fixed doFrame Android 12+ trace name matching and SPAN_JOIN utid partition issue, returned to Task6."
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 2，自动晋升 finalized。；2026-05-22 task9 idle-audit: needs-rework，P0 1 / P1 1，写入 queue task9-audit-20260522-13.10-perfetto-sql-doframe-spanjoin。；2026-05-28 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 android_monitor_contention lock_name 当前 stdlib 口径，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 1；修正 Perfetto v54.0 monitor_contention.lock_name 版本口径，并把不存在的 INTERVAL_INTERSECT 名称改为 intervals 标准库入口，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending 且 Task6 已通过，自动晋升 finalized。"
-last_task9_audit: "2026-05-22"
+last_task9_audit: "2026-06-16"
 last_task6_at: "2026-05-28T18:20:12+08:00"
 last_task6_review_log: "logs/review/2026-05-28-18-review.md"
 task6_l1_l2_fixes: 1
