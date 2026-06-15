@@ -36,20 +36,20 @@ sources:
     path: "https://android-developers.googleblog.com/2024/04/the-first-beta-of-android-15.html#app-archiving"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-27"
+task9_result: needs-rework
+task9_reviewed_date: "2026-06-15"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T19:20:00+08:00"
+last_task9_at: "2026-06-15T11:26:52+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-27-19-deep-review.md"
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 queue_entry: task9-2026-05-17-1-20-archive-conditions-callback
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: "2026-05-27 Task9：pass-tech-review。复核 PackageInstaller.requestArchive/requestUnarchive、PackageArchiver archive state 与点击恢复、ActivityStarter START_CLASS_NOT_FOUND 分支、ACTION_UNARCHIVE_PACKAGE 显式广播；此前 P1 已修正。 P0 0 / P1 0 / P2 0；Task6 已通过且 queue.json 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-06-15 Task9 闲时抽检：needs-rework。发现 AOSP main/GitHub Mirror 锚点推断 Android 17 覆盖、Android 15/16 Launcher 恢复调用者范围差异未进入正文版本口径；已写 queue.json（P1:2）。此前记录：2026-05-27 Task9 pass-tech-review，复核 PackageInstaller/PackageArchiver/ActivityStarter 主链路。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_state: reviewed
@@ -59,6 +59,9 @@ last_task6_review_log: "logs/review/2026-05-27-19-review.md"
 task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
+last_task9_audit: "2026-06-15"
+last_task9_audit_at: "2026-06-15T11:26:52+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-15-11-audit.md"
 ---
 
 # 1.20 App Archiving 机制与恢复性能
