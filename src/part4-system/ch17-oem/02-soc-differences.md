@@ -43,20 +43,20 @@ last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 last_task9_autofix_at: "2026-06-15"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task6_state: revisiting
-task6_reviewed_date: "2026-05-27"
+task6_state: "reviewed"
+task6_reviewed_date: "2026-06-15"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-05-27T09:16:48+08:00"
+last_task6_at: "2026-06-15T20:16:42+08:00"
 last_task6_review_log: "logs/review/2026-05-27-09-review.md"
 review_type: task6-writing-quality-review
-task9_state: "reviewed"
+task9_state: "pending"
 last_task9_audit: "2026-06-15"
 last_task9_audit_log: "logs/deep-review/2026-06-15-19-audit.md"
-task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。修正术语括号格式；L1 禁用词与高频词扫描无命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。"
+task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。修正术语括号格式；L1 禁用词与高频词扫描无命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。" | 2026-06-15 20:16 Task6 复审:pass-light-edit。Task9 idle-audit 补充 android17-6.18 kernel 分支口径后文风复扫;L1 禁用词/高频词/翻译腔动词均无命中;outline 5/5 + 扩展 2/2 覆盖;待验证 26.7% < 30%;无 L1/L2 新增问题;无 L3/L4 回炉项。Task9 result 为 auto-fixed,未满足自动晋升 finalized 条件,送 Task9 复审。
 ---# SoC 平台差异
 
 <!-- outline-start -->
