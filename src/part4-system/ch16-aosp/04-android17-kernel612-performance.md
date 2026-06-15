@@ -2,7 +2,7 @@
 title: "Android 17 + Kernel 6.12 系统级性能优化"
 section: "16.4"
 chapter: "16.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-26"

@@ -46,7 +46,7 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-16T04:10:28+08:00"
 last_task6_review_log: "logs/review/2026-06-16-04-review.md"
 task6_review_notes: "2026-06-16 Task6 第三次复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式 1 次(开篇对比句,在限制内)。"承担"出现 1 次为正常用法。L1/L2 全部通过,无 B 类问题。queue.json 中 20.7 条目状态为 completed,无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,保持 ready-for-review 等待 Task9 确认升级。"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
