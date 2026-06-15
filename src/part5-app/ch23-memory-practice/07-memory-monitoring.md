@@ -410,6 +410,24 @@ Android 10 到 14 的线上 heap dump 仍多依赖 `Debug.dumpHprofData()`、专
 
 <!-- AIW-源码调研-2026-06-15 -->
 
+### 2026-06-15 补充：PSS/RSS 快速路径与 getRss() 新 API
+
+#### StatusVmRSS 廉价路径与 Debug.getRss() 新增 API
+
+Android 15+ (main 分支) 新增 `Debug.getRss()` 走 `/proc/<pid>/status` 的 `VmRSS` 字段，比传统的 smaps_rollup 更快：
+
+- **三层采样路径**：`SmapsOrRollup`（PSS/全量）→ `SmapsOrRollupPss`（PSS/精简）→ `StatusVmRSS`（RSS/廉价）
+- **5分钟限速机制**：`ActivityManagerConstants.MEMORY_INFO_THROTTLE_TIME` 默认 300_000 ms，避免高频 PSS 采样导致 system_server 压力
+- **Shell bypass**：`adb shell dumpsys meminfo` 走 `instr.mSourceUid == SHELL_UID || ROOT_UID`，不受限速限制
+- **Battery Historian 集成**：`FrameworkStatsLog.PROCESS_MEMORY_STAT_REPORTED` 将 PSS/USS/RSS 上报到 statsd，供 Vitals 分析
+
+源码锚点：
+- `libmeminfo::ProcMemInfo::StatusVmRSS()`（procmeminfo.cpp L346-348）
+- `Debug.getRss(int pid, long[] outMemtrack)`（main 分支，`@FlaggedApi(Flags.FLAG_REMOVE_APP_PROFILER_PSS_COLLECTION)`）
+- `ActivityManagerService.getProcessMemoryInfo()` 限速逻辑（android-14-release L3928-4030）
+
+[调研来源: DeepResearch/2026-06-15-android-pss-rss-fastpath-smaps-rollup-status-vmrss-throttle.md]
+
 ## 工具实现层补充：dumpsys meminfo 与 heapprofd 的源码骨架
 
 本节上文写"内存分析工具详见 10.1 节"，并已在 23.3 节进一步指向 14.3 节。在 14.3 节实体落盘之前，把这两条核心工具的源码锚点补在这里，方便做线上 dump 时直接定位。
