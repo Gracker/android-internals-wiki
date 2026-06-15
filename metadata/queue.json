@@ -900,5 +900,109 @@
     "completed_at": "2026-06-15T16:52:36+08:00",
     "completed_by": "task2b-main",
     "completed_reason": "fixed: Virtual A/B subsection rewritten to versioned model (Android 11 kernel COW / Android 12+ Android COW format + snapuserd / Android 13+ userspace merge); removed dm-snapshot + super COW unified model; updated Perfetto observation table"
+  },
+  {
+    "section": "21.5",
+    "section_title": "Splash Screen 与感知启动速度",
+    "title": "Splash Screen 与感知启动速度",
+    "file": "src/part5-app/ch21-startup/05-splash-screen.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] core-splashscreen 版本/API 边界与兼容模式实现描述错误，需要回炉修正 SplashScreen 适配表和低版本行为。",
+    "material_paths": [
+      "logs/deep-review/2026-06-16-00-deep-review.md",
+      "https://developer.android.com/jetpack/androidx/releases/core#core-splashscreen_1.2.0",
+      "https://developer.android.com/develop/ui/views/launch/splash-screen/migrate",
+      "https://github.com/androidx/androidx/blob/androidx-main/core/core-splashscreen/src/main/java/androidx/core/splashscreen/SplashScreen.kt"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "L140-L155、L208-L215、L425-L433",
+        "detail": "正文写 androidx.core:core-splashscreen 向后支持到 Android 5.0/API 21，并把兼容库模式描述为 App 内部创建 Activity 级别启动页、退出动画不可用。AndroidX core-splashscreen 1.0.0 发布说明写明该库把 Android 12 splash screen 带到 API 23+；SplashScreen.kt 的 API<31 实现读取启动 Activity 主题、应用 postSplashScreenTheme、用 OnPreDrawListener 控制保持时机，并通过 SplashScreenViewProvider 分发退出动画，不会创建额外 SplashActivity。",
+        "suggestion": "把兼容库适用范围改为 API 23+；版本表改为“同一启动 Activity 主题/DecorView 兼容实现，不是系统 Starting Window，也不是额外 Activity”；删除“退出动画不支持”的结论，改成 API<31 不支持启动图标 AVD 动画，退出动画由兼容库 overlay/provider 模拟。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L150-L155",
+        "detail": "依赖示例仍使用 1.2.0-alpha02，并建议生产环境使用稳定版 1.0.1。AndroidX release notes 显示 core-splashscreen 1.2.0 已于 2025-11-05 稳定发布，2026-05 之后的章节不应继续推荐 alpha02 作为示例版本。",
+        "suggestion": "把依赖示例改为当前稳定版 1.2.0；如需保守推荐，可写“最低可用 1.0.1，Android 15/16 行为兼容优先验证 1.2.0+”，不要把 alpha 版本放进主示例。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L172",
+        "detail": "正文写 postSplashScreenTheme 缺失或指向不存在主题时 Activity 会崩溃。官方迁移文档要求该属性指向后续 Activity 主题；但 AndroidX 源码只在 attr resolve 成功且 resourceId 非 0 时调用 Activity.setTheme()，缺失并不等价于必然运行时崩溃，更多是 Activity 继续带着 splash 主题运行导致样式/窗口属性错误。",
+        "suggestion": "改为“postSplashScreenTheme 是必填迁移项；缺失时兼容库不会替 Activity 切回正常主题，可能导致启动后主题/窗口属性异常；不存在的资源引用通常在构建期失败”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-16T00:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "20.7",
+    "section_title": "异常处理架构设计",
+    "title": "异常处理架构设计",
+    "file": "src/part5-app/ch20-stability/07-exception-architecture.md",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 异常处理架构仍保留 Task9 回炉占位，ApplicationExitInfo、SafeMode 状态机和 crash 文件持久化协议未闭环。",
+    "material_paths": [
+      "logs/deep-review/2026-06-16-00-deep-review.md",
+      "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+      "https://android.googlesource.com/platform/frameworks/base.git/+/master/core/java/android/app/ApplicationExitInfo.java"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/源码边界",
+        "location": "L120-L125",
+        "detail": "正文仍保留“需确认 getTraceInputStream 对 native tombstone 的 API 边界”。Android 官方 ApplicationExitInfo 文档写明 getTraceInputStream 自 API 30 存在，通常用于 REASON_ANR；从 API 31 开始，REASON_CRASH_NATIVE 会返回 tombstone protobuf 输入流，但该 trace 保存在全局循环缓冲区，可能被覆盖并返回 null。章节适用 Android 10-16，必须把 API 30/31 边界写清。",
+        "suggestion": "补成版本化表述：Android 11/API30 可查历史退出原因和 ANR trace；Android 12/API31+ native crash 可通过 REASON_CRASH_NATIVE + getTraceInputStream 读取 tombstone protobuf；调用方必须处理 null/IOException/缓冲区覆盖，并保留 Crashpad/Breakpad 作为主链路。"
+      },
+      {
+        "type": "原理断裂/知识盲区",
+        "location": "L140-L170 SafeMode 判定",
+        "detail": "正文只有 recent crashes 按 stackFingerprint 达阈值后 enable safe_mode 的示意，仍标注缺 launch marker 状态机、启动成功标记、退出原因过滤和离线补偿链路。没有这些环节，无法区分“启动过程中崩溃”“后台/页面崩溃”“用户主动退出”“系统杀进程”，SafeMode 可能误触发或漏触发。",
+        "suggestion": "补 launch_attempt/launch_success/crash_before_success 三态或等价 marker；把 ApplicationExitInfo reason、版本号、进程名、崩溃指纹、启动窗口时间纳入判定；说明远程配置不可用时本地默认规则如何继续生效。"
+      },
+      {
+        "type": "原理断裂/数据持久化边界",
+        "location": "L272-L274 多进程记录文件",
+        "detail": "正文仍只写临时文件 + rename，并用占位说明缺 flush/fsync、rename 后父目录 fsync、completed/tmp 扫描和 partial 清理规则。Crash 入口写文件时如果缺目录 fsync 或恢复扫描协议，断电/进程死亡后仍可能出现“文件名已替换但目录项未落盘”或 tmp 残留无法归类。",
+        "suggestion": "补最小可靠写入协议：tmp 写入、flush/FileDescriptor.sync、rename 到 completed、父目录 fsync；下次启动扫描 completed/tmp/partial 并按校验字段清理或补报；多进程按进程分文件或加文件锁。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-16T00:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.11",
+    "section_title": "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数",
+    "title": "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数",
+    "file": "src/part3-tools/ch13-perfetto/11-perfetto-span-join-window-functions.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] SPAN_JOIN 示例仍有 SQL 正确性问题：残留反向警告和 GC pause window 合并算法会产生错误区间。",
+    "material_paths": [
+      "logs/deep-review/2026-06-16-00-deep-review.md",
+      "https://perfetto.dev/docs/analysis/perfetto-sql-getting-started",
+      "https://perfetto.dev/docs/analysis/stdlib-docs",
+      "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-16.0.0_r1/src/trace_processor/perfetto_sql/intrinsics/operators/span_join_operator.cc"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/示例错误",
+        "location": "L327-L331 frame × CPU 频率示例",
+        "detail": "正文查询已经在 SELECT 聚合里用 MIN(joined.end, frame.end) - MAX(joined.start, frame.start) 裁剪到 frame 边界，但紧接着的“注意”仍说上述查询聚合 joined.dur、会把 frame 外时长算进当前帧。这是上一轮问题修复后的残留反向结论，会误导读者把已修正 SQL 当成错误 SQL。",
+        "suggestion": "删除 L331 的残留警告，或改成“如果改回直接 SUM(joined.dur) 才会污染帧边界；当前示例已用 overlap_dur 裁剪”。"
+      },
+      {
+        "type": "源码错误/SQL 正确性",
+        "location": "L389-L411 GC pause window 合并 SQL",
+        "detail": "合并算法用 LAG(end_ts) 判断当前 interval 是否与前一个 interval 连续。遇到嵌套区间 A[1,10]、B[2,3]、C[9,12] 时，C 只会和 B.end=3 比较，被误判成新组，输出 [1,10] 与 [9,12] 两个同 utid 重叠窗口。Perfetto 文档明确要求同一表同一分区的 span 不能重叠，否则 SPAN_JOIN 会静默产出错误行。",
+        "suggestion": "把 LAG(end_ts) 改为运行最大结束时间模型：先计算 prev_max_end = MAX(end_ts) OVER (PARTITION BY utid ORDER BY ts, end_ts ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)，再用 ts <= prev_max_end 判定是否同组；或直接改用 Perfetto interval/stdlib 模块处理重叠区间。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-16T00:20:00+08:00",
+    "status": "pending"
   }
 ]

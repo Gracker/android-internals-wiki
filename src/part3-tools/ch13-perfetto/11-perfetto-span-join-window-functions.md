@@ -34,15 +34,15 @@ task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-15"
 task6_reviewed_date: "2026-06-15"
-pipeline_stage: task9_pending
-task9_state: pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-15"
-last_task9_at: "2026-05-15T09:27:23+08:00"
-last_task9_review_log: logs/deep-review/2026-05-15-09-deep-review.md
-task9_review_notes: "2026-05-15 Task9 09: needs-rework。P0 1 / P1 1 / P2 1；帧 × CPU 频率统计未按 frame 裁剪 joined.dur，GC pause 示例可能违反 SPAN_JOIN 同分区不重叠约束。"
-task2b_state: fixed
+task9_reviewed_date: "2026-06-16"
+last_task9_at: "2026-06-16T00:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-16-00-deep-review.md"
+task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2。frame/cpufreq 查询残留错误警告、GC pause window 合并算法仍会产生重叠窗口。"
+task2b_state: pending
 
 task2b_result: fixed
 ---
