@@ -38,16 +38,15 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-15"
+reviewed_date: "2026-06-16"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-15T16:13:21+08:00"
-last_task6_review_log: "logs/review/2026-05-15-06-review.md"
-task6_review_notes: "2026-05-15 Task6 06:05：needs-rework。完成 L1/L2 小修 6 处；沿用 Task9 风险信号标注 4 处并合并 queue，交 Task2B。"
+last_task6_at: "2026-06-16T02:10:13+08:00"
+last_task6_review_log: "logs/review/2026-06-16-02-review.md"
+task6_review_notes: "2026-06-16 Task6 复审：pass-light-edit。Task2B Lite 已修复 getTraceInputStream 版本边界（API 30/31），写作质量保持通过。清理重复 task2b_result 字段。Task9 remaining 2 issues（SafeMode 状态机、crash 文件持久化协议）仍在 queue，待 Task2B 补齐。"
 task9_state: pending
-task2b_result: fixed-lite
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
