@@ -31,3 +31,40 @@ Android 14 (API 34) 引入了更精细的内存跟踪 API，显著提升了内�
 
 ### 关联章节
 23.7, 15.3, 26.1
+
+## [2026-06-16] 20.7 异常处理架构设计 — 知识盲区
+
+### 盲区描述
+SafeMode 判定缺少 launch marker 状态机、启动成功标记、退出原因过滤和离线补偿链路。当前正文只有 repeated crash threshold，无法稳定区分启动崩溃、页面崩溃、系统杀进程和用户主动退出。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 App 侧 launch_attempt / launch_success / crash_before_success 状态机。
+- 结合 ApplicationExitInfo reason、进程名、版本号、崩溃指纹和启动窗口时间做误判过滤。
+- 设计远程配置不可用时仍可生效的本地默认 SafeMode 规则。
+
+### 关联章节
+20.2, 20.3, 20.6, 26.2
+
+---
+
+## [2026-06-16] 20.7 异常处理架构设计 — 知识盲区
+
+### 盲区描述
+Crash 文件持久化协议只写“临时文件 + rename”不够，缺 flush/fsync、rename 后父目录 fsync、completed/tmp 扫描和 partial 清理规则。崩溃入口写文件时，这些边界决定下次启动能否可靠补报。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 Android/Java 文件写入、POSIX rename、目录 fsync 在崩溃/断电场景下的可靠性边界。
+- 设计 crash_envelope 的 tmp/completed/partial 文件状态机与校验字段。
+- 验证多进程同时写入时按进程分文件、文件锁或上传进程汇总的取舍。
+
+### 关联章节
+20.2, 20.3, 20.7, 26.2
+
+---
+
