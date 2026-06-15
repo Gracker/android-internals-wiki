@@ -2319,6 +2319,111 @@
       ],
       "summary": "Android 12下WorkManager使用指南...",
       "scored_at": "2026-06-14T09:05:26.578624"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-performancehint-setthreads-ipc-chain-newly-flags.md",
+      "title": "PerformanceHintManager setThreads IPC 链路与 Android 16 新 FlaggedApi 内部全貌",
+      "summary": "深入剖析 PerformanceHintManager.Session 的 IPC 全链路：setThreads 走 IHintManager 同步 Binder、updateTargetWorkDuration 走 IHintSession oneway；揭示 Android 16 内部 4 个未公开 FlaggedApi（graphics pipeline、HWUI GPU、input event boost、obtainView boost）；新增 associateToLayers AIDL 将 session 与 SurfaceFlinger 图层关联；load hint 内置令牌桶限流（2s/20hints/10hints/s）；WorkDuration 上报新增 native 层 VALIDATE_INT 校验。",
+      "section": "ch05",
+      "target_file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "processed_at": "2026-06-15T06:12:58.181758",
+      "type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-perfetto-jank-cuj-v54-process-filter-and-frametracker-join.md",
+      "title": "Perfetto DataGrid 与 Jank CUJ 标准库 v54 · 进程过滤与 FrameTracker Join 深挖",
+      "summary": "对 Perfetto v54 Jank CUJ 标准库的二次深挖：发现 cujs/base.sql 进程名过滤分两层（GLOB com.google.android* / com.android.* + counter 回溯规则）；CUJ counter 走 process_counter_track 且命名遵循 J<CUJ>#<counter> 模式；android_jank_cuj_frame 是 per-frame 行表用 vsync ID 串联 App/RT/SF/GPU，与 frame_timeline 表不重复；JankTracker.cpp 五种 JankType 实时判定与 CUJ 标准库事后聚合是两层独立判定。",
+      "section": "ch13",
+      "target_file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
+      "processed_at": "2026-06-15T06:12:58.181758",
+      "type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-ams-dual-lock-android17-main-extensions.md",
+      "title": "Android 17 AMS 双锁架构在 CachedAppOptimizer / AppProfiler / CPU Booster 上的延伸",
+      "summary": "Android 17 main 分支上 mProcLock 已扩散到 CachedAppOptimizer（冻结/压缩队列）、AppProfiler（低内存时间跟踪）等 5 个核心类，每类约 20-30 处标注。ActivityManagerProcLock 空壳类作为 CPU booster 识别 critical section 的锚点，配合 ART monitor enter/exit 拉高 system_server CPU 频率。UPDATE_TIME_ZONE 等高频路径仅需 mProcLock 避开 mGlobalLock 排队。",
+      "section": "ch01",
+      "target_file": "src/part1-fundamentals/ch01-architecture/25-ams-dual-lock-system-server-contention.md",
+      "processed_at": "2026-06-15T06:12:58.181758",
+      "type": "DeepResearch 调研结果"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-android17-strictmode-vmpolicy-evolution-cross-binder-propagation.md",
+      "title": "Android 14–17 StrictMode VmPolicy 演进与跨 Binder 违规传播机制",
+      "summary": "StrictMode VmPolicy 从 Android 14 的 10 个 DETECT_VM_* 比特扩展到 Android 17 的 15 个，新增 credential-protected-while-locked、incorrect-context-use、BAL-aborted 等。跨 Binder 违规传播靠 gatheredViolations ThreadLocal + Parcel.writeNoException() 反向序列化；BlockGuard.Policy 通过 getPolicyMask() 把策略位图打包进 Binder native thread-local。定位 14 个关键函数与 6 个集成锚点。",
+      "section": "ch14",
+      "target_file": "src/part3-tools/ch14-other-tools/23-strictmode-performance-diagnostics.md",
+      "processed_at": "2026-06-15T06:12:58.181758",
+      "type": "DeepResearch 调研结果"
+    },
+    {
+      "title": "从软件架构分析 Android 图形系统 (1-7)",
+      "path": "AndroidWeekly/#21/从软件架构分析 Android 图形系统 (1)",
+      "source_url": "https://zhuanlan.zhihu.com/p/404805031",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "系列文章深入剖析Android图形系统架构，SurfaceFlinger、HWComposer等核心组件...",
+      "scored_at": "2026-06-15T09:06:56.807078"
+    },
+    {
+      "title": "Android 应用启动 全流程分析（源码深度剖析 + Systrace 展示）",
+      "path": "AndroidWeekly/#21/Android 应用启动 全流程分析",
+      "source_url": "https://mp.weixin.qq.com/s/8WR6YfnJrQmRWTbY4s0b7Q",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-性能",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android应用启动全流程源码分析，包含Systrace性能优化实践...",
+      "scored_at": "2026-06-15T09:06:56.807079"
+    },
+    {
+      "title": "Flutter 手势探索 —— 原理与实现的背后",
+      "path": "AndroidWeekly/#21/Flutter 手势探索",
+      "source_url": "https://mp.weixin.qq.com/s/rUcWz7Rx5T34WyYoCDLh8Q",
+      "weekly_issue": "#21",
+      "weekly_date": "2021-09-18",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter手势机制深度解析，包含事件处理和手势识别原理...",
+      "scored_at": "2026-06-15T09:06:56.807081"
     }
   ]
 }

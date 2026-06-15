@@ -62,6 +62,8 @@ last_task9_review_log: logs/deep-review/2026-05-27-21-deep-review.md
 task9_review_notes: "2026-05-27 21:20 Task9 复审通过。P0/P1/P2=0；AOSP Bitmap/Debug、Android Developers Bitmap memory/load-bitmap、Perfetto heapprofd/profileable 边界复核通过；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-27T21:10:00+08:00"
 last_task2b_at: "2026-05-27T20:50:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-15
 ---
 
 # 内存优化案例集
@@ -94,10 +96,7 @@ last_task2b_at: "2026-05-27T20:50:00+08:00"
 
 本节不重复展开 ART 堆结构、Bitmap 解码 API、heapprofd 配置和线上指标采集。相关机制详见 23.1、23.2、23.3、23.4、23.7 节；OOM 分类与稳定性口径详见 20.5 节。
 
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
-[案例参考: Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md]
 
 一个公开的脱敏案例能说明案例集应该保留哪些证据。货拉拉司机端的内存治理复盘里，治理前 OOM 设备崩溃率峰值为 0.8‱，约占整体崩溃率 20%；线上内存触顶率为 0.64%，高频页面集中在首页和车贴拍摄页。治理后，OOM 设备崩溃率降到 0.01‱，线上内存触顶率降到 0.01%，核心页面和核心流程 OOM 崩溃率降到 0。
 
@@ -106,11 +105,6 @@ last_task2b_at: "2026-05-27T20:50:00+08:00"
 这个案例的价值在于证据链完整：现象、指标、Heap Dump、引用链、根因、修复和线上结果都能对上。后面的 Bitmap、Native 和预算场景都按这条标准组织。
 
 ## Bitmap 内存治理实战：先拆成“大图”和“泄漏”两类
-
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/load-bitmap]
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 
 图片问题常见于信息流、相册、商品详情和富文本页面。症状看起来相似：Native Heap、Graphics 或 PSS 在滑动后上升，页面退出后回落慢，低端机更容易触发 OOM。排查时先把问题拆成两类：解码出来的 Bitmap 本身太大，或者 Bitmap 所属页面已经失效但对象还被引用。
 
@@ -158,12 +152,6 @@ fun Bitmap.reportBitmapBudget(
 
 ## Native 内存泄漏排查案例：Java Heap 稳定时看 Native Heap 和匿名映射
 
-[已验证: 官方文档, source.android.com/docs/core/tests/debug/native-memory]
-[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler]
-[已验证: 官方文档, developer.android.com/guide/topics/manifest/profileable-element]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Debug.java]
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
-
 Native 内存泄漏常见于音视频 SDK、地图 SDK、图片库、加密库和自研 JNI 模块。典型现象是 Java Heap 曲线稳定，PSS 或 Native Heap 随场景次数增长；重启进程后恢复，清理 Java 缓存没有效果。
 
 排查时先确认增长口径，再抓分配栈。`dumpsys meminfo <pid>` 可以看 Native Heap、Dalvik Heap、Graphics、Stack、Code 等分类；在调试包、自有进程可读、root 或 userdebug/eng 环境下，`/proc/<pid>/smaps` 可以进一步确认增长区域是 `[anon:libc_malloc]`、`[anon:scudo:*]`、so 私有脏页，还是图形缓冲。分类对了，工具才选得对。
@@ -198,10 +186,6 @@ adb shell perfetto -c heapprofd-config.pbtxt -o /data/misc/perfetto-traces/nativ
 
 ## 大型 App 内存预算管理：把预算分给场景和团队
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory]
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
-[已验证: 官方文档, developer.android.com/studio/profile/capture-heap-dump]
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
 [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 
 大型 App 的内存问题很少由单个模块独立造成。首页框架、图片库、Feed、WebView、地图、直播、IM、广告 SDK、埋点 SDK 都会申请缓存和线程。每个团队只看自己的模块，单项都合理，合在一个进程里仍可能超过设备承受范围。
@@ -238,10 +222,6 @@ adb shell perfetto -c heapprofd-config.pbtxt -o /data/misc/perfetto-traces/nativ
 预算执行有三个动作：新增大缓存必须声明场景和上限；引入 SDK 必须提供内存基线；灰度阶段发现超预算，要能回滚开关或降级能力。单纯要求“少占内存”没有操作性，给出场景、数据、owner 和回滚路径，才能把问题持续压回预算线内。
 
 ## 复盘模板：让每个内存问题变成下一次排查入口
-
-[自动发现]
-[来源: metadata/source-index.json 中 KOOM / OOM monitoring 相关素材索引]
-[已验证: 官方文档, developer.android.com/topic/performance/memory]
 
 内存问题修完后要留下结构化记录。下一次出现同类曲线时，团队应该能从旧案例里复用排查路径，而不是重新猜一遍。
 

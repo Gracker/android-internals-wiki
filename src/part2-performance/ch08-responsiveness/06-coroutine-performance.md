@@ -699,3 +699,121 @@ hintSession?.setPreferPowerEfficiency(true)
 
 
 > **版本说明**：Session.setThreads() 为 API 34 公开方法（非 flagged API）。setPreferPowerEfficiency() 和 WorkDuration 分离上报为 flagged API，需运行时 flag 判断。详见 [DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md](DeepResearch/2026-05-27-adpf-performancehintmanager-api-version-boundary.md)
+
+<!-- AIW-源码调研-2026-06-15 -->
+## ADPF IPC 链路与 Android 16+ FlaggedApi 全貌（2026-06-15 增补）
+
+> 本节基于 AOSP master 分支（`Build.VERSION_CODES.BAKLAVA = API 36` / Android 16）的源码抓取。源码锚点：
+> - `frameworks/base/core/java/android/os/IHintSession.aidl`（31 行，已完整阅读）
+> - `frameworks/base/core/java/android/os/IHintManager.aidl`（46 行，已完整阅读）
+> - `frameworks/base/core/jni/android_os_PerformanceHintManager.cpp`（331 行，已完整阅读）
+> - `frameworks/base/native/android/performance_hint.cpp`（关键方法段已阅读）
+> - `frameworks/base/core/java/android/os/flags.aconfig`（ADPF flag 段）
+
+### 1. `Session.setThreads()` 的同步 IPC 链路
+
+`Session.setThreads(int[])` **不是异步**。它走 `IHintManager.setHintSessionThreads(IHintSession, int[])` 这条**同步** AIDL 通道，再由 HintManagerService 在内部触发 `IHintSession.setMode`，错误码从系统进程经 Binder 一路返回 Java 层。`IHintSession` 整体声明为 `oneway interface`，但 `setThreads` 这条路径通过 `IHintManager` 的 sync 通道拿到 errno：
+
+```
+Java Session.setThreads(int[])
+  → nativeSetThreads
+  → gAPH_setThreadsFn (dlopen libandroid.so 后 dlsym)
+  → APerformanceHint_setThreads
+  → session->setThreads (Binder 客户端)
+  → IHintManager.setHintSessionThreads (sync IPC)
+  → HintManagerService (system_server)
+  → 校验：tids 全属于本进程？session 在前台？tids 非空？
+  → 内部 IHintSession.setMode
+  → 返回 errno (EINVAL/EPERM/0)
+  → Java: throwExceptionForErrno
+       EINVAL → IllegalArgumentException
+       EPERM  → SecurityException
+       其他   → RuntimeException
+```
+
+JNINativeMethod 注册表里 `nativeReportActualWorkDuration` 有两个重载（`(JJ)V` 与 `(JJJJJ)V`），分别对应单 long 旧接口和 WorkDuration 4 字段新接口。
+
+### 2. Android 16 全量 ADPF FlaggedApi 全景（来自 `flags.aconfig`）
+
+按 `is_exported` / `is_fixed_read_only` 划分：
+
+**应用可见（`is_exported: true`）**：
+| flag 名 | 对应 API |
+|---------|----------|
+| `adpf_gpu_report_actual_work_duration` | `WorkDuration` 类 + `reportActualWorkDuration(WorkDuration)` + `GPU_LOAD_UP/DOWN/RESET` |
+| `adpf_graphics_pipeline` | `SessionCreationConfig` + Graphics Pipeline 模式 |
+| `adpf_prefer_power_efficiency` | `Session.setPreferPowerEfficiency(boolean)` |
+
+**平台内部只读（`is_fixed_read_only: true`，应用不可写）**：
+| flag 名 | 用途 |
+|---------|------|
+| `adpf_hwui_gpu` | libandroid 层 FMQ 通道启用 |
+| `adpf_obtainview_boost` | HWUI obtainView 提频 |
+| `adpf_platform_power_efficiency` | 平台内部能效模式 |
+| `adpf_use_load_hints` | 公共 load hints 走 readonly flag（详见 §3） |
+
+**应用可见但仍 gated（`is_exported: false`）**：
+| flag 名 | 用途 |
+|---------|------|
+| `adpf_measure_during_input_event_boost` | 输入事件触发的 measure 提频 |
+
+### 3. 私有 load hints 速率限制器（libandroid 内置）
+
+`frameworks/base/native/android/performance_hint.cpp` 中常量：
+
+```cpp
+constexpr double kLoadHintInterval = std::chrono::nanoseconds(2s).count();   // 2 秒窗口
+constexpr double kMaxLoadHintsPerInterval = 20;                              // 窗口内最多 20 个
+constexpr double kReplenishRate = kMaxLoadHintsPerInterval / kLoadHintInterval;  // 10 hints/s
+
+bool useNewLoadHintBehavior() {
+    return android::os::adpf_use_load_hints() || kForceNewHintBehavior;
+}
+```
+
+含义：NDK 层私有 API `APerformanceHint_notifyWorkloadIncrease/Reset/Spike` 在 `adpf_use_load_hints` flag 开启后启用，并被 libandroid 内置令牌桶限流（2 秒滑动窗口、稳态 10 hints/s）。这套约束是为防止游戏渲染循环以帧率（60–120 Hz）滥用 hint。Java SDK 未暴露这套 API，但游戏引擎和 HWUI 内部可通过 native 路径使用。
+
+### 4. `WorkDuration` 的双重校验路径
+
+Java `PerformanceHintManager.Session.reportActualWorkDuration(WorkDuration)` 的 setter 抛 `IllegalArgumentException`，但绕过 setter 直接构造 `WorkDuration` 后调用，会进入 JNI/libandroid 层：
+
+```cpp
+int APerformanceHint_reportActualWorkDuration2(APerformanceHintSession* session,
+                                               AWorkDuration* workDurationPtr) {
+    VALIDATE_PTR(session)
+    VALIDATE_PTR(workDurationPtr)
+    VALIDATE_INT(workDurationPtr->durationNanos, > 0)
+    VALIDATE_INT(workDurationPtr->workPeriodStartTimestampNanos, > 0)
+    VALIDATE_INT(workDurationPtr->cpuDurationNanos, >= 0)
+    VALIDATE_INT(workDurationPtr->gpuDurationNanos, >= 0)
+    VALIDATE_INT(workDurationPtr->gpuDurationNanos + workDurationPtr->cpuDurationNanos, > 0)
+    return session->reportActualWorkDuration(workDurationPtr);
+}
+```
+
+`VALIDATE_INT` 失败返回 `EINVAL`，JNI 抛 `IllegalArgumentException`。这是协程框架（Kotlin 1.9/2.x 的 `PerformanceHintManager` 包装库）需要复用的约束：**`totalDuration > 0` 且 `cpu+gpu > 0`，二者缺一不可**。
+
+### 5. 新增 AIDL 接口（`IHintSession.associateToLayers`）
+
+```java
+oneway interface IHintSession {
+    void updateTargetWorkDuration(long targetDurationNanos);
+    void reportActualWorkDuration(in long[] actualDurationNanos, in long[] timeStampNanos);
+    void close();
+    void sendHint(int hint);
+    void setMode(int mode, boolean enabled);
+    void reportActualWorkDuration2(in WorkDuration[] workDurations);
+    /** Used by apps to associate a session to a given set of layers */
+    oneway void associateToLayers(in IBinder[] layerTokens);     // ★ Android 16 新增
+}
+```
+
+`associateToLayers` 把 session 与 SurfaceFlinger 的图层 token 关联，用于 graphics pipeline 模式下的 frame cadence 协调（与 `adpf_graphics_pipeline` flag 联动）。调用是 `oneway`，应用不阻塞，但系统内部把 layerTokens 注入 PowerHAL 的 SessionConfig 后才能让提频信号真正生效。
+
+### 工程结论（与 §8.6 原内容协同）
+
+- §8.6 原"Session 线程绑定的核心约束"已经覆盖 API 边界，本节补充 **IPC 同步性**（setThreads 同步、reportActual 异步 oneway、associateToLayers oneway）这条工程决策依据。
+- §8.6 原"GPU 负载上报（Android 16 FlaggedApi）"已经覆盖 Java 层校验，本节补充 **libandroid 层 VALIDATE_INT 二次校验**，解释为什么 WorkDuration 在绕过 setter 时仍会失败。
+- 新 flag `adpf_graphics_pipeline` 与 `IHintManager.getMaxGraphicsPipelineThreadsCount()` 是 graphics pipeline 模式的两个抓手，应用层暂未直接暴露 setter，但通过 `adpf_graphics_pipeline` flag 启用后 `getMaxGraphicsPipelineThreadsCount()` 会返回非零值，提示应用可以做 graphics pipeline 提交。
+
+详见：[DeepResearch/2026-06-15-performancehint-setthreads-ipc-chain-newly-flags.md](DeepResearch/2026-06-15-performancehint-setthreads-ipc-chain-newly-flags.md)

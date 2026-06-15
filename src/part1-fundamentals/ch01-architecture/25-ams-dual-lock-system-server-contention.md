@@ -345,3 +345,13 @@ Self-Locked 模式把 PidMap 与 sActiveProcessInfo 完全脱离 AMS 主锁，�
 原章节（android-16.0.0_r4 锚点）覆盖双锁骨架、LOSP/LSP 命名、UPDATE_TIME_ZONE / OomAdjuster 路径、Perfetto 观测。本节补充 Android 17 main 在 CachedAppOptimizer / AppProfiler / 临时白名单三块的新增 mProcLock 现场，并揭示 `ActivityManagerProcLock` 空壳类的 CPU booster 用途。两者结合即得 AMS 双锁架构的完整视图。
 
 <!-- outline-end -->
+
+
+## 参考资料
+
+### Android 17 AMS 双锁架构在 CachedAppOptimizer / AppProfiler / CPU Booster 上的延伸
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-ams-dual-lock-android17-main-extensions.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 main 分支上 mProcLock 已扩散到 CachedAppOptimizer（冻结/压缩队列）、AppProfiler（低内存时间跟踪）等 5 个核心类，每类约 20-30 处标注。ActivityManagerProcLock 空壳类作为 CPU booster 识别 critical section 的锚点，配合 ART monitor enter/exit 拉高 system_server CPU 频率。UPDATE_TIME_ZONE 等高频路径仅需 mProcLock 避开 mGlobalLock 排队。
+- 注入时间：2026-06-15
+- 价值：补齐 Android 17 main 上 mProcLock 扩散到 5 个核心类的源码证据与 CPU booster 机制
