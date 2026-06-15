@@ -1,4 +1,5 @@
 ---
+
 title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
 chapter: "13.11"
 section: "13.11"
@@ -29,22 +30,23 @@ related_chapters: ["13.10", "13.6", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/研究素材"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-15"
 task6_reviewed_date: "2026-06-15"
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-16"
 last_task9_at: "2026-06-16T00:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-16-00-deep-review.md"
 task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2。frame/cpufreq 查询残留错误警告、GC pause window 合并算法仍会产生重叠窗口。"
-task2b_state: pending
+task2b_state: fixed
 
 task2b_result: fixed
+last_task2b_main_at: 2026-06-16T02:50:00+08:00
 ---
 
 # 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
@@ -328,7 +330,7 @@ ORDER BY frame.frame_id;
 
 这个统计能回答两个问题：帧的墙上时间里主线程占用 CPU 跑了多久；主线程运行期间 CPU 频率处在哪个区间。如果 `frame_wall_ms` 很高但 `main_cpu_ms` 很低，瓶颈更可能是等锁、等 Binder、等 I/O 或调度排队，详见 §13.6。若 `main_cpu_ms` 高且 `avg_freq_khz` 长期偏低，需要继续看温控、后台功耗限制、线程优先级和厂商调度策略，eBPF 侧的频率驻留统计可作为补充，详见 §14.10。
 
-**注意：** 上述查询使用普通 JOIN 做重叠判断但聚合 `joined.dur`，当 sched/cpufreq 交集段跨过 frame 边界时，frame 外时长会被错误算进当前帧。推荐改为 `SPAN_JOIN(frame_span PARTITIONED utid, sched_with_freq PARTITIONED utid)` 后聚合，或用 `MIN(joined.ts + joined.dur, frame.ts + frame.dur) - MAX(joined.ts, frame.ts)` 计算精确的重叠时长。
+上述查询已经用 `MIN(joined.end, frame.end) - MAX(joined.start, frame.start)` 裁剪重叠时长，frame 边界是安全的。如果改为 `SPAN_JOIN(frame_span PARTITIONED utid, sched_with_freq PARTITIONED utid)`，`SPAN_JOIN` 内部会按交集自动切段，聚合 `joined.dur` 也不会越界——这是等价写法，选择哪种取决于查询规模和调试习惯：普通 JOIN + overlap 公式适合快速验证少量帧；`SPAN_JOIN` 适合大 trace 时把边界裁剪交给算子，减少 SQL 里的重复公式。
 
 ## 帧 × Binder / 锁 / GC 的交叉分析
 
@@ -392,8 +394,15 @@ merged AS (
     ts,
     end_ts,
     name,
-    -- 标记每个合并组的起点：与前一个 interval 不连续
-    CASE WHEN ts <= LAG(end_ts) OVER (PARTITION BY utid ORDER BY ts)
+    -- 用运行最大结束时间判定合并组起点。
+    -- LAG(end_ts) 只比较前一行的 end，遇到嵌套区间（如 A[1,10]、B[2,3]、C[9,12]）时
+    -- C 只与 B.end=3 比较会被误判为新组，产出两个重叠窗口违反 SPAN_JOIN 同分区不重叠约束。
+    -- MAX(end_ts) OVER 取前序所有行的最大结束时间，嵌套区间可正确合并到同一组。
+    CASE WHEN ts <= MAX(end_ts) OVER (
+      PARTITION BY utid
+      ORDER BY ts, end_ts
+      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+    )
       THEN 0 ELSE 1 END AS is_start
   FROM raw_gc
 ),
