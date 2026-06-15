@@ -34,12 +34,12 @@ last_task6_audit: 2026-06-09
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: pending-review
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-03T02:20:00+08:00"
@@ -49,7 +49,7 @@ last_task9_audit_at: "2026-06-15T16:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-15-16-audit.md"
 task9_review_notes: "2026-06-15 Task9 闲时抽检：发现 P1 版本差异，Virtual A/B / VABC 小节仍按 dm-snapshot + super COW 统一模型描述，未区分 Android 11 / 12 / 13+ snapshot 与 snapuserd 边界；已写入 queue，回到 Task2B。"
 
-last_task2b_at: "2026-05-22T07:21:00+08:00"
+last_task2b_at: "2026-06-15T16:52:36+08:00"
 last_task9_autofix_at: "2026-06-02"
 last_task6_at: "2026-06-02T18:08:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-18-review.md"
@@ -325,26 +325,48 @@ AOSP 中的关键实现路径：
 
 ## Dynamic Partition 与 Virtual A/B 的存储布局
 
-前面提到 Dynamic Partition 通过 `super` 物理分区和 dm-linear 实现了灵活的逻辑分区布局。但 Dynamic Partition 只是存储布局演进的一半，另一半是 **Virtual A/B（VABC）**——它解决了 OTA 升级时如何安全地更新这些分区的问题。
+Dynamic Partition 通过 `super` 物理分区和 `dm-linear` 在运行时切出逻辑分区，这一层已经介绍过了。但分区布局的灵活调整只解决了"逻辑分区怎么划"的问题——另一半是 **Virtual A/B（VABC）**，解决的是 OTA 升级时如何安全更新这些逻辑分区、差异数据存在哪里、由谁合并。
 
-传统的 A/B 分区方案为每个分区维护两套完整的副本（slot A 和 slot B），占用双倍的存储空间。Virtual A/B 在此基础上做了优化：它不再为每个只读分区维护完整副本，而是利用 dm-snapshot（COW 设备）只记录升级过程中的变更。具体来说，升级时系统会创建一个 COW 设备，在 `super` 分区中分配空间。新版本的分区数据写入 COW 区域，旧版本的数据保持不变。如果升级成功，COW 中的数据被合并为正式数据；如果升级失败，系统可以回退到旧版本——只需要丢弃 COW 设备即可。
+传统 A/B 分区方案为每个分区维护两套完整副本（slot A 和 slot B），占用双倍存储空间。Virtual A/B 不再为只读分区保留完整副本，而是只记录升级中的差异。但"怎么记录差异、差异写到哪、合并由谁执行"这三个问题，在不同 Android 版本里答案完全不同，不能用一个统一的 `dm-snapshot` 模型概括。
+
+### Android 11：kernel COW
+
+Android 11 引入 Virtual A/B 的早期形态，差异记录在 `dm-snapshot` COW 设备上。COW 空间从 `super` 分区中分配，内核 snapshot 模块负责 redirect write——写入新数据前先把旧数据复制到 COW 设备，再将新数据写到目标位置，一次写入变成两次 I/O。
+
+### Android 12+：Android COW Format + snapuserd
+
+Android 12 起，Virtual A/B 转用 **Android COW format**（Android 自己的 COW 格式），不再依赖内核 `dm-snapshot`。COW 空间从 `super` 内分配改为主要落在 `/data`，由 `dm-user`（用户态 device mapper 接口）配合 `snapuserd` 守护进程处理压缩快照（compressed snapshots）。`snapuserd` 负责读取 COW 数据并以用户态响应读取——当系统需要读取旧版本数据时，`snapuserd` 判断该数据是否已被 COW 覆盖，未覆盖则直接读 base 分区。
+
+### Android 13+：userspace merge
+
+Android 13 将 snapshot merge 完全移入 `snapuserd` 用户态，移除了对内核 `dm-snapshot` 和 kernel COW 的依赖。升级成功后，`snapuserd` 执行 userspace merge 将 COW 数据写回正式分区；升级失败时，丢弃 COW 区回退到旧版本，不需要额外还原操作。[已验证: AOSP 官方 Virtual A/B 文档, source.android.com/docs/core/ota/virtual_ab]
 
 ```text
-Virtual A/B 升级流程：
+Virtual A/B 存储模型演进：
 
-super 分区布局（升级中）：
-┌──────────────┬──────────┬────────────┐
-│  当前 slot A  │  COW 区域 │  空闲空间   │
-│(system/vendor)│(变更记录) │            │
-└──────────────┴──────────┴────────────┘
+Android 11（kernel COW）：
+  snapshot delta → dm-snapshot COW → super 内分配
 
-升级成功 → COW 合并到正式分区
-升级失败 → 丢弃 COW，继续用 slot A
+Android 12+（Android COW format）：
+  snapshot delta → /data（compressed）→ dm-user + snapuserd
+
+Android 13+（userspace merge）：
+  merge 由 snapuserd 用户态执行，移除 kernel COW 依赖
 ```
 
-这种做法的核心是，COW 区域只记录新旧版本之间的差异，而不是保存一套完整的分区副本。这样可以减少 OTA 升级需要额外预留的空间。但代价是升级期间的写入性能会受到影响，每次写入都要先复制旧数据到 COW 设备，再写入新数据，也就是一次写入会变成两次 I/O。[已验证: 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
+这次演进的实质是把 COW 空间从 `super` 分区解放出来，放到容量更充裕的 `/data` 分区。Android 12+ 的 COW 空间属于临时的 transient space——升级完成后可以被回收。升级期间，`/data` 上的 COW 写入会和用户 I/O 竞争；如果 `/data` 已经接近满载，性能影响会更明显。
 
-在 Perfetto Trace 中，如果设备正在进行或刚完成 OTA 升级，我们可能会观察到 `data` 分区或 `super` 分区上有持续的后台 I/O，那通常就是 COW merge 在工作。合并大多在后台完成，但存储空间紧张或后台写入很重时，它会明显拉长前台 App 的 I/O 等待。[图：Virtual A/B merge 的后台 I/O。标出 `update_engine`、`snapuserd` 或 merge worker 的持续写入，以及前台 App `fsync` / `read` 延迟被拉长的位置。]
+在 Perfetto Trace 中，OTA 升级期间的 Virtual A/B 活动有几个可观测信号，集中在三组进程：
+
+| 进程 | 角色 | Trace 特征 |
+| --- | --- | --- |
+| `update_engine` | 下载包、写 COW、触发 merge | 持有 `/data` COW 空间的写入流量；升级完成后停止 |
+| `snapuserd` | Android 12+ 的 COW 读写与 merge 执行 | 用户态 dm-user worker，持续占用 CPU 和 `/data` I/O；升级成功后 merge 阶段仍活跃 |
+| 前台 App | 受影响方 | 主线程 `fsync`/`read` 延迟明显拉长，时间与 `snapuserd`/`update_engine` 活动对齐 |
+
+[图：Virtual A/B 后台 I/O 竞争的 Trace。标出 `update_engine`、`snapuserd` dm-user worker、以及前台 App 主线程被拉长的 `fsync`/`read`，同时展示 `/data` 上的稳定写入流量。]
+
+合并大多在后台完成，但存储空间紧张或后台写入密集时，`snapuserd` 和前台 App 争抢 `/data` 的 IOPS，会明显拉长前台 App 的 I/O 等待。
 
 ## 存储寿命与写入放大
 

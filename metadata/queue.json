@@ -896,6 +896,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-15T16:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-15T16:52:36+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "fixed: Virtual A/B subsection rewritten to versioned model (Android 11 kernel COW / Android 12+ Android COW format + snapuserd / Android 13+ userspace merge); removed dm-snapshot + super COW unified model; updated Perfetto observation table"
   }
 ]
