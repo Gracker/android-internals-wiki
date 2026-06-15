@@ -28,14 +28,14 @@ related_chapters: ['6.2', '6.3', '4.1', '7.1']
 created: 2026-04-01
 drafted_date: 2026-04-01
 drafted_by: openclaw-task2a
-reviewed_date: 2026-06-02
-task6_reviewed_date: "2026-06-02"
+reviewed_date: 2026-06-15
+task6_reviewed_date: "2026-06-15"
 last_task6_audit: 2026-06-09
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: pending-review
 task2b_result: fixed
@@ -51,10 +51,10 @@ task9_review_notes: "2026-06-15 Task9 闲时抽检：发现 P1 版本差异，Vi
 
 last_task2b_at: "2026-06-15T16:52:36+08:00"
 last_task9_autofix_at: "2026-06-02"
-last_task6_at: "2026-06-02T18:08:00+08:00"
-last_task6_review_log: "logs/review/2026-06-02-18-review.md"
-task6_review_notes: "2026-06-02 18:08 Task6 revisiting-review：L1/L2 小修 11 处（metadata 版本范围、禁用/高风险填充词、物理动作动词、ASCII 图代码围栏），outline 5/5 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
-task6_l1_l2_fixes: 11
+last_task6_at: "2026-06-15T17:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-15-17-review.md"
+task6_review_notes: "2026-06-15 17:10 Task6 revisiting-review（Task2B 修复后）：Virtual A/B 版本拆分（Android 11/12+/13+）写作质量良好，逻辑清晰；L1 小修 1 处（第一人称「我更建议」→「建议」）；outline 7/7 覆盖；无新增 L3/L4 回炉项。Task2B 已修复 Task9 P1（版本差异），送 Task9 复核。"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
 deepseek_cn_review_state: done
@@ -400,7 +400,7 @@ NAND 闪存有一个物理限制：每个存储单元的擦写次数是有限的
 
 ## 存储问题观测地图
 
-这一章反复提 Perfetto 和 I/O 诊断，如果没有一个最小观测地图，读者很容易停在“看起来像 I/O 慢”的直觉层。实战里我更建议按下面五层去抓。
+这一章反复提 Perfetto 和 I/O 诊断，如果没有一个最小观测地图，读者很容易停在“看起来像 I/O 慢”的直觉层。实战中建议按以下五层抓取。
 
 [图：存储问题观测地图。纵轴是 block layer、ext4/f2fs、FUSE/MediaProvider、init/vold、update_engine/snapuserd；横轴是抓取入口、关键进程、常见异常形态。]
 
