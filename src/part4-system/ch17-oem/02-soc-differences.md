@@ -54,15 +54,11 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-15"
 task6_result: pass-light-edit
 task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-27"
-task6_result: pass-light-edit
-task6_state: "revisiting"
 task6_reviewed_date: "2026-06-15"
 task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-06-15T22:30:00+08:00"
 last_task6_audit: "2026-06-15"
-last_task6_review_log: "logs/review/2026-05-27-09-review.md"
+last_task6_review_log: "logs/review/2026-06-15-22-review.md"
 review_type: task6-writing-quality-review
 task9_state: "reviewed"
 last_task9_audit: "2026-06-15"
