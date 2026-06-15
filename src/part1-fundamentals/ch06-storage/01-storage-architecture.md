@@ -34,9 +34,9 @@ last_task6_audit: 2026-06-09
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_result: fixed
 task2b_state: fixed
@@ -51,10 +51,10 @@ task9_review_notes: "2026-06-15 Task9 deep review：AUTO-FIX。复核上一轮 V
 
 last_task2b_at: "2026-06-15T16:52:36+08:00"
 last_task9_autofix_at: "2026-06-15"
-last_task6_at: "2026-06-15T17:10:00+08:00"
-last_task6_review_log: "logs/review/2026-06-15-17-review.md"
-task6_review_notes: "2026-06-15 17:10 Task6 revisiting-review（Task2B 修复后）：Virtual A/B 版本拆分（Android 11/12+/13+）写作质量良好，逻辑清晰；L1 小修 1 处（第一人称「我更建议」→「建议」）；outline 7/7 覆盖；无新增 L3/L4 回炉项。Task2B 已修复 Task9 P1（版本差异），送 Task9 复核。"
-task6_l1_l2_fixes: 1
+last_task6_at: "2026-06-15T18:11:42+08:00"
+last_task6_review_log: "logs/review/2026-06-15-18-review.md"
+task6_review_notes: "2026-06-15 18:05 Task6 revisiting-review（Task9 auto-fix 后第二轮复审）：Task9 已修正 Android 12 compressed snapshots 版本描述（dm-snapshot 过渡期 → Android 13+ userspace merge）；本轮重审 Virtual A/B 三段版本拆分写作质量良好，逻辑清晰，版本边界准确；L1 禁用词/高频词/翻译腔全扫通过；outline 7/7 覆盖；无 L1/L2 修复项，无新增 L3/L4 回炉项。送 Task9 最终复核。"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 deepseek_cn_review_state: done
