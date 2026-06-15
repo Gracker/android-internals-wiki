@@ -9,21 +9,24 @@ reviewed_date: "2026-06-15"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-04-11"
-last_verified_against: "Android 17 release notes + Android 17 behavior changes + Mainline docs + android-16.0.0_r1 (Binder/BLAST) + AOSP master (MessageQueue, 未进入公开 android-17 tag)"
+last_verified_against: "Android 17 release notes + Android 17 behavior changes + Mainline docs + android-16.0.0_r1 (Binder/BLAST/Looper/WMS) + AOSP master (MessageQueue, 未进入公开 android-17 tag)"
 confidence: medium
 tags:
   - android
   - performance
   - aosp
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
 task9_reviewed_date: "2026-06-15"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-15T14:20:00+08:00"
+last_task9_at: "2026-06-15T15:24:49+08:00"
+last_task9_autofix_at: "2026-06-15"
 last_task9_audit_log: "logs/deep-review/2026-06-15-14-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-15-15-deep-review.md"
 last_task9_audit: "2026-06-15"
+task9_review_notes: "2026-06-15 Task9 re-review: AUTO-FIX source anchors; Looper / SurfaceControl / BLASTSyncEngine / WindowContainerTransaction references pinned to android-16.0.0_r1 after direct AOSP verification. P0/P1=0, P2=1, Task6 revisiting."
 task2b_state: fixed
 task2b_result: fixed
 task2b_fixed_at: "2026-06-15T14:50:00+08:00"
@@ -230,15 +233,15 @@ Baseline Profiles 解决的是"关键代码路径尽早编译成机器码",但�
 ## 参考资料
 - AOSP / 官方源码路径
   - `platform/frameworks/base/core/java/android/view/Choreographer.java`(android-16.0.0_r1,VSync 驱动的帧调度入口)
-  - `platform/frameworks/base/core/java/android/os/Looper.java`(refs/heads/master,Looper 驱动 MessageQueue)
+  - `platform/frameworks/base/core/java/android/os/Looper.java`(android-16.0.0_r1,Looper 驱动 MessageQueue)
   - `platform/frameworks/base/core/java/android/os/LockedMessageQueue/MessageQueue.java`(refs/heads/master，master 观察，未进入公开 android-17 tag)
   - `platform/frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`(refs/heads/master，master 观察，未进入公开 android-17 tag)
   - `platform/frameworks/native/libs/binder/ProcessState.cpp`(android-16.0.0_r1，`DEFAULT_MAX_BINDER_THREADS` / `BINDER_SET_MAX_THREADS`)
   - `platform/frameworks/native/libs/gui/BLASTBufferQueue.cpp`(android-16.0.0_r1，`syncNextTransaction()` / `mergeWithNextTransaction()` / `applyPendingTransactions()`)
   - `platform/frameworks/native/libs/gui/include/gui/BLASTBufferQueue.h`(android-16.0.0_r1，BLAST 的同步接口定义)
-  - `platform/frameworks/base/core/java/android/view/SurfaceControl.java`(refs/heads/master,`mergeWithNextTransaction` Java 侧钩子)
-  - `platform/frameworks/base/services/core/java/com/android/server/wm/BLASTSyncEngine.java`(refs/heads/master,WMS 侧 BLAST sync 收集与提交)
-  - `platform/frameworks/base/core/java/android/window/WindowContainerTransaction.java`(refs/heads/master,窗口事务跨进程传递对象)
+  - `platform/frameworks/base/core/java/android/view/SurfaceControl.java`(android-16.0.0_r1,`mergeWithNextTransaction` Java 侧钩子)
+  - `platform/frameworks/base/services/core/java/com/android/server/wm/BLASTSyncEngine.java`(android-16.0.0_r1,WMS 侧 BLAST sync 收集与提交)
+  - `platform/frameworks/base/core/java/android/window/WindowContainerTransaction.java`(android-16.0.0_r1,窗口事务跨进程传递对象)
 - 官方文档
   - `https://developer.android.com/topic/performance`
   - `https://developer.android.com/topic/performance/baselineprofiles/overview`
