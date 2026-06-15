@@ -946,19 +946,13 @@
     "title": "异常处理架构设计",
     "file": "src/part5-app/ch20-stability/07-exception-architecture.md",
     "priority": 85,
-    "reason": "[Deep Tech Review] 异常处理架构仍保留 Task9 回炉占位，ApplicationExitInfo、SafeMode 状态机和 crash 文件持久化协议未闭环。",
+    "reason": "[Deep Tech Review] 异常处理架构仍保留 Task9 回炉占位，SafeMode 状态机和 crash 文件持久化协议未闭环。（版本/API 边界问题已由 Task2B Lite 于 2026-06-16 修复）",
     "material_paths": [
       "logs/deep-review/2026-06-16-00-deep-review.md",
       "https://developer.android.com/reference/android/app/ApplicationExitInfo",
       "https://android.googlesource.com/platform/frameworks/base.git/+/master/core/java/android/app/ApplicationExitInfo.java"
     ],
     "review_issues": [
-      {
-        "type": "版本差异/源码边界",
-        "location": "L120-L125",
-        "detail": "正文仍保留“需确认 getTraceInputStream 对 native tombstone 的 API 边界”。Android 官方 ApplicationExitInfo 文档写明 getTraceInputStream 自 API 30 存在，通常用于 REASON_ANR；从 API 31 开始，REASON_CRASH_NATIVE 会返回 tombstone protobuf 输入流，但该 trace 保存在全局循环缓冲区，可能被覆盖并返回 null。章节适用 Android 10-16，必须把 API 30/31 边界写清。",
-        "suggestion": "补成版本化表述：Android 11/API30 可查历史退出原因和 ANR trace；Android 12/API31+ native crash 可通过 REASON_CRASH_NATIVE + getTraceInputStream 读取 tombstone protobuf；调用方必须处理 null/IOException/缓冲区覆盖，并保留 Crashpad/Breakpad 作为主链路。"
-      },
       {
         "type": "原理断裂/知识盲区",
         "location": "L140-L170 SafeMode 判定",
@@ -974,7 +968,12 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-16T00:20:00+08:00",
-    "status": "pending"
+    "status": "pending",
+    "task2b_lite_partial": {
+      "fixed_at": "2026-06-16T01:35:00+08:00",
+      "fixed_issue": "版本差异/源码边界: getTraceInputStream API 30/31 版本边界",
+      "remaining_issues": 2
+    }
   },
   {
     "section": "13.11",

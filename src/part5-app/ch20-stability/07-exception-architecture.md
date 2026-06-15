@@ -38,16 +38,18 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-15"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-15T16:13:21+08:00"
 last_task6_review_log: "logs/review/2026-05-15-06-review.md"
 task6_review_notes: "2026-05-15 Task6 06:05：needs-rework。完成 L1/L2 小修 6 处；沿用 Task9 风险信号标注 4 处并合并 queue，交 Task2B。"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
+last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -121,7 +123,7 @@ Native 入口通常交给 Crashpad、Breakpad 或厂商 APM SDK。信号处理�
 
 Android 11 引入 `ApplicationExitInfo`，应用可通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询历史进程退出原因。它适合补偿“进程被系统杀死、handler 没来得及执行、Native crash 只留下系统 trace”的场景，但不能替代 Crash handler；它拿到的是系统记录，不保证包含业务上下文。[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo]
 
-[需确认: `ApplicationExitInfo.getTraceInputStream()` 对 native tombstone 的 API 边界、空 trace fallback 需按 Task9 问题单补齐。]
+`getTraceInputStream()` 的返回内容随版本变化。Android 11/API 30 引入该方法，用于 `REASON_ANR` 的 ANR trace；Android 12/API 31 起，`REASON_CRASH_NATIVE` 也可通过该方法读取 tombstone protobuf 流，但底层存储是全局循环缓冲区，高崩溃频率下会被覆盖并返回 `null`。调用方必须处理 `null` 和 `IOException`，不能把它当作 native crash 的主链路——Crashpad/Breakpad 仍然是 native 崩溃捕获的首选。[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo]
 
 全局捕获框架的边界要写进 SDK 契约：
 
