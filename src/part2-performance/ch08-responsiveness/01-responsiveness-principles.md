@@ -5,7 +5,7 @@ section: "8.1"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-reviewed_date: '2026-06-05'
+reviewed_date: '2026-06-16'
 reviewed_by: openclaw-task6
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-06-16"
@@ -28,12 +28,12 @@ sources:
     path: "https://web.dev/articles/rail"
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
-task6_review_notes: "2026-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-task6_state: revisiting
+task6_review_notes: "2026-06-16 Task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 小修 3 处(删除评价形容词"精彩的"、修正"写法"→"帧预算"、修正词序"公开 Android Vitals"). L1禁用词零命中. 无B类大问题. 评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5. task9_result=auto-fixed非pass-tech-review,不触发自动晋升. 公开 Android Vitals 目前不单列 Tap Re"
+task6_state: reviewed
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
-task6_reviewed_date: "2026-06-05"
+task6_reviewed_date: '2026-06-16'
 task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-05-22"
@@ -49,7 +49,7 @@ last_task9_autofix_at: "2026-06-16"
 task9_review_notes: "2026-06-16 Task9 idle audit auto-fixed: 补充 Android 15 QPR1+ ARR 支持边界，修正 InputDispatcher 源码成员访问写法；未使用 Android 18/API 38+ 资料。"
 last_task9_audit: "2026-06-16"
 last_task9_review_log: logs/deep-review/2026-06-16-04-audit.md
-last_task6_at: "2026-06-05T03:05:00+08:00"
+last_task6_at: "2026-06-16T05:05:00+08:00"
 
 task2b_fixed_date: "2026-06-06"
 finalized_date: 2026-06-06
@@ -107,7 +107,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
 
 在实际工程中，我们通常从以下几个维度度量响应速度：
 
-**1. 点击响应速度（Tap Response Time）**——用户点击屏幕到系统给出视觉反馈的时间。这是最直观的响应速度指标。公开 Android Vitals 目前不单列 Tap Response Time 核心指标；排查时通常结合 Perfetto Input 轨道、慢帧、冻结帧和 ANR 数据判断。
+**1. 点击响应速度（Tap Response Time）**——用户点击屏幕到系统给出视觉反馈的时间。这是最直观的响应速度指标。Android Vitals 公开指标目前不单列 Tap Response Time 核心指标；排查时通常结合 Perfetto Input 轨道、慢帧、冻结帧和 ANR 数据判断。
 
 **2. 滑动响应速度（Swipe Response Time）**——用户手指滑动到画面开始跟随移动的时间。滑动的感知比点击更敏锐，因为用户的眼睛在跟踪手指运动，任何微小的延迟都会被捕捉到。
 
@@ -130,7 +130,7 @@ RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 
 
 ### Animation——动画（命中 VSync Deadline）
 
-动画和滚动场景下，每一帧的渲染必须在当前刷新率对应的 VSync 周期内完成。传统写法是 60Hz 屏幕 16ms、120Hz 屏幕 8ms；在支持 ARR 的 Android 15 QPR1+ 设备上，显示刷新率可以按内容渲染帧率动态匹配，Android 16 又补了 `hasArrSupport()`、`getSuggestedFrameRate(int)` 等应用侧能力。Animation 阶段的目标更适合写成"命中调度器分配的 Expected Deadline"，而不是把所有设备都压到某个固定数值。这个时间包括 Input 事件处理、业务逻辑更新、measure/layout/draw 整套流程。
+动画和滚动场景下，每一帧的渲染必须在当前刷新率对应的 VSync 周期内完成。传统帧预算是 60Hz 屏幕 16ms、120Hz 屏幕 8ms；在支持 ARR 的 Android 15 QPR1+ 设备上，显示刷新率可以按内容渲染帧率动态匹配，Android 16 又补了 `hasArrSupport()`、`getSuggestedFrameRate(int)` 等应用侧能力。Animation 阶段的目标更适合写成"命中调度器分配的 Expected Deadline"，而不是把所有设备都压到某个固定数值。这个时间包括 Input 事件处理、业务逻辑更新、measure/layout/draw 整套流程。
 
 Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的处理时间超过了 VSync 周期，就会产生"掉帧"（jank），用户会感知到画面卡顿。关于 Choreographer 的详细机制，我们在 [2.4 Choreographer 与渲染流水线](../../part1-fundamentals/ch02-rendering/04-choreographer.md) 中专门讨论。
 
@@ -191,7 +191,7 @@ SurfaceFlinger 在 VSync-sf 信号到来时，将所有 Layer 的 GraphicBuffer 
 
 抖动问题指的是系统虽然有足够的平均性能，但偶尔会出现执行时间的剧烈波动。比如某一帧因为 GC 暂停、Binder 调用慢、或者锁竞争导致执行时间从 5ms 飙升到 50ms。抖动问题的危害往往比容量问题更大——因为用户对"偶尔卡一下"的感知比对"一直慢"更强烈。
 
-Google 在评估指南中给出了一个精彩的例子来解释这个问题：假设有两个 SoC 运行同样的渲染 benchmark——SoC A 每帧稳定在 10ms，总分 10000；SoC B 在 99% 的情况下每帧 1ms，但有 1% 的帧需要 100ms，总分 19900。从 benchmark 分数看 SoC B "更快"，但在实际使用中，SoC A 的体验会远好于 SoC B，因为 SoC B 每 1.5 秒就会出现一次明显的卡顿。
+Google 在评估指南中给出了一个例子来解释这个问题：假设有两个 SoC 运行同样的渲染 benchmark——SoC A 每帧稳定在 10ms，总分 10000；SoC B 在 99% 的情况下每帧 1ms，但有 1% 的帧需要 100ms，总分 19900。从 benchmark 分数看 SoC B "更快"，但在实际使用中，SoC A 的体验会远好于 SoC B，因为 SoC B 每 1.5 秒就会出现一次明显的卡顿。
 
 ## Android Vitals 中的响应速度指标
 
