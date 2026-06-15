@@ -2,7 +2,7 @@
 title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
 chapter: "13.11"
 section: "13.11"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -36,14 +36,14 @@ reviewed_date: "2026-06-16"
 task6_reviewed_date: "2026-06-16"
 last_task6_at: "2026-06-16T03:07:00+08:00"
 task6_review_notes: "2026-06-16 Task6 复审:pass-light-edit。无禁用词/高频词/AI套话命中。frontmatter 格式清理(删除空行)。L1/L2 全部通过,无B类问题。Task9 needs-rework 状态保持,不可自动晋升。"
-pipeline_stage: task9_pending
-task9_state: pending
-task9_result: needs-rework
+pipeline_stage: ready-to-publish
+task9_state: reviewed
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T00:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-00-deep-review.md"
-task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2。frame/cpufreq 查询残留错误警告、GC pause window 合并算法仍会产生重叠窗口。"
+last_task9_at: "2026-06-16T03:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-16-03-deep-review.md"
+task9_review_notes: "2026-06-16 Task9 复审:pass-tech-review。frame/cpufreq 边界裁剪与 GC pause window 运行最大结束时间合并算法已通过复核；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00

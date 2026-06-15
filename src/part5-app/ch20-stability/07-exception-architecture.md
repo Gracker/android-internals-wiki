@@ -38,27 +38,28 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-16"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-16T03:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-16-02-review.md"
 task6_review_notes: "2026-06-16 Task6 第二次复审:pass-light-edit。无禁用词/高频词命中(闭环仅出现在 frontmatter 元数据中,不计入)。不是X而是Y 句式 1 次(开篇对比句,在限制内)。frontmatter 格式清理(删除首行空行)。L1/L2 全部通过,无B类问题。Task9 needs-rework 未闭环,不可自动晋升。"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T02:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-02-deep-review.md"
-task9_review_notes: "2026-06-16 Task9 复审:needs-rework。getTraceInputStream API 30/31 与 native tombstone API 31+ 边界已通过复核;P1 2 仍未闭环:SafeMode launch marker 状态机、crash 文件持久化协议,沿用 queue pending。"
+last_task9_at: "2026-06-16T03:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-16-03-deep-review.md"
+task9_review_notes: "2026-06-16 Task9 复审:auto-fixed。SafeMode launch marker 状态机、crash 文件持久化协议已闭环；本轮直接修正父目录 fsync 示例中不存在的 Java/Kotlin API 写法，回到 Task6 复审。"
 
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00
+last_task9_autofix_at: "2026-06-16"
 ---
 
 # 异常处理架构设计
@@ -337,7 +338,7 @@ public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail)
 `临时文件 + rename` 不能保证目录项在崩溃后一定落盘。文件系统和存储固件可能在 rename 之后、父目录元数据刷盘之前断电，导致 rename 丢失、tmp 残留或 completed 文件为空。最小可靠协议需要补三步：
 
 1. **tmp 写入后 flush**：`FileOutputStream` 写完内容后调用 `fd.sync()`（或 Java 层 `FileDescriptor.sync()`），确保数据从 OS 缓冲区刷到存储设备。
-2. **rename 到 completed 后父目录 fsync**：`File.renameTo()` 是文件系统元数据操作，目录项不一定立即持久化。rename 之后对父目录调用 `getParentFile().sync()`（需要反射或 NDK `fsync(dirfd)`），确保目录项落盘。
+2. **rename 到 completed 后父目录 fsync**：`File.renameTo()` 是文件系统元数据操作，目录项不一定立即持久化。rename 之后打开父目录对应的目录 fd 并调用 `fsync(dirfd)`（通常通过 NDK 封装；纯 Java/Kotlin 没有直接 API），确保目录项落盘。
 3. **下次启动扫描与清理**：恢复流程要区分三种文件状态——
 
 | 状态 | 文件名 | 处理方式 |
