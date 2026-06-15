@@ -8,7 +8,7 @@ drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-15"
-last_verified_against: "Qualcomm / MediaTek / Samsung / Google 官方产品页，AOSP android-16.0.0_r1，Android common android14-6.1 / android15-6.6 / android16-6.12 / android17-6.18"
+last_verified_against: "Qualcomm / MediaTek / Samsung / Google 官方产品页，Google Tensor G5 官方博文，ARM Cortex-X925 官方资料，AOSP android-16.0.0_r1，Android common android14-6.1 / android15-6.6 / android16-6.12 / android17-6.18"
 confidence: medium
 sources:
   - type: blog
@@ -23,6 +23,12 @@ sources:
     path: "mediatek.com/products/smartphones"
   - type: official
     path: "arm.com/products/silicon-ip-cpu"
+  - type: official
+    path: "blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/"
+  - type: official
+    path: "support.google.com/pixelphone/answer/7158570"
+  - type: official
+    path: "developer.arm.com/documentation/102807/0002"
   - type: web
     path: "多来源综合(web search 验证)"
 tags: [qualcomm, mediatek, samsung, exynos, tensor, adreno, mali, xclipse, soc, cpu, gpu]
@@ -32,9 +38,9 @@ last_task2b_at: "2026-05-17T19:17:39"
 task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-15"
-last_task9_at: "2026-06-15T19:25:12+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-27-09-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。 | 2026-05-27 07:24 Task9 auto-fix：Android common 6.12 不存在 kernel/sched/energy.c；EAS 选核源码锚点改为 kernel/sched/fair.c 的 find_energy_efficient_cpu()/compute_energy()，回到 Task6 复审。 | 2026-05-27 08:22 Task9 auto-fix：按 Android common 6.1/6.6/6.12 复核 EEVDF 版本口径，避免把调度器切换绑定到 Android API；回到 Task6 复审。 | 2026-05-27 09:40 Task9 deep-review：pass-tech-review。复核 08:22 EEVDF 版本口径 auto-fix 后，Task6 09:16 仅改术语括号，未引入技术变化；queue 无 pending，自动晋升 finalized。 | 2026-06-15 19:25 Task9 idle-audit auto-fix：补充 Android 17 支持的 android17-6.18 kernel 分支口径；复核 fair.c find_energy_efficient_cpu()/compute_energy()/EEVDF 与 sched_ext ext.c 锚点；回到 Task6 复审。"
+last_task9_at: "2026-06-15T20:30:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-15-20-deep-review.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；8 Elite Gen 5 Vulkan、Dimensity 9500 core/GPU、Snapdragon LPDDR5X 带宽规格与官方资料不一致。 | 2026-05-27 06:23 Task9 auto-fix：按 Qualcomm / MediaTek 官方产品规格修正 8 Elite Gen 5 图形 API、Dimensity 9500 八核 CPU / Mali-G1 Ultra MC12、Snapdragon 8 Elite LPDDR5x 口径；无 queue pending。 | 2026-05-27 07:24 Task9 auto-fix：Android common 6.12 不存在 kernel/sched/energy.c；EAS 选核源码锚点改为 kernel/sched/fair.c 的 find_energy_efficient_cpu()/compute_energy()，回到 Task6 复审。 | 2026-05-27 08:22 Task9 auto-fix：按 Android common 6.1/6.6/6.12 复核 EEVDF 版本口径，避免把调度器切换绑定到 Android API；回到 Task6 复审。 | 2026-05-27 09:40 Task9 deep-review：pass-tech-review。复核 08:22 EEVDF 版本口径 auto-fix 后，Task6 09:16 仅改术语括号，未引入技术变化；queue 无 pending，自动晋升 finalized。 | 2026-06-15 19:25 Task9 idle-audit auto-fix：补充 Android 17 支持的 android17-6.18 kernel 分支口径；复核 fair.c find_energy_efficient_cpu()/compute_energy()/EEVDF 与 sched_ext ext.c 锚点；回到 Task6 复审。 | 2026-06-15 20:30 Task9 auto-fix：修正 Cortex-X925 L2/ROB 旧口径、Tensor G5 发布与 Pixel 10 RAM 机型差异、Geekbench 工具名；补充 Google/ARM 官方来源；回到 Task6 复审。"
 p0: 0
 p1: 0
 p2: 0
@@ -43,21 +49,22 @@ last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 last_task9_autofix_at: "2026-06-15"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-06-15"
 task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-06-15T20:16:42+08:00"
 last_task6_review_log: "logs/review/2026-05-27-09-review.md"
 review_type: task6-writing-quality-review
-task9_state: "pending"
+task9_state: "reviewed"
 last_task9_audit: "2026-06-15"
 last_task9_audit_log: "logs/deep-review/2026-06-15-19-audit.md"
-task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。修正术语括号格式；L1 禁用词与高频词扫描无命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。" | 2026-06-15 20:16 Task6 复审:pass-light-edit。Task9 idle-audit 补充 android17-6.18 kernel 分支口径后文风复扫;L1 禁用词/高频词/翻译腔动词均无命中;outline 5/5 + 扩展 2/2 覆盖;待验证 26.7% < 30%;无 L1/L2 新增问题;无 L3/L4 回炉项。Task9 result 为 auto-fixed,未满足自动晋升 finalized 条件,送 Task9 复审。
----# SoC 平台差异
+task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。修正术语括号格式；L1 禁用词与高频词扫描无命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-06-15 20:16 Task6 复审:pass-light-edit。Task9 idle-audit 补充 android17-6.18 kernel 分支口径后文风复扫;L1 禁用词/高频词/翻译腔动词均无命中;outline 5/5 + 扩展 2/2 覆盖;待验证 26.7% < 30%;无 L1/L2 新增问题;无 L3/L4 回炉项。Task9 result 为 auto-fixed,未满足自动晋升 finalized 条件,送 Task9 复审。"
+---
+# SoC 平台差异
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -106,13 +113,13 @@ Android 生态中的旗舰 SoC 主要来自四家公司,每家的设计哲学和
 
 **三星 Exynos** 的情况比较特殊。Exynos 曾经是三星 Galaxy 系列的主力芯片,但在旗舰性能上与高通的差距导致三星多次在旗舰机型上转向骁龙。最新的 Exynos 2500 计划用于 Galaxy Z Flip 7 等折叠屏设备。Exynos 的 CPU 使用 ARM 公版核心,但 GPU 方面采用了与 AMD 合作的 Xclipse 系列,基于 AMD RDNA 架构,这在移动 GPU 中是独树一帜的选择,带来了硬件光追和 VRS 等桌面级特性。
 
-**Google Tensor** 是 Google 为 Pixel 系列定制的 SoC。Tensor 的设计哲学与其他三家完全不同:它不以峰值性能为目标,而是围绕 Google 的 AI 和机器学习需求来设计。Tensor 的 CPU 和 GPU 性能在旗舰 SoC 中并不突出,但在端侧 AI 推理(如语音识别、图像处理、实时翻译)方面有专用硬件加速。Tensor G4 仍基于三星的代工和部分 IP,但 Tensor G5 预计将是 Google 的首款完全自研芯片,由 TSMC 代工。
+**Google Tensor** 是 Google 为 Pixel 系列定制的 SoC。Tensor 的设计哲学与其他三家完全不同:它不以峰值性能为目标,而是围绕 Google 的 AI 和机器学习需求来设计。Tensor 的 CPU 和 GPU 性能在旗舰 SoC 中并不突出,但在端侧 AI 推理(如语音识别、图像处理、实时翻译)方面有专用硬件加速。Tensor G4 仍基于三星的代工和部分 IP,但 Tensor G5 已随 Pixel 10 系列发布。Google 官方称 Tensor G5 是第五代自研 Tensor,采用 TSMC 3nm 工艺;Pixel 10 系列继续围绕端侧 AI、相机 ISP 和安全硬件做定制。
 
-> **2025/2026 当前旗舰更新**：截至 2026-05，四大平台均已迭代到新一代旗舰：
+> **2025/2026 当前旗舰更新**：截至 2026-06-15，四大平台均已迭代到新一代旗舰：
 > - **Qualcomm Snapdragon 8 Elite Gen 5**：第三代自研 Oryon CPU 核心，Adreno GPU 升级；Qualcomm 产品规格列出的 Android 图形 API 为 OpenCL 3.0 FP / OpenGL ES 3.2 / Vulkan 1.3，Linux UMD 资料里的 Vulkan 1.4 不能直接写成 Android 设备统一能力
 > - **MediaTek Dimensity 9500**：采用 ARM C1-Ultra + C1-Premium + C1-Pro 八核架构（1×C1-Ultra + 3×C1-Premium + 4×C1-Pro），GPU 为 Arm Mali-G1 Ultra MC12；官方规格未列出额外 2 个低功耗核
 > - **Samsung Exynos 2600**：2nm GAA 工艺，十核 CPU（ARM C1 系列），Xclipse 960 GPU（基于 AMD RDNA）
-> - **Google Tensor G5**：Pixel 10 系列搭载，TSMC 代工的首款完全自研芯片，12GB RAM 配置
+> - **Google Tensor G5**：Pixel 10 系列搭载，采用 TSMC 3nm 工艺；Google 官方硬件规格中 Pixel 10 为 12GB RAM，Pixel 10 Pro / Pro XL / Pro Fold 为 16GB RAM
 >
 > 2024/2025 代表芯片（8 Elite、9400、Exynos 2500、Tensor G4）仍作为当前在售设备的主力参考，但分析新设备 Perfetto 数据时需要按新一代架构更新基准判断。
 
@@ -130,7 +137,7 @@ CPU 是性能分析时最关注的组件。不同 SoC 在 CPU 核心的拓扑结
 
 高通在 Snapdragon 8 Gen 3 上采用了 1+3+2+2 的四集群设计(1 个 Cortex-X4 超大核 + 3 个 Cortex-A720 大核 + 2 个 A720 中核 + 2 个 A520 小核),到了 8 Elite(搭载自研 Oryon 核心)则简化为 2+6 的双集群设计。这种简化策略背后的思路是:减少集群间迁移的机会,降低调度器做迁移决策时的开销。在 Perfetto 中分析 Oryon 设备时,应重点看线程是否在两个集群之间来回迁移,而不是直接套用四集群大小核的判断。
 
-联发科的策略最为激进。Dimensity 9300 和 9400 采用了「全大核」设计:Dimensity 9400 配置为 1×Cortex-X925 + 3×Cortex-X4 + 4×Cortex-A720 的全大核架构。MediaTek 官方公开 Cortex-X925 up to 3.62GHz 与 LPDDR5X 内存规格;X4/A720 的细分频率、vendor OPP 表和实机频率策略仍需以设备/内核来源核验。评测拆解和 GeekBoard/AnTuTu 等工具读数可作交叉参考,但不同渠道的数字存在差异。这种设计带来的直接影响是:在 Perfetto 的 CPU Track 中,所有核心都有较高的基础性能,即使任务被调度到所谓「能效核」上,也不会出现性能断崖式下降的情况。
+联发科的策略最为激进。Dimensity 9300 和 9400 采用了「全大核」设计:Dimensity 9400 配置为 1×Cortex-X925 + 3×Cortex-X4 + 4×Cortex-A720 的全大核架构。MediaTek 官方公开 Cortex-X925 up to 3.62GHz 与 LPDDR5X 内存规格;X4/A720 的细分频率、vendor OPP 表和实机频率策略仍需以设备/内核来源核验。评测拆解和 Geekbench/AnTuTu 等工具读数可作交叉参考,但不同渠道的数字存在差异。这种设计带来的直接影响是:在 Perfetto 的 CPU Track 中,所有核心都有较高的基础性能,即使任务被调度到所谓「能效核」上,也不会出现性能断崖式下降的情况。
 
 三星 Exynos 2500 则保持相对传统的大小核配置,使用 ARM 公版核心搭配标准的 DynamIQ 集群。Google Tensor G4 使用 Arm 公版 Cortex 核心(1×Cortex-X4 + 3×Cortex-A720 + 4×Cortex-A520),Google/Samsung 在 SoC 集成、频率调度和 TPU/NPU 侧做定制,核心频率通常设得比同代骁龙和天玑低一些,以换取更好的功耗和散热表现。
 
@@ -146,7 +153,7 @@ CPU 是性能分析时最关注的组件。不同 SoC 在 CPU 核心的拓扑结
 
 [待验证: Oryon L1/L2 容量和访问延迟周期:Qualcomm 公开产品页未披露具体数字,待官方白皮书、Hot Chips/ISSCC 或芯片拆解报告确认;L2 已确认为私有(非共享),但容量和延迟数值仍待验证]
 
-ARM 的 Cortex-X925 是 ARM 最高性能的公版核心,10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心,IPC 虽然不如 X 系列,但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用,其基础性能仍远超传统的 A5xx 系列小核心。
+ARM 的 Cortex-X925 是 ARM 最高性能的公版核心。Arm 官方公开口径是:相对 Cortex-X4,私有 L2 从 2MB 提升到最高 3MB,Geekbench 6.2 IPC 提升约 15%,前端、乱序窗口和后端负载管线都有扩展。Cortex-A720 作为性能-能效核心,IPC 虽然不如 X 系列,但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用,其基础性能仍远超传统的 A5xx 系列小核心。
 
 Google Tensor G4 使用 Arm Cortex-X4/A720/A520 公版核心,微架构与同代 Cortex 一致,但频率设置更为保守。在 Perfetto 中,同一时间段内 Tensor 的 CPU 利用率数值可能看起来更高(因为频率低、单周期处理能力低),但这不代表性能差,只是基准不同。
 
@@ -237,7 +244,7 @@ ARM 的 **Mali** 和 **Immortalis** GPU 是使用最广泛的移动 GPU IP。Imm
 
 三星的 **Xclipse** GPU 是移动 GPU 中的异类:它基于 AMD 的 RDNA 架构,这是 PC 和主机显卡的架构。Xclipse 940(Exynos 2400)使用 RDNA 3,支持硬件光追和可变分辨率渲染(VRS)等桌面级特性。Xclipse 的理论性能很强,但由于移动端的功耗和散热限制,持续性能输出可能不如 Adreno 稳定。在驱动方面,Xclipse 的 Vulkan 支持被认为与 Adreno 接近。
 
-Google Tensor 使用的 GPU 通常是 ARM Mali 系列(如 Mali-G715)。Tensor 不追求 GPU 峰值性能,更看重端侧 AI 推理,这个需求由 TPU(Tensor Processing Unit)而非 GPU 来承担。
+Google Tensor G4 及更早几代公开资料多以 ARM Mali 系列 GPU 为主。Pixel 10 的 Tensor G5 在 Google 官方硬件规格中只标注 Tensor G5 处理器,未列出 GPU 型号;分析 Pixel 10 GPU 问题时应以实机驱动和可核实厂商资料为准。Tensor 不追求 GPU 峰值性能,更看重端侧 AI 推理,这个需求由 TPU(Tensor Processing Unit)而非 GPU 来承担。
 
 ### GPU 差异在 Perfetto 中的表现
 
