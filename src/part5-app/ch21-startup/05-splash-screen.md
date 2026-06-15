@@ -24,13 +24,13 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-16"
-task2b_state: pending
+task2b_state: fixed
 created_by: "task2a-content-processing"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-15"
@@ -44,8 +44,9 @@ last_task6_at: "2026-06-15T16:13:21+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-16-00-deep-review.md"
 
 task2b_result: fixed
+last_task2b_at: "2026-06-16T00:51:53"
+task2b_fixed_date: "2026-06-16"
 ---
-
 # Splash Screen 与感知启动速度
 
 冷启动的客观耗时和用户体感之间有一段可操作的空间。系统 Starting Window 在 App 进程完成首帧之前给用户视觉反馈；SplashScreen API（Android 12+）统一了这段反馈的配置方式；骨架屏、预渲染、退出动画则让这段过渡更平滑。本节讲这三层工具怎么用、各自的版本边界和 Perfetto 上的观察点。
@@ -141,7 +142,7 @@ SplashScreen API 把启动画面的行为统一交给系统处理：开发者配
 - **`installSplashScreen()`**：Activity 侧的接入点，必须在 `setContentView()` 之前调用。
 - **`KeepOnScreenCondition`**：让启动画面在条件满足前保持显示。
 - **`setOnExitAnimationListener`**：自定义退出动画。
-- **兼容库** `androidx.core:core-splashscreen`：向后支持到 Android 5.0（API 21）。
+- **兼容库** `androidx.core:core-splashscreen`：向后支持到 Android 6.0（API 23）。
 
 ### 配置步骤
 
@@ -149,10 +150,10 @@ SplashScreen API 把启动画面的行为统一交给系统处理：开发者配
 
 ```groovy
 // build.gradle
-implementation "androidx.core:core-splashscreen:1.2.0-alpha02"
+implementation "androidx.core:core-splashscreen:1.2.0"
 ```
 
-`1.2.0` 系列支持 Android 16 的行为变更（详见下方版本差异表）。生产环境建议用稳定版 `1.0.1`，按需升级。
+`1.2.0` 是当前稳定版（2025-11-05 stable），支持 Android 16 的行为变更。最低可用 `1.0.1`，Android 15/16 行为兼容优先验证 `1.2.0+`。
 
 **2. 配置主题**
 
@@ -169,7 +170,7 @@ implementation "androidx.core:core-splashscreen:1.2.0-alpha02"
 </style>
 ```
 
-`postSplashScreenTheme` 必须指向 App 正常运行时使用的主题。SplashScreen 消失后，系统会把 Activity 的主题从 `Theme.App.Starting` 切换到 `postSplashScreenTheme`。如果这项配置缺失或指向了不存在的主题，Activity 会崩溃。
+`postSplashScreenTheme` 是迁移必填项，必须指向 App 正常运行时使用的主题。SplashScreen 消失后，系统会把 Activity 的主题从 `Theme.App.Starting` 切换到 `postSplashScreenTheme`。缺失时兼容库不会替 Activity 切回正常主题，可能导致启动后主题或窗口属性异常；不存在的资源引用通常在构建期就会失败，不会留到运行时。
 
 **3. 在 Manifest 中设置主题**
 
@@ -205,14 +206,14 @@ class MainActivity : ComponentActivity() {
 
 ### 版本行为差异
 
-| 特性 | Android 5-11（兼容库模式） | Android 12+（原生 API） |
+| 特性 | Android 6-11 / API 23-30（兼容库模式） | Android 12+ / API 31+（原生 API） |
 |------|--------------------------|------------------------|
-| 中央图标 | 显示静态图标（AVD 只显示第一帧） | 支持 AnimatedVectorDrawable 动画 |
+| 中央图标 | API<31 显示静态图标，不支持 AVD 动画 | 支持 AnimatedVectorDrawable 动画 |
 | 背景色 | 支持 | 支持 |
 | 品牌图片（底部） | 不显示 | `windowSplashScreenBrandingImage` |
-| 退出动画 | 不支持 | `setOnExitAnimationListener` |
+| 退出动画 | 由兼容库 SplashScreenViewProvider / dispatchOnExitAnimation 模拟 | `setOnExitAnimationListener` |
 | 圆形遮罩 | 无 | 遵循 Adaptive Icon 规范，图标在圆形区域内 |
-| Starting Window 创建 | App 侧创建 Activity 模拟 | Shell starting-surface 组件创建 |
+| Starting Window 创建 | 复用启动 Activity 的 DecorView（不创建额外 Activity） | Shell starting-surface 组件创建 |
 
 [待补充：各 Android 版本上 SplashScreen 外观的截图对比]
 
@@ -268,7 +269,7 @@ splashScreen.setOnExitAnimationListener { provider ->
 3. 创建 `Theme.SplashScreen` 的子主题，把旧的背景色和 Logo 迁移到 `windowSplashScreenBackground` 和 `windowSplashScreenAnimatedIcon`。
 4. 在 Activity 中调用 `installSplashScreen()`。
 5. 如果之前有 SplashActivity，把它的数据加载逻辑搬到主 Activity 的 ViewModel 里，用 `KeepOnScreenCondition` 控制启动画面消失时机，然后删掉 SplashActivity。
-6. 测试 Android 5-11 的兼容表现——兼容库模式下图标动画和退出动画不可用。
+6. 测试 Android 6-11 / API 23-30 的兼容表现——兼容库模式下图标 AVD 动画不可用，退出动画由 provider 模拟。
 
 迁移完成后，Perfetto 上的变化：原来两次 `reportDrawFinished`（SplashActivity + MainActivity）变成一次（MainActivity），中间的 Activity 切换开销消失。
 
@@ -424,9 +425,9 @@ App 在 Android 12+ 上不适配 SplashScreen API 时，启动流程可能出现
 
 ### 兼容库在低版本上的限制
 
-`androidx.core:core-splashscreen` 在 Android 5-11 上通过在 App 内部创建一个 Activity 级别的启动页来模拟 SplashScreen 行为。因此：
+`androidx.core:core-splashscreen` 在 Android 6-11 / API 23-30 上复用启动 Activity 的主题和 DecorView 来实现兼容——通过 OnPreDrawListener 控制显示时机、SplashScreenViewProvider 驱动退出动画，不创建额外 Activity。因此：
 
-- 退出动画和图标动画不可用。
+- API<31 不支持启动图标 AVD 动画（只显示静态图标）。退出动画由兼容库 overlay / provider 模拟，功能可用。
 - `KeepOnScreenCondition` 的行为和 Android 12+ 一致。
 - 兼容库模式下的 SplashScreen 不是系统侧 Starting Window，它的绘制发生在 App 进程里，不算系统侧 starting surface。
 

@@ -11798,6 +11798,15 @@
       "result": "fixed",
       "summary": "修正 dumpsys gfxinfo framestats 字段版本边界：FrameDeadline/FrameInterval 为 Android 12+ 已存在，WorkloadTarget 为 Android 16+ 新增；回流 Task6。",
       "source_log": "logs/deep-review/2026-05-24-01-deep-review.md"
+    },
+    {
+      "section": "21.5",
+      "file": "src/part5-app/ch21-startup/05-splash-screen.md",
+      "source": "task9-deep-tech-review",
+      "fixed_at": "2026-06-16T00:51:53",
+      "fixed_by": "task2b-main",
+      "issues_fixed": 3,
+      "status": "completed"
     }
   ],
   "task6_audit_summary": {
