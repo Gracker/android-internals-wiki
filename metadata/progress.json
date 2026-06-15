@@ -1,8 +1,8 @@
 {
   "total": 426,
   "draft": 0,
-  "ready-for-review": 78,
-  "finalized": 300,
+  "ready-for-review": 80,
+  "finalized": 301,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-12",
   "task9_reviewed_by": "openclaw-task9",
@@ -741,13 +741,13 @@
       "task6_note": "实战案例缺少可复核 Trace/AGI 证据且局部重复，已写入 queue。"
     },
     "21.5": {
-      "p0": 1,
-      "p1": 1,
+      "p0": 0,
+      "p1": 0,
       "p2": 2,
-      "p3": 2,
-      "reviewed_at": "2026-05-15T11:41:46+08:00",
-      "log": "logs/deep-review/2026-05-15-11-deep-review.md",
-      "summary": "P0 1 / P1 1 / P2 2 / P3 2。[P0] L355-L358 — baselineProfileRulesRewrite 不是官方 Baseline Profile DSL；示例可能无法编译。; [P1] L200-L207/L400-L406 — AndroidX core-splashscreen 低版本实现仍写成“创建 Activity/退出动画不支持”。",
+      "p3": 0,
+      "reviewed_at": "2026-06-16T01:20:00+08:00",
+      "log": "logs/deep-review/2026-06-16-01-deep-review.md",
+      "summary": "P0/P1 0；Task2B 修复项复核通过；P2 2 为数据支撑补强建议。",
       "task6_result": "pass-light-edit",
       "task6_l1_l2_fixes": 2,
       "task6_l3_l4_issues": 0,
@@ -756,7 +756,9 @@
       "task6_new_rework": false,
       "task6_note": "写作质量通过；运行时译法和禁用句式已修。Task9 既有 Baseline Profile DSL / core-splashscreen 兼容模式问题仍由 Task2B 处理。",
       "task6_state": "reviewed",
-      "pipeline_stage": "task9_pending"
+      "pipeline_stage": "task9_pending",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed"
     },
     "22.4": {
       "p0": 2,
@@ -2454,8 +2456,8 @@
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
   "ready_for_review": 81,
-  "last_updated": "2026-06-15T13:16:24+08:00",
-  "last_updated_by": "task6-draft-review",
+  "last_updated": "2026-06-16T01:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
     "reviewed_by": "openclaw-task6",
@@ -2484,7 +2486,7 @@
     "l3_l4_issues": 0,
     "new_rework": false
   },
-  "task9_last_review": "2026-06-12T18:20:00+08:00",
+  "task9_last_review": "2026-06-16T01:20:00+08:00",
   "ready_to_publish": 193,
   "rework_history": [
     {
@@ -3160,18 +3162,25 @@
       "last_task2b_verifier_at": "2026-05-29T23:25:00+08:00"
     },
     "21.5": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-05-13T01:20:00+08:00",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "queue_priority": 90,
       "last_task6_review_log": "logs/review/2026-05-13-01-review.md",
       "task9_state": "reviewed",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task9_reviewed_date": "2026-05-14",
       "task9_reviewed_by": "openclaw-task9",
       "file": "src/part5-app/ch21-startup/05-splash-screen.md",
-      "title": "Splash Screen 与感知启动速度"
+      "title": "Splash Screen 与感知启动速度",
+      "section": "21.5",
+      "task6_state": "reviewed",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task9_at": "2026-06-16T01:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-06-16-01-deep-review.md",
+      "task9_review_summary": "pass-tech-review；P0/P1 0；P2 2 写入 suggestions；queue 无 pending；自动晋升 finalized。"
     },
     "21.6": {
       "status": "finalized",
@@ -7849,36 +7858,37 @@
     ],
     "notes": "APA/AGI/Perfetto/Sokatoa 工具边界已按 2026-05-19 官方资料复核；未发现 Android 18/API 38+ 越界内容。"
   },
-  "last_task9_review": "2026-06-12T18:20:00+08:00",
+  "last_task9_review": "2026-06-16T01:20:00+08:00",
   "last_task9_sections": [
-    "14.8"
+    "21.5"
   ],
   "last_task9_review_detail": {
-    "date": "2026-06-12",
-    "time": "18:20",
-    "reviewed_at": "2026-06-12T18:20:00+08:00",
+    "date": "2026-06-16",
+    "time": "01:20",
+    "reviewed_at": "2026-06-16T01:20:00+08:00",
     "mode": "deep-review",
     "sections": [
-      "14.8"
+      "21.5"
     ],
     "files": [
-      "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+      "src/part5-app/ch21-startup/05-splash-screen.md"
     ],
-    "log": "logs/deep-review/2026-06-12-18-deep-review.md",
+    "log": "logs/deep-review/2026-06-16-01-deep-review.md",
     "p0": 0,
     "p1": 0,
-    "p2": 0,
-    "p3": 3,
+    "p2": 2,
+    "p3": 0,
     "queue_added": 0,
-    "suggestions_added": 0,
+    "research_gaps_added": 0,
+    "suggestions_added": 2,
     "result": "pass-tech-review",
     "auto_promoted": [
-      "14.8"
+      "21.5"
     ],
-    "notes": "APA/AGI/Perfetto/Sokatoa 工具边界已按 2026-05-19 官方资料复核；未发现 Android 18/API 38+ 越界内容。"
+    "notes": "Task2B 修复项复核通过；未发现 P0/P1；未使用 Android 18/API 38+ 资料。"
   },
   "task9_last_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+    "src/part5-app/ch21-startup/05-splash-screen.md"
   ],
   "total_review_files": 132,
   "last_task2a_at": "2026-06-04T22:04:00+08:00",
@@ -7928,9 +7938,9 @@
     "review_round": 2
   },
   "last_task9_reviewed_files": [
-    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+    "src/part5-app/ch21-startup/05-splash-screen.md"
   ],
-  "last_task9_at": "2026-06-12T18:20:00+08:00",
+  "last_task9_at": "2026-06-16T01:20:00+08:00",
   "last_task2a_result": "processed",
   "ready-to-publish": 0,
   "last_task2a_processed_section": "1.24",
@@ -10156,15 +10166,15 @@
     "note": "连续 128 轮无合格缺口。0 draft 章节。全书 426 文件：298 finalized + 82 ready-for-review + 46 无状态/附录。管线堵点仍在复审/发布环节，非内容缺口。"
   },
   "task9_last_sections": [
-    "14.8"
+    "21.5"
   ],
   "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
   "last_task9_files": [
-    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+    "src/part5-app/ch21-startup/05-splash-screen.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-06-12-18-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-06-16-01-deep-review.md",
   "task9_last_files": [
-    "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
+    "src/part5-app/ch21-startup/05-splash-screen.md"
   ],
   "last_task2b_run": "2026-06-14T00:52:40+08:00",
   "task2b_sections_fixed": [
@@ -10618,7 +10628,7 @@
     "reviewed_date": "2026-06-01",
     "task6_review_summary": "L1/L2 小修 2 处；无新增回炉项，送 Task9 复核。"
   },
-  "last_task9_review_summary": "14.8 GPU 图形调试与分析工具：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
+  "last_task9_review_summary": "21.5 Splash Screen 与感知启动速度：pass-tech-review；P0/P1 0，P2 2 写入 suggestions；自动晋升 finalized / ready-to-publish。",
   "last_task2a_gap_mining": {
     "date": "2026-06-16",
     "time": "01:07",
@@ -10848,7 +10858,7 @@
       "summary": "修复 PreferenceWriteBuffer flush 后无条件清空 pending 导致并发新增写入丢失的问题。"
     }
   ],
-  "last_task9_review_log": "logs/deep-review/2026-06-12-18-deep-review.md",
+  "last_task9_review_log": "logs/deep-review/2026-06-16-01-deep-review.md",
   "last_task6_review_log": "logs/review/2026-06-15-13-review.md",
   "section_19_09": {
     "section": "19.09",
@@ -13006,10 +13016,10 @@
     "log": "logs/rework/2026-06-03-04-task2b-main.md"
   },
   "last_task9_reviewed_sections": [
-    "14.8"
+    "21.5"
   ],
   "task9_last_reviewed_sections": [
-    "14.8"
+    "21.5"
   ],
   "section_10_3": {
     "section": "10.3",
