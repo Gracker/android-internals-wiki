@@ -1,6 +1,4 @@
 ---
-
-
 title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
@@ -10,8 +8,8 @@ polish_by: "task2b-polish"
 reviewed_date: '2026-06-05'
 reviewed_by: openclaw-task6
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
-last_verified: "2026-03-30"
-last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
+last_verified: "2026-06-16"
+last_verified_against: "AOSP android-16.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; android-17.0.0_r1 tag unavailable"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
@@ -30,8 +28,8 @@ sources:
     path: "https://web.dev/articles/rail"
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
-P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-task6_state: "reviewed"
+task6_review_notes: "2026-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
+task6_state: revisiting
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
@@ -40,19 +38,25 @@ task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 review_round: 1
-status: finalized
-pipeline_stage: ready-to-publish
-task9_result: pass-tech-review
+status: ready-for-review
+pipeline_stage: task6_pending
+task9_result: auto-fixed
 task9_state: reviewed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-06
-last_task9_at: 2026-06-06T13:25:00+08:00
-last_task9_autofix_at: "2026-06-04"
-task9_review_notes: "2026-06-04 Task9 auto-fixed: 修正 RAIL Load 大纲阈值与 3 个跨章节链接；ANR 阈值边界作为 P2 写入 suggestions。"
-last_task9_audit: "2026-05-23"
-last_task9_review_log: logs/deep-review/2026-06-06-13-deep-review.md
-last_task6_at: "2026-06-05T03:05:00+08:00"---
+task9_reviewed_date: 2026-06-16
+last_task9_at: "2026-06-16T04:35:00+08:00"
+last_task9_autofix_at: "2026-06-16"
+task9_review_notes: "2026-06-16 Task9 idle audit auto-fixed: 补充 Android 15 QPR1+ ARR 支持边界，修正 InputDispatcher 源码成员访问写法；未使用 Android 18/API 38+ 资料。"
+last_task9_audit: "2026-06-16"
+last_task9_review_log: logs/deep-review/2026-06-16-04-audit.md
+last_task6_at: "2026-06-05T03:05:00+08:00"
 
+task2b_fixed_date: "2026-06-06"
+finalized_date: 2026-06-06
+finalized_by: openclaw-task9-auto-promote
+last_task9_audit_result: auto-fixed
+last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
+---
 
 # 响应速度原理
 
@@ -126,7 +130,7 @@ RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 
 
 ### Animation——动画（命中 VSync Deadline）
 
-动画和滚动场景下，每一帧的渲染必须在当前刷新率对应的 VSync 周期内完成。传统写法是 60Hz 屏幕 16ms、120Hz 屏幕 8ms，但 Android 15+ 广泛采用自适应刷新率（ARR）后，帧预算变成了动态值——系统调度器会根据内容意图（滑动、动画、静止）动态切换 VSync 周期。Animation 阶段的目标是"命中调度器分配的 Expected Deadline"，而非死守某个固定数值。这个时间包括 Input 事件处理、业务逻辑更新、measure/layout/draw 整套流程。
+动画和滚动场景下，每一帧的渲染必须在当前刷新率对应的 VSync 周期内完成。传统写法是 60Hz 屏幕 16ms、120Hz 屏幕 8ms；在支持 ARR 的 Android 15 QPR1+ 设备上，显示刷新率可以按内容渲染帧率动态匹配，Android 16 又补了 `hasArrSupport()`、`getSuggestedFrameRate(int)` 等应用侧能力。Animation 阶段的目标更适合写成"命中调度器分配的 Expected Deadline"，而不是把所有设备都压到某个固定数值。这个时间包括 Input 事件处理、业务逻辑更新、measure/layout/draw 整套流程。
 
 Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的处理时间超过了 VSync 周期，就会产生"掉帧"（jank），用户会感知到画面卡顿。关于 Choreographer 的详细机制，我们在 [2.4 Choreographer 与渲染流水线](../../part1-fundamentals/ch02-rendering/04-choreographer.md) 中专门讨论。
 
@@ -150,7 +154,7 @@ Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的�
 
 当用户触摸屏幕时，硬件产生一个中断，内核的触摸驱动将其转换为输入事件。随后 InputReader（运行在 system_server 的 InputFlinger 线程中）读取这些事件，交给 InputDispatcher 进行分发。
 
-InputDispatcher 通过 InputChannel 将事件发送给目标 App 进程。AOSP android-16.0.0_r1 中，InputDispatcher::publishMotionEvent() 调用 connection->inputPublisher.publishMotionEvent()；InputPublisher 将 MotionEvent 序列化到 InputChannel 的共享消息缓冲区，再通过 Unix domain socket/socketpair 发送通知并传递输入消息。App 侧 NativeInputEventReceiver 监听 fd，InputConsumer 取出事件后封装为 Java 层 MotionEvent，投递到主线程消息队列。Binder 只参与窗口和 InputChannel 的创建、传递阶段，不承载每个 MotionEvent 的分发。
+InputDispatcher 通过 InputChannel 将事件发送给目标 App 进程。AOSP android-16.0.0_r1 中，InputDispatcher::publishMotionEvent() 调用 connection.inputPublisher.publishMotionEvent()；InputPublisher 将 MotionEvent 序列化到 InputChannel 的共享消息缓冲区，再通过 Unix domain socket/socketpair 发送通知并传递输入消息。App 侧 NativeInputEventReceiver 监听 fd，InputConsumer 取出事件后封装为 Java 层 MotionEvent，投递到主线程消息队列。Binder 只参与窗口和 InputChannel 的创建、传递阶段，不承载每个 MotionEvent 的分发。
 
 这条路径在 Perfetto 中对应的是 Input Track 和对应 App 主线程上的 Input 事件处理 slice。从 InputDispatcher 发出到 App 收到，通常耗时在 1-2ms；如果主线程被阻塞（比如正在执行长时间的 measure/layout），这个时间会显著增加。
 
@@ -318,15 +322,13 @@ RAIL 的核心思想——根据用户的感知阈值设定性能目标——是
 - [RAIL: A User-Centric Performance Model | web.dev](https://web.dev/articles/rail) [已验证]
 - [华为 - 交互流畅体验设计](https://developer.huawei.com/consumer/cn/doc/best-practices-V5/bpta-smooth-application-design-V5) [来源: Cubox]
 - AOSP 源码路径：
-  - `frameworks/native/services/inputflinger/`（Input 分发）
+  - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（Input 分发调度）
+  - `frameworks/native/libs/input/InputTransport.cpp`（InputPublisher / InputChannel 消息发送）
+  - `frameworks/native/include/input/InputTransport.h`（InputPublisher / InputConsumer 端点定义）
   - `frameworks/base/core/java/android/view/Choreographer.java`（VSync 同步）
   - `frameworks/base/core/java/android/view/ViewRootImpl.java`（渲染管线入口）
 
-task2b_fixed_date: "2026-06-06"
-finalized_date: 2026-06-06
-finalized_by: openclaw-task9-auto-promote
----
 
-> **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-16.0.0_r1 源码修正。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
+> **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-16.0.0_r1 源码修正；android-17.0.0_r1 官方源码标签本轮无法取得，未用 main/master 结论外推到 Android 17。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；ARR 表述限定为支持 HAL/API 的 Android 15 QPR1+ 设备，Android 16 应用侧 API 另行说明；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
 >
 > **术语约定**：全文统一使用"响应速度"（Responsiveness）作为核心术语。"响应延迟"仅在引用外部指标定义时作为时间度量值使用，不作为独立术语。
