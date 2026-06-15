@@ -5,7 +5,7 @@ chapter: "16.1"
 status: ready-for-review
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-06-15"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-04-11"
@@ -15,8 +15,8 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-06-15"
@@ -31,6 +31,7 @@ last_task2b_at: "2026-06-15T14:50:00+08:00"
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 last_task6_audit_log: "logs/review/2026-05-22-03-audit.md"
+last_task6_at: "2026-06-15T15:10:00+08:00"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/release-notes"
@@ -173,7 +174,7 @@ Binder 这部分也非常容易被写成"Android 8 动态扩展线程池,Android
 
 再看优先级继承。官方 binder IPC 文档写得很直接,binder driver 一直支持 nice priority inheritance。Android 8 借 Treble 引入 `/dev/hwbinder` 域,同时把 real-time priority inheritance 加进 binder driver;到了 Android 10,Stable AIDL 又让满足稳定性要求的 HAL 可以回到 `/dev/binder`。准确的演进线是:早期已有 nice priority inheritance,Android 8 加入 RT inheritance 与 hwbinder 域,Android 10 通过 Stable AIDL 重新整理 binder domain 边界。
 
-这段时间线搞清楚之后,我们再看 Perfetto 里的 Binder track,才不会把线程池耗尽、调度延迟、优先级反转这些问题混成一团。Binder 的具体机制还可以回看 §1.4《Binder IPC 机制与性能影响》。
+这条时间线搞清楚之后,我们再看 Perfetto 里的 Binder track,才不会把线程池耗尽、调度延迟、优先级反转这些问题混成一团。Binder 的具体机制还可以回看 §1.4《Binder IPC 机制与性能影响》。
 
 ### 窗口管理:BLASTBufferQueue 优化 buffer 与 transaction 的同帧提交
 BLASTBufferQueue 常被简化成"App 直接把 buffer 发给 SurfaceFlinger"。源码里的路径更具体（android-16.0.0_r1 可稳定验证）：`BLASTBufferQueue` 仍然会创建内部的 `BufferQueueCore`、producer 和 consumer，BufferQueue 基础设施还在。它把 buffer acquire 与 `SurfaceControl.Transaction` 的提交时机绑到同一个 frame number 上。`BLASTBufferQueue.cpp` 里能直接看到这条主线，`syncNextTransaction()` 负责登记同步点，`mergeWithNextTransaction()` 决定当前 transaction 是立刻 apply 还是暂存到 `mPendingTransactions`，等目标 frame 到达后再 merge / apply；`SurfaceControl.java` 里也有 `onMergeWithNextTransaction()` 这条 Java 侧钩子。

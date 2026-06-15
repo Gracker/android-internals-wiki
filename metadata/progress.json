@@ -7879,9 +7879,21 @@
   "last_task2a_at": "2026-06-04T22:04:00+08:00",
   "last_task2a_section": "18.24",
   "last_task2a_file": "src/part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md",
-  "last_task6_review": "2026-06-15T13:16:24+08:00",
+  "last_task6_review": {
+    "reviewed_at": "2026-06-15T15:15:00+08:00",
+    "reviewed_by": "openclaw-task6",
+    "sections": [
+      "16.1"
+    ],
+    "files": [
+      "src/part4-system/ch16-aosp/01-google-optimization.md"
+    ],
+    "log": "logs/review/2026-06-15-15-review.md",
+    "result": "pass-light-edit",
+    "mode": "revisiting"
+  },
   "last_task6_sections": [
-    "14.10"
+    "16.1"
   ],
   "last_task6_reviewed_files": [
     "src/part2-performance/ch11-power/03-system-power-optimization.md"
@@ -13107,7 +13119,7 @@
     "task6_review_notes": "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
   },
   "last_task6_files": [
-    "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    "src/part4-system/ch16-aosp/01-google-optimization.md"
   ],
   "section_16_5": {
     "section": "16.5",
@@ -14187,6 +14199,14 @@
       "task6_result": "pass-light-edit",
       "pipeline": "task9_pending",
       "auto_promoted": false
+    },
+    {
+      "section": "16.1",
+      "date": "2026-06-15",
+      "task6_result": "pass-light-edit",
+      "pipeline": "task9_pending",
+      "auto_promoted": false,
+      "note": "revisiting review after task2b fix; 1 L1 measure word fix; no B-class issues; awaiting task9 re-review"
     }
   ],
   "3.2": {
@@ -14409,5 +14429,16 @@
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "last_task6_at": "2026-06-14T04:08:15+08:00"
+  },
+  "section_16_1": {
+    "section": "16.1",
+    "title": "Google 官方的性能优化思路",
+    "file": "src/part4-system/ch16-aosp/01-google-optimization.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-06-15T15:15:00+08:00",
+    "last_task6_review_log": "logs/review/2026-06-15-15-review.md"
   }
 }
