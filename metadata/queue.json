@@ -871,6 +871,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-15T14:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-15T14:50:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completed_note": "Task2B 回炉修复：源码锚点已改 android-16.0.0_r1，master-only 路径已标注未进入公开 android-17 tag"
   }
 ]
