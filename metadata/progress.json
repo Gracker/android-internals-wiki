@@ -754,7 +754,9 @@
       "task6_reviewed_at": "2026-05-15T12:11:00+08:00",
       "task6_log": "logs/review/2026-05-15-12-review.md",
       "task6_new_rework": false,
-      "task6_note": "写作质量通过；运行时译法和禁用句式已修。Task9 既有 Baseline Profile DSL / core-splashscreen 兼容模式问题仍由 Task2B 处理。"
+      "task6_note": "写作质量通过；运行时译法和禁用句式已修。Task9 既有 Baseline Profile DSL / core-splashscreen 兼容模式问题仍由 Task2B 处理。",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending"
     },
     "22.4": {
       "p0": 2,
@@ -1359,7 +1361,10 @@
       "p3": 0,
       "reviewed_at": "2026-05-18T12:44:40+08:00",
       "log": "logs/deep-review/2026-05-18-12-deep-review.md",
-      "summary": "上一轮 AOSP 锚点、bundletool --modules、sideload split 边界均已修复；本轮 P0/P1/P2 0，自动晋升 finalized。"
+      "summary": "上一轮 AOSP 锚点、bundletool --modules、sideload split 边界均已修复；本轮 P0/P1/P2 0，自动晋升 finalized。",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed"
     },
     "26.1": {
       "task9_result": "pass-tech-review",
@@ -10615,17 +10620,17 @@
   },
   "last_task9_review_summary": "14.8 GPU 图形调试与分析工具：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "last_task2a_gap_mining": {
-    "date": "2026-06-13",
-    "time": "02:07",
+    "date": "2026-06-16",
+    "time": "01:07",
     "mode": "gap-mining-skip",
     "created_sections": [],
     "created_files": [],
     "candidate_count": 0,
     "qualified_count": 0,
-    "source": "Round 90: Phase 0 无空 draft (426 章节, 297 finalized + 78 ready-for-review + 51 appendix/README/preface). Phase 0.5 TASK2B_BACKLOG=0. DeepResearch 无新增未映射文件 (最近 6 篇全部已映射). source-index 109 篇全部映射. research-gaps 2 条已映射到 §26.3/§23.7. daily-info 热点无新缺口. Clippings 三本参考书结构已充分比对. 连续 90 轮无合格缺口, 跳过.",
-    "note": "连续 90 轮无合格缺口。0 draft 章节。"
+    "source": "Round 126: Phase 0 无空 draft (381 章节, 299 finalized + 82 ready-for-review). Phase 0.5 TASK2B_BACKLOG=2. Source-index 0 篇 (已耗尽). Research-feeds 最近 2026-04-14 无新增. research-gaps 2 条已映射. daily-info 热点无新缺口. Clippings 三本参考书结构已充分比对. 连续 126 轮无合格缺口, 跳过.",
+    "note": "连续 126 轮无合格缺口。0 draft 章节。管线堵点在 Task6/Task9 复审环节。"
   },
-  "last_task2a_gap_mining_at": "2026-06-15T23:11:00+08:00",
+  "last_task2a_gap_mining_at": "2026-06-16T01:07:06.662203+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
@@ -10635,14 +10640,14 @@
   ],
   "last_task6_audit_log": "logs/review/2026-05-24-07-audit.md",
   "task2a_gap_mining": {
-    "date": "2026-06-13",
+    "date": "2026-06-16",
     "created_count": 0,
     "sections": [],
     "files": [],
     "mode": "gap-mining-skip",
     "candidate_count": 0,
     "qualified_count": 0,
-    "source": "Round 101 skip",
+    "source": "Round 126 skip",
     "updated_by": "openclaw-task2a"
   },
   "section_5_15": {
