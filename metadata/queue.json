@@ -846,5 +846,31 @@
     "original_review_log": "logs/deep-review/2026-06-15-11-audit.md",
     "completed_reason": "fixed-lite: source anchors redirected to android-15/16.0.0_r1; version boundary claim fixed; caller scope split Android 15 vs 16",
     "completed_at": "2026-06-15T11:36:00+08:00"
+  },
+  {
+    "section": "16.1",
+    "section_title": "Google 官方的性能优化思路",
+    "priority": 85,
+    "reason": "[Deep Tech Review][闲时抽检] Android 17 相关源码锚点仍使用 AOSP master，且 android-17.0.0_r1 tag 当前未公开，违反 AIW master-only 资料边界",
+    "file": "src/part4-system/ch16-aosp/01-google-optimization.md",
+    "material_paths": [
+      "logs/deep-review/2026-06-15-14-audit.md",
+      "https://developer.android.com/about/versions/17/release-notes",
+      "https://developer.android.com/about/versions/17/behavior-changes-17",
+      "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html",
+      "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/",
+      "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/"
+    ],
+    "review_issues": [
+      {
+        "type": "源码引用/版本差异",
+        "location": "frontmatter last_verified_against/sources；L165；L231-L240",
+        "detail": "章节把 Android 17 MessageQueue、Binder、BLAST 相关源码锚点写成 AOSP master/refs/heads/master，并用 master 目录拆分支撑正文结论。本轮用 android.googlesource 复核 frameworks/base 与 frameworks/native：android-16.0.0_r1 tag 存在，但 android-17* / android-17.0.0_r1 tag 当前未公开；按 AIW 版本边界，main/master-only 资料必须标注“未进入 Android 17”，不能作为正文结论。另 android-16.0.0_r1 的 MessageQueue 目录为 Legacy/Combined/Concurrent，master 的 Locked/Semi 命名不能直接回填为 Android 17 稳定源码锚点。",
+        "suggestion": "回炉时把 Binder / BLAST 可稳定验证的源码锚点尽量改到 android-16.0.0_r1 或更低 release tag；Android 17 lock-free MessageQueue 可引用官方 release notes、behavior changes 与官方 DeliQueue 博客，但涉及 AOSP master 目录、类名、实现拆分时需明确“master 观察，未进入公开 android-17 tag”，并避免把 master-only 路径作为正文定论。等 android-17.0.0_r1 公开后再替换为 release-tag 锚点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-15T14:20:00+08:00",
+    "status": "pending"
   }
 ]
