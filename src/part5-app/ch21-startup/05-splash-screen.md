@@ -26,7 +26,7 @@ tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, w
 related_chapters: ["2.12", "8.3", "21.1"]
 pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-15'
