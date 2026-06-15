@@ -2,7 +2,7 @@
 title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"

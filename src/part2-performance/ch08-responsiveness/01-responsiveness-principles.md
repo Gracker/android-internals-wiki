@@ -39,9 +39,9 @@ task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 review_round: 1
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: auto-fixed
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-16
 last_task9_at: "2026-06-16T04:35:00+08:00"
