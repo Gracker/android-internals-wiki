@@ -4495,17 +4495,19 @@
     },
     "20.7": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "needs-rework",
       "task9_state": "reviewed",
-      "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task9_result": "auto-fixed",
+      "task2b_state": "fixed",
       "last_task6_at": "2026-05-15T06:05:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-15-06-review.md",
       "last_task9_at": "2026-05-15T05:50:05+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-15-05-deep-review.md",
-      "queue_priority": 95
+      "queue_priority": 95,
+      "task2b_result": "fixed",
+      "last_verified_at": "2026-06-16T03:30:52+08:00"
     },
     "26.8": {
       "title": "可观测性案例集",
@@ -10157,15 +10159,15 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-16",
-    "time": "02:04",
+    "time": "03:04",
     "mode": "gap-mining-skip",
-    "round": 129,
+    "round": 130,
     "created_sections": [],
     "created_files": [],
     "candidate_count": 0,
     "qualified_count": 0,
-    "source": "Round 129: Phase 0 无空 draft (426 章节, 0 draft). Phase 0.5 TASK2B_BACKLOG=1 ≤ 20. 上轮 mining Round 128 (2026-06-15 23:11). 本轮新增 1 篇 DeepResearch: 2026-06-17-android17-network-quota-limit-enforcement.md (00:02) → 关联章节 §12.3/§11.x 已有章节覆盖, 为 NetworkStatsService/NPMSeBPF 流量采集与 quota 限速源码深化, 不构成新缺口. research-gaps 06-16 新增 2 条均为 §20.7 既有章节的改进建议 (SafeMode 状态机/Crash 文件持久化), 非新章节候选. 连续 129 轮无合格缺口, 跳过创建.",
-    "note": "连续 129 轮无合格缺口。0 draft 章节。全书 426 文件：301 finalized + 80 ready-for-review + 45 无状态/附录。管线堵点在复审/发布环节，非内容缺口。"
+    "source": "Round 130: Phase 0 无空 draft (426 章节, 0 draft). Phase 0.5 TASK2B_BACKLOG=0 ≤ 20. 上轮 mining Round 129 (2026-06-16 02:04). 距上轮仅 1 小时, 无新增 DeepResearch/research-feeds/source-index. daily-info 1 条 (Android 17 新调度器) 映射 ch03/ch16 已有章节. research-gaps 4 条均为已有章节 (§26.3/§20.7) 改进建议, 非新章节候选. 连续 130 轮无合格缺口, 跳过创建.",
+    "note": "连续 130 轮无合格缺口。0 draft 章节。全书 426 文件：301 finalized + 80 ready-for-review + 45 无状态/附录。管线堵点在复审/发布环节，非内容缺口。"
   },
   "task9_last_sections": [
     "21.5"
@@ -10642,7 +10644,7 @@
     "source": "Round 126: Phase 0 无空 draft (381 章节, 299 finalized + 82 ready-for-review). Phase 0.5 TASK2B_BACKLOG=2. Source-index 0 篇 (已耗尽). Research-feeds 最近 2026-04-14 无新增. research-gaps 2 条已映射. daily-info 热点无新缺口. Clippings 三本参考书结构已充分比对. 连续 126 轮无合格缺口, 跳过.",
     "note": "连续 126 轮无合格缺口。0 draft 章节。管线堵点在 Task6/Task9 复审环节。"
   },
-  "last_task2a_gap_mining_at": "2026-06-16T01:07:06.662203+08:00",
+  "last_task2a_gap_mining_at": "2026-06-16T03:04:00+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
