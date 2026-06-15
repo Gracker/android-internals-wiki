@@ -48,15 +48,20 @@ task2b_state: "fixed"
 last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
 task2b_verifier_result: ready-for-task6
 last_task9_autofix_at: "2026-06-15"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-15"
+task6_result: pass-light-edit
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
 task6_state: "revisiting"
 task6_reviewed_date: "2026-06-15"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-15T21:14:47+08:00"
+last_task6_at: "2026-06-15T22:30:00+08:00"
+last_task6_audit: "2026-06-15"
 last_task6_review_log: "logs/review/2026-05-27-09-review.md"
 review_type: task6-writing-quality-review
 task9_state: "reviewed"
@@ -375,3 +380,46 @@ SoC 平台差异不是一个独立的机制,它影响着本书前面讲过的几
 **「全大核架构一定更省电」**:不一定。联发科的全大核设计消除了小核,但 A720「能效核」的功耗仍然高于传统的 A5xx 小核。在轻负载场景下(如待机、听音乐),全大核的功耗可能反而更高。全大核的优势在于中高负载场景下没有性能断崖。
 
 **「Google Tensor 性能差」**:这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中不如骁龙和天玑,但它的设计目标是端侧 AI 体验,而不是通用峰值性能。在 Pixel 设备上,语音识别、实时翻译和计算摄影的响应速度可能优于其他平台,因为这些工作负载被 TPU 加速了。评估 Tensor 需要看具体场景是什么。
+
+## 参考资料
+
+### 官方文档
+- Qualcomm Snapdragon 8 Elite Gen 5 官方产品页 - qualcomm.com/products/mobile/snapdragon
+- MediaTek Dimensity 9400/9500 官方产品页 - mediatek.com/products/smartphones
+- Samsung Exynos 2600 官方产品页 - samsung.com/semiconductor/products/exynos
+- Google Tensor G5 官方博文 - blog.google/products-and-platforms/devices/pixel/tensor-g5-pixel-10/
+- Google Pixel 10 技术支持 - support.google.com/pixelphone/answer/7158570
+- ARM Cortex-X925/A720/A520 官方架构文档 - developer.arm.com/documentation/102807/0002
+- ARM Mali-G1 Ultra MC12 技术文档 - developer.arm.com/products/silicon-ip-cpu
+- ARM DSU-120 架构手册 - developer.arm.com/documentation/102807/0002
+
+### 开源代码
+- AOSP 内核调度器源码（Android common 6.1/6.6/6.12/6.18 分支）:
+  - kernel/sched/fair.c（find_energy_efficient_cpu, compute_energy, EEVDF）
+  - kernel/sched/cpufreq_schedutil.c（schedutil 调频策略）
+  - kernel/sched/sched.h（uclamp 任务频率约束）
+- 高通 Perflock 机制源码（vendor/qcom/proprietary/commonsys-intf/android-perf）
+
+### 性能分析工具文档
+- Snapdragon Profiler 官方文档 - developer.qualcomm.com/software/snapdragon-profiler
+- ARM Streamline Performance Analyzer 官方文档 - developer.arm.com/Tools%20and%20Software/ARM%20Streamline%20Performance%20Analyzer
+- Perfetto 官方文档 - perfetto.dev
+
+### 技术博客与分析
+- 高通 Oryon 处理器微架构分析 - Cubox 博客专栏
+- 高通 Perflock 机制详解 - Cubox 博客园
+- ARM 2023年最新处理器架构分析 - Cubox 博客专栏
+- 多来源综合验证（2026年市场调研）
+
+### 标准规范
+- JEDEC LPDDR5X 内存标准
+- Vulkan 1.3/OpenGL ES 3.2/OpenCL 3.0 FP 图形 API 规范
+- Android 17 (API 37) 开发者文档
+- Linux 6.12+ 调度器文档（EEVDF, sched_ext）
+
+### 相关章节
+- §5.1 Linux 进程调度
+- §5.3 大小核架构
+- §5.4 DVFS
+- §2.10 GPU 渲染深入
+- §17.1 OEM 优化通用思路
