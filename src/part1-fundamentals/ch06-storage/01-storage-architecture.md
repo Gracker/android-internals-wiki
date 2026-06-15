@@ -34,20 +34,20 @@ last_task6_audit: 2026-06-09
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task9_result: auto-fixed
 task2b_result: fixed
 task2b_state: fixed
 task9_reviewed_date: "2026-06-15"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-15T17:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-15-17-deep-review.md"
+last_task9_at: "2026-06-15T18:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-15-18-deep-review.md"
 last_task9_audit: "2026-06-15"
 last_task9_audit_at: "2026-06-15T16:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-15-16-audit.md"
-task9_review_notes: "2026-06-15 Task9 deep review：AUTO-FIX。复核上一轮 Virtual A/B 修复后，发现 Android 12 compressed snapshots 被写成已移除 dm-snapshot；已按官方文档改为 Android 12 过渡期（Android COW + snapuserd，但 merge 仍依赖 kernel COW / dm-snapshot）与 Android 13+ userspace merge 分界，回到 Task6 复审。"
+task9_review_notes: "2026-06-15 18:20 Task9 final复核：AUTO-FIX。AOSP android-16.0.0_r1 FsCrypt.cpp 中函数名为 fscrypt_prepare_user_storage，正文误写为 fs_prepare_user_storage；已修正源码锚点，回到 Task6 复审。"
 
 last_task2b_at: "2026-06-15T16:52:36+08:00"
 last_task9_autofix_at: "2026-06-15"
@@ -316,7 +316,7 @@ FBE 的密钥管理由 `vold`（Volume Daemon）负责。整个密钥层次如�
 3. **User CE Key**：每个用户的 CE 密钥，用户解锁后由凭据派生，用于绝大多数 App 数据，对应 `/data/user/<user_id>/`（CE 也包括 `/data/system_ce/<user_id>/`）。
 
 AOSP 中的关键实现路径：
-- `system/vold/FsCrypt.cpp`：`fs_prepare_user_storage()` 函数准备 DE/CE 目录并应用 fscrypt policy
+- `system/vold/FsCrypt.cpp`：`fscrypt_prepare_user_storage()` 函数准备 DE/CE 目录并应用 fscrypt policy
 - `system/vold/Utils.cpp`：`BuildDataSystemDePath()`、`BuildDataMiscDePath()`、`BuildDataUserDePath()` 生成 `/data/system_de/<user>`、`/data/misc_de/<user>`、`/data/user_de/<user>` 等路径
 
 [已验证: AOSP android-16.0.0_r1, system/vold/FsCrypt.cpp / Utils.cpp; 来源见 Android分区挂载原理介绍（OPPO内核工匠）]
