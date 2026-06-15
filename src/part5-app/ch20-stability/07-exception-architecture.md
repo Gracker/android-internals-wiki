@@ -38,12 +38,12 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-task6_result: needs-rework
-last_task6_at: "2026-05-15T06:05:00+08:00"
+reviewed_date: "2026-06-15"
+task6_result: pass-light-edit
+last_task6_at: "2026-06-15T16:13:21+08:00"
 last_task6_review_log: "logs/review/2026-05-15-06-review.md"
 task6_review_notes: "2026-05-15 Task6 06:05：needs-rework。完成 L1/L2 小修 6 处；沿用 Task9 风险信号标注 4 处并合并 queue，交 Task2B。"
 task9_state: reviewed
@@ -51,7 +51,7 @@ task2b_state: fixed
 last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-15"
+task9_reviewed_date: "2026-06-15"
 last_task9_at: "2026-05-15T05:50:05+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-15-05-deep-review.md"
 task9_review_notes: "2026-05-15 Task9：needs-rework。P0 1：WebView renderer 进程模型误写为可安装 Crash handler 的 App 进程；P1 3：ApplicationExitInfo native tombstone API 边界、SafeMode launch marker/退出补偿链路、崩溃文件 fsync/rename 持久化边界。"

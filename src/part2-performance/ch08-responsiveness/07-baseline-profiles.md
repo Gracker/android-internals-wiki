@@ -55,6 +55,8 @@ last_task6_at: "2026-05-27T04:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-04-review.md"
 task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-27-04-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-15
 ---
 # 8.7 Baseline Profiles 与编译优化实践
 
@@ -63,9 +65,6 @@ Android 的 ART 运行时经历了多次编译策略的演变——从 Android 5
 在这个时间窗口内，ART 还没有收集到足够的运行时 profile 数据，无法知道哪些方法是热点。结果是大量关键代码只能解释执行，冷启动速度比经过优化的状态慢 30% 甚至更多。
 
 Baseline Profiles 的作用是让开发者在 APK 中预置一份"热点方法清单"，并在设备端的安装期或后续 Profile 编译阶段优先告诉 dex2oat 哪些代码需要先编译为机器码。这样即使没有任何用户使用数据，首次启动也更容易接近稳态性能。
-
-[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles]
-
 <!-- outline-start -->
 ## 本节要点大纲
 
@@ -139,17 +138,14 @@ Android 7/8 是"有开发者 Baseline Profile 但无 Cloud Profile"的关键边�
 
 Baseline Profiles 的性能收益有大量公开数据支撑：
 
-Google 官方给出的通用范围是 **15-30% 的启动速度提升**。实际案例中：
+Google 的通用结论是 **15-30% 的启动速度提升**，实际公开案例包括：
 - **Reddit**（2024.12）：Baseline Profiles + R8 full mode → median 启动时间缩短 **51%**
 - **Duolingo**：Macrobenchmark 测试显示 **25-40%** 的启动速度增益
 - **Android Calendar**：启动时间 **~20%** 提升
 - **Now in Android** 示例应用：有 profiles 时 229.0ms，无编译时 324.8ms（**~30%**）
 - 某手机应用：median startup 提升 **23%**（328ms），Wear OS 应用 **14%**（267ms）
 
-这些数据的差异主要来自应用本身的代码结构和 profile 覆盖的完整度。使用大量 Jetpack/Compose 库的应用收益通常更大，因为这些库的初始化路径长、方法调用密集。
-
-[来源: intake/research-feeds/2026-04-06-11-baseline-profiles-compilation-optimization.md]
-
+收益差异主要来自应用的代码结构和 profile 覆盖完整度。大量使用 Jetpack 和 Compose 库的应用收益通常更高，因为这些库的初始化路径长、方法调用密集。
 ## Baseline Profiles 的工作机制
 
 ### Profile 格式与打包
@@ -420,10 +416,7 @@ Google 在 Compose 的每个 release 中都附带了预生成的 Baseline Profil
 
 使用 Compose 的应用**强烈建议**生成自己的 Baseline Profiles，而不仅仅依赖库的 profile。因为库的 profile 不知道应用的具体组合树结构——它只知道库内部的方法是热点，但不知道应用层的 `@Composable` 函数调用链。应用层的 profile 和库的 profile 合并后，才能覆盖完整的渲染路径。
 
-实测数据也验证了这一点：Compose 应用添加 Baseline Profiles 后的收益通常比传统 View 应用更大（25-40% vs 15-20%），原因就是 Compose 运行时的编译依赖更重。
-
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance#baseline_profiles]
-
+这也解释了为什么 Compose 应用添加 Baseline Profiles 后的收益通常比传统 View 应用更明显。
 ## 扩展
 
 ### Profileable 应用与性能分析

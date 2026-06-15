@@ -245,6 +245,99 @@ SRM 检查应该先于性能指标判断。实验平台每天输出分桶比例�
 
 Firebase Remote Config 实验会在 variant 中修改参数；官方文档也提醒变体权重开始后不能修改，不均匀权重会增加数据收集时间。自建平台同样要记录参数快照和权重变化，否则归因时无法确认用户拿到的究竟是哪一版配置。[已验证: 官方文档, firebase.google.com/docs/ab-testing/abtest-config]
 
+
+
+## [自动发现] 系统进程死亡证据：ApplicationExitInfo 源码机制
+
+[已验证: AOSP frameworks/base 源码 android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1]
+
+线上回归检测除了"分位值 + 慢帧率 + 启动耗时"这些主动指标，还可以从**系统侧的进程死亡证据**获得关键判据。Android 在 `android.app.ApplicationExitInfo`（API 30，Android 11）暴露了进程死亡原因、PSS/RSS、trace 流入和自定义状态快照——这是 A/B 灰度阶段"为什么这个 variant 变卡"最直接的证据来源。
+
+调用入口是 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)`，返回的列表按 `timestamp` 降序（最新在前）。三个参数语义：
+- `packageName == null`：仅匹配调用者 UID 下的包；查他人包需要 `DUMP` 权限（普通应用拿不到，APM 厂商通过 OEM 签名获取）。
+- `pid == 0`：忽略 pid 过滤，返回所有匹配记录。
+- `maxNum == 0`：忽略上限，返回所有匹配。
+
+服务端调用链：
+
+```
+client → IActivityManager (Binder) → AMS.getHistoricalProcessExitReasons
+  ├─ enforceNotIsolatedCaller             // 拒绝 isolated 进程
+  ├─ mUserController.handleIncomingUser   // user 边界校验
+  ├─ enforceDumpPermissionForPackage      // 跨包查询要 DUMP
+  ├─ mProcessList.mAppExitInfoTracker.getExitInfo(packageName, uid, pid, maxNum, results)
+  │    └─ AppExitInfoContainer.getInfosLocked → SparseArray<ApplicationExitInfo> (key=pid)
+  └─ NativeTombstoneManager.collectTombstones(results, uid, pid, maxNum)  // API 31+ 合并 native tombstone
+```
+
+**保留策略与持久化**：`AppExitInfoTracker` 用 `SparseArray<ApplicationExitInfo>`（key = pid）作为 in-memory 缓冲，容量来自资源整数 `config_app_exit_info_history_list_size`（AOSP 14/15/16 均为 16，注释：*Retention policy: number of records to kept for the historical exit info per package*）。**每包 16 条上限**、按 `timestamp` 找最旧淘汰。索引是 pid 意味着同一进程反复死亡会覆盖前一条；容量在**每个包粒度**生效（`mData.put(pkgName, uid, container)`），不是全局。
+
+数据持久化到 `mProcExitStoreDir` 下的 `app_exit_info_history.pb`（`persistProcessExitInfo` + `loadExistingProcessExitInfo`），**reboot 后由 `onSystemReady` 在 `IoThread` 中恢复**。这意味着 A/B 灰度阶段不需要担心重启清空历史。
+
+**`getTraceInputStream` 的两条物理路径**：
+
+| 维度 | ANR trace | Native tombstone (API 31+) |
+| --- | --- | --- |
+| 文件 | `mProcExitStoreDir` 下 `StackTracesDumpHelper.ANR_FILE_PREFIX` + `APP_TRACE_FILE_SUFFIX` | debuggerd 全局循环缓冲 |
+| 压缩 | gzip | 未压缩 protobuf（`tombstone.proto`） |
+| 匹配 key | `(packageName, packageUid, pid)` 三元组 | tombstone 内部 process record |
+| 持久化 | 跟随 `mAppExitInfoContainer` 增删 | 全局 LRU，可能被其他应用覆盖 |
+| 淘汰 | LRU 16 条/包；溢出时主动 `traceFile.delete()` | 全局 LRU；命中时 `getPfd()` 返回 null |
+
+写入触发点（`ProcessList.java`）：
+- `handleProcessDiedLocked`（L5327）→ `scheduleNoteProcessDied` 默认 `REASON_UNKNOWN`，再由 zygote 收到 `SIGCHLD` 的 status 二次更新为 `REASON_SIGNALED` 或 `REASON_EXIT_SELF`。
+- `noteAppRecoverableCrash`（L5338）→ `scheduleNoteAppRecoverableCrash` 写 `REASON_CRASH_NATIVE`。
+- `noteAppKill`（L5356）→ `scheduleNoteAppKill` 由 AMS 显式 kill 时调用，**`reason` 已是分类好的枚举**（force-stop / trim / cache / freeze / update / permission-change）。
+- `scheduleNoteLmkdProcKilled` 由 LMKD 通过 `AppExitInfoExternalSource` 上报，写 `REASON_LOW_MEMORY`。
+
+**关键版本演进**：
+
+| API level | 变化 | A/B 报告影响 |
+| --- | --- | --- |
+| 30 (A11) | API 首版，13 REASON_、0 SUBREASON_ | 旧包数据不足 |
+| 31 (A12) | REASON_ 14/15/16 补齐；`getTraceInputStream` 支持 native tombstone protobuf | 灰度分析开始有 trace 证据 |
+| 32 (A12L) | SUBREASON_ 1..4 补齐（cached/empty/trim/large_cached） | "low memory" 细分 |
+| 34 (A14) | REASON_FREEZER=14 / PACKAGE_STATE_CHANGE=15 / PACKAGE_UPDATED=16；UPSIDE_DOWN_CAKE 起 update 独立成 REASON | 实验包更新时一定会有 PACKAGE_UPDATED 记录 |
+| 36 (A16) | `preventExitInfoUpdate` 防覆盖；LMKD 路径带 rssKb | 崩溃证据不再被 force-stop 覆盖；内存归因可基于被杀瞬间 RSS |
+
+**A16 (API 36) 的 `preventExitInfoUpdate` 守卫**（`AppExitInfoTracker.java` L412-L430）：
+
+```java
+private boolean preventExitInfoUpdate(final ApplicationExitInfo exitInfo) {
+    switch (exitInfo.getReason()) {
+        case ApplicationExitInfo.REASON_ANR:
+        case ApplicationExitInfo.REASON_CRASH:
+        case ApplicationExitInfo.REASON_CRASH_NATIVE:
+            return true;
+        default:
+            return false;
+    }
+}
+```
+
+这条规则挡住了 A14/A15 上"实验包 native crash → 用户在最近任务里 swipe 掉 → `scheduleNoteAppKill` 用 `REASON_USER_REQUESTED` 覆盖 `REASON_CRASH_NATIVE`"的脏数据流。**A/B 分析平台必须按用户 OS 版本分流**：A14/A15 上"出现 REASON_USER_REQUESTED"不能直接等同"用户主动清理"，要先看同 `(packageName, pid)` 是否有 ANR/CRASH 历史；A16 起可以信任 `REASON_USER_REQUESTED` 不会覆盖崩溃记录。
+
+**`setProcessStateSummary` 的实验变体快照能力**：`ApplicationExitInfo#getProcessStateSummary()` 可读出 process 死亡前自己写入的最多 128 字节状态（`ActivityManager.setProcessStateSummary(byte[])`）。A/B 平台可以在 variant 命中时把 `{experiment_id, variant_id, params_snapshot}` 写进去，进程死亡后由 `getHistoricalProcessExitReasons` 一并带回，**直接定位"哪个 variant 在被杀时处于哪个参数"**。这是 26.6 节"自动归因"在系统侧的强证据，比"上报埋点"更可靠（埋点丢失时仍然有系统侧记录）。
+
+性能影响：服务端写入 O(16) 线性扫描（`mMaxCapacity` 已满时找最旧）；所有死亡事件串行化进 `KillHandler`，无锁竞争；客户端单次 `ParceledListSlice` IPC，trace 走 `ParcelFileDescriptor` 不入 IPC body。
+
+源码锚点：
+- 客户端入口：`frameworks/base/core/java/android/app/ActivityManager.java` L4060-L4140
+- 服务端实现：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` L9535-L9580
+- LRU + 持久化：`frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java` L260-L819, L1322-L1410, L412-L430（A16）
+- 写入触发：`frameworks/base/services/core/java/com/android/server/am/ProcessList.java` L5327, L5338, L5356
+- Trace 双桶：`frameworks/base/core/java/android/app/ApplicationExitInfo.java` L820-L862
+- 保留配置：`frameworks/base/core/res/res/values/config.xml` `config_app_exit_info_history_list_size=16`
+
+A/B 平台实践清单（基于以上源码）：
+- 灰度拉取时**单次拉取 + 缓存**：每次 query 一次 Binder IPC，10 万级用户小时级轮询必须批量。
+- 灰度分析报表**按 REASON_ + SUBREASON_ 维度展开**，不要把 `REASON_OTHER` 拍平（`SUBREASON_TOO_MANY_CACHED`/`TRIM_EMPTY`/`MEMORY_PRESSURE` 各自的灰度风险不同）。
+- **A14/A15 数据要做"ANR/CRASH 优先保留"二次过滤**，`REASON_USER_REQUESTED` 单独存放。
+- **A16 起的 RSS 字段直接进内存压力归因**，避免与"实验包内存泄漏"混淆。
+- **每包 16 条是硬上限**：短时间高频崩溃（同一 pid 覆盖）需要在上报侧做补全，否则 16 条以外的数据无法恢复。
+
+<!-- AIW-源码调研-2026-06-15 -->
+
 ## 小结
 
 性能 A/B Test 的价值在于把发布判断从“看起来变快”变成可复核的实验结论。实验开始前定义主指标、护栏指标、样本量和停止条件；CI 里用 Macrobenchmark 和固定设备拦住确定性回归；灰度阶段用线上分位值和分群指标判断真实用户风险；告警发生后，把版本、实验、场景、设备和 trace 证据一起交给排查人。

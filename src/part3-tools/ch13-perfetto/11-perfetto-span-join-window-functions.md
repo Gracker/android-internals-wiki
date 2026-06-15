@@ -29,16 +29,16 @@ related_chapters: ["13.10", "13.6", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/研究素材"
-task6_state: revisiting
-task6_result: needs-rework
+task6_state: reviewed
+task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-task6_reviewed_date: "2026-05-15"
-pipeline_stage: task6_pending
+reviewed_date: "2026-06-15"
+task6_reviewed_date: "2026-06-15"
+pipeline_stage: task9_pending
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-15"
+task9_reviewed_date: "2026-06-15"
 last_task9_at: "2026-05-15T09:27:23+08:00"
 last_task9_review_log: logs/deep-review/2026-05-15-09-deep-review.md
 task9_review_notes: "2026-05-15 Task9 09: needs-rework。P0 1 / P1 1 / P2 1；帧 × CPU 频率统计未按 frame 裁剪 joined.dur，GC pause 示例可能违反 SPAN_JOIN 同分区不重叠约束。"
