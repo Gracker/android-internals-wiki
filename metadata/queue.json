@@ -875,5 +875,27 @@
     "completed_at": "2026-06-15T14:50:00+08:00",
     "completed_by": "openclaw-task2b",
     "completed_note": "Task2B 回炉修复：源码锚点已改 android-16.0.0_r1，master-only 路径已标注未进入公开 android-17 tag"
+  },
+  {
+    "section": "6.1",
+    "section_title": "Android 存储架构",
+    "title": "Android 存储架构",
+    "file": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+    "priority": 85,
+    "reason": "[Deep Tech Review][闲时抽检] Virtual A/B / VABC 版本边界失真：Android 12+ compressed snapshots / Android 13+ snapuserd userspace merge 与正文 dm-snapshot/super COW 模型不一致。",
+    "material_paths": [
+      "logs/deep-review/2026-06-15-16-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md:L330-L347",
+        "detail": "正文把 Virtual A/B（VABC）统一写成 dm-snapshot COW 设备在 super 分区中分配空间，并用 super 分区 COW 区域图表示升级中布局。AOSP Virtual A/B 文档显示：Virtual A/B delta 写入 snapshot；Android 12+ compressed snapshots 由 dm-user + snapuserd + Android COW format 支撑，空间压力在 /data；Android 13+ snapshot/merge 由 snapuserd 执行，且文档明确 Android 13 移除对 kernel COW / dm-snapshot 的依赖。正文未区分 Android 11 kernel COW、Android 12 compressed snapshots、Android 13+ userspace merge，导致 VABC 版本结论过旧。",
+        "suggestion": "重写该小节为版本化模型：保留 super + dm-linear 是 Dynamic Partition 基底；Virtual A/B 更新差异写入 snapshot/COW，不再画成统一的 super 内 COW 区；按 Android 11、Android 12、Android 13+ 拆出 dm-snapshot/kernel COW、Android COW format、snapuserd userspace merge 的边界，并把 Perfetto 观察点改成 update_engine/snapuserd/dm-user 与 /data transient COW 空间压力。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-15T16:20:00+08:00",
+    "status": "pending"
   }
 ]
