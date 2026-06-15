@@ -39,3 +39,55 @@
 - 状态修正：4 处
 - 阻塞：0
 - 结果：ready-for-task6（25.8）/ ready-for-task9（13.11, 20.7, 21.5）
+
+---
+
+# Task2B Verifier · 回流复查 · 2026-06-15 23:39（第二轮，确认复查）
+
+## 复查范围
+确认上轮（23:31）修正是否全部到位，扫描是否有新的状态不一致。
+
+## 上轮修正确认
+
+### ✅ 25.8 App Bundle 与按需分发
+- pipeline_stage=task6_pending ✓
+- status=ready-for-review ✓
+- task6_state=revisiting ✓
+- task2b_state=fixed ✓
+- task9_result=auto-fixed ✓
+- queue pending: 0
+- 结论：正确等待 Task6 复审
+
+### ✅ 13.11 Perfetto SPAN_JOIN 与窗口函数
+- pipeline_stage=task9_pending ✓
+- task9_state=pending ✓（上轮修正生效）
+- task2b_state=fixed ✓
+- task6_state=reviewed + pass-light-edit ✓
+- queue pending: 0
+- 结论：正确等待 Task9 重新 deep review
+
+### ✅ 20.7 异常处理架构设计
+- pipeline_stage=task9_pending ✓
+- task9_state=pending ✓（上轮修正生效）
+- task2b_state=fixed ✓
+- queue pending: 0
+- 结论：正确等待 Task9 重新 deep review
+
+### ✅ 21.5 Splash Screen 与感知启动速度
+- pipeline_stage=task9_pending ✓
+- task9_state=pending ✓（上轮修正生效）
+- task2b_state=fixed ✓
+- queue pending: 0
+- 结论：正确等待 Task9 重新 deep review
+
+## 额外扫描
+- pipeline_stage=task2b_pending: 0 章（无卡住章节）
+- 并发锁：0 active locks
+- Android 版本边界：25.8 applicable_versions 上限 Android 16/API 36 ✓
+- 12 章 finalized/ready-to-publish 缺 task2b_result 字段（历史遗留，不影响流水线）
+
+## 统计
+- 本轮复查：4 章（确认上轮修正）
+- 状态修正：0
+- 阻塞：0
+- 结果：no-change（所有状态正确）
