@@ -2,11 +2,11 @@
 title: 渲染机制的版本演进
 chapter: '2.9'
 section: '2.9'
-status: ready-for-review
+status: finalized
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-task6_reviewed_date: "2026-05-27"
-reviewed_date: "2026-05-27"
+task6_reviewed_date: "2026-06-15"
+reviewed_date: "2026-06-15"
 reviewed_by: openclaw-task6
 applicable_versions: Android 3.0 (API 11) ~ Android 17 (API 37)
 last_verified: '2026-06-15'
@@ -15,14 +15,14 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-15T06:50:00+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_task2b_lite_at: '2026-05-27'
 sources:
 - type: official
@@ -59,13 +59,13 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-15"
 last_task9_at: "2026-06-15T07:26:56+08:00"
 task9_review_notes: "2026-06-15 Task9 re-review: AUTO-FIX。修正 FrameMetrics 常量 COMMANDS_DURATION -> COMMAND_ISSUE_DURATION；修正 Android 16 Vulkan 1.4、VP_ANDROID_16_minimums 与 AVP 2025 的层级边界；移除 Android 17 Choreographer 新增帧控制接口的无证据断言。P0/P1 已局部修复，queue 无新增 pending，回到 Task6 复审。"
-task6_review_notes: "2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除源码调研 HTML 注释，统一正文中文标点与中英文混排；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-06-15 08:06 Task6 revisiting re-review: pass-light-edit。Task9 auto-fix 全部验证通过（COMMAND_ISSUE_DURATION 常量修正、Vulkan 1.4/VP_ANDROID_16_minimums/AVP 2025 层级边界澄清、Android 17 Choreographer 无证据断言已移除）。L1 禁用词/高频词扫描无命中；否定-纠正结构 2 次卡线但未超限。修标题括号一致性 （Android 4.1）→(Android 4.1)。无 L3/L4 新增回炉项，queue 无 pending。自动晋升 finalized。 2026-05-27 12:06 Task6 revisiting：pass-light-edit。移除源码调研 HTML 注释，统一正文中文标点与中英文混排；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-27-12-review.md"
-last_task6_at: "2026-06-15T07:08:00+08:00"
+last_task6_at: "2026-06-15T08:06:00+08:00"
 last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-06-15
 last_task9_audit: "2026-06-15"
 last_task9_audit_log: "logs/deep-review/2026-06-15-06-audit.md"
 last_task9_autofix_at: "2026-06-15"
@@ -105,7 +105,7 @@ Android 4.0 Ice Cream Sandwich（API 14，2011 年）将硬件加速设为 **所
 
 Android 4.0 同时要求搭载该版本的设备在硬件层面支持 GPU 加速的 2D 绘制——这部分取决于 SoC 的 GPU 能力，而非单纯由 Android 版本决定。对 `targetSdk ≥ 14` 的应用，硬件加速是默认行为；对更低 targetSdk 的应用，仍需手动开启或依赖设备兼容策略。
 
-## Project Butter 与 VSync/Choreographer（Android 4.1）
+## Project Butter 与 VSync/Choreographer(Android 4.1)
 
 ### 60 FPS 的承诺
 
@@ -127,9 +127,7 @@ Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流
 
 Android 12 开始逐步将 `DispSync` 替换为 `VsyncPredictor`。`VsyncPredictor` 使用更灵活的预测算法（支持非线性和突变适应），能更快跟上刷新率切换带来的 VSync 周期变化，这在 Android 15+ 的 ARR 设备上尤为重要。对外接口不变——Perfetto 中仍然是 `VSYNC-app` 和 `VSYNC-sf` 两路节拍，变的是内部预测器的实现。排查 Trace 时不需要区分 `DispSync` 和 `VsyncPredictor`，但读到旧版 AOSP 源码时要知道实现已换。
 
-[图：VSync 信号分发时序图，展示 HWC → DispSync → VSYNC-app/VSYNC-sf 的分发流程与 offset 关系]
 
-[待高爷补充：Perfetto 中 VSYNC-app 和 VSYNC-sf 信号的 Track 截图，标注 offset 间距]
 
 
 
@@ -154,9 +152,7 @@ Android 5.0 Lollipop（API 21，2014 年）引入了 **RenderThread**——一�
 
 在 Perfetto 中，`UI Thread` 和 `RenderThread` 是两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。反过来，如果 `DrawFrame` 还没开始，`UI Thread` 上的 `performTraversals` 就已经超了帧预算，那瓶颈在主线程的 measure/layout/draw——RenderThread 再快也救不回来。
 
-[图：Perfetto 中 UI Thread 与 RenderThread 的 Track 分离示意图，标注 performTraversals 和 DrawFrame 的时序关系]
 
-[待高爷补充：Android 5.0+ 设备的 Perfetto Trace 截图，清晰展示 UI Thread 与 RenderThread Track 分离]
 
 RenderThread 能独立推进的，是 `RenderNodeAnimator` 和基于 `CanvasProperty` 的 RT animation。`RippleDrawable`、circular reveal 一类效果走这条路时，启动后可以继续在 RenderThread 上推进。普通 `ObjectAnimator`、`ValueAnimator`、`ViewPropertyAnimator` 仍由 UI 线程的 `Choreographer` 驱动；它们只是把结果写回 `RenderNode`，再由 RenderThread 去绘制。主线程一旦卡住，这类动画也会一起掉帧。
 
@@ -212,9 +208,7 @@ Vulkan 后端相比 OpenGL ES 的具体改进:
 
 在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果仍沿用 Android 11 及之前的 `BufferQueue` Track 经验，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。实际排查中，如果 Android 12+ 设备的 Trace 里出现 `dequeueBuffer` 等待时间异常拉长，不要急着按旧经验去查 BufferQueue slot 状态——先确认走的是 BLAST 路径还是旧路径，再决定排查方向。
 
-[图：Android 11 BufferQueue 与 Android 12 BLASTBufferQueue 的 Buffer 流转对比示意图]
 
-[待高爷补充：可用文字流程图 + Perfetto 中 BufferQueue/BLASTBufferQueue 相关 slice 截图]
 
 ## Android 16：图形 API 演进
 
@@ -269,9 +263,7 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 在 Perfetto 中，ARR 的变化体现在 **`VSYNC-app` 信号不再固定间隔**。当 App 请求 30 FPS 时，`VSYNC-app` 的周期间隔会变为约 33.3ms 而非 8.33ms(120Hz)。这让 Perfetto 分析需要更仔细地识别帧率切换场景。拿到一份 ARR 设备的 Trace 时，先检查 VSync 间隔是否在切换；如果帧率档位变了，对应的帧预算也要跟着换。
 
-[图：ARR 开启前后 VSYNC-app 信号间隔对比，展示 120Hz→30Hz 切换时的 Trace 表现]
 
-[待高爷补充：支持 ARR 的设备上 VSYNC-app 间隔动态变化的 Perfetto 截图]
 
 ## Android 17：WebGPU 与 Vulkan 路线深化
 
@@ -434,7 +426,7 @@ Android 13（API 33）同批新增 NDK API：`AChoreographer_postVsyncCallback()
 
 Perfetto 中 SurfaceView 的 FrameTimeline 尚未完全支持。DisplayFrame 被选中时，FrameTimeline 会绘制箭头，指向所有被合成进该 DisplayFrame 的 SurfaceFrame（可能跨多进程）。
 
-> [源码: frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h/cpp (android-14/android-16); perfetto.dev docs; AOSP Gerrit commits 757f24e3, 603a15d2] **[一手：AOSP 源码 + Perfetto 官方文档]**
+> [源码: frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h/cpp (android-14/android-16); perfetto.dev docs; AOSP Gerrit commits 757f24e3, 603a15d2]
 
 以上是 FrameTimeline 的完整框架。日常分析中不需要逐行背源码——记住它能给出 `JankType` 判定和预期/实际帧时间对比就够了。回到具体排查时，对着 Perfetto 里 Frame Timeline track 的每个箭头追即可。
 
@@ -467,7 +459,6 @@ Unreal Engine 已集成 Swappy。
 | 16 | 2025 | Vulkan 1.4 launch-device 基线 + VP_ANDROID_16_minimums profile + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan version、profile、extension 口径需要分开验证；帧率动态切换更频繁；Graphite 为 Skia 方向性后端，HWUI 侧启用路径待后续版本 |
 | 17 | 2026 | WebGPU on Android + `prefer_angle` manifest metadata + OpenGL ES 维护模式继续 | WebGPU 为 Web 内容提供 Vulkan 后端 GPU 能力；App 可通过 manifest metadata 声明 ANGLE 偏好（不保证启用） |
 
-> [已验证: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
 
 
 

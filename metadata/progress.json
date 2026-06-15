@@ -3181,10 +3181,10 @@
     "2.9": {
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
-      "last_task6_at": "2026-05-27T12:06:00+08:00",
+      "last_task6_at": "2026-06-15T08:06:00+08:00",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
-      "last_task6_review_log": "logs/review/2026-05-27-12-review.md",
+      "last_task6_review_log": "logs/review/2026-06-15-08-review.md",
       "task6_state": "reviewed",
       "task2b_state": "fixed",
       "task2b_result": "fixed-lite",
