@@ -7,12 +7,12 @@ status: finalized
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-27"
-last_verified_against: "developer.android.com, AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord / FrameMetrics"
+last_verified: "2026-06-16"
+last_verified_against: "developer.android.com current official URLs; AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord / FrameMetrics; packages/modules/adb android-16.0.0_r1 adb.1.md"
 confidence: medium
 sources:
   - type: official
-    path: "https://developer.android.com/topic/performance/launch-time"
+    path: "https://developer.android.com/topic/performance/vitals/launch-time"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
   - type: aosp
@@ -20,24 +20,24 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java"
   - type: official
-    path: "https://developer.android.com/studio/build/apk-analyzer"
+    path: "https://developer.android.com/studio/debug/apk-analyzer"
   - type: official
-    path: "https://developer.android.com/topic/performance/benchmarking/overview"
+    path: "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
   - type: official
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
   - type: aosp
     path: "frameworks/base/core/java/android/view/FrameMetrics.java"
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
 related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-22"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-28"
 last_task9_at: "2026-04-28T07:40:26+08:00"
@@ -46,13 +46,16 @@ last_task2b_at: "2026-04-27T21:44:26+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。"
-last_task9_audit: "2026-05-23"
-last_task9_audit_log: "logs/deep-review/2026-05-23-00-audit.md"
-task9_audit_notes: "2026-05-23 Task9 idle audit: 无 P0/P1。源码路径与 Android 16 FrameMetrics/ActivityTaskManager 链路复核通过；仅记录 P2：Benchmarking overview 官方 URL 已迁移。"
+last_task9_audit: "2026-06-16"
+last_task9_audit_log: "logs/deep-review/2026-06-16-18-audit.md"
+task9_audit_notes: '2026-05-23 Task9 idle audit: 无 P0/P1。源码路径与 Android 16 FrameMetrics/ActivityTaskManager 链路复核通过；仅记录 P2：Benchmarking overview 官方 URL 已迁移。 | 2026-06-16 Task9 idle audit auto-fixed: P0 1（Battery Historian bugreport 导出命令修正为 adb bugreport bugreport.zip）/ P1 0 / P2 1（官方文档 URL 迁移修正）；回到 Task6 复审。'
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-25"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
+last_task9_autofix_at: "2026-06-16"
+updated_by: "openclaw-task9"
+updated_date: "2026-06-16"
 ---
 
 
@@ -109,7 +112,7 @@ last_deepseek_cn_review_at: 2026-06-12
 
 **同温度**——这是最容易被忽略的因素。现代手机在发热后会触发温控策略，降低 CPU 频率（Thermal Throttling），直接影响所有性能指标。如果我们先测了 App A 的十轮启动，设备已经发热，再测 App B，那 App B 的数据天然吃亏。正确的做法是两轮测试之间让设备冷却（可以等待几分钟或用散热背夹），或者在测试顺序上交替进行（A1 → B1 → A2 → B2），通过轮换消除顺序偏差。
 
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/overview — Macrobenchmark 强调 "same device, same OS version, same compilation profile"]
+[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-overview — Macrobenchmark 强调 "same device, same OS version, same compilation profile"]
 
 ### 测试前的设备准备
 
@@ -173,7 +176,7 @@ Complete.
 
 **WaitTime** 是从 `am` 命令发起时刻到系统返回结果的总时间，包含了 Pause 前一个 Activity 的开销。这个值受系统状态影响较大，不适合做精确的竞品对比。
 
-[已验证: 官方文档, developer.android.com/topic/performance/launch-time — "TotalTime represents the total time taken to launch the activity"]
+[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time — "TotalTime represents the total time taken to launch the activity"]
 
 ### 自动化多次采样的脚本
 
@@ -334,7 +337,7 @@ Android Studio 自带的 APK Analyzer 是包体积分析的主力工具。它能
 
 竞品对比时，我们可以把竞品的 APK 也拖进 APK Analyzer，然后手工记录各分类的大小，做一个横向对比表。
 
-[已验证: 官方文档, developer.android.com/studio/build/apk-analyzer — "APK Analyzer allows you to inspect the contents of your APK and compare two APKs"]
+[已验证: 官方文档, developer.android.com/studio/debug/apk-analyzer — "APK Analyzer allows you to inspect the contents of your APK and compare two APKs"]
 
 ### 命令行工具 apkanalyzer
 
@@ -452,7 +455,7 @@ adb shell dumpsys batterystats --reset
 # 执行测试操作...
 
 # 导出电池数据
-adb bugreport > bugreport.txt
+adb bugreport bugreport.zip
 # 使用 Battery Historian 分析
 battery-historian --port 9998
 ```
@@ -475,9 +478,9 @@ battery-historian --port 9998
 ## 参考资料
 
 ### 官方文档
-- [App startup time](https://developer.android.com/topic/performance/launch-time) — 官方启动时间测量指南
-- [APK Analyzer](https://developer.android.com/studio/build/apk-analyzer) — APK 分析工具文档
-- [Benchmarking overview](https://developer.android.com/topic/performance/benchmarking/overview) — 性能基准测试框架
+- [App startup time](https://developer.android.com/topic/performance/vitals/launch-time) — 官方启动时间测量指南
+- [APK Analyzer](https://developer.android.com/studio/debug/apk-analyzer) — APK 分析工具文档
+- [Benchmarking overview](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview) — 性能基准测试框架
 - [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics) — 帧性能测量 API
 - [Reduce APK size](https://developer.android.com/topic/performance/reduce-apk-size) — APK 体积优化指南
 - [Battery Historian](https://developer.android.com/topic/performance/power/battery-historian) — 电量分析工具
