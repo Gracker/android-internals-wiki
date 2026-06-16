@@ -9,14 +9,18 @@ task6_reviewed_by: "openclaw-task2a"
 task6_reviewed_date: "2026-06-16"
 task2b_result: "fixed"
 task2b_fixed_date: "2026-06-16"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task9_result: auto-fixed
+last_task9_autofix_at: 2026-06-16
+last_task9_at: 2026-06-16T20:31:23+08:00
+task9_review_notes: "2026-06-16 Task9 auto-fix：修正 Systrace 入口和 SimplePerf/内存泄漏工具映射；依据 Android Developers tracing/simpleperf 与 Perfetto heapprofd 官方文档。"
 created_by: "codex"
 created_date: '2026-06-16'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-16'
-last_verified_against: AOSP android-16.0.0_r1, Android Developers 文档, 官方性能博客
+last_verified_against: AOSP android-16.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 confidence: high
 sources:
 - type: official
@@ -33,6 +37,12 @@ sources:
   path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://developer.android.com/topic/performance/tracing
+- type: official
+  path: https://developer.android.com/ndk/guides/simpleperf
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
 tags:
 - performance-methodology
 - research-methods
@@ -146,8 +156,8 @@ graph TD
 
 **关键工具**：
 - **Perfetto**：系统级性能数据的采集和分析
-- **SimplePerf**：应用级性能剖析
-- **Systrace**：渲染性能分析
+- **SimplePerf**：应用级 CPU 性能剖析
+- **Systrace**：旧版短时系统 trace；Android 10+ 优先用 Perfetto
 - **ADB**：基础性能数据获取
 
 ## 常见研究误区
@@ -187,7 +197,7 @@ graph TD
 
 2. **Trace 工具**：
    - `adb shell atrace`：系统级跟踪
-   - `adb shell systrace`：渲染性能跟踪
+   - `systrace`（主机侧命令）/ Android Studio System Trace：短时系统跟踪；Android 10+ 优先用 Perfetto
 
 ### 专业工具
 
@@ -205,9 +215,9 @@ graph TD
 
 | 场景 | 推荐工具 | 适用阶段 |
 |-----|---------|---------|
-| 启动性能分析 | Perfetto + Systrace | 调试阶段 |
-| 内存泄漏检测 | ADB + SimplePerf | 调试阶段 |
-| 渲染性能分析 | Systrace + Perfetto | 调试阶段 |
+| 启动性能分析 | Perfetto / Android Studio System Trace | 调试阶段 |
+| 内存泄漏检测 | Memory Profiler / LeakCanary / heap dump；Native 泄漏看 heapprofd + meminfo | 调试阶段 |
+| 渲染性能分析 | Perfetto / Android Studio System Trace；旧版本可用 Systrace | 调试阶段 |
 | 线上性能监控 | 自定义埋点 + 数据平台 | 运维阶段 |
 
 ## 总结
