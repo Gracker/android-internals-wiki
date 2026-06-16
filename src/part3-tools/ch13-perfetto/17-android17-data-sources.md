@@ -13,9 +13,9 @@ sources:
   - type: DeepResearch
     path: "DeepResearch/2026-06-08-android-17-perfetto-data-sources-boundary-verification.md"
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h"
+    path: "frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h"
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp"
+    path: "frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp"
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
   - type: aosp
@@ -24,20 +24,22 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "needs-rework"
-task9_state: "reviewed"
+task9_state: "pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
 last_task6_at: 2026-06-16T21:11:00+08:00
 # task2b_state restored 2026-06-16 by Task9 — P0/P1 technical rework required
 task9_result: "needs-rework"
-task2b_state: "pending"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
 last_task9_at: "2026-06-16T21:32:37+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-16-21-deep-review.md"
+last_task2b_lite_at: 2026-06-16
 task9_review_notes: "2026-06-16 21 Task9 deep-review：needs-rework。AOSP android-16.0.0_r3 复核发现 FrameTimeline 源码路径、filter_frames_before_trace_starts flag、JankClassificationThresholds 字段、trace SQL/protobuf 示例与 linux.perf 开销口径存在 P0/P1，已合并 queue P95。"
 ---
 
@@ -91,7 +93,7 @@ FrameTimeline 与 statsd atom 写入的路径关系需要进一步确认。
 
 ### 1.1 数据源注册机制
 
-**关键常量**：`frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h`（line 528）
+**关键常量**：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h`（line 528）
 ```cpp
 static constexpr char kFrameTimelineDataSource[] = "android.surfaceflinger.frametimeline";
 ```
@@ -341,13 +343,15 @@ message PerfEventConfig {
 
 ## 6. 实际应用建议
 
-### 6.1 Trace 配置建议
+### 6.1 Trace 数据查询
 
 ```sql
--- 同时启用两个数据源示例
-SELECT * FROM perfetto WHERE 
-  (SELECT name FROM gpu_track) LIKE '%frame%' OR
-  (SELECT name FROM sched) LIKE '%perfetto%';
+-- 查询 FrameTimeline jank 数据（trace_processor SQL）
+SELECT display_frame_token, name, jank_type
+FROM actual_frame_timeline
+WHERE jank_type != 'None'
+ORDER BY display_frame_token DESC
+LIMIT 20;
 ```
 
 ### 6.2 避免数据丢失
@@ -389,7 +393,7 @@ Android 17 / API 37 公开 tag 发布后，需执行以下验证：
 ```bash
 # 1. 检查数据源常量是否变更
 git log android-16.0.0_r3..android-17.0.0_r1 \
-  -- frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h \
+  -- frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h \
   | grep kFrameTimelineDataSource
 
 # 2. 检查数据源是否被禁用
@@ -419,7 +423,7 @@ git log android-16.0.0_r3..android-17.0.0_r1 \
 ## 信息源与参考资料
 
 ### 一手源码
-- `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.{h,cpp}` (android-16.0.0_r3)
+- `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp}` (android-16.0.0_r3)
 - `frameworks/native/services/surfaceflinger/common/FlagManager.cpp` (android-16.0.0_r3)
 - `frameworks/native/services/surfaceflinger/Jank/JankTracker.{h,cpp}` (android-16.0.0_r3)
 - `external/perfetto/src/profiling/perf/traced_perf.cc` (lineage-18.1)
