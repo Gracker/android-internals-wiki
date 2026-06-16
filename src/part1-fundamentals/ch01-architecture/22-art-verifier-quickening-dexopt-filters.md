@@ -3,8 +3,8 @@ title: "ART Verifier Quickening 与 dexopt 过滤器性能边界"
 chapter: "1.22"
 section: "1.22"
 status: ready-for-review
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: "reviewed"
 drafted_date: "2026-05-24"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36); Android 17 待正式 AOSP tag 复核"

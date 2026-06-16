@@ -1,8 +1,8 @@
 {
   "total": 434,
   "draft": 0,
-  "ready-for-review": 85,
-  "finalized": 304,
+  "ready-for-review": 87,
+  "finalized": 302,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
   "task9_reviewed_by": "openclaw-task9",
@@ -3243,8 +3243,8 @@
       "task2b_state": "pending"
     },
     "22.4": {
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "auto-fixed",
@@ -5002,8 +5002,8 @@
     "2.21": {
       "title": "文字渲染性能",
       "file": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -6507,7 +6507,7 @@
       "last_verified_against": "source.android.com ART configure / ART Service configuration; AOSP platform/art main",
       "confidence": "high",
       "task2a_state": "processed",
-      "task6_state": "pending"
+      "task6_state": "revisiting"
     },
     "5.6": {
       "section": "5.6",
@@ -10203,15 +10203,15 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-17",
-    "time": "01:06",
+    "time": "03:06",
     "mode": "gap-mining-skip",
-    "round": 141,
+    "round": 143,
     "created_sections": [],
     "created_files": [],
     "candidate_count": 0,
     "qualified_count": 0,
-    "source": "Round 141: Phase 0 无空 draft (434 章节, 0 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 0 篇 (已耗尽). Research-feeds 最近 2026-04-14 无新增. Research-gaps 4 条均已映射. Daily-info 2026-06-16 热点映射 ch03/ch16/ch12/ch14/ch13 (均已存在). Clippings 已充分比对. 连续 141 轮无合格缺口, 跳过创建.",
-    "note": "连续 141 轮无合格缺口。0 draft 章节。全书 434 文件。管线堵点在 Task6/Task9 复审(88 个 ready-for-review), 非内容缺口。"
+    "source": "Round 143: Phase 0 无空 draft (434 章节, 0 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 1 篇 (已耗尽, 0 unmapped). Research-feeds 最近 2026-04-14 无新增. Research-gaps 4 条均已映射. Daily-info 2026-06-17 热点 (Android 17 scheduler / Linux 6.10 内存碎片) 映射 ch01/ch04/ch16 (均已存在). DeepResearch 7 篇 (06-16/06-17) 全部映射已有章节 (ch20/ch23/ch26/ch14/ch13/ch12). Clippings 已充分比对. 连续 143 轮无合格缺口, 跳过创建.",
+    "note": "连续 143 轮无合格缺口。0 draft 章节。全书 434 文件 (304 finalized + 85 ready-for-review + 45 other)。管线堵点在 Task6/Task9 复审(85 个 ready-for-review), 非内容缺口。"
   },
   "task9_last_sections": [
     "7.9",
@@ -10691,7 +10691,7 @@
     "source": "Round 126: Phase 0 无空 draft (381 章节, 299 finalized + 82 ready-for-review). Phase 0.5 TASK2B_BACKLOG=2. Source-index 0 篇 (已耗尽). Research-feeds 最近 2026-04-14 无新增. research-gaps 2 条已映射. daily-info 热点无新缺口. Clippings 三本参考书结构已充分比对. 连续 126 轮无合格缺口, 跳过.",
     "note": "连续 126 轮无合格缺口。0 draft 章节。管线堵点在 Task6/Task9 复审环节。"
   },
-  "last_task2a_gap_mining_at": "2026-06-17T01:06:52.148183+08:00",
+  "last_task2a_gap_mining_at": "2026-06-17T03:06:28.819395+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"

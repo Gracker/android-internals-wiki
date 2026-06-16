@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: ready-for-review
 title: 文字渲染性能
 chapter: '2.21'
 section: '2.21'
