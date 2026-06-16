@@ -48,23 +48,23 @@ review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 1
 last_task9_review_log: "logs/deep-review/2026-06-16-07-audit.md"
 status: ready-for-review
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-28"
-task6_state: "revisiting"
+reviewed_date: "2026-06-16"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: "task6_pending"
-last_task6_at: "2026-05-28T03:16:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-03-review.md"
-task6_l1_l2_fixes: 1
+pipeline_stage: "task9_pending"
+last_task6_at: "2026-06-16T08:06:00+08:00"
+last_task6_review_log: "logs/review/2026-06-16-08-review.md"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 1 处；无 L3/L4 回炉项，送 Task9 复核。"
-review_round: 6
+task6_review_notes: "2026-06-16 Task6：Task9 闲时抽检 auto-fix（kernel wakeup_source 锚点统一）回流后写作复审通过；L1/L2 无问题；锚点覆盖 7/7；无 L3/L4 回炉项，转 Task9 最终确认。"
+review_round: 7
 last_task9_autofix_at: "2026-06-16"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: "2026-06-01"
+last_deepseek_cn_review_at: 2026-06-16
 last_task9_audit: "2026-06-16"
 ---
 
@@ -424,7 +424,6 @@ SystemSuspend: 用户态 wakelock 计数增加
 
 [已验证: AOSP `hardware/libhardware_legacy/power.cpp`、`SystemSuspend.cpp`、`IPower.aidl` 与 `PowerHalController` 路径]
 
-
 ## Wakelock 泄漏的常见模式与诊断
 
 ### 四种常见泄漏模式
@@ -484,7 +483,6 @@ adb bugreport bugreport.zip
 ```
 
 在 Battery Historian 的时间线上，wakelock 显示在 top bar 区域。如果某个 App 的 wakelock 条目在屏幕关闭后长时间存在（特别是整段时间都是连续的），几乎可以确定存在问题。
-
 
 ### dumpsys batterystats 解读
 
@@ -710,13 +708,7 @@ Google 官方推荐的迁移路径：
 
 ## 与其他章节的关系
 
-Wakelock 不是一个孤立的话题，它与全书多个章节紧密关联：
-
-- **§5.6 Android 功耗管理**：wakelock 是 Android 功耗管理体系的核心机制之一，与 Doze、App Standby、Battery Saver 共同组成系统的功耗防线
-- **§5.8 后台执行限制与优化**：WorkManager、JobScheduler 等后台调度框架内部都管理了 wakelock，了解 wakelock 机制有助于理解这些框架为什么比手动管理更安全
-- **§11.1 Android 功耗模型**：wakelock 直接影响功耗模型中的 CPU 活跃时间
-- **§11.2 App 耗电优化**：Play Store 的惩罚政策是 App 层面优化的直接驱动力
-- **§13.5 Perfetto 专题解读**：wakelock 的 Perfetto SQL 分析方法是 Trace 分析的常用技巧
+Wakelock 与全书多个章节直接相关：§5.6 中它与 Doze、App Standby、Battery Saver 共同组成功耗防线；§5.8 中 WorkManager、JobScheduler 等框架内部都管理了 wakelock；§11.1 中 wakelock 直接影响功耗模型中的 CPU 活跃时间；§11.2 中 Play Store 惩罚政策是 App 层优化的直接驱动力；§13.5 提供了 wakelock 的 Perfetto SQL 分析方法。
 
 ## 版本演进
 
@@ -749,7 +741,6 @@ Foreground Service 提高的是进程存活优先级，不是 CPU 的唤醒状�
 **误区 4："PowerManagerService 持有的 wakelock 是系统问题"**
 
 `dumpsys batterystats` 中看到 `PowerManagerService` 持有大量 wakelock 时间，常常会被误认为是系统 bug。很多时候 PowerManagerService 只是代理，它通过 WorkSource 代表其他 App 记账。需要进一步查看是哪个 App 的 wakelock 归因到了 PMS。
-
 
 ### Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监测
 
@@ -795,8 +786,6 @@ PowerMonitorReadings.getTimestampMillis(PowerMonitor) → 快照时刻的 elapse
 - `getRailInfo()` — 获取功耗轨元信息（名称、测量类型）
 - `getEnergyData()` — 获取自启动以来的累计能耗数据
 
-[已确认: 已按 Task9 结论修正——Perfetto 数据源名称统一为 `android.power` + `collect_power_rails: true`；`android_power_rails_counters` 仅作为 Trace Processor SQL 表名，不写成 data source name。]
-
 主要消费者：Statsd（功耗归因）、Perfetto（`android.power` 数据源）、Batterystats（电池分析）。
 
 #### Perfetto 端到端观测
@@ -825,7 +814,6 @@ Perfetto android.power 数据源记录 rail 数据（SQL 表名 `android_power_r
   ↓
 验证 Power Efficiency Mode 的实际效果
 ```
-
 
 #### 非游戏场景的 ADPF 应用
 

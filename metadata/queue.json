@@ -1158,5 +1158,26 @@
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-16T06:12:01.599869",
     "status": "pending"
+  },
+  {
+    "section": "16.4",
+    "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+    "priority": 90,
+    "reason": "[review回炉] AutoFDO benchmark 数据正文与版本演进表不一致（Boot 1.1% vs 1.9%, Cold App launch 6.6% vs 3.4%），疑似 Task9 auto-fix 更新正文后遗漏了版本表",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "版本演进表 Android 17 相关 GKI 行",
+        "detail": "版本演进表中 AutoFDO README benchmark 数据与正文数据不一致，正文已在 Task9 auto-fix 中更新，表格遗漏",
+        "suggestion": "确认正文数据来自 android17-6.18 gki/aarch64/afdo/README.md，统一版本表与正文数据。Task6 已暂行按正文修正版本表。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-16T08:06:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-16-08-review.md"
   }
 ]
