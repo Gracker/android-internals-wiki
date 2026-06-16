@@ -39,23 +39,23 @@ sources:
 reviewed_at: "2026-05-11T19:05:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T07:20:00+08:00"
+last_task9_at: "2026-06-16T08:20:00+08:00"
 last_task2b_at: "2026-05-28T00:50:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。 | 2026-06-16 Task9 闲时抽检 auto-fix：将 Android common kernel wakeup source 参考锚点统一为 `kernel/common/kernel/power/wakelock.c` 与 `kernel/common/drivers/base/power/wakeup.c`；P0 0 / P1 0 / P2 1，回到 Task6 复审。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。 | 2026-06-16 Task9 闲时抽检 auto-fix：将 Android common kernel wakeup source 参考锚点统一为 `kernel/common/kernel/power/wakelock.c` 与 `kernel/common/drivers/base/power/wakeup.c`；P0 0 / P1 0 / P2 1，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-16-07-audit.md"
-status: ready-for-review
+last_task9_review_log: "logs/deep-review/2026-06-16-08-deep-review.md"
+status: "finalized"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-16"
 task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: "auto-fixed"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 last_task6_at: "2026-06-16T08:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-16-08-review.md"
 task6_l1_l2_fixes: 0
@@ -66,6 +66,8 @@ last_task9_autofix_at: "2026-06-16"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 last_task9_audit: "2026-06-16"
+finalized_date: "2026-06-16"
+finalized_by: "openclaw-task9-auto-promote"
 ---
 
 # 11.5 Wakelock 机制与功耗分析

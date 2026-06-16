@@ -31,29 +31,29 @@ related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15
 task6_review_notes: "2026-06-16 Task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 小修 3 处(删除评价形容词"精彩的"、修正"写法"→"帧预算"、修正词序"公开 Android Vitals"). L1禁用词零命中. 无B类大问题. 评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5. task9_result=auto-fixed非pass-tech-review,不触发自动晋升. 公开 Android Vitals 目前不单列 Tap Re"
 task6_state: reviewed
 task6_result: pass-light-edit
-task2b_state: fixed
+task2b_state: "fixed"
 task2b_result: fixed
 task6_reviewed_date: '2026-06-16'
 task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 review_round: 1
-status: ready-for-review
-pipeline_stage: task9_pending
-task9_result: auto-fixed
-task9_state: pending
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-16
-last_task9_at: "2026-06-16T04:35:00+08:00"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task9_result: "pass-tech-review"
+task9_state: "reviewed"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-16"
+last_task9_at: "2026-06-16T08:20:00+08:00"
 last_task9_autofix_at: "2026-06-16"
-task9_review_notes: "2026-06-16 Task9 idle audit auto-fixed: 补充 Android 15 QPR1+ ARR 支持边界，修正 InputDispatcher 源码成员访问写法；未使用 Android 18/API 38+ 资料。"
+task9_review_notes: "2026-06-16 Task9 idle audit auto-fixed: 补充 Android 15 QPR1+ ARR 支持边界，修正 InputDispatcher 源码成员访问写法；未使用 Android 18/API 38+ 资料。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。"
 last_task9_audit: "2026-06-16"
-last_task9_review_log: logs/deep-review/2026-06-16-04-audit.md
+last_task9_review_log: "logs/deep-review/2026-06-16-08-deep-review.md"
 last_task6_at: "2026-06-16T05:05:00+08:00"
 
 task2b_fixed_date: "2026-06-06"
-finalized_date: 2026-06-06
-finalized_by: openclaw-task9-auto-promote
+finalized_date: "2026-06-16"
+finalized_by: "openclaw-task9-auto-promote"
 last_task9_audit_result: auto-fixed
 last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
 ---

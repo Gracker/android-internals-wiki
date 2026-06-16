@@ -2,7 +2,7 @@
 title: "异常处理架构设计"
 chapter: "20.7"
 section: "20.7"
-status: ready-for-review
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
@@ -38,7 +38,7 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-16"
@@ -46,20 +46,22 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-16T04:10:28+08:00"
 last_task6_review_log: "logs/review/2026-06-16-04-review.md"
 task6_review_notes: "2026-06-16 Task6 第三次复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式 1 次(开篇对比句,在限制内)。"承担"出现 1 次为正常用法。L1/L2 全部通过,无 B 类问题。queue.json 中 20.7 条目状态为 completed,无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,保持 ready-for-review 等待 Task9 确认升级。"
-task9_state: pending
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "fixed"
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
+task9_result: "pass-tech-review"
+task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T03:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-03-deep-review.md"
-task9_review_notes: "2026-06-16 Task9 复审:auto-fixed。SafeMode launch marker 状态机、crash 文件持久化协议已闭环；本轮直接修正父目录 fsync 示例中不存在的 Java/Kotlin API 写法，回到 Task6 复审。"
+last_task9_at: "2026-06-16T08:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-16-08-deep-review.md"
+task9_review_notes: "2026-06-16 Task9 复审:auto-fixed。SafeMode launch marker 状态机、crash 文件持久化协议已闭环；本轮直接修正父目录 fsync 示例中不存在的 Java/Kotlin API 写法，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。"
 
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00
 last_task9_autofix_at: "2026-06-16"
+finalized_date: "2026-06-16"
+finalized_by: "openclaw-task9-auto-promote"
 ---
 
 # 异常处理架构设计
