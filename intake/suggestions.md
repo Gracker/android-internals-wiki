@@ -1604,3 +1604,134 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 - **问题**：官方 2024/2025 资料能支撑 Reddit 的 51% median startup early benchmark、overall cold start 20%、R8 full mode 40% faster cold startup / 30% fewer ANR / 25% frame rendering / 14% app size 等结论，但本节写入的 P50 2.8s、P50 1.7s、P95 超过 5s，以及 Baseline Profiles 20-30% + R8 10-20% 的拆分没有在本轮官方资料中找到直接出处。
 - **建议**：保留官方可验证百分比；若要保留绝对耗时和拆分估算，需要补充 Reddit 原始分享/trace/benchmark 来源，否则改成“官方未披露绝对耗时与拆分贡献”。
 - **review 日志**：logs/deep-review/2026-06-16-21-deep-review.md
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-17 04:07 (Round 144)
+
+### 1. Phase 0 空章节扫描
+- 全书 434 文件，0 draft（302 finalized + 87 ready-for-review + 45 无状态/附录/前言）
+- 连续 144 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0（≤ 20），允许进入 Phase 1
+
+### 3. 增量素材检查（对比 Round 143 @ 03:06）
+- daily-info/：2026-06-17 仅有 2 条 RSS（Android 17 调度器 + Linux 6.10 内存碎片），已被 Round 143 及之前覆盖
+- research-feeds/：最新文件 2026-04-14，无新增（已过期 2 个月）
+- research-gaps/：4 条记录均映射现有章节，评分 < 14
+- source-index/：1 条记录，0 条未映射高分素材
+- DeepResearch/：无新增文件
+- Clippings/：三本参考书核心知识点已全部被现有章节覆盖
+
+### 4. queue.json 状态
+- 51 条记录，多为 completed；pending 条目均为现有章节的素材注入/审计
+- 无 priority ≥ 85 的 pending 新章节条目
+
+### 5. 本轮评估
+- 候选缺口 0，合格缺口（≥14 分）0
+- 连续 144 轮无合格缺口
+
+### 6. 结论
+本轮未发现评分 ≥ 14 的合格知识缺口，跳过新章节创建。
+
+### 管线状态
+全书 434 文件、0 draft、302 finalized（69.6%）、87 ready-for-review（20.0%）。连续 144 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（87 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-17 06:07 (Round 144)
+
+本轮按 `task2a-content-processing-new.md` Phase 0-1 完成知识缺口挖掘，未产出评分 ≥ 14 的候选。
+
+### 1. Phase 0 空章节扫描
+- 全书 434 个 .md 文件，0 个空 draft（§14.13 status="draft" 但正文 435 行，非空）
+- 连续 144 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0（≤ 20，允许进入 Phase 1）
+
+### 3. source-index.json 未映射素材
+- 0 条 score ≥ 16 且无 mapped_chapters 的素材
+
+### 4. research-feeds 最近文件
+- 最新更新 2026-04-14，无新增（5 个文件已全部覆盖现有章节）
+
+### 5. daily-info 热点（2026-06-16 ~ 2026-06-17）
+- Android 17 MessageQueue 重构 → 已覆盖 §1.26
+- Android 桌面端转型 → 已覆盖 §2.20 / §22.14
+- Compose 样式系统变化 → 非 AIW 范畴
+- Gemini API Android 接入 → 非 AIW 范畴
+- Loop Engineering / Agent 工程方法论 → 非 AIW 范畴
+
+### 6. research-gaps.md 需求
+- 4 条盲区全部映射到现有章节（§20.7 SafeMode 状态机、§20.7 Crash 持久化、§26.3 Battery Historian 集成、§26.3 Android 14 内存跟踪 API）
+- 均已在 Queue 中有对应 pending 条目（Task 2B / DeepResearch 注入），无需新建章节
+
+### 7. DeepResearch 新材料（2026-06-16 ~ 2026-06-17）
+- BatteryStatsService × PowerStatsService 深度集成 → 映射到 §26.3（已在 Queue）
+- SmartPerfetto enterpriseTraceMetadataRoutes 404 → 映射到 §13.18（已在 Queue）
+- Crash 文件持久化协议可靠性 → 映射到 §20.7/§20.12（已在 research-gaps）
+- App SafeMode 状态机 → 映射到 §20.12（已在 research-gaps）
+- Battery Historian 性能指标集成 → 映射到 §26.3（已在 Queue）
+- Android 14 精细化内存跟踪 → 映射到 §26.3（已在 research-gaps）
+
+### 8. Queue 待处理项
+- 10 个 pending：5 个 task2a-gap-mining 已创建待加工（实际全部已 ready-for-review）、4 个 DeepResearch 注入待加工、1 个 task6-audit 补写版本演进
+- 均为现有章节的补充/加工，非新章节
+
+### 9. 评分结论
+- 发现可创建候选缺口：0 个
+- 评分 ≥ 14：0 个
+- 本轮不创建新章节、不更新 SUMMARY、不更新 queue
+
+### 总结
+连续 144 轮无合格缺口。全书 434 文件（283 finalized / 89 ready-for-review / 1 draft / 61 无状态），65.2% finalized。堵点在 ready-for-review → finalized 的复审推进（89 个待审），非内容缺口。AIW 已进入收尾维护阶段。
+
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-17 07:19 (Round 145)
+
+本轮按 `task2a-content-processing-new.md` Phase 0-1 完成知识缺口挖掘，未产出评分 ≥ 14 的候选。
+
+### 1. Phase 0 空章节扫描
+- 全书 390 个内容 .md 文件，0 个 draft（1 个无 frontmatter status）
+- 连续 145 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0（≤ 20，允许进入 Phase 1）
+
+### 3. source-index.json 未映射素材
+- 257 条素材记录，0 条 score ≥ 16 且无 mapped_chapters 的素材
+
+### 4. research-feeds 最近文件
+- 最新更新 2026-04-14，无新增（5 个文件已全部覆盖现有章节）
+
+### 5. daily-info 热点（2026-06-16 ~ 2026-06-17）
+- Android 17 性能优化新调度器 → 已覆盖 §1.25 / §1.26 / §1.27 / §5.17
+- Linux 6.10 内存碎片整理 → 已覆盖 §4.10 / §4.13
+- Android 桌面端转型 → 已覆盖 §2.20 / §22.14
+- Compose Pager → 非 AIW 性能范畴
+- 端侧模型推理 → 已覆盖 §5.11-5.14 / §5.16 / §5.19
+
+### 6. research-gaps.md 需求
+- 4 条盲区全部映射到现有章节（§20.7 SafeMode 状态机、§20.7 Crash 持久化、§26.3 Battery Historian 集成、§26.3 Android 14 内存跟踪 API）
+- 均已在 Queue 中有对应 pending 条目
+
+### 7. DeepResearch 新材料（2026-06-15 ~ 2026-06-17）
+- Android 14 内存跟踪 API 深度分析 → 映射到 §23.7 / §26.3（已在 research-gaps）
+- Android 15 PowerStats/BatteryStats 深度集成 → 映射到 §26.3（已在 Queue）
+- SmartPerfetto enterpriseTraceMetadataRoutes 404 → 映射到 §13.18（已在 Queue）
+- Crash 文件持久化协议可靠性 → 映射到 §20.7/§20.12（已在 research-gaps）
+- App SafeMode 状态机 → 映射到 §20.12（已在 research-gaps）
+- Android 17 NetworkStatsService quota → 映射到 §12.6（已在 Queue）
+- ANR 检测链路源码 → 已直接注入 §9.1
+
+### 8. Clippings 三本参考书结构比对
+- 《Android 应用稳定性剖析与优化》(20 篇) → 全部知识点映射到 ch20-ch23 已有章节
+- 《Android 性能优化》(16 篇) → 全部知识点映射到 ch04/ch05/ch12/ch21-ch25 已有章节
+- 《线上疑难问题》(59 篇) → 全部知识点映射到 ch26 + 各章节案例补充
+
+### 9. 评分结论
+- 发现可创建候选缺口：0 个
+- 评分 ≥ 14：0 个
+- 本轮不创建新章节、不更新 SUMMARY、不更新 queue
+
+### 总结
+连续 145 轮无合格缺口。全书 390 个内容文件（306 finalized + 83 ready-for-review + 1 无状态）。78.5% finalized。堵点在 ready-for-review → finalized 的复审推进（83 个待审），非内容缺口。AIW 已进入收尾维护阶段。
