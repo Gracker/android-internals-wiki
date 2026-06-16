@@ -7,9 +7,9 @@ drafted_date: '2026-04-09'
 reviewed_date: '2026-05-28'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + androidx-main + developer.android.com
@@ -52,24 +52,25 @@ related_chapters:
 - '2.5'
 - '7.8'
 - '7.12'
-task9_result: pass-tech-review
+task9_result: auto-fixed
 repaired_date: '2026-04-23'
 repaired_by: openclaw-task2b
 task2b_result: fixed
 task2b_state: "fixed"
 last_task2b_at: '2026-05-09T17:52:02+08:00'
-task9_reviewed_date: "2026-05-28"
+task9_reviewed_date: "2026-06-17"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-28T04:30:00+08:00"
+last_task9_at: "2026-06-17T03:26:16+08:00"
 review_round: "3"
 task6_review_notes: "2026-05-28 Task6 review: pass-light-edit。L1/L2 小修 5 处；未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足自动晋升条件，转 task9_pending。"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
-last_task9_review_log: "logs/deep-review/2026-05-28-04-deep-review.md"
-last_task9_autofix_at: "2026-05-28"
-task9_review_notes: "2026-05-28 Task9 04:30：pass-tech-review；无 P0/P1；queue 无 pending，Task6 已通过，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-17-03-audit.md"
+last_task9_autofix_at: "2026-06-17"
+task9_review_notes: "2026-06-17 Task9 闲时抽检：auto-fixed；AOSP HarfBuzz 路径已纠正为 external/harfbuzz_ng/；回到 Task6 复审。"
 last_task6_at: '2026-05-28T01:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-28-01-review.md"
+last_task9_audit: "2026-06-17"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
 ---
@@ -157,7 +158,7 @@ FontCollection(字体集合)
 
 Android 16 换入了 HarfBuzz 10.x。这一代在复杂脚本整形上做了显著优化，包括阿拉伯语 Nastaliq 塑形和 Apple Advanced Typography (AAT) 路径的性能改进。对出海应用来说，中东、南亚、东南亚语系的文字测量开销会下降——这些语系在旧版本中往往是 measure 阶段的 CPU 热点。如果 Perfetto 中观察到阿拉伯语或印地语文本的 `TextView.onMeasure()` 耗时异常，升级到 Android 16+ 设备后应有可测量的改善。
 
-[已验证: AOSP android-16.0.0_r1, external/harfbuzz/ — HarfBuzz 10.2.0; 具体加速百分比因 shaping / subsetting / loading 口径不同而无法给出单一数字，保留“显著优化”的定性描述]
+[已验证: AOSP android-16.0.0_r1, external/harfbuzz_ng/ — HarfBuzz 10.2.0; 具体加速百分比因 shaping / subsetting / loading 口径不同而无法给出单一数字，保留“显著优化”的定性描述]
 
 **LineBreaker** 负责多行文字的换行计算。它调用 ICU 的换行算法,根据语言规则决定在哪里断行。换行算法的复杂度与文本长度线性相关,但 ICU 的实现中涉及大量的字典查找(特别是 CJK,因为中文没有空格作为天然断点),所以 CJK 文本的换行开销明显高于拉丁文本。
 
@@ -400,7 +401,7 @@ RenderThread / HWUI 侧当然也可能有文字相关成本,但要分清"能推�
 | Android 9.0 (API 28) | framework 引入 `PrecomputedText` | Android Developers `PrecomputedText` reference(Added in API 28) |
 | Android 15 (API 35) | 16 KB page size 进入兼容面;自带 native 文字 / 字体库不能再写死 4 KB 页大小 | Android Developers page size guide |
 | AndroidX core / appcompat | `PrecomputedTextCompat.getTextFuture()` 配合 `AppCompatTextView.setTextFuture()` 提供异步预计算接入 | androidx-main `PrecomputedTextCompat.java` / `AppCompatTextView.java` |
-| Android 16 (API 36) | HarfBuzz 10.x 引擎升级：复杂脚本整形性能显著改善；可变字体 Variation Axes 缓存机制待验证 | AOSP external/harfbuzz/ NEWS 10.2.0; frameworks/minikin/ |
+| Android 16 (API 36) | HarfBuzz 10.x 引擎升级：复杂脚本整形性能显著改善；可变字体 Variation Axes 缓存机制待验证 | AOSP external/harfbuzz_ng/ NEWS 10.2.0; frameworks/minikin/ |
 | Android 15 (API 35) | 排版 API 突破：`StaticLayout.Builder` 引入 `setUseBoundsForWidth(boolean)` 和 `setShiftDrawingOffsetForStartOverhang(boolean)`，解决斜体字起始位置剪裁和复杂字形对齐偏差 | Android Developers StaticLayout.Builder reference (Added in API 35) |
 | AndroidX emoji / emoji2 | `EmojiCompat` 通过 `EmojiSpan` / `TypefaceEmojiSpan` 兼容新 emoji,字体来源可选 bundled 或 downloadable font provider | Android Developers EmojiCompat 文档;androidx-main `TypefaceEmojiSpan.java` |
 
