@@ -19,7 +19,7 @@ last_task6_review_log: "logs/review/2026-05-27-16-review.md"
 last_task6_at: "2026-05-27T16:08:00+08:00"
 last_task6_audit: "2026-06-11"
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: auto-fixed
 sources:
   - type: official
     path: "https://source.android.com/docs/core/audio/latency"
@@ -35,25 +35,25 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-27T14:50:00+08:00"
-task9_reviewed_date: "2026-05-27"
+task9_reviewed_date: "2026-06-16"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T16:21:00+08:00"
+last_task9_at: "2026-06-16T15:25:46+08:00"
 section: "1.16"
-task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。 | 2026-05-24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 16 AIDL CAP/IConfig 强制口径仍过硬，需收窄为 AIDL HAL fully supports CAP、legacy/HIDL 兼容与 XML 转 AIDL reference implementation；另有 AAudio offloaded 与 Android 17 WIU FGS 条件混写的 P2 建议。 | 2026-05-25 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Android 17 background audio hardening 的 visible Activity/非 SHORT_SERVICE FGS、target API 37 WIU、USAGE_ALARM exact alarm 豁免条件与 AAudio offloaded playback 前提混写，已写入 metadata/queue.json。 | 2026-05-27 15:22 Task9 auto-fix：收窄 AAudio Power Saving Offloaded 与 DSP 解码表述，避免把省电 output path 写成无条件 DSP 解码；回到 Task6 复审。 | 2026-05-27 16:21 Task9 deep-review: pass-tech-review；P0 0 / P1 0 / P2 0 新增；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-24 08:20 Task9 idle audit: needs-rework；P0: FastMixer.cpp 与 AAudio service AOSP 路径错误，已写入 metadata/queue.json。 | 2026-05-24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；Android 16 AIDL CAP/IConfig 强制口径仍过硬，需收窄为 AIDL HAL fully supports CAP、legacy/HIDL 兼容与 XML 转 AIDL reference implementation；另有 AAudio offloaded 与 Android 17 WIU FGS 条件混写的 P2 建议。 | 2026-05-25 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Android 17 background audio hardening 的 visible Activity/非 SHORT_SERVICE FGS、target API 37 WIU、USAGE_ALARM exact alarm 豁免条件与 AAudio offloaded playback 前提混写，已写入 metadata/queue.json。 | 2026-05-27 15:22 Task9 auto-fix：收窄 AAudio Power Saving Offloaded 与 DSP 解码表述，避免把省电 output path 写成无条件 DSP 解码；回到 Task6 复审。 | 2026-05-27 16:21 Task9 deep-review: pass-tech-review；P0 0 / P1 0 / P2 0 新增；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-16 15:25 Task9 idle audit AUTO-FIX：收窄 FastMixer fast track slot 上限；android-16.0.0_r1 默认 8（index 0 预留，应用侧默认 7），但 ro.audio.max_fast_tracks 可配置 2-32，回到 Task6 复审。"
 review_type: "task6-writing-quality-review"
-last_task9_audit: "2026-05-24"
-last_task9_review_log: "logs/deep-review/2026-05-27-16-deep-review.md"
+last_task9_audit: "2026-06-16"
+last_task9_review_log: "logs/deep-review/2026-06-16-15-audit.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-25 Task6：revisiting 写作质检通过；未新增 L1/L2 小修；沿用 Task9 2026-05-25 P1 技术回炉，章节保持 task2b_pending。 | 2026-05-27 15:08 Task6：revisiting 写作质检通过；未新增 L1/L2 正文问题；Task2B 修复后的 Android 17 后台音频与 AAudio offloaded 边界已进入正文；Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；删除开头主观填充词，维持 Android 17 后台音频与 AAudio offloaded 边界表述；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。"
 task2b_notes: "2026-05-27 Task2B fallback：修复 Task9 2026-05-25 P1；拆开 Android 17 后台音频 hardening 生命周期条件与 AAudio Power Saving Offloaded 输出路径，补 targetSdk 37+ WIU / USAGE_ALARM 豁免和 cmd audio 强制测试语义。"
-last_task9_autofix_at: "2026-05-27"
+last_task9_autofix_at: "2026-06-16"
 last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
 task6_reviewed_by: "openclaw-task6"
@@ -187,7 +187,7 @@ FAST Mixer 省掉的是每条 fast track 的 sample rate conversion、per-track 
 
 第二步由 AudioFlinger 在创建 track 时完成筛选。常见的硬条件包括：这个 output 上存在 fast mixer thread；请求的 sample rate、format、channel mask 和设备 mix port 匹配；client 侧能用 callback 线程按时供数；track 的 frame count 落在 fast track 可接受的范围；fast track slot 还有空位。任何一个条件不满足，都会退回 Normal Mixer。
 
-这里的 slot 是硬约束。android-16.0.0_r1 的 `PlaybackThread` 构造里把 `mFastTrackAvailMask` 初始化为 `((1 << FastMixerState::sMaxFastTracks) - 1) & ~1`，源码注释直接写明 index 0 预留给 normal mixer 的 submix。也就是说 FastMixer 的槽位数是固定的，应用侧实际最多同时占用 7 个 fast track；槽位打满时，新流会直接降回 normal track，即使 sample rate 和 buffer 配置都匹配。
+这里的 slot 是硬约束。android-16.0.0_r1 的 `PlaybackThread` 构造里把 `mFastTrackAvailMask` 初始化为 `((1 << FastMixerState::sMaxFastTracks) - 1) & ~1`，源码注释直接写明 index 0 预留给 normal mixer 的 submix。`FastMixerState::sMaxFastTracks` 默认是 8，`FastMixerState.cpp` 允许厂商通过 `ro.audio.max_fast_tracks` 在 2-32 之间配置，所以常见默认配置下应用侧最多同时占用 7 个 fast track；如果设备改过这个属性，实际 slot 上限要看该设备的 `dumpsys audio` 或 property。槽位打满时，新流会直接降回 normal track，即使 sample rate 和 buffer 配置都匹配。
 
 这就是为什么同样都写着“LOW_LATENCY”，有的流能进 fast track，有的流还是普通 track。最常见的失败原因就是 44100Hz 请求落在 48000Hz 输出设备上，或者 buffer/frame count 配得太保守。
 
