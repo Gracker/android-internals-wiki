@@ -2,7 +2,7 @@
 title: SurfaceControl API 深入
 chapter: '18.10'
 section: '18.10'
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 tags:
 - SurfaceControl
@@ -24,23 +24,23 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 last_task2b_at: '2026-05-27T10:50:00+08:00'
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T14:20:00+08:00"
+last_task9_at: "2026-06-16T11:20:00+08:00"
 task6_result: "pass-light-edit"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_result: fixed
 last_task2b_lite_at: '2026-05-27'
-task9_reviewed_date: "2026-05-27"
+task9_reviewed_date: "2026-06-16"
 task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。 | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。 | 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。 | 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。 | 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。 | 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 API 34 `ASurfaceControl_fromJava()`、API 36 release callback、FramebufferSurface client target 边界、FrameTimeline API level 与跨进程 SurfaceControl 共享路径；无 P0/P1，queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。 | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。 | 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。 | 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。 | 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。 | 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 API 34 `ASurfaceControl_fromJava()`、API 36 release callback、FramebufferSurface client target 边界、FrameTimeline API level 与跨进程 SurfaceControl 共享路径；无 P0/P1，queue 无 pending，自动晋升 finalized。 | 2026-06-16 11 Task9 idle audit AUTO-FIX：修正 Perfetto surfaceflinger_layers.proto 中 HwcCompositionType 枚举名与 DISPLAY_DECORATION=6 缺失问题；证据为 AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/trace/android/surfaceflinger_layers.proto；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。"
 last_task6_at: "2026-05-27T11:10:56+08:00"
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。 | 2026-05-27 08:07 Task6：pass-light-edit。补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。清理重复分隔线和代码标识符间距；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-05-27 11:10 Task6：pass-light-edit。复扫 Task2B 修正后的文稿；清理评价性表达与元叙述；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-27-14-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-16-11-audit.md"
 review_notes: 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface
   消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto
   错误；L666-L668 交叉链接断链。
@@ -49,10 +49,14 @@ task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-27-11-review.md"
 review_type: "task6-writing-quality-review"
 
-last_task9_autofix_at: "2026-05-27"
-p0: 0
+last_task9_autofix_at: "2026-06-16"
+p0: 1
 p1: 0
 p2: 0
+last_task9_audit: "2026-06-16"
+last_task9_audit_at: "2026-06-16T11:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-16-11-audit.md"
+last_task9_audit_result: "auto-fixed-p0-source-enum"
 ---
 # 18.10 SurfaceControl API 深入
 
@@ -649,20 +653,21 @@ Framework 层入口是 `GraphicBufferMapper`（`libs/ui/GraphicBufferMapper.cpp`
 
 ### HWC 合成类型判断
 
-`HwcCompositionType`（`layers.proto`）定义：
+`HwcCompositionType`（`surfaceflinger_layers.proto`）定义：
 
 ```protobuf
 enum HwcCompositionType {
-  INVALID = 0;
-  CLIENT = 1;    // SurfaceFlinger 用 GLES 合成
-  DEVICE = 2;    // HWC 用硬件 Overlay 直接合成
-  SOLID_COLOR = 3;
-  CURSOR = 4;    // 类似 DEVICE，但位置可异步设置
-  SIDEBAND = 5;   // HWC 通过 sideband stream 直接合成
+  HWC_TYPE_UNSPECIFIED = 0;
+  HWC_TYPE_CLIENT = 1;              // SurfaceFlinger 合成到 client target buffer
+  HWC_TYPE_DEVICE = 2;              // HWC 用硬件 Overlay 直接合成
+  HWC_TYPE_SOLID_COLOR = 3;
+  HWC_TYPE_CURSOR = 4;              // 类似 DEVICE，但位置可异步设置
+  HWC_TYPE_SIDEBAND = 5;            // HWC 通过 sideband stream 直接合成
+  HWC_TYPE_DISPLAY_DECORATION = 6;  // 显示装饰硬件路径
 }
 ```
 
-判断发生在 SurfaceFlinger 的 `validate()` 阶段：HWC 逐 layer 返回自己能不能处理，能处理则 DEVICE，不能则 CLIENT。Perfetto / `dumpsys SurfaceFlinger` 里的 CompositionType 列就是这个值。
+判断发生在 SurfaceFlinger 的 `validate()` 阶段：HWC 逐 layer 返回自己能不能处理，能处理则 `HWC_TYPE_DEVICE`，不能则 `HWC_TYPE_CLIENT`。Perfetto proto 里记录的是上述 `HWC_TYPE_*` 值；`dumpsys SurfaceFlinger` 或图形调试面板常把它显示成 `CLIENT`、`DEVICE` 这类可读名称。
 
 ### BLAST 模式下的位置变化
 
