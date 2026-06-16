@@ -380,4 +380,5 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 - Android Developers：`PowerManager` thermal API reference，覆盖 thermal status、thermal headroom 与预测采样边界。
 - Android Developers：`SystemHealthManager` API reference，覆盖 CPU / GPU headroom 的调用入口和低频采样要求。
 - AOSP：`frameworks/base/core/java/android/os/PerformanceHintManager.java`，用于核对 Java API surface、flagged API 与 session 状态机。
+- DeepResearch：`PerformanceHintManager.Session.setThreads()` IPC 链路与 Android 16+ FlaggedApi 全景分析 — 拆解 setThreads 的同步 Binder 调用链（IHintManager → IHintSession）、AIDL oneway/sync 区分、Android 16+ 全部 @FlaggedApi 标记全景，以及 error code 映射规则（EINVAL→IllegalArgumentException, EPERM→SecurityException）。
 - AOSP：`frameworks/base/native/android/performance_hint.cpp` 与 NDK `performance_hint.h`，用于核对 native workload hint 接入边界。

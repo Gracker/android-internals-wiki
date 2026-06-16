@@ -303,6 +303,11 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 - 摘要：LiteRT Next 通过 NPU delegate 对接 Qualcomm QNN、MediaTek NeuroPilot 等厂商后端，模型是否完整跑在 NPU 上取决于 SoC、delegate、算子覆盖和回退策略。
 - 用途：支撑 LiteRT CompiledModel、AOT 编译、AI Pack 分发和厂商 NPU delegate 的工程边界。
 
+### NeuralNetworks HAL 1.3 接口族与推理加速机制
+- 来源：DeepResearch/2026-06-14-android17-neuralnetworks-hal-inference-acceleration.md
+- 摘要：梳理 NN HAL 1.3 的 IDevice/IPreparedModel/IExecutionCallback/IFencedExecutionCallback 四接口架构，fenced execution、burst execution、compilation caching、QoS priority 等加速特性均通过 HAL 层实现；Android 17 未引入新的 NN HAL 主版本，AI 推理加速集中在 system 级 profiling 与 driver 端对 HAL 1.3 既有能力的最佳实践。
+- 用途：支撑本节 NNAPI / NN HAL 与厂商 delegate 的底层接口边界。
+
 ### Android 端侧 AI 推理栈边界验证
 - 来源：DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md；DeepResearch/2026-05-23-android-ai-inference-stack-litert-aicore-nnapi.md
 - 摘要：整理 AICore、LiteRT、NNAPI / NN HAL 和厂商 SDK 的分层关系，明确 AICore 与 LiteRT 不属于 AOSP 公共平台能力，Android 17 新增的是 NPU feature 声明管理边界。
