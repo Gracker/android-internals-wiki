@@ -35,7 +35,16 @@
   - 《Android 性能优化》— 赵子健 掘金小册（16 篇，对应 ch21-ch25 启动/渲染/内存/IO/功耗优化实战）
   - 《线上疑难问题该如何排查和跟踪》— 极客时间 Android 开发高手课（59 篇，对应 ch26 可观测性 + 各章节案例补充）
 - Obsidian 根目录：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/`
-- Obsidian 落盘：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/YYYY-MM-DD-HH-知识加工(新).md`
+- Obsidian 落盘：运行时必须用 Python 生成确定路径，不得把 `YYYY-MM-DD` / `HH` / `HHMM` 字面量写进文件名：
+  ```python
+  from datetime import datetime
+  from pathlib import Path
+  from zoneinfo import ZoneInfo
+
+  now = datetime.now(ZoneInfo("Asia/Shanghai"))
+  out = Path("/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工") / f"{now:%Y-%m-%d-%H}-知识加工(新).md"
+  ```
+  文件名只允许形如 `2026-06-16-11-知识加工(新).md`，禁止 `2026-06-16-1110-...`、`2026-06-16-11:10-...`、`YYYY-MM-DD-HH-...`。
 
 ## ⚠️ 铁律
 
