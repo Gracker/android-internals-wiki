@@ -2,7 +2,7 @@
 title: "Baseline Profiles 与编译优化"
 chapter: "19"
 section: "19.15"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37);Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景,非 Play 安装需单独验证"
@@ -42,6 +42,8 @@ last_task9_audit: "2026-06-16"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-26T09:40:00+08:00"
 last_task9_audit_at: "2026-06-16T14:38:30+08:00"
+last_task2b_verifier_at: "2026-06-16T23:28:12+08:00"
+task2b_verifier_notes: "2026-06-16 Task2B Verifier: state reconciliation — status finalized→ready-for-review; Task9 idle audit auto-fix 后需 Task6 revisiting 复审，原 finalized 状态阻止 Task6 拾取"
 last_task9_audit_log: "logs/deep-review/2026-06-16-14-audit.md"
 last_task9_autofix_at: "2026-06-16"
 last_task9_review_log: "logs/deep-review/2026-06-16-14-audit.md"

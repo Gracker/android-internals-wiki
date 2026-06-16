@@ -9,7 +9,7 @@ reviewed_date: "2026-06-16"
 reviewed_by: "openclaw-task6"
 task6_review_date: "2026-06-16"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: auto-fixed
 last_task9_at: "2026-05-26T01:27:00+08:00"
 task9_reviewed_date: "2026-05-26"
@@ -22,6 +22,8 @@ last_task9_audit_result: auto-fixed-p1-source-drift
 task9_audit_notes: "2026-06-16 Task9 idle audit: AUTO-FIX P1 1; android17-6.18 AutoFDO README 已更新到 6.18.21 与新 benchmark 口径,正文已同步后回到 Task6 复审。"
 last_task2b_at: "2026-06-16T08:51:39+08:00"
 last_task6_at: 2026-06-16T22:15:00+08:00
+last_task2b_verifier_at: "2026-06-16T23:28:12+08:00"
+task2b_verifier_notes: "2026-06-16 Task2B Verifier: state reconciliation — task9_state reviewed→pending; Task6 已 pass-light-edit，需 Task9 复审 auto-fixed 内容"
 last_task6_audit: "2026-06-16"
 last_task6_audit_log: "logs/review/2026-05-24-23-audit.md"
 last_task6_audit_notes: "idle audit: 补充缺失 outline 大纲;L1 禁用词正文未命中;frontmatter 完整;outline 锚点覆盖 9/9;无回炉项。"
