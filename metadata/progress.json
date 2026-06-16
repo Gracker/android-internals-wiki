@@ -2,9 +2,9 @@
   "total": 426,
   "draft": 0,
   "ready-for-review": 80,
-  "finalized": 301,
-  "task9_result": "pass-tech-review",
-  "task9_reviewed_date": "2026-06-12",
+  "finalized": 300,
+  "task9_result": "auto-fixed",
+  "task9_reviewed_date": "2026-06-16",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
@@ -2457,8 +2457,8 @@
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
-  "ready_for_review": 81,
-  "last_updated": "2026-06-16T01:20:00+08:00",
+  "ready_for_review": 80,
+  "last_updated": "2026-06-16T10:32:06+08:00",
   "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
@@ -2488,7 +2488,7 @@
     "l3_l4_issues": 0,
     "new_rework": false
   },
-  "task9_last_review": "2026-06-16T01:20:00+08:00",
+  "task9_last_review": "2026-06-16T10:32:06+08:00",
   "ready_to_publish": 193,
   "rework_history": [
     {
@@ -7756,6 +7756,19 @@
       "last_task2a_at": "2026-06-11T13:04:00+08:00",
       "task6_state": "pending",
       "queue_priority": 80
+    },
+    "7.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "task9_reviewed_at": "2026-06-16T10:32:06+08:00",
+      "task9_log": "logs/deep-review/2026-06-16-10-audit.md",
+      "last_task9_audit": "2026-06-16",
+      "last_task9_audit_at": "2026-06-16T10:32:06+08:00",
+      "last_task9_audit_result": "auto-fixed-p1-version-anchor",
+      "task9_note": "Task9 idle audit auto-fixed InputConsumer constants source anchor from AOSP mainline to android-16.0.0_r1; returned to Task6."
     }
   },
   "task2b_rounds": [
@@ -7839,57 +7852,54 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md",
   "last_task2a_processed_date": "2026-06-04",
   "task9_last_review_detail": {
-    "date": "2026-06-12",
-    "time": "18:20",
-    "reviewed_at": "2026-06-12T18:20:00+08:00",
-    "mode": "deep-review",
-    "sections": [
-      "14.8"
-    ],
-    "files": [
-      "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md"
-    ],
-    "log": "logs/deep-review/2026-06-12-18-deep-review.md",
-    "p0": 0,
-    "p1": 0,
-    "p2": 0,
-    "p3": 3,
-    "queue_added": 0,
-    "suggestions_added": 0,
-    "result": "pass-tech-review",
-    "auto_promoted": [
-      "14.8"
-    ],
-    "notes": "APA/AGI/Perfetto/Sokatoa 工具边界已按 2026-05-19 官方资料复核；未发现 Android 18/API 38+ 越界内容。"
-  },
-  "last_task9_review": "2026-06-16T01:20:00+08:00",
-  "last_task9_sections": [
-    "21.5"
-  ],
-  "last_task9_review_detail": {
     "date": "2026-06-16",
-    "time": "01:20",
-    "reviewed_at": "2026-06-16T01:20:00+08:00",
-    "mode": "deep-review",
+    "time": "10:20",
+    "reviewed_at": "2026-06-16T10:32:06+08:00",
+    "mode": "idle-audit",
     "sections": [
-      "21.5"
+      "7.9"
     ],
     "files": [
-      "src/part5-app/ch21-startup/05-splash-screen.md"
+      "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
     ],
-    "log": "logs/deep-review/2026-06-16-01-deep-review.md",
+    "log": "logs/deep-review/2026-06-16-10-audit.md",
     "p0": 0,
-    "p1": 0,
-    "p2": 2,
+    "p1": 1,
+    "p2": 1,
     "p3": 0,
     "queue_added": 0,
     "research_gaps_added": 0,
-    "suggestions_added": 2,
-    "result": "pass-tech-review",
-    "auto_promoted": [
-      "21.5"
+    "suggestions_added": 0,
+    "result": "auto-fixed",
+    "auto_promoted": [],
+    "notes": "Idle audit auto-fixed unversioned AOSP mainline anchor for InputConsumer constants to android-16.0.0_r1; no Android 18/API 38 material used."
+  },
+  "last_task9_review": "2026-06-16T10:32:06+08:00",
+  "last_task9_sections": [
+    "7.9"
+  ],
+  "last_task9_review_detail": {
+    "date": "2026-06-16",
+    "time": "10:20",
+    "reviewed_at": "2026-06-16T10:32:06+08:00",
+    "mode": "idle-audit",
+    "sections": [
+      "7.9"
     ],
-    "notes": "Task2B 修复项复核通过；未发现 P0/P1；未使用 Android 18/API 38+ 资料。"
+    "files": [
+      "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+    ],
+    "log": "logs/deep-review/2026-06-16-10-audit.md",
+    "p0": 0,
+    "p1": 1,
+    "p2": 1,
+    "p3": 0,
+    "queue_added": 0,
+    "research_gaps_added": 0,
+    "suggestions_added": 0,
+    "result": "auto-fixed",
+    "auto_promoted": [],
+    "notes": "Idle audit auto-fixed unversioned AOSP mainline anchor for InputConsumer constants to android-16.0.0_r1; no Android 18/API 38 material used."
   },
   "task9_last_reviewed_files": [
     "src/part5-app/ch21-startup/05-splash-screen.md"
@@ -10170,15 +10180,15 @@
     "note": "连续 135 轮无合格缺口。0 draft 章节。全书 426 文件。管线堵点在 Task6/Task9 复审(80 个 ready-for-review), 非内容缺口。"
   },
   "task9_last_sections": [
-    "21.5"
+    "7.9"
   ],
   "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
   "last_task9_files": [
-    "src/part5-app/ch21-startup/05-splash-screen.md"
+    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
   ],
-  "last_task9_log": "logs/deep-review/2026-06-16-01-deep-review.md",
+  "last_task9_log": "logs/deep-review/2026-06-16-10-audit.md",
   "task9_last_files": [
-    "src/part5-app/ch21-startup/05-splash-screen.md"
+    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
   ],
   "last_task2b_run": "2026-06-14T00:52:40+08:00",
   "task2b_sections_fixed": [
@@ -14469,5 +14479,6 @@
     "last_task6_at": "2026-06-15T15:15:00+08:00",
     "last_task6_review_log": "logs/review/2026-06-15-15-review.md"
   },
-  "last_task2b_main_result": "fixed 2 chapters: 13.11, 20.7"
+  "last_task2b_main_result": "fixed 2 chapters: 13.11, 20.7",
+  "task9_last_log": "logs/deep-review/2026-06-16-10-audit.md"
 }
