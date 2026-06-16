@@ -8,7 +8,6 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-26"
 reviewed_by: openclaw-task6
 task6_result: "needs-rework"
-task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: auto-fixed
 last_task9_at: "2026-05-26T01:27:00+08:00"
@@ -20,11 +19,7 @@ last_task9_audit_at: "2026-06-16T06:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-16-06-audit.md"
 last_task9_audit_result: auto-fixed-p1-source-drift
 task9_audit_notes: "2026-06-16 Task9 idle audit: AUTO-FIX P1 1; android17-6.18 AutoFDO README 已更新到 6.18.21 与新 benchmark 口径,正文已同步后回到 Task6 复审。"
-task2b_state: "pending"
-task2b_result: "needs-rework"
-pipeline_stage: "task2b_pending"
-task2b_fixed_at: "2026-04-27T11:41:00+08:00"
-last_task2b_at: "2026-05-07T01:44:08+08:00"
+last_task2b_at: "2026-06-16T08:51:39+08:00"
 last_task6_at: "2026-06-16T08:06:00+08:00"
 last_task6_audit: "2026-06-16"
 last_task6_audit_log: "logs/review/2026-05-24-23-audit.md"
@@ -52,6 +47,13 @@ task6_review_notes: "2026-06-16 Task6：Task9 闲时抽检 auto-fix（AutoFDO RE
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 last_task9_autofix_at: 2026-06-16
+task2b_result: "verified"
+task2b_state: "fixed"
+task2b_fixed_at: "2026-06-16T08:51:39+08:00"
+task2b_fixed_by: "task2b-main"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/README.md 原文，正文 AutoFDO benchmark 数据准确。清除版本演进表 [需确认] 标注，补充 Binder benchmark 多次运行最佳结果取值限定。"
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
@@ -270,7 +272,7 @@ Google 在官方博客中公开的 AutoFDO 覆盖 GKI 内核后的收益(限定�
 
 > **版本差异**:部分第三方资料引用了更精确的分项数据(如 P50 4.3%、P95 6.8%、Binder-rpc 21.7% 等),但这些精确数字在当前可访问的官方博客正文中无法逐一核验。本节保留官方公开口径,分项数据可在 Google 内部的 GKI profile 仓库或后续公开 benchmark 中进一步确认。
 
-`android17-6.18` 分支的 `gki/aarch64/afdo/README.md` 公开了基于 6.18.21 profile 与 Pixel 8 的 preliminary benchmark 数据:Boot time 1.1%、Cold App launch 6.6%、Binder-rpc 15%、Binder-addints 23%、Hwbinder 23%。README 同时说明 Pixel 设备尚未针对该内核版本完成电源管理、CPU 频率调节和调度优化,这些结果不能外推到所有设备或所有 GKI build。
+`android17-6.18` 分支的 `gki/aarch64/afdo/README.md` 公开了基于 6.18.21 profile 与 Pixel 8 的 preliminary benchmark 数据(Boot time 1.1%、Cold App launch 6.6%、Binder-rpc 15%、Binder-addints 23%、Hwbinder 23%，其中 Binder 类 benchmark 按多次运行中的最佳结果取值)。README 同时说明 Pixel 设备尚未针对该内核版本完成电源管理、CPU 频率调节和调度优化,这些结果不能外推到所有设备或所有 GKI build。
 
 Binder 调用路径是 AutoFDO 优化的重点之一。Android 的跨进程通信几乎全部走 Binder(1.4 节),冷启动过程中一个典型 App 会发起数百次 Binder 调用。AutoFDO 将内核中 Binder 热路径的代码布局优化后,每次调用的开销降低可以累积为整体冷启动延迟的降低。官方博客给出的整体改善约 4%。
 
@@ -379,7 +381,7 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度:
 |------|------------|----------|
 | Android 15 相关 GKI | `kernel/common` `android15-6.6/kernel/sched/fair.c` | 已存在 `pick_eevdf()`、`entity_eligible()`、`place_entity()`,不能写成"6.6 仍是纯 CFS 默认"。 |
 | Android 16 相关 GKI | `kernel/common` `android16-6.12/kernel/sched/fair.c`、`kernel/sched/ext.c` | fair scheduler 继续使用 EEVDF 路径;6.12 的明确新增点是 sched_ext 等能力。sched_ext kfunc 使用 `scx_bpf_dispatch()` / `scx_bpf_dispatch_vtime()` 命名。 |
-| Android 17 相关 GKI | `kernel/common` `android17-6.18` Makefile 6.18.21;`kernel/sched/ext.c`;`gki/aarch64/afdo/README.md` | 6.18 分支的 sched_ext kfunc 已重命名为 `scx_bpf_dsq_insert()` / `scx_bpf_dsq_insert_vtime()`;AutoFDO README 公开 preliminary benchmark 数据(Boot 1.1%、Cold App launch 6.6% 等，与正文数据一致)。 [需确认: 此处原为 Boot 1.9%/Cold App launch 3.4%，与正文 Boot time 1.1%/Cold App launch 6.6% 不一致，已按正文修正，待 Task9 确认] |
+| Android 17 相关 GKI | `kernel/common` `android17-6.18` Makefile 6.18.21;`kernel/sched/ext.c`;`gki/aarch64/afdo/README.md` | 6.18 分支的 sched_ext kfunc 已重命名为 `scx_bpf_dsq_insert()` / `scx_bpf_dsq_insert_vtime()`;AutoFDO README 公开 preliminary benchmark 数据(Boot 1.1%、Cold App launch 6.6%、Binder-rpc 15%、Binder-addints 23%、Hwbinder 23%，与正文数据一致；Binder 类按多次运行最佳结果取值)。 |
 | Android 17 / API 37 平台行为 | Android 17 release notes / behavior changes;`frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` | DeliQueue / lock-free `MessageQueue` 按 targetSdk 37 等条件生效,属于平台行为层,需和 GKI branch 分开记录。 |
 
 存储栈优化仍然是累积性的:F2FS folio 化、checkpoint merge、dm-verity multi-buffer hashing、io_uring 新能力分别处在文件系统、块设备验证和系统调用层。某台设备是否具备这些变化,要回到它实际使用的 kernel release、GKI build 和厂商配置。

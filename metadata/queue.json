@@ -1177,7 +1177,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-16T08:06:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-16-08-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-16-08-review.md",
+    "completed_at": "2026-06-16T08:51:39+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "Verified android17-6.18 gki/aarch64/afdo/README.md; body text data confirmed correct. Removed [需确认] annotation from version table; added Binder benchmark best-result caveat."
   }
 ]
