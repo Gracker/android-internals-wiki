@@ -1,10 +1,10 @@
 {
-  "total": 431,
+  "total": 434,
   "draft": 0,
-  "ready-for-review": 80,
-  "finalized": 301,
-  "task9_result": "auto-fixed",
-  "task9_reviewed_date": "2026-06-16",
+  "ready-for-review": 85,
+  "finalized": 304,
+  "task9_result": "pass-tech-review",
+  "task9_reviewed_date": "2026-06-17",
   "task9_reviewed_by": "openclaw-task9",
   "new_sections": [
     "5.19",
@@ -973,7 +973,16 @@
       "task6_reviewed_at": "2026-05-27T08:07:00+08:00",
       "task6_log": "logs/review/2026-05-27-08-review.md",
       "task6_new_rework": false,
-      "task6_note": "补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
+      "task6_note": "补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。",
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "reviewed_at": "2026-06-17T01:27:53+08:00",
+      "log": "logs/deep-review/2026-06-17-01-deep-review.md",
+      "summary": "Task9 pass-tech-review；复核 auto-fix 后源码锚点、版本边界、交叉引用，无 P0/P1。",
+      "task9_result": "pass-tech-review",
+      "auto_promoted": true
     },
     "19.13": {
       "p0": 1,
@@ -2236,7 +2245,16 @@
       "task6_reviewed_at": "2026-05-24T01:08:00+08:00",
       "task6_log": "logs/review/2026-05-24-01-review.md",
       "task6_new_rework": false,
-      "task6_note": "revisiting 复审通过；压低否定-纠正式句式，移除 AIW 注释，并把 Buffer Stuffing Recovery 段移到参考资料前。InputConsumer DEBUG tag 已由 Task2B 修复，等待 Task9 复审。"
+      "task6_note": "revisiting 复审通过；压低否定-纠正式句式，移除 AIW 注释，并把 Buffer Stuffing Recovery 段移到参考资料前。InputConsumer DEBUG tag 已由 Task2B 修复，等待 Task9 复审。",
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0,
+      "reviewed_at": "2026-06-17T01:27:53+08:00",
+      "log": "logs/deep-review/2026-06-17-01-deep-review.md",
+      "summary": "Task9 pass-tech-review；复核 auto-fix 后源码锚点、版本边界、交叉引用，无 P0/P1。",
+      "task9_result": "pass-tech-review",
+      "auto_promoted": true
     },
     "25.16": {
       "task6_result": "pass-light-edit",
@@ -2478,9 +2496,9 @@
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
-  "ready_for_review": 80,
-  "last_updated": "2026-06-16T23:17:17+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 85,
+  "last_updated": "2026-06-17T01:27:53+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": "2026-06-16T23:17:17+08:00",
   "task9_last_review": "2026-06-16T10:32:06+08:00",
   "ready_to_publish": 193,
@@ -7857,54 +7875,65 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md",
   "last_task2a_processed_date": "2026-06-04",
   "task9_last_review_detail": {
-    "date": "2026-06-16",
-    "time": "10:20",
-    "reviewed_at": "2026-06-16T10:32:06+08:00",
-    "mode": "idle-audit",
+    "date": "2026-06-17",
+    "time": "01:27",
+    "reviewed_at": "2026-06-17T01:27:53+08:00",
+    "mode": "deep-review",
     "sections": [
-      "7.9"
+      "7.9",
+      "18.10"
     ],
     "files": [
-      "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+      "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+      "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/deep-review/2026-06-16-10-audit.md",
+    "log": "logs/deep-review/2026-06-17-01-deep-review.md",
     "p0": 0,
-    "p1": 1,
-    "p2": 1,
+    "p1": 0,
+    "p2": 0,
     "p3": 0,
     "queue_added": 0,
     "research_gaps_added": 0,
     "suggestions_added": 0,
-    "result": "auto-fixed",
-    "auto_promoted": [],
-    "notes": "Idle audit auto-fixed unversioned AOSP mainline anchor for InputConsumer constants to android-16.0.0_r1; no Android 18/API 38 material used."
+    "result": "pass-tech-review",
+    "auto_promoted": [
+      "7.9",
+      "18.10"
+    ],
+    "notes": "复核 2026-06-16 auto-fix 后源码锚点与版本边界；无 P0/P1；Task6 已 pass-light-edit 且 queue 无 pending，自动晋升 finalized。android-17.0.0_r1 tag 未检出，未使用 Android 18/API 38+。"
   },
   "last_task9_review": "2026-06-16T10:32:06+08:00",
   "last_task9_sections": [
-    "7.9"
+    "7.9",
+    "18.10"
   ],
   "last_task9_review_detail": {
-    "date": "2026-06-16",
-    "time": "10:20",
-    "reviewed_at": "2026-06-16T10:32:06+08:00",
-    "mode": "idle-audit",
+    "date": "2026-06-17",
+    "time": "01:27",
+    "reviewed_at": "2026-06-17T01:27:53+08:00",
+    "mode": "deep-review",
     "sections": [
-      "7.9"
+      "7.9",
+      "18.10"
     ],
     "files": [
-      "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+      "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+      "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
     ],
-    "log": "logs/deep-review/2026-06-16-10-audit.md",
+    "log": "logs/deep-review/2026-06-17-01-deep-review.md",
     "p0": 0,
-    "p1": 1,
-    "p2": 1,
+    "p1": 0,
+    "p2": 0,
     "p3": 0,
     "queue_added": 0,
     "research_gaps_added": 0,
     "suggestions_added": 0,
-    "result": "auto-fixed",
-    "auto_promoted": [],
-    "notes": "Idle audit auto-fixed unversioned AOSP mainline anchor for InputConsumer constants to android-16.0.0_r1; no Android 18/API 38 material used."
+    "result": "pass-tech-review",
+    "auto_promoted": [
+      "7.9",
+      "18.10"
+    ],
+    "notes": "复核 2026-06-16 auto-fix 后源码锚点与版本边界；无 P0/P1；Task6 已 pass-light-edit 且 queue 无 pending，自动晋升 finalized。android-17.0.0_r1 tag 未检出，未使用 Android 18/API 38+。"
   },
   "task9_last_reviewed_files": [
     "src/part5-app/ch21-startup/05-splash-screen.md"
@@ -10185,15 +10214,18 @@
     "note": "连续 141 轮无合格缺口。0 draft 章节。全书 434 文件。管线堵点在 Task6/Task9 复审(88 个 ready-for-review), 非内容缺口。"
   },
   "task9_last_sections": [
-    "7.9"
+    "7.9",
+    "18.10"
   ],
   "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
   "last_task9_files": [
-    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
   "last_task9_log": "logs/deep-review/2026-06-16-10-audit.md",
   "task9_last_files": [
-    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+    "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
   ],
   "last_task2b_run": "2026-06-14T00:52:40+08:00",
   "task2b_sections_fixed": [
