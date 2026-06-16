@@ -2,7 +2,7 @@
 title: "三方性能库"
 chapter: "14.5"
 section: "14.5"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -69,6 +69,8 @@ last_task9_review_log: "logs/deep-review/2026-05-28-19-deep-review.md"
 task9_review_notes: "2026-05-28 Task9 deep review: pass-tech-review; no P0/P1; P2 suggestions written to intake/suggestions.md; auto-promoted finalized. 2026-06-17 Task9 idle audit: AUTO-FIX btrace 3.0 Android capability boundary; current open-source path requires PC/adb and online support is roadmap; added Android 8+/64-bit/Android 15 allocation-monitor limits; return to Task6 revisiting."
 last_task9_autofix_at: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-05-audit.md"
+last_task2b_verifier_at: "2026-06-17T07:29:33+08:00"
+task2b_verifier_note: "status finalized→ready-for-review; task9 auto-fix 回流 Task6 复审"
 ---
 
 
