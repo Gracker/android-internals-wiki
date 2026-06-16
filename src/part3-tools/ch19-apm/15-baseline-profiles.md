@@ -2,7 +2,7 @@
 title: "Baseline Profiles 与编译优化"
 chapter: "19"
 section: "19.15"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37);Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景,非 Play 安装需单独验证"
@@ -20,10 +20,10 @@ sources:
     path: "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/dex2oat/dex2oat.cc"
   - type: source
     path: "https://github.com/androidx/androidx/blob/androidx-main/profileinstaller/profileinstaller/src/main/AndroidManifest.xml"
-pipeline_stage: task6_pending
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-28"
+reviewed_date: "2026-06-17"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
@@ -48,6 +48,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-16-14-audit.md"
 last_task9_autofix_at: "2026-06-16"
 last_task9_review_log: "logs/deep-review/2026-06-16-14-audit.md"
 task9_review_notes: "2026-06-16 Task9 idle audit auto-fixed: 将 AOSP ART profman/dex2oat 源码锚点从 refs/heads/main 固定到 android-16.0.0_r1；android-17.0.0_r1 tag 未发布时不使用 main/master 作为正文结论来源。"
+last_task6_at: "2026-06-17T01:10:00+08:00"
 ---
 
 # Baseline Profiles 与编译优化

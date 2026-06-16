@@ -218,3 +218,76 @@ AIW 适合提供稳定的机制解释和调查步骤，SmartPerfetto 适合把�
 ## 小结
 
 SmartPerfetto 的价值在可复查：模型回答要能回到 SQL，报告数字要能回到证据行，多次分析要能形成对比，Skill 要能回归测试。把这几件事做好，它就是团队 trace 调查、回归复盘和知识归档的中间层。工程上仍要保留边界：数据来自 trace processor 和 Skill，结论需要人工复核，缺失的数据源要写进补采建议。
+
+
+## 🔧 企业版迁移与故障排查
+
+SmartPerfetto 在引入企业功能过程中，可能出现 trace 访问相关的 404 错误。本节基于源码分析提供详细的排查方法和修复方案。
+
+### 404 回归的根本原因
+
+**主要问题**：企业版迁移系统的阶段配置变更导致 trace 读取行为发生根本性改变。
+
+**触发场景**：
+- 迁移阶段从 `dual-write` 变为 `cutover`
+- 企业功能启用（默认 `cutover` 阶段）
+- 环境变量 `SMARTPERFETTO_ENTERPRISE_MIGRATION_PHASE` 配置变更
+
+**技术原理**：
+企业迁移系统通过 `readAuthority` 字段控制读取来源：
+- `readAuthority: 'filesystem'`：从 `./uploads/traces/{id}.trace` 文件读取
+- `readAuthority: 'db'`：从企业数据库 `trace_assets` 表读取
+
+### 诊断方法
+
+#### 1. 检查当前迁移状态
+查看当前迁移配置：
+```bash
+echo $SMARTPERFETTO_ENTERPRISE_MIGRATION_PHASE
+echo $SMARTPERFETTO_ENTERPRISE
+```
+
+#### 2. 验证 trace 存在性
+检查 trace 是否在文件系统中存在，以及是否在数据库中有对应记录。
+
+#### 3. 权限验证
+验证 SSO 头部和用户权限配置。
+
+### 修复方案
+
+#### 立即修复（临时方案）
+```bash
+# 方案1：回退到 dual-write 阶段
+export SMARTPERFETTO_ENTERPRISE_MIGRATION_PHASE=dual-write
+
+# 方案2：临时禁用企业功能
+export SMARTPERFETTO_ENTERPRISE=false
+```
+
+#### 长期修复（代码优化）
+在 `readTraceMetadataForContext` 函数中增加回退机制，先尝试企业数据库读取，失败后回退到文件系统读取。
+
+#### 迁移策略优化
+1. **渐进式迁移**：保持 dual-write 阶段直到所有 trace 完成迁移
+2. **数据一致性检查**：迁移前后对比文件系统和数据库中的 trace 记录
+3. **监控告警**：设置 trace 访问 404 率的监控阈值
+
+### 最佳实践
+
+#### 环境配置管理
+建立清晰的迁移阶段变更流程，设置配置变更的审核机制。
+
+#### 监控指标
+- trace 访问成功率（目标 >99.5%）
+- 404 错误率（目标 <0.5%）
+- 数据库查询响应时间
+- 文件系统回退请求频率
+
+### 故障排查清单
+
+1. **检查环境变量**：确认迁移阶段和企业功能状态
+2. **验证数据存在性**：检查文件系统和数据库中的 trace 记录
+3. **检查权限配置**：验证 SSO 头部和用户权限
+4. **验证网络连接**：确认数据库连接和文件系统权限
+
+通过以上方法和最佳实践，可以有效预防和解决 SmartPerfetto 企业版迁移过程中的 trace 访问问题，确保系统稳定运行。

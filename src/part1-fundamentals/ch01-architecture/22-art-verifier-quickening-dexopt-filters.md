@@ -3,8 +3,8 @@ title: "ART Verifier Quickening 与 dexopt 过滤器性能边界"
 chapter: "1.22"
 section: "1.22"
 status: ready-for-review
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "reviewed"
 drafted_date: "2026-05-24"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36); Android 17 待正式 AOSP tag 复核"
@@ -41,6 +41,10 @@ task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; replaced AOSP main anchors with android-16.0.0_r1 after android-17 platform tag was not present; no Android 18/API 38 material used."
 last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
 last_task9_autofix_at: "2026-06-17"
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-17"
+last_task6_at: "2026-06-17T01:10:00+08:00"
 ---
 
 # 1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界
@@ -72,7 +76,7 @@ last_task9_autofix_at: "2026-06-17"
 ## 扩展
 
 ### 🔸 旧设备 quicken 产物与现代 ART Service 的兼容排查
-围绕 Android 8-11 旧设备和 Android 14+ 主线化 ART 做版本矩阵，记录验证、quickening、AOT 产物复用的差异。
+围绕 Android 8-11 旧设备和 Android 14+ 主线化 ART 做版本对照，记录验证、quickening、AOT 产物复用的差异。
 
 ### 🔸 dexopt 策略对大体积应用安装耗时的影响
 结合 very-large dex 降级、profile 缺失和后台 dexopt 取消条件，形成大包安装后首启慢的排障清单。
