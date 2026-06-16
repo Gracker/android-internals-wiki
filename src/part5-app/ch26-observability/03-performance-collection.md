@@ -106,6 +106,28 @@ Part 5 各章已经分别讲了启动、渲染、内存的单点监控方法。�
 渲染指标默认不要逐帧上报。AndroidX JankStats 会报告耗时过长的应用帧，并支持给帧附加 UI 状态。线上更适合按页面停留窗口聚合：总帧数、jank 帧数、frozen 帧数、P90/P99、最大连续慢帧时长。命中阈值后再抽样上传慢帧现场或 Perfetto 片段。
 
 内存指标要把页口径和对象口径分开。`Debug.MemoryInfo` / `ActivityManager.getProcessMemoryInfo()` 适合记录 PSS、dalvik / native / other PSS 等页级数据；`Runtime.totalMemory() - Runtime.freeMemory()` 适合记录 Java Heap 对象使用量。两个口径都叫“内存”，但它们解释的问题不同，不能相加后当作单一结论。)]
+<!-- AIW-源码调研-2026-06-16 -->
+
+> **Android 14 内存跟踪 API 深度分析**：
+> 
+> **重要发现**：ProfilingManager 实际为 Android 15+ (API 35+) 引入，不在 Android 14 范围内。Android 14 内存跟踪主要基于 ActivityManager 和 Debug 类的现有 API 增强实现。
+> 
+> **Android 14 新增特性**：
+> 1. **ProcessMemoryState 类**：提供进程 OOM 分数和组件类型分类，为精细化 OOM 决策提供依据
+> 2. **堆内存分解增强**：`Debug.MemoryInfo` 新增 `getSummaryJavaHeap()`/`getSummaryNativeHeap()` 方法，提供更精确的 PSS/RSS 分解数据
+> 3. **内存压力级别细化**：`ComponentCallbacks2.onTrimMemory()` 新增 `TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL` 三个级别
+> 4. **进程退出历史增强**：`ActivityManager.getHistoricalProcessExitReasons()` 返回的 `ApplicationExitInfo` 包含更丰富的内存字段
+> 
+> **调用链分析**：
+> `ActivityManager.getProcessMemoryInfo()` → ActivityManagerService → Debug.getMemoryInfo() → /proc/pid/smaps 解析 → native_getPss()
+> 
+> **版本边界**：
+> - ProfilingManager 首次出现：Android 15 (API 35)
+> - ProfilingServiceManager：Android 16 (API 36)
+> - Anomaly detection：Android 17 (API 37)
+> - 本节内容严格限制在 Android 14 (API 34) 范围内
+
+
 
 采集入口要足够轻。主线程上只记录时间戳、枚举字段和少量数值；序列化、压缩、落盘和上传放到后台线程。Clippings 里的上报组件章节把高频埋点拆成采样、存储、上报、容灾四块，这个拆法适合性能指标系统复用：采集入口不要负责存储和网络。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 

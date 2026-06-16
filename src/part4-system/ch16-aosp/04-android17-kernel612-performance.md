@@ -5,9 +5,12 @@ chapter: "16.4"
 status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-26"
+reviewed_date: "2026-06-16"
 reviewed_by: openclaw-task6
-task6_result: "needs-rework"
+last_task6_at: "2026-06-16T09:09:00+08:00"
+task6_review_date: "2026-06-16"
+task6_review_notes: "2026-06-16 Task6 复审：版本演进表 AutoFDO 数据已确认与官方 README 一致，L1/L2/L3/L4 全部通过，仅一项需确认标注已处理。"
+task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task9_result: auto-fixed
 last_task9_at: "2026-05-26T01:27:00+08:00"
