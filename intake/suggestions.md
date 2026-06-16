@@ -1597,3 +1597,10 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 - **问题**：`optional CallstackSampling callstack_sampling = 16 { scope: TARGET_CMDLINE … }` 语法非法。Protobuf 字段声明后不能内联 `{ }` 赋值块。字段编号（16）和嵌套 message 引用正确，但赋值语法是编造的。
 - **建议**：改为合法的 Perfetto TraceConfig protobuf 示例（参考 perfetto.dev/docs/reference/trace-config-proto），或将配置建议改为注释说明 + trace_config.json 示例。
 - **review 日志**：logs/review/2026-06-16-21-review.md
+
+## [Task9 Deep Review] 8.5 案例集 — 2026-06-16
+- **类型**：数据缺失
+- **位置**：案例一 Reddit 冷启动优化（P50 2.8s → 1.7s、Baseline Profiles / R8 收益拆分）
+- **问题**：官方 2024/2025 资料能支撑 Reddit 的 51% median startup early benchmark、overall cold start 20%、R8 full mode 40% faster cold startup / 30% fewer ANR / 25% frame rendering / 14% app size 等结论，但本节写入的 P50 2.8s、P50 1.7s、P95 超过 5s，以及 Baseline Profiles 20-30% + R8 10-20% 的拆分没有在本轮官方资料中找到直接出处。
+- **建议**：保留官方可验证百分比；若要保留绝对耗时和拆分估算，需要补充 Reddit 原始分享/trace/benchmark 来源，否则改成“官方未披露绝对耗时与拆分贡献”。
+- **review 日志**：logs/deep-review/2026-06-16-21-deep-review.md
