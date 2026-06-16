@@ -3,8 +3,8 @@ title: "Android Developer Verification 与安装链路边界"
 chapter: "1.21"
 section: "1.21"
 status: ready-for-review
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "reviewed"
 drafted_date: "2026-05-20"
 applicable_versions: "Enforcement: Android 7+ certified devices; PackageInstaller reason-code API: Android 16 Extension 36.1 - Android 17 (API 37)"
@@ -39,6 +39,10 @@ task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; separated ADV enforcement scope (Android 7+ certified devices via Play services) from PackageInstaller 36.1 reason-code API surface; no queue item."
 last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
 last_task9_autofix_at: "2026-06-17"
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-17"
+last_task6_at: "2026-06-17T01:10:00+08:00"
 ---
 
 # 1.21 Android Developer Verification 与安装链路边界
