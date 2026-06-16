@@ -2,7 +2,7 @@
 title: "自定义 View 性能优化"
 chapter: "22.4"
 section: "22.4"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -20,14 +20,14 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/Color.java"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-27"
+reviewed_date: '2026-06-17'
 task6_result: pass-light-edit
 task9_result: "auto-fixed"
 last_task2b_at: "2026-05-13T23:35:47+08:00"
@@ -35,9 +35,9 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
 last_task9_at: "2026-06-17T02:36:15+08:00"
 task6_reviewed_date: "2026-05-27"
-task6_review_notes: "2026-05-27 13:05 Task6 revisiting：pass-light-edit。补齐 outline 锚点并清理多余空行；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task6_review_log: "logs/review/2026-05-27-13-review.md"
-last_task6_at: "2026-05-27T13:05:00+08:00"
+task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（22.4 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
+last_task6_review_log: logs/review/2026-06-17-04-review.md
+last_task6_at: "2026-06-17T04:06:00+08:00"
 task9_review_notes: "2026-05-27 task9 deep-review: auto-fixed。修正 GC 观测归因、硬件加速 Canvas API 版本边界、debug.hwui.profile/Perfetto 观测口径与 onDraw invalidate 表述；回到 Task6 复审。 | 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核硬件加速 Canvas API 支持表、`invalidate(Rect)` API 21+ 脏区口径、RenderNode API 29 与 Perfetto/GC 观测口径；无 P0/P1，queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 idle-audit auto-fix：修正 invalidate 脏区/整树重绘口径、onLayout 触发条件和 postInvalidateOnAnimation 跨线程 attach 边界；回到 Task6 复审。"
 last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6

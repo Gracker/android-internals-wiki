@@ -1,10 +1,12 @@
 ---
-title: "ART Verifier Quickening 与 dexopt 过滤器性能边界"
+
+task6_review_notes: 2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.22 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。
+last_task6_review_log: logs/review/2026-06-17-04-review.mdtitle: "ART Verifier Quickening 与 dexopt 过滤器性能边界"
 chapter: "1.22"
 section: "1.22"
-status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: "reviewed"
 drafted_date: "2026-05-24"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36); Android 17 待正式 AOSP tag 复核"
@@ -41,10 +43,10 @@ task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; replaced AOSP main anchors with android-16.0.0_r1 after android-17 platform tag was not present; no Android 18/API 38 material used."
 last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
 last_task9_autofix_at: "2026-06-17"
-task6_result: "pass-light-edit"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-17"
-last_task6_at: "2026-06-17T01:10:00+08:00"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: '2026-06-17'
+last_task6_at: "2026-06-17T04:06:00+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17
 ---
