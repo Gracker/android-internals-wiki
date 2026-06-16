@@ -2,7 +2,7 @@
 title: "Android 17 Perfetto 数据源边界与验证"
 chapter: "13.17"
 section: "13.17"
-status: draft
+status: ready-for-review
 drafted_date: "2026-06-16"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -24,11 +24,13 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task6_pending"
-task6_state: "pending"
+pipeline_stage: "task2b_pending"
+task6_state: "reviewed"
+task6_result: "needs-rework"
 task9_state: "pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
+last_task6_at: 2026-06-16T21:11:00+08:00
 # task2b_state removed 2026-06-16 — chapter freshly drafted, needs Task6 review first; no rework context exists
 ---
 
@@ -46,6 +48,37 @@ reviewed_date: "2026-06-16"
 - `linux.perf`（`traced_perf` 守护进程）与 `android.surfaceflinger.frametimeline` 在 Android 16.0.0_r3 中保持完整实现
 - 基于 AOSP API 兼容性政策，两个数据源在 Android 17 / API 37 中**预期仍可用**
 - 需等待 android-17.0.0_r1 公开后执行 `git log android-16.0.0_r3..android-17.0.0_r1 -- paths` 二次确认
+
+<!-- outline-start -->
+## 要点
+
+### 🔹 数据源注册机制
+`android.surfaceflinger.frametimeline` 在 SurfaceFlinger 启动后无条件注册，`linux.perf` 则按需触发。
+
+### 🔹 Jank 类型判别系统
+FrameTimeline 通过 `classifyJankLocked()` 建立完整的 jank 分类机制，11 种类型对应不同的性能影响。
+
+### 🔹 性能开销控制
+`linux.perf` 的 100Hz 采样带来约 0.1% 单核开销；`frametimeline` 仅在 trace session 开启时工作，开销极低。
+
+### 🔹 版本演进路径
+Android 12 引入两个核心数据源，Android 16 达到完整优化状态，Android 17 需待公开 tag 验证。
+
+### 🔸 应用优化建议
+针对不同场景的 Trace 配置方案，避免数据丢失，优化内存使用。
+
+## 扩展
+
+### 🔸 实时进程发现延迟
+traced_perf 的 50ms 延迟机制避免 execve 期间信号处理异常，但可能遗漏短进程。
+
+### 🔸 多进程协调
+`mTraceCookie` 在跨进程场景下的正确性有待验证。
+
+### 🔸 StatsD 集成
+FrameTimeline 与 statsd atom 写入的路径关系需要进一步确认。
+
+<!-- outline-end -->
 
 ## 1. `android.surfaceflinger.frametimeline` 数据源
 

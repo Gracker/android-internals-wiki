@@ -1191,5 +1191,32 @@
     "completed_at": "2026-06-16T08:51:39+08:00",
     "completed_by": "task2b-main",
     "completed_reason": "Verified android17-6.18 gki/aarch64/afdo/README.md; body text data confirmed correct. Removed [需确认] annotation from version table; added Binder benchmark best-result caveat."
+  },
+  {
+    "section": "13.17",
+    "section_title": "Android 17 Perfetto 数据源边界与验证",
+    "priority": 90,
+    "reason": "[review回炉] §6.1 SQL 示例和 §6.3 protobuf 示例为编造代码，语法非法，需替换为合法示例或删除",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "§6.1 Trace 配置建议 — SQL 示例",
+        "detail": "SELECT * FROM perfetto WHERE… 不是合法的 Perfetto trace_processor 查询。perfetto 不是表名，子查询语法也无效。",
+        "suggestion": "替换为合法的 trace_processor SQL 示例（如 SELECT name, jank_type FROM actual_frame_timeline WHERE jank_type != 'None'），或删除此小节"
+      },
+      {
+        "type": "需重写",
+        "location": "§6.3 性能优化配置 — protobuf 示例",
+        "detail": "protobuf optional 字段后内联 { } 赋值块语法非法。Protobuf 不支持在字段声明后直接写 { scope: TARGET_CMDLINE … }",
+        "suggestion": "替换为合法的 perfetto trace config protobuf 示例（参考 perfetto docs 的 TraceConfig proto），或改为注释说明字段含义"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-16T21:11:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-16-21-review.md"
   }
 ]

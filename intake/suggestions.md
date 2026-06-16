@@ -1508,3 +1508,92 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 
 ### 9. Task2B Frontmatter Fallback 阻塞记录（2026-06-16 18:50）
 - **[blocked-need-review-context] §13.17 `src/part3-tools/ch13-perfetto/17-android17-data-sources.md`** — 章节于 2026-06-16 由 Task2A 新起草，frontmatter 中 `task2b_state: pending` 与 `pipeline_stage: task6_pending` 矛盾。旧版 deep-review 日志（2026-05-17）针对的是旧文件名 `17-perfetto-sdk-in-app-tracing.md`，内容完全不同的旧版，问题单不适用。当前版本尚未经过 Task6/Task9 review，无法定位修复问题来源。建议：先让章节走完整 Task6 → Task9 流程后再回 Task2B。
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-16 19:04 (Round 138)
+
+### 1. Phase 0 空章节扫描
+- 全书 426 文件，0 空 draft（§13.17 为非空 draft，285 行）
+- 连续 138 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0（≤ 20），允许进入 Phase 1
+
+### 3. 增量素材检查（对比 Round 137 @ 12:18）
+- Daily-info 2026-06-16：10 条新内容，全部映射现有章节
+  - Android 17 新调度器 → §16.5/§21.1
+  - 桌面端 → §2.20/§22.14
+  - Compose Pager → §22.22
+  - DeepResearch ×5 → §9.1/§23.7/§26.3/§12.6/§18.2
+  - 论文 ×5 → §12.x/§24.x/§11.x
+- Research-feeds 无新增（最近 2026-04-14）
+- Research-gaps 无新增
+- Source-index 无新增（0 条未映射高分）
+
+### 4. source-index.json 未映射高分素材
+- 0 条
+
+### 5. Clippings 参考书交叉对照
+- 三本参考书核心知识点已全部被现有章节覆盖
+
+### 6. queue.json 状态
+- 45 条记录，8 pending（priority 60-85，均为现有章节注入/审计）
+- 无 priority ≥ 85 的 pending 新章节条目
+
+### 7. 本轮评估
+- 候选缺口 0，合格缺口（≥14 分）0
+- 连续 138 轮无合格缺口
+
+### 8. 结论
+本轮未发现评分 ≥ 14 的合格知识缺口，跳过新章节创建。
+
+### 管线状态
+全书 426 文件、0 空 draft、~300 finalized（70.4%）、~82 ready-for-review（19.2%）。连续 138 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（82 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-16 20:07 (Round 139)
+
+### 1. Phase 0 空章节扫描
+- 全书 426 文件，0 空 draft（§13.17 `17-android17-data-sources.md` 为非空 draft，285 行）
+- 连续 139 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0（≤ 20），允许进入 Phase 1
+
+### 3. 增量素材检查（对比 Round 138 @ 19:04）
+- daily-info/：最新 2026-06-16 06:35，已被 Round 135-138 全部分析，无新增
+- research-feeds/：最新 2026-04-14，无新增（已过期 2 个月）
+- research-gaps/：4 条记录，均映射现有章节，评分 < 14
+- source-index/：0 条未映射高分素材
+- 距 Round 138（19:04）约 1 小时，无新素材进入
+
+### 4. source-index.json 未映射高分素材
+- 0 条新增记录
+
+### 5. Clippings 参考书交叉对照
+- 三本参考书核心知识点已全部被现有章节覆盖（连续 100+ 轮确认）
+
+### 6. queue.json 状态
+- 45 条记录，8 pending（priority 60-85，均为现有章节注入/审计）
+- 无 priority ≥ 85 的 pending 新章节条目
+
+### 7. 本轮评估
+- 候选缺口 0，合格缺口（≥14 分）0
+- 连续 139 轮无合格缺口
+
+### 8. 结论
+本轮未发现评分 ≥ 14 的合格知识缺口，跳过新章节创建。
+
+### 管线状态
+全书 426 文件、0 空 draft、~300 finalized（70.4%）、~82 ready-for-review（19.2%）。连续 139 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（82 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+
+
+## [Task6 Review] 13.17 Android 17 Perfetto 数据源边界与验证 — 2026-06-16
+
+- **类型**：需重写
+- **位置**：§6.1 Trace 配置建议 — SQL 示例
+- **问题**：`SELECT * FROM perfetto WHERE (SELECT name FROM gpu_track) LIKE '%frame%' OR (SELECT name FROM sched) LIKE '%perfetto%';` 不是合法的 Perfetto trace_processor 查询。`perfetto` 不是表名，子查询引用 gpu_track 和 sched 的方式也不构成有效语义。
+- **建议**：替换为合法的 trace_processor SQL 示例。如果目的是展示「同时启用两个数据源」的配置方式，应给 trace config 的 JSON/proto 示例而非 SQL。如果是展示查询方法，应写 `SELECT name, jank_type FROM actual_frame_timeline WHERE jank_type != 'None'` 之类的合法查询。
+
+- **类型**：需重写
+- **位置**：§6.3 性能优化配置 — protobuf 示例
+- **问题**：`optional CallstackSampling callstack_sampling = 16 { scope: TARGET_CMDLINE … }` 语法非法。Protobuf 字段声明后不能内联 `{ }` 赋值块。字段编号（16）和嵌套 message 引用正确，但赋值语法是编造的。
+- **建议**：改为合法的 Perfetto TraceConfig protobuf 示例（参考 perfetto.dev/docs/reference/trace-config-proto），或将配置建议改为注释说明 + trace_config.json 示例。
+- **review 日志**：logs/review/2026-06-16-21-review.md
