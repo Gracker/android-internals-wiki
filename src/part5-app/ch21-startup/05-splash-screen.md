@@ -2,7 +2,7 @@
 title: "Splash Screen 与感知启动速度"
 chapter: "21.5"
 section: "21.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-15.0.0_r1"
@@ -24,12 +24,12 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-16"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: pending
+task9_reviewed_by: ""
+task9_reviewed_date: ""
 task2b_state: fixed
 created_by: "task2a-content-processing"
 reviewed_by: "openclaw-task6"
