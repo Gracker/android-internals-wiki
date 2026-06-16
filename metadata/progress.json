@@ -1,12 +1,13 @@
 {
   "total": 431,
-  "draft": 5,
+  "draft": 0,
   "ready-for-review": 81,
   "finalized": 300,
   "task9_result": "auto-fixed",
   "task9_reviewed_date": "2026-06-16",
   "task9_reviewed_by": "openclaw-task9",
   "new_sections": ["5.19", "22.23", "24.18", "25.21", "26.20"],
+  "ready_for_review_sections": ["5.19", "22.23", "24.18", "25.21", "26.20"],
   "review_sections": [
     "1.6",
     "1.9",
