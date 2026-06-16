@@ -43,6 +43,8 @@ task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-17"
 last_task6_at: "2026-06-17T01:10:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-17
 ---
 
 # 1.21 Android Developer Verification 与安装链路边界
@@ -63,11 +65,11 @@ Android 安装链路里有几类判断经常被混在一起：APK 是否完整�
 
 官方口径把验证流程拆成两步：开发者验证身份，随后注册 package names，并通过提供由私钥签名的 APK 证明包名归属。这个过程建立“开发者账号 ↔ 包名 ↔ 签名 APK”的绑定关系。[已验证: 官方文档, developer.android.com/developer-verification]
 
-落到工程排障时，安装失败要先拆层：同一个“无法安装”弹窗背后可能是 APK 文件坏、签名不一致、用户拒绝、设备策略阻止、网络导致验证失败、开发者未验证。只有回调 extra 或系统日志指向 developer verification 时，才进入 Developer Verification 路径。
+工程排障时，安装失败要先拆层。同一个“无法安装”弹窗，背后可能是 APK 文件损坏、签名不一致、用户拒绝、设备策略阻止、网络问题导致验证失败、或者开发者未完成验证。只有回调 extra 或系统日志指向 developer verification 时，才进入 Developer Verification 路径。
 
 ## verified / unverified developer 对用户安装路径的影响
 
-Developer Verification 的执行目标是 certified Android devices 上的普通安装体验。FAQ 进一步把执行范围限定为运行 Android 7 及以上、通过 Google Play services 接收规则更新的 certified devices；`PackageInstaller` 中的 Developer Verification reason-code extra 则是 Android 16 Extension 36.1 之后的安装器可观测面。官方时间线显示，2026 年 9 月起，Brazil、Indonesia、Singapore、Thailand 等区域会先进入要求期；到这个节点，适用区域内的 app 需要由 verified developer 注册后才能在认证设备上安装。[已验证: 官方文档, developer.android.com/developer-verification/guides/faq；PackageInstaller API version 36.1]
+Developer Verification 面向的是 certified Android devices 上的普通安装路径。FAQ 进一步明确了执行范围：运行 Android 7 及以上、通过 Google Play services 接收规则更新的 certified devices。而 `PackageInstaller` 中新增的 Developer Verification reason-code extra 则是 Android 16 Extension 36.1 之后安装器侧的可观测手段。官方时间线显示，2026 年 9 月起，Brazil、Indonesia、Singapore、Thailand 等区域会先进入要求期；到这个节点，适用区域内的 app 需要由 verified developer 注册后才能在认证设备上安装。[已验证: 官方文档, developer.android.com/developer-verification/guides/faq；PackageInstaller API version 36.1]
 
 安装入口可以按人群分成三类：
 
@@ -99,7 +101,7 @@ Developer Verification 在公开 API 上新增的是结果解释能力。`Packag
 | `STATUS_FAILURE_BLOCKED` | 同时检查设备策略、包验证器、系统关键包保护、安装器权限 | 不要只按 status 名称归入开发者验证 |
 | `STATUS_FAILURE_INVALID` / `STATUS_FAILURE_CONFLICT` | 核对 APK 结构、split、签名、版本、已有包状态 | 与 Developer Verification 分开统计 |
 
-公开 AOSP 分支中，Developer Verification 的服务端策略、区域开关、网络结果缓存和 verifier 绑定实现还不适合写成固定源码调用链。[待验证: Developer Verification 内部服务源码在公开分支中的最终路径] 发布稿更稳的写法是引用 PackageInstaller 公开回调面和官方 Developer Verification 文档，把内部实现留给后续源码复核。
+公开 AOSP 分支中，Developer Verification 的服务端策略、区域开关、网络结果缓存和 verifier 绑定实现还不能写成固定的源码调用链——这部分在公开分支中的最终路径仍有待确认。目前更稳的做法是引用 PackageInstaller 公开回调面和官方 Developer Verification 文档，内部实现留待后续源码复核。
 
 ## 对安装耗时和失败归因的观测指标
 

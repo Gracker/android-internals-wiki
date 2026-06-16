@@ -45,6 +45,8 @@ task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-17"
 last_task6_at: "2026-06-17T01:10:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-17
 ---
 
 # 1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界
@@ -89,21 +91,17 @@ last_task6_at: "2026-06-17T01:10:00+08:00"
 
 读完这一节，排查安装慢、升级后首启慢、后台 dexopt 没执行时，可以把问题归到三个具体位置：验证是否已经复用、AOT 是否按 profile 编译、当前 ROM 的 dexopt 场景是否选了符合预期的 compiler filter。
 
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure]
-
 ## Verifier、dex2oat 和 VDEX 的分工
 
-ART 运行 APK 前要确认 DEX 字节码满足类型安全、访问权限、方法签名和控制流约束。这个动作由 bytecode verifier 完成。Verifier 的输出不是“让代码更快”的机器码，而是一组能证明 DEX 可安全执行的验证结果。
+ART 在运行 DEX 之前必须确认字节码的类型安全、访问权限、方法签名和控制流全部合规，这由 bytecode verifier 完成。Verifier 的输出不是“让代码更快”的机器码，而是一组能证明 DEX 可安全执行的验证结果。
 
-`dex2oat` 是把 APK / DEX 输入转换成 ART 运行期产物的工具。Android 8 起，官方文档列出的典型产物包括 `.vdex`、`.odex` 和可选 `.art`：
+`dex2oat` 的职责是把 APK 或 DEX 转成 ART 运行时可直接使用的产物。从 Android 8 开始，典型产物有三种：`.vdex`、`.odex` 和可选的 `.art`：
 
 - `.vdex`: 存验证加速用的元数据，部分版本和场景也会存未压缩 DEX。
 - `.odex`: 存 AOT 编译后的方法机器码。
 - `.art`: 存 ART 内部字符串、类等启动加速数据。
 
 这三个文件回答的问题不同。VDEX 让下一次验证少做重复解析；ODEX 让命中方法跳过解释执行和 JIT 热身；ART 文件减少部分运行时对象准备成本。排查时不能只看到 `/data/misc/apexdata/com.android.art/dalvik-cache` 里有文件就判断“已经优化完”。
-
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure]
 
 ### 安装期和运行期的边界
 
@@ -122,11 +120,7 @@ compiler filter 是传给 `dex2oat` 的策略参数。它决定本轮做多少�
 | `speed-profile` | 验证 DEX，按 profile 编译方法，并优化 profile 中类加载 | ODEX + VDEX | 命中 profile 的启动路径更早执行机器码 | Android 8+ 官方支持 |
 | `speed` | 验证 DEX，并 AOT 编译全部方法 | ODEX 体积更大 | 运行时覆盖广，安装时间和存储成本高 | Android 8+ 官方支持 |
 
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure]
-
 AOSP `android-16.0.0_r1` 的 `art/libartbase/base/compiler_filter.h` 已经没有 `kQuicken` 枚举，保留的是 `kVerify`、`kSpaceProfile`、`kSpace`、`kSpeedProfile`、`kSpeed`、`kEverythingProfile`、`kEverything` 等当前过滤器。旧文章或旧 ROM 日志里出现 `quicken` 时，要先确认设备版本，再决定能否把它套到 Android 12+ 的行为上。
-
-[已验证: AOSP android-16.0.0_r1, `art/libartbase/base/compiler_filter.h`]
 
 ## quickening 的版本边界
 
@@ -138,13 +132,9 @@ AOSP `android-16.0.0_r1` 的 `art/libartbase/base/compiler_filter.h` 已经没�
 - Android 12+ 文档口径里，`quicken` 已不再作为当前主线 filter 描述；排查重点应转到 `verify`、`speed-profile`、`speed` 以及 ART Service 的场景策略。
 - 厂商 ROM 可能保留旧属性或日志字符串。只凭日志里出现 `quicken` 不能推断 Android 12+ / ART Service 口径的行为。
 
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure；AOSP android-16.0.0_r1, `art/libartbase/base/compiler_filter.h`]
-
 ## ART Service 接管后的 dexopt 场景
 
-Android 14 起，应用的 on-device AOT 编译由 ART Service 处理。ART Service 属于 ART Mainline 模块，负责管理 dexopt 产物、查询编译状态、删除产物，并对接 `artd` / `dex2oat`。Android 13 及以下仍以 Package Manager 侧 legacy 实现为主，版本跨度分析时要把这条线拆开。
-
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure/art-service]
+Android 14 起，应用的 on-device AOT 编译由 ART Service 处理。ART Service 是 ART Mainline 模块的一部分，负责管理 dexopt 产物、查询编译状态、删除产物，并通过 `artd` 对接 `dex2oat`。Android 13 及以下仍以 Package Manager 侧 legacy 实现为主，版本跨度分析时要把这条线拆开。
 
 Android 14+ 的标准默认值更偏保守：
 
@@ -160,8 +150,6 @@ pm.dexopt.shared=speed
 
 这组值反映了系统取舍：开机、OTA 和 mainline update 优先缩短阻塞时间；后台空闲充电阶段再用 profile 补编译；被其他应用加载的 shared app 不能直接使用本地 profile 时，可能走 `pm.dexopt.shared` 兜底策略。
 
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure/art-service]
-
 ### 场景对照表
 
 | 场景 | 触发原因 | Android 14+ 默认行为 | 排障观察点 |
@@ -172,19 +160,13 @@ pm.dexopt.shared=speed
 | idle + charging | `bg-dexopt` / `inactive` | JobScheduler 触发后台 dexopt，常用 `speed-profile`；任务可取消 | idle、charging、battery-not-low、后台任务日志 |
 | command line | `cmdline` | 由 `pm compile`、`pm bg-dexopt-job`、`pm art dexopt-packages` 显式触发 | 命令参数和 verbose result |
 
-[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/README.md`]
-
 这一节只给机制判断。Cloud Profile、Baseline Profile、`.dm` 文件和 SDM 产物的应用侧验证详见 16.6 节和 21.11 节；PMS、`InstallPackageHelper`、`DexOptHelper` 与安装 session 的关系详见 1.9 节。
 
 ## VDEX 复用和 class loader context
 
 VDEX 的价值是减少重复验证。`dex2oat.cc` 在处理输入 VDEX 时，会打开 `input_vdex_file_`，解析 verifier deps，并在有可用 VDEX 时走快速验证路径。源码中还包含从 dex metadata archive 读取 VDEX 的路径，日志文案会提到 fast verification with vdex from DexMetadata archive。
 
-[已验证: AOSP android-16.0.0_r1, `art/dex2oat/dex2oat.cc`]
-
 VDEX 能否复用不只看文件是否存在，还要看 DEX checksum、bootclasspath、class loader context 和相关依赖是否匹配。`<uses-library>` 是常见触发点。dexpreopt 发生在构建机上，运行期加载发生在设备上；两边计算出的 class loader context 必须一致，否则构建期生成的 AOT 产物会被拒绝，设备端改跑 dexopt 或退回未优化执行。
-
-[已验证: 官方文档, source.android.com/docs/core/runtime/art-class-loader-context]
 
 排查 CLC mismatch 时，可以直接抓 logcat：
 
@@ -248,8 +230,6 @@ Android 8-11 设备仍可能出现 `quicken`。这类设备上，不要把 `quic
 | Android 8-11 | `verify` / `quicken` / `speed-profile` / `speed` | 区分 quickened DEX、VDEX 和 ODEX；观察首次运行后 JIT 是否继续活跃 |
 | Android 12-13 | `verify` / `speed-profile` / `speed` 为主 | ART Mainline 化后，旧 `quicken` 口径不再直接套用 |
 | Android 14-16 | ART Service 管理 dexopt | 以 `cmd package art dump`、`pm.dexopt.*`、JobScheduler 状态和 `.dm` / profile 为主 |
-
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure；source.android.com/docs/core/runtime/configure/art-service]
 
 ## 大体积应用安装后首启慢清单
 
