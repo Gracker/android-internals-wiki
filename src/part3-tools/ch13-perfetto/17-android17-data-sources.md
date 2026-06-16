@@ -2,7 +2,7 @@
 title: "Android 17 Perfetto 数据源边界与验证"
 chapter: "13.17"
 section: "13.17"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-06-16"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -24,15 +24,15 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: "pass-light-edit"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
-last_task6_at: 2026-06-16T22:15:00+08:00
+last_task6_at: "2026-06-16T23:16:33+08:00"
 # task2b_state restored 2026-06-16 by Task9 — P0/P1 technical rework required
-task9_result: "auto-fixed"
+task9_result: pass-tech-review
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
@@ -42,6 +42,7 @@ last_task9_review_log: "logs/deep-review/2026-06-16-22-deep-review.md"
 last_task2b_lite_at: 2026-06-16
 task9_review_notes: "2026-06-16 22 Task9 re-review：auto-fixed。复核 android-16.0.0_r3 与 Perfetto proto 后，修正 JankClassificationThresholds 字段、FrameTimeline trace 起点过滤门控、linux.perf 开销口径、TraceConfig textproto 与过滤字段名；回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-16"
+auto_promoted_at: "2026-06-16T23:16:33+08:00"
 ---
 
 
