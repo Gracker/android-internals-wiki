@@ -40,8 +40,8 @@ last_task9_at: "2026-05-30T00:28:17+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
-last_task9_audit: "2026-05-23"
-last_task9_audit_log: "logs/deep-review/2026-05-23-01-audit.md"
+last_task9_audit: "2026-06-16"
+last_task9_audit_log: "logs/deep-review/2026-06-16-19-audit.md"
 status: "finalized"
 task6_state: "reviewed"
 task9_state: reviewed
