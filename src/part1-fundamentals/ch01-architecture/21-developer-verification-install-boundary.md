@@ -3,8 +3,8 @@ title: "Android Developer Verification 与安装链路边界"
 chapter: "1.21"
 section: "1.21"
 status: ready-for-review
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: "reviewed"
 drafted_date: "2026-05-20"
 applicable_versions: "Enforcement: Android 7+ certified devices; PackageInstaller reason-code API: Android 16 Extension 36.1 - Android 17 (API 37)"

@@ -2,7 +2,7 @@
 title: "自定义 View 性能优化"
 chapter: "22.4"
 section: "22.4"
-status: "finalized"
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1"
