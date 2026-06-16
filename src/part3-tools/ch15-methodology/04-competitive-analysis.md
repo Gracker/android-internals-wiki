@@ -4,7 +4,7 @@
 title: "竞品分析方法"
 chapter: "15.4"
 section: "15.4"
-status: "ready-for-review"
+status: finalized
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -30,12 +30,12 @@ sources:
     path: "frameworks/base/core/java/android/view/FrameMetrics.java"
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
 related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-27"
+reviewed_date: 2026-06-16
 task6_result: pass-light-edit
 last_task6_audit: "2026-05-22"
 task9_result: auto-fixed
@@ -57,6 +57,7 @@ last_deepseek_cn_review_at: 2026-06-12
 last_task9_autofix_at: "2026-06-16"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-16"
+last_task6_at: 2026-06-16T20:10:00+08:00
 ---
 
 

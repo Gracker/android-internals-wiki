@@ -42,6 +42,8 @@ last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-11'
 last_task6_audit: '2026-06-12'
+last_task6_audit_at: '2026-06-16T18:00:00+08:00'
+last_task6_audit_reason: 'idle audit: L1合规性、frontmatter完整性、outline锚点覆盖检查均通过'
 -----
 
 # Chapter 14.2 - Simpleperf

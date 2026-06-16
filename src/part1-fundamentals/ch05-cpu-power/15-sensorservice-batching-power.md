@@ -55,6 +55,8 @@ p0: 0
 p1: 1
 p2: 0
 task9_review_notes: "2026-06-09 19 Task9 idle audit auto-fix: AOSP main 源码锚点不满足 Android 17 边界；android-17.0.0_r1 Gitiles 查询返回 404，已改为 android-16.0.0_r1 复核锚点并把适用范围收窄到 Android 16；回到 Task6 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-16
 ---
 
 # 5.15 SensorService 与传感器批处理功耗模型
@@ -106,13 +108,13 @@ SensorService 相关的耗电不能只看采样频率。一次传感器请求会
 | 缓存成本 | sensor hub、HAL FIFO、共享内存队列 | 事件先进入低功耗缓冲区，不马上唤醒 AP | 依赖硬件 FIFO 深度、`fifoMaxEventCount` / `fifoReservedEventCount` 和 HAL 实现 |
 | 交付成本 | AP、system_server / native sensorservice、App 进程回调线程 | suspend 退出、CPU 调度、Binder / socket 传输、Java/Kotlin 回调执行 | 增大 `maxReportLatencyUs`，让事件合并交付，减少 AP wakeup 次数 |
 
-Android Source 对 batching 的定义是：事件先缓存在 sensor hub 或硬件 FIFO，再经由 Sensors HAL 上报。批处理使用低功耗内存，目标是减少高功耗 AP wakeup；只有传感器带硬件 FIFO，或 sensor hub 能缓存事件时，批处理才有空间。`SensorInfo.fifoMaxEventCount` 表示可批量缓存的上限，`fifoReservedEventCount` 表示多传感器同时工作时至少保留的事件数量。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/batching]
+Android 传感器栈对 batching 的定义很明确：事件先在 sensor hub 或硬件 FIFO 中暂存，再通过 Sensors HAL 批量上报。核心目的是用低功耗侧缓存来减少高功耗 AP 被唤醒的次数。这个机制的前提是传感器本身带有硬件 FIFO，或 sensor hub 有能力暂存事件。`SensorInfo.fifoMaxEventCount` 表示单传感器可缓存的事件上限，`fifoReservedEventCount` 表示多传感器并行时至少保留的事件数量。
 
 这解释了一个常见误判：把采样周期从 20 ms 改到 200 ms 会减少采样事件，但不一定减少唤醒次数；把最大上报延迟从 0 改到 5 s，才可能把多次事件交付合并成一次 AP 唤醒。两者影响不同电源域，不能混在一个“省电参数”里看。
 
 ## SensorService 在系统功耗路径里的位置
 
-App 侧调用 `SensorManager.registerListener()` 后，参数先进入 `SystemSensorManager.registerListenerImpl()`，再通过 `SensorEventQueue.addSensor()` 传到 native 层。Native `SensorService::enable()` 取到 sensor handle、采样周期和最大批量延迟后，调用具体 sensor 接口的 `batch()`；底层 `SensorDevice::batch()` 把每个客户端的请求记录在 `batchParams` 中，再计算当前硬件需要执行的最小采样周期和最小批量窗口。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/hardware/SystemSensorManager.java; frameworks/native/services/sensorservice/SensorService.cpp; frameworks/native/services/sensorservice/SensorDevice.cpp]
+App 侧调用 `SensorManager.registerListener()` 后，参数先进入 `SystemSensorManager.registerListenerImpl()`，再通过 `SensorEventQueue.addSensor()` 传到 native 层。Native `SensorService::enable()` 取到 sensor handle、采样周期和最大批量延迟后，调用具体 sensor 接口的 `batch()`；底层 `SensorDevice::batch()` 把每个客户端的请求记录在 `batchParams` 中，再计算当前硬件需要执行的最小采样周期和最小批量窗口。
 
 ```mermaid
 flowchart LR
@@ -128,15 +130,15 @@ flowchart LR
     SS --> App
 ```
 
-这条路径里，SensorService 会聚合多个客户端，不做简单转发。`SensorDevice::updateBatchParamsLocked()` 会从同一个 handle 的所有客户端里选出一组“硬件能同时满足”的参数：采样周期取更紧的请求，批量延迟也取更紧的请求。只要有一个客户端要求低延迟或高频，底层 sensor 的整体配置就会被拉到更高成本的档位。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/sensorservice/SensorDevice.cpp]
+这条路径里，SensorService 会聚合多个客户端，不做简单转发。`SensorDevice::updateBatchParamsLocked()` 会从同一个 handle 的所有客户端里选出一组“硬件能同时满足”的参数：采样周期取更紧的请求，批量延迟也取更紧的请求。只要有一个客户端要求低延迟或高频，底层 sensor 的整体配置就会被拉到更高成本的档位。
 
-`dumpsys sensorservice` 能看到这个聚合结果。`SensorDevice::dump()` 会输出每个活跃 sensor 的 active-count、各客户端 `sampling_period(ms)`、各客户端 `batching_period(ms)`，以及 selected 值。分析“为什么明明传了 10 秒批量延迟，回调仍然很密”时，先看 selected batching period 是否被其他客户端压到更小值。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/sensorservice/SensorDevice.cpp]
+`dumpsys sensorservice` 能看到这个聚合结果。`SensorDevice::dump()` 会输出每个活跃 sensor 的 active-count、各客户端 `sampling_period(ms)`、各客户端 `batching_period(ms)`，以及 selected 值。分析“为什么明明传了 10 秒批量延迟，回调仍然很密”时，先看 selected batching period 是否被其他客户端压到更小值。
 
 ## `samplingPeriodUs` 与 `maxReportLatencyUs`
 
-`samplingPeriodUs` 描述事件产生或期望交付的频率。`SensorManager` 注释把它称为一个 hint：事件可能比指定值更快或更慢到达，具体取决于传感器类型、HAL、其他客户端和系统状态。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/hardware/SensorManager.java]
+`samplingPeriodUs` 描述事件产生或期望交付的频率。`SensorManager` 注释把它称为一个 hint：事件可能比指定值更快或更慢到达，具体取决于传感器类型、HAL、其他客户端和系统状态。
 
-`maxReportLatencyUs` 描述事件允许在硬件 FIFO 中暂存多久。`SensorManager.registerListener(listener, sensor, samplingPeriodUs, maxReportLatencyUs)` 的注释说明，事件最多可在硬件 FIFO 中保存 `maxReportLatencyUs` 微秒；一旦 FIFO 中某个事件需要上报，FIFO 里的事件会顺序交付，所以部分事件会早于最大延迟到达。`maxReportLatencyUs = 0` 时，行为等价于尽快交付；`sensor.maxFifoEventCount() = 0` 时，设备没有可用 FIFO，传入正数也不会产生批处理收益。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/hardware/SensorManager.java]
+`maxReportLatencyUs` 描述事件允许在硬件 FIFO 中暂存多久。`SensorManager.registerListener(listener, sensor, samplingPeriodUs, maxReportLatencyUs)` 的注释说明，事件最多可在硬件 FIFO 中保存 `maxReportLatencyUs` 微秒；一旦 FIFO 中某个事件需要上报，FIFO 里的事件会顺序交付，所以部分事件会早于最大延迟到达。`maxReportLatencyUs = 0` 时，行为等价于尽快交付；`sensor.maxFifoEventCount() = 0` 时，设备没有可用 FIFO，传入正数也不会产生批处理收益。
 
 | 参数 | 控制对象 | 设为更大时的效果 | 失效条件 |
 |---|---|---|---|
@@ -147,11 +149,11 @@ flowchart LR
 
 ## wake-up / non-wake-up sensor 与 sensor hub
 
-Android Source 把 suspend 下的行为分成两类。non-wake-up sensor 不阻止 SoC 进入 suspend，也不会为了上报数据唤醒 SoC；SoC 睡眠期间事件继续产生并进入 FIFO，SoC 醒来后再交付。App 如果要求灭屏期间稳定收到 non-wake-up sensor 事件，要么持有 partial wake lock，要么接受 suspend 期间事件可能丢失，要么在不需要时注销监听。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/suspend-mode]
+Android 传感器栈把 suspend 下的行为分成两类。non-wake-up sensor 不阻止 SoC 进入 suspend，也不会为了上报数据唤醒 SoC；SoC 睡眠期间事件继续产生并进入 FIFO，SoC 醒来后再交付。App 如果要求灭屏期间稳定收到 non-wake-up sensor 事件，要么持有 partial wake lock，要么接受 suspend 期间事件可能丢失，要么在不需要时注销监听。
 
-wake-up sensor 的约束更强。SoC 睡眠时，wake-up sensor 必须在最大上报延迟到达或 FIFO 将满前唤醒 SoC 并交付事件。`SensorManager` 注释也说明，每个 wake-up sensor 事件都可能让 AP wake-up，因此注册 wake-up sensor 有明显功耗影响；如果使用这类传感器，应结合 batching 参数减少唤醒频次。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/suspend-mode; AOSP android-16.0.0_r1, frameworks/base/core/java/android/hardware/SensorManager.java]
+wake-up sensor 的约束更强。SoC 睡眠时，wake-up sensor 必须在最大上报延迟到达或 FIFO 将满前唤醒 SoC 并交付事件。`SensorManager` 注释也说明，每个 wake-up sensor 事件都可能让 AP wake-up，因此注册 wake-up sensor 有明显功耗影响；如果使用这类传感器，应结合 batching 参数减少唤醒频次。
 
-Sensor hub 的价值在这一步体现出来。Android 传感器栈允许设备在低功耗微控制器上执行低层计算，例如 step counting、sensor fusion 和 batching；SoC 可以处于 suspend，事件暂存在 hub/FIFO 中。Android Source 还提到一种常见硬件组织：sensor hub 到 SoC 可以有两条中断线，一条用于 wake-up sensor，一条用于 non-wake-up sensor。这类设计决定了同一段 App 代码在不同机型上的唤醒形态会不一样。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/sensor-stack]
+Sensor hub 的价值在这一步体现出来。Android 传感器栈允许设备在低功耗微控制器上执行低层计算，例如 step counting、sensor fusion 和 batching；SoC 可以处于 suspend，事件暂存在 hub/FIFO 中。一种常见的硬件组织是 sensor hub 到 SoC 有两条中断线，一条用于 wake-up sensor，一条用于 non-wake-up sensor。这类设计决定了同一段 App 代码在不同机型上的唤醒形态会不一样。
 
 对性能分析来说，wake-up / non-wake-up 的差异比传感器名字更重要。加速度计、计步器、显著运动检测都可能存在不同 reporting mode 或 wake-up 版本；正文判断应以 `Sensor.isWakeUpSensor()`、`Sensor.getReportingMode()`、FIFO 能力和设备实测为准，不按传感器类型直接下结论。
 
@@ -163,9 +165,9 @@ Sensor hub 的价值在这一步体现出来。Android 传感器栈允许设备�
 - **其他客户端请求更紧**：`SensorDevice` 会在同一 sensor handle 的多个客户端里选择更小的采样周期和批量延迟。地图、系统服务、健康 App、测试工具同时监听时，单个 App 看到的回调频率可能被全局配置影响。
 - **wake-up sensor 事件密度太高**：wake-up sensor 需要在最大延迟到达或 FIFO 将满前唤醒 SoC；事件密度升高后，实际唤醒间隔会短于传入的最大延迟。
 - **生命周期未退订**：`SensorManager` 注释要求 Activity 在 `onPause()` 注销 listener。未注销时，即使 non-wake-up sensor 事件可能在 suspend 中丢失，传感器仍会继续耗电。
-- **HAL 能力和厂商策略差异**：Sensors HAL 2.0 要求 sensor 在激活前通过 `batch()` 配置采样周期和最大上报延迟，也允许 framework 调用 `flush()` 立即冲刷批量事件；具体 FIFO 深度、flush 行为、hub 算法和 vendor 限制仍由设备实现决定。[已验证: 官方文档, source.android.com/docs/core/interaction/sensors/sensors-hal2]
+- **HAL 能力和厂商策略差异**：Sensors HAL 2.0 要求 sensor 在激活前通过 `batch()` 配置采样周期和最大上报延迟，也允许 framework 调用 `flush()` 立即冲刷批量事件；具体 FIFO 深度、flush 行为、hub 算法和 vendor 限制仍由设备实现决定。
 
-`SensorService::enable()` 中还有一个细节：多个连接共享 continuous sensor 时，服务会在合适条件下先 `flush()`，再 `activate()`，避免旧批量事件被新连接误收。这个行为解释了部分测试中“注册后马上收到一批历史事件”的现象，也说明 flush 只是交付控制，不代表采样停止。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/sensorservice/SensorService.cpp]
+`SensorService::enable()` 中还有一个细节：多个连接共享 continuous sensor 时，服务会在合适条件下先 `flush()`，再 `activate()`，避免旧批量事件被新连接误收。这个行为解释了部分测试中“注册后马上收到一批历史事件”的现象，也说明 flush 只是交付控制，不代表采样停止。
 
 ## Perfetto、Battery Historian 与 `dumpsys sensorservice` 观察点
 
@@ -186,14 +188,16 @@ Sensor hub 的价值在这一步体现出来。Android 传感器栈允许设备�
 
 和 5.6、11.2 的关系也要分清。WakeLock、Doze、后台任务限制决定系统何时允许 App 继续运行；SensorService 批处理决定传感器事件如何在低功耗路径上暂存和交付。一个后台计步需求如果同时持有 partial wake lock、请求 wake-up sensor、又把 `maxReportLatencyUs` 设为 0，问题不在单个 API，而在电源策略和事件交付策略互相抵消。
 
-## Sensor Direct Channel 与高频传感器流
+## 扩展阅读
 
-[自动发现] Sensor Direct Channel 适合高频、低开销的传感器数据传输场景，它允许传感器事件写入共享内存通道，减少普通 listener 回调路径的开销。它不是通用省电开关：direct channel 更关注高频数据搬运效率，是否省电仍取决于采样频率、内存类型、消费者处理节奏和设备 HAL 支持。后续如果扩写，应单独核对 `SensorDirectChannel` API、`TYPE_HARDWARE_BUFFER` / `TYPE_MEMORY_FILE` 支持和目标设备的 HAL 能力。[待验证]
+### Sensor Direct Channel 与高频传感器流
 
-## OEM sensor hub 策略差异
+Sensor Direct Channel 适合高频、低开销的传感器数据传输场景，它允许传感器事件写入共享内存通道，减少普通 listener 回调路径的开销。它不是通用省电开关：direct channel 更关注高频数据搬运效率，是否省电仍取决于采样频率、内存类型、消费者处理节奏和设备 HAL 支持。后续如果扩写，应单独核对 `SensorDirectChannel` API、`TYPE_HARDWARE_BUFFER` / `TYPE_MEMORY_FILE` 支持和目标设备的 HAL 能力。
 
-[自动发现] 传感器批处理对 OEM 实现依赖很高。Pixel、Qualcomm、MediaTek 设备可能在 FIFO 深度、wake-up interrupt、step counter 算法、vendor debug 节点和 HAL 日志上存在差异。正文目前只给 AOSP 与官方文档层面的模型，具体厂商结论需要实机 `dumpsys sensorservice`、Perfetto、Battery Historian 和 vendor 日志支撑。[待补充]
+### OEM sensor hub 策略差异
 
-## 与定位、蓝牙和后台任务的功耗归因协同
+传感器批处理对 OEM 实现依赖很高。Pixel、Qualcomm、MediaTek 设备可能在 FIFO 深度、wake-up interrupt、step counter 算法、vendor debug 节点和 HAL 日志上存在差异。正文目前只给 AOSP 与官方文档层面的模型，具体厂商结论需要实机 `dumpsys sensorservice`、Perfetto、Battery Historian 和 vendor 日志支撑。
 
-[自动发现] 传感器很少单独造成线上耗电。运动检测常和 FLP、BLE scan、JobScheduler / WorkManager 一起出现；用户看到的是一段后台活动造成的综合掉电。排查时应把传感器事件、定位更新、蓝牙扫描、后台任务和 wake lock 放在同一时间范围内对齐，避免把 FLP 或 BLE 引起的唤醒误归因给 SensorService。定位和传感器的 App 侧取舍详见 25.5 节，功耗工具详见 14.11 节。
+### 与定位、蓝牙和后台任务的功耗归因协同
+
+传感器很少单独造成线上耗电。运动检测常和 FLP、BLE scan、JobScheduler / WorkManager 一起出现；用户看到的是一段后台活动造成的综合掉电。排查时应把传感器事件、定位更新、蓝牙扫描、后台任务和 wake lock 放在同一时间范围内对齐，避免把 FLP 或 BLE 引起的唤醒误归因给 SensorService。定位和传感器的 App 侧取舍详见 25.5 节，功耗工具详见 14.11 节。

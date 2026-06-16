@@ -2458,7 +2458,7 @@
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
   "ready_for_review": 80,
-  "last_updated": "2026-06-16T10:32:06+08:00",
+  "last_updated": "2026-06-16T20:10:00+08:00",
   "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "reviewed_at": "2026-06-03T07:08:52+08:00",
@@ -6577,7 +6577,7 @@
       "queue_priority": 85,
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-27",
-      "last_task6_at": "2026-05-27T16:08:00+08:00",
+      "last_task6_at": "2026-06-16T20:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-27-16-review.md",
       "last_task9_at": "2026-05-25T00:20:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-25-00-deep-review.md",
@@ -7769,6 +7769,17 @@
       "last_task9_audit_at": "2026-06-16T10:32:06+08:00",
       "last_task9_audit_result": "auto-fixed-p1-version-anchor",
       "task9_note": "Task9 idle audit auto-fixed InputConsumer constants source anchor from AOSP mainline to android-16.0.0_r1; returned to Task6."
+    },
+    "15.4": {
+      "status": "finalized",
+      "task6_result": "pass-light-edit",
+      "task9_result": "auto-fixed",
+      "last_task6_at": "2026-06-16T20:10:00+08:00"
+    },
+    "15": {
+      "status": "ready-for-review",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-06-16T20:10:00+08:00"
     }
   },
   "task2b_rounds": [

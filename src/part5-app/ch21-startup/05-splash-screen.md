@@ -2,7 +2,7 @@
 title: "Splash Screen 与感知启动速度"
 chapter: "21.5"
 section: "21.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-06-16"
 last_verified_against: "AOSP android-15.0.0_r1; AndroidX core-splashscreen 1.2.0"
@@ -29,7 +29,7 @@ sources:
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
@@ -38,9 +38,12 @@ task2b_state: fixed
 created_by: "task2a-content-processing"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
-task6_reviewed_date: "2026-06-15"
+task6_reviewed_date: "2026-06-16"
 task6_result: "pass-light-edit"
+task6_review_notes: "2026-06-16 Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。自动晋升 finalized / ready-to-publish。"
 last_task9_at: "2026-06-16T12:40:55+08:00"
+last_task6_at: "2026-06-16T16:05:00+08:00"
+pipeline_stage: ready-to-publish
 task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2 / P1 1。core-splashscreen API 下限、兼容模式/退出动画、postSplashScreenTheme 崩溃口径需回炉。 | 2026-06-16 01:20 Task9 复审：pass-tech-review。P0/P1 0；P2 2 已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-16 12:40 Task9：auto-fixed。复核 core-splashscreen 1.2.0 AAR/source，修正 minSdk/API21-22 降级行为、低版本圆形 mask、Perfetto/度量工具名，回 Task6 复审。"
 task6_review_notes: "2026-06-16 01:xx Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。Task9 needs-rework（P0 2/P1 1）已由 Task2B 修复，等待 Task9 复审确认。不自动晋升。"
 last_task6_review_log: "logs/review/2026-06-16-01-review.md"
@@ -121,7 +124,7 @@ Android 12 之前，Starting Window 的外观由 App theme 的 `windowBackground
 
 1. **OEM 差异**：不同厂商对 Starting Window 的实现有裁剪，部分厂商会替换或忽略自定义 `windowBackground`。
 2. **过渡生硬**：Starting Window 消失和 App 首帧出现之间没有动画衔接，视觉上是"品牌页突然跳成 App 内容"。
-3. **Android 12+ 行为变化**：不适配 SplashScreen API 的 App 在 Android 12+ 上可能出现闪烁——系统先显示默认 SplashScreen，再切到 App 自定义的 windowBackground，再切到 App 内容，多了一次跳变。
+3. **Android 12+ 行为差异**：不适配 SplashScreen API 的 App 在 Android 12+ 上可能出现闪烁——系统先显示默认 SplashScreen，再切到 App 自定义的 windowBackground，再切到 App 内容，多了一次跳变。
 
 ### 自建 SplashActivity 的代价
 
@@ -167,8 +170,10 @@ implementation "androidx.core:core-splashscreen:1.2.0"
     <!-- 背景色 -->
     <item name="windowSplashScreenBackground">@color/brand_background</item>
     <!-- 中央图标，支持 AnimatedVectorDrawable -->
-    <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    ```xml
+<item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     <!-- 图标动画时长，上限 1000ms -->
+```
     <item name="windowSplashScreenAnimationDuration">1000</item>
     <!-- 启动画面结束后的 Activity 主题 -->
     <item name="postSplashScreenTheme">@style/Theme.App</item>

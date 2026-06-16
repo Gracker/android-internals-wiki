@@ -64,6 +64,9 @@ task9_state: "reviewed"
 last_task9_audit: "2026-06-15"
 last_task9_audit_log: "logs/deep-review/2026-06-15-19-audit.md"
 task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;常见问题后的联发科调度源码素材块仍未并入正文,已继续并入 queue.json priority 95。保留 Task9 2025/2026 SoC 规格 P0 pending。 | 2026-05-27 07:11 Task6：pass-light-edit。将文末联发科调度源码锚点移入 CPU 调度策略小节；L1 禁用词扫描无新增命中；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 08:07 Task6：pass-light-edit。L1/L2 文风复扫无新增命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-05-27 09:16 Task6：pass-light-edit。修正术语括号格式；L1 禁用词与高频词扫描无命中；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。 | 2026-06-15 20:16 Task6 复审:pass-light-edit。Task9 idle-audit 补充 android17-6.18 kernel 分支口径后文风复扫;L1 禁用词/高频词/翻译腔动词均无命中;outline 5/5 + 扩展 2/2 覆盖;待验证 26.7% < 30%;无 L1/L2 新增问题;无 L3/L4 回炉项。Task9 result 为 auto-fixed,未满足自动晋升 finalized 条件,送 Task9 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-16
+last_deepseek_polish_at: 2026-06-16
 ---
 # SoC 平台差异
 
@@ -116,7 +119,8 @@ Android 生态中的旗舰 SoC 主要来自四家公司,每家的设计哲学和
 
 **Google Tensor** 是 Google 为 Pixel 系列定制的 SoC。Tensor 的设计哲学与其他三家完全不同:它不以峰值性能为目标,而是围绕 Google 的 AI 和机器学习需求来设计。Tensor 的 CPU 和 GPU 性能在旗舰 SoC 中并不突出,但在端侧 AI 推理(如语音识别、图像处理、实时翻译)方面有专用硬件加速。Tensor G4 仍基于三星的代工和部分 IP,但 Tensor G5 已随 Pixel 10 系列发布。Google 官方称 Tensor G5 是第五代自研 Tensor,采用 TSMC 3nm 工艺;Pixel 10 系列继续围绕端侧 AI、相机 ISP 和安全硬件做定制。
 
-> **2025/2026 当前旗舰更新**：截至 2026-06-15，四大平台均已迭代到新一代旗舰：
+> 截至 2026-06-15，四大平台均已迭代到新一代旗舰，以下为当前各平台最新型号的关键规格：
+>
 > - **Qualcomm Snapdragon 8 Elite Gen 5**：第三代自研 Oryon CPU 核心，Adreno GPU 升级；Qualcomm 产品规格列出的 Android 图形 API 为 OpenCL 3.0 FP / OpenGL ES 3.2 / Vulkan 1.3，Linux UMD 资料里的 Vulkan 1.4 不能直接写成 Android 设备统一能力
 > - **MediaTek Dimensity 9500**：采用 ARM C1-Ultra + C1-Premium + C1-Pro 八核架构（1×C1-Ultra + 3×C1-Premium + 4×C1-Pro），GPU 为 Arm Mali-G1 Ultra MC12；官方规格未列出额外 2 个低功耗核
 > - **Samsung Exynos 2600**：2nm GAA 工艺，十核 CPU（ARM C1 系列），Xclipse 960 GPU（基于 AMD RDNA）
@@ -127,6 +131,8 @@ Android 生态中的旗舰 SoC 主要来自四家公司,每家的设计哲学和
 [图:四大 SoC 平台的关键参数对比表格(CPU 架构/GPU/NPU/制程/典型机型)]
 
 [已验证: 公开产品规格,来源见 Qualcomm/MediaTek/Samsung/Google 官方产品页]
+
+四种设计哲学的分歧，在 CPU 核心架构上体现得最直接：从核心选型、拓扑排列到调度策略，每一家的选择都不一样。下面从这三个维度逐一对比。
 
 ## CPU 核心架构差异与性能调度策略
 
@@ -223,9 +229,7 @@ LIMIT 20;
 
 [待验证: 联发科的具体调度参数和提频策略在 AOSP 开源部分不完整,需实机确认]
 
-### 联发科调度链路源码锚点
-
-联发科调度链路的源码锚点集中在几条公开内核路径：schedutil governor（`kernel/sched/cpufreq_schedutil.c`）通过调度器的 `cpufreq_update_util()` 回调在 CFS util 更新时计算下一档频率，iowait boost 在连续 IO 唤醒时按 tick 窗口逐级提高 boost；uclamp（`kernel/sched/sched.h`）约束任务可用频率范围，top-app 通常设置较高的 uclamp_min；EAS 选核逻辑位于 `kernel/sched/fair.c`（`find_energy_efficient_cpu()` / `compute_energy()`），在多 cluster 之间选择节能收益大于迁移成本的目标。Dimensity 的 1+3+4 拓扑中，超大核与其他核之间迁移成本较高（私有 L1/L2 不共享）。联发科 vendor kernel 在 energy model 中为每个 cluster 定义不同的静态功耗和 OPP 表参数，这部分未进入 AOSP 主线。Dimensity 9400（代号 MT6991）的具体频率曲线定义在 vendor kernel 设备树中，通过 `operating-points-v2` 传递到 mtk-cpufreq driver。
+联发科调度链路在 AOSP 公共代码中的锚点，主要集中在几条公开内核路径：schedutil governor（`kernel/sched/cpufreq_schedutil.c`）通过调度器的 `cpufreq_update_util()` 回调在 CFS util 更新时计算下一档频率，iowait boost 在连续 IO 唤醒时按 tick 窗口逐级提高 boost；uclamp（`kernel/sched/sched.h`）约束任务可用频率范围，top-app 通常设置较高的 uclamp_min；EAS 选核逻辑位于 `kernel/sched/fair.c`（`find_energy_efficient_cpu()` / `compute_energy()`），在多 cluster 之间选择节能收益大于迁移成本的目标。Dimensity 的 1+3+4 拓扑中，超大核与其他核之间迁移成本较高（私有 L1/L2 不共享）。联发科 vendor kernel 在 energy model 中为每个 cluster 定义不同的静态功耗和 OPP 表参数，这部分未进入 AOSP 主线。Dimensity 9400（代号 MT6991）的具体频率曲线定义在 vendor kernel 设备树中，通过 `operating-points-v2` 传递到 mtk-cpufreq driver。
 
 [待验证：Dimensity 9400 具体 freq table 数值、MTK EAS vendor patch 与主线的差异量、real device 实际调度行为需通过 Perfetto traces 测量]
 
@@ -235,7 +239,7 @@ LIMIT 20;
 
 ## GPU 差异对渲染性能的影响
 
-GPU 是 Android 渲染管线的核心执行单元。§2.10 已经分析过 GPU 渲染的通用原理,但不同 SoC 的 GPU 架构差异会直接影响渲染性能和 Perfetto 中 GPU Track 的表现。
+CPU 核怎么排、任务怎么调，决定了"算得动"；但帧能不能按时画出来，看的是 GPU。渲染管线的核心执行单元就是 GPU。§2.10 已经分析过 GPU 渲染的通用原理,但不同 SoC 的 GPU 架构差异会直接影响渲染性能和 Perfetto 中 GPU Track 的表现。
 
 ### 四大 GPU 架构概览
 
@@ -265,7 +269,7 @@ Xclipse GPU 的 Perfetto 支持相对有限。由于 AMD 的 RDNA 架构在移�
 
 ## NPU / DSP / ISP 的性能相关差异
 
-SoC 上除了 CPU 和 GPU,还有几个专用处理器对实际性能有重要影响。它们通常不直接出现在 Perfetto 的常规 Track 中,但它们的工作会间接影响 CPU 负载和功耗。
+CPU 和 GPU 之外，SoC 上还有几个专用处理器对实际性能有直接影响。它们通常不直接出现在 Perfetto 的常规 Track 中，但会间接改变 CPU 负载和功耗分布。它们通常不直接出现在 Perfetto 的常规 Track 中,但它们的工作会间接影响 CPU 负载和功耗。
 
 ### NPU（神经网络处理单元）
 

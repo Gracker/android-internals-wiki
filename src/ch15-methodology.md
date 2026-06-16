@@ -2,16 +2,16 @@
 title: "Android 性能优化研究方法论"
 chapter: '15'
 section: '15'
-status: "ready-for-review"
+status: ready-for-review
 task2b_state: "fixed"
-task6_result: "ready-for-review"
+task6_result: pass-light-edit
 task6_reviewed_by: "openclaw-task2a"
 task6_reviewed_date: "2026-06-16"
 task2b_result: "fixed"
 task2b_fixed_date: "2026-06-16"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "pending"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 created_by: "codex"
 created_date: '2026-06-16'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -44,22 +44,25 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-16
+last_task6_at: 2026-06-16T20:10:00+08:00
 ---
 
 # 第 15 章：Android 性能优化研究方法论
 
 ## 为什么要建立性能研究方法论？
 
-性能问题本质上是系统性问题，不是简单的"代码慢"或"内存高"。在实际排查中，你经常会遇到：
+性能问题是系统性问题，不是简单的"代码慢"或"内存高"。在实际排查中，经常会遇到：
 
 - **盲人摸象现象**：只看到表面的 ANR，却不知道背后的 Binder 调用链
 - **头痛医头问题**：针对某个优化点做了改进，却引发了其他性能下降
-- **数据孤岛问题**：CPU 数据和内存数据割裂分析，找不到真正的瓶颈
+- **数据孤岛问题**：CPU 数据和内存数据割裂分析，找不到实际瓶颈
 
-系统化的研究方法论能够帮你：
+系统化的研究方法论能够：
 
 1. **建立观测体系**：从系统调用到应用代码的全链路可观测性
-2. **形成知识沉淀**：把零散的经验形成可复用的分析模式
+2. **形成可复用的知识体系**：把零散的经验形成可复用的分析模式
 3. **提升诊断效率**：减少无效的排查路径，快速定位核心问题
 
 ## 定量研究与定性研究
@@ -79,7 +82,7 @@ related_chapters:
 
 ### 定性研究的角色
 
-定量指标告诉你"是什么"，定性研究告诉你"为什么"。定性研究方法包括：
+定量指标反映"是什么"，定性研究回答"为什么"。定性研究方法包括：
 
 1. **代码走读**：分析关键路径的代码实现
 2. **架构分析**：审视模块间的通信方式和数据流
@@ -171,7 +174,7 @@ graph TD
 
 **案例**：对性能瓶颈判断错误，在非关键路径上花费大量时间。
 
-**解决方法**：先做性能分析，找到真正的瓶颈再针对性优化。
+**解决方法**：先做性能分析，找到瓶颈再针对性优化。
 
 ## 研究工具推荐
 
@@ -216,7 +219,7 @@ graph TD
 3. **工具链完善**：覆盖不同场景的性能分析需求
 4. **持续学习**：跟进 Android 系统的最新特性和优化手段
 
-记住：好的性能优化不是"修修补补"，而是建立从问题发现到解决方案验证的完整体系。只有这样，才能真正做到系统性提升应用性能。
+记住：好的性能优化不是"修修补补"，而是建立从问题发现到解决方案验证的完整体系。只有这样，才能系统性提升应用性能。
 
 ---
 
