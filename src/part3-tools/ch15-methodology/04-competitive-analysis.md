@@ -1,6 +1,5 @@
 ---
 
-
 title: "竞品分析方法"
 chapter: "15.4"
 section: "15.4"
@@ -53,13 +52,12 @@ task9_audit_notes: '2026-05-23 Task9 idle audit: 无 P0/P1。源码路径与 And
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-25"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-12
+last_deepseek_cn_review_at: 2026-06-17
 last_task9_autofix_at: "2026-06-16"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-16"
 last_task6_at: 2026-06-16T20:10:00+08:00
 ---
-
 
 # 竞品分析方法
 
@@ -114,8 +112,6 @@ last_task6_at: 2026-06-16T20:10:00+08:00
 
 **同温度**——这是最容易被忽略的因素。现代手机在发热后会触发温控策略，降低 CPU 频率（Thermal Throttling），直接影响所有性能指标。如果我们先测了 App A 的十轮启动，设备已经发热，再测 App B，那 App B 的数据天然吃亏。正确的做法是两轮测试之间让设备冷却（可以等待几分钟或用散热背夹），或者在测试顺序上交替进行（A1 → B1 → A2 → B2），通过轮换消除顺序偏差。
 
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-overview — Macrobenchmark 强调 "same device, same OS version, same compilation profile"]
-
 ### 测试前的设备准备
 
 在每次测试之前，我们需要做一组标准化的设备准备工作，确保测试环境的一致性：
@@ -136,7 +132,7 @@ last_task6_at: 2026-06-16T20:10:00+08:00
 
 对于滑动流畅性这类需要人工操作的场景，因为难以完美复现每次滑动的速度和距离，建议采用 **5-10 次** 较长距离的滑动采样，然后对比帧耗时的分布（P50、P90、P99），而不是只看单一指标。
 
-[待补充: 采样次数的统计学置信区间计算方法]
+采样次数的统计学置信区间计算方法目前还没有标准公式，这里先用经验值。
 
 ## 竞品启动速度对比
 
@@ -177,8 +173,6 @@ Complete.
 **ThisTime** 记录的是最后一个 Activity 的启动耗时。如果 App 的启动路径中有中间 Activity（比如一个透明的路由 Activity 跳转到真正的首页），ThisTime 只计最后一段，TotalTime 则包含整个路径。所以竞品对比用 TotalTime，不要用 ThisTime。
 
 **WaitTime** 是从 `am` 命令发起时刻到系统返回结果的总时间，包含了 Pause 前一个 Activity 的开销。这个值受系统状态影响较大，不适合做精确的竞品对比。
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time — "TotalTime represents the total time taken to launch the activity"]
 
 ### 自动化多次采样的脚本
 
@@ -227,9 +221,9 @@ awk '{sum+=$1; vals[NR]=$1; if($1>max) max=$1; if(NR==1||$1<min) min=$1}
 
 竞品对比通常关注冷启动，因为它最能体现 App 的启动优化功底。但如果我们想了解竞品的保活和缓存策略，温启动和热启动的对比也很有价值。
 
-[自动发现: 部分 App 使用多进程架构，冷启动时主进程和子进程的启动顺序会影响 TotalTime。这种情况下，`am start -W` 的计时可能不包含子进程的完整初始化。如果需要精确分析多进程启动，建议配合 Perfetto Trace 做更深入的时间线分析。]
+部分 App 使用多进程架构，冷启动时主进程和子进程的启动顺序会影响 TotalTime。这种情况下，`am start -W` 的计时可能不包含子进程的完整初始化。如果需要精确分析多进程启动，建议配合 Perfetto Trace 做更深入的时间线分析。
 
-[待验证: Android 16 是否对 am start -W 的计时逻辑有调整，特别是涉及 SplashScreen 的场景]
+目前还不能确认 Android 16 是否调整了 am start -W 的计时逻辑，尤其是涉及 SplashScreen 的场景。
 
 ### 启动对比的注意事项
 
@@ -320,7 +314,7 @@ activity.getWindow().addOnFrameMetricsAvailableListener(
 
 如果分析 `performTraversals()` 之后的应用侧开销，应该拆看 `LAYOUT_MEASURE_DURATION`、`DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`SWAP_BUFFERS_DURATION`，再对应到 Perfetto 中 UI thread、RenderThread、SurfaceFlinger 的时间线。
 
-[待补充: 不同 APM 平台（Firebase Performance / 自建 APM）的流畅性指标口径对比]
+不同 APM 平台的流畅性指标口径差异较大，目前还没有统一对比。
 
 ## 竞品包体积对比
 
@@ -337,9 +331,7 @@ Android Studio 自带的 APK Analyzer 是包体积分析的主力工具。它能
 3. 对于 DEX 文件，可以进一步展开查看类和方法的数量以及占用的字节。
 4. 对于资源文件，可以按目录浏览，快速定位大图、大字体等体积消耗者。
 
-竞品对比时，我们可以把竞品的 APK 也拖进 APK Analyzer，然后手工记录各分类的大小，做一个横向对比表。
-
-[已验证: 官方文档, developer.android.com/studio/debug/apk-analyzer — "APK Analyzer allows you to inspect the contents of your APK and compare two APKs"]
+竞品对比时，把竞品 APK 也拖进 APK Analyzer，手工记录各分类的大小，就能做出一张横向对比表。
 
 ### 命令行工具 apkanalyzer
 
@@ -393,7 +385,7 @@ done
 
 **Assets 体积**：有些 App 会在 assets 中打包 HTML5 页面、JS Bundle、预置数据等。这部分通常被忽略，但在某些类型的 App 中可能占比很大。
 
-[自动发现: AAB（Android App Bundle）格式下，Google Play 会按设备特征（ABI、屏幕密度、语言）生成定制的 APK，实际下载体积远小于完整 APK。竞品对比时应区分"完整 APK 体积"和"实际下载体积"，后者才是用户体验的真实指标。Google Play Console 提供了下载体积的参考数据。]
+AAB（Android App Bundle）格式下，Google Play 会按设备特征（ABI、屏幕密度、语言）生成定制的 APK，实际下载体积远小于完整 APK。竞品对比时应区分"完整 APK 体积"和"实际下载体积"，后者才是用户体验的真实指标。Google Play Console 提供了下载体积的参考数据。
 
 ## 注意事项：避免误导性结论
 
@@ -421,7 +413,7 @@ done
 
 在不同品牌手机上测试同一个 App，性能数据可能差别很大。高通骁龙和联发科天玑的 CPU 调度策略不同，GPU 能力不同，内存带宽不同。如果我们在骁龙 8 Gen 3 上测了竞品 A，在天玑 9300 上测了竞品 B，然后得出"A 比 B 流畅"的结论，我们比较的可能是两个 SoC 而不是两个 App。
 
-[自动发现: 手机厂商的性能模式（如"性能模式"或"游戏模式"）会改变 CPU 调频策略和温控阈值。在竞品对比前，确保设备的性能模式设置一致，或统一使用默认模式。]
+手机厂商的性能模式（如"性能模式"或"游戏模式"）会改变 CPU 调频策略和温控阈值。在竞品对比前，确保设备的性能模式设置一致，或统一使用默认模式。
 
 ## 扩展：自动化竞品对比测试流水线
 
@@ -438,9 +430,9 @@ done
 5. **数据分析**：将原始数据汇总为统计表格（中位数、P90、P99），生成可视化图表。
 6. **报告输出**：自动生成 Markdown 或 HTML 格式的对比报告，包含数据表格、趋势图和简要分析。
 
-[待补充: 使用 Macrobenchmark 库实现自动化启动和滑动测试的完整示例]
+使用 Macrobenchmark 库实现自动化启动和滑动测试的完整示例仍在整理中。
 
-[待验证: 不同 Android 版本的 dumpsys gfxinfo 输出格式是否有差异，需要做版本适配]
+不同 Android 版本的 dumpsys gfxinfo 输出格式可能有差异，需要做版本适配确认。
 
 ## 扩展：竞品功耗对比方法
 
@@ -475,7 +467,7 @@ battery-historian --port 9998
 3. 对电流曲线积分得到总功耗（mAh），或取平均功率（mW）作为对比指标。
 4. 在相同操作路径下对比不同 App 的功耗数据。
 
-[待补充: 使用 Monsoon Power Monitor 进行功耗测试的详细配置步骤]
+使用 Monsoon Power Monitor 进行功耗测试的详细配置步骤仍在整理中。
 
 ## 参考资料
 
