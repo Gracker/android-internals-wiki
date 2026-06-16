@@ -1,8 +1,8 @@
 {
   "total": 434,
   "draft": 0,
-  "ready-for-review": 87,
-  "finalized": 302,
+  "ready-for-review": 89,
+  "finalized": 300,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
   "task9_reviewed_by": "openclaw-task9",
@@ -2496,7 +2496,7 @@
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
-  "ready_for_review": 85,
+  "ready_for_review": 87,
   "last_updated": "2026-06-17T01:27:53+08:00",
   "last_updated_by": "openclaw-task9",
   "task6_last_review": "2026-06-16T23:17:17+08:00",
@@ -12725,14 +12725,10 @@
     "last_task6_at": "2026-05-26T23:07:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-26-23-review.md"
   },
-  "last_task2b_verifier_at": "2026-06-03T03:25:00+08:00",
+  "last_task2b_verifier_at": "2026-06-17T07:30:09+08:00",
   "last_task2b_verifier_sections": [
-    "src/part5-app/ch22-rendering-practice/10-rendereffect-runtime-shader-performance.md",
-    "src/part5-app/ch21-startup/08-startup-monitoring.md",
-    "src/part5-app/ch20-stability/08-crash-aggregation.md",
-    "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
-    "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
-    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md"
+    "14.5",
+    "15.1"
   ],
   "section_7_8": {
     "section": "7.8",
@@ -13032,6 +13028,16 @@
       "blocked": 2,
       "result": "blocked",
       "log": "logs/rework/2026-06-03-03-task2b-verifier.md"
+    },
+    {
+      "date": "2026-06-17T07:30:09+08:00",
+      "sections": [
+        "14.5",
+        "15.1"
+      ],
+      "fixes": 2,
+      "result": "ready-for-task6",
+      "note": "status finalized→ready-for-review; task9 auto-fix 回流"
     }
   ],
   "last_task2b_files": [
@@ -13410,7 +13416,7 @@
     "last_task2b_verifier_at": "2026-05-31T23:25:00+08:00",
     "last_task2b_verifier_log": "logs/rework/2026-05-31-23-task2b-verifier.md"
   },
-  "last_task2b_verifier_log": "logs/rework/2026-06-03-03-task2b-verifier.md",
+  "last_task2b_verifier_log": "logs/rework/2026-06-17-07-task2b-verifier.md",
   "last_task2b_log": "logs/rework/2026-06-03-04-task2b-main.md",
   "task2b_last_rework_lite": {
     "at": "2026-06-03T05:37:00+08:00",
@@ -14521,7 +14527,9 @@
   "last_task2b_main_result": "fixed 2 chapters: 13.11, 20.7",
   "task9_last_log": "logs/deep-review/2026-06-16-10-audit.md",
   "task6_pending": [
-    "21.5"
+    "21.5",
+    "14.5",
+    "15.1"
   ],
   "verifier_logs": [
     {

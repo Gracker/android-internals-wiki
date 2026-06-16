@@ -2,7 +2,7 @@
 title: 性能优化的术、道、器
 chapter: '15.1'
 section: '15.1'
-status: "finalized"
+status: ready-for-review
 drafted_date: '2026-04-04'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
@@ -52,8 +52,8 @@ task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T22:07:00+08:00"
 last_task9_audit: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-06-audit.md"
-last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
-task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+last_task2b_verifier_at: "2026-06-17T07:29:33+08:00"
+task2b_verifier_note: "status finalized→ready-for-review; task9 auto-fix 回流 Task6 复审"
 last_task9_review_log: "logs/deep-review/2026-06-17-06-audit.md"
 task6_state: "revisiting"
 last_task6_audit: "2026-06-16"
