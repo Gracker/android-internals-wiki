@@ -1,7 +1,7 @@
 {
   "total": 426,
   "draft": 0,
-  "ready-for-review": 80,
+  "ready-for-review": 81,
   "finalized": 300,
   "task9_result": "auto-fixed",
   "task9_reviewed_date": "2026-06-16",
@@ -14480,5 +14480,8 @@
     "last_task6_review_log": "logs/review/2026-06-15-15-review.md"
   },
   "last_task2b_main_result": "fixed 2 chapters: 13.11, 20.7",
-  "task9_last_log": "logs/deep-review/2026-06-16-10-audit.md"
+  "task9_last_log": "logs/deep-review/2026-06-16-10-audit.md",
+  "task6_pending": [
+    "21.5"
+  ]
 }
