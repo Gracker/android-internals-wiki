@@ -1468,3 +1468,43 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 
 ### 管线状态
 全书 426 文件、0 draft、约 301 finalized（70.9%）、79 ready-for-review（18.8%）。连续 136 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（79 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+
+## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-16 12:18 (Round 137)
+
+### 1. Phase 0 空章节扫描
+- 全书 426 文件，0 draft（298 finalized + 82 ready-for-review + 46 无状态/附录）
+- 连续 137 轮无空 draft
+
+### 2. Phase 0.5 Backlog 限流
+- TASK2B_BACKLOG = 0（≤ 20），允许进入 Phase 1
+
+### 3. 增量素材检查（对比 Round 136 @ 09:09）
+- DeepResearch 无新文件（最近 3 个已在 Round 135/136 映射）
+- Daily-info 2026-06-16 无新增热点（Round 135 已全部分析）
+- Research-gaps 无新增（3 条已映射现有章节）
+- Source-index 无新增
+- Research-feeds 无新增（最近 2026-04-14）
+
+### 4. source-index.json 未映射高分素材
+- 21 条 score ≥ 16 未映射记录，逐条比对 SUMMARY.md 后全部已有对应章节覆盖
+- 关键覆盖关系：HPROF→§14.22、PowerStats→§14.17、SF Transaction Queue→§2.27、ART GC Fragmentation→§4.14、SDM→§16.9、StrictMode→§14.23、MessageQueue→§1.13、Codec2→§18.23 等
+
+### 5. Clippings 参考书交叉对照
+- 三本参考书核心知识点已全部被现有章节覆盖（连续 100+ 轮确认）
+
+### 6. queue.json 状态
+- 45 条记录，8 pending（priority 60-85，均为现有章节的注入/审计条目）
+- 无 priority ≥ 85 的 pending 新章节条目
+
+### 7. 本轮评估
+- 无新增候选方向（所有素材增量均映射到现有章节）
+- 连续 137 轮无评分 ≥ 14 的合格知识缺口
+
+### 8. 结论
+本轮未发现评分 ≥ 14 的合格知识缺口，跳过新章节创建。
+
+### 管线状态
+全书 426 文件、0 draft、298 finalized（69.9%）、82 ready-for-review（19.2%）。连续 137 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（82 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+
+### 9. Task2B Frontmatter Fallback 阻塞记录（2026-06-16 18:50）
+- **[blocked-need-review-context] §13.17 `src/part3-tools/ch13-perfetto/17-android17-data-sources.md`** — 章节于 2026-06-16 由 Task2A 新起草，frontmatter 中 `task2b_state: pending` 与 `pipeline_stage: task6_pending` 矛盾。旧版 deep-review 日志（2026-05-17）针对的是旧文件名 `17-perfetto-sdk-in-app-tracing.md`，内容完全不同的旧版，问题单不适用。当前版本尚未经过 Task6/Task9 review，无法定位修复问题来源。建议：先让章节走完整 Task6 → Task9 流程后再回 Task2B。
