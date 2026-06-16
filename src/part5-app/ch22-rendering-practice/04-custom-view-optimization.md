@@ -20,8 +20,8 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/Color.java"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed-lite
@@ -29,23 +29,24 @@ last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 last_task2b_at: "2026-05-13T23:35:47+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T14:20:00+08:00"
+last_task9_at: "2026-06-17T02:36:15+08:00"
 task6_reviewed_date: "2026-05-27"
 task6_review_notes: "2026-05-27 13:05 Task6 revisiting：pass-light-edit。补齐 outline 锚点并清理多余空行；L1 禁用词与高频词扫描无命中；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-27-13-review.md"
 last_task6_at: "2026-05-27T13:05:00+08:00"
-task9_review_notes: "2026-05-27 task9 deep-review: auto-fixed。修正 GC 观测归因、硬件加速 Canvas API 版本边界、debug.hwui.profile/Perfetto 观测口径与 onDraw invalidate 表述；回到 Task6 复审。 | 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核硬件加速 Canvas API 支持表、`invalidate(Rect)` API 21+ 脏区口径、RenderNode API 29 与 Perfetto/GC 观测口径；无 P0/P1，queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-27 task9 deep-review: auto-fixed。修正 GC 观测归因、硬件加速 Canvas API 版本边界、debug.hwui.profile/Perfetto 观测口径与 onDraw invalidate 表述；回到 Task6 复审。 | 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核硬件加速 Canvas API 支持表、`invalidate(Rect)` API 21+ 脏区口径、RenderNode API 29 与 Perfetto/GC 观测口径；无 P0/P1，queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 idle-audit auto-fix：修正 invalidate 脏区/整树重绘口径、onLayout 触发条件和 postInvalidateOnAnimation 跨线程 attach 边界；回到 Task6 复审。"
 last_task2b_verifier_at: "2026-05-27T11:44:00+08:00"
 task2b_verifier_result: ready-for-task6
-last_task9_autofix_at: "2026-05-27"
-last_task9_review_log: "logs/deep-review/2026-05-27-14-deep-review.md"
-p0: 0
+last_task9_autofix_at: "2026-06-17"
+last_task9_review_log: "logs/deep-review/2026-06-17-02-audit.md"
+p0: 2
 p1: 0
 p2: 0
+last_task9_audit: "2026-06-17"
 ---
 # 自定义 View 性能优化
 
@@ -67,7 +68,7 @@ p2: 0
 - 🔸 RenderThread DrawFrame 与 UI Thread draw 的耗时对照
 <!-- outline-end -->
 
-自定义 View 是 Android 开发中最灵活的 UI 扩展手段，也是性能问题的高发区。一条 onDraw() 里多了几行对象分配，就可能在大列表滑动场景中触发每秒 60-120 次的 GC 压力；一次 invalidate() 没有指定脏区域，就会让整棵 View 树重绘。
+自定义 View 是 Android 开发中最灵活的 UI 扩展手段，也是性能问题的高发区。一条 onDraw() 里多了几行对象分配，就可能在大列表滑动场景中触发每秒 60-120 次的 GC 压力；一次把内容变化误写成 requestLayout()，或把过大的自定义 View 作为单个 RenderNode 频繁 invalidate()，都会放大测量、布局或 DisplayList 重录成本。
 
 本节聚焦自定义 View 的四个性能瓶颈：绘制管线开销、对象分配、硬件加速适配、重绘范围控制。每个环节都给出可观察的指标和可执行的改法。
 
@@ -75,9 +76,9 @@ p2: 0
 
 ### 三者的调用频率差异
 
-自定义 View 的 onMeasure()、onLayout()、onDraw() 不是等权重的。onDraw() 的调用频率远高于前两者——任何一次 invalidate() 或父容器布局变化都可能触发 onDraw()，而 onMeasure() 只在布局请求（requestLayout()）时触发，onLayout() 只在布局尺寸变化时触发。
+自定义 View 的 onMeasure()、onLayout()、onDraw() 不是等权重的。onDraw() 的调用频率通常高于前两者——任何一次 invalidate() 或父容器布局变化都可能触发 onDraw()；onMeasure() 主要在布局请求（requestLayout()）后参与下一轮 traversal，onLayout() 会在 View 的位置/尺寸变化，或 layout 请求留下 `PFLAG_LAYOUT_REQUIRED` 时执行。
 
-在滑动列表中，一个自定义 View 可能每帧都走一次 `onDraw()`，但 `onMeasure()` 和 `onLayout()` 只在条目进入/离开屏幕时才执行。
+在滑动列表中，一个自定义 View 可能每帧都走一次 `onDraw()`；`onMeasure()` 和 `onLayout()` 更多出现在条目 attach/detach、尺寸变化、内容影响布局或父容器重新 layout 的阶段。
 
 **优化优先级**：`onDraw()` > `onLayout()` > `onMeasure()`。把 `onDraw()` 的优化做完，再做 `onLayout()` 的布局计算缓存。
 
@@ -292,7 +293,7 @@ public class FlowLayout extends ViewGroup {
 | 方法 | 重绘范围 | 线程 | 适用场景 |
 |------|---------|------|----------|
 | `invalidate()` | 整个 View | UI 线程 | 内容变化 |
-| `postInvalidateOnAnimation()` | 整个 View | 任意线程 | 在下一帧动画时刷新 |
+| `postInvalidateOnAnimation()` | 整个 View | UI 线程；非 UI 线程调用要求 View 已 attach | 在下一帧动画时刷新 |
 
 在 API 21 之前的软件绘制路径中，`invalidate(Rect)` 的脏区域合并机制（`ViewRootImpl.invalidateRectOnScreen()`）能减少重绘范围。但现代 Android 默认硬件加速，这条路径已不再适用。
 
@@ -306,8 +307,8 @@ public class FlowLayout extends ViewGroup {
 
 这两者会触发不同范围的重新计算：
 
-- invalidate()：标记 View 需要重绘，触发 onDraw()
-- requestLayout()：标记 View 需要重新测量和布局，触发 onMeasure() + onLayout() + onDraw()
+- invalidate()：标记当前 View 内容需要重录/重绘，通常触发该 View 的 onDraw()
+- requestLayout()：标记 View 需要重新测量和布局，进入下一轮 traversal；通常包含 onMeasure() / onLayout()，随后需要绘制时再走 onDraw()
 
 `requestLayout()` 的调用会沿 View 树向上冒泡到 `ViewRootImpl`，触发完整的 `performTraversals()`（measure → layout → draw）。如果只需要重绘内容，不要调 `requestLayout()`。
 
