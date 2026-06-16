@@ -1195,8 +1195,8 @@
   {
     "section": "13.17",
     "section_title": "Android 17 Perfetto 数据源边界与验证",
-    "priority": 90,
-    "reason": "[review回炉] §6.1 SQL 示例和 §6.3 protobuf 示例为编造代码，语法非法，需替换为合法示例或删除",
+    "priority": 95,
+    "reason": "[Deep Tech Review] §13.17 存在 AOSP 路径、flag、阈值、trace 示例与 linux.perf 开销口径错误；合并 Task6 SQL/protobuf 回炉项",
     "material_paths": [
       "intake/suggestions.md（含 review 意见）"
     ],
@@ -1212,11 +1212,43 @@
         "location": "§6.3 性能优化配置 — protobuf 示例",
         "detail": "protobuf optional 字段后内联 { } 赋值块语法非法。Protobuf 不支持在字段声明后直接写 { scope: TARGET_CMDLINE … }",
         "suggestion": "替换为合法的 perfetto trace config protobuf 示例（参考 perfetto docs 的 TraceConfig proto），或改为注释说明字段含义"
+      },
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources、§1.1、§7、信息源 — FrameTimeline 源码路径",
+        "detail": "AOSP android-16.0.0_r3 中 FrameTimeline 实现在 frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp}；章节写成 frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.{h,cpp}，该路径在 android-16.0.0_r3 不存在。",
+        "suggestion": "统一改为 Scheduler/FrameTimeline.{h,cpp}，并同步 git log 二次验证命令与信息源列表。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§1.5 Feature Flag 控制门控、§8.2 潜在风险",
+        "detail": "AOSP android-16.0.0_r3 的 FlagManager.cpp 未包含 filter_frames_before_trace_starts 的 DUMP_ACONFIG_FLAG / FLAG_MANAGER_ACONFIG_FLAG；FrameTimeline 构造函数只是接收 bool filterFramesBeforeTraceStarts 并赋给 mFilterFramesBeforeTraceStarts。章节把不存在的 aconfig flag 写成 Android 16 源码事实。",
+        "suggestion": "删除该 flag 断言，改写为构造参数/测试参数边界；如需讨论 Android 17/main 新 flag，必须标注未进入 Android 17 正文结论并跳过。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§1.3 关键参数配置 — JankClassificationThresholds",
+        "detail": "android-16.0.0_r3 的 JankClassificationThresholds 字段为 presentThresholdLegacy=2ms、presentThresholdExtended=4ms、deadlineThreshold=0ms、startThreshold=2ms；章节写成单一 presentThreshold=2ms，遗漏 increase_missed_frame_jank_threshold 对阈值选择的影响。",
+        "suggestion": "按 android-16.0.0_r3 的真实字段重写阈值表，并说明 presentThresholdLegacy/Extended 的选择由 increase_missed_frame_jank_threshold 控制。"
+      },
+      {
+        "type": "数据错误",
+        "location": "核心发现、§3 对比表、§5.1 linux.perf 性能开销",
+        "detail": "章节同时写 “100Hz 约 0.1% 单核开销” 和 “100Hz ≈ 1-3% CPU”，口径互相冲突；且 100Hz × 每次 1ms = 100ms/s，折算约 10% 单核而不是 0.1%。每次 unwinder 1ms 的假设也未给出 Perfetto/AOSP 证据。",
+        "suggestion": "删除 0.1% 公式和未证实的 1ms 假设；如保留开销判断，改为引用 Perfetto 官方 guardrail / sampling 文档或标注为待实测。"
+      },
+      {
+        "type": "源码/API 示例错误",
+        "location": "§6.1 Trace 配置建议、§6.3 性能优化配置",
+        "detail": "§6.1 的 SELECT * FROM perfetto 查询不是合法 trace_processor SQL；§6.3 的 protobuf 字段声明后内联赋值块不是合法 proto/trace config 写法。该问题已由 Task6 命中，本轮按技术 P0 复核确认。",
+        "suggestion": "§6.1 如讲数据源启用，应给合法 TraceConfig；如讲查询，应用 actual_frame_timeline / sched / perf_sample 等真实表。§6.3 改为合法 perfetto trace config textproto/json 示例。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-16T21:11:00+08:00",
     "status": "pending",
-    "original_review_log": "logs/review/2026-06-16-21-review.md"
+    "original_review_log": "logs/review/2026-06-16-21-review.md",
+    "last_updated_by": "task9-deep-tech-review",
+    "last_updated_at": "2026-06-16T21:32:37+08:00"
   }
 ]

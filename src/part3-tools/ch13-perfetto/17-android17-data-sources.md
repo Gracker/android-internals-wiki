@@ -27,11 +27,18 @@ related_chapters: ["13.2", "13.9", "13.14"]
 pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task6_result: "needs-rework"
-task9_state: "pending"
+task9_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
 last_task6_at: 2026-06-16T21:11:00+08:00
-# task2b_state removed 2026-06-16 — chapter freshly drafted, needs Task6 review first; no rework context exists
+# task2b_state restored 2026-06-16 by Task9 — P0/P1 technical rework required
+task9_result: "needs-rework"
+task2b_state: "pending"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-16"
+last_task9_at: "2026-06-16T21:32:37+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-16-21-deep-review.md"
+task9_review_notes: "2026-06-16 21 Task9 deep-review：needs-rework。AOSP android-16.0.0_r3 复核发现 FrameTimeline 源码路径、filter_frames_before_trace_starts flag、JankClassificationThresholds 字段、trace SQL/protobuf 示例与 linux.perf 开销口径存在 P0/P1，已合并 queue P95。"
 ---
 
 # Android 17 Perfetto 数据源边界与验证
