@@ -1,13 +1,25 @@
 {
   "total": 431,
   "draft": 0,
-  "ready-for-review": 81,
-  "finalized": 300,
+  "ready-for-review": 80,
+  "finalized": 301,
   "task9_result": "auto-fixed",
   "task9_reviewed_date": "2026-06-16",
   "task9_reviewed_by": "openclaw-task9",
-  "new_sections": ["5.19", "22.23", "24.18", "25.21", "26.20"],
-  "ready_for_review_sections": ["5.19", "22.23", "24.18", "25.21", "26.20"],
+  "new_sections": [
+    "5.19",
+    "22.23",
+    "24.18",
+    "25.21",
+    "26.20"
+  ],
+  "ready_for_review_sections": [
+    "5.19",
+    "22.23",
+    "24.18",
+    "25.21",
+    "26.20"
+  ],
   "review_sections": [
     "1.6",
     "1.9",
@@ -459,28 +471,35 @@
     }
   ],
   "task6_review_summary": {
-    "reviewed_at": "2026-06-03T07:08:52+08:00",
+    "reviewed_at": "2026-06-16T23:17:17+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
       "22.7",
       "24.8",
-      "25.1"
+      "25.1",
+      "13.17"
     ],
     "files": [
       "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
       "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
-      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
+      "src/part5-app/ch25-power-size/01-power-diagnosis.md",
+      "src/part3-tools/ch13-perfetto/17-android17-data-sources.md"
     ],
-    "log": "logs/review/2026-06-03-07-review.md",
-    "review_log": "logs/review/2026-06-03-07-review.md",
+    "log": "logs/review/2026-06-16-23-review.md",
+    "review_log": "logs/review/2026-06-16-23-review.md",
     "pass_light_edit": [
       "22.7",
       "24.8",
-      "25.1"
+      "25.1",
+      "13.17"
     ],
     "needs_rework": [],
-    "auto_promoted": [],
-    "auto_finalized": [],
+    "auto_promoted": [
+      "13.17"
+    ],
+    "auto_finalized": [
+      "13.17"
+    ],
     "result": "pass-light-edit",
     "l1_l2_fixes": 1,
     "l3_l4_issues": 0,
@@ -2460,36 +2479,9 @@
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
   "ready_for_review": 80,
-  "last_updated": "2026-06-16T20:10:00+08:00",
-  "last_updated_by": "openclaw-task9",
-  "task6_last_review": {
-    "reviewed_at": "2026-06-03T07:08:52+08:00",
-    "reviewed_by": "openclaw-task6",
-    "sections": [
-      "22.7",
-      "24.8",
-      "25.1"
-    ],
-    "files": [
-      "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
-      "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
-      "src/part5-app/ch25-power-size/01-power-diagnosis.md"
-    ],
-    "log": "logs/review/2026-06-03-07-review.md",
-    "review_log": "logs/review/2026-06-03-07-review.md",
-    "pass_light_edit": [
-      "22.7",
-      "24.8",
-      "25.1"
-    ],
-    "needs_rework": [],
-    "auto_promoted": [],
-    "auto_finalized": [],
-    "result": "pass-light-edit",
-    "l1_l2_fixes": 1,
-    "l3_l4_issues": 0,
-    "new_rework": false
-  },
+  "last_updated": "2026-06-16T23:17:17+08:00",
+  "last_updated_by": "openclaw-task6",
+  "task6_last_review": "2026-06-16T23:17:17+08:00",
   "task9_last_review": "2026-06-16T10:32:06+08:00",
   "ready_to_publish": 193,
   "rework_history": [
