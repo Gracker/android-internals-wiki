@@ -10,9 +10,9 @@ rework_by: "task2b-rework"
 reviewed_by: "openclaw-task6"
 review_cycle: 4
 re_review_date: "2026-04-09"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-27"
-last_verified_against: "Android multidex docs, Android 16KB page size docs, android.os.ProfilingManager docs, AOSP / Perfetto context"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+last_verified: "2026-06-16"
+last_verified_against: "Android multidex docs, Android 16KB page size docs, android.os.ProfilingManager / ProfilingTrigger / ProfilingResult docs, AOSP / Perfetto context"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-06"
@@ -34,31 +34,32 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-23"
-last_task9_at: "2026-05-23T19:20:00+08:00"
+task9_reviewed_date: "2026-06-16"
+last_task9_at: "2026-06-16T13:30:06+08:00"
 repaired_date: "2026-05-23"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T19:10:48+08:00"
 updated_by: "openclaw-task2b"
 updated_date: "2026-05-23"
 review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-05 task6 re-review (finalized revisiting): pass-light-edit；L1/L2 轻修并确认 finalized / ready-to-publish。；2026-05-23 task9 re-review: pass-tech-review。AutoFDO 官方指标修复复核通过；无 P0/P1；queue 无 pending（清理 stale pending 1 条），自动晋升 finalized。"
-last_task9_audit: "2026-05-23"
-last_task9_review_log: "logs/deep-review/2026-05-23-19-deep-review.md"
-last_task9_audit_log: "logs/deep-review/2026-05-23-16-audit.md"
-task9_review_notes: "2026-05-23 Task9 re-review：pass-tech-review。已复核 16 点抽检 P0（AutoFDO Cold App Launch/Boot/Binder-rpc/Hwbinder 指标）修复；本轮无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_audit: "2026-06-16"
+last_task9_review_log: "logs/deep-review/2026-06-16-13-audit.md"
+last_task9_audit_log: "logs/deep-review/2026-06-16-13-audit.md"
+task9_review_notes: "2026-05-23 Task9 re-review：pass-tech-review。已复核 16 点抽检 P0（AutoFDO Cold App Launch/Boot/Binder-rpc/Hwbinder 指标）修复；本轮无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-16 13 Task9 idle audit auto-fix：修正 ProfilingManager 触发来源判定 API，`getTag()` 改为 `getTriggerType()` / 文件名 `trigger-type-x`，并补充 `TRIGGER_TYPE_OOM` 返回 Java heap dump 的产物边界；同步 applicable_versions 到 Android 17 / API 37。证据：Android Developers ProfilingTrigger / ProfilingResult / ProfilingManager docs。已回到 Task6 复审。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
+last_task9_autofix_at: "2026-06-16"
 ---
 
 # 案例集
@@ -428,7 +429,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，取得一次优化不容易，守住不退步更难——每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
 
-**第五，利用系统级自动采集减少人工排查。** Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（内存超限）等触发类型，`ProfilingResult.getTag()` 可以区分不同触发源产出的 trace 文件。系统触发受采样策略和设备版本约束，不能保证每次事件都产出 trace；线上使用仍需采样率控制和隐私脱敏。
+**第五，利用系统级自动采集减少人工排查。** Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（Java OOM，返回 Java heap dump）等触发类型；区分触发来源应读 `ProfilingResult.getTriggerType()` 或结果文件名里的 `trigger-type-x`，`getTag()` 只保留请求 tag，或承载部分异常 / 兼容性问题的附加分类。系统触发受采样策略和设备版本约束，不能保证每次事件都产出产物；线上使用仍需采样率控制和隐私脱敏。
 
 [自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 主动请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件；这类系统触发与 App 主动调用共用结果回调模型，但是否生成、保存和上报仍受采样策略、设备版本、权限边界和隐私策略约束。
 
