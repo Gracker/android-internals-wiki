@@ -24,24 +24,26 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: "pending"
+task9_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
 last_task6_at: 2026-06-16T22:15:00+08:00
 # task2b_state restored 2026-06-16 by Task9 — P0/P1 technical rework required
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T21:32:37+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-21-deep-review.md"
+last_task9_at: "2026-06-16T22:33:40+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-16-22-deep-review.md"
 last_task2b_lite_at: 2026-06-16
-task9_review_notes: "2026-06-16 21 Task9 deep-review：needs-rework。AOSP android-16.0.0_r3 复核发现 FrameTimeline 源码路径、filter_frames_before_trace_starts flag、JankClassificationThresholds 字段、trace SQL/protobuf 示例与 linux.perf 开销口径存在 P0/P1，已合并 queue P95。"
+task9_review_notes: "2026-06-16 22 Task9 re-review：auto-fixed。复核 android-16.0.0_r3 与 Perfetto proto 后，修正 JankClassificationThresholds 字段、FrameTimeline trace 起点过滤门控、linux.perf 开销口径、TraceConfig textproto 与过滤字段名；回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-16"
 ---
+
 
 # Android 17 Perfetto 数据源边界与验证
 
@@ -68,7 +70,7 @@ task9_review_notes: "2026-06-16 21 Task9 deep-review：needs-rework。AOSP andro
 FrameTimeline 通过 `classifyJankLocked()` 建立完整的 jank 分类机制，11 种类型对应不同的性能影响。
 
 ### 🔹 性能开销控制
-`linux.perf` 的 100Hz 采样带来约 0.1% 单核开销；`frametimeline` 仅在 trace session 开启时工作，开销极低。
+`linux.perf` 的开销由采样频率、目标进程范围和调用栈展开成本共同决定；`frametimeline` 仅在 trace session 开启时写入 packet。
 
 ### 🔹 版本演进路径
 Android 12 引入两个核心数据源，Android 16 达到完整优化状态，Android 17 需待公开 tag 验证。
@@ -144,14 +146,19 @@ mFrameTimeline->onBootFinished();     // <-- 注册点
 
 ### 1.3 关键参数配置
 
-**默认阈值**：`FrameTimeline.h` line 95-100
+**默认阈值**：`FrameTimeline.h` line 107-115
 ```cpp
 struct JankClassificationThresholds {
-    nsecs_t presentThreshold = std::chrono::duration_cast<std::chrono::nanoseconds>(2ms).count();
+    nsecs_t presentThresholdLegacy =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(2ms).count();
+    nsecs_t presentThresholdExtended =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(4ms).count();
     nsecs_t deadlineThreshold = std::chrono::duration_cast<std::chrono::nanoseconds>(0ms).count();
     nsecs_t startThreshold = std::chrono::duration_cast<std::chrono::nanoseconds>(2ms).count();
 };
 ```
+
+`classifyJankLocked()` 通过 `FlagManager::getInstance().increase_missed_frame_jank_threshold()` 在 legacy/extended present 阈值之间选择。
 
 **缓冲区大小**：
 ```cpp
@@ -173,22 +180,26 @@ private:
 
 作用：分离发送 Surface/DisplayFrame 的开始和结束时间戳，避免重复发送完整信息。
 
-### 1.5 Feature Flag 控制门控
+### 1.5 Trace 起点过滤门控
 
-`frameworks/native/services/surfaceflinger/common/FlagManager.cpp`：
+`FrameTimeline.cpp` line 915-920：
 ```cpp
-DUMP_ACONFIG_FLAG(filter_frames_before_trace_starts);
-FLAG_MANAGER_ACONFIG_FLAG(filter_frames_before_trace_starts, "")
+FrameTimeline::FrameTimeline(std::shared_ptr<TimeStats> timeStats, pid_t surfaceFlingerPid,
+                             JankClassificationThresholds thresholds, bool useBootTimeClock,
+                             bool filterFramesBeforeTraceStarts)
+      : mUseBootTimeClock(useBootTimeClock),
+        mFilterFramesBeforeTraceStarts(filterFramesBeforeTraceStarts),
 ```
 
-`FrameTimeline.cpp` line 919-921：
+写 expected/actual timeline packet 前会检查 trace session 的起点：
 ```cpp
-mFilterFramesBeforeTraceStarts(
-        FlagManager::getInstance().filter_frames_before_trace_starts() &&
-        filterFramesBeforeTraceStarts),
+if (filterFramesBeforeTraceStarts && !shouldTraceForDataSource(ctx, timestamp)) {
+    // Do not trace packets started before tracing starts.
+    return;
+}
 ```
 
-含义：控制 trace 启动前的 frame 是否写入 packet。
+含义：android-16.0.0_r3 中这是构造参数控制的 packet 过滤边界；`FlagManager.cpp` 没有 `filter_frames_before_trace_starts` aconfig flag。
 
 ### 1.6 JankTracker 异步通知链
 
@@ -274,10 +285,10 @@ bool ShouldRejectDueToFilter(pid_t pid, const TargetFilter& filter) {
 }
 ```
 
-支持三种过滤方式：
-- `target_cmdline`：白名单 cmdline（支持通配符）
-- `exclude_cmdlines`：黑名单 cmdline  
-- `pids` / `exclude_pids`：直接 PID 过滤
+TraceConfig 字段与 `TargetFilter` 内部集合名要区分。对外配置使用：
+- `callstack_sampling.scope.target_cmdline`：白名单 cmdline（Android 13+ 支持单个通配符）
+- `callstack_sampling.scope.exclude_cmdline`：黑名单 cmdline
+- `callstack_sampling.scope.target_pid` / `exclude_pid`：直接 PID 过滤
 
 ### 2.5 实时进程发现延迟
 
@@ -314,7 +325,7 @@ message PerfEventConfig {
 | 注册时机 | traced 检测到 config 含此 data source 时启动 traced_perf | SurfaceFlinger.onBootFinished() 无条件注册 |
 | 数据路径 | perf_event_open syscall → kernel ring buffer → traced_perf → traced | SurfaceFrame lifecycle → FrameTimeline::Trace() → traced |
 | 数据语义 | CPU 周期采样 + 调用栈 | 显示帧 jank 类型 + 预测 vs 实际时间线 |
-| 性能开销 | 100Hz ≈ 1-3% CPU（unwind 主导） | 极低（仅在 trace session 开启时写 packet） |
+| 性能开销 | 随采样频率、目标范围和调用栈展开方式变化，需在目标设备实测 | 仅 trace session 开启时写 packet |
 | Android 12+ 可用 | 是 | 是 |
 | Android 17 验证状态 | 需公开 tag 复核 | 需公开 tag 复核 |
 
@@ -332,14 +343,14 @@ message PerfEventConfig {
 ## 5. 性能影响分析
 
 ### 5.1 `linux.perf` 性能开销
-- **100Hz 采样**：100Hz × 每次约 1ms unwinder 工作 = ~0.1% 单核开销
-- **高频瓶颈**：1000Hz 时 unwinder 队列成为瓶颈（默认 `max_enqueued_footprint_kb` 触发时丢样）
+- **采样频率**：`timebase.frequency` 越高，perf event 采样和 unwinder 队列压力越大，不能用固定百分比描述所有设备。
+- **内存与丢样边界**：`max_enqueued_footprint_kb` 会在 unwinder 队列占用超过阈值时丢样；`max_daemon_memory_kb` 会在 `traced_perf` 内存超过阈值时停止数据源。
 - **启动延迟**：`ConnectWithRetries`（kInitialConnectionBackoffMs=100ms, kMaxConnectionBackoffMs=30s）
 
 ### 5.2 `frametimeline` 性能开销
-- **空闲开销**：trace session 不开时为 0
-- **运行开销**：开启时每个 SurfaceFrame 写 1-2 个 packet，锁竞争极低
-- **异步通知**：JankTracker 使用低优先级 BackgroundExecutor，不影响主线程
+- **空闲开销**：trace session 不开时没有 Perfetto packet 写入；FrameTimeline 自身的帧状态维护仍属于 SurfaceFlinger 正常路径。
+- **运行开销**：开启时每个 SurfaceFrame 写 1-2 个 packet，锁竞争极低。
+- **异步通知**：JankTracker 使用低优先级 BackgroundExecutor，不影响 SurfaceFlinger 主路径。
 
 ## 6. 实际应用建议
 
@@ -364,25 +375,35 @@ adb shell cmd tracing perfetto --start-trigger ...
 
 ### 6.3 性能优化配置
 
-```protobuf
-// PerfEventConfig 优化示例
-message PerfEventConfig {
-  // 降低采样频率减少 overhead
-  optional CallstackSampling callstack_sampling = 16 {
-    scope: TARGET_CMDLINE
-    target_cmdlines: ["myapp"]
-    user_frames: UNWIND_WITH_DWARF
-  };
-  
-  // 限制内存使用
-  optional uint64 max_enqueued_footprint_kb = 17 {
-    value: 1024  // 1GB
-  };
-  
-  // 针对性 CPU 采样
-  repeated uint32 target_cpu = 20 {
-    value: [0, 1, 2, 3]  // 仅采样指定核心
-  };
+```textproto
+# Perfetto TraceConfig textproto 示例
+buffers {
+  size_kb: 32768
+  fill_policy: RING_BUFFER
+}
+
+data_sources {
+  config {
+    name: "linux.perf"
+    perf_event_config {
+      timebase {
+        frequency: 100
+      }
+      callstack_sampling {
+        scope {
+          target_cmdline: "myapp"
+        }
+        user_frames: UNWIND_DWARF
+      }
+      ring_buffer_pages: 256
+      max_enqueued_footprint_kb: 65536
+      max_daemon_memory_kb: 262144
+      target_cpu: 0
+      target_cpu: 1
+      target_cpu: 2
+      target_cpu: 3
+    }
+  }
 }
 ```
 
@@ -418,7 +439,7 @@ git log android-16.0.0_r3..android-17.0.0_r1 \
 
 1. **信号处理脆弱性**：execve 期间的 50ms 延迟可能遗漏短进程
 2. **内存压力**：高采样频率下的 unwinder 队列积压
-3. **权限控制**：`filter_frames_before_trace_starts` 的默认值影响数据完整性
+3. **FrameTimeline 过滤边界**：`mFilterFramesBeforeTraceStarts` 为 true 时，trace 开始前已启动的 frame packet 会被过滤；该行为来自构造参数，不是 android-16.0.0_r3 的 aconfig flag。
 
 ## 信息源与参考资料
 
