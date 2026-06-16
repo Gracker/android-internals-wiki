@@ -66,7 +66,8 @@ task9_reviewed_date: "2026-06-15"
 task9_review_notes: "2026-05-18 12:44 Task9 deep-review: pass-tech-review。P0/P1/P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-15 22:23 Task9 idle audit auto-fix：AOSP 源码锚点从未固定 tag 改为 android-16.0.0_r1，补 `ApkLiteParseUtils.java` 锚点并修复 frontmatter 结束标记；无 P0/P1。"
 last_task9_audit: "2026-06-15"
 last_task9_autofix_at: "2026-06-15"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-16
 ---
 
 # App Bundle 与按需分发
@@ -100,7 +101,6 @@ last_task9_autofix_at: "2026-06-15"
 
 Android App Bundle（AAB）是交给 Google Play 或 `bundletool` 的发布格式，设备最终安装的是分发侧生成的 APK 组合。分发侧会根据设备 ABI、屏幕密度、语言、功能模块和资产包生成一组 APK。对用户来说，下载目标从“拿完整安装包”变成“拿这台设备需要的 base APK、配置 APK、功能 APK 或资产包”。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md]
 
 ## AAB 格式与分包机制
 
@@ -207,7 +207,6 @@ manager.startInstall(request)
 
 模块边界按依赖方向设计。feature module 可以依赖 base module，base module 不能直接引用 feature module 的实现类；公共接口、路由协议、埋点模型和错误码应放在 base 或独立 API 模块。资源也要跟着功能移动：功能页面专用图片、layout、字符串和 native 库放进 feature module；启动图、通用图标、登录依赖和崩溃兜底页面留在 base module。
 
-[结构参考: Clippings/Android 性能优化 - 通过插件化来优化包体积（上）.md；Clippings/Android 性能优化 - 通过插件化来优化包体积（下）.md]
 
 ## Play Asset Delivery 与大资源管理
 
@@ -232,7 +231,6 @@ PAD 的风险主要在可用性与缓存一致性：
 - **磁盘占用**：按需资源不会让磁盘成本消失，只是把下载时机后移。清理策略要纳入发版设计。
 - **观测指标**：记录资源包下载耗时、失败码、取消率、重试次数和首用等待时间。没有这些指标，PAD 上线后很难判断收益是否覆盖等待成本。
 
-[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md；Clippings/Android 性能优化 - so 文件的体积优化实战.md]
 
 ## 国内分发场景的 AAB 替代方案
 

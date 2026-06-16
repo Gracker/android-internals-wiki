@@ -651,3 +651,11 @@ mAnrRecords.add(AnrRecord) → startAnrConsumerIfNeeded → AnrConsumerThread �
 
 ---
 
+
+
+### Android 14-17 ANR 检测链路与 InputDispatcher 超时机制源码深度解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 IInputConstants.aidl 到 AnrHelper.appNotResponding 的完整 ANR 检测链路源码解析。核心发现：(1) input 派发超时 = 5000ms × ro.hw_timeout_multiplier；(2) processAnrsLocked 每轮检测 mAnrTracker 并组装 mLastAnrState 诊断快照；(3) AnrController 新增 blamePendingFocusRequest 解决焦点切换误报；(4) AnrHelper 异步 trace dump 编排（AnrConsumerThread 单线程消费），drop 重复/zero-pid/pre-dumped；(5) isSilentAnr 控制后台 ANR 静默 kill；(6) Watchdog 15s 预 dump + 60s 超时杀 system_server。覆盖 Android 14-17 版本演进。
+- 注入时间：2026-06-16
+- 价值：把 AIW ch09 ANR 章节从架构级描述推进到源码级验证，特别是 blamePendingFocusRequest、mTempDumpedPids 防竞争、mDropboxRateLimiter 等 Android 16/17 新增机制在 AIW 中尚未覆盖

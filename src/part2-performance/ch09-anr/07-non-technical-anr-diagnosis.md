@@ -95,6 +95,8 @@ last_task9_review_log: logs/deep-review/2026-06-13-01-audit.md
 task9_review_notes: "2026-06-13 Task9 idle audit auto-fix: 修正 ContentProvider WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG 与 setDetectNotResponding 路径混用。P0 1(auto-fixed) / P1 0 / P2 0；回到 Task6 复审。"
 finalized_date: "2026-06-04"
 finalized_by: openclaw-task9-auto-promote
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-16
 ---
 
 # ANR 非技术故障诊断
@@ -128,7 +130,6 @@ ANR 报告把责任先落在"超时的进程"上,这一步只够告诉我们谁�
 
 [已验证: 官方文档, https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
 
-<!-- AIW-源码调研-2026-06-06 -->
 **⚠️ 重要源码锚点修正**：ContentProvider 实际存在两条正交的超时路径，当前表格表述不够精确：
 
 - **路径 1：Provider 进程 publish 超时（10s）**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（10s × HW_TIMEOUT_MULTIPLIER）在 `attachApplicationLocked` 中发送 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57`，超时后调用 `ContentProviderHelper.processContentProviderPublishTimedOutLocked` → `removeProcessLocked` + `REASON_INITIALIZATION_FAILURE`（杀进程，**不弹 ANR 对话框**，Perfetto 中只见 `am_proc_died` 无 `am_anr`）。
@@ -137,7 +138,6 @@ ANR 报告把责任先落在"超时的进程"上,这一步只够告诉我们谁�
 **常量定义位置修正**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 等常量定义在 `ContentResolver`（android-16 为 l.788-807），非 `ContentProviderHelper`。`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57` 用于 provider publish 超时；`WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG=73` 只用于等待 provider publish 状态超时，不是 `setDetectNotResponding()` 的 call-hang ANR 消息。
 
 **排查入口区分**：若遇到 "Unable to launch app ... for provider ... launching app became null" 或 `REASON_INITIALIZATION_FAILURE`，应查路径 1；若遇到 ANR 对话框且 subject 包含 "ContentProvider not responding"，应查路径 2 + `setDetectNotResponding` 的调用方。
-<!-- AIW-源码调研-2026-06-06 -->
 
 [已验证: 官方文档, https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
 

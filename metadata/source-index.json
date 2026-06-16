@@ -2424,6 +2424,62 @@
       ],
       "summary": "Flutter手势机制深度解析，包含事件处理和手势识别原理...",
       "scored_at": "2026-06-15T09:06:56.807081"
+    },
+    {
+      "title": "Android-2026-06-15",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/每日论文精读（Android）/Android-2026-06-15.md",
+      "score": 14,
+      "chapter": "ch13",
+      "date": "2026-06-16",
+      "scored_at": "2026-06-16T05:47:22.552381"
+    },
+    {
+      "title": "2026-06-15-AI-agent-benchmark-evaluation-osworld",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/每日论文精读（AI）/2026-06-15-AI-agent-benchmark-evaluation-osworld.md",
+      "score": 15,
+      "chapter": "ch16",
+      "date": "2026-06-16",
+      "scored_at": "2026-06-16T05:47:22.552391"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-16-android15-battery-historian-perf-metrics-integration.md",
+      "title": "Android 15 Battery Historian 与性能指标的深度集成机制",
+      "summary": "Battery Historian 数据入口 dumpsys batterystats --proto，Streamlined Battery Stats 三层 flag，PowerStatsService 功耗归因链，WakeupReason 与 Perfetto POWER track 联动",
+      "chapter": "ch14/ch26",
+      "processed_at": "2026-06-16T06:12:28.318156",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-android17-network-quota-limit-enforcement.md",
+      "title": "Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径",
+      "summary": "双服务架构（采集+策略执行），BPF/eBPF FastDataInput 4 个 BpfMap，quota 超限触发链：BPF → netd → AlertObserver → firewall chain",
+      "chapter": "ch12",
+      "processed_at": "2026-06-16T06:12:28.318156",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md",
+      "title": "Android 14-17 ANR 检测链路与 InputDispatcher 超时机制源码深度解析",
+      "summary": "InputDispatcher 5s 超时检测，processAnrsLocked，AnrHelper 异步 dump，isSilentAnr，blamePendingFocusRequest，Android 16/17 演进",
+      "chapter": "ch09",
+      "processed_at": "2026-06-16T06:12:28.318156",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-android-pss-rss-fastpath-smaps-rollup-status-vmrss-throttle.md",
+      "title": "Android 14/15+ PSS/RSS 快速路径：smaps_rollup / StatusVmRSS 优化与 getProcessMemoryInfo 限速",
+      "summary": "三层采样降级，IsSmapsRollupSupported 全局原子缓存，5 分钟限速，Debug.getRss() 新 API，PROCESS_MEMORY_STAT_REPORTED statsd 链",
+      "chapter": "ch23/ch26",
+      "processed_at": "2026-06-16T06:12:28.318156",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-blast-buffferqueue-canunblockuithread-and-pipeline-pitfalls.md",
+      "title": "BLASTBufferQueue 关键回调链与 canUnblockUiThread 提前释放机制",
+      "summary": "canUnblockUiThread = info.prepareTextures，BLASTBufferQueue 两类回调语义，Android 17 BufferQueue 所有权下沉，PictureProfileHandle",
+      "chapter": "ch18",
+      "processed_at": "2026-06-16T06:12:28.318156",
+      "action": "queue"
     }
   ]
 }

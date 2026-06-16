@@ -1426,3 +1426,10 @@ utf-8## [Task2A Gap Mining] 本轮已检查方向 — 2026-06-13 16:04 (Round 10
 
 ### 管线状态
 全书 426 文件、0 draft、约 301 finalized（70.9%）、80 ready-for-review（18.8%）。连续 135 轮无合格缺口。管线堵点在 Task 6/Task 9 复审环节（80 个 ready-for-review 待推进），非内容缺口。知识库进入收尾维护阶段。
+
+## [Task6 Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-06-16
+- **类型**：需确认
+- **位置**：版本演进表 "Android 17 相关 GKI" 行，AutoFDO benchmark 数据
+- **问题**：Task9 闲时抽检 auto-fix 更新了正文 AutoFDO 数据（Boot time 1.1%、Cold App launch 6.6%、Binder-rpc 15%、Binder-addints 23%、Hwbinder 23%），但版本演进表中仍为旧数据（Boot 1.9%、Cold App launch 3.4%）。Task6 已暂行按正文修正版本表数据，但需 Task9/Task2B 确认正文数据确实来自 android17-6.18 gki/aarch64/afdo/README.md 最新版本。
+- **建议**：核对 android17-6.18 分支的 gki/aarch64/afdo/README.md 原文，确认正文数据为准后清除 [需确认] 标注。
+- **review 日志**：logs/review/2026-06-16-08-review.md
