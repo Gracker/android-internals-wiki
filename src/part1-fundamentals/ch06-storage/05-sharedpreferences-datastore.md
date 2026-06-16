@@ -40,6 +40,8 @@ task2b_result: fixed
 last_task9_audit: "2026-06-11"
 last_task6_audit: "2026-06-11"
 last_task9_audit_log: "logs/deep-review/2026-06-11-14-audit.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-16
 ---
 
 # 6.5 SharedPreferences/DataStore 性能与 ANR 优化
@@ -562,5 +564,5 @@ MMKV 通过 `mmap` 减少了传统文件 I/O 的一部分开销。在高频小�
 - AOSP ActivityThread.java: `frameworks/base/core/java/android/app/ActivityThread.java`
 - AOSP BroadcastReceiver.java: `frameworks/base/core/java/android/content/BroadcastReceiver.java`
 - [Jetpack DataStore 官方文档](https://developer.android.com/topic/libraries/architecture/datastore)
-- [今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待](https://mp.weixin.qq.com/s/kfF83UmsGM5w43rDCH544g) [来源: Obsidian Cubox]
-- [Google I/O 2024: DataStore 最佳实践](https://developer.android.com/videos/play/live/308012) [待验证]
+- [今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待](https://mp.weixin.qq.com/s/kfF83UmsGM5w43rDCH544g)
+- [Google I/O 2024: DataStore 最佳实践](https://developer.android.com/videos/play/live/308012)

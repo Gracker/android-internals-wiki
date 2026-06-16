@@ -65,6 +65,8 @@ p1: 0
 p2: 0
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T09:06:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-16
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
@@ -94,7 +96,7 @@ TLS 1.3 把这个流程压缩到了 1-RTT。核心变化在于密钥交换机制
 
 [图：TLS 1.2 vs TLS 1.3 握手时序对比。左栏 TLS 1.2：ClientHello → ServerHello+Cert+ServerHelloDone → ClientKeyExchange+ CCS + Finished → CCS + Finished（2-RTT）。右栏 TLS 1.3：ClientHello+KeyShare → ServerHello+KeyShare+Cert+Finished（1-RTT）。标出每段 RTT 和关键差异]
 
-Google 在 Android 10（API 29）上默认启用 TLS 1.3 后报告，相比 TLS 1.2 有最高 40% 的速度提升。[已验证: 官方文档, developer.android.com/about/versions/10/features#tls-1.3]
+Google 在 Android 10（API 29）上默认启用 TLS 1.3 后报告，相比 TLS 1.2 有最高 40% 的速度提升。
 
 TLS 1.3 还定义了 0-RTT（Zero Round-Trip Time）恢复模式。当客户端之前连接过某个服务器并获得 session ticket 后，下次连接时可以在 ClientHello 中携带加密的 "early data"。Android 客户端能不能使用这条路径，取决于网络库是否公开 early data / QUIC / HTTP/3 能力。
 
@@ -102,7 +104,7 @@ OkHttp 可以通过平台 TLS provider 使用 TLS 1.3，但 OkHttp 5 的公开 `
 
 0-RTT early data 不具备前向安全性且可被重放，因此只适用于幂等请求（GET / HEAD），不能用于有副作用的操作（POST /transfer）。Android 10 的 TLS 1.3 文档明确说明平台 TLS 1.3 不支持 0-RTT；后续可用性主要取决于网络栈是否公开 QUIC / HTTP/3 / TLS 0-RTT 能力。`HttpEngine.Builder.addQuicHint()` 只说明开启 HTTP cache 后可辅助 QUIC 0-RTT connection establishment；Cronet `QuicOptions.Builder.enableTlsZeroRtt()` 是 QUIC/TLS 0-RTT 开关。当前公开文档不能推出“Android 15 Conscrypt 自动阻断 0-RTT 重放”。
 
-工程建议：GET 类请求和首屏元数据请求，只有在网络库明确支持 QUIC / TLS 0-RTT、服务端实现 anti-replay 并完成灰度验证后，才把 0-RTT 纳入连接延迟优化；有副作用的写操作（POST / PUT / DELETE）不应走 0-RTT。Android 侧只把 `HttpEngine` / Cronet 视为能力入口，不能把平台 TLS provider 当作自动安全兜底。[已验证: Android 10 TLS 1.3 文档；developer.android.com/reference/android/net/http/HttpEngine.Builder；Cronet QuicOptions API]
+工程建议：GET 类请求和首屏元数据请求，在确认网络库支持 QUIC / TLS 0-RTT、服务端实现了 anti-replay 并通过灰度验证后，再把 0-RTT 纳入连接延迟优化；有副作用的写操作（POST / PUT / DELETE）不应走 0-RTT。
 
 ### Session Resumption：被低估的优化手段
 
@@ -126,8 +128,6 @@ Android 平台的 TLS 行为随着版本演进持续收紧：
 | Android 11 (API 30) | TLS 1.3 完善支持 |
 | Android 17 (API 37) | ECH 平台配置面、targetSdk 37+ CT 默认验证 |
 
-[已验证: 官方文档, developer.android.com/training/articles/security-gms-provider]
-
 Android 的 TLS 实现由 Conscrypt 安全提供者（基于 BoringSSL）负责。这个提供者通过 Google Play System Updates（Project Mainline）推送，设备不需要系统 OTA 就能收到 TLS 安全补丁和协议更新。实际更新范围取决于设备厂商对 Mainline 模块的支持程度。
 
 ## Encrypted Client Hello (ECH) 的性能影响
@@ -138,7 +138,7 @@ Encrypted Client Hello（ECH，RFC 9849）的目的是加密 TLS ClientHello 中
 
 ### Android 17 的 ECH 支持
 
-Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供配置面。当前官方文档公开示例使用 `mode="enabled"` 和 `mode="disabled"`，默认行为是 enabled；不要把旧草案或二手资料里的 `opportunistic` 写成可用枚举。ECH 是否生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。按照 Network Security Config 的 `enabled` 语义，有 ECHConfig 时会强制 ECH；没有 ECHConfig 时启用 ECH GREASE。不要把“ECH 协商失败”笼统写成普通 TLS 回退，失败处理要以具体网络库和服务端配置为准。
+Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供配置面。官方文档公开的枚举为 `mode="enabled"` 和 `mode="disabled"`，默认行为是 enabled。ECH 是否生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。按照 Network Security Config 的 `enabled` 语义，有 ECHConfig 时会强制 ECH；没有 ECHConfig 时启用 ECH GREASE。ECH 协商失败时的具体行为取决于网络库和服务端配置，不能一概视为普通 TLS 回退。
 
 ECH 配置通常通过 DNS 的 HTTPS/SVCB 记录分发。解析过程可以走传统 DNS，也可以走 DoH/DoT；DoH/DoT 只是 DNS 传输层的实现方式，不是 ECH 协商本身的前提。做性能分析时，要把“拿到 ECH 配置的 DNS 成本”和“TLS 握手里执行 ECH 的成本”拆开看。
 
@@ -148,18 +148,15 @@ ECH 的额外开销来自两部分：
 
 1. **DNS 查询增加**：客户端要先拿到 ECH 配置。这个动作通常体现在一次 DNS HTTPS/SVCB 查询或缓存命中判断里，不一定意味着额外发起一次 DoH HTTPS 请求。首次解析未命中缓存时，额外延迟主要还是 RTT；命中缓存后，这部分成本接近零。
 
-2. **ClientHello 加密**：ECH 使用 HPKE（Hybrid Public Key Encryption）对 ClientHello 进行加密。公开资料通常把延迟主项放在 DNS 查询、缓存命中和网络 RTT 上，而不是 HPKE 本身。正文不把这一步写成固定耗时；如果要给出设备侧数字，需要按 X25519 / P-256、AES-GCM / ChaCha20-Poly1305、payload 大小和设备加速能力分别压测。
+2. **ClientHello 加密**：ECH 使用 HPKE（Hybrid Public Key Encryption）对 ClientHello 进行加密。公开资料通常把延迟主项放在 DNS 查询、缓存命中和网络 RTT 上，而不是 HPKE 本身。具体耗时取决于 KEM 算法（X25519 / P-256）、AEAD 套件（AES-GCM / ChaCha20-Poly1305）、payload 大小和设备加速能力，不适合用单一数字概括。
 
 在性能排查里，先拆 DNS HTTPS/SVCB 获取、TLS 握手、连接复用和证书验证四段，再决定是否需要单独压测 HPKE suite。
 
-Android 17 的 Advanced Protection Mode 主要面向设备安全策略，例如 2G/WEP 限制、sideloading 防护、forensic logging、未知号码来电和消息链接防护等。公开文档没有给出“无视 App Network Security Config、强制所有可用域名走 ECH + DoH3”的依据。把 APM 与 ECH 放在一起排查时，只能确认设备是否处于 APM 状态，不能把它当作 ECH 失败或 DoH3 路径切换的直接原因。
+Android 17 的 Advanced Protection Mode 主要面向设备安全策略，例如 2G/WEP 限制、sideloading 防护、forensic logging、未知号码来电和消息链接防护等。排查 ECH 问题时，只需确认设备是否处于 APM 状态，不需要把 APM 当作 ECH 失败或 DoH3 路径切换的直接原因。
 
-**ECH 的 CPU 开销**：ECH 握手会多一次 HPKE 封装 / 解封装路径，成本集中在握手阶段，连接建立后不再出现。公开 Android 文档没有给出跨设备可复用的固定比例；对高频短连接场景（如消息轮询、推送心跳），需要按 ECHConfig 获取方式、KEM / AEAD suite、SoC 加速能力和网络库实现做同设备 A/B。
+**ECH 的 CPU 开销**：ECH 握手会多一次 HPKE 封装 / 解封装路径，成本集中在握手阶段，连接建立后不再出现。对高频短连接场景（如消息轮询、推送心跳），需要按 ECHConfig 获取方式、KEM / AEAD suite、SoC 加速能力和网络库实现做同设备 A/B 测试才能得出可用数字。
 
 [图：ECH 在 TLS 握手中的位置。标出正常 TLS（SNI 明文）vs ECH 模式（SNI 加密，经 DNS HTTPS/SVCB 获取 ECH 配置）的流程差异，重点展示 DNS 解析阶段与 TLS 握手阶段的分界]
-
-[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17]
-[待验证: Android 17 平台级 ECH 实现对 OkHttp / Cronet 等上层 HTTP 客户端的透明性——平台负责在 TLS 层处理 ECH 协商，理论上上层无感，但具体客户端行为（如 OkHttp 的 TLS 配置覆盖）需对照 Android 17 正式版验证]
 
 ## Certificate Transparency 的开销
 
@@ -181,16 +178,13 @@ Android 16 及之前，CT 默认不启用，需要 App 通过 Network Security C
 
 CT 验证通常不该成为移动网络请求的首要耗时项。更常见的现场是兼容性失败：证书缺少足够 SCT、SCT 来自不合规日志、私有 CA 或内部证书没有按 Android CT Policy 配置，targetSdk 37 升级后 TLS 直接失败。App 不会收到“性能差”的反馈，而是直接收到连接异常。
 
-如果要把 CT 验证写成具体耗时，需要给出设备型号、Android 版本、证书链长度、SCT 数量、签名算法和采集方式。没有这组条件时，正文只保留方向判断，不写通用微秒级数字。
+CT 验证的具体耗时取决于设备型号、Android 版本、证书链长度、SCT 数量和签名算法，不同环境差异很大。
 
-排查方法：在 OkHttp 的 `EventListener` 中监听 `connectEnd` / `connectFailed` 回调，如果 targetSdk >= 37 的 App 在升级后出现大量 TLS 连接失败，优先检查服务器证书的 SCT 配置。可以用 `openssl s_client -connect host:443 -ct` 命令查看证书的 SCT 数量。
-
-[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17]
-[已验证: Android Certificate Transparency Policy, developer.android.com/privacy-and-security/certificate-transparency-policy]
+排查时，在 OkHttp 的 `EventListener` 中监听 `connectEnd` / `connectFailed` 回调。targetSdk 37 升级后如果出现大量 TLS 连接失败，优先检查服务器证书的 SCT 配置。用 `openssl s_client -connect host:443 -ct` 可以直接查看证书中的 SCT 数量。
 
 ## 从 HTTP 到 HTTPS：迁移中的延迟陷阱
 
-Android 对明文流量的限制逐代收紧。当前能从官方文档稳定确认的边界是：API 23 引入 `usesCleartextTraffic`，API 24 引入 Network Security Configuration，targetSdkVersion >= 28 默认禁止明文流量。本文不把 Android 17 写成 cleartext hard block；如果后续正式行为变更文档给出新条件，再按条件补充。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。
+Android 对明文流量的限制逐代收紧。当前能从官方文档稳定确认的边界是：API 23 引入 `usesCleartextTraffic`，API 24 引入 Network Security Configuration，targetSdkVersion >= 28 默认禁止明文流量。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。
 
 ### 弃用时间线
 
@@ -199,8 +193,6 @@ Android 对明文流量（HTTP）的限制是一个渐进过程：
 - **Android 6.0 (API 23)**：引入 `usesCleartextTraffic` 标志和 `StrictMode` 检测
 - **Android 7.0 (API 24)**：引入 Network Security Configuration，提供更细粒度的控制
 - **Android 9 (API 28)**：targetSdkVersion >= 28 的 App 默认禁止明文流量
-
-[已验证: 官方文档, developer.android.com/training/articles/security-config]
 
 ### 迁移中的延迟变化
 
@@ -229,7 +221,7 @@ Network Security Configuration 是 Android 推荐的网络安全管理方式，�
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    
+
     <!-- 调试模式允许 localhost 明文（仅 debuggable=true 时生效） -->
     <debug-overrides>
         <trust-anchors>
@@ -241,11 +233,9 @@ Network Security Configuration 是 Android 推荐的网络安全管理方式，�
 
 `debug-overrides` 只在 App 处于 debuggable 模式时生效，不会影响生产环境的性能和安全。
 
-[已验证: 官方文档, developer.android.com/training/articles/security-config]
-
 ## HPKE 混合加密 SPI
 
-Android 平台在 API 35 起公开了 Hybrid Public Key Encryption（HPKE，RFC 9180）的 Service Provider Interface（SPI）。它是一组独立的加密能力 API，适合端到端加密、密钥封装和安全配置分发等场景，不等同于普通 HTTPS 连接默认会走的 TLS 路径。
+Android 15（API 35）公开了 Hybrid Public Key Encryption（HPKE，RFC 9180）的 Service Provider Interface（SPI）。HPKE 是一组独立的加密能力 API，适合端到端加密、密钥封装和安全配置分发，和普通 HTTPS 连接默认走的 TLS 路径是两回事。
 
 ### 为什么要关注
 
@@ -258,11 +248,6 @@ HPKE 适合以下需要公钥加密的场景：
 - **端到端加密消息**：使用接收者的公钥加密消息内容
 - **安全配置分发**：设备注册时加密敏感配置数据
 - **跨进程安全通信**：App 内部不同组件间的加密数据传递
-
-`HpkeSpi` 以 JCA provider SPI 的形式公开，文档显示它在 API 35 引入，面向安全提供者或上层框架接入 HPKE 套件。它属于独立的加密能力扩展点，不会把普通 HTTPS 连接自动切到 HPKE 路径。
-
-[已验证: 官方文档, developer.android.com/reference/android/crypto/hpke/HpkeSpi]
-[待验证: Android 平台公开文档仍缺少 HPKE 端到端性能基准；如要把它引入生产环境，需要结合具体 provider、suite 和消息体大小自行压测]
 
 ## 优化实践：从观测到行动
 

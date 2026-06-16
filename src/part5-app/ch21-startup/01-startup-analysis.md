@@ -41,6 +41,9 @@ last_task2b_verifier_at: "2026-06-02T03:33:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-03-task2b-verifier.md"
 task6_reviewed_at: "2026-06-02T07:07:00+08:00"
 task6_reviewed_by: openclaw-task6
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-16
+last_deepseek_polish_at: 2026-06-16
 ---
 
 # 启动完整路径分析（App 视角）
@@ -534,11 +537,11 @@ Baseline Profile 的制作和使用在 21.4 节详细介绍。从 dex 加载角�
 
 更轻量的方式：在 `Application.attachBaseContext` 中记录时间戳，在 `Application.onCreate` 中分 SDK 记录时间戳，看哪些 SDK 初始化耗时异常长。如果某个 SDK 初始化耗时远超其文档声称的时间，类加载（首次引用 + 依赖类的级联加载）可能是隐藏的原因。
 
+上面讨论的是 App 侧能做的工作——类重排、Baseline Profile。系统侧还有一条并行的加速路径：Zygote 预热和 ClassLoader 缓存。这条路径对 App 开发者基本透明，但理解它有助于解释"为什么同一台设备上第二次冷启动比第一次快"。
 
-<!-- AIW-源码调研-2026-06-12 -->
-### 源码级补充：Zygote 预热与 ClassLoader 缓存（Android 14+）
+### Zygote 预热与 ClassLoader 缓存（Android 14+）
 
-> 本节为 AutoResearchClaw · 每日源码调研反哺，原始报告：[DeepResearch/2026-06-12-android14-cold-start-warmup-mechanism.md](../../../../../../../../../Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android14-cold-start-warmup-mechanism.md)。源码锚点统一在 `android-14.0.0_r1`。
+> 源码锚点统一在 `android-14.0.0_r1`，原始调研报告见 DeepResearch/2026-06-12-android14-cold-start-warmup-mechanism。
 
 冷启动"预热"在系统侧由 Zygote 集中承担，并由 system_server 触发。三条相互衔接的路径共同决定首进程耗时：
 
@@ -618,4 +621,3 @@ synchronized (mLoaders) {
 | 35 | `Resources.preloadResources()` 静态化 | `ZygoteInit15.java#preload` |
 
 > **Android 17 / API 37 为本文最高版本边界**。未读取或引用 Android 18 / API 38+ 内容。
-<!-- AIW-源码调研-2026-06-12-end -->

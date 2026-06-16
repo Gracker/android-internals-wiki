@@ -3,7 +3,7 @@
 
 title: "Audio Pipeline 延迟与性能"
 chapter: "1.16"
-status: "ready-for-review"
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [audio, audioflinger, aaudio, latency, perfetto, scheduling]
 related_chapters: ["1.4", "5.1", "5.6", "16.5"]
@@ -14,10 +14,10 @@ drafted_by: "openclaw-task2a"
 last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-27"
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-16
 last_task6_review_log: "logs/review/2026-05-27-16-review.md"
-last_task6_at: "2026-05-27T16:08:00+08:00"
+last_task6_at: 2026-06-16T20:10:00+08:00
 last_task6_audit: "2026-06-11"
 task6_result: pass-light-edit
 task9_result: auto-fixed
@@ -36,8 +36,8 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed

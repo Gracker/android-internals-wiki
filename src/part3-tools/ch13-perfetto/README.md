@@ -15,7 +15,7 @@ sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md"
 tags: ['perfetto', 'tracing', 'overview', 'chapter-intro']
-related_chapters: ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "13.7", "13.8", "13.9", "13.10", "13.11", "13.12", "13.13", "13.14", "13.15", "13.16"]
+related_chapters: ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "13.7", "13.8", "13.9", "13.10", "13.11", "13.12", "13.13", "13.14", "13.15", "13.16", "13.17"]
 pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed
@@ -64,6 +64,7 @@ task9_reviewed_date: "2026-04-28"
 - 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 - 13.15 BufferQueue 阻塞的 Perfetto 识别
 - 13.16 Agent 辅助 Perfetto 分析协议
+- 13.17 Android 17 Perfetto 数据源边界与验证
 
 ## 阅读顺序建议
 
