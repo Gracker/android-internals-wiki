@@ -24,13 +24,13 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: "needs-rework"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
-last_task6_at: 2026-06-16T21:11:00+08:00
+last_task6_at: 2026-06-16T22:15:00+08:00
 # task2b_state restored 2026-06-16 by Task9 — P0/P1 technical rework required
 task9_result: "needs-rework"
 task2b_result: "fixed-lite"
