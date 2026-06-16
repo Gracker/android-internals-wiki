@@ -5,8 +5,8 @@ section: "7.9"
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-04"
-last_verified_against: "AOSP android-17-beta3"
+last_verified: "2026-06-16"
+last_verified_against: "AOSP android-16.0.0_r1; Android 17 public tag unavailable"
 task6_reviewed_date: "2026-05-05"
 last_task6_audit: "2026-05-23"
 review_type: "task6-writing-quality-review"
@@ -21,16 +21,16 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-24"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-06-16"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-24T01:38:24+08:00"
-task9_review_notes: "2026-05-24 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 1（既有 RESAMPLE_LATENCY 口径建议，未重复入队）；InputTransportResampling DEBUG tag 修复已复核；自动晋升 finalized；详见 logs/deep-review/2026-05-24-01-deep-review.md。"
+last_task9_at: "2026-06-16T10:28:38+08:00"
+task9_review_notes: "2026-06-16 Task9 idle audit: AUTO-FIX P1 version anchor. InputConsumer resampling constants were labeled AOSP mainline; verified against android-16.0.0_r1 and updated the source anchor. No Android 18/API 38 material used; Android 17 public AOSP tag unavailable."
 review_notes: "2026-05-05 Task6：修正 frontmatter 结构、章节称谓、结构性过渡和少量大小写/中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
-last_task9_audit: "2026-05-23"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+last_task9_audit: "2026-06-16"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
@@ -40,7 +40,12 @@ task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
 task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 5 处（压低否定-纠正式句式、移除 AIW 编辑注释、把新增 Buffer Stuffing Recovery 段移到参考资料前）。无新增 Task6 回炉；InputConsumer DEBUG tag 已由 Task2B 修复，等待 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-24-01-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-16-10-audit.md"
+last_task9_audit_at: "2026-06-16T10:28:38+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-16-10-audit.md"
+last_task9_audit_result: "auto-fixed-p1-version-anchor"
+task9_audit_notes: "2026-06-16 Task9 idle audit: auto-fixed unversioned AOSP mainline anchor for InputConsumer constants to android-16.0.0_r1; sent back to Task6."
+last_task9_autofix_at: "2026-06-16"
 ---
 
 
@@ -314,7 +319,7 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 **机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心流程在 `frameworks/native/libs/input/InputConsumer.cpp` 中：`consume()` → `consumeBatch()` 计算采样时间点 → `updateTouchState()` 更新历史样本 → `resampleTouchState()` 执行插值/外推。声明位于 `frameworks/native/include/input/InputConsumer.h`。
 
-**关键常量**（AOSP mainline）：
+**关键常量**（AOSP android-16.0.0_r1）：
 - `RESAMPLE_LATENCY = 5 * NANOS_PER_MS`（5ms 预期延迟，用于减少误预测影响）
 - `RESAMPLE_MIN_DELTA = 2 * NANOS_PER_MS`（最小采样间隔，2ms）
 - `RESAMPLE_MAX_PREDICTION = 8 * NANOS_PER_MS`（最大预测窗口，8ms）
