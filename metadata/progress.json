@@ -14483,5 +14483,27 @@
   "task9_last_log": "logs/deep-review/2026-06-16-10-audit.md",
   "task6_pending": [
     "21.5"
+  ],
+  "verifier_logs": [
+    {
+      "date": "2026-06-16T19:30:00+08:00",
+      "chapters_verified": [
+        "1.16",
+        "7.9",
+        "8.5",
+        "15.4",
+        "16.4",
+        "18.10"
+      ],
+      "fixes": {
+        "1.16": "Audio Pipeline — status finalized→ready-for-review",
+        "7.9": "感知流畅性 — task6_state reviewed→revisiting",
+        "8.5": "案例集 — status finalized→ready-for-review",
+        "15.4": "竞品分析 — status finalized→ready-for-review",
+        "16.4": "Android 17 Kernel — task6_state reviewed→revisiting",
+        "18.10": "SurfaceControl — task6_state reviewed→revisiting"
+      },
+      "result": "ready-for-task6"
+    }
   ]
 }

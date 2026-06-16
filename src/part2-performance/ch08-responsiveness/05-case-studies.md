@@ -1,8 +1,9 @@
 ---
+
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-04-02"
 reviewed_date: "2026-05-05"
 rework_date: "2026-05-03"
@@ -56,9 +57,9 @@ last_task9_review_log: "logs/deep-review/2026-06-16-13-audit.md"
 last_task9_audit_log: "logs/deep-review/2026-06-16-13-audit.md"
 task9_review_notes: "2026-05-23 Task9 re-review：pass-tech-review。已复核 16 点抽检 P0（AutoFDO Cold App Launch/Boot/Binder-rpc/Hwbinder 指标）修复；本轮无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-16 13 Task9 idle audit auto-fix：修正 ProfilingManager 触发来源判定 API，`getTag()` 改为 `getTriggerType()` / 文件名 `trigger-type-x`，并补充 `TRIGGER_TYPE_OOM` 返回 Java heap dump 的产物边界；同步 applicable_versions 到 Android 17 / API 37。证据：Android Developers ProfilingTrigger / ProfilingResult / ProfilingManager docs。已回到 Task6 复审。"
 deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-27
+last_deepseek_polish_at: 2026-06-16
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
+last_deepseek_cn_review_at: 2026-06-16
 last_task9_autofix_at: "2026-06-16"
 ---
 
@@ -160,7 +161,7 @@ android {
 }
 ```
 
-R8 full mode 的判断条件也不在文件名上。`gradle.properties` 里不要保留 `android.enableR8.fullMode=false` 这类 compat mode 开关；AGP 8.0+ 已默认走 full mode。需要投入验证的部分，是 keep rules、反射调用和 JNI 入口。
+AGP 8.0+ 已默认走 full mode，真正需要投入验证的是 keep rules、反射调用和 JNI 入口。
 
 ### 优化结果
 
@@ -429,9 +430,9 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，取得一次优化不容易，守住不退步更难——每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
 
-**第五，利用系统级自动采集减少人工排查。** Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（Java OOM，返回 Java heap dump）等触发类型；区分触发来源应读 `ProfilingResult.getTriggerType()` 或结果文件名里的 `trigger-type-x`，`getTag()` 只保留请求 tag，或承载部分异常 / 兼容性问题的附加分类。系统触发受采样策略和设备版本约束，不能保证每次事件都产出产物；线上使用仍需采样率控制和隐私脱敏。
+**第五，利用系统级自动采集减少人工排查。** 前面几个案例中，团队要么自建分析平台，要么手动抓 Perfetto。但 Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（Java OOM，返回 Java heap dump）等触发类型；区分触发来源应读 `ProfilingResult.getTriggerType()` 或结果文件名里的 `trigger-type-x`，`getTag()` 只保留请求 tag，或承载部分异常 / 兼容性问题的附加分类。系统触发受采样策略和设备版本约束，不能保证每次事件都产出产物；线上使用仍需采样率控制和隐私脱敏。
 
-[自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 主动请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件；这类系统触发与 App 主动调用共用结果回调模型，但是否生成、保存和上报仍受采样策略、设备版本、权限边界和隐私策略约束。
+**ProfilingManager（Android 15+）的辅助价值**：Android 15 起，系统提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 主动请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件；这类系统触发与 App 主动调用共用结果回调模型，但是否生成、保存和上报仍受采样策略、设备版本、权限边界和隐私策略约束。
 
 下面的代码只展示公开 SDK 可编译的显式 system trace 请求路径，重点看 `PROFILING_TYPE_SYSTEM_TRACE`、`tag` 和结果回调。公开 SDK 没有暴露 `KEY_DURATION_MS`；普通 App 代码不要依赖隐藏常量控制采集时长：
 
