@@ -1,8 +1,9 @@
 ---
 
+
 title: "Audio Pipeline 延迟与性能"
 chapter: "1.16"
-status: finalized
+status: "ready-for-review"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [audio, audioflinger, aaudio, latency, perfetto, scheduling]
 related_chapters: ["1.4", "5.1", "5.6", "16.5"]
