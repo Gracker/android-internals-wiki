@@ -11,7 +11,15 @@
 - 加工队列：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/queue.json
 - 章节源文件：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/（直接写回此处，不再使用 staging/）
 - 验证记录：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/verification-log.json
-- Obsidian 落盘：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/YYYY-MM-DD-HH-知识加工.md
+- Obsidian 落盘：运行时必须用 Python 生成确定路径，不得把 `YYYY-MM-DD` / `HH` / `HHMM` 字面量写进文件名：
+  ```python
+  from datetime import datetime
+  from pathlib import Path
+  from zoneinfo import ZoneInfo
+
+  now = datetime.now(ZoneInfo("Asia/Shanghai"))
+  out = Path("/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工") / f"{now:%Y-%m-%d-%H}-知识加工.md"
+  ```
 - Obsidian 根目录（素材源）：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/
 
 ## 核心原则

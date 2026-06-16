@@ -123,6 +123,7 @@ tags:
   - [5.16 GPU/NPU 异构负载调度与功耗归因](part1-fundamentals/ch05-cpu-power/16-gpu-npu-heterogeneous-scheduling.md)
   - [5.17 Android 17 FGS 类型声明与后台执行性能边界](part1-fundamentals/ch05-cpu-power/17-fgs-type-declaration-background-performance.md)
   - [5.18 CPU Cache 友好代码与数据布局优化](part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md)
+  - [5.19 端侧 AI 调度与 ADPF 智能优化](part1-fundamentals/ch05-cpu-power/5.19-ondevice-ai-adpf-intelligent-scheduling.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
@@ -414,6 +415,8 @@ tags:
   - [22.20 Jetpack Compose 性能优化盲区：rememberCoroutineScope、produceState 与 Strong Skipping](part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md)
   - [22.21 Jetpack Compose 动画性能深度优化](part5-app/ch22-rendering-practice/21-compose-animation-performance.md)
   - [22.22 Compose LazyList/LazyGrid 滑动性能深度优化](part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md)
+  - [22.23 Navigation Compose 性能优化](part5-app/ch22-rendering-practice/22.23-navigation-compose-performance.md)
+  - [22.23 Navigation Compose 性能优化](part5-app/ch22-rendering-practice/22.23-navigation-compose-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
@@ -447,6 +450,9 @@ tags:
   - [24.16 Android 17 流媒体网络预算与本地网络权限适配](part5-app/ch24-io-network/16-android17-streaming-local-network.md)
   - [24.17 Room 3.0 与 SQLiteDriver 迁移性能边界](part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md)
   - [24.18 Android 17 ECH 与 domainEncryption 网络适配](part5-app/ch24-io-network/18-android17-ech-domain-encryption.md)
+  - [24.17 Room 3.0 与 SQLiteDriver 迁移性能边界](part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md)
+  - [24.18 CameraX 3.0 性能边界与实战](part5-app/ch24-io-network/24.18-camerax-3.0-performance-boundary.md)
+  - [24.18 CameraX 3.0 性能边界与实战](part5-app/ch24-io-network/24.18-camerax-3.0-performance-boundary.md)
   - [24.19 BluetoothSocket read 断开语义与长连接治理](part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
@@ -470,6 +476,7 @@ tags:
   - [25.18 音频 Offload 与 AudioTrack 精确控制功耗实践](part5-app/ch25-power-size/18-audio-offload-audiotrack-power.md)
   - [25.19 Android Vitals 过度 WakeLock 指标与治理](part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md)
   - [25.20 Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理](part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md)
+  - [25.21 Android Auto/Car OS 性能优化](part4-system/ch17-oem/25.21-android-auto-car-os-performance.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
@@ -491,6 +498,7 @@ tags:
   - [26.17 线上网络质量监控与接入层协同](part5-app/ch26-observability/17-online-network-quality-observability.md)
   - [26.18 App Performance Score 与性能质量评分归因](part5-app/ch26-observability/18-app-performance-score.md)
   - [26.19 端侧高可用日志与诊断命令通道](part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md)
+  - [26.20 Battery Historian 与性能指标集成](part5-app/ch26-observability/26.20-battery-historian-performance-metrics-integration.md)
 
 ---
 

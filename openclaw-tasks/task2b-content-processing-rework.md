@@ -80,7 +80,16 @@ PY
 - Review 日志目录：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/review/
 - 外部 Review 归档：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/
 - 外部 Review 整合规范：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/external-ai-review-integration-spec.md
-- Obsidian 落盘：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/YYYY-MM-DD-HH-知识加工(回炉).md
+- Obsidian 落盘：运行时必须用 Python 生成确定路径，不得把 `YYYY-MM-DD` / `HH` / `HHMM` 字面量写进文件名：
+  ```python
+  from datetime import datetime
+  from pathlib import Path
+  from zoneinfo import ZoneInfo
+
+  now = datetime.now(ZoneInfo("Asia/Shanghai"))
+  out = Path("/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工") / f"{now:%Y-%m-%d-%H}-知识加工(回炉).md"
+  ```
+  文件名只允许形如 `2026-06-16-11-知识加工(回炉).md`，禁止 `2026-06-16-1110-...`、`2026-06-16-11:10-...`、`YYYY-MM-DD-HH-...`。
 
 ## ⚠️ 铁律：只修回炉/技术纠错章节
 

@@ -800,6 +800,66 @@
     "completed_by": "task2b-main"
   },
   {
+    "section": "5.19",
+    "section_title": "端侧 AI 调度与 ADPF 智能优化",
+    "title": "端侧 AI 调度与 ADPF 智能优化",
+    "file": "src/part1-fundamentals/ch05-cpu-power/5.19-ondevice-ai-adpf-intelligent-scheduling.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - 端侧 AI 调度与 ADPF 智能优化",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-16T22:04:00+08:00",
+    "created": "2026-06-16",
+    "status": "pending"
+  },
+  {
+    "section": "22.23",
+    "section_title": "Navigation Compose 性能优化",
+    "title": "Navigation Compose 性能优化",
+    "file": "src/part5-app/ch22-rendering-practice/22.23-navigation-compose-performance.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - Navigation Compose 性能优化",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-16T22:04:00+08:00",
+    "created": "2026-06-16",
+    "status": "pending"
+  },
+  {
+    "section": "24.18",
+    "section_title": "CameraX 3.0 性能边界与实战",
+    "title": "CameraX 3.0 性能边界与实战",
+    "file": "src/part5-app/ch24-io-network/24.18-camerax-3.0-performance-boundary.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - CameraX 3.0 性能边界与实战",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-16T22:04:00+08:00",
+    "created": "2026-06-16",
+    "status": "pending"
+  },
+  {
+    "section": "25.21",
+    "section_title": "Android Auto/Car OS 性能优化",
+    "title": "Android Auto/Car OS 性能优化",
+    "file": "src/part4-system/ch17-oem/25.21-android-auto-car-os-performance.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - Android Auto/Car OS 性能优化",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-16T22:04:00+08:00",
+    "created": "2026-06-16",
+    "status": "pending"
+  },
+  {
+    "section": "26.20",
+    "section_title": "Battery Historian 与性能指标集成",
+    "title": "Battery Historian 与性能指标集成",
+    "file": "src/part5-app/ch26-observability/26.20-battery-historian-performance-metrics-integration.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - Battery Historian 与性能指标集成",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-16T22:04:00+08:00",
+    "created": "2026-06-16",
+    "status": "pending"
+  },
+  {
     "section": "13.14",
     "section_title": "Perfetto Data Explorer 与 Jank CUJ 标准库",
     "priority": 80,

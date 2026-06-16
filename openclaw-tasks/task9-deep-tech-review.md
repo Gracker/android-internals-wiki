@@ -22,9 +22,18 @@
 - 知识盲区：intake/research-gaps.md
 - 外部 Review 归档：logs/external-review/
 - 外部 Review 整合规范：external-ai-review-integration-spec.md
-- Review 日志：logs/deep-review/YYYY-MM-DD-HH-deep-review.md
+- Review 日志：运行时用 Python `datetime.now(ZoneInfo("Asia/Shanghai"))` 生成 `logs/deep-review/{YYYY-MM-DD-HH}-deep-review.md`，不得把模板字面量写进文件名。
 - 进度追踪：metadata/progress.json
-- Obsidian 落盘：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/YYYY-MM-DD-HH-深度技术Review.md
+- Obsidian 落盘：运行时必须用 Python 生成确定路径，不得把 `YYYY-MM-DD` / `HH` / `HHMM` 字面量写进文件名：
+  ```python
+  from datetime import datetime
+  from pathlib import Path
+  from zoneinfo import ZoneInfo
+
+  now = datetime.now(ZoneInfo("Asia/Shanghai"))
+  out = Path("/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工") / f"{now:%Y-%m-%d-%H}-深度技术Review.md"
+  ```
+  文件名只允许形如 `2026-06-16-11-深度技术Review.md`，禁止 `2026-06-16-1110-...`、`2026-06-16-11:10-...`、`YYYY-MM-DD-HH-...`。
 
 ## ⚠️ 铁律
 
