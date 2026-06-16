@@ -1,15 +1,15 @@
 ---
-status: ready-for-review
+status: finalized
 title: 文字渲染性能
 chapter: '2.21'
 section: '2.21'
 drafted_date: '2026-04-09'
-reviewed_date: '2026-05-28'
+reviewed_date: '2026-06-17'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + androidx-main + developer.android.com
@@ -62,14 +62,14 @@ task9_reviewed_date: "2026-06-17"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-17T03:26:16+08:00"
 review_round: "3"
-task6_review_notes: "2026-05-28 Task6 review: pass-light-edit。L1/L2 小修 5 处；未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足自动晋升条件，转 task9_pending。"
+task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（2.21 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task9_review_log: "logs/deep-review/2026-06-17-03-audit.md"
 last_task9_autofix_at: "2026-06-17"
 task9_review_notes: "2026-06-17 Task9 闲时抽检：auto-fixed；AOSP HarfBuzz 路径已纠正为 external/harfbuzz_ng/；回到 Task6 复审。"
-last_task6_at: '2026-05-28T01:05:00+08:00'
-last_task6_review_log: "logs/review/2026-05-28-01-review.md"
+last_task6_at: "2026-06-17T04:06:00+08:00"
+last_task6_review_log: logs/review/2026-06-17-04-review.md
 last_task9_audit: "2026-06-17"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
@@ -178,7 +178,7 @@ Minikin 内部维护了几层缓存来避免重复计算:
 - 换行约束变化(比如屏幕旋转、RecyclerView 宽度变化):会让 StaticLayout 重新 line breaking / layout,即使底层 Layout cache 仍可能命中
 - Locale 变化
 
-在列表滑动场景中,RecyclerView 的 Item 宽度通常是固定的,文本内容会变化但可能存在重复(比如聊天消息中的相同文字)。理解这些缓存行为有助于我们判断:哪些情况下文字测量是"快"的(缓存命中),哪些情况下是"慢"的(缓存全miss)。
+在列表滑动场景中,RecyclerView 的 Item 宽度通常是固定的,文本内容会变化但可能存在重复(比如聊天消息中的相同文字)。理解这些缓存行为有助于我们判断:哪些情况下文字测量是"快"的(缓存命中),哪些情况下是"慢"的(缓存全 miss)。
 
 ## StaticLayout 的性能特征
 
