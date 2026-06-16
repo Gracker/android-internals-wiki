@@ -4,12 +4,12 @@ chapter: "1.22"
 section: "1.22"
 status: ready-for-review
 pipeline_stage: "task6_pending"
-task6_state: "pending"
-task9_state: "pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 drafted_date: "2026-05-24"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36); Android 17 待正式 AOSP tag 复核"
-last_verified: "2026-05-24"
-last_verified_against: "source.android.com ART configure / ART Service configuration 2026-05; AOSP platform/art main compiler_filter.h / dex2oat.cc; AOSP ART Service README; Android Developers ART compatibility docs"
+last_verified: "2026-06-17"
+last_verified_against: "source.android.com ART configure / ART Service configuration 2026-05; AOSP android-16.0.0_r1 platform/art compiler_filter.h / dex2oat.cc / libartservice/service/README.md; Android Developers ART compatibility docs"
 confidence: high
 tags: [art, dex2oat, dexopt, verifier, vdex, startup]
 related_chapters: ["1.7", "1.9", "16.6", "21.11"]
@@ -33,6 +33,14 @@ sources:
     path: "art/libartservice/service/README.md"
   - type: research
     path: "intake/daily-info/2026-05-24.md#增量扫描-源码调研art-verifier-quickening-与-dex2oat-过滤器体系"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
+last_task9_at: "2026-06-17T00:29:18+08:00"
+task9_reviewed_date: "2026-06-17"
+task9_reviewed_by: "openclaw-task9"
+task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; replaced AOSP main anchors with android-16.0.0_r1 after android-17 platform tag was not present; no Android 18/API 38 material used."
+last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
+last_task9_autofix_at: "2026-06-17"
 ---
 
 # 1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界
@@ -112,9 +120,9 @@ compiler filter 是传给 `dex2oat` 的策略参数。它决定本轮做多少�
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/configure]
 
-AOSP `main` 分支的 `art/libartbase/base/compiler_filter.h` 已经没有 `kQuicken` 枚举，保留的是 `kVerify`、`kSpaceProfile`、`kSpace`、`kSpeedProfile`、`kSpeed`、`kEverythingProfile`、`kEverything` 等当前过滤器。旧文章或旧 ROM 日志里出现 `quicken` 时，要先确认设备版本，再决定能否把它套到 Android 12+ 的行为上。
+AOSP `android-16.0.0_r1` 的 `art/libartbase/base/compiler_filter.h` 已经没有 `kQuicken` 枚举，保留的是 `kVerify`、`kSpaceProfile`、`kSpace`、`kSpeedProfile`、`kSpeed`、`kEverythingProfile`、`kEverything` 等当前过滤器。旧文章或旧 ROM 日志里出现 `quicken` 时，要先确认设备版本，再决定能否把它套到 Android 12+ 的行为上。
 
-[已验证: AOSP main, `art/libartbase/base/compiler_filter.h`]
+[已验证: AOSP android-16.0.0_r1, `art/libartbase/base/compiler_filter.h`]
 
 ## quickening 的版本边界
 
@@ -124,9 +132,9 @@ AOSP `main` 分支的 `art/libartbase/base/compiler_filter.h` 已经没有 `kQui
 
 - Android 8-11 设备上，如果 filter 是 `quicken`，首启可能比纯 `verify` 少一些解释器解析开销，但热点方法仍要等 JIT 或后续 AOT。
 - Android 12+ 文档口径里，`quicken` 已不再作为当前主线 filter 描述；排查重点应转到 `verify`、`speed-profile`、`speed` 以及 ART Service 的场景策略。
-- 厂商 ROM 可能保留旧属性或日志字符串。只凭日志里出现 `quicken` 不能推断当前 AOSP main 的行为。
+- 厂商 ROM 可能保留旧属性或日志字符串。只凭日志里出现 `quicken` 不能推断 Android 12+ / ART Service 口径的行为。
 
-[已验证: 官方文档, source.android.com/docs/core/runtime/configure；AOSP main, `art/libartbase/base/compiler_filter.h`]
+[已验证: 官方文档, source.android.com/docs/core/runtime/configure；AOSP android-16.0.0_r1, `art/libartbase/base/compiler_filter.h`]
 
 ## ART Service 接管后的 dexopt 场景
 
@@ -160,7 +168,7 @@ pm.dexopt.shared=speed
 | idle + charging | `bg-dexopt` / `inactive` | JobScheduler 触发后台 dexopt，常用 `speed-profile`；任务可取消 | idle、charging、battery-not-low、后台任务日志 |
 | command line | `cmdline` | 由 `pm compile`、`pm bg-dexopt-job`、`pm art dexopt-packages` 显式触发 | 命令参数和 verbose result |
 
-[已验证: AOSP main, `art/libartservice/service/README.md`]
+[已验证: AOSP android-16.0.0_r1, `art/libartservice/service/README.md`]
 
 这一节只给机制判断。Cloud Profile、Baseline Profile、`.dm` 文件和 SDM 产物的应用侧验证详见 16.6 节和 21.11 节；PMS、`InstallPackageHelper`、`DexOptHelper` 与安装 session 的关系详见 1.9 节。
 
@@ -168,7 +176,7 @@ pm.dexopt.shared=speed
 
 VDEX 的价值是减少重复验证。`dex2oat.cc` 在处理输入 VDEX 时，会打开 `input_vdex_file_`，解析 verifier deps，并在有可用 VDEX 时走快速验证路径。源码中还包含从 dex metadata archive 读取 VDEX 的路径，日志文案会提到 fast verification with vdex from DexMetadata archive。
 
-[已验证: AOSP main, `art/dex2oat/dex2oat.cc`]
+[已验证: AOSP android-16.0.0_r1, `art/dex2oat/dex2oat.cc`]
 
 VDEX 能否复用不只看文件是否存在，还要看 DEX checksum、bootclasspath、class loader context 和相关依赖是否匹配。`<uses-library>` 是常见触发点。dexpreopt 发生在构建机上，运行期加载发生在设备上；两边计算出的 class loader context 必须一致，否则构建期生成的 AOT 产物会被拒绝，设备端改跑 dexopt 或退回未优化执行。
 
@@ -258,7 +266,7 @@ Android 8-11 设备仍可能出现 `quicken`。这类设备上，不要把 `quic
 - [已验证: 官方文档] ART Service configuration — `https://source.android.com/docs/core/runtime/configure/art-service`
 - [已验证: 官方文档] Dexpreopt and `<uses-library>` checks — `https://source.android.com/docs/core/runtime/art-class-loader-context`
 - [已验证: 官方文档] Verifying app behavior on ART — `https://developer.android.com/guide/practices/verifying-apps-art`
-- [已验证: AOSP] `art/libartbase/base/compiler_filter.h`
-- [已验证: AOSP] `art/dex2oat/dex2oat.cc`
-- [已验证: AOSP] `art/libartservice/service/README.md`
+- [已验证: AOSP android-16.0.0_r1] `art/libartbase/base/compiler_filter.h`
+- [已验证: AOSP android-16.0.0_r1] `art/dex2oat/dex2oat.cc`
+- [已验证: AOSP android-16.0.0_r1] `art/libartservice/service/README.md`
 - [来源: Obsidian] `intake/daily-info/2026-05-24.md`

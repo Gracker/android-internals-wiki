@@ -4,12 +4,12 @@ chapter: "1.21"
 section: "1.21"
 status: ready-for-review
 pipeline_stage: "task6_pending"
-task6_state: "pending"
-task9_state: "pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 drafted_date: "2026-05-20"
-applicable_versions: "Android 16 Extension 36.1 - Android 17 (API 37)"
-last_verified: "2026-05-20"
-last_verified_against: "Android Developers developer verification docs / PackageInstaller API version 36.1 / AOSP android-16.0.0_r1 PackageInstallerSession"
+applicable_versions: "Enforcement: Android 7+ certified devices; PackageInstaller reason-code API: Android 16 Extension 36.1 - Android 17 (API 37)"
+last_verified: "2026-06-17"
+last_verified_against: "Android Developers developer verification FAQ 2026-05-11 / PackageInstaller API version 36.1 / AOSP android-16.0.0_r1 PackageInstallerSession"
 confidence: medium
 tags: [package-manager, installer, developer-verification, security, performance]
 related_chapters: ["1.9", "16.5", "26.7"]
@@ -31,6 +31,14 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/pm/VerifyingSession.java"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
+last_task9_at: "2026-06-17T00:29:18+08:00"
+task9_reviewed_date: "2026-06-17"
+task9_reviewed_by: "openclaw-task9"
+task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; separated ADV enforcement scope (Android 7+ certified devices via Play services) from PackageInstaller 36.1 reason-code API surface; no queue item."
+last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
+last_task9_autofix_at: "2026-06-17"
 ---
 
 # 1.21 Android Developer Verification 与安装链路边界
@@ -55,7 +63,7 @@ Android 安装链路里有几类判断经常被混在一起：APK 是否完整�
 
 ## verified / unverified developer 对用户安装路径的影响
 
-Developer Verification 的执行目标是 certified Android devices 上的普通安装体验。官方时间线显示，2026 年 9 月起，Brazil、Indonesia、Singapore、Thailand 等区域会先进入要求期；到这个节点，适用区域内的 app 需要由 verified developer 注册后才能在认证设备上安装。[已验证: 官方文档, developer.android.com/developer-verification]
+Developer Verification 的执行目标是 certified Android devices 上的普通安装体验。FAQ 进一步把执行范围限定为运行 Android 7 及以上、通过 Google Play services 接收规则更新的 certified devices；`PackageInstaller` 中的 Developer Verification reason-code extra 则是 Android 16 Extension 36.1 之后的安装器可观测面。官方时间线显示，2026 年 9 月起，Brazil、Indonesia、Singapore、Thailand 等区域会先进入要求期；到这个节点，适用区域内的 app 需要由 verified developer 注册后才能在认证设备上安装。[已验证: 官方文档, developer.android.com/developer-verification/guides/faq；PackageInstaller API version 36.1]
 
 安装入口可以按人群分成三类：
 
