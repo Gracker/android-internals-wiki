@@ -1,5 +1,4 @@
 ---
-
 title: "Android 17 + Kernel 6.12 系统级性能优化"
 section: "16.4"
 chapter: "16.4"
@@ -7,10 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-16"
-reviewed_by: openclaw-task6
-last_task6_at: "2026-06-16T09:09:00+08:00"
+reviewed_by: "openclaw-task6"
 task6_review_date: "2026-06-16"
-task6_review_notes: "2026-06-16 Task6 复审：版本演进表 AutoFDO 数据已确认与官方 README 一致，L1/L2/L3/L4 全部通过，仅一项需确认标注已处理。"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task9_result: auto-fixed
@@ -24,7 +21,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-16-06-audit.md"
 last_task9_audit_result: auto-fixed-p1-source-drift
 task9_audit_notes: "2026-06-16 Task9 idle audit: AUTO-FIX P1 1; android17-6.18 AutoFDO README 已更新到 6.18.21 与新 benchmark 口径,正文已同步后回到 Task6 复审。"
 last_task2b_at: "2026-06-16T08:51:39+08:00"
-last_task6_at: "2026-06-16T08:06:00+08:00"
+last_task6_at: 2026-06-16T22:15:00+08:00
 last_task6_audit: "2026-06-16"
 last_task6_audit_log: "logs/review/2026-05-24-23-audit.md"
 last_task6_audit_notes: "idle audit: 补充缺失 outline 大纲;L1 禁用词正文未命中;frontmatter 完整;outline 锚点覆盖 9/9;无回炉项。"
@@ -55,8 +52,8 @@ task2b_result: "verified"
 task2b_state: "fixed"
 task2b_fixed_at: "2026-06-16T08:51:39+08:00"
 task2b_fixed_by: "task2b-main"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/README.md 原文，正文 AutoFDO benchmark 数据准确。清除版本演进表 [需确认] 标注，补充 Binder benchmark 多次运行最佳结果取值限定。"
 ---
 
@@ -76,6 +73,8 @@ task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/REA
 - 🔹 Perfetto 中验证 Kernel 6.12 优化的观察点
 - 🔹 Android 平台版本与 GKI 分支的版本边界
 - 🔹 常见误区与排查结论
+
+<!-- outline-end -->
 
 ## 为什么要了解 Android 17 + Kernel 6.12 的性能变化
 
