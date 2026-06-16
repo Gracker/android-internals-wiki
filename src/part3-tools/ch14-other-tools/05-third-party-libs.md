@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-25"
-last_verified_against: "external review + GitHub upstream READMEs + AndroidX/AGP docs"
+last_verified: "2026-06-17"
+last_verified_against: "external review + GitHub upstream READMEs + AndroidX/AGP docs + bytedance/btrace 3.0 README/INTRODUCTION"
 confidence: medium
 sources:
   - type: blog
@@ -45,14 +45,14 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 review_round: 4
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-28T19:20:00+08:00"
+last_task9_at: "2026-06-17T05:27:45+08:00"
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
@@ -64,9 +64,11 @@ task2b_result: fixed
 last_task2b_at: "2026-05-28T18:50:00+08:00"
 repaired_date: "2026-05-28"
 repaired_by: "openclaw-task2b"
-last_task9_audit: "2026-05-23"
+last_task9_audit: "2026-06-17"
 last_task9_review_log: "logs/deep-review/2026-05-28-19-deep-review.md"
-task9_review_notes: "2026-05-28 Task9 deep review: pass-tech-review; no P0/P1; P2 suggestions written to intake/suggestions.md; auto-promoted finalized."
+task9_review_notes: "2026-05-28 Task9 deep review: pass-tech-review; no P0/P1; P2 suggestions written to intake/suggestions.md; auto-promoted finalized. 2026-06-17 Task9 idle audit: AUTO-FIX btrace 3.0 Android capability boundary; current open-source path requires PC/adb and online support is roadmap; added Android 8+/64-bit/Android 15 allocation-monitor limits; return to Task6 revisiting."
+last_task9_autofix_at: "2026-06-17"
+last_task9_audit_log: "logs/deep-review/2026-06-17-05-audit.md"
 ---
 
 
@@ -328,7 +330,7 @@ Booster 基于 Transform API 的经典方案也有局限，但不能简单等同
 
 ## 扩展：Rhea / btrace —— 字节跳动的 Trace 工具
 
-Rhea 是字节跳动在 Trace 工具上的一条演进线，后续以 `btrace` 项目的形式完全开源。它基于 Perfetto 生态，支持 Android 和 iOS，适合用来理解函数级 Trace 工具在真实业务里的工程化演进。
+Rhea 是字节跳动在 Trace 工具上的一条演进线，后续以 `btrace` 项目的形式完全开源。它基于 Perfetto 生态，适合用来理解函数级 Trace 工具在真实业务里的工程化演进；当前开源 btrace 3.0 已覆盖 Android、iOS 和 HarmonyOS，但 Android 侧 README 标注的边界是 Android 8.0+、64 位设备 / 应用，Java 对象创建监控暂未适配 Android 15 及以上设备。
 
 ### 从 Systrace 到 Rhea 的三阶段演进
 
@@ -388,7 +390,7 @@ Booster 使用的 Transform 属于编译期方案。它在 .class 文件阶段�
 
 **启动任务管理**可以用 Anchors / AppInit 等调度框架。重点还是把 DAG 调度的思路落到任务拆分和依赖编排上，而不是绑定某个具体框架。如果项目规模不大，完全可以自建一个轻量的任务调度器。
 
-**线下深度 Trace**中 Perfetto 仍然是首选，Rhea 的价值在于：当我们需要在真实用户环境中远程抓取 Trace（比如灰度用户反馈的特定场景卡顿），Rhea 可以不依赖 PC、不依赖 adb 就在 App 侧完成 Trace 抓取。
+**线下深度 Trace**中 Perfetto 仍然是首选，btrace / Rhea 的价值在于把应用方法栈与系统 trace 放到同一个 Perfetto 视角里。按 bytedance/btrace 3.0 README，当前开源 Android 路径仍需要 PC 侧脚本、adb 可识别设备和集成 SDK 的 APK；online support 还在 roadmap。要做灰度用户远程取证，不能直接把 btrace 3.0 当成无需 PC / adb 的线上方案，需要先确认团队使用的是内部分支还是自建上传 / 触发通道。
 
 ### 组合使用的注意事项
 
