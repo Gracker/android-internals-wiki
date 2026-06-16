@@ -43,7 +43,9 @@ tags:
   - [1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界](part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md)
   - [1.23 Android Staged Install 与安装原子性性能](part1-fundamentals/ch01-architecture/23-staged-install-performance.md)
   - [1.24 ResourcesManager 与 Configuration 变更性能](part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md)
-  - [1.25 AMS 双锁架构与 system_server 锁竞争优化](part1-fundamentals/ch01-architecture/25-ams-dual-lock-system-server-contention.md)
+  - [1.25 Android 17 Binder IPC 异步机制与批处理流水线](part1-fundamentals/ch01-architecture/01.25-binder-ipc-async-pipeline.md)
+  - [1.26 Android 17 MessageQueue 重构与 DeliQueue 无锁优化](part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md)
+  - [1.27 AMS 双锁架构与 system_server 锁竞争优化](part1-fundamentals/ch01-architecture/25-ams-dual-lock-system-server-contention.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
