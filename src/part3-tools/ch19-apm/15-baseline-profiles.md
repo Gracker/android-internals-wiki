@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37);Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景,非 Play 安装需单独验证"
-last_verified: "2026-04-27"
-last_verified_against: "Android Developers Baseline Profiles docs + ProfileInstaller manifest/source + AOSP art/profman/profman.cc + art/dex2oat/dex2oat.cc"
+last_verified: "2026-06-16"
+last_verified_against: "Android Developers Baseline Profiles docs (last updated 2026-06-09) + AndroidX profileinstaller source + AOSP ART android-16.0.0_r1 profman/dex2oat"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -15,21 +15,21 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
   - type: source
-    path: "https://android.googlesource.com/platform/art/+/refs/heads/main/profman/profman.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/profman/profman.cc"
   - type: source
-    path: "https://android.googlesource.com/platform/art/+/refs/heads/main/dex2oat/dex2oat.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-16.0.0_r1/dex2oat/dex2oat.cc"
   - type: source
     path: "https://github.com/androidx/androidx/blob/androidx-main/profileinstaller/profileinstaller/src/main/AndroidManifest.xml"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-28"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
-task9_reviewed_date: "2026-05-03"
+task9_reviewed_date: "2026-06-16"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-03T06:20:00+08:00"
+last_task9_at: "2026-06-16T14:38:30+08:00"
 task6_result: "pass-light-edit"
 task2b_result: fixed
 last_task2b_at: "2026-04-27T22:40:00+08:00"
@@ -38,9 +38,14 @@ repaired_by: openclaw-task2b
 review_notes: "2026-05-03 task9 deep-review: pass-tech-review；无 P0/P1；P2 1 写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 auto_promoted: true
 last_task6_audit: "2026-05-22"
-last_task9_audit: "2026-05-23"
+last_task9_audit: "2026-06-16"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-26T09:40:00+08:00"
+last_task9_audit_at: "2026-06-16T14:38:30+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-16-14-audit.md"
+last_task9_autofix_at: "2026-06-16"
+last_task9_review_log: "logs/deep-review/2026-06-16-14-audit.md"
+task9_review_notes: "2026-06-16 Task9 idle audit auto-fixed: 将 AOSP ART profman/dex2oat 源码锚点从 refs/heads/main 固定到 android-16.0.0_r1；android-17.0.0_r1 tag 未发布时不使用 main/master 作为正文结论来源。"
 ---
 
 # Baseline Profiles 与编译优化
@@ -118,7 +123,7 @@ flowchart LR
     Dex2oat --> Oat[OAT / App image]
 ```
 
-`baseline-prof.txt` 不会直接交给 ART 编译器。`profgen` 在构建期把文本规则转成二进制 profile;非 Play 安装时,`androidx.profileinstaller.ProfileInstaller` 通常负责把随包 profile 放到 ART 可读的位置。后续由 `profman` 合并和分析 profile,满足条件后由 `dex2oat --compiler-filter=speed-profile` 编译命中的方法。源码锚点是 AOSP `art/profman/profman.cc` 和 `art/dex2oat/dex2oat.cc`。
+`baseline-prof.txt` 不会直接交给 ART 编译器。`profgen` 在构建期把文本规则转成二进制 profile;非 Play 安装时,`androidx.profileinstaller.ProfileInstaller` 通常负责把随包 profile 放到 ART 可读的位置。后续由 `profman` 合并和分析 profile,满足条件后由 `dex2oat --compiler-filter=speed-profile` 编译命中的方法。源码锚点可先落到 AOSP android-16.0.0_r1 的 `art/profman/profman.cc` 和 `art/dex2oat/dex2oat.cc`; Android 17 发布 tag 可用后再复核同一路径。
 
 `RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION` 表示 profile 已交给系统,等待后续 dexopt;`RESULT_CODE_COMPILED_WITH_PROFILE` 才表示当前包已经按 profile 完成编译。排查时不要把 ENQUEUED 当作收益已经生效。
 
