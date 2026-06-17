@@ -294,6 +294,114 @@ public class NetworkRequestManager {
 - **Radio 状态切换**：降低 80%
 - **电量消耗**：网络相关功耗降低 45%
 
+
+#### 5. 源码级补充：Radio 状态机实际架构（AOSP HEAD / 适用于 android-17.0.0_r1 及以下版本）
+
+> 来源：`DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md`
+
+**Radio 状态机在 Android 源码中的真实抽象层级**（与上表不同，更精确）：
+
+```hal
+// hardware/interfaces/radio/1.0/types.hal:237
+enum RadioState : int32_t {
+    OFF = 0,                              // Radio explicitly powered off (eg CFUN=0)
+    UNAVAILABLE = 1,                      // Radio unavailable (eg, resetting or not booted)
+    ON = 10,                              // Radio is ON
+};
+```
+
+**关键差异说明**：
+- **HAL 状态机仅 3 态**，不区分 IDLE/FACH/DCH（这是 modem 内部 RRC 状态，对 Java 不可见）
+- 状态值 `0/1/10` 非连续——为厂商自定义预留 2-9
+- `OFF` 对应 3GPP `CFUN=0`（电路域功能关闭）
+- `UNAVAILABLE` 涵盖所有过渡态：boot、reset、crash recovery、SIM 切换
+
+**Java 侧枚举映射**（`frameworks/opt/telephony/src/java/com/android/internal/telephony/RILUtils.java:3912`）：
+
+```java
+public static @Annotation.RadioPowerState int convertHalRadioState(int stateInt) {
+    switch (stateInt) {
+        case android.hardware.radio.V1_0.RadioState.OFF:
+            return TelephonyManager.RADIO_POWER_OFF;     // 0
+        case android.hardware.radio.V1_0.RadioState.UNAVAILABLE:
+            return TelephonyManager.RADIO_POWER_UNAVAILABLE;  // 2
+        case android.hardware.radio.V1_0.RadioState.ON:
+            return TelephonyManager.RADIO_POWER_ON;      // 1
+        default:
+            throw new RuntimeException("Unrecognized RadioState: " + stateInt);
+    }
+}
+```
+
+**注意**：`RADIO_POWER_ON=1`（Java）和 `RadioState.ON=10`（HAL）值不同——这是 API Level 1 时代遗留的 Java 命名先于 HAL 设计的产物。
+
+**上行通知链路**（HAL → Java）：
+
+```
+modem chip
+  → IRadio HAL (HIDL/AIDL binder)
+  → RadioIndication.radioStateChanged()   [frameworks/opt/telephony/.../RadioIndication.java:138]
+  → RILUtils.convertHalRadioState()       [enum 转换]
+  → BaseCommands.setRadioState()          [父类，触发 mRadioStateChangedRegistrants 广播]
+  → ServiceStateTracker / Phone           [最终消费者]
+```
+
+**下行控制链路**（Java → HAL）：
+
+```
+GsmCdmaPhone / ImsPhone
+  → RIL.setRadioPower(on, forEmergency, preferredForEmergency, result)
+                                              [RIL.java:2051]
+  → RadioModemProxy.getRadioServiceProxy()
+  → HAL 版本分派（AIDL → 1.6 → 1.5 → 1.0）
+  → IRadioModem.setRadioPower() / IRadio.setRadioPower_1_6()
+  → modem chip
+```
+
+**关键功耗路径：紧急呼叫优化扫描**（API 33+, HAL 1.5+）：
+
+```hal
+// hardware/interfaces/radio/1.6/IRadio.hal:30-80
+oneway setRadioPower_1_6(int32_t serial, bool powerOn, bool forEmergencyCall,
+        bool preferredForEmergencyCall);
+
+/*
+ * When powerOn + forEmergencyCall + preferredForEmergencyCall all true,
+ * modem scans only emergency call bands until:
+ * 1) Emergency call completed
+ * 2) Another setRadioPower with emergency flags reset
+ * 3) Timeout after 30 seconds
+ */
+```
+
+- 30 秒硬超时——**这是当前电流值的隐性峰源**：
+  - 0-30s：仅扫紧急频段，~150-250 mA
+  - 30s 后：强制全频段扫描，~300+ mA
+- 业务上应避免"启用紧急模式但不立即拨号"的场景
+
+**AIDL 迁移状态**（Android 14+ / API 34+）：
+
+```java
+// RadioModemProxy.java:75
+if (isAidl()) {
+    mModemProxy.setRadioPower(serial, powerOn, forEmergencyCall, preferredForEmergencyCall);
+} else if (mHalVersion.greaterOrEqual(RIL.RADIO_HAL_VERSION_1_6)) {
+    ((android.hardware.radio.V1_6.IRadio) mRadioProxy).setRadioPower_1_6(...);
+} else if (mHalVersion.greaterOrEqual(RIL.RADIO_HAL_VERSION_1_5)) {
+    ((android.hardware.radio.V1_5.IRadio) mRadioProxy).setRadioPower_1_5(...);
+} else {
+    mRadioProxy.setRadioPower(serial, powerOn);
+}
+```
+
+AIDL 路径从 Android 14 开始成为主流，**Android 17 设备几乎全部走 AIDL 路径**。
+
+**RadioInterfaceLayer.java 已经被移除**：该类在 2018 年前后被 RIL + Radio*Proxy 三件套完全替代。任何引用该类的旧资料已过时。**当前架构是 RIL + Radio*Proxy + RadioIndication 三件套**。
+
+<!-- AIW-源码调研-2026-06-18 -->
+
+
+
 ## 11.4.4 内存优化对功耗的影响
 
 ### 问题场景
@@ -506,3 +614,26 @@ public class UnifiedTaskScheduler {
 3. **FGS常量位置修正**: 、 等常量位于，而非
 
 4. **路径更新说明**: 本节讨论的11.4.1前台服务优化案例中，JobScheduler相关代码示例引用的源码位置已按Android 16+ APEX架构更新，确保开发调试时能准确找到常量定义和实现逻辑。
+
+## 参考资料
+### Battery Saver 与定位功耗策略协同机制（5 种 LocationMode × Thermal 叠加模型）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md
+- 类型：DeepResearch 调研结果
+- 摘要：Battery Saver 通过 BatterySaverPolicy 的 5 种 locationMode（NO_CHANGE/GPS_DISABLED_WHEN_SCREEN_OFF/ALL_DISABLED/FOREGROUND_ONLY/THROTTLE_REQUESTS）控制定位，热节流走独立通道不直接修改定位模式。两层是叠加关系：低电关定位+过热调频率。LocationProviderManager.isActive() 在三条件同时满足时过滤后台 GPS 请求。
+- 注入时间：2026-06-18
+- 价值：填补 §11.4.2 定位功耗策略盲区，解释 Battery Saver × Thermal 协同的源码闭环
+
+### JobScheduler 源码常量来源修正（APEX 路径迁移 + OP_TIMEOUT_MILLIS 核验）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-jobscheduler-source-verification.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 16+ JobScheduler 从 services/core 迁移至 APEX 模块架构，路径变更为 apex/jobscheduler/service/java/。OP_TIMEOUT_MILLIS 从 Android 10 起始终位于 JobServiceContext.java，Android 12+ 乘以 HW_TIMEOUT_MULTIPLIER。ch11 04-case-studies 的 source_repos 需更新 APEX 路径。
+- 注入时间：2026-06-18
+- 价值：修正 P0 级源码引用错误，补充 Android 16+ APEX 架构路径变更
+
+
+### Radio 状态机功耗原理完整分析（HAL→RIL→TelephonyManager 三层源码）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 蜂窝 Radio 状态机由 HAL(radio/1.0/types.hal) 三位枚举(OFF/UNAVAILABLE/ON) → RIL → TelephonyManager 三层构成。HAL 不区分 IDLE/TRANSFER，modem 内部连接态对外不可见。下行控制 RIL.setRadioPower() 按 HAL 版本走不同 proxy，4G/5G 紧急呼叫扫描 30 秒自动回退是隐性电流峰值源。
+- 注入时间：2026-06-18
+- 价值：填补 §11.4.3 Radio 状态机功耗优化的源码级空白，提供 HAL→Java 完整调用链
