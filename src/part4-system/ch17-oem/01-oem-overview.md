@@ -22,7 +22,7 @@ related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-17"
 task2b_state: "fixed"
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
 task6_result: pass-light-edit
