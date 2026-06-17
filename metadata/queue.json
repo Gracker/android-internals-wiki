@@ -1412,5 +1412,50 @@
     "completed_at": "2026-06-17T14:52:54.997405+08:00",
     "completed_by": "task2b-main",
     "completed_reason": "素材注入: 已追加 ApplicationExitInfo 数据底座引用至参考资料"
+  },
+  {
+    "section": "26.3",
+    "section_title": "性能指标采集与上报",
+    "title": "性能指标采集与上报",
+    "file": "src/part5-app/ch26-observability/03-performance-collection.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 17 API 版本边界错误、源码引用不准确、关键版本差异未覆盖、数据支撑缺失",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "src/part5-app/ch26-observability/03-performance-collection.md:L89, L130, L145",
+        "detail": "章节中使用 Build.VERSION_CODES.VANILLA_ICE_CREAM 但 Vanilla Ice Cream 实际是 Android 15 (API 35) 的代码名，@RequiresApi 注解中的版本与章节声称的 Android 17 (API 37) 矛盾。",
+        "suggestion": "修正为正确的 Android 17 API 37 标识，使用 CUR_DEVELOPMENT 或明确版本常量。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "src/part5-app/ch26-observability/03-performance-collection.md:L92-96",
+        "detail": "Battery Historian 三层架构描述缺少关键实现细节和运行时交互机制，从 Java 层直接跳到 Native daemon，中间缺乏 StatsCompanionService JNI 桥接的实现说明。",
+        "suggestion": "补充 JNI 桥接服务的作用、数据流转方式和跨层通信机制。"
+      },
+      {
+        "type": "版本差异",
+        "location": "src/part5-app/ch26-observability/03-performance-collection.md:L89-91",
+        "detail": "Android 17 的 Battery Historian 深度集成机制未与 Android 14/15/16 版本做对比说明，缺少版本演进和新增能力的演进路径。",
+        "suggestion": "新增 Battery Historian 版本演进小节，对比各版本主要变化和新增功能。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "src/part5-app/ch26-observability/03-performance-collection.md:L128-132, L135-138, L145-147",
+        "detail": "采样频率数据（10%、30%、70%、95%）和性能开销控制在 5% 以内的声明未提供测试设备和基准测试数据支撑。P0/P1/P2 级别指标分类缺少实际使用案例。",
+        "suggestion": "补充数据来源：设备型号、测试环境、采样频率验证方法；提供实际业务案例说明指标优先级划分依据。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-17T16:26:54.597221+00:00",
+    "created": "2026-06-18",
+    "status": "completed",
+    "completed_at": "2026-06-18T00:50:00+08:00",
+    "completed_by": "task2b-main",
+    "resolution": "所有 4 条问题已修复：Issue 1 VANILLA_ICE_CREAM 已不存在于当前文件(已使用正确常量)；Issue 2 JNI 桥接细节已补充；Issue 3 版本演进对比表已添加；Issue 4 测试设备与业务案例已补充。禁用词检查通过。"
   }
 ]
