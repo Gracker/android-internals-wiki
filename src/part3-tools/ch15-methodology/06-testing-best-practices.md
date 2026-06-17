@@ -2,7 +2,7 @@
 title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-27"
@@ -41,13 +41,13 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 last_task6_audit: "2026-05-23"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
@@ -65,10 +65,11 @@ last_deepseek_polish_at: "2026-05-25"
 last_task9_audit: "2026-06-18"
 task9_audit_notes: "2026-06-18 idle audit: P1 2 / P2 0; Android 17 关键变更缺失与源码路径版本边界风险；queued Task2B."
 last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
-auto_promoted_by: "openclaw-task9"
-auto_promoted_date: "2026-05-26"
+auto_promoted_by: "openclaw-task6"
+auto_promoted_date: "2026-06-18"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
+last_task6_at: "2026-06-18T04:09:00+08:00"
 ---
 
 
