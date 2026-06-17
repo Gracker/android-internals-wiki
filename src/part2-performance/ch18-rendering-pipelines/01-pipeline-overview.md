@@ -1,24 +1,23 @@
 ---
-
 title: "渲染管线分类与选择对照表"
 chapter: "18.1"
 section: "18.1"
 status: finalized
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
-last_verified: "2026-05-05"
-last_verified_against: "AOSP android-16 BLASTBufferQueue + HardwareBufferRenderer API + Flutter 3.32 release notes"
+last_verified: "2026-06-17"
+last_verified_against: "AOSP android-16.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue + HardwareBufferRenderer API + Flutter 3.32 release notes"
 confidence: medium
 tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "TextureView", "Vulkan", "OpenGL ES", "HardwareBufferRenderer"]
 related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 sources: ["AOSP frameworks/native/services/surfaceflinger", "AOSP frameworks/base/core/java/android/view", "Android 16 Developer Preview 文档", "Flutter 3.32 release notes"]
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-05-24T07:40:43+08:00"
+last_task9_at: "2026-06-17T08:28:29+08:00"
 last_task2b_at: "2026-05-05T04:53:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
@@ -26,17 +25,18 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T05:05:00+08:00"
 last_task6_audit: "2026-06-17T06:07:00+08:00"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-24"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-17"
 task9_reviewed_by: openclaw-task9
-task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-p0: 0
+task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 闲时抽检 AUTO-FIX：P0 1 / P1 0 / P2 2；修正 Android 14-16 SurfaceFlinger 源码锚点，`BufferStateLayer.cpp` 限定为 Android 11-13，回到 Task6 复审。"
+p0: 1
 p1: 0
 p2: 2
-last_task9_audit: "2026-05-24"
-last_task9_audit_log: "logs/deep-review/2026-05-24-04-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-24-07-deep-review.md"
+last_task9_audit: "2026-06-17"
+last_task9_audit_log: "logs/deep-review/2026-06-17-08-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-17-08-audit.md"
 auto_promoted: true
+last_task9_autofix_at: "2026-06-17"
 ---
 
 <!-- outline-start -->
@@ -72,11 +72,11 @@ Android 图形栈在过去几年经历了系统性重构。理解版本差异是
 | **Android 10** (API 29) | 过渡期，App View 仍以 Legacy BufferQueue 为主 | `SurfaceControl` / Transaction 能力扩展，部分系统侧窗口场景开始向新提交流程过渡 |
 | **Android 9 及以下** | Legacy BufferQueue | `queueBuffer` / `IGraphicBufferProducer` 是常态，App 侧看不到 BLAST 相关 slice |
 
-**关键转折点**：BLAST 改的是提交通道，不是消费位置。Android 11 之后，App 侧的 ViewRootImpl / RenderThread 会把绘制好的 buffer 和图层几何状态封装进 `SurfaceControl.Transaction`，再通过 `apply()` 交给 SurfaceFlinger。SurfaceFlinger 侧的 `BufferStateLayer` 仍负责 `acquireBuffer`、latch 和合成。App 还是 producer，SurfaceFlinger 还是 consumer。
+**关键转折点**：BLAST 改的是提交通道，不是消费位置。Android 11 之后，App 侧的 ViewRootImpl / RenderThread 会把绘制好的 buffer 和图层几何状态封装进 `SurfaceControl.Transaction`，再通过 `apply()` 交给 SurfaceFlinger。Android 11-13 的 SurfaceFlinger 侧可沿 `BufferStateLayer.cpp` 追 buffer 状态；Android 14-16 的同类逻辑已收敛到 `Layer.cpp`，重点看 `Layer::setBuffer()`、`Layer::latchBufferImpl()` 和 release callback。App 还是 producer，SurfaceFlinger 还是 consumer。
 
 放到 Trace 里看，App 进程新增的 `BLASTBufferQueue` slice 代表本地打包 transaction；消费与合成仍然发生在 SurfaceFlinger 进程里。Android 10 的 Trace 处在过渡期，很多 App View 场景仍然更像 Legacy BufferQueue。
 
-[已验证: external review archive + 2.5 节 BLAST 验证记录 + AOSP `frameworks/native/services/surfaceflinger/BufferStateLayer.cpp`]
+[已验证: external review archive + 2.5 节 BLAST 验证记录 + AOSP android-16.0.0_r1 `frameworks/native/services/surfaceflinger/Layer.cpp`；Android 11-13 旧锚点为 `frameworks/native/services/surfaceflinger/BufferStateLayer.cpp`]
 
 ## 典型模式对比
 
