@@ -669,8 +669,11 @@
     ],
     "added_by": "task6-audit",
     "added_at": "2026-06-14T05:05:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-14-05-audit.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-14-05-audit.md",
+    "completed_at": "2026-06-17T13:35:00+08:00",
+    "completed_by": "task2b-lite",
+    "completed_reason": "fixed-lite: 补写 Android 10-17 版本演进章节（包管理架构、编译调度优化、OTA 更新优化、安装性能提升）"
   },
   {
     "section": "16.0",
@@ -809,7 +812,9 @@
     "added_by": "task2a-gap-mining",
     "added_at": "2026-06-16T22:04:00+08:00",
     "created": "2026-06-16",
-    "status": "pending"
+    "status": "ready-for-review",
+    "processed_date": "2026-06-17",
+    "processed_by": "task2a-content-processing"
   },
   {
     "section": "22.23",

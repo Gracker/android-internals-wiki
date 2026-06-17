@@ -12,6 +12,12 @@ reviewed_date: "2026-05-28"
 reviewed_by: "openclaw-task6"
 reviewed_at: "2026-05-28T17:18:00+08:00"
 task6_result: "pass-light-edit"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
+pipeline_stage: "task6_pending"
+last_task2b_lite_at: "2026-06-17"
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 confidence: medium
 sources:
@@ -727,6 +733,35 @@ Package Manager Service 与全书多个章节有交叉：
 - **§4.3 ART 虚拟机内存管理**：dex2oat 编译过程的内存占用和 JIT 代码缓存在 ART 的内存预算中
 
 ## 版本演进
+
+Android 10 到 Android 17 期间，包管理系统经历了显著优化，主要集中在以下几个方向：
+
+### 包管理架构演进
+- **Android 10-11**：引入分拆安装（Split APK），支持动态 feature 模块；PackageInstaller API 完善异步安装流程
+- **Android 12**：强化隐私权限管理，安装时需声明敏感权限；PackageInstallerSession 支持会话级别的安装状态管理
+- **Android 13**：引入 App Bundle 强制签名验证；支持非对称签名验证流程，增强 APK 安全性
+- **Android 14-15**：PackageInstaller API 标准化，新增 PackageInstaller.SessionParams 参数控制安装行为；支持 APK 大小限制配置
+- **Android 16-17**：PackageInstaller 支持并行安装会话，提升多应用批量安装性能；安装状态查询接口完善
+
+### 编译调度优化
+- **Android 10-11**：引入 Baseline Profiles 概念，但尚未与 PMS 深度集成；dexopt 编译调度仍以同步为主
+- **Android 12**：PMS 集成 Baseline Profiles，安装期可引用预编译的 profile 优化 dexopt 决策
+- **Android 13**：Compilation Committee 编译调度器引入，支持多阶段 dexopt 策略（verify-only/dexopt-mode/force-dexopt）
+- **Android 14**：BackgroundDexoptJob 后台任务调度机制完善，支持电量/网络/存储状态感知的 dexopt
+- **Android 15**：引入增量编译（Incremental Compilation），PMS 支持分块编译大 APK；PackageInstallerSession 支持编译进度回调
+- **Android 16-17**：编译调度进一步智能化，支持编译缓存复用；安装期编译与后台编译解耦
+
+### OTA 更新优化
+- **Android 10-11**：OTA 过程中仍需全量 dexopt，更新包体积较大
+- **Android 12**：OTA 过程引入编译产物缓存机制，减少重复编译
+- **Android 13**：A/B 更新架构完善，PMS 支持增量 OTA 更新策略；dexopt 产物可跨 OTA 会话复用
+- **Android 14-15**：OTA 过程中的编译调度优化，支持根据设备性能动态选择编译级别；更新验证流程简化
+- **Android 16-17**：OTA 更新支持分块下载与并行处理；PackageInstaller 与系统更新框架深度集成，提升更新成功率
+
+### 安装性能提升
+- **Android 10-12**：安装时间主要集中在 APK 解析与 dexopt 编译，同步流程较长
+- **Android 13-14**：安装流程异步化，PackageInstallerSession 支持安装状态回调；dexopt 可延后执行
+- **Android 15-17**：并行安装与编译调度结合，多应用安装性能提升显著；安装过程可中断恢复
 
 ## SDM 在 PMS 侧的集成细节
 
