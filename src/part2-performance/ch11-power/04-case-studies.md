@@ -3,11 +3,11 @@
 title: "案例集"
 chapter: "11.4"
 section: "11.4"
-status: "finalized"
-pipeline_stage: ready-to-publish
+status: "ready-for-review"
+pipeline_stage: task6_pending
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 14.0 (API 34) - Android 16 (API 36)"
 last_verified: "2026-04-03"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium-high
@@ -34,14 +34,14 @@ sources:
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
 pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-26T04:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-26-04-review.md"
 task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task6_audit: "2026-05-23"
-task9_state: "reviewed"
-task2b_result: fixed
+task9_state: "pending"
+task2b_result: fixed-lite
 task2b_state: fixed
 task2b_repaired_date: "2026-05-31"
 task2b_repaired_by: "openclaw-task2b"
@@ -49,15 +49,16 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
 last_task2b_at: "2026-05-31T00:50:00+08:00"
+last_task2b_lite_at: "2026-06-17"
 last_task9_at: "2026-05-26T04:30:00+08:00"
 finalized_promoted_at: "2026-05-31T00:50:00+08:00"
 finalized_promoted_by: "task2b-auto-promotion"
 last_task9_review_log: "logs/deep-review/2026-05-26-04-deep-review.md"
 task9_review_notes: "2026-05-26 Task9 deep-review 04:30: needs-rework。P0 1 / P1 0 / P2 2；JobScheduler timeout 仍把 quota 降级写成可能短于最小保障，需按 JobServiceContext Math.max(maxRuntime,minGuarantee) 修正；Stuck WakeLock 阈值与 Excessive Wakeups URL 待修。"
-last_task9_audit: "2026-05-26"
+last_task9_audit: "2026-06-17"
 last_task9_audit_at: "2026-05-26T02:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-02-audit.md"
-last_task9_audit_result: "p0-source-error"
+last_task9_audit_result: "p1-version-mismatch"
 task9_audit_notes: "2026-05-26 Task9 idle audit: P0 1 / P1 1 / P2 1；AOSP JobScheduler runtime 常量与 location FGS 版本链需回炉。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31

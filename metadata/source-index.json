@@ -2480,6 +2480,775 @@
       "chapter": "ch18",
       "processed_at": "2026-06-16T06:12:28.318156",
       "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-06-16-1247-0xCodez-LoopEngineering从提示词设.md",
+      "title": "Loop Engineering：从提示词设计者到系统设计师的14步路线图",
+      "score": 15,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:20.643640+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:20.686799"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-06-16-1247-cellinlab-LoopEngineering构建自主系.md",
+      "title": "Loop Engineering：构建自主系统的五个核心组件",
+      "score": 14,
+      "chapter": "ch03",
+      "timestamp": "2026-06-16T21:46:20.795255+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:20.838661"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-06-16-1247-sairahul1-LoopEngineering从Prom.md",
+      "title": "Loop Engineering：从Prompt到系统的转变",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:20.896454+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:20.939138"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第001章-千万失败体.md",
+      "title": "第001章-千万失败体",
+      "score": 10,
+      "chapter": "ch08",
+      "timestamp": "2026-06-16T21:46:21.358019+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:21.403448"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第021章-第340天.md",
+      "title": "第021章-第340天",
+      "score": 10,
+      "chapter": "ch08",
+      "timestamp": "2026-06-16T21:46:21.986677+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:22.027547"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76047574-10万人都在用的top10skills我.md",
+      "title": "10万人都在用的 top10 skills，我帮你试了",
+      "score": 13,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:22.372328+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:22.410976"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76226966-Android要变天桌面端这次真的来了.md",
+      "title": "Android 要变天：桌面端这次真的来了！",
+      "score": 10,
+      "chapter": "ch03",
+      "timestamp": "2026-06-16T21:46:22.462669+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:22.503098"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76128120-Android17为什么重写Messag.md",
+      "title": "Android17 为什么重写 MessageQueue",
+      "score": 14,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:22.556154+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:22.595464"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76010772-火爆全网的Skills看这一篇就够了.md",
+      "title": "火爆全网的Skills，看这一篇就够了！",
+      "score": 15,
+      "chapter": "ch03",
+      "timestamp": "2026-06-16T21:46:22.650968+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:22.692286"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76388970-为什么Android不用接口做Activ.md",
+      "title": "为什么 Android 不用接口做 Activity 通信？",
+      "score": 14,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:22.747312+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:22.788337"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-android15-powerstats-batterystats-deep-integration.md",
+      "title": "源码调研：Android 15 BatteryStatsService × PowerStatsService 深度集成（rail→component 全链路）",
+      "score": 18,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:22.845871+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:22.888276"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-smartperfetto-enterprise-trace-metadata-routes-404-regression-analysis.md",
+      "title": "源码调研：SmartPerfetto enterpriseTraceMetadataRoutes 404 回归分析与修复方案",
+      "score": 16,
+      "chapter": "ch13",
+      "timestamp": "2026-06-16T21:46:22.945490+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:22.985898"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-16-crash-file-persistence-protocol-reliability.md",
+      "title": "源码调研：Crash 文件持久化协议可靠性边界与文件状态机设计",
+      "score": 17,
+      "chapter": "ch06",
+      "timestamp": "2026-06-16T21:46:23.069143+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:23.112768"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-16-appsafemode-state-machine-and-launch-success-marker.md",
+      "title": "源码调研：App SafeMode 判定状态机设计与启动成功标记机制",
+      "score": 17,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:23.172765+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:23.214552"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-16-android15-battery-historian-perf-metrics-integration.md",
+      "title": "源码调研：Android 15 Battery Historian 与性能指标的深度集成机制",
+      "score": 17,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:23.274732+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:23.316916"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-16-android14-memory-tracking-api.md",
+      "title": "源码调研：Android 14 精细化内存跟踪 API 的高精度内存监控机制",
+      "score": 15,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:23.373030+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:23.421610"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/digest_2026-06-16_02.md",
+      "title": "Sakana AI 的 The AI Scientist 登上 Nature",
+      "score": 12,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:23.534946+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:23.576656"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/1e41ec2c.md",
+      "title": "为啥 Codex 还不推出类似 Codex Design 的产品？",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:23.726674+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:23.771600"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/a9187b00.md",
+      "title": "Not everyone is using AI for everything",
+      "score": 12,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:23.834586+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:23.884263"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/microsoft_agent_framework_1_0_2026_001.md",
+      "title": "Microsoft Agent Framework 1.0正式发布：MCP集成的企业级代理开发平台",
+      "score": 11.5,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:23.944664+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:23.986516"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/6b5fef67.md",
+      "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
+      "score": 13,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:24.040870+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.082328"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/gemini_3_1_pro_2026_001.md",
+      "title": "Gemini 3.1 Pro Preview发布：专为复杂工作流编排设计的新一代模型",
+      "score": 10,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:24.137672+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.178499"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/digest_2026-06-16_04.md",
+      "title": "Chollet《Deep Learning with Python》第三版免费上线",
+      "score": 10,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:24.241297+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.281352"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/digest_2026-06-16_01.md",
+      "title": "吴恩达推出《AI Prompting for Everyone》新课",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:24.467913+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.508778"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/README.md",
+      "title": "God of GPT",
+      "score": 12,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:24.566451+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.605514"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-06-17-Gracker的Rss订阅.md",
+      "title": "Gracker 的 Rss 订阅 · 2026-06-17",
+      "score": 14,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:24.657377+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.697484"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Agent实践探索/2026-06-16-Agent实践探索.md",
+      "title": "每日 Agent 实践 · 2026-06-16",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:24.750054+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.790444"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-06-16-今天干了啥日报（OpenClaw）.md",
+      "title": "今天 OpenClaw 帮我干了点啥？！· 2026-06-16",
+      "score": 13,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:24.842817+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.882185"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-06-16-Obsidian新增文件与今日总结（22点）.md",
+      "title": "2026-06-16-Obsidian新增文件与今日总结（22点）",
+      "score": 16,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:24.947110+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:24.990345"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Last30Days研究/2026-06-16-Last30Days定向研究.md",
+      "title": "Last 30 Days 定向研究 · 2026-06-16",
+      "score": 12,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:25.052729+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:25.094839"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日冥想流程/2026-06-16-每日冥想流程.md",
+      "title": "2026-06-16-每日冥想流程",
+      "score": 12,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:25.147308+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:25.186163"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Perfetto每日提交监控/2026-06-16-Perfetto每日提交监控.md",
+      "title": "2026-06-16-Perfetto每日提交监控",
+      "score": 13,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:25.238018+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:25.277231"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/DailyDigest日终复盘/2026-06-16-DailyDigest日终复盘.md",
+      "title": "DailyDigest 日终复盘 · 2026-06-16",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:25.333410+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:25.375529"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日深度研究选题/2026-06-17-每日深度研究选题.md",
+      "title": "📊 每日深度研究选题 · 2026-06-17",
+      "score": 15,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:25.526763+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:25.571405"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日深度研究选题/2026-06-16-每日深度研究选题.md",
+      "title": "每日深度研究选题 · 2026-06-16",
+      "score": 12,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:25.628844+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:25.671501"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/夜航之一致性周检/2026-06-17-夜航之一致性周检.md",
+      "title": "夜航之一致性周检 · 2026-06-17",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:25.770907+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:25.810103"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Evolver周检只读/2026-06-17-Evolver周检只读.md",
+      "title": "Evolver 周检（只读）· 2026-06-17",
+      "score": 12,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:25.862819+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:25.904454"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-17/perfetto-pr-ci-gate.md",
+      "title": "SmartPerfetto日报 · perfetto PR与CI轻量检查 - 2026-06-17",
+      "score": 13.5,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:26.049092+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.088446"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-17/local-gate/local-gate-report.md",
+      "title": "SmartPerfetto日报 · 本地PR门禁验证 (Local Gate)",
+      "score": 18,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:26.145647+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.186132"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-06-17/perfetto-pr-check.md",
+      "title": "SmartPerfetto日报 - Perfetto PR与CI检查报告",
+      "score": 11.5,
+      "chapter": "ch13",
+      "timestamp": "2026-06-16T21:46:26.242037+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.281498"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/SmartPerfetto日报/2026-06-16-SmartPerfetto日报.md",
+      "title": "SmartPerfetto / perfetto 协作日报 · 2026-06-16",
+      "score": 15,
+      "chapter": "ch07",
+      "timestamp": "2026-06-16T21:46:26.338734+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.378322"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-18-知识加工(新).md",
+      "title": "OpenClaw 知识加工报告 - 2026-06-16 18",
+      "score": 13,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:26.431683+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.470900"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-11-深度技术Review.md",
+      "title": "2026-06-16-11-深度技术Review",
+      "score": 13.5,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:26.525920+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.565821"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-22-知识加工(新).md",
+      "title": "2026-06-16-22-知识加工(新)",
+      "score": 13,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:26.618163+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.658011"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-09-知识加工(新).md",
+      "title": "知识加工（Task 2A）— 2026-06-16 09:09",
+      "score": 11,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:26.758939+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.798551"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-02-知识加工(新).md",
+      "title": "Task 2A · 知识加工报告 — 2026-06-17 02:07",
+      "score": 13,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:26.896716+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:26.936808"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-18-深度技术Review.md",
+      "title": "2026-06-16-18-深度技术Review",
+      "score": 13,
+      "chapter": "ch11",
+      "timestamp": "2026-06-16T21:46:26.988979+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.028314"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-06-知识加工(新).md",
+      "title": "知识加工（Task 2A 新） — 2026-06-16 06:05",
+      "score": 12,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:27.081324+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.125141"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-21-深度技术Review.md",
+      "title": "2026-06-16-21-深度技术Review",
+      "score": 13,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:27.180757+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.220530"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-05-知识加工(新).md",
+      "title": "知识加工报告（新） — 2026-06-17 05:06",
+      "score": 12,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:27.272494+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.313142"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-02-深度技术Review.md",
+      "title": "2026-06-17-02-深度技术Review",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:27.365525+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.404745"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-17-知识加工(新).md",
+      "title": "2026-06-16-17-知识加工(新)",
+      "score": 10,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:27.456732+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.496536"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-12-知识加工(新).md",
+      "title": "知识加工（新章节创建与内容加工）— 2026-06-16 12:17",
+      "score": 13.5,
+      "chapter": "ch07",
+      "timestamp": "2026-06-16T21:46:27.594648+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.637880"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-00-知识加工(新).md",
+      "title": "Task 2A 知识加工报告 — 2026-06-17 00:12",
+      "score": 10.5,
+      "chapter": "ch11",
+      "timestamp": "2026-06-16T21:46:27.693916+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.739517"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-05-深度技术Review.md",
+      "title": "2026-06-17-05-深度技术Review",
+      "score": 14,
+      "chapter": "ch13",
+      "timestamp": "2026-06-16T21:46:27.794317+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.833827"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-22-深度技术Review.md",
+      "title": "2026-06-16-22-深度技术Review",
+      "score": 14.0,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:27.886753+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:27.927038"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-01-深度技术Review.md",
+      "title": "2026-06-17-01-深度技术Review",
+      "score": 15,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:27.979103+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.020303"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-12-知识加工(回炉).md",
+      "title": "2026-06-16-12-知识加工(回炉)",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:28.081862+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.123522"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-20-知识加工(回炉).md",
+      "title": "2026-06-16-20-知识加工(回炉)",
+      "score": 15,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:28.178686+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.218975"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-00-深度技术Review.md",
+      "title": "2026-06-17-00-深度技术Review",
+      "score": 11,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:28.271114+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.312271"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-04-深度技术Review.md",
+      "title": "2026-06-17-04-深度技术Review",
+      "score": 14,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:28.366471+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.406046"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-03-知识加工(新).md",
+      "title": "Task 2A · 知识加工报告（新章节创建与内容加工）",
+      "score": 16,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:28.458486+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.499014"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-19-知识加工(新).md",
+      "title": "Task 2A · 知识加工（新章节+草稿加工）— 2026-06-16 19:07",
+      "score": 13,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:28.554113+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.595780"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-03-深度技术Review.md",
+      "title": "2026-06-17-03-深度技术Review",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:28.654268+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.697866"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-20-深度技术Review.md",
+      "title": "2026-06-16-20-深度技术Review",
+      "score": 15,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:28.760970+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.804097"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-14-知识加工(新).md",
+      "title": "Task 2A 知识加工报告 - 2026-06-16 14:00 (Asia/Shanghai)",
+      "score": 16,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:28.860128+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:28.904284"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-13-深度技术Review.md",
+      "title": "2026-06-16-13-深度技术Review",
+      "score": 12,
+      "chapter": "ch13",
+      "timestamp": "2026-06-16T21:46:29.057521+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.097953"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-07-知识加工(新).md",
+      "title": "知识加工（Task 2A）— 2026-06-16 07:06",
+      "score": 13,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:29.200418+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.243023"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-17-04-知识加工(新).md",
+      "title": "Task 2A 知识加工（新章节+草稿加工）— 2026-06-17 04:07",
+      "score": 12,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:29.297252+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.337905"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-10-深度技术Review.md",
+      "title": "Task9 闲时抽检 · 2026-06-16 10:20",
+      "score": 13.5,
+      "chapter": "ch02",
+      "timestamp": "2026-06-16T21:46:29.390508+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.429473"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-07-深度技术Review.md",
+      "title": "Task 9 闲时抽检 · 2026-06-16 07:20",
+      "score": 13,
+      "chapter": "ch03",
+      "timestamp": "2026-06-16T21:46:29.482327+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.523322"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-18-知识加工(回炉).md",
+      "title": "2026-06-16-18-知识加工(回炉)",
+      "score": 10,
+      "chapter": "ch13",
+      "timestamp": "2026-06-16T21:46:29.576590+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.616739"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-14-深度技术Review.md",
+      "title": "2026-06-16-14-深度技术Review",
+      "score": 10,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:29.671827+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.715670"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-06-16-21-知识加工(新).md",
+      "title": "2026-06-16-21-知识加工(新)",
+      "score": 12,
+      "chapter": "ch07",
+      "timestamp": "2026-06-16T21:46:29.771200+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.811690"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每周深度文草稿/2026-06-16-fail-plausible.md",
+      "title": "Fail-Plausible：当你的 AI 助手在骗你",
+      "score": 10,
+      "chapter": "ch03",
+      "timestamp": "2026-06-16T21:46:29.864164+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.904503"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/X每日草稿/2026-06-16-X草稿.md",
+      "title": "X每日草稿 - 2026-06-16",
+      "score": 14,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:29.958583+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:29.998039"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian定时任务目录卫生巡检/2026-06-16-Obsidian定时任务目录卫生巡检.md",
+      "title": "Obsidian 定时任务目录卫生巡检 · 2026-06-16",
+      "score": 11.5,
+      "chapter": "ch13",
+      "timestamp": "2026-06-16T21:46:30.054037+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:30.093771"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/掘金Android技术文章抓取/2026-06-17-掘金Android技术文章抓取.md",
+      "title": "掘金 Android 技术日报 · 2026-06-17",
+      "score": 13,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:30.150592+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:30.191148"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日Task巡检与自修复/2026-06-16-每日Task巡检与自修复.md",
+      "title": "每日 Task 巡检 · 2026-06-16",
+      "score": 11,
+      "chapter": "ch16",
+      "timestamp": "2026-06-16T21:46:30.292991+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:30.334564"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日内容流水线选题提案/2026-06-17-每日内容流水线选题提案.md",
+      "title": "2026-06-17-每日内容流水线选题提案",
+      "score": 16,
+      "chapter": "ch04",
+      "timestamp": "2026-06-16T21:46:30.388996+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:30.428534"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/每日论文精读（AI）/2026-06-16-AI-chain-of-thought-reasoning-scaling.md",
+      "title": "2026-06-16-AI-chain-of-thought-reasoning-scaling",
+      "score": 16,
+      "chapter": "ch05",
+      "timestamp": "2026-06-16T21:46:30.486076+00:00",
+      "type": "incremental",
+      "scored_at": "2026-06-17T05:46:30.527029"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-android14-memory-tracking-api-deep-dive.md",
+      "title": "Android 14 精细化内存跟踪 API 与进程死亡诊断能力源码解析",
+      "summary": "Android 14 在 ApplicationExitInfo 体系上新增 SUBREASON 枚举、Debug.getPss 五维查询、ProcessProfileRecord 五元组与 OomAdjProfiler 功耗切片",
+      "chapter": "ch10",
+      "processed_at": "2026-06-17T06:13:45.643980",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md",
+      "title": "Android 14→17 内存分析工具栈源码全景",
+      "summary": "heapprofd 守护进程启动链路、MallocDispatch hook 表、SIGRTMIN 双路信号、Poisson 采样算法、dumpsys meminfo VMA 分类、procstats 持久化",
+      "chapter": "ch14",
+      "processed_at": "2026-06-17T06:13:45.643980",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android17-system-server-binder-ipc-startup-optimization.md",
+      "title": "Android 17 系统服务启动顺序与 Binder IPC 性能优化",
+      "summary": "SystemServer 三阶段分层 init + InitThreadPool 并行 + PHASE_* 阶段广播 + Binder 线程池配置 + BR_FROZEN_* 协同",
+      "chapter": "ch16",
+      "processed_at": "2026-06-17T06:13:45.643980",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-aosp-bluetooth-scan-power-attribution-protection.md",
+      "title": "AOSP Bluetooth 扫描功耗归因与保护机制源码解析",
+      "summary": "BLE 扫描三层 Suspend 保护 + AppScanStats isUnoptimized 归因 + GattService 频率限制 + BatteryStatsManager 写入路径",
+      "chapter": "ch11",
+      "processed_at": "2026-06-17T06:13:45.643980",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-ab-test-regression-applicationexitinfo-source.md",
+      "title": "ApplicationExitInfo / getHistoricalProcessExitReasons A/B Test 数据底座",
+      "summary": "AppExitInfoTracker 环形缓冲 LRU 持久化、getTraceInputStream 双路径、A16 preventExitInfoUpdate 守卫、LMKD RSS 字段",
+      "chapter": "ch26",
+      "processed_at": "2026-06-17T06:13:45.643980",
+      "action": "queue"
     }
   ]
 }

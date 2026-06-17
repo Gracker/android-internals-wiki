@@ -803,6 +803,39 @@
     "completed_by": "task2b-main"
   },
   {
+    "id": "task9-20260617-11.4-power-case-studies-version-boundary",
+    "section": "11.4",
+    "section_title": "案例集",
+    "title": "案例集",
+    "file": "src/part2-performance/ch11-power/04-case-studies.md",
+    "priority": 90,
+    "reason": "fixed-lite",
+    "material_paths": [
+      "logs/deep-review/2026-06-17-19-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:frontmatter:applicable_versions",
+        "detail": "章节讨论 Android 14+、Android 15+ 的特性（如 exact alarm 限制、FGS timeout、ProfilingManager），但适用的版本声明为 \"Android 8.0 (API 26) - Android 16 (API 36)\"，内容与版本边界不一致。",
+        "suggestion": "重新审核 applicable_versions 范围，确保与讨论的 Android 版本特性一致；将 Android 14+ exact alarm 限制特性明确加入版本边界；补充 Android 16 与 Android 15 在 FGS timeout 机制上的具体差异说明。"
+      },
+      {
+        "type": "版本差异",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:L1085-L1093, L1104-L1109, L1122-L1128",
+        "detail": "章节讨论 Android 15+ FGS timeout 机制和 Android 17 ProfilingManager 异常自动触发，但没有明确区分 Android 15/16/17 的版本演进差异，容易让读者误认为这些特性在更早版本就已经支持。",
+        "suggestion": "明确标注 Android 15 FGS timeout 的具体配额（6 小时配额、onTimeout 回调）、Android 16 配额强化和 onTimeout 机制的具体行为差异，以及 ProfilingManager 仅在 Android 17+ 可用。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-17T19:22:00+08:00",
+    "created": "2026-06-17",
+    "status": "completed",
+    "audit_mode": "idle-audit",
+    "completed_at": "2026-06-17T19:39:07+08:00",
+    "completed_by": "task2b-lite"
+  },
+  {
     "section": "5.19",
     "section_title": "端侧 AI 调度与 ADPF 智能优化",
     "title": "端侧 AI 调度与 ADPF 智能优化",
