@@ -7808,6 +7808,17 @@
       "task2b_state": "fixed",
       "task9_result": "auto-fixed",
       "last_verifier_pass": "2026-06-17T23:29:22+08:00"
+    },
+    "25.22": {
+      "section": "25.22",
+      "title": "定位服务功耗与性能实战",
+      "file": "src/part5-app/ch25-power-size/22-location-services-performance.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6-pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "last_task2a_at": "2026-06-17T21:12:51.408821+00:00"
     }
   },
   "task2b_rounds": [
@@ -10209,13 +10220,13 @@
     }
   },
   "task2a_last_processed": {
-    "section": "1.25",
-    "title": "AMS 双锁架构与 system_server 锁竞争优化",
-    "file": "src/part1-fundamentals/ch01-architecture/25-ams-dual-lock-system-server-contention.md",
+    "section": "25.22",
+    "title": "定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理",
+    "file": "src/part5-app/ch25-power-size/22-location-services-performance.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-11T13:04:00",
+    "processed_at": "2026-06-17T21:12:51.408561+00:00",
     "status": "ready-for-review",
-    "note": "7 个锚点全部覆盖，3 个扩展点全部覆盖，素材来自 DeepResearch/2026-06-10-lru-lock-optimization.md + AOSP android-16.0.0_r4 源码验证"
+    "note": "5 个锚点全部覆盖，2 个扩展点全部覆盖，素材来自官方文档 + AOSP 源码验证"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-18",
