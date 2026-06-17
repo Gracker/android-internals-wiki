@@ -859,7 +859,9 @@
     "added_by": "task2a-gap-mining",
     "added_at": "2026-06-16T22:04:00+08:00",
     "created": "2026-06-16",
-    "status": "pending"
+    "status": "completed",
+    "completed_note": "stale-cleanup: file already processed, status is ready-for-review",
+    "completed_at": "2026-06-18T07:04:00+08:00"
   },
   {
     "section": "24.18",
@@ -871,7 +873,9 @@
     "added_by": "task2a-gap-mining",
     "added_at": "2026-06-16T22:04:00+08:00",
     "created": "2026-06-16",
-    "status": "pending"
+    "status": "completed",
+    "completed_note": "stale-cleanup: file already processed, status is ready-for-review",
+    "completed_at": "2026-06-18T07:04:00+08:00"
   },
   {
     "section": "25.21",
@@ -883,7 +887,9 @@
     "added_by": "task2a-gap-mining",
     "added_at": "2026-06-16T22:04:00+08:00",
     "created": "2026-06-16",
-    "status": "pending"
+    "status": "completed",
+    "completed_note": "stale-cleanup: file already processed, status is ready-for-review",
+    "completed_at": "2026-06-18T07:04:00+08:00"
   },
   {
     "section": "26.20",
@@ -895,7 +901,9 @@
     "added_by": "task2a-gap-mining",
     "added_at": "2026-06-16T22:04:00+08:00",
     "created": "2026-06-16",
-    "status": "pending"
+    "status": "completed",
+    "completed_note": "stale-cleanup: file already processed, status is ready-for-review",
+    "completed_at": "2026-06-18T07:04:00+08:00"
   },
   {
     "section": "13.14",
