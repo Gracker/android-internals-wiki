@@ -53,7 +53,7 @@ task9_review_notes: "2026-06-17 Task9 idle audit AUTO-FIX: Android 17 lmkd PSI m
 updated_date: "2026-06-17"
 updated_by: openclaw-task9
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-07
+last_deepseek_cn_review_at: 2026-06-17
 task2b_state: fixed
 ---
 
@@ -86,7 +86,7 @@ task2b_state: fixed
 
 ## 为什么要了解低内存对性能的影响
 
-Perfetto 里如果看到主线程长时间处于 D 状态（Uninterruptible Sleep），或者前台 App 突然被杀掉、用户重新打开后走了完整冷启动流程，根因往往是系统整体进入了低内存状态。低内存会沿着一条明确路径放大：内核内存回收被激活，I/O 被打满，GC 频繁触发，后台进程被杀，最终落到用户感知的卡顿。
+Perfetto 里如果看到主线程长时间处于 D 状态（Uninterruptible Sleep），或者前台 App 突然被杀掉、用户重新打开后走了完整冷启动流程，根因往往是系统整体进入了低内存状态。低内存会沿着一条明确的因果链传递：内核回收被激活 → I/O 被打满 → GC 频繁触发 → 后台进程被杀 → 最终用户感知到卡顿。
 
 理解这条因果链，才能在 Perfetto 中准确判断“这个卡顿到底是 App 问题还是系统问题”。本节从内核内存回收机制出发，说明低内存如何拖慢整个系统，以及如何通过工具识别和定位这些问题。
 
@@ -382,7 +382,7 @@ Android Go Edition 是面向低 RAM 设备的一组系统配置和产品策略�
 
 ## 与其他章节的关系
 
-本章讨论的低内存影响与多个章节存在交叉：
+低内存的影响贯穿全书多个章节，以下是最直接的交叉点：
 
 - **§4.1 Android 内存模型全景**：理解 Android 整体内存管理框架
 - **§4.2 Linux 内核内存管理**：kswapd、Direct Reclaim 的详细机制分析

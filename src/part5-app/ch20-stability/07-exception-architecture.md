@@ -62,6 +62,8 @@ last_task2b_main_at: 2026-06-16T02:50:00+08:00
 last_task9_autofix_at: "2026-06-16"
 finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"
+deepseek_cn_review_state: needs-structure-rework
+last_deepseek_cn_review_at: 2026-06-17
 ---
 
 # 异常处理架构设计
@@ -416,10 +418,9 @@ fun atomicWriteCrashFile(dir: File, pid: Int, content: ByteArray): Boolean {
 
 本节没有重复 20.2、20.3 的底层机制,也没有展开 26.2 的服务端上报实现。实际接入前还要核对三件事:SafeMode 阈值是否符合业务现状,多进程文件写入是否具备原子性,热修复框架边界是否和当前项目一致。
 
-<!-- AIW-源码调研-2026-06-17 -->
-## 源码调研补充：SafeMode 状态机与 ApplicationExitInfo 的 AOSP 锚点核验
+## 源码核验：SafeMode 状态机与 ApplicationExitInfo 的 AOSP 锚点
 
-本节对 launch marker / SafeMode 状态机中引用的 AOSP 锚点做一次源码核验，**所有结论已对齐 android-15.0.0_r1，未引用 Android 17 主线作为正文结论**。详细调研报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-safemode-launch-marker-state-machine-aosp-verification.md`。
+本节对 launch marker / SafeMode 状态机中引用的 AOSP 锚点做源码核验（android-15.0.0_r1）。
 
 ### `ApplicationExitInfo` 退出原因全集
 
@@ -485,13 +486,99 @@ AOSP 把"用户主动强停"和"系统低内存"分别落到了 `REASON_USER_REQ
 - `frameworks/base/core/java/android/app/ActivityManager.java`
 - `core/res/res/values/config.xml`
 
-<!-- /AIW-源码调研-2026-06-17 -->
+### 源码调研补充：AOSP `DropBoxManagerService` 的 Crash 文件持久化真实协议
+
+本节在 §20.7"最小可靠写入协议"的基础上，给出 AOSP 真实实现的源码级核验。**基于 android-15.0.0_r1**。#### 写入路径（DBMS.java:540-573 → 925-944）
+
+`DropBoxManagerService.add()` 真正写入的代码：
+
+```java
+// DropBoxManagerService.java:548-553
+temp = new File(mDropBoxDir, "drop" + Thread.currentThread().getId() + ".tmp");
+try (FileOutputStream out = new FileOutputStream(temp)) {
+    entry.writeTo(out.getFD());
+}
+// DropBoxManagerService.java:942
+if (!temp.renameTo(file)) {
+    throw new IOException("Can't rename " + temp + " to " + file);
+}
+```
+
+关键点：
+- `try-with-resources` 自动 `close()`，**不调用 `FileUtils.sync()`**（工具本身存在于 `FileUtils.java:275`，DBMS 显式不调用）。
+- `File.renameTo()` 是 POSIX `rename(2)` 的 Java 封装，**不刷父目录 inode**。
+- `add()` 的 `catch` 块只 `Slog.e("Can't write: " + tag, e)`，**不补偿**——失败的 tmp 由下次启动的 `init()` 删除。
+
+#### 启动恢复（DBMS.java:1107-1112）
+
+```java
+for (File file : files) {
+    if (file.getName().endsWith(".tmp")) {
+        Slog.i(TAG, "Cleaning temp file: " + file);
+        file.delete();
+        continue;
+    }
+    EntryFile entry = new EntryFile(file, mBlockSize);
+    ...
+}
+```
+
+**与生产期望的边界差异**：本节"最小可靠写入协议"表格里描述 tmp 解析后 rename 为 completed，但 AOSP DBMS 的真实行为是 **tmp 直接 delete**——这是有意取舍，dbms 不做 partial recovery。
+
+#### Tombstone 模式（DBMS.java:951-960, 1287-1291）
+
+被 trim 或配额超限的条目**不直接删除**，而是创建 0 字节 + `IS_EMPTY` 标志的 tombstone：
+
+```java
+// DBMS.java:951-960
+public EntryFile(File dir, String tag, long timestampMillis) throws IOException {
+    this.tag = TextUtils.safeIntern(tag);
+    this.timestampMillis = timestampMillis;
+    this.flags = DropBoxManager.IS_EMPTY;
+    this.blocks = 0;
+    new FileOutputStream(getFile(dir)).close();
+}
+```
+
+含义：**"曾经有崩溃"的信号保留，内容丢失**。生产应用要按 tag+timestamp 看到 tombstone 才能区分"没崩溃过"和"崩溃过但日志已 GC"。
+
+#### system_server 自崩溃的 2 秒 join（AMS.java:10051-10070）
+
+```java
+worker.start();
+if (process != null && process.mPid == MY_PID && "crash".equals(eventType)) {
+    // We're actually crashing, let's wait for up to 2 seconds before killing ourselves,
+    // so the data could be persisted into the dropbox.
+    try {
+        worker.join(2000);
+    } catch (InterruptedException ignored) {
+    }
+}
+```
+
+**这是整个协议最关键的可靠性补丁**：
+- 普通应用 crash 没有 `worker.join`——依赖 worker 在进程死亡前自然完成，**不保证落盘**。
+- 只有 `system_server` 自己 crash 时才阻塞 2 秒等 DropBox 落盘——这是有意的可靠性权衡。
+- `DropboxRateLimiter.shouldRateLimit()` 命中时直接 return，连 worker 都不启动（AMS.java:9893-9895）。
+
+#### 信息源（全部 android-15.0.0_r1）
+
+- `frameworks/base/services/core/java/com/android/server/DropBoxManagerService.java`（1324 行）
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（21170 行，节选 9872-10070）
+- `frameworks/base/core/java/android/os/FileUtils.java`（节选 269-279）
+
+#### 生产实现的差距提示
+
+如果项目要严格持久化 crash 记录，必须补 §20.7 现有协议没覆盖的三件事：
+
+1. **flush 数据文件**：`out.getFD().sync()` 或 `FileUtils.sync(out)`——DBMS 故意不做。
+2. **fsync 父目录**：rename 后打开 `dir` 的 fd 调 `fsync(dirfd)`——DBMS 故意不做，需 NDK/反射封装。
+3. **partial 解析与 rename**：DBMS 的 `init()` 对 `.tmp` 一律 delete，不做解析恢复——生产若想保留，必须在 delete 前做解析。
+
+但要意识到 DBMS 的取舍动机：eMMC/UFS 上 `fsync(dirfd)` 通常 1-10ms，对 1KB-300KB 大小的 crash dump 是显著开销。DropBox 选择 best-effort + tombstone 信号，避免阻塞应用死亡路径。
+
 
 ## 参考资料
 
 ### Kotlin 协程异常处理与 UncaughtExceptionHandler 三层级联体系
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md
-- 类型:DeepResearch 调研结果
-- 摘要:Kotlin 协程异常处理形成 CoroutineExceptionHandler(Context级)→ ServiceLoader 全局 handler → Thread.uncaughtExceptionHandler 三层级联。Android 8.0/8.1 存在 AndroidExceptionPreHandler 反射兼容问题,协程可能绕过 pre-handler。
-- 注入时间:2026-05-17
-- 价值:源码级梳理协程异常三级分发机制,解决协程崩溃归因与 UncaughtExceptionHandler 关系模糊的问题
+Kotlin 协程异常处理形成 CoroutineExceptionHandler(Context级)→ ServiceLoader 全局 handler → Thread.uncaughtExceptionHandler 三层级联。Android 8.0/8.1 存在 AndroidExceptionPreHandler 反射兼容问题，协程可能绕过 pre-handler。详见 DeepResearch 调研。

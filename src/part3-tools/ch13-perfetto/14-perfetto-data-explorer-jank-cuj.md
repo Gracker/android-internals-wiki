@@ -606,3 +606,10 @@ v54.0 已有 `index.ts` + `explore_page.ts` + 完整的 `query_builder/` 子目�
 - 摘要：验证 Perfetto v54 android.cujs.base SQL 模块的 process.name 过滤逻辑（仅 com.android.*/com.google.android.*），确认第三方 App CUJ 不自动进入 android_jank_cuj 表。给出三条替代路径：AndroidX JankStats（API 16+，API 24+ 计时数据更可靠，API 31+ 精度更高）、自定义 atrace marker（Trace.beginSection）、FrameTimeline direct join。梳理 FrameTracker 数据流从 Choreographer→ViewRootImpl→JankTracker→SF FrameTimeline→Perfetto。
 - 注入时间：2026-05-23
 - 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
+
+### Perfetto DataGrid 与 Jank CUJ 标准库 v54 · 进程过滤与 FrameTracker Join 深挖
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-perfetto-jank-cuj-v54-process-filter-and-frametracker-join.md
+- 类型：DeepResearch 调研结果
+- 摘要：对 Perfetto v54 Jank CUJ 标准库的二次深挖：确认 `android.cujs.base` 进程名过滤分两层（GLOB com.google.android*/com.android.*），第二层 `cujs_ordered` CTE 按进程名决定 counter 回溯窗口（系统进程 0 回溯、NexusLauncher 白名单、其他进程 MAX(ts, ts_end-4ms)）；`android_jank_cuj_frame` vs `android_jank_cuj_frame_timeline` 的分工（frame 用于拼完整帧范围，timeline 用于 jank_type 分类）；JankTracker.cpp 五种 JankType 实时判定与 CUJ 标准库事后聚合的关系；`relevant_threads.sql` 的 SF 线程视图迁移策略（旧表计划 v55+ 删除）。
+- 注入时间：2026-06-17
+- 价值：进一步验证了第三方 App 的 CUJ 边界限制，明确了 counter 命名规范（J<CUJ_NAME>#<counter_name>）和 JankTracker 实时判定与 CUJ 库事后分析的双层独立架构
