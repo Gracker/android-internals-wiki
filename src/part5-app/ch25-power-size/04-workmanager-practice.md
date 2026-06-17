@@ -2,7 +2,7 @@
 title: "WorkManager 实战与后台任务调度"
 chapter: "25.4"
 section: "25.4"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AndroidX WorkManager androidx-main + Android Developers background work docs + AOSP JobScheduler android-16.0.0_r1 + Clippings structure references"
@@ -35,18 +35,19 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [workmanager, jobscheduler, expedited-work, background-task, power]
+last_task2b_lite_at: "2026-06-17"
 related_chapters: ["25.2", "25.3", "5.10"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-03T13:05:00+08:00"
 last_task6_review_log: logs/review/2026-06-03-13-review.md
 task6_review_notes: "2026-06-03 Task6 13:05：pass-light-edit（状态修复+确认）。前次 review 已通过但 task6_state 未从 revisiting 更新为 reviewed。确认 task2b 修复内容（UIDT 版本边界、GreedyScheduler 约束追踪、requiresDeviceIdle+backoff 不兼容、getStopReason 版本边界）写作质量合格。无新增 L1/L2 问题。task9_result 仍 needs-rework，不可自动晋升。"
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
+task9_state: pending
+task2b_state: pending
+task2b_result: fixed-lite
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-03"
