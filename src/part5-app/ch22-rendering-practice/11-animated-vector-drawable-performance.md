@@ -41,11 +41,13 @@ task2b_state: fixed
 
 task6_state: "reviewed"
 task9_state: "reviewed"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-18
 ---
 
 # 22.11 AnimatedVectorDrawable 线程退化与动画卡顿
 
-AnimatedVectorDrawable 适合做小型矢量图标动效，但它的性能边界经常被误判：同一份 XML 在硬件加速 View 上走 RenderThread，在软件 Canvas 场景会退回 UI 线程。排查这类问题时，重点放在 AVD 的线程路径、退化触发和线上定位方式上；通用动画选型见 22.5，帧率监控口径见 22.8。
+AnimatedVectorDrawable 适合做小型矢量图标动效，但它的性能边界经常被误判：同一份 XML 在硬件加速 View 上走 RenderThread，在软件 Canvas 场景会退回 UI 线程。排查时把重点放在 AVD 的线程路径、退化触发条件和线上定位方式上。通用动画选型见 22.5，帧率监控口径见 22.8。
 
 ## AnimatedVectorDrawable 的 RenderThread 与 UI 线程双路径
 
@@ -53,7 +55,7 @@ Android 官方文档把版本边界放在 API 25：从 API 25 开始，AnimatedV
 
 AOSP 代码里的构造路径也对应这个判断。`AnimatedVectorDrawable` 构造时创建的是 `VectorDrawableAnimatorRT`，`ensureAnimatorSet()` 再把 XML 解析出的 `AnimatorSet` 初始化进当前动画器。RT 路径仍依赖 View 系统中的硬件加速 Canvas 记录到 `RenderNode`：`VectorDrawableAnimatorRT.onDraw()` 只有在 `canvas.isHardwareAccelerated()` 为真时才会调用 `recordLastSeenTarget((RecordingCanvas) canvas)`，再把 native animator 注册到最近一次看到的 `RenderNode` 上。[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java]
 
-这带来一个实战判断：AVD 能走 RT 的前提是宿主绘制路径仍在硬件加速 View 管线里，单纯使用 vector XML 不够。只要宿主把 Drawable 画到 Bitmap-backed `Canvas`、软件 layer，或全局关闭硬件加速，AVD 就失去 RT 的目标节点，动画调度会落回 UI 线程。
+实战判断很明确：AVD 能走 RT 的前提是宿主绘制路径仍在硬件加速 View 管线里，单纯使用 vector XML 不够。只要宿主把 Drawable 画到 Bitmap-backed `Canvas`、软件 layer，或全局关闭硬件加速，AVD 就失去 RT 的目标节点，动画调度会落回 UI 线程。
 
 与 2.5 节的 MainThread / RenderThread 分工对应，RT 模式能让一部分属性动画在 UI 线程忙时继续推进。但官方文档也说明，UI 线程无响应时，RT 上的 AVD 可能继续动画到 UI 线程提交下一帧为止，因此不要把它拿来和 UI 线程属性动画做逐帧同步。`Animatable2.AnimationCallback.onAnimationEnd()` 也会在 RT 完成后的下一帧回调。[已验证: 官方文档, developer.android.com/reference/android/graphics/drawable/AnimatedVectorDrawable]
 
@@ -88,9 +90,7 @@ Perfetto 没有一个公开的 “AVD fallback” counter。排查时要把它�
 - 看 RenderThread 是否有对应帧的 `DrawFrame` / HWUI 工作。如果 UI 线程忙、RenderThread 仍稳定推进，AVD 更可能仍在 RT；如果 UI 线程承担主要动画推进，而 RenderThread 空闲或只做轻量提交，要回到宿主 Canvas 检查。
 - 对比同一资源在普通 `ImageView` 和问题容器中的 trace。资源相同但线程分布不同，宿主绘制路径就是第一嫌疑点。
 
-本地复现时建议给问题场景加轻量埋点：记录 AVD 资源名、宿主 View 类名、`View.isHardwareAccelerated()`、是否设置 software layer、播放 start 时间和场景 ID。线上样本只靠堆栈不够，卡顿监控要带现场信息，这个组织方式参考了卡顿监控章节的“场景 + 指标 + 现场”结构。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md]
-
-## 资源写法与运行时场景的优化策略
+本地复现时建议给问题场景加轻量埋点：记录 AVD 资源名、宿主 View 类名、`View.isHardwareAccelerated()`、是否设置 software layer、播放 start 时间和场景 ID。线上样本只靠堆栈不够，卡顿监控要带现场信息，这个组织方式参考了卡顿监控章节的“场景 + 指标 + 现场”结构。## 资源写法与运行时场景的优化策略
 
 AVD 优化要分两层处理：资源复杂度控制和宿主路径控制。
 
@@ -108,9 +108,7 @@ AVD 优化要分两层处理：资源复杂度控制和宿主路径控制。
 - RecyclerView 列表项内的 AVD 要按可见性启动和停止，`onViewDetachedFromWindow()` 及时 `stop()`，避免离屏动画继续占用 UI 或 RT 资源。
 - 大量同款 AVD 同时播放时，不要只查单个资源。主线程、RenderThread 和 GPU 都可能被多实例放大，治理动作应从“同时播放数量”和“场景触发条件”开始。
 
-参考书中“主线程和 RenderThread 对体验速度敏感”的组织方式适合迁移到这里：AVD 的最终表现同时受资源、线程调度和 CPU 时间片影响。[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
-
-## 线上帧率监控如何标记 AVD 退化样本
+参考书中“主线程和 RenderThread 对体验速度敏感”的组织方式适合迁移到这里：AVD 的最终表现同时受资源、线程调度和 CPU 时间片影响。## 线上帧率监控如何标记 AVD 退化样本
 
 线上不能直接读取 AVD 内部的 `mAnimatorSet` 类型，标记样本要走“强信号 + 弱推断”的方式。
 
@@ -148,5 +146,5 @@ AVD 适合小图标、状态切换和短时长矢量动效；View 属性动画�
 - [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java]
 - [已验证: 官方文档, https://developer.android.com/reference/android/graphics/drawable/AnimatedVectorDrawable]
 - [来源: DeepResearch/2026-05-08-animatedvectordrawable-thread-degradation.md]
-- [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md]
+- Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级
+- Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7

@@ -4,13 +4,8 @@ weight: 4
 applicable_versions: [Android 14.0 (API 34) - Android 16 (API 36)]
 source_repos: 
   - frameworks/base/core/java/android/os/PowerManager.java
-  - frameworks/base/apex/power/service/java/com/android/server/power/PowerManagerService.java  # Android 16+ APEX路径修正
+  - frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java
   - frameworks/base/core/java/android/os/BatteryStats.java
-  - frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java  # JobScheduler核心服务
-  - frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java  # Job调度上下文
-  - frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java  # JobInfo公共API
-  - frameworks/base/services/core/java/com/android/server/am/ActiveServices.java  # FGS与Job协同
-  - frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java  # FGS常量定义
 status: ready-for-review
 task9_state: reviewed
 task6_result: pass-light-edit
@@ -489,20 +484,3 @@ public class UnifiedTaskScheduler {
 5. **模式兼容**：充分考虑 Doze 模式、应用待机等系统限制
 
 这些优化方案可以显著降低应用的电量消耗，同时保持良好的用户体验。
-<!-- AIW-源码调研-2026-06-18 -->
-
-### 🔹 源码位置与常量分析（2026-06-18新增）
-
-**重要发现**：Android 16+ JobScheduler架构从services/core迁移至APEX模块，源码路径需更新。经源码验证：
-
-1. **JobSchedulerService.java** (Android 17): 
-   - 包含默认退避常量：
-   - 负责Job调度、配额管理、并发控制核心逻辑
-
-2. **JobServiceContext.java** (Android 17): 
-   - 包含超时常量：
-   - 负责JobService绑定生命周期管理
-
-3. **FGS常量位置修正**: 、 等常量位于，而非
-
-4. **路径更新说明**: 本节讨论的11.4.1前台服务优化案例中，JobScheduler相关代码示例引用的源码位置已按Android 16+ APEX架构更新，确保开发调试时能准确找到常量定义和实现逻辑。
