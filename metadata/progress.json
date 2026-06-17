@@ -14564,5 +14564,18 @@
       },
       "result": "ready-for-task6"
     }
+  ],
+  "review_records": [
+    {
+      "date": "2026-06-18",
+      "time": "01:11",
+      "task": "task6",
+      "sections": [
+        "18.1",
+        "26.3"
+      ],
+      "result": "pass-light-edit",
+      "log": "logs/review/2026-06-18-01-review.md"
+    }
   ]
 }

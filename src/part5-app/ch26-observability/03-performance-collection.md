@@ -25,14 +25,15 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, collection, reporting, android17]
 related_chapters: ["26.1", "26.2", "26.4", "15.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pending
-reviewed_by: 
-reviewed_date: 
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+last_task6_at: "2026-06-18T01:11:00+08:00"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-18"
 task9_state: reviewed
 task9_reviewed_date: "2026-06-18"
-task9_reviewed_by: "task9-deep-tech-review"
+task9_reviewed_by: openclaw-task6
 task9_result: "needs-rework"
 last_task9_audit: "2026-06-18"
 last_task6_audit: "2026-06-18"
@@ -68,7 +69,7 @@ task2b_result: "fixed"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-性能指标采集要解决三个根本问题：什么指标值得采、怎么采才不卡 App、采到的数据怎么用。Android 17 在内存跟踪、电池 Historian 集成和诊断能力上有重大变化。本文分析 Android 14-17 的新增能力，以及性能采集与系统特性的边界关系。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md]
+性能指标采集要解决三个根本问题：什么指标值得采、怎么采才不卡 App、采到的数据怎么用。Android 17 在内存跟踪、电池 Historian 集成和诊断能力上有重大变化。本文分析 Android 14-17 的新增能力，以及性能采集与系统特性的边界关系。
 
 ## Android 14 高精度内存跟踪 API
 
@@ -324,7 +325,7 @@ Android 17 的 `NetworkCallback` 可以监听网络状态变化，自动调整�
 
 ## 总结
 
-Android 14-17 在性能监控方面带来了显著提升：Android 14 引入了高精度内存跟踪，Android 15 建立了退出事件与电池状态的归因链路，Android 16 增加了实时诊断拉取能力，Android 17 通过 StatsD 框架在 daemon 层实现了电池感知的自动降采样。新监控体系的核心不再是"采得多"，而是"在正确的电量模式下采到正确的指标"——P0 始终全量，P1 跟随电量动态调整，P2 按需开启。平衡监控覆盖率和系统性能影响，同时保证用户隐私和数据安全。
+Android 14-17 的性能监控体系逐步演进：Android 14 引入了高精度内存跟踪，Android 15 建立了退出事件与电池状态的归因链路，Android 16 增加了实时诊断拉取能力，Android 17 通过 StatsD 框架在 daemon 层实现了电池感知的自动降采样。新监控体系的核心不再是"采得多"，而是"在正确的电量模式下采到正确的指标"——P0 始终全量，P1 跟随电量动态调整，P2 按需开启。
 
 ## 延伸阅读
 
