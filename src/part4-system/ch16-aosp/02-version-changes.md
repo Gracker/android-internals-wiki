@@ -597,6 +597,13 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 
 ## 参考资料
 
+### Android 17 系统服务启动顺序与 Binder IPC 性能优化源码解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android17-system-server-binder-ipc-startup-optimization.md
+- 类型：DeepResearch 调研结果
+- 摘要：SystemServer 启动演进为三阶段分层 init + InitThreadPool 并行子任务模型，四段方法（startBootstrapServices → startCoreServices → startOtherServices → startApexServices）串联八个 PHASE_* 阶段广播。Binder 端通过 ProcessState::setThreadPoolMaxThreadCount 配置 31 个主线程，借助 BR_FROZEN_* 命令与 cached app freezer 协同避免启动抖动。
+- 注入时间：2026-06-17
+- 价值：AIW ch16 版本变更章节缺少 SystemServer 四阶段启动模型与 PHASE_* 阶段广播的源码级拆解，Binder 线程池配置 + BR_FROZEN_* 协同机制是启动优化的关键背景知识
+
 ### 官方文档
 - Android 12 Behavior Changes: developer.android.com/about/versions/12/behavior-changes-12
 - Android 13 Behavior Changes: developer.android.com/about/versions/13/behavior-changes-13

@@ -448,6 +448,83 @@ benchmarkRule.measureRepeated(
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06-wechat_货拉拉司机Android端内存治理实践.md]
 
+
+
+<!-- AIW-源码调研-2026-06-17 -->
+### Android 14 (API 34) 内存跟踪 API 源码级补充
+
+> 详细分析见 [DeepResearch/2026-06-17-android14-memory-tracking-api-deep-dive.md](../../DeepResearch/2026-06-17-android14-memory-tracking-api-deep-dive.md)。源码锚点统一为 `android-14.0.0_r1`。
+
+#### 进程死亡时的 PSS/RSS 上下文：`ApplicationExitInfo`
+
+公开 API `ApplicationExitInfo.getPss()` / `getRss()` 在 API 30 即加入，Android 14 主要完善了 `SUBREASON` 枚举。新增的关键 `SUBREASON_*` 值（位于 `frameworks/base/core/java/android/app/ApplicationExitInfo.java`）：
+
+| 常量 | 值 | 关联 REASON | 含义 |
+|------|----|----|--------|
+| `SUBREASON_MEMORY_PRESSURE` | 6 | `REASON_OTHER` | 系统长期内存压力下 AMS 主动杀进程 |
+| `SUBREASON_UNDELIVERED_BROADCAST` | 26 | `REASON_OTHER` | 广播队列积压被杀 |
+| `SUBREASON_KILL_BACKGROUND` | 24 | `REASON_USER_REQUESTED` | adb 或开发者选项主动杀 |
+| `SUBREASON_STOP_APP` | 23 | `REASON_USER_REQUESTED` | 用户从任务管理器停止 |
+| `SUBREASON_REMOVE_TASK` | 22 | `REASON_USER_REQUESTED` | 用户从 Recents 滑掉 |
+
+调用链（`AppExitInfoTracker.scheduleNoteProcessDied` → `obtainRawRecord`）：
+
+```java
+// AppExitInfoTracker.java L1047-L1048
+info.setPss(app.mProfile.getLastPss());
+info.setRss(app.mProfile.getLastRss());
+```
+
+⚠️ **关键限制**：源码注释明确 `getPss()` 是"上次采样值"，不是死亡瞬间的精确快照。极短命进程（系统来不及采样）会返回 0。线上告警设计要联合 `getReason()` 一起判断，不能因 `getPss()==0` 直接判否内存相关死亡。
+
+#### 进程死亡前的"遗言"：`setProcessStateSummary`
+
+`ActivityManager.setProcessStateSummary(byte[])` 允许 App 在死亡前写入最多 128 字节的状态数据，进程死亡时由 `AppExitInfoTracker.mActiveAppStateSummary`（`SparseArray<SparseArray<byte[]>>`）"过户"到 `ApplicationExitInfo.mState`，新进程通过 `getHistoricalProcessExitReasons()` 读回。
+
+适用场景：在关键业务路径（页面跳转、长任务开始/结束）写入业务标记，事后做"崩溃时用户在做什么"的事后归因。
+
+⚠️ 源码明确警告（ActivityManager.java L4112-L4114）：
+> "System might decide to throttle the calls to this API; excessive calls could result a `RuntimeException`."
+
+线上实践：仅"页面级"标记，**禁止**事件级高频调用。
+
+#### 单次 PSS 5 元组查询：`Debug.getPss(int pid, long[] outUssSwapPssRss, long[] outMemtrack)`
+
+一次 JNI 调用返回 PSS/Uss/SwapPss/RSS/Memtrack 五个维度，避免应用层多次 IPC。`outMemtrack[]` 对应 memtrack HAL 的 Graphics 内存分类。
+
+性能：单次 < 2ms（含 Binder），可主线程调用但避开 onCreate 等热点。
+
+#### `Debug.MemoryInfo` 字段分类（`frameworks/base/core/java/android/os/Debug.java#L116-L980`）
+
+按分配器分三类 × 按指标分十维的矩阵：
+
+| 维度 | 字段 |
+|------|------|
+| PSS | `dalvikPss`, `nativePss`, `otherPss` |
+| RSS | `dalvikRss`, `nativeRss`, `otherRss` |
+| Private Dirty/Clean | `dalvikPrivateDirty`, `dalvikPrivateClean`, ... |
+| Shared Dirty/Clean | ... |
+| Swap | `dalvikSwappedOut`, `nativeSwappedOut`, `otherSwappedOut` |
+| SwapPss | `dalvikSwappedOutPss`, ... |
+
+`getOtherPss(int which)` 进一步细分为 graphics、code、stack 等子类别，对应 `dumpsys meminfo` 中 Graphics 行。
+
+#### `ActivityManager.getProcessMemoryInfo(int[] pids)` 的 API 29+ 限频
+
+`ActivityManager.java#L4320-L4327` 明确：API 29 起跨 uid 查询会被限频并返回零数组，仅同 uid 可用。**自查询（传入自己 PID）始终可用**。线上监控如果想看其他进程，只能走 `dumpsys meminfo` shell 路径或 `IMemtrack` HAL。
+
+#### 系统侧支撑：`system/memory/libmeminfo`
+
+`ProcMemInfo::SmapsOrRollup()`（`system/memory/libmeminfo/include/meminfo/procmeminfo.h`）优先用 `/proc/<pid>/smaps_rollup`（内核 4.14+，Android 14 默认开），fallback 到 `smaps`。单次调用 < 1ms（rollup 路径），100+ VMA 进程 1-3ms（smaps 路径），是 30-60s 采样间隔的物理基础。
+
+`ProcMemInfo::ResetWorkingSet(pid)` 写 `/proc/<pid>/clear_refs`，清除所有页的 `ACCESSED/YOUNG` 位，用于识别"长期未使用"的回收候选。
+
+#### 系统服务内部：`OomAdjProfiler` 的内存回收功耗画像
+
+`frameworks/base/services/core/java/com/android/server/am/OomAdjProfiler.java` 维护两个 `RingBuffer<CpuTimes>`（容量 10），按电池会话切片存储 `oom_adj` 与 `system_server` 的 CPU 耗时。回答"我们 App 让系统 server 多花了多少 CPU 在 oom_adj 上"，对 §11 功耗章节的"系统服务 CPU 开销归因"有用。
+
+<!-- /AIW-源码调研-2026-06-17 -->
+
 ## 工具速查表
 
 | 场景 | 工具 | 命令/操作 | 适用阶段 |
@@ -496,6 +573,13 @@ PSS 是进程维度的内存计量,但它包含了共享库的分摊。对于系
 PSS 是必要的但不够。它只能告诉你"内存高了",但不知道是 Java Heap、Native Heap 还是 Graphics 的问题。线上监控至少需要区分 Java Heap 使用率和 PSS,最好还能采集 Native Heap 和 Graphics 的数据,才能指导排查方向。
 
 ## 参考资料
+
+### Android 14 精细化内存跟踪 API 与进程死亡诊断能力源码解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-android14-memory-tracking-api-deep-dive.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 14 在 Debug.MemoryInfo / ApplicationExitInfo 体系上做了三件事：(1) 进程死亡时通过 getPss()/getRss() 提供上次采样 PSS/RSS 上下文，新增 SUBREASON_MEMORY_PRESSURE 等 SUBREASON 枚举精确区分杀进程原因；(2) Debug.getPss() 一次性返回 PSS/Uss/SwapPss/RSS/Memtrack 五维数据避免多次 IPC；(3) AMS 内部 ProcessProfileRecord 维护五元组并由 OomAdjProfiler 按电池会话切片存储内存回收功耗开销。
+- 注入时间：2026-06-17
+- 价值：把 AIW ch10 内存分析章节从 API 表面推进到 ApplicationExitInfo SUBREASON 枚举、ProcessProfileRecord 五元组、OomAdjProfiler 功耗切片的源码级验证
 
 - [Android Studio Memory Profiler 官方文档](https://developer.android.com/studio/profile/memory-profiler)
 - [Perfetto Native Heap Profiling 文档](https://perfetto.dev/docs/data-sources/native-heap-profiling)

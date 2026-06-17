@@ -2,7 +2,7 @@
 title: "三方性能库"
 chapter: "14.5"
 section: "14.5"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -45,8 +45,8 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 review_round: 4
 task9_state: reviewed
 task9_result: auto-fixed
@@ -57,9 +57,9 @@ task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-28T19:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-19-review.md"
-last_task6_audit: "2026-05-22"
+last_task6_at: "2026-06-17T08:09:32+08:00"
+last_task6_review_log: "logs/review/2026-06-17-08-review.md"
+last_task6_audit: "2026-06-17"
 task2b_result: fixed
 last_task2b_at: "2026-05-28T18:50:00+08:00"
 repaired_date: "2026-05-28"
@@ -71,6 +71,7 @@ last_task9_autofix_at: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-05-audit.md"
 last_task2b_verifier_at: "2026-06-17T07:29:33+08:00"
 task2b_verifier_note: "status finalized→ready-for-review; task9 auto-fix 回流 Task6 复审"
+task6_refinalize_note: "2026-06-17 Task6 复审通过（revisiting）；Task9 auto-fix 内容无文风/格式问题，L1/L2 全部通过；自动晋升 finalized。"
 ---
 
 

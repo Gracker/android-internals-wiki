@@ -58,6 +58,8 @@ last_task9_review_log: logs/deep-review/2026-05-19-08-deep-review.md
 task9_review_notes: "2026-05-19 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点、App Startup、Baseline Profile 与 TTFD 链路复核通过；满足 Task6+Task9+queue 条件，自动晋升 finalized。"
 auto_promoted_by: task9-deep-tech-review
 auto_promoted_at: "2026-05-19T08:27:59+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-17
 ---
 
 # 启动优化复盘框架与案例模板
@@ -86,7 +88,7 @@ auto_promoted_at: "2026-05-19T08:27:59+08:00"
 
 ## 为什么要看启动优化复盘框架
 
-21.1 到 21.8 已经把启动分析、任务编排、`ContentProvider`、Baseline Profile、启动页、延迟初始化、多进程和线上监控拆开讲过。本章收束到复盘框架视角：拿到一个启动慢的大型 App，怎样把 trace、任务清单、profile、线上指标串成一次可复用的优化过程。
+前面几节已经把启动分析、任务编排、`ContentProvider`、Baseline Profile、启动页、延迟初始化、多进程和线上监控逐一拆开讲过。本章收束到复盘框架视角：拿到一个启动慢的大型 App，怎样把 trace、任务清单、profile、线上指标串成一次可复用的优化过程。
 
 本节不重复前文原理，重点放在三个工程场景的排查框架：`Application` 初始化过重、启动框架从散点初始化演进为任务图、Baseline Profile 从“文件已生成”走到“收益可验证”。
 
@@ -127,12 +129,12 @@ auto_promoted_at: "2026-05-19T08:27:59+08:00"
 | `HeapTaskDaemon` 在启动阶段抢占 CPU，伴随频繁对象分配 | 启动分配过多触发 GC 压力 | 减少临时对象、复用缓存、推迟大对象创建 |
 | 后台线程过多，CPU 被大量初始化任务占满 | 并发过度 | 限制启动线程池、按优先级分层执行 |
 
-参考素材把速度优化拆成 CPU、缓存、任务调度三个方向。放到启动场景里，对应的工程动作是：减少启动路径上必须执行的代码；让会被马上访问的类、资源、配置更早命中缓存；让首帧相关线程拿到足够 CPU 时间。不要把线程数开大当成通用解法，启动阶段 CPU 核心有限，过量并发会让主线程和 RenderThread 排队。
+把速度优化拆成 CPU、缓存、任务调度三个方向来看，放到启动场景里对应的工程动作是：减少启动路径上必须执行的代码；让会被马上访问的类、资源、配置更早命中缓存；让首帧相关线程拿到足够 CPU 时间。不要把线程数开大当成通用解法——启动阶段 CPU 核心有限，过量并发会让主线程和 RenderThread 排队。
 
 
 ### 对 GC 抑制方案的取舍
 
-参考素材中有一类激进方案：通过分析 ART 的 `HeapTaskDaemon` 和 `ConcurrentGCTask`，在启动阶段延后 GC 执行。这个方向说明了一个事实：启动期 GC 会抢 CPU，也会放大锁等待。但 App 侧不建议把 hook ART 内部符号作为常规线上方案。
+有一类激进方案值得了解：通过分析 ART 的 `HeapTaskDaemon` 和 `ConcurrentGCTask`，在启动阶段延后 GC 执行。这个方向说明了一个事实：启动期 GC 会抢 CPU，也会放大锁等待。但 App 侧不建议把 hook ART 内部符号作为常规线上方案。
 
 App 侧优先按这个顺序处理：
 
@@ -226,7 +228,7 @@ AOSP `Activity.reportFullyDrawn()` 的注释说明，系统会用这个信号辅
 
 ### 和 Dex 布局优化的关系
 
-参考素材用 Redex 的 Dex 类重排序解释空间局部性：把启动路径上会连续访问的类排得更近，减少加载和缓存 miss。现代 Android 工程里，Baseline Profile、Startup Profile、AGP / R8 / D8 的 profile 处理已经覆盖了很大一部分工作。
+Redex 的 Dex 类重排序可以解释空间局部性：把启动路径上会连续访问的类排得更近，减少加载和缓存 miss。现代 Android 工程里，Baseline Profile、Startup Profile、AGP / R8 / D8 的 profile 处理已经覆盖了很大一部分工作。
 
 工程上不建议同时叠很多黑盒优化。App 侧先按这条路径验证：
 
