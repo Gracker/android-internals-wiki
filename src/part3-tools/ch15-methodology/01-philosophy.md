@@ -2,7 +2,7 @@
 title: 性能优化的术、道、器
 chapter: '15.1'
 section: '15.1'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-04'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
@@ -35,7 +35,7 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
 task2b_state: fixed
 task6_result: pass-light-edit
@@ -49,16 +49,17 @@ last_task2b_at: "2026-05-23T11:17:28+08:00"
 task2b_fixed_at: "2026-04-27T13:40:00+08:00"
 task9_review_notes: "2026-05-23 task9 idle audit: needs-rework。P0 2 / P1 0 / P2 0。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 06:25 Task9 idle audit auto-fix：修正 BLASTBufferQueue 版本归属；AOSP android-11.0.0_r1 已有 frameworks/native/libs/gui/BLASTBufferQueue.cpp，android-10.0.0_r1 无该文件。未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。"
 task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T22:07:00+08:00"
+last_task6_at: "2026-06-17T08:09:32+08:00"
 last_task9_audit: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-06-audit.md"
 last_task2b_verifier_at: "2026-06-17T07:29:33+08:00"
 task2b_verifier_note: "status finalized→ready-for-review; task9 auto-fix 回流 Task6 复审"
+task6_refinalize_note: "2026-06-17 Task6 复审通过（revisiting）；Task9 auto-fix BLASTBufferQueue 版本归属修正无文风/格式问题，L1/L2 全部通过；自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-06-17-06-audit.md"
-task6_state: "revisiting"
-last_task6_audit: "2026-06-16"
+task6_state: "reviewed"
+last_task6_audit: "2026-06-17"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
+last_deepseek_cn_review_at: 2026-06-17
 last_task9_autofix_at: "2026-06-17"
 p0: 0
 p1: 0
@@ -138,7 +139,7 @@ Brendan Gregg 把性能问题描述为「主观的」,正因如此,我们更需�
 
 ### 测量本身会影响被测系统
 
-上面三步建立了一个完整的「度量→定位→验证」循环,但有一个前提容易被忽略:**测量本身会影响被测系统**。
+上面三步建立了一个完整的「度量 → 定位 → 验证」循环，但有一个前提容易被忽略：**测量本身会影响被测系统**。
 
 Perfetto 的 trace event 插桩会给每个被追踪的函数增加微秒级开销;Simpleperf 的采样频率越高,对目标线程的干扰越大;Macrobenchmark 连续跑几十次冷启动,设备可能因发热触发降频,导致后几轮数据偏低。这些影响在单次测量中往往可以忽略,但在精确到毫秒级的性能对比中就可能引入偏差。
 
@@ -166,7 +167,7 @@ Android 系统在持续演进,每一代新版本都可能引入新的性能特�
 
 **版本跟进**是长期投入。每当 Android 发布新版本,都应该评估新版本对既有优化策略的影响。比如 Android 11 已出现 `BLASTBufferQueue`,窗口更新的 buffer/transaction 交接模型开始和旧 BufferQueue 口径分开(详见第 2 章和第 2.6 节)。如果我们的优化策略依赖于旧的行为模型,就需要及时调整。
 
-从工具演进看,这条时间线可以拆成几处明确的里程碑:
+从 Perfetto 和系统工具的演进来看，这条时间线可以拆成几处明确的里程碑：
 
 - **API 24 / Android 7.0**:`FrameMetrics` 已经提供逐帧耗时观测能力。
 - **Android 9-10**:Perfetto 逐步成为系统级 trace 主线,systrace 更多退到兼容入口。
@@ -230,7 +231,7 @@ Android 14-16 继续扩展 Perfetto 的 Track 覆盖(Jobscheduler Track、App St
 
 ### 工具的选择逻辑
 
-Android 性能分析工具很多,但它们各有定位。选择工具时先写清楚「要回答什么问题」,再选择能回答这个问题的工具。
+Android 性能分析工具很多,但它们各有定位。选择工具时先写清楚「要回答什么问题」，再选择能回答这个问题的工具。
 
 | 场景 | 先看什么 | 首选工具 | 继续深入时看什么 |
 |------|----------|----------|------------------|

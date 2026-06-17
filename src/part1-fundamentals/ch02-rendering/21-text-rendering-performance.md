@@ -72,7 +72,7 @@ last_task6_at: "2026-06-17T04:06:00+08:00"
 last_task6_review_log: logs/review/2026-06-17-04-review.md
 last_task9_audit: "2026-06-17"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
+last_deepseek_cn_review_at: 2026-06-17
 ---
 
 
@@ -92,7 +92,7 @@ last_deepseek_cn_review_at: 2026-06-09
 
 打开手机上任何一个 App（微信聊天、微博信息流、新闻客户端），占据屏幕面积最大的元素是什么？文字。
 
-文字看起来简单，像只是把几个字画到屏幕上。但在 Android 的渲染管线中,文字往往是 CPU 开销最高的绘制类型之一。原因很直接,文字渲染不是简单的像素拷贝,而是要经过"整形→测量→换行→光栅化→绘制"这一整套流程。其中"整形"(text shaping)和"测量"(measurement)尤其昂贵,需要根据字体、语言、上下文计算每个字符的精确位置,背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
+文字看起来简单，像只是把几个字画到屏幕上。但在 Android 的渲染管线中，文字往往是 CPU 开销最高的绘制类型之一。原因很直接：文字渲染不是简单的像素拷贝，而是要经过「整形 → 测量 → 换行 → 光栅化 → 绘制」这一整套流程。其中整形（text shaping）和测量（measurement）尤其昂贵，需要根据字体、语言、上下文计算每个字符的精确位置，背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
 
 对于列表类 App(聊天、社交、新闻),一屏可能同时存在几十个 TextView。在滑动过程中,每个 TextView 都需要在 8.33ms (120Hz) 或 16.67ms (60Hz) 的帧预算内完成 measure → layout → draw 全流程。如果某个 TextView 的文字测量耗时超标,帧就掉了。
 
@@ -112,7 +112,7 @@ last_deepseek_cn_review_at: 2026-06-09
 
 - **DynamicLayout**:用于可编辑文本(EditText)。它在 StaticLayout 的基础上增加了文本变化时的增量更新逻辑。
 
-选好 Layout 之后,主线程已经拿到了每个 run 的测量结果、行分布和 glyph 位置信息。接下来进入 draw 阶段。public API 和 HWUI 内部提交层要分开看。API 31 起,`Canvas.drawGlyphs()` 已经提供了"按 glyph id + 坐标绘制"的公开入口;但在 `android-16.0.0_r1` 的 `frameworks/base/libs/hwui/SkiaCanvas.cpp` 里,HWUI 这一层的 `SkiaCanvas::drawGlyphs()` 仍然是先把 glyph 和坐标写进 `SkTextBlobBuilder`,再调用 `mCanvas->drawTextBlob()` 交给 Skia。
+选好 Layout 之后，主线程已经拿到了每个 run 的测量结果、行分布和 glyph 位置信息，接下来进入 draw 阶段。这里要区分两个层面：公开 API 和 HWUI 内部提交。API 31 起，`Canvas.drawGlyphs()` 提供了「按 glyph id + 坐标绘制」的公开入口；但在 `android-16.0.0_r1` 的 HWUI 实现中（`frameworks/base/libs/hwui/SkiaCanvas.cpp`），`SkiaCanvas::drawGlyphs()` 仍然先把 glyph 和坐标写进 `SkTextBlobBuilder`，再调用 `mCanvas->drawTextBlob()` 交给 Skia。
 
 ```cpp
 // frameworks/base/libs/hwui/SkiaCanvas.cpp @ android-16.0.0_r1
@@ -124,9 +124,9 @@ void SkiaCanvas::drawGlyphs(...) {
 }
 ```
 
-这个区别直接影响我们怎么描述调用链。公开 API 层可以说是 `Canvas.drawGlyphs()`;HWUI 提交层在当前 tag 上仍然是 `SkiaCanvas::drawGlyphs()` → `SkTextBlobBuilder` → `SkCanvas::drawTextBlob()`。把这两层合并成一句“直接下沉到 SkCanvas.drawGlyphs”，会混淆公开 API 名称和 HWUI 内部实现。
+也就是说，公开 API 走 `Canvas.drawGlyphs()`，HWUI 内部提交仍然走 `SkiaCanvas::drawGlyphs()` → `SkTextBlobBuilder` → `SkCanvas::drawTextBlob()`。
 
-Glyph atlas 仍然存在,首次出现的字形也仍可能触发 atlas miss、CPU 光栅化和纹理上传。但这些属于 Skia / HWUI 的内部实现细节,具体函数名会随版本变化;写到书里时保留到可直接核对的层级更稳。
+Glyph atlas 仍然存在，首次出现的字形也仍可能触发 atlas miss、CPU 光栅化和纹理上传。但这些属于 Skia / HWUI 的内部实现细节，具体函数名会随版本变化；写到书里时保留到可直接核对的层级更稳。
 [图:文字渲染管线架构图 - 展示 TextView.setText() → Layout 选择(BoringLayout / StaticLayout / DynamicLayout)→ Minikin 整形 + LineBreaker 换行 → HWUI drawGlyphs() → Skia drawTextBlob() → GPU glyph atlas 的完整路径,标注 measure 和 draw 两个瓶颈区间]
 
 这条管线的性能瓶颈集中在两个地方:
@@ -196,7 +196,7 @@ new StaticLayout(text, paint, width, align, spacingMult, spacingAdd)
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/text/StaticLayout.java]
 
-在较新的代码里,我们更应该直接使用 **StaticLayout.Builder**。这个 Builder 至少在 `android-6.0.1_r1` 就已经存在,不是 Android 9 才出现。它把布局参数的设置集中到一处,也更容易和 `breakStrategy`、`hyphenationFrequency` 等参数一起核对。
+在较新的代码里，推荐使用 **StaticLayout.Builder**（至少在 `android-6.0.1_r1` 就已经存在）。它把布局参数的设置集中到一处，也更容易和 `breakStrategy`、`hyphenationFrequency` 等参数一起核对。
 
 ```java
 // 推荐用法(android-6.0.1_r1 已可见)
@@ -230,7 +230,7 @@ StaticLayout 本身不做缓存--每次创建新的 StaticLayout 实例都是重
 
 ## Emoji 渲染性能
 
-分析 emoji 渲染性能时,需要把不同实现路径区分开。站在当前可核对的 AOSP / AndroidX 实现上,我们至少要分清三件事。
+分析 emoji 渲染性能时，需要把不同实现路径区分开，至少分清三件事。
 
 **Android 4.4 - 7.1**:Emoji 主要依赖系统字体。它和普通文字一样参与字体 fallback、整形和绘制,只是字体文件里保存的是 color emoji glyph。这个阶段的主要问题,是字体版本跟系统版本绑定,新 emoji 很容易显示成 tofu。
 
@@ -367,16 +367,13 @@ textView.setIncludeFontPadding(false);
 
 [图:Perfetto Trace 截图 - 主线程 doFrame 展开,measure 子 slice 中多个 TextView.onMeasure() 累计耗时超过帧预算,对应 FrameTimeline 标记的红色 jank 帧。标注关键区域:performTraversals → measure → TextView.onMeasure()]
 
-### 文字渲染在 Perfetto 中的可观测面
+### 在 Perfetto 中观察文字渲染
 
-这个话题最容易写飘。默认 Perfetto trace 能稳定看到的,主要是 MainThread 上的 `performTraversals → measure / layout`,以及其中的 `TextView.onMeasure()`。如果这里已经占满一帧,根因通常就在文字测量、span 处理或布局约束变化上。
+默认 Perfetto trace 能稳定看到的是 MainThread 上的 `performTraversals → measure / layout`，以及其中的 `TextView.onMeasure()`。如果 measure 已经占满一帧，根因通常就在文字测量、Span 处理或布局约束变化上。
 
-RenderThread / HWUI 侧当然也可能有文字相关成本,但要分清"能推测"和"能稳定看见":
-- **默认 trace**:更适合看 MainThread 的 measure 开销。
-- **额外打开 `gfx`、`view`、`hwui` 等 atrace 类别**:能看到录制、提交、上传这类更细的渲染工作。
-- **具体 slice 名称**:会随 Android 版本、厂商定制和 trace 配置变化,不适合把 `drawPosText`、`TextBlob` 这类名字当成通用检查清单。
+如果需要观察 RenderThread / HWUI 侧的细节，可以额外打开 `gfx`、`view`、`hwui` 等 atrace 类别，能看到录制、提交、上传这类更细的渲染工作。注意具体 slice 名称会随 Android 版本和厂商定制变化，不适合把固定名称当成通用检查清单。
 
-如果你在某台设备上观察到首次 emoji / 生僻字渲染伴随 RenderThread 或 GPU 侧的 upload 突刺,那是一个需要结合 trace 配置和机型继续核实的现象,不是所有设备都会露出的固定 slice。
+如果在某台设备上观察到首次 emoji 或生僻字渲染伴随 RenderThread 或 GPU 侧的 upload 突刺，需要结合 trace 配置和机型进一步核实——不是所有设备都会露出相同的 slice。
 
 ### 定位建议
 

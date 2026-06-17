@@ -381,3 +381,12 @@ public void reportBleScanStarted(@NonNull WorkSource ws, boolean isUnoptimized) 
 - **节流上报**：每 100 result 才 1 次 Binder，避免高频 result 把 wakeup 打满
 
 <!-- AIW-源码调研-2026-06-14 -->
+
+## 参考资料
+
+### AOSP Bluetooth 扫描功耗归因与保护机制源码解析（ScanManager / AppScanStats / GattService）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-aosp-bluetooth-scan-power-attribution-protection.md
+- 类型：DeepResearch 调研结果
+- 摘要：BLE 扫描功耗治理是四组件协同的三层保护+归因上报体系：(1) ScanManager 的 requiresScreenOn/requiresLocationOn 谓词控制扫描暂停；(2) AppScanStats 通过 isUnoptimized 标签（无过滤+非 first-match+非 opportunistic）上报 BatteryStats；(3) GattService 的 isScanningTooFrequently 直接拒绝注册；(4) BatteryStatsManager.reportBleScanStarted 是 dumpsys batterystats 中 Bluetooth scan UID 归因的最终写入路径。
+- 注入时间：2026-06-17
+- 价值：ch11 功耗章节此前无任何源码级覆盖，本报告首次拆解 BLE 扫描三层保护机制与 BatteryStats 归因写入链路的源码实现
