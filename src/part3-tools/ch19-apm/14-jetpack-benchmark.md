@@ -48,6 +48,7 @@ reviewed_date: "2026-05-24"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
+last_task6_audit: "2026-06-18"
 task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 1 处（清理 frontmatter duplicate task2b_result）。无新增 Task6 回炉；Baseline Profile API floor 已由 Task2B 修复，等待 Task9 复审。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-26
