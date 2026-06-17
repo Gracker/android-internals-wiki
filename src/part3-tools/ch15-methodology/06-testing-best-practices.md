@@ -2,11 +2,11 @@
 title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-04"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-27"
-last_verified_against: "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1 ThermalManagerService / DisplayModeDirector / PackageManagerShellCommand / BackgroundDexOptService / BackgroundDexOptJobService; AOSP android-16.0.0_r1 PackageManagerShellCommand / ArtManagerLocal"
+last_verified_against: "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1 ThermalManagerService / DisplayModeDirector / PackageManagerShellCommand / BackgroundDexOptService / BackgroundDexOptJobService; AOSP android-16.0.0_r1 PackageManagerShellCommand / ArtManagerLocal; AOSP paths verified against android-16.0.0_r1, pending re-verification for android-17.0.0_r1"
 confidence: medium
 sources:
   - type: official
@@ -41,16 +41,16 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 last_task6_audit: "2026-05-23"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
-last_task2b_lite_at: "2026-05-26"
+last_task2b_lite_at: "2026-06-18"
 last_task2b_at: "2026-05-26T19:25:19+08:00"
 review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用 P10/慢帧占比）；Macrobenchmark 自动稳定化已改为 IsolationActivity + sustained perf mode 源码级描述。"
 task9_result: pass-tech-review
@@ -59,11 +59,11 @@ task9_reviewed_date: "2026-05-26"
 last_task9_at: "2026-05-26T19:26:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-05-07 Task9 18:28：pass-tech-review。P0 0 / P1 0 / P2 1；Macrobenchmark 分位数与自动稳定化 P1 已闭环，JSON schema 口径 P2 已写入 suggestions。满足 Task6 通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 2（ArtShellCommand 既有 suggestions 不重复；Macrobenchmark 迭代次数官方来源不足写入 suggestions）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-07 Task9 18:28：pass-tech-review。P0 0 / P1 0 / P2 1；Macrobenchmark 分位数与自动稳定化 P1 已闭环，JSON schema 口径 P2 已写入 suggestions。满足 Task6 通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 2（ArtShellCommand 既有 suggestions 不重复；Macrobenchmark 迭代次数官方来源不足写入 suggestions）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 03:20 闲时抽检：P1 2（Android 17 关键变更缺失与源码路径版本边界风险），写入 queue.json。"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-25"
-last_task9_audit: "2026-05-26"
-task9_audit_notes: "2026-05-26 idle audit: P1 1 / P2 1; Macrobenchmark CI GMD guidance conflicts with current official docs; queued Task2B."
+last_task9_audit: "2026-06-18"
+task9_audit_notes: "2026-06-18 idle audit: P1 2 / P2 0; Android 17 关键变更缺失与源码路径版本边界风险；queued Task2B."
 last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-26"
@@ -233,7 +233,7 @@ adb shell setprop pm.dexopt.disable_bg_dexopt true 2>/dev/null || true
 adb shell cmd package bg-dexopt-job --disable 2>/dev/null || true
 ```
 
-`am kill-all` 只能杀 App 进程，拦不住系统维护任务——尤其是后台 dexopt。设备空闲或充电时，系统会在后台执行 dexopt 优化，带来 CPU 和 I/O 波动，直接干扰启动、安装后首次运行和 CI 基准测试。Android 14 和 Android 16 的实现路径不同：Android 14 通过 JobScheduler 调度（`BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`），shell 命令入口在 `PackageManagerShellCommand.java`；Android 16 将执行侧迁移到 ART Service（`ArtManagerLocal.java`），shell 命令入口保持不变。
+`am kill-all` 只能杀 App 进程，拦不住系统维护任务——尤其是后台 dexopt。设备空闲或充电时，系统会在后台执行 dexopt 优化，带来 CPU 和 I/O 波动，直接干扰启动、安装后首次运行和 CI 基准测试。Android 14 和 Android 16 的实现路径不同：Android 14 通过 JobScheduler 调度（`BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`），shell 命令入口在 `PackageManagerShellCommand.java`；Android 16 将执行侧迁移到 ART Service（`ArtManagerLocal.java`），shell 命令入口保持不变。Android 17（API 37）继续沿用 ART Service 架构；上述源码路径验证至 android-16.0.0_r1，android-17.0.0_r1 中如有路径调整需重新核对。
 
 `bg-dexopt-job --cancel` / `--disable`、`cancel-bg-dexopt-job` 和 `pm.dexopt.disable_bg_dexopt` 的可用性会随系统版本、权限和厂商实现变化。CI 脚本要记录命令是否执行成功；执行失败时，把 ART 后台优化状态写进测试报告。测试结束后恢复 `pm.dexopt.disable_bg_dexopt=false`，避免长期影响设备的正常优化。
 
@@ -624,10 +624,10 @@ Firebase Performance Monitoring(FPM)是 Google 提供的线上性能监控服务
 - [Measure performance | Android Developers](https://developer.android.com/topic/performance) - 性能测量总入口
 - AOSP 路径:`frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`(thermalservice shell 命令)
 - AOSP 路径:`frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java`(刷新率 setting 与 mode 选择)
-- AOSP 路径:`frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java`(`bg-dexopt-job` / `cancel-bg-dexopt-job` shell 命令分发)
-- AOSP 路径:`frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java`(Android 14 后台 dexopt 服务调度)
-- AOSP 路径:`frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptJobService.java`(Android 14 JobService 调度入口)
-- AOSP 路径:`art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`(Android 16 ART Service 优化执行入口)
+- AOSP 路径:`frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java`(`bg-dexopt-job` / `cancel-bg-dexopt-job` shell 命令分发;验证至 android-16.0.0_r1)
+- AOSP 路径:`frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java`(Android 14 后台 dexopt 服务调度;验证至 android-14.0.0_r1)
+- AOSP 路径:`frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptJobService.java`(Android 14 JobService 调度入口;验证至 android-14.0.0_r1)
+- AOSP 路径:`art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`(Android 16 ART Service 优化执行入口;验证至 android-16.0.0_r1)
 - AOSP 路径:`frameworks/base/core/java/android/app/Activity.java`(`reportFullyDrawn()` / 启动时间相关 API)
 - AOSP 路径:`frameworks/base/core/java/android/view/Choreographer.java`(帧回调 API)
 - AndroidX 路径:`androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt`(CompilationMode 定义)
