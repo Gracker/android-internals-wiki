@@ -2,7 +2,7 @@
 title: "性能指标采集与上报"
 chapter: "26.3"
 section: "26.3"
-status: draft
+status: ready-for-review
 drafted_date: "2026-06-17"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-17"
