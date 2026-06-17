@@ -1457,5 +1457,53 @@
     "completed_at": "2026-06-18T00:50:00+08:00",
     "completed_by": "task2b-main",
     "resolution": "所有 4 条问题已修复：Issue 1 VANILLA_ICE_CREAM 已不存在于当前文件(已使用正确常量)；Issue 2 JNI 桥接细节已补充；Issue 3 版本演进对比表已添加；Issue 4 测试设备与业务案例已补充。禁用词检查通过。"
+  },
+  {
+    "section": "5.20",
+    "section_title": "GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争",
+    "title": "GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争",
+    "file": "src/part1-fundamentals/ch05-cpu-power/20-genai-app-integration-performance.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - GenAI 应用集成性能边界：AICore 调度、Google Intellig",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-18T01:10:44.690432+08:00",
+    "created": "2026-06-18",
+    "status": "pending"
+  },
+  {
+    "section": "12.7",
+    "section_title": "Privacy Sandbox API 性能影响：Topics、Protected Audiences 与 Attribution Reporting",
+    "title": "Privacy Sandbox API 性能影响：Topics、Protected Audiences 与 Attribution Reporting",
+    "file": "src/part2-performance/ch12-apk-network/07-privacy-sandbox-performance.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - Privacy Sandbox API 性能影响：Topics、Protecte",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-18T01:10:44.690432+08:00",
+    "created": "2026-06-18",
+    "status": "pending"
+  },
+  {
+    "section": "25.22",
+    "section_title": "定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理",
+    "title": "定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理",
+    "file": "src/part5-app/ch25-power-size/22-location-services-performance.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-18T01:10:44.690432+08:00",
+    "created": "2026-06-18",
+    "status": "pending"
+  },
+  {
+    "section": "8.14",
+    "section_title": "推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染",
+    "title": "推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染",
+    "file": "src/part2-performance/ch08-responsiveness/14-push-notification-pipeline-performance.md",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口] 新创建章节 - 推送通知管线性能：FCM 投递延迟与 NotificationManagerSe",
+    "added_by": "task2a-gap-mining",
+    "added_at": "2026-06-18T01:10:44.690432+08:00",
+    "created": "2026-06-18",
+    "status": "pending"
   }
 ]
