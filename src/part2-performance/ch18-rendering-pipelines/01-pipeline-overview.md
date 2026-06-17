@@ -2,7 +2,7 @@
 title: "渲染管线分类与选择对照表"
 chapter: "18.1"
 section: "18.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-06-17"
 last_verified_against: "AOSP android-16.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue + HardwareBufferRenderer API + Flutter 3.32 release notes"
