@@ -1,8 +1,8 @@
 {
   "total": 438,
   "draft": 3,
-  "ready-for-review": 91,
-  "finalized": 300,
+  "ready-for-review": 90,
+  "finalized": 301,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
   "task9_reviewed_by": "openclaw-task9",
@@ -2502,9 +2502,9 @@
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
   "ready_for_review": 87,
-  "last_updated": "2026-06-17T01:27:53+08:00",
-  "last_updated_by": "openclaw-task9",
-  "task6_last_review": "2026-06-16T23:17:17+08:00",
+  "last_updated": "2026-06-18T02:10:00+08:00",
+  "last_updated_by": "openclaw-task6",
+  "task6_last_review": "2026-06-18T02:10:00+08:00",
   "task9_last_review": "2026-06-16T10:32:06+08:00",
   "ready_to_publish": 193,
   "rework_history": [
