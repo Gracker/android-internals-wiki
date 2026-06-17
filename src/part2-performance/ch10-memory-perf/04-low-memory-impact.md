@@ -28,21 +28,21 @@ polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
 task2b_result: fixed
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External Review 问题单）"
 repaired_date: "2026-05-05"
 repaired_by: "openclaw-task2b"
 review_round: 8
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_state: "reviewed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-17T12:31:45+08:00"
 review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。 | 2026-05-05 Task2B 09:56：P0 mm_events源码锚点已修正为system/memory/lmkd/mm_events.c+libmemevents/；官方链接改为AOSP仓库直链；mem.mm_events SQL视图标注待验证。P1 Generational CMC全面默认已收窄为AOSP main可见+runtime flag条件化。 | 2026-05-05 Task6 12:26：revisiting 写作复审，清理第一人称、拟人化标题和少量填充词；L1/L2 通过，queue 无 pending，等待 Task9 复审。 | 2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 1；mm_events 源码路径与 Android 12+ 版本线仍错误，lmkd PSI some/full 触发语义需修正，Trace 配置中的 lmkd atrace category 需校正。 | 2026-05-05 Task2B 20:34：P0 mm_events源码路径已修正(lmkd.cpp+libmeminfo/libmemevents)；版本线收窄至Android 15+；PSI触发语义改为三档(LOW/MEDIUM→PSI some, CRITICAL→PSI full) | 2026-05-05 Task9 21:00：needs-rework。P0 1（Trace 配置 atrace_categories:\\\\\"lmkd\\\\\" 不在 AOSP atrace category 中，需改 lowmemorykiller ftrace/memory 口径）；P1 0。 | 2026-05-05 Task6 23:26：revisiting 写作复审，微调开头连锁反应表述；L1/L2 通过，queue 无 pending，转 Task9 复审。 | 2026-05-06 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；关闭上一轮 mm_events/Generational CMC/Trace category pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 0；低内存 Trace 配置中的 lmk 捕获口径错误：AOSP `memory` category 不启用 lowmemorykiller，`lowmemorykiller/lowmemorykiller` 事件名不可核，应改为 `memreclaim` category 或 legacy `lowmemorykiller/lowmemory_kill`，并标注现代 lmkd ATrace/ProcessKilled 边界。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 lmk Trace 配置已从 memory/错误事件名修正为 memreclaim + legacy lowmemorykiller/lowmemory_kill，并补现代 lmkd ATrace/ProcessKilled 边界；queue 无 pending，Task6 已通过，自动晋升 finalized。"
-task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T23:26:00+08:00"
+task6_reviewed_date: "2026-06-17"
+last_task6_at: "2026-06-17T19:12:00+08:00"
 last_task6_audit: "2026-06-13"
 last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
 last_task9_audit: "2026-06-17"
@@ -132,7 +132,7 @@ I/O 阻塞进一步蔓延。等待 I/O 完成的进程持有各种内核锁（mu
 
 当内核层面的内存回收（kswapd 和 Direct Reclaim）仍然无法缓解内存压力时，Android 的 lmkd（Low Memory Killer Daemon）就会介入了。lmkd 运行在用户空间，通过 PSI（Pressure Stall Information）信号来感知系统内存紧张程度。
 
-PSI 是 Linux 内核从 4.20 开始提供的一种机制，它统计的是：因为内存（或 CPU、I/O）资源不足，有多少任务被迫等待，以及等待了多久。PSI 提供两种级别的统计：`some`（至少有一个任务在等待）和 `full`（所有非空闲任务都在等待）。lmkd 按压力等级注册不同的 PSI 监听器：LOW 和 MEDIUM 压力监听 `PSI_SOME`（部分阻塞），CRITICAL 压力监听 `PSI_FULL`（完全阻塞）。收到信号后，lmkd 还会结合 thrashing、swap 余量、file cache 水平和 `oom_score_adj` 等条件做综合判断，不是只看 PSI 就直接杀进程。
+PSI 是 Linux 内核从 4.20 开始提供的机制，统计的是：因内存（或 CPU、I/O）资源不足导致任务等待的数量和时长。PSI 提供两种级别的统计：`some`（至少有一个任务在等待）和 `full`（所有非空闲任务都在等待）。lmkd 按压力等级注册不同的 PSI 监听器：LOW 和 MEDIUM 压力监听 `PSI_SOME`（部分阻塞），CRITICAL 压力监听 `PSI_FULL`（完全阻塞）。收到信号后，lmkd 还会结合 thrashing、swap 余量、file cache 水平和 `oom_score_adj` 等条件做综合判断，不是只看 PSI 就直接杀进程。
 
 lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置三档压力阈值：`psi_partial_stall_ms`（部分阻塞阈值，服务 LOW/MEDIUM 级别，监听 PSI some）和 `psi_complete_stall_ms`（完全阻塞阈值，服务 CRITICAL 级别，监听 PSI full）。当内核 PSI 机制检测到内存阻塞时间超过阈值时，会通过 epoll 通知 lmkd。Android 10 起的现代 lmkd 路径以 PSI 为默认信号来源。AOSP android-11 到 android-16 的 lmkd 中还能看到 `ro.lmk.use_psi` / `use_psi` 默认开启；Android 17 的 `lmkd.cpp` 已不再保留这个开关，启动时直接初始化 PSI monitors。分析 Android 17 时不要再把 `use_psi` 当成可核验开关。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
 
@@ -148,7 +148,7 @@ lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 和当前�
 
 当用户切换到一个之前被 lmkd 杀掉的 App 时，这个 App 需要完整地走一遍冷启动流程：Zygote fork 新进程 → 加载 Application 类 → 执行 ContentProvider 初始化 → Activity 的 onCreate/onStart/onResume。整个流程可能需要数百毫秒甚至数秒。
 
-这个问题的用户体验非常直接：用户之前打开过的 App，再切回去时需要重新走一遍启动流程——闪屏页可能出现、列表需要重新加载、之前的状态丢失。用户会感觉"这个手机很卡"、"App 总是被杀"。
+用户体验非常直接：用户之前打开过的 App，再切回去时需要重新走一遍启动流程——闪屏页可能出现、列表需要重新加载、之前的状态丢失。用户会感觉"这个手机很卡"、"App 总是被杀"。
 
 更严重的是，如果系统持续低内存，lmkd 会反复杀进程，而用户又反复打开被杀的 App，形成"杀进程→冷启动→内存又不够→再杀"的恶性循环。在 Perfetto 中表现为频繁的进程启动和 `ProcessKilled` 事件交替出现。
 

@@ -4,9 +4,12 @@ chapter: "14.23"
 status: ready-for-review
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
-task9_state: reviewed
-pipeline_stage: task6_pending
+task6_state: "reviewed"
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-06-17"
+last_task6_at: "2026-06-17T19:12:00+08:00"
+task9_state: "reviewed"
+pipeline_stage: "task9_pending"
 last_task2b_lite_at: 2026-06-17
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 tags: [strictmode, disk-read, disk-write, network, custom-penalty, performance-diagnostics]
@@ -17,7 +20,7 @@ drafted_date: "2026-06-08"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
-task9_result: auto-fixed
+task9_result: pass-tech-review
 last_task9_at: "2026-06-17T14:32:54+08:00"
 task9_reviewed_date: "2026-06-17"
 task9_reviewed_by: openclaw-task9
@@ -224,7 +227,7 @@ public void enableStrictMode() {
 }
 ```
 
-`penaltyDeath()` 在测试环境中让违规变成测试失败，防止问题被忽略。结合 Firebase Test Lab 或 Firebase Test Orchestra 时，StrictMode 违规会出现在测试报告的 crash 堆栈中。
+`penaltyDeath()` 在测试环境中让违规变成测试失败，防止问题被忽略。结合 Firebase Test Lab 或 Android Test Orchestrator 时，StrictMode 违规会出现在测试报告的 crash 堆栈中。
 
 `ActivityScenario` 不会替测试自动打开 StrictMode；需要在测试基类、JUnit Rule 或 `Application.onCreate()` 中显式设置策略，才能把违规转成 CI 失败。
 
