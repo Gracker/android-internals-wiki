@@ -1511,7 +1511,7 @@
     "title": "内存抖动与频繁 GC",
     "file": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
     "priority": 95,
-    "status": "pending",
+    "status": "completed",
     "created": "2026-06-18",
     "source": "task9-deep-tech-review",
     "review_issues": [
@@ -1521,6 +1521,8 @@
         "detail": "错误声称 GcWatcher 实现位于 BinderInternal.java，实际实现位于 ActivityThread.java",
         "suggestion": "修正源码引用路径，区分使用方（BinderInternal）和实现方（ActivityThread）"
       }
-    ]
+    ],
+    "completed_reason": "false-positive-already-correct: GcWatcher path already verified in BinderInternal.java per multiple external reviews (2026-04-19, 2026-04-25, 2026-04-29). Task9 reviewer reversed the correction. CMC line number fix applied as Lite fix.",
+    "completed_at": "2026-06-18T01:40:26+08:00"
   }
 ]
