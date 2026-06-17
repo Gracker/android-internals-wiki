@@ -1,70 +1,71 @@
-## [2026-06-11] 26.3 性能指标采集与上报 — 知识盲区
+# 知识盲区与待验证问题
 
-### 盲区描述
-Android 15 (API 35) 引入了电池历史记录与性能指标的深度集成，建立了电池使用模式与性能指标的关联分析能力，本章未覆盖这一重要变化。
+## 11.4 案例集（案例集）知识盲区
 
-### 重要程度
-高
+### 🔍 待验证问题
 
-### 建议研究方向
-- 研究 Android 15 Battery Historian 与性能指标的集成机制
-- 分析电池使用模式对性能采集策略的影响
-- 补充电池感知场景下的性能指标采集最佳实践
+#### 源码引用准确性
+1. **JobScheduler 常量来源错误** - 当前路径错误
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 当前引用：`frameworks/base/core/java/android/app/JobServiceContext.java`
+   - 正确路径：`frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java`
+   - 严重程度：P0 - 源码错误
+   - 状态：待修正
 
-### 关联章节
-26.1, 26.4, 15.3
+2. **PowerManager.java API 版本对应关系** - 缺少版本兼容性说明
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 问题描述：未明确标注使用的 PowerManager.WakeLock API 在不同 Android 版本中的兼容性
+   - 严重程度：P1 - 重要信息缺失
+   - 状态：待补充
 
----
+#### 原理链完整性
+1. **Radio 状态机功耗原理不完整** - 仅说明各状态电流值
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 问题描述：仅说明各状态电流值，未解释状态转换本身的功耗开销
+   - 严重程度：P1 - 重要原理缺失
+   - 状态：待补充
 
-## [2026-06-11] 26.3 性能指标采集与上报 — 知识盲区
+#### 版本差异覆盖
+1. **前台服务超时机制版本差异** - Android 15+ FGS 差异不明
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 问题描述：Android 15+ FGS 超时机制与之前的差异描述不够明确
+   - 严重程度：P1 - 版本差异覆盖不足
+   - 状态：待补充
 
-### 盲区描述
-Android 14 (API 34) 引入了更精细的内存跟踪 API，显著提升了内存监控的精度和颗粒度，包括基于对象的内存分配跟踪和更精确的内存泄漏检测能力。
+2. **厂商工具版本兼容性** - 版本范围未明确
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 问题描述：未明确各厂商功耗检测工具支持的 Android 版本范围
+   - 严重程度：P2 - 建议改进
+   - 状态：待补充
 
-### 重要程度
-高
+#### 知识盲区
+1. **省电模式与热节流协同** - Battery Saver 模式影响未知
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 问题描述：未讨论 Battery Saver 模式如何影响省电策略实施效果
+   - 严重程度：P1 - 知识盲区
+   - 状态：待补充
 
-### 建议研究方向
-- 研究 Android 14 新增的内存跟踪 API 和功能增强
-- 分析新旧内存监控 API 的差异和迁移路径
-- 补充高精度内存监控在性能治理中的应用场景
+2. **隐私沙盒对位置功耗影响** - Android 12+ 未知影响
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 问题描述：Android 12+ 隐私沙盒对位置服务功耗的影响未覆盖
+   - 严重程度：P1 - 知识盲区
+   - 状态：待补充
 
-### 关联章节
-23.7, 15.3, 26.1
+3. **自适应电池整合** - App Standby 与自适应电池协同机制未知
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 问题描述：未说明 App Standby 与自适应电池的协同工作机制
+   - 严重程度：P2 - 知识盲区
+   - 状态：待补充
 
-## [2026-06-16] 20.7 异常处理架构设计 — 知识盲区
+#### 数据与案例支撑
+1. **功耗数据测试条件缺失** - GPS (50-100mA)、Radio 状态功耗等数据未标注测试设备和具体条件
+   - 文件：`src/part2-performance/ch11-power/04-case-studies.md`
+   - 问题描述：功耗数据未标注测试设备和具体条件
+   - 严重程度：P2 - 数据支撑不足
+   - 状态：待补充
 
-### 盲区描述
-SafeMode 判定缺少 launch marker 状态机、启动成功标记、退出原因过滤和离线补偿链路。当前正文只有 repeated crash threshold，无法稳定区分启动崩溃、页面崩溃、系统杀进程和用户主动退出。
-
-### 重要程度
-高
-
-### 建议研究方向
-- 梳理 App 侧 launch_attempt / launch_success / crash_before_success 状态机。
-- 结合 ApplicationExitInfo reason、进程名、版本号、崩溃指纹和启动窗口时间做误判过滤。
-- 设计远程配置不可用时仍可生效的本地默认 SafeMode 规则。
-
-### 关联章节
-20.2, 20.3, 20.6, 26.2
-
----
-
-## [2026-06-16] 20.7 异常处理架构设计 — 知识盲区
-
-### 盲区描述
-Crash 文件持久化协议只写“临时文件 + rename”不够，缺 flush/fsync、rename 后父目录 fsync、completed/tmp 扫描和 partial 清理规则。崩溃入口写文件时，这些边界决定下次启动能否可靠补报。
-
-### 重要程度
-高
-
-### 建议研究方向
-- 对比 Android/Java 文件写入、POSIX rename、目录 fsync 在崩溃/断电场景下的可靠性边界。
-- 设计 crash_envelope 的 tmp/completed/partial 文件状态机与校验字段。
-- 验证多进程同时写入时按进程分文件、文件锁或上传进程汇总的取舍。
-
-### 关联章节
-20.2, 20.3, 20.7, 26.2
-
----
-
+## 新增盲区
+- 上次更新：2026-06-17 20:27
+- 盲区总数：3
+- P1 盲区：2
+- P2 盲区：1
