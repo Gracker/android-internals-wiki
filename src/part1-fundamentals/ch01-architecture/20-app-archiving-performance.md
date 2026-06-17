@@ -39,6 +39,8 @@ sources:
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md"
 pipeline_stage: ready-to-publish
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-15"
