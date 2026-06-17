@@ -19,12 +19,12 @@ sources:
     path: "developer.android.com/topic/performance/background-optimization"
 tags: ['oem', 'performance', 'freezer', 'preloading', 'background-management']
 related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-06"
-task2b_state: fixed
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-06-17"
+task2b_state: "fixed"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task9_state: "reviewed"
 reviewed_by: openclaw-task6
@@ -34,11 +34,17 @@ last_task6_at: "2026-05-06T01:05:00+08:00"
 last_task6_audit: "2026-05-24"
 review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修1处（禁用句式 x1 替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 CachedAppOptimizer freezer、USAP Pool 默认开关与 App Zygote 边界；无 P0/P1；P2 数据/Trace 观测补证写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-06T01:28:30+08:00"
-last_task9_audit: "2026-05-24"
-last_task9_audit_log: "logs/deep-review/2026-05-24-21-audit.md"
+last_task9_at: "2026-06-17T11:27:14+08:00"
+last_task9_audit: "2026-06-17"
+last_task9_audit_log: "logs/deep-review/2026-06-17-11-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+last_task9_review_log: "logs/deep-review/2026-06-17-11-audit.md"
+last_task9_autofix_at: "2026-06-17"
+p0: 1
+p1: 0
+p2: 2
+task9_review_notes: "2026-06-17 Task9 idle audit AUTO-FIX：修正 cached apps freezer device_config 命令口径与 Zygote preloaded-classes 源码路径；AOSP android-17.0.0_r1 复核 CachedAppOptimizer / ZygoteConfig / ZygoteProcess 通过。P0 1 / P1 0 / P2 2；未发现超出 Android 17/API 37 边界的内容，回到 Task6 复审。"
 ---
 
 # OEM 性能优化的通用思路
@@ -131,7 +137,7 @@ Android 11 QPR3 引入了基于 cgroup v2 freezer 的 cached apps freezer 机制
 
 cgroup freezer 的工作方式是将目标进程迁移到冻结的 cgroup 中。与 SIGSTOP 的关键区别在于，cgroup freezer 是从 cgroup 层面统一控制一组进程的状态——它不是逐个进程发送信号，而是通过向 cgroup 的 `cgroup.freeze` 文件写入 `1` 来冻结整个组。这样一来，一个 App 的所有进程（主进程、子进程、Content Provider 进程等）可以被原子性地冻结或恢复。
 
-在 AOSP 中，这个机制由 ActivityManager 的 `setProcessFrozen` 和 `enableFreezer` 两个隐藏 API 控制。设备可以通过 `activity_manager_native_boot_use_freezer` 配置标志来启用，也可以在开发者选项中通过「Suspend execution for cached apps」开关控制。
+在 AOSP 中，这个机制由 ActivityManager 的 `setProcessFrozen` 和 `enableFreezer` 两个隐藏 API 控制。设备可以通过 `device_config put activity_manager_native_boot use_freezer true` 启用，也可以在开发者选项中通过「Suspend execution for cached apps」开关控制。
 
 我们可以在 Perfetto 中观察到冻结行为——当后台 App 被冻结后，它的所有线程会从 CPU 调度队列中消失，在 CPU Track 上表现为进程的线程完全没有任何 CPU 活动。验证冻结是否生效的方法是通过 adb：
 
@@ -158,7 +164,7 @@ adb shell ls /sys/fs/cgroup/uid_*/cgroup.freeze
 
 ### 系统级预加载：从 Zygote 到定制化
 
-Android 的应用进程都是从 Zygote fork 出来的。Zygote 在系统启动时预加载了大量 Java 类和资源（定义在 `frameworks/base/preloaded-classes` 中），这样每个新进程 fork 后不需要重新加载这些类，直接就能用。这个机制是 Android 启动速度的基石，我们在 §8.3 中也讨论过它对启动优化的影响。
+Android 的应用进程都是从 Zygote fork 出来的。Zygote 在系统启动时预加载了大量 Java 类和资源（源码列表位于 `frameworks/base/config/preloaded-classes`，运行时路径是 `/system/etc/preloaded-classes`），这样每个新进程 fork 后不需要重新加载这些类，直接就能用。这个机制是 Android 启动速度的基石，我们在 §8.3 中也讨论过它对启动优化的影响。
 
 厂商在此基础上做了进一步定制。常见做法包括：
 
