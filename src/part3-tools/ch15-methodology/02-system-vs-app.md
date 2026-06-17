@@ -10,7 +10,6 @@ task6_state: "reviewed"
 task6_reviewed_date: "2026-06-17"
 last_task6_at: "2026-06-17T19:12:00+08:00"
 task6_result: pass-light-edit
-pipeline_stage: "task9_pending"
 last_task2b_lite_at: 2026-06-17
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
