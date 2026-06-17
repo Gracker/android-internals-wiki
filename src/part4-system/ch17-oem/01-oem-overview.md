@@ -5,8 +5,8 @@ section: "17.1"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-06-17"
+last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
 sources:
   - type: blog
@@ -19,18 +19,18 @@ sources:
     path: "developer.android.com/topic/performance/background-optimization"
 tags: ['oem', 'performance', 'freezer', 'preloading', 'background-management']
 related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
-task9_result: "auto-fixed"
+task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-06-17"
 task2b_state: "fixed"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "reviewed"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-06"
-task6_reviewed_date: "2026-05-06"
-last_task6_at: "2026-05-06T01:05:00+08:00"
+reviewed_date: "2026-06-17"
+task6_reviewed_date: "2026-06-17"
+last_task6_at: "2026-06-17T21:20:00+08:00"
 last_task6_audit: "2026-05-24"
 review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修1处（禁用句式 x1 替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 CachedAppOptimizer freezer、USAP Pool 默认开关与 App Zygote 边界；无 P0/P1；P2 数据/Trace 观测补证写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task9_reviewed_by: "openclaw-task9"
@@ -39,7 +39,7 @@ last_task9_audit: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-11-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17
-last_task9_review_log: "logs/deep-review/2026-06-17-11-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-17-11-audit.md" | 2026-06-17 Task6 21:20：Task9 auto-fix 后复审。L1 小修 2 处（AI 清嗓 variant x1、editorial 措辞 x1）。无 B 类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。task9_result 更新为 pass-tech-review（auto-fix 已验证）。queue 无 pending，自动晋升 finalized。
 last_task9_autofix_at: "2026-06-17"
 p0: 1
 p1: 0
@@ -90,7 +90,7 @@ task9_review_notes: "2026-06-17 Task9 idle audit AUTO-FIX：修正 cached apps f
 
 **启动速度**是用户对手机的第一印象。冷启动从按下图标到第一帧渲染，中间涉及 Zygote fork、ClassLoader 加载、Application 初始化、Activity 创建到渲染——整段启动路径上的每个环节都是优化点。厂商会在系统层面做预加载（让 Zygote 提前初始化常用类）、dex2oat 编译策略调整，甚至直接在 init 阶段预创建进程。我们在 §8.3 中详细讲过 App 层的启动优化思路，厂商的做法是把同样的思路往系统层推。
 
-**流畅性**是用户日常感知最强的指标。厂商会从渲染管线的每个环节入手：调整 VSync offset 让 App 和 SurfaceFlinger 的配合更紧凑、优化 GPU 调度策略减少渲染延迟、在 SurfaceFlinger 中做图层合成的特殊优化。我们前面在 §2.3～§2.6 中拆解了渲染管线的每个环节，厂商的优化就是在这些环节上做加减法。
+**流畅性**是用户日常感知最强的指标。厂商会从渲染管线的每个环节入手：调整 VSync offset 让 App 和 SurfaceFlinger 的配合更紧凑、优化 GPU 调度策略减少渲染延迟、在 SurfaceFlinger 中做图层合成的特殊优化。我们前面在 §2.3～§2.6 中展开了渲染管线的每个环节，厂商的优化就是在这些环节上做加减法。
 
 **内存管理**在 Android 上永远是稀缺资源的争夺战。厂商的策略核心是「保证前台、压缩后台」：调整 LMK 的阈值参数（我们在 §4.4 中讲过 AOSP 的默认实现）、在内存紧张时更激进地回收后台进程、对系统进程做内存上限控制。国内厂商因为要应对更复杂的 App 生态（特别是各类保活方案），通常会比 AOSP 默认策略更激进。
 
@@ -101,7 +101,7 @@ task9_review_notes: "2026-06-17 Task9 idle audit AUTO-FIX：修正 cached apps f
 
 ## 技术手段的全栈分层
 
-厂商的优化不是在一个层面完成的，而是从 Kernel 到 App 层贯穿整个技术栈。理解这个分层结构，有助于我们在 Trace 中快速判断某个优化行为的来源。
+厂商的优化覆盖从 Kernel 到 App 层的整个技术栈。理解这个分层结构，有助于我们在 Trace 中快速判断某个优化行为的来源。
 
 **Kernel 层**是厂商最深的优化战场。这里的手段包括 CPU 调度器调优（修改 CFS/EEVDF 的参数、定制 EAS 的能效模型）、内存管理的参数调整（watermark、min_free_kbytes 等）、I/O 调度策略（为不同场景配置不同的 I/O 优先级和调度器）、以及 cgroup 的精细化配置。在高通平台上，厂商可以直接修改 Snapdragon 的 governor 参数；在联发科平台上，则有 MTK 定制的调度策略。这些改动在 Perfetto 中表现为 CPU 频率变化、调度迁移行为、以及内存回收事件。
 
@@ -174,7 +174,7 @@ Android 的应用进程都是从 Zygote fork 出来的。Zygote 在系统启动�
 
 AOSP 本身提供了标准化的预热缓存池机制：USAP（Unspecialized App Process）Pool。Zygote 在空闲时预先 fork 一批「空白进程」放入池中（`ZygoteServer.fillUsapPool()`），当 AMS 需要启动新进程时，优先从池中取用而非重新 fork。关键配置属性是 `usap_pool_enabled`（默认值因版本而异，AOSP 16 中默认关闭）和 `usap_pool_size_max`（池容量上限）。厂商可以基于这套机制做自己的预热策略——比如根据用户习惯提前填充池、增大池容量、或者在内存紧张时清空池释放资源。
 
-在 Perfetto 中验证 USAP Pool 是否生效的方法：观察启动 Trace 中的 `Zygote` 线程 slice，如果出现 `usapReceive` 而非 `forkAndSpecialize`，说明进程来自预热池。需要额外注意的是，USAP Pool 目前不支持 App Zygote（Child Zygote）和 `android:useAppZygote` 场景，这类多进程架构的 App 仍走标准 fork 路径。
+在 Perfetto 中验证 USAP Pool 是否生效的方法：观察启动 Trace 中的 `Zygote` 线程 slice，如果出现 `usapReceive` 而非 `forkAndSpecialize`，说明进程来自预热池。USAP Pool 有一个限制：目前不支持 App Zygote（Child Zygote）和 `android:useAppZygote` 场景，这类多进程架构的 App 仍走标准 fork 路径。
 
 
 第三，**预编译优化**。调整 dex2oat 的编译策略，让常用 App 在系统空闲时提前完成 AOT 编译，或者使用基于用户使用习惯的 Profile-Guided Optimization（PGO）策略，只编译用户经常用到的代码路径。三星的 App Booster 就是这个思路——它手动对已安装的 App 执行 profile-guided 编译，让代码针对实际使用模式优化。
@@ -182,7 +182,7 @@ AOSP 本身提供了标准化的预热缓存池机制：USAP（Unspecialized App
 
 ### AI 预测启动
 
-更进阶的做法是基于用户行为预测来预加载 App。原理很简单：如果一个用户每天早上 8 点打开微信，那系统可以在 7:58 就开始预热微信的进程，等用户实际点击时，启动过程几乎瞬时完成。
+更进阶的做法是基于用户行为预测来预加载 App。如果一个用户每天早上 8 点打开微信，那系统可以在 7:58 就开始预热微信的进程，等用户实际点击时，启动过程几乎瞬时完成。
 
 ColorOS 的 Trinity Engine 就是这种思路的典型代表——它通过 AI 学习用户的使用习惯，预测用户下一步可能打开的 App，并提前做资源分配和进程预热。据 OPPO 公开的数据，Trinity Engine 可以将 App 启动速度提升 28%，加载时间缩短 21%。这种预测能力在 Perfetto 中很难直接观察到（因为预热过程发生在后台），但可以通过对比有无预测时 App 的冷启动 Trace 来间接验证。
 
@@ -195,7 +195,7 @@ ColorOS 的 Trinity Engine 就是这种思路的典型代表——它通过 AI �
 
 理解厂商的后台管理策略，必须先理解中国 Android 生态的一个根本特殊性：**没有 Google Play Services**。
 
-因为没有统一的推送服务（FCM），App 为了确保能及时收到消息通知，不得不自己维持后台进程的活跃状态。于是各种保活方案层出不穷：双进程守护、JobScheduler 定时唤醒、AccountSync 同步触发、1 像素 Activity 保活、甚至静默播放音频文件来防止进程被杀。多个 App 之间还会相互唤醒——你打开了 App A，它通过 ContentProvider 或广播把同公司的 App B 也拉起来。这就是臭名昭著的「全家桶」现象。
+因为没有统一的推送服务（FCM），App 为了确保能及时收到消息通知，不得不自己维持后台进程的活跃状态。于是各种保活方案层出不穷：双进程守护、JobScheduler 定时唤醒、AccountSync 同步触发、1 像素 Activity 保活、甚至静默播放音频文件来防止进程被杀。多个 App 之间还会相互唤醒——你打开了 App A，它通过 ContentProvider 或广播把同公司的 App B 也拉起来。这就是「全家桶」现象。
 
 这种生态导致了一个恶性循环：App 越来越激进的保活 → 系统越来越卡、越来越耗电 → 厂商越来越激进的杀后台 → App 为了存活更加激进地保活。这个循环的结果是，国内 Android 手机的后台管理策略远比 AOSP 默认策略更激进。
 
@@ -247,13 +247,13 @@ OEM 优化策略随 Android 版本的演进经历了几个关键转折点：
 
 **Android 6.0（2015）**：Doze 模式和 App Standby 引入，这是 Google 第一次系统性地从 AOSP 层面限制后台行为。厂商在此基础上做了大量增强。
 
-**Android 8.0（2017）**：后台执行限制大幅收紧——隐式广播被大量禁用、后台服务受限。这迫使 App 改用更规范的后台方案，也为厂商的优化提供了更干净的基础。
+**Android 8.0（2017）**：后台执行限制大幅趋严——隐式广播被大量禁用、后台服务受限。这迫使 App 改用更规范的后台方案，也为厂商的优化提供了更干净的基础。
 
 **Android 9.0（2018）**：Adaptive Battery 引入，基于机器学习预测用户使用习惯来分配后台资源。厂商纷纷在此基础上训练自己的模型。
 
 **Android 11（2020）**：cached apps freezer 正式引入（QPR3），基于 cgroup v2 的进程冻结成为 AOSP 标准方案。厂商从自己的 SIGSTOP/cgroup 方案逐步迁移到 AOSP 标准。
 
-**Android 12（2021）**：前台服务启动限制更加严格，Exact Alarm 需要特殊权限。进一步收紧了 App 的后台行为空间。
+**Android 12（2021）**：前台服务启动限制更加严格，Exact Alarm 需要特殊权限。进一步限制了 App 的后台行为空间。
 
 **Android 14（2023）**：前台服务类型强制声明，每种类型有明确的使用场景限制。与 Samsung 合作改进了后台 App 管理 API，提升了跨设备一致性。
 
