@@ -1448,12 +1448,18 @@
         "location": "src/part5-app/ch26-observability/03-performance-collection.md:L128-132, L135-138, L145-147",
         "detail": "采样频率数据（10%、30%、70%、95%）和性能开销控制在 5% 以内的声明未提供测试设备和基准测试数据支撑。P0/P1/P2 级别指标分类缺少实际使用案例。",
         "suggestion": "补充数据来源：设备型号、测试环境、采样频率验证方法；提供实际业务案例说明指标优先级划分依据。"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part5-app/ch26-observability/03-performance-collection.md",
+        "detail": "未提供具体的 AOSP 源码文件路径，只提到 API 级别，无法进行源码验证。Battery Historian 层次架构中的具体类名和接口名需要验证，PowerAwareSampling API 的具体实现需要 AOSP 源码验证。",
+        "suggestion": "补充具体的 AOSP 源码文件路径和类名，确保代码示例与实际源码一致；提供明确的源码锚点，便于验证准确性。"
       }
     ],
-    "added_by": "task9-deep-tech-review",
+    "added_by": "task9-deep-tech-review, task9-deep-tech-review",
     "added_at": "2026-06-17T16:26:54.597221+00:00",
     "created": "2026-06-18",
-    "status": "completed",
+    "status": "pending",
     "completed_at": "2026-06-18T00:50:00+08:00",
     "completed_by": "task2b-main",
     "resolution": "所有 4 条问题已修复：Issue 1 VANILLA_ICE_CREAM 已不存在于当前文件(已使用正确常量)；Issue 2 JNI 桥接细节已补充；Issue 3 版本演进对比表已添加；Issue 4 测试设备与业务案例已补充。禁用词检查通过。"
