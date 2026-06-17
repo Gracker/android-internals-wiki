@@ -340,13 +340,4 @@ A/B 平台接入 `ApplicationExitInfo` 之后，回归检测就多了一条与�
 
 ## 参考资料
 
--
--
--
--
--
--
--
--
--
--
+- **ApplicationExitInfo 数据底座：进程死亡回放与 A/B 回归溯源** — `getHistoricalProcessExitReasons` 基于每包 16 条 LRU 环形缓冲，持久化到 `/data/system/users/<id>/app_exit_info.pb`；`getTraceInputStream` 双路径：ANR trace gzip 压缩 vs tombstone protobuf（API 31+）；Android 16 新增 `preventExitInfoUpdate` 防覆盖守卫（保留 ANR/CRASH 证据不被 user-stop 覆盖）+ LMKD RSS 字段。DeepResearch: `2026-06-15-ab-test-regression-applicationexitinfo-source.md`

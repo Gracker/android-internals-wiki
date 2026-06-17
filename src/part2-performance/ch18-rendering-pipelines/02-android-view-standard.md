@@ -374,6 +374,7 @@ Compose 与 View 系统可以互相嵌入：
 - **BLASTBufferQueue 与 ViewRootImpl 异步 buffer 提交流程** — 解析 BBQ 从 `onFrameAvailable` 到 `Transaction.apply()` 的提交链路，以及 `releaseBuffer` 回调链中 ACQUIRED → FREE 的槽位释放时序。DeepResearch: `2026-05-15-android-view-blast-art-gc.md`
 - **ART 分代 GC 与 Compose 性能** — Android 10+ CC collector 默认启用分代模式；Compose recomposition 产生的短期对象（lambda、state、LayoutNode）集中在 young generation，由 Sticky GC（kGcTypeSticky）以较低成本回收。source.android.com: "Debug ART garbage collection"；AOSP `art/runtime/gc/collector/concurrent_copying.cc`
 - **DeliQueue（Android 17 MessageQueue 无锁优化）** — targetSdk >= 37 应用默认使用 Treiber Stack 无锁入队/出队，替代旧版链表按 when 排序插入。AOSP `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
+- **BLASTBufferQueue 回调链与 canUnblockUiThread 源码验证** — `canUnblockUiThread` 实际取值 `info.prepareTextures`（纹理缓存未耗尽）；`transactionCommittedCallback` 与 `transactionCallback` 分别在 latch 完成后更新 FrameEventHistory 与 transform；`releaseBufferCallbackLocked` 中 EGL 客户端按 `mMaxAcquiredBuffers - mCurrentMaxAcquiredBufferCount` 决定保留 Buffer 数量；Android 17 新增 `WB_CONSUMER_BASE_OWNS_BQ` / `BUFFER_RELEASE_CHANNEL` 编译期开关，BufferQueue 所有权下沉到 Consumer。DeepResearch: `2026-06-15-blast-buffferqueue-canunblockuithread-and-pipeline-pitfalls.md`
 
 ---
 

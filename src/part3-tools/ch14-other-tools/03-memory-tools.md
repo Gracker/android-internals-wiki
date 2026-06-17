@@ -677,3 +677,4 @@ heapprofd 告诉你的是"哪里在分配内存"和"哪些分配没有被释放"
 - AOSP libmeminfo 源码（Android 16）：https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-16.0.0_r1/
 - AOSP libmeminfo 主线（可能包含 Android 17）：https://android.googlesource.com/platform/system/memory/libmeminfo/+/main/
 - Android 调查内存使用：https://developer.android.com/topic/performance/memory
+- **Android 14→17 内存分析工具栈源码全景** — heapprofd 中央守护进程通过 bionic `MallocDispatch` 表拦截 malloc（非 LD_PRELOAD）；Java HPROF 用 `SIGRTMIN+6`、native heapprofd 用 `SIGRTMIN+4` 双路信号触发；Poisson 采样算法按字节间隔抽样；`dumpsys meminfo` VMA 分类在 `libmeminfo` 完成（heap/scudo/stack/GL 映射）；`procstats` 六档快照（1h/3h/6h/12h/24h/48h）持久化。DeepResearch: `2026-06-15-memory-analysis-tools-source-code-stack.md`
