@@ -1459,10 +1459,11 @@
     "added_by": "task9-deep-tech-review, task9-deep-tech-review",
     "added_at": "2026-06-17T16:26:54.597221+00:00",
     "created": "2026-06-18",
-    "status": "pending",
+    "status": "completed",
     "completed_at": "2026-06-18T00:50:00+08:00",
     "completed_by": "task2b-main",
-    "resolution": "所有 4 条问题已修复：Issue 1 VANILLA_ICE_CREAM 已不存在于当前文件(已使用正确常量)；Issue 2 JNI 桥接细节已补充；Issue 3 版本演进对比表已添加；Issue 4 测试设备与业务案例已补充。禁用词检查通过。"
+    "resolution": "所有 4 条问题已修复：Issue 1 VANILLA_ICE_CREAM 已不存在于当前文件(已使用正确常量)；Issue 2 JNI 桥接细节已补充；Issue 3 版本演进对比表已添加；Issue 4 测试设备与业务案例已补充。禁用词检查通过。",
+    "completed_reason": "所有 4 条问题已修复：Issue 1 VANILLA_ICE_CREAM 已不存在于当前文件(已使用正确常量)；Issue 2 JNI 桥接细节已补充；Issue 3 版本演进对比表已添加；Issue 4 测试设备与业务案例已补充。禁用词检查通过。"
   },
   {
     "section": "5.20",
@@ -1568,5 +1569,164 @@
     "completed_at": "2026-06-18T03:37:27+08:00",
     "completed_by": "task2b-lite",
     "completion_reason": "fixed-lite: 版本限定更新至 Android 17/API 37；源码路径添加 AOSP 版本标签；正文补 Android 17 边界声明（共改动约 8 行正文/frontmatter）"
+  },
+  {
+    "section": "12.1",
+    "section_title": "应用与网络",
+    "priority": 70,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7604757482005053503"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "10万人都在用的 top10 skills，我帮你试了 — 详细介绍了当前最热门的Claude Code Skills，包括开发工具、营销技能、文档处理等，分析了这些工具的实际应用场景、安装方法和使用效果。...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-18T05:34:36",
+    "status": "pending"
+  },
+  {
+    "section": "12.1",
+    "section_title": "应用与网络",
+    "priority": 70,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7601077290682286132"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "火爆全网的Skills，看这一篇就够了！ — 详细介绍了当前最热门的Claude Code Skills，包括开发工具、营销技能、文档处理等，分析了这些工具的实际应用场景、安装方法和使用效果。...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-18T05:34:36",
+    "status": "pending"
+  },
+  {
+    "section": "12.1",
+    "section_title": "应用与网络",
+    "priority": 80,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7589903499599347766"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "聊聊2026年Android开发会是什么样 — 文章系统分析了2026年Android开发的多个关键趋势，包括AI集成、跨平台框架演进、鸿OS生态扩展、Android桌面端发展等，为开发者提供全面的技术路线指引。...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-18T05:34:36",
+    "status": "pending"
+  },
+  {
+    "section": "12.1",
+    "section_title": "应用与网络",
+    "priority": 80,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7613230154210852910"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "2026 Flutter VS React Native ，同时在 AI 时代 VS Native 开发，你没见过的版本 — 从性能、成本、维护等多个维度对比了Flutter和React Native，包含详细的性能测试数据、热更新方案对比、跨平台开发选型建议。...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-18T05:34:36",
+    "status": "pending"
+  },
+  {
+    "section": "12.1",
+    "section_title": "应用与网络",
+    "priority": 70,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7622696665740558386"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 要变天：桌面端这次真的来了！ — Android 要变天：桌面端这次真的来了！由黄林晴撰写，文章深入探讨了Android开发的最新技术和趋势，对开发者具有重要参考价值。...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-06-18T05:34:36",
+    "status": "pending"
+  },
+  {
+    "section": "20.7",
+    "section_title": "异常架构",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-crash-file-persistence-dropbox-aosp-verification.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Crash 文件持久化 DropBox 协议核验（best-effort + tombstone + system_server 2s join） — DropBoxManagerService 持久化采用 best-effort：写入不 fsync、不 fsync 父目录，init() 直接删除 .tmp 不恢复，system_server 崩溃有",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-18T06:13:16.933321",
+    "status": "pending"
+  },
+  {
+    "id": "task9-20260618-06-performance-collection-source-errors",
+    "section": "26.3",
+    "section_title": "性能指标采集与上报",
+    "title": "性能指标采集与上报",
+    "file": "src/part5-app/ch26-observability/03-performance-collection.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 章节存在多个 P0 源码错误：MemoryTracking、MemoryUsage、LeakDetection 等核心 API 在 AOSP 中不存在",
+    "material_paths": [
+      "logs/deep-review/2026-06-18-06-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "Android 14 高精度内存跟踪 API 章节",
+        "detail": "章节声称 Android 14 (API 34) 引入了 MemoryTracking API，但该 API 在 AOSP 中不存在。实际内存监控通过 Debug.MemoryInfo 类实现，不存在文中所述的 getClassUsage()、getRecentAllocations()、getAllocatorStats() 方法。",
+        "suggestion": "删除虚假的 MemoryTracking API 描述，改为使用真实的 Debug.MemoryInfo 类或其他实际存在的 Android 内存监控 API。若需高精度内存跟踪，应说明使用第三方方案如自定义的内存跟踪库。"
+      },
+      {
+        "type": "源码错误",
+        "location": "Android 14 高精度内存跟踪 API 章节",
+        "detail": "章节展示的 MemoryUsage 类及其方法（getClassUsage()、getRecentAllocations()、getAllocatorStats()）在标准 Android API 中不存在。这些方法名称和功能纯属虚构。",
+        "suggestion": "删除整个 MemoryUsage 类的代码示例，替换为实际存在的 Android 内存监控 API 或明确说明这是概念性伪代码。"
+      },
+      {
+        "type": "源码错误",
+        "location": "Android 14 高精度内存跟踪 API 章节",
+        "detail": "章节提到的 LeakDetection 类（setLeakThreshold()、setDetectionStrategy()、getLeakPaths()）在 AOSP 中不存在。内存泄漏检测主要通过第三方库如 LeakCanary 实现，不是系统级 API。",
+        "suggestion": "删除 LeakDetection 类的描述，改为介绍 LeakCanary 等实际可用的内存泄漏检测工具的实现原理和使用方法。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-18T06:20:00+08:00",
+    "created": "2026-06-18",
+    "status": "completed",
+    "completed_at": "2026-06-18T06:50:00+08:00",
+    "completed_by": "task2b-main",
+    "resolution": "已删除虚构的 MemoryTracking/MemoryUsage/LeakDetection API，替换为 Debug.MemoryInfo/getRuntimeStat/LeakCanary 等真实API；同步修复 PowerAwareSampling/AsyncMetricsCollector/MetricsCache 虚构类"
   }
 ]
