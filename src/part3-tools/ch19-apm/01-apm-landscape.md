@@ -64,6 +64,8 @@ last_deepseek_polish_at: 2026-05-26
 deepseek_polish_state: done
 task6_reviewed_date: 2026-06-15
 task6_reviewed_by: openclaw-task6
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-18
 ---
 
 # APM 全景图与分类体系
@@ -111,7 +113,7 @@ task6_reviewed_by: openclaw-task6
 
 APM 在 Android 性能体系里的作用是把线上设备里的性能信号采回来，让团队知道哪类问题正在发生、影响多少用户、是否需要进入修复队列。它不替代 Perfetto、Android Studio Profiler、simpleperf 这类线下诊断工具，也不保证单靠 SDK 上报就能还原所有现场。
 
-APM 负责发现样本和分布，Perfetto 负责还原一次具体慢帧、ANR、启动慢或内存异常的细节。
+APM 负责发现样本和分布；Perfetto 负责还原某一次具体的慢帧、ANR、启动慢或内存异常细节。
 
 排查路径可以这样展开：灰度版本看板发现 `oom_rate` 在 Android 13/14 的低内存机型上抬升，按页面聚合后集中在图片编辑页。APM 拉到一条样本，主事件里有 `version`、`device`、`page`、`session_id`、`heap_used_ratio`，附件里有 Hprof 摘要：多个已销毁的 `ImageEditActivity` 仍被静态 `Handler` 消息引用。
 
@@ -266,8 +268,7 @@ APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适�
 2. 它产出的数据能支撑哪类判断。
 3. 问题继续往下查时，要接哪个工具或哪条分析路径。
 
-<!-- AIW-源码调研-2026-04-25 -->
-## 补充：AppExitInfoTracker 内部机制（源码级）
+## AppExitInfoTracker 内部机制
 
 以下内容基于 AOSP 源码调研，补充到 §19.01 作为 AppExitInfoTracker 的实现细节参考。
 
@@ -323,13 +324,7 @@ APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适�
 - `core/java/android/app/ApplicationExitInfo.java` (AOSP android-16.0.0_r1 / API 30+) — 应用层 API，reason 常量定义
 - `github.com/KwaiAppTeam/KOOM` — koom-java-leak 模块 fork dump HPROF 机制
 
-<!-- AIW-源码调研-2026-04-25 -->
 
 ## 延伸阅读
 
-### 字节跳动 Android/移动端 性能·功耗·稳定性 全栈技术方案深度调研
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/字节跳动 Android:移动端 性能·功耗·稳定性 全栈技术方案深度调研.md
-- 类型：DeepResearch 调研结果
-- 摘要：系统梳理字节跳动开源性能工具链（btrace 3.0 同步抓栈、ByteHook/ShadowHook hook 三件套、Raphael Native 泄漏检测）与闭源 APM 平台（Slardar/MDAP/APMPlus）的架构原理。覆盖流畅度三级防劣化体系、ANR 信号捕获与消息调度图还原、功耗模块化归因模型、端侧 AI（豆包手机助手 GUI Agent 端云协同架构）等核心方案，包含大量源码级实现细节。
-- 注入时间：2026-06-02
-- 价值：字节系 APM 工具链的完整技术栈剖析，btrace 3.0 同步抓栈原理与稳定性的信号归因方法论对 AIW APM 章节有直接补充价值
+- 字节跳动 Android 性能·功耗·稳定性全栈技术方案深度调研：系统梳理字节跳动开源性能工具链（btrace 3.0、ByteHook/ShadowHook、Raphael）与闭源 APM 平台（Slardar/MDAP/APMPlus）架构原理，覆盖流畅度防劣化体系、ANR 信号捕获、功耗模块化归因、端侧 AI 等核心方案
