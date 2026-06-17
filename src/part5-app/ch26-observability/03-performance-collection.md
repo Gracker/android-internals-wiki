@@ -31,7 +31,7 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-18T01:11:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-18"
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_date: "2026-06-18"
 task9_reviewed_by: openclaw-task6
 task9_result: "needs-rework"
