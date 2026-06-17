@@ -52,6 +52,7 @@ task9_reviewed_date: "2026-05-28"
 last_task9_at: "2026-05-28T04:30:00+08:00"
 task9_review_notes: "2026-05-28 Task9 04:30：pass-tech-review；无 P0/P1；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-28-04-deep-review.md"
+last_task9_audit: "2026-06-17"
 ---
 
 # 13.13 Perfetto CPU 频率与 DVFS 关联分析
