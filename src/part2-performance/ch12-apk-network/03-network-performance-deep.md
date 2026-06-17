@@ -480,3 +480,4 @@ Retrofit 通常不是网络慢的第一嫌疑人。若 `EventListener` 显示 DN
 - [Android Optimizing Battery Life](https://developer.android.com/training/monitoring-device-state)
 - [OkHttp EventListener API](https://square.github.io/okhttp/4.x/okhttp/okhttp3/-event-listener/)
 - [Perfetto 自定义 Trace Event](https://perfetto.dev/docs/instrumentation/tracing-sdk)
+- [Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径](DeepResearch/2026-06-17-android17-network-quota-limit-enforcement.md) — 源码级分析双服务架构（采集+策略执行）：BPF/eBPF FastDataInput 模式 4 个 BpfMap 绕过 procfs 零拷贝读取、quota 超限触发链路（内核 BPF map → netd.bandwidthSetGlobalAlert → AlertObserver.onQuotaLimitReached → performPollLocked 持久化 → firewall chain 隔离）、15K 采样率与 2MB 持久化阈值、BlockedReasons/AllowedReasons UID 级状态机

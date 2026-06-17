@@ -882,7 +882,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-15T06:12:58.181758",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-17T18:52:01+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加 Perfetto v54 Jank CUJ 进程过滤与 FrameTracker Join 深挖引用至参考资料"
   },
   {
     "section": "1.20",
@@ -1168,7 +1171,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-16T06:12:01.599869",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-17T18:52:01+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加 Streamlined Battery Stats 三层 flag + PowerStatsService 采集链路引用至参考资料"
   },
   {
     "section": "12.3",
@@ -1188,7 +1194,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-16T06:12:01.599869",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-17T18:52:01+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加 NetworkStatsService/NPMS quota 限速双服务架构引用至参考资料"
   },
   {
     "section": "23.7",

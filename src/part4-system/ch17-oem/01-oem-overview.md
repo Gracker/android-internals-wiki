@@ -38,7 +38,7 @@ last_task9_at: "2026-06-17T11:27:14+08:00"
 last_task9_audit: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-11-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-17
 last_task9_review_log: "logs/deep-review/2026-06-17-11-audit.md"
 last_task9_autofix_at: "2026-06-17"
 p0: 1
@@ -229,8 +229,6 @@ OPPO/vivo（ColorOS/OriginOS）的策略相对平衡，近年来通过 AI 学习
 
 ## 与其他机制的关系
 
-OEM 的优化实践不是孤立存在的，它和我们前面讨论过的多个系统机制紧密关联：
-
 OEM 的性能优化不是一个独立模块，它嵌入在全书讨论过的各个系统机制中。理解这些关联，能帮我们在 Trace 中更快判断一个现象的来源。
 
 **与 CPU 调度的关系（§5.1～§5.4）**：厂商在 Kernel 层的调度器调优直接影响 EAS 的行为。如果你在 Perfetto 中看到 CPU 迁移策略跟 AOSP 默认行为不同，很可能是厂商修改了 sched_energy_cost 或者 CPU capacity 的配置。DVFS 的 governor 选择和参数调优（§5.4）同样因厂商而异。
@@ -306,59 +304,3 @@ OEM 优化策略随 Android 版本的演进经历了几个关键转折点：
 > **验证状态**：L2 验证通过 8 处（AOSP 源码路径、官方文档、Linux man page），待验证 4 处（厂商具体策略参数）。信心等级：medium。
 >
 > **素材来源**：obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Android系统优化的那10年.md、obsidian/Personal-Knowlodge/source/the-performance-design-of-os.md、source.android.com、developer.android.com
-
-### Android 16 Market Share Reaches 20.4%
-- 来源：https://www.appbrain.com/stats/top-android-sdk-versions
-- 类型：技术资讯
-- 摘要：Android平台在2026年保持强劲发展势头，新功能不断推出，用户体验持续改善，生态系统更加完善。
-- 入库时间：2026-05-31
-- 评分：12/20
-
-### Android 16 Market Share Reaches 20.4%
-- 来源：https://www.appbrain.com/stats/top-android-sdk-versions
-- 类型：技术资讯
-- 摘要：Android 16以20.4%的市场份额成为最受欢迎的版本，反映出用户对新功能、安全性和性能优化的积极认可。
-- 入库时间：2026-05-31
-- 评分：16/20
-
-### Android 16 Market Share Reaches 20.4%
-- 来源：https://www.appbrain.com/stats/top-android-sdk-versions
-- 类型：技术资讯
-- 摘要：Android平台在2026年保持强劲发展势头，新功能不断推出，用户体验持续改善，生态系统更加完善。
-- 入库时间：2026-05-31
-- 评分：12/20
-
-### Android 16 Market Share Reaches 20.4%
-- 来源：https://www.appbrain.com/stats/top-android-sdk-versions
-- 类型：技术资讯
-- 摘要：Android 16以20.4%的市场份额成为最受欢迎的版本，反映出用户对新功能、安全性和性能优化的积极认可。
-- 入库时间：2026-05-31
-- 评分：16/20
-
-### Android 16 Market Share Reaches 20.4%
-- 来源：https://www.appbrain.com/stats/top-android-sdk-versions
-- 类型：技术资讯
-- 摘要：Android平台在2026年保持强劲发展势头，新功能不断推出，用户体验持续改善，生态系统更加完善。
-- 入库时间：2026-05-31
-- 评分：12/20
-
-### Android 16 Market Share Reaches 20.4%
-- 来源：https://www.appbrain.com/stats/top-android-sdk-versions
-- 类型：技术资讯
-- 摘要：Android 16以20.4%的市场份额成为最受欢迎的版本，反映出用户对新功能、安全性和性能优化的积极认可。
-- 入库时间：2026-05-31
-- 评分：16/20
-
-### 聊聊2026年Android开发会是什么样_android_陆业聪-开源鸿蒙跨平台开发者社区
-- 来源：https://openharmonycrossplatform.csdn.net/695626f1bf6b0e4b285fea36.html
-- 类型：技术资讯
-- 摘要：2026年Android开发呈现AI本地化、跨平台成熟和鸿蒙挑战三大趋势，开发者需要适应AI能力设备端部署和跨平台技术的新要求。
-- 入库时间：2026-05-31
-- 评分：12/20
-
-### Android 16 Market Share Reaches 20.4%
-- 来源：https://www.appbrain.com/stats/top-android-sdk-versions
-- 类型：技术资讯
-- 摘要：Android 16以20.4%的市场份额成为最受欢迎的版本，反映出用户对新功能、安全性和性能优化的积极认可。
-- 入库时间：2026-05-31
-- 评分：16/20

@@ -18,10 +18,12 @@ last_task9_at: "2026-06-16T21:32:37+08:00"
 task9_review_notes: "2026-06-16 Task9 auto-fix：修正 Systrace 入口和 SimplePerf/内存泄漏工具映射；依据 Android Developers tracing/simpleperf 与 Perfetto heapprofd 官方文档。 | 2026-06-16 21 Task9 deep-review：pass-tech-review。复核 20 点 auto-fix 后无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 created_by: "codex"
 created_date: '2026-06-16'
+last_task6_audit: '2026-06-17'
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-16'
 last_verified_against: AOSP android-16.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 confidence: high
+last_task9_audit: "2026-06-17"
 sources:
 - type: official
   path: https://developer.android.com/topic/performance
