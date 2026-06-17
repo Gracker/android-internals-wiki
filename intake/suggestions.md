@@ -105,3 +105,21 @@
 - **问题**：多处精确技术声明待验证：LeakCanary `ScheduleRef`/`PausedState`/`dumpHeapMaxDurationMillis` 字段名；`setWatchHeapLimit` API 33 标注 vs "Android 14+"行文不一致；CPU 开销精确数据来源
 - **建议**：Task 9 技术复审
 - **review 日志**：logs/review/2026-06-18-07-review.md
+
+## [Task9 Deep Review] 26.3 性能指标采集与上报 — 2026-06-18
+- **类型**：知识盲区
+- **位置**：内存监控部分
+- **问题**：缺少内存压力预警机制说明
+- **建议**：补充`onLowMemory()`和`onTrimMemory()`回调的使用示例和最佳实践，解释内存压力感知的具体实现
+
+## [Task9 Deep Review] 26.3 性能指标采集与上报 — 2026-06-18
+- **类型**：版本差异覆盖
+- **位置**：权限边界部分
+- **问题**：Android 17权限模型缺少运行时权限申请的具体实现示例
+- **建议**：补充READ_PRECISE_STATS等权限的运行时申请代码示例，包括权限检查和申请流程
+
+## [Task9 Deep Review] 26.3 性能指标采集与上报 — 2026-06-18
+- **类型**：原理链完整性
+- **位置**：Battery Historian层次架构部分
+- **问题**：三层架构缺少设计原理解释
+- **建议**：补充各层的设计目的和必要性说明，解释为什么需要Java→JNI→Native的三层架构设计
