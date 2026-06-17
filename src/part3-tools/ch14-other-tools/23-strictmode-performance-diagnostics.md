@@ -2,6 +2,12 @@
 title: "StrictMode 性能检查与开发期诊断"
 chapter: "14.23"
 status: ready-for-review
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: reviewed
+pipeline_stage: task6_pending
+last_task2b_lite_at: 2026-06-17
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 tags: [strictmode, disk-read, disk-write, network, custom-penalty, performance-diagnostics]
 related_chapters: ["15.6", "14.4", "21.3"]
@@ -11,11 +17,21 @@ drafted_date: "2026-06-08"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
+task9_result: auto-fixed
+last_task9_at: "2026-06-17T14:32:54+08:00"
+task9_reviewed_date: "2026-06-17"
+task9_reviewed_by: openclaw-task9
+last_task9_autofix_at: "2026-06-17"
+last_task9_review_log: "logs/deep-review/2026-06-17-14-deep-review.md"
+task9_review_notes: "2026-06-17 Task9 auto-fix: StrictMode API 归属、VmPolicy bit 口径、Compose/ActivityScenario 边界、DropBox/netd 说明与 AOSP android-17.0.0_r1 源码锚点修正；回到 Task6 复审。"
+p0: 0
+p1: 0
+p2: 0
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/StrictMode.java"
   - type: aosp
-    path: "dalvik/system/BlockGuard.java"
+    path: "libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java"
 gap_source: "AOSP结构/官方文档/章节深挖"
 ---
 
@@ -45,6 +61,7 @@ StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
     .detectNetwork()
     .detectCustomSlowCalls()
     .detectResourceMismatches()      // API 23+
+    .detectExplicitGc()              // API 34+
     .penaltyLog()
     .build();
 StrictMode.setThreadPolicy(policy);
@@ -56,7 +73,8 @@ StrictMode.setThreadPolicy(policy);
 - `detectDiskWrites()`：拦截主线程的文件写入。`SharedPreferences.edit().commit()` 必然触发（`apply()` 不会，因为写入发生在后台线程）。参见 21.3 对 ContentProvider 启动阶段 SharedPreferences 使用方式的分析。
 - `detectNetwork()`：拦截主线程的网络操作。BlockGuard 对 `Socket`、`HttpURLConnection` 的 connect/write/read 插入拦截。OkHttp 底层也走 Socket，同样会触发。
 - `detectCustomSlowCalls()`：配合 `StrictMode.noteSlowCall("tag")` 使用，开发者自行标记耗时操作。适合标记那些不涉及磁盘/网络但耗时可能超标的逻辑（如 JSON 解析、Bitmap 解码）。
-- `detectResourceMismatches()`（API 23+）：检测资源类型不匹配，比如对 `TextView` 调用 `setImageResource()`。
+- `detectResourceMismatches()`（API 23+）：检测资源定义类型与读取方法不匹配，比如 `TypedArray.getInt()` 读取到 String 类型资源时触发 `ResourceMismatchViolation`。
+- `detectExplicitGc()`（API 34+）：检测当前线程显式调用 `System.gc()` / `Runtime.gc()`。它是 ThreadPolicy 检测项，不属于 VmPolicy。
 
 ### Penalty 策略
 
@@ -124,8 +142,7 @@ StrictMode.VmPolicy vmPolicy = new StrictMode.VmPolicy.Builder()
     .detectLeakedClosableObjects()
     .detectLeakedSqlLiteObjects()
     .detectNonSdkApiUsage()           // API 28+
-    .detectExplicitGc()               // API 29+
-    .detectUnsafeIntentLaunch()        // API 33+
+    .detectUnsafeIntentLaunch()        // API 31+
     .penaltyLog()
     .build();
 StrictMode.setVmPolicy(vmPolicy);
@@ -133,12 +150,11 @@ StrictMode.setVmPolicy(vmPolicy);
 
 各检测项说明：
 
-- `detectActivityLeaks()`：在 Activity `onDestroy()` 后检查该 Activity 实例是否仍被引用。如果被 GC root 间接持有，报告泄漏。实现方式是在 `ActivityThread` 的 `performDestroyActivity()` 路径中注册弱引用检查。
+- `detectActivityLeaks()`：通过 `ActivityThread` 的创建/销毁路径维护 Activity 实例的期望计数；销毁后如果 `InstanceTracker` / `VMDebug.countInstancesOfClass()` 统计仍超过阈值，就报告 `InstanceCountViolation`。
 - `detectLeakedClosableObjects()`：检查 `Closeable` 对象（`InputStream`、`OutputStream`、`Cursor` 等）是否在 finalize 时仍未关闭。底层通过 `CloseGuard`（`libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java`）实现，每个 `Closeable` 在构造时注册一个 guard，`finalize()` 时检查 guard 是否已关闭。
 - `detectLeakedSqlLiteObjects()`：SQLite 特化的泄漏检测。SQLiteCursor 和 SQLiteDatabase 在 finalize 时检查是否已关闭。和 `detectLeakedClosableObjects()` 有重叠，但 SQLite 检测会额外报告 SQL 语句和数据库路径。
-- `detectNonSdkApiUsage()`（API 28+）：拦截通过反射或 JNI 访问非 SDK 接口的行为。Android 9 起对 `@hide` API 实施限制，这个检测帮助发现代码中的灰色地带。底层通过 `VMRuntime setHiddenApiExemptions()` 和 class linker 的访问检查实现。
-- `detectExplicitGc()`（API 29+）：检测代码中显式调用 `System.gc()`、`Runtime.gc()` 的行为。在 ART 环境下显式 GC 通常不必要，反而可能干扰分代 GC 的调度节奏。
-- `detectUnsafeIntentLaunch()`（API 33+）：检测通过 `Intent.setPackage()` 或 `Intent.setComponent()` 启动外部组件时未做安全验证的行为。属于安全检测，但间接影响性能（恶意 Intent 可能触发不必要的进程启动）。
+- `detectNonSdkApiUsage()`（API 28+）：拦截通过反射或 JNI 访问非 SDK 接口的行为。Android 9 起对 `@hide` API 实施限制，这个检测帮助发现代码中的灰色地带。`setVmPolicy()` 会注册 `VMRuntime.setNonSdkApiUsageConsumer()` 并关闭 ART 内部去重，非 SDK 访问检查命中后回调到 StrictMode。
+- `detectUnsafeIntentLaunch()`：检测应用把外部来源的 `Intent` 继续用于 `startActivity()`、`startService()`、`bindService()`、`sendBroadcast()` 或 `setResult()` 时可能触发的未保护组件/URI 授权风险。它主要是安全检测，不应写成 `setPackage()` / `setComponent()` 本身的性能问题。
 
 ## 违规日志分析
 
@@ -210,7 +226,7 @@ public void enableStrictMode() {
 
 `penaltyDeath()` 在测试环境中让违规变成测试失败，防止问题被忽略。结合 Firebase Test Lab 或 Firebase Test Orchestra 时，StrictMode 违规会出现在测试报告的 crash 堆栈中。
 
-`ActivityScenario`（AndroidX Test）在 API 28+ 会自动启用部分 StrictMode 检测。手动配置会叠加到自动配置之上。
+`ActivityScenario` 不会替测试自动打开 StrictMode；需要在测试基类、JUnit Rule 或 `Application.onCreate()` 中显式设置策略，才能把违规转成 CI 失败。
 
 ### 将违规纳入 CI 失败条件
 
@@ -257,7 +273,7 @@ StrictMode + Perfetto 的组合使用：StrictMode 负责开发期门控（`pena
 
 BlockGuard 对每次 I/O 操作都做一次策略检查。在高频操作路径上（如每帧都读文件的极端情况），StrictMode 会引入可测量的延迟。这就是为什么 StrictMode 只在 Debug 构建启用、不在生产构建开启。
 
-实测数据参考：启用 StrictMode 的 ThreadPolicy（全部检测项）后，主线程文件操作的额外开销约为每次调用 +0.1-0.5ms（取决于堆栈深度和 penalty 配置）。对于 `penaltyLog()` 这个量级通常可接受；`penaltyDeath()` 因为需要构造异常堆栈，开销略高。
+量化 StrictMode 开销时，需要在目标设备上分别测 `penaltyLog()`、`penaltyDeath()` 和 `penaltyListener()`。结论不要直接套固定毫秒数：违规处理会构造堆栈，`penaltyDeath()` 还会抛异常，DropBox / listener 路径的耗时也取决于当时的系统负载。
 
 ## 扩展
 
@@ -265,14 +281,14 @@ BlockGuard 对每次 I/O 操作都做一次策略检查。在高频操作路径�
 
 Compose 的渲染管线在 `Composer` 层面不做文件 I/O，不会直接触发 StrictMode。但以下场景可能产生误报：
 
-- Compose 的 `LaunchedEffect` 如果在 effect 体中执行文件操作，会在 `Recomposer` 线程触发。这不是主线程违规，StrictMode 的 ThreadPolicy 不会拦截。但如果使用 `rememberCoroutineScope { Dispatchers.IO }` 的方式不对，实际执行可能在主线程。
+- Compose 的 `LaunchedEffect` 默认继承当前 composition 的协程上下文；Android UI 组合通常在主线程上运行，effect 体里直接做文件 I/O 仍会触发 ThreadPolicy。需要显式切到 `Dispatchers.IO`，例如 `rememberCoroutineScope().launch(Dispatchers.IO) { ... }`。
 - `AndroidView` 包装的传统 View 如果在 `onMeasure`/`onLayout` 中做磁盘操作，会触发 StrictMode。这与 View 体系的行为一致，不是 Compose 特有问题。
 
 ### 常见违规模式的修复
 
 | 违规模式 | 修复方向 | 注意事项 |
 |----------|----------|----------|
-| `SharedPreferences.commit()` | 改用 `apply()` | `apply()` 在 API 31+ 已改为异步写入，不会触发 StrictMode |
+| `SharedPreferences.commit()` | 改用 `apply()` | `commit()` 允许在调用线程同步写盘；`apply()` 走异步写盘，但仍要避免随后在主线程等待加载或 flush |
 | `FileInputStream.read()` 在 `onCreate()` | 移到 `Dispatchers.IO` 协程 | 注意协程切换后变量作用域的变化 |
 | `Cursor` 未关闭 | 使用 `use {}` 扩展函数 | Kotlin 的 `use` 会自动调用 `close()` |
 | `OkHttp.execute()` 在主线程 | 移到 `viewModelScope` + `Dispatchers.IO` | OkHttp 的 `enqueue()` 是另一种方式 |
@@ -294,9 +310,9 @@ StrictMode 的策略是进程内的、线程级别的。每个进程需要独立
 
 > 本节为 §14.23 在 2026-06-14 由 AIW 源码调研 cron 写入的反哺节，补充主章节未覆盖的源码级细节。原始主章节基于 API 28–37 验证 + AOSP android-17.0.0_r1，本节沿用同一边界。
 
-### VmPolicy 比特位全景（bit 0–14）
+### VmPolicy 比特位全景（API 37 范围）
 
-`StrictMode.java`（main 分支）定义 15 个 `DETECT_VM_*` 比特（`0x0000ffff = DETECT_VM_ALL`）。Android 14–17 窗口新增了 bit 11–14：
+`StrictMode.java`（android-17.0.0_r1）里，本文只讨论 API 37 范围内可用、且与性能诊断直接相关的 `DETECT_VM_*` 位；下表聚焦 Android 14–17 窗口内的 bit 9–14：
 
 | 比特 | 常量 | API | 关键特性 |
 |------|------|-----|---------|
@@ -413,7 +429,7 @@ if (netd != null) {
 }
 ```
 
-`NETWORK_POLICY_LOG` 路径：netd 走 `nf_log` 记录到 netd 日志，应用看到 `cleartextNotPermitted()` SocketException。`NETWORK_POLICY_REJECT` 路径：netd 直接拒绝握手，应用层只能看到 Connection Refused。
+`NETWORK_POLICY_LOG` 路径只记录明文网络事件，不阻断连接；`NETWORK_POLICY_REJECT` 路径才会由 netd 拒绝流量。应用层看到的异常类型取决于 socket / TLS / Network Security Config 触发点，不能固定写成某一种 `SocketException`。
 
 ### DropBox 限流与 BackgroundThread 异步
 
@@ -433,15 +449,15 @@ private static void dropboxViolationAsync(final int penaltyMask, final Violation
 }
 ```
 
-**实战含义**：线上应用如果同时开 `PENALTY_DROPBOX` + 在高频路径违规（每分钟数百条），`sDropboxCallsInFlight` 会经常到 20 上限，后续违规直接丢弃。DropBox 文件 `/data/system/dropbox/system_app_strictmode`（系统应用）或 `/data/system/dropbox/data_app_strictmode`（第三方）每 24h 滚动一次、单文件最大 8KB。CI 测试时建议临时把上限调高或换 `penaltyListener` 把违规统一收集到自定义 logger。
+**实战含义**：线上应用如果同时开 `PENALTY_DROPBOX` + 在高频路径违规（每分钟数百条），`sDropboxCallsInFlight` 会经常到 20 上限，后续违规直接丢弃。DropBox 条目写入 `/data/system/dropbox`，tag 常见为 `system_app_strictmode`（系统应用）或 `data_app_strictmode`（第三方应用）。配额和保留时间由 `DropBoxManagerService` 的全局配置控制，android-17.0.0_r1 默认保留 3 天、全局配额约 10MB（user）/20MB（userdebug），不要把它理解成单个 StrictMode tag 固定 24h/8KB。CI 测试更适合用 `penaltyListener` 把违规统一收集到自定义 logger。
 
 ### 推荐补充到章节 §14.23 的源码级引用清单
 
 调研报告 `DeepResearch/2026-06-14-android17-strictmode-vmpolicy-evolution-cross-binder-propagation.md` 给出完整 14 个关键函数 + 6 个集成锚点。本节为反哺摘要，深度内容请参考完整报告。
 
 > [适用版本: Android 9 (API 28) - Android 17 (API 37)]
-> [已验证: AOSP main 分支, frameworks/base/core/java/android/os/StrictMode.java, libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java]
-> [android-17.0.0_r1 tag 公开未发布；本节未引用 Android 18+/API 38+ 内容]
+> [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/StrictMode.java, libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java]
+> [版本边界: 仅使用 Android 17/API 37 及以下源码锚点]
 
 > [适用版本: Android 9 (API 28) - Android 17 (API 37)]
 > [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/StrictMode.java]

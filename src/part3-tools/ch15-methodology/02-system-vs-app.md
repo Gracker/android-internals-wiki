@@ -1,5 +1,66 @@
 ---
-title: "如何区分系统问题和 App 问题"chapter: "15.2"section: "15.2"status: ready-for-reviewdrafted_date: "2026-04-04"drafted_by: "openclaw-task2a"applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"last_verified: "2026-04-21"last_verified_against: "AOSP android-16.0.0_r1"confidence: highsources:  - type: blog    path: "androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/"  - type: blog    path: "androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"  - type: official    path: "perfetto.dev/docs/data-sources/cpu-scheduling"  - type: official    path: "developer.android.com/topic/performance"  - type: official    path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"  - type: official    path: "perfetto.dev/docs/data-sources/frametimeline"  - type: aosp    path: "frameworks/native/services/surfaceflinger/"tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]pipeline_stage: "task6_pending"task6_state: "revisiting"reviewed_by: "openclaw-task6"reviewed_date: "2026-05-28"last_task6_audit: "2026-05-21"task6_result: "pass-light-edit"task9_state: "reviewed"task9_result: auto-fixedlast_task9_at: "2026-06-16T04:50:00+08:00"task9_reviewed_date: "2026-06-16"task9_reviewed_by: openclaw-task9task2b_state: "fixed"task2b_result: fixed-litereview_round: 2repaired_date: "2026-04-27"repaired_by: "openclaw-task2b"last_task2b_at: "2026-04-27T14:50:00+08:00"last_task2b_lite_at: "2026-05-28"finalized_date: "2026-05-28"finalized_by: openclaw-task9last_task9_audit: "2026-06-16"last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"last_task6_at: "2026-05-28T18:20:12+08:00"task6_reviewed_at: "2026-05-28T18:20:12+08:00"task6_reviewed_by: "openclaw-task6"last_task6_review_log: "logs/review/2026-05-28-18-review.md"task6_l1_l2_fixes: 8task6_l3_l4_issues: 0task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"last_task9_review_log: "logs/deep-review/2026-06-16-04-audit.md"task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 FGS timeout 版本边界、ANR 阈值、Perfetto scheduling/FrameTimeline、SF commit/composite；未发现阻断问题，自动晋升 finalized。 | 2026-06-16 04 Task9 idle audit auto-fix: 修正失效/不精确的一手资料链接：内存管理改为 Android Developers memory-management + source.android lmkd；ANR 阈值改为 diagnose-and-fix-anrs；SurfaceFlinger 源码锚点从 master 固定到 android-16.0.0_r1。未发现 P0/P1 或 Android 18/API 38+ 越界内容，回到 Task6 复审。"p0: 0p1: 0p2: 3last_task9_autofix_at: "2026-06-16"deepseek_cn_review_state: donelast_deepseek_cn_review_at: 2026-06-16
+title: "如何区分系统问题和 App 问题"
+chapter: "15.2"
+section: "15.2"
+status: ready-for-review
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task6_result: pass-light-edit
+pipeline_stage: task6_pending
+last_task2b_lite_at: 2026-06-17
+drafted_date: "2026-04-04"
+drafted_by: "openclaw-task2a"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+last_verified: "2026-04-21"
+last_verified_against: "AOSP android-16.0.0_r1"
+confidence: high
+sources:
+  - type: blog
+    path: "androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/"
+  - type: blog
+    path: "androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
+  - type: official
+    path: "perfetto.dev/docs/data-sources/cpu-scheduling"
+  - type: official
+    path: "developer.android.com/topic/performance"
+  - type: official
+    path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+  - type: official
+    path: "perfetto.dev/docs/data-sources/frametimeline"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/"
+tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
+related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-28"
+last_task6_audit: "2026-05-21"
+last_task6_at: "2026-05-28T18:20:12+08:00"
+task6_reviewed_at: "2026-05-28T18:20:12+08:00"
+task6_reviewed_by: "openclaw-task6"
+last_task6_review_log: "logs/review/2026-05-28-18-review.md"
+task6_l1_l2_fixes: 8
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。"
+task9_state: reviewed
+task9_result: pass-tech-review
+last_task9_at: "2026-06-17T14:36:19+08:00"
+task9_reviewed_date: "2026-06-17"
+task9_reviewed_by: openclaw-task9
+last_task9_review_log: "logs/deep-review/2026-06-17-14-deep-review.md"
+task9_review_notes: "2026-06-17 Task9 deep-review: pass-tech-review。复核 Perfetto thread_state/Wall vs CPU、kswapd/lmkd、FrameTimeline、ANR 阈值与 SF commit/composite 口径；未发现 P0/P1。Task6 仍处 revisiting，本轮不自动晋升。"
+p0: 0
+p1: 0
+p2: 0
+review_round: 2
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-27T14:50:00+08:00"
+finalized_date: "2026-05-28"
+finalized_by: openclaw-task9
+last_task9_audit: "2026-06-16"
+last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
+last_task9_autofix_at: "2026-06-16"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 ---
