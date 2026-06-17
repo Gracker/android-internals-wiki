@@ -1529,5 +1529,37 @@
     ],
     "completed_reason": "false-positive-already-correct: GcWatcher path already verified in BinderInternal.java per multiple external reviews (2026-04-19, 2026-04-25, 2026-04-29). Task9 reviewer reversed the correction. CMC line number fix applied as Lite fix.",
     "completed_at": "2026-06-18T01:40:26+08:00"
+  },
+  {
+    "section": "15.6",
+    "section_title": "性能测试最佳实践",
+    "title": "性能测试最佳实践",
+    "file": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+    "priority": 95,
+    "reason": "[Deep Tech Review][闲时抽检] Android 17 关键变更缺失与源码路径版本边界风险",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/deep-review/2026-06-18-03-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "src/part3-tools/ch15-methodology/06-testing-best-practices.md 全章节",
+        "detail": "章节声称适用 Android 16 (API 36)，但未覆盖 Android 17 中 ART Service 对后台 dexopt 的架构调整（Android 16 的 BackgroundDexOptJobService 已迁移到 ArtManagerLocal），编译模式 API 在 Android 17 中可能有新状态/参数未文档",
+        "suggestion": "补充 Android 17 后台 dexopt 架构调整说明，并标注 CompilationMode API 可能的版本边界；检查所有源码路径是否在 android-17.0.0_r1 中存在"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part3-tools/ch15-methodology/06-testing-best-practices.md:L706-L732, L638-L644 等源码引用段",
+        "detail": "章节引用的多个 AOSP 路径（如 BackgroundDexOptService.java/BackgroundDexOptJobService.java）在 Android 17 中结构可能已变化，需 verify 是否仍在 android-17.0.0_r1 或更早版本中保持相同接口",
+        "suggestion": "复核所有源码锚点是否可定位到 android-17.0.0_r1 或更低版本；若路径只在 main 分支存在，需标注\"未进入 Android 17\"并移出正文结论"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-17T19:23:36.497904+00:00+00:00",
+    "created": "2026-06-17",
+    "status": "completed",
+    "completed_at": "2026-06-18T03:37:27+08:00",
+    "completed_by": "task2b-lite",
+    "completion_reason": "fixed-lite: 版本限定更新至 Android 17/API 37；源码路径添加 AOSP 版本标签；正文补 Android 17 边界声明（共改动约 8 行正文/frontmatter）"
   }
 ]
