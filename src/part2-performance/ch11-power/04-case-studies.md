@@ -12,9 +12,10 @@ source_repos:
   - frameworks/base/services/core/java/com/android/server/am/ActiveServices.java  # FGS与Job协同
   - frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java  # FGS常量定义
 status: ready-for-review
-task9_state: reviewed
+task9_state: pending
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: task9_pending
 ---
 
 # 11.4 案例集
