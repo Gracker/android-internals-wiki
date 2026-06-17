@@ -416,6 +416,77 @@ fun atomicWriteCrashFile(dir: File, pid: Int, content: ByteArray): Boolean {
 
 本节没有重复 20.2、20.3 的底层机制,也没有展开 26.2 的服务端上报实现。实际接入前还要核对三件事:SafeMode 阈值是否符合业务现状,多进程文件写入是否具备原子性,热修复框架边界是否和当前项目一致。
 
+<!-- AIW-源码调研-2026-06-17 -->
+## 源码调研补充：SafeMode 状态机与 ApplicationExitInfo 的 AOSP 锚点核验
+
+本节对 launch marker / SafeMode 状态机中引用的 AOSP 锚点做一次源码核验，**所有结论已对齐 android-15.0.0_r1，未引用 Android 17 主线作为正文结论**。详细调研报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-safemode-launch-marker-state-machine-aosp-verification.md`。
+
+### `ApplicationExitInfo` 退出原因全集
+
+`frameworks/base/core/java/android/app/ApplicationExitInfo.java` 在 android-15 共 17 个 `REASON_*` 常量（0–16），本节列出的 `REASON_CRASH` / `REASON_CRASH_NATIVE` / `REASON_ANR` / `REASON_LOW_MEMORY` / `REASON_USER_REQUESTED` 全部存在，**应补的还有**：
+
+- `REASON_INITIALIZATION_FAILURE`（7）：启动初始化失败，SafeMode 维度 3 白名单应纳入。
+- `REASON_FREEZER`（14）/ `REASON_PACKAGE_STATE_CHANGE`（15）/ `REASON_PACKAGE_UPDATED`（16）/ `REASON_USER_STOPPED`（11）/ `REASON_PERMISSION_CHANGE`（8）/ `REASON_DEPENDENCY_DIED`（12）：应明确加入黑名单，避免被误算为启动崩溃。
+
+`getTraceInputStream()` 签名是 `@Nullable InputStream getTraceInputStream() throws IOException`，对 `mAppTraceRetriever` 为空的 reason 必然返回 `null`——"拿不到 trace" 是正常路径，不能当作 "没有 native crash"。
+
+### `AtomicFile` 持久化协议（核验维度 4 的边界）
+
+`frameworks/base/core/java/android/util/AtomicFile.java:172` 的 `finishWrite()` 流程：
+
+```java
+// 关键代码
+if (!FileUtils.sync(str)) Log.e(LOG_TAG, "Failed to sync file output stream");  // 仅 fsync 数据文件
+str.close();
+rename(mNewName, mBaseName);  // POSIX rename(2)
+```
+
+`FileUtils.sync()`（`core/java/android/os/FileUtils.java:275`）只调 `FileDescriptor.sync()`，**不 fsync 父目录**。崩溃后父目录 inode 未落盘，下一次启动 `openRead()` 可能看到不一致状态——本节维度 4 提到的"父目录 fsync 边界"在 AOSP `AtomicFile` 里**没有实现**，生产实现若要更严格需自行补 `parentFile.fdatasync()`。
+
+`failWrite()` 只删 `mNewName`，**不回退 `mBaseName`**；崩溃期间未完成 `finishWrite` 之前失败，下次读到的是旧版本，与本节"崩溃入口写文件时 partial 清理规则"一致。
+
+### `AppExitInfoTracker` 离线补偿的两个数字
+
+`frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`：
+
+- `APP_EXIT_INFO_PERSIST_INTERVAL = TimeUnit.MINUTES.toMillis(30)`（line 102）——**30 分钟 debounce**，不是每次 `noteAppKill` 都落盘。
+- `mAppExitInfoHistoryListSize` 来自资源 `config_app_exit_info_history_list_size=16`（line 268–269）——**单包 16 条上限**，超出按最旧优先丢弃。
+- 路径：`data/system/procexitstore/procexitinfo`（`APP_EXIT_STORE_DIR` / `APP_EXIT_INFO_FILE`）。
+
+应用启动期做 SafeMode 判定时：30 分钟内强停 + 断电的场景，**这条 `REASON_USER_REQUESTED` 还没落盘就丢失**。生产实现若依赖 `ApplicationExitInfo` 做离线补偿，要么在 `forceStop` 前主动触发一次 `immediately=true` 同步，要么在 `Application.onCreate` 顶端额外叠加本地未上报队列。
+
+### `ProcessList` 退出原因来源链
+
+`frameworks/base/services/core/java/com/android/server/am/ProcessList.java:907–911`：
+
+```java
+noteAppKill(oomKill.getPid(), oomKill.getUid(),
+        ApplicationExitInfo.REASON_LOW_MEMORY,
+        ApplicationExitInfo.SUBREASON_OOM_KILL, "oom");
+```
+
+AOSP 把"用户主动强停"和"系统低内存"分别落到了 `REASON_USER_REQUESTED`（AMS `forceStopPackageLocked` → `ProcessList.killProcessGroup`）和 `REASON_LOW_MEMORY`（`OomConnection` / `LmkdConnection` 回调），且不与 `REASON_CRASH` 系列混用。`SafeModeController` 维度 3 可以直接按 reason 整数判定，**不需要解析 `mDescription` 字符串**。`Process.killProcess`（`core/java/android/os/Process.java:1439`）→ `sendSignal(pid, SIGNAL_KILL=9)`，是被三条路径共用的底层调用。
+
+### 客户端 API 边界
+
+`frameworks/base/core/java/android/app/ActivityManager.java:4457` 的 `getHistoricalProcessExitReasons(packageName, pid, maxNum)`：
+
+- `maxNum=0` 表示"返回所有匹配记录"（line 4451 注释），按 `mAppExitInfoHistoryListSize=16` 上限传入 `maxNum=16` 即可。
+- `isLowMemoryKillReportSupported()` 是**静态方法**，先确认设备支持上报 LMK kill 再走 `REASON_LOW_MEMORY` 路径；部分厂商 ROM 不上报时该 reason 退化为 `REASON_SIGNALED`，过滤会失效。
+
+### 信息源（全部 android-15.0.0_r1）
+
+- `frameworks/base/core/java/android/app/ApplicationExitInfo.java`
+- `frameworks/base/core/java/android/util/AtomicFile.java`
+- `frameworks/base/core/java/android/os/FileUtils.java`
+- `frameworks/base/core/java/android/os/Process.java`
+- `frameworks/base/services/core/java/com/android/server/am/ProcessList.java`
+- `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`
+- `frameworks/base/core/java/android/app/ActivityManager.java`
+- `core/res/res/values/config.xml`
+
+<!-- /AIW-源码调研-2026-06-17 -->
+
 ## 参考资料
 
 ### Kotlin 协程异常处理与 UncaughtExceptionHandler 三层级联体系
