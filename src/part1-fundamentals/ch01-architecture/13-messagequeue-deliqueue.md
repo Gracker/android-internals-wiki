@@ -63,6 +63,8 @@ finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-06-14"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-14"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-17
 ---
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化
@@ -101,7 +103,7 @@ MessageQueue 就在这个位置上。Input 事件、`Handler.post()`、`Choreogr
 
 ## MessageQueue 在主线程里扮演什么角色
 
-先把队列操作和业务执行分开。`Looper.loopOnce()` 在 Android 16 的边界很清楚,先调用 `me.mQueue.next()` 取消息,拿到消息后才进入 `msg.target.dispatchMessage(msg)`:
+先把队列操作和业务执行分开。`Looper.loopOnce()` 在 Android 16 的分工很清晰：先调用 `me.mQueue.next()` 取消息，拿到消息后才进入 `msg.target.dispatchMessage(msg)`：
 
 ```java
 // frameworks/base/core/java/android/os/Looper.java
@@ -117,7 +119,7 @@ private static boolean loopOnce(final Looper me, /* 省略其他参数 */) {
 }
 ```
 
-这条边界很重要。复杂 layout、draw、Binder 回调、数据库访问,都发生在 `dispatchMessage()` 之后。它们会拖慢一帧,也会推迟下一次 `next()` 的时点;它们不会把本次 `MessageQueue` 的锁持有时间直接拉长。把这两段混成一件事，后面的因果关系会被混淆。
+这条边界很重要。复杂 layout、draw、Binder 回调、数据库访问,都发生在 `dispatchMessage()` 之后。它们会拖慢一帧,也会推迟下一次 `next()` 的时点;它们不会把本次 `MessageQueue` 的锁持有时间直接拉长。如果把这两段混在一起看，后续因果分析会走偏。
 
 ## 传统实现为什么容易出现锁竞争
 
@@ -143,7 +145,7 @@ boolean enqueueMessage(Message msg, long when) {
 }
 ```
 
-这里的竞争点：
+竞争发生在三处：
 
 1. 后台线程往主线程 `post` 消息时,要抢这把 monitor。
 2. 主线程调用 `next()` 扫描队列、处理同步屏障时,也要抢这把 monitor。
@@ -160,7 +162,7 @@ boolean enqueueMessage(Message msg, long when) {
 - 后台线程密集往主线程发消息,比如实时流、频繁状态刷新、复杂初始化。
 - 主线程业务很忙,导致它下一次回到 `next()` 的时间被推迟。这里受影响的是"回到队列口的时机",不是"当前这次 queue 锁持有得更久"。
 
-这个区别必须写清。trace 里如果看到 `dispatchMessage()` 很长,那是业务执行慢;如果看到 `enqueueMessage()` 或 `next()` 周边出现 monitor contention,那才是队列竞争。
+这个区分很关键：trace 里如果看到 `dispatchMessage()` 很长,那是业务执行慢;如果看到 `enqueueMessage()` 或 `next()` 周边出现 monitor contention,那才是队列竞争。
 
 ## `next()` 里面到底做了什么
 
@@ -187,7 +189,7 @@ Message next() {
 
 ### 1. `nativePollOnce()` / epoll
 
-队列空闲时,Looper 不会忙等,而是进入 native poll。新消息插入后,`nativeWake()` 把它唤醒。这一层在 Android 17 仍然保留,变的是 Java 层队列结构,不是把 Looper 改成自旋线程。
+队列空闲时,Looper 不会忙等,而是进入 native poll。新消息插入后,`nativeWake()` 把它唤醒。这一层在 Android 17 也保留了下来。变的是 Java 层队列结构，Looper 并没有被改成自旋线程。
 
 ### 2. 同步屏障
 
@@ -383,12 +385,12 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 ## 收尾
 
-排查主线程调度问题时,先把流程切成三段:**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor。Android 16 的公开源码已经能看到 legacy / concurrent 多变体试点,Android 17 把这件事推到了面向应用的默认行为。
+排查主线程调度问题，先把流程切成三段：**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor；Android 16 公开源码已经能看到 legacy / concurrent 多变体试点；Android 17 把这件事推到了面向应用的默认行为。
 
-这节最该带走的判断只有两个:
+这节最值得带走的判断有两个：
 
-- trace 里看到 `dispatchMessage()` 长，不要先归因到 MessageQueue。
-- retarget 到 Android 17 后,如果测试框架、反射代码、旧监控脚本先出问题,先查 `mMessages` 和测试库版本,再查业务逻辑。
+- trace 里 `dispatchMessage()` 长是业务执行慢，不要先归因到 MessageQueue。
+- retarget 到 Android 17 后，测试框架、反射代码、旧监控脚本先出问题，先查 `mMessages` 和测试库版本，再查业务逻辑。
 
 ## 参考资料
 

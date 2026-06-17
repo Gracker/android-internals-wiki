@@ -57,7 +57,7 @@ task9_review_notes: "2026-06-17 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；
 last_task2b_at: "2026-06-03T12:50:00+08:00"
 task2b_fix_summary: "Fixed P1: UIDT 版本边界 (API 34+/29-33 fallback) + §5.10 交叉引用；P2: GreedyScheduler WorkConstraintsTracker 约束追踪、requiresDeviceIdle+backoff 不兼容、getStopReason 版本边界 (WorkManager 2.9.0+/API 31+)"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
+last_deepseek_cn_review_at: 2026-06-17
 ---
 
 # WorkManager 实战与后台任务调度
@@ -87,11 +87,11 @@ last_deepseek_cn_review_at: 2026-06-13
 
 ## 为什么要了解 WorkManager 实战与后台任务调度
 
-WorkManager 适合两类后台工作：用户离开页面后仍要可靠完成的任务，以及可以延后、可以合并、可以按约束执行的周期任务。典型例子是日志上传、配置同步、离线数据刷新、用户触发后的短上传收尾。它不适合替代页面内协程，也不适合承担必须精确到点触发的提醒。
+WorkManager 适合用户离开页面后仍要可靠完成的后台任务，以及可以延后、可以合并、可以按约束执行的周期任务——典型例子是日志上传、配置同步、离线数据刷新、用户触发后的短上传收尾。它不适合替代页面内协程，也不适合承担必须精确到点的提醒。
 
-App 侧需要关注建模、约束、排重和降级。Doze、App Standby、Job 配额和后台限制的系统层细节见 §25.2；WakeLock 和 Alarm 的使用边界见 §25.3；JobScheduler / WorkManager 的系统调度机制见 §5.10。
+App 侧需要关注建模、约束、排重和降级。Doze、App Standby、Job 配额的系统层细节见 §25.2；WakeLock 和 Alarm 的使用边界见 §25.3；JobScheduler / WorkManager 的系统调度机制见 §5.10。
 
-后台任务的分类可以从三个维度判断：是否用户可见、是否可延后、是否需要跨进程可靠执行。明确了这三条，再决定用什么约束、怎么排重、记录哪些观测字段。
+后台任务可以从三个维度分类：是否用户可见、是否可延后、是否需要跨进程可靠执行。明确了这三条，再决定用什么约束、怎么排重、记录哪些观测字段。
 
 ## WorkManager 架构与约束条件
 
@@ -101,7 +101,7 @@ AndroidX 源码里，Android 10-16 设备上的主要调度器是 `SystemJobSche
 
 `GreedyScheduler` 是另一条 App 进程内的快速路径。源码注释写明它处理 unconstrained、non-timed work，并且不会主动持有 WakeLock；当任务无约束、已到运行时间且处于 `ENQUEUED` 状态时，它会直接启动 Work。同时，非 idle、非 content-uri trigger 的 constrained work 会经过 `WorkConstraintsTracker` 追踪：约束满足时进程内 `startWork()`，约束失效时 `stopWorkWithReason()`。这个路径只能作为进程存活时的机会执行，不能作为可靠后台执行保证；约束恢复路径的可靠性远低于 JobScheduler 的系统级持久化追踪。 [已验证: AndroidX 源码, platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/background/greedy/GreedyScheduler.java]
 
-约束设置要考虑功耗成本。WorkManager 支持 `NetworkType`、`BatteryNotLow`、`RequiresCharging`、`DeviceIdle`、`StorageNotLow`。多个约束同时设置时，全部满足后才运行；运行中约束失效，Worker 会被停止，后续等约束恢复后重试。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work]
+约束设置要结合功耗成本一起考虑。WorkManager 支持 `NetworkType`、`BatteryNotLow`、`RequiresCharging`、`DeviceIdle`、`StorageNotLow` 五种约束。全部满足后才运行；运行中任一约束失效，Worker 会被停止，等约束恢复后重试。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work]
 
 注意 `.setRequiresDeviceIdle(true)` 不能与 `.setBackoffCriteria()` 同时使用——AndroidX `OneTimeWorkRequest.Builder` 与 `PeriodicWorkRequest.Builder` 在 `build()` 时会抛出 `IllegalArgumentException`。如果业务需要 idle 条件，退避策略应依赖系统对周期任务的调度合并，而不是 WorkManager 层面的重试退避。 [已验证: AndroidX 源码, platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/WorkRequest.java]
 

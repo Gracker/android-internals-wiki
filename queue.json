@@ -1,17 +1,18 @@
 {
-  "generated_at": "2026-06-15T02:00:00+08:00",
+  "generated_at": "2026-06-17T02:00:00+08:00",
   "freshness_check": {
-    "check_date": "2026-06-15",
+    "check_date": "2026-06-17",
     "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
-    "scope": "src/ 全量 406 篇含 last_verified 元数据章节",
+    "scope": "src/ 全量 392 篇含 last_verified 元数据章节",
     "android_version_cap": "Android 17 / API 37（不包含 Android 18/API 38+）",
-    "outdated_total": 9,
+    "outdated_total": 7,
     "high_risk": 1,
-    "medium_risk": 1,
-    "low_risk": 7,
+    "medium_risk": 6,
+    "low_risk": 0,
     "files_over_90_days": 0,
     "boundary_violations": 0,
-    "files_with_api37_coverage": 264
+    "files_with_api37_coverage": 247,
+    "files_ending_at_api36": 145
   },
   "task6_review": {
     "sections_reviewed": [
@@ -60,7 +61,7 @@
     "2.3",
     "2.6"
   ],
-  "notes": "本轮（2026-06-15）巡检：发现 6.4 存储相关的版本演进逾期 62 天（version_evolution 阈值 30 天），已加入 queue priority 90。4.6 内存相关的版本演进已在 queue（priority 90）处理中。Android 17/API 37 边界严格遵守，无 Android 18/API 38+ 越界内容。",
+  "notes": "本轮（2026-06-17）巡检：发现 6.4 存储相关的版本演进逾期 64 天（version_evolution 阈值 30 天），已在 queue 中（pending from 2026-06-15, priority 90）。新增 2.14 图形 API 演进逾期 22 天（version_evolution 阈值 30 天），加入 queue priority 70。Android 17/API 37 边界严格遵守，无 Android 18/API 38+ 越界内容。",
   "queue": [
     {
       "section": "16.5",
@@ -124,12 +125,32 @@
         {
           "type": "版本演进",
           "location": "6.4 存储相关的版本演进",
-          "detail": "last_verified 2026-04-14，逾期 62 天（version_evolution 阈值 30 天）。文件已包含 API 37 标记但需要补全 Android 17 稳定版具体特性（Scoped Storage Final、Photo Picker 强制化、F2FS inline encryption 改进）。",
+          "detail": "last_verified 2026-04-14，逾期 64 天（version_evolution 阈值 30 天）。文件已包含 API 37 标记但需要补全 Android 17 稳定版具体特性（Scoped Storage Final、Photo Picker 强制化、F2FS inline encryption 改进）。",
           "suggestion": "检查并补全 Android 17 稳定版存储相关特性"
         }
       ],
       "added_by": "task3-freshness-check",
       "added_at": "2026-06-15T02:00:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.14",
+      "section_title": "图形 API 演进",
+      "priority": 70,
+      "reason": "[Freshness Check 2026-06-17] version_evolution 章节逾期 22 天（阈值 30 天），需补充 Android 17 稳定版 Vulkan/AGSL/图形驱动变更",
+      "material_paths": [
+        "metadata/freshness-log.json"
+      ],
+      "review_issues": [
+        {
+          "type": "版本演进",
+          "location": "2.14 图形 API 演进",
+          "detail": "last_verified 2026-04-26，逾期 22 天（version_evolution 阈值 30 天）。文件已包含 API 37 标记但需要补全 Android 17 稳定版具体图形 API 变更（Vulkan 1.4、AGSL RuntimeColorFilter/Xfermode、OpenCL 弃用进展）。",
+          "suggestion": "检查并补全 Android 17 稳定版图形 API 相关特性"
+        }
+      ],
+      "added_by": "task3-freshness-check",
+      "added_at": "2026-06-17T02:00:00+08:00",
       "status": "pending"
     }
   ]

@@ -66,6 +66,7 @@ task2b_state: 'fixed'
 task2b_result: fixed-lite
 pipeline_stage: ready-to-publish
 last_task2b_lite_at: '2026-06-07'
+status: finalized
 review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 | 2026-06-07 Task9 04: deep-review pass-tech-review。P0/P1 0；Android 17 官方版本差异补充已闭合，AOSP 源码锚点保持 android-16.0.0_r4/更低，自动晋升 finalized。
   轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)；2026-05-01
   task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。 | 2026-05-09 Task6 02:08：revisiting

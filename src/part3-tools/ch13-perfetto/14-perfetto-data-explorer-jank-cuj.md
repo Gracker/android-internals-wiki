@@ -57,6 +57,8 @@ p2: 0
 task9_reviewed_at: "2026-05-28T17:29:00+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-05-28"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-17
 ---
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 
@@ -89,10 +91,7 @@ v54 删除 `slice.stack_id` 和 `slice.parent_stack_id`，把相关能力迁移�
 ### 🔸 Collapsed Stack / Firefox Profiler 格式导入
 v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON 导入。它适合迁移历史 profile 资产，但这类格式通常缺少 Android trace 的 FrameTimeline、Binder 和调度上下文。
 
-## 补充：系统 CUJ 与第三方 App 适用范围边界（源码验证）
-
-**来源**：Perfetto DataGrid 与 Jank CUJ 标准库 · 源码调研（2026-05-18）  
-**验证状态**：一手源码验证完成（部分细节待进一步确认）
+## 系统 CUJ 与第三方 App 适用范围边界
 
 ### 关键发现
 
@@ -140,12 +139,9 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 | AndroidX JankStats 1.0.0 | API 16+ 可用；API 24+ 依赖 FrameMetrics，API 31+ 计时数据更准 |
 | Android 13+ | InteractionJankMonitor 稳定化 |
 
-### 第三方 App CUJ 分析的三条执行路径（补充验证）
+### 第三方 App CUJ 分析的三条执行路径
 
-**来源**：Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证 · 源码调研（2026-05-22）  
-**验证状态**：一手源码验证完成（部分细节待进一步确认）
-
-前次调研已厘清 `android.cujs.base` 默认仅覆盖系统进程的边界。本补充提供三条**可直接执行**的路径，适用于第三方 App 做 CUJ 分析：
+`android.cujs.base` 默认仅覆盖系统进程。以下三条路径适用于第三方 App 做 CUJ 分析：
 
 #### 路径一：AndroidX JankStats（API 16+ 可用，API 24/31 后计时更准）
 
@@ -223,11 +219,7 @@ Choreographer#doFrame()
 **版本备注**：sched_ext 调度器可能影响 CUJ 帧时间判断（线程调度延迟 → 帧耗时），此方向有待进一步验证。
 
 
-<!-- AIW-源码调研-2026-06-15 -->
-### 补充：android.cujs.base 进程名过滤两层结构 + FrameTracker/CUJ 协作链（源码验证）
-
-**来源**：Perfetto DataGrid 与 Jank CUJ 标准库 · 二次深挖（2026-06-15）  
-**验证状态**：一手源码验证完成（10 个 SQL 文件 + JankTracker.cpp/.h）
+### android.cujs.base 进程名过滤两层结构与协作链
 
 #### 进程名过滤是两层（不是一层）
 
@@ -508,7 +500,6 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 
 ## 节点式数据流补注：DataExplorer（节点图编辑器）
 
-<!-- AIW-源码调研-2026-06-13 -->
 
 > **纠正**：上一节原写「节点式数据流不属于 v54 release notes 描述的功能」，该表述与 v54.0 源码不符。
 > Perfetto 节点图编辑器在 v54.0 早已落地，**只是 plugin id 是 `dev.perfetto.ExplorePage` 而非 `dev.perfetto.DataExplorer`**。
@@ -575,11 +566,7 @@ v54.0 已有 `index.ts` + `explore_page.ts` + 完整的 `query_builder/` 子目�
 
 [已验证: google/perfetto v54.0 `ui/src/plugins/dev.perfetto.ExplorePage/` + google/perfetto v55.0 `ui/src/plugins/dev.perfetto.DataExplorer/`, 2026-06-13]
 
-### 补充：节点图编辑器最佳实践（源码调研反哺，2026-06-13）
-
-**来源**：Perfetto Data Explorer 节点式可视化分析工具深度实践 · 源码调研（2026-06-13）
-
-**验证状态**：一手源码验证完成
+### 节点图编辑器最佳实践
 
 围绕 `QueryExecutionService` 的两阶段执行模型，整理出三个可落地最佳实践：
 
@@ -600,12 +587,6 @@ v54.0 已有 `index.ts` + `explore_page.ts` + 完整的 `query_builder/` 子目�
 - 注入时间：2026-05-23
 - 价值：解决了第三方 App 如何使用 Perfetto CUJ 分析的实际工程问题，提供了可直接使用的三种方案和代码示例
 
-### Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md
-- 类型：DeepResearch 调研结果
-- 摘要：验证 Perfetto v54 android.cujs.base SQL 模块的 process.name 过滤逻辑（仅 com.android.*/com.google.android.*），确认第三方 App CUJ 不自动进入 android_jank_cuj 表。给出三条替代路径：AndroidX JankStats（API 16+，API 24+ 计时数据更可靠，API 31+ 精度更高）、自定义 atrace marker（Trace.beginSection）、FrameTimeline direct join。梳理 FrameTracker 数据流从 Choreographer→ViewRootImpl→JankTracker→SF FrameTimeline→Perfetto。
-- 注入时间：2026-05-23
-- 价值：源码级分析，包含 AOSP 路径交叉验证和版本边界澄清，可作为章节内容的补充参考材料
 
 ### Perfetto DataGrid 与 Jank CUJ 标准库 v54 · 进程过滤与 FrameTracker Join 深挖
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-perfetto-jank-cuj-v54-process-filter-and-frametracker-join.md
