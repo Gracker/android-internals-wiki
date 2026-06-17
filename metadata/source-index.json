@@ -3249,6 +3249,136 @@
       "chapter": "ch26",
       "processed_at": "2026-06-17T06:13:45.643980",
       "action": "queue"
+    },
+    {
+      "path": "https://juejin.cn/post/7604757482005053503",
+      "title": "10万人都在用的 top10 skills，我帮你试了",
+      "summary": "详细介绍了当前最热门的Claude Code Skills，包括开发工具、营销技能、文档处理等，分析了这些工具的实际应用场景、安装方法和使用效果。",
+      "section": "ch12-apk-network",
+      "target_file": null,
+      "processed_at": "2026-06-18T05:34:36",
+      "type": "daily-info"
+    },
+    {
+      "path": "https://juejin.cn/post/7601077290682286132",
+      "title": "火爆全网的Skills，看这一篇就够了！",
+      "summary": "详细介绍了当前最热门的Claude Code Skills，包括开发工具、营销技能、文档处理等，分析了这些工具的实际应用场景、安装方法和使用效果。",
+      "section": "ch12-apk-network",
+      "target_file": null,
+      "processed_at": "2026-06-18T05:34:36",
+      "type": "daily-info"
+    },
+    {
+      "path": "https://juejin.cn/post/7589903499599347766",
+      "title": "聊聊2026年Android开发会是什么样",
+      "summary": "文章系统分析了2026年Android开发的多个关键趋势，包括AI集成、跨平台框架演进、鸿OS生态扩展、Android桌面端发展等，为开发者提供全面的技术路线指引。",
+      "section": "ch12-apk-network",
+      "target_file": null,
+      "processed_at": "2026-06-18T05:34:36",
+      "type": "daily-info"
+    },
+    {
+      "path": "https://juejin.cn/post/7613230154210852910",
+      "title": "2026 Flutter VS React Native ，同时在 AI 时代 VS Native 开发，你没见过的版本",
+      "summary": "从性能、成本、维护等多个维度对比了Flutter和React Native，包含详细的性能测试数据、热更新方案对比、跨平台开发选型建议。",
+      "section": "ch12-apk-network",
+      "target_file": null,
+      "processed_at": "2026-06-18T05:34:36",
+      "type": "daily-info"
+    },
+    {
+      "path": "https://juejin.cn/post/7622696665740558386",
+      "title": "Android 要变天：桌面端这次真的来了！",
+      "summary": "Android 要变天：桌面端这次真的来了！由黄林晴撰写，文章深入探讨了Android开发的最新技术和趋势，对开发者具有重要参考价值。",
+      "section": "ch12-apk-network",
+      "target_file": null,
+      "processed_at": "2026-06-18T05:34:36",
+      "type": "daily-info"
+    },
+    {
+      "path": "DeepResearch/2026-06-18-jobscheduler-source-verification.md",
+      "score": 17,
+      "chapter": "ch04",
+      "timestamp": "2026-06-18T05:49:42.141375",
+      "scored_at": "2026-06-18T05:49:42.186533"
+    },
+    {
+      "path": "DeepResearch/2026-06-17-android15-fgs-timeout-data-sync-media-processing.md",
+      "score": 18,
+      "chapter": "ch04",
+      "timestamp": "2026-06-18T05:49:42.141382",
+      "scored_at": "2026-06-18T05:49:42.186542"
+    },
+    {
+      "path": "DeepResearch/2026-06-17-android17-deliqueue-messagequeue-source-verification.md",
+      "score": 17,
+      "chapter": "ch04",
+      "timestamp": "2026-06-18T05:49:42.141384",
+      "scored_at": "2026-06-18T05:49:42.186544"
+    },
+    {
+      "path": "DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md",
+      "score": 19,
+      "chapter": "ch04",
+      "timestamp": "2026-06-18T05:49:42.141385",
+      "scored_at": "2026-06-18T05:49:42.186546"
+    },
+    {
+      "path": "DeepResearch/2026-06-17-crash-file-persistence-dropbox-aosp-verification.md",
+      "score": 19,
+      "chapter": "ch04",
+      "timestamp": "2026-06-18T05:49:42.141386",
+      "scored_at": "2026-06-18T05:49:42.186547"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md",
+      "title": "Radio 状态机功耗原理完整分析（HAL→RIL→TelephonyManager 三层源码）",
+      "summary": "Android 17 蜂窝 Radio 状态机由 HAL(radio/1.0/types.hal) 三位枚举(OFF/UNAVAILABLE/ON) → RIL → TelephonyManager 三层构成。HAL 不区分 IDLE/TRANSFER，modem 内部连接态对外不可见。下行控制 RIL.setRadioPower() 按 HAL 版本走不同 proxy，4G/5G 紧急呼叫扫描 30 秒自动回退是隐性电流峰值源。",
+      "section": "ch11",
+      "target_file": "src/part2-performance/ch11-power/04-case-studies.md",
+      "processed_at": "2026-06-18T06:13:16.933321",
+      "type": "DeepResearch 调研结果",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-jobscheduler-source-verification.md",
+      "title": "JobScheduler 源码常量来源修正（APEX 路径迁移 + OP_TIMEOUT_MILLIS 核验）",
+      "summary": "Android 16+ JobScheduler 从 services/core 迁移至 APEX 模块架构，路径变更为 apex/jobscheduler/service/java/。OP_TIMEOUT_MILLIS 从 Android 10 起始终位于 JobServiceContext.java，Android 12+ 乘以 HW_TIMEOUT_MULTIPLIER。ch11 04-case-studies 的 source_repos 需更新 APEX 路径。",
+      "section": "ch11",
+      "target_file": "src/part2-performance/ch11-power/04-case-studies.md",
+      "processed_at": "2026-06-18T06:13:16.933321",
+      "type": "DeepResearch 调研结果",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md",
+      "title": "Battery Saver 与定位功耗策略协同机制（5 种 LocationMode × Thermal 叠加模型）",
+      "summary": "Battery Saver 通过 BatterySaverPolicy 的 5 种 locationMode（NO_CHANGE/GPS_DISABLED_WHEN_SCREEN_OFF/ALL_DISABLED/FOREGROUND_ONLY/THROTTLE_REQUESTS）控制定位，热节流走独立通道不直接修改定位模式。两层是叠加关系：低电关定位+过热调频率。LocationProviderManager.isActive() 在三条件同时满足时过滤后台 GPS 请求。",
+      "section": "ch11",
+      "target_file": "src/part2-performance/ch11-power/04-case-studies.md",
+      "processed_at": "2026-06-18T06:13:16.933321",
+      "type": "DeepResearch 调研结果",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-android17-deliqueue-messagequeue-source-verification.md",
+      "title": "Android 17 MessageQueue DeliQueue 真实实现核验（ConcurrentSkipListSet 而非 min-heap）",
+      "summary": "AOSP android-16.0.0_r1 三种 MessageQueue 实现并列（Combined/Concurrent/Legacy），CMQ 使用 ConcurrentSkipListSet<MessageNode>（跳表/红黑树）而非 min-heap，L3 review 的纠正本身也有误。Treiber stack 4 种节点类型，gating 由 aconfig flag + system UID 白名单控制，App targetSdk 37 不自动获得 CMQ。",
+      "section": "ch01",
+      "target_file": "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md",
+      "processed_at": "2026-06-18T06:13:16.933321",
+      "type": "DeepResearch 调研结果",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-crash-file-persistence-dropbox-aosp-verification.md",
+      "title": "Crash 文件持久化 DropBox 协议核验（best-effort + tombstone + system_server 2s join）",
+      "summary": "DropBoxManagerService 持久化采用 best-effort：写入不 fsync、不 fsync 父目录，init() 直接删除 .tmp 不恢复，system_server 崩溃有 2s join 保护但普通 App 不保证。超配额用 0 字节 IS_EMPTY tombstone 保留信号。与 daily-topics 描述的 completed/tmp 协议有重大偏差。",
+      "section": "20.7",
+      "target_file": "src/part5-app/ch20-stability/07-exception-architecture.md",
+      "processed_at": "2026-06-18T06:13:16.933321",
+      "type": "DeepResearch 调研结果",
+      "action": "queued"
     }
   ]
 }
