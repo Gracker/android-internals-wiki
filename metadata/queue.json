@@ -1482,7 +1482,8 @@
     "added_by": "task2a-gap-mining",
     "added_at": "2026-06-18T01:10:44.690432+08:00",
     "created": "2026-06-18",
-    "status": "pending"
+    "status": "processed",
+    "processed_at": "2026-06-18T04:04:00+08:00"
   },
   {
     "section": "25.22",
