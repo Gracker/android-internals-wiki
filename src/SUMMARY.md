@@ -126,6 +126,7 @@ tags:
   - [5.17 Android 17 FGS 类型声明与后台执行性能边界](part1-fundamentals/ch05-cpu-power/17-fgs-type-declaration-background-performance.md)
   - [5.18 CPU Cache 友好代码与数据布局优化](part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md)
   - [5.19 端侧 AI 调度与 ADPF 智能优化](part1-fundamentals/ch05-cpu-power/5.19-ondevice-ai-adpf-intelligent-scheduling.md)
+  - [5.20 GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争](part1-fundamentals/ch05-cpu-power/20-genai-app-integration-performance.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
@@ -175,6 +176,7 @@ tags:
   - [8.11 Native 库加载与动态链接性能](part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md)
   - [8.12 Keystore/KeyMint 调用延迟与登录链路性能](part2-performance/ch08-responsiveness/12-keystore-keymint-latency.md)
   - [8.13 BiometricPrompt 与 Credential Manager 登录链路性能](part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md)
+  - [8.14 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染](part2-performance/ch08-responsiveness/14-push-notification-pipeline-performance.md)
 
 - [第 9 章：ANR](part2-performance/ch09-anr/README.md)
   - [9.1 ANR 设计思想](part2-performance/ch09-anr/01-anr-design.md)
@@ -240,6 +242,7 @@ tags:
   - [12.4 Android 网络安全与 TLS 性能优化](part2-performance/ch12-apk-network/04-network-security-tls-performance.md)
   - [12.5 ConnectivityService 与网络状态监听性能](part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md)
   - [12.6 netd 与 DnsResolver：DNS 解析性能和故障诊断](part2-performance/ch12-apk-network/06-netd-dnsresolver-network-diagnostics.md)
+  - [12.7 Privacy Sandbox API 性能影响：Topics、Protected Audiences 与 Attribution Reporting](part2-performance/ch12-apk-network/07-privacy-sandbox-performance.md)
 
 ---
 
@@ -418,7 +421,6 @@ tags:
   - [22.21 Jetpack Compose 动画性能深度优化](part5-app/ch22-rendering-practice/21-compose-animation-performance.md)
   - [22.22 Compose LazyList/LazyGrid 滑动性能深度优化](part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md)
   - [22.23 Navigation Compose 性能优化](part5-app/ch22-rendering-practice/22.23-navigation-compose-performance.md)
-  - [22.23 Navigation Compose 性能优化](part5-app/ch22-rendering-practice/22.23-navigation-compose-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
@@ -452,9 +454,6 @@ tags:
   - [24.16 Android 17 流媒体网络预算与本地网络权限适配](part5-app/ch24-io-network/16-android17-streaming-local-network.md)
   - [24.17 Room 3.0 与 SQLiteDriver 迁移性能边界](part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md)
   - [24.18 Android 17 ECH 与 domainEncryption 网络适配](part5-app/ch24-io-network/18-android17-ech-domain-encryption.md)
-  - [24.17 Room 3.0 与 SQLiteDriver 迁移性能边界](part5-app/ch24-io-network/17-room3-sqlitedriver-kmp-performance.md)
-  - [24.18 CameraX 3.0 性能边界与实战](part5-app/ch24-io-network/24.18-camerax-3.0-performance-boundary.md)
-  - [24.18 CameraX 3.0 性能边界与实战](part5-app/ch24-io-network/24.18-camerax-3.0-performance-boundary.md)
   - [24.19 BluetoothSocket read 断开语义与长连接治理](part5-app/ch24-io-network/19-bluetoothsocket-read-disconnect.md)
 
 - [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
@@ -479,6 +478,7 @@ tags:
   - [25.19 Android Vitals 过度 WakeLock 指标与治理](part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md)
   - [25.20 Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理](part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md)
   - [25.21 Android Auto/Car OS 性能优化](part4-system/ch17-oem/25.21-android-auto-car-os-performance.md)
+  - [25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理](part5-app/ch25-power-size/22-location-services-performance.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
