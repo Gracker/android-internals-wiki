@@ -1316,5 +1316,45 @@
     "remaining_issues": [],
     "remaining_issues_closed_by": "task9-auto-fix",
     "remaining_issues_closed_at": "2026-06-16T22:33:40+08:00"
+  },
+  {
+    "section": "14.3",
+    "section_title": "内存分析工具",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 14→17 内存分析工具栈源码全景 — heapprofd 中央守护进程启动链路、MallocDispatch hook 表、SIGRTMIN+4/+6 双路信号触发、Poisson 采样算法、dumpsys meminfo VMA 分类、procstats 六档快照持久化",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-17T06:13:45.643980",
+    "status": "pending"
+  },
+  {
+    "section": "26.6",
+    "section_title": "A/B Test 与性能回归防护",
+    "priority": 82,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-ab-test-regression-applicationexitinfo-source.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "ApplicationExitInfo / getHistoricalProcessExitReasons 数据底座 — AppExitInfoTracker 环形缓冲(每包16条LRU)+持久化+重启恢复、getTraceInputStream 双路径(ANR trace gzip vs tombstone protobuf)、A16 preventExitInfoUpdate 守卫、LMKD RSS 字段写入",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-17T06:13:45.643980",
+    "status": "pending"
   }
 ]
