@@ -25,10 +25,10 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, collection, reporting, android17]
 related_chapters: ["26.1", "26.2", "26.4", "15.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: "2026-06-18T01:11:00+08:00"
+last_task6_at: "2026-06-18T07:07:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-18"
 task9_state: pending
@@ -72,7 +72,7 @@ last_task6_audit: "2026-06-18"
 
 ## 内存监控与采集
 
-Android 平台提供的进程内存监控通过两个核心 API 完成：`Debug.MemoryInfo`（进程级内存详情）和 `ActivityManager.getProcessMemoryInfo()`（批量获取多进程）。
+Android 平台提供的进程内存监控通过两个 API 完成：`Debug.MemoryInfo`（进程级内存详情）和 `ActivityManager.getProcessMemoryInfo()`（批量获取多进程）。
 
 ### Debug.MemoryInfo：进程内存分类统计
 
@@ -114,7 +114,7 @@ String gcTime  = Debug.getRuntimeStat("art.gc.gc-time");
 
 ### 内存泄漏检测：LeakCanary
 
-标准 Android SDK 未提供系统级内存泄漏 API。当前工程实践中，内存泄漏检测由第三方库 LeakCanary 承担。核心流程：
+标准 Android SDK 未提供系统级内存泄漏 API。当前工程实践中，内存泄漏检测由第三方库 LeakCanary 承担。检测流程：
 
 ```java
 // LeakCanary 2.x 初始化（Application.onCreate 中一行接入）
@@ -208,7 +208,7 @@ if (isPowerSave && batteryLevel < 30) {
 }
 ```
 
-采样策略的核心思路：低电量时减少采样，高电量时增加采样。但崩溃、ANR 等核心质量指标始终需要 100% 采样。Android 17 的 StatsD 框架在 daemon 层实现了电池感知降采样，框架根据 `DeviceConfig.NAMESPACE_STATSD_JAVA` 下发的配置自动调节各 Atom 的采样率，App 侧只需通过 `StatsManager` 声明指标优先级。[已验证: PowerManager + BatteryManager 官方文档, API 37]
+采样策略的基本思路：低电量时减少采样，高电量时增加采样。但崩溃、ANR 等核心质量指标始终需要 100% 采样。Android 17 的 StatsD 框架在 daemon 层实现了电池感知降采样，框架根据 `DeviceConfig.NAMESPACE_STATSD_JAVA` 下发的配置自动调节各 Atom 的采样率，App 侧只需通过 `StatsManager` 声明指标优先级。[已验证: PowerManager + BatteryManager 官方文档, API 37]
 
 App 侧检测电池状态变化——`ACTION_BATTERY_CHANGED` 广播和 `ACTION_POWER_SAVE_MODE_CHANGED`（API 21+）——即可在回调中动态调整自身采集策略，与 StatsD 框架层面的降采样形成双层保护。
 
@@ -307,7 +307,7 @@ Android 17 的 `NetworkCallback` 可以监听网络状态变化，自动调整�
 
 ## 总结
 
-Android 14-17 的性能监控体系逐步演进：Android 14 的 StatsD 基础框架将性能事件接入了电池分析体系，Android 15 建立了退出事件与电池状态的归因链路，Android 16 增加了实时诊断拉取能力，Android 17 通过 StatsD 框架在 daemon 层实现了电池感知的自动降采样。内存采集方面，`Debug.MemoryInfo` + `ActivityManager.getProcessMemoryInfo()` 提供进程级分类统计，`getRuntimeStat()` 补充 ART GC 行为观测；内存泄漏检测依赖 LeakCanary 等第三方库完成。新监控体系的核心不是"采得多"，而是"在正确的电量模式下采到正确的指标"——P0 始终全量，P1 跟随电量动态调整，P2 按需开启。
+Android 14-17 的性能监控体系逐步演进：Android 14 的 StatsD 基础框架将性能事件接入了电池分析体系，Android 15 建立了退出事件与电池状态的归因链路，Android 16 增加了实时诊断拉取能力，Android 17 通过 StatsD 框架在 daemon 层实现了电池感知的自动降采样。内存采集方面，`Debug.MemoryInfo` + `ActivityManager.getProcessMemoryInfo()` 提供进程级分类统计，`getRuntimeStat()` 补充 ART GC 行为观测；内存泄漏检测依赖 LeakCanary 等第三方库完成。新监控体系不是"采得多"，而是"在正确的电量模式下采到正确的指标"——P0 始终全量，P1 跟随电量动态调整，P2 按需开启。
 
 ## 延伸阅读
 
@@ -315,5 +315,5 @@ Android 14-17 的性能监控体系逐步演进：Android 14 的 StatsD 基础�
 - [Firebase Performance Monitoring](https://firebase.google.com/docs/perf-mon) — Firebase 性能监控接入指南，含采样率配置
 - [ApplicationExitInfo API](https://developer.android.com/reference/android/app/ApplicationExitInfo) — Android 11+ 退出原因归因 API，Android 15 起集成到 StatsD
 - [Battery Historian 源码（AOSP）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:tools/battery-historian/) — Battery Historian 离线分析工具的 Android 17 分支源码
-- [LeakCanary](https://square.github.io/leakcanary/) — Square 开源的内存泄漏检测库，Android 内存问题的核心诊断工具
+- [LeakCanary](https://square.github.io/leakcanary/) — Square 开源的内存泄漏检测库，Android 内存问题的主要诊断工具
 - [Debug.MemoryInfo](https://developer.android.com/reference/android/os/Debug.MemoryInfo) — 进程内存使用明细 API 官方文档
