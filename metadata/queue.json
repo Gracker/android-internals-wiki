@@ -1231,7 +1231,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-16T06:12:01.599869",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-17T14:52:54.997405+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加 BLASTBufferQueue 回调链与 canUnblockUiThread 源码验证引用至参考资料"
   },
   {
     "section": "16.4",
@@ -1340,7 +1343,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-17T06:13:45.643980",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-17T14:52:54.997405+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加 Android 14→17 内存分析工具栈源码全景引用至参考资料"
   },
   {
     "section": "26.6",
@@ -1360,6 +1366,9 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-17T06:13:45.643980",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-17T14:52:54.997405+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "素材注入: 已追加 ApplicationExitInfo 数据底座引用至参考资料"
   }
 ]
