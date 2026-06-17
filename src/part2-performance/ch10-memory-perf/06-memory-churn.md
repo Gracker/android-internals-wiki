@@ -2,7 +2,7 @@
 title: "内存抖动与频繁 GC"
 chapter: "10.6"
 section: "10.6"
-status: "finalized"
+status: "ready-for-review"
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
@@ -26,13 +26,13 @@ word_count: "~7500"
 reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T05:05:00+08:00"
 last_task6_audit: "2026-05-26"
 last_task6_review_log: "logs/review/2026-05-08-05-review.md"
-pipeline_stage: "ready-to-publish"
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: "openclaw-task9"
@@ -40,10 +40,11 @@ last_task9_at: "2026-05-08T05:27:25+08:00"
 last_task9_audit: "2026-06-06"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task2b_state: "fixed"
-task2b_result: "fixed"
+task2b_result: "fixed-lite"
 task2b_rework_date: "2026-05-08"
 task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
 last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
+last_task2b_lite_at: 2026-06-18
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-08-05-deep-review.md"
 deepseek_cn_review_state: done
@@ -103,11 +104,11 @@ Android 15 引入的 Continuous Memory Compacting (CMC) GC 是 userfaultfd 在�
 CMC GC 的工作流程包括：
 
 1. **GC 线程通过 `mremap(MREMAP_DONTUNMAP)` 将 from-space 页面迁移到 to-space**
-   - `MREMAP_DONTUNMAP` 在 android-14.0.0_r1 中已定义（`mark_compact.cc` 行 65-81）
+   - `MREMAP_DONTUNMAP` 在 android-14.0.0_r1 中已定义（`mark_compact.cc` 中 `MovingPages` 相关实现）
    - 迁移后的旧地址仍有效，但读取时触发 SIGBUS
 
 2. **mutator 访问旧地址时触发 SIGBUS（启用 UFFD_FEATURE_SIGBUS 时）**
-   - SIGBUS handler 在 `mark_compact.cc` 行 3017-3084 实现
+   - SIGBUS handler 在 `mark_compact.cc` 的 `SigbusHandler()` 中实现
    - handler 查 `moving_pages_status_` 原子状态机，决定处理方式
 
 3. **SIGBUS handler 处理页面请求**
@@ -137,10 +138,10 @@ CMC GC 的工作流程包括：
 
 #### 源码关键位置
 
-- **信号处理**: `mark_compact.cc` 行 3017-3084 — `SigbusHandler()` 
-- **页面状态机**: 行 ~3170 — `PageState` 枚举与原子操作
-- **并发处理**: 行 ~3100 — `ConcurrentlyProcessMovingPage` 模板函数
-- **内核特性检查**: 行 131-142 — KernelSupportsUffd()
+- **信号处理**: `mark_compact.cc` — `SigbusHandler()`
+- **页面状态机**: `mark_compact.cc` — `PageState` 枚举与原子操作
+- **并发处理**: `mark_compact.cc` — `ConcurrentlyProcessMovingPage` 模板函数
+- **内核特性检查**: `mark_compact.cc` — `KernelSupportsUffd()`
 
 #### 核心优化点
 
