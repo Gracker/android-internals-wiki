@@ -2,12 +2,12 @@
 title: "低内存对系统性能的影响"
 chapter: "10.4"
 section: "10.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-04"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-06-17"
+last_verified_against: "AOSP android-17.0.0_r1: system/memory/lmkd/lmkd.cpp, frameworks/native/cmds/atrace/atrace.cpp, frameworks/base/core/java/android/content/ComponentCallbacks2.java, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java, ART GC collector sources"
 confidence: medium-high
 sources:
   - type: blog
@@ -28,27 +28,33 @@ polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
 task2b_result: fixed
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External Review 问题单）"
 repaired_date: "2026-05-05"
 repaired_by: "openclaw-task2b"
 review_round: 8
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-24T15:30:04+08:00"
+last_task9_at: "2026-06-17T12:31:45+08:00"
 review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。 | 2026-05-05 Task2B 09:56：P0 mm_events源码锚点已修正为system/memory/lmkd/mm_events.c+libmemevents/；官方链接改为AOSP仓库直链；mem.mm_events SQL视图标注待验证。P1 Generational CMC全面默认已收窄为AOSP main可见+runtime flag条件化。 | 2026-05-05 Task6 12:26：revisiting 写作复审，清理第一人称、拟人化标题和少量填充词；L1/L2 通过，queue 无 pending，等待 Task9 复审。 | 2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 1；mm_events 源码路径与 Android 12+ 版本线仍错误，lmkd PSI some/full 触发语义需修正，Trace 配置中的 lmkd atrace category 需校正。 | 2026-05-05 Task2B 20:34：P0 mm_events源码路径已修正(lmkd.cpp+libmeminfo/libmemevents)；版本线收窄至Android 15+；PSI触发语义改为三档(LOW/MEDIUM→PSI some, CRITICAL→PSI full) | 2026-05-05 Task9 21:00：needs-rework。P0 1（Trace 配置 atrace_categories:\\\\\"lmkd\\\\\" 不在 AOSP atrace category 中，需改 lowmemorykiller ftrace/memory 口径）；P1 0。 | 2026-05-05 Task6 23:26：revisiting 写作复审，微调开头连锁反应表述；L1/L2 通过，queue 无 pending，转 Task9 复审。 | 2026-05-06 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；关闭上一轮 mm_events/Generational CMC/Trace category pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 0；低内存 Trace 配置中的 lmk 捕获口径错误：AOSP `memory` category 不启用 lowmemorykiller，`lowmemorykiller/lowmemorykiller` 事件名不可核，应改为 `memreclaim` category 或 legacy `lowmemorykiller/lowmemory_kill`，并标注现代 lmkd ATrace/ProcessKilled 边界。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 lmk Trace 配置已从 memory/错误事件名修正为 memreclaim + legacy lowmemorykiller/lowmemory_kill，并补现代 lmkd ATrace/ProcessKilled 边界；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T23:26:00+08:00"
 last_task6_audit: "2026-06-13"
 last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
-last_task9_audit: "2026-05-24"
-last_task9_audit_log: "logs/deep-review/2026-05-24-09-audit.md"
+last_task9_audit: "2026-06-17"
+last_task9_audit_at: "2026-06-17T12:31:45+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-17-12-audit.md"
+last_task9_autofix_at: "2026-06-17"
+task9_review_notes: "2026-06-17 Task9 idle audit AUTO-FIX: Android 17 lmkd PSI monitor / kill trace version boundary fixed; AOSP source links pinned to android-17.0.0_r1; returned to Task6."
+updated_date: "2026-06-17"
+updated_by: openclaw-task9
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
+task2b_state: fixed
 ---
 
 # 低内存对系统性能的影响
@@ -128,7 +134,7 @@ I/O 阻塞进一步蔓延。等待 I/O 完成的进程持有各种内核锁（mu
 
 PSI 是 Linux 内核从 4.20 开始提供的一种机制，它统计的是：因为内存（或 CPU、I/O）资源不足，有多少任务被迫等待，以及等待了多久。PSI 提供两种级别的统计：`some`（至少有一个任务在等待）和 `full`（所有非空闲任务都在等待）。lmkd 按压力等级注册不同的 PSI 监听器：LOW 和 MEDIUM 压力监听 `PSI_SOME`（部分阻塞），CRITICAL 压力监听 `PSI_FULL`（完全阻塞）。收到信号后，lmkd 还会结合 thrashing、swap 余量、file cache 水平和 `oom_score_adj` 等条件做综合判断，不是只看 PSI 就直接杀进程。
 
-lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置三档压力阈值：`psi_partial_stall_ms`（部分阻塞阈值，服务 LOW/MEDIUM 级别，监听 PSI some）和 `psi_complete_stall_ms`（完全阻塞阈值，服务 CRITICAL 级别，监听 PSI full）。当内核 PSI 机制检测到内存阻塞时间超过阈值时，会通过 epoll 通知 lmkd。从 Android 10 开始，PSI 已取代早期的 `vmpressure` 机制成为 lmkd 的默认信号来源（`use_psi` 属性默认为 true）。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
+lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置三档压力阈值：`psi_partial_stall_ms`（部分阻塞阈值，服务 LOW/MEDIUM 级别，监听 PSI some）和 `psi_complete_stall_ms`（完全阻塞阈值，服务 CRITICAL 级别，监听 PSI full）。当内核 PSI 机制检测到内存阻塞时间超过阈值时，会通过 epoll 通知 lmkd。Android 10 起的现代 lmkd 路径以 PSI 为默认信号来源。AOSP android-11 到 android-16 的 lmkd 中还能看到 `ro.lmk.use_psi` / `use_psi` 默认开启；Android 17 的 `lmkd.cpp` 已不再保留这个开关，启动时直接初始化 PSI monitors。分析 Android 17 时不要再把 `use_psi` 当成可核验开关。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
 
 ### lmkd 的杀进程策略
 
@@ -229,7 +235,7 @@ PSI 数据在 Perfetto 的 `sys_stats` 数据源中可以找到。PSI 为每种�
 
 如果 1-3 出现但还没有 5-6，说明系统在低内存但还在努力维持。如果 5-6 也出现了，说明系统已经无法仅靠内存回收来维持运转了。
 
-可复现的低内存 Trace 可以从下面这份配置起步。它覆盖 vmscan、sched、process stats、PSI、ART GC 和 lmk 事件；设备内核裁剪不同时，录制前先用 `adb shell ls /sys/kernel/tracing/events/vmscan` 和 `adb shell atrace --list_categories` 确认可用项。注意 `lmkd` 不是 atrace 稳定 category（不在 `frameworks/native/cmds/atrace/atrace.cpp` 列表中）。现代 Android 推荐优先依赖 lmkd ATrace slice / ProcessKilled / logcat/statsd 监控杀进程事件（`LMKD_TRACE_KILLS` 与设备实现相关）。如果需要 atrace category 辅助内存回收相关 trace，应使用 `atrace_categories: "memreclaim"` 而不是 `"memory"`——AOSP atrace 的 `memory` category 不启用 `lowmemorykiller` ftrace 事件。如果需要 legacy ftrace 事件，应使用 `lowmemorykiller/lowmemory_kill` 而不是 `lowmemorykiller/lowmemorykiller`。
+可复现的低内存 Trace 可以从下面这份配置起步。它覆盖 vmscan、sched、process stats、PSI、ART GC 和 lmk 事件；设备内核裁剪不同时，录制前先用 `adb shell ls /sys/kernel/tracing/events/vmscan` 和 `adb shell atrace --list_categories` 确认可用项。注意 `lmkd` 不是 atrace 稳定 category（不在 `frameworks/native/cmds/atrace/atrace.cpp` 列表中）。Android 14-16 的 lmkd ATrace kill slice 受 `LMKD_TRACE_KILLS` 编译条件影响；Android 17 的 `lmkd.cpp` 已改为 kill 后调用 `ATRACE_INSTANT_FOR_TRACK(LOG_TAG, desc)`。现代 Android 推荐优先依赖 lmkd ATrace instant / `ProcessKilled` / logcat/statsd 监控杀进程事件。如果需要 atrace category 辅助内存回收相关 trace，应使用 `atrace_categories: "memreclaim"` 而不是 `"memory"`——AOSP atrace 的 `memory` category 不启用 `lowmemorykiller` ftrace 事件。如果需要 legacy ftrace 事件，应使用 `lowmemorykiller/lowmemory_kill` 而不是 `lowmemorykiller/lowmemorykiller`。
 
 ```protobuf
 buffers { size_kb: 32768 fill_policy: RING_BUFFER }
@@ -307,7 +313,7 @@ Android 使用 cgroup（Control Group）来对进程组施加资源限制，其�
 
 Android 10+ 引入了 cgroup 抽象层和 Task Profiles 机制。厂商可以在 `cgroups.json` 中定义 cgroup 配置，在 `task_profiles.json` 中把不同类型的任务映射到对应的 cgroup。这让系统可以按进程优先级做记账、隔离和资源约束：前台路径尽量宽松，后台进程更容易在压力下被收缩。
 
-版本演进上：早期 Android 主要依赖内核态 `lowmemorykiller` 驱动。Android 9 起，如果设备没有检测到 in-kernel LMK，且内核满足 memcg 等前提，可以启用 userspace `lmkd`。Android 10 起，内核提供 PSI monitor 时，lmkd 默认优先用 PSI 做内存压力检测；缺少 PSI 时再回退到 `vmpressure` 或 `minfree` 路径。
+版本演进上：早期 Android 主要依赖内核态 `lowmemorykiller` 驱动。Android 9 起，如果设备没有检测到 in-kernel LMK，且内核满足 memcg 等前提，可以启用 userspace `lmkd`。Android 10-16 的 lmkd 仍保留 PSI / vmpressure / minfree 的兼容分支；Android 17 的 AOSP `lmkd.cpp` 已直接初始化 PSI monitors，`use_minfree_levels` 只影响 kill strategy，不再表示回到旧的 `ro.lmk.use_psi=false` 监控路径。
 
 cgroup 和 PSI 不是同一层。cgroup 负责进程分组、内存记账和 task profile 约束；PSI 负责把 stall 时间暴露给 lmkd，帮助它决定什么时候该杀后台进程。userspace lmkd、memcg 依赖和 PSI 模式各自独立演进，排查时不要把三者混成一个版本开关。[已验证: 官方文档, source.android.com]
 
@@ -388,10 +394,10 @@ Android Go Edition 是面向低 RAM 设备的一组系统配置和产品策略�
 
 ## 参考资料
 
-- [lmkd 源码](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/heads/main/lmkd.cpp) — Android Low Memory Killer Daemon（MemEventListener 与 mm_events 触发逻辑在此文件中）
-- [libmemevents 源码](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/heads/main/libmemevents/) — BPF memevents 程序（`system/memory/libmeminfo/libmemevents/`）
+- [lmkd 源码](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp) — Android Low Memory Killer Daemon（MemEventListener 与 mm_events 触发逻辑在此文件中）
+- [libmemevents 源码](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libmemevents/) — BPF memevents 程序（`system/memory/libmeminfo/libmemevents/`）
 - [Linux Kernel PSI 文档](https://docs.kernel.org/accounting/psi.html) — Pressure Stall Information 机制说明
-- [lmkd 源码](https://android.googlesource.com/platform/system/memory/lmkd/) — Android Low Memory Killer Daemon
+- [lmkd 源码](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/) — Android Low Memory Killer Daemon
 - [Perfetto 文档 - Memory Tracking](https://perfetto.dev/docs/data-sources/memory) — Perfetto 内存追踪数据源
 - [kswapd 详解 — OPPO 内核工匠](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487168) — kswapd 工作流程深度解析
 - [Linux 内存变低会发生什么 — 腾讯技术工程](https://mp.weixin.qq.com/s?__biz=MjM5ODYwMjI2MA==&mid=2649785631) — 低内存的连锁反应分析
