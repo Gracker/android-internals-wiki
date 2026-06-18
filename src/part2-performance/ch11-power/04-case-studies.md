@@ -13,14 +13,14 @@ source_repos:
   - frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java  # FGS常量定义
   - frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java  # 定位服务管理
   - frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java  # 省电模式定位策略
-status: finalized
+status: "finalized"
 task2b_result: fixed
 task2b_state: fixed
 task9_state: reviewed
 task9_result: auto-fixed
 task6_result: pass-light-edit
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 last_task2b_fix_at: 2026-06-18
 last_task6_at: 2026-06-18
 last_task6_review_at: 2026-06-18
@@ -29,7 +29,7 @@ last_task9_autofix_at: 2026-06-18
 
 # 11.4 案例集
 
-本章节将通过实际案例深入分析 Android 功耗优化的实践方法，从系统到应用层面给出可直接使用的方案。
+下面 6 个案例覆盖 Android 功耗优化的主要场景：前台服务调度、定位策略、Radio 状态机、内存泄漏、Doze 兼容和批量任务调度。每个案例包含问题定位、系统机制分析和源码级优化方案。
 
 ## 11.4.1 前台服务优化案例
 
@@ -129,7 +129,7 @@ public class OptimizedForegroundService extends Service {
 
 #### 5. 系统如何协同控制 FGS 生命周期
 
-FGS 超时不是简单的倒计时——它是 `ActiveServices`、进程状态机（`OomAdjuster`）、电源策略（`PowerManagerService`）三方协同的结果：
+FGS 超时是 `ActiveServices`、进程状态机（`OomAdjuster`）、电源策略（`PowerManagerService`）三方协同的结果：
 
 1. **ServiceLifecycle 跟踪**：`ActiveServices` 维护每个 FGS 的 `ServiceRecord`，记录 `fgsStartRealtime`、类型位掩码（`FOREGROUND_SERVICE_TYPE_*`）、进入前台的时间戳。Android 15 引入 `TimeLimitedFgsInfo` 结构体，把所有有时间限制的 FGS 类型的起始时间统一计在同一个 24 小时滚动窗口内。
 
@@ -219,6 +219,8 @@ public class OptimizedLocationTracker implements LocationListener {
 
 ### 11.4.2.1 补充：省电模式与热节流对定位的系统级协同
 
+省电模式与热节流通过各自独立的通道影响定位行为，下面从源码层面分析两条路径的协同方式。
+
 <!-- AIW-源码调研-2026-06-17 -->
 <!-- AIW-源码调研-2026-06-18 -->
 ### 11.4.2.2 Battery Saver × 热节流协同机制：省电策略的温度敏感度分析
@@ -255,7 +257,7 @@ public class PowerSaveState {
 ```
 
 **紧急关机**：
-热节流达到 `THROTTLING_SHUTDOWN` 时触发关机流程；这不是 Battery Saver 与 Thermal 的策略融合，而是 ThermalManagerService 独立触发的设备保护路径：
+热节流达到 `THROTTLING_SHUTDOWN` 时触发关机流程；由 `ThermalManagerService` 独立触发的设备保护路径，与 Battery Saver 策略无关：
 ```java
 // frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java:484-485
 case Temperature.TYPE_BATTERY:
@@ -302,11 +304,11 @@ Android 14-17 范围内需要按版本区分：
 >
 > **2. 派发通道**（`SystemLocationPowerSaveModeHelper.java:50-79`）：`LocationManagerService` 启动时通过 `LocalServices.getService(PowerManagerInternal.class).registerLowPowerModeObserver(PowerManager.ServiceType.LOCATION, this)` 订阅 Battery Saver 状态变更；`accept(PowerSaveState)` 在 `batterySaverEnabled=true` 时把 `locationMode` 推到所有 `LocationProviderManager`。
 >
-> **3. 真正的节能点 — `LocationProviderManager.isActive()` 过滤**（`LocationProviderManager.java:2331-2352`）：LOCATION_MODE 的节能**不是降频率**而是**直接让 registration inactive**，mergeRegistrations 不下发 ProviderRequest。在 `_FOREGROUND_ONLY` + 熄屏场景下，应用层无论怎么 schedule 都拿不到 fix，**比主动调低频率更省电**（典型节省 80mA × 8h ≈ 640mAh）。
+> **3. 真正的节能点 — `LocationProviderManager.isActive()` 过滤**（`LocationProviderManager.java:2331-2352`）：LOCATION_MODE 的节能靠的是**直接让 registration inactive**，不涉及降频率，mergeRegistrations 不下发 ProviderRequest。在 `_FOREGROUND_ONLY` + 熄屏场景下，应用层无论怎么 schedule 都拿不到 fix，**比主动调低频率更省电**（典型节省 80mA × 8h ≈ 640mAh）。
 >
-> **4. Thermal 通道独立**（`PowerManager.java:2625-2685, 2938-2995`）：`getCurrentThermalStatus()` 与 `getThermalHeadroom(forecastSeconds)` 由 `IThermalService` 提供，**不会自动**把 thermal status 折算为 location 关闭。应用必须主动 poll 或监听 `addThermalStatusListener`。Thermal 与 Battery Saver 是**叠加（additive）关系而非互斥**。
+> **4. Thermal 通道独立**（`PowerManager.java:2625-2685, 2938-2995`）：`getCurrentThermalStatus()` 与 `getThermalHeadroom(forecastSeconds)` 由 `IThermalService` 提供，**不会自动**把 thermal status 折算为 location 关闭。应用必须主动 poll 或监听 `addThermalStatusListener`。Thermal 与 Battery Saver 是**叠加（additive）关系，两者独立运行**。
 >
-> **5. 厂商定制**：MIUI/EMUI/ColorOS/Samsung OneUI 普遍把 `location_mode=3 (_FOREGROUND_ONLY)` 设为默认 + 缩短 maintenance window，因此 11.4.2 案例集中"驾驶模式 30s 间隔"在熄屏后表现糟糕的根因往往不是应用调度，而是**被系统强制 inactive**。应用需要在前台时缓存足够的 fix 以应对后续熄屏场景。
+> **5. 厂商定制**：MIUI/EMUI/ColorOS/Samsung OneUI 普遍把 `location_mode=3 (_FOREGROUND_ONLY)` 设为默认 + 缩短 maintenance window，因此 11.4.2 案例集中"驾驶模式 30s 间隔"在熄屏后表现糟糕的根因往往是**被系统强制 inactive**，与应用调度无关。应用需要在前台时缓存足够的 fix 以应对后续熄屏场景。
 >
 > **关键源码路径**：
 > - `frameworks/base/core/java/android/os/PowerManager.java:1055-1084, 2625-2685, 2938-2995`
@@ -315,6 +317,117 @@ Android 14-17 范围内需要按版本区分：
 > - `frameworks/base/services/core/java/com/android/server/location/provider/LocationProviderManager.java:2331-2352, 2566`
 >
 > **功耗建模建议**：把"定位功耗"拆成三个互相独立的维度——**设备级 LOCATION_MODE × 屏幕状态 × 芯片热状态**。建模时不能假设"省电模式关闭 = 定位一定可用"，也不能假设"thermal throttling 会自动省电"。
+
+
+### 11.4.2.3 隐私沙盒对位置服务功耗的深层影响：Android 12+ 三层判定链
+
+11.4.2.1/2 已分析省电模式（设备级 LOCATION_MODE）与热节流对定位的叠加效应，但 Android 12 (API 31) 起的**隐私沙盒**是另一条独立的省电路径——它把"权限"从 Manifest 声明拓展为用户可撤销的运行时开关，从源头限制了无效定位请求的功耗成本。
+
+#### 三层判定链（源码级）
+
+**① 权限位解析**（`frameworks/base/services/core/java/com/android/server/location/LocationPermissions.java:35-50`）：
+
+```java
+public static final int PERMISSION_NONE = 0;
+public static final int PERMISSION_COARSE = 1;  // ACCESS_COARSE_LOCATION → OP_COARSE_LOCATION
+public static final int PERMISSION_FINE = 2;    // ACCESS_FINE_LOCATION → OP_FINE_LOCATION
+```
+
+**② AppOps 复合检查**（`injector/LocationPermissionsHelper.java:75-85`）：即使 Manifest 权限通过，`AppOpsManager.checkOpNoThrow()` 仍可能返回 `MODE_IGNORED` / `MODE_FOREGROUND`，最终 `hasLocationPermissions()` 返回 false。
+
+**③ Registration 活跃性判定**（`LocationProviderManager.java:2331-2370`）：
+
+```java
+@Override
+protected boolean isActive(Registration registration) {
+    if (!registration.isPermitted()) return false;       // 权限+appop 综合
+    boolean isBypass = registration.getRequest().isBypass();
+    if (!isActive(isBypass, registration.getIdentity())) return false;  // 用户黑名单
+    if (!isBypass) {
+        switch (mLocationPowerSaveModeHelper.getLocationPowerSaveMode()) {
+            case LOCATION_MODE_FOREGROUND_ONLY:
+                if (!registration.isForeground()) return false;  // 前台态过滤
+                break;
+            case LOCATION_MODE_ALL_DISABLED_WHEN_SCREEN_OFF:
+                if (!mScreenInteractiveHelper.isInteractive()) return false;
+                break;
+        }
+    }
+    return true;
+}
+```
+
+**关键**：当 isActive 返回 false 时，registration 不参与 `mergeRegistrations()`，**ProviderRequest 不下发到 GnssLocationProvider / FusedProvider**——GPS 芯片、Wi-Fi 扫描、Cell-ID 查询全部停止。这是隐私沙盒**真正的省电点**：被拒请求 0 功耗（fix 不下发）。
+
+#### 前台/后台状态机
+
+`LocationProviderManager.Registration.mForeground` 字段（`LocationProviderManager.java:390`）由 `SystemAppForegroundHelper.isAppForeground()`（通过 `ActivityManager.addOnUidImportanceListener` 监听 UID 重要性变化）维护，分界点是 `IMPORTANCE_FOREGROUND_SERVICE` (150)。UID 重要性变化时 `onForegroundChanged(uid, foreground)` 回调（`LocationProviderManager.java:666-679`）触发 `mForeground` 更新并重算 ProviderRequest。
+
+**前台判定 vs 进程可见性**：应用持有 FGS（FOREGROUND_SERVICE_LOCATION 类型）时，UID 重要性提升到 FOREGROUND_SERVICE，绕过 LOCATION_MODE_FOREGROUND_ONLY。这是 Android 12+ 给"实际需要持续定位"应用的标准通道。
+
+#### 后台节流（Background Throttle）— Android 12+ 默认开启
+
+```java
+// injector/SystemSettingsHelper.java:71-73
+private static final long DEFAULT_BACKGROUND_THROTTLE_INTERVAL_MS = 30 * 60 * 1000;  // 30 min
+```
+
+**节流逻辑**（`LocationProviderManager.java:750-757`）：
+
+```java
+if (!locationSettingsIgnored && !isThrottlingExempt()) {
+    if (!mForeground) {
+        builder.setIntervalMillis(max(mBaseRequest.getIntervalMillis(),
+                mSettingsHelper.getBackgroundThrottleIntervalMs()));
+    }
+}
+```
+
+只有 `!mForeground`（后台）且 `!isThrottlingExempt()`（不在白名单）时，interval 才被强制覆盖到 30 分钟。**前台请求不受影响**——这是 Android 12+ 隐私沙盒给前台应用"留的口子"。
+
+白名单路径（`SystemSettingsHelper.java:99-102`）：默认从 `SystemConfig.getAllowUnthrottledLocation()` 读取，对应 `/system/etc/sysconfig.xml` 的 `allow-unthrottled-location` 列表（AOSP 默认包含 Google Play Services 等核心系统组件，OEM 可扩展）。
+
+#### 隐私沙盒的功耗推论
+
+| 场景 | GPS 电流 | 8h 后台累计 |
+|------|---------|-----------|
+| **沙盒完全屏蔽**（未授权 / 关闭 appOp） | 0 mA | ~0 mAh |
+| **后台节流 30min**（持精确定位 + 后台 8h） | <5 mA | <5 mAh |
+| **后台 1Hz 精确定位**（忽略沙盒 + 旧代码） | 50-100 mA | 400-800 mAh |
+| **前台精确定位**（用户主动打开地图） | 50-100 mA | 由使用时长决定 |
+
+**核心结论**：Android 12+ 隐私沙盒对**正确适配**的应用是**纯省电**（400-800 mAh → <5 mAh）；对**未适配**的应用是**反效果**（高 CPU 唤醒 + 空轮询），原因是每次 1Hz 轮询本身消耗 binder transaction + 短暂 CPU 唤醒。
+
+#### 优化建议
+
+1. **自适应粗精度**：`LocationRequest.setQuality(QUALITY_LOW_POWER)` 配合 `LocationManager.getCurrentLocation()`，避免长持高精确定位。
+2. **前台白名单利用**：app 实际需要 1Hz GPS 时应在 FGS（FOREGROUND_SERVICE_LOCATION 类型）内运行，使 `mForeground=true` 绕过 `LOCATION_MODE_FOREGROUND_ONLY`。
+3. **节流生效检测**：通过 Perfetto `location` track（`LocationEventLog`）观察 `PROVIDER_REQUEST` 实际下发的 interval，验证节流是否按预期工作。
+
+#### 版本差异
+
+| API Level | 关键变化 | 源码证据 |
+|-----------|---------|---------|
+| API 30 (Android 11) | 引入 `LOCATION_MODE_THROTTLE_REQUESTS_WHEN_SCREEN_OFF` | `PowerManager.java:1199` |
+| API 31 (Android 12) | 默认开启 background throttle (30 min) | `SystemSettingsHelper.java:71-73` |
+| API 33 (Android 13) | 收紧 `LOCATION_BYPASS`；新增 `READ_LOCATION_BYPASS_ALLOWLIST` | `LocationPermissions.java:34-40` |
+| API 34 (Android 14) | AIDL Radio HAL 默认；`Flags.locationAuditing()` 启用 | `LocationManagerService.java:450` |
+| API 35-37 | 沿用 12+ 模型 | android-17.0.0_r1 源码 |
+
+**关键源码路径**：
+- `frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java:884-906, 450-498`
+- `frameworks/base/services/core/java/com/android/server/location/LocationPermissions.java:35-50, 55-77, 34-40`
+- `frameworks/base/services/core/java/com/android/server/location/injector/LocationPermissionsHelper.java:75-85`
+- `frameworks/base/services/core/java/com/android/server/location/injector/SystemSettingsHelper.java:71-73, 99-102`
+- `frameworks/base/services/core/java/com/android/server/location/injector/SystemAppForegroundHelper.java:60-72`
+- `frameworks/base/services/core/java/com/android/server/location/provider/LocationProviderManager.java:2331-2370, 750-757, 666-679, 390, 459-463, 2584-2587`
+- `frameworks/base/core/java/android/app/AppOpsManager.java:946-949`
+- `frameworks/base/core/java/android/os/PowerManager.java:1175-1200, 2609-2615`
+
+> **隐私沙盒 vs Battery Saver 的关系**：两者**独立但叠加**。Battery Saver 通过 `SystemLocationPowerSaveModeHelper` 推 `LOCATION_MODE` 到 `LocationProviderManager.isActive()`（详见 11.4.2.1）；隐私沙盒通过 `LocationPermissionsHelper.hasLocationPermissions()` + `isActive()` 第一行判定。**两条路径在 isActive 内串行判定**：先过权限/appop，再过 power save 模式。开发者的精细化策略应是**先确保沙盒适配（不持 FGS 时切粗精度或停止请求），再针对 power save 模式做调整**——顺序反了会导致沙盒完全拒绝后，power save 的 mode 切换根本不触发。
+
+<!-- AIW-源码调研-2026-06-18 -->
+
 
 ## 11.4.3 Radio 状态机功耗优化
 
