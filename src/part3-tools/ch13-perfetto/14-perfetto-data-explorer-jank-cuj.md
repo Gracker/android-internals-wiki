@@ -33,21 +33,21 @@ gap_source: "研究素材/官方文档"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-19T02:06:00+08:00"
+last_task6_at: "2026-06-19T05:08:51+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-18T14:33:37+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: revisiting
-task9_state: "reviewed"
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: "pending"
+pipeline_stage: task9_pending
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-06-19-02-review.md"
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（ViewRootImpl 行号/JankTracker/JankInfo/Cuj 锚点/CUJ counter 进程过滤/weighted jank 口径）回流后写作层复审通过；L1 小修 1 处（禁用词「矩阵」→「表」）；无 L3/L4 回炉项，送 Task9 终审。"
+task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix 回流后写作层复审通过；L1 小修 2 处（禁用词「落地」×2）；无 L3/L4 回炉项，送 Task9 终审。"
 last_task9_autofix_at: "2026-06-18"
 last_task9_review_log: "logs/deep-review/2026-06-18-14-audit.md"
 task9_review_notes: "2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
@@ -503,7 +503,7 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 
 
 > **纠正**：上一节原写「节点式数据流不属于 v54 release notes 描述的功能」，该表述与 v54.0 源码不符。
-> Perfetto 节点图编辑器在 v54.0 早已落地，**只是 plugin id 是 `dev.perfetto.ExplorePage` 而非 `dev.perfetto.DataExplorer`**。
+> Perfetto 节点图编辑器在 v54.0 已经实现，**只是 plugin id 是 `dev.perfetto.ExplorePage` 而非 `dev.perfetto.DataExplorer`**。
 > 本补注以 v54.0 / v55.0 源码对比给出准确边界。
 
 ### 1. 命名变迁
@@ -569,7 +569,7 @@ v54.0 已有 `index.ts` + `explore_page.ts` + 完整的 `query_builder/` 子目�
 
 ### 节点图编辑器最佳实践
 
-围绕 `QueryExecutionService` 的两阶段执行模型，整理出三个可落地最佳实践：
+围绕 `QueryExecutionService` 的两阶段执行模型，整理出三条可直接使用的最佳实践：
 
 1. **SqlSourceNode 关闭 autoExecute**：v55.0 源码 `query_execution_service.ts` 注释明确把 `SqlSourceNode` 列为默认 `autoExecute=false` 的节点之一。理由：用户写 SQL 时频繁重构查询，自动跑会浪费 IO；让用户点 Ctrl+Enter 显式触发。
 2. **多输入节点用 LEFT JOIN + 物化中间表**：`IntervalIntersectNode` / `UnionNode` / `FilterDuringNode` 这三个多输入节点同样默认手动执行，结果集可能很大。Debug 阶段应把中间节点单独物化（点击节点 → 切到 Result 视图看物化表的行数）确认输入符合预期后再下游 join。

@@ -36,10 +36,10 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:45+08:00"
@@ -48,7 +48,7 @@ last_task9_at: "2026-06-19T02:26:22+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-19"
 task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；FrameTimeline 证据字段写成 present_offset/refresh_period/hwc_layer_name 不符合 Perfetto SQL 表，需改为 actual_frame_timeline_slice/expected_frame_timeline_slice 的 jank_type、present_type、layer_name，并用 dumpsys 或 layer snapshot 复核 HWC DEVICE/CLIENT。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；DeliQueue android-17-beta3 源码 tag 与 HWC3 Composition/Overlay plane 数据支撑仅作为 P2 留给后续小修；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 idle-audit: auto-fixed。P0 1：补齐 Android 17 HWC3 Composition.aidl 的 DISPLAY_DECORATION=6，并修正源码索引中 HWC3 Composition 枚举归属；无 P1/P2，回到 Task6 复审。"
-last_task6_at: "2026-05-24T20:14:35+08:00"
+last_task6_at: "2026-06-19T05:08:51+08:00"
 last_task6_audit: "2026-05-24"
 task6_reviewed_date: "2026-05-24"
 review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"
@@ -58,7 +58,7 @@ last_task2b_at: 2026-05-24T19:29:26+08:00
 reviewed_at: "2026-05-24T20:14:35+08:00"
 review_round: 2
 last_task6_review_log: "logs/review/2026-05-24-20-review.md"
-task6_review_notes: "2026-05-24 task6 revisiting review: L1/L2 小修 7 处；无新增 Task6 回炉项；Task9 audit 已由 Task2B 修复，等待 Task9 复审。"
+task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（HWC3 Composition.aidl DISPLAY_DECORATION=6）回流后写作层复审通过；L1/L2 无需小修；无 L3/L4 回炉项，送 Task9 终审。"
 last_task9_review_log: "logs/deep-review/2026-06-19-02-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
