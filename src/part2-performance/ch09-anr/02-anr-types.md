@@ -64,8 +64,8 @@ last_task6_at: "2026-05-06T08:15:00+08:00"
 last_task6_audit: 2026-06-12
 auto_promoted: true
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理重复 DeepResearch 注入块与引用元信息；Task9 复审已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-05-24"
-last_task9_audit_log: "logs/deep-review/2026-05-24-04-audit-2.md"
+last_task9_audit: "2026-06-18"
+last_task9_audit_log: "logs/deep-review/2026-06-18-18-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-24-07-deep-review.md"
 p0: 0
 p1: 0
