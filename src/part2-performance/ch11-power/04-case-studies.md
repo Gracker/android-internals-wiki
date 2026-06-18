@@ -4,7 +4,7 @@ weight: 4
 applicable_versions: [Android 14.0 (API 34) - Android 17.0 (API 37)]
 source_repos: 
   - frameworks/base/core/java/android/os/PowerManager.java
-  - frameworks/base/apex/power/service/java/com/android/server/power/PowerManagerService.java  # Android 16+ APEX路径
+  - frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java  # Android 17 仍在 services/core 路径
   - frameworks/base/core/java/android/os/BatteryStats.java
   - frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java  # Android 16+ APEX路径
   - frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java  # Android 16+ APEX路径
@@ -13,15 +13,18 @@ source_repos:
   - frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java  # FGS常量定义
   - frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java  # 定位服务管理
   - frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java  # 省电模式定位策略
-status: ready-for-review
+status: finalized
 task2b_result: fixed
 task2b_state: fixed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task6_result: pass-light-edit
 task6_state: revisiting
 pipeline_stage: task6_pending
 last_task2b_fix_at: 2026-06-18
+last_task6_at: 2026-06-18
+last_task6_review_at: 2026-06-18
+last_task9_autofix_at: 2026-06-18
 ---
 
 # 11.4 案例集
@@ -66,7 +69,7 @@ public class ForegroundService extends Service {
 
 1. **系统级调度 > 应用自调度**：轮询循环跑在应用进程内，系统不知道这次唤醒是"必须立即执行"还是"可以等到下一次系统唤醒窗口再一起做"。JobScheduler 把任务声明交给系统——系统知道当前电量、Doze 状态、网络可用性，可以把多个应用的延时任务合并到同一个唤醒窗口执行。JobScheduler 内部使用 `JobSchedulerService` 维护全局 Job 队列，`JobServiceContext` 管理每个 Job 的绑定生命周期，`JobConcurrencyManager` 根据 `maxActiveJobs` 和 `maxRunningJobs` 控制并发——这些是应用自己实现不了的调度能力。
 
-2. **白名单与省电策略集成**：`JobScheduler.setRequiresBatteryNotLow(true)`、`setRequiresDeviceIdle(true)` 等约束直接挂接到 `BatterySaverPolicy` 和 `DeviceIdleController`。Doze 模式下，即使应用有 PARTIAL_WAKE_LOCK，系统也会把非白名单 Job 推迟到 maintenance window 执行。轮询代码不具备这些保护——它会在电池低于 5% 时仍然跑，会被 Doze 强制暂停。
+2. **白名单与省电策略集成**：`JobInfo.Builder#setRequiresBatteryNotLow(true)`、`JobInfo.Builder#setRequiresDeviceIdle(true)` 等约束会交给 `JobSchedulerService` 与系统电源/空闲策略共同判定。Doze 模式下，即使应用有 PARTIAL_WAKE_LOCK，系统也会把非白名单 Job 推迟到 maintenance window 执行。轮询代码不具备这些保护——它会在电池低于 5% 时仍然跑，会被 Doze 强制暂停。
 
 3. **避免无效唤醒**：`JobInfo.NETWORK_TYPE_ANY` 告诉系统"有网再叫我"，JobScheduler 通过 `ConnectivityService` 监听网络变化——有网时才下发 Job，没网不唤醒。轮询方案每 5 秒检查一次消息，哪怕设备在飞行模式下也会试图建立连接、分配 socket、触发 DNS 解析——全是废功耗。
 
@@ -118,7 +121,7 @@ public class OptimizedForegroundService extends Service {
 <!-- AIW-源码调研-2026-06-17 -->
 > **FGS 超时机制版本差异（Android 14 → 17）** — 来自源码调研 `2026-06-17-android15-fgs-timeout-data-sync-media-processing.md`。
 > 
-> - **Android 14 (API 34)** 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`（1 << 11），硬性 3 分钟超时（`DEFAULT_SHORT_FGS_TIMEOUT_DURATION = 3 * 60_000`），三阶段：3min `Service.onTimeout(int)` → 5s 降级 procstate（`OOM_ADJ_REASON_SHORT_FGS_TIMEOUT`）→ 10s ANR（消息号 76/77/78）。源码：`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `unscheduleShortFgsTimeoutLocked` / `onShortFgsTimeout`。
+> - **Android 14 (API 34)** 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`（1 << 11），硬性 3 分钟超时（`DEFAULT_SHORT_FGS_TIMEOUT_DURATION = 3 * 60_000`），三阶段：3min `Service.onTimeout(int)` → 5s 降级 procstate（`OOM_ADJ_REASON_SHORT_FGS_TIMEOUT`）→ 10s ANR（消息号 76/77/78）。源码：`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `maybeUpdateShortFgsTrackingLocked` / `onShortFgsTimeout` / `onShortFgsProcstateTimeout` / `onShortFgsAnrTimeout`。
 > - **Android 15 (API 35)** 新增 **`TimeLimitedFgsInfo` 时间限制 FGS 框架**：`FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING`（1 << 13）+ `FOREGROUND_SERVICE_TYPE_DATA_SYNC` 都被限制为 **6 小时**（`DEFAULT_MEDIA_PROCESSING_FGS_TIMEOUT_DURATION` / `DEFAULT_DATA_SYNC_FGS_TIMEOUT_DURATION` 均 = `6 * 60 * 60_000`）。新增 `SERVICE_FGS_TIMEOUT_MSG` (84) / `SERVICE_FGS_CRASH_TIMEOUT_MSG` (85)。源码：`ActiveServices.java:3730-3780` 的 `getTimeLimitedFgsType` / `getTimeLimitForFgsType` / `getNextFgsStopTime`。
 > - **24 小时滚动窗口**：`firstFgsStartRealtime < now - 24h` 或 app 进入 `PROCESS_STATE_TOP` 时调用 `TimeLimitedFgsInfo.reset()` 清零预算（`ActiveServices.java:2420-2460`）。TOP 状态可"充值"时间预算。
 > - **Android 16+ (API 36+)** 强化崩溃行为：`Flags.enableFgsTimeoutCrashBehavior` 开启后，6h 未停的 FGS 通过 `crashApplicationWithTypeWithExtras` 抛 `ForegroundServiceDidNotStopInTimeException` 直接 crash；新增 `Service.onTimeout(int, int)`（`introduceNewServiceOntimeoutCallback` flag）统一 short-FGS 与 time-limited 回调。
@@ -130,13 +133,13 @@ FGS 超时不是简单的倒计时——它是 `ActiveServices`、进程状态�
 
 1. **ServiceLifecycle 跟踪**：`ActiveServices` 维护每个 FGS 的 `ServiceRecord`，记录 `fgsStartRealtime`、类型位掩码（`FOREGROUND_SERVICE_TYPE_*`）、进入前台的时间戳。Android 15 引入 `TimeLimitedFgsInfo` 结构体，把所有有时间限制的 FGS 类型的起始时间统一计在同一个 24 小时滚动窗口内。
 
-2. **进程状态联动**：Short-FGS（3 分钟）到期后，`ActiveServices.unscheduleShortFgsTimeoutLocked()` 调用 `OomAdjuster` 把进程的 `procState` 从 `FOREGROUND_SERVICE` 降级到 `IMPORTANT_FOREGROUND` 以下——进程优先级下降，内存回收压力上升，CPU 时间片减少。接着 5 秒宽限期后触发 ANR。
+2. **进程状态联动**：Short-FGS（3 分钟）到期后，`ActiveServices.onShortFgsTimeout()` 先通过 `scheduleTimeoutService()` 回调 `Service.onTimeout(int)`，再投递 `SERVICE_SHORT_FGS_PROCSTATE_TIMEOUT_MSG` 并启动 ANR 计时。`onShortFgsProcstateTimeout()` 才调用 `updateOomAdjLocked(..., OOM_ADJ_REASON_SHORT_FGS_TIMEOUT)` 做进程状态降级；`unscheduleShortFgsTimeoutLocked()` 只负责取消这些消息。
 
 3. **电源策略叠加**：即使 FGS 在 6h 配额内，如果设备进入 Doze，`DeviceIdleController` 仍然会暂停非白名单应用的 Job 和 Alarm。对 FGS 本身，Doze 不直接杀——但 FGS 持有的 WakeLock 会被 `PowerManagerService` 计入统计，Doze maintenance window 之外的应用网络访问被推迟。
 
 4. **24h 预算重置**：`TimeLimitedFgsInfo.reset()` 在两个条件下触发——(a) 距 `firstFgsStartRealtime` 超过 24 小时；(b) 应用进入 `PROCESS_STATE_TOP`（用户回到前台）。用户每次打开应用都在"充值"后台时间——实际可用时间 = min(6h, 24h 内的剩余配额)。
 
-Android 17 新增 `ProfilingManager`，可以按应用进程维度记录 FGS 超时事件并触发 trace 采集——这是性能工程师追踪"6h 后 crash 导致的冷启动功耗尖峰"的关键工具，仅 Android 17（API 37）可用。
+Android 15（API 35）引入 `ProfilingManager` 的应用主动 profiling；Android 16（API 36）增加 system-triggered profiling（cold start、ANR 等触发器）。Android 17 范围内没有可直接证明“FGS 超时事件自动触发 trace”的公开 API，追踪 FGS 6h 后 crash 应结合 `ForegroundServiceDidNotStopInTimeException`、ANR/crash 日志、Perfetto 手动/触发式采样和应用埋点。
 
 ## 11.4.2 定位服务功耗优化
 
@@ -171,13 +174,7 @@ public class LocationTracker implements LocationListener {
 // 优化后的定位服务
 public class OptimizedLocationTracker implements LocationListener {
     private LocationManager locationManager;
-    private PowerManager.WakeLock wakeLock;
-    
     public void startTracking() {
-        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK, "LocationTracker");
-        
         // 根据场景选择不同的定位策略
         if (isDriving()) {
             startDrivingModeTracking();
@@ -223,6 +220,75 @@ public class OptimizedLocationTracker implements LocationListener {
 ### 11.4.2.1 补充：省电模式与热节流对定位的系统级协同
 
 <!-- AIW-源码调研-2026-06-17 -->
+<!-- AIW-源码调研-2026-06-18 -->
+### 11.4.2.2 Battery Saver × 热节流协同机制：省电策略的温度敏感度分析
+
+通过Android 17.0.0_r1源码深度分析，揭示Battery Saver与热节流机制的独立协同架构：
+
+#### 核心架构特性
+
+**独立性**：
+- Battery Saver由`BatterySaverController`管理，通过`PowerManagerService.registerLowPowerModeObserver()`通知
+- 热节流由`ThermalManagerService`管理，通过`IThermalStatusListener`独立通知
+- 两个系统在框架层**无融合逻辑**，职责分离明确
+
+**状态级别映射**：
+- Battery Saver：`POLICY_LEVEL_OFF/ADAPTIVE/FULL` + 5种`LOCATION_MODE`
+- 热节流：`THERMAL_STATUS_NONE/LIGHT/MODERATE/SEVERE/CRITICAL/EMERGENCY/SHUTDOWN`（7个级别）
+
+**叠加效应**：
+应用层可通过同时监听两个状态实现协同，但系统层面需要自行处理状态冲突。例如：
+- Battery Saver开启`LOCATION_MODE_FOREGROUND_ONLY`
+- 热节流达到`THROTTLING_MODERATE`
+- 实际效果：前台定位可用 + CPU降频 = 综合节能
+
+#### 源码级协同机制
+
+**统一状态传递**：
+```java
+// PowerSaveState统一承载两类状态
+public class PowerSaveState {
+    public final boolean batterySaverEnabled;  // Battery Saver状态
+    public final int locationMode;             // 定位控制策略
+    public final int soundTriggerMode;         // 音频控制策略
+}
+```
+
+**紧急关机**：
+热节流达到 `THROTTLING_SHUTDOWN` 时触发关机流程；这不是 Battery Saver 与 Thermal 的策略融合，而是 ThermalManagerService 独立触发的设备保护路径：
+```java
+// frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java:484-485
+case Temperature.TYPE_BATTERY:
+    powerManager.shutdown(false, PowerManager.SHUTDOWN_BATTERY_THERMAL_STATE, false);
+    break;
+```
+
+#### 优化建议
+
+**三维建模**：
+建议功耗建模采用`Battery Saver级别 × 温度级别 × 设备状态`的三维模型，而非简单的二元判断。
+
+**冲突处理**：
+当 Battery Saver 允许定位但 thermal status 已升高时，应用策略应以温度保护优先，主动降级定位精度或频率。
+
+**应用适配**：
+应用层应同时注册两类监听器，动态调整行为：
+```java
+powerManager.addThermalStatusListener(thermalListener);
+registerReceiver(batterySaverReceiver,
+    new IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED));
+```
+
+#### 版本特性
+
+Android 14-17 范围内需要按版本区分：
+- Android 14 已存在 `LOCATION_MODE_THROTTLE_REQUESTS_WHEN_SCREEN_OFF` 与 `BatterySaverController.REASON_DYNAMIC_POWER_SAVINGS_AUTOMATIC_ON`，后者是 framework 内部原因码，不是公开 App API。
+- Android 15 增加 `PowerManager.getThermalHeadroomThresholds()`；`getThermalHeadroom()` 本身在更早版本已存在。
+- Android 17 仍沿用 Battery Saver 与 Thermal 分离模型，本节只使用 android-17.0.0_r1 及以下源码锚点。
+
+---
+
+
 > **系统层定位功耗策略 — Battery Saver × Thermal 协同机制**（来自源码调研 `2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md`）。
 >
 > 11.4.2 上文从应用层给出了定位频率优化方案，但节能的关键在系统层。Android 通过两层 PowerSave 框架叠加控制定位功耗：
@@ -268,7 +334,7 @@ public class OptimizedLocationTracker implements LocationListener {
 | **DCH（Dedicated Channel / Connected）** | 100-200mA | 数据持续传输状态，上下行通道全开 |
 | **PCH（Paging Channel）** | 50-80mA | 省电连接状态（3G/4G），数据间断传输，上行受限 |
 
-> **与 Android HAL 状态的区别**：`frameworks/hardware/interfaces/radio/1.0/types.hal` 定义的 `RadioState` 只有 3 个枚举值——`OFF(0)` / `UNAVAILABLE(1)` / `ON(10)`。这 3 个态描述的是"modem 硬件是否上电可用"，不区分 RRC 层的 IDLE/DCH/PCH。下行由 `RIL.setRadioPower()` 控制，上行通知通过 `RadioIndication.radioStateChanged()` 上报。详细的 HAL→Java 映射和 AIDL 迁移路径见下方"源码级补充"。
+> **与 Android HAL 状态的区别**：`hardware/interfaces/radio/1.0/types.hal` 定义的 `RadioState` 只有 3 个枚举值——`OFF(0)` / `UNAVAILABLE(1)` / `ON(10)`。这 3 个态描述的是"modem 硬件是否上电可用"，不区分 RRC 层的 IDLE/DCH/PCH。下行由 `RIL.setRadioPower()` 控制，上行通知通过 `RadioIndication.radioStateChanged()` 上报。详细的 HAL→Java 映射和 AIDL 迁移路径见下方"源码级补充"。
 
 #### 2. RRC 状态转换开销（modem 内部）
 
@@ -336,7 +402,7 @@ public class NetworkRequestManager {
 - **电量消耗**：网络相关功耗降低 45%
 
 
-#### 5. 源码级补充：Radio 状态机实际架构（AOSP HEAD / 适用于 android-17.0.0_r1 及以下版本）
+#### 5. 源码级补充：Radio 状态机实际架构（android-17.0.0_r1 及以下版本）
 
 > 来源：`DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md`
 
@@ -402,7 +468,7 @@ GsmCdmaPhone / ImsPhone
 **关键功耗路径：紧急呼叫优化扫描**（API 33+, HAL 1.5+）：
 
 ```hal
-// hardware/interfaces/radio/1.6/IRadio.hal:30-80
+// hardware/interfaces/radio/1.6/IRadio.hal:41-70
 oneway setRadioPower_1_6(int32_t serial, bool powerOn, bool forEmergencyCall,
         bool preferredForEmergencyCall);
 
@@ -435,9 +501,9 @@ if (isAidl()) {
 }
 ```
 
-AIDL 路径从 Android 14（API 34）开始成为主流，**Android 17（API 37）设备几乎全部走 AIDL 路径**。HIDL 路径（`IRadio.hal` 1.0-1.6）保留为向下兼容通道，Android 17 不再新增 HIDL Radio HAL 版本。
+Android 14+ 源码同时保留 AIDL 与 HIDL 分派；新实现应优先核对 AIDL `IRadioModem`，HIDL 路径（`IRadio.hal` 1.0-1.6）用于兼容旧 HAL。Android 17 不再新增 HIDL Radio HAL 版本。
 
-> **Android 17 范围内 Radio 相关能力**：AIDL Radio HAL 的 `IRadioModem.setRadioPower()` + `IRadioModem.getRadioCapability()` + `RadioIndication.radioStateChanged()` 已在 android-17.0.0_r1 的 `frameworks/hardware/interfaces/radio/aidl/` 中 stably 定义。Android 17 不包含 Android 18 规划的 `RadioDataConnectionManager` / `CarrierAggregationManager`——这些仅存在于 AOSP main 分支，不得作为正文结论。
+> **Android 17 范围内 Radio 相关能力**：AIDL Radio HAL 的 `IRadioModem.setRadioPower()` + `IRadioModem.getRadioCapability()` + `RadioIndication.radioStateChanged()` 已在 android-17.0.0_r1 的 `hardware/interfaces/radio/aidl/` 中 stably 定义。AOSP main 中未进入 Android 17 的接口不得作为正文结论。
 
 **RadioInterfaceLayer.java 已经被移除**：该类在 2018 年前后被 RIL + Radio*Proxy + RadioIndication 三件套完全替代。任何引用该类的旧资料已过时。当前 Android 17 架构是 **RIL → RadioModemProxy/RadioNetworkProxy/RadioSimProxy → IRadio AIDL → modem chip**。
 
@@ -478,8 +544,8 @@ public class MemoryOptimizedApplication extends Application {
     }
     
     private void setDefaultMemoryCacheSize() {
-        int memoryClass = getResources().getInteger(
-            ActivityManager.LayoutParams.DESCRIPTOR);
+        ActivityManager activityManager = getSystemService(ActivityManager.class);
+        int memoryClass = activityManager.getMemoryClass();
         int cacheSize = memoryClass * 1024 * 1024 / 8; // 使用 1/8 内存作为缓存
         
         ImageLoader.getInstance().init(new ImageLoaderConfiguration.Builder(this)
@@ -503,10 +569,10 @@ public class MemoryOptimizedApplication extends Application {
 ### 分析过程
 
 #### 1. Doze 模式限制
-- **CPU 禁用**：除白名单应用外，CPU 频率受限
-- **网络延迟**：网络访问被推迟
-- **同步暂停**：Sync 适配器暂停工作
-- **Alarm 限制**：Alarm 延长最小间隔
+- **网络暂停**：Doze 期间应用网络访问被挂起，维护窗口内短暂恢复
+- **WakeLock 忽略**：非豁免应用持有的 WakeLock 不再保证执行
+- **同步/Job 推迟**：SyncAdapter、JobScheduler 和基于 JobScheduler 的 WorkManager 任务推迟到维护窗口
+- **Alarm 限制**：普通 `setExact()` / `setWindow()` 推迟到维护窗口；`setAndAllowWhileIdle()` / `setExactAndAllowWhileIdle()` 可穿透 Doze，但同一应用触发频率受限
 
 #### 2. 优化策略
 ```java
@@ -540,9 +606,9 @@ public class DozeAwareService extends Service {
         
         Intent workIntent = new Intent(this, WorkReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, 
-            workIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            workIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         
-        // 使用 setAndAllowWhileIdle 允许在 Doze 模式下执行
+        // 使用 setAndAllowWhileIdle 穿透 Doze；同一应用仍受最小触发间隔限制
         alarmManager.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP,
             triggerTime, pendingIntent);
     }
@@ -551,12 +617,15 @@ public class DozeAwareService extends Service {
         // 获取部分唤醒锁确保工作完成
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK, "DozeAwareService");
-        wakeLock.acquire();
-        
-        // 执行实际工作
-        doActualWork();
-        
-        wakeLock.release();
+        wakeLock.acquire(10 * 60 * 1000L);
+        try {
+            // 执行实际工作
+            doActualWork();
+        } finally {
+            if (wakeLock.isHeld()) {
+                wakeLock.release();
+            }
+        }
     }
 }
 ```
