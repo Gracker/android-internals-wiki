@@ -2,7 +2,7 @@
 title: "Perfetto SDK 与应用内 Trace 数据源"
 chapter: "13.17"
 section: "13.17"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；system backend 依赖设备侧 traced 服务，低版本按设备能力降级"
 last_verified: "2026-06-18"

@@ -32,8 +32,8 @@ reviewed_date: "2026-06-19"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-05-08-04-review.md"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_result: auto-fixed
 task9_state: reviewed
 task2b_result: fixed
