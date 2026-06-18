@@ -33,21 +33,21 @@ gap_source: "研究素材/官方文档"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-19T06:15:23+08:00"
+last_task6_at: "2026-06-19T07:09:24+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-19T06:25:40+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: "revisiting"
-task9_state: "reviewed"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
 last_task2b_lite_at: "2026-05-28"
-last_task6_review_log: "logs/review/2026-06-19-06-review.md"
+last_task6_review_log: "logs/review/2026-06-19-07-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（P1 1：v55 DataExplorer 边界收窄）回流后写作层复审通过；无 L1/L2 问题（上轮禁用词已修复确认），无 L3/L4 回炉项。task9_result=auto-fixed，送 Task9 终审确认。"
+task6_review_notes: "2026-06-19 Task6 revisiting-review (round 3): pass-light-edit。Task9 auto-fix 回流后写作层复审通过；L1 禁用词/高频词/物理动词/元叙述零命中；L2 开头/节奏/结构/读者引导全部通过；outline 6/6 锚点全覆盖；验证标注 10已验证/1待验证(9.1%)；无 L1/L2 问题，无 L3/L4 回炉项。task9_result=auto-fixed，送 Task9 终审确认。"
 last_task9_autofix_at: "2026-06-19"
 last_task9_review_log: "logs/deep-review/2026-06-19-06-deep-review.md"
 task9_review_notes: "2026-06-19 Task9 deep-review AUTO-FIX: P0 2 / P1 0 / P2 0；修正 android-17.0.0_r1 ViewRootImpl traversal 回调源码锚点（TraversalCallback#onVsync）与 JankTracker JankType 判定表（补入 kMissedDeadline / kMissedDeadlineLegacy 边界）；回到 Task6 复审。详见 logs/deep-review/2026-06-19-06-deep-review.md。 | 2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
