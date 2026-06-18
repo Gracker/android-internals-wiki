@@ -27,25 +27,26 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
 last_task6_at: "2026-06-12T08:10:00+08:00"
 task2b_result: fixed
 task2b_state: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 last_task2b_at: "2026-06-12"
 last_task2b_lite_at: "2026-06-12"
 reviewed_date: "2026-06-12"
 reviewed_by: "openclaw-task6"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-12"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-12T07:24:58+08:00"
-task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。 | 2026-05-25 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；版本边界已收窄到 Android 13-16，Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点复核 android-16.0.0_r1，版本边界保持 Android 13-16；Task6 未通过，未自动晋升。"
-last_task9_audit: "2026-05-24"
-last_task9_audit_log: "logs/deep-review/2026-05-24-17-audit.md"
+last_task9_autofix_at: "2026-06-18"
+task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。 | 2026-05-25 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；版本边界已收窄到 Android 13-16，Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点复核 android-16.0.0_r1，版本边界保持 Android 13-16；Task6 未通过，未自动晋升。 | 2026-06-18 Task9 闲时抽检 auto-fix：P0 0 / P1 1 / P2 0；AOSP android-17.0.0_r1 已发布，修正“Android 17 tag 未发布”的过期版本边界，并标注 no focused window ANR 状态在 Android 17 改为 mNoFocusedWindowAnrState，回到 Task6 复审。"
+last_task9_audit: "2026-06-18"
+last_task9_audit_log: "logs/deep-review/2026-06-18-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-12-07-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
@@ -54,7 +55,7 @@ task6_reviewed_date: "2026-06-12"
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
 
-> **版本边界说明**：本章主线以 AOSP android-16.0.0_r1 为准。涉及的关键机制不在同一版本引入——`mAnrTracker` 和 `shouldPruneInboundQueueLocked` 始于 Android 11，`processConnectionResponsiveLocked` 始于 Android 12，`canReceiveForegroundTouches` 始于 Android 13。Android 10 的 InputDispatcher 仍在 `services/inputflinger/InputDispatcher.cpp`（未迁入 `dispatcher/` 子目录），ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`，与正文主线差异较大。Android 17 的 AOSP tag 截至当前未发布，未经验证。排查旧版本时优先确认源码路径和 ANR 等待模型。
+> **版本边界说明**：本章主线以 AOSP android-16.0.0_r1 为准。涉及的关键机制不在同一版本引入——`mAnrTracker` 和 `shouldPruneInboundQueueLocked` 始于 Android 11，`processConnectionResponsiveLocked` 始于 Android 12，`canReceiveForegroundTouches` 始于 Android 13。Android 10 的 InputDispatcher 仍在 `services/inputflinger/InputDispatcher.cpp`（未迁入 `dispatcher/` 子目录），ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`，与正文主线差异较大。Android 17 的 AOSP tag 已发布，但本章尚未按 android-17.0.0_r1 全量复核；已确认相关锚点仍在 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`，但 no focused window ANR 状态从 `mAwaitedFocusedApplication` / `mNoFocusedWindowTimeoutTime` 改为 `mNoFocusedWindowAnrState`，不要把 Android 16 的字段名直接套到 Android 17。排查旧版本或 Android 17 时优先确认源码路径和 ANR 等待模型。
 
 <!-- outline-start -->
 ## 要点
@@ -199,6 +200,7 @@ InputDispatcher 反压由 channel 可写性、`outboundQueue`、`waitQueue`、`m
 ## References
 
 - AOSP: `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（android-16.0.0_r1）
+- AOSP: `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（android-17.0.0_r1，用于版本边界抽检）
 - AOSP docs: `frameworks/native/services/inputflinger/docs/anr.md`
 - Android Developers: [ANRs](https://developer.android.com/topic/performance/vitals/anr)
 - Android Developers: [dumpsys](https://developer.android.com/tools/dumpsys)
