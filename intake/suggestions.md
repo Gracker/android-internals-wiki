@@ -245,3 +245,21 @@
 **已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架。
 
 **结论**：全书 441 节（302 finalized / 92 ready-for-review / 4 非空 draft）已进入高度成熟期。连续 150 轮无合格缺口。
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-19 05:05 (Round 151)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**（3 个，均 < 14 分）：
+1. Battery Saver 与 Thermal 协同机制 — 12/20（素材 3 + 相关 3 + 需求 3 + 时效 3）→ 今日 DeepResearch 产出（2026-06-18），但内容映射到 §11.4 案例集补充，不构成独立章节
+2. Android 17 Radio 状态机功耗与 App 级控制 — 10/20（素材 3 + 相关 2 + 需求 2 + 时效 3）→ DeepResearch 产出，但 App 开发者可控性低，素材指向 §11.4
+3. Compose SlotTable 内存分配源码分析 — 12/20（素材 3 + 相关 4 + 需求 3 + 时效 2）→ 今日 DeepResearch 产出，素材直接服务于 ch23.12 draft 和 §10.6，不构成新章节
+
+**近期 DeepResearch 文件映射检查**：2026-06-17~19 共 15 个 DeepResearch 文件，全部映射到已有章节（§10.6 / §11.4 / §13.18 / §20.7 / §23.7 / §26.20 / §1.26 等），无孤立高价值主题。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配。
+
+**结论**：全书 441 节（302 finalized / 92 ready-for-review / 4 非空 draft）已进入高度成熟期。连续 151 轮无合格缺口。
+
+**⚠️ P0 遗留**：§15.2 内容截断（Task2B Lite 导致 93% 内容丢失，已记录在 suggestions.md），需主 Task2B 从 git commit 2c5c7c85 恢复。
