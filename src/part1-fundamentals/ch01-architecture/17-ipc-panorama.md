@@ -32,10 +32,10 @@ reviewed_date: "2026-06-19"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-05-08-04-review.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_result: auto-fixed
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-04-24T09:54:00+08:00"
@@ -44,7 +44,7 @@ task9_reviewed_date: "2026-06-19"
 last_task9_at: "2026-06-19T01:26:49+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-19-01-deep-review.md"
 task6_reviewed_date: "2026-06-19"
-last_task6_at: "2026-06-19T02:06:00+08:00"
+last_task6_at: "2026-06-19T05:08:51+08:00"
 last_task6_audit: "2026-06-17"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（Parcel::writeBlob mAllowFds 边界、ashmem/memfd 版本门禁、RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线）回流后写作层复审通过；L1/L2 无需小修，章节文风干净；无 L3/L4 回炉项，送 Task9 终审。"
 task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-26 20:20 Task9 闲时抽检：pass-tech-review。P0/P1 0；P2 2（RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线表述需修正）；详见 logs/deep-review/2026-05-26-20-audit.md。 | 2026-06-18 Task9 idle-audit: auto-fixed。P1 1：修正 ashmem-compatible memfd 版本边界，android-17.0.0_r1 中默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37；P2 3：修正 RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线与 Parcel::writeBlob 零拷贝口径。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 0；复核 AOSP android-17.0.0_r1 Parcel.cpp，修正 writeBlob >16KB 走 ashmem fd 的条件，补充 mAllowFds 为 true 的边界；回到 Task6 复审。详见 logs/deep-review/2026-06-19-01-deep-review.md。"

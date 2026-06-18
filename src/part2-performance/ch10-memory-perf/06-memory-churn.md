@@ -474,6 +474,112 @@ TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需
 **"对象池是万能方案。"**
 
 对象池也有成本：状态重置遗漏会导致 bug，池过大是另一种内存浪费，多线程还需要同步开销。优先考虑"避免分配"——预分配、使用原始类型——只在分配确实绕不开时才引入对象池。
+<!-- AIW-源码调研-2026-06-19 -->
+
+## 补充：Jetpack Compose 分配模型（源码级）
+
+> 调研来源：[2026-06-19] Jetpack Compose 内存分配与 SlotTable / Composer 机制（DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md）
+
+### 与传统 View 系统的本质区别
+
+`onDraw(Canvas)` 中 `new Paint()` 是「在同一帧的同一方法里反复分配」；Compose 的分配模式完全不同——它是**树形状态机的重建**，分配分散在多个数据结构上，且部分分配是结构性必然（无法完全消除），部分分配是反模式（可以压缩到接近 0）。
+
+### 五个核心数据结构的分配源
+
+| 数据结构 | 源码路径 | 分配频率 | 是否可优化 |
+|---|---|---|---|
+| `RecomposeScopeImpl` | `androidx.compose.runtime.RecomposeScopeImpl` | 每个 restartable composable 1 个 | 不可消除（结构性） |
+| `SlotTable`（gap-buffer） | `androidx.compose.runtime.composer.gapbuffer.SlotTable` | 初始组合 0→N 数组倍增 | 不可避免，但 `Strong skipping` 可减少后续扩容 |
+| `block: (Composer, Int) -> Unit` Lambda | 同 `RecomposeScopeImpl` | 每次 `endRestartGroup().updateScope { ... }` 1 个 | 强跳过模式 + `@Stable` 可让旧 Lambda 持久不替换 |
+| `RememberObserverHolder` | `androidx.compose.runtime.RememberManager` | 每次 `remember { ... }` 1 个 | 用 `remember(key)` 而非 `remember(list)`，避免 key 抖动 |
+| `DerivedSnapshotState.ResultRecord` | `androidx.compose.runtime.DerivedState` | 每次快照 apply 1 个 | 避免在 hot path 滥用 `derivedStateOf` |
+
+### 关键源码片段
+
+**反装箱的显式重载**（`androidx.compose.runtime.Composer.kt`，第 ~700 行）：
+
+```kotlin
+@ComposeCompilerApi public fun changed(value: Float): Boolean
+@ComposeCompilerApi public fun changed(value: Long): Boolean
+@ComposeCompilerApi public fun changed(value: Double): Boolean
+```
+
+注释明确：「This overload is provided to avoid boxing [value] to compare with a potentially boxed version of [value] in the composition state.」编译器优先选择原始类型重载，避免 `Int → Integer` 装箱。这是 Compose 编译期优化的关键。
+
+**SlotTable 物理布局**（`SlotTable.kt`）：
+
+```kotlin
+internal class SlotTable : SlotStorage(), CompositionData, Iterable<CompositionGroup> {
+    var groups = IntArray(0)              // 每组 5 个 int：key、nodeCount、size、parentAnchor、dataAnchor
+    var groupsSize = 0
+    var slots = Array<Any?>(0) { null }   // 装载 State<*>、Lambda、LayoutNode、CompositionLocalMap
+    var slotsSize = 0
+    private var readers = 0               // 多读单写
+}
+```
+
+`IntArray` 装组信息（原始类型，密集存储），`Array<Any?>` 装所有引用值。
+
+**`RecomposeScopeImpl` 的 11 个 flag 位**（`RecomposeScopeImpl.kt`）：
+
+```kotlin
+private const val UsedFlag = 0x001
+private const val DefaultsInScopeFlag = 0x002
+private const val DefaultsInvalidFlag = 0x004
+private const val RequiresRecomposeFlag = 0x008
+private const val SkippedFlag = 0x010
+private const val RereadingFlag = 0x020
+private const val ForcedRecomposeFlag = 0x040
+private const val ForceReusing = 0x080
+private const val Paused = 0x100
+private const val Resuming = 0x200
+private const val ResetReusing = 0x400
+
+internal class RecomposeScopeImpl(...) {
+    private var flags: Int = 0        // 11 个布尔位打包到 1 个 int
+    private var block: ((Composer, Int) -> Unit)? = null   // 捕获 State 引用的 Lambda
+}
+```
+
+`block` Lambda 持有所有可观察 State 的引用 —— 这是 Compose「依赖追踪」机制的本质；旧 Lambda 在 `updateScope` 时失去强引用，进入年轻代。
+
+### 三类分配及其优化策略
+
+1. **结构性必分配**（无法消除）：
+   - 每个 restartable composable 对应一个 `RecomposeScopeImpl`；
+   - 每个 `endRestartGroup()` 至少创建一个 `(Composer, Int) -> Unit` Lambda；
+   - `SlotTable` 初始组合的数组倍增。
+
+2. **可压缩分配**（用模式可显著减少）：
+   - 用 `Strong skipping`（Compose 1.4+ 编译 flag）+ `@Stable` 类型 → 旧 Lambda 不替换，旧 scope 不重跑；
+   - `remember(key1, key2)` 的 key 用稳定 hash 而非可变 list；
+   - `SnapshotIntState.intValue` 替代 `State<Int>.value`，避免 Integer 装箱（API 5.0+ 公开）。
+
+3. **反模式**（必须避免）：
+   - `@Composable fun A() { val list = List(10) { ... } }` —— 每次重组重建；
+   - `if (loading) A() else B()` 中 loading 反复抖动 → scope 反复 release+create；
+   - `derivedStateOf { list.first().name }` 写在 Lazy item 内部 → 每帧 1 个 ResultRecord。
+
+### 版本矩阵
+
+| Compose 版本 | ART / 平台 | 关键变化 | 对内存抖动的影响 |
+|---|---|---|---|
+| 1.0 (2021) | API 21+ | 首次 GA | 整体重组为主，scope 复用率低 |
+| 1.4 (2023) | API 21+ | `Strong skipping mode`（需 `@Stable` + compiler flag） | 同输入下 scope 真正可跳过，**churn 数量级下降** |
+| 1.7 (2024) | API 21+ | `PausableComposition` + `GapComposer` 重写 | 支持按时间片暂停长组合任务 |
+| 1.8 (2025) | API 21+ | `LinkComposer` / 新 `GapComposer` | 移除旧 ObjectArrayList 残留 |
+| —— | Android 15 (API 35) | 平台层 Lazy 列表预取调度 | 减少滚出屏→回滚造成的 scope churn |
+| —— | Android 16 (API 36) | ART 分代 CMC 阶段启用 | 短命对象 GC 更及时，Eden 切分更细 |
+| —— | Android 17 (API 37) | 公开 AOSP 仍无 `android-17` tag | 分代 CMC 是否全量默认 **待验证** |
+
+> **版本边界声明**：所有 Compose 版本均通过 AndroidX 发布，不直接绑定 platform API level；同一份 Compose 1.8 编译产物可同时运行在 API 28 与 API 37 设备上。但底层 ART GC 行为差异会显著影响 Compose 短命对象被回收的及时性。
+
+### 经验性建议
+
+- 用 `@Stable` 标注纯数据类（特别是被 `remember` 的 model）；
+- 滚动列表中避免在 `item { }` 内部 `derivedStateOf { ... }`；
+- 把「List 是否为空」「是否 loading」这种高频抖动状态放在 `remember { mutableStateOf(false) }` 而非直接 `var`；
+- 关键性能路径（Lazy list item、动画帧）用 `Modifier.composed { ... }` + `remember` 缓存，避免每帧重建 Modifier 链。
 
 ## 参考资料
 
