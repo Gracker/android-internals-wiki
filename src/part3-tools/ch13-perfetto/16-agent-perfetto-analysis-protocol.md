@@ -13,13 +13,13 @@ related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 task2b_result: fixed-lite
-task6_state: revisiting
+task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
-task6_result: pass-light-edit
-last_task6_at: "2026-05-28T08:10:00+08:00"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-06-19T04:25:46+08:00"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
@@ -42,12 +42,10 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md"
   - type: material
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md"
-task6_reviewed_by: openclaw-task6
+task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-28T08:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-08-review.md"
-task6_l1_l2_fixes: 1
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处，删除一处否定纠正式开场句；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-06-18-20-audit.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-18"
@@ -59,6 +57,9 @@ p2: 0
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-05-28"
 last_task9_audit: "2026-06-18"
+task6_reviewed_date: "2026-06-19"
+task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（cpu_freq linux.cpu.frequency cpu_frequency_counters 修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过（两处模板引导语属于代码块用途句，不算元叙述）。outline 8/8 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
+last_task6_review_log: "logs/review/2026-06-19-04-review.md"
 ---
 
 # 13.16 Agent 辅助 Perfetto 分析协议
