@@ -2,7 +2,7 @@
 title: "Agent 辅助 Perfetto 分析协议"
 chapter: "13.16"
 section: "13.16"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-18"

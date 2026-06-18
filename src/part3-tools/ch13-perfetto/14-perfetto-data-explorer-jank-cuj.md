@@ -40,9 +40,9 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-18T14:33:37+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: "reviewed"
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-06-19-02-review.md"
 task6_l1_l2_fixes: 2
