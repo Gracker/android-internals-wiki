@@ -25,6 +25,8 @@ last_task2b_fix_at: 2026-06-18
 last_task6_at: 2026-06-18
 last_task6_review_at: 2026-06-18
 last_task9_autofix_at: 2026-06-18
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-18
 ---
 
 # 11.4 案例集
@@ -118,8 +120,7 @@ public class OptimizedForegroundService extends Service {
 - **电量消耗**：每日节省 15% 电量（测量维度：`dumpsys batterystats` 中 `Estimated power use (mAh)` 对应用 UID 的归因）
 
 
-<!-- AIW-源码调研-2026-06-17 -->
-> **FGS 超时机制版本差异（Android 14 → 17）** — 来自源码调研 `2026-06-17-android15-fgs-timeout-data-sync-media-processing.md`。
+> **FGS 超时机制版本差异（Android 14 → 17）**
 > 
 > - **Android 14 (API 34)** 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`（1 << 11），硬性 3 分钟超时（`DEFAULT_SHORT_FGS_TIMEOUT_DURATION = 3 * 60_000`），三阶段：3min `Service.onTimeout(int)` → 5s 降级 procstate（`OOM_ADJ_REASON_SHORT_FGS_TIMEOUT`）→ 10s ANR（消息号 76/77/78）。源码：`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `maybeUpdateShortFgsTrackingLocked` / `onShortFgsTimeout` / `onShortFgsProcstateTimeout` / `onShortFgsAnrTimeout`。
 > - **Android 15 (API 35)** 新增 **`TimeLimitedFgsInfo` 时间限制 FGS 框架**：`FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING`（1 << 13）+ `FOREGROUND_SERVICE_TYPE_DATA_SYNC` 都被限制为 **6 小时**（`DEFAULT_MEDIA_PROCESSING_FGS_TIMEOUT_DURATION` / `DEFAULT_DATA_SYNC_FGS_TIMEOUT_DURATION` 均 = `6 * 60 * 60_000`）。新增 `SERVICE_FGS_TIMEOUT_MSG` (84) / `SERVICE_FGS_CRASH_TIMEOUT_MSG` (85)。源码：`ActiveServices.java:3730-3780` 的 `getTimeLimitedFgsType` / `getTimeLimitForFgsType` / `getNextFgsStopTime`。
@@ -221,8 +222,6 @@ public class OptimizedLocationTracker implements LocationListener {
 
 省电模式与热节流通过各自独立的通道影响定位行为，下面从源码层面分析两条路径的协同方式。
 
-<!-- AIW-源码调研-2026-06-17 -->
-<!-- AIW-源码调研-2026-06-18 -->
 ### 11.4.2.2 Battery Saver × 热节流协同机制：省电策略的温度敏感度分析
 
 通过Android 17.0.0_r1源码深度分析，揭示Battery Saver与热节流机制的独立协同架构：
@@ -291,7 +290,7 @@ Android 14-17 范围内需要按版本区分：
 ---
 
 
-> **系统层定位功耗策略 — Battery Saver × Thermal 协同机制**（来自源码调研 `2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md`）。
+> **系统层定位功耗策略 — Battery Saver × Thermal 协同机制**。
 >
 > 11.4.2 上文从应用层给出了定位频率优化方案，但节能的关键在系统层。Android 通过两层 PowerSave 框架叠加控制定位功耗：
 >
@@ -319,9 +318,9 @@ Android 14-17 范围内需要按版本区分：
 > **功耗建模建议**：把"定位功耗"拆成三个互相独立的维度——**设备级 LOCATION_MODE × 屏幕状态 × 芯片热状态**。建模时不能假设"省电模式关闭 = 定位一定可用"，也不能假设"thermal throttling 会自动省电"。
 
 
-### 11.4.2.3 隐私沙盒对位置服务功耗的深层影响：Android 12+ 三层判定链
+### 11.4.2.2 隐私沙盒对位置服务功耗的深层影响：Android 12+ 三层判定链
 
-11.4.2.1/2 已分析省电模式（设备级 LOCATION_MODE）与热节流对定位的叠加效应，但 Android 12 (API 31) 起的**隐私沙盒**是另一条独立的省电路径——它把"权限"从 Manifest 声明拓展为用户可撤销的运行时开关，从源头限制了无效定位请求的功耗成本。
+11.4.2.1 已分析省电模式（设备级 LOCATION_MODE）与热节流对定位的叠加效应，但 Android 12 (API 31) 起的**隐私沙盒**是另一条独立的省电路径——它把"权限"从 Manifest 声明拓展为用户可撤销的运行时开关，从源头限制了无效定位请求的功耗成本。
 
 #### 三层判定链（源码级）
 
@@ -424,9 +423,8 @@ if (!locationSettingsIgnored && !isThrottlingExempt()) {
 - `frameworks/base/core/java/android/app/AppOpsManager.java:946-949`
 - `frameworks/base/core/java/android/os/PowerManager.java:1175-1200, 2609-2615`
 
-> **隐私沙盒 vs Battery Saver 的关系**：两者**独立但叠加**。Battery Saver 通过 `SystemLocationPowerSaveModeHelper` 推 `LOCATION_MODE` 到 `LocationProviderManager.isActive()`（详见 11.4.2.1）；隐私沙盒通过 `LocationPermissionsHelper.hasLocationPermissions()` + `isActive()` 第一行判定。**两条路径在 isActive 内串行判定**：先过权限/appop，再过 power save 模式。开发者的精细化策略应是**先确保沙盒适配（不持 FGS 时切粗精度或停止请求），再针对 power save 模式做调整**——顺序反了会导致沙盒完全拒绝后，power save 的 mode 切换根本不触发。
+隐私沙盒与 Battery Saver **独立但叠加**：Battery Saver 通过 `SystemLocationPowerSaveModeHelper` 推 `LOCATION_MODE` 到 `LocationProviderManager.isActive()`（详见 11.4.2.1），隐私沙盒通过 `LocationPermissionsHelper.hasLocationPermissions()` + `isActive()` 第一行判定。两条路径在 `isActive` 内串行：先过权限/appop，再过 power save 模式。开发者的精细化策略应是**先确保沙盒适配**（不持 FGS 时切粗精度或停止请求），**再针对 power save 模式调整**——顺序反了，沙盒拒绝后 power save 的 mode 切换根本不会触发。
 
-<!-- AIW-源码调研-2026-06-18 -->
 
 
 ## 11.4.3 Radio 状态机功耗优化
@@ -516,8 +514,6 @@ public class NetworkRequestManager {
 
 
 #### 5. 源码级补充：Radio 状态机实际架构（android-17.0.0_r1 及以下版本）
-
-> 来源：`DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md`
 
 **Radio 状态机在 Android 源码中的真实抽象层级**（与上表不同，更精确）：
 
@@ -620,7 +616,6 @@ Android 14+ 源码同时保留 AIDL 与 HIDL 分派；新实现应优先核对 A
 
 **RadioInterfaceLayer.java 已经被移除**：该类在 2018 年前后被 RIL + Radio*Proxy + RadioIndication 三件套完全替代。任何引用该类的旧资料已过时。当前 Android 17 架构是 **RIL → RadioModemProxy/RadioNetworkProxy/RadioSimProxy → IRadio AIDL → modem chip**。
 
-<!-- AIW-源码调研-2026-06-18 -->
 
 
 
@@ -811,7 +806,99 @@ public class UnifiedTaskScheduler {
 - **执行效率**：任务执行时间缩短 40%
 - **电量消耗**：后台任务功耗降低 55%
 
+<!-- AIW-源码调研-2026-06-18 -->
+
+### Adaptive Battery × App Standby 协同机制（5 桶配额 + 三方消费 + 12h 衰减）
+
+#### 1. 写入侧：ML 预测如何落到桶值
+
+Adaptive Battery 在 AOSP 主线不是独立服务，而是一套**写入接口 + 衰减契约**。`AppStandbyController.setAppStandbyBuckets()`（`frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java:1749-1790`）把"非用户、非系统"的调用全部标记为 `REASON_MAIN_PREDICTED`，再把桶值与 `lastPredictedTime` 一起持久化到 `AppIdleHistory.AppUsageHistory`（`AppIdleHistory.java:174-204`）。三个 caller 类别：
+
+| Caller UID | reason | 预测能否覆盖 |
+|------------|--------|--------------|
+| `shell`/`root`/Settings | `REASON_MAIN_FORCED_BY_USER` | 否 |
+| Core 系统进程 | `REASON_MAIN_FORCED_BY_SYSTEM` | 否 |
+| `UsageStatsManagerInternal` 透传的 ML | `REASON_MAIN_PREDICTED` | 是 |
+
+**关键点**：OEM GMS / 第三方 Usage Ranker 通过 `UsageStatsManagerInternal.setAppStandbyBuckets` 写入后，**唯一持久化字段**是 `lastPredictedBucket` 与 `lastPredictedTime`。评估侧 `AppStandbyController.predictionTimedOut()`（`AppStandbyController.java:1094-1098`）给出默认 12 小时超时：
+
+```java
+private static final long DEFAULT_PREDICTION_TIMEOUT =
+        COMPRESS_TIME ? 10 * ONE_MINUTE : 12 * ONE_HOUR;
+```
+
+超过 12 小时或用户产生 usage 事件，`evaluateBucketsLocked()` 走 `getBucketForLocked()` 纯时间阈值路径——**Adaptive Battery 完全失效的 fallback 就在这里**。
+
+#### 2. 衰减契约：predicted vs timeout 决策树
+
+`AppStandbyController.java:1014-1027` 的核心判断：
+
+```java
+if (!predictionLate && app.lastPredictedBucket >= STANDBY_BUCKET_ACTIVE
+        && app.lastPredictedBucket <= STANDBY_BUCKET_RARE) {
+    newBucket = app.lastPredictedBucket;     // 12h 内的预测值
+    reason    = REASON_MAIN_PREDICTED | REASON_SUB_PREDICTED_RESTORED;
+} else {
+    newBucket = getBucketForLocked(packageName, userId, elapsedRealtime);  // 时间阈值
+    reason    = REASON_MAIN_TIMEOUT;
+}
+```
+
+`mPredictionTimeoutMillis` 允许被 `DeviceConfig` 覆写（`AppStandbyController.java:3231-3233`），OEM 可调整保质期。
+
+#### 3. 三方消费者：桶值到资源限制的完整路径
+
+**JobScheduler 消费**（`JobSchedulerService.java:5016-5058`）——`standbyBucketForPackage()` 把标准桶值映射成内部索引 `EXEMPTED/ACTIVE/WORKING/FREQUENT/RARE/RESTRICTED/NEVER`，再喂给 `QuotaController.isWithinQuotaLocked()`（`QuotaController.java:942-1017`）。`QuotaController` 默认配额矩阵（`QuotaController.java:3249-3290`）：
+
+| 桶 | 窗口 | Job 配额 | Session 配额 | EJ 配额 |
+|----|------|---------|--------------|---------|
+| EXEMPTED | 40 min | 75 | 75 | 60 min |
+| ACTIVE | 60 min | 75 | 75 | 30 min |
+| WORKING_SET | 4 h | 60 | 10 | 15 min |
+| FREQUENT | 12 h | 200 | 8 | 10 min |
+| RARE | 24 h | 48 | 3 | 10 min |
+| RESTRICTED | 24 h | 10 | 1 | 5 min |
+
+FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减 2.5 倍。这就是 Adaptive Battery 写一次桶值的实际资源效果。
+
+**AppStateTracker 消费**（`AppStateTrackerImpl.java:771-792`）——`StandbyTracker.onAppIdleStateChanged()` 把进入 EXEMPTED 的包加入 `mExemptedBucketPackages`，进而被 `isUidActiveSynced()`（`AppStateTrackerImpl.java:1811`）和 `isInParole()`（`AppStateTrackerImpl.java:1156-1191`）读取。**EXEMPTED 不仅是配额大的桶**：它让 App 绕过 `QuotaController.isUidInForeground()` 常规检查，也影响 RIL 是否给该 UID 拉活数据 Radio。
+
+**全局强制降级**（`AppStateTrackerImpl.java:634-654`）——`mForceAllAppsStandby` 是 OEM 经常复用的钩子：华为/小米冻结后台的底层来源之一，与 Adaptive Battery 桶值是叠加而非互斥。
+
+#### 4. 调用链总览
+
+```
+[OEM Usage Ranker / ML 预测]
+        ↓ UsageStatsManagerInternal.setAppStandbyBuckets(...)
+[AppStandbyController.setAppStandbyBucket(...)]  reason=REASON_MAIN_PREDICTED
+        ↓ 持久化 lastPredictedBucket / lastPredictedTime
+[evaluateBucketsLocked() / 定时评估]
+        │ predictionTimedOut: 12h 窗口内？
+        │   ├─ 是 → newBucket = lastPredictedBucket
+        │   └─ 否 → newBucket = getBucketForLocked()  时间阈值
+        ↓
+[StandbyUpdateRecord + AppIdleStateChangeListener 广播]
+        │
+        ├─→ AppStateTracker.StandbyTracker.onAppIdleStateChanged()
+        │       → mExemptedBucketPackages.add/remove
+        │       → isUidActiveSynced() / isInParole() → RIL 拉活
+        │
+        └─→ JobSchedulerService.standbyBucketForPackage()
+                → QuotaController.isWithinQuotaLocked()
+                → { EJ 时长 / Job 数 / Session 数 / 充电豁免 / 顶层启动豁免 }
+                → Job 允许 / 延期（whenStandbyDeferred++）
+```
+
+#### 5. 性能影响与版本差异
+
+- **唤醒节省**：RARE/RESTRICTED 桶的 `mAppStandbyElapsedThresholds` 显著拉长——24h 才允许一次 RARE 桶 App 主动唤醒执行 Job。FREQUENT→RARE 后，后台 CPU 时间预算下降约 4–5 倍。
+- **EXEMPTED 副作用**：ML 推入 EXEMPTED 的 App 同时获得 RIL 旁路、QuotaController 前台旁路、高配额三层资源——实质等价于"被系统认为活跃"。
+- **版本差异**：RESTRICTED 自动降级 8 天阈值从 Android 13 起生效；Android 14 起 `DEFAULT_CURRENT_EJ_TOP_APP_TIME_CHUNK_SIZE_MS` 从 30s 改成 5min；Android 16+ `AppStandbyController` 整组迁移到 `apex/jobscheduler/service/`；Android 17 维持 `12 * ONE_HOUR` 默认 prediction timeout。
+
+> 排查后台任务延迟时，先用 `adb shell dumpsys jobscheduler <pkg>` 看到 `whenStandbyDeferred>0`，再 `adb shell am get-standby-bucket <pkg>` 拿当前桶，配合 `dumpsys usagestats` 里的 `adaptivebat=<provider_pkg>` 判断是 ML 预测结果还是时间阈值结果——三种情况的修复路径不同。
+
 ## 总结
+
 
 本章案例覆盖了 Android 功耗优化的 5 个主要方向：
 
@@ -823,27 +910,26 @@ public class UnifiedTaskScheduler {
 
 以上优化方向的实际效果取决于设备电池容量、芯片工艺、运营商网络质量和用户使用模式，数字引用请以对应的测试条件为准。
 
-<!-- AIW-源码调研-2026-06-18 -->
 
 ## 参考资料
 ### Battery Saver 与定位功耗策略协同机制（5 种 LocationMode × Thermal 叠加模型）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md
 - 类型：DeepResearch 调研结果
 - 摘要：Battery Saver 通过 BatterySaverPolicy 的 5 种 locationMode（NO_CHANGE/GPS_DISABLED_WHEN_SCREEN_OFF/ALL_DISABLED/FOREGROUND_ONLY/THROTTLE_REQUESTS）控制定位，热节流走独立通道不直接修改定位模式。两层是叠加关系：低电关定位+过热调频率。LocationProviderManager.isActive() 在三条件同时满足时过滤后台 GPS 请求。
-- 注入时间：2026-06-18
-- 价值：填补 §11.4.2 定位功耗策略盲区，解释 Battery Saver × Thermal 协同的源码链路
 
 ### JobScheduler 源码常量来源修正（APEX 路径迁移 + OP_TIMEOUT_MILLIS 核验）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-jobscheduler-source-verification.md
 - 类型：DeepResearch 调研结果
 - 摘要：Android 16+ JobScheduler 从 services/core 迁移至 APEX 模块架构，路径变更为 apex/jobscheduler/service/java/。OP_TIMEOUT_MILLIS 从 Android 10 起始终位于 JobServiceContext.java，Android 12+ 乘以 HW_TIMEOUT_MULTIPLIER。ch11 04-case-studies 的 source_repos 需更新 APEX 路径。
-- 注入时间：2026-06-18
-- 价值：修正 P0 级源码引用错误，补充 Android 16+ APEX 架构路径变更
 
 
 ### Radio 状态机功耗原理完整分析（HAL→RIL→TelephonyManager 三层源码）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md
 - 类型：DeepResearch 调研结果
 - 摘要：Android 17 蜂窝 Radio 状态机由 HAL(radio/1.0/types.hal) 三位枚举(OFF/UNAVAILABLE/ON) → RIL → TelephonyManager 三层构成。HAL 不区分 IDLE/TRANSFER，modem 内部连接态对外不可见。下行控制 RIL.setRadioPower() 按 HAL 版本走不同 proxy，4G/5G 紧急呼叫扫描 30 秒自动回退是隐性电流峰值源。
-- 注入时间：2026-06-18
-- 价值：填补 §11.4.3 Radio 状态机功耗优化的源码级空白，提供 HAL→Java 完整调用链
+
+### Adaptive Battery 与 App Standby 协同机制（5 桶配额 + 三方消费 + 12h 衰减）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md
+- 类型：DeepResearch 调研结果
+- 摘要：Adaptive Battery 在 AOSP 主线不是独立服务，而是「写入接口+衰减契约」：UsageStatsManagerInternal.setAppStandbyBuckets() 走 REASON_MAIN_PREDICTED 路径，AppStandbyController 把 lastPredictedBucket 持久化，12h 内调度器读取，超过则回退到时间阈值。桶值被三方消费：JobScheduler.standbyBucketForPackage()→QuotaController.isWithinQuotaLocked()（决定 EJ/Job/Session 配额）、AppStateTracker.StandbyTracker（EXEMPTED 集 + RIL 拉活旁路）、AppStateTracker.mForceAllAppsStandby（OEM 强制降级钩子）。FREQUENT→RARE 等价于 Job 配额衰减 4 倍、Session 衰减 2.5 倍。
+

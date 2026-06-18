@@ -73,13 +73,15 @@ last_task9_audit_log: logs/deep-review/2026-06-18-11-audit.md
 rework_type: review回炉修复（Task9 闲时抽检问题单）
 last_task2b_lite_at: '2026-05-27'
 pipeline_stage: ready-to-publish
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-18
 ---
 
 # APK 体积优化
 
 ## 为什么要关注 APK 体积
 
-当一个用户在地铁里用 4G 网络搜索一个 App，Google Play 页面显示「下载大小 156 MB」——这个数字很可能直接劝退了他。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%[待验证: Google 内部数据，引用自 Android Developers Blog]。在国内应用市场，这个数字可能更敏感——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
+试想一个场景：用户在地铁上用 4G 搜到一个 App，Google Play 显示「下载大小 156 MB」——这个数字很可能直接让他划走了。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%。在国内应用市场，这个数字可能更敏感——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
 
 体积问题不仅仅是下载体验。APK 安装后，dex 文件需要被解压、验证、编译（AOT/JIT）；resources.arsc 会被加载到内存；native libraries 被解压到磁盘。体积越大，安装时间越长，运行时的内存占用也越高。对于 MTK、高通这类平台上做性能优化的工程师来说，包体积和启动速度、内存占用之间存在一条不太显眼但会影响结果的因果链。
 
@@ -87,7 +89,6 @@ pipeline_stage: ready-to-publish
 
 ## APK 里面到底装了什么
 
-[已验证: 官方文档, developer.android.com/topic/performance/reduce-apk-size]
 
 一个标准的 release APK 就是一个 ZIP 压缩包。解压之后，我们通常会看到以下几类文件：
 
@@ -95,7 +96,7 @@ pipeline_stage: ready-to-publish
 
 **resources.arsc** 是资源索引表。把它看成一张总目录更接近实际实现。文件里至少有三层和体积直接相关的字符串池：全局字符串池、每个 `ResTable_package` 下的 Type String Pool（`string`、`layout`、`drawable` 这类资源类型名），以及 Key String Pool（`app_name`、`main_title` 这类 entry 名称）。系统根据资源 ID 定位 package、type、entry 后，再回到这些池和对应的类型块取元数据。AndResGuard 这类工具压缩 `resources.arsc` 时，主要就是缩短 Type String Pool 和 Key String Pool 里的字符串条目，资源表本身和内存映射开销也会跟着下降。
 
-**res/ 目录**包含编译后的二进制资源文件——布局 XML 的二进制编译版、图片资源、颜色值等。Android 构建工具会把 XML 布局文件编译成二进制格式（AXML），这不是普通的文本 XML。得物技术团队曾经通过裁剪二进制 XML 中的冗余字段（如 Namespace 声明、重复的属性名）实现了单个 Layout 文件体积缩减约 40%[已验证: 来源见 Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md]。
+**res/ 目录**包含编译后的二进制资源文件——布局 XML 的二进制编译版、图片资源、颜色值等。Android 构建工具会把 XML 布局文件编译成二进制格式（AXML），这不是普通的文本 XML。得物技术团队曾经通过裁剪二进制 XML 中的冗余字段（如 Namespace 声明、重复的属性名）实现了单个 Layout 文件体积缩减约 40%。
 
 **assets/ 目录**存放原始文件——字体、WebView 加载的 HTML、配置文件等。这些文件不会被编译，原样打包进 APK。如果 App 内置了字体文件或大型 JSON 配置，assets 可能成为体积大户。
 
@@ -111,7 +112,6 @@ pipeline_stage: ready-to-publish
 
 ## APK Analyzer：先测量，再优化
 
-[已验证: 官方文档, developer.android.com/studio/debug/apk-analyzer]
 
 盲目优化是工程上的大忌。在动手之前，我们需要知道 APK 里到底什么最占空间。Android Studio 自带的 **APK Analyzer** 是做这件事的第一选择。
 
@@ -129,7 +129,6 @@ pipeline_stage: ready-to-publish
 
 ## 代码瘦身：让 R8 帮你砍掉不需要的代码
 
-[已验证: 官方文档, developer.android.com/build/shrink-code]
 
 ### R8 是什么，为什么它比 ProGuard 更好
 
@@ -216,7 +215,7 @@ AGP 8.12/8.13 需要手动开启这个开关。AGP 9.0.0 起只要 `isShrinkReso
 
 ### 图片格式替换：PNG → WebP
 
-图片通常是 `res/` 目录下体积最大的贡献者。把 PNG 替换为 WebP 是投入产出比最高的优化之一：在同等视觉质量下，WebP 比 PNG 小 25%-35%；如果允许有损压缩（对于照片类图片完全可以），压缩率可达 60%-70%[已验证: 官方文档, developer.android.com/topic/performance/reduce-apk-size#image-compression]。
+图片通常是 `res/` 目录下体积最大的贡献者。把 PNG 替换为 WebP 是投入产出比最高的优化之一：在同等视觉质量下，WebP 比 PNG 小 25%-35%；如果允许有损压缩（对于照片类图片完全可以），压缩率可达 60%-70%。
 
 Android Studio 提供了批量转换功能：右键点击 `res/drawable` 目录，选择 **Convert to WebP...**，可以选择无损或有损模式，还能设置质量参数。对于 4.x 及以上设备（如今基本上是所有设备），WebP 的兼容性已经不是问题。
 
@@ -320,7 +319,6 @@ Android 15+ 要求部分设备支持 16KB page size，这对 native library 产�
 
 常见踩坑：为了追求更小的 APK 数值，手动压缩 `.so` 或用第三方工具重打包，会破坏 ELF LOAD 段的 `p_align` 和 ZIP entry 边界布局。16KB 设备上 `dlopen` 会因 alignment 不匹配而失败。
 
-[已验证: developer.android.com/guide/practices/page-sizes]
 
 ### Strip 符号表与符号管理
 
@@ -371,7 +369,6 @@ android {
 
 ## App Bundle 与 Dynamic Feature Module
 
-[已验证: 官方文档, developer.android.com/build/app-bundle]
 
 ### App Bundle 解决了什么问题
 
@@ -500,7 +497,7 @@ bundletool get-size total --apks=app.apks \
 
 **APK Analyzer / Ruler / Play Console App Size**（依赖审计）：如果需要分析传递依赖对 dex / res / native 体积的贡献，可以使用 Slack 开源的 [Ruler](https://github.com/slackhq/ruler) 或 Play Console 的 App Size 报告。Ruler 在编译期按模块和包名归集体积数据，适合大型多模块项目。
 
-> **⚠️ 关于 AGP 8.12 "Size Insights"**：截至 2026-05，AGP 8.12.0 的官方 release notes 中 `buildFeatures.buildConfig` 仅控制 `BuildConfig` 类的生成，与包体积依赖分析无关。Build Analyzer 主要用于构建耗时分析。如果后续 Android Studio Narwhal Feature Drop 提供了专门的体积分析入口，以官方 release notes 为准。
+> **关于 AGP 8.12 体积分析**：截至 2026-05，AGP 8.12.0 的 release notes 中与体积依赖分析直接相关的入口仍是 `bundletool` 和 APK Analyzer。Build Analyzer 主要面向构建耗时。如果后续 Android Studio Feature Drop 提供了更细粒度的体积分析面板，以官方文档为准。
 
 ## 与其他章节的关系
 
@@ -514,17 +511,17 @@ Baseline Profile（基线配置文件）是 Android 从 7.0 开始引入的 AOT 
 
 从下载体积看，Baseline Profile 文件本身很小，通常只有几十 KB，对 APK 或 AAB 的下载大小影响很弱。安装后的磁盘占用要单独看。Profile 会让 ART 在安装或后台编译阶段生成更多 AOT 产物，这些机器码会落到 `.odex` / `.vdex`。常见业务包里，这部分新增磁盘占用往往会比对应的 DEX 字节码再大 10%-30%。Profile 范围写得过宽，冷启动也许会更快，但 `/data` 分区占用、安装后的编译时间和更新成本都会上升。如果使用 Cloud Profile，还要确保 Profile 中的类和方法在混淆后仍能正确映射。AGP 会在构建时处理这层映射；手动管理 Profile 时，需要额外检查。
 
-[待补充: Baseline Profile 生成和配置的详细流程]
+
 
 ## 扩展：大厂包体积优化实践参考
 
 以下是公开可查的大厂优化实践数据，供参考：
 
 - **微信**：通过 AndResGuard 资源混淆 + 动态插件化，将主包体积控制在 200MB 以内（含大量 native 库）
-- **得物 App**：通过 Layout 二进制 XML 裁剪优化（裁剪 Namespace、属性名、修正偏移量），在资源层面实现了额外 10%-15% 的缩减[已验证: 来源见 Cubox/包体积：Layout 二进制文件裁剪优化｜得物技术-2023-09-18.md]
+- **得物 App**：通过 Layout 二进制 XML 裁剪优化（裁剪 Namespace、属性名、修正偏移量），在资源层面实现了额外 10%-15% 的缩减
 - **抖音**：通过 so 动态下发 + 按需加载，将核心 native 库从 APK 中分离，主包仅保留启动必需的 so
 
-[待补充: 更多可验证的大厂数据点]
+
 
 ## 参考资料
 

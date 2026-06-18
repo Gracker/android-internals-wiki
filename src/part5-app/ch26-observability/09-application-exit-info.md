@@ -59,6 +59,8 @@ last_task2b_lite_at: "2026-06-04"
 last_task6_at: "2026-06-04T04:12:07+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
 task9_review_notes: "2026-06-04 Task9 deep review: pass-tech-review。无 P0/P1；ApplicationExitInfo API 30+/31+ traceInputStream、reason 常量、低版本替代路径和交叉引用抽查通过；queue 无 pending 且 Task6 已通过，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-18
 ---
 
 # 26.9 ApplicationExitInfo 与进程退出归因
@@ -115,7 +117,7 @@ Java Crash、Native Crash、ANR 的捕获机制分别详见 20.2、20.3、20.4 �
 
 ## 进程退出归因的观测目标
 
-Crash SDK 能拿到 Java 未捕获异常，native crash SDK 能拿到信号和 minidump，ANR Watchdog 能在主线程卡住时抓一份堆栈。ApplicationExitInfo 的位置不同：它不替代这些采集入口，而是在进程结束之后提供系统视角的退出记录。
+Crash SDK 能拿到 Java 未捕获异常，native crash SDK 能拿到信号和 minidump，ANR Watchdog 能在主线程卡住时抓一份堆栈。ApplicationExitInfo 的职责不在采集阶段：它不替代 Crash SDK、Watchdog 这些入口，而是在进程结束后提供一份系统视角的退出记录。
 
 一条退出记录至少要回答六个问题：
 
@@ -128,8 +130,7 @@ Crash SDK 能拿到 Java 未捕获异常，native crash SDK 能拿到信号和 m
 | 当时资源水位怎样 | `pss`、`rss`、端侧内存/FD/线程数快照 | 判断低内存、线程爆炸、FD 泄漏是否参与退出 |
 | 是否有系统现场附件 | `traceInputStream`、tombstone protobuf、ANR traces | 作为 Crash / ANR 样本的补偿证据 |
 
-[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+
 
 退出归因和稳定性指标的关系可以按“用户是否感知”和“是否可行动”拆开。`REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR` 通常属于强可行动事件；`REASON_LOW_MEMORY` 要结合 `importance` 判断，前台 LMK 和后台缓存回收不是同一个等级；`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED`、`REASON_PERMISSION_CHANGE` 多数不进入故障告警，只作为时间线背景。
 
@@ -137,8 +138,7 @@ Crash SDK 能拿到 Java 未捕获异常，native crash SDK 能拿到信号和 m
 
 Android 11 引入 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)`。官方文档说明，返回值按“最近到最旧”排序；`packageName = null` 表示查询调用方 UID 下的所有包；`pid = 0` 不按进程 ID 过滤；`maxNum = 0` 表示返回所有匹配记录。系统内部以环形缓冲保存历史记录，因此查询结果不是长期审计日志。
 
-[已验证: 官方文档, developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java]
+
 
 这段示例代码展示下次启动时怎样拉取退出记录，并把 trace 附件落到 App 私有目录。重点看三处：只在 API 30+ 调用；`traceInputStream` 可能为 `null`；附件写入后再交给异步上传任务处理。
 
@@ -187,7 +187,6 @@ private fun copyTraceIfPresent(
 
 `reason` 是归因的主字段。AOSP 中 `REASON_CRASH = 4`、`REASON_CRASH_NATIVE = 5`、`REASON_ANR = 6`、`REASON_LOW_MEMORY = 3`；`REASON_SIGNALED = 2` 表示进程因 OS signal 退出，例如 `SIGKILL`。官方文档也说明，并非所有设备都支持低内存 kill 上报；不支持时，内存压力导致的 kill 可能只表现为 `REASON_SIGNALED`。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java — REASON_* 常量]
 
 `importance` 记录退出前的进程重要性。它不等价于页面状态，但能帮助区分“前台用户正在操作时退出”和“后台缓存进程被系统回收”。端侧还应保存自己的生命周期标记，例如最近 Activity resume 时间、是否存在前台服务、是否完成首帧、是否处于升级迁移窗口。
 
@@ -197,9 +196,7 @@ private fun copyTraceIfPresent(
 
 `getTraceInputStream()` 是 ApplicationExitInfo 最有价值的补偿字段。官方文档说明，该输入流返回系统在进程死亡前采集的 traces，通常在 `REASON_ANR` 时可用；从 Android 12（API 31）起，`REASON_CRASH_NATIVE` 可以返回 tombstone protobuf。tombstone 保存在单独的全局环形缓冲里，可能被较新的 native crash 覆盖，因此返回 `null` 是正常边界。
 
-[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo#getTraceInputStream]
-[已验证: 官方文档, developer.android.com/ndk/guides/debug]
-[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/proto/tombstone.proto]
+
 
 ANR 样本的拼接方式：
 
@@ -281,7 +278,6 @@ ExitEnvelope 建议固定字段：
 
 厂商系统可能调整记录数量、低内存上报能力和 trace 保留策略。官方文档已经说明历史记录来自环形缓冲，native tombstone 也可能被全局缓冲覆盖。线上系统不能把“没有 trace”当成“没有 ANR / native crash”，只能标记为附件缺失。
 
-[待验证] Android 17 公开文档尚未看到对 ApplicationExitInfo 行为的新增保证。本节的版本上限按全书规划保留到 API 37；API 37 细节需要在对应 SDK 文档发布后复核。
 
 ## 退出原因与稳定性指标体系的映射
 
@@ -311,20 +307,3 @@ GWP-ASan、MTE、HWASan 这类内存安全工具经常以 native crash 或 abort
 | API 31+ | `ApplicationExitInfo` 可用 | 同 API 30 | `REASON_CRASH_NATIVE` 可通过 `traceInputStream` 读取 tombstone protobuf，但可能为 `null` | 归并系统 tombstone、Crash SDK、端侧资源快照 |
 
 这张表给工程实现划边界：API 30+ 用系统记录做主归因；API 31+ 对 native crash 多拉一份 tombstone；API 29 及以下靠端侧状态机和自建采样兜底。所有版本都保留本地启动标记，因为它能发现“系统没有给出完整解释”的异常退出。
-
-<!-- AIW-源码调研-2026-05-25 -->
-### 源码调研补充（2026-05-25）
-
-**调研议题**：Android 版本化线上诊断能力——ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
-
-**关键发现**：
-
-1. **getTraceInputStream() 版本差异**（未经一手验证，建议用 AOSP android-16.0.0_r1 核实）
-   - API 30：`getTraceInputStream()` 仅对 ANR 返回 trace，native crash 返回 null
-   - API 31+：`REASON_CRASH_NATIVE` 可通过 `getTraceInputStream()` 返回 native tombstone protobuf
-
-2. **Exit Reason 常量版本边界**
-   - `REASON_FREEZER` = API 33
-   - `REASON_PACKAGE_STATE_CHANGE` / `REASON_PACKAGE_UPDATED` = API 34
-
-**信息源**：developer.android.com NDK debug 文档（✅）、developer.android.com ApplicationExitInfo API reference（✅）

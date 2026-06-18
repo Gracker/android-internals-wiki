@@ -436,6 +436,7 @@ tags:
   - [23.11 Scudo 分配器与 Native Heap 性能边界](part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md)
 
 - [第 24 章：I/O 与网络优化](part5-app/ch24-io-network/README.md)
+  - [23.24 Android 17 AI 推理加速与 NeuralNetworks HAL 优化](part5-app/ch23-memory/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md)
   - [24.1 文件 I/O 优化](part5-app/ch24-io-network/01-file-io-optimization.md)
   - [24.2 数据库性能优化（SQLite/Room）](part5-app/ch24-io-network/02-database-optimization.md)
   - [24.3 序列化性能对比与选型](part5-app/ch24-io-network/03-serialization-performance.md)

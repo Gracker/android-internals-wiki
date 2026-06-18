@@ -36,7 +36,8 @@ task9_reviewed_date: "2026-06-18"
 task9_reviewed_by: openclaw-task9
 task9_result: "pass-tech-review"
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-06-18"
 last_task9_audit: "2026-06-18"
 last_task6_audit: "2026-06-18"
 ---
@@ -48,10 +49,16 @@ last_task6_audit: "2026-06-18"
 
 ### 锚点（必须覆盖）
 
-- 🔹 内存监控 API：Debug.MemoryInfo 与 ActivityManager 进程内存采集
-- 🔹 Battery Historian 与性能指标的深度集成机制
-- 🔹 性能指标采集策略与电池使用模式协同
-- 🔹 线上性能指标采集的边界条件与性能影响
+- 🔹 [定位] 说明性能指标采集的适用场景、限制条件和价值边界，区分系统级监控与第三方监控工具分工
+- 🔹 [trace 模型] 展开性能数据结构，包括原子指标(Atom)、聚合配置(ConfigKey)、优先级分级(P0/P1/P2)和事件流走向
+- 🔹 [网络聚合] 说明网络性能指标如何通过 StatsD 进行 URL pattern 归一化、状态码聚合和 payload size 统计
+- 🔹 [JankStats 关系] 区分系统级性能指标与端侧 JankStats 的数据分工，明确什么情况需要自采补充
+- 🔹 [采样与延迟] 分析不同电池模式下的采样策略、本地缓冲周期、控制台延迟对问题排查的影响
+- 🔹 [接入成本] 评估性能监控的 CPU/内存开销、权限要求和电池消耗，给出中低端设备的降级建议
+- 🔹 [适用边界] 明确 Android 17 性能监控的最佳实践，包括指标分级、隐私保护和数据生命周期管理
+- 🔹 [内存监控] 说明 Debug.MemoryInfo 进程内存统计、ART GC 观察和 LeakCanary 内存泄漏检测机制
+- 🔹 [电池集成] 解析 Battery Historian 三层架构、版本演进和电量感知的自动降采样策略
+- 🔹 [边界条件] 分析性能影响的测量方法、权限模型和网络优化策略
 
 ### 扩展（可选深入）
 

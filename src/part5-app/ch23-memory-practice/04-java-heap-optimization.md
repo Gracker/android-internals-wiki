@@ -60,7 +60,7 @@ last_task9_review_log: logs/deep-review/2026-06-08-05-audit.md
 task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX，补充 API 34+/35+ onTrimMemory 等级边界，回到 Task6 复审。"
 task2b_result: fixed
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
+last_deepseek_cn_review_at: 2026-06-18
 task2b_state: fixed
 last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
@@ -99,12 +99,9 @@ Android Developers 的内存文档给了两个判断口径：Android 会给每�
 
 ART 堆空间、分配器和 GC 细节详见 4.3 节；分代 GC 与暂停分析详见 4.8 节；内存泄漏治理详见 23.1 节；内存抖动与 GC 治理详见 23.5 节。本节把这些机制转成应用侧可执行动作：少分配、晚分配、按预算缓存、在生命周期边界清理。
 
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-[已验证: 官方文档, developer.android.com/topic/performance/memory-overview]
 
 ## Java Heap 空间组成与分配策略
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap-inl.h]
 
 应用代码里 `new` 出来的对象不会均匀落在一整块抽象堆里。ART 会按对象性质和回收器配置把对象放到不同空间中，应用侧最需要关心的是 Main Space 和 Large Object Space：普通对象通常进入 Main Space，满足大对象条件的基本类型数组或 `String` 会走 Large Object Space。
 
@@ -149,7 +146,6 @@ object JavaHeapPressure {
 
 ## 大对象与集合优化
 
-[已验证: 官方文档, developer.android.com/studio/profile/capture-heap-dump]
 
 大对象优化先从“减少一次性装入”开始。服务端返回几 MB JSON、一次性读完整文件、把长日志拼成一个 `String`、把列表全量映射成 ViewModel，都会把 Java Heap 压力集中到一个短窗口里。GC 能回收不可达对象，但它不能替业务决定哪些对象不该一次性加载。
 
@@ -185,8 +181,6 @@ fun buildVisibleItems(
 
 ## 对象池与缓存策略
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
 对象池和缓存都在用空间换时间，区别在于目标不同。对象池减少重复分配，缓存减少重复计算或重复 I/O。两者都要有上限、失效条件和生命周期归属，否则优化很快会变成常驻内存。
 
@@ -217,11 +211,10 @@ class StringPayloadCache(
 
 对象池只适合满足三个条件的对象：创建频繁、初始化成本高、可安全重置。普通 data class、生命周期复杂的对象、持有 `Context` / View / callback 的对象，不建议放进池。池化后的对象一旦忘记清字段，泄漏和脏数据会比原来的分配成本更贵。
 
-对象池还要跟 ART 分代 GC 分开评估：短命小对象在现代 ART 上可能很便宜，强行池化会把短命对象变成长命对象，增加老年代压力。和 4.8 节里的分代 GC 逻辑对照看，池化的判断标准应该是“分配热点是否导致可观测 GC 或 CPU 压力”，不是“看到 new 就消灭”。[已验证: 官方文档, developer.android.com/topic/performance/memory-overview]
+对象池还要跟 ART 分代 GC 分开评估：短命小对象在现代 ART 上可能很便宜，强行池化会把短命对象变成长命对象，增加老年代压力。和 4.8 节里的分代 GC 逻辑对照看，池化的判断标准应该是“分配热点是否导致可观测 GC 或 CPU 压力”，不是“看到 new 就消灭”。
 
 ## GC 友好的编码实践
 
-[已验证: 官方文档, developer.android.com/studio/profile/record-java-kotlin-allocations]
 
 GC 友好的代码要让分配符合场景节奏：启动、首帧、滑动、动画、输入响应期间少制造短时间高峰；页面退出、后台切换、系统 trim 时能释放；后台任务和低优先级计算不要跟前台帧争资源。
 
@@ -259,13 +252,12 @@ class GoodsAdapter(
 
 ## ART GC 调优参数
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap-inl.h]
 
-应用侧不应把 ART 私有参数当常规调优手段。`growth_limit_`、`target_footprint_`、`concurrent_start_bytes_`、`large_object_threshold_` 这些变量解释了 ART 何时扩堆、何时触发并发 GC、哪些对象走大对象路径，但它们不是面向普通应用开放的配置接口。
+`growth_limit_`、`target_footprint_`、`concurrent_start_bytes_`、`large_object_threshold_` 等变量解释了 ART 何时扩堆、何时触发并发 GC、哪些对象走大对象路径，但它们不是面向普通应用暴露的配置接口，不要当作常规调优手段。
 
 `android:largeHeap="true"` 也不能当默认方案。它会让部分设备给进程更大的堆上限，但不会消除泄漏、无上限缓存和大对象峰值；它还会让单进程占用更高，增加系统回收后台进程的压力。只有图片编辑、大文档处理、地图、创作工具这类明确需要大内存且已做过分层释放的业务，才值得单独评估。
 
-参考书里提到的 GC 抑制和 ART Hook 属于高风险方案。本节不把它们作为通用建议，只保留两个可借鉴的方向：在关键窗口前减少无关分配，在关键窗口后恢复正常回收节奏。应用侧更安全的做法是减少启动和滑动期间的分配热点，而不是阻塞 HeapTaskDaemon 或修改 ART 内部行为。
+参考书里提到的 GC 抑制和 ART Hook 属于高风险方案，不建议作为通用手段。更安全的做法是减少启动和滑动期间的分配热点，而不是阻塞 HeapTaskDaemon 或修改 ART 内部行为。
 
 评审时可以用下面的表格判断方案边界：
 
@@ -280,7 +272,6 @@ class GoodsAdapter(
 
 ## 排查路径：从堆曲线到代码改动
 
-[已验证: 官方文档, developer.android.com/studio/profile/record-java-kotlin-allocations]
 
 Java Heap 优化可以按四步推进：
 
