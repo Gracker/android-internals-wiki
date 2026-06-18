@@ -3533,5 +3533,52 @@
       "source": "Task11-每日增量扫描",
       "scored_at": "2026-06-19T05:46:42.080708"
     }
+  ],
+  "entries": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-strictmode-android17-new-features.md",
+      "title": "Android 17 StrictMode 新增特性与 FlaggedApi 集成",
+      "summary": "Android 17 StrictMode 重大升级：@FlaggedApi 渐进式控制、新增 BAL/URI Permission Violation 类、AConfig 只读 flags",
+      "chapter": "ch14",
+      "section": "14.23",
+      "processed_at": "2026-06-19T06:14:05.963030",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md",
+      "title": "Jetpack Compose 内存分配与 SlotTable / Composer 机制",
+      "summary": "Compose 重组内存分配模式源码分析：SlotTable gap-buffer、RecomposeScopeImpl、State 装箱、derivedStateOf ResultRecord",
+      "chapter": "ch10",
+      "section": "10.6",
+      "processed_at": "2026-06-19T06:14:05.963030",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-memory-metrics-collection-source-stack.md",
+      "title": "Android 内存指标采集体系（PSS/RSS/smaps_rollup/StatusVmRSS 三层采样路径）",
+      "summary": "三条内存采样路径：SmapsOrRollup 全量PSS、SmapsOrRollupPss 精简PSS、StatusVmRSS 廉价RSS(Android 15+)",
+      "chapter": "ch23",
+      "section": "23.7",
+      "processed_at": "2026-06-19T06:14:05.963030",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md",
+      "title": "Adaptive Battery 与 App Standby 协同机制",
+      "summary": "Adaptive Battery 写入接口+衰减契约，桶值被三方读取(JobScheduler/AppStateTracker/PowerManagerService)，源码 android-17.0.0_r1",
+      "chapter": "ch05",
+      "section": "5.21",
+      "processed_at": "2026-06-19T06:14:05.963030",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-privacy-sandbox-location-power-analysis.md",
+      "title": "Android 12+ 隐私沙盒对位置服务功耗的深层影响",
+      "summary": "三层判定链控制定位功耗：权限位→复合判定→注册层前台态过滤，后台 interval 默认30分钟",
+      "chapter": "ch11",
+      "section": "11.4",
+      "processed_at": "2026-06-19T06:14:05.963030",
+      "action": "queue"
+    }
   ]
 }
