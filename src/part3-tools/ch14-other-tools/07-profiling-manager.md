@@ -125,14 +125,14 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 写"保住窗口开头"时用 `DISCARD`，写"保住结束点附近现场"时用 `RING_BUFFER`，语义就能和真实枚举对上。
 
-## 结果通道别按"显式请求"和"trigger"硬切开
+## 结果通道别按"显式请求"和"trigger"机械区分
 
 平台文档把 listener 分成 request-specific listener 和 global listener 两层,但 global listener 不只给 trigger 用。`registerForAllProfilingResults()` 会收到当前 UID 的全部 profiling 结果。应用同时注册 global listener 时,一次显式请求也会额外命中它。
 
 | 场景 | request-specific listener | global listener | `triggerType` | 归档建议 |
 |---|---|---|---|---|
 | `Profiling.requestProfiling(...)`,未注册 global listener | 会收到 | 收不到 | `TRIGGER_TYPE_NONE` | callback 里直接归档也能跑通 |
-| `Profiling.requestProfiling(...)`,已注册 global listener | 会收到 | 也会收到同一结果 | `TRIGGER_TYPE_NONE` | callback 只做 case 状态更新,global listener 负责真正落库 |
+| `Profiling.requestProfiling(...)`,已注册 global listener | 会收到 | 也会收到同一结果 | `TRIGGER_TYPE_NONE` | callback 只做 case 状态更新,global listener 负责统一落库 |
 | `addProfilingTriggers(...)` 注册的 system-triggered profiling | 收不到 | 会收到 | 具体 trigger 常量 | global listener 按 `triggerType` 分发到冷启动、ANR、OOM 各自流程 |
 
 同时注册两层 listener 时,去重主键优先用 `resultFilePath`。失败结果没有文件时,用 `triggerType + tag + errorCode + caseId` 兜底。这样显式请求和 trigger 结果走同一条归档流程,不会出现双写同一份 artifact。

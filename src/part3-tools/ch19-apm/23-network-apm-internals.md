@@ -1,5 +1,4 @@
 ---
-
 status: "finalized"
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: '19'
@@ -9,7 +8,7 @@ drafted_date: '2026-04-24'
 last_task2b_at: "2026-05-31T19:35:00+08:00"
 last_task2b_lite_at: "2026-05-31"
 last_task6_at: "2026-05-31T20:10:00+08:00"
-last_task6_audit: "2026-06-15T06:07:00+08:00"
+last_task6_audit: "2026-06-18T16:10:36+08:00"
 last_task6_review_log: "logs/review/2026-05-31-20-review.md"
 last_task9_at: "2026-05-31T21:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
@@ -54,8 +53,6 @@ title: 网络 APM 底层捕获原理
 task9_review_notes: "2026-05-31 Task9 deep review: 复核 OkHttp EventListener attempt/exchange 建模、responseBodyEnd 应用消费边界、AGP Instrumentation API、Cronet/eBPF/QUIC 边界，无 P0/P1，自动晋升 finalized。"
 task6_review_notes: "2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；既有 Task9 P0 queue pending（activeExchange 状态机），Task6 不裁决，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 1 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-31 20:10 Task6：Task2B fixed-lite 后复审，L1/L2 clean，无新增回炉项，送 Task9 复核。"
 ---
-
-
 # 网络 APM 底层捕获原理
 
 <!-- outline-start -->

@@ -62,7 +62,7 @@ task6_review_notes: "2026-05-28 Task6 review: pass-light-edit。L1/L2 小修 2 �
 last_task9_review_log: "logs/deep-review/2026-06-18-10-audit.md"
 task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：EAS 示例未体现 fits_capacity 约 20% margin；P1 1：运行时负载均衡误写为 EAS 参与，已改为 CFS load_balance/misfit 路径并由 overutilized 分界。回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
+last_deepseek_cn_review_at: 2026-06-18
 last_task9_audit_at: "2026-06-18T10:29:11+08:00"
 last_task9_autofix_at: "2026-06-18"
 last_task9_audit_log: "logs/deep-review/2026-06-18-10-audit.md"
@@ -203,7 +203,7 @@ EAS 的决策依赖一个关键输入:**任务有多"忙"**。这个信息由 PE
 
 在 PELT 出现之前,内核通过 per-CPU runqueue 的负载来估算任务的繁忙程度,但这种方式有一个缺陷：它只反映了 CPU 的整体负载,无法区分"一个 CPU 上跑了三个轻任务"和"一个 CPU 上跑了一个重任务"。EAS 需要知道**每个任务**需要多少计算能力,才能做出合理的选核决策。
 
-PELT 从 Linux 3.8 开始引入,它为每个调度实体(单个任务、任务组、CPU runqueue)维护一个独立的 utilization 信号 `util_avg`。
+PELT 从 Linux 3.8 开始引入，它为每个调度实体（单个任务、任务组、CPU runqueue）维护独立的 utilization 信号 `util_avg`。
 
 [已验证: 官方文档, kernel/sched/fair.c - PELT tracks utilization per sched_entity]
 
@@ -234,9 +234,9 @@ PELT 的 util 信号要能在大小核之间准确比较,需要满足两个"不�
 
 ### WALT 与设备差异
 
-Linux mainline 的 EAS 文档建立在 PELT 及其 frequency / CPU invariance 之上,并没有把 WALT 当成前提。WALT（Window Assisted Load Tracking）更像是部分 Android common kernel 或厂商内核使用过的负载跟踪扩展,常见于追求更快突发响应的设备内核。它会改变 util 信号的形成方式,但不会改掉 EAS 仍需依据 util、capacity、EM 做选核这一点。
+Linux mainline 的 EAS 文档建立在 PELT 及其 frequency / CPU invariance 之上,并没有把 WALT 当成前提。WALT（Window Assisted Load Tracking）是部分 Android common kernel 或厂商内核使用过的负载跟踪扩展，常见于追求更快突发响应的设备内核。它会改变 util 信号的形成方式，但不会改变 EAS 依据 util、capacity、EM 做选核这一核心逻辑。
 
-时间线最好拆成三层看。主线内核这条线是 PELT → EAS → uclamp;AOSP 用户态这条线是 task profile、cgroup 和 Power HAL 怎样把提示送进调度器;厂商设备这条线才是 WALT、boost hook、额外迁核策略。把三条线压成"Android 12 统一回归 PELT",很容易把 mainline、AOSP 和 vendor 内核混成一件事。分析具体设备时,要按内核版本和厂商树确认它到底是纯 PELT、WALT,还是两者混用。
+分析具体设备时，按三层拆开看更清楚。主线内核这条线是 PELT → EAS → uclamp；AOSP 用户态是 task profile、cgroup 和 Power HAL 怎样把提示送进调度器；厂商设备才是 WALT、boost hook、额外迁核策略。把三条线压成"Android 12 统一回归 PELT"，容易把 mainline、AOSP 和 vendor 内核混成一件事。排查时按内核版本和厂商树确认具体负载跟踪实现。
 
 [已验证: 官方文档, https://docs.kernel.org/scheduler/sched-energy.html - EAS 依赖 frequency-invariant / CPU-invariant utilization signals]
 
@@ -467,7 +467,7 @@ EAS 看的是"有效 util 信号 + capacity + EM"。SchedTune 或 uclamp 只是�
 
 ### "厂商的定制调度器比原版 EAS 好"
 
-不一定,但也不一定差。厂商的定制调度器通常在原版 EAS 的基础上增加了更多场景感知(如游戏模式、性能模式)和更精细的绑核策略。有些厂商的定制带来了更好的用户体验,但也有厂商的定制引入了新的问题(如过度激进的上核策略导致功耗飙升)。分析 Perfetto Trace 时,需要了解测试设备的厂商调度策略,才能准确判断行为是否正常。
+不一定好，也不一定差。厂商定制通常在原版 EAS 基础上增加更多场景感知（游戏模式、性能模式）和更精细的绑核策略。有些定制体验更好，也有定制引入了新问题（如过度激进的上核策略导致功耗飙升）。分析 Perfetto 时，先确认测试设备的厂商调度策略，才能准确判断行为是否异常。
 
 ## 版本演进
 

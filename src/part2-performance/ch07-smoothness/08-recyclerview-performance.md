@@ -79,6 +79,8 @@ task6_review_notes: "2026-05-27 06:09 Task6：复审通过；禁用词扫描仅�
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-18
 ---
 
 # 7.8 RecyclerView 列表滑动性能深度优化
@@ -199,7 +201,7 @@ GapWorker 的时间预算只覆盖 ViewHolder 获取、create 和 bind 路径，
 
 ### Android 17 DeliQueue 对预取调度的影响
 
-Android 17 为 `targetSdkVersion >= 37` 的应用启用新的 lock-free `MessageQueue` 实现 DeliQueue；低于这个 target 的应用默认仍走旧的 lock-based 实现，debuggable build 可用 `adb am compat enable USE_NEW_MESSAGEQUEUE <package>` 提前测试。这个边界来自 Android 17 MessageQueue behavior change 文档，不依赖 AOSP benchmark 代码。
+Android 17 为 `targetSdkVersion >= 37` 的应用启用新的 lock-free `MessageQueue` 实现 DeliQueue；低于此 target 的应用默认仍走旧的 lock-based 实现，debuggable build 可用 `adb am compat enable USE_NEW_MESSAGEQUEUE <package>` 提前测试。
 
 `GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程队列。旧实现中，后台线程 `Handler.post()`、`AsyncListDiffer` diff 结果回调和主线程 `next()` 共享同一把 `MessageQueue` monitor；后台线程持锁时被调度器抢占，主线程就可能在取消息阶段等待。DeliQueue 的设计口径来自 Google Android Developers Blog：入队侧使用 Treiber stack，Looper 侧使用 min-heap 处理按 `when` 排序的消息，目标是移除这条 monitor contention 路径。
 
@@ -229,9 +231,9 @@ GROUP BY process_name
 ORDER BY SUM(dur) DESC;
 ```
 
-### 反射 MessageQueue 的监控库兼容性
+### DeliQueue 对监控库的兼容性影响
 
-DeliQueue 改变了 `MessageQueue` 的内部实现。部分基于反射访问 `MessageQueue.mMessages` 链表的 RecyclerView 性能监控库（如通过反射 hook `dispatchMessage` 来追踪 `doFrame` 内各阶段耗时），在 Android 17 上可能拿不到预期的字段值或回调时机。如果项目依赖这类库，建议切换到官方 `FrameMetrics` / `JankStats` 方案，或使用 `Choreographer.FrameCallback` + `FrameData` (API 33+) 的公开 API。
+DeliQueue 改变了 `MessageQueue` 内部实现。部分通过反射访问 `MessageQueue.mMessages` 链表的性能监控库（如反射 hook `dispatchMessage` 追踪 `doFrame` 内各阶段耗时），在 Android 17 上可能拿不到预期字段值或回调时机。如果项目依赖这类库，建议切换到官方 `FrameMetrics` / `JankStats` 方案，或使用 `Choreographer.FrameCallback` + `FrameData` (API 33+) 的公开 API。
 
 [已验证: AndroidX androidx-main，`RecyclerView.java` `scrollByInternal()` / `ViewFlinger.run()` / `tryGetViewHolderForPositionByDeadline()`，`GapWorker.java` `postFromTraversal()` / `run()` / `prefetchPositionWithDeadline()`]
 
@@ -319,14 +321,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 在 Perfetto 中，嵌套滑动导致的性能问题通常表现为频繁的 `requestLayout` 调用和重复的 measure/layout pass。如果在一个 doFrame 中看到多次 layout 事件，很可能是嵌套滑动导致的。
 
-针对嵌套 RecyclerView 的优化策略：
-
-- 共享 RecycledViewPool：为所有内层 RecyclerView 设置同一个 Pool 实例，避免每个子列表各自维护独立的缓存池
-- `LinearLayoutManager#setRecycleChildrenOnDetach(true)`：在内层列表使用 `LinearLayoutManager` / `GridLayoutManager` 时，滑出屏幕后立即把子 ViewHolder 回收到共享 Pool
-- `setMaxRecycledViews()` 调整 Pool 大小：根据可见 item 数量合理配置
-- 禁用 OverScroll 效果：`setOverScrollMode(View.OVER_SCROLL_NEVER)`，减少不必要的绘制开销
-
-这些优化手段的效果取决于具体的嵌套结构和数据量。在做了上述优化之后，如果嵌套滑动仍然导致明显的卡顿，需要进一步分析 doFrame 内的布局调用路径。
+针对嵌套 RecyclerView 的优化策略：共享 RecycledViewPool、`setRecycleChildrenOnDetach(true)`、按需调整 `setMaxRecycledViews()`，以及禁用 OverScroll 效果（`setOverScrollMode(View.OVER_SCROLL_NEVER)`）。这些手段的效果取决于具体嵌套结构和数据量——做了上述优化后如果仍然明显卡顿，需要进一步分析 doFrame 内的布局调用路径。
 
 [图：嵌套滑动协议的时序图，标注 preScroll 和 postScroll 的分发路径]
 
@@ -348,7 +343,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 这是一种"无掉帧卡顿"，和 §7.1 中讨论的帧率稳定性问题不同。帧率可能稳定在 120fps，但步幅波动仍会让用户感觉不流畅。
 
-[来源: 高爷卡顿知识补充 2026-04-06，VSync 时间取整问题]
+
 
 ## RecyclerView 1.4 与 Adaptive Refresh Rate
 
@@ -423,7 +418,7 @@ GROUP BY name
 ORDER BY max_ms DESC;
 ```
 
-有两个判断点很常用。`RV OnLayout` 很长，通常说明布局、measure 或动画准备在吃时间。`RV Prefetch` 很明显，但后面没有 create/bind，则多半是预算检查提前结束了预取，或者目标 ViewHolder 已经在缓存里。
+两个常用判断：`RV OnLayout` 很长 → 布局、measure 或动画准备在吃时间；`RV Prefetch` 出现但后面没有 create/bind → 预算检查提前结束了预取，或目标 ViewHolder 已在缓存中。
 
 `dispatchLayoutStep1/2/3` 不会直接出现在 Trace 名字里。看到 `RV FullInvalidate`、`RV PartialInvalidate`、`RV OnLayout` 之后，还要回到上一节的阶段映射去解释它们分别对应哪一段布局流程。
 
@@ -472,4 +467,4 @@ ORDER BY max_ms DESC;
 - **内部调研**：`DeepResearch/2026-05-14-android17-deliqueue-recyclerview-prefetch-verification.md`
 - **内部调研**：`DeepResearch/2026-05-13-recyclerview-deliqueue-messagequeue-analysis.md`
 - **Myers 差分算法**：Eugene W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986
-- **高爷补充素材**：VSync 时间精度与步幅波动（2026-04-06）
+- VSync 时间精度与步幅波动分析（2026-04-06）

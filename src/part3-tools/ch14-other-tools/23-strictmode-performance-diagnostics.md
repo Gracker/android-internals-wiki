@@ -27,6 +27,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_autofix_at: "2026-06-17"
 last_task9_review_log: "logs/deep-review/2026-06-17-14-deep-review.md"
 task9_review_notes: "2026-06-17 Task9 auto-fix: StrictMode API 归属、VmPolicy bit 口径、Compose/ActivityScenario 边界、DropBox/netd 说明与 AOSP android-17.0.0_r1 源码锚点修正；回到 Task6 复审。"
+last_task6_audit: "2026-06-18"
 p0: 0
 p1: 0
 p2: 0

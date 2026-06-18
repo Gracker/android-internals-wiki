@@ -41,6 +41,7 @@ task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T14:32:13+08:00"
 last_task9_audit: "2026-06-09"
+last_task6_audit: "2026-06-18"
 
 last_task2b_at: "2026-06-05T04:53:50+08:00"
 
