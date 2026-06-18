@@ -2,7 +2,7 @@
 title: "渲染管线分类与选择对照表"
 chapter: "18.1"
 section: "18.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
 last_verified: "2026-06-17"
 last_verified_against: "AOSP android-16.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue + HardwareBufferRenderer API + Flutter 3.32 release notes"
@@ -12,13 +12,13 @@ related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", 
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 sources: ["AOSP frameworks/native/services/surfaceflinger", "AOSP frameworks/base/core/java/android/view", "Android 16 Developer Preview 文档", "Flutter 3.32 release notes"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
-last_task9_at: "2026-06-17T08:28:29+08:00"
+last_task9_at: "2026-06-19T01:26:49+08:00"
 last_task2b_at: "2026-05-05T04:53:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-19"
@@ -26,18 +26,20 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-06-19"
 last_task6_at: "2026-06-19T01:10:00+08:00"
 last_task6_audit: "2026-06-17T06:07:00+08:00"
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-17"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: openclaw-task9
-task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 闲时抽检 AUTO-FIX：P0 1 / P1 0 / P2 2；修正 Android 14-16 SurfaceFlinger 源码锚点，`BufferStateLayer.cpp` 限定为 Android 11-13，回到 Task6 复审。"
-p0: 1
+task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 闲时抽检 AUTO-FIX：P0 1 / P1 0 / P2 2；修正 Android 14-16 SurfaceFlinger 源码锚点，`BufferStateLayer.cpp` 限定为 Android 11-13，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。"
+p0: 0
 p1: 0
-p2: 2
+p2: 0
 last_task9_audit: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-08-audit.md"
-last_task9_review_log: "logs/deep-review/2026-06-17-08-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-19-01-deep-review.md"
 auto_promoted: true
 last_task9_autofix_at: "2026-06-17"
+updated_by: "openclaw-task9"
+updated_date: "2026-06-19"
 ---
 
 <!-- outline-start -->

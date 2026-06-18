@@ -32,30 +32,30 @@ reviewed_date: "2026-06-19"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-05-08-04-review.md"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_result: "auto-fixed"
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_result: auto-fixed
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-04-24T09:54:00+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-18"
-last_task9_at: "2026-06-18T22:30:36+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-18-22-audit.md"
+task9_reviewed_date: "2026-06-19"
+last_task9_at: "2026-06-19T01:26:49+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-19-01-deep-review.md"
 task6_reviewed_date: "2026-06-19"
 last_task6_at: "2026-06-19T01:10:00+08:00"
 last_task6_audit: "2026-06-17"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 18 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、数据口径示意与代码块语言标注；无新增回炉项，送 Task9 复审。 | 2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（ashmem/memfd 版本边界、RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线）回流后写作层复审通过；L1/L2 无需小修，章节文风干净；无 L3/L4 回炉项，送 Task9 复审。"
-task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-26 20:20 Task9 闲时抽检：pass-tech-review。P0/P1 0；P2 2（RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线表述需修正）；详见 logs/deep-review/2026-05-26-20-audit.md。 | 2026-06-18 Task9 idle-audit: auto-fixed。P1 1：修正 ashmem-compatible memfd 版本边界，android-17.0.0_r1 中默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37；P2 3：修正 RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线与 Parcel::writeBlob 零拷贝口径。"
+task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-26 20:20 Task9 闲时抽检：pass-tech-review。P0/P1 0；P2 2（RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线表述需修正）；详见 logs/deep-review/2026-05-26-20-audit.md。 | 2026-06-18 Task9 idle-audit: auto-fixed。P1 1：修正 ashmem-compatible memfd 版本边界，android-17.0.0_r1 中默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37；P2 3：修正 RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线与 Parcel::writeBlob 零拷贝口径。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 0；复核 AOSP android-17.0.0_r1 Parcel.cpp，修正 writeBlob >16KB 走 ashmem fd 的条件，补充 mAllowFds 为 true 的边界；回到 Task6 复审。详见 logs/deep-review/2026-06-19-01-deep-review.md。"
 last_task9_audit: "2026-06-18"
 last_task9_audit_log: "logs/deep-review/2026-06-18-22-audit.md"
-last_task9_autofix_at: "2026-06-18"
+last_task9_autofix_at: "2026-06-19"
 updated_by: "openclaw-task9"
-updated_date: "2026-06-18"
-p0: 0
-p1: 1
-p2: 3
+updated_date: "2026-06-19"
+p0: 1
+p1: 0
+p2: 0
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
@@ -281,13 +281,13 @@ InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/syste
 
 ### 3.4.1 Parcel::writeBlob fd 传递与 ashmem/memfd 演进
 
-Android 的 `Parcel::writeBlob()` 对大于 `BLOB_INPLACE_LIMIT`（`16 * 1024 = 16KB`）的大数据使用共享内存 fd，避免把 payload 直接塞进 Binder transaction buffer。发送方仍需要把已有数据写入共享区域，所以这里不能写成端到端零拷贝：
+Android 的 `Parcel::writeBlob()` 在允许携带 fd（`mAllowFds == true`）且 payload 大于 `BLOB_INPLACE_LIMIT`（`16 * 1024 = 16KB`）时，使用共享内存 fd，避免把 payload 直接塞进 Binder transaction buffer。若当前 `Parcel` 禁止 fd，源码会回到 inplace 写入路径。发送方仍需要把已有数据写入共享区域，所以这里不能写成端到端零拷贝：
 
 ```cpp
 // frameworks/native/libs/binder/Parcel.cpp (AOSP android-17.0.0_r1)
 // 简化调用链
 Parcel::writeBlob(size, data)
-  ├─ if (size <= BLOB_INPLACE_LIMIT)   // 16KB
+  ├─ if (!mAllowFds || size <= BLOB_INPLACE_LIMIT)
   │    writeInplace(data)              // 直接写入 Parcel 内部 buffer
   └─ else
        ashmem_create_region("Parcel Blob", size)  // 申请匿名共享内存
@@ -301,7 +301,7 @@ Parcel::writeBlob(size, data)
 
 `ashmem_create_region` 由 `libcutils/ashmem-dev.cpp` 的 ashmem-compatible 层实现，底层是否走 `memfd_create` 取决于版本和设备门禁；`F_ADD_SEALS` / `F_SEAL_FUTURE_WRITE` 是 memfd 路径的实现细节，对 Parcel 调用者不可见。`art/libartbase/base/memfd.cc` 提供 memfd 的封装和 tmpfile fallback。
 
-[源码验证: AOSP android-17.0.0_r1 frameworks/native/libs/binder/Parcel.cpp（writeBlob 阈值判断与 ashmem 路径）；system/core/libcutils/ashmem-dev.cpp（ashmem-compatible memfd 实现）；art/libartbase/base/memfd.cc（memfd 封装）]
+[源码验证: AOSP android-17.0.0_r1 frameworks/native/libs/binder/Parcel.cpp（`!mAllowFds || len <= BLOB_INPLACE_LIMIT` 的 inplace 分支与 ashmem fd 分支）；system/core/libcutils/ashmem-dev.cpp（ashmem-compatible memfd 实现）；art/libartbase/base/memfd.cc（memfd 封装）]
 
 ### 3.5 mmap 文件映射
 
