@@ -1661,7 +1661,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-06-18T05:34:36",
-    "status": "pending"
+    "status": "completed",
+    "completed_reason": "URL 不可访问（Juejin SPA 无 API 访问），跳过",
+    "completed_at": "2026-06-18T12:51:57.275711+08:00",
+    "completed_by": "task2b-main"
   },
   {
     "section": "12.1",
@@ -1725,7 +1728,10 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-06-18T05:34:36",
-    "status": "pending"
+    "status": "completed",
+    "completed_reason": "URL 不可访问（Juejin SPA 无 API 访问），跳过",
+    "completed_at": "2026-06-18T12:51:57.275711+08:00",
+    "completed_by": "task2b-main"
   },
   {
     "section": "20.7",
@@ -1745,7 +1751,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-18T06:13:16.933321",
-    "status": "pending"
+    "status": "completed",
+    "completed_reason": "素材注入: 已追加 DropBox crash persistence 协议核验 DeepResearch 引用至参考资料",
+    "completed_at": "2026-06-18T12:51:57.275711+08:00",
+    "completed_by": "task2b-main"
   },
   {
     "id": "task9-20260618-06-performance-collection-source-errors",
