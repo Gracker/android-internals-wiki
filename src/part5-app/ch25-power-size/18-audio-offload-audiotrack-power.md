@@ -26,7 +26,8 @@ task6_autofix_trigger: true
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-05-31T10:08:00+08:00"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-05T13:11:00+08:00"
+last_task6_at: "2026-06-18T21:10:00+08:00"
+last_task6_audit: "2026-06-18"
 last_task6_review_log: "logs/review/2026-06-05-13-review.md"
 sources:
   - type: clippings-structure
@@ -113,7 +114,7 @@ Offload 的收益来自少唤醒、少 CPU 解码和少数据搬运。适用场�
 | Assistant 回复音频 | 分场景处理 | 短回复更看延迟，长回复可评估省电 | Android 17 音量流隔离和后台资格要分开判断 |
 | 闹钟、提醒 | 按 `USAGE_ALARM` 单独处理 | 与后台音频 hardening 的豁免相关 | 不应把媒体播放伪装成 alarm usage |
 
-Media3 文档给出的边界很清楚：短音频或亮屏播放时，音频通常不是主要耗电项；长时间、屏幕关闭后的播放可以评估 ExoPlayer audio offload。官方也说明设备和格式支持会变化，Offload 会限制变速、跳过静音等效果能力，所以不能只看 API level 下结论。
+Media3 文档建议：短音频或亮屏播放时，音频通常不是主要耗电项；长时间、屏幕关闭后的播放可以评估 ExoPlayer audio offload。官方也说明设备和格式支持会变化，Offload 会限制变速、跳过静音等效果能力，所以不能只看 API level 下结论。
 
 [已验证: 官方文档, developer.android.com/media/media3/exoplayer/battery-consumption]
 
