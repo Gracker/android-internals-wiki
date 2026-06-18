@@ -3,7 +3,7 @@
 title: "InputDispatcher 反压与无响应窗口降级"
 chapter: "3.7"
 section: "3.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 16 (API 36)"
 last_verified: "2026-05-16"

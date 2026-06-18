@@ -671,7 +671,8 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "last_task2b_verifier_at": "2026-05-27T23:28:16+08:00",
-      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
+      "task2b_verifier_note": "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "5.7": {
       "p0": 0,
@@ -1623,7 +1624,10 @@
       "p0": 0,
       "p1": 1,
       "p2": 0,
-      "p3": 0
+      "p3": 0,
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "5.1": {
       "p0": 1,
@@ -1670,7 +1674,10 @@
       "p3": 0,
       "reviewed_at": "2026-05-16T14:20:00+08:00",
       "log": "logs/deep-review/2026-05-16-14-deep-review.md",
-      "summary": "P1 2：weighted_missed_frames 中间表口径被当作总严重度；android.cujs.base 默认只覆盖 com.android*/com.google.android* 的 J<...> CUJ，正文缺第三方 App 适用边界。P2 1：最小 TraceConfig/采集条件缺失。"
+      "summary": "P1 2：weighted_missed_frames 中间表口径被当作总严重度；android.cujs.base 默认只覆盖 com.android*/com.google.android* 的 J<...> CUJ，正文缺第三方 App 适用边界。P2 1：最小 TraceConfig/采集条件缺失。",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "5.8": {
       "task6_l3_l4": 1,
@@ -2835,8 +2842,8 @@
       "verifier_updated": "2026-06-06T19:28"
     },
     "5.2": {
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-05-24T06:27:54+08:00",
       "task9_result": "needs-rework",
       "auto_promoted": false,
@@ -2855,7 +2862,8 @@
       "last_task6_review_log": "logs/review/2026-05-28-01-review.md",
       "task6_l1_l2_fixes": 2,
       "task6_l3_l4_issues": 0,
-      "task6_review_notes": "2026-05-28 Task6 review：pass-light-edit；既有 Task9 needs-rework 技术项继续流转 task9_pending。"
+      "task6_review_notes": "2026-05-28 Task6 review：pass-light-edit；既有 Task9 needs-rework 技术项继续流转 task9_pending。",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "5.7": {
       "status": "finalized",
@@ -5059,8 +5067,8 @@
     "3.7": {
       "title": "InputDispatcher 反压与无响应窗口降级",
       "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5081,7 +5089,8 @@
       "last_task9_audit_log": "logs/deep-review/2026-05-24-17-audit.md",
       "task9_review_notes": "2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。",
       "last_task6_at": "2026-06-12T08:10:00+08:00",
-      "last_task6_review_log": "logs/review/2026-06-12-08-review.md"
+      "last_task6_review_log": "logs/review/2026-06-12-08-review.md",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
@@ -5136,8 +5145,8 @@
     "13.14": {
       "title": "Perfetto DataGrid 与 Jank CUJ 标准库",
       "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5171,7 +5180,8 @@
       "p1": 0,
       "p2": 0,
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-05-28"
+      "task9_reviewed_date": "2026-05-28",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
@@ -7174,8 +7184,8 @@
       "section": "15.2",
       "title": "如何区分系统问题和 App 问题",
       "file": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
@@ -7190,7 +7200,8 @@
       "task6_l3_l4_issues": 0,
       "task6_review_notes": "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed-lite"
+      "task2b_result": "fixed-lite",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "14.5": {
       "title": "三方性能库",
@@ -7806,7 +7817,7 @@
       "pipeline_stage": "task6_pending",
       "task2b_state": "fixed",
       "task9_result": "auto-fixed",
-      "last_verifier_pass": "2026-06-17T23:29:22+08:00"
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "25.22": {
       "section": "25.22",
@@ -8266,7 +8277,7 @@
       "title": "InputDispatcher 反压与无响应窗口降级",
       "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -8285,7 +8296,8 @@
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_audit": "2026-05-24",
       "last_task9_audit_log": "logs/deep-review/2026-05-24-17-audit.md",
-      "task9_review_notes": "2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。"
+      "task9_review_notes": "2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
@@ -8329,7 +8341,7 @@
       "title": "Perfetto DataGrid 与 Jank CUJ 标准库",
       "file": "src/part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -8365,7 +8377,8 @@
       "p1": 0,
       "p2": 0,
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-05-28"
+      "task9_reviewed_date": "2026-05-28",
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
     },
     "20.12": {
       "title": "SafeMode 崩溃循环判定与启动补偿链路",
@@ -14613,5 +14626,10 @@
     "finalized": 307,
     "ready_for_review": 89,
     "draft": 2
+  },
+  "1.17": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "last_verifier_pass": "2026-06-18T23:29:05+08:00"
   }
 }

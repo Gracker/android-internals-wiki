@@ -2,7 +2,7 @@
 title: "Perfetto DataGrid 与 Jank CUJ 标准库"
 chapter: "13.14"
 section: "13.14"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-18"

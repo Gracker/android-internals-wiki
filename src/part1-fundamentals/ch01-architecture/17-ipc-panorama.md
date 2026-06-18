@@ -2,7 +2,7 @@
 title: "IPC 全景：Android 进程间通信机制对比与性能选型"
 chapter: "1.17"
 section: "1.17"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-18"
 last_verified_against: "AOSP android-17.0.0_r1（ProcessState.cpp、Parcel.cpp、InputTransport.cpp、Looper.cpp、ashmem-dev.cpp、RpcTransportRaw.cpp、reserved_signals.h、debuggerd_client.cpp）, source.android.com"
