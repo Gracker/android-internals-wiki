@@ -38,9 +38,9 @@ reviewed_date: "2026-05-28"
 last_task6_audit: '2026-05-21'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 review2_date: '2026-04-06'
 review2_by: openclaw-task6
 polish_count: 1
@@ -50,19 +50,23 @@ task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-05-28T01:28:49+08:00"
-task9_result: "pass-tech-review"
+last_task9_at: "2026-06-18T10:29:11+08:00"
+task9_result: "auto-fixed"
 review_notes: '2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。'
-last_task9_audit: '2026-05-24'
+last_task9_audit: "2026-06-18"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task6_at: '2026-05-28T01:05:00+08:00'
 last_task6_review_log: "logs/review/2026-05-28-01-review.md"
 task6_review_notes: "2026-05-28 Task6 review: pass-light-edit。L1/L2 小修 2 处；既有 Task9 needs-rework 技术项不由 Task6 裁决，继续流转 task9_pending。"
-last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
-task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-18-10-audit.md"
+task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：EAS 示例未体现 fits_capacity 约 20% margin；P1 1：运行时负载均衡误写为 EAS 参与，已改为 CFS load_balance/misfit 路径并由 overutilized 分界。回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
+last_task9_audit_at: "2026-06-18T10:29:11+08:00"
+last_task9_autofix_at: "2026-06-18"
+last_task9_audit_log: "logs/deep-review/2026-06-18-10-audit.md"
+last_task9_audit_result: "auto-fixed"
 ---
 
 
@@ -114,12 +118,12 @@ EAS 覆盖了 CFS 的默认唤醒逻辑。当 EAS 启用时，`select_task_rq_fa
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - "EAS overrides the CFS task wake-up balancing code"]
 
-用一个具体的例子来说明。假设我们有一个 util 值为 200 的轻量级任务需要被唤醒,系统中有两种核心:
+用一个具体的例子来说明。假设我们有一个 util 值为 120 的轻量级任务需要被唤醒,系统中有两种核心:
 
 - 小核:capacity 200,当前空闲
 - 大核:capacity 1024,当前空闲
 
-传统 CFS 会发现大核更空闲,选择大核。但 EAS 会计算:这个任务放在小核上刚好能"装下"(util 200 ≤ capacity 200),不需要拉高大核的频率,整体能耗更低。于是 EAS 选择小核。这就是 EAS 的核心逻辑:**优先找一个既省电又够用的核,而不是单纯追求最空闲的核**。
+传统 CFS 会发现大核更空闲,选择大核。但 EAS 会计算:这个任务放在小核上仍在安全余量内(`fits_capacity(120, 200)` 为真;内核默认预留约 20% margin),不需要拉高大核的频率,整体能耗更低。于是 EAS 选择小核。这就是 EAS 的核心逻辑:**优先找一个既省电又够用的核,而不是单纯追求最空闲的核**。
 
 
 [已验证: 官方文档, https://docs.kernel.org/scheduler/sched-energy.html - EAS uses capacity and utilization to estimate "busyness" for performance-vs-energy trade-offs]
@@ -273,9 +277,9 @@ EAS 对轻任务和重任务有不同的处理方式:
 
 ### 负载均衡与任务迁移
 
-除了唤醒时的选核,EAS 还参与系统运行时的负载均衡。当调度器发现某个 CPU 过载(utilization 接近或超过 capacity),会触发负载均衡,将部分任务迁移到其他 CPU。
+除了唤醒时的选核,运行时负载均衡仍走 CFS 的 `load_balance()`、misfit migration 等路径,不做 EAS 能量估算。当调度器发现某个 CPU 过载(utilization 接近或超过 capacity),会触发负载均衡,将部分任务迁移到其他 CPU。
 
-在 EAS 的场景下,负载均衡有一个特殊行为:**overutilized 标志**。当系统中任何一个 CPU 的 utilization 超过其 capacity 的 80%(默认阈值),系统会被标记为 "overutilized"。
+在 EAS 的场景下,这个分界由 **overutilized 标志** 决定。当系统中任何一个 CPU 的 utilization 超过其 capacity 的 80%(默认阈值),系统会被标记为 "overutilized"。
 
 overutilized 对 EAS 的影响随内核版本有差异:
 
