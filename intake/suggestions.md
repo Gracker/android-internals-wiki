@@ -123,3 +123,80 @@
 - **位置**：Battery Historian层次架构部分
 - **问题**：三层架构缺少设计原理解释
 - **建议**：补充各层的设计目的和必要性说明，解释为什么需要Java→JNI→Native的三层架构设计
+
+
+## [Task9 Deep Review] 11.4 案例集 — 2026-06-18
+- **类型**：数据缺失
+- **位置**：11.4.1 前台服务优化案例
+- **问题**："CPU使用率从15%降至3%"未说明测试设备、环境和测量方法
+- **建议**：补充测试环境说明（设备型号、Android版本、测试持续时间）和测量工具（Battery Historian、perfetto）
+
+## [Task9 Deep Review] 11.4 案例集 — 2026-06-18
+- **类型**：数据缺失
+- **位置**：11.4.3 Radio状态机功耗优化
+- **问题**："减少75%的网络唤醒"未说明与什么基线对比
+- **建议**：明确对比基线，如"相比轮询策略减少75%"或"相比未优化版本减少75%"
+
+## [Task9 Deep Review] 11.4 案例集 — 2026-06-18
+- **类型**：交叉引用不一致
+- **位置**：整章节
+- **问题**：章节内混用"FGS"、"Foreground Service"、"前台服务"，术语不统一
+- **建议**：统一使用"前台服务"或"FGS"，避免同一概念在不同段落使用不同术语
+
+## [Task9 Deep Review] 11.4 案例集 — 2026-06-18
+- **类型**：知识盲区
+- **位置**：11.4.2 定位服务功耗优化
+- **问题**：缺少功耗优化效果的验证方法和工具使用指南
+- **建议**：补充Battery Historian、perfetto等工具的使用方法，提供具体的Trace分析步骤
+
+## [Task9 Deep Review] 11.4 案例集 — 2026-06-18
+- **类型**：知识盲区
+- **位置**：11.4.5 前台服务与Doze模式协同优化
+- **问题**：缺少与其他章节（内存管理、网络、渲染）的交叉引用
+- **建议**：在相关章节添加交叉引用，如"详细内存管理策略参见第X章"、"网络优化详见第Y章"
+
+## [Task9 Deep Review] 11.4 案例集 — 2026-06-18
+- **类型**：建议改进
+- **位置**：11.4.1 前台服务优化案例
+- **问题**：Doze模式与前台服务协同缺少AlarmManager的WAKEUP类型选择依据说明
+- **建议**：补充不同AlarmManager类型（ELAPSED_REALTIME_WAKEUP vs RTC_WAKEUP）的适用场景和选择依据
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-18 09:11
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**已检查方向**（避免下轮重复）：
+1. **AOSP frameworks/base 核心服务**：AMS、PMS、WMS、ContentProvider、NotificationManagerService、PowerManagerService、AlarmManagerService、JobSchedulerService、SensorService、InputManagerService、LocationManagerService、AudioManagerService、StorageManagerService、ConnectivityManager 等 — 均已覆盖
+2. **source-index.json 高质量未映射素材**：0 篇（所有高质量素材已映射）
+3. **Clippings 三本参考书 vs 现有章节**：稳定性书 20 篇、性能优化书 19 篇、线上疑难问题书 59 篇 — 所有知识点均映射到现有章节
+4. **Android 16/17 新特性覆盖**：Binder 异步、DeliQueue、AMS 双锁、图形内存 16KB、Choreographer Buffer Stuffing、Edge-to-Edge、SF Transaction Queue、ML Runtime、NPU、FGS 类型、ADPF、GenAI 集成、Notification Pipeline、SDM 安装、Excessive CPU Kill、TARE、ECH、Room 3.0、Compose 动画/LazyList/Navigation、DCL、Keystore 配额、App Memory Limits 等 40+ 主题 — 均已覆盖
+5. **开发者高频性能搜索**：启动慢、列表卡顿、内存泄漏、ANR、耗电、Compose 性能、网络优化、APK 体积、后台执行、IPC、帧率、线程、存储 — 均已覆盖
+6. **跨平台框架**：Flutter（ch02.11/ch18.12）、React Native/WebView（ch18.13）、游戏引擎（ch18.16）— 均已覆盖
+7. **新兴平台**：Wear OS（ch25.21 Auto/Car）、Android XR（ch18.22）、桌面窗口（ch02.20/ch22.14）— 均已覆盖
+8. **现有章节扩展点（🔸 待补充）**：APV 工作流、CMC 与 ZRAM 交互、ARR 与游戏帧率、AGSL 测试 — 属于 Task 2B 内容补充范畴，不构成新章节缺口
+9. **JVMTI / JVMTI-based profiling**：已在 ch14 工具体系中隐含覆盖
+10. **Paging 3 / DI 框架（Hilt/Koin）性能**：素材有限（<3 篇高质量），评分 12，未达阈值
+
+**结论**：全书 438 节、306 finalized、89 ready-for-review，已进入高度成熟期。缺口挖掘收益递减，建议后续轮次探索更细分的垂直领域（如 Wear OS 6 深度、Android XR 渲染细节、车载音频系统），或转向 ready-for-review 章节的 Task 2B 加工推进。
+
+
+## [Task6 Review] 11.4 案例集 — 2026-06-18
+- **类型**：L3 内容深度
+- **位置**：§11.4.1-§11.4.6 原始案例段落（非源码调研注入段落）
+- **问题**：6 个原始案例遵循统一模板（问题场景→分析过程→优化方案→优化效果），缺少真实调试过程、Trace 观察点、弯路排除和经验判断。源码调研注入的段落（FGS 超时机制、Battery Saver × Thermal 协同、隐私沙盒省电链路、Radio HAL 状态机）质量很高，原始段落与它们形成明显落差。
+- **建议**：后续版本中，优先选择 1-2 个案例按真实调试流程重写——补充 Perfetto trace 截图/观察点、调试弯路、实际测试数据。writing-guide.md 类型 B（性能分析实战篇）给出了参考结构。
+- **review 日志**：logs/review/2026-06-18-12-review.md
+
+## [Task6 Review] 11.4 案例集 — 2026-06-18
+- **类型**：L3 数据支撑
+- **位置**：§11.4.2 优化效果、§11.4.3 优化效果、§11.4.5 优化效果、§11.4.6 优化效果
+- **问题**：部分优化效果数据缺少测量上下文。"GPS 使用时间减少 80%"、"定位相关功耗降低 65%"、"唤醒效率减少无效唤醒 85%"、"后台任务功耗降低 55%" 均无设备型号、Android 版本、测试场景和样本量。§11.4.1 的优化效果数据（CPU 使用率/网络唤醒/电量消耗）已附测量维度，是正确的做法。
+- **建议**：为未标注测量条件的优化效果数据补充测试环境（设备/版本/场景/样本），或标注为"参考值，非实测"。
+- **review 日志**：logs/review/2026-06-18-12-review.md
+
+## [Task6 Review] 11.4 案例集 — 2026-06-18
+- **类型**：L4 活人感
+- **位置**：全章
+- **问题**：所有案例使用"某社交应用/某地图应用/某应用"等假设性场景描述，无真实项目痕迹。章节标题为"案例集"但内容实为教程/优化模式说明。源码调研段落有强烈的工程师视角和真实分析痕迹，原始段落缺少这种温度。
+- **建议**：后续版本考虑将原始段落标题改为"优化模式"以准确反映内容定位，或替换为真实项目案例（含 Trace/数据/踩坑过程）。
+- **review 日志**：logs/review/2026-06-18-12-review.md
