@@ -1736,5 +1736,25 @@
     "completed_at": "2026-06-18T06:50:00+08:00",
     "completed_by": "task2b-main",
     "resolution": "已删除虚构的 MemoryTracking/MemoryUsage/LeakDetection API，替换为 Debug.MemoryInfo/getRuntimeStat/LeakCanary 等真实API；同步修复 PowerAwareSampling/AsyncMetricsCollector/MetricsCache 虚构类"
+  },
+  {
+    "section": "15.2",
+    "section_title": "如何区分系统问题和 App 问题",
+    "priority": 70,
+    "reason": "[audit发现] 正文全部压缩在单行（13803 chars on line 65），markdown结构标记缺少换行分隔，导致渲染异常。需重建为标准多行markdown格式。",
+    "material_paths": [
+      "logs/review/2026-06-18-08-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "格式修复",
+        "location": "正文全部（行65，13803字符）",
+        "detail": "整个正文内容位于单行，所有##/###/- /```/|/ >标记之间缺少\\n。需在结构标记前插入换行符。",
+        "suggestion": "按markdown结构标记拆分为多行。注意保护代码块内部内容不被拆分。"
+      }
+    ],
+    "added_by": "task6-audit",
+    "added_at": "2026-06-18T08:15:00",
+    "status": "pending"
   }
 ]
