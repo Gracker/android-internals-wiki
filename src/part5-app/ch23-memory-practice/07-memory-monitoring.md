@@ -487,3 +487,115 @@ Perfetto trace config: data_source.name = "android.java_hprof" 或 "android.heap
 | Hprof 自动 dump（API 37） | `ProfilingTrigger.TRIGGER_TYPE_OOM/ANOMALY` | ProfilingManager | 同 Java HPROF | API 37 落地（详见 26.12 / 23.10） |
 
 [调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §1-§6]
+
+
+<!-- AIW-源码调研-2026-06-18 -->
+### 2026-06-18 补充：libmeminfo 三层采样路径的完整源码骨架
+
+23.7 节正文已用一段高层描述解释 `SmapsOrRollup`，本节落到 procmeminfo.cpp 与 android_os_Debug.cpp 的具体行号，把 SmapsOrRollup / SmapsOrRollupPss / StatusVmRSS 三条路径的入口、判定条件和 JNI 汇聚点补齐。
+
+#### libmeminfo 三条路径头文件契约
+
+`platform/system/memory/libmeminfo/include/meminfo/procmeminfo.h` 注释（行 99-108）明确说明三条路径的字段填充差异：
+
+```cpp
+// Used to parse either of /proc/<pid>/{smaps, smaps_rollup} and record the process's
+// Pss and Private memory usage in 'stats'. The method only populates the fields
+// of the MemUsage structure that are intended to be used by Android's periodic
+// Pss collection: Pss / Rss / Uss / private_clean / private_dirty / SwapPss.
+// All other fields of MemUsage are zeroed.
+bool SmapsOrRollup(MemUsage* stats) const;
+bool SmapsOrRollupPss(uint64_t* pss) const;   // 只解析 Pss: 一行
+// StatusVmRSS() 走 /proc/<pid>/status:VmRSS（procmeminfo.cpp L346-348）
+```
+
+AMS 周期采样默认走 `SmapsOrRollupPss`，要拿 USS/SwapPss/Private 才升到全量 `SmapsOrRollup`，这是 23.7 节正文未展开的隐藏优化。
+
+#### SmapsOrRollup 入口与 smaps_rollup 支持判定
+
+`platform/system/memory/libmeminfo/procmeminfo.cpp`（行 305-310 + 624-642）：
+
+```cpp
+bool ProcMemInfo::SmapsOrRollup(MemUsage* stats) const {
+    std::string path = ::android::base::StringPrintf(
+            "/proc/%d/%s", pid_, IsSmapsRollupSupported() ? "smaps_rollup" : "smaps");
+    return SmapsOrRollupFromFile(path, stats);
+}
+
+bool IsSmapsRollupSupported() {
+    enum smaps_rollup_support rollup_support =
+        g_rollup_support.load(std::memory_order_relaxed);
+    if (rollup_support != UNTRIED) return rollup_support == SUPPORTED;
+
+    if (access("/proc/self/smaps_rollup", F_OK | R_OK)) {
+        g_rollup_support.store(UNSUPPORTED, std::memory_order_relaxed);
+        return false;
+    }
+    g_rollup_support.store(SUPPORTED, std::memory_order_relaxed);
+    LOG(INFO) << "Using smaps_rollup for pss collection";
+    return true;
+}
+```
+
+判定仅探测 `/proc/self`，结果以 atomic relaxed 缓存；这是线上 device 看不到 smaps_rollup 但 kernel 真的支持时的回退依据（自身能读就视为支持，不再做 per-pid 探测）。
+
+#### JNI 汇聚点与 memtrack 独立读取
+
+`frameworks/base/core/jni/android_os_Debug.cpp::android_os_Debug_getPssPid`（行 497-563）：
+
+```cpp
+jlong pss = 0, rss = 0, swapPss = 0, uss = 0, memtrack = 0;
+struct graphics_memory_pss graphics_mem;
+if (read_memtrack_memory(pid, &graphics_mem) == 0) {
+    pss = uss = rss = memtrack = graphics_mem.graphics
+         + graphics_mem.gl + graphics_mem.other;
+}
+
+::android::meminfo::ProcMemInfo proc_mem(pid);
+::android::meminfo::MemUsage stats;
+if (proc_mem.SmapsOrRollup(&stats)) {
+    pss += stats.pss; uss += stats.uss; rss += stats.rss;
+    swapPss = stats.swap_pss;
+    pss += swapPss;  // 被 swap 出去的页会计入 PSS
+} else { return 0; }
+```
+
+- `/proc/<pid>/memtrack` 不在 smaps 内，必须独立读取（GPU graphics + GL driver + other）。
+- `SmapsOrRollup` 返回 false 时直接 `return 0`；**调用方拿到 0 不代表内存为 0，而是解析失败**，线上探针必须做 `>0` 校验。
+- `swap_pss` 加入 pss，符合"未被驻留但占用 swap 槽位"的内存压力定义。
+
+#### AMS 节流规则：5 分钟窗口 + shell bypass
+
+`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java::getProcessMemoryInfo`（行 3928 起）：
+
+- 非 shell 调用：`now - lastSampleTime < mConstants.MEMORY_INFO_THROTTLE_TIME` 时直接返回 `ProcessProfileRecord.lastMemInfo` 缓存。
+- shell / instrumentation 调用：完全 bypass 限速（`isCallerInstrumentedFromShell` 标志位）。
+- `MEMORY_INFO_THROTTLE_TIME` 默认 5 分钟（300_000 ms）——23.7 节正文未明示这个数字。线上每分钟调一次 `getProcessMemoryInfo` 实际拿到的是同一份缓存。
+
+App 端 `ActivityManager.getMemoryInfo()` 在 `Flags.rateLimitGetMemoryInfo()` 启用后叠加 `RateLimitingCache<MemoryInfo>` 限速，两层节流叠加决定线上只能"分钟级或事件触发式"采样。
+
+#### 全链路调用链（一次 PSS 采样）
+
+```
+Debug.getPss() (Debug.java:1942)
+  └─ JNI android_os_Debug_getPss
+       └─ meminfo::ProcMemInfo::SmapsOrRollup
+            ├─ IsSmapsRollupSupported()  → atomic cache
+            └─ SmapsOrRollupFromFile
+                 └─ fopen("/proc/<pid>/smaps_rollup")  (kernel 4.14+)
+                 └─ parse Pss/Private_Clean/Private_Dirty/SwapPss
+                 └─ MemUsage 累加
+       └─ read_memtrack_memory(pid)  → /proc/<pid>/memtrack
+  └─ 返回 pss
+```
+
+#### 性能开销对照（已含上文表格，这里只补行内提醒）
+
+- `SmapsOrRollup` 走 smaps_rollup：1-5 ms
+- 老 kernel fallback 到 smaps：50-300 ms（依 VMA 数量）
+- `SmapsOrRollupPss`：<1 ms（只解 Pss:）
+- `StatusVmRSS`：<1 ms（只读 VmRSS:）
+
+线上策略：周期采样走 `SmapsOrRollupPss`，事件触发（watch heap 命中 / dumpsys / OOM 前兆）走全量 `SmapsOrRollup`，大批量 RSS 监控走 `StatusVmRSS`。
+
+[调研来源: DeepResearch/2026-06-18-memory-metrics-collection-source-stack.md §1-§7]
