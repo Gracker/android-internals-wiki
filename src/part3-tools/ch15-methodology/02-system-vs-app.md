@@ -2,11 +2,11 @@
 title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
-status: "finalized"
-pipeline_stage: task6_pending
+status: ready-for-review
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_reviewed_date: "2026-06-17"
 last_task6_at: "2026-06-17T19:12:00+08:00"
 task6_result: pass-light-edit
