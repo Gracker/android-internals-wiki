@@ -5,8 +5,8 @@ section: "13.17"
 status: finalized
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；system backend 依赖设备侧 traced 服务，低版本按设备能力降级"
-last_verified: "2026-05-17"
-last_verified_against: "Perfetto docs main / Android Developers tracing docs / external/perfetto main"
+last_verified: "2026-06-18"
+last_verified_against: "AOSP external/perfetto android-17.0.0_r1 / Android Developers ProfilingManager API 35 / ProfilingTrigger API 36"
 confidence: medium
 sources:
   - type: official
@@ -16,13 +16,17 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/design-docs/api-and-abi"
   - type: aosp
-    path: "external/perfetto/docs/instrumentation/tracing-sdk.md"
+    path: "https://android.googlesource.com/platform/external/perfetto/+show/android-17.0.0_r1/docs/instrumentation/tracing-sdk.md"
   - type: official
     path: "https://developer.android.com/topic/performance/tracing/custom-events"
   - type: official
     path: "https://developer.android.com/topic/performance/tracing"
   - type: official
     path: "https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
   - type: blog
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md"
 tags: [perfetto, tracing-sdk, in-app-tracing, custom-data-source, observability]
@@ -32,8 +36,8 @@ created_date: "2026-05-17"
 gap_source: "素材驱动/官方文档"
 gap_score: 16
 material_count: 4
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
@@ -41,22 +45,24 @@ last_task6_at: "2026-05-28T08:10:00+08:00"
 last_task6_audit: "2026-06-16"
 last_task6_review_log: "logs/review/2026-05-28-08-review.md"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-28"
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-28T08:28:23+08:00"
+last_task9_autofix_at: "2026-06-18"
+last_task9_audit: "2026-06-18"
 last_task9_review_log: "logs/deep-review/2026-05-28-08-deep-review.md"
-task9_review_notes: "2026-05-17 10:20 Task9 deep-review: needs-rework。P0 0 / P1 3 / P2 0。Top: startup tracing 仅 kSystemBackend；Perfetto C API/ABI 稳定性未写清；ProfilingManager system trace 是请求进程脱敏结果，不能等同全设备/全进程 trace。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。"
+task9_review_notes: "2026-05-17 10:20 Task9 deep-review: needs-rework。P0 0 / P1 3 / P2 0。Top: startup tracing 仅 kSystemBackend；Perfetto C API/ABI 稳定性未写清；ProfilingManager system trace 是请求进程脱敏结果，不能等同全设备/全进程 trace。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。 2026-06-18 21 Task9 idle-audit auto-fixed: AOSP anchor moved from external/perfetto main to android-17.0.0_r1；ProfilingManager / ProfilingTrigger API boundary corrected (requestProfiling API 35, ProfilingTrigger API 36)."
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T08:10:00+08:00"
 task6_review_notes: "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B fixed-lite 后送 Task9 复核。"
-updated_by: "openclaw-task9"
-updated_date: "2026-05-28"
+updated_by: "openclaw-task9-auto-fix"
+updated_date: "2026-06-18"
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-05-28"
 p0: 0
@@ -114,7 +120,7 @@ Perfetto SDK 的入口在 Native 侧。官方文档把它定义为 C++17 userspa
 
 这两个层级不是互斥关系。`track_event` 负责时间轴上最常见的切片和计数器；custom data source 负责 Perfetto 原生数据源覆盖不到的结构化状态。
 
-[已验证: AOSP external/perfetto/docs/instrumentation/tracing-sdk.md]
+[已验证: AOSP android-17.0.0_r1, external/perfetto/docs/instrumentation/tracing-sdk.md]
 
 选择时按这张表判断：
 
@@ -228,7 +234,7 @@ write_into_file: true
 
 `track_event` 适合时间轴问题：某段代码什么时候开始、持续多久、当时 counter 是多少。custom data source 适合状态问题：队列里有多少任务、调度器把帧分到哪个阶段、推理运行时选择了哪个 delegate、缓存池水位如何变化。
 
-[已验证: AOSP external/perfetto/docs/instrumentation/tracing-sdk.md]
+[已验证: AOSP android-17.0.0_r1, external/perfetto/docs/instrumentation/tracing-sdk.md]
 
 引入 custom data source 前先过三条检查：
 
@@ -287,7 +293,7 @@ trace 数据比日志更容易暴露上下文，因为它把时间、线程、�
 
 ## Perfetto SDK、ProfilingManager、APM 自定义 trace 的组合方案
 
-Perfetto SDK 不是 APM 的替代品。它负责把应用事件写成 Perfetto 原生数据；APM 负责采样、触发、上传、去重、归档和告警；`ProfilingManager` / `ProfilingTrigger` 负责 Android 15+ 的平台公开 profiling 入口。`ProfilingManager` 返回的是请求应用相关的 redacted 结果，不能当作 adb 或系统签名工具可拿到的全设备 trace。三者组合时按环境拆分：
+Perfetto SDK 不是 APM 的替代品。它负责把应用事件写成 Perfetto 原生数据；APM 负责采样、触发、上传、去重、归档和告警；`ProfilingManager.requestProfiling()` 是 Android 15/API 35 的平台公开 profiling 入口；`ProfilingTrigger` 从 API 36 开始提供触发式 profiling 能力。`ProfilingManager` 返回的是请求应用相关的 redacted 结果，不能当作 adb 或系统签名工具可拿到的全设备 trace。三者组合时按环境拆分：
 
 | 环境 | 采集方式 | 适用数据 | 产物 |
 | --- | --- | --- | --- |
@@ -308,7 +314,7 @@ Perfetto SDK 不是 APM 的替代品。它负责把应用事件写成 Perfetto �
 
 - [已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
 - [已验证: 官方文档, perfetto.dev/docs/getting-started/in-app-tracing]
-- [已验证: AOSP external/perfetto/docs/instrumentation/tracing-sdk.md]
+- [已验证: AOSP android-17.0.0_r1, external/perfetto/docs/instrumentation/tracing-sdk.md]
 - [已验证: 官方文档, developer.android.com/topic/performance/tracing/custom-events]
 - [已验证: 官方文档, developer.android.com/topic/performance/tracing]
 - [来源: obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md]
