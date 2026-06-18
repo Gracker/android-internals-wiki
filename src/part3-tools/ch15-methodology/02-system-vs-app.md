@@ -3,10 +3,10 @@ title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_reviewed_date: "2026-06-17"
 last_task6_at: "2026-06-17T19:12:00+08:00"
 task6_result: pass-light-edit
@@ -14,8 +14,8 @@ last_task2b_lite_at: 2026-06-17
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-21"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-06-19"
+last_verified_against: "AOSP android-17.0.0_r1; Perfetto memory-counters"
 confidence: high
 sources:
   - type: blog
@@ -30,6 +30,8 @@ sources:
     path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
   - type: official
     path: "perfetto.dev/docs/data-sources/frametimeline"
+  - type: official
+    path: "perfetto.dev/docs/data-sources/memory-counters"
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
@@ -40,17 +42,17 @@ last_task6_review_log: "logs/review/2026-05-28-18-review.md"
 task6_l1_l2_fixes: 8
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；压缩元叙述与高风险填充词；L1/L2 通过；outline 7/7 覆盖；无 L3/L4 回炉项。"
-task9_state: pending
-task9_result: pass-tech-review
-last_task9_at: "2026-06-17T14:36:19+08:00"
-task9_reviewed_date: "2026-06-17"
+task9_state: reviewed
+task9_result: auto-fixed
+last_task9_at: "2026-06-19T00:26:33+08:00"
+task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: openclaw-task9
-last_task9_review_log: "logs/deep-review/2026-06-17-14-deep-review.md"
-task9_review_notes: "2026-06-17 Task9 deep-review: pass-tech-review。复核 Perfetto thread_state/Wall vs CPU、kswapd/lmkd、FrameTimeline、ANR 阈值与 SF commit/composite 口径；未发现 P0/P1。Task6 仍处 revisiting，本轮不自动晋升。"
-p0: 0
+last_task9_review_log: "logs/deep-review/2026-06-19-00-deep-review.md"
+task9_review_notes: "2026-06-19 Task9 deep-review: auto-fixed。修复 Perfetto RSS anon 查询使用错误 GLOB 顺序，改为 process_counter_track.name = 'mem.rss.anon'；证据：Perfetto memory-counters / §13.5；回到 Task6 复审。"
+p0: 1
 p1: 0
 p2: 0
-review_round: 2
+review_round: 3
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: 2026-06-18T22:50:00+08:00
@@ -58,7 +60,7 @@ finalized_date: "2026-05-28"
 finalized_by: openclaw-task9
 last_task9_audit: "2026-06-16"
 last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
-last_task9_autofix_at: "2026-06-16"
+last_task9_autofix_at: "2026-06-19"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 last_task2b_recovery: data recovery from commit 2c5c7c85 after Lite truncation (ec2e99c4)
@@ -89,7 +91,7 @@ last_task2b_recovery: data recovery from commit 2c5c7c85 after Lite truncation (
 
 ## CPU 全核满载在 Perfetto 顶部的 CPU 区域，你能看到每个核心上正在执行的线程。如果所有核心（包括大核和小核）都被密集占满，且持续较长时间，这就是系统负载过高的直接证据。满载本身不一定是问题——后台编译（dex2oat）、大文件下载、游戏引擎渲染，都可能让 CPU 跑满。问题在于，当 CPU 全部满载时，调度器不得不在所有竞争者之间分配时间片。低优先级的线程（比如后台 App 的主线程）很容易被反复抢占，长时间处于 Runnable 状态排不上队。在 Perfetto 中你可以用这个 SQL 查询来量化某个时间段内的系统负载：```sql-- 查看某段时间内各进程的 CPU 时间SELECT  process.name,  sum(dur) / 1e9 AS total_cpu_time_sFROM schedJOIN thread ON sched.utid = thread.utidJOIN process ON thread.upid = process.upidWHERE ts > 2e9 AND ts < 5e9  -- 替换为你的时间范围GROUP BY process.nameORDER BY total_cpu_time_s DESCLIMIT 10;```**注意一种常见的误判**：CPU 看起来满载，但满载的主力可能是你的 App 自己。在归因之前，先确认"满载的主力"是不是你自己的进程。如果 top 1 的 CPU 消耗者就是你的 App，那问题回到了 App 端——可能是后台线程在做不必要的计算。#
 
-## kswapd 活跃与内存压力`kswapd` 是 Linux 内核的后台内存回收守护线程。当系统空闲内存低于阈值时，`kswapd` 被唤醒，开始扫描并回收可回收的内存页（如 clean page cache），或者将匿名页压缩到 zRAM 中。在 Perfetto 中，如果你在 CPU 区域看到 `kswapd0`（或 `kswapd1`、`kswapd2`，取决于 NUMA 节点数）频繁且持续地出现在 CPU 上，说明系统正在经历持续的内存压力。这种内存压力会导致一系列连锁反应：1. **App 进程被 LMK 杀掉**：如果 `kswapd` 回收不够快，现代 Android 通常由 userspace `lmkd` 结合 `oom_score_adj`、PSI 和 reclaim 信号决定是否杀进程。旧资料里的 `oom_adj` 是历史字段名。App 被杀后用户下次打开就是冷启动，体验变差。2. **主线程进入 D 状态**：内存不足时，页面换入（page fault）会触发同步的磁盘 I/O，主线程如果触发了 page fault，就会进入不可中断的 D 状态等待 I/O 完成。3. **GC 频繁触发**：ART 在内存紧张时会更频繁地触发 GC。Android 10+ 默认的 Generational Concurrent Copying GC 中，Young GC 暂停往往在 1-3ms，但在高负载场景里这段暂停仍可能被放大，因为 GC 线程本身也要争抢 CPU。定位内存压力来源时，不要停在 `kswapd` 这个信号上。继续看 `rss_stat` / process memory 轨道，把问题时间窗内各进程的 RSS 增长排出来，再结合 `lmkd` kill 事件、`oom_score_adj` 和 `ApplicationExitInfo.getRss()` 判断谁在制造压力。常用查询可以从 anon RSS 增长开始：```sql-- 按进程统计问题时间窗内 anon RSS 增长SELECT  process.name,  max(c.value) - min(c.value) AS anon_rss_growth_bytes,  max(c.value) AS anon_rss_peak_bytesFROM counter cJOIN process_counter_track pct ON c.track_id = pct.idJOIN process ON pct.upid = process.upidWHERE c.ts BETWEEN 2e9 AND 5e9  AND pct.name GLOB '*anon*rss*'GROUP BY process.nameHAVING anon_rss_growth_bytes > 0ORDER BY anon_rss_growth_bytes DESCLIMIT 10;```不同 Android 版本和采集配置下，track 名称可能略有差异。查询没有结果时，先在 Perfetto UI 搜索 `rss_stat`、`anon_rss`、`file_rss`，确认 trace 是否采到了进程级内存 counter。所以当你看到 `kswapd` 活跃 + 主线程出现 D 状态 + LMK 频繁杀进程这三件套，可以判定这是系统级内存压力。App 端仍要确认自身 RSS 是否异常增长；如果自身内存稳定，最终解决通常需要系统层面调整 LMK 策略或增加物理内存。#
+## kswapd 活跃与内存压力`kswapd` 是 Linux 内核的后台内存回收守护线程。当系统空闲内存低于阈值时，`kswapd` 被唤醒，开始扫描并回收可回收的内存页（如 clean page cache），或者将匿名页压缩到 zRAM 中。在 Perfetto 中，如果你在 CPU 区域看到 `kswapd0`（或 `kswapd1`、`kswapd2`，取决于 NUMA 节点数）频繁且持续地出现在 CPU 上，说明系统正在经历持续的内存压力。这种内存压力会导致一系列连锁反应：1. **App 进程被 LMK 杀掉**：如果 `kswapd` 回收不够快，现代 Android 通常由 userspace `lmkd` 结合 `oom_score_adj`、PSI 和 reclaim 信号决定是否杀进程。旧资料里的 `oom_adj` 是历史字段名。App 被杀后用户下次打开就是冷启动，体验变差。2. **主线程进入 D 状态**：内存不足时，页面换入（page fault）会触发同步的磁盘 I/O，主线程如果触发了 page fault，就会进入不可中断的 D 状态等待 I/O 完成。3. **GC 频繁触发**：ART 在内存紧张时会更频繁地触发 GC。Android 10+ 默认的 Generational Concurrent Copying GC 中，Young GC 暂停往往在 1-3ms，但在高负载场景里这段暂停仍可能被放大，因为 GC 线程本身也要争抢 CPU。定位内存压力来源时，不要停在 `kswapd` 这个信号上。继续看 `rss_stat` / process memory 轨道，把问题时间窗内各进程的 RSS 增长排出来，再结合 `lmkd` kill 事件、`oom_score_adj` 和 `ApplicationExitInfo.getRss()` 判断谁在制造压力。常用查询可以从 anon RSS 增长开始：```sql-- 按进程统计问题时间窗内 anon RSS 增长SELECT  process.name,  max(c.value) - min(c.value) AS anon_rss_growth_bytes,  max(c.value) AS anon_rss_peak_bytesFROM counter cJOIN process_counter_track pct ON c.track_id = pct.idJOIN process ON pct.upid = process.upidWHERE c.ts BETWEEN 2e9 AND 5e9  AND pct.name = 'mem.rss.anon'GROUP BY process.nameHAVING anon_rss_growth_bytes > 0ORDER BY anon_rss_growth_bytes DESCLIMIT 10;```不同 Android 版本和采集配置下，track 名称可能略有差异。查询没有结果时，先在 Perfetto UI 搜索 `rss_stat`、`mem.rss.anon`、`mem.rss.file`，确认 trace 是否采到了进程级内存 counter。所以当你看到 `kswapd` 活跃 + 主线程出现 D 状态 + LMK 频繁杀进程这三件套，可以判定这是系统级内存压力。App 端仍要确认自身 RSS 是否异常增长；如果自身内存稳定，最终解决通常需要系统层面调整 LMK 策略或增加物理内存。#
 
 ## SurfaceFlinger 合成延迟SurfaceFlinger 是系统级的合成服务，它负责把所有 App 的 Layer 合成为最终显示的画面。当 SurfaceFlinger 自身出现性能瓶颈时，**所有可见的 App 都会受影响**，而不仅仅是某个 App。在 Perfetto 中排查 SurfaceFlinger 延迟，主要看这几个信号（详见 §2.6）：- SurfaceFlinger 主线程 Track 上 `commit`、`composite`，以及旧 trace 中可能出现的 `onMessageRefresh`。Android 14+ 里 `commit` 主要覆盖事务处理和 buffer latch，`composite` 主要覆盖合成决策、HWC/GPU 提交和 present 相关工作。判断 SF 延迟时，先和同设备、同分辨率、同刷新率、相近 Layer 数量的正常帧对比。Client 合成在不同 GPU、HWC 能力和分辨率下差异很大；只有相对基线持续拉长，并且 FrameTimeline 标记指向 SF 侧，才把 SF 作为主要方向。- `VSYNC-sf` 信号到来时 SurfaceFlinger 是否及时响应。如果 SF 在一个 VSync 周期内没能完成合成，这一帧就会被延迟到下一个 VSync 才呈现——表现为全局性的掉帧，不只是一个 App 的掉帧。- Android 12+ 的 `FrameTimeline` 数据会明确标记 jank 的类型：如果是 `SurfaceFlingerCpuDeadlineMissed` 或 `SurfaceFlingerGpuDeadlineMissed`，那就是 SF 侧的问题。[已验证: AOSP, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]SurfaceFlinger 延迟的常见原因包括：GPU 被其他进程（如游戏）占用导致 Client 合成排队；Layer 数量过多（多个浮窗、画中画、分屏）；HWC（Hardware Composer）能力不足，需要回退到 GPU 合成等。
 
@@ -131,6 +133,6 @@ last_task2b_recovery: data recovery from commit 2c5c7c85 after Lite truncation (
 
 ## 常见误区**误区一："主线程 Runnable 时间长就是系统问题"**不一定。如果你的 App 自己创建了大量后台线程（比如线程池里 50 个并发任务），这些线程和主线程争抢 CPU，导致主线程排不上队——这是 App 内部线程间的资源竞争。系统调度器只是公平地分配 CPU，它不知道哪些线程对你更重要（除非你设置了优先级）。**误区二："系统问题我改不了，不用分析"**即使问题属于系统侧（比如 OEM 的调度策略不合理），你也应该分析清楚并量化影响。原因有三：一是你可以向系统组提供详细的 Trace 分析报告来推动修复；二是你可以在 App 端做防御性优化（减少计算量、异步化），降低对系统资源的依赖；三是在与 OEM 或合作方沟通时，有数据支撑的分析比模糊的"系统卡"有效得多。**误区三："CPU 利用率低就说明没问题"**CPU 利用率低也可能说明有问题——如果你的主线程在 Runnable 状态等了很久，但 CPU 看起来"不满载"，可能是因为调度器在等当前 CPU 空闲而不愿意把线程迁移到另一个空闲核心（Linux 调度器的非严格 work-conserving 行为）。这种情况下，虽然总利用率不高，但对你的线程来说延迟是实实在在的。**误区四："ANR 一定是 App 的问题"**AOSP 默认的 ANR 窗口要按组件类型拆开看，不能压成一个统一数字：| 场景 | 常见默认阈值 | 备注 ||:--|:--|:--|| Input dispatching | 5 秒 | 前台输入无响应最常见 || Service timeout（前台进程） | 20 秒 | `ActiveServices` 前台 service 执行超时 || Service timeout（后台进程） | 200 秒 | 后台 service 窗口更长 || BroadcastReceiver（前台优先级） | 10 秒，Android 14+ 在 CPU 饥饿时可放宽到 20 秒 | 冷启动时间也算在窗口内 || BroadcastReceiver（后台优先级） | 60 秒，Android 14+ 在 CPU 饥饿时可放宽到 120 秒 | `goAsync()` 也算在窗口内 || `startForegroundService()` 后未及时调用 `startForeground()` | Android 8 默认 5 秒；Android 9-12 常见 AOSP 默认 10 秒；Android 13+ 拆成 `fgs_start_foreground_timeout`、`service_start_foreground_timeout_ms` 和 `service_start_foreground_anr_delay_ms` | OEM / DeviceConfig 可能调整具体阈值 |具体值仍以当版 `ActiveServices`、Broadcast 常量和官方 ANR 文档为准。[已验证: 官方文档, developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]如果主线程被调度延迟阻塞了 3 秒，再加上自身代码耗时 2 秒，总共就超过了 5 秒的 Input ANR 阈值。这种情况下，如果只看 App 代码可能只看到了 2 秒，漏掉了调度延迟的 3 秒。分析 ANR 时要把主线程、Binder 对端、系统负载和组件类型一起看。**误区五："SurfaceFlinger 延迟是 GPU 厂商的问题"**SurfaceFlinger 合成延迟的原因有很多，不一定是 GPU 硬件的问题。常见的原因包括：App 提交了过多或过大的 Layer、HWC 的能力没有充分利用、GPU 被 App 的自定义渲染占用、以及系统内存不足导致 GPU Buffer 分配慢。归因时需要具体分析 SF Track 中的耗时分布。
 
-## 参考资料- [Perfetto CPU Scheduling 官方文档](https://perfetto.dev/docs/data-sources/cpu-scheduling) — CPU 调度数据采集与分析- [Perfetto Thread State 分析](https://perfetto.dev/docs/data-sources/cpu-scheduling#thread-states) — 线程状态详解- [Android Memory allocation 官方文档](https://developer.android.com/topic/performance/memory-management) — kswapd 与 zRAM 机制- [AOSP lmkd 官方文档](https://source.android.com/docs/core/perf/lmkd) — userspace lmkd、PSI 与低内存杀进程策略- [Android Performance 官方指南](https://developer.android.com/topic/performance) — 性能优化最佳实践- [Diagnose and fix ANRs 官方文档](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs) — ANR 类型与超时口径- [Perfetto FrameTimeline 官方文档](https://perfetto.dev/docs/data-sources/frametimeline) — App / SurfaceFlinger jank 归因- [AOSP SurfaceFlinger 源码](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) — Android 16 tag 下的合成流程源码
+## 参考资料- [Perfetto CPU Scheduling 官方文档](https://perfetto.dev/docs/data-sources/cpu-scheduling) — CPU 调度数据采集与分析- [Perfetto Thread State 分析](https://perfetto.dev/docs/data-sources/cpu-scheduling#thread-states) — 线程状态详解- [Android Memory allocation 官方文档](https://developer.android.com/topic/performance/memory-management) — kswapd 与 zRAM 机制- [AOSP lmkd 官方文档](https://source.android.com/docs/core/perf/lmkd) — userspace lmkd、PSI 与低内存杀进程策略- [Android Performance 官方指南](https://developer.android.com/topic/performance) — 性能优化最佳实践- [Diagnose and fix ANRs 官方文档](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs) — ANR 类型与超时口径- [Perfetto FrameTimeline 官方文档](https://perfetto.dev/docs/data-sources/frametimeline) — App / SurfaceFlinger jank 归因- [AOSP SurfaceFlinger 源码](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) — Android 17 tag 下的合成流程源码
 ---
 *本节内容与 §5.1（Linux 进程调度基础）、§7.3（卡顿分析方法论）、§13.6（线程 CPU 状态分析）形成交叉参考体系。建议先掌握 §5.1 中的线程状态和调度延迟概念，再阅读本节进行归因实战。*
