@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-18"
-last_verified_against: "Perfetto v54.0 source (ab21398/v54.0); AOSP android-17.0.0_r1 ViewRootImpl/JankTracker/JankInfo/Cuj; Perfetto v55.0 source only as out-of-Android-17 comparison"
+last_verified_against: "Perfetto v54.0 source (ab21398/v54.0); AOSP android-17.0.0_r1 ViewRootImpl/JankTracker/JankInfo/Cuj"
 confidence: medium
 sources:
   - type: official
@@ -35,28 +35,28 @@ reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-19T05:08:51+08:00"
 task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-18"
+task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-18T14:33:37+08:00"
+last_task9_at: "2026-06-19T05:28:49+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: reviewed
-task9_state: "pending"
-pipeline_stage: task9_pending
+task6_state: revisiting
+task9_state: reviewed
+pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-06-19-02-review.md"
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix 回流后写作层复审通过；L1 小修 2 处（禁用词「落地」×2）；无 L3/L4 回炉项，送 Task9 终审。"
-last_task9_autofix_at: "2026-06-18"
-last_task9_review_log: "logs/deep-review/2026-06-18-14-audit.md"
-task9_review_notes: "2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_autofix_at: "2026-06-19"
+last_task9_review_log: "logs/deep-review/2026-06-19-05-deep-review.md"
+task9_review_notes: "2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
 p0: 0
-p1: 0
+p1: 1
 p2: 0
 task9_reviewed_at: "2026-06-18T14:33:37+08:00"
 updated_by: "openclaw-task9"
-updated_date: "2026-06-18"
+updated_date: "2026-06-19"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17
 last_task9_audit: "2026-06-18"
@@ -342,7 +342,7 @@ Perfetto v54 让 Android 性能分析里的三类证据开始使用同一套工�
 
 ## DataGrid 适合做什么
 
-Perfetto v54 release notes 在 UI 部分写到的是 DataGrid table viewer 的改进：pivot table、glob / contains / not-contains filters、distinct value picker，以及 snap-to-boundaries。DataGrid 是 SQL 结果表的交互层；分析口径仍由 SQL 和标准库决定。**节点式数据流（node-based query builder）在 v54.0 已存在**，只是 id 是 `dev.perfetto.ExplorePage` 而非 `dev.perfetto.DataExplorer`；v55.0 才完成重命名 + 加入 Dashboard/TraceSummary/Group 节点。详见本节末「节点式数据流补注」。
+Perfetto v54 release notes 在 UI 部分写到的是 DataGrid table viewer 的改进：pivot table、glob / contains / not-contains filters、distinct value picker，以及 snap-to-boundaries。DataGrid 是 SQL 结果表的交互层；分析口径仍由 SQL 和标准库决定。**节点式数据流（node-based query builder）在 v54.0 已存在**，Android 17 范围内只按 `dev.perfetto.ExplorePage` 和基础节点能力讨论；后续版本的重命名与扩展节点不进入本节结论。详见本节末「节点式数据流补注」。
 
 DataGrid 的价值在三类场景里最明显：
 
@@ -499,83 +499,41 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 
 这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。[待验证: 需要结合真实 trace 案例复核排障顺序]
 
-## 节点式数据流补注：DataExplorer（节点图编辑器）
+## 节点式数据流补注：ExplorePage（节点图编辑器）
 
+> Perfetto v54.0 已提供基础节点图编辑器，plugin id 是 `dev.perfetto.ExplorePage`。后续版本的重命名和扩展节点未进入 Android 17，本节不把它们作为正文结论或操作建议。
 
-> **纠正**：上一节原写「节点式数据流不属于 v54 release notes 描述的功能」，该表述与 v54.0 源码不符。
-> Perfetto 节点图编辑器在 v54.0 已经实现，**只是 plugin id 是 `dev.perfetto.ExplorePage` 而非 `dev.perfetto.DataExplorer`**。
-> 本补注以 v54.0 / v55.0 源码对比给出准确边界。
+### 1. Android 17 范围内的源码锚点
 
-### 1. 命名变迁
-
-| 版本 | plugin id | 源码根目录 | 关键文件 |
-|---|---|---|---|
-| v54.0（Android 17 出厂基线） | `dev.perfetto.ExplorePage` | `ui/src/plugins/dev.perfetto.ExplorePage/` | `index.ts` / `explore_page.ts` / `core_nodes.ts`（18 节点） |
-| v55.0 | `dev.perfetto.DataExplorer` | `ui/src/plugins/dev.perfetto.DataExplorer/` | `index.ts` / `data_explorer.ts` / `core_nodes.ts`（22 节点） |
-
-v54.0 已有 `index.ts` + `explore_page.ts` + 完整的 `query_builder/` 子目录、节点注册表、节点图渲染、Undo/Redo、Recent Graphs，**只是缺少**：`dashboard/` 子目录、`data_explorer_tabs_storage.ts`（多 tab）、`pbtxt_import.ts`、DashboardNode / TraceSummaryNode / GroupNode。
-
-### 2. 节点类型表
-
-`nodeRegistry.register(id, descriptor)` 集中注册节点，`descriptor` 包含 `name` / `description` / `icon` / `hotkey` / `type: 'source' | 'modification'` / `nodeType: NodeType` / 可选 `preCreate`（弹窗预创建）/ `factory()` / `deserialize()`。
-
-| 节点 id | 显示名 | 类型 | v54.0 | v55.0 变化 |
+| Perfetto 版本 | Android 出厂基线 | 节点式工具 | 源码根目录 | 关键能力 |
 |---|---|---|---|---|
-| `slice` | Slices | source | ✓ | — |
-| `table` | Table | source | ✓ | — |
-| `sql` | Query | source | ✓ | — |
-| `timerange` | Time Range | source | ✓ | — |
-| `add_columns` / `modify_columns` | Add/Modify Columns | modification | ✓ | — |
-| `aggregation` / `filter_node` / `filter_during` / `filter_in` | 聚合 + 过滤 | modification | ✓ | — |
-| `interval_intersect` / `join` / `union_node` / `create_slices` / `sort_node` / `limit_and_offset_node` | 多节点算子 | modification | ✓ | — |
-| `metrics` / `counter_to_intervals` | 度量/计数器 | modification | ✓ | — |
-| `visualisation` | **Visualisation**（v54.0）/ **Charts**（v55.0） | modification | ✓ | 仅改名 |
-| `dashboard` | Export to Dashboard | modification | ✗ | **v55.0 新增** |
-| `trace_summary` | Trace Summary | modification | ✗ | **v55.0 新增** |
-| `group` | Group | group | ✗ | **v55.0 新增** |
+| v54.0 | Android 17 / API 37 | `dev.perfetto.ExplorePage` | `ui/src/plugins/dev.perfetto.ExplorePage/` | 基础节点图、Undo/Redo、Recent Graphs、server-side 分页/过滤/排序 |
 
-### 3. 两阶段执行模型
+v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.ts` 和 `core_nodes.ts`。可用节点覆盖 `slice`、`table`、`sql`、`timerange`、`add_columns`、`modify_columns`、`aggregation`、`filter_node`、`filter_during`、`filter_in`、`interval_intersect`、`join`、`union_node`、`create_slices`、`sort_node`、`limit_and_offset_node`、`metrics`、`counter_to_intervals`、`visualisation`。这些足够支撑 CUJ / 卡顿 trace 的探索式筛选。
+
+### 2. 两阶段执行模型
 
 `QueryExecutionService`（`query_builder/query_execution_service.ts`）定义两阶段：
 
-- **Phase 1 Analysis**：`NodePanel.updateQuery()` → `service.processNode({ manual: false })` → `engine.analyzeStructuredQuery` 验证并返回 `{sql, textproto, modules, preambles, columns}`，**不执行**。
-- **Phase 2 Execution**：把 `modules + preambles + query.sql` 物化成 `_exp_materialized_{sanitizedNodeId}` 表，再通过 `SQLDataSource` 提供 server-side 分页/过滤/排序。
+- **Phase 1 Analysis**：`NodePanel.updateQuery()` → `service.processNode({ manual: false })` → `engine.analyzeStructuredQuery` 验证并返回 `{sql, textproto, modules, preambles, columns}`，不执行查询。
+- **Phase 2 Execution**：把 `modules + preambles + query.sql` 物化成 `_exp_materialized_{sanitizedNodeId}` 表，再通过 `SQLDataSource` 提供 server-side 分页、过滤和排序。
 
-**v55.0 关键设计**：把整张节点图一次性提交到 `TraceSummarySpec.query`，由 `engine.updateSummarizerSpec(summarizerId, spec)` 统一协调；每个 query 的 `wasUpdated` 标志位判定是否需要重算，`nodeStaleMap` 缓存判定结果，未变更节点直接复用已物化表。`executionQueue` 串行化 processNode 防止 race。
+这个模型说明节点图编辑器不是新的分析口径，而是把 PerfettoSQL 查询拆成可视化节点和可检查的中间表。技术结论仍应落回 SQL、标准库和 trace 数据。
 
-### 4. 与 DataGrid / 手写 SQL 的关系
+### 3. 与 DataGrid / 手写 SQL 的关系
 
-`DataExplorer` 不是 DataGrid 的替代品，而是把「写 PerfettoSQL 文本 + 单次 query」重构为「拖拽节点 + 图形化连边 + 自动生成 SQL + 物化中间结果」：
+`dev.perfetto.ExplorePage` 不是 DataGrid 的替代品，而是把「写 PerfettoSQL 文本 + 单次 query」拆成「节点连边 + 自动生成 SQL + 物化中间结果」：
 
-| 维度 | 手写 SQL | DataGrid | DataExplorer |
+| 维度 | 手写 SQL | DataGrid | ExplorePage 节点图 |
 |---|---|---|---|
 | 适用对象 | 熟悉 PerfettoSQL 的工程师 | 任意人 | 任意人 |
 | 中间结果可见性 | 一次 query 一个结果 | 一个 SQL 一个 DataGrid | 节点图每个节点一个物化表 |
-| 可视化程度 | 纯文本 | 表格 + pivot | 节点图 + 表格 + 仪表盘 |
-| 跨会话复用 | 保存 SQL 文件 | 保存 permalink | 保存 permalink + 节点图 JSON + Dashboard |
+| 可视化程度 | 纯文本 | 表格 + pivot | 节点图 + 表格 |
+| 跨会话复用 | 保存 SQL 文件 | 保存 permalink | 保存 permalink + 节点图 JSON |
 
-**最佳实践**：节点图编辑器出快速验证、CUJ/卡顿 trace 的探索性分析；明确的口径化 SQL（§13.10 cookbook、§13.14 现有内容）放仓库里，DataGrid + 节点图当作交互式验证入口。
+**结论**：Android 17 / Perfetto v54.0 范围内，不能说「v54 完全没有节点式数据流」。准确说法是：v54.0 已有基础 ExplorePage 节点图编辑器；后续版本的命名和扩展节点不进入本节结论。
 
-### 5. Android 17 平台能力边界
-
-| Perfetto 版本 | Android 出厂基线 | 节点式工具 | 可用节点 |
-|---|---|---|---|
-| v54.0 | Android 17 / API 37 | `dev.perfetto.ExplorePage` | 18（无 Dashboard/TraceSummary/Group） |
-| v55.0 | 后续主线（**非 Android 17 范围**） | `dev.perfetto.DataExplorer` | 22（含 Dashboard/TraceSummary/Group） |
-
-**结论**：AIW 章节叙述「节点式数据流属于 v54 之后演进」是正确的；但不能说「v54 完全没有节点式数据流」——v54.0 已经提供基础 18 节点编辑器，只是名字和扩展能力有差异。
-
-[已验证: google/perfetto v54.0 `ui/src/plugins/dev.perfetto.ExplorePage/` + google/perfetto v55.0 `ui/src/plugins/dev.perfetto.DataExplorer/`, 2026-06-13]
-
-### 节点图编辑器最佳实践
-
-围绕 `QueryExecutionService` 的两阶段执行模型，整理出三条可直接使用的最佳实践：
-
-1. **SqlSourceNode 关闭 autoExecute**：v55.0 源码 `query_execution_service.ts` 注释明确把 `SqlSourceNode` 列为默认 `autoExecute=false` 的节点之一。理由：用户写 SQL 时频繁重构查询，自动跑会浪费 IO；让用户点 Ctrl+Enter 显式触发。
-2. **多输入节点用 LEFT JOIN + 物化中间表**：`IntervalIntersectNode` / `UnionNode` / `FilterDuringNode` 这三个多输入节点同样默认手动执行，结果集可能很大。Debug 阶段应把中间节点单独物化（点击节点 → 切到 Result 视图看物化表的行数）确认输入符合预期后再下游 join。
-3. **导出 Dashboard 时为 sourceNodeId 命名稳定**：v55.0 `dashboard_node.ts` 把 `getExportName()` 默认值取自 `primaryInput.getTitle()`，所以节点标题会沿用到 Dashboard 卡片标题。团队协作时为最终导出节点取稳定标题（如 `Final: widgets_per_cuj`），避免下游 Dashboard 卡片名漂移。
-
-[已验证: google/perfetto v55.0 `ui/src/plugins/dev.perfetto.DataExplorer/query_builder/query_execution_service.ts` + `query_builder/nodes/dashboard_node.ts` + `query_builder/builder.ts`, 2026-06-13]
+[已验证: google/perfetto v54.0 `ui/src/plugins/dev.perfetto.ExplorePage/` + `query_builder/core_nodes.ts` + `query_builder/query_execution_service.ts`, 2026-06-19]
 
 ---
 
@@ -592,6 +550,6 @@ v54.0 已有 `index.ts` + `explore_page.ts` + 完整的 `query_builder/` 子目�
 ### Perfetto DataGrid 与 Jank CUJ 标准库 v54 · 进程过滤与 FrameTracker Join 深挖
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-perfetto-jank-cuj-v54-process-filter-and-frametracker-join.md
 - 类型：DeepResearch 调研结果
-- 摘要：对 Perfetto v54 Jank CUJ 标准库的二次深挖：确认 `android.cujs.base` 进程名过滤分两层（GLOB com.google.android*/com.android.*），第二层 `cujs_ordered` CTE 按进程名决定 counter 回溯窗口（系统进程 0 回溯、NexusLauncher 白名单、其他进程 MAX(ts, ts_end-4ms)）；`android_jank_cuj_frame` vs `android_jank_cuj_frame_timeline` 的分工（frame 用于拼完整帧范围，timeline 用于 jank_type 分类）；JankTracker.cpp 五种 JankType 实时判定与 CUJ 标准库事后聚合的关系；`relevant_threads.sql` 的 SF 线程视图迁移策略（旧表计划 v55+ 删除）。
+- 摘要：对 Perfetto v54 Jank CUJ 标准库的二次深挖：确认 `android.cujs.base` 进程名过滤分两层（GLOB com.google.android*/com.android.*），第二层 `cujs_ordered` CTE 按进程名决定 counter 回溯窗口（系统进程 0 回溯、NexusLauncher 白名单、其他进程 MAX(ts, ts_end-4ms)）；`android_jank_cuj_frame` vs `android_jank_cuj_frame_timeline` 的分工（frame 用于拼完整帧范围，timeline 用于 jank_type 分类）；JankTracker.cpp 五种 JankType 实时判定与 CUJ 标准库事后聚合的关系；`relevant_threads.sql` 的 SF 线程视图迁移策略（旧表有后续删除计划）。
 - 注入时间：2026-06-17
 - 价值：进一步验证了第三方 App 的 CUJ 边界限制，明确了 counter 命名规范（J<CUJ_NAME>#<counter_name>）和 JankTracker 实时判定与 CUJ 库事后分析的双层独立架构
