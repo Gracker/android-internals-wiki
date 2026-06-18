@@ -808,8 +808,8 @@
     "section_title": "案例集",
     "title": "案例集",
     "file": "src/part2-performance/ch11-power/04-case-studies.md",
-    "priority": 90,
-    "reason": "fixed-lite",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 多处源码错误和版本边界违反，需要回炉修复",
     "material_paths": [
       "logs/deep-review/2026-06-17-19-audit.md"
     ],
@@ -825,15 +825,58 @@
         "location": "src/part2-performance/ch11-power/04-case-studies.md:L1085-L1093, L1104-L1109, L1122-L1128",
         "detail": "章节讨论 Android 15+ FGS timeout 机制和 Android 17 ProfilingManager 异常自动触发，但没有明确区分 Android 15/16/17 的版本演进差异，容易让读者误认为这些特性在更早版本就已经支持。",
         "suggestion": "明确标注 Android 15 FGS timeout 的具体配额（6 小时配额、onTimeout 回调）、Android 16 配额强化和 onTimeout 机制的具体行为差异，以及 ProfilingManager 仅在 Android 17+ 可用。"
+      },
+      {
+        "type": "版本差异",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:frontmatter:applicable_versions",
+        "detail": "章节声称覆盖Android 14-36，但内容多处引用Android 17+特性（FGS超时机制、Radio状态机AIDL迁移），违反Android 17/API 37版本边界",
+        "suggestion": "重新审核 applicable_versions 范围，确保与实际讨论的Android版本一致；明确标注适用Android 14-17范围，删除超出Android 17的内容"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:source_repos",
+        "detail": "ActiveServices.java 在 Android 16+ 已迁移至 APEX 模块 frameworks/base/apex/power/service/java/com/android/server/power/PowerManagerService.java，但章节仍引用旧路径 frameworks/base/services/core/java/com/android/server/am/ActiveServices.java",
+        "suggestion": "更新 source_repos 中的源码路径，迁移至APEX路径 frameworks/base/apex/power/service/java/com/android/server/power/PowerManagerService.java"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:11.4.3 Radio状态机功耗优化",
+        "detail": "章节描述Radio有5种状态（Sleep/Idle/DCH/PCH），但Android 17 Radio HAL只有3个状态：OFF/UNAVAILABLE/ON。章节描述的错误状态转换功耗表与实际AOSP不符",
+        "suggestion": "修正Radio状态机描述，仅包含Android 17实际存在的3个HAL状态，并注明这是 modem 内部 RRC 状态对Java层不可见"
+      },
+      {
+        "type": "原理断裂",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:11.4.1 前台服务优化案例",
+        "detail": "从\"使用JobScheduler\"直接跳到实现代码，缺少解释JobScheduler为什么比轮询更优的根本原因（系统级电源管理集成、白名单机制、智能调度）",
+        "suggestion": "补充JobScheduler相比轮询的核心优势说明：系统级调度、白名单机制、避免无效唤醒、电池优化策略集成"
+      },
+      {
+        "type": "版本差异",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:11.4.3 Radio状态机功耗优化",
+        "detail": "章节提及Android 14+ AIDL迁移，但未明确说明Android 17范围内可用的具体功能，且未标注适用Android 17范围",
+        "suggestion": "明确标注Radio状态机分析适用于Android 17，补充Android 17 AIDL路径的具体实现细节"
+      },
+      {
+        "type": "源码错误",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:11.4.3 Radio状态机功耗优化",
+        "detail": "RadioInterfaceLayer.java 已经被移除（2018年前后被RIL + Radio*Proxy三件套完全替代），章节中引用的旧架构已过时",
+        "suggestion": "更新Radio架构描述为当前主流的RIL + Radio*Proxy + RadioIndication三件套架构"
+      },
+      {
+        "type": "原理断裂",
+        "location": "src/part2-performance/ch11-power/04-case-studies.md:11.4.1 前台服务优化案例",
+        "detail": "未解释FGS超时机制的根本原理，缺少系统级电源管理集成的说明",
+        "suggestion": "补充FGS超时机制的系统级原理：系统如何通过ServiceLifecycle、进程状态、电源策略协同控制FGS生命周期"
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-17T19:22:00+08:00",
+    "added_at": "2026-06-18T08:31:19.175311",
     "created": "2026-06-17",
     "status": "completed",
     "audit_mode": "idle-audit",
-    "completed_at": "2026-06-17T19:39:07+08:00",
-    "completed_by": "task2b-lite"
+    "completed_at": "2026-06-18T08:53:48.608809+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "fixed: 9条问题全部修复 — frontmatter版本边界/源码路径修正 + Radio状态表HAL化 + JobScheduler/FGS原理补充 + 总结AI味清理"
   },
   {
     "section": "5.19",
