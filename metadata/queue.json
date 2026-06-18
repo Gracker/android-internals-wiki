@@ -96,7 +96,10 @@
     ],
     "added_by": "task2b-lite",
     "added_at": "2026-06-18T21:40:52+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-18T22:53:28.939917+08:00",
+    "completed_by": "task2b-main",
+    "resolution": "从 git commit 2c5c7c85 恢复完整内容（29612→29755 字节），修复 Lite 修复造成的正文截断；更新 frontmatter state 字段"
   },
   {
     "section": "19.17",
@@ -108,7 +111,7 @@
     "added_by": "task6-audit",
     "added_at": "2026-06-18T09:08:00+08:00",
     "created": "2026-06-18",
-    "status": "pending",
+    "status": "completed",
     "review_issues": [
       {
         "type": "outline覆盖缺陷",
@@ -116,7 +119,10 @@
         "detail": "章节大纲包含10个锚点，但仅覆盖4个，缺失率达60%：缺失锚点包括'trace模型'、'网络聚合'、'JankStats关系'、'采样与延迟'、'接入成本'、'适用边界'。",
         "suggestion": "需补充完整大纲覆盖，确保结构完整性和读者导航体验。"
       }
-    ]
+    ],
+    "completed_at": "2026-06-18T22:53:28.939917+08:00",
+    "completed_by": "task2b-main",
+    "resolution": "审计条目已过时：当前正文完整覆盖全部10个大纲锚点（定位/trace模型/自动采集/自定义trace/网络聚合/JankStats关系/采样与延迟/Google Play/接入成本/适用边界），无需修复"
   },
   {
     "section": "gap-1.0",
