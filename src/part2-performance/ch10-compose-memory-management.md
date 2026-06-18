@@ -842,3 +842,11 @@ Android 17/18将继续优化Compose的内存效率：
 - 开源项目
   - [Compose Runtime源码](https://cs.android.com/androidx/platform/frameworks/support/+/main:/compose/runtime/)
   - [Compose工具库](https://cs.android.com/androidx/platform/frameworks/support/+/main:/compose/ui/tooling/)
+
+
+### Jetpack Compose 内存分配与 SlotTable / Composer 机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：深入分析 Compose 重组机制的内存分配模式：SlotTable gap-buffer 数据结构在首次组合时多次倍增数组，RecomposeScopeImpl 每个可组合函数对应一个对象，State<T> 装箱开销与 changed() 反装箱优化，derivedStateOf 的 ResultRecord 链在快照切换时创建新记录。揭示结构性必然分配只能通过 @Stable、remember、SnapshotIntState 等方式压缩。
+- 注入时间：2026-06-19
+- 价值：首次从源码层面拆解 Compose 重组内存分配的结构性必然开销，对理解 Compose 内存抖动有直接参考价值

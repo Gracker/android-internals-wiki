@@ -126,3 +126,11 @@ QuotaController 使用的不是简单的固定值，而是基于多个参数的�
 <!-- outline-end -->
 
 > 本节内容待加工。
+
+
+### Adaptive Battery 与 App Standby 协同机制：后台任务优先级管理的新范式
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md
+- 类型：DeepResearch 调研结果
+- 摘要：Adaptive Battery 在 AOSP 层是写入接口+衰减契约，AppStandbyController.setAppStandbyBucket() 将非用户/系统调用标记为 REASON_MAIN_PREDICTED，12小时后 predictionTimedOut 回退到纯时间阈值算法。桶值被 JobScheduler/QuotaController、AppStateTrackerImpl、PowerManagerService 三方读取，实质上是写一次读三方的中间层。源码锚点 android-17.0.0_r1。
+- 注入时间：2026-06-19
+- 价值：基于 android-17.0.0_r1 源码的 Adaptive Battery 完整调用链分析，补充了桶值写入、衰减超时、三方消费的机制细节
