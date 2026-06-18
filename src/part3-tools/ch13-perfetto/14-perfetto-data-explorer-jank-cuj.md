@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-19"
-last_verified_against: "Perfetto v54.0 source (ab21398/v54.0); AOSP android-17.0.0_r1 ViewRootImpl/JankTracker/JankInfo/Cuj"
+last_verified_against: "Perfetto v54.0 source (ab21398/v54.0); AOSP android-17.0.0_r1 ViewRootImpl/JankTracker/ProfileData/FrameTracker/JankInfo/Cuj/UIInteractionFrameInfoReported"
 confidence: medium
 sources:
   - type: official
@@ -37,24 +37,24 @@ last_task6_at: "2026-06-19T07:09:24+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-19T06:25:40+08:00"
+last_task9_at: "2026-06-19T07:27:34+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
+pipeline_stage: "task6_pending"
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-06-19-07-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-19 Task6 revisiting-review (round 3): pass-light-edit。Task9 auto-fix 回流后写作层复审通过；L1 禁用词/高频词/物理动词/元叙述零命中；L2 开头/节奏/结构/读者引导全部通过；outline 6/6 锚点全覆盖；验证标注 10已验证/1待验证(9.1%)；无 L1/L2 问题，无 L3/L4 回炉项。task9_result=auto-fixed，送 Task9 终审确认。"
 last_task9_autofix_at: "2026-06-19"
-last_task9_review_log: "logs/deep-review/2026-06-19-06-deep-review.md"
-task9_review_notes: "2026-06-19 Task9 deep-review AUTO-FIX: P0 2 / P1 0 / P2 0；修正 android-17.0.0_r1 ViewRootImpl traversal 回调源码锚点（TraversalCallback#onVsync）与 JankTracker JankType 判定表（补入 kMissedDeadline / kMissedDeadlineLegacy 边界）；回到 Task6 复审。详见 logs/deep-review/2026-06-19-06-deep-review.md。 | 2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
-p0: 2
+last_task9_review_log: "logs/deep-review/2026-06-19-07-deep-review.md"
+task9_review_notes: "2026-06-19 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 0；修正 statsd 侧不存在的 `frame_missed` atom 标识，改为 android-17.0.0_r1 `UI_INTERACTION_FRAME_INFO_REPORTED` atom 及 `missed_frames` / `app_missed_frames` / `sf_missed_frames` 字段；回到 Task6 复审。详见 logs/deep-review/2026-06-19-07-deep-review.md。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 2 / P1 0 / P2 0；修正 android-17.0.0_r1 ViewRootImpl traversal 回调源码锚点（TraversalCallback#onVsync）与 JankTracker JankType 判定表（补入 kMissedDeadline / kMissedDeadlineLegacy 边界）；回到 Task6 复审。详见 logs/deep-review/2026-06-19-06-deep-review.md。 | 2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
+p0: 1
 p1: 0
 p2: 0
-task9_reviewed_at: "2026-06-19T06:25:40+08:00"
+task9_reviewed_at: "2026-06-19T07:27:34+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-19"
 deepseek_cn_review_state: done
@@ -292,7 +292,7 @@ android_is_app_jank_type(jank_type) :=
 
 报告链路：`JankTracker::finishFrame` → `ProfileDataContainer` + `FrameMetricsReporter::reportFrameMetrics` → 第三方 App 通过 `Window.OnFrameMetricsAvailableListener` 接收（也是 AndroidX JankStats 内部数据源）。
 
-**JankTracker 与 CUJ 标准库独立运行**：JankTracker 的 legacy jank 计数不会自动映射到 CUJ metric 的 `missedFrames`；CUJ 事后聚合依赖 `J<CUJ_NAME>` slice、`J<CUJ_NAME>#*` counter track 和 FrameTimeline 数据。两层的数据要一致需通过 StatsD 端 `frame_missed` 原子数据 join。
+**JankTracker 与 CUJ 标准库独立运行**：JankTracker 的 legacy jank 计数不会自动映射到 CUJ metric 的 `missedFrames`；CUJ 事后聚合依赖 `J<CUJ_NAME>` slice、`J<CUJ_NAME>#*` counter track 和 FrameTimeline 数据。需要把两层数据对齐时，应核对 statsd 的 `UI_INTERACTION_FRAME_INFO_REPORTED` atom 字段（`missed_frames` / `app_missed_frames` / `sf_missed_frames`）和 trace counter。
 
 #### `relevant_threads.sql` 迁移策略
 
@@ -333,7 +333,7 @@ AndroidJankCujMetric proto  (android/android_jank_cuj.sql)
    counter_metrics / trace_metrics / timeline_metrics / frame / sf_frame
 ```
 
-[已验证: Perfetto v54.0 ab21398 + android-17.0.0_r1 JankTracker.cpp / ProfileData.h / JankInfo.h / ViewRootImpl.java / Cuj.java, 2026-06-19]
+[已验证: Perfetto v54.0 ab21398 + android-17.0.0_r1 JankTracker.cpp / ProfileData.h / JankInfo.h / ViewRootImpl.java / FrameTracker.java / Cuj.java / stats/atoms.proto, 2026-06-19]
 
 <!-- outline-end -->
 
