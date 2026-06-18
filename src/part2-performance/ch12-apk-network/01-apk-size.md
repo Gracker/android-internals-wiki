@@ -60,7 +60,7 @@ task6_state: "reviewed"
 task9_state: "reviewed"
 repaired_by: openclaw-task2b
 last_task2b_at: '2026-05-06T04:41:00+08:00'
-task9_review_notes: "2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；Dynamic Feature Module 仍使用旧 Play Core Library 1.6+ 口径，需更新为 Play Feature Delivery Library 2.1.0+ 并标注 Android 14+ target SDK 版本边界。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；Dynamic Feature Module 仍使用旧 Play Core Library 1.6+ 口径，需更新为 Play Feature Delivery Library 2.1.0+ 并标注 Android 14+ target SDK 版本边界。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 闲时抽检：pass-tech-review。P0 0 / P1 0 / P2 1；官方文档核对未发现 Android 18/API 38 越界；zipalign 16KB 验证命令建议后续从对齐命令改为 -c 校验命令。"
 last_task6_at: '2026-05-06T05:05:00+08:00'
 last_task6_audit: '2026-06-10'
 review_notes: '2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9
@@ -68,8 +68,8 @@ review_notes: '2026-05-05 Task6 23:26：revisiting 写作复审，清理填充�
   结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 05 task9 deep-review:
   pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
 last_task9_review_log: "logs/deep-review/2026-05-28-01-deep-review.md"
-last_task9_audit: '2026-05-24'
-last_task9_audit_log: logs/deep-review/2026-05-24-22-audit.md
+last_task9_audit: '2026-06-18'
+last_task9_audit_log: logs/deep-review/2026-06-18-11-audit.md
 rework_type: review回炉修复（Task9 闲时抽检问题单）
 last_task2b_lite_at: '2026-05-27'
 pipeline_stage: ready-to-publish
