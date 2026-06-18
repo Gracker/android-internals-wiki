@@ -29,7 +29,10 @@ related_chapters: ["5.15", "11.2", "25.5", "5.17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-18"
 gap_source: "官方文档/素材驱动"
-pipeline_stage: "task6-pending"
+pipeline_stage: "task6_pending"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
+last_task2b_lite_at: "2026-06-19"
 ---
 
 # 25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理
