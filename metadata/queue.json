@@ -1625,7 +1625,7 @@
     "section": "12.1",
     "section_title": "应用与网络",
     "priority": 70,
-    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "reason": "与章节内容无关，跳过",
     "material_paths": [
       "https://juejin.cn/post/7604757482005053503"
     ],
@@ -1639,7 +1639,9 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-06-18T05:34:36",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-18T10:52:25+08:00",
+    "completed_by": "task2b-main"
   },
   {
     "section": "12.1",
@@ -1665,7 +1667,7 @@
     "section": "12.1",
     "section_title": "应用与网络",
     "priority": 80,
-    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "reason": "与章节内容无关，跳过",
     "material_paths": [
       "https://juejin.cn/post/7589903499599347766"
     ],
@@ -1679,13 +1681,15 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-06-18T05:34:36",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-18T10:52:25+08:00",
+    "completed_by": "task2b-main"
   },
   {
     "section": "12.1",
     "section_title": "应用与网络",
     "priority": 80,
-    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "reason": "与章节内容无关，跳过",
     "material_paths": [
       "https://juejin.cn/post/7613230154210852910"
     ],
@@ -1699,7 +1703,9 @@
     ],
     "added_by": "task8-classifier",
     "added_at": "2026-06-18T05:34:36",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-18T10:52:25+08:00",
+    "completed_by": "task2b-main"
   },
   {
     "section": "12.1",
