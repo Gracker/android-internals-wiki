@@ -34,6 +34,7 @@ repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-05-20"
 last_task9_audit_log: "logs/deep-review/2026-05-20-12-audit.md"
 last_task6_at: "2026-06-05T20:08:00+08:00"
+last_task6_audit: "2026-06-18"
 review_notes_6: "2026-06-05 task6 revisit-review (round 7): pass-light-edit. L1 clean (真正 x2 functional, Not-X-but-Y x2 within limit). All 10 anchors covered. task9_result=auto-fixed, queue clean. Auto-promoted to finalized."
 review_notes_5: "2026-06-05 task6 re-review (round 6): pass-light-edit. Fixed 禁用词 痛点→冲突. task9_result=pending, routes to task9."
 review_notes_4: "2026-06-04 task6 re-review (round 5): pass-light-edit. Task2b fix at 20:56 reviewed; no new writing quality issues. L1 clean (真正 x2 functional). Routing to task9 for pending tech review."
@@ -286,7 +287,7 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 - `Looper.Observer` 接口位置：`Looper.java:598-628`（API 36 行号；android-10.0.0_r1 引入时在 `:433-466`），三方法 `messageDispatchStarting()` / `messageDispatched(Object token, Message msg)` / `dispatchingThrewException(Object token, Message msg, Exception exception)` 签名、Javadoc、`@hide` 标记从 API 29 → API 33/34/35/36 **零变更**。
 - `sObserver` 字段在 `Looper.java:86`（API 36），`private static Observer sObserver`，注释上 `@UnsupportedAppUsage`，单进程单槽位。`setObserver(@Nullable Observer observer)` 在 `Looper.java:182-187`，赋值前无锁（JMM 依赖 final/synchronized block，注释明示 "The observer won't change while processing a transaction"，由调用方在 `loopOnce` 入口拍快照到 final local 变量保证一致性）。
 - `loopOnce` 调用模式（API 36 `Looper.java:246-260`）：dispatch 入口 `observer.messageDispatchStarting()` 拿 token；`try` 块成功后 `observer.messageDispatched(token, msg)`；`catch` 块 `observer.dispatchingThrewException(token, msg, exception)` 再 `throw`。三者互斥且每个 token 必须恰好回调一次，无重试容错。
-- **android-16.0.0_r3 新增**（API 36，2024 引入）：`Looper.loopOnce()` 在 `MessageQueue.next()` 返回 msg 后立即 emit Perfetto slice `message_queue_receive`（`Looper.java:203-213`），用 `mEventId` 做跨线程 terminating flow id，发送方线程名作为 proto 字段；类别 `PerfettoTrace.MQ_CATEGORY = new Category("mq")` 定义在 `core/java/android/os/PerfettoTrace.java:54`（该文件在 android-15 之前不存在，404 命中）。这条系统级 Perfetto trace 与 `Looper.Observer` 正交，Java 端 Observer 仍是"语义语义回调"语义，Perfetto 是"trace 端延迟打点"。两者可同时启用。
+- **android-16.0.0_r3 新增**（API 36，2024 引入）：`Looper.loopOnce()` 在 `MessageQueue.next()` 返回 msg 后立即 emit Perfetto slice `message_queue_receive`（`Looper.java:203-213`），用 `mEventId` 做跨线程 terminating flow id，发送方线程名作为 proto 字段；类别 `PerfettoTrace.MQ_CATEGORY = new Category("mq")` 定义在 `core/java/android/os/PerfettoTrace.java:54`（该文件在 android-15 之前不存在，404 命中）。这条系统级 Perfetto trace 与 `Looper.Observer` 正交，Java 端 Observer 仍是回调语义，Perfetto 是"trace 端延迟打点"。两者可同时启用。
 - **BlockCanary 当前 main 分支（2026-06-05 拉取 `markzhai/AndroidPerformanceMonitor/master`）**：实现仍是 `class LooperMonitor implements Printer`（`blockcanary-analyzer/.../LooperMonitor.java` 103 行），通过 `Looper.getMainLooper().setMessageLogging(new LooperMonitor(...))` 挂载，**未切到 `Looper.Observer`**。原因主要是 Observer 仍 `@hide`（灰名单 / max-target-o），且 `Printer.println` 的 `>>>>> Dispatching to / <<<<< Finished to` 双行模式足够做 block 阈值判定，迁移收益不抵反射与 token 协议改造成本。
 - **Android 17 边界声明**：`android-17.0.0_r1` tag 在 aosp-mirror / GitHub 镜像**尚不存在**（最新 release tag 为 `android-16.0.0_r3`）。上述结论对 Android 17 (API 37) 的外推基于 API 29-36 源码零变更趋势，**未在 Android 17 真实源码上直接验证**。如需 100% 权威，应在 cs.android.com 出现 android-17.0.0_r1 tag 后重读 `Looper.java` 与 `PerfettoTrace.java` 复核。
 
