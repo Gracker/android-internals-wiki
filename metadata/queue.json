@@ -1,204 +1,256 @@
-[
-  {
-    "section": "4.14",
-    "title": "ART GC Region 碎片化与 Compaction 策略",
-    "file": "src/part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md",
-    "priority": 80,
-    "status": "completed",
-    "created": "2026-06-11",
-    "source": "task2a-gap-mining",
-    "completed_note": "stale-cleanup: file already processed"
-  },
-  {
-    "section": "16.9",
-    "title": "Android 17 SDM 安装编译链路性能",
-    "file": "src/part4-system/ch16-aosp/09-android17-sdm-install-performance.md",
-    "priority": 80,
-    "status": "completed",
-    "created": "2026-06-11",
-    "source": "task2a-gap-mining",
-    "completed_note": "stale-cleanup: file already processed"
-  },
-  {
-    "section": "2.27",
-    "title": "SurfaceFlinger Transaction Queue 无锁架构与消息分流",
-    "file": "src/part1-fundamentals/ch02-rendering/27-sf-transaction-queue-lockless.md",
-    "priority": 95,
-    "status": "completed",
-    "created": "2026-06-11",
-    "source": "task2a-gap-mining",
-    "completed_note": "stale-cleanup: file already processed"
-  },
-  {
-    "section": "4.8",
-    "title": "ART Generational GC 与分代回收机制",
-    "file": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
-    "priority": 95,
-    "status": "completed",
-    "created": "2026-06-11",
-    "source": "task2a-gap-mining",
-    "completed_note": "stale-cleanup: file already processed"
-  },
-  {
-    "id": "task9-20260618-06-performance-collection-source-errors",
-    "section": "26.3",
-    "section_title": "性能指标采集与上报",
-    "title": "性能指标采集与上报",
-    "file": "src/part5-app/ch26-observability/03-performance-collection.md",
-    "priority": 95,
-    "reason": "[Deep Tech Review] 章节存在多个 P0 源码错误：MemoryTracking、MemoryUsage、LeakDetection 等核心 API 在 AOSP 中不存在",
-    "material_paths": [
-      "logs/deep-review/2026-06-18-06-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "Android 14 高精度内存跟踪 API 章节",
-        "detail": "章节声称 Android 14 (API 34) 引入了 MemoryTracking API，但该 API 在 AOSP 中不存在。实际内存监控通过 Debug.MemoryInfo 类实现，不存在文中所述的 getClassUsage()、getRecentAllocations()、getAllocatorStats() 方法。",
-        "suggestion": "删除虚假的 MemoryTracking API 描述，改为使用真实的 Debug.MemoryInfo 类或其他实际存在的 Android 内存监控 API。若需高精度内存跟踪，应说明使用第三方方案如自定义的内存跟踪库。"
-      },
-      {
-        "type": "源码错误",
-        "location": "Android 14 高精度内存跟踪 API 章节",
-        "detail": "章节展示的 MemoryUsage 类及其方法（getClassUsage()、getRecentAllocations()、getAllocatorStats()）在标准 Android API 中不存在。这些方法名称和功能纯属虚构。",
-        "suggestion": "删除整个 MemoryUsage 类的代码示例，替换为实际存在的 Android 内存监控 API 或明确说明这是概念性伪代码。"
-      },
-      {
-        "type": "源码错误",
-        "location": "Android 14 高精度内存跟踪 API 章节",
-        "detail": "章节提到的 LeakDetection 类（setLeakThreshold()、setDetectionStrategy()、getLeakPaths()）在 AOSP 中不存在。内存泄漏检测主要通过第三方库如 LeakCanary 实现，不是系统级 API。",
-        "suggestion": "删除 LeakDetection 类的描述，改为介绍 LeakCanary 等实际可用的内存泄漏检测工具的实现原理和使用方法。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-18T06:20:00+00:00",
-    "created": "2026-06-18",
-    "status": "completed",
-    "completed_at": "2026-06-18T06:50:00+08:00",
-    "completed_by": "task2b-main",
-    "resolution": "已删除虚构的 MemoryTracking/MemoryUsage/LeakDetection API，替换为 Debug.MemoryInfo/getRuntimeStat/LeakCanary 等真实API；同步修复 PowerAwareSampling/AsyncMetricsCollector/MetricsCache 虚构类"
-  },
-  {
-    "section": "15.2",
-    "section_title": "如何区分系统问题和 App 问题",
-    "priority": 95,
-    "reason": "[Task2B Lite 严重发现] 前次 Lite 修复（commit ec2e99c4）导致正文截断：29612→2111 字节，丢失约 93% 内容。需从 git 2c5c7c85 恢复原始内容并正确拆分多行。",
-    "material_paths": [
-      "logs/review/2026-06-18-08-audit.md"
-    ],
-    "review_issues": [
-      {
-        "type": "数据丢失",
-        "location": "全文",
-        "detail": "正文从 26804 字符截断至约 500 字符，内容在'也就是'处中断",
-        "suggestion": "从 git commit 2c5c7c85 恢复完整内容，按 markdown 结构标记拆分为标准多行格式"
-      }
-    ],
-    "added_by": "task2b-lite",
-    "added_at": "2026-06-18T21:40:52+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-18T22:53:28.939917+08:00",
-    "completed_by": "task2b-main",
-    "resolution": "从 git commit 2c5c7c85 恢复完整内容（29612→29755 字节），修复 Lite 修复造成的正文截断；更新 frontmatter state 字段"
-  },
-  {
-    "section": "19.17",
-    "section_title": "Firebase Performance 监控实战",
-    "title": "Firebase Performance 监控实战",
-    "file": "src/part3-tools/ch19-apm/17-firebase-performance.md",
-    "priority": 85,
-    "reason": "[闲时抽检] outline锚点覆盖缺陷：10个大纲锚点中6个缺失",
-    "added_by": "task6-audit",
-    "added_at": "2026-06-18T09:08:00+08:00",
-    "created": "2026-06-18",
-    "status": "completed",
-    "review_issues": [
-      {
-        "type": "outline覆盖缺陷",
-        "location": "章节大纲结构",
-        "detail": "章节大纲包含10个锚点，但仅覆盖4个，缺失率达60%：缺失锚点包括'trace模型'、'网络聚合'、'JankStats关系'、'采样与延迟'、'接入成本'、'适用边界'。",
-        "suggestion": "需补充完整大纲覆盖，确保结构完整性和读者导航体验。"
-      }
-    ],
-    "completed_at": "2026-06-18T22:53:28.939917+08:00",
-    "completed_by": "task2b-main",
-    "resolution": "审计条目已过时：当前正文完整覆盖全部10个大纲锚点（定位/trace模型/自动采集/自定义trace/网络聚合/JankStats关系/采样与延迟/Google Play/接入成本/适用边界），无需修复"
-  },
-  {
-    "section": "gap-1.0",
-    "section_title": "Android 17 渲染新技术",
-    "title": "Android 17 渲染新技术",
-    "file": "src/part1-fundamentals/ch01-architecture/gap-android-17-渲染新技术.md",
-    "priority": 16,
-    "reason": "[Task2A 知识缺口] 新创建章节 - Android 17 渲染新技术",
-    "added_by": "task2a-gap-mining",
-    "added_at": "2026-06-18T09:18:04.233520+00:00",
-    "created": "2026-06-18",
-    "status": "draft",
-    "score": 16
-  },
-  {
-    "section": "26.3",
-    "section_title": "性能指标采集与上报",
-    "title": "性能指标采集与上报",
-    "file": "src/part5-app/ch26-observability/03-performance-collection.md",
-    "priority": 85,
-    "reason": "[Task2B Lite] outline锚点覆盖缺陷：10个大纲锚点中缺失6个",
-    "added_by": "task2b-lite",
-    "added_at": "2026-06-18T15:35:00+08:00",
-    "created": "2026-06-18",
-    "status": "completed",
-    "completed_at": "2026-06-18T15:35:00+08:00",
-    "completed_by": "task2b-lite",
-    "resolution": "已补充完整10锚点大纲，与正文内容完全匹配"
-  },
-  {
-    "file": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part5-app/ch23-memory/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md",
-    "priority": 80,
-    "created_at": "2026-06-18T21:20:27.299445+08:00",
-    "source": "knowledge_gap",
-    "title": "Android 17 AI 推理加速与 NeuralNetworks HAL 优化",
-    "score": 14
-  },
-  {
-    "chapter": "22.24",
-    "title": "App Widget 更新性能：RemoteViews IPC 与 Glance 渲染",
-    "path": "src/part5-app/ch22-rendering-practice/24-app-widget-performance.md",
-    "priority": 80,
-    "status": "pending",
-    "created_date": "2026-06-19",
-    "source": "task2a-knowledge-gap"
-  },
-  {
-    "chapter": "23.12",
-    "title": "Jetpack Compose 内存分配与 GC 影响",
-    "path": "src/part5-app/ch23-memory-practice/12-compose-memory-allocation-gc.md",
-    "priority": 80,
-    "status": "pending",
-    "created_date": "2026-06-19",
-    "source": "task2a-knowledge-gap"
-  },
-  {
-    "section": "15.2",
-    "section_title": "如何区分系统问题和 App 问题",
-    "priority": 90,
-    "reason": "[review回炉] 全文格式损坏：27/32 个 markdown 标题（## / ###）与后续正文内容合并到同一行，列表项也被合并。需要恢复标题与正文之间、列表项之间的换行分隔。",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需重写",
-        "location": "全文（L73-L135 区域最严重）",
-        "detail": "markdown 格式损坏：所有 ## 和 ### 标题后没有换行，标题文字与正文第一句紧贴在同一行。列表项（- 开头）之间也丢失换行，多个列表项合并为一行。整体文件仅 135 行但实际内容量远超。具体示例：L77「## 为什么一定要区分系统问题和 App 问题很多性能排查卡在后半段——trace 够了」应为两行。",
-        "suggestion": "Task2B 需要做全文行级格式修复：1) 每个 ## / ### 标题独占一行，后接空行；2) 列表项 - / 数字列表各占一行；3) 代码块 ``` 前后换行；4) 保持正文内容不变，仅修复换行结构。"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-19T02:06:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-06-19-02-review.md",
-    "completed_at": "2026-06-19T02:53:39+08:00",
-    "completed_by": "openclaw-task2b"
-  }
-]
+{
+  "pending": [
+    {
+      "section": "4.14",
+      "title": "ART GC Region 碎片化与 Compaction 策略",
+      "file": "src/part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md",
+      "priority": 80,
+      "status": "completed",
+      "created": "2026-06-11",
+      "source": "task2a-gap-mining",
+      "completed_note": "stale-cleanup: file already processed"
+    },
+    {
+      "section": "16.9",
+      "title": "Android 17 SDM 安装编译链路性能",
+      "file": "src/part4-system/ch16-aosp/09-android17-sdm-install-performance.md",
+      "priority": 80,
+      "status": "completed",
+      "created": "2026-06-11",
+      "source": "task2a-gap-mining",
+      "completed_note": "stale-cleanup: file already processed"
+    },
+    {
+      "section": "2.27",
+      "title": "SurfaceFlinger Transaction Queue 无锁架构与消息分流",
+      "file": "src/part1-fundamentals/ch02-rendering/27-sf-transaction-queue-lockless.md",
+      "priority": 95,
+      "status": "completed",
+      "created": "2026-06-11",
+      "source": "task2a-gap-mining",
+      "completed_note": "stale-cleanup: file already processed"
+    },
+    {
+      "section": "4.8",
+      "title": "ART Generational GC 与分代回收机制",
+      "file": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "priority": 95,
+      "status": "completed",
+      "created": "2026-06-11",
+      "source": "task2a-gap-mining",
+      "completed_note": "stale-cleanup: file already processed"
+    },
+    {
+      "id": "task9-20260618-06-performance-collection-source-errors",
+      "section": "26.3",
+      "section_title": "性能指标采集与上报",
+      "title": "性能指标采集与上报",
+      "file": "src/part5-app/ch26-observability/03-performance-collection.md",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 章节存在多个 P0 源码错误：MemoryTracking、MemoryUsage、LeakDetection 等核心 API 在 AOSP 中不存在",
+      "material_paths": [
+        "logs/deep-review/2026-06-18-06-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Android 14 高精度内存跟踪 API 章节",
+          "detail": "章节声称 Android 14 (API 34) 引入了 MemoryTracking API，但该 API 在 AOSP 中不存在。实际内存监控通过 Debug.MemoryInfo 类实现，不存在文中所述的 getClassUsage()、getRecentAllocations()、getAllocatorStats() 方法。",
+          "suggestion": "删除虚假的 MemoryTracking API 描述，改为使用真实的 Debug.MemoryInfo 类或其他实际存在的 Android 内存监控 API。若需高精度内存跟踪，应说明使用第三方方案如自定义的内存跟踪库。"
+        },
+        {
+          "type": "源码错误",
+          "location": "Android 14 高精度内存跟踪 API 章节",
+          "detail": "章节展示的 MemoryUsage 类及其方法（getClassUsage()、getRecentAllocations()、getAllocatorStats()）在标准 Android API 中不存在。这些方法名称和功能纯属虚构。",
+          "suggestion": "删除整个 MemoryUsage 类的代码示例，替换为实际存在的 Android 内存监控 API 或明确说明这是概念性伪代码。"
+        },
+        {
+          "type": "源码错误",
+          "location": "Android 14 高精度内存跟踪 API 章节",
+          "detail": "章节提到的 LeakDetection 类（setLeakThreshold()、setDetectionStrategy()、getLeakPaths()）在 AOSP 中不存在。内存泄漏检测主要通过第三方库如 LeakCanary 实现，不是系统级 API。",
+          "suggestion": "删除 LeakDetection 类的描述，改为介绍 LeakCanary 等实际可用的内存泄漏检测工具的实现原理和使用方法。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-18T06:20:00+00:00",
+      "created": "2026-06-18",
+      "status": "completed",
+      "completed_at": "2026-06-18T06:50:00+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "已删除虚构的 MemoryTracking/MemoryUsage/LeakDetection API，替换为 Debug.MemoryInfo/getRuntimeStat/LeakCanary 等真实API；同步修复 PowerAwareSampling/AsyncMetricsCollector/MetricsCache 虚构类"
+    },
+    {
+      "section": "15.2",
+      "section_title": "如何区分系统问题和 App 问题",
+      "priority": 95,
+      "reason": "[Task2B Lite 严重发现] 前次 Lite 修复（commit ec2e99c4）导致正文截断：29612→2111 字节，丢失约 93% 内容。需从 git 2c5c7c85 恢复原始内容并正确拆分多行。",
+      "material_paths": [
+        "logs/review/2026-06-18-08-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据丢失",
+          "location": "全文",
+          "detail": "正文从 26804 字符截断至约 500 字符，内容在'也就是'处中断",
+          "suggestion": "从 git commit 2c5c7c85 恢复完整内容，按 markdown 结构标记拆分为标准多行格式"
+        }
+      ],
+      "added_by": "task2b-lite",
+      "added_at": "2026-06-18T21:40:52+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-18T22:53:28.939917+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "从 git commit 2c5c7c85 恢复完整内容（29612→29755 字节），修复 Lite 修复造成的正文截断；更新 frontmatter state 字段"
+    },
+    {
+      "section": "19.17",
+      "section_title": "Firebase Performance 监控实战",
+      "title": "Firebase Performance 监控实战",
+      "file": "src/part3-tools/ch19-apm/17-firebase-performance.md",
+      "priority": 85,
+      "reason": "[闲时抽检] outline锚点覆盖缺陷：10个大纲锚点中6个缺失",
+      "added_by": "task6-audit",
+      "added_at": "2026-06-18T09:08:00+08:00",
+      "created": "2026-06-18",
+      "status": "completed",
+      "review_issues": [
+        {
+          "type": "outline覆盖缺陷",
+          "location": "章节大纲结构",
+          "detail": "章节大纲包含10个锚点，但仅覆盖4个，缺失率达60%：缺失锚点包括'trace模型'、'网络聚合'、'JankStats关系'、'采样与延迟'、'接入成本'、'适用边界'。",
+          "suggestion": "需补充完整大纲覆盖，确保结构完整性和读者导航体验。"
+        }
+      ],
+      "completed_at": "2026-06-18T22:53:28.939917+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "审计条目已过时：当前正文完整覆盖全部10个大纲锚点（定位/trace模型/自动采集/自定义trace/网络聚合/JankStats关系/采样与延迟/Google Play/接入成本/适用边界），无需修复"
+    },
+    {
+      "section": "gap-1.0",
+      "section_title": "Android 17 渲染新技术",
+      "title": "Android 17 渲染新技术",
+      "file": "src/part1-fundamentals/ch01-architecture/gap-android-17-渲染新技术.md",
+      "priority": 16,
+      "reason": "[Task2A 知识缺口] 新创建章节 - Android 17 渲染新技术",
+      "added_by": "task2a-gap-mining",
+      "added_at": "2026-06-18T09:18:04.233520+00:00",
+      "created": "2026-06-18",
+      "status": "draft",
+      "score": 16
+    },
+    {
+      "section": "26.3",
+      "section_title": "性能指标采集与上报",
+      "title": "性能指标采集与上报",
+      "file": "src/part5-app/ch26-observability/03-performance-collection.md",
+      "priority": 85,
+      "reason": "[Task2B Lite] outline锚点覆盖缺陷：10个大纲锚点中缺失6个",
+      "added_by": "task2b-lite",
+      "added_at": "2026-06-18T15:35:00+08:00",
+      "created": "2026-06-18",
+      "status": "completed",
+      "completed_at": "2026-06-18T15:35:00+08:00",
+      "completed_by": "task2b-lite",
+      "resolution": "已补充完整10锚点大纲，与正文内容完全匹配"
+    },
+    {
+      "file": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part5-app/ch23-memory/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md",
+      "priority": 80,
+      "created_at": "2026-06-18T21:20:27.299445+08:00",
+      "source": "knowledge_gap",
+      "title": "Android 17 AI 推理加速与 NeuralNetworks HAL 优化",
+      "score": 14
+    },
+    {
+      "chapter": "22.24",
+      "title": "App Widget 更新性能：RemoteViews IPC 与 Glance 渲染",
+      "path": "src/part5-app/ch22-rendering-practice/24-app-widget-performance.md",
+      "priority": 80,
+      "status": "pending",
+      "created_date": "2026-06-19",
+      "source": "task2a-knowledge-gap"
+    },
+    {
+      "chapter": "23.12",
+      "title": "Jetpack Compose 内存分配与 GC 影响",
+      "path": "src/part5-app/ch23-memory-practice/12-compose-memory-allocation-gc.md",
+      "priority": 80,
+      "status": "pending",
+      "created_date": "2026-06-19",
+      "source": "task2a-knowledge-gap"
+    },
+    {
+      "section": "15.2",
+      "section_title": "如何区分系统问题和 App 问题",
+      "priority": 90,
+      "reason": "[review回炉] 全文格式损坏：27/32 个 markdown 标题（## / ###）与后续正文内容合并到同一行，列表项也被合并。需要恢复标题与正文之间、列表项之间的换行分隔。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文（L73-L135 区域最严重）",
+          "detail": "markdown 格式损坏：所有 ## 和 ### 标题后没有换行，标题文字与正文第一句紧贴在同一行。列表项（- 开头）之间也丢失换行，多个列表项合并为一行。整体文件仅 135 行但实际内容量远超。具体示例：L77「## 为什么一定要区分系统问题和 App 问题很多性能排查卡在后半段——trace 够了」应为两行。",
+          "suggestion": "Task2B 需要做全文行级格式修复：1) 每个 ## / ### 标题独占一行，后接空行；2) 列表项 - / 数字列表各占一行；3) 代码块 ``` 前后换行；4) 保持正文内容不变，仅修复换行结构。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-19T02:06:00+08:00",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-19-02-review.md",
+      "completed_at": "2026-06-19T02:53:39+08:00",
+      "completed_by": "openclaw-task2b"
+    },
+    {
+      "section": "ch02-rendering",
+      "section_title": "Chapter ch02-rendering",
+      "priority": 80,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7611938320638869550"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "[掘金Android] 告别 Modifier 地狱，Compose 样式系统要变天了 — ：UI渲染系统深度解析，包含Compose新特性，深入分析技术实现和实际应用场景...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-19T05:35:01.980056",
+      "status": "pending"
+    },
+    {
+      "section": "ch02-rendering",
+      "section_title": "Chapter ch02-rendering",
+      "priority": 80,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7618433588125007923"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "[掘金Android] 你可能还不知道 Compose Pager 有多强大 — ：UI渲染系统深度解析，包含Compose新特性，深入分析技术实现和实际应用场景...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-19T05:35:01.982263",
+      "status": "pending"
+    }
+  ],
+  "queue": [
+    {
+      "chapter": "5.21",
+      "title": "Adaptive Battery 与 App Standby Bucket 协同机制",
+      "priority": 80,
+      "status": "pending",
+      "source": "task2a-knowledge-gap",
+      "created_date": "2026-06-19"
+    }
+  ]
+}

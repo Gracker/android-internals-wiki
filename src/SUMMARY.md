@@ -127,6 +127,7 @@ tags:
   - [5.18 CPU Cache 友好代码与数据布局优化](part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md)
   - [5.19 端侧 AI 调度与 ADPF 智能优化](part1-fundamentals/ch05-cpu-power/5.19-ondevice-ai-adpf-intelligent-scheduling.md)
   - [5.20 GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争](part1-fundamentals/ch05-cpu-power/20-genai-app-integration-performance.md)
+  - [5.21 Adaptive Battery 与 App Standby Bucket 协同机制](part1-fundamentals/ch05-cpu-power/21-adaptive-battery-app-standby-coordination.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
