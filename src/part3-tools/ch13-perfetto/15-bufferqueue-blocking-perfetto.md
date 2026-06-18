@@ -61,6 +61,7 @@ updated_by: openclaw-task9
 updated_date: "2026-05-28"
 last_task9_at: "2026-05-28T09:20:00+08:00"
 task9_review_notes: "2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
+last_task9_audit: "2026-06-19"
 ---
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别
