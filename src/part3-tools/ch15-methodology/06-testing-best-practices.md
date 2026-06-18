@@ -68,7 +68,7 @@ last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-06-18"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
+last_deepseek_cn_review_at: 2026-06-18
 last_task6_at: "2026-06-18T04:09:00+08:00"
 ---
 
@@ -234,7 +234,7 @@ adb shell setprop pm.dexopt.disable_bg_dexopt true 2>/dev/null || true
 adb shell cmd package bg-dexopt-job --disable 2>/dev/null || true
 ```
 
-`am kill-all` 只能杀 App 进程，拦不住系统维护任务——尤其是后台 dexopt。设备空闲或充电时，系统会在后台执行 dexopt 优化，带来 CPU 和 I/O 波动，直接干扰启动、安装后首次运行和 CI 基准测试。Android 14 和 Android 16 的实现路径不同：Android 14 通过 JobScheduler 调度（`BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`），shell 命令入口在 `PackageManagerShellCommand.java`；Android 16 将执行侧迁移到 ART Service（`ArtManagerLocal.java`），shell 命令入口保持不变。Android 17（API 37）继续沿用 ART Service 架构；上述源码路径验证至 android-16.0.0_r1，android-17.0.0_r1 中如有路径调整需重新核对。
+`am kill-all` 只能杀 App 进程，拦不住系统维护任务——尤其是后台 dexopt。设备空闲或充电时，系统会在后台执行 dexopt 优化，带来 CPU 和 I/O 波动，直接干扰启动、安装后首次运行和 CI 基准测试。Android 14 和 Android 16 的实现路径不同：Android 14 通过 JobScheduler 调度（`BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`），shell 命令入口在 `PackageManagerShellCommand.java`；Android 16 将执行侧迁移到 ART Service（`ArtManagerLocal.java`），shell 命令入口保持不变。Android 17（API 37）继续沿用 ART Service 架构（验证至 android-16.0.0_r1，android-17.0.0_r1 路径待确认）。
 
 `bg-dexopt-job --cancel` / `--disable`、`cancel-bg-dexopt-job` 和 `pm.dexopt.disable_bg_dexopt` 的可用性会随系统版本、权限和厂商实现变化。CI 脚本要记录命令是否执行成功；执行失败时，把 ART 后台优化状态写进测试报告。测试结束后恢复 `pm.dexopt.disable_bg_dexopt=false`，避免长期影响设备的正常优化。
 
@@ -253,13 +253,13 @@ adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
 
 [已验证: AOSP sysfs 接口, /sys/devices/system/cpu/cpu*/cpufreq/ 路径在 ARM64 内核中通用。具体频率值因 SoC 而异,可通过 `cat scaling_available_frequencies` 查询。]
 
-对于性能基准测试,更实际的做法是先用 `adb shell settings put global low_power 0` 确保系统不进入低功耗模式。`adb shell cmd thermalservice override-status 0` 可以把 framework 侧的 thermal status 锁到 `THERMAL_STATUS_NONE`,但要注意:这个命令只覆盖 `ThermalManagerService` 的 `mIsStatusOverride`,影响 framework 向 App 投递的 `ThermalStatusChanged` 回调;它不会关闭 vendor 侧的 Thermal HAL、kernel cpufreq/GPU throttling 或 vendor thermal engine。设备仍然会根据真实温度降频。因此这个命令适合用来测试 App 自身的 thermal callback 逻辑,不能当作"锁定 CPU/GPU 峰值性能"的工具。性能基准测试的稳定化应优先依靠温度控制(间隔冷却、物理散热、温度门控),再配合 CPU 频率锁定(需要 root)。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控。[已验证: AOSP android-14.0.0_r1 & android-16.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 的 `override-status` 只设置 `mIsStatusOverride` 并覆盖 framework thermal status,不影响 HAL/kernel 侧温控]
+对性能基准测试来说，先确认系统不在低功耗模式：`adb shell settings put global low_power 0`。`adb shell cmd thermalservice override-status 0` 能把 framework 侧 thermal status 锁在 `THERMAL_STATUS_NONE`。注意：这个命令只覆盖 `ThermalManagerService` 的 `mIsStatusOverride`，也就是 framework 向 App 投递 `ThermalStatusChanged` 回调的那一层——vendor 侧 Thermal HAL、kernel cpufreq/GPU throttling 和 vendor thermal engine 都不受它影响。设备仍然会根据真实温度降频。换句话说，这个命令适合测试 App 自身的 thermal callback 逻辑，不能当作"锁定 CPU/GPU 峰值性能"的手段。性能基准测试的稳定化应优先依靠温度控制(间隔冷却、物理散热、温度门控),再配合 CPU 频率锁定(需要 root)。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控。[已验证: AOSP android-14.0.0_r1 & android-16.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 的 `override-status` 只设置 `mIsStatusOverride` 并覆盖 framework thermal status,不影响 HAL/kernel 侧温控]
 
-Macrobenchmark 库在内部会自动执行一些环境稳定化操作。每次测量前,`AndroidBenchmarkRunner` 通过 `IsolationActivity` 降低窗口干扰(接近全屏、固定亮度);设备支持时启用 **sustained performance mode**(通知调度器/thermal 策略降低频率波动);可选的 side effects 还包括 disable 指定后台 package、暂停 background dexopt 等。[已验证: AOSP androidx-main, benchmark/benchmark-macro/AndroidBenchmarkRunner, IsolationActivity, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]。
+Macrobenchmark 库在每次测量前也会做自动稳定化：`AndroidBenchmarkRunner` 通过 `IsolationActivity` 降低窗口干扰（接近全屏、固定亮度）；设备支持时还会打开 **sustained performance mode**，通知调度器和 thermal 策略控制频率波动；此外还可以禁用指定后台包、暂停 background dexopt 等。[已验证: AOSP androidx-main, benchmark/benchmark-macro/AndroidBenchmarkRunner, IsolationActivity, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]
 
 ### 环境控制的源码锚点
 
-这些步骤背后对应的源码入口要一并记录,后续排查脚本失效时可以直接回到实现层核对:
+上面每一步控制都对应具体的系统实现。把源码入口一并记录下来，排查脚本失效时可以直接回到实现层核对：
 
 - 刷新率设置:`frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java` 监听 `Settings.System.PEAK_REFRESH_RATE` / `MIN_REFRESH_RATE`,再参与 display mode 选择。
 - 热状态 shell:`frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 暴露 `override-status` / `reset` shell 命令,用于实验环境下临时固定 thermal status。
@@ -341,7 +341,7 @@ fun startupWithPartialCompilation() = benchmarkRule.measureRepeated(
 - **`CompilationMode.None()`**:不做预编译,适合观察 fresh install 的最差启动路径
 - **`CompilationMode.Full()`**:完全 AOT 编译,适合在实验环境里压低 JIT 噪声,但不代表大多数用户设备上的默认状态
 
-旧资料里常见的 `SpeedProfile()` 已经不在当前公开 API 中。如果你想表达"先跑几轮再按热点编译",现在应改用 `CompilationMode.Partial(warmupIterations = N)` 这组参数。
+`SpeedProfile()` 已不在当前公开 API 中。需要表达"先跑几轮再按热点编译"时，用 `CompilationMode.Partial(warmupIterations = N)`。
 
 对比 `DEFAULT`、`Partial(...)` 和 `None()` 可以量化 Baseline Profile 与 warm-up 的收益。具体提升幅度要看你的 App、构建配置和测试设备,不要直接套用固定百分比。
 
@@ -551,13 +551,13 @@ Firebase Performance Monitoring(FPM)是 Google 提供的线上性能监控服务
 
 ### FPM 的主要限制
 
-**采样策略不透明**。FPM 的采样由平台侧控制,开发者不能按实验批次或设备分层精确指定样本量。它更适合看整体趋势,不适合拿来做严格的实验设计。
+**采样策略不透明**。FPM 的采样由平台侧控制，开发者不能按实验批次或设备分层精确指定样本量——更适合看整体趋势，不适合严格的实验设计。
 
 **自定义 Trace 的限制是按单条 trace 计算**。官方约束包括：trace name 最长 100 个字符、每条 custom code trace 最多 5 个 custom attributes、最多 32 个 metrics（含默认的 Duration）。需要控制的是字段数量和名称基数，不能简单记成「应用最多 100 个 Trace」[已验证: Firebase Performance Monitoring limits, firebase.google.com/docs/perf-mon/troubleshooting#performance-monitoring-limits]。
 
-**数据粒度有限**。FPM 提供的是聚合指标,适合看 P50/P95/P99 和版本趋势,不适合还原单个会话的完整上下文。
+**数据粒度有限**。FPM 提供的是聚合指标（P50/P95/P99 和版本趋势），不能还原单个会话的完整上下文。
 
-**数据延迟**。FPM 的数据上报通常存在小时级到天级延迟,适合版本趋势观察,不适合发布后立刻做小时级回归判定。
+**数据延迟**。数据延迟方面，FPM 从上报到可查看通常有几小时到一天的延迟，适合用于版本趋势观察，不适合发布后立刻做小时级回归判定。
 
 ### 替代方案
 

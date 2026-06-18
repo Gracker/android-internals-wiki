@@ -49,7 +49,7 @@ last_task2b_lite_at: 2026-06-18
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-08-05-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-18
 
 # 内存抖动与频繁 GC
 
@@ -102,7 +102,7 @@ Android 15 引入的 Continuous Memory Compacting (CMC) GC 是 userfaultfd 在�
 
 #### 核心机制
 
-CMC GC 的工作流程包括：
+CMC GC 的工作流程可以拆成四步：
 
 1. **GC 线程通过 `mremap(MREMAP_DONTUNMAP)` 将 from-space 页面迁移到 to-space**
    - `MREMAP_DONTUNMAP` 在 android-14.0.0_r1 中已定义（`mark_compact.cc` 中 `MovingPages` 相关实现）
@@ -146,15 +146,14 @@ CMC GC 的工作流程包括：
 
 #### 核心优化点
 
-CMC 的核心优势在于：将原本阻塞式的页面搬移改造为"请求-响应"模式。mutator 访问页面时发现数据不可用，立即触发 handler 进行后台拷贝，而不需要等待整个 compaction 完成。这种设计使得 GC 线程和应用线程可以并行执行，显著降低了 STW 时间。
-
+CMC 的核心思路是把阻塞式页面搬移改成"请求-响应"：mutator 访问时发现数据不可用，立即触发 handler 后台拷贝，不需要等 compaction 全部做完。GC 线程和应用线程并行推进，STW 时间大幅缩短。
 ---
 
-GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制或压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 8 到 14 的代价模型更接近 CC / 分代 CC，Android 15 开始切到 CMC（Concurrent Mark-Compact），Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化），Android 17（API 37）据公开信息计划将分代 CMC 设为默认基线，但截至 android-16.0.0_r1，AOSP 公开 tag 未见 android-17 对应分支，该结论仍需正式 release notes 或 ART runtime flag 确认。[待验证：Android 17 分代 CMC 默认状态] 判断 GC 影响更稳的方式是看分配速率、Young GC 频率、Allocation Stall 和 CPU 竞争，而不是把 Android 14、15、16 合成一个统一的 GC 时代。暂停仍然存在，只是不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同。
+GC 本身并不等于卡顿。这些并发收集器的大部分工作都在后台和应用线程并行，但 Stop-The-World（STW）阶段仍然存在。不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同：Android 8 到 14 主线是 CC / 分代 CC；Android 15 切换到 CMC；Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化）；Android 17（API 37）据公开信息计划将分代 CMC 设为默认基线，但截至 android-16.0.0_r1 尚无 android-17 对应 AOSP tag，需正式 release notes 确认。[待验证：Android 17 分代 CMC 默认状态]
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
-更准确的类比是"先消费、后买单"：对象在业务代码里快速分配，GC 代价在同一帧或之后几帧集中结算。分配速率越高，越容易把这笔成本推到帧渲染路径上。
+可以理解为"先分配、后结算"：对象在业务代码里快速创建，GC 代价在同一帧或之后几帧集中结算。分配速率越高，成本越容易推到帧渲染路径上。
 
 ## 内存抖动对性能的影响
 
@@ -162,9 +161,9 @@ GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制�
 
 内存抖动对性能的影响可以从三个层面来理解：
 
-**GC 暂停直接抢占帧时间。** 在 60Hz 设备上，一帧的预算是 16.6ms；在 120Hz 设备上，这个预算缩减到 8.3ms。一次 Young GC 暂停 1-3ms，如果恰好发生在帧渲染期间，这一帧就被 GC 吃掉了 12%-36% 的时间预算（120Hz 场景）。如果主线程的渲染工作本身就需要 6-7ms，加上 GC 暂停，帧总耗时轻松突破 8.3ms 的上限。
+**GC 暂停直接抢占帧时间。** 在 60Hz 设备上，一帧的预算是 16.6ms；在 120Hz 设备上，这个预算缩减到 8.3ms。一次 Young GC 暂停 1-3ms，如果恰好发生在帧渲染期间，这一帧就被 GC 吃掉了 12%-36% 的时间预算（120Hz 场景）。如果主线程渲染本身就要 6-7ms，叠上 GC 暂停，整帧耗时轻松突破 8.3ms。
 
-**Allocation Stall：分配线程被阻塞。** 当 Eden 区已满、GC 正在进行时，试图分配新对象的线程会被阻塞（称为 Allocation Stall），直到 GC 完成回收。即使 GC 标记为"并发"，在特定时刻分配线程仍然可能被卡住。在 Perfetto 中，我们可以观察到主线程突然出现一段"无法解释"的等待时间，实际原因就是 Allocation Stall。
+**Allocation Stall：分配线程被阻塞。** 当 Eden 区已满、GC 正在进行时，试图分配新对象的线程会被阻塞（称为 Allocation Stall），直到 GC 完成回收。即便 GC 类型标记为"并发"，分配线程在特定时刻仍然可能被卡住——Perfetto 中主线程突然出现一段"无法解释"的等待，实际原因往往就是 Allocation Stall。
 
 大对象分配（超过 TLAB / RegionTLAB 容量的对象）的阻塞代价在 Android 15+ 得到了缓解。CMC 通过 `userfaultfd` 内核特性处理对象搬移期间的页面访问同步，使 Large Object Space（LOS）的分配 Stall Time 降低约 15%。在 Android 15+ 设备上，大对象分配对帧渲染路径的冲击比老版本（全局锁模型）要轻，但仍然不能忽视——高频大对象分配依然会触发 GC 和 CPU 竞争。
 
@@ -441,13 +440,13 @@ GC 名称也要按版本拆开。`android-14.0.0_r1` 还能看到 `gUseReadBarri
 
 TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需要获取堆的全局锁，只需在自己的 TLAB 中执行一次"指针前进"操作。这个过程极快，不涉及任何同步。只有当 TLAB 空间不足、或者分配的对象太大无法放入 TLAB 时，线程才需要向堆申请更多空间。
 
-不同的分配模式代价差异很大。在 TLAB 中分配的小对象代价极低，而触发 TLAB 补充或大对象分配的代价较高。因此，内存抖动的严重程度取决于分配模式：
+不同的分配模式代价差异很大。在 TLAB 中分配的小对象代价极低，而触发 TLAB 补充或大对象分配的代价较高。因此，内存抖动的严重程度取决于分配模式本身：
 
 - **大量小对象、均匀分配**：大部分分配在 TLAB 中完成，GC 压力较小
 - **大对象或突发式分配**：更容易触发 TLAB 补充和同步 GC，性能影响更大
 - **分配速率超过 GC 回收速率**：Eden 区长期处于即将耗尽的边缘，GC 持续高频运行
 
-对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。Android 17 据公开信息计划将分代 CMC 设为默认基线，但截至当前尚无正式 AOSP tag 支撑，需以 release notes 为准。[待验证：Android 17 分代 CMC 默认状态] Android 16 的分代 CMC 尚未全量生效，不能当作所有设备的标准配置。
+对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。Android 16 的分代 CMC 尚未全量生效，不能当作所有设备的标准配置；Android 17 的计划方向见上文 CMC 节。
 
 ## 与其他章节的关系
 
@@ -470,11 +469,11 @@ TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需
 
 **"手动调用 System.gc() 可以缓解内存抖动。"**
 
-这是一个非常危险的做法。`System.gc()` 触发的是一次显式 GC，它会打断 ART 自身的 GC 调度策略，可能在不合适的时机执行 Full GC，导致更长的暂停。Android 官方明确不建议手动触发 GC [已验证: 官方文档, developer.android.com/reference/java/lang/System#gc()]。正确的做法是减少分配，而不是干预 GC 调度。
+这很危险。`System.gc()` 触发的是显式 GC，会打断 ART 自身的调度策略——可能在不该 GC 的时候执行 Full GC，暂停反而更长。Android 官方明确不建议手动触发 GC [已验证: 官方文档, developer.android.com/reference/java/lang/System#gc()]。正确的做法是减少分配，而不是干预 GC 调度。
 
 **"对象池是万能方案。"**
 
-对象池有自己的代价：状态重置的遗漏会导致 bug，池过大会浪费内存，多线程环境下的同步控制增加复杂度。应该优先考虑"避免分配"（预分配、使用原始类型），只在分配确实无法避免时才使用对象池。
+对象池也有成本：状态重置遗漏会导致 bug，池过大是另一种内存浪费，多线程还需要同步开销。优先考虑"避免分配"——预分配、使用原始类型——只在分配确实绕不开时才引入对象池。
 
 ## 参考资料
 
