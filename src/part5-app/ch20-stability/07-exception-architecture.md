@@ -582,3 +582,6 @@ if (process != null && process.mPid == MY_PID && "crash".equals(eventType)) {
 
 ### Kotlin 协程异常处理与 UncaughtExceptionHandler 三层级联体系
 Kotlin 协程异常处理形成 CoroutineExceptionHandler(Context级)→ ServiceLoader 全局 handler → Thread.uncaughtExceptionHandler 三层级联。Android 8.0/8.1 存在 AndroidExceptionPreHandler 反射兼容问题，协程可能绕过 pre-handler。详见 DeepResearch 调研。
+
+### Crash 文件持久化 DropBox 协议核验（AOSP best-effort + tombstone + system_server 2s join）
+对 AOSP `DropBoxManagerService` 持久化协议的完整源码核验：写入路径不 fsync、init() 对所有 `.tmp` 直接 delete、system_server 自崩溃时通过 `worker.join(2000)` 等 2 秒、超过配额的旧条目用 tombstone 保留信号。协议整体可靠性边界是 best-effort + tombstone + system_server 2s join，非严格持久化。详见 DeepResearch 调研：`2026-06-17-crash-file-persistence-dropbox-aosp-verification.md`。
