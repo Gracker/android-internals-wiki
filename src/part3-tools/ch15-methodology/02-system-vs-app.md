@@ -3,13 +3,13 @@ title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: "reviewed"
 task6_reviewed_date: "2026-06-19"
-last_task6_at: "2026-06-19T03:08:00+08:00"
-task6_result: pass-light-edit
+last_task6_at: "2026-06-19T04:25:46+08:00"
+task6_result: "pass-light-edit"
 last_task2b_lite_at: 2026-06-17
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
@@ -42,10 +42,8 @@ tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
 last_task6_audit: "2026-06-18"
 task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-06-19-03-review.md"
-task6_l1_l2_fixes: 1
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task2B 已修复全文格式损坏（标题换行恢复），验证通过。Task9 auto-fix（Perfetto RSS anon GLOB 顺序）正确。仅 1 处 L1 修复：补全缺失的 outline-end 标记。无 B 类问题。"
 task9_state: reviewed
 task9_result: auto-fixed
 last_task9_at: "2026-06-19T03:27:33+08:00"
@@ -69,6 +67,8 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-19
 last_task2b_recovery: data recovery from commit 2c5c7c85 after Lite truncation (ec2e99c4)
 last_task2b_by: openclaw-task2b
+task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（ANR 阈值表 startForegroundService 超时口径修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过。outline 5/5 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
+last_task6_review_log: "logs/review/2026-06-19-04-review.md"
 ---
 
 # 如何区分系统问题和 App 问题<!-- outline-start -->
