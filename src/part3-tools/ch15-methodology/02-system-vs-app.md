@@ -34,11 +34,7 @@ sources:
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-28"
-last_task6_audit: "2026-05-21"
-last_task6_at: "2026-05-28T18:20:12+08:00"
-task6_reviewed_at: "2026-05-28T18:20:12+08:00"
+last_task6_audit: "2026-06-18"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-18-review.md"
 task6_l1_l2_fixes: 8
