@@ -5,7 +5,7 @@ section: "13.14"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-18"
+last_verified: "2026-06-19"
 last_verified_against: "Perfetto v54.0 source (ab21398/v54.0); AOSP android-17.0.0_r1 ViewRootImpl/JankTracker/JankInfo/Cuj"
 confidence: medium
 sources:
@@ -37,24 +37,24 @@ last_task6_at: "2026-06-19T06:15:23+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-19T05:28:49+08:00"
+last_task9_at: "2026-06-19T06:25:40+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
+pipeline_stage: "task6_pending"
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-06-19-06-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（P1 1：v55 DataExplorer 边界收窄）回流后写作层复审通过；无 L1/L2 问题（上轮禁用词已修复确认），无 L3/L4 回炉项。task9_result=auto-fixed，送 Task9 终审确认。"
 last_task9_autofix_at: "2026-06-19"
-last_task9_review_log: "logs/deep-review/2026-06-19-05-deep-review.md"
-task9_review_notes: "2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
-p0: 0
-p1: 1
+last_task9_review_log: "logs/deep-review/2026-06-19-06-deep-review.md"
+task9_review_notes: "2026-06-19 Task9 deep-review AUTO-FIX: P0 2 / P1 0 / P2 0；修正 android-17.0.0_r1 ViewRootImpl traversal 回调源码锚点（TraversalCallback#onVsync）与 JankTracker JankType 判定表（补入 kMissedDeadline / kMissedDeadlineLegacy 边界）；回到 Task6 复审。详见 logs/deep-review/2026-06-19-06-deep-review.md。 | 2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
+p0: 2
+p1: 0
 p2: 0
-task9_reviewed_at: "2026-06-18T14:33:37+08:00"
+task9_reviewed_at: "2026-06-19T06:25:40+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-19"
 deepseek_cn_review_state: done
@@ -103,8 +103,9 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 
 2. **FrameTracker 与 CUJ 的数据流**
    ```text
-   Choreographer#doFrame()
-     → ViewRootImpl.TraversalRunnable#doFrame() → doTraversal()  (android-17.0.0_r1: L5773 / L3347)
+   ViewRootImpl.scheduleTraversals()
+     → Choreographer.postVsyncCallback(CALLBACK_TRAVERSAL, mTraversalCallback)
+       → TraversalCallback#onVsync() → doTraversal()  (android-17.0.0_r1: L3330-L3331 / L11445-L11448 / L3347)
        → JankTracker::finishFrame(...)  // frameworks/base/libs/hwui/JankTracker.cpp
          → SurfaceFlinger FrameTimeline
            → Perfetto trace → android_jank_cuj 表
@@ -128,7 +129,7 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
 |------|------|
 | `frameworks/base/libs/hwui/JankTracker.cpp` | FrameTracker jank 跟踪器实现 |
 | `frameworks/native/libs/gui/include/gui/JankInfo.h` | SurfaceFlinger `JankType` 枚举定义 |
-| `frameworks/base/core/java/android/view/ViewRootImpl.java` (android-17.0.0_r1: L5773 / L3347) | `TraversalRunnable#doFrame()` 到 `doTraversal()` 调用链入口 |
+| `frameworks/base/core/java/android/view/ViewRootImpl.java` (android-17.0.0_r1: L3330-L3331 / L11445-L11448 / L3347) | `scheduleTraversals()` 通过 `postVsyncCallback()` 进入 `TraversalCallback#onVsync()`，再调用 `doTraversal()` |
 | `external/perfetto/src/trace_processor/metrics/sql/android/jank/cujs_boundaries.sql` | CUJ 边界计算核心逻辑 |
 | `frameworks/base/core/java/com/android/internal/jank/Cuj.java` | AOSP CUJ ID / marker 定义 |
 
@@ -203,8 +204,9 @@ LIMIT 50;
 #### FrameTracker 数据流（系统进程视角）
 
 ```text
-Choreographer#doFrame()
-  → ViewRootImpl.TraversalRunnable#doFrame() → doTraversal()  // frameworks/base/core/java/android/view/ViewRootImpl.java:5773 / 3347
+ViewRootImpl.scheduleTraversals()
+  → Choreographer.postVsyncCallback(CALLBACK_TRAVERSAL, mTraversalCallback)
+    → TraversalCallback#onVsync() → doTraversal()  // frameworks/base/core/java/android/view/ViewRootImpl.java:3330-3331 / 11445-11448 / 3347
     → JankTracker::finishFrame(...)  // frameworks/base/libs/hwui/JankTracker.cpp
       → SurfaceFlinger FrameTimeline (BufferQueue feedback)
         → Perfetto trace → android_jank_cuj 表
@@ -277,15 +279,16 @@ android_is_app_jank_type(jank_type) :=
 
 #### JankTracker.cpp 与 CUJ 的关系
 
-`frameworks/base/libs/hwui/JankTracker.cpp` 在 native 层做**实时**判定，五种 JankType：
+`frameworks/base/libs/hwui/JankTracker.cpp` 在 native 层先按 `GpuCompleted >= FrameDeadline` 记录 `kMissedDeadline`，再对 deadline miss 的帧按四个阶段补充拆分；triple-buffered 状态下即使命中 deadline，也可能记录 `kHighInputLatency`。legacy 路径还会单独记录 `kMissedDeadlineLegacy`。
 
-| JankType | 阈值 | 时序范围 |
+| JankType | 阈值/触发条件 | 时序范围 |
 |----------|------|----------|
+| `kMissedDeadline` | `GpuCompleted >= FrameDeadline` | IntendedVsync → GpuCompleted / FrameDeadline |
 | `kMissedVsync` | 1 ns | IntendedVsync → Vsync |
 | `kSlowUI` | 0.5× frameInterval | Vsync → SyncStart |
 | `kSlowSync` | 0.2× frameInterval | SyncStart → IssueDrawCommandsStart |
 | `kSlowRT` | 0.75× frameInterval | IssueDrawCommandsStart → FrameCompleted |
-| `kHighInputLatency` | 0.1× frameInterval | 触发条件：triple buffered |
+| `kHighInputLatency` | `mNextFrameStartUnstuffed - IntendedVsync > 0.1× frameInterval` | triple-buffered 状态命中 deadline |
 
 报告链路：`JankTracker::finishFrame` → `ProfileDataContainer` + `FrameMetricsReporter::reportFrameMetrics` → 第三方 App 通过 `Window.OnFrameMetricsAvailableListener` 接收（也是 AndroidX JankStats 内部数据源）。
 
@@ -298,7 +301,7 @@ android_is_app_jank_type(jank_type) :=
 #### 调用链总图
 
 ```
-Choreographer#doFrame vsync=N
+Choreographer traversal callback vsync=N
   → ViewRootImpl.doTraversals
      → HWUI rendering
         → RenderThread DrawFrames vsync=N
@@ -330,7 +333,7 @@ AndroidJankCujMetric proto  (android/android_jank_cuj.sql)
    counter_metrics / trace_metrics / timeline_metrics / frame / sf_frame
 ```
 
-[已验证: Perfetto v54.0 ab21398 + android-17.0.0_r1 JankTracker.cpp / JankInfo.h / ViewRootImpl.java / Cuj.java, 2026-06-18]
+[已验证: Perfetto v54.0 ab21398 + android-17.0.0_r1 JankTracker.cpp / ProfileData.h / JankInfo.h / ViewRootImpl.java / Cuj.java, 2026-06-19]
 
 <!-- outline-end -->
 
@@ -550,6 +553,6 @@ v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.
 ### Perfetto DataGrid 与 Jank CUJ 标准库 v54 · 进程过滤与 FrameTracker Join 深挖
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-perfetto-jank-cuj-v54-process-filter-and-frametracker-join.md
 - 类型：DeepResearch 调研结果
-- 摘要：对 Perfetto v54 Jank CUJ 标准库的二次深挖：确认 `android.cujs.base` 进程名过滤分两层（GLOB com.google.android*/com.android.*），第二层 `cujs_ordered` CTE 按进程名决定 counter 回溯窗口（系统进程 0 回溯、NexusLauncher 白名单、其他进程 MAX(ts, ts_end-4ms)）；`android_jank_cuj_frame` vs `android_jank_cuj_frame_timeline` 的分工（frame 用于拼完整帧范围，timeline 用于 jank_type 分类）；JankTracker.cpp 五种 JankType 实时判定与 CUJ 标准库事后聚合的关系；`relevant_threads.sql` 的 SF 线程视图迁移策略（旧表有后续删除计划）。
+- 摘要：对 Perfetto v54 Jank CUJ 标准库的二次深挖：确认 `android.cujs.base` 进程名过滤分两层（GLOB com.google.android*/com.android.*），第二层 `cujs_ordered` CTE 按进程名决定 counter 回溯窗口（系统进程 0 回溯、NexusLauncher 白名单、其他进程 MAX(ts, ts_end-4ms)）；`android_jank_cuj_frame` vs `android_jank_cuj_frame_timeline` 的分工（frame 用于拼完整帧范围，timeline 用于 jank_type 分类）；JankTracker.cpp deadline miss 主判定、阶段拆分 JankType 与 CUJ 标准库事后聚合的关系；`relevant_threads.sql` 的 SF 线程视图迁移策略（旧表有后续删除计划）。
 - 注入时间：2026-06-17
 - 价值：进一步验证了第三方 App 的 CUJ 边界限制，明确了 counter 命名规范（J<CUJ_NAME>#<counter_name>）和 JankTracker 实时判定与 CUJ 库事后分析的双层独立架构
