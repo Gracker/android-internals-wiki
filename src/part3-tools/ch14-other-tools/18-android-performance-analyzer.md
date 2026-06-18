@@ -1,13 +1,14 @@
 ---
-title: "Android Performance Analyzer 与系统性能分析"
-chapter: "14.18"
+
+title: Android Performance Analyzer 与系统性能分析
+chapter: 14.18
 status: ready-for-review
-drafted_date: "2026-05-21"
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-05-21"
-last_verified_against: "Android Developers APA docs/blog 2026-05-19 + Perfetto tracing docs"
+drafted_date: 2026-05-21
+applicable_versions: Android 12 (API 31) - Android 17 (API 37)
+last_verified: 2026-05-21
+last_verified_against: Android Developers APA docs/blog 2026-05-19 + Perfetto tracing docs
 confidence: medium
-sources:
+sources: 
   - type: official
     path: "https://developer.android.com/android-performance-analyzer"
   - type: official
@@ -20,10 +21,11 @@ sources:
     path: "https://android-developers.googleblog.com/2026/05/whats-new-android-developer-tools.html"
 tags: [android-performance-analyzer, profiler, perfetto, gpu, tools]
 related_chapters: ["13.10", "14.1", "14.8", "14.17", "26.14"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-21"
-gap_source: "每日信息/官方文档"
+created_by: task2a-knowledge-gap
+created_date: 2026-05-21
+gap_source: 每日信息/官方文档
 ---
+-
 
 # 14.18 Android Performance Analyzer 与系统性能分析
 
