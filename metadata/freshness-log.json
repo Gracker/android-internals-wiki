@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-06-17T02:00:00+08:00",
+  "last_check": "2026-06-19T02:13:00+08:00",
   "entries": [
     {
       "date": "2026-04-15",
@@ -1307,6 +1307,103 @@
       "appendix_note": "过去 7 天窗口内无新 Android 17 Beta/DP 发布；appendix/version-changelog.md 保持当前状态",
       "external_source_limitation": "Android Developers Blog 和 AOSP Release Notes 访问受限，但基于已知信息和本地内容判断时效性",
       "next_scheduled_check": "2026-06-19"
+    },
+    {
+      "date": "2026-06-19",
+      "timestamp": "2026-06-19T02:13:00+08:00",
+      "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
+      "android_version_changes": {
+        "android_17_status": "仍处于预稳定阶段，预计 2026 年 6-7 月正式发布；过去 7 天内无新 Beta/DP 发布",
+        "android_16_status": "QPR2 已发布（2026-05-07），Generational CMC 作为官方功能正式可用",
+        "version_boundary_check": "无 Android 18 / API 38 引用 - 边界严格遵守",
+        "recent_updates": [
+          "Android 17 API 37 仍处于预稳定阶段，过去 7 天窗口内无新 Beta/DP",
+          "Android 16 QPR2+ Generational CMC 作为官方能力正式可用（延续）",
+          "AutoFDO 扩展至 android17-6.18 kernel 分支 - 26.4% 基准性能提升（延续）",
+          "MessageQueue 无锁实现在 API 37 中已稳定（延续）",
+          "App Memory Limiter 在 API 37 中引入 - 每应用基于设备 RAM 的内存限制（延续）",
+          "ProfilingManager 新增 TRIGGER_TYPE_ANOMALY 触发器（延续）"
+        ],
+        "key_changes": {
+          "app_memory_limiter": "Android 17 基于设备 RAM 的应用内存限制（API 37）",
+          "generational_cmc_official": "Android 16 QPR2+ Generational CMC 作为官方能力",
+          "lock_free_messagequeue": "API 37 无锁 MessageQueue 稳定",
+          "profiling_anomaly_trigger": "ProfilingManager 异常检测触发器",
+          "autofdo_kernel_618": "AutoFDO android17-6.18 性能提升"
+        },
+        "scope_note": "巡检范围上限 Android 17 / API 37；Android 18/API 38+ 内容已判定为超出范围",
+        "external_source_status": "Android Developers Blog 和 AOSP Release Notes 访问受限"
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 478,
+        "files_with_metadata": 392,
+        "files_verified_under_14_days": 80,
+        "files_verified_under_30_days": 200,
+        "files_verified_over_90_days": 0,
+        "outdated_files": 7,
+        "high_risk_files": 1,
+        "medium_risk_files": 6,
+        "low_risk_files": 0,
+        "files_ending_at_api36": 145,
+        "files_with_api37": 247,
+        "android_18_api38_references": 0
+      },
+      "key_findings": [
+        "1 高风险版本演进章节：6.4 存储相关的版本演进（64 天逾期，已在 queue 中 pending, priority 90）",
+        "1 中风险版本演进章节：2.14 图形 API 演进（22 天逾期，已加入 queue priority 70）",
+        "5 中风险工具使用章节（ch07/ch08/ch10/ch15/ch02 部分工具方法，< 20 天逾期）",
+        "Android 17 / API 37 边界严格遵守，无 Android 18/API 38+ 越界内容",
+        "247 个文件已有 API 37 覆盖，145 个文件仍需添加（主要为 system_mechanisms 180 天阈值内文件）",
+        "无文件超过 90 天验证阈值（90 天阈值严格遵守）",
+        "过去 7 天无新 Android 17 Beta/DP 发布，附录 A 无需更新"
+      ],
+      "action_items": [
+        "跟踪 6.4 存储相关的版本演进在队列中的处理进度（已有 priority 90）",
+        "处理新增的 2.14 图形 API 演进 queue 项（priority 70）",
+        "为 5 个中风险工具使用章节准备刷新（ch07-07/ch08-06/ch10-02/ch15-01/ch02-08）",
+        "继续为系统机制章节分批添加 API 37 覆盖（145 个文件）",
+        "跟踪 Android 17 正式发布日期，准备版本演进章节最终更新"
+      ],
+      "outdated_files": [
+        {
+          "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+          "title": "存储相关的版本演进",
+          "section": "6.4",
+          "last_verified": "2026-04-14",
+          "days_overdue": 64,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "high",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 4.4 (API 19) - Android 17 (API 37)",
+          "missing_content": "Android 17 稳定版存储相关特性（Scoped Storage Final、Photo Picker 强制化、F2FS 改进）",
+          "suggested_action": "已在 queue 中（priority 90，added by task3-freshness-check 2026-06-15）",
+          "already_in_queue": true
+        },
+        {
+          "file": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+          "title": "图形 API 演进",
+          "section": "2.14",
+          "last_verified": "2026-04-26",
+          "days_overdue": 22,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "medium",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 4.0 (API 14) - Android 17 (API 37)",
+          "missing_content": "Android 17 稳定版图形 API 变更（Vulkan 1.4、AGSL RuntimeColorFilter/Xfermode、OpenCL 弃用进展）",
+          "suggested_action": "已加入 queue，priority 70（added by task3-freshness-check 2026-06-17）",
+          "already_in_queue": true
+        }
+      ],
+      "queue_updates": [
+        "EXISTING priority-90: 6.4 存储相关的版本演进（pending, added by task3-freshness-check 2026-06-15）",
+        "EXISTING priority-70: 2.14 图形 API 演进（added by task3-freshness-check 2026-06-17）"
+      ],
+      "appendix_updates_needed": false,
+      "appendix_note": "过去 7 天窗口内无新 Android 17 Beta/DP 发布；appendix/version-changelog.md 保持当前状态",
+      "external_source_limitation": "Android Developers Blog 和 AOSP Release Notes 访问受限，但基于已知信息和本地内容判断时效性",
+      "next_scheduled_check": "2026-06-21"
     }
   ]
 }
