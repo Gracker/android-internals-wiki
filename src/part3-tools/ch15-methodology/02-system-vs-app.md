@@ -3,10 +3,10 @@ title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_reviewed_date: "2026-06-19"
 last_task6_at: "2026-06-19T03:08:00+08:00"
 task6_result: pass-light-edit
@@ -15,7 +15,7 @@ drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-19"
-last_verified_against: "AOSP android-17.0.0_r1; Perfetto memory-counters"
+last_verified_against: "AOSP android-17.0.0_r1 ActivityManagerConstants/ActiveServices; AOSP android-8/9/12 ActiveServices; Perfetto memory-counters"
 confidence: high
 sources:
  - type: blog
@@ -34,6 +34,10 @@ sources:
  path: "perfetto.dev/docs/data-sources/memory-counters"
  - type: aosp
  path: "frameworks/native/services/surfaceflinger/"
+ - type: aosp
+ path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+ - type: aosp
+ path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
 last_task6_audit: "2026-06-18"
@@ -42,17 +46,17 @@ last_task6_review_log: "logs/review/2026-06-19-03-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task2B 已修复全文格式损坏（标题换行恢复），验证通过。Task9 auto-fix（Perfetto RSS anon GLOB 顺序）正确。仅 1 处 L1 修复：补全缺失的 outline-end 标记。无 B 类问题。"
-task9_state: pending
+task9_state: reviewed
 task9_result: auto-fixed
-last_task9_at: "2026-06-19T00:26:33+08:00"
+last_task9_at: "2026-06-19T03:27:33+08:00"
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: openclaw-task9
-last_task9_review_log: "logs/deep-review/2026-06-19-00-deep-review.md"
-task9_review_notes: "2026-06-19 Task9 deep-review: auto-fixed。修复 Perfetto RSS anon 查询使用错误 GLOB 顺序，改为 process_counter_track.name = 'mem.rss.anon'；证据：Perfetto memory-counters / §13.5；回到 Task6 复审。"
-p0: 1
-p1: 0
+last_task9_review_log: "logs/deep-review/2026-06-19-03-deep-review.md"
+task9_review_notes: "2026-06-19 Task9 deep-review: auto-fixed。修正 ANR 阈值表中 startForegroundService 超时口径：Android 13-17 使用 service_start_foreground_timeout_ms=30s + service_start_foreground_anr_delay_ms=10s；fgs_start_foreground_timeout 属于普通 startService 后升前台的资格重算窗口。证据：AOSP android-17.0.0_r1 ActivityManagerConstants/ActiveServices；回到 Task6 复审。"
+p0: 0
+p1: 1
 p2: 0
-review_round: 4
+review_round: 5
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: 2026-06-19T02:53:39+08:00
@@ -254,7 +258,7 @@ Android 大版本升级往往会引入新的系统服务，或者让既有服务
 
 ## 常见误区
 
-**误区一："主线程 Runnable 时间长就是系统问题"**不一定。如果你的 App 自己创建了大量后台线程（比如线程池里 50 个并发任务），这些线程和主线程争抢 CPU，导致主线程排不上队——这是 App 内部线程间的资源竞争。系统调度器只是公平地分配 CPU，它不知道哪些线程对你更重要（除非你设置了优先级）。**误区二："系统问题我改不了，不用分析"**即使问题属于系统侧（比如 OEM 的调度策略不合理），你也应该分析清楚并量化影响。原因有三：一是你可以向系统组提供详细的 Trace 分析报告来推动修复；二是你可以在 App 端做防御性优化（减少计算量、异步化），降低对系统资源的依赖；三是在与 OEM 或合作方沟通时，有数据支撑的分析比模糊的"系统卡"有效得多。**误区三："CPU 利用率低就说明没问题"**CPU 利用率低也可能说明有问题——如果你的主线程在 Runnable 状态等了很久，但 CPU 看起来"不满载"，可能是因为调度器在等当前 CPU 空闲而不愿意把线程迁移到另一个空闲核心（Linux 调度器的非严格 work-conserving 行为）。这种情况下，虽然总利用率不高，但对你的线程来说延迟是实实在在的。**误区四："ANR 一定是 App 的问题"**AOSP 默认的 ANR 窗口要按组件类型拆开看，不能压成一个统一数字：| 场景 | 常见默认阈值 | 备注 ||:--|:--|:--|| Input dispatching | 5 秒 | 前台输入无响应最常见 || Service timeout（前台进程） | 20 秒 | `ActiveServices` 前台 service 执行超时 || Service timeout（后台进程） | 200 秒 | 后台 service 窗口更长 || BroadcastReceiver（前台优先级） | 10 秒，Android 14+ 在 CPU 饥饿时可放宽到 20 秒 | 冷启动时间也算在窗口内 || BroadcastReceiver（后台优先级） | 60 秒，Android 14+ 在 CPU 饥饿时可放宽到 120 秒 | `goAsync()` 也算在窗口内 || `startForegroundService()` 后未及时调用 `startForeground()` | Android 8 默认 5 秒；Android 9-12 常见 AOSP 默认 10 秒；Android 13+ 拆成 `fgs_start_foreground_timeout`、`service_start_foreground_timeout_ms` 和 `service_start_foreground_anr_delay_ms` | OEM / DeviceConfig 可能调整具体阈值 |具体值仍以当版 `ActiveServices`、Broadcast 常量和官方 ANR 文档为准。如果主线程被调度延迟阻塞了 3 秒，再加上自身代码耗时 2 秒，总共就超过了 5 秒的 Input ANR 阈值。这种情况下，如果只看 App 代码可能只看到了 2 秒，漏掉了调度延迟的 3 秒。分析 ANR 时要把主线程、Binder 对端、系统负载和组件类型一起看。**误区五："SurfaceFlinger 延迟是 GPU 厂商的问题"**SurfaceFlinger 合成延迟的原因有很多，不一定是 GPU 硬件的问题。常见的原因包括：App 提交了过多或过大的 Layer、HWC 的能力没有充分利用、GPU 被 App 的自定义渲染占用、以及系统内存不足导致 GPU Buffer 分配慢。归因时需要具体分析 SF Track 中的耗时分布。
+**误区一："主线程 Runnable 时间长就是系统问题"**不一定。如果你的 App 自己创建了大量后台线程（比如线程池里 50 个并发任务），这些线程和主线程争抢 CPU，导致主线程排不上队——这是 App 内部线程间的资源竞争。系统调度器只是公平地分配 CPU，它不知道哪些线程对你更重要（除非你设置了优先级）。**误区二："系统问题我改不了，不用分析"**即使问题属于系统侧（比如 OEM 的调度策略不合理），你也应该分析清楚并量化影响。原因有三：一是你可以向系统组提供详细的 Trace 分析报告来推动修复；二是你可以在 App 端做防御性优化（减少计算量、异步化），降低对系统资源的依赖；三是在与 OEM 或合作方沟通时，有数据支撑的分析比模糊的"系统卡"有效得多。**误区三："CPU 利用率低就说明没问题"**CPU 利用率低也可能说明有问题——如果你的主线程在 Runnable 状态等了很久，但 CPU 看起来"不满载"，可能是因为调度器在等当前 CPU 空闲而不愿意把线程迁移到另一个空闲核心（Linux 调度器的非严格 work-conserving 行为）。这种情况下，虽然总利用率不高，但对你的线程来说延迟是实实在在的。**误区四："ANR 一定是 App 的问题"**AOSP 默认的 ANR 窗口要按组件类型拆开看，不能压成一个统一数字：| 场景 | 常见默认阈值 | 备注 ||:--|:--|:--|| Input dispatching | 5 秒 | 前台输入无响应最常见 || Service timeout（前台进程） | 20 秒 | `ActiveServices` 前台 service 执行超时 || Service timeout（后台进程） | 200 秒 | 后台 service 窗口更长 || BroadcastReceiver（前台优先级） | 10 秒，Android 14+ 在 CPU 饥饿时可放宽到 20 秒 | 冷启动时间也算在窗口内 || BroadcastReceiver（后台优先级） | 60 秒，Android 14+ 在 CPU 饥饿时可放宽到 120 秒 | `goAsync()` 也算在窗口内 || `startForegroundService()` 后未及时调用 `startForeground()` | Android 8 默认 5 秒；Android 9-12 常见 AOSP 默认 10 秒；Android 13-17 AOSP 默认先按 `service_start_foreground_timeout_ms` 等待 30 秒，再按 `service_start_foreground_anr_delay_ms` 延迟 10 秒投递 ANR | `fgs_start_foreground_timeout` 是普通 `startService()` 后再升前台时的 FGS 启动资格重算窗口，不是这类 ANR 阈值；OEM / DeviceConfig 可能调整具体值 |具体值仍以当版 `ActiveServices`、Broadcast 常量和官方 ANR 文档为准。如果主线程被调度延迟阻塞了 3 秒，再加上自身代码耗时 2 秒，总共就超过了 5 秒的 Input ANR 阈值。这种情况下，如果只看 App 代码可能只看到了 2 秒，漏掉了调度延迟的 3 秒。分析 ANR 时要把主线程、Binder 对端、系统负载和组件类型一起看。**误区五："SurfaceFlinger 延迟是 GPU 厂商的问题"**SurfaceFlinger 合成延迟的原因有很多，不一定是 GPU 硬件的问题。常见的原因包括：App 提交了过多或过大的 Layer、HWC 的能力没有充分利用、GPU 被 App 的自定义渲染占用、以及系统内存不足导致 GPU Buffer 分配慢。归因时需要具体分析 SF Track 中的耗时分布。
 
 ## 参考资料
 
