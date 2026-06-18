@@ -3,7 +3,7 @@
 title: "InputDispatcher 反压与无响应窗口降级"
 chapter: "3.7"
 section: "3.7"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 16 (API 36)"
 last_verified: "2026-06-18"
@@ -28,29 +28,35 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
 task6_state: reviewed
-task9_state: "pending"
+task9_state: reviewed
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
 last_task6_at: "2026-06-19T01:10:00+08:00"
 task2b_result: fixed
 task2b_state: fixed
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 last_task2b_at: "2026-06-12"
 last_task2b_lite_at: "2026-06-12"
 reviewed_date: "2026-06-19"
 reviewed_by: "openclaw-task6"
-task9_result: "auto-fixed"
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-12T07:24:58+08:00"
+last_task9_at: "2026-06-19T01:26:49+08:00"
 last_task9_autofix_at: "2026-06-18"
-task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。 | 2026-05-25 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；版本边界已收窄到 Android 13-16，Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点复核 android-16.0.0_r1，版本边界保持 Android 13-16；Task6 未通过，未自动晋升。 | 2026-06-18 Task9 闲时抽检 auto-fix：P0 0 / P1 1 / P2 0；AOSP android-17.0.0_r1 已发布，修正“Android 17 tag 未发布”的过期版本边界，并标注 no focused window ANR 状态在 Android 17 改为 mNoFocusedWindowAnrState，回到 Task6 复审。"
+task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。 | 2026-05-25 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；版本边界已收窄到 Android 13-16，Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点复核 android-16.0.0_r1，版本边界保持 Android 13-16；Task6 未通过，未自动晋升。 | 2026-06-18 Task9 闲时抽检 auto-fix：P0 0 / P1 1 / P2 0；AOSP android-17.0.0_r1 已发布，修正“Android 17 tag 未发布”的过期版本边界，并标注 no focused window ANR 状态在 Android 17 改为 mNoFocusedWindowAnrState，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。"
 last_task9_audit: "2026-06-18"
 last_task9_audit_log: "logs/deep-review/2026-06-18-17-audit.md"
-last_task9_review_log: "logs/deep-review/2026-06-12-07-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-19-01-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
 task6_reviewed_date: "2026-06-19"
+auto_promoted: true
+updated_by: "openclaw-task9"
+updated_date: "2026-06-19"
+p0: 0
+p1: 0
+p2: 0
 ---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
