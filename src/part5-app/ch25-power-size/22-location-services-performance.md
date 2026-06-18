@@ -32,6 +32,9 @@ gap_source: "官方文档/素材驱动"
 pipeline_stage: "task6_pending"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
+task6_state: "revisiting"
+task9_state: pending
+task9_result: pending
 last_task2b_lite_at: "2026-06-19"
 ---
 
