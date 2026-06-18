@@ -30,7 +30,8 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T04:36:19+08:00"
-last_task9_audit: "2026-05-25"
+last_task9_audit: "2026-06-18"
+last_task9_audit_log: "logs/deep-review/2026-06-18-13-audit.md"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-06 task9 deep-review: pass-tech-review。P1 0 / P2 2；无 P0/P1，记录 Matrix README/API 与 AGP 版本边界建议。"
