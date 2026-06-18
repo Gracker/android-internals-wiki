@@ -10234,13 +10234,13 @@
     }
   },
   "task2a_last_processed": {
-    "section": "25.22",
-    "title": "定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理",
-    "file": "src/part5-app/ch25-power-size/22-location-services-performance.md",
+    "section": "22.24",
+    "title": "App Widget 更新性能：RemoteViews IPC 与 Glance 渲染",
+    "file": "src/part5-app/ch22-rendering-practice/24-app-widget-performance.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-17T21:12:51.408561+00:00",
+    "processed_at": "2026-06-19T01:09:47.372864+08:00",
     "status": "ready-for-review",
-    "note": "5 个锚点全部覆盖，2 个扩展点全部覆盖，素材来自官方文档 + AOSP 源码验证"
+    "note": "6 个锚点全部覆盖，3 个扩展点全部覆盖，素材来自 AOSP 源码 + 官方文档"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-18",
@@ -14626,12 +14626,24 @@
   "status_counts": {
     "total": 398,
     "finalized": 307,
-    "ready_for_review": 89,
-    "draft": 2
+    "ready_for_review": 90,
+    "draft": 1
   },
   "1.17": {
     "status": "ready-for-review",
     "pipeline_stage": "task6_pending",
     "last_verifier_pass": "2026-06-18T23:29:05+08:00"
+  },
+  "22.24": {
+    "section": "22.24",
+    "title": "App Widget 更新性能：RemoteViews IPC 与 Glance 渲染",
+    "file": "src/part5-app/ch22-rendering-practice/24-app-widget-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "last_task2a_at": "2026-06-19T01:09:47.372864+08:00",
+    "note": "6 锚点全部覆盖，3 扩展点全部覆盖"
   }
 }
