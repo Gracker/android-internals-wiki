@@ -209,3 +209,16 @@
 - **恢复来源**：git commit 2c5c7c85（修复前的完整单行版本）
 - **建议**：主 Task2B 需从 git commit 2c5c7c85 恢复原始内容，按 markdown 结构标记正确拆分为多行，保留全部正文。这不是普通回炉修复，是数据恢复。
 - **日志**：logs/rework/2026-06-18-21-task2b-lite.md
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-18 23:08 (Round 149)
+
+本轮无空 draft 章节，2 个非空 draft（01.27 Binder Async 229 行 / 01.28 MessageQueue DeliQueue 421 行）不碰。Task2B backlog=0。
+
+**候选评估**（3 个，均 < 14 分）：
+1. Jetpack Compose 内存管理专题 — 13/20（素材 2 + 相关 4 + 需求 4 + 时效 3）→ research-gaps 建议但 source-index 已耗尽，无新高质量素材
+2. 蜂窝 Radio 状态机功耗模型 — 11/20（素材 3 + 相关 3 + 需求 2 + 时效 3）→ 今日 DeepResearch 产出，但 app 开发者可控性低
+3. Crash 文件持久化 DropBox 机制 — 8/20（素材 2 + 相关 2 + 需求 2 + 时效 2）→ 已在 ch20/ch26 隐含覆盖
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台、现有章节扩展点、JVMTI、Paging 3 / DI 框架。
+
+**结论**：全书 398 节已进入高度成熟期。连续 149 轮无合格缺口。
