@@ -52,7 +52,7 @@ last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 task6_state: "reviewed"
-last_task6_audit: "2026-06-13"
+last_task6_audit: "2026-06-18"
 ---
 
 # 14.7 ProfilingManager
