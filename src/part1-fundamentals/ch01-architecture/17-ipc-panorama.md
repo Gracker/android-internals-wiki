@@ -4,8 +4,8 @@ chapter: "1.17"
 section: "1.17"
 status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP main（ProcessState.cpp、Looper.cpp、InputTransport.cpp、InputChannel.java）, source.android.com"
+last_verified: "2026-06-18"
+last_verified_against: "AOSP android-17.0.0_r1（ProcessState.cpp、Parcel.cpp、InputTransport.cpp、Looper.cpp、ashmem-dev.cpp、RpcTransportRaw.cpp、reserved_signals.h、debuggerd_client.cpp）, source.android.com"
 confidence: medium
 sources:
   - type: official
@@ -32,22 +32,30 @@ reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-05-08-04-review.md"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_result: "pass-tech-review"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_result: "auto-fixed"
 task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-04-24T09:54:00+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-08"
-last_task9_at: "2026-05-08T04:31:55+08:00"
+task9_reviewed_date: "2026-06-18"
+last_task9_at: "2026-06-18T22:30:36+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-18-22-audit.md"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T04:05:00+08:00"
 last_task6_audit: "2026-06-17"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 18 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、数据口径示意与代码块语言标注；无新增回炉项，送 Task9 复审。"
-task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-26 20:20 Task9 闲时抽检：pass-tech-review。P0/P1 0；P2 2（RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线表述需修正）；详见 logs/deep-review/2026-05-26-20-audit.md。"
-last_task9_audit: "2026-05-26"
+task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-26 20:20 Task9 闲时抽检：pass-tech-review。P0/P1 0；P2 2（RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线表述需修正）；详见 logs/deep-review/2026-05-26-20-audit.md。 | 2026-06-18 Task9 idle-audit: auto-fixed。P1 1：修正 ashmem-compatible memfd 版本边界，android-17.0.0_r1 中默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37；P2 3：修正 RpcBinder/vsock 数据边界、Stable AIDL HAL 时间线与 Parcel::writeBlob 零拷贝口径。"
+last_task9_audit: "2026-06-18"
+last_task9_audit_log: "logs/deep-review/2026-06-18-22-audit.md"
+last_task9_autofix_at: "2026-06-18"
+updated_by: "openclaw-task9"
+updated_date: "2026-06-18"
+p0: 0
+p1: 1
+p2: 3
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
@@ -143,7 +151,7 @@ Android 的安全模型基于进程隔离：每个应用运行在独立进程中
 | **AIDL** | 双向（Binder） | ≤进程级 buffer 约 1MB | 1 | UID/GID + SELinux | 自定义服务接口 |
 | **Messenger** | 单向队列（Binder） | ≤进程级 buffer 约 1MB | 1 | UID/GID | 轻量消息传递 |
 | **FMQ（Fast Message Queue）** | 双向 | 可配置 | 0（零拷贝） | HAL 进程 | 高吞吐 HAL 数据流 |
-| **AF_VSOCK / RpcBinder** | 双向 | 与 Binder 同量级 | 1 | SELinux + VM 域 | AVF/Microdroid VM 间通信 |
+| **AF_VSOCK / RpcBinder** | 双向 | 受 RpcBinder framing 与 socket/vsock buffer 影响 | socket/vsock 路径，需实测 | SELinux + VM 域 | AVF/Microdroid VM 间通信 |
 
 ## 3. 核心机制详解
 
@@ -163,7 +171,7 @@ Android 框架内的大多数系统服务调用走 Binder 路径。四大组件�
 - 单次事务数据上限：受进程级 Binder transaction buffer 约束（约 1MB 减 2 个 page，由同进程并发事务共享）。AOSP `ProcessState.cpp` 中 `BINDER_VM_SIZE` 为 `((1*1024*1024) - sysconf(_SC_PAGE_SIZE) * 2)`；4KB 设备约 1MB - 8KB，16KB 设备约 1MB - 32KB。`TransactionTooLargeException` 的实际触发条件受并发事务放大影响——多个线程同时发起 Binder 调用时，buffer 空间是共享的
 - 优化：一次 mmap 拷贝（vs 传统 IPC 的两次）
 
-[已验证: AOSP main, frameworks/native/libs/binder/ProcessState.cpp — `DEFAULT_MAX_BINDER_THREADS = 15`]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp — `DEFAULT_MAX_BINDER_THREADS = 15`、`BINDER_VM_SIZE = (1MB - page_size * 2)`]
 
 **性能陷阱：**
 
@@ -188,7 +196,7 @@ Android 框架内的大多数系统服务调用走 Binder 路径。四大组件�
 
 InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/system/input_manager/*` 这类命名 socket 路径发出去的。WMS / InputDispatcher 会创建一对 `InputChannel`，底层是 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`；客户端那一端作为 `Parcelable` 经 Binder 送到 App，之后事件和 `FINISHED` 回执都在这对未命名 Unix domain socket 上流动。
 
-[已验证: AOSP main, frameworks/native/libs/input/InputTransport.cpp — `InputChannel::openInputChannelPair()` 使用 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`；frameworks/base/core/java/android/view/InputChannel.java — `InputChannel` 可通过 `Parcelable` 随 Binder 传递]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/InputTransport.cpp — `InputChannel::openInputChannelPair()` 使用 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`；frameworks/base/core/java/android/view/InputChannel.java — `InputChannel` 可通过 `Parcelable` 随 Binder 传递]
 
 **性能特征：**
 
@@ -212,7 +220,7 @@ InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/syste
 
 现代 Android 需要把 pipe 和 `eventfd` 分开看。`system/core/libutils/Looper.cpp` 在 `Looper` 构造时创建的是 `mWakeEventFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)`，再把这个 fd 注册进 epoll。也就是说，MessageQueue/Looper 的唤醒路径在 Android 8-17 范围内应理解为 `eventfd + epoll`，pipe 只能作为更早实现的历史背景。
 
-[已验证: AOSP main, system/core/libutils/Looper.cpp — `mWakeEventFd.reset(eventfd(...))`]
+[已验证: AOSP android-17.0.0_r1, system/core/libutils/Looper.cpp — `mWakeEventFd.reset(eventfd(...))`]
 
 **性能特征：**
 
@@ -228,15 +236,15 @@ InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/syste
 
 | 路线 | 常见 API / 类型 | 底层对象 | 典型场景 | 版本节点 | 可观测点 |
 |------|----------------|----------|----------|----------|----------|
-| **应用通用共享内存** | `MemoryFile`、`SharedMemory`、`ASharedMemory`、`CursorWindow` | ashmem-compatible fd + `mmap`；Android 12 之后这条线逐步以 memfd 为底层承载，并保留 ashmem 兼容语义 | 应用间大块数据、Provider 窗口、匿名共享区域 | Android 8 系列开始提供 `SharedMemory` / `ASharedMemory`；Android 12 是 ashmem → memfd 的分水岭；`MemoryFile` 仍是兼容层 | Binder 事务中的 `BINDER_TYPE_FD`、`/proc/<pid>/maps` 里的 ashmem / memfd 区域 |
+| **应用通用共享内存** | `MemoryFile`、`SharedMemory`、`ASharedMemory`、`CursorWindow` | ashmem-compatible fd + `mmap`；是否走 memfd 取决于版本与设备门禁 | 应用间大块数据、Provider 窗口、匿名共享区域 | Android 12-14 已有 memfd 支持但默认受 `sys.use_memfd` 等门禁影响；android-17.0.0_r1 的默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37 | Binder 事务中的 `BINDER_TYPE_FD`、`/proc/<pid>/maps` 里的 ashmem / memfd 区域 |
 | **图形与 DMA buffer** | `GraphicBuffer`、`AHardwareBuffer`、gralloc buffer handle | ION → dmabuf / dmabuf-heaps | BufferQueue、SurfaceFlinger、相机/编解码器缓冲区 | Android 10 之后更常见把新分配放到 dmabuf-heaps；Android 13 之后图形路径更统一 | gralloc handle 中的 buffer fd、`/dev/dma_heap/*`、BufferQueue / SurfaceFlinger trace |
 | **HAL 零拷贝队列** | FMQ（`MQDescriptorSync` / `MQDescriptorUnsync`） | 共享内存环形队列 + event flag | 音频、相机、传感器、NNAPI 等高吞吐 HAL 数据流 | Treble 之后广泛使用，接口协商走 HIDL 或 AIDL | HAL 调用里的 descriptor 传递、libfmq 映射、队列读写 trace |
 
-[已验证: AOSP main `MemoryFile.java` 把 MemoryFile 写成 SharedMemory wrapper；`android_os_MemoryFile.cpp` 与 `CursorWindow.cpp` 仍直接使用 `cutils/ashmem.h` / `ashmem_create_region()`；Android 12 之后通用匿名共享内存的底层实现逐步转向 memfd，并保留 ashmem 兼容语义；`MessageQueueBase.h` 明确 FMQ 可用 ashmem shared memory 创建队列]
+[已验证: AOSP android-17.0.0_r1 `MemoryFile.java` 把 MemoryFile 写成 SharedMemory wrapper；`android_os_MemoryFile.cpp`、`CursorWindow.cpp` 与 `MessageQueueBase.h` 仍经 `cutils/ashmem.h` / `ashmem_create_region()`；system/core `ashmem-dev.cpp` 显示 Android 12-14 默认仍受 `sys.use_memfd` 门禁影响，android-17.0.0_r1 中默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37]
 
 把三条路线拆开之后，边界会清楚很多：
 
-- `SharedMemory` / `MemoryFile` / `CursorWindow` 讨论的是通用匿名共享内存。这条线的 API 语义仍可按 ashmem-compatible fd + `mmap` 理解，但版本边界要单独记住：Android 12 是底层实现从 ashmem 向 memfd 过渡的分水岭。memfd 的 `F_ADD_SEALS` 可以限制 `grow` / `shrink`，避免对端在共享期间改区域大小。
+- `SharedMemory` / `MemoryFile` / `CursorWindow` 讨论的是通用匿名共享内存。这条线的 API 语义仍可按 ashmem-compatible fd + `mmap` 理解，但不能把“Android 12 起默认 memfd”写成通用结论。Android 12-14 代码已有 memfd 支持，默认仍受 `sys.use_memfd` 等门禁控制；android-17.0.0_r1 里 `ashmem_create_region()` 只有在 memfd SELinux capability、vendor API 202604 与 app target SDK min 37 条件满足时才走 memfd。
 - `GraphicBuffer` / `AHardwareBuffer` / gralloc 讨论的是图形与设备共享 buffer allocator。这条线从 ION 走到 dmabuf-heaps，关注点是 allocator、buffer handle 和硬件设备共享。
 - FMQ 讨论的是 HAL 场景下的环形队列抽象。它可以建立在共享内存之上，但语义是“有读写指针的队列”，和单块共享区域、图形 buffer handle 不是一类对象。
 
@@ -250,7 +258,7 @@ InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/syste
 **Android 中的关键使用：**
 
 - **BufferQueue / GraphicBuffer**（§2.13）：Binder 协商 buffer 生命周期，图形数据走 dmabuf / GraphicBuffer
-- **ContentProvider / CursorWindow**：查询窗口在需要扩容时会 inflate 到匿名共享内存。旧路径常见 ashmem，新设备上这类 fd 更多由 memfd 承载，再通过 Binder 返回给客户端
+- **ContentProvider / CursorWindow**：查询窗口在需要扩容时会 inflate 到匿名共享内存。旧路径常见 ashmem，新设备上这类 fd 可能由 memfd 承载，具体取决于 ashmem-compatible 层门禁，再通过 Binder 返回给客户端
 - **SharedMemory API / MemoryFile**：应用或系统服务共享匿名内存
 - **FMQ**：HAL 侧高频、小单元、连续读写的数据流
 
@@ -271,12 +279,12 @@ InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/syste
 
 
 
-### 3.4.1 Parcel::writeBlob 零拷贝与 ashmem/memfd 演进
+### 3.4.1 Parcel::writeBlob fd 传递与 ashmem/memfd 演进
 
-Android 的 `Parcel::writeBlob()` 对大于 `BLOB_INPLACE_LIMIT`（`16 * 1024 = 16KB`）的大数据使用共享内存 fd 实现零拷贝：
+Android 的 `Parcel::writeBlob()` 对大于 `BLOB_INPLACE_LIMIT`（`16 * 1024 = 16KB`）的大数据使用共享内存 fd，避免把 payload 直接塞进 Binder transaction buffer。发送方仍需要把已有数据写入共享区域，所以这里不能写成端到端零拷贝：
 
 ```cpp
-// frameworks/native/libs/binder/Parcel.cpp (AOSP main)
+// frameworks/native/libs/binder/Parcel.cpp (AOSP android-17.0.0_r1)
 // 简化调用链
 Parcel::writeBlob(size, data)
   ├─ if (size <= BLOB_INPLACE_LIMIT)   // 16KB
@@ -291,9 +299,9 @@ Parcel::writeBlob(size, data)
        // Binder 事务中只传 fd，不传数据本身
 ```
 
-`ashmem_create_region` 在新设备上由 `libcutils/ashmem-dev.cpp` 的 ashmem-compatible 层实现，底层可能走 `memfd_create`；`F_ADD_SEALS` / `F_SEAL_FUTURE_WRITE` 是 memfd 路径的实现细节，对 Parcel 调用者不可见。`art/libartbase/base/memfd.cc` 提供 memfd 的封装和 tmpfile fallback。
+`ashmem_create_region` 由 `libcutils/ashmem-dev.cpp` 的 ashmem-compatible 层实现，底层是否走 `memfd_create` 取决于版本和设备门禁；`F_ADD_SEALS` / `F_SEAL_FUTURE_WRITE` 是 memfd 路径的实现细节，对 Parcel 调用者不可见。`art/libartbase/base/memfd.cc` 提供 memfd 的封装和 tmpfile fallback。
 
-[源码验证: AOSP main frameworks/native/libs/binder/Parcel.cpp（writeBlob 阈值判断与 ashmem 路径）；system/core/libcutils/ashmem-dev.cpp（ashmem-compatible memfd 实现）；art/libartbase/base/memfd.cc（memfd 封装）]
+[源码验证: AOSP android-17.0.0_r1 frameworks/native/libs/binder/Parcel.cpp（writeBlob 阈值判断与 ashmem 路径）；system/core/libcutils/ashmem-dev.cpp（ashmem-compatible memfd 实现）；art/libartbase/base/memfd.cc（memfd 封装）]
 
 ### 3.5 mmap 文件映射
 
@@ -326,7 +334,7 @@ Parcel::writeBlob(size, data)
 | `SIGKILL (9)` | AMS / LMKD / init | App 进程 | 强制结束进程 |
 | `SIGABRT (6)` | bionic / malloc / 进程自身 | 自身 | abort、heap corruption、触发 native crash 流程 |
 
-[已验证: AOSP main `bionic/reserved_signals.h` 把 `BIONIC_SIGNAL_DEBUGGER` 定义为 `__SIGRTMIN + 3`；`debuggerd_client.cpp` 中 Java backtrace 走 `SIGQUIT`，native dump 走 `BIONIC_SIGNAL_DEBUGGER`]
+[已验证: AOSP android-17.0.0_r1 `bionic/reserved_signals.h` 把 `BIONIC_SIGNAL_DEBUGGER` 定义为 `__SIGRTMIN + 3`；`debuggerd_client.cpp` 中 Java backtrace 走 `SIGQUIT`，native dump 走 `BIONIC_SIGNAL_DEBUGGER`]
 
 当前默认路径已经由 `SIGQUIT` 和 `BIONIC_SIGNAL_DEBUGGER` 覆盖。文档如果另写自定义信号方案，必须单独给出处。
 
@@ -339,14 +347,14 @@ Parcel::writeBlob(size, data)
 
 ### 3.7 Treble 之后的 HAL IPC：HIDL / hwbinder 与 Stable AIDL / binder
 
-**背景：** Treble 改变的是 Framework 和 vendor 之间的边界：它把两侧通信固化成稳定接口。Android 8 先用 HIDL + `/dev/hwbinder` 建立这条边界；Android 10 再引入 Stable AIDL，让 HAL 也可以走标准 `/dev/binder`，同时保留接口稳定性要求。
+**背景：** Treble 改变的是 Framework 和 vendor 之间的边界：它把两侧通信固化成稳定接口。Android 8 先用 HIDL + `/dev/hwbinder` 建立这条边界；Android 10 引入 Stable AIDL 的稳定性机制；Android 11 起 AIDL for HALs 允许系统 / 供应商 HAL 以 Stable AIDL 走标准 `/dev/binder`。
 
 **两条主路径不要混为一谈：**
 
 | 路径 | Binder 域 | 接口定义 | 典型阶段 | 说明 |
 |------|-----------|----------|----------|------|
 | **HIDL HAL** | `/dev/hwbinder` | HIDL | Android 8 之后的存量 HAL | Treble 初期建立的独立 HAL binder domain |
-| **Stable AIDL HAL** | `/dev/binder` | Stable AIDL | Android 10 引入，Android 11+ 新 HAL 广泛采用 | 与 framework binder 共用驱动，靠稳定接口和 VINTF 约束兼容性 |
+| **Stable AIDL HAL** | `/dev/binder` | Stable AIDL | Android 10 引入稳定性机制，Android 11+ 可用于 HAL | 与 framework binder 共用驱动，靠稳定接口和 VINTF 约束兼容性 |
 
 **AIDL HAL 不等于 HwBinder**。Trace 里出现 HAL 调用时，要先分清它落在哪个 binder domain：命中 `/dev/hwbinder` 的通常是 HIDL，命中标准 binder 的则更可能是 Stable AIDL HAL。
 
@@ -355,7 +363,7 @@ Parcel::writeBlob(size, data)
 - 控制面上的 HAL 调用，仍是 Binder 家族的 RPC，开销更多取决于服务端干了什么，而不是“hwbinder 天生更慢”
 - 音频、相机、传感器这类高吞吐路径，常见做法是 Binder / HwBinder 只负责控制面，数据面走 FMQ、共享内存或 dmabuf
 
-[已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》— Android 8 将 vendor IPC 隔离到 `/dev/hwbinder`；Android 10 Stable AIDL 允许 HAL 使用 `/dev/binder`]
+[已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》— Android 8 将 vendor IPC 隔离到 `/dev/hwbinder`；AIDL for HALs 文档明确 Android 11 引入 HAL 使用 AIDL 的能力]
 
 ### 3.7.1 AVF 场景下的 IPC：AF_VSOCK 与 RpcBinder
 
@@ -369,7 +377,7 @@ Android Virtualization Framework (AVF) 引入了虚拟机（pVM/Microdroid）场
 | **pVM 内部** | Unix Domain Socket / 共享内存 | VM 内部组件间的 IPC 走标准 UDS 或共享内存 |
 | **VM 间** | 无直接 IPC | pVM 之间不直接通信，需经 host 中转 |
 
-RpcBinder 的性能特征与标准 Binder 类似（序列化/反序列化 + 一次数据拷贝），但底层传输从 binder 驱动换成了 vsock。在 Perfetto 中，VM 间 IPC 的开销更多体现在 vsock 的数据传输延迟上，而非 binder driver 的调度。
+RpcBinder 仍保留 Binder 风格的接口模型和序列化成本，但底层传输从 binder 驱动换成 socket / vsock。它不继承 Binder driver 的进程级 transaction buffer 口径，拷贝次数也不能沿用 Binder mmap 路径的 `1`；在 Perfetto 中，VM 场景 IPC 的开销更多体现在 vsock 数据传输延迟和服务端处理时间上。
 
 ## 4. 性能对比表
 
@@ -518,12 +526,12 @@ IPC 的版本演进重点在于控制面和数据面的边界变化。这张表�
 | 版本 | IPC 变化 | 分析时要注意什么 |
 |------|---------|----------------|
 | Android 8 (Treble) | 引入 Treble，HIDL HAL 进入 `/dev/hwbinder` domain | HAL 控制调用开始和 framework binder domain 分离 |
-| Android 10 | 引入 Stable AIDL；图形/多媒体 allocator 继续从 ION 向 dmabuf-heaps 迁移 | 不能把 `SharedMemory` / `MemoryFile` / `CursorWindow` 写成 dmabuf-heaps 的直接替代物 |
-| Android 11 | 新 HAL 可以直接使用 AIDL，迁移开始扩大 | Trace 中要同时接受 HIDL 和 AIDL HAL 并存 |
-| Android 12 | 通用匿名共享内存开始把 memfd 作为主要底层承载，ashmem 兼容语义继续保留 | 分析 `SharedMemory` / `CursorWindow` 时要分清 API 名称和底层内核对象，不要把 memfd 写成 dmabuf 的一部分 |
+| Android 10 | 引入 Stable AIDL 的稳定性机制；图形/多媒体 allocator 继续从 ION 向 dmabuf-heaps 迁移 | 不能把 `SharedMemory` / `MemoryFile` / `CursorWindow` 写成 dmabuf-heaps 的直接替代物 |
+| Android 11 | AIDL for HALs 引入，系统 / 供应商 HAL 可使用 Stable AIDL 走 `/dev/binder` | Trace 中要同时接受 HIDL 和 AIDL HAL 并存 |
+| Android 12-14 | ashmem-compatible 层已有 memfd 支持，但默认仍受 `sys.use_memfd` 等门禁影响 | 分析 `SharedMemory` / `CursorWindow` 时要分清 API 名称、设备属性和底层内核对象，不要把 memfd 写成 dmabuf 的一部分 |
 | Android 13 | GraphicBuffer 等图形内存路径进一步统一到 dmabuf | 图形类大数据更典型地表现为“Binder 控制 + dmabuf 数据面”；应用通用共享内存仍单独看 |
 | Android 14+ | 持续鼓励 HIDL → AIDL 迁移，而不是一刀切“全面完成” | 同一设备上可能长期共存两套 HAL IPC |
-| Android 16-17 | AIDL HAL 与 Rust HAL 覆盖面继续扩大 | 实现语言会变，但 control plane / data plane 的组合模式不变 |
+| Android 17 | ashmem-compatible 层默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37 | 这是 android-17.0.0_r1 源码口径；实现语言会变，但 control plane / data plane 的组合模式不变 |
 | Android 13+ (AVF) | AF_VSOCK + RpcBinder 用于 host ↔ VM 通信 | VM 场景下 IPC 走 vsock 而非 binder 驱动；分析 VM trace 时要区分 vsock 和传统 binder 延迟 |
 
 [已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》；Android 图形 allocator 的 ION → dmabuf-heaps 迁移与通用共享内存 API 是两条独立演进线]
@@ -583,7 +591,7 @@ Android 的 IPC 生态以 Binder 为核心，但绝非只有 Binder。理解全�
 
 1. **Trace 分析时识别 IPC 类型和瓶颈**：Binder 延迟 ≠ 全部 IPC 延迟
 2. **系统优化时选择最合适的机制**：大数据用共享内存，紧急通知用 Signal，流式数据用 Socket
-3. **理解版本演进方向**：通用共享内存这条线要记住 Android 12 的 memfd 分水岭，图形 allocator 才是 ION → dmabuf-heaps，HAL 接口再看 HIDL / hwbinder → Stable AIDL / binder
+3. **理解版本演进方向**：通用共享内存这条线要看 ashmem-compatible 层的 memfd 门禁，图形 allocator 才是 ION → dmabuf-heaps，HAL 接口再看 HIDL / hwbinder → Stable AIDL / binder
 4. **避免常见反模式**：Binder 调用风暴、大数据走 Binder、缺乏同步的共享内存
 
 ---
