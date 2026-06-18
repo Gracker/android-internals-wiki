@@ -60,7 +60,7 @@ task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Cho
 task2b_result: "fixed"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
-last_task6_audit: "2026-06-09"
+last_task6_audit: "2026-06-18"
 task9_state: "reviewed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"
@@ -115,7 +115,7 @@ VSync 决定了渲染延迟的基准线。不理解 VSync，你无法解释为�
 
 ### 1.2 VSync 的基本思路
 
-解决画面撕裂的方案很直接:**在屏幕完成一帧扫描、准备开始下一帧扫描的间隙,才允许更新帧缓冲的数据**。这个间隙就是垂直同步(Vertical Synchronization,简称 VSync)信号。
+解决画面撕裂的方案是:**在屏幕完成一帧扫描、准备开始下一帧扫描的间隙,才允许更新帧缓冲的数据**。这个间隙就是垂直同步(Vertical Synchronization,简称 VSync)信号。
 
 VSync 信号也叫 VBlank 信号或 TE (Tearing Effect) 信号。从硬件角度看,它是显示屏上的一个引脚产生的电平变化(通常是上升沿中断);从软件角度看,它是一个 GPIO 中断,系统根据这个中断来安排渲染和合成的时序。
 
@@ -573,7 +573,7 @@ VSync 架构从 Android 4.1 的 Project Butter 确立基本框架以来,经历�
 
 ### 9.2 Android 7.0 ~ 10:DispSync 成熟期
 
-DispSync 的软件锁相环模型在这一时期逐渐稳定,成为 Android VSync 虚拟化的标准实现。Phase Offset 通过 `BoardConfig.mk` 中的纳秒值直接配置,OEM 需要根据自己设备的渲染耗时手动调优。这一时期在 Perfetto 中可以看到稳定的 DispSync 模型行为--HW_VSYNC 仅在校正时短暂开启。
+DispSync 的软件锁相环模型在这一时期逐渐稳定,成为 Android VSync 虚拟化的标准实现。Phase Offset 通过 `BoardConfig.mk` 中的纳秒值直接配置,OEM 需要根据自己设备的渲染耗时手动调优。这一时期在 Perfetto 中,DispSync 模型行为已经稳定--HW_VSYNC 仅在校正时短暂开启。
 
 ### 9.3 Android 11 ~ 12:VsyncConfiguration 引入
 
