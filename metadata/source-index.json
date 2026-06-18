@@ -3379,6 +3379,159 @@
       "processed_at": "2026-06-18T06:13:16.933321",
       "type": "DeepResearch 调研结果",
       "action": "queued"
+    },
+    {
+      "title": "性能工程成熟度模型-2026-06-18",
+      "path": "Cubox/性能工程成熟度模型-2026-06-18.md",
+      "score": 12,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080681"
+    },
+    {
+      "title": "2026-06-18-adaptive-battery-app-standby-coordination",
+      "path": "DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md",
+      "score": 15,
+      "chapter": "ch03",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080688"
+    },
+    {
+      "title": "2026-06-18-battery-saver-thermal-coordination",
+      "path": "DeepResearch/2026-06-18-battery-saver-thermal-coordination.md",
+      "score": 15,
+      "chapter": "ch05",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080690"
+    },
+    {
+      "title": "2026-06-18-memory-metrics-collection-source-stack",
+      "path": "DeepResearch/2026-06-18-memory-metrics-collection-source-stack.md",
+      "score": 17,
+      "chapter": "ch04",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080692"
+    },
+    {
+      "title": "2026-06-18-privacy-sandbox-location-power-analysis",
+      "path": "DeepResearch/2026-06-18-privacy-sandbox-location-power-analysis.md",
+      "score": 16,
+      "chapter": "ch05",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080693"
+    },
+    {
+      "title": "2026-06-18-radio-power-state-machine-source-analysis",
+      "path": "DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md",
+      "score": 17,
+      "chapter": "ch02",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080695"
+    },
+    {
+      "title": "2026-06-19-jetpack-compose-memory-churn-source-analysis",
+      "path": "DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md",
+      "score": 17,
+      "chapter": "ch04",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080696"
+    },
+    {
+      "title": "2026-06-18-1236-cellinlab-Loop工程学",
+      "path": "X 文章/2026-06-18-1236-cellinlab-Loop工程学.md",
+      "score": 11,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080697"
+    },
+    {
+      "title": "2026-06-19-75899034-聊聊2026年Android开发会是什么",
+      "path": "source/juejin-android/2026-06-19-75899034-聊聊2026年Android开发会是什么.md",
+      "score": 12,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080698"
+    },
+    {
+      "title": "2026-06-19-76102333-Android17有什么需要适配的",
+      "path": "source/juejin-android/2026-06-19-76102333-Android17有什么需要适配的.md",
+      "score": 12,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080700"
+    },
+    {
+      "title": "2026-06-19-76119383-告别Modifier地狱Compo",
+      "path": "source/juejin-android/2026-06-19-76119383-告别Modifier地狱Compo.md",
+      "score": 12,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080701"
+    },
+    {
+      "title": "2026-06-19-76125451-Android17来了新特性介绍与",
+      "path": "source/juejin-android/2026-06-19-76125451-Android17来了新特性介绍与.md",
+      "score": 12,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080702"
+    },
+    {
+      "title": "2026-06-19-76128120-Android17为什么重写Mess",
+      "path": "source/juejin-android/2026-06-19-76128120-Android17为什么重写Mess.md",
+      "score": 12,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080703"
+    },
+    {
+      "title": "2026-06-19-76148976-什么AI写Android最好用",
+      "path": "source/juejin-android/2026-06-19-76148976-什么AI写Android最好用.md",
+      "score": 13,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080704"
+    },
+    {
+      "title": "2026-06-19-76226966-Android要变天桌面端这次真的来",
+      "path": "source/juejin-android/2026-06-19-76226966-Android要变天桌面端这次真的来.md",
+      "score": 12,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080706"
+    },
+    {
+      "title": "2026-06-19-76388970-为什么Android不用接口做A",
+      "path": "source/juejin-android/2026-06-19-76388970-为什么Android不用接口做A.md",
+      "score": 12,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080707"
+    },
+    {
+      "title": "2026-06-18-AI-agentic-workflow-automation",
+      "path": "每日论文精读（AI）/2026-06-18-AI-agentic-workflow-automation.md",
+      "score": 17,
+      "chapter": "ch16",
+      "indexed_date": "2026-06-19",
+      "source": "Task11-每日增量扫描",
+      "scored_at": "2026-06-19T05:46:42.080708"
     }
   ]
 }

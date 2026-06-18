@@ -304,3 +304,108 @@ OEM 优化策略随 Android 版本的演进经历了几个关键转折点：
 > **验证状态**：L2 验证通过 8 处（AOSP 源码路径、官方文档、Linux man page），待验证 4 处（厂商具体策略参数）。信心等级：medium。
 >
 > **素材来源**：obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Android系统优化的那10年.md、obsidian/Personal-Knowlodge/source/the-performance-design-of-os.md、source.android.com、developer.android.com
+
+### [ClawFeed] Android17 为什么重写 MessageQueue
+- 来源：https://juejin.cn/post/7612812060795093002
+- 类型：技术文章
+- 摘要：：这篇掘金文章分享了Android17 为什么重写 MessageQueue的实践经验和解决方案，结合具体案例和代码实现，为开发者提供了实用的技术指导。
+- 入库时间：2026-06-19
+- 评分：12/20
+
+### [ClawFeed] Android17 为什么重写 MessageQueue
+- 来源：https://juejin.cn/post/7612812060795093002
+- 类型：技术文章
+- 摘要：：这篇文章分析了Android 17的新特性和适配要求，涉及系统架构变化、API更新和兼容性处理，为Android开发者提供了版本升级指导。
+- 入库时间：2026-06-19
+- 评分：16/20
+
+### [掘金Android] 聊聊2026年Android开发会是什么样
+- 来源：https://juejin.cn/post/7589903499599347766
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，高关注度技术文章（15659浏览），高收藏价值（154收藏），开发者高度认可（149点赞），深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
+
+### [掘金Android] 什么 AI 写 Android 最好用？官方做了一个基准测试排名
+- 来源：https://juejin.cn/post/7614897667961143347
+- 类型：技术文章
+- 摘要：：AI技术在Android中的应用和实现方案，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：12/20
+
+### [掘金Android] Android17 为什么重写 MessageQueue
+- 来源：https://juejin.cn/post/7612812060795093002
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，高收藏价值（121收藏），开发者高度认可（100点赞），深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
+
+### [掘金Android] Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？
+- 来源：https://juejin.cn/post/7610233341305389099
+- 类型：技术文章
+- 摘要：：Android 17最新特性解析，涉及API level 37变更，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：16/20
+
+### [掘金Android] Android 要变天：桌面端这次真的来了！
+- 来源：https://juejin.cn/post/7622696665740558386
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
+
+### [掘金Android] Android 17 来了！新特性介绍与适配建议
+- 来源：https://juejin.cn/post/7612545160434188297
+- 类型：技术文章
+- 摘要：：Android 17最新特性解析，涉及API level 37变更，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：16/20
+
+### [掘金Android]  为什么 Android 不用接口做 Activity 通信？
+- 来源：https://juejin.cn/post/7638897090145075246
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
+
+### [掘金Android] 从 MVVM 到 MVI：为什么说 MVVM 的 UI 状态像"网"，而 MVI 像"一条线"？
+- 来源：https://juejin.cn/post/7618226713329090610
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
+
+### [掘金Android] 你的 Android App 还没接 AI？Gemini API 接入全攻略
+- 来源：https://juejin.cn/post/7613282719573229618
+- 类型：技术文章
+- 摘要：：AI技术在Android中的应用和实现方案，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：12/20
+
+### [掘金Android] Android 开发者再不转Kotlin，真的来不及了
+- 来源：https://juejin.cn/post/7641229739893784622
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
+
+### [掘金Android] 我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂
+- 来源：https://juejin.cn/post/7623242804392247305
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
+
+### [掘金Android] 重磅！Android Studio Quail 1 来了，IDE直接内置 LeakCanary
+- 来源：https://juejin.cn/post/7631081134169309210
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
+
+### [掘金Android]  现代 Android 官方为什么更推荐 Repository 暴露 `suspend fun`，而不是在内部 `launch`
+- 来源：https://juejin.cn/post/7650074080125599790
+- 类型：技术文章
+- 摘要：：Android开发前沿技术探讨，深入分析技术实现和实际应用场景
+- 入库时间：2026-06-19
+- 评分：14/20
