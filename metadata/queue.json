@@ -159,5 +159,23 @@
     "source": "knowledge_gap",
     "title": "Android 17 AI 推理加速与 NeuralNetworks HAL 优化",
     "score": 14
+  },
+  {
+    "chapter": "22.24",
+    "title": "App Widget 更新性能：RemoteViews IPC 与 Glance 渲染",
+    "path": "src/part5-app/ch22-rendering-practice/24-app-widget-performance.md",
+    "priority": 80,
+    "status": "pending",
+    "created_date": "2026-06-19",
+    "source": "task2a-knowledge-gap"
+  },
+  {
+    "chapter": "23.12",
+    "title": "Jetpack Compose 内存分配与 GC 影响",
+    "path": "src/part5-app/ch23-memory-practice/12-compose-memory-allocation-gc.md",
+    "priority": 80,
+    "status": "pending",
+    "created_date": "2026-06-19",
+    "source": "task2a-knowledge-gap"
   }
 ]

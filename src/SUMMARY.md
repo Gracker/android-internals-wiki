@@ -421,6 +421,7 @@ tags:
   - [22.21 Jetpack Compose 动画性能深度优化](part5-app/ch22-rendering-practice/21-compose-animation-performance.md)
   - [22.22 Compose LazyList/LazyGrid 滑动性能深度优化](part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md)
   - [22.23 Navigation Compose 性能优化](part5-app/ch22-rendering-practice/22.23-navigation-compose-performance.md)
+  - [22.24 App Widget 更新性能：RemoteViews IPC 与 Glance 渲染](part5-app/ch22-rendering-practice/24-app-widget-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
@@ -434,6 +435,7 @@ tags:
   - [23.9 Android 17 App Memory Limits 与内存泄漏治理](part5-app/ch23-memory-practice/09-android17-app-memory-limits.md)
   - [23.10 Memory Advice API 与游戏内存压力治理](part5-app/ch23-memory-practice/10-memory-advice-api.md)
   - [23.11 Scudo 分配器与 Native Heap 性能边界](part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md)
+  - [23.12 Jetpack Compose 内存分配与 GC 影响](part5-app/ch23-memory-practice/12-compose-memory-allocation-gc.md)
 
 - [第 24 章：I/O 与网络优化](part5-app/ch24-io-network/README.md)
   - [23.24 Android 17 AI 推理加速与 NeuralNetworks HAL 优化](part5-app/ch23-memory/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md)
