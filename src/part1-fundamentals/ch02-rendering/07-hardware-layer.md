@@ -38,7 +38,7 @@ last_task2b_at: "2026-05-08T20:44:59+08:00"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-08T21:35:11+08:00"
-last_task9_audit: "2026-05-26"
+last_task9_audit: "2026-06-18"
 last_task6_at: "2026-05-08T21:24:13+08:00"
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-08-21-review.md"
@@ -47,6 +47,7 @@ last_task9_review_log: "logs/deep-review/2026-05-08-21-deep-review.md"
 task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 4 处记录在 deep-review/suggestions，不阻塞发布；自动晋升 finalized / ready-to-publish。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
+last_task9_audit_log: "logs/deep-review/2026-06-18-16-audit.md"
 ---
 
 # Hardware Layer
