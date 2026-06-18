@@ -5,28 +5,28 @@ section: "13.16"
 status: finalized
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-17"
-last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto Trace Processor docs; Perfetto SQL query/table docs; Android system tracing docs"
+last_verified: "2026-06-18"
+last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto stdlib docs (android.frames.*, android.startup.startups, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.*); Perfetto SQL table docs (thread_state, cpu_freq); Android system tracing docs"
 confidence: medium
 tags: [perfetto, trace-analysis, agent-workflow, performance-tools]
 related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task2b_result: fixed-lite
-task6_state: reviewed
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-28T08:10:00+08:00"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
-last_task9_at: "2026-05-28T08:28:23+08:00"
+last_task9_at: "2026-06-18T20:38:56+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-28"
+task9_reviewed_date: "2026-06-18"
 sources:
   - type: official
     path: "https://github.com/android/skills/tree/main/profilers"
@@ -48,16 +48,17 @@ last_task6_review_log: "logs/review/2026-05-28-08-review.md"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处，删除一处否定纠正式开场句；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
-last_task9_review_log: "logs/deep-review/2026-05-28-08-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-18-20-audit.md"
 updated_by: "openclaw-task9"
-updated_date: "2026-05-28"
-last_task9_autofix_at: "2026-05-28"
-task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。"
-p0: 0
+updated_date: "2026-06-18"
+last_task9_autofix_at: "2026-06-18"
+task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：修正 Perfetto CPU 频率时间区间入口，`cpu_freq` 仅为 CPU/freq 维度表，频率区间应使用 `linux.cpu.frequency` / `cpu_frequency_counters`。"
+p0: 1
 p1: 0
 p2: 0
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-05-28"
+last_task9_audit: "2026-06-18"
 ---
 
 # 13.16 Agent 辅助 Perfetto 分析协议
@@ -173,7 +174,7 @@ Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和�
 |---|---|---|
 | 固定入口 | 使用项目根目录的 `./trace_processor`，必要时下载官方 wrapper | 查询只停在生成文本，或工具路径不稳定 |
 | schema 检索 | 用 Perfetto stdlib / SQL table 文档确认表名、列名、模块名 | 编造字段、混用旧版本字段 |
-| stdlib 优先 | 优先查 `android.startup.startups`、`android.frames.timeline`、`android.frames.per_frame_metrics`、`sched.with_context`、`linux.cpu.utilization.process` 等具体模块；CPU 频率明细先用 prelude 的 `cpu_freq` 表或 CPU utilization 模块产出的聚合视图，`android.frames` 是 package 名，不是可直接 include 的模块名 | 手写复杂 join 时漏掉边界，或把原始表名误写成 stdlib 模块 |
+| stdlib 优先 | 优先查 `android.startup.startups`、`android.frames.timeline`、`android.frames.per_frame_metrics`、`sched.with_context`、`linux.cpu.utilization.process` 等具体模块；CPU 频率时间区间先 include `linux.cpu.frequency` 并查询 `cpu_frequency_counters`，进程/线程聚合频率再用 `linux.cpu.utilization.*`，`cpu_freq` 只表示 CPU/freq 维度，不是时间区间表；`android.frames` 是 package 名，不是可直接 include 的模块名 | 手写复杂 join 时漏掉边界，或把原始表名误写成 stdlib 模块 |
 | `utid/upid` | 线程和进程 join 使用 trace 内唯一 ID | `tid/pid` 复用导致错配 |
 | `dur = -1` | 统计时用 `trace_end() - ts` 替代未闭合 duration | 总耗时和 overlap 计算错误 |
 | overlap 过滤 | 时间窗查询使用区间相交条件 | 漏掉跨越窗口边界的长 slice |
