@@ -36,32 +36,38 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:45+08:00"
-task9_result: pass-tech-review
-last_task9_at: "2026-05-24T20:34:56+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-24"
-task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；FrameTimeline 证据字段写成 present_offset/refresh_period/hwc_layer_name 不符合 Perfetto SQL 表，需改为 actual_frame_timeline_slice/expected_frame_timeline_slice 的 jank_type、present_type、layer_name，并用 dumpsys 或 layer snapshot 复核 HWC DEVICE/CLIENT。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；DeliQueue android-17-beta3 源码 tag 与 HWC3 Composition/Overlay plane 数据支撑仅作为 P2 留给后续小修；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_result: "auto-fixed"
+last_task9_at: "2026-06-19T02:26:22+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-19"
+task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；FrameTimeline 证据字段写成 present_offset/refresh_period/hwc_layer_name 不符合 Perfetto SQL 表，需改为 actual_frame_timeline_slice/expected_frame_timeline_slice 的 jank_type、present_type、layer_name，并用 dumpsys 或 layer snapshot 复核 HWC DEVICE/CLIENT。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；DeliQueue android-17-beta3 源码 tag 与 HWC3 Composition/Overlay plane 数据支撑仅作为 P2 留给后续小修；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 idle-audit: auto-fixed。P0 1：补齐 Android 17 HWC3 Composition.aidl 的 DISPLAY_DECORATION=6，并修正源码索引中 HWC3 Composition 枚举归属；无 P1/P2，回到 Task6 复审。"
 last_task6_at: "2026-05-24T20:14:35+08:00"
 last_task6_audit: "2026-05-24"
 task6_reviewed_date: "2026-05-24"
 review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"
-last_task9_audit: "2026-05-24"
-last_task9_audit_log: "logs/deep-review/2026-05-24-15-audit.md"
+last_task9_audit: "2026-06-19"
+last_task9_audit_log: "logs/deep-review/2026-06-19-02-audit.md"
 last_task2b_at: 2026-05-24T19:29:26+08:00
 reviewed_at: "2026-05-24T20:14:35+08:00"
 review_round: 2
 last_task6_review_log: "logs/review/2026-05-24-20-review.md"
 task6_review_notes: "2026-05-24 task6 revisiting review: L1/L2 小修 7 处；无新增 Task6 回炉项；Task9 audit 已由 Task2B 修复，等待 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-24-20-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-19-02-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
+last_task9_autofix_at: "2026-06-19"
+updated_by: "openclaw-task9"
+updated_date: "2026-06-19"
+p0: 1
+p1: 0
+p2: 0
 ---
 
 # 卡顿原因体系
@@ -286,16 +292,17 @@ enum class HWC2::Composition {
 };
 ```
 
-Android 13+ 的 HWC3 (AIDL) 使用相同的语义但通过 AIDL 接口暴露：
+Android 13+ 的 HWC3 (AIDL) 通过 AIDL 接口暴露 composition type。Android 17 的 `Composition.aidl` 至少包含下面这些值；前五项与 HWC2 语义保持一致，`DISPLAY_DECORATION` 用于屏幕圆角、挖孔等 display decoration 层：
 
 ```hal
 // hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl
 enum Composition : int32 {
-    CLIENT = 1,      // GPU 回退合成，SurfaceFlinger 负责
-    DEVICE = 2,      // 硬件 Overlay 合成
-    SOLID_COLOR = 3, // 纯色层
-    CURSOR = 4,      // 光标层
-    SIDEBAND = 5,    // 视频流直通道
+    CLIENT = 1,              // GPU 回退合成，SurfaceFlinger 负责
+    DEVICE = 2,              // 硬件 Overlay 合成
+    SOLID_COLOR = 3,         // 纯色层
+    CURSOR = 4,              // 光标层
+    SIDEBAND = 5,            // 视频流直通道
+    DISPLAY_DECORATION = 6,  // 屏幕装饰层
 };
 ```
 
@@ -357,7 +364,8 @@ Display 0 (Primary):
 | 文件路径 | 关键内容 | 版本 |
 |---------|---------|------|
 | `hardware/libhardware/include/hardware/hwcomposer2.h` | HWC2 Composition 枚举定义 | 全版本 |
-| `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposer.aidl` / `IComposerClient.aidl` | HWC3 AIDL 接口（含 Composition 枚举） | Android 13+ |
+| `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl` | HWC3 Composition 枚举定义 | Android 13+ |
+| `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposer.aidl` / `IComposerClient.aidl` | HWC3 composer service / client 接口 | Android 13+ |
 | `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` | SurfaceFlinger HWC 封装 | 全版本 |
 | `platform/hardware/qcom/display/` | Qualcomm 私有 HWC 实现 | 厂商私有 |
 | `platform/external/drm_hwcomposer/` | DRM HWC 参考实现 | Linux mainline |
