@@ -12,19 +12,19 @@ related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", 
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 sources: ["AOSP frameworks/native/services/surfaceflinger", "AOSP frameworks/base/core/java/android/view", "Android 16 Developer Preview 文档", "Flutter 3.32 release notes"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
 last_task9_at: "2026-06-17T08:28:29+08:00"
 last_task2b_at: "2026-05-05T04:53:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-18"
+reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-06-18"
-last_task6_at: "2026-06-18T01:11:00+08:00"
+task6_reviewed_date: "2026-06-19"
+last_task6_at: "2026-06-19T01:10:00+08:00"
 last_task6_audit: "2026-06-17T06:07:00+08:00"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-17"

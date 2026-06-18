@@ -6,8 +6,8 @@ section: "3.7"
 status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 16 (API 36)"
-last_verified: "2026-05-16"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-06-18"
+last_verified_against: "AOSP android-16.0.0_r1（主线）; AOSP android-17.0.0_r1（版本边界抽检, 2026-06-18）"
 confidence: medium
 sources:
   - type: aosp
@@ -27,20 +27,20 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: revisiting
-task9_state: "reviewed"
+task6_state: reviewed
+task9_state: "pending"
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
-last_task6_at: "2026-06-12T08:10:00+08:00"
+last_task6_at: "2026-06-19T01:10:00+08:00"
 task2b_result: fixed
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-06-12"
 last_task2b_lite_at: "2026-06-12"
-reviewed_date: "2026-06-12"
+reviewed_date: "2026-06-19"
 reviewed_by: "openclaw-task6"
 task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-12"
+task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-12T07:24:58+08:00"
 last_task9_autofix_at: "2026-06-18"
@@ -50,7 +50,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-18-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-12-07-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
-task6_reviewed_date: "2026-06-12"
+task6_reviewed_date: "2026-06-19"
 ---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
@@ -205,4 +205,3 @@ InputDispatcher 反压由 channel 可写性、`outboundQueue`、`waitQueue`、`m
 - Android Developers: [ANRs](https://developer.android.com/topic/performance/vitals/anr)
 - Android Developers: [dumpsys](https://developer.android.com/tools/dumpsys)
 - [DeepResearch: 2026-05-10-inputdispatcher-backpressure]
--
