@@ -49,7 +49,7 @@ last_task9_audit: "2026-06-18"
 last_task9_audit_log: "logs/deep-review/2026-06-18-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-19-01-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-12
+last_deepseek_cn_review_at: 2026-06-19
 task6_reviewed_date: "2026-06-19"
 auto_promoted: true
 updated_by: "openclaw-task9"
@@ -100,7 +100,7 @@ p2: 0
 
 这类问题在 trace 里常被误判。`WaitQueue` 变长只能说明事件已经发给目标连接、还没收到 App 侧 `Finished` 回执；它不能直接等同于 App 主线程 MessageQueue 变长，也不能证明 Binder 调用就是根因。分析时要把 InputDispatcher 的队列状态、App 主线程栈、Binder 线程、CPU 调度和窗口焦点变化放到同一个时间窗口里看。详见 9.3 节。
 
-## 输入通道的天然反压点
+## 输入通道的反压点
 
 InputDispatcher 到 App 的事件面走 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端 channel；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。这个数据面不是 Binder。Binder 主要参与窗口和 channel 的建立、传递与策略回调，逐个 `MotionEvent` / `KeyEvent` 的传输走 channel fd。详见 1.17 节与 3.1 节。
 
@@ -111,11 +111,10 @@ AOSP android-16.0.0_r1 的 `InputDispatcher::startDispatchCycleLocked()` 在写�
 
 这就是输入管道的反压点。它依赖底层 channel 的可写性，不靠 Framework 额外猜测 App 是否繁忙。只要 App 侧没有及时读事件或发送 `Finished`，新的事件就会停在 `outboundQueue` 或更上游的 `inboundQueue`，直到目标连接恢复、超时、窗口被移除，或策略层做取消处理。
 
-> [已验证: AOSP android-16.0.0_r1, `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — `startDispatchCycleLocked()` / `publishMotionEvent()` / `abortBrokenDispatchCycleLocked()`]
 
 ## waitQueue、inboundQueue 与 ANR 计时边界
 
-InputDispatcher 内部至少要区分三类队列：
+InputDispatcher 内部有三类队列需要区分：
 
 | 队列 | 含义 | 典型观察结论 |
 |------|------|--------------|
@@ -127,8 +126,6 @@ ANR 计时绑定在 `waitQueue` 条目上。事件写给目标连接后，`deliv
 
 这条边界决定了排查顺序：Input ANR 不是从事件进入 `inboundQueue` 的瞬间开始计时，也不是按 App 主线程 MessageQueue 的长度计时。只有事件已经交给目标连接、等待回执超过窗口或应用的 dispatch timeout，InputDispatcher 才会把该连接判为无响应。Android Developers 的 ANR 文档也把 Input dispatching timed out 描述为应用没有在约 5 秒内响应按键或触摸事件。具体超时时间在系统内可由 window/application 的 dispatching timeout 影响，不要把 5 秒写成所有设备、所有窗口都不可变的常量。
 
-> [已验证: AOSP android-16.0.0_r1, `InputDispatcher.cpp` — `mAnrTracker.insert()` / `handleReceiveCallback()` / `doDispatchCycleFinishedCommand()`]
-> [已验证: 官方文档, `developer.android.com/topic/performance/vitals/anr`]
 
 ## 目标窗口无响应后的连接隔离
 
@@ -138,7 +135,6 @@ ANR 计时绑定在 `waitQueue` 条目上。事件写给目标连接后，`deliv
 
 连接恢复也有明确回路。App 之后返回 `Finished`，对应 `waitQueue` 条目被移除；`isConnectionResponsive()` 确认剩余条目没有过期后，`processConnectionResponsiveLocked()` 通知策略层窗口恢复。这里的恢复条件仍然基于 InputDispatcher 自己的 `waitQueue`，不是基于 App 业务状态。
 
-> [已验证: AOSP android-16.0.0_r1, `InputDispatcher.cpp` — `processAnrsLocked()` / `onAnrLocked()` / `cancelEventsForAnrLocked()` / `processConnectionResponsiveLocked()`]
 
 ## 跨应用切换时的队列裁剪策略
 
@@ -150,7 +146,6 @@ ANR 计时绑定在 `waitQueue` 条目上。事件写给目标连接后，`deliv
 
 这条策略解释了一个常见现象：Input ANR 发生或即将发生时，用户点别的应用、返回桌面、拉系统手势，有时仍然能继续响应。无响应窗口被隔离，新的输入目标绕开旧队列继续前进。
 
-> [已验证: AOSP android-16.0.0_r1, `InputDispatcher.cpp` — `shouldPruneInboundQueueLocked()` / `enqueueInboundEventLocked()` / `dropInboundEventLocked()`]
 
 ## Perfetto / dumpsys input 的观察入口
 
@@ -166,8 +161,6 @@ Perfetto 侧看 ATRACE counter。AOSP android-16.0.0_r1 里 `traceInboundQueueLe
 
 判读时不要把 `wq` 当成 MotionEvent batching 的直接证据。batching 和重采样主要在 App 侧 `InputConsumer` / `ViewRootImpl` 时序里观察，InputDispatcher 的 `wq` 只说明已交付事件没有完成回执。详见 3.2 节。
 
-> [已验证: 官方文档, `developer.android.com/tools/dumpsys`]
-> [已验证: AOSP android-16.0.0_r1, `InputDispatcher.cpp` — `dumpDispatchStateLocked()` / `traceInboundQueueLengthLocked()` / `traceOutboundQueueLength()` / `traceWaitQueueLength()`]
 
 ## 与应用主线程卡顿、Binder 阻塞的归因边界
 
@@ -179,7 +172,7 @@ InputDispatcher 的 waitQueue 是症状入口，不是根因结论。一个输�
 
 定位顺序建议固定下来：用 `dumpsys input` 或 Perfetto counter 确认 `wq/oq/iq` 的卡点，再看目标 App 主线程同一时间窗口的 call stack 和 sched 状态；如果主线程在 Binder 等待，再沿 Binder transaction 查对端线程；如果主线程看起来空闲但 `wq` 仍然不退，再检查 App 进程是否被调度、channel 是否 broken、窗口是否被移除或策略层是否延长 timeout。
 
-这能避免两个误判：把所有 Input ANR 都归到 App 主线程；把所有主线程卡顿都写成 InputDispatcher 问题。InputDispatcher 负责检测和隔离无响应连接，根因通常还要在 App、system_server、Binder 对端或内核调度里落点。
+这段分析能避免两个常见误判：一是把所有 Input ANR 都归到 App 主线程，二是把所有主线程卡顿都写成 InputDispatcher 的问题。InputDispatcher 负责检测和隔离无响应连接，根因通常还要在 App、system_server、Binder 对端或内核调度里落点。
 
 ## 扩展场景
 
@@ -191,7 +184,6 @@ InputDispatcher 的 waitQueue 是症状入口，不是根因结论。一个输�
 
 游戏场景还有一个分析边界：公开 Android API 没有提供“把某个 App 的 InputDispatcher 优先级提高”这样的能力。`View.requestUnbufferedDispatch()` 影响的是 App 侧 MotionEvent batching 行为，不等于提升触控 IC 报点率，也不等于绕过 InputDispatcher 的 `waitQueue` / ANR 机制。厂商 ROM 可能有游戏模式或触控调度定制，但没有公开源码或实机 trace 时，只能标为 OEM 差异，不能写成 AOSP 通用行为。
 
-> [待验证: 不同厂商游戏模式对 InputDispatcher 线程优先级、触控报点和事件过滤策略的实机差异]
 
 ### 厂商输入调度策略与可验证边界
 

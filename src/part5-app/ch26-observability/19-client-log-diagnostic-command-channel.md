@@ -51,6 +51,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_at: "2026-06-05T12:27:00+08:00"
 last_task9_at: "2026-06-05T12:27:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-19
 ---
 
 # 26.19 端侧高可用日志与诊断命令通道
@@ -59,45 +61,45 @@ last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 ## 要点
 
 ### 🔹 问题边界：日志、Trace、诊断命令解决的不是同一类问题
-区分常规业务日志、性能 Trace、一次性诊断命令和动态规则下发的适用场景，明确它们在成本、实时性、覆盖率和隐私风险上的差异。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+区分常规业务日志、性能 Trace、一次性诊断命令和动态规则下发的适用场景，明确它们在成本、实时性、覆盖率和隐私风险上的差异。
 
 ### 🔹 日志通道的高可用目标
-覆盖数据不丢、写入开销可控、弱网可恢复、用户维度可回溯、敏感字段可治理五个目标，避免把日志系统做成新的性能问题来源。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+覆盖数据不丢、写入开销可控、弱网可恢复、用户维度可回溯、敏感字段可治理五个目标，避免把日志系统做成新的性能问题来源。
 
 ### 🔹 采样、存储、上报三层架构
-拆出用户采样、事件优先级、本地持久化、后台上报和失败重试几个层次，说明每层可以独立调参，不把所有控制都压到服务端开关里。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+拆出用户采样、事件优先级、本地持久化、后台上报和失败重试几个层次，说明每层可以独立调参，不把所有控制都压到服务端开关里。
 
 ### 🔹 多进程写入与单进程上报的工程边界
-讨论 mmap、文件切换、FileObserver、原子 rename、进程崩溃窗口和本地堆积清理策略，重点放在 Android 多进程应用的端侧实现约束。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+讨论 mmap、文件切换、FileObserver、原子 rename、进程崩溃窗口和本地堆积清理策略，重点放在 Android 多进程应用的端侧实现约束。
 
 ### 🔹 诊断命令通道：拉日志、跑检测、回传证据
-覆盖按用户拉取日志、网络诊断、文件状态检查、配置快照、一次性 Trace 触发等命令类型，并说明命令通道必须具备鉴权、审计、过期和熔断机制。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+覆盖按用户拉取日志、网络诊断、文件状态检查、配置快照、一次性 Trace 触发等命令类型，并说明命令通道必须具备鉴权、审计、过期和熔断机制。
 
 ### 🔹 与 ProfilingManager / Perfetto 的边界
-说明 Android 15+ `ProfilingManager` 可作为系统级 profiling 入口，但不能替代自建日志与业务诊断通道；Perfetto 适合证据包，日志通道适合持续上下文。[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
+说明 Android 15+ `ProfilingManager` 可作为系统级 profiling 入口，但不能替代自建日志与业务诊断通道；Perfetto 适合证据包，日志通道适合持续上下文。
 
 ### 🔹 数据自监控与质量指标
-定义日志到达率、延迟分布、本地积压量、丢弃原因、命令成功率、用户流量成本和隐私拦截次数，作为日志通道自身的运行指标。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+定义日志到达率、延迟分布、本地积压量、丢弃原因、命令成功率、用户流量成本和隐私拦截次数，作为日志通道自身的运行指标。
 
 ### 🔹 隐私、合规与灰度开关
-把诊断能力限定在明确授权、最小采集、字段脱敏、分级审批和自动过期范围内，避免线上排障能力越过用户隐私边界。[已验证: 官方文档, developer.android.com/privacy-and-security/risks/log-info-disclosure]
+把诊断能力限定在明确授权、最小采集、字段脱敏、分级审批和自动过期范围内，避免线上排障能力越过用户隐私边界。
 
 ## 扩展
 
 ### 🔸 Xlog、Logan、Holmes 类方案的结构对比
-比较高性能日志、统一日志平台、动态日志插桩三类方案的成本与风险。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+比较高性能日志、统一日志平台、动态日志插桩三类方案的成本与风险。
 
 ### 🔸 网络诊断命令与客户端 traceId 协同
 补充 DNS、连接、TLS、HTTP、CDN、服务端调用日志之间的证据拼接方式，详见 24.15、26.17 节。
 
 ### 🔸 动态部署与远程调试的风险边界
-梳理动态部署适合补日志和验证假设，远程调试适合受控测试设备，不建议直接进入普通线上用户路径。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+梳理动态部署适合补日志和验证假设，远程调试适合受控测试设备，不建议直接进入普通线上用户路径。
 
 <!-- outline-end -->
 
 端侧日志与诊断命令通道解决同一个现场问题：线上设备出问题时，App 要在不重新发包、不要求用户安装调试包的前提下，把足够可信的证据带回来。本节只讲 App 团队可控的基础设施，26.5 继续负责排障流程，26.12 负责 `ApplicationExitInfo`、`ProfilingManager` 和 `ProfilingTrigger` 的版本化 API 边界。
 
-参考材料把线上疑难问题拆成用户日志、动态调试、动态部署、远程控制和数据上报组件几类。本节借鉴这种覆盖顺序，但所有工程建议按 Android 公开权限模型、ProfilingManager 文档和 AOSP logging 文档重新组织，不复用参考书原文段落。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+线上疑难问题可以拆成用户日志、动态调试、动态部署、远程控制和数据上报组件几类。本节按这种覆盖顺序组织，但所有工程建议均以 Android 公开权限模型、ProfilingManager 文档和 AOSP logging 文档为准。
 
 ## 日志、Trace、诊断命令的分工
 
@@ -110,13 +112,13 @@ last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 | 诊断命令 | 设备当前配置、网络路径、缓存状态、文件状态是否异常 | 中 | 工单、客服反馈、灰度异常、线上告警 | 命令越权、误删数据、重复触发 |
 | 动态规则 / 补日志 | 已有日志不够时，临时扩展观察点 | 中到高 | 指定版本、机型、用户分群 | 代码执行边界、性能退化、审批缺失 |
 
-普通三方 App 不应把系统级 `logcat` 当成线上证据入口。AOSP logging 文档明确要求不要记录 PII，并说明设备日志访问受到限制；第三方 App 访问自身日志不变，但读取全设备日志的能力受系统和 OEM 权限边界约束。[已验证: AOSP 文档, source.android.com/docs/core/tests/debug/understanding-logging][已验证: 官方文档, developer.android.com/privacy-and-security/risks/log-info-disclosure]
+普通三方 App 不应把系统级 `logcat` 当成线上证据入口。AOSP logging 文档明确要求不要记录 PII，并说明设备日志访问受到限制；第三方 App 访问自身日志不变，但读取全设备日志的能力受系统和 OEM 权限边界约束。
 
 日志通道的基线是 App 自己写、自己脱敏、自己上传、自己归档。系统日志、bug report、完整 Perfetto trace 只能作为补充证据，不能替代 App 自建的业务现场。
 
 ## 高可用日志通道的五个目标
 
-参考材料把高可用上报组件拆成数据不丢、实时性和性能三个目标。本节放到日志与诊断场景里，需要再补两项：用户维度可回溯、敏感字段可治理。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+高可用上报组件的基线是数据不丢、实时性和性能三个目标。放到日志与诊断场景里，还需要再补两项：用户维度可回溯、敏感字段可治理。
 
 - **数据不丢**：日志先写入 App 私有目录，再由后台任务上传。进程崩溃、用户切后台、系统杀进程、弱网重试都不能让关键事件只停留在内存队列里。
 - **写入开销可控**：主线程和渲染路径不做压缩、加密、网络发送和大 JSON 序列化。高频日志只写短字段，复杂对象在后台线程展开。
@@ -126,7 +128,7 @@ last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 
 这里的取舍很现实。日志写得越全，越容易引入 I/O、流量和隐私成本；日志写得太少，线上偶发问题只能靠猜。可执行的口径是把日志分成常开字段和临时字段：常开字段只保存排障必需上下文，临时字段只能通过审批后的灰度开关打开，并自动过期。
 
-[已验证: 官方文档, developer.android.com/training/permissions/usage-notes]
+
 
 ## 采样、存储、上报三层架构
 
@@ -134,7 +136,7 @@ last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 
 ### 采样层：按用户、事件和风险分开控制
 
-采样层回答“谁写、写什么、写多久”。参考材料提出 UV 采样、用户标识随机和按天轮换的思路；迁移到线上诊断时，可以保留这种用户分散思想，但要把排障命令和常规日志分开。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+采样层回答“谁写、写什么、写多久”。UV 采样、用户标识随机和按天轮换的思路值得保留；迁移到线上诊断时，要把排障命令和常规日志分开。
 
 - **用户采样**：普通性能日志按匿名用户 ID 做稳定采样，避免同一用户会话内忽开忽关。分桶规则要带版本号，便于回看当时的采样配置。
 - **事件优先级**：Crash、ANR、严重业务失败、支付失败、数据损坏属于高优先级；页面曝光、调试级业务流属于低优先级。高优先级允许更短上传间隔，低优先级可以等 Wi-Fi 或批量上传。
@@ -155,9 +157,9 @@ last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 | 批量缓冲后写文件 | 主路径开销低，便于压缩 | 崩溃窗口可能丢内存队列 | 中低频结构化日志 |
 | mmap / 环形文件 | 高频写入性能好，适合多进程分文件 | 实现复杂，需要处理落盘和文件切换 | APM、埋点、全量日志基础库 |
 
-参考材料中的“多进程写 + mmap”适合大规模日志基础设施，但它不是所有团队的起点。团队早期可以采用“每进程独立文件 + 后台批量上传”的保守版本，先把切分、重试、脱敏、保留期和自监控做完整。等写入量、进程数和性能成本压不住，再引入 mmap 或 native 日志库。
+“多进程写 + mmap”适合大规模日志基础设施，但不是所有团队的起点。团队早期可以采用“每进程独立文件 + 后台批量上传”的保守版本，先把切分、重试、脱敏、保留期和自监控做完整。等写入量、进程数和性能成本压不住，再引入 mmap 或 native 日志库。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+
 
 ### 上报层：单点调度，按优先级组包
 
@@ -177,7 +179,7 @@ last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 
 Android 大型 App 常见主进程、WebView 进程、播放器进程、推送进程、插件进程并存。日志基础库如果让所有进程都通过 IPC 写到一个服务进程，容易把日志写入变成 Binder 堆积；如果所有进程都直接上传，又会放大网络连接、重试和状态同步成本。
 
-推荐边界是“多进程独立写，单进程统一传”。每个进程写自己的当前文件，文件切换后通过原子 rename 移到待上传目录；上传进程监听目录变化或按周期扫描目录，再按优先级组包。参考材料提到原子 rename 和 `FileObserver` 的组合，本节只保留这个设计方向，具体实现要按文件系统、进程保活和厂商兼容性测试确认。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+推荐边界是“多进程独立写，单进程统一传”。每个进程写自己的当前文件，文件切换后通过原子 rename 移到待上传目录；上传进程监听目录变化或按周期扫描目录，再按优先级组包。原子 rename 和 `FileObserver` 的组合是一个可行的设计方向，具体实现要按文件系统、进程保活和厂商兼容性测试确认。
 
 这里有几个容易漏掉的边界：
 
@@ -205,19 +207,19 @@ Android 大型 App 常见主进程、WebView 进程、播放器进程、推送�
 
 命令执行必须有状态机：`received`、`validated`、`running`、`uploaded`、`failed`、`expired`、`blocked_by_policy`。服务端不能只等文件回来；失败回执同样是证据，能说明命令被版本不匹配、权限不足、用户未授权、限流或网络条件挡住。
 
-诊断命令不应直接暴露“执行任意 Java 代码”能力。参考材料提到 Lua 脚本、远程调试、动态部署等进阶方案，它们在超级 App 或受控内测体系里有价值，但普通线上用户路径要收窄为预定义命令。命令越接近代码执行，越要限定目标人群、签名校验、审批流程、回滚方式和自动过期。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+诊断命令不应直接暴露“执行任意 Java 代码”能力。Lua 脚本、远程调试、动态部署等进阶方案在超级 App 或受控内测体系里有价值，但普通线上用户路径要收窄为预定义命令。命令越接近代码执行，越要限定目标人群、签名校验、审批流程、回滚方式和自动过期。
 
 ## 与 ProfilingManager / Perfetto 的边界
 
-Android 15 / API 35 加入 `ProfilingManager`。官方 API 文档说明它支持请求 profiling 并监听结果，类型包括 system trace、Java heap dump、heap profile 和 stack trace；结果文件会放在请求 App 的数据目录，并通过回调返回文件路径。[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingManager]
+Android 15 / API 35 加入 `ProfilingManager`。官方 API 文档说明它支持请求 profiling 并监听结果，类型包括 system trace、Java heap dump、heap profile 和 stack trace；结果文件会放在请求 App 的数据目录，并通过回调返回文件路径。
 
 这让 App 可以把一次性性能证据纳入诊断命令通道，但边界要写清楚：
 
 - **它是 profile 入口，不是日志系统**：`ProfilingManager` 适合抓一次 system trace 或 heap dump；业务日志仍要靠自建通道保存连续上下文。
-- **它有限流和默认时长**：官方指南说明 ProfilingManager 有 rate limiter，并允许通过 builder 设置时长、buffer policy 和 buffer size；如果没有 `CancellationSignal` 或 duration，系统使用默认时长。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture]
+- **它有限流和默认时长**：官方指南说明 ProfilingManager 有 rate limiter，并允许通过 builder 设置时长、buffer policy 和 buffer size；如果没有 `CancellationSignal` 或 duration，系统使用默认时长。
 - **它不暴露完整 Perfetto 配置面**：官方指南标注并非所有 Perfetto 配置都可用于 `ProfilingManager`。复杂系统级追踪仍要回到 13.2 的 Perfetto/adb/internal build 路径。
-- **结果文件要自己管理**：官方 retrieve 文档说明 trace 位置应通过 `ProfilingResult.getResultFilePath()` 获取，记录文件在 App 目录内，App 需要自己处理上传和清理。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze]
-- **触发式采集有版本边界**：官方 trigger-based capture 文档说明 `ProfilingManager` 支持基于系统 trigger 采集 profile，文件位置仍应以 `ProfilingResult#getResultFilePath()` 为准。具体 trigger 类型和 Extension 版本详见 26.12。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture]
+- **结果文件要自己管理**：官方 retrieve 文档说明 trace 位置应通过 `ProfilingResult.getResultFilePath()` 获取，记录文件在 App 目录内，App 需要自己处理上传和清理。
+- **触发式采集有版本边界**：官方 trigger-based capture 文档说明 `ProfilingManager` 支持基于系统 trigger 采集 profile，文件位置仍应以 `ProfilingResult#getResultFilePath()` 为准。具体 trigger 类型和 Extension 版本详见 26.12。
 
 诊断通道调用 `ProfilingManager` 时，命令返回值至少包含 `profiling_type`、`tag`、`duration_ms`、`buffer_size_kb`、`buffer_policy`、`result_file_path`、`error_code`、`error_message`、`rate_limited` 和上传结果。没有这些字段，服务端只知道“抓 trace 失败”，无法区分 API 不支持、系统限流、App 被杀、文件上传失败和策略拦截。
 
@@ -238,13 +240,13 @@ Perfetto 的价值在于解释线程、调度、Binder、锁、I/O、渲染和 C
 | 命令阻断率 | `blocked_by_policy` / 下发命令数 | 评估隐私和审批策略是否过严或误配 |
 | 用户流量成本 | 诊断上传在移动网络和 Wi-Fi 下的字节分布 | 避免排障能力伤害用户体验 |
 
-参考材料强调质量监控和容灾监控，本节把它们落到日志通道的可观测字段上。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+质量监控和容灾监控要落到日志通道的可观测字段上。
 
 自监控事件也要走更轻的通道。比如日志上传失败不能再依赖同一个日志上传任务完整回传；至少要有一个小体积、低频、可降级的 health ping，携带最近一次失败阶段和错误码。否则主通道故障时，监控数据也会一起丢。
 
 ## 隐私、合规与灰度开关
 
-日志与诊断能力默认接触用户数据。Android 官方权限最佳实践要求只在功能需要时请求权限，并尽量减少访问敏感信息；Android 安全文档也把不当日志记录列为信息泄露风险。[已验证: 官方文档, developer.android.com/training/permissions/usage-notes][已验证: 官方文档, developer.android.com/privacy-and-security/risks/log-info-disclosure]
+日志与诊断能力默认接触用户数据。Android 官方权限最佳实践要求只在功能需要时请求权限，并尽量减少访问敏感信息；Android 安全文档也把不当日志记录列为信息泄露风险。
 
 端侧设计要把隐私策略做成技术约束：
 
@@ -259,7 +261,7 @@ Perfetto 的价值在于解释线程、调度、Binder、锁、I/O、渲染和 C
 
 ## Xlog、Logan、Holmes 类方案的结构对比
 
-参考材料中的 Xlog、Logan、Holmes 对应三种能力层级：高性能本地日志、统一日志平台、动态日志补充。它们值得借鉴的是分层思路，不是把某个开源库直接塞进工程。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+Xlog、Logan、Holmes 对应三种能力层级：高性能本地日志、统一日志平台、动态日志补充。值得借鉴的是分层思路，不是把某个开源库直接塞进工程。
 
 | 方案类型 | 主要价值 | 成本 | 适合阶段 |
 |---|---|---|---|
@@ -287,7 +289,7 @@ Perfetto 的价值在于解释线程、调度、Binder、锁、I/O、渲染和 C
 
 动态部署适合补日志、打开开关、验证小范围假设。远程调试适合内测设备、企业设备或用户明确配合的专项问题。二者都不应成为普通线上排障的默认入口。
 
-参考材料提到 JDWP 通道改造、动态部署和 Lua 远程控制，这些方案证明端侧可观测能力可以继续扩展，但它们的风险也明显高于拉日志和跑诊断命令。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+JDWP 通道改造、动态部署和 Lua 远程控制这些方案证明端侧可观测能力可以继续扩展，但风险明显高于拉日志和跑诊断命令。
 
 - **动态部署**：只能发布经过签名校验和灰度审批的补丁，动作限定在补日志、调整采样、修复低风险逻辑。补丁要有命中范围、回滚条件、过期时间和版本白名单。
 - **远程调试**：只在可控设备使用，普通用户设备上会遇到授权、稳定性、隐私和调试协议暴露风险。混淆包调试也要保证符号和权限隔离。

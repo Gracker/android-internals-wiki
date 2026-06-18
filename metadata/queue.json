@@ -177,5 +177,26 @@
     "status": "pending",
     "created_date": "2026-06-19",
     "source": "task2a-knowledge-gap"
+  },
+  {
+    "section": "15.2",
+    "section_title": "如何区分系统问题和 App 问题",
+    "priority": 90,
+    "reason": "[review回炉] 全文格式损坏：27/32 个 markdown 标题（## / ###）与后续正文内容合并到同一行，列表项也被合并。需要恢复标题与正文之间、列表项之间的换行分隔。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文（L73-L135 区域最严重）",
+        "detail": "markdown 格式损坏：所有 ## 和 ### 标题后没有换行，标题文字与正文第一句紧贴在同一行。列表项（- 开头）之间也丢失换行，多个列表项合并为一行。整体文件仅 135 行但实际内容量远超。具体示例：L77「## 为什么一定要区分系统问题和 App 问题很多性能排查卡在后半段——trace 够了」应为两行。",
+        "suggestion": "Task2B 需要做全文行级格式修复：1) 每个 ## / ### 标题独占一行，后接空行；2) 列表项 - / 数字列表各占一行；3) 代码块 ``` 前后换行；4) 保持正文内容不变，仅修复换行结构。"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-19T02:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-19-02-review.md"
   }
 ]

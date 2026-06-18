@@ -31,23 +31,23 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-28"
+reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-28T07:05:00+08:00"
+last_task6_at: "2026-06-19T02:06:00+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-18T14:33:37+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 last_task2b_lite_at: "2026-05-28"
-last_task6_review_log: "logs/review/2026-05-28-07-review.md"
-task6_l1_l2_fixes: 1
+last_task6_review_log: "logs/review/2026-06-19-02-review.md"
+task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 Task6：Task9 auto-fix 回流后写作复审通过；L1/L2 小修 1 处，统一参考资料中的 JankStats API 版本口径；无 L3/L4 回炉项，送 Task9 复核。"
+task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（ViewRootImpl 行号/JankTracker/JankInfo/Cuj 锚点/CUJ counter 进程过滤/weighted jank 口径）回流后写作层复审通过；L1 小修 1 处（禁用词「矩阵」→「表」）；无 L3/L4 回炉项，送 Task9 终审。"
 last_task9_autofix_at: "2026-06-18"
 last_task9_review_log: "logs/deep-review/2026-06-18-14-audit.md"
 task9_review_notes: "2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
@@ -515,7 +515,7 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 
 v54.0 已有 `index.ts` + `explore_page.ts` + 完整的 `query_builder/` 子目录、节点注册表、节点图渲染、Undo/Redo、Recent Graphs，**只是缺少**：`dashboard/` 子目录、`data_explorer_tabs_storage.ts`（多 tab）、`pbtxt_import.ts`、DashboardNode / TraceSummaryNode / GroupNode。
 
-### 2. 节点类型矩阵
+### 2. 节点类型表
 
 `nodeRegistry.register(id, descriptor)` 集中注册节点，`descriptor` 包含 `name` / `description` / `icon` / `hotkey` / `type: 'source' | 'modification'` / `nodeType: NodeType` / 可选 `preCreate`（弹窗预创建）/ `factory()` / `deserialize()`。
 
