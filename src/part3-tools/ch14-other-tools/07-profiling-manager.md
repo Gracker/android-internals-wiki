@@ -41,7 +41,7 @@ pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-18
-task2b_state: fixed
+
 task2b_result: fixed-lite
 last_task2b_at: "2026-05-18T15:23:37+08:00"
 reviewed_by: openclaw-task6
