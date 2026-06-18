@@ -3,13 +3,13 @@ title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-task6_reviewed_date: "2026-06-17"
-last_task6_at: "2026-06-19T02:06:00+08:00"
-task6_result: needs-rework
+task6_state: reviewed
+task6_reviewed_date: "2026-06-19"
+last_task6_at: "2026-06-19T03:08:00+08:00"
+task6_result: pass-light-edit
 last_task2b_lite_at: 2026-06-17
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
@@ -38,10 +38,10 @@ tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
 last_task6_audit: "2026-06-18"
 task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-06-19-02-review.md"
-task6_l1_l2_fixes: 8
+last_task6_review_log: "logs/review/2026-06-19-03-review.md"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-19 Task6 revisiting-review: needs-rework。Task9 auto-fix（Perfetto RSS anon GLOB 顺序）正确；但发现 B 类格式问题：全文 27/32 个标题与正文之间的换行丢失（heading+body 合并到同一行），列表项同样合并，属于大规模格式损坏，需 Task2B 重新排版。"
+task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task2B 已修复全文格式损坏（标题换行恢复），验证通过。Task9 auto-fix（Perfetto RSS anon GLOB 顺序）正确。仅 1 处 L1 修复：补全缺失的 outline-end 标记。无 B 类问题。"
 task9_state: pending
 task9_result: auto-fixed
 last_task9_at: "2026-06-19T00:26:33+08:00"
@@ -52,7 +52,7 @@ task9_review_notes: "2026-06-19 Task9 deep-review: auto-fixed。修复 Perfetto 
 p0: 1
 p1: 0
 p2: 0
-review_round: 3
+review_round: 4
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: 2026-06-19T02:53:39+08:00
@@ -83,6 +83,8 @@ last_task2b_by: openclaw-task2b
 
 🔸 多 App 共存时的性能归因
 - 🔸 系统级性能回归的排查方法
+
+<!-- outline-end -->
 
 ## 为什么一定要区分系统问题和 App 问题
 
