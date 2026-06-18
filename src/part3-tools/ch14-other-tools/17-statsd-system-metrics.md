@@ -1,13 +1,14 @@
 ---
-title: "statsd 与系统级指标采集"
-chapter: "14.17"
+
+title: statsd 与系统级指标采集
+chapter: 14.17
 status: ready-for-review
-drafted_date: "2026-05-20"
-applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-05-20"
-last_verified_against: "AOSP main packages/modules/StatsD, frameworks/proto_logging/stats/atoms.proto, source.android.com Statsd 文档"
+drafted_date: 2026-05-20
+applicable_versions: Android 11 (API 30) - Android 17 (API 37)
+last_verified: 2026-05-20
+last_verified_against: AOSP main packages/modules/StatsD, frameworks/proto_logging/stats/atoms.proto, source.android.com Statsd 文档
 confidence: medium
-sources:
+sources: 
   - type: official
     path: "https://source.android.com/docs/core/ota/modular-system/statsd"
   - type: aosp
@@ -24,10 +25,11 @@ sources:
     path: "https://developer.android.com/tools/adb"
 tags: [statsd, observability, perfetto, tools]
 related_chapters: ["13.9", "13.10", "14.10", "15.3", "26.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-20"
-gap_source: "AOSP结构/官方文档/已有章节深挖"
+created_by: task2a-knowledge-gap
+created_date: 2026-05-20
+gap_source: AOSP结构/官方文档/已有章节深挖
 ---
+-
 
 # 14.17 statsd 与系统级指标采集
 

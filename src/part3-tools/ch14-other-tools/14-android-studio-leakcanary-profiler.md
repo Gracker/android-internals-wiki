@@ -1,15 +1,16 @@
 ---
-title: "Android Studio LeakCanary Profiler 与堆转储分析"
-chapter: "14.14"
-section: "14.14"
+
+title: Android Studio LeakCanary Profiler 与堆转储分析
+chapter: 14.14
+section: 14.14
 status: ready-for-review
-drafted_date: "2026-05-17"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android Studio Panda 4+ / Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-17"
-last_verified_against: "Android Studio Panda preview/stable docs, Android Developers heap dump docs, Android 17 behavior changes, LeakCanary docs"
+drafted_date: 2026-05-17
+drafted_by: openclaw-task2a
+applicable_versions: Android Studio Panda 4+ / Android 8.0 (API 26) - Android 17 (API 37)
+last_verified: 2026-05-17
+last_verified_against: Android Studio Panda preview/stable docs, Android Developers heap dump docs, Android 17 behavior changes, LeakCanary docs
 confidence: medium
-sources:
+sources: 
   - type: official
     path: "https://developer.android.com/studio/preview/features"
   - type: official
@@ -32,10 +33,11 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md"
 tags: [android-studio, profiler, leakcanary, memory, hprof, heap-dump]
 related_chapters: ["10.2", "14.1", "14.3", "19.5", "23.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-17"
-gap_source: "官方文档/每日信息/素材驱动"
+created_by: task2a-knowledge-gap
+created_date: 2026-05-17
+gap_source: 官方文档/每日信息/素材驱动
 ---
+-
 
 # 14.14 Android Studio LeakCanary Profiler 与堆转储分析
 

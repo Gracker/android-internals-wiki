@@ -1,14 +1,15 @@
 ---
-title: "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源"
-chapter: "14.22"
+
+title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
+chapter: 14.22
 status: ready-for-review
-drafted_date: "2026-06-07"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-07"
-last_verified_against: "AOSP android-17.0.0_r1 + KOOM 2.2.1 + Perfetto docs"
+drafted_date: 2026-06-07
+drafted_by: openclaw-task2a
+applicable_versions: Android 12 (API 31) - Android 17 (API 37)
+last_verified: 2026-06-07
+last_verified_against: AOSP android-17.0.0_r1 + KOOM 2.2.1 + Perfetto docs
 confidence: medium
-sources:
+sources: 
   - type: aosp
     path: "art/runtime/hprof/hprof.cc"
   - type: aosp
@@ -23,10 +24,11 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md"
 tags: [hprof, heap-dump, art, perfetto, java_hprof, memory-analysis]
 related_chapters: ["10.1", "10.2", "14.3", "14.14", "19.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-07"
-gap_source: "素材驱动/DeepResearch/AOSP结构"
+created_by: task2a-knowledge-gap
+created_date: 2026-06-07
+gap_source: 素材驱动/DeepResearch/AOSP结构
 ---
+-
 
 # 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 
