@@ -81,24 +81,24 @@
   {
     "section": "15.2",
     "section_title": "如何区分系统问题和 App 问题",
-    "priority": 70,
-    "reason": "[audit发现] 正文全部压缩在单行（13803 chars on line 65），markdown结构标记缺少换行分隔，导致渲染异常。需重建为标准多行markdown格式。",
+    "priority": 95,
+    "reason": "[Task2B Lite 严重发现] 前次 Lite 修复（commit ec2e99c4）导致正文截断：29612→2111 字节，丢失约 93% 内容。需从 git 2c5c7c85 恢复原始内容并正确拆分多行。",
     "material_paths": [
       "logs/review/2026-06-18-08-audit.md"
     ],
     "review_issues": [
       {
-        "type": "格式修复",
-        "location": "正文全部（行65，13803字符）",
-        "detail": "整个正文内容位于单行，所有##/###/- /```/|/ >标记之间缺少\\n。需在结构标记前插入换行符。",
-        "suggestion": "按markdown结构标记拆分为多行。注意保护代码块内部内容不被拆分。"
+        "type": "数据丢失",
+        "location": "全文",
+        "detail": "正文从 26804 字符截断至约 500 字符，内容在'也就是'处中断",
+        "suggestion": "从 git commit 2c5c7c85 恢复完整内容，按 markdown 结构标记拆分为标准多行格式"
       }
     ],
-    "added_by": "task6-audit",
-    "added_at": "2026-06-18T08:15:00",
+    "added_by": "task2b-lite",
+    "added_at": "2026-06-18T21:40:52+08:00",
     "status": "pending"
   },
-    {
+  {
     "section": "19.17",
     "section_title": "Firebase Performance 监控实战",
     "title": "Firebase Performance 监控实战",
@@ -145,5 +145,13 @@
     "completed_at": "2026-06-18T15:35:00+08:00",
     "completed_by": "task2b-lite",
     "resolution": "已补充完整10锚点大纲，与正文内容完全匹配"
+  },
+  {
+    "file": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part5-app/ch23-memory/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md",
+    "priority": 80,
+    "created_at": "2026-06-18T21:20:27.299445+08:00",
+    "source": "knowledge_gap",
+    "title": "Android 17 AI 推理加速与 NeuralNetworks HAL 优化",
+    "score": 14
   }
 ]
