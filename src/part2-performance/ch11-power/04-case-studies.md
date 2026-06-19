@@ -933,3 +933,10 @@ FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减
 - 类型：DeepResearch 调研结果
 - 摘要：Adaptive Battery 在 AOSP 主线不是独立服务，而是「写入接口+衰减契约」：UsageStatsManagerInternal.setAppStandbyBuckets() 走 REASON_MAIN_PREDICTED 路径，AppStandbyController 把 lastPredictedBucket 持久化，12h 内调度器读取，超过则回退到时间阈值。桶值被三方消费：JobScheduler.standbyBucketForPackage()→QuotaController.isWithinQuotaLocked()（决定 EJ/Job/Session 配额）、AppStateTracker.StandbyTracker（EXEMPTED 集 + RIL 拉活旁路）、AppStateTracker.mForceAllAppsStandby（OEM 强制降级钩子）。FREQUENT→RARE 等价于 Job 配额衰减 4 倍、Session 衰减 2.5 倍。
 
+
+### Android 12+ 隐私沙盒对定位功耗的三层判定链
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-privacy-sandbox-location-power-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 12+ 定位权限从 Manifest 声明扩展为三层判定链：LocationPermissions.getPermissionLevel() 解析权限位 → LocationPermissionsHelper.hasLocationPermissions() 叠加 AppOpsManager 运行时开关 → LocationProviderManager.isActive() 叠加 LOCATION_MODE_FOREGROUND_ONLY + isAppForeground() 前台判定。后台应用即使持有 ACCESS_FINE_LOCATION 也无法获得 fix，避免了无效 GPS 锁定、Wi-Fi 扫描、传感器调度的全部伴随电流。后台 interval 被强制拉大到 getBackgroundThrottleIntervalMs()（默认 30 分钟）。
+- 注入时间：2026-06-19
+- 价值：为 §11.4.2 定位服务功耗优化补充 Android 12+ 隐私沙盒的源码级功耗分析

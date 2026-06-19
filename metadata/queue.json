@@ -266,7 +266,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-19T06:14:05.963030",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-19T14:51:57.266963+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "DeepResearch 材料已作为参考资料注入：Android 17 StrictMode FlaggedApi 集成与 ImplicitUriPermissionGrantViolation"
     },
     {
       "section": "23.7",
@@ -286,7 +289,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-19T06:14:05.963030",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-19T14:51:57.266963+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "DeepResearch 材料此前已注入正文（全链路PSS采样路径、三层采样性能开销对照）；无需重复注入"
     },
     {
       "section": "11.4",
@@ -306,7 +312,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-19T06:14:05.963030",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-19T14:51:57.266963+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "DeepResearch 材料已作为参考资料注入：Android 12+ 隐私沙盒对定位功耗的三层判定链"
     }
   ],
   "queue": [
