@@ -5,7 +5,7 @@ section: "2.17"
 status: "ready-for-review"
 applicable_versions: "Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API 37)"
 last_verified: "2026-04-19"
-last_verified_against: "AOSP platform/frameworks/opt/gamesdk refs/heads/main; Perfetto FrameTimeline SQL; developer.android.com frame-pacing docs"
+last_verified_against: "frameworks/opt/gamesdk refs/heads/main（该仓库无 android-17/16/15 platform tag，main 分支内容未证明进入 Android 17）; Perfetto FrameTimeline SQL @ android-17.0.0_r1; developer.android.com frame-pacing docs"
 confidence: medium
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
@@ -19,7 +19,7 @@ related_chapters: ["2.3", "2.6", "2.13", "2.18", "16.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
@@ -27,16 +27,17 @@ reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T05:05:00+08:00"
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-08-05-review.md"
-pipeline_stage: "task2b_pending"
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_task6_reviewed_date: "2026-04-30"
 task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-20T07:28:47+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-20-07-audit.md"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-06-20"
 last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
 review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML 与轻量措辞，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 1；Android 17 tag 下 MessageQueue 路径已拆分，正文旧路径与 mLock 表述错误；frameworks/opt/gamesdk 关键源码锚点仍依赖 main，未证明进入 Android 17，已写入 queue。"
 task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 1；Android 17 tag 下 MessageQueue 路径已拆分，正文旧路径与 mLock 表述错误；frameworks/opt/gamesdk 关键源码锚点仍依赖 main，未证明进入 Android 17，已写入 queue。"
@@ -81,6 +82,8 @@ Swappy 负责决定这一帧该什么时候等、什么时候交、要不要设�
 - 🔸 **与 ARR 的关系**：Swappy 会投票 frame rate 或选择 display mode，平台级 Adaptive Refresh Rate 的模式切换细节放到 §2.18 展开。
 - 🔸 **引擎集成的表述边界**：Unity / Unreal 的版本线变化很快，没有 release note 支撑时，不把“默认启用”写成事实。
 <!-- outline-end -->
+
+> **源码版本说明**：`frameworks/opt/gamesdk` 仓库在 `android-17.0.0_r1`、`android-16.0.0_r1`、`android-15.0.0_r1` 下均无 `games-frame-pacing` 目录，本文 Swappy 源码引用基于 `refs/heads/main` 分支。这些内容属于 AGDK 维护线，未证明已进入 Android 17 platform tag，如需精确对应请查阅 AGDK release notes。
 
 ## 帧节奏问题在 trace 里长什么样
 
@@ -396,19 +399,19 @@ Android 16 设备的 Vulkan 能力基线由 Khronos VP_ANDROID_16_minimums profi
 
 `VK_KHR_present_id` 本身是给 present 操作打递增 ID 的扩展，不等同于 display driver 返回完成时间戳。即使 Swappy 未来接入该扩展，帧上屏时刻的确认仍然需要 display timing 支持。当前 Swappy Vulkan 路径没有使用 `VK_KHR_present_id`，文档或文章不应把"Vulkan 1.4 可用"写成"Swappy 已接入"。
 
-> **注意**：Swappy 当前未接入 `VK_KHR_present_id` 和 `VK_KHR_present_wait`。即使设备支持这些扩展，实际能否减少 present 确认延迟还需 benchmark 验证——设备、Android build、GPU/driver、swapchain present mode、是否启用 `VK_GOOGLE_display_timing` 都会影响结果，不能仅凭扩展声明下结论。
+> **注意**：Swappy 当前未接入 `VK_KHR_present_id` 和 `VK_KHR_present_wait`（前者是后者启用前置；两者均需通过 `VkPhysicalDevice*FeaturesKHR` 查询）。即使设备支持这些扩展，实际能否减少 present 确认延迟还需 benchmark 验证——设备、Android build、GPU/driver、swapchain present mode、是否启用 `VK_GOOGLE_display_timing` 都会影响结果，不能仅凭扩展声明下结论。
 
 ### DeliQueue：Java MessageQueue 的无锁重构
 
 Android 17 对 Java 侧 `MessageQueue` 做了无锁队列重构（DeliQueue），替换了沿用多年的 `Looper` + `MessageQueue` 锁竞争模型。
 
-**对 Java Choreographer 的影响（targetSdk 37+）。** Android 17 behavior changes 明确限定：apps targeting Android 17 (API 37) or higher 才会收到 DeliQueue 的无锁 `MessageQueue` 实现。主线程的 `MessageQueue.nativePollOnce()` 和其他线程的同步操作共用一把 `mLock`，锁竞争会导致 VSync 回调到达时间抖动。DeliQueue 通过多生产者 lock-free Treiber stack + Looper 侧 min-heap 的无锁结构消除了这把锁（详见 §16.4）。只有 targetSdk ≥ 37 且运行在 Android 17+ 设备上的应用，使用 Java `Choreographer.FrameCallback` 时才会直接受益。targetSdk < 37 的应用即使跑在 Android 17 上，MessageQueue 仍走原有锁路径。
+**对 Java Choreographer 的影响（targetSdk 37+）。** Android 17 behavior changes 明确限定：apps targeting Android 17 (API 37) or higher 才会收到 DeliQueue 的无锁 `MessageQueue` 实现。Legacy `MessageQueue`（`LegacyMessageQueue/MessageQueue.java`）中，`nativePollOnce()` 返回后通过 `synchronized (this)` 保护队列读写，其他线程的 `enqueueMessage()` 也竞争同一把 monitor，锁竞争会导致 VSync 回调到达时间抖动。DeliQueue（`CombinedDeliMessageQueue/MessageQueue.java`）通过多生产者 lock-free Treiber stack + Looper 侧 min-heap 的无锁结构消除了这把 monitor（详见 §16.4）。只有 targetSdk ≥ 37 且运行在 Android 17+ 设备上的应用，使用 Java `Choreographer.FrameCallback` 时才会直接受益。targetSdk < 37 的应用即使跑在 Android 17 上，MessageQueue 仍走原有锁路径。
 
 **对 Swappy 的 NDK AChoreographer 路径，影响需要分两层看。** Swappy 的 Vulkan/OpenGL 路径走的是 NDK `AChoreographer` 回调，不直接经过 Java `MessageQueue`。DeliQueue 改造的是 Java 层 `MessageQueue`，目前没有 AOSP commit 或公开文档证明 NDK `AChoreographer` / `ALooper` 的回调路径也做了同样的无锁改造。如果 NDK AChoreographer 的底层仍然走传统 `Looper` 管道，DeliQueue 改善的是 Java 侧回调抖动，不直接传导到 Swappy native 回调。
 
 > **注意**：DeliQueue 改造的是 Java 层 `MessageQueue`，NDK `AChoreographer` / `ALooper` 的回调路径是否做了同样的无锁改造，目前没有公开文档确认。如果 NDK 路径已同步改造，Swappy `onPreSwap()` 中距下一个 VSync 的时间估算精度会受益，高刷设备上效果更明显。
 
-[已验证: AOSP frameworks/base/core/java/android/os/MessageQueue.java (DeliQueue Java 层实现), Swappy × Choreographer × Android 17 架构深研]
+[已验证: AOSP frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java @ android-17.0.0_r1; Swappy × Choreographer × Android 17 架构深研]
 
 ## 参考资料
 
