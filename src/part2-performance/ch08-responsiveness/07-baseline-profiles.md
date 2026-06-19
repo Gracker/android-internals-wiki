@@ -12,7 +12,7 @@ last_verified_against: developer.android.com create/debug/profileable docs + AOS
 reviewed_date: "2026-05-27"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 confidence: medium
 sources:
 - type: official
@@ -35,28 +35,29 @@ tags:
 - dexopt
 - startup
 - performance
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
 review_round: 6
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-27T04:23:00+08:00"
+last_task9_at: "2026-06-19T20:35:11+08:00"
 last_task6_audit: '2026-06-11'
 last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
-task9_review_notes: "2026-05-27 Task9 04:23：pass-tech-review。未发现 P0/P1；Baseline/ProfileInstaller/Startup Profile 版本边界通过，另记录 1 条 P2 量化数据建议，自动晋升 finalized。"
-last_task9_audit: 2026-05-25
+task9_review_notes: "2026-06-19 Task9 idle audit: auto-fixed。修正 ART Service AOSP 源码路径为 platform/art/artd 与 platform/art/libartservice；补 ProfileVerifier 仅支持 Android 9+ 的版本边界。未写 queue。"
+last_task9_audit: "2026-06-19"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task6_at: "2026-05-27T04:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-04-review.md"
 task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-27-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-19-20-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
+last_task9_autofix_at: "2026-06-19"
 ---
 # 8.7 Baseline Profiles 与编译优化实践
 
@@ -80,7 +81,7 @@ Baseline Profiles 的作用是让开发者在 APK 中预置一份"热点方法�
   Google Play、Android Studio/Gradle、其他 installer + `ProfileInstaller` 的行为不同，`verify` 只表示当前还没看到已编译产物，不等于 APK 或 AAB 里没有 Baseline Profile。
 
 - 🔹 **验证路径先看编译状态，再看启动收益**：[已验证: debug docs + Macrobenchmark docs]
-  编译状态用 `ProfileVerifier` 或 `dumpsys package dexopt`，收益用 Macrobenchmark 的 TTID / TTFD 对比 `CompilationMode.None()` 与 `CompilationMode.Partial()`。
+  编译状态用 `ProfileVerifier`（Android 9+）或 `dumpsys package dexopt`，收益用 Macrobenchmark 的 TTID / TTFD 对比 `CompilationMode.None()` 与 `CompilationMode.Partial()`。
 
 - 🔹 **`<profileable>` 与 OEM dexpreopt 要分开写**：[已验证: manifest docs + AOSP build 资料]
   `<profileable>` 元素和 `android:shell` 都从 API 29 开始可用；API 30 新增的是 `android:enabled`。`WITH_DEXPREOPT_*` 属于系统镜像 preopt 开关，和应用侧 Baseline Profiles 不是一套机制。
@@ -172,13 +173,15 @@ Google 的通用结论是 **15-30% 的启动速度提升**，实际公开案例�
 | Android Studio / Gradle 安装的 non-debuggable build（AGP < 8.4） | APK 自带 Baseline Profile | 不会自动编译；需要 `ProfileInstaller` 入队或手工 `cmd package compile` | `ProfileVerifier`、`dumpsys package dexopt` |
 | 其他 installer / 侧载 | APK 自带 Baseline Profile，`ProfileInstaller` 负责把 profile 入队 | 常见为等待下一次 `bg-dexopt`；线下要立刻确认时，可手工执行 `cmd package compile -r bg-dexopt` 或 `cmd package compile -m speed-profile -f` | `ProfileVerifier`、`dumpsys package dexopt` |
 
+`ProfileVerifier` 的查询能力从 Android 9（API 28）开始可用。Android 7/8 仍在 Baseline Profile 的适用范围内，但验证状态时应优先看 ADB 编译状态和启动基准，不要把 `RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION` 误判成 profile 没有生效。
+
 AGP 8.4 是自动编译的分界线。AGP 8.4+ 通过 Android Studio 或 Gradle 安装 non-debuggable build 时，设备端会自动触发 `speed-profile` 编译。AGP 8.4 之前的版本或其他 installer（如 `adb install`、第三方工具）不会自动编译，需要依赖 `ProfileInstaller` 库把 profile 入队，或手工执行 `cmd package compile`。
 
 无论哪条路径，`/data/misc/profiles/...` 放的是 Profile 数据，`/data/app/.../oat/arm64/base.odex` 放的是编译后的应用 OAT 产物。把这两类目录分开看，`dumpsys package dexopt` 的输出才不会读反。
 
 ### ART Service 与 Profile 管理
 
-Android 14 之后，`dexopt` 管理由 ART Mainline 模块内的 ART Service 承担。源码锚点在 `packages/modules/Art/artd/`，核心职责包括：接收 `cmd package compile` 请求、调度后台 dexopt job、管理编译状态与 Profile 数据。应用侧常用的入口有两个：`cmd package compile -r bg-dexopt` 触发后台编译语义，`cmd package compile -m speed-profile -f` 直接强制 speed-profile 编译。写验证步骤时，命令口径最好和官方调试文档保持一致：
+Android 14 之后，`dexopt` 管理由 ART Mainline 模块内的 ART Service 承担。Android 17 源码锚点在 AOSP `platform/art/artd/` 和 `platform/art/libartservice/`：前者承接 artd 侧服务，后者包含 ART Service 控制面与 dexopt 调度相关逻辑。应用侧常用的入口有两个：`cmd package compile -r bg-dexopt` 触发后台编译语义，`cmd package compile -m speed-profile -f` 直接强制 speed-profile 编译。写验证步骤时，命令口径最好和官方调试文档保持一致：
 
 ```bash
 # 触发一次后台 dexopt 语义的编译
@@ -200,7 +203,7 @@ adb shell dumpsys package dexopt | grep -A 2 com.example.app
 - `reason = install-dm / bg-dexopt / cmdline`：分别对应安装期、后台任务和手工 ADB 触发
 - `location is /data/app/.../oat/arm64/base.odex`：这是编译产物目录，不是 Profile 数据目录
 
-如果需要在应用内自检，官方更推荐 `ProfileVerifier`。它能区分“包里没有 Baseline Profile”“已入队等待编译”“已经按 Profile 编译”等状态，适合接到 debug build 或灰度埋点里。
+如果需要在应用内自检，官方更推荐 `ProfileVerifier`。它能区分“包里没有 Baseline Profile”“已入队等待编译”“已经按 Profile 编译”等状态，适合接到 debug build 或灰度埋点里。这个入口只支持 Android 9（API 28）及更高版本；Android 7/8 仍可携带 Baseline Profile，但状态验证要依赖 ADB、`dumpsys package dexopt` 或 Macrobenchmark 对比。
 
 ### Cloud Profiles 的配合
 
@@ -322,7 +325,7 @@ Baseline Profiles 和 AutoFDO 都属于 Profile-Guided Optimization，但它们�
 
 ### 2. 确认设备端已经完成 `speed-profile` 编译
 
-应用安装到设备后，用 `ProfileVerifier` 或 ADB 看状态：
+应用安装到设备后，Android 9+ 可以用 `ProfileVerifier` 或 ADB 看状态；Android 7/8 走 ADB 路径：
 
 ```bash
 adb shell cmd package compile -r bg-dexopt com.example.app
@@ -375,7 +378,7 @@ AAB 里的 `BUNDLE-METADATA` 是构建产物视角，安装到设备后不会原
 
 - APK 可以携带 `baseline.prof`，这表示安装包里带了规则，不等于设备侧已经生成 `speed-profile` 产物
 - 通过其他 installer 或侧载安装时，Jetpack `ProfileInstaller` 负责把 profile 入队，等待下一次后台 DEX 优化流程处理
-- 想确认当前设备是否已经吃到编译收益，还是要看 `ProfileVerifier` 或 `dumpsys package dexopt`；需要立即验证时，用 `cmd package compile -m speed-profile -f`，要模拟后台任务语义时再用 `cmd package compile -r bg-dexopt`
+- 想确认当前设备是否已经吃到编译收益，Android 9+ 可以看 `ProfileVerifier`，所有版本都应看 `dumpsys package dexopt`；需要立即验证时，用 `cmd package compile -m speed-profile -f`，要模拟后台任务语义时再用 `cmd package compile -r bg-dexopt`
 
 所以，非 Google Play 渠道并不是拿不到 Baseline Profile 收益，而是“何时完成编译”取决于安装器、`ProfileInstaller` 和后台 dexopt 是否已经跑完。Cloud Profiles 和 Cloud Compilation 仍然依赖 Google Play 服务，离线渠道拿不到这两类分发增强能力。
 
@@ -393,7 +396,7 @@ AAB 里的 `BUNDLE-METADATA` 是构建产物视角，安装到设备后不会原
 排查顺序也固定下来：
 
 1. 检查 APK / AAB 里有没有 `baseline.prof`
-2. 用 `ProfileVerifier` 或 `dumpsys package dexopt` 看设备是否进入 `speed-profile`
+2. Android 9+ 用 `ProfileVerifier`，所有版本用 `dumpsys package dexopt` 看设备是否进入 `speed-profile`
 3. 仍停在 `verify` 时，先跑 `adb shell cmd package compile -m speed-profile -f com.example.app`
 4. 再用 Macrobenchmark 对同一包做 `None()` / `Partial()` 对比
 
