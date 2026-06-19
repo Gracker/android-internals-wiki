@@ -53,13 +53,12 @@ rework_date: "2026-04-30"
 rework_by: "task2b-rework"
 pipeline_stage: ready-to-publish
 task6_state: "reviewed"
-last_task6_audit: "2026-05-22"
+last_task6_audit: "2026-06-19"
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-04T10:50:00+08:00"
-last_task2b_at: "2026-05-24T11:16:52+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-05"
 last_task9_at: "2026-06-05T18:32:25+08:00"
