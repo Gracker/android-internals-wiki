@@ -51,7 +51,7 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1�
 last_task6_at: "2026-05-26T04:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-26-04-review.md"
 task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: "task6_pending"
 task9_result: auto-fixed
 task9_state: "reviewed"

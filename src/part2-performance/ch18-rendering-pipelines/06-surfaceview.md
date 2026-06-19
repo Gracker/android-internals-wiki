@@ -50,7 +50,7 @@ last_task2b_at: "2026-05-24T11:16:52+08:00"
 last_task2b_lite_at: "2026-05-28"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
-status: finalized
+status: ready-for-review
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
