@@ -49,7 +49,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-06T09:20:00+08:00"
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-last_task6_audit: "2026-06-06"
+last_task6_audit: "2026-06-19"
 task6_result: "pass-light-edit"
 review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatter 标签、禁用词替换、段落拆分、代码注释格式统一）。回炉
   4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
@@ -99,7 +99,6 @@ task9_review_notes: "2026-06-06 09:20 Task9 deep-review: pass-tech-review。Velo
 
 在这条路径上的任何额外开销，例如对象分配、不必要的计算、过深的 View 遍历，都会在快速滑动时被放大。
 
-本节将从 VelocityTracker 的速度计算算法、GestureDetector 的状态机设计、手势冲突的解决机制三个核心维度展开，最终落到性能优化的实践建议。
 
 ## VelocityTracker：速度计算的底层引擎
 
@@ -325,7 +324,7 @@ if (dispatchNestedScroll(dxConsumed, dyConsumed, 0, dyUnconsumed, mScrollOffset)
 }
 ```
 
-这里引用的是 AndroidX `NestedScrollView`，不是 `frameworks/base` 里的 framework 代码。原因很简单，NestedScrolling 支持类长期维护在 AndroidX，正文里的来源也要按这个边界来标。
+这里引用的是 AndroidX `NestedScrollView`，不是 `frameworks/base` 里的 framework 代码。NestedScrolling 支持类长期维护在 AndroidX，正文里的来源也按这个边界来标。
 
 **性能影响**：每次 ACTION_MOVE 都会触发 `dispatchNestedPreScroll()` 和 `dispatchNestedScroll()` 的调用。这些调用本身非常轻量，主要是在 Parent 链上做回调。
 
