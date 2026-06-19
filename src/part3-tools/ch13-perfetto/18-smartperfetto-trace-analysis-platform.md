@@ -2,7 +2,7 @@
 title: "SmartPerfetto 与可复用 Trace 分析平台"
 chapter: "13.18"
 section: "13.18"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-18"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；Perfetto trace schema / stdlib 能力按工具版本降级"
@@ -17,17 +17,17 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
+task2b_state: fixed
+task2b_result: fixed-lite
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-19T15:26:23+08:00"
@@ -35,6 +35,7 @@ last_task9_review_log: "logs/deep-review/2026-05-28-12-deep-review.md"
 task9_review_notes: "2026-05-28 11 Task9 auto-fix: 对齐 SmartPerfetto main 标准对比指标列表与回填能力边界；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-19 15 Task9 闲时抽检：发现 SmartPerfetto main 运行时边界已从双运行时扩展为四类 runtime/provider 路径，写入 P1 回炉。"
 last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
+last_task2b_lite_at: 2026-06-19
 last_task6_at: "2026-05-28T12:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-12-review.md"
 last_task9_audit: "2026-06-19"
@@ -82,8 +83,8 @@ p2: 0
 ### 🔹 多 Trace 对比与性能回归判断
 说明实时 reference trace 对比和 analysis result snapshot 对比的差异，覆盖 baseline / candidates、标准化指标、缺失指标回填、显著变化阈值和报告复核方式。
 
-### 🔹 Provider Manager 与双运行时边界
-说明 provider profile、active profile、env fallback、Claude Agent SDK、OpenAI Agents SDK 的职责划分；重点写清模型配置和 SmartPerfetto 后端连接不是同一个概念。
+### 🔹 Provider Manager 与运行时/provider 边界
+说明 provider profile、active profile、env fallback 与运行时选择的职责划分；运行时覆盖 Claude Agent SDK、OpenAI Agents SDK、Pi Agent Core、OpenCode 四条路径，由 SMARTPERFETTO_AGENT_RUNTIME 或 active provider 决定；重点写清模型配置和 SmartPerfetto 后端连接不是同一个概念。
 
 ### 🔹 运行分发、权限和隐私边界
 覆盖 Docker、本地源码、桌面免安装包、CLI/API/MCP 的适用场景，并说明 trace 文件、SQL 结果、报告分享、workspace 权限和企业部署中的数据治理边界。
@@ -150,9 +151,9 @@ SmartPerfetto 有两类对比对象。实时 reference trace 对比要求当前�
 
 这类对比和 26.14 节的实验统计互相补位。线上实验负责判断分位值和阈值违约率是否变化，SmartPerfetto 负责在少量代表性 trace 上解释变化来源。一个版本的启动 P90 上升后，应该抽取 baseline / candidate trace，各自生成 result snapshot，再比较启动阶段、线程状态、Binder、I/O 和帧提交证据。这样可以把“线上变慢”继续追到“哪类 trace 证据变了”。
 
-## Provider Manager 与双运行时边界
+## Provider Manager 与运行时/provider 边界
 
-SmartPerfetto 的模型配置分成三层：Connection、Provider、运行时。Connection 配 SmartPerfetto 后端地址和可选后端访问 token；Provider profile 配模型服务的 Base URL、API key / token、模型 ID 和协议类型；运行时决定后端用 Claude Agent SDK 还是 OpenAI Agents SDK 编排工具调用。这三层混在一起时，排障很难判断问题出在后端连接、模型凭证还是工具编排。[来源: https://github.com/Gracker/SmartPerfetto]
+SmartPerfetto 的模型配置分成三层：Connection、Provider、运行时。Connection 配 SmartPerfetto 后端地址和可选后端访问 token；Provider profile 配模型服务的 Base URL、API key / token、模型 ID 和协议类型；运行时决定后端用哪条 Agent SDK 路径编排工具调用——Claude Agent SDK、OpenAI Agents SDK、Pi Agent Core 或 OpenCode，由 `SMARTPERFETTO_AGENT_RUNTIME` 环境变量或 active UI provider 决定。这三层混在一起时，排障很难判断问题出在后端连接、模型凭证还是工具编排。[来源: https://github.com/Gracker/SmartPerfetto]
 
 | 配置项 | 作用 | 常见误解 |
 | --- | --- | --- |
@@ -160,9 +161,9 @@ SmartPerfetto 的模型配置分成三层：Connection、Provider、运行时。
 | Provider profile | 配模型服务、模型 ID、协议类型 | 保存 profile 后忘记设为 active |
 | active provider | 当前会话优先使用的 provider | 以为改 `.env` 会覆盖 active profile |
 | env fallback | 脚本和服务端部署的默认凭证 | 只查 `.env`，不看 Provider Manager |
-| 运行时 | 选择 Claude Agent SDK 或 OpenAI Agents SDK | provider 能聊天就认为能稳定 tool call |
+| 运行时 | 由 SMARTPERFETTO_AGENT_RUNTIME 或 active provider 选 Claude Agent SDK / OpenAI Agents SDK / Pi Agent Core / OpenCode | provider 能聊天就认为能稳定 tool call |
 
-已经创建的分析 session 通常应固定当时的 provider 来源。trace 分析里的多轮追问依赖前一轮工具结果、SDK 会话状态和报告上下文；中途切换模型可能让后续回答无法复用原来的证据。排障时应同时记录 `/health` 的 `aiEngine.runtime`、`credentialSource`、provider 名称、模型 ID、协议类型、分析模式和 session 日志。
+已经创建的分析 session 通常应固定当时的 provider 来源。trace 分析里的多轮追问依赖前一轮工具结果、SDK 会话状态和报告上下文；中途切换模型可能让后续回答无法复用原来的证据。排障时应同时记录 `/health` 的 `aiEngine.runtime`（当前为 claude / openai / pi / opencode 四类之一）、`credentialSource`、provider 名称、模型 ID、协议类型、分析模式和 session 日志。
 
 ## 运行分发、权限和隐私边界
 

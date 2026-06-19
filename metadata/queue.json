@@ -337,7 +337,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-19T15:26:23+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_reason": "fixed-lite: 更新运行时边界描述为四条 runtime 路径（Claude/OpenAI/Pi/OpenCode）",
+      "completed_at": "2026-06-19T15:35:00+08:00"
     }
   ],
   "queue": [
