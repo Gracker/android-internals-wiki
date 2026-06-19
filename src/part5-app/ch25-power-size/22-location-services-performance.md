@@ -1,7 +1,7 @@
 ---
 title: "定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理"
 chapter: "25.22"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-18"
 last_verified: "2026-06-18"
@@ -39,10 +39,10 @@ last_task2b_lite_at: "2026-06-19"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-19T08:13:20+08:00"
-task6_l1_l2_fixes: 2
+last_task6_at: "2026-06-19T09:09:22+08:00"
+task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-19 Task6 first-review: pass-light-edit。L1: 中英文空格L137(PendingIntent/lambda)、汇报腔L256(可以看到→会显示)已修；高频词全部<5；否定纠正0；物理动词"收紧"在"收紧限制"语境属自然中文用法保留。L2: 开头/节奏/结构/读者引导通过。验证标注: 多处[已验证]+官方文档,无[待验证]。无L3/L4回炉项。送Task9技术审。"
+task6_review_notes: "2026-06-19 Task6 re-review (post-Task9 autofix): pass-light-edit。L1: 网络梗"带飞"→"拉高唤醒频率"(L111)已修。高频词: 真正1次<5合格。否定纠正0。禁用词0(收紧属自然中文)。L2: 开头/节奏/结构/读者引导通过。Task9 autofix P0x5/P1x1/P2x1 修正的段落(FLP provider/Geofence 100限制/版本表/FGS权限/GnssCapabilities/PowerStats rail)文风无回退。验证标注: 正文0处待验证,14处已验证。无L3/L4回炉项。task9_result=auto-fixed(已修复全部发现),task6 pass,queue无pending,自动晋升finalized。"
 last_task9_at: "2026-06-19T08:25:51+08:00"
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
@@ -108,7 +108,7 @@ FLP 的 Priority 只能表达精度和功耗目标，不能让客户端指定 GN
 
 **setIntervalMillis**（原 setInterval）：位置计算的最小间隔。设为 10 秒和 60 秒的功耗差距可达 3-5 倍，因为 10 秒间隔下 GNSS 芯片几乎不会进入低功耗休眠模式。
 
-**setMinUpdateIntervalMillis**（原 setFastestInterval）：当其他 App 请求更快的位置更新时，本 App 被唤醒的频率上限。如果不设这个参数，FLP 会按其他 App 的最快频率给本 App 推数据。设为 60 秒可以避免被其他 App 的高频请求带飞。
+**setMinUpdateIntervalMillis**（原 setFastestInterval）：当其他 App 请求更快的位置更新时，本 App 被唤醒的频率上限。如果不设这个参数，FLP 会按其他 App 的最快频率给本 App 推数据。设为 60 秒可以避免本 App 被其他 App 的高频请求拉高唤醒频率。
 
 **setMinUpdateDistanceMeters**（原 setSmallestDisplacement）：只有移动距离超过这个值才回调。设为 50 米后，用户静止时不会收到任何回调——这是降低功耗的第二有效手段（第一是降低 interval）。
 
