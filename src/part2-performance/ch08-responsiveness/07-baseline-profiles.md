@@ -1,4 +1,5 @@
 ---
+
 title: Baseline Profiles 与编译优化实践
 chapter: '8.7'
 section: '8.7'
@@ -37,7 +38,7 @@ tags:
 - performance
 pipeline_stage: "task9_pending"
 task6_state: "reviewed"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
 review_round: 6
@@ -49,19 +50,19 @@ last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 task9_review_notes: "2026-06-19 Task9 idle audit: auto-fixed。修正 ART Service AOSP 源码路径为 platform/art/artd 与 platform/art/libartservice；补 ProfileVerifier 仅支持 Android 9+ 的版本边界。未写 queue。"
 last_task9_audit: "2026-06-19"
-last_task2b_verifier_at: "2026-06-19T23:28:42+08:00"
+last_task2b_verifier_at: "2026-06-20T03:32:38+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task6_at: "2026-06-20T01:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-01-review.md"
 task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 + Task9 auto-fix 后内容无新增 L1/L2 问题；无 L3/L4 回炉项。Task9 为 auto-fixed（非 pass-tech-review），未满足自动晋升条件。"
 last_task9_review_log: "logs/deep-review/2026-06-19-20-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-15
+last_deepseek_cn_review_at: 2026-06-20
 last_task9_autofix_at: "2026-06-19"
 ---
 # 8.7 Baseline Profiles 与编译优化实践
 
-Android 的 ART 运行时经历了多次编译策略的演变——从 Android 5.0 的全量 AOT 编译，到 Android 7.0 的解释执行 + JIT，再到 Profile-Guided 编译。每次转变都在安装时间、运行性能和存储占用之间做不同的权衡。但有一个问题始终存在：**应用首次安装后的冷启动性能**。
+ART 的编译策略经历过几次大的调整：Android 5.0 走全量 AOT，Android 7.0 换成解释执行 + JIT，再到后来的 Profile-Guided 编译。每次调整都在安装时间、运行性能和磁盘占用之间做新的取舍。但有一个问题始终没变：**应用首次安装后的冷启动性能**。
 
 在这个时间窗口内，ART 还没有收集到足够的运行时 profile 数据，无法知道哪些方法是热点。结果是大量关键代码只能解释执行，冷启动速度比经过优化的状态慢 30% 甚至更多。
 
@@ -213,11 +214,10 @@ Cloud Profiles 用真实用户数据补齐 Baseline Profiles 没覆盖到的热�
 
 公开材料把 Android 16 描述为 Google Play 分发侧的云端预编译能力，目标是减少设备端 `dex2oat` 的工作量，让安装和更新阶段更短。到目前为止，公开的一手文档还不足以稳定确认 `SDM` 文件格式、签名绑定方式，以及“设备端是否完全不再做本地编译”的边界。
 
-写到这一段时，先保留两个稳妥结论：
+目前能确定两点：
 
 - 它属于 Google Play 分发增强能力，不是所有安装渠道都具备的通用机制。
-- 它和 Baseline Profiles、Cloud Profiles 同属 ART 编译优化体系，但公开证据还不够支撑更细的实现断言。
-- SDM（Secure Dex Metadata）的具体格式和签名绑定方式目前仍缺少可复核的 AOSP 或官方文档锚点，本段所有关于云端预编译的描述均为 `[待验证]` 状态。
+- 它和 Baseline Profiles、Cloud Profiles 同属 ART 编译优化体系，但公开证据还不够支撑更细的实现断言（包括 SDM 的具体格式和签名绑定方式，目前仍缺少可复核的 AOSP 或官方文档锚点）。
 
 ## 生成与维护 Baseline Profiles
 
@@ -349,7 +349,6 @@ Perfetto 仍然有用，但更适合做补充观察：
 - 看主线程、RenderThread 的热点是否转移
 - 对照 `speed-profile` 状态确认优化前后的 trace 可比性
 
-[图：同一条冷启动路径的两组验证视图。左侧是 `dumpsys package dexopt` 的 `speed-profile` 状态，右侧是 Macrobenchmark 的 TTID / TTFD 对比。]
 
 ## 常见问题与最佳实践
 
