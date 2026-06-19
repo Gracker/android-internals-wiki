@@ -68,23 +68,18 @@ review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠
 last_task9_audit: "2026-06-20"
 last_task9_autofix_at: "2026-06-20"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-27"
+reviewed_date: "2026-06-20"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_reviewed_date: "2026-06-20"
 task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-06-20T02:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-20-02-review.md"
+last_task6_at: "2026-06-20T03:08:00+08:00"
+last_task6_review_log: "logs/review/2026-06-20-03-review.md"
 review_type: "task6-writing-quality-review"
-task9_state: "reviewed"
-task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 Android 17 归因管线重构内容已进入正文（PowerAttributor / PowerStatsProcessor）；L1 小修 1 处（em-dash 一致性）；无 L3/L4 回炉项。Task9 仍为 pending-review，未满足自动晋升条件。 | 2026-06-20 02:07 Task6 revisiting re-review：pass-light-edit。Task9 auto-fix 后的 Android 17 归因管线内容（PowerAttributor / MultiStatePowerAttributor / CpuPowerStatsProcessor / ScreenPowerStatsProcessor）已稳定；L1 小修 2 处（汇报腔"需要注意"删除 + 4处连续空行压缩）；无 L3/L4 回炉项。Task9 result 为 auto-fixed（非 pass-tech-review），未满足自动晋升条件。"
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-27
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
-last_task9_audit_log: "logs/deep-review/2026-06-20-00-audit.md"
+task9_state: "pending"
+task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 Android 17 归因管线重构内容已进入正文（PowerAttributor / PowerStatsProcessor）；L1 小修 1 处（em-dash 一致性）；无 L3/L4 回炉项。Task9 仍为 pending-review，未满足自动晋升条件。 | 2026-06-20 02:07 Task6 revisiting re-review：pass-light-edit。Task9 auto-fix 后的 Android 17 归因管线内容（PowerAttributor / MultiStatePowerAttributor / CpuPowerStatsProcessor / ScreenPowerStatsProcessor）已稳定；L1 小修 2 处（汇报腔"需要注意"删除 + 4处连续空行压缩）；无 L3/L4 回炉项。Task9 result 为 auto-fixed（非 pass-tech-review），未满足自动晋升条件。 | 2026-06-20 03:08 Task6 revisiting re-review：pass-light-edit。正文经多轮 review 已稳定；L1/L2 全部通过（禁用词/汇报腔/AI套话/高频词/翻译腔均无命中）；无 L3/L4 回炉项。task9_result 仍为 auto-fixed（非 pass-tech-review），未满足自动晋升条件，送 Task9 复审。"
 ---
 
 # Android 功耗模型
