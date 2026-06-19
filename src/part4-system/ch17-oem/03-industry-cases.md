@@ -34,9 +34,9 @@ task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-28"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-05-22"
-last_task6_audit_log: "logs/review/2026-05-22-10-audit.md"
-last_task6_audit_notes: "idle audit: L1 高频词小修 6 个位置；frontmatter 完整；outline 锚点覆盖 4/4；无回炉项。"
+last_task6_audit: "2026-06-19"
+last_task6_audit_log: "logs/review/2026-06-19-11-audit.md"
+last_task6_audit_notes: "idle audit: L1 物理动作动词 拆解→分析 1 处小修；高频词均在阈值内；frontmatter 完整；outline 锚点覆盖 4/4；无回炉项。"
 section: "17.3"
 status: finalized
 pipeline_stage: ready-to-publish
@@ -84,7 +84,7 @@ review_notes: "2026-04-28 task9 deep-review: pass-tech-review；无 P0/P1；Task
 
 ## 为什么要看行业案例
 
-前十六章我们一直在拆解 Android 系统的内部机制和优化方法——VSync 怎么工作、Binder 怎么调度、SurfaceFlinger 怎么合成。这些是"兵器谱"，告诉你每件兵器的原理和用法。但落到具体性能问题时，怎么选兵器、怎么组合、怎么根据现场条件调整策略，光看原理是不够的。
+前十六章我们一直在分析 Android 系统的内部机制和优化方法——VSync 怎么工作、Binder 怎么调度、SurfaceFlinger 怎么合成。这些是"兵器谱"，告诉你每件兵器的原理和用法。但落到具体性能问题时，怎么选兵器、怎么组合、怎么根据现场条件调整策略，光看原理是不够的。
 
 行业案例的价值在于：**它们是真实战场的复盘报告。** 每一个案例背后都是某个团队在数亿用户、复杂设备和苛刻时间约束下做出的技术决策。看这些案例的目的是学习他们的**分析思路、决策逻辑和权衡取舍**。
 
