@@ -14017,54 +14017,7 @@
       "auto_promoted_at": "2026-06-07T21:12:57+08:00"
     }
   },
-  "review_log": [
-    {
-      "date": "2026-06-07",
-      "time": "21:12",
-      "sections": [
-        "11.3"
-      ],
-      "result": "11.3 pass-light-edit auto-promoted finalized",
-      "reviewer": "openclaw-task6"
-    },
-    {
-      "date": "2026-06-03",
-      "sections": [
-        "25.10",
-        "25.6"
-      ],
-      "result": "25.10 pass-light-edit auto-promoted finalized; 25.6 pass-light-edit pending task9",
-      "reviewer": "openclaw-task6"
-    },
-    {
-      "section": "2.22",
-      "task6_status": "reviewed",
-      "date": "2026-06-07",
-      "result": "pass-light-edit",
-      "reviewer": "openclaw-task6"
-    },
-    {
-      "section": "4.11",
-      "task6_status": "reviewed",
-      "date": "2026-06-07",
-      "result": "pass-light-edit",
-      "reviewer": "openclaw-task6"
-    },
-    {
-      "section": "19.27",
-      "task6_status": "reviewed",
-      "date": "2026-06-07",
-      "result": "pass-light-edit",
-      "reviewer": "openclaw-task6"
-    },
-    {
-      "section": "7.13",
-      "task6_status": "reviewed",
-      "date": "2026-06-07",
-      "result": "pass-light-edit",
-      "reviewer": "openclaw-task6"
-    }
-  ],
+  "review_log": "logs/review/2026-06-19-17-review.md",
   "18.2": {
     "status": "finalized",
     "pipeline_stage": "ready-to-publish",
