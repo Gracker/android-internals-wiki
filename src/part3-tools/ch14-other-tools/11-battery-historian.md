@@ -28,26 +28,28 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T18:20:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-18-review.md"
 task6_reviewed_date: "2026-05-08"
-review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。'
+review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。 | 2026-06-19 Task9 audit 18:25：auto-fixed。闲时抽检发现 4 处源码/版本锚点小问题：Android 35 误写为 Android 15、PowerMonitorReadings.getConsumedEnergy 方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回 Task6 复审。'
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 last_task2b_at: 2026-05-08T17:58:58+08:00
-task9_result: "pass-tech-review"
-last_task9_at: "2026-05-08T18:40:56+08:00"
+task9_result: "auto-fixed"
+last_task9_at: "2026-06-19T18:25:54+08:00"
+last_task9_audit: "2026-06-19"
+last_task9_autofix_at: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-08"
-last_task9_review_log: "logs/deep-review/2026-05-08-18-deep-review.md"
-task9_review_notes: "2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task9 18:39：pass-tech-review。P0/P1 0；前轮 PowerMonitor 常量与 PowerStatsService 路径/版本 P0 已复核通过；新增 P2 源码锚点建议 2 条，自动晋升 finalized。"
+task9_reviewed_date: "2026-06-19"
+last_task9_review_log: "logs/deep-review/2026-06-19-18-audit.md"
+task9_review_notes: "2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task9 18:39：pass-tech-review。P0/P1 0；前轮 PowerMonitor 常量与 PowerStatsService 路径/版本 P0 已复核通过；新增 P2 源码锚点建议 2 条，自动晋升 finalized。 | 2026-06-19 Task9 audit 18:25：auto-fixed。闲时抽检发现 4 处源码/版本锚点小问题：Android 35 误写为 Android 15、PowerMonitorReadings.getConsumedEnergy 方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回 Task6 复审。"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 # 14.11 Battery Historian 与功耗分析工具
@@ -371,7 +373,7 @@ class PowerBenchmark {
 
 ## PowerMonitor API（API 35 应用层接口）
 
-Macrobenchmark `PowerMetric` 是 AndroidX Benchmark 1.2.0+ 的库能力，平台下限 API 29（`@RequiresApi(29)`），高精度 rail 采集依赖设备是否实现 Power Stats HAL / ODPM（Pixel 6+ 确认支持，其他设备需用 `deviceSupportsHighPrecisionTracking()` 判断）。Android 35 (API 35) 进一步向应用层开放了直接查询功耗数据的接口：`android.os.PowerMonitor` + `SystemHealthManager` 组合。
+Macrobenchmark `PowerMetric` 是 AndroidX Benchmark 1.2.0+ 的库能力，平台下限 API 29（`@RequiresApi(29)`），高精度 rail 采集依赖设备是否实现 Power Stats HAL / ODPM（Pixel 6+ 确认支持，其他设备需用 `deviceSupportsHighPrecisionTracking()` 判断）。Android 15 (API 35) 进一步向应用层开放了直接查询功耗数据的接口：`android.os.PowerMonitor` + `SystemHealthManager` 组合。
 
 核心三类：
 
@@ -514,8 +516,8 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 
 **源码锚点**：
 - `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` — `frameworks/base/core/java/android/os/PerformanceHintManager.java`（API 35）
-- `APerformanceHint_setPreferPowerEfficiency()` — `platform/frameworks/native/include/android/performance_hint.h`（NDK r28+，API 35）
-- `PowerMonitor.getConsumedEnergy()` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java`
+- `APerformanceHint_setPreferPowerEfficiency()` — `frameworks/native/include/android/performance_hint.h`（NDK r28+，API 35）
+- `PowerMonitorReadings.getConsumedEnergy(PowerMonitor)` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java`
 
 **两个关键约束**：
 
@@ -623,7 +625,7 @@ public List<BatteryUsageStats> getBatteryUsageStats(List<BatteryUsageStatsQuery>
 
 `BatteryStatsService.java`（行 615–645 / 709 / 1070–1072 / 3129）通过 `Flags.streamlinedBatteryStats()` 把 CPU / MOBILE_RADIO / WIFI 三个 component 切到实时 `PowerStatsProcessor` 路径，统计口径从「power_profile 平均功率 × 时长」迁移为「PowerStats HAL rail + 状态机」。这是 Power Profiler 数据可信度从「估算」走向「rail 校准估算」的关键拐点。
 
-对应实现入口 `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61）：在 `BatteryStatsHistory` 上做事件流回放，每个 component 用各自 `PowerStatsProcessor` 累计出 `AggregatedPowerStats`，`BatteryUsageStatsProvider` 再按 query 维度切片返回。
+对应实现入口 `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16/17 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`）：在 `BatteryStatsHistory` 上做事件流回放，每个 component 用各自 `PowerStatsProcessor` 累计出 `AggregatedPowerStats`，`BatteryUsageStatsProvider` 再按 query 维度切片返回。
 
 ### 历史线嵌入
 
@@ -654,7 +656,7 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
 - `frameworks/base/core/java/android/os/BatteryUsageStats.java`（`android-15.0.0_r1`，行 320–329 / 839–866）— `iterateBatteryStatsHistory` 与 Builder
 - `frameworks/base/core/java/android/os/BatteryConsumer.java`（`android-15.0.0_r1`，行 132–195 / 247–270）— `POWER_MODEL_*` / `PROCESS_STATE_*` / `Key`
 - `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-15.0.0_r1`，行 1061–1145）— statsd 拉取
-- `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61）— 聚合入口
+- `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16/17 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`）— 聚合入口
 - `frameworks/base/core/java/com/android/internal/os/BatteryStatsHistory.java`（`android-15.0.0_r1`，行 1060 / 1077）— Parcel 序列化
 
 [已验证: android-15.0.0_r1 / android-14.0.0_r1 源码 cs.android.com 同源路径]
