@@ -435,3 +435,21 @@
 **已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching。
 
 **结论**：全书 443 节（304 finalized / 92 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 158 轮无合格缺口。
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-06-20
+- **类型**：数据缺失
+- **位置**：`Startup Profile 与指令缓存局部性`
+- **问题**：正文写“Startup Profile 对冷启动的贡献通常占 Baseline Profile 总收益的 40-60%”，本轮未找到官方或 AOSP 可复核来源。Android Developers 当前口径是 Startup Profiles 通常比仅使用 Baseline Profiles 再快 15%-30%，不能直接换算成 Baseline Profile 总收益占比。
+- **建议**：后续回炉时改成官方 15%-30% 相对口径，或补充可复现实验数据、设备、版本、样本量与计算方式。
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-06-20
+- **类型**：数据缺失
+- **位置**：`Profile 的关键覆盖路径`
+- **问题**：“覆盖 80% 的启动路径就能获得大部分收益”属于经验化阈值，本轮未找到官方文档或本地实测支撑；作为通用建议容易被误读成固定优化目标。
+- **建议**：改成“覆盖启动和核心 CUJ 的主要路径后通常能获得大部分收益”，或补充项目内 Macrobenchmark / profile 规则覆盖率数据。
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-06-20
+- **类型**：交叉引用一致性
+- **位置**：`与 1.7 / 4.3 / 1.9 的 Google Play 安装时机口径`
+- **问题**：8.7 已按 Debug Baseline Profiles 文档区分 Play、AGP 8.4+、其他 installer 的编译触发时机；相关章节仍有“Google Play 安装阶段就会使用 Baseline Profiles 优化 APK / 安装即有 AOT 覆盖”的简化表述，和 8.7 的验证口径不完全一致。
+- **建议**：后续抽检相关章节时统一成“Play / PackageManager / ART Service 可能在安装期或后台设备更新阶段消费可用 profile；具体是否已完成 `speed-profile` 以 `ProfileVerifier` 或 `dumpsys package dexopt` 为准”。
