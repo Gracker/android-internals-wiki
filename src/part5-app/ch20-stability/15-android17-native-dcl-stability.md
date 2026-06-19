@@ -59,40 +59,11 @@ task9_p2_issues: 0
 last_task6_audit: "2026-06-05"
 last_task9_audit: "2026-06-16"
 last_task9_audit_log: "logs/deep-review/2026-06-16-09-audit.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-19
 ---
 
 # 20.15 Android 17 Native DCL 只读约束与动态库加载稳定性
-
-<!-- outline-start -->
-## 要点
-
-### 🔹 Android 17 Native DCL 的适配边界
-从 Android 14 DEX/JAR 动态加载保护延伸到 Android 17 native library，说明 `System.load()`、下载后加载、插件化 SO、热修复 SO 和解压到私有目录后加载的区别。
-
-### 🔹 只读文件状态如何进入加载检查
-梳理文件权限、落盘目录、解压/校验/rename 顺序和加载时机，说明为什么写入 fd 打开后、内容写入前就要标记只读。
-
-### 🔹 动态库更新流程的稳定性风险
-覆盖灰度更新、断点续传、覆盖写、清理旧版本、崩溃回滚和多进程并发加载，重点处理 `UnsatisfiedLinkError` 的止血策略。
-
-### 🔹 Native 热修复与插件化框架的兼容改造
-整理三方框架需要检查的落盘策略、ABI 目录、签名/哈希校验、加载入口和回滚状态，不把安全绕过方案写成推荐路径。
-
-### 🔹 与 native crash 治理的关系
-说明这类问题常表现为启动崩溃或功能入口崩溃，证据包应保留 targetSdk、文件路径、权限位、加载堆栈和库版本。
-
-### 🔹 灰度验证清单
-给出 Android 17 targetSdk 灰度前的自动化检查项：文件权限断言、首次安装/覆盖安装/热更新/回滚、多进程启动和异常上报字段。
-
-## 扩展
-
-### 🔸 与 8.11 Native 库加载性能的边界
-8.11 负责动态链接耗时与加载顺序，本节处理 Android 17 Native DCL 的稳定性适配。
-
-### 🔸 与 20.13 16KB Page Size 兼容性的衔接
-同一套 native 发布流程可以同时检查 page size、ELF 对齐和 DCL 文件状态，但正文拆开问题归因。
-
-<!-- outline-end -->
 
 Android 17 把动态代码加载的只读约束扩展到 native library。业务代码需要重点检查运行时下载、解压、替换后再通过 `System.load(path)` 加载的 `.so` 文件；APK 内随包发布的常规 `System.loadLibrary()` 不是主要风险来源。[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17#safer-native-dcl-c]
 
@@ -170,7 +141,7 @@ fun publishNativeLibrary(bytes: ByteArray, tmp: File, finalFile: File, expectedS
 
 Native DCL 只读约束触发时，最常见的表象是 Java 层 `UnsatisfiedLinkError`。这不是 SIGSEGV、SIGABRT 这类 native signal crash；除非业务捕获异常后继续调用未注册 native 方法，或者加载到错误版本的库后进入 native 执行，才会落到 20.3 的 native crash 路径。
 
-证据包要分两层：加载失败层和执行崩溃层。加载失败层保留 Java 堆栈、文件路径、权限位、哈希、ABI、库版本、targetSdk、灰度批次和插件版本；执行崩溃层再补 tombstone、signal、寄存器、backtrace、Build ID 与符号文件。Native Crash 监控参考书对 signal、backtrace、ELF 和符号归档的组织方式很适合放到证据包设计里，但这里不复述信号机制，避免和 20.3 重复。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md] [结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Backtrace：Native 堆栈信息获取.md]
+证据包要分两层：加载失败层和执行崩溃层。加载失败层保留 Java 堆栈、文件路径、权限位、哈希、ABI、库版本、targetSdk、灰度批次和插件版本；执行崩溃层再补 tombstone、signal、寄存器、backtrace、Build ID 与符号文件。Native Crash 监控参考书对 signal、backtrace、ELF 和符号归档的组织方式很适合放到证据包设计里，但这里不复述信号机制，避免和 20.3 重复。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]
 
 线上归因也要防止误判。`UnsatisfiedLinkError` 可能来自文件可写、ABI 不匹配、依赖库缺失、namespace 不允许访问、16KB page size 不兼容、库文件损坏或符号未解析。文件权限只是 Android 17 新增的一类高优先级检查项，不能看到同一个异常类型就全部归因到 Native DCL。
 
