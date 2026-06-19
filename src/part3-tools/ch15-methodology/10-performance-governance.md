@@ -32,7 +32,7 @@ task9_result: fixed
 task9_reviewed_date: "2026-05-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-19T21:04:13+08:00"
-last_task6_audit: "2026-06-06"
+last_task6_audit: "2026-06-20"
 task2b_result: fixed
 task2b_state: fixed
 last_task9_audit: "2026-05-19"
