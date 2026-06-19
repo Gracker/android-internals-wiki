@@ -58,8 +58,8 @@ last_task6_at: "2026-05-28T07:05:00+08:00"
 last_task6_audit: '2026-05-24'
 task6_reviewed_date: "2026-05-25"
 last_task9_review_log: "logs/deep-review/2026-05-28-07-deep-review.md"
-last_task9_audit: '2026-05-25'
-last_task9_audit_log: 'logs/deep-review/2026-05-25-05-audit.md'
+last_task9_audit: '2026-06-20'
+last_task9_audit_log: 'logs/deep-review/2026-06-20-02-audit.md'
 last_task6_review_log: "logs/review/2026-05-28-07-review.md"
 task6_review_notes: "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 2 处，压掉否定纠正式句型和限制句式；无 L3/L4 回炉项，送 Task9 复核。"
 p0: 0

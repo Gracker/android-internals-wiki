@@ -6673,7 +6673,7 @@
       "last_task2b_at": "2026-05-28T06:50:00+08:00",
       "task2b_source": "frontmatter backlog fallback",
       "last_task9_review_log": "logs/deep-review/2026-05-28-07-deep-review.md",
-      "last_task9_audit_log": "logs/deep-review/2026-05-25-05-audit.md",
+      "last_task9_audit_log": "logs/deep-review/2026-06-20-02-audit.md",
       "task2b_summary": "修复 Trace Processor metric 示例、android.log userdebug 边界、Android 10/11 配置输入路径边界，并拆分 Android 15-17 profiling 版本表。",
       "task6_l1_l2_fixes": 2,
       "task6_l3_l4_issues": 0,
@@ -6686,7 +6686,8 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-28",
       "updated_by": "openclaw-task9",
-      "updated_date": "2026-05-28"
+      "updated_date": "2026-06-20",
+      "last_task9_audit": "2026-06-20"
     },
     "14.10": {
       "title": "eBPF/BPF 在 Android 性能分析中的应用",
@@ -9765,7 +9766,9 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-28",
       "updated_by": "openclaw-task9",
-      "updated_date": "2026-05-28"
+      "updated_date": "2026-06-20",
+      "last_task9_audit": "2026-06-20",
+      "last_task9_audit_log": "logs/deep-review/2026-06-20-02-audit.md"
     },
     "12.4": {
       "section": "12.4",
