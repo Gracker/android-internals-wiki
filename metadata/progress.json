@@ -10281,15 +10281,15 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-20",
-    "time": "01:06",
+    "time": "05:10",
     "mode": "gap-mining-skip",
-    "round": 160,
+    "round": 161,
     "created_sections": [],
     "created_files": [],
     "candidate_count": 0,
     "qualified_count": 0,
-    "source": "Round 160: Phase 0 无空 draft (403 章节文件, 309 finalized + 91 ready-for-review + 3 孤立 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 0 篇 (已耗尽). Research-feeds 最新 2026-04-14 无新增. Daily-info 2026-06-19 热点全部映射已有章节 (MessageQueue → 1.13/1.26, Android 17 启动优化 → 16.x, 桌面模式 → 2.20/22.14). Clippings 三本参考书结构已充分比对. 连续 160 轮无合格缺口, 跳过.",
-    "note": "连续 160 轮无合格缺口。0 空 draft 章节。全书 403 文件 (309 finalized + 91 ready-for-review)。管线堵点在 Task6/Task9 复审 (91 个 ready-for-review), 非内容缺口。"
+    "source": "Round 161: Phase 0 无空 draft (403 章节文件, 309 finalized + 91 ready-for-review + 3 有内容 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 0 篇 (已耗尽). Research-feeds 最新 2026-04-14 无新增. Daily-info 2026-06-20 热点全部映射已有章节 (MessageQueue → 1.13/1.26/1.28, Android 17 适配 → 16.x, 桌面模式 → 2.20/22.14, Compose → 7.7/22.3/22.20-22, Room 3.0 → 24.17, SharedPreferences → 6.5, Gemini API → 5.20). Clippings 三本参考书结构已充分比对. 连续 161 轮无合格缺口, 跳过.",
+    "note": "连续 161 轮无合格缺口。0 空 draft 章节。全书 403 文件 (309 finalized + 91 ready-for-review)。管线堵点在 Task6/Task9 复审 (91 个 ready-for-review), 非内容缺口。"
   },
   "task9_last_sections": [
     "7.9",
@@ -10769,7 +10769,7 @@
     "source": "Round 126: Phase 0 无空 draft (381 章节, 299 finalized + 82 ready-for-review). Phase 0.5 TASK2B_BACKLOG=2. Source-index 0 篇 (已耗尽). Research-feeds 最近 2026-04-14 无新增. research-gaps 2 条已映射. daily-info 热点无新缺口. Clippings 三本参考书结构已充分比对. 连续 126 轮无合格缺口, 跳过.",
     "note": "连续 126 轮无合格缺口。0 draft 章节。管线堵点在 Task6/Task9 复审环节。"
   },
-  "last_task2a_gap_mining_at": "2026-06-20T01:06:53.711777+08:00",
+  "last_task2a_gap_mining_at": "2026-06-20T05:10:01.443391+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
