@@ -55,7 +55,7 @@ task6_result: pass-light-edit
 task2b_result: fixed
 task6_reviewed_date: '2026-05-05'
 review_round: 3
-status: 'finalized'
+status: "ready-for-review"
 pipeline_stage: task6_pending
 task9_result: 'auto-fixed'
 task9_state: 'reviewed'

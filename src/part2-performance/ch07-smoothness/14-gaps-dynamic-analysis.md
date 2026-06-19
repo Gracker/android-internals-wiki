@@ -2,7 +2,7 @@
 title: "GAPS：Android 动态分析目标可达性路径重建"
 chapter: "7.14"
 section: "7.14"
-status: finalized
+status: "ready-for-review"
 applicable_versions: "论文实验环境：Android 13 x86-64 emulator；ARM 场景：Pixel 2 Android 11"
 tags: [dynamic-analysis, gui-testing, static-analysis, method-reachability, android-testing]
 related_chapters: ["7.3", "7.4", "13.1", "13.3"]
