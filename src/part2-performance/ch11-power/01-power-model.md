@@ -2,7 +2,7 @@
 title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 polish_count: 1
@@ -36,22 +36,22 @@ sources:
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 task2b_result: "fixed-lite"
-task2b_state: "fixed"
+task2b_state: "pending"
 last_task2b_at: "2026-05-27T03:42:00+08:00"
 last_task2b_lite_at: "2026-05-27"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T07:24:00+08:00"
+last_task9_at: "2026-06-20T00:30:18+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-27-07-deep-review.md"
-task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 power_profile、BatteryStats/BatteryUsageStats、PowerStats AIDL、PowerMonitor、ComponentCallbacks2 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 power_profile、BatteryStats/BatteryUsageStats、PowerStats AIDL、PowerMonitor、ComponentCallbacks2 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 00 Task9 闲时抽检：发现 Android 17 功耗归因管线从 *PowerCalculator 重构为 PowerAttributor / PowerStatsProcessor，写入 P1 回炉。"
 last_task6_audit: "2026-05-25"
 review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
-last_task9_audit: 2026-05-25
+last_task9_audit: "2026-06-20"
 last_task9_autofix_at: "2026-05-27"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
@@ -67,6 +67,7 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+last_task9_audit_log: "logs/deep-review/2026-06-20-00-audit.md"
 ---
 
 
