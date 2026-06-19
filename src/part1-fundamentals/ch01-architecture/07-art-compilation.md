@@ -43,7 +43,7 @@ related_chapters:
 - '8.3'
 - '16.1'
 task2b_result: "fixed"
-task6_state: "reviewed"
+task6_state: "revisiting"
 review_round: 6
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -52,21 +52,22 @@ last_task6_at: "2026-05-26T04:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-26-04-review.md"
 task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-task9_result: pass-tech-review
+pipeline_stage: "task6_pending"
+task9_result: auto-fixed
 task9_state: "reviewed"
 last_task2b_at: "2026-05-26T03:19:12+08:00"
 task2b_state: "fixed"
-task9_reviewed_date: "2026-05-26"
+task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-26T04:30:00+08:00"
-task9_review_notes: "2026-05-26 Task9 deep-review 04:30: pass-tech-review。P0 0 / P1 0 / P2 1；JIT code cache 4MB 工程值仍需补实测出处；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-06-20T05:27:05+08:00"
+task9_review_notes: "2026-05-26 Task9 deep-review 04:30: pass-tech-review。P0 0 / P1 0 / P2 1；JIT code cache 4MB 工程值仍需补实测出处；Task6 已通过且 queue 无 pending，自动晋升 finalized。 2026-06-20 Task9 idle-audit auto-fixed: JitCodeCache 回收入口按 android-15/16/17 修正为 DoCollection(Thread*)，保留 android-14 旧名边界；修正两个 404 source.android 官方链接；回到 Task6 复审。"
 last_task6_audit: "2026-05-22"
 last_task6_audit_log: "logs/review/2026-05-22-20-audit.md"
-last_task9_review_log: "logs/deep-review/2026-05-26-04-deep-review.md"
-last_task9_audit: 2026-05-26
+last_task9_review_log: "logs/deep-review/2026-06-20-05-audit.md"
+last_task9_audit: 2026-06-20
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+last_task9_autofix_at: "2026-06-20"
 ---
 
 
@@ -83,7 +84,7 @@ last_deepseek_cn_review_at: 2026-05-28
 - 🔹 **JIT 编译器的工作原理**：[已验证: AOSP art/runtime/jit/]
   包括方法热度追踪、JIT code cache、Profile 收集与持久化，以及这些行为对冷启动路径的影响。
 
-- 🔹 **dex2oat 的编译流程与 compiler filter**：[已验证: AOSP art/dex2oat/ + source.android.com/docs/core/runtime/dex2oat]
+- 🔹 **dex2oat 的编译流程与 compiler filter**：[已验证: AOSP art/dex2oat/ + source.android.com/docs/core/runtime/configure]
   说明 DEX 到 OAT / VDEX 的转换流程，以及 `verify`、`speed`、`speed-profile` 等编译级别的取舍。
 
 - 🔹 **PGO / Baseline Profiles / Startup Profiles 的分工**：[已验证: developer.android.com/topic/performance/baselineprofiles/overview]
@@ -180,7 +181,7 @@ JIT 编译后的机器码存放在代码缓存（JIT code cache）中。这个�
 - 初始大小：`dalvik.vm.jitinitialsize`，默认 64KB（同属 Dalvik 遗留前缀，ART 仍读取）
 - 最大容量：`dalvik.vm.jitmaxsize`，默认 64MB
 
-代码缓存会在空间压力下触发回收，`JitCodeCache::GarbageCollectCache()`（`art/runtime/jit/jit_code_cache.cc`）负责处理这件事。公开源码能稳定确认的边界主要有三条：
+代码缓存会在空间压力下触发回收。AOSP android-15.0.0_r1 到 android-17.0.0_r1 的入口是 `JitCodeCache::DoCollection(Thread*)`（`art/runtime/jit/jit_code_cache.cc`）；android-14.0.0_r1 旧实现中还保留 `GarbageCollectCache(Thread*)`。公开源码能稳定确认的边界主要有三条：
 
 - **触发条件**：新的编译产物放不进当前 code cache 时，会进入回收流程。
 - **回收约束**：仍被活动栈帧引用的代码不能直接回收，调试信息和 code/data 区的管理也要一起维护。
@@ -651,8 +652,9 @@ Baseline Profiles 只对其中标记的代码路径生效。如果冷启动路�
 ### 官方文档
 - [Baseline Profiles 概览](https://developer.android.com/topic/performance/baselineprofiles/overview)
 - [ART 与 Dalvik](https://source.android.com/docs/core/runtime)
-- [dex2oat 编译选项](https://source.android.com/docs/core/runtime/dex2oat)
-- [Profile-Guided 代码优化](https://source.android.com/docs/core/runtime/pgodexopt)
+- [ART 编译配置与 compiler filters](https://source.android.com/docs/core/runtime/configure)
+- [ART Service 配置](https://source.android.com/docs/core/runtime/configure/art-service)
+- [ART JIT compiler](https://source.android.com/docs/core/runtime/jit-compiler)
 
 ### 深入阅读
 - Google Blog: Android Performance Updates 2025（dex2oat 编译优化、AutoFDO）
