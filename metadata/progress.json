@@ -10268,42 +10268,32 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-19",
-    "time": "04:21",
+    "time": "11:07",
     "mode": "gap-mining-skip",
-    "round": 150,
+    "round": 151,
     "created_sections": [],
     "created_files": [],
-    "candidate_count": 5,
+    "candidate_count": 3,
     "qualified_count": 0,
     "candidates": [
       {
-        "name": "Android 17 新调度器减少启动时间",
-        "score": 8,
-        "source": "daily-info RSS"
-      },
-      {
-        "name": "Android 17 MessageQueue 重写",
+        "name": "Radio Power State Machine",
         "score": 10,
-        "source": "daily-info ClawFeed"
+        "source": "DeepResearch source-index"
       },
       {
-        "name": "JobScheduler 常量来源核验",
-        "score": 7,
-        "source": "daily-info 增量扫描"
+        "name": "Compose 内存抖动盲区",
+        "score": 12,
+        "source": "research-gaps.md"
       },
       {
-        "name": "Crash DropBox 持久化",
-        "score": 8,
-        "source": "daily-info 增量扫描"
-      },
-      {
-        "name": "Battery Saver 定位功耗策略",
-        "score": 9,
-        "source": "daily-info 增量扫描"
+        "name": "内存跟踪 API 盲区",
+        "score": 11,
+        "source": "research-gaps.md"
       }
     ],
-    "source": "Round 150: Phase 0 无空 draft (401 章节文件, 301 finalized + 96 ready-for-review + 4 非空 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 0 条 (已耗尽). Research-feeds 最新 2026-04-14 无新增. Daily-info 2026-06-19 RSS Android 17 调度器/MessageQueue 均映射已有章节. Daily-info 2026-06-18 增量扫描 5 篇 (JobScheduler/FGS/DeliQueue/Battery Saver/DropBox) 均映射已有章节. research-gaps 2 条 (Compose 内存 13/20, 26.3 指标 ≤14) 均未达 14. Clippings 三本参考书结构已充分比对. 连续 150 轮无合格缺口, 跳过创建.",
-    "note": "连续 150 轮无合格缺口。0 空 draft 章节（4 个非空 draft: compose-memory 577行/binder-async 193行/messagequeue-rewrite 383行/compose-gc 32行）。全书 401 文件 (301 finalized + 96 ready-for-review)。管线堵点在 Task6/Task9 复审 (96 个 ready-for-review), 非内容缺口。"
+    "source": "Round 151: Phase 0 无空 draft (401 章节文件, 301 finalized + 96 ready-for-review + 4 非空 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 64 条高分未映射条目逐一比对全部映射已有章节. Research-feeds 最新 2026-04-14 无新增. Daily-info 2026-06-19 RSS Android 17 调度器/MessageQueue 均映射已有章节. research-gaps 2 条 (Compose 内存 12/20, 内存跟踪 API 11/20) 均未达 14. Clippings 三本参考书结构已充分比对. 连续 151 轮无合格缺口, 跳过创建.",
+    "note": "连续 151 轮无合格缺口。0 空 draft 章节（4 个非空 draft: binder-async 230行/messagequeue-rewrite 422行/adaptive-battery 74行/compose-memory 636行）。全书 401 文件 (301 finalized + 96 ready-for-review)。管线堵点在 Task6/Task9 复审 (96 个 ready-for-review), 非内容缺口。"
   },
   "task9_last_sections": [
     "7.9",
