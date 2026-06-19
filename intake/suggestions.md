@@ -375,3 +375,25 @@
 - ch01 下存在 2 个 orphan draft 文件（01.27/01.28），与 SUMMARY 中的 1.25/1.26 条目主题重复但文件名不同，需确认合并
 - §15.2 markdown 格式损坏仍需 Task2B 修复
 - queue.json 中 §5.21 为 stale 条目（已在 progress.json 标记 ready-for-review），建议清理
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-19 18:09 (Round 156)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。新增 2 篇 DeepResearch（ProfilingManager 系统触发器 → §8.10/14.07/19.16/26.12 已覆盖；CachedAppOptimizer freezer → §1.18/4.11/4.12 已覆盖），均为已有章节的源码级补充。daily-info 无未覆盖热点。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer。
+
+**结论**：全书 443 节（304 finalized / 91 ready-for-review / 4 draft）已进入高度成熟期。连续 156 轮无合格缺口。
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-19 19:06 (Round 157)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。今日新增 4 篇 DeepResearch（ProfilingManager 触发器 → §8.10/14.07/19.16/26.12 已覆盖；CachedAppOptimizer freezer → §1.18/4.11/4.12 已覆盖；StrictMode Android 17 → §14.23 已覆盖；Compose SlotTable 内存 → §10.6/23.12 已覆盖），均为已有章节的源码级补充。daily-info 无未覆盖热点。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、Compose SlotTable/Composer 内存。
+
+**结论**：全书 402 节（309 finalized / 90 ready-for-review / 3 draft）已进入高度成熟期。连续 157 轮无合格缺口。
