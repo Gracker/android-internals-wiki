@@ -2,7 +2,7 @@
 title: 卡顿分析方法论
 chapter: '7.3'
 section: '7.3'
-reviewed_date: '2026-05-05'
+reviewed_date: '2026-06-19'
 last_task2b_at: '2026-05-05T10:47:46.821502'
 reviewed_by: openclaw-task6
 rework_date: '2026-04-04'
@@ -50,13 +50,13 @@ related_chapters:
 - '2.18'
 - '1.5'
 - '13.3'
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task2b_result: fixed
-task6_reviewed_date: '2026-05-05'
+task6_reviewed_date: '2026-06-19'
 review_round: 3
-status: "ready-for-review"
-pipeline_stage: task6_pending
+status: "finalized"
+pipeline_stage: ready-to-publish
 task9_result: 'auto-fixed'
 task9_state: 'reviewed'
 task2b_state: fixed
@@ -65,9 +65,9 @@ task9_reviewed_date: '2026-06-19'
 last_task9_at: '2026-06-19T11:28:24+08:00'
 last_task9_audit: '2026-06-19'
 task9_review_notes: '2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1 / P2 1。 | 2026-05-13 02:51 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-19 11:28 Task9 idle-audit: auto-fixed。P0 2 / P1 0 / P2 0；修正 FrameMetrics 表中 INPUT_HANDLING_DURATION 常量名与 INTENDED_VSYNC_TIMESTAMP API 引入版本，回 Task6 复审。'
-last_task6_at: '2026-05-05T11:05:00+08:00'
+last_task6_at: '2026-06-19T12:09:00+08:00'
 last_task6_audit: '2026-06-18'
-review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。'
+review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。 | 2026-06-19 Task6 revisit: Task9 auto-fix 修正 FrameMetrics 表常量名与 API 版本后复审；L1 禁用词零命中，L2 通过；修复参考资料区 Binder/FrameTimeline 链接合并错误；无 B 类大问题；自动晋升 finalized。'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
 last_task9_autofix_at: '2026-06-19'
@@ -792,7 +792,8 @@ Trace 不是越长越好。5-10 秒的精简 Trace 远比 60 秒的"大杂烩"�
   - [Android 中的卡顿丢帧原因概述 - 方法论](https://www.androidperformance.com/2019/09/05/Android-Jank-Debug/)
 - 官方文档：
   - [Perfetto Trace Processor SQL Documentation](https://perfetto.dev/docs/analysis/sql-tables)
-- [Perfetto Docs - Analyzing Android Binder Transactions](https://perfetto.dev/docs/analysis/binder) — 官方 Binder 分析指南，含 `android.binder` 模块用法(https://perfetto.dev/docs/data-sources/frametimeline) — FrameTimeline 的可用版本、轨道含义与 SurfaceView 使用边界
+  - [Perfetto Docs - Analyzing Android Binder Transactions](https://perfetto.dev/docs/analysis/binder) — 官方 Binder 分析指南，含 `android.binder` 模块用法
+  - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline) — FrameTimeline 的可用版本、轨道含义与 SurfaceView 使用边界
   - [Android FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics) — FrameMetrics 各指标的官方说明
   - [JankStats Library](https://developer.android.com/topic/performance/jankstats) — Google 官方的线上卡顿监控库
 - 其他参考：

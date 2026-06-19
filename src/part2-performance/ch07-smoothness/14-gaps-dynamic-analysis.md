@@ -2,7 +2,7 @@
 title: "GAPS：Android 动态分析目标可达性路径重建"
 chapter: "7.14"
 section: "7.14"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "论文实验环境：Android 13 x86-64 emulator；ARM 场景：Pixel 2 Android 11"
 tags: [dynamic-analysis, gui-testing, static-analysis, method-reachability, android-testing]
 related_chapters: ["7.3", "7.4", "13.1", "13.3"]
@@ -17,12 +17,12 @@ sources:
     path: "https://github.com/samudoria/GAPS"
     authors: "Samuele Doria, Eleonora Losiouk"
     date: "2025-11-28"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: "pass-light-edit"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-06-19"
 reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-06-05T03:05:00+08:00"
+task6_reviewed_date: "2026-06-19"
+last_task6_at: "2026-06-19T12:09:00+08:00"
 auto_promoted_date: "2026-06-05"
 auto_promoted_by: "openclaw-task6"
 last_task6_audit: "2026-05-23"
@@ -34,8 +34,7 @@ task9_result: auto-fixed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-24T10:22:45+08:00"
@@ -44,7 +43,7 @@ task2b_fixed_date: "2026-06-05T02:50:00+08:00"
 task2b_fixed_by: "openclaw-task2b-main"
 task2b_fix_summary: "Removed unsupported reflection/DI/dynamic-proxy penetration rate table (not backed by GAPS paper/repo per Task9 idle audit 2026-05-24); replaced with qualitative Limitations-based description consistent with paper text."
 task9_review_notes: "2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。Frida trace marker 与 Perfetto SDK 边界已处理完成；自动晋升 finalized。；2026-05-24 10:22 task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 0。L196-L212 的反射/DI/动态代理穿透率表未被 GAPS 论文/仓库支撑，已写入 queue。；2026-06-19 Task9 idle-audit auto-fix：修正 GAPS Limitations 来源归因，反射/DI/动态代理/JNI 仅保留为外推风险；回到 Task6 复审。"
-review_notes: "2026-05-05 Task6：补齐 outline 块，修正 frontmatter 结构、标题标点和少量中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
+review_notes: "2026-05-05 Task6：补齐 outline 块，修正 frontmatter 结构、标题标点和少量中英文间距；L1/L2 通过，等待 Task9 复审技术项。 | 2026-06-19 Task6 revisit: Task9 auto-fix 修正 Limitations 来源归因后复审；L1 禁用词/格式零命中，L2 可读性通过；修正 frontmatter 重复 task6_state；无 B 类大问题；自动晋升 finalized。"
 last_task9_audit_at: "2026-06-19T10:27:25+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-19-10-audit.md"
 last_task9_autofix_at: "2026-06-19"
