@@ -14640,5 +14640,18 @@
     "task2b_state": "pending",
     "last_task2a_at": "2026-06-19T12:12:21.990959+08:00",
     "note": "7 锚点 + 4 扩展全部覆盖"
+  },
+  "task2b_verifier": {
+    "last_run": "2026-06-20T07:33:53+08:00",
+    "last_status_corrections": 2,
+    "last_blocked": 1,
+    "last_result": "ready-for-task6",
+    "corrected_sections": [
+      "1.7",
+      "18.6"
+    ],
+    "blocked_sections": [
+      "2.17"
+    ]
   }
 }
