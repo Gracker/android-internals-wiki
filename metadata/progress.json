@@ -1,6 +1,6 @@
 {
-  "total": 442,
-  "draft": 3,
+  "total": 443,
+  "draft": 4,
   "ready-for-review": 91,
   "finalized": 304,
   "task9_result": "pass-tech-review",
@@ -15,7 +15,8 @@
     "25.22",
     "8.14",
     "22.24",
-    "5.21"
+    "5.21",
+    "8.15"
   ],
   "ready_for_review_sections": [
     "5.19",
@@ -10274,32 +10275,32 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-19",
-    "time": "11:07",
+    "time": "14:08",
     "mode": "gap-mining-skip",
-    "round": 151,
+    "round": 153,
     "created_sections": [],
     "created_files": [],
     "candidate_count": 3,
     "qualified_count": 0,
     "candidates": [
       {
-        "name": "Radio Power State Machine",
-        "score": 10,
-        "source": "DeepResearch source-index"
-      },
-      {
-        "name": "Compose 内存抖动盲区",
-        "score": 12,
-        "source": "research-gaps.md"
-      },
-      {
-        "name": "内存跟踪 API 盲区",
+        "name": "Android 17 桌面模式窗口管理细化",
         "score": 11,
-        "source": "research-gaps.md"
+        "source": "daily-info"
+      },
+      {
+        "name": "Clippings 缓存优化（冷热端分离）",
+        "score": 10,
+        "source": "Clippings"
+      },
+      {
+        "name": "线上疑难案例独立章节",
+        "score": 11,
+        "source": "Clippings"
       }
     ],
-    "source": "Round 151: Phase 0 无空 draft (401 章节文件, 301 finalized + 96 ready-for-review + 4 非空 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 64 条高分未映射条目逐一比对全部映射已有章节. Research-feeds 最新 2026-04-14 无新增. Daily-info 2026-06-19 RSS Android 17 调度器/MessageQueue 均映射已有章节. research-gaps 2 条 (Compose 内存 12/20, 内存跟踪 API 11/20) 均未达 14. Clippings 三本参考书结构已充分比对. 连续 151 轮无合格缺口, 跳过创建.",
-    "note": "连续 151 轮无合格缺口。0 空 draft 章节（4 个非空 draft: binder-async 230行/messagequeue-rewrite 422行/adaptive-battery 74行/compose-memory 636行）。全书 401 文件 (301 finalized + 96 ready-for-review)。管线堵点在 Task6/Task9 复审 (96 个 ready-for-review), 非内容缺口。"
+    "source": "Round 153: Phase 0 无空 draft (402 章节文件, 309 finalized + 90 ready-for-review + 3 非空 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 0 篇 (已耗尽). Research-feeds 最新 2026-04-14 无新增. Daily-info 2026-06-19 热点 (Android 17 调度器/MessageQueue/桌面模式/AI基准) 全部映射已有章节或超出范围. Research-gaps 2 条均未达 14 且已有对应章节. Clippings 三本参考书 (20+21+59=100篇) 全部结构映射完毕. AOSP 主要服务 (AMS/WMS/PMS/IMS/SF/LMK/vold/netd/SensorService) 全部有对应章节. 连续 153 轮无合格缺口, 跳过创建.",
+    "note": "连续 153 轮无合格缺口。0 空 draft 章节（3 个非空 draft: binder-async 190行/messagequeue-rewrite 379行/compose-memory 617行）。全书 402 文件 (309 finalized + 90 ready-for-review)。管线堵点在 Task6/Task9 复审 (90 个 ready-for-review), 非内容缺口。"
   },
   "task9_last_sections": [
     "7.9",
@@ -10779,7 +10780,7 @@
     "source": "Round 126: Phase 0 无空 draft (381 章节, 299 finalized + 82 ready-for-review). Phase 0.5 TASK2B_BACKLOG=2. Source-index 0 篇 (已耗尽). Research-feeds 最近 2026-04-14 无新增. research-gaps 2 条已映射. daily-info 热点无新缺口. Clippings 三本参考书结构已充分比对. 连续 126 轮无合格缺口, 跳过.",
     "note": "连续 126 轮无合格缺口。0 draft 章节。管线堵点在 Task6/Task9 复审环节。"
   },
-  "last_task2a_gap_mining_at": "2026-06-19T09:08:28.671680+08:00",
+  "last_task2a_gap_mining_at": "2026-06-19T13:07:01.129400+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
@@ -14664,9 +14665,9 @@
     }
   ],
   "status_counts": {
-    "total": 401,
-    "finalized": 301,
-    "ready_for_review": 97,
+    "total": 402,
+    "finalized": 309,
+    "ready_for_review": 90,
     "draft": 3
   },
   "1.17": {
