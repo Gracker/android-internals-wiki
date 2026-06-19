@@ -340,6 +340,15 @@
       "status": "completed",
       "completed_reason": "fixed-lite: 更新运行时边界描述为四条 runtime 路径（Claude/OpenAI/Pi/OpenCode）",
       "completed_at": "2026-06-19T15:35:00+08:00"
+    },
+    {
+      "section": "8.15",
+      "title": "Play Integrity API 性能与集成延迟",
+      "file": "src/part2-performance/ch08-responsiveness/15-play-integrity-api-performance.md",
+      "priority": 80,
+      "status": "pending",
+      "created": "2026-06-19",
+      "source": "task2a-gap-mining"
     }
   ],
   "queue": [

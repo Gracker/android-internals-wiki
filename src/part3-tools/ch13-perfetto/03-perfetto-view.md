@@ -67,6 +67,8 @@ task9_reviewed_by: openclaw-task9
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-19
 ---
 
 
@@ -103,9 +105,9 @@ p2: 0
 
 第一次打开 Perfetto UI，常见感受是"信息过载"：满屏幕的色块、密密麻麻的 Track、各种看不懂的缩写。Perfetto 展示的是整个 Android 系统在抓取时段内的全部活动——所有进程、所有线程、所有 CPU 核心、所有图形管线——信息量很大。
 
-换成分析动作看，读 Trace 不需要逐条看每一个事件，而是先定位时间区间、关键 Track 和线程状态颜色，再顺着异常片段往下追。
+实际分析时，不需要逐条看每一个事件。正确的做法是：先定位时间区间、关键 Track 和线程状态颜色，再沿着异常片段往下追。
 
-本节解决这三个问题。读完之后，再打开一个 Perfetto Trace，应该能快速找到主线程在做什么、渲染线程跑在哪个核心、Binder 调用跳到了哪个进程、掉帧发生时系统各模块的状态——这些是日常性能分析最常用的操作。
+本节解决这三个问题。读完后再打开一个 Perfetto Trace，你能快速找到：主线程在做什么、渲染线程跑在哪个核心、Binder 调用跳到了哪个进程、掉帧发生时各模块的状态——这些是日常性能分析的最高频操作。
 
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
@@ -489,6 +491,8 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 
 ### Perfetto 近期版本更新要点
+
+Perfetto 是一个快速迭代的项目，以下梳理了 2025-2026 年对日常分析影响较大的版本更新，作为上面各小节操作说明的时效性补充。
 
 Perfetto 在 2025-2026 年的版本迭代中引入了多项影响分析体验的改进（基于 [Perfetto Releases](https://github.com/google/perfetto/releases)）：
 

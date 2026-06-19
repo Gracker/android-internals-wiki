@@ -69,7 +69,7 @@ last_task6_at: '2026-06-19T12:09:00+08:00'
 last_task6_audit: '2026-06-18'
 review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。 | 2026-06-19 Task6 revisit: Task9 auto-fix 修正 FrameMetrics 表常量名与 API 版本后复审；L1 禁用词零命中，L2 通过；修复参考资料区 Binder/FrameTimeline 链接合并错误；无 B 类大问题；自动晋升 finalized。'
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
+last_deepseek_cn_review_at: 2026-06-19
 last_task9_autofix_at: '2026-06-19'
 last_task9_review_log: 'logs/deep-review/2026-06-19-11-audit.md'
 ---
@@ -260,7 +260,9 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 当系统内存紧张时，App 在主线程执行过程中可能触发 page fault（访问的内存页被回收了），需要从磁盘或 ZRAM 中把数据读回来。这个过程中主线程就处于 Uninterruptible Sleep 状态，看起来像是"卡住了但没有执行业务代码"。在 Perfetto 中，如果主线程出现大量深橙色片段，且时间点恰好与 kswapd（内核内存回收线程）或 lmkd（Low Memory Killer）的活动重合，那基本可以确定是低内存导致的 I/O 阻塞。
 
 
-#### TrimMemory 机制与 Jank 的关联（源码级补充）
+#### 低内存场景深入：TrimMemory 机制与 Jank 的关联（源码级补充）
+
+上面提到的 page fault 和磁盘 I/O 在 Android 中有完整的系统侧触发路径。理解这条路径，才能在 Perfetto 中把 Uninterruptible Sleep、lmkd 活动和 App 层 TrimMemory 回调对齐，判断是 App 自身内存膨胀还是系统全局低内存在拖慢关键线程。下面展开这条路径的关键节点。
 
 上述低内存导致的 Uninterruptible Sleep 背后，是一条从内核 PSI 监控到应用组件回调的完整路径。Android 14 源码验证了以下关键细节：
 
@@ -414,7 +416,9 @@ JankStats 降低了线上卡顿监控的接入成本，但它的判定逻辑与�
 
 业界的卡顿监测方案还包括基于 Handler 消息执行时间的监测（如 BlockCanary、Matrix）和基于 Choreographer 回调间隔的监测。这些方案的优势在于可以在卡顿发生时抓取主线程的调用栈，帮助定位具体的代码路径；劣势在于采样精度不如 FrameMetrics，且有一定的性能开销。如果团队已有成熟的 APM 框架，可以将 FrameMetrics 数据和堆栈采集结合起来，实现更完整的线上卡顿诊断能力。
 
-## [自动发现] 线上动态 Trace：Perfetto SDK 方案
+## 补充方案：线上动态 Trace（Perfetto SDK）
+
+前面的 FrameMetrics 和 JankStats 解决的是"知道卡了、卡在哪帧"的问题。对于偶发性卡顿——线下复现成功率低、用户侧低概率触发——只靠度量数据不够，还需要在现场保留尽可能完整的 Trace 证据。下面介绍 Perfetto SDK 的方案和边界。
 
 对于偶发性卡顿——线下难以复现、用户侧低概率触发——传统的"复现→抓 Trace"流程容易失效。`androidx.tracing:tracing-perfetto` 的边界是：它主要把 App 内的 trace section 写入 Perfetto，便于线下或平台侧 Trace 看到 App 自己标记的阶段；它不能替代平台侧 `perfetto` 进程去回溯系统 ftrace、atrace category 和 FrameTimeline。
 
@@ -620,7 +624,9 @@ LIMIT 20;
 
 这条查询统计的是线程进入 Runnable 后到进入 Running 之间的等待时长。`waker_id` 可以把当前 Runnable 片段回连到唤醒它的线程状态，再还原出唤醒源。如果要直接查询 raw `sched_wakeup` / `sched_waking` 事件，需要先展开 `ftrace_event` 表；不要把 `sched_wakeup` 当成 Trace Processor 默认就存在的 SQL 表。
 
-### 查询 Binder Transaction 耗时与异常诊断 [自动发现]
+### 补充查询：Binder Transaction 耗时与异常诊断
+
+主线程卡顿的另一大来源是 Binder IPC。Perfetto 通过内核 ftrace 事件捕获 Binder 事务的完整链路，配合标准库 SQL 模块可以做精确的耗时归因。下面是在上面调度 SQL 基础上的 Binder 专项查询。
 
 Binder Transaction 是 Android IPC 的核心，也是主线程卡顿的常见根因。Perfetto 通过 `linux.ftrace` 捕获内核 `binder_transaction` 系列 tracepoint，再经 `android.binder` 标准库 SQL 模块解析，可实现精细的 IPC 耗时归因。
 
@@ -705,7 +711,7 @@ atrace 等效命令：`adb shell atrace --async_start -b 20000 -c binder_driver 
 
 
 
-### 大型 Trace 的 SQL 性能优化 [自动发现]
+### 大型 Trace 的 SQL 性能优化
 
 当 Trace 文件超过 500MB（例如长时间录制或高频事件场景），在 Perfetto UI 中直接执行复杂 SQL 查询可能导致页面无响应甚至崩溃。以下是处理大型 Trace 的实用建议：
 

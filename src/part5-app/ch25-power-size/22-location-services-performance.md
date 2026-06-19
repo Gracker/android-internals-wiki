@@ -54,6 +54,8 @@ p0: 5
 p1: 1
 p2: 1
 task9_review_notes: "2026-06-19 08 Task9 deep-review: auto-fixed。P0 5 / P1 1 / P2 1。修正 FLP provider 过度保证、Geofencing 100 条超限处理、Android 9/10/12 后台定位版本表、Android 14 location FGS 权限检查、startForegroundService 版本注释、GnssCapabilities L5 不存在 API、PowerStats GNSS rail 归属边界；回到 Task6 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-19
 ---
 
 # 25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理
@@ -72,7 +74,7 @@ Android 定位有三个底层 provider，功耗差异跨数量级：
 
 [已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/battery]
 
-GPS provider 的功耗主因是 GNSS 芯片需要持续接收卫星信号、做相关运算。冷启动时还要下载星历数据（ephemeris），这个过程持续 30 秒左右，功耗峰值可达 500 mA。热启动时星历有效，锁定时间缩到 1-5 秒，但芯片工作电流不变。NETWORK provider 不激活 GNSS 芯片，靠 Wi-Fi 扫描和蜂窝基站 ID 匹配数据库来估算位置，单次扫描功耗在 20-80 mA 区间。
+GPS provider 的功耗主要来自 GNSS 芯片持续接收卫星信号和运行的基带相关运算。冷启动阶段，芯片还要下载星历（ephemeris），这个过程大约 30 秒，功耗峰值可达 500 mA。热启动时星历仍在有效期内，锁定时间可以缩短到 1-5 秒，但芯片工作电流本身不会降低。NETWORK provider 不需要 GNSS 芯片，它通过 Wi-Fi 扫描结果和蜂窝基站 ID 匹配位置数据库来估算位置，单次扫描功耗在 20-80 mA 区间。
 
 PASSIVE provider 是最省电的方案，它不主动触发任何硬件，只在系统内其他 App（比如导航类 App）请求位置更新时，被动接收同样的位置结果。使用 PASSIVE provider 不需要自己持有定位权限中的 ACCESS_FINE_LOCATION（但需要至少 ACCESS_COARSE_LOCATION），适合做城市级内容推荐、天气等低精度场景。
 
@@ -295,7 +297,11 @@ adb shell dumpsys power_stats | grep -A5 "GNSS\|MODEM"
 - **GNSS 活跃时长占比**：GNSS Active 时间 / App 运行时间，正常应 < 5%（导航类 App 除外）
 - **FLP 请求参数分布**：统计线上不同 Priority 和 interval 的使用占比，发现异常的高精度请求
 
-## 扩展：GNSS 原始测量与双频 GNSS
+## 扩展定位技术：GNSS 原始测量、双频 GNSS、Wi-Fi RTT 与 BLE 测距
+
+以上是日常开发中最常用的功耗优化路径。下面三个扩展场景面向有更高精度需求的团队：GNSS 原始测量适用于 RTK 高精度定位、双频 GNSS 提升城市峡谷精度、Wi-Fi RTT 和 BLE Beacon 解决室内定位。这些技术的共同点是：精度越高，功耗代价越大，需要在上面的基础优化做完之后再按需评估。
+
+### GNSS 原始测量与双频 GNSS
 
 Android 7.0+ 提供 `GnssMeasurementsEvent` 回调，App 可以接收 GNSS 原始测量数据（伪距、载波相位、多普勒频移）。这些数据用于 RTK（实时动态定位）或高精度独立定位算法。
 
@@ -339,7 +345,7 @@ locationManager.registerGnssStatusCallback(
 
 [已验证: 官方文档, developer.android.com/reference/android/location/GnssStatus#getCarrierFrequencyHz (API 26+)]
 
-## 扩展：Wi-Fi RTT 与 BLE Beacon 测距
+### Wi-Fi RTT 与 BLE Beacon 测距
 
 **Wi-Fi RTT**（Round-Trip-Time，IEEE 802.11mc）：Android 9.0+ 支持通过 Wi-Fi RTT API 测量到 Wi-Fi 接入点的距离，精度可达 1-2 米。比 GPS 在室内场景精度高得多。
 
