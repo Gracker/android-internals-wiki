@@ -2,7 +2,7 @@
 title: Baseline Profiles 与编译优化实践
 chapter: '8.7'
 section: '8.7'
-status: "finalized"
+status: "ready-for-review"
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7 (API 24) - Android 17 (API 37)
@@ -49,7 +49,7 @@ last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 task9_review_notes: "2026-06-19 Task9 idle audit: auto-fixed。修正 ART Service AOSP 源码路径为 platform/art/artd 与 platform/art/libartservice；补 ProfileVerifier 仅支持 Android 9+ 的版本边界。未写 queue。"
 last_task9_audit: "2026-06-19"
-last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
+last_task2b_verifier_at: "2026-06-19T23:28:42+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task6_at: "2026-05-27T04:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-04-review.md"
