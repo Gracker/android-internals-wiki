@@ -166,18 +166,24 @@
       "title": "App Widget 更新性能：RemoteViews IPC 与 Glance 渲染",
       "path": "src/part5-app/ch22-rendering-practice/24-app-widget-performance.md",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "created_date": "2026-06-19",
-      "source": "task2a-knowledge-gap"
+      "source": "task2a-knowledge-gap",
+      "completed_at": "2026-06-19T17:48:46",
+      "completed_by": "task2b-lite",
+      "resolution": "stale-cleanup: file already ready-for-review (12441b)"
     },
     {
       "chapter": "23.12",
       "title": "Jetpack Compose 内存分配与 GC 影响",
       "path": "src/part5-app/ch23-memory-practice/12-compose-memory-allocation-gc.md",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "created_date": "2026-06-19",
-      "source": "task2a-knowledge-gap"
+      "source": "task2a-knowledge-gap",
+      "completed_at": "2026-06-19T17:48:46",
+      "completed_by": "task2b-lite",
+      "resolution": "stale-cleanup: file already ready-for-review (18771b)"
     },
     {
       "section": "15.2",
@@ -356,9 +362,12 @@
       "chapter": "5.21",
       "title": "Adaptive Battery 与 App Standby Bucket 协同机制",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "source": "task2a-knowledge-gap",
-      "created_date": "2026-06-19"
+      "created_date": "2026-06-19",
+      "completed_at": "2026-06-19T17:48:46",
+      "completed_by": "task2b-lite",
+      "resolution": "stale-cleanup: file already ready-for-review (14669b)"
     }
   ],
   "items": []
