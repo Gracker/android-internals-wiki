@@ -316,6 +316,28 @@
       "completed_at": "2026-06-19T14:51:57.266963+08:00",
       "completed_by": "task2b-main",
       "resolution": "DeepResearch 材料已作为参考资料注入：Android 12+ 隐私沙盒对定位功耗的三层判定链"
+    },
+    {
+      "section": "13.18",
+      "section_title": "SmartPerfetto 与可复用 Trace 分析平台",
+      "title": "SmartPerfetto 与可复用 Trace 分析平台",
+      "file": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+      "priority": 85,
+      "reason": "[Deep Tech Review][闲时抽检] SmartPerfetto main 运行时边界已扩展，正文仍按双运行时描述。",
+      "material_paths": [
+        "logs/deep-review/2026-06-19-15-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "“Provider Manager 与双运行时边界”小节及要点中的“双运行时边界”表述",
+          "detail": "SmartPerfetto main 当前 README 已把运行时边界扩展为 Claude Agent SDK、OpenAI Agents SDK、Pi Agent Core、OpenCode，并说明 SMARTPERFETTO_AGENT_RUNTIME 或 active UI provider 决定实际运行时；正文“Provider Manager 与双运行时边界”仍只描述 Claude/OpenAI 双运行时，标题、段落和排障字段会让读者漏掉 Pi Agent Core / OpenCode 以及对应 provider 配置边界。",
+          "suggestion": "回炉时把“双运行时”改成“运行时与 provider 边界”，补齐 Pi Agent Core / OpenCode 是自定义 provider/runtime 路径；同时保留 Connection、Provider profile、active provider、env fallback、session 固定 provider 的区分。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-19T15:26:23+08:00",
+      "status": "pending"
     }
   ],
   "queue": [

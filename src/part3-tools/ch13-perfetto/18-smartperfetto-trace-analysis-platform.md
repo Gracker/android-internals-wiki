@@ -17,7 +17,7 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
@@ -25,18 +25,20 @@ task6_result: pass-light-edit
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-28T12:26:35+08:00"
+last_task9_at: "2026-06-19T15:26:23+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-28-12-deep-review.md"
-task9_review_notes: "2026-05-28 11 Task9 auto-fix: 对齐 SmartPerfetto main 标准对比指标列表与回填能力边界；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。"
+task9_review_notes: "2026-05-28 11 Task9 auto-fix: 对齐 SmartPerfetto main 标准对比指标列表与回填能力边界；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-19 15 Task9 闲时抽检：发现 SmartPerfetto main 运行时边界已从双运行时扩展为四类 runtime/provider 路径，写入 P1 回炉。"
 last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
 last_task6_at: "2026-05-28T12:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-12-review.md"
+last_task9_audit: "2026-06-19"
+last_task9_audit_log: "logs/deep-review/2026-06-19-15-audit.md"
 sources:
   - type: blog
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-18_RSS_886623bf54.md"
@@ -53,10 +55,10 @@ sources:
   - type: internal
     path: "src/part5-app/ch26-observability/14-performance-experiment-statistics.md"
 last_task9_autofix_at: "2026-05-28"
-updated_date: "2026-05-28"
+updated_date: "2026-06-19"
 updated_by: openclaw-task9
 p0: 0
-p1: 0
+p1: 1
 p2: 0
 ---
 
