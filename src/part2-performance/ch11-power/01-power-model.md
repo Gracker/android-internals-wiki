@@ -65,18 +65,18 @@ review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠
 last_task9_audit: "2026-06-20"
 last_task9_autofix_at: "2026-05-27"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-05-27T07:11:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-07-review.md"
+last_task6_at: "2026-06-20T01:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-20-01-review.md"
 review_type: "task6-writing-quality-review"
 task9_state: "pending"
-task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
+task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 Android 17 归因管线重构内容已进入正文（PowerAttributor / PowerStatsProcessor）；L1 小修 1 处（em-dash 一致性）；无 L3/L4 回炉项。Task9 仍为 pending-review，未满足自动晋升条件。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 deepseek_cn_review_state: done
@@ -186,7 +186,7 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 这个结构中有几个关键细节。
 
-第一，CPU 功耗拆为“基础项 + 各 cluster 频点项”两层，因为现代 SoC 的 CPU 功耗随频率非线性增长—1.5GHz 时的电流可能是 300MHz 时的数倍。异构 CPU 的 profile 文件中常见 `cpu.speeds.cluster0`、`cpu.active.cluster0`、`cpu.speeds.cluster1` 这类独立数组，各自描述一个 cluster。旧资料中也有不带后缀的 legacy 名称，但对照 Android 16 公共文件时，优先看带 `display` / `cluster` 后缀的写法。
+第一，CPU 功耗拆为“基础项 + 各 cluster 频点项”两层，因为现代 SoC 的 CPU 功耗随频率非线性增长——1.5GHz 时的电流可能是 300MHz 时的数倍。异构 CPU 的 profile 文件中常见 `cpu.speeds.cluster0`、`cpu.active.cluster0`、`cpu.speeds.cluster1` 这类独立数组，各自描述一个 cluster。旧资料中也有不带后缀的 legacy 名称，但对照 Android 16 公共文件时，优先看带 `display` / `cluster` 后缀的写法。
 
 第二，蜂窝网络 Radio 的功耗按信号强度分档。信号弱时 Radio 需要更大发射功率来维持连接，电流消耗可能比信号强时高出两三倍。这就是在地铁里刷手机特别费电的原因之一。
 
