@@ -337,3 +337,25 @@
 **⚠️ 遗留元数据问题**（非知识缺口）：
 - ch01 下存在 2 个 orphan draft 文件（01.27/01.28），与 SUMMARY 中的 1.25/1.26 条目主题重复但文件名不同，需确认合并
 - §15.2 文件已恢复至 266 行/30KB（上轮报告的截断问题已有改善），但 markdown 格式损坏仍需 Task2B 修复
+
+
+## [2026-06-19] Task 2A 知识缺口挖掘 — 已检查方向
+
+本轮全书 443 小节交叉比对，检查了以下方向：
+
+### 已覆盖（无需新增）
+- AOSP `frameworks/base/` 核心服务：AMS、PMS、WMS、NotificationManager、ContentProvider、InputManager、AudioManager、LocationManager、PowerManager、AlarmManager、JobScheduler、ConnectivityManager、DisplayManager、StorageManager、SensorManager 全部已有对应章节
+- AOSP `system/` 核心组件：lmkd(4.04)、vold(6.06)、netd(12.06)、installd(1.09) 均已覆盖
+- Android 17 新特性：Binder 异步(1.25)、MessageQueue 重构(1.26)、DeliQueue(1.26/22.16)、Edge-to-Edge(2.26)、Native DCL(20.15)、Keystore 配额(20.16)、Excessive CPU Kill(25.12)、TARE(11.08)、ECH(24.18)、FGS 类型(5.17)、App Memory Limits(23.09)、SDM(16.09) 等全部已覆盖
+- Clippings 参考书对照：《稳定性剖析》19 篇知识点均有对应章节（ch20+ch23+ch14+ch26）；《性能优化》21 篇知识点均有对应章节（ch04+ch05+ch08+ch21+ch23+ch25）
+- 安全机制性能：SELinux、seccomp 开销 → 太底层不单独成节；Key Attestation 已在 8.12 覆盖
+- Wear OS / Android TV / IoT 性能 → 素材不足，读者面窄，不满足 ≥14 分门槛
+- VPN Service 性能 → 不满足门槛
+- Gradle 构建性能 → 非运行时性能范畴
+- Dagger/Hilt 初始化性能 → 部分覆盖于 21.02/21.06，独立成节素材不足
+
+### 本轮新增
+- **8.15 Play Integrity API 性能与集成延迟** — Score: 15/20
+  - 素材丰富度(3) + 相关性(4) + 读者需求(4) + 时效性(4)
+  - 全书无 Play Integrity / SafetyNet 任何提及，登录/支付/反作弊链路的关键延迟源
+  - 官方推荐标准 API 替代经典 API，性能特征差异显著
