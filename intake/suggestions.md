@@ -359,3 +359,19 @@
   - 素材丰富度(3) + 相关性(4) + 读者需求(4) + 时效性(4)
   - 全书无 Play Integrity / SafetyNet 任何提及，登录/支付/反作弊链路的关键延迟源
   - 官方推荐标准 API 替代经典 API，性能特征差异显著
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-19 17:08 (Round 155)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24 小时无新增 DeepResearch、无新增 research-feeds。daily-info（2026-06-19）热点与 Round 152-154 一致（Android 17 调度器/MessageQueue 重写 → 已覆盖，Compose 样式系统 → 非性能范畴，桌面模式 → 已有 §2.20/§22.14）。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器。
+
+**结论**：全书 443 节（304 finalized / 91 ready-for-review / 4 draft）已进入高度成熟期。连续 155 轮无合格缺口。
+
+**⚠️ 遗留元数据问题**（非知识缺口）：
+- ch01 下存在 2 个 orphan draft 文件（01.27/01.28），与 SUMMARY 中的 1.25/1.26 条目主题重复但文件名不同，需确认合并
+- §15.2 markdown 格式损坏仍需 Task2B 修复
+- queue.json 中 §5.21 为 stale 条目（已在 progress.json 标记 ready-for-review），建议清理
