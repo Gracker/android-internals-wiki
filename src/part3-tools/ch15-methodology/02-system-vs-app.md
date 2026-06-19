@@ -2,8 +2,8 @@
 title: "如何区分系统问题和 App 问题"
 chapter: "15.2"
 section: "15.2"
-status: ready-for-review
-pipeline_stage: "task9_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task2b_result: fixed
 task2b_state: fixed
 task6_state: "reviewed"
@@ -15,7 +15,7 @@ drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-19"
-last_verified_against: "AOSP android-17.0.0_r1 ActivityManagerConstants/ActiveServices; AOSP android-8/9/12 ActiveServices; Perfetto memory-counters"
+last_verified_against: "AOSP android-17.0.0_r1 ActivityManagerConstants/ActiveServices/BroadcastConstants; AOSP android-13.0.0_r1 and android-17.0.0_r1 SurfaceFlinger commit/composite; Perfetto thread_state/memory-counters/FrameTimeline docs"
 confidence: high
 sources:
  - type: blog
@@ -44,22 +44,22 @@ last_task6_audit: "2026-06-18"
 task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-task9_state: pending
-task9_result: auto-fixed
-last_task9_at: "2026-06-19T03:27:33+08:00"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+last_task9_at: "2026-06-19T09:26:10+08:00"
 task9_reviewed_date: "2026-06-19"
-task9_reviewed_by: openclaw-task9
-last_task9_review_log: "logs/deep-review/2026-06-19-03-deep-review.md"
-task9_review_notes: "2026-06-19 Task9 deep-review: auto-fixed。修正 ANR 阈值表中 startForegroundService 超时口径：Android 13-17 使用 service_start_foreground_timeout_ms=30s + service_start_foreground_anr_delay_ms=10s；fgs_start_foreground_timeout 属于普通 startService 后升前台的资格重算窗口。证据：AOSP android-17.0.0_r1 ActivityManagerConstants/ActiveServices；回到 Task6 复审。"
+task9_reviewed_by: "openclaw-task9"
+last_task9_review_log: "logs/deep-review/2026-06-19-09-deep-review.md"
+task9_review_notes: "2026-06-19 Task9 deep-review: auto-fixed。修正 ANR 阈值表中 startForegroundService 超时口径：Android 13-17 使用 service_start_foreground_timeout_ms=30s + service_start_foreground_anr_delay_ms=10s；fgs_start_foreground_timeout 属于普通 startService 后升前台的资格重算窗口。证据：AOSP android-17.0.0_r1 ActivityManagerConstants/ActiveServices；回到 Task6 复审。 | 2026-06-19 Task9 final-review: pass-tech-review。复核上轮 ANR FGS timeout auto-fix、Broadcast timeout CPU starvation 放宽、Perfetto thread_state/process_counter_track、SurfaceFlinger commit/composite 和 FrameTimeline SF jank 口径；未发现 P0/P1/P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 p0: 0
-p1: 1
+p1: 0
 p2: 0
-review_round: 5
+review_round: 6
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: 2026-06-19T02:53:39+08:00
-finalized_date: "2026-05-28"
-finalized_by: openclaw-task9
+finalized_date: "2026-06-19"
+finalized_by: "openclaw-task9"
 last_task9_audit: "2026-06-16"
 last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
 last_task9_autofix_at: "2026-06-19"
