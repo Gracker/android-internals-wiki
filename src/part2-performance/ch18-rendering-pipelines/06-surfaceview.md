@@ -3,8 +3,8 @@ title: SurfaceView 直出路径
 section: '18.6'
 chapter: '18.6'
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-05-28'
-last_verified_against: AOSP SurfaceView.java / BLASTBufferQueue / BufferQueueProducer.cpp / HWComposer.cpp + Android Graphics Architecture overlay docs
+last_verified: '2026-06-20'
+last_verified_against: AOSP android-17.0.0_r1 SurfaceView.java / BLASTBufferQueue / BufferQueueProducer.cpp / BufferQueueConsumer.cpp / BufferQueueCore.cpp / HWComposer.cpp + Android Graphics Architecture overlay docs
 confidence: medium
 sources:
 - type: aosp
@@ -38,10 +38,11 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 task2b_state: fixed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-29T06:27:31+08:00"
-task9_reviewed_date: "2026-05-24"
+last_task9_at: "2026-06-20T06:24:54+08:00"
+last_task9_audit: "2026-06-20"
+task9_reviewed_date: "2026-06-20"
 task2b_result: fixed-lite
 task2b_rework_date: '2026-04-20'
 task2b_fixed_at: '2026-04-26T13:40:00+08:00'
@@ -50,8 +51,8 @@ last_task2b_lite_at: "2026-05-28"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
@@ -69,8 +70,8 @@ review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 1：现代 Surfac
   API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。
   | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；按技术写作词库统一术语为“路径”，清理夸张/填充表达 4 处；无新增 L3/L4
   回炉项，送 Task9 复审。'
-task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 SurfaceView punchHole 版本边界与 BufferQueue notifyBufferReleased 精确唤醒误述；无 queue P0/P1。"
-last_task9_review_log: "logs/deep-review/2026-05-29-06-deep-review.md"
+task9_review_notes: "2026-06-20 Task9 idle audit: auto-fixed。去除 master 源码锚点，改为 android-17.0.0_r1；修正 HWComposer.cpp 不存在的 validateLayerCompositionTypes 方法名；无 queue P0/P1。"
+last_task9_review_log: "logs/deep-review/2026-06-20-06-audit.md"
 p0: 0
 p1: 0
 p2: 0
@@ -80,7 +81,7 @@ task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-29T07:07:00+08:00"
-last_task9_autofix_at: "2026-05-29"
+last_task9_autofix_at: "2026-06-20"
 ---
 
 # 18.6 SurfaceView 直出路径
@@ -116,7 +117,7 @@ SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 Text
 
 ## 独立 Surface 与挖洞机制
 
-SurfaceView 在 WMS（Window Manager Service）侧注册为一个**独立的图层（Layer）**，与 App 的主窗口并行存在。App 的主窗口会在 SurfaceView 所在区域"挖一个洞"（Punch Through），让 SurfaceView 的独立 Layer 从下面透出来。
+SurfaceView 从架构上拥有一个独立图层（Layer），与 App 的主窗口并行存在。Android 11 及以下主要通过 WMS（Window Manager Service）的旧窗口模型分配 Surface；Android 12+ 则由 App 进程内的 SurfaceControl / BLAST 路径创建并提交。App 的主窗口会在 SurfaceView 所在区域"挖一个洞"（Punch Through），让 SurfaceView 的独立 Layer 从下面透出来。
 
 双 Layer 架构从 Android 1.0 就存在。早期版本里 Layer 注册和 Buffer 管理完全由 WMS 的 `WindowState` / `WindowSurfacePlacer` 控制。Android 12（S）起，SurfaceView 的 Layer 创建路径切换到 `SurfaceView.updateSurface()` → `createBlastSurfaceControls()`，通过 `SurfaceControl.Builder()` 创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。Android 11 虽然为 ViewRootImpl 引入了 BLASTBufferQueue，但 SurfaceView 在 Android 11 上仍使用旧窗口模型创建 Layer——WMS 侧的 `WindowState` 仍然参与 SurfaceView 的 Surface 分配。现代结构为：
 
@@ -183,9 +184,9 @@ SurfaceView 的渲染路径可以分为三个阶段，每个阶段对应不同�
 这通常是视频解码线程（MediaCodec）、Camera 数据线程或游戏逻辑线程：
 
 1. **dequeueBuffer**：从 BufferQueue 申请一个空闲 Buffer。如果队列满了（Consumer 没来得及消费），这里会阻塞。[已验证: AOSP BufferQueue]
-   - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()`（行 297）持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `releaseBuffer()`（行 480）通过 `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。[已验证: AOSP BufferQueueProducer.cpp]
+   - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()` 持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `BufferQueueConsumer::releaseBuffer()` 通过 `BufferQueueCore::notifyBufferReleased()` / `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。[已验证: AOSP android-17.0.0_r1 BufferQueueProducer.cpp / BufferQueueConsumer.cpp / BufferQueueCore.cpp]
    - **O(n) 热点**：每次 `waitForFreeSlotThenRelock` 重试都要遍历 `mActiveBuffers` 集合统计 dequeued/acquired 数量（默认 Slot=4），n 越大竞争越激烈
-   - **Android 16+ 变化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 包装点；但 `android-16.0.0_r1` / master 中 `BufferQueueCore::notifyBufferReleased()` 仍调用 `mDequeueCondition.notify_all()`，不能写成已经实现的精确唤醒优化
+   - **Android 16+ 变化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 包装点；但 `android-16.0.0_r1` / `android-17.0.0_r1` 中 `BufferQueueCore::notifyBufferReleased()` 仍调用 `mDequeueCondition.notify_all()`，不能写成已经实现的精确唤醒优化
    - **Allocation 期间释放锁**：`mIsAllocating=true` 时 `waitWhileAllocatingLocked()` 主动释放 `mMutex`，避免 GraphicBuffer 分配 I/O 导致全局阻塞——这能防止分配期间整个 BufferQueue 冻结
 2. **Draw（绘制）**：
    - **Canvas 模式**：`lockCanvas()` → 在 Bitmap 上绘制 → `unlockCanvasAndPost()`。这种模式适合简单的 2D 绘制，如 AR 贴纸
@@ -325,7 +326,7 @@ SurfaceView 能走 Overlay 需要同时满足下面这几条。视频和相机�
 5. **缩放比例与旋转**：超出 HWC scaler 能力或不支持的旋转会触发回退。
 6. **色彩空间与 HDR**：不在 HWC 支持列表里的色域 / HDR 元数据会触发 GPU 端的 tone mapping，结果也是回退到 client 合成。
 
-[已验证: AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` `validateLayerCompositionTypes` 条件 + Android Graphics Architecture overlay 章节]
+[已验证: AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` `getDeviceCompositionChanges()` / `validate()` / `getChangedCompositionTypes()` 路径 + Android Graphics Architecture overlay 章节]
 
 ### Overlay 失效的常见原因
 
