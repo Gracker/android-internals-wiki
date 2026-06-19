@@ -9,7 +9,7 @@ applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；Perfetto trace
 last_verified: "2026-06-19"
 last_verified_against: "SmartPerfetto main c4884fa73f98c71224e105304dc1c1ff98051de1; README; backend/src/types/multiTraceComparison.ts; backend/src/services/standardMetricBackfillService.ts; backend/src/services/enterpriseMigration.ts; backend/src/services/traceMetadataStore.ts; AIW 13.3/13.10/13.16/13.17/26.3/26.12/26.14"
 confidence: medium
-task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 复扫通过；无 L3/L4 回炉项，送 Task9 技术复审。"
+task6_review_notes: "2026-06-19 17 Task6 复审（Task9 auto-fix 后）：L1 修复 1 处 AI 模板结尾；L2 通过；L3 标注 🔧 企业版排查段风格不一致（bullet-only，缺叙述），不影响本轮通过；送 Task9 最终确认。"
 tags: [perfetto, smartperfetto, trace-analysis, ai-assistant, sql-guardrail, observability]
 related_chapters: ["13.3", "13.10", "13.14", "13.16", "13.17", "26.3", "26.12", "26.14"]
 created_by: "task2a-knowledge-gap"
@@ -17,14 +17,14 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-28"
+reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
-task6_l1_l2_fixes: 0
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -36,8 +36,8 @@ task9_review_notes: "2026-05-28 11 Task9 auto-fix: 对齐 SmartPerfetto main 标
 last_task2b_at: "2026-05-28T10:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
 last_task2b_lite_at: 2026-06-19
-last_task6_at: "2026-05-28T12:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-12-review.md"
+last_task6_at: "2026-06-19T17:12:15+08:00"
+last_task6_review_log: "logs/review/2026-06-19-17-review.md"
 last_task9_audit: "2026-06-19"
 last_task9_audit_log: "logs/deep-review/2026-06-19-15-audit.md"
 sources:
@@ -293,4 +293,3 @@ export SMARTPERFETTO_ENTERPRISE=false
 3. **检查权限配置**：验证 SSO 头部和用户权限
 4. **验证网络连接**：确认数据库连接和文件系统权限
 
-通过以上方法和最佳实践，可以有效预防和解决 SmartPerfetto 企业版迁移过程中的 trace 访问问题，确保系统稳定运行。
