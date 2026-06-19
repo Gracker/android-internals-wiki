@@ -476,3 +476,10 @@ private static void dropboxViolationAsync(final int penaltyMask, final Violation
 - 摘要：StrictMode VmPolicy 从 Android 14 的 10 个 DETECT_VM_* 比特扩展到 Android 17 的 15 个，新增 credential-protected-while-locked、incorrect-context-use、BAL-aborted 等。跨 Binder 违规传播靠 gatheredViolations ThreadLocal + Parcel.writeNoException() 反向序列化；BlockGuard.Policy 通过 getPolicyMask() 把策略位图打包进 Binder native thread-local。定位 14 个关键函数与 6 个集成锚点。
 - 注入时间：2026-06-15
 - 价值：补齐 VmPolicy 从 API 28 到 API 37 的完整演进与跨进程违规传播源码级证据链
+
+### Android 17 StrictMode 新增 FlaggedApi 集成与 ImplicitUriPermissionGrantViolation
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-strictmode-android17-new-features.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 引入 @FlaggedApi 标注的 detectBlockedBackgroundActivityLaunch 和 detectImplicitUriPermissionGrant，新增 BackgroundActivityLaunchViolation 和 ImplicitUriPermissionGrantViolation 两个 violation 类。bal_strict_mode_ro flag 通过 AConfig 实现 is_fixed_read_only 控制，支持双门控——应用端 enable + 服务端 DeviceConfig 推送同时开启才生效。
+- 注入时间：2026-06-19
+- 价值：补齐 Android 17 StrictMode FlaggedApi 机制和 ImplicitUriPermissionGrant 检测的源码级锚点
