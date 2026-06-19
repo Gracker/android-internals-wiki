@@ -380,6 +380,36 @@
       "status": "completed",
       "completed_at": "2026-06-20T00:50:00+08:00",
       "completed_by": "openclaw-task2b"
+    },
+    {
+      "id": "task9-audit-20260620-07-frame-pacing-source-boundary",
+      "section": "2.17",
+      "section_title": "Frame Pacing Library 与帧节奏控制",
+      "title": "Frame Pacing Library 与帧节奏控制",
+      "file": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 闲时抽检发现 Android 17 源码锚点错误与 gamesdk main 源码未进入 Android 17 的版本边界问题",
+      "material_paths": [
+        "logs/deep-review/2026-06-20-07-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L405/L411 DeliQueue 段",
+          "detail": "正文引用 AOSP frameworks/base/core/java/android/os/MessageQueue.java 作为 Android 17 DeliQueue Java 层实现，但 android-17.0.0_r1 下该旧路径返回 404；实际源码拆为 core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java 与 LegacyMessageQueue/MessageQueue.java。CombinedDeliMessageQueue 中 nextDeliQueue() 调 nativePollOnce() 后走 nextMessage()，legacy 路径是 nativePollOnce() 后 synchronized(this)，未发现正文所称的 MessageQueue.mLock。",
+          "suggestion": "将源码锚点改为 android-17.0.0_r1 的 CombinedDeliMessageQueue/MessageQueue.java、LegacyMessageQueue/MessageQueue.java、MessageStack.java / MessageHeap.java；把“nativePollOnce 与同步操作共用 mLock”改成旧 MessageQueue nextLegacy() 在 nativePollOnce() 后进入 synchronized(this) 队列临界区，DeliQueue 通过 MessageStack/MessageHeap 与 CAS/VarHandle 减少该 monitor 竞争。"
+        },
+        {
+          "type": "版本差异",
+          "location": "frontmatter last_verified_against；L64-L181、L393 等 Swappy 源码结论",
+          "detail": "章节大量 Swappy / games-frame-pacing 结论标注为 AOSP platform/frameworks/opt/gamesdk refs/heads/main 或“当前 main 分支”。本轮复核 platform/frameworks/opt/gamesdk 的 android-17.0.0_r1、android-16.0.0_r1、android-15.0.0_r1 文件 URL 均返回 404；refs 中可用的是 main/gamesdk-main/android-games-sdk-* release branch，而不是 Android 17 平台 tag。按 AIW Android 17 范围规则，只有 main/master 资料时必须标注“未进入 Android 17”，不能作为正文结论。",
+          "suggestion": "回炉时把 gamesdk main-sourced 实现细节降级为“未进入 Android 17 / 待验证”或迁移到研究备注；正文结论优先改用 Android 17 可验证源码、官方 AGDK 文档与 AGDK release branch，并明确它是库 release branch 而非 Android platform release tag。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-20T07:28:47+08:00",
+      "created": "2026-06-20",
+      "status": "pending"
     }
   ],
   "queue": [
