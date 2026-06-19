@@ -2,7 +2,7 @@
 title: "Agent 辅助 Perfetto 分析协议"
 chapter: "13.16"
 section: "13.16"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-18"
@@ -13,20 +13,20 @@ related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task2b_result: fixed-lite
 task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-06-19T04:25:46+08:00"
-task9_state: pending
-task9_result: auto-fixed
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
-last_task9_at: "2026-06-18T20:38:56+08:00"
+last_task9_at: "2026-06-19T08:26:11+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-18"
+task9_reviewed_date: "2026-06-19"
 sources:
   - type: official
     path: "https://github.com/android/skills/tree/main/profilers"
@@ -46,16 +46,16 @@ task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-28T08:10:00+08:00"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-last_task9_review_log: "logs/deep-review/2026-06-18-20-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-19-08-deep-review.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-18"
 last_task9_autofix_at: "2026-06-18"
-task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：修正 Perfetto CPU 频率时间区间入口，`cpu_freq` 仅为 CPU/freq 维度表，频率区间应使用 `linux.cpu.frequency` / `cpu_frequency_counters`。"
-p0: 1
+task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：修正 Perfetto CPU 频率时间区间入口，`cpu_freq` 仅为 CPU/freq 维度表，频率区间应使用 `linux.cpu.frequency` / `cpu_frequency_counters`。 2026-06-19 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核源码/官方文档锚点、版本边界、Perfetto stdlib/API 口径，无新增技术问题；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
+p0: 0
 p1: 0
 p2: 0
 finalized_by: "openclaw-task9-auto-promote"
-finalized_date: "2026-05-28"
+finalized_date: "2026-06-19"
 last_task9_audit: "2026-06-18"
 task6_reviewed_date: "2026-06-19"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（cpu_freq linux.cpu.frequency cpu_frequency_counters 修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过（两处模板引导语属于代码块用途句，不算元叙述）。outline 8/8 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
