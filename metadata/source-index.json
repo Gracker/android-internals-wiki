@@ -3532,53 +3532,160 @@
       "indexed_date": "2026-06-19",
       "source": "Task11-每日增量扫描",
       "scored_at": "2026-06-19T05:46:42.080708"
-    }
-  ],
-  "entries": [
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-strictmode-android17-new-features.md",
-      "title": "Android 17 StrictMode 新增特性与 FlaggedApi 集成",
-      "summary": "Android 17 StrictMode 重大升级：@FlaggedApi 渐进式控制、新增 BAL/URI Permission Violation 类、AConfig 只读 flags",
-      "chapter": "ch14",
-      "section": "14.23",
-      "processed_at": "2026-06-19T06:14:05.963030",
-      "action": "queue"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md",
-      "title": "Jetpack Compose 内存分配与 SlotTable / Composer 机制",
-      "summary": "Compose 重组内存分配模式源码分析：SlotTable gap-buffer、RecomposeScopeImpl、State 装箱、derivedStateOf ResultRecord",
-      "chapter": "ch10",
-      "section": "10.6",
-      "processed_at": "2026-06-19T06:14:05.963030",
-      "action": "direct-inject"
+      "title": "Performance improvement opportunities in the open source C++ standard libraries",
+      "path": "AndroidWeekly/#22/Performance improvement opportunities in the open source C++ standard libraries",
+      "source_url": "https://llvm.org/devmtg/2021-02-28/slides/Aditya-c++-libraries.pdf",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 9,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-性能",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "C++标准库性能优化机会，包含编译优化技术分析",
+      "scored_at": "2026-06-19T09:05:50.824850"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-memory-metrics-collection-source-stack.md",
-      "title": "Android 内存指标采集体系（PSS/RSS/smaps_rollup/StatusVmRSS 三层采样路径）",
-      "summary": "三条内存采样路径：SmapsOrRollup 全量PSS、SmapsOrRollupPss 精简PSS、StatusVmRSS 廉价RSS(Android 15+)",
-      "chapter": "ch23",
-      "section": "23.7",
-      "processed_at": "2026-06-19T06:14:05.963030",
-      "action": "queue"
+      "title": "ART 虚拟机 — Interpreter 模式",
+      "path": "AndroidWeekly/#22/ART 虚拟机 — Interpreter 模式",
+      "source_url": "https://blog.csdn.net/u013989732/article/details/80717762",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 13,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-虚拟机",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ART虚拟机interpreter模式深度解析，包含运行时机制详解",
+      "scored_at": "2026-06-19T09:05:50.824860"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md",
-      "title": "Adaptive Battery 与 App Standby 协同机制",
-      "summary": "Adaptive Battery 写入接口+衰减契约，桶值被三方读取(JobScheduler/AppStateTracker/PowerManagerService)，源码 android-17.0.0_r1",
-      "chapter": "ch05",
-      "section": "5.21",
-      "processed_at": "2026-06-19T06:14:05.963030",
-      "action": "direct-inject"
+      "title": "Android 性能优化机制 - 应用启动",
+      "path": "AndroidWeekly/#22/Android 性能优化机制 - 应用启动",
+      "source_url": "https://zhuanlan.zhihu.com/p/348852031",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-性能",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android应用启动优化机制深度分析，包含冷启动热启动优化策略",
+      "scored_at": "2026-06-19T09:05:50.824862"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-privacy-sandbox-location-power-analysis.md",
-      "title": "Android 12+ 隐私沙盒对位置服务功耗的深层影响",
-      "summary": "三层判定链控制定位功耗：权限位→复合判定→注册层前台态过滤，后台 interval 默认30分钟",
-      "chapter": "ch11",
-      "section": "11.4",
-      "processed_at": "2026-06-19T06:14:05.963030",
-      "action": "queue"
+      "title": "Android 性能优化机制 - 优先级反转问题",
+      "path": "AndroidWeekly/#22/Android 性能优化机制 - 优先级反转问题",
+      "source_url": "https://zhuanlan.zhihu.com/p/348548041",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 15,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-性能",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android优先级反转问题分析与解决方案，线程同步优化技术",
+      "scored_at": "2026-06-19T09:05:50.824864"
+    },
+    {
+      "title": "Android 性能优化之 Android 10+ dex2oat 实践",
+      "path": "AndroidWeekly/#22/Android 性能优化之 Android 10+ dex2oat 实践",
+      "source_url": "https://mp.weixin.qq.com/s/5kwU-84TbsO3Tk5QDzNKwA",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-性能",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch01-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 10+ dex2oat性能优化实践，包含AOT编译优化技术",
+      "scored_at": "2026-06-19T09:05:50.824865"
+    },
+    {
+      "title": "Measuring Render Performance with Jetpack Compose",
+      "path": "AndroidWeekly/#22/Measuring Render Performance with Jetpack Compose",
+      "source_url": "https://engineering.premise.com/measuring-render-performance-with-jetpack-compose-c0bf5814933",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch06-Jetpack",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Jetpack Compose渲染性能测量方法，包含性能分析工具使用",
+      "scored_at": "2026-06-19T09:05:50.824866"
     }
   ]
 }
