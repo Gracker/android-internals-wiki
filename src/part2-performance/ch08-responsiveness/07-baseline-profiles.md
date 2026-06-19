@@ -35,8 +35,8 @@ tags:
 - dexopt
 - startup
 - performance
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
@@ -51,9 +51,9 @@ task9_review_notes: "2026-06-19 Task9 idle audit: auto-fixed。修正 ART Servic
 last_task9_audit: "2026-06-19"
 last_task2b_verifier_at: "2026-06-19T23:28:42+08:00"
 task2b_verifier_result: "ready-for-task6"
-last_task6_at: "2026-05-27T04:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-04-review.md"
-task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。"
+last_task6_at: "2026-06-20T01:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-20-01-review.md"
+task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 + Task9 auto-fix 后内容无新增 L1/L2 问题；无 L3/L4 回炉项。Task9 为 auto-fixed（非 pass-tech-review），未满足自动晋升条件。"
 last_task9_review_log: "logs/deep-review/2026-06-19-20-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
