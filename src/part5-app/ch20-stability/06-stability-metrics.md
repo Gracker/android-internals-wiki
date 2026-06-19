@@ -2,7 +2,7 @@
 title: "稳定性度量与指标体系"
 chapter: "20.6"
 section: "20.6"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-11"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, Google Play Console"
@@ -20,7 +20,7 @@ tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
 reviewed_by: openclaw-task6
