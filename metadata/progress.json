@@ -10258,13 +10258,13 @@
     }
   },
   "task2a_last_processed": {
-    "section": "22.24",
-    "title": "App Widget 更新性能：RemoteViews IPC 与 Glance 渲染",
-    "file": "src/part5-app/ch22-rendering-practice/24-app-widget-performance.md",
+    "section": "5.21",
+    "title": "Adaptive Battery 与 App Standby Bucket 协同机制",
+    "file": "src/part1-fundamentals/ch05-cpu-power/21-adaptive-battery-app-standby-coordination.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-19T01:09:47.372864+08:00",
+    "processed_at": "2026-06-19T12:12:21.990959+08:00",
     "status": "ready-for-review",
-    "note": "6 个锚点全部覆盖，3 个扩展点全部覆盖，素材来自 AOSP 源码 + 官方文档"
+    "note": "7 个锚点全部覆盖（含版本演进表 + 诊断路径），4 个扩展点全部覆盖，素材来自 AOSP android-17.0.0_r1 源码 + DeepResearch 调研"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-19",
@@ -14660,8 +14660,8 @@
   "status_counts": {
     "total": 401,
     "finalized": 301,
-    "ready_for_review": 96,
-    "draft": 4
+    "ready_for_review": 97,
+    "draft": 3
   },
   "1.17": {
     "status": "ready-for-review",
@@ -14679,5 +14679,17 @@
     "task2b_state": "pending",
     "last_task2a_at": "2026-06-19T01:09:47.372864+08:00",
     "note": "6 锚点全部覆盖，3 扩展点全部覆盖"
+  },
+  "5.21": {
+    "section": "5.21",
+    "title": "Adaptive Battery 与 App Standby Bucket 协同机制",
+    "file": "src/part1-fundamentals/ch05-cpu-power/21-adaptive-battery-app-standby-coordination.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "last_task2a_at": "2026-06-19T12:12:21.990959+08:00",
+    "note": "7 锚点 + 4 扩展全部覆盖"
   }
 }
