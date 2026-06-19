@@ -29,13 +29,20 @@ related_chapters: ["5.15", "11.2", "25.5", "5.17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-18"
 gap_source: "官方文档/素材驱动"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: pending
 task9_result: pending
 last_task2b_lite_at: "2026-06-19"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-19"
+task6_result: pass-light-edit
+last_task6_at: "2026-06-19T08:13:20+08:00"
+task6_l1_l2_fixes: 2
+task6_l3_l4_issues: 0
+task6_review_notes: "2026-06-19 Task6 first-review: pass-light-edit。L1: 中英文空格L137(PendingIntent/lambda)、汇报腔L256(可以看到→会显示)已修；高频词全部<5；否定纠正0；物理动词"收紧"在"收紧限制"语境属自然中文用法保留。L2: 开头/节奏/结构/读者引导通过。验证标注: 多处[已验证]+官方文档,无[待验证]。无L3/L4回炉项。送Task9技术审。"
 ---
 
 # 25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理
@@ -134,7 +141,7 @@ val request = GeofencingRequest.Builder()
     .addGeofence(geofence)
     .build()
 
-// 需要PendingIntent来接收回调，不能用lambda
+// 需要 PendingIntent 来接收回调，不能用 lambda
 val intent = Intent(context, GeofenceBroadcastReceiver::class.java)
 val pendingIntent = PendingIntent.getBroadcast(
     context, 0, intent,
@@ -253,7 +260,7 @@ adb shell dumpsys location
 
 如果看到某个 App 注册了 GPS_PROVIDER + 1 秒 interval 的请求，但该 App 已经在后台，说明该 App 没有正确释放定位请求。这是最常见的定位功耗异常模式。
 
-**Battery Historian** 分析定位功耗：上传 bugreport 后，在 `Location Active` 行可以看到 GNSS 芯片活跃时间段。正常情况下，用户不使用导航时 GNSS Active 行应该是空白的。如果看到长时间持续活跃，需要排查哪个 App 在后台持续请求高精度定位。
+**Battery Historian** 分析定位功耗：上传 bugreport 后，在 `Location Active` 行会显示 GNSS 芯片活跃时间段。正常情况下，用户不使用导航时 GNSS Active 行应该是空白的。如果看到长时间持续活跃，需要排查哪个 App 在后台持续请求高精度定位。
 
 ```bash
 # 抓取 bugreport 供 Battery Historian 分析

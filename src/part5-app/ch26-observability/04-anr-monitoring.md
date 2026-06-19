@@ -57,6 +57,8 @@ last_task6_audit: "2026-06-07"
 task9_review_notes: "2026-06-08 Task9 复审：pass-tech-review，P0/P1 0；P2 1（ApplicationExitInfo trace 保留细节已写入 suggestions）。自动晋升 finalized。"
 task2b_result: "fixed"
 last_task9_audit: "2026-06-08"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-19
 ---
 # ANR 监控体系
 
@@ -89,9 +91,6 @@ ANR 监控解决的是两个问题：用户遇到无响应时能不能被统计�
 
 ANR 监控可以拆成四层：系统 ANR 记录、Play Vitals 指标、端侧卡顿预警、现场快照。系统 ANR 负责确认事件，端侧快照负责补足上下文，Play Vitals 负责提供发布质量红线。ANR 根因分析流程详见 9.3 节，治理策略详见 20.4 节，Crash / ANR 捕获底层实现详见 19.24 节。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
-
 ## 系统侧 ANR 记录与 traces 采集
 
 系统 ANR 的触发点不在 App SDK 里。输入派发超时、前台 Service 超时、广播超时、ContentProvider 发布超时等路径最终会进入 system_server 的 ANR 处理逻辑。Android 16 的 AOSP 路径里，`ActivityManagerService` 把事件交给 `AnrHelper.appNotResponding()`，再由 `AnrConsumer` 串行处理队列，避免同一个进程重复进入 ANR dump。
@@ -115,7 +114,7 @@ sequenceDiagram
 
 `StackTracesDumpHelper` 的 dump 有固定预算：Java 栈通过 `Debug.dumpJavaBacktraceToFileTimeout()` 写入，失败时会尝试 native backtrace；native 进程栈通过 `Debug.dumpNativeBacktraceToFileTimeout()` 补充。源码里还会从 `ProcessCpuTracker` 选出最多两个 CPU 活跃的 Java 进程追加栈信息，用来定位“不是目标进程卡住，但目标进程在等别人”的场景。
 
-老版本监控方案常提到监听 `/data/anr/traces.txt` 或依赖 SIGQUIT 产生 traces。这个方向只能作为历史背景看：高版本系统对 `/data/anr/` 访问限制增加，端侧 SDK 不能稳定读取系统 ANR 文件；Android 16 的 system_server 路径也不等同于“App 自己处理 SIGQUIT”。App 侧更可靠的做法是把系统确认与端侧快照分开：Android 11 及以上用 `ApplicationExitInfo` 读取退出原因与系统 traces，运行期用主线程监控保存自己的现场。
+老版本监控方案常提到监听 `/data/anr/traces.txt` 或依赖 SIGQUIT 产生 traces。这条路径只能作为历史背景参考：高版本系统对 `/data/anr/` 访问限制增加，端侧 SDK 不能稳定读取系统 ANR 文件；Android 16 的 system_server 路径也不等同于“App 自己处理 SIGQUIT”。App 侧更可靠的做法是把系统确认与端侧快照分开：Android 11 及以上用 `ApplicationExitInfo` 读取退出原因与系统 traces，运行期用主线程监控保存自己的现场。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java]
@@ -154,8 +153,6 @@ Play 当前把 user-perceived ANR rate 列为 core vitals。公开阈值是：�
 告警规则按“全量 + 分桶”两层设计。全量指标盯版本发布质量，分桶指标盯机型、系统版本、页面、实验组。某个低端机型超过 8% 的 Play 线，哪怕全量 ANR 率还低，也要按 P1 处理；全量 user-perceived ANR rate 接近 0.47% 时，发版节奏应暂停，先确认增量版本、实验组和场景分布。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
-
 ## 主线程卡顿监控与 ANR 预警
 
 主线程监控的任务不是“判定 ANR”，而是在系统 ANR 之前保存现场。工程上通常用三类信号组合：
@@ -170,8 +167,6 @@ Play 当前把 user-perceived ANR rate 列为 core vitals。公开阈值是：�
 
 [已验证: 官方文档, developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
 [已验证: 官方文档, developer.android.com/topic/performance/anrs/find-unresponsive-thread]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md]
-
 ## ANR 快照字段设计
 
 ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题会停在“主线程在等锁 / 等 Binder / 等 I/O”，但不知道锁被谁拿着、Binder 对端是谁、I/O 对哪个文件发生。快照字段应围绕“时间、线程、资源、场景、环境”设计。
@@ -204,10 +199,9 @@ ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题�
 这个顺序能避免两个常见误判：把每个 5s 长卡顿都叫 ANR，或只盯主线程栈而忽略对端线程。ANR 监控的价值不在于多报几条事件，而在于每条事件都能给出下一步排查动作。
 
 [已验证: 官方文档, developer.android.com/topic/performance/anrs/find-unresponsive-thread]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md]
-
 ## 扩展
+
+以下两个场景在多进程和协程项目中常见，作为 ANR 监控的补充边界。
 
 ### 多进程 ANR 监控边界
 

@@ -61,7 +61,7 @@ last_task6_review_log: "logs/review/2026-05-24-20-review.md"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（HWC3 Composition.aidl DISPLAY_DECORATION=6）回流后写作层复审通过；L1/L2 无需小修；无 L3/L4 回炉项，送 Task9 终审。"
 last_task9_review_log: "logs/deep-review/2026-06-19-05-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-30
+last_deepseek_cn_review_at: 2026-06-19
 last_task9_autofix_at: "2026-06-19"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-19"
@@ -115,8 +115,7 @@ VSync-app 信号到达
   → 显示上屏
 ```
 
-在这条路径上，任何一个环节超时，后续环节都会被顺延，最终导致这一帧错过 VSync-app 的截止时间，表现为掉帧。后面的分类按这条路径逐段展开。
-
+在这条路径上，任何一个环节超时，后续环节都会被顺延，最终导致这一帧错过 VSync-app 的截止时间，表现为掉帧。后面的分类按这条路径逐段展开。先从渲染管线最后一环——HWC 合成说起。
 
 ### HWC 合成降级导致的 Jank
 
@@ -145,7 +144,7 @@ VSync-app 信号到达
 
 Layout 和 Measure 是 View 树遍历的核心阶段。当 View 层级过深、或者某个 ViewGroup 的 onMeasure/onLayout 逻辑过于复杂时，这两个阶段的耗时会显著增加。
 
-常见触发点主要有三类：
+常见触发点集中在三类：
 
 **View 层级过深。** Android 的 measure 和 layout 是从根节点开始递归遍历整棵 View 树的。如果层级超过 10 层，每次 requestLayout 都需要遍历所有节点，耗时累加起来相当可观。在实际项目中，嵌套过多的 LinearLayout 或 RelativeLayout 是最常见的深层级来源。
 
@@ -210,7 +209,7 @@ Android 17 对 `MessageQueue` 做了一次架构级重构，引入了 **DeliQueu
 
 - **主线程 `monitor contention` 减少**：在 Perfetto 中，启用了 DeliQueue 的应用，`android.monitor_contention` 事件中 `MessageQueue` 相关的竞争会显著减少。但业务锁（单例锁、Kotlin lazy 锁）、Binder 对端锁、native futex 等仍需正常排查。
 - **callback 分发延迟降低**：`Choreographer` 的 `doFrame` 回调、Input 事件分发等通过 Handler 投递的关键路径，受多线程并发投递的影响变小。
-- **分析注意事项**：排查 Android 17 上的主线程卡顿时，先确认应用是否启用了 DeliQueue（检查 `targetSdkVersion`），再判断 `MessageQueue` 锁竞争是否仍是瓶颈。
+- **分析注意事项**：在 Android 17 上排查主线程卡顿时，先确认应用是否启用了 DeliQueue（检查 `targetSdkVersion`），再判断 `MessageQueue` 锁竞争是否仍是瓶颈。
 
 
 ## RenderThread 瓶颈
@@ -392,6 +391,8 @@ Linux 的 Completely Fair Scheduler（CFS）按照虚拟运行时间（vruntime�
 
 **在 Perfetto 中的表现：** 在 CPU Info 区域查看主线程的状态，会看到蓝色的 Runnable Slice（表示线程已就绪但未执行）。如果这个 Runnable Slice 的持续时间超过 2-3ms，就值得关注。可以通过点击 Runnable Slice 查看唤醒源和前一个线程的状态，分析为什么调度器没有及时调度主线程。
 
+除了调度延迟，页面大小也是影响帧时间的底层因素之一。
+
 **16KB Page Size 对 I/O 卡顿和渲染 TLB 的影响。** Android 15/16 在支持 16KB 页大小的设备上，卡顿分析还需要考虑一个底层因素。16KB 页将页表条目减少了 75%，直接降低了 `fork()` 和 `mmap()` 的开销；同时对渲染管线有正面影响：
 
 - **I/O 卡顿缓解**：更大的页意味着单次 I/O 读取覆盖更多数据，启动阶段和资源加载阶段的 Page Fault 频率理论上会降低。
@@ -456,7 +457,7 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 ### 系统提供的对抗工具：ADPF
 
-当 App 检测到由于限频或调度导致的卡顿风险时，**ADPF（Android Dynamic Performance Framework）** 是官方 CPU 资源提示的主入口。ADPF 的核心 API `PerformanceHintManager` 允许 App 向系统提交线程组的 workload deadline，由系统根据 SoC 状态和温控策略决定是否调整 CPU clock 或 core type。
+面对温控限频和调度延迟，App 并非只能被动接受。当检测到限频或调度导致的卡顿风险时，**ADPF（Android Dynamic Performance Framework）** 是官方 CPU 资源提示的主入口。ADPF 的核心 API `PerformanceHintManager` 允许 App 向系统提交线程组的 workload deadline，由系统根据 SoC 状态和温控策略决定是否调整 CPU clock 或 core type。
 
 在卡顿原因体系的语境下，ADPF 的定位是：
 

@@ -62,7 +62,7 @@ task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9
 last_task9_review_log: "logs/deep-review/2026-06-19-05-deep-review.md"
 task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：EAS 示例未体现 fits_capacity 约 20% margin；P1 1：运行时负载均衡误写为 EAS 参与，已改为 CFS load_balance/misfit 路径并由 overutilized 分界。回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 Linux 6.6/6.12 EAS overutilized、fits_capacity、compute_energy 与 uclamp max/bucket 边界，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
+last_deepseek_cn_review_at: 2026-06-19
 last_task9_audit_at: "2026-06-18T10:29:11+08:00"
 last_task9_autofix_at: "2026-06-18"
 last_task9_audit_log: "logs/deep-review/2026-06-18-10-audit.md"
@@ -105,7 +105,7 @@ p2: 0
 
 在上一节中,我们讲了 CFS 的基本原理:它通过 vruntime 保证所有进程公平地获得 CPU 时间。但公平只是调度器的一个目标——在手机这样的移动设备上，还有一个同样重要的目标：**省电**。
 
-现代手机 SoC（System on Chip，片上系统）普遍采用大小核架构(我们会在 5.3 节详细展开),一个四小核加四大核的八核处理器,在安排任务时面临一个核心问题:**一个任务应该放在小核还是大核?** 放小核省电但可能不够快,放大核够快但功耗高。如果调度器只看当前空闲程度,轻任务就可能被放到大核上,频率和电压都会被抬高,系统会多花电,也更容易把热量堆在前台交互阶段。
+现代手机 SoC（System on Chip，片上系统）普遍采用大小核架构(我们会在 5.3 节详细展开),一个四小核加四大核的八核处理器,在安排任务时面临一个核心问题:**一个任务应该放在小核还是大核?** 放小核省电但可能不够快,放大核够快但功耗高。如果调度器只看当前空闲程度,轻任务就可能被放到大核上,频率和电压都会被抬高,系统会多花电,还会把更多热量堆在前台交互阶段。
 
 EAS（Energy Aware Scheduling）就是为了解决这个问题而生的。它在 Linux 5.0 中被合入主线内核,是 Android 设备上最重要的调度增强之一。EAS 的核心能力是:**在任务唤醒时,预测把任务放在不同 CPU 核心上分别需要消耗多少能量,然后选择一个既满足性能需求又最省电的核**。
 
@@ -321,13 +321,13 @@ overutilized 对 EAS 的影响随内核版本有差异:
 
 社区和部分厂商分支曾探索将聚合方式从 max 改为 sum，理论上能更准确反映多任务总负载。但截至 android16-6.12（GKI 6.12），公开源码中 `uclamp_rq_util_with()` 仍走 max 路径，sum 聚合尚未合入主线。如果某个厂商内核切换到了 sum 聚合，排查时要结合具体 kernel tree 和 commit 确认。
 
-把 Android 10、11、12 的路径拆开看,更稳:
+在 Android 10、11、12 各版本中，排查路径应分层检查:
 
 - **Android 10**:task profile 已经能操作 `cpu.util.min` / `cpu.util.max`,但默认的性能档位还是大量依赖 `/dev/stune/{background,foreground,top-app}` 和 `schedtune.boost` / `schedtune.prefer_idle`;cpuset 这条线单独决定线程允许跑在哪组 CPU 上。
 - **Android 11**:AOSP 把 cpu controller 的接口名切到 `cpu.uclamp.min` / `cpu.uclamp.max`,默认 profile 仍保留 `schedtune` 分组,属于"uclamp 文件名到位了,默认性能档位还没完全离开 schedtune"的阶段。
 - **Android 12 及以后**:AOSP 默认的 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接加入 `cpu/{background,foreground,top-app}`,`cpuset` 继续负责 CPU 集约束,freezer 迁到 cgroup v2。到这时,top-app / foreground / background 这三档才把 uclamp 提示纳入默认用户态路径。
 
-落到设备上排查时,我们至少看三处:
+排查具体设备时，至少检查三处:
 
 1. `/proc/<tid>/cgroup`,确认线程落在哪个 `cpu` / `cpuset` / `schedtune` 分组。
 2. 对应 cgroup 目录里的 `cpu.uclamp.min`、`cpu.uclamp.max`,旧设备再补看 `cpu.util.min` / `cpu.util.max` 和 `/dev/stune/*/schedtune.boost`。
