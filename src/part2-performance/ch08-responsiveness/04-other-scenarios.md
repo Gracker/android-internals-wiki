@@ -39,6 +39,7 @@ task9_state: "reviewed"
 task9_reviewed_date: 2026-06-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-06T11:20:00+08:00"
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-07T17:40:00+08:00"
 repaired_date: "2026-05-07"
