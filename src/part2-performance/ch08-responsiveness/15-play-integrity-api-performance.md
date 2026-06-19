@@ -184,7 +184,7 @@ Play Store 维护的 verdict 缓存有以下特征：
 
 ### 缓存复用边界
 
-token 本身不可跨请求复用——每次 `requestIntegrityToken()` 都返回新 token。但底层 verdict 在 Play Store 缓存窗口内可以复用，这意味着连续多次调用的延迟会递减：
+token 本身不可跨请求复用——每次 `requestIntegrityToken()` 都返回新 token。但底层 verdict 在 Play Store 缓存窗口内可以复用，连续多次调用的延迟因此递减：
 
 - 首次调用：完整延迟（缓存未命中时 250-1000ms）
 - 后续调用（窗口内）：降低到本地签名成本（50-150ms）
