@@ -50,26 +50,28 @@ related_chapters:
 - '2.18'
 - '1.5'
 - '13.3'
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task2b_result: fixed
 task6_reviewed_date: '2026-05-05'
 review_round: 3
 status: 'finalized'
-pipeline_stage: 'ready-to-publish'
-task9_result: 'pass-tech-review'
+pipeline_stage: task6_pending
+task9_result: 'auto-fixed'
 task9_state: 'reviewed'
 task2b_state: fixed
 task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-05-13'
-last_task9_at: '2026-05-13T02:51:35+08:00'
-last_task9_audit: '2026-05-25'
-task9_review_notes: '2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1 / P2 1。 | 2026-05-13 02:51 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。'
+task9_reviewed_date: '2026-06-19'
+last_task9_at: '2026-06-19T11:28:24+08:00'
+last_task9_audit: '2026-06-19'
+task9_review_notes: '2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1 / P2 1。 | 2026-05-13 02:51 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-19 11:28 Task9 idle-audit: auto-fixed。P0 2 / P1 0 / P2 0；修正 FrameMetrics 表中 INPUT_HANDLING_DURATION 常量名与 INTENDED_VSYNC_TIMESTAMP API 引入版本，回 Task6 复审。'
 last_task6_at: '2026-05-05T11:05:00+08:00'
 last_task6_audit: '2026-06-18'
 review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
+last_task9_autofix_at: '2026-06-19'
+last_task9_review_log: 'logs/deep-review/2026-06-19-11-audit.md'
 ---
 
 
@@ -378,8 +380,8 @@ FrameMetrics 常量按版本分批引入：
 
 | 常量 | 引入版本 | 用途 |
 |:---|:---|:---|
-| `TOTAL_DURATION` / `DRAW_DURATION` / `LAYOUT_MEASURE_DURATION` / `SYNC_DURATION` / `HANDLE_INPUT_DURATION` / `ANIMATION_DURATION` / `SWAP_BUFFERS_DURATION` / `INTENDED_VSYNC_TIMESTAMP` / `FIRST_DRAW_FRAME` | API 24 (Android 7.0) | 基础帧阶段指标 |
-| `VSYNC_TIMESTAMP` | API 26 (Android 8.0) | 实际 VSync 时间戳，可精确还原帧提交时机 |
+| `TOTAL_DURATION` / `DRAW_DURATION` / `LAYOUT_MEASURE_DURATION` / `SYNC_DURATION` / `INPUT_HANDLING_DURATION` / `ANIMATION_DURATION` / `SWAP_BUFFERS_DURATION` / `FIRST_DRAW_FRAME` | API 24 (Android 7.0) | 基础帧阶段指标 |
+| `INTENDED_VSYNC_TIMESTAMP` / `VSYNC_TIMESTAMP` | API 26 (Android 8.0) | 预期 / 实际 VSync 时间戳，可精确还原帧提交时机 |
 | `DEADLINE` / `GPU_DURATION` | API 31 (Android 12) | 系统计算的帧截止时间 / GPU 渲染耗时 |
 | `FRAME_TIMELINE_VSYNC_ID` | API 36 (Android 16) | 帧与 Perfetto FrameTimeline token 的关联键，用于线上帧数据与 Trace 帧时间线对齐 |
 
