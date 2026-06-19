@@ -453,3 +453,48 @@
 - **位置**：`与 1.7 / 4.3 / 1.9 的 Google Play 安装时机口径`
 - **问题**：8.7 已按 Debug Baseline Profiles 文档区分 Play、AGP 8.4+、其他 installer 的编译触发时机；相关章节仍有“Google Play 安装阶段就会使用 Baseline Profiles 优化 APK / 安装即有 AOT 覆盖”的简化表述，和 8.7 的验证口径不完全一致。
 - **建议**：后续抽检相关章节时统一成“Play / PackageManager / ART Service 可能在安装期或后台设备更新阶段消费可用 profile；具体是否已完成 `speed-profile` 以 `ProfileVerifier` 或 `dumpsys package dexopt` 为准”。
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 03:04 (Round 159)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。daily-info（2026-06-20）仅 2 条 RSS，均与之前轮次一致（Android 17 调度器/Linux 6.10 内存碎片整理），对应章节已覆盖。deep-review（2026-06-20-01）为 §11.1 功耗模型技术审查，已有章节。无新增 research-feeds、无新增 Clippings 文件。
+
+**已检查方向（累积）**：与 Round 158 一致，覆盖 AOSP 核心服务全量、source-index、Clippings 三本参考书、Android 16/17 新特性 40+ 主题、开发者高频搜索、跨平台框架、新兴平台、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching、Compose Memory Churn。
+
+**结论**：全书 443 节（304 finalized / 92 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 159 轮无合格缺口。
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 04:04 (Round 161)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24 小时无新增 DeepResearch、无新增 research-feeds。daily-info（2026-06-20）2 条 RSS 均与之前轮次一致（Android 17 调度器 → §1.13/1.25/1.26/16.x 已覆盖；Linux 6.10 内存碎片 → §4.10/4.13/4.14 已覆盖）。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching、Compose Memory Churn。
+
+**结论**：全书 403 节（309 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 161 轮无合格缺口。
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 06:08 (Round 162)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24 小时新增 1 篇 DeepResearch（Perfetto Remote Trace Processor 架构解析），评估为 §13.7 的源码级补充，评分 10/20 < 14，不构成新缺口。daily-info（2026-06-20）17 篇掘金文章全部映射到已有章节（MessageQueue 重写、Handler vs 协程、Room 3.0、桌面端 Android 等）。Clippings 无新增参考书文件。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching、Compose Memory Churn、Perfetto Remote Trace Processor RTP 架构。
+
+**结论**：全书 453 节（309 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 162 轮无合格缺口。
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 07:08 (Round 163)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24 小时新增 2 篇 DeepResearch：
+- binder-transaction-performance-analysis → §1.04/§1.25 Binder IPC 已覆盖（5 段事务开销建模 + ioctl/batching 量化，源码级补充）
+- perfetto-remote-trace-processor-architecture → §13.07 Perfetto 高级用法已覆盖（Rpc 类 byte-pipe 协议，源码级补充）
+
+均为已有章节的源码级深度补充。daily-info（2026-06-20）热点与 Round 158-162 一致（ML 内存泄漏检测 → §23.01/§23.07 已覆盖；Android 17 调度器 → §1.13/§1.25/§1.26 已覆盖）。无新增 research-feeds、无新增 Clippings 文件。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching、Compose Memory Churn、Perfetto Remote Trace Processor RTP 架构、Binder 事务 5 段开销建模。
+
+**结论**：全书 453 节（309 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 163 轮无合格缺口。
