@@ -290,3 +290,50 @@
   - `01.27-android17-binder-async-pipeline.md`（230 行 draft）↔ SUMMARY 1.25 `01.25-binder-ipc-async-pipeline.md`
   - `01.28-android17-messagequeue-rewrite.md`（422 行 draft）↔ SUMMARY 1.26 `01.26-messagqueue-deliqueue-optimization.md`
 - 建议：确认哪份文件是最终版本，合并内容并统一文件名/编号，清理 orphan 文件
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-19 09:08 (Round 152)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**（2 个，均 < 14 分）：
+1. Android 17 新调度器启动优化（RSS 消息） — 11/20（素材 2 + 相关 3 + 需求 3 + 时效 3）→ RSS 消息指向 Android 17 任务调度器减少 30% 启动时间，但已有 §1.13 MessageQueue/DeliQueue、§1.27 Binder Async、§5.9 ADPF、§16.4 Android 17 Kernel 覆盖
+2. AI 编程辅助 Android 开发效能 — 7/20（素材 1 + 相关 2 + 需求 2 + 时效 2）→ 超出 AIW 性能优化定位范围
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器。
+
+**结论**：全书 401 节已进入高度成熟期。连续 152 轮无合格缺口。
+
+**⚠️ 遗留元数据问题**（非知识缺口）：
+- ch01 下存在 2 个 orphan draft 文件（01.27/01.28），与 SUMMARY 中的 1.25/1.26 条目主题重复但文件名不同，需确认合并
+- §15.2 内容截断（Task2B Lite 导致 93% 内容丢失），需主 Task2B 从 git commit 2c5c7c85 恢复
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-19 10:07 (Round 153)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24 小时无新增 DeepResearch、无新增 research-feeds、daily-info 无未覆盖热点。所有方向与 Round 150-152 累积检查一致。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器。
+
+**结论**：全书 442 节（302 finalized / 93 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 153 轮无合格缺口。
+
+**⚠️ 遗留元数据问题**（非知识缺口）：
+- ch01 下存在 2 个 orphan draft 文件（01.27/01.28），与 SUMMARY 中的 1.25/1.26 条目主题重复但文件名不同，需确认合并
+- §15.2 内容截断（Task2B Lite 导致 93% 内容丢失），需主 Task2B 从 git commit 2c5c7c85 恢复
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-19 15:04 (Round 154)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24 小时无新增 DeepResearch、无新增 research-feeds。daily-info（2026-06-19）热点与 Round 152-153 一致（Android 17 调度器/MessageQueue 重写 → 已覆盖）。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器。
+
+**结论**：全书 442 节（304 finalized / 91 ready-for-review / 3 draft）已进入高度成熟期。连续 154 轮无合格缺口。
+
+**⚠️ 遗留元数据问题**（非知识缺口）：
+- ch01 下存在 2 个 orphan draft 文件（01.27/01.28），与 SUMMARY 中的 1.25/1.26 条目主题重复但文件名不同，需确认合并
+- §15.2 文件已恢复至 266 行/30KB（上轮报告的截断问题已有改善），但 markdown 格式损坏仍需 Task2B 修复
