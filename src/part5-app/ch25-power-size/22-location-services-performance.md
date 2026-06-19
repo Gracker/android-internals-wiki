@@ -5,7 +5,7 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-18"
 last_verified: "2026-06-18"
-last_verified_against: "Android Developers location docs + Google Play services Location APIs + AOSP frameworks/base LocationManagerService"
+last_verified_against: "Android Developers location/background + FGS service type docs + Google Play services LocationRequest/GeofenceStatusCodes + Android API GnssStatus + AOSP android-17.0.0_r1 LocationManagerService"
 confidence: medium-high
 sources:
   - type: official
@@ -15,7 +15,7 @@ sources:
   - type: official
     path: "https://developer.android.com/develop/sensors-and-location/location/geofencing"
   - type: official
-    path: "https://developer.android.com/about/versions/12/behavior-changes-12#background-location-access"
+    path: "https://developer.android.com/develop/sensors-and-location/location/background"
   - type: official
     path: "https://developer.android.com/about/versions/14/changes/fgs-types"
   - type: official
@@ -29,12 +29,12 @@ related_chapters: ["5.15", "11.2", "25.5", "5.17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-18"
 gap_source: "官方文档/素材驱动"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
-task6_state: "reviewed"
-task9_state: pending
-task9_result: pending
+task6_state: "revisiting"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 last_task2b_lite_at: "2026-06-19"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-19"
@@ -43,6 +43,17 @@ last_task6_at: "2026-06-19T08:13:20+08:00"
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-19 Task6 first-review: pass-light-edit。L1: 中英文空格L137(PendingIntent/lambda)、汇报腔L256(可以看到→会显示)已修；高频词全部<5；否定纠正0；物理动词"收紧"在"收紧限制"语境属自然中文用法保留。L2: 开头/节奏/结构/读者引导通过。验证标注: 多处[已验证]+官方文档,无[待验证]。无L3/L4回炉项。送Task9技术审。"
+last_task9_at: "2026-06-19T08:25:51+08:00"
+task9_reviewed_date: "2026-06-19"
+task9_reviewed_by: "openclaw-task9"
+last_task9_review_log: "logs/deep-review/2026-06-19-08-deep-review.md"
+last_task9_autofix_at: "2026-06-19"
+updated_by: "openclaw-task9-auto-fix"
+updated_date: "2026-06-19"
+p0: 5
+p1: 1
+p2: 1
+task9_review_notes: "2026-06-19 08 Task9 deep-review: auto-fixed。P0 5 / P1 1 / P2 1。修正 FLP provider 过度保证、Geofencing 100 条超限处理、Android 9/10/12 后台定位版本表、Android 14 location FGS 权限检查、startForegroundService 版本注释、GnssCapabilities L5 不存在 API、PowerStats GNSS rail 归属边界；回到 Task6 复审。"
 ---
 
 # 25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理
@@ -87,7 +98,7 @@ LocationRequest.Builder(Priority.PRIORITY_PASSIVE, Long.MAX_VALUE) // 不主动�
 
 [已验证: Google Play services LocationRequest 文档]
 
-FLP 的选型逻辑：`PRIORITY_HIGH_ACCURACY` 允许 FLP 激活 GNSS；`PRIORITY_BALANCED_POWER_ACCURACY` 默认只用 NETWORK，除非 App 设置的间隔很短（< 10 秒）且其他 App 已经激活了 GNSS；`PRIORITY_LOW_POWER` 严格只用 NETWORK；`PRIORITY_PASSIVE` 完全不触发硬件。
+FLP 的 Priority 只能表达精度和功耗目标，不能让客户端指定 GNSS、Wi-Fi、蜂窝或传感器组合。官方 `LocationRequest` 文档明确说客户端不能指定具体传感器，很多参数只是尽力满足；`PRIORITY_PASSIVE` 是例外，它不会主动触发定位，只接收其他客户端触发的位置更新。
 
 和 `LocationManager`（系统 API）的区别：`LocationManager.requestLocationUpdates(GPS_PROVIDER, ...)` 硬编码 provider，App 自己负责切换。FLP 把选型逻辑封装在 Play services 内部，能根据设备状态（是否充电、是否移动、屏幕是否亮）做更细粒度的调整。在支持 Google Play services 的设备上优先用 FLP；在国内无 GMS 设备上，只能用 `LocationManager`。
 
@@ -116,7 +127,7 @@ val request = LocationRequest.Builder(
     .build()
 ```
 
-这套配置在城市级内容推荐场景下够用：NETWORK provider 为主，移动距离判断过滤静止唤醒，批量交付降低 CPU 唤醒次数。功耗比默认配置（HIGH_ACCURACY + 1 秒间隔）低一个数量级。
+这套配置在城市级内容推荐场景下够用：精度目标限制在平衡模式，移动距离判断过滤静止唤醒，批量交付降低 CPU 唤醒次数。功耗比默认配置（HIGH_ACCURACY + 1 秒间隔）低一个数量级。
 
 [已验证: Google Play services LocationRequest Builder 文档]
 
@@ -159,7 +170,7 @@ geofencingClient.addGeofences(request, pendingIntent)
 
 **setLoiteringDelay**：DWELL 事件的触发停留时间。设太短会增加误触发（路过围栏边缘被判定为停留），设太长会漏掉真正的停留事件。30-60 秒是合理区间。
 
-**围栏数量限制**：Google Play services 的 FLP 每个应用最多注册 100 个地理围栏。超过时系统会淘汰最早注册的围栏。大规模连锁店场景需要做围栏分组管理，只在用户所在城市半径内激活对应围栏组，用户离开后移除。
+**围栏数量限制**：Google Play services 的 Geofencing API 每个应用最多注册 100 个地理围栏。超过限制时 `addGeofences()` 会失败并返回 `GEOFENCE_TOO_MANY_GEOFENCES`，不会自动淘汰旧围栏。大规模连锁店场景需要做围栏分组管理，只在用户所在城市半径内激活对应围栏组，用户离开后移除。
 
 [已验证: Google Play services GeofencingClient 文档, 每应用 100 围栏限制]
 
@@ -171,19 +182,22 @@ Android 对后台定位的限制经历了多个版本的收紧：
 
 | 版本 | 关键限制 | 对 App 的影响 |
 |------|---------|--------------|
-| Android 8 (API 26) | 后台应用位置更新频率被限制到约每小时几次 | 后台持续导航不再可行 |
-| Android 9 (API 28) | 后台应用需要 ACCESS_BACKGROUND_LOCATION 权限 | 无此权限的后台定位直接不回调 |
-| Android 10 (API 29) | ACCESS_BACKGROUND_LOCATION 需要单独申请，不能和前台权限一起弹 | 用户可以在系统设置中随时收回 |
+| Android 8 (API 26) | 后台应用位置更新频率被限制到每小时数次 | 后台持续导航不再可行，应改用前台服务或地理围栏 |
+| Android 9 (API 28) | 引入 `FOREGROUND_SERVICE` 权限，后台定位仍沿用 Android 8 的低频限制 | 使用 FGS 的应用必须在 manifest 声明基础前台服务权限 |
+| Android 10 (API 29) | 引入 `ACCESS_BACKGROUND_LOCATION`；使用位置的 FGS 也要求声明 `location` 类型 | 后台位置权限需要单独申请，不能和前台权限一次弹出 |
 | Android 11 (API 30) | 前台权限弹窗不再包含"始终允许"选项 | 需要先授"使用时允许"，再跳设置页授"始终允许" |
-| Android 12 (API 31) | 后台位置更新从可变频率降为固定低频（约每小时 1-2 次） | 即使有权限，后台定位也几乎不可用于实时场景 |
-| Android 14 (API 34) | 持续定位需要 FGS，且必须声明 `location` 类型 | 未声明类型的 FGS 会被系统拒绝启动 |
+| Android 12 (API 31) | 用户可以只授予近似位置；后台更新仍受 Android 8+ 低频限制 | App 需要验证 coarse-only 路径，不能默认拿到 fine location |
+| Android 14 (API 34) | FGS 类型和类型权限强制化，location FGS 需要 manifest 声明 `location` 与 `FOREGROUND_SERVICE_LOCATION`，运行时还要具备 coarse/fine 定位权限 | 未声明类型或运行时前置条件不满足时，FGS 会启动失败 |
 
-[已验证: 官方文档, developer.android.com/about/versions/12/behavior-changes-12#background-location-access + developer.android.com/about/versions/14/changes/fgs-types]
+[已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/background + developer.android.com/about/versions/12/behavior-changes-all#approximate-location + developer.android.com/about/versions/14/changes/fgs-types]
 
-Android 14+ 要求持续定位的 FGS 声明 `location` 类型：
+Android 14+ 的 location FGS 有两层要求：manifest 声明 `FOREGROUND_SERVICE_LOCATION` 和 `android:foregroundServiceType="location"`；启动前，用户还必须开启位置服务，并授予 `ACCESS_COARSE_LOCATION` 或 `ACCESS_FINE_LOCATION`。`FOREGROUND_SERVICE_LOCATION` 是普通权限，只能通过 manifest 声明，不是运行时弹窗权限。
 
 ```xml
 <!-- AndroidManifest.xml -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
 <service
     android:name=".LocationTrackingService"
     android:foregroundServiceType="location"
@@ -195,23 +209,20 @@ Android 17 进一步要求 FGS 类型声明与实际用途匹配（详见 §5.17
 运行时申请 FGS：
 
 ```kotlin
-// Android 14+ 需要先检查权限
+// Android 14+ 启动 location FGS 前，需要已有 coarse 或 fine 定位运行时权限
 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-    val perm = ContextCompat.checkSelfPermission(
-        context,
-        android.Manifest.permission.FOREGROUND_SERVICE_LOCATION
-    )
-    if (perm != PackageManager.PERMISSION_GRANTED) {
-        // 需要先请求 FGS location 权限
-        return
-    }
+    val hasLocation =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    if (!hasLocation) return
 }
 
 // 启动 FGS
 val intent = Intent(context, LocationTrackingService::class.java)
 ContextCompat.startForegroundService(context, intent)
 
-// 在 Service.onStartCommand 中，3.0+ 必须在 5 秒内调用 startForeground
+// Android 8.0+ 通过 startForegroundService 启动后，Service 必须在短时间内调用 startForeground
 startForeground(
     NOTIFICATION_ID,
     notification,
@@ -270,10 +281,10 @@ adb bugreport bugreport.zip
 
 [已验证: 官方文档, developer.android.com/topic/performance/power/battery-historian]
 
-**PowerStatsService 归因**（Android 12+）：`dumpsys power_stats` 可以查看各子系统（包括 GNSS）的功耗归因数据。GNSS 功耗通常归类在 modem 子系统下，因为 GNSS 芯片在 SoC 外部，通过 modem 接口供电。
+**PowerStatsService 归因**（Android 12+）：`dumpsys power_stats` 可以查看各子系统（包括 GNSS）的功耗归因数据。GNSS power rail 的命名和归属依赖设备实现，可能以 GNSS、modem 或厂商自定义 rail 出现，不能只按 modem 归类。
 
 ```bash
-# 查看 GNSS/modem 功耗统计（需要 root 或 userdebug 版本）
+# 查看 GNSS/modem/vendor power rail 统计（需要 root 或 userdebug 版本）
 adb shell dumpsys power_stats | grep -A5 "GNSS\|MODEM"
 ```
 
@@ -306,18 +317,27 @@ locationManager.registerGnssMeasurementsCallback(
 
 双频 GNSS（L1+L5）从 Android 8.0 开始逐步支持，Pixel 5、Galaxy S20+ 等设备配备了双频 GNSS 芯片。双频定位的优势在于城市峡谷环境（高楼遮挡）：L1 信号反射多径误差大，L5 信号带宽更宽、抗多径能力强，双频联合解算可以把峡谷场景的定位误差从 15-30 米降到 5-10 米。
 
-双频 GNSS 的功耗比单频 L1 高约 15-25%。系统层自动管理双频开关，App 无法手动控制。`LocationManager.getGnssCapabilities()`（API 31+）可以查询当前设备是否支持双频：
+双频 GNSS 的功耗比单频 L1 高约 15-25%。系统层自动管理双频开关，App 无法手动控制。Android 没有用 `GnssCapabilities` 直接暴露"支持 L5 双频"的公共开关。应用通常通过 `GnssStatus.Callback` 观察卫星状态：当某颗卫星 `hasCarrierFrequencyHz(index)` 为 true，且 `getCarrierFrequencyHz(index)` 接近 L5 频点（GPS L5 约 1176.45 MHz）时，才能判断当前观测里出现了 L5 信号。
 
 ```kotlin
-if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-    val caps = locationManager.getGnssCapabilities()
-    if (caps.hasGnssCapabilitiesType(GnssCapabilities.TOP_L5)) {
-        // 设备支持 L5 双频
+locationManager.registerGnssStatusCallback(
+    executors.main,
+    object : GnssStatus.Callback() {
+        override fun onSatelliteStatusChanged(status: GnssStatus) {
+            for (i in 0 until status.satelliteCount) {
+                if (status.hasCarrierFrequencyHz(i)) {
+                    val mhz = status.getCarrierFrequencyHz(i) / 1_000_000f
+                    if (mhz in 1175.0f..1178.0f) {
+                        // 当前观测中出现 L5 附近频点
+                    }
+                }
+            }
+        }
     }
-}
+)
 ```
 
-[已验证: 官方文档, developer.android.com/reference/android/location/GnssCapabilities (API 31+)]
+[已验证: 官方文档, developer.android.com/reference/android/location/GnssStatus#getCarrierFrequencyHz (API 26+)]
 
 ## 扩展：Wi-Fi RTT 与 BLE Beacon 测距
 
@@ -367,11 +387,12 @@ Wi-Fi RTT 单次测距功耗约 30-50 mA·s（毫安秒），比 Wi-Fi 扫描低
 - [官方文档：位置更新请求](https://developer.android.com/develop/sensors-and-location/location/request-updates)
 - [官方文档：地理围栏](https://developer.android.com/develop/sensors-and-location/location/geofencing)
 - [官方文档：定位电池优化](https://developer.android.com/develop/sensors-and-location/location/battery/optimize)
-- [官方文档：Android 12 后台定位限制](https://developer.android.com/about/versions/12/behavior-changes-12#background-location-access)
+- [官方文档：后台定位限制](https://developer.android.com/develop/sensors-and-location/location/background)
+- [官方文档：Android 12 近似位置](https://developer.android.com/about/versions/12/behavior-changes-all#approximate-location)
 - [官方文档：Android 14 FGS 类型](https://developer.android.com/about/versions/14/changes/fgs-types)
 - [官方文档：Wi-Fi RTT](https://developer.android.com/guide/topics/connectivity/wifi-rtt)
 - [Google Play services：LocationRequest](https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest)
-- [AOSP：LocationManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/location/LocationManagerService.java)
+- [AOSP：LocationManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/LocationManagerService.java)
 - 详见 §25.5 定位与传感器功耗优化（基础权衡）
 - 详见 §5.17 Android 17 FGS 类型声明与后台执行性能边界
 - 详见 §11.2 App 耗电优化（功耗入口体系）
