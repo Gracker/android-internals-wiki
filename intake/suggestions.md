@@ -263,3 +263,30 @@
 **结论**：全书 441 节（302 finalized / 92 ready-for-review / 4 非空 draft）已进入高度成熟期。连续 151 轮无合格缺口。
 
 **⚠️ P0 遗留**：§15.2 内容截断（Task2B Lite 导致 93% 内容丢失，已记录在 suggestions.md），需主 Task2B 从 git commit 2c5c7c85 恢复。
+
+
+## [Task2A 缺口挖掘 — 2026-06-19 08:13] 已检查方向记录
+
+本轮未发现 ≥14 分候选。已检查以下方向（避免下轮重复探索）：
+
+1. source-index.json → 5 条目，无高质量未映射素材
+2. research-feeds（2026-04-08 ~ 2026-05-04）→ 主题已全覆盖（与上轮一致）
+3. daily-info（2026-06-17 ~ 2026-06-19）→ 无未覆盖 Android 性能热点
+4. research-gaps.md 现有盲区 → 均为现有章节补充建议（26.3 内存监控 API、10.6 Compose 内存），非新章节
+5. AOSP frameworks/base 核心服务 → 所有性能相关主要服务已覆盖
+6. Clippings 三本参考书 → 知识点已穷尽（与上轮一致）
+7. Android 17 新特性逐项排查 → 所有性能相关特性已有专属章节
+8. 本轮新增探索方向（均不通过 ≥14 阈值）：
+   - Android Virtualization Framework (AVF) 性能：9 分（素材少、读者需求低）
+   - Wear OS / Android TV 性能：8 分（超出 AIW 定位范围）
+   - Enterprise / Work Profile 性能：11 分（相关性不足）
+   - HAL 框架性能：10 分（过于抽象，缺乏独立章节价值）
+   - Kernel OTA / Update Engine 性能：7 分（非应用开发者关注）
+   - Multi-user / Secondary User 性能：9 分（过于小众）
+9. 与上轮（2026-06-18）对比：无新增素材、无新增 daily-info 热点、无新增 research-feeds → 覆盖范围无变化
+
+**元数据问题（非知识缺口，记录待处理）**：
+- ch01 下存在 2 个 orphan draft 文件，与 SUMMARY 中的 1.25/1.26 条目主题重复但文件名不同：
+  - `01.27-android17-binder-async-pipeline.md`（230 行 draft）↔ SUMMARY 1.25 `01.25-binder-ipc-async-pipeline.md`
+  - `01.28-android17-messagequeue-rewrite.md`（422 行 draft）↔ SUMMARY 1.26 `01.26-messagqueue-deliqueue-optimization.md`
+- 建议：确认哪份文件是最终版本，合并内容并统一文件名/编号，清理 orphan 文件
