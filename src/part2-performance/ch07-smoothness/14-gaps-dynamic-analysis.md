@@ -17,7 +17,7 @@ sources:
     path: "https://github.com/samudoria/GAPS"
     authors: "Samuele Doria, Eleonora Losiouk"
     date: "2025-11-28"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: "pass-light-edit"
 reviewed_date: "2026-05-05"
 reviewed_by: "openclaw-task6"
@@ -30,21 +30,24 @@ review_type: "task6-writing-quality-review"
 repaired_date: 2026-05-05
 repaired_by: openclaw-task2b
 review_round: 3
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: revisiting
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-24T10:22:45+08:00"
-last_task9_audit: "2026-05-24"
+last_task9_audit: "2026-06-19"
 task2b_fixed_date: "2026-06-05T02:50:00+08:00"
 task2b_fixed_by: "openclaw-task2b-main"
 task2b_fix_summary: "Removed unsupported reflection/DI/dynamic-proxy penetration rate table (not backed by GAPS paper/repo per Task9 idle audit 2026-05-24); replaced with qualitative Limitations-based description consistent with paper text."
-task9_review_notes: "2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。Frida trace marker 与 Perfetto SDK 边界已处理完成；自动晋升 finalized。；2026-05-24 10:22 task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 0。L196-L212 的反射/DI/动态代理穿透率表未被 GAPS 论文/仓库支撑，已写入 queue。"
+task9_review_notes: "2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。Frida trace marker 与 Perfetto SDK 边界已处理完成；自动晋升 finalized。；2026-05-24 10:22 task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 0。L196-L212 的反射/DI/动态代理穿透率表未被 GAPS 论文/仓库支撑，已写入 queue。；2026-06-19 Task9 idle-audit auto-fix：修正 GAPS Limitations 来源归因，反射/DI/动态代理/JNI 仅保留为外推风险；回到 Task6 复审。"
 review_notes: "2026-05-05 Task6：补齐 outline 块，修正 frontmatter 结构、标题标点和少量中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
+last_task9_audit_at: "2026-06-19T10:27:25+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-19-10-audit.md"
+last_task9_autofix_at: "2026-06-19"
 ---
 
 # 7.14 GAPS：Android 动态分析目标可达性路径重建
@@ -195,21 +198,20 @@ GAPS 的 Frida hook 除了用于确认方法是否被执行，还可以扩展为
 
 - **Jetpack Compose**：论文明确写了当前不支持 Compose。
 - **Flutter / React Native**：逻辑不完全落在传统 Dalvik 调用链里，静态路径重建会受限。
-- **混淆、反射、复杂 App state**：真实应用里的 path explosion、账号态、支付流、系统权限广播都会降低动态触达率。
+- **混淆、复杂 App state**：真实应用里的 path explosion、账号态、支付流、系统权限广播都会降低动态触达率。
 - **性能分析扩展**：若要把它用于 jank / ANR 排查，还要自己补 Trace 与统计口径。
 
 
 
-### 反射与编译期生成对静态分析的影响
+### 论文外推边界：反射与编译期生成
 
-GAPS 论文在 Limitations 节中列举了反射、依赖注入、动态代理和 JNI 等场景对静态路径重建精度的威胁，但未提供分项定量数据。以下按论文自身的讨论范围简述各类影响：
+GAPS 论文的 Limitations 节只支撑几类边界：Flutter / React Native、混淆导致的 path explosion、库中的 dead code、未建模的 implicit flows、Jetpack Compose、复杂交互状态，以及 intent-filter 权限或 data 参数。反射、Dagger/Hilt、动态代理和 JNI 属于 Android 静态分析的通用风险；论文没有给出 GAPS 对这些场景的分项实验或穿透率，不能写成论文结论。
 
-- **反射调用**：R8/ProGuard full mode 可将 `Class.forName()` 参数和反射目标方法名混淆为无意义字符串，静态分析阶段完全无法还原调用目标。实际工程中需要 `-keepnames` 或 `-keepclassmembers` 规则来保留入口。
-- **Dagger/Hilt 等编译期代码生成**：`Hilt_*_Factory`、`*_MembersInjector` 等生成类仅存在于编译产物 `classes.dex` 中，无对应源码。静态分析工具需要从 APK 字节码中反向推断依赖注入关系，GAPS 未内置对此类生成模式的专门建模。
-- **动态代理（InvocationHandler）**：`java.lang.reflect.Proxy` 生成的代理类在运行时拼接方法调用，静态 call graph 上无法追踪代理到真实实现的跳转关系。
-- **JNI / Native 调用链**：论文明确指出当前不支持 Android 原生代码（C/C++）的静态路径重建，所有 JNI 入口点到 native 库的调用关系都在静态分析阶段不可见。
+- **反射 / 动态代理**：目标调用可能在运行时由字符串、代理类或 `InvocationHandler` 拼接出来，静态 call graph 不一定能追踪到真实实现。用于 GAPS 结果解读时，只能标成待验证风险。
+- **Dagger/Hilt 等编译期代码生成**：生成类存在于编译产物中，GAPS 是否能复原依赖注入关系取决于字节码形态和回调建模，论文未给出专项结果。
+- **JNI / Native 调用链**：目标方法进入 native 库后，传统 Dalvik 字节码路径重建无法继续展开。论文没有对 JNI 场景给出单独实验，不能从整体 88.24% / 57.44% 推导 native 触达率。
 
-这些场景在真实应用中的覆盖缺口，是 GAPS 静态穿透率（88.24%）和动态触达率（57.44%）之间差距的主要来源之一。将 GAPS 用于性能排障时，如果目标方法落在这几类场景里，静态阶段就可能拿不到可行路径。
+将 GAPS 用于性能排障时，若目标方法落在这些外推场景里，应先通过 Frida hook、trace marker 或手工验证确认触达，再把 Perfetto / simpleperf 观测结果接到后续分析。
 
 ## 参考资料
 
