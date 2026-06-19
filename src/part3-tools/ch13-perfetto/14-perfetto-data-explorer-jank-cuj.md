@@ -41,7 +41,7 @@ last_task9_at: "2026-06-19T07:27:34+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
 task6_state: "reviewed"
-task9_state: "reviewed"
+task9_state: "pending"
 pipeline_stage: "task9_pending"
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-06-19-07-review.md"
