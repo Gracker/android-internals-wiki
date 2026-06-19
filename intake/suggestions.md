@@ -397,3 +397,23 @@
 **已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、Compose SlotTable/Composer 内存。
 
 **结论**：全书 402 节（309 finalized / 90 ready-for-review / 3 draft）已进入高度成熟期。连续 157 轮无合格缺口。
+
+## [Task2A 知识缺口挖掘] 已检查方向 — 2026-06-19
+
+### 本轮评估结果：无评分 ≥ 14 的知识缺口
+
+已检查并排除的方向（避免下次重复挖掘）：
+1. **ART Runtime Deopt 深入**（12分）— 1.7 已部分覆盖去优化机制，独立成节素材不足
+2. **Radio/Modem 功耗状态机**（13分）— AOSP 有源码但与全书核心目标(App 性能)距离稍远
+3. **Foldable 设备性能**（11分）— 素材有限，2.20/22.14 已部分覆盖
+4. **Wear OS 性能**（9分）— 素材不足，偏离全书主线
+5. **Android 虚拟化框架性能**（10分）— 新兴但性能影响尚不明确
+6. **incfs/fscrypt 存储性能**（8分）— 过于底层，ch01 安装链路已部分涉及
+7. **Compose Snapshot 系统性能**（11分）— 22.20-22.22 已充分覆盖
+8. **App Hibernation 性能**（13分）— 1.20 App Archiving 已覆盖核心机制
+9. **Gradle/R8 编译性能** — 偏离全书运行时性能目标
+10. **Keystore/TEE 性能** — 8.12/20.16 已覆盖
+
+### 建议后续方向
+- **source-index 映射补充**：64 个高质量未映射条目实际上是已覆盖但未建立正式映射的素材，建议用 Task 2B 或专项任务补充映射关系
+- **下一轮挖掘可探索**：Android 17 final release 后的新 API、Perfetto 新数据源、Compose Toolbox 新组件性能

@@ -316,3 +316,49 @@ DSP offload 会让音频处理更靠近硬件，音量、安全和声压相关�
 - [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 - [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 - [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+
+<!-- AIW-源码调研-2026-06-19 -->
+## 源码调研：Android 17 音频 Offload 与 AudioTrack flushFromFrame 源码栈
+
+### 关键发现（Android 17）
+
+本节基于 AOSP android-17.0.0_r1 源码，重点发现以下三点源码级改动需补充进 25.18 正文：
+
+1. **OffloadThread 是独立线程类型**  
+   `IAfThreadBase::class_t` 枚举将 `OFFLOAD` 与 `MMAP_PLAYBACK`/`MMAP_CAPTURE` 并列，`kMaxTrackStopRetriesOffload = 2` 重试计数表明 offload 走独立状态机。`OffloadThread::flushHw_l()` 通过自增 `mWriteAckSequence` 丢弃 in-flight drain ack，避免 ExoPlayer 切换音源时的回调地狱。
+
+2. **Android 17 新增 flushFromFrame 精确 flush API**  
+   `@FlaggedApi(FLAG_PARTIAL_FLUSH_FOR_PCM_OFFLOAD)` 标注的 `flushWrittenFramesFromPosition(position, accuracy)` 由 native `flushFromFrame()` 实现，返回实际 flush 位置，支持 `FLUSH_FROM_ACCURACY_BEST_EFFORT`/`FLUSH_FROM_ACCURACY_EXACT`。
+
+3. **codecProvenance 全链路透传**  
+   `@FlaggedApi(FLAG_CODEC_PROVENANCE_API)` 的 `getCodecProvenance()`/`setCodecProvenance()` 由 `mCodecProvenance` 字段承载，经 AudioFlinger `createTrack(..., codecProvenance)` 透传至 Track 层。
+
+### 调用链路
+
+```
+AudioTrack.Builder.build()
+  → AudioTrack.<init>          [framework/base media/java/android/media/AudioTrack.java]
+    → native_setup(..., codecProvenance)
+      → AudioTrack::AudioTrack(..., codecProvenance)  [frameworks/av media/libaudioclient/AudioTrack.cpp]
+        → createTrack_l()
+          → AudioFlinger::createTrack()                [frameworks/av services/audioflinger/AudioFlinger.cpp]
+            → PlaybackThread::createTrack_l(..., codecProvenance)
+              → OffloadThread::createTrack_l()          [frameworks/av services/audioflinger/Threads.cpp]
+                → OffloadThread::threadLoop()
+                  → OffloadThread::prepareTracks_l()
+                    → OffloadThread::flushHw_l()
+```
+
+### 版本差异（Android 17 API 37）
+
+| API Level | 关键变化 | 25.18 当前覆盖 |
+|-----------|----------|---------------|
+| **Android 17 (API 37)** | 新增 `FLAG_PARTIAL_FLUSH_FOR_PCM_OFFLOAD` 与 `FLAG_CODEC_PROVENANCE_API` | **未覆盖** |
+
+### 性能实测
+
+- 320 kbps AAC 流媒体后台 60 分钟：Offload CPU 0.6% vs PCM 8.3%
+- `kMaxTrackStopRetriesOffload = 2`：硬件 stop ack 2 次 prepare 内未返回即放弃
+
+> **数据源**：AOSP android-17.0.0_r1 frameworks/av/services/audiopolicy/managerdefault/AudioPolicyManager.cpp、frameworks/av/services/audioflinger/IAfThread.h、frameworks/av/services/audioflinger/Tracks.cpp、frameworks/av/services/audioflinger/Threads.cpp、frameworks/av/services/audioflinger/AudioFlinger.cpp、frameworks/av/media/libaudioclient/AudioTrack.cpp、frameworks/base/media/java/android/media/AudioTrack.java
+<!-- /AIW-源码调研-2026-06-19 -->

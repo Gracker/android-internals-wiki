@@ -201,3 +201,47 @@ Sensor Direct Channel 适合高频、低开销的传感器数据传输场景，�
 ### 与定位、蓝牙和后台任务的功耗归因协同
 
 传感器很少单独造成线上耗电。运动检测常和 FLP、BLE scan、JobScheduler / WorkManager 一起出现；用户看到的是一段后台活动造成的综合掉电。排查时应把传感器事件、定位更新、蓝牙扫描、后台任务和 wake lock 放在同一时间范围内对齐，避免把 FLP 或 BLE 引起的唤醒误归因给 SensorService。定位和传感器的 App 侧取舍详见 25.5 节，功耗工具详见 14.11 节。
+
+<!-- AIW-源码调研-2026-06-19 -->
+## 源码级补充：Android 17 SensorService 批处理与 CAPPED 限频
+
+> 本节基于 AOSP `android-17.0.0_r1` tag 抓取源码（2026-06-19），完整研究报告见 `DeepResearch/2026-06-19-sensorservice-batching-android17-source-verification.md`。
+
+### 🔸 Android 17 引入的 200Hz 限频（CAPPED）
+
+加速度计/陀螺仪/磁力计（含 uncalibrated 版本）共 6 个 sensor 落在 capped 集合。App 没有 `HIGH_SAMPLING_RATE_SENSORS` 权限、或麦克风 sensor privacy 开启时，请求采样周期会被压到 5ms（200Hz）。`SensorService::onFirstRef()` 还会直接把 `Sensor` 对象的 `minDelay` 和 `highestDirectReportRateLevel` 永久调整，让 HAL 一开始就拒绝 > 200Hz 的请求。
+
+源码锚点：
+
+- `frameworks/native/services/sensorservice/SensorService.h` line 73：`#define SENSOR_SERVICE_CAPPED_SAMPLING_PERIOD_NS (5 * 1000 * 1000)`
+- `frameworks/native/services/sensorservice/SensorService.cpp` line 2877-2925：`isSensorInCappedSet()` / `adjustSamplingPeriodBasedOnMicAndPermission()` / `adjustRateLevelBasedOnMicAndPermission()`
+- `frameworks/native/services/sensorservice/SensorService.cpp` line 1576-1584：`SensorService::onFirstRef()` 中的 `sensor.capMinDelayMicros(...)` / `sensor.capHighestDirectReportRateLevel(...)` 永久调整
+- `frameworks/native/services/sensorservice/SensorEventConnection.cpp` line 725-748：`SensorEventConnection::enableDisable()` 中的 capped 入口
+- `frameworks/native/services/sensorservice/SensorDirectConnection.cpp` line 187-200：`SensorDirectConnection::configure()` 中 direct channel 限频
+
+实际行为：debuggable App 在无权限时拿到 `PERMISSION_DENIED` 而不是 200Hz 限频，方便开发者定位。
+
+### 🔸 `suspend_sensor_event_delivery_on_frozen_pid` 投递挂起
+
+Android 17 引入 aconfig flag `android::hardware::flags::suspend_sensor_event_delivery_on_frozen_pid()`，在 `SensorService::~SensorService()`、`onUidStateChanged()`、`sendEventsToAllClients()` 等路径上分支控制：当 App 被 cgroup freezer 冻住时，SensorService 在 sensor 侧先暂停事件累积，等进程解冻后再投递，避免 socket buffer 堆满和"无效 AP 唤醒"。
+
+源码锚点：
+
+- `frameworks/native/services/sensorservice/SensorService.cpp` line 577（析构）、712（`onUidStateChanged`）、1923+（`sendEventsToAllClients`）的分支
+- 头文件 `frameworks/native/services/sensorservice/SensorService.cpp` line 28 引入 `<com_android_frameworks_sensorservice_flags.h>`
+
+> 该 flag 的默认值与切换时间需进一步在 aconfig 源文件核对，目前正文表述为"Android 17 引入"。
+
+### 🔸 批处理参数聚合（确认）
+
+`SensorDevice::updateBatchParamsLocked()` 在同一 sensor handle 的所有客户端里取最小采样周期和最小批量延迟；只有 `bestBatchParams` 变化时才调 `mHalWrapper->batch()`。这一行为在 `android-17.0.0_r1` 仍保持，可作为 §5.15 "SensorDevice 聚合多客户端请求" 论断的源码证据。
+
+源码锚点：
+
+- `frameworks/native/services/sensorservice/SensorDevice.cpp` line 570-636：`batch` / `batchLocked` / `updateBatchParamsLocked` 三个函数
+
+### 🔸 适用版本范围提示
+
+原 §5.15 front matter 适用版本为 "Android 4.4 (API 19) - Android 16 (API 36)"，但其源码锚点已对齐到 `android-17.0.0_r1`；正文可补一条 "2026-06-19 已在 android-17.0.0_r1 完成复核，批处理路径与 Android 16 行为一致；新增的 CAPPED 限频和 frozen pid 挂起属于 Android 17 行为变更，不影响批处理模型本身" 的脚注，与本节相互引用。
+
+<!-- /AIW-源码调研-2026-06-19 -->

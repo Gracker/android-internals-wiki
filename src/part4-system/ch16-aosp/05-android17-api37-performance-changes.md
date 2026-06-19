@@ -312,6 +312,134 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 
 详见 **14.7 ProfilingManager**。
 
+
+<!-- AIW-源码调研-2026-06-19 -->
+
+### 源码级机制补充（2026-06-19 源码调研）
+
+基于对 AOSP 源码的深度分析，Android 17 的 ProfilingManager 实际上是一个三层架构的完整性能监控体系，包含以下核心组件：
+
+#### 1. 架构层次
+
+**ProfilingServiceManager**（框架接入层）：
+- 位置：`platform/frameworks/base/core/java/android/os/ProfilingServiceManager.java`
+- 功能：提供 Profiling 服务的框架级接入点
+- 关键 API：`getProfilingServiceRegisterer()` 返回 `ServiceRegisterer("profiling_service")`
+
+**ProfilingService**（核心服务层）：
+- 位置：`platform/packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`
+- 功能：实现系统触发器的核心逻辑
+- 关键机制：`startSystemTriggeredTrace()` 启动系统触发追踪
+- 触发器管理：`addTrigger()` 管理应用级触发器
+
+**AnomalyDetector**（异常检测层）：
+- 位置：`platform/packages/modules/Profiling/anomaly-detector/framework/java/android/os/profiling/anomaly/AnomalyDetectorManager.java`
+- 功能：系统级异常检测和规则引擎
+- 关键 API：`setAnomalyDetectorRules()` 设置异常检测规则
+
+#### 2. 源码级触发机制
+
+**系统触发器实现：**
+```java
+public void startSystemTriggeredTrace() {
+    synchronized (mLock) {
+        if (mSystemTriggeredTraceProcess != null && mSystemTriggeredTraceProcess.isAlive()) {
+            // 只允许同时运行一个系统触发追踪
+            return;
+        }
+        
+        String[] packageNames = getActiveTriggerPackageNames();
+        if (packageNames.length == 0) {
+            // 没有应用注册触发器，不启动追踪
+            return;
+        }
+        // 启动系统触发追踪进程
+    }
+}
+```
+
+**触发器注册机制：**
+```java
+public void addTrigger(ProfilingTriggerData trigger, boolean maybePersist) {
+    SparseArray<ProfilingTriggerData> perProcessTriggers =
+            mAppTriggers.get(trigger.getPackageName(), trigger.getUid());
+    
+    if (perProcessTriggers == null) {
+        perProcessTriggers = new SparseArray<>();
+        mAppTriggers.put(trigger.getPackageName(), trigger.getUid(), perProcessTriggers);
+    }
+    
+    // 每个uid+触发器类型只允许一个触发器
+    perProcessTriggers.put(trigger.getTriggerType(), trigger);
+}
+```
+
+#### 3. 异常检测规则引擎
+
+**规则定义：**
+```java
+public final class Rule {
+    private final String name;
+    private final List<Integer> anomalyActions;
+    private final int conditionType;
+    private final String ruleCondition;
+    
+    public static final int ANOMALY_TYPE_MEMORY = 1;
+    public static final int ANOMALY_TYPE_CPU = 2;
+    public static final int ANOMALY_TYPE_NETWORK = 3;
+}
+```
+
+**规则设置：**
+```java
+@RequiresApi(37)
+@SystemApi(client = SystemApi.Client.PRIVILEGED_APPS)
+@RequiresPermission(CONFIGURE_ANOMALY_DETECTOR)
+public void setAnomalyDetectorRules(@NonNull Set<Rule> rules) {
+    Objects.requireNonNull(rules);
+    try {
+        mService.setRules(convertRulesToRuleParcels(rules));
+    } catch (RemoteException ex) {
+        ex.rethrowFromSystemServer();
+    }
+}
+```
+
+#### 4. 输出文件格式与性能优化
+
+**Perfetto 格式输出：**
+- Java堆转储：`.perfetto-java-heap-dump`
+- 堆分析：`.perfetto-heap-profile`
+- 栈采样：`.perfetto-stack-sample`
+- 系统追踪：`.perfetto-trace`
+
+**性能优化策略：**
+- RateLimiter 控制触发频率
+- 异步处理栈采样和追踪
+- 自动清理临时文件，限制存储空间
+- 系统触发器优先级高于应用触发器
+
+#### 5. 模块化架构设计
+
+Android 17 将 Profiling 系统组织为独立的主线模块（com.android.profiling APEX），包含：
+- `platform/packages/modules/Profiling/` - 主模块
+- `platform/packages/modules/Profiling/anomaly-detector/` - 异常检测子模块
+- `platform/packages/modules/Profiling/service/` - 服务实现
+- `platform/packages/modules/Profiling/framework/` - 框架API
+
+这种模块化设计使得 Profiling 系统可以独立于 framework 更新，为系统级性能监控提供了灵活的基础设施。
+
+#### 6. 与现有架构的集成
+
+ProfilingService 与现有的 ActivityManagerService 性能监控组件协同工作：
+- **AppProfiler.java** - 应用级性能分析，提供 PSS/RSS 内存监控
+- **ProcessProfileRecord.java** - 进程性能记录管理，内存信息缓存
+- 新的 ProfilingService 提供系统级触发器能力
+
+三个层次形成完整的性能监控体系：应用层、系统服务层、框架API层。
+
+---
+
 ---
 
 ## JobScheduler pending reasons 诊断 API

@@ -52,32 +52,11 @@ last_task9_review_log: logs/deep-review/2026-05-13-22-deep-review.md
 task9_result: pass-tech-review
 task2b_result: fixed
 task9_review_notes: "2026-05-13 Task9 22:26：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 已写入 suggestions.md。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-19
 ---
 
 # 内存泄漏检测与治理
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 常见泄漏模式：Activity / Fragment / Handler / 匿名内部类
-- 🔹 LeakCanary 原理与集成
-- 🔹 线上泄漏检测方案
-- 🔹 泄漏治理优先级与修复策略
-
-### 扩展（可选深入）
-
-- 🔸 Kotlin Coroutine 与 Flow 的泄漏风险
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
 
 ## 为什么要做内存泄漏治理
 
@@ -88,8 +67,6 @@ task9_review_notes: "2026-05-13 Task9 22:26：pass-tech-review。无 P0/P1；Tas
 ## 泄漏判定：对象失效后仍被 GC Root 触达
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory]
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 内存泄漏监控与 OOM：Java 内存泄漏如何定义？.md]
 
 Android Developers 的内存文档把泄漏风险落在两个动作上：避免把对象引用长期放进 static 字段，并按生命周期释放引用对象。落到 Java Heap 上，泄漏可以写成一句更工程化的判断：对象已经超出业务生命周期，仍然存在一条从 GC Root 到它的强引用路径。
 
@@ -105,7 +82,6 @@ Android Developers 的内存文档把泄漏风险落在两个动作上：避免�
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/Activity.java]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Handler.java]
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Message.java]
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
 
 大多数 Java 泄漏不复杂，源头是“长生命周期对象持有短生命周期对象”。排查时先找持有者，再判断它的生命周期是否长于被持有对象。
 
@@ -113,7 +89,7 @@ Android Developers 的内存文档把泄漏风险落在两个动作上：避免�
 - **Fragment / Fragment View 泄漏**：Fragment 本体和它的 View 生命周期不同。`onDestroyView()` 后如果还持有 binding、Adapter、RecyclerView callback 或 viewLifecycleOwner 之外启动的任务，会保留整棵 View 树。修复点通常在 `onDestroyView()` 清空 View 相关字段，而不是等到 `onDestroy()`。
 - **Handler / Runnable 泄漏**：AOSP `Handler.post()` 会把 `Runnable` 包进 `Message.callback`，`enqueueMessage()` 会把 `Message.target` 指向当前 Handler。只要消息还在队列中，`Message → callback / target → 外部类` 这条路径就存在。Activity 退出前没有执行 `removeCallbacksAndMessages(null)`，延迟消息就可能把页面对象保留到执行时刻。
 - **匿名内部类与 lambda 泄漏**：非静态匿名内部类默认持有外部类引用，lambda 只要捕获了 `this`、View、binding、Context，也会产生同类路径。风险点常见于 listener、计时器、线程任务、网络回调和动画回调。
-- **Bitmap 间接泄漏**：[自动发现] Android 8.0 之后 Bitmap 像素内存主要由 Native 侧承载，但 AOSP `Bitmap` Java 对象仍保存 `mNativePtr`，并通过 `NativeAllocationRegistry.registerNativeAllocation()` 关联 Native 释放。Java 层 Bitmap 或持有它的 Activity 泄漏时，Native 像素内存也可能被拖住。图片问题的完整治理放到 23.2 节，本节只把它作为泄漏放大器处理。[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
+- **Bitmap 间接泄漏**：Android 8.0 之后 Bitmap 像素内存主要由 Native 侧承载，但 AOSP `Bitmap` Java 对象仍保存 `mNativePtr`，并通过 `NativeAllocationRegistry.registerNativeAllocation()` 关联 Native 释放。Java 层 Bitmap 或持有它的 Activity 泄漏时，Native 像素内存也可能被拖住。图片问题的完整治理放到 23.2 节，本节只把它作为泄漏放大器处理。[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 
 Handler 相关风险可以用下面这段代码定位。重点看两个动作：延迟任务入队，以及页面销毁时清队列。
 
@@ -143,7 +119,6 @@ class DetailActivity : AppCompatActivity() {
 ## LeakCanary 原理与接入边界
 
 [已验证: LeakCanary 官方文档, square.github.io/leakcanary/fundamentals-how-leakcanary-works/]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 内存泄漏监控与 OOM：Java 内存泄漏如何定义？.md]
 
 LeakCanary 的价值不是“告诉你内存变大了”，而是在对象失效后给出 GC Root 到泄漏对象的引用路径。它的默认流程有四步：
 
@@ -176,7 +151,6 @@ class SearchPresenter(
 ## 线上泄漏检测：采趋势，不在用户设备上重分析引用链
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory]
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
 
 线上泄漏治理的目标是发现“哪类页面、哪类路径、哪类版本在持续增长”，而不是把用户设备变成 MAT。建议把线上方案拆成三层：
 
