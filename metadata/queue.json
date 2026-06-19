@@ -355,6 +355,29 @@
       "status": "pending",
       "created": "2026-06-19",
       "source": "task2a-gap-mining"
+    },
+    {
+      "id": "task9-audit-20260620-0030-11.1-android17-powerstats-refactor",
+      "section": "11.1",
+      "section_title": "Android 功耗模型",
+      "title": "Android 功耗模型",
+      "file": "src/part2-performance/ch11-power/01-power-model.md",
+      "priority": 85,
+      "reason": "[Deep Tech Review][闲时抽检] Android 17 功耗归因管线已从 *PowerCalculator 重构到 PowerAttributor / PowerStatsProcessor，正文仍停留在 Android 16 口径。",
+      "material_paths": [
+        "logs/deep-review/2026-06-20-00-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "“CPU：功耗敏感项”“Display：最直观的耗电源”“现代功耗归属流程”与版本演进表",
+          "detail": "章节当前按 Android 16 口径描述 BatteryUsageStatsProvider 调用 CpuPowerCalculator/ScreenPowerCalculator 等 *PowerCalculator 生成 BatteryUsageStats；但 AOSP android-17.0.0_r1 中 top-level CpuPowerCalculator.java、ScreenPowerCalculator.java、PowerCalculator.java 已不在 services/core/java/com/android/server/power/stats/ 目录，Android 17 改为 PowerAttributor + processor/*PowerStatsProcessor 归因路径。章节 applicable_versions 仍止于 Android 16，且版本演进表没有 Android 17 边界，读者会漏掉 Android 17 的功耗归因管线重构。",
+          "suggestion": "回炉时补 Android 17 边界：保留 Android 16 及以下的 *PowerCalculator 说明；新增 Android 17 的 PowerAttributor、PowerStatsProcessor、CpuPowerStatsProcessor、ScreenPowerStatsProcessor 路径与归因流程；同时复核 shouldResetOnUnplugLocked 在 Android 17 中高电量阈值改为 BatteryStatsConfig.getHighBatteryLevelAfterCharge() 的配置化差异。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-20T00:30:18+08:00",
+      "status": "pending"
     }
   ],
   "queue": [
