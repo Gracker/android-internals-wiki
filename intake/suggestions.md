@@ -417,3 +417,21 @@
 ### 建议后续方向
 - **source-index 映射补充**：64 个高质量未映射条目实际上是已覆盖但未建立正式映射的素材，建议用 Task 2B 或专项任务补充映射关系
 - **下一轮挖掘可探索**：Android 17 final release 后的新 API、Perfetto 新数据源、Compose Toolbox 新组件性能
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 02:06 (Round 158)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24 小时新增 6 篇 DeepResearch：
+- android17-audiotrack-offload-flushfromframe → §25.18 已覆盖
+- cachedappoptimizer-freezer-mechanism → §1.18/§4.11/§4.12 已覆盖
+- jetpack-compose-memory-churn-source-analysis → §10.6/§23.12 已覆盖
+- profilingmanager-system-triggers-source-analysis → §8.10/§14.07/§19.16/§26.12 已覆盖
+- sensorservice-batching-android17-source-verification → §5.15 已覆盖
+- strictmode-android17-new-features → §14.23 已覆盖
+
+均为已有章节的源码级补充。daily-info（2026-06-19）无未覆盖热点。无新 Clippings 文件。
+
+**已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching。
+
+**结论**：全书 443 节（304 finalized / 92 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 158 轮无合格缺口。
