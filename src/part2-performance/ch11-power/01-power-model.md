@@ -2,7 +2,7 @@
 title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
-task9_result: "pending-review"
+task9_result: "auto-fixed"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 polish_count: 1
@@ -10,7 +10,7 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-06-20"
-last_verified_against: "AOSP android-17.0.0_r1 + PowerAttributor / PowerStatsProcessor 归因管线"
+last_verified_against: "AOSP android-17.0.0_r1 + PowerAttributor / MultiStatePowerAttributor / PowerStatsProcessor 归因管线"
 confidence: medium
 sources:
   - type: aosp
@@ -30,7 +30,10 @@ sources:
     note: "Android 5-16; Android 17+ 由 processor/ScreenPowerStatsProcessor 替代"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java"
-    note: "Android 17+ 功耗归因调度器"
+    note: "Android 16+ 功耗归因接口"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java"
+    note: "Android 16+ 默认 PowerAttributor 实现，Android 17 归因处理器配置入口"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java"
     note: "Android 17+ CPU 功耗归因处理器"
@@ -55,27 +58,27 @@ last_task2b_at: "2026-06-20T00:50:00+08:00"
 last_task2b_lite_at: "2026-05-27"
 repaired_date: "2026-06-20"
 repaired_by: "openclaw-task2b"
-task9_reviewed_date: "2026-05-27"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-20T00:30:18+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-27-07-deep-review.md"
-task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 power_profile、BatteryStats/BatteryUsageStats、PowerStats AIDL、PowerMonitor、ComponentCallbacks2 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 00 Task9 闲时抽检：发现 Android 17 功耗归因管线从 *PowerCalculator 重构为 PowerAttributor / PowerStatsProcessor，写入 P1 回炉。"
+task9_reviewed_date: "2026-06-20"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-20T01:30:26+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-20-01-deep-review.md"
+task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 power_profile、BatteryStats/BatteryUsageStats、PowerStats AIDL、PowerMonitor、ComponentCallbacks2 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 00 Task9 闲时抽检：发现 Android 17 功耗归因管线从 *PowerCalculator 重构为 PowerAttributor / PowerStatsProcessor，写入 P1 回炉。 | 2026-06-20 01:30 Task9 auto-fix：校准 Android 16/17 功耗归因边界；补 MultiStatePowerAttributor 源码锚点；修正 Android 17 ScreenPowerStatsProcessor 不再保留 10min smear 门槛。"
 last_task6_audit: "2026-05-25"
 review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
 last_task9_audit: "2026-06-20"
-last_task9_autofix_at: "2026-05-27"
+last_task9_autofix_at: "2026-06-20"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-06-20T01:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-01-review.md"
 review_type: "task6-writing-quality-review"
-task9_state: "pending"
+task9_state: "reviewed"
 task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 Android 17 归因管线重构内容已进入正文（PowerAttributor / PowerStatsProcessor）；L1 小修 1 处（em-dash 一致性）；无 L3/L4 回炉项。Task9 仍为 pending-review，未满足自动晋升条件。"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
@@ -219,7 +222,7 @@ CPU charge ≈ cpu.active × activeTime
 这里故意写成 charge，而不是 mWh。`power_profile.xml` 里没有 `cpu.voltage` 数组，当前 AOSP 也不是靠一个 `cpu.voltage` 表把 CPU 时间换成能量。HAL 侧如果提供实测值，常见原始单位是 uWs；Framework 在 `BatteryStatsImpl` 和 `BatteryConsumer` 侧再转换成 uC、mAh 等更适合归属和展示的单位。把 HAL 原始单位、Framework 内部统计单位、设置页展示单位混在一层，公式就容易写错。
 
 
-> **Android 17 归因管线变更**：android-17.0.0_r1 中，`frameworks/base/services/core/java/com/android/server/power/stats/` 目录下的 `CpuPowerCalculator.java` 已移除。CPU 功耗归因改为由 `PowerAttributor` 调度 `processor/CpuPowerStatsProcessor` 执行。`PowerAttributor` 按组件类型（`PowerComponent.CPU`）路由到对应 `PowerStatsProcessor`，而 `CpuPowerStatsProcessor` 内部仍然消费 UID 的 CPU active time、policy running time、freq step time 和可选的硬件能量数据，归因逻辑与 Android 16 的 `CpuPowerCalculator` 保持高度一致。Android 16 及以下的 `*PowerCalculator` 描述仍然适用对应版本，Android 17+ 读者应追踪 `PowerAttributor` → `CpuPowerStatsProcessor` 路径。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java; frameworks/base/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java]
+> **Android 17 归因管线变更**：android-17.0.0_r1 中，`frameworks/base/services/core/java/com/android/server/power/stats/` 目录下的 `CpuPowerCalculator.java` 已移除。CPU 功耗归因改为由 `PowerAttributor` 接口承接；默认实现 `processor/MultiStatePowerAttributor` 通过 `AggregatedPowerStatsConfig` 配置 `processor/CpuPowerStatsProcessor`。`CpuPowerStatsProcessor` 内部仍然消费 UID 的 CPU active time、policy running time、freq step time 和可选的硬件能量数据，归因逻辑与 Android 16 的 `CpuPowerCalculator` 接近。Android 16 是过渡态：`BatteryUsageStatsProvider` 保留 `*PowerCalculator` 回退，同时已经会调用 `mPowerAttributor.estimatePowerConsumption()` 处理受支持组件。Android 17+ 读者应追踪 `PowerAttributor` → `MultiStatePowerAttributor` → `CpuPowerStatsProcessor` 路径。[已验证: AOSP android-16.0.0_r1 / android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java; frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java; frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java; frameworks/base/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java]
 这套三层模型解释了一个常见现象：两个进程的 CPU 总时长接近，耗电量仍然可能差很多。差异不只来自“跑了多久”——还取决于跑在哪个 scaling policy / cluster、跑在哪些频点、是否拿到了硬件能量数据。
 
 ### Display：最直观的耗电源
@@ -227,7 +230,7 @@ CPU charge ≈ cpu.active × activeTime
 屏幕依然是大头，但“屏幕功耗不归属到 App”只覆盖了旧 batterystats 视角。`ScreenPowerCalculator` 先看 `batteryStats.getScreenOnEnergyConsumptionUC()` 是否可用。如果设备有屏幕 `EnergyConsumer` 数据，就能直接给每个 `UidBatteryConsumer` 写入 `POWER_COMPONENT_SCREEN`。如果没有，Framework 才回退到 `POWER_GROUP_DISPLAY_SCREEN_ON` 和 `POWER_GROUP_DISPLAY_SCREEN_FULL` 这套 power-profile 估算，再按前台 activity 时间把总屏幕耗电分摊到各个 UID。源码里的 `smearScreenBatteryDrain()` 还要求总前台活动时间至少 10 分钟才开始分摊。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java]
 
 
-> **Android 17 边界**：android-17.0.0_r1 中 `ScreenPowerCalculator.java` 已不在 `power/stats/` 目录，屏幕功耗归因由 `processor/ScreenPowerStatsProcessor` 接管。`PowerAttributor` 在归因屏幕功耗时 route 到 `ScreenPowerStatsProcessor`，后者仍然遵循"优先硬件能量数据 → 回退到 power-profile 估算 + smear 分摊"的相同逻辑。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java]
+> **Android 17 边界**：android-17.0.0_r1 中 `ScreenPowerCalculator.java` 已不在 `power/stats/` 目录，屏幕功耗归因由 `processor/ScreenPowerStatsProcessor` 接管。`ScreenPowerStatsProcessor` 仍然优先读取屏幕 `EnergyConsumer`，缺失时再用 `POWER_GROUP_DISPLAY_SCREEN_ON` / `POWER_GROUP_DISPLAY_SCREEN_FULL` 估算；分摊阶段按 UID top activity duration 占比分配屏幕功耗。这里已经没有 Android 16 `ScreenPowerCalculator.smearScreenBatteryDrain()` 的 `MIN_ACTIVE_TIME_FOR_SMEARING = 10min` 门槛，只在总 top activity duration 为 0 时跳过 UID 分摊。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java]
 
 所以，旧 batterystats 视角里常见的“屏幕是系统项”只说对了一半。到了 `BatteryUsageStats` 这层，屏幕既可能以 smear 的方式分摊到前台 UID，也可能在有硬件计量时直接带着 UID 归属结果出现。我们看设置页、电池 bugreport 和 Power Profiler 时，要先分清设备走的是哪条路径。
 
@@ -330,13 +333,13 @@ Fuel Gauge 建立在 Coulomb Counter 之上。它在电流积分之外，还会�
 
 ### 归属的基本思路
 
-`BatteryStatsImpl` 先记账，再由 `BatteryUsageStatsProvider` 调各个 `*PowerCalculator` 做归属。`CpuPowerCalculator`、`ScreenPowerCalculator`、`WifiPowerCalculator` 等计算结果会写进 `BatteryUsageStats.Builder`，产出 `BatteryUsageStats` 和 `UidBatteryConsumer` 快照。Settings 电池页、`adb bugreport` 里的电池摘要，消费的就是这层数据；它们看的是归属后的结果，不是 HAL 原始读数。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java; frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java; frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java]
+`BatteryStatsImpl` 先记账，再由 `BatteryUsageStatsProvider` 产出归属结果。Android 15 及以下主要由各个 `*PowerCalculator` 计算；Android 16 是过渡态，`BatteryUsageStatsProvider` 保留 `*PowerCalculator` 回退，同时会调用 `mPowerAttributor.estimatePowerConsumption()`；Android 17 移除顶层 `*PowerCalculator`，归因结果由 `PowerAttributor` / `processor/*PowerStatsProcessor` 写进 `BatteryUsageStats.Builder`，再产出 `BatteryUsageStats` 和 `UidBatteryConsumer` 快照。Settings 电池页、`adb bugreport` 里的电池摘要，消费的就是这层数据；它们看的是归属后的结果，不是 HAL 原始读数。[已验证: AOSP android-15.0.0_r1 / android-16.0.0_r1 / android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java; frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java; frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java]
 
-[图：BatteryStatsImpl 记录时长、计数器和能量桶。Android 5-16：BatteryUsageStatsProvider → CpuPowerCalculator / ScreenPowerCalculator 等 → BatteryUsageStats / UidBatteryConsumer。Android 17+：BatteryUsageStatsProvider → PowerAttributor → CpuPowerStatsProcessor / ScreenPowerStatsProcessor 等 → BatteryUsageStats / UidBatteryConsumer。随后供 Settings 电池页和 bugreport 展示]
+[图：BatteryStatsImpl 记录时长、计数器和能量桶。Android 5-15：BatteryUsageStatsProvider → CpuPowerCalculator / ScreenPowerCalculator 等 → BatteryUsageStats / UidBatteryConsumer。Android 16：BatteryUsageStatsProvider → *PowerCalculator 回退 + PowerAttributor。Android 17+：BatteryUsageStatsProvider → PowerAttributor / MultiStatePowerAttributor → CpuPowerStatsProcessor / ScreenPowerStatsProcessor 等 → BatteryUsageStats / UidBatteryConsumer。随后供 Settings 电池页和 bugreport 展示]
 
 对不同模块，归属方式并不一样。
 
-**CPU**：如果 UID 已有 `getCpuEnergyConsumptionUC()`，`CpuPowerCalculator` 直接使用硬件能量数据。没有时才按 active、cluster、freq step 三层模型估算。
+**CPU**：在 `CpuPowerCalculator` 路径中，如果 UID 已有 `getCpuEnergyConsumptionUC()`，计算器直接使用硬件能量数据；没有时才按 active、cluster、freq step 三层模型估算。Android 17 的 `CpuPowerStatsProcessor` 仍沿用硬件能量优先、缺失后按统计时长和 power-profile 估算的口径。
 
 **WiFi / 蓝牙 / Radio**：按 UID 的网络活动、扫描、连接时长和流量做归属。多个 App 并发时通常需要分摊。
 
@@ -351,8 +354,9 @@ Fuel Gauge 建立在 Coulomb Counter 之上。它在电流积分之外，还会�
 我们在排查“设置页百分比”“Battery Historian 统计”和“Perfetto 看到的 rail 数据”为什么对不上时，先把三层对象分开：
 
 - `BatteryStatsImpl` 记录的是原始时长、计数器、能量桶。
-- **Android 5-16**：`BatteryUsageStatsProvider` 调用各个 `*PowerCalculator`（`CpuPowerCalculator`、`ScreenPowerCalculator`、`WifiPowerCalculator` 等）把原始数据折成组件耗电和 UID 耗电。
-- **Android 17+**：`BatteryUsageStatsProvider` 改为委托 `PowerAttributor`，后者按组件类型（`PowerComponent.CPU`、`PowerComponent.SCREEN` 等）路由到对应的 `processor/*PowerStatsProcessor`（`CpuPowerStatsProcessor`、`ScreenPowerStatsProcessor`、`WifiPowerStatsProcessor` 等），归因结果写入 `BatteryUsageStats.Builder`。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java; frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java]
+- **Android 5-15**：`BatteryUsageStatsProvider` 调用各个 `*PowerCalculator`（`CpuPowerCalculator`、`ScreenPowerCalculator`、`WifiPowerCalculator` 等）把原始数据折成组件耗电和 UID 耗电。
+- **Android 16**：`BatteryUsageStatsProvider` 同时具备两条路径：不受 `PowerAttributor` 支持的组件继续走 `*PowerCalculator`，受支持组件再由 `mPowerAttributor.estimatePowerConsumption()` 写入归因结果。
+- **Android 17+**：`BatteryUsageStatsProvider` 移除 `*PowerCalculator` 回退，委托 `PowerAttributor`；默认实现 `MultiStatePowerAttributor` 按组件类型配置对应的 `processor/*PowerStatsProcessor`（`CpuPowerStatsProcessor`、`ScreenPowerStatsProcessor`、`WifiPowerStatsProcessor` 等），归因结果写入 `BatteryUsageStats.Builder`。[已验证: AOSP android-16.0.0_r1 / android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java; frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java; frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java]
 - `BatteryUsageStats` 和 `UidBatteryConsumer` 是 Framework 对外给 Settings、bugreport、系统服务用的归属结果。
 
 Perfetto Power rails 和 Android Studio Power Profiler 更靠近硬件计量层；Settings 电池页更靠近 Framework 归属层。两边能互相校对，但不需要逐列完全相等，因为一个看的是 meter 或 rail，另一个看的是归属后的 consumer 或 UID。
@@ -530,8 +534,8 @@ Android 功耗模型与本书多个章节讨论的机制紧密关联：
 | Android 13 (API 33) | Framework 侧继续通过 `BatteryUsageStats` / `UidBatteryConsumer` 输出归属结果，方便 Settings 和 bugreport 读取 |
 | Android 14 (API 34) | `CpuPowerCalculator`、`ScreenPowerCalculator` 等继续优先使用 hardware energy data，缺失时回退到 power-profile 估算 |
 | Android 15 (API 35) | `PowerMonitor` / `SystemHealthManager` 公开 API 引入，支持 App 程序化查询能量快照；PAS 动态反馈路径目前缺少公开 AOSP 调用链证据（待验证） |
-| Android 16 (API 36) | ADPF 与 ODPM 是否存在调度层联动，目前缺少公开 AOSP 源码或官方文档支撑（待验证）；Framework 仍是 `BatteryStatsImpl -> BatteryUsageStatsProvider -> *PowerCalculator -> BatteryUsageStats / UidBatteryConsumer` 这套归属结构 |
-| Android 17 (API 37) | 功耗归因管线重构：`*PowerCalculator`（`CpuPowerCalculator`、`ScreenPowerCalculator` 等）从 `power/stats/` 移除，改为 `PowerAttributor` 调度 `processor/*PowerStatsProcessor`（`CpuPowerStatsProcessor`、`ScreenPowerStatsProcessor` 等）；`BatteryUsageStatsProvider` 委托 `PowerAttributor` 执行归因；`shouldResetOnUnplugLocked()` 高电量阈值从硬编码 `>= 90` 改为 `BatteryStatsConfig.getHighBatteryLevelAfterCharge()` 配置化 |
+| Android 16 (API 36) | ADPF 与 ODPM 是否存在调度层联动，目前缺少公开 AOSP 源码或官方文档支撑（待验证）；Framework 进入过渡态，`BatteryUsageStatsProvider` 保留 `*PowerCalculator` 回退，同时调用 `PowerAttributor` 处理受支持组件 |
+| Android 17 (API 37) | 功耗归因管线重构：`*PowerCalculator`（`CpuPowerCalculator`、`ScreenPowerCalculator` 等）从 `power/stats/` 移除，`BatteryUsageStatsProvider` 改为委托 `PowerAttributor`；默认实现 `MultiStatePowerAttributor` 配置 `processor/*PowerStatsProcessor`（`CpuPowerStatsProcessor`、`ScreenPowerStatsProcessor` 等）；`ScreenPowerStatsProcessor` 的屏幕分摊不再保留 `MIN_ACTIVE_TIME_FOR_SMEARING = 10min` 门槛；`shouldResetOnUnplugLocked()` 高电量阈值从硬编码 `>= 90` 改为 `BatteryStatsConfig.getHighBatteryLevelAfterCharge()` 配置化 |
 
 ## 常见问题与误区
 
@@ -559,10 +563,11 @@ ODPM 提供的是 meter / rail / energy consumer 读数，不是自动给 `power
 
 - AOSP power_profile.xml: `frameworks/base/core/res/res/xml/power_profile.xml`
 - AOSP BatteryStatsImpl: `frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java`
-- AOSP BatteryUsageStatsProvider: `frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java`（Android 5-16 直接调用 *PowerCalculator；Android 17+ 委托 PowerAttributor）
+- AOSP BatteryUsageStatsProvider: `frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java`（Android 16 为 *PowerCalculator + PowerAttributor 过渡态；Android 17+ 委托 PowerAttributor）
 - AOSP CpuPowerCalculator: `frameworks/base/services/core/java/com/android/server/power/stats/CpuPowerCalculator.java`（Android 5-16；Android 17+ 由 CpuPowerStatsProcessor 替代）
 - AOSP ScreenPowerCalculator: `frameworks/base/services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java`（Android 5-16；Android 17+ 由 ScreenPowerStatsProcessor 替代）
-- AOSP PowerAttributor（Android 17+）: `frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java`
+- AOSP PowerAttributor（Android 16+）: `frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java`
+- AOSP MultiStatePowerAttributor（Android 16+）: `frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java`
 - AOSP CpuPowerStatsProcessor（Android 17+）: `frameworks/base/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java`
 - AOSP ScreenPowerStatsProcessor（Android 17+）: `frameworks/base/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java`
 - AOSP BatteryStatsConfig（Android 17+）: `frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsConfig.java`
