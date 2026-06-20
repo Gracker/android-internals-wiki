@@ -3568,7 +3568,7 @@
       "title": "Kotlin Coroutine 性能实践"
     },
     "14.3": {
-      "status": "finalized",
+      "status": "ready-for-review",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
@@ -3587,7 +3587,8 @@
       "reviewed_date": "2026-05-29",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-29",
-      "task6_review_notes": "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。补 2 处示例代码块语言标记；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
+      "task6_review_notes": "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。补 2 处示例代码块语言标记；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。",
+      "task2b_verifier_fixed": "2026-06-20T19:27:39+08:00"
     },
     "22.6": {
       "status": "ready-for-review",
@@ -11135,7 +11136,7 @@
     "section": "3.1",
     "title": "Input 事件分发全流程",
     "file": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-    "status": "finalized",
+    "status": "ready-for-review",
     "pipeline_stage": "ready-to-publish",
     "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
@@ -11159,7 +11160,8 @@
     "task6_reviewed_date": "2026-06-07",
     "task6_reviewed_by": "openclaw-task6",
     "task2b_fixed_at": "2026-06-07T10:50:00+08:00",
-    "task2b_fixed_by": "openclaw-task2b"
+    "task2b_fixed_by": "openclaw-task2b",
+    "task2b_verifier_fixed": "2026-06-20T19:27:39+08:00"
   },
   "section_14_18": {
     "section": "14.18",

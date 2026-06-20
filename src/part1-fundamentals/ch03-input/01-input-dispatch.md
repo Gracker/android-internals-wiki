@@ -1,5 +1,5 @@
 ---
-status: "finalized"
+status: "ready-for-review"
 title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
@@ -54,6 +54,8 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
 last_task9_autofix_at: "2026-06-20"
 last_task9_audit: "2026-06-20"
+task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
+
 ---
 
 # Input 事件分发全流程

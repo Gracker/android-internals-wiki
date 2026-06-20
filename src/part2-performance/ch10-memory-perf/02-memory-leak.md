@@ -2,7 +2,7 @@
 title: "内存泄漏"
 chapter: "10.2"
 section: "10.2"
-status: finalized
+status: "ready-for-review"
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -51,6 +51,8 @@ last_task9_review_log: "logs/deep-review/2026-06-20-17-audit.md"
 task9_reviewed_at: "2026-06-20T17:27:45+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-20"
+task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
+
 ---
 
 # 内存泄漏
