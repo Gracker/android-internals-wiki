@@ -12,17 +12,17 @@ sources:
   - AOSP frameworks/base/core/java/android/webkit/WebView.java
   - AOSP frameworks/base/core/java/android/webkit/WebChromeClient.java
   - AOSP frameworks/base/core/java/android/webkit/WebViewFactory.java
-  - AOSP frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java (Android 14-15) / WebViewUpdateServiceImpl2.java (Android 15-16; android-17.0.0_r1 tag unavailable)
+  - AOSP frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java (Android 14 / Android 15 early tags) / WebViewUpdateServiceImpl2.java (Android 15 later tags - Android 17)
   - AndroidX WebKit WebViewCompat.getCurrentWebViewPackage()
   - Chromium android_webview/browser/gfx/browser_view_renderer.cc
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
 last_task2b_at: "2026-06-01T22:58:00+08:00"
 last_task2b_main_at: "2026-06-01T22:58:00+08:00"
@@ -30,22 +30,22 @@ last_task2b_log: "logs/rework/2026-06-01-22-task2b-main.md"
 last_task2b_lite_at: "2026-06-01"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
-task9_result: pass-tech-review
-last_task9_at: "2026-06-03T02:20:00+08:00"
+task9_result: auto-fixed
+last_task9_at: "2026-06-21T01:29:00+08:00"
 last_task6_audit: "2026-06-11"
 review_round: 4
-task9_reviewed_date: "2026-06-03"
+task9_reviewed_date: "2026-06-21"
 task9_reviewed_by: "openclaw-task9"
-last_task9_audit: "2026-05-31"
-task9_review_notes: "2026-06-03 Task9 02 复审：pass-tech-review。WebViewUpdateServiceImpl/Impl2 版本边界、GL Functor、SurfaceControl 子 Surface、fullscreen custom view 与第三方 Texture-like 路径复核通过；queue 无 pending，自动晋升 finalized。"
+last_task9_audit: "2026-06-21"
+task9_review_notes: "2026-06-21 闲时抽检 auto-fix：android-17.0.0_r1 已可访问且 WebViewUpdateServiceImpl2.java 存在；修正 WebViewFactory.getProvider、AwContents::OnDraw/BrowserViewRenderer::OnDrawSoftware、ANativeWindow_Buffer 等源码锚点，回到 Task6 复审。"
 last_task6_at: "2026-06-02T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-10-review.md"
 task6_review_notes: "2026-06-02 10 Task6 revisiting-review: pass-light-edit。Task2B/Task9 已收敛版本边界和伪 API 问题；锚点覆盖完整，未新增回炉项。"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
-last_task9_review_log: "logs/deep-review/2026-06-03-02-deep-review.md"
-last_task9_autofix_at: "2026-06-02"
+last_task9_review_log: "logs/deep-review/2026-06-21-01-audit.md"
+last_task9_autofix_at: "2026-06-21"
 last_task2b_verifier_at: "2026-06-02T07:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-07-task2b-verifier.md"
 task6_reviewed_date: "2026-06-02"
@@ -135,7 +135,7 @@ adb shell dumpsys webviewupdate
 
 ### WebViewChromiumFactory 初始化分层
 
-1. **Factory 加载**:WebViewFactory 通过 `getFactory()` 检查当前 provider 是否可用
+1. **Factory 加载**:WebView.java 的私有 `getFactory()` 最终调用 `WebViewFactory.getProvider()`，用于检查并加载当前 provider
 2. **Provider 选择**:WebViewUpdateService 选择当前可用的 Android System WebView / Trichrome provider
 3. **Native 库加载**:加载 `libwebviewchromium.so` 及相关 native 库
 4. **Browser Context 初始化**:创建 `content::BrowserContext` 实例
@@ -218,9 +218,9 @@ sequenceDiagram
 2. **`AwDrawFnImpl::DrawGL` / `DrawVk` 双回调**:Android P 之后 HWUI 通过 `AwDrawFnFunctorCallbacks` 结构体(含 `draw_gl` / `draw_vk` 两个字段)回调 Chromium 侧;HWUI 根据当前 pipeline 调用对应一个,最终落到 `AwDrawFnImpl::DrawGL` 或 `AwDrawFnImpl::DrawVk`。Trace 上看到 `DrawGL` slice 还是 `DrawVk` slice,对应当前后端。
 3. **`VizCompositorThread` 不做最终 swap**:独立 Chrome 中 Viz 既合成又 swap;stock WebView 中 Viz 仍然做合成、overlay 决策、SkiaRenderer DDL 记录,但**不做最终 buffer swap**--swap 由宿主 `RenderThread` 通过 draw functor 替 Viz 执行。这是 WebView 区别于独立 Chrome 的架构核心。
 4. **GPU 资源共享的精确口径**:Chromium 与 HWUI 各自持有 context,通过 GPU resource sharing 共享底层资源--GL 路径下 Chromium 用 virtual EGL context 映射到与 HWUI `RenderThread` 的 real context(同一 shared context group);Vulkan 路径下走基于 `AHardwareBuffer` 的 SharedImage。底层不每帧 CPU 拷贝整块像素,但 context make-current 切换可能在 trace 上有可见开销。
-5. **软件渲染 fallback**:宿主未启用硬件加速(`android:hardwareAccelerated="false"`)或 View 设为 `LAYER_TYPE_SOFTWARE` 时,WebView 不走 functor,fallback 到 `AwContents.onDrawSoftware()` → `BrowserViewRenderer.onDrawSoftware()`,直接在 CPU Canvas 上做软件光栅化。trace 上看不到 `DrawFunctor` slice,取而代之的是 CPU 侧绘制耗时。注意软件 fallback 不等于 Chromium 内部纯 CPU--根据版本和功能开关,tile raster 仍可能走 GPU,只是最终合成后把 bitmap 拷回宿主 Canvas。
+5. **软件渲染 fallback**:宿主未启用硬件加速(`android:hardwareAccelerated="false"`)或 View 设为 `LAYER_TYPE_SOFTWARE` 时,WebView 不走 functor,fallback 到 Java `AwContents.onDraw()` / native `AwContents::OnDraw()` → `BrowserViewRenderer::OnDrawSoftware()`,直接在 CPU Canvas 上做软件光栅化。trace 上看不到 `DrawFunctor` slice,取而代之的是 CPU 侧绘制耗时。注意软件 fallback 不等于 Chromium 内部纯 CPU--根据版本和功能开关,tile raster 仍可能走 GPU,只是最终合成后把 bitmap 拷回宿主 Canvas。
 
-[已验证: Chromium `android_webview/public/browser/draw_fn.h` `AwDrawFnFunctorCallbacks` + `android_webview/browser/gfx/aw_draw_fn_impl.cc` + `android_webview/browser/aw_contents.cc` `onDrawSoftware`]
+[已验证: Chromium `android_webview/public/browser/draw_fn.h` `AwDrawFnFunctorCallbacks` + `android_webview/browser/gfx/aw_draw_fn_impl.cc` + `android_webview/browser/aw_contents.cc` `AwContents::OnDraw()` / `BrowserViewRenderer::OnDrawSoftware()`]
 
 ### 路径 B:`SurfaceControl` 独立子 Surface(provider 条件满足时)
 
@@ -419,9 +419,9 @@ adb shell dumpsys SurfaceFlinger | sed -n '/<包名或 layer 关键字>/,/^$/p'
 - `frameworks/base/core/java/android/webkit/WebView.java` - WebView 主要实现
 - `frameworks/base/core/java/android/webkit/WebChromeClient.java` - 全屏回调接口定义
 - `frameworks/base/core/java/android/webkit/WebViewFactory.java` - WebView 初始化与 provider 加载
-- `frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java`（Android 14-15）/ `WebViewUpdateServiceImpl2.java`（Android 15-16）- WebView provider 更新服务；android-17.0.0_r1 tag 暂不可用
+- `frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java`（Android 14 / Android 15 early tags）/ `WebViewUpdateServiceImpl2.java`（Android 15 later tags - Android 17）- WebView provider 更新服务
 - `frameworks/native/libs/ui/include/ui/GraphicBuffer.h` - GraphicBuffer 定义
-- `frameworks/native/libs/nativewindow/include/android/native_window.h` - ANativeWindowBuffer 定义
+- `frameworks/native/libs/nativewindow/include/android/native_window.h` - `ANativeWindow_Buffer` 定义
 
 ### Chromium Android WebView 源码
 - `android_webview/browser/gfx/browser_view_renderer.cc` - BrowserViewRenderer 主要实现
