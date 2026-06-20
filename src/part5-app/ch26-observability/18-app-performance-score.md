@@ -55,6 +55,7 @@ reviewed_date: "2026-05-23"
 task6_result: pass-light-edit
 task9_state: reviewed
 last_task6_at: "2026-05-23T20:16:21+08:00"
+last_task6_audit: "2026-06-20"
 task9_result: pass-tech-review
 last_task9_at: "2026-05-23T20:25:42+08:00"
 last_task9_audit: "2026-06-13"
