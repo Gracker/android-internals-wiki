@@ -39,6 +39,7 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-05T06:20:00+08:00"
+last_task9_audit: "2026-06-21"
 review_notes: "2026-05-05 task6 review: L1/L2 小修完成；GPU/NPU 协同调度扩展仍为空壳，已写入 queue/suggestions 回炉。；2026-05-18 task6 revisiting: L1/L2 小修完成；GPU + NPU 扩展仍为占位，已合并写入 queue/suggestions，等待 Task2B 补素材或裁剪。"
 task6_reviewed_date: "2026-05-18"
 last_task6_at: "2026-06-05T05:12:00+08:00"
