@@ -35,16 +35,16 @@ status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-26"
-last_task6_at: "2026-05-07T17:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-17-review.md"
+last_task6_at: "2026-06-20T13:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-20-13-review.md"
 last_task6_audit: "2026-05-25"
 task2b_result: fixed
-task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补充 render_process_gone Perfetto 事件待验证标注 1 处，frontmatter 更新；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-06-20 Task6 13:07：Task2B 修复 Chromium 锚点标注后写作复审；L1/L2 通过，小修 2 处（GLFunctor 术语一致性、方案三去冗余）；无新增 L3/L4 回炉项，送 Task9 复审 Task2B 修复。"
 last_task9_review_log: "logs/deep-review/2026-06-20-12-audit.md"
 last_task9_audit: 2026-06-20
 auto_promoted_by: "openclaw-task9"
@@ -204,7 +204,7 @@ CCT 还支持预热 API（`CustomTabsClient.warmup()`）和预加载（`CustomTa
 
 **方案三：触发静态初始化**
 
-如果不想创建 WebView 实例，可以通过调用 `WebSettings.getDefaultUserAgent(context)` 间接触发 Chromium 引擎的初始化。这比创建 WebView 实例更轻量，但只完成了部分初始化工作。
+不想创建 WebView 实例时，`WebSettings.getDefaultUserAgent(context)` 是最轻的替代——只触发 provider 的部分初始化，不创建 View 对象。适合只需要提前装载 native 库的场景。
 
 [已验证：来源见 developer.android.com/develop/ui/views/layout/webapps/webview]
 
@@ -399,7 +399,7 @@ WebView 的滚动可以受益于 Chromium compositor 的 off-main-thread scrolli
 3. 当页面只发生 compositor-friendly 的变换（如 `transform`、`opacity`）时，部分滚动与动画可以在 compositor 线程推进，减少 Blink 主线程参与
 4. 最终帧仍要通过 WebView 的绘制路径或独立 Layer 提交给 Android 显示系统，并与 SurfaceFlinger 的合成节奏同步
 
-如果当前 provider 走 GL Functor 路径，我们会在 App RenderThread 里看到 WebView 的 draw / functor 工作；如果走独立 Layer 路径，瓶颈会更多落在 compositor 与 SurfaceFlinger 的交界处。分析 WebView 滚动时，Chromium compositor 和 App / SurfaceFlinger 两边都要一起看。
+如果当前 provider 走 GLFunctor 路径，App RenderThread 里会出现 WebView 的 draw / functor 工作；如果走独立 Layer 路径，瓶颈会更多落在 compositor 与 SurfaceFlinger 的交界处。分析 WebView 滚动时，Chromium compositor 和 App / SurfaceFlinger 两边都要一起看。
 
 ### 导致滚动掉帧的常见原因
 

@@ -315,7 +315,15 @@
     "18.13",
     "22.7",
     "24.8",
-    "25.1"
+    "25.1",
+    {
+      "section": "7.11",
+      "title": "WebView 渲染性能与优化",
+      "task6_result": "pass-light-edit",
+      "task6_date": "2026-06-20",
+      "task9_state": "pending",
+      "pipeline_stage": "task9_pending"
+    }
   ],
   "review_files": [
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
