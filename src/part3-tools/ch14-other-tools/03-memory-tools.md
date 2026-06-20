@@ -9,29 +9,31 @@ drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-05-30'
-last_verified_against: AOSP android-17.0.0_r1 + Perfetto native-heap-profiler docs + Android Developers memory docs
+last_verified_against: AOSP android-17.0.0_r1 (system/memory/libmeminfo + bionic libc/memory malloc_debug/malloc_hooks) + Perfetto native-heap-profiler docs + Android Developers memory docs
 
 ⚠️ 注意：本章内容基于 Android 16-17 版本验证，Android 17 (API 37) 相关特性已进入主线，实际使用时需注意版本差异。
 confidence: high
 sources: 
 - type: aosp
-path: bionic/libc/malloc_debug
+path: bionic/libc/memory/malloc_debug
 tags: 
 related_chapters: 
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-05-28'
 task2b_lite_fixed_at: '2026-05-28T15:38:00+08:00'
 last_task2b_verifier_at: '2026-05-28T15:47:00+08:00'
-task9_reviewed_date: "2026-05-30"
+task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-05-30T09:20:00+08:00
-task9_review_notes: "2026-05-30 Task9 deep-review: pass-tech-review。P0 1 / P1 0 / P2 0；修正 Android 17 源码引用边界，确认 libmeminfo、malloc_debug、malloc_hooks 在 Android 17 中的稳定性，满足自动晋升 finalized 条件。"
+last_task9_at: 2026-06-20T16:26:46+08:00
+last_task9_audit: "2026-06-20"
+last_task9_audit_log: logs/deep-review/2026-06-20-16-audit.md
+task9_review_notes: "2026-06-20 Task9 idle audit AUTO-FIX: 修正 Android 17 bionic malloc_debug/malloc_hooks 源码锚点；无新增 queue pending，回到 Task6 复审。"
 last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
 last_task6_at: "2026-05-30T01:05:00+08:00"
 last_task6_audit: "2026-06-09"
@@ -39,12 +41,12 @@ task6_reviewed_date: "2026-05-30"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: logs/review/2026-05-30-01-review.md
 task6_review_notes: "2026-05-30 01: Task6 revisiting review: pass-light-edit；outline 5/5 覆盖；无新增 L1/L2 小修，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_autofix_at: "2026-05-30"
-last_task9_review_log: logs/deep-review/2026-05-30-01-deep-review.md
+last_task9_autofix_at: "2026-06-20"
+last_task9_review_log: logs/deep-review/2026-06-20-16-audit.md
 reviewed_at: "2026-05-30T01:05:00+08:00"
-task9_reviewed_at: "2026-05-30T14:50:00+08:00"
+task9_reviewed_at: "2026-06-20T16:26:46+08:00"
 updated_by: "openclaw-task9"
-updated_date: "2026-05-29"
+updated_date: "2026-06-20"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
@@ -412,7 +414,7 @@ procrank 的可用性取决于设备。有些厂商的 ROM 没有预装 procrank
 
 ### libmeminfo：内存信息的底层库
 
-`libmeminfo` 不是一个直接面向用户的命令行工具，而是 Android 系统内部用于收集内存信息的 C++ 库。它的源码位于 `system/memory/libmeminfo/`（Android 11 起；更早版本在 `system/core/libmeminfo/`）。**注意：此路径和接口在 Android 17 中可能发生变化，建议参考最新 AOSP 源码。**
+`libmeminfo` 不是一个直接面向用户的命令行工具，而是 Android 系统内部用于收集内存信息的 C++ 库。它的源码位于 `system/memory/libmeminfo/`（Android 11-17；更早版本在 `system/core/libmeminfo/`）。Android 17 的 `android-17.0.0_r1` tag 仍在该路径，接口细节以对应 tag 为准。
 
 libmeminfo 提供了以下能力：
 
@@ -424,7 +426,7 @@ libmeminfo 提供了以下能力：
 
 了解 libmeminfo 的意义在于：当你需要自定义内存采集逻辑（比如定期采集特定进程的内存分布），可以参考 libmeminfo 的实现来编写采集工具，而不是反复调用 `dumpsys` 再解析文本输出。
 
-[已验证: AOSP, system/memory/libmeminfo (Android 11-16); 旧版路径 system/core/libmeminfo 已弃用]
+[已验证: AOSP android-17.0.0_r1, system/memory/libmeminfo；旧版路径 system/core/libmeminfo 已弃用]
 **Android 17 支持：** libmeminfo 接口在 Android 17 中保持稳定，可通过 AOSP android-17.0.0_r1 源码确认具体实现细节。
 [已验证: 官方文档, https://source.android.com/docs/core/debug/eval-performance]
 [待验证: procrank 在 Android 14+ 设备上的可用性]
@@ -491,7 +493,7 @@ adb shell kill -48 <pid>
 adb logcat -s libmemunreachable
 ```
 
-[已验证: AOSP bionic/libc/malloc_debug/README.md (Android 14-17), Android 14-17 signal table]
+[已验证: AOSP android-17.0.0_r1, bionic/libc/memory/malloc_debug/README.md；Android 14-17 signal table]
 **Android 17 支持：** malloc_debug 功能在 Android 17 中保持稳定，信号机制与 Android 14-16 一致。
 
 ### malloc hooks
@@ -544,7 +546,7 @@ malloc hooks 的典型应用场景包括：构建轻量级的内存分配追踪�
 
 malloc hooks 会拦截所有 native 分配调用，对性能有显著影响（通常 2-5 倍的分配延迟），不适合在 release 版本中启用。
 
-[已验证: AOSP bionic/libc/malloc_hooks/ (API 28-17)]
+[已验证: AOSP android-17.0.0_r1, bionic/libc/memory/malloc_hooks/README.md 与 bionic/libc/include/malloc.h (API 28-17)]
 **Android 17 支持：** malloc_hooks 接口在 Android 17 中保持稳定，API 28+ 可用。
 [适用版本: malloc debug API 24+, malloc hooks API 28+]
 
@@ -674,7 +676,8 @@ heapprofd 告诉你的是"哪里在分配内存"和"哪些分配没有被释放"
 - heapprofd 官方文档：https://perfetto.dev/docs/data-sources/native-heap-profiler
 - dumpsys meminfo 官方文档：https://developer.android.com/studio/command-line/dumpsys#meminfo
 - Android 内存调试工具总览：https://developer.android.com/ndk/guides/sanitizers
-- AOSP libmeminfo 源码（Android 16）：https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-16.0.0_r1/
-- AOSP libmeminfo 主线（可能包含 Android 17）：https://android.googlesource.com/platform/system/memory/libmeminfo/+/main/
+- AOSP libmeminfo 源码（Android 17）：https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/
+- AOSP malloc_debug 源码（Android 17）：https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_debug/README.md
+- AOSP malloc_hooks 源码（Android 17）：https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_hooks/README.md
 - Android 调查内存使用：https://developer.android.com/topic/performance/memory
 - **Android 14→17 内存分析工具栈源码全景** — heapprofd 中央守护进程通过 bionic `MallocDispatch` 表拦截 malloc（非 LD_PRELOAD）；Java HPROF 用 `SIGRTMIN+6`、native heapprofd 用 `SIGRTMIN+4` 双路信号触发；Poisson 采样算法按字节间隔抽样；`dumpsys meminfo` VMA 分类在 `libmeminfo` 完成（heap/scudo/stack/GL 映射）；`procstats` 六档快照（1h/3h/6h/12h/24h/48h）持久化。DeepResearch: `2026-06-15-memory-analysis-tools-source-code-stack.md`
