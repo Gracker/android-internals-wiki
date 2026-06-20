@@ -22,28 +22,35 @@ sources:
   - type: paper
     path: "Manus/android_native_memory_leak_report.md"
   - type: official
-    path: "source.android.com/docs/debug/native-memory"
+    path: "source.android.com/docs/core/tests/debug/native-memory"
   - type: official
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: ready-to-publish
+pipeline_stage: "task6_pending"
 task2b_result: fixed
-task2b_state: fixed
-task6_state: reviewed
+task2b_state: "fixed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-05-08"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-05-08-04-review.md"
-task9_state: reviewed
-task9_reviewed_date: "2026-05-08"
+task9_state: "reviewed"
+task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-08T04:31:55+08:00"
-last_task9_audit: "2026-05-26"
-task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 ProfilingManager requestProfiling API 签名已修正（补 tag/CancellationSignal/Consumer<ProfilingResult>，说明 global listener 路径） | 2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
-task9_result: "pass-tech-review"
+last_task9_at: "2026-06-20T17:27:45+08:00"
+last_task9_audit: "2026-06-20"
+task9_review_notes: "2026-06-20 17 Task9 idle-audit AUTO-FIX: 修正 source.android.com native-memory 官方文档路径；补齐 heapprofd Java allocation sampling Android 12+ 版本边界；无 queue pending，回到 Task6 复审。 | 2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 ProfilingManager requestProfiling API 签名已修正（补 tag/CancellationSignal/Consumer<ProfilingResult>，说明 global listener 路径） | 2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
+task9_result: "auto-fixed"
 last_task6_at: "2026-05-08T04:05:00+08:00"
 last_task6_audit: "2026-05-25"
 task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 7 处 L1/L2 表达与格式问题；Task9 仍为 pending，未自动晋升。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter YAML 与流程元数据；正文无新增 L1/L2 问题；无新增回炉项，送 Task9 复审。"
+last_task9_audit_result: "auto-fixed"
+last_task9_audit_log: "logs/deep-review/2026-06-20-17-audit.md"
+last_task9_autofix_at: "2026-06-20"
+last_task9_review_log: "logs/deep-review/2026-06-20-17-audit.md"
+task9_reviewed_at: "2026-06-20T17:27:45+08:00"
+updated_by: "openclaw-task9"
+updated_date: "2026-06-20"
 ---
 
 # 内存泄漏
@@ -205,7 +212,7 @@ Fragment 有两个可能泄漏的对象：Fragment 本身和它的 View。`onDes
 
 ## Native 内存泄漏的排查
 
-[已验证: 官方文档, source.android.com/docs/debug/native-memory]
+[已验证: 官方文档, source.android.com/docs/core/tests/debug/native-memory]
 [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/native-heap-profiler]
 [已验证: 来源见 Manus/android_native_memory_leak_report.md]
 
@@ -300,7 +307,7 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 - **Android 10**：引入 heapprofd，集成在 Perfetto 中
 - **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化。多进程应用、direct boot、instant app 或严格沙箱模式下自动初始化可能受影响——这些边界场景下 ContentProvider 的初始化时机和 Security Context 与普通单进程应用不同。遇到自动初始化问题时，在 `Application.onCreate()` 中显式调用 `AppWatcher.manualInstall(application)` 即可
 - **Android 17 (API 37)**：分代 CMC 引入独立的 Minor GC，年轻代 WeakReference 入队延迟理论上可缩短，但具体增量效果待验证（[待验证：缺乏官方 benchmark 和 ART reference processing 源码提交；CC collector 在 Android 10+ 已默认 generational，分代 CMC 的增量收益需同设备 A/B trace 对照]）
-- **heapprofd Java 堆采样**：Perfetto heapprofd 支持通过 `heaps: "com.android.art"` 配置 Java heap allocations 采样，具体成为默认可用能力的 Android 版本边界待核
+- **heapprofd Java 堆采样**：Perfetto heapprofd 支持通过 `heaps: "com.android.art"` 配置 Java heap allocations 采样；该能力从 Android 12 起可用，Android 10/11 的 heapprofd 仍按 Native heap profiling 口径使用
 
 ## 常见问题与误区
 
@@ -353,7 +360,7 @@ public void requestProfiling(
 
 - [LeakCanary 官方文档](https://square.github.io/leakcanary/)
 - [Shark 引擎源码](https://github.com/square/leakcanary/tree/main/shark)
-- [Android Malloc Debug](https://source.android.com/docs/debug/native-memory)
+- [Android Malloc Debug](https://source.android.com/docs/core/tests/debug/native-memory)
 - [heapprofd / Perfetto Native Heap Profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
 - [快手 Koom](https://github.com/KwaiAppTeam/Koom)
 - [腾讯 Matrix](https://github.com/Tencent/matrix)
