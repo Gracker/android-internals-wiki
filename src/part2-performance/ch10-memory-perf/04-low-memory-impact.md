@@ -136,6 +136,95 @@ PSI 是 Linux 内核从 4.20 开始提供的机制，统计的是：因内存（
 
 lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置三档压力阈值：`psi_partial_stall_ms`（部分阻塞阈值，服务 LOW/MEDIUM 级别，监听 PSI some）和 `psi_complete_stall_ms`（完全阻塞阈值，服务 CRITICAL 级别，监听 PSI full）。当内核 PSI 机制检测到内存阻塞时间超过阈值时，会通过 epoll 通知 lmkd。Android 10 起的现代 lmkd 路径以 PSI 为默认信号来源。AOSP android-11 到 android-16 的 lmkd 中还能看到 `ro.lmk.use_psi` / `use_psi` 默认开启；Android 17 的 `lmkd.cpp` 已不再保留这个开关，启动时直接初始化 PSI monitors。分析 Android 17 时不要再把 `use_psi` 当成可核验开关。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
 
+
+
+<!-- AIW-源码调研-2026-06-20:android-memory-pressure-detector -->
+
+#### 源码层补充：system_server 内部的 PSI 消费器（LowMemDetector → AppProfiler）
+
+`04-low-memory-impact.md` 已说明 lmkd 是 PSI 的核心用户；本节补充 system_server 进程内部**自己**也消费 PSI 的链路。这条链路在 Android 14+ 落地（`LowMemDetector.java` 文件头 `Copyright (C) 2019`），目标是**调整 cached 进程的 trim 级别**（`onTrimMemory` 派发），与 lmkd 的"杀进程"目标互补。
+
+**Java 端桥接**（`frameworks/base/services/core/java/com/android/server/am/LowMemDetector.java`，126 行）：
+
+```java
+public final class LowMemDetector {
+    private final LowMemThread mLowMemThread;
+    private boolean mAvailable;
+    @GuardedBy("mPressureStateLock")
+    private int mPressureState = ADJ_MEM_FACTOR_NORMAL;
+    private native int init();
+    private native int waitForPressure();
+    ...
+}
+```
+
+构造时调 `init()`（JNI），若失败（内核不支持 PSI）`mAvailable=false`；成功则 `LowMemThread.start()`，在循环里阻塞于 `waitForPressure()`。进入 `ADJ_MEM_FACTOR_CRITICAL` 时打开 trace：
+
+```java
+if (isCriticalLowMemory && !mIsTracingMemCriticalLow) {
+    Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, "criticalLowMemory");
+}
+```
+
+`criticalLowMemory` slice 一直持续到下一档 `epoll_wait` 返回非 CRITICAL，给 Perfetto 留出完整压力时间窗。
+
+**Native 端 PSI 监听**（`frameworks/base/services/core/jni/com_android_server_am_LowMemDetector.cpp`，157 行）：
+
+```cpp
+static constexpr int PSI_LOW_STALL_US    = 15000;  // 15 ms
+static constexpr int PSI_MEDIUM_STALL_US = 30000;  // 30 ms
+static constexpr int PSI_HIGH_STALL_US   = 50000;  // 50 ms
+static constexpr int PSI_WINDOW_SIZE_US  = 1000000; // 1 s
+```
+
+- LOW 档用 `PSI_SOME`（部分阻塞），MEDIUM/HIGH 用 `PSI_FULL`（全部非 idle 阻塞）。
+- 三个 PSI fd 全部注册到同一个 epoll，循环中 `epoll_wait` 取 `data.u32` 最大值作为当前压力等级。
+- 进入非 NONE 态后 `epoll_wait` 切到 1 s 超时；1 s 内无事件则 `pressure_level = PRESSURE_NONE` 主动回零——这比 lmkd 路径简单，JavaDoc 写 "This is simpler than lmkd"。
+- `EPOLLERR/EPOLLHUP` 时立刻返回 -1，Java 端 `mAvailable=false`，整条 PSI 路径退役。
+
+**集成点**（`frameworks/base/services/core/java/com/android/server/am/AppProfiler.java`）：
+
+`ActivityManagerService` 在构造时把 `LowMemDetector` 注入 `AppProfiler`（AMS 第 2488 行）：
+
+```java
+mAppProfiler = new AppProfiler(this, BackgroundThread.getHandler().getLooper(),
+        new LowMemDetector(this));
+```
+
+`AppProfiler.updateLowMemStateLSP()` 优先读 PSI，否则回退到 `numCached + numEmpty` 启发式：
+
+```java
+if (mLowMemDetector != null && mLowMemDetector.isAvailable()) {
+    memFactor = mLowMemDetector.getMemFactor();
+} else {
+    if (numCached + numEmpty <= ProcessList.TRIM_CRITICAL_THRESHOLD) {
+        memFactor = ADJ_MEM_FACTOR_CRITICAL;
+    } else if (numCached + numEmpty <= ProcessList.TRIM_LOW_THRESHOLD) {
+        memFactor = ADJ_MEM_FACTOR_LOW;
+    } else {
+        memFactor = ADJ_MEM_FACTOR_MODERATE;
+    }
+}
+```
+
+随后 `mProcessStats.setMemFactorLocked(memFactor, ...)` + `mBgHandler.obtainMessage(MEMORY_PRESSURE_CHANGED, ...)`，最终由 `mProcessList.forEachLruProcessesLOSP()` 派发 cached 进程的 `Application.onTrimMemory()`。
+
+**与 lmkd PSI 的差异**：
+
+| 维度 | system_server LowMemDetector | userspace lmkd |
+|------|------------------------------|----------------|
+| 压力等级 | 4 档（NORMAL/MODERATE/LOW/CRITICAL） | 3 档（LOW/MEDIUM/CRITICAL） |
+| PSI 监听 | PSI_SOME（LOW）+ PSI_FULL（MEDIUM/HIGH） | PSI_SOME（LOW/MEDIUM）+ PSI_FULL（CRITICAL） |
+| Stall 阈值 | 硬编码 15/30/50 ms | 可由 `psi_partial_stall_ms` / `psi_complete_stall_ms` 配置 |
+| 触发动作 | 调整 trim 级别 + `onTrimMemory` | 杀进程 + minfree 重算 |
+| 故障回退 | `numCached + numEmpty` 启发式 | `vmpressure` 或 minfree polling |
+
+二者互不感知，但共享 `/proc/pressure/memory` 内核统计，重复 fd 不会导致内核做重复计算。分析 ftrace 时若看到 `cgroup_pressure_*` 路径同时被 system_server 和 lmkd 打开属正常现象。[已验证: 源码, LowMemDetector.java + com_android_server_am_LowMemDetector.cpp + AppProfiler.java + ProcessList.java]
+
+**版本边界**：本次抓取基于 AOSP `frameworks/base` 的 `refs/heads/main`（与 `android-17.0.0_r1` 在该文件族内行为一致）。**Android 18 / API 38+ 不在本节范围，跳过**。
+
+<!-- /AIW-源码调研-2026-06-20 -->
+
 ### lmkd 的杀进程策略
 
 lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 和当前压力等级选择可杀范围。`min_score_adj` 表示本轮候选进程的最低 `oom_score_adj`，它是运行时阈值或设备属性阈值，不能等同于某个固定进程等级。AOSP `ProcessList` 里常见分层是：前台进程 0、可见进程 100、perceptible 进程 200、服务进程 500、previous app 700、cached 进程 900-999。

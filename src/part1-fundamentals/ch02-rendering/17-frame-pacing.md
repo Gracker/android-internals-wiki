@@ -48,7 +48,7 @@ last_task9_audit: "2026-06-20"
 last_task9_audit_at: "2026-06-20T07:28:47+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-20-07-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-06-20
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制
@@ -402,7 +402,7 @@ Android 16 设备的 Vulkan 能力基线由 Khronos VP_ANDROID_16_minimums profi
 
 `VK_KHR_present_id` 本身是给 present 操作打递增 ID 的扩展，不等同于 display driver 返回完成时间戳。即使 Swappy 未来接入该扩展，帧上屏时刻的确认仍然需要 display timing 支持。当前 Swappy Vulkan 路径没有使用 `VK_KHR_present_id`，文档或文章不应把"Vulkan 1.4 可用"写成"Swappy 已接入"。
 
-> **注意**：Swappy 当前未接入 `VK_KHR_present_id` 和 `VK_KHR_present_wait`（前者是后者启用前置；两者均需通过 `VkPhysicalDevice*FeaturesKHR` 查询）。即使设备支持这些扩展，实际能否减少 present 确认延迟还需 benchmark 验证——设备、Android build、GPU/driver、swapchain present mode、是否启用 `VK_GOOGLE_display_timing` 都会影响结果，不能仅凭扩展声明下结论。
+Swappy 当前未接入 `VK_KHR_present_id` 和 `VK_KHR_present_wait`（前者是后者的启用前置，两者均需通过 `VkPhysicalDevice*FeaturesKHR` 查询）。即使设备支持这些扩展，实际能否减少 present 确认延迟还需 benchmark 验证——设备型号、Android build、GPU 驱动、swapchain present mode、是否启用 `VK_GOOGLE_display_timing` 都会影响结果，不能仅凭扩展声明下结论。
 
 ### DeliQueue：Java MessageQueue 的无锁重构
 
@@ -412,7 +412,7 @@ Android 17 对 Java 侧 `MessageQueue` 做了无锁队列重构（DeliQueue）�
 
 **对 Swappy 的 NDK AChoreographer 路径，影响需要分两层看。** Swappy 的 Vulkan/OpenGL 路径走的是 NDK `AChoreographer` 回调，不直接经过 Java `MessageQueue`。DeliQueue 改造的是 Java 层 `MessageQueue`，目前没有 AOSP commit 或公开文档证明 NDK `AChoreographer` / `ALooper` 的回调路径也做了同样的无锁改造。如果 NDK AChoreographer 的底层仍然走传统 `Looper` 管道，DeliQueue 改善的是 Java 侧回调抖动，不直接传导到 Swappy native 回调。
 
-> **注意**：DeliQueue 改造的是 Java 层 `MessageQueue`，NDK `AChoreographer` / `ALooper` 的回调路径是否做了同样的无锁改造，目前没有公开文档确认。如果 NDK 路径已同步改造，Swappy `onPreSwap()` 中距下一个 VSync 的时间估算精度会受益，高刷设备上效果更明显。
+DeliQueue 改造的是 Java 层 `MessageQueue`。NDK `AChoreographer` / `ALooper` 的回调路径是否做了同样的无锁改造，目前没有公开文档确认——如果 NDK 路径也同步改造，Swappy `onPreSwap()` 中对下一个 VSync 的时间估算精度会受益，高刷设备上效果更明显。
 
 [已验证: AOSP frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java @ android-17.0.0_r1; Swappy × Choreographer × Android 17 架构深研]
 

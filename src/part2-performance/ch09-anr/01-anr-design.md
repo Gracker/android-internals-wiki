@@ -68,10 +68,9 @@ last_task9_review_log: "logs/deep-review/2026-06-20-14-audit.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-27"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-30
+last_deepseek_cn_review_at: 2026-06-20
 last_task9_autofix_at: "2026-06-20"
 ---
-
 # ANR 设计思想
 
 <!-- outline-start -->
@@ -495,8 +494,7 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
 
 ### Kotlin 协程 ANR 治理与 Dispatchers 性能开销
 
-> 源码级分析 CoroutineScheduler 线程池架构：Dispatchers.IO 与 Default 共享同一 CoroutineScheduler 实例，withContext(Dispatchers.IO) 在 Default 线程上不发生线程切换只改变 TaskContext 标记；WorkQueue 半 FIFO 调度的饥饿风险；HandlerContext 关闭后任务降级到 Dispatchers.IO 的 ANR 传播链；协程 ANR 本质是 withContext(Dispatchers.Main) 仍在主线程执行。
-> 揭示了协程 ANR 的核心陷阱——Dispatchers.IO 不等于切换线程，以及 Handler 关闭后的降级传播链，对 ANR 治理实践有直接的避坑指导价值
+> 协程 ANR 的核心陷阱：Dispatchers.IO 不等于切换线程，Handler 关闭后存在降级传播链。对 withContext 和 CoroutineScheduler 线程模型的深度分析，详见参考资料。
 
 
 - AOSP 源码路径：
@@ -513,7 +511,6 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
   - [钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498818)
   - Android 16/17 ProfilingManager 系统触发式追踪（[ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)、[ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger)、[Android 17 features](https://developer.android.com/about/versions/17/features)）
 
-<!-- AIW-源码调研-2026-06-15 -->
 ## 源码级补充：Android 14-17 ANR 检测链路（InputDispatcher → AMS → AnrHelper → ProcessErrorStateRecord）
 
 > 关联 DeepResearch：`2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md`

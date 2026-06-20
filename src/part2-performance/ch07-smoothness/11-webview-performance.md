@@ -50,11 +50,10 @@ last_task9_audit: 2026-06-20
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-26"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
+last_deepseek_cn_review_at: 2026-06-20
 last_task2b_result: fixed-main
 last_task9_autofix_at: "2026-06-20"
 ---
-
 # 7.11 WebView 渲染性能与优化
 
 <!-- outline-start -->
@@ -598,13 +597,15 @@ API 29 新增 `WebViewRenderProcessClient`，提供 `onRenderProcessUnresponsive
 | `frameworks/base/core/java/android/webkit/WebViewRenderProcess.java` | `terminate()` 方法 | API 29+ |
 | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | 渲染进程退出事件触发层 | Chromium mainline（未确认属于 Android 17/API 37 范围） |
 
-[已验证：AOSP `frameworks/base/core/java/android/webkit/WebViewClient.java`、`RenderProcessGoneDetail.java`、`WebViewRenderProcessClient.java` 通过 android-17.0.0_r1 验证；`AwContents` / `AwBrowserTerminator` 调用链来自 Chromium mainline，不作为正文结论依据，仅作流程参考]
+[已验证：AOSP framework 侧通过 android-17.0.0_r1 验证；Chromium 侧调用链为流程参考，版本锚点待后续确认]
 
 ## WebView 渲染管线与 Perfetto 追踪
 
+前面几节讲了 WebView 的架构、内存和 JS Bridge，现在把视角收回到渲染管线本身——从 JS 执行到屏幕合成，中间经历了哪些线程和组件，以及在 Perfetto 中如何对应。
+
 ### Chromium 多进程架构
 
-Android WebView 的渲染引擎源码位于 `chromium/src/android_webview/`（AOSP external 仓库分支），核心组件：
+Android WebView 的渲染引擎源码位于 `chromium/src/android_webview/`，核心组件：
 
 | 组件 | 源码路径 | 角色 |
 |------|---------|------|
@@ -703,7 +704,7 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
   - `frameworks/base/core/java/android/webkit/WebViewFactory.java` — Chromium 引擎加载
   - `frameworks/base/core/java/android/webkit/WebSettings.java` — WebView 配置
   - `android_webview/` (chromium.googlesource.com) — Chromium WebView 实现（HEAD；架构参考，未确认属于 Android 17/API 37 范围）
-  - `chromium/src/android_webview/browser/aw_browser_terminator.cc` — Renderer 进程终止检测（Chromium mainline；未确认属于 Android 17/API 37 范围，流程参考）
+  - `chromium/src/android_webview/browser/aw_browser_terminator.cc` — Renderer 进程终止检测（流程参考，版本锚点待确认）
 
 - **官方文档**：
   - [developer.android.com — WebView 概览](https://developer.android.com/develop/ui/views/layout/webapps/webview)
