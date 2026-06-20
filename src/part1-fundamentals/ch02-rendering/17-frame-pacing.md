@@ -5,7 +5,7 @@ section: "2.17"
 status: "ready-for-review"
 applicable_versions: "Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API 37)"
 last_verified: "2026-04-19"
-last_verified_against: "frameworks/opt/gamesdk refs/heads/main（该仓库无 android-17/16/15 platform tag，main 分支内容未证明进入 Android 17）; Perfetto FrameTimeline SQL @ android-17.0.0_r1; developer.android.com frame-pacing docs"
+last_verified_against: "frameworks/opt/gamesdk refs/heads/android-games-sdk-games-frame-pacing-release（AGDK frame-pacing release branch，非 Android platform tag）；Perfetto FrameTimeline SQL @ android-17.0.0_r1；frameworks/base DeliQueue @ android-17.0.0_r1；developer.android.com frame-pacing docs"
 confidence: medium
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
@@ -19,7 +19,7 @@ related_chapters: ["2.3", "2.6", "2.13", "2.18", "16.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-06-20"
 reviewed_by: "openclaw-task6"
@@ -27,22 +27,23 @@ reviewed_date: "2026-05-08"
 last_task6_at: "2026-06-20T08:08:00+08:00"
 last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-06-20-08-review.md"
-pipeline_stage: "task9_pending"
-task9_state: "pending"
-task9_result: "needs-rework"
+pipeline_stage: "task6_pending"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task9_task6_reviewed_date: "2026-04-30"
 task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-20T07:28:47+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-20-07-audit.md"
+last_task9_at: "2026-06-20T08:27:23+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-20-08-deep-review.md"
+last_task9_autofix_at: "2026-06-20"
 task2b_state: "fixed"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-20"
 last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
-review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML 与轻量措辞，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 1；Android 17 tag 下 MessageQueue 路径已拆分，正文旧路径与 mLock 表述错误；frameworks/opt/gamesdk 关键源码锚点仍依赖 main，未证明进入 Android 17，已写入 queue。"
-task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 1；Android 17 tag 下 MessageQueue 路径已拆分，正文旧路径与 mLock 表述错误；frameworks/opt/gamesdk 关键源码锚点仍依赖 main，未证明进入 Android 17，已写入 queue。"
+review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML 与轻量措辞，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 1；Android 17 tag 下 MessageQueue 路径已拆分，正文旧路径与 mLock 表述错误；frameworks/opt/gamesdk 关键源码锚点仍依赖 main，未证明进入 Android 17，已写入 queue。 | 2026-06-20 Task9 复审：auto-fixed。DeliQueue 路径/targetSdk 37 边界已闭环；Swappy 源码锚点从 main 收紧为 AGDK frame-pacing release branch，并明确不作为 Android 17 platform 源码结论；queue 项已关闭，回到 Task6 复审。"
+task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：needs-rework。P0 1 / P1 1 / P2 1；Android 17 tag 下 MessageQueue 路径已拆分，正文旧路径与 mLock 表述错误；frameworks/opt/gamesdk 关键源码锚点仍依赖 main，未证明进入 Android 17，已写入 queue。 | 2026-06-20 Task9 复审：auto-fixed。DeliQueue 路径/targetSdk 37 边界已闭环；Swappy 源码锚点从 main 收紧为 AGDK frame-pacing release branch，并明确不作为 Android 17 platform 源码结论；queue 项已关闭，回到 Task6 复审。"
 last_task9_audit: "2026-06-20"
 last_task9_audit_at: "2026-06-20T07:28:47+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-20-07-audit.md"
@@ -85,7 +86,7 @@ Swappy 负责决定这一帧该什么时候等、什么时候交、要不要设�
 - 🔸 **引擎集成的表述边界**：Unity / Unreal 的版本线变化很快，没有 release note 支撑时，不把“默认启用”写成事实。
 <!-- outline-end -->
 
-> **源码版本说明**：`frameworks/opt/gamesdk` 仓库在 `android-17.0.0_r1`、`android-16.0.0_r1`、`android-15.0.0_r1` 下均无 `games-frame-pacing` 目录，本文 Swappy 源码引用基于 `refs/heads/main` 分支。这些内容属于 AGDK 维护线，未证明已进入 Android 17 platform tag，如需精确对应请查阅 AGDK release notes。
+> **源码版本说明**：`frameworks/opt/gamesdk` 仓库在 `android-17.0.0_r1`、`android-16.0.0_r1`、`android-15.0.0_r1` 下均无 `games-frame-pacing` 目录。本文 Swappy 源码引用基于 `refs/heads/android-games-sdk-games-frame-pacing-release`，这是 AGDK 库 release branch，不是 Android 17 platform tag。下文未带 tag 的 `frameworks/opt/gamesdk` 锚点均指向该分支，只用于说明 AGDK Swappy 库实现，不作为 Android 17 platform 源码结论。
 
 ## 帧节奏问题在 trace 里长什么样
 
@@ -102,12 +103,12 @@ Swappy 负责决定这一帧该什么时候等、什么时候交、要不要设�
 
 ## Swappy 的真实提交链
 
-当前 main 分支的 OpenGL 路径已经拆成多段。`SwappyGL::swapInternal()` 负责把几个步骤串起来，fence、presentation time 和统计逻辑分散在 `SwappyGL.cpp`、`EGL.cpp`、`SwappyCommon.cpp` 里。
+AGDK frame-pacing release branch 的 OpenGL 路径已经拆成多段。`SwappyGL::swapInternal()` 负责把几个步骤串起来，fence、presentation time 和统计逻辑分散在 `SwappyGL.cpp`、`EGL.cpp`、`SwappyCommon.cpp` 里。
 
-按当前源码整理，提交顺序可以写成这段伪代码。AOSP 没有原样函数体，所以这里不能标成真实函数。
+按该 release branch 源码整理，提交顺序可以写成这段伪代码。AOSP 没有原样函数体，所以这里不能标成真实函数。
 
 ```cpp
-// 伪代码，按 frameworks/opt/gamesdk 当前 main 分支调用顺序整理
+// 伪代码，按 frameworks/opt/gamesdk android-games-sdk-games-frame-pacing-release 分支调用顺序整理
 bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
     SwappyCommon::SwapHandlers handlers = {
         .lastFrameIsComplete = [&] { return lastFrameIsComplete(display); },
@@ -129,7 +130,7 @@ bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
 
 这条链里有三件事。
 
-一件是 `insertSyncFence()`。`EGL.cpp` 里会创建 `EGL_SYNC_FENCE_KHR`，再把 fence 交给内部 waiter thread 异步等待。后面的 `lastFrameIsComplete()` 和 `getFencePendingTime()`，都依赖这里采到的状态。[已验证: frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.cpp]
+一件是 `insertSyncFence()`。`EGL.cpp` 里会创建 `EGL_SYNC_FENCE_KHR`，再把 fence 交给内部 waiter thread 异步等待。后面的 `lastFrameIsComplete()` 和 `getFencePendingTime()`，都依赖这里采到的状态。[已验证: frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.cpp, frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.h]
 
 一件是 `onPreSwap()` / `onPostSwap()`。这部分在 `SwappyCommon` 里处理等待、统计 frame duration、决定 auto swap interval、更新 presentation time，还会在合适的时候向平台投票新的 frame rate。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp]
 
@@ -395,7 +396,7 @@ Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swa
 
 ### present_id 与 VK_GOOGLE_display_timing：Swappy Vulkan 路径的真实确认方式
 
-Android 16 设备的 Vulkan 能力基线由 Khronos VP_ANDROID_16_minimums profile 定义（具体 Vulkan 版本要求以正式 CDD 16 为准）。`VK_KHR_present_id` 在 Khronos `vk.xml` 中仍是 ratified KHR 设备扩展，不属于 Vulkan 1.4 核心特性；设备支持时，应用需通过 `VkPhysicalDevicePresentIdFeaturesKHR` 查询并启用。复核 `frameworks/opt/gamesdk` 当前 main 分支：`SwappyVk.cpp`、`SwappyVkBase.cpp` 和 `swappyVk.h` 中均未出现 `VK_KHR_present_id` 或 `present_id` 相关代码。Swappy Vulkan 路径的帧上屏确认仍围绕 `VK_GOOGLE_display_timing`、GPU fence、Choreographer 回调和 SwappyStats。
+Android 16 设备的 Vulkan 能力基线由 Khronos VP_ANDROID_16_minimums profile 定义（具体 Vulkan 版本要求以正式 CDD 16 为准）。`VK_KHR_present_id` 在 Khronos `vk.xml` 中仍是 ratified KHR 设备扩展，不属于 Vulkan 1.4 核心特性；设备支持时，应用需通过 `VkPhysicalDevicePresentIdFeaturesKHR` 查询并启用。复核 `frameworks/opt/gamesdk` 的 AGDK frame-pacing release branch：`SwappyVk.cpp`、`SwappyVkBase.cpp` 和 `swappyVk.h` 中均未出现 `VK_KHR_present_id` 或 `present_id` 相关代码。Swappy Vulkan 路径的帧上屏确认仍围绕 `VK_GOOGLE_display_timing`、GPU fence、Choreographer 回调和 SwappyStats。
 
 `VK_GOOGLE_display_timing` 提供的是 display 驱动报告的 `presentTimes` 时间戳，经过 SurfaceFlinger 中转。Swappy 用这些时间戳与内部统计做校准。这条路径与 Choreographer 回调路径之间存在调度延迟，但这正是 Swappy 通过 `onPreSwap()` / `onPostSwap()` 统计循环试图补偿的部分。
 
