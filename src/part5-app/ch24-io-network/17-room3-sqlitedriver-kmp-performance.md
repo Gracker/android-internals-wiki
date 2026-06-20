@@ -2,7 +2,7 @@
 title: "Room 3.0 与 SQLiteDriver 迁移性能边界"
 chapter: "24.17"
 section: "24.17"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Room 3.0.0-rc01"
