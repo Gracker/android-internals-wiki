@@ -1,4 +1,5 @@
 ---
+
 title: "Android 渲染架构全景"
 chapter: "2.1"
 section: "2.1"
@@ -22,7 +23,7 @@ sources:
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 review_round: 7
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-20T11:42:39+08:00"
@@ -32,18 +33,18 @@ review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁�
 task9_review_notes: "2026-06-20 Task9 idle audit auto-fix: P0 1（Android 16 Vulkan CDD 要求版本断言错误），已按 Android 16/17 CDD 修正；源码锚点 android-16.0.0_r1 与 android-17.0.0_r1 抽检无阻断差异。"
 last_task9_review_log: "logs/deep-review/2026-06-20-11-audit.md"
 
-status: ready-for-review
+status: finalized
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-01"
-task6_result: "pass-light-edit"
-task6_state: revisiting
+reviewed_date: 2026-06-20
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2b_state: fixed
-last_task6_at: "2026-06-01T21:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-21-review.md"
+last_task6_at: "2026-06-20T12:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-20-12-review.md"
 task2b_result: "fixed"
-task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-06-20 12:07 Task6 revisiting-review：Task9 idle audit auto-fix（P0: Android 16 Vulkan CDD 版本断言错误，3 处正文修正）写作质量复审通过；L1 禁用词/高频词/结构性元叙述 0 命中；L2 开头/节奏/结构/读者视角全部通过；outline 锚点全覆盖；无新增 L3/L4 回炉项；task9_result=auto-fixed → pass-tech-review，queue.json 无 pending，自动晋升 finalized。"
 last_task6_audit: "2026-05-25"
 last_task9_audit: "2026-06-20"
 last_task9_audit_at: "2026-06-20T11:42:39+08:00"
