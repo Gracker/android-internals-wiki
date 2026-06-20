@@ -65,6 +65,10 @@ task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
+last_task9_audit: "2026-06-20"
+last_task9_audit_log: "logs/deep-review/2026-06-20-10-audit.md"
+last_task9_audit_result: "pass-idle-audit"
+last_task9_audit_notes: "idle audit: no P0/P1/P2; Android common android16-6.12 sched_ext paths/constants/sysfs and OPPO hmbird proc controls rechecked; upstream mainline-only DSQ bypass constants remain outside Android 17/API 37 conclusions."
 ---
 
 # 17.4 sched_ext 与 OEM BPF 调度器
