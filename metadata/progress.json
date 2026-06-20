@@ -10328,15 +10328,15 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-20",
-    "time": "19:07",
+    "time": "22:04",
     "mode": "gap-mining-skip",
-    "round": 169,
+    "round": 170,
     "created_sections": [],
     "created_files": [],
-    "candidate_count": 0,
+    "candidate_count": 8,
     "qualified_count": 0,
-    "source": "Round 169: Phase 0 无空 draft (443 章节文件, 305 finalized + 91 ready-for-review + 3 有内容 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 已耗尽. Research-feeds 最新 2026-04-14 无新增. Daily-info 2026-06-20 ML 内存泄漏检测 → ch23 已覆盖, 评分 10/20 不达标. Clippings 无变化. DeepResearch 无新增. 连续 169 轮无合格缺口, 跳过.",
-    "note": "连续 169 轮无合格缺口。0 空 draft 章节。全书 443 文件 (305 finalized + 91 ready-for-review)。管线堵点在 Task6/Task9 复审 (91 个 ready-for-review), 非内容缺口。3 个有内容 draft (1.27/1.28/10.x) 待确认推进。"
+    "source": "Round 170: Phase 0 无空 draft (443 章节文件, 305 finalized + 91 ready-for-review + 3 有内容 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 已耗尽. Research-feeds 最新 2026-04-14 已映射. Daily-info 2026-06-20 ML 内存泄漏检测 → 评分 7/20 不达标. Clippings 无变化. 连续 170 轮无合格缺口, 跳过.",
+    "note": "连续 170 轮无合格缺口。0 空 draft 章节。全书 443 文件 (305 finalized + 91 ready-for-review)。管线堵点在 Task6/Task9 复审 (91 个 ready-for-review), 非内容缺口。"
   },
   "task9_last_sections": [
     "7.9",
