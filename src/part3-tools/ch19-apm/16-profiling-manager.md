@@ -40,6 +40,7 @@ task9_result: "pass-tech-review"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-14"
 last_task6_at: "2026-06-14T11:12:23+08:00"
+last_task6_audit: "2026-06-20"
 last_task6_review_log: "logs/review/2026-06-14-11-review.md"
 task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 4 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
 last_task9_at: "2026-06-14T16:20:00+08:00"
