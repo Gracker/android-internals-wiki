@@ -3,8 +3,8 @@ title: "Android 渲染架构全景"
 chapter: "2.1"
 section: "2.1"
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"  # 版本演进从 3.0 开始,核心内容覆盖 API 11-36
-last_verified: "2026-04-09"
-last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
+last_verified: "2026-06-20"
+last_verified_against: "AOSP android-16.0.0_r1 / android-17.0.0_r1 spot-check; Android 16/17 CDD Vulkan requirements"
 confidence: high
 drafted_date: "2026-03-30"
 polish_count: 2
@@ -22,39 +22,39 @@ sources:
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 review_round: 7
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-06-02"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-02T00:25:54+08:00"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-20"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-20T11:42:39+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁用短语修复 1 处；AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 1；源码锚点与版本边界通过，queue 无 pending，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
+task9_review_notes: "2026-06-20 Task9 idle audit auto-fix: P0 1（Android 16 Vulkan CDD 要求版本断言错误），已按 Android 16/17 CDD 修正；源码锚点 android-16.0.0_r1 与 android-17.0.0_r1 抽检无阻断差异。"
+last_task9_review_log: "logs/deep-review/2026-06-20-11-audit.md"
 
-status: finalized
+status: ready-for-review
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-01"
 task6_result: "pass-light-edit"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task2b_state: fixed
 last_task6_at: "2026-06-01T21:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-21-review.md"
 task2b_result: "fixed"
 task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_audit: "2026-05-25"
-last_task9_audit: "2026-05-26"
-last_task9_audit_at: "2026-05-26T05:35:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-26-05-audit.md"
-last_task9_audit_result: "p1-version-difference"
-task9_audit_notes: "2026-05-26 Task9 idle audit: P0 0 / P1 1 / P2 0；AOSP 4.4.4_r2 无 RenderNode/renderthread，Android 5.0 才出现现代 RenderNode/RenderThread 分工。"
+last_task9_audit: "2026-06-20"
+last_task9_audit_at: "2026-06-20T11:42:39+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-20-11-audit.md"
+last_task9_audit_result: "auto-fixed-p0-version-error"
+task9_audit_notes: "2026-06-20 Task9 idle audit auto-fix: 修正 Android 16 Vulkan CDD 设备要求版本断言；硬性要求为 Vulkan 1.1，Vulkan 1.3 为 strongly recommended；AOSP android-16/17 渲染源码锚点抽检通过，回到 Task6 复审。"
 p0: 0
 p1: 0
-p2: 1
-updated_by: "openclaw-task2b"
-updated_date: "2026-06-01"
+p2: 0
+updated_by: "openclaw-task9"
+updated_date: "2026-06-20"
 task2b_fixed_at: "2026-06-01T04:50:00+08:00"
 task2b_fix_notes: "2026-05-31 Task2B main: 修复 Task9 2026-05-26 P1 版本差异；拆开 Android 3.0 早期 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 分工。"
 last_task2b_at: "2026-06-01T04:50:00+08:00"
@@ -63,7 +63,7 @@ task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
-last_task9_autofix_at: "2026-06-01"
+last_task9_autofix_at: "2026-06-20"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
@@ -297,7 +297,7 @@ status_t BufferItemConsumer::acquireBuffer(BufferItem* item,
         nsecs_t presentWhen, bool waitForFence);
 ```
 
-`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 要求 64 位新设备支持 Vulkan 1.4,其中 Host Image Copy 优化的是纹理上传和 image memory 路径,与 BufferQueue / BLAST 不在同一层,不要混到三缓冲的描述里。同样,`AsyncBufferQueue` 目前还没有正式发布的 AOSP commit,本文暂不展开。
+`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 CDD 对非低内存 64 位 handheld 设备的硬性要求是 Vulkan 1.1；Vulkan 1.3 是 strongly recommended,不是 1.4 硬性要求。Host Image Copy 优化的是纹理上传和 image memory 路径,与 BufferQueue / BLAST 不在同一层,不要混到三缓冲的描述里。同样,`AsyncBufferQueue` 目前还没有正式发布的 AOSP commit,本文暂不展开。
 
 Trace 中验证三缓冲,打开 FrameTimeline、gfx / view / sched / freq、SurfaceFlinger 相关类别后按这几类信号对照:
 
@@ -577,7 +577,7 @@ HWUI 的一帧主链如下:
 
 ### Vulkan 在 Android 中的采用
 
-Vulkan 从 Android 7.0 开始被引入作为可选图形 API。HWUI 同时保留 SkiaOpenGLPipeline 和 SkiaVulkanPipeline 两条渲染管线;具体走哪条取决于设备上的 `use_vulkan` 属性、`debug.hwui.renderer` 设置以及 OEM 配置--不是某个 Android 版本统一切过去的平台行为。AOSP `frameworks/base/libs/hwui/Properties.cpp` 中 `peekRenderPipelineType()` 按 `use_vulkan` flag 在 `skiagl` / `skiavk` 间选择。Vulkan API/设备基线的提升(比如 Android 16 要求新设备支持 Vulkan 1.4)不等于 HWUI 默认使用 Vulkan 后端。与 OpenGL ES 相比,Vulkan 最核心的设计差异是"显式"--开发者需要自己管理 GPU 资源的分配、同步和生命周期,而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率:OpenGL ES 的驱动层为了自动管理资源,需要在每次 API 调用时进行状态检查和验证,这个开销在复杂场景中可能占去数毫秒的帧时间;而 Vulkan 的显式设计省去了这些检查,CPU 可以用更少的时间提交同样数量的绘制命令。
+Vulkan 从 Android 7.0 开始被引入作为可选图形 API。HWUI 同时保留 SkiaOpenGLPipeline 和 SkiaVulkanPipeline 两条渲染管线;具体走哪条取决于设备上的 `use_vulkan` 属性、`debug.hwui.renderer` 设置以及 OEM 配置--不是某个 Android 版本统一切过去的平台行为。AOSP `frameworks/base/libs/hwui/Properties.cpp` 中 `peekRenderPipelineType()` 按 `use_vulkan` flag 在 `skiagl` / `skiavk` 间选择。Vulkan API/设备基线的提升(比如 Android 16 CDD 对非低内存 64 位 handheld 设备要求 Vulkan 1.1,并对 Vulkan 1.3 给出 strongly recommended)不等于 HWUI 默认使用 Vulkan 后端。与 OpenGL ES 相比,Vulkan 最核心的设计差异是"显式"--开发者需要自己管理 GPU 资源的分配、同步和生命周期,而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率:OpenGL ES 的驱动层为了自动管理资源,需要在每次 API 调用时进行状态检查和验证,这个开销在复杂场景中可能占去数毫秒的帧时间;而 Vulkan 的显式设计省去了这些检查,CPU 可以用更少的时间提交同样数量的绘制命令。
 
 Vulkan 还原生支持多线程渲染--不同的线程可以并行构建命令缓冲区(Command Buffer),再统一提交给 GPU 执行。这对 Android 来说尤为重要,因为 HWUI 的架构本身就是多线程的(主线程录制 + RenderThread 回放),Vulkan 的多线程能力可以更好地利用这个架构。此外,Vulkan 提供了对 GPU 资源的更精细控制,减少了不必要的内存拷贝和状态切换。
 
@@ -654,7 +654,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 **Android 13(T,2022)** 优化了 Vulkan 后端的稳定性,但 HWUI 默认走 OpenGL 还是 Vulkan 仍然取决于设备 `use_vulkan` 属性和 OEM 配置,不是平台级统一切换。
 
-**Android 16(2025)** 把图形栈的设备基线继续抬高:64 位新设备要求支持 Vulkan 1.4,Host Image Copy 让持续上传纹理和图像数据时少一次 staging copy;缓冲区排队和窗口事务侧继续沿着 BLASTBufferQueue / ASurfaceControl 路径演进,重点是把 buffer 与 transaction 的提交节奏继续同步。这里不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口;如果后续拿到明确的 AOSP commit,再单独展开。面向应用层,AGSL 继续扩展 RuntimeColorFilter、RuntimeXfermode 这类可编程图形能力。
+**Android 16(2025)** 把图形栈的设备基线继续抬高:Android 16 CDD 对非低内存 64 位 handheld 设备要求支持 Vulkan 1.1；对支持 OpenGL ES 3.1 或包含屏幕/视频输出的设备,Vulkan 1.3 是 strongly recommended。Host Image Copy 让持续上传纹理和图像数据时少一次 staging copy;缓冲区排队和窗口事务侧继续沿着 BLASTBufferQueue / ASurfaceControl 路径演进,重点是把 buffer 与 transaction 的提交节奏继续同步。这里不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口;如果后续拿到明确的 AOSP commit,再单独展开。面向应用层,AGSL 继续扩展 RuntimeColorFilter、RuntimeXfermode 这类可编程图形能力。
 
 ## 常见问题与误区
 
