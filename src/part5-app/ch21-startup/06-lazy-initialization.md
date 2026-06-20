@@ -33,7 +33,7 @@ task2b_state: skipped
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
-last_task6_audit: "2026-05-23"
+last_task6_audit: "2026-06-21"
 task6_result: pass-light-edit
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
