@@ -570,8 +570,11 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-06-20T23:20:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-20-23-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-20-23-audit.md",
+      "completed_at": "2026-06-21T00:52:15+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "fixed: removed appendix with android-17 contradictory claims; 3 audit issues resolved"
     }
   ]
 }
