@@ -43,8 +43,11 @@ last_task6_at: "2026-05-08T02:09:46+08:00"
 last_task6_audit: "2026-05-25"
 task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result=pending 等待 Task9 复审。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。修复 YAML 引号、重复验证句和 8 处 L1/L2 表达问题；Task9 仍为 pending，未自动晋升。"
 task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 attribute key 32->40 + reserved prefix；P0 Cronet 改为 HttpMetric manual trace；P1 EventListener 删除无证据断言 | 2026-05-08 02 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-05-26"
-last_task9_audit_log: "logs/deep-review/2026-05-26-16-audit.md"
+last_task9_audit: "2026-06-20"
+last_task9_audit_log: "logs/deep-review/2026-06-20-09-audit.md"
+last_task9_audit_at: "2026-06-20T09:26:03+08:00"
+last_task9_audit_result: "pass-audit-p2-only"
+task9_audit_notes: "2026-06-20 Task9 idle audit: P0 0 / P1 0 / P2 3；Firebase _app_start 起点、main process only、screen rendering 60Hz 假设作为 P2 仅日志记录，正文未修改。"
 ---
 # Firebase Performance
 
