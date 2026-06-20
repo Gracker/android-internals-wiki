@@ -43,16 +43,16 @@ related_chapters:
 - '8.3'
 - '16.1'
 task2b_result: "fixed"
-task6_state: "revisiting"
+task6_state: "reviewed"
 review_round: 6
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
-last_task6_at: "2026-05-26T04:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-26-04-review.md"
-task6_review_notes: "2026-05-26 task6 revisiting review 04:07: pass-light-edit。小修禁用词、翻译腔与模糊表达；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+last_task6_at: "2026-06-20T08:08:00+08:00"
+last_task6_review_log: "logs/review/2026-06-20-08-review.md"
+task6_review_notes: "2026-06-20 08:08 Task6 revisiting review: pass-light-edit。L1 禁用词 0 命中，L2 可读性通过；Task9 idle-audit auto-fixed（JitCodeCache DoCollection + 404 链接修正）后正文未回退；task6+task9 双通过且 queue 无 pending，自动晋升 finalized。"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task9_result: auto-fixed
 task9_state: "reviewed"
 last_task2b_at: "2026-05-26T03:19:12+08:00"
@@ -66,7 +66,7 @@ last_task6_audit_log: "logs/review/2026-05-22-20-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-20-05-audit.md"
 last_task9_audit: 2026-06-20
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-20
 last_task9_autofix_at: "2026-06-20"
 ---
 
@@ -298,9 +298,7 @@ dex2oat 通过编译过滤器（compiler filter）控制编译的深度和范围
 
 `speed-profile` 在 Android 12+ 设备上很常见，但它不是所有安装来源、所有设备策略下的固定默认值。Baseline Profiles、本地 JIT Profile、Cloud Profile 是否命中，都会影响最终选中的 compiler filter；没有可用 Profile 时，结果可能直接落到 `verify`。判断一台设备上的真实状态，直接看 `cmd package art dump`（Android 14+ 常用）或 `dumpsys package dexopt` 的输出更可靠。
 
-### Quicken 过滤器的深入分析
-
-> 本补充基于 AOSP 源码分析，验证了 dex2oat quicken 过滤器的具体含义和 vdex 文件的作用。
+### Quicken 过滤器：DEX 指令优化
 
 ### Quicken 过滤器的真实行为
 
@@ -604,13 +602,13 @@ Baseline Profiles、ProfileInstaller 和 Play Cloud Profiles 属于应用分发�
 
 Android 17 公开确认的是 `static final` 的行为约束进一步明确，运行时可变性比旧版本更小。对编译器来说，这提供了更稳定的前提，常量传播、分支裁剪和内联缓存的假设空间也会更宽。
 
-正文把这一点落成“dex2oat 一定会更激进地做常量折叠和内联”就写过头了。更稳妥的表述是：
+不过这里要把结论收紧：
 
-- **行为变化可以确认**：字段可变性边界更清楚，编译器不需要像旧版本那样为一部分运行时改写场景保留同样多的防御性假设
-- **优化机会可以确认**：`static final` 参与的常量传播、条件折叠和部分内联决策，更容易满足前提
-- **收益幅度要按实现核对**：是否真的落成 OAT 中的额外内联、能带来多少启动收益，仍要结合 ART 版本、目标代码形态和具体优化路径验证
+- **能确认的是行为变化**：字段可变性边界更清楚，编译器不需要像旧版本那样为运行时改写留大量防御性假设。
+- **能确认的是优化机会**：`static final` 参与的常量传播、条件折叠和部分内联决策，更容易满足前提。
+- **不能直接换算成收益**：是否真的落成 OAT 中的额外内联、能带来多少启动收益，要结合 ART 版本、目标代码形态和具体优化路径验证。
 
-排查时，更有价值的做法是看 `oatdump`、编译日志和目标版本下的实际 trace，而不是直接把行为变化换算成固定收益。
+排查时更有价值的做法是看 `oatdump`、编译日志和目标版本下的实际 trace，而不是直接把行为变化换算成固定收益。
 
 ## 常见问题与误区
 

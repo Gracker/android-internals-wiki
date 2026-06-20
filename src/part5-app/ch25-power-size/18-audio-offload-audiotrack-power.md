@@ -48,6 +48,8 @@ sources:
     path: "https://developer.android.com/media/media3/exoplayer/battery-consumption"
   - type: official
     path: "https://developer.android.com/media/media3/exoplayer/track-selection"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-20
 ---
 
 # 25.18 音频 Offload 与 AudioTrack 精确控制功耗实践
@@ -97,9 +99,7 @@ Audio offload 解决的是这类长时间播放的 CPU 参与度问题。平台�
 
 本节只讨论应用侧怎么判断、怎么接入、怎么验证和怎么灰度。AudioFlinger / AAudio / MMAP 的机制详见 1.16 节；MediaCodec、Media3 与播放管线详见 8.8 和 18.23 节；Android 17 后台音频限制详见 25.17 节。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[已验证: 官方文档, developer.android.com/media/media3/exoplayer/battery-consumption]
 
 ## 场景边界：什么时候值得开启 Offload
 
@@ -116,7 +116,6 @@ Offload 的收益来自少唤醒、少 CPU 解码和少数据搬运。适用场�
 
 Media3 文档建议：短音频或亮屏播放时，音频通常不是主要耗电项；长时间、屏幕关闭后的播放可以评估 ExoPlayer audio offload。官方也说明设备和格式支持会变化，Offload 会限制变速、跳过静音等效果能力，所以不能只看 API level 下结论。
 
-[已验证: 官方文档, developer.android.com/media/media3/exoplayer/battery-consumption]
 
 ## AAudio Power Saving Offloaded 的探测流程
 
@@ -150,11 +149,9 @@ AAudioStreamBuilder_delete(builder);
 
 打开成功后还要记录格式、声道、采样率、设备路由、是否蓝牙、是否屏幕关闭、写入模式和回退原因。没有这些字段，线上只能看到“请求过 Offload”，看不到设备为什么没走这条路径。
 
-[已验证: 官方文档, developer.android.com/ndk/reference/group/audio]
 
 AAudio offloaded stream 还有两个 API 36 相关能力值得纳入状态机：`AAudioStreamBuilder_setPresentationEndCallback()` 可在 offloaded stream 中所有已排队 buffer 播放完时回调；`AAudioStream_flushFromFrame()` 只在 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 下工作，可从指定 frame 刷掉后续数据，并返回实际 flush 位置。它适合有声书章节跳转、广告插入后恢复、长音频 seek 等场景，但调用成功后如果剩余数据不足，应用要立刻补数据，否则会发生 underrun。
 
-[已验证: 官方文档, developer.android.com/ndk/reference/group/audio]
 
 ## AudioTrack Offload 的 API 37 新边界
 
@@ -168,7 +165,6 @@ Android 17 为 `AudioTrack` 补了两个和 Offload 直接相关的能力：code
 
 `flushWrittenFramesFromPosition()` 的约束会影响播放器状态机。`positionInFrames` 必须在 0 到已写入 frame 之间；`FLUSH_FROM_ACCURACY_BEST_EFFORT` 表示系统尽量接近请求位置但不低于该位置；`FLUSH_FROM_ACCURACY_EXACT` 表示必须从请求位置 flush。若 exact 模式做不到，方法返回 `ERROR_BAD_VALUE`。调用期间不能继续写入，否则数据可能损坏；调用成功且 stream 仍活跃时，如果剩余音频太少，要马上补写，避免 underrun。
 
-[已验证: 官方文档, developer.android.com/reference/android/media/AudioTrack]
 
 这些 API 对四类产品动作有价值：
 
@@ -197,11 +193,10 @@ player.trackSelectionParameters = player.trackSelectionParameters
 
 `setIsGaplessSupportRequired(true)` 会提高无缝播放要求，也可能缩小可 offload 的设备和格式组合。音乐 App、播客 App、有声书 App 的取舍不同：音乐更在意 gapless；播客更常用倍速和跳过静音；有声书更在意章节 seek 和断点续播。灰度开关不要只按“是否开启 Offload”一档设计，至少要把 gapless、倍速、跳过静音、空间音频、蓝牙路由分开。
 
-[已验证: 官方文档, developer.android.com/media/media3/exoplayer/track-selection]
 
 ## 功耗收益怎么验证
 
-Offload 的验收指标不是“听起来没问题”，而是 CPU、唤醒、电量和用户体验都可复查。参考书里把速度优化拆成 CPU 指令、等待、调度和缓存几个维度；迁移到音频省电场景后，观察对象变成 CPU 时间、线程唤醒、buffer 深度、系统电量统计和播放状态。
+Offload 的验收指标不是“听起来没问题”，而是 CPU、唤醒、电量和用户体验都可复查。可以借鉴一个分析思路：把问题拆成 CPU 指令、等待、调度和缓存几个维度，迁移到音频省电场景后，观察对象变成 CPU 时间、线程唤醒、buffer 深度、系统电量统计和播放状态。
 
 | 指标 | 采集方式 | 看什么 | 解释边界 |
 | --- | --- | --- | --- |
@@ -226,7 +221,6 @@ adb shell dumpsys batterystats > batterystats.txt
 
 `dumpsys audio` 用来确认 output、track、offload 状态和路由；Perfetto 用来观察线程与 CPU；batterystats 用来做长时间电量对比。三者缺一项，结论都容易偏：只有 Perfetto 可能看不到用户体验，只有 batterystats 很难定位到播放器内部原因，只有播放器日志则无法证明系统省电。
 
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
 ## 延迟、音质与兼容性代价
@@ -260,8 +254,6 @@ Android 17 引入 `USAGE_ASSISTANT` 专用音量流，Assistant 回复音量可�
 - 后台线：退后台或锁屏后是否满足 Android 17 后台音频 hardening、FGS 与 while-in-use 规则，详见 25.17 节。
 - 省电线：长回复或长内容播放是否满足 offload 条件，短回复优先保证延迟和可打断性。
 
-[已验证: 官方文档, developer.android.com/about/versions/17/features]
-[来源: intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md]
 
 ## 线上监控与回滚开关
 
@@ -316,49 +308,3 @@ DSP offload 会让音频处理更靠近硬件，音量、安全和声压相关�
 - [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 - [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 - [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
-
-<!-- AIW-源码调研-2026-06-19 -->
-## 源码调研：Android 17 音频 Offload 与 AudioTrack flushFromFrame 源码栈
-
-### 关键发现（Android 17）
-
-本节基于 AOSP android-17.0.0_r1 源码，重点发现以下三点源码级改动需补充进 25.18 正文：
-
-1. **OffloadThread 是独立线程类型**  
-   `IAfThreadBase::class_t` 枚举将 `OFFLOAD` 与 `MMAP_PLAYBACK`/`MMAP_CAPTURE` 并列，`kMaxTrackStopRetriesOffload = 2` 重试计数表明 offload 走独立状态机。`OffloadThread::flushHw_l()` 通过自增 `mWriteAckSequence` 丢弃 in-flight drain ack，避免 ExoPlayer 切换音源时的回调地狱。
-
-2. **Android 17 新增 flushFromFrame 精确 flush API**  
-   `@FlaggedApi(FLAG_PARTIAL_FLUSH_FOR_PCM_OFFLOAD)` 标注的 `flushWrittenFramesFromPosition(position, accuracy)` 由 native `flushFromFrame()` 实现，返回实际 flush 位置，支持 `FLUSH_FROM_ACCURACY_BEST_EFFORT`/`FLUSH_FROM_ACCURACY_EXACT`。
-
-3. **codecProvenance 全链路透传**  
-   `@FlaggedApi(FLAG_CODEC_PROVENANCE_API)` 的 `getCodecProvenance()`/`setCodecProvenance()` 由 `mCodecProvenance` 字段承载，经 AudioFlinger `createTrack(..., codecProvenance)` 透传至 Track 层。
-
-### 调用链路
-
-```
-AudioTrack.Builder.build()
-  → AudioTrack.<init>          [framework/base media/java/android/media/AudioTrack.java]
-    → native_setup(..., codecProvenance)
-      → AudioTrack::AudioTrack(..., codecProvenance)  [frameworks/av media/libaudioclient/AudioTrack.cpp]
-        → createTrack_l()
-          → AudioFlinger::createTrack()                [frameworks/av services/audioflinger/AudioFlinger.cpp]
-            → PlaybackThread::createTrack_l(..., codecProvenance)
-              → OffloadThread::createTrack_l()          [frameworks/av services/audioflinger/Threads.cpp]
-                → OffloadThread::threadLoop()
-                  → OffloadThread::prepareTracks_l()
-                    → OffloadThread::flushHw_l()
-```
-
-### 版本差异（Android 17 API 37）
-
-| API Level | 关键变化 | 25.18 当前覆盖 |
-|-----------|----------|---------------|
-| **Android 17 (API 37)** | 新增 `FLAG_PARTIAL_FLUSH_FOR_PCM_OFFLOAD` 与 `FLAG_CODEC_PROVENANCE_API` | **未覆盖** |
-
-### 性能实测
-
-- 320 kbps AAC 流媒体后台 60 分钟：Offload CPU 0.6% vs PCM 8.3%
-- `kMaxTrackStopRetriesOffload = 2`：硬件 stop ack 2 次 prepare 内未返回即放弃
-
-> **数据源**：AOSP android-17.0.0_r1 frameworks/av/services/audiopolicy/managerdefault/AudioPolicyManager.cpp、frameworks/av/services/audioflinger/IAfThread.h、frameworks/av/services/audioflinger/Tracks.cpp、frameworks/av/services/audioflinger/Threads.cpp、frameworks/av/services/audioflinger/AudioFlinger.cpp、frameworks/av/media/libaudioclient/AudioTrack.cpp、frameworks/base/media/java/android/media/AudioTrack.java
-<!-- /AIW-源码调研-2026-06-19 -->

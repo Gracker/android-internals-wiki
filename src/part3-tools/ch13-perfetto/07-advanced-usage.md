@@ -49,8 +49,8 @@ last_task6_audit: "2026-05-25"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
 task2b_result: fixed
 task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；清理形容词冒号起手句 1 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-deepseek_polish_state: done
-last_deepseek_polish_at: 2026-05-26
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-20
 ---
 
 
@@ -119,7 +119,7 @@ SELECT name FROM sqlite_master WHERE type='table';
 SELECT * FROM pragma_table_info('slice');
 ```
 
-[待高爷补充：Perfetto UI Query 页面执行 SQL 查询的截图]
+[待补充：Perfetto UI Query 页面执行 SQL 查询的截图]
 
 ### 编写自定义 Metric 的流程
 
@@ -298,7 +298,7 @@ Perfetto UI 的宏（Macros）是一种可复用的分析自动化脚本。简�
 
 这样做除了省时间，更实际的价值是把团队里资深工程师的分析思路固化下来。新同学拿到一个 Trace，运行标准分析宏，就能先看到老手会看的东西。
 
-[待高爷补充：Perfetto UI 命令面板执行宏的截图]
+[待补充：Perfetto UI 命令面板执行宏的截图]
 
 ## Trace Processor Python API 的高级用法
 
@@ -813,14 +813,95 @@ data_sources {
 
 **NDK 侧 `ATrace_*` 的边界。** `ATrace_beginSection` 是平台 tracing API，Perfetto 在 Android 10+ 通过 `traced` 守护进程采集其输出。在 release native 库中保留 `ATrace_*` 调用的开销很低（单次约 50-100ns），但字符串常量同样会进入 .rodata 段。可通过 `#ifdef NDEBUG` 宏控制 release 构建中的 trace 输出。
 
+
+## Remote Trace Processor 架构
+
+前面提到 `./trace_processor trace.perfetto-trace --httpd` 可以启动本地 Trace Processor 实例让浏览器直连。这里从源码角度展开其内部架构。
+
+### 核心类与目录
+
+`Perfetto Remote Trace Processor`（RTP）在 AOSP `android-17.0.0_r1` 中位于 `external/perfetto/src/trace_processor/rpc/`（不是上游 main 较新版本的 `remote/` 目录；功能等价）。三个传输后端都共用同一个 `Rpc` 类（`rpc.h` / `rpc.cc`），传输无关：
+
+- `stdiod.cc`（stdin/stdout 字节流，Python 客户端和嵌入式场景）
+- `httpd.cc`（HTTP+WebSocket+chunked transfer，浏览器 UI 使用）
+- `wasm_bridge.cc`（Emscripten 模式，与 `ui.perfetto.dev` 配合）
+
+`Rpc` 类的注释明确写「This class does NOT define how the transport works, it just deals with marshal/unmarshal」——这是 RTP 实现「传输无关」的关键。
+
+### 关键调用链（`--httpd` 模式）
+
+```
+trace_processor_shell --httpd
+  → trace_processor_shell.cc:953 转 server subcommand
+  → shell/server_subcommand.cc:ServerSubcommand::Run
+    → 创建 Rpc 实例（持 std::unique_ptr<TraceProcessor>）
+    → RunHttpRPCServer(rpc, listen_ip, port, cors_origins)
+      → httpd.cc:Httpd::Run 启动 HttpServer，端口 9001
+      → httpd.cc:OnHttpRequest 根据 URI 分派：
+          /status         → Rpc::GetStatus
+          /websocket      → UpgradeToWebsocket
+          /rpc            → SetRpcResponseFunction → Rpc::OnRpcRequest
+          /parse /notify_eof /restore_initial_tables /query /compute_metric ...
+                         → legacy REST 端点（Python 兼容）
+```
+
+### 协议要点
+
+- **Wire format**：`TraceProcessorRpcStream` 消息线性序列，每条 `TraceProcessorRpc` 消息前缀是 `[field=1, length-delimited][varint size]`——这与 trace.proto 中 `Trace { repeated TracePacket packet = 1; }` 完全同构。
+- **seq 字段**：`optional int64 seq = 1` 用于检测掉包 / 重复。注释明确「Do NOT expect that a response has the same seq of its corresponding request」——一个 query 可能产生多个 batch 响应。
+- **seq=0 重置**：浏览器刷新 trace_processor_shell --httpd 时 seq=0 是合法的「重置」（`rpc.cc:201` 短路判断 `req.seq() != 0 && rx_seq_id_ != 0`）。
+- **响应 framing**：`(nullptr, 0)` 是 disconnect 信号，由 fatal framing error 触发。
+
+### 17 个 method（去除 reserved 4/12/14）
+
+`TPM_APPEND_TRACE_DATA(1)` / `TPM_FINALIZE_TRACE_DATA(2)` / `TPM_QUERY_STREAMING(3)` / `TPM_COMPUTE_METRIC(5)` / `TPM_GET_METRIC_DESCRIPTORS(6)` / `TPM_RESTORE_INITIAL_TABLES(7)` / `TPM_ENABLE_METATRACE(8)` / `TPM_DISABLE_AND_READ_METATRACE(9)` / `TPM_GET_STATUS(10)` / `TPM_RESET_TRACE_PROCESSOR(11)` / `TPM_REGISTER_SQL_PACKAGE(13)` / `TPM_SUMMARIZE_TRACE(15)` / `TPM_CREATE_SUMMARIZER(16)` / `TPM_UPDATE_SUMMARIZER_SPEC(17)` / `TPM_QUERY_SUMMARIZER(18)` / `TPM_DESTROY_SUMMARIZER(19)`。
+
+`TPM_SUMMARIZER` 系列（16-19）是 v53+ 引入的新方法，Android 17 已包含。
+
+### 零拷贝设计
+
+`Rpc::Response::Send`（`rpc.cc:74-79`）把 `HeapBuffered<TraceProcessorRpcStream>` 的多个 slice 直接 forward 到 `rpc_response_fn_`——避免了「先 SerializeAsArray 到 std::vector 再转发」的一次堆分配与拷贝。`Response` 的 slice 大小是 `kDefaultBatchSplitThreshold + 4096`，默认每个 query response batch ~128 KiB + 4 KiB 余量。
+
+### 实际用法（场景化）
+
+**场景 1：用 --httpd 让浏览器 UI 加速**
+
+```bash
+./trace_processor trace.perfetto-trace --httpd
+# 默认监听 127.0.0.1:9001，CORS 已放行 ui.perfetto.dev
+# 打开 https://ui.perfetto.dev/，会弹出「Trace Processor native acceleration」确认
+```
+
+**场景 2：用 --stdiod 嵌入到 CI 流水线**
+
+```bash
+./trace_processor --stdiod trace.perfetto-trace
+# 通过 STDIN/STDOUT 走裸字节流协议，Python perfetto.TraceProcessor 可直接对接
+# 单线程 reactive 循环，4 KiB 读循环，STDIN EOF 正常退出
+```
+
+**场景 3：HTTP /rpc 端点直接打裸 RPC（Python 替代路径）**
+
+```python
+import requests
+r = requests.post(
+    "http://localhost:9001/rpc",
+    data=rpc_bytes,
+    stream=True,
+    headers={"Content-Type": "application/x-protobuf",
+             "Transfer-Encoding": "chunked"})
+# 响应是 chunked transfer：每个 chunk "hex_len\r\nbody\r\n"
+# 解析后是 TraceProcessorRpcStream 字节流
+```
+
+> 引用：`external/perfetto/src/trace_processor/rpc/rpc.cc:114-126`（`OnRpcRequest`）、`rpc.cc:152-300`（`ParseRpcRequest`）、`httpd.cc:130-265`（`OnHttpRequest`）、`server_subcommand.cc:Run`（subcommand 入口）。
+> 完整调研：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-perfetto-remote-trace-processor-architecture.md`
+
+
 ## 参考资料
 
-### Perfetto SPAN_JOIN 与窗口函数交叉分析算法引擎深度解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-perfetto-span-join-window-function.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级解析 Perfetto Trace Processor 的 SPAN_JOIN 自定义算子表：C++ 层实现时间跨度交集，支持 PARTITIONED 分区键避免 O(n×m) 全量比较。详解 SPAN_LEFT_JOIN/SPAN_OUTER_JOIN 变体，以及窗口函数 LEAD() 在 counter→span 视图转换中的核心用法（闭区间转开区间技巧）。
-- 注入时间：2026-05-14
-- 价值：这是 Perfetto SQL 高级分析的核心能力，掌握后可大幅提升帧×GC/Binder/锁交叉分析效率
+### Perfetto SPAN_JOIN 与窗口函数交叉分析
+Perfetto Trace Processor 的 SPAN_JOIN 自定义算子表在 C++ 层实现时间跨度交集，支持 PARTITIONED 分区键避免 O(n×m) 全量比较。配合 SPAN_LEFT_JOIN / SPAN_OUTER_JOIN 变体，以及窗口函数 LEAD() 在 counter→span 视图转换中的核心用法，可以构建帧×GC、Binder、锁等交叉分析。详见 DeepResearch 调研：`DeepResearch/2026-05-13-perfetto-span-join-window-function.md`。
 
 
 ### Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序
@@ -829,10 +910,6 @@ data_sources {
 - 摘要：UI层：Dark Mode、触摸支持、多Track批量操作。分析层：android_anrs新增anr_type字段、android.bitmaps位图时序数据、slice_self_dur自持续时间计算、regexp_extract函数、JSON trace解析性能提升。
 - 入库时间：2026-04-08
 
-### AndroidX Tracing 2.0 架构级深度技术分析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md
-- 类型：DeepResearch 调研结果
-- 摘要：围绕 AndroidX Tracing 2.0 alpha05，分析 Tracer、TraceDriver、TraceSink 新对象模型、协程上下文传播、纯 Kotlin Perfetto TracePacket 发射路径，以及与 1.x、Benchmark、Studio Profiler 的边界。
-- 注入时间：2026-04-19
-- 价值：补齐应用侧自定义 tracing 与协程归因的新范式。
+### AndroidX Tracing 2.0 架构
+AndroidX Tracing 2.0（alpha05）引入了 Tracer、TraceDriver、TraceSink 新对象模型，支持协程上下文传播和纯 Kotlin Perfetto TracePacket 发射路径。详见 DeepResearch 调研：`DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析.md`。
 
