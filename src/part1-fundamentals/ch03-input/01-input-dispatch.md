@@ -8,10 +8,10 @@ last_task2b_lite_at: "2026-06-07"
 task2b_lite_notes: "2026-06-07 删除重复 H1+outline+intro 块(L55-102);代码块语言标记待后续修复"
 last_task6_review_log: "logs/review/2026-06-07-11-review.md"
 task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。 | 2026-06-07 11:06:B类问题-文件存在重复的H1+outline+intro块(第55-102行),需Task2B删除第一个不完整实例;L1/L2无新增小修项。 | 2026-06-07 12:12:task6 revisiting review(第3轮):修复 13 处代码块语言标记(```text→```cpp/```java + 闭合标签规范化);L1/L2 通过;无 B 类大问题;queue 中 3.1 的 pending 条目为 task2b 已修复的陈旧条目，建议清理。"
-applicable_versions: Android 12 (API 31) - Android 16 (API 36)
-last_verified: '2026-04-27'
-last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
-version_note: 已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android
+applicable_versions: Android 12 (API 31) - Android 17 (API 37)
+last_verified: '2026-06-20'
+last_verified_against: AOSP android-12/13/14/15/16/17 InputDispatcher.cpp / InputReader.cpp / InputProcessor.cpp / WindowState.java
+version_note: 已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android 17 延续 InputDispatcher/InputProcessor 主路径
 confidence: high
 reviewed_date: "2026-06-07"
 reviewed_by: "openclaw-task6"
@@ -27,24 +27,24 @@ path: https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture
 tags: 
 related_chapters: 
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-pipeline_stage: "ready-to-publish"
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
 task6_reviewed_date: "2026-06-07"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 task2b_notes: "修复 Task6 2026-05-30 回炉问题:移除未进入 Android 17 的 DeliQueue 推测内容，清理参考资料后未融合的源码调研素材块。2026-06-07 Task2B 主修复：修正 HwTimeoutMultiplier() 版本表入口（Android 13 已存在）；修复 frontmatter 重复 pipeline_stage 键。"
 task2b_fixed_by: openclaw-task2b
 task2b_fixed_at: "2026-06-07T10:50:00+08:00"
-task9_reviewed_date: "2026-06-07"
+task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-07T12:24:00+08:00"
-review_notes: "2026-06-07 Task9 深度技术审计通过：无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-06-20T18:29:16+08:00"
+review_notes: "2026-06-07 Task9 深度技术审计通过：无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检 auto-fix: 修正 Android 17 源码边界、EventHub 示例、InputChannel 创建链路和窗口信息回调版本限定;回到 Task6 复审。"
 last_task2b_at: "2026-05-30T00:50:00+08:00"
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-06-07-12-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-20-18-audit.md"
 task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 19
 task6_l3_l4_issues: 1
@@ -52,6 +52,8 @@ task6_new_rework: true
 review_type: "task6-writing-quality-review"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
+last_task9_autofix_at: "2026-06-20"
+last_task9_audit: "2026-06-20"
 ---
 
 # Input 事件分发全流程
@@ -110,13 +112,14 @@ last_deepseek_cn_review_at: 2026-06-07
 
 ```cpp
 // frameworks/native/services/inputflinger/reader/EventHub.cpp
+// Android 17 形态；Android 12 的 getEvents 仍是 RawEvent* buffer 参数,等待机制相同。
 EventHub::EventHub(void) {
-    mEpollFd = epoll_create(EPOLL_SIZE_HINT);  // 创建 epoll 实例
-    mINotifyFd = inotify_init();                // 监听设备插拔
+    mEpollFd = epoll_create1(EPOLL_CLOEXEC);
+    mINotifyFd = inotify_init1(IN_CLOEXEC);  // 监听设备插拔
     // ...
 }
 
-size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer, size_t bufferSize) {
+std::vector<RawEvent> EventHub::getEvents(int timeoutMillis) {
     for (;;) {
         int pollResult = epoll_wait(mEpollFd, mPendingEventItems,
                                     EPOLL_MAX_EVENTS, timeoutMillis);
@@ -195,7 +198,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 ### 手势排除区域
 
-在 Android 16 的 AOSP 主线源码中,手势排除区域(g gesture exclusion)尚未作为独立机制进入 `InputDispatcher` 的分发路径。`InputDispatcher.cpp` 没有专门处理手势排除区域的代码分支,`WindowInfo.h` 中也未出现 `gesture exclusion` 相关的结构字段。此前一些资料提到的"10ms 优化收益",在现有 AOSP 主线中缺乏源码依据。
+在 Android 17 的 AOSP 主线源码中,手势排除区域(gesture exclusion)尚未作为独立机制进入 `InputDispatcher` 的分发路径。`InputDispatcher.cpp` 没有专门处理手势排除区域的代码分支,`WindowInfo.h` 中也未出现 `gesture exclusion` 相关的结构字段。此前一些资料提到的"10ms 优化收益",在现有 AOSP 主线中缺乏源码依据。
 
 排查边缘触控问题时,仍以窗口命中判断、系统手势区域和 `InputDispatcher` 的分发耗时(slice)为主要分析手段。如果后续版本确认手势排除逻辑下沉到 Native 输入循环,再结合对应源码 tag 和 Perfetto trace 样本补充。
 
@@ -267,12 +270,16 @@ ViewRootImpl.setView()
   → Session.addToDisplay()
     → WindowManagerService.addWindow()
       → WindowState.openInputChannel()
-        → InputChannel.openInputChannelPair()  // 创建 socketpair
-        → sockets[0] → InputDispatcher.registerInputChannel()  // 服务端
-        → sockets[1] → 回传给 ViewRootImpl  // 客户端
+        → InputManagerService.createInputChannel()
+          → nativeCreateInputChannel()
+            → NativeInputManager::createInputChannel()
+              → InputDispatcher::createInputChannel()
+                → InputChannel::openInputChannelPair()  // socketpair
+                → ConnectionManager.createConnection(serverChannel)
+        → client InputChannel 回传给 ViewRootImpl
 ```
 
-`WindowState.openInputChannel()` 调用 `InputChannel.openInputChannelPair()`,内部通过 `socketpair()` 创建一对已连接的全双工 socket。`sockets[0]`(server 端)注册到 `InputDispatcher`,封装为 `Connection` 对象保存在 `mConnectionsByFd` 中;`sockets[1]`(client 端)通过 Binder 回传给 App 进程,保存在 `ViewRootImpl` 的 `mInputChannel` 中。
+`WindowState.openInputChannel()` 不直接调用 Java 层的 `InputChannel.openInputChannelPair()`。Android 12-17 的主线路径是先进入 `InputManagerService.createInputChannel()`,再通过 JNI 到 `NativeInputManager::createInputChannel()` 和 `InputDispatcher::createInputChannel()`。`InputDispatcher` 在 native 层调用 `InputChannel::openInputChannelPair()` 创建 `socketpair()`,server 端封装为 `Connection` 并注册到连接管理结构,client 端通过 Binder 回传给 App 进程,保存在 `ViewRootImpl` 的 `mInputChannel` 中。
 
 创建失败时,问题通常停在 `InputChannel.openInputChannelPair()` 或 JNI 封装层。`socketpair()` 返回失败后,Framework 会向上抛出运行时异常,窗口无法完成输入通道建立。线上常见原因是进程或系统 fd 耗尽(`EMFILE` / `ENFILE`)以及内存不足(`ENOMEM`)。这类问题不会表现为普通的 `wq` 堆积,因为事件还没有进入目标窗口连接;更常见的现象是窗口添加失败、焦点窗口迟迟不可用,随后触发 No Focus Window ANR 或窗口初始化异常。
 
@@ -372,6 +379,7 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+// Android 13 形态；Android 14+ 参数改为 const gui::WindowInfosUpdate& update。
 void InputDispatcher::onWindowInfosChanged(
         const std::vector<WindowInfo>& windowInfos,
         const std::vector<DisplayInfo>& displayInfos) {
@@ -420,11 +428,11 @@ if (connection->responsive) {
 
 ### 5 秒超时的来源
 
-默认超时时间在 InputDispatcher 中定义。Android 14/15/16 的代码已经是 `std::chrono` 写法,默认 5 秒来自 `IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS`,并会经过 `HwTimeoutMultiplier()` 放大:
+默认超时时间在 InputDispatcher 中定义。Android 14/15/16/17 的代码已经是 `std::chrono` 写法,默认 5 秒来自 `IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS`,并会经过 `HwTimeoutMultiplier()` 放大:
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
-// [已验证: AOSP android-14.0.0_r1 / android-16.0.0_r1]
+// [已验证: AOSP android-14.0.0_r1 / android-16.0.0_r1 / android-17.0.0_r1]
 const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::milliseconds(
         android::os::IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS *
         HwTimeoutMultiplier());
@@ -469,7 +477,7 @@ Android 的 Input 系统区分两种基本的指针类事件:
 
 ## InputFlinger 的角色与版本边界
 
-Android 12 到 Android 16 的 `InputReader`、`InputDispatcher`、`InputProcessor` 等实现都位于 `frameworks/native/services/inputflinger/`。这说明源码按 inputflinger 模块组织,但 AOSP 主线默认运行形态仍是通过 `libinputflinger` 等库进入 `system_server`;独立 `inputflinger` 进程仍停留在 TODO 或 OEM 形态。
+Android 12 到 Android 17 的 `InputReader`、`InputDispatcher`、`InputProcessor` 等实现都位于 `frameworks/native/services/inputflinger/`。这说明源码按 inputflinger 模块组织,但 AOSP 主线默认运行形态仍是通过 `libinputflinger` 等库进入 `system_server`;独立 `inputflinger` 进程仍停留在 TODO 或 OEM 形态。
 
 ### 已核验的版本事实
 
@@ -480,8 +488,9 @@ Android 12 到 Android 16 的 `InputReader`、`InputDispatcher`、`InputProcesso
 | Android 14 | 触摸分类路径演进为 `InputProcessor.cpp`;`DEFAULT_INPUT_DISPATCHING_TIMEOUT` 使用 `std::chrono` + `HwTimeoutMultiplier()` |
 | Android 15 | stale 判定改为 `mPolicy.isStaleEvent(currentTime, entry.eventTime)` |
 | Android 16 | stale 判定路径延续 Android 15;`services/inputflinger/Android.bp` 仍保留 "Move inputflinger to its own process" TODO |
+| Android 17 | stale 判定、InputProcessor 触摸分类、`InputDispatcher::createInputChannel()` 和 inputflinger 进程边界延续 Android 16 主路径 |
 
-`services/inputflinger/Android.bp` 中的 TODO 说明独立进程化仍不是 AOSP 12-16 的默认事实。某些产品/OEM 可以调整服务形态,但正文只能按可核验的 AOSP 主线描述。
+`services/inputflinger/Android.bp` 中的 TODO 说明独立进程化仍不是 AOSP 12-17 的默认事实。某些产品/OEM 可以调整服务形态,但正文只能按可核验的 AOSP 主线描述。
 
 ## 常见问题与误区
 
@@ -512,8 +521,9 @@ Input 事件通过 `socketpair` 传递,不是 `Binder`。这一点在面试中�
 | Android 14 (API 34) | 触摸分类路径演进为 `InputProcessor.cpp`;默认 dispatch timeout 改用 `std::chrono` 写法,`HwTimeoutMultiplier()` 延续 Android 13 已引入的机制 |
 | Android 15 (API 35) | stale 判定改为 `mPolicy.isStaleEvent(currentTime, entry.eventTime)` |
 | Android 16 (API 36) | stale 判定路径延续 Android 15;AOSP 主线仍没有默认把 inputflinger 独立成单独进程 |
+| Android 17 (API 37) | stale 判定、InputProcessor 触摸分类和 InputChannel native 创建路径延续 Android 16;`WindowInfo.h` 未出现 gesture exclusion 字段 |
 
-[版本边界:Predictive Back 已在上文限定为 Framework 窗口层机制;AOSP android-16.0.0_r1 未见其进入 `InputDispatcher` 主分发路径。IME 交互优化仍需单独源码锚点,不写入本表。]
+[版本边界:Predictive Back 已在上文限定为 Framework 窗口层机制;AOSP android-17.0.0_r1 未见其进入 `InputDispatcher` 主分发路径。IME 交互优化仍需单独源码锚点,不写入本表。]
 
 ## 调试技巧
 
@@ -555,7 +565,7 @@ if (nextTimeout <= currentTime) {
 }
 ```
 
-动态超时更新:窗口超时时间变更时,AnrTracker 保留已派发事件的原始超时值--已派发事件按原超时处理,新事件按新超时处理。这个机制在 Android 12-16 之间保持稳定。
+动态超时更新:窗口超时时间变更时,AnrTracker 保留已派发事件的原始超时值--已派发事件按原超时处理,新事件按新超时处理。这个机制在 Android 12-17 之间保持稳定。
 
 > [未验证: InputFlinger priority setpriority 移除的具体 commit 版本]
 
