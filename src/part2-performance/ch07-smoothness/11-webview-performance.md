@@ -11,7 +11,7 @@ gap_source: "AOSP结构+官方文档+读者需求"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-04-13"
-last_verified_against: "AOSP android-17-beta3 + developer.android.com + Chromium android_webview docs"
+last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base/core/java/android/webkit/) + developer.android.com; Chromium android_webview/docs/ 为 HEAD 版本，架构描述与 AOSP framework 行为一致，但 Chromium 侧版本锚点未确认属于 Android 17/API 37 范围"
 confidence: medium
 sources:
   - type: official
@@ -20,30 +20,30 @@ sources:
     path: "https://source.android.com/docs/core/graphics"
   - type: aosp
     path: "frameworks/base/core/java/android/webkit/"
-  - type: aosp
-    path: "android_webview/docs/ (chromium.googlesource.com)"
+  - type: reference
+    path: "chromium.googlesource.com — android_webview/docs/ (HEAD；架构参考，未确认属于 Android 17/API 37 范围)"
 review_notes: "2026-05-07 Task6 09:06：pass-light-edit。Task2B 已将后半部调研补丁移入发布稿收束前；本轮小修 6 处（代码围栏语言、16KB 边界术语、Viz/GPU service 表述），L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 task9_result: "needs-rework"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-26"
 last_task9_at: "2026-06-20T12:34:59+08:00"
-last_task2b_at: "2026-05-26T19:25:19+08:00"
+last_task2b_at: 2026-06-20T12:54:38+08:00
 review_round: 3
 task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。；2026-05-26 Task9 闲时抽检：needs-rework。P0 1（AwBrowserTerminator / Renderer 退出调用链使用过期源码口径）；P2 1（API 26 renderer 模型表格重叠）；详见 logs/deep-review/2026-05-26-12-audit.md。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Renderer 模型版本表重复 Android 11+ 行）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 12:34 Task9 闲时抽检：needs-rework。P1 1（Chromium HEAD/mainline 源码/文档锚点无法证明进入 Android 17/API37）；已写入 queue，回到 Task2B。"
 
-status: finalized
+status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: "reviewed"
-pipeline_stage: "task2b_pending"
-task2b_state: "pending"
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+task2b_state: fixed
 last_task2b_lite_at: "2026-05-26"
 last_task6_at: "2026-05-07T17:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
 last_task6_audit: "2026-05-25"
-task2b_result: fixed-lite
+task2b_result: fixed
 task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补充 render_process_gone Perfetto 事件待验证标注 1 处，frontmatter 更新；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-20-12-audit.md"
 last_task9_audit: 2026-06-20
@@ -51,6 +51,7 @@ auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-26"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
+last_task2b_result: fixed-main
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -128,7 +129,7 @@ WebView 带着一套 Chromium 渲染管线进入 App，但它不是“App 外面
 
 WebView 可以把一部分滚动、动画和合成工作留在 Chromium compositor 线程，但它仍然嵌在 Android 的 View、draw 和显示同步路径里。输入先经过 Android InputDispatcher / View 分发到 WebView，最终内容也要通过 WebView 的绘制路径或独立 Layer 提交给 SurfaceFlinger。排查卡顿时，Chromium 线程、App MainThread / RenderThread、SurfaceFlinger 这三处都要一起看。
 
-[已验证：来源见 Chromium `android_webview/docs/architecture.md`、`threading.md`、`legacy-os-behavior.md`]
+[已验证：AOSP framework 侧通过 android-17.0.0_r1 验证；Chromium `android_webview/docs/architecture.md`、`threading.md`、`legacy-os-behavior.md` 为 HEAD 版本，架构描述与 AOSP framework 行为一致，但 Chromium 侧版本锚点未确认属于 Android 17/API 37 范围]
 
 ### 初始化开销
 
@@ -223,7 +224,7 @@ WebView 初始化在 Perfetto 中，通常有三类观察点：
 
 JavaScript Interface 是 WebView 和 App 原生代码之间的桥梁。通过 `@JavascriptInterface` 注解的方法可以从 JS 调用 Native 代码。理解这些方法运行在哪个线程上，是避免 ANR 的关键。
 
-**`@JavascriptInterface` 方法运行在 WebView 的私有后台线程上**，这一点没有问题，但不能据此得出“不会挡住 MainThread”的结论。Chromium `java-bridge.md` 写得很直白：页面发起的这次 bridge 交互要在这个后台线程上完成，同时 main application thread（browser UI thread）会等待结果返回。执行线程不是 UI thread，调用期间 browser UI thread 仍可能被桥接方法拖住。
+**`@JavascriptInterface` 方法运行在 WebView 的私有后台线程上**，这一点没有问题，但不能据此得出“不会挡住 MainThread”的结论。Chromium `java-bridge.md` 的说明：页面发起的这次 bridge 交互要在这个后台线程上完成，同时 main application thread（browser UI thread）会等待结果返回。执行线程不是 UI thread，调用期间 browser UI thread 仍可能被桥接方法拖住。
 
 这里至少要分清三件事：
 
@@ -250,7 +251,7 @@ class WebAppInterface(private val activity: Activity) {
 }
 ```
 
-[已验证：来源见 developer.android.com/reference/android/webkit/JavascriptInterface 与 Chromium `android_webview/docs/java-bridge.md`]
+[已验证：developer.android.com 部分通过 android-17.0.0_r1 验证；Chromium `android_webview/docs/java-bridge.md` 为 HEAD 版本，线程模型描述作为参考，待以 Android 17 范围 Chromium 版本验证]
 
 ### evaluateJavascript() 的同步陷阱
 
@@ -594,9 +595,9 @@ API 29 新增 `WebViewRenderProcessClient`，提供 `onRenderProcessUnresponsive
 | `frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java` | `didCrash()` / `rendererPriorityAtExit()` 抽象方法 | API 26+ |
 | `frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java` | 渲染器无响应回调体系 | API 29+ |
 | `frameworks/base/core/java/android/webkit/WebViewRenderProcess.java` | `terminate()` 方法 | API 29+ |
-| `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | 渲染进程退出事件触发层 | Chromium mainline |
+| `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | 渲染进程退出事件触发层 | Chromium mainline（未确认属于 Android 17/API 37 范围） |
 
-[已验证: 来源见 AOSP `frameworks/base/core/java/android/webkit/WebViewClient.java`、`RenderProcessGoneDetail.java`、`WebViewRenderProcessClient.java`]
+[已验证：AOSP `frameworks/base/core/java/android/webkit/WebViewClient.java`、`RenderProcessGoneDetail.java`、`WebViewRenderProcessClient.java` 通过 android-17.0.0_r1 验证；`AwContents` / `AwBrowserTerminator` 调用链来自 Chromium mainline，不作为正文结论依据，仅作流程参考]
 
 ## WebView 渲染管线与 Perfetto 追踪
 
@@ -606,9 +607,9 @@ Android WebView 的渲染引擎源码位于 `chromium/src/android_webview/`（AO
 
 | 组件 | 源码路径 | 角色 |
 |------|---------|------|
-| `AwContents.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | WebView 内容管理层，持有 WebContents |
-| DrawFn 实现 | `android_webview/browser/gfx/aw_draw_fn_impl.cc`（C++ 侧）；Java 侧通过 `android_webview/public/browser/draw_fn.h` 定义的 `AwDrawFnFunctorCallbacks` 回调 | Android P+ HWUI functor 双后端入口（`draw_gl` / `draw_vk`），不是独立 Java 类 |
-| `Viz` 组件 / GPU service | `chromium/src/components/viz/` | GPU 组合器，聚合多 Renderer 帧 |
+| `AwContents.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java`（Chromium mainline；未确认属于 Android 17/API 37 范围） | WebView 内容管理层，持有 WebContents |
+| DrawFn 实现 | `android_webview/browser/gfx/aw_draw_fn_impl.cc`（C++ 侧，Chromium mainline；未确认属于 Android 17/API 37）；Java 侧通过 `android_webview/public/browser/draw_fn.h` 定义的 `AwDrawFnFunctorCallbacks` 回调 | Android P+ HWUI functor 双后端入口（`draw_gl` / `draw_vk`），不是独立 Java 类 |
+| `Viz` 组件 / GPU service | `chromium/src/components/viz/`（Chromium mainline；未确认属于 Android 17/API 37 范围） | GPU 组合器，聚合多 Renderer 帧 |
 
 从 JS 到屏幕的渲染路径取决于 WebView 当前的合成模式，不是固定路径。Chromium 侧的帧生产管线相同——V8 执行 JS、Blink 做 Layout/Paint、CompositorThread 生成 `CompositorFrame`——但帧输出后走哪条提交路径，取决于运行时条件：
 
@@ -673,7 +674,7 @@ Renderer 进程崩溃在 Perfetto 中的表现需要按 WebView provider 和 tra
 | Android 11+ (API 30) | 全部 out-of-process | GLFunctor（默认）/ SurfaceControl 子 Surface（条件满足时） | renderer 崩溃隔离成为默认 |
 | Android 13+ (API 33) | Sandbox 加强隔离 | SurfaceControl 子 Surface 路径更常见 | 安全边界收紧 |
 
-[已验证: 来源见 Chromium `android_webview/docs/architecture.md`、`chromium/src/base/trace_event/README.md`、`perfetto.dev/docs/analysis/webview-tracing`]
+[已验证：perfetto.dev 文档为公开参考；Chromium `android_webview/docs/architecture.md` 和 `chromium/src/base/trace_event/README.md` 为 HEAD 版本，架构/追踪描述与 AOSP framework 行为一致，但版本锚点未确认属于 Android 17/API 37 范围]
 
 
 ## 常见问题与误区
@@ -700,16 +701,16 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
   - `frameworks/base/core/java/android/webkit/WebView.java` — WebView Java API 入口
   - `frameworks/base/core/java/android/webkit/WebViewFactory.java` — Chromium 引擎加载
   - `frameworks/base/core/java/android/webkit/WebSettings.java` — WebView 配置
-  - `android_webview/` (chromium.googlesource.com) — Chromium WebView 实现
-  - `chromium/src/android_webview/browser/aw_browser_terminator.cc` — Renderer 进程终止检测
+  - `android_webview/` (chromium.googlesource.com) — Chromium WebView 实现（HEAD；架构参考，未确认属于 Android 17/API 37 范围）
+  - `chromium/src/android_webview/browser/aw_browser_terminator.cc` — Renderer 进程终止检测（Chromium mainline；未确认属于 Android 17/API 37 范围，流程参考）
 
 - **官方文档**：
   - [developer.android.com — WebView 概览](https://developer.android.com/develop/ui/views/layout/webapps/webview)
   - [developer.android.com — WebView 渲染性能](https://developer.android.com/develop/ui/views/layout/webapps/rendering-performance)
-  - [chromium.googlesource.com — Android WebView Architecture](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/architecture.md)
-  - [chromium.googlesource.com — WebView Java Bridge](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/java-bridge.md)
-  - [chromium.googlesource.com — WebView Threading](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/threading.md)
-  - [chromium.googlesource.com — Legacy OS Behavior](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/legacy-os-behavior.md)
+  - [chromium.googlesource.com — Android WebView Architecture](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/architecture.md)（HEAD；架构参考，未确认属于 Android 17/API 37 范围）
+  - [chromium.googlesource.com — WebView Java Bridge](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/java-bridge.md)（HEAD；线程模型参考，未确认属于 Android 17/API 37 范围）
+  - [chromium.googlesource.com — WebView Threading](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/threading.md)（HEAD；线程模型参考，未确认属于 Android 17/API 37 范围）
+  - [chromium.googlesource.com — Legacy OS Behavior](https://chromium.googlesource.com/chromium/src/+/HEAD/android_webview/docs/legacy-os-behavior.md)（HEAD；版本行为参考，未确认属于 Android 17/API 37 范围）
   - [source.android.com — Android 图形架构](https://source.android.com/docs/core/graphics/architecture)
 
 - **交叉引用**：

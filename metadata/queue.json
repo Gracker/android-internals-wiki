@@ -520,7 +520,10 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-20T12:34:59+08:00",
       "created": "2026-06-20",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-20T12:54:38+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "fixed — Chromium HEAD/mainline 锚点已降级为参考/标注，AOSP android-17.0.0_r1 framework 锚点保留为已验证"
     }
   ],
   "queue": [
