@@ -5,9 +5,9 @@ section: "24.17"
 status: "finalized"
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Room 3.0.0-alpha05"
-last_verified: "2026-05-25"
-last_verified_against: "AndroidX Room3 3.0.0-alpha05 release notes + androidx.sqlite API reference + Android Developers performance docs"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Room 3.0.0-rc01"
+last_verified: "2026-06-21"
+last_verified_against: "AndroidX Room3 3.0.0-rc01 release notes + androidx.sqlite API reference + Android Developers performance docs"
 confidence: medium
 sources:
   - type: official
@@ -39,10 +39,10 @@ related_chapters: ["10.7", "14.1", "19.14", "24.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-25"
 gap_source: "官方文档/每日信息"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-01"
@@ -54,14 +54,16 @@ task6_result: "pass-light-edit"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 review_type: "task6-writing-quality-review"
-last_task9_at: "2026-06-01T08:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-01-08-deep-review.md"
+last_task9_at: "2026-06-21T05:26:42+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-21-05-audit.md"
 task9_p0_issues: 0
-task9_p1_issues: 0
-task9_reviewed_date: "2026-06-01"
+task9_p1_issues: 1
+task9_reviewed_date: "2026-06-21"
 task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-06-01 Task9 deep-review: pass-tech-review。复核 Room 3.0 alpha05、SQLiteDriver、连接池、KSP/schema、wrapper 与 Android 性能验收边界；无 P0/P1/P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-06-21 Task9 idle audit: auto-fixed。官方 Room 3.0 release notes 已到 3.0.0-rc01；补齐 alpha06/rc01 版本边界、converter 命名变化和 WITHOUT ROWID 迁移影响；回到 Task6 复审。"
 task9_p2_issues: 0
+last_task9_audit: "2026-06-21"
+last_task9_autofix_at: "2026-06-21"
 task6_new_rework: false
 task6_review_notes: "2026-06-01 Task6 06:05：回炉后写作复审；完成 L1/L2 小修 1 处，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 deepseek_cn_review_state: done
@@ -113,7 +115,7 @@ Room 3.0 不是一次普通依赖升级。它把包名移到 `androidx.room3`，
 
 ## Room 3.0 的变化边界
 
-截至 2026-05-25，Room 3.0 最新公开版本是 `3.0.0-alpha05`（2026-05-19 发布），alpha04（2026-05-06）引入了 connection pool 改进，alpha05 新增 `@Relation`/`@Junction` 的 `parentColumns`/`entityColumns` 数组化以支持 composite relationship keys。本文按 alpha05 验证；alpha 阶段 API 仍可能变化，生产接入需固定版本。官方 release notes 把它定义为 Room 2.x 的大版本更新，包名从 `androidx.room` 迁到 `androidx.room3`，Maven 坐标也相应改为 `androidx.room3:room3-*`。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
+截至 2026-06-21，Room 3.0 最新公开版本是 `3.0.0-rc01`（2026-06-17 发布）。alpha04（2026-05-06）引入 connection pool 配置，alpha05（2026-05-19）新增 `@Relation`/`@Junction` 复合关系键支持，alpha06（2026-06-03）新增 `@Entity.withoutRowId`，rc01 新增 DAO 查询结果 data class 默认值支持，并把 `@TypeConverter` 重命名为 `@ColumnTypeConverter`。本文按 rc01 复核；Room 3.0 仍处预发布阶段，生产接入需固定版本。官方 release notes 把它定义为 Room 2.x 的大版本更新，包名从 `androidx.room` 迁到 `androidx.room3`，Maven 坐标也相应改为 `androidx.room3:room3-*`。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
 
 迁移评估先看破坏性变化，不看新平台覆盖。Room 3.0 保留 `@Database`、`@Entity`、`@Dao`、`@Query` 这类注解模型，但运行期和编译期的基础设施已经换掉：
 
@@ -174,7 +176,7 @@ plugins {
 }
 
 dependencies {
-    val roomVersion = "3.0.0-alpha05"
+    val roomVersion = "3.0.0-rc01"
     implementation("androidx.room3:room3-runtime:$roomVersion")
     ksp("androidx.room3:room3-compiler:$roomVersion")
 
@@ -274,7 +276,7 @@ Android App 团队不要把 KMP 目标反向写进 Android 性能结论。Androi
 
 ## 常见风险与回滚策略
 
-Room 3.0 目前仍是 alpha。生产接入应默认使用灰度、双版本 schema 测试和可回滚数据层开关，不要把 Room 2.x 到 3.0 放进一个不可拆分的大版本改造。
+Room 3.0 在本轮复核时已进入 rc01，但仍未稳定发布。生产接入应默认使用灰度、双版本 schema 测试和可回滚数据层开关，不要把 Room 2.x 到 3.0 放进一个不可拆分的大版本改造。
 
 | 风险 | 触发条件 | 回滚策略 |
 | --- | --- | --- |
@@ -290,15 +292,17 @@ Room 3.0 目前仍是 alpha。生产接入应默认使用灰度、双版本 sche
 
 ## 版本边界
 
-Room 3.0 alpha 阶段的 API 变化节奏较快，几个关键版本的边界要记住：
+Room 3.0 预发布阶段的 API 变化节奏较快，几个关键版本的边界要记住：
 
 | 版本 | 变化 | 迁移影响 |
 | --- | --- | --- |
 | 3.0.0-alpha02 | `@Fts5` 支持 | 搜索类业务可评估 FTS5，单独验证索引构建时间 |
 | 3.0.0-alpha04 | `setSingleConnectionPool()` / `setMultipleConnectionPool(...)` | 按 `hasConnectionPool()`、WAL 默认 4 reader + 1 writer、`SQLITE_BUSY` / `busy_timeout` 验收连接池边界 |
 | 3.0.0-alpha05 | `@Relation`/`@Junction` 数组化 `parentColumns`/`entityColumns` | 支持复合关系键；旧写法是否仍兼容需单独验证 |
+| 3.0.0-alpha06 | `@Entity.withoutRowId` | 使用 `WITHOUT ROWID` 表时，单独验证主键约束、查询计划、文件体积和迁移兼容性 |
+| 3.0.0-rc01 | DAO 查询结果 data class 默认值、`@ColumnTypeConverter`、provided custom DAO return types | converter import、结果映射和自定义返回类型是升级清单新增项；升级后重跑编译、schema diff 和 DAO smoke test |
 
-alpha 阶段建议固定版本号，不要用动态版本；升级时逐版本跑 migration test 和 benchmark。
+预发布阶段建议固定版本号，不要用动态版本；升级时逐版本跑 migration test 和 benchmark。
 
 ## Room 2.x 到 Room 3.0 迁移 checklist
 
