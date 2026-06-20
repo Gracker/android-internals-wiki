@@ -2,7 +2,7 @@
 title: "Binder Freezer 与缓存进程冻结性能"
 chapter: "1.18"
 section: "1.18"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 11 QPR3 - Android 17 (API 37)"
 last_verified: "2026-06-14"
@@ -13,8 +13,8 @@ related_chapters: ["1.3", "1.4", "5.8", "11.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-06-14"
 reviewed_by: openclaw-task6
@@ -22,7 +22,7 @@ reviewed_date: "2026-05-27"
 last_task6_at: "2026-06-14T04:07:46+08:00"
 last_task6_review_log: "logs/review/2026-06-13-18-review.md"
 task6_review_notes: "2026-06-14 Task6 round 3 re-review: pass-light-edit. Task9 auto-fixed kernel source anchors (Linux main→Android common kernel android17-6.18-2026-04_r1). L1: clean (no banned words). L2: clean (good narrative, proper structure, clear tables). All 6 anchors covered. No B-class issues. Writing quality high. Score: structure 5/5, wording 5/5, consistency 5/5, verification 4/5, metadata 5/5."
-task9_state: reviewed
+task9_state: pending
 last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 last_task9_at: "2026-06-14T00:24:00+08:00"
 task9_reviewed_by: openclaw-task9
@@ -69,6 +69,8 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
 last_task6_audit: "2026-06-20"
 
+last_task2b_at: 2026-06-21T00:52:15+08:00
+last_task2b_by: task2b-main
 ---
 
 # 1.18 Binder Freezer 与缓存进程冻结性能
@@ -305,95 +307,4 @@ AOSP 冻结资格从 oom_adj 进入，组件状态会通过 adj、capability 和
 - [Android common kernel android17-6.18-2026-04_r1: cgroup freezer](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-04_r1/kernel/cgroup/freezer.c)
 - [DeepResearch: Cached App Freezer 机制与 GC 触发路径] — Freezer、LMK、GC 三机制的独立决策关系，冻结/解冻触发链与 Binder 协作细节
 
-<!-- AIW-源码调研-2026-06-19 -->
 
-## 🔹 源码级补全：双阶段冻结调用链（Android 17）
-
-基于 AOSP android-17.0.0_r1 源码分析，缓存进程冻结机制采用"Binder 内核冻结 + cgroup 进程冻结"的双阶段设计，完整调用链如下：
-
-### 1. 触发判定：OomAdjuster.updateOomAdjLocked → CachedAppOptimizer.freezeAppAsyncLSP
-
-**文件**：frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java  
-**关键条件**：`adj >= CACHED_APP_MIN_ADJ`  
-**调用链**：
-```java
-// OomAdjuster.java - adj 值判定与异步触发
-if (adj >= CACHED_APP_MIN_ADJ && cachedAppOptimizer != null) {
-    cachedAppOptimizer.freezeAppAsyncLSP(app);  // 发送异步消息
-}
-```
-
-### 2. 异步调度：freezeAppAsyncInternalLSP 与消息延迟机制
-
-**文件**：frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java  
-**核心设计**：
-- `mFreezeHandler` 独立线程处理冻结逻辑，避免阻塞 OomAdjuster
-- 支持消息覆盖、取消、延迟执行
-- 关键消息类型：`SET_FROZEN_PROCESS_MSG = 3`
-
-```java
-// CachedAppOptimizer.java - 冻结异步调度
-mFreezeHandler.sendMessageDelayed(
-    mFreezeHandler.obtainMessage(SET_FROZEN_PROCESS_MSG, DO_FREEZE, 0, app),
-    delayMillis);
-```
-
-### 3. 冻结执行：freezeProcess 中的 Binder 优先策略
-
-**文件**：frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java  
-**核心逻辑**：
-```java
-// freezeProcess - 两阶段冻结
-private void freezeProcess(ProcessRecord proc) {
-    // 1. 先冻结 Binder 接口，同步刷新 pending 事务
-    if (mFreezer.freezeBinder(pid, true, FREEZE_BINDER_TIMEOUT_MS) != 0) {
-        handleBinderFreezerFailure(proc, "outstanding txns");
-        return;
-    }
-    
-    // 2. 后冻结进程 cgroup
-    mFreezer.setProcessFrozen(pid, proc.uid, true);
-    opt.setFrozen(true);
-    mFrozenProcesses.put(pid, proc);
-}
-```
-
-### 4. 接口层：Freezer 代理设计
-
-**文件**：frameworks/base/services/core/java/com/android/server/am/Freezer.java  
-**关键接口**：
-- `freezeBinder(pid, true, timeoutMs)`：Binder 内核冻结
-- `setProcessFrozen(pid, uid, true)`：cgroup v2 冻结
-- 返回值：0 成功，-EAGAIN 有 pending 事务
-
-### 5. JNI 层：Process.setProcessFrozen 代理
-
-**文件**：frameworks/base/core/jni/android_util_Process.cpp  
-**实现机制**：
-```cpp
-// android_util_Process.cpp - JNI 实现
-void android_os_Process_setProcessFrozen(JNIEnv* env, jobject clazz, jint pid, jint uid, jboolean freeze) {
-    if (freeze) {
-        SetProcessProfiles(uid, pid, {"Frozen"});  // 写入 cgroup v2
-    } else {
-        SetProcessProfiles(uid, pid, {"Unfrozen"});
-    }
-}
-```
-
-### 6. 底层实现：cgroup v2 freezer 接口
-
-**系统路径**：`/sys/fs/cgroup/{system|apps}/uid_{uid}/pid_{pid}/cgroup.freeze`  
-**写入内容**："1" = 冻结，"0" = 解冻  
-**工作原理**：通过 freezer.stop cgroup 暂停进程调度，但进程仍在内存中
-
-### 性能实测数据
-- **冻结开销**：2-5ms（可接受范围，测量方法：`SystemClock.uptimeMillis()`）
-- **冻结态内存**：全保留，不会 swap out
-- **Binder 事务处理**：同步事务直接返回错误，oneway 事务缓存到进程端
-
-### 版本边界说明
-- **Android 17 新增**：`mFreezeBackoff` 指数退避机制，防止 Binder 事务 spam 导致无法冻结
-- **Android 17 新增**：`UidFrozenStateChangedCallback` 冻结状态回调机制
-- **版本差异**：Android 16 使用 `mAwaitedFocusedApplication`，Android 17 改为 `mNoFocusedWindowAnrState`
-- **源码锚点**：所有代码均基于 AOSP android-17.0.0_r1 验证
