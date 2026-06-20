@@ -36,7 +36,7 @@ task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-16
 task6_result: pass-light-edit
-last_task6_audit: "2026-05-22"
+last_task6_audit: "2026-06-21T06:08:32+08:00"
 task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-28"
@@ -181,7 +181,7 @@ Complete.
 ```bash
 #!/bin/bash
 # cold_start_benchmark.sh — 冷启动竞品对比采样脚本
-# 用法: ./cold_start_benchmark.sh <包名> <Activity名> <采样次数>
+# 用法: ./cold_start_benchmark.sh <包名> <Activity 名> <采样次数>
 
 PACKAGE=$1
 ACTIVITY=$2
