@@ -587,3 +587,18 @@
 **已检查方向（累积）**：与 Round 167 一致，新增 LowMemDetector system_server 链路验证（已在 §10.4 覆盖）、JobScheduler 三层节流验证（已在 §5.10 部分覆盖）。
 
 **结论**：全书 443 节（305 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 168 轮无合格缺口。管线堵点在 Task6/Task9 复审（91 个 ready-for-review），非内容缺口。
+
+## [Task2A 缺口挖掘 — 2026-06-20 18:05] 已检查方向记录
+
+本轮未发现 ≥14 分候选。已检查以下方向（避免下轮重复探索）：
+
+1. source-index.json → 空库（0 条目），无候选
+2. research-feeds（最近 5 个文件，2026-03 ~ 2026-04）→ Perfetto v53/v54、Frame Timeline、Compose PausableComposition 均已映射到现有章节
+3. daily-info（2026-06-18 ~ 2026-06-20）→ Android 17 MessageQueue（已有 1.13/1.26/1.28）、ML 内存泄漏检测（研究方向非系统机制）、Android 17 适配（已有 ch16.5）
+4. research-gaps.md 现有盲区 → 均为现有章节补充建议（26.3 性能指标采集、10.6 内存抖动），非新章节候选
+5. Clippings 三本参考书（103 文件）→ 最近更新 2026-05-30 MUSCHED（已有 ch17.8），其余知识点已穷尽
+6. queue.json → 空，无 pending 条目
+7. 全书 443 节（305 finalized + 91 ready-for-review + 3 draft + 49 unknown），知识库持续高度饱和
+8. 候选评分：本轮未发现 ≥ 10 分候选（与 2026-06-20 06:15 轮一致，连续 83+ 轮无合格缺口）
+
+结论：知识库高度饱和，本轮无新章节创建。
