@@ -5,20 +5,22 @@ chapter: '7.1'
 status: "finalized"
 drafted_date: '2026-03-30'
 drafted_by: openclaw-task2
-applicable_versions: Android 4.1 (API 16) - Android 16 (API 36)
-last_verified: '2026-05-08'
-last_verified_against: AOSP android-16.0.0_r1 FrameTimeline.cpp + Perfetto docs / Android Developers docs
+applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
+last_verified: "2026-06-20"
+last_verified_against: AOSP android-17.0.0_r1 Scheduler/FrameTimeline.cpp + JankInfo.h / Perfetto docs / Android Developers docs
 polish_count: 3
 polish_date: '2026-05-08'
 polish_by: task2b-rework
 review_type: post-polish-quality-gate
 task2b_result: fixed
 task2b_state: "fixed"
-task6_state: reviewed
+task6_state: "revisiting"
 task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 confidence: medium
 sources:
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp
 - type: aosp
   path: frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp
 - type: aosp
@@ -56,18 +58,18 @@ related_chapters:
 - '7.15'
 - '8.1'
 - '9.1'
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 last_task2b_at: 2026-05-08T17:58:58+08:00
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
 review_round: 9
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-08"
-last_task9_at: "2026-05-08T18:40:56+08:00"
-last_task9_audit: "2026-06-06"
-last_task9_audit_log: "logs/deep-review/2026-06-06-12-audit.md"
-task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 2（JankType 版本边界、未验证枚举）/ P2 5 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 1 / P2 0；Perfetto FrameTimeline `jank_type` 等值与 UI 线程定位仍需回炉。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task9 18:39：pass-tech-review。P0/P1/P2 0；前轮 Binder SQL P0 已按 Perfetto android.frames.timeline / android.binder 源码复核通过，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-08-18-deep-review.md"
+task9_reviewed_date: "2026-06-20"
+last_task9_at: "2026-06-20T22:28:48+08:00"
+last_task9_audit: "2026-06-20"
+last_task9_audit_log: "logs/deep-review/2026-06-20-22-audit.md"
+task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 2（JankType 版本边界、未验证枚举）/ P2 5 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 1 / P2 0；Perfetto FrameTimeline `jank_type` 等值与 UI 线程定位仍需回炉。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task9 18:39：pass-tech-review。P0/P1/P2 0；前轮 Binder SQL P0 已按 Perfetto android.frames.timeline / android.binder 源码复核通过，自动晋升 finalized。 | 2026-06-20 Task9 闲时抽检：auto-fixed。Android 17/API 37 公开 tag 已可核验；FrameTimeline.cpp 在 Android 17 移至 Scheduler/FrameTimeline.cpp，JankInfo.h 新增 NonAnimating/AppResyncedJitter/DisplayNotOn/DisplayModeChangeInProgress/DisplayPowerModeChangeInProgress；已修正源码锚点、版本边界和旧待验证枚举口径，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-20-22-audit.md"
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -75,9 +77,13 @@ task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T18:20:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-18-review.md"
 last_task6_audit: "2026-05-26"
-review_notes: '2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 task6 revisit: pass-light-edit。清理重复 frontmatter 并复审 Task2B 修复后的 Binder SQL 段；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。'
+review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 task6 revisit: pass-light-edit。清理重复 frontmatter 并复审 Task2B 修复后的 Binder SQL 段；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。 | 2026-06-20 Task9 闲时抽检：auto-fixed。Android 17/API 37 公开 tag 已可核验；FrameTimeline.cpp 在 Android 17 移至 Scheduler/FrameTimeline.cpp，JankInfo.h 新增 NonAnimating/AppResyncedJitter/DisplayNotOn/DisplayModeChangeInProgress/DisplayPowerModeChangeInProgress；已修正源码锚点、版本边界和旧待验证枚举口径，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
+last_task9_autofix_at: "2026-06-20"
+last_task9_audit_at: "2026-06-20T22:28:48+08:00"
+last_task9_audit_result: "auto-fixed"
+task9_audit_notes: "2026-06-20 Task9 闲时抽检：auto-fixed。Android 17/API 37 公开 tag 已可核验；FrameTimeline.cpp 在 Android 17 移至 Scheduler/FrameTimeline.cpp，JankInfo.h 新增 NonAnimating/AppResyncedJitter/DisplayNotOn/DisplayModeChangeInProgress/DisplayPowerModeChangeInProgress；已修正源码锚点、版本边界和旧待验证枚举口径，回到 Task6 复审。"
 ---
 # 卡顿的定义与分类
 
@@ -174,7 +180,7 @@ Android 12 之后，FrameTimeline 会给每一帧写下责任归因。Perfetto �
 
 `AppDeadlineMissed` 表示 App 一侧没有按时交帧。Perfetto 文档把 App frame 的时间范围定义为：起点是 `Choreographer` 回调计划运行后的 App 开工时刻，终点落在 App 实际 `queueBuffer` 的时间与 fence signal time 中较晚的那个时间点。AOSP `FrameTimeline.cpp` 里的 `SurfaceFrame::setActualQueueTime()` 与 `setAcquireFenceTime()` 分别写入这两个时间点；对 GPU 渲染来说，后者通常落在 GPU 完成之后。`queueBuffer` 对应 App 把 buffer 交给 BufferQueue，所以这类 jank 既可能来自 MainThread，也可能来自 RenderThread 或 GPU 工作未及时结束。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp；AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp]
 
 Trace 里先点 App 的 `Actual Timeline` slice，再顺 token 回到 `Choreographer#doFrame` 和 `RenderThread`。如果 `On time finish` 为 `false`，而 `Jank Type` 是 `AppDeadlineMissed`，说明问题就在 App 自己这一段。
 
@@ -224,7 +230,19 @@ Perfetto 文档把 `BufferStuffing` 描述为一种状态，而不是独立的 j
 
 `Dropped`（值 0x200）在 Android 14 QPR 及后续 tag 的 JankInfo.h 中出现，Android 12/13 的公开 tag 中不一定暴露。分析 Android 14 以下设备时，看到 `Dropped Frame` 归因以 Perfetto details 面板实际输出为准。
 
-> **待验证**：外部 Review 提到 `JANK_NON_ANIMATING`（0x800）、`JANK_APP_RESYNCED_JITTER`（0x1000）、`JANK_DISPLAY_NOT_ON`（0x2000）三个枚举，称来自 Android 15/16 JankInfo.h。复核公开 AOSP tag 未找到这三个常量定义，可能存在于厂商内部分支或后续 QPR 版本。读者在实际设备 FrameTimeline 中观察到这些类型欢迎补充验证。
+Android 17（`android-17.0.0_r1`）的 `JankInfo.h` 在 `Dropped` 之后继续新增五类状态：
+
+| JankType | 值 | 触发条件 | 排查入口 |
+|----------|------|----------|----------|
+| `NonAnimating` | 0x400 | frame 没有按时 present，但不属于动画内容，通常不构成可感知 jank | 先确认 layer 是否处在动画或跟手交互路径 |
+| `AppResyncedJitter` | 0x800 | App 修改了该帧的 vsync time | 检查 App 侧 vsync resync、FrameTimeline token 与调度时间 |
+| `DisplayNotOn` | 0x1000 | 屏幕关闭或处于 doze 状态 | 结合 Display state / PowerManager 状态过滤 |
+| `DisplayModeChangeInProgress` | 0x2000 | 显示模式切换过程中产生的 late frame | 检查刷新率 / 分辨率切换窗口 |
+| `DisplayPowerModeChangeInProgress` | 0x4000 | 显示电源模式切换过程中产生的 late frame | 检查 power mode 切换和亮灭屏时序 |
+
+Android 16 及更早公开 tag 未定义这五项。历史材料中把 `NonAnimating`、`AppResyncedJitter`、`DisplayNotOn` 的值整体后移一档的口径，不适用于公开 AOSP `android-17.0.0_r1`。
+
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/gui/include/gui/JankInfo.h]
 
 ### Dropped Frame
 
@@ -480,7 +498,8 @@ JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直
 ## 参考资料
 
 - AOSP 源码路径：
-  - `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp` - FrameTimeline 归因逻辑
+  - `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp` - FrameTimeline 归因逻辑（Android 17）
+  - `frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp` - FrameTimeline 归因逻辑（Android 16 及更早）
   - `frameworks/native/libs/gui/include/gui/JankInfo.h` - JankType 定义
   - `frameworks/base/core/java/android/view/Choreographer.java` - App 侧 frame 调度入口
   - `frameworks/base/core/java/android/view/FrameMetrics.java` - UI frame 指标接口
