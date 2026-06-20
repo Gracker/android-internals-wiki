@@ -28,7 +28,7 @@ last_task9_audit: "2026-06-21"
 task9_review_notes: "2026-06-21 Task9 06:25 闲时抽检：auto-fixed。用 AOSP android-17.0.0_r1 复核 Java crash、ANR/Broadcast timeout、ART heap 分配源码锚点；修正 RuntimeInit 退出调用、Broadcast timeout 源码文件、Heap::AllocObjectWithAllocator 所在文件，回到 Task6 复审。"
 task6_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-06-21-06-audit.md"
-status: "finalized"
+status: "ready-for-review"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
 task6_state: revisiting
