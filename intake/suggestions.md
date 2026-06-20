@@ -535,3 +535,55 @@
 - AVF/pKVM 隔离开销（需 Android 17 源码级素材）
 - Intent/BroadcastReceiver 投递延迟（需新调研素材）
 - VpnService 包处理性能（需 Android 17 新增 API 素材）
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 12:04 (Round 166)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近检查：
+- daily-info（2026-06-20）ML 内存泄漏检测 → §23.01/§23.07 已覆盖
+- daily-info（2026-06-19）Android 17 调度器 → §1.13/§1.25/§1.26 已覆盖
+- daily-info（2026-06-19）Android 17 MessageQueue → §1.13/§1.26/§1.28 已覆盖
+- research-feeds 最新 Perfetto v54 → §13.14/§13.10/§13.15 已覆盖
+- source-index 323 文件已耗尽，Clippings 103 文件充分比对
+
+**已检查方向（累积）**：与 Round 165 一致。
+
+**结论**：全书 443 节（305 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 166 轮无合格缺口。管线堵点在 Task6/Task9 复审（91 个 ready-for-review），非内容缺口。
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 14:05 (Round 167)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24h 无新增 DeepResearch、无新增 research-feeds、无新增 Clippings 文件。daily-info（2026-06-20）ML 内存泄漏检测 → §23.01/§23.07 已覆盖。
+
+**已检查方向（累积）**：与 Round 166 一致，覆盖 AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（103 文件充分比对）、Android 16/17 新特性 40+ 主题、开发者高频搜索、跨平台框架、新兴平台、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching、Compose Memory Churn、Perfetto Remote Trace Processor RTP 架构、Binder 事务 5 段开销建模。
+
+**结论**：全书 443 节（305 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 167 轮无合格缺口。管线堵点在 Task6/Task9 复审（91 个 ready-for-review），非内容缺口。
+
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-06-20
+- **类型**：源码引用准确性
+- **位置**：工具推荐章节
+- **问题**：缺少具体 AOSP 源码路径引用，方法论章节中的工具描述未关联到具体实现源码
+- **建议**：补充关键工具（如 Perfetto、SimplePerf）在 AOSP 中的具体源码路径和实现位置
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-06-20
+- **类型**：版本差异覆盖
+- **位置**：Systrace vs Perfetto 工具选型章节
+- **问题**：未明确标注 Android 10+ 中 Systrace 到 Perfetto 的版本演进边界和具体差异
+- **建议**：补充 Android 10/11/12/13/14/17 中相关工具的官方文档链接和 API 变化说明
+
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 16:06 (Round 168)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 ≥14 的候选。
+
+**候选评估**：检查了 2 个新 DeepResearch 文件：
+1. **android-memory-pressure-detector (LowMemDetector/PSI)** — 评分 10/20 < 14。该 DeepResearch 自述「本轮先反哺到 04-low-memory-impact.md」，内容已在 §10.4 lines 143-222 覆盖（含 Java 桥接、Native PSI 监听、AppProfiler 集成点、LowMemDetector vs lmkd 对比表），不构成新缺口。
+2. **job-scheduler-throttling-mechanism (三层节流)** — 评分 13/20 < 14。§5.10 已覆盖 QuotaController 基本机制（line 149/202/209/222），§25.13/§25.14 覆盖配额治理与调试。DeepResearch 的三层细化（CountQuotaTracker API 限流、ExecutionSafeguards 执行超时、QuotaController 运行时配额）更适合作为 §5.10 的源码级补充，而非独立新节。
+
+**已检查方向（累积）**：与 Round 167 一致，新增 LowMemDetector system_server 链路验证（已在 §10.4 覆盖）、JobScheduler 三层节流验证（已在 §5.10 部分覆盖）。
+
+**结论**：全书 443 节（305 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 168 轮无合格缺口。管线堵点在 Task6/Task9 复审（91 个 ready-for-review），非内容缺口。
