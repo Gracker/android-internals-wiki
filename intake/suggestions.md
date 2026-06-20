@@ -498,3 +498,40 @@
 **已检查方向（累积）**：AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（充分比对）、Android 16/17 新特性（40+ 主题已覆盖）、开发者高频搜索、跨平台框架、新兴平台（Wear OS 6 / AVF / KMP / CMP）、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching、Compose Memory Churn、Perfetto Remote Trace Processor RTP 架构、Binder 事务 5 段开销建模。
 
 **结论**：全书 453 节（309 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 163 轮无合格缺口。
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 08:08 (Round 164)
+
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 >=14 的候选。
+
+**候选评估**：本轮无新增候选方向。最近 24h 新增 2 篇 DeepResearch（binder-transaction-performance-analysis → §1.04/§1.25 已覆盖；perfetto-remote-trace-processor-architecture → §13.07 已覆盖），均为源码级补充。daily-info（2026-06-20）ML 内存泄漏检测 → §23.01/§23.07 已覆盖。
+
+**已检查方向（累积）**：与 Round 163 一致，覆盖 AOSP 核心服务全量、source-index、Clippings 三本参考书、Android 16/17 新特性 40+ 主题、开发者高频搜索、跨平台框架、新兴平台、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching、Compose Memory Churn、Perfetto Remote Trace Processor RTP 架构、Binder 事务 5 段开销建模。
+
+**结论**：全书 443 节（304 finalized / 92 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 164 轮无合格缺口。
+
+## [Task2A Gap Mining] 已检查方向 — 2026-06-20 09:06 (Round 165)
+本轮无空 draft 章节，Task2B backlog=0，执行知识缺口挖掘。未发现评分 >=14 的候选。
+**候选评估**：本轮无新增候选方向。最近 24h 无新增 DeepResearch、无新增 research-feeds、无新增 Clippings 文件。daily-info 最新 2026-06-17，与 Round 159-164 一致。3 个非空 draft（1.27/1.28/10.x）有实质内容但未达到 ready-for-review，不在 Task2A 加工范围。
+**已检查方向（累积）**：与 Round 164 一致，覆盖 AOSP 核心服务全量、source-index（已耗尽）、Clippings 三本参考书（103 文件充分比对）、Android 16/17 新特性 40+ 主题、开发者高频搜索、跨平台框架、新兴平台、现有章节扩展点、JVMTI、Paging 3 / DI 框架、Battery Saver/Thermal 协同、Radio 状态机、Compose SlotTable 分配、Android 17 新调度器、ProfilingManager 系统触发器、CachedAppOptimizer cgroup freezer、StrictMode FlaggedApi、AudioTrack Offload、SensorService Batching、Compose Memory Churn、Perfetto Remote Trace Processor RTP 架构、Binder 事务 5 段开销建模。
+**结论**：全书 403 节（309 finalized / 91 ready-for-review / 3 非空 draft）已进入高度成熟期。连续 165 轮无合格缺口。管线堵点在 Task6/Task9 复审（91 个 ready-for-review），非内容缺口。
+
+## [2026-06-20] Task2A 知识缺口挖掘 — 已检查方向
+
+**已检查方向（本轮无合格缺口，评分均 < 14）**：
+1. Android Virtualization Framework (AVF) / pKVM Performance — 素材不足，性能影响小（10/20）
+2. Wear OS Performance Optimization — 素材匮乏，领域过窄（7/20）
+3. Android TV / Google TV Performance — 冷门方向（5/20）
+4. Multi-user / Work Profile Performance — 素材不足（7/20）
+5. OTA Update Performance — 系统层面为主，App 关联弱（7/20）
+6. Android Backup / Restore Performance — 素材不足（5/20）
+7. VpnService Performance — 素材有限（9/20）
+8. Intent / BroadcastReceiver Performance — 素材中等，已有 ch01.08/ch01.10 部分覆盖（10/20）
+9. ContentObservable / Observer Performance — 冷门（5/20）
+
+**总结**：全书 443 节，88.0% 完成率（305 finalized + 91 ready-for-review + 3 draft = 399/443 已有内容）。
+知识库高度饱和，连续 82+ 轮无合格缺口。68 个高质量未映射素材全部可归入已有章节。
+
+**下次可探索方向**（需新素材支撑才可能达标）：
+- AVF/pKVM 隔离开销（需 Android 17 源码级素材）
+- Intent/BroadcastReceiver 投递延迟（需新调研素材）
+- VpnService 包处理性能（需 Android 17 新增 API 素材）
