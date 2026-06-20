@@ -69,7 +69,7 @@ p1: 1
 p2: 0
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSchedule/VSyncPredictor/VSyncDispatchTimerQueue/Scheduler/RefreshRateSelector 与 ARR/FrameTimeline 官方文档；未发现 P0/P1，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-20
 last_task9_autofix_at: "2026-06-20"
 last_task9_audit: "2026-06-20"
 last_task9_audit_at: "2026-06-20T11:30:27+08:00"
@@ -195,7 +195,7 @@ App VSync 提早，输入到首帧绘制的延迟可能下降；SF VSync 提早�
 
 Android 11 起，应用可以通过 `Surface.setFrameRate()` 告诉平台某个 Surface 的期望帧率。官方文档给了清晰边界：调用只是 hint，调度器会结合多 Surface、系统策略、电量模式、是否允许无缝切换等因素决定显示刷新率；应用仍要能处理系统没有切到请求刷新率的情况。[已验证: 官方文档, developer.android.com/media/optimize/performance/frame-rate]
 
-普通 UI 的入口在 Android 15+ 又多了一层。ARR 文档建议 View 层通过 `View.setRequestedFrameRate()` 表达类别或具体帧率，滚动组件通过 `setFrameContentVelocity()` 传递内容速度，Window 层还可控制 touch boost 和 power-savings balanced 策略。SurfaceView / TextureView 明确设置的帧率会被尊重并下传到低层 layer。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
+普通 UI 的入口在 Android 15+ 又多了一层。ARR 文档建议 View 层通过 `View.setRequestedFrameRate()` 表达类别或具体帧率，滚动组件通过 `setFrameContentVelocity()` 传递内容速度，Window 层还可控制 touch boost 和 power-savings balanced 策略。SurfaceView / TextureView 明确设置的帧率会作为有效输入传递到低层 layer。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
 SurfaceFlinger 侧，`SurfaceFlinger.cpp` 会把前端 snapshot 中的 `frameRate` 写入 `LayerProps.setFrameRateVote`，再通过 Scheduler 的 layer history 汇总成 content requirements。`Scheduler::chooseRefreshRateForContent()` 调用 `LayerHistory::summarize()`，随后 `RefreshRateSelector::getRankedFrameRates()` 对候选刷新率排序。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp] [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp] [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp]
 
@@ -211,7 +211,7 @@ Android 15 引入 ARR，官方定义是：显示刷新率可用离散 VSync step
 - 渲染目标帧率：App / View / Surface 给系统的偏好或限制，可能来自 `setFrameRate()`、`setRequestedFrameRate()`、Game Mode。
 - 显示刷新率：面板实际刷新或展示新帧的频率，可能是 60Hz / 90Hz / 120Hz，也可能是 ARR 的离散 step。
 
-按 android-16.0.0_r1 公开源码核对，`FrameRateEligibility` 没有对应的稳定可引用类或 API；源码里能确认的是 `RefreshRateSelector`、`LayerRequirement`、`LayerVoteType`、GameManager FPS intervention 和 ARR 文档中的 eligibility 语义。正文把它作为“某个请求是否有资格影响刷新率选择”的策略概念处理，不把它写成固定源码入口。[已验证(2026-06-02): android-16.0.0_r1 无 FrameRateEligibility 同名类；实现路径为 FrameRateCompatibility + LayerVoteType::NoVote — 见 DeepResearch/2026-06-02-android-frame-rate-eligibility-verify.md]
+按 android-16.0.0_r1 公开源码核对，`FrameRateEligibility` 没有对应的稳定可引用类或 API；源码里能确认的是 `RefreshRateSelector`、`LayerRequirement`、`LayerVoteType`、GameManager FPS intervention 和 ARR 文档中的 eligibility 语义。正文把它作为“某个请求是否有资格影响刷新率选择”的策略概念处理，不把它写成固定源码入口。[已验证: android-16.0.0_r1 无 FrameRateEligibility 同名类；实现路径为 FrameRateCompatibility + LayerVoteType::NoVote]
 
 GameManager 的帧率干预又是另一条线。官方 frame pacing 文档说明，`GameManagerService` 按用户和游戏维护 FPS、分辨率降档等 intervention 信息，SurfaceFlinger 维护 UID 到 frame rate 的映射，并在 VSync 到来时检查节流后的应用帧率是否与 VSync timestamp 同相位；不同相位时会 hold frame，直到帧率和 VSync 对上。[已验证: 官方文档, source.android.com/docs/core/graphics/frame-pacing]
 
@@ -229,6 +229,113 @@ GameManager 的帧率干预又是另一条线。官方 frame pacing 文档说明
 | FrameTimeline | expected / actual / present 是否偏离 | ARR 场景要按变化后的 VSync interval 判断，不按固定 16.67ms 阈值 |
 
 ARR 设备上，VSYNC 间隔变长不等于卡顿。滚动结束后降到 60Hz 或更低，是省电策略的一部分；视频 24fps 在 120Hz 上按 5:1 展示，也会让内容帧和显示刷新频率不同。异常判断应落到“目标帧是否错过自己的 expected present time”，而不是“本帧是否等于 60Hz 周期”。[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline] [已验证: 官方文档, developer.android.com/media/optimize/performance/frame-rate]
+
+## 七点五、FrameTracer / FrameTimeline 数据源细节（Android 12+，Android 17 沿用）
+
+光看 Perfetto 里的 `FrameTimeline` track 名称还不够，本节把 Android 17 中产出这条 track 的两个数据源和它们的判定阈值串起来。
+
+### FrameTracer（buffer-level，2019 至今）
+
+源码：`frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.cpp`
+
+```cpp
+// FrameTracer.cpp L40-55
+void FrameTracer::initialize() {
+    std::call_once(mInitializationFlag, [this]() {
+        perfetto::TracingInitArgs args;
+        args.backends = perfetto::kSystemBackend;
+        perfetto::Tracing::Initialize(args);
+        registerDataSource();   // 注册 "android.surfaceflinger.frame"
+    });
+}
+```
+
+- 数据源名：`android.surfaceflinger.frame`
+- Proto：`perfetto::protos::pbzero::GraphicsFrameEvent::BufferEvent`，字段含 `buffer_id` / `frame_number` / `layer_name` / `type` / `duration_ns`，时钟源 `BUILTIN_CLOCK_MONOTONIC`
+- 关键阈值：`kFenceSignallingDeadline = 60'000'000'000` ns（60s），超时 fence 丢弃避免历史事件污染新 trace
+- hot path 仅哈希查找 + 互斥锁，trace 关闭时退化为空操作
+
+### FrameTimeline（frame-level，2020 引入，Android 12+ 完善）
+
+源码：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h/.cpp`
+
+```cpp
+// FrameTimeline.h L83-94: 单帧时间线容器
+struct TimelineItem {
+    nsecs_t startTime;          // app 开始渲染
+    nsecs_t endTime;            // app 完成渲染（latch 时刻）
+    nsecs_t presentTime;        // 实际显示
+    nsecs_t desiredPresentTime; // app 通过 setFrameTimeline 声明
+};
+
+// FrameTimeline.h L100-105: 阈值（决定是否计为 jank）
+struct JankClassificationThresholds {
+    nsecs_t presentThreshold = 2ms;  // 实际 present 偏离 present 预测超过此值 → late/early
+    nsecs_t deadlineThreshold = 0ms; // endTime 晚于 deadline → late finish
+    nsecs_t startThreshold = 2ms;    // startTime 偏离预测超过此值 → late/early start
+};
+```
+
+- 数据源名：`android.surfaceflinger.frametimeline`，Proto `FrameTimelineEvent`
+- 13 类 jank bitmask（FrameTimeline.cpp `jankTypeBitmaskToProto`）：`DisplayHAL`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`AppDeadlineMissed`、`AppResyncedJitter`、`PredictionError`、`SurfaceFlingerScheduling`、`BufferStuffing`、`Unknown`、`SurfaceFlingerStuffing`、`Dropped`（覆写语义）、`NonAnimating`、`DisplayNotOn`、`DisplayModeChangeInProgress`、`DisplayPowerModeChangeInProgress`
+- 严重度：`calculateJankSeverity` 使用 go/refined-jank-metric 公式，输出 0~1 分数 + 4 级 `JankSeverityType { None, Partial, Full, Unknown }`
+- 预测 token：`TokenManager` 默认 120ms TTL，120Hz 下 14.4 个 VSync 周期。`PredictionState::Expired` 表示预测已被冲掉，trace 端需用 `Expired` 标记，避免把"丢失预测"误归类为 jank
+
+`SurfaceFrame::isSelfJanky()`（FrameTimeline.cpp L562-573）只把 `AppDeadlineMissed | Unknown | AppResyncedJitter` 视为"App 自己造成的 jank"——把 jank 完整 bitmask 甩给 App 是误读，SF 调度/HWC/Dropped 都不在 self-janky 集合里。
+
+### VSyncPredictor 替代 DispSync
+
+源码：`frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp`
+
+```cpp
+// VSyncPredictor.cpp L88-99: 离群样本检测
+bool VSyncPredictor::validate(nsecs_t timestamp) const {
+    const auto aValidTimestamp = mTimestamps[mLastTimestampIndex];
+    const auto percent =
+        (timestamp - aValidTimestamp) % idealPeriod() * kMaxPercent / idealPeriod();
+    if (percent >= kOutlierTolerancePercent &&
+        percent <= (kMaxPercent - kOutlierTolerancePercent)) {
+        return false;  // 离群样本丢弃
+    }
+    // ...
+}
+```
+
+- `Model { slope, intercept }`：线性回归，slope 是周期（ns），intercept 是偏移
+- 验证窗口：约 ±50% idealPeriod 的离群容忍；`kPredictorThreshold` 0.5ms 内视为重复 timestamp
+- VsyncTimeline：`mIdealPeriod + mRenderRateOpt + mValidUntil` 三件套；`setRenderRate()` 改变相位，对应 ARR 场景下 24fps → 120Hz 的 5:1 节奏
+- 老 `DispSync` 在 Android 12 后已不存在于 `services/surfaceflinger/Scheduler/`，旧资料应改用 `VSyncPredictor` 描述
+
+### VSyncDispatchTimerQueue：倒推 wakeup time
+
+源码：`frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp`
+
+```cpp
+// VSyncDispatchTimerQueue.cpp L77-99
+ScheduleResult VSyncDispatchTimerQueueEntry::schedule(VSyncDispatch::ScheduleTiming timing,
+                                                      VSyncTracker& tracker, nsecs_t now) {
+    auto nextVsyncTime =
+        tracker.nextAnticipatedVSyncTimeFrom(
+            std::max(timing.lastVsync, now + timing.workDuration + timing.readyDuration),
+            timing.committedVsyncOpt.value_or(timing.lastVsync));
+    auto nextWakeupTime = nextVsyncTime - timing.workDuration - timing.readyDuration;
+    mArmedInfo = {nextWakeupTime, nextVsyncTime, nextReadyTime};
+}
+```
+
+`ScheduleTiming` 携带 `workDuration`（绘制缓冲时长）+ `readyDuration`（latch buffer 时长）+ `lastVsync`。`schedule()` 从 `nextVsyncTime` 反推 `nextWakeupTime`，是"VSync 倒推唤醒时间"的核心算法。`mMinVsyncDistance` 防止 entry 错过一个 VSync 后在下一个 VSync 触发，避免节拍打滑。
+
+### Perfetto 排障时的实操对照
+
+| FrameTimeline 字段 | 看什么 | 怎么定位 |
+|---|---|---|
+| `expected_present_time` vs `actual_present_time` | 偏差 > 2ms 触发 PRESENT_LATE | 偏离持续 = SF/HWC 合成慢；偶发 = App 渲染慢 |
+| `prediction_state == PREDICTION_EXPIRED` | 预测被冲掉 | 硬件 VSync 不稳或 VSyncPredictor 需 `resetModel()` |
+| `jank_type` bitmask | 多 bit 共存 = 多段叠加 | `DisplayHAL` 单独出现 = 屏端问题；含 `SurfaceFlingerScheduling` = SF 调度路径 |
+| `jank_severity` 分数 | 0~1，分数越高越严重 | 同一 layer 连续几帧 Partial → Full 表示雪球效应 |
+| `app deadline missed` 与 `app resynced jitter` 区分 | App 是否在 deadline 内提交 | 看到 `AppResyncedJitter` 多为 RenderThread 与主线程相位滑移 |
+
+<!-- AIW-源码调研-2026-06-20 -->
 
 ## 八、版本边界：DispSync、VSyncPredictor 与 ARR
 

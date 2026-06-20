@@ -1,9 +1,9 @@
 ---
-status: "ready-for-review"
+status: "finalized"
 title: Input 事件分发全流程
 chapter: '3.1'
 section: '3.1'
-last_task6_at: "2026-06-07T12:12:00+08:00"
+last_task6_at: "2026-06-20T20:11:02+08:00"
 last_task2b_lite_at: "2026-06-07"
 task2b_lite_notes: "2026-06-07 删除重复 H1+outline+intro 块(L55-102);代码块语言标记待后续修复"
 last_task6_review_log: "logs/review/2026-06-07-11-review.md"
@@ -27,9 +27,9 @@ path: https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture
 tags: 
 related_chapters: 
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
-task6_reviewed_date: "2026-06-07"
+task6_state: reviewed
+pipeline_stage: "ready-to-publish"
+task6_reviewed_date: "2026-06-20"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
@@ -56,6 +56,7 @@ last_task9_autofix_at: "2026-06-20"
 last_task9_audit: "2026-06-20"
 task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
 
+last_task6_audit: "2026-06-20"
 ---
 
 # Input 事件分发全流程
@@ -338,7 +339,7 @@ InputStage nativePreImeStage = new NativePreImeInputStage(viewPreImeStage, ...);
 
 在 `ViewPostImeInputStage` 中,触摸事件的处理路径如下:
 
-```
+```text
 ViewPostImeInputStage.processPointerEvent()
   → mView.dispatchPointerEvent(event)     // mView 是 DecorView
     → DecorView.dispatchTouchEvent()

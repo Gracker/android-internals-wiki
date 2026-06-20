@@ -68,7 +68,7 @@ last_task9_autofix_at: "2026-06-20"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-20
 ---
 
 # Android 渲染架构全景
@@ -298,7 +298,7 @@ status_t BufferItemConsumer::acquireBuffer(BufferItem* item,
         nsecs_t presentWhen, bool waitForFence);
 ```
 
-`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 CDD 对非低内存 64 位 handheld 设备的硬性要求是 Vulkan 1.1；Vulkan 1.3 是 strongly recommended,不是 1.4 硬性要求。Host Image Copy 优化的是纹理上传和 image memory 路径,与 BufferQueue / BLAST 不在同一层,不要混到三缓冲的描述里。同样,`AsyncBufferQueue` 目前还没有正式发布的 AOSP commit,本文暂不展开。
+`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 CDD 对非低内存 64 位 handheld 设备的硬性要求是 Vulkan 1.1，Vulkan 1.3 则是 strongly recommended。Host Image Copy 优化的是纹理上传和 image memory 路径，属于 GPU 侧概念，与 BufferQueue / BLAST 不在同一层。`AsyncBufferQueue` 目前还没有正式发布的 AOSP commit，本节不展开。
 
 Trace 中验证三缓冲,打开 FrameTimeline、gfx / view / sched / freq、SurfaceFlinger 相关类别后按这几类信号对照:
 

@@ -3568,7 +3568,7 @@
       "title": "Kotlin Coroutine 性能实践"
     },
     "14.3": {
-      "status": "ready-for-review",
+      "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
@@ -6074,8 +6074,8 @@
       "title": "云端 Profile、DM 文件与安装后编译优化"
     },
     "3.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -7891,6 +7891,10 @@
       "last_task2a_at": "2026-06-17T21:12:51.408821+00:00",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-06-19T09:09:43+08:00"
+    },
+    "10.2": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish"
     }
   },
   "task2b_rounds": [
@@ -14711,5 +14715,11 @@
     "blocked_sections": [
       "2.17"
     ]
+  },
+  "stats": {
+    "drafted": 0,
+    "reviewed": 65,
+    "finalized": 196,
+    "total": 264
   }
 }
