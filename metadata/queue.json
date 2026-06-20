@@ -497,6 +497,30 @@
       "completed_at": "2026-06-20T08:28:10+08:00",
       "completed_by": "openclaw-task9",
       "resolution": "Task9 复审 auto-fix：DeliQueue Android 17 路径/monitor 描述已闭环；Swappy 源码锚点改为 AGDK frame-pacing release branch，并声明非 Android 17 platform tag。"
+    },
+    {
+      "id": "task9-audit-20260620-12-711-chromium-source-boundary",
+      "section": "7.11",
+      "section_title": "WebView 渲染性能与优化",
+      "title": "WebView 渲染性能与优化",
+      "file": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
+      "priority": 85,
+      "reason": "[闲时抽检][Deep Tech Review] Chromium HEAD/mainline 源码/文档锚点无法证明进入 Android 17/API 37",
+      "material_paths": [
+        "logs/deep-review/2026-06-20-12-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码锚点",
+          "location": "frontmatter last_verified_against；正文 L131/L465/L599/L676；参考资料 L709-L712",
+          "detail": "章节把 Chromium android_webview docs 的 HEAD/mainline 资料，以及 Chromium mainline AwContents/aw_browser_terminator.cc 作为正文验证来源；按 AIW_ANDROID_VERSION_CAP_2026_05_29，只有 main/master 资料且无法证明进入 Android 17/API 37 时，不能作为正文结论。AOSP android-17.0.0_r1 framework WebView API 可验证，但 Chromium 侧文档/实现锚点尚未固定到 Android 17 范围内。",
+          "suggestion": "Task2B 需把 Chromium WebView 文档/源码锚点替换为可证明属于 Android 17/API 37 或更低范围的版本来源；无法证明的 HEAD/mainline 资料应明确标注“未进入 Android 17”，并从正文结论依据中移除或降为待验证。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-20T12:34:59+08:00",
+      "created": "2026-06-20",
+      "status": "pending"
     }
   ],
   "queue": [

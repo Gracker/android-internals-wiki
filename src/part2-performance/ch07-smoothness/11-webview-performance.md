@@ -23,30 +23,30 @@ sources:
   - type: aosp
     path: "android_webview/docs/ (chromium.googlesource.com)"
 review_notes: "2026-05-07 Task6 09:06：pass-light-edit。Task2B 已将后半部调研补丁移入发布稿收束前；本轮小修 6 处（代码围栏语言、16KB 边界术语、Viz/GPU service 表述），L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-task9_result: pass-tech-review
+task9_result: "needs-rework"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-26"
-last_task9_at: "2026-05-26T19:26:00+08:00"
+last_task9_at: "2026-06-20T12:34:59+08:00"
 last_task2b_at: "2026-05-26T19:25:19+08:00"
 review_round: 3
-task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。；2026-05-26 Task9 闲时抽检：needs-rework。P0 1（AwBrowserTerminator / Renderer 退出调用链使用过期源码口径）；P2 1（API 26 renderer 模型表格重叠）；详见 logs/deep-review/2026-05-26-12-audit.md。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Renderer 模型版本表重复 Android 11+ 行）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。；2026-05-26 Task9 闲时抽检：needs-rework。P0 1（AwBrowserTerminator / Renderer 退出调用链使用过期源码口径）；P2 1（API 26 renderer 模型表格重叠）；详见 logs/deep-review/2026-05-26-12-audit.md。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Renderer 模型版本表重复 Android 11+ 行）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 12:34 Task9 闲时抽检：needs-rework。P1 1（Chromium HEAD/mainline 源码/文档锚点无法证明进入 Android 17/API37）；已写入 queue，回到 Task2B。"
 
 status: finalized
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
-task2b_state: fixed
+task9_state: "reviewed"
+pipeline_stage: "task2b_pending"
+task2b_state: "pending"
 last_task2b_lite_at: "2026-05-26"
 last_task6_at: "2026-05-07T17:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
 last_task6_audit: "2026-05-25"
 task2b_result: fixed-lite
 task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补充 render_process_gone Perfetto 事件待验证标注 1 处，frontmatter 更新；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-26-19-deep-review.md"
-last_task9_audit: 2026-05-26
+last_task9_review_log: "logs/deep-review/2026-06-20-12-audit.md"
+last_task9_audit: 2026-06-20
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-26"
 deepseek_cn_review_state: done
