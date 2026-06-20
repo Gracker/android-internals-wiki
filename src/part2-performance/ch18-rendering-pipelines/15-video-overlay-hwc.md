@@ -1,7 +1,7 @@
 ---
 title: 视频叠加与 HWC
 chapter: '18.15'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
 - HWC
@@ -36,16 +36,16 @@ last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 section: '18.15'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-01"
-task6_reviewed_date: "2026-06-01"
-last_task6_at: "2026-06-01T21:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-21-review.md"
+reviewed_date: "2026-06-21"
+task6_reviewed_date: "2026-06-21"
+last_task6_at: "2026-06-21T04:11:00+08:00"
+last_task6_review_log: "logs/review/2026-06-21-04-review.md"
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
 task2b_state: fixed
-pipeline_stage: task6_pending
-task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：补正文 H1 1 处，功耗/带宽数字已由 Task2B 降级为定性趋势，未新增 L3/L4 回炉项，送 Task9 复审。"
-task6_l1_l2_fixes: 1
+pipeline_stage: ready-to-publish
+task6_review_notes: "2026-06-21 04:11 Task6 revisiting-review (post-Task9-autofix)：L1/L2 全清（0 禁用词/0 翻译腔/0 硬换行），锚点 5+3 全覆盖，Task9 修正版本边界后写作质量无回退，无 B 类大问题，自动晋升 finalized。"
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"

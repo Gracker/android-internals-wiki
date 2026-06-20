@@ -2,7 +2,7 @@
 title: "WebView 渲染管线"
 chapter: "18.13"
 section: "18.13"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0+(WebView provider 可独立更新;SurfaceControl 子 Surface 需 Android 12+ 平台支持,并结合 provider / Chromium milestone 判断)"
 tags: ["WebView", "Chromium", "GL-Functor", "SurfaceControl", "SurfaceTexture", "X5内核", "渲染管线"]
 related_chapters: ["2.5", "2.6", "7.11", "18.6", "18.7", "18.10"]
@@ -18,29 +18,29 @@ sources:
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
 last_task2b_at: "2026-06-01T22:58:00+08:00"
 last_task2b_main_at: "2026-06-01T22:58:00+08:00"
 last_task2b_log: "logs/rework/2026-06-01-22-task2b-main.md"
 last_task2b_lite_at: "2026-06-01"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-02"
+reviewed_date: "2026-06-21"
 task9_result: auto-fixed
 last_task9_at: "2026-06-21T01:29:00+08:00"
-last_task6_audit: "2026-06-11"
+last_task6_audit: "2026-06-21"
 review_round: 4
 task9_reviewed_date: "2026-06-21"
 task9_reviewed_by: "openclaw-task9"
 last_task9_audit: "2026-06-21"
 task9_review_notes: "2026-06-21 闲时抽检 auto-fix：android-17.0.0_r1 已可访问且 WebViewUpdateServiceImpl2.java 存在；修正 WebViewFactory.getProvider、AwContents::OnDraw/BrowserViewRenderer::OnDrawSoftware、ANativeWindow_Buffer 等源码锚点，回到 Task6 复审。"
-last_task6_at: "2026-06-02T10:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-02-10-review.md"
-task6_review_notes: "2026-06-02 10 Task6 revisiting-review: pass-light-edit。Task2B/Task9 已收敛版本边界和伪 API 问题；锚点覆盖完整，未新增回炉项。"
+last_task6_at: "2026-06-21T04:11:00+08:00"
+last_task6_review_log: "logs/review/2026-06-21-04-review.md"
+task6_review_notes: "2026-06-21 04:11 Task6 revisiting-review (post-Task9-autofix)：L1/L2 全清（0 禁用词/0 翻译腔/0 硬换行），锚点全覆盖（6+3），Task9 修正源码锚点后写作质量无回退，无 B 类大问题，自动晋升 finalized。"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
@@ -48,7 +48,7 @@ last_task9_review_log: "logs/deep-review/2026-06-21-01-audit.md"
 last_task9_autofix_at: "2026-06-21"
 last_task2b_verifier_at: "2026-06-02T07:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-07-task2b-verifier.md"
-task6_reviewed_date: "2026-06-02"
+task6_reviewed_date: "2026-06-21"
 ---
 
 # WebView 渲染管线

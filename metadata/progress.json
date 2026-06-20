@@ -7451,7 +7451,7 @@
       "reviewed_date": "2026-06-01",
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-06-01",
-      "last_task6_at": "2026-06-01T21:05:00+08:00",
+      "last_task6_at": "2026-06-21T04:11:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-01-21-review.md",
       "task6_review_summary": "2026-06-01 21:05 Task6 revisiting-review：补正文 H1 1 处，功耗/带宽数字已由 Task2B 降级为定性趋势，未新增 L3/L4 回炉项，送 Task9 复审。",
       "task6_new_rework": false,
@@ -7461,7 +7461,8 @@
       "task6_review_notes": "2026-06-01 21:05 Task6 revisiting-review：补正文 H1 1 处，功耗/带宽数字已由 Task2B 降级为定性趋势，未新增 L3/L4 回炉项，送 Task9 复审。",
       "task6_l1_l2_fixes": 1,
       "task6_l3_l4_issues": 0,
-      "review_type": "task6-writing-quality-review"
+      "review_type": "task6-writing-quality-review",
+      "task6_review_log": "logs/review/2026-06-21-04-review.md"
     },
     "18.13": {
       "section": "18.13",
@@ -7471,7 +7472,7 @@
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-06-02T10:05:00+08:00",
+      "last_task6_at": "2026-06-21T04:11:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-02-10-review.md",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-06-02",
@@ -7492,7 +7493,8 @@
       "last_task9_autofix_at": "2026-06-02",
       "last_task2b_lite_at": "2026-06-01",
       "last_task2b_verifier_at": "2026-06-02T07:25:00+08:00",
-      "last_task2b_verifier_log": "logs/rework/2026-06-02-07-task2b-verifier.md"
+      "last_task2b_verifier_log": "logs/rework/2026-06-02-07-task2b-verifier.md",
+      "task6_review_log": "logs/review/2026-06-21-04-review.md"
     },
     "18.7": {
       "section": "18.7",
@@ -10326,16 +10328,16 @@
     "note": "7 个锚点全部覆盖（含版本演进表 + 诊断路径），4 个扩展点全部覆盖，素材来自 AOSP android-17.0.0_r1 源码 + DeepResearch 调研"
   },
   "task2a_last_gap_mining": {
-    "date": "2026-06-20",
-    "time": "22:04",
+    "date": "2026-06-21",
+    "time": "03:06",
     "mode": "gap-mining-skip",
-    "round": 170,
+    "round": 172,
     "created_sections": [],
     "created_files": [],
-    "candidate_count": 8,
+    "candidate_count": 3,
     "qualified_count": 0,
-    "source": "Round 170: Phase 0 无空 draft (443 章节文件, 305 finalized + 91 ready-for-review + 3 有内容 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 已耗尽. Research-feeds 最新 2026-04-14 已映射. Daily-info 2026-06-20 ML 内存泄漏检测 → 评分 7/20 不达标. Clippings 无变化. 连续 170 轮无合格缺口, 跳过.",
-    "note": "连续 170 轮无合格缺口。0 空 draft 章节。全书 443 文件 (305 finalized + 91 ready-for-review)。管线堵点在 Task6/Task9 复审 (91 个 ready-for-review), 非内容缺口。"
+    "source": "Round 172: Phase 0 无空 draft (4 draft 均有实质内容 230-1011行). Phase 0.5 TASK2B_BACKLOG=0. 今日 daily-info: Android 17 调度器优化(已有ch16覆盖) 13分, Linux 6.10内存碎片(已有ch04覆盖) 5分, Memory Tracking API(已有ch23.7/ch26.3覆盖) 9分. DeepResearch 8篇全部映射已有章节. source-index 0篇. research-feeds 2026-04-14已映射. Clippings 无变化. 连续172轮无合格缺口, 跳过.",
+    "note": "连续172轮无合格缺口。0空draft。全书443文件(305 finalized + 91 ready-for-review + 4 draft有内容)。管线堵点在Task6/Task9复审(91个ready-for-review)。DeepResearch注入管线活跃(7个pending)。"
   },
   "task9_last_sections": [
     "7.9",
