@@ -45,7 +45,7 @@ repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
-status: finalized
+status: ready-for-review
 pipeline_stage: "task6_pending"
 task9_result: "auto-fixed"
 task9_state: "reviewed"
@@ -64,7 +64,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-20-14-audit.md"
 last_task6_at: "2026-05-26T23:07:00+08:00"
 last_task6_audit: "2026-06-18"
 last_task6_review_log: "logs/review/2026-05-26-23-review.md"
-task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。 | 2026-05-26 20:08 Task6：revisiting 复审；L1/L2 小修 11 处（否定-纠正句式、结构性元叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；保留既有 Task9 pending 技术问题单。 | 2026-05-26 23:07 Task6：Task2B 修复后 revisiting 复审；L1/L2 小修 13 处（冗余确认副词、第一人称叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；转 Task9 复核。"
+task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。 | 2026-05-26 20:08 Task6：revisiting 复审；L1/L2 小修 11 处（否定-纠正句式、结构性元叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；保留既有 Task9 pending 技术问题单。 | 2026-05-26 23:07 Task6：Task2B 修复后 revisiting 复审；L1/L2 小修 13 处（冗余确认副词、第一人称叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；转 Task9 复核。 | 2026-06-20 15:25 Task2B-Verifier：回流复查。status finalized→ready-for-review（Task9 auto-fix 后状态未对齐），章节已可被 Task6 拾取。"
 last_task9_review_log: "logs/deep-review/2026-06-20-14-audit.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-27"
