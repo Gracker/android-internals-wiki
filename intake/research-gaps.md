@@ -125,3 +125,35 @@ Android 系统缺少官方的高精度内存跟踪 API，现有监控主要依�
 - 全书 443 节（309 finalized, 92 ready-for-review, 4 draft 均有实质内容）
 - TASK2B_BACKLOG: 0
 - **知识库高度饱和，本轮跳过**
+
+## [2026-06-21 02:07] Task2A 缺口挖掘 — 第 86 轮
+
+### 本轮检查方向（6 个）
+1. 今日 daily-info (06-20)：ML 内存泄漏检测论文 — 评分 9/20（学术前沿，工程实战素材不足，ch20/ch23 已覆盖传统内存泄漏治理）
+2. 近期 DeepResearch 注入 pending 项（4 条）— 全部已有对应章节，属于素材补充而非新章节缺口
+3. Clippings 三本参考书 — 最后修改 2026-05-30，无新增知识点
+4. source-index.json 未映射高质量素材 — 0 篇（已持续耗尽）
+5. research-feeds 最新（2026-04-14 Perfetto v54）— 全部已映射到 ch13
+6. AOSP frameworks/base 未覆盖服务扫描 — 已在历轮 85+ 次扫描中穷尽
+
+### 结论
+- 最高新缺口评分：9/20（远低于 14 分门槛）
+- 连续无合格缺口轮次：86 轮
+- 全书 443 节（309 finalized + 90 ready-for-review + 3 draft 有实质内容 + 1 非空 draft）
+- Task2B backlog: 0
+- **知识库高度饱和，本轮跳过**
+
+## [2026-06-21 04:13] Task2A 缺口挖掘 — 第 173 轮
+
+### 本轮检查方向（5 个）
+1. 今日 daily-info：Android 17 调度器减少 30% 启动时间 — 评分 5/20（已有 ch16.4/ch16.7/ch16.8 完整覆盖）
+2. 今日 daily-info：Linux 6.10 内存碎片整理 — 评分 6/20（面向服务器/虚拟化，非 Android 场景；ch4.10/ch4.13/ch4.14 已覆盖 Android 侧）
+3. 昨日 daily-info：ML 内存泄漏检测论文 — 评分 8/20（学术前沿，工程落地不足）
+4. source-index.json 未映射素材 — 0 篇（持续耗尽）
+5. research-feeds 最新（2026-04-14 Perfetto v54）— 全部已映射
+
+### 结论
+- 最高分：8/20（远低于 14 分门槛）
+- 连续无合格缺口轮次：173 轮
+- 全书 443 节（305 finalized + 91 ready-for-review + 3 draft 有实质内容）
+- **知识库高度饱和，本轮跳过**
