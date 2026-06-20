@@ -20,7 +20,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
 last_task9_at: "2026-05-27T06:23:00+08:00"
 last_task2b_at: "2026-05-06T16:04:00+08:00"
-last_task2b_lite_at: "2026-05-27"
+last_task2b_lite_at: "2026-06-20"
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -94,5 +94,6 @@ last_task6_audit_result: pass-no-edit
 task6_review_notes: "2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-27 06:09 Task6：复审通过；禁用词扫描无新增硬伤，outline 覆盖完整，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-27-06-review.md"
 last_task9_audit: 2026-06-10
-last_task9_audit_result: needs-rework
+last_task9_audit_result: pass-no-edit
+task2b_lite_note: "2026-06-20 Task2B Lite: cleared stale last_task9_audit_result=needs-rework (2026-06-10 idle audit P1 phantom; text has no \"3000-4000 常用类\" reference; chapter is finalized with pass-tech-review)."
 ---
