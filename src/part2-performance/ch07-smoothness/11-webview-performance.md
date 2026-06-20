@@ -4,7 +4,7 @@ chapter: "7.11"
 section: "7.11"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [WebView, Chromium, Blink, JS Bridge, 混合渲染, 硬件加速, ANR, jank, 内存优化]
-related_chapters: ["2.1", "2.5", "2.10", "7.1", "7.2", "8.1", "9.1"]
+related_chapters: ["2.1", "2.5", "2.9", "5.6", "7.1", "7.2", "9.1", "13.7", "18.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
@@ -23,21 +23,21 @@ sources:
   - type: reference
     path: "chromium.googlesource.com — android_webview/docs/ (HEAD；架构参考，未确认属于 Android 17/API 37 范围)"
 review_notes: "2026-05-07 Task6 09:06：pass-light-edit。Task2B 已将后半部调研补丁移入发布稿收束前；本轮小修 6 处（代码围栏语言、16KB 边界术语、Viz/GPU service 表述），L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-26"
-last_task9_at: "2026-06-20T12:34:59+08:00"
+task9_reviewed_date: "2026-06-20"
+last_task9_at: "2026-06-20T13:25:38+08:00"
 last_task2b_at: 2026-06-20T12:54:38+08:00
 review_round: 3
-task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。；2026-05-26 Task9 闲时抽检：needs-rework。P0 1（AwBrowserTerminator / Renderer 退出调用链使用过期源码口径）；P2 1（API 26 renderer 模型表格重叠）；详见 logs/deep-review/2026-05-26-12-audit.md。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Renderer 模型版本表重复 Android 11+ 行）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 12:34 Task9 闲时抽检：needs-rework。P1 1（Chromium HEAD/mainline 源码/文档锚点无法证明进入 Android 17/API37）；已写入 queue，回到 Task2B。"
+task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。；2026-05-26 Task9 闲时抽检：needs-rework。P0 1（AwBrowserTerminator / Renderer 退出调用链使用过期源码口径）；P2 1（API 26 renderer 模型表格重叠）；详见 logs/deep-review/2026-05-26-12-audit.md。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Renderer 模型版本表重复 Android 11+ 行）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 12:34 Task9 闲时抽检：needs-rework。P1 1（Chromium HEAD/mainline 源码/文档锚点无法证明进入 Android 17/API37）；已写入 queue，回到 Task2B。 | 2026-06-20 13:25 Task9 deep-review：auto-fixed。P0 0 / P1 1（Chromium HEAD loading 文档仍被写作已验证来源，已降级为参考并移除未固定版本的 AwBrowserProcess.start() 正文步骤）/ P2 2（§2.10/§8.1 交叉引用指向错误，已修正为 §2.9/§5.6）；回到 Task6 复审。"
 
 status: ready-for-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task6_state: revisiting
+task9_state: reviewed
+pipeline_stage: task6_pending
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-26"
 last_task6_at: "2026-06-20T13:07:00+08:00"
@@ -45,13 +45,14 @@ last_task6_review_log: "logs/review/2026-06-20-13-review.md"
 last_task6_audit: "2026-05-25"
 task2b_result: fixed
 task6_review_notes: "2026-06-20 Task6 13:07：Task2B 修复 Chromium 锚点标注后写作复审；L1/L2 通过，小修 2 处（GLFunctor 术语一致性、方案三去冗余）；无新增 L3/L4 回炉项，送 Task9 复审 Task2B 修复。"
-last_task9_review_log: "logs/deep-review/2026-06-20-12-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-20-13-deep-review.md"
 last_task9_audit: 2026-06-20
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-26"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
 last_task2b_result: fixed-main
+last_task9_autofix_at: "2026-06-20"
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -159,7 +160,7 @@ Android 15 引入了对 16KB 内存页的支持。对 WebView 冷启动而言，
 ```text
 new WebView(context) / inflate 包含 WebView 的布局
   → WebViewFactory 选择并装载 provider
-  → AwBrowserProcess.start()
+  → Chromium browser-side 初始化启动
   → 建立 browser-side 基础线程与 service
   → [multiprocess] 拉起 renderer 进程
   → WebView.loadUrl() / loadData()
@@ -169,7 +170,7 @@ new WebView(context) / inflate 包含 WebView 的布局
 
 只有首次实例化才会把 provider 装载、browser-side 初始化和 renderer 拉起这些成本叠在一起。后续再创建 WebView，通常只需要复用已装载的 provider 和既有基础设施。
 
-[已验证：来源见 AOSP `frameworks/base/core/java/android/webkit/WebViewFactory.java`、Chromium `android_webview/docs/how-does-loading-work.md`]
+[验证状态：AOSP `frameworks/base/core/java/android/webkit/WebViewFactory.java` 通过 android-17.0.0_r1 验证；Chromium `android_webview/docs/how-does-loading-work.md` 为 HEAD 版本，仅作 loading 流程参考，未确认属于 Android 17/API 37 范围]
 
 ### 预热策略
 
@@ -463,7 +464,7 @@ WebView 页面上面再盖一个原生浮层、或者 WebView 嵌在滚动容器
 
 Trichrome 和 Monochrome 这两段历史最好分开记。Android 7-9 不能简单写成“WebView 并入 Chrome APK”，因为是否使用 Chrome-provider 取决于设备形态和 provider packaging；Android 10 开始，支持设备才转向 Trichrome，把共享 native library 拆到 `TrichromeLibrary`。遇到兼容性或体积问题时，先确认设备实际 provider 包名，再谈架构差异。
 
-[已验证：来源见 Chromium `android_webview/docs/architecture.md`、`legacy-os-behavior.md`]
+[验证状态：Chromium `android_webview/docs/architecture.md`、`legacy-os-behavior.md` 为 HEAD 版本，仅作 provider 历史参考，未确认属于 Android 17/API 37 范围]
 
 ## WebView 在 Perfetto 中的分析
 
@@ -510,9 +511,9 @@ WebView 发起的网络请求可以在 Perfetto 的 Network Track 中观察到�
 
 - **渲染架构（§2.1）**：WebView 的渲染管线是 Android 原生渲染管线的「并行版本」，两者最终都通过 SurfaceFlinger 合成。理解 §2.1 的整体架构有助于定位 WebView 渲染问题出在 Chromium 内部还是与 Android 体系的交互上。
 - **MainThread 与 RenderThread（§2.5）**：WebView 的 Java API 和一部分 browser-side 调度发生在宿主 App 进程里，最终显示又会和 App RenderThread、SurfaceFlinger 竞争 GPU 与合成时间。
-- **渲染机制版本演进（§2.10）**：WebView 的架构演进（单进程→多进程→Trichrome）与 Android 整体渲染演进并行，了解 §2.10 有助于理解 WebView 各版本的差异。
+- **渲染机制版本演进（§2.9）**：WebView 的架构演进（单进程→多进程→Trichrome）与 Android 整体渲染演进并行，了解 §2.9 有助于理解 WebView 各版本的差异。
 - **卡顿原因体系（§7.2）**：WebView 相关的卡顿可以归类到 §7.2 的卡顿原因中：JS 长任务对应「主线程耗时操作」，GPU 合成竞争对应「GPU 渲染超时」，BufferQueue 竞争对应「缓冲区管理」。
-- **功耗管理（§8.1）**：WebView 的 GPU 线程持续活跃会导致 GPU 功耗上升。复杂的 CSS 动画和频繁的页面重绘是 WebView 场景下功耗问题的常见原因。
+- **功耗管理（§5.6）**：WebView 的 GPU 线程持续活跃会导致 GPU 功耗上升。复杂的 CSS 动画和频繁的页面重绘是 WebView 场景下功耗问题的常见原因。
 - **Perfetto 高级用法（§13.7）**：WebView 的多线程分析需要用到 Perfetto 的高级功能（自定义 Trace Event、SQL 查询、多进程关联）。
 
 ## WebView Renderer 进程崩溃恢复
