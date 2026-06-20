@@ -3686,6 +3686,155 @@
       ],
       "summary": "Jetpack Compose渲染性能测量方法，包含性能分析工具使用",
       "scored_at": "2026-06-19T09:05:50.824866"
+    },
+    {
+      "title": "源码调研：Android 17 音频 Offload 与 AudioTrack flushFromFrame 源码栈",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-android17-audiotrack-offload-flushfromframe-source-stack.md",
+      "quality": "high",
+      "score": 18,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:41.309352"
+    },
+    {
+      "title": "源码调研：Android 17 CachedAppOptimizer + cgroup freezer 完整调用链",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-cachedappoptimizer-freezer-mechanism.md",
+      "quality": "high",
+      "score": 17,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:41.405956"
+    },
+    {
+      "title": "源码调研：Android 17 ProfilingManager 系统触发器源码深度调研",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-profilingmanager-system-triggers-source-analysis.md",
+      "quality": "high",
+      "score": 17,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:41.498918"
+    },
+    {
+      "title": "源码调研：SensorService 批处理功耗路径在 Android 17 (API 37) 的源码级确认",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-sensorservice-batching-android17-source-verification.md",
+      "quality": "high",
+      "score": 18,
+      "chapter": "ch11",
+      "scored_at": "2026-06-20T05:46:41.591868"
+    },
+    {
+      "title": "源码调研：Android 17 StrictMode 新增特性与 FlaggedApi 集成",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-strictmode-android17-new-features.md",
+      "quality": "high",
+      "score": 18,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:41.696744"
+    },
+    {
+      "title": "源码调研：Perfetto Remote Trace Processor 架构深度解析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-perfetto-remote-trace-processor-architecture.md",
+      "quality": "high",
+      "score": 18,
+      "chapter": "ch05",
+      "scored_at": "2026-06-20T05:46:41.803935"
+    },
+    {
+      "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-20-76102333-Android 17 有什么需要适配的2.md",
+      "quality": "high",
+      "score": 16,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:41.907988"
+    },
+    {
+      "title": "Android17 为什么重写 MessageQueue",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-20-76128120-Android17 为什么重写 Mess.md",
+      "quality": "high",
+      "score": 16,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:42.008540"
+    },
+    {
+      "title": "Android 协程时代，Handler 应该退休了吗？",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-20-76129057-Android 协程时代Handler .md",
+      "quality": "high",
+      "score": 16,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:42.106222"
+    },
+    {
+      "title": "2026 Flutter VS React Native ，同时在 AI 时代 VS Native 开发，你没见过的版本",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-20-76132301-2026 Flutter VS Reac.md",
+      "quality": "high",
+      "score": 16,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:42.198821"
+    },
+    {
+      "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-20-76148976-什么 AI 写 Android 最好用官.md",
+      "quality": "high",
+      "score": 16,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:42.297406"
+    },
+    {
+      "title": "Android Room 3.0 来了，这次改得有点狠",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-20-76171086-Android Room 30 来了这次.md",
+      "quality": "high",
+      "score": 16,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:42.390520"
+    },
+    {
+      "title": "为什么 Android 不用接口做 Activity 通信？",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-20-76388970-为什么 Android 不用接口做 Ac.md",
+      "quality": "high",
+      "score": 16,
+      "chapter": "ch04",
+      "scored_at": "2026-06-20T05:46:42.484934"
+    },
+    {
+      "title": "Android 17 Binder 事务性能建模——IPC 开销量化与调度器交互",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-binder-transaction-performance-analysis.md",
+      "quality": "high",
+      "chapter": "ch01",
+      "type": "deepresearch",
+      "summary": "单次 Binder 事务 5 段可测量开销拆解，3 个稳定性能钩子点，Android 17 kEnableKernelIpc 与 RpcBinder 优化",
+      "processed_at": "2026-06-20T06:12:05.214478"
+    },
+    {
+      "title": "Perfetto Remote Trace Processor 架构深度解析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-perfetto-remote-trace-processor-architecture.md",
+      "quality": "high",
+      "chapter": "ch13",
+      "type": "deepresearch",
+      "summary": "Rpc 类二进制 marshalling、byte-pipe 协议、httpd/stdiod/wasm 三种传输，android-17.0.0_r1 路径对齐",
+      "processed_at": "2026-06-20T06:12:05.214478"
+    },
+    {
+      "title": "Android 17 CachedAppOptimizer + cgroup freezer 完整调用链",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-cachedappoptimizer-freezer-mechanism.md",
+      "quality": "high",
+      "chapter": "ch01",
+      "type": "deepresearch",
+      "summary": "双阶段冻结（Binder + cgroup v2），OomAdjuster 触发、异步调度、JNI 代理，冻结 <5ms",
+      "processed_at": "2026-06-20T06:12:05.214478"
+    },
+    {
+      "title": "Jetpack Compose 内存分配与 SlotTable / Composer 机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md",
+      "quality": "high",
+      "chapter": "ch10",
+      "type": "deepresearch",
+      "summary": "Compose 重组短命对象分配：SlotTable gap-buffer、RecomposeScopeImpl、State 装箱、derivedStateOf",
+      "processed_at": "2026-06-20T06:12:05.214478"
+    },
+    {
+      "title": "SensorService 批处理功耗 Android 17 源码级确认",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-sensorservice-batching-android17-source-verification.md",
+      "quality": "high",
+      "chapter": "ch05",
+      "type": "deepresearch",
+      "summary": "200Hz 限频、麦克风 privacy 联动、frozen pid 投递挂起，android-17.0.0_r1 源码锚点",
+      "processed_at": "2026-06-20T06:12:05.214478"
     }
   ]
 }

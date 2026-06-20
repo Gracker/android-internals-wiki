@@ -718,3 +718,10 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 - 注入时间：2026-06-13
 - 价值：源码级详解 IPCThreadState::transact 同步/异步两条完整路径，与 §1.4 已有"线程池+事务队列"形成用户态执行机制闭环
 
+### Android 17 Binder 事务性能建模——IPC 开销量化与调度器交互
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-binder-transaction-performance-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：将单次 Binder 事务拆解为 5 段可测量开销（用户态 mOut 写入 → ioctl 提交 → 内核入队 → 对端读取 → BBinder 分发），定位 3 个稳定性能钩子点：flushCommands 双次 talkWithDriver 批处理、BBinder::transact 内置 >1s 告警、IF_LOG_COMMANDS 十六进制 dump。Android 17 新增 kEnableKernelIpc 编译期强制校验与 RpcBinder 分支 [[unlikely]] 标注优化。
+- 注入时间：2026-06-20
+- 价值：首次从"单次事务性能建模"角度补齐 §1.4 已有队列/frozen/oneway 之外的 IPC 开销量化视角，含 ioctl/batching 开销与调度器交互分析
+

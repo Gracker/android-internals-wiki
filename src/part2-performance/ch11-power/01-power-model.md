@@ -80,6 +80,8 @@ last_task6_review_log: "logs/review/2026-06-20-03-review.md"
 review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
 task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 Android 17 归因管线重构内容已进入正文（PowerAttributor / PowerStatsProcessor）；L1 小修 1 处（em-dash 一致性）；无 L3/L4 回炉项。Task9 仍为 pending-review，未满足自动晋升条件。 | 2026-06-20 02:07 Task6 revisiting re-review：pass-light-edit。Task9 auto-fix 后的 Android 17 归因管线内容（PowerAttributor / MultiStatePowerAttributor / CpuPowerStatsProcessor / ScreenPowerStatsProcessor）已稳定；L1 小修 2 处（汇报腔"需要注意"删除 + 4处连续空行压缩）；无 L3/L4 回炉项。Task9 result 为 auto-fixed（非 pass-tech-review），未满足自动晋升条件。 | 2026-06-20 03:08 Task6 revisiting re-review：pass-light-edit。正文经多轮 review 已稳定；L1/L2 全部通过（禁用词/汇报腔/AI套话/高频词/翻译腔均无命中）；无 L3/L4 回炉项。task9_result 仍为 auto-fixed（非 pass-tech-review），未满足自动晋升条件，送 Task9 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-20
 ---
 
 # Android 功耗模型
@@ -213,9 +215,9 @@ CPU charge ≈ cpu.active × activeTime
           + Σ(freqStepPower × freqStepTime)
 ```
 
-这里故意写成 charge，而不是 mWh。`power_profile.xml` 里没有 `cpu.voltage` 数组，当前 AOSP 也不是靠一个 `cpu.voltage` 表把 CPU 时间换成能量。HAL 侧如果提供实测值，常见原始单位是 uWs；Framework 在 `BatteryStatsImpl` 和 `BatteryConsumer` 侧再转换成 uC、mAh 等更适合归属和展示的单位。把 HAL 原始单位、Framework 内部统计单位、设置页展示单位混在一层，公式就容易写错。
+这里用 charge 而不是 mWh，是因为 `power_profile.xml` 里没有 `cpu.voltage` 数组，当前 AOSP 也不是靠一个电压表把 CPU 时间直接换成能量。HAL 侧如果提供实测值，常见原始单位是 uWs；Framework 在 `BatteryStatsImpl` 和 `BatteryConsumer` 侧再转换成 uC、mAh 等更适合归属和展示的单位。把 HAL 原始单位、Framework 内部统计单位、设置页展示单位混在一层，公式就容易写错。
 
-上面说的是 Android 16 及更早版本的 CPU 功耗三层模型。Android 17 做了归因管线重构：
+上面是 Android 16 及更早版本的 CPU 功耗三层模型。到 Android 17，归因管线做了重构：
 
 > **Android 17 归因管线变更**：android-17.0.0_r1 的 `frameworks/base/services/core/java/com/android/server/power/stats/` 目录已不再包含 `CpuPowerCalculator.java`。CPU 功耗归因改为由 `PowerAttributor` 接口承接；默认实现 `processor/MultiStatePowerAttributor` 通过 `AggregatedPowerStatsConfig` 配置 `processor/CpuPowerStatsProcessor`。`CpuPowerStatsProcessor` 内部仍然消费 UID 的 CPU active time、policy running time、freq step time 和可选的硬件能量数据，归因逻辑与 Android 16 的 `CpuPowerCalculator` 接近。Android 16 是过渡态：`BatteryUsageStatsProvider` 保留 `*PowerCalculator` 回退，同时已经会调用 `mPowerAttributor.estimatePowerConsumption()` 处理受支持组件。Android 17+ 读者应追踪 `PowerAttributor` → `MultiStatePowerAttributor` → `CpuPowerStatsProcessor` 路径。[已验证: AOSP android-16.0.0_r1 / android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java; frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java; frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java; frameworks/base/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java]
 这套三层模型解释了一个常见现象：两个进程的 CPU 总时长接近，耗电量仍然可能差很多。差异不只来自“跑了多久”——还取决于跑在哪个 scaling policy / cluster、跑在哪些频点、是否拿到了硬件能量数据。
@@ -224,7 +226,7 @@ CPU charge ≈ cpu.active × activeTime
 
 屏幕依然是大头，但“屏幕功耗不归属到 App”只覆盖了旧 batterystats 视角。`ScreenPowerCalculator` 先看 `batteryStats.getScreenOnEnergyConsumptionUC()` 是否可用。如果设备有屏幕 `EnergyConsumer` 数据，就能直接给每个 `UidBatteryConsumer` 写入 `POWER_COMPONENT_SCREEN`。如果没有，Framework 才回退到 `POWER_GROUP_DISPLAY_SCREEN_ON` 和 `POWER_GROUP_DISPLAY_SCREEN_FULL` 这套 power-profile 估算，再按前台 activity 时间把总屏幕耗电分摊到各个 UID。源码里的 `smearScreenBatteryDrain()` 还要求总前台活动时间至少 10 分钟才开始分摊。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java]
 
-上述分摊逻辑是 Android 16 及更早版本的行为。Android 17 对此做了简化：
+上述分摊逻辑是 Android 16 及更早版本的行为。Android 17 在此基础上做了简化：
 
 > **Android 17 边界**：android-17.0.0_r1 的 `power/stats/` 目录已不再包含 `ScreenPowerCalculator.java`，屏幕功耗归因由 `processor/ScreenPowerStatsProcessor` 接管。`ScreenPowerStatsProcessor` 仍然优先读取屏幕 `EnergyConsumer`，缺失时再用 `POWER_GROUP_DISPLAY_SCREEN_ON` / `POWER_GROUP_DISPLAY_SCREEN_FULL` 估算；分摊阶段按 UID top activity duration 占比分配屏幕功耗。这里已经没有 Android 16 `ScreenPowerCalculator.smearScreenBatteryDrain()` 的 `MIN_ACTIVE_TIME_FOR_SMEARING = 10min` 门槛，只在总 top activity duration 为 0 时跳过 UID 分摊。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java]
 
@@ -396,7 +398,7 @@ Android 10 和 Android 11 常见的是 HIDL `android.hardware.power.stats@1.0::I
 - `getEnergyConsumerInfo()` 和 `getEnergyConsumed()` 面向 `EnergyConsumer`，结果是 `EnergyConsumerResult.energyUWs`，可选带 `attribution[]` 按 UID 归属
 - `getEnergyMeterInfo()` 和 `readEnergyMeter()` 面向 `Channel` / `EnergyMeasurement`，看的是 meter 读数，`EnergyMeasurement.energyUWs` 也是 uWs
 
-这里最容易写错的地方有两个。第一，AIDL 不再用 HIDL 的 `getRailInfo()` 和 `getEnergyData()` 命名；第二，HAL 原始返回单位是 uWs，不是 mAh。mAh 通常是 Framework 或工具为了展示再换算出来的值。Framework 在拿到 `EnergyConsumerResult` 时，可以直接把 measured energy 合进 `BatteryUsageStats`；只有缺失这些读数时，`power_profile.xml` 才继续兜底。[已验证: AOSP android-10.0.0_r1, hardware/interfaces/power/stats/1.0/IPowerStats.hal; AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl; EnergyConsumerResult.aidl; EnergyMeasurement.aidl]
+容易混淆的关键点：AIDL 不再用 HIDL 的 `getRailInfo()` 和 `getEnergyData()` 命名；HAL 原始返回单位是 uWs，不是 mAh——mAh 通常是 Framework 或工具为了展示再换算出来的值。Framework 拿到 `EnergyConsumerResult` 时可以直接把 measured energy 合进 `BatteryUsageStats`，只有缺失这些读数时 `power_profile.xml` 才继续兜底。[已验证: AOSP android-10.0.0_r1, hardware/interfaces/power/stats/1.0/IPowerStats.hal; AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl; EnergyConsumerResult.aidl; EnergyMeasurement.aidl]
 
 ### EnergyConsumer 和 rail / Channel 的区别
 

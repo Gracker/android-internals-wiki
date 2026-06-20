@@ -382,6 +382,90 @@
       "completed_by": "openclaw-task2b"
     },
     {
+      "id": "task-deepresearch-inject-2026-06-20-1307-perfetto-rtp",
+      "section": "13.7",
+      "section_title": "Perfetto 的高级用法",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-perfetto-remote-trace-processor-architecture.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Perfetto Remote Trace Processor 架构深度解析 — 源码级解析 Rpc 类的二进制 marshalling 单一职责设计、byte-pipe 协议（TraceProcessorRpcStream）、httpd/stdiod/wasm 三种传输方式及 android-17.0.0_r1 路径对齐",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-20T06:12:05.214478",
+      "status": "pending"
+    },
+    {
+      "id": "task-deepresearch-inject-2026-06-20-0118-cachedappoptimizer-freezer",
+      "section": "1.18",
+      "section_title": "Binder Freezer 与缓存进程冻结性能",
+      "priority": 82,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-cachedappoptimizer-freezer-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 CachedAppOptimizer + cgroup freezer 完整调用链 — 双阶段冻结（Binder 内核冻结 + cgroup v2 进程冻结），含 OomAdjuster 触发入口、异步延迟调度、freezeBinder + setProcessFrozen 执行顺序、JNI 层代理及冻结性能 <5ms",
+          "suggestion": "章节已 finalized，判断是否适合补充为参考资料或触发回炉"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-20T06:12:05.214478",
+      "status": "pending"
+    },
+    {
+      "id": "task-deepresearch-inject-2026-06-20-1006-compose-memory-churn",
+      "section": "10.6",
+      "section_title": "内存抖动与频繁 GC",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Jetpack Compose 内存分配与 SlotTable / Composer 机制 — 分析 Compose 重组产生的短命对象分配：SlotTable gap-buffer reallocate、RecomposeScopeImpl 对象创建、State<T> 装箱开销、derivedStateOf ResultRecord 链，以及 @Stable/remember/SnapshotIntState 优化路径",
+          "suggestion": "章节已 finalized，判断是否适合补充为参考资料或触发回炉"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-20T06:12:05.214478",
+      "status": "pending"
+    },
+    {
+      "id": "task-deepresearch-inject-2026-06-20-0515-sensorservice-android17",
+      "section": "5.15",
+      "section_title": "SensorService 与传感器批处理功耗模型",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-sensorservice-batching-android17-source-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "SensorService 批处理功耗路径 Android 17 源码级确认 — 200Hz 限频（HIGH_SAMPLING_RATE_SENSORS 权限）、麦克风 privacy 联动限频、suspend_sensor_event_delivery_on_frozen_pid 投递挂起机制，源码锚点 android-17.0.0_r1",
+          "suggestion": "章节 last_verified_against 仍为 android-16，本次有 android-17 源码级更新，建议回炉补充"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-20T06:12:05.214478",
+      "status": "pending"
+    },
+    {
       "id": "task9-audit-20260620-07-frame-pacing-source-boundary",
       "section": "2.17",
       "section_title": "Frame Pacing Library 与帧节奏控制",

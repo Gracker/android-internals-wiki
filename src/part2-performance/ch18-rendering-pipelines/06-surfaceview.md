@@ -50,15 +50,15 @@ last_task2b_at: "2026-05-24T11:16:52+08:00"
 last_task2b_lite_at: "2026-05-28"
 rework_by: openclaw-task2b
 rework_type: review回炉修复（External 问题单）
-status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
-task6_reviewed_date: "2026-05-29"
-last_task6_at: "2026-05-29T07:07:00+08:00"
+task6_reviewed_date: "2026-06-20"
+last_task6_at: "2026-06-20T08:08:00+08:00"
 last_task6_audit: '2026-05-24'
 last_task6_audit_log: 'logs/review/2026-05-24-07-audit.md'
 last_task6_audit_notes: '2026-05-24 闲时抽检：L1 禁用词/高频词 0 命中，锚点 8/8；补齐 frontmatter 来源与验证字段；发现 Task9 needs-rework 状态流转不一致及 SurfaceView BLAST 版本边界残留，已写入 queue P90。'
@@ -75,12 +75,12 @@ last_task9_review_log: "logs/deep-review/2026-06-20-06-audit.md"
 p0: 0
 p1: 0
 p2: 0
-last_task6_review_log: "logs/review/2026-05-29-07-review.md"
-task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；替换 1 处禁用词；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
+last_task6_review_log: "logs/review/2026-06-20-08-review.md"
+task6_review_notes: "2026-06-20 08:08 Task6 revisiting review: pass-light-edit；L1 禁用词 0 命中，L2 可读性通过；Task9 auto-fixed（源码锚点 android-17.0.0_r1 + HWComposer 方法名修正）后正文质量未回退；task6+task9 双通过且 queue 无 pending，自动晋升 finalized。"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-05-29T07:07:00+08:00"
+task6_reviewed_at: "2026-06-20T08:08:00+08:00"
 last_task9_autofix_at: "2026-06-20"
 ---
 
