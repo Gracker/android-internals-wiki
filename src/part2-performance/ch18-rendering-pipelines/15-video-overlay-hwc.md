@@ -1,7 +1,7 @@
 ---
 title: 视频叠加与 HWC
 chapter: '18.15'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
 - HWC

@@ -2,7 +2,7 @@
 title: "WebView 渲染管线"
 chapter: "18.13"
 section: "18.13"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0+(WebView provider 可独立更新;SurfaceControl 子 Surface 需 Android 12+ 平台支持,并结合 provider / Chromium milestone 判断)"
 tags: ["WebView", "Chromium", "GL-Functor", "SurfaceControl", "SurfaceTexture", "X5内核", "渲染管线"]
 related_chapters: ["2.5", "2.6", "7.11", "18.6", "18.7", "18.10"]
