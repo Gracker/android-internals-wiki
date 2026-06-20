@@ -322,7 +322,14 @@
       "task6_result": "pass-light-edit",
       "task6_date": "2026-06-20",
       "task9_state": "pending",
-      "pipeline_stage": "task9_pending"
+      "pipeline_stage": "ready-to-publish",
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task9_result": "auto-fixed",
+      "last_task6_at": "2026-06-20T14:05:00+08:00",
+      "auto_promoted": true,
+      "auto_promoted_by": "openclaw-task6",
+      "auto_promoted_date": "2026-06-20"
     }
   ],
   "review_files": [

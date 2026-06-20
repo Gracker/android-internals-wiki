@@ -31,20 +31,20 @@ last_task2b_at: 2026-06-20T12:54:38+08:00
 review_round: 3
 task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。；2026-05-26 Task9 闲时抽检：needs-rework。P0 1（AwBrowserTerminator / Renderer 退出调用链使用过期源码口径）；P2 1（API 26 renderer 模型表格重叠）；详见 logs/deep-review/2026-05-26-12-audit.md。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Renderer 模型版本表重复 Android 11+ 行）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 12:34 Task9 闲时抽检：needs-rework。P1 1（Chromium HEAD/mainline 源码/文档锚点无法证明进入 Android 17/API37）；已写入 queue，回到 Task2B。 | 2026-06-20 13:25 Task9 deep-review：auto-fixed。P0 0 / P1 1（Chromium HEAD loading 文档仍被写作已验证来源，已降级为参考并移除未固定版本的 AwBrowserProcess.start() 正文步骤）/ P2 2（§2.10/§8.1 交叉引用指向错误，已修正为 §2.9/§5.6）；回到 Task6 复审。"
 
-status: ready-for-review
+status: finalized
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-07"
+reviewed_date: "2026-06-20"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-26"
-last_task6_at: "2026-06-20T13:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-20-13-review.md"
+last_task6_at: "2026-06-20T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-20-14-review.md"
 last_task6_audit: "2026-05-25"
 task2b_result: fixed
-task6_review_notes: "2026-06-20 Task6 13:07：Task2B 修复 Chromium 锚点标注后写作复审；L1/L2 通过，小修 2 处（GLFunctor 术语一致性、方案三去冗余）；无新增 L3/L4 回炉项，送 Task9 复审 Task2B 修复。"
+task6_review_notes: "2026-06-20 Task6 14:05：Task9 auto-fixed 后写作复审；L1/L2 通过，小修 1 处（§2.10/§8.1 交叉引用修正为 §2.9/§5.6）；无新增 L3/L4 回炉项。task9_result=auto-fixed（P0/P1/P2 已全部修复），queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-06-20-13-deep-review.md"
 last_task9_audit: 2026-06-20
 auto_promoted_by: "openclaw-task9"
@@ -717,7 +717,7 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
 - **交叉引用**：
   - §2.1 Android 渲染架构全景
   - §2.5 MainThread 与 RenderThread 协作
-  - §2.10 渲染机制的版本演进
+  - §2.9 渲染机制的版本演进
   - §7.2 卡顿原因体系
-  - §8.1 Android 功耗管理
+  - §5.6 Android 功耗管理
   - §13.7 Perfetto 高级用法
