@@ -2,7 +2,7 @@
 title: 内存分析工具
 chapter: '14.3'
 section: '14.3'
-status: finalized
+status: "ready-for-review"
 reviewed_date: "2026-05-30"
 reviewed_by: "openclaw-task6"
 drafted_date: '2026-04-03'
@@ -53,6 +53,8 @@ task6_new_rework: false
 review_type: "task6-writing-quality-review"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
+task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
+
 ---
 
 
