@@ -2,7 +2,7 @@
 title: "Binder Freezer 与缓存进程冻结性能"
 chapter: "1.18"
 section: "1.18"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 11 QPR3 - Android 17 (API 37)"
 last_verified: "2026-06-14"
@@ -13,16 +13,16 @@ related_chapters: ["1.3", "1.4", "5.8", "11.2", "26.9"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-06-14"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-27"
-last_task6_at: "2026-06-14T04:07:46+08:00"
+reviewed_date: 2026-06-21
+last_task6_at: "2026-06-21T01:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-13-18-review.md"
-task6_review_notes: "2026-06-14 Task6 round 3 re-review: pass-light-edit. Task9 auto-fixed kernel source anchors (Linux main→Android common kernel android17-6.18-2026-04_r1). L1: clean (no banned words). L2: clean (good narrative, proper structure, clear tables). All 6 anchors covered. No B-class issues. Writing quality high. Score: structure 5/5, wording 5/5, consistency 5/5, verification 4/5, metadata 5/5."
-task9_state: pending
+task6_review_notes: "2026-06-21 Task6 round 4 re-review (post-task9-autofix): pass-light-edit. Task9 auto-fixed kernel source anchors (Linux main to Android common kernel android17-6.18-2026-04_r1). Re-verified writing quality after Task9 changes: L1 clean (no banned words, no high-freq issues, no translation tone). L2 clean (good narrative flow, proper structure, clear tables, good CJK-ASCII spacing). L3/L4: strong technical depth, good human feel, precise source references. All 6 anchors covered. No B-class issues. Auto-promoted to finalized: task6 pass-light-edit + task9 auto-fixed + no pending queue items."
+task9_state: reviewed
 last_task9_review_log: "logs/deep-review/2026-06-14-00-deep-review.md"
 last_task9_at: "2026-06-14T00:24:00+08:00"
 task9_reviewed_by: openclaw-task9
@@ -67,7 +67,7 @@ last_task9_audit: "2026-06-13"
 last_task9_autofix_at: "2026-06-14"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
-last_task6_audit: "2026-06-20"
+last_task6_audit: 2026-06-21
 
 last_task2b_at: 2026-06-21T00:52:15+08:00
 last_task2b_by: task2b-main
