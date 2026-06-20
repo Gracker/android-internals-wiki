@@ -66,7 +66,7 @@ p2: 0
 last_task9_audit: "2026-06-13"
 last_task9_autofix_at: "2026-06-14"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
+last_deepseek_cn_review_at: 2026-06-21
 last_task6_audit: 2026-06-21
 
 last_task2b_at: 2026-06-21T00:52:15+08:00
@@ -267,9 +267,9 @@ AOSP 文档写明 Android 11 QPR3 或更高版本支持 cached apps freezer；�
 | Android 13 | `ApplicationExitInfo.REASON_FREEZER` 可用于线上归因 | 不把所有厂商后台冻结都归为 AOSP freezer |
 | Android 14/15 | 包状态 / 更新原因与 freezer subreason 继续补齐 | `SUBREASON_FREEZER_BINDER_ASYNC_FULL` 属于 Android 15+ 边界；subreason 多为 hidden/internal，应用侧能拿到的字段受 API 和权限限制 |
 | Android 16 | `FREEZER_CUTOFF_ADJ` 由 `ActivityManagerConstants` / DeviceConfig 管理，默认仍以 cached 边界为基线；`CachedAppOptimizer`、Binder freezer、cgroup v2 freezer 主路径与本节一致 | 以 `android-16.0.0_r1` 为源码锚点；不要把 AOSP main 直接当作 Android 17 结论 |
-| Android 17 | framework `android-17.0.0_r1` tag 本轮仍未取到；Binder/cgroup 内核锚点已核到 Android common kernel `android17-6.18-2026-04_r1` | framework 结论只使用 Android 16 及以下可验证源码；内核侧只引用 Android common kernel tag，不使用 Linux main/master 作为 Android 17 结论 |
+| Android 17 | framework `android-17.0.0_r1` tag 本轮仍未取到；Binder/cgroup 内核锚点已核到 Android common kernel `android17-6.18-2026-04_r1` | framework 结论使用 Android 16 及以下可验证源码；内核侧引用 Android common kernel tag，不使用 Linux main/master 作为 Android 17 结论 |
 
-本节没有把 freezer 写成万能后台治理方案。它解决 cached 进程 CPU 空转，但会暴露跨进程协议设计问题：冻结期间还在同步调用远端，就会把后台节能问题变成稳定性问题；冻结期间不断发 oneway 回调，就会把 CPU 问题变成异步缓冲区压力和过期事件问题。
+cached app freezer 的核心价值是降低 cached 进程的 CPU 空转，代价是它会暴露跨进程协议的设计问题。冻结期间如果还在同步调用远端，后台节能问题就变成了稳定性问题；冻结期间如果不断发 oneway 回调，CPU 节省就变成了异步缓冲区压力和过期事件问题。这两个边界提醒我们：freezer 不是一个单独的优化开关，它需要和 Binder 协议设计、应用生命周期管理一起考虑。
 
 ## 扩展：组件豁免、厂商差异和复现实验
 

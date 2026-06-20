@@ -51,7 +51,7 @@ task6_l3_l4_issues: 1
 task6_new_rework: true
 review_type: "task6-writing-quality-review"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-07
+last_deepseek_cn_review_at: 2026-06-21
 last_task9_autofix_at: "2026-06-20"
 last_task9_audit: "2026-06-20"
 task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
@@ -103,7 +103,7 @@ last_task6_audit: "2026-06-20"
 
 **第二段:EventHub → InputReader**。这是 Android Framework 层的第一道关卡。`EventHub` 利用 Linux 的 `epoll` 机制监听 `/dev/input/` 目录下的设备文件,当有新事件时可读取。`InputReader` 是一个跑在 `system_server` 进程中的 Native 循环线程,它不断从 `EventHub` 读取原始的 `struct input_event`,然后根据设备类型(触摸屏、键盘、鼠标等)交给对应的 `InputMapper` 做"加工"(cook)--把原始数据转成 Android 层认识的 `KeyEvent`、`MotionEvent`。
 
-**第三段:InputClassifier/InputProcessor → InputDispatcher → 目标窗口**。触摸事件在进入分发线程前还有一层版本化处理:Android 12/13 的代码路径是 `InputReader → InputClassifier → InputDispatcher`,Android 14+ 演进为 `InputReader → InputProcessor → InputDispatcher`。这一层负责触摸分类、palm rejection、stylus 等处理;不需要分类的事件会直接透传到 queued listener,然后进入 `InputDispatcher`。`InputDispatcher` 再找到目标窗口(焦点窗口或触摸区域命中的窗口),通过 `InputChannel`(底层是 `socketpair`)跨进程把事件发送给 App。
+**第三段:InputClassifier/InputProcessor → InputDispatcher → 目标窗口**。触摸事件在进入分发线程前还有一层版本化处理:Android 12/13 走 `InputReader → InputClassifier → InputDispatcher`,Android 14+ 走 `InputReader → InputProcessor → InputDispatcher`。这一层负责触摸分类、palm rejection、stylus 等操作;不需要分类的事件直接透传到 queued listener,然后进入 `InputDispatcher`。`InputDispatcher` 找到目标窗口(焦点窗口或触摸区域命中的窗口),通过 `InputChannel`(底层是 `socketpair`)跨进程把事件发给 App。
 
 **第四段:App 侧分发**。App 进程通过 `WindowInputEventReceiver` 收到事件,经过 `ViewRootImpl` 的责任链式 `InputStage` 管线处理,最终分发到 View 树中的具体控件。
 
@@ -201,9 +201,9 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 ### 手势排除区域
 
-在 Android 17 的 AOSP 主线源码中,手势排除区域(gesture exclusion)尚未作为独立机制进入 `InputDispatcher` 的分发路径。`InputDispatcher.cpp` 没有专门处理手势排除区域的代码分支,`WindowInfo.h` 中也未出现 `gesture exclusion` 相关的结构字段。此前一些资料提到的"10ms 优化收益",在现有 AOSP 主线中缺乏源码依据。
+截止 Android 17,手势排除区域(gesture exclusion)还没有进入 `InputDispatcher` 的分发路径——`InputDispatcher.cpp` 没有处理手势排除的代码分支,`WindowInfo.h` 也没有定义相关字段。一些资料提到的"10ms 优化收益"在现有 AOSP 主线中缺少源码支撑。
 
-排查边缘触控问题时,仍以窗口命中判断、系统手势区域和 `InputDispatcher` 的分发耗时(slice)为主要分析手段。如果后续版本确认手势排除逻辑下沉到 Native 输入循环,再结合对应源码 tag 和 Perfetto trace 样本补充。
+排查边缘触控时,先按窗口命中判断、系统手势区域和 `InputDispatcher` 分发耗时来定位。如果后续版本确认手势排除逻辑下沉到了 Native 输入循环,再结合对应源码 tag 和 Perfetto trace 样本补充。
 
 ### 三大队列:iq / oq / wq
 
@@ -406,7 +406,7 @@ void InputDispatcher::onWindowInfosChanged(
 
 Input 系统有两种不同类型的 ANR:
 
-**No Focus Window ANR**:当 `InputDispatcher` 处理按键事件时,调用 `findFocusedWindowTargetsLocked()` 查找焦点窗口,如果当前有焦点 App 但没有焦点窗口(窗口还没准备好),就设置一个 5 秒超时。如果 5 秒内窗口准备好了,超时取消;否则触发 ANR。(关于 ANR 的完整设计思想,参见第 9.1 节「ANR 设计思想」。)
+**No Focus Window ANR**:当 `InputDispatcher` 处理按键事件时,调用 `findFocusedWindowTargetsLocked()` 查找焦点窗口,如果当前有焦点 App 但没有焦点窗口(窗口还没准备好),就设置一个 5 秒超时。如果 5 秒内窗口准备好了,超时取消;否则触发 ANR。关于 ANR 的完整设计思想,参见第 9.1 节。
 
 这种情况常见于 Activity 在 `onResume()` 中执行耗时操作导致窗口没有及时显示。比如:
 
