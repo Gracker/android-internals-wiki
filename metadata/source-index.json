@@ -3835,6 +3835,244 @@
       "type": "deepresearch",
       "summary": "200Hz 限频、麦克风 privacy 联动、frozen pid 投递挂起，android-17.0.0_r1 源码锚点",
       "processed_at": "2026-06-20T06:12:05.214478"
+    },
+    {
+      "title": "Performance improvement opportunities in the open source C++ standard libraries",
+      "path": "AndroidWeekly/#22/Performance_improvement_opportunities_in_the_open_source_C++_standard_libraries",
+      "source_url": "https://llvm.org/devmtg/2021-02-28/slides/Aditya-c++-libraries.pdf",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch12-性能优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "C++标准库性能优化机会 - LLVM技术分享",
+      "scored_at": "2026-06-20T09:04:54.489380"
+    },
+    {
+      "title": "关于 ClassFileLoadHook 一些技术细节",
+      "path": "AndroidWeekly/#22/关于_ClassFileLoadHook_一些技术细节",
+      "source_url": "https://zhuanlan.zhihu.com/p/371369860",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-ART虚拟机",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Java虚拟机ClassFileLoadHook技术细节分析",
+      "scored_at": "2026-06-20T09:04:54.489390"
+    },
+    {
+      "title": "ART 虚拟机 — Interpreter 模式",
+      "path": "AndroidWeekly/#22/ART_虚拟机_—_Interpreter_模式",
+      "source_url": "https://blog.csdn.net/u013989732/article/details/80717762",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-ART虚拟机",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ART虚拟机Interpreter模式深入分析",
+      "scored_at": "2026-06-20T09:04:54.489392"
+    },
+    {
+      "title": "谈 编程语言互操作 - 概述",
+      "path": "AndroidWeekly/#22/谈_编程语言互操作_概述",
+      "source_url": "https://zhuanlan.zhihu.com/p/281059891",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-开发语言",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "编程语言互操作技术概述",
+      "scored_at": "2026-06-20T09:04:54.489394"
+    },
+    {
+      "title": "谈编程语言互操作 - C/C++ 互操作机制",
+      "path": "AndroidWeekly/#22/谈编程语言互操作_C_C++_互操作机制",
+      "source_url": "https://zhuanlan.zhihu.com/p/291400029",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-开发语言",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch12-性能优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "C/C++与Java/Kotlin互操作机制详解",
+      "scored_at": "2026-06-20T09:04:54.489396"
+    },
+    {
+      "title": "谈编程语言互操作 - Java/C++ 互操作机制",
+      "path": "AndroidWeekly/#22/谈编程语言互操作_Java_C++_互操作机制",
+      "source_url": "https://zhuanlan.zhihu.com/p/297727926",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-开发语言",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch08-ART虚拟机",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Java与C++互操作机制深入解析",
+      "scored_at": "2026-06-20T09:04:54.489397"
+    },
+    {
+      "title": "谈编程语言互操作 - Java/Kotlin 互操作机制",
+      "path": "AndroidWeekly/#22/谈编程语言互操作_Java_Kotlin_互操作机制",
+      "source_url": "https://zhuanlan.zhihu.com/p/299669161",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-开发语言",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Java与Kotlin互操作机制详解",
+      "scored_at": "2026-06-20T09:04:54.489398"
+    },
+    {
+      "title": "探索 Android 平台 ARM unwind 技术",
+      "path": "AndroidWeekly/#22/探索_Android_平台_ARM_unwind_技术",
+      "source_url": "https://zhuanlan.zhihu.com/p/336916116",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-系统底层",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android平台ARM unwind技术深度探索",
+      "scored_at": "2026-06-20T09:04:54.489401"
+    },
+    {
+      "title": "探索 Android 平台 ARM unwind 技术 - 2",
+      "path": "AndroidWeekly/#22/探索_Android_平台_ARM_unwind_技术_2",
+      "source_url": "https://zhuanlan.zhihu.com/p/345878125",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-系统底层",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android平台ARM unwind技术第二部分",
+      "scored_at": "2026-06-20T09:04:54.489402"
+    },
+    {
+      "title": "探索 Android 平台 ARM unwind 技术 - 3",
+      "path": "AndroidWeekly/#22/探索_Android_平台_ARM_unwind_技术_3",
+      "source_url": "https://zhuanlan.zhihu.com/p/350149964",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-系统底层",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android平台ARM unwind技术第三部分",
+      "scored_at": "2026-06-20T09:04:54.489408"
     }
   ]
 }

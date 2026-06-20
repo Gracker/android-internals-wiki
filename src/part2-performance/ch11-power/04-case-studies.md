@@ -897,6 +897,168 @@ FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减
 
 > 排查后台任务延迟时，先用 `adb shell dumpsys jobscheduler <pkg>` 看到 `whenStandbyDeferred>0`，再 `adb shell am get-standby-bucket <pkg>` 拿当前桶，配合 `dumpsys usagestats` 里的 `adaptivebat=<provider_pkg>` 判断是 ML 预测结果还是时间阈值结果——三种情况的修复路径不同。
 
+<!-- AIW-源码调研-2026-06-20 -->
+## 11.4.7 JobScheduler 节流机制：三层防线源码级分析
+
+> **来源调研**：[2026-06-20-job-scheduler-throttling-mechanism.md](../DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md)（AIW 每日源码调研）
+> **本节定位**：在 §11.4.6 Adaptive Battery 协同机制基础上，补充 JobScheduler 自身三层节流防线的源码级细节。
+> **API 范围**：本节分析基于 main 分支 2026-06-20，API 37 (Android 17) 范围内有效；`cs.android.com` android-17.0.0_r1 tag 不可访问，**未进入 Android 17 tag 一手验证**。
+
+JobScheduler 在 framework 层构建了**三层节流防线**防止应用滥用后台执行，三层互不替代、共同收敛到「应用应进入前台或 TOP 状态」的目标。
+
+### 11.4.7.1 第一层：API 调度频率节流（schedule() rate limit）
+
+**核心常量**（`JobSchedulerService.java:701-776`，DeviceConfig 可覆盖）：
+
+| Key | Default | 含义 |
+|-----|---------|------|
+| `KEY_ENABLE_API_QUOTAS` | true | 总开关 |
+| `KEY_API_QUOTA_SCHEDULE_COUNT` | 250 (硬下限) | 每窗口允许的 schedule() 次数 |
+| `KEY_API_QUOTA_SCHEDULE_WINDOW_MS` | 1 minute | 滚动窗口长度 |
+| `KEY_API_QUOTA_SCHEDULE_THROW_EXCEPTION` | true | 超限后是否对 debuggable 抛 `LimitExceededException` |
+| `KEY_API_QUOTA_SCHEDULE_RETURN_FAILURE_RESULT` | false | 超限后是否返回 RESULT_FAILURE |
+
+**执行路径**（`JobSchedulerService.scheduleAsPackage()`，line 1720-1767）：
+
+```java
+if (job.isPersisted() && (packageName == null || packageName.equals(servicePkg))) {
+    if (!mQuotaTracker.isWithinQuota(userId, pkg, QUOTA_TRACKER_SCHEDULE_PERSISTED_TAG)) {
+        mAppStandbyInternal.restrictApp(pkg, userId,
+            UsageStatsManager.REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY);
+        if (mConstants.API_QUOTA_SCHEDULE_THROW_EXCEPTION && isDebuggable) {
+            throw new LimitExceededException("schedule()/enqueue() called more than "
+                + mQuotaTracker.getLimit(QUOTA_TRACKER_CATEGORY_SCHEDULE_PERSISTED)
+                + " times in the past "
+                + mQuotaTracker.getWindowSizeMs(QUOTA_TRACKER_CATEGORY_SCHEDULE_PERSISTED)
+                + "ms.");
+        }
+        if (mConstants.API_QUOTA_SCHEDULE_RETURN_FAILURE_RESULT) {
+            return JobScheduler.RESULT_FAILURE;
+        }
+    }
+    mQuotaTracker.noteEvent(userId, pkg, QUOTA_TRACKER_SCHEDULE_PERSISTED_TAG);
+}
+```
+
+**关键设计点**：
+- **只对 persisted job 限频**：非持久化 Job 走 `JobStore` 内存路径，频繁 schedule 但不入库，不会触配额。
+- **节流附带 `restrictApp(...)`**：把包降级到 RESTRICTED 桶，**真正的杀手锏**——即使 schedule() 成功，restricted 桶的 Job 在 QuotaController 还会被掐（见第三层）。
+- **`Math.max(250, ...)` 硬下限保护**（line 1182-1185）：OEM 改小 DeviceConfig 不会低于 250。
+
+### 11.4.7.2 第二层：执行超时节流（Execution Safeguards for UDC）
+
+跟踪 UI-initiated / Expedited / Regular 三类 Job 的超时事件（默认 24h 窗口内 2/5/3 次，total 10 次），ANR 单独计数（默认 6h 内 3 次）。
+
+**记录路径**（`JobSchedulerService.java:3238-3266`，在 `JobServiceContext.handleFinishedLocked()` 中触发）：
+
+```java
+if (jobTimedOut) {
+    final int userId = jobStatus.getTimeoutBlameUserId();
+    final String pkg = jobStatus.getTimeoutBlamePackageName();
+    mQuotaTracker.noteEvent(userId, pkg,
+            jobStatus.startedAsUserInitiatedJob ? QUOTA_TRACKER_TIMEOUT_UIJ_TAG
+            : jobStatus.startedAsExpeditedJob ? QUOTA_TRACKER_TIMEOUT_EJ_TAG
+            : QUOTA_TRACKER_TIMEOUT_REG_TAG);
+    if (!mQuotaTracker.noteEvent(userId, pkg, QUOTA_TRACKER_TIMEOUT_TOTAL_TAG)) {
+        mAppStandbyInternal.restrictApp(pkg, userId,
+                UsageStatsManager.REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY);
+    }
+}
+```
+
+**关键设计点**：
+- **`getTimeoutBlameUserId/PackageName` 归责到发起方**：Job 是被系统排给 A 跑的，但发起方是 B，那 B 拿单。
+- **`noteEvent` 返回值即「是否仍在配额内」**：UIJ/EJ/REG 单独触顶只计数不降级，给应用留缓冲；**只有 timeout_total 和 ANR 触顶才 `restrictApp`**。
+- **ANR 单独走 `QUOTA_TRACKER_ANR_TAG`**：6h/3 次更严格（ANR 几乎都是 bug 行为）。
+- **「超时」依据**（line 3227-3236）：`executionDurationMs >= RUNTIME_MIN_GUARANTEE_MS`，普通 Job 10 分钟、Expedited 3 分钟、UI 6 小时。
+
+**消费侧**（`JobServiceContext.isAppConsideredBuggy()`，line 4600-4604）：把 buggy 状态透出到 dumpsys、bug report，触发 BatteryStats 异常标记。
+
+### 11.4.7.3 第三层：后台运行配额（QuotaController）
+
+**配额矩阵**（`QuotaController.java:3160-3250`，`QcConstants` 默认值）：
+
+| Bucket | AllowedTime/Period | WindowSize (legacy → current) | MaxJobCount | MaxSessionCount |
+|--------|--------------------|-------------------------------|-------------|-----------------|
+| EXEMPTED | 10 min | 10 min (legacy) / 20 min (current) | 75 | 75 |
+| ACTIVE | 10 min | 10 min (legacy) / 30 min (current) | 75 | 75 |
+| WORKING | 10 min | 2 h (legacy) / 4 h (current) | 120 | 10 |
+| FREQUENT | 10 min | 8 h (legacy) / 12 h (current) | 200 | 8 |
+| RARE | 10 min | 24 h | 48 | 3 |
+| RESTRICTED | 10 min | 24 h | 10 | 1 |
+| NEVER | 0 | 0 | 0 | 0 |
+
+**全局硬上限**（`QuotaController.java:376-403`）：
+- `mMaxExecutionTimeMs = 4 hours`（无论 bucket，24h 内最多跑 4h）
+- `mRateLimitingWindowMs = 1 minute`、`mMaxJobCountPerRateLimitingWindow = 20`（最近 1 分钟 ≤ 20 个 Job）
+- `mQuotaBufferMs = 30s`（in-quota 边界 buffer，避免抖动）
+
+**EJ 专属配额**（`QuotaController.java:481-528`）：`mEJLimitsMs[]` 给 Expedited Job 单独限额，EXEMPTED 60min、ACTIVE 30min、WORKING 15min、FREQUENT 10min、RARE 10min、RESTRICTED 5min；窗口 `mEJLimitWindowSizeMs = 24h`。
+
+**决策入口**（`QuotaController.isWithinQuotaLocked()`，line 927-967）：
+
+```java
+if (jobStatus.shouldTreatAsUserInitiatedJob()
+        || isTopStartedJobLocked(jobStatus)
+        || isUidInForeground(jobStatus.getSourceUid())) return true;  // 豁免
+if (standbyBucket == NEVER_INDEX) return false;
+if (isQuotaFreeLocked(standbyBucket)) return true;  // 充电中
+final ExecutionStats stats = getExecutionStatsLocked(...);
+if (!(getRemainingExecutionTimeLocked(stats) > 0)) return false;
+if (standbyBucket != RESTRICTED_INDEX && mService.isCurrentlyRunningLocked(jobStatus)) return true;
+return isUnderJobCountQuotaLocked(stats) && isUnderSessionCountQuotaLocked(stats);
+```
+
+**调用链**（在每个 Job 生命周期内）：
+
+1. `maybeStartTrackingJobLocked()`（line 615-642）：Job 被 tracking controller 接管时调用 `isWithinQuotaLocked()`，并通过 `setConstraintSatisfied(jobStatus, nowElapsed, isWithinQuota, isWithinEJQuota)` 写入 constraint 状态。
+2. `prepareForExecutionLocked()`（line 644-676）：**真正开始计时**——把 Job 装进 `Timer.startTrackingJobLocked()`，此时 `Timer` 记录 `mStartTimeElapsed` 并 `scheduleCutoff()`。
+3. `unprepareFromExecutionLocked()`（line 678-695）：Job 跑完时 `Timer.stopTrackingJob()`，若 `mRunningBgJobs` 清空则 `emitSessionLocked()`，**把整段 session 写入 `mTimingSessions`**，并 `incrementTimingSessionCountLocked`。
+4. `getRemainingExecutionTimeLocked()`（line 1039-1041）：剩余时间 = `min(allowedTime - usedInWindow, maxExecTime - usedInMaxPeriod)`，**双窗口收敛**。
+
+**豁免路径**（line 882-925 + 942-960）：
+
+- **User-Initiated Job**：完全不计入 quota（`prepareForExecutionLocked` 直接 return，line 657-660）。
+- **Top started Job**：启动时 app 在 TOP 状态，整段不计入（`mTopStartedJobs` 集合 + `OVERRIDE_QUOTA_ENFORCEMENT_TO_TOP_STARTED_JOBS = 374323858L` ChangeID，line 161-164）。
+- **Foreground UID**：`isUidInForeground()` 命中即放行。
+- **BatteryCharging**：`isQuotaFreeLocked()` 返回 true（除 RESTRICTED），Job 全部放行。
+- **Temp allowlist / Top app grace period**：进入 `mTempAllowlistCache` 的 UID 拿 grace period。
+- **Already running**（非 RESTRICTED）：已经在跑的 Job 视为 in-quota，避免掐正在跑的任务。
+
+### 11.4.7.4 节流与 JobConcurrencyManager 的协同
+
+`JobConcurrencyManager`（JCM）负责「**能跑多少**」并发，`QuotaController` 负责「**能不能跑**」quota；二者通过 `JobStatus.isReady()` 在 `findNextReadyJob()`（line 1655、1752）协同：
+
+```java
+if (Flags.countQuotaFix() && !nextPending.isReady()) {
+    pendingJobQueue.remove(nextPending);
+    continue;
+}
+```
+
+`isReady()` 是 JobStatus 上的聚合判定——所有 controller 都说「OK」才算 ready。QuotaController 通过 `setConstraintSatisfied()` 把 `isWithinQuota` 写进 JobStatus 的 constraint snapshot。**关键：QuotaController 不抢占 JCM 的并发名额，JCM 不感知 quota 状态**——这层解耦使得 quota 限制可以独立调整。
+
+### 11.4.7.5 三层节流的协同效果
+
+| 节流层 | 防什么 | 谁来执行 | 触顶后副作用 |
+|--------|--------|----------|--------------|
+| 1. API 节流 | 防「调太多 schedule()」 | `JobSchedulerService.scheduleAsPackage()` | debuggable 抛异常 / release 返回失败 + 降桶 |
+| 2. 执行超时节流 | 防「单次跑太久（>10min）」 | `JobServiceContext.handleFinishedLocked()` | total/ANR 触顶降桶 |
+| 3. 后台配额 | 防「算太久（>4h/24h）」 | `QuotaController.isWithinQuotaLocked()` | 静默 defer，1 分钟后 `MSG_REACHED_COUNT_QUOTA` 通知 |
+
+**调用收敛**：三层都把触顶后的副作用收敛到 `mAppStandbyInternal.restrictApp(pkg, userId, REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY)`，把包降级到 RESTRICTED 桶——这意味着 **RESTRICTED 桶的 App 实际承受了所有三层的惩罚**。
+
+### 11.4.7.6 性能与排查
+
+- **schedule() 入口 quota 检查 O(1)**：CountQuotaTracker 只查 ring buffer 头尾两次比较。
+- **QuotaController 高频判定点**：每个 Job 在 `maybeStartTrackingJobLocked()` 和 `prepareForExecutionLocked()` 都过 `isWithinQuotaLocked()`，**WORKING 桶 2h 窗口下平均遍历 20-30 个 session**，开销 < 1μs。
+- **AppStandby 联动是真正的成本**：频繁触限的应用会形成「schedule → 限频 → restrictApp → 降桶 → QuotaController 更严 → restrictApp」循环，**单次 schedule 路径可能放大到 ms 级**。
+- **充电豁免的功耗副作用**：`isQuotaFreeLocked()` 充电时放行所有 Job，OEM 应避免用户态 Job 伪装成系统任务——会导致 4h 硬上限失效。
+- **排查命令**：`adb shell dumpsys jobscheduler <pkg>` 看 `whenStandbyDeferred>0` + `QuotaController is within quota=false` + `CountQuotaTracker countInWindow/countLimit` 三个字段，配合 `dumpsys batterystats --checkin` 找 `restrictApp` 调用记录。
+
+> 与 §11.4.6 Adaptive Battery 协同机制的关系：§11.4.6 解释了「**bucket 怎么被算出来**」（ML 预测 + 时间衰减），本节解释「**bucket 怎么被消费**」（三层节流 + AppStandby 联动）。两者结合构成完整的 Adaptive Battery → JobScheduler 限流闭环。
+
+
 ## 总结
 
 
@@ -916,6 +1078,11 @@ FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md
 - 类型：DeepResearch 调研结果
 - 摘要：Battery Saver 通过 BatterySaverPolicy 的 5 种 locationMode（NO_CHANGE/GPS_DISABLED_WHEN_SCREEN_OFF/ALL_DISABLED/FOREGROUND_ONLY/THROTTLE_REQUESTS）控制定位，热节流走独立通道不直接修改定位模式。两层是叠加关系：低电关定位+过热调频率。LocationProviderManager.isActive() 在三条件同时满足时过滤后台 GPS 请求。
+
+### JobScheduler 节流机制三层防线（API 频率 + 执行超时 + 后台配额）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：JobScheduler 在 framework 层构建三层节流防线：(1) API 频率节流——CountQuotaTracker + JobSchedulerService.scheduleAsPackage() 在 schedule() 入口拦截，persisted job 250 次/分钟默认，触顶对 debuggable 抛 LimitExceededException 并对 release 应用调 restrictApp 降级到 RESTRICTED 桶；(2) 执行超时节流——Execution Safeguards for UDC 在 JobServiceContext.handleFinishedLocked() 记录 UIJ/EJ/REG/ANR 超时事件，24h 内 total 10 次或 ANR 6h/3 次触顶同样降桶；(3) 后台配额——QuotaController.isWithinQuotaLocked() 双重窗口（bucket period 10min 执行时间 + MAX_PERIOD 4h 硬上限）+ 数量配额（WORKING 120/FREQUENT 200/RARE 48 jobs）+ 1 分钟 20 个 Job 速率配额，User-Initiated/Top started/Foreground/Charging/Temp allowlist 全部豁免。CountQuotaTracker 用 UptcMap 环形队列 O(1) 判定。JobConcurrencyManager 不感知 quota 状态，quota 状态写入 JobStatus constraint snapshot。注入到 §11.4.7。
 
 ### JobScheduler 源码常量来源修正（APEX 路径迁移 + OP_TIMEOUT_MILLIS 核验）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-jobscheduler-source-verification.md
