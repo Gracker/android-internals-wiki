@@ -17,19 +17,19 @@ related_chapters:
 - '18.6'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 last_task2b_lite_at: "2026-05-31"
 last_task2b_rework_at: "2026-06-01T06:52:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-02"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-last_task9_at: "2026-06-02T04:21:00+08:00"
-last_task9_audit: 2026-05-31
-last_task9_autofix_at: "2026-06-01"
+last_task9_at: "2026-06-21T02:28:32+08:00"
+last_task9_audit: "2026-06-21"
+last_task9_autofix_at: "2026-06-21"
 review_notes: '2026-05-21 task9 idle audit: needs-rework。P1:HWC SKIP_VALIDATE 版本边界与 SurfaceFlinger canSkipValidate 条件需修正。'
-last_task9_review_log: "logs/deep-review/2026-06-02-04-deep-review.md"
-task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。复核 HWC DEVICE/CLIENT/SIDEBAND、skip validate、tunneled playback 与 Perfetto/dumpsys 观察口径；无 P0/P1，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-21-02-audit.md"
+task9_review_notes: "2026-06-21 Task9 idle audit auto-fix: 修正 SKIP_VALIDATE Android 14-17 版本边界、composition type API 命名与 skip validate 所属协商路径；回到 Task6 复审。"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-01T06:52:00+08:00"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
@@ -41,9 +41,9 @@ task6_reviewed_date: "2026-06-01"
 last_task6_at: "2026-06-01T21:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-21-review.md"
 task6_result: "pass-light-edit"
-task6_state: reviewed
+task6_state: revisiting
 task2b_state: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_review_notes: "2026-06-01 21:05 Task6 revisiting-review：补正文 H1 1 处，功耗/带宽数字已由 Task2B 降级为定性趋势，未新增 L3/L4 回炉项，送 Task9 复审。"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
@@ -126,9 +126,8 @@ graph LR
 这里需要区分 SurfaceFlinger 包装层里的 `validate()` / `present()` 方法和 HAL 暴露的 `validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()`、`setClientTarget()`、`presentDisplay()`。HWC3 把接口迁到 AIDL，但这套协商流程没有变成“纯 HWC 直出”，SurfaceFlinger 仍然负责 layer latch、client composition 和 fence 协调。
 
 **Skip Validate 的版本边界**：
-- **Android 8.0-10 (API 26-29)**：`HWC2_CAPABILITY_SKIP_VALIDATE` 作为可选能力，需要设备声明支持
-- **Android 11-14 (API 30-34)**：逐渐成为默认启用的能力，但 vendor 可选择禁用
-- **Android 15-17 (API 35-37)**：Composer3 AIDL 中 `SKIP_VALIDATE` 标记为 `@deprecated`，表示"已默认启用"，但实际行为仍依赖 vendor 实现
+- **Android 8.0-13 (API 26-33)**：`HWC2_CAPABILITY_SKIP_VALIDATE` / AIDL `SKIP_VALIDATE` 仍是显式能力声明，设备实现需要报告支持
+- **Android 14-17 (API 34-37)**：Composer3 AIDL 中 `SKIP_VALIDATE` 标记为 `@deprecated`，表示"已默认启用"；legacy HWC2 头文件中仍可见 `HWC2_CAPABILITY_SKIP_VALIDATE`，实际 fast path 仍依赖 vendor 实现
 
 **AOSP 源码实现路径**：
 - `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` 中 `getDeviceCompositionChanges()` 的 `canSkipValidate` / `presentOrValidate()` 分支
@@ -141,9 +140,9 @@ graph LR
 - **MediaTek**：常见策略偏保守，对 Layer 变化的判断更严格
 - **Samsung Exynos**：One UI 设备可能在系统层增加额外优化，具体收益仍依赖机型实现
 
-- **HWC2::Composition::DEVICE**：该 Layer 由显示硬件直接处理，常见于视频 YUV Layer。
-- **HWC2::Composition::CLIENT**：该 Layer 先由 SurfaceFlinger / GPU 合成，再作为 client target 交回 HWC。
-- **HWC2::Composition::SIDEBAND**：数据不走普通 BufferQueue buffer，更接近 sideband / tunneled playback 这类可选能力。
+- **`DEVICE` composition**：该 Layer 由显示硬件直接处理，常见于视频 YUV Layer；AIDL 中对应 `composer3::Composition::DEVICE`，legacy HWC2 对应 `HWC2_COMPOSITION_DEVICE`。
+- **`CLIENT` composition**：该 Layer 先由 SurfaceFlinger / GPU 合成，再作为 client target 交回 HWC；AIDL 中对应 `composer3::Composition::CLIENT`，legacy HWC2 对应 `HWC2_COMPOSITION_CLIENT`。
+- **`SIDEBAND` composition**：数据不走普通 BufferQueue buffer，更接近 sideband / tunneled playback 这类可选能力；AIDL 中对应 `composer3::Composition::SIDEBAND`，legacy HWC2 对应 `HWC2_COMPOSITION_SIDEBAND`。
 
 ## GPU Path vs Overlay Path
 
@@ -202,7 +201,7 @@ HDR 视频会增加 HWC 合成需要处理的维度：
 App 侧的启用入口是 `MediaCodec` 的 Tunneled Playback 能力（Android 5.0 / API 21+）：
 
 - 通过 `MediaFormat.KEY_AUDIO_SESSION_ID` + `MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback` 启用;
-- 启用后**解码帧不经过 App BufferQueue**：解码器输出作为 sideband stream，由 SurfaceFlinger 交给 HWC 的 sideband layer（`HWC2::Composition::SIDEBAND`）；
+- 启用后**解码帧不经过 App BufferQueue**：解码器输出作为 sideband stream，由 SurfaceFlinger 交给 HWC 的 sideband layer（`SIDEBAND` composition）；
 - A/V 同步与显示时序由 HAL + HWC 在硬件通路里完成，App 和 SurfaceFlinger 不再做 per-frame 工作。
 
 **Trace 上的典型特征**：App 侧看起来“什么都没做”却画面流畅。看不到 `dequeueBuffer` / `queueBuffer` 的高频跳动，也看不到 `latchBuffer` 对该 layer 的逐帧动作。这是 Tunneled 路径的正常现象，不是 trace 不完整。问题要到 HAL / HWC 层面才能定位。
@@ -342,7 +341,7 @@ adb shell dumpsys SurfaceFlinger | grep -A5 "SurfaceView"
 ## 与其他章节的关系
 
 - **2.6 SurfaceFlinger 与合成**:SurfaceFlinger 合成流程详解
-- **2.10 GPU 渲染深入**:GPU 合成的技术细节，包括 skip validate 在 GPU 侧的实现
+- **2.10 GPU 渲染深入**:GPU 合成的技术细节；skip validate 属于 SurfaceFlinger 与 Composer HAL 的协商 fast path
 - **18.6 SurfaceView**:Overlay 的主要载体，SurfaceView 创建和管理的具体实现
 
 ## 内存管理与同步注意事项
