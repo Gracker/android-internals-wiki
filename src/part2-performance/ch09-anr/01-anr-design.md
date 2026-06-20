@@ -7,8 +7,8 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-26"
-last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs, Android Developers ProfilingManager / ProfilingTrigger docs"
+last_verified: "2026-06-20"
+last_verified_against: "AOSP android-11.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-17.0.0_r1, packages/modules/Profiling android-16.0.0_r1 / android-17.0.0_r1, Android Vitals ANR docs"
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task9
 confidence: medium
@@ -46,30 +46,31 @@ repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
 status: finalized
-pipeline_stage: ready-to-publish
-task9_result: pass-tech-review
-task9_state: reviewed
-task2b_state: fixed
+pipeline_stage: "task6_pending"
+task9_result: "auto-fixed"
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: "fixed"
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T01:22:00+08:00"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。 | 2026-05-27 01:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 已有 suggestions 不重复写入（Android 10/13 ANR trace 存储口径需后续补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-task6_state: reviewed
+last_task9_at: "2026-06-20T14:31:09+08:00"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。 | 2026-05-27 01:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 已有 suggestions 不重复写入（Android 10/13 ANR trace 存储口径需后续补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 14:31 Task9 闲时抽检 auto-fix：修正 ANR 版本口径（BroadcastQueueModernImpl 仅 Android 14/15；Android 16/17 为 BroadcastQueueImpl + AnrTimer；Watchdog 15s pre-watchdog 为 Android 15+；blamePendingFocusRequest 在 Android 14-17 均可见），回到 Task6 复审。"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-23"
-last_task9_audit: 2026-05-26
-last_task9_audit_at: "2026-05-26T11:26:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-26-11-audit.md"
+last_task9_audit: "2026-06-20"
+last_task9_audit_at: "2026-06-20T14:31:09+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-20-14-audit.md"
 last_task6_at: "2026-05-26T23:07:00+08:00"
 last_task6_audit: "2026-06-18"
 last_task6_review_log: "logs/review/2026-05-26-23-review.md"
 task6_review_notes: "2026-05-25 16:07 Task6：Task2B 修复后写作复审；L1/L2 小修 7 处（否定-纠正句式、重复权限句、填充强调词）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。 | 2026-05-26 20:08 Task6：revisiting 复审；L1/L2 小修 11 处（否定-纠正句式、结构性元叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；保留既有 Task9 pending 技术问题单。 | 2026-05-26 23:07 Task6：Task2B 修复后 revisiting 复审；L1/L2 小修 13 处（冗余确认副词、第一人称叙述、翻译腔动词）；锚点覆盖完整，无新增 L3/L4 回炉项；转 Task9 复核。"
-last_task9_review_log: "logs/deep-review/2026-05-27-01-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-20-14-audit.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-27"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
+last_task9_autofix_at: "2026-06-20"
 ---
 
 # ANR 设计思想
@@ -129,7 +130,7 @@ ANR 机制可以拆成四个阶段：注册超时、主线程处理、超时触�
 
 ### 第一阶段：注册超时
 
-当某个需要应用响应的操作开始时，system_server 会在后台线程上设置延迟消息。以 BroadcastReceiver 为例，Android 13 及以下常用排查口径是前台广播 10 秒、后台广播 60 秒。Android 14+ 引入 `BroadcastQueueModernImpl`，把广播超时拆成两级：
+当某个需要应用响应的操作开始时，system_server 会在后台线程上设置延迟消息。以 BroadcastReceiver 为例，Android 13 及以下常用排查口径是前台广播 10 秒、后台广播 60 秒。Android 14/15 的现代广播队列实现是 `BroadcastQueueModernImpl`；Android 16/17 对应实现改为 `BroadcastQueueImpl`，并通过 `AnrTimer` 承接计时。下面的 soft / hard timeout 伪代码只锚定 `android-14.0.0_r1` 的 `BroadcastQueueModernImpl`：
 
 - **soft timeout**：前台广播 10 秒、后台广播 60 秒到期后，系统先检查接收进程的 CPU 调度延迟。如果进程拿到了足够的 CPU 时间，soft timeout 直接升级为 ANR
 - **hard timeout**：如果进程因 CPU starvation（系统负载高、进程刚拉起、调度优先级低）还没来得及执行 `onReceive()`，系统会追加一个 hard timeout 窗口。前台广播 hard deadline 约 20 秒，后台广播约 120 秒。hard timeout 的实际计算依赖于 `app.getCpuDelayTime()`——它衡量的是进程从被调度到实际获得 CPU 的时间差
@@ -143,7 +144,7 @@ ANR 机制可以拆成四个阶段：注册超时、主线程处理、超时触�
 // Android 13 及以下：分发广播时设置固定 timeout
 scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
 
-// Android 14+ Modern Broadcast Queue：两级超时
+// Android 14/15 Modern Broadcast Queue：两级超时
 // 第一级：soft timeout（fg=10s, bg=60s）
 //   dispatchReceivers() → scheduleDeliveryTimeoutMessageLocked(MSG_DELIVERY_TIMEOUT_SOFT)
 //   到期后 deliveryTimeoutSoftLocked() 检查 app.getCpuDelayTime()
@@ -155,7 +156,7 @@ scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
 //   到期后无论 CPU 延迟如何，直接判定 ANR
 ```
 
-两级超时设计的目的是区分「App 自己的 onReceive() 执行太慢」和「系统没给 App 足够的 CPU 时间」。排查 Android 14+ 设备的 Broadcast ANR 时，event log 中能看到 soft timeout 还是 hard timeout 触发的标记，帮助判断瓶颈在应用侧还是系统调度侧。
+两级超时设计的目的是区分「App 自己的 onReceive() 执行太慢」和「系统没给 App 足够的 CPU 时间」。排查 Android 14/15 设备的 Broadcast ANR 时，event log 中能看到 soft timeout 还是 hard timeout 触发的标记；排查 Android 16/17 时应从 `BroadcastQueueImpl` 和 `com.android.server.utils.AnrTimer` 追踪对应计时路径。
 
 ### 第二阶段：主线程处理
 
@@ -550,13 +551,13 @@ SLOW_EVENT_PROCESSING_WARNING_TIMEOUT = 2s（仅 logcat warning 不 ANR）；STA
 
 `InputManagerCallback.notifyNoFocusedWindowAnr/notifyWindowUnresponsive`（line 108-119）→ `AnrController.notifyAppUnresponsive/notifyWindowUnresponsive`（line 68-220）。
 
-**关键 blamePendingFocusRequest 逻辑**（line 104-122）：input 焦点在 5s dispatch timeout 内切换则归咎焦点目标窗口而非原 ANR 应用，避免用户切到新 app 时新 app 的 ANR 被旧 app 误标（Android 15+ 引入）。
+**关键 blamePendingFocusRequest 逻辑**（line 104-122）：input 焦点在 5s dispatch timeout 内切换则归咎焦点目标窗口而非原 ANR 应用，避免用户切到新 app 时新 app 的 ANR 被旧 app 误标；该逻辑在 `android-14.0.0_r1` 到 `android-17.0.0_r1` 的 `AnrController.java` 中均可见。
 
 ### ActivityRecord → ActivityManagerService
 
 `ActivityRecord.inputDispatchingTimedOut`（line 7225）→ `ActivityManagerService.inputDispatchingTimedOut`（line 18115-18166）→ `mAnrHelper.appNotResponding`。后者会做 instrumentation 路径短路（line 18156）—— 进程正在 instrumentation 则 `finishInstrumentationLocked` 而非 ANR 流程。
 
-### AnrHelper 异步 trace dump 编排（Android 14+ 抽离）
+### AnrHelper 异步 trace dump 编排（Android 11 起承接，Android 14+ 增强）
 
 **核心常量**（`frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`）：
 
@@ -602,7 +603,7 @@ public int getCompletionStateLocked() {
 }
 ```
 
-Android 14+ 引入 PRE_WATCHDOG_TIMEOUT_RATIO 阶段：15s 时先 dump stacktrace 但不杀进程（避免误杀正在做长 GC 的 system_server），60s 时才真正 crash。
+Android 15+ 引入 `PRE_WATCHDOG_TIMEOUT_RATIO` 阶段：15s 时先 dump stacktrace 但不杀进程（避免误杀正在做长 GC 的 system_server），60s 时才真正 crash；Android 14 仍是 30s 的 `WAITED_HALF` 半程检查口径。
 
 ### 完整调用链
 
@@ -645,10 +646,10 @@ mAnrRecords.add(AnrRecord) → startAnrConsumerIfNeeded → AnrConsumerThread �
 | 版本 | 关键变化 |
 |------|---------|
 | Android 8.0 (API 26) | IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000 已有；AnrHelper 未抽离 |
-| Android 11 (API 30) | mLastAnrState 引入（dumpsys input 复用最近 ANR 状态） |
-| Android 14 (API 34) | AnrHelper 抽离（Copyright 2020）+ 三段时间阈值 + early kill + ANR_OCCURRED atom 上报 |
-| Android 15 (API 35) | blamePendingFocusRequest 引入（line 104-122）解决焦点切换误报 |
-| Android 16/17 (API 36/37) | mTempDumpedPids 防止 preDump 与 queue 同 pid 竞争；currentPid != r.mPid 防止陈旧 ANR；mDropboxRateLimiter rate-limit |
+| Android 11 (API 30) | AnrHelper 成为应用 ANR 排队入口；mLastAnrState 引入（dumpsys input 复用最近 ANR 状态） |
+| Android 14 (API 34) | BroadcastQueueModernImpl 的 soft / hard 广播超时口径；ProcessErrorStateRecord 路径包含 early kill + ANR_OCCURRED atom 上报 |
+| Android 15 (API 35) | Watchdog 引入 PRE_WATCHDOG_TIMEOUT_RATIO 预 dump 阶段；AnrController 沿用 pending focus 归因逻辑 |
+| Android 16/17 (API 36/37) | BroadcastQueueModernImpl 更名为 BroadcastQueueImpl，并接入 AnrTimer；mTempDumpedPids 防止 preDump 与 queue 同 pid 竞争；currentPid != r.mPid 防止陈旧 ANR；mDropboxRateLimiter rate-limit |
 
 ---
 
@@ -657,6 +658,6 @@ mAnrRecords.add(AnrRecord) → startAnrConsumerIfNeeded → AnrConsumerThread �
 ### Android 14-17 ANR 检测链路与 InputDispatcher 超时机制源码深度解析
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md
 - 类型：DeepResearch 调研结果
-- 摘要：从 IInputConstants.aidl 到 AnrHelper.appNotResponding 的完整 ANR 检测链路源码解析。核心发现：(1) input 派发超时 = 5000ms × ro.hw_timeout_multiplier；(2) processAnrsLocked 每轮检测 mAnrTracker 并组装 mLastAnrState 诊断快照；(3) AnrController 新增 blamePendingFocusRequest 解决焦点切换误报；(4) AnrHelper 异步 trace dump 编排（AnrConsumerThread 单线程消费），drop 重复/zero-pid/pre-dumped；(5) isSilentAnr 控制后台 ANR 静默 kill；(6) Watchdog 15s 预 dump + 60s 超时杀 system_server。覆盖 Android 14-17 版本演进。
+- 摘要：从 IInputConstants.aidl 到 AnrHelper.appNotResponding 的完整 ANR 检测链路源码解析。核心发现：(1) input 派发超时 = 5000ms × ro.hw_timeout_multiplier；(2) processAnrsLocked 每轮检测 mAnrTracker 并组装 mLastAnrState 诊断快照；(3) AnrController 的 pending focus 归因逻辑解决焦点切换误报；(4) AnrHelper 异步 trace dump 编排（AnrConsumerThread 单线程消费），drop 重复/zero-pid/pre-dumped；(5) isSilentAnr 控制后台 ANR 静默 kill；(6) Watchdog 在 Android 15+ 进入 15s 预 dump + 60s 超时杀 system_server 口径。覆盖 Android 14-17 版本演进。
 - 注入时间：2026-06-16
-- 价值：把 AIW ch09 ANR 章节从架构级描述推进到源码级验证，特别是 blamePendingFocusRequest、mTempDumpedPids 防竞争、mDropboxRateLimiter 等 Android 16/17 新增机制在 AIW 中尚未覆盖
+- 价值：把 AIW ch09 ANR 章节从架构级描述推进到源码级验证，特别是 Android 16/17 的 BroadcastQueueImpl / AnrTimer、mTempDumpedPids 防竞争、mDropboxRateLimiter 等机制在 AIW 中尚未覆盖；pending focus 归因逻辑作为 Android 14-17 均可见的边界保留。
