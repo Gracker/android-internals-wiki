@@ -2,7 +2,7 @@
 title: 卡顿的定义与分类
 section: '7.1'
 chapter: '7.1'
-status: "finalized"
+status: "ready-for-review"
 drafted_date: '2026-03-30'
 drafted_by: openclaw-task2
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
@@ -15,7 +15,7 @@ review_type: post-polish-quality-gate
 task2b_result: fixed
 task2b_state: "fixed"
 task6_state: "revisiting"
-task9_state: "reviewed"
+task9_state: "pending"
 pipeline_stage: "task6_pending"
 confidence: medium
 sources:
