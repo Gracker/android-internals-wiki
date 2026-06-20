@@ -2,7 +2,7 @@
 title: "SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略"
 chapter: "2.23"
 section: "2.23"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-18"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
