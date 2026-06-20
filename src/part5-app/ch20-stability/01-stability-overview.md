@@ -24,19 +24,20 @@ related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-01"
 last_task9_at: "2026-06-01T18:21:00+08:00"
-task9_review_notes: "2026-06-01 Task9 18:21：pass-tech-review。复核 Task6 回流后的稳定性全景；ANR 阈值、ContentProvider ANR、ApplicationExitInfo 与 Play Vitals 口径经 AOSP android-16.0.0_r1 / 官方文档复核，无新增 P0/P1，自动晋升 finalized。"
+last_task9_audit: "2026-06-21"
+task9_review_notes: "2026-06-21 Task9 06:25 闲时抽检：auto-fixed。用 AOSP android-17.0.0_r1 复核 Java crash、ANR/Broadcast timeout、ART heap 分配源码锚点；修正 RuntimeInit 退出调用、Broadcast timeout 源码文件、Heap::AllocObjectWithAllocator 所在文件，回到 Task6 复审。"
 task6_reviewed_date: "2026-05-14"
-last_task9_review_log: "logs/deep-review/2026-06-01-18-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-21-06-audit.md"
 status: "finalized"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 last_task2b_at: "2026-06-01T08:50:00+08:00"
 task2b_fixed_at: "2026-06-01T08:50:00+08:00"
 last_task6_at: "2026-06-01T16:05:00+08:00"
@@ -44,7 +45,7 @@ last_task6_review_log: "logs/review/2026-06-01-16-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-01 Task6 16: Task2B 回流后 L1/L2 复扫通过，outline 5/5 覆盖；无新增回炉项。Task9 result 为 auto-fixed，未满足自动 finalized 条件。"
-last_task9_autofix_at: "2026-06-01"
+last_task9_autofix_at: "2026-06-21"
 ---
 
 # 应用稳定性全景
@@ -80,9 +81,9 @@ AOSP 中的处理链路：
 
 1. 虚拟机在各检查点检测到未处理异常，调用 `HandleUncaughtExceptions()`
 2. 通过 JNI 调用 Java 层的 `Thread.dispatchUncaughtException(Throwable)`
-3. 沿着 `Thread.getUncaughtExceptionHandler()` → `ThreadGroup.uncaughtException()` → `KillApplicationHandler` 链路，最终调用 `Process.killProcess()` 和 `Runtime.getRuntime().exit()`
+3. 沿着 `Thread.getUncaughtExceptionHandler()` → `ThreadGroup.uncaughtException()` → `KillApplicationHandler` 链路，最终在 `RuntimeInit.KillApplicationHandler` 中调用 `Process.killProcess(Process.myPid())` 和 `System.exit(10)`
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
+[已验证: AOSP android-17.0.0_r1, art/runtime/thread.cc, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
 
 Java Crash 的堆栈信息由 ART 虚拟机直接生成，格式规范、可读性好。`CreateInternalStackTrace()`（`art/runtime/thread.cc`）是生成 Java 异常堆栈的核心函数：遍历 `ManagedStack` 链表中的 `ShadowFrame`（解释执行帧）和 `QuickFrame`（编译执行帧），逐帧解析 `ArtMethod` 指针。内部常量 `kMaxSavedFrames = 256` 是首轮栈帧缓存大小，不是硬上限——当实际深度超过 256 时，ART 会通过 `BuildInternalStackTraceVisitor.WalkStack()` 重新遍历完整调用栈。日志中看到的 `... N more` 折叠来自 `Throwable#printStackTrace` 对 common frames 的合并显示，与 `kMaxSavedFrames` 无关。
 
@@ -116,9 +117,9 @@ ANR 不是崩溃，是系统对"主线程阻塞"的强制干预。触发条件�
 
 ANR 进入 `AnrHelper.appNotResponding()` 之后，系统先采集线程堆栈和进程状态，再由 `AppErrors` 结合进程可见性、后台限制、系统策略和用户交互决定后续动作。前台可见 ANR 通常会展示“应用无响应”对话框，用户可以选择等待或关闭；后台 ANR 与 silent ANR 不一定弹窗，常见结果是记录事件、写入 trace，并按策略终止或保留进程。
 
-trace 文件通常落在 `/data/anr/` 目录（android-16 使用 `ANR_TRACE_DIR`，文件名前缀 `anr_`；旧版设备可能是 `traces.txt`）。`ApplicationExitInfo` 在 API 30+ 提供历史退出查询：当进程因 ANR 退出时，`getReason()` 可返回 `REASON_ANR`；`getTraceInputStream()` 通常可读取 ANR trace。如果进程曾发生 ANR 但后来恢复，并在之后因其他原因退出，系统也可能把之前采集的 trace 附在对应的 `ApplicationExitInfo` 记录中。
+trace 文件通常落在 `/data/anr/` 目录（Android 16/17 使用 `StackTracesDumpHelper.ANR_TRACE_DIR`，文件名前缀 `anr_`；旧版设备可能是 `traces.txt`）。`ApplicationExitInfo` 在 API 30+ 提供历史退出查询：当进程因 ANR 退出时，`getReason()` 可返回 `REASON_ANR`；`getTraceInputStream()` 通常可读取 ANR trace。如果进程曾发生 ANR 但后来恢复，并在之后因其他原因退出，系统也可能把之前采集的 trace 附在对应的 `ApplicationExitInfo` 记录中。
 
-[已验证: Android Developers ANR documentation; AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java, AppErrors.java, BroadcastQueue.java]
+[已验证: Android Developers ANR documentation; AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java, AppErrors.java, StackTracesDumpHelper.java, BroadcastQueueImpl.java, BroadcastConstants.java]
 
 ANR 的治理思路与 Crash 不同。Crash 是"代码逻辑出错，需要修复"；ANR 是"主线程执行耗时操作，需要拆分或异步化"。20.4 节展开 ANR 的治理策略。
 
@@ -128,7 +129,7 @@ ANR 的治理思路与 Crash 不同。Crash 是"代码逻辑出错，需要修�
 
 OOM 在 Android 上有两层含义：
 
-**Java 堆 OOM**：分配入口是 `Heap::AllocObjectWithAllocator()`（`art/runtime/gc/heap.cc`），先检查当前已分配内存加上新对象大小是否超过 `Runtime.maxMemory()` 限制。超过时进入 `AllocateInternalWithGc()` 触发 GC（根据内存压力选择 kGcCauseForAlloc 对应的 GC 类型），回收后重新检查空间；空间足够时经 `AllocObject()` → `AllocateObject()` 执行实际内存分配。如果 GC 后仍不够，尝试堆扩容（前提是未达到 `HeapGrowthLimit`，由 `dalvik.vm.heapgrowthlimit` 控制）。扩容后仍不够，才抛出 `OutOfMemoryError`。
+**Java 堆 OOM**：常规对象分配入口是 `Heap::AllocObject()` → `Heap::AllocObjectWithAllocator()`（声明在 `art/runtime/gc/heap.h`，内联实现在 `art/runtime/gc/heap-inl.h`），先检查当前已分配内存加上新对象大小是否超过 `Runtime.maxMemory()` 限制。超过时进入 `AllocateInternalWithGc()`（`art/runtime/gc/heap.cc`）触发 GC（根据内存压力选择 kGcCauseForAlloc 对应的 GC 类型），回收后重新检查空间；空间足够时走 TLAB / rosalloc 快路径，或通过 `TryToAllocate()` 在对应 allocator 中完成分配。如果 GC 后仍不够，尝试堆扩容（前提是未达到 `HeapGrowthLimit`，由 `dalvik.vm.heapgrowthlimit` 控制）。扩容后仍不够，才抛出 `OutOfMemoryError`。
 
 `Runtime.maxMemory()` 返回值取决于 Manifest 配置：未设置 `largeHeap` 时返回 `dalvik.vm.heapgrowthlimit`（通常 256MB ~ 384MB），设置 `android:largeHeap="true"` 时返回 `dalvik.vm.heapsize`（通常 512MB）。但 `largeHeap` 不等于无限分配——最终仍受物理内存和系统整体内存压力约束。
 
@@ -136,7 +137,7 @@ OOM 在 Android 上有两层含义：
 
 OOM 的特殊性在于，它抛出的是 `Error` 而非 `Exception`。Java 的设计意图是 Error 不应被应用层捕获——但实际工程中，部分团队会在 `UncaughtExceptionHandler` 中做差异化处理：只上报 Java 堆 OOM 并尝试恢复（如释放缓存、降低图片分辨率），虚拟内存耗尽则直接放弃。20.5 节展开 OOM 的分类治理。
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.h, art/runtime/gc/heap-inl.h, art/runtime/gc/heap.cc]
 
 ### 三类问题的关系
 
