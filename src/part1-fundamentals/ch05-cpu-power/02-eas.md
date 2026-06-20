@@ -35,7 +35,7 @@ related_chapters:
 - '2.5'
 drafted_date: '2026-03-31'
 reviewed_date: "2026-06-19"
-last_task6_audit: '2026-05-21'
+last_task6_audit: '2026-06-20'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
