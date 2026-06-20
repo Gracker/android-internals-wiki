@@ -67,6 +67,8 @@ last_task9_audit: "2026-06-13"
 last_task9_autofix_at: "2026-06-14"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
+last_task6_audit: "2026-06-20"
+
 ---
 
 # 1.18 Binder Freezer 与缓存进程冻结性能
