@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-05-18"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-05-18"
-last_verified_against: "AOSP android-16.0.0_r1 Scheduler/VSyncPredictor.cpp + VSyncDispatchTimerQueue.cpp + Scheduler.cpp + RefreshRateSelector.cpp；Android graphics frame pacing / ARR / media frame rate docs"
+last_verified: "2026-06-20"
+last_verified_against: "AOSP android-16.0.0_r1 Scheduler/VSyncPredictor.cpp + VSyncDispatchTimerQueue.cpp + Scheduler.cpp + RefreshRateSelector.cpp；AOSP android-17.0.0_r1 VsyncSchedule.cpp / VSyncPredictor.cpp / VSyncDispatchTimerQueue.cpp / Scheduler.cpp / RefreshRateSelector.cpp；Android graphics frame pacing / ARR / media frame rate docs"
 confidence: medium
 sources:
   - type: research
@@ -43,20 +43,20 @@ created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/AOSP结构"
 gap_score: 16
 material_count: 4
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
 task9_state: reviewed
 last_task6_at: "2026-05-27T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-10-review.md"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-27T13:20:00+08:00"
-task2b_state: "fixed"
-task2b_result: "fixed-lite"
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_lite_at: "2026-05-27"
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
@@ -64,11 +64,18 @@ review_type: "task6-writing-quality-review"
 task6_review_notes: "2026-05-27 10:05 Task6：pass-light-edit。复扫 Scheduler/VSyncPredictor/ARR 文稿；L1 禁用词、高频词和结构性元叙述 0 命中；outline 8/8 覆盖；无新增 L3/L4 回炉项。Task9 result 仍非 pass-tech-review，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-27-13-deep-review.md"
 p0: 0
-p1: 0
+p1: 1
 p2: 0
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSchedule/VSyncPredictor/VSyncDispatchTimerQueue/Scheduler/RefreshRateSelector 与 ARR/FrameTimeline 官方文档；未发现 P0/P1，自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
+last_task9_autofix_at: "2026-06-20"
+last_task9_audit: "2026-06-20"
+last_task9_audit_at: "2026-06-20T11:30:27+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-20-11-audit.md"
+last_task9_audit_result: "auto-fixed-p1-version-difference"
+task9_audit_notes: "2026-06-20 Task9 idle audit: P0 0 / P1 1 / P2 0；AUTO-FIX Android 17 VsyncSchedule VRR + present fence 单样本预测模式版本边界，回到 Task6 复审。"
+---
 
 # 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略
 
@@ -133,7 +140,7 @@ sequenceDiagram
     D-->>APP: callback(vsync, wakeup, deadline)
 ```
 
-`VsyncSchedule::createTracker()` 创建 `VSyncPredictor`，参数里能看到三个调度常量：历史样本数 20、预测最小样本数 6、异常样本丢弃阈值 20%。`VsyncSchedule::createDispatch()` 创建 `VSyncDispatchTimerQueue`，它把多个接近的 callback 分到同一个 VSync 目标附近，避免每个消费者都单独设一个 timer。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp]
+`VsyncSchedule::createTracker()` 在 Android 16 默认路径中创建 `VSyncPredictor`，参数里能看到三个调度常量：历史样本数 20、预测最小样本数 6、异常样本丢弃阈值 20%。Android 17.0.0_r1 保留这组默认值，但在 `use_last_vsync_predict` 打开、目标显示设备存在 VRR config 且 present fence 可用时，会把 `historySize` / `minSamples` 改成 1 / 1 的单样本预测模式；分析 Android 17 VRR 设备时不能只按 20 / 6 参数推断收敛窗口。`VsyncSchedule::createDispatch()` 创建 `VSyncDispatchTimerQueue`，它把多个接近的 callback 分到同一个 VSync 目标附近，避免每个消费者都单独设一个 timer。[已验证: AOSP android-16.0.0_r1 / android-17.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp]
 
 `Scheduler::addResyncSample()` 接收硬件时间戳后转给对应 display 的 `VsyncSchedule`。`Scheduler::addPresentFence()` 又会把 present fence 喂给控制器；如果控制器判断还缺信号，Scheduler 会打开硬件 VSync，样本够用后再关闭。这个设计让系统只在模型不稳、模式变化或 fence 信息不足时增加硬件采样，平时靠软件预测降低中断成本。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp]
 
