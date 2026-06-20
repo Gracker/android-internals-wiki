@@ -256,3 +256,73 @@ Perfetto 和 BatteryStats 适合验证“断线后是否还在耗电”。抓取
 - Bluetooth 关闭、权限撤销和低电量状态不会触发无限重连。
 - Android 17 target SDK 37 有专门测试用例，验证 RFCOMM `read()` 返回 `-1`。
 - 线上监控字段保护设备隐私，不上传完整 MAC、设备名和原始 payload。
+
+
+<!-- AIW-源码调研-2026-06-21 -->
+
+## 源码级补充（Android 17.0.0_r1）
+
+本章节在「Android 17 RFCOMM EOF 语义」一节标注的「待验证：AOSP android-17 tag 发布后复核」现在已通过源码落地。以下是 android-17.0.0_r1 tag 的具体实现细节：
+
+### 三重门控机制
+
+`BluetoothSocket.read(byte[], int, int)` 在 EOF 路径通过三重门控决定返回 -1 还是抛 IOException：
+
+```java
+@ChangeId static final long MAKE_SOCKET_READ_BEHAVIOR_CONSISTENT = 383671392L;
+
+@EnabledSince(targetSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
+public int read(byte[] b, int offset, int length) throws IOException {
+    // ... 正常读取逻辑
+    if (ret < 0) {
+        mSocketState = SocketState.CLOSED;
+        if (Flags.makeSocketReadBehaviorConsistent()
+                && CompatChanges.isChangeEnabled(MAKE_SOCKET_READ_BEHAVIOR_CONSISTENT)
+                && SdkLevel.isAtLeastC()) {
+            if (DBG) Log.d(TAG, "read(): EOF, returning -1");
+            return -1;
+        }
+        throw new IOException("bt socket closed, read return: " + ret);
+    }
+    return ret;
+}
+```
+
+**门控条件：**
+1. `Flags.makeSocketReadBehaviorConsistent()` - aconfig flag (bug 408461997)，默认启用
+2. `CompatChanges.isChangeEnabled(MAKE_SOCKET_READ_BEHAVIOR_CONSISTENT)` - ChangeId 383671392L 查询
+3. `SdkLevel.isAtLeastC()` - 设备 SDK ≥ 17 (Cinnamon Bun)
+
+### 状态翻转时机
+
+无论 EOF 还是异常路径，无条件先执行 `mSocketState = CLOSED`。上层无法通过 SocketState 区分 EOF 和异常原因，必须结合 `localClosing` 标志位与 read 返回值合并判断。
+
+### accept 侧 flush 行为
+
+`BluetoothServerSocket.accept()` 默认调用 `flushSocketAcceptSignal()`：
+
+```java
+private void sendSocketAcceptSignal(OutputStream os, boolean isAccepting) throws IOException {
+    // ... signal 写入逻辑
+    if (Flags.flushSocketAcceptSignal()) {
+        os.flush();   // Android 17：默认 flush，减小首包延迟
+    }
+}
+```
+
+这可能导致 syscall 成本上升，但对端感知延迟下降。
+
+### 错误码吞噬
+
+`EBADFD = 77`、`EADDRINUSE = 98` 等错误码在 Android 17 后被「吞噬」：不再通过 IOException 暴露具体错误类型，只依赖返回 -1 或 throw 的一元选择。
+
+### 测试验证建议
+
+可通过以下命令验证：
+```bash
+# 查看单个应用的 ChangeId 启用状态
+adb shell cmd compat 383671392
+
+# 查看 package_compat 全局配置
+adb shell dumpsys package_compat
+```
