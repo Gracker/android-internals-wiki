@@ -539,5 +539,39 @@
       "resolution": "stale-cleanup: file already ready-for-review (14669b)"
     }
   ],
-  "items": []
+  "items": [
+    {
+      "section": "1.18",
+      "section_title": "Binder Freezer 与缓存进程冻结性能",
+      "priority": 90,
+      "reason": "[抽检回炉] 底部 AIW-源码调研注入章节与正文版本边界表矛盾：正文明确写 android-17.0.0_r1 framework tag 不可取，但底部章节声称基于该 tag 分析；性能实测数据缺乏方法论",
+      "material_paths": [
+        "logs/review/2026-06-20-23-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "参考资料之后的「## 🔹 源码级补全：双阶段冻结调用链（Android 17）」全节",
+          "detail": "底部章节标注「基于 AOSP android-17.0.0_r1 源码分析」，但正文版本边界表明确写「framework android-17.0.0_r1 tag 本轮仍未取到」。两处自相矛盾。需确认该 tag 是否已可获取，或标注数据来源为 Android 16 源码/android-17 预览",
+          "suggestion": "如果 tag 确实不可取，需将底部章节的版本标注改为 android-16.0.0_r1 或明确标注为预测性内容；如果 tag 已可取，需更新版本边界表"
+        },
+        {
+          "type": "需验证",
+          "location": "底部章节「### 性能实测数据」小节",
+          "detail": "声称冻结开销 2-5ms，但未给出测量设备、Android 版本、测量方法、样本数量。底部章节整体的 java/cpp 源码片段风格也与正文叙述风格不一致（变成了代码堆砌式，违反 writing-guide.md 第二章类型 A 叙述规范）",
+          "suggestion": "补充测量条件或标注为 [待验证]；考虑将底部章节内容融入正文对应锚点而非独立堆叠在参考资料之后"
+        },
+        {
+          "type": "需确认",
+          "location": "底部章节结构位置",
+          "detail": "92 行内容堆叠在参考资料之后，打破了 writing-guide.md 定义的文章结构（参考资料应为文章末尾）。底部章节使用 🔹 emoji 标题风格与正文 H2 标题风格不一致",
+          "suggestion": "将底部章节内容拆分融入正文对应的 6 个锚点段落中，或作为独立附录章节放在参考资料之前"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-06-20T23:20:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-20-23-audit.md"
+    }
+  ]
 }
