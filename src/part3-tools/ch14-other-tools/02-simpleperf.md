@@ -41,7 +41,7 @@ reviewed_date: 2026-06-21
 last_task6_at: '2026-06-21T16:05:00+08:00'
 last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-06-11'
+last_deepseek_cn_review_at: 2026-06-21
 last_task6_audit: '2026-06-12'
 last_task6_audit_at: '2026-06-16T18:00:00+08:00'
 last_task6_audit_reason: 'idle audit: L1合规性、frontmatter完整性、outline锚点覆盖检查均通过'
@@ -515,9 +515,7 @@ simpleperf report --sort pid,symbol
 
 #### 多进程 IPC 通路与跨进程数据整合
 
-<!-- AIW-源码调研-2026-06-11 -->
-
-> 补充自 `2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md` 报告。与 `2026-06-10-simpleperf-multiprocess-sampling-coordination.md` 的"进程选择策略"互补，本节聚焦"选完之后数据怎么流、IPC 开销多大、跨进程数据怎么合"。
+> 以下内容聚焦 Simpleperf 多进程采集时数据如何流转、IPC 开销大小以及跨进程数据如何合并。
 
 Simpleperf 的多进程性能监控在 IPC 层是**"RecordReadThread 采样读线程 + app 内嵌 ProfileSession + 跨文件合并"**的复合架构。Android 17 / API 37 的 AOSP `system/extras/simpleperf` 已不再保留历史版本中的 `MapRecordThread`；system-wide 模式下的 `/proc/<pid>/maps` 扫描由 `RecordCommand::DumpMaps()` / `DumpMapsForRecord()` 同步或按首次命中进程懒触发完成。
 
@@ -588,7 +586,7 @@ event_id 重映射（`cmd_merge.cpp` L264-320）：每合并一个新文件，�
 
 **复杂度**：5 进程 × 1000 线程 = 5000 ThreadEntry 但仅 5 份 MapSet 内存。
 
-##### 端侧 AI 应用的反直觉点
+##### 端侧 AI 应用采样时的注意事项
 
 1. **NPU delegate 进程**：TFLite / MediaPipe 经常通过 `android:process=":npu"` 派生 NPU 专属进程，simpleperf **必须用 `--app <pkg>`** 才能捕获，否则只看到主进程在 NPU 推理时 CPU idle
 2. **mmap record 占头部 30-50%**：NPU delegate 进程 mmap 大量权重文件（1GB 模型 ≈ 250k 个 mmap record 项），不压缩时 `adb pull` 瓶颈在 IO
@@ -758,9 +756,7 @@ Simpleperf 分析指导优化的两条核心原则：
 
 ### mmap/munmap 数据通路：源码级展开
 
-<!-- AIW-源码调研-2026-06-11 -->
-
-> 补充自 `2026-06-11-android17-simpleperf-mmap-munmap-analysis.md` 报告；本节结论已在 AOSP `system/extras/simpleperf` `android-17.0.0_r1` 重新复核。LineageOS 初始调研锚点仅保留为材料来源，不作为正文证据。
+> 以下内容基于 AOSP `system/extras/simpleperf` `android-17.0.0_r1` 源码复核。
 
 #### 双重 mmap 语义
 
@@ -800,7 +796,7 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 
 > **源码锚点说明**：正文行为锚点以 `android-17.0.0_r1` 为准；历史版本只用于确认引入或移除边界，不使用 main/master 结论。
 
-#### 端侧 AI 应用的可观测性反直觉点
+#### 端侧 AI 应用的采样注意点
 
 - **JIT 代码是否被采样**取决于 mmap 时的 `prot` 标志位。`mprotect(PROT_READ)` 之后 simpleperf 会**丢弃该映射**（`MapRecordReader.cpp:55-57`）。
 - **运行时 `mprotect(PROT_WRITE)` 改可执行段**会触发 `IpToVaddrInFile` 退化路径（`dso.cpp:670-680` 注释明确警告），让 vaddr 反向解析从 O(log N) 退到 O(N)——TFLite/NCNN 动态重写权重时容易踩到。
@@ -810,7 +806,6 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 
 ## 参考资料
 
-### Android 17 Simpleperf 多进程 IPC 架构：三层生产者-消费者设计
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md
-- 摘要：Simpleperf 内部多进程数据通路主要包括：(1) RecordReadThread 用 lock-free ring buffer + pipe2(O_CLOEXEC) 将 kernel mmap buffer 与用户态处理线程解耦；(2) ProfileSession 用 pipe + vfork + dup2 在 app 进程内嵌 simpleperf 子进程；(3) system-wide maps 在 Android 17 中由 DumpMapsForRecord() 首次命中 pid 时按需读取。跨进程数据整合通过 cmd_merge 按特征段元数据 + 符号表一致性校验合并多份 perf.data。
-- 关联子节：§14.2.5 数据收集方法、§14.2.6 数据分析与解读
+### Simpleperf 多进程 IPC 架构
+
+Simpleperf 内部多进程数据通路主要包括三层：(1) RecordReadThread 用 lock-free ring buffer + `pipe2(O_CLOEXEC)` 将 kernel mmap buffer 与用户态处理线程解耦；(2) ProfileSession 用 pipe + vfork + dup2 在 app 进程内嵌 simpleperf 子进程；(3) system-wide maps 在 Android 17 中由 `DumpMapsForRecord()` 首次命中 pid 时按需读取。跨进程数据整合通过 `cmd_merge` 按元数据 + 符号表一致性校验合并多份 `perf.data`。

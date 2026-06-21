@@ -70,7 +70,7 @@ task6_l1_l2_fixes: 15
 task6_l3_l4_issues: 0
 task6_new_rework: false
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
+last_deepseek_cn_review_at: 2026-06-21
 ---
 
 # Android 功耗管理
@@ -160,7 +160,7 @@ WakeLock、suspend blocker、autosuspend 和 Power HAL 处理的是同一套机�
 
 HWC（Hardware Composer）在显示内容持续不变时，可以通过 IComposerCallback.onVsyncIdle() 通知上层显示管线进入空闲态。在 AOSP 实现中，SurfaceFlinger 收到 onComposerHalVsyncIdle() 回调后，调用 Scheduler.forceNextResync() 触发一次重新同步——这个回调表示 display idle 导致 refresh/vsync cadence 发生变化，不负责直接驱动 PMS 进入 suspend。
 
-注意：onVsyncIdle 是 HWC → SurfaceFlinger 的显示侧信号，不等于 PMS 收到后直接释放 WakeLock 或触发系统 suspend。系统从"屏幕静止"到"进入 Deep Sleep"的路径仍然由 PMS 的 WakeLock 汇总、用户超时设置、Doze 状态等因素决定。如果需要缩短灭屏到 suspend 的窗口，应从 PowerManagerService / DisplayPowerController / Power HAL 交互逻辑入手分析，而非依赖 onVsyncIdle 单信号。
+onVsyncIdle 是 HWC → SurfaceFlinger 的显示侧信号，不代表 PMS 收到后直接放锁或触发 suspend。系统从屏幕静止到进入 Deep Sleep 的路径仍由 PMS 的 WakeLock 汇总、用户超时设置、Doze 状态共同决定。想缩短灭屏到 suspend 的窗口，应从 PowerManagerService / DisplayPowerController / Power HAL 交互逻辑入手分析。
 
 对开发者而言，灭屏后的功耗分析不能只看 WakeLock 持有时长，还需要关注 App 是否在持续触发 invalidate / requestLayout 导致 SurfaceFlinger 无法判定"显示空闲"。如果在 Perfetto 中观察到灭屏后 SurfaceFlinger 仍然持续产生 VSync-surfaceflinger slice，且系统迟迟不进入 suspend，排查方向包括：持续动画、后台 Canvas 绘制、ViewRootImpl 的 dirty rect 提交等。
 
@@ -395,9 +395,9 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 
 TARE（Think Advanced Resource Economy）曾作为 JobScheduler 资源配额实验出现在 Android 12-14 附近的系统实现中。它把后台资源抽象成 ARC（Android Resource Credits），由系统服务根据策略给应用分配预算，再在 Job 调度前判断是否允许继续执行。
 
-TARE 在本节只能写成历史实现和源码边界，不能写成 Android 17 已验证能力。2026-06-21 抽检确认：`android-17.0.0_r1` tag 已发布；`android-17.0.0_r1` / `android-16.0.0_r1` / `android-15.0.0_r1` 的 `frameworks/base/apex/jobscheduler/service/java/com/android/server/` 下未命中 `tare/` 目录；`android-14.0.0_r1` 的历史 `tare/` 目录包含 `InternalResourceService`、`EconomicPolicy`、`JobSchedulerEconomicPolicy`、`EconomyManagerInternal` 等实现，但没有 `TareEconomicManager.java`、`AppBudgetManager.java`，也没有 `setAppBudgetoyant()` / `getRemainingBudget()` 这类应用自设预算公开 API。
+TARE 在本节只能作为历史实现和源码线索，不能写成 Android 17 已验证能力。经 `android-17.0.0_r1` / `android-16.0.0_r1` / `android-15.0.0_r1` 源码确认，三版 `frameworks/base/apex/jobscheduler/` 下均未命中 `tare/` 目录；仅在 `android-14.0.0_r1` 中存在 TARE 的历史实现（`InternalResourceService`、`EconomicPolicy`、`EconomyManagerInternal` 等），但不存在公开的预算管理 API。
 
-因此，在 Android 16/17 范围内分析 JobScheduler 配额，应回到 App Standby Bucket、Doze 维护窗口、JobScheduler quota 和 Android 16 行为变更这些公开资料。TARE 只作为历史源码线索保留：它说明 Android 曾尝试把后台任务约束抽象成经济模型，但不能用它解释 Android 17 的 Job 调度决策。
+在 Android 16/17 范围内分析 JobScheduler 配额，应回到 App Standby Bucket、Doze 维护窗口和 JobScheduler quota 等公开资料。TARE 作为历史线索保留：它说明 Android 曾尝试把后台约束抽象成经济模型，但不用于解释 Android 17 的调度决策。
 
 [已验证: AOSP android-14.0.0_r1 historical TARE directory; AOSP android-15.0.0_r1 / android-16.0.0_r1 / android-17.0.0_r1 no matching `com/android/server/tare/` directory; logs/deep-review/2026-06-02-03-deep-review.md]
 
@@ -589,16 +589,17 @@ CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只�
 - [BatteryHistorian Android手机耗电分析神器](https://mp.weixin.qq.com/s/BatteryHistorian)
 - [SoC低功耗问题定位及优化的10个思路](https://mp.weixin.qq.com/s/SoC低功耗问题定位)
 
-### Android 16 Headroom API 的真相:一条走 Power HAL 而非 PSI 的 CPU/GPU 前瞻信号通道
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 Headroom API 的真相:一条走 Power HAL 而非 PSI 的 CPU:GPU 前瞻信号通道.md
-- 类型:DeepResearch 调研结果
-- 摘要:基于 AOSP 16 梳理 `getCpuHeadroom()/getGpuHeadroom()` 调用链,澄清它经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量,不走 PSI/lmkd,也不存在公开 memory headroom;适合做相机、游戏等重负载场景的前瞻降级信号。
+### Android 16 Headroom API
+
+Android 16 的 `getCpuHeadroom()` / `getGpuHeadroom()` 经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量，不走 PSI/lmkd，也不存在公开的 memory headroom。适合相机、游戏等重负载场景作为前瞻降级信号。
+
+> 基于 DeepResearch 调研结果整理：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 Headroom API 的真相.md`
 
 ---
 
-## Linux 电源管理架构与 eBPF 微架构能效分析（补充）
+## Linux 电源管理架构与 eBPF 微架构能效分析
 
-> 本节为 2026-06-01 每日源码调研补充，聚焦 Linux 内核层电源管理框架与 eBPF 微架构能效分析技术，与上文 Android 框架层功耗管理构成完整链路。
+上文讨论的是 Android 框架层如何管理功耗。这一节向下走一层，看 Linux 内核的电源管理框架与 eBPF 能效分析技术，它们构成了 Android 功耗管理的基础设施。
 
 ### Linux 电源管理的分层架构
 

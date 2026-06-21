@@ -2,7 +2,7 @@
 title: "启动框架设计与任务编排"
 chapter: "21.2"
 section: "21.2"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-21"
 last_verified_against: "AOSP android-17.0.0_r1, Jetpack App Startup 1.2.0 sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)"
@@ -24,13 +24,13 @@ sources:
     path: "github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-01"
+reviewed_date: 2026-06-21
 task6_result: pass-light-edit
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
@@ -41,8 +41,9 @@ last_task9_autofix_at: "2026-06-21"
 task6_reviewed_date: "2026-05-22"
 task9_review_notes: "2026-06-21 闲时抽检：AUTO-FIX。修正 Alpha 版本锚点为 GitHub HEAD 04fe7f2 / artifact 1.0.0.1；修正 AlphaManager.addProject() 链式调用；修正 THREAD_PRIORITY_DISPLAY 注释归因。回到 Task6 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-21-18-audit.md"
-last_task6_at: "2026-06-01T23:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-23-review.md"
+last_task6_at: "2026-06-21T20:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-21-20-review.md"
+task6_review_notes: "2026-06-21 20:07 Task6 revisiting-review (post-Task9-auto-fix): pass-light-edit。Task9 修正 Alpha 版本锚点/GitHub HEAD 04fe7f2、AlphaManager.addProject() 链式调用、THREAD_PRIORITY_DISPLAY 注释归因。L1/L2 复扫通过，无新增小修，无新增回炉项。自动晋升 finalized。"
 task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task2b_at: "2026-06-01T14:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-deep-review.md 修正 Alpha Project.Builder/getInstance/默认 ExecutorService/执行模型，并收窄线程优先级建议。"

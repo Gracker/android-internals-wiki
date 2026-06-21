@@ -77,6 +77,86 @@ public class ForegroundService extends Service {
 
 到 Android 16（API 36），JobScheduler 核心从 `frameworks/base/services/core/` 迁移至 APEX 模块 `frameworks/base/apex/jobscheduler/`，调度参数和常量定义路径需要按 APEX 新路径查找。
 
+#### 2.2 Android 17 JobScheduler 五层节流机制源码级剖析
+
+> <!-- AIW-源码调研-2026-06-21 -->
+> **本节补充自 2026-06-21 源码调研**：原 §2.1 仅以「`JobConcurrencyManager` 根据 `maxActiveJobs` 和 `maxRunningJobs` 控制并发」一笔带过节流机制，未覆盖 Android 17 APEX 模块下 JobScheduler 的完整节流路径。Android 17 (API 37) 的节流实际上是**五层叠加**的体系，下面以 `android-17.0.0_r1` 标签下 AOSP 源码为唯一一手资料，逐层给出源码位置、默认值与触发行为。
+
+**第一层：注册数节流**（`JobSchedulerService.java:213-215, 1976-1985, 3035`）
+- `DEFAULT_MAX_JOBS_PER_APP = 150`（单 UID 持久化 Job 总数上限，临时 Job 不计）
+- 触发点：`scheduleAsPackage()` 中 `mJobs.countJobsForUid(callingUid) > mMaxJobsPerApp` → 返回 `JobScheduler.RESULT_FAILURE`
+- 这是 schedule() 阶段的第一道硬卡，超过 150 个直接拒绝（不抛异常、不入 standby bucket）
+
+**第二层：API Quota 节流**（`JobSchedulerService.java:166-168, 371-392, 677-693, 811-815, 1822-1866` + `CountQuotaTracker.java:180-216, 361-369` + `QuotaTracker.java:147-157`）
+- `DEFAULT_API_QUOTA_SCHEDULE_COUNT = 250`、`DEFAULT_API_QUOTA_SCHEDULE_WINDOW_MS = MINUTE_IN_MILLIS` —— 即 250 次/分钟 的 schedule 频率限制
+- 仅对 `job.isPersisted()=true` 的 Job 启用
+- 算法：`CountQuotaTracker.noteEvent()` 用 `LongArrayQueue` 维护时间戳滑动窗口，`isUnderCountQuotaLocked` 检查 `countInWindow < countLimit`
+- 窗口边界：`MIN_WINDOW_SIZE_MS=20_000`（20s 下限）、`MAX_WINDOW_SIZE_MS=30 * 24 * 60 * MINUTE_IN_MILLIS`（1 个月上限）
+- 副作用链：超限 → `mAppStandbyInternal.restrictApp(pkg, userId, UsageStatsManager.REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY)` → app 被强制降级到 RARE bucket
+- 异常行为：`API_QUOTA_SCHEDULE_THROW_EXCEPTION=true`（默认）且 `isDebuggable=true` → 抛 `LimitExceededException`（带详细 message）；release 包仅返回失败或不处理（`API_QUOTA_SCHEDULE_RETURN_FAILURE_RESULT=false` 默认）
+- 附加 Execution Safeguards（UDC 防护）：`DEFAULT_EXECUTION_SAFEGUARDS_UDC_TIMEOUT_TOTAL_COUNT=10/24h`、`DEFAULT_EXECUTION_SAFEGUARDS_UDC_ANR_COUNT=3/6h` —— 超限后下次 Job 的 `getMaxJobExecutionTimeMs()` 退化为 10min
+
+**第三层：运行时长节流**（`JobSchedulerService.java:828-841, 4507-4584` + `JobServiceContext.java:236-238, 451-453, 1907-1909`）
+- `DEFAULT_RUNTIME_MIN_GUARANTEE_MS = 10 * MINUTE_IN_MILLIS`（普通 Job 最小保证期）—— `isWithinExecutionGuaranteeTime()` 期间不可被抢占
+- `DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS = 30 * MINUTE_IN_MILLIS`（普通 Job 最大执行期）
+- `DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS = 3 * MINUTE_IN_MILLIS`（Expedited Job 最小保证期）
+- `DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS = Math.max(6h, 10min)`（User-Initiated Job 最小保证期 6h）
+- `DEFAULT_RUNTIME_UI_LIMIT_MS = Math.max(12h, 30min)`（User-Initiated Job 最大执行期 12h）—— 但需 `QUOTA_TRACKER_TIMEOUT_UIJ_TAG` 在配额内
+- `DEFAULT_RUNTIME_CUMULATIVE_UI_LIMIT_MS = 24 * HOUR_IN_MILLIS`（User-Initiated Job 24h 累计上限）
+- JobServiceContext 使用：`mMaxExecutionTimeMillis = Math.max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)` —— 超过后 `handleOpTimeoutLocked()` 触发 `STOP_REASON_TIMEOUT`
+
+**第四层：并发控制**（`JobConcurrencyManager.java:94-114, 127-130, 250-348, 1820-1909`）
+- `MAX_CONCURRENCY_LIMIT = 64`
+- `DEFAULT_CONCURRENCY_LIMIT` 按 RAM 自适应：
+  - Low-RAM 设备：8
+  - ≤6GB：16
+  - ≤8GB：20
+  - ≤12GB：32
+  - >12GB：40
+- `DEFAULT_PKG_CONCURRENCY_LIMIT_REGULAR = DEFAULT_CONCURRENCY_LIMIT / 2`、`DEFAULT_PKG_CONCURRENCY_LIMIT_EJ = 3`（单包并发上限）
+- `WorkTypeConfig` 矩阵：4 种屏幕状态（screen_on/off）× 4 种内存压力级别（normal/moderate/low/critical）= 16 套配置
+  - 例：screen_on_normal 的 `defaultMaxTotal = DEFAULT_CONCURRENCY_LIMIT * 3 / 4`（如 12GB+ 设备为 30）
+  - screen_on_critical 的 `defaultMaxTotal = DEFAULT_CONCURRENCY_LIMIT * 4 / 10`（12GB+ 设备 16）
+- 抢占逻辑 `shouldStopRunningJobLocked()` 返回的 reason 字符串："battery saver" / "deep doze" / "too many jobs running" / "blocking BGUSER_IMPORTANT queue" / "blocking EJ queue" / "prevent immediacy privilege dominance" / "restriction:<code>" —— 这些字符串直接进入 Perfetto trace
+
+**第五层：强制批处理（唤醒合并）**（`JobSchedulerService.java:784-790, 851-868` + `JobConcurrencyManager.java:1482-1512, 1684-1820`）
+- `DEFAULT_MAX_CPU_ONLY_JOB_BATCH_DELAY_MS = 31 * MINUTE_IN_MILLIS`（31min，纯 CPU Job 最长等待）
+- `DEFAULT_MAX_NON_ACTIVE_JOB_BATCH_DELAY_MS = 31 * MINUTE_IN_MILLIS`（31min，非 ACTIVE bucket Job 最长等待）
+- `DEFAULT_MIN_READY_CPU_ONLY_JOBS_COUNT = min(3, DEFAULT_CONCURRENCY_LIMIT/3)`（CPU Job 批触发阈值）
+- `DEFAULT_MIN_READY_NON_ACTIVE_JOBS_COUNT = min(5, DEFAULT_CONCURRENCY_LIMIT/3)`（非 ACTIVE Job 批触发阈值）
+- 网络 Job（`KEY_CONN_MAX_CONNECTIVITY_JOB_BATCH_DELAY_MS = 31min`，`KEY_CONN_TRANSPORT_BATCH_THRESHOLD` 对 CELLULAR 默认 3，WIFI/ETHERNET 不限）
+- 31min ≈ Doze maintenance window（30min）+ 1min buffer —— 系统在窗口内尝试凑齐多个 ready Job 一次唤醒执行
+
+**五层调用链总结**：
+
+```
+app: JobScheduler.schedule(job)
+  → JobSchedulerService.scheduleAsPackage()
+    ├── [层1] mJobs.countJobsForUid() > 150 → RESULT_FAILURE
+    ├── [层2] !mQuotaTracker.isWithinQuota(250/min) → restrictApp(RARE) + 可选异常
+    → JobStatus 入队
+  → JobConcurrencyManager.assignJobsToContextsLocked()
+    ├── [层4] shouldStopRunningJobLocked() → 抢占旧 Job
+    ├── [层5] shouldForceBatchLocked() → 延迟 31min 等待批处理
+  → JobServiceContext.startJob() → scheduleOpTimeOutLocked()
+  → JobServiceContext.handleOpTimeoutLocked() (after mMaxExecutionTimeMillis)
+    ├── [层3] sendStopMessageLocked("client timed out")
+    → onJobCompletedLocked() → [层2] noteEvent(QUOTA_TRACKER_TIMEOUT_*_TAG)
+      → 下次 getMaxJobExecutionTimeMs() 退化为 10min
+```
+
+**与 §11.4.2 节流案例的对照**：
+- 本节是 JobScheduler 服务自身的「节流」，§11.4.2 是「被 JobScheduler 调度的 LocationProvider 的节流」—— 两者位于不同栈层级但都通过 `mAppStandbyInternal` 接受 STANDBY_BUCKET 调控
+- 本节层 4 的 `"battery saver"` / `"deep doze"` reason 与 §11.4.2.1 的省电模式触发路径**同源**（`mPowerManager.isPowerSaveMode()` / `isDeviceIdleMode()`），但执行点不同：本节在 `shouldStopRunningJobLocked`（Job 启动后抢占），§11.4.2 在 `LocationProviderManager`（定位请求前过滤）
+
+**对应用的可操作建议**：
+1. **不要 burst-schedule**：在 onResume / onReceive / WorkContinuation 链里 schedule 大量 Job 容易触发层 2（API Quota）→ RARE bucket
+2. **周期性 Job 实际执行时间 < 1min**：层 5 批处理可能让首启延迟 31min，且层 4 抢占发生在 `mMinExecutionGuaranteeMs=10min` 之后——短任务实际开销就是 10min CPU，**未省电反而耗电**。OEM 在做白名单节流分析时，应按"实际执行时间 / 周期时间"衡量收益
+3. **EJ 不适合长任务**：层 3 EJ 最小 3min，且 EJ 之间会按 `WORK_TYPE_BGUSER_IMPORTANT > EJ > 其他` 抢占
+4. **150 Job 上限外还有隐性反压**：`countJobsForUid()` 是 O(N)，Job 数量越多 schedule 越慢
+
+> 引用源：`frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` (6857 行)、`JobConcurrencyManager.java` (3026 行)、`JobServiceContext.java` (1982 行)；`frameworks/base/services/core/java/com/android/server/utils/quota/CountQuotaTracker.java` (805 行)、`QuotaTracker.java` (530 行)。版本：`android-17.0.0_r1`。
+
 #### 3. 优化方案
 ```java
 // 优化后的前台服务实现
