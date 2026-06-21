@@ -273,6 +273,28 @@ Android 系统缺少官方的高精度内存跟踪 API，现有监控主要依�
 - 全书 443+ 节（305 finalized, 91 ready-for-review, 4 draft 有实质内容）
 - **知识库高度饱和，本轮跳过**
 
+## [2026-06-21 12:28] 14.2 Simpleperf — 知识盲区
+
+### 盲区描述
+Simpleperf 工具与 Android 电源管理系统和热节流机制的交互存在重要知识盲区。当前章节未覆盖 profiling 过程中的电源管理影响、热节流对分析精度的干扰，以及多核调度（big.LITTLE）对采样准确性的影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 simpleperf 与 Android 电源管理系统的交互机制及其对电池分析的影响
+- 分析热节流如何影响 profiling 精度和数据可信度
+- 探索 big.LITTLE 架构和核心调度对采样精度的干扰机制
+- 调查不同设备制造商自定义安全策略对 simpleperf 可用性的影响
+- 研究 RLIMIT_MEMLOCK 约束在大规模 profiling 场景下的具体限制
+
+### 关联章节
+- 14.2 Simpleperf（当前章节，需补充电源管理和热节流内容）
+- 11.1 Android 功耗模型（补充电源管理交互）
+- 2.2 CPU 调度（补充多核调度影响）
+
+---
+
 ## [2026-06-21 12:09] Task2A 缺口挖掘 — 第 175 轮
 
 ### 本轮检查方向（8 个）
@@ -290,4 +312,42 @@ Android 系统缺少官方的高精度内存跟踪 API，现有监控主要依�
 - 连续无合格缺口轮次：175 轮
 - 全书 443 节（308 finalized, 88 ready-for-review, 4 draft 有实质内容）
 - TASK2B_BACKLOG: 0（无积压）
+- **知识库高度饱和，本轮跳过**
+
+## [2026-06-21 13:06] Task2A 缺口挖掘 — 第 176 轮
+
+### 本轮检查方向（6 个）
+1. 今日 daily-info（06-21）：Android 17 新调度器减少 30% 启动时间 — 评分 10/20（已有 ch16.4/ch16.7/ch16.8 覆盖）
+2. 今日 daily-info（06-21）：Linux 6.10 内存碎片整理 — 评分 8/20（通用 Linux 内核，Android 17 用 Kernel 6.12，ch04.10 已覆盖）
+3. 今日 daily-info（06-21）：Android 17 内存压力检测器（PSI/LowMemDetector）— 评分 11/20（已有 ch04.04 LMK + ch04.10 覆盖核心机制）
+4. source-index.json 高质量未映射素材 — 0 篇（持续耗尽）
+5. research-feeds 最新（2026-04-14 Perfetto v54）— 全部已映射到 ch13
+6. Clippings 参考书 — Part 5 章节（ch20-ch26）共 127 节已高度饱和，无新增参考书
+
+### 结论
+- 最高分：11/20（远低于 14 分门槛）
+- 连续无合格缺口轮次：176 轮
+- 全书 443 节（308 finalized, 88 ready-for-review, 3 draft 有实质内容）
+- TASK2B_BACKLOG: 0（无积压）
+- **知识库高度饱和，本轮跳过**
+
+
+## [2026-06-21 14:04] Task2A 缺口挖掘 — 第 175 轮
+
+### 本轮检查方向（8 个）
+1. 今日 daily-info：Android 17 调度器 30% 启动优化 — 评分 11/20（ch16.4/16.7/16.8 已覆盖）
+2. 今日 daily-info：Linux 6.10 内存碎片整理 — 评分 7/20（服务端向，ch04.10 已覆盖）
+3. 今日 daily-info：Android 17 内存压力检测器 — 评分 12/20（ch04.04/04.11 已覆盖内存压力相关）
+4. 今日 daily-info：Android 内存跟踪 API 栈 — 评分 10/20（ch04.03/10.08/23.07 已覆盖）
+5. 今日 daily-info：SurfaceFlinger 帧时间追踪器 — 评分 10/20（ch02/ch13 已充分覆盖）
+6. 今日 daily-info：JobScheduler 限流机制 — 评分 10/20（ch05.10/25.13/25.14 已覆盖）
+7. 今日 daily-info：BluetoothSocket EOF 标志 — 评分 9/20（ch24.19 已覆盖）
+8. 昨日 daily-info：ML 内存泄漏检测论文 — 评分 8/20（学术前沿，ch23 已覆盖传统方法）
+
+### 结论
+- 最高分：12/20（远低于 14 分门槛）
+- 连续无合格缺口轮次：175 轮
+- 全书 443 节（305 finalized + 91 ready-for-review + 3 draft 有实质内容）
+- source-index.json 已耗尽（0 篇未映射高质量素材）
+- research-feeds 最新 2026-04-14 全部已映射
 - **知识库高度饱和，本轮跳过**
