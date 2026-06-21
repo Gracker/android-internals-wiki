@@ -4,7 +4,7 @@
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
@@ -31,18 +31,23 @@ last_task2b_lite_at: '2026-06-21'
 last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: auto-fixed
 task6_result: pass-light-edit
+task6_review_notes: "2026-06-22 01 Task6 revisiting-review (Task9 autofix 后复审): pass-light-edit。L1/L2 全面扫描零命中（'上分'为'上分流'误匹配）。否定-纠正结构 1 处在限内。无 B 类问题。自动晋升 finalized。"
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-22
-last_task6_at: '2026-06-21T16:05:00+08:00'
+last_task6_at: "2026-06-22T01:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-22-01-review.md"
+task6_l1_l2_fixes: 0
+task6_l3_l4_issues: 0
+task6_new_rework: false
 last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
-last_task6_audit: '2026-06-12'
+last_task6_audit: "2026-06-22"
 last_task6_audit_at: '2026-06-16T18:00:00+08:00'
 last_task6_audit_reason: 'idle audit: L1合规性、frontmatter完整性、outline锚点覆盖检查均通过'
 -----

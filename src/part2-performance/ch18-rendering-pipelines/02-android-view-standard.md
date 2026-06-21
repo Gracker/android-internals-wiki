@@ -3,7 +3,7 @@
 title: Android View 标准管线（BLAST 深入）
 chapter: '18.2'
 section: '18.2'
-status: "ready-for-review"
+status: finalized
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 last_verified: '2026-05-05'
 last_verified_against: AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases
@@ -37,29 +37,29 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: ready-to-publish"
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-06-04T02:57:11+08:00
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-04"
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-26"
-last_task6_at: "2026-06-04T03:10:02+08:00"
+last_task6_at: "2026-06-22T01:10:00+08:00"
 task9_result: auto-fixed
 task9_reviewed_date: 2026-06-21
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-21T21:31:53+08:00"
 task9_review_notes: "2026-06-21 Task9 idle audit auto-fix: corrected Android 16/17 BLAST libgui aconfig flag version table and removed unverified 5-15ms picture profile benefit."
-task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1/L2 禁用词/高频词/AI填充词零命中。清除 1 处 [已修正] 编辑痕迹。无 B 类问题。自动晋升 finalized（task9 pass-tech-review + queue 无 pending + 无 B 类问题）。"
-last_task6_review_log: "logs/review/2026-05-26-05-review.md"
+task6_review_notes: "2026-06-22 01 Task6 revisiting-review (Task9 autofix 后复审): pass-light-edit。L1/L2 禁用词/高频词/AI填充词/翻译腔/元叙述零命中。无 B 类问题。自动晋升 finalized。"
+last_task6_review_log: "logs/review/2026-06-22-01-review.md"
 last_task9_review_log: "logs/deep-review/2026-06-21-21-audit.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 1
-task6_l1_l2_fixes: 1
+task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
