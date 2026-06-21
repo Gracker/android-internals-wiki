@@ -28,15 +28,23 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsScheduler.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsStore.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/WakeLockStats.java"
   - type: blog
     path: "Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md"
   - type: blog
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-22T04:51:20+08:00"
@@ -44,12 +52,12 @@ last_task2b_lite_at: "2026-06-03"
 task2b_rework_log: "logs/task2b/2026-06-22-04-task2b-main-25.1.md"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
 task6_review_notes: "2026-06-22 Task6 revisiting 复审通过；L1/L2 无新增问题（修复 1 处笔误'异常常'→'异常通常'）；Task2B 已修复 P0 源码链路问题；无 B 类回炉项，转入 Task9 pending 待技术复审。"
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-22"
-last_task9_at: "2026-06-22T04:28:56+08:00"
-last_task9_review_log: logs/deep-review/2026-06-22-04-audit.md
-task9_review_notes: "2026-06-22 Task9 闲时抽检：发现 P0 源码链路/Android 17 版本边界问题；已写入 queue.json，由 Task2B main 于 2026-06-22 修复完成，返回 Task6 revisiting。"
+last_task9_at: "2026-06-22T05:28:30+08:00"
+last_task9_review_log: logs/deep-review/2026-06-22-05-deep-review.md
+task9_review_notes: "2026-06-22 Task9 深度复审：auto-fix 了 PowerStatsStore 存储路径/格式、Android 16 调用行号、WakeupReason/WakeLockStats 行号及 master 锚点边界；返回 Task6 revisiting。"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
@@ -59,6 +67,7 @@ task6_reviewed_date: "2026-06-03"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 last_task9_audit: "2026-06-22"
+last_task9_autofix_at: "2026-06-22"
 ---
 
 # 功耗诊断与分析方法
@@ -216,7 +225,7 @@ Power Profiler 与 Perfetto 最适合做“时间同步”。当 power rail 出�
 ## 源码级实现细节（AIW-源码调研-2026-06-16）
 
 > 关联报告：`DeepResearch/2026-06-16-android15-battery-historian-perf-metrics-integration.md`
-> 锚点版本：AOSP `frameworks/base` master @ 2026-06-16，参考 `android-15.0.0_r1`，最高边界 Android 17 / API 37
+> 锚点版本：AOSP `android-17.0.0_r1` 为主锚点，`android-16.0.0_r1` / `android-15.0.0_r1` 用于版本差异，最高边界 Android 17 / API 37
 > 一手资料：`BatteryStatsService.java`、`PowerStatsService.java`、`PowerStatsScheduler.java`、`BatteryUsageStatsProvider.java`、`WakeLockStats.java`
 
 ### ⚠️ 重要勘误：daily-topics.json topic #1 的 source_refs 不存在
@@ -276,17 +285,17 @@ BatteryUsageStatsProvider.getBatteryUsageStats()（L286-L287）
 | Android 版本 | `start()` 签名 | 调用位置 |
 |-------------|---------------|---------|
 | 15（`android-15.0.0_r1`） | `start(Flags.streamlinedBatteryStats())` | `BatteryStatsService.java` L707-L710 |
-| 16（`android-16.0.0_r1`） | `start(boolean enablePeriodicPowerStatsCollection)` | `BatteryStatsService.java` L674 |
+| 16（`android-16.0.0_r1`） | `start(boolean enablePeriodicPowerStatsCollection)` | `BatteryStatsService.java` L629-L631 |
 | 17（`android-17.0.0_r1`） | `start()`（无参） | `BatteryStatsService.java` L573-L576 |
 
 三个版本的共同行为：
 - 通过 `AlarmManager` 注册 **inexact non-wakeup alarm** 触发聚合
 - 聚合动作在 `mHandler` 线程执行，**不会阻塞 system_server main looper**
-- 落盘到 `PowerStatsStore`（在 `/data/system/powerstats/`）
+- 落盘到 `PowerStatsStore`（在 `/data/system/power-stats/`，span 文件后缀为 `.pss`）
 
 ### WakeupReason × Perfetto POWER track —— 「业务耗时 × 系统功耗」对齐点
 
-`BatteryStatsService.java` L3029（`WakeupReasonThread.run()` 内）：
+`BatteryStatsService.java` L2928（`WakeupReasonThread.run()` 内）：
 
 ```java
 Trace.instantForTrack(Trace.TRACE_TAG_POWER, "wakeup_reason",
@@ -325,7 +334,7 @@ public final class WakeLockStats implements Parcelable {
 }
 ```
 
-服务端入口：`BatteryStatsService.getWakeLockStats()`（L3604-3613，权限 `BATTERY_STATS`）。
+服务端入口：`BatteryStatsService.getWakeLockStats()`（L3534-L3540，权限 `BATTERY_STATS`）。
 
 **对 Battery Historian 的意义**：旧版只能从 dumpsys 文本 `grep "Wake lock"`，新版 APM 可直接走 `IBatteryStats.getWakeLockStats()` 拿 `Parcelable` 快照。`backgroundWakeLockData` 字段对应 Android Vitals 的 stuck partial wake lock 判定（>1h 后台持有）。
 
@@ -342,7 +351,7 @@ public final class WakeLockStats implements Parcelable {
 1. **判断 device 走哪条归因路径**：`dumpsys batterystats --usage --proto` 输出中的 `power_model` 字段，值为 `POWER_MODEL_POWER_PROFILE` vs `POWER_MODEL_MEASURED_ENERGY`
 2. **新增 wakeup 监控**应同时检查 `Trace.TRACE_TAG_POWER` track 与 BatteryStats history 两条线 —— 二者在 `BatteryStatsService.WakeupReasonThread` 内已统一落点
 3. **`WakeLockStats.getWakeLockStats()`** 在 Android 15 引入，但 `@hide`，端侧 APM 需通过系统权限或反射调用
-4. **PowerStatsStore** 是 `/data/system/powerstats/log.powerstats.meter.0` 二进制文件，**Proto 格式**（`ProtoStreamUtils`），不要用 `cat` 读
+4. **PowerStatsStore** 位于 `/data/system/power-stats/`，span 文件名是 19 位 ID + `.pss`，内容由 `PowerStatsSpan.writeXml(out, Xml.newBinarySerializer())` 写成二进制 XML；不要按 `/data/system/powerstats/log.powerstats.meter.0` 或 Proto 文件处理。
 
 ## 本节小结
 
