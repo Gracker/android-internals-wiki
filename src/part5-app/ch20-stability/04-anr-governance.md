@@ -13,6 +13,8 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+  - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityManager.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
@@ -28,9 +30,9 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -39,17 +41,19 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-23T08:18:48+08:00"
 last_task6_audit: "2026-06-18"
 task6_reviewed_date: "2026-05-23"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-02T03:20:00+08:00"
+last_task9_at: "2026-06-21T20:36:07+08:00"
 last_task6_review_log: "logs/review/2026-05-23-08-review.md"
-task9_review_notes: "2026-06-02 Task9 03: pass-tech-review。复核 ANR 阈值、Broadcast/Provider/Service 超时、FGS 晋升计时、Binder timeout、goAsync 与 SIGQUIT 权限边界；无 P0/P1，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-06-02-03-deep-review.md"
+task9_review_notes: "2026-06-21 Task9 idle audit auto-fix：补充 Android 14+ shortService FGS 类型级 ANR 计时器；证据为 AOSP android-14.0.0_r1 至 android-17.0.0_r1 ActivityManagerConstants/ActiveServices 与 Android Developers FGS shortService 文档。"
+last_task9_review_log: "logs/deep-review/2026-06-21-20-audit.md"
 task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。"
 task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
+last_task9_autofix_at: "2026-06-21"
+last_task9_audit: "2026-06-21"
 ---
 
 # ANR 治理策略
@@ -87,6 +91,7 @@ ANR 治理的核心约束是：主线程必须在对应超时窗口内完成系�
 | ContentProvider publish | 10s（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`） | AMS 检测应用 publish provider 超时 | Application.onCreate() 或 ContentProvider.onCreate() 耗时 |
 | Service（前台） | 20s（`ActivityManagerConstants.SERVICE_TIMEOUT`） | ActiveServices 检测 onCreate()/onStartCommand() 超时 | Service 生命周期回调中执行耗时操作 |
 | Service（后台） | 200s（`ActivityManagerConstants.SERVICE_BACKGROUND_TIMEOUT`） | 同上 | 后台 Service 长时间运行 |
+| FGS shortService（Android 14+） | 3min + 10s ANR 宽限（AOSP `mShortFgsTimeoutDuration` / `mShortFgsAnrExtraWaitDuration` 默认值） | ActiveServices 短 FGS 计时器触发 `SERVICE_SHORT_FGS_ANR_TIMEOUT_MSG` | `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` 未及时 `stopSelf()` / `stopForeground()` |
 
 上表中的超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。在多数线上治理中，Input dispatch ANR 是优先排查对象，具体占比应以应用自己的 ANR 监控口径为准。
 
@@ -425,15 +430,16 @@ Service 的前台生命周期超时是 `SERVICE_TIMEOUT` 默认 20 秒，后台 
 
 - `onCreate()` 和 `onStartCommand()` 都在主线程执行。如果 `onStartCommand()` 需要做耗时操作，启动一个后台线程来处理，然后立即返回 `START_STICKY` 或 `START_NOT_STICKY`。
 - FGS 晋升超时（`startForegroundService()` → `startForeground()`）：Android 8 引入此约束，排查时按目标系统源码中的配置确认，不要统一写 5s。Android 10-12 的核心窗口来自 `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT`，默认 10s；Android 13+ 改为 `ActivityManagerConstants.mServiceStartForegroundTimeoutMs` 默认 30s，超时后再等待 `mServiceStartForegroundAnrDelayMs` 默认 10s 触发 ANR。此外 Android 12+ 还有 FGS 启动限制（`ForegroundServiceStartNotAllowedException`），需要满足豁免条件才能从后台启动前台 Service。
+- Android 14+ 的 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` 还有类型级计时器：AOSP 默认 3 分钟，超时后调用 `Service.onTimeout()`；如果再过 `short_fgs_anr_extra_wait_duration` 默认 10 秒仍未停止，`ActiveServices.onShortFgsAnrTimeout()` 触发 ANR。这个计时器与普通 Service 生命周期超时、FGS 晋升超时相互独立。
 - 普通前台 Service 生命周期执行超时（`onCreate()`/`onStartCommand()`）：`ActivityManagerConstants.SERVICE_TIMEOUT` 默认 20s（前台），`SERVICE_BACKGROUND_TIMEOUT` 默认 200s（后台）。两者与 FGS 晋升超时是独立的计时器。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java]
+[已验证: AOSP android-14.0.0_r1 - android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java；AOSP android-16.0.0_r1 / android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java]
 
 ## ANR Watchdog 搭建
 
 ANR Watchdog 是应用侧的 ANR 检测机制，用于在系统弹出 ANR 对话框之前就发现主线程阻塞。
 
-这里需要区分两层检测。第一层是系统的 ANR 检测——上表所列的六种组件各有独立的超时阈值和检测逻辑。第二层是应用侧的 Watchdog，它是一套独立的监测线程，不依赖系统信号，通过主动探测主线程的响应性来判断。Watchdog 的检测间隔和阈值由应用自己设定，通常比系统阈值低，目的是在系统判定 ANR 之前发出预警。
+这里需要区分两层检测。第一层是系统的 ANR 检测——上表所列的 ANR 类型各有独立的超时阈值和检测逻辑。第二层是应用侧的 Watchdog，它是一套独立的监测线程，不依赖系统信号，通过主动探测主线程的响应性来判断。Watchdog 的检测间隔和阈值由应用自己设定，通常比系统阈值低，目的是在系统判定 ANR 之前发出预警。
 
 ### 工作原理
 
