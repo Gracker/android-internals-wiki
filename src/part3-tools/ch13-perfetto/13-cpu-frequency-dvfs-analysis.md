@@ -39,6 +39,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 last_task6_at: "2026-05-28T04:13:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-04-review.md"
+last_task6_audit: "2026-06-21"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 Task6：Task2B fixed-lite 后复审通过；L1/L2 小修 1 处，禁用词与高频词扫描无命中；outline 10/10 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，未自动晋升。"
