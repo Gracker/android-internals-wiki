@@ -2,7 +2,7 @@
 title: "持续性能验证与 CI/CD"
 chapter: "27.5"
 section: "第三部分：工具与方法论"
-status: ready-for-review
+status: draft
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -22,8 +22,6 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals"
 tags: [performance-engineering, ci-cd, macrobenchmark, release-gate, regression-detection]
 related_chapters: ["15.10", "26.7", "19.14", "26.15"]
-pipeline_stage: task6_pending
-task6_state: pending
 ---
 
 # 持续性能验证与 CI/CD

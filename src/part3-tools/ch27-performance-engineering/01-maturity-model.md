@@ -2,7 +2,7 @@
 title: "性能工程成熟度模型"
 chapter: "27.1"
 section: "27.1"
-status: ready-for-review
+status: draft
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -18,13 +18,6 @@ sources:
     path: "https://developer.android.com/topic/performance/benchmarking"
 tags: [performance-engineering, methodology, maturity-model, governance, observability]
 related_chapters: ["15.10", "15.9", "26.1"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-21
-last_task6_at: 2026-06-21T15:06:00+08:00
-task9_state: pending
 ---
 
 # 性能工程成熟度模型

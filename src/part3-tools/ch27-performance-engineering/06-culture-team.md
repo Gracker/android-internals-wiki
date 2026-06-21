@@ -2,7 +2,7 @@
 title: "性能文化构建与团队演进"
 chapter: "27.6"
 section: "第三部分：工具与方法论"
-status: ready-for-review
+status: draft
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -18,8 +18,6 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals"
 tags: [performance-engineering, culture, team, governance, performance-champion]
 related_chapters: ["15.1", "15.10", "27.1"]
-pipeline_stage: task6_pending
-task6_state: pending
 ---
 
 # 性能文化构建与团队演进

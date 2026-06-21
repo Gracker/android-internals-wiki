@@ -11,7 +11,7 @@ applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
 version_boundary: '[已验证] API 21-37 (Android 5-17) 基于 NDK r29 + android-17.0.0_r1 全量源码路径验证 — 2026-06-21 Task2B 验证 simpleperf 核心源码 (main.cpp/cmd_record/environment/JITDebugReader 等 19 个文件) 均在 android-17.0.0_r1 存在'
 last_verified: '2026-06-21'
 last_verified_against: NDK r29 simpleperf docs + AOSP system/extras/simpleperf (android-17.0.0_r1, 2026-06-21 全量源码路径验证通过) + Perfetto linux.perf data source docs
-confidence: needs-review
+confidence: medium
 sources:
   - type: official
     path: android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/doc/README.md
@@ -30,15 +30,15 @@ last_task9_autofix_at: '2026-06-21'
 last_task2b_lite_at: '2026-06-21'
 last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: auto-fixed
-task6_result: needs-rework
+task6_result: pass-light-edit
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-21
-last_task6_at: '2026-06-21T14:07:00+08:00'
+last_task6_at: '2026-06-21T16:05:00+08:00'
 last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-11'

@@ -2,7 +2,7 @@
 title: "左移性能工程"
 chapter: "27.4"
 section: "27.4"
-status: ready-for-review
+status: draft
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -20,13 +20,6 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
 tags: [performance-engineering, shift-left, code-review, architecture-review, profiling]
 related_chapters: ["15.6", "14.1", "8.1", "19.15"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-21
-last_task6_at: 2026-06-21T15:06:00+08:00
-task9_state: pending
 ---
 
 # 左移性能工程
