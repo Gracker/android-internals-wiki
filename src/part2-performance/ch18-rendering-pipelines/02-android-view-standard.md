@@ -3,7 +3,7 @@
 title: Android View 标准管线（BLAST 深入）
 chapter: '18.2'
 section: '18.2'
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 last_verified: '2026-05-05'
 last_verified_against: AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases

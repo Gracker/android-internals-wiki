@@ -2,7 +2,7 @@
 title: "Jetpack Compose 性能优化"
 chapter: "22.3"
 section: "22.3"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-02"
 last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2"
