@@ -38,3 +38,38 @@
 - 连续无合格缺口轮次：84 轮
 - 全书 443 节（307 finalized, 94 ready-for-review, 3 draft 有实质内容）
 - **知识库高度饱和，本轮跳过**
+
+
+## [Task9 Deep Review] 26.1 App 可观测性架构设计 — 闲时抽检 — 2026-06-21
+
+### P2 建议改进：
+
+- **类型**：源码引用准确性
+- **位置**：可观测性架构技术实现
+- **问题**：章节提到 'RingBuffer' 和 'mmap' 等技术实现，但未提供具体的 AOSP 源码路径。引用的技术实现细节缺乏源头验证，影响架构设计的可信度。
+- **建议**：补充 frameworks/native/services/surfaceflinger/ 中的 RingBuffer 实现和内存映射相关代码，以及相关线程管理类的源码路径。
+
+- **类型**：源码引用准确性
+- **位置**：线程模型和监控架构
+- **问题**：提到 'Main thread' 和 'RenderThread' 等线程概念，但未引用具体的 AOSP 实现类。技术概念缺乏源码支撑，影响读者理解系统机制。
+- **建议**：补充 android/view/ViewRootImpl.java 中的主线程管理、frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp 中的 RenderThread 实现。
+
+- **类型**：版本差异覆盖
+- **位置**：Android 可观测性系统演进
+- **问题**：章节标注 applicable_versions: Android 10 (API 29) - Android 17 (API 37)，但未详细说明 Android 12 引入的 StrictMode 性能监控、Android 14 中的 Jetpack WindowManager 对可观测性的影响等重要版本变化。
+- **建议**：补充 Android 12-17 的可观测性系统关键特性演进，特别是 StrictMode 机制完善、Jetpack 组件监控能力增强、隐私沙盒对监控权限的影响等。
+
+## [Task6 Review] 14.2 Simpleperf — 2026-06-21
+
+### B类问题
+- **类型**：存疑-技术准确性
+- **位置**：14.2.5 与 Perfetto 集成段
+- **问题**：原文称 perf.data 为 "protobuf 编码"，perf.data 实际基于 Linux perf 二进制格式（header + event records），非 protobuf 序列化。已在正文添加 [存疑] 标签。
+- **建议**：Task 9 验证后修正格式描述
+- **review 日志**：logs/review/2026-06-21-12-review.md
+
+### L3/L4 观察项（不阻塞，供后续优化参考）
+1. **开头段落风格**：当前开头为定义式（"Simpleperf 是 Google 官方维护的..."），writing-guide Type C 建议从"这个工具解决什么问题/没有它会多痛苦"切入。不阻塞本轮，但可在下次回炉时优化。
+2. **源码深度与章节定位**：14.2.5/14.2.6 中源码级分析（IPC 三层架构、FP/DWARF 分叉、JITdebugReader 协议等）非常深入，超出 Type C（工具使用篇）的典型深度。内容质量高，但可考虑将最深入的部分拆到附录或独立"源码解析"章节，保持工具章的实用性聚焦。
+3. **"适用范围"列表项**：纯名词列表（"Native C/C++ 代码性能分析"等），无描述性说明。SKILL.md 3.4 建议列表项自带信息增量，可补充每项的典型场景。
+4. **outline 标记缺失**：本章无 `<!-- outline-start/end -->` 标记，无法做锚点覆盖检查。属结构性问题，留给 Task 2 补充。

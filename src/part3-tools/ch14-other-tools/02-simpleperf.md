@@ -32,12 +32,12 @@ task9_result: needs-rework
 task6_result: pass-light-edit
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-10
-last_task6_at: 2026-06-10T21:13:04+08:00
+last_task6_at: '2026-06-21T12:07:00+08:00'
 last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-11'
@@ -258,7 +258,7 @@ simpleperf report -i my_profile.data
 
 ### 与 Perfetto 集成
 
-Simpleperf 本身输出 `perf.data` 格式（protobuf 编码），不直接输出 `.perfetto-trace` 文件。
+Simpleperf 本身输出 `perf.data` 格式（protobuf 编码）[存疑: perf.data 疑似基于 Linux perf 二进制格式而非 protobuf，待 Task 9 验证]，不直接输出 `.perfetto-trace` 文件。
 与 Perfetto 系统 trace 集成的正确方式是通过 Perfetto 的 `linux.perf` data source 在同一个 tracing session 中同时采集 perf events 和 ftrace/atrace 事件 [已验证：Perfetto linux.perf 文档]：
 
 ```bash
@@ -345,8 +345,7 @@ adb pull /data/local/tmp/combined.trace
 
 ### Profileable 应用数据收集
 
-Android 10+ 引入了 profileable 应用机制，允许 release 构建在 `AndroidManifest.xml` 中声明 `<profileable android:shell="true" />` 后
-无需 debuggable 即可被 simpleperf 采样 [已验证：Android Profileable 官方文档]：
+Android 10+ 引入了 profileable 应用机制，允许 release 构建在 `AndroidManifest.xml` 中声明 `<profileable android:shell="true" />` 后无需 debuggable 即可被 simpleperf 采样 [已验证：Android Profileable 官方文档]：
 
 ```bash
 # 对 profileable 应用采样（--app 自动处理 profileable 权限）
@@ -608,11 +607,6 @@ event_id 重映射（`cmd_merge.cpp` L264-320）：每合并一个新文件，�
 3. **`inherit=1` 是关键**：AI 推理 framework（TFLite Interpreter::Run）经常 std::thread + pthread_create，simpleperf 默认 `inherit=1` 自动覆盖这些线程——这就是为什么 simpleperf 能捕获到推理 worker 线程热点的关键
 4. **`cmd_merge` 的 `app_package_name` 限制**：NPU 进程和主进程虽都在 `--app <pkg>` 下抓取，但 `app_package_name` meta info 相同，**可以合并**；但跨 app 调试时直接拒绝合并
 
-
-
----
-
-
 ---
 
 ## 14.2.6 数据分析与解读
@@ -774,8 +768,7 @@ Simpleperf 分析指导优化的两条核心原则：
 
 ---
 
-
-### mmap/munmap 数据通路：源码级拆解
+### mmap/munmap 数据通路：源码级展开
 
 <!-- AIW-源码调研-2026-06-11 -->
 
@@ -825,7 +818,7 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 - **运行时 `mprotect(PROT_WRITE)` 改可执行段**会触发 `IpToVaddrInFile` 退化路径（`dso.cpp:670-680` 注释明确警告），让 vaddr 反向解析从 O(log N) 退到 O(N)——TFLite/NCNN 动态重写权重时容易踩到。
 - **未压缩 perf.data 的头部体积**主要是 mmap record（每条 ~110 字节 + filename 8 字节对齐拷贝），AI 推理 app 通常 2000-5000 条 mmap record，200-500KB 头部。
 
-
+---
 
 ## 参考资料
 
