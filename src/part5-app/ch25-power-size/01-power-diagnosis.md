@@ -2,10 +2,10 @@
 title: "功耗诊断与分析方法"
 chapter: "25.1"
 section: "25.1"
-status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers power docs + Clippings structure references"
+status: ready-for-review
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+last_verified: "2026-06-22"
+last_verified_against: "AOSP android-17.0.0_r1 (primary) + android-16.0.0_r1 + android-15.0.0_r1 (version diff) + Android Developers power docs + Clippings structure references"
 confidence: medium-high
 drafted_date: "2026-05-10"
 polish_count: 0
@@ -34,13 +34,14 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed-lite
-last_task2b_at: "2026-05-15T07:22:00+08:00"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-06-22T04:51:20+08:00"
 last_task2b_lite_at: "2026-06-03"
+task2b_rework_log: "logs/task2b/2026-06-22-04-task2b-main-25.1.md"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
 task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
 task9_result: needs-rework
@@ -48,7 +49,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-03"
 last_task9_at: "2026-06-22T04:28:56+08:00"
 last_task9_review_log: logs/deep-review/2026-06-22-04-audit.md
-task9_review_notes: "2026-06-22 Task9 闲时抽检：发现 P0 源码链路/Android 17 版本边界问题；已写入 queue.json，回到 Task2B 修复。"
+task9_review_notes: "2026-06-22 Task9 闲时抽检：发现 P0 源码链路/Android 17 版本边界问题；已写入 queue.json，由 Task2B main 于 2026-06-22 修复完成，返回 Task6 revisiting。"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
@@ -224,9 +225,13 @@ Power Profiler 与 Perfetto 最适合做“时间同步”。当 power rail 出�
 >
 > Battery Historian 在 AOSP 端的真实数据生产者是 `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`，配合 `PowerStatsService`（HAL 数据采集）+ `PowerStatsScheduler`（周期聚合）+ `BatteryUsageStatsProvider`（统一归因入口）共同完成。
 
-### Android 15 Streamlined Battery Stats：三层 aconfig flag 体系
+### 功耗归因路径：Android 15 → 16 → 17 版本演进
 
-`BatteryStatsService.systemServicesReady()`（L525-619）集中配置哪些 power component 走「实测 HAL」路径：
+`BatteryStatsService.systemServicesReady()` 在三个 Android 版本中逐步重构了功耗归因链路。下面的分析以 `android-17.0.0_r1` 为最终锚点，Android 15/16 差异单独标注。
+
+#### ① Android 15（`android-15.0.0_r1`）：三层 aconfig flag 控制 collector / exporter
+
+`BatteryStatsService.systemServicesReady()`（L619-L631）集中配置哪些 power component 走实测 HAL 路径： [已验证: AOSP android-15.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java]
 
 | Flag | 覆盖组件 | 关闭时行为 |
 |------|----------|-------------|
@@ -234,7 +239,7 @@ Power Profiler 与 Perfetto 最适合做“时间同步”。当 power rail 出�
 | `Flags.streamlinedMiscBatteryStats()` | `WAKE_LOCK` / `SCREEN` / `AUDIO` / `VIDEO` / `GNSS` / `SENSORS` / `CAMERA` / `MEMORY` / `ANY` | 各类 `*PowerCalculator` 用 PowerProfile 估算 |
 | `Flags.streamlinedConnectivityBatteryStats()` | `MOBILE_RADIO` / `PHONE` / `WIFI` / `BLUETOOTH` | `MobileRadioPowerCalculator` 等估算 |
 
-**flag 开启 + HAL 支持**时，走 `MultiStatePowerAttributor.estimatePowerConsumption()` → `PowerStatsInternal.getStateResidencyAsync()`（**2 秒同步超时**，`POWER_STATS_QUERY_TIMEOUT_MILLIS = 2000`，L218）→ `BatteryUsageStats.Builder.aggregate()`。
+Android 15 中，这些 flag 的作用是决定各 `PowerCalculator` 走实测（`PowerStatsService` 采集的 HAL 数据）还是建模（`PowerProfile` 估算）。此版本**不存在** `processor/MultiStatePowerAttributor.java`——旗舰归因逻辑没有独立 processor。`PowerStatsScheduler.start(Flags.streamlinedBatteryStats())` 在 L707-L710 调用，带 boolean 参数控制是否启动周期聚合。
 
 **实战判定方式**：
 ```bash
@@ -242,12 +247,40 @@ adb shell dumpsys batterystats --usage --proto
 # 看输出中 component 是 "modeled" 还是 "measured"
 ```
 
+#### ② Android 16（`android-16.0.0_r1`）：`MultiStatePowerAttributor` 引入
+
+Android 16 新增 `processor/MultiStatePowerAttributor`，归因路径变为： [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java]
+
+```
+BatteryUsageStatsProvider.getBatteryUsageStats()
+  → MultiStatePowerAttributor.estimatePowerConsumption()
+    → PowerStatsExporter.exportAggregatedPowerStats()
+      → BatteryUsageStats.Builder.aggregate()
+```
+
+`PowerStatsInternal.getStateResidencyAsync()` — 位于 `BatteryStatsService` 的低功耗状态查询/打印路径（`android-17.0.0_r1` L294-L297），**不是** `BatteryUsageStatsProvider` 的主归因链。`PowerStatsScheduler.start(boolean enablePeriodicPowerStatsCollection)`（L92-L97）保持带参形式。
+
+#### ③ Android 17（`android-17.0.0_r1`）：flag 移除 + `start()` 无参化
+
+Android 17 中 `BatteryStatsService` 已移除 `Flags.streamlinedBatteryStats()` 判断，`PowerStatsScheduler.start()` 变为无参方法（L91-L94）。归因链与 Android 16 一致，但不再由 aconfig flag 开关控制： [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsScheduler.java]
+
+```
+BatteryUsageStatsProvider.getBatteryUsageStats()（L286-L287）
+  → mPowerAttributor.estimatePowerConsumption()
+```
+
 ### PowerStatsScheduler：周期聚合主调度器
 
-`frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsScheduler.java`（230 行）
+`frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsScheduler.java`
 
+| Android 版本 | `start()` 签名 | 调用位置 |
+|-------------|---------------|---------|
+| 15（`android-15.0.0_r1`） | `start(Flags.streamlinedBatteryStats())` | `BatteryStatsService.java` L707-L710 |
+| 16（`android-16.0.0_r1`） | `start(boolean enablePeriodicPowerStatsCollection)` | `BatteryStatsService.java` L674 |
+| 17（`android-17.0.0_r1`） | `start()`（无参） | `BatteryStatsService.java` L573-L576 |
+
+三个版本的共同行为：
 - 通过 `AlarmManager` 注册 **inexact non-wakeup alarm** 触发聚合
-- 入口：`mPowerStatsScheduler.start(Flags.streamlinedBatteryStats())`（`BatteryStatsService.java` L674）
 - 聚合动作在 `mHandler` 线程执行，**不会阻塞 system_server main looper**
 - 落盘到 `PowerStatsStore`（在 `/data/system/powerstats/`）
 
