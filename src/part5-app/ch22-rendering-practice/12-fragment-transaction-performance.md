@@ -6,8 +6,8 @@ section: "22.12"
 status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37); AndroidX Fragment 1.4 - 1.8+"
-last_verified: "2026-06-03"
-last_verified_against: "AndroidX fragment release branch commit f39ca3510efb2347ebfef231e25a3e804922450d FragmentManager/BackStackRecord/FragmentTransaction + Android Developers Fragment docs + Perfetto FrameTimeline docs"
+last_verified: "2026-06-22"
+last_verified_against: "AndroidX fragment release branch commit f39ca3510efb2347ebfef231e25a3e804922450d FragmentManager/BackStackRecord/FragmentTransaction + AndroidX Fragment 1.8.9/1.9.0-alpha01 release notes + Perfetto FrameTimeline Android 12+ docs"
 confidence: medium
 sources:
   - type: source
@@ -36,13 +36,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/AOSP结构/官方文档"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T17:24:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-05-17-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 深度复审：auto-fixed。P0 0 / P1 0 / P2 1；修正 related_chapters 中不存在的 7.4 为 7.17，AndroidX Fragment 提交链路与 runOnCommit / executePendingTransactions 边界复核通过，回到 Task6 复审。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；AndroidX Fragment commit f39ca351 提交链路、runOnCommit/reordering 边界、FrameTimeline 观察点和 related_chapters 复核通过，满足自动晋升 finalized 条件。"
-task6_state: reviewed
+task9_reviewed_date: "2026-06-22"
+last_task9_at: "2026-06-22T07:26:20+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-22-07-audit.md"
+task9_review_notes: "2026-06-03 Task9 深度复审：auto-fixed。P0 0 / P1 0 / P2 1；修正 related_chapters 中不存在的 7.4 为 7.17，AndroidX Fragment 提交链路与 runOnCommit / executePendingTransactions 边界复核通过，回到 Task6 复审。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；AndroidX Fragment commit f39ca351 提交链路、runOnCommit/reordering 边界、FrameTimeline 观察点和 related_chapters 复核通过，满足自动晋升 finalized 条件。 | 2026-06-22 Task9 闲时抽检：auto-fixed。P0 0 / P1 1 / P2 0；补齐 FrameTimeline 仅 Android 12 / API 31+ 可用的版本边界，Android 10/11 退回 Choreographer / RenderThread / 自定义 trace；AndroidX 1.8.9 与 1.9.0-alpha01 release notes 未改变正文 pinned commit 主链路。回到 Task6 复审。"
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
@@ -53,8 +53,9 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-03T02:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-pipeline_stage: ready-to-publish
-last_task9_autofix_at: "2026-06-03"
+pipeline_stage: task6_pending
+last_task9_autofix_at: "2026-06-22"
+last_task9_audit: "2026-06-22"
 last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
 ---
@@ -95,7 +96,7 @@ last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
 
 <!-- outline-end -->
 
-Fragment 页面切换的耗时，不能只看 `commit()` 调用点。`commit()` 多数时候只把事务放进 `FragmentManager` 的待执行队列；页面是否创建 View、何时触发布局、是否挤占下一帧，取决于后续 `execPendingActions()` 这段主线程工作。做页面切换性能排查时，要把 Fragment 事务、View inflate / layout、动画和 FrameTimeline 放到同一条时间线上看。
+Fragment 页面切换的耗时，不能只看 `commit()` 调用点。`commit()` 多数时候只把事务放进 `FragmentManager` 的待执行队列；页面是否创建 View、何时触发布局、是否挤占下一帧，取决于后续 `execPendingActions()` 这段主线程工作。做页面切换性能排查时，要把 Fragment 事务、View inflate / layout、动画和帧观测放到同一条时间线上看；Android 12+ 可以用 FrameTimeline，Android 10/11 设备则退回 Choreographer / RenderThread 切片和自定义 trace。
 
 现代应用的 Fragment 性能排查应以 AndroidX Fragment 为准。平台 `android.app.Fragment` 已废弃，不再作为新代码优化对象。速度优化的组织方式参考了《Android 性能优化》中“速度 = CPU 执行、缓存命中、任务调度共同决定”的结构，但正文结论以 AndroidX 源码与官方文档为准。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 
@@ -290,11 +291,13 @@ sequenceDiagram
 
 Perfetto FrameTimeline 的官方定义是：Expected Timeline 表示系统给 App 的渲染时间窗，Actual Timeline 表示 App 完成该帧并提交给 SurfaceFlinger 的时间窗；Actual 超过 Expected 会被判为 jank。[已验证: Perfetto FrameTimeline docs]
 
+这个观察点只适用于 Android 12 / API 31+。Android 10/11 设备没有 `android.surfaceflinger.frametimeline` 数据源，排查时要退回 `Choreographer#doFrame`、`performTraversals`、RenderThread 切片和业务 trace。
+
 排查时应同时看三段：
 
 - `mExecCommit` 所在主线程消息：看是否有 Fragment 生命周期、inflate、同步读取配置、数据库或磁盘访问。没有自定义 trace 时，可以打开 Java/Kotlin callstack sampling，或在关键生命周期加 `Trace.beginSection()`。
 - 后续 `Choreographer#doFrame`：看 traversal 内的 measure / layout / draw 是否因为新页面 View 树过重而超时，详见 §18.2。
-- RenderThread / FrameTimeline：看提交后的 `syncFrameState`、`dequeueBuffer`、GPU work 或 SurfaceFlinger 合成是否继续放大卡顿，详见 §13.3。
+- RenderThread / FrameTimeline（Android 12+）：看提交后的 `syncFrameState`、`dequeueBuffer`、GPU work 或 SurfaceFlinger 合成是否继续放大卡顿；Android 10/11 先看 RenderThread 切片和自定义 trace，详见 §13.3。
 
 ## `runOnCommit()` 的边界：事务执行完成，不等于帧已绘制
 
@@ -342,8 +345,8 @@ private void removeRedundantOperationsAndExecute(
 |---|---|---|---|
 | 点击后的主线程消息 | Java/Kotlin callstack、业务自定义 trace、`androidx.fragment` 调用栈 | `execPendingActions()` 批量执行、`onCreateView()` inflate 重、`onViewCreated()` 同步 I/O | 给生命周期关键点加 trace；同步 I/O 移出首帧；child Fragment 延后创建 |
 | 首次 traversal | `Choreographer#doFrame`、`performTraversals`、measure / layout / draw | 新页面 View 树过深、ConstraintLayout 约束复杂、RecyclerView 首屏绑定重 | 拆布局层级；首屏只绑定可见最小数据；复杂 View 延迟到首帧后 |
-| RenderThread | `syncFrameState`、`dequeueBuffer`、GPU work | Bitmap / RenderNode 同步重、Buffer 等待、GPU 绘制压力 | 压缩首屏图片；减少首帧动画和阴影；参考 §18.2 的 BLAST / FrameTimeline 分析 |
-| SurfaceFlinger / FrameTimeline | Actual 晚于 Expected、jank tag、SF 合成耗时 | App 提交晚、GPU fence 晚、合成压力高 | 回到 App 主线程和 RenderThread 定位；合成侧问题再看 HWC / layer 数 |
+| RenderThread | `syncFrameState`、`dequeueBuffer`、GPU work | Bitmap / RenderNode 同步重、Buffer 等待、GPU 绘制压力 | 压缩首屏图片；减少首帧动画和阴影；Android 12+ 参考 §18.2 的 BLAST / FrameTimeline 分析，Android 10/11 退回 RenderThread 与业务 trace |
+| SurfaceFlinger / FrameTimeline（Android 12+） | Actual 晚于 Expected、jank tag、SF 合成耗时 | App 提交晚、GPU fence 晚、合成压力高 | 回到 App 主线程和 RenderThread 定位；Android 10/11 设备先看 `doFrame`、RenderThread 与业务 trace；合成侧问题再看 HWC / layer 数 |
 | Binder / I/O | Binder transaction、disk read / write、SQLite | 页面创建期间同步拉配置、读缓存、跨进程查询 | 预取、缓存、异步化；把首帧必须字段和可延后字段拆开 |
 
 `Trace.beginSection()` 建议放在这些位置：导航点击回调、`commit()` 前后、目标 Fragment 的 `onAttach()` / `onCreate()` / `onCreateView()` / `onViewCreated()`、adapter 首次 submit、首屏数据绑定、首帧后任务入口。section 名不要带高基数字段，例如用户 ID、订单 ID、URL；否则线上聚合会失效，Perfetto 里也很难按名称过滤。
@@ -415,4 +418,4 @@ Compose-only 新页面优先用 Compose Navigation；迁移期混用可以接受
 
 Fragment 页面切换的性能判断点有三条：`commit()` 只是排队，`execPendingActions()` 才承担事务执行成本；Fragment 生命周期推进通常发生在普通主线程消息里，可能在 `doFrame` 之前拖慢下一帧；`setReorderingAllowed(true)` 通过合并和重排减少冗余操作，但会改变生命周期顺序假设。
 
-排查时从点击后的主线程消息开始，顺着 Fragment 生命周期、首帧 traversal、RenderThread 和 FrameTimeline 往后看。优化也按这个顺序做：少创建、晚创建、批量提交、首帧后再补齐。能用结构拆分解决的问题，不要交给 `commitNow()` 或线程优先级处理。
+排查时从点击后的主线程消息开始，顺着 Fragment 生命周期、首帧 traversal、RenderThread 和 Android 12+ FrameTimeline 往后看。优化也按这个顺序做：少创建、晚创建、批量提交、首帧后再补齐。能用结构拆分解决的问题，不要交给 `commitNow()` 或线程优先级处理。
