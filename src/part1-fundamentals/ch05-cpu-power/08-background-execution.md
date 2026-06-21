@@ -9,8 +9,8 @@ section: '5.8'
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
-last_verified: '2026-06-04'
-last_verified_against: AOSP android-16.0.0_r1 + Android Developers Android 17 docs + JobScheduler API reference
+last_verified: "2026-06-21"
+last_verified_against: "Android Developers Android 17 bg-audio docs + JobScheduler/IBinder API reference + source.android cached apps freezer docs"
 confidence: high
 sources:
 - type: official
@@ -71,31 +71,32 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: 2026-05-18
 task6_reviewed_by: openclaw-task6
-task9_reviewed_date: "2026-06-05"
+task9_reviewed_date: "2026-06-21"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-05T17:24:00+08:00"
+last_task9_at: "2026-06-21T19:26:37+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-06-04T02:57:11+08:00
 task9_state: reviewed
-task9_result: pass-tech-review
-last_task9_review_log: "logs/deep-review/2026-06-05-17-deep-review.md"
+task9_result: auto-fixed
+last_task9_review_log: "logs/deep-review/2026-06-21-19-audit.md"
 queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
-task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 Android 16 Binder freezer 源码行号，补 Android 17 JobScheduler reason stats 版本边界。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；Doze/App Standby、FGS 超时、Android 17 后台音频硬化、JobScheduler pending reason stats 与 Binder freezer 版本边界复核通过，满足自动晋升 finalized 条件。"
+task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 Android 16 Binder freezer 源码行号，补 Android 17 JobScheduler reason stats 版本边界。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；Doze/App Standby、FGS 超时、Android 17 后台音频硬化、JobScheduler pending reason stats 与 Binder freezer 版本边界复核通过，满足自动晋升 finalized 条件。 | 2026-06-21 Task9 闲时抽检：auto-fixed。修正 Android 17 background audio hardening 的 WIU / exact alarm + USAGE_ALARM 边界；把 cached apps freezer 约 10 秒冻结窗口从 Android 16 修正为 Android 14+；回到 Task6 复审。"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-04
 last_task6_at: 2026-06-04T12:11:00+08:00
 last_task6_review_log: "logs/review/2026-05-18-02-review.md"
-last_task9_autofix_at: "2026-06-04"
+last_task9_autofix_at: "2026-06-21"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-06
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
+last_task9_audit: "2026-06-21"
 ---
 
 
@@ -304,9 +305,9 @@ Android 15 又给 `dataSync` 和 `mediaProcessing` 加了累计预算。两种�
 
 ### Android 17 的后台音频硬化
 
-API 37 对后台音频操作施加了更严格的约束。由后台触发器（如 BOOT_COMPLETED、CONNECTIVITY_ACTION）拉起的 FGS，即使声明了 mediaPlayback 类型，也无法获取音频焦点。AudioManager.requestAudioFocus() 在这类场景下返回 AUDIOFOCUS_REQUEST_FAILED，不会抛异常，但播放会静默失败。
+API 37 对后台音频操作施加了更严格的约束。运行在 Android 17 的所有 App，只要在后台发起播放、请求音频焦点或改音量，都需要可见 Activity，或运行一个不是 `shortService` 类型的 FGS；如果 targetSdk 是 37，还要满足 FGS 具备 While-In-Use（WIU）能力。`BOOT_COMPLETED` 这类后台触发器拉起的 `mediaPlayback` FGS，如果没有用户触发形成的 WIU 能力，调用 `AudioManager.requestAudioFocus()` 会返回 `AUDIOFOCUS_REQUEST_FAILED`，播放和音量 API 可能静默失败。
 
-这意味着"后台 FGS + 音频焦点 + 持续播放"这条保活路径从 API 37 起被系统层封堵。如果 App 需要在后台持续播放音频，必须保证前台交互状态（Activity 可见、或 FGS 由用户操作触发）成立。已经在播放的音频流，如果应用退到后台且失去了 While-In-Use 状态，系统会在一段宽限期后停止音频焦点。
+例外要单独看：targetSdk 37 的应用如果已获得 exact alarm 权限，并且操作的是 `USAGE_ALARM` 音频流，官方文档明确豁免 WIU 要求。普通媒体播放、播客和直播类后台播放，仍应在用户发起播放时启动 `mediaPlayback` FGS，并在播放结束或永久失去音频焦点时停止 FGS。
 
 ## WorkManager vs JobScheduler vs AlarmManager：选型指南
 
@@ -377,13 +378,13 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 
 以上是任务调度层面的限制。下面从另一个角度看后台管控：系统对缓存进程的冻结机制。当 App 退到 cached 状态后，CachedAppOptimizer 会决定何时暂停其执行，这和 Doze、Standby bucket 是两条并行的管控线。
 
-## Android 16 的进程冻结流程：CachedAppOptimizer 与 Binder 协同
+## CachedAppOptimizer 与 Binder 协同：Android 14 冻结窗口与 Android 16 回调 API
 
 后台限制不只体现在 job、alarm 和 FGS 门禁上。应用退到 cached 之后，系统还会通过 CachedAppOptimizer 决定它何时进入 freezer。这套机制处理的是缓存进程何时暂停执行，Doze 和 Standby bucket 处理的是后台任务何时允许运行。
 
-Android 16 在这里补了一层约 10 秒的 debounce。进程刚进入 cached 状态时，系统不会立刻冻结，而是先留出一个短窗口，避开用户来回切任务时的频繁 freeze / unfreeze。对体验的影响很直接：最近刚离开前台的应用，回切时更少撞上“刚被冻结又马上解冻”的额外开销。
+从 Android 14 起，进程进入 cached 状态后约 10 秒才会被冻结。这个窗口避免用户来回切任务时频繁 freeze / unfreeze；最近刚离开前台的应用，回切时更少撞上“刚被冻结又马上解冻”的额外开销。Android 14 同时把冻结前 GC 请求、冻结后的内存压缩和上下文注册广播延迟投递写进 cached apps freezer 行为边界。
 
-Binder 侧也补了配套能力。`IBinder.FrozenStateChangeCallback` 允许系统服务感知远端进程已经 frozen 或恢复运行。对高频 callback 分发器，这个信号的作用是暂停发送非必要回调，或者改用丢弃策略，避免事务堆积在 frozen 进程前面。排查后台任务时，如果 Job、Alarm 和配额都正常，但进程长时间停在 cached + frozen 状态，就要把 CachedAppOptimizer 和 Binder 回调一起看。
+Android 16 / API 36 侧补了公开的 Binder 冻结通知 API。`IBinder.FrozenStateChangeCallback` 允许系统服务感知远端进程已经 frozen 或恢复运行。对高频 callback 分发器，这个信号的作用是暂停发送非必要回调，或者改用丢弃策略，避免事务堆积在 frozen 进程前面。排查后台任务时，如果 Job、Alarm 和配额都正常，但进程长时间停在 cached + frozen 状态，就要把 CachedAppOptimizer 和 Binder 回调一起看。
 
 ### BINDER_FREEZE ioctl 与竞态处理
 
@@ -549,9 +550,9 @@ binder.addFrozenStateChangeCallback(executor, (who, state) -> {
 | Android 10 (API 29) | BAL 收紧 | 后台弹 Activity 的路径明显变少 |
 | Android 12 (API 31) | Restricted bucket、后台启动 FGS 限制、exact alarm special access | 后台任务调度和 FGS 启动都要先过门禁 |
 | Android 13 (API 33) | Restricted bucket 的长期未交互阈值从 45 天降到 8 天 | 很久不用的 App 更快进入重限流状态 |
-| Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型；CachedAppOptimizer 引入冻结前 GC 请求 + 冻结后 compaction | FGS 类型、权限和运行时前提都要写完整 |
+| Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型；cached app 进入 cached 约 10 秒后冻结，并引入冻结前 GC 请求 + 冻结后 compaction | FGS 类型、权限和运行时前提都要写完整 |
 | Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
-| Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；CachedAppOptimizer 增加约 10 秒 freeze debounce，Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，cached 进程的 freeze / unfreeze 抖动也更容易解释 |
+| Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，系统服务也能按远端 frozen 状态处理回调分发 |
 | Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力；`getPendingJobReasonStats()` 增加 Job pending reason 统计 | 后台保活路径进一步收窄，Job 未执行原因更容易聚合分析 |
 
 ## 常见问题与误区
