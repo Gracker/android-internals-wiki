@@ -30,15 +30,15 @@ last_task9_autofix_at: '2026-06-21'
 last_task2b_lite_at: '2026-06-21'
 last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: auto-fixed
-task6_result: pass-light-edit
+task6_result: needs-rework
 task2b_result: fixed-lite
-task2b_state: fixed
-task6_state: revisiting
+task2b_state: pending
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-21
-last_task6_at: '2026-06-21T13:07:00+08:00'
+last_task6_at: '2026-06-21T14:07:00+08:00'
 last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-11'
@@ -404,7 +404,7 @@ adb shell simpleperf record -a --duration 30 -m 16384 -o /data/local/tmp/perf.da
 
 现代 Android 应用常拆为多个进程（主进程 + :bg 后台 + :remote 远端等）。Simpleperf 提供四种进程选择接口，定位多进程场景的热点分布。
 
-#### 四种选程方式
+#### 四种进程选择方式
 
 | 选项 | 语义 | 适用场景 |
 |------|------|----------|
@@ -517,7 +517,7 @@ simpleperf report --sort pid,symbol
 
 <!-- AIW-源码调研-2026-06-11 -->
 
-> 补充自 `2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md` 报告。与 `2026-06-10-simpleperf-multiprocess-sampling-coordination.md` 的"选程策略"互补，本节聚焦"选完之后数据怎么流、IPC 开销多大、跨进程数据怎么合"。
+> 补充自 `2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md` 报告。与 `2026-06-10-simpleperf-multiprocess-sampling-coordination.md` 的"进程选择策略"互补，本节聚焦"选完之后数据怎么流、IPC 开销多大、跨进程数据怎么合"。
 
 Simpleperf 的多进程性能监控在 IPC 层是**"三层生产者-消费者 + 一条主控通路 + 一条跨文件合并"**的复合架构：
 
@@ -799,7 +799,7 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 | API 31 (Android 12) | `MapRecordThread` 引入并行 mmap 扫描 | `MapRecordReader.cpp:18` Copyright 2020 [android-16.0.0_r1] |
 | API 33 (Android 13) | `GetDefaultRecordBufferSize` 按内存分级（64MB / 256MB） | `cmd_record.cpp:91-108` [android-16.0.0_r1] |
 
-> **源码锚点说明**：以上版本差异条目均基于 `android-17.0.0_r1` 验证（2026-06-21 Task2B 全量确认）。Android 17/API 37 的 simpleperf 行为与 android-16.0.0_r1 一致，源码路径无变更。
+> **源码锚点说明**：版本差异条目的源码行号在 `android-16.0.0_r1` 中定位，2026-06-21 Task2B 在 `android-17.0.0_r1` 上全量确认路径未变更。Android 17/API 37 的 simpleperf 行为与 Android 16 一致。
 
 #### 端侧 AI 应用的可观测性反直觉点
 

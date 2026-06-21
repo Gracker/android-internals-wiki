@@ -123,3 +123,17 @@
 - **建议**：Task 9 查阅 simpleperf record --help 确认 `--exclude-pid` 是否存在；如不存在则删除该示例
 
 - **review 日志**：logs/review/2026-06-21-13-review.md
+
+## [Task6 Review] 14.2 Simpleperf — 2026-06-21 14:07
+- **类型**：存疑-技术一致性
+- **位置**：14.2.4 过滤选项 vs 14.2.5 多进程应用采样
+- **问题**：-p 参数语义在三处描述不一致——14.2.4 注释写"只接受数字 PID，不支持进程名或正则"；14.2.5 表格写 `<pid_or_name_regex>` 和"按 PID 或进程名正则"；14.2.5 注释写"也支持进程名正则"。需确认 simpleperf -p 在 android-17.0.0_r1 中的实际行为。
+- **建议**：查阅 `simpleperf record --help` 确认 -p 参数语义，统一全文三处描述
+- **review 日志**：logs/review/2026-06-21-14-review.md
+
+## [Task6 Review] 14.2 Simpleperf — 2026-06-21 14:07
+- **类型**：存疑-源码锚点合规性
+- **位置**：14.2.7 mmap/munmap 数据通路：源码级展开
+- **问题**：该节源码锚点为 LineageOS/android_system_extras@lineage-23.2（非 AOSP 官方 tag），正文虽标注"android-17.0.0_r1 tag 未公开，未进入 Android 17"，但源码分析结论仍作为正文内容。版本差异表行号引用 [android-16.0.0_r1]。需 Task 9 确认 LineageOS lineage-23.2 与 android-17.0.0_r1 代码一致性。
+- **建议**：Task 9 验证源码一致性；若无法确认，mmap 数据通路节结论需降级或增加标注
+- **review 日志**：logs/review/2026-06-21-14-review.md

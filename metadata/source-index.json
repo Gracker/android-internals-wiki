@@ -4073,6 +4073,149 @@
       ],
       "summary": "Android平台ARM unwind技术第三部分",
       "scored_at": "2026-06-20T09:04:54.489408"
+    },
+    {
+      "title": "Android 17 内存压力检测器源码深度解析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-android-memory-pressure-detector.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "04",
+      "tags": [
+        "#Android",
+        "#系统开发",
+        "#内存管理",
+        "#PSI",
+        "#LowMemDetector"
+      ],
+      "summary": "Android 17 system_server 内部使用 LowMemDetector 直接消费 Linux 内核 PSI 信号，将内存压力转成四档内存因子，驱动进程 trim 级别调整和 onTrimMemory 派发。详细分析了 PSI 阈值配置、降级路径和 Java 与 Native 层交互机制。",
+      "scored_at": "2026-06-21T05:46:10.472389"
+    },
+    {
+      "title": "Android 内存跟踪 API 栈深度分析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-android-memory-tracking-api-stack.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "04",
+      "tags": [
+        "#Android",
+        "#系统开发",
+        "#内存管理",
+        "#API",
+        "#跟踪"
+      ],
+      "summary": "Android 内存跟踪 API 栈的深度技术分析，涵盖了从内核到应用层的完整内存跟踪机制。",
+      "scored_at": "2026-06-21T05:46:10.472397"
+    },
+    {
+      "title": "Android 17 BluetoothSocket EOF 标志处理",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-android17-bluetoothsocket-read-eof-flag.md",
+      "quality": "high",
+      "score": 18,
+      "chapter": "03",
+      "tags": [
+        "#Android",
+        "#系统开发",
+        "#蓝牙",
+        "#BluetoothSocket",
+        "#EOF"
+      ],
+      "summary": "Android 17 BluetoothSocket 的 EOF 标志处理机制分析，包括流处理和连接状态管理。",
+      "scored_at": "2026-06-21T05:46:10.472400"
+    },
+    {
+      "title": "SurfaceFlinger 帧时间追踪器实现",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-surfaceflinger-frame-timing-tracer.md",
+      "quality": "high",
+      "score": 19,
+      "chapter": "02",
+      "tags": [
+        "#Android",
+        "#系统开发",
+        "#渲染",
+        "#SurfaceFlinger",
+        "#帧时间"
+      ],
+      "summary": "SurfaceFlinger 帧时间追踪器的实现原理，包括渲染时间统计和性能监控机制。",
+      "scored_at": "2026-06-21T05:46:10.472401"
+    },
+    {
+      "title": "Android Job Scheduler 限流机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md",
+      "quality": "high",
+      "score": 17,
+      "chapter": "05",
+      "tags": [
+        "#Android",
+        "#系统开发",
+        "#JobScheduler",
+        "#限流",
+        "#调度"
+      ],
+      "summary": "Android Job Scheduler 的限流机制分析，包括任务调度策略和资源控制。",
+      "scored_at": "2026-06-21T05:46:10.472403"
+    },
+    {
+      "title": "Android 内存跟踪 API 间隙分析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-21-memory-tracking-api-gap.md",
+      "quality": "high",
+      "score": 18,
+      "chapter": "04",
+      "tags": [
+        "#Android",
+        "#系统开发",
+        "#内存管理",
+        "#API",
+        "#跟踪"
+      ],
+      "summary": "Android 内存跟踪 API 间隙的深度分析，识别现有实现中的缺陷和优化空间。",
+      "scored_at": "2026-06-21T05:46:10.472404"
+    },
+    {
+      "title": "Android内存泄漏检测与优化论文精读",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/每日论文精读（Android）/Android-2026-06-20.md",
+      "quality": "medium",
+      "score": 18,
+      "chapter": "16",
+      "tags": [
+        "#Android",
+        "#内存管理",
+        "#论文精读",
+        "#AI/ML",
+        "#优化"
+      ],
+      "summary": "5篇关于机器学习在Android内存泄漏检测中应用的论文精读，涵盖实时检测框架、自动化工具和大规模分析研究。",
+      "scored_at": "2026-06-21T05:46:16.244952"
+    },
+    {
+      "title": "Android内存分析笔记",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/每日论文精读（Android）/Android-Notes-2026-06-20.md",
+      "quality": "medium",
+      "score": 17,
+      "chapter": "04",
+      "tags": [
+        "#Android",
+        "#内存管理",
+        "#分析笔记",
+        "#优化"
+      ],
+      "summary": "Android内存管理的分析笔记，包含内存泄漏检测和优化的实践经验和最佳实践。",
+      "scored_at": "2026-06-21T05:46:16.244961"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-21-compose-memory-churn-slot-table.md",
+      "title": "源码调研：Jetpack Compose 重组内存抖动与 SlotTable/LinkTable 管理机制",
+      "summary": "SlotTable gap-buffer 结构与扩容机制、SlotWriter deferredSlotWrites 批量刷入优化、derivedStateOf 内存泄漏(b/516904513)、removeCurrentGroup 销毁链、LazyColumn 快速滚动 MB 级泄漏根因",
+      "chapter": "ch10",
+      "type": "deepresearch",
+      "processed_at": "2026-06-21T06:12:04.258796+08:00"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-surfaceflinger-frame-timing-tracer.md",
+      "title": "源码调研：SurfaceFlinger 帧时序体系 —— FrameTracer / FrameTimeline / VSyncPredictor 三层数据流",
+      "summary": "Android 17 SurfaceFlinger 帧时序三层架构：FrameTracer(Perfetto DataSource, 60s fence超时)、FrameTimeline(SurfaceFrame, 13类jank bitmask)、VSyncPredictor(线性回归替代DispSync)，完整 App/SF/HWC 卡顿分类判定点",
+      "chapter": "ch02",
+      "type": "deepresearch",
+      "processed_at": "2026-06-21T06:12:04.258796+08:00"
     }
   ]
 }

@@ -54,6 +54,8 @@ last_task9_audit: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-07-audit.md"
 last_task9_audit_notes: "idle audit: no P0/P1; AOSP android-16.0.0_r1 source paths and official Game Mode/ADPF API version guards rechecked; existing P2 guards remain for FileProvider attachInfo, Thermal thresholds, Game State API."
 review_notes: "2026-04-28 task9 deep-review: pass-tech-review；无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3。核心 API 与案例链路可通过；仅有 Thermal thresholds API 版本守卫、FileProvider 插桩细节、折叠屏多窗口数据支撑三处 P2。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-21
 ---
 
 # 行业案例
@@ -98,7 +100,7 @@ review_notes: "2026-04-28 task9 deep-review: pass-tech-review；无 P0/P1；Task
 
 Samsung 公开一手资料能确认两条线。用户侧有 Game Booster，Samsung 支持页把它定义为在游戏运行时自动介入的功能，目标是在 battery usage、performance 和 temperature 之间做平衡。开发者协作侧有 SceneSDK，Samsung Galaxy GameDev 的文章明确写到，游戏可以把场景信息发给 SceneSDK，设备侧再按场景调整 CPU/GPU frequency，并在发生降频时回传通知。
 
-这两条线要分开写。Game Booster 里的 Max Boost、Performance Priority 这类开关，属于用户可见的模式入口。公开资料没有展开 governor 参数、线程调度优先级、热阈值这些内部实现。SceneSDK 则是 Samsung 私有的厂商协作能力，不等于 Android 标准 API，也不意味着所有 Galaxy 机型都会给所有游戏开放同一套调度策略。
+这两条线要分开看。Game Booster 里的 Max Boost、Performance Priority 是用户可见的模式入口，公开资料没有展开 governor 参数、线程调度优先级、热阈值这些内部实现。SceneSDK 是 Samsung 私有的厂商协作接口，不是 Android 标准 API，不同 Galaxy 机型给不同游戏开放的策略也不一样。
 
 把 Samsung 案例落到实战，比较稳的写法有三点：
 
@@ -106,22 +108,20 @@ Samsung 公开一手资料能确认两条线。用户侧有 Game Booster，Samsu
 - **厂商私有能力**：SceneSDK 支持按 scene 调整 CPU/GPU 资源，并在系统发生 frequency reduction 时通知游戏
 - **验证方法**：如果要判断某台 Galaxy 设备是否真的抬高了频率或缩短了频率响应，仍要看 Perfetto、频率 counter、热状态和帧时间，不能把 UI 上的“Max Boost”直接翻译成固定的底层机制
 
-[已验证: Samsung Support Game Booster + Samsung Developer SceneSDK]
-
 ### Xiaomi：Game Turbo 更适合写成设备侧模式入口
 
 Xiaomi 的 Game Turbo 是 HyperOS 里的游戏模式入口。公开能稳定确认的是用户侧能力：均衡模式、性能模式，以及免打扰、亮度锁定、手势限制这类配套开关。至于“主线程固定绑大核”“GPU governor 一定更激进”这类底层行为，仍会随着机型、SoC 和系统版本变化，不能直接写成跨设备结论。
 
-因此，这一类案例更适合保留两层信息：
+因此，这一类案例保留两层信息就够了：
 
 - **用户可见模式**：均衡模式偏续航和温控，性能模式偏帧率和响应
-- **设备侧观测口径**：如果要判断 HyperOS 某个版本是否真的改变了 CPU 迁移、频率投票或 GPU 响应，仍要回到 Perfetto、频率 counter、migration 事件和帧时间分布
+- **设备侧验证**：判断 HyperOS 某个版本是否真的改变了 CPU 迁移、频率投票，回到 Perfetto、频率 counter、migration 事件和帧时间分布
 
 这样写既保留了 OEM 游戏模式的实用价值，也不会把设备观察误写成 Android 通用机制。
 
 ### OPPO/vivo：ADPF 的价值在于更早给系统负载信号
 
-OPPO、vivo 这类案例更适合用来说明 ADPF 与 vendor thermal / power stack 的协作边界。公开标准 API 只有 `PerformanceHintManager`、Thermal Headroom 和 Game Mode 这类入口。应用把 workload signal 提前交给系统后，怎样转换为 cluster placement、frequency vote 或 thermal policy，仍要经过厂商的 power HAL、perfservice 或调度栈。
+OPPO、vivo 这类案例更适合说明 ADPF 与厂商 thermal / power 栈的协作边界。公开标准 API 只有 `PerformanceHintManager`、Thermal Headroom 和 Game Mode。应用把 workload 信号提前交给系统后，具体怎么转换为 cluster placement、frequency vote 或 thermal policy，仍要经过厂商的 power HAL、perfservice 或调度栈。
 
 因此，这里保留定性判断，不再写成通用时延数字。ADPF 的价值是让游戏把目标帧时间和实际工作时长更早交给系统，减少纯靠历史负载猜测的滞后。具体能快多少，取决于 SoC、governor、power HAL、thermal policy 和游戏引擎接入方式。
 
@@ -131,8 +131,6 @@ OPPO、vivo 这类案例更适合用来说明 ADPF 与 vendor thermal / power st
 - **CPU/GPU 频率 counter**：频率变化是提前发生，还是等掉帧之后才追上来
 - **thermal status / thermal headroom**：系统是在主动留余量，还是已经进入被动降频
 - **hint session 相关轨道或日志**：应用是否真的按帧上报了 target / actual duration
-
-[待高爷补充：同一设备、同一场景下的 ADPF 开关对照 trace]
 
 ## 游戏性能优化：ADPF 与 Game Mode 的实战
 
@@ -153,7 +151,7 @@ Game Mode API 的作用是把“用户更想要性能还是续航”这件事传
 
 ### ADPF Thermal API：主动温控避免降频
 
-温控是移动设备上最容易被忽视的性能因素。游戏前几分钟可能稳定跑满 60fps，温度升高后触发 thermal throttling，帧率可能骤降到 30fps 甚至更低。稳定的 45fps 往往比先满帧再突然半帧更容易接受。
+温控是移动设备上最容易被忽视的性能因素。游戏前几分钟能稳定跑满 60fps，温度升高后触发 thermal throttling，帧率可能骤降到 30fps。稳定的 45fps 比先满帧再突然半帧更容易接受。
 
 ADPF Thermal API 用于在温度接近阈值前逐步降低负载，避免设备进入被动降频。主要 API 是 `PowerManager.getThermalHeadroom(int forecastSeconds)`。它返回非负浮点值，表示当前工作负载持续 `forecastSeconds` 秒后的预测热余量；`1.0` 对应 `THERMAL_STATUS_SEVERE` 的预测阈值，不是取值上限。返回值可能大于 `1.0`。设备不支持预测、传感器数据不足，或调用频率过高时可能返回 `NaN`。接入代码要先处理 `NaN`，并把采样频率控制在秒级，避免把无效值写进降级策略。
 
@@ -165,13 +163,11 @@ ADPF Thermal API 用于在温度接近阈值前逐步降低负载，避免设备
 
 在 Perfetto 里验证 Thermal API，至少同时看四组信号：thermal status / thermal headroom、CPU/GPU 频率 counter、FrameTimeline / 帧时间，以及应用侧的降级日志。只有 API 返回值、负载降级动作和帧时间变化能对上，才说明主动温控策略真的生效。
 
-[待高爷补充：游戏场景中 ADPF Thermal 主动降级前后的帧时间对比 Trace]
-
 ### ADPF Performance Hint API：帧级性能信号
 
-Performance Hint API 用于把周期性 workload 的目标耗时和实际耗时交给系统。传统 DVFS 更多依赖过去一段时间的平均负载，`PerformanceHintManager` 则让游戏或高负载 App 按线程组创建 `HintSession`，把目标帧时间和每轮实际工作时长直接上报给系统。
+Performance Hint API 让应用把周期性 workload 的目标耗时和实际耗时交给系统。传统 DVFS 依赖过去一段时间的平均负载做决策，`PerformanceHintManager` 则让游戏按线程组创建 `HintSession`，把目标帧时间和每轮实际工作时长直接上报。
 
-游戏或 App 在一帧渲染完成后调用 `reportActualWorkDuration()` 上报实际耗时，并用 `updateTargetWorkDuration()` 更新目标耗时，例如 `16.6ms@60fps`。系统会对比 actual duration 与 target duration：实际耗时长期低于目标时，可以降低资源供给；实际耗时接近或超过目标时，可以提前提高资源供给，减少下一帧超时概率。
+一帧渲染完成后调用 `reportActualWorkDuration()` 上报实际耗时，用 `updateTargetWorkDuration()` 更新目标耗时（例如 `16.6ms@60fps`）。系统对比实际耗时与目标：实际耗时长期低于目标时降低资源供给；实际耗时接近或超过目标时提前提高供给，减少下一帧超时概率。
 
 这套机制需要游戏引擎配合。Unity 引擎通过 ADPF 插件可以在每一帧渲染完成后调用这些 API；Unreal Engine 可以把可伸缩性设置与 ADPF 信号结合，按负载动态调整画质级别。
 
@@ -219,9 +215,9 @@ Google 自己的 Lifecycle 组件（`ProcessLifecycleOwnerInitializer`）和 Fil
 
 ## 大型 App 与厂商的协作优化
 
-### TikTok × Google：官方 case study 的价值在于完整证据链
+### TikTok × Google：完整证据链的示范
 
-Google 在 2022 年发布了 TikTok Android 性能案例，给出的三组结果分别是：启动时间下降 **45%**、UI smoothness 改善 **49%**、视频首帧显示速度提升 **41%**。同一篇文章还提到 active days per user 提升 **1%**。这些数字来自 Google 和 TikTok 联合发布的 case study，适合当成单一应用、单一优化周期里的公开结果，不适合直接当作行业基线。
+Google 在 2022 年发布了 TikTok Android 性能案例，三组结果是：启动时间下降 **45%**、UI smoothness 改善 **49%**、视频首帧速度提升 **41%**。同一篇文章还提到 active days per user 提升 **1%**。这些数字来自 Google 和 TikTok 联合发布的案例，适合当成单一应用、单一优化周期的公开结果，不能直接当作行业基线。
 
 这个案例的参考价值在于它把“分析路径 → 工程动作 → 业务结果”接完整了：
 
@@ -230,8 +226,6 @@ Google 在 2022 年发布了 TikTok Android 性能案例，给出的三组结果
 - **视频首帧**：复用 player、做 preload / prerender，并联优化 codec 与 network path
 
 这类官方案例最有用的地方，不在数字本身，而在证据链完整。能看到优化目标、主要动作和业务结果之间的对应关系。
-
-[已验证: Android Developers Blog, 2022-08]
 
 ### 厂商与应用的联合优化模式
 
@@ -243,9 +237,9 @@ Google 在 2022 年发布了 TikTok Android 性能案例，给出的三组结果
 
 这三种形态可以同时存在。写案例时要把“公开 API”“设备配置”“合作调优”分层，不要把其中一层的能力外推成整条 Android 通用机制。
 
-## 折叠屏与大屏设备的性能挑战 [自动发现]
+## 折叠屏与大屏设备的性能挑战
 
-折叠屏设备在 2024-2025 年成为 Android 生态中增长最快的品类之一，Samsung Galaxy Z Fold 系列是其中的代表。折叠屏给性能优化带来了两类独特的挑战。
+折叠屏设备在 2024-2025 年成为 Android 生态中增长最快的品类之一，Samsung Galaxy Z Fold 系列是其中的代表。折叠屏给性能优化带来两类独特挑战。
 
 ### 屏幕形态切换时的渲染开销
 
@@ -277,11 +271,11 @@ App 在屏幕切换时需要重新适配帧率策略。如果 App 使用了 Chor
 
 **误区四：折叠屏优化只是 UI 适配。** 折叠屏的性能优化不只是让布局在大屏上好看——它涉及 Surface 管理、GPU 资源分配、多窗口调度、VRR 适配等一系列底层问题。如果只做 UI 适配而忽视这些底层因素，用户体验仍然会出问题。
 
-**误区五：性能优化的投入只在技术层面有回报。** TikTok 的案例证明，性能优化直接关联用户活跃度和留存率。1% 的活跃天数提升在数亿用户规模下意味着可观的商业价值。将性能优化的投入转化为业务语言（留存、DAU、ARPU），能帮助技术团队获得更多的资源支持。
+**误区五：性能优化的回报只在技术层面。** TikTok 案例表明性能优化直接关联用户活跃度和留存率——1% 的活跃天数提升在数亿用户规模下意味着可观的商业价值。把优化投入转化为业务语言（留存、DAU、ARPU），有助于技术团队争取资源。
 
 ## 与其他章节的关系
 
-本节的案例涉及了全书多个章节的技术内容，它们的关联如下：
+本节案例涉及全书多个章节的技术内容：
 
 - **5.4 DVFS / 5.6 Android 功耗管理**：OEM 游戏模式经常围绕 CPU/GPU 频率、功耗预算和热策略做差异化实现
 - **5.3 big.LITTLE**：关键线程是否迁移、迁到哪一组核心，常常决定游戏场景的帧时间波动
