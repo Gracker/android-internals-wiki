@@ -27,14 +27,14 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-06-01"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-06-21"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-01T18:21:00+08:00"
+last_task9_at: "2026-06-21T16:27:03+08:00"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-01T12:50:00+08:00"
@@ -47,11 +47,12 @@ task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
 last_task6_review_log: "logs/review/2026-06-01-18-review.md"
 task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。"
-last_task9_review_log: "logs/deep-review/2026-06-01-18-deep-review.md"
-task9_review_notes: "2026-06-01 Task9 18:21：pass-tech-review。复核 Task6 回流后的 Native Crash 链路；SignalChain、debuggerd/crash_dump、ApplicationExitInfo tombstone、Breakpad 符号化与线程级安全点边界经 AOSP android-16.0.0_r1 复核，无新增 P0/P1，自动晋升 finalized。"
-last_task9_autofix_at: "2026-06-01"
+last_task9_review_log: "logs/deep-review/2026-06-21-16-audit.md"
+task9_review_notes: "2026-06-21 Task9 idle-audit：auto-fixed。Android 17/API 37 源码抽检发现 native crash 通知链路方法名不准；已将 AppErrors.crashApplication()/handleApplicationCrash() 修正为 NativeCrashListener -> handleApplicationCrashInner()，回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-21"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
+last_task9_audit: "2026-06-21"
 ---
 
 # Native Crash 分析与治理
@@ -120,7 +121,7 @@ SignalChain 的拦截发生在 `sigaction()` 调用时：应用通过 JNI 调用
 2. `crash_dump` 连接 **tombstoned** 守护进程获取输出 fd，通过 `ptrace` attach 回崩溃进程，读取寄存器状态和内存映射
 3. `crash_dump` 使用 `libunwindstack` 回溯调用栈，收集所有线程的堆栈并生成 tombstone
 4. tombstone 通过 tombstoned 写入 `/data/tombstones/`
-5. `crash_dump` 通过 `/data/system/ndebugsocket` 通知 **ActivityManagerService**，由 AMS 通过 `AppErrors.crashApplication()` / `handleApplicationCrash()` 处理（不经过 Java 层的 `UncaughtExceptionHandler`——Native Crash 走的是 AMS → CrashDialog / kill 进程路径）
+5. `crash_dump` 通过 `/data/system/ndebugsocket` 通知 **ActivityManagerService** 中的 `NativeCrashListener`，再由 AMS 的 `handleApplicationCrashInner()` 处理（不经过 Java 层的 `UncaughtExceptionHandler`——Native Crash 走的是 AMS → CrashDialog / kill 进程路径）
 
 `ptrace` + 独立进程的设计是关键：崩溃进程的内存空间可能已经损坏，如果在进程内部做堆栈回溯，可能二次崩溃。`crash_dump` 通过 `ptrace` 从外部读取，安全性更高。pseudothread 机制保证崩溃线程在 fork+exec 期间不会阻塞在信号处理上下文中。
 
