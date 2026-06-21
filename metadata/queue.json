@@ -524,6 +524,71 @@
       "completed_at": "2026-06-20T12:54:38+08:00",
       "completed_by": "task2b-main",
       "resolution": "fixed — Chromium HEAD/mainline 锚点已降级为参考/标注，AOSP android-17.0.0_r1 framework 锚点保留为已验证"
+    },
+    {
+      "section": "8.3",
+      "section_title": "启动优化",
+      "priority": 80,
+      "reason": "[素材注入] Android 17 新任务调度器启动优化参考文章",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — Android 17 引入全新任务调度器，智能优先级算法+延迟启动+ML预测用户行为",
+          "suggestion": "判断是否适合作为启动优化章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-21T05:32:16.634401",
+      "status": "completed",
+      "completed_at": "2026-06-21T08:50:48.523891+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "URL 不可访问（resolves to private/internal IP），跳过"
+    },
+    {
+      "id": "task-deepresearch-inject-2026-06-21-compose-slot-table",
+      "section": "10.6",
+      "section_title": "内存抖动与频繁 GC",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增 Compose SlotTable/LinkTable 源码级深度调研，补充 gap-buffer/deferred writes/derivedStateOf 泄漏机制",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-21-compose-memory-churn-slot-table.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Compose 重组内存抖动与 SlotTable/LinkTable 管理机制 — gap-buffer 扩容、deferredSlotWrites 批量刷入、derivedStateOf 泄漏（b/516904513），Lazy 列表滚动 MB 级泄漏量化",
+          "suggestion": "章节已 finalized，建议在下次回炉时补充 SlotTable gap-buffer 源码级分析及 deferredSlotWrites 优化陷阱，特别是 LazyColumn 场景"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-21T06:12:04.258796+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task-deepresearch-inject-2026-06-21-sf-frame-timing",
+      "section": "2.17",
+      "section_title": "Frame Pacing 与 VSync 调度",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增 SurfaceFlinger 帧时序三层架构（FrameTracer/FrameTimeline/VSyncPredictor）Android 17 源码级调研",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-surfaceflinger-frame-timing-tracer.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "SurfaceFlinger 帧时序体系 — FrameTracer(Perfetto DataSource)、FrameTimeline(13类jank bitmask+score)、VSyncPredictor(线性回归替代DispSync)，完整数据流源码链",
+          "suggestion": "章节已 finalized，建议回炉时补充 VSyncPredictor 替代 DispSync 的源码依据、FrameTimeline jank 分类算法、以及 FrameTracer 的 60s fence 超时机制"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-21T06:12:04.258796+08:00",
+      "status": "pending"
     }
   ],
   "queue": [
