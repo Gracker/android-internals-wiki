@@ -4,32 +4,34 @@ chapter: "5.6"
 section: "5.6"
 status: finalized
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
-last_verified: "2026-06-02"
-last_verified_against: "AOSP android-16.0.0_r1; android-14.0.0_r1 historical TARE check; Android 17 / API 37 official docs"
+last_verified: "2026-06-21"
+last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base, frameworks/native, hardware/interfaces); android-14.0.0_r1 historical TARE check; Android 16/17 official docs"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-02"
 task6_reviewed_date: "2026-06-02"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-03"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-21"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-03T02:20:00+08:00"
+last_task9_at: "2026-06-21T15:27:38+08:00"
+last_task9_audit: "2026-06-21"
+last_task9_autofix_at: "2026-06-21"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-02T08:50:00+08:00"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 review_round: 7
 related_chapters:
   - "5.1"
   - "5.2"
   - "5.4"
-last_task9_review_log: "logs/deep-review/2026-06-03-02-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 02 复审：pass-tech-review。旧 P0/P1（TARE 伪 API、Android 17 Energy Limiter 研究假设）已移出正文结论；Power HAL AIDL、Doze/App Standby、JobDebugInfo 与 onVsyncIdle 口径复核通过；queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-06-21-15-audit.md"
+task9_review_notes: "2026-06-21 Task9 闲时抽检：auto-fixed。已将源码锚点升级到 android-17.0.0_r1；修正 TARE tag 状态、Notifier/BatteryStatsImpl 路径、JobScheduler 10 分钟时限版本边界，并把不存在的 JobDebugInfo 改为 PendingJobReasonsInfo/getPendingJobReasonStats 口径；回到 Task6 复审。"
 reviewed_at: "2026-06-02T01:05:00+08:00"
 last_task6_at: "2026-06-02T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-10-review.md"
@@ -83,7 +85,7 @@ last_deepseek_cn_review_at: 2026-06-03
 
 ### PowerManagerService:功耗管理的总调度
 
-PowerManagerService(简称 PMS)运行在 system_server 进程中,是 Android 功耗管理的核心调度者。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java]
+PowerManagerService(简称 PMS)运行在 system_server 进程中,是 Android 功耗管理的核心调度者。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java]
 
 PMS 的职责可以概括为三个:
 
@@ -91,17 +93,17 @@ PMS 的职责可以概括为三个:
 
 **第二,决定设备的电源状态。** PMS 根据当前有效的 WakeLock、屏幕超时设置、Doze 状态等因素,计算出系统应该处于什么电源状态--屏幕亮还是灭、CPU 运行还是可以休眠。
 
-**第三,协调 autosuspend、suspend blocker 和 Power HAL。** PMS 不再把"进入 Suspend"简化成直接写 `/sys/power/state`。在 android-16 的实现里,Java 层通过 JNI 调 `nativeSetAutoSuspend()`、`nativeAcquireSuspendBlocker()` / `nativeReleaseSuspendBlocker()` 和 `nativeSetPowerMode()`;对应的 native 层再调用 autosuspend 接口、维护本地 suspend blocker,并把 `Mode::INTERACTIVE` 这类模式透传给 Power HAL。[已验证: AOSP android-16.0.0_r1, services/core/jni/com_android_server_power_PowerManagerService.cpp; hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
+**第三,协调 autosuspend、suspend blocker 和 Power HAL。** PMS 不再把"进入 Suspend"简化成直接写 `/sys/power/state`。在 android-17.0.0_r1 的实现里,Java 层通过 JNI 调 `nativeSetAutoSuspend()`、`nativeAcquireSuspendBlocker()` / `nativeReleaseSuspendBlocker()` 和 `nativeSetPowerMode()`;对应的 native 层再调用 autosuspend 接口、维护本地 suspend blocker,并把 `Mode::INTERACTIVE` 这类模式透传给 Power HAL。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/jni/com_android_server_power_PowerManagerService.cpp; hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
 
 ### WakeLock 的种类:锁类型决定影响范围
 
-WakeLock 是 Android 提供给 App 的一种"阻止系统休眠"的机制。在 `PowerManager.java` 中定义了多种类型:[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java]
+WakeLock 是 Android 提供给 App 的一种"阻止系统休眠"的机制。在 `PowerManager.java` 中定义了多种类型:[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java]
 
 最关键的是 **PARTIAL_WAKE_LOCK**。它只保持 CPU 运行,允许屏幕和键盘背光关闭。这是音乐播放、后台下载、即时通讯心跳等场景下最常用的锁类型。如果持有了 PARTIAL_WAKE_LOCK,即使用户按下电源键灭屏,CPU 仍然会继续工作。
 
 其他类型的锁(如 SCREEN_BRIGHT_WAKE_LOCK、FULL_WAKE_LOCK)在较新的 Android 版本中已经被废弃,因为它们强制保持屏幕点亮,功耗影响太大。如果代码中还在使用这些废弃的锁类型,应该迁移到 FLAG_KEEP_SCREEN_ON 或其他方式。
 
-**WakeLock 事件如何流向 BatteryStats**：当 App 调用 PowerManager.newWakeLock() 时，请求经过 PowerManager(客户端) → Binder IPC → PowerManagerService(PMS)。PMS 在 acquireWakeLockInternal() 中完成 WakeLock 注册，随后通过 notifyWakeLockAcquiredLocked() → Notifier.onWakeLockAcquired() 把事件转发给 IBatteryStats（通过 noteStartWakelock() / noteStartWakelockFromSource()，携带 WorkSource、historyTag、lockFlags 等参数）。IBatteryStats 的实现类 BatteryStatsService 最终在 BatteryStatsImpl 中按 uid/pid 记录持锁时长和频次。释放流程对称：notifyWakeLockReleasedLocked() → Notifier → IBatteryStats.noteStopWakelock*()。Battery Historian 的 Userspace Wakelock Track 数据就来自这条统计路径。[已验证: AOSP android-16.0.0_r1, PowerManagerService.java / PowerManagerService.Notifier.java / BatteryStatsImpl.java]
+**WakeLock 事件如何流向 BatteryStats**：当 App 调用 PowerManager.newWakeLock() 时，请求经过 PowerManager(客户端) → Binder IPC → PowerManagerService(PMS)。PMS 在 acquireWakeLockInternal() 中完成 WakeLock 注册，随后通过 notifyWakeLockAcquiredLocked() → Notifier.onWakeLockAcquired() 把事件转发给 IBatteryStats（通过 noteStartWakelock() / noteStartWakelockFromSource()，携带 WorkSource、historyTag、lockFlags 等参数）。IBatteryStats 的实现类 BatteryStatsService 最终在 BatteryStatsImpl 中按 uid/pid 记录持锁时长和频次。释放流程对称：notifyWakeLockReleasedLocked() → Notifier → IBatteryStats.noteStopWakelock*()。Battery Historian 的 Userspace Wakelock Track 数据就来自这条统计路径。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java; frameworks/base/services/core/java/com/android/server/power/Notifier.java; frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java; frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java]
 
 ```java
 // frameworks/base/core/java/android/os/PowerManager.java
@@ -135,7 +137,7 @@ HWC（Hardware Composer）在显示内容持续不变时，可以通过 ICompose
 
 对开发者而言，灭屏后的功耗分析不能只看 WakeLock 持有时长，还需要关注 App 是否在持续触发 invalidate / requestLayout 导致 SurfaceFlinger 无法判定"显示空闲"。如果在 Perfetto 中观察到灭屏后 SurfaceFlinger 仍然持续产生 VSync-surfaceflinger slice，且系统迟迟不进入 suspend，排查方向包括：持续动画、后台 Canvas 绘制、ViewRootImpl 的 dirty rect 提交等。
 
-[已验证: AOSP android-16.0.0_r1, SurfaceFlinger.onComposerHalVsyncIdle() / Scheduler.forceNextResync(); hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerCallback.aidl]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp; hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerCallback.aidl]
 
 [图:PowerManagerService → WakeLock / suspend blocker / autosuspend / Power HAL 的分层示意]
 
@@ -366,11 +368,11 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 
 TARE（Think Advanced Resource Economy）曾作为 JobScheduler 资源配额实验出现在 Android 12-14 附近的系统实现中。它把后台资源抽象成 ARC（Android Resource Credits），由系统服务根据策略给应用分配预算，再在 Job 调度前判断是否允许继续执行。
 
-TARE 在本节只能写成历史实现和源码边界，不能写成 Android 17 已验证能力。Task9 复核结果显示：android.googlesource 当前未发布 `android-17.0.0_r1` tag；`android-16.0.0_r1` / `android-15.0.0_r1` 的 `frameworks/base/apex/jobscheduler/service/java/com/android/server/` 下未命中 `tare/` 目录；`android-14.0.0_r1` 的历史 `tare/` 目录包含 `InternalResourceService`、`EconomicPolicy`、`JobSchedulerEconomicPolicy`、`EconomyManagerInternal` 等实现，但没有 `TareEconomicManager.java`、`AppBudgetManager.java`，也没有 `setAppBudgetoyant()` / `getRemainingBudget()` 这类应用自设预算公开 API。
+TARE 在本节只能写成历史实现和源码边界，不能写成 Android 17 已验证能力。2026-06-21 抽检确认：`android-17.0.0_r1` tag 已发布；`android-17.0.0_r1` / `android-16.0.0_r1` / `android-15.0.0_r1` 的 `frameworks/base/apex/jobscheduler/service/java/com/android/server/` 下未命中 `tare/` 目录；`android-14.0.0_r1` 的历史 `tare/` 目录包含 `InternalResourceService`、`EconomicPolicy`、`JobSchedulerEconomicPolicy`、`EconomyManagerInternal` 等实现，但没有 `TareEconomicManager.java`、`AppBudgetManager.java`，也没有 `setAppBudgetoyant()` / `getRemainingBudget()` 这类应用自设预算公开 API。
 
 因此，在 Android 16/17 范围内分析 JobScheduler 配额，应回到 App Standby Bucket、Doze 维护窗口、JobScheduler quota 和 Android 16 行为变更这些公开资料。TARE 只作为历史源码线索保留：它说明 Android 曾尝试把后台任务约束抽象成经济模型，但不能用它解释 Android 17 的 Job 调度决策。
 
-[已验证: AOSP android-14.0.0_r1 historical TARE directory; AOSP android-15.0.0_r1 / android-16.0.0_r1 no matching `com/android/server/tare/` directory; logs/deep-review/2026-06-02-03-deep-review.md]
+[已验证: AOSP android-14.0.0_r1 historical TARE directory; AOSP android-15.0.0_r1 / android-16.0.0_r1 / android-17.0.0_r1 no matching `com/android/server/tare/` directory; logs/deep-review/2026-06-02-03-deep-review.md]
 
 ## JobScheduler / WorkManager 的省电调度策略
 
@@ -402,7 +404,7 @@ JobScheduler scheduler = (JobScheduler) context.getSystemService(Context.JOB_SCH
 scheduler.schedule(job);
 ```
 
-JobScheduler 的一个重要特性是:**Job 执行完必须调用 jobFinished()**。因为 JobScheduler 在执行 Job 时会持有一个以 `*job*` 开头的 WakeLock,最长执行时间 10 分钟。如果一直不结束,这个锁就不会释放,系统无法休眠。[已验证: 官方文档, developer.android.com/reference/android/app/job/JobScheduler]
+JobScheduler 的一个重要特性是:**Job 执行完必须调用 jobFinished()**。JobScheduler 在执行 Job 时会持有一个以 `*job*` 开头的 WakeLock；Android M 到 Android R 的 Job 最长执行 10 分钟，Android S 之后如果系统繁忙或需要回收资源仍可能在 10 分钟后停止，但系统空闲时可以继续运行更久。如果 Job 一直不结束，这个锁也会持续影响系统休眠。[已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java]
 
 ### WorkManager:Jetpack 的调度方案
 
@@ -439,7 +441,7 @@ WorkManager.getInstance(context).enqueue(uploadWork)
 
 **3. 注意 Doze 和 App Standby 的交互。** 即使使用 JobScheduler 正确调度了任务,如果 App 被放到 Rare 或 Restricted Bucket,任务的执行频率仍然会被大幅降低。代码需要能够处理"任务很久没执行"的情况。
 
-**4. 不要在 Job 中做无限期的工作。** Job 有执行时间限制(通常是 10 分钟),超时后系统会强制停止。如果任务需要更长时间,应该考虑使用前台服务,或者把大任务拆分成多个小任务。
+**4. 不要在 Job 中做无限期的工作。** Android M 到 R 的普通 Job 有 10 分钟执行上限；Android S 之后系统仍可在繁忙或资源紧张时停止长时间 Job，但空闲时不保证严格卡在 10 分钟。如果任务需要更长时间,应该考虑使用前台服务,或者把大任务拆分成多个小任务。
 
 ### 在 Android 16 中的演进
 
@@ -507,7 +509,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 | 12 (API 31) | Restricted Bucket + 自动限制通知 | 最严格 Standby 等级 + 用户参与共治 |
 | 14 (API 34) | 前台服务类型强制化 | 后台启动前台服务需声明具体类型 |
 | 16 (API 36) | JobScheduler 配额优化 | Active Bucket 配额更宽裕,可见时发起的 Job 更容易保留高配额 |
-| 17 (API 37) | JobDebugInfo 调试能力 + onVsyncIdle 显示空闲回调 | 后台任务调试信息增强;HWC display idle 通知 SurfaceFlinger 重新同步 |
+| 17 (API 37) | JobScheduler pending reason stats 调试能力 + onVsyncIdle 显示空闲回调 | 后台任务 pending 原因统计增强;HWC display idle 通知 SurfaceFlinger 重新同步 |
 
 这张表呈现出一个趋势：Android 的功耗管理策略越来越依赖系统侧的主动管控，不再只依赖 App 开发者自觉控制后台行为。对于 App 开发者来说,趋势很明确:尽量少用直接 WakeLock,更多依赖 JobScheduler / WorkManager 的系统调度。对于系统开发者来说,理解 PMS 的决策逻辑和各版本的行为差异,是分析功耗问题的关键基础。
 
@@ -538,7 +540,7 @@ CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只�
 - **5.3 大小核架构**:大小核的硬件设计为功耗优化提供了物理基础
 - **5.4 DVFS 与功耗管理**:DVFS 根据负载动态调整频率和电压,是运行时功耗优化的核心
 - **5.5 Thermal 管控**:高温时限制频率和任务,从另一个维度控制系统功耗
-- **5.10 JobScheduler/WorkManager 调度与后台任务性能**:本节涉及的调度框架在 §5.10 有更深入的性能分析,包括 Android 17 新增的 JobDebugInfo API 和 Play Store wakelock 惩罚政策
+- **5.10 JobScheduler/WorkManager 调度与后台任务性能**:本节涉及的调度框架在 §5.10 有更深入的性能分析,包括 Android 17 的 JobScheduler pending reason stats 调试口径和 Play Store wakelock 惩罚政策
 - **11.5 Wakelock 机制与功耗分析**:从 Perfetto 视角详细分析 WakeLock 的持有时长、滥用检测与系统限制机制
 - **11.1 Android 功耗模型** / **11.2 App 耗电优化**:从 App 视角更深入地讨论功耗优化策略
 
@@ -546,8 +548,8 @@ CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只�
 
 ## 参考资料
 
-- [AOSP PowerManagerService](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
-- [AOSP PowerManager](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/os/PowerManager.java)
+- [AOSP PowerManagerService](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java)
+- [AOSP PowerManager](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PowerManager.java)
 - [Android 官方文档: Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
 - [Android 官方文档: App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
 - [Android 官方文档: Battery Historian](https://developer.android.com/topic/performance/power/setup-battery-historian)
@@ -650,7 +652,7 @@ EAS 在选择任务放置时，评估的是"把任务迁移到候选 CPU"带来�
 
 ### Power HAL：Android 与内核的桥梁
 
-Android 的 Power HAL 是连接 Android 框架层和内核电源管理的关键接口。旧设备和历史代码里会看到 `hardware/libhardware/include/hardware/power.h` 与 `android.hardware.power@1.0-1.3` HIDL 接口；Android 16/17 口径优先看 AIDL `IPower`，源码锚点是 `hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
+Android 的 Power HAL 是连接 Android 框架层和内核电源管理的关键接口。旧设备和历史代码里会看到 `hardware/libhardware/include/hardware/power.h` 与 `android.hardware.power@1.0-1.3` HIDL 接口；Android 17 口径优先看 AIDL `IPower`，源码锚点是 `hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
 
 **Legacy HAL 接口**：
 
