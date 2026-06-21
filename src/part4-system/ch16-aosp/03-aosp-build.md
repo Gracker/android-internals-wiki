@@ -8,7 +8,7 @@ reviewed_date: "2026-05-01"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
-last_task6_audit: "2026-05-23"
+last_task6_audit: "2026-06-22"
 task9_state: reviewed
 task9_result: pass-tech-review
 last_task9_at: "2026-05-01T08:27:00+08:00"
