@@ -34,8 +34,8 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -43,17 +43,17 @@ last_task2b_at: "2026-06-22T04:51:20+08:00"
 last_task2b_lite_at: "2026-06-03"
 task2b_rework_log: "logs/task2b/2026-06-22-04-task2b-main-25.1.md"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
-task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
+task6_review_notes: "2026-06-22 Task6 revisiting 复审通过；L1/L2 无新增问题（修复 1 处笔误'异常常'→'异常通常'）；Task2B 已修复 P0 源码链路问题；无 B 类回炉项，转入 Task9 pending 待技术复审。"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-03"
+task9_reviewed_date: "2026-06-22"
 last_task9_at: "2026-06-22T04:28:56+08:00"
 last_task9_review_log: logs/deep-review/2026-06-22-04-audit.md
 task9_review_notes: "2026-06-22 Task9 闲时抽检：发现 P0 源码链路/Android 17 版本边界问题；已写入 queue.json，由 Task2B main 于 2026-06-22 修复完成，返回 Task6 revisiting。"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
-last_task6_at: "2026-06-03T07:08:52+08:00"
+last_task6_at: "2026-06-22T05:06:00+08:00"
 review_type: task6-writing-quality-review
 task6_reviewed_date: "2026-06-03"
 deepseek_cn_review_state: done
@@ -174,7 +174,7 @@ CPU 功耗不能只看线程是否 busy。大核高频、持续唤醒、频繁�
 
 ### 网络：看传输量，也看唤醒形态
 
-网络功耗常见异常常来自碎片流量。十几 KB 的请求如果每分钟唤醒一次，modem 和 Wi-Fi 都要反复从低功耗状态切到活跃状态。`batterystats` 里看 UID 收发字节数和 radio active；Battery Historian 里看 `network` 行是否出现密集短脉冲；Perfetto 里进一步查 socket tag、线程和请求发起点。
+网络功耗异常通常来自碎片流量。十几 KB 的请求如果每分钟唤醒一次，modem 和 Wi-Fi 都要反复从低功耗状态切到活跃状态。`batterystats` 里看 UID 收发字节数和 radio active；Battery Historian 里看 `network` 行是否出现密集短脉冲；Perfetto 里进一步查 socket tag、线程和请求发起点。
 
 网络优化策略详见 §24.4、§24.5。诊断结论要落到“是哪类请求在唤醒网络、频率是多少、是否能批量化”。
 
