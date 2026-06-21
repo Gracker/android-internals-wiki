@@ -2,7 +2,7 @@
 title: "启动框架设计与任务编排"
 chapter: "21.2"
 section: "21.2"
-status: finalized
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-21"
 last_verified_against: "AOSP android-17.0.0_r1, Jetpack App Startup 1.2.0 sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)"
@@ -49,6 +49,8 @@ task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-de
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
+last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
+task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
 ---
 
 # 启动框架设计与任务编排
