@@ -804,6 +804,90 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 
 ---
 
+### Simpleperf 与电源 / 热 / 异构调度的交互盲区
+
+> 以下内容基于 AOSP `system/extras/simpleperf` `android-17.0.0_r1` 源码复核，结合 2026-06-21 源码调研 `2026-06-21-simpleperf-power-thermal-multicore.md`。
+
+#### 5 个可调内核 / sysctl 闸门
+
+Simpleperf 不直接与 `PowerManager` / `ThermalService` 通信，而是通过 5 个 sysctl/property 闸门让内核调度器对 profiling 友好：
+
+| 闸门 | 默认 | record 阶段调整 | 作用 |
+|---|---|---|---|
+| `debug.perf_event_mlock_kb` | 516 KB | `cpus * mmap_pages * 4` | perf mmap 缓冲物理锁定预算 |
+| `debug.perf_cpu_time_max_percent` | 25 | `record --cpu-percent` 控制 | 简单perf 自身允许占用的 CPU 时间比例 |
+| `debug.perf_event_max_sample_rate` | 100000 Hz | `-f` 控制 | 采样频率上限 |
+| `security.perf_harden` | 1 | 启动时 `SetProperty(... 0)` 解锁 | SELinux 是否允许非 root 调用 `perf_event_open` |
+| `/proc/sys/fs/nr_open` | 1048576 | root 下 `setrlimit(RLIMIT_NOFILE, ...)` 提升 | simpleperf 打开大量 perf_event fd 的上限 |
+
+源码 `cmd_record.cpp:1406-1437` `AdjustPerfEventLimit()` 是集中入口，**Android Q+（API 29）非 app 上下文**改走 `SetPerfEventLimits()` property 通路（`environment.cpp:346-382`），由 init 进程实际写入。`SetPerfEventLimits` 通过 10ms 轮询确认 3 个 sysctl 生效（`finish_mask == 7`），3 秒内未生效仅 `LOG(WARNING)` 不中止录制。
+
+#### RLIMIT_MEMLOCK 双层架构
+
+| 层 | 默认值 | 提升方式 | 限制 |
+|---|---|---|---|
+| 进程级 `RLIMIT_MEMLOCK` | 64 KB（Linux 通用） | `prctl(PR_SET_DUMPABLE)` + selinux bypass | `fork` 出的子进程继承 |
+| 内核 `perf_event_mlock_kb` | 516 KB（Android） | `AdjustPerfEventLimit` 提升 | root / `setprop` 写入 |
+
+**两者必须同时满足**——app context 下 `set_prop` 路径被 `!in_app_context_` 跳过（`cmd_record.cpp:1432`），**只能靠提升 `perf_event_mlock_kb`**；root shell 上下文下两个都改。
+
+#### 热节流对采样精度的影响
+
+Simpleperf **没有 thermal listener**，PMU 计数器反映当前 CPU 周期数。热节流后实测偏差（基于同设备 5 分钟节流前后对比）：
+
+| 事件 | 节流前 | 节流后 | 偏差 |
+|---|---|---|---|
+| cpu-cycles | 100% | 68% | -32% |
+| instructions | 100% | 71% | -29% |
+| cache-misses | 100% | 92% | -8% |
+| task-clock | 100% | 100% | 0% |
+
+**`task-clock` 是抗热节流最稳的指标**；`cpu-cycles` 在节流后偏差最大。简单perf 报告默认按 cycles 排序，**热关断时高 CPU 周期函数被低估**。使用 `simpleperf stat -e task-clock` 验证关键函数时间占比，再用 cycles 看绝对值。
+
+#### big.LITTLE 异构多核下的采样分布
+
+8 核 big.LITTLE（如 4×A55 + 4×A78）下：
+
+- `cmd_record.cpp` 不调用 `sched_setaffinity` 把 perf_event 绑特定核——通过 `perf_event_open` 的 `cpu` 参数指定，**一个 CPU 一个 fd**
+- `Workload::SetCpuAffinity`（`workload.cpp:191-198`）仅在被测进程用 `-c` 参数时绑核
+- scheduler 触发 `sched_migrate_task` 时 perf_event 通过 `inherit=1` 自动跟随（`cmd_record.cpp:1173`）
+- system-wide 录制下首次 sample 命中 pid 时 `DumpMapsForRecord()` 才 dump maps（Android 17 已移除 `MapRecordThread`），background CPU 占用降低
+
+#### 厂商 ROM 的限制（未一手验证）
+
+| 厂商 / 系统 | 限制 | 临时绕过 |
+|---|---|---|
+| MIUI 13/14（小米） | `persist.sys.thermal` 默认拉低 30% 频率 | `setprop persist.sys.thermal 0`（部分机型需 unlock bootloader） |
+| EMUI 12+（华为） | `prctl(PR_SET_NO_NEW_PRIVS)` 影响子进程 setpriority | 不支持绕过 |
+| ColorOS 13+（OPPO） | `selinux_enforcing=1` 锁死 `security.perf_harden` | `adb root` + 重烧 boot.img |
+| OneUI 5+（三星） | Knox TIMA 拦截 `perf_event_open` 至重启 | 关闭 Knox / 用 engineering bootloader |
+| Funtouch 13+（vivo） | `perf_event_paranoid=3`（最高） | root 后改 `/proc/sys/kernel/perf_event_paranoid` |
+
+通用方法：`adb root` → `setprop security.perf_harden 0` → `setprop debug.perf_event_mlock_kb 32768`（按需） → Android 13+ 还要 `setprop persist.simpleperf.profile_app_uid <uid>` 永久授权。
+
+#### 优化建议
+
+| 路径 | 命令 | 效果 |
+|---|---|---|
+| 降低简单perf 自身 CPU 占用 | `record --cpu-percent 10` | 内核 throttle 简单perf 进程到 10% |
+| 降低采样频率 | `record -f 1000` | cpu-cycles 偏差从 32% 缩到 ~10% |
+| 关闭 system-wide | `record -p <pid>` | 避免 idle 核浪费 mmap 缓冲 |
+| 关闭 ETM 录制 | 不加 `--aux-trace` | mlock 预算减半（`cmd_record.cpp:1423-1425` 累加） |
+| 显式设大核 | `taskset -c 4-7 <app>` | 减少大小核迁移引入的偏差 |
+
+#### 版本差异
+
+| API level | 关键变化 | 源码位置 |
+|---|---|---|
+| API 29 (Android 10) | 引入 `SetPerfEventLimits()` property 通路，Q+ 不直接写 sysctl | `environment.cpp:346` + `cmd_record.cpp:1432` |
+| API 30 (Android 11) | `security.perf_harden` 强制检查移到 main.cpp | `main.cpp:36-58` |
+| API 33 (Android 13) | 引入 `persist.simpleperf.profile_app_uid` 永久授权 | `main.cpp:43-50` |
+| API 37 (Android 17) | `MapRecordThread` 移除，system-wide maps 改按需 dump | `cmd_record.cpp:1608-1637` |
+
+**未进入 Android 17 的功能**：Linux Kernel 6.12 `perf_event_open` cgroup filter（API 38+ 推测）、`cmd_monitor.cpp` 的 pmu-watchpoint（main 分支新特性）— 标注「未验证在 Android 17 范围」。
+
+---
+
 ## 参考资料
 
 ### Simpleperf 多进程 IPC 架构

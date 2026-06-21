@@ -725,3 +725,13 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 - 注入时间：2026-06-20
 - 价值：首次从"单次事务性能建模"角度补齐 §1.4 已有队列/frozen/oneway 之外的 IPC 开销量化视角，含 ioctl/batching 开销与调度器交互分析
 
+
+
+### Android 17 Binder IPC 调优杠杆——mmap 缓冲区 / 线程池 / 批处理 / oneway spam / frozen reply
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-21-binder-ipc-optimization-android17.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 IPC 调优视角梳理 Android 17 Binder 的 5 个上层杠杆：`BINDER_VM_SIZE = 1MiB - 2*PAGE_SIZE`（`ProcessState.cpp:48`）的单进程环形物理页池、`DEFAULT_MAX_BINDER_THREADS = 15`（`ProcessState.cpp:49`）的不可下调线程池上限、`talkWithDriver` 单次 ioctl(`BINDER_WRITE_READ`)双向传输、`flushCommands` 双次调用收敛 post-write deref、`BR_ONEWAY_SPAM_SUSPECT` + `BR_FROZEN_REPLY` 软限流机制。给出 5 个具体调优动作：(1) 高频 IPC 服务（如 surfaceflinger）通过 `setThreadPoolMaxThreadCount(N>=31)` 上调；(2) 高频 fire-and-forget 必选 oneway 并监控 `BR_ONEWAY_SPAM_SUSPECT`；(3) 服务端用 `BBinder::transact` 内置 `transactionMs > 1000` `ALOGW` 定位慢调用；(4) 大 Parcel 超过 `binder::kLogTransactionsOverBytes` 触发 `ALOGW`；(5) Android 17 新增 `kEnableKernelIpc` 编译期强制校验 + `[[unlikely]]` 标注 RPC 分流优化分支预测。
+- 注入时间：2026-06-21
+- 价值：从「调优杠杆」视角补齐 §1.4 已有队列/frozen/oneway 之外的 IPC 性能调优操作手册，与 2026-06-20 单次事务性能建模形成完整「建模 + 调优」闭环
+- 目标章节（待创建）：`src/part2-performance/ch04-system/06-binder-transaction-optimization.md`
+
