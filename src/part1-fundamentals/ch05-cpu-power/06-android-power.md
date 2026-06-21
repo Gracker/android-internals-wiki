@@ -70,7 +70,7 @@ task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
+last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # Android 功耗管理
@@ -391,15 +391,11 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 
 [图:Battery Historian 中 WakeLock 持有时长的可视化示例]
 
-### TARE 经济模型（历史实现，非 Android 17 能力）
+### TARE 经济模型（历史线索）
 
-TARE（Think Advanced Resource Economy）曾作为 JobScheduler 资源配额实验出现在 Android 12-14 附近的系统实现中。它把后台资源抽象成 ARC（Android Resource Credits），由系统服务根据策略给应用分配预算，再在 Job 调度前判断是否允许继续执行。
+TARE（Think Advanced Resource Economy）是 Android 12-14 期间在 JobScheduler 中实验过的资源配额模型。它把后台资源抽象成 ARC（Android Resource Credits），由系统根据策略给应用分配预算，再在 Job 调度前判断是否允许继续执行。
 
-TARE 在本节只能作为历史实现和源码线索，不能写成 Android 17 已验证能力。经 `android-17.0.0_r1` / `android-16.0.0_r1` / `android-15.0.0_r1` 源码确认，三版 `frameworks/base/apex/jobscheduler/` 下均未命中 `tare/` 目录；仅在 `android-14.0.0_r1` 中存在 TARE 的历史实现（`InternalResourceService`、`EconomicPolicy`、`EconomyManagerInternal` 等），但不存在公开的预算管理 API。
-
-在 Android 16/17 范围内分析 JobScheduler 配额，应回到 App Standby Bucket、Doze 维护窗口和 JobScheduler quota 等公开资料。TARE 作为历史线索保留：它说明 Android 曾尝试把后台约束抽象成经济模型，但不用于解释 Android 17 的调度决策。
-
-[已验证: AOSP android-14.0.0_r1 historical TARE directory; AOSP android-15.0.0_r1 / android-16.0.0_r1 / android-17.0.0_r1 no matching `com/android/server/tare/` directory; logs/deep-review/2026-06-02-03-deep-review.md]
+TARE 仅在 `android-14.0.0_r1` 中存在历史实现，Android 15/16/17 源码中已无 `tare/` 目录。在 Android 16/17 范围内分析 JobScheduler 配额，应回到 App Standby Bucket、Doze 维护窗口和 JobScheduler quota 等公开资料。TARE 的意义在于说明 Android 曾尝试把后台约束抽象成经济模型，这一思路影响了后续配额管理的演进方向。
 
 ## JobScheduler / WorkManager 的省电调度策略
 
@@ -593,13 +589,12 @@ CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只�
 
 Android 16 的 `getCpuHeadroom()` / `getGpuHeadroom()` 经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量，不走 PSI/lmkd，也不存在公开的 memory headroom。适合相机、游戏等重负载场景作为前瞻降级信号。
 
-> 基于 DeepResearch 调研结果整理：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 Headroom API 的真相.md`
 
 ---
 
 ## Linux 电源管理架构与 eBPF 微架构能效分析
 
-上文讨论的是 Android 框架层如何管理功耗。这一节向下走一层，看 Linux 内核的电源管理框架与 eBPF 能效分析技术，它们构成了 Android 功耗管理的基础设施。
+Android 功耗管理并非只有框架层。Linux 内核的电源管理框架与 eBPF 能效分析技术构成它的基础设施。理解内核层的行为，有助于解释"为什么灭屏后系统没有睡下去"这类问题的完整链路。
 
 ### Linux 电源管理的分层架构
 

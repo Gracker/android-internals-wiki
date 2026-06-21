@@ -14735,5 +14735,21 @@
     "task6_result": "needs-rework",
     "last_task6_at": "2026-06-21T14:07:00+08:00"
   },
-  "task2a_last_gap_mining_at": "2026-06-22T02:04:00+08:00"
+  "task2a_last_gap_mining_at": "2026-06-22T02:04:00+08:00",
+  "22.3": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task6_at": "2026-06-22T02:07:00+08:00",
+    "last_review_log": "logs/review/2026-06-22-02-review.md"
+  },
+  "20.4": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task6_at": "2026-06-22T02:07:00+08:00",
+    "last_review_log": "logs/review/2026-06-22-02-review.md"
+  }
 }
