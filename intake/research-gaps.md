@@ -351,3 +351,44 @@ Simpleperf 工具与 Android 电源管理系统和热节流机制的交互存在
 - source-index.json 已耗尽（0 篇未映射高质量素材）
 - research-feeds 最新 2026-04-14 全部已映射
 - **知识库高度饱和，本轮跳过**
+
+## [2026-06-21 16:05] Task2A 缺口挖掘 — 第 171 轮
+
+### 本轮检查方向（7 个）
+1. 今日 daily-info：Android 17 新调度器减少 30% 启动时间 — 已有 ch16.4/ch16.7/ch16.8 覆盖（PSI/AppFlow/SDM 均已写入）
+2. 今日 daily-info：Linux 6.10 内存碎片整理 — 已有 ch4.10（内存规整与直接回收性能边界）覆盖
+3. 今日 daily-info 增量扫描：Android 17 内存压力检测器(PSI/LowMemDetector) — ch4.4 LMK + ch4.11 Cached App Freezer + ch16.4/16.8 已覆盖核心机制
+4. 今日 daily-info 增量扫描：Android 内存跟踪 API 栈 — ch23.7 内存监控 + ch26.3 性能指标采集已覆盖，research-gaps 已记录 API 间隙
+5. 今日 daily-info 增量扫描：SurfaceFlinger 帧时间追踪器 — ch2.22/ch2.23 SF FrontEnd/VSync Scheduler + ch13 Perfetto 已覆盖
+6. 今日 daily-info 增量扫描：JobScheduler 限流机制 — ch5.10/ch5.17/ch25.13/ch25.14 四节已全面覆盖
+7. 今日 daily-info 增量扫描：BluetoothSocket EOF — ch24.19 已专门覆盖
+
+### 候选评分
+- 最高分：7/20（ML 内存泄漏检测论文，学术前沿，全书定位不匹配）
+- 连续无合格缺口轮次：171 轮
+
+### 全书覆盖度
+- 总计 443 节：308 finalized / 88 ready-for-review / 3 draft（ch27 性能工程体系 6 节 + ch1.27/1.28/10.x 已有实质内容）
+- 知识库高度饱和，本轮跳过
+
+### 结论
+所有 7 个候选方向最高分 7/20，远低于 14 分门槛。全书 443 节，知识库高度饱和。
+
+
+## [2026-06-21 17:06] Task2A 缺口挖掘 — 第 172 轮
+
+### 本轮检查方向（8 个）
+1. 今日 daily-info：Android 17 调度器启动优化 30% — 已有 ch16.4/ch16.7/ch16.8 覆盖（评分 5/20）
+2. 今日 daily-info：Linux 6.10 内存碎片整理 — 已有 ch04.10/ch04.14 覆盖，且 Linux 6.10 < 6.12 不在 Android 17 范围（评分 3/20）
+3. 今日 daily-info：Android 17 内存压力检测器源码 — 已有 ch04 PSI/LowMemDetector 覆盖（评分 6/20）
+4. 今日 daily-info：Android 内存跟踪 API 栈 — 已有 ch04/ch23.7/ch26.3 覆盖（评分 5/20）
+5. 今日 daily-info：Android 17 BluetoothSocket EOF — 已有 ch24.19 覆盖（评分 8/20）
+6. 今日 daily-info：SurfaceFlinger 帧时间追踪器 — 已有 ch02/ch13 覆盖（评分 6/20）
+7. 今日 daily-info：JobScheduler 限流机制 — 已有 ch25.13/ch5.10 覆盖（评分 7/20）
+8. source-index.json 高质量未映射素材 — 0 篇（持续耗尽）
+
+### 结论
+- 最高分：8/20（远低于 14 分门槛）
+- 连续无合格缺口轮次：172 轮
+- 全书 443 节（305+ finalized, 90+ ready-for-review, 10 draft 均有实质内容）
+- **知识库高度饱和，本轮跳过**
