@@ -3484,7 +3484,8 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_p0_issues": 0,
       "task9_p1_issues": 0,
-      "task9_p2_issues": 1
+      "task9_p2_issues": 1,
+      "last_task6": "2026-06-22"
     },
     "19.21": {
       "status": "finalized",
@@ -6552,7 +6553,7 @@
       "title": "Android 功耗管理",
       "file": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
       "status": "finalized",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_by": "openclaw-task6",
@@ -6571,7 +6572,8 @@
       "task6_review_notes": "2026-06-21 16 Task6 revisiting-review: pass-light-edit。补全 sources/tags frontmatter；L1/L2 无问题；无新增回炉项。",
       "last_task9_at": "2026-06-02T03:20:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-06-02-03-deep-review.md",
-      "review_round": 8
+      "review_round": 8,
+      "last_task6": "2026-06-22"
     },
     "7.2": {
       "section": "7.2",

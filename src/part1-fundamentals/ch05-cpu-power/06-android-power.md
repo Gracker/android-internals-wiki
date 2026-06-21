@@ -2,7 +2,7 @@
 title: "Android 功耗管理"
 chapter: "5.6"
 section: "5.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-06-21"
 last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base, frameworks/native, hardware/interfaces); android-14.0.0_r1 historical TARE check; Android 16/17 official docs"
@@ -38,7 +38,7 @@ drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-02"
 task6_reviewed_date: "2026-06-02"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
@@ -50,7 +50,7 @@ last_task9_autofix_at: "2026-06-21"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-02T08:50:00+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 review_round: 8
 related_chapters:
@@ -60,13 +60,13 @@ related_chapters:
 last_task9_review_log: "logs/deep-review/2026-06-21-15-audit.md"
 task9_review_notes: "2026-06-21 Task9 闲时抽检：auto-fixed。已将源码锚点升级到 android-17.0.0_r1；修正 TARE tag 状态、Notifier/BatteryStatsImpl 路径、JobScheduler 10 分钟时限版本边界，并把不存在的 JobDebugInfo 改为 PendingJobReasonsInfo/getPendingJobReasonStats 口径；回到 Task6 复审。"
 reviewed_at: "2026-06-02T01:05:00+08:00"
-last_task6_at: "2026-06-02T10:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-02-10-review.md"
-task6_review_notes: "2026-06-02 10 Task6 revisiting-review: pass-light-edit。L1/L2 小修 15 处；无新增回炉项，送 Task9 复审。"
+last_task6_at: "2026-06-22T01:10:00+08:00"
+last_task6_review_log: "logs/review/2026-06-22-01-review.md"
+task6_review_notes: "2026-06-22 01 Task6 revisiting-review (Task9 autofix 后复审): pass-light-edit。L1 修复 1 处形容词+冒号起手式（'趋势很明确:'→直接陈述）。L2 开头/节奏/结构/读者视角均通过。无 B 类问题。自动晋升 finalized。"
 p0: 0
 p1: 0
 p2: 0
-task6_l1_l2_fixes: 15
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
 deepseek_cn_review_state: done
@@ -538,7 +538,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 | 16 (API 36) | JobScheduler 配额优化 | Active Bucket 配额更宽裕,可见时发起的 Job 更容易保留高配额 |
 | 17 (API 37) | JobScheduler pending reason stats 调试能力 + onVsyncIdle 显示空闲回调 | 后台任务 pending 原因统计增强;HWC display idle 通知 SurfaceFlinger 重新同步 |
 
-这张表呈现出一个趋势：Android 的功耗管理策略越来越依赖系统侧的主动管控，不再只依赖 App 开发者自觉控制后台行为。对于 App 开发者来说,趋势很明确:尽量少用直接 WakeLock,更多依赖 JobScheduler / WorkManager 的系统调度。对于系统开发者来说,理解 PMS 的决策逻辑和各版本的行为差异,是分析功耗问题的关键基础。
+这张表呈现出一个趋势：Android 的功耗管理策略越来越依赖系统侧的主动管控，不再只依赖 App 开发者自觉控制后台行为。对于 App 开发者来说,尽量少用直接 WakeLock,更多依赖 JobScheduler / WorkManager 的系统调度。对于系统开发者来说,理解 PMS 的决策逻辑和各版本的行为差异,是分析功耗问题的关键基础。
 
 ## 常见问题与误区
 
