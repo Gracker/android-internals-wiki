@@ -6,7 +6,7 @@ section: '14.4'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 task6_result: "pass-light-edit"
-task2b_state: "finalized"
+task2b_state: "fixed"
 pipeline_stage: "ready-to-publish"
 applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
 last_verified: '2026-05-30'

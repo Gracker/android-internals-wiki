@@ -47,7 +47,8 @@ last_task9_audit: "2026-06-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-14"
 task9_result: pass-tech-review
-task2b_state: done
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
