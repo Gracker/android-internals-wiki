@@ -2,7 +2,7 @@
 title: "性能预算体系"
 chapter: "27.3"
 section: "27.3"
-status: ready-for-review
+status: draft
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -20,13 +20,6 @@ sources:
     path: "https://developer.android.com/topic/performance/reduce-apk-size"
 tags: [performance-engineering, performance-budget, ci, benchmark, governance]
 related_chapters: ["15.10", "19.14", "8.1", "9.1"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-21
-last_task6_at: 2026-06-21T15:06:00+08:00
-task9_state: pending
 ---
 
 # 性能预算体系

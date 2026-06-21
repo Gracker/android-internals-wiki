@@ -7,11 +7,38 @@ applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 last_verified: "2026-06-21"
 last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base, frameworks/native, hardware/interfaces); android-14.0.0_r1 historical TARE check; Android 16/17 official docs"
 confidence: medium
+sources:
+  - type: official
+    path: android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java
+    note: PowerManagerService 核心实现
+  - type: official
+    path: developer.android.com/training/monitoring-device-state/doze-standby
+    note: Doze 模式与 App Standby 官方文档
+  - type: official
+    path: developer.android.com/topic/performance/appstandby
+    note: App Standby Buckets 官方文档
+  - type: official
+    path: developer.android.com/topic/libraries/architecture/workmanager
+    note: WorkManager 官方文档
+  - type: blog
+    path: obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md
+    note: Battery Historian 使用实践
+  - type: blog
+    path: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md
+    note: 抖音功耗优化实践
+tags:
+  - power
+  - wakelock
+  - doze
+  - battery
+  - battery-historian
+  - jobscheduler
+  - power-management
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-02"
 task6_reviewed_date: "2026-06-02"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
@@ -23,9 +50,9 @@ last_task9_autofix_at: "2026-06-21"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-02T08:50:00+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 reviewed_by: openclaw-task6
-review_round: 7
+review_round: 8
 related_chapters:
   - "5.1"
   - "5.2"

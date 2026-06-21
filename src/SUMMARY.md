@@ -336,6 +336,14 @@ tags:
   - [19.26 混合栈与跨平台 APM (WebView / Flutter)](part3-tools/ch19-apm/26-hybrid-apm.md)
   - [19.27 千万级 DAU 的 APM 端侧架构](part3-tools/ch19-apm/27-apm-client-architecture.md)
 
+- [第 27 章：性能工程体系](part3-tools/ch27-performance-engineering/README.md)
+  - [27.1 性能工程成熟度模型](part3-tools/ch27-performance-engineering/01-maturity-model.md)
+  - [27.2 性能策略制定与路线图](part3-tools/ch27-performance-engineering/02-performance-strategy.md)
+  - [27.3 性能预算体系](part3-tools/ch27-performance-engineering/03-performance-budget.md)
+  - [27.4 左移性能工程](part3-tools/ch27-performance-engineering/04-shift-left.md)
+  - [27.5 持续性能验证与 CI/CD](part3-tools/ch27-performance-engineering/05-cicd-continuous-perf.md)
+  - [27.6 性能文化构建与团队演进](part3-tools/ch27-performance-engineering/06-culture-team.md)
+
 ---
 
 # 第四部分：系统级优化与行业实践

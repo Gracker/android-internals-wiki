@@ -2,7 +2,7 @@
 title: "性能策略制定与路线图"
 chapter: "27.2"
 section: "27.2"
-status: ready-for-review
+status: draft
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -18,13 +18,6 @@ sources:
     path: "https://developer.android.com/topic/performance/appstartup"
 tags: [performance-engineering, strategy, roadmap, okr, android-performance]
 related_chapters: ["15.3", "8.1", "15.10"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-21
-last_task6_at: 2026-06-21T15:06:00+08:00
-task9_state: pending
 ---
 
 # 性能策略制定与路线图
