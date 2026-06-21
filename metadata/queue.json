@@ -1,54 +1,49 @@
-[
-  {
-    "section": "14.2",
-    "section_title": "Simpleperf",
-    "priority": 70,
-    "reason": "[Task6-revisit] 2个技术一致性/源码锚点问题待Task9确认：-p参数语义矛盾、LineageOS源码锚点合规性",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "存疑-技术一致性",
-        "location": "14.2.4 过滤选项 vs 14.2.5 多进程应用采样表/代码注释",
-        "detail": "-p参数描述矛盾：14.2.4代码注释写'-p/--pid 只接受数字 PID，不支持进程名或正则'，但14.2.5表格写'-p <pid_or_name_regex> | 按 PID 或进程名正则'，14.2.5代码注释写'也支持进程名正则'。三处描述不一致。",
-        "suggestion": "查阅 simpleperf record --help（android-17.0.0_r1）确认 -p 是否接受进程名/正则，统一全文描述"
-      },
-      {
-        "type": "存疑-源码锚点合规性",
-        "location": "14.2.7 mmap/munmap数据通路",
-        "detail": "源码锚点标注为 LineageOS/android_system_extras@lineage-23.2（非AOSP官方tag），正文已标注'未进入Android 17'，但该节内容仍作为正文结论使用。版本差异表源码行号引用[android-16.0.0_r1]而非android-17.0.0_r1。",
-        "suggestion": "Task9确认LineageOS lineage-23.2与android-17.0.0_r1的simpleperf代码一致性；若无法确认，mmap数据通路节的结论需降级或标注为参考"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-21T14:07:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-06-21-14-review.md",
-    "completed_by": "task9-deep-tech-review",
-    "completed_at": "2026-06-21T14:30:31+08:00",
-    "resolution": "AUTO-FIX: confirmed -p accepts PID or process-name regex in android-17.0.0_r1; confirmed --exclude-pid exists; replaced non-AOSP LineageOS anchor and removed Android 17 MapRecordThread claim."
-  },
-  {
-    "section": "25.1",
-    "section_title": "功耗诊断与分析方法",
-    "priority": 95,
-    "reason": "[Deep Tech Review][闲时抽检] 功耗归因源码链路与 Android 17 版本边界不一致：MultiStatePowerAttributor/getStateResidencyAsync/PowerStatsScheduler.start 描述需要重审",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误/版本差异",
-        "location": "源码级实现细节（AIW-源码调研-2026-06-16）→ Android 15 Streamlined Battery Stats：三层 aconfig flag 体系（约 L226-L249）",
-        "detail": "正文把「flag 开启 + HAL 支持」后的主归因链路写成 MultiStatePowerAttributor.estimatePowerConsumption() → PowerStatsInternal.getStateResidencyAsync() → BatteryUsageStats.Builder.aggregate()。AOSP tagged source 不支持这个链路：android-15.0.0_r1 没有 services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java；android-16/17 中 MultiStatePowerAttributor.estimatePowerConsumption() 调用 PowerStatsExporter.exportAggregatedPowerStats()，而 getStateResidencyAsync() 位于 BatteryStatsService 的 low power stats 查询/打印路径。Android 17 还移除了 BatteryStatsService 中的 Flags.streamlinedBatteryStats() 判断，PowerStatsScheduler.start(boolean) 变为 start()。",
-        "suggestion": "拆分 Android 15、Android 16、Android 17 三段版本边界：Android 15 只描述 aconfig flag 控制 collector/exporter；Android 16/17 再描述 processor/MultiStatePowerAttributor 归因链；删除 getStateResidencyAsync() 作为主功耗归因链的说法，并把 PowerStatsScheduler.start() 的 Android 17 签名差异补上。源码锚点优先改为 android-17.0.0_r1，Android 15/16 差异单独标注。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-22T04:28:56+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-22T04:51:37+08:00",
-    "completed_by": "task2b-main"
-  }
-]
+{
+  "pending": [
+    {
+      "section": "20.7",
+      "section_title": "异常处理架构设计 — SafeMode launch marker AOSP 源码核验",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值 AOSP 源码核验调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-safemode-launch-marker-state-machine-aosp-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "SafeMode launch marker 状态机的 AOSP 源码核验 — 核验 ApplicationExitInfo 17 个 REASON_* 常量、AtomicFile.finishWrite() 持久化协议、AppExitInfoTracker 30分钟 debounce + 16条记录限制、Process.killProcess 三条路径",
+          "suggestion": "判断是否适合补充为 ch20.7 和 ch20.12 的章节参考资料，特别是退出原因白名单 {REASON_CRASH, REASON_CRASH_NATIVE, REASON_ANR, REASON_INITIALIZATION_FAILURE} 和持久化协议的边界条件"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-22T06:12:58.925959",
+      "status": "pending"
+    }
+  ],
+  "in_progress": [],
+  "completed": [
+    {
+      "section": "ch02-rendering",
+      "section_title": "ch02-rendering",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-surfaceflinger-frame-timing-tracer.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "SurfaceFlinger 帧时序三层架构（FrameTracer/FrameTimeline/VSyncPredictor） — Android 17 帧时序三层架构",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-22T05:33:49.362142",
+      "status": "completed",
+      "completed_at": "2026-06-22T06:51:36+08:00",
+      "completed_reason": "已追加到 2.17-frame-pacing.md 参考资料小节：SurfaceFlinger 帧时序三层架构（FrameTracer/FrameTimeline/VSyncPredictor）"
+    }
+  ]
+}

@@ -436,3 +436,6 @@ DeliQueue 改造的是 Java 层 `MessageQueue`。NDK `AChoreographer` / `ALooper
 
 ### Swappy × Choreographer × Android 17 架构深研
 - 来源：DeepResearch 调研。围绕 Swappy、Choreographer、SurfaceFlinger 三层协作，指出 Android 17 的 DeliQueue 主要改善主线程 MessageQueue 锁竞争，从而提升 Vsync 回调到达质量；Swappy 本体仍依赖 ChoreographerFilter、AChoreographer deadline/expectedPresentationTime 与统计循环做帧节奏控制。
+
+### SurfaceFlinger 帧时序三层架构（FrameTracer / FrameTimeline / VSyncPredictor）
+- 来源：DeepResearch 源码调研（android-17.0.0_r1）。覆盖三层独立模块：①FrameTracer（Perfetto DataSource `android.surfaceflinger.frame`，逐 layer 记录 buffer queue/acquire/post/latch 生命周期事件，含 60s 过期 fence 回收）；②FrameTimeline（`android.surfaceflinger.frametimeline`，用 `SurfaceFrame` 包装单帧，按 13 类 jank bitmask + `refined-jank-metric` 公式输出 None/Partial/Full 严重度分数，`TokenManager` 预测有效期 120ms）；③VSyncPredictor（OLS 线性回归替代 DispSync，异常值过滤 ±50%，`kScalingFactor` 缩放渲染率相位）。完整数据流从硬件 VSync 经 VSyncPredictor 建模、VSyncDispatchTimerQueue 反推 wakeup time，最终到 Choreographer 回调，可用于定位 App/SF/HWC 三段卡顿判定点。
