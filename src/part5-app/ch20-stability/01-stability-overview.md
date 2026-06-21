@@ -2,8 +2,8 @@
 title: "应用稳定性全景"
 chapter: "20.1"
 section: "20.1"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-06-01"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+last_verified: "2026-06-21"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers ANR documentation, ApplicationExitInfo API reference"
 confidence: medium
 drafted_date: "2026-05-11"
@@ -22,29 +22,29 @@ sources:
 tags: [stability, crash, anr, oom, app-quality]
 related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-01"
+task9_reviewed_date: "2026-06-21"
 last_task9_at: "2026-06-01T18:21:00+08:00"
 last_task9_audit: "2026-06-21"
 task9_review_notes: "2026-06-21 Task9 06:25 闲时抽检：auto-fixed。用 AOSP android-17.0.0_r1 复核 Java crash、ANR/Broadcast timeout、ART heap 分配源码锚点；修正 RuntimeInit 退出调用、Broadcast timeout 源码文件、Heap::AllocObjectWithAllocator 所在文件，回到 Task6 复审。"
 task6_reviewed_date: "2026-05-14"
 last_task9_review_log: "logs/deep-review/2026-06-21-06-audit.md"
-status: "ready-for-review"
+status: "finalized"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-01"
-task6_state: revisiting
+reviewed_date: "2026-06-21"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 last_task2b_at: "2026-06-01T08:50:00+08:00"
 task2b_fixed_at: "2026-06-01T08:50:00+08:00"
-last_task6_at: "2026-06-01T16:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-16-review.md"
-task6_l1_l2_fixes: 0
+last_task6_at: "2026-06-21T08:09:43+08:00"
+last_task6_review_log: "logs/review/2026-06-21-08-review.md"
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-01 Task6 16: Task2B 回流后 L1/L2 复扫通过，outline 5/5 覆盖；无新增回炉项。Task9 result 为 auto-fixed，未满足自动 finalized 条件。"
+task6_review_notes: "2026-06-21 Task6 复审（revisiting→reviewed）：L1 小修 1 处（applicable_versions 补 Android 17），锚点 5/5 覆盖，无 L3/L4 回炉项。Task9 auto-fixed 已完成，queue 无 pending，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-21"
 ---
 
