@@ -2,7 +2,7 @@
 title: "功耗诊断与分析方法"
 chapter: "25.1"
 section: "25.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-22"
 last_verified_against: "AOSP android-17.0.0_r1 (primary) + android-16.0.0_r1 + android-15.0.0_r1 (version diff) + Android Developers power docs + Clippings structure references"
@@ -42,8 +42,8 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -51,7 +51,7 @@ last_task2b_at: "2026-06-22T04:51:20+08:00"
 last_task2b_lite_at: "2026-06-03"
 task2b_rework_log: "logs/task2b/2026-06-22-04-task2b-main-25.1.md"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
-task6_review_notes: "2026-06-22 Task6 revisiting 复审通过；L1/L2 无新增问题（修复 1 处笔误'异常常'→'异常通常'）；Task2B 已修复 P0 源码链路问题；无 B 类回炉项，转入 Task9 pending 待技术复审。"
+task6_review_notes: "2026-06-22 Task6 revisiting 复审通过（第二轮）；Task9 auto-fix 后内容完整，L1/L2 无新增问题；4 锚点全覆盖；9 处已验证 0 待验证；无 B 类回炉项；task9_result=auto-fixed 视同技术复审完成，自动晋升 finalized。"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-22"
@@ -60,8 +60,8 @@ last_task9_review_log: logs/deep-review/2026-06-22-05-deep-review.md
 task9_review_notes: "2026-06-22 Task9 深度复审：auto-fix 了 PowerStatsStore 存储路径/格式、Android 16 调用行号、WakeupReason/WakeLockStats 行号及 master 锚点边界；返回 Task6 revisiting。"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-last_task6_at: "2026-06-22T05:06:00+08:00"
+reviewed_date: "2026-06-22"
+last_task6_at: "2026-06-22T06:08:57+08:00"
 review_type: task6-writing-quality-review
 task6_reviewed_date: "2026-06-03"
 deepseek_cn_review_state: done
