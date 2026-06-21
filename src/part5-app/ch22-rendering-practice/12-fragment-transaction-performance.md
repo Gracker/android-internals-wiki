@@ -3,7 +3,7 @@
 title: "FragmentTransaction 提交链路与页面切换性能"
 chapter: "22.12"
 section: "22.12"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37); AndroidX Fragment 1.4 - 1.8+"
 last_verified: "2026-06-22"
@@ -56,8 +56,8 @@ task2b_fixed_by: openclaw-task2b
 pipeline_stage: task6_pending
 last_task9_autofix_at: "2026-06-22"
 last_task9_audit: "2026-06-22"
-last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
-last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
+last_task2b_verifier_at: "2026-06-22T07:30:06+08:00"
+last_task2b_verifier_log: "logs/rework/2026-06-22-07-task2b-verifier.md"
 ---
 
 # 22.12 FragmentTransaction 提交链路与页面切换性能
