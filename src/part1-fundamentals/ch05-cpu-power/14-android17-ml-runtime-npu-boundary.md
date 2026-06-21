@@ -31,9 +31,7 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/content/pm/PackageManager.java"
   - type: research
-    path: "DeepResearch/2026-05-15-android-17-npu-litert-aicore.md"
-  - type: research
-    path: "DeepResearch/2026-05-15-android-ml-inference-npu-litert.md"
+    path: "DeepResearch/2026-05-26-android-17-npu-aicore-lert-capability-boundary.md"
 tags: [android17, litert, npu, nnapi, on-device-ai, performance]
 related_chapters: ["5.11", "5.13", "16.5", "25.11"]
 created_by: "task2a-knowledge-gap"
@@ -58,7 +56,7 @@ task9_result: "pass-tech-review"
 task2b_state: fixed
 task2b_result: fixed
 pipeline_stage: "ready-to-publish"
-last_task2b_lite_at: "2026-06-01"
+last_task2b_lite_at: "2026-06-22"
 last_task2b_at: "2026-06-02T22:50:00+08:00"
 p0: "0"
 p1: "0"
@@ -306,11 +304,11 @@ Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；L
 - 用途：支撑 LiteRT CompiledModel、AOT 编译、AI Pack 分发和厂商 NPU delegate 的工程边界。
 
 ### NeuralNetworks HAL 1.3 接口族与推理加速机制
-- 来源：DeepResearch/2026-06-14-android17-neuralnetworks-hal-inference-acceleration.md
+- 来源：DeepResearch/2026-05-26-android-17-npu-aicore-lert-capability-boundary.md（NN HAL 1.3 接口族与推理加速机制部分）
 - 摘要：梳理 NN HAL 1.3 的 IDevice/IPreparedModel/IExecutionCallback/IFencedExecutionCallback 四接口架构，fenced execution、burst execution、compilation caching、QoS priority 等加速特性均通过 HAL 层实现；Android 17 未引入新的 NN HAL 主版本，AI 推理加速集中在 system 级 profiling 与 driver 端对 HAL 1.3 既有能力的最佳实践。
 - 用途：支撑本节 NNAPI / NN HAL 与厂商 delegate 的底层接口边界。
 
 ### Android 端侧 AI 推理栈边界验证
-- 来源：DeepResearch/2026-05-21-android-ml-stack-aicore-litert-nnapi-boundary-verification.md；DeepResearch/2026-05-23-android-ai-inference-stack-litert-aicore-nnapi.md
+- 来源：DeepResearch/2026-05-26-android-17-npu-aicore-lert-capability-boundary.md（端侧 AI 推理栈边界验证部分）
 - 摘要：整理 AICore、LiteRT、NNAPI / NN HAL 和厂商 SDK 的分层关系，明确 AICore 与 LiteRT 不属于 AOSP 公共平台能力，Android 17 新增的是 NPU feature 声明管理边界。
 - 用途：支撑本节“公开 API、Preview 能力与闭源组件边界”小节。
