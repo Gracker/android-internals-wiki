@@ -62,6 +62,8 @@ task6_state: reviewed
 last_task6_at: "2026-06-08T16:14:59+08:00"
 last_task6_review_log: "logs/review/2026-06-08-16-review.md"
 last_task6_audit: "2026-06-08"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-21
 ---
 
 # 文件 I/O 优化
@@ -93,12 +95,7 @@ last_task6_audit: "2026-06-08"
 
 文件 I/O 在 App 性能里很容易被低估。CPU 火焰图里看不到多少计算量，主线程却卡在 `read()`、`write()`、`fsync()` 或 `QueuedWork.waitToFinish()`；Perfetto 里线程状态变成 D 状态或 Sleeping，用户看到的是点击无响应、启动变慢、页面切换掉帧。
 
-机制篇已经讲过 Android 存储栈、I/O 调度、Page Cache、SharedPreferences 和 DataStore 的内部路径，详见 6.1、6.3、6.5 节。应用侧要回答四个取舍：哪些 I/O 不能放在主线程，哪些 KV 数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步落盘把延迟放大。
-
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]
+Android 存储栈、I/O 调度、Page Cache、SharedPreferences 和 DataStore 的内部路径见 6.1、6.3、6.5 节。应用侧要回答四个取舍：哪些 I/O 不能放在主线程，哪些 KV 数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步落盘把延迟放大。
 
 ## 主线程 I/O 的危害与 StrictMode 检测
 

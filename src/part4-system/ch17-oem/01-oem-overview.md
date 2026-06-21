@@ -282,6 +282,14 @@ OEM 优化策略随 Android 版本的演进经历了几个关键转折点：
 
 ## 参考资料
 
+### Android 17 性能优化：新调度器减少 30% 启动时间
+- 来源：https://android-developers.googleblog.com/2026/06/android-17-performance-optimization
+- 类型：技术文章
+- 摘要：A
+- 入库时间：2026-06-21
+- 评分：18/20
+
+
 ### AOSP 源码路径
 - `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` — cgroup freezer 管理
 - `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java` — Zygote 预加载逻辑

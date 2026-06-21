@@ -81,7 +81,7 @@ last_task9_review_log: "logs/deep-review/2026-06-13-15-deep-review.md"
 task9_review_notes: "2026-06-13 Task9 深度技术复审: auto-fixed。P0 1 / P1 1 / P2 1；已修复 SessionMode 枚举、headroom 版本与返回值边界、FMQ/版本演进表，回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-13"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
+last_deepseek_cn_review_at: 2026-06-21
 task2b_state: "fixed"
 last_task9_audit: 2026-06-13
 finalized_date: "2026-06-13"
@@ -124,7 +124,7 @@ Power Efficiency Mode 的前提是工作有稳定周期，并且业务结果不�
 
 ## ADPF Session 的线程集合与生命周期
 
-`PerformanceHintManager.Session` 表示一组共同完成同一类工作的 Linux 线程。官方 API reference 写明，session 中的线程应是 long-lived，不适合动态创建、销毁；使用 work duration API 时，创建 session 时传入初始 target duration，随后每个周期用 `reportActualWorkDuration()` 上报实际耗时。
+`PerformanceHintManager.Session` 表示一组共同完成同一类工作的 Linux 线程。session 中的线程应是 long-lived，不适合动态创建、销毁；创建 session 时传入初始 target duration，每个周期用 `reportActualWorkDuration()` 上报实际耗时。
 
 这几个 API 的分工要分开：
 
@@ -136,7 +136,7 @@ Power Efficiency Mode 的前提是工作有稳定周期，并且业务结果不�
 
 Power Efficiency Mode 对应的公开方法是 `setPreferPowerEfficiency(boolean)`，API reference 标注 Added in API level 35。AOSP main 中同名方法调用 native 层 `nativeSetPreferPowerEfficiency()`，注释说明它表达“这些线程可以安全地偏向能效而不是性能”。
 
-这段代码展示固定 worker 的组织方式，重点看 tid 采集、session 创建、节能偏好和周期上报的位置；生产代码还要补错误处理、埋点、灰度开关和 API 版本判断。
+这段代码展示固定 worker 的组织方式。重点看 tid 采集、session 创建、节能偏好和周期上报的位置；生产代码还要补错误处理、埋点、灰度开关和 API 版本判断。
 
 ```kotlin
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -178,7 +178,7 @@ class PowerEfficientBatchWorker(
 
 ## Power Efficiency Mode 的系统语义
 
-`setPreferPowerEfficiency(true)` 表达的是调度偏好，不承诺具体 CPU 频点、大小核选择、GPU 频率或能耗下降比例。官方 ADPF 文档的基本模型是：App 提供工作目标和实际耗时，系统结合 SoC 与热设计决定如何使用这些 hint。
+`setPreferPowerEfficiency(true)` 表达的是调度偏好，不承诺具体 CPU 频点、大小核选择、GPU 频率或能耗下降比例。基本模型是：App 提供工作目标和实际耗时，系统结合 SoC 与热设计决定如何使用这些 hint。
 
 发布时要把三层边界写清楚：
 
@@ -383,9 +383,6 @@ Perfetto 文档说明，电池 counter 在 USB 插电时会反映充电电流，
 [待验证] 当前缺少 Pixel 与至少一个 OEM 设备上的同窗对比数据。后续实验应在同一时间窗口内同时记录 `PowerMonitorReadings.getConsumedEnergy()` 差值、Perfetto power rails 差值、CPU frequency、thermal status 和任务计数，确认两类读数在同一设备上是否能互相解释。
 
 
-
-<!-- AIW-源码调研-2026-06-10 -->
-<!-- Task2B rework 2026-06-13: 修复 ML_ACC 手写值、SessionTag/SessionMode 混用、main branch 锚点越界 -->
 ## 扩展：系统层硬件协同设计架构
 
 ADPF 的端到端效果不仅依赖应用侧代码，更依赖系统层的硬件感知能力。本节基于 AOSP android-16.0.0_r1 源码分析系统组件如何实现硬件协同。
@@ -474,7 +471,6 @@ enum SessionMode {
 Android 15 起 Power HAL AIDL 已提供 `getSessionChannel()`，Android 16 的服务端增加 FMQ 支持状态统计。它们都属于系统级调试和 OEM 适配面，不直接暴露给 App。
 
 
-<!-- AIW-源码调研-2026-06-13 -->
 
 ### PowerStatsService 完整数据通路（系统服务 → IPowerStats HAL → statsd）
 
@@ -511,12 +507,11 @@ Android 15 起 Power HAL AIDL 已提供 `getSessionChannel()`，Android 16 的�
 
 **反哺要点**：
 1. App 不应假设 `getPowerMonitorReadings()` 实时调用 HAL；30s 阈值期间复用 `mPowerMonitorStates` 缓存
-2. `STOPSHIP(253292374)`（L515）—— getEnergyConsumedAsync 偶发返回 null 是已知问题，线上要监控 `Slog.wtf` 频率而非直接报错
+2. getEnergyConsumedAsync 偶发返回 null 是已知问题（见 PowerStatsService.java L515），线上要监控 `Slog.wtf` 频率而非直接报错
 3. statsd pull atom 的 2s 超时是硬约束，HAL 异常时 `PULL_SKIP` 是正确行为；不能改用后台 executor 反而把 2s 用在排队上
 4. PowerStats 数据是 `IPowerStats` AIDL `@VintfStability` 稳定接口，跨 Android 主版本兼容；vendor 端实现差异在 `Channel.name` 等设备特定字段上，跨设备对比前要先确认字段语义
 
-> 一手资料：`PowerStatsService.java` (L1-800+)、`StatsPullAtomCallbackImpl.java` (L1-175)、`PowerStatsLogger.java` (L1-120+)、`IPowerStatsService.aidl` (L1-34)、`PowerMonitor.java` (L1-120)、`IPowerStats.aidl` (L1-124)、`Channel.aidl` (L1-28)、`EnergyMeasurement.aidl` (L1-33)
-> 详细报告：`DeepResearch/2026-06-13-android17-powerstats-service-statsd-pull-atoms.md`
+> 本节源码锚点覆盖：`PowerStatsService.java`（L1-800+）、`StatsPullAtomCallbackImpl.java`（L1-175）、`PowerStatsLogger.java`（L1-120+）、`IPowerStatsService.aidl`、`PowerMonitor.java`、`IPowerStats.aidl`、`Channel.aidl`、`EnergyMeasurement.aidl`。深入分析见 `DeepResearch/2026-06-13-android17-powerstats-service-statsd-pull-atoms.md`。
 
 
 ### 版本演进总结

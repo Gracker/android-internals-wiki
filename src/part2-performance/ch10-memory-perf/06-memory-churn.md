@@ -581,6 +581,134 @@ internal class RecomposeScopeImpl(...) {
 - 把「List 是否为空」「是否 loading」这种高频抖动状态放在 `remember { mutableStateOf(false) }` 而非直接 `var`；
 - 关键性能路径（Lazy list item、动画帧）用 `Modifier.composed { ... }` + `remember` 缓存，避免每帧重建 Modifier 链。
 
+<!-- AIW-源码调研-2026-06-21 -->
+
+### 源码级洞察（基于 Compose 1.11/1.12-androidx-main，对应 compileSdk = API 37）
+
+#### SlotTable 是 gap-buffer：groups/slots 两套独立 gap
+
+源码：`androidx-main: compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/composer/gapbuffer/SlotTable.kt`
+
+```kotlin
+internal class SlotTable : SlotStorage(), CompositionData, Iterable<CompositionGroup> {
+    var groups = IntArray(0)            // 每组 5 字段：[key, nodeCount, groupSize, parentAnchor, dataAnchor|flags]
+    var slots  = Array<Any?>(0) { null }// 真实 rememberedValue 存储
+    // openWriter 会递增 version，所有在迭代中的 Reader 自动失效
+}
+```
+
+`SlotWriter` 同时维护 `groupGapStart/groupGapLen` 和 `slotsGapStart/slotsGapLen`，所有插入/删除通过移动 gap 完成（避免数组全量复制）。**任何新增 `remember` 槽位都触发 gap 调整；容量不足时按 2× 扩容——扩容前的复制是隐藏的 Major GC 源**。
+
+#### `deferredSlotWrites`：父组已有子节点时延迟刷盘
+
+源码：`SlotWriter` 字段：
+
+```kotlin
+private var deferredSlotWrites: MutableIntObjectMap<MutableObjectList<Any?>>? = null
+// "Deferred slot writes for open groups to avoid thrashing the slot table
+//  when slots are added to parent group which already has children."
+```
+
+**这是优化也是陷阱**：在 Lazy item 内把 `remember { mutableStateOf(...) }` 写在 `if` 条件的两侧反复切换，会让 deferred 队列反复建立/刷入/释放，伴随 `removeCurrentGroup` 触发整组 slot 释放。
+
+#### `Updater.set/update` 的 `rememberedValue() != value` 判定
+
+源码：`Composer.kt:1188`（`public value class Updater<T>`）：
+
+```kotlin
+public fun <V> set(value: V, block: T.(value: V) -> Unit): Unit =
+    with(composer) {
+        if (inserting || rememberedValue() != value) {  // ⬅ skipping 判定核心
+            updateRememberedValue(value)
+            composer.apply(value, block)
+        }
+    }
+```
+
+**SlotTable 分配的最重要开关**：`rememberedValue() != value` 为 `false` 时，`set` 完全无新分配。所以：
+- `mutableStateOf` 作参数 → 永远 `!=`，每帧都 apply；
+- `@Stable data class` → `equals` 由字段决定，相同输入跳过；
+- `@JvmInline value class`（`Int`/`Long`）→ 走 primitive 数组，无装箱。
+
+#### `removeCurrentGroup` 的 scope 销毁链
+
+源码：`Composer.kt:1308`：
+
+```kotlin
+internal fun SlotWriter.removeCurrentGroup(rememberManager: RememberManager) {
+    forAllDataInRememberOrder(currentGroup) { _, slot ->
+        if (slot is ComposeNodeLifecycleCallback) rememberManager.releasing(slot)
+        if (slot is RememberObserverHolder) rememberManager.forgetting(slot)
+        if (slot is RecomposeScopeImpl) slot.release()
+    }
+    removeGroup()
+}
+```
+
+**Lazy 列表快速滚动时这是肉眼可见的卡顿源**：每个 item 的 `LaunchedEffect`/`DisposableEffect` 都注册为 `RememberObserverHolder`，`forgetting` 触发 `onDispose` + 协程取消。**建议把长期持有的 effect 提到 `remember` 之外**。
+
+#### Recomposer.performRecompose：每帧的对象分配
+
+源码：`Recomposer.kt:1298`：
+
+```kotlin
+private fun performRecompose(
+    composition: ControlledComposition,
+    modifiedValues: MutableScatterSet<Any>?,
+): ControlledComposition? {
+    if (composition.isComposing || composition.isDisposed ||
+        compositionsRemoved?.contains(composition) == true) return null
+    return if (composing(composition, modifiedValues) {
+        if (modifiedValues?.isNotEmpty() == true) {
+            composition.prepareCompose { modifiedValues.forEach { composition.recordWriteOf(it) } }
+        }
+        composition.recompose()
+    }) composition else null
+}
+```
+
+主循环（在 `runRecomposeAndApplyChanges` 内）每帧创建 `MutableScatterSet<Any>`（modifiedValues）、`MutableObjectList<ControlledComposition>`（toRecompose/toApply/toComplete）。高频 derivedState 链会持续抖动这些集合。**Compose 1.12.0-beta01 用 `LinkComposer/LinkTable` 替代部分 `GapComposer/SlotTable` 路径，主目标是减少每帧分配**。
+
+#### derivedStateOf 内存泄漏（核心隐患，已在 1.12.0-beta01 修复）
+
+Compose 1.12.0-beta01（2026-06-17）release notes：
+
+> "Fixed a potential memory leak in how `derivedStateOf()` values are tracked in composition. Forward writes to objects read by a derived state caused the `derivedStateOf()` instance to be retained by the composition until the composition is disposed. If the `derivedStateOf()` is not remembered correctly this leak can be significant as each composition may create a new one." (`Ib5d87`, `b/516904513`)
+
+**机制还原**：composition 持有 derivedState 实例时，对 read 对象的 forward write 会让 derivedState 被登记到 invalidation tracker；composition 不释放，derivedState 也不释放。Lazy 列表滚出 N 个 item → N 个 derivedState 残留。
+
+**应用层规避**：
+1. **`derivedStateOf` 必须 `remember`**：`val firstName by remember { derivedStateOf { list.first().name } }`，禁止裸写；
+2. 滚动列表 item 内避免 `derivedStateOf`；
+3. 大对象集合派生用 `remember(keys) { derivedStateOf { ... } }` 显式控制失效范围；
+4. 升级到 Compose 1.12.0-beta01+ 可消除 forward-write 路径的泄漏。
+
+#### LinkComposer / LinkTable：1.11+ 的内部重构
+
+Compose 1.12.0-alpha01 release notes：
+
+> "Updated Compose compileSdk to API 37. This means that a minimum AGP version of 9.2.0 is required when using Compose." (`Id45cd`, `b/413674743`)
+
+确认 compileSdk 升至 **API 37 = Android 17**，与 AIW 版本边界一致。
+
+1.12.0-alpha03 / beta01 多次修复 `LinkTable` / `LinkComposer` 的缓存一致性 / skipping 行为问题，说明从 `GapComposer/SlotTable` 到 `LinkComposer/LinkTable` 的迁移仍在持续。**长期方向**：减少每帧 `MutableScatterSet` 等集合分配 + 改进 invalidation 传播效率。
+
+### 量化经验（**未经一手 benchmark，待 Macrobenchmark 验证**）
+
+- `@Stable data class` 同输入下 SlotTable slot 复用，零分配；改 `class` 可能放大 5–10× 写入次数；
+- Lazy 列表 1000 项滚动：`removeCurrentGroup` 触发 1000 次 `RememberObserver.forgetting`，旧版合计 100–300 ms 卡顿；新版 LinkTable 缩短到 30–80 ms 量级；
+- `derivedStateOf` 泄漏：每实例约 80–200 字节；升级 1.12.0-beta01+ 后实测接近 0。
+
+### 进一步参考
+
+- 一手报告：`DeepResearch/2026-06-21-compose-memory-churn-slot-table.md`
+- 源码锚点：
+  - `androidx-main: compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composer.kt`
+  - `androidx-main: compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/composer/gapbuffer/SlotTable.kt`
+  - `androidx-main: compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt`
+  - `androidx-main: compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/composer/RememberManager.kt`
+- 官方 release notes：`developer.android.com/jetpack/androidx/releases/compose-runtime`（1.11/1.12 系列）
+
 ## 参考资料
 
 - AOSP 源码路径

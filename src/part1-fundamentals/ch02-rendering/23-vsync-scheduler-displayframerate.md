@@ -359,3 +359,110 @@ ScheduleResult VSyncDispatchTimerQueueEntry::schedule(VSyncDispatch::ScheduleTim
 ## 小结
 
 SurfaceFlinger 的 VSync Scheduler 不是单纯转发硬件中断。它用 `VSyncPredictor` 建模，用 `VSyncDispatchTimerQueue` 按 work / ready duration 反推唤醒时刻，再用 `RefreshRateSelector` 把 layer 投票、GameManager 干预、touch signal 和设备策略折成一个刷新率选择。Perfetto 排障时，把 App late、SF late、HWC present late 分开看，才能避免把正常的 ARR 降频或 timeline 过渡误判成卡顿。
+
+---
+
+<!-- AIW-源码调研-2026-06-21 -->
+
+## 附：2026-06-21 Android 17 源码调研补强
+
+> 本节由每日源码调研任务自动追加。来源：`DeepResearch/2026-06-21-surfaceflinger-vsync-scheduler-android17.md`
+
+### A1. 关键架构事实：DispSync 已彻底退场
+
+Android 17 (`android-17.0.0_r1`，对应 `BlissRoms/platform_frameworks_native@17` 分支验证) 中，`frameworks/native/services/surfaceflinger/` 顶层目录下已 **不存在** `DispSync.cpp` / `DispSync.h`。其职责由 `Scheduler/` 子目录下的四个核心组件分工承担：
+
+| 旧 DispSync 职责 | 新模块（Android 17） |
+|---|---|
+| 统计 vsync 周期 | `VSyncPredictor`（OLS 线性回归，slope+intercept 模型） |
+| 控制周期切换 | `VSyncReactor`（10% allowance 判定） |
+| 多客户端分发 | `VSyncDispatchTimerQueue` + `VSyncDispatchTimerQueueEntry` |
+| 配置 phase offset | `VsyncConfiguration`（按 fps 缓存 PhaseOffsets） |
+
+### A2. VSyncPredictor 的 10% 容差与 Render Rate Phase 对齐
+
+源码（`VSyncPredictor.cpp`）确认：
+
+- 拟合用 OLS（普通最小二乘法），缩放因子 `kScalingFactor = 1000` 保证定点精度。
+- 异常值过滤：`|anticipatedPeriod - mIdealPeriod| / mIdealPeriod * 100 >= kOutlierTolerancePercent` 时清空时间戳环重新学习。
+- **ARR 渲染率相位对齐**（`nextAnticipatedVSyncTimeFrom`）：当应用通过 `setFrameRate()` 设定的渲染帧率不是显示刷新率整数倍时，VSyncPredictor 通过 `mLastVsyncSequence.seq % divisor == 0` 判定相位，把下一个 vsync 对齐到目标帧率的最近整除位置。
+- 兜底断言 `LOG_ALWAYS_FATAL_IF(prediction < timePoint, "VSyncPredictor: model miscalculation")` —— 预测出比当前时间更早的 vsync 视为模型 bug。
+
+### A3. VSyncReactor 的周期切换状态机
+
+源码（`VSyncReactor.cpp`）确认 Reactor 同时接受两类时间源：
+
+- HW vsync 时间戳（来自 HWComposer HAL）
+- present fence（surfaceflinger 提交 buffer 后由 HWC 回填）
+
+两者通过同一个 `VSyncTracker&`（即 VSyncPredictor）拟合。`mPeriodConfirmationInProgress` 状态机的判定核心在 `periodConfirmed()`：
+
+```cpp
+static constexpr int allowancePercent = 10;
+auto const allowance = period * 10 / 100;  // std::ratio<10,100>
+if (HwcVsyncPeriod) {
+    return std::abs(*HwcVsyncPeriod - period) < allowance;
+}
+auto const distance = vsync_timestamp - *mLastHwVsync;
+return std::abs(distance - period) < allowance;
+```
+
+含义：周期切换期间，新采集的 vsync 样本与期望周期的偏差必须在 ±10% 内，否则视为「尚未稳定」继续采集。这导致 ARR 切换时存在 ~17-33ms（@60-120Hz）的预测不可用窗口。
+
+### A4. VSyncDispatchTimerQueue 的 schedule() 三段时间模型
+
+源码（`VSyncDispatchTimerQueue.cpp`）中每个 `VSyncDispatchTimerQueueEntry` 持有 `ScheduleTiming = {earliestVsync, workDuration, readyDuration}`，调度公式：
+
+```
+nextVsyncTime = tracker.nextAnticipatedVSyncTimeFrom(
+    max(earliestVsync, now + workDuration + readyDuration))
+nextWakeupTime = nextVsyncTime - workDuration - readyDuration
+nextReadyTime  = nextVsyncTime - readyDuration
+```
+
+`mMinVsyncDistance` 字段防止单帧多次回调抢占造成 GPU pipeline bubble —— 这是游戏引擎和高帧率相机预览场景下需要关注的参数。
+
+### A5. 完整调用链（自上而下）
+
+```
+应用/SurfaceControl.setFrameRate()
+    ↓ [Binder → SurfaceFlinger]
+Scheduler::requestNextVsync()
+    ↓
+VsyncSchedule::getTracker()           ← 选取 pacesetter display 的 schedule
+    ↓
+VSyncPredictor::nextAnticipatedVSyncTimeFrom()
+    ↓ OLS slope + intercept 计算
+VSyncDispatchTimerQueueEntry::schedule()
+    ↓ 计算 wakeupTime / readyTime
+OneShotTimer 定时器
+    ↓ 到点触发
+VSyncDispatch::Callback              ← 例如 EventThread::onVSync
+    ↓
+Choreographer → 应用 UI 线程
+```
+
+### A6. 版本边界（一手核对）
+
+| 版本 | 关键变化 |
+|---|---|
+| Android 11 (R) | VSyncPredictor / VSyncReactor 引入；DispSync 仍存在 |
+| Android 12 (S) | VSyncDispatchTimerQueue 引入；`Scheduler/` 目录结构基本定型 |
+| Android 13 (T) | VsyncModulator（同屏多 frameRate 协调）引入 |
+| Android 14 (U) | `Scheduler::setPacesetterDisplay()` 支持运行时切换 |
+| Android 15 (V) | `Display.hasArrSupport()` 公开；View `setRequestedFrameRate()` |
+| Android 16 (Baklava) | 多窗口场景下「同屏多 frameRate」策略完善 |
+| **Android 17 (API 37)** | **DispSync.cpp/.h 已从源码树移除**；VSync* 接口稳定 |
+
+### A7. 与本章节的关系
+
+本章节（02.23）已在 Android 16 验证，覆盖了 Scheduler 总体架构与 ARR 策略。本节补强：
+
+1. **Android 17 特有事实**：DispSync 完全退场，源码中已无该类。
+2. **VSyncPredictor 的 OLS 实现细节**：包括异常值过滤、kScalingFactor、render rate phase 对齐。
+3. **VSyncReactor 的 10% 容差机制**：ARR 切换期间预测不可用窗口的来源。
+4. **完整调用链的源码级证据**：从 setFrameRate 到 Choreographer 的可逐行追踪路径。
+
+报告与本节内容保持一致；未来如需调研 `VsyncModulator`、`EventThread::onVSync`、`SurfaceControl.setFrameRate()` 等子主题，可基于本次建立的源码阅读基线继续深入。
+
+<!-- /AIW-源码调研-2026-06-21 -->
