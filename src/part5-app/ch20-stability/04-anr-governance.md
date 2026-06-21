@@ -2,7 +2,7 @@
 title: "ANR 治理策略"
 chapter: "20.4"
 section: "20.4"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-06-02"
 last_verified_against: "AOSP android-16.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
