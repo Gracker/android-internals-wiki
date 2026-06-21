@@ -60,7 +60,7 @@ task2b_verifier_result: ready-for-task6
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
+last_deepseek_cn_review_at: 2026-06-21
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
@@ -200,9 +200,14 @@ FAST Mixer 运行在一个专用线程上，使用 `SCHED_FIFO` 实时调度策�
 
 ### 从创建流到选路：为什么这条流没有进入 fast path
 
-只看输出侧，容易把 round-trip latency 讲成半截。完整路径是：`AudioTrack` / `AAudio` 输出先经 AudioPolicyService 选 output profile，再由 `AudioFlinger::createTrack()` / `PlaybackThread::createTrack_l()` 决定是 normal track、fast track、direct/offload 还是 MMAP output；输入侧 `AudioRecord` / `AAudio` input 则先经 AudioPolicyService 选 input profile，再落到 `RecordThread`，设备支持时再进一步走 `FastCapture` 或 input MMAP。
+只看输出侧容易把 round-trip latency 讲成半截。完整的往返路径要分两头看：
 
-所以 round-trip latency = input path + app processing + output path。输出侧已经拿到 FAST Mixer，只能说明扬声器这半边更快；如果输入侧还停留在普通 `RecordThread`，麦克风到 App 的这一半仍然会拖慢总延迟。分析乐器、KTV、视频会议这类场景时，需要同时看 `AudioFlinger` 的 playback thread 和 `RecordThread` / `FastCapture` 的调度节奏，不能只盯着输出线程。
+- **输出侧**：`AudioTrack` / `AAudio` 经 AudioPolicyService 选 output profile，再由 `AudioFlinger::createTrack()` / `PlaybackThread::createTrack_l()` 决定是 normal track、fast track、direct/offload 还是 MMAP output
+- **输入侧**：`AudioRecord` / `AAudio` input 经 AudioPolicyService 选 input profile，落到 `RecordThread`，设备支持时进一步走 `FastCapture` 或 input MMAP
+
+所以 round-trip latency = input path + app processing + output path。输出侧已经拿到 FAST Mixer，只能说明扬声器这半边更快。如果输入侧还停留在普通 `RecordThread`，麦克风到 App 的这一半仍然会拖慢总延迟。
+
+分析乐器、KTV、视频会议这类场景时，PlaybackThread 和 RecordThread / FastCapture 的调度节奏要同时看，不能只盯输出侧。
 
 ## AAudio 与 MMAP：低延迟数据路径
 
@@ -210,11 +215,11 @@ FAST Mixer 运行在一个专用线程上，使用 `SCHED_FIFO` 实时调度策�
 
 AAudio 是 Android 8.0 引入的原生音频 C API，专为低延迟音频场景设计（游戏、音乐制作、实时音频处理）。相比传统的 OpenSL ES（已标记为废弃）和 Java 层的 AudioTrack，AAudio 提供了更底层的控制和更低的延迟。
 
-AAudio 的核心设计原则是简洁：创建流（`AAudioStream`）、写入数据（`AAudioStream_write()`）、关闭流。没有复杂的回调层级，没有 Java 层的额外开销。
+AAudio 的设计思路是极简：创建流（`AAudioStream`）、写入数据（`AAudioStream_write()`）、关闭流。没有多层回调，没有 Java 层开销。
 
-### MMAP 模式：减少数据面拷贝，控制面仍在
+### MMAP 模式：缩短数据面路径
 
-Android 8.1 引入了 MMAP（Memory Mapped）模式。它缩短的是数据面的搬运路径，不是把 audioserver 完全拿掉。
+Android 8.1 引入了 MMAP 模式。它的作用是减少数据面的多级拷贝，不是把 audioserver 完全绕开。
 
 传统 PCM 播放通常是：
 
@@ -248,9 +253,9 @@ Google 的 Oboe 库封装了 AAudio（Android 8.0+）和 OpenSL ES（回退）�
 
 对于需要在多种 Android 设备上实现低延迟音频的开发者，Oboe 是比直接使用 AAudio 更稳妥的选择。
 
-## 在 Perfetto 中的表现
+## 在 Perfetto 中分析 Audio Pipeline
 
-分析音频性能问题时，Perfetto 是首选工具。
+Perfetto 是分析音频性能问题的首选工具。下面给出抓取命令和关键 Track。
 
 ### 抓取音频 Trace
 
@@ -270,7 +275,7 @@ adb shell perfetto -t 10s \
 
 3. **CPU Scheduling**：检查 FAST Mixer 线程的 CPU 调度状态。`SCHED_FIFO` 线程应该有稳定的执行周期。如果看到频繁的 `Task State: Runnable` 但未被调度执行，说明系统负载过高。
 
-4. **缓冲区水位线（Underrun）**：音频 underrun 是最常见的音频性能问题。当 AudioFlinger 需要读取数据但 App 还没来得及写入时，就会发生 underrun——用户听到的就是「咔嗒」声或断续的播放。在 Perfetto 中可以通过 SQL 查询检测：
+4. **缓冲区水位线（Underrun）**：音频 underrun 是最常见的音频性能问题。AudioFlinger 要读数据时 App 还没写入，用户就会听到「咔嗒」声或断续播放。Perfetto 中可以用 SQL 查询检测：
 
 ```sql
 SELECT slice.name, slice.ts, slice.dur
@@ -290,9 +295,9 @@ ORDER BY slice.ts
 | Underrun | AudioFlinger 读取时缓冲区为空 | App 写入不及时或缓冲区太小 |
 | 后台音频卡顿 | App 侧 write/callback 停止，随后 track 在 `dumpsys audio` 中变为 inactive 或被 teardown | Android 17 后台音频硬化：无可见 Activity、无合规 FGS，或 targetSdk 37+ 未满足 WIU / `USAGE_ALARM` 豁免条件 |
 
-## Android 17 音频性能变更
+## Android 17 音频变更
 
-Android 17（API 37）对音频子系统引入了多项重要变更，对 App 开发和性能分析都有直接影响。
+Android 17（API 37）对音频子系统的改动集中在三块：后台播放约束、offload 控制精度、codec 来源追溯。
 
 ### 后台音频强化（Audio Hardening）
 
@@ -338,17 +343,15 @@ Android 17 新增 `flushWrittenFramesFromPosition(long, int)`。官方 API 文�
 
 `getCodecProvenance()` 返回的是配置阶段确定的 codec provenance，也就是编解码器实现来源字符串，例如系统组件名或厂商 codec 名。它表达的是“这条播放流最终绑定了哪套编解码器实现”，方便 framework 或 HAL 在空间音频、渲染策略这类场景里保留来源信息；它本身不直接给出“当前一定走硬解 / 软解 / offload”这类执行路径结论。
 
-如果要判断执行路径，是不是 offload、是不是 hardware decoder、DSP 有没有接管，应该另外看 offload 配置、`dumpsys audio`、播放器管线和设备能力。不能把 `getCodecProvenance()` 直接当成执行路径探针。
+要判断执行路径（offload 还是 PCM、硬件解码还是软件解码），去看 offload 配置、`dumpsys audio` 和播放器管线。`getCodecProvenance()` 不是执行路径探针。
 
 ### Assistant 独立音量流
 
-Android 17 引入了 `USAGE_ASSISTANT` 专用音量流，将语音助手的音频与标准媒体流解耦。用户可以独立控制 Assistant 音量和媒体音量，不会出现「调低音乐音量后 Assistant 也听不到了」的问题。
+Android 17 新增了 `USAGE_ASSISTANT` 专用音量流，Assistant 音量与媒体音量独立控制。以前调低音乐后 Assistant 也跟着变小，现在两条音量线互不影响。配套 `MODE_ASSISTANT_CONVERSATION` 模式进一步提升音量一致性。
 
-配套 `MODE_ASSISTANT_CONVERSATION` 音频模式进一步提升音量控制的一致性。
+### 四种输出路径一览
 
-### 四类 output path 放在一起看
-
-前面已经出现 FAST、MMAP、offload 这几个词，如果不放在同一张表里，很容易把低延迟播放和省电播放写混。
+前面陆续出现 FAST、MMAP、offload 几个概念，放在同一张表里对比能避免把低延迟播放和省电播放混为一谈。
 
 | 输出类型 | 典型线程 / 组件 | 常见 payload | 目标 | 常见入口 |
 |----------|-----------------|-------------|------|----------|
@@ -359,9 +362,9 @@ Android 17 引入了 `USAGE_ASSISTANT` 专用音量流，将语音助手的音�
 
 `flushWrittenFramesFromPosition()` 和 `getCodecProvenance()` 这类 API 应放在 Direct / Offload 这一栏理解。它们服务的是 seek、codec 来源保留、power-saving playback 这类问题，不属于 MMAP low-latency 方案。
 
-### AAudio offloaded playback 的边界
+### AAudio offloaded playback 边界
 
-现有公开资料已经出现 AAudio offloaded playback / `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 这类能力描述，但 API level、支持格式、PCM/压缩边界和设备覆盖范围还要结合 Android 16/17 API diff 与实机确认。现阶段更稳妥的理解是：它请求的是省电型 output path，不是低延迟 MMAP；讨论它时要单独看 output profile、offload capability 和 `dumpsys audio` 中的 offload output 状态。
+目前公开资料中 AAudio offloaded playback / `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 的能力描述，API level、支持格式、PCM/压缩边界和设备覆盖范围还需要实机确认。现阶段稳妥的理解是：它请求的是省电型输出路径，不是低延迟 MMAP。实际使用时看 output profile、offload capability 和 `dumpsys audio` 的 offload output 状态。
 
 ## API 选择指南
 

@@ -14561,13 +14561,13 @@
     "title": "Simpleperf",
     "file": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
     "status": "ready-for-review",
-    "pipeline_stage": "task9_pending",
-    "task6_result": "pass-light-edit",
+    "pipeline_stage": "task2b_pending",
+    "task6_result": "needs-rework",
     "task6_state": "reviewed",
     "last_task6_review": "2026-06-10T06:06:00+08:00",
     "review_round": 3,
     "task2b_state": "pending",
-    "last_task6_at": "2026-06-10T15:21:08+08:00",
+    "last_task6_at": "2026-06-21T14:07:00+08:00",
     "task6_reviewed_at": "2026-06-10T08:06:00",
     "last_review_log": "logs/review/2026-06-10-15-review.md",
     "task9_state": "pending",
@@ -14723,11 +14723,13 @@
   "14.2": {
     "chapter": "14.2",
     "title": "Simpleperf",
-    "pipeline_stage": "task6_pending",
+    "pipeline_stage": "task2b_pending",
     "task2b_result": "fixed",
-    "task2b_state": "fixed",
-    "task6_state": "revisiting",
+    "task2b_state": "pending",
+    "task6_state": "reviewed",
     "last_task2b_at": "2026-06-21T12:53:03+08:00",
-    "last_task2b_by": "task2b-main"
+    "last_task2b_by": "task2b-main",
+    "task6_result": "needs-rework",
+    "last_task6_at": "2026-06-21T14:07:00+08:00"
   }
 }
