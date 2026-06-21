@@ -727,5 +727,40 @@
       "completed_by": "task2b-main",
       "resolution": "false positive: /memfd:jit-zygote-cache 路径在 android-17.0.0_r1 simpleperf/JITDebugReader.cpp 源码中真实存在，为 kJITZygoteCacheFile 的 memfd 文件系统路径"
     }
+  ],
+  "queue": [
+    {
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 70,
+      "reason": "[Task6-review] 3 个技术准确性问题待 Task 9 验证：setprop/sysctl 混淆、裸 glob 语法、--exclude-pid 存在性",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "存疑-技术准确性",
+          "location": "14.2.4 PMU 硬件事件权限段",
+          "detail": "adb shell setprop kernel.perf_event_paranoid 1 — setprop 不能设置 sysctl 参数",
+          "suggestion": "改为 adb shell \"echo 1 > /proc/sys/kernel/perf_event_paranoid\""
+        },
+        {
+          "type": "存疑-命令语法",
+          "location": "14.2.4 过滤选项段",
+          "detail": "simpleperf record com.example.* 缺少 --app 或 -p 目标选择标志",
+          "suggestion": "改为 simpleperf record --app com.example.app"
+        },
+        {
+          "type": "存疑-选项存在性",
+          "location": "14.2.4 过滤选项段",
+          "detail": "--exclude-pid 选项是否存在需要验证",
+          "suggestion": "查阅 simpleperf record --help 确认"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-21T13:07:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-21-13-review.md"
+    }
   ]
 }

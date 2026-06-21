@@ -32,12 +32,12 @@ task9_result: needs-rework
 task6_result: pass-light-edit
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-10
-last_task6_at: '2026-06-21T12:07:00+08:00'
+last_task6_at: '2026-06-21T13:07:00+08:00'
 last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-11'
@@ -411,6 +411,7 @@ adb shell simpleperf record --system-wide --duration 30 -m 16384 -o /data/local/
 ```
 
 > `-m` 值不足会导致采样丢失（`LOST` 事件），表现为 report 中特定进程/线程数据稀疏。若 `simpleperf report` 输出大量 `LOST` 行，优先增大 `-m` 值。[已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-17.0.0_r1, `-m` 选项注册为 `OptionUintOption("m", "Set mmap pages used by record, the unit is page (4K).")`]
+
 ### 多进程应用采样
 
 现代 Android 应用常拆为多个进程（主进程 + :bg 后台 + :remote 远端等）。Simpleperf 提供四种进程选择接口，定位多进程场景的热点分布。
