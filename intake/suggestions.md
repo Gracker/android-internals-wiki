@@ -143,3 +143,10 @@
 - **位置**：14.2.7 Simpleperf 与电源 / 热 / 异构调度的交互盲区，厂商 ROM 限制表
 - **问题**：MIUI/EMUI/ColorOS/OneUI/Funtouch 限制与绕过方式标注为“未一手验证”，但表格给出了具体系统属性、root、boot image 等操作建议；当前没有厂商文档、设备实验记录或日志支撑。
 - **建议**：补充可复现实验记录和系统版本/机型边界；如果无法补齐，一律降级为“待验证观察”或移出正文操作建议区。
+
+## [Task9 Idle Audit] 5.14 Android 17 ML Runtime 与 NPU 访问边界 — 2026-06-22
+- **类型**：源码引用准确性/交叉引用一致性
+- **位置**：frontmatter `sources` L33-L36；参考资料 `NeuralNetworks HAL 1.3 接口族与推理加速机制`、`Android 端侧 AI 推理栈边界验证`
+- **问题**：章节列出的 5 个 `DeepResearch/...` 内部材料路径当前均不存在；正文技术结论仍可由 Android 17 release notes、PackageManager API 37 reference、NNAPI Runtime 与 LiteRT Next 官方文档支撑，但这些内部材料引用无法回溯。
+- **建议**：后续回炉时删除失效 DeepResearch 引用，或替换为实际存在且已校正 API 37 / `android.hardware.npu` 口径的研究材料；不要引用含 API 36 或 `android.hardware.neural_processing_unit` 旧口径的素材。
+- **review 日志**：logs/deep-review/2026-06-22-01-audit.md
