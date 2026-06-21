@@ -3,10 +3,10 @@ title: "Native Crash 分析与治理"
 chapter: "20.3"
 section: "20.3"
 section_title: "Native Crash 分析与治理"
-status: "ready-for-review"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-05-11"
-last_verified_against: "AOSP android-16.0.0_r1"
+status: "finalized"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+last_verified: "2026-06-21"
+last_verified_against: "AOSP android-17.0.0_r1 (native crash notification chain verified by Task9)"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
@@ -27,9 +27,9 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: "pass-light-edit"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-21"
@@ -40,12 +40,13 @@ task2b_result: "fixed"
 last_task2b_at: "2026-06-01T12:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-01"
-last_task6_at: "2026-06-01T18:10:00+08:00"
+reviewed_date: 2026-06-21
+last_task6_at: "2026-06-21T20:07:00+08:00"
 last_task6_audit: "2026-06-09"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
-last_task6_review_log: "logs/review/2026-06-01-18-review.md"
+last_task6_review_log: "logs/review/2026-06-21-20-review.md"
+task6_review_notes: "2026-06-21 20:07 Task6 revisiting-review (post-Task9-auto-fix): pass-light-edit。Task9 修正 NativeCrashListener -> handleApplicationCrashInner() 通知链路方法名。L1/L2 复扫通过，无新增小修，无新增回炉项。更新 applicable_versions 至 Android 17/API 37。自动晋升 finalized。"
 task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-06-21-16-audit.md"
 task9_review_notes: "2026-06-21 Task9 idle-audit：auto-fixed。Android 17/API 37 源码抽检发现 native crash 通知链路方法名不准；已将 AppErrors.crashApplication()/handleApplicationCrash() 修正为 NativeCrashListener -> handleApplicationCrashInner()，回到 Task6 复审。"

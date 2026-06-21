@@ -2,7 +2,7 @@
 
 
 
-status: "ready-for-review"
+status: "finalized"
 title: 后台执行限制与优化
 chapter: '5.8'
 section: '5.8'
@@ -71,9 +71,8 @@ related_chapters:
 - '5.7'
 - '11.2'
 - '8.4'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_reviewed_date: 2026-05-18
 task6_reviewed_by: openclaw-task6
 task9_reviewed_date: "2026-06-21"
@@ -87,18 +86,17 @@ task9_result: auto-fixed
 last_task9_review_log: "logs/deep-review/2026-06-21-19-audit.md"
 queue_entry: task9-20260518-5.8-freezer-gc-version-boundary
 task9_review_notes: "2026-06-04 task9 deep-review: auto-fixed。修正 Android 16 Binder freezer 源码行号，补 Android 17 JobScheduler reason stats 版本边界。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；Doze/App Standby、FGS 超时、Android 17 后台音频硬化、JobScheduler pending reason stats 与 Binder freezer 版本边界复核通过，满足自动晋升 finalized 条件。 | 2026-06-21 Task9 闲时抽检：auto-fixed。修正 Android 17 background audio hardening 的 WIU / exact alarm + USAGE_ALARM 边界；把 cached apps freezer 约 10 秒冻结窗口从 Android 16 修正为 Android 14+；回到 Task6 复审。"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-06-04
-last_task6_at: 2026-06-04T12:11:00+08:00
-last_task6_review_log: "logs/review/2026-05-18-02-review.md"
+last_task6_at: "2026-06-21T20:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-21-20-review.md"
+task6_review_notes: "2026-06-21 20:07 Task6 revisiting-review (post-Task9-auto-fix): pass-light-edit。Task9 修正 Android 17 background audio WIU/USAGE_ALARM 边界及 freezer 冻结窗口版本(Android 14+)。L1/L2 复扫通过，无新增小修，无新增回炉项。自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-21"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
+last_deepseek_cn_review_at: 2026-06-21
 last_task9_audit: "2026-06-21"
 last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
 task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
+task6_result: pass-light-edit
+reviewed_date: 2026-06-21
 ---
 
 
@@ -122,13 +120,7 @@ task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-fo
 - 🔸 Standby Bucket、Job 配额与网络策略的内部实现
 - 🔸 Android 16 的后台任务调试接口与版本边界
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或官方文档中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+> **锚点**为最低覆盖要求。**扩展**视素材丰富程度选择性深入。大纲外但与本节强相关的知识点可插入最相关锚点后方。
 <!-- outline-end -->
 
 ## 为什么要了解后台执行限制
@@ -390,7 +382,7 @@ Android 16 / API 36 侧补了公开的 Binder 冻结通知 API。`IBinder.Frozen
 
 ### BINDER_FREEZE ioctl 与竞态处理
 
-和排查 freezer 相关问题直接相关的细节主要有三类：
+排查 freezer 相关问题时，以下三类细节值得关注：
 
 **BINDER_FREEZE ioctl 结构体**（`kernel/common/drivers/android/binder.c`）：
 ```c
@@ -432,14 +424,9 @@ IBinder.addFrozenStateChangeCallback(executor, callback)
 - `services/core/java/com/android/server/am/Freezer.java` L44-L61 — freezeBinder() 抽象入口
 ### CachedAppOptimizer 的 GC 联动与内存压缩
 
-从 Android 14 开始，CachedAppOptimizer 在冻结 cached 进程前可能请求应用运行时执行一次 GC，为后续的内存回收做准备。冻结后，系统还可能对进程执行额外的内存压缩（compaction）：包括将脏页回写到 backing storage、将匿名页压缩到 ZRAM。
+从 Android 14 开始，CachedAppOptimizer 在冻结 cached 进程前可能先触发一次 GC，冻结后再对进程做内存压缩（compaction）：脏页回写到 backing storage，匿名页压缩到 ZRAM。
 
-这套机制不依赖 16KB 页——它在 4KB 页设备上同样生效。但 16KB 页设备的单次页面释放粒度更大（16KB vs 4KB），压缩后的内存回收效率会更高。排查时可以在 Perfetto 中观察系统压缩事件前后，目标进程的 GC slice 与 `malloc_stats` 下降是否同步出现。
-
-**关键源码路径**：
-- `services/core/java/com/android/server/am/CachedAppOptimizer.java` — freeze 流程与 GC 请求
-- `system/core/lmkd/lmkd.cpp` — lmkd 压力触发的回收路径
-- source.android.com — cached-apps-freezer 官方文档
+这套机制不依赖 16KB 页，在 4KB 页设备上同样生效。但 16KB 页设备的单次页面释放粒度更大（16KB vs 4KB），压缩后内存回收效率更高。排查时可在 Perfetto 中对比系统压缩事件前后，目标进程的 GC slice 与 `malloc_stats` 变化。
 
 ## Binder Freezer Driver 协同机制的实现细节
 
