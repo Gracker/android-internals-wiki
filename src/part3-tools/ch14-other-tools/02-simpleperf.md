@@ -24,18 +24,18 @@ tags:
   - native-profiling
 last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task9_audit_at: '2026-06-10T16:20:00+08:00'
-last_task9_reviewed_at: '2026-06-21T13:30:02+08:00'
-last_task9_at: '2026-06-21T13:30:02+08:00'
+last_task9_reviewed_at: '2026-06-21T14:30:31+08:00'
+last_task9_at: '2026-06-21T14:30:31+08:00'
 last_task9_autofix_at: '2026-06-21'
 last_task2b_lite_at: '2026-06-21'
 last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: auto-fixed
 task6_result: needs-rework
 task2b_result: fixed-lite
-task2b_state: pending
-task6_state: reviewed
-task9_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task6_state: revisiting
+task9_state: reviewed
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-21
 last_task6_at: '2026-06-21T14:07:00+08:00'
@@ -235,7 +235,7 @@ simpleperf record -t 5678
 # 按包名等待并采样应用进程
 simpleperf record --app com.example.app
 
-# 按多个 PID 过滤（-p/--pid 只接受数字 PID，不支持进程名或正则）
+# 按多个 PID 或进程名正则过滤（-p 接受逗号分隔的 PID 或 process name regex）
 simpleperf record -p 1234,5678
 
 # 按进程名正则排除系统进程样本
@@ -519,14 +519,13 @@ simpleperf report --sort pid,symbol
 
 > 补充自 `2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md` 报告。与 `2026-06-10-simpleperf-multiprocess-sampling-coordination.md` 的"进程选择策略"互补，本节聚焦"选完之后数据怎么流、IPC 开销多大、跨进程数据怎么合"。
 
-Simpleperf 的多进程性能监控在 IPC 层是**"三层生产者-消费者 + 一条主控通路 + 一条跨文件合并"**的复合架构：
+Simpleperf 的多进程性能监控在 IPC 层是**"RecordReadThread 采样读线程 + app 内嵌 ProfileSession + 跨文件合并"**的复合架构。Android 17 / API 37 的 AOSP `system/extras/simpleperf` 已不再保留历史版本中的 `MapRecordThread`；system-wide 模式下的 `/proc/<pid>/maps` 扫描由 `RecordCommand::DumpMaps()` / `DumpMapsForRecord()` 同步或按首次命中进程懒触发完成。
 
-##### 三层生产者-消费者
+##### 采样与 app 内嵌通路
 
 | 通路 | 触发场景 | IPC 机制 | 源码位置 |
 |------|----------|----------|----------|
 | **RecordReadThread** | 全部 `record` 模式 | `pipe2(O_CLOEXEC)` cmd/data 双管道 + 1 字节通知 + lock-free ring buffer (10MB 阈值) | `RecordReadThread.cpp` L17-130, L224-360 |
-| **MapRecordThread** | system-wide + ETM aux tracing | 独立 `std::thread` 写 `TemporaryFile`，主线程 `Join()` 后回灌 | `MapRecordReader.h` L41-58, `cmd_record.cpp` L1570-1610 |
 | **ProfileSession** | app 内嵌 `simpleperf` 子进程 | `pipe` × 2 (control/reply) + `vfork` + `dup2(fd0/fd1)` | `app_api/cpp/simpleperf.cpp` L249-310 |
 
 ##### RecordReadThread 的两层 buffer 阈值
@@ -540,18 +539,18 @@ record_buffer_critical_level_ = std::min(record_buffer_size / 6, kDefaultCritica
 
 主线程通过 `SyncKernelBuffer()` 阻塞等 read 线程赶上，**不动态降频**（不像 Perfetto adaptive sampling）。
 
-##### MapRecordThread 调度
+##### system-wide maps 调度
 
-源码 `cmd_record.cpp` L1570-1610 `RecordCommand::DumpMaps`：
+Android 17 的 `cmd_record.cpp` L1608-1637 `RecordCommand::DumpMaps()` 不启动后台 map 线程：
 
 ```cpp
-if (event_selection_set_.HasAuxTrace() && !etm_branch_list_generator_) {
-  map_record_thread_.emplace(*map_record_reader_);  // 启动后台线程
-  return true;  // 不阻塞，立即返回
+if (system_wide_collection_) {
+  // For system wide recording, maps of a process is dumped when needed.
+  return true;
 }
 ```
 
-`RecordReadThread` 走 kernel mmap 拿实时采样，`MapRecordThread` 走 `/proc/<pid>/maps` 拿地址空间快照，**两者完全独立**，最终合并到同一份 perf.data 的 `data_section` + `init_map feature`。
+system-wide 模式下，`DumpMapsForRecord()` 在 sample 或 `PERF_RECORD_SWITCH_CPU_WIDE` 首次命中某个 pid 时调用 `MapRecordReader::ReadProcessMaps()`，并用 `dumped_processes_` 防止同一进程重复 dump。非 system-wide 模式则在 `DumpMaps()` 中先收集目标 pid/tid，再同步读取每个进程的 maps。
 
 ##### ProfileSession 状态机
 
@@ -761,7 +760,7 @@ Simpleperf 分析指导优化的两条核心原则：
 
 <!-- AIW-源码调研-2026-06-11 -->
 
-> 补充自 `2026-06-11-android17-simpleperf-mmap-munmap-analysis.md` 报告。源码锚点：`LineageOS/android_system_extras@lineage-23.2`（Android 17 base，android-17.0.0_r1 tag 未公开，标注"未进入 Android 17"）。
+> 补充自 `2026-06-11-android17-simpleperf-mmap-munmap-analysis.md` 报告；本节结论已在 AOSP `system/extras/simpleperf` `android-17.0.0_r1` 重新复核。LineageOS 初始调研锚点仅保留为材料来源，不作为正文证据。
 
 #### 双重 mmap 语义
 
@@ -786,7 +785,7 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 |------|---------|---------|
 | 录制前注入 kernel/BPF map | `MapRecordReader.cpp:25-46` | 主动构造 `MmapRecord`，覆盖 `[0, UINT64_MAX]` 为 BPF JIT 预留 |
 | 录制中扫进程 /proc/maps | `MapRecordReader.cpp:48-83` | **过滤非 PROT_EXEC 映射**，record 数量级从千压到百 |
-| system-wide 并行扫所有进程 | `MapRecordReader.cpp:85-119` `MapRecordThread` | ETM aux tracing 场景专用，独立线程写临时文件 |
+| system-wide 按需扫进程 /proc/maps | `cmd_record.cpp:1608-1637`、`cmd_record.cpp:1733-1751` | Android 17 不再使用 `MapRecordThread`；首次 sample / `PERF_RECORD_SWITCH_CPU_WIDE` 命中某 pid 时才 dump maps |
 | 主循环折叠到 DSO 树 | `thread_tree.cpp:399-426` `ThreadTree::Update` | 把 mmap/Mmap2/comm/fork/exit 折叠进 `user_dso_tree_`/`kernel_dso_` |
 | 录制入口 | `cmd_record.cpp:1592` `ProcessRecord` → `UpdateRecord` | **每条 record 触发一次 ThreadTree 折叠** |
 | 报告期 IP→vaddr 反查 | `dso.cpp:652-668` `IpToVaddrInFile` | 源码注释明确警告：*"Apps may make part of the executable segment writeable, which can generate multiple executable segments at runtime"* |
@@ -795,11 +794,11 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 
 | API level | 关键变化 | 源码位置 |
 |------|------|------|
-| API 24 (Android 7) | 引入 `PERF_RECORD_MMAP2`，多 `prot/flags/maj/min/ino/ino_generation` 6 字段 | `record.cpp:297-340` [android-16.0.0_r1] |
-| API 31 (Android 12) | `MapRecordThread` 引入并行 mmap 扫描 | `MapRecordReader.cpp:18` Copyright 2020 [android-16.0.0_r1] |
-| API 33 (Android 13) | `GetDefaultRecordBufferSize` 按内存分级（64MB / 256MB） | `cmd_record.cpp:91-108` [android-16.0.0_r1] |
+| API 24 (Android 7) | 引入 `PERF_RECORD_MMAP2`，多 `prot/flags/maj/min/ino/ino_generation` 6 字段 | `record.cpp:298-342` [android-17.0.0_r1]；Android 6.0.1 r81 未命中 `Mmap2Record`，Android 7.0.0 r1 已命中 |
+| API 34 (Android 14) | `GetDefaultRecordBufferSize` 按内存分级（64MB / 256MB） | `cmd_record.cpp:129-145` [android-17.0.0_r1]；Android 13.0.0 r1 未命中，Android 14.0.0 r1 已命中 |
+| API 37 (Android 17) | `MapRecordThread` 不在 AOSP 17 中；system-wide map dump 改为 `DumpMapsForRecord()` 首次命中 pid 时触发 | `cmd_record.cpp:1608-1637`、`cmd_record.cpp:1733-1751`、`MapRecordReader.cpp:59-105` [android-17.0.0_r1] |
 
-> **源码锚点说明**：版本差异条目的源码行号在 `android-16.0.0_r1` 中定位，2026-06-21 Task2B 在 `android-17.0.0_r1` 上全量确认路径未变更。Android 17/API 37 的 simpleperf 行为与 Android 16 一致。
+> **源码锚点说明**：正文行为锚点以 `android-17.0.0_r1` 为准；历史版本只用于确认引入或移除边界，不使用 main/master 结论。
 
 #### 端侧 AI 应用的可观测性反直觉点
 
@@ -813,5 +812,5 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 
 ### Android 17 Simpleperf 多进程 IPC 架构：三层生产者-消费者设计
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-simpleperf-multiprocess-ipc-data-integration.md
-- 摘要：Simpleperf 内部三层生产者-消费者复合架构：(1) RecordReadThread 用 lock-free 环形 buffer（默认 10MB）+ pipe2(O_CLOEXEC) 将 kernel mmap buffer 与用户态处理线程解耦；(2) MapRecordThread 在 system-wide + ETM aux tracing 场景用独立线程扫 /proc/<pid>/maps 写临时文件；(3) ProfileSession 用 pipe + vfork + dup2 在 app 进程内嵌 simpleperf 子进程。跨进程数据整合通过 cmd_merge 按特征段元数据 + 符号表一致性校验合并多份 perf.data。所有 IPC 走 pipe2 + 无锁 ring buffer 而非 socket，避免 AF_UNIX 协议栈开销。
+- 摘要：Simpleperf 内部多进程数据通路主要包括：(1) RecordReadThread 用 lock-free ring buffer + pipe2(O_CLOEXEC) 将 kernel mmap buffer 与用户态处理线程解耦；(2) ProfileSession 用 pipe + vfork + dup2 在 app 进程内嵌 simpleperf 子进程；(3) system-wide maps 在 Android 17 中由 DumpMapsForRecord() 首次命中 pid 时按需读取。跨进程数据整合通过 cmd_merge 按特征段元数据 + 符号表一致性校验合并多份 perf.data。
 - 关联子节：§14.2.5 数据收集方法、§14.2.6 数据分析与解读

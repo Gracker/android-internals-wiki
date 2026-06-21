@@ -23,7 +23,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-21T14:07:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-21-14-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-21-14-review.md",
+    "completed_by": "task9-deep-tech-review",
+    "completed_at": "2026-06-21T14:30:31+08:00",
+    "resolution": "AUTO-FIX: confirmed -p accepts PID or process-name regex in android-17.0.0_r1; confirmed --exclude-pid exists; replaced non-AOSP LineageOS anchor and removed Android 17 MapRecordThread claim."
   }
 ]
