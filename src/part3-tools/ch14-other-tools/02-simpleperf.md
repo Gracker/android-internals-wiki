@@ -46,7 +46,7 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
+last_deepseek_cn_review_at: 2026-06-22
 last_task6_audit: "2026-06-22"
 last_task6_audit_at: '2026-06-16T18:00:00+08:00'
 last_task6_audit_reason: 'idle audit: L1合规性、frontmatter完整性、outline锚点覆盖检查均通过'
@@ -521,7 +521,7 @@ simpleperf report --sort pid,symbol
 
 #### 多进程 IPC 通路与跨进程数据整合
 
-> 以下内容聚焦 Simpleperf 多进程采集时数据如何流转、IPC 开销大小以及跨进程数据如何合并。
+Simpleperf 的多进程性能监控在 IPC 层由 RecordReadThread、ProfileSession 和 cmd_merge 三类机制协作完成。
 
 Simpleperf 的多进程性能监控在 IPC 层是**"RecordReadThread 采样读线程 + app 内嵌 ProfileSession + 跨文件合并"**的复合架构。Android 17 / API 37 的 AOSP `system/extras/simpleperf` 已不再保留历史版本中的 `MapRecordThread`；system-wide 模式下的 `/proc/<pid>/maps` 扫描由 `RecordCommand::DumpMaps()` / `DumpMapsForRecord()` 同步或按首次命中进程懒触发完成。
 
@@ -592,7 +592,7 @@ event_id 重映射（`cmd_merge.cpp` L264-320）：每合并一个新文件，�
 
 **复杂度**：5 进程 × 1000 线程 = 5000 ThreadEntry 但仅 5 份 MapSet 内存。
 
-##### 端侧 AI 应用采样时的注意事项
+##### 端侧 AI 应用采样的特殊处理
 
 1. **NPU delegate 进程**：TFLite / MediaPipe 经常通过 `android:process=":npu"` 派生 NPU 专属进程，simpleperf **必须用 `--app <pkg>`** 才能捕获，否则只看到主进程在 NPU 推理时 CPU idle
 2. **mmap record 占头部 30-50%**：NPU delegate 进程 mmap 大量权重文件（1GB 模型 ≈ 250k 个 mmap record 项），不压缩时 `adb pull` 瓶颈在 IO
@@ -662,8 +662,6 @@ Overhead  Command   Pid   Tid   Symbol
 > ⚠️ **注意区分两个"默认"**：ARM64 内核的 `PERF_SAMPLE_CALLCHAIN` 默认走 FP 寄存器链回溯；但 simpleperf 的 `-g` 短参数等价于 `--call-graph dwarf`，即默认启用 DWARF 展开 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-17.0.0_r1 — help 字符串明确标注 `-g Same as '--call-graph dwarf'`]。Android NDK Clang 默认保留 FP（`-fno-omit-frame-pointer`），因此大多数场景下 FP 回溯即可满足需求。选择决策：先跑一次 `simpleperf report -g`，若调用栈满足分析需求则不需要切换；若栈经常出现 `0x0` 断点或深度明显不足（预期 10 层实际只有 3 层），表明 FP 回溯受限，用 `--call-graph dwarf` 重新采集对比。
 
 
-
-以下深入到 AOSP `system/extras/simpleperf/` 源码，说明 FP 和 DWARF 两条路径在实现层的具体分叉点，供需要理解内部机制或调试符号化异常的读者参考。
 
 #### 源码级展开：FP/DWARF 在 simpleperf 内部的实现分叉
 
@@ -760,9 +758,9 @@ Simpleperf 分析指导优化的两条核心原则：
 
 ---
 
-### mmap/munmap 数据通路：源码级展开
+### mmap/munmap 数据通路
 
-> 以下内容基于 AOSP `system/extras/simpleperf` `android-17.0.0_r1` 源码复核。
+理解 Simpleperf 的 mmap 数据通路有助于分析 perf.data 体积和内存占用。
 
 #### 双重 mmap 语义
 
@@ -812,7 +810,7 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 
 ### Simpleperf 与电源 / 热 / 异构调度的交互盲区
 
-> 以下内容基于 AOSP `system/extras/simpleperf` `android-17.0.0_r1` 源码复核，结合 2026-06-21 源码调研 `2026-06-21-simpleperf-power-thermal-multicore.md`。
+Simpleperf 不直接与 PowerManager / ThermalService 通信，但其行为受内核 sysctl、调度器策略和厂商 ROM 限制影响。理解这些交互盲区有助于避免 profiling 数据偏差。
 
 #### 5 个可调内核 / sysctl 闸门
 

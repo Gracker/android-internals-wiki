@@ -2,8 +2,8 @@
 title: "ANR 治理策略"
 chapter: "20.4"
 section: "20.4"
-status: ready-for-review
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+status: finalized
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-02"
 last_verified_against: "AOSP android-16.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
 confidence: medium
@@ -30,28 +30,28 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-23"
+reviewed_date: "2026-06-22"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-23T08:18:48+08:00"
+last_task6_at: "2026-06-22T02:07:00+08:00"
 last_task6_audit: "2026-06-18"
-task6_reviewed_date: "2026-05-23"
-task9_result: auto-fixed
+task6_reviewed_date: "2026-06-22"
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-21T20:36:07+08:00"
-last_task6_review_log: "logs/review/2026-05-23-08-review.md"
+last_task6_review_log: "logs/review/2026-06-22-02-review.md"
 task9_review_notes: "2026-06-21 Task9 idle audit auto-fix：补充 Android 14+ shortService FGS 类型级 ANR 计时器；证据为 AOSP android-14.0.0_r1 至 android-17.0.0_r1 ActivityManagerConstants/ActiveServices 与 Android Developers FGS shortService 文档。"
 last_task9_review_log: "logs/deep-review/2026-06-21-20-audit.md"
-task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。"
+task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 补充 Android 14+ shortService FGS 计时器后回审；L1/L2 全部通过；applicable_versions 扩展至 Android 17 (API 37)；task9_result 确认 pass-tech-review；queue 无 pending，自动晋升 finalized。"
 task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
+last_deepseek_cn_review_at: 2026-06-22
 last_task9_autofix_at: "2026-06-21"
 last_task9_audit: "2026-06-21"
 ---
@@ -173,13 +173,13 @@ WorkManager.getInstance(context).enqueue(uploadWork)
 - **第三方 SDK 的主线程调用**：很多第三方 SDK（广告、推送、统计）在初始化或回调里做磁盘 I/O 或网络请求，而调用时机往往是 `Application.onCreate()` 或 `Activity.onCreate()`——这两个都在主线程。治理手段：SDK 初始化移到子线程（如果 SDK 支持），或者用 `ContentProvider` 的延迟初始化机制（详见后文）。
 
 
-### Kotlin 协程 ANR 治理：源码级细节
+### Kotlin 协程内部调度与 ANR 关系
 
-以上是协程在主线程瘦身中的应用方式。但要准确判断协程在什么时候会间接导致 ANR，需要理解它的调度器内部行为。以下分析基于 kotlinx-coroutines 1.9.x 源码（GitHub master 分支）。
+协程让异步代码更易写，但它不自动消除 ANR 风险。理解 Dispatchers 的线程池和调度行为，才能判断协程在什么场景下会间接导致主线程阻塞。本节基于 kotlinx-coroutines 1.9.x 源码说明关键点。
 
 #### Dispatchers.IO 与 Default 共享线程池
 
-Dispatchers.Default 的内部实现是 `DefaultScheduler`，它继承自 `SchedulerCoroutineDispatcher`。Dispatchers.IO 的内部实现是 `DefaultIoScheduler`，它实现 `ExecutorCoroutineDispatcher` / `Executor`，再通过 `UnlimitedIoScheduler.limitedParallelism()` 把 blocking 任务委托给 `DefaultScheduler.dispatchWithContext(..., BlockingContext, ...)`。两者共享底层 worker 资源，但继承关系不同。
+Dispatchers.Default 的内部实现是 `DefaultScheduler`（继承 `SchedulerCoroutineDispatcher`）。Dispatchers.IO 的内部实现是 `DefaultIoScheduler`（实现 `ExecutorCoroutineDispatcher` / `Executor`），它通过 `UnlimitedIoScheduler.limitedParallelism()` 把 blocking 任务委托给 `DefaultScheduler.dispatchWithContext(..., BlockingContext, ...)`。两者共享底层 worker 资源，但继承关系和调度语义不同。
 
 ```kotlin
 // kotlinx-coroutines-core/jvm/src/scheduling/Dispatcher.kt
