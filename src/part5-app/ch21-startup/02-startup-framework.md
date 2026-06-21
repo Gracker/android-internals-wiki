@@ -4,8 +4,8 @@ chapter: "21.2"
 section: "21.2"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-12"
-last_verified_against: "AOSP android-16.0.0_r1, Jetpack App Startup 1.2.0, Alpha 1.2.0"
+last_verified: "2026-06-21"
+last_verified_against: "AOSP android-17.0.0_r1, Jetpack App Startup 1.2.0 sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 1
@@ -20,23 +20,27 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: aosp
     path: "androidx.startup:AppInitializer.java"
+  - type: github
+    path: "github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-01"
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-02"
-last_task9_at: "2026-06-02T01:20:00+08:00"
+task9_reviewed_date: "2026-06-21"
+last_task9_at: "2026-06-21T18:28:08+08:00"
+last_task9_audit: "2026-06-21"
+last_task9_autofix_at: "2026-06-21"
 task6_reviewed_date: "2026-05-22"
-task9_review_notes: "2026-06-02 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；Alpha API/执行模型/线程优先级边界复核通过，queue 无 pending，自动晋升 finalized。"
-last_task9_review_log: logs/deep-review/2026-06-02-01-deep-review.md
+task9_review_notes: "2026-06-21 闲时抽检：AUTO-FIX。修正 Alpha 版本锚点为 GitHub HEAD 04fe7f2 / artifact 1.0.0.1；修正 AlphaManager.addProject() 链式调用；修正 THREAD_PRIORITY_DISPLAY 注释归因。回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-21-18-audit.md"
 last_task6_at: "2026-06-01T23:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-23-review.md"
 task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
@@ -80,7 +84,7 @@ task6_new_rework: false
 
 ## 启动任务有向无环图（DAG）设计
 
-[已验证: AOSP android-16.0.0_r1, Jetpack AppStartup 依赖图构建逻辑]
+[已验证: AOSP android-17.0.0_r1, Jetpack AppStartup 1.2.0 依赖图构建逻辑]
 
 ### 为什么用 DAG
 
@@ -196,7 +200,7 @@ Jetpack App Startup 采用这种方式。优点是编译期就能检查依赖是
 **3. Builder 声明（运行时构建）**
 
 ```java
-// Alpha 框架的配置方式（基于 alibaba/alpha v1.2.0）
+// Alpha 框架的配置方式（基于 alibaba/alpha 04fe7f2，artifact 1.0.0.1）
 Task crashReport = new CrashReportTask();
 Task networkConfig = new NetworkConfigTask();
 Task analytics = new AnalyticsTask();
@@ -208,12 +212,12 @@ Project project = new Project.Builder()
     .add(analytics).after(crashReport, networkConfig)
     .create();
 
-AlphaManager.getInstance(context)
-    .addProject(project)
-    .start();
+AlphaManager alphaManager = AlphaManager.getInstance(context);
+alphaManager.addProject(project);
+alphaManager.start();
 ```
 
-Alpha 框架使用 Builder API 在运行时构建任务图，兼顾了灵活性和类型安全。同时支持 XML 配置。注意：Alpha 的 `Task` 构造函数通过 `Task(String taskName, boolean isInUiThread)` 表达 UI 线程任务，也可以通过 `Task(String taskName, int threadPriority)` 指定线程 nice 值；`Project.Builder` 使用无参构造，依赖关系通过 `add(task).after(taskA, taskB)` 声明，入口调用为 `AlphaManager.getInstance(context).addProject(project).start()`。默认 `ExecutorService` 来自 `AlphaConfig`，核心线程数默认为 `Runtime.getRuntime().availableProcessors()`，队列是无界 `LinkedBlockingQueue`。
+Alpha 框架使用 Builder API 在运行时构建任务图，兼顾了灵活性和类型安全。同时支持 XML 配置。注意：Alpha 的 `Task` 构造函数通过 `Task(String taskName, boolean isInUiThread)` 表达 UI 线程任务，也可以通过 `Task(String taskName, int threadPriority)` 指定线程 nice 值；`Project.Builder` 使用无参构造，依赖关系通过 `add(task).after(taskA, taskB)` 声明，入口调用需要拆成 `addProject(project)` 和 `start()` 两步，因为 `addProject()` 返回 `void`。默认 `ExecutorService` 来自 `AlphaConfig`，核心线程数默认为 `Runtime.getRuntime().availableProcessors()`，队列是无界 `LinkedBlockingQueue`。
 
 ### 依赖的边界情况
 
@@ -259,15 +263,15 @@ App Startup 解决的核心问题：**消除启动阶段多个 SDK 各自注册 
 
 ### Alpha 框架
 
-[已验证: GitHub alibaba/alpha v1.2.0 README + Task.java / Project.java / AlphaConfig.java]
+[已验证: GitHub alibaba/alpha 04fe7f2 README + Task.java / Project.java / AlphaConfig.java / AlphaManager.java]
 
 Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个基于 DAG 的异步任务调度器。
 
-**核心概念**（基于 alibaba/alpha v1.2.0 源码）：
+**核心概念**（基于 alibaba/alpha 04fe7f2 源码，artifact 版本 1.0.0.1）：
 
 - `Task`：最小调度单位。通过 `Task(String taskName, boolean isInUiThread)` 构造，`isInUiThread=true` 的 Task 通过主线程 Handler 执行，`false` 的走 ExecutorService。Task 支持设置 `executePriority`（调度优先级）和 `threadPriority`（OS 线程优先级）。
 - `Project`：Task 的容器，对应一个启动阶段（如"Application 初始化""首屏准备"）。`Project.Builder` 使用 `add(task)` 添加任务，`add(task).after(taskA, taskB)` 声明依赖。Project 之间可以串行或并行。
-- `AlphaManager`：入口类，通过 `AlphaManager.getInstance(context).addProject(project).start()` 启动调度。支持 Java Builder 和 XML 两种配置方式。
+- `AlphaManager`：入口类，先通过 `AlphaManager.getInstance(context).addProject(project)` 注册 Project，再调用 `AlphaManager.getInstance(context).start()` 启动调度。支持 Java Builder 和 XML 两种配置方式。
 
 **执行流程**（基于 `AlphaManager.start()` 源码）：
 
@@ -346,7 +350,7 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 
 ## 异步初始化与线程池策略
 
-[已验证: AOSP android-16.0.0_r1, ThreadPoolExecutor 配置参数]
+[已验证: AOSP android-17.0.0_r1, ThreadPoolExecutor 配置参数]
 
 ### 主线程是瓶颈
 
@@ -449,7 +453,7 @@ try {
 Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
 ```
 
-线程优先级不要作为启动优化的默认开关。关键路径上的异步线程可以在小范围实验中提升到 `THREAD_PRIORITY_FOREGROUND`（-2），但要同时满足三个条件：任务耗时短、不会阻塞主线程、Perfetto `sched` 轨道能观察到 TTID 收益。非关键路径的 IO 线程更适合设置为 `THREAD_PRIORITY_BACKGROUND`（10），避免和主线程抢占 CPU。`THREAD_PRIORITY_DISPLAY`（-4）及其以上优先级专供系统渲染管线使用，AOSP `Process.java` 注释明确标注 "Applications can not normally change to this priority"，应用侧调用 `Process.setThreadPriority(-4)` 可能抛出 `SecurityException`。线程优先级的原理详见 1.5 节。
+线程优先级不要作为启动优化的默认开关。关键路径上的异步线程可以在小范围实验中提升到 `THREAD_PRIORITY_FOREGROUND`（-2），但要同时满足三个条件：任务耗时短、不会阻塞主线程、Perfetto `sched` 轨道能观察到 TTID 收益。非关键路径的 IO 线程更适合设置为 `THREAD_PRIORITY_BACKGROUND`（10），避免和主线程抢占 CPU。`THREAD_PRIORITY_DISPLAY`（-4）及其以上优先级专供系统显示/合成线程使用；`Process.setThreadPriority()` 文档说明无权限使用给定 priority 时会抛出 `SecurityException`。应用侧不要把 `-4` 当成常规启动优化开关。线程优先级的原理详见 1.5 节。
 
 ### 线程池的监控指标
 
