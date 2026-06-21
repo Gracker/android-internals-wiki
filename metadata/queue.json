@@ -759,8 +759,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-21T13:07:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-21-13-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-21-13-review.md",
+      "completed_reason": "fixed-lite: issue 1 already fixed in prior round; issue 2 (-p glob → numeric PIDs) fixed; issue 3 (--exclude-pid) not present in file, --exclude-process-name is valid option",
+      "completed_at": "2026-06-21T13:35:00+08:00"
     }
   ]
 }

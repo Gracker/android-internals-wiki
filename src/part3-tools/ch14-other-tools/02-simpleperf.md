@@ -31,10 +31,10 @@ last_task2b_lite_at: '2026-06-21'
 last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: auto-fixed
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_state: fixed
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 pipeline_stage: task6_pending
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-21
@@ -235,8 +235,8 @@ simpleperf record -t 5678
 # 按包名等待并采样应用进程
 simpleperf record --app com.example.app
 
-# 按进程名正则过滤已存在进程
-simpleperf record -p 'com.example.*'
+# 按多个 PID 过滤（-p/--pid 只接受数字 PID，不支持进程名或正则）
+simpleperf record -p 1234,5678
 
 # 按进程名正则排除系统进程样本
 simpleperf record -a --exclude-process-name '^(android|system).*'
