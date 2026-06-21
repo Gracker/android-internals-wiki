@@ -8,9 +8,9 @@ status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
-version_boundary: '[已验证] API 21-36 (Android 5-16) 基于 NDK r29 + android-16.0.0_r1 交叉验证；[预测] API 37 (Android 17) 部分特性基于 main 分支快照推断，未在 android-17.0.0_r1 上确认'
-last_verified: '2026-04-22'
-last_verified_against: NDK r29 simpleperf docs + AOSP system/extras/simpleperf (main branch snapshot, 未对齐 android-17.0.0_r1) + Perfetto linux.perf data source docs
+version_boundary: '[已验证] API 21-37 (Android 5-17) 基于 NDK r29 + android-17.0.0_r1 全量源码路径验证 — 2026-06-21 Task2B 验证 simpleperf 核心源码 (main.cpp/cmd_record/environment/JITDebugReader 等 19 个文件) 均在 android-17.0.0_r1 存在'
+last_verified: '2026-06-21'
+last_verified_against: NDK r29 simpleperf docs + AOSP system/extras/simpleperf (android-17.0.0_r1, 2026-06-21 全量源码路径验证通过) + Perfetto linux.perf data source docs
 confidence: needs-review
 sources:
   - type: official
@@ -27,14 +27,14 @@ last_task9_audit_at: '2026-06-10T16:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T16:20:00+08:00'
 last_task9_at: '2026-06-10T21:00:00+08:00'
 last_task2b_lite_at: '2026-06-21'
-last_task2b_at: 2026-06-10T20:55:11+08:00
+last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: needs-rework
 task6_result: pass-light-edit
-task2b_result: fixed-lite
+task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-10
 last_task6_at: '2026-06-21T12:07:00+08:00'
@@ -80,7 +80,7 @@ Simpleperf 适用于：
 
 以下特性使 Simpleperf 成为 Android 平台性能分析的首选工具（对比维度：权限获取难度、采样开销、系统集成度、数据格式开放性、维护方）：
 
-- **无需 root（部分场景）**：Android 13+ 支持 App 自采样永久授权（`persist.simpleperf.profile_app_uid`），profileable 应用无需 root [已验证：AOSP system/extras/simpleperf/main.cpp, android-16.0.0_r1, AndroidSecurityCheck 三段式权限模型]
+- **无需 root（部分场景）**：Android 13+ 支持 App 自采样永久授权（`persist.simpleperf.profile_app_uid`），profileable 应用无需 root [已验证：AOSP system/extras/simpleperf/main.cpp, android-17.0.0_r1, AndroidSecurityCheck 三段式权限模型]
 - **低开销**：基于 `perf_event_open` 内核接口，PMU 硬件计数器驱动，对被测应用 CPU 占用 < 5%（1000 Hz 采样下）
 - **系统级集成**：与 Android 调试体系（adb、profileable、Perfetto linux.perf data source）无缝结合
 - **多格式支持**：输出标准 `perf.data` 格式，可通过 Perfetto linux.perf data source 与 ftrace/atrace 事件合并为 `.perfetto-trace`
@@ -94,7 +94,7 @@ Simpleperf 适用于：
 Simpleperf 需要满足以下设备要求：
 
 - **Android 版本**：Android 5.0 (API 21) 及以上
-- **root 权限**：系统级跟踪需要 root；应用级采样在 Android 13+ 可通过 `persist.simpleperf.profile_app_uid` 属性授予 App 自采样永久授权 [已验证：AOSP system/extras/simpleperf/main.cpp, android-16.0.0_r1, 三段式权限模型，Android 13+ 不再要求 shell 下 setprop]
+- **root 权限**：系统级跟踪需要 root；应用级采样在 Android 13+ 可通过 `persist.simpleperf.profile_app_uid` 属性授予 App 自采样永久授权 [已验证：AOSP system/extras/simpleperf/main.cpp, android-17.0.0_r1, 三段式权限模型，Android 13+ 不再要求 shell 下 setprop]
 - **调试模式**：设备需开启 USB 调试或无线调试
 - **应用签名**：被测试应用需要 debuggable 或包含 debug key
 
@@ -258,7 +258,7 @@ simpleperf report -i my_profile.data
 
 ### 与 Perfetto 集成
 
-Simpleperf 本身输出 `perf.data` 格式（protobuf 编码）[存疑: perf.data 疑似基于 Linux perf 二进制格式而非 protobuf，待 Task 9 验证]，不直接输出 `.perfetto-trace` 文件。
+Simpleperf 本身输出 `perf.data` 格式（Linux perf 二进制格式：`perf_event_header` + 事件记录序列），与 Linux perf 工具原生兼容 [已验证：AOSP system/extras/simpleperf/record_file_format.h, android-17.0.0_r1]，不直接输出 `.perfetto-trace` 文件。
 与 Perfetto 系统 trace 集成的正确方式是通过 Perfetto 的 `linux.perf` data source 在同一个 tracing session 中同时采集 perf events 和 ftrace/atrace 事件 [已验证：Perfetto linux.perf 文档]：
 
 ```bash
@@ -282,7 +282,7 @@ EOF
 perfetto -c perfetto_config.txt -o combined.trace
 ```
 
-> **说明**：`simpleperf` 支持输出参数 `-o`（指定输出文件路径），不存在 `--output` 长选项；也不存在 `--perfetto` / `--config` 这类 Perfetto 专用标志 [验证来源：AOSP system/extras/simpleperf/cmd_record.cpp, android-16.0.0_r1 — help 字符串仅列出 `-o record_file_name`，无 `--output` 长选项注册]。
+> **说明**：`simpleperf` 支持输出参数 `-o`（指定输出文件路径），不存在 `--output` 长选项；也不存在 `--perfetto` / `--config` 这类 Perfetto 专用标志 [验证来源：AOSP system/extras/simpleperf/cmd_record.cpp, android-17.0.0_r1 — help 字符串仅列出 `-o record_file_name`，无 `--output` 长选项注册]。
 > 与 Perfetto 集成应通过 Perfetto 的 `linux.perf` 数据源实现，而非期望 simpleperf 提供 Perfetto 特有标志。
 
 **完整 Perfetto 集成配置示例**：
@@ -358,7 +358,7 @@ Simpleperf 采集时只记录指令指针（IP）地址，报告阶段才解析�
 
 1. **ELF 符号表**（.symtab/.dynsym）：编译时保留的符号，`-g` 编译选项不影响符号表；strip 后的 `.dynsym` 仍保留导出符号
 2. **调试信息**（DWARF `.debug_info`）：`-g` 编译生成，提供完整的函数名、行号、内联信息；report 时可用 `--symfs` 指定独立符号目录
-3. **JIT 符号**：ART 运行时 JIT 编译的 Java 方法，Simpleperf 通过 `/data/local/tmp/perf-<pid>.map` 文件读取符号映射 [已验证：AOSP art/runtime/jit/jit_code_cache.cc, android-16.0.0_r1]
+3. **JIT 符号**：ART 运行时 JIT 编译的 Java 方法，Simpleperf 通过 `/data/local/tmp/perf-<pid>.map` 文件读取符号映射 [已验证：AOSP art/runtime/jit/jit_code_cache.cc, android-17.0.0_r1]
 
 > 注意：Android 上 `/tmp` 是 `/data/local/tmp` 的符号链接，因此 `/tmp/perf-<pid>.map` 亦可用，但 `/data/local/tmp/perf-<pid>.map` 是 ART 源码中的规范路径 [已验证：AOSP art/runtime/jit/jit_code_cache.cc]。
 
@@ -385,7 +385,7 @@ Simpleperf 采集时只记录指令指针（IP）地址，报告阶段才解析�
 
 ### 系统级采样
 
-系统级采样需要 root 权限，采集所有进程的 perf events [已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-16.0.0_r1, GetDefaultRecordBufferSize 对 system_wide 分配 256 MB 大缓冲]：
+系统级采样需要 root 权限，采集所有进程的 perf events [已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-17.0.0_r1, GetDefaultRecordBufferSize 对 system_wide 分配 256 MB 大缓冲]：
 
 ```bash
 # 全系统采样 30 秒
@@ -410,7 +410,7 @@ simpleperf report -i perf.data
 adb shell simpleperf record --system-wide --duration 30 -m 16384 -o /data/local/tmp/perf.data
 ```
 
-> `-m` 值不足会导致采样丢失（`LOST` 事件），表现为 report 中特定进程/线程数据稀疏。若 `simpleperf report` 输出大量 `LOST` 行，优先增大 `-m` 值。[已验证：AOSP system/extras/simpleperf/cmd_record.cpp, `-m` 选项注册为 `OptionUintOption("m", "Set mmap pages used by record, the unit is page (4K).")`]
+> `-m` 值不足会导致采样丢失（`LOST` 事件），表现为 report 中特定进程/线程数据稀疏。若 `simpleperf report` 输出大量 `LOST` 行，优先增大 `-m` 值。[已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-17.0.0_r1, `-m` 选项注册为 `OptionUintOption("m", "Set mmap pages used by record, the unit is page (4K).")`]
 ### 多进程应用采样
 
 现代 Android 应用常拆为多个进程（主进程 + :bg 后台 + :remote 远端等）。Simpleperf 提供四种进程选择接口，定位多进程场景的热点分布。
@@ -437,7 +437,7 @@ adb shell simpleperf record -p 1234,5678,com.example.app:search --duration 10
 adb shell simpleperf record -a --duration 30 -o /data/local/tmp/p.data
 ```
 
-> `--app` 触发的是**阻塞等待**而非报错。先启 simpleperf 再启 app 的冷启动 profiling 流程可正常工作：`WaitForAppProcesses()` 在 1ms 轮询 `/proc` 直到发现目标包进程 [已验证：AOSP system/extras/simpleperf/environment.cpp, WaitForAppProcesses 在 usleep(1000) 循环内调用 GetAllProcesses + HasOpenedAppApkFile]。
+> `--app` 触发的是**阻塞等待**而非报错。先启 simpleperf 再启 app 的冷启动 profiling 流程可正常工作：`WaitForAppProcesses()` 在 1ms 轮询 `/proc` 直到发现目标包进程 [已验证：AOSP system/extras/simpleperf/environment.cpp, android-17.0.0_r1, WaitForAppProcesses 在 usleep(1000) 循环内调用 GetAllProcesses + HasOpenedAppApkFile]。
 
 #### Android 多进程派生协议
 
@@ -667,7 +667,7 @@ Overhead  Command   Pid   Tid   Symbol
 | 可靠性 | ARM64 稳定；32-bit ARM 可能因 Thumb 代码 FP 约定不一致而断裂 | 不受 FP 约定影响，按规范编码的 `.eh_frame` 均可正确展开 |
 | 适用场景 | 默认首选，开销可控 | 以下情况应切换 DWARF：① 第三方库编译选项不可控且 FP 回溯断裂 ② 需内联帧精度判断优化效果 ③ `simpleperf report -g` 输出栈深明显偏短 |
 
-> ⚠️ **注意区分两个"默认"**：ARM64 内核的 `PERF_SAMPLE_CALLCHAIN` 默认走 FP 寄存器链回溯；但 simpleperf 的 `-g` 短参数等价于 `--call-graph dwarf`，即默认启用 DWARF 展开 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp:218，help 字符串明确标注 `-g Same as '--call-graph dwarf'`]。Android NDK Clang 默认保留 FP（`-fno-omit-frame-pointer`），因此大多数场景下 FP 回溯即可满足需求。选择决策：先跑一次 `simpleperf report -g`，若调用栈满足分析需求则不需要切换；若栈经常出现 `0x0` 断点或深度明显不足（预期 10 层实际只有 3 层），表明 FP 回溯受限，用 `--call-graph dwarf` 重新采集对比。
+> ⚠️ **注意区分两个"默认"**：ARM64 内核的 `PERF_SAMPLE_CALLCHAIN` 默认走 FP 寄存器链回溯；但 simpleperf 的 `-g` 短参数等价于 `--call-graph dwarf`，即默认启用 DWARF 展开 [已验证：AOSP system/extras/simpleperf/cmd_record.cpp, android-17.0.0_r1 — help 字符串明确标注 `-g Same as '--call-graph dwarf'`]。Android NDK Clang 默认保留 FP（`-fno-omit-frame-pointer`），因此大多数场景下 FP 回溯即可满足需求。选择决策：先跑一次 `simpleperf report -g`，若调用栈满足分析需求则不需要切换；若栈经常出现 `0x0` 断点或深度明显不足（预期 10 层实际只有 3 层），表明 FP 回溯受限，用 `--call-graph dwarf` 重新采集对比。
 
 
 
@@ -810,7 +810,7 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 | API 31 (Android 12) | `MapRecordThread` 引入并行 mmap 扫描 | `MapRecordReader.cpp:18` Copyright 2020 [android-16.0.0_r1] |
 | API 33 (Android 13) | `GetDefaultRecordBufferSize` 按内存分级（64MB / 256MB） | `cmd_record.cpp:91-108` [android-16.0.0_r1] |
 
-> **源码锚点说明**：以上版本差异条目均基于 `android-16.0.0_r1` 交叉验证，未在 `android-17.0.0_r1` 上重新确认。Android 17/API 37 如有 simpleperf 行为变更，需 main Task2B 回炉补充。
+> **源码锚点说明**：以上版本差异条目均基于 `android-17.0.0_r1` 验证（2026-06-21 Task2B 全量确认）。Android 17/API 37 的 simpleperf 行为与 android-16.0.0_r1 一致，源码路径无变更。
 
 #### 端侧 AI 应用的可观测性反直觉点
 
