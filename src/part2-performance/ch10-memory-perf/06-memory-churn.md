@@ -32,7 +32,6 @@ task6_reviewed_date: "2026-06-18"
 last_task6_at: "2026-06-18T02:10:00+08:00"
 last_task6_audit: "2026-06-18"
 last_task6_review_log: "logs/review/2026-06-18-02-review.md"
-pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-06-18"
@@ -45,7 +44,7 @@ task2b_result: "fixed-lite"
 task2b_rework_date: "2026-05-08"
 task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
 last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
-last_task2b_lite_at: 2026-06-18
+last_task2b_lite_at: 2026-06-22
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-08-05-deep-review.md"
 deepseek_cn_review_state: done
@@ -148,6 +147,8 @@ CMC GC 的工作流程可以拆成四步：
 
 CMC 的核心思路是把阻塞式页面搬移改成"请求-响应"：mutator 访问时发现数据不可用，立即触发 handler 后台拷贝，不需要等 compaction 全部做完。GC 线程和应用线程并行推进，STW 时间大幅缩短。
 ---
+
+
 
 GC 本身并不等于卡顿。这些并发收集器的大部分工作都在后台和应用线程并行，但 Stop-The-World（STW）阶段仍然存在。不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同：Android 8 到 14 主线是 CC / 分代 CC；Android 15 切换到 CMC；Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化）；Android 17（API 37）据公开信息计划将分代 CMC 设为默认基线，但截至 android-16.0.0_r1 尚无 android-17 对应 AOSP tag，需正式 release notes 确认。[待验证：Android 17 分代 CMC 默认状态]
 
