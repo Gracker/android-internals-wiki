@@ -3,7 +3,7 @@ title: "Native Crash 分析与治理"
 chapter: "20.3"
 section: "20.3"
 section_title: "Native Crash 分析与治理"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-11"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -53,6 +53,8 @@ last_task9_autofix_at: "2026-06-21"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 last_task9_audit: "2026-06-21"
+last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
+task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
 ---
 
 # Native Crash 分析与治理

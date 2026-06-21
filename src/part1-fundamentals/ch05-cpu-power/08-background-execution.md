@@ -2,7 +2,7 @@
 
 
 
-status: finalized
+status: "ready-for-review"
 title: 后台执行限制与优化
 chapter: '5.8'
 section: '5.8'
@@ -97,6 +97,8 @@ last_deepseek_cn_review_at: 2026-06-06
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 last_task9_audit: "2026-06-21"
+last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
+task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
 ---
 
 
