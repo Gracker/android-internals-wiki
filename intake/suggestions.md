@@ -150,3 +150,10 @@
 - **问题**：章节列出的 5 个 `DeepResearch/...` 内部材料路径当前均不存在；正文技术结论仍可由 Android 17 release notes、PackageManager API 37 reference、NNAPI Runtime 与 LiteRT Next 官方文档支撑，但这些内部材料引用无法回溯。
 - **建议**：后续回炉时删除失效 DeepResearch 引用，或替换为实际存在且已校正 API 37 / `android.hardware.npu` 口径的研究材料；不要引用含 API 36 或 `android.hardware.neural_processing_unit` 旧口径的素材。
 - **review 日志**：logs/deep-review/2026-06-22-01-audit.md
+
+## [Task9 Idle Audit] 22.10 RenderEffect 与 RuntimeShader 性能实践 — 2026-06-22
+- **类型**：版本差异覆盖
+- **位置**：outline L85-L87；RuntimeShader / AGSL 段 L181；优化清单 L271
+- **问题**：章节把 `RuntimeShader` / `createRuntimeShaderEffect()` 的最低版本写清为 API 33，这一结论正确；但 Android 16/17 范围内 AGSL 相关 API 已继续扩展：`RuntimeShader.setInputColorFilter()` / `setInputXfermode()` 为 API 36，`RuntimeShader.setWorkingColorSpace()` 为 API 37。当前章节没有把这些后续能力与 22.19 区分，读者可能把“API 33+ 的能力范围”理解为完整边界。
+- **建议**：后续回炉时补一条版本边界说明：22.10 只覆盖 `RenderEffect + RuntimeShader` 整节点后处理；Android 16 的 `RuntimeColorFilter` / `RuntimeXfermode` 走 22.19；Android 17 的 `setWorkingColorSpace()` 只影响 RuntimeShader 色彩空间求值，不改变 RenderEffect 离屏层成本模型。
+- **review 日志**：logs/deep-review/2026-06-22-02-audit.md

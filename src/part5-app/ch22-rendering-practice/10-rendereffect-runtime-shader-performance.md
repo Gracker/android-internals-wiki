@@ -65,6 +65,9 @@ last_task2b_at: "2026-06-03T00:50:00+08:00"
 task2b_review_notes: "2026-06-03 Task2B fallback 回炉：修正 RuntimeShader uniform 更新后的重绘语义，收敛 GPU counter/GPU Headroom 版本边界，补上 Android 16 源码锚点口径。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
+last_task9_audit: "2026-06-22"
+last_task9_audit_log: "logs/deep-review/2026-06-22-02-audit.md"
+last_task9_audit_result: "pass-idle-audit"
 ---
 
 # 22.10 RenderEffect 与 RuntimeShader 性能实践
