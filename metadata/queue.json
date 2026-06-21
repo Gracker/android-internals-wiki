@@ -589,57 +589,50 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-06-21T06:12:04.258796+08:00",
       "status": "pending"
-    }
-  ],
-  "queue": [
+    },
     {
-      "chapter": "5.21",
-      "title": "Adaptive Battery 与 App Standby Bucket 协同机制",
-      "priority": 80,
-      "status": "completed",
-      "source": "task2a-knowledge-gap",
-      "created_date": "2026-06-19",
-      "completed_at": "2026-06-19T17:48:46",
-      "completed_by": "task2b-lite",
-      "resolution": "stale-cleanup: file already ready-for-review (14669b)"
-    }
-  ],
-  "items": [
-    {
-      "section": "1.18",
-      "section_title": "Binder Freezer 与缓存进程冻结性能",
-      "priority": 90,
-      "reason": "[抽检回炉] 底部 AIW-源码调研注入章节与正文版本边界表矛盾：正文明确写 android-17.0.0_r1 framework tag 不可取，但底部章节声称基于该 tag 分析；性能实测数据缺乏方法论",
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "priority": 95,
+      "reason": "[Deep Tech Review - Idle Audit] Version boundary inconsistency and source code anchor validation needed",
       "material_paths": [
-        "logs/review/2026-06-20-23-audit.md"
+        "logs/deep-review/2026-06-21-11-audit.md"
       ],
       "review_issues": [
         {
-          "type": "需确认",
-          "location": "参考资料之后的「## 🔹 源码级补全：双阶段冻结调用链（Android 17）」全节",
-          "detail": "底部章节标注「基于 AOSP android-17.0.0_r1 源码分析」，但正文版本边界表明确写「framework android-17.0.0_r1 tag 本轮仍未取到」。两处自相矛盾。需确认该 tag 是否已可获取，或标注数据来源为 Android 16 源码/android-17 预览",
-          "suggestion": "如果 tag 确实不可取，需将底部章节的版本标注改为 android-16.0.0_r1 或明确标注为预测性内容；如果 tag 已可取，需更新版本边界表"
+          "type": "Version Boundary Error",
+          "location": "Version boundary section (frontmatter)",
+          "detail": "Chapter claims API 37 (Android 17) features based on main branch snapshot but android-17.0.0_r1 anchor is not explicitly validated. Mixing main branch assumptions with specific version anchors creates uncertainty about actual Android 17 behavior.",
+          "suggestion": "Either: 1) Validate features against android-17.0.0_r1 source code, or 2) Clearly distinguish main branch predictions from android-17.0.0_r1 validated features, marking predictions as such.",
+          "resolution_lite": "frontmatter version_boundary 已有声明，新增源码锚点标签"
         },
         {
-          "type": "需验证",
-          "location": "底部章节「### 性能实测数据」小节",
-          "detail": "声称冻结开销 2-5ms，但未给出测量设备、Android 版本、测量方法、样本数量。底部章节整体的 java/cpp 源码片段风格也与正文叙述风格不一致（变成了代码堆砌式，违反 writing-guide.md 第二章类型 A 叙述规范）",
-          "suggestion": "补充测量条件或标注为 [待验证]；考虑将底部章节内容融入正文对应锚点而非独立堆叠在参考资料之后"
+          "type": "API Mapping Error",
+          "location": "Version references throughout chapter",
+          "detail": "Multiple incorrect API level to Android version mappings found (e.g., API 21 mapped to Android 17, API 24 mapped to Android 7). This creates confusion about which features are available in which Android versions.",
+          "suggestion": "Review and correct all API level to Android version mappings. Verify each mapping against official Android documentation and ensure consistency throughout the chapter.",
+          "resolution_lite": "FALSE POSITIVE: API 21=Android 5, API 24=Android 7 等映射均正确，范围标注 \"API 21 – Android 17\" 非 \"API 21 = Android 17\""
         },
         {
-          "type": "需确认",
-          "location": "底部章节结构位置",
-          "detail": "92 行内容堆叠在参考资料之后，打破了 writing-guide.md 定义的文章结构（参考资料应为文章末尾）。底部章节使用 🔹 emoji 标题风格与正文 H2 标题风格不一致",
-          "suggestion": "将底部章节内容拆分融入正文对应的 6 个锚点段落中，或作为独立附录章节放在参考资料之前"
+          "type": "Source Anchor Inconsistency",
+          "location": "Source code references and validation sections",
+          "detail": "Chapter references both main/master branch (8 instances) and android-17.0.0_r1 (2 instances) without clear version distinction. This makes it difficult to determine which features are actually validated against Android 17.",
+          "suggestion": "Standardize source code anchors to use android-17.0.0_r1 as the primary validation target for Android 17 features, with clear labeling of main branch predictions that need future validation.",
+          "resolution_lite": "版本差异表新增 [android-16.0.0_r1] 锚点标签，last_verified_against 补充未对齐声明"
+        },
+        {
+          "type": "Feature Validation Gap",
+          "location": "Android 17 / API 37 feature descriptions",
+          "detail": "Features claimed for Android 17/API 37 are based on main branch snapshots rather than android-17.0.0_r1 validation. Without direct validation against Android 17 source code, these claims may be inaccurate.",
+          "suggestion": "Validate all Android 17/API 37 feature claims against android-17.0.0_r1 source code before presenting them as confirmed features."
         }
       ],
-      "added_by": "task6-audit",
-      "added_at": "2026-06-20T23:20:00+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-06-20-23-audit.md",
-      "completed_at": "2026-06-21T00:52:15+08:00",
-      "completed_by": "task2b-main",
-      "resolution": "fixed: removed appendix with android-17 contradictory claims; 3 audit issues resolved"
+      "added_by": "task9-deep-tech-review-idle-audit",
+      "added_at": "2026-06-21T11:24:56",
+      "status": "pending",
+      "task2b_lite_partial": true,
+      "task2b_lite_at": "2026-06-21",
+      "task2b_lite_note": "Lite 修复了源码锚点标注(frontmatter #1, #3)，API 映射经核实为正确(#2 false positive)，Feature Validation Gap (#4) 留给 main Task2B"
     }
   ]
 }

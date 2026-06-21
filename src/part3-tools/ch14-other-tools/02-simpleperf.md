@@ -4,13 +4,13 @@
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
 version_boundary: '[已验证] API 21-36 (Android 5-16) 基于 NDK r29 + android-16.0.0_r1 交叉验证；[预测] API 37 (Android 17) 部分特性基于 main 分支快照推断，未在 android-17.0.0_r1 上确认'
 last_verified: '2026-04-22'
-last_verified_against: NDK r29 simpleperf docs + AOSP system/extras/simpleperf (main branch snapshot) + Perfetto linux.perf data source docs
+last_verified_against: NDK r29 simpleperf docs + AOSP system/extras/simpleperf (main branch snapshot, 未对齐 android-17.0.0_r1) + Perfetto linux.perf data source docs
 confidence: needs-review
 sources:
   - type: official
@@ -26,15 +26,15 @@ last_task9_audit: '2026-06-10T04:21:00+08:00'
 last_task9_audit_at: '2026-06-10T16:20:00+08:00'
 last_task9_reviewed_at: '2026-06-10T16:20:00+08:00'
 last_task9_at: '2026-06-10T21:00:00+08:00'
-last_task2b_lite_at: '2026-06-10'
+last_task2b_lite_at: '2026-06-21'
 last_task2b_at: 2026-06-10T20:55:11+08:00
-task9_result: pass-tech-review
+task9_result: needs-rework
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-10
 last_task6_at: 2026-06-10T21:13:04+08:00
@@ -813,9 +813,11 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 
 | API level | 关键变化 | 源码位置 |
 |------|------|------|
-| API 24 (Android 7) | 引入 `PERF_RECORD_MMAP2`，多 `prot/flags/maj/min/ino/ino_generation` 6 字段 | `record.cpp:297-340` |
-| API 31 (Android 12) | `MapRecordThread` 引入并行 mmap 扫描 | `MapRecordReader.cpp:18` Copyright 2020 |
-| API 33 (Android 13) | `GetDefaultRecordBufferSize` 按内存分级（64MB / 256MB） | `cmd_record.cpp:91-108` |
+| API 24 (Android 7) | 引入 `PERF_RECORD_MMAP2`，多 `prot/flags/maj/min/ino/ino_generation` 6 字段 | `record.cpp:297-340` [android-16.0.0_r1] |
+| API 31 (Android 12) | `MapRecordThread` 引入并行 mmap 扫描 | `MapRecordReader.cpp:18` Copyright 2020 [android-16.0.0_r1] |
+| API 33 (Android 13) | `GetDefaultRecordBufferSize` 按内存分级（64MB / 256MB） | `cmd_record.cpp:91-108` [android-16.0.0_r1] |
+
+> **源码锚点说明**：以上版本差异条目均基于 `android-16.0.0_r1` 交叉验证，未在 `android-17.0.0_r1` 上重新确认。Android 17/API 37 如有 simpleperf 行为变更，需 main Task2B 回炉补充。
 
 #### 端侧 AI 应用的可观测性反直觉点
 
