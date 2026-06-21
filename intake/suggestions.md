@@ -59,6 +59,35 @@
 - **问题**：章节标注 applicable_versions: Android 10 (API 29) - Android 17 (API 37)，但未详细说明 Android 12 引入的 StrictMode 性能监控、Android 14 中的 Jetpack WindowManager 对可观测性的影响等重要版本变化。
 - **建议**：补充 Android 12-17 的可观测性系统关键特性演进，特别是 StrictMode 机制完善、Jetpack 组件监控能力增强、隐私沙盒对监控权限的影响等。
 
+## [Task9 Deep Review] 14.2 Simpleperf — 2026-06-21
+
+### P2 建议改进：
+
+- **类型**：版本差异覆盖
+- **位置**：API 24-33 mmap 记录处理转换
+- **问题**：章节未详细说明 Android 7 到 Android 13 的 mmap 记录处理变化细节，包括采样机制、缓冲策略和数据处理流程的演进。
+- **建议**：补充 Android 7-13 的 mmap 记录处理变化细节，特别是 Android 12+ 的 mmap 机制优化和格式变化，帮助读者理解不同版本的数据处理差异。
+
+- **类型**：版本差异覆盖
+- **位置**：Android 12+ 可分析应用权限模型
+- **问题**：章节提到可分析应用但未详细说明权限模型如何从 Android 10 演变到 13+，包括权限申请流程、用户授权机制和系统限制。
+- **建议**：补充 Android 12-17 的可分析应用权限模型演进，特别是隐私沙盒对 profiling 权限的影响和适配策略。
+
+- **类型**：数据与案例支撑
+- **位置**：性能开销声明
+- **问题**：章节中的 CPU 开销百分比（"CPU 占用率增加 3-5%"）缺乏实际基准数据支持，未在不同设备配置下验证。
+- **建议**：提供实际设备配置下的基准测试数据，包括不同芯片架构、内存大小和 Android 版本下的开销对比。
+
+- **类型**：数据与案例支撑
+- **位置**：内存使用估计
+- **问题**：200-500KB mmap 记录头估计未在真实 AI 应用中验证，可能存在实际应用场景下的偏差。
+- **建议**：在真实 AI 应用场景中验证内存使用数据，包括大型模型、复杂计算和长时间运行场景下的实际内存开销。
+
+- **类型**：交叉引用一致性
+- **位置**：术语使用
+- **问题**：章节在不同地方使用 "callgraph" 和 "call stack"，与其他分析章节术语不一致，可能造成读者混淆。
+- **建议**：统一术语使用，选择一个标准术语（如 "call stack"）并在全文保持一致，同时在章节开始处定义术语规范。
+
 ## [Task6 Review] 14.2 Simpleperf — 2026-06-21
 
 ### B类问题
@@ -73,3 +102,24 @@
 2. **源码深度与章节定位**：14.2.5/14.2.6 中源码级分析（IPC 三层架构、FP/DWARF 分叉、JITdebugReader 协议等）非常深入，超出 Type C（工具使用篇）的典型深度。内容质量高，但可考虑将最深入的部分拆到附录或独立"源码解析"章节，保持工具章的实用性聚焦。
 3. **"适用范围"列表项**：纯名词列表（"Native C/C++ 代码性能分析"等），无描述性说明。SKILL.md 3.4 建议列表项自带信息增量，可补充每项的典型场景。
 4. **outline 标记缺失**：本章无 `<!-- outline-start/end -->` 标记，无法做锚点覆盖检查。属结构性问题，留给 Task 2 补充。
+
+## [Task6 Review] 14.2 Simpleperf — 2026-06-21 (revisit)
+
+### B类问题（技术准确性，交 Task 9 验证）
+
+- **类型**：存疑-技术准确性
+- **位置**：14.2.4 PMU 硬件事件权限段（line ~224）
+- **问题**：`adb shell setprop kernel.perf_event_paranoid 1` — `perf_event_paranoid` 是 sysctl 参数（`/proc/sys/kernel/perf_event_paranoid`），不是 Android system property。`setprop` 设置的是 Android 属性系统（`/system/build.prop` 等），不能直接设置 sysctl。正确方式应为 `adb shell "echo 1 > /proc/sys/kernel/perf_event_paranoid"`（需 root）。
+- **建议**：Task 9 验证后修正命令为 sysctl 写法或标注设备差异
+
+- **类型**：存疑-命令语法
+- **位置**：14.2.4 过滤选项段（line ~236）
+- **问题**：`simpleperf record com.example.*` — 无 `--app` 或 `-p` 目标选择标志，直接使用 glob 模式作为 record 参数。Simpleperf CLI 不接受裸包名 glob 作为 record target，应使用 `--app com.example.app` 或 `-p <pid>` 。
+- **建议**：Task 9 验证 simpleperf record 是否支持裸进程名 glob，如不支持则修正为 `--app` 语法
+
+- **类型**：存疑-选项存在性
+- **位置**：14.2.4 过滤选项段（line ~239）
+- **问题**：`simpleperf record --exclude-pid android.*,system.*` — `--exclude-pid` 选项是否存在需要验证。Simpleperf 常用 record 选项为 `--app`、`-p`、`-t`、`-a`，未见 `--exclude-pid` 的官方文档记录。
+- **建议**：Task 9 查阅 simpleperf record --help 确认 `--exclude-pid` 是否存在；如不存在则删除该示例
+
+- **review 日志**：logs/review/2026-06-21-13-review.md
