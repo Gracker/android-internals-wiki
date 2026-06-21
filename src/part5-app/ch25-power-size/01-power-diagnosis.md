@@ -34,21 +34,21 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed-lite
 last_task2b_at: "2026-05-15T07:22:00+08:00"
 last_task2b_lite_at: "2026-06-03"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
 task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 扫描无新增正文问题；无新增 L3/L4 回炉项，转入 Task9 pending。"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-06-03T13:24:44+08:00"
-last_task9_review_log: logs/deep-review/2026-06-03-13-deep-review.md
-task9_review_notes: "2026-06-03 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；源码路径、版本边界、官方功耗/后台任务口径复核通过；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-06-22T04:28:56+08:00"
+last_task9_review_log: logs/deep-review/2026-06-22-04-audit.md
+task9_review_notes: "2026-06-22 Task9 闲时抽检：发现 P0 源码链路/Android 17 版本边界问题；已写入 queue.json，回到 Task2B 修复。"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
@@ -57,6 +57,7 @@ review_type: task6-writing-quality-review
 task6_reviewed_date: "2026-06-03"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
+last_task9_audit: "2026-06-22"
 ---
 
 # 功耗诊断与分析方法
