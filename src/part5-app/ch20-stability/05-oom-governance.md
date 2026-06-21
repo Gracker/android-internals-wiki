@@ -44,6 +44,7 @@ task9_reviewed_date: "2026-06-01"
 last_task9_review_log: "logs/deep-review/2026-06-01-18-deep-review.md"
 task9_review_notes: "2026-06-01 Task9 18:21：pass-tech-review。复核 Task6 回流后的 OOM 治理；ART OOME 投递、Heap::ThrowOutOfMemoryError、JNI/native alloc、Bitmap native heap、pthread_create 与 heapprofd 边界经 AOSP android-16.0.0_r1 复核，无新增 P0/P1，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-01"
+last_task9_audit: "2026-06-21"
 ---
 
 # OOM 治理
