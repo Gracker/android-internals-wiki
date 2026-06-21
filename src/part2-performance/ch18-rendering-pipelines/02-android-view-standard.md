@@ -37,8 +37,8 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -48,14 +48,14 @@ reviewed_date: "2026-06-04"
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-05-26"
 last_task6_at: "2026-06-04T03:10:02+08:00"
-task9_result: pass-tech-review
-task9_reviewed_date: 2026-06-05
+task9_result: auto-fixed
+task9_reviewed_date: 2026-06-21
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-05T20:33:28+08:00"
-task9_review_notes: "2026-06-05 Task9 deep-review: pass-tech-review. No P0/P1; existing P2 FrameTimeline wording remains non-blocking and already logged."
+last_task9_at: "2026-06-21T21:31:53+08:00"
+task9_review_notes: "2026-06-21 Task9 idle audit auto-fix: corrected Android 16/17 BLAST libgui aconfig flag version table and removed unverified 5-15ms picture profile benefit."
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。L1/L2 禁用词/高频词/AI填充词零命中。清除 1 处 [已修正] 编辑痕迹。无 B 类问题。自动晋升 finalized（task9 pass-tech-review + queue 无 pending + 无 B 类问题）。"
 last_task6_review_log: "logs/review/2026-05-26-05-review.md"
-last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-21-21-audit.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 1
@@ -65,6 +65,9 @@ task6_new_rework: false
 review_type: "task6-writing-quality-review"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
+last_task9_audit: 2026-06-21
+last_task9_autofix_at: 2026-06-21
+last_task9_audit_log: "logs/deep-review/2026-06-21-21-audit.md"
 ---
 
 
@@ -374,32 +377,24 @@ Compose 与 View 系统可以互相嵌入：
 - **BLASTBufferQueue 与 ViewRootImpl 异步 buffer 提交流程** — 解析 BBQ 从 `onFrameAvailable` 到 `Transaction.apply()` 的提交链路，以及 `releaseBuffer` 回调链中 ACQUIRED → FREE 的槽位释放时序。DeepResearch: `2026-05-15-android-view-blast-art-gc.md`
 - **ART 分代 GC 与 Compose 性能** — Android 10+ CC collector 默认启用分代模式；Compose recomposition 产生的短期对象（lambda、state、LayoutNode）集中在 young generation，由 Sticky GC（kGcTypeSticky）以较低成本回收。source.android.com: "Debug ART garbage collection"；AOSP `art/runtime/gc/collector/concurrent_copying.cc`
 - **DeliQueue（Android 17 MessageQueue 无锁优化）** — targetSdk >= 37 应用默认使用 Treiber Stack 无锁入队/出队，替代旧版链表按 when 排序插入。AOSP `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
-- **BLASTBufferQueue 回调链与 canUnblockUiThread 源码验证** — `canUnblockUiThread` 实际取值 `info.prepareTextures`（纹理缓存未耗尽）；`transactionCommittedCallback` 与 `transactionCallback` 分别在 latch 完成后更新 FrameEventHistory 与 transform；`releaseBufferCallbackLocked` 中 EGL 客户端按 `mMaxAcquiredBuffers - mCurrentMaxAcquiredBufferCount` 决定保留 Buffer 数量；Android 17 新增 `WB_CONSUMER_BASE_OWNS_BQ` / `BUFFER_RELEASE_CHANNEL` 编译期开关，BufferQueue 所有权下沉到 Consumer。DeepResearch: `2026-06-15-blast-buffferqueue-canunblockuithread-and-pipeline-pitfalls.md`
+- **BLASTBufferQueue 回调链与 canUnblockUiThread 源码验证** — `canUnblockUiThread` 实际取值 `info.prepareTextures`（纹理缓存未耗尽）；`transactionCommittedCallback` 与 `transactionCallback` 分别在 latch 完成后更新 FrameEventHistory 与 transform；`releaseBufferCallbackLocked` 中 EGL 客户端按 `mMaxAcquiredBuffers - mCurrentMaxAcquiredBufferCount` 决定保留 Buffer 数量；Android 16 BP2A 已启用 `wb_consumer_base_owns_bq` / `buffer_release_channel` / `apply_picture_profiles`，Android 17 CP2A 继续沿用并把部分条件编译路径收敛为默认源码路径。DeepResearch: `2026-06-15-blast-buffferqueue-canunblockuithread-and-pipeline-pitfalls.md`
 
 ---
 
 ## Android 17 BLAST 行为变更
 
-Android 17 通过 `com_android_graphics_libgui_flags.h` 在 BLAST 路径引入了几项编译期变更：
+Android 17（CP2A.260605.016）的 BLAST 版本线需要拆开看：Android 16（BP2A.250605.031.A2）发布配置已经启用了 `bq_setframerate`、`wb_consumer_base_owns_bq`、`buffer_release_channel` 和 `apply_picture_profiles`；Android 17 继续保留这些能力，并把部分 Android 16 的 `#if COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(...)` 条件路径收敛成默认源码路径。
 
-| Flag | Android 17 默认 | 影响 |
-|:---|:---|:---|
-| `WB_CONSUMER_BASE_OWNS_BQ` | 启用 | `BLASTBufferItemConsumer` 构造时同时持有 `IGraphicBufferProducer` 与 `IGraphicBufferConsumer`，BQ 所有权下沉到 Consumer 内部 |
-| `BUFFER_RELEASE_CHANNEL` | 启用 | BBQ 通过 `BufferReleaseReader` 专门消费释放回调，析构时走 `mBufferReleaseReader.emplace(*this)` 收口 |
-| `BQ_SETFRAMERATE` | 关闭 | 启用后 `BLASTBufferItemConsumer::onSetFrameRate` 转发到 BBQ |
-| `apply_picture_profiles` | 启用 | `acquireNextBufferLocked` 末尾将 `PictureProfileHandle` 装入 Transaction；屏幕旋转、PIP、Multi-Window resize 等 SurfaceControl 切换场景可节省一次 GPU pipeline 重置（典型 5-15ms），避免 SDR/HDR tone mapping 断档 |
+| Flag / 行为 | Android 11-14 | Android 15 (AP3A) | Android 16 (BP2A) | Android 17 (CP2A) |
+|:---|:---|:---|:---|:---|
+| `bq_setframerate` | 未作为本节结论 | ENABLED | ENABLED | `onSetFrameRate()` / `setFrameRate()` 成为无条件路径 |
+| `wb_consumer_base_owns_bq` | 未作为本节结论 | 未启用 | ENABLED | 同名条件分支不再保留，按新结构实现 |
+| `buffer_release_channel` | 未作为本节结论 | 未启用 | ENABLED，仍保留条件编译分支 | `BufferReleaseReader` / `BufferReleaseChannel` 路径成为默认实现 |
+| `apply_picture_profiles` | 未作为本节结论 | 未启用 | ENABLED，`acquireNextBufferLocked()` 写入 `PictureProfileHandle` | 继续通过 `setPictureProfileHandle()` 迁移到新的 `SurfaceControl` |
+| `canUnblockUiThread` 语义 | `info.prepareTextures` | 同 | 同 | 同 |
+| EGL 客户端 buffer 保留 | 0~max | 同 | 同 | 同 |
+| FrameTimeline 绑定 Transaction | API 31 引入 | 稳定 | 稳定 | 稳定 |
 
-`apply_picture_profiles` 工作方式是 BBQ 保留 `mPictureProfileHandle`，在 `update()` 中 SurfaceControl 切换时把当前 profile 迁移到新 SurfaceControl。`BQ_SETFRAMERATE` flag 在 master 分支存在编译期分支，但默认值需进一步确认 `libgui_trunk_defaults`，本轮未逐字段确认。
+`apply_picture_profiles` 的可验证行为是 BBQ 保留 `mPictureProfileHandle`，在 `update()` 或 `acquireNextBufferLocked()` 中把 profile 写入当前 `SurfaceControl.Transaction`。这能帮助 SurfaceControl 切换时延续 picture profile；本节不再给出缺少设备、场景和 trace 条件的量化收益。
 
-跨版本对比：
-
-| 特性 | Android 11-13 | Android 14-16 | Android 17 (API 37) |
-|:---|:---|:---|:---|
-| `canUnblockUiThread` 语义 | `info.prepareTextures` | 同 | 同 |
-| EGL 客户端 buffer 保留 | 0~max | 同 | 同 |
-| `WB_CONSUMER_BASE_OWNS_BQ` | 关闭 | 关闭 | 启用 |
-| `BUFFER_RELEASE_CHANNEL` | 关闭 | 关闭 | 启用 |
-| `apply_picture_profiles` | 关闭 | 关闭 | 启用 |
-| FrameTimeline 绑定 Transaction | API 31 引入 | 稳定 | 加强一致性 |
-
-[已验证: AOSP `frameworks/native/libs/gui/BLASTBufferQueue.{cpp,h}` master 分支；`frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp` master 分支]
+[已验证: AOSP `frameworks/native/libs/gui/BLASTBufferQueue.{cpp,h}` android-15.0.0_r1 / android-16.0.0_r1 / android-17.0.0_r1；`platform/build/release` AP3A / BP2A / CP2A aconfig value sets；`frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp` android-17.0.0_r1]
