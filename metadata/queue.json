@@ -637,11 +637,95 @@
       ],
       "added_by": "task9-deep-tech-review-idle-audit",
       "added_at": "2026-06-21T11:24:56",
-      "status": "pending",
+      "status": "completed",
       "task2b_lite_partial": true,
       "task2b_lite_at": "2026-06-21",
       "task2b_lite_note": "Lite 修复了源码锚点标注(frontmatter #1, #3)，API 映射经核实为正确(#2 false positive)，Feature Validation Gap (#4) 留给 main Task2B",
-      "updated_at": "2026-06-21T12:07:00"
+      "updated_at": "2026-06-21T12:07:00",
+      "completed_at": "2026-06-21T12:52:54+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "#4: frontmatter 已更新为 android-17.0.0_r1 全量验证（19个核心源码文件均在 android-17.0.0_r1 存在）；#5: perf.data 格式已修正为 Linux perf 二进制格式（perf_event_header），移除 protobuf 错误声明"
+    },
+    {
+      "id": "task9-20260621-14-simpleperf-source-paths",
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "title": "AOSP 源码路径错误",
+      "file": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+      "priority": 95,
+      "reason": "[Deep Tech Review] AOSP source code paths are incorrect - Files like system/extras/simpleperf/main.cpp, cmd_record.cpp are not found at the referenced locations. These paths may have been moved or the repository structure may have changed.",
+      "material_paths": [
+        "logs/deep-review/2026-06-21-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "AOSP 源码引用段落",
+          "detail": "章节引用的 system/extras/simpleperf/main.cpp、cmd_record.cpp、environment.cpp、event_selection_set.cpp 等文件在 AOSP 中不存在，源码路径可能已被移动或重构。",
+          "suggestion": "重新验证并修正 AOSP 中的实际源码路径，或明确说明这些是概念性伪代码。如路径已变更，需更新为正确的 android-17.0.0_r1 源码锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-21T12:28:00+08:00",
+      "created": "2026-06-21",
+      "status": "completed",
+      "completed_at": "2026-06-21T12:52:54+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "false positive: android-17.0.0_r1 验证所有源码路径 (main.cpp/cmd_record.cpp/environment.cpp/event_selection_set.cpp/thread_tree.cpp/dso.cpp/RecordReadThread.cpp/JITDebugReader.cpp/OfflineUnwinder.cpp/CallChainJoiner.cpp 等 19 个文件) 均在 AOSP system/extras/simpleperf/ 存在"
+    },
+    {
+      "id": "task9-20260621-15-simpleperf-version-inconsistency",
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "title": "源码验证不一致",
+      "file": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Source code verification inconsistency - Chapter claims verification against android-16.0.0_r1 but references main branch snapshots, creating a version mismatch that affects credibility.",
+      "material_paths": [
+        "logs/deep-review/2026-06-21-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本不一致",
+          "location": "源码验证说明",
+          "detail": "章节声称基于 android-16.0.0_r1 验证，但多处引用 main 分支快照，造成验证版本与引用版本不一致，影响内容可信度。",
+          "suggestion": "统一验证版本口径：要么全部使用 android-16.0.0_r1 锚点，要么明确标注 main 分支快照为「待验证」预测内容，不能混用作为正文结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-21T12:28:00+08:00",
+      "created": "2026-06-21",
+      "status": "completed",
+      "completed_at": "2026-06-21T12:52:54+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "frontmatter last_verified_against 已统一为 android-17.0.0_r1；version_boundary 更新为 API 21-37 [已验证]；所有源码锚点统一使用 android-17.0.0_r1"
+    },
+    {
+      "id": "task9-20260621-16-simpleperf-art-cache-path",
+      "section": "14.2",
+      "section_title": "Simpleperf",
+      "title": "文件路径错误",
+      "file": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
+      "priority": 85,
+      "reason": "[Deep Tech Review] File path inaccuracy - Reference to /memfd:jit-zygote-cache appears incorrect; actual ART JIT cache paths differ.",
+      "material_paths": [
+        "logs/deep-review/2026-06-21-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "路径错误",
+          "location": "ART JIT 缓存引用",
+          "detail": "章节引用 /memfd:jit-zygote-cache 作为 ART JIT 缓存路径，该路径在标准 Android 系统中不存在。实际 ART JIT 缓存路径和机制需要重新验证。",
+          "suggestion": "重新确认 ART JIT 缓存的实际存储路径和访问机制。如果使用 memfd，需要确认正确的 fd 命名规则；如果使用其他机制，需要准确描述实际实现。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-21T12:28:00+08:00",
+      "created": "2026-06-21",
+      "status": "completed",
+      "completed_at": "2026-06-21T12:52:54+08:00",
+      "completed_by": "task2b-main",
+      "resolution": "false positive: /memfd:jit-zygote-cache 路径在 android-17.0.0_r1 simpleperf/JITDebugReader.cpp 源码中真实存在，为 kJITZygoteCacheFile 的 memfd 文件系统路径"
     }
   ]
 }

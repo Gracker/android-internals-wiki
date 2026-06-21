@@ -10326,15 +10326,15 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-21",
-    "time": "03:06",
+    "time": "11:04",
     "mode": "gap-mining-skip",
-    "round": 172,
+    "round": 174,
     "created_sections": [],
     "created_files": [],
-    "candidate_count": 3,
+    "candidate_count": 8,
     "qualified_count": 0,
-    "source": "Round 172: Phase 0 无空 draft (4 draft 均有实质内容 230-1011行). Phase 0.5 TASK2B_BACKLOG=0. 今日 daily-info: Android 17 调度器优化(已有ch16覆盖) 13分, Linux 6.10内存碎片(已有ch04覆盖) 5分, Memory Tracking API(已有ch23.7/ch26.3覆盖) 9分. DeepResearch 8篇全部映射已有章节. source-index 0篇. research-feeds 2026-04-14已映射. Clippings 无变化. 连续172轮无合格缺口, 跳过.",
-    "note": "连续172轮无合格缺口。0空draft。全书443文件(305 finalized + 91 ready-for-review + 4 draft有内容)。管线堵点在Task6/Task9复审(91个ready-for-review)。DeepResearch注入管线活跃(7个pending)。"
+    "source": "Round 174: Phase 0 无空 draft (4 draft 均有实质内容 227-1009行). Phase 0.5 TASK2B_BACKLOG=0. 今日 daily-info 6 项全部已有覆盖(8-11分). 增量扫描全部已有覆盖(9-11分). source-index 0篇. research-feeds 全部已映射(最后2026-04-14). 连续174轮无合格缺口, 跳过.",
+    "note": "连续174轮无合格缺口。0空draft。全书443+节(305 finalized + 91 ready-for-review + 4 draft有内容)。管线堵点在Task6/Task9复审(91个ready-for-review)。"
   },
   "task9_last_sections": [
     "7.9",
@@ -10814,7 +10814,7 @@
     "source": "Round 126: Phase 0 无空 draft (381 章节, 299 finalized + 82 ready-for-review). Phase 0.5 TASK2B_BACKLOG=2. Source-index 0 篇 (已耗尽). Research-feeds 最近 2026-04-14 无新增. research-gaps 2 条已映射. daily-info 热点无新缺口. Clippings 三本参考书结构已充分比对. 连续 126 轮无合格缺口, 跳过.",
     "note": "连续 126 轮无合格缺口。0 draft 章节。管线堵点在 Task6/Task9 复审环节。"
   },
-  "last_task2a_gap_mining_at": "2026-06-20T19:07:13.603595+08:00",
+  "last_task2a_gap_mining_at": "2026-06-21T11:06:20.355151+08:00",
   "last_task6_audit": "2026-05-24T07:07:00+08:00",
   "last_task6_audit_sections": [
     "18.6"
@@ -14719,5 +14719,15 @@
     "reviewed": 65,
     "finalized": 196,
     "total": 264
+  },
+  "14.2": {
+    "chapter": "14.2",
+    "title": "Simpleperf",
+    "pipeline_stage": "task6_pending",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "task6_state": "revisiting",
+    "last_task2b_at": "2026-06-21T12:53:03+08:00",
+    "last_task2b_by": "task2b-main"
   }
 }
