@@ -14751,5 +14751,17 @@
     "task9_result": "pass-tech-review",
     "last_task6_at": "2026-06-22T02:07:00+08:00",
     "last_review_log": "logs/review/2026-06-22-02-review.md"
+  },
+  "task2b_rework": {
+    "2026-06-22": [
+      {
+        "section": "25.1",
+        "chapter": "ch25-power-size",
+        "file": "src/part5-app/ch25-power-size/01-power-diagnosis.md",
+        "action": "fixed P95 source code chain / version boundary for streamlined battery stats attribution",
+        "source": "task9-deep-tech-review",
+        "time": "2026-06-22T04:51:37+08:00"
+      }
+    ]
   }
 }
