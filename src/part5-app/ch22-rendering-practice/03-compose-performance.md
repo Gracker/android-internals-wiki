@@ -16,21 +16,21 @@ sources:
     path: "platform/frameworks/support/+/androidx-compose-release/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutCacheWindow.kt"
 tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-06-02T13:05:00+08:00"
 task9_state: reviewed
 last_task2b_at: "2026-06-02T12:54:00+08:00"
 last_task2b_lite_at: "2026-05-31T15:35:00+08:00"
 task6_result: pass-light-edit
-task9_result: "pass-tech-review"
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-02"
-last_task9_at: "2026-06-02T17:23:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-02-17-deep-review.md"
-task9_review_notes: "2026-06-02 Task9 deep-review: pass-tech-review。复核 Strong Skipping、Pausable Composition、LazyLayoutCacheWindow 与 Android 17/Compose 工具链边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-06-21T22:30:33+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-21-22-audit.md"
+task9_review_notes: "2026-06-02 Task9 deep-review: pass-tech-review。复核 Strong Skipping、Pausable Composition、LazyLayoutCacheWindow 与 Android 17/Compose 工具链边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 2026-06-21 Task9 idle audit auto-fix: 修正 produceState Snapshot 写入链路中不存在的 registerMutableSnapshot/notifyReaders/scheduleRevalidation 方法名，收窄 Strong Skipping 报告检查与 produceState key 重载边界；P0/P1=1/0，回到 Task6 复审。"
 last_task6_review_log: "logs/review/2026-06-02-13-review.md"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-02"
@@ -38,10 +38,13 @@ review_notes: "2026-06-02 13:05 Task6 复审：L1 小修 10 处；修正 Android
 task2b_notes: "2026-06-02 Task2B：删除发布正文中的调研补遗块，统一 Pausable Composition 为 Compose/Foundation 工具链能力，移出未闭合的 AOSP master/androidx-main 正文结论。"
 last_task2b_verifier_at: "2026-06-02T19:27:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-19-task2b-verifier.md"
-last_task9_autofix_at: "2026-06-01"
-task9_p0_issues: 2
-task9_p1_issues: 1
+last_task9_autofix_at: "2026-06-21"
+task9_p0_issues: 1
+task9_p1_issues: 0
 task9_p2_issues: 2
+last_task9_audit: "2026-06-21"
+last_task9_audit_at: "2026-06-21T22:30:33+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-21-22-audit.md"
 ---
 # Jetpack Compose 性能优化实战
 
@@ -172,7 +175,7 @@ fun userProfile(userId: String): State<User?> {
 | `ProduceStateScopeImpl(result, coroutineContext)` | 接口包装对象 | Composable 进入时 |
 | `value = newValue` | **无堆分配**（in-place 写） | producer 执行时 |
 
-`value` 写入触发 Snapshot 写事务链：`ProduceStateScope.value setter → Snapshot.registerMutableSnapshot → notifyReaders() → Recomposer.scheduleRevalidation() → 下帧重组评估`。producer 内每执行一次 `value = it` 就触发一次重组评估，因此 `produceState` **不适合驱动 UI 动画**（动画应使用 `animateFloatAsState` 等专用 API）。
+`value` 写入最终落到 Compose runtime 的 `SnapshotMutableStateImpl.value` setter。`androidx-compose-release` 中 setter 通过 `next.withCurrent { ... next.overwritable(...) }` 写入 Snapshot state record；读取该 `State` 的重组作用域随后会被失效并由 Recomposer 调度重组评估。producer 内每执行一次 `value = it` 都可能触发后续重组评估，因此 `produceState` **不适合驱动 UI 动画**（动画应使用 `animateFloatAsState` 等专用 API）。
 
 ### Stability 标记:什么时候还需要手动标注
 
@@ -539,7 +542,7 @@ AndroidView(
 
 迁移步骤:
 1. 升级 Kotlin 到 2.0.20+(或 2.0.0-2.0.10 显式开启 `enableStrongSkippingMode`),确认 Compose compiler 插件版本匹配。
-2. 运行编译器报告,检查 `skippable` 字段是否全部为 `true`。
+2. 运行编译器报告，确认 restartable Composable 在 Strong Skipping 下可跳过；non-restartable Composable 仍可能显示为不可跳过，不作为异常处理。
 3. 清理冗余的手动 `remember { { lambda } }` 包裹代码。
 4. 在 Layout Inspector 中对比升级前后的重组次数,确认 Strong Skipping 生效。
 5. 重新采集 Baseline Profile，覆盖冷启动、首屏列表和主要交互路径。
@@ -571,7 +574,7 @@ Android 17（API 37）平台不内置 Compose 工具链，也不决定 Strong Sk
 ### Jetpack Compose 性能优化 — rememberCoroutineScope / produceState / Strong Skipping
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-compose-perf-remember-scopeproducestate.md
 - 类型：DeepResearch 调研结果
-- 摘要：produceState 底层依赖 LaunchedEffect(Unit) 启动 producer 协程，key 为 Unit 固定值故重组不重启。rememberCoroutineScope 通过 remember 存储 CoroutineScope 实例，重组时复用同一实例。Strong Skipping Mode（Compose Compiler 1.10+）对非 restartable Composable 有限制，produceState 的 producer lambda 执行的协程体不受 Strong Skipping 直接控制。
+- 摘要：无 key 重载的 `produceState` 使用 `LaunchedEffect(Unit)`，带 key 重载使用 `LaunchedEffect(key1/key2/keys)`，key 变化时 producer 协程会取消并重启。`rememberCoroutineScope` 通过 `remember` 存储 `CoroutineScope` 实例，重组时复用同一实例。Strong Skipping Mode 对 non-restartable Composable 有限制，`produceState` 的 producer lambda 执行的协程体不受 Strong Skipping 直接控制。
 - 注入时间：2026-06-06
 - 价值：从源码层面揭示了 Compose 副作用 API（produceState/rememberCoroutineScope）在 Strong Skipping 下的行为差异，对 Compose 性能优化实践有直接指导意义
 
