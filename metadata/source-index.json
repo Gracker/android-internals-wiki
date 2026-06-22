@@ -4216,6 +4216,616 @@
       "chapter": "ch02",
       "type": "deepresearch",
       "processed_at": "2026-06-21T06:12:04.258796+08:00"
+    },
+    {
+      "path": "DeepResearch/2026-06-21-binder-ipc-optimization-android17.md",
+      "title": "2026-06-21-binder-ipc-optimization-android17",
+      "quality": "high",
+      "score": 18,
+      "timestamp": "2026-06-22T05:46:11.210176",
+      "scored_at": "2026-06-22T05:46:11.249479"
+    },
+    {
+      "path": "DeepResearch/2026-06-21-jobscheduler-throttling-android17.md",
+      "title": "2026-06-21-jobscheduler-throttling-android17",
+      "quality": "high",
+      "score": 17,
+      "timestamp": "2026-06-22T05:46:11.357035",
+      "scored_at": "2026-06-22T05:46:11.396924"
+    },
+    {
+      "path": "DeepResearch/2026-06-21-simpleperf-power-thermal-multicore.md",
+      "title": "2026-06-21-simpleperf-power-thermal-multicore",
+      "quality": "high",
+      "score": 19,
+      "timestamp": "2026-06-22T05:46:11.454839",
+      "scored_at": "2026-06-22T05:46:11.495046"
+    },
+    {
+      "path": "DeepResearch/2026-06-21-surfaceflinger-vsync-scheduler-android17.md",
+      "title": "2026-06-21-surfaceflinger-vsync-scheduler-android17",
+      "quality": "high",
+      "score": 18,
+      "timestamp": "2026-06-22T05:46:11.553006",
+      "scored_at": "2026-06-22T05:46:11.594575"
+    },
+    {
+      "path": "DeepResearch/2026-06-22-libmeminfo-android17.md",
+      "title": "2026-06-22-libmeminfo-android17",
+      "quality": "high",
+      "score": 18,
+      "timestamp": "2026-06-22T05:46:11.659498",
+      "scored_at": "2026-06-22T05:46:11.705813"
+    },
+    {
+      "path": "source/juejin-android/2026-06-22-76010772-火爆全网的Skills看这一篇就够了.md",
+      "title": "2026-06-22-76010772-火爆全网的Skills看这一篇就够了",
+      "quality": "medium",
+      "score": 12,
+      "timestamp": "2026-06-22T05:46:29.632723",
+      "scored_at": "2026-06-22T05:46:29.672526"
+    },
+    {
+      "path": "source/juejin-android/2026-06-22-76047574-10万人都在用的_top10_skill.md",
+      "title": "2026-06-22-76047574-10万人都在用的_top10_skill",
+      "quality": "medium",
+      "score": 12,
+      "timestamp": "2026-06-22T05:46:29.727772",
+      "scored_at": "2026-06-22T05:46:29.767304"
+    },
+    {
+      "path": "source/juejin-android/2026-06-22-76102333-Android_17_有什么需要适配的2.md",
+      "title": "2026-06-22-76102333-Android_17_有什么需要适配的2",
+      "quality": "medium",
+      "score": 14,
+      "timestamp": "2026-06-22T05:46:29.822219",
+      "scored_at": "2026-06-22T05:46:29.863318"
+    },
+    {
+      "path": "source/juejin-android/2026-06-22-76128120-Android17_为什么重写_Mess.md",
+      "title": "2026-06-22-76128120-Android17_为什么重写_Mess",
+      "quality": "medium",
+      "score": 13,
+      "timestamp": "2026-06-22T05:46:29.920162",
+      "scored_at": "2026-06-22T05:46:29.962349"
+    },
+    {
+      "path": "每日论文精读（Android）/Android-2025-05-01-BatteryLife.md",
+      "title": "Android-2025-05-01-BatteryLife",
+      "quality": "medium",
+      "score": 12,
+      "timestamp": "2026-06-22T05:46:30.113269",
+      "scored_at": "2026-06-22T05:46:30.153575"
+    },
+    {
+      "path": "论文/Android-2025-05-01-BatteryLife-Dataset/02-全文翻译.md",
+      "title": "02-全文翻译",
+      "quality": "medium",
+      "score": 11,
+      "timestamp": "2026-06-22T05:46:30.209782",
+      "scored_at": "2026-06-22T05:46:30.249733"
+    },
+    {
+      "path": "论文/Android-2025-05-01-BatteryLife-Dataset/03-精读.md",
+      "title": "03-精读",
+      "quality": "medium",
+      "score": 10,
+      "timestamp": "2026-06-22T05:46:30.305459",
+      "scored_at": "2026-06-22T05:46:30.345338"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-jetpack-compose-state-management-source.md",
+      "title": "Jetpack Compose 状态管理机制的内存分配与 GC 交互",
+      "summary": "基于 androidx-main 源码解析 MutableState 装箱 vs 原始特化、RecomposeScopeImpl Lazy 字段分配、derivedStateOf ResultRecord 链开销与 Compose 1.12 修复（b/516904513）",
+      "chapter_mapping": "ch23.12",
+      "processed_at": "2026-06-22T06:12:58.925959",
+      "processing_action": "injected_into_chapter",
+      "status": "ready-for-review"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-safemode-launch-marker-state-machine-aosp-verification.md",
+      "title": "SafeMode launch marker 状态机的 AOSP 源码核验",
+      "summary": "核验 ApplicationExitInfo 17 个 REASON 常量、AtomicFile.finishWrite 持久化协议、AppExitInfoTracker 30min debounce + 16条限制、Process.killProcess 三条路径",
+      "chapter_mapping": "ch20.7/ch20.12",
+      "processed_at": "2026-06-22T06:12:58.925959",
+      "processing_action": "queued",
+      "status": "finalized_chapter"
+    },
+    {
+      "title": "谈编程语言互操作 - Java/C++ 互操作机制",
+      "path": "AndroidWeekly/#22/谈编程语言互操作 - Java/C++ 互操作机制",
+      "source_url": "https://zhuanlan.zhihu.com/p/297727926",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [],
+      "summary": "谈编程语言互操作 - Java/C++ 互操作机制 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559951"
+    },
+    {
+      "title": "谈编程语言互操作 - Java/Kotlin 互操作机制",
+      "path": "AndroidWeekly/#22/谈编程语言互操作 - Java/Kotlin 互操作机制",
+      "source_url": "https://zhuanlan.zhihu.com/p/299669161",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [],
+      "summary": "谈编程语言互操作 - Java/Kotlin 互操作机制 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559966"
+    },
+    {
+      "title": "探索 Android 平台 ARM unwind 技术",
+      "path": "AndroidWeekly/#22/探索 Android 平台 ARM unwind 技术",
+      "source_url": "https://zhuanlan.zhihu.com/p/336916116",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "探索 Android 平台 ARM unwind 技术 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559968"
+    },
+    {
+      "title": "探索 Android 平台 ARM unwind 技术 - 2",
+      "path": "AndroidWeekly/#22/探索 Android 平台 ARM unwind 技术 - 2",
+      "source_url": "https://zhuanlan.zhihu.com/p/345878125",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "探索 Android 平台 ARM unwind 技术 - 2 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559969"
+    },
+    {
+      "title": "探索 Android 平台 ARM unwind 技术 - 3",
+      "path": "AndroidWeekly/#22/探索 Android 平台 ARM unwind 技术 - 3",
+      "source_url": "https://zhuanlan.zhihu.com/p/350149964",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "探索 Android 平台 ARM unwind 技术 - 3 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559971"
+    },
+    {
+      "title": "探索 Android 平台 ARM unwind 技术 - 4",
+      "path": "AndroidWeekly/#22/探索 Android 平台 ARM unwind 技术 - 4",
+      "source_url": "https://zhuanlan.zhihu.com/p/351240785",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "探索 Android 平台 ARM unwind 技术 - 4 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559972"
+    },
+    {
+      "title": "探索 Android 平台 ARM unwind 技术 - 番外篇",
+      "path": "AndroidWeekly/#22/探索 Android 平台 ARM unwind 技术 - 番外篇",
+      "source_url": "https://zhuanlan.zhihu.com/p/351463209",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "探索 Android 平台 ARM unwind 技术 - 番外篇 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559976"
+    },
+    {
+      "title": "Scudo 在 Android11 使用介绍",
+      "path": "AndroidWeekly/#22/Scudo 在 Android11 使用介绍",
+      "source_url": "https://zhuanlan.zhihu.com/p/353784014",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Scudo 在 Android11 使用介绍 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559977"
+    },
+    {
+      "title": "Android 上 GWP-ASAN 集成分析",
+      "path": "AndroidWeekly/#22/Android 上 GWP-ASAN 集成分析",
+      "source_url": "https://zhuanlan.zhihu.com/p/349475224",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 上 GWP-ASAN 集成分析 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559978"
+    },
+    {
+      "title": "Android 应用程序一些功耗技巧",
+      "path": "AndroidWeekly/#22/Android 应用程序一些功耗技巧",
+      "source_url": "https://zhuanlan.zhihu.com/p/309703698",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch09-功耗",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 应用程序一些功耗技巧 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559980"
+    },
+    {
+      "title": "相比 XML , Compose 性能到底怎么样？",
+      "path": "AndroidWeekly/#22/相比 XML , Compose 性能到底怎么样？",
+      "source_url": "https://juejin.cn/post/7008522702835154980",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-UI",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "相比 XML , Compose 性能到底怎么样？ - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559981"
+    },
+    {
+      "title": "视频 - Android Game Dev Show",
+      "path": "AndroidWeekly/#22/视频 - Android Game Dev Show",
+      "source_url": "https://www.youtube.com/playlist?list=PLWz5rJ2EKKc9UA3vUgdf-TUj5IRr3YWV9",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch11-游戏",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "视频 - Android Game Dev Show - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559983"
+    },
+    {
+      "title": "Android Basics in Kotlin",
+      "path": "AndroidWeekly/#22/Android Basics in Kotlin",
+      "source_url": "https://developer.android.google.cn/courses/android-basics-kotlin/course",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android Basics in Kotlin - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559986"
+    },
+    {
+      "title": "好看视频 Android 重构 —— 围绕于播放器的重构实践",
+      "path": "AndroidWeekly/#22/好看视频 Android 重构 —— 围绕于播放器的重构实践",
+      "source_url": "https://mp.weixin.qq.com/s/R2EHg7kVN8VWkGgZ1z-7pQ",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch11-游戏",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "好看视频 Android 重构 —— 围绕于播放器的重构实践 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559987"
+    },
+    {
+      "title": "Android 开发太难了：Java Lambda ≠ Android Lambda",
+      "path": "AndroidWeekly/#22/Android 开发太难了：Java Lambda ≠ Android Lambda",
+      "source_url": "https://mp.weixin.qq.com/s/bnljzi2fpFyNqXfRBBkJSg",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 开发太难了：Java Lambda ≠ Android Lambda - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559988"
+    },
+    {
+      "title": "深入探索 Android 稳定性优化",
+      "path": "AndroidWeekly/#22/深入探索 Android 稳定性优化",
+      "source_url": "https://zhuanlan.zhihu.com/p/414155765",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-稳定性",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "深入探索 Android 稳定性优化 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559989"
+    },
+    {
+      "title": "Android 画面显示流程分析 (1)",
+      "path": "AndroidWeekly/#22/Android 画面显示流程分析 (1)",
+      "source_url": "https://www.jianshu.com/p/df46e4b39428",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 画面显示流程分析 (1) - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559991"
+    },
+    {
+      "title": "Android 画面显示流程分析 (2)",
+      "path": "AndroidWeekly/#22/Android 画面显示流程分析 (2)",
+      "source_url": "https://www.jianshu.com/p/f96ab6646ae3",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 画面显示流程分析 (2) - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559992"
+    },
+    {
+      "title": "Android 画面显示流程分析 (3)",
+      "path": "AndroidWeekly/#22/Android 画面显示流程分析 (3)",
+      "source_url": "https://www.jianshu.com/p/3c61375cc15b",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 画面显示流程分析 (3) - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559993"
+    },
+    {
+      "title": "Android 画面显示流程分析 (4)",
+      "path": "AndroidWeekly/#22/Android 画面显示流程分析 (4)",
+      "source_url": "https://www.jianshu.com/p/7a18666a43ce",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 画面显示流程分析 (4) - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559994"
+    },
+    {
+      "title": "Android 画面显示流程分析 (5)",
+      "path": "AndroidWeekly/#22/Android 画面显示流程分析 (5)",
+      "source_url": "https://www.jianshu.com/p/dcaf1eeddeb1",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 画面显示流程分析 (5) - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559995"
+    },
+    {
+      "title": "Kotlin Compiler Plugin 探索与实践",
+      "path": "AndroidWeekly/#22/Kotlin Compiler Plugin 探索与实践",
+      "source_url": "https://mp.weixin.qq.com/s/DlAZgysc0MxrQAqTsAKVfw",
+      "weekly_issue": "#22",
+      "weekly_date": "2021-09-30",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin Compiler Plugin 探索与实践 - Android Weekly #22",
+      "scored_at": "2026-06-22T09:07:20.559996"
     }
   ]
 }
