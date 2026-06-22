@@ -1,5 +1,39 @@
 {
-  "pending": [],
+  "pending": [
+    {
+      "section": "13.17",
+      "section_title": "Android 17 Perfetto 数据源边界与验证",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 17 重基后仍有 traced_perf/perf_producer 源码片段不匹配、Perfetto SQL 表名错误，以及版本表/二次验证计划证据锚点过期。",
+      "material_paths": [
+        "logs/deep-review/2026-06-23-00-deep-review.md",
+        "src/part3-tools/ch13-perfetto/17-android17-data-sources.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "§2.2 / §2.4 linux.perf 源码片段（约 L259-L310）",
+          "detail": "章节声明基于 android-17.0.0_r1，但 traced_perf.cc 片段仍写 base::UnixTaskRunner；Android 17 实际为 base::MaybeLockFreeTaskRunner，并在 line 88-105 建立 AndroidRemoteDescriptorGetter、PerfProducer、ConnectWithRetries。perf_producer.cc 的 ShouldRejectDueToFilter 也不在 line 80-103；Android 17 实际签名在 line 326-331，过滤逻辑使用 glob_aware::MatchGlobPattern，并包含 skip_cmdline、additional_cmdline_count/process_sharding 等边界。当前正文代码片段与 Android 17 源码不一致。",
+          "suggestion": "Task2B 按 android-17.0.0_r1 重贴 §2.2 和 §2.4 的最小源码片段：traced_perf.cc 使用 line 34-45、84-105；perf_producer.cc 使用 line 326-378 的过滤骨架，并保留 TraceConfig 字段与 TargetFilter 内部集合的区分。"
+        },
+        {
+          "type": "P0 Perfetto SQL 表名错误",
+          "location": "§6.1 Trace 数据查询（约 L384-L390）",
+          "detail": "示例查询 FROM actual_frame_timeline，但 Android 17 随附 Perfetto trace_processor stdlib 在 prelude/after_eof/events.sql 中定义的是 actual_frame_timeline_slice 与 expected_frame_timeline_slice；未发现 actual_frame_timeline 表。按当前示例执行会直接找不到表。",
+          "suggestion": "把查询表名改为 actual_frame_timeline_slice；如需 CUJ/frames 标准库口径，可引用 android.frames.timeline 或 android_jank_cuj_frame_timeline，而不是不存在的 actual_frame_timeline。"
+        },
+        {
+          "type": "P1 版本差异/证据锚点",
+          "location": "§4 版本演进与兼容性 / §7 二次验证计划（约 L357-L462）",
+          "detail": "章节 frontmatter 已写 android-17.0.0_r1 已验证，但版本表仍使用 lineage-18.1、lineage-22.2 等旁路锚点，并保留“Android 17 / API 37 公开 tag 发布后，需执行以下验证”的计划式表述。android-17.0.0_r1 已公开后，这些内容会削弱版本边界可信度。",
+          "suggestion": "将 §4 的证据列统一改成 AOSP tags（android-12.0.0_r1、android-16.0.0_r3、android-17.0.0_r1）或官方 Perfetto 文档；§7 改成“复核命令/已执行的回归检查”，不要继续写成待公开 tag 后的计划。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-23T00:29:23+08:00",
+      "status": "pending"
+    }
+  ],
   "in_progress": [],
   "completed": [
     {

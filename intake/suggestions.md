@@ -176,3 +176,10 @@
 - **问题**：章节把 `RuntimeShader` / `createRuntimeShaderEffect()` 的最低版本写清为 API 33，这一结论正确；但 Android 16/17 范围内 AGSL 相关 API 已继续扩展：`RuntimeShader.setInputColorFilter()` / `setInputXfermode()` 为 API 36，`RuntimeShader.setWorkingColorSpace()` 为 API 37。当前章节没有把这些后续能力与 22.19 区分，读者可能把“API 33+ 的能力范围”理解为完整边界。
 - **建议**：后续回炉时补一条版本边界说明：22.10 只覆盖 `RenderEffect + RuntimeShader` 整节点后处理；Android 16 的 `RuntimeColorFilter` / `RuntimeXfermode` 走 22.19；Android 17 的 `setWorkingColorSpace()` 只影响 RuntimeShader 色彩空间求值，不改变 RenderEffect 离屏层成本模型。
 - **review 日志**：logs/deep-review/2026-06-22-02-audit.md
+
+## [Task9 Deep Review] 13.17 Android 17 Perfetto 数据源边界与验证 — 2026-06-23
+- **类型**：数据缺失/源码边界
+- **位置**：§5.2 `frametimeline` 性能开销（约 L375-L378）
+- **问题**：正文称“开启时每个 SurfaceFrame 写 1-2 个 packet，锁竞争极低”，但未给出 trace 样本、Trace Processor 统计或源码约束。Android 17 `FrameTimeline.cpp` 对 expected/actual display/surface frame 有多处 `FrameTimelineDataSource::Trace()` 写入，实际 packet 数取决于 display frame、surface frame、filterFramesBeforeTraceStarts 与预测状态。
+- **建议**：把固定 packet 数和“锁竞争极低”降级为待实测口径，补一组 `actual_frame_timeline_slice` / `expected_frame_timeline_slice` 统计或 Perfetto packet 计数后再下结论。
+- **review 日志**：logs/deep-review/2026-06-23-00-deep-review.md
