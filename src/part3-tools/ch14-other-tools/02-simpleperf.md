@@ -1,10 +1,9 @@
 ---
 
-
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
@@ -27,27 +26,21 @@ last_task9_audit_at: '2026-06-10T16:20:00+08:00'
 last_task9_reviewed_at: '2026-06-22T00:28:28+08:00'
 last_task9_at: '2026-06-22T00:28:28+08:00'
 last_task9_autofix_at: '2026-06-22'
-last_task2b_lite_at: '2026-06-22'
+last_task2b_lite_at: 2026-06-22
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: auto-fixed
 task6_result: pass-light-edit
-task6_review_notes: "2026-06-22 01 Task6 revisiting-review (Task9 autofix 后复审): pass-light-edit。L1/L2 全面扫描零命中（'上分'为'上分流'误匹配）。否定-纠正结构 1 处在限内。无 B 类问题。自动晋升 finalized。"
-task2b_result: fixed-lite
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
-last_task2b_lite_at: 2026-06-22
-reviewed_by: openclaw-task9
+task6_review_notes: "2026-06-22 18 Task6 revisiting-review (Task2B lite-fix 后复审): pass-light-edit。修复 6 处重复 frontmatter key + 3 处 简单perf→Simpleperf 术语一致性。L1/L2 扫描零命中（上分为上分流误匹配）。否定-纠正 1 处在限内。无 B 类问题。task9_result=auto-fixed 视为 pass，queue 无 pending，自动晋升 finalized。"
+reviewed_by: openclaw-task6
 reviewed_date: 2026-06-22
-last_task6_at: "2026-06-22T01:10:00+08:00"
-last_task6_review_log: "logs/review/2026-06-22-01-review.md"
-task6_l1_l2_fixes: 0
+last_task6_at: 2026-06-22T18:17:53+08:00
+last_task6_review_log: "logs/review/2026-06-22-18-review.md"
+task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
 task6_new_rework: false
 last_task2b_by: openclaw-task2b-main
@@ -56,7 +49,9 @@ last_deepseek_cn_review_at: 2026-06-22
 last_task6_audit: "2026-06-22"
 last_task6_audit_at: '2026-06-16T18:00:00+08:00'
 last_task6_audit_reason: 'idle audit: L1合规性、frontmatter完整性、outline锚点覆盖检查均通过'
------
+---
+
+--
 
 # Chapter 14.2 - Simpleperf
 
@@ -825,7 +820,7 @@ Simpleperf 不直接与 `PowerManager` / `ThermalService` 通信，而是通过 
 | 闸门 | 默认 | record 阶段调整 | 作用 |
 |---|---|---|---|
 | `debug.perf_event_mlock_kb` | 516 KB | `cpus * mmap_pages * 4` | perf mmap 缓冲物理锁定预算 |
-| `debug.perf_cpu_time_max_percent` | 25 | `record --cpu-percent` 控制 | 简单perf 自身允许占用的 CPU 时间比例 |
+| `debug.perf_cpu_time_max_percent` | 25 | `record --cpu-percent` 控制 | Simpleperf 自身允许占用的 CPU 时间比例 |
 | `debug.perf_event_max_sample_rate` | 100000 Hz | `-f` 控制 | 采样频率上限 |
 | `security.perf_harden` | 1 | 启动时 `SetProperty(... 0)` 解锁 | SELinux 是否允许非 root 调用 `perf_event_open` |
 | `/proc/sys/fs/nr_open` | 1048576 | root 下 `setrlimit(RLIMIT_NOFILE, ...)` 提升 | simpleperf 打开大量 perf_event fd 的上限 |
@@ -852,7 +847,7 @@ Simpleperf **没有 thermal listener**，PMU 计数器反映当前 CPU 周期数
 | cache-misses | 100% | 92% | -8% |
 | task-clock | 100% | 100% | 0% |
 
-**`task-clock` 是抗热节流最稳的指标**；`cpu-cycles` 在节流后偏差最大。简单perf 报告默认按 cycles 排序，**热关断时高 CPU 周期函数被低估**。使用 `simpleperf stat -e task-clock` 验证关键函数时间占比，再用 cycles 看绝对值。
+**`task-clock` 是抗热节流最稳的指标**；`cpu-cycles` 在节流后偏差最大。Simpleperf 报告默认按 cycles 排序，**热关断时高 CPU 周期函数被低估**。使用 `simpleperf stat -e task-clock` 验证关键函数时间占比，再用 cycles 看绝对值。
 
 #### big.LITTLE 异构多核下的采样分布
 
@@ -879,7 +874,7 @@ Simpleperf **没有 thermal listener**，PMU 计数器反映当前 CPU 周期数
 
 | 路径 | 命令 | 效果 |
 |---|---|---|
-| 降低简单perf 自身 CPU 占用 | `record --cpu-percent 10` | 内核 throttle 简单perf 进程到 10% |
+| 降低Simpleperf 自身 CPU 占用 | `record --cpu-percent 10` | 内核 throttle Simpleperf 进程到 10% |
 | 降低采样频率 | `record -f 1000` | cpu-cycles 偏差从 32% 缩到 ~10% |
 | 关闭 system-wide | `record -p <pid>` | 避免 idle 核浪费 mmap 缓冲 |
 | 关闭 ETM 录制 | 不加 `--aux-trace` | mlock 预算减半（`cmd_record.cpp:1423-1425` 累加） |
