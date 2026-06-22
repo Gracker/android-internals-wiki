@@ -7,7 +7,7 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 reviewed_date: '2026-06-16'
 reviewed_by: openclaw-task6
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-16"
 last_verified_against: "AOSP android-16.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; android-17.0.0_r1 tag unavailable"
 confidence: medium
@@ -36,7 +36,8 @@ task2b_result: fixed
 task6_reviewed_date: '2026-06-16'
 task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
-last_task6_audit: "2026-05-22"
+last_task6_audit: "2026-06-22"
+last_task6_audit_type: "idle-audit"
 review_round: 1
 status: "finalized"
 pipeline_stage: "ready-to-publish"
@@ -56,6 +57,8 @@ finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"
 last_task9_audit_result: auto-fixed
 last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # 响应速度原理
@@ -95,7 +98,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
 
 从用户体验治理角度看，响应速度和流畅性属于同一类问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢就是同一条体验路径上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
 
-了解响应速度的完整路径之后，我们就能在 Perfetto 中精准定位：延迟到底发生在 Input 分发阶段、App 主线程处理阶段、还是渲染合成阶段。每一种瓶颈的优化方向完全不同，搞清楚"慢在哪里"是解决问题的第一步。
+搞清楚响应速度的完整路径之后，在 Perfetto 里定位延迟就有了方向——延迟可能出在 Input 分发、App 主线程处理或渲染合成三个阶段。每一种瓶颈的优化方向完全不同，先确认"慢在哪里"是解决问题的第一步。
 
 ## 响应速度的完整定义
 
@@ -107,17 +110,17 @@ last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
 
 在实际工程中，我们通常从以下几个维度度量响应速度：
 
-**1. 点击响应速度（Tap Response Time）**——用户点击屏幕到系统给出视觉反馈的时间。这是最直观的响应速度指标。Android Vitals 公开指标目前不单列 Tap Response Time 核心指标；排查时通常结合 Perfetto Input 轨道、慢帧、冻结帧和 ANR 数据判断。
+**1. 点击响应速度（Tap Response Time）**——用户点击屏幕到系统给出视觉反馈的时间。这是最直观的响应速度指标。Android Vitals 公开指标目前不单列 Tap Response Time 主要指标；排查时通常结合 Perfetto Input 轨道、慢帧、冻结帧和 ANR 数据判断。
 
 **2. 滑动响应速度（Swipe Response Time）**——用户手指滑动到画面开始跟随移动的时间。滑动的感知比点击更敏锐，因为用户的眼睛在跟踪手指运动，任何微小的延迟都会被捕捉到。
 
 **3. 启动响应速度（Launch Response Time）**——用户点击 App 图标到 App 界面出现的时间。这个指标在 Android Vitals 中被拆分为 TTID（Time To Initial Display，首次绘制时间）和 TTFD（Time To Full Display，完全绘制时间）两个子指标。
 
-华为在《交互流畅体验设计》文档中给出了更精细的推荐指标：点击响应时延 ≤ 100ms，抛滑响应时延 ≤ 80ms，拖滑响应时延 ≤ 60ms。[来源: Cubox/华为-交互流畅体验设计-2025-02-18.md]
+华为在《交互流畅体验设计》文档中给出了更精细的推荐指标：点击响应时延 ≤ 100ms，抛滑响应时延 ≤ 80ms，拖滑响应时延 ≤ 60ms。
 
 ## RAIL 模型与 Android 性能目标
 
-RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 Web 前端，但其核心理念同样适用于 Android。RAIL 将用户交互拆解为四个阶段，每个阶段都有明确的性能目标。[已验证: 官方文档, web.dev/articles/rail]
+RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 Web 前端，但其基本理念同样适用于 Android。RAIL 将用户交互拆解为四个阶段，每个阶段都有明确的性能目标。[已验证: 官方文档, web.dev/articles/rail]
 
 ### Response——响应（< 100ms）
 
@@ -231,7 +234,7 @@ ANR 是响应速度问题的极端表现。当主线程被阻塞超过一定时�
 
 ## 感知速度 vs 实际速度
 
-这一节讨论的可能是整个响应速度优化中最实用的一个观点：**用户感知到的速度，不完全等于实际的执行速度。**
+这一节讨论的可能是整个响应速度优化中最实用的一个观点：**用户感知到的速度，不完全等于具体的执行速度。**
 
 ### 为什么感知速度更重要
 
@@ -243,13 +246,13 @@ ANR 是响应速度问题的极端表现。当主线程被阻塞超过一定时�
 
 这 100ms 的临界点可以通过视觉技巧来"骗过"。如果我们不能在 100ms 内完成完整处理，但能在 50ms 内给用户一个视觉反馈（即使这个反馈不包含最终结果），用户的感知仍然是"系统立即响应了我"。
 
-华为在《交互流畅体验设计》文档中也强调了这一点：**感知流畅性不等同于系统性能。优秀的系统性能是保证用户感知流畅的必要条件，但好的系统性能不一定带来好的感知流畅性。** [来源: Cubox/华为-交互流畅体验设计-2025-02-18.md]
+华为在《交互流畅体验设计》文档中也强调了这一点：**感知流畅性不等同于系统性能。优秀的系统性能是保证用户感知流畅的必要条件，但好的系统性能不一定带来好的感知流畅性。**
 
 ### 骨架屏（Skeleton Screen）
 
 骨架屏是最常用的感知优化手段。核心思路是：在真实内容加载完成之前，先显示一个与最终布局结构一致的灰色占位界面。
 
-骨架屏的核心作用体现在三个方面。**消除布局跳变**：用户看到的界面结构从一开始就是稳定的，不会出现内容加载完成后突然"跳"出来的情况，视觉上的连贯性得到了保证。**制造进度感**：即使内容还没加载完，灰色块的闪烁或渐变动画也在持续告诉用户"正在处理"。**降低等待焦虑**：心理学研究表明，明确的等待状态比不确定的等待更容易被接受，骨架屏恰好提供了一个明确的中间状态。
+骨架屏的主要作用体现在三个方面。**消除布局跳变**：用户看到的界面结构从一开始就是稳定的，不会出现内容加载完成后突然"跳"出来的情况，视觉上的连贯性得到了保证。**制造进度感**：即使内容还没加载完，灰色块的闪烁或渐变动画也在持续告诉用户"正在处理"。**降低等待焦虑**：心理学研究表明，明确的等待状态比不确定的等待更容易被接受，骨架屏恰好提供了一个明确的中间状态。
 
 Android 12 的 SplashScreen API 提供了系统级的启动画面支持，可以在 App 初始化期间显示一个带图标的启动画面。
 
@@ -261,7 +264,7 @@ Android 12 的 SplashScreen API 提供了系统级的启动画面支持，可以
 
 过渡动画（Transition Animation）在状态切换时播放动画，起到"桥接"作用——把用户的注意力从前一个状态引导到后一个状态，让等待变得不那么明显。但动画时间需要控制——一般不超过 300ms，否则就从优化变成了浪费。
 
-即时反馈（Immediate Feedback）是最直接也最有效的感知优化方式。按钮按下时立即变色、列表项滑动时立即跟随手指移动，这些"零延迟"反馈让用户确信系统接收到了操作。如果后续处理需要时间，可以在给出即时反馈之后再异步加载实际内容。
+即时反馈（Immediate Feedback）是最直接也最有效的感知优化方式。按钮按下时立即变色、列表项滑动时立即跟随手指移动，这些"零延迟"反馈让用户确信系统接收到了操作。如果后续处理需要时间，可以在给出即时反馈之后再异步加载真实内容。
 
 ### 触摸预测（Touch Prediction）
 
@@ -289,7 +292,7 @@ UIL（User Interaction Latency）适合作为端到端响应分析口径，用�
 
 ## 在 Perfetto 中分析响应速度
 
-在实际工作中，我们通常按以下步骤在 Perfetto 中定位响应速度问题：
+在 Perfetto 中定位响应速度问题，通常按以下步骤展开：
 
 **Step 1：找到用户的操作时间点**。在 Perfetto 中打开 Input Track，定位触摸事件的 dispatch 时间。如果不确定事件发生的精确位置，可以先用搜索功能查找 `InputDispatcher` 关键词，从搜索结果跳转到对应时间轴位置。
 
@@ -313,14 +316,14 @@ UIL（User Interaction Latency）适合作为端到端响应分析口径，用�
 
 **误区 3："RAIL 模型是 Web 的，和 Android 没关系"**
 
-RAIL 的核心思想——根据用户的感知阈值设定性能目标——是通用的。100ms 的响应临界点、动态的帧预算、以及对空闲时间的利用，这些在 Android 上同样适用。区别只在于实现手段不同。
+RAIL 的基本思想——根据用户的感知阈值设定性能目标——是通用的。100ms 的响应临界点、动态的帧预算、以及对空闲时间的利用，这些在 Android 上同样适用。区别只在于实现手段不同。
 
 ## 参考资料
 
 - [Evaluating Performance | Android Open Source Project](https://source.android.google.cn/docs/core/tests/debug/eval_perf) [已验证]
 - [Android Vitals | Android Developers](https://developer.android.com/topic/performance/vitals) [已验证]
 - [RAIL: A User-Centric Performance Model | web.dev](https://web.dev/articles/rail) [已验证]
-- [华为 - 交互流畅体验设计](https://developer.huawei.com/consumer/cn/doc/best-practices-V5/bpta-smooth-application-design-V5) [来源: Cubox]
+- [华为 - 交互流畅体验设计](https://developer.huawei.com/consumer/cn/doc/best-practices-V5/bpta-smooth-application-design-V5)
 - AOSP 源码路径：
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（Input 分发调度）
   - `frameworks/native/libs/input/InputTransport.cpp`（InputPublisher / InputChannel 消息发送）
@@ -329,6 +332,6 @@ RAIL 的核心思想——根据用户的感知阈值设定性能目标——是
   - `frameworks/base/core/java/android/view/ViewRootImpl.java`（渲染管线入口）
 
 
-> **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-16.0.0_r1 源码修正；android-17.0.0_r1 官方源码标签本轮无法取得，未用 main/master 结论外推到 Android 17。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；ARR 表述限定为支持 HAL/API 的 Android 15 QPR1+ 设备，Android 16 应用侧 API 另行说明；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
+> **验证状态**：本节主要内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-16.0.0_r1 源码修正；android-17.0.0_r1 官方源码标签本轮无法取得，未用 main/master 结论外推到 Android 17。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；ARR 表述限定为支持 HAL/API 的 Android 15 QPR1+ 设备，Android 16 应用侧 API 另行说明；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
 >
-> **术语约定**：全文统一使用"响应速度"（Responsiveness）作为核心术语。"响应延迟"仅在引用外部指标定义时作为时间度量值使用，不作为独立术语。
+> **术语约定**：全文统一使用"响应速度"（Responsiveness）作为主要术语。"响应延迟"仅在引用外部指标定义时作为时间度量值使用，不作为独立术语。

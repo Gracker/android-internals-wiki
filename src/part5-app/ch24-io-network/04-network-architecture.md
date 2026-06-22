@@ -4,7 +4,7 @@ title: "网络架构与连接管理"
 chapter: "24.4"
 section: "24.4"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-03"
 last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-35 SDK sources"
 confidence: medium

@@ -3,7 +3,7 @@ title: "WorkManager 实战与后台任务调度"
 chapter: "25.4"
 section: "25.4"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "AndroidX WorkManager androidx-main + Android Developers background work docs + AOSP JobScheduler android-16.0.0_r1 + Clippings structure references"
 confidence: high

@@ -4,7 +4,7 @@ chapter: "5.15"
 section: "5.15"
 status: finalized
 drafted_date: "2026-05-19"
-applicable_versions: "Android 4.4 (API 19) - Android 16 (API 36)"
+applicable_versions: "Android 4.4 (API 19) - Android 17 (API 37)"
 last_verified: "2026-06-09"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Source sensors docs"
 confidence: medium-high

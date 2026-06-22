@@ -8,7 +8,7 @@ section: "4.11"
 status: finalized
 finalized_by: openclaw-task2b-verifier
 drafted_date: "2026-05-19"
-applicable_versions: "Android 11 (API 30) - Android 16 (API 36); Android 17 待公开 tag 复核; 16KB Page Size 从 Android 15 起覆盖设备侧兼容"
+applicable_versions: "Android 11 (API 30) - Android 17 (API 37); 16KB Page Size 从 Android 15 起覆盖设备侧兼容"
 last_verified: "2026-05-19"
 last_verified_against: "AOSP android-16.0.0_r1 frameworks/base CachedAppOptimizer/OomAdjuster/ProcessList/ActivityManagerConstants + ART heap.cc; Android Source/Developers docs 2026-05; Android 17 tag 未公开"
 confidence: medium

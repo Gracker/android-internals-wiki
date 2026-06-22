@@ -5,7 +5,7 @@ section: "14.5"
 status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-06-17"
 last_verified_against: "external review + GitHub upstream READMEs + AndroidX/AGP docs + bytedance/btrace 3.0 README/INTRODUCTION"
 confidence: medium

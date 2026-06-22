@@ -4,7 +4,7 @@ chapter: "18.18"
 section: "18.18"
 section_title: "PIP 与自由窗口渲染"
 status: finalized
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "AOSP ViewRootImpl / Choreographer / DisplayEventReceiver / BLASTBufferQueue / TaskOrganizer / WindowContainerTransaction / PipTaskOrganizer；Android Picture-in-Picture / Multi-Window / SurfaceView 官方文档"
 sources:

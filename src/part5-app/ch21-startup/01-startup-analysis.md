@@ -4,7 +4,7 @@ title: "启动完整路径分析（App 视角）"
 chapter: "21.1"
 section: "21.1"
 status: "finalized"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-15.0.0_r1, Android Developers launch-time docs"
 confidence: medium

@@ -4,7 +4,7 @@ title: "发版质量门禁"
 chapter: "26.7"
 section: "26.7"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-04"
 last_verified_against: "Android Developers Macrobenchmark docs 2026-05-19 + Google Play rollout docs 2025-12/2026 Help + Clippings structure references"
 confidence: medium

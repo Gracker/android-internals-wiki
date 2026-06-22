@@ -20,7 +20,7 @@ task2b_state: 'fixed'
 task2b_result: fixed
 status: finalized
 drafted_date: "2026-05-16"
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: '2026-06-04'
 last_verified_against: 'AOSP android-15.0.0_r1/android-16.0.0_r1 + Android API docs'
 confidence: medium

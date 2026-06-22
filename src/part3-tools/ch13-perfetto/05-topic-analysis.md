@@ -5,7 +5,7 @@ section: '13.5'
 status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-13'
 last_verified_against: perfetto.dev stdlib/docs, AOSP android-16.0.0_r1, 高爷博客原创
 confidence: medium

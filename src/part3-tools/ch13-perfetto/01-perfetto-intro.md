@@ -11,7 +11,7 @@ task6_result: pass-light-edit
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-applicable_versions: Android 9 (API 28) - Android 17 (API 37, Beta)
+applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-04-14'
 last_verified_against: perfetto.dev docs, source.android.com/docs/core/debug/perfetto,
   developer.android.com/profileable

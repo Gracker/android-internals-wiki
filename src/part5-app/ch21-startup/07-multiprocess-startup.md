@@ -3,7 +3,7 @@ title: "多进程启动优化"
 chapter: "21.7"
 section: "21.7"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android16-release, Android Developers docs, Clippings structure refs"
 confidence: medium

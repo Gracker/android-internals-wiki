@@ -1,12 +1,13 @@
 ---
 
+
 title: "Android Vitals 过度 WakeLock 指标与治理"
 chapter: "25.19"
 section: "25.19"
 status: finalized
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36); Google Play Android vitals wake lock metric updated 2026-05"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals wake lock metric updated 2026-05"
 last_verified: "2026-05-25"
 last_verified_against: "Android Developers excessive/stuck wake lock docs updated 2026-05, Android Developers Blog 2025-10-02, AOSP android-16.0.0_r3 / android16-qpr2-release"
 confidence: high

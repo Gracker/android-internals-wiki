@@ -17,7 +17,7 @@ task9_result: pass-tech-review
 task9_state: reviewed
 drafted_date: "2026-05-16"
 drafted_by: openclaw-task2a
-applicable_versions: "Android 15-QPR1 (API 35) - Android 16 (API 36)"
+applicable_versions: "Android 15-QPR1 (API 35) - Android 17 (API 37)"
 last_verified: "2026-06-04"
 last_verified_against: "AOSP android-16.0.0_r1：frameworks/native/services/inputflinger、frameworks/base/services/core/java/com/android/server/power、frameworks/native/services/surfaceflinger；spot-check AOSP android-15.0.0_r36 inputflinger/rust/input_filter.rs；Android Developers ARR 文档；AOSP ARR 文档"
 confidence: medium

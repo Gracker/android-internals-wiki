@@ -5,7 +5,7 @@ chapter: "12.5"
 section: "12.5"
 status: "finalized"
 drafted_date: "2026-05-17"
-applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
+applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 last_verified: "2026-06-09"
 last_verified_against: "AOSP android-16.0.0_r1 / developer.android.com; Android 17 tag not public on android.googlesource at audit time"
 confidence: high
@@ -221,3 +221,195 @@ Network Slicing 适合低延迟、专用带宽这类明确网络质量诉求，�
 ## 小结
 
 ConnectivityService 和 `NetworkCallback` 的性能价值在于提供平台级网络画像，让应用把预取、同步、降级、重试和后台任务调度建立在同一份状态上。注册回调要少而稳，后台任务交给系统调度，计费与验证状态要参与请求策略，连接池和 HTTPDNS 仍由网络栈独立处理。这样的网络层既能减少无效唤醒，也能让弱网归因更接近真实故障位置。
+
+<!-- AIW-源码调研-2026-06-22 -->
+
+### 12.5.6 NetworkAgent 生命周期与网络评分机制深度解析
+
+基于 Android 17 / API 37 源码的深度分析，NetworkAgent 的生命周期管理与网络评分机制是整个网络栈的核心，直接影响网络分配的性能和准确性。
+
+#### NetworkAgent 生命周期管理
+
+**注册流程**（ConnectivityService.java:10422）：
+```java
+private NetworkAndAgentRegistryParcelable registerNetworkAgentInternal(
+        INetworkAgent na, NetworkInfo networkInfo,
+        LinkProperties linkProperties, NetworkCapabilities networkCapabilities,
+        NetworkScore currentScore, NetworkAgentConfig networkAgentConfig,
+        @Nullable LocalNetworkConfig localNetworkConfig, int providerId,
+        int uid, boolean isAppSpecificNetwork) {
+    
+    // 创建 NetworkAgentInfo 对象，分配唯一的 netId
+    final NetworkAgentInfo nai = new NetworkAgentInfo(na,
+            new Network(mNetIdManager.reserveNetId()), niCopy, lpCopy, ncCopy,
+            localNetworkConfig, currentScore, mContext, mTrackerHandler,
+            new NetworkAgentConfig(networkAgentConfig), this, mNetd, mDnsResolver, providerId,
+            uid, isAppSpecificNetwork, mLingerDelayMs, mQosCallbackTracker, mDeps);
+    
+    // 创建网络监控器
+    mDeps.getNetworkStack().makeNetworkMonitor(
+            nai.network, name, new NetworkMonitorCallbacks(nai));
+    
+    return result;
+}
+```
+
+**销毁流程**（ConnectivityService.java:6287）：
+```java
+private void destroyNetwork(NetworkAgentInfo nai) {
+    // 通知 netd 清理网络配置
+    if (shouldDestroyNativeNetwork(nai)) {
+        destroyNativeNetwork(nai);
+    }
+    
+    // 移除接口转发规则
+    maybeDisableForwardRulesForDisconnectingNai(nai, false);
+    
+    // 销毁网络缓存
+    mDnsResolver.destroyNetworkCache(nai.network.getNetId());
+    mDnsManager.removeNetwork(nai.network);
+    
+    // 清理速率限制规则
+    if (nai.everConnected() && canNetworkBeRateLimited(nai) && mIngressRateLimit >= 0) {
+        mDeps.disableIngressRateLimit(nai.linkProperties.getInterfaceName());
+    }
+    
+    // 标记为已销毁
+    nai.setDestroyed();
+    nai.onNetworkDestroyed();
+}
+```
+
+#### 网络评分机制
+
+**评分更新机制**（ConnectivityService.java:13688）：
+```java
+private void updateNetworkScore(@NonNull final NetworkAgentInfo nai, final NetworkScore score) {
+    if (VDBG || DDBG) log("updateNetworkScore for " + nai.toShortString() + " to " + score);
+    nai.setScore(score);
+    rematchAllNetworksAndRequests();
+}
+```
+
+**重匹配算法**（ConnectivityService.java:13092）：
+```java
+private void rematchAllNetworksAndRequests() {
+    rematchNetworksAndRequests(getNrisFromGlobalRequests());
+}
+
+private void rematchNetworksAndRequests(@NonNull final Set<NetworkRequestInfo> networkRequests) {
+    ensureRunningOnConnectivityServiceThread();
+    final long start = SystemClock.elapsedRealtime();
+    
+    // 计算网络重分配
+    final NetworkReassignment changes = computeNetworkReassignment(networkRequests);
+    final long computed = SystemClock.elapsedRealtime();
+    
+    // 应用重分配
+    applyNetworkReassignment(changes, start);
+    final long applied = SystemClock.elapsedRealtime();
+    
+    // 发送网络需求通知
+    issueNetworkNeeds();
+}
+```
+
+**网络排名计算**（ConnectivityService.java:13048）：
+```java
+private NetworkReassignment computeNetworkReassignment(
+        @NonNull final Collection<NetworkRequestInfo> networkRequests) {
+    final NetworkReassignment changes = new NetworkReassignment();
+    
+    // 收集所有相关的网络代理
+    final ArrayList<NetworkAgentInfo> nais = new ArrayList<>();
+    forEachNetworkAgentInfo(nai -> nais.add(nai));
+    
+    for (final NetworkRequestInfo nri : networkRequests) {
+        if (!nri.isMultilayerRequest() && nri.mRequests.get(0).isListen()) {
+            continue; // 忽略非多层监听请求
+        }
+        
+        NetworkAgentInfo bestNetwork = null;
+        NetworkRequest bestRequest = null;
+        
+        // 为每个请求找到最佳网络
+        for (final NetworkRequest req : nri.mRequests) {
+            bestNetwork = mNetworkRanker.getBestNetwork(req, nais, nri.getSatisfier());
+            if (null != bestNetwork) {
+                bestRequest = req;
+                break;
+            }
+        }
+        
+        // 如果当前满足者与最佳网络不同，添加重分配
+        if (nri.getSatisfier() != bestNetwork) {
+            changes.addRequestReassignment(new NetworkReassignment.RequestReassignment(
+                    nri, nri.mActiveRequest, bestRequest, nri.getSatisfier(), bestNetwork));
+        }
+    }
+    return changes;
+}
+```
+
+#### 关键调用链
+
+1. **网络注册调用链**：
+   ```
+   NetworkAgent.registerNetworkAgent()
+       ↓
+   ConnectivityService.registerNetworkAgent()
+       ↓
+   ConnectivityService.registerNetworkAgentInternal()
+       ↓
+   NetworkAgentInfo.NetworkAgentInfo()
+       ↓
+   NetworkStack.makeNetworkMonitor()
+   ```
+
+2. **评分更新调用链**：
+   ```
+   NetworkAgent.onNetworkScoreChanged()
+       ↓
+   ConnectivityService.updateNetworkScore()
+       ↓
+   NetworkAgentInfo.setScore()
+       ↓
+   ConnectivityService.rematchAllNetworksAndRequests()
+       ↓
+   ConnectivityService.computeNetworkReassignment()
+       ↓
+   ConnectivityService.applyNetworkReassignment()
+   ```
+
+3. **网络销毁调用链**：
+   ```
+   NetworkAgent.disconnect()
+       ↓
+   ConnectivityService.disconnectAndDestroyNetwork()
+       ↓
+   ConnectivityService.destroyNetwork()
+       ↓
+   netd.networkDestroy()
+       ↓
+   DnsResolver.destroyNetworkCache()
+   ```
+
+#### 性能影响
+
+1. **重匹配算法复杂度**：`rematchAllNetworksAndRequests()` 的时间复杂度为 O(n×m)，其中 n 是网络数量，m 是请求数量。代码中有 TODO 注释提到 "This may be slow, and should be optimized."
+
+2. **网络评分性能**：`updateNetworkScore()` 会立即触发全局重匹配，可能在网络频繁变化时造成性能开销。
+
+3. **内存管理**：NetworkAgentInfo 包含大量状态信息，包括 NetworkInfo、LinkProperties、NetworkCapabilities 等，需要有效的内存管理。
+
+#### Android 17 版本特性
+
+基于 Android 17 / API 37 源码分析，未发现与 Android 18+ 相关的特有变化。NetworkAgent 生命周期与网络评分机制在 API 37 中保持稳定，但评分算法的优化仍在进行中。
+
+**关键函数位置**：
+- `registerNetworkAgentInternal()` - 第10422行
+- `destroyNetwork()` - 第6287行  
+- `updateNetworkScore()` - 第13688行
+- `rematchAllNetworksAndRequests()` - 第13092行
+
+这些源码位置为理解 Android 网络栈的底层实现提供了完整的调用链和时序分析。

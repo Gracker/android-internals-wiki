@@ -7,7 +7,7 @@ drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-19"
 reviewed_by: openclaw-task6
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36); kernel/GKI AutoFDO 覆盖 android15-6.6、android16-6.12"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37); kernel/GKI AutoFDO 覆盖 android15-6.6、android16-6.12"
 last_verified: "2026-06-12"
 last_verified_against: "Google blog 2026-03 + AOSP branch HEAD 2026-06-12 (android16-6.12/android15-6.6) + simpleperf ETM doc + AOSP userspace afdo: true examples"
 confidence: medium

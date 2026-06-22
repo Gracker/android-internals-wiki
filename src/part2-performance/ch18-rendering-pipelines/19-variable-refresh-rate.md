@@ -2,7 +2,7 @@
 title: "可变刷新率渲染管线"
 chapter: "18.19"
 status: finalized
-applicable_versions: "多刷新率背景：Android 11 (API 30) - Android 14；ARR 主体：Android 15-QPR1+；Display 查询 API：Android 16 (API 36)"
+applicable_versions: "多刷新率背景：Android 11 (API 30) - Android 14；ARR 主体：Android 15-QPR1 - Android 17 (API 37)；Display 查询 API：Android 16 (API 36)"
 tags: ["VRR", "ARR", "Variable-Refresh-Rate", "LTPO", "setFrameRate", "FrameTimeline", "渲染管线"]
 related_chapters: ["2.3", "2.18", "2.19"]
 created_by: "rendering-pipelines-merge"

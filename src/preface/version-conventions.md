@@ -13,9 +13,9 @@ Android 性能问题有一个很现实的难点：**很多结论是带版本边�
 
 例如：
 
-- `Android 8 (API 26) - Android 16 (API 36)`
-- `Android 12+`
-- `Android 15+（system-triggered profiling 扩展到 Android 16 / 17）`
+- `Android 8 (API 26) - Android 17 (API 37)`
+- `Android 12 (API 31) - Android 17 (API 37)`
+- `Android 15+（system-triggered profiling 扩展到 Android 16 / 17，源码验证默认看 Android 17 tag）`
 
 ## 为什么要坚持写版本范围
 
@@ -30,7 +30,7 @@ Android 性能问题有一个很现实的难点：**很多结论是带版本边�
 
 ## 默认参考版本
 
-除非章节里明确说明，本书当前内容尽量以较新的稳定 Android 行为为基线来讲，再补充关键版本分界线。  
+除非章节里明确说明，本书当前内容以 Android 17（API 37）稳定版为最高基线来讲，AOSP 源码验证默认锚定 `android-17.0.0_r1`，再补充关键版本分界线。  
 遇到明显受版本影响的地方，会优先写清楚：
 
 - 哪个版本之前是什么

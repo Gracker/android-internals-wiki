@@ -3,7 +3,7 @@ title: "Bitmap 与图片内存优化"
 chapter: "23.2"
 section: "23.2"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android16-release + Android Developers"
 confidence: medium

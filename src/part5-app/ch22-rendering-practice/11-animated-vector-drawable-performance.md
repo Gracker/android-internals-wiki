@@ -5,7 +5,7 @@ chapter: "22.11"
 section: "22.11"
 status: finalized
 drafted_date: "2026-05-16"
-applicable_versions: "Android 7.1 (API 25) - Android 16 (API 36)"
+applicable_versions: "Android 7.1 (API 25) - Android 17 (API 37)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP platform/frameworks/base android-16.0.0_r1, Android Developers AnimatedVectorDrawable reference"
 confidence: medium

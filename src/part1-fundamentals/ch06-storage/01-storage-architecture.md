@@ -3,7 +3,7 @@ title: "Android 存储架构"
 chapter: "6.1"
 section: "6.1"
 status: finalized
-applicable_versions: "Android 9 - Android 16"
+applicable_versions: "Android 9 - Android 17 (API 37)"
 last_verified: "2026-04-14"
 last_verified_against: "Android 16, AOSP dynamic partitions / metadata encryption / system-as-root docs, Android 11 shared storage docs, SQLite compile & WAL docs"
 confidence: medium

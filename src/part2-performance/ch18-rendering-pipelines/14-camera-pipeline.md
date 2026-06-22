@@ -4,7 +4,7 @@ title: "Camera 渲染管线"
 chapter: "18.14"
 section: "18.14"
 status: ready-for-review
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 sources:
   - type: official
     path: "https://developer.android.com/media/camera/camera2"

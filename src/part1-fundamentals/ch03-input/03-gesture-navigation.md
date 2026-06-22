@@ -19,7 +19,7 @@ last_task9_audit: "2026-06-12"
 last_task9_audit_log: "logs/deep-review/2026-06-12-05-audit.md"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium

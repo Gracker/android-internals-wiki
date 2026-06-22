@@ -7,7 +7,7 @@ title: "APK 体积分析与瘦身"
 chapter: "25.6"
 section: "25.6"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-06 + AOSP android-16.0.0_r1"
 confidence: medium

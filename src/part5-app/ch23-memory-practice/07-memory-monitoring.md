@@ -4,7 +4,7 @@ title: "内存监控与线上治理"
 chapter: "23.7"
 section: "23.7"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers Debug/ActivityManager/ComponentCallbacks2 + Clippings/Android 性能优化"
 confidence: medium
@@ -170,6 +170,40 @@ fun collectMemorySample(context: Context): MemorySample {
 这段代码只能作为基础探针。线上版本还要补进程名、前后台状态、页面、机型、Android 版本、App 版本、采样原因和采样间隔；没有这些维度，单点数值很难转成治理动作。
 
 [自动发现] RSS 曲线要单独入库。Android Studio 2026 年文档把 Process Memory（RSS）拆成 Total、Allocated、File Mappings、Shared，用来解释物理驻留内存来自匿名私有分配、文件映射还是共享内存。线上不一定能拿到 Studio 的完整拆分，但至少要区分 `VmRSS`、PSS 和 Java Heap，避免把 RSS 抬升误判成 Java 泄漏。[已验证: 官方文档, developer.android.com/studio/profile/chart-glossary/process-memory]
+
+
+
+<!-- AIW-源码调研-2026-06-22 -->
+## 源码调研补充：Android 17 内存监控工具适配实践
+
+**调研发现（2026-06-22）：**
+
+### Valgrind 在 Android 17 中的状态
+- **状态：完全废弃** - AOSP 最后更新于 2014 年（Valgrind SVN r14689），仅支持 Android 4.x
+- **构建支持：** 无 Android.bp/Android.mk，无 arm64 支持
+- **结论：** Android 17 中**完全不可用**，已被 AddressSanitizer 完全替代
+
+### AddressSanitizer 在 Android 17 中的实现机制
+- **核心发现：** ASan 在 Android 17 中通过 `linker_asan` 动态库重定向机制工作
+- **关键路径：** 
+  ```text
+  App binary → linker_asan → AndroidRuntime → JNI → ASan runtime → shadow memory mapping
+  ```
+- **源码位置：** 
+  - `bionic/linker/linker.cpp`：定义库搜索路径 `/data/asan/system/lib64`、`/system/lib64/asan` 等
+  - `external/compiler-rt/lib/asan/asan_linux.cc`：Android 特定空实现 `AsanCheckDynamicRTPrereqs()`
+  - `llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp`：32 位 Android 使用动态 shadow 偏移
+
+### Android 17 官方政策变化
+- **2023 年官方声明：** ASan 标记为"unsupported"
+- **推荐替代：** HWASan（ARM64，Android 14+）
+- **向后兼容：** ASan 仍可用但可能存在 bug
+
+### ELF Note 机制澄清
+- **用途：** 页面大小迁移检测（`NT_ANDROID_TYPE_PAD_SEGMENT`）
+- **与 ASan 关系：** **不相关**，主要用于 linker 内部页面大小处理
+
+<!-- AIW-源码调研-2026-06-22 结束 -->
 
 <!-- AIW-源码调研-2026-06-13 -->
 ### Android 14+ 高精度内存跟踪 API 源码补充

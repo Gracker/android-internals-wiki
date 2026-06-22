@@ -3,7 +3,7 @@ title: "数据库性能优化（SQLite/Room）"
 chapter: "24.2"
 section: "24.2"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP master snapshot 2026-05-14 + Android Developers docs + AndroidX Room source"
 confidence: medium

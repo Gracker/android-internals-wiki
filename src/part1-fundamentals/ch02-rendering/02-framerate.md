@@ -12,7 +12,7 @@ rework_by: openclaw-task2b
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-applicable_versions: Android 4.1 (API 16) - Android 16 (API 36)
+applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 last_verified: 2026-06-15
 last_verified_against: "AOSP android-16.0.0_r1, AOSP android-15.0.0_r1 SurfaceControl.java, Android Developers API reference through API 37"
 confidence: high

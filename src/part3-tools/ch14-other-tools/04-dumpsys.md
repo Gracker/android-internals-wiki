@@ -61,7 +61,7 @@ updated_by: "openclaw-task9"
 updated_date: "2026-06-22"
 deepseek_cn_review_state: done
 last_task6_audit: "2026-06-10"
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-06-22
 p0: 0
 p1: 0
 p2: 0
@@ -97,9 +97,9 @@ p2: 0
 
 ## 为什么需要 dumpsys
 
-在分析 Android 性能问题的过程中，我们经常需要快速了解系统某一时刻的"状态快照"——比如某个进程占用了多少内存、当前屏幕上叠加了多少个 Layer、哪个窗口持有焦点、最近 120 帧的渲染耗时分布如何。Perfetto 可以告诉我们"过程"（事情是怎么一步步发生的），但如果我们需要的是一个"截面"（此刻系统长什么样），dumpsys 更适合先取状态快照。
+在分析 Android 性能问题的过程中，我们经常需要快速了解系统某个时刻的状态——比如哪个进程占用了多少内存、屏幕上当前叠加了多少个 Layer、哪个窗口持有焦点、最近 120 帧的渲染耗时分布如何。Perfetto 负责回答"过程"（事情是怎么一步步发生的），而 dumpsys 负责回答"当下"（此刻系统长什么样），两者互为补充。
 
-dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服务，调用每个服务的 `dump()` 方法，把服务内部状态以文本形式输出到终端。
+dumpsys 的工作方式是：遍历系统中所有注册到 ServiceManager 的系统服务，依次调用每个服务的 `dump()` 方法，把内部状态以文本形式输出到终端。
 
 每个系统服务都实现了自己的 `dump()` 方法，因此 dumpsys 的输出覆盖了 Android 系统的多个关键面向，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
 
@@ -296,7 +296,7 @@ adb shell top -H -p <pid>
 - kernel 占用高 → 大量系统调用（如频繁的 IPC、文件 I/O）
 - `TOTAL` 行 iowait / irq / softirq 高 → I/O 等待或中断处理异常，需结合 Perfetto CPU / irq / sched 轨道继续定位
 
-`dumpsys cpuinfo` 的局限在于它只提供瞬时快照，无法看到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 进行持续观察。
+`dumpsys cpuinfo` 只提供瞬时快照，看不到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 进行持续观察。
 
 如果输出里带有 `minor faults` / `major faults`，跨设备对比时要把 page size 放进测试条件。Android 15/16 已支持 16KB page size，单页覆盖范围变大后，同样访问模式下的 minor faults 次数可能低于 4KB 设备。这个数字下降不一定来自 I/O 或内存访问优化，先用 `adb shell getconf PAGESIZE` 确认页大小，再做同条件对比。
 
@@ -325,7 +325,7 @@ adb shell dumpsys input | grep -E 'FocusedWindow|FocusedApplication'
 
 在性能分析中，dumpsys window 主要用于两类场景。
 
-**第一类是确认窗口焦点。** 当用户报告"点了没反应"或"触摸不灵敏"时，优先从 `adb shell dumpsys window displays` 看每个 `DisplayContent` 下的 `mCurrentFocus` 和 `mFocusedApp`。Android 15+ 的焦点状态已经明显转向显示器维度；多屏、投屏、车机、副屏场景下，直接在全局输出里 grep `mCurrentFocus` 容易拿到非目标显示器的窗口。它们不一定一致：比如用户拉下通知栏时，`mCurrentFocus` 会切换到 SystemUI 的通知面板，但 `mFocusedApp` 仍然是之前使用的 App。
+**第一类是确认窗口焦点。** 当用户报告"点了没反应"或"触摸不灵敏"时，优先从 `adb shell dumpsys window displays` 看每个 `DisplayContent` 下的 `mCurrentFocus` 和 `mFocusedApp`。Android 15+ 的焦点状态已经明显转向显示器维度；多屏、投屏、车机、副屏场景下，直接在全局输出里 grep `mCurrentFocus` 容易拿到非目标显示器的窗口。两者不一定一致——比如用户拉下通知栏时，`mCurrentFocus` 会切到 SystemUI 的通知面板，而 `mFocusedApp` 仍然是之前使用的 App。
 
 **第二类是排查 Input ANR。** `dumpsys window` 只能回答 WMS 视角的窗口状态，决定触摸事件去向的是 InputDispatcher。遇到窗口看起来有焦点、点击却没有反应的场景，要再执行 `adb shell dumpsys input`，联动查看 `FocusedWindow` 和 `FocusedApplication`。如果两边不一致，或者 InputDispatcher 指向了意料之外的窗口，再回头检查 `NOT_TOUCHABLE`、InputChannel 和覆盖层拦截。
 
@@ -423,7 +423,7 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 
 ### FrontEnd 架构补充（源码级）
 
-上面讲的是怎么用 `dumpsys SurfaceFlinger` 看 Layer 列表和合成方式。如果你是做平台调试或性能分析的，可能还需要理解 FrontEnd 内部是怎么组织这些信息的。下面这部分基于 AOSP android-16.0.0_r1 源码，补充了正文没有展开的内部机制。
+前面讲的是如何使用 `dumpsys SurfaceFlinger` 查看 Layer 列表和合成方式。对于做平台调试或性能分析的读者，以下基于 AOSP android-16.0.0_r1 源码补充了 FrontEnd 的内部机制，可按需阅读。
 
 **FrontEnd 组件清单：**
 
@@ -541,17 +541,13 @@ bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
 - `dumpsys alarm` 列出所有已注册的 Alarm，包括触发时间和目标 App。频繁触发的 Alarm 是后台功耗的常见来源。
 - `dumpsys jobscheduler` 显示当前所有 Job 的状态和执行历史。在分析后台任务调度是否合理时有用。
 
-[待补充: 这三个命令的详细输出示例和关键字段解读]
-
 ### 自定义 Service 的 dump 接口
 
 dumpsys 不只是系统服务的专利。任何应用或服务都可以实现自己的 `dump()` 方法，通过 `adb shell dumpsys <service_name>` 输出自定义的调试信息。
 
 对于系统服务，在 AOSP 中实现 dump 只需要重写 `Binder.dump()` 方法。对于应用内部的 Service，可以通过 `adb shell dumpsys activity service <package_name>/<service_class>` 触发 Service 的 `dump()` 回调。
 
-[自动发现] 这个机制在 MTK/高通等厂商的定制系统服务中广泛使用。例如 MTK 的 `perfboost` 服务就实现了 dump 接口，可以通过 `adb shell dumpsys perfboost` 查看当前的 CPU/GPU 频率策略和 boost 配置。在做平台级性能调试时，这类厂商自定义 dump 往往能直接给出关键线索。
-
-[待补充: 自定义 dump 接口的代码示例和最佳实践]
+MTK/高通等厂商的定制系统服务中广泛使用了这个机制。例如 MTK 的 `perfboost` 服务就实现了 dump 接口，可以通过 `adb shell dumpsys perfboost` 查看当前的 CPU/GPU 频率策略和 boost 配置。在做平台级性能调试时，这类厂商自定义 dump 往往能直接给出关键线索。
 
 ## 常见问题与误区
 

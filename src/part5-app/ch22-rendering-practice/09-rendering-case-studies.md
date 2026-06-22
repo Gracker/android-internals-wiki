@@ -3,7 +3,7 @@ title: "渲染优化排查框架与案例模板"
 chapter: "22.9"
 section: "22.9"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "Android Developers docs (Slow rendering, JankStats, Macrobenchmark, Compose performance) + Clippings structure references"
 confidence: medium

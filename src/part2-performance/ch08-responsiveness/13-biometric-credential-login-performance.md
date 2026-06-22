@@ -3,7 +3,7 @@ title: "BiometricPrompt 与 Credential Manager 登录链路性能"
 chapter: "8.13"
 status: ready-for-review
 drafted_date: "2026-05-26"
-applicable_versions: "Android 9 (API 28) - Android 17 (API 37); Credential Manager single tap Android 15+"
+applicable_versions: "Android 9 (API 28) - Android 17 (API 37); Credential Manager single tap Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-26"
 last_verified_against: "Android Developers identity docs, AOSP android-16.0.0_r1 frameworks/base"
 confidence: medium

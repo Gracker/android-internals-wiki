@@ -3,7 +3,7 @@ title: "Foreground Service 超时与 JobScheduler 配额治理"
 chapter: "25.13"
 status: ready-for-review
 drafted_date: "2026-05-21"
-applicable_versions: "Android 14 (API 34) - Android 16 (API 36)"
+applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-05-21"
 last_verified_against: "Android Developers docs 2026-02/03；AOSP android-16.0.0_r1 源码待复核"
 confidence: medium

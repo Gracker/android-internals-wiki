@@ -3,7 +3,7 @@ title: "帧率监控与线上卡顿治理"
 chapter: "22.8"
 section: "22.8"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1, AndroidX JankStats docs, Android FrameMetrics docs"
 confidence: medium

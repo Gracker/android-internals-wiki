@@ -3,7 +3,7 @@ title: "Android 17 App Memory Limits 与内存泄漏治理"
 chapter: "23.9"
 status: ready-for-review
 drafted_date: "2026-05-19"
-applicable_versions: "Android 17 (API 37)+; Android Studio Panda 1+"
+applicable_versions: "Android 17 (API 37); Android Studio Panda 1+"
 last_verified: "2026-05-19"
 last_verified_against: "Android Developers 2026-05-18; AOSP main ApplicationExitInfo / Profiling module"
 confidence: medium

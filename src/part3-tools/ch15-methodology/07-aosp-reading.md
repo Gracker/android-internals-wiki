@@ -7,7 +7,7 @@ section: "15.7"
 status: "ready-for-review"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-25"
 last_verified_against: "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、frameworks/base/services/core/java/com/android/server/wm、system/core/libutils/include/utils/Trace.h、system/core/libcutils/include/cutils/trace.h、frameworks/native/services/surfaceflinger）"
 confidence: medium

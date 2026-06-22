@@ -5,7 +5,7 @@ section: "13.4"
 status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-27"
 last_verified_against: "AOSP external/perfetto trace_processor_shell.cc + Perfetto docs/python api"
 confidence: medium

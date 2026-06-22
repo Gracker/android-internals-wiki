@@ -3,7 +3,7 @@ title: "Perfetto 的高级用法"
 chapter: "13"
 section: "13.7"
 drafted_date: "2026-04-03"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-22"
 last_verified_against: "perfetto.dev/docs/analysis/metrics, perfetto.dev/docs/analysis/trace-summary, perfetto.dev/docs/instrumentation/tracing-sdk"
 confidence: medium

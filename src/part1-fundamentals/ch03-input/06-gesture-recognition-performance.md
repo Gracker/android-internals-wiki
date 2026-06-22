@@ -10,7 +10,7 @@ task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
 drafted_by: openclaw-task
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 version_notes: "DEFAULT_STRATEGY_BY_AXIS 仅 Android 14+ (API 34+) 可用"
 confidence: medium
 sources:

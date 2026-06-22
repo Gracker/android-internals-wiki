@@ -2,7 +2,7 @@
 title: "Android 17 Perfetto 数据源边界与验证"
 chapter: "13.17"
 section: "13.17"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-06-16"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"

@@ -3,7 +3,7 @@ title: Hardware Buffer Renderer
 chapter: "18"
 section: "18.17"
 status: "finalized"
-applicable_versions: Android 14 (API 34) - Android 16 (API 36)
+applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 tags:
   - HardwareBufferRenderer
   - 离屏渲染

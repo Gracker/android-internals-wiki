@@ -4,7 +4,7 @@ chapter: "1.3"
 section: "1.3"
 drafted_date: "2026-05-13"
 drafted_by: openclaw-task2a
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, source.android.com lmkd docs"
 confidence: high

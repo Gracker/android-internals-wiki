@@ -3,7 +3,7 @@ title: "Android View 混合渲染链路"
 chapter: "18.4"
 section: "18.4"
 status: finalized
-applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
+applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"

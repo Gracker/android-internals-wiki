@@ -5,7 +5,7 @@ status: finalized
 section: '11.3'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
+applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
 last_verified: '2026-04-20'
 last_verified_against: AOSP android-16.0.0_r1, Android Developers Doze / location
   / foreground service docs

@@ -3,7 +3,7 @@ title: "Baseline Profile 实战"
 chapter: "21.4"
 section: "21.4"
 status: finalized
-applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
+applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-06-07"
 last_verified_against: "Android Developers BaselineProfileRule API / Baseline Profiles docs, AOSP android-16.0.0_r1 art/profman + art/dex2oat, AIW 8.7 / 19.15"
 confidence: medium

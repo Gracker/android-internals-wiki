@@ -3,7 +3,7 @@
 title: "Startup Profile 与 DEX Layout 启动优化"
 chapter: "21.12"
 section: "21.12"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"

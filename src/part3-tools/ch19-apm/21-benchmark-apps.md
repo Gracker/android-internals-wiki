@@ -7,7 +7,7 @@ section: '19.21'
 status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: Geekbench 6：官方当前要求 Android 10+ / 4 GB RAM；Vellamo：历史工具，仅用于旧报告；其他 Benchmark
+applicable_versions: Geekbench 6：官方当前要求 Android 10 (API 29) - Android 17 (API 37) / 4 GB RAM；Vellamo：历史工具，仅用于旧报告；其他 Benchmark
   按工具版本逐项核验
 last_verified: '2026-06-07'
 last_verified_against: Geekbench 6 download page / Benchmark Internals, Android Performance

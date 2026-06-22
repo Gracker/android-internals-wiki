@@ -20,7 +20,7 @@ task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-28T06:28:00+08:00"
 pipeline_stage: ready-to-publish
-applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-03'
 last_verified_against: OkHttp 4.12.x / Android 16
 confidence: medium

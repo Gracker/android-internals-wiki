@@ -9,7 +9,7 @@ updated_date: "2026-05-30"
 task6_result: pass-light-edit
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-30"
-applicable_versions: "Android 15+(system-triggered 触发器覆盖 Android 16 / version 36.1 / Android 17)"
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37)(system-triggered 触发器覆盖 Android 16 / version 36.1 / Android 17)"
 sources:
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
@@ -53,7 +53,7 @@ last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 task6_state: "reviewed"
-last_task6_audit: "2026-06-18"
+last_task6_audit: "2026-06-22"
 ---
 
 # 14.7 ProfilingManager

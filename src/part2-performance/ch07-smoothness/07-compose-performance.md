@@ -3,7 +3,7 @@
 title: Jetpack Compose 性能优化
 chapter: '7.7'
 status: ready-for-review
-applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-01'
 last_verified_against: Android 16 Developer Preview
 confidence: medium

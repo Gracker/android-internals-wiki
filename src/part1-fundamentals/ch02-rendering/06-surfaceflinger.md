@@ -4,7 +4,7 @@ chapter: "2.6"
 section: "2.6"
 status: finalized
 pipeline_stage: ready-to-publish
-applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
+applicable_versions: "Android 12 (API S) - Android 17 (API 37)"
 last_verified: "2026-05-10"
 drafted_date: 2026-03-30
 reviewed_date: "2026-05-18"

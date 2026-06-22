@@ -48,6 +48,8 @@ last_task9_autofix_at: "2026-06-13"
 last_task9_review_log: "logs/deep-review/2026-06-13-05-audit.md"
 task9_review_notes: "2026-06-13 Task9 idle audit: auto-fixed AOSP main anchors to android-16.0.0_r1; Android 17 tag unavailable during audit, no P0/P1 queue item."
 task2b_verifier_note: "2026-06-13 Verifier: auto-promoted to finalized (task6 pass-light-edit + task9 auto-fixed + no queue pending + content sufficient)"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # 20.14 线程与 FD 资源监控治理
@@ -59,19 +61,19 @@ task2b_verifier_note: "2026-06-13 Verifier: auto-promoted to finalized (task6 pa
 线程数失控、FD 泄漏、虚拟地址空间不足和 OOM / Native Crash 常常在同一组稳定性问题里出现。本节从「资源数量 → 创建来源 → 关闭/回收 → 崩溃补偿」四层建立治理入口，避免只在崩溃栈上找最后一次触发点。
 
 ### 🔹 线程快照：数量、名称、状态与调用栈
-覆盖 `Thread.getAllStackTraces()`、线程名规范、线程池命名策略、匿名线程识别和采样频率边界。重点说明快照适合回答「当前有哪些线程」，不适合单独回答「是谁创建了线程」。[结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md]
+覆盖 `Thread.getAllStackTraces()`、线程名规范、线程池命名策略、匿名线程识别和采样频率边界。重点说明快照适合回答「当前有哪些线程」，不适合单独回答「是谁创建了线程」。
 
 ### 🔹 匿名线程归因：字节码插桩与运行时兜底
-整理无参 `Thread()` / `Thread(Runnable)` 构造的归因方案：编译期 ASM 改写、统一 ThreadFactory、运行时监控三种路径。需要区分可控业务代码、三方库代码、动态加载代码的覆盖边界。[结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md]
+整理无参 `Thread()` / `Thread(Runnable)` 构造的归因方案：编译期 ASM 改写、统一 ThreadFactory、运行时监控三种路径。需要区分可控业务代码、三方库代码、动态加载代码的覆盖边界。
 
 ### 🔹 FD 快照：`/proc/$pid/fd`、`Os.readlink()` 与类型聚合
-覆盖普通文件、socket、pipe、anon_inode、ashmem/memfd、eventfd/epoll 等 FD 类型的线上采集字段。重点说明采集要保留数量、目标路径、进程、线程、采样时间和 top-N 聚合结果。[结构参考: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md]
+覆盖普通文件、socket、pipe、anon_inode、ashmem/memfd、eventfd/epoll 等 FD 类型的线上采集字段。重点说明采集要保留数量、目标路径、进程、线程、采样时间和 top-N 聚合结果。
 
 ### 🔹 FD 创建归因：open/pipe/socket/dup/close 的 hook 边界
-整理 FD 创建函数监控的最小集合、堆栈采样策略、性能开销和安全边界。hook 方案只作为灰度诊断能力，常态监控优先使用低频快照和阈值触发。[结构参考: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md]
+整理 FD 创建函数监控的最小集合、堆栈采样策略、性能开销和安全边界。hook 方案只作为灰度诊断能力，常态监控优先使用低频快照和阈值触发。
 
 ### 🔹 与 OOM、ANR、Native Crash 的关联判定
-把线程创建失败、FD 超限、Looper/epoll 相关 FD、Binder 线程池耗尽、日志 mmap 文件泄漏放到同一张判定表。结论要回连 20.5 OOM 治理、20.4 ANR 治理和 20.3 Native Crash 分析，不重复展开底层机制。[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
+把线程创建失败、FD 超限、Looper/epoll 相关 FD、Binder 线程池耗尽、日志 mmap 文件泄漏放到同一张判定表。结论要回连 20.5 OOM 治理、20.4 ANR 治理和 20.3 Native Crash 分析，不重复展开底层机制。
 
 ### 🔹 线上治理策略：阈值、分位值、灰度和止血动作
 给出线程数、FD 数、增长斜率、重复路径、创建堆栈聚类的指标设计。止血动作只讨论降级、限流、关闭非关键模块、重启子进程，不把强杀进程写成默认治理手段。
@@ -84,10 +86,10 @@ task2b_verifier_note: "2026-06-13 Verifier: auto-promoted to finalized (task6 pa
 ### 🔸 与 26.2 / 26.5 线上证据包的衔接
 本节产出的线程快照、FD 快照、FD 创建堆栈需要进入 crash/ANR 证据包，作为 ApplicationExitInfo、tombstone、traces.txt 的补充材料。
 
-### 🔸 待验证：Android 16/17 bionic fortify 与 FD_SETSIZE 触发路径
+### 🔸 ⚠️ 待验证：Android 16/17 bionic fortify 与 FD_SETSIZE 触发路径
 需要复核 `__FD_SET_chk`、`FD_SETSIZE`、厂商 libc 差异和目标 SDK 行为边界，避免把老设备现象写成所有 Android 版本的通用结论。
 
-### 🔸 待验证：字节码插桩与现代 AGP/ASM Transform 接入方式
+### 🔸 ⚠️ 待验证：字节码插桩与现代 AGP/ASM Transform 接入方式
 需要补齐 AGP 8.x 插件接入方式、Transform API 退场后的替代路径，以及 R8/混淆对线程归因类名的影响。
 
 <!-- outline-end -->
@@ -102,9 +104,6 @@ task2b_verifier_note: "2026-06-13 Verifier: auto-promoted to finalized (task6 pa
 |------|----------|----------|----------|----------|
 | 线程 | `Thread.getAllStackTraces()`、线程池统计、native 线程采样 | 名称、状态、线程组、栈顶模块 | `ThreadFactory`、字节码插桩、pthread 创建监控 | 线程创建失败、调度拥塞、Binder 线程池耗尽、ANR |
 | FD | `/proc/$pid/fd`、`/proc/$pid/limits`、端侧计数器 | 普通文件、socket、pipe、anon_inode、ashmem / memfd | `open` / `socket` / `pipe` / `dup` / `close` 监控 | `EMFILE`、`FD_SET` FORTIFY abort、日志/网络/数据库异常 |
-
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md]
 
 ## 线程快照：先拿到“当前有哪些线程”
 
@@ -158,8 +157,6 @@ fun collectThreadSnapshot(): List<ThreadSnapshotItem> {
 
 字节码插桩的思路来自参考书：无参构造和带名构造的差异集中在构造函数签名和调用前多压入的字符串参数。工程实现不要只替换 `Thread()`，还要覆盖 `Thread(Runnable)`、`Thread(ThreadGroup, Runnable)` 等常见重载，并跳过已经带业务名的调用。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - ASM 与字节码插桩：改写字节码的“神器”.md]
-
 这段伪代码表达插桩规则，重点是“只补无业务名构造”。
 
 ```kotlin
@@ -180,7 +177,9 @@ fun buildThreadName(className: String, methodName: String): String {
 }
 ```
 
-插桩落到生产前，要处理四个边界：R8 混淆后类名是否还能定位模块、三方库是否允许改写、增量编译缓存是否污染、动态加载代码是否绕过构建期处理。现代 AGP 中旧 Transform API 已退场，新插件应走 Android Gradle Plugin instrumentation / ASM visitor 能力；这部分需要按项目 AGP 版本验证接入方式。[待验证: AGP 8.x instrumentation API 在目标工程中的接入细节]
+插桩落到生产前，要处理四个边界：R8 混淆后类名是否还能定位模块、三方库是否允许改写、增量编译缓存是否污染、动态加载代码是否绕过构建期处理。现代 AGP 中旧 Transform API 已退场，新插件应走 Android Gradle Plugin instrumentation / ASM visitor 能力；这部分需要按项目 AGP 版本验证接入方式。
+
+> ⚠️ 待验证：AGP 8.x instrumentation API 在目标工程中的接入细节
 
 native 线程也要单独处理。Java `Thread.start()` 在 ART 里会进入 `Thread_nativeCreate()`，随后调用 `Thread::CreateNativeThread()`；纯 native 侧的 `pthread_create()` 不一定经过 Java 命名体系。对 native SDK，可通过统一线程创建封装、SDK 接入规范或灰度 hook 记录创建堆栈。[已验证: AOSP android-16.0.0_r1, art/runtime/native/java_lang_Thread.cc, `Thread_nativeCreate()`]
 
@@ -234,8 +233,6 @@ FD 快照至少保留六类字段：采样时间、进程名、FD 总数、类�
 | anon_inode | `anon_inode:[eventpoll]`、`anon_inode:[eventfd]` | Looper、epoll、InputChannel、协程/线程调度辅助对象 |
 | ashmem / memfd | `memfd:...`、`/dev/ashmem/...` | 图像、共享内存、跨进程 buffer |
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md]
-
 ## FD 创建归因：常态快照优先，hook 只做灰度诊断
 
 FD 泄漏要定位创建点，光靠 `/proc/$pid/fd` 不够。可监控的函数包括 `open` / `openat`、`socket` / `accept`、`pipe` / `pipe2`、`dup` / `dup2` / `dup3`、`eventfd`、`epoll_create` / `epoll_create1`、`close`。记录创建堆栈时，`close` 同样要监控，否则本地表只会增长，无法区分“还没关闭”和“已经关闭但表没删”。
@@ -250,8 +247,7 @@ FD 泄漏要定位创建点，光靠 `/proc/$pid/fd` 不够。可监控的函数
 
 PLT / GOT hook 能把这些函数接入端侧诊断，但它不应成为默认常开能力。理由有三点：一是所有线程都可能打开 FD，本地归因表要处理并发；二是采集 backtrace 有成本，高频 socket 或日志写入会放大开销；三是 hook 本身受系统版本、加载顺序、SDK 冲突和 16 KB page size 适配影响。14.13 节已经讲过 hook 基础设施边界，这里只把它作为 FD 诊断手段引用。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md]
-[交叉引用: 详见 14.13 节]
+详见 14.13 节
 
 灰度诊断的推荐策略：常态只做低频 FD 快照；达到阈值后对命中设备打开短时 hook；hook 只记录 top-K 创建堆栈和增长最快的 FD 类型；诊断窗口结束后自动关闭。这样能把成本控制在问题设备上，也能减少与其他 native hook SDK 的冲突。
 
@@ -271,8 +267,7 @@ Android NDK 提供 `AFileDescriptor_create()`、`AFileDescriptor_getFd()`、`AFi
 
 bionic `__check_fd_set()` 会在 fd 小于 0、fd 大于等于 `FD_SETSIZE`、`fd_set` 空间不足时触发 FORTIFY fatal。这里的 `FD_SETSIZE` 是 `select` / `fd_set` 使用边界，不等同于进程可打开 FD 的总上限。把它写成“FD 总数超过 1024 就必崩”会误导排查；准确说法是：某个 fd 值进入 `FD_SET` 时超出 `fd_set` 可表达范围，bionic fortify 触发 abort。[已验证: AOSP android-16.0.0_r1, bionic/libc/private/bionic_fortify.h, `__check_fd_set()`]
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
-[交叉引用: 详见 20.3、20.4、20.5、20.7、26.2、26.5 节]
+详见 20.3、20.4、20.5、20.7、26.2、26.5 节
 
 ## 线上治理策略：阈值、分位值、灰度和止血
 
@@ -294,7 +289,7 @@ bionic `__check_fd_set()` 会在 fd 小于 0、fd 大于等于 `FD_SETSIZE`、`f
 
 20.7 负责异常捕获、SafeMode、降级和热修复接入。本节只提供资源证据：线程快照、FD 快照、创建堆栈、资源曲线和归因结论。异常框架拿到这些证据后，可以决定是否打开降级开关、是否进入 SafeMode、是否暂停灰度。
 
-[交叉引用: 详见 20.7 节]
+详见 20.7 节
 
 ## 扩展：与 26.2 / 26.5 线上证据包的衔接
 
@@ -308,7 +303,7 @@ Crash 上报和线上排查系统需要把资源证据作为附件，而不是�
 
 Crash 当下只写最小文件，上传、符号化、聚合和告警放到 26.2；线上复现、动态日志、远程 trace 和用户反馈放到 26.5。这样资源治理不会把 Crash handler 变成复杂业务逻辑。
 
-[交叉引用: 详见 26.2、26.5 节]
+详见 26.2、26.5 节
 
 ## 扩展：Android 16 / 17 仍需复核的点
 
@@ -317,5 +312,5 @@ Crash 当下只写最小文件，上传、符号化、聚合和告警放到 26.2
 - `FD_SET` 触发路径：当前已验证 AOSP android-16.0.0_r1 的 bionic FORTIFY 检查，但不同厂商 libc、目标 SDK、老设备 `select` 使用方式可能存在差异。线上结论要同时看 tombstone、设备系统版本和触发库。
 - AGP 插桩接入：线程命名插桩的字节码规则已经明确，但 AGP 8.x instrumentation API、R8 混淆、增量编译和三方库处理需要在目标工程里验证。
 
-[待验证: 厂商 libc / 目标 SDK 对 `FD_SET` 触发路径的影响]
-[待验证: AGP 8.x instrumentation API 与 R8 对线程命名插桩的影响]
+> ⚠️ 待验证：厂商 libc / 目标 SDK 对 `FD_SET` 触发路径的影响
+> ⚠️ 待验证：AGP 8.x instrumentation API 与 R8 对线程命名插桩的影响

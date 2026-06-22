@@ -2,7 +2,7 @@ title: "定位与传感器功耗优化"
 chapter: "25.5"
 section: "25.5"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers location / sensors docs + Google Play services LocationRequest docs + AOSP sensor batching docs + Clippings structure references"
 confidence: medium-high

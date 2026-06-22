@@ -3,7 +3,7 @@ title: "Keystore/KeyMint 调用延迟与登录链路性能"
 chapter: "8.12"
 status: ready-for-review
 drafted_date: "2026-05-22"
-applicable_versions: "Android 6 (API 23) - Android 16 (API 36)"
+applicable_versions: "Android 6 (API 23) - Android 17 (API 37)"
 last_verified: "2026-05-22"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Keystore/BiometricPrompt docs, AOSP KeyMint docs"
 confidence: medium

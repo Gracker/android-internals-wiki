@@ -4,7 +4,7 @@ chapter: "1.20"
 section: "1.20"
 status: finalized
 drafted_date: "2026-05-17"
-applicable_versions: "Android 15 (API 35) - Android 16 (API 36)；Android 17 (API 37) 待 tag 复核"
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-06-15"
 last_verified_against: "android-15.0.0_r1, android-16.0.0_r1 (frameworks/base)"
 confidence: medium

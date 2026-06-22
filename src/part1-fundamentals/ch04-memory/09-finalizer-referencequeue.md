@@ -5,7 +5,7 @@ section: "4.9"
 status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36), Android 17/API 37 源码 tag 待复核"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-09"
 last_verified_against: "AOSP android-16.0.0_r1 libcore + Android Developers API reference (Cleaner/CloseGuard/SystemCleaner) + Oracle Java SE 8 ReferenceQueue API"
 confidence: medium

@@ -3,7 +3,7 @@ title: "内存抖动与 GC 治理"
 chapter: "23.5"
 section: "23.5"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + Perfetto docs + Clippings/Android 性能优化"
 confidence: medium

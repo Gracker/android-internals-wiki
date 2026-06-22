@@ -5,7 +5,7 @@ section: "1.15"
 chapter: "1.15"
 status: finalized
 drafted_date: "2026-04-06"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com @CriticalNative"
 confidence: medium

@@ -3,7 +3,7 @@ title: "Splash Screen 与感知启动速度"
 chapter: "21.5"
 section: "21.5"
 status: finalized
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-06-16"
 last_verified_against: "AOSP android-15.0.0_r1; AndroidX core-splashscreen 1.2.0"
 confidence: medium

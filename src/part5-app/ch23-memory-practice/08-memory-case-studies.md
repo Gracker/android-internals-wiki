@@ -3,7 +3,7 @@ title: "内存优化案例集"
 chapter: "23.8"
 section: "23.8"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-27"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers memory/profileable docs + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化"
 confidence: medium

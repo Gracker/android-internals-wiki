@@ -5,7 +5,7 @@ chapter: '7.6'
 section: '7.6'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-05-03'
 last_verified_against: AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI
   / Android 14 cached process freezing / ComponentCallbacks2 / Lottie vs AVD Perfetto

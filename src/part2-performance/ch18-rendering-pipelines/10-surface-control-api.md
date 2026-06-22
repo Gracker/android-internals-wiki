@@ -4,7 +4,7 @@ title: SurfaceControl API 深入
 chapter: '18.10'
 section: '18.10'
 status: "finalized"
-applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - SurfaceControl
 - ASurfaceControl

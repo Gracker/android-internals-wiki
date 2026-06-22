@@ -2,7 +2,7 @@
 title: "Android View 软件渲染路径"
 chapter: "18.3"
 status: finalized
-applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
+applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 section: "18.3"
 last_verified: "2026-05-05"
 last_verified_against: "Android Developers hardware acceleration docs + AOSP View/Surface/HWUI source references already cited in draft"

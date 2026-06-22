@@ -5,7 +5,7 @@ section: '15.1'
 status: finalized
 drafted_date: '2026-04-04'
 drafted_by: openclaw-task2a
-applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
+applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-04-04'
 last_verified_against: AOSP android-16.0.0_r1
 confidence: high

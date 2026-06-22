@@ -7,7 +7,7 @@ drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-12"
 reviewed_by: openclaw-task6
-applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-03'
 last_verified_against: perfetto.dev/docs/data-sources/cpu-scheduling
 confidence: high

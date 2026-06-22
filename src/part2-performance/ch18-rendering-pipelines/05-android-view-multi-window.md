@@ -3,7 +3,7 @@ title: Android View 多窗口渲染路径
 chapter: '18.5'
 section: '18.5'
 status: finalized
-applicable_versions: Android 9 (API 28) - Android 16 (API 36)
+applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-05-07'
 last_verified_against: AOSP Choreographer/ViewRootImpl/RenderThread references + EGL
   1.5 Specification
