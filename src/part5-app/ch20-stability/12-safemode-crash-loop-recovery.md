@@ -3,7 +3,7 @@
 title: "SafeMode 崩溃循环判定与启动补偿链路"
 chapter: "20.12"
 section: "20.12"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-22"
@@ -43,13 +43,13 @@ related_chapters: ["20.2", "20.3", "20.6", "20.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/参考书素材"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 reviewed_date: "2026-06-22"
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-22"
-last_task6_at: "2026-06-22T13:14:00+08:00"
+last_task6_at: "2026-06-22T15:05:00+08:00"
 last_task6_audit: "2026-06-22"
 task6_review_notes: "2026-06-22 Task6 复审(revisiting): 四层质检全部通过，3处小修已处理，2处需高爷确认的技术问题已标注。"
 task6_review_notes: "2026-06-22 task6 复审(revisiting): L1/L2/L3/L4 全部通过，无新问题。章节从 revisiting 晋升 finalized。"
@@ -60,7 +60,7 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-22T13:35:41.580031+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-22-13-deep-review.md"
 auto_promoted_by: task6-auto-promotion
-task6_auto_promoted_at: "2026-06-22T13:14:00+08:00"
+task6_auto_promoted_at: "2026-06-22T15:05:00+08:00"
 task2b_state: "fixed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-04-audit.md"
@@ -71,6 +71,8 @@ last_task2b_main_at: "2026-06-22T12:51:50+08:00"
 last_task2b_lite_at: "2026-06-22"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-06-22"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # 20.12 SafeMode 崩溃循环判定与启动补偿链路
@@ -83,7 +85,7 @@ last_task6_audit: "2026-06-22"
 
 启动崩溃循环不能只靠"最近崩溃次数"判断。合理的状态机要把启动状态、退出原因、版本边界和恢复动作放在一起,否则很容易把用户强杀、系统低内存回收、后台进程退出误判成启动崩溃。
 
-一个可执行的最小状态机如下:
+下面是一个可直接落地的状态机设计:
 
 | 状态 | 写入时机 | 下次启动的解释 |
 | --- | --- | --- |
@@ -108,9 +110,12 @@ last_task6_audit: "2026-06-22"
 
 本地规则只用于保命,不能替代发布平台和 Crash 看板。20.6 节的启动崩溃率、重复崩溃率和灰度门禁仍然是团队层面的判断依据。
 
-实际工作中的两个典型盲区：一是把用户冷启动强杀后的第一次正常启动误判成 SafeMode 触发——这一轮启动本身没有问题,但上一个 marker 停在 `launching`,退出原因是 `REASON_USER_REQUESTED`。解法很简单:拿到退出原因后再对齐 marker 阶段;用户请求退出的不计入崩溃循环,只清理残留 marker。二是"同一版本 3 次冷启动失败"这个默认阈值在新设备上过于激进——高端机 startup 通常 600ms 以内,很多 crash 发生在启动的后半段;如果 marker 写得太晚,崩溃可能发生在 marker 之后,反而被漏掉。实际调到"5 次 + 10 分钟窗口"才比较稳。
+实际工作中有两个典型盲区。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 2.md]
+第一个盲区：把用户强杀冷启动后的下一次正常启动误判成 SafeMode 触发。这一轮启动本身没有问题,但上一个 marker 停在 `launching`,退出原因是 `REASON_USER_REQUESTED`。解法是拿到退出原因后再对齐 marker 阶段——用户请求退出的不计入崩溃循环,只清理残留 marker。
+
+第二个盲区：默认阈值"同一版本 3 次冷启动失败"在新设备上过于激进。高端机 startup 通常 600ms 以内,很多 crash 发生在启动后半段;如果 marker 写得太晚,崩溃可能发生在 marker 之后,反而被漏掉。实际调到"5 次 + 10 分钟窗口"才比较稳。
+
 
 ## 启动 marker 的写入、完成与清理
 
@@ -174,9 +179,9 @@ SafeMode 的误判大多来自证据混用。Java Crash、Native Crash、ANR 和
 | LMK / 低内存 kill | App 内 handler 不会执行 | 支持设备返回 `REASON_LOW_MEMORY`;不支持时可能表现为 `REASON_SIGNALED` + `SIGKILL` | 只作为内存降级依据,通常不直接计入崩溃循环 |
 | 用户强杀 / 任务移除 | 没有 crash 现场 | `REASON_USER_REQUESTED`、`REASON_USER_STOPPED` 或相关 subreason | 排除,不触发 SafeMode |
 
-Java Crash 的系统默认路径在 `RuntimeInit` 中:`LoggingHandler` 记录 fatal exception,`KillApplicationHandler` 设置 `mCrashing` 防止重入,调用 `ActivityManager` 上报后执行 `killProcess()` 和 `System.exit(10)`。应用自定义 handler 要做的不是"救回"进程,而是在系统终止前写下足够小的 envelope。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java][结构参考: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控:实现自定义 Crash 处理器.md]
+Java Crash 的系统默认路径在 `RuntimeInit` 中:`LoggingHandler` 记录 fatal exception,`KillApplicationHandler` 设置 `mCrashing` 防止重入,调用 `ActivityManager` 上报后执行 `killProcess()` 和 `System.exit(10)`。应用自定义 handler 要做的不是"救回"进程,而是在系统终止前写下足够小的 envelope。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
 
-Native Crash 的证据重心在系统侧。参考书把 Native Crash 拆成信号监听和 backtrace 获取两段,这个拆法适合作为 APM 结构参考;生产环境里,信号处理器不应做复杂序列化、锁、分配内存或网络请求。SafeMode 只需要拿到最小摘要,完整 tombstone 和符号化交给 20.3、26.2 的链路处理。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控:为我们应用插上监控 Native Crash 的电子眼.md][结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Backtrace:Native 堆栈信息获取.md]
+Native Crash 的证据重心在系统侧。参考书把 Native Crash 拆成信号监听和 backtrace 获取两段,这个拆法适合作为 APM 结构参考;生产环境里,信号处理器不应做复杂序列化、锁、分配内存或网络请求。SafeMode 只需要拿到最小摘要,完整 tombstone 和符号化交给 20.3、26.2 的链路处理。
 
 ANR 和 LMK 更依赖下次启动补偿。Android Vitals 文档也把 `ApplicationExitInfo` 列为诊断 ANR 的可用工具;它能说明进程为何退出,但不能自动说明哪段业务逻辑导致失败。要把 `processStateSummary`、启动 marker、前台页面、最近阶段事件拼起来,才能形成 SafeMode 判定证据。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
 
@@ -272,7 +277,6 @@ SafeMode 的策略应分两层:
 
 20.10 节已经展开 WebView Renderer OOM 与白屏恢复,本节只把它接入 SafeMode 证据链:Renderer gone 是页面 / 容器证据,只有当它让宿主进程退出,或启动 marker 多次停在同一 H5 路径上,才进入进程级保护。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 39.md]
 
 ## SafeMode 降级动作与恢复条件
 
@@ -341,13 +345,13 @@ SafeMode 落盘的可靠性依赖文件持久化协议。Android 框架内有三
 
 `AppExitInfoTracker`(system_server)维护 16 条/容器的 LRU 退出记录环形缓冲,按 `packageName + uid + pid` 定位,`lmkd > zygote > AM 自杀` 三级信号源优先级,写入 statsd 前做 15 秒去抖。作为 SafeMode 补偿读取的系统侧数据源,它的字段语义和边界在正文已展开。
 
-这两节完整的源码级分析(AtomicFile fsync 链路、DropBox 状态机、tombstoned linkat 协议、RecoverySystem BCB 写入、AppExitInfoTracker 多源聚合)已移至技术附录,详见下方的「附录 A:Crash 文件持久化协议可靠性边界」和「附录 B:AOSP AppExitInfoTracker 状态机参考」。
+AtomicFile fsync 链路、DropBox 状态机、tombstoned linkat 协议、RecoverySystem BCB 写入、AppExitInfoTracker 多源聚合的完整源码级分析见下方「附录 A:Crash 文件持久化协议可靠性边界」和「附录 B:AOSP AppExitInfoTracker 状态机参考」。
 
 
 
 ## 附录 A:Crash 文件持久化协议可靠性边界
 
-> 本节内容原位于正文"源码级深度补充"章节,移至附录保留完整源码分析供深度查阅。
+> 本节内容移至附录,保留完整源码分析供深度查阅。
 
 AOSP 自身没有"统一"的崩溃文件持久化协议,而是分散在三套独立实现里:1 `android.util.AtomicFile`(Java 端约定俗成的原子写)走"写 `.new` → fsync → `renameTo`";2 `DropBoxManagerService` 走"写 `drop<pid>.tmp` → `createEntry()` 内 `EntryFile` 执行 `temp.renameTo(final file)` → `enrollEntry`"但**不**对 tmp 做 fsync;`init()` 启动时清理未提交的残留 `.tmp`;3 `tombstoned`(Native 端)走 `O_TMPFILE` → `unlinkat` 清旧路径 → `linkat` 硬链接提交,**不**走 rename。文件系统层面 `rename(2)` 在同一文件系统内是原子的,但**不能**保证跨 power-cut 的元数据持久性--必须 `fsync(file)` + `fsync(parent dir)`。这三套实现都没有把目录 fsync 显式化,是 AOSP 自身 crash 文件持久化边界的最大盲点。锚定版本:AOSP android-17.0.0_r1;旧版本实现细节需按对应 tag 复核。
 
@@ -521,7 +525,7 @@ Os.close(dirFd);
 
 ## 附录 B:AOSP AppExitInfoTracker 状态机参考
 
-> 本节内容原位于正文"源码级深度补充"章节,移至附录供工程实现参考。
+> 本节内容移至附录,供工程实现参考。
 
 AOSP 自身在 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java` 维护一个进程退出状态机,可作为本节工程设计的参考实现。锚定版本:AOSP android-17.0.0_r1。
 
