@@ -7896,6 +7896,15 @@
     "10.2": {
       "status": "finalized",
       "pipeline_stage": "ready-to-publish"
+    },
+    "14.2": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "last_task6_at": "2026-06-22T18:17:53+08:00",
+      "last_review_log": "logs/review/2026-06-22-18-review.md"
     }
   },
   "task2b_rounds": [
