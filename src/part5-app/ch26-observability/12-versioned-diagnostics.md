@@ -70,7 +70,7 @@ last_task6_review_log: "logs/review/2026-05-17-06-review.md"
 last_task6_at: "2026-05-17T06:16:00+08:00"
 reviewed_date: "2026-05-17"
 reviewed_by: "openclaw-task6"
-task9_state: reviewed
+task9_state: pending
 task6_result: pass-light-edit
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-17T06:04:00+08:00"

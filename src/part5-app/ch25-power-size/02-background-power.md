@@ -3,7 +3,7 @@ title: "后台功耗治理"
 chapter: "25.2"
 section: "25.2"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers power / background work docs + Clippings structure references"
 confidence: medium-high
@@ -50,7 +50,7 @@ tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, f
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "5.8", "11.2"]
 pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-15T07:22:00+08:00"

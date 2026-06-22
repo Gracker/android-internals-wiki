@@ -5,7 +5,7 @@ chapter: "3.7"
 section: "3.7"
 status: finalized
 drafted_date: "2026-05-16"
-applicable_versions: "Android 13 (API 33) - Android 16 (API 36)"
+applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-06-18"
 last_verified_against: "AOSP android-16.0.0_r1（主线）; AOSP android-17.0.0_r1（版本边界抽检, 2026-06-18）"
 confidence: medium
@@ -27,8 +27,8 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revising
+task9_state: pending
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
 last_task6_at: "2026-06-19T01:10:00+08:00"

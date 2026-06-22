@@ -35,10 +35,10 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-task6_state: reviewed
+task6_state: revising
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-06-14-08-review.md"
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "pass-tech-review"
 last_task9_autofix_at: "2026-06-14"
 last_task9_at: "2026-06-14T08:20:00+08:00"

@@ -8,7 +8,7 @@ drafted_by: openclaw-task2a
 task6_result: "pass-light-edit"
 task2b_state: "fixed"
 pipeline_stage: "ready-to-publish"
-applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
+applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
 last_verified: '2026-05-30'
 last_verified_against: AOSP android-16.0.0_r1
 confidence: medium
@@ -43,8 +43,8 @@ review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHi
 last_task9_audit: "2026-06-16"
 last_task9_audit_log: "logs/deep-review/2026-06-16-19-audit.md"
 status: "finalized"
-task6_state: "reviewed"
-task9_state: reviewed
+task6_state: "revising"
+task9_state: pending
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-29"
