@@ -1,6 +1,6 @@
 ---
 title: "网络性能优化"
-chapter: 12.2
+chapter: "12"
 section: '12.2'
 status: finalized
 drafted_date: '2026-04-03'
@@ -44,7 +44,7 @@ related_chapters:
 - '6.1'
 - '8.1'
 last_task9_audit: '2026-06-13'
-last_task6_audit: '2026-05-22'
+last_task6_audit: "2026-06-22"
 last_task2b_at: "2026-05-28T04:50:00+08:00"
 last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
 last_task2b_note: "修复 OkHttp EventListener 文档锚点、Cronet 0-RTT 配置边界、16KB Cronet 冷启动无来源百分比、NetworkCapabilities 带宽估算 Android 16/eBPF 口径。"
@@ -274,7 +274,7 @@ OkHttp 的超时分为三类，每一类对应请求生命周期的不同阶段�
 - **readTimeout**：等待服务端响应数据的超时时间。默认 10 秒。这个值需要根据接口特性调整——列表接口可以短一些（10-15 秒），而文件上传、报表生成等需要更长（30-60 秒）。
 - **writeTimeout**：向服务端写入请求体的超时时间。默认 10 秒。主要影响上传场景。
 
-合理的超时配置不是"一刀切"，而是根据请求类型分档。关键接口（如支付、登录）可以给更长的超时；非关键接口（如上报、埋点）可以设短一些，快速失败不影响核心体验。
+合理的超时配置应该按请求类型分档。关键接口（如支付、登录）可以给更长的超时；非关键接口（如上报、埋点）可以设短一些，快速失败不影响核心体验。
 
 ```java
 // 全局默认超时
