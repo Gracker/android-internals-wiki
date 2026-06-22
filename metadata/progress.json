@@ -5544,7 +5544,9 @@
       "task6_reviewed_by": "openclaw-task6",
       "task6_reviewed_at": "2026-05-28T08:10:00+08:00",
       "task6_review_notes": "2026-05-28 08 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 8/8 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B fixed-lite 后送 Task9 复核。",
-      "verifier_note": "2026-06-22 status finalized→ready-for-review, Task2B fixed 回流 Task6"
+      "verifier_note": "2026-06-22 status finalized→ready-for-review, Task2B fixed 回流 Task6",
+      "task6_date": "2026-06-23",
+      "note": "Task6 re-review pass, task9 pending re-verify"
     },
     "12.5": {
       "title": "ConnectivityService 与网络状态监听性能",
@@ -6059,7 +6061,7 @@
       "confidence": "medium"
     },
     "21.11": {
-      "status": "ready-for-review",
+      "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
@@ -6071,7 +6073,9 @@
       "task9_result": "pending",
       "file": "src/part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md",
       "title": "云端 Profile、DM 文件与安装后编译优化",
-      "verifier_note": "2026-06-22 status finalized→ready-for-review, Task9 auto-fix 回流 Task6"
+      "verifier_note": "2026-06-22 status finalized→ready-for-review, Task9 auto-fix 回流 Task6",
+      "task6_date": "2026-06-23",
+      "note": "auto-promoted: task6 pass + task9 auto-fixed + no queue"
     },
     "3.1": {
       "status": "finalized",
@@ -6301,7 +6305,7 @@
     "7.18": {
       "title": "HWC Overlay Plane 与合成降级排查",
       "file": "src/part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md",
-      "status": "ready-for-review",
+      "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task2a_state": "processed",
       "task2a_result": "ready-for-review",
@@ -6312,7 +6316,10 @@
       "queue_priority": 80,
       "gap_source": "章节深挖/研究素材/AOSP结构/官方文档",
       "material_count": 4,
-      "verifier_note": "2026-06-22 status finalized→ready-for-review, Task9 auto-fix 回流 Task6"
+      "verifier_note": "2026-06-22 status finalized→ready-for-review, Task9 auto-fix 回流 Task6",
+      "task6_state": "reviewed",
+      "task6_date": "2026-06-23",
+      "note": "auto-promoted: task6 pass + task9 auto-fixed + no queue"
     },
     "19.14": {
       "status": "finalized",
@@ -7909,6 +7916,12 @@
       "task9_state": "reviewed",
       "last_task6_at": "2026-06-22T18:17:53+08:00",
       "last_review_log": "logs/review/2026-06-22-18-review.md"
+    },
+    "21.12": {
+      "status": "finalized",
+      "task6_state": "reviewd",
+      "task6_date": "2026-06-23",
+      "note": "auto-promoted: task6 pass + task9 auto-fixed + no queue"
     }
   },
   "task2b_rounds": [
