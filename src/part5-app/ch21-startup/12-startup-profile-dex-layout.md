@@ -8,7 +8,7 @@ drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-05-25"
-last_verified_against: "Android Developers Startup Profiles / Baseline Profiles docs 2026-05; AOSP ART profman + dex2oat; R8 StartupOptions; AIW 1.7/8.7/19.15/21.4"
+last_verified_against: "Android Developers Startup Profiles / Baseline Profiles docs 2026-05; AOSP android-17.0.0_r1 ART profman + dex2oat; AIW 1.7/8.7/19.15/21.4"
 confidence: medium-high
 tags: [startup-profile, baseline-profile, dex-layout, startup-optimization, macrobenchmark]
 related_chapters: ["21.1", "21.4", "8.7", "19.15", "1.7"]
@@ -46,22 +46,23 @@ sources:
     path: "art/profman/profman.cc"
   - type: aosp
     path: "art/dex2oat/dex2oat.cc"
-  - type: source
-    path: "r8/src/main/java/com/android/tools/r8/profile/startup/StartupOptions.java"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task2a_state: processed
 task2a_result: processed-draft
 last_task2a_at: "2026-05-25T23:10:00+08:00"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: auto-fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 last_task6_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
+task2b_state: "fixed"
+last_task9_autofix_at: "2026-06-22"
+last_task9_audit: "2026-06-22"
 ---
 last_task6_audit: "2026-06-22"
 
