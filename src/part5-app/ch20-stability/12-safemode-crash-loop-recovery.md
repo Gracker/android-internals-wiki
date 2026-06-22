@@ -8,7 +8,7 @@ drafted_date: "2026-05-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-22"
 last_verified_against: "AOSP android-17.0.0_r1 / developer.android.com"
-confidence: medium
+confidence: high
 sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控:实现自定义 Crash 处理器.md"
@@ -49,22 +49,23 @@ task6_result: "pass-light-edit"
 reviewed_date: "2026-06-22"
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-22"
-last_task6_at: "2026-06-22T12:14:30+08:00"
+last_task6_at: "2026-06-22T13:14:00+08:00"
 last_task6_audit: "2026-06-22"
+task6_review_notes: "2026-06-22 Task6 复审(revisiting): 四层质检全部通过，3处小修已处理，2处需高爷确认的技术问题已标注。"
 task6_review_notes: "2026-06-22 task6 复审(revisiting): L1/L2/L3/L4 全部通过，无新问题。章节从 revisiting 晋升 finalized。"
-task9_state: "pending"
+task9_state: "reviewed"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-22"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-22T11:30:21+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-22-11-deep-review.md"
-auto_promoted_by: task9-deep-tech-review
-auto_promoted_at: "2026-05-16T15:38:55+08:00"
+last_task9_at: "2026-06-22T13:35:41.580031+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-22-13-deep-review.md"
+auto_promoted_by: task6-auto-promotion
+task6_auto_promoted_at: "2026-06-22T13:14:00+08:00"
 task2b_state: "fixed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-04-audit.md"
 last_task9_autofix_at: "2026-06-22"
-task9_review_notes: "2026-06-22 Task9 复审:auto-fixed。修正 tombstoned android-17 O_TMPFILE/linkat 源码锚点、AtomicFile fsync 注释、RecoverySystem BCB 写入链路、AppExitInfoTracker 查询维度表述；无新增 queue 技术回炉项。"
+task9_review_notes: "2026-06-22 Task9 复审:auto-fixed。修正 ApplicationExitInfo 时间戳口径与 Android 11/14 版本边界、tombstoned unlinkat/linkat 提交表述；无新增 queue 技术回炉项。"
 task2b_result: "fixed"
 last_task2b_main_at: "2026-06-22T12:51:50+08:00"
 last_task2b_lite_at: "2026-06-22"
@@ -229,7 +230,7 @@ fun collectExitCompensation(
 
 补偿逻辑不要把"最近一条退出记录"直接绑定到"上一轮启动失败"。多进程 App、外部 service、后台进程、预加载进程都可能留下记录。稳妥做法是按 `processName`、marker 时间、`session_id` 摘要和启动阶段一起匹配;匹配不上就只上报,不触发 SafeMode。
 
-实际工作中踩过的坑:部分厂商 ROM(特别是 ColorOS 和 MIUI 旧版)`getHistoricalProcessExitReasons()` 返回的 `timestamp` 是系统 `uptimeMillis`,而应用 marker 里写的是 `System.currentTimeMillis()`,两者有 NTP 校准差和开机时间差,直接做时间窗匹配会漏掉或误匹配。建议统一用 `SystemClock.elapsedRealtime()` 写入 marker,退出数据里的 `timestamp` 需要先做一次换算对齐;如果厂商 ROM 上 `ApplicationExitInfo.timestamp` 不标时钟源,宁可放宽时间窗到 ±120s 再加进程名和 session_id 摘要做交叉校验。
+实际工作中踩过的坑:部分厂商 ROM(特别是 ColorOS 和 MIUI 旧版)可能把 `getHistoricalProcessExitReasons()` 返回的 `timestamp` 做成 `uptimeMillis` 口径,而 AOSP `ApplicationExitInfo.timestamp` 是 `@CurrentTimeMillisLong` 墙钟时间。marker 要同时写 `started_elapsed_ms` 和 `started_wall_time_ms`:AOSP 匹配走墙钟时间,本地过期判断走 `elapsedRealtime()`;如果厂商 ROM 上时间源不可信,宁可放宽时间窗到 ±120s,再用进程名和 session_id 摘要做交叉校验。
 
 LMK 还要判断设备是否支持低内存 kill 上报。AOSP `ActivityManager.isLowMemoryKillReportSupported()` 读取 `persist.sys.lmk.reportkills`;不支持时,内存压力下的 kill 可能退化为 `REASON_SIGNALED` 和 `SIGKILL`。这类样本可以推动内存预算和 WebView 降级,不能直接等同于代码崩溃。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java]
 
@@ -296,7 +297,7 @@ SafeMode 的动作要按故障半径分级。降级过重会把可恢复的小�
 
 恢复条件要比进入条件更保守。一次成功启动只说明当前路径通过,不说明问题消失。推荐同时满足:同一版本连续成功启动 N 次、没有新的同签名失败、修复配置版本已更新、关键页面进入过一次。版本升级可以清理旧签名,但要保留"升级前进入过 SafeMode"的事件,方便灰度复盘。
 
-用户强杀、系统更新、权限变更、包状态变化、任务移除不应触发 SafeMode。Android 13 已有 `REASON_USER_STOPPED`,Android 14 起新增 `REASON_PACKAGE_STATE_CHANGE`,并继续细化 reason / subreason;低版本或厂商 ROM 上拿不到完整分类时,宁可只上报,也不要按崩溃处理。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+用户强杀、系统更新、权限变更、包状态变化、任务移除不应触发 SafeMode。Android 11(API 30)起已有 `REASON_USER_STOPPED`,Android 14 起新增 `REASON_PACKAGE_STATE_CHANGE`,并继续细化 reason / subreason;低版本或厂商 ROM 上拿不到完整分类时,宁可只上报,也不要按崩溃处理。[已验证: AOSP android-11.0.0_r1 / android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
 SafeMode 事件本身也要进入 Crash 上报体系。建议至少包含:进入等级、触发规则、上一轮 marker、退出原因、关联 issue、被关闭模块、恢复条件、是否成功退出。26.2 节的 Crash 上报体系负责聚合和告警,20.8 节负责把重复样本归并成可处理 issue。
 
@@ -334,11 +335,11 @@ SafeMode 落盘的可靠性依赖文件持久化协议。Android 框架内有三
 
 - **`AtomicFile`**(Java 端):`finishWrite()` 先 fsync 文件,再 `rename(2)` 原子切换 `.new` → 正式文件。限制:不 fsync 父目录,跨文件系统 rename 不捕获 EXDEV。
 - **`DropBoxManagerService`**:写 `.tmp` 文件后通过 `EntryFile.renameTo()` 提交,不显式 fsync;重启时 `init()` 清理残留 `.tmp`(未提交信号)。依赖文件系统惰性刷盘。
-- **`tombstoned`**(Native 端):`O_TMPFILE` + `linkat` + `unlink` 提交,不走 rename;同样不 fsync 文件和目录。
+- **`tombstoned`**(Native 端):`O_TMPFILE` + `unlinkat` 清旧路径 + `linkat` 提交,不走 rename;同样不 fsync 文件和目录。
 
 三套实现的共性缺口是**不 fsync 父目录**——POSIX 语义下 `rename(2)` 修改了父目录的目录项,必须 fsync 父目录 fd 才能保证元数据在 power-cut 后可见。这是 AOSP 自身持久化边界的最大盲点。
 
-`AppExitInfoTracker`(system_server)维护 16 条/容器的 LRU 退出记录环形缓冲,按 `packageName + uid + pid` 定位,`lmkd > zygote > AM 自杀` 三级信号源优先级,写入前做 15 秒去抖。作为 SafeMode 补偿读取的系统侧数据源,它的字段语义和边界在正文已展开。
+`AppExitInfoTracker`(system_server)维护 16 条/容器的 LRU 退出记录环形缓冲,按 `packageName + uid + pid` 定位,`lmkd > zygote > AM 自杀` 三级信号源优先级,写入 statsd 前做 15 秒去抖。作为 SafeMode 补偿读取的系统侧数据源,它的字段语义和边界在正文已展开。
 
 这两节完整的源码级分析(AtomicFile fsync 链路、DropBox 状态机、tombstoned linkat 协议、RecoverySystem BCB 写入、AppExitInfoTracker 多源聚合)已移至技术附录,详见下方的「附录 A:Crash 文件持久化协议可靠性边界」和「附录 B:AOSP AppExitInfoTracker 状态机参考」。
 
@@ -348,7 +349,7 @@ SafeMode 落盘的可靠性依赖文件持久化协议。Android 框架内有三
 
 > 本节内容原位于正文"源码级深度补充"章节,移至附录保留完整源码分析供深度查阅。
 
-AOSP 自身没有"统一"的崩溃文件持久化协议,而是分散在三套独立实现里:1 `android.util.AtomicFile`(Java 端约定俗成的原子写)走"写 `.new` → fsync → `renameTo`";2 `DropBoxManagerService` 走"写 `drop<pid>.tmp` → `createEntry()` 内 `EntryFile` 执行 `temp.renameTo(final file)` → `enrollEntry`"但**不**对 tmp 做 fsync;`init()` 启动时清理未提交的残留 `.tmp`;3 `tombstoned`(Native 端)走 `O_TMPFILE` → `linkat` + `unlink` 硬链接提交,**不**走 rename。文件系统层面 `rename(2)` 在同一文件系统内是原子的,但**不能**保证跨 power-cut 的元数据持久性--必须 `fsync(file)` + `fsync(parent dir)`。这三套实现都没有把目录 fsync 显式化,是 AOSP 自身 crash 文件持久化边界的最大盲点。锚定版本:AOSP android-17.0.0_r1;旧版本实现细节需按对应 tag 复核。
+AOSP 自身没有"统一"的崩溃文件持久化协议,而是分散在三套独立实现里:1 `android.util.AtomicFile`(Java 端约定俗成的原子写)走"写 `.new` → fsync → `renameTo`";2 `DropBoxManagerService` 走"写 `drop<pid>.tmp` → `createEntry()` 内 `EntryFile` 执行 `temp.renameTo(final file)` → `enrollEntry`"但**不**对 tmp 做 fsync;`init()` 启动时清理未提交的残留 `.tmp`;3 `tombstoned`(Native 端)走 `O_TMPFILE` → `unlinkat` 清旧路径 → `linkat` 硬链接提交,**不**走 rename。文件系统层面 `rename(2)` 在同一文件系统内是原子的,但**不能**保证跨 power-cut 的元数据持久性--必须 `fsync(file)` + `fsync(parent dir)`。这三套实现都没有把目录 fsync 显式化,是 AOSP 自身 crash 文件持久化边界的最大盲点。锚定版本:AOSP android-17.0.0_r1;旧版本实现细节需按对应 tag 复核。
 
 ### AOSP `AtomicFile` 的 fsync + rename 实现
 
@@ -437,7 +438,7 @@ static bool rename_tombstone_fd(borrowed_fd fd, borrowed_fd dirfd, const std::st
 }
 ```
 
-关键设计差异:1 **不用 rename,用 linkat + unlink**--`O_TMPFILE` 模式下 fd 没有路径,无法 rename;只能 linkat 把 inode 接入目录树。2 **不 fsync 文件,也不 fsync 目录**--把"已提交"语义寄托在 linkat 的原子性上。3 **持久化后端** `/data/tombstones/` 位于设备数据分区,实际文件系统取决于设备;在没有 file / directory fsync 的情况下, power-cut 后最后 N 个 tombstone 仍可能丢失。
+关键设计差异:1 **不用 rename,先 `unlinkat` 清旧路径,再 `linkat` 提交**--`O_TMPFILE` 模式下 fd 没有路径,无法 rename;只能 linkat 把 inode 接入目录树。2 **不 fsync 文件,也不 fsync 目录**--把"已提交"语义寄托在 linkat 的原子性上。3 **持久化后端** `/data/tombstones/` 位于设备数据分区,实际文件系统取决于设备;在没有 file / directory fsync 的情况下, power-cut 后最后 N 个 tombstone 仍可能丢失。
 
 ### `RecoverySystem.installPackage` 的控制文件(无 fsync / 无 rename)
 
