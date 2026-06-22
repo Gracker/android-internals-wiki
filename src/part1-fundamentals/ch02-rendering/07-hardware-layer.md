@@ -40,7 +40,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-08T21:35:11+08:00"
 last_task9_audit: "2026-06-18"
 last_task6_at: "2026-05-08T21:24:13+08:00"
-last_task6_audit: "2026-06-21"
+last_task6_audit: "2026-06-23"
 last_task6_review_log: "logs/review/2026-05-08-21-review.md"
 task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理 L1/L2 用词 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-08-21-deep-review.md"
