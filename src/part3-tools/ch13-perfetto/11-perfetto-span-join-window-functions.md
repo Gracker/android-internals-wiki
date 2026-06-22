@@ -44,6 +44,10 @@ task9_reviewed_date: "2026-06-16"
 last_task9_at: "2026-06-16T03:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-16-03-deep-review.md"
 task9_review_notes: "2026-06-16 Task9 复审:pass-tech-review。frame/cpufreq 边界裁剪与 GC pause window 运行最大结束时间合并算法已通过复核；queue 无 pending，Task6 已通过，自动晋升 finalized。"
+last_task9_audit: "2026-06-23"
+last_task9_audit_at: "2026-06-23T05:31:21+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-23-05-audit.md"
+last_task9_audit_result: "pass-idle-audit"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00
