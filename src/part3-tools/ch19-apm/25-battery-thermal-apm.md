@@ -27,7 +27,7 @@ task2b_state: fixed
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-07
-last_task6_audit: 2026-06-07
+last_task6_audit: 2026-06-22
 task6_result: pass-light-edit
 task9_state: reviewed
 sources:
@@ -162,7 +162,7 @@ Android 12 引入 `SCHEDULE_EXACT_ALARM` 权限，Android 13/14 进一步收紧�
 | Android 13 | targetSdk 33+ 可在 `SCHEDULE_EXACT_ALARM` 与 `USE_EXACT_ALARM` 之间选择；`USE_EXACT_ALARM` 安装即授予但仅限闹钟/日历等合规场景，`SCHEDULE_EXACT_ALARM` 走用户授权并可能被撤销 | 增加 app-op 状态、是否命中 `USE_EXACT_ALARM` 豁免、安装/升级来源 |
 | Android 14-17 | 新安装且 targetSdk 33+ 的应用默认拒绝 `SCHEDULE_EXACT_ALARM`；未授权时通过 `PendingIntent` 版本调用 `setExact()` / `setExactAndAllowWhileIdle()` / `setAlarmClock()` 会抛 `SecurityException`，不会静默降级。`OnAlarmListener` 版本的 `setExact()` 不需要该权限。需改用 `set()` / `setWindow()` / `setAndAllowWhileIdle()` 等非精确闹钟 API，或引导用户授权 | 调用精确闹钟 API 前必须检查 `canScheduleExactAlarms()`；未授权时记录回退路径（非精确闹钟 API 或权限请求），并在样本中区分"请求精确"与"实际精确" |
 
-Android 14-17 精确闹钟策略收紧：未持有 `SCHEDULE_EXACT_ALARM` 权限时，通过 `PendingIntent` 版本调用 `setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()` 会直接抛出 `SecurityException`，而非静默降级；使用 `OnAlarmListener` 版本的 `setExact()` 不需要该权限。APM 归因时需要区分两种场景：一是业务确实只用了非精确闹钟 API，触发时间本身就有偏移窗口；二是业务请求了精确闹钟 API 但因权限缺失导致崩溃或被迫回退。端侧应在调用前检查 `canScheduleExactAlarms()` 返回值，并在 APM 样本中分别记录"请求精确"与"实际精确"两种口径。
+Android 14-17 对精确闹钟的权限策略最为严格，上表已列出具体行为和 APM 记录要求。总的来说，端侧归因的核心是在样本中区分"业务请求了精确闹钟"和"系统实际允许了精确触发"两种口径。
 
 ## 4. 硬件资源耗电归因：按占用窗口统计
 
