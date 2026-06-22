@@ -65,7 +65,7 @@ last_task6_at: "2026-06-22T06:08:57+08:00"
 review_type: task6-writing-quality-review
 task6_reviewed_date: "2026-06-03"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
+last_deepseek_cn_review_at: 2026-06-22
 last_task9_audit: "2026-06-22"
 last_task9_autofix_at: "2026-06-22"
 ---
@@ -97,11 +97,9 @@ last_task9_autofix_at: "2026-06-22"
 
 ## 为什么要了解功耗诊断与分析方法
 
-App 侧功耗诊断不用重复 Android 功耗模型的计算细节。模型、硬件电流表和 BatteryStats 归属算法见 §11.1；后台任务、定位、网络、Alarm 的省电策略见 §11.2；Battery Historian 的部署细节见 §14.11。
+做 App 功耗诊断，不需要把 Android 功耗模型重新推导一遍。功耗模型、硬件电流表与 BatteryStats 归属算法见 §11.1；后台任务、定位、网络、Alarm 的省电策略见 §11.2；Battery Historian 的部署细节见 §14.11。那些章节已经把系统“怎么计电”讲清楚了。
 
-App 实战里要解决的是另一件事：用户说耗电之后，怎么把“掉电快”拆成可复现的场景、可对比的数据和可修改的代码入口。功耗诊断的目标是把 CPU、网络、GNSS、WakeLock 这些信号放到同一个时间窗口里判断，而不是追一个万能指标。
-
-Part 5 更关注怎么抓数据、怎么读数据、怎么把异常归到业务动作上，不重新解释系统为什么这样计电。
+本节要解决的是另一件事：用户投诉“掉电快”之后，怎么把问题拆成可复现的场景、可对比的数据、可修改的代码入口。功耗诊断的核心方法是把 CPU、网络、GNSS、WakeLock 这些信号放到同一个时间窗口里交叉比对，而不是追一个万能指标。Part 5 的重心在“怎么抓、怎么读、怎么归因到业务动作”，不再重复解释系统的计电逻辑。
 
 ## Battery Historian 与 Power Profiler 实战
 
@@ -222,17 +220,13 @@ Partial WakeLock 是功耗异常里最容易直接归责的一类。Android Vita
 
 Power Profiler 与 Perfetto 最适合做“时间同步”。当 power rail 出现尖峰时，不要直接下结论；先在同一时间点查线程、网络包、frame、日志 marker。只有功耗轨道和业务事件在时间上重合，才值得进入代码级修复。
 
-## 源码级实现细节（AIW-源码调研-2026-06-16）
+以上是实战诊断的完整流程。下面从 AOSP 源码角度，梳理 Android 15→17 三个版本中功耗归因链路的演进，并说明 Perfetto POWER track 与 BatteryStats 的数据对应关系——这些信息在你需要自己搭建 APM 功耗监控，或者排查工具读数不一致时会有用。
 
-> 关联报告：`DeepResearch/2026-06-16-android15-battery-historian-perf-metrics-integration.md`
-> 锚点版本：AOSP `android-17.0.0_r1` 为主锚点，`android-16.0.0_r1` / `android-15.0.0_r1` 用于版本差异，最高边界 Android 17 / API 37
-> 一手资料：`BatteryStatsService.java`、`PowerStatsService.java`、`PowerStatsScheduler.java`、`BatteryUsageStatsProvider.java`、`WakeLockStats.java`
+## 源码级实现细节
 
-### ⚠️ 重要勘误：daily-topics.json topic #1 的 source_refs 不存在
+以下分析以 AOSP `android-17.0.0_r1` 为主锚点，`android-16.0.0_r1` / `android-15.0.0_r1` 用于版本差异，涉及 `BatteryStatsService.java`、`PowerStatsService.java`、`PowerStatsScheduler.java`、`BatteryUsageStatsProvider.java`、`WakeLockStats.java`。
 
-> `frameworks/base/services/core/java/com/android/server/battery/BatteryHistorian.java` 在 AOSP 任何分支中**均不存在**。`server/battery/` 目录从未存在；Battery Historian 本身是独立 Go 工具（`github.com/google/battery-historian`），不在平台树内。
->
-> Battery Historian 在 AOSP 端的真实数据生产者是 `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`，配合 `PowerStatsService`（HAL 数据采集）+ `PowerStatsScheduler`（周期聚合）+ `BatteryUsageStatsProvider`（统一归因入口）共同完成。
+> **注意**：Battery Historian 是独立 Go 工具（`github.com/google/battery-historian`），不在 AOSP 平台树内。AOSP 中 `frameworks/base/services/core/java/com/android/server/battery/` 目录和 `BatteryHistorian.java` 文件均不存在。Battery Historian 在 AOSP 端的真实数据生产者是 `BatteryStatsService`，配合 `PowerStatsService`（HAL 采集）、`PowerStatsScheduler`（周期聚合）和 `BatteryUsageStatsProvider`（归因入口）共同完成。
 
 ### 功耗归因路径：Android 15 → 16 → 17 版本演进
 
@@ -346,12 +340,12 @@ public final class WakeLockStats implements Parcelable {
 - `WakeLockStats` 新 API → 把 wake lock 从 dumpsys 文本格式升级为 System API
 - Perfetto POWER track wakeup_reason instant → 业务事件与功耗事件的**统一时间锚**
 
-### 反哺要点（建议 Battery Historian 替代方案选型时复用）
+### 选型备忘：从源码视角看 Battery Historian 替代方案
 
-1. **判断 device 走哪条归因路径**：`dumpsys batterystats --usage --proto` 输出中的 `power_model` 字段，值为 `POWER_MODEL_POWER_PROFILE` vs `POWER_MODEL_MEASURED_ENERGY`
-2. **新增 wakeup 监控**应同时检查 `Trace.TRACE_TAG_POWER` track 与 BatteryStats history 两条线 —— 二者在 `BatteryStatsService.WakeupReasonThread` 内已统一落点
-3. **`WakeLockStats.getWakeLockStats()`** 在 Android 15 引入，但 `@hide`，端侧 APM 需通过系统权限或反射调用
-4. **PowerStatsStore** 位于 `/data/system/power-stats/`，span 文件名是 19 位 ID + `.pss`，内容由 `PowerStatsSpan.writeXml(out, Xml.newBinarySerializer())` 写成二进制 XML；不要按 `/data/system/powerstats/log.powerstats.meter.0` 或 Proto 文件处理。
+1. **判断归因路径**：`dumpsys batterystats --usage --proto` 中的 `power_model` 字段取值为 `POWER_MODEL_POWER_PROFILE`（估算）或 `POWER_MODEL_MEASURED_ENERGY`（实测）
+2. **新增 wakeup 监控**应同时检查 Perfetto `TRACE_TAG_POWER` track 和 BatteryStats history 两条线——二者在 `BatteryStatsService.WakeupReasonThread` 内已统一落点
+3. **`WakeLockStats.getWakeLockStats()`** 在 Android 15 引入但标记 `@hide`，端侧 APM 需通过系统权限或反射调用
+4. **PowerStatsStore** 的数据位于 `/data/system/power-stats/`，span 文件名为 19 位 ID + `.pss`，内容为二进制 XML（`PowerStatsSpan.writeXml`）；不要按 `/data/system/powerstats/log.powerstats.meter.0` 或 Proto 文件格式处理
 
 ## 本节小结
 

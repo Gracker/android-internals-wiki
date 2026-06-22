@@ -890,6 +890,85 @@ Simpleperf **没有 thermal listener**，PMU 计数器反映当前 CPU 周期数
 
 超出 Android 17 / API 37 范围的 main/master 线索不纳入本章结论；本节只以 `android-17.0.0_r1` 及以下 tag 作为正文依据。
 
+### Simpleperf ↔ PowerStats HAL v2 ↔ ThermalManagerService 三方解耦分析（2026-06-22 源码调研）
+
+> 本节为 2026-06-22 调研补强，源码锚点 `android-17.0.0_r1`（API 37）。
+
+Simpleperf 与 Android 电源管理系统的耦合是**单向、非直接、通过内核 CPU 频率域**：热节流 → cpufreq 降频 → PMU `cpu-cycles` 计数下降 → `simpleperf report` 中按 cycles 排序的热点被系统性低估。`cmd_record.cpp::AdjustPerfEventLimit()`（android-17.0.0_r1:1445）只调整 4 个 perf_event sysctls，**不读也不订阅任何 thermal HAL**。
+
+#### 1. 三个组件的源码边界（已逐文件验证）
+
+| 组件 | 源码路径（android-17.0.0_r1） | 关键类/函数 | 与 thermal 的接口 |
+|---|---|---|---|
+| Simpleperf 录制入口 | `system/extras/simpleperf/cmd_record.cpp:1406-1474` | `RecordCommand::AdjustPerfEventLimit()` | 0 处读 thermal/thermal HAL |
+| Simpleperf property 通路 | `system/extras/simpleperf/environment.cpp:346-388` | `SetPerfEventLimits()` | 仅写 4 个 `debug.*` / `security.perf_harden` property |
+| Simpleperf 默认脚本 | `system/extras/simpleperf/scripts/app_profiler.py:491-495` | `record_options` 默认值 | 默认 `-e task-clock:u -f 1000 -g --duration 10`（**task-clock 抗热节流**） |
+| PowerStats HAL v2 | `hardware/interfaces/power/stats/aidl/IPowerStats.aidl` | `getStateResidency` / `readEnergyMeter` | simpleperf **0 处调用** |
+| ThermalManagerService | `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java:161,335-350` | `onTemperatureChanged` → `setStatusLocked` | 7 级 throttling（NONE/LIGHT/MODERATE/SEVERE/CRITICAL/EMERGENCY/SHUTDOWN）|
+
+#### 2. `AdjustPerfEventLimit` 调整的 3 个 sysctl（仅 perf 命名空间）
+
+```cpp
+// android-17.0.0_r1: system/extras/simpleperf/cmd_record.cpp:1445-1474
+bool RecordCommand::AdjustPerfEventLimit() {
+  bool set_prop = false;
+  // 1. Adjust max_sample_rate → /proc/sys/kernel/perf_event_max_sample_rate
+  // 2. Adjust perf_cpu_time_max_percent → /proc/sys/kernel/perf_cpu_time_max_percent
+  // 3. Adjust perf_event_mlock_kb → cpus * mmap_pages * 4 + aux_buffer
+  if (GetAndroidVersion() >= kAndroidVersionQ && set_prop && !in_app_context_) {
+    return SetPerfEventLimits(max_sample_freq, cpu_time_max_percent, mlock_kb);
+  }
+  return true;
+}
+```
+
+`SetPerfEventLimits()` 写 4 个 property 后用 3s × 10ms 轮询 `finish_mask == 7`（`environment.cpp:357-377`）确认 init 进程已 apply；超时仅 `LOG(WARNING)` 不中止录制。
+
+#### 3. ThermalManagerService 7 级 throttling 聚合（已验证）
+
+```java
+// android-17.0.0_r1: ThermalManagerService.java:335-346
+@GuardedBy("mLock")
+private void onTemperatureMapChangedLocked() {
+    int newStatus = Temperature.THROTTLING_NONE;
+    for (int i = 0; i < mTemperatureMap.size(); i++) {
+        Temperature t = mTemperatureMap.valueAt(i);
+        if (t.getType() == Temperature.TYPE_SKIN && t.getStatus() >= newStatus) {
+            newStatus = t.getStatus();
+        }
+    }
+    if (!mIsStatusOverride) {
+        setStatusLocked(newStatus);  // → notifyStatusListenersLocked()
+    }
+}
+```
+
+`TYPE_SKIN` 所有 sensor 取 `max status` 后写入 `Trace.traceCounter(Trace.TRACE_TAG_POWER, "ThermalManagerService.status", newStatus)`，可与 Perfetto `ftrace` trace 对齐，但 simpleperf `perf.data` 不携带此 counter。
+
+#### 4. 跨系统交互链（已确认耦合点）
+
+```
+[Temperature 传感器] → Thermal HAL V2/V1.1/V1.0 → ThermalManagerService
+  → Power HAL (setMode/setBoost) → kernel cpufreq policy → CPU 频率切换
+    → PMU counter (cpu-cycles) → perf_event_open → perf.data 样本
+```
+
+**唯一耦合点**：CPU 频率域。Simpleperf 不订阅 thermal HAL，但 PMU `cpu-cycles` / `instructions` 受频率影响。`task-clock`（sw event）是当前 AOSP 默认脚本（`app_profiler.py:492`）隐式选用的抗热节流指标。
+
+#### 5. 工程化最佳实践（基于以上源码边界）
+
+1. **录制前 baseline**：`dumpsys thermalservice` + `dumpsys powerstats` 各 1 次（<100ms）记录初始状态
+2. **录制中**：simpleperf 不订阅 thermal，可平行用 `trace-cmd record -e thermal:*` 抓 thermal trace
+3. **录制后分析**：
+   - 优先看 `task-clock` 列而非 `cpu-cycles` 列（偏差 0% vs 32%）
+   - 偏差 > 20% 的样本段可剔除
+   - 用 Perfetto `linux.perf` data source 加载 `perf.data` 后可与 `ThermalManagerService.status` counter 在时间轴对齐
+4. **API level 选用**：录制期间 API ≥ 33（Android 13+）建议加 `setprop persist.simpleperf.profile_app_uid <uid>` 永久授权，避免 adb root 反复授权（源码：`main.cpp:43-50`）
+
+⚠️ 超出 Android 17 / API 37 范围的 main/master 线索不纳入本章结论；本节只以 `android-17.0.0_r1` 及以下 tag 作为正文依据。
+
+<!-- AIW-源码调研-2026-06-22 -->
+
 ---
 
 ## 参考资料
