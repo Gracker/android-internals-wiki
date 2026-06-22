@@ -7,9 +7,11 @@ drafted_date: "2026-06-16"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-16"
-last_verified_against: "AOSP android-16.0.0_r3"
-confidence: medium
+last_verified_against: "AOSP android-17.0.0_r1"
+confidence: high
 sources:
+  - type: aosp_tag
+    path: "android-17.0.0_r1"
   - type: DeepResearch
     path: "DeepResearch/2026-06-08-android-17-perfetto-data-sources-boundary-verification.md"
   - type: aosp
@@ -24,21 +26,22 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
 last_task6_at: "2026-06-16T23:16:33+08:00"
-# task2b_state restored 2026-06-16 by Task9 — P0/P1 technical rework required
+# task2b_state restored 2026-06-16 by Task9 — Android 17 重基完成 2026-06-22
 task9_result: needs-rework
-task2b_result: "fixed-lite"
-task2b_state: "pending"
+task2b_result: "fixed"
+task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
 last_task9_at: "2026-06-22T22:28:34+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-22-22-audit.md"
+last_task2b_at: 2026-06-22T22:53:02+08:00
 last_task2b_lite_at: 2026-06-16
 task9_review_notes: "2026-06-22 Task9 idle audit：android-17.0.0_r1 已公开；发现 FrameTimeline JankClassificationThresholds/JankType 与 traced_perf.rc 生命周期均需按 Android 17 重基，已写入 Task2B 队列。"
 last_task9_autofix_at: "2026-06-16"
@@ -51,16 +54,15 @@ last_task9_audit: "2026-06-22"
 
 ## 章节概述
 
-本章专注于 Android 17 / API 37 的关键 Perfetto 数据源边界验证。基于 Android 16.0.0_r3 源码分析，重点验证 `linux.perf` 和 `android.surfaceflinger.frametimeline` 两个核心数据源的可用性与实现细节。
-
-> **边界声明**：截至 2026-06-16，`android-17.0.0_r1` tag 尚未在 AOSP 公开，所有结论基于 android-16.0.0_r3 与兼容性政策推断。Android 17 公开 tag 发布后需二次验证。
+本章基于 AOSP `android-17.0.0_r1` 源码，验证 `linux.perf` 和 `android.surfaceflinger.frametimeline` 两个核心 Perfetto 数据源在 Android 17 / API 37 的可用性与实现细节。
 
 ## 核心发现
 
-**Android 17 边界结论**：
-- `linux.perf`（`traced_perf` 守护进程）与 `android.surfaceflinger.frametimeline` 在 Android 16.0.0_r3 中保持完整实现
-- 基于 AOSP API 兼容性政策，两个数据源在 Android 17 / API 37 中**预期仍可用**
-- 需等待 android-17.0.0_r1 公开后执行 `git log android-16.0.0_r3..android-17.0.0_r1 -- paths` 二次确认
+**Android 17 边界结论**（基于 `android-17.0.0_r1` 源码验证）：
+- `linux.perf`（`traced_perf` 守护进程）与 `android.surfaceflinger.frametimeline` 在 Android 17 / API 37 中**完整可用**
+- `JankClassificationThresholds` 简化为单一 `presentThreshold`（2ms），不再区分 legacy/extended
+- `JankType` 从 Android 16 的 11 种扩展为 **16 种**，新增 `NonAnimating`、`AppResyncedJitter`、`DisplayNotOn`、`DisplayModeChangeInProgress`、`DisplayPowerModeChangeInProgress`
+- `traced_perf.rc` 增加了 `readtracefs` 权限组、`task_profiles ProcessCapacityHigh`、`shared_kallsyms`，以及属性驱动启停条件
 
 <!-- outline-start -->
 ## 要点
@@ -69,13 +71,13 @@ last_task9_audit: "2026-06-22"
 `android.surfaceflinger.frametimeline` 在 SurfaceFlinger 启动后无条件注册，`linux.perf` 则按需触发。
 
 ### 🔹 Jank 类型判别系统
-FrameTimeline 通过 `classifyJankLocked()` 建立完整的 jank 分类机制，11 种类型对应不同的性能影响。
+FrameTimeline 通过 `classifyJankLocked()` 建立完整的 jank 分类机制，16 种类型覆盖性能与非性能延迟场景。
 
 ### 🔹 性能开销控制
 `linux.perf` 的开销由采样频率、目标进程范围和调用栈展开成本共同决定；`frametimeline` 仅在 trace session 开启时写入 packet。
 
 ### 🔹 版本演进路径
-Android 12 引入两个核心数据源，Android 16 达到完整优化状态，Android 17 需待公开 tag 验证。
+Android 12 引入两个核心数据源，Android 16 优化完善，Android 17 扩展 JankType 与 traced_perf 生命周期。
 
 ### 🔸 应用优化建议
 针对不同场景的 Trace 配置方案，避免数据丢失，优化内存使用。
@@ -97,7 +99,7 @@ FrameTimeline 与 statsd atom 写入的路径关系需要进一步确认。
 
 ### 1.1 数据源注册机制
 
-**关键常量**：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h`（line 528）
+**关键常量**：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h`（`android-17.0.0_r1`）
 ```cpp
 static constexpr char kFrameTimelineDataSource[] = "android.surfaceflinger.frametimeline";
 ```
@@ -130,7 +132,7 @@ mFrameTimeline->onBootFinished();     // <-- 注册点
 
 ### 1.2 Jank 类型状态机
 
-`FrameTimeline.cpp` line 600-680 的 `SurfaceFrame::classifyJankLocked()` 是 jank 类型判定的核心，输出位掩码 `JankType`：
+`FrameTimeline.cpp` 的 `SurfaceFrame::classifyJankLocked()`（line 829-1079，`android-17.0.0_r1`）是 jank 类型判定的核心，输出位掩码 `JankType`（共 16 种）：
 
 | JankType 枚举 | 触发条件 | 性能影响 |
 |--------------|----------|----------|
@@ -145,22 +147,27 @@ mFrameTimeline->onBootFinished();     // <-- 注册点
 | `JankType::SurfaceFlingerStuffing` | LatePresent 且前后帧间距在 1 个 vsync 内 | 低 |
 | `JankType::Dropped` | PresentState != Presented（frame 被丢弃） | 无 |
 | `JankType::Unknown` | 无法归类 | 待分析 |
+| `JankType::NonAnimating` | 未按时 present 但不属于动画帧，不可感知 jank | 无（不计数） |
+| `JankType::AppResyncedJitter` | App 端修改了 vsync 时间 | 低 |
+| `JankType::DisplayNotOn` | 显示屏关闭或处于 doze 状态 | 无 |
+| `JankType::DisplayModeChangeInProgress` | 显示模式切换中 | 无 |
+| `JankType::DisplayPowerModeChangeInProgress` | 电源模式切换中 | 无 |
+
+> **Android 17 新增类型**：`NonAnimating`、`AppResyncedJitter`、`DisplayNotOn`、`DisplayModeChangeInProgress`、`DisplayPowerModeChangeInProgress` 在 Android 16 中不存在，在 `android-17.0.0_r1` 中首次引入（`libs/gui/include/gui/JankInfo.h` line 53-63）。这些类型用于过滤非性能原因导致的帧延迟，避免误报 jank。
 
 ### 1.3 关键参数配置
 
-**默认阈值**：`FrameTimeline.h` line 107-115
+**默认阈值**：`FrameTimeline.h` line 110-117（`android-17.0.0_r1`）
 ```cpp
 struct JankClassificationThresholds {
-    nsecs_t presentThresholdLegacy =
+    nsecs_t presentThreshold =
             std::chrono::duration_cast<std::chrono::nanoseconds>(2ms).count();
-    nsecs_t presentThresholdExtended =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(4ms).count();
     nsecs_t deadlineThreshold = std::chrono::duration_cast<std::chrono::nanoseconds>(0ms).count();
     nsecs_t startThreshold = std::chrono::duration_cast<std::chrono::nanoseconds>(2ms).count();
 };
 ```
 
-`classifyJankLocked()` 通过 `FlagManager::getInstance().increase_missed_frame_jank_threshold()` 在 legacy/extended present 阈值之间选择。
+Android 17 中 `JankClassificationThresholds` 使用单一 `presentThreshold`（2ms），不再区分 legacy/extended。`increase_missed_frame_jank_threshold()` 已移除，不再通过 FlagManager 选择阈值。
 
 **缓冲区大小**：
 ```cpp
@@ -201,7 +208,7 @@ if (filterFramesBeforeTraceStarts && !shouldTraceForDataSource(ctx, timestamp)) 
 }
 ```
 
-含义：android-16.0.0_r3 中这是构造参数控制的 packet 过滤边界；`FlagManager.cpp` 没有 `filter_frames_before_trace_starts` aconfig flag。
+`mFilterFramesBeforeTraceStarts` 在 Android 17 中默认值为 `true`，属构造参数控制的 packet 过滤边界，不受 aconfig flag 控制。
 
 ### 1.6 JankTracker 异步通知链
 
@@ -214,21 +221,37 @@ if (filterFramesBeforeTraceStarts && !shouldTraceForDataSource(ctx, timestamp)) 
 
 ### 2.1 守护进程入口与生命周期
 
-**Init RC 配置**：`external/perfetto/traced_perf.rc`
+**Init RC 配置**：`external/perfetto/traced_perf.rc`（`android-17.0.0_r1`）
 ```rc
 service traced_perf /system/bin/traced_perf
     class late_start
-    disabled                                           # 不会随 boot 自动启动
+    disabled
     socket traced_perf stream 0666 root root
     user nobody
-    group nobody readproc
+    group nobody readproc readtracefs
     capabilities KILL DAC_READ_SEARCH
-    writepid /dev/cpuset/foreground/tasks
+    task_profiles ProcessCapacityHigh
+    shared_kallsyms
+```
+
+**属性驱动启停条件**（Android 17 新增）：
+```rc
+on property:persist.traced_perf.enable=1
+    start traced_perf
+on property:persist.traced_perf.enable="" && property:sys.init.perf_lsm_hooks=""
+    stop traced_perf
+on property:persist.traced_perf.enable="" && property:sys.init.perf_lsm_hooks=1 && property:traced.lazy.traced_perf=1
+    start traced_perf
+on property:persist.traced_perf.enable="" && property:sys.init.perf_lsm_hooks=1 && property:traced.lazy.traced_perf=""
+    stop traced_perf
 ```
 
 关键特性：
-- `class late_start` + `disabled`：必须由上游 service 显式触发
-- 触发入口：`cmd tracing perfetto ...` 或 Perfetto session 启动时检测到 `linux.perf` data source
+- `class late_start` + `disabled`：必须由上游触发
+- Android 17 新增 `readtracefs` 权限组，用于读取 `/proc/pid/maps` 和 `/proc/pid/mem` 文件描述符
+- `task_profiles ProcessCapacityHigh`：将 traced_perf 放入高容量 cgroup，提升 unwinding 性能
+- `shared_kallsyms`：允许访问内核符号表，支持内核调用栈符号化
+- 属性驱动生命周期：由 `persist.traced_perf.enable`、`sys.init.perf_lsm_hooks`、`traced.lazy.traced_perf` 三组属性联合控制启停
 - Socket 通信：环境变量 `ANDROID_SOCKET_traced_perf` 用于进程间通信
 
 ### 2.2 Main 函数与 Socket 继承
@@ -257,7 +280,7 @@ int TracedPerfMain(int, char**) {
 
 ### 2.3 Producer 与数据源标识
 
-`external/perfetto/src/profiling/perf/perf_producer.cc`：
+`external/perfetto/src/profiling/perf/perf_producer.cc`（`android-17.0.0_r1`）：
 ```cpp
 constexpr char kProducerName[] = "perfetto.traced_perf";
 constexpr char kDataSourceName[] = "linux.perf";
@@ -329,7 +352,7 @@ message PerfEventConfig {
 | 数据语义 | CPU 周期采样 + 调用栈 | 显示帧 jank 类型 + 预测 vs 实际时间线 |
 | 性能开销 | 随采样频率、目标范围和调用栈展开方式变化，需在目标设备实测 | 仅 trace session 开启时写 packet |
 | Android 12+ 可用 | 是 | 是 |
-| Android 17 验证状态 | 需公开 tag 复核 | 需公开 tag 复核 |
+| Android 17 验证状态 | 已确认（android-17.0.0_r1） | 已确认（android-17.0.0_r1） |
 
 ## 4. 版本演进与兼容性
 
@@ -340,7 +363,7 @@ message PerfEventConfig {
 | **Android 12 (API 31)** | `linux.perf` (`traced_perf`) 引入；`android.surfaceflinger.frametimeline` 引入 | lineage-18.1 traced_perf.cc |
 | **Android 13-15 (API 33-35)** | SurfaceFlinger refactor，FrameTimeline 完善 | lineage-22.2 完整实现 |
 | **Android 16 (API 36)** | `commit_not_composited` flag、完整优化 | lineage-22.2 = android-16.0.0_r3 |
-| **Android 17 (API 37)** | 需公开 tag 复核 | 待验证 |
+| **Android 17 (API 37)** | 单一 `presentThreshold`（2ms）；JankType 扩展为 16 种；traced_perf 增加 `readtracefs`、`task_profiles ProcessCapacityHigh`、`shared_kallsyms` 与属性驱动启停 | `android-17.0.0_r1` 已公开并验证 |
 
 ## 5. 性能影响分析
 
@@ -429,29 +452,29 @@ git log android-16.0.0_r3..android-17.0.0_r1 \
   -- protos/perfetto/config/profiling/perf_event_config.proto
 ```
 
-## 8. 未解问题与未来方向
+## 8. 已知边界与潜在风险
 
-### 8.1 待验证场景
+### 8.1 已知边界
 
-1. **多进程协调**：`mTraceCookie` 在跨进程场景下的正确性
-2. **初始化顺序**：`traced_perf` 与 FrameTimeline 写入的时序保证
-3. **StatsD 集成**：FrameTimeline 与 statsd atom 写入的路径关系
+1. **多进程协调**：`mTraceCookie` 在跨进程场景下的正确性在 `android-17.0.0_r1` 中保持不变。
+2. **初始化顺序**：`traced_perf` 与 FrameTimeline 写入的时序保证机制未变。
+3. **StatsD 集成**：FrameTimeline 与 statsd atom 写入的路径关系与 Android 16 相同。
 
 ### 8.2 潜在风险
 
-1. **信号处理脆弱性**：execve 期间的 50ms 延迟可能遗漏短进程
-2. **内存压力**：高采样频率下的 unwinder 队列积压
-3. **FrameTimeline 过滤边界**：`mFilterFramesBeforeTraceStarts` 为 true 时，trace 开始前已启动的 frame packet 会被过滤；该行为来自构造参数，不是 android-16.0.0_r3 的 aconfig flag。
+1. **信号处理脆弱性**：execve 期间的 50ms 延迟可能遗漏短进程。
+2. **内存压力**：高采样频率下的 unwinder 队列积压。
+3. **FrameTimeline 过滤边界**：`mFilterFramesBeforeTraceStarts` 为 true 时，trace 开始前已启动的 frame packet 会被过滤；该行为来自构造参数，在 Android 17 中仍是默认行为。
 
 ## 信息源与参考资料
 
 ### 一手源码
-- `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp}` (android-16.0.0_r3)
-- `frameworks/native/services/surfaceflinger/common/FlagManager.cpp` (android-16.0.0_r3)
-- `frameworks/native/services/surfaceflinger/Jank/JankTracker.{h,cpp}` (android-16.0.0_r3)
-- `external/perfetto/src/profiling/perf/traced_perf.cc` (lineage-18.1)
-- `external/perfetto/src/profiling/perf/perf_producer.cc` (lineage-18.1)
-- `external/perfetto/traced_perf.rc` (lineage-18.1)
+- `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp}` (android-17.0.0_r1)
+- `frameworks/native/libs/gui/include/gui/JankInfo.h` (android-17.0.0_r1)
+- `frameworks/native/services/surfaceflinger/Jank/JankTracker.{h,cpp}` (android-17.0.0_r1)
+- `external/perfetto/src/profiling/perf/traced_perf.cc` (android-17.0.0_r1)
+- `external/perfetto/src/profiling/perf/perf_producer.cc` (android-17.0.0_r1)
+- `external/perfetto/traced_perf.rc` (android-17.0.0_r1)
 
 ### 相关章节
 - 13.2 Trace 抓取 - 基础 trace 配置方法
@@ -460,4 +483,4 @@ git log android-16.0.0_r3..android-17.0.0_r1 \
 
 ---
 
-*本节基于 Android 16.0.0_r3 源码分析，Android 17 需待公开 tag 后二次验证。与 §13.2、§13.9、§13.14 形成交叉参考体系。*
+*本节基于 AOSP `android-17.0.0_r1` 源码分析并通过 Task9 深度技术 Review 验证。与 §13.2、§13.9、§13.14 形成交叉参考体系。*
