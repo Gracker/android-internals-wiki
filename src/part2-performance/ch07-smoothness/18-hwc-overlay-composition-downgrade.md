@@ -3,7 +3,7 @@
 title: "HWC Overlay Plane 与合成降级排查"
 chapter: "7.18"
 section: "7.18"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-23"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-22"
@@ -33,22 +33,24 @@ created_date: "2026-05-23"
 gap_source: "章节深挖/研究素材/AOSP结构/官方文档"
 gap_score: 18
 material_count: 4
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2a_state: "processed"
 task2a_result: "ready-for-review"
 last_task2a_at: "2026-05-23T01:04:00+08:00"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task6_result: pass-light-edit
 task9_result: auto-fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-05"
-last_task6_at: "2026-06-05"
+reviewed_date: "2026-06-23"
+last_task6_at: "2026-06-23T01:10:00+08:00"
 last_task9_at: "2026-06-05T05:28:04+08:00"
 last_task9_audit: "2026-06-22"
 last_task9_autofix_at: "2026-06-22"
 task2b_state: fixed
 deepseek_cn_review_state: done
+finalized_date: "2026-06-23"
+finalized_by: "openclaw-task6-auto-promote"
 last_deepseek_cn_review_at: 2026-06-05
 ---
 
