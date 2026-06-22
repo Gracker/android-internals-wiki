@@ -1,5 +1,39 @@
 {
-  "pending": [],
+  "pending": [
+    {
+      "section": "13.17",
+      "section_title": "Android 17 Perfetto \u6570\u636e\u6e90\u8fb9\u754c\u4e0e\u9a8c\u8bc1",
+      "priority": 95,
+      "reason": "[Deep Tech Review] android-17.0.0_r1 \u5df2\u516c\u5f00\u540e\uff0c\u7ae0\u8282\u4ecd\u57fa\u4e8e android-16.0.0_r3/lineage-18.1 \u63a8\u65ad Android 17\uff1bFrameTimeline jank \u9608\u503c/JankType \u4e0e traced_perf.rc \u751f\u547d\u5468\u671f\u5b58\u5728 Android 17 \u6e90\u7801\u7ea7\u9519\u8bef\u3002",
+      "material_paths": [
+        "logs/deep-review/2026-06-22-22-audit.md",
+        "src/part3-tools/ch13-perfetto/17-android17-data-sources.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P1 \u7248\u672c\u5dee\u5f02",
+          "location": "frontmatter / \u00a7\u7ae0\u8282\u6982\u8ff0 / \u00a7\u6838\u5fc3\u53d1\u73b0 / \u00a73 / \u00a74 / \u00a77 / \u7ed3\u5c3e\uff08\u7ea6 L9-L10\u3001L53-L62\u3001L331-L342\u3001L411-L462\uff09",
+          "detail": "\u6b63\u6587\u4ecd\u58f0\u660e android-17.0.0_r1 \u672a\u516c\u5f00\u3001Android 17 \u7ed3\u8bba\u53ea\u80fd\u7531 android-16.0.0_r3 \u63a8\u65ad\u30022026-06-22 \u672c\u8f6e\u7528 AOSP git ls-remote \u590d\u6838\uff0cframeworks/native \u4e0e external/perfetto \u5747\u5df2\u6709 refs/tags/android-17.0.0_r1\uff1b\u7ae0\u8282\u7684 Android 17 \u8fb9\u754c\u5df2\u4ece\u201c\u5f85\u516c\u5f00 tag \u63a8\u65ad\u201d\u53d8\u6210\u201c\u53ef\u7528 Android 17 tag \u76f4\u63a5\u9a8c\u8bc1\u201d\u3002",
+          "suggestion": "Task2B \u9700\u5c06\u6e90\u7801\u951a\u70b9\u4ece android-16.0.0_r3/lineage-18.1 \u91cd\u57fa\u5230 android-17.0.0_r1\uff0c\u66f4\u65b0 last_verified_against\u3001\u8fb9\u754c\u58f0\u660e\u3001\u6838\u5fc3\u53d1\u73b0\u3001\u7248\u672c\u8868\u3001\u4e8c\u6b21\u9a8c\u8bc1\u8ba1\u5212\u548c\u53c2\u8003\u8d44\u6599\uff1b\u4e0d\u5f15\u5165 Android 18/API 38+ \u5185\u5bb9\u3002"
+        },
+        {
+          "type": "P0 \u6e90\u7801\u9519\u8bef",
+          "location": "\u00a71.2-\u00a71.3 Jank \u7c7b\u578b\u4e0e\u9608\u503c\uff08\u7ea6 L70-L162\uff09",
+          "detail": "Android 17 \u7684 frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h \u4e2d JankClassificationThresholds \u5df2\u662f\u5355\u4e00 presentThreshold=2ms\u3001deadlineThreshold=0ms\u3001startThreshold=2ms\uff1b\u672c\u8f6e\u5728 android-17.0.0_r1 \u672a\u547d\u4e2d FlagManager::increase_missed_frame_jank_threshold()\u3002\u6b63\u6587\u4ecd\u5199 android-16 \u7684 presentThresholdLegacy/presentThresholdExtended \u4e0e FlagManager \u9009\u62e9\u903b\u8f91\uff0c\u5e76\u79f0 JankType \u53ea\u6709 11 \u79cd\u3002android-17.0.0_r1 libs/gui/include/gui/JankInfo.h \u65b0\u589e NonAnimating\u3001AppResyncedJitter\u3001DisplayNotOn\u3001DisplayModeChangeInProgress\u3001DisplayPowerModeChangeInProgress\uff0c\u5e76\u5728 FrameTimeline.cpp \u7ef4\u62a4 legacy/experimental \u4e0e JankSeverity\u3002",
+          "suggestion": "\u6309 android-17.0.0_r1 \u91cd\u5199 \u00a71.2-\u00a71.3\uff1a\u533a\u5206 legacy \u4e0e experimental jank \u5206\u7c7b\uff1b\u8865\u9f50 Android 17 JankType enum \u65b0\u589e\u9879\u4e0e JankSeverity\uff1b\u79fb\u9664 increase_missed_frame_jank_threshold() \u548c legacy/extended present \u9608\u503c\u7ed3\u8bba\uff0c\u6216\u660e\u786e\u4ec5\u5c5e\u4e8e android-16.0.0_r3\u3002"
+        },
+        {
+          "type": "P0 \u6e90\u7801\u9519\u8bef",
+          "location": "\u00a72.1 linux.perf init rc \u4e0e\u751f\u547d\u5468\u671f / \u00a76.2 \u542f\u52a8\u5efa\u8bae\uff08\u7ea6 L216-L231\u3001L369-L374\uff09",
+          "detail": "\u6b63\u6587\u7684 traced_perf.rc \u7247\u6bb5\u6765\u81ea\u65e7\u951a\u70b9\uff1agroup \u53ea\u5199 readproc\uff0c\u4ecd\u6709 writepid /dev/cpuset/foreground/tasks\uff0c\u5e76\u628a\u751f\u547d\u5468\u671f\u7b80\u5316\u4e3a\u201c\u7531\u4e0a\u6e38 service \u663e\u5f0f\u89e6\u53d1\u201d\u3002android-16.0.0_r3 \u4e0e android-17.0.0_r1 external/perfetto/traced_perf.rc \u5b9e\u9645\u4e3a group nobody readproc readtracefs\u3001task_profiles ProcessCapacityHigh\u3001shared_kallsyms\uff0c\u5e76\u901a\u8fc7 persist.traced_perf.enable\u3001sys.init.perf_lsm_hooks\u3001traced.lazy.traced_perf \u5c5e\u6027\u63a7\u5236\u542f\u505c\u3002",
+          "suggestion": "\u7528 android-17.0.0_r1 traced_perf.rc \u66f4\u65b0 \u00a72.1\uff1b\u628a \u00a76.2 \u7684\u201cctl.start traced_perf \u786e\u4fdd\u542f\u52a8\u201d\u6539\u4e3a\u7b26\u5408 lazy traced_perf/Perfetto session \u89e6\u53d1\u4e0e perf_event_open LSM hooks \u7684\u63cf\u8ff0\u3002"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-22T22:28:34+08:00",
+      "status": "pending"
+    }
+  ],
   "in_progress": [],
   "completed": [
     {
