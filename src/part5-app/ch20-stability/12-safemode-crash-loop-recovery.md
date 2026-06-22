@@ -46,25 +46,25 @@ gap_source: "章节深挖/参考书素材"
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
 task6_result: "pass-light-edit"
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-06-22"
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-22"
-last_task6_at: "2026-06-22T10:13:00+08:00"
+last_task6_at: "2026-06-22T11:11:00+08:00"
 last_task6_audit: "2026-06-22"
-task6_review_notes: "2026-06-22 task6 review: 完成 L1/L2 轻修 10 处；发现 L3/L4 问题需 Task2B 处理。"
-task9_state: "pending"
-task9_result: "needs-rework"
+task6_review_notes: "2026-06-22 task6 review: 无 L1/L2 问题需修复;发现 L3/L4 问题需 Task2B 处理。内容深度和工程实践经验需补充。"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-22"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-22T10:30:04+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-22-10-deep-review.md"
+last_task9_at: "2026-06-22T11:30:21+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-22-11-deep-review.md"
 auto_promoted_by: task9-deep-tech-review
 auto_promoted_at: "2026-05-16T15:38:55+08:00"
 task2b_state: "fixed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-04-audit.md"
-last_task9_autofix_at: "2026-06-09"
-task9_review_notes: "2026-06-22 Task9 deep review: P0 3 / P1 1。DropBoxManagerService rename 状态机、AtomicFile.failWrite 行为、crash_envelope fsync 示例 API 签名存在源码级错误；Android 17 tag 已公开，需回炉重锚。"
+last_task9_autofix_at: "2026-06-22"
+task9_review_notes: "2026-06-22 Task9 复审:auto-fixed。修正 tombstoned android-17 O_TMPFILE/linkat 源码锚点、AtomicFile fsync 注释、RecoverySystem BCB 写入链路、AppExitInfoTracker 查询维度表述；无新增 queue 技术回炉项。"
 task2b_result: "fixed"
 last_task2b_main_at: "2026-06-22T10:50:00+08:00"
 last_task2b_lite_at: "2026-06-22"
@@ -123,7 +123,7 @@ marker 字段只保留判定所需的信息:
 | `stage` | `launching`、`started`、`degraded` 等状态 | 状态变化必须原子落盘 |
 | `safe_mode_level` | 本次是否降级启动 | 用于恢复后复盘 |
 
-这段示例代码表达 marker 的原子写入方式，重点看 `startWrite()`、`finishWrite()` 和失败回滚三步。
+这段示例代码表达 marker 的原子写入方式,重点看 `startWrite()`、`finishWrite()` 和失败回滚三步。
 
 ```kotlin
 // 示意代码:启动 marker 持久化。生产环境还要补进程锁、序列化异常处理和日志脱敏。
@@ -148,14 +148,14 @@ class LaunchMarkerStore(private val file: File) {
 
 AOSP `AtomicFile` 的 `finishWrite()` 会对输出流做 sync,关闭后把 `.new` 文件 rename 到目标文件;`failWrite()` 会 sync、关闭并删除 `.new` 文件。应用侧如果不用 `AtomicFile`,也要遵守同一套协议:写临时文件、`fsync` 文件内容、关闭、rename 到正式文件,必要时再处理父目录持久化。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/util/AtomicFile.java]
 
-启动成功点不要放得太早。`Application.onCreate()` 结束只说明初始化函数返回了，不代表用户能进入页面。常见做法是设两个标记：
+启动成功点不要放得太早。`Application.onCreate()` 结束只说明初始化函数返回了,不代表用户能进入页面。常见做法是设两个标记:
 
 - `process_started`:`Application.onCreate()` 完成后写入,说明基础初始化通过。
 - `interactive_started`:首个关键 Activity `onResume()` 后,或首页首帧 / 首屏数据达到可交互条件后写入,说明启动体验通过。
 
 SafeMode 判定应以 `interactive_started` 为主。只写 `process_started` 会漏掉首页容器、WebView 首屏、数据库迁移后的页面恢复等启动后半段问题。
 
-清理规则也要明确：同一版本连续成功 N 次后清理失败计数；版本升级、安装来源变化、ABI 变化后清理旧签名；用户清除数据后自然重置；远程配置命中新开关时只清理对应模块，不要把所有历史证据抹掉。
+清理规则也要明确:同一版本连续成功 N 次后清理失败计数;版本升级、安装来源变化、ABI 变化后清理旧签名;用户清除数据后自然重置;远程配置命中新开关时只清理对应模块,不要把所有历史证据抹掉。
 
 ## Java / Native / ANR / LMK 的证据差异
 
@@ -173,7 +173,7 @@ Java Crash 的系统默认路径在 `RuntimeInit` 中:`LoggingHandler` 记录 fa
 
 Native Crash 的证据重心在系统侧。参考书把 Native Crash 拆成信号监听和 backtrace 获取两段,这个拆法适合作为 APM 结构参考;生产环境里,信号处理器不应做复杂序列化、锁、分配内存或网络请求。SafeMode 只需要拿到最小摘要,完整 tombstone 和符号化交给 20.3、26.2 的链路处理。[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控:为我们应用插上监控 Native Crash 的电子眼.md][结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Backtrace:Native 堆栈信息获取.md]
 
-ANR 和 LMK 更依赖下次启动补偿。Android Vitals 文档也把 `ApplicationExitInfo` 列为诊断 ANR 的可用工具；它能说明进程为何退出，但不能自动说明哪段业务逻辑导致失败。要把 `processStateSummary`、启动 marker、前台页面、最近阶段事件拼起来，才能形成 SafeMode 判定证据。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+ANR 和 LMK 更依赖下次启动补偿。Android Vitals 文档也把 `ApplicationExitInfo` 列为诊断 ANR 的可用工具;它能说明进程为何退出,但不能自动说明哪段业务逻辑导致失败。要把 `processStateSummary`、启动 marker、前台页面、最近阶段事件拼起来,才能形成 SafeMode 判定证据。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
 
 ## ApplicationExitInfo 的补偿入口
 
@@ -316,7 +316,7 @@ SafeMode 需要一组排除规则,否则会把正常生命周期当成故障:
 
 ## 源码级深度补充(Crash 文件持久化协议可靠性边界)
 
-AOSP 自身没有"统一"的崩溃文件持久化协议,而是分散在三套独立实现里:1 `android.util.AtomicFile`(Java 端约定俗成的原子写)走"写 `.new` → fsync → `renameTo`";2 `DropBoxManagerService` 走"写 `drop<pid>.tmp` → `createEntry()` 内 `EntryFile` 执行 `temp.renameTo(final file)` → `enrollEntry`"但**不**对 tmp 做 fsync;`init()` 启动时清理未提交的残留 `.tmp`;3 `tombstoned`(Native 端)走 `O_TMPFILE`/`openat(.temporary<N>)` → `linkat` + `unlink` 硬链接提交,**不**走 rename。文件系统层面 `rename(2)` 在同一文件系统内是原子的,但**不能**保证跨 power-cut 的元数据持久性--必须 `fsync(file)` + `fsync(parent dir)`。这三套实现都没有把目录 fsync 显式化,是 AOSP 自身 crash 文件持久化边界的最大盲点。锚定版本:AOSP android-17.0.0_r1;API 26 及以上行为一致。
+AOSP 自身没有"统一"的崩溃文件持久化协议,而是分散在三套独立实现里:1 `android.util.AtomicFile`(Java 端约定俗成的原子写)走"写 `.new` → fsync → `renameTo`";2 `DropBoxManagerService` 走"写 `drop<pid>.tmp` → `createEntry()` 内 `EntryFile` 执行 `temp.renameTo(final file)` → `enrollEntry`"但**不**对 tmp 做 fsync;`init()` 启动时清理未提交的残留 `.tmp`;3 `tombstoned`(Native 端)走 `O_TMPFILE` → `linkat` + `unlink` 硬链接提交,**不**走 rename。文件系统层面 `rename(2)` 在同一文件系统内是原子的,但**不能**保证跨 power-cut 的元数据持久性--必须 `fsync(file)` + `fsync(parent dir)`。这三套实现都没有把目录 fsync 显式化,是 AOSP 自身 crash 文件持久化边界的最大盲点。锚定版本:AOSP android-17.0.0_r1;旧版本实现细节需按对应 tag 复核。
 
 ### AOSP `AtomicFile` 的 fsync + rename 实现
 
@@ -325,7 +325,7 @@ AOSP 自身没有"统一"的崩溃文件持久化协议,而是分散在三套独
 ```java
 public void finishWrite(FileOutputStream str) {
     if (str == null) return;
-    if (!FileUtils.sync(str)) {              // 1 fdatasync(fd) - 数据+必要元数据
+    if (!FileUtils.sync(str)) {              // 1 fsync(fd) - 数据+必要元数据
         Log.e(LOG_TAG, "Failed to sync file output stream");
     }
     try { str.close(); } catch (IOException e) { ... }
@@ -348,7 +348,7 @@ public void finishWrite(FileOutputStream str) {
 temp = new File(mDropBoxDir, "drop" + Thread.currentThread().getId() + ".tmp");
 try (FileOutputStream out = new FileOutputStream(temp)) {
     entry.writeTo(out.getFD());             // 1 写 .tmp,无 fsync
-}                                            // 2 close 走 BufferedOutputStream 刷盘
+}                                            // 2 close 关闭 FileOutputStream,但不等于 fsync
 long time = createEntry(temp, tag, flags);  // 3 EntryFile(File temp, ...) 执行 temp.renameTo(final file) → enrollEntry
 temp = null;
 ...
@@ -370,7 +370,7 @@ for (File file : files) {
 }
 ```
 
-DropBox 的实际状态机是:`.tmp` 写入完成后通过 `EntryFile.renameTo()` 提交到最终文件名,再 `enrollEntry` 注册到内存索引;启动期扫到的残留 `.tmp` 表示提交前中断,`init()` 删除(视作 partial/脏数据)。同时支持 IS_EMPTY tombstone(`enrollEntry(new EntryFile(mDropBoxDir, tag, t))` line 1171)--空文件 tombstone 标记"数据被丢过"。关键限制:
+DropBox 的实际状态机是:`.tmp` 写入完成后通过 `EntryFile.renameTo()` 提交到最终文件名,再 `enrollEntry` 注册到内存索引;启动期扫到的残留 `.tmp` 表示提交前中断,`init()` 删除(视作 partial/脏数据)。同时支持 IS_EMPTY tombstone(`enrollEntry(new EntryFile(mDropBoxDir, tag, t))` line 1236-1239)--空文件 tombstone 标记"数据被丢过"。关键限制:
 
 1. **写 .tmp 时不 fsync**,写完后通过 renameTo 提交。完全依赖文件系统的惰性刷盘保证"写入即可见",在 power-cut 下可能丢失最近 1 个 entry。这与 AtomicFile 的显式 sync 形成区别。
 2. **重启时**残留 `.tmp` 是未提交信号--`init()` 删除。这恰好提供了"partial 状态机"语义:`.tmp` 存在 = 上次提交前中断,**不需要**额外的 `partial` 标记文件。
@@ -385,14 +385,10 @@ CrashArtifact create_temporary_file() const {
     CrashArtifact result;
     result.fd.reset(openat(dir_fd_, ".", O_WRONLY | O_APPEND | O_TMPFILE | O_CLOEXEC, 0660));
     if (result.fd == -1) {
-        // 无 O_TMPFILE(ext4 不支持)走兜底
-        std::string tmp_filename = StringPrintf(".temporary%zu", counter++);
-        result.fd.reset(openat(dir_fd_, tmp_filename.c_str(),
-                               O_WRONLY | O_APPEND | O_CREAT | O_TRUNC | O_CLOEXEC, 0660));
-        ...
-        result.temporary_path = std::move(tmp_filename);
+        PLOG(FATAL) << "failed to create temporary tombstone in " << dir_path_;
     }
-    return std::move(result);
+    ...
+    return result;
 }
 ```
 
@@ -409,7 +405,7 @@ static bool rename_tombstone_fd(borrowed_fd fd, borrowed_fd dirfd, const std::st
 }
 ```
 
-关键设计差异:1 **不用 rename,用 linkat + unlink**--`O_TMPFILE` 模式下 fd 没有路径,无法 rename;只能 linkat 把 inode 接入目录树。2 **不 fsync 文件,也不 fsync 目录**--把"已提交"语义寄托在 linkat 的原子性上。3 **持久化后端** `/data/tombstones/`(普通 ext4,不是 fsync-friendly 的日志型 FS)-- power-cut 下最后 N 个 tombstone 可能丢失 inode。
+关键设计差异:1 **不用 rename,用 linkat + unlink**--`O_TMPFILE` 模式下 fd 没有路径,无法 rename;只能 linkat 把 inode 接入目录树。2 **不 fsync 文件,也不 fsync 目录**--把"已提交"语义寄托在 linkat 的原子性上。3 **持久化后端** `/data/tombstones/` 位于设备数据分区,实际文件系统取决于设备;在没有 file / directory fsync 的情况下, power-cut 后最后 N 个 tombstone 仍可能丢失。
 
 ### `RecoverySystem.installPackage` 的控制文件(无 fsync / 无 rename)
 
@@ -441,7 +437,7 @@ if (filename.startsWith("/data/")) {
 }
 ```
 
-**完全没有 fsync,也没有 rename 协议**--直接 `FileWriter.write` + `close`,依赖 Java IO 内部 flush。崩溃时 `uncrypt_file` 可能为空或不完整。RecoverySystem 的最终 commit 信号是 BCB(misc 分区),由 `setupBcb()` 通过 `IBootloader.setBootControl()` 写入 raw misc 分区(2MB)。`BLOCK_MAP_FILE` 的存在性即状态机:`exists()` = 已经预先处理;不存在 = 启动时需要 uncrypt。两态机但**没有** partial 状态,崩溃恢复依赖 BCB + recovery image。
+**完全没有 fsync,也没有 rename 协议**--直接 `FileWriter.write` + `close`,依赖 Java IO 内部 flush。崩溃时 `uncrypt_file` 可能为空或不完整。RecoverySystem 的最终 commit 信号是 BCB;Java 层通过 Binder 调用 `RecoverySystemService.setupBcb()`,system_server 拉起 init 的 `setup-bcb` 服务,再通过 `/dev/socket/uncrypt` 发送 BCB command。`BLOCK_MAP_FILE` 的存在性即状态机:`exists()` = 已经预先处理;不存在 = 启动时需要 uncrypt。两态机但**没有** partial 状态,崩溃恢复依赖 BCB + recovery image。
 
 ### 应用层 `crash_envelope` 的推荐设计
 
@@ -488,7 +484,7 @@ Os.close(dirFd);
 
 **5. Native signal handler 落盘边界更窄**:安全做法是提前准备固定大小缓冲区和文件描述符,崩溃时只写最小二进制摘要(magic + 时间戳 + crash type + backtrace pointer list);完整日志、符号化、压缩和上传都放到下次启动。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/util/AtomicFile.java、core/java/android/os/FileUtils.java、services/core/java/com/android/server/DropBoxManagerService.java、core/java/android/os/RecoverySystem.java、system/core/debuggerd/tombstoned/tombstoned.cpp;本节调研对应《2026-06-16-crash-file-persistence-protocol-reliability.md》]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/util/AtomicFile.java、core/java/android/os/FileUtils.java、services/core/java/com/android/server/DropBoxManagerService.java、core/java/android/os/RecoverySystem.java、services/core/java/com/android/server/recoverysystem/RecoverySystemService.java、system/core/debuggerd/tombstoned/tombstoned.cpp;本节调研对应《2026-06-16-crash-file-persistence-protocol-reliability.md》]
 
 
 ## 源码级深度补充(AOSP AppExitInfoTracker 参照)
@@ -497,11 +493,11 @@ AOSP 自身在 `frameworks/base/services/core/java/com/android/server/am/AppExit
 
 ### 状态机选型:环形缓冲 + LRU + 时间窗
 
-AOSP 把每个 package 的退出记录限定在 16 条以内(`config_app_exit_info_history_list_size = 16`,`core/res/res/values/config.xml`),超出后按时间戳最小者淘汰。App 侧 SafeMode 实现也应限定在 8~16 条,超过按 LRU 驱逐;N 太小会冲掉灰度期集中爆发,N 太大调试难定位。
+AOSP 把每个 package / uid 容器的退出记录限定在 16 条以内(`config_app_exit_info_history_list_size = 16`,`core/res/res/values/config.xml`),超出后按时间戳最小者淘汰。App 侧 SafeMode 实现也应限定在 8~16 条,超过按 LRU 驱逐;N 太小会冲掉灰度期集中爆发,N 太大调试难定位。
 
 ### 字段五元组:定义一次进程死亡
 
-AOSP 用 `(packageName, packageUid, realUid, pid, timestamp)` 五元组定位一次进程死亡(`AppExitInfoTracker.handleNoteProcessDiedLocked` 与 `AppExitInfoContainer.getExitInfosLocked`)。App 侧建议把 marker 匹配的五元组限定到 `(versionCode, packageName, processName, startupRoute, startedWallTimeMs)`,再叠加 `ApplicationExitInfo.timestamp` 做时间窗校验,窗口 ±60s 内才计入崩溃循环。
+AOSP 查询时先按 `packageName + uid` 定位容器,再按 `pid` 过滤;`AppExitInfoContainer.getExitInfosLocked()` 把结果按 `timestamp` 倒序返回,`realUid` 主要用于孤立进程 / SDK sandbox 映射和 zygote、lmkd 外部信号匹配。App 侧建议把 marker 匹配维度限定到 `(versionCode, packageName, processName, startupRoute, startedWallTimeMs)`,再叠加 `ApplicationExitInfo.timestamp` 做时间窗校验,窗口 ±60s 内才计入崩溃循环。
 
 ### 不可覆盖白名单:`preventExitInfoUpdate`
 
