@@ -5,9 +5,9 @@ chapter: "7.18"
 section: "7.18"
 status: finalized
 drafted_date: "2026-05-23"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36); Android 17 待公开 tag 复核"
-last_verified: "2026-05-23"
-last_verified_against: "AOSP android-16.0.0_r1 frameworks/native SurfaceFlinger/HWC2/CompositionEngine + hardware/interfaces composer3 AIDL + source.android.com HWC docs + Perfetto FrameTimeline docs"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+last_verified: "2026-06-22"
+last_verified_against: "AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger/HWC2/CompositionEngine + hardware/interfaces composer3 AIDL + source.android.com HWC docs + Perfetto FrameTimeline docs"
 confidence: medium
 sources:
   - type: aosp
@@ -33,18 +33,21 @@ created_date: "2026-05-23"
 gap_source: "章节深挖/研究素材/AOSP结构/官方文档"
 gap_score: 18
 material_count: 4
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task2a_state: "processed"
 task2a_result: "ready-for-review"
 last_task2a_at: "2026-05-23T01:04:00+08:00"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: auto-fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 last_task6_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
+last_task9_audit: "2026-06-22"
+last_task9_autofix_at: "2026-06-22"
+task2b_state: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
 ---
@@ -99,7 +102,7 @@ last_deepseek_cn_review_at: 2026-06-05
 
 ## 合成协商怎样决定 DEVICE / CLIENT
 
-SurfaceFlinger 在一帧里完成 layer latch 后，会把可见 Layer 集合交给 Composer HAL。HWC 根据本设备的显示硬件能力返回每个 Layer 的合成类型。Android 16 的 AIDL `Composition.aidl` 给出两个常用类型的定义：`CLIENT` 表示 client 必须先把该 Layer 合成进 client target，再通过 `setClientTarget` 交给设备；`DEVICE` 表示设备通过 hardware overlay 或类似能力处理该 Layer，但 `validateDisplay()` 之后设备可以要求把它改成 `CLIENT`。[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl]
+SurfaceFlinger 在一帧里完成 layer latch 后，会把可见 Layer 集合交给 Composer HAL。HWC 根据本设备的显示硬件能力返回每个 Layer 的合成类型。Android 17 的 AIDL `Composition.aidl` 给出两个常用类型的定义：`CLIENT` 表示 client 必须先把该 Layer 合成进 client target，再通过 `setClientTarget` 交给设备；`DEVICE` 表示设备通过 hardware overlay 或类似能力处理该 Layer，但 `validateDisplay()` 之后设备可以要求把它改成 `CLIENT`。[已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl]
 
 ```mermaid
 graph LR
@@ -114,9 +117,9 @@ graph LR
     P --> F[present fence / release fences]
 ```
 
-AOSP android-16.0.0_r1 的 `HWC2.cpp` 能看到这组调用的包装层：`Display::validate()` 调 `mComposer.validateDisplay()`，`Display::getChangedCompositionTypes()` 读取 HWC 要求的类型变化，`Display::acceptChanges()` 调 `acceptDisplayChanges()`，`Display::present()` 调 `presentDisplay()` 并返回 present fence。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp]
+AOSP android-17.0.0_r1 的 `HWC2.cpp` 能看到这组调用的包装层：`Display::validate()` 调 `mComposer.validateDisplay()`，`Display::getChangedCompositionTypes()` 读取 HWC 要求的类型变化，`Display::acceptChanges()` 调 `acceptDisplayChanges()`，`Display::present()` 调 `presentDisplay()` 并返回 present fence。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp]
 
-只要本帧存在 `CLIENT` Layer，SurfaceFlinger 就要准备 client target。`CompositionEngine/src/Output.cpp` 的路径更接近排查现场：`Output::prepareFrame()` 选择合成策略；`Output::composeSurfaces()` 在 `usesClientComposition` 为真时生成 client composition requests，随后调用 `RenderEngine::drawLayers()`；完成后通过 render surface `queueBuffer()` 把结果交回显示侧。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp]
+只要本帧存在 `CLIENT` Layer，SurfaceFlinger 就要准备 client target。`CompositionEngine/src/Output.cpp` 的路径更接近排查现场：`Output::prepareFrame()` 选择合成策略；`Output::composeSurfaces()` 在 `usesClientComposition` 为真时生成 client composition requests，随后调用 `RenderEngine::drawLayers()`；完成后通过 render surface `queueBuffer()` 把结果交回显示侧。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp]
 
 排查时可以把 `DEVICE` 理解成“这层被显示硬件接走”，把 `CLIENT` 理解成“这层先被 SurfaceFlinger 的 RenderEngine 合成进一张中间 buffer”。`CLIENT` 不一定错；系统栏、圆角、色彩转换、复杂裁剪和某些 protected 场景都可能让它变成合理选择。问题在于某个业务场景让 `CLIENT` 比例突然升高，并把 GPU 合成、带宽或 HWC present 推过帧预算。
 
@@ -124,7 +127,7 @@ AOSP android-16.0.0_r1 的 `HWC2.cpp` 能看到这组调用的包装层：`Displ
 
 官方 HWC 文档提到 Android 设备通常支持四个 overlay plane，超过 overlay 能力时，HWC 可以要求部分或全部 Layer 走 GLES/client composition。[已验证: source.android.com/docs/core/graphics/hwc]
 
-这句话适合做排查入口，不适合作为设备结论。公开 Android 应用 API 没有稳定入口查询 overlay plane 数量；HWC AIDL 的 `getOverlaySupport()` 面向 Composer HAL/系统侧，Android 16 的 `OverlayProperties.aidl` 暴露的是 pixel format、dataspace 组合、mixed color spaces、LUT 等支持项，并不等价于“这台机器有 N 个 plane”。[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl 与 OverlayProperties.aidl]
+这句话适合做排查入口，不适合作为设备结论。公开 Android 应用 API 没有稳定入口查询 overlay plane 数量；HWC AIDL 的 `getOverlaySupport()` 面向 Composer HAL/系统侧，Android 17 的 `OverlayProperties.aidl` 暴露的是 pixel format、dataspace 组合、mixed color spaces、LUT 等支持项，并不等价于“这台机器有 N 个 plane”。[已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl 与 OverlayProperties.aidl]
 
 做设备基准时，把下面几类变量放在同一张表里，比单看 Layer 数更稳：
 
@@ -170,7 +173,7 @@ order by ts;
 
 ### SurfaceFlinger slice：确认是否进入 client composition
 
-在 trace 里查看 `/system/bin/surfaceflinger` 进程，重点找本帧附近的 `composite`、`present`、CompositionEngine、RenderEngine 或 `drawLayers` 相关 slice。不同 Android 版本和 trace 配置下 slice 名称会有差异，源码锚点不要写成旧版 `handleMessageRefresh()` 或不存在的 `doComposition()`。Android 16 更可靠的源码路径是 `SurfaceFlinger::composite()` 之后进入 CompositionEngine，`Output::prepareFrame()` 选择策略，`Output::composeSurfaces()` 执行 RenderEngine client composition。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp]
+在 trace 里查看 `/system/bin/surfaceflinger` 进程，重点找本帧附近的 `composite`、`present`、CompositionEngine、RenderEngine 或 `drawLayers` 相关 slice。不同 Android 版本和 trace 配置下 slice 名称会有差异，源码锚点不要写成旧版 `handleMessageRefresh()` 或不存在的 `doComposition()`。Android 17 更可靠的源码路径是 `SurfaceFlinger::composite()` 之后进入 CompositionEngine，`Output::prepareFrame()` 选择策略，`Output::composeSurfaces()` 执行 RenderEngine client composition。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp]
 
 ### dumpsys / Winscope：确认 Layer 类型变化
 
@@ -242,10 +245,10 @@ order by ts;
 
 - [已验证: source.android.com/docs/core/graphics/hwc] Hardware Composer HAL 文档：HWC 与 overlay planes 的系统说明。
 - [已验证: source.android.com/docs/core/graphics/implement-hwc] Implement Hardware Composer HAL：`validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()` 的协商流程。
-- [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp] SurfaceFlinger HWC2 包装层。
-- [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp] `prepareFrame()`、`composeSurfaces()`、`RenderEngine::drawLayers()` 路径。
-- [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl] `CLIENT` / `DEVICE` / `SIDEBAND` 等 composition type 定义。
-- [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/OverlayProperties.aidl] overlay 支持项边界。
+- [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp] SurfaceFlinger HWC2 包装层。
+- [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp] `prepareFrame()`、`composeSurfaces()`、`RenderEngine::drawLayers()` 路径。
+- [已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl] `CLIENT` / `DEVICE` / `SIDEBAND` 等 composition type 定义。
+- [已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/OverlayProperties.aidl] overlay 支持项边界。
 - [已验证: Perfetto docs, docs/data-sources/frametimeline.md] `expected_frame_timeline_slice` / `actual_frame_timeline_slice` 与 FrameTimeline 版本边界。
 - [来源: Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md] HWC Overlay Plane Capability 与 SF 合成降级验证素材。
 
