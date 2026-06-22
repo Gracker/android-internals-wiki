@@ -35,14 +35,14 @@ reviewed_date: "2026-06-16"
 last_task6_at: "2026-06-16T23:16:33+08:00"
 # task2b_state restored 2026-06-16 by Task9 — Android 17 重基完成 2026-06-22
 task9_result: needs-rework
-task2b_result: "fixed"
+task2b_result: "fixed-lite"
 task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
 last_task9_at: "2026-06-22T22:28:34+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-22-22-audit.md"
 last_task2b_at: 2026-06-22T22:53:02+08:00
-last_task2b_lite_at: 2026-06-16
+last_task2b_lite_at: 2026-06-22
 task9_review_notes: "2026-06-22 Task9 idle audit：android-17.0.0_r1 已公开；发现 FrameTimeline JankClassificationThresholds/JankType 与 traced_perf.rc 生命周期均需按 Android 17 重基，已写入 Task2B 队列。"
 last_task9_autofix_at: "2026-06-16"
 auto_promoted_at: "2026-06-16T23:16:33+08:00"
@@ -392,10 +392,19 @@ LIMIT 20;
 
 ### 6.2 避免数据丢失
 
+Android 17 中 `traced_perf` 通过属性驱动启停（见 §2.1），不再使用 `ctl.start`：
+
 ```bash
-# 确保 traced_perf 在 FrameTimeline 写入前已启动
-adb shell setprop ctl.start traced_perf
-adb shell cmd tracing perfetto --start-trigger ...
+# 方式一：显式启用 traced_perf
+adb shell setprop persist.traced_perf.enable 1
+
+# 方式二：lazy trigger（需要 perf_event_open LSM hooks）
+adb shell setprop sys.init.perf_lsm_hooks 1
+adb shell setprop traced.lazy.traced_perf 1
+
+# 触发 Perfetto trace session 后 traced_perf 按需启动
+adb shell perfetto -c /data/misc/perfetto-configs/perf.conf \
+  -o /data/misc/perfetto-traces/trace.perfetto-trace
 ```
 
 ### 6.3 性能优化配置
