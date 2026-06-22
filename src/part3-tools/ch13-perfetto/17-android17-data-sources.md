@@ -24,7 +24,7 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: "reviewed"
@@ -32,17 +32,18 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
 last_task6_at: "2026-06-16T23:16:33+08:00"
 # task2b_state restored 2026-06-16 by Task9 — P0/P1 technical rework required
-task9_result: pass-tech-review
+task9_result: needs-rework
 task2b_result: "fixed-lite"
-task2b_state: "fixed"
+task2b_state: "pending"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T22:33:40+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-22-deep-review.md"
+last_task9_at: "2026-06-22T22:28:34+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-22-22-audit.md"
 last_task2b_lite_at: 2026-06-16
-task9_review_notes: "2026-06-16 22 Task9 re-review：auto-fixed。复核 android-16.0.0_r3 与 Perfetto proto 后，修正 JankClassificationThresholds 字段、FrameTimeline trace 起点过滤门控、linux.perf 开销口径、TraceConfig textproto 与过滤字段名；回到 Task6 复审。"
+task9_review_notes: "2026-06-22 Task9 idle audit：android-17.0.0_r1 已公开；发现 FrameTimeline JankClassificationThresholds/JankType 与 traced_perf.rc 生命周期均需按 Android 17 重基，已写入 Task2B 队列。"
 last_task9_autofix_at: "2026-06-16"
 auto_promoted_at: "2026-06-16T23:16:33+08:00"
+last_task9_audit: "2026-06-22"
 ---
 
 
