@@ -63,6 +63,7 @@ last_task9_at: "2026-06-05T05:28:04+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
 ---
+last_task6_audit: "2026-06-22"
 
 # 21.12 Startup Profile 与 DEX Layout 启动优化
 
