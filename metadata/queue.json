@@ -1,26 +1,5 @@
 {
-  "pending": [
-    {
-      "section": "20.7",
-      "section_title": "异常处理架构设计 — SafeMode launch marker AOSP 源码核验",
-      "priority": 85,
-      "reason": "[DeepResearch 注入] 新增高价值 AOSP 源码核验调研材料，建议补充到章节参考资料",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-safemode-launch-marker-state-machine-aosp-verification.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "SafeMode launch marker 状态机的 AOSP 源码核验 — 核验 ApplicationExitInfo 17 个 REASON_* 常量、AtomicFile.finishWrite() 持久化协议、AppExitInfoTracker 30分钟 debounce + 16条记录限制、Process.killProcess 三条路径",
-          "suggestion": "判断是否适合补充为 ch20.7 和 ch20.12 的章节参考资料，特别是退出原因白名单 {REASON_CRASH, REASON_CRASH_NATIVE, REASON_ANR, REASON_INITIALIZATION_FAILURE} 和持久化协议的边界条件"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-06-22T06:12:58.925959",
-      "status": "pending"
-    }
-  ],
+  "pending": [],
   "in_progress": [],
   "completed": [
     {
@@ -44,6 +23,50 @@
       "status": "completed",
       "completed_at": "2026-06-22T06:51:36+08:00",
       "completed_reason": "已追加到 2.17-frame-pacing.md 参考资料小节：SurfaceFlinger 帧时序三层架构（FrameTracer/FrameTimeline/VSyncPredictor）"
+    },
+    {
+      "section": "20.7",
+      "section_title": "异常处理架构设计 — SafeMode launch marker AOSP 源码核验",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值 AOSP 源码核验调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-safemode-launch-marker-state-machine-aosp-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "SafeMode launch marker 状态机的 AOSP 源码核验 — 核验 ApplicationExitInfo 17 个 REASON_* 常量、AtomicFile.finishWrite() 持久化协议、AppExitInfoTracker 30分钟 debounce + 16条记录限制、Process.killProcess 三条路径",
+          "suggestion": "判断是否适合补充为 ch20.7 和 ch20.12 的章节参考资料，特别是退出原因白名单 {REASON_CRASH, REASON_CRASH_NATIVE, REASON_ANR, REASON_INITIALIZATION_FAILURE} 和持久化协议的边界条件"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-22T06:12:58.925959",
+      "status": "completed",
+      "completed_at": "2026-06-22T09:35:00+08:00",
+      "completed_reason": "fixed-lite"
+    },
+    {
+      "section": "20.12",
+      "section_title": "SafeMode 崩溃循环判定与启动补偿链路 — SafeMode launch marker AOSP 源码核验",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值 AOSP 源码核验调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-safemode-launch-marker-state-machine-aosp-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "SafeMode launch marker 状态机的 AOSP 源码核验 — 核验 ApplicationExitInfo 17 个 REASON_* 常量、AtomicFile.finishWrite() 持久化协议、AppExitInfoTracker 30分钟 debounce + 16条记录限制、Process.killProcess 三条路径",
+          "suggestion": "判断是否适合补充为 ch20.7 和 ch20.12 的章节参考资料，特别是退出原因白名单 {REASON_CRASH, REASON_CRASH_NATIVE, REASON_ANR, REASON_INITIALIZATION_FAILURE} 和持久化协议的边界条件"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-22T09:35:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-22T09:35:00+08:00",
+      "completed_reason": "fixed-lite"
     }
   ]
 }
