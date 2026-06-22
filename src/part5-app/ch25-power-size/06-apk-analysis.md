@@ -65,6 +65,8 @@ last_task2b_lite_at: 2026-06-03
 last_task9_autofix_at: "2026-06-06"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
+last_task9_audit: "2026-06-22"
+last_task9_audit_log: "logs/deep-review/2026-06-22-21-audit.md"
 ---
 
 
