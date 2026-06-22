@@ -56,6 +56,8 @@ updated_date: "2026-06-19"
 p0: 0
 p1: 0
 p2: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
@@ -277,7 +279,7 @@ InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/syste
 3. 只有共享区域，没有同步协议，最终读到半写入数据
 4. 用 Binder 传大 payload，而不是传 fd / descriptor
 
-
+上面说到“用 Binder 传 fd 而不是传大 payload”，这句话在 AOSP 源码里的具体实现就是 `Parcel::writeBlob()`。它是“控制面传 fd、数据面零拷贝”这个模式在 Binder 层的典型实现，下面展开它的条件和流程。
 
 ### 3.4.1 Parcel::writeBlob fd 传递与 ashmem/memfd 演进
 
@@ -416,7 +418,7 @@ fd 传递就是这两层之间的桥。Binder 路径里对应的是 `BINDER_TYPE
 | **CursorWindow** | `ContentProvider` query / moveToPosition 等 Binder 调用 | `CursorWindow` 共享内存 | window fd 经 Binder 返回给客户端 |
 | **SharedMemory / FMQ / HAL** | Service 或 HAL 接口先协商共享区域 | SharedMemory / FMQ | Binder 用 `BINDER_TYPE_FD`，socket 用 `SCM_RIGHTS` |
 
-这也是为什么 BufferQueue、CursorWindow、很多 HAL 数据流都不能简单归类成“Binder”或“共享内存”二选一。更准确的说法是：**控制面走 Binder 家族，数据面走 fd 指向的零拷贝通道。**
+这也是为什么 BufferQueue、CursorWindow、很多 HAL 数据流都不能简单归为“用 Binder”或“用共享内存”这种二选一。更准确的说法是：**控制面走 Binder 家族，数据面走 fd 指向的零拷贝通道。**
 
 ### 4.3 使用频率的方向性印象（AOSP 系统进程）
 
@@ -530,7 +532,7 @@ IPC 的版本演进重点在于控制面和数据面的边界变化。这张表�
 | Android 11 | AIDL for HALs 引入，系统 / 供应商 HAL 可使用 Stable AIDL 走 `/dev/binder` | Trace 中要同时接受 HIDL 和 AIDL HAL 并存 |
 | Android 12-14 | ashmem-compatible 层已有 memfd 支持，但默认仍受 `sys.use_memfd` 等门禁影响 | 分析 `SharedMemory` / `CursorWindow` 时要分清 API 名称、设备属性和底层内核对象，不要把 memfd 写成 dmabuf 的一部分 |
 | Android 13 | GraphicBuffer 等图形内存路径进一步统一到 dmabuf | 图形类大数据更典型地表现为“Binder 控制 + dmabuf 数据面”；应用通用共享内存仍单独看 |
-| Android 14+ | 持续鼓励 HIDL → AIDL 迁移，而不是一刀切“全面完成” | 同一设备上可能长期共存两套 HAL IPC |
+| Android 14+ | 持续鼓励 HIDL → AIDL 迁移，而不是一刀切地声称“已全面完成” | 同一设备上可能长期共存两套 HAL IPC |
 | Android 17 | ashmem-compatible 层默认 memfd 路径要求 memfd SELinux capability、vendor API 202604 与 app target SDK min 37 | 这是 android-17.0.0_r1 源码口径；实现语言会变，但 control plane / data plane 的组合模式不变 |
 | Android 13+ (AVF) | AF_VSOCK + RpcBinder 用于 host ↔ VM 通信 | VM 场景下 IPC 走 vsock 而非 binder 驱动；分析 VM trace 时要区分 vsock 和传统 binder 延迟 |
 

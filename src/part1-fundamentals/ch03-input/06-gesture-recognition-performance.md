@@ -60,6 +60,8 @@ last_task2b_at: "2026-06-03T21:33:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-06-09-deep-review.md"
 last_task9_autofix_at: "2026-06-12"
 task9_review_notes: "2026-06-06 09:20 Task9 deep-review: pass-tech-review。VelocityTracker Android 10-16 策略演进与 View/GestureDetector/ViewConfiguration 源码锚点复核通过；仅写入 P2 数据支撑建议。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 13:20 Task9 idle audit: auto-fixed。修正 VelocityTracker.getXVelocity() 源码片段与 Compose MotionEventAdapter/PointerInputEvent 命名；Android 17 tag 未公开，未扩展为 Android 17 已验证结论。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-22
 ---
 
 # 手势识别算法与性能优化
@@ -93,7 +95,7 @@ task9_review_notes: "2026-06-06 09:20 Task9 deep-review: pass-tech-review。Velo
 
 当用户抱怨"滑动列表不跟手"或"快速滑动时松手后列表没有惯性滚动"时，Perfetto Trace 里大概率不会出现明显的掉帧。问题往往出在**手势识别本身**：速度计算不准导致 Fling 速度太小，TouchSlop 过大导致误判为"没滑动"，或者手势冲突导致事件被外层 View 截获。
 
-手势识别是 Input 事件分发之后、UI 渲染之前的"决策层"。它决定了用户的触摸行为会被解读成什么——点击、滑动、快速滑动、长按、还是双击。这个决策层的算法质量直接影响了用户对 App "流畅度"的感知。
+手势识别是 Input 事件分发之后、UI 渲染之前的"决策层"。它决定了用户的触摸行为会被解读成什么——点击、滑动、快速滑动、长按、还是双击。这个决策层的算法质量，直接决定了用户对 App "流畅度"的感知。
 
 手势识别还是一个**高频路径**。每次 ACTION_MOVE 都会触发 VelocityTracker 的速度更新，每次 ACTION_DOWN 都会触发 GestureDetector 的状态初始化。
 
@@ -503,6 +505,8 @@ case MotionEvent.ACTION_UP:
 2. **在合适的位置调用 `requestDisallowInterceptTouchEvent(true)`**，避免事件被不必要的中间层拦截和重新分发
 3. **对于复杂的自定义手势 View，考虑直接处理 Raw Touch 事件**，跳过不必要的中间层
 
+以上三个陷阱覆盖了 App 层手势性能的主要问诘。下面两节为扩展内容，分别看厂商驱动层和 Compose 的手势差异。
+
 ## 厂商手势增强方案（扩展）
 
 ### 边缘手势防误触
@@ -527,6 +531,8 @@ case MotionEvent.ACTION_UP:
 
 ## Compose 手势系统的架构差异（扩展）
 
+厂商方案在驱动层做了透明干预，而 Compose 的差异是架构级的：它的手势系统与 View 系统有本质不同。
+
 Jetpack Compose 的手势系统与 View 系统有本质的架构差异：
 
 **View 系统**：基于 `onInterceptTouchEvent()` / `onTouchEvent()` 的责任链模式，事件从外层向内层分发，拦截权由外层控制。
@@ -544,6 +550,6 @@ Modifier.pointerInput(Unit) {
 
 **性能特点**：Compose 的手势系统在底层仍然依赖 Android 的 `MotionEvent`，但手势判定逻辑运行在 Compose 的 pointer input 层中。
 
-因此，Compose 的手势识别可以更细粒度地与 Composable 的重组和布局阶段集成，但 Android 平台层仍需要通过 `MotionEventAdapter` 把 `MotionEvent` 转换为 Compose 内部的 `PointerInputEvent` / `PointerInputChange`，这一步会带来额外转换开销。
+因此，Compose 的手势识别可以更细粒度地与 Composable 的重组和布局阶段集成，但 Android 平台层仍需要通过 `MotionEventAdapter` 把 `MotionEvent` 转换为 Compose 内部的 `PointerInputEvent` / `PointerInputChange`，这一步会引入额外的转换开销。
 
 > [已验证: Jetpack Compose 1.6+, androidx.compose.ui.input.pointer]
