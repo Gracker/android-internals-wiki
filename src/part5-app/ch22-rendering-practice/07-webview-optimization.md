@@ -69,6 +69,8 @@ last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束�
 last_task9_autofix_at: "2026-06-03"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-06
+last_task9_audit: "2026-06-22"
+last_task9_audit_log: "logs/deep-review/2026-06-22-14-audit.md"
 ---
 
 # WebView 性能优化实战
