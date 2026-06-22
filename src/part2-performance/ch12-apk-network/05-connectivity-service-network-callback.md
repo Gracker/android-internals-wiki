@@ -413,3 +413,21 @@ private NetworkReassignment computeNetworkReassignment(
 - `rematchAllNetworksAndRequests()` - 第13092行
 
 这些源码位置为理解 Android 网络栈的底层实现提供了完整的调用链和时序分析。
+
+---
+
+## 参考资料
+
+### 系统源码调研
+- [NetworkAgent 生命周期与网络评分机制（Android 17 源码调研）](DeepResearch/2026-06-22-android17-networkagent-lifecycle-scoring-mechanism.md) — `registerNetworkAgentInternal` netId 分配、`destroyNetwork` 清理链、`updateNetworkScore → rematchAllNetworksAndRequests → computeNetworkReassignment` 重匹配算法，含 `NetworkRanker` 分层评分逻辑。
+
+### 官方文档
+- [Reading network state — developer.android.com](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
+- [Optimize network power — developer.android.com](https://developer.android.com/topic/performance/power/network/action-app-traffic.html)
+
+### 交叉引用
+- 12.2 HTTP 请求耗时分析
+- 12.3 连接池复用
+- 12.4 TLS 握手优化
+- 24.4 网络相关的电池优化
+
