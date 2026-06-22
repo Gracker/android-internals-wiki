@@ -247,6 +247,50 @@
       "completed_at": "2026-06-23T00:52:17+08:00",
       "completed_by": "openclaw-task2b",
       "completed_reason": "Task2B 回炉修复完成：源码片段重贴(§2.2/§2.4)、SQL表名修正(§6.1)、版本表AOSP标签重基(§4)、二次验证计划→已执行检查(§7)"
+    },
+    {
+      "section": "4.4",
+      "section_title": "Low Memory Killer (LMK) — PSI/LowMemDetector 源码级补充",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值 lmkd PSI 源码调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-android17-psi-lowmemdetector.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 PSI/LowMemDetector — libpsi 适配层源码（psi.h/psi.cpp）、lmkd 集成（init_psi_monitors、psi_thresholds 70/100/70ms）、mp_event_common deprecated 标记、BPF MemEventListener 四类事件，以及 AIW §4.4 现有 700ms 阈值与源码 70ms 硬编码不一致的修正线索",
+          "suggestion": "判断是否适合补充为 §4.4 参考资料并修正阈值描述不一致（property 缺省 70/700ms vs 硬编码 70ms）"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-23T06:15:10.552199",
+      "status": "completed",
+      "completed_at": "2026-06-23T06:51:15.642179+08:00",
+      "completed_reason": "已注入到 §4.4 参考资料小节：Android 17 PSI/LowMemDetector 源码调研（libpsi 适配层、lmkd 集成、BPF MemEventListener、psi_thresholds 70/100/70ms）"
+    },
+    {
+      "section": "12.5",
+      "section_title": "ConnectivityService NetworkAgent 生命周期与网络评分",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增 NetworkAgent 注册/销毁/评分重匹配源码调研，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-android17-networkagent-lifecycle-scoring-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 NetworkAgent 生命周期与网络评分 — registerNetworkAgentInternal netId 分配、destroyNetwork 清理链、updateNetworkScore → rematchAllNetworksAndRequests → computeNetworkReassignment 重匹配算法，含 NetworkRanker 分层评分逻辑",
+          "suggestion": "判断是否适合补充为 §12.5 参考资料或新建 NetworkAgent 专节"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-23T06:15:10.552199",
+      "status": "completed",
+      "completed_at": "2026-06-23T06:51:15.642179+08:00",
+      "completed_reason": "已追加 §12.5 参考资料小节：NetworkAgent 生命周期与网络评分机制（registerNetworkAgentInternal netId 分配、destroyNetwork 清理链、updateNetworkScore → rematchAllNetworksAndRequests 重匹配算法）"
     }
   ]
 }
