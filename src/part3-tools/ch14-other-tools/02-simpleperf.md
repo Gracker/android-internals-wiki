@@ -4,7 +4,7 @@
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
@@ -27,7 +27,12 @@ last_task9_audit_at: '2026-06-10T16:20:00+08:00'
 last_task9_reviewed_at: '2026-06-22T00:28:28+08:00'
 last_task9_at: '2026-06-22T00:28:28+08:00'
 last_task9_autofix_at: '2026-06-22'
-last_task2b_lite_at: '2026-06-21'
+last_task2b_lite_at: '2026-06-22'
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: auto-fixed
 task6_result: pass-light-edit
@@ -240,7 +245,7 @@ simpleperf record -t 5678
 # 按包名等待并采样应用进程
 simpleperf record --app com.example.app
 
-# 按多个 PID 或进程名正则过滤（-p 接受逗号分隔的 PID 或 process name regex）
+# 按多个 PID 过滤（-p 只接受逗号分隔的数字 PID，不支持进程名正则）
 simpleperf record -p 1234,5678
 
 # 按进程名正则排除系统进程样本
@@ -267,7 +272,7 @@ simpleperf report -i my_profile.data
 ### 与 Perfetto 集成
 
 Simpleperf 本身输出 `perf.data` 格式（Linux perf 二进制格式：`perf_event_header` + 事件记录序列），与 Linux perf 工具原生兼容 [已验证：AOSP system/extras/simpleperf/record_file_format.h, android-17.0.0_r1]，不直接输出 `.perfetto-trace` 文件。
-与 Perfetto 系统 trace 集成有两条路径：Android 15-17 可通过 Perfetto 的 `linux.perf` data source 在同一个 tracing session 中同时采集 perf events 和 ftrace/atrace 事件；Android 10-14 若只是想在 Perfetto UI 查看 Simpleperf profile，应使用 `simpleperf report-sample --protobuf --show-callchain` 导入路径 [已验证：Perfetto CPU profiling/other-formats 文档，Android command line `linux.perf` 前提为 Android 15+]：
+与 Perfetto 系统 trace 集成有两条路径：Android 15-17 可通过 Perfetto 的 `linux.perf` data source 在同一个 tracing session 中同时采集 perf events 和 ftrace/atrace 事件；Android 10-14 若只是想在 Perfetto UI 查看 Simpleperf profile，应使用 `simpleperf report --protobuf --show-callchain` 导入路径 [已验证：Perfetto CPU profiling/other-formats 文档， Android command line `linux.perf` 前提为 Android 15+]：
 
 ```bash
 # 方式一：通过 Perfetto 配置同时采集 perf events + ftrace
@@ -349,7 +354,7 @@ adb pull /data/local/tmp/combined.trace
 # 5. 在 Perfetto UI (https://ui.perfetto.dev/) 中打开 combined.trace
 ```
 
-> 环境要求：Perfetto `linux.perf` 的 Android command line 采集路径按官方文档限定为 Android 15+；本书范围内可覆盖 Android 15-17。Android 10-14 走 Simpleperf protobuf 导入；两条路径都需要内核 `CONFIG_PERF_EVENTS=y`，callstack sampling 还要求目标 app 为 profileable/debuggable 或设备为 userdebug/eng。
+> 环境要求：Perfetto `linux.perf` 的 Android command line 采集路径按官方文档限定为 Android 15+；本书范围内可覆盖 Android 15-17。Android 10-14 走 Simpleperf `report --protobuf` 导入；两条路径都需要内核 `CONFIG_PERF_EVENTS=y`，callstack sampling 还要求目标 app 为 profileable/debuggable 或设备为 userdebug/eng。
 
 ### Profileable 应用数据收集
 
