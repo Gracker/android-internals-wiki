@@ -38,8 +38,8 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-16"
 task6_result: pass-light-edit
@@ -52,16 +52,17 @@ last_task2b_lite_at: "2026-06-22"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T08:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-08-deep-review.md"
-task9_review_notes: "2026-06-16 Task9 复审:auto-fixed。SafeMode launch marker 状态机、crash 文件持久化协议已闭环；本轮直接修正父目录 fsync 示例中不存在的 Java/Kotlin API 写法，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。"
+last_task9_at: "2026-06-23T07:25:29+08:00"
+last_task9_audit: "2026-06-23"
+last_task9_review_log: "logs/deep-review/2026-06-23-07-audit.md"
+task9_review_notes: "2026-06-16 Task9 复审:auto-fixed。SafeMode launch marker 状态机、crash 文件持久化协议已闭环；本轮直接修正父目录 fsync 示例中不存在的 Java/Kotlin API 写法，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。 | 2026-06-23 Task9 闲时抽检:auto-fixed。Android 17 源码复核确认 REASON_INITIALIZATION_FAILURE 仍为 ApplicationExitInfo 主退出原因之一；SafeMode 示例代码已补入该白名单，与后文源码核验结论保持一致，回到 Task6 复审。"
 
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00
-last_task9_autofix_at: "2026-06-16"
+last_task9_autofix_at: "2026-06-23"
 finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"
 deepseek_cn_review_state: needs-structure-rework
@@ -212,7 +213,8 @@ class SafeModeController(
         val lastExitIsCrash = exitInfoCollector.lastExitReasons().any { info ->
             info.reason == ApplicationExitInfo.REASON_CRASH ||
             info.reason == ApplicationExitInfo.REASON_CRASH_NATIVE ||
-            info.reason == ApplicationExitInfo.REASON_ANR
+            info.reason == ApplicationExitInfo.REASON_ANR ||
+            info.reason == ApplicationExitInfo.REASON_INITIALIZATION_FAILURE
         }
 
         // 维度 4：远程配置不可用时本地默认规则继续生效
