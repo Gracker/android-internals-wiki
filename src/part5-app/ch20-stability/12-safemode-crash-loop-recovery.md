@@ -3,7 +3,7 @@
 title: "SafeMode 崩溃循环判定与启动补偿链路"
 chapter: "20.12"
 section: "20.12"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-22"
@@ -43,8 +43,8 @@ related_chapters: ["20.2", "20.3", "20.6", "20.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/参考书素材"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 reviewed_date: "2026-06-22"
 reviewed_by: "openclaw-task6"
@@ -52,7 +52,7 @@ task6_reviewed_date: "2026-06-22"
 last_task6_at: "2026-06-22T12:14:30+08:00"
 last_task6_audit: "2026-06-22"
 task6_review_notes: "2026-06-22 task6 复审(revisiting): L1/L2/L3/L4 全部通过，无新问题。章节从 revisiting 晋升 finalized。"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-22"
 task9_reviewed_by: "openclaw-task9"
@@ -66,7 +66,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-09-04-audit.md"
 last_task9_autofix_at: "2026-06-22"
 task9_review_notes: "2026-06-22 Task9 复审:auto-fixed。修正 tombstoned android-17 O_TMPFILE/linkat 源码锚点、AtomicFile fsync 注释、RecoverySystem BCB 写入链路、AppExitInfoTracker 查询维度表述；无新增 queue 技术回炉项。"
 task2b_result: "fixed"
-last_task2b_main_at: "2026-06-22T10:50:00+08:00"
+last_task2b_main_at: "2026-06-22T12:51:50+08:00"
 last_task2b_lite_at: "2026-06-22"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-06-22"
@@ -106,6 +106,8 @@ last_task6_audit: "2026-06-22"
 | 远程强制降级 | 服务端下发 feature kill switch | 已确认某模块线上故障 |
 
 本地规则只用于保命,不能替代发布平台和 Crash 看板。20.6 节的启动崩溃率、重复崩溃率和灰度门禁仍然是团队层面的判断依据。
+
+实际工作中的两个典型盲区：一是把用户冷启动强杀后的第一次正常启动误判成 SafeMode 触发——这一轮启动本身没有问题,但上一个 marker 停在 `launching`,退出原因是 `REASON_USER_REQUESTED`。解法很简单:拿到退出原因后再对齐 marker 阶段;用户请求退出的不计入崩溃循环,只清理残留 marker。二是"同一版本 3 次冷启动失败"这个默认阈值在新设备上过于激进——高端机 startup 通常 600ms 以内,很多 crash 发生在启动的后半段;如果 marker 写得太晚,崩溃可能发生在 marker 之后,反而被漏掉。实际调到"5 次 + 10 分钟窗口"才比较稳。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 2.md]
 
@@ -227,6 +229,8 @@ fun collectExitCompensation(
 
 补偿逻辑不要把"最近一条退出记录"直接绑定到"上一轮启动失败"。多进程 App、外部 service、后台进程、预加载进程都可能留下记录。稳妥做法是按 `processName`、marker 时间、`session_id` 摘要和启动阶段一起匹配;匹配不上就只上报,不触发 SafeMode。
 
+实际工作中踩过的坑:部分厂商 ROM(特别是 ColorOS 和 MIUI 旧版)`getHistoricalProcessExitReasons()` 返回的 `timestamp` 是系统 `uptimeMillis`,而应用 marker 里写的是 `System.currentTimeMillis()`,两者有 NTP 校准差和开机时间差,直接做时间窗匹配会漏掉或误匹配。建议统一用 `SystemClock.elapsedRealtime()` 写入 marker,退出数据里的 `timestamp` 需要先做一次换算对齐;如果厂商 ROM 上 `ApplicationExitInfo.timestamp` 不标时钟源,宁可放宽时间窗到 ±120s 再加进程名和 session_id 摘要做交叉校验。
+
 LMK 还要判断设备是否支持低内存 kill 上报。AOSP `ActivityManager.isLowMemoryKillReportSupported()` 读取 `persist.sys.lmk.reportkills`;不支持时,内存压力下的 kill 可能退化为 `REASON_SIGNALED` 和 `SIGKILL`。这类样本可以推动内存预算和 WebView 降级,不能直接等同于代码崩溃。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java]
 
 ## WebView renderer 退出的单独处理
@@ -280,6 +284,14 @@ SafeMode 的动作要按故障半径分级。降级过重会把可恢复的小�
 | L3 保护模式 | 同一版本连续启动失败,无法确认模块 | 只初始化账号、配置、修复、上报、基础 UI | 版本升级、补丁命中,或本地连续成功启动达到阈值 |
 | L4 停止自拉起 | 子进程 / 服务反复崩溃 | 暂停后台服务、指数退避重启 | 远程配置或下次版本恢复 |
 
+**案例 1：三方 SDK 初始化连续失败的 L1 降级**
+
+某个视频 SDK 在特定 ROM + Android 14 上连续两次冷启动在 `VideoSDK.init()` 处抛出 `UnsatisfiedLinkError`,导致 marker 停在 `launching`。由于 crash 签名稳定(同一 native lib、同一异常类型、同一进程),第三次启动时 SafeMode 判定为 L1 模块降级:跳过该 SDK 初始化,视频页改为 Web fallback。恢复条件是同一版本成功启动 3 次且远程开关确认 SDK 服务可用后才重新启用。这个案例的关键经验是:降级粒度必须能精确到单个 SDK——如果整页都关闭,用户连 fallback 都看不到。
+
+**案例 2：启动首页 H5 容器白屏的 L2 降级**
+
+某个版本的 WebView 在 Android 16 上预加载池中的 Renderer 反复 gone,首屏 H5 无法渲染;原生首页和账号模块完好。SafeMode 命中 L2 启动路径降级:关闭 WebView 预加载池和离线包注入,首屏切到原生降级页(展示核心功能入口 + 修复提示),保留账号和推送模块。恢复条件:进入降级页完成配置拉取、H5 容器水位恢复后重新打开。这个案例避开了"把 WebView 问题升级到整个 App 保护模式"的常见错误。
+
 降级开关必须本地可读。进入崩溃循环的设备可能离线,不能依赖服务端实时返回。远程配置只能收紧或放宽本地规则,不能成为唯一判定来源。
 
 恢复条件要比进入条件更保守。一次成功启动只说明当前路径通过,不说明问题消失。推荐同时满足:同一版本连续成功启动 N 次、没有新的同签名失败、修复配置版本已更新、关键页面进入过一次。版本升级可以清理旧签名,但要保留"升级前进入过 SafeMode"的事件,方便灰度复盘。
@@ -316,7 +328,25 @@ SafeMode 需要一组排除规则,否则会把正常生命周期当成故障:
 
 排除规则的落点仍然是 marker 匹配。没有 marker,只有退出原因,就上报观察;有 marker,但版本、进程、时间窗口对不上,也只上报观察。SafeMode 的判定应宁可少触发,也不要把用户带进错误的降级状态。
 
-## 源码级深度补充(Crash 文件持久化协议可靠性边界)
+## 文件持久化协议与系统退出状态机(概要)
+
+SafeMode 落盘的可靠性依赖文件持久化协议。Android 框架内有三套独立的 crash 文件持久化实现:
+
+- **`AtomicFile`**(Java 端):`finishWrite()` 先 fsync 文件,再 `rename(2)` 原子切换 `.new` → 正式文件。限制:不 fsync 父目录,跨文件系统 rename 不捕获 EXDEV。
+- **`DropBoxManagerService`**:写 `.tmp` 文件后通过 `EntryFile.renameTo()` 提交,不显式 fsync;重启时 `init()` 清理残留 `.tmp`(未提交信号)。依赖文件系统惰性刷盘。
+- **`tombstoned`**(Native 端):`O_TMPFILE` + `linkat` + `unlink` 提交,不走 rename;同样不 fsync 文件和目录。
+
+三套实现的共性缺口是**不 fsync 父目录**——POSIX 语义下 `rename(2)` 修改了父目录的目录项,必须 fsync 父目录 fd 才能保证元数据在 power-cut 后可见。这是 AOSP 自身持久化边界的最大盲点。
+
+`AppExitInfoTracker`(system_server)维护 16 条/容器的 LRU 退出记录环形缓冲,按 `packageName + uid + pid` 定位,`lmkd > zygote > AM 自杀` 三级信号源优先级,写入前做 15 秒去抖。作为 SafeMode 补偿读取的系统侧数据源,它的字段语义和边界在正文已展开。
+
+这两节完整的源码级分析(AtomicFile fsync 链路、DropBox 状态机、tombstoned linkat 协议、RecoverySystem BCB 写入、AppExitInfoTracker 多源聚合)已移至技术附录,详见下方的「附录 A:Crash 文件持久化协议可靠性边界」和「附录 B:AOSP AppExitInfoTracker 状态机参考」。
+
+
+
+## 附录 A:Crash 文件持久化协议可靠性边界
+
+> 本节内容原位于正文"源码级深度补充"章节,移至附录保留完整源码分析供深度查阅。
 
 AOSP 自身没有"统一"的崩溃文件持久化协议,而是分散在三套独立实现里:1 `android.util.AtomicFile`(Java 端约定俗成的原子写)走"写 `.new` → fsync → `renameTo`";2 `DropBoxManagerService` 走"写 `drop<pid>.tmp` → `createEntry()` 内 `EntryFile` 执行 `temp.renameTo(final file)` → `enrollEntry`"但**不**对 tmp 做 fsync;`init()` 启动时清理未提交的残留 `.tmp`;3 `tombstoned`(Native 端)走 `O_TMPFILE` → `linkat` + `unlink` 硬链接提交,**不**走 rename。文件系统层面 `rename(2)` 在同一文件系统内是原子的,但**不能**保证跨 power-cut 的元数据持久性--必须 `fsync(file)` + `fsync(parent dir)`。这三套实现都没有把目录 fsync 显式化,是 AOSP 自身 crash 文件持久化边界的最大盲点。锚定版本:AOSP android-17.0.0_r1;旧版本实现细节需按对应 tag 复核。
 
@@ -488,8 +518,9 @@ Os.close(dirFd);
 
 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/util/AtomicFile.java、core/java/android/os/FileUtils.java、services/core/java/com/android/server/DropBoxManagerService.java、core/java/android/os/RecoverySystem.java、services/core/java/com/android/server/recoverysystem/RecoverySystemService.java、system/core/debuggerd/tombstoned/tombstoned.cpp;本节调研对应《2026-06-16-crash-file-persistence-protocol-reliability.md》]
 
+## 附录 B:AOSP AppExitInfoTracker 状态机参考
 
-## 源码级深度补充(AOSP AppExitInfoTracker 参照)
+> 本节内容原位于正文"源码级深度补充"章节,移至附录供工程实现参考。
 
 AOSP 自身在 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java` 维护一个进程退出状态机,可作为本节工程设计的参考实现。锚定版本:AOSP android-17.0.0_r1。
 

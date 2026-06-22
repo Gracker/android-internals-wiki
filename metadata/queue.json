@@ -108,6 +108,42 @@
       "status": "completed",
       "completed_at": "2026-06-22T10:52:56.773004+08:00",
       "completed_reason": "Task2B 主修复: 修正 DropBoxManagerService renameTo 状态机、AtomicFile.failWrite 行为、crash_envelope fsync API 签名、全局版本锚点更新至 android-17.0.0_r1"
+    },
+    {
+      "section": "20.12",
+      "section_title": "SafeMode 崩溃循环判定与启动补偿链路",
+      "priority": 90,
+      "reason": "[review回炉] Task6 review 发现内容深度和工程实践经验不足，需要补充实用指导",
+      "material_paths": [
+        "logs/review/2026-06-22-11-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "全文",
+          "detail": "缺少实际工程实践经验，过于理论化",
+          "suggestion": "在关键决策点增加实际工作中遇到的坑和经验分享，加入\"实际工作中我们发现...\"的实践经验段落"
+        },
+        {
+          "type": "需重写",
+          "location": "SafeMode 降级动作章节",
+          "detail": "降级策略的具体实现示例不够丰富",
+          "suggestion": "增加1-2个实际案例展示如何选择和实现不同等级的降级策略，包括具体的代码示例"
+        },
+        {
+          "type": "需重写",
+          "location": "源码级深度补充章节",
+          "detail": "部分源码实现细节过于深入，影响可读性",
+          "suggestion": "将最底层的源码实现细节移至附录或技术附录章节，保留核心概念和接口使用方法"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-22T11:11:00+08:00",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-22-11-review.md",
+      "completed_at": "2026-06-22T12:51:50+08:00",
+      "completed_reason": "Task2B main 回炉修复完成：补充工程实践经验、降级案例、源码深度内容移至附录"
     }
   ]
 }
