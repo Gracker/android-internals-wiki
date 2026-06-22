@@ -1,45 +1,5 @@
 {
-  "pending": [
-    {
-      "section": "20.12",
-      "section_title": "SafeMode 崩溃循环判定与启动补偿链路",
-      "priority": 95,
-      "reason": "[Deep Tech Review] DropBoxManagerService 状态机、AtomicFile.failWrite 行为、crash_envelope fsync 示例存在源码/API 级错误，且 Android 17 锚点已过期。",
-      "material_paths": [
-        "logs/deep-review/2026-06-22-10-deep-review.md",
-        "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
-      ],
-      "review_issues": [
-        {
-          "type": "P0 源码错误",
-          "location": "源码级深度补充 / DropBoxManagerService 的 `.tmp` 状态机（约 L344-L375）",
-          "detail": "章节称 createEntry(temp, tag, flags) “直接注册到 mAllFiles(不 rename)”、tmp 写完后直接作为 entry。AOSP android-17.0.0_r1 中 createEntry() 会调用 new EntryFile(temp, mDropBoxDir, tag, t, flags, mBlockSize)，EntryFile(File temp, ...) 内部执行 temp.renameTo(final file) 后才 enrollEntry；启动 init() 只清理未提交的残留 .tmp。当前正文把 DropBox 的提交状态机讲反。",
-          "suggestion": "将 DropBox 描述改为“.tmp 写入后通过 EntryFile.renameTo() 提交到最终文件名，再 enroll 到内存索引；残留 .tmp 只表示提交前中断，init() 会删除”。保留“写入路径无显式 fsync”的边界，但移除“不 rename / .tmp 直接作为 entry / .tmp 可作为 completed entry”的结论。"
-        },
-        {
-          "type": "P0 源码错误",
-          "location": "AOSP AtomicFile 的 fsync + rename 实现（约 L336）",
-          "detail": "正文后半段称 AtomicFile.failWrite() “只删除 .new 不做 fsync”，与同章 L148 和 AOSP 不一致。android-17.0.0_r1 AtomicFile.failWrite(FileOutputStream) 先调用 FileUtils.sync(str)，再 close，最后 delete .new。",
-          "suggestion": "把 failWrite() 行为修正为“sync + close + delete .new”，并保留父目录未 fsync 的限制；同时消除前后段落自相矛盾。"
-        },
-        {
-          "type": "P0 API 签名错误",
-          "location": "应用层 crash_envelope 的 fsync 协议示例（约 L472-L484）",
-          "detail": "示例把 Os.open() 的返回值写成 int dirFd，并调用 Os.fsync(dirFd)/Os.close(dirFd)；Android 的 android.system.Os.open() 返回 FileDescriptor，Os.fsync()/Os.close() 也接收 FileDescriptor。正文还称 Android 12+ 可用 android.os.ParcelFileDescriptor.fsync()，但 android-17.0.0_r1 的 ParcelFileDescriptor 没有 fsync() 方法。",
-          "suggestion": "将示例改为 FileDescriptor dirFd = Os.open(dir.getPath(), OsConstants.O_RDONLY, 0); Os.fsync(dirFd); Os.close(dirFd); 并删除 ParcelFileDescriptor.fsync() 说法；低版本不需要因为 fsync 本身走 JNI，android.system.Os.fsync(FileDescriptor) 是公开系统调用封装。"
-        },
-        {
-          "type": "P1 版本差异",
-          "location": "frontmatter 与源码锚点（L8-L10, L67, L318, 多处 [已验证]）",
-          "detail": "本轮 preflight 后复核到 android-17.0.0_r1 已在 android.googlesource 公开；章节仍写“Android 17 tag not public”，并在正文一处直接断言 android-17/API37 范围接口未变，但大多数锚点仍停在 android-16.0.0_r4 或 android-14.0.0_r30。",
-          "suggestion": "Task2B 回炉时统一用 android-17.0.0_r1 复核 AtomicFile、DropBoxManagerService、ApplicationExitInfo、ActivityManager、WebViewClient/WebViewRenderProcessClient、AppExitInfoTracker、tombstoned 等锚点；若决定章节继续只覆盖 Android 16，应删除“Android 17 tag not public / API37 未变”这类已过期表述。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-22T10:30:04+08:00",
-      "status": "pending"
-    }
-  ],
+  "pending": [],
   "in_progress": [],
   "completed": [
     {
@@ -107,6 +67,47 @@
       "status": "completed",
       "completed_at": "2026-06-22T09:35:00+08:00",
       "completed_reason": "fixed-lite"
+    },
+    {
+      "section": "20.12",
+      "section_title": "SafeMode 崩溃循环判定与启动补偿链路",
+      "priority": 95,
+      "reason": "[Deep Tech Review] DropBoxManagerService 状态机、AtomicFile.failWrite 行为、crash_envelope fsync 示例存在源码/API 级错误，且 Android 17 锚点已过期。",
+      "material_paths": [
+        "logs/deep-review/2026-06-22-10-deep-review.md",
+        "src/part5-app/ch20-stability/12-safemode-crash-loop-recovery.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 源码错误",
+          "location": "源码级深度补充 / DropBoxManagerService 的 `.tmp` 状态机（约 L344-L375）",
+          "detail": "章节称 createEntry(temp, tag, flags) “直接注册到 mAllFiles(不 rename)”、tmp 写完后直接作为 entry。AOSP android-17.0.0_r1 中 createEntry() 会调用 new EntryFile(temp, mDropBoxDir, tag, t, flags, mBlockSize)，EntryFile(File temp, ...) 内部执行 temp.renameTo(final file) 后才 enrollEntry；启动 init() 只清理未提交的残留 .tmp。当前正文把 DropBox 的提交状态机讲反。",
+          "suggestion": "将 DropBox 描述改为“.tmp 写入后通过 EntryFile.renameTo() 提交到最终文件名，再 enroll 到内存索引；残留 .tmp 只表示提交前中断，init() 会删除”。保留“写入路径无显式 fsync”的边界，但移除“不 rename / .tmp 直接作为 entry / .tmp 可作为 completed entry”的结论。"
+        },
+        {
+          "type": "P0 源码错误",
+          "location": "AOSP AtomicFile 的 fsync + rename 实现（约 L336）",
+          "detail": "正文后半段称 AtomicFile.failWrite() “只删除 .new 不做 fsync”，与同章 L148 和 AOSP 不一致。android-17.0.0_r1 AtomicFile.failWrite(FileOutputStream) 先调用 FileUtils.sync(str)，再 close，最后 delete .new。",
+          "suggestion": "把 failWrite() 行为修正为“sync + close + delete .new”，并保留父目录未 fsync 的限制；同时消除前后段落自相矛盾。"
+        },
+        {
+          "type": "P0 API 签名错误",
+          "location": "应用层 crash_envelope 的 fsync 协议示例（约 L472-L484）",
+          "detail": "示例把 Os.open() 的返回值写成 int dirFd，并调用 Os.fsync(dirFd)/Os.close(dirFd)；Android 的 android.system.Os.open() 返回 FileDescriptor，Os.fsync()/Os.close() 也接收 FileDescriptor。正文还称 Android 12+ 可用 android.os.ParcelFileDescriptor.fsync()，但 android-17.0.0_r1 的 ParcelFileDescriptor 没有 fsync() 方法。",
+          "suggestion": "将示例改为 FileDescriptor dirFd = Os.open(dir.getPath(), OsConstants.O_RDONLY, 0); Os.fsync(dirFd); Os.close(dirFd); 并删除 ParcelFileDescriptor.fsync() 说法；低版本不需要因为 fsync 本身走 JNI，android.system.Os.fsync(FileDescriptor) 是公开系统调用封装。"
+        },
+        {
+          "type": "P1 版本差异",
+          "location": "frontmatter 与源码锚点（L8-L10, L67, L318, 多处 [已验证]）",
+          "detail": "本轮 preflight 后复核到 android-17.0.0_r1 已在 android.googlesource 公开；章节仍写“Android 17 tag not public”，并在正文一处直接断言 android-17/API37 范围接口未变，但大多数锚点仍停在 android-16.0.0_r4 或 android-14.0.0_r30。",
+          "suggestion": "Task2B 回炉时统一用 android-17.0.0_r1 复核 AtomicFile、DropBoxManagerService、ApplicationExitInfo、ActivityManager、WebViewClient/WebViewRenderProcessClient、AppExitInfoTracker、tombstoned 等锚点；若决定章节继续只覆盖 Android 16，应删除“Android 17 tag not public / API37 未变”这类已过期表述。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-22T10:30:04+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-22T10:52:56.773004+08:00",
+      "completed_reason": "Task2B 主修复: 修正 DropBoxManagerService renameTo 状态机、AtomicFile.failWrite 行为、crash_envelope fsync API 签名、全局版本锚点更新至 android-17.0.0_r1"
     }
   ]
 }
