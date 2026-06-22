@@ -2,7 +2,7 @@
 title: "Android 17 Perfetto 数据源边界与验证"
 chapter: "13.17"
 section: "13.17"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-06-16"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -26,13 +26,13 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-23"
-last_task6_at: "2026-06-23T01:10:00+08:00"
+last_task6_at: "2026-06-23T02:08:00+08:00"
 # task2b_state restored 2026-06-16 by Task9 — Android 17 重基完成 2026-06-22
 task9_result: "auto-fixed"
 task2b_result: "fixed"
@@ -41,7 +41,6 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-23"
 last_task9_at: "2026-06-23T01:30:06+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-23-01-deep-review.md"
-last_task2b_at: 2026-06-22T22:53:02+08:00
 last_task2b_lite_at: 2026-06-22
 task9_review_notes: "2026-06-23 Task9 deep-review：auto-fix Android 17 重基后的源码行号、ShouldRejectDueToFilter 片段、linux.perf/traced_perf 版本归因与 readtracefs 权限用途；无剩余 P0/P1，回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-23"
