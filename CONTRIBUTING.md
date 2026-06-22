@@ -73,7 +73,7 @@ related_chapters: ["X.Y", "X.Z"]
 
 ## 验证标注规范
 
-- `[已验证: AOSP android-16.0.0_r1, frameworks/base/...]` — 源码验证
+- `[已验证: AOSP android-17.0.0_r1, frameworks/base/...]` — 源码验证
 - `[已验证: 官方文档, developer.android.com/...]` — 官方文档验证
 - `[待验证]` — 未能验证
 - `[待补充]` — 内容缺失

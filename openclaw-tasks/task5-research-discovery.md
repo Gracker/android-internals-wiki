@@ -58,7 +58,7 @@
 | 16 | 窗口与显示 | WindowManager, DisplayPolicy, pip, multi-window |
 | 17 | 音频与媒体 | AudioFlinger, MediaCodec, ExoPlayer |
 | 18 | 调试与稳定性 | tombstone, anr, watchdog, native crash |
-| 19 | 新版本特性 | Android 16/17 preview, API changes, behavior changes |
+| 19 | 新版本特性 | Android 17 stable, API changes, behavior changes |
 
 轮转规则：`主题序号 = (YYYYMMDD % 20)`，如 2026-03-29 → 20260329 % 20 = 9（图形与 GPU）
 
@@ -67,7 +67,7 @@
 #### L1 - AOSP 官方源码
 - 搜索 cs.android.com 获取最新代码变更
 - 检查 AOSP Gerrit 的近期 commit
-- 关注 android-16.0.0_r1 分支的关键变更
+- 关注 android-17.0.0_r1 分支的关键变更
 
 #### L2 - 官方文档与博客
 - developer.android.com 的 API 变更

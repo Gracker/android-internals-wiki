@@ -8,7 +8,7 @@
 ## 项目特点
 
 - **跨层覆盖**：App → Framework → Native → Kernel，完整链路
-- **持续更新**：按 Android 版本持续追踪变化（稳定基准：Android 16，并持续跟踪 Android 17 变化）
+- **持续更新**：按 Android 版本持续追踪变化（当前基准：Android 17 / API 37）
 - **源码级引用**：每个知识点标注 AOSP 源码路径，可追溯验证
 - **实战驱动**：大量来自一线性能优化的真实案例
 
@@ -57,6 +57,8 @@ mdbook serve
 
 章节 frontmatter 目前主要跟踪工作流状态，如 `ready-for-review`、`finalized`。
 正文中的知识点级标注仍使用以下验证状态：
+
+默认源码验证锚点为 AOSP `android-17.0.0_r1`。旧版本 tag 只用于版本演进、历史行为对比或章节内明确说明的低版本边界。
 
 - `verified` — 已通过 AOSP 源码或实机验证
 - `draft` — 初稿完成，等待验证

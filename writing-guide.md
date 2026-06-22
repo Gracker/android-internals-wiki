@@ -186,7 +186,7 @@ Choreographer.scheduleFrameLocked()。这个方法做的核心事情只有一件
 
 ```java
 // frameworks/base/core/java/android/view/Choreographer.java
-// @ AOSP android-17-beta3
+// @ AOSP android-17.0.0_r1
 private void scheduleFrameLocked(long now) {
     if (!mFrameScheduled) {
         mFrameScheduled = true;  // 标记：已经申请了，避免重复申请

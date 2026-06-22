@@ -34,7 +34,7 @@
 
 **L1 - AOSP 源码验证**：
 - 通过搜索 cs.android.com 或已知的 AOSP 代码路径，确认关键类名、方法名、流程描述是否准确
-- 标注源码路径和分支：`frameworks/base/core/java/android/os/Handler.java @ android-16.0.0_r1`
+- 标注源码路径和分支：`frameworks/base/core/java/android/os/Handler.java @ android-17.0.0_r1`
 
 **L2 - 官方文档验证**：
 - 查阅 developer.android.com、source.android.com 确认 API 行为、参数、限制
@@ -66,7 +66,7 @@
 **优先级 3（深层内容必须）：L1 AOSP 源码验证**
 - 仅用于：内核机制（调度/内存/IO）、渲染管线细节、系统服务内部逻辑
 - 不用于：一般性 API 描述、工具使用方法、最佳实践建议
-- 标注格式：`[已验证: AOSP android-16.0.0_r1, path/to/File.java:行号]`
+- 标注格式：`[已验证: AOSP android-17.0.0_r1, path/to/File.java:行号]`
 
 **优先级 4（可选）：L3 Deep Research**
 - 仅在高爷明确指示或涉及前沿话题时执行
@@ -122,7 +122,7 @@ related_chapters: ["X.Y", "X.Z"]
 ```
 
 ### 草稿标注规范
-- `[已验证: AOSP android-16.0.0_r1, frameworks/base/...]`：已通过源码验证
+- `[已验证: AOSP android-17.0.0_r1, frameworks/base/...]`：已通过源码验证
 - `[已验证: 官方文档, developer.android.com/...]`：已通过官方文档验证
 - `[待验证]`：内容逻辑上合理但未能验证
 - `[待补充]`：内容逻辑上缺失的部分
