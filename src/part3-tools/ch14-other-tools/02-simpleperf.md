@@ -39,9 +39,10 @@ task6_result: pass-light-edit
 task6_review_notes: "2026-06-22 01 Task6 revisiting-review (Task9 autofix 后复审): pass-light-edit。L1/L2 全面扫描零命中（'上分'为'上分流'误匹配）。否定-纠正结构 1 处在限内。无 B 类问题。自动晋升 finalized。"
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_lite_at: 2026-06-22
 reviewed_by: openclaw-task9
 reviewed_date: 2026-06-22
 last_task6_at: "2026-06-22T01:10:00+08:00"
@@ -245,7 +246,7 @@ simpleperf record -t 5678
 # 按包名等待并采样应用进程
 simpleperf record --app com.example.app
 
-# 按多个 PID 过滤（-p 只接受逗号分隔的数字 PID，不支持进程名正则）
+# 按多个 PID 过滤（-p 支持数字 PID 和进程名正则）
 simpleperf record -p 1234,5678
 
 # 按进程名正则排除系统进程样本
@@ -862,7 +863,7 @@ Simpleperf **没有 thermal listener**，PMU 计数器反映当前 CPU 周期数
 - scheduler 触发 `sched_migrate_task` 时 perf_event 通过 `inherit=1` 自动跟随（`cmd_record.cpp:1173`）
 - system-wide 录制下首次 sample 命中 pid 时 `DumpMapsForRecord()` 才 dump maps（Android 17 已移除 `MapRecordThread`），background CPU 占用降低
 
-#### 厂商 ROM 的限制（未一手验证）
+#### 厂商 ROM 的限制（待验证观察）
 
 | 厂商 / 系统 | 限制 | 临时绕过 |
 |---|---|---|
