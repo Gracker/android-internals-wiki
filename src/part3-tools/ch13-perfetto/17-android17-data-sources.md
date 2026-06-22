@@ -26,17 +26,17 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task2b_pending"
-task6_state: revisiting
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
 last_task6_at: "2026-06-16T23:16:33+08:00"
 # task2b_state restored 2026-06-16 by Task9 — Android 17 重基完成 2026-06-22
 task9_result: "needs-rework"
-task2b_result: "fixed-lite"
-task2b_state: "pending"
+task2b_result: "fixed"
+task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-23"
 last_task9_at: "2026-06-23T00:29:23+08:00"
@@ -47,6 +47,7 @@ task9_review_notes: "2026-06-23 Task9 deep-review：发现 Android 17 源码片�
 last_task9_autofix_at: "2026-06-16"
 auto_promoted_at: "2026-06-16T23:16:33+08:00"
 last_task9_audit: "2026-06-22"
+last_task2b_at: "2026-06-23T00:51:41+08:00"
 ---
 
 
@@ -268,7 +269,7 @@ int GetRawInheritedListeningSocket() {
 }
 
 int TracedPerfMain(int, char**) {
-  base::UnixTaskRunner task_runner;
+  base::MaybeLockFreeTaskRunner task_runner;
   AndroidRemoteDescriptorGetter proc_fd_getter{GetRawInheritedListeningSocket(),
                                                &task_runner};
   profiling::PerfProducer producer(&proc_fd_getter, &task_runner);
@@ -288,7 +289,7 @@ constexpr char kDataSourceName[] = "linux.perf";
 
 ### 2.4 进程过滤机制
 
-`perf_producer.cc` line 80-103：
+`perf_producer.cc` line 326-378（`android-17.0.0_r1`）：
 ```cpp
 bool ShouldRejectDueToFilter(pid_t pid, const TargetFilter& filter) {
   bool reject_cmd = false;
@@ -309,6 +310,8 @@ bool ShouldRejectDueToFilter(pid_t pid, const TargetFilter& filter) {
   ...
 }
 ```
+
+Android 17 中 `ShouldRejectDueToFilter` 使用 `glob_aware::MatchGlobPattern` 进行 cmdline 匹配，支持 `*` 通配符。额外包含 `skip_cmdline` 跳过列表、`additional_cmdline_count` 多 cmdline 进程、`process_sharding` 分片等边界处理。
 
 TraceConfig 字段与 `TargetFilter` 内部集合名要区分。对外配置使用：
 - `callstack_sampling.scope.target_cmdline`：白名单 cmdline（Android 13+ 支持单个通配符）
@@ -360,9 +363,9 @@ message PerfEventConfig {
 |-------------|---------|----------|
 | **Android 10 (API 29)** | Perfetto 系统服务内置；不支持两个核心数据源 | FrameTimeline/ 目录不存在 |
 | **Android 11 (API 30)** | heapprofd 完善，`android.java_hprof` 引入 | perfetto 主线 |
-| **Android 12 (API 31)** | `linux.perf` (`traced_perf`) 引入；`android.surfaceflinger.frametimeline` 引入 | lineage-18.1 traced_perf.cc |
-| **Android 13-15 (API 33-35)** | SurfaceFlinger refactor，FrameTimeline 完善 | lineage-22.2 完整实现 |
-| **Android 16 (API 36)** | `commit_not_composited` flag、完整优化 | lineage-22.2 = android-16.0.0_r3 |
+| **Android 12 (API 31)** | `linux.perf` (`traced_perf`) 引入；`android.surfaceflinger.frametimeline` 引入 | android-12.0.0_r1 traced_perf.cc |
+| **Android 13-15 (API 33-35)** | SurfaceFlinger refactor，FrameTimeline 完善 | android-13.0.0_r1 / android-15.0.0_r1 FrameTimeline |
+| **Android 16 (API 36)** | `commit_not_composited` flag、完整优化 | android-16.0.0_r3 FrameTimeline |
 | **Android 17 (API 37)** | 单一 `presentThreshold`（2ms）；JankType 扩展为 16 种；traced_perf 增加 `readtracefs`、`task_profiles ProcessCapacityHigh`、`shared_kallsyms` 与属性驱动启停 | `android-17.0.0_r1` 已公开并验证 |
 
 ## 5. 性能影响分析
@@ -384,7 +387,7 @@ message PerfEventConfig {
 ```sql
 -- 查询 FrameTimeline jank 数据（trace_processor SQL）
 SELECT display_frame_token, name, jank_type
-FROM actual_frame_timeline
+FROM actual_frame_timeline_slice
 WHERE jank_type != 'None'
 ORDER BY display_frame_token DESC
 LIMIT 20;
@@ -441,9 +444,9 @@ data_sources {
 }
 ```
 
-## 7. 二次验证计划
+## 7. 已执行回归检查
 
-Android 17 / API 37 公开 tag 发布后，需执行以下验证：
+以下复核命令已在 `android-17.0.0_r1` 公开后执行：
 
 ```bash
 # 1. 检查数据源常量是否变更
