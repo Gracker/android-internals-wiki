@@ -34,9 +34,9 @@ related_chapters:
 - '14.1'
 task9_result: "pass-tech-review"
 last_task2b_at: "2026-05-28T14:50:00+08:00"
-task9_reviewed_date: "2026-05-30"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-30T00:28:17+08:00"
+task9_reviewed_date: "2026-06-22"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-22T16:31:06+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
@@ -44,24 +44,27 @@ last_task9_audit: "2026-06-16"
 last_task9_audit_log: "logs/deep-review/2026-06-16-19-audit.md"
 status: "finalized"
 task6_state: "revising"
-task9_state: pending
+task9_state: "reviewed"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-29"
 last_task6_at: "2026-05-29T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-06-review.md"
 task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。正文 L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项，Task9 auto-fixed 不满足自动晋升条件，送 Task9 复审。"
-last_task9_review_log: logs/deep-review/2026-05-30-00-deep-review.md
-task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。 | 2026-05-30 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 SurfaceFlinger FrontEnd mainline 锚点与 kMustComposite/tryFastUpdate 边界，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-22-16-deep-review.md"
+task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。 | 2026-05-30 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 SurfaceFlinger FrontEnd mainline 锚点与 kMustComposite/tryFastUpdate 边界，回到 Task6 复审。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；复核 dumpsys.cpp、ActivityManagerService exit-info、HWUI FrameInfo/JankTracker/GraphicsStatsService、SurfaceFlinger dump flags 与 FrontEnd 锚点；无阻断技术问题。"
 last_task9_autofix_at: "2026-05-30"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: "openclaw-task6"
-task9_reviewed_at: "2026-05-29T05:20:00+08:00"
+task9_reviewed_at: "2026-06-22T16:31:06+08:00"
 updated_by: "openclaw-task9"
-updated_date: "2026-05-29"
+updated_date: "2026-06-22"
 deepseek_cn_review_state: done
 last_task6_audit: "2026-06-10"
 last_deepseek_cn_review_at: 2026-05-31
+p0: 0
+p1: 0
+p2: 0
 ---
 
 # dumpsys 系列命令
