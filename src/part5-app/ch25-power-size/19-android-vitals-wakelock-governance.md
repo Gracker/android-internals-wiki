@@ -57,6 +57,10 @@ last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
 task9_review_notes: "2026-06-05 Task9：源码/API/版本边界复核无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
+last_task9_audit: "2026-06-22"
+last_task9_audit_at: "2026-06-22T15:25:24+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-22-15-audit.md"
+last_task9_audit_result: "pass-idle-audit"
 ---
 
 # 25.19 Android Vitals 过度 WakeLock 指标与治理
