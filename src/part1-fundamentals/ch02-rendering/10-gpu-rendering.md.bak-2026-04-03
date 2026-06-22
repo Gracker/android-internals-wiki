@@ -2,7 +2,7 @@
 title: "GPU 渲染深入"
 chapter: "2.10"
 status: reviewed
-applicable_versions: "Android 12 - Android 16 (API 31-36)"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: high

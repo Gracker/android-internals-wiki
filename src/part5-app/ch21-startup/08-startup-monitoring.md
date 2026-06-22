@@ -3,7 +3,7 @@ title: "启动监控与度量"
 chapter: "21.8"
 section: "21.8"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "Android Developers docs, Google Play Android Vitals, Clippings structure refs"
 confidence: medium

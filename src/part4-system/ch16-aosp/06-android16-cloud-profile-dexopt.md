@@ -5,7 +5,7 @@ chapter: "16.6"
 section: "16.6"
 status: "finalized"
 drafted_date: "2026-05-15"
-applicable_versions: "Android 14 (API 34) - Android 16 (API 36)"
+applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-16.0.0_r1 ArtFileManager.java / PrimaryDexopter.java / DexMetadataHelper.java; source.android.com ART Service configuration; Android Developers Baseline Profiles docs"
 confidence: medium

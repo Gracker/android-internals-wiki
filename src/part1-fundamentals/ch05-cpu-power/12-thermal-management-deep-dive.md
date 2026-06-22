@@ -7,7 +7,7 @@ title: "Thermal 管控深度：从内核子系统到 ADPF 主动降频"
 chapter: "5.12"
 section: "5.12"
 status: finalized
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-04-12"

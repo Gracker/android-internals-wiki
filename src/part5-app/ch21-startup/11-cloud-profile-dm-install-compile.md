@@ -4,9 +4,9 @@
 title: "云端 Profile、DM 文件与安装后编译优化"
 chapter: "21.11"
 section: "21.11"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-21"
-applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
+applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-05-21"
 last_verified_against: "source.android.com ART configure / ART Service configuration, Android Developers Baseline Profiles docs, AOSP DexMetadataHelper + installd dexopt.cpp + ART Service"
 confidence: medium
@@ -38,15 +38,15 @@ related_chapters: ["1.7", "8.2", "21.4", "21.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "素材驱动/AOSP结构/官方文档"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_date: "2026-05-21"
 reviewed_by: openclaw-task6
 review_type: draft-review
 review_round: 1
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 last_task6_at: "2026-05-21T01:15:21+08:00"
 last_task6_audit: 2026-06-15
 last_task6_review_log: logs/review/2026-05-21-01-review.md
@@ -55,15 +55,17 @@ task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-06
-last_task9_at: 2026-06-06T13:25:00+08:00
-last_task9_review_log: logs/deep-review/2026-06-06-13-deep-review.md
+last_task9_at: "2026-06-22T19:25:53+08:00"
+last_task9_review_log: logs/deep-review/2026-06-22-19-audit.md
 last_task2b_lite_at: "2026-06-06"
-task9_review_notes: '2026-05-21 Task9 01: needs-rework。P0 1：ART Service dump 命令；P1 1：无 profile 基线命令/API34+ 口径。已写入 logs/deep-review/2026-05-21-01-deep-review.md。'
+task9_review_notes: '2026-05-21 Task9 01: needs-rework。P0 1：ART Service dump 命令；P1 1：无 profile 基线命令/API34+ 口径。已写入 logs/deep-review/2026-05-21-01-deep-review.md。; 2026-06-22 Task9 idle-audit AUTO-FIX: 按 Android 17 ArtShellCommand 修正 API34+ pm compile --reset 与 external profile 口径。'
 task2b_fixed_date: "2026-06-06"
 finalized_date: 2026-06-06
 finalized_by: openclaw-task9-auto-promote
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
+last_deepseek_cn_review_at: 2026-06-22
+last_task9_audit: 2026-06-22
+last_task9_autofix_at: 2026-06-22
 ---
 
 # 21.11 云端 Profile、DM 文件与安装后编译优化
@@ -87,7 +89,7 @@ last_deepseek_cn_review_at: 2026-06-06
 覆盖错误 profile、过窄场景、动态特性模块、热修复和 R8 混淆变更带来的失效场景，说明线上回归需要看启动耗时、安装耗时和崩溃率三类指标。
 
 ### 🔹 与 Baseline Profile 实战的分工
-本节聚焦系统如何消费 profile 与如何验证效果；生成规则、Macrobenchmark 录制和 Gradle 集成详见 21.4 节。
+本节聚焦系统如何利用 profile 以及如何验证效果；生成规则、Macrobenchmark 录制和 Gradle 集成详见 21.4 节。
 
 ## 扩展
 
@@ -101,7 +103,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 ## 为什么单独拆出这一节
 
-21.4 节已经写了 Baseline Profile 怎么生成、怎么接入、怎么用 Macrobenchmark 验证。本节换一个角度：应用发布后，系统和安装来源怎样消费 profile，以及 App 团队怎样判断某次启动收益是不是来自编译状态变化。
+21.4 节已经写了 Baseline Profile 怎么生成、怎么接入、怎么用 Macrobenchmark 验证。本节换一个角度：应用发布后，系统和安装来源怎样利用 profile，以及 App 团队怎样判断某次启动收益是不是来自编译状态变化。
 
 启动优化里最容易混在一起的有三类成本：代码解释执行 / JIT 预热、启动任务本身耗时、类加载和 DEX 布局 I/O。Profile 只影响其中一部分。若主线程卡在数据库升级、网络同步、锁等待或 SDK 初始化，Cloud Profile 和 Baseline Profile 都不会把这些任务变短。
 
@@ -113,7 +115,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 | Profile 类型 | 生产者 | 到达设备的时机 | 主要影响 | 验证入口 |
 |---|---|---|---|---|
-| Baseline Profile | App 团队、库作者、CI | 随 APK / AAB 打包，安装或后续编译时被 ART 消费 | 新安装、新升级后的 Day-0 代码执行成本 | APK 内 `assets/dexopt/baseline.prof`、`ProfileVerifier`、`pm art dump` |
+| Baseline Profile | App 团队、库作者、CI | 随 APK / AAB 打包，安装或后续编译时被 ART 使用 | 新安装、新升级后的 Day-0 代码执行成本 | APK 内 `assets/dexopt/baseline.prof`、`ProfileVerifier`、`pm art dump` |
 | Cloud Profile | Google Play 基于用户群体聚合 | Play 分发时随 dex metadata 一起到达设备 | 补充真实用户高频路径，覆盖开发脚本没跑到的路径 | 安装来源、`.dm` 文件、编译状态 |
 | 本地 JIT Profile | 单台设备运行时 | 用户实际使用后写入 `/data/misc/profiles/cur/.../primary.prof` | 后续启动和后台编译逐步收敛 | `profman --dump-profile-file`、后台 dexopt 日志 |
 | Startup Profile | App 团队、构建系统 | 构建期交给 D8 / R8 做 DEX layout | 启动路径类和方法的物理布局 | APK DEX 布局、Macrobenchmark 对比 |
@@ -184,15 +186,15 @@ Android 14+ 优先看 `pm art dump`；旧设备可退回 `dumpsys package dexopt
 | Baseline / Cloud Profile 命中 | 使用目标安装来源安装，等待或强制触发 `speed-profile` | profile 是否改善首次或前几次启动 |
 | 稳态组 | 应用运行多次，后台 dexopt 完成后启动 | 本地 JIT profile 和后台编译收敛后能到什么水平 |
 
-下面的命令适合线下实验，用于构造“无 profile”和“强制 speed-profile”两个状态。执行前先确认测试设备允许这些 shell 操作。
+下面的命令适合线下实验，用于构造“无本地 profile / 无 AOT 编译产物”和“强制 speed-profile”两个状态。执行前先确认测试设备允许这些 shell 操作。
 
 ```bash
-# === API 34+ (Android 14+)：两步清理 ===
-# 第一步：将编译 filter 降为 verify（不做 AOT 编译）
+# === API 34+ (Android 14+)：清掉本地 profile，并把编译产物降到 verify ===
+adb shell pm art clear-app-profiles com.example.app
 adb shell cmd package compile -f -m verify com.example.app
 
-# 第二步：清掉本地 profile（包括 reference profile 和当前 profile）
-adb shell pm art clear-app-profiles com.example.app
+# ART Service 的 reset 入口：清 current / reference profile，本次不使用 external profile
+adb shell cmd package compile --reset com.example.app
 
 # === API 33 及以下：单条命令 ===
 # 重置编译状态（通常需要 root 或 AOSP build）
@@ -202,7 +204,7 @@ adb shell cmd package compile --reset com.example.app
 adb shell cmd package compile -m speed-profile -f com.example.app
 ```
 
-API 34+ 需要两步才能保证"无 profile"基线干净：先降 filter 到 `verify`，再清 profile 文件。只做 `compile --reset` 在 API 34+ 上可能仍保留 Play / DM 下发的 profile，导致基线被旧 profile 污染。命令只适合实验室复现。线上发布验证仍要按真实安装来源测试，因为 Play、第三方商店、adb 侧载和厂商应用商店对 `.dm`、profile 安装和后台 dexopt 的触发时机可能不同。
+API 34+ 的 `pm compile --reset` 会清理 current profile 和 reference profile，并把主 dex 恢复到接近新安装后的 `verify` 状态；Android 17 的 ART Service help 明确说明 external profiles（Cloud Profile 和 APK 内嵌 profile）会保留给后续 dexopt，但本次 reset 不会使用它们。若要避免后续维护窗口重新使用外部 profile，测试流程还要控制安装来源和等待窗口，不能只清本地 profile 文件。
 
 指标上，至少看 TTID、TTFD、启动阶段慢帧和 P50 / P90 / P99。P50 变好只能说明主路径改善；P90 / P99 没变，常见原因是 profile 没覆盖长尾路径，或者长尾主要来自 I/O、网络、迁移任务和低端机 CPU。21.8 节已经给出启动监控的分位值口径，本节只补一个编译维度字段：每条启动样本最好带上安装来源、是否升级后首启、当前 compiler filter、是否清数据或首次安装。
 
@@ -222,7 +224,7 @@ Profile 也会带来发布风险。它不是“加上就只会变快”的静态
 
 ## 与 Baseline Profile 实战的分工
 
-21.4 节负责“怎么生成”：Macrobenchmark 场景、`BaselineProfileRule`、Gradle 集成、构建产物检查和 A/B 验证。本节负责“系统怎么消费”：`.dm` 文件、Cloud Profile、compiler filter、ART Service、`dex2oat` 和后台维护窗口。
+21.4 节负责“怎么生成”：Macrobenchmark 场景、`BaselineProfileRule`、Gradle 集成、构建产物检查和 A/B 验证。本节负责“系统怎么使用”：`.dm` 文件、Cloud Profile、compiler filter、ART Service、`dex2oat` 和后台维护窗口。
 
 交叉引用可以按下面的边界使用：
 
@@ -235,7 +237,7 @@ Profile 也会带来发布风险。它不是“加上就只会变快”的静态
 
 ## 厂商 ROM 编译策略差异
 
-[自动发现] 同一 APK 在不同 ROM 上，profile 收益可能不同。差异来自安装器是否传递 `.dm`、ART Mainline 版本、后台维护窗口、低电量策略、省电模式、存储空间压力和厂商自定义 dexopt 策略。官方 ART Service 文档也把 `pm.dexopt.<reason>`、并发数、`dalvik.vm.*dex2oat-*` 等属性列为可配置项。[已验证: 官方文档, source.android.com/docs/core/runtime/configure/art-service]
+同一 APK 在不同 ROM 上，profile 收益可能不同。差异来自安装器是否传递 `.dm`、ART Mainline 版本、后台维护窗口、低电量策略、省电模式、存储空间压力和厂商自定义 dexopt 策略。官方 ART Service 文档也把 `pm.dexopt.<reason>`、并发数、`dalvik.vm.*dex2oat-*` 等属性列为可配置项。[已验证: 官方文档, source.android.com/docs/core/runtime/configure/art-service]
 
 线下排查清单可以固定成几步：
 
@@ -247,7 +249,7 @@ Profile 也会带来发布风险。它不是“加上就只会变快”的静态
 
 这些步骤不要求 App 团队修改代码。它们的目标是把“这台设备 profile 没收益”拆成安装来源问题、后台编译未触发、ROM filter 不同、或启动瓶颈不在编译四类。
 
-[待验证: 主流厂商 ROM 在 `pm.dexopt.bg-dexopt`、维护窗口频率和低电量策略上的差异，缺少统一公开文档，需用实机记录补证据]
+主流厂商 ROM 在 `pm.dexopt.bg-dexopt`、维护窗口频率和低电量策略上的差异缺少统一公开文档，需用实机记录补充证据。
 
 ## 动态特性模块与 Play 分发
 
@@ -262,7 +264,7 @@ App Bundle 和动态特性模块会改变 profile 验证边界。Base APK 的 pr
 | 升级后进入模块 | 新旧 split + profile 是否匹配 | 升级后首进退化，稳态恢复 |
 | 热修复后进入模块 | 运行时 dex 与 profile 是否偏离 | profile 命中下降，secondary dex 加载增加 |
 
-[待验证: Play 对动态 feature 的 Cloud Profile / dex metadata 覆盖细节需要按当前 Play 分发文档和实测安装包确认]
+Play 对动态 feature 的 Cloud Profile / dex metadata 覆盖细节需要按当前 Play 分发文档和实测安装包确认。
 
 ## 排查手册
 

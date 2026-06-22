@@ -4,7 +4,7 @@
 title: ANGLE（GLES-over-Vulkan 翻译层）
 chapter: '18.11'
 section: '18.11'
-applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - ANGLE
 - GLES

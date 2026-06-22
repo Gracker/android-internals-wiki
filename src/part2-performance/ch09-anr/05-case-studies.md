@@ -8,7 +8,7 @@ drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-18"
 reviewed_by: "openclaw-task6"
-applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-21'
 last_verified_against: AOSP android-14.0.0_r1
 confidence: medium

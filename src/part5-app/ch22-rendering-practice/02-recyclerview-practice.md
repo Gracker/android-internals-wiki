@@ -3,7 +3,7 @@ title: "RecyclerView 最佳实践"
 chapter: "22.2"
 section: "22.2"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "AndroidX androidx-main, Android Developers docs, AIW 7.8/22.1/2.4, Clippings 结构参考"
 confidence: medium

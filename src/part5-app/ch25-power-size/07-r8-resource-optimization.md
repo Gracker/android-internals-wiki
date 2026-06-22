@@ -4,7 +4,7 @@ title: "R8 与资源优化"
 chapter: "25.7"
 section: "25.7"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-03/2026-05, R8 full mode docs, AOSP ResourceTypes.h"
 confidence: medium

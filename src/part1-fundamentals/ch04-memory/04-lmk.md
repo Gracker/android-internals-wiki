@@ -474,6 +474,167 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 [源码验证: libprocessgroup/task_profiles.json]
 
 
+
+
+<!-- AIW-源码调研-2026-06-22: Android 17 PSI/LowMemDetector 源码级补充 -->
+### 扩展五：Android 17 PSI/LowMemDetector 源码级补充
+
+AOSP `android-17.0.0_r1` 的 PSI 集成沿用"libpsi + lmkd + BPF memevents"三层架构，但相对 Android 12-15 有三处关键演进：mp_event_common 被 `[[deprecated]]`、libpsi 独立成子库、memevent 默认启用直接回收/kswapd 探测。本节补充 `lmkd.cpp` 实际调用链与代码位置，所有结论均直接锚到 AOSP tag `android-17.0.0_r1`。
+
+#### 5.1 libpsi 适配层（`system/memory/lmkd/libpsi/`）
+
+- 头文件：`system/memory/lmkd/libpsi/include/psi/psi.h`（66 行）
+- 实现：`system/memory/lmkd/libpsi/psi.cpp`（125 行）
+- `libpsi/Android.bp`：`cc_library`、`vendor_available: true`，即 vendor 进程也可使用
+
+关键数据结构和 API：
+
+```c
+// psi.h L22-L25
+enum psi_resource { PSI_MEMORY, PSI_IO, PSI_CPU, PSI_RESOURCE_COUNT };
+enum psi_stall_type { PSI_SOME, PSI_FULL, PSI_TYPE_COUNT };
+
+// psi.h L42-L45
+static const char* psi_resource_file[PSI_RESOURCE_COUNT] = {
+    "/proc/pressure/memory", "/proc/pressure/io", "/proc/pressure/cpu",
+};
+
+int init_psi_monitor(enum psi_stall_type, int threshold_us, int window_us,
+                     enum psi_resource = PSI_MEMORY);
+int register_psi_monitor(int epollfd, int fd, void* data);
+```
+
+`init_psi_monitor()`（psi.cpp L29-L67）的实现就是：open `/proc/pressure/<resource>` → write `"<some|full> <threshold_us> <window_us>"` → 返回 fd。`register_psi_monitor()`（psi.cpp L72-L80）用 `EPOLLPRI`（注意不是 `EPOLLIN`）把 fd 加进 epoll。
+
+[源码验证: AOSP android-17.0.0_r1 `system/memory/lmkd/libpsi/psi.cpp` L29-L80, `libpsi/include/psi/psi.h` L22-L65, `libpsi/Android.bp`]
+
+#### 5.2 lmkd 集成 PSI：3 档注册 + 新策略
+
+lmkd.cpp 在 `init_psi_monitors()`（L3607-L3648）注册 3 个 PSI fd，对应 `VMPRESS_LEVEL_LOW / MEDIUM / CRITICAL`。每档通过 `init_mp_psi()`（L3435-L3462）走 `libpsi::init_psi_monitor()` + `libpsi::register_psi_monitor()`。
+
+**新策略下的差异**（L3623-L3627）：
+
+```cpp
+if (use_new_strategy) {
+    psi_thresholds[VMPRESS_LEVEL_LOW].threshold_ms = 0;          // 禁用 low
+    psi_thresholds[VMPRESS_LEVEL_MEDIUM].threshold_ms = psi_partial_stall_ms;
+    psi_thresholds[VMPRESS_LEVEL_CRITICAL].threshold_ms = psi_complete_stall_ms;
+}
+```
+
+`use_new_strategy` 由 `low_ram_device` 或 `!use_minfree_levels` 触发；只有在 v1 cgroup 存在时才允许走旧策略（`memcg_version() != kV1` 时强制新策略）。
+
+**handler 绑定**（L3451）：
+
+```cpp
+vmpressure_hinfo[level].handler = use_new_strategy ? mp_event_psi : mp_event_common;
+```
+
+**重要事实纠正**：本节 §"PSI：更精准的内存压力度量"中提到的 "DEF_PARTIAL_STALL=70 / DEF_COMPLETE_STALL=700" 是 `ro.lmk.psi_partial_stall_ms` / `ro.lmk.psi_complete_stall_ms` 的 property 缺省值；`lmkd.cpp` 内部硬编码的 `psi_thresholds[]` 是 `70 / 100 / 70`（partial 70ms、partial 100ms、full 70ms），通过 `GET_LMK_PROPERTY` 宏覆盖到 `psi_partial_stall_ms` / `psi_complete_stall_ms`，**最终优先级阈值是 property 覆盖后的值，不是硬编码 70**。
+
+[源码验证: AOSP android-17.0.0_r1 `system/memory/lmkd/lmkd.cpp` L122-L168（hardcoded psi_thresholds）、L140-L156（property 缺省）、L3607-L3648（init_psi_monitors）、L3435-L3462（init_mp_psi）]
+
+#### 5.3 事件处理：`__mp_event_psi()` 决策路径
+
+事件入口（L3191-L3194）：
+
+```cpp
+static void mp_event_psi(int data, uint32_t events, struct polling_params *poll_params) {
+    union psi_event_data event_data = {.level = (enum vmpressure_level)data};
+    __mp_event_psi(PSI, event_data, events, poll_params);
+}
+```
+
+`__mp_event_psi()`（L2773-L3193）的判定流程：
+
+1. **过滤抖动**（L2831-L2850）：第一个 polling 窗口内忽略更低级事件，prev_level 升级后只接受同级或更高级。
+2. **kill-in-flight 跳过**（L2856-L2863）：距上次 kill 不到 `kill_timeout_ms` 则 `goto no_kill`。
+3. **vmstat / meminfo 读取**（L2866-L2880）：从 `/proc/vmstat` 和 `/proc/meminfo` 读 thrashing 指标。
+4. **直接回收 / kswapd 探测**（L2894-L2904）：优先 memevent 时间戳，否则用 vmstat 差分（`pgscan_direct / pgscan_kswapd / pgrefill`）。
+5. **轮询频率切换**（L3170-L3189）：
+
+```cpp
+if (swap_is_low || killing) {
+    poll_params->polling_interval_ms = PSI_POLL_PERIOD_SHORT_MS;   // 10ms
+} else {
+    poll_params->polling_interval_ms = PSI_POLL_PERIOD_LONG_MS;    // 100ms
+}
+```
+
+`__mp_event_psi()` 内部用 `enum reclaim_state { NO_RECLAIM, KSWAPD_RECLAIM, DIRECT_RECLAIM }` 三态机判断当前是空闲、后台回收还是直接回收，这直接影响 kill 阈值与 thrashing 限制。
+
+[源码验证: AOSP android-17.0.0_r1 `system/memory/lmkd/lmkd.cpp` L2773-L3193, L2866-L2910, L3170-L3189]
+
+#### 5.4 mp_event_common 已标 deprecated
+
+L3207-L3208：
+
+```cpp
+// The implementation of this function relies on memcg statistics that are only
+// available in the v1 cgroup hierarchy.
+[[deprecated("memcg v1 is not supported after Dec. 2026")]]
+static void mp_event_common(int data, uint32_t events, struct polling_params *poll_params) {
+```
+
+这是 Android 17 的重要信号：基于 v1 cgroup memcg 的旧 kill 策略将在 2026-12 之后停止支持。Android 16 之前只以注释形式警告，Android 17 直接以 `[[deprecated]]` 属性硬约束编译器诊断。
+
+[源码验证: AOSP android-17.0.0_r1 `system/memory/lmkd/lmkd.cpp` L3207]
+
+#### 5.5 BPF memevent 集成
+
+`init_memevent_listener_monitoring()`（L3525-L3598）通过 `android::bpf::memevents::MemEventListener` 订阅 ring buffer，注册 5 类事件：
+
+| 事件类型 | 用途 |
+|---------|------|
+| `MEM_EVENT_DIRECT_RECLAIM_BEGIN/END` | 标记直接回收时间窗口 |
+| `MEM_EVENT_KSWAPD_WAKE/SLEEP` | 标记 kswapd 唤醒窗口 |
+| `MEM_EVENT_VENDOR_LMK_KILL` | vendor hook 自定义 kill（可选） |
+| `MEM_EVENT_UPDATE_ZONEINFO` | zone watermark 刷新（可选） |
+
+注册时机：必须等 `sys.boot_completed=true` 才能调用，因为 BPF 程序要等系统起来才加载。`init_memevent()`（L3599-...）单独在 `LMK_BOOT_COMPLETED` 之后被触发。
+
+启用后的影响：`__mp_event_psi()` 中 `in_direct_reclaim / in_kswapd_reclaim` 直接从时间戳判定，不再做 vmstat 差分，性能更好且不依赖字段重命名（5.9 kernel 重命名 `workingset_refault` → `workingset_refault_file`，lmkd L2867-L2869 已兼容两者）。
+
+[源码验证: AOSP android-17.0.0_r1 `system/memory/lmkd/lmkd.cpp` L3480-L3606（memevent_listener_notification 与 init_memevent_listener_monitoring）]
+
+#### 5.6 轮询状态机：POLLING_START/PAUSE/RESUME
+
+`polling_update` 枚举（lmkd.cpp L243-L247）：
+
+```cpp
+enum polling_update {
+    POLLING_DO_NOT_CHANGE,
+    POLLING_START,
+    POLLING_PAUSE,
+    POLLING_RESUME,
+};
+```
+
+`mp_event_psi()` 在 `__mp_event_psi()` 末尾设置 `poll_params->update`：
+
+- `POLLING_START`：PSI 事件首次到达，开启 10ms/100ms 周期轮询
+- `POLLING_PAUSE`：等待被 kill 进程死信号期间暂停
+- `POLLING_RESUME`：被 kill 进程已死或 kill_timeout 到期恢复轮询
+
+`POLLING_DO_NOT_CHANGE`：常规唤醒但无需调整状态。
+
+[源码验证: AOSP android-17.0.0_r1 `system/memory/lmkd/lmkd.cpp` L243-L247, L3160-L3190]
+
+#### 5.7 章节事实校验
+
+| 本节 §"PSI" 中声明 | 源码核对结果 |
+|-------------------|-------------|
+| "DEF_PARTIAL_STALL=70、DEF_COMPLETE_STALL=700" 是 AOSP 定义的 property 缺省 | ✅ L143-L156 一致 |
+| "lmkd 关注 memory 的 some 和 full 信号" | ✅ psi_thresholds 全部为 PSI_SOME / PSI_FULL |
+| "Android 10 PSI 阈值硬编码在 lmkd.c 中" | ✅ 旧路径，与本节 PSI 路径不冲突 |
+| lmkd.cpp 用 v1 cgroup memcg 决定进程杀路径 | ⚠️ Android 17 标 deprecated，未来不可用 |
+| 缺：libpsi 独立子库 | ✅ 本节补充 |
+| 缺：mp_event_psi / __mp_event_psi 决策分支 | ✅ 本节补充 |
+| 缺：BPF memevent 集成 | ✅ 本节补充 |
+
+[调研报告: `DeepResearch/2026-06-22-android17-psi-lowmemdetector.md`]
+
+
 ## 参考资料
 
 ### AOSP 源码

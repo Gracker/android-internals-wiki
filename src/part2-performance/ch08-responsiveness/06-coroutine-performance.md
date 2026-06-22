@@ -15,7 +15,7 @@ polish_by: task2b-polish
 polish_review_date: '2026-04-09'
 polish_review_by: openclaw-task6
 review_cycle: 4
-applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-02'
 last_verified_against: kotlinx.coroutines 1.9.x / Kotlin 2.1.x / Kotlin 2.2
 confidence: medium-high

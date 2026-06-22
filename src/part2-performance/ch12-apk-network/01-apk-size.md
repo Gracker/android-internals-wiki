@@ -10,7 +10,7 @@ task6_reviewed_date: '2026-05-06'
 polish_count: 1
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-24'
 last_verified_against: AGP 8.8 DSL deprecation docs + AGP 8.12.0 release notes + Android
   App Bundle docs

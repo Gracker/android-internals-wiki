@@ -49,7 +49,7 @@ last_task9_audit: "2026-06-18"
 last_task9_audit_log: "logs/deep-review/2026-06-18-17-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-22-16-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
+last_deepseek_cn_review_at: 2026-06-22
 task6_reviewed_date: "2026-06-19"
 auto_promoted: true
 updated_by: "openclaw-task9"
@@ -96,13 +96,13 @@ p2: 0
 
 ## 为什么单独看 InputDispatcher 反压
 
-第 3.1 节已经给出 Input 事件从硬件到 App 的完整路径，第 3.2 节讨论触摸响应延迟。这里把视角收窄到 InputDispatcher 内部：事件已经进入 InputDispatcher，目标窗口却没有及时消费时，系统怎样限制积压、怎样判定 Input ANR，怎样避免一个无响应窗口拖住新的输入目标。
+第 3.1 节已经给出 Input 事件从硬件到 App 的完整路径，第 3.2 节讨论触摸响应延迟。本节聚焦 InputDispatcher 内部：事件已经进入 InputDispatcher，目标窗口却没有及时消费时，系统怎样限制积压、怎样判定 Input ANR，怎样避免一个无响应窗口拖住新的输入目标。
 
-这类问题在 trace 里常被误判。`WaitQueue` 变长只能说明事件已经发给目标连接、还没收到 App 侧 `Finished` 回执；它不能直接等同于 App 主线程 MessageQueue 变长，也不能证明 Binder 调用就是根因。分析时要把 InputDispatcher 的队列状态、App 主线程栈、Binder 线程、CPU 调度和窗口焦点变化放到同一个时间窗口里看。详见 9.3 节。
+这类问题在 trace 里很容易误判。`WaitQueue` 变长只能说明事件已经发给目标连接、还没收到 App 侧 `Finished` 回执；它不能直接等同于 App 主线程 MessageQueue 变长，也不能证明 Binder 调用就是根因。分析时要把 InputDispatcher 的队列状态、App 主线程栈、Binder 线程、CPU 调度和窗口焦点变化放到同一个时间窗口里看。详见 9.3 节。
 
 ## 输入通道的反压点
 
-InputDispatcher 到 App 的事件面走 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端 channel；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。这个数据面不是 Binder。Binder 主要参与窗口和 channel 的建立、传递与策略回调，逐个 `MotionEvent` / `KeyEvent` 的传输走 channel fd。详见 1.17 节与 3.1 节。
+InputDispatcher 到 App 的事件面走 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端 channel；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。这里要区分清楚：事件本身的传输走 channel fd，不走 Binder；Binder 主要参与窗口和 channel 的建立、传递与策略回调。详见 1.17 节与 3.1 节。
 
 AOSP android-16.0.0_r1 的 `InputDispatcher::startDispatchCycleLocked()` 在写入失败时会检查返回码。返回 `WOULD_BLOCK` 时，代码分两种情况处理：
 
@@ -164,13 +164,13 @@ Perfetto 侧看 ATRACE counter。AOSP android-16.0.0_r1 里 `traceInboundQueueLe
 
 ## 与应用主线程卡顿、Binder 阻塞的归因边界
 
-InputDispatcher 的 waitQueue 是症状入口，不是根因结论。一个输入事件停在 `waitQueue`，只能说明目标进程没有按时返回 `Finished`。常见根因有三类：
+InputDispatcher 的 waitQueue 是症状，不是根因。一个输入事件停在 `waitQueue`，只能说明目标进程没有按时返回 `Finished`。常见根因有三类：
 
 1. App 主线程正在执行长任务，没有进入 `NativeInputEventReceiver` 的消费回路。
 2. App 主线程被 Binder、锁、I/O、GC 或同步等待卡住，导致已收到的事件无法完成处理。
 3. system_server 或目标进程调度异常，InputDispatcher 写入、App 读取、回执返回中的某段被 CPU 饥饿或内核等待拖慢。
 
-定位顺序建议固定下来：用 `dumpsys input` 或 Perfetto counter 确认 `wq/oq/iq` 的卡点，再看目标 App 主线程同一时间窗口的 call stack 和 sched 状态；如果主线程在 Binder 等待，再沿 Binder transaction 查对端线程；如果主线程看起来空闲但 `wq` 仍然不退，再检查 App 进程是否被调度、channel 是否 broken、窗口是否被移除或策略层是否延长 timeout。
+建议按以下顺序定位：先用 `dumpsys input` 或 Perfetto counter 确认 `wq/oq/iq` 的卡点；再看同一时间窗口目标 App 主线程的 call stack 和 sched 状态；如果主线程在 Binder 等待，沿 Binder transaction 查对端线程；如果主线程看起来空闲但 `wq` 不退，检查 App 进程是否被调度、channel 是否 broken、窗口是否被移除、策略层是否延长了 timeout。
 
 这段分析能避免两个常见误判：一是把所有 Input ANR 都归到 App 主线程，二是把所有主线程卡顿都写成 InputDispatcher 的问题。InputDispatcher 负责检测和隔离无响应连接，根因通常还要在 App、system_server、Binder 对端或内核调度里落点。
 

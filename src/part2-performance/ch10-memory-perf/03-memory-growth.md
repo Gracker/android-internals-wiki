@@ -6,7 +6,7 @@ section: '10.3'
 status: finalized
 drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
-applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-02'
 last_verified_against: AOSP android-16.0.0_r1
 reviewed_date: "2026-05-27"
@@ -52,8 +52,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-28"
 last_task9_at: "2026-06-13T03:24:38+08:00"
 last_task6_at: "2026-05-27T23:15:00+08:00"
-last_task6_audit: '2026-06-08'
-last_task6_audit_result: l1-clean
+last_task6_audit: '2026-06-22'
+last_task6_audit_result: minor-fixes
 last_task9_audit: "2026-06-13"
 last_task2b_lite_at: "2026-05-27"
 last_task6_review_log: "logs/review/2026-05-27-23-review.md"

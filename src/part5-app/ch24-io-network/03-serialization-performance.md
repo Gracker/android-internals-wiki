@@ -3,7 +3,7 @@ title: "序列化性能对比与选型"
 chapter: "24.3"
 section: "24.3"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP master snapshot 2026-05-14 + Android Developers docs + upstream library docs"
 confidence: medium

@@ -4,7 +4,7 @@ chapter: '19'
 section: '19.14'
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark：Android 6.0+（API 23+）；Baseline Profile 生成需 API 33+ 或 rooted API 28+；Baseline Profile 验证需 API 24+；书中样例以 Android 8-17 为主
+applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark：Android 6.0+（API 23+）；Baseline Profile 生成需 API 33+ 或 rooted API 28+；Baseline Profile 验证需 API 24+；书中样例以 Android 8 (API 26) - Android 17 (API 37) 为主
 last_verified: '2026-04-27'
 last_verified_against: AndroidX BlackHole / BenchmarkState / BaselineProfileRule / CompilationMode source and Android Developers Benchmark docs
 confidence: medium

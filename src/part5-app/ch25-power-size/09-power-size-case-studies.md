@@ -3,7 +3,7 @@ title: "功耗与包体积案例集"
 chapter: "25.9"
 section: "25.9"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers power / vitals / APK size docs + AOSP android-16.0.0_r1 + Clippings structure references"
 confidence: medium-high

@@ -7,7 +7,7 @@ section: "3.2"
 status: finalized
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium

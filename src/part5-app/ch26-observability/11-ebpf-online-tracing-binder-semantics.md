@@ -3,7 +3,7 @@ title: "eBPF 在线追踪与 Binder 语义重建"
 chapter: "26.11"
 section: "26.11"
 status: finalized
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-05-17"

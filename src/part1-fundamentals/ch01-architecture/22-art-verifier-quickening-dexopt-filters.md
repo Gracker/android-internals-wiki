@@ -9,7 +9,7 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: "reviewed"
 drafted_date: "2026-05-24"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36); Android 17 待正式 AOSP tag 复核"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-17"
 last_verified_against: "source.android.com ART configure / ART Service configuration 2026-05; AOSP android-16.0.0_r1 platform/art compiler_filter.h / dex2oat.cc / libartservice/service/README.md; Android Developers ART compatibility docs"
 confidence: high

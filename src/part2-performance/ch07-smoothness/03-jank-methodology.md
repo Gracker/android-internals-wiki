@@ -11,7 +11,7 @@ rework_type: review回炉修复（Task9/External 问题单）
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-03-31'
 last_verified_against: AOSP android-16.0.0_r1, Perfetto 官方文档
 confidence: high

@@ -3,7 +3,7 @@
 title: "Android 渲染架构全景"
 chapter: "2.1"
 section: "2.1"
-applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"  # 版本演进从 3.0 开始,核心内容覆盖 API 11-36
+applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"  # 版本演进从 3.0 开始,核心内容覆盖 API 11-37
 last_verified: "2026-06-20"
 last_verified_against: "AOSP android-16.0.0_r1 / android-17.0.0_r1 spot-check; Android 16/17 CDD Vulkan requirements"
 confidence: high

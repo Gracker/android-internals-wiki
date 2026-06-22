@@ -8,7 +8,7 @@ chapter: '2.18'
 section: '2.18'
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
-applicable_versions: ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持
+applicable_versions: ARR 主体：Android 15-QPR1 - Android 17 (API 37)；背景：Android 11-14 多刷新率支持
 last_verified: '2026-04-26'
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev + external review 2026-04-25"
 confidence: high

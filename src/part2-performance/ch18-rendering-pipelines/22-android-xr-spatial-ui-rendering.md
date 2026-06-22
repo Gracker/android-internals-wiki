@@ -4,7 +4,7 @@ chapter: "18.22"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-05-19"
-applicable_versions: "Android XR / Jetpack XR SDK Developer Preview 3 - Android 16 (API 36)+"
+applicable_versions: "Android XR / Jetpack XR SDK Developer Preview 3 - Android 17 (API 37)"
 last_verified: "2026-05-19"
 last_verified_against: "Android Developers Android XR docs, Jetpack XR SDK docs, Unity Android XR Extensions docs"
 confidence: medium

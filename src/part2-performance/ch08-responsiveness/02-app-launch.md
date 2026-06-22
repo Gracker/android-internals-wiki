@@ -3,7 +3,7 @@
 status: finalized
 title: App 启动全流程
 chapter: '8.2'
-applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-20'
 last_verified_against: AOSP android-15.0.0_r1, AndroidX Activity release notes, Perfetto
   atrace docs, Android Developers baseline profiles docs

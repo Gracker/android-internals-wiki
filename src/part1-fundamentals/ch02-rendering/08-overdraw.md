@@ -5,7 +5,7 @@ section: 2.8
 polish_count: 1
 polish_date: 2026-04-05
 polish_by: task2b-polish
-applicable_versions: Android 4.2 (API 17) - Android 16
+applicable_versions: Android 4.2 (API 17) - Android 17 (API 37)
 last_verified: 2026-04-12
 last_verified_against: AOSP android-16.0.0_r1
 drafted_date: 2026-03-30

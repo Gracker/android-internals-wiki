@@ -3,7 +3,7 @@ title: "I/O 与网络优化案例集"
 chapter: "24.8"
 section: "24.8"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-35 SDK sources + Android Developers docs + OkHttp 5.x docs + Clippings 结构参考"
 confidence: medium

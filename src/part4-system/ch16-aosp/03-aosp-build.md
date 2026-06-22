@@ -17,7 +17,7 @@ task9_reviewed_by: openclaw-task9
 task2b_state: fixed
 task2b_result: fixed
 pipeline_stage: ready-to-publish
-applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
+applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 + source.android.com"
 confidence: medium

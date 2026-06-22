@@ -8,7 +8,7 @@ drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-18"
 reviewed_by: "openclaw-task6"
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high

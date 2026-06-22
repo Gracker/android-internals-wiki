@@ -4,7 +4,7 @@ chapter: "20.11"
 section: "20.11"
 status: finalized
 drafted_date: "2026-05-16"
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-16"
 last_verified_against: "AOSP main / Android Developers docs / source.android.com MTE docs"
 confidence: medium

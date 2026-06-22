@@ -6,7 +6,7 @@ section: "19.22"
 status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-applicable_versions: "历史存储 Benchmark 参考；Android 10/11+ 路径权限需逐机验证；方法可用于 Android 8-17 的设备基线分析"
+applicable_versions: "历史存储 Benchmark 参考；Android 10/11+ 路径权限需逐机验证；方法可用于 Android 8 (API 26) - Android 17 (API 37) 的设备基线分析"
 last_verified: "2026-04-24"
 last_verified_against: "AndroBench paper / A1 SD Bench public materials / Android 11 scoped storage docs"
 confidence: medium

@@ -3,7 +3,7 @@ title: "图片加载与显示优化"
 chapter: "22.6"
 section: "22.6"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android16-release, Android Developers docs, Glide/Coil docs, Clippings 结构参考"
 confidence: medium

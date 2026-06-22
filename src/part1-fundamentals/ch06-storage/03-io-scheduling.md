@@ -5,7 +5,7 @@ status: finalized
 title: I/O 调度与性能
 chapter: '6.3'
 section: '6.3'
-applicable_versions: Android 10–17
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-05-09'
 last_verified_against: Linux 6.12 + Android 16 GKI + Android 17 Baklava preview
 confidence: medium

@@ -68,6 +68,8 @@ last_deepseek_cn_review_at: 2026-06-16
 last_task9_audit: "2026-06-16"
 finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"
+last_task6_audit: "2026-06-22"
+
 ---
 
 # 11.5 Wakelock 机制与功耗分析
@@ -599,7 +601,7 @@ AlarmManager 是 wakelock 的一个重要间接来源。当 Alarm 触发时：
 | `SCHEDULE_EXACT_ALARM` | Android 12+ 通常需要 | 不需要 | 不需要该权限，但需要 `UPDATE_DEVICE_STATS` |
 | 适用场景 | 闹钟、提醒、日程、需要冷启动的任务 | 进程内心跳、短周期采样、前台存活任务 | 系统级 idle 例外定时 |
 
-适用公开 API 的判断标准很直接：进程必须大概率一直活着，回调逻辑必须够轻，业务也接受"进程被系统杀掉后这次 alarm 不补发"。
+适用公开 API 的判断标准：进程必须大概率一直活着，回调逻辑必须够轻，业务也接受"进程被系统杀掉后这次 alarm 不补发"。
 
 [已验证: developer.android.com/about/versions/14/changes/schedule-exact-alarms；AOSP android-17 `AlarmManager.java` 中 `OnAlarmListener` 与 `setExact(..., OnAlarmListener)` / `setExactAndAllowWhileIdle(..., OnAlarmListener)` 定义]
 

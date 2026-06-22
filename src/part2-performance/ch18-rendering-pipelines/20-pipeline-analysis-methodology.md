@@ -4,7 +4,7 @@ title: "渲染管线分析方法论"
 chapter: "18.20"
 section: "18.20"
 status: finalized
-applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
+applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 sources:
   - type: official
     path: "https://source.android.com/docs/core/graphics/architecture"

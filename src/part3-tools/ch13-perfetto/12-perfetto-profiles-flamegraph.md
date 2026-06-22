@@ -6,7 +6,7 @@ section: "13.12"
 status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 10-17（Simpleperf 导入）；Android 15+（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)（Simpleperf 导入）；Android 15 (API 35) - Android 17 (API 37)（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）"
 last_verified: "2026-05-15"
 last_verified_against: "Perfetto v53/v54 release notes, perfetto.dev profiling/import/symbolization docs, Android simpleperf public docs snippets"
 confidence: high

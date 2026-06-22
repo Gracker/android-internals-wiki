@@ -8,7 +8,7 @@ section: "2.22"
 status: finalized
 finalized_by: openclaw-task2b-verifier
 drafted_date: "2026-05-18"
-applicable_versions: "Android 15 (API 35) - Android 16 (API 36); Android 17 待公开 tag 复核"
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-18"
 last_verified_against: "AOSP android-15.0.0_r1 / android-16.0.0_r1 frameworks/native/services/surfaceflinger/FrontEnd + source.android.com graphics docs; Android 17 tag 未公开"
 confidence: medium

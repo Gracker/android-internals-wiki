@@ -9,7 +9,7 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档, AndroidX RecyclerView release notes"
 confidence: high

@@ -11,7 +11,7 @@ reviewed_by: "openclaw-task6"
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-28"
 last_verified_against: "Android Studio Profiler docs 2026-03-06 + Power Profiler docs 2026-03-06 + ProfilingManager API 36 / trigger-based profiling docs"
 confidence: high

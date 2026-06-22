@@ -4,7 +4,7 @@ title: "A/B Test 与性能回归防护"
 chapter: "26.6"
 section: "26.6"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-04"
 last_verified_against: "Android Developers Macrobenchmark docs 2026-05-19 + Firebase docs + Clippings structure references"
 confidence: medium

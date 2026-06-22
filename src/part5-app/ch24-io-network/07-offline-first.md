@@ -3,7 +3,7 @@ title: "离线优先架构"
 chapter: "24.7"
 section: "24.7"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "Android Developers docs 2026-05-14 + AndroidX Room/WorkManager/Paging docs + Clippings 结构参考"
 confidence: medium

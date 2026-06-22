@@ -4,7 +4,7 @@ title: "可观测性案例集"
 chapter: "26.8"
 section: "26.8"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "Android Developers docs / Android Vitals docs / Clippings structure references"
 confidence: medium

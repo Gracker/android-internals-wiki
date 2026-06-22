@@ -3,7 +3,7 @@
 title: "HWC Overlay Plane 与合成降级排查"
 chapter: "7.18"
 section: "7.18"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-23"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-22"

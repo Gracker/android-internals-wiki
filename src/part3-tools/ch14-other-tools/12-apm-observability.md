@@ -5,7 +5,7 @@ section: '14.12'
 status: "finalized"
 drafted_date: '2026-04-21'
 drafted_by: codex
-applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: "2026-04-25"
 last_verified_against: "Android Developers / AndroidX metrics docs / Firebase docs / GitHub upstream READMEs / external review 2026-04-25"
 confidence: medium

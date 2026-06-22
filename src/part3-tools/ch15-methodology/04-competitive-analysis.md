@@ -6,7 +6,7 @@ section: "15.4"
 status: finalized
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-16"
 last_verified_against: "developer.android.com current official URLs; AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord / FrameMetrics; packages/modules/adb android-16.0.0_r1 adb.1.md"
 confidence: medium

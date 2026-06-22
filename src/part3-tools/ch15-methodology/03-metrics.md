@@ -3,7 +3,7 @@ title: "性能指标体系"
 chapter: "15.3"
 status: finalized
 drafted_date: "2026-04-04"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-25"
 last_verified_against: "developer.android.com/topic/performance/vitals/render, FrameMetrics.DEADLINE, Macrobenchmark FrameTimingMetric, ApplicationExitInfo, lmkd 官方文档"
 confidence: medium

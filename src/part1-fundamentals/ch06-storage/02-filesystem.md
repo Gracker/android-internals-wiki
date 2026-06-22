@@ -3,7 +3,7 @@
 title: 文件系统
 chapter: '6.2'
 section: '6.2'
-applicable_versions: Android 10+
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP EROFS docs + source.android 16KB page size docs + kernel/common android15-6.6 ext4 journal / f2fs segment,gc,uapi/linux/f2fs.h,include/linux/f2fs_fs.h + developer.android.com
 confidence: medium

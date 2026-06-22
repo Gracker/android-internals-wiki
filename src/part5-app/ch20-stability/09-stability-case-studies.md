@@ -3,7 +3,7 @@ title: "稳定性治理案例集"
 chapter: "20.9"
 section: "20.9"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-28"
 last_verified_against: "AOSP android-16.0.0_r1 ActivityThread/ComputerEngine；signal handler async-signal-safety audit"
 confidence: medium

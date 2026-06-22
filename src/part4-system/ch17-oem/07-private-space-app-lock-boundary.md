@@ -3,7 +3,7 @@ title: "Private Space 与应用锁的兼容性边界"
 chapter: "17.7"
 status: ready-for-review
 drafted_date: "2026-05-25"
-applicable_versions: "Android 15 (API 35) - Android 16 QPR2；Android 17 应用锁待官方确认"
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37) QPR2；Android 17 应用锁待官方确认"
 last_verified: "2026-05-25"
 last_verified_against: "AOSP/Android Developers documentation, Android 16 QPR2 release notes"
 confidence: medium

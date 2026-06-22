@@ -8,7 +8,7 @@ drafted_date: "2026-05-14"
 reviewed_date: 2026-06-08
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-08"
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers docs / Perfetto docs"
 confidence: medium

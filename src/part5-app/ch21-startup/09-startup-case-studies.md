@@ -3,7 +3,7 @@ title: "启动优化复盘框架与案例模板"
 chapter: "21.9"
 section: "21.9"
 status: finalized
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP master Activity.reportFullyDrawn / ActivityMetricsLogger, Android Developers launch-time / App Startup / Baseline Profiles docs"
 confidence: medium

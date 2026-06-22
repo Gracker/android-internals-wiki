@@ -5,7 +5,7 @@ section: "19.16"
 status: "finalized"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-applicable_versions: "Android 15+（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37)（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
 last_verified: "2026-06-14"
 last_verified_against: "developer.android ProfilingManager / ProfilingTrigger / ProfilingResult + tracing/profiling-manager docs + AndroidX Profiling reference + Build.VERSION_CODES_FULL / Android 16 minor SDK guidance"
 confidence: medium
