@@ -1,7 +1,7 @@
 ---
 title: "行业案例"
 chapter: "17.3"
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-21"
 last_verified_against: "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study"
 confidence: medium
@@ -34,9 +34,9 @@ task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-28"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-06-19"
-last_task6_audit_log: "logs/review/2026-06-19-11-audit.md"
-last_task6_audit_notes: "idle audit: L1 物理动作动词 拆解→分析 1 处小修；高频词均在阈值内；frontmatter 完整；outline 锚点覆盖 4/4；无回炉项。"
+last_task6_audit: "2026-06-22"
+last_task6_audit_log: "logs/review/2026-06-22-16-audit.md"
+last_task6_audit_notes: "idle audit: L1 禁用词 拆解→分析 1 处小修；高频词均在阈值内；frontmatter 完整；outline 锚点内容需优化。"
 section: "17.3"
 status: finalized
 pipeline_stage: ready-to-publish
@@ -197,7 +197,7 @@ Performance Hint API 让应用把周期性 workload 的目标耗时和实际耗�
 
 Google 自己的 Lifecycle 组件（`ProcessLifecycleOwnerInitializer`）和 FileProvider 就是典型的例子。单个 ContentProvider 的耗时可能只有几毫秒，但大型 App 可能注册了几十个 ContentProvider，累积起来就是几十毫秒甚至上百毫秒的开销。
 
-抖音的做法是在编译期通过字节码插桩修改 FileProvider 的行为：具体来说，他们在 `FileProvider.attachInfo()` 中插桩，临时将 `grantUriPermissions` 设为 `false`，让 `getPathStrategy()` 的解析逻辑被跳过（因为 FileProvider 会检查这个标志并在为 false 时抛异常），然后在异常捕获后恢复原始值。这样 FileProvider 在启动阶段只执行了最轻量的初始化，真正的 XML 解析被延迟到第一次实际使用文件操作时才进行。
+抖音的做法是在编译期通过字节码插桩分析 FileProvider 的行为：具体来说，他们在 `FileProvider.attachInfo()` 中插桩，临时将 `grantUriPermissions` 设为 `false`，让 `getPathStrategy()` 的解析逻辑被跳过（因为 FileProvider 会检查这个标志并在为 false 时抛异常），然后在异常捕获后恢复原始值。这样 FileProvider 在启动阶段只执行了最轻量的初始化，真正的 XML 解析被延迟到第一次实际使用文件操作时才进行。
 
 这种做法不修改业务代码，在构建流水线中自动完成，对开发者透明。对于 WorkManager 等其他有类似问题的库，也可以用同样的方式处理。
 

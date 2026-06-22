@@ -464,12 +464,12 @@ chapter: "2.3"
 status: verified | draft | needs-review | outdated
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-03-28"
-last_verified_against: "AOSP android-17-beta3"
+last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high | medium | low
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp"
-    branch: "android-17-beta3"
+    branch: "android-17.0.0_r1"
   - type: blog
     url: "https://androidperformance.com/2019/12/01/Android-Systrace-Vsync/"
     author: "Gracker"
@@ -528,7 +528,7 @@ related_chapters: ["2.2", "2.4", "2.6"]
 **Level 1：AOSP 源码验证（最高可信度）**
 - 对于机制类内容（如 VSync 怎么分发、LMK 怎么算 adj），必须能指出对应的 AOSP 源码路径和关键函数
 - OpenClaw 通过 `cs.android.com` 或本地 AOSP 源码库验证
-- 标注源码分支和版本：`// frameworks/base/core/java/android/os/MessageQueue.java @ android-17-beta3`
+- 标注源码分支和版本：`// frameworks/base/core/java/android/os/MessageQueue.java @ android-17.0.0_r1`
 
 **Level 2：实机验证**
 - 对于行为类内容（如"XX 条件下系统会 XX"），通过 Perfetto Trace 或 adb 命令验证
@@ -739,7 +739,7 @@ OpenClaw 每次跑 task 前先检查 suggestions.md，据此调整优先级。
 
 **L1 - AOSP 源码验证**：
 - 通过搜索 cs.android.com 或已知的 AOSP 代码路径，确认关键类名、方法名、流程描述是否准确
-- 标注源码路径和分支：`frameworks/base/core/java/android/os/Handler.java @ android-17-beta3`
+- 标注源码路径和分支：`frameworks/base/core/java/android/os/Handler.java @ android-17.0.0_r1`
 
 **L2 - 官方文档验证**：
 - 查阅 developer.android.com、source.android.com 确认 API 行为、参数、限制
@@ -764,7 +764,7 @@ OpenClaw 每次跑 task 前先检查 suggestions.md，据此调整优先级。
 7. 更新 queue.json 和 progress.json
 
 ### 草稿标注规范
-- `[已验证: AOSP android-17-beta3, frameworks/base/...]`：已通过源码验证
+- `[已验证: AOSP android-17.0.0_r1, frameworks/base/...]`：已通过源码验证
 - `[已验证: 官方文档, developer.android.com/...]`：已通过官方文档验证
 - `[待验证]`：内容逻辑上合理但未能验证
 - `[待补充]`：内容逻辑上缺失的部分
@@ -821,7 +821,7 @@ git commit -m "[openclaw] draft: {章节号} {小节名简述}"
 搜索以下信息源，检查是否有影响书中内容的新变化：
 - Android Developers Blog（搜索最近 7 天的性能相关文章）
 - AOSP Release Notes（检查新版本发布）
-- Android 17 Beta 变更（当前处于 Beta 3，即将 Platform Stability）
+- Android 17 稳定版变更（以 API 37 / `android-17.0.0_r1` 为准）
 - Kernel 相关更新（如 AutoFDO 部署进展）
 
 ### Step 2：扫描已有内容
