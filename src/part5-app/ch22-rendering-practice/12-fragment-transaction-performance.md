@@ -35,25 +35,25 @@ related_chapters: ["7.17", "8.4", "13.3", "18.2", "22.1", "22.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "素材驱动/AOSP结构/官方文档"
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-22"
 last_task9_at: "2026-06-22T07:26:20+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-22-07-audit.md"
 task9_review_notes: "2026-06-03 Task9 深度复审：auto-fixed。P0 0 / P1 0 / P2 1；修正 related_chapters 中不存在的 7.4 为 7.17，AndroidX Fragment 提交链路与 runOnCommit / executePendingTransactions 边界复核通过，回到 Task6 复审。 | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；AndroidX Fragment commit f39ca351 提交链路、runOnCommit/reordering 边界、FrameTimeline 观察点和 related_chapters 复核通过，满足自动晋升 finalized 条件。 | 2026-06-22 Task9 闲时抽检：auto-fixed。P0 0 / P1 1 / P2 0；补齐 FrameTimeline 仅 Android 12 / API 31+ 可用的版本边界，Android 10/11 退回 Choreographer / RenderThread / 自定义 trace；AndroidX 1.8.9 与 1.9.0-alpha01 release notes 未改变正文 pinned commit 主链路。回到 Task6 复审。"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-last_task6_at: "2026-06-03T10:05:00+08:00"
-last_task6_review_log: logs/review/2026-06-03-04-review.md
-task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 1 处；Task9 既有技术项经 Task2B 修复后保持待审，未新增回炉项。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。"
+reviewed_date: "2026-06-22"
+last_task6_at: "2026-06-22T08:07:00+08:00"
+last_task6_review_log: logs/review/2026-06-22-08-review.md
+task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 1 处；Task9 既有技术项经 Task2B 修复后保持待审，未新增回炉项。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。 | 2026-06-22 08:07 Task6 revisiting 复审（Task9 闲时抽检 auto-fix 后）：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 开头/节奏/结构/读者视角均通过；Task9 补齐的 FrameTimeline 版本边界（Android 12+/10-11 退回路径）已贯穿正文和排查表格，无写作质量问题。无新增 L3/L4 回炉项。送 Task9 确认 auto-fix 后标记 pass-tech-review。"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-03T02:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_autofix_at: "2026-06-22"
 last_task9_audit: "2026-06-22"
 last_task2b_verifier_at: "2026-06-22T07:30:06+08:00"
