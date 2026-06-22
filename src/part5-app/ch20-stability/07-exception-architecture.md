@@ -2,7 +2,7 @@
 title: "异常处理架构设计"
 chapter: "20.7"
 section: "20.7"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"

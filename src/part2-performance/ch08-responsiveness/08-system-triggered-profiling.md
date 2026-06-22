@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: "ready-for-review"
 title: ProfilingManager 系统触发式性能追踪
 chapter: '8.10'
 section: '8.10'
