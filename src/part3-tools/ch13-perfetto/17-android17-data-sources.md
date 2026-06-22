@@ -26,25 +26,25 @@ sources:
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
+task9_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-23"
 last_task6_at: "2026-06-23T01:10:00+08:00"
 # task2b_state restored 2026-06-16 by Task9 — Android 17 重基完成 2026-06-22
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 task2b_result: "fixed"
 task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-23"
-last_task9_at: "2026-06-23T00:29:23+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-23-00-deep-review.md"
+last_task9_at: "2026-06-23T01:30:06+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-23-01-deep-review.md"
 last_task2b_at: 2026-06-22T22:53:02+08:00
 last_task2b_lite_at: 2026-06-22
-task9_review_notes: "2026-06-23 Task9 deep-review：发现 Android 17 源码片段仍有旧版代码、Perfetto SQL 表名错误、版本表/二次验证计划证据锚点过期；已写入 Task2B 队列。"
-last_task9_autofix_at: "2026-06-16"
+task9_review_notes: "2026-06-23 Task9 deep-review：auto-fix Android 17 重基后的源码行号、ShouldRejectDueToFilter 片段、linux.perf/traced_perf 版本归因与 readtracefs 权限用途；无剩余 P0/P1，回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-23"
 auto_promoted_at: "2026-06-16T23:16:33+08:00"
 last_task9_audit: "2026-06-22"
 last_task2b_at: "2026-06-23T00:51:41+08:00"
@@ -63,7 +63,7 @@ last_task2b_at: "2026-06-23T00:51:41+08:00"
 - `linux.perf`（`traced_perf` 守护进程）与 `android.surfaceflinger.frametimeline` 在 Android 17 / API 37 中**完整可用**
 - `JankClassificationThresholds` 简化为单一 `presentThreshold`（2ms），不再区分 legacy/extended
 - `JankType` 从 Android 16 的 11 种扩展为 **16 种**，新增 `NonAnimating`、`AppResyncedJitter`、`DisplayNotOn`、`DisplayModeChangeInProgress`、`DisplayPowerModeChangeInProgress`
-- `traced_perf.rc` 增加了 `readtracefs` 权限组、`task_profiles ProcessCapacityHigh`、`shared_kallsyms`，以及属性驱动启停条件
+- `traced_perf.rc` 在 Android 17 保持 Android 16 已有的 `readtracefs`、`task_profiles ProcessCapacityHigh`、`shared_kallsyms`；属性驱动启停模型从 Android 12 起已存在
 
 <!-- outline-start -->
 ## 要点
@@ -78,7 +78,7 @@ FrameTimeline 通过 `classifyJankLocked()` 建立完整的 jank 分类机制，
 `linux.perf` 的开销由采样频率、目标进程范围和调用栈展开成本共同决定；`frametimeline` 仅在 trace session 开启时写入 packet。
 
 ### 🔹 版本演进路径
-Android 12 引入两个核心数据源，Android 16 优化完善，Android 17 扩展 JankType 与 traced_perf 生命周期。
+`linux.perf` 在 Android 11 已存在，`android.surfaceflinger.frametimeline` 从 Android 12 引入；Android 17 主要扩展 JankType，traced_perf 维持既有属性驱动生命周期。
 
 ### 🔸 应用优化建议
 针对不同场景的 Trace 配置方案，避免数据丢失，优化内存使用。
@@ -105,7 +105,7 @@ FrameTimeline 与 statsd atom 写入的路径关系需要进一步确认。
 static constexpr char kFrameTimelineDataSource[] = "android.surfaceflinger.frametimeline";
 ```
 
-**注册入口**：`FrameTimeline.cpp`（line 933-939）
+**注册入口**：`FrameTimeline.cpp`（line 1344-1355）
 ```cpp
 void FrameTimeline::onBootFinished() {
     perfetto::TracingInitArgs args;
@@ -123,10 +123,10 @@ void FrameTimeline::registerDataSource() {
 
 **触发时机**：SurfaceFlinger 启动完成后无条件注册
 ```cpp
-// SurfaceFlinger.cpp line 762-764
+// SurfaceFlinger.cpp line 815-820
 const nsecs_t now = systemTime();
 const nsecs_t duration = now - mBootTime;
-ALOGI("Boot is finished (%ld ms)", long(ns2ms(duration)) );
+ALOGI("Boot is finished (%ld ms)", long(ns2ms(duration)));
 mFrameTracer->initialize();
 mFrameTimeline->onBootFinished();     // <-- 注册点
 ```
@@ -154,7 +154,7 @@ mFrameTimeline->onBootFinished();     // <-- 注册点
 | `JankType::DisplayModeChangeInProgress` | 显示模式切换中 | 无 |
 | `JankType::DisplayPowerModeChangeInProgress` | 电源模式切换中 | 无 |
 
-> **Android 17 新增类型**：`NonAnimating`、`AppResyncedJitter`、`DisplayNotOn`、`DisplayModeChangeInProgress`、`DisplayPowerModeChangeInProgress` 在 Android 16 中不存在，在 `android-17.0.0_r1` 中首次引入（`libs/gui/include/gui/JankInfo.h` line 53-63）。这些类型用于过滤非性能原因导致的帧延迟，避免误报 jank。
+> **Android 17 新增类型**：`NonAnimating`、`AppResyncedJitter`、`DisplayNotOn`、`DisplayModeChangeInProgress`、`DisplayPowerModeChangeInProgress` 在 Android 16 中不存在，在 `android-17.0.0_r1` 中首次引入（`libs/gui/include/gui/JankInfo.h` line 53-61）。这些类型用于过滤非性能原因导致的帧延迟，避免误报 jank。
 
 ### 1.3 关键参数配置
 
@@ -178,7 +178,7 @@ static constexpr uint32_t kNumSurfaceFramesInitial = 10;
 
 ### 1.4 Trace Cookie 机制
 
-`FrameTimeline.h` line 122-130：
+`FrameTimeline.h` line 148-157：
 ```cpp
 class TraceCookieCounter {
 public:
@@ -192,7 +192,7 @@ private:
 
 ### 1.5 Trace 起点过滤门控
 
-`FrameTimeline.cpp` line 915-920：
+`FrameTimeline.cpp` line 1331-1335；默认值见 `FrameTimeline.h` line 627-628：
 ```cpp
 FrameTimeline::FrameTimeline(std::shared_ptr<TimeStats> timeStats, pid_t surfaceFlingerPid,
                              JankClassificationThresholds thresholds, bool useBootTimeClock,
@@ -213,7 +213,7 @@ if (filterFramesBeforeTraceStarts && !shouldTraceForDataSource(ctx, timestamp)) 
 
 ### 1.6 JankTracker 异步通知链
 
-`JankTracker.cpp` line 26-30 + line 47-75：
+`JankTracker.cpp` line 26 + line 62-87：
 - `JankTracker::onJankData()` 在每帧 jank 分类后被调用
 - 通过 `BackgroundExecutor::getLowPriorityInstance().sendCallbacks()` 异步推送
 - 批量阈值 `kJankDataBatchSize = 50`
@@ -235,7 +235,7 @@ service traced_perf /system/bin/traced_perf
     shared_kallsyms
 ```
 
-**属性驱动启停条件**（Android 17 新增）：
+**属性驱动启停条件**（Android 12 起已有，Android 17 保持）：
 ```rc
 on property:persist.traced_perf.enable=1
     start traced_perf
@@ -249,7 +249,7 @@ on property:persist.traced_perf.enable="" && property:sys.init.perf_lsm_hooks=1 
 
 关键特性：
 - `class late_start` + `disabled`：必须由上游触发
-- Android 17 新增 `readtracefs` 权限组，用于读取 `/proc/pid/maps` 和 `/proc/pid/mem` 文件描述符
+- `readtracefs` 权限组用于读取 tracefs；`/proc/pid/{maps,mem}` 文件描述符由 `traced_perf` socket 接收，`/proc` 读取依赖 `readproc`
 - `task_profiles ProcessCapacityHigh`：将 traced_perf 放入高容量 cgroup，提升 unwinding 性能
 - `shared_kallsyms`：允许访问内核符号表，支持内核调用栈符号化
 - 属性驱动生命周期：由 `persist.traced_perf.enable`、`sys.init.perf_lsm_hooks`、`traced.lazy.traced_perf` 三组属性联合控制启停
@@ -257,7 +257,7 @@ on property:persist.traced_perf.enable="" && property:sys.init.perf_lsm_hooks=1 
 
 ### 2.2 Main 函数与 Socket 继承
 
-`external/perfetto/src/profiling/perf/traced_perf.cc` line 24-50：
+`external/perfetto/src/profiling/perf/traced_perf.cc` line 34-50 + line 84-105：
 ```cpp
 static constexpr char kTracedPerfSocketEnvVar[] = "ANDROID_SOCKET_traced_perf";
 
@@ -268,7 +268,8 @@ int GetRawInheritedListeningSocket() {
   ...
 }
 
-int TracedPerfMain(int, char**) {
+int TracedPerfMain(int argc, char** argv) {
+  // Option parsing and daemonize handling are omitted.
   base::MaybeLockFreeTaskRunner task_runner;
   AndroidRemoteDescriptorGetter proc_fd_getter{GetRawInheritedListeningSocket(),
                                                &task_runner};
@@ -291,22 +292,18 @@ constexpr char kDataSourceName[] = "linux.perf";
 
 `perf_producer.cc` line 326-378（`android-17.0.0_r1`）：
 ```cpp
-bool ShouldRejectDueToFilter(pid_t pid, const TargetFilter& filter) {
-  bool reject_cmd = false;
-  std::string cmdline;
-  if (GetCmdlineForPID(pid, &cmdline)) {
-    // reject if absent from non-empty whitelist, or present in blacklist
-    reject_cmd = (filter.cmdlines.size() && !filter.cmdlines.count(cmdline)) ||
-                 filter.exclude_cmdlines.count(cmdline);
-  } else {
-    PERFETTO_DLOG("Failed to look up cmdline for pid [%d]",
-                  static_cast<int>(pid));
-    // reject only if there's a whitelist present
-    reject_cmd = filter.cmdlines.size() > 0;
-  }
-
-  bool reject_pid = (filter.pids.size() && !filter.pids.count(pid)) ||
-                    filter.exclude_pids.count(pid);
+bool PerfProducer::ShouldRejectDueToFilter(
+    pid_t pid, const TargetFilter& filter, bool skip_cmdline,
+    base::FlatSet<std::string>* additional_cmdlines,
+    std::function<bool(std::string*)> read_proc_pid_cmdline) {
+  ...
+  auto has_matching_pattern = [](const std::vector<std::string>& patterns,
+                                 const char* cmd, const char* name) {
+    for (const std::string& pattern : patterns) {
+      if (glob_aware::MatchGlobPattern(pattern.c_str(), cmd, name)) return true;
+    }
+    return false;
+  };
   ...
 }
 ```
@@ -320,7 +317,7 @@ TraceConfig 字段与 `TargetFilter` 内部集合名要区分。对外配置使�
 
 ### 2.5 实时进程发现延迟
 
-`perf_producer.cc` line 47：
+`perf_producer.cc` line 73：
 ```cpp
 // TODO(b/151835887): on Android, when using signals, there exists a vulnerable
 // window between a process image being replaced by execve, and the new
@@ -362,11 +359,11 @@ message PerfEventConfig {
 | Android 版本 | 关键差异 | 源码证据 |
 |-------------|---------|----------|
 | **Android 10 (API 29)** | Perfetto 系统服务内置；不支持两个核心数据源 | FrameTimeline/ 目录不存在 |
-| **Android 11 (API 30)** | heapprofd 完善，`android.java_hprof` 引入 | perfetto 主线 |
-| **Android 12 (API 31)** | `linux.perf` (`traced_perf`) 引入；`android.surfaceflinger.frametimeline` 引入 | android-12.0.0_r1 traced_perf.cc |
+| **Android 11 (API 30)** | `linux.perf` / `traced_perf` 已存在；FrameTimeline 尚未引入 | android-11.0.0_r1 external/perfetto |
+| **Android 12 (API 31)** | `android.surfaceflinger.frametimeline` 引入；`linux.perf` 继续可用，二者从本章范围开始同时覆盖 | android-12.0.0_r1 FrameTimeline / traced_perf.cc |
 | **Android 13-15 (API 33-35)** | SurfaceFlinger refactor，FrameTimeline 完善 | android-13.0.0_r1 / android-15.0.0_r1 FrameTimeline |
-| **Android 16 (API 36)** | `commit_not_composited` flag、完整优化 | android-16.0.0_r3 FrameTimeline |
-| **Android 17 (API 37)** | 单一 `presentThreshold`（2ms）；JankType 扩展为 16 种；traced_perf 增加 `readtracefs`、`task_profiles ProcessCapacityHigh`、`shared_kallsyms` 与属性驱动启停 | `android-17.0.0_r1` 已公开并验证 |
+| **Android 16 (API 36)** | `commit_not_composited` flag、FrameTimeline 完整优化；`traced_perf.rc` 已包含 `readtracefs`、`ProcessCapacityHigh`、`shared_kallsyms` | android-16.0.0_r3 FrameTimeline / traced_perf.rc |
+| **Android 17 (API 37)** | 单一 `presentThreshold`（2ms）；JankType 扩展为 16 种；`traced_perf.rc` 与 Android 16 的权限组、task profile、属性驱动生命周期保持一致 | `android-17.0.0_r1` 已公开并验证 |
 
 ## 5. 性能影响分析
 
@@ -395,7 +392,7 @@ LIMIT 20;
 
 ### 6.2 避免数据丢失
 
-Android 17 中 `traced_perf` 通过属性驱动启停（见 §2.1），不再使用 `ctl.start`：
+Android 17 中 `traced_perf` 仍通过属性驱动启停（见 §2.1），不是直接调用 `ctl.start`：
 
 ```bash
 # 方式一：显式启用 traced_perf
