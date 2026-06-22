@@ -59,7 +59,6 @@ task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-04T10:50:00+08:00"
-last_task2b_at: "2026-05-19T11:32:33+08:00"
 task9_reviewed_date: "2026-06-05"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-05T18:32:25+08:00"
@@ -77,6 +76,7 @@ task6_reviewed_date: "2026-05-24"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
 task6_state: "reviewed"
+last_task6_audit: "2026-06-23"
 ---
 
 
