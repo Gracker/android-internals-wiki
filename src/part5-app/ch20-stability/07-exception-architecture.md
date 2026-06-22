@@ -2,7 +2,7 @@
 title: "异常处理架构设计"
 chapter: "20.7"
 section: "20.7"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
@@ -48,6 +48,8 @@ last_task6_review_log: "logs/review/2026-06-16-04-review.md"
 task6_review_notes: "2026-06-16 Task6 第三次复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式 1 次(开篇对比句,在限制内)。"承担"出现 1 次为正常用法。L1/L2 全部通过,无 B 类问题。queue.json 中 20.7 条目状态为 completed,无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,保持 ready-for-review 等待 Task9 确认升级。"
 task9_state: "reviewed"
 task2b_state: "fixed"
+last_task2b_lite_at: "2026-06-22"
+task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: "pass-tech-review"
@@ -485,6 +487,10 @@ AOSP 把"用户主动强停"和"系统低内存"分别落到了 `REASON_USER_REQ
 - `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`
 - `frameworks/base/core/java/android/app/ActivityManager.java`
 - `core/res/res/values/config.xml`
+
+### 深度调研源
+
+- SafeMode launch marker 状态机 AOSP 源码核验 — 详细核验 ApplicationExitInfo 17 个 REASON_* 常量、AtomicFile.finishWrite() 持久化协议、AppExitInfoTracker 30分钟 debounce + 16条记录限制、Process.killProcess 三条路径
 
 ### 源码调研补充：AOSP `DropBoxManagerService` 的 Crash 文件持久化真实协议
 

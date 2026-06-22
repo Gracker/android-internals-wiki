@@ -3,7 +3,7 @@
 title: "SafeMode 崩溃循环判定与启动补偿链路"
 chapter: "20.12"
 section: "20.12"
-status: finalized
+status: "ready-for-review"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-06-09"
@@ -43,8 +43,8 @@ related_chapters: ["20.2", "20.3", "20.6", "20.7", "26.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "章节深挖/参考书素材"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
@@ -52,7 +52,7 @@ task6_reviewed_date: "2026-05-16"
 last_task6_at: "2026-05-16T15:12:00+08:00"
 last_task6_audit: "2026-06-08"
 task6_review_notes: "2026-05-16 task6 review: 完成 L1/L2 轻修 4 处；无 Task2B 回炉项，进入 Task9 技术审查。"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "auto-fixed"
 task9_reviewed_date: 2026-05-16
 task9_reviewed_by: openclaw-task9
@@ -64,7 +64,10 @@ task2b_state: "fixed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-04-audit.md"
 last_task9_autofix_at: "2026-06-09"
-task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。AOSP android-17.0.0_r1 未在 android.googlesource 公开；本轮将 AtomicFile / RuntimeInit / ActivityManager / ApplicationExitInfo / WebView 相关源码锚点从 AOSP master 收敛到已复核的 android-16.0.0_r4，并将适用上限暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 1（日志记录）。"---
+task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。AOSP android-17.0.0_r1 未在 android.googlesource 公开；本轮将 AtomicFile / RuntimeInit / ActivityManager / ApplicationExitInfo / WebView 相关源码锚点从 AOSP master 收敛到已复核的 android-16.0.0_r4，并将适用上限暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 1（日志记录）。"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-06-22"
+---
 
 # 20.12 SafeMode 崩溃循环判定与启动补偿链路
 
@@ -525,6 +528,10 @@ AOSP 维护三个独立信号源（`mAppExitInfoSourceZygote`、`mAppExitInfoSou
 AOSP 把退出记录写到 `/data/system/procexitstore/procexitinfo`（`AtomicFile` 包装，30 分钟刷盘一次），崩溃时只丢 30 分钟内的记录；`onSystemReady` 时异步加载（`loadExistingProcessExitInfo`）。App 侧 SafeMode 本地规则必须不依赖任何远程信号：启动时先读本地 marker，再读 `ApplicationExitInfo`；远程配置作为「放宽/收紧」的二次开关，不能作为唯一判定来源。断网、远程配置降级、首次冷启场景下，SafeMode 仍能基于本地历史做兜底。
 
 [已验证: AOSP android-16.0.0_r4, frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java、core/java/android/app/ApplicationExitInfo.java、core/java/android/app/ActivityManager.java、services/core/java/com/android/server/am/ProcessList.java、core/res/res/values/config.xml；本节调研对照《2026-06-16-appsafemode-state-machine-and-launch-success-marker.md》]
+
+### 深度调研源
+
+- SafeMode launch marker 状态机 AOSP 源码核验 — 详细核验 ApplicationExitInfo 17 个 REASON_* 常量、AtomicFile.finishWrite() 持久化协议、AppExitInfoTracker 30分钟 debounce + 16条记录限制、Process.killProcess 三条路径
 
 ## 小结
 
