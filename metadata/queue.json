@@ -603,5 +603,52 @@
       "completed_at": "2026-06-24T01:39:59+08:00",
       "completed_reason": "fixed-lite: HookManager.java/IHookManager.aidl references not present in current file (phantom review finding). Task6 B-class issues fixed instead: code block label c→java, JIT optimization advice corrected, pseudo-code labels added to case studies."
     }
+  ],
+  "queue": [
+    {
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 90,
+      "reason": "[review回炉·第二轮] 内容深度不足：多节为列表堆砌缺叙述，未来发展章节纯填充，xHook/Matrix 工具描述过薄，案例1/2/4伪代码过于泛化",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "§ Hook 技术的未来发展（整节）",
+          "detail": "三个子节（性能优化/更好兼容性/功能扩展）全是泛化 bullet 列表，没有具体技术内容。'Android 12+ 支持' 已过时（当前范围到 Android 17），'无 Root Hook' 等说法缺乏依据。违反 writing-guide '朴素诚恳，不空谈' 铁律。",
+          "suggestion": "删除整节，或替换为 Android 14-17 中 Hook 相关的实际变化（如 SELinux 策略收紧对 inline hook 的影响、16KB page size 对 trampoline 布局的影响、ART TI 对 native 插桩的辅助作用）"
+        },
+        {
+          "type": "需补充素材",
+          "location": "§ xHook（爱奇艺）整节",
+          "detail": "仅有一个虚构的架构树和 5 条 bullet 特点。没有 PLT/GOT Hook 原理说明，没有代码示例，没有实现细节。相比 ShadowHook 节严重不对称。",
+          "suggestion": "补充 PLT Hook 的实际工作原理（linker 重定位流程、GOT 表替换机制），给出最小代码示例，或明确标注为'概述'并精简"
+        },
+        {
+          "type": "需补充素材",
+          "location": "§ Matrix（腾讯）整节",
+          "detail": "仅有 4 条 bullet 特点，无实现细节。案例 3 中的 Matrix 内容质量很高，但主体章节描述太薄。",
+          "suggestion": "将案例 3 的 Matrix 实现细节前移到主体章节，或在主体章节补充 TraceCanary 的 Hook 注册流程"
+        },
+        {
+          "type": "需重写",
+          "location": "§ 实际应用案例 1、2、4",
+          "detail": "案例 1（Systrace 集成）和案例 2（ANR 分析）的伪代码过于泛化，函数签名虚构（hook_sched_switch/hook_messagequeue_next），不反映真实工具实现。案例 4（内存泄漏）与案例 5（KOOM）高度重复。",
+          "suggestion": "删除案例 1、2、4，保留高质量案例 3（Matrix）和案例 5（KOOM）。如需保留案例 2 的 ANR 主题，改为引用 Matrix TraceCanary 的真实实现"
+        },
+        {
+          "type": "需补充素材",
+          "location": "缺少 § 在 Perfetto/工具中的表现",
+          "detail": "writing-guide Type A 结构要求'在 Perfetto/工具中的表现'节。本章讲了 Hook 工具但未说明 Hook 采集的数据如何在 Perfetto/Perfetto UI 中呈现。",
+          "suggestion": "补充一节说明：atrace HAL 如何在 Perfetto 中产生 slice track，heapprofd 如何产生 heap dump track，Hook 自建工具的数据如何通过 Perfetto TraceSession 写入"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-24T02:17:39",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-24-02-review.md"
+    }
   ]
 }

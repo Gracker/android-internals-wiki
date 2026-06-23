@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-06-22T02:00:00+08:00",
+  "last_check": "2026-06-24T02:03:49.256066+08:00",
   "entries": [
     {
       "date": "2026-04-15",
@@ -1546,6 +1546,229 @@
       "appendix_note": "过去 7 天窗口内无新 Android 17 Beta/DP 发布；appendix/version-changelog.md 保持当前状态",
       "external_source_limitation": "Android Developers Blog 和 AOSP Release Notes 访问受限，但基于已知信息和本地内容判断时效性",
       "next_scheduled_check": "2026-06-21"
+    },
+    {
+      "date": "2026-06-24",
+      "timestamp": "2026-06-24T02:03:49.256066+08:00",
+      "android_version_changes": {
+        "android_17_status": "持续预稳定阶段；android-17.0.0_r1 tag 已在 AOSP 主要仓库公开（frameworks/base, frameworks/native, system/memory, packages/modules/Profiling, libcore, ART）",
+        "android_16_status": "QPR2+ Generational CMC 作为官方能力正式可用（延续）",
+        "recent_updates": [
+          "AOSP android-17.0.0_r1 公开后源码锚点已大量更新（Task2B 已批量刷写 last_verified_against）",
+          "上轮巡检（2026-06-22）发现 ch07-10 Image/Bitmap 性能 1 章未列具体节号，本轮纳入巡检"
+        ],
+        "key_changes": {
+          "lock_free_messagequeue": "API 37 无锁 MessageQueue 稳定（延续）",
+          "static_final_fields": "Static final fields immutability enforced in API 37（延续）",
+          "local_network_permissions": "本地网络访问在 API 37 中默认阻止（延续）",
+          "adaptive_apps": "大屏可调整性在 API 37 中强制（延续）",
+          "app_memory_limiter": "API 37 引入 App Memory Limiter（每应用基于设备 RAM 的内存限制，延续）"
+        }
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 478,
+        "files_with_metadata": 460,
+        "outdated_files_total": 10,
+        "high_risk_files": 1,
+        "medium_risk_files": 9,
+        "low_risk_files": 0,
+        "tool_usage_overdue_60d": 3,
+        "tool_usage_approaching_60d": 6,
+        "version_evolution_overdue_30d": 1,
+        "version_evolution_pending_in_queue": 2,
+        "files_verified_over_90d": 0,
+        "files_ending_at_api36": 145,
+        "files_with_api37": 247,
+        "android_18_api38_references": 0
+      },
+      "key_findings": [
+        "1 高风险版本演进章节：6.4 存储相关的版本演进（71 天逾期，仍在 queue priority 90）",
+        "1 中风险版本演进章节：2.14 图形 API 演进（59 天逾期，已加入 queue priority 70）",
+        "3 工具使用章节严重超期（>60 天）：ch08-06 协程性能、ch10-02 内存泄漏检测、ch10-03 内存增长分析",
+        "6 工具使用章节接近 60 天阈值，需在本周分批处理",
+        "ch02-18 Adaptive Refresh Rate 章节过期 59 天，逼近 version_evolution 30 天阈值",
+        "Android 17 / API 37 边界严格遵守，无 Android 18/API 38+ 越界内容",
+        "247 个文件已有 API 37 覆盖，145 个文件仍需添加（主要为 system_mechanisms 180 天阈值内文件）",
+        "无文件超过 90 天验证阈值（90 天阈值严格遵守）",
+        "过去 7 天无新 Android 17 Beta/DP 发布，附录 A 无需更新"
+      ],
+      "action_items": [
+        "本轮新增 9 项到 queue（3 高优先级 + 6 中优先级），按优先级排序处理",
+        "跟踪 6.4 存储相关的版本演进在队列中的处理进度（已有 priority 90，本轮升级到 priority 95）",
+        "处理 2.14 图形 API 演进 queue 项（priority 70，逾期天数增加到 59 天）",
+        "批量处理 3 个超期工具使用章节（ch08-06/ch10-02/ch10-03，60 天阈值）",
+        "分批处理 6 个接近 60 天阈值的工具使用章节",
+        "继续为系统机制章节分批添加 API 37 覆盖（145 个文件）",
+        "跟踪 Android 17 正式发布日期，准备版本演进章节最终更新"
+      ],
+      "outdated_files": [
+        {
+          "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+          "title": "存储相关的版本演进",
+          "section": "6.4",
+          "last_verified": "2026-04-14",
+          "days_overdue": 71,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "high",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 4.4 (API 19) - Android 17 (API 37)",
+          "missing_content": "Android 17 稳定版存储相关特性（Scoped Storage Final、Photo Picker 强制化、F2FS 改进）",
+          "suggested_action": "已在 queue 中（priority 90，建议升级到 priority 95）",
+          "already_in_queue": true
+        },
+        {
+          "file": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+          "title": "图形 API 演进",
+          "section": "2.14",
+          "last_verified": "2026-04-26",
+          "days_overdue": 59,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "medium",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 4.0 (API 14) - Android 17 (API 37)",
+          "missing_content": "Android 17 稳定版图形 API 变更（Vulkan 1.4、AGSL RuntimeColorFilter/Xfermode、OpenCL 弃用进展）",
+          "suggested_action": "已加入 queue，priority 70（已逾期 59 天，建议升级到 priority 80）",
+          "already_in_queue": true
+        },
+        {
+          "file": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
+          "title": "Kotlin Coroutine 性能实践",
+          "section": "8.6",
+          "last_verified": "2026-04-02",
+          "days_overdue": 83,
+          "threshold_days": 60,
+          "category": "tool_usage",
+          "risk_level": "high",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+          "missing_content": "Kotlin 2.2 协程最新优化、kotlinx-coroutines 1.10.x 更新、Android 17 协程调度器",
+          "suggested_action": "本轮加入 queue，priority 85",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
+          "title": "内存泄漏检测",
+          "section": "10.2",
+          "last_verified": "2026-04-02",
+          "days_overdue": 83,
+          "threshold_days": 60,
+          "category": "tool_usage",
+          "risk_level": "high",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+          "missing_content": "LeakCanary 3.x 更新、Android 17 App Memory Limiter 集成、ProfileInstaller 新接口",
+          "suggested_action": "本轮加入 queue，priority 85",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part2-performance/ch10-memory-perf/03-memory-growth.md",
+          "title": "内存增长分析",
+          "section": "10.3",
+          "last_verified": "2026-04-02",
+          "days_overdue": 83,
+          "threshold_days": 60,
+          "category": "tool_usage",
+          "risk_level": "high",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+          "missing_content": "Android 17 App Memory Limiter 行为更新、Android 16 KB 页大小对内存分析影响",
+          "suggested_action": "本轮加入 queue，priority 85",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+          "title": "Jank 根因分析",
+          "section": "7.2",
+          "last_verified": "2026-04-08",
+          "days_overdue": 77,
+          "threshold_days": 60,
+          "category": "tool_usage",
+          "risk_level": "medium",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+          "missing_content": "JankStats 1.x、Android 17 FrameMetrics API 增强",
+          "suggested_action": "本轮加入 queue，priority 70",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+          "title": "Perfetto 简介",
+          "section": "13.1",
+          "last_verified": "2026-04-14",
+          "days_overdue": 71,
+          "threshold_days": 60,
+          "category": "tool_usage",
+          "risk_level": "medium",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+          "missing_content": "Perfetto v55+ 新功能、Android 17 Systrace-替代品更新",
+          "suggested_action": "本轮加入 queue，priority 70",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
+          "title": "Perfetto 主题分析",
+          "section": "13.5",
+          "last_verified": "2026-04-13",
+          "days_overdue": 72,
+          "threshold_days": 60,
+          "category": "tool_usage",
+          "risk_level": "medium",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+          "missing_content": "Perfetto SQL stdlib 新增函数、android.frames.* 扩展",
+          "suggested_action": "本轮加入 queue，priority 70",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
+          "title": "Perfetto 高级用法",
+          "section": "13.7",
+          "last_verified": "2026-04-22",
+          "days_overdue": 63,
+          "threshold_days": 60,
+          "category": "tool_usage",
+          "risk_level": "medium",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+          "missing_content": "Perfetto Trace Processor v55+、持续追踪改进",
+          "suggested_action": "本轮加入 queue，priority 65",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part2-performance/ch07-smoothness/05-optimization.md",
+          "title": "流畅度优化方法",
+          "section": "7.5",
+          "last_verified": "2026-04-20",
+          "days_overdue": 65,
+          "threshold_days": 60,
+          "category": "tool_usage",
+          "risk_level": "medium",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+          "missing_content": "Android 17 流畅度优化最新实践、Compose 1.10 性能改进",
+          "suggested_action": "本轮加入 queue，priority 65",
+          "already_in_queue": false
+        }
+      ],
+      "queue_updates": [
+        "升级 priority-90 → 95: 6.4 存储相关的版本演进（pending, days_overdue: 64 → 71）",
+        "升级 priority-70 → 80: 2.14 图形 API 演进（days_overdue: 22 → 59）",
+        "新增 priority-85: 8.6 Kotlin Coroutine 性能实践（tool_usage, 83 天逾期）",
+        "新增 priority-85: 10.2 内存泄漏检测（tool_usage, 83 天逾期）",
+        "新增 priority-85: 10.3 内存增长分析（tool_usage, 83 天逾期）",
+        "新增 priority-70: 7.2 Jank 根因分析（tool_usage, 77 天逾期）",
+        "新增 priority-70: 13.1 Perfetto 简介（tool_usage, 71 天逾期）",
+        "新增 priority-70: 13.5 Perfetto 主题分析（tool_usage, 72 天逾期）",
+        "新增 priority-65: 13.7 Perfetto 高级用法（tool_usage, 63 天逾期）",
+        "新增 priority-65: 7.5 流畅度优化方法（tool_usage, 65 天逾期）"
+      ],
+      "appendix_updates_needed": false,
+      "appendix_note": "过去 7 天窗口内无新 Android 17 Beta/DP 发布；android-17.0.0_r1 tag 已在 AOSP 主要仓库公开，但本轮内容更新以现有 API 37 文档为基础，不引入新版本内容",
+      "external_source_limitation": "Android Developers Blog 和 AOSP Release Notes 访问受限，但基于已知信息和本地内容判断时效性",
+      "next_scheduled_check": "2026-06-26"
     }
   ]
 }

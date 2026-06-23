@@ -72,7 +72,7 @@ p0: "1"
 p1: "0"
 p2: "0"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 
@@ -251,8 +251,6 @@ createInfo.pCode = spirvCode.data();
 // vkCreateShaderModule() 将 SPIR-V 编译为 GPU 本机指令
 ```
 
-> [来源: Vulkan Android 16 调研素材]
-
 Android 16 将 Vulkan 定为默认图形 API 的一个重要动机,就是利用 SPIR-V 的预编译优势来减少 Shader Compilation Jank。对于仍然使用 OpenGL ES 的应用,ANGLE 转换层会将 GLSL 着色器翻译为 SPIR-V 后再交给 Vulkan 后端处理,虽然多了一层翻译,但依然比传统 OpenGL ES 驱动的纯运行时编译更可控。
 
 ## Vulkan vs OpenGL ES 在 Android 上的性能对比
@@ -271,7 +269,7 @@ VPA16 里与性能关系最直接的一项是 Host Image Copy。它允许 CPU �
 <!-- AIW-源码调研-2026-06-12 -->
 ### ANGLE Vulkan Backend 四级 PSO 缓存（Android 17 优化）
 
-对于仍使用 OpenGL ES 的应用，ANGLE 层在 Android 17 上通过四级 PSO 缓存进一步减少了编译开销：
+对于仍使用 OpenGL ES 的应用，ANGLE 层在 Android 17 上进一步完善了四级 PSO 缓存体系，从更细的粒度控制编译开销。下面展开各层机制：
 
 1. **L3（VkPipelineCache）**：vendor driver 内部哈希，支持跨进程持久化。ANGLE 通过 `glLinkProgram` 预热 driver 的 VkPipelineCache，让首次 `vkCreateGraphicsPipelines` 命中预热 hash，避免 cold compile。
 
@@ -319,9 +317,9 @@ sk_sp<GraphicsPipeline> pipeline = resolveHandle(handle); // 等 fCompleted=true
 这一机制将 pipeline 编译从"draw 时同步阻塞"改为"snap 时派发 + insertRecording 时统一等待"，**不再出现孤立的长编译帧**。
 
 > [来源: google/skia refs/heads/main/src/gpu/graphite/PipelineManager.h/.cpp]
-<!-- AIW-源码调研-2026-06-12 结束 -->
-
 <!-- AIW-源码调研-2026-06-13 -->
+在上面的四级缓存框架下，PipelineManager 的三段查找和 DrawPass 双缓冲切换构成了具体的实现路径。以下分析以 Skia Graphite 和 ANGLE 的源码为锚点，展开各层的算法细节：
+
 ### PipelineManager 三段式查找与 DrawPass 双 buffer 切换（Android 17 深入）
 
 昨日的 `PipelineManager` 概述本节下沉到算法层细节。这三段是 Android 17 Vulkan 异步编译链路的"协议层"。
@@ -467,8 +465,6 @@ context->graphiteContext()->submit(graphite::SyncToCpu::kNo);
 - `kMonolithicPipelineJobPeriod` 是否被调为 1ms 或 4ms（影响并发吞吐）
 - `kNumGraphicsPipelineDirtyBits` 是否改为 8 字节/位（影响 L1 碰撞率）
 - Graphite 是否默认启用（影响 `graphiteRecorder->snap` 调用频次）
-<!-- AIW-源码调研-2026-06-13 结束 -->
-
 
 ### Vulkan 渲染管线的核心组件
 
@@ -1004,34 +1000,22 @@ GPU 渲染属于 Android 渲染管线中的一环。理解 GPU 在管线中的�
 
 ### 生产环境 GPU 性能问题调试方法论
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-gpu-performance-debugging-methodology.md
-- 类型:DeepResearch 调研结果
 - 摘要:系统性 GPU 性能调试方法论:Android 16 标准化 gpu_busy 计数器 vs 旧版厂商自定义命名差异、AGI 离线分析与 Perfetto 实时追踪的分工定位、Qualcomm Adreno 与 ARM Mali 的 counter 体系差异及统一方法论。包含从问题现象到根因的完整排查流程(CPU-GPU 同步 back-pressure、内存带宽、着色器编译)。
-- 注入时间:2026-05-12
-- 价值:提供了从问题现象到 GPU 根因定位的完整方法链,填补了现有章节缺少系统性排查流程的空白,Adreno vs Mali 差异对比对 OEM 场景尤为实用
 
 
 ### ARM Mali GPU TBR 架构原理与 Android 渲染性能影响
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md
-- 类型:DeepResearch 调研结果
 - 摘要:详述 ARM Mali GPU 从 Utgard 到第五代的 Tile-Based Rendering 演进:双阶段 Geometry+Fragment 流水线、on-chip tile memory 工作机制、AFBC 压缩、Transaction Elimination、Forward Pixel Kill、IDVS/DVS、Fragment Prepass、CSF 命令流前端。覆盖 Android 渲染栈 HWUI/RenderThread/SurfaceFlinger/HWC 与 Mali TBR 的交互,以及 Vulkan Render Pass load/store op 到 tile load/writeback 的映射。
-- 注入时间:2026-04-29
-- 价值:最完整的 Mali GPU TBR 架构与 Android 渲染栈交互文档,对 GPU 渲染性能分析与调优极具价值
 
 
 ### GPU Vulkan 异步编译：PipelineManager 三步查找与 Pacing 节流
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-gpu-vulkan-async-compile-pipeline-manager-pacing.md
-- 类型:DeepResearch 调研结果
 - 摘要:Skia Graphite PipelineManager::createHandle 三步查找算法（findTask→findGraphicsPipeline→findOrCreateTask）+ UniqueKey 哈希 O(1) 去重，多 Recorder 命中同一 pipeline 时通过 findTask 复用 in-flight 编译任务；DrawPass 双 buffer 瘦身（snap 后 fPipelineDescs→handle→fFullPipelines 切换）；ANGLE L1 跳转表 44-bit dirty bit 位图跳过未变化区域；ShareGroupVk 2ms 单 in-flight 节流。
-- 注入时间:2026-06-13
-- 价值:补全 GPU 异步编译链路的算法细节——三步去重、双 buffer 内存模型、dirty bit 位图优化、线程节流策略，与已注入的"四级 PSO 缓存"形成完整拼图
 
 
 ### GPU 驱动渲染管线异步编译：四级 PSO 缓存与 PipelineCreationTask
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android17-gpu-driver-pipeline-async-compilation.md
-- 类型:DeepResearch 调研结果
 - 摘要:Skia Graphite PipelineCreationTask（std::variant<task,pipeline> + atomic<bool> fCompleted + SkSpinlock）显式异步任务模型；DrawPass 三步生命周期（snap→prepareResources→createHandle→startTask→resolveHandle）；ANGLE L0(active PSO)→L1(transition table)→L2(GraphicsPipelineCache hash map + xxHash)→L3(driver VkPipelineCache) 四级缓存层次；Recording 阶段无锁提交、insertRecording 阶段一次性等待的标准并行模式。
-- 注入时间:2026-06-13
-- 价值:从 PipelineCreationTask 原子同步原语到 ANGLE 四级缓存体系，为 GPU 异步编译提供完整的金字塔式缓存层级视图
 
 
 ### AOSP 源码路径
@@ -1118,10 +1102,7 @@ status_t BufferQueueProducer::waitForFreeSlotThenRelock(
 
 ### RenderEffect 底层 GPU 渲染管线与 offscreen buffer 机制
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md
-- 类型:DeepResearch 调研结果
 - 摘要:RenderEffect 映射到 Skia 的 SkImageFilter 链,触发 offscreen GPU texture 分配(RenderLayer)。分析了 Java API → JNI → Skia GPU pipeline 的完整路径,blur sigma 值与 shader 计算量关系,AGSL RuntimeShader 通过 makeImageSnapshot() 触发 offscreen buffer 分配的机制。性能代价来自显存申请、filter chain GPU pass 数、RenderThread-GPU 同步三方面。
-- 注入时间:2026-05-10
-- 价值:RenderEffect 到 Skia 底层的完整链路分析,包含 offscreen buffer 触发条件和性能代价量化,对 GPU 渲染深入章节有直接补充价值
 
 ### A.2 GPU 性能问题系统性排查流程
 
@@ -1278,8 +1259,6 @@ Mali 的 `gpu_render_stages` 在 Perfetto 中通常比 Adreno 更细粒度--ARM 
 
 
 
-<!-- AIW-源码调研-2026-06-09 -->
-
 ### AIW 源码调研：Vulkan 1.3/1.4 加载器协商与 ANGLE 命名空间隔离（android-16.0.0_r4 锚点）
 
 > **版本边界**：android-17.0.0_r1 tag 公开未发布，本节所有源码锚点基于 `android-16.0.0_r4` 分支（即 `refs/heads/android16-release`），Android 17 差异为延续性推断。
@@ -1323,8 +1302,6 @@ if (icd_api_version_ >= VK_API_VERSION_1_3 &&
 **详细调研**：[2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md)
 
 
-
-<!-- AIW-源码调研-2026-06-11 -->
 
 ### AIW 源码调研补充：libvulkan Aconfig 旗标与 EnumerateInstanceVersion 公开 API（android-17 main 锚点）
 

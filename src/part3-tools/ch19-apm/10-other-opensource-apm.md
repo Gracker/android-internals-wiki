@@ -1,36 +1,35 @@
 ---
-
 title: "其他开源 APM 库(AndroidGodEye、Collie、Rabbit)"
-chapter: "'19'"
-section: "'19.10'"
+chapter: "19"
+section: "19.10"
 status: "ready-for-review"
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-tags: ['apm', 'monitoring']
+tags: "['apm', 'monitoring']"
 confidence: "medium"
-last_verified: "'2026-04-24'"
+last_verified: "2026-04-24"
 last_verified_against: "AndroidGodEye / Collie / Rabbit / Matrix GitHub READMEs + AGP API updates + Android developers docs"
-drafted_date: "'2026-04-24'"
+drafted_date: "2026-04-24"
 drafted_by: "codex"
-reviewed_date: "'2026-04-24'"
+reviewed_date: "2026-06-23"
 reviewed_by: "openclaw-task6"
 path: "https://developer.android.com/reference/android/os/ProfilingManager"
 task6_state: "reviewed"
-task9_state: pending
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task6_result: "pass-light-edit"
-last_task6_audit: "'2026-06-23'"
-reviewed_date: "'2026-06-23'"
+last_task6_audit: "2026-06-23"
 task2b_result: "fixed"
-last_task2b_at: "'2026-04-25T09:40:00+08:00'"
-repaired_date: "'2026-04-25'"
+last_task2b_at: "2026-04-25T09:40:00+08:00"
+repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
-task9_result: "pending"
-task9_reviewed_date: "'2026-04-24'"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "'2026-04-24T17:50:00+08:00'"
-last_task9_audit: "'2026-05-20'"
+last_task9_at: "2026-06-24"
+last_task9_audit: "2026-05-20"
 ---
+-
 
 # 其他开源 APM 库(AndroidGodEye、Collie、Rabbit)
 
