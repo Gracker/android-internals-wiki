@@ -322,7 +322,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-23T09:31:30.213333",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-23T09:36:00+08:00",
+      "completed_by": "task2b-lite",
+      "completion_note": "fixed-lite: 修复 REASON_INITIALIZATION_FAILURE 常量值(7→8)、WebViewClient.onRenderProcessGone()返回值注释、Android 17源码锚点更新、ApplicationExitInfo新增常量补充"
     },
     {
       "section": "20.7",
@@ -372,7 +375,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-23T09:31:30.213342",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-23T10:52:28+08:00",
+      "completed_reason": "Task2B 主修复: Android 17 版本锚点统一更新(android-15→android-17)，P0/P1问题已在之前的 auto-fix 中修复"
     }
   ]
 }
