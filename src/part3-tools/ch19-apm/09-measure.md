@@ -55,6 +55,8 @@ task6_state: "reviewed"
 task9_state: "reviewed"
 pipeline_stage: "ready-to-publish"
 task6_review_notes: "2026-06-04 Task6 revisiting-review: L1/L2 无新增问题，章节整洁。自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-23
 ---
 # Measure
 
@@ -102,13 +104,13 @@ task6_review_notes: "2026-06-04 Task6 revisiting-review: L1/L2 无新增问题�
 
 Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、错误率、App 大小、用户点击、页面导航、HTTP 调用、CPU、内存等信息组织成可回查的会话时间线。它和 Matrix、KOOM 这类“客户端采集组件”不同，更接近“SDK + 后端 + 看板”的平台方案。
 
-如果团队不想从零搭服务端，又希望数据可自托管，Measure 值得评估。它的边界也要先定清：平台能帮团队收集很多监控数据，但专项性能诊断仍然要回到 Perfetto、Profiler、heap dump 和业务日志。
+如果团队不想从零搭服务端，又希望数据可自托管，Measure 值得评估。它的边界也要先说清楚：平台能帮团队收集很多监控数据，但专项性能诊断仍然要回到 Perfetto、Profiler、heap dump 和业务日志。
 
 [已验证: 官方文档, GitHub README；docs/README.md；docs/sdk-integration-guide.md]
 
 ## 它的优势在会话上下文
 
-很多线上问题难查，是因为单条崩溃或 ANR 日志太孤立。Measure 的一个强点是 event timeline：把错误会话中的点击、导航、HTTP 调用、CPU、内存等事件按时间排列。
+很多线上问题难查，是因为单条崩溃或 ANR 日志太孤立。Measure 的核心优势是事件时间线（event timeline）：把错误会话中的点击、导航、HTTP 调用、CPU、内存等事件按时间排列。
 
 这类时间线能回答几个常见问题：
 
@@ -197,7 +199,7 @@ Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、
 
 ## 使用建议
 
-Measure 适合作为平台入口评估，而不是单个性能 SDK。试点时不要一次接入所有事件，先围绕一条真实问题路径验证：崩溃能否聚合、会话能否回查、符号能否还原、告警能否进入团队处理流程。
+评估 Measure 时，应该把它当作一个平台入口来看，而不是单个性能 SDK。试点时不要一次接入所有事件，先围绕一条真实问题路径验证：崩溃能否聚合、会话能否回查、符号能否还原、告警能否进入团队处理流程。
 
 只有当这些环节都跑通，平台型 APM 才能给团队省时间。否则它只是多收了一批数据。
 
@@ -230,7 +232,7 @@ Measure 这类平台主要看数据模型，单个 SDK API 反而不是评估重
 00:10 anr: input dispatching timed out
 ```
 
-这组事件不能直接给根因，但能把复现路径变清楚：进入详情页、推荐接口超时、内存上涨、返回时 ANR。之后再抓 Perfetto，看主线程和网络回调。
+这组事件未必直接给出根因，但能把复现路径还原出来：进入详情页、推荐接口超时、内存上涨、返回时 ANR。之后再抓 Perfetto，看主线程和网络回调。
 
 ## 自定义 trace 的设计原则
 
@@ -316,12 +318,9 @@ Measure 已经提供了 URL pattern、HTTP body / header、用户标识、截图
 
 通过这些验证后，再决定是否扩大到更多业务线。
 
-<!-- AIW-源码调研-2026-06-03 -->
+## Measure 与 Android Vitals 崩溃聚合集成机制
 
-<!-- AIW-源码调研-2026-06-04 -->
-## Measure 与 Android Vitals 崩溃聚合集成机制（补充）
-
-**源码调研：2026-06-04 | 来源：daily-topics.json ID=1 | Gap: RG-MEASURE-002**
+本节内容来自源码调研（2026-06-04，Gap: RG-MEASURE-002），梳理 Android 17 Measure API 与 Android Vitals 的数据流关系，供评估 Measure 平台时参考。
 
 ### 核心发现
 
@@ -394,7 +393,7 @@ frameworks/base/services/core/java/com/android/server/am/
 
 ## FrameMetrics 与 Perfetto 系统级渲染分析集成点
 
-**源码调研：2026-06-03 | Gap: RG-MEASURE-001**
+本节梳理 FrameMetrics API 与 Perfetto trace 的底层数据源关系（源码调研 2026-06-03，Gap: RG-MEASURE-001），供需要自建帧级监控的团队参考。
 
 ### 核心结论
 

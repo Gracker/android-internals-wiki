@@ -1,3 +1,11 @@
+---
+title: "Android架构概览"
+chapter: "01"
+status: "draft"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+tags: [android, performance]
+---
+
 # Android架构概览
 
 ## 章节概述

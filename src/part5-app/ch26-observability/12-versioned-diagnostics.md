@@ -1,89 +1,39 @@
 ---
-
-title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger"
-chapter: "26.12"
-section: "26.12"
-status: finalized
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-drafted_date: "2026-05-17"
-drafted_by: "openclaw-task2a"
-last_verified: "2026-06-03"
-last_verified_against: "AOSP main ApplicationExitInfo / ActivityManager / packages/modules/Profiling, Android Developers docs, Clippings structure references"
-confidence: medium
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-pipeline_stage: ready-to-publish
-sources:
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md"
-  - type: research
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-android-versioned-diagnostic-capabilities.md"
-  - type: research
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-android线上诊断能力版本边界-profiling-trigger.md"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingManager"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingResult"
-  - type: official
-    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture"
-  - type: official
-    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture"
-  - type: official
-    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityManager.java"
-  - type: aosp
-    path: "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java"
-  - type: aosp
-    path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
-  - type: aosp
-    path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
+title: "\"Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger\""
+chapter: "\"26.12\""
+section: "\"26.12\""
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
-related_chapters: ["26.2", "26.5", "14.7", "8.10", "13.2", "15.5", "20.3", "19.24"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-17"
-gap_source: "研究素材/官方文档/章节深挖"
-gap_score: 18
-pipeline_stage: ready-to-publish
-task6_state: revisiting
-last_task6_review_log: "logs/review/2026-05-17-06-review.md"
-last_task6_at: "2026-05-17T06:16:00+08:00"
-reviewed_date: "2026-05-17"
-reviewed_by: "openclaw-task6"
-task9_state: pending
-task6_result: pass-light-edit
-task2a_result: draft-ready-for-review
-last_task2a_at: "2026-05-17T06:04:00+08:00"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-05-17"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-17T06:36:36+08:00"
-last_task9_autofix_at: "2026-06-02"
-last_task9_review_log: "logs/deep-review/2026-06-02-17-deep-review.md"
-task2b_result: "fixed-lite"
-task2b_state: "fixed"
-last_task2b_lite_at: "2026-06-03"---
-
+confidence: "medium"
+last_verified: "\"2026-06-03\""
+last_verified_against: "\"AOSP main ApplicationExitInfo / ActivityManager / packages/modules/Profiling, Android Developers docs, Clippings structure references\""
+drafted_date: "\"2026-05-17\""
+drafted_by: "\"openclaw-task2a\""
+reviewed_date: "\"2026-05-17\""
+reviewed_by: "\"openclaw-task6\""
+path: "\"packages/modules/Profiling/framework/java/android/os/ProfilingResult.java\""
+related_chapters: "[\"26.2\", \"26.5\", \"14.7\", \"8.10\", \"13.2\", \"15.5\", \"20.3\", \"19.24\"]"
+created_by: "\"task2a-knowledge-gap\""
+created_date: "\"2026-05-17\""
+gap_source: "\"研究素材/官方文档/章节深挖\""
+gap_score: "18"
+task6_state: "revisiting"
+last_task6_at: "\"2026-05-17T06:16:00+08:00\""
+task9_state: "pending"
+task6_result: "pass-light-edit"
+task2a_result: "draft-ready-for-review"
+last_task2a_at: "\"2026-05-17T06:04:00+08:00\""
+task9_result: "\"auto-fixed\""
+task9_reviewed_date: "\"2026-05-17\""
+task9_reviewed_by: "\"openclaw-task9\""
+last_task9_at: "\"2026-05-17T06:36:36+08:00\""
+last_task9_autofix_at: "\"2026-06-02\""
+task2b_result: "\"fixed-lite\""
+task2b_state: "\"fixed\""
+last_task2b_lite_at: "\"2026-06-03\""
+---
 
 # 26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
 

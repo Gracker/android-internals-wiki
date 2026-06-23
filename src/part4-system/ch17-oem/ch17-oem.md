@@ -1,4 +1,10 @@
-
+---
+title: "ch17-oem"
+chapter: "17"
+status: "draft"
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
+tags: [oem, soc]
+---
 
 ## 参考资料
 

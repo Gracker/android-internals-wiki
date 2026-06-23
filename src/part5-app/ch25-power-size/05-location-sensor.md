@@ -1,3 +1,4 @@
+---
 title: "定位与传感器功耗优化"
 chapter: "25.5"
 section: "25.5"
@@ -53,6 +54,7 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-03T21:36:06+08:00"
 last_task6_review_log: logs/review/2026-05-14-19-review.md
 task6_review_notes: "2026-05-14 Task6：L1/L2 小修 2 处；写作层通过。保留 Task9 P1 回炉队列，未自动晋升。"
+---
 
 # 定位与传感器功耗优化
 

@@ -1,5 +1,4 @@
 ---
-
 last_task9_at: "2026-06-05T07:20:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-05"
@@ -13,33 +12,21 @@ drafted_by: "openclaw-task2a"
 last_verified: "2026-04-12"
 last_verified_against: "AOSP android-16.0.0_r1, Linux kernel android16-6.12"
 confidence: medium
-sources:
-  - type: aosp
-    path: "drivers/thermal/thermal_core.c"
-  - type: aosp
-    path: "drivers/thermal/cpufreq_cooling.c"
-  - type: aosp
-    path: "drivers/thermal/gov_step_wise.c"
-  - type: aosp
-    path: "drivers/thermal/gov_power_allocator.c"
-  - type: aosp
-    path: "drivers/thermal/devfreq_cooling.c"
-  - type: aosp
-    path: "drivers/devfreq/devfreq.c"
-  - type: aosp
-    path: "hardware/interfaces/thermal/aidl/android/hardware/thermal/"
-  - type: official
-    path: "developer.android.com/games/optimize/thermal"
-  - type: official
-    path: "developer.android.com/games/optimize/adpf"
-  - type: official
-    path: "source.android.com/docs/core/power/thermal-mitigation"
-  - type: official
-    path: "https://perfetto.dev/docs/analysis/trace-analysis-with-sql"
-  - type: blog
-    path: "mediatek.com - MAGT ADPF integration case studies"
-tags: [thermal, throttling, ADPF, Thermal HAL, sustained performance, 游戏性能, 功耗, devfreq, power_allocator]
-related_chapters: ["5.5", "5.9", "4.7", "8.9", "11.1", "16.4"]
+sources: 
+path: "drivers/thermal/thermal_core.c"
+path: "drivers/thermal/cpufreq_cooling.c"
+path: "drivers/thermal/gov_step_wise.c"
+path: "drivers/thermal/gov_power_allocator.c"
+path: "drivers/thermal/devfreq_cooling.c"
+path: "drivers/devfreq/devfreq.c"
+path: "hardware/interfaces/thermal/aidl/android/hardware/thermal/"
+path: "developer.android.com/games/optimize/thermal"
+path: "developer.android.com/games/optimize/adpf"
+path: "source.android.com/docs/core/power/thermal-mitigation"
+path: "https://perfetto.dev/docs/analysis/trace-analysis-with-sql"
+path: "mediatek.com - MAGT ADPF integration case studies"
+tags: "[thermal, throttling, ADPF, Thermal HAL, sustained performance, 游戏性能, 功耗, devfreq, power_allocator]"
+related_chapters: "[\"5.5\", \"5.9\", \"4.7\", \"8.9\", \"11.1\", \"16.4\"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
@@ -76,8 +63,8 @@ finalized_date: 2026-06-15
 finalized_by: openclaw-task6
 auto_promoted_date: 2026-06-15
 auto_promoted_by: openclaw-task6
--
 ---
+
  Thermal 管控深度：从内核子系统到 ADPF 主动降频
 
 本章是 [5.5 Thermal 管控](05-thermal.md) 的深度扩展。5.5 讲的是"温控系统从传感器到 App 的完整流程"，适合建立全局认知。如果你已经读完 5.5，并且需要回答这些问题——"内核的 thermal governor 具体怎么决策？""power_allocator 的 PID 参数怎么调？""为什么同一款 SoC 的两台手机 thermal 表现差这么多？""在 Perfetto 里怎么用 SQL 量化 thermal throttling 对帧率的影响？"——那么你在这篇文章里能找到答案。

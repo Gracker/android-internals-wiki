@@ -1,67 +1,39 @@
 ---
-
-title: "HTTPDNS 与 OkHttp Dns 执行边界"
-chapter: "24.10"
-section: "24.10"
-drafted_date: "2026-05-16"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x"
-last_verified: "2026-06-09"
-last_verified_against: "OkHttp 5.x docs + OkHttp source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab + DeepResearch 2026-05-14 + Clippings 结构参考"
-confidence: medium
-sources:
-  - type: official
-    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/"
-  - type: official
-    path: "https://square.github.io/okhttp/features/connections/"
-  - type: official
-    path: "https://square.github.io/okhttp/features/events/"
-  - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt"
-  - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt"
-  - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt"
-  - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt"
-  - type: source
-    path: "https://raw.githubusercontent.com/square/okhttp/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp-dnsoverhttps/README.md"
-  - type: blog
-    path: "DeepResearch/2026-05-14-okhttp-dns-lookup-httpdns-engineering.md"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
+title: "\"HTTPDNS 与 OkHttp Dns 执行边界\""
+chapter: "\"24.10\""
+section: "\"24.10\""
+status: "finalized"
+pipeline_stage: "\"ready-to-publish\""
+applicable_versions: "\"Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x\""
 tags: [network, httpdns, okhttp, dns, latency]
-related_chapters: ["12.2", "12.3", "24.4", "24.5", "26.3"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-16"
-gap_source: "章节深挖/研究素材"
-last_task2a_at: "2026-05-16T16:04:00+08:00"
-status: finalized
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
-task6_state: "reviewed"
-task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: auto-fixed
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: "ready-to-publish"
-last_task6_at: "2026-05-16T16:10:00+08:00"
-last_task6_audit: "2026-06-08"
-last_task6_review_log: "logs/review/2026-05-16-16-review.md"
-task6_l1_l2_fixes: 9
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-16 Task6：首次写作质检通过；修复 outline 重复描述、禁用词和兜底表述 9 处；无 L3/L4 回炉项，送 Task9 技术复核。"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-16"
-last_task9_at: "2026-05-16T16:30:00+08:00"
-last_task9_audit: "2026-06-09"
-last_task9_autofix_at: "2026-06-09"
-last_task9_review_log: "logs/deep-review/2026-05-16-16-deep-review.md"
-task9_review_notes: "2026-05-16 Task9：深度技术审计通过；OkHttp Dns.lookup()、RouteSelector、DnsOverHttps bootstrap、EventListener 与 fast fallback 口径已核对；无 P0/P1/P2，自动晋升 finalized / ready-to-publish。 | 2026-06-09 Task9 闲时抽检：auto-fixed。P0 源码锚点 2 处；修正 OkHttp Dns.kt master 路径、RealRoutePlanner commit 归属，并将 frontmatter OkHttp raw source pin 到 source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab。"---
+confidence: "medium"
+last_verified: "\"2026-06-09\""
+last_verified_against: "\"OkHttp 5.x docs + OkHttp source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab + DeepResearch 2026-05-14 + Clippings 结构参考\""
+drafted_date: "\"2026-05-16\""
+reviewed_date: "\"2026-05-16\""
+reviewed_by: "openclaw-task6"
+path: "\"Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md\""
+related_chapters: "[\"12.2\", \"12.3\", \"24.4\", \"24.5\", \"26.3\"]"
+created_by: "\"task2a-knowledge-gap\""
+created_date: "\"2026-05-16\""
+gap_source: "\"章节深挖/研究素材\""
+last_task2a_at: "\"2026-05-16T16:04:00+08:00\""
+task6_state: "\"reviewed\""
+task6_result: "pass-light-edit"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task6_at: "\"2026-05-16T16:10:00+08:00\""
+last_task6_audit: "\"2026-06-08\""
+task6_l1_l2_fixes: "9"
+task6_l3_l4_issues: "0"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "\"2026-05-16\""
+last_task9_at: "\"2026-05-16T16:30:00+08:00\""
+last_task9_audit: "\"2026-06-09\""
+last_task9_autofix_at: "\"2026-06-09\""
+---
 
 # 24.10 HTTPDNS 与 OkHttp Dns 执行边界
 

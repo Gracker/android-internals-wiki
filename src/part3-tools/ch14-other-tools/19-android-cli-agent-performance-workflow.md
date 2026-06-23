@@ -1,5 +1,4 @@
 ---
-
 title: "Android CLI 与 Agent 化性能调试工作流"
 chapter: "14.19"
 section: "14.19"
@@ -46,6 +45,8 @@ task9_review_notes: "2026-05-22 task9 deep-review: pass-tech-review。P0 0 / P1 
 last_task9_review_log: "logs/deep-review/2026-05-22-04-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
+---
+
 # 14.19 Android CLI 与 Agent 化性能调试工作流
 
 <!-- outline-start -->

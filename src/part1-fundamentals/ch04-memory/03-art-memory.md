@@ -1,77 +1,36 @@
 ---
-
-status: "finalized"
-title: ART 虚拟机内存管理
+title: "ART 虚拟机内存管理"
 chapter: '4.3'
 section: '4.3'
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+tags: [memory, lmk, gc]
+confidence: medium
+last_verified: '2026-06-10'
+last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 + Android Developers Blog (Android 16 QPR2); android-17.0.0_r1 tag unavailable on 2026-06-10"
 drafted_date: '2026-03-31'
 drafted_by: openclaw-task2
-applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-06-10'
+reviewed_date: '2026-06-10'
+reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 + Android Developers Blog (Android 16 QPR2); android-17.0.0_r1 tag unavailable on 2026-06-10"
-confidence: medium
-sources:
-- type: official
-  path: https://source.android.com/docs/core/runtime/gc-debug
-- type: blog
-  path: ART虚拟机内存分配原理浅析 (微信技术文章)
-- type: blog
-  path: ART虚拟机CMC GC算法核心实现介绍 (微信技术文章)
-- type: blog
-  path: 【Android ART】Heap的内存布局 (微信技术文章)
-- type: official
-  path: https://developer.android.com/topic/performance/baselineprofiles
-- type: official
-  path: https://developer.android.com/guide/practices/page-sizes
-- type: official
-  path: https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html
-tags:
-- art
-- gc
-- heap
-- tlab
-- aot
-- jit
-- cc-gc
-- cmc-gc
-- uffd
-- read-barrier
-- memory-allocation
-- generational-gc
-related_chapters:
-- '4.1'
-- '4.2'
-- '4.4'
-- '4.6'
-- '4.7'
-- '4.8'
-- '7.1'
-- '7.7'
+path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 last_task2b_at: "2026-06-09T20:59:35+08:00"
-reviewed_date: '2026-06-10'
-reviewed_by: openclaw-task6
 last_task6_at: '2026-06-10T01:07:00+08:00'
 last_task6_audit: 2026-06-09
-last_task6_review_log: logs/review/2026-06-10-01-review.md
 task6_state: "reviewed"
 task6_result: pass-light-edit
-review_notes: '2026-06-10 01:07 Task6 revisiting 第四轮复审（Task9 auto-fixed 后）。L1 小修 1 处（"这样做的目的，是"口水过渡词→直接陈述）。无新增 L3/L4 回炉项。送 Task9 做 pass-tech-review 终审。 | 2026-06-09 23:00 Task6 revisiting 第三轮复审。L1 小修 4 处（3 处口水过渡词"更合适/更准确"，1 处附录格式）。无新增 L3/L4 回炉项。送 Task9 复审 auto-fixed 内容。 | 2026-06-09 21:09 Task6 revisiting 复审。L1/L2 小修 2 处。源码调研附录（AIW-源码调研-2026-06-09）未整合进正文为 L3 建议。送 Task9 复审。 | 2026-06-09 20:56 Task2B main 回炉。P0: 删除 05-28 Generational CMC 注入块(不存在 generational_collector.cc、gc_type.h 枚举名错误、未验证 Android 17 结论)。P1: 移除 "与 AIW §4.3现有描述的差异" 小节(指向已删块)。保留 06-09 一手验证块。 | 2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
-task6_review_notes: "2026-06-10 01 Task6 revisiting 第四轮复审；L1 小修 1 处（"这样做的目的是"口水过渡词 + 而不是 → 直接陈述），无 L3/L4 回炉项，送 Task9 pass-tech-review 终审。 | 2026-06-09 23: Task6 revisiting 第三轮复审；L1 小修 4 处（口水过渡词 3 + 附录格式 1），无 L3/L4 回炉项，送 Task9 复审 auto-fixed 内容。 | 2026-06-09 21 Task6 revisiting 复审；Task2B 已删除 05-28 注入块，06-09 一手验证块保留。L1/L2 小修 2 处（"这样做，是为了让"重复起手式→直接陈述）。源码调研附录风格未整合为 L3 建议交 Task2B。送 Task9 技术复审。 | 2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。" "2026-05-17 Task6 11: Task2B 回炉修复后复审；L1/L2 小修 5 处，未新增 L3/L4 回炉项，送 Task9 技术复审。"
 task9_state: "reviewed"
 task9_reviewed_date: '2026-06-10'
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-10T00:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-10-00-deep-review.md"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "ready-to-publish"
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: "2026-06-10 00:20 Task9 deep-review auto-fixed。P0: 修正 Zygote Space 源码锚点为 Heap::PreZygoteFork()，修正 LOS/main moving space 移动属性误写。P1: 收窄 Android17/Generational CMC 口径（android-17.0.0_r1 tag 仍为空），回 Task6 复审。 | 2026-06-09 22 Task9 deep-review auto-fixed。P0: 修正 06-09 源码调研块中 CMC kernel/userfaultfd 条件（Linux 5.13/MREMAP_DONTUNMAP + SIGBUS，minor-fault 非启用前提）；P1: 删除 Android17 候选结论口径；P2: 移除未 benchmark 的 CC/CMC 暂停时间表。回 Task6 复审。 | 2026-06-09 20 Task9 idle audit→Task2B 主修复已删除 05-28 注入块(虚假源码路径+未验证 Android 17 结论)。06-09 一手验证块保留。 | 2026-05-17 15 Task9 re-review: pass-tech-review。P0/P1 已清零；LOS FreeList/Map、CMC/BumpPointerSpace、Generational CMC 开关、JIT Code Cache 口径已对上 AOSP。GC baseline 数据 P2 既有 suggestions 保留。自动晋升 finalized。 | 2026-06-09 20 Task9 idle audit: needs-rework。P0 1：2026-05-28 Generational CMC 注入块存在 AOSP 源码路径/枚举错误；P1 1：Android 17/Generational CMC 版本边界证据不足，回 Task2B 清理或重写。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
 last_task9_audit: 2026-06-09

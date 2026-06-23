@@ -10,68 +10,33 @@ last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memor
 reviewed_date: '2026-06-12'
 reviewed_by: openclaw-task6
 review_notes: 'task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack；2026-06-12 13:08 Task6 复审（Task9 auto-fix 后）：L1/L2 全部通过，0 处禁用词，0 处需修问题，无 B 类问题。Task9 已 pass（auto-fixed），queue 无 pending，自动晋升 finalized。'
-  物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in
-  swap/total swap）；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9；2026-05-07 20:08
-  Task6 复审：L1/L2 小修 12 处，锚点覆盖完整，无新增回炉项，交回 Task9'
 task6_result: pass-light-edit
 confidence: medium
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-sources:
-- type: official
-  path: https://developer.android.com/topic/performance/memory-management
-- type: official
-  path: https://developer.android.com/topic/performance/graphics/manage-memory
-- type: official
-  path: https://developer.android.com/guide/practices/page-sizes
-- type: official
-  path: https://source.android.com/docs/core/perf/lmkd
-- type: official
-  path: https://source.android.com/docs/core/perf/cgroups
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/am/ProcessList.java
-- type: aosp
-  path: frameworks/base/core/java/android/content/ComponentCallbacks2.java
-- type: aosp
-  path: system/core/libprocessgroup/profiles/task_profiles.json
-- type: aosp
-  path: system/memory/lmkd/lmkd.cpp
-- type: official
-  path: https://docs.kernel.org/admin-guide/blockdev/zram.html
-- type: official
-  path: https://perfetto.dev/docs/data-sources/java-heap-profiler
-- type: official
-  path: https://perfetto.dev/docs/case-studies/android-outofmemoryerror
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
-- type: aosp
-  path: frameworks/base/core/java/android/app/ActivityThread.java
-- type: aosp
-  path: art/runtime/hprof/hprof.cc
-- type: aosp
-  path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
-- type: blog
-  path: https://androidperformance.com/
-- type: blog
-  path: https://juejin.cn/post/7530909474103296039
-tags:
-- memory
-- PSS
-- RSS
-- dumpsys
-- meminfo
-- procfs
-- ZRAM
-- cgroup
-related_chapters:
-- '4.2'
-- '4.3'
-- '4.4'
-- '4.5'
-- '10.1'
+sources: 
+path: "https://developer.android.com/topic/performance/memory-management"
+path: "https://developer.android.com/topic/performance/graphics/manage-memory"
+path: "https://developer.android.com/guide/practices/page-sizes"
+path: "https://source.android.com/docs/core/perf/lmkd"
+path: "https://source.android.com/docs/core/perf/cgroups"
+path: frameworks/base/services/core/java/com/android/server/am/ProcessList.java
+path: frameworks/base/core/java/android/content/ComponentCallbacks2.java
+path: system/core/libprocessgroup/profiles/task_profiles.json
+path: system/memory/lmkd/lmkd.cpp
+path: "https://docs.kernel.org/admin-guide/blockdev/zram.html"
+path: "https://perfetto.dev/docs/data-sources/java-heap-profiler"
+path: "https://perfetto.dev/docs/case-studies/android-outofmemoryerror"
+path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
+path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+path: frameworks/base/core/java/android/app/ActivityThread.java
+path: art/runtime/hprof/hprof.cc
+path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
+path: "https://androidperformance.com/"
+path: "https://juejin.cn/post/7530909474103296039"
+tags: 
+related_chapters: 
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -89,7 +54,6 @@ task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
 ---
-
 
 # Android 内存模型全景
 

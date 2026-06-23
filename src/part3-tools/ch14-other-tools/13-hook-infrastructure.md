@@ -54,6 +54,7 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: '2026-04-22'
 polish_by: "task2b-polish"
+---
 
 # 14.13 Hook 基础设施与性能工具实现原理
 

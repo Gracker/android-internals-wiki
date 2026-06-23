@@ -1,58 +1,34 @@
 ---
-
-title: "崩溃聚合与归因分析"
-chapter: "20.8"
-section: "20.8"
-status: finalized
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-03"
-last_verified_against: "AOSP android-16.0.0_r1, Firebase Crashlytics docs, Sentry docs"
-confidence: medium
-drafted_date: "2026-05-11"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task9_result: auto-fixed
-task2b_result: fixed
-task2b_state: fixed
-polish_count: 1
-pipeline_stage: ready-to-publish
-sources:
-  - type: aosp
-    path: "art/runtime/thread.cc (CreateInternalStackTrace, WalkStack)"
-  - type: official
-    path: "https://docs.sentry.io/platform-features/grouping/"
-  - type: official
-    path: "https://firebase.google.com/docs/crashlytics/customize-crash-reports"
-  - type: clippings-structure-ref
-    path: "Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md"
-  - type: clippings-structure-ref
-    path: "Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md"
+title: "\"崩溃聚合与归因分析\""
+chapter: "\"20.8\""
+section: "\"20.8\""
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [crash-aggregation, attribution, alerting, stack-dedup, clustering]
-related_chapters: ["20.6", "26.2", "19.18"]
-pipeline_stage: ready-to-publish
-task6_state: revisiting
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-06-03T00:50:00+08:00"
-task2b_review_notes: "2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-task6_result: pass-light-edit
-task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-06-03T09:20:00+08:00"
-last_task6_at: "2026-06-03T03:06:00+08:00"
-last_task6_review_log: "logs/review/2026-06-03-03-review.md"
-last_task9_autofix_at: "2026-06-03"
-last_task9_review_log: "logs/deep-review/2026-06-03-09-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 auto-fix：修正 kMaxSavedFrames=256 为 ART 首轮栈帧缓存阈值而非 Java 堆栈硬上限，回到 Task6 复审。"---
-
+confidence: "medium"
+last_verified: "\"2026-06-03\""
+last_verified_against: "\"AOSP android-16.0.0_r1, Firebase Crashlytics docs, Sentry docs\""
+drafted_date: "\"2026-05-11\""
+reviewed_date: "\"2026-06-03\""
+reviewed_by: "openclaw-task6"
+polish_count: "1"
+task6_result: "pass-light-edit"
+task6_state: "revisiting"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_result: "fixed"
+task2b_state: "fixed"
+path: "\"Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md\""
+related_chapters: "[\"20.6\", \"26.2\", \"19.18\"]"
+last_task2b_at: "\"2026-06-03T00:50:00+08:00\""
+task2b_review_notes: "\"2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。\""
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "\"2026-06-03\""
+last_task9_at: "\"2026-06-03T09:20:00+08:00\""
+last_task6_at: "\"2026-06-03T03:06:00+08:00\""
+last_task9_autofix_at: "\"2026-06-03\""
+---
 
 # 崩溃聚合与归因分析
 

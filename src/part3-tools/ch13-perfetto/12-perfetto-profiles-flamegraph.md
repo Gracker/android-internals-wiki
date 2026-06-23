@@ -1,51 +1,35 @@
 ---
-
-title: "Perfetto Profile 导入与 Flamegraph 分析"
-chapter: "13.12"
-section: "13.12"
-status: finalized
-drafted_date: "2026-05-15"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)（Simpleperf 导入）；Android 15 (API 35) - Android 17 (API 37)（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）"
-last_verified: "2026-05-15"
-last_verified_against: "Perfetto v53/v54 release notes, perfetto.dev profiling/import/symbolization docs, Android simpleperf public docs snippets"
-confidence: high
-sources:
-  - type: official
-    path: "https://github.com/google/perfetto/releases/tag/v53.0"
-  - type: official
-    path: "https://github.com/google/perfetto/releases/tag/v54.0"
-  - type: official
-    path: "https://raw.githubusercontent.com/google/perfetto/main/docs/getting-started/other-formats.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/google/perfetto/main/docs/getting-started/cpu-profiling.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/google/perfetto/main/docs/learning-more/symbolization.md"
-  - type: blog
-    path: "intake/research-feeds/2026-04-14-07-perfetto-v53-rust-sdk-pprof-simpleperf-custom-sorting.md"
-  - type: blog
-    path: "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md"
+title: "\"Perfetto Profile 导入与 Flamegraph 分析\""
+chapter: "\"13.12\""
+section: "\"13.12\""
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)（Simpleperf 导入）；Android 15 (API 35) - Android 17 (API 37)（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）\""
 tags: ["perfetto", "simpleperf", "pprof", "flamegraph", "profiling", "trace"]
-related_chapters: ["13.2", "13.3", "13.10", "14.2", "14.8"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "研究素材/官方发布说明"
-deepseek_polish_state: done
-last_deepseek_polish_at: "2026-05-26"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
-last_task6_at: '2026-05-15T14:12:00+08:00'
-task6_result: pass-light-edit
-reviewed_date: "2026-05-15"
-reviewed_by: openclaw-task6
-task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
-task9_reviewed_date: "2026-05-18"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-18T15:25:00+08:00"
-task9_review_notes: "2026-05-15 task9 deep-review: P0 1 / P1 1 / P2 1，需 Task2B 修正 v54 Data Explorer 命名、linux.perf Android 版本/权限边界与 ch13 交叉引用。；2026-05-18 task9 deep-review: P0 0 / P1 0 / P2 1（既有 ch13 README/related_chapters 交叉引用建议已在 suggestions.md 记录）；无阻塞技术问题，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"---
+confidence: "high"
+last_verified: "\"2026-05-15\""
+last_verified_against: "\"Perfetto v53/v54 release notes, perfetto.dev profiling/import/symbolization docs, Android simpleperf public docs snippets\""
+drafted_date: "\"2026-05-15\""
+drafted_by: "\"openclaw-task2a\""
+reviewed_date: "\"2026-05-15\""
+reviewed_by: "openclaw-task6"
+path: "\"intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md\""
+related_chapters: "[\"13.2\", \"13.3\", \"13.10\", \"14.2\", \"14.8\"]"
+created_by: "\"task2a-knowledge-gap\""
+created_date: "\"2026-05-15\""
+gap_source: "\"研究素材/官方发布说明\""
+deepseek_polish_state: "done"
+last_deepseek_polish_at: "\"2026-05-26\""
+task6_state: "\"reviewed\""
+last_task6_at: "'2026-05-15T14:12:00+08:00'"
+task6_result: "pass-light-edit"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task2b_state: "fixed"
+task9_reviewed_date: "\"2026-05-18\""
+task9_reviewed_by: "\"openclaw-task9\""
+last_task9_at: "\"2026-05-18T15:25:00+08:00\""
+---
 
 # 13.12 Perfetto Profile 导入与 Flamegraph 分析
 

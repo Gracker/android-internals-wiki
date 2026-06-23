@@ -1,4 +1,10 @@
-
+---
+title: "Android 17 无锁消息队列：DeliQueue 替换 MessageQueue 深度解析"
+chapter: "07"
+status: "draft"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+tags: [smoothness, jank]
+---
 
 # Android 17 无锁消息队列：DeliQueue 替换 MessageQueue 深度解析
 

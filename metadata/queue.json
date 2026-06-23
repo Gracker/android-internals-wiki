@@ -1,6 +1,29 @@
 {
   "pending": [],
   "in_progress": [],
+  "pending": [
+    {
+      "section": "8.10",
+      "section_title": "ProfilingManager 系统触发式性能追踪",
+      "priority": 95,
+      "reason": "[Deep Tech Review] AOSP 源码路径不存在，无法验证章节技术准确性",
+      "material_paths": [
+        "logs/deep-review/2026-06-23-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0 事实错误",
+          "location": "全文源码引用",
+          "detail": "章节引用的 AOSP 源码路径（packages/modules/Profiling/framework/java/android/os/ProfilingManager.java 等）在当前工作空间中不存在，无法验证章节中技术描述的准确性。整个章节建立在无法验证的源码基础上，存在重大技术准确性风险。",
+          "suggestion": "需要补充实际可访问的 AOSP 源码路径，或明确标注 '源码未公开，基于文档推断' 的边界。建议等待 Android 17 Profiling 模块源码公开后再进行技术审查。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-23T13:20:00+08:00",
+      "status": "pending"
+    }
+  ],
+  "in_progress": [],
   "completed": [
     {
       "section": "ch02-rendering",

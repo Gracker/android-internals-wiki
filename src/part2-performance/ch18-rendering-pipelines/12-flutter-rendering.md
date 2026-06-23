@@ -1,62 +1,37 @@
 ---
+title: "Flutter 渲染管线"
+chapter: "'18.12'"
+section: "'18.12'"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+applicable_versions: "Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android"
+tags: ['rendering', 'pipeline']
+reviewed_date: "2026-06-04"
+reviewed_by: "\"openclaw-task6\""
+created_by: "rendering-pipelines-merge"
+created_date: "'2026-04-09'"
+task6_state: "\"reviewed\""
+task9_state: "reviewed"
+task2b_state: "fixed"
+task6_result: "\"pass-light-edit\""
+task2b_result: "fixed"
+last_task2b_at: "2026-06-04T12:54:39"
+task9_result: "pass-tech-review"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "\"2026-06-05\""
+last_task9_at: "\"2026-06-05T00:20:00+08:00\""
+repaired_date: "\"2026-04-26\""
+repaired_by: "\"openclaw-task2b\""
+last_task9_audit: "\"2026-05-21\""
+last_task9_audit_at: "\"2026-05-21T06:36:00+08:00\""
+last_task9_audit_log: "\"logs/deep-review/2026-05-21-06-audit-18.12.md\""
+last_task6_at: "\"2026-06-04T15:21:59.742576+08:00\""
+task6_reviewed_date: "2026-06-04"
+task6_reviewed_by: "\"openclaw-task6\""
+task6_l1_l2_fixes: "0"
+task6_l3_l4_issues: "0"
+---
 
-
-
-
-title: Flutter 渲染管线
-chapter: '18.12'
-status: finalized
-applicable_versions: Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android
-  API 29+ 默认 Impeller） / Android 10 (API 29) - Android 16 (API 36)
-tags:
-- Flutter
-- Impeller
-- Skia
-- SurfaceView
-- TextureView
-- Merged-Thread
-- PlatformView
-- 渲染管线
-related_chapters:
-- '2.5'
-- '2.11'
-- '18.6'
-- '18.7'
-created_by: rendering-pipelines-merge
-created_date: '2026-04-09'
-sources:
-  - Flutter 官方文档：Flutter rendering pipeline
-  - Flutter 官方文档：Impeller rendering engine
-  - Flutter engine 仓库：shell/platform/android/
-section: '18.12'
-review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 10 L1 fixes (禁用词「链路」→「管线」全量替换: 标题/tags/大纲/正文). 无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
-task6_state: "reviewed"
-pipeline_stage: ready-to-publish
-task9_state: reviewed
-task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: 2026-06-04
-task6_result: "pass-light-edit"
-task2b_result: fixed
-last_task2b_at: 2026-06-04T12:54:39
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T00:20:00+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-last_task9_audit: "2026-05-21"
-last_task9_audit_at: "2026-05-21T06:36:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-05-21-06-audit-18.12.md"
-task2b_notes: 2026-06-04 Task2B main 回炉：新增 VSync 协调扩展锚点（VsyncWaiter → Choreographer 链路、Merged Model 差异、TextureView 额外延迟、Perfetto 观察点）；P0 RenderMode.image 和 P1 HCPP 已在前序修复中修正，确认本轮文本已覆盖
-last_task6_at: "2026-06-04T15:21:59.742576+08:00"
-task6_reviewed_date: 2026-06-04
-task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 0
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit。本轮无 L1/L2 问题，无新增 L3/L4 回炉项。"
-last_task9_review_log: "logs/deep-review/2026-06-05-00-deep-review.md"
-task9_review_notes: "2026-06-05 00:20 Task9 deep-review: pass-tech-review。Flutter 3.29 merged threads、3.27 Impeller Android API 29+、3.44 HCPP API 34+ Vulkan 边界经官方文档复核；无 P0/P1，自动晋升 finalized。"---
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**

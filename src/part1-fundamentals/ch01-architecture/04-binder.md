@@ -1,67 +1,42 @@
 ---
-
-title: "Binder IPC 机制与性能影响"
-chapter: "1.4"
-section: "1.4"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-drafted_date: "2026-05-13"
-drafted_by: openclaw-task2a
-last_verified: "2026-06-09"
-last_verified_against: "AOSP android-16.0.0_r4 / kernel android16-6.12 / external/perfetto android-16.0.0_r1 / source.android / developer.android"
-confidence: medium
-sources:
-  - type: blog
-    path: "Blog/Blog/source/_posts/Android-Systrace-Binder.md"
-  - type: blog
-    path: "Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md"
-  - type: deepresearch
-    path: "DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md"
-  - type: blog
-    path: "Cubox/Binder驱动中的流程详解-2024-07-12.md"
-  - type: official
-    path: "developer.android.com/reference/android/os/IBinder"
-  - type: official
-    path: "developer.android.com/guide/components/aidl"
-  - type: official
-    path: "source.android.com/docs/core/architecture/ipc/priority-inheritance"
-  - type: official
-    path: "source.android.com/docs/core/architecture/ipc/binder-freezer"
-  - type: aosp
-    path: "frameworks/native/libs/binder/ProcessState.cpp"
-  - type: aosp
-    path: "kernel/common/drivers/android/binder.c"
-  - type: aosp
-    path: "kernel/common/drivers/android/binder_alloc.c"
-  - type: aosp
-    path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
+title: "\"Binder IPC 机制与性能影响\""
+chapter: "\"1.4\""
+section: "\"1.4\""
+status: "finalized"
+pipeline_stage: "\"ready-to-publish\""
+applicable_versions: "\"Android 8 (API 26) - Android 17 (API 37)\""
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
-related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-task6_state: "reviewed"
-last_task2a_at: "2026-05-13T18:20:00+08:00"
-last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
-status: finalized
-pipeline_stage: "ready-to-publish"
-task9_state: "reviewed"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-09"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-09T01:20:00+08:00"
-last_task9_audit: "2026-06-09"
-last_task9_audit_at: "2026-06-09T01:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-09-01-audit.md"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-13"
-last_task6_at: "2026-05-13T19:10:00+08:00"
-last_task6_audit: "2026-05-19"
-task6_review_log: "logs/review/2026-05-13-19-review.md"
-auto_promoted_at: "2026-05-13T19:10:00+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
-task2b_state: "fixed"
-last_task9_autofix_at: "2026-06-09"---
-
+confidence: "medium"
+last_verified: "\"2026-06-09\""
+last_verified_against: "\"AOSP android-16.0.0_r4 / kernel android16-6.12 / external/perfetto android-16.0.0_r1 / source.android / developer.android\""
+drafted_date: "\"2026-05-13\""
+drafted_by: "openclaw-task2a"
+reviewed_date: "\"2026-05-13\""
+reviewed_by: "openclaw-task6"
+path: "\"external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql\""
+related_chapters: "[\"1.1\", \"2.5\", \"7.2\", \"8.2\", \"9.1\"]"
+task6_state: "\"reviewed\""
+last_task2a_at: "\"2026-05-13T18:20:00+08:00\""
+last_task2a_note: "\"空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。\""
+task9_state: "\"reviewed\""
+task9_result: "\"auto-fixed\""
+task9_reviewed_date: "\"2026-06-09\""
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "\"2026-06-09T01:20:00+08:00\""
+last_task9_audit: "\"2026-06-09\""
+last_task9_audit_at: "\"2026-06-09T01:20:00+08:00\""
+last_task9_audit_log: "\"logs/deep-review/2026-06-09-01-audit.md\""
+task6_result: "pass-light-edit"
+task6_reviewed_date: "\"2026-05-13\""
+last_task6_at: "\"2026-05-13T19:10:00+08:00\""
+last_task6_audit: "\"2026-05-19\""
+task6_review_log: "\"logs/review/2026-05-13-19-review.md\""
+auto_promoted_at: "\"2026-05-13T19:10:00+08:00\""
+deepseek_cn_review_state: "done"
+last_deepseek_cn_review_at: "2026-06-09"
+task2b_state: "\"fixed\""
+last_task9_autofix_at: "\"2026-06-09\""
+---
 
 # Binder IPC 机制与性能影响
 

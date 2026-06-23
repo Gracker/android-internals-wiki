@@ -1,70 +1,46 @@
 ---
-
-title: Jetpack Compose 性能优化
-chapter: '7.7'
-status: ready-for-review
-applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-01'
-last_verified_against: Android 16 Developer Preview
-confidence: medium
-reviewed_date: 2026-06-04
-last_task6_at: 2026-06-04T12:11:00+08:00
-last_task6_audit: '2026-05-22'
-last_task6_audit_result: pass-light-edit
-last_task6_audit_log: logs/review/2026-05-22-19-audit.md
-last_task2b_at: '2026-06-04T05:36:00+08:00'
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task9_result: auto-fixed
-polish_count: 1
-polish_date: '2026-04-04'
-polish_by: task2b-polish
-review_type: post-polish-quality-gate
-review_round: 3
-sources:
-- type: blog
-  path: Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md
-- type: blog
-- type: blog
-- type: blog
-- type: blog
-- type: blog
-- type: official
-tags:
-- compose
-- jank
-- recomposition
-- stability
-- lazy-column
-- layout-inspector
-- compose-compiler
-- animation
-- compose-interop
-related_chapters:
-- '7.1'
-- '7.2'
-- '7.3'
-- '2.4'
-- '2.5'
-- '2.11'
-drafted_date: '2026-04-01'
-drafted_by: openclaw-task2a
-section: '7.7'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed-lite
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-06-04'
-last_task9_at: "2026-06-04T20:24:00+08:00"
-last_task9_autofix_at: '2026-06-04'
-auto_promoted_by: "openclaw-task6"
-auto_promoted_date: "2026-05-04"
-last_task9_audit: '2026-05-20'
-last_task9_audit_result: needs-rework
-last_task9_review_log: logs/deep-review/2026-05-20-02-audit.md
-task9_review_notes: "2026-06-04 Task9 auto-fixed: 修正 PausableComposition Android API level 绑定、延迟状态读取示例、RecyclerView ComposeView Recomposer/Dispose 策略；P2 数据缺口写入 suggestions。"---
+title: "Jetpack Compose 性能优化"
+chapter: "'7.7'"
+section: "'7.7'"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+tags: ['smoothness', 'jank']
+confidence: "medium"
+last_verified: "'2026-04-01'"
+last_verified_against: "Android 16 Developer Preview"
+drafted_date: "'2026-04-01'"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-06-04"
+reviewed_by: "openclaw-task6"
+polish_count: "1"
+polish_date: "'2026-04-04'"
+polish_by: "task2b-polish"
+last_task6_at: "2026-06-04T12:11:00+08:00"
+last_task6_audit: "'2026-05-22'"
+last_task6_audit_result: "pass-light-edit"
+last_task6_audit_log: "logs/review/2026-05-22-19-audit.md"
+last_task2b_at: "'2026-06-04T05:36:00+08:00'"
+task6_result: "pass-light-edit"
+task9_result: "auto-fixed"
+review_type: "post-polish-quality-gate"
+review_round: "3"
+path: "Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md"
+task6_state: "reviewed"
+task9_state: "reviewed"
+reviewed_date: "2026-06-23"
+last_task6_audit: "'2026-06-23'"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "'2026-06-04'"
+last_task9_at: "\"2026-06-04T20:24:00+08:00\""
+last_task9_autofix_at: "'2026-06-04'"
+auto_promoted_by: "\"openclaw-task6\""
+auto_promoted_date: "\"2026-05-04\""
+last_task9_audit: "'2026-05-20'"
+last_task9_audit_result: "needs-rework"
+---
 
 # Jetpack Compose 性能优化
 

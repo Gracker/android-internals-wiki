@@ -10,35 +10,22 @@ applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-05-10"
 last_verified_against: "AOSP android-16.0.0_r1 Scheduler/VSyncPredictor.cpp + VSyncReactor.cpp + VSyncDispatchTimerQueue"
 confidence: high
-sources:
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/Choreographer.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/Looper.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
-  - type: official
-    path: "https://source.android.com/docs/core/graphics/implement-vsync"
-  - type: official
-    path: "https://developer.android.com/about/versions/16/features"
-tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]
-related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
+sources: 
+path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp"
+path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp"
+path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp"
+path: "frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp"
+path: "frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp"
+path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp"
+path: "frameworks/base/core/java/android/view/Choreographer.java"
+path: "frameworks/base/core/java/android/os/Looper.java"
+path: "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
+path: "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
+path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
+path: "https://source.android.com/docs/core/graphics/implement-vsync"
+path: "https://developer.android.com/about/versions/16/features"
+tags: "[vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]"
+related_chapters: "[\"2.1\", \"2.4\", \"2.5\", \"2.6\", \"2.9\", \"8.1\"]"
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-09"
@@ -56,7 +43,6 @@ task2b_state: "fixed"
 last_task2b_at: "2026-05-15T03:17:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-09-14-audit.md"
 task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Choreographer API 名 `AChoreographer_vsyncCallback`；AOSP android-16.0.0_r1 header 已复核，Android 17 tag 当前未在 android.googlesource 公开，章节 Android 17 内容保留待验证边界。P0 1（已修）/ P1 0 / P2 1（既有 suggestions，不重复）。"
-
 task2b_result: "fixed"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
@@ -65,7 +51,7 @@ task9_state: "reviewed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"
 last_task9_autofix_at: "2026-06-09"
-----
+---
 
 # VSync 机制
 

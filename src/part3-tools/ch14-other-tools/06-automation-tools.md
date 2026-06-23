@@ -1,20 +1,17 @@
 ---
-
 applicable_versions: Android 8 (API 26) - Android 15 (API 35)
-
-**注意**: 本章节中提到的 Macrobenchmark 等工具的部分高级功能（如 FrameTimingMetric 的 frameOverrunMs、PowerMetric 等）需要 Android 12+ (API 31+) 支持，实际使用时请根据目标设备版本调整功能范围。
 chapter: 14.6
 confidence: medium
 drafted_date: 2026-04-04
-last_task2b_at: 2026-05-22T07:21:00+08:00
+last_task2b_at: "2026-05-22T07:21:00+08:00"
 last_task6_at: "2026-06-04T05:07:00+08:00"
 last_task6_audit: 2026-06-15
 last_task6_review_log: logs/review/2026-05-22-08-review.md
-last_task9_at: 2026-05-22T07:43:01+08:00
+last_task9_at: "2026-05-22T07:43:01+08:00"
 last_task9_audit: 2026-05-22
 last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
 last_verified: 2026-04-26
-last_verified_against: AndroidX docs + AndroidX Benchmark PowerMetric @RequiresApi(Q) + Android test docs + external review
+last_verified_against: "AndroidX docs + AndroidX Benchmark PowerMetric @RequiresApi(Q) + Android test docs + external review"
 path: appium.io/docs/en/latest/
 related_chapters: 
 repaired_by: openclaw-task2b
@@ -44,7 +41,6 @@ updated_date: 2026-04-26
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
 ---
-
 
 # 自动化测试工具
 

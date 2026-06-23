@@ -1,3 +1,11 @@
+---
+title: "第 14 章：其他分析工具"
+chapter: "14"
+status: "draft"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+tags: [android, performance]
+---
+
 # 第 14 章：其他分析工具
 
 > **注**：本章聚焦 Android 性能分析中非 Peretto 的工具生态。这些工具要么是官方提供的基础工具，要么是开源社区的优秀实现，在实际性能调优和问题排查中发挥着重要作用。

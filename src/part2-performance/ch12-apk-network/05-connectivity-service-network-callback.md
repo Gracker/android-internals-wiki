@@ -1,57 +1,40 @@
 ---
-
 title: "ConnectivityService 与网络状态监听性能"
 chapter: "12.5"
 section: "12.5"
 status: "finalized"
-drafted_date: "2026-05-17"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
+tags: [[connectivity, network-callback, network-performance, power, android-16]]
+confidence: high
 last_verified: "2026-06-09"
 last_verified_against: "AOSP android-16.0.0_r1 / developer.android.com; Android 17 tag not public on android.googlesource at audit time"
-confidence: high
-tags: [connectivity, network-callback, network-performance, power, android-16]
-related_chapters: ["12.2", "12.3", "12.4", "24.4", "25.2"]
+drafted_date: "2026-05-17"
+reviewed_date: "2026-05-17"
+reviewed_by: openclaw-task6
+related_chapters: "[\"12.2\", \"12.3\", \"12.4\", \"24.4\", \"25.2\"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "官方文档+AOSP结构+每日信息"
 gap_score: 15
-sources:
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
-  - type: official
-    path: "https://developer.android.com/topic/performance/power/network/action-app-traffic.html"
-  - type: official
-    path: "https://developer.android.com/topic/performance/background-optimization"
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/5g/use-network-slicing"
-  - type: aosp
-    path: "packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java"
-  - type: aosp
-    path: "packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java"
-  - type: aosp
-    path: "packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java"
-reviewed_date: "2026-05-17"
-reviewed_by: openclaw-task6
-task6_state: "reviewed"  # updated by task2b-verifier 2026-06-09
+path: "packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task2b_state: "fixed"
-pipeline_stage: "ready-to-publish"
 review_type: task6-writing-quality-review
 last_task6_at: "2026-05-17T12:11:00+08:00"
 last_task6_audit: "2026-06-08"
-task6_review_notes: "2026-05-17 Task6 12: L1/L2 小修 3 处（补 section 元数据、弱化口语化表述 2 处）；无回炉项，待 Task9 技术审查。"
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-09T00:20:00+08:00"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
-last_task9_review_log: "logs/deep-review/2026-06-09-00-audit.md"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-00-audit.md"
 last_task9_autofix_at: "2026-06-09"
 task9_result: "auto-fixed"
-task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。将 ConnectivityManager / ConnectivityService / NetworkCapabilities 的源码锚点从 AOSP main 收敛到已复核的 android-16.0.0_r1；Android 17 tag 当前未在 android.googlesource 公开，适用范围暂回退到 Android 16。P0 0 / P1 1（已修）/ P2 0。"---
+---
 
 # 12.5 ConnectivityService 与网络状态监听性能
 

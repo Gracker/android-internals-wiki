@@ -1,40 +1,24 @@
 ---
-
-task6_review_notes: 2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.22 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。
-last_task6_review_log: logs/review/2026-06-17-04-review.mdtitle: "ART Verifier Quickening 与 dexopt 过滤器性能边界"
+title: "1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界"
 chapter: "1.22"
 section: "1.22"
 status: finalized
 pipeline_stage: ready-to-publish
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+tags: "[art, dex2oat, dexopt, verifier, vdex, startup]"
+confidence: high
+last_verified: "2026-06-17"
+last_verified_against: "source.android.com ART configure / ART Service configuration 2026-05; AOSP android-16.0.0_r1 platform/art compiler_filter.h / dex2oat.cc / libartservice/service/README.md; Android Developers ART compatibility docs"
+task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.22 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
+last_task6_review_log: "logs/review/2026-06-17-04-review.mdtitle: \"ART Verifier Quickening 与 dexopt 过滤器性能边界\""
 task6_state: reviewed
 task9_state: "reviewed"
 drafted_date: "2026-05-24"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-06-17"
-last_verified_against: "source.android.com ART configure / ART Service configuration 2026-05; AOSP android-16.0.0_r1 platform/art compiler_filter.h / dex2oat.cc / libartservice/service/README.md; Android Developers ART compatibility docs"
-confidence: high
-tags: [art, dex2oat, dexopt, verifier, vdex, startup]
-related_chapters: ["1.7", "1.9", "16.6", "21.11"]
+related_chapters: "[\"1.7\", \"1.9\", \"16.6\", \"21.11\"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "研究素材/官方文档/AOSP结构"
-sources:
-  - type: official
-    path: "https://source.android.com/docs/core/runtime/configure"
-  - type: official
-    path: "https://source.android.com/docs/core/runtime/configure/art-service"
-  - type: official
-    path: "https://source.android.com/docs/core/runtime/art-class-loader-context"
-  - type: official
-    path: "https://developer.android.com/guide/practices/verifying-apps-art"
-  - type: aosp
-    path: "art/libartbase/base/compiler_filter.h"
-  - type: aosp
-    path: "art/dex2oat/dex2oat.cc"
-  - type: aosp
-    path: "art/libartservice/service/README.md"
-  - type: research
-    path: "intake/daily-info/2026-05-24.md#增量扫描-源码调研art-verifier-quickening-与-dex2oat-过滤器体系"
+path: "intake/daily-info/2026-05-24.md#增量扫描-源码调研art-verifier-quickening-与-dex2oat-过滤器体系"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 last_task9_at: "2026-06-17T00:29:18+08:00"

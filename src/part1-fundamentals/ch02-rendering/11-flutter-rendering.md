@@ -1,79 +1,53 @@
 ---
 title: 2.11 Flutter 渲染管线与性能
-section: '2.11'
-chapter: '2.11'
-drafted_date: '2026-04-01'
-drafted_by: openclaw-task2a
-finalized_date: "2026-05-22"
-finalized_by: "openclaw-task9-auto-promote"
-auto_promoted_date: "2026-05-22"
-auto_promoted_by: "openclaw-task9"
-polish_count: 1
-polish_date: '2026-04-05'
-polish_by: task2b-polish
+chapter: 2.11
+section: 2.11
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-05-09'
-last_verified_against: Flutter 3.29 architecture/thread merge docs + Flutter Impeller
-  docs/engine impeller README + Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java
-  / FlutterRenderer.java) + Android 16 Vulkan 1.4 VPA16 specs + ADPF PerformanceHintManager
-confidence: medium-to-low
-sources:
-- type: official
-  path: https://docs.flutter.dev/perf/rendering-performance
-- type: official
-  path: https://docs.flutter.dev/perf/impeller
-- type: blog
-  path: https://github.com/flutter/flutter/wiki/Impeller
-- type: source
-  path: https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/view/VsyncWaiter.java
-- type: source
-  path: https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java
-- type: source
-  path: https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java
-tags:
-- flutter
-- rendering
-- impeller
-- skia
-- cross-platform
-- shader-compilation
-- jank
-related_chapters:
-- '2.1'
-- '2.3'
-- '2.4'
-- '2.5'
-- '7.1'
-- '7.7'
-- '18.12'
+tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
+confidence: medium-low
+last_verified: 2026-05-09
+last_verified_against: Flutter 3.29 architecture/thread merge docs + Flutter Impeller docs/engine impeller README + Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java / FlutterRenderer.java) + Android 16 Vulkan 1.4 VPA16 specs + ADPF PerformanceHintManager
+sources: [{'type': 'official', 'path': 'https://docs.flutter.dev/perf/rendering-performance'}, {'type': 'official', 'path': 'https://docs.flutter.dev/perf/impeller'}, {'type': 'blog', 'path': 'https://github.com/flutter/flutter/wiki/Impeller'}, {'type': 'source', 'path': 'https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/view/VsyncWaiter.java'}, {'type': 'source', 'path': 'https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java'}, {'type': 'source', 'path': 'https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java'}]
+drafted_date: 2026-04-01
+drafted_by: openclaw-task2a
+finalized_date: 2026-05-22
+finalized_by: openclaw-task9-auto-promote
+auto_promoted_date: 2026-05-22
+auto_promoted_by: openclaw-task9
+polish_count: 1
+polish_date: 2026-04-05
+polish_by: task2b-polish
+related_chapters: ['2.1', '2.3', '2.4', '2.5', '7.1', '7.7', '18.12']
 task2b_result: fixed
 last_task2b_at: "2026-05-22T19:18:14+08:00"
-last_task9_audit: "2026-06-13"
-last_task9_audit_log: "logs/deep-review/2026-06-13-20-audit.md"
-last_task6_audit: '2026-06-13'
-status: "finalized"
-task9_state: "reviewed"
-task9_result: "pass-tech-review"
-task2b_state: "fixed"
-pipeline_stage: "ready-to-publish"
-task9_reviewed_date: "2026-05-22"
-task9_reviewed_by: "openclaw-task9"
+last_task9_audit: 2026-06-13
+last_task9_audit_log: logs/deep-review/2026-06-13-20-audit.md
+last_task6_audit: 2026-06-13
+task9_state: reviewed
+task9_result: pass-tech-review
+task2b_state: fixed
+task9_reviewed_date: 2026-05-22
+task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-22T19:26:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-19-deep-review.md"
+last_task9_review_log: logs/deep-review/2026-05-22-19-deep-review.md
 task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1/P2；16KB plugin 合规链路已拆清 AGP zip alignment、ELF p_align 与 native 4KB 假设。queue 无 pending，Task6 已通过，自动晋升 finalized。"
-reviewed_date: "2026-05-22"
+reviewed_date: 2026-05-22
 reviewed_by: openclaw-task6
-task6_state: "reviewed"
+task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_at: "2026-05-22T16:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-22-16-review.md"
+last_task6_review_log: logs/review/2026-05-22-16-review.md
 review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 14 处（结构性元叙述、ASCII 破折号、标点与几处过度口语表达）。Task9 P1/P2 queue 已存在，保持 task2b_pending。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 5 处；压掉不必要的“我们”第一人称和开头问题句式；既有 Task9 P1（16KB plugin packaging/ELF/runtime 边界）queue 保留，保持 task2b_pending。 2026-05-22 19:26 Task9 re-review: pass-tech-review，P0/P1/P2=0；queue 无 pending，自动晋升 finalized。"
-updated_by: "openclaw-task9"
-updated_date: "2026-05-22"
+updated_by: openclaw-task9
+updated_date: 2026-05-22
 p0: 0
 p1: 0
 p2: 0
-auto_promoted: true
+auto_promoted: True
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-23
 ---
 <!-- outline-start -->
 ## 本节要点大纲
@@ -106,23 +80,23 @@ auto_promoted: true
 
 ## 为什么要了解 Flutter 的渲染
 
-在 Perfetto 中分析 Flutter 应用时,最先变的是线程视角。原生应用里常看的 `ViewRootImpl.Traversal`、RenderThread 绘制阶段,在 Flutter 自绘 UI 路径上不会出现;有些 trace 会在 `1.platform` 或 `io.flutter.platform` 上看到 `Choreographer#doFrame`,那是 Flutter 订阅系统 VSync 的入口,不代表它回到了原生 View 绘制流程。
+在 Perfetto 中分析 Flutter 应用，第一个要切换的是线程视角。原生应用里熟悉的 `ViewRootImpl.Traversal`、RenderThread 绘制阶段，在 Flutter 自绘 UI 路径上不会出现；trace 中 `1.platform` 或 `io.flutter.platform` 上有时能看到 `Choreographer#doFrame`，那只是 Flutter 订阅系统 VSync 的入口，不等于回到了原生 View 绘制流程。
 
 Flutter 的 Android Embedder 通过 `VsyncWaiter` 调用 `Choreographer.postFrameCallback()`。回调到达后,`VsyncWaiter.FrameCallback#doFrame()` 把时间戳交给 `FlutterJNI.onVsync()`,后续的 Build、Layout、Paint 和 Raster 调度由 Flutter Engine 接管。Flutter 不使用 Android 原生 View 树渲染自己的 Widget,也没有原生应用里的 RenderThread 分工。
 
-这个差异会改变排查入口。列表滚动卡顿时,Flutter 3.29+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`;Flutter 3.28- 或定制 Embedder 才需要单独找 `1.ui` / `io.flutter.ui`。
+这个差异直接影响排查入口。列表滚动卡顿时，Flutter 3.29+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`；如果是 Flutter 3.28- 或定制 Embedder，才需要单独看 `1.ui` / `io.flutter.ui`。
 
 排查 Flutter 卡顿时，需要先定清三个问题：Flutter 在 Android 上怎么渲染，它的渲染管线和原生 Android 有什么差异，性能问题出现时应该看哪里、怎么分析？
 
 ## Flutter 的渲染架构
 
-Flutter 的渲染架构可以分为三层:Framework 层(Dart)、Engine 层(C++)和平台嵌入层(Platform Embedder)。
+Flutter 的渲染架构分三层：Framework 层（Dart）、Engine 层（C++）和平台嵌入层（Platform Embedder）。
 
 Framework 层是应用开发者直接接触的部分。Widget、State、Element,以及 Rendering 目录下的 RenderObject,都在这一层。当 UI 需要更新时,Framework 层会经历 Build → Layout → Paint 三个阶段:Build 阶段根据状态构建 Widget 树;Layout 阶段计算每个 RenderObject 的大小和位置;Paint 阶段将绘制指令记录到一个 DisplayList 中。
 
 Engine 层是 Flutter 的核心引擎,用 C++ 编写。它负责两件事:一是把 Framework 层产生的 DisplayList 光栅化为实际的像素数据;二是管理与底层图形 API(Vulkan 或 OpenGL ES)的交互。Engine 层还包含了 Dart 虚拟机、文本排版引擎(最近从 libtxt 迁移到了 SkParagraph)、以及网络、文件等基础能力。
 
-平台嵌入层是一个比较薄的层,负责把 Flutter Engine 嵌入到具体的平台中。在 Android 上,它创建和管理 FlutterView(通常是一个 SurfaceView 或 TextureView),处理 Android 的生命周期事件,并将触摸等输入事件转发给 Flutter Engine。
+平台嵌入层相对较薄，负责把 Flutter Engine 嵌入到具体平台中。在 Android 上,它创建和管理 FlutterView(通常是一个 SurfaceView 或 TextureView),处理 Android 的生命周期事件,并将触摸等输入事件转发给 Flutter Engine。
 
 这套三层结构把原生 View 体系留在 Android Embedder 边界。Widget 的 Build/Layout/Paint 不走 `ViewRootImpl.performTraversals()`,Raster 也不走原生应用的 RenderThread;但 Flutter 仍然通过 Android `Surface` / `ANativeWindow` 向 BufferQueue 提交 buffer,SurfaceFlinger 仍负责最终合成。差异在 producer:原生应用通常由 HWUI/RenderThread 生产图层内容,Flutter 自绘 UI 由 Engine 的 Raster 路径生产。
 
@@ -182,6 +156,8 @@ PlatformView 不能再只按"两种模式"理解。Flutter Engine 源码里至�
 
 ### 16KB Page Size 合规与 Flutter 原生插件
 
+Flutter 的渲染最终通过 Android Surface 提交帧，但 Flutter 应用里如果引入原生插件（PlatformView、FFI 或预编译 .so），Android 15+ 的 16KB page size 要求就会直接影响这些原生代码的兼容性。这一点不是渲染管线本身的问题，但多数 Flutter 应用都会用到原生插件，排查异常崩溃时经常要回到这里。
+
 Android 15+ 已支持 16KB page-size 设备。Google Play 从 2025-11-01 起要求所有面向 Android 15+ 的新应用和更新兼容 16KB page sizes。对 Flutter 开发者来说，影响的是包含原生代码的第三方插件，而不是 Dart 代码本身。
 
 Flutter plugin 中的 `.so` 文件对齐要求取决于 NDK 版本：
@@ -204,7 +180,7 @@ Flutter plugin 中的 `.so` 文件对齐要求取决于 NDK 版本：
 
 ## 性能分析方法
 
-分析 Flutter 应用的性能，最大的挑战在于它横跨两个世界：Flutter Engine 内部的 Dart/C++ 世界，以及 Android 系统的内核/GPU 世界。问题可能藏在任何一层，因此需要两套工具配合使用：Flutter DevTools 看 Engine 内部的执行细节，Perfetto 看系统层面的调度和合成状态。
+分析 Flutter 应用的性能有一个天然难点：Flutter Engine 内部的 Dart/C++ 层面和 Android 系统的内核/GPU 层面各管一摊，问题可能出在任何一层。因此需要两套工具配合：Flutter DevTools 看 Engine 内部的执行细节，Perfetto 看系统层面的调度和合成状态。
 
 ### Flutter DevTools
 
@@ -261,6 +237,8 @@ EOF
 在 Perfetto 中,Flutter Engine 会输出自己的 trace event。系统抓 trace 时要保留 `gfx`、`view` 这类 atrace 类别,并在 UI 里同时搜索 `flutter`、`io.flutter`、`BeginFrame`、`DrawFrame`。常见 slice 包括 `FlutterEngine::BeginFrame`、`GPURasterizer::DrawToSurface`;不同 Flutter 版本的事件名会变化,过滤时不要只依赖单个字符串。
 
 ### ADPF 系统级调频（待验证）
+
+排查 Flutter 性能时，还有一种情况是 Raster 线程本身负载正常，但帧仍然超时——可能是系统没有及时给到足够的 CPU / GPU 频率。Android 的 ADPF 框架提供了一种机制来解决这个问题，下面说明 Flutter Engine 当前对它的支持程度。
 
 ADPF（Adaptive Performance Framework）的 `PerformanceHintManager` 是 Android 平台提供的动态调频接口。App 或引擎可以创建 HintSession,逐帧调用 `reportActualWorkDuration()` 反馈渲染负载,系统根据反馈调整 CPU/GPU 频率。
 
@@ -361,7 +339,7 @@ Impeller 在 Android 上优先使用 Vulkan 后端。Flutter 3.27 起,Android AP
 
 #### Vulkan 1.4 Host Image Copy 与纹理上传
 
-出厂搭载 Android 16+ 的合规设备需支持 Vulkan 1.4（升级到 Android 16 的旧设备可选支持,需运行时查询 `vkEnumerateInstanceVersion` / device extension / feature bit）。`VK_EXT_host_image_copy` 扩展允许 CPU 直接把纹理数据写入 GPU 可访问的内存,省掉了传统路径中的 Staging Buffer 中转和 GPU 搬运命令。这属于 Android/Vulkan 通用能力,不作为 Flutter 当前可依赖能力。
+Impeller 在 Android 上优先使用 Vulkan 后端，而 Android 16+ 出厂设备强制支持 Vulkan 1.4，这带来了纹理上传路径的潜在优化空间。虽然 Flutter Engine 当前尚未启用这个能力，但了解它的原理有助于判断未来版本中的纹理上传性能变化。（升级到 Android 16 的旧设备可选支持,需运行时查询 `vkEnumerateInstanceVersion` / device extension / feature bit）。`VK_EXT_host_image_copy` 扩展允许 CPU 直接把纹理数据写入 GPU 可访问的内存,省掉了传统路径中的 Staging Buffer 中转和 GPU 搬运命令。这属于 Android/Vulkan 通用能力,不作为 Flutter 当前可依赖能力。
 
 但截至当前 Flutter Engine 主干（ae5c360）,Impeller Vulkan 后端的 capability 枚举只包含 `VK_EXT_pipeline_creation_feedback`、`VK_KHR_portability_subset`、`VK_EXT_image_compression_control` 三个可选扩展,未启用 `VK_EXT_host_image_copy`。`impeller/renderer/backend/vulkan/texture_vk.cc` L75-L130 仍创建 staging buffer 并调用 `vk_cmd_buffer.copyBufferToImage()`。全局搜索 `host_image_copy` / `CopyMemoryToImage` 无命中。
 

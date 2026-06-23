@@ -1,8 +1,4 @@
 ---
-
-
-
-
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
@@ -47,6 +43,8 @@ task9_review_notes: "2026-06-06 Task9 04 auto-fix: 修正 ARR/MRR 版本边界�
 task9_result: auto-fixed
 last_task2b_by: openclaw-task2b-main
 last_task9_autofix_at: 2026-06-06
+---
+
 ----
 
 

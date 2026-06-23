@@ -1,51 +1,37 @@
 ---
-
-title: "Camera 渲染管线"
-chapter: "18.14"
-section: "18.14"
-status: ready-for-review
-applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-sources:
-  - type: official
-    path: "https://developer.android.com/media/camera/camera2"
-  - type: official
-    path: "https://developer.android.com/media/camera/camerax"
-  - type: official
-    path: "https://developer.android.com/reference/android/hardware/camera2/params/OutputConfiguration"
-  - type: aosp
-    path: "frameworks/av/services/camera/libcameraservice/device3/Camera3Device.cpp"
-  - type: aosp
-    path: "hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl"
+title: "\"Camera 渲染管线\""
+chapter: "\"18.14\""
+section: "\"18.14\""
+status: "ready-for-review"
+pipeline_stage: "task9_pending"
+applicable_versions: "\"Android 5.0 (API 21) - Android 17 (API 37)\""
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
-related_chapters: ["2.13", "2.15", "14.9", "18.6"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: auto-fixed
-task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-04'
-P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。；2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
-task6_result: pass-light-edit
-task2b_result: fixed
-task9_reviewed_date: 2026-06-04
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T21:20:00+08:00"
-last_task2b_at: "2026-04-26T10:41:09+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P0 源码错误：OutputConfiguration.setStreamUseCase() 的 maxUseCaseValue 是平台公开枚举上限，不是设备 CameraCharacteristics 动态值；已按 android-13/android-14+/android-16 AOSP 源码修正；P0 1 / P1 0 / P2 0。"
-last_task9_audit: "2026-05-20"
-last_task9_audit_log: "logs/deep-review/2026-05-20-21-audit.md"
-last_task6_audit: "2026-05-21"
-last_task6_audit_result: l1-frontmatter-light-edit
-last_task6_audit_log: "logs/review/2026-05-21-16-audit.md"
-last_task6_at: '2026-06-04T22:12:00+08:00'
-last_task9_review_log: logs/deep-review/2026-06-04-21-deep-review.md
-last_task9_autofix_at: 2026-06-04---
-
+reviewed_date: "'2026-06-04'"
+reviewed_by: "openclaw-task6"
+path: "\"hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl\""
+related_chapters: "[\"2.13\", \"2.15\", \"14.9\", \"18.6\"]"
+created_by: "\"rendering-pipelines-merge\""
+created_date: "\"2026-04-09\""
+task6_state: "reviewed"
+task9_state: "pending"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
+task6_result: "pass-light-edit"
+task2b_result: "fixed"
+task9_reviewed_date: "2026-06-04"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "\"2026-06-04T21:20:00+08:00\""
+last_task2b_at: "\"2026-04-26T10:41:09+08:00\""
+repaired_date: "\"2026-04-26\""
+repaired_by: "\"openclaw-task2b\""
+last_task9_audit: "\"2026-05-20\""
+last_task9_audit_log: "\"logs/deep-review/2026-05-20-21-audit.md\""
+last_task6_audit: "\"2026-05-21\""
+last_task6_audit_result: "l1-frontmatter-light-edit"
+last_task6_audit_log: "\"logs/review/2026-05-21-16-audit.md\""
+last_task6_at: "'2026-06-04T22:12:00+08:00'"
+last_task9_autofix_at: "2026-06-04"
+---
 
 <!-- outline-start -->
 

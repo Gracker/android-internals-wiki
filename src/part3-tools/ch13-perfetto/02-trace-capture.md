@@ -1,5 +1,4 @@
 ---
-
 title: Trace 抓取
 chapter: '13.2'
 section: '13.2'
@@ -8,7 +7,7 @@ drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-06-05
-last_verified_against: AOSP external/perfetto android-12.0.0_r1 + android-16.0.0_r3, perfetto.dev docs, Android Trace API
+last_verified_against: "AOSP external/perfetto android-12.0.0_r1 + android-16.0.0_r3, perfetto.dev docs, Android Trace API"
 confidence: high
 reviewed_date: "2026-06-05"
 reviewed_by: "openclaw-task6"
@@ -18,33 +17,16 @@ polish_date: '2026-04-06'
 polish_by: task2b-polish
 review_type: post-polish-quality-gate
 review_round: 2
-sources:
-- type: blog
-  path: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
-- type: official
-  path: https://perfetto.dev/docs/quickstart/android-tracing
-- type: blog
-  path: Cubox/Perfetto 快速上手指南1 —— Trace 的抓取-2025-03-20.md
-- type: blog
-  path: Cubox/Android Perfetto 系列 4：使用命令行在本地打开超大 Trace · Android Performance-2025-02-09.md
-- type: official
-  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
-- type: aosp
-  path: external/perfetto/protos/perfetto/config/data_source_config.proto
-- type: aosp
-  path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
-tags:
-- perfetto
-- trace
-- atrace
-- trace-capture
-- heapprofd
-related_chapters:
-- '13.1'
-- '13.3'
-- '13.4'
-- '14.1'
-- '15.1'
+sources: 
+path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/"
+path: "https://perfetto.dev/docs/quickstart/android-tracing"
+path: Cubox/Perfetto 快速上手指南1 —— Trace 的抓取-2025-03-20.md
+path: Cubox/Android Perfetto 系列 4：使用命令行在本地打开超大 Trace · Android Performance-2025-02-09.md
+path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+path: external/perfetto/protos/perfetto/config/data_source_config.proto
+path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
+tags: 
+related_chapters: 
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
@@ -58,23 +40,20 @@ last_task9_at: "2026-06-05T19:28:13+08:00"
 repaired_date: 2026-06-05
 repaired_by: openclaw-task2b
 task2b_fixed_by: openclaw-task2b
-last_task2b_at: 2026-06-05T16:53:39
+last_task2b_at: "2026-06-05T16:53:39"
 review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 0，P1 2，P2 1；问题已写入 queue/suggestions，等待 Task2B 回炉。'
 last_task6_at: "2026-06-05T20:08:00+08:00"
 last_task6_audit: "2026-06-21"
 task6_review_notes_r7: "2026-06-05 Task6 revisit-review #4: L1/L2 pass (禁用词 0, 确实 x1 functional). All 6 anchors covered. task9 auto-fixed resolved queue 13.2 contradiction. Auto-promoted to finalized."
 last_task6_review_log: logs/review/2026-05-09-07-review.md
 task6_review_notes_r6: "2026-06-05 Task6 revisit-review #3: L1/L2 pass (确实 x3 all functional). B-type: two contradictory source research appendices on linux.perf/frametimeline — flagged for task9/task2b cleanup. Routes to task9."
-    task6_review_notes: "2026-06-05 Task6 revisit-review: L1/L2 pass (轻修 0 处，前序已修 27 处)。task9 needs re-review (task9_result=pending)。送 Task9 复审。"
-  通过；无新增 L3/L4 回炉项，送 Task9 复审。
+task6_review_notes: "2026-06-05 Task6 revisit-review: L1/L2 pass (轻修 0 处，前序已修 27 处)。task9 needs re-review (task9_result=pending)。送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-05-19-deep-review.md"
-
 last_task9_autofix_at: "2026-06-05"
 task9_review_notes: "2026-06-05 Task9 deep-review: auto-fixed。将 Perfetto/linux.perf/FrameTimeline 的直接源码验证边界从不存在的 android-17.0.0_r1 回退到 android-12.0.0_r1 与 android-16.0.0_r3；Android 17 保留为待公开 tag 复核。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-06
 ---
-
 
 # Trace 抓取
 

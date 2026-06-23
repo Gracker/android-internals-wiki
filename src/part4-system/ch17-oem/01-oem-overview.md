@@ -2,49 +2,38 @@
 title: "OEM 性能优化的通用思路"
 chapter: "17.1"
 section: "17.1"
-drafted_date: "2026-04-04"
-drafted_by: "openclaw-task2a"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+tags: [['oem', 'performance', 'freezer', 'preloading', 'background-management']]
+confidence: medium
 last_verified: "2026-06-17"
 last_verified_against: "AOSP android-17.0.0_r1"
-confidence: medium
-sources:
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Android系统优化的那10年.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/the-performance-design-of-os.md"
-  - type: official
-    path: "source.android.com/docs/core/perf/cached-apps-freezer"
-  - type: official
-    path: "developer.android.com/topic/performance/background-optimization"
-tags: ['oem', 'performance', 'freezer', 'preloading', 'background-management']
-related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
+drafted_date: "2026-04-04"
+drafted_by: "openclaw-task2a"
+reviewed_date: "2026-06-17"
+reviewed_by: openclaw-task6
+path: "developer.android.com/topic/performance/background-optimization"
+related_chapters: "[\"5.1\", \"5.5\", \"5.6\", \"4.4\", \"8.3\", \"17.2\"]"
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-06-17"
 task2b_state: "fixed"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "reviewed"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-17"
 task6_reviewed_date: "2026-06-17"
 last_task6_at: "2026-06-17T21:20:00+08:00"
 last_task6_audit: "2026-05-24"
-review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修1处（禁用句式 x1 替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 CachedAppOptimizer freezer、USAP Pool 默认开关与 App Zygote 边界；无 P0/P1；P2 数据/Trace 观测补证写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-17T11:27:14+08:00"
 last_task9_audit: "2026-06-17"
 last_task9_audit_log: "logs/deep-review/2026-06-17-11-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17
-last_task9_review_log: "logs/deep-review/2026-06-17-11-audit.md" | 2026-06-17 Task6 21:20：Task9 auto-fix 后复审。L1 小修 2 处（AI 清嗓 variant x1、editorial 措辞 x1）。无 B 类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。task9_result 更新为 pass-tech-review（auto-fix 已验证）。queue 无 pending，自动晋升 finalized。
 last_task9_autofix_at: "2026-06-17"
 p0: 1
 p1: 0
 p2: 2
-task9_review_notes: "2026-06-17 Task9 idle audit AUTO-FIX：修正 cached apps freezer device_config 命令口径与 Zygote preloaded-classes 源码路径；AOSP android-17.0.0_r1 复核 CachedAppOptimizer / ZygoteConfig / ZygoteProcess 通过。P0 1 / P1 0 / P2 2；未发现超出 Android 17/API 37 边界的内容，回到 Task6 复审。"
 ---
 
 # OEM 性能优化的通用思路

@@ -17,29 +17,19 @@ applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-19"
 last_verified_against: "AOSP android-17.0.0_r1 ActivityManagerConstants/ActiveServices/BroadcastConstants; AOSP android-13.0.0_r1 and android-17.0.0_r1 SurfaceFlinger commit/composite; Perfetto thread_state/memory-counters/FrameTimeline docs"
 confidence: high
-sources:
- - type: blog
- path: "androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/"
- - type: blog
- path: "androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
- - type: official
- path: "perfetto.dev/docs/data-sources/cpu-scheduling"
- - type: official
- path: "developer.android.com/topic/performance"
- - type: official
- path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
- - type: official
- path: "perfetto.dev/docs/data-sources/frametimeline"
- - type: official
- path: "perfetto.dev/docs/data-sources/memory-counters"
- - type: aosp
- path: "frameworks/native/services/surfaceflinger/"
- - type: aosp
- path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
- - type: aosp
- path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
-tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
-related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
+sources: 
+path: "androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/"
+path: "androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/"
+path: "perfetto.dev/docs/data-sources/cpu-scheduling"
+path: "developer.android.com/topic/performance"
+path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+path: "perfetto.dev/docs/data-sources/frametimeline"
+path: "perfetto.dev/docs/data-sources/memory-counters"
+path: "frameworks/native/services/surfaceflinger/"
+path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
+tags: "['methodology', 'system-vs-app', 'trace-analysis', 'attribution']"
+related_chapters: "[\"5.1\", \"7.1\", \"7.2\", \"7.3\", \"13.3\", \"13.6\", \"15.1\"]"
 last_task6_audit: "2026-06-18"
 task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 0
@@ -57,7 +47,7 @@ p2: 0
 review_round: 6
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-last_task2b_at: 2026-06-19T02:53:39+08:00
+last_task2b_at: "2026-06-19T02:53:39+08:00"
 finalized_date: "2026-06-19"
 finalized_by: "openclaw-task9"
 last_task9_audit: "2026-06-16"
