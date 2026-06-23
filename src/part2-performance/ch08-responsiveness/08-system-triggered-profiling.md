@@ -55,19 +55,20 @@ sources:
   title: SdkExtensions API Reference
   date: '2026'
 last_task9_audit: "2026-06-23"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
 last_task2b_at: '2026-05-09T13:40:00+08:00'
-last_task2b_lite_at: '2026-06-08'
+last_task2b_lite_at: '2026-06-23'
 repaired_date: '2026-05-09'
 repaired_by: openclaw-task2b
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-23
 task6_result: pass-light-edit
 task9_result: needs-rework
+verifier_pass: "2026-06-23T11:26:00+08:00"
 task9_reviewed_date: 2026-06-23
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-06-23T09:32:42.809428
