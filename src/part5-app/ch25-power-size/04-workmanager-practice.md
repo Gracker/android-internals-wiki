@@ -2,7 +2,7 @@
 title: "WorkManager 实战与后台任务调度"
 chapter: "25.4"
 section: "25.4"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
 last_verified_against: "AndroidX WorkManager androidx-main + Android Developers background work docs + AOSP JobScheduler android-16.0.0_r1 + Clippings structure references"
@@ -37,14 +37,14 @@ sources:
 tags: [workmanager, jobscheduler, expedited-work, background-task, power]
 last_task2b_lite_at: "2026-06-24"
 related_chapters: ["25.2", "25.3", "5.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
+reviewed_date: "2026-06-24"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-17T10:11:00+08:00"
-last_task6_review_log: logs/review/2026-06-17-10-review.md
-task6_review_notes: "2026-06-17 Task6 10:11：pass-light-edit。修复文风问题：替换翻译腔动词（接住→收到，拆解→分析），优化长句结构，删除AI清嗓词。章节质量合格，无新增 L1/L2 问题。task9_result 已通过，queue无pending，自动晋升 finalized。"
+last_task6_at: "2026-06-24T06:07:00+08:00"
+last_task6_review_log: logs/review/2026-06-24-06-review.md
+task6_review_notes: "2026-06-24 Task6 06:07：pass-light-edit（revisiting 复检）。Task2B 回炉后复检：frontmatter 格式修复（last_deepseek_cn_review_at 与 last_task9_audit 合例行拆分）。正文无新增 L1/L2 问题，禁用词零命中，高频词全量达标，翻译腔零检出。task9_result 已通过，queue 无 pending，自动晋升 finalized。"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -57,8 +57,8 @@ task9_review_notes: "2026-06-17 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；
 last_task2b_at: "2026-06-03T12:50:00+08:00"
 task2b_fix_summary: "Fixed P1: UIDT 版本边界 (API 34+/29-33 fallback) + §5.10 交叉引用；P2: GreedyScheduler WorkConstraintsTracker 约束追踪、requiresDeviceIdle+backoff 不兼容、getStopReason 版本边界 (WorkManager 2.9.0+/API 31+)"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17last_task9_audit: "2026-06-24"
-
+last_deepseek_cn_review_at: 2026-06-17
+last_task9_audit: "2026-06-24"
 ---
 
 # WorkManager 实战与后台任务调度
