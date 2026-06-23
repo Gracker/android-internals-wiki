@@ -1,9 +1,10 @@
 ---
+
 title: "其他开源 APM 库(AndroidGodEye、Collie、Rabbit)"
 chapter: "'19'"
 section: "'19.10'"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: task9_pending
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: ['apm', 'monitoring']
 confidence: "medium"
@@ -15,7 +16,7 @@ reviewed_date: "'2026-04-24'"
 reviewed_by: "openclaw-task6"
 path: "https://developer.android.com/reference/android/os/ProfilingManager"
 task6_state: "reviewed"
-task9_state: "reviewed"
+task9_state: pending
 task2b_state: "fixed"
 task6_result: "pass-light-edit"
 last_task6_audit: "'2026-06-23'"
