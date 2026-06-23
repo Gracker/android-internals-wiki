@@ -10367,13 +10367,13 @@
     }
   },
   "task2a_last_processed": {
-    "section": "5.21",
-    "title": "Adaptive Battery 与 App Standby Bucket 协同机制",
-    "file": "src/part1-fundamentals/ch05-cpu-power/21-adaptive-battery-app-standby-coordination.md",
+    "section": "2.29",
+    "title": "TaskSnapshot 系统架构与 Recents 渲染性能",
+    "file": "src/part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-19T12:12:21.990959+08:00",
+    "processed_at": "2026-06-24T04:06:00+08:00",
     "status": "ready-for-review",
-    "note": "7 个锚点全部覆盖（含版本演进表 + 诊断路径），4 个扩展点全部覆盖，素材来自 AOSP android-17.0.0_r1 源码 + DeepResearch 调研"
+    "note": "7 锚点全部覆盖（含版本演进表+诊断路径），3 扩展点全部覆盖，素材来自 AOSP android-17.0.0_r1 源码"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-23",
@@ -14772,8 +14772,8 @@
   "status_counts": {
     "total": 443,
     "finalized": 305,
-    "ready_for_review": 91,
-    "draft": 3
+    "ready_for_review": 92,
+    "draft": 2
   },
   "1.17": {
     "status": "ready-for-review",
@@ -14890,5 +14890,17 @@
     "last_result": "ready-for-task6",
     "corrections": 1,
     "blocked": 1
+  },
+  "2.29": {
+    "section": "2.29",
+    "title": "TaskSnapshot 系统架构与 Recents 渲染性能",
+    "file": "src/part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "last_task2a_at": "2026-06-24T04:06:00+08:00",
+    "note": "7 锚点全部覆盖，3 扩展点全部覆盖"
   }
 }
