@@ -24,3 +24,13 @@
 - **位置**：§停止原因与回归守门 末段
 - **问题**：章节称"如果任务频繁超时，系统可能把 App 放入 restricted standby bucket"。但 Android App Standby Buckets 中，"Restricted"桶需要用户主动操作，系统不会自动将 App 放入 Restricted 桶。系统可根据使用模式自动降级到"Rare"或"Limited"桶。
 - **建议**：将"restricted standby bucket"改为"更低的 standby bucket（如 Rare 或 Limited）"，或删除"restricted"这一特指，仅保留"系统可能限制 App 的后台执行能力"。
+
+## [Task2B 修复完成] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-24
+- **状态**：已修复
+- **修复内容**：
+  - COLD_START 常量值修正：outline 中 `COLD_START=11` → `10`，trigger table 中 `TRIGGER_TYPE_COLD_START = 11` → `10`，与 AOSP `android-17.0.0_r1` 源码一致
+  - APP_COMPAT 常量值修正：outline 中 `APP_COMPAT=10` → `11`，与源码一致
+  - 版本演进表中 COLD_START=10 / APP_COMPAT=11 已确认正确，无需修改
+  - Frontmatter 去重：删除重复的 `task6_review_notes`
+- **章节状态**：task2b_result/task2b_state → fixed，pipeline_stage → task6_pending（等待下一轮 Task6/Task9 review）
+- **修复日志**：logs/review/2026-06-24-04-review.md
