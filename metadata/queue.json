@@ -1,139 +1,116 @@
 {
   "pending": [
     {
-      "section": "18.14",
-      "section_title": "Camera 渲染管线",
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
       "priority": 95,
-      "status": "completed",
-      "added_by": "task9-deep-tech-review",
-      "completed_at": "2026-06-23T14:58:21+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "P0 ProfilingManager路径: false positive — 文件已正确使用 packages/modules/Profiling/... 路径。P1 MemoryLimiter: 已加入正文（REASON_OTHER+MemoryLimiter描述、版本边界）。P1 原理链: 已加强ApplicationExitInfo与ProfilingManager证据互补规则。",
-      "reason": "[Deep Tech Review] Camera HAL buffer management 与 ZSL 机制存在原理断裂，以及源码引用路径错误",
+      "reason": "[Deep Tech Review] Hook框架安全性描述不完整、Hook性能测量方法论缺失、缺乏主模块兼容性讨论",
       "material_paths": [
-        "logs/deep-review/2026-06-23-14-deep-review.md"
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "P0 事实错误",
-          "location": "源码引用路径",
-          "detail": "引用路径错误：`hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDevice.aidl` 应为 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`",
-          "suggestion": "修正源码路径引用，确保指向正确的 CameraDevice AIDL 接口"
+          "type": "P1 重要缺失",
+          "location": "Hook框架安全性章节",
+          "detail": "未讨论Hook框架的SELinux上下文需求、seccomp过滤器权限要求、系统层面的Hook框架安全边界",
+          "suggestion": "补充Hook框架安全章节：SELinux domain要求、seccomp过滤规则、系统层面Hook框架的权限申请与边界说明"
         },
         {
           "type": "P1 重要缺失",
-          "location": "ZSL 机制原理链",
-          "detail": "ZSL 机制描述不完整，缺少 HAL reprocessing 能力前置条件说明",
-          "suggestion": "补充说明设备必须声明 `REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING` 才能使用 ZSL，建立完整的 HAL 能力依赖链"
+          "location": "Hook性能监测章节",
+          "detail": "未说明Hook性能测量的方法论，如如何测量Hook开销、样本收集频率、测试环境要求",
+          "suggestion": "补充Hook性能测量方法论：测试环境设置、样本收集方法、基线对比、统计显著性验证"
         },
         {
           "type": "P1 重要缺失",
-          "location": "版本演进覆盖",
-          "detail": "Android 16 MemoryLimiter 机制未在章节中提及",
-          "suggestion": "在版本演进表中增加 MemoryLimiter 相关说明，补充 Android 17 对高 RAM 设备的内存限制变化"
+          "location": "Android Mainline模块影响",
+          "detail": "未讨论Android Mainline模块对Hook框架兼容性的影响，Mainline模块的隔离机制如何影响Hook",
+          "suggestion": "补充Mainline模块与Hook兼容性：Mainline模块隔离机制、Hook框架在模块化环境中的适应性策略"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "Hook框架原理链完整性",
+          "detail": "Trampoline机制章节未解释ARM64指令对齐要求、内存保护约束，Trampoline设计的必要性说明不足",
+          "suggestion": "补充ARM64指令对齐要求说明、内存保护约束分析，解释Trampoline设计的必然性"
         }
       ],
-      "added_at": "2026-06-23T14:20:00+08:00"
-    },
-    {
-      "section": "26.12",
-      "section_title": "Android 版本化线上诊断能力",
-      "priority": 95,
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-24T02:20:00+08:00",
       "status": "completed",
-      "completed_by": "task2b-lite",
-      "completed_at": "2026-06-23T15:40:00+08:00",
-      "completed_reason": "fixed-lite: 修正源码路径引用、补全 ApplicationExitInfo 与 ProfilingManager 证据互补规则、更新版本边界"
+      "completed_at": "2026-06-24T02:53:34+08:00",
+      "completed_by": "task2b-main"
     },
     {
-      "section": "4.15",
-      "section_title": "Android 17 PSI/LowMemDetector 与 lmkd 内存压力检测架构演进",
-      "priority": 80,
-      "status": "pending",
-      "added_by": "task2a-knowledge-gap",
-      "added_date": "2026-06-23"
-    },
-    {
-      "section": "12.8",
-      "section_title": "Android 17 NetworkAgent 生命周期与 NetworkScorecard 动态评分机制",
-      "priority": 80,
-      "status": "pending",
-      "added_by": "task2a-knowledge-gap",
-      "added_date": "2026-06-23"
-    },
-    {
-      "id": "task2a-2.28-foldable-display-20260623",
-      "chapter": "2.28",
-      "title": "折叠屏显示管线与铰链状态渲染性能",
-      "file": "src/part1-fundamentals/ch02-rendering/28-foldable-display-pipeline-performance.md",
-      "priority": 80,
-      "status": "pending",
-      "added_by": "task2a-knowledge-gap",
-      "added_date": "2026-06-23"
-    },
-    {
-      "section": "3.12",
-      "section_title": "Predictive Back 系统架构与动画管线性能",
-      "priority": 80,
-      "status": "pending",
-      "added_by": "task2a-knowledge-gap",
-      "added_date": "2026-06-24",
-      "gap_score": 16,
-      "file": "src/part1-fundamentals/ch03-input/12-predictive-back-system-architecture.md"
-    },
-    {
-      "section": "2.29",
-      "section_title": "TaskSnapshot 系统架构与 Recents 渲染性能",
-      "priority": 80,
-      "status": "pending",
-      "added_by": "task2a-knowledge-gap",
-      "added_date": "2026-06-24",
-      "gap_score": 14,
-      "file": "src/part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md"
-    },
-    {
-      "section": "14.13",
-      "section_title": "Hook 基础设施与性能工具实现原理",
-      "priority": 90,
-      "reason": "[review回炉] 代码示例 Java/C 混用、try/catch 标为 C、未来发展章节填充内容、多处伪代码未标注",
+      "section": "7.7",
+      "section_title": "Jetpack Compose 性能优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 缺乏Compose Multiplatform性能特性、缺少State hoisting性能模式讨论、无Compose性能测试方法论",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "需重写",
-          "location": "§应用场景 > 代码注入 (line ~241-262)",
-          "detail": "Hook Activity.startActivity 示例在 ```c 代码块中使用 Java 类型 (Intent intent)，intent.getAction().equals() 是 Java 语法，不能标为 C 代码。应改为标注伪代码或拆分为 Java 层接口 + C 层 Hook 实现",
-          "suggestion": "将该示例改为 Java 代码块，或标注为伪代码示意"
+          "type": "P1 重要缺失",
+          "location": "性能优化章节",
+          "detail": "未讨论Compose Multiplatform的性能特征与Android平台的差异，跨平台性能考量缺失",
+          "suggestion": "补充Compose Multiplatform性能特性：跨平台渲染差异、性能优化策略、平台特定考量"
         },
         {
-          "type": "需重写",
-          "location": "§错误处理和恢复 (line ~412-426)",
-          "detail": "try/catch 是 C++ 语法，已修正语言标签为 cpp 并加注释。但原文在 C Hook 场景中使用 C++ 异常处理模式不合适——实际 Hook 框架（ShadowHook/xHook）都是纯 C，用返回值检查做错误处理",
-          "suggestion": "用返回值 + errno 模式重写错误处理示例，或明确标注为 C++ Hook 场景"
+          "type": "P1 重要缺失",
+          "location": "State管理章节",
+          "detail": "缺少State hoisting模式对性能影响的分析，未讨论状态提升的性能优化策略",
+          "suggestion": "补充State hoisting性能模式：状态提升机制、性能影响分析、hoisting最佳实践"
         },
         {
-          "type": "需重写",
-          "location": "§Hook 技术的未来发展 (line ~380-400)",
-          "detail": "整节为推测性填充内容：'并行 Hook' ShadowHook 已支持、'Android 12+ 适配' 章节已覆盖到 Android 17、'Hook 链式调用' 已被 Matrix/KOOM 实现。违反 writing-guide 禁止空话和填充的原则",
-          "suggestion": "删除整节，或改为'Hook 技术当前局限性'用务实语气列出已知限制"
-        },
-        {
-          "type": "需修正",
-          "location": "§最佳实践 > 优化 Hook 性能 (line ~400-410)",
-          "detail": "'使用 JIT 编译优化 Hook 函数'建议不适用于典型 Hook 场景——Hook 函数是用户写的 C/C++ 函数，不会经过 JIT；ART JIT 只优化 Java/Kotlin 方法",
-          "suggestion": "删除 JIT 相关建议，保留减少复杂度和使用缓存的建议"
-        },
-        {
-          "type": "需修正",
-          "location": "§应用场景 > 实际应用案例 > 案例 1-2 (line ~300-340)",
-          "detail": "hook_sched_switch / hook_file_operation / hook_messagequeue_next 等函数签名是虚构的，不是真实内核或框架 API。读者可能误以为可以照搬使用",
-          "suggestion": "标注为伪代码示意，或替换为真实的 Hook 目标函数签名"
+          "type": "P1 重要缺失",
+          "location": "测试工具章节",
+          "detail": "未说明如何在Compose测试中进行性能基准测试，缺乏性能回归测试的方法论",
+          "suggestion": "补充Compose性能测试方法论：基准测试框架、性能回归检测、持续集成中的性能监控"
         }
       ],
-      "added_by": "task6-review",
-      "added_at": "2026-06-24T01:19:40",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-24-01-review.md"
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-24T02:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "4.7",
+      "section_title": "16KB Page Size 与 Android 性能",
+      "priority": 80,
+      "reason": "[Deep Tech Review] ART堆行为描述不完整、GPU内存映射讨论缺失、缺乏不同工作负载的功耗分析",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P1 重要缺失",
+          "location": "内存影响章节",
+          "detail": "未讨论16KB页面对ART堆分配器行为的影响，ART内存管理在16KB页面下的特定机制",
+          "suggestion": "补充ART堆行为分析：16KB页面对堆分配器的影响、对象分配策略调整、内存碎片化管理"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "性能数据章节",
+          "detail": "未讨论16KB页面对GPU纹理内存映射的影响，图形渲染中的内存映射优化",
+          "suggestion": "补充GPU内存映射：16KB页面对纹理内存的影响、渲染管线优化、显存分配策略"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "功耗分析章节",
+          "detail": "主要关注启动功耗，缺少后台任务功耗分析、不同工作负载下的功耗特征",
+          "suggestion": "补充多场景功耗分析：后台任务功耗、不同工作负载特征、功耗优化策略"
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "TLB章节",
+          "detail": "未说明不同TLB替换算法（LRU、Pseudo-LRU）对16KB页面性能的影响",
+          "suggestion": "补充TLB替换策略分析：不同算法适用场景、16KB页面下的TLB行为、优化建议"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-24T02:20:00+08:00",
+      "status": "pending"
     }
   ],
   "in_progress": [],
@@ -647,8 +624,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-06-24T02:17:39",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-24-02-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-06-24-02-review.md",
+      "completed_at": "2026-06-24T02:53:34+08:00",
+      "completed_by": "task2b-main"
     }
   ]
 }
