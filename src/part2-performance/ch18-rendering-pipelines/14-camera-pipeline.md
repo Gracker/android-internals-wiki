@@ -13,10 +13,13 @@ related_chapters: "[\"2.13\", \"2.15\", \"14.9\", \"18.6\"]"
 created_by: "\"rendering-pipelines-merge\""
 created_date: "\"2026-04-09\""
 task6_state: revisiting
-task9_state: pending
+task9_state: auto-fixed
 task9_result: "auto-fixed"
 task2b_state: fixed
 task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "'2026-06-23'"
+last_task6_at: "'2026-06-23T15:15:00+08:00'"
 task2b_result: fixed
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: "openclaw-task9"
@@ -31,6 +34,8 @@ last_task6_audit_result: "l1-frontmatter-light-edit"
 last_task6_audit_log: "\"logs/review/2026-05-21-16-audit.md\""
 last_task6_at: "'2026-06-04T22:12:00+08:00'"
 last_task9_autofix_at: "2026-06-04"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-23
 ---
 
 <!-- outline-start -->
@@ -49,11 +54,11 @@ last_task9_autofix_at: "2026-06-04"
 
 <!-- outline-end -->
 
-## 为什么 Camera 的渲染管线与众不同
+## Camera 渲染管线的独特性
 
-Camera 是 Android 系统里数据吞吐最高、实时性要求最严的一类管线。普通 View 渲染通常是一次输入对应一次输出，Camera 则经常把同一帧同时送给预览、录像和分析三个消费者。Sensor、ISP、Camera HAL、BufferQueue、SurfaceFlinger、MediaCodec、ImageReader 都可能成为瓶颈点。
+Camera 管线是 Android 里数据吞吐最高、对实时性要求最严的一类。普通 View 渲染是一次输入对应一次输出，Camera 则经常把同一帧同时送给预览、录像和分析三个消费者。Sensor、ISP、Camera HAL、BufferQueue、SurfaceFlinger、MediaCodec、ImageReader，整个链条上的任何一个节点都可能成为瓶颈。
 
-排查 Camera 卡顿时，先分清楚问题发生在生产端、Buffer 流转阶段，还是消费端。HAL 生产慢、ImageReader 不及时归还 Buffer、Binder IPC 堵塞，三类问题在 Perfetto 里的形态不同，修复动作也不同。
+排查 Camera 卡顿时，第一步是把问题归到生产端、Buffer 流转阶段还是消费端。HAL 生产慢、ImageReader 不及时归还 Buffer、Binder IPC 堵塞——这三类在 Perfetto 里的表现形态不同，修复方向也不同。
 
 ## 多消费者架构
 
@@ -69,7 +74,7 @@ graph TD
     Sensor -->|GraphicBuffer| IA
 ```
 
-CameraService 负责资源仲裁和会话管理。App 调用 `CameraManager.openCamera()` 后，请求先到 CameraService，由它检查 camera id、客户端优先级、当前占用状态，再把请求交给 `Camera3Device`。Android 13+ 的主线实现里，这一步对应 `hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDevice.aidl` 定义的设备接口，`open()` 之后再进入活跃的 `ICameraDeviceSession`。会话建立阶段，CameraService 还要把各个输出 Surface 的尺寸、像素格式、usage flag 汇总给 HAL，决定这组输出能不能同时成立。
+CameraService 负责资源仲裁和会话管理。App 调用 `CameraManager.openCamera()` 后，请求先到 CameraService，由它检查 camera id、客户端优先级、当前占用状态，再把请求交给 `Camera3Device`。Android 15+ 的主线实现里，这一步对应 `hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDevice.aidl` 定义的设备接口，`open()` 之后再进入活跃的 `ICameraDeviceSession`；Android 13-14 仍兼容 HIDL 3.x 接口。会话建立阶段，CameraService 还要把各个输出 Surface 的尺寸、像素格式、usage flag 汇总给 HAL，决定这组输出能不能同时成立。
 
 HAL3 / ISP 负责把 Sensor 原始数据变成可以消费的帧。ISP 完成曝光、去噪、白平衡、色彩校正后，HAL 按 `CaptureRequest` 的目标 Surface 把结果写入对应 Buffer。预览、录像、分析可以共享同一次曝光得到的图像，但它们拿到的是不同用途的输出 Buffer，而不是一块 Buffer 在多个线程里反复回拷。
 
@@ -93,8 +98,6 @@ cameraDevice.createCaptureSession(
 
 Android 12+ 的 Extensions 是这一步的一个变体。App 通过 `CameraDevice.createExtensionSession()` 或 CameraX Extensions 建立 `CameraExtensionSession` 时，session 配置仍然要校验输出 Surface 组合，但 OEM extension 库会在 Preview 或 Still Capture 路径里插入额外的多帧后处理节点。夜景、HDR、虚化模式下，排查范围要同时覆盖 extension service、额外的中间 Buffer 和后处理线程。
 
-
-<!-- AIW-源码调研-2026-04-26 -->
 ### Stream Use Case：HAL 层面的业务意图路由（Android 13+）
 
 `OutputConfiguration.setStreamUseCase()` 是 Android 13 (API 33) 引入的性能调优入口。通过它，App 可以告诉 Camera HAL 单个输出流的业务意图（预览/录像/拍照/视频通话），HAL 据此选择 sensor mode、ISP pipeline 参数和调优策略。这与 Capture Intent 控制全局 3A 不同——Stream Use Case 控制的是单个 OutputConfiguration 的硬件 pipeline 参数。
@@ -165,15 +168,13 @@ CameraX 默认的 UseCase 映射：Preview→PREVIEW、ImageCapture→STILL_CAPT
 
 关键 Slice：`camera3_process_capture_request`（HAL 层）、`BufferQueue::dequeueBuffer/queueBuffer`（Buffer 状态）、`requestStreamBuffers`（Android 13+ AIDL）。
 
-<!-- AIW-源码调研-2026-04-26 -->
-
 ### 阶段二：生产（Request & Produce）
 
 稳态预览阶段，App 通常通过 `setRepeatingRequest()` 持续下发同一组 request。Android 13+ 的主线实现里，CameraService 通过 AIDL `ICameraDeviceSession.processCaptureRequest()` 把 request 送到 vendor HAL；Android 10-12 机型仍常见 `processCaptureRequest_3_4()` 或 `processCaptureRequest_3_7()` 这类 HIDL 方法。HAL 收到 request 后驱动 Sensor 曝光，ISP 完成图像处理，再把结果写入对应输出 Buffer。对预览和录像场景，主路径通常保持在 GraphicBuffer 内流转，CPU 不直接搬运像素数据。
 
 ### 阶段三：消费（Preview / Recording / Analysis）
 
-**Preview** 路径面向低延迟显示。对 Android 5-10 的 `SurfaceView` 预览，可以按 `HAL → Camera framework stream → BufferQueue → SurfaceFlinger → HWC → Display` 理解。HAL 拿到的是 Framework 侧已经准备好的输出 buffer handle，真正的 `dequeueBuffer` 发生在 `Camera3OutputStream` 管理的 stream / Surface 一侧。
+**Preview** 路径面向低延迟显示。对 Android 5-10 的 `SurfaceView` 预览，可以按 `HAL → Camera framework stream → BufferQueue → SurfaceFlinger → HWC → Display` 理解。HAL 拿到的是 Framework 侧已经准备好的输出 buffer handle，`dequeueBuffer` 操作发生在 `Camera3OutputStream` 管理的 stream / Surface 一侧。
 
 Android 11+ 的 `SurfaceView` 预览仍然沿用 Camera framework stream + BufferQueue 这条像素路径，但 consumer 侧进入 `BLASTBufferQueue + SurfaceControl.Transaction` 的现代通路。预览帧到达后，Buffer latch 和几何更新由 transaction 协调，再交给 SurfaceFlinger。涉及 resize、裁剪和窗口同步时，排查口径应与 §18.6 保持一致。
 
@@ -249,7 +250,7 @@ ZSL 依赖一条明确的 HAL 能力前置链，缺一个环节就整条链路�
 
 `CONTROL_ENABLE_ZSL` 处理的是 device-operated ZSL。对 `STILL_CAPTURE` request 打开这个开关后，设备可以复用过去已经采到的帧来生成拍照结果。文档使用 may，不保证每次都会回用历史帧。是否真的回用历史帧，取决于 HAL 能力、当前模板、闪光灯和会话配置。
 
-CameraX 的 ZSL 是另一层实现。`ImageCapture` 的零快门延迟模式会维护一个 app-managed ring buffer，从最近几帧里挑时间戳最接近快门的一帧，再走重处理或库层封装的输出路径。这个 ring buffer 负责保留候选帧，真正落到设备侧时仍然依赖 `createReprocessableCaptureSession()` 对应的 reprocess pipeline，把候选帧重新组织成 HAL 可消费的 reprocess request。它要求设备支持 PRIVATE reprocessing，启用前要通过 `isZslSupported()` 判断；不满足条件时会回退到 `CAPTURE_MODE_MINIMIZE_LATENCY`。flash 为 `ON` 或 `AUTO`、VideoCapture、Extensions 场景都不走这条路径。
+CameraX 的 ZSL 是另一层实现。`ImageCapture` 的零快门延迟模式会维护一个 app-managed ring buffer，从最近几帧里挑时间戳最接近快门的一帧，再走重处理或库层封装的输出路径。这个 ring buffer 负责保留候选帧，在设备侧仍然依赖 `createReprocessableCaptureSession()` 对应的 reprocess pipeline，把候选帧重新组织成 HAL 可消费的 reprocess request。它要求设备支持 PRIVATE reprocessing，启用前要通过 `isZslSupported()` 判断；不满足条件时会回退到 `CAPTURE_MODE_MINIMIZE_LATENCY`。flash 为 `ON` 或 `AUTO`、VideoCapture、Extensions 场景都不走这条路径。
 
 ## Request-Buffer 生命周期
 
@@ -338,9 +339,10 @@ HDR、多帧降噪、夜景和高分辨率视频会直接抬高 ISP 处理时长
 
 Analysis 回调里频繁 `new byte[]`、做 YUV 平面拼接、把每帧都转成 Bitmap，会把 Camera 管线拖回 CPU 和 GC 世界。Perfetto 里常见现象是主线程或分析线程出现长片段 Java/Native 计算，`dma_buf` 之外的 App RSS 也会上涨。修复动作是直接消费 `Image.Plane` 的 `ByteBuffer`，能走 GPU 或 NDK 的路径就不要先回拷到 Java Heap，再把生命周期控制在单帧范围内。
 
-## 源码级细节补充（Camera HAL3 Buffer 所有权 + CameraX ZSL Ring Buffer）
+## Camera HAL3 Buffer 所有权与 CameraX ZSL Ring Buffer
 
-补充 `frameworks/av/services/camera/libcameraservice/` 与 AndroidX camera-camera2 / camera-core 中的源码级实现要点，对应 [intake/research-gaps.md] `[2026-06-23] 18.14 Camera 渲染管线` 第一条盲区。
+
+以下源码级实现要点来自 `frameworks/av/services/camera/libcameraservice/` 与 AndroidX camera-camera2 / camera-core，
 
 ### 1. `CameraDeviceClient` 的 input stream 单例约束
 
@@ -509,7 +511,7 @@ ZSL 与 Stream Use Case **路径不交叉**：`SupportedSurfaceCombination` 在 
 | AIDL Camera HAL（Android 13+） | 设备接口迁到 `ICameraDevice.aidl` / `ICameraDeviceSession.aidl`，`processCaptureRequest()`、`requestStreamBuffers()` 延续同一套 buffer management 语义 | Android 14-16 排查底层接口时，应优先按 AIDL slice 和 `aidl/` 源码路径定位 |
 | CameraX ZSL（Jetpack 1.2+） | `ImageCapture` 在库层维护 ring buffer，并把候选帧桥接回 reprocess pipeline | App 侧看到的 ZSL 体验来自库层封装，但底层仍要满足 HAL reprocess 能力 |
 
-CameraX 不是新的底层渲染路径。它把 Camera2 常见的会话管理错误和生命周期错误收敛掉了，能减少“配置没错但输出组合很差”的问题。真正的像素生产、Buffer 流转、Surface 合成仍然落在 Camera2 / HAL3 这条管线上。
+CameraX 不是新的底层渲染路径。它把 Camera2 常见的会话管理错误和生命周期错误收敛掉了，能减少“配置没错但输出组合很差”的问题。像素生产、Buffer 流转、Surface 合成仍然落在 Camera2 / HAL3 这条管线上。
 
 ## 与其他章节的关系
 

@@ -115,7 +115,7 @@ Android 后台限制可以按“设备状态、App 使用状态、任务 API”�
 | Android 9 | App Standby Buckets 按使用频率限制资源 | 在测试里记录 bucket；不要把 rare / restricted 下的延迟误判成代码失败 |
 | Android 12 | 后台启动前台服务受限，`ForegroundServiceStartNotAllowedException` 成为运行时风险 | 前台服务启动必须来自用户可见动作或官方豁免场景 |
 | Android 14 | 前台服务类型和对应权限成为硬性约束 | Manifest 声明 `foregroundServiceType`，补对应 `FOREGROUND_SERVICE_*` 权限 |
-| Android 16 | Job 执行配额与 App 状态关系更细；前台服务场景下的 Job 也可能受配额影响 | 把前台服务内派生的后台 Job 纳入功耗预算和超时监控 |
+| Android 16 | Job 执行配额与 App 状态关系更细；前台服务场景下的 Job 也可能受配额影响 | 把前台服务内派生的后台 Job 纳入功耗预算和超时监控，引入基于前台服务类型的动态配额调整 |
 
 Android Developers 的 power resource limits 文档把限制分成两种：一种是设备低功耗状态下延后执行，例如 Doze 期间普通 Job 和非精确 Alarm 延后；另一种是根据 standby bucket 限制唤醒频率和可运行时长，例如 rare bucket 下 Job 运行预算更少。WorkManager 在 App 不可见时通过 JobScheduler 执行，也会受到这些限制。 [已验证: 官方文档, developer.android.com/topic/performance/power/power-details]
 
