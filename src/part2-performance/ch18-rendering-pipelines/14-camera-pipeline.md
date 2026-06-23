@@ -3,7 +3,7 @@ title: "\"Camera 渲染管线\""
 chapter: "\"18.14\""
 section: "\"18.14\""
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
 applicable_versions: "\"Android 5.0 (API 21) - Android 17 (API 37)\""
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
 reviewed_date: "'2026-06-04'"
@@ -12,18 +12,18 @@ path: "\"hardware/interfaces/camera/device/aidl/android/hardware/camera/device/I
 related_chapters: "[\"2.13\", \"2.15\", \"14.9\", \"18.6\"]"
 created_by: "\"rendering-pipelines-merge\""
 created_date: "\"2026-04-09\""
-task6_state: "reviewed"
-task9_state: "pending"
+task6_state: revisiting
+task9_state: pending
 task9_result: "auto-fixed"
-task2b_state: "fixed"
+task2b_state: fixed
 task6_result: "pass-light-edit"
-task2b_result: "fixed"
+task2b_result: fixed
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "\"2026-06-04T21:20:00+08:00\""
-last_task2b_at: "\"2026-04-26T10:41:09+08:00\""
-repaired_date: "\"2026-04-26\""
-repaired_by: "\"openclaw-task2b\""
+last_task2b_at: "2026-06-23T14:57:24+08:00"
+repaired_date: "2026-06-23"
+repaired_by: "openclaw-task2b"
 last_task9_audit: "\"2026-05-20\""
 last_task9_audit_log: "\"logs/deep-review/2026-05-20-21-audit.md\""
 last_task6_audit: "\"2026-05-21\""
@@ -238,7 +238,14 @@ sequenceDiagram
 
 ## ZSL（Zero Shutter Lag）
 
-ZSL 需要先分清楚两层能力。底层前提是 Camera HAL 声明可重处理能力。`REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING` 对应设备侧的 ZSL reprocessing use case，`REQUEST_AVAILABLE_CAPABILITIES_YUV_REPROCESSING` 对应 `YUV_420_888` 重处理。具备这些能力时，App 才能通过 `createReprocessableCaptureSession()` 建立 reprocessable session，再把历史帧送回管线。
+ZSL 依赖一条明确的 HAL 能力前置链，缺一个环节就整条链路不可用：
+
+1. **设备侧能力声明**：Camera HAL 必须在 `CameraCharacteristics` 中声明重处理能力。`REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING` 对应设备侧的 ZSL reprocessing use case，`REQUEST_AVAILABLE_CAPABILITIES_YUV_REPROCESSING` 对应 `YUV_420_888` 重处理。
+2. **App 侧能力检测**：调用 `CameraCharacteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)` 验证 capability 存在，再通过 `isReprocessingSupported()` 或类似方法确认。
+3. **Reprocessable Session 建立**：`CameraDevice.createReprocessableCaptureSession()` 要求设备已声明 reprocessing capability。不声明则返回 `UnsupportedOperationException` 或 session 创建失败。
+4. **ZSL 实际生效**：满足以上前提后，`CONTROL_ENABLE_ZSL` 或 CameraX ZSL 才能把历史帧送回 reprocess pipeline。
+
+这条链在排查 ZSL 不生效时是查证骨架：先看设备 capability，再看 session 是否 reprocessable，最后看上层开关。不能跳过 capability 检测直接怀疑上层配置。
 
 `CONTROL_ENABLE_ZSL` 处理的是 device-operated ZSL。对 `STILL_CAPTURE` request 打开这个开关后，设备可以复用过去已经采到的帧来生成拍照结果。文档使用 may，不保证每次都会回用历史帧。是否真的回用历史帧，取决于 HAL 能力、当前模板、闪光灯和会话配置。
 
@@ -330,6 +337,164 @@ HDR、多帧降噪、夜景和高分辨率视频会直接抬高 ISP 处理时长
 ### CPU 回拷与内存抖动
 
 Analysis 回调里频繁 `new byte[]`、做 YUV 平面拼接、把每帧都转成 Bitmap，会把 Camera 管线拖回 CPU 和 GC 世界。Perfetto 里常见现象是主线程或分析线程出现长片段 Java/Native 计算，`dma_buf` 之外的 App RSS 也会上涨。修复动作是直接消费 `Image.Plane` 的 `ByteBuffer`，能走 GPU 或 NDK 的路径就不要先回拷到 Java Heap，再把生命周期控制在单帧范围内。
+
+## 源码级细节补充（Camera HAL3 Buffer 所有权 + CameraX ZSL Ring Buffer）
+
+补充 `frameworks/av/services/camera/libcameraservice/` 与 AndroidX camera-camera2 / camera-core 中的源码级实现要点，对应 [intake/research-gaps.md] `[2026-06-23] 18.14 Camera 渲染管线` 第一条盲区。
+
+### 1. `CameraDeviceClient` 的 input stream 单例约束
+
+每个 `CameraDeviceClient` 只能持有一个 input stream（ZSL 候选帧入口）。`frameworks/av/services/camera/libcameraservice/api2/CameraDeviceClient.h`：
+
+```cpp
+struct InputStreamConfiguration {
+    bool configured;
+    int32_t width;
+    int32_t height;
+    int32_t format;
+    int32_t id;
+} mInputStream;  // 单例
+```
+
+`CameraDeviceClient.cpp::createInputStream()` 守住这一约束（与 §18.14 现有"Request-Buffer 生命周期"段衔接）：
+
+```cpp
+if (mInputStream.configured) {
+    return STATUS_ERROR(CameraService::ERROR_ALREADY_EXISTS,
+        "Already has an input stream configured (ID %d)", mInputStream.id);
+}
+int streamId = -1;
+status_t err = mDevice->createInputStream(width, height, format, isMultiResolution, &streamId);
+if (err == OK) {
+    mInputStream.configured = true;
+    mInputStream.width  = width;
+    mInputStream.height = height;
+    mInputStream.format = format;
+    mInputStream.id     = streamId;
+    *newStreamId = streamId;
+}
+```
+
+`getInputBufferProducer()` 走 `WB_CAMERA3_AND_PROCESSORS_WITH_DEPENDENCIES` 编译开关：true 时上层拿 `Surface`，否则拿裸 `IGraphicBufferProducer` binder handle。底层不复制 buffer 数据，HAL 借出的是 buffer handle + fence。
+
+### 2. `Camera3Stream` 的 buffer 所有权转移 + 信号量
+
+`frameworks/av/services/camera/libcameraservice/device3/Camera3Stream.cpp` 提供了四组配对函数：
+
+| API | 角色 | 同步原语 |
+|:---|:---|:---|
+| `getBuffer` / `returnBuffer` | output stream 申请/归还 | `mOutputBufferReturnedSignal` (Condition) |
+| `getInputBuffer` / `returnInputBuffer` | input stream (ZSL 入口) 申请/归还 | `mInputBufferReturnedSignal` (Condition) |
+| `isOutstandingBuffer` | 重复归还拦截 | `mOutstandingBuffers` 列表（`mOutstandingBuffersLock` 保护） |
+
+关键约束（HAL3.5+ 行为，Android 13/14/15/16/17 沿用）：
+
+- `camera_stream::max_buffers == 2`：HAL 同时持有 input buffer 上限；`getInputBuffer` 在到达上限时会阻塞 `kWaitForBufferDuration`（默认 300ms），等待 `returnInputBuffer` 通过 `mInputBufferReturnedSignal.signal()` 唤醒。
+- `returnBuffer` 内部做 timestamp 单调性检查：乱序 timestamp 会把 buffer 标记为 `CAMERA_BUFFER_STATUS_ERROR`（除非 HAL 已经显式 ERROR 标记）。
+- 重复归还会被 `isOutstandingBuffer` 拦截并 `ALOGE` 报错，可作为 perfetto trace 的对照锚点。
+
+### 3. `Camera3Device::mInFlightMap` 在途请求簿记
+
+`frameworks/av/services/camera/libcameraservice/device3/Camera3Device.cpp::registerInFlight()`：
+
+```cpp
+status_t Camera3Device::registerInFlight(uint32_t frameNumber,
+        int32_t numBuffers, CaptureResultExtras resultExtras, bool hasInput,
+        ..., bool isZslCapture, ...) {
+    std::lock_guard<std::mutex> l(mInFlightLock);
+    ssize_t res = mInFlightMap.add(frameNumber,
+        InFlightRequest(numBuffers, resultExtras, hasInput, ..., isZslCapture, ...));
+    if (res < 0) return res;
+    if (mInFlightMap.size() == 1) {
+        mStatusTracker->markComponentActive(mInFlightStatusId);
+    }
+    mExpectedInflightDuration += maxExpectedDuration;
+    return OK;
+}
+```
+
+`InFlightRequest` 持有 `hasInput` / `isZslCapture` / `outputSurfaces` 等字段，frameNumber 是主键。`onInflightEntryRemovedLocked` 在 `mInFlightMap.size() == 0` 时翻转 idle；`checkInflightMapLengthLocked` 在 `mExpectedInflightDuration > kMinWarnInflightDuration` 时触发 `CLOGW("In-flight list too large: %zu, total inflight duration %" PRIu64)` 告警。ZSL request 因 `isZslCapture=true` 与较大的 `maxExpectedDuration`（reprocess pipeline 时长）对 inflight 计数更敏感。
+
+### 4. CameraX ZSL Ring Buffer（应用层候选帧保留）
+
+`androidx.camera.core/camera-core/src/main/java/androidx/camera/core/internal/utils/ZslRingBuffer.java`（CameraX 1.2+）：
+
+```java
+public final class ZslRingBuffer extends ArrayRingBuffer<ImageProxy> {
+    @Override
+    public void enqueue(@NonNull ImageProxy imageProxy) {
+        if (isValidZslFrame(imageProxy.getImageInfo())) {
+            super.enqueue(imageProxy);
+        } else {
+            mOnRemoveCallback.onRemove(imageProxy);  // 3A 未收敛直接丢弃
+        }
+    }
+    private boolean isValidZslFrame(@NonNull ImageInfo imageInfo) {
+        // AF=LOCKED_FOCUSED/PASSIVE_FOCUSED && AE=CONVERGED && AWB=CONVERGED
+        if (cameraCaptureResult.getAfState() != AfState.LOCKED_FOCUSED
+            && cameraCaptureResult.getAfState() != AfState.PASSIVE_FOCUSED) return false;
+        if (cameraCaptureResult.getAeState() != AeState.CONVERGED) return false;
+        if (cameraCaptureResult.getAwbState() != AwbState.CONVERGED) return false;
+        return true;
+    }
+}
+```
+
+底层 `ArrayRingBuffer`（同目录，CameraX 1.2+）：
+
+```java
+public class ArrayRingBuffer<T> implements RingBuffer<T> {
+    private final int mRingBufferCapacity;
+    @GuardedBy("mLock")
+    private final ArrayDeque<T> mBuffer;  // FIFO: addFirst 入，removeLast 出
+    @Override
+    public void enqueue(@NonNull T element) {
+        T removedItem = null;
+        synchronized (mLock) {
+            if (mBuffer.size() >= mRingBufferCapacity) {
+                removedItem = this.dequeue();  // 容量满时丢弃最旧帧
+            }
+            mBuffer.addFirst(element);
+        }
+        if (mOnRemoveCallback != null && removedItem != null) {
+            mOnRemoveCallback.onRemove(removedItem);
+        }
+    }
+}
+```
+
+要点：FIFO drop-oldest 策略；3A 收敛判据缺一即丢弃；`OnRemoveCallback` 触发 `ImageProxy.close()`，把 GraphicBuffer 引用释放回 Surface / ImageReader pool。
+
+### 5. CameraX ZSL 与 Stream Use Case 的互斥
+
+`androidx.camera.camera2/camera-camera2/src/main/java/androidx/camera/camera2/adapter/SupportedSurfaceCombination.kt`：
+
+```kotlin
+val containsZsl: Boolean =
+    StreamUseCaseUtil.containsZslUseCase(attachedSurfaces, newUseCaseConfigs)
+var orderedSurfaceConfigListForStreamUseCase: List<SurfaceConfig>? = null
+// Only checks the stream use case combination support when ZSL is not required.
+if (isStreamUseCaseSupported && !containsZsl) {
+    orderedSurfaceConfigListForStreamUseCase =
+        getOrderedSurfaceConfigListForStreamUseCase(...)
+}
+```
+
+`ZslControlImpl.addZslConfig()`（`androidx.camera.camera2/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt`）关键参数：
+
+- `FORMAT = ImageFormat.YUV_420_888`（强制 YUV，不接受 JPEG）
+- `MAX_IMAGES` 与 `ZSL_RING_BUFFER_CAPACITY` 共同决定 `MetadataImageReader` 容量与 ring buffer 容量
+- input size 取 `getInputSizes(YUV_420_888)` 中 `area` 最大的那一个（接近 sensor 全分辨率，1080p sensor 单帧约 3.2 MB YUV420 1.5 byte/pixel）
+- 启用门槛：`cameraMetadata.supportsPrivateReprocessing`（即 `REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING`）
+- 任一 disable 条件命中（use case config / Quirk / flash=ON|AUTO / VideoCapture / Extensions）回退到 `TEMPLATE_PREVIEW`，不建立 input stream
+
+ZSL 与 Stream Use Case **路径不交叉**：`SupportedSurfaceCombination` 在 `containsZsl=true` 时直接跳过 `getOrderedSurfaceConfigListForStreamUseCase`，避免双重协商争抢 sensor pipeline。
+
+### 6. 性能调优含义速查
+
+- **Input stream 内存峰值**：`max_buffers=2` × input size area，约 6.4 MB（1080p sensor），叠加 `mInFlightMap` 中 ZSL request 占用的 output buffer 形成双重内存峰值。
+- **Ring buffer 容量与 3A 收敛**：默认典型 3-4 帧；3A 长时间不收敛时新帧持续覆盖旧帧，`OnRemoveCallback` 频繁 `close()` 触发 BufferQueue release，可能放大 BufferQueue 抖动。
+- **mInFlightMap 积压**：`checkInflightMapLengthLocked` 触发 `CLOGW` 是 perfetto `camera3` track 上 frameNumber 间隔拉大的同步信号；ZSL + 长曝光是常见诱因。
 
 ## 版本演进
 

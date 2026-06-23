@@ -3,7 +3,7 @@ title: "\"Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingM
 chapter: "\"26.12\""
 section: "\"26.12\""
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: task6_pending
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
@@ -19,9 +19,9 @@ created_by: "\"task2a-knowledge-gap\""
 created_date: "\"2026-05-17\""
 gap_source: "\"研究素材/官方文档/章节深挖\""
 gap_score: "18"
-task6_state: "revisiting"
+task6_state: revisiting
 last_task6_at: "\"2026-05-17T06:16:00+08:00\""
-task9_state: "pending"
+task9_state: pending
 task6_result: "pass-light-edit"
 task2a_result: "draft-ready-for-review"
 last_task2a_at: "\"2026-05-17T06:04:00+08:00\""
@@ -30,9 +30,12 @@ task9_reviewed_date: "\"2026-05-17\""
 task9_reviewed_by: "\"openclaw-task9\""
 last_task9_at: "\"2026-05-17T06:36:36+08:00\""
 last_task9_autofix_at: "\"2026-06-02\""
-task2b_result: "\"fixed-lite\""
-task2b_state: "\"fixed\""
+task2b_result: fixed
+task2b_state: fixed
 last_task2b_lite_at: "\"2026-06-03\""
+last_task2b_at: "2026-06-23T14:57:24+08:00"
+repaired_date: "2026-06-23"
+repaired_by: "openclaw-task2b"
 ---
 
 # 26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
@@ -75,6 +78,13 @@ last_task2b_lite_at: "\"2026-06-03\""
 <!-- outline-end -->
 
 本节按 Android 版本重新整理线上诊断入口。26.5 负责排障流程，14.7 和 8.10 负责 ProfilingManager 工具机制；这里只回答一个问题：线上问题发生在不同系统版本时，App 能从系统拿到哪类证据，证据该怎么归档，哪些情况必须降级。
+
+**两类系统证据的互补关系**：`ApplicationExitInfo` 负责"进程为什么死了"，给出死因、时间戳、内存快照和 trace 附件；`ProfilingManager` / `ProfilingTrigger` 负责"进程活着时发生了什么"，给出 system trace、heap dump、stack sample 和 call stack。去重和互补的规则：
+
+- **同一 case 内两类证据并存时**：优先以 `ProfilingManager` 的 system trace / heap dump 作为主证据（提供运行时上下文），`ApplicationExitInfo` 的 reason/timestamp/trace 作为辅证据（确认退出原因和终点状态）。
+- **只有 ApplicationExitInfo 没有 ProfilingManager 时**：ANR → 用 `getTraceInputStream()` 的 ANR trace 补文本证据；native crash → 用 tombstone protobuf 与 SDK minidump 交叉验证；OOM → 结合自有内存采样回溯。
+- **只有 ProfilingManager 没有退出记录时**：卡顿/慢启动/内存异常在灰度复现阶段触发，按采集产物独立归档，不等待退出。
+- **去重键**：`pid + timestamp + processName + reason` 作为退出记录去重键，`sessionId + profilingType + triggerType` 作为 profiling 结果去重键。同一 pid 在相近时间窗口内出现多种证据时，按 caseId 合并。
 
 参考材料把线上问题拆成崩溃现场、卡顿现场、用户日志、上报组件和动态诊断几类，本节借鉴这个组织方式，但材料全部按 Android 10-17 的公开 API 和 AOSP 路径重写，不复用原文段落。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 7.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
 
@@ -151,6 +161,10 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 | 其他系统原因 | `REASON_OTHER`、`REASON_DEPENDENCY_DIED`、`REASON_FREEZER` | 需要人工复核描述和版本分布 | 只做辅助归因 |
 
 Native crash 有两份证据来源：SDK 自有 minidump，以及 Android 12+ `ApplicationExitInfo#getTraceInputStream()` 暴露的 tombstone protobuf。Crashpad / Breakpad 的价值在于崩溃当下由 SDK 控制写入；系统 tombstone 的价值在于系统侧也保存了 native crash 证据。两者要合并，不要互相替代。Native signal handler、out-of-process handler、minidump 写入边界详见 20.3 和 19.24。[已验证: 官方文档, developer.android.com/ndk/guides/debug][已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+
+**版本边界补充**：`REASON_FREEZER` 在 API 33（Android 13）引入，App Freezer 杀进程时返回；`REASON_PACKAGE_STATE_CHANGE` 和 `REASON_PACKAGE_UPDATED` 在 API 34（Android 14）引入。按 `Build.VERSION.SDK_INT` 判断常量可用性，低于对应 API level 的设备上不会返回这些 reason。
+
+**Android 17 MemoryLimiter**：Android 17（API 37）对高 RAM 设备（总 RAM ≥ 6GB）引入保守的应用内存限制。targetSdk ≥ 36 的应用触发 MemoryLimiter 杀灭时，`ApplicationExitInfo.getReason()` 返回 `REASON_OTHER`（兜底原因），`getDescription()` 包含字符串 "MemoryLimiter"。进程退出前没有 OOM 异常，`TRIGGER_TYPE_OOM` 不会触发，应通过退出记录归因。与 `REASON_EXCESSIVE_RESOURCE_USAGE` 的区别：后者基于资源用量阈值，MemoryLimiter 基于设备 RAM 总量的应用上限。
 
 ## Android 15：ProfilingManager 的应用驱动采集
 
@@ -462,7 +476,7 @@ Android 版本演进对原子数据诊断的影响：
    - `REASON_FREEZER` = API 33
    - `REASON_PACKAGE_STATE_CHANGE` / `REASON_PACKAGE_UPDATED` = API 34
    
-3. **ProfilingManager 能力边界**（API 35+，建议用 `frameworks/base/core/java/android/os/ProfilingManager.java` 核实）
+3. **ProfilingManager 能力边界**（API 35+，建议用 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java` 核实）
    - `requestProfiling()` 后台执行，完成后通过 callback 返回 `ProfilingResult#getResultFilePath()`
    - trace 输出路径：`/data/user/0/<app>/files/profiling/profile_<tag>_<datetime>.perfetto-trace`
    - 有 rate limiter；debug mode 可禁用 rate limiting 并保留未脱敏 trace
