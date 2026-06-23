@@ -34,6 +34,8 @@ last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-00-audit.md"
 last_task9_autofix_at: "2026-06-09"
 task9_result: "auto-fixed"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 # 12.5 ConnectivityService 与网络状态监听性能
@@ -204,8 +206,6 @@ Network Slicing 适合低延迟、专用带宽这类明确网络质量诉求，�
 ## 小结
 
 ConnectivityService 和 `NetworkCallback` 的性能价值在于提供平台级网络画像，让应用把预取、同步、降级、重试和后台任务调度建立在同一份状态上。注册回调要少而稳，后台任务交给系统调度，计费与验证状态要参与请求策略，连接池和 HTTPDNS 仍由网络栈独立处理。这样的网络层既能减少无效唤醒，也能让弱网归因更接近真实故障位置。
-
-<!-- AIW-源码调研-2026-06-22 -->
 
 ### 12.5.6 NetworkAgent 生命周期与网络评分机制深度解析
 

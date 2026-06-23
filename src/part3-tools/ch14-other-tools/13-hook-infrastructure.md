@@ -6,13 +6,13 @@ status: "ready-for-review"
 task6_result: "needs-rework"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-24"
-task6_state: "revisiting"
-task2b_state: "fixed"
+task6_state: "reviewed"
+task2b_state: "pending"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: 2026-06-24
 task9_state: "pending"
 task2b_fixed_date: "2026-06-12"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -32,6 +32,7 @@ polish_by: "task2b-polish"
 task6_review_notes_2026_06_24: "revisiting 复审：发现 B 类问题 5 处（代码示例 Java/C 混用、try/catch C++ 语法标为 C、未来发展章节填充内容、JIT 优化建议不当、多处伪代码未标注），已修 2 处 L1 代码块标签，B 类写入 queue+ suggestions 送 Task2B。"
 task9_result: "needs-rework"
 last_task9_at: "2026-06-24"
+task6_review_notes_2026_06_24_r2: "第二轮复审：L1 修 2 处（首段伪代码标注、「篡改」改「替换」），文本禁用词/AI套话/翻译腔全部清洁。B 类 5 处（未来发展纯填充[复发]、xHook/Matrix 节过薄、案例1/2/4泛化、缺Perfetto表现节），写入 queue priority:90 送 Task2B。"
 ---
 -
 
@@ -72,6 +73,7 @@ Android Hook 技术主要分为两类：
 Hook 的核心机制是**函数指针替换**：
 
 ```c
+// 示意伪代码，展示概念模型，不可直接运行
 // 原始函数
 void original_function() {
     // 原始实现
@@ -416,4 +418,4 @@ Hook 技术的实际价值不在于"有几种实现方式"，而在于**填补�
 2. **覆盖优先选 inline hook（ShadowHook 路线）**：可以拦截任意地址的任意函数，适合调试和性能分析。
 3. **整机监控走 atrace/Perfetto SDK（系统级插桩）**：Systrace 和 Perfetto 的底层 atrace HAL 本身就是一个稳定的 Hook 层，无需自建 Hook 框架就能覆盖 framework 关键路径。
 
-Hook 不是银弹——每次 Hook 都有额外调用开销，PLT 表项被篡改后某些 linker 优化（如 IFUNC resolver）会绕过 Hook。选择 Hook 方案前先确认：Perfetto SDK 的 track event 或 atrace 插桩能不能覆盖你的观测需求？能就不用 Hook；不能，再从 PLT Hook → inline hook 逐级加码。
+Hook 不是银弹——每次 Hook 都有额外调用开销，PLT 表项被替换后某些 linker 优化（如 IFUNC resolver）会绕过 Hook。选择 Hook 方案前先确认：Perfetto SDK 的 track event 或 atrace 插桩能不能覆盖你的观测需求？能就不用 Hook；不能，再从 PLT Hook → inline hook 逐级加码。

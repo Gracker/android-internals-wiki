@@ -1,26 +1,27 @@
 ---
-
-title: 案例集
-chapter: 11.04
-status: finalized
-pipeline_stage: ready-to-publish
-applicable_versions: ['Android 14.0 (API 34) - Android 17.0 (API 37)']
-tags: [power, battery, energy]
-weight: 4
-source_repos: ['frameworks/base/core/java/android/os/PowerManager.java', 'frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java', 'frameworks/base/core/java/android/os/BatteryStats.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java', 'frameworks/base/services/core/java/com/android/server/am/ActiveServices.java', 'frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java', 'frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java', 'frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java']
-task2b_result: fixed
-task2b_state: fixed
-task9_state: pending
-task9_result: auto-fixed
-task6_result: pass-light-edit
-task6_state: reviewed
-last_task2b_fix_at: 2026-06-18
-last_task6_at: 2026-06-23T20:08:00+08:00
-last_task6_review_at: 2026-06-23T20:08:00+08:00
-last_task9_autofix_at: 2026-06-18
+title: "案例集"
+chapter: "11.04"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+applicable_versions: "['Android 14.0 (API 34) - Android 17.0 (API 37)']"
+tags: "[power, battery, energy]"
+weight: "4"
+source_repos: "['frameworks/base/core/java/android/os/PowerManager.java', 'frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java', 'frameworks/base/core/java/android/os/BatteryStats.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java', 'frameworks/base/services/core/java/com/android/server/am/ActiveServices.java', 'frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java', 'frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java', 'frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java']"
+task2b_result: "fixed"
+task2b_state: "fixed"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+last_task2b_fix_at: "2026-06-18"
+last_task6_at: "2026-06-23T20:08:00+08:00"
+last_task6_review_at: "2026-06-23T20:08:00+08:00"
+last_task9_autofix_at: "2026-06-18"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
+last_deepseek_cn_review_at: 2026-06-24
+last_task9_at: "2026-06-24"
 ---
+-
 
 # 11.4 案例集
 
@@ -72,8 +73,7 @@ public class ForegroundService extends Service {
 
 #### 2.2 Android 17 JobScheduler 五层节流机制源码级剖析
 
-> <!-- AIW-源码调研-2026-06-21 -->
-> **本节补充自 2026-06-21 源码调研**：原 §2.1 仅以「`JobConcurrencyManager` 根据 `maxActiveJobs` 和 `maxRunningJobs` 控制并发」一笔带过节流机制，未覆盖 Android 17 APEX 模块下 JobScheduler 的完整节流路径。Android 17 (API 37) 的节流实际上是**五层叠加**的体系，下面以 `android-17.0.0_r1` 标签下 AOSP 源码为唯一一手资料，逐层给出源码位置、默认值与触发行为。
+> > **本节补充自 2026-06-21 源码调研**：原 §2.1 仅以「`JobConcurrencyManager` 根据 `maxActiveJobs` 和 `maxRunningJobs` 控制并发」一笔带过节流机制，未覆盖 Android 17 APEX 模块下 JobScheduler 的完整节流路径。Android 17 (API 37) 的节流实际上是**五层叠加**的体系，下面以 `android-17.0.0_r1` 标签下 AOSP 源码为唯一一手资料，逐层给出源码位置、默认值与触发行为。
 
 **第一层：注册数节流**（`JobSchedulerService.java:213-215, 1976-1985, 3035`）
 - `DEFAULT_MAX_JOBS_PER_APP = 150`（单 UID 持久化 Job 总数上限，临时 Job 不计）
@@ -879,8 +879,6 @@ public class UnifiedTaskScheduler {
 - **执行效率**：任务执行时间缩短 40%
 - **电量消耗**：后台任务功耗降低 55%
 
-<!-- AIW-源码调研-2026-06-18 -->
-
 ### Adaptive Battery × App Standby 协同机制（5 桶配额 + 三方消费 + 12h 衰减）
 
 #### 1. 写入侧：ML 预测如何落到桶值
@@ -970,7 +968,6 @@ FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减
 
 > 排查后台任务延迟时，先用 `adb shell dumpsys jobscheduler <pkg>` 看到 `whenStandbyDeferred>0`，再 `adb shell am get-standby-bucket <pkg>` 拿当前桶，配合 `dumpsys usagestats` 里的 `adaptivebat=<provider_pkg>` 判断是 ML 预测结果还是时间阈值结果——三种情况的修复路径不同。
 
-<!-- AIW-源码调研-2026-06-20 -->
 ## 11.4.7 JobScheduler 节流机制：三层防线源码级分析
 
 > **来源调研**：[2026-06-20-job-scheduler-throttling-mechanism.md](../DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md)（AIW 每日源码调研）

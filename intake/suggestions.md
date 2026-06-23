@@ -267,3 +267,28 @@
 - **位置**：各库的适用性说明
 - **问题**：未覆盖AGP 8.0+对Transform API的移除对各库的影响
 - **建议**：说明AGP 8.0+中Transform API的替代方案，以及对各APM库的影响
+
+### DeepSeek 中文读者终审建议 — 2026-06-24
+
+**章节**: `src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md`
+
+**问题**: Vulkan vs OpenGL ES 小节内，ANGLE 四级 PSO 缓存和 PipelineManager 三段查找两块源码分析篇幅过长、细节密度过高，打断了对"Vulkan 相比 OpenGL ES 的性能优势"这一主线的阅读。对中文 Android 工程师读者，这两块更像是独立的技术备注而非正文叙述。
+
+**建议**: 
+1. 将 ANGLE 四级 PSO 缓存和 PipelineManager 算法细节移到正文后的独立附录（如 A.3 GPU 异步编译管线深入），正文只保留一段 3–5 句的总结，点明"Android 17 的异步编译链路通过四级缓存 + 三步查找降低了 shader 编译抖动"。
+2. 或者保留在正文但大幅压缩，把四级缓存的详细说明和源码引用改为脚注或侧边栏形式。
+
+**影响**: 当前不改不影响技术正确性，但中文读者阅读体验有明显割裂——从高层对比直接跳进 44 个 dirty bit 的位图跳过算法，缺少承接。
+
+## [Task6 Review · 第二轮] 14.13 Hook 基础设施与性能工具实现原理 — 2026-06-24
+- **类型**：需重写 / 需补充素材
+- **位置**：多处（详见下）
+- **问题**：
+  1. **「未来发展」整节填充**（§Hook 技术的未来发展）：三个子节全是泛化 bullet，无具体技术内容。"Android 12+ 支持"已过时，违反 writing-guide 禁止空谈铁律。**上一轮已提出，Task2B lite 未修复。**
+  2. **xHook 节过薄**（§xHook）：仅虚构架构树 + 5 条 bullet，无 PLT/GOT Hook 原理说明，与 ShadowHook 节严重不对称。
+  3. **Matrix 节过薄**（§Matrix）：仅 4 条 bullet，无实现细节。案例 3 质量高但主体描述太薄。
+  4. **案例 1/2/4 泛化**（§实际应用案例）：伪代码函数签名虚构，案例 4 与案例 5 重复。建议删除 1/2/4，保留高质量案例 3 和 5。
+  5. **缺少 Perfetto/工具表现节**：writing-guide Type A 要求，本章缺失。
+- **建议**：上述 1-4 项为第二轮回炉重点；第 5 项为结构性补充建议。详细 review 日志见 logs/review/2026-06-24-02-review.md
+- **review 日志**：logs/review/2026-06-24-02-review.md
+
