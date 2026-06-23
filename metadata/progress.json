@@ -2759,7 +2759,7 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-14T02:53:35",
+  "last_task2b_at": "2026-06-24T06:51:46+08:00",
   "last_task2b_sections": [
     "14.8"
   ],
@@ -13927,7 +13927,7 @@
     "13.2",
     "8.6"
   ],
-  "last_task2b_section": "14.8",
+  "last_task2b_section": "14.13",
   "last_task2b_file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
   "last_task2b_result": "fixed-returned-to-task6",
   "section_6_1": {
@@ -14903,5 +14903,8 @@
     "task2b_state": "pending",
     "last_task2a_at": "2026-06-24T04:06:00+08:00",
     "note": "7 锚点全部覆盖，3 扩展点全部覆盖"
-  }
+  },
+  "completed_sections": [
+    "14.13"
+  ]
 }
