@@ -63,7 +63,7 @@ task2b_fixed_date: "2026-06-06"
 finalized_date: "2026-06-23"
 finalized_by: "openclaw-task6-auto-promote"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-22
+last_deepseek_cn_review_at: 2026-06-23
 last_task9_audit: 2026-06-22
 last_task9_autofix_at: 2026-06-22
 ---
@@ -105,7 +105,7 @@ last_task9_autofix_at: 2026-06-22
 
 21.4 节已经写了 Baseline Profile 怎么生成、怎么接入、怎么用 Macrobenchmark 验证。本节换一个角度：应用发布后，系统和安装来源怎样利用 profile，以及 App 团队怎样判断某次启动收益是不是来自编译状态变化。
 
-启动优化里最容易混在一起的有三类成本：代码解释执行 / JIT 预热、启动任务本身耗时、类加载和 DEX 布局 I/O。Profile 只影响其中一部分。若主线程卡在数据库升级、网络同步、锁等待或 SDK 初始化，Cloud Profile 和 Baseline Profile 都不会把这些任务变短。
+启动优化里最容易混在一起的有三类成本：代码解释执行与 JIT 预热、启动任务本身耗时、类加载和 DEX 布局 I/O。Profile 只影响其中一部分。若主线程卡在数据库升级、网络同步、锁等待或 SDK 初始化，Cloud Profile 和 Baseline Profile 都不会缩短这些任务。
 
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
 

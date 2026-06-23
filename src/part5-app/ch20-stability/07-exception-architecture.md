@@ -38,15 +38,15 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-16"
+reviewed_date: 2026-06-23
 task6_result: pass-light-edit
-last_task6_at: "2026-06-16T04:10:28+08:00"
-last_task6_review_log: "logs/review/2026-06-16-04-review.md"
-task6_review_notes: "2026-06-16 Task6 第三次复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式 1 次(开篇对比句,在限制内)。"承担"出现 1 次为正常用法。L1/L2 全部通过,无 B 类问题。queue.json 中 20.7 条目状态为 completed,无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,保持 ready-for-review 等待 Task9 确认升级。"
-task9_state: "reviewed"
+last_task6_at: 2026-06-23T08:15:43+08:00
+last_task6_review_log: "logs/review/2026-06-23-08-review.md"
+task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式在限制内。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
+task9_state: pending
 task2b_state: "fixed"
 last_task2b_lite_at: "2026-06-22"
 task2b_result: "fixed-lite"
@@ -54,7 +54,7 @@ last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-16"
+task9_reviewed_date: 2026-06-23
 last_task9_at: "2026-06-23T07:25:29+08:00"
 last_task9_audit: "2026-06-23"
 last_task9_review_log: "logs/deep-review/2026-06-23-07-audit.md"

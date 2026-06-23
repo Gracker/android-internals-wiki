@@ -51,7 +51,7 @@ task2b_state: fixed
 deepseek_cn_review_state: done
 finalized_date: "2026-06-23"
 finalized_by: "openclaw-task6-auto-promote"
-last_deepseek_cn_review_at: 2026-06-05
+last_deepseek_cn_review_at: 2026-06-23
 ---
 
 # 7.18 HWC Overlay Plane 与合成降级排查
@@ -131,7 +131,7 @@ AOSP android-17.0.0_r1 的 `HWC2.cpp` 能看到这组调用的包装层：`Displ
 
 这句话适合做排查入口，不适合作为设备结论。公开 Android 应用 API 没有稳定入口查询 overlay plane 数量；HWC AIDL 的 `getOverlaySupport()` 面向 Composer HAL/系统侧，Android 17 的 `OverlayProperties.aidl` 暴露的是 pixel format、dataspace 组合、mixed color spaces、LUT 等支持项，并不等价于“这台机器有 N 个 plane”。[已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl 与 OverlayProperties.aidl]
 
-做设备基准时，把下面几类变量放在同一张表里，比单看 Layer 数更稳：
+建立设备基线时，把下面几类变量放在同一张表里，比单看 Layer 数更稳：
 
 | 变量 | 现场表现 | 排查价值 |
 |---|---|---|
