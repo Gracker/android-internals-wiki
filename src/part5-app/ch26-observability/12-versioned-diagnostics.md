@@ -2,7 +2,7 @@
 title: "\"Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger\""
 chapter: "\"26.12\""
 section: "\"26.12\""
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: task6_pending
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
@@ -30,7 +30,7 @@ task9_reviewed_date: "\"2026-05-17\""
 task9_reviewed_by: "\"openclaw-task9\""
 last_task9_at: "\"2026-05-17T06:36:36+08:00\""
 last_task9_autofix_at: "\"2026-06-02\""
-task2b_result: fixed
+task2b_result: "fixed-lite"
 task2b_state: fixed
 last_task2b_lite_at: "\"2026-06-03\""
 last_task2b_at: "2026-06-23T14:57:24+08:00"
@@ -168,7 +168,7 @@ Native crash 有两份证据来源：SDK 自有 minidump，以及 Android 12+ `A
 
 ## Android 15：ProfilingManager 的应用驱动采集
 
-Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复现，App 能不能请求系统保存一份 profile”的问题。AOSP `ProfilingManager.java` 注释列出四类 profiling：system trace、Java heap dump、heap profile、stack sampling。公开 API 路径在 Mainline Profiling 模块 `packages/modules/Profiling/framework/java/android/os/`，不是旧的 `frameworks/base/core/java/android/os/` 路径。[已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
+Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复现，App 能不能请求系统保存一份 profile”的问题。AOSP `ProfilingManager.java` 注释列出四类 profiling：system trace、Java heap dump、heap profile、stack sampling。公开 API 路径在 Mainline Profiling 模块 `packages/modules/Profiling/framework/java/android/os/`，不是旧的 `frameworks/base/core/java/android/os/` 路径。[已验证: AOSP android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
 
 | profiling type | 适合场景 | 主要风险 | 结果处理 |
 |---|---|---|---|
