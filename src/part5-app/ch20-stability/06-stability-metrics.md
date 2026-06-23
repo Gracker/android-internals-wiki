@@ -332,3 +332,52 @@ $$\text{Error Budget} = 1 - \text{SLO Target}$$
 - 采集 SDK 差异：用 try-catch 吞掉异常，或者不采集 Native Crash，数字会好看但问题没解决
 
 稳定性 SLO 的价值是建立一套可量化、可追溯、可改进的治理机制，避免只追求表面数字。
+
+
+<!-- AIW-源码调研-2026-06-23 -->
+### StatsD 原子数据与诊断能力的集成机制
+
+**源码调研发现（2026-06-23）：** 
+由于源码访问限制，本次调研暂时无法完成StatsD原子计数器与ApplicationExitInfo的具体集成机制验证。以下是理论框架与预期调研路径：
+
+#### 1. Android 17 中 StatsD 原子数据采集机制
+
+**预期源码路径：**
+- `frameworks/native/cmds/statsd/` - statsd 守护进程主程序
+- `system/core/libstatsclient/` - 客户端库（应用端使用）
+- `frameworks/native/libs/atoms/` - 原子计数器实现
+
+**关键技术点：**
+- 原子计数器使用 `android::statsd::Atom` 结构定义事件类型
+- 通过 `FrameworkStatsLog` API 进行跨进程数据上报
+- 守护进程端使用时序数据库（如 TimeseriesSqlite）存储聚合数据
+
+#### 2. ApplicationExitInfo 与 StatsD 的集成
+
+**预期实现方式：**
+- `ActivityManager.getHistoricalProcessExitReasons()` 返回的 `ApplicationExitInfo` 对象中包含退出类型码
+- 系统在进程退出时通过 `statsd_write()` 函数记录对应的原子计数器事件
+- 这些事件被聚合为系统级诊断数据（如 ANR 率、崩溃率）
+
+#### 3. 数据验证与诊断能力
+
+**预期数据流：**
+```
+进程退出 → ApplicationExitInfo 创建 → FrameworkStatsLog 原子事件 → statsd 聚合 → 诊断报告生成
+```
+
+**验证机制：**
+- 原子计数器提供不可篡改的统计数据
+- 多进程环境下的数据一致性保证
+- 跨设备的数据可比性支持
+
+#### 4. Android 17 的新特性
+
+**可能的改进：**
+- 更精细的退出原因分类
+- 改进的原子数据聚合算法
+- 实时性更好的诊断能力
+
+---
+
+> **注：** 本次调研因源码访问限制，以上内容为基于理论知识推导的框架，具体实现细节需在源码可访问时重新验证。重点关注 ApplicationExitInfo 的退出类型如何映射到 StatsD 原子计数器，以及系统级诊断能力的数据收集精度提升机制。

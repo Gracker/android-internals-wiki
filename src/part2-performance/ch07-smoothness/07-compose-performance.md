@@ -40,6 +40,8 @@ auto_promoted_by: "\"openclaw-task6\""
 auto_promoted_date: "\"2026-05-04\""
 last_task9_audit: "'2026-05-20'"
 last_task9_audit_result: "needs-rework"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-23
 ---
 
 # Jetpack Compose 性能优化
@@ -71,7 +73,7 @@ last_task9_audit_result: "needs-rework"
 
 ## 为什么要关注 Compose 的性能
 
-默认的 system trace 里,看不到单个 composable function。Perfetto 更常见的是 Choreographer、主线程、RenderThread、FrameTimeline 这些线程级或帧级轨道;只有在打开 composition tracing 之后,system trace 才会把 composable functions 写进 trace。把不存在的 "CM / Compose Manager" 当成 Compose 的固定观察入口,会把排查方向直接带偏。
+在默认的 system trace 里看不到单个 composable function。Perfetto 通常只有 Choreographer、主线程、RenderThread、FrameTimeline 这些线程级或帧级轨道；必须显式开启 composition tracing，system trace 才会把 composable function 写进去。很多人习惯性去翻 "CM / Compose Manager" 这类不存在的入口，排查方向一开始就偏了。
 
 Compose 需要单独建立一套分析视角。它的渲染管线、状态管理和重组机制都不同于传统 View。卡顿可能不是布局层级太深,而是某个状态读取范围过大,导致页面在短时间内重复重组。
 
@@ -98,7 +100,6 @@ Compose 需要单独建立一套分析视角。它的渲染管线、状态管理
 ### 重组到底是什么
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/mental-model#recomposition]
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md]
 
 "重组"这个词听起来像是一个复杂的机制,但它的本质非常简单:**重新调用一次 @Composable 函数**。
 
@@ -121,11 +122,10 @@ fun Greeting(msg: String) {
 
 ### 与传统 View 体系的性能对比
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md]
 
-社区里出现过 LazyColumn 和 RecyclerView 的对比测试:同一个列表页面,分别用两套 UI 实现,然后在不同 Android 版本的设备上测量快速滑动时的 FPS。
+社区做过 LazyColumn 和 RecyclerView 的对比测试：同一个列表页面，两套 UI 实现，在不同 Android 版本的设备上测量快速滑动 FPS。
 
-其中一组常被引用的样本里,高端设备(Android 11+)两者都能接近 60fps;中低端的 Android 7.1 设备上,LazyColumn 约 43fps,RecyclerView 约 60fps。同一位测试者在粒子动画场景里又观察到 Compose 和 View 的 Canvas 绘制几乎一致。这类结果更适合当成"特定设备、特定版本、特定页面结构下的观察",不能直接外推成通用结论。真要拿它指导项目,至少要用 Macrobenchmark 的 `FrameTimingMetric` 或 Perfetto,在自己的机型、刷新率、Compose 版本和滚动场景上复测。
+其中一组常被引用的数据是：高端设备（Android 11+）上两者都能接近 60fps；中低端 Android 7.1 设备上，LazyColumn 约 43fps，RecyclerView 约 60fps。同一位测试者在粒子动画场景里又发现 Compose 和 View 的 Canvas 绘制几乎一致。这类数据更适合当成"特定设备、特定版本、特定页面结构下的抽样观察"，不能直接外推成通用结论。真要拿来做项目决策，至少用 Macrobenchmark 的 `FrameTimingMetric` 或 Perfetto，在自己的机型、刷新率、Compose 版本和滚动场景上复测。
 
 这组对比说明的方向没有变:**Compose 本身的渲染性能(Layout + Drawing)已经和传统 View 接近,差距更多出现在 Composition 阶段,也就是重组的开销**。如果我们的 Compose 页面掉帧,大概率就是"Compose 重组了不该重组的东西"。
 
@@ -178,7 +178,6 @@ data class ProductListState(
 )
 ```
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md]
 
 **@Stable**:标记"属性会变,但变化路径对 Compose 可见"的类,常见于 State holder:
 
@@ -215,7 +214,6 @@ val sortedItems = remember(items) { items.sortedBy { it.priority } }
 ### derivedStateOf:只在结果变化时触发重组
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/side-effects#derivedstateof]
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_原创_写给初学者的Jetpack_Compose教程_用derivedStateOf提升性能.md]
 
 `derivedStateOf` 是减少不必要重组的利器。它创建一个"派生状态"--只有当派生表达式的**结果**发生变化时,才会通知 Compose 触发重组。
 
@@ -235,9 +233,9 @@ val shouldShowButton by remember {
 
 **`derivedStateOf` 的滥用陷阱**:`derivedStateOf` 本身有对象创建和依赖追踪的开销。如果派生结果的变化频率和输入状态完全一样(比如 `derivedStateOf { scrollState.value * 2 }`),它并不能减少任何重组,反而增加了额外的计算层。只有当"输入高频变化,输出低频变化"时才有收益--典型的场景是把连续的滚动 offset 映射为离散的布尔值、索引值或分档结果。如果输入输出同频,直接读原始 State 即可。
 
-### SnapshotStateObserver:三阶段失效的底层机制 [自动发现]
+### SnapshotStateObserver：三阶段失效的底层机制
 
-[来源: AOSP androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateObserver.kt]
+
 
 前面讲到"状态读取发生在哪个 Scope,状态更新时哪个 Scope 就发生重组",但没有深入到运行时实现。`SnapshotStateObserver`(SSO)是这一机制的核心组件,理解它有助于精准判断 Compose 性能瓶颈的来源。
 
@@ -302,7 +300,6 @@ SSO 实现了 DerivedState 的智能去重:当依赖状态变更时,SSO 先检�
 
 ### 延迟状态读取:缩小重组范围
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md]
 
 这是 Android 官方推荐的另一项关键优化。核心思想是:**尽可能把状态的读取推迟到使用它的地方**,利用 Kotlin Lambda 的惰性求值(Laziness)来避免在 Composition 阶段产生不必要的订阅关系。
 
@@ -361,7 +358,6 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 ### 陷阱二:LazyColumn 缺少 key 导致整列表重组
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md]
 
 LazyColumn 默认用 item 在列表中的位置(index)作为标识。所以当我们在列表头部插入一个新 item,Compose 会认为所有 item 都变了(因为它们的 index 都变了),导致整列表重组。
 
@@ -511,7 +507,6 @@ fun WebViewScreen(url: String) {
 }
 ```
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_Jetpack_Compose_与_WebView.md]
 
 性能注意事项:`factory` 只在首次创建 View 时调用,`update` 在每次重组时都会调用。如果把初始化逻辑错误地放在了 `update` 里,就会导致每次重组都重新执行--比如每次都重新创建 WebViewClient,这是完全没有必要的开销。
 
@@ -523,7 +518,6 @@ fun WebViewScreen(url: String) {
 
 ## Compose 动画性能
 
-[来源: obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Android_鸿蒙_AI_技术刊_第14期_Compose动画深度解析_KMP多端实践落地_Android_16适配指.md]
 
 前几节讨论了 Compose 的重组机制和常见的性能陷阱,这些优化手段已经能覆盖大部分场景。但还有一个特殊的性能敏感区域:动画。动画的特点是状态变化极为频繁(每秒 60 甚至 120 次),如果每一帧都走完整的 Composition → Layout → Draw 流程,开销会迅速累积。Compose 提供了三种层次的动画 API,性能特征各不相同:
 
@@ -580,13 +574,12 @@ fun WebViewScreen(url: String) {
 - [Compose Compiler Metrics | Android Developers](https://developer.android.com/develop/ui/compose/performance#compose-compiler-metrics) [已验证: 官方文档]
 - [Layout Inspector for Compose | Android Developers](https://developer.android.com/studio/debug/layout-inspector/compose) [已验证: 官方文档]
 - [Compose and View Interoperability | Android Developers](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis) [已验证: 官方文档]
-- [朱涛·沉思录:如何优化 Compose 的性能](https://mp.weixin.qq.com/s?__biz=Mzg5MDY5ODk2MQ==&mid=2247485054) [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md]
-- [提升 Jetpack Compose 性能 | Kotlin 社区](https://mp.weixin.qq.com/s?__biz=MzIyMzg2MzQxNg==&mid=2247486800) [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_提升Jetpack_Compose_性能.md]
-- [Compose 渲染性能到底怎么样 | 程序员江同学](https://mp.weixin.qq.com/s?__biz=MzkzNjMxNzY5NQ==&mid=2247484027) [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Compose_渲染性能到底怎么样.md]
-- [用 derivedStateOf 提升性能 | 郭霖](https://mp.weixin.qq.com/s?__biz=MzA5MzI3NjE2MA==&mid=2650284101) [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_原创_写给初学者的Jetpack_Compose教程_用derivedStateOf提升性能.md]
-- [掌握 Android Compose:从基础到性能优化全面指南](https://mp.weixin.qq.com/s?__biz=MzkyNTUyNDA5Nw==&mid=2247485870) [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_掌握_Android_Compose_从基础到性能优化全面指南.md]
+- [朱涛·沉思录:如何优化 Compose 的性能](https://mp.weixin.qq.com/s?__biz=Mzg5MDY5ODk2MQ==&mid=2247485054)
+- [提升 Jetpack Compose 性能 | Kotlin 社区](https://mp.weixin.qq.com/s?__biz=MzIyMzg2MzQxNg==&mid=2247486800)
+- [Compose 渲染性能到底怎么样 | 程序员江同学](https://mp.weixin.qq.com/s?__biz=MzkzNjMxNzY5NQ==&mid=2247484027)
+- [用 derivedStateOf 提升性能 | 郭霖](https://mp.weixin.qq.com/s?__biz=MzA5MzI3NjE2MA==&mid=2650284101)
+- [掌握 Android Compose:从基础到性能优化全面指南](https://mp.weixin.qq.com/s?__biz=MzkyNTUyNDA5Nw==&mid=2247485870)
 
-<!-- AIW-源码调研-2026-06-02 -->
 **[源码调研补遗 2026-06-02]**：`derivedStateOf` 底层源码已验证。一手来源：
 - `androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt`（`DerivedSnapshotState` 实现、`readableHash` 机制、`policy` 参数）
 - `androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateObserver.kt`（三阶段失效、`withoutReadObservation`）

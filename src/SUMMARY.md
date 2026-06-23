@@ -105,6 +105,7 @@ tags:
   - [4.12 ZRAM 压缩交换与应用重启延迟](part1-fundamentals/ch04-memory/12-zram-compressed-swap-relaunch.md)
   - [4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能](part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md)
   - [4.14 ART GC Region 碎片化与 Compaction 策略](part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md)
+  - [4.15 Android 17 PSI/LowMemDetector 与 lmkd 内存压力检测架构演进](part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
@@ -245,6 +246,7 @@ tags:
   - [12.5 ConnectivityService 与网络状态监听性能](part2-performance/ch12-apk-network/05-connectivity-service-network-callback.md)
   - [12.6 netd 与 DnsResolver：DNS 解析性能和故障诊断](part2-performance/ch12-apk-network/06-netd-dnsresolver-network-diagnostics.md)
   - [12.7 Privacy Sandbox API 性能影响：Topics、Protected Audiences 与 Attribution Reporting](part2-performance/ch12-apk-network/07-privacy-sandbox-performance.md)
+  - [12.8 Android 17 NetworkAgent 生命周期与 NetworkScorecard 动态评分机制](part2-performance/ch12-apk-network/08-networkagent-lifecycle-scoring.md)
 
 ---
 

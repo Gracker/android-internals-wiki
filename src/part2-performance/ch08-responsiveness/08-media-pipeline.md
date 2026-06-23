@@ -67,6 +67,8 @@ last_task2b_lite_at: 2026-06-05T13:35
 last_task2b_by: openclaw-task2b-main
 task2b_notes: "2026-06-06 Task2B main 回炉 #3：P0 Media3 ABR 源码方法修正（AdaptiveTrackSelection+DefaultBandwidthMeter 实际API），删除2026-05-12/21旧附录（含不可溯源伪代码和已被后文否定结论），清理CCodec::initialize伪代码和ABR错误调用链，P1 16KB页面声明降级为待验证。"
 last_task9_autofix_at: 2026-06-06
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-23
 ---
 
 ----
@@ -102,7 +104,7 @@ last_task9_autofix_at: 2026-06-06
 
 这类问题的共同点是：Android 多媒体管线横跨 App 框架、硬件编解码器（VPU/DSP）、AudioFlinger、SurfaceFlinger 以及内核驱动，路径很长，参与组件也多。只要其中任何一个环节处理不及时，用户就会直接感知到，比如视频掉帧、音频爆音，或者后台播放耗电升高。
 
-理解这条管线的架构和性能特征，能把问题定位到解码、渲染、合成、音频 buffer 供给或 CPU 调度这些环节，建立端到端的排查路径。
+理解这条管线的架构和性能特征之后，问题落在解码、渲染、合成、音频 buffer 供给还是 CPU 调度，就不再靠猜——每个环节都有对应的排查入口。
 
 多媒体相关的信息在 Perfetto 中分布在多个 track 上——MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动、Surface 渲染的帧时间线，后续章节会逐项分析怎么对应到具体问题。
 
@@ -114,7 +116,7 @@ Android 的多媒体处理围绕 MediaCodec 这个核心 API 展开。从数据�
 
 [已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec]
 
-这类输出路径都尽量避免 CPU 逐像素拷贝。MediaCodec 解码后的帧通常放在由 Gralloc 分配的 `GraphicBuffer` / DMA-BUF 中，通过 `BufferQueue` 或 sideband handle 交给后续消费者。`Surface` 只是统一的配置入口，具体消费者会因为 `SurfaceView`、`TextureView` 和 tunneled mode 分成三条路径。
+这三条输出路径都尽可能绕开 CPU，不让像素数据在 App 层再做一次搬运。MediaCodec 解码后的帧通常放在 Gralloc 分配的 `GraphicBuffer` / DMA-BUF 中，通过 `BufferQueue` 或 sideband handle 交给后续消费者。`Surface` 只是统一的配置入口，具体消费者会因为 `SurfaceView`、`TextureView` 和 tunneled mode 分成三条路径。
 
 | 输出方式 | producer → consumer | App / GPU 参与方式 | Overlay / 合成条件 | 排查观察点 |
 |------|------|------|------|------|
@@ -179,7 +181,7 @@ codec.setCallback(new MediaCodec.Callback() {
 
 视频播放需要音画同步。Android 的方案是：AudioTrack 持续写入音频 PCM 数据，系统通过 `AudioTimestamp` 提供"当前正在播放的音频帧对应的时间戳"。视频端用这个时间戳来判断当前应该显示哪一帧，从而保持同步。
 
-具体来说，如果视频帧的 presentation timestamp（PTS）早于 AudioTimestamp，说明视频落后了，需要追赶（可能跳过一些帧）；如果视频帧的 PTS 远远领先于 AudioTimestamp，说明视频太快了，需要等待。这个同步逻辑通常由播放器框架（如 ExoPlayer）内部处理。
+具体来说，如果视频帧的 presentation timestamp（PTS）早于 AudioTimestamp，说明视频落后了，需要追赶（可能跳过一些帧）；如果视频帧的 PTS 远远领先于 AudioTimestamp，说明视频太快了，需要等待。这套同步逻辑通常封装在播放器框架内部，比如 ExoPlayer，App 层一般不需要自己维护。
 
 ## MediaCodec 与 Surface 的协同
 
@@ -294,7 +296,6 @@ Media3 近几个版本对播放性能的改动分布在不同 release 里，不�
 Player 池化与 `prepare()` 预热仍然是短视频 Feed 常用的工程模式，但它们属于应用层策略，不应写成“Media3 1.10 新增能力”。Media3 1.6.0 之后，官方 API 让 renderer 级预热更容易实施；池化规模、预热窗口和 Compose 状态读取策略仍要按业务自己控制。
 
 [已验证: AndroidX Media3 release notes 1.6.0 / 1.8.0 / 1.9.0 / 1.10.0, developer.android.com/jetpack/androidx/releases/media3]
-[来源: intake/research-feeds/2026-04-03-19-ch07-media3-10-dynamic-scheduling-compose.md]
 
 低内存设备上需要注意 Player 实例数量。每个 ExoPlayer 实例至少占用 20-30MB 内存（解码器 buffer + 缓冲数据），同时持有 3-4 个实例可能触发 LMK。建议通过 `ActivityManager.isLowRamDevice` 动态调整池化大小。
 
@@ -532,9 +533,7 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 
 
 
-<!-- AIW-源码调研-2026-05-24 -->
-
-## 源码调研补充：Codec2 / Tunneled Playback / Media3 ABR 深度验证（2026-05-24）
+## Codec2 / Tunneled Playback / Media3 ABR 深度验证
 
 ### OMX → Codec2 演进路径源码锚点
 
@@ -644,5 +643,3 @@ public Factory(
 | `frameworks/av/media/libstagefright/omx/OMXNodeInstance.cpp` | 一手（AOSP android-16.0.0_r1） |
 | `androidx/media/blob/release/libraries/exoplayer/.../AdaptiveTrackSelection.java` / `DefaultBandwidthMeter.java` | 一手（GitHub androidx/media release） |
 | `hardware/interfaces/audio/common/7.0/types.hal` | 一手（AOSP android-16.0.0_r1） |
-
-<!-- AIW-源码调研-2026-05-24 -->

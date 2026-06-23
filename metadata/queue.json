@@ -8,7 +8,7 @@
       "added_by": "task9-deep-tech-review",
       "completed_at": "2026-06-23T14:58:21+08:00",
       "completed_by": "task2b-main",
-      "completed_reason": "P0 AIDL路径: false positive — Camera AIDL paths verified correct (hardware/interfaces/camera/device/aidl/...)。P1 ZSL: 加强HAL能力前置链（PRIVATE_REPROCESSING四步依赖）。P1 MemoryLimiter: app内存管理，已在§26.12覆盖。",
+      "completed_reason": "P0 ProfilingManager路径: false positive — 文件已正确使用 packages/modules/Profiling/... 路径。P1 MemoryLimiter: 已加入正文（REASON_OTHER+MemoryLimiter描述、版本边界）。P1 原理链: 已加强ApplicationExitInfo与ProfilingManager证据互补规则。",
       "reason": "[Deep Tech Review] Camera HAL buffer management 与 ZSL 机制存在原理断裂，以及源码引用路径错误",
       "material_paths": [
         "logs/deep-review/2026-06-23-14-deep-review.md"
@@ -33,12 +33,7 @@
           "suggestion": "在版本演进表中增加 MemoryLimiter 相关说明，补充 Android 17 对高 RAM 设备的内存限制变化"
         }
       ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-23T14:20:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-06-23T14:58:21+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "P0 ProfilingManager路径: false positive — 文件已正确使用 packages/modules/Profiling/... 路径。P1 MemoryLimiter: 已加入正文（REASON_OTHER+MemoryLimiter描述、版本边界）。P1 原理链: 已加强ApplicationExitInfo与ProfilingManager证据互补规则。"
+      "added_at": "2026-06-23T14:20:00+08:00"
     },
     {
       "section": "26.12",
@@ -48,6 +43,22 @@
       "completed_by": "task2b-lite",
       "completed_at": "2026-06-23T15:40:00+08:00",
       "completed_reason": "fixed-lite: 修正源码路径引用、补全 ApplicationExitInfo 与 ProfilingManager 证据互补规则、更新版本边界"
+    },
+    {
+      "section": "4.15",
+      "section_title": "Android 17 PSI/LowMemDetector 与 lmkd 内存压力检测架构演进",
+      "priority": 80,
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_date": "2026-06-23"
+    },
+    {
+      "section": "12.8",
+      "section_title": "Android 17 NetworkAgent 生命周期与 NetworkScorecard 动态评分机制",
+      "priority": 80,
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_date": "2026-06-23"
     }
   ],
   "in_progress": [],
@@ -151,14 +162,14 @@
         {
           "type": "P0 源码错误",
           "location": "源码级深度补充 / DropBoxManagerService 的 `.tmp` 状态机（约 L344-L375）",
-          "detail": "章节称 createEntry(temp, tag, flags) "直接注册到 mAllFiles(不 rename)"、tmp 写完后直接作为 entry。AOSP android-17.0.0_r1 中 createEntry() 会调用 new EntryFile(temp, mDropBoxDir, tag, t, flags, mBlockSize)，EntryFile(File temp, ...) 内部执行 temp.renameTo(final file) 后才 enrollEntry；启动 init() 只清理未提交的残留 .tmp。当前正文把 DropBox 的提交状态机讲反。",
-          "suggestion": "将 DropBox 描述改为".tmp 写入后通过 EntryFile.renameTo() 提交到最终文件名，再 enroll 到内存索引；残留 .tmp 只表示提交前中断，init() 会删除"。保留"写入路径无显式 fsync"的边界，但移除"不 rename / .tmp 直接作为 entry / .tmp 可作为 completed entry"的结论。"
+          "detail": "章节称 createEntry(temp, tag, flags) “直接注册到 mAllFiles(不 rename)“、tmp 写完后直接作为 entry。AOSP android-17.0.0_r1 中 createEntry() 会调用 new EntryFile(temp, mDropBoxDir, tag, t, flags, mBlockSize)，EntryFile(File temp, ...) 内部执行 temp.renameTo(final file) 后才 enrollEntry；启动 init() 只清理未提交的残留 .tmp。当前正文把 DropBox 的提交状态机讲反。",
+          "suggestion": "将 DropBox 描述改为“.tmp 写入后通过 EntryFile.renameTo() 提交到最终文件名，再 enroll 到内存索引；残留 .tmp 只表示提交前中断，init() 会删除“。保留“写入路径无显式 fsync“的边界，但移除“不 rename / .tmp 直接作为 entry / .tmp 可作为 completed entry“的结论。"
         },
         {
           "type": "P0 源码错误",
           "location": "AOSP AtomicFile 的 fsync + rename 实现（约 L336）",
-          "detail": "正文后半段称 AtomicFile.failWrite() "只删除 .new 不做 fsync"，与同章 L148 和 AOSP 不一致。android-17.0.0_r1 AtomicFile.failWrite(FileOutputStream) 先调用 FileUtils.sync(str)，再 close，最后 delete .new。",
-          "suggestion": "把 failWrite() 行为修正为"sync + close + delete .new"，并保留父目录未 fsync 的限制；同时消除前后段落自相矛盾。"
+          "detail": "正文后半段称 AtomicFile.failWrite() “只删除 .new 不做 fsync“，与同章 L148 和 AOSP 不一致。android-17.0.0_r1 AtomicFile.failWrite(FileOutputStream) 先调用 FileUtils.sync(str)，再 close，最后 delete .new。",
+          "suggestion": "把 failWrite() 行为修正为“sync + close + delete .new“，并保留父目录未 fsync 的限制；同时消除前后段落自相矛盾。"
         },
         {
           "type": "P0 API 签名错误",
@@ -169,8 +180,8 @@
         {
           "type": "P1 版本差异",
           "location": "frontmatter 与源码锚点（L8-L10, L67, L318, 多处 [已验证]）",
-          "detail": "本轮 preflight 后复核到 android-17.0.0_r1 已在 android.googlesource 公开；章节仍写"Android 17 tag not public"，并在正文一处直接断言 android-17/API37 范围接口未变，但大多数锚点仍停在 android-16.0.0_r4 或 android-14.0.0_r30。",
-          "suggestion": "Task2B 回炉时统一用 android-17.0.0_r1 复核 AtomicFile、DropBoxManagerService、ApplicationExitInfo、ActivityManager、WebViewClient/WebViewRenderProcessClient、AppExitInfoTracker、tombstoned 等锚点；若决定章节继续只覆盖 Android 16，应删除"Android 17 tag not public / API37 未变"这类已过期表述。"
+          "detail": "本轮 preflight 后复核到 android-17.0.0_r1 已在 android.googlesource 公开；章节仍写“Android 17 tag not public“，并在正文一处直接断言 android-17/API37 范围接口未变，但大多数锚点仍停在 android-16.0.0_r4 或 android-14.0.0_r30。",
+          "suggestion": "Task2B 回炉时统一用 android-17.0.0_r1 复核 AtomicFile、DropBoxManagerService、ApplicationExitInfo、ActivityManager、WebViewClient/WebViewRenderProcessClient、AppExitInfoTracker、tombstoned 等锚点；若决定章节继续只覆盖 Android 16，应删除“Android 17 tag not public / API37 未变“这类已过期表述。"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -258,7 +269,7 @@
         {
           "type": "P1 版本差异",
           "location": "frontmatter / §章节概述 / §核心发现 / §3 / §4 / §7 / 结尾（约 L9-L10、L53-L62、L331-L342、L411-L462）",
-          "detail": "正文仍声明 android-17.0.0_r1 未公开、Android 17 结论只能由 android-16.0.0_r3 推断。2026-06-22 本轮用 AOSP git ls-remote 复核，frameworks/native 与 external/perfetto 均已有 refs/tags/android-17.0.0_r1；章节的 Android 17 边界已从"待公开 tag 推断"变成"可用 Android 17 tag 直接验证"。",
+          "detail": "正文仍声明 android-17.0.0_r1 未公开、Android 17 结论只能由 android-16.0.0_r3 推断。2026-06-22 本轮用 AOSP git ls-remote 复核，frameworks/native 与 external/perfetto 均已有 refs/tags/android-17.0.0_r1；章节的 Android 17 边界已从“待公开 tag 推断“变成“可用 Android 17 tag 直接验证“。",
           "suggestion": "Task2B 需将源码锚点从 android-16.0.0_r3/lineage-18.1 重基到 android-17.0.0_r1，更新 last_verified_against、边界声明、核心发现、版本表、二次验证计划和参考资料；不引入 Android 18/API 38+ 内容。"
         },
         {
@@ -270,8 +281,8 @@
         {
           "type": "P0 源码错误",
           "location": "§2.1 linux.perf init rc 与生命周期 / §6.2 启动建议（约 L216-L231、L369-L374）",
-          "detail": "正文的 traced_perf.rc 片段来自旧锚点：group 只写 readproc，仍有 writepid /dev/cpuset/foreground/tasks，并把生命周期简化为"由上游 service 显式触发"。android-16.0.0_r3 与 android-17.0.0_r1 external/perfetto/traced_perf.rc 实际为 group nobody readproc readtracefs、task_profiles ProcessCapacityHigh、shared_kallsyms，并通过 persist.traced_perf.enable、sys.init.perf_lsm_hooks、traced.lazy.traced_perf 属性控制启停。",
-          "suggestion": "用 android-17.0.0_r1 traced_perf.rc 更新 §2.1；把 §6.2 的"ctl.start traced_perf 确保启动"改为符合 lazy traced_perf/Perfetto session 触发与 perf_event_open LSM hooks 的描述。"
+          "detail": "正文的 traced_perf.rc 片段来自旧锚点：group 只写 readproc，仍有 writepid /dev/cpuset/foreground/tasks，并把生命周期简化为“由上游 service 显式触发“。android-16.0.0_r3 与 android-17.0.0_r1 external/perfetto/traced_perf.rc 实际为 group nobody readproc readtracefs、task_profiles ProcessCapacityHigh、shared_kallsyms，并通过 persist.traced_perf.enable、sys.init.perf_lsm_hooks、traced.lazy.traced_perf 属性控制启停。",
+          "suggestion": "用 android-17.0.0_r1 traced_perf.rc 更新 §2.1；把 §6.2 的“ctl.start traced_perf 确保启动“改为符合 lazy traced_perf/Perfetto session 触发与 perf_event_open LSM hooks 的描述。"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -306,8 +317,8 @@
         {
           "type": "P1 版本差异/证据锚点",
           "location": "§4 版本演进与兼容性 / §7 二次验证计划（约 L357-L462）",
-          "detail": "章节 frontmatter 已写 android-17.0.0_r1 已验证，但版本表仍使用 lineage-18.1、lineage-22.2 等旁路锚点，并保留"Android 17 / API 37 公开 tag 发布后，需执行以下验证"的计划式表述。android-17.0.0_r1 已公开后，这些内容会削弱版本边界可信度。",
-          "suggestion": "将 §4 的证据列统一改成 AOSP tags（android-12.0.0_r1、android-16.0.0_r3、android-17.0.0_r1）或官方 Perfetto 文档；§7 改成"复核命令/已执行的回归检查"，不要继续写成待公开 tag 后的计划。"
+          "detail": "章节 frontmatter 已写 android-17.0.0_r1 已验证，但版本表仍使用 lineage-18.1、lineage-22.2 等旁路锚点，并保留“Android 17 / API 37 公开 tag 发布后，需执行以下验证“的计划式表述。android-17.0.0_r1 已公开后，这些内容会削弱版本边界可信度。",
+          "suggestion": "将 §4 的证据列统一改成 AOSP tags（android-12.0.0_r1、android-16.0.0_r3、android-17.0.0_r1）或官方 Perfetto 文档；§7 改成“复核命令/已执行的回归检查“，不要继续写成待公开 tag 后的计划。"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -379,7 +390,7 @@
         {
           "type": "重要缺失",
           "location": "ANOMALY 详细规则描述",
-          "detail": "文中称 ANOMALY "产物类型和 tag 由 anomaly-detector 规则决定"，但未明确说明具体哪些异常类型会触发 ANOMALY，哪些不会",
+          "detail": "文中称 ANOMALY “产物类型和 tag 由 anomaly-detector 规则决定“，但未明确说明具体哪些异常类型会触发 ANOMALY，哪些不会",
           "suggestion": "补充 ANOMALY 完整触发规则清单，明确列出具体的异常类型"
         },
         {
