@@ -1,6 +1,6 @@
 ---
 
-status: ready-for-review
+status: finalized
 section: '2.10'
 title: GPU 渲染深入
 chapter: '2.10'
@@ -37,19 +37,19 @@ related_chapters:
 - '14.3'
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-06-03"
+reviewed_date: "2026-06-23"
 reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 review_round: 11
 last_polish_notes: 第2轮出版级精修:修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达;发现L3/L4问题需Task2B加工
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-task9_state: pending
+task9_state: reviewed
 task2b_state: "fixed"
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_task2b_at: "2026-06-02T22:50:00+08:00"
 last_task2b_lite_at: "2026-06-01"
 review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处;参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据,已写入 queue。 | 2026-06-02 task6 review: pass-light-edit。L1/L2 小修 2 处;AOSP mainline 锚点改为 Android 17 待验证边界,删除填充副词。"
@@ -59,7 +59,7 @@ task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-03T01:26:00+08:00"
 rework_notes_2: "Task 2B 回炉修复: 参考资料后源码调研材料重构为附录(A.1 GPU 内存管理, A.2 GPU 性能排查流程), 保持正文收束结构"
-last_task6_at: "2026-06-03T04:08:00+08:00"
+last_task6_at: "2026-06-23T22:20:10+08:00"
 last_task6_audit: "2026-06-21"
 task6_review_notes: "2026-06-03 Task6 04: pass-light-edit。L1/L2 小修 4 处；未发现新增回炉项，进入 Task9 待审。"
 task9_review_notes: "2026-06-03 Task9 deep review: auto-fixed。AUTO-FIX: 修正 graphics Java 源码目录、BufferQueue/GraphicBuffer/HWC2 路径与 BUFFER_RELEASE_CHANNEL 版本边界；P0 1 / P1 0 / P2 0，回到 Task6 复审。"

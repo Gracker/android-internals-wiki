@@ -3125,7 +3125,7 @@
     "2.10": {
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
-      "last_task6_at": "2026-06-03T04:08:00+08:00",
+      "last_task6_at": "2026-06-23T22:20:10+08:00",
       "task6_result": "pass-light-edit",
       "queue_priority": 90,
       "task9_state": "pending",
