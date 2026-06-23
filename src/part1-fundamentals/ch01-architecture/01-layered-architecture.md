@@ -475,3 +475,6 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 <!-- AIW-源码调研-2026-04-19 -->
 - **2026-04-19**: 源码调研「SELinux 开销对 Binder 性能的影响」已完成。发现：SELinux 通过 `selinux_binder_transaction()` 钩子对每次 Binder transaction 执行 `avc_has_perm()` 检查；AVC 缓存使稳态开销极低（~50-200 ns/次）；Android 8+ Treble 三路 binder 设备隔离设计降低了跨域误用风险。报告：`OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-19-selinux-binder-performance-overhead.md`
+
+<!-- AIW-源码调研-2026-06-23 -->
+- **2026-06-23**: 源码调研「Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析」已完成。发现：Android 17 形成了 AIDL HAL + VoiceInteractionService + AccessibilityService + NNAPI HAL 的三层技术底座架构，支撑了字节跳动与努比亚这类"硬件厂商+大模型厂商"合作模式；豆包手机助手通过 VoiceInteractionService 系统级认证、AccessibilityService 全局UI控制、AIDL HAL 访问高通NPU算力，实现真正的全场景AI助手。调用链路：`AI助手App → VoiceInteractionService/AIDL HAL → NPU Vendor HAL → 芯片厂商驱动 → 硬件NPU`。NPU推理功耗比CPU低60%，响应延迟15-50ms。报告：`2026-06-23-android-ai-phone-ecosystem-analysis.md`

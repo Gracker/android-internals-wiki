@@ -195,6 +195,156 @@ Perfetto trace 中不会直接标注"AICore 正在为谁推理"。排查多 App 
 
 默认 system trace 能稳定看到线程调度、CPU/GPU frequency、内存水位和 thermal 变化。模型内部推理阶段的细节（tokenization、权重加载、NPU 执行）在 AICore 进程内部，App 侧无法通过 Perfetto 直接观测。
 
+
+
+<!-- AIW-源码调研-2026-06-23 增补 -->
+## 附录：ML Kit GenAI API 状态机与 LiteRT-LM 集成规范（2026-06-23 源码增补）
+
+本章上述内容基于 Google 官方文档对 AICore 进程模型、IPC 管线与资源争抢的概览式描述。本节补全**生产级集成代码**层面的具体 API surface 与状态机，来自 `github.com/dev-vikas-soni/android-ai-agents`、`github.com/blundell/AICoreMinSdkTemplate`、`github.com/google-ai-edge/LiteRT-LM` 三个一手开源仓库。
+
+### A.1 ML Kit GenAI API 状态机（`com.google.mlkit.genai.prompt`）
+
+`Generation` 客户端在生成内容前需走完以下状态机，**每次 agent 任务启动时** 都必须显式重走：
+
+```kotlin
+import com.google.mlkit.genai.prompt.Generation
+import com.google.mlkit.genai.prompt.GenerationConfig
+import com.google.mlkit.genai.prompt.ModelConfig
+
+val mConfig = ModelConfig.Builder().apply {
+    preference = 1   // 1 = FAST, 0 = QUALITY
+    releaseStage = 1 // 1 = PREVIEW
+}.build()
+val client = Generation.getClient(GenerationConfig.Builder().apply {
+    modelConfig = mConfig
+}.build())
+
+val status = client.checkStatus()
+// 1 = AVAILABLE → 直接 generateContent
+// 2 = DOWNLOADABLE → client.download().collect { progress } 等待
+// 3 = DOWNLOADING → 排队等待
+// 0 = NOT_SUPPORTED → fallback（云端 / 简化模型）
+
+client.warmup()  // 显式预热，绑定服务
+val response = client.generateContent(prompt)
+response.candidates.firstOrNull()?.text
+```
+
+[一手来源: github.com/dev-vikas-soni/android-ai-agents/ai-runtime/.../RealGeminiNanoClient.kt]
+
+「Feature 636」是 Android 系统 feature flag，控制 Samsung 设备上 Gemini Nano 启用。`checkStatus()` 返回 0 时，错误信息常含 "606"/"636"，需提示用户在「设置 → 高级功能 → 高级智能」中开启。
+
+`preference=1 (FAST)` vs `0 (QUALITY)` 是 NPU 路径选择开关：**长时程 agent 推理应固定使用 FAST**，能效比与散热更优；`releaseStage=1 (PREVIEW)` 在 Gemini Nano 正式 GA 前必须保留。
+
+### A.2 AI Edge SDK 低阶 Kotlin DSL（`com.google.ai.edge.aicore`）
+
+```kotlin
+import com.google.ai.edge.aicore.GenerativeModel
+import com.google.ai.edge.aicore.generationConfig
+
+@ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
+fun isSupported() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
+val gm = GenerativeModel(
+    generationConfig = generationConfig {
+        context = application
+        temperature = 0.2f
+        topK = 16
+        maxOutputTokens = 256
+    }
+)
+```
+
+[一手来源: github.com/blundell/AICoreMinSdkTemplate/gemini/.../SecondViewModel.kt]
+
+`com.google.ai.edge.aicore` 是**无状态 model 构造**（每次 `GenerativeModel(...)` 重建实例），适合轻量级一次性调用；ML Kit GenAI 是**有状态 client**（`Generation.getClient()` 复用），适合 agent 类持续会话。
+
+### A.3 LiteRT-LM Android 集成规范（开源引擎路径）
+
+对于希望绕开 AICore、直接在 App 进程内跑 LLM 的场景，Google 开源的 `LiteRT-LM` 提供了完整的 Android 集成规范（仓库 `google-ai-edge/LiteRT-LM` 下的 `agents/skills/create-litert-lm-android-demo-app/references/inference_implementation.md`）。
+
+**A.3.1 AndroidManifest 强制声明**（防 Adreno GPU 启动 crash）：
+
+```xml
+<uses-native-library android:name="libOpenCL.so" android:required="false"/>
+```
+
+**A.3.2 Cascading Fallback 三级回退**（Google Agent Skill 明文要求）：
+
+```kotlin
+// 所有 native init 都必须在 withContext(Dispatchers.IO) 内
+withContext(Dispatchers.IO) {
+    val engine = try {
+        // Step 1: 多模态优先 GPU（或 CPU）
+        val cfg = EngineConfig(
+            modelPath = path,
+            backend = Backend.GPU(),
+            visionBackend = Backend.GPU(),
+            audioBackend = Backend.CPU()  // 音频多模态强制 CPU
+        )
+        Engine.create(cfg).also { it.initialize() }
+    } catch (e: Throwable) {
+        try {
+            // Step 2: 多模态全 CPU 回退
+            Engine.create(EngineConfig(
+                modelPath = path,
+                backend = Backend.CPU(),
+                visionBackend = Backend.CPU(),
+                audioBackend = Backend.CPU()
+            )).also { it.initialize() }
+        } catch (e: Throwable) {
+            // Step 3: 纯文本 CPU 兜底（省略 vision/audio backend）
+            Engine.create(EngineConfig(
+                modelPath = path,
+                backend = Backend.CPU()
+            )).also { it.initialize() }
+        }
+    }
+    val conversation = engine.createConversation()
+    conversation.sendMessageAsync(prompt)  // sendMessageAsync 内部托管线程
+}
+```
+
+关键约定：
+- `EngineConfig` / `Backend` 是 data class，**必须用命名参数构造**，禁止 `.builder()` 模式
+- `Backend.CPU` / `Backend.GPU` 必须显式加括号 `Backend.CPU()`、`Backend.GPU()`
+- 构造后**必须显式调 `engine.initialize()`**，否则后续 `createConversation()` 失败
+- `sendMessageAsync` 是 high-level JNI 消息 API，**不需要** 外部包 `Dispatchers.IO`
+
+### A.4 AppFunctions：Android 16+ 的 on-device MCP 协议
+
+AppFunctions 是 Android 16+ 引入的平台级 API + Jetpack 库，让 App 暴露自身能力为「可被 agent 调用的工具」，对应 server-side 的 Model Context Protocol（MCP）。
+
+```kotlin
+@AppFunction(isDescribedByKDoc = true)
+suspend fun createTask(
+    context: AppFunctionContext,
+    title: String,
+    dueDateTime: LocalDateTime? = null,
+    location: String? = null
+): Task
+```
+
+[一手来源: developer.android.com/ai/appfunctions]
+
+**关键事实**：
+- AppFunctions **从 Android 16 起可用**，在 Android 17 上是 GA 能力
+- 调用方需 `EXECUTE_APP_FUNCTIONS` 权限，可由 agents / apps / Gemini 等助手持有
+- 截至 2026-05，AppFunctions ↔ Gemini 集成仍处 private preview，但 App 可开始准备注册
+- 配套有 `AppFunctions skill` 仓库，可让 agent 自动分析 App 工作流并生成 KDoc + Kotlin 代码 + ADB 调试命令
+
+**对长时程 agent 的工程含义**：AppFunctions 是 on-device MCP 协议，让 agent 能跨 App 调度多端能力，背后由 AICore 提供 NPU 推理。Sakana Marlin 这类 8h 连续推理 agent 跨多个 App 协作时，AppFunctions 是公开的协议基础。
+
+### A.5 章节关联更新
+
+本节增补的源码细节与本章其他章节的关联：
+- **§5.14**（ML Runtime 与 NPU 访问边界）：LiteRT-LM 是 AOSP NNAPI HAL 之外的 App 进程内推理路径，与 AICore 互补
+- **§5.19**（ADPF 与端侧 AI 调度）：`setPreferPowerEfficiency(true)` 应在 `checkStatus` 通过后、`generateContent` 前调用
+- **§1.4**（Binder IPC）：ML Kit GenAI 每次 `checkStatus` / `generateContent` 都是独立 Binder 事务
+- **§5.13**（移动端 LLM 推理 DVFS 与能效）：FAST 路径 (`preference=1`) 是能效优先的开关
+
+[调研报告: 2026-06-23-android17-ondevice-llm-inference-architecture.md]
+
 ## 与其他章节的关联
 
 - **§5.11 端侧 AI 推理性能**：NNAPI、LiteRT、模型优化技术的基础设施
@@ -204,3 +354,12 @@ Perfetto trace 中不会直接标注"AICore 正在为谁推理"。排查多 App 
 - **§4.4 Low Memory Killer**：推理内存压力与 LMK 的交互
 - **§1.4 Binder IPC**：Binder 事务的基础机制
 - **§2.5 MainThread 与 RenderThread**：推理与渲染的资源争抢
+
+## 参考资料
+
+### Android 17 端侧 LLM 推理架构：AICore、ML Kit GenAI、AppFunctions 与 LiteRT-LM
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md
+- 类型：DeepResearch 调研结果
+- 摘要：系统梳理了 Android 17 端侧 LLM 三层 SDK（ML Kit GenAI 高阶 Builder、AI Edge SDK 低阶 Kotlin DSL、LiteRT-LM 开源引擎）及 AppFunctions 平台 API。涵盖 Generation.checkStatus() 四态状态机（AVAILABLE/DOWNLOADABLE/DOWNLOADING/NOT_SUPPORTED）、warmup() 预热、preference FAST/QUALITY 的 NPU 路径选择，以及 LiteRT-LM「GPU→多模态 CPU→纯文本 CPU」三级 cascading fallback 规范。
+- 注入时间：2026-06-23
+- 价值：补完 §5.20 缺失的 AICore 调用链源码级细节和 AppFunctions 跨 App Agent 协议基础

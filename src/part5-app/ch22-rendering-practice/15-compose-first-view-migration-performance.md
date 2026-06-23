@@ -61,6 +61,8 @@ task9_result: pass-tech-review
 task9_review_notes: "2026-05-21 task9 deep-review: 无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: 2026-06-06
 last_task6_audit: 2026-06-15
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-23
 ---
 
 # 22.15 Compose First 与 View/Compose 混合迁移性能边界
@@ -99,11 +101,9 @@ last_task6_audit: 2026-06-15
 
 <!-- outline-end -->
 
-Google 在 2026 年把 Android UI 指南、示例、工具和新增 API 的重心转向 Compose，并把这个方向命名为 Compose First。本节把这条产品路线转成工程迁移规则：新增 UI 默认选 Compose；存量 View 页面按触碰频率、性能敏感度和维护成本分批处理，不把一次性重写当成目标。[已验证: Android Developers Blog, 2026-05-21][已验证: 官方文档, developer.android.com/develop/ui/compose/first]
+Google 在 2026 年将 Android UI 指南、示例、工具和新增 API 的重心全面转向 Compose，官方把这个方向称为 Compose First。对团队来说，这条产品路线要转成可执行的工程规则：新增 UI 默认选 Compose；存量 View 页面按触碰频率、性能敏感度和维护成本分批处理——不要一上来就计划全量重写。[已验证: Android Developers Blog, 2026-05-21][已验证: 官方文档, developer.android.com/develop/ui/compose/first]
 
-这类迁移不能只看“能不能改成 Compose”。渲染性能章节已经覆盖 View 管线、RecyclerView 实战和 Compose 性能细节，详见 22.2、22.3 和 18.2 节。本节只处理混合迁移阶段的取舍：什么时候插入 `ComposeView`，什么时候用 `AndroidView` 保留遗留组件，什么时候必须先补性能基线。
-
-[结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md][结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
+这类迁移不能只看“能不能改成 Compose”。View 管线、RecyclerView 实战和 Compose 性能细节在 22.2、22.3 和 18.2 节已经展开过。本节只聚焦混合迁移阶段的取舍：什么时候插入 `ComposeView`，什么时候用 `AndroidView` 保留遗留组件，什么时候必须先补性能基线——这些判断比“能不能改”更影响上线质量。
 
 ## Compose First 改变新增 UI 能力入口
 
@@ -149,9 +149,7 @@ Compose First 不等于 View 立刻废弃。官方明确 `android.widget` 这类
 
 ## 迁移顺序与风险分层
 
-迁移顺序应该从“改动收益”和“性能风险”一起排。参考《Android 性能优化》里按场景建立指标、再按 CPU、缓存、任务调度拆原因的组织方式，Compose 迁移也应该先建立页面基线，再决定改哪一类页面。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md][结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
-
-| 页面类型 | 建议策略 | 验证门槛 |
+迁移顺序应该从“改动收益”和“性能风险”一起排。参考《Android 性能优化》里按场景建立指标、再按 CPU、缓存、任务调度拆原因的组织方式，Compose 迁移也应该先建立页面基线，再决定改哪一类页面。| 页面类型 | 建议策略 | 验证门槛 |
 |---|---|---|
 | 新页面 / 新弹窗 / 新设置项 | 直接使用 Compose | 常规单元测试、截图测试、基本帧耗时检查 |
 | 低频设置页 / 个人资料页 | 小批量迁移，优先清理 XML 和 Binding 技术债 | 冷启动不劣化；页面首帧和内存峰值不劣化 |
@@ -220,4 +218,4 @@ Compose First 面向 Android UI 开发主路径；Compose Multiplatform 是跨�
 
 Compose 1.10 之后，列表预取、Pausable Composition、Modifier 行为、runtime tracing 和 compiler metrics 仍在快速变化。进入稳定版本之前，任何“默认启用”“性能对等”“列表卡顿率显著下降”这类判断都要补齐四个条件：Compose BOM / Foundation / Compiler 版本、Android Studio 或 AGP 版本、设备与刷新率、测试场景与统计口径。
 
-本节当前结论适用于 2026-05-21 可验证的公开文档和本地调研。后续如果 Compose Foundation 重新默认启用 Pausable Composition，或 Android Studio Compose Profiler 的入口和数据项变化，应优先更新本节的版本边界，再同步回 22.3 节的 Compose 性能实践。
+本节结论基于 2026-05-21 可验证的公开文档和本地调研。后续 Compose Foundation 如果重新默认启用 Pausable Composition，或 Compose Profiler 的入口和数据项发生变化，应先更新本节的版本边界，再同步回 22.3 节。

@@ -62,6 +62,8 @@ last_task9_audit: "2026-06-13"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-23"
 task9_review_notes: "2026-05-23 20:25 Task9 深度技术审计：pass-tech-review。P0 0 / P1 0 / P2 0；官方 App Performance Score、Vitals、Macrobenchmark、Baseline Profiles、APA 口径复核通过；自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-23
 ---
 
 # 26.18 App Performance Score 与性能质量评分归因
@@ -103,11 +105,11 @@ task9_review_notes: "2026-05-23 20:25 Task9 深度技术审计：pass-tech-revie
 
 <!-- outline-end -->
 
-App Performance Score 是 Google 给应用性能体检提供的 0-100 分框架。它把性能改进拆成两类工作：一类是能从工程配置里直接检查的静态项，另一类是必须在设备上跑路径才能得到的动态项。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
+团队拿到一个 0–100 的性能分数之后，最常见的反应是“然后呢？”App Performance Score 是 Google 给出的应用性能体检框架，它把改进项拆成两类：一类是能从工程配置里直接检查的静态项，另一类是必须在设备上跑路径才能得到的动态项。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
 
 这节的重点不是复述评分表，而是把分数转成研发队列。对团队来说，分数只回答“哪里还有改进空间”；能推进的是后面的任务拆分：补配置、补测试、补 trace 证据，再把风险接进发版门禁。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md] 把质量平台放在开发、CI、测试、灰度和发布流程里理解；[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md]、[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md] 分别提供了启动与渲染问题的测量顺序；[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]、[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md] 提供了灰度验证和上报组件的组织方式。这里借用的是覆盖顺序和问题分类，不复用原文段落与代码。
+把质量平台放在开发、CI、测试、灰度和发布流程里理解；、分别提供了启动与渲染问题的测量顺序；、提供了灰度验证和上报组件的组织方式。这里借用的是覆盖顺序和问题分类，不复用原文段落与代码。
 
 ## App Performance Score 的定位
 
@@ -123,7 +125,7 @@ App Performance Score 适合做研发阶段的性能体检。官方文档把它�
 | Perfetto / Android Performance Analyzer | 某次慢启动、慢帧、GPU 压力或线程调度异常的时间线证据 | 根因定位、案例复盘、A/B trace 对比 | 不负责把问题自动转成组织任务 |
 | 自建 APM | 版本、设备、渠道、用户路径上的长期指标和报警 | 灰度、发布、线上治理 | 指标口径容易和平台口径分叉，需要和 Vitals 保持同一套口径 |
 
-这个定位决定了它更像一张检查清单，而不是性能系统的终点。评分项命中后，还要回到具体场景：启动慢看 TTID / TTFD 和主线程；滑动慢看帧耗时、RenderThread、SurfaceFlinger 与 GPU；低端机差看设备档位、存储、温度和后台负载。
+这个定位决定了它更像一张检查清单，而不是性能系统的终点。评分项命中后，还要回到具体场景：启动慢看 TTID / TTFD 和主线程；滑动慢看帧耗时、RenderThread、SurfaceFlinger 与 GPU；低端机差看设备档位、存储、温度和后台负载——分数指路，根因还是要靠 trace。
 
 ## 静态评分：低成本配置项先补齐
 

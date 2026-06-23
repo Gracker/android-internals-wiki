@@ -402,3 +402,12 @@ if (resynced && Trace.isTagEnabled(Trace.TRACE_TAG_VIEW)) {
 Buffer Stuffing Recovery 是 Android 16 对帧节拍的补救机制。它不释放 buffer，不扩大 BufferQueue，也不替代 SurfaceFlinger 或 fence 分析。它做的事更窄：当客户端等待 buffer release 超过半帧后，下一轮 `doFrame()` 先主动等一次 VSync，再在恢复阶段给动画时间线加负偏移，直到检测到 idle 后退出。
 
 诊断时把它当成“等待 buffer 之后的节拍修正信号”。根因仍然要沿 producer 等待、consumer release、fence 和 SurfaceFlinger present 继续补证据。
+
+## 参考资料
+
+### Android 17 Choreographer.doFrame 与 VSync 时间戳预测机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-choreographer-vsync-prediction-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：深度解析 Android 17 Choreographer.doFrame 的多帧时间线预测架构，FRAME_TIMELINES_CAPACITY=7 支持并行帧时间线选择。涵盖 FrameTimeline 结构（vsyncId/expectedPresentationTimeNanos/deadline）、Buffer Stuffing Recovery 三态处理（NONE/OFFSET/DELAY_FRAME）、VsyncCallback 接口及 FrameData 多时间线选择，以及 jitter 计算后的动态 resync 逻辑。
+- 注入时间：2026-06-23
+- 价值：提供 §2.25 Buffer Stuffing Recovery 的上层 VSync 预测机制上下文，补完多帧时间线调度全链路
