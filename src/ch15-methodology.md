@@ -25,6 +25,7 @@ last_verified: '2026-06-16'
 last_verified_against: AOSP android-16.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 confidence: high
 last_task9_audit: "2026-06-21"
+last_task6_audit: "2026-06-23"
 sources:
 - type: official
   path: https://developer.android.com/topic/performance
