@@ -18,3 +18,9 @@
   - version table: `COLD_START=10`、`APP_COMPAT=11`
 - **建议**：查阅 AOSP `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java` 中的常量定义，统一全文三处引用。这是技术事实错误，不能靠写作层面解决。
 - **review 日志**：logs/review/2026-06-24-04-review.md
+
+## [Task9 闲时抽检] 25.4 WorkManager 实战与后台任务调度 — 2026-06-24
+- **类型**：版本/术语准确性
+- **位置**：§停止原因与回归守门 末段
+- **问题**：章节称"如果任务频繁超时，系统可能把 App 放入 restricted standby bucket"。但 Android App Standby Buckets 中，"Restricted"桶需要用户主动操作，系统不会自动将 App 放入 Restricted 桶。系统可根据使用模式自动降级到"Rare"或"Limited"桶。
+- **建议**：将"restricted standby bucket"改为"更低的 standby bucket（如 Rare 或 Limited）"，或删除"restricted"这一特指，仅保留"系统可能限制 App 的后台执行能力"。
