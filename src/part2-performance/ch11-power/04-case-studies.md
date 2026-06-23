@@ -2,8 +2,8 @@
 
 title: 案例集
 chapter: 11.04
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: ['Android 14.0 (API 34) - Android 17.0 (API 37)']
 tags: [power, battery, energy]
 weight: 4
@@ -13,10 +13,10 @@ task2b_state: fixed
 task9_state: pending
 task9_result: auto-fixed
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 last_task2b_fix_at: 2026-06-18
-last_task6_at: 2026-06-18
-last_task6_review_at: 2026-06-18
+last_task6_at: 2026-06-23T20:08:00+08:00
+last_task6_review_at: 2026-06-23T20:08:00+08:00
 last_task9_autofix_at: 2026-06-18
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
@@ -429,7 +429,7 @@ protected boolean isActive(Registration registration) {
 }
 ```
 
-**关键**：当 isActive 返回 false 时，registration 不参与 `mergeRegistrations()`，**ProviderRequest 不下发到 GnssLocationProvider / FusedProvider**——GPS 芯片、Wi-Fi 扫描、Cell-ID 查询全部停止。这是隐私沙盒**真正的省电点**：被拒请求 0 功耗（fix 不下发）。
+**关键**：当 isActive 返回 false 时，registration 不参与 `mergeRegistrations()`，**ProviderRequest 不下发到 GnssLocationProvider / FusedProvider**——GPS 芯片、Wi-Fi 扫描、Cell-ID 查询全部停止。这是隐私沙盒**省电的核心**：被拒请求 0 功耗（fix 不下发）。
 
 #### 前台/后台状态机
 
@@ -1015,7 +1015,7 @@ if (job.isPersisted() && (packageName == null || packageName.equals(servicePkg))
 
 **关键设计点**：
 - **只对 persisted job 限频**：非持久化 Job 走 `JobStore` 内存路径，频繁 schedule 但不入库，不会触配额。
-- **节流附带 `restrictApp(...)`**：把包降级到 RESTRICTED 桶，**真正的杀手锏**——即使 schedule() 成功，restricted 桶的 Job 在 QuotaController 还会被掐（见第三层）。
+- **节流附带 `restrictApp(...)`**：把包降级到 RESTRICTED 桶，**杀手锏**——即使 schedule() 成功，restricted 桶的 Job 在 QuotaController 还会被掐（见第三层）。
 - **`Math.max(250, ...)` 硬下限保护**（line 1182-1185）：OEM 改小 DeviceConfig 不会低于 250。
 
 ### 11.4.7.2 第二层：执行超时节流（Execution Safeguards for UDC）
