@@ -45,17 +45,16 @@
       "section_title": "Android 版本化线上诊断能力",
       "priority": 95,
       "status": "completed",
-      "reason": "[Deep Tech Review] ProfilingManager 源码路径错误、版本差异覆盖不完整",
+      "completed_by": "task2b-lite",
+      "completed_at": "2026-06-23T15:40:00+08:00",
+      "completed_reason": "fixed-lite: 修正源码路径引用、补全 ApplicationExitInfo 与 ProfilingManager 证据互补规则、更新版本边界"
+    },
+    {
+      "section": "20.12",
+      "section_title": "SafeMode 崩溃循环判定与启动补偿链路",
+      "priority": 95,
+      "reason": "[Deep Tech Review] DropBoxManagerService 状态机、AtomicFile.failWrite 行为、crash_envelope fsync 示例存在源码/API 级错误，且 Android 17 锚点已过期。",
       "material_paths": [
-        "logs/deep-review/2026-06-23-14-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "P0 事实错误",
-          "location": "ProfilingManager 源码路径",
-          "detail": "引用路径错误：`frameworks/base/core/java/android/os/ProfilingManager.java` 应为 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`",
-          "suggestion": "更新源码路径引用，确保指向正确的 ProfilingManager 位置"
-        },
         {
           "type": "P1 重要缺失",
           "location": "Android 17 MemoryLimiter 行为",
