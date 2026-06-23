@@ -14338,6 +14338,49 @@
         "8.8",
         "2.19"
       ]
+    },
+    {
+      "date": "2026-06-23T23:33:08",
+      "chapters_verified": [
+        "14.13",
+        "14.11",
+        "19",
+        "7.7",
+        "26.12",
+        "4.7"
+      ],
+      "fixes": [
+        {
+          "chapter": "14.13",
+          "action": "status fixed: draft→ready-for-review, correctly in task6_pending"
+        },
+        {
+          "chapter": "14.11",
+          "action": "status fixed: finalized→ready-for-review, task9 auto-fixed back to task6"
+        },
+        {
+          "chapter": "19",
+          "action": "pipe fixed: task6_pending→task9_pending, task6 passed"
+        },
+        {
+          "chapter": "7.7",
+          "action": "pipe fixed: task6_pending→task9_pending, task9_state reset to pending"
+        },
+        {
+          "chapter": "26.12",
+          "action": "pipe fixed: task6_pending→task9_pending, task2b-lite fix done, task6 passed"
+        },
+        {
+          "chapter": "4.7",
+          "action": "pipe fixed: task9_pending→task6_pending, task9 auto-fixed back to task6"
+        }
+      ],
+      "blocked": [
+        {
+          "chapter": "8.10",
+          "reason": "task9_result=needs-rework but no pending queue items — cannot verify if issues were resolved"
+        }
+      ]
     }
   ],
   "5.18": {

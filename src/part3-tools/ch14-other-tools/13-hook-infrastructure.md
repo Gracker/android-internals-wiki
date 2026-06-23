@@ -1,8 +1,9 @@
 ---
+
 title: Hook 基础设施与性能工具实现原理
 chapter: '14.13'
 section: '14.13'
-status: "draft"
+status: ready-for-review
 task6_result: "ready-for-review"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-30"

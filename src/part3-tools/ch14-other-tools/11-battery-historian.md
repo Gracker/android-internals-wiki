@@ -1,8 +1,9 @@
 ---
+
 title: "Battery Historian 与功耗分析工具"
 chapter: "14.11"
 section: "14.11"
-status: "finalized"
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: [Battery Historian, bugreport, 功耗分析, Wakelock, 电池, Power Profiler, ODPM, Energy Profiler]
 related_chapters: ["11.1", "11.2", "11.5", "14.1", "15.5"]

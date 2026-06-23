@@ -1,9 +1,10 @@
 ---
+
 title: "\"Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger\""
 chapter: "\"26.12\""
 section: "\"26.12\""
 status: "finalized"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
