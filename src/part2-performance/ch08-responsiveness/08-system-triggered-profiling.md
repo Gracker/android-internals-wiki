@@ -55,9 +55,9 @@ sources:
   title: SdkExtensions API Reference
   date: '2026'
 last_task9_audit: "2026-06-23"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-09T13:40:00+08:00'
@@ -70,16 +70,16 @@ task6_result: pass-light-edit
 task9_result: auto-fixed
 task9_reviewed_date: 2026-06-23
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-06-23T06:30:23+08:00'
+last_task9_at: "2026-06-23T08:34:43+08:00"
 last_task6_audit: '2026-06-11'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
-last_task9_review_log: "logs/deep-review/2026-06-23-06-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-23-08-deep-review.md"
 last_task9_autofix_at: "2026-06-23"
 last_task6_at: 2026-06-23T08:15:43+08:00
 last_task6_review_log: "logs/review/2026-06-23-08-review.md"
 task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式 1 次(在限制内)。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
-task9_review_notes: "2026-06-23 Task9 idle audit：auto-fix Android 17 anomaly-detector 源码类名；将 ANOMALY 终止前触发限定到 MemoryLimiter 等具体 kill 路径，回到 Task6 复审。"
+task9_review_notes: "2026-06-23 Task9 idle audit：auto-fix Android 17 anomaly-detector 源码类名；将 ANOMALY 终止前触发限定到 MemoryLimiter 等具体 kill 路径，回到 Task6 复审。 | 2026-06-23 08:34 Task9 deep-review:auto-fixed。P0 1；按 android-17.0.0_r1 ProfilingService 修正 Java heap dump 产物后缀，.hprof 改为 .perfetto-java-heap-dump，回到 Task6 复审。"
 ---
 
 
@@ -208,7 +208,7 @@ public final class TriggeredProfilingRegistrar {
 | `TRIGGER_TYPE_ANOMALY = 8` | API 37 | **依异常类型动态变化**：heap dump 或 stack sampling | 系统检测到异常行为；MemoryLimiter 这类 kill 路径会在终止前触发，binder spam 等规则可能只收集 profile | 产物类型和 tag 由 anomaly-detector 规则决定；`ProfilingResult.getTag()` 携带异常分类信息 |
 | `TRIGGER_TYPE_APP_COMPAT = 11` | API 37 | **依兼容性问题类型动态变化** | 应用表现出兼容性回退行为 | 产物和 tag 随具体 compat 问题而定 |
 
-这张表比散落的清单更有用，因为后续分析的入口已经固定下来了。`APP_FULLY_DRAWN` 和 `ANR` 的结果都可以走 Perfetto UI，`OOM` 该走 heap dump 分析，`COLD_START` 既有 system trace，也有 stack sampling。`ANOMALY` 和 `APP_COMPAT` 的产物不固定，收到结果后要先读 `getTag()` 判断异常类别，再根据文件扩展名（`.perfetto-trace` / `.hprof`）选择分析工具。
+这张表比散落的清单更有用，因为后续分析的入口已经固定下来了。`APP_FULLY_DRAWN` 和 `ANR` 的结果都可以走 Perfetto UI，`OOM` 该走 heap dump 分析，`COLD_START` 既有 system trace，也有 stack sampling。`ANOMALY` 和 `APP_COMPAT` 的产物不固定，收到结果后要先读 `getTag()` 判断异常类别，再根据文件后缀选择分析工具；Android 17 `ProfilingService` 中 Java heap dump 使用 `.perfetto-java-heap-dump` 后缀，system trace 使用 `.perfetto-trace` 后缀。
 
 ### 36.1 trigger 还要单独判 extension version
 
@@ -230,7 +230,7 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 `TRIGGER_TYPE_ANOMALY`（API 37，常量值 8）由 Android 17 新增的 `AnomalyDetectorService` 驱动。这个服务在设备端根据规则监控异常行为，Android 17 源码中已包含 binder spam detector；MemoryLimiter 的 anon+swap 超限路径会先通知 `ProfilingServiceHelper` 触发 ANOMALY，再延迟 kill 目标进程。也就是说，ANOMALY 不是“所有异常都代表进程马上被杀”的统一信号：有些规则只触发日志或 profile 收集，只有 MemoryLimiter 这类 kill 路径才适合按进程终止前现场来理解。
 
-**产物的动态性**：ANOMALY 不像其他 trigger 返回固定的文件格式。`ProfilingResult#getTag()` 会携带异常分类信息（如 `memory_limit`），`getResultFilePath()` 返回的文件扩展名决定分析工具——`.hprof` 走 heap dump 工具链，`.perfetto-trace` 走 Perfetto UI。处理 ANOMALY 结果时，要先读 tag 再决定分析路径，不能一律当 system trace 处理。
+**产物的动态性**：ANOMALY 不像其他 trigger 返回固定的文件格式。`ProfilingResult#getTag()` 会携带异常分类信息（如 `memory_limit`），`getResultFilePath()` 返回的文件后缀决定分析工具——`.perfetto-java-heap-dump` 走 Java heap dump 工具链，`.perfetto-trace` 走 Perfetto UI。处理 ANOMALY 结果时，要先读 tag 再决定分析路径，不能一律当 system trace 处理。
 
 **MemoryLimiter 场景**：当 MemoryLimiter 的 anon+swap 限额路径触发时，`frameworks/base` 会先向 `ProfilingServiceHelper` 发送 ANOMALY，再延迟 kill，kill reason 可见类似 `MemoryLimiter:AnonSwap`。`ProfilingService` 对这类异常使用 `memory_limit` tag，并返回 Java heap dump，用于定位是哪些对象占住了内存。这个场景的排查顺序是：`ApplicationExitInfo.getReason()` 指向资源过量或描述里出现 MemoryLimiter 线索 → `ProfilingResult.getTag()` 为 `memory_limit` → heap dump 进 MAT 或 Android Studio Profiler → 找 retained size 最高的引用路径。
 

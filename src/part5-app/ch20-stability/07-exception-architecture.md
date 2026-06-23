@@ -38,16 +38,16 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-23
 task6_result: pass-light-edit
 last_task6_at: 2026-06-23T08:15:43+08:00
 last_task6_review_log: "logs/review/2026-06-23-08-review.md"
 task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式在限制内。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
-task9_state: pending
-task2b_state: "fixed"
+task9_state: reviewed
+task2b_state: fixed
 last_task2b_lite_at: "2026-06-22"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-16"
@@ -55,10 +55,10 @@ last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-06-23
-last_task9_at: "2026-06-23T07:25:29+08:00"
+last_task9_at: "2026-06-23T08:34:43+08:00"
 last_task9_audit: "2026-06-23"
-last_task9_review_log: "logs/deep-review/2026-06-23-07-audit.md"
-task9_review_notes: "2026-06-16 Task9 复审:auto-fixed。SafeMode launch marker 状态机、crash 文件持久化协议已闭环；本轮直接修正父目录 fsync 示例中不存在的 Java/Kotlin API 写法，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。 | 2026-06-23 Task9 闲时抽检:auto-fixed。Android 17 源码复核确认 REASON_INITIALIZATION_FAILURE 仍为 ApplicationExitInfo 主退出原因之一；SafeMode 示例代码已补入该白名单，与后文源码核验结论保持一致，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-23-08-deep-review.md"
+task9_review_notes: "2026-06-16 Task9 复审:auto-fixed。SafeMode launch marker 状态机、crash 文件持久化协议已闭环；本轮直接修正父目录 fsync 示例中不存在的 Java/Kotlin API 写法，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。 | 2026-06-23 Task9 闲时抽检:auto-fixed。Android 17 源码复核确认 REASON_INITIALIZATION_FAILURE 仍为 ApplicationExitInfo 主退出原因之一；SafeMode 示例代码已补入该白名单，与后文源码核验结论保持一致，回到 Task6 复审。 | 2026-06-23 08:34 Task9 deep-review:auto-fixed。P0 1；修正不存在的 parentFile.fdatasync() API 表述，改为父目录 fd + fsync(dirfd)/android.system.Os.fsync()，回到 Task6 复审。"
 
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00
@@ -387,7 +387,7 @@ fun atomicWriteCrashFile(dir: File, pid: Int, content: ByteArray): Boolean {
 }
 ```
 
-`syncParentDir` 需要打开父目录的文件描述符并 `fsync`。Java/Kotlin 标准库没有直接暴露这个能力，通常通过 `FileDescriptor` 反射获取或 NDK 封装。如果项目无法引入 NDK 调用，至少做 `fd.sync()` + rename；`tmp` 文件会在下次启动扫描时被兜底发现并转为 completed，丢记录的概率降低但未完全消除。
+`syncParentDir` 需要打开父目录的文件描述符并 `fsync`。Android 层可用 `android.system.Os.open()` + `Os.fsync()` 封装，或用 NDK 调用；Java/Kotlin 标准库本身没有 `File` 级别的目录 fsync API。如果项目无法封装目录 fsync，至少做 `fd.sync()` + rename；`tmp` 文件会在下次启动扫描时被兜底发现并转为 completed，丢记录的概率降低但未完全消除。
 
 多进程重启要限制次数。远程服务进程崩溃后立刻拉起,可能形成后台崩溃风暴;更稳的策略是指数退避、本地计数、达到阈值后关闭该服务入口,并把"重启被抑制"作为事件上报。[待验证: 具体重启策略需要结合业务保活要求和厂商后台限制验证]
 
@@ -446,7 +446,7 @@ str.close();
 rename(mNewName, mBaseName);  // POSIX rename(2)
 ```
 
-`FileUtils.sync()`（`core/java/android/os/FileUtils.java:275`）只调 `FileDescriptor.sync()`，**不 fsync 父目录**。崩溃后父目录 inode 未落盘，下一次启动 `openRead()` 可能看到不一致状态——本节维度 4 提到的"父目录 fsync 边界"在 AOSP `AtomicFile` 里**没有实现**，生产实现若要更严格需自行补 `parentFile.fdatasync()`。
+`FileUtils.sync()`（`core/java/android/os/FileUtils.java:275`）只调 `FileDescriptor.sync()`，**不 fsync 父目录**。崩溃后父目录 inode 未落盘，下一次启动 `openRead()` 可能看到不一致状态——本节维度 4 提到的"父目录 fsync 边界"在 AOSP `AtomicFile` 里**没有实现**，生产实现若要更严格，需要打开父目录 fd 后调用 `fsync(dirfd)`；Android 层可用 `android.system.Os.open()` + `Os.fsync()` 封装，或用 NDK 调用。
 
 `failWrite()` 只删 `mNewName`，**不回退 `mBaseName`**；崩溃期间未完成 `finishWrite` 之前失败，下次读到的是旧版本，与本节"崩溃入口写文件时 partial 清理规则"一致。
 
