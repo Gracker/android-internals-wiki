@@ -111,6 +111,27 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-24T02:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "8.10",
+      "section_title": "ProfilingManager 系统触发式性能追踪",
+      "priority": 90,
+      "reason": "[review回炉] COLD_START/APP_COMPAT 常量值在三处不一致(outline/trigger table/version table)，属技术事实错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "技术一致性错误",
+          "location": "trigger table + version table + outline",
+          "detail": "TRIGGER_TYPE_COLD_START 和 TRIGGER_TYPE_APP_COMPAT 的常量值在三处不一致：outline 写 COLD_START=11/APP_COMPAT=10；trigger table 写 COLD_START=11/APP_COMPAT=11（两个不同 trigger 同值不可能）；version table 写 COLD_START=10/APP_COMPAT=11。需核对 AOSP ProfilingTrigger.java 常量定义后统一。",
+          "suggestion": "查阅 packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java 中的常量定义，统一全文三处引用。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-24T04:11:39+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-24-04-review.md"
     }
   ],
   "in_progress": [],

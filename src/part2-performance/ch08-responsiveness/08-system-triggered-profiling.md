@@ -3,7 +3,7 @@ title: "ProfilingManager 系统触发式性能追踪"
 chapter: '8.10'
 section: '8.10'
 status: "ready-for-review"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 tags: [responsiveness, latency, launch]
 confidence: medium
@@ -12,24 +12,23 @@ last_verified_against: "AOSP android-17.0.0_r1 + Android Developers + Task9 audi
 created_by: task2a-knowledge-gap
 created_date: '2026-04-10'
 gap_source: 研究素材
-path: "https://developer.android.com/reference/android/os/ext/SdkExtensions
-title: SdkExtensions API Reference
-date: '2026'"
+path: "https://developer.android.com/reference/android/os/ProfilingManager"
 last_task9_audit: "2026-06-23"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 last_task2b_lite_at: '2026-06-23'
 repaired_date: '2026-05-09'
 repaired_by: openclaw-task2b
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-23
-task6_result: pass-light-edit
+reviewed_date: 2026-06-24
+task6_result: needs-rework
+task6_review_notes: "2026-06-24 Task6 三轮复审(Task2B fix后回归): 发现COLD_START/APP_COMPAT常量值在三处不一致(outline vs trigger table vs version table),属技术准确性问题,回炉Task2B。frontmatter path字段已修,grammar已修。"
 task9_result: needs-rework
 verifier_pass: "2026-06-23T11:26:00+08:00"
-task9_reviewed_date: 2026-06-23
+task9_reviewed_date: 2026-06-24
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-23T13:20:00+08:00"
-last_task6_audit: '2026-06-11'
+last_task6_audit: '2026-06-24'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 last_task9_autofix_at: "2026-06-23"
@@ -37,7 +36,7 @@ last_task6_at: "2026-06-23T13:09:00+08:00"
 last_task6_review_log: "logs/review/2026-06-23-13-review.md"
 task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 auto-fix 后回归): pass-light-edit。无禁用词/高频词命中, 不是X而是Y 句式 1 次(在限制内)。queue.json 无 pending。"
 task2b_result: "fixed-lite"
-task2b_state: "fixed"
+task2b_state: "pending"
 last_task2b_at: "2026-06-23T13:35:00+08:00"
 task9_review_notes: "2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。"
 last_task9_review_log: "logs/deep-review/2026-06-23-13-deep-review.md"
@@ -54,7 +53,7 @@ last_task9_review_log: "logs/deep-review/2026-06-23-13-deep-review.md"
 
 对启动优化来说,这让 `Activity.reportFullyDrawn()` 前后的启动收尾不再只能靠人工复现。对 ANR 排查来说,我们拿到的也不再只是 `traces.txt` 的定格画面,而是一份围绕触发时刻保存下来的 trace。对 OOM 来说,返回物是 Java heap dump,与其他 trigger 返回的 trace 不同。
 
-Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步:系统检测到异常行为时,可以根据 anomaly-detector 规则触发日志或 profiling。MemoryLimiter 的 anon+swap 超限路径会在延迟 kill 目标进程之前先触发 ANOMALY;binder spam 这类规则则不等同于"马上杀进程"的信号。排查"应用被杀但不知道为什么"的问题时,ANOMALY 能补上部分进程终止前现场;但收到结果后仍要看 tag 和返回物,不能把所有 ANOMALY 都按 kill 前 trace 处理。
+Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步:系统检测到异常行为时,可以根据 anomaly-detector 规则触发日志或 profiling。MemoryLimiter 的 anon+swap 超限路径会在延迟 kill 目标进程之前先触发 ANOMALY;binder spam 这类规则则不等同于"马上杀进程"的信号。排查"应用被杀但不知道为什么"的问题时,ANOMALY 能补上部分进程终止前的现场;但收到结果后仍要看 tag 和返回物,不能把所有 ANOMALY 都按 kill 前 trace 处理。
 
 只有把这些触发器、产物类型、版本边界和结果交付方式拆开,后面分析时才知道该用什么工具、看什么轨道。
 
