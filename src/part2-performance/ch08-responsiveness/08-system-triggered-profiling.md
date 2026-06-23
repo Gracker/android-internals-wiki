@@ -3,7 +3,7 @@ title: "ProfilingManager 系统触发式性能追踪"
 chapter: '8.10'
 section: '8.10'
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 tags: [responsiveness, latency, launch]
 confidence: medium
@@ -14,15 +14,15 @@ created_date: '2026-04-10'
 gap_source: 研究素材
 path: "https://developer.android.com/reference/android/os/ProfilingManager"
 last_task9_audit: "2026-06-23"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 last_task2b_lite_at: '2026-06-23'
 repaired_date: '2026-05-09'
 repaired_by: openclaw-task2b
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-24
-task6_result: needs-rework
-task6_review_notes: "2026-06-24 Task6 三轮复审(Task2B fix后回归): 发现COLD_START/APP_COMPAT常量值在三处不一致(outline vs trigger table vs version table),属技术准确性问题,回炉Task2B。frontmatter path字段已修,grammar已修。"
+task6_result: pass-light-edit
+task6_review_notes: "2026-06-24 Task6 四轮复审(Task2B fix后回归): 常量值一致性已修复。本轮修复3处编辑残留(元叙述)和2处否定-纠正句式超限,判定pass-light-edit。等待Task9复审。"
 task9_result: needs-rework
 verifier_pass: "2026-06-23T11:26:00+08:00"
 task9_reviewed_date: 2026-06-24
@@ -32,8 +32,8 @@ last_task6_audit: '2026-06-24'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 last_task9_autofix_at: "2026-06-23"
-last_task6_at: "2026-06-23T13:09:00+08:00"
-last_task6_review_log: "logs/review/2026-06-23-13-review.md"
+last_task6_at: "2026-06-24T05:07:00+08:00"
+last_task6_review_log: "logs/review/2026-06-24-05-review.md"
 task2b_result: "fixed"
 task2b_state: "fixed"
 last_task2b_at: "2026-06-23T13:35:00+08:00"
@@ -96,7 +96,7 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 
 Android 15 引入 `ProfilingManager`,先解决"应用怎样在公开设备上请求 profiling"这个问题。到了 Android 16,系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`,让应用可以提前声明自己关心哪些系统事件。事件真的发生时,系统把结果文件落到应用目录,再把文件路径和触发器类型通过 `ProfilingResult` 回传。
 
-源码位置也要先摆正。公开 API 不在 `frameworks/base/core/java/android/os/`,而在 Mainline Profiling 模块:`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`。服务端实现位于 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 不是老式 framework 服务路径上的普通类。
+源码位置也要先摆正。公开 API 位于 Mainline Profiling 模块:`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`。服务端实现位于 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 不是老式 framework 服务路径上的普通类。
 
 ### 结果是怎么回来的
 
@@ -111,8 +111,7 @@ system-triggered profiling 有一个容易写错的地方,结果只会发给全�
 
 ### 最小可用流程
 
-下面这段代码只做一件事,注册全局结果回调,再添加两个 Android 16 就能使用的触发器。它没有把上一版草稿里那些虚构回调、虚构 Builder 和伪字段再写回来。
-
+下面这段代码只做一件事,注册全局结果回调,再添加两个 Android 16 就能使用的触发器。
 ```java
 import android.content.Context;
 import android.os.ProfilingManager;
@@ -199,7 +198,7 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 ### ANR 和 excessive CPU 也不要发明内部阈值
 
-`TRIGGER_TYPE_ANR` 的公开定义是"ANR 已被识别,但系统还没准备按公开契约结束该应用"。文档没有给出上一版草稿里那组预警数值。`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 也只公开到了"应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被杀后返回 running system trace snapshot"这一层,没有把 CPU 百分比、持续时间、采样窗口当成 API 契约。
+`TRIGGER_TYPE_ANR` 的公开定义是"ANR 已被识别,但系统还没准备按公开契约结束该应用"。文档没有公开具体的预警阈值。`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 也只公开到了"应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被杀后返回 running system trace snapshot"这一层,没有把 CPU 百分比、持续时间、采样窗口当成 API 契约。
 
 所以这一类章节不该写成一组固定百分比、固定时长和固定预警窗口。如果没有源码、实验或 device_config 证据支撑,那就是把内部策略猜想写成公开合同。
 
@@ -213,9 +212,7 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 [图:`TRIGGER_TYPE_COLD_START` 返回的 system trace + stack sampling 结果示意。标出应用冷启动早期的进程创建、主线程首个长任务、`reportFullyDrawn()` 停止点,以及默认 5 秒停止的回退边界。]
 
-我们分析这两类结果时，入口不在跑一条固定 SQL，而是在先确定时间窗口，再看线程状态、Binder 等待、渲染帧和系统服务干预。
-
-这一节原来的伪 SQL 已经删掉，因为它把 `reportFullyDrawn()`、固定表名和时间字面量硬拼在一起，和真实 schema 不是一回事。
+分析这两类结果时，先确定时间窗口，再看线程状态、Binder 等待、渲染帧和系统服务干预。
 
 ### ANR 样例:running system trace snapshot
 
@@ -266,7 +263,7 @@ device_config delete profiling_testing system_triggered_profiling.testing_packag
 
 ### 和 `ApplicationExitInfo` 的关系
 
-`KILL_EXCESSIVE_CPU_USAGE` 的判断依据不是我们手写的 CPU 百分比,而是 `ApplicationExitInfo.getReason() == REASON_EXCESSIVE_RESOURCE_USAGE`。也就是说,ProfilingManager 这里拿到的是系统已经做出 kill 判断后的 profiling 结果,而不是一个持续轮询 CPU 的前台预警器。
+`KILL_EXCESSIVE_CPU_USAGE` 的判断依据来自系统已经做出的 kill 判断(`ApplicationExitInfo.getReason() == REASON_EXCESSIVE_RESOURCE_USAGE`),应用侧不需要自行检测 CPU。也就是说,ProfilingManager 这里拿到的是系统已经做出 kill 判断后的 profiling 结果,而不是一个持续轮询 CPU 的前台预警器。
 
 ## 版本演进
 
@@ -295,7 +292,7 @@ system-triggered profiling 的结果只会通过 `registerForAllProfilingResults
 
 ### 误区 4:系统公开了 ANR / CPU 的内部阈值
 
-公开 API 没有给出上一版草稿里那组固定阈值。没有源码、实验或 device_config 证据时,章节里就不该擅自补这些数字。
+公开 API 没有给出具体的 CPU 阈值。没有源码、实验或 device_config 证据时,章节里就不该擅自补这些数字。
 
 ## 参考资料
 
