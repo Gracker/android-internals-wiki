@@ -38,15 +38,15 @@ sources:
     path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 related_chapters: ["20.2", "20.3", "26.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-23
 task6_result: pass-light-edit
-last_task6_at: 2026-06-23T08:15:43+08:00
+last_task6_at: 2026-06-23T09:10:00+08:00
 last_task6_review_log: "logs/review/2026-06-23-08-review.md"
 task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式在限制内。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-22"
 task2b_result: "fixed-lite"
@@ -67,6 +67,7 @@ finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"
 deepseek_cn_review_state: needs-structure-rework
 last_deepseek_cn_review_at: 2026-06-17
+task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(parentFile.fdatasync()→android.system.Os.open()+Os.fsync(), REASON_INITIALIZATION_FAILURE 补入 SafeMode 白名单)已验证到位,无引入新写作问题。无禁用词/高频词命中(正文)。不是X而是Y 句式 1 次(在限制内)。承担 1 处(line 272,中文日常用法,非物理动作隐喻,保留)。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
 ---
 
 # 异常处理架构设计

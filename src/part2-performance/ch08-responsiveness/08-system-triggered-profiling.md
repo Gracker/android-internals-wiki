@@ -55,9 +55,9 @@ sources:
   title: SdkExtensions API Reference
   date: '2026'
 last_task9_audit: "2026-06-23"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-09T13:40:00+08:00'
@@ -76,10 +76,11 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 last_task9_review_log: "logs/deep-review/2026-06-23-08-deep-review.md"
 last_task9_autofix_at: "2026-06-23"
-last_task6_at: 2026-06-23T08:15:43+08:00
+last_task6_at: 2026-06-23T09:10:00+08:00
 last_task6_review_log: "logs/review/2026-06-23-08-review.md"
 task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式 1 次(在限制内)。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
 task9_review_notes: "2026-06-23 Task9 idle audit：auto-fix Android 17 anomaly-detector 源码类名；将 ANOMALY 终止前触发限定到 MemoryLimiter 等具体 kill 路径，回到 Task6 复审。 | 2026-06-23 08:34 Task9 deep-review:auto-fixed。P0 1；按 android-17.0.0_r1 ProfilingService 修正 Java heap dump 产物后缀，.hprof 改为 .perfetto-java-heap-dump，回到 Task6 复审。"
+task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(.hprof→.perfetto-java-heap-dump, AnomalyDetectorService 类名, MemoryLimiter kill 路径限定)已验证到位,无引入新写作问题。无禁用词/高频词命中。不是X而是Y 句式 1 次(在限制内)。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
 ---
 
 
