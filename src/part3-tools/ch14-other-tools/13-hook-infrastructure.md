@@ -4,15 +4,15 @@ title: Hook 基础设施与性能工具实现原理
 chapter: '14.13'
 section: '14.13'
 status: ready-for-review
-task6_result: "ready-for-review"
+task6_result: "needs-rework"
 task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-30"
-task6_state: "revisiting"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task6_reviewed_date: "2026-06-24"
+task6_state: "reviewed"
+task2b_state: "pending"
+task2b_result: ""
 task9_state: "pending"
 task2b_fixed_date: "2026-06-12"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -55,6 +55,7 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: '2026-04-22'
 polish_by: "task2b-polish"
+task6_review_notes_2026_06_24: "revisiting 复审：发现 B 类问题 5 处（代码示例 Java/C 混用、try/catch C++ 语法标为 C、未来发展章节填充内容、JIT 优化建议不当、多处伪代码未标注），已修 2 处 L1 代码块标签，B 类写入 queue+ suggestions 送 Task2B。"
 ---
 
 # 14.13 Hook 基础设施与性能工具实现原理
@@ -181,7 +182,7 @@ xHook 是爱奇艺开源的 Hook 框架，特点是：
 - 支持 Hook 系统调用
 
 #### 架构
-```
+```text
 xHook
 ├── Core Hooking Engine
 │   ├── Trampoline Manager
@@ -409,8 +410,8 @@ KOOM 使用 PLT Hook 而非 inline hook，侧重点在稳定性——PLT 表项�
 
 ### 4. 错误处理和恢复
 
-```c
-// Hook 函数的错误处理
+```cpp
+// Hook 函数的错误处理（C++ 示例；纯 C 场景用返回值检查替代）
 int hook_system_call() {
     try {
         // Hook 实现
