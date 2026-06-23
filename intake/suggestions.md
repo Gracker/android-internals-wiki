@@ -41,3 +41,21 @@
 - **位置**：协程异常与页面生命周期绑定
 - **问题**：缺少 viewModelScope、lifecycleScope 异常的具体实现示例，难以判断页面销毁时序相关的异常处理。
 - **建议**：添加页面销毁时协程异常的处理示例，说明如何避免内存泄漏和不必要的异常上报。
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-23
+- **类型**：源码准确性
+- **位置**：ANOMALY 产物动态性说明
+- **问题**：ANOMALY 触发器的产物类型选择逻辑不清晰，何时返回 heap dump vs stack sampling 的判断标准未明确
+- **建议**：补充具体的 anomaly-detector 规则判断逻辑，或说明产物类型由 anomaly 类型决定的具体机制
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-23
+- **类型**：版本差异
+- **位置**：Android 17 APP_COMPAT=11 描述
+- **问题**：APP_COMPAT trigger 描述过于简略，未说明具体使用场景和产物类型
+- **建议**：补充 APP_COMPAT 的具体使用场景、返回产物类型和分析方法
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-23
+- **类型**：数据支撑
+- **位置**：性能影响章节
+- **问题**：缺少具体的性能基准数据支持
+- **建议**：补充不同 trigger 类型的内存占用、CPU 占用、存储占用等量化数据，以及针对不同使用场景的优化建议
