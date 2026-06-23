@@ -16,8 +16,8 @@ path: "https://developer.android.com/reference/android/os/ext/SdkExtensions
 title: SdkExtensions API Reference
 date: '2026'"
 last_task9_audit: "2026-06-23"
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 last_task2b_lite_at: '2026-06-23'
 repaired_date: '2026-05-09'
 repaired_by: openclaw-task2b

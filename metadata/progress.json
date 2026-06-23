@@ -14884,5 +14884,11 @@
       "fixed_issues": "P0验证+false positive 确认, P1 ZSL/MemoryLimiter/证据互补修复"
     }
   ],
-  "last_task2b": "2026-06-23T14:57:33+08:00"
+  "last_task2b": "2026-06-23T14:57:33+08:00",
+  "verifier": {
+    "last_run": "2026-06-24T03:29:07+08:00",
+    "last_result": "ready-for-task6",
+    "corrections": 1,
+    "blocked": 1
+  }
 }
