@@ -1,62 +1,39 @@
 ---
-
-title: Hook 基础设施与性能工具实现原理
-chapter: '14.13'
-section: '14.13'
-status: ready-for-review
+title: "Hook 基础设施与性能工具实现原理"
+chapter: "14.13"
+section: "14.13"
+status: "ready-for-review"
 task6_result: "needs-rework"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-24"
-task6_state: "reviewed"
-task2b_state: "pending"
-task2b_result: ""
+task6_state: "revisiting"
+task2b_state: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: 2026-06-24
 task9_state: "pending"
 task2b_fixed_date: "2026-06-12"
-pipeline_stage: "task2b_pending"
-drafted_date: '2026-04-21'
-drafted_by: codex
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-05-30'
-last_verified_against: AOSP android-16.0.0_r1 system/sepolicy private/app.te + bionic linker linker_phdr.cpp/linker.cpp/linker_soinfo*.h + libdl.map.txt + Android Developers 16KB page size docs + ART TI + GitHub upstream READMEs
-confidence: medium
-sources:
-- type: official
-  path: https://developer.android.com/guide/practices/page-sizes
-- type: official
-  path: https://source.android.com/docs/core/runtime/art-ti
-- type: blog
-  path: https://github.com/bytedance/bhook
-- type: blog
-  path: https://github.com/bytedance/android-inline-hook
-- type: blog
-  path: https://github.com/iqiyi/xHook
-- type: blog
-  path: https://github.com/didi/Booster
-- type: blog
-  path: https://github.com/Tencent/matrix
-- type: blog
-  path: https://github.com/KwaiAppTeam/KOOM
-tags:
-- hook
-- bytehook
-- shadowhook
-- xhook
-- booster
-- tracing
-related_chapters:
-- '14.5'
-- '14.12'
-- '13.9'
-- '15.5'
-- '15.9'
+pipeline_stage: "task6_pending"
+drafted_date: "2026-04-21"
+drafted_by: "codex"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+last_verified: "2026-05-30"
+last_verified_against: "AOSP android-16.0.0_r1 system/sepolicy private/app.te + bionic linker linker_phdr.cpp/linker.cpp/linker_soinfo*.h + libdl.map.txt + Android Developers 16KB page size docs + ART TI + GitHub upstream READMEs"
+confidence: "medium"
+sources: ""
+path: "https://github.com/KwaiAppTeam/KOOM"
+tags: ""
+related_chapters: ""
 created_by: "codex"
-created_date: '2026-04-21'
+created_date: "2026-04-21"
 gap_source: "AOSP结构+官方文档+研究素材"
-polish_count: 1
-polish_date: '2026-04-22'
+polish_count: "1"
+polish_date: "2026-04-22"
 polish_by: "task2b-polish"
 task6_review_notes_2026_06_24: "revisiting 复审：发现 B 类问题 5 处（代码示例 Java/C 混用、try/catch C++ 语法标为 C、未来发展章节填充内容、JIT 优化建议不当、多处伪代码未标注），已修 2 处 L1 代码块标签，B 类写入 queue+ suggestions 送 Task2B。"
+task9_result: "needs-rework"
+last_task9_at: "2026-06-24"
 ---
+-
 
 # 14.13 Hook 基础设施与性能工具实现原理
 
@@ -239,7 +216,8 @@ int hook_gettimeofday(struct timeval *tv, struct timezone *tz) {
 
 通过 Hook 在运行时注入代码：
 
-```c
+```java
+// 示意伪代码，不可直接运行
 // Hook Activity.startActivity
 void hook_startActivity(Intent intent) {
     // 检查 Intent 是否需要处理
@@ -310,6 +288,7 @@ int hook_socket(int domain, int type, int protocol) {
 Systrace 是 Android 官方提供的性能分析工具，使用 Hook 技术来收集系统调用信息：
 
 ```c
+// 示意伪代码，不可直接运行
 // Hook 调度相关的函数
 void hook_sched_switch() {
     // 记录任务切换信息
@@ -330,6 +309,7 @@ void hook_file_operation() {
 通过 Hook 主线程的相关函数来分析 ANR 问题：
 
 ```c
+// 示意伪代码，不可直接运行
 // Hook MessageQueue 的 next 方法
 void hook_messagequeue_next() {
     long start_time = get_current_time();
@@ -404,7 +384,7 @@ KOOM 使用 PLT Hook 而非 inline hook，侧重点在稳定性——PLT 表项�
 
 ### 3. 优化 Hook 性能
 
-- 使用 JIT 编译优化 Hook 函数
+- 减少 Hook 函数内的分支和计算复杂度（ART JIT 只优化 Java/Kotlin 方法，不适用于 native Hook 函数）
 - 减少 Hook 函数的复杂度
 - 合理使用缓存机制
 
