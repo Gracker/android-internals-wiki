@@ -2,7 +2,7 @@
 
 
 
-status: ready-for-review
+status: finalized
 title: App 内存优化
 section: '4.5'
 chapter: '4.5'
@@ -55,8 +55,8 @@ review_round: 5
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: reworked
@@ -67,9 +67,9 @@ task9_reviewed_date: "2026-06-04"
 last_task9_at: "2026-06-04T08:20:00+08:00"
 task9_review_notes: "2026-06-04 Task9 deep review: auto-fixed。修正 onTrimMemory 在 Android 16 的 ApplicationThread→主线程分发链、Debug.getPss API level、heapprofd 开销边界和 System.gc 使用边界；已回到 Task6 复审。"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-04T16:14:53+08:00"
-last_task6_review_log: "logs/review/2026-05-22-08-review.md"
-task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。task9 needs-rework + task2b 已 fixed,返回 task9 待复审。'
+last_task6_at: "2026-06-23T20:08:00+08:00"
+last_task6_review_log: "logs/review/2026-06-23-20-review.md"
+task6_review_notes: '2026-06-23 task6 revisiting-review: pass-light-edit。L1 修复 1 处（恰恰相反→删除）。L2 全部通过。无B类大问题。task2b 已 fixed，task9 auto-fixed，queue.json 无 pending，自动晋升 finalized。'
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
 last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
 last_task9_autofix_at: "2026-06-04"
@@ -110,7 +110,7 @@ last_deepseek_cn_review_at: 2026-06-04
 
 前面几节已经讲过 Android 内存模型的底层架构：Linux 内核如何管理物理页（4.2），ART 虚拟机如何分配和回收 Java 堆内存（4.3），系统在内存不足时如何通过 LMK 杀进程（4.4）。这些都是系统层面的机制——作为 App 开发者，无法直接控制 `lmkd` 的杀进程策略，也无法修改 ART 的 GC 算法。
 
-但这并不意味着 App 层面无能为力。恰恰相反，**App 的内存使用方式直接决定了系统级机制的触发频率**。一个内存管理良好的 App，不容易触发 GC 暂停导致卡顿，不容易被 LMK 杀死导致冷启动，也不容易因为内存抖动让整个系统的内存压力增大。
+但这并不意味着 App 层面无能为力。**App 的内存使用方式直接决定了系统级机制的触发频率**。一个内存管理良好的 App，不容易触发 GC 暂停导致卡顿，不容易被 LMK 杀死导致冷启动，也不容易因为内存抖动让整个系统的内存压力增大。
 
 很多开发者对"内存优化"的理解是碎片化的：知道 Bitmap 要 recycle，知道 Activity 泄漏要用 WeakReference，知道 onTrimMemory 要处理，但缺少一个框架把这些点串起来。
 

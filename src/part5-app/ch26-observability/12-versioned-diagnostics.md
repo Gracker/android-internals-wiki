@@ -2,7 +2,7 @@
 title: "\"Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger\""
 chapter: "\"26.12\""
 section: "\"26.12\""
-status: "ready-for-review"
+status: "finalized"
 pipeline_stage: task6_pending
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
@@ -19,8 +19,8 @@ created_by: "\"task2a-knowledge-gap\""
 created_date: "\"2026-05-17\""
 gap_source: "\"研究素材/官方文档/章节深挖\""
 gap_score: "18"
-task6_state: revisiting
-last_task6_at: "\"2026-05-17T06:16:00+08:00\""
+task6_state: reviewed
+last_task6_at: "\"2026-06-23T20:08:00+08:00\""
 task9_state: pending
 task6_result: "pass-light-edit"
 task2a_result: "draft-ready-for-review"
@@ -378,6 +378,101 @@ Android 版本演进对原子数据诊断的影响：
 
 在制定诊断策略时，需要根据目标设备的 Android 版本选择合适的原子数据采集方式。
 <!-- /AIW-源码调研-2026-06-07 -->
+
+
+
+<!-- AIW-源码调研-2026-06-23 -->
+## 源码调研补充（2026-06-23）：StatsD AppProcessDied 原子与 ApplicationExitInfo 集成链路
+
+**来源**：research-gaps.md §26.12 盲区回退
+
+### AppProcessDied 原子注册
+
+**一手验证**（`frameworks/proto_logging/stats/atoms.proto` line 20229-20255）：
+
+```
+AppProcessDied app_process_died = 373 [(module) = "framework"];
+```
+
+字段顺序（与 `AppExitInfoTracker.performLogToStatsdLocked` 调用顺序严格对齐）：
+1. `uid` [(is_uid)=true]
+2. `process_name`（与包名相同则 null，前缀相同则截断）
+3. `reason` → `android.app.AppExitReasonCode`
+4. `sub_reason` → `android.app.AppExitSubReasonCode`
+5. `importance` → `android.app.Importance`
+6. `pss` (int32, kB)
+7. `rss` (int32, kB)
+8. `has_foreground_services` (bool)
+
+### 15 秒去抖与去重机制
+
+**一手验证**（`frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`）：
+
+```java
+private static final long APP_EXIT_INFO_STATSD_LOG_DEBOUNCE = TimeUnit.SECONDS.toMillis(15);
+
+@GuardedBy("mLock")
+private void scheduleLogToStatsdLocked(ApplicationExitInfo info, boolean immediate) {
+    if (info.isLoggedInStatsd()) return;  // 哨兵去重
+    if (immediate) {
+        mKillHandler.removeMessages(KillHandler.MSG_STATSD_LOG, info);
+        performLogToStatsdLocked(info);
+    } else if (!mKillHandler.hasMessages(KillHandler.MSG_STATSD_LOG, info)) {
+        mKillHandler.sendMessageDelayed(mKillHandler.obtainMessage(
+                KillHandler.MSG_STATSD_LOG, info), APP_EXIT_INFO_STATSD_LOG_DEBOUNCE);
+    }
+}
+```
+
+**设计含义**：
+- 多源 kill 信号（lmkd、zygote SIGCHLD、noteAppKill）汇入同一条记录，去抖窗口允许更高优先级的来源（带 PSS/RSS/importance）覆盖更早的简单记录。
+- `setLoggedInStatsd(true)` 是写后哨兵，确保一条退出记录只产生一次原子推送。
+- `KillHandler.MSG_STATSD_LOG = 4105` 是 AMS 进程内自定义消息号（与其他子系统不冲突）。
+
+### 三类 kill 源汇入路径
+
+| 来源 | 触发位置 | Reason | SubReason |
+|------|---------|--------|-----------|
+| lmkd netlink → AMS `OomConnection.handleOomEvent` | `ProcessList.java` line 900-915 | REASON_LOW_MEMORY | SUBREASON_OOM_KILL |
+| zygote SIGCHLD → `mAppExitInfoSourceZygote.onProcDied` | AppExitInfoTracker 内部 | 视场景而定 | 视场景而定 |
+| AMS 内部 `noteAppKill` / `killLocked` | `ProcessList.removeProcessLocked` / 类似 | REASON_OTHER / REASON_EXCESSIVE_RESOURCE_USAGE 等 | SUBREASON_TRIM_EMPTY / SUBREASON_EXCESSIVE_CPU 等 |
+
+所有路径汇入 `handleNoteProcessDiedLocked` / `handleNoteAppKillLocked`，最终 `scheduleLogToStatsdLocked` 推送。
+
+### StatsBootstrapAtomService 早期启动路径
+
+**一手验证**（`frameworks/base/services/core/java/com/android/server/stats/bootstrap/StatsBootstrapAtomService.java`）：
+
+- 自 2021 年引入，专门解决 system_server 早期启动阶段 statsd daemon 尚未 ready 时的原子投递。
+- 通过 `Context.STATS_BOOTSTRAP_ATOM_SERVICE` Binder service 注册。
+- `reportBootstrapAtom()` 内做 atomId 范围校验 `[1, 10000)`，超出则拒绝。
+- 使用 `StatsEvent.Builder.usePooledBuffer()` 复用字节缓冲，避免早期启动 GC 抖动。
+
+### PSS/RSS int 强转精度边界
+
+`performLogToStatsdLocked` 调用 `(int) info.getPss()` / `(int) info.getRss()`，意味着 statsd 原子记录的 PSS/RSS 上限为 2GB（int32 上界）。对绝大多数移动应用（PSS 通常 100MB 量级）无影响，但对调试 OOM/内存压力场景时需要注意 statsd 端的精度损失——这是设计上的精度折中，原始数据仍保留在 `ApplicationExitInfo` Java API 端。
+
+### 持久化 proto 与 statsd 原子的字段差异
+
+**一手验证**（`frameworks/base/core/proto/android/app/appexitinfo.proto`）：
+
+| 字段 | ApplicationExitInfoProto (持久化) | AppProcessDied 原子 (statsd) |
+|------|----------------------------------|------------------------------|
+| pid / real_uid / defining_uid / connection_group | ✅ | ❌（只保留 package_uid） |
+| status（信号号 / exit code） | ✅ | ❌ |
+| description | ✅ (DEST_EXPLICIT) | ❌ |
+| state / trace_file | ✅ | ❌ |
+
+statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保留在 ApplicationExitInfo Java API 端。这意味着 statsd 适合做趋势/告警，ApplicationExitInfo 适合做单次诊断详查——两条通道互补而非重复。
+
+### 未验证项
+
+- `FrameworkStatsLog.APP_PROCESS_DIED` 常量值 373 是基于 atoms.proto 中 enum 注册顺序推断，生成的 `FrameworkStatsLog.java` 不在 git tree 中可直读。
+- Android 17 是否新增独立 Reason 常量（如 `REASON_MEMORY_LIMITER`）未在 android17-release 分支验证；上一轮 AIW 调研（2026-05-23）已记录 Android 17 引入保守应用内存限制（targetSdk>=36），但 Reason 路径需补查。
+- `StatsdStatsService` / `StatsService.java` 在 `services/core/java/com/android/server/stats/` 目录下的 Android.bp 视角未在本轮核对，与本主题相关度低但建议后续补查。
+
+<!-- /AIW-源码调研-2026-06-23 -->
+
 
 ## 待复核项
 
