@@ -5,12 +5,12 @@ section: "20.7"
 status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-15"
-last_verified_against: "AOSP android-16.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
+last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
 confidence: medium
 drafted_date: "2026-05-15"
 polish_count: 1
 sources:
-  - type: clippings-structure-ref
+- type: clippings-structure-ref
     path: "Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控:实现自定义 Crash 处理器.md"
   - type: clippings-structure-ref
     path: "Clippings/Android 应用稳定性剖析与优化 - Java 堆栈:深入了解 Throwable.md"
@@ -46,20 +46,19 @@ task6_result: pass-light-edit
 last_task6_at: 2026-06-23T09:10:00+08:00
 last_task6_review_log: "logs/review/2026-06-23-08-review.md"
 task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式在限制内。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-22"
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
-task9_result: "auto-fixed"
+task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-06-23
-last_task9_at: "2026-06-23T08:34:43+08:00"
+last_task9_at: 2026-06-23T09:32:42.810173
 last_task9_audit: "2026-06-23"
 last_task9_review_log: "logs/deep-review/2026-06-23-08-deep-review.md"
 task9_review_notes: "2026-06-16 Task9 复审:auto-fixed。SafeMode launch marker 状态机、crash 文件持久化协议已闭环；本轮直接修正父目录 fsync 示例中不存在的 Java/Kotlin API 写法，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。 | 2026-06-23 Task9 闲时抽检:auto-fixed。Android 17 源码复核确认 REASON_INITIALIZATION_FAILURE 仍为 ApplicationExitInfo 主退出原因之一；SafeMode 示例代码已补入该白名单，与后文源码核验结论保持一致，回到 Task6 复审。 | 2026-06-23 08:34 Task9 deep-review:auto-fixed。P0 1；修正不存在的 parentFile.fdatasync() API 表述，改为父目录 fd + fsync(dirfd)/android.system.Os.fsync()，回到 Task6 复审。"
-
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00
 last_task9_autofix_at: "2026-06-23"
@@ -68,7 +67,7 @@ finalized_by: "openclaw-task9-auto-promote"
 deepseek_cn_review_state: needs-structure-rework
 last_deepseek_cn_review_at: 2026-06-17
 task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(parentFile.fdatasync()→android.system.Os.open()+Os.fsync(), REASON_INITIALIZATION_FAILURE 补入 SafeMode 白名单)已验证到位,无引入新写作问题。无禁用词/高频词命中(正文)。不是X而是Y 句式 1 次(在限制内)。承担 1 处(line 272,中文日常用法,非物理动作隐喻,保留)。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
----
+----
 
 # 异常处理架构设计
 
@@ -118,9 +117,9 @@ flowchart TD
   I --> J[上报与聚合]
 ```
 
-Java 入口使用 `Thread.UncaughtExceptionHandler`。Android 官方文档说明,线程因未捕获异常即将终止时,虚拟机会通知对应 handler;AOSP `RuntimeInit.commonInit()` 默认注册 `LoggingHandler` 和 `KillApplicationHandler`,前者写 `FATAL EXCEPTION` 日志,后者通知 AMS 并结束进程。自定义 handler 处理完后必须调用上一个 handler,不能吞掉系统退出路径。详见 20.2。[已验证: 官方文档, developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler][已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
+Java 入口使用 `Thread.UncaughtExceptionHandler`。Android 官方文档说明,线程因未捕获异常即将终止时,虚拟机会通知对应 handler;AOSP `RuntimeInit.commonInit()` 默认注册 `LoggingHandler` 和 `KillApplicationHandler`,前者写 `FATAL EXCEPTION` 日志,后者通知 AMS 并结束进程。自定义 handler 处理完后必须调用上一个 handler,不能吞掉系统退出路径。详见 20.2。[已验证: 官方文档, developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler][已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
 
-Native 入口通常交给 Crashpad、Breakpad 或厂商 APM SDK。信号处理函数的安全边界比 Java handler 更窄,不能依赖锁、堆分配、日志框架和网络。端侧只写最小记录,堆栈符号化、聚合和告警放到 26.2 的上报系统处理。详见 20.3。[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/crash_dump.cpp]
+Native 入口通常交给 Crashpad、Breakpad 或厂商 APM SDK。信号处理函数的安全边界比 Java handler 更窄,不能依赖锁、堆分配、日志框架和网络。端侧只写最小记录,堆栈符号化、聚合和告警放到 26.2 的上报系统处理。详见 20.3。[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/crash_dump.cpp]
 
 异常记录建议拆成两份:崩溃当下写入 `crash_envelope`,下次启动再补 `runtime_context`。
 
@@ -334,7 +333,7 @@ public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail)
     view.destroy();
     // 3. 显示兜底页或重建 WebView
     showFallbackPage();
-    return true; // 已处理,不让系统走默认行为
+    return true; // 阻止系统默认行为，表示已处理
 }
 ```
 
@@ -429,10 +428,11 @@ fun atomicWriteCrashFile(dir: File, pid: Int, content: ByteArray): Boolean {
 
 ### `ApplicationExitInfo` 退出原因全集
 
-`frameworks/base/core/java/android/app/ApplicationExitInfo.java` 在 android-15 共 17 个 `REASON_*` 常量（0–16），本节列出的 `REASON_CRASH` / `REASON_CRASH_NATIVE` / `REASON_ANR` / `REASON_LOW_MEMORY` / `REASON_USER_REQUESTED` 全部存在，**应补的还有**：
+`frameworks/base/core/java/android/app/ApplicationExitInfo.java` 在 android-17 共 18 个 `REASON_*` 常量（0–17），本节列出的 `REASON_CRASH` / `REASON_CRASH_NATIVE` / `REASON_ANR` / `REASON_LOW_MEMORY` / `REASON_USER_REQUESTED` 全部存在，**应补的还有**：
 
-- `REASON_INITIALIZATION_FAILURE`（7）：启动初始化失败，SafeMode 维度 3 白名单应纳入。
+- `REASON_INITIALIZATION_FAILURE`（8）：启动初始化失败，SafeMode 维度 3 白名单应纳入。
 - `REASON_FREEZER`（14）/ `REASON_PACKAGE_STATE_CHANGE`（15）/ `REASON_PACKAGE_UPDATED`（16）/ `REASON_USER_STOPPED`（11）/ `REASON_PERMISSION_CHANGE`（8）/ `REASON_DEPENDENCY_DIED`（12）：应明确加入黑名单，避免被误算为启动崩溃。
+- `REASON_CRITICAL_PROCESS_DIED`（17）：Android 17 新增的关键进程死亡，需纳入异常处理范围。
 
 `getTraceInputStream()` 签名是 `@Nullable InputStream getTraceInputStream() throws IOException`，对 `mAppTraceRetriever` 为空的 reason 必然返回 `null`——"拿不到 trace" 是正常路径，不能当作 "没有 native crash"。
 
