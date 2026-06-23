@@ -1,3 +1,104 @@
+## [Task9 Deep Review] 18.14 Camera 渲染管线 — 2026-06-23
+
+- **类型**：源码准确性
+- **位置**：源码引用路径
+- **问题**：引用路径错误：`hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDevice.aidl` 应为 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
+- **建议**：修正源码路径引用，确保指向正确的 CameraDevice AIDL 接口
+
+- **类型**：原理链完整性
+- **位置**：ZSL 机制原理链
+- **问题**：ZSL 机制描述不完整，缺少 HAL reprocessing 能力前置条件说明
+- **建议**：补充说明设备必须声明 `REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING` 才能使用 ZSL，建立完整的 HAL 能力依赖链
+
+- **类型**：版本差异覆盖
+- **位置**：版本演进表
+- **问题**：Android 16 MemoryLimiter 机制未在章节中提及
+- **建议**：在版本演进表中增加 MemoryLimiter 相关说明，补充 Android 17 对高 RAM 设备的内存限制变化
+
+- **类型**：知识盲区
+- **位置**：Camera HAL buffer management
+- **问题**：Camera HAL buffer management 与 BufferQueue 协作的内存模型未充分覆盖
+- **建议**：补充 GraphicBuffer 在 HAL 和 Framework 间的所有权转移机制、内存分配策略、同步原语使用说明
+
+- **类型**：知识盲区
+- **位置**：CameraX ZSL 与底层 HAL reprocessing
+- **问题**：CameraX ring buffer 如何与 HAL reprocessing request 对应关系不清晰
+- **建议**：研究 CameraX ZSL 实现与 HAL reprocessing 的映射关系，分析不同设备 HAL 能力对 ZSL 策略的影响
+
+- **类型**：数据支撑
+- **位置**：Stream Use Case 性能影响
+- **问题**：不同 Stream Use Case 对 pipeline 延迟和功耗缺少量化数据
+- **建议**：补充不同 Stream Use Case 对 pipeline 延迟和功耗的具体影响数据，支持性能调优决策
+
+- **类型**：数据支撑
+- **位置**：Buffer 饥饿场景
+- **问题**：Buffer 饥饿场景缺少典型阈值数据
+- **建议**：补充 ImageReader 回调堆积超过多少帧会被判定为 Buffer 饥饿的典型阈值数据
+
+- **类型**：交叉引用一致性
+- **位置**：与 14.9 节引用关系
+- **问题**：与 14.9 节 Camera 性能分析的引用关系描述不一致
+- **建议**：修正交叉引用，确保章节引用编号和标题准确对应
+
+## [Task9 Deep Review] 26.12 Android 版本化线上诊断能力 — 2026-06-23
+
+- **类型**：源码准确性
+- **位置**：ProfilingManager 源码路径
+- **问题**：引用路径错误：`frameworks/base/core/java/android/os/ProfilingManager.java` 应为 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
+- **建议**：更新源码路径引用，确保指向正确的 ProfilingManager 位置
+
+- **类型**：版本差异覆盖
+- **位置**：Android 17 MemoryLimiter 行为
+- **问题**：Android 17 对高 RAM 设备引入保守应用内存限制的行为未在章节中体现
+- **建议**：在版本演进表和证据归档中增加 MemoryLimiter 相关说明，补充退出时的 MemoryLimiter 描述
+
+- **类型**：原理链完整性
+- **位置**：ApplicationExitInfo 与 ProfilingManager 证据互补关系
+- **问题**：未说明两类证据如何去重和互补
+- **建议**：补充相同场景下两种证据的优先级和互补逻辑，建立完整的诊断证据链
+
+- **类型**：知识盲区
+- **位置**：StatsD 原子数据与诊断能力集成
+- **问题**：StatsD 原子计数器与 ApplicationExitInfo 状态的关联分析缺失
+- **建议**：研究 Android StatsD 原子计数器的采集机制，分析与 ApplicationExitInfo 的集成关系
+
+- **类型**：知识盲区
+- **位置**：ProfilingManager FLAG_TELEMETRY_APIS 启用条件
+- **问题**：Telemetry APIs 启用条件和设备兼容性判断不明确
+- **建议**：明确 Telemetry APIs 的启用条件和设备兼容性判断标准
+
+- **类型**：知识盲区
+- **位置**：ProfilingService 服务端实现
+- **问题**：ProfilingService 后端处理流程和限流机制未详细说明
+- **建议**：补充 ProfilingService 服务端处理流程和限流机制的详细说明
+
+- **类型**：数据支撑
+- **位置**：ProfilingManager rate limiter 阈值
+- **问题**：系统级和进程级限流的具体数值和计算方式未明确
+- **建议**：补充 ProfilingManager 系统级和进程级限流的具体数值和计算方式
+
+- **类型**：数据支撑
+- **位置**：各 ProfilingType 文件大小和耗时
+- **问题**：system trace、heap dump 等的典型文件大小和采集耗时未给出
+- **建议**：补充各 ProfilingType 的典型文件大小和采集耗时数据
+
+- **类型**：交叉引用一致性
+- **位置**：与 8.10 节引用关系
+- **问题**：与 8.10 节 ProfilingTrigger 的实现细节描述有冲突
+- **建议**：明确引用范围，区分客户端和服务端实现细节
+
+## [Task9 Deep Review] 25.2 后台功耗治理 — 2026-06-23
+
+- **类型**：知识盲区
+- **位置**：WorkManager 与 JobScheduler 实现差异
+- **问题**：Android 15+ JobScheduler quota 控制与 WorkManager 的映射关系不清晰
+- **建议**：补充 Android 15+ JobScheduler quota 控制与 WorkManager 的映射关系说明
+
+- **类型**：数据支撑
+- **位置**：后台定位功耗对比
+- **问题**：不同定位优先级（NO_POWER/BALANCED/HIGH_ACCURACY）的典型功耗范围未给出
+- **建议**：补充不同定位优先级的典型功耗范围数据，支持功耗优化决策
+
 ## [Task9 Deep Review] 20.7 异常处理架构设计 — 2026-06-23
 
 ### P2 建议改进：
@@ -89,3 +190,10 @@
 - **位置**："PausableComposition"描述
 - **问题**：版本边界描述不够精确
 - **建议**：需要核实具体的Compose Runtime版本边界
+## [Task2B 回炉阻塞] 8.10 ProfilingManager — 2026-06-23
+
+**原因**：Task 9 Deep Tech Review 指出章节引用的 AOSP 源码路径（`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`）在 android-17.0.0_r1 及之前 tag 中均未公开，无法验证章节技术描述的准确性。
+
+**状态**：`blocked` — 须等待 Android Profiling 模块源码公开，或由高爷确认是否标注「源码未公开，基于文档推断」。
+
+**来源 queue 条目**：priority 95, added_by task9-deep-tech-review

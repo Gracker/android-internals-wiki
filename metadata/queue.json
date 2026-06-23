@@ -48,29 +48,6 @@
       "completed_by": "task2b-lite",
       "completed_at": "2026-06-23T15:40:00+08:00",
       "completed_reason": "fixed-lite: 修正源码路径引用、补全 ApplicationExitInfo 与 ProfilingManager 证据互补规则、更新版本边界"
-    },
-    {
-      "section": "20.12",
-      "section_title": "SafeMode 崩溃循环判定与启动补偿链路",
-      "priority": 95,
-      "reason": "[Deep Tech Review] DropBoxManagerService 状态机、AtomicFile.failWrite 行为、crash_envelope fsync 示例存在源码/API 级错误，且 Android 17 锚点已过期。",
-      "material_paths": [
-        {
-          "type": "P1 重要缺失",
-          "location": "Android 17 MemoryLimiter 行为",
-          "detail": "Android 17 对高 RAM 设备引入保守应用内存限制的行为未在章节中体现",
-          "suggestion": "在版本演进表和证据归档中增加 MemoryLimiter 相关说明，补充退出时的 MemoryLimiter 描述"
-        },
-        {
-          "type": "P1 重要缺失",
-          "location": "原理链完整性",
-          "detail": "ApplicationExitInfo 与 ProfilingManager 的证据互补关系不完整，未说明两类证据如何去重和互补",
-          "suggestion": "补充相同场景下两种证据的优先级和互补逻辑，建立完整的诊断证据链"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-23T14:20:00+08:00",
-      "status": "pending"
     }
   ],
   "in_progress": [],
@@ -93,7 +70,7 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-23T13:20:00+08:00",
-      "status": "pending"
+      "status": "blocked"
     },
     {
       "section": "ch02-rendering",
