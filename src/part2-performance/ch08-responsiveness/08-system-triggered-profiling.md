@@ -3,7 +3,7 @@ title: "ProfilingManager 系统触发式性能追踪"
 chapter: '8.10'
 section: '8.10'
 status: "ready-for-review"
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 tags: [responsiveness, latency, launch]
 confidence: medium
@@ -14,8 +14,8 @@ created_date: '2026-04-10'
 gap_source: 研究素材
 path: "https://developer.android.com/reference/android/os/ProfilingManager"
 last_task9_audit: "2026-06-23"
-task6_state: reviewed
-task9_state: pending
+task6_state: "revisiting"
+task9_state: "pending"
 last_task2b_lite_at: '2026-06-23'
 repaired_date: '2026-05-09'
 repaired_by: openclaw-task2b
@@ -34,9 +34,8 @@ last_deepseek_cn_review_at: 2026-06-08
 last_task9_autofix_at: "2026-06-23"
 last_task6_at: "2026-06-23T13:09:00+08:00"
 last_task6_review_log: "logs/review/2026-06-23-13-review.md"
-task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 auto-fix 后回归): pass-light-edit。无禁用词/高频词命中, 不是X而是Y 句式 1 次(在限制内)。queue.json 无 pending。"
-task2b_result: "fixed-lite"
-task2b_state: "pending"
+task2b_result: "fixed"
+task2b_state: "fixed"
 last_task2b_at: "2026-06-23T13:35:00+08:00"
 task9_review_notes: "2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。"
 last_task9_review_log: "logs/deep-review/2026-06-23-13-deep-review.md"
@@ -73,7 +72,7 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 ### 🔹 Android 16、36.1、17 的版本分层
 - API 36:`APP_FULLY_DRAWN=1`、`ANR=2`
 - extension 36.1:`APP_REQUEST_RUNNING_TRACE=3`、`KILL_FORCE_STOP=4`、`KILL_RECENTS=5`、`KILL_TASK_MANAGER=6`,运行时还要做 Extension SDK gating
-- API 37:`OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=11`、`APP_COMPAT=10`
+- API 37:`OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=10`、`APP_COMPAT=11`
 
 ### 🔹 冷启动、ANR、OOM 的使用方式
 - 冷启动要分清 `APP_FULLY_DRAWN` 和 `COLD_START`
@@ -164,7 +163,7 @@ public final class TriggeredProfilingRegistrar {
 |---|---|---|---|---|
 | `TRIGGER_TYPE_APP_FULLY_DRAWN = 1` | API 36 | running system trace snapshot | 冷启动里调用 `Activity.reportFullyDrawn()` 之后 | 适合复盘启动尾段 |
 | `TRIGGER_TYPE_ANR = 2` | API 36 | running system trace snapshot | 系统已经识别到 ANR,但还没按公开契约结束该应用时 | 文档强调它不等同于"应用一定已被杀" |
-| `TRIGGER_TYPE_COLD_START = 11` | API 37 | newly started system trace + stack sampling | 应用冷启动尽早阶段,且 `ApplicationStartInfo.getStartType()` 为 `START_TYPE_COLD` | 调用 `reportFullyDrawn()` 时停止;没有调用时默认约 5 秒停止 |
+| `TRIGGER_TYPE_COLD_START = 10` | API 37 | newly started system trace + stack sampling | 应用冷启动尽早阶段,且 `ApplicationStartInfo.getStartType()` 为 `START_TYPE_COLD` | 调用 `reportFullyDrawn()` 时停止;没有调用时默认约 5 秒停止 |
 | `TRIGGER_TYPE_OOM = 7` | API 37 | Java heap dump | 应用抛出 `OutOfMemoryError` | 自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler |
 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE = 9` | API 37 | running system trace snapshot | 应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被系统杀掉 | 文档没有公开 CPU 阈值 |
 | `TRIGGER_TYPE_ANOMALY = 8` | API 37 | **依异常类型动态变化**:heap dump 或 stack sampling | 系统检测到异常行为;MemoryLimiter 这类 kill 路径会在终止前触发,binder spam 等规则可能只收集 profile | 产物类型和 tag 由 anomaly-detector 规则决定;`ProfilingResult.getTag()` 携带异常分类信息 |
@@ -180,7 +179,7 @@ public final class TriggeredProfilingRegistrar {
 
 Android 16 的 `TRIGGER_TYPE_APP_FULLY_DRAWN = 1`,语义是"冷启动里已经调用 `Activity.reportFullyDrawn()`,系统给出一份 running system trace snapshot"。它更像在启动完成点拿一张快照,帮助我们比对启动后段和 fully drawn 时刻前后的线程活动。
 
-Android 17 的 `TRIGGER_TYPE_COLD_START = 11` 则往前迈了一步。它要求系统在应用冷启动尽早阶段就开始录制,并持续到 `reportFullyDrawn()`,或者在没有调用 `reportFullyDrawn()` 时按默认 5 秒截止。公开文档还说明这类 trigger 使用 discard buffer,缓冲区满时会丢新事件,优先保留最早阶段的 tracepoint。写启动章节时,如果把这两个 trigger 混成一个名字,读者对采样窗口的判断就会直接错位。
+Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求系统在应用冷启动尽早阶段就开始录制,并持续到 `reportFullyDrawn()`,或者在没有调用 `reportFullyDrawn()` 时按默认 5 秒截止。公开文档还说明这类 trigger 使用 discard buffer,缓冲区满时会丢新事件,优先保留最早阶段的 tracepoint。写启动章节时,如果把这两个 trigger 混成一个名字,读者对采样窗口的判断就会直接错位。
 
 ### OOM 说的是 Java 层 OOM,不是 LMK
 
