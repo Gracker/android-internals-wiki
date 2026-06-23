@@ -7,11 +7,23 @@ status: "finalized"
 drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-06-14'
-last_verified_against: AOSP android-16.0.0_r1 attrs_manifest.xml + Android Developers
+last_verified: '2026-06-24'
+last_verified_against: AOSP android-17.0.0_r1 frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java + LogicalDisplayMapper.java + LocalDisplayAdapter.java + DisplayAdapter.java + ExternalDisplayPolicy.java + Android Developers multi-window / connected displays docs
   multi-window/desktop/connected displays/behavior changes 16/17/release notes
   + Android Developers Blog first beta Android 17 + Perfetto stdlib/FrameTimeline docs
   + Source Android SurfaceFlinger/HWC docs
+- type: source
+  path: frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java
+- type: source
+  path: frameworks/base/services/core/java/com/android/server/display/LogicalDisplayMapper.java
+- type: source
+  path: frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java
+- type: source
+  path: frameworks/base/services/core/java/com/android/server/display/DisplayAdapter.java
+- type: source
+  path: frameworks/base/services/core/java/com/android/server/display/ExternalDisplayPolicy.java
+- type: report
+  path: ../../../DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md
 confidence: medium
 sources:
 - type: official
@@ -146,6 +158,94 @@ last_deepseek_cn_review_at: 2026-06-15
 | desktop windowing 设备 + 外接显示器 | 平板等 desktop windowing 设备连接外屏 | 桌面会话跨两块屏幕扩展，窗口和光标可跨屏移动 | 仍是同一套桌面会话，但 display 范围更大、像素更多 |
 
 [图：split-screen、PiP、desktop windowing、connected display 四种形态的 display 会话示意图]
+
+## DisplayManagerService 的多 display 源码结构（Android 17）
+
+多 display 真正的「分屏」发生在 DisplayManagerService（DMS），不在 SurfaceFlinger。SurfaceFlinger 拿到的是「已经定型」的 display 列表；多 display 的 display 角色、主从关系、拓扑关系由 DMS 在 `android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java` 维护。
+
+<!-- AIW-源码调研-2026-06-24 -->
+
+下面把 `android-17.0.0_r1` 上看得到的几条主线写下来，方便排查时直接定位。
+
+### 一把 `SyncRoot` 锁守住所有 display 状态
+
+`DisplayManagerService` 内部用 `DisplayManagerService.SyncRoot`（一个 `static final` 类）做全局锁。DisplayAdapter 的 `registerLocked()`、`LogicalDisplayMapper.updateLogicalDisplaysLocked()`、`ExternalDisplayPolicy.handleExternalDisplayConnectedLocked()`、每个 `DisplayPowerController` 的 lead 切换全部在这把锁上同步（`DisplayManagerService.java` 行 285–537，构造与字段定义；行 696–770 子模块装配；行 783–797 `onStart`）。
+
+这把锁在 Android 17 仍未拆分。foldable 展开 + external display 接入同时发生（dock 设备）时，`mSyncRoot` 持锁时间偏长是已知瓶颈。**不能把 Android 17 的 `DeliQueue` 优化（`android.os.MessageQueue` 无锁）外推到 DMS 的 `SyncRoot` 隔离**——两者是不同对象。
+
+### 物理 display 怎么被发现
+
+`LocalDisplayAdapter.registerLocked()` 在 `onStart` 后由 `MSG_REGISTER_DEFAULT_DISPLAY_ADAPTERS` 触发（`DisplayManagerService.java` 行 2543–2551），它会枚举 `SurfaceControl.getPhysicalDisplayIds()` 并对每个 physical id 调 `tryConnectDisplayLocked()`。第一次发现的 display 走 `DISPLAY_DEVICE_EVENT_ADDED`，后续 hotplug 走 `DISPLAY_DEVICE_EVENT_CHANGED`（`LocalDisplayAdapter.java` 行 121–200）。
+
+`isFirstDisplay`（`mDevices.size() == 0`）决定这块 display 是否作为设备的主 display，写进 `DisplayDeviceInfo.flags`，后续 `LogicalDisplayMapper` 拿来挑 `DEFAULT_DISPLAY`（displayId=0）对应的物理 display。
+
+`OverlayDisplayAdapter` 和 `WifiDisplayAdapter` 在 `MSG_REGISTER_ADDITIONAL_DISPLAY_ADAPTERS` 且 `!mSafeMode` 时才注册（行 2564–2591）。Miracast 设备在 Android 17 仍走 `WifiDisplayAdapter` 路径。
+
+### 设备状态（折叠/展开/桌面模式）的统一入口
+
+折叠、展开、桌面模式都属于 `DeviceState` 概念。`LogicalDisplayMapper.setDeviceState(DeviceState state)` 是唯一入口（`LogicalDisplayMapper.java` 行 554–568），它会：
+
+1. 在 `mSyncRoot` 锁上同步执行 `setDeviceStateLocked()`（行 569–668）。
+2. 调 `resetLayoutLocked(prev, next, transitionValue=true)`，让相关 `LogicalDisplay` 标记为「即将关闭」中间态，SurfaceFlinger 关闭动画就此触发。
+3. 调 `shouldDeviceBeWoken` / `shouldDeviceBePutToSleep` 决定是否联动 `PowerManager.wakeUp(WAKE_REASON_UNFOLD_DEVICE, "server.display:unfold")` 或 `goToSleep(GO_TO_SLEEP_REASON_DEVICE_FOLD)`（行 626–666）。这就是 §2.20 中 `wakeup` / `goToSleep` trace slice 的来源。
+4. 派发 `MSG_TRANSITION_TO_PENDING_DEVICE_STATE` 延迟消息作为兜底超时（行 667）。如果 `finishStateTransitionLocked()` 回调没到，强制切到目标状态。
+
+`onBootCompleted()` 之前所有状态变化都被缓存在 `mDeviceStateToBeAppliedAfterBoot` 里，boot 完才落地（行 670–681）。这是为什么冷启动过程中观察不到 fold/unfold trace 的原因。
+
+### 逻辑 display → DisplayPowerController 一一对应
+
+每个 logical display 在 `setupLogicalDisplay()` 中都会创建一个 `DisplayPowerController` 并加到 `mDisplayPowerControllers: SparseArray<DisplayPowerController>`（`DisplayManagerService.java` 行 2603–2651）。多 display 的功耗/亮度隔离边界就在这里。
+
+设备状态切换时 `updateDisplayPowerControllerLeaderLocked(dpc, leadDisplayId)`（行 2774–2801）会做 lead/follower 重排：unregister 旧 lead → register 新 lead。每个 follower 跟着 lead 调亮度，避免多 display 各自跑亮度策略打架。
+
+### External display 单独走 `ExternalDisplayPolicy`
+
+`handleLogicalDisplayConnectedPreProcessLocked()` 中判断 `ExternalDisplayPolicy.isExternalDisplayLocked(display)`（`DisplayManagerService.java` 行 2674–2684），条件就是 `logicalDisplay.getDisplayInfoLocked().type == Display.TYPE_EXTERNAL`（`ExternalDisplayPolicy.java` 行 63–65）。外接显示器单独的 enable / disable 策略、高温不允许通知、统计由 `ExternalDisplayPolicy` 负责（行 197–243）。
+
+`isExtendedDisplayAllowed`（`DisplayManagerService.java` 行 2689–2700）在 Android 17 的变化是引入 `DisplayManagerFlags.isDisplayContentModeManagementEnabled()`：开启后**默认允许外接显示器扩展**，不再依赖 `DEVELOPMENT_FORCE_DESKTOP_MODE_ON_EXTERNAL_DISPLAYS` 这个开发选项。Android 17 设备开启该 flag 后，phone + external 不需要任何开关就能进入 desktop windowing。
+
+### 多 display 状态变更怎么传到 WindowManager
+
+DMS 通过单实例的 `mPendingTraversal` 节流地向 WindowManager 投递 `MSG_REQUEST_TRAVERSAL`（`DisplayManagerService.java` 行 3985–3991）。这条路径解释了「external display 拔插后为什么 WindowManager 跟着做一次 traversal」——DMS 调一次 → WMS 走 `WindowManagerService#requestTraversalFromDisplayManager()` → 下一个 vsync 重新计算可见 window 与 layer。
+
+DMS 自己跑在独立的 `DisplayThread` 上（`DisplayManagerService.setupSchedulerPolicies()` 行 768–777 把 DisplayThread / AnimationThread / SurfaceAnimationThread 都设为 `THREAD_GROUP_TOP_APP`）。所以 Perfetto 中 `android.display` 线程的占用反映 DMS 内部在 `updateLogicalDisplaysLocked()` 等热点上的开销，**不直接反映锁竞争**。
+
+### 多 display 调用的关键调用链
+
+```
+SurfaceFlinger hotplug
+  → SurfaceControl.DisplayEventReceiver
+  → LocalDisplayEventListener (in LocalDisplayAdapter)
+  → LocalDisplayAdapter.tryConnectDisplayLocked
+  → sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_ADDED)
+  → DisplayAdapter.sendDisplayDeviceEventLocked
+  → mHandler.post(() -> mListener.onDisplayDeviceEvent)
+  → DisplayManagerService.LogicalDisplayListener.onDisplayDeviceEvent
+  → LogicalDisplayMapper.onDisplayDeviceEventLocked
+  → handleDisplayDeviceAddedLocked
+  → updateLogicalDisplaysLocked
+  → 触发 deliverDisplayEvents / scheduleTraversalLocked
+  → WindowManager.requestTraversalFromDisplayManager
+  → WMS 重新计算可见 window → SurfaceFlinger layer 树更新
+```
+
+整条路径在 `android-17.0.0_r1` 上仍然是「单 `mSyncRoot` 串行化 + 多次 `mHandler.post` 异步派发」。在多 display 频繁切换（foldable 翻转 + 外部热插）的场景下，单锁是观察到的串行化瓶颈，handler 异步派发只是把 DMS 内部的不同步骤错开，并不能跨 display 并行化。
+
+### 多 display trace 排查时回看 DMS 的几个具体切片
+
+- `dumpsys display`：能直接看 `mLogicalDisplays` / `mDisplayGroups` / `mDisplayPowerControllers` / `mVirtualDeviceDisplayMapping` / 当前 `Layout` 与 `mDeviceState`。
+- `dumpsys SurfaceFlinger`：以 `Display` 维度看 `compositionType` / `layer` 归属 / `FramebufferSurface`。注意 `dumpsys SurfaceFlinger` 里看到的 display 与 DMS 的 `LogicalDisplay` 是一对一映射。
+- Perfetto 中 `surfaceflinger_display` / `transaction` / `surfaceflinger_layer` 三个表能看出多 display 的 layer 归属（`surfaceflinger_layer` 表本身没有 `display_id` 列，需要通过 `surfaceflinger_layers_snapshot.id = surfaceflinger_layer.snapshot_id` 关联到 `android_surfaceflinger_display` 再确认归属）。
+- 系统级 `frame timeline` 切片里看 `jank_type`：多 display 下 `SurfaceFlingerCpuDeadlineMissed` 只能说明该 display 自己的合成 deadline 没赶上，**不能外推到另一块 display**——每块 display 独立的 vsync、独立的 deadline。这与 §2.20 中「多 display 还会把 VSync 和 deadline 观察拆成两份」的判断一致。
+
+参考源码：
+- `frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java`
+- `frameworks/base/services/core/java/com/android/server/display/LogicalDisplayMapper.java`
+- `frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java`
+- `frameworks/base/services/core/java/com/android/server/display/DisplayAdapter.java`
+- `frameworks/base/services/core/java/com/android/server/display/ExternalDisplayPolicy.java`
+
+<!-- /AIW-源码调研-2026-06-24 -->
 
 ## SurfaceFlinger 在多窗口下多了什么工作
 
