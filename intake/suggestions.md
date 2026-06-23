@@ -144,22 +144,60 @@
 - **建议**：添加页面销毁时协程异常的处理示例，说明如何避免内存泄漏和不必要的异常上报。
 
 ## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-23
+
 - **类型**：源码准确性
 - **位置**：ANOMALY 产物动态性说明
 - **问题**：ANOMALY 触发器的产物类型选择逻辑不清晰，何时返回 heap dump vs stack sampling 的判断标准未明确
 - **建议**：补充具体的 anomaly-detector 规则判断逻辑，或说明产物类型由 anomaly 类型决定的具体机制
 
 ## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-23
+
 - **类型**：版本差异
 - **位置**：Android 17 APP_COMPAT=11 描述
 - **问题**：APP_COMPAT trigger 描述过于简略，未说明具体使用场景和产物类型
 - **建议**：补充 APP_COMPAT 的具体使用场景、返回产物类型和分析方法
 
 ## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-23
+
 - **类型**：数据支撑
 - **位置**：性能影响章节
 - **问题**：缺少具体的性能基准数据支持
 - **建议**：补充不同 trigger 类型的内存占用、CPU 占用、存储占用等量化数据，以及针对不同使用场景的优化建议
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-06-23
+
+- **类型**：源码准确性
+- **位置**：Canvas.java 源码路径
+- **问题**：引用路径错误 - frameworks/base/graphics/java/android/graphics/Canvas.java 在 AOSP android-16.0.0_r1 中存在，但调用链中的 BaseCanvas.java 路径不准确
+- **建议**：统一引用 frameworks/base/graphics/java/android/graphics/ 包下的 Canvas.java 和 BaseCanvas.java 路径
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-06-23
+
+- **类型**：版本差异覆盖
+- **位置**：Android 16 瓦片大小相关内容
+- **问题**：文中提到"在统一内存架构下"，但对 Android 16 的统一内存架构变化描述较少，缺少对 16KB 页环境下 GPU 内存管理变化的补充
+- **建议**：补充 Android 16 统一内存架构变化和 16KB 页环境下 GPU 内存管理的具体说明
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-06-23
+
+- **类型**：数据支撑
+- **位置**：GPU 性能数据
+- **问题**：缺少 "GPU busy" 计数器的具体数值对比或实际案例分析
+- **建议**：补充 GPU busy 计数器在不同场景下的具体数值对比或实际案例分析
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-06-23
+
+- **类型**：知识盲区
+- **位置**：大型 App 内存预算管理
+- **问题**：仅提到分层思路，缺少大型 App 内存预算模型和内存压力监测的具体实践
+- **建议**：补充大型 App 内存预算模型和内存压力监测的具体实践案例
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-06-23
+
+- **类型**：数据支撑
+- **位置**：优化数据支撑
+- **问题**：内存优化章节缺少优化前后的具体数据对比
+- **建议**：补充内存优化前后的具体数据对比案例
 
 ## [Task6 Review] 19.10 其他开源 APM 库 — 2026-06-23
 - **类型**：L3 内容深度
@@ -190,6 +228,7 @@
 - **位置**："PausableComposition"描述
 - **问题**：版本边界描述不够精确
 - **建议**：需要核实具体的Compose Runtime版本边界
+
 ## [Task2B 回炉阻塞] 8.10 ProfilingManager — 2026-06-23
 
 **原因**：Task 9 Deep Tech Review 指出章节引用的 AOSP 源码路径（`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`）在 android-17.0.0_r1 及之前 tag 中均未公开，无法验证章节技术描述的准确性。
