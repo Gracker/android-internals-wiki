@@ -183,3 +183,52 @@
 - **问题**：正文称“开启时每个 SurfaceFrame 写 1-2 个 packet，锁竞争极低”，但未给出 trace 样本、Trace Processor 统计或源码约束。Android 17 `FrameTimeline.cpp` 对 expected/actual display/surface frame 有多处 `FrameTimelineDataSource::Trace()` 写入，实际 packet 数取决于 display frame、surface frame、filterFramesBeforeTraceStarts 与预测状态。
 - **建议**：把固定 packet 数和“锁竞争极低”降级为待实测口径，补一组 `actual_frame_timeline_slice` / `expected_frame_timeline_slice` 统计或 Perfetto packet 计数后再下结论。
 - **review 日志**：logs/deep-review/2026-06-23-00-deep-review.md
+
+
+## [Task9 Deep Review] 8.10 ProfilingManager — ANOMALY 内存阈值数据缺失
+- **类型**：数据缺失
+- **位置**：ANOMALY 异常检测规则描述
+- **问题**：章节提到 ANOMALY 与内存阈值相关，但未给出具体的内存阈值数字和基准参考，缺少量化数据支撑
+- **建议**：补充 Android 17 中 ANOMALY 检测的具体内存阈值（如 MemoryLimiter 的阈值设置），并提供实际测试数据或 AOSP 配置文件中的默认值
+
+## [Task9 Deep Review] 8.10 ProfilingManager — result delivery 机制描述不完整
+- **类型**：原理链断裂
+- **位置**：registerForAllProfilingResults() 回调机制
+- **问题**：章节未详细说明 registerForAllProfilingResults() 的具体回调时机和线程模型，影响开发者理解异步结果的处理流程
+- **建议**：补充回调调用的详细时序图，说明在不同场景下的调用线程和回调模式
+
+## [Task9 Deep Review] 8.10 ProfilingManager — Extension 36.1 处理回退逻辑缺失
+- **类型**：版本差异
+- **位置**：Extension-only 触发器处理
+- **问题**：未说明 API 36 设备上如何处理 extension-only 的触发器，缺少向后兼容性说明
+- **建议**：补充 Extension-only 触发器在 API 36 设备上的降级处理逻辑，说明 gracefully degrade 策略
+
+## [Task9 Deep Review] 20.7 异常处理架构设计 — SafeMode 阈值数据缺失
+- **类型**：数据缺失
+- **位置**：SafeMode 崩溃判定
+- **问题**：章节提到 SafeMode 与崩溃频次相关，但未给出具体的崩溃频次、时间窗口数值等量化指标
+- **建议**：补充 Android 17 中 SafeMode 的具体判定阈值（如3次崩溃/5分钟），并提供配置位置和默认值
+
+## [Task9 Deep Review] 20.7 异常处理架构设计 — Native crash 处理性能数据缺失
+- **类型**：数据缺失
+- **位置**：Native signal handler
+- **问题**：章节未给出 signal handler 的执行耗时基准，影响开发者对性能影响的评估
+- **建议**：补充 Native crash 处理的性能数据（如 signal handler 执行耗时、内存占用），并提供优化建议
+
+## [Task9 Deep Review] 20.7 异常处理架构设计 — WebView crash 实际发生率数据
+- **类型**：数据缺失
+- **位置**：WebView 进程崩溃
+- **问题**：缺少实际生产环境的 WebView crash 率统计，难以评估风险等级
+- **建议**：补充 WebView crash 的实际发生率数据（如大型应用统计、AOSP 内部监控数据），并提供风险防范策略
+
+## [Task9 Deep Review] 20.7 异常处理架构设计 — 多进程异常同步机制
+- **类型**：原理链断裂
+- **位置**：主进程协调子进程异常
+- **问题**：未说明主进程如何协调多个子进程的异常状态，存在跨进程同步的盲区
+- **建议**：补充主进程监控子进程异常状态的机制，说明 Process.getState()、异常状态同步策略
+
+## [Task9 Deep Review] 20.7 异常处理架构设计 — 与 ch26.2 上报体系衔接
+- **类型**：交叉引用错误
+- **位置**：异常上报整合
+- **问题**：未说明如何与 ch26.2 的上报系统集成，存在系统断层
+- **建议**：补充异常处理与上报体系的整合方案，说明各系统的职责边界和协作模式

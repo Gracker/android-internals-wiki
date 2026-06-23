@@ -904,3 +904,61 @@ Simpleperf 工具与 Android 电源管理系统和热节流机制的交互存在
 - research-feeds：最近 2026-04-14，无新增
 - 管线堵点：91 个 ready-for-review 待 Task6/Task9 复审
 - **知识库高度饱和，本轮跳过**
+
+
+## [2026-06-23] 8.10 ProfilingManager — ANOMALY 完整触发规则清单
+
+### 盲区描述
+章节只提到 MemoryLimiter 和 binder spam 会触发 ANOMALY，但 Android 17 完整的 ANOMALY 规则清单未覆盖，无法判断哪些异常类型会触发系统性能追踪，哪些不会。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 android-17.0.0_r1 frameworks/native/services/surfaceflinger/ 目录下的 AnomalyDetector 源码
+- 分析 ProfilingService.java 中各类异常类型的判断逻辑
+- 确定 ANOMALY 规则的完整清单和边界条件
+- 梳理不同异常类型对应的产物类型（heap dump/trace/log）
+
+### 关联章节
+- 8.10 ProfilingManager 系统触发式性能追踪（当前章节）
+- 8.2 性能监控原理
+- 13.7 Perfetto 数据源
+
+## [2026-06-23] 20.7 异常处理架构设计 — DropBoxManagerService 并发冲突处理
+
+### 盲区描述
+章节未说明系统 crash 记录与 App 自建 crash 文件的并发冲突处理机制，这可能导致数据覆盖、读写冲突等生产问题。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析 lmkd/crash_dumpsystem 如何处理 concurrent crash 文件写入
+- 研究 DropBoxManagerService 的文件锁定机制和写入策略
+- 探索 App 自建 crash 文件与系统 crash 文件的最佳实践
+- 分析文件命名冲突和覆盖保护机制
+
+### 关联章节
+- 20.7 异常处理架构设计（当前章节）
+- 4.4 Low Memory Killer
+- 26.2 性能指标采集与上报
+
+## [2026-06-23] 20.7 异常处理架构设计 — 协程异常传播的现代实践
+
+### 盲区描述
+章节未覆盖 Kotlin Coroutines 1.6+ 的异常传播优化，这会影响现代 Android 开发的最佳实践。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 Kotlin Coroutines 1.6+ 的异常传播机制改进
+- 分析协程上下文中的异常处理策略
+- 探索 ScopeCoroutineExceptionHandler 的使用场景
+- 梳理协程异常与现代异常框架的整合方案
+
+### 关联章节
+- 20.7 异常处理架构设计（当前章节）
+- 25.5 线程池管理
+- 26.3 性能指标采集与上报
