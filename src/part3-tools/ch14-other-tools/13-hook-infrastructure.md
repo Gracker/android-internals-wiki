@@ -6,13 +6,13 @@ status: "ready-for-review"
 task6_result: "pass-light-edit"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-24"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-24"
 task9_result: "needs-rework"
 task9_state: "pending"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -35,6 +35,7 @@ task6_review_notes_2026_06_24_r2: "第二轮复审：L1 修 2 处（首段伪代
 task2b_rework_round: "2026-06-24"
 task2b_changes_summary: "P95+P90综合回炉：删除未来发展节替换为Android 14-17实际变化；重写xHook节补充PLT/GOT原理；Matrix节前移TraceCanary实现细节；删除案例1/2/4；新增Perfetto表现节；扩充Trampoline ARM64约束说明；扩充限制与注意事项（SELinux安全边界、Mainline模块影响、性能测量方法论）"
 task6_review_notes_2026_06_24_r3: "第三轮复审：Task2B P95+P90 回炉后质量显著提升。L1 修 2 处（重复 task9_result frontmatter、socket 代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=2（限额内）。L3 观察项 2 条（案例1 Matrix 与第3节 TraceCanary 实现细节重复、应用场景三小节偏薄），写入 suggestions 作建议参考，不阻断。task6_result: pass-light-edit，待 Task9 技术复审。"
+task6_review_notes_2026_06_24_r4: "第四轮复审（Task2B P95 Task9回炉后）：L1 修 1 处（Mainline 段落重复，新增 ### Mainline 模块的影响 标题，合并去重）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=2（限额内）。L3 观察 1 条（Matrix 实现细节与案例1重叠，前轮已标注，持续性建议）。task6_result: pass-light-edit，待 Task9 技术复审。"
 task2b_changes_summary_2026-06-24: "P95 Task9深度复审回炉: 更新last_verified_against为android-17.0.0_r1; Mainline模块节补充ProfilingManager路径版本说明(packages/modules/Profiling/)"
 ---
 
@@ -323,7 +324,9 @@ Android 的安全模型在两层限制 Hook 的能力：
 
 **seccomp-bpf 过滤器**：Android 8+ 引入的 seccomp 系统调用过滤器在部分进程（如 `mediaextractor`）中限制了 `mprotect` 系统调用本身。Hook 框架在这些进程中即使有 SELinux 权限，也无法修改内存保护属性，导致 hook 失败。`setuid` 和 `setgid` 等系统调用也被广泛过滤 [已验证: AOSP bionic/libc/seccomp/]。
 
-（ART、conscrypt、media、network、Profiling 等），这对 Hook 框架产生了几个实际影响 [已验证: AOSP art/libartbase/base/apex.h + AOSP packages/modules/Profiling/]：
+### Mainline 模块的影响
+
+Android Mainline 模块化将部分系统组件（ART、conscrypt、media、network、Profiling 等）从系统分区迁移到独立可更新的 APEX 模块，这对 Hook 框架有几个实际影响 [已验证: AOSP art/libartbase/base/apex.h + AOSP packages/modules/Profiling/]：
 
 **ProfilingManager 路径说明**：ProfilingManager 属于 Mainline 模块，源码位于 AOSP `packages/modules/Profiling/`。Android 13 引入后路径未发生结构性变化，但内部 profiling service 的实现细节在不同 Android 版本间有调整。具体来说：
 
@@ -333,7 +336,7 @@ Android 的安全模型在两层限制 Hook 的能力：
 
 对 Hook 框架而言，ProfilingManager 的关键影响是：如果自建 Hook 工具的目标函数与 ProfilingManager 的插桩目标重叠，两者的 trampoline/GOT 修改可能互相覆盖。在同时使用 ProfilingManager 和自建 Hook 的设备上，建议通过 `dumpsys profiling` 提前确认 ProfilingManager 当前激活的 trigger 类型和插桩范围，避免冲突。
 
-（ART、conscrypt、media、network 等），这对 Hook 框架产生了几个实际影响 [已验证: AOSP art/libartbase/base/apex.h]：
+除 ProfilingManager 外，Mainline 机制对 Hook 框架的普遍影响包括：
 
 1. **库路径变化**：Mainline 模块的 .so 从 `/system/lib64/` 迁移到 `/apex/com.android.xxx/lib64/`，Hook 框架的库定位逻辑需要适配 APEX 路径。
 2. **版本碎片化**：同一台设备上，Mainline 模块的版本可能与系统分区不一致。Hook 框架拦截同一个系统 API 时，在不同进程中可能对应不同版本的实现——一个进程用 APEX 版本，另一个用系统分区版本。
