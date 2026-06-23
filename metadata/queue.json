@@ -69,6 +69,26 @@
       "status": "pending",
       "added_by": "task2a-knowledge-gap",
       "added_date": "2026-06-23"
+    },
+    {
+      "section": "3.12",
+      "section_title": "Predictive Back 系统架构与动画管线性能",
+      "priority": 80,
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_date": "2026-06-24",
+      "gap_score": 16,
+      "file": "src/part1-fundamentals/ch03-input/12-predictive-back-system-architecture.md"
+    },
+    {
+      "section": "2.29",
+      "section_title": "TaskSnapshot 系统架构与 Recents 渲染性能",
+      "priority": 80,
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_date": "2026-06-24",
+      "gap_score": 14,
+      "file": "src/part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md"
     }
   ],
   "in_progress": [],
