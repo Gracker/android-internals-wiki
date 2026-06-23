@@ -76,6 +76,7 @@ tags:
   - [2.25 Choreographer Buffer Stuffing Recovery 与帧节拍修正](part1-fundamentals/ch02-rendering/25-choreographer-buffer-stuffing-recovery.md)
   - [2.26 Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能](part1-fundamentals/ch02-rendering/26-edge-to-edge-inset-rendering-performance.md)
   - [2.27 SurfaceFlinger Transaction Queue 无锁架构与消息分流](part1-fundamentals/ch02-rendering/27-sf-transaction-queue-lockless.md)
+  - [2.28 折叠屏显示管线与铰链状态渲染性能](part1-fundamentals/ch02-rendering/28-foldable-display-pipeline-performance.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)

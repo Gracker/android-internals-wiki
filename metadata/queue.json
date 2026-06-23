@@ -59,6 +59,16 @@
       "status": "pending",
       "added_by": "task2a-knowledge-gap",
       "added_date": "2026-06-23"
+    },
+    {
+      "id": "task2a-2.28-foldable-display-20260623",
+      "chapter": "2.28",
+      "title": "折叠屏显示管线与铰链状态渲染性能",
+      "file": "src/part1-fundamentals/ch02-rendering/28-foldable-display-pipeline-performance.md",
+      "priority": 80,
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_date": "2026-06-23"
     }
   ],
   "in_progress": [],
