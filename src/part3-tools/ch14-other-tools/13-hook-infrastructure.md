@@ -3,16 +3,16 @@ title: "Hook 基础设施与性能工具实现原理"
 chapter: "14.13"
 section: "14.13"
 status: "ready-for-review"
-task6_result: "needs-rework"
+task6_result: "pass-light-edit"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-24"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-24"
 task9_result: "needs-rework"
 task9_state: "pending"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -30,11 +30,11 @@ polish_count: "1"
 polish_date: "2026-04-22"
 polish_by: "task2b-polish"
 task6_review_notes_2026_06_24: "revisiting 复审：发现 B 类问题 5 处（代码示例 Java/C 混用、try/catch C++ 语法标为 C、未来发展章节填充内容、JIT 优化建议不当、多处伪代码未标注），已修 2 处 L1 代码块标签，B 类写入 queue+ suggestions 送 Task2B。"
-task9_result: "needs-rework"
 last_task9_at: "2026-06-24"
 task6_review_notes_2026_06_24_r2: "第二轮复审：L1 修 2 处（首段伪代码标注、「篡改」改「替换」），文本禁用词/AI套话/翻译腔全部清洁。B 类 5 处（未来发展纯填充[复发]、xHook/Matrix 节过薄、案例1/2/4泛化、缺Perfetto表现节），写入 queue priority:90 送 Task2B。"
 task2b_rework_round: "2026-06-24"
 task2b_changes_summary: "P95+P90综合回炉：删除未来发展节替换为Android 14-17实际变化；重写xHook节补充PLT/GOT原理；Matrix节前移TraceCanary实现细节；删除案例1/2/4；新增Perfetto表现节；扩充Trampoline ARM64约束说明；扩充限制与注意事项（SELinux安全边界、Mainline模块影响、性能测量方法论）"
+task6_review_notes_2026_06_24_r3: "第三轮复审：Task2B P95+P90 回炉后质量显著提升。L1 修 2 处（重复 task9_result frontmatter、socket 代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=2（限额内）。L3 观察项 2 条（案例1 Matrix 与第3节 TraceCanary 实现细节重复、应用场景三小节偏薄），写入 suggestions 作建议参考，不阻断。task6_result: pass-light-edit，待 Task9 技术复审。"
 ---
 
 # 14.13 Hook 基础设施与性能工具实现原理
@@ -296,6 +296,7 @@ void hook_startActivity(Intent intent) {
 Hook 系统调用来检测异常行为：
 
 ```c
+// [概念示意图] 仅用于展示 Hook 安全防护概念，不可直接编译运行
 // Hook socket 来检测网络连接
 int hook_socket(int domain, int type, int protocol) {
     checkNetworkConnection(domain, type, protocol);
