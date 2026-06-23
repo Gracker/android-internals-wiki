@@ -77,6 +77,7 @@ tags:
   - [2.26 Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能](part1-fundamentals/ch02-rendering/26-edge-to-edge-inset-rendering-performance.md)
   - [2.27 SurfaceFlinger Transaction Queue 无锁架构与消息分流](part1-fundamentals/ch02-rendering/27-sf-transaction-queue-lockless.md)
   - [2.28 折叠屏显示管线与铰链状态渲染性能](part1-fundamentals/ch02-rendering/28-foldable-display-pipeline-performance.md)
+  - [2.29 TaskSnapshot 系统架构与 Recents 渲染性能](part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -90,6 +91,7 @@ tags:
   - [3.9 端到端输入延迟预算与感知阈值](part1-fundamentals/ch03-input/09-input-latency-budget-perception.md)
   - [3.10 InputDispatcher stale event 判定与事件丢弃](part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md)
   - [3.11 InputMethodManager 与软键盘性能](part1-fundamentals/ch03-input/11-input-method-manager-performance.md)
+  - [3.12 Predictive Back 系统架构与动画管线性能](part1-fundamentals/ch03-input/12-predictive-back-system-architecture.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.1 Android 内存模型全景](part1-fundamentals/ch04-memory/01-memory-overview.md)
