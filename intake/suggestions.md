@@ -34,3 +34,11 @@
   - Frontmatter 去重：删除重复的 `task6_review_notes`
 - **章节状态**：task2b_result/task2b_state → fixed，pipeline_stage → task6_pending（等待下一轮 Task6/Task9 review）
 - **修复日志**：logs/review/2026-06-24-04-review.md
+
+## [Task2B Lite 修复完成] 25.4 WorkManager 实战与后台任务调度 — 2026-06-24
+- **状态**：已修复 (fixed-lite)
+- **修复内容**：
+  - §停止原因与回归守门：将"restricted standby bucket"修正为"降低 standby bucket 等级（如 Rare 或 Frequent）"
+  - 原因：Restricted 桶需用户/系统特定策略触发，非 WorkManager 超时直接导致
+- **章节状态**：status → ready-for-review，pipeline_stage → task6_pending
+- **修复日志**：logs/rework/2026-06-24-05-task2b-lite.md
