@@ -1,9 +1,10 @@
 ---
 
+
 title: Simpleperf
 chapter: '14.2'
 section: '14.2'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) – Android 17 (API 37)
@@ -29,9 +30,9 @@ last_task9_autofix_at: '2026-06-22'
 last_task2b_lite_at: 2026-06-22
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 last_task2b_at: 2026-06-21T12:52:41+08:00
 task9_result: auto-fixed
 task6_result: pass-light-edit
