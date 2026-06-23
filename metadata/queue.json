@@ -89,6 +89,51 @@
       "added_date": "2026-06-24",
       "gap_score": 14,
       "file": "src/part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md"
+    },
+    {
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 90,
+      "reason": "[review回炉] 代码示例 Java/C 混用、try/catch 标为 C、未来发展章节填充内容、多处伪代码未标注",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "§应用场景 > 代码注入 (line ~241-262)",
+          "detail": "Hook Activity.startActivity 示例在 ```c 代码块中使用 Java 类型 (Intent intent)，intent.getAction().equals() 是 Java 语法，不能标为 C 代码。应改为标注伪代码或拆分为 Java 层接口 + C 层 Hook 实现",
+          "suggestion": "将该示例改为 Java 代码块，或标注为伪代码示意"
+        },
+        {
+          "type": "需重写",
+          "location": "§错误处理和恢复 (line ~412-426)",
+          "detail": "try/catch 是 C++ 语法，已修正语言标签为 cpp 并加注释。但原文在 C Hook 场景中使用 C++ 异常处理模式不合适——实际 Hook 框架（ShadowHook/xHook）都是纯 C，用返回值检查做错误处理",
+          "suggestion": "用返回值 + errno 模式重写错误处理示例，或明确标注为 C++ Hook 场景"
+        },
+        {
+          "type": "需重写",
+          "location": "§Hook 技术的未来发展 (line ~380-400)",
+          "detail": "整节为推测性填充内容：'并行 Hook' ShadowHook 已支持、'Android 12+ 适配' 章节已覆盖到 Android 17、'Hook 链式调用' 已被 Matrix/KOOM 实现。违反 writing-guide 禁止空话和填充的原则",
+          "suggestion": "删除整节，或改为'Hook 技术当前局限性'用务实语气列出已知限制"
+        },
+        {
+          "type": "需修正",
+          "location": "§最佳实践 > 优化 Hook 性能 (line ~400-410)",
+          "detail": "'使用 JIT 编译优化 Hook 函数'建议不适用于典型 Hook 场景——Hook 函数是用户写的 C/C++ 函数，不会经过 JIT；ART JIT 只优化 Java/Kotlin 方法",
+          "suggestion": "删除 JIT 相关建议，保留减少复杂度和使用缓存的建议"
+        },
+        {
+          "type": "需修正",
+          "location": "§应用场景 > 实际应用案例 > 案例 1-2 (line ~300-340)",
+          "detail": "hook_sched_switch / hook_file_operation / hook_messagequeue_next 等函数签名是虚构的，不是真实内核或框架 API。读者可能误以为可以照搬使用",
+          "suggestion": "标注为伪代码示意，或替换为真实的 Hook 目标函数签名"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-24T01:19:40",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-24-01-review.md"
     }
   ],
   "in_progress": [],

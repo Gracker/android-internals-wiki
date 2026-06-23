@@ -236,3 +236,15 @@
 **状态**：`blocked` — 须等待 Android Profiling 模块源码公开，或由高爷确认是否标注「源码未公开，基于文档推断」。
 
 **来源 queue 条目**：priority 95, added_by task9-deep-tech-review
+
+## [Task6 Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-06-24
+- **类型**：需重写 / 需修正
+- **位置**：多处（详见下）
+- **问题**：
+  1. **代码示例 Java/C 混用**（§应用场景 > 代码注入）：```c 代码块中使用 Java Intent 类型，`intent.getAction().equals()` 是 Java 语法
+  2. **try/catch 错误处理模式**（§错误处理和恢复）：try/catch 是 C++ 语法，纯 C Hook 场景应用返回值检查（已临时修正语言标签为 cpp）
+  3. **未来发展章节填充**（§Hook 技术的未来发展）：整节内容已被现有工具实现或过于笼统，违反 writing-guide 禁止填充原则
+  4. **JIT 优化建议不当**（§最佳实践 > 优化 Hook 性能）：ART JIT 只优化 Java/Kotlin 方法，不适用于 C Hook 函数
+  5. **多处伪代码未标注**（§实际应用案例 案例 1-2）：hook_sched_switch 等函数签名是虚构的，读者可能误以为可照搬
+- **建议**：见上述逐条；详细 review 日志见 logs/review/2026-06-24-01-review.md
+- **review 日志**：logs/review/2026-06-24-01-review.md
