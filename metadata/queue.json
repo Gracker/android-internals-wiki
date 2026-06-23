@@ -1,24 +1,5 @@
 {
-  "pending": [
-    {
-      "section": "8.10",
-      "section_title": "ProfilingManager 系统触发式性能追踪",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 引用不存在章节 '9.3'，导致交叉引用断裂",
-      "material_paths": ["intake/suggestions.md"],
-      "review_issues": [
-        {
-          "type": "交叉引用错误",
-          "location": "related_chapters 引用 '9.3'",
-          "detail": "章节引用了不存在的 '9.3' (ch09-app-lifecycle)，导致交叉引用断裂",
-          "suggestion": "移除不存在的 '9.3' 引用，或确认正确章节路径"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-23T12:25:00+08:00",
-      "status": "pending"
-    }
-  ],
+  "pending": [],
   "in_progress": [],
   "completed": [
     {
@@ -397,6 +378,29 @@
       "status": "completed",
       "completed_at": "2026-06-23T10:52:28+08:00",
       "completed_reason": "Task2B 主修复: Android 17 版本锚点统一更新(android-15→android-17)，P0/P1问题已在之前的 auto-fix 中修复"
+    },
+    {
+      "section": "8.10",
+      "section_title": "ProfilingManager 系统触发式性能追踪",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 引用不存在章节 '9.3'，导致交叉引用断裂",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "交叉引用错误",
+          "location": "related_chapters 引用 '9.3'",
+          "detail": "章节引用了不存在的 '9.3' (ch09-app-lifecycle)，导致交叉引用断裂",
+          "suggestion": "移除不存在的 '9.3' 引用，或确认正确章节路径"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-23T12:25:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-23T12:55:47+08:00",
+      "completed_by": "task2b-main",
+      "completed_reason": "交叉引用验证: 9.3 (ch09-anr/03-anr-analysis.md, ANR 分析方法) 存在且语义匹配。ProfilingManager ANR trigger → ANR analysis 关联成立。Task9 false positive（Reviewer 误以为 ch09 是 app-lifecycle）。frontmatter 已更新任务记录。"
     }
   ]
 }

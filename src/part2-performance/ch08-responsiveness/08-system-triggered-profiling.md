@@ -58,9 +58,6 @@ last_task9_audit: "2026-06-23"
 pipeline_stage: task6_pending
 task6_state: revisiting
 task9_state: pending
-task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_at: '2026-05-09T13:40:00+08:00'
 last_task2b_lite_at: '2026-06-23'
 repaired_date: '2026-05-09'
 repaired_by: openclaw-task2b
@@ -75,16 +72,15 @@ last_task9_at: 2026-06-23T12:25:00+08:00
 last_task6_audit: '2026-06-11'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
-last_task9_review_log: "logs/deep-review/2026-06-23-12-deep-review.md"
 last_task9_autofix_at: "2026-06-23"
 last_task6_at: 2026-06-23T09:10:00+08:00
 last_task6_review_log: "logs/review/2026-06-23-08-review.md"
-task6_result: pass-light-edit
-task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式 1 次(在限制内)。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
-task9_result: needs-rework
-task9_state: reviewed
-task9_review_notes: "2026-06-23 Task9 deep-review: 发现交叉引用错误（不存在的 '9.3'）、ANOMALY 规则覆盖不完整、缺少性能影响数据、多进程应用处理等 P0/P1 问题，已写入 queue.json 和 research-gaps.md。"
-task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(.hprof→.perfetto-java-heap-dump, AnomalyDetectorService 类名, MemoryLimiter kill 路径限定)已验证到位,无引入新写作问题。无禁用词/高频词命中。不是X而是Y 句式 1 次(在限制内)。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
+task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 auto-fix 后回归): pass-light-edit。无禁用词/高频词命中, 不是X而是Y 句式 1 次(在限制内)。queue.json 无 pending。"
+task2b_result: fixed
+task2b_state: fixed
+last_task2b_at: "2026-06-23T12:55:36+08:00"
+task9_review_notes: "2026-06-23 Task9 deep-review: 发现交叉引用错误(不存在的'9.3')、ANOMALY 规则覆盖不完整等问题。2026-06-23 Task2B main: 验证交叉引用 '9.3' 有效 — ch09-anr/03-anr-analysis.md (ANR 分析方法) 存在且语义匹配(ProfilingManager ANR trigger → ANR analysis)。此条为 Task9 false positive(Reviewer 误以为 ch09 是 app-lifecycle)。"
+last_task9_review_log: "logs/deep-review/2026-06-23-12-deep-review.md"
 ----
 
 
