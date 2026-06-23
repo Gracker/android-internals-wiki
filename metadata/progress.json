@@ -5084,8 +5084,8 @@
     "3.7": {
       "title": "InputDispatcher 反压与无响应窗口降级",
       "file": "src/part1-fundamentals/ch03-input/07-inputdispatcher-backpressure.md",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5107,7 +5107,8 @@
       "task9_review_notes": "2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。",
       "last_task6_at": "2026-06-12T08:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-12-08-review.md",
-      "last_verifier_pass": "2026-06-18T23:29:05+08:00"
+      "last_verifier_pass": "2026-06-18T23:29:05+08:00",
+      "verifier_note": "2026-06-23 task2b-verifier: frontmatter finalized, progress stale; synced to finalized"
     },
     "3.8": {
       "title": "InputFlinger Rust 组件与自适应刷新率协同",
@@ -7920,6 +7921,23 @@
       "task6_state": "reviewd",
       "task6_date": "2026-06-23",
       "note": "auto-promoted: task6 pass + task9 auto-fixed + no queue"
+    },
+    "8.10": {
+      "title": "ProfilingManager 系统触发式性能追踪",
+      "file": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed-lite",
+      "task6_result": "pass-light-edit",
+      "last_task2b_lite_at": "2026-06-23",
+      "last_task6_at": "2026-06-23T11:12:00+08:00",
+      "last_task9_at": "2026-06-23T09:32:42+08:00",
+      "section": "8.10",
+      "verifier_note": "2026-06-23 task2b-verifier: Task2B fixed-lite 后状态修正, 回流 Task6"
     }
   },
   "task2b_rounds": [
@@ -14751,14 +14769,17 @@
   "14.2": {
     "chapter": "14.2",
     "title": "Simpleperf",
-    "pipeline_stage": "task2b_pending",
+    "pipeline_stage": "ready-to-publish",
     "task2b_result": "fixed",
-    "task2b_state": "pending",
+    "task2b_state": "fixed",
     "task6_state": "reviewed",
     "last_task2b_at": "2026-06-21T12:53:03+08:00",
     "last_task2b_by": "task2b-main",
     "task6_result": "needs-rework",
-    "last_task6_at": "2026-06-21T14:07:00+08:00"
+    "last_task6_at": "2026-06-21T14:07:00+08:00",
+    "task9_state": "reviewed",
+    "status": "finalized",
+    "verifier_note": "2026-06-23 task2b-verifier: frontmatter finalized, root progress stale; synced"
   },
   "task2a_last_gap_mining_at": "2026-06-22T22:07:15.268437+08:00",
   "22.3": {
