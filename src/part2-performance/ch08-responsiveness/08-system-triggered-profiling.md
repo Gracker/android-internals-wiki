@@ -71,16 +71,19 @@ task9_result: needs-rework
 verifier_pass: "2026-06-23T11:26:00+08:00"
 task9_reviewed_date: 2026-06-23
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-06-23T09:32:42.809428
+last_task9_at: 2026-06-23T12:25:00+08:00
 last_task6_audit: '2026-06-11'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
-last_task9_review_log: "logs/deep-review/2026-06-23-08-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-23-12-deep-review.md"
 last_task9_autofix_at: "2026-06-23"
 last_task6_at: 2026-06-23T09:10:00+08:00
 last_task6_review_log: "logs/review/2026-06-23-08-review.md"
+task6_result: pass-light-edit
 task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式 1 次(在限制内)。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
-task9_review_notes: "2026-06-23 Task9 idle audit：auto-fix Android 17 anomaly-detector 源码类名；将 ANOMALY 终止前触发限定到 MemoryLimiter 等具体 kill 路径，回到 Task6 复审。 | 2026-06-23 08:34 Task9 deep-review:auto-fixed。P0 1；按 android-17.0.0_r1 ProfilingService 修正 Java heap dump 产物后缀，.hprof 改为 .perfetto-java-heap-dump，回到 Task6 复审。"
+task9_result: needs-rework
+task9_state: reviewed
+task9_review_notes: "2026-06-23 Task9 deep-review: 发现交叉引用错误（不存在的 '9.3'）、ANOMALY 规则覆盖不完整、缺少性能影响数据、多进程应用处理等 P0/P1 问题，已写入 queue.json 和 research-gaps.md。"
 task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(.hprof→.perfetto-java-heap-dump, AnomalyDetectorService 类名, MemoryLimiter kill 路径限定)已验证到位,无引入新写作问题。无禁用词/高频词命中。不是X而是Y 句式 1 次(在限制内)。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
 ----
 
