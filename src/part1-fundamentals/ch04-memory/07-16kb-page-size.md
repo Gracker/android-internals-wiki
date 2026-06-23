@@ -3,7 +3,7 @@
 title: "16KB Page Size 与 Android 性能"
 chapter: "4.7"
 section: "4.7"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-06"
 reviewed_date: "2026-06-03"
 reviewed_by: "openclaw-task6"
@@ -38,14 +38,14 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_reviewed_date: "2026-05-08"
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed-lite
 task2b_state: fixed
 task6_result: "pass-light-edit"
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-03T14:26:33+08:00"
