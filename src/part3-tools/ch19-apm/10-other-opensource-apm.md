@@ -3,7 +3,7 @@ title: "其他开源 APM 库(AndroidGodEye、Collie、Rabbit)"
 chapter: "19"
 section: "19.10"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "['apm', 'monitoring']"
 confidence: "medium"
@@ -14,13 +14,14 @@ drafted_by: "codex"
 reviewed_date: "2026-06-23"
 reviewed_by: "openclaw-task6"
 path: "https://developer.android.com/reference/android/os/ProfilingManager"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-06-23"
-task2b_result: "fixed"
+task2b_result: "fixed-lite"
 last_task2b_at: "2026-04-25T09:40:00+08:00"
+last_task2b_lite_at: "2026-06-24"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 task9_result: "needs-rework"
@@ -162,6 +163,8 @@ AndroidGodEye、Collie、Rabbit 虽然形态不同,但它们共同说明了一�
 | 网络 | OkHttp interceptor / 统一网络层 | URL pattern、阶段耗时、错误类型 |
 | Crash / ANR | 崩溃处理、`ApplicationExitInfo`、ANR 监控 | 堆栈、退出原因、版本 |
 | 页面 | Activity / Fragment lifecycle | 页面进入、退出、停留 |
+
+> **API 路径**：`JankStats` — `androidx.metrics.performance.JankStats`（Jetpack Metrics 库）;`FrameMetrics` — `android.view.FrameMetrics` + `Window.OnFrameMetricsAvailableListener`（API 24+）;`ProfilingManager` — `android.os.ProfilingManager`（API 35+）;`ApplicationExitInfo` — `android.app.ApplicationExitInfo`（API 30+）。
 
 这套最小信号已经足够支撑第一版线上看板。指标稳定后,再决定是否补重样本、端侧专项或平台化能力。
 
