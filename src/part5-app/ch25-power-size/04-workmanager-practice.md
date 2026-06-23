@@ -57,7 +57,8 @@ task9_review_notes: "2026-06-17 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；
 last_task2b_at: "2026-06-03T12:50:00+08:00"
 task2b_fix_summary: "Fixed P1: UIDT 版本边界 (API 34+/29-33 fallback) + §5.10 交叉引用；P2: GreedyScheduler WorkConstraintsTracker 约束追踪、requiresDeviceIdle+backoff 不兼容、getStopReason 版本边界 (WorkManager 2.9.0+/API 31+)"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17
+last_deepseek_cn_review_at: 2026-06-17last_task9_audit: "2026-06-24"
+
 ---
 
 # WorkManager 实战与后台任务调度
