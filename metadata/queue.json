@@ -291,6 +291,88 @@
       "status": "completed",
       "completed_at": "2026-06-23T06:51:15.642179+08:00",
       "completed_reason": "已追加 §12.5 参考资料小节：NetworkAgent 生命周期与网络评分机制（registerNetworkAgentInternal netId 分配、destroyNetwork 清理链、updateNetworkScore → rematchAllNetworksAndRequests 重匹配算法）"
+    },
+    {
+      "section": "8.10",
+      "section_title": "8.10 ProfilingManager 系统触发式性能追踪",
+      "priority": 95,
+      "reason": "[Deep Tech Review] TRIGGER_TYPE_COLD_START常量值错误，ANOMALY规则覆盖不完整",
+      "material_paths": [
+        "logs/deep-review/2026-06-23-09-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "TRIGGER_TYPE_COLD_START 常量值",
+          "detail": "文中称 TRIGGER_TYPE_COLD_START=10，但 android-17.0.0_r1 ProfilingTrigger.java:36 实际值为 11",
+          "suggestion": "修正为 TRIGGER_TYPE_COLD_START=11"
+        },
+        {
+          "type": "重要缺失",
+          "location": "ANOMALY 详细规则描述",
+          "detail": "文中称 ANOMALY \"产物类型和 tag 由 anomaly-detector 规则决定\"，但未明确说明具体哪些异常类型会触发 ANOMALY，哪些不会",
+          "suggestion": "补充 ANOMALY 完整触发规则清单，明确列出具体的异常类型"
+        },
+        {
+          "type": "版本差异",
+          "location": "Android 17 常量值",
+          "detail": "文中列出的 TRIGGER_TYPE_OOM=7、TRIGGER_TYPE_ANOMALY=8 等常量值与 android-17.0.0_r1 实际值不匹配",
+          "suggestion": "按 android-17.0.0_r1 更新所有常量值，标注确切源码位置"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-23T09:31:30.213333",
+      "status": "pending"
+    },
+    {
+      "section": "20.7",
+      "section_title": "20.7 异常处理架构设计",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ApplicationExitInfo常量值错误，Android 17锚点过期，API描述错误",
+      "material_paths": [
+        "logs/deep-review/2026-06-23-09-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "ApplicationExitInfo.REASON_INITIALIZATION_FAILURE 常量值",
+          "detail": "文中称值为 7，但 android-17.0.0_r1 ApplicationExitInfo.java:62 实际值为 8",
+          "suggestion": "修正为 REASON_INITIALIZATION_FAILURE=8"
+        },
+        {
+          "type": "源码错误",
+          "location": "AtomicFile.finishWrite() 描述",
+          "detail": "称 finishWrite() 会 sync 数据文件，但 AOSP android-17.0.0_r1 AtomicFile.java:172 只调用 FileUtils.sync(str)，不保证父目录落盘",
+          "suggestion": "修正为 finishWrite() 只 sync 字符串数据，不保证父目录落盘"
+        },
+        {
+          "type": "API错误",
+          "location": "WebViewClient.onRenderProcessGone() 返回值逻辑",
+          "detail": "称返回 true 表示处理完成，但文档明确说返回 true 会阻止默认行为，false 会继续默认流程",
+          "suggestion": "修正为 true 表示阻止默认行为（处理完成），false 表示继续默认流程"
+        },
+        {
+          "type": "API边界错误",
+          "location": "Os.fsync() API边界",
+          "detail": "称 ParcelFileDescriptor 有 fsync() 方法，但 android-17.0.0_r1 实际只有 android.system.Os.fsync(FileDescriptor)",
+          "suggestion": "修正为仅 android.system.Os.fsync(FileDescriptor) 可用，并说明边界条件"
+        },
+        {
+          "type": "版本差异",
+          "location": "Android 17 源码锚点",
+          "detail": "多处引用 android-16.0.0_r1，但 android-17.0.0_r1 已公开",
+          "suggestion": "统一将源码锚点更新为 android-17.0.0_r1，明确标注版本边界"
+        },
+        {
+          "type": "版本差异",
+          "location": "ApplicationExitInfo 新增常量",
+          "detail": "Android 17 新增 REASON_CRITICAL_PROCESS_DIED (17) 等常量未提及",
+          "suggestion": "补充 Android 17 新增的常量说明"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-23T09:31:30.213342",
+      "status": "pending"
     }
   ]
 }
