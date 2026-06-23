@@ -248,3 +248,22 @@
   5. **多处伪代码未标注**（§实际应用案例 案例 1-2）：hook_sched_switch 等函数签名是虚构的，读者可能误以为可照搬
 - **建议**：见上述逐条；详细 review 日志见 logs/review/2026-06-24-01-review.md
 - **review 日志**：logs/review/2026-06-24-01-review.md
+
+
+## [Task9 Deep Review] src/part3-tools/ch14-other-tools/13-hook-infrastructure.md — 2026-06-24
+- **类型**：源码准确性
+- **位置**：多次引用frameworks/base/core/java/android/os/HookManager.java
+- **问题**：源码路径不存在，实际应为frameworks/base/core/java/android/os/IHookManager.aidl
+- **建议**：修正源码路径，并说明这是AIDL Binder接口定义
+
+## [Task9 Deep Review] src/part3-tools/ch14-other-tools/13-hook-infrastructure.md — 2026-06-24
+- **类型**：原理链完整性
+- **位置**：Hook机制的注册流程描述
+- **问题**：未解释系统级Hook点的发现机制
+- **建议**：补充Hook点发现机制的原理，如如何定位到特定函数
+
+## [Task9 Deep Review] src/part3-tools/ch19-apm/10-other-opensource-apm.md — 2026-06-24
+- **类型**：版本差异覆盖
+- **位置**：各库的适用性说明
+- **问题**：未覆盖AGP 8.0+对Transform API的移除对各库的影响
+- **建议**：说明AGP 8.0+中Transform API的替代方案，以及对各APM库的影响
