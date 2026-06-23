@@ -1,5 +1,4 @@
 ---
-
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: 8.8
@@ -64,11 +63,12 @@ last_task9_review_log: logs/deep-review/2026-06-06-04-deep-review.md
 last_task6_at: "2026-06-06T05:12:48+08:00"
 last_task6_review_log: "logs/review/2026-06-06-05-review.md"
 task6_review_notes: "2026-06-06 Task6 revisiting-review #6: L1/L2 clean (禁用词0/高频词0-2功能性/元叙述0/物理动词0). L3/L4 pass (论据有验证标注/知识输出有深度/实战案例完整/工程师对话口吻). No B-class issues. task6=pass-light-edit + task9=auto-fixed + queue empty → promote finalized."
-
 last_task2b_lite_at: 2026-06-05T13:35
 last_task2b_by: openclaw-task2b-main
 task2b_notes: "2026-06-06 Task2B main 回炉 #3：P0 Media3 ABR 源码方法修正（AdaptiveTrackSelection+DefaultBandwidthMeter 实际API），删除2026-05-12/21旧附录（含不可溯源伪代码和已被后文否定结论），清理CCodec::initialize伪代码和ABR错误调用链，P1 16KB页面声明降级为待验证。"
 last_task9_autofix_at: 2026-06-06
+---
+
 ----
 
 

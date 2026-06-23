@@ -52,6 +52,8 @@ last_task6_review_log: "logs/review/2026-06-13-16-review.md"
 task6_review_notes: "2026-06-13 Task6 回炉复审(revisiting→reviewed): pass-light-edit。L1 修复见 review 日志；L2/L3/L4 无新增问题；Task9 已 auto-fixed；queue 无 pending；自动晋升 finalized。"
 finalized_date: "2026-06-13"
 finalized_by: "openclaw-task6-auto-promote"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-23
 ---
 
 # 场景化性能作战手册
@@ -61,7 +63,7 @@ finalized_by: "openclaw-task6-auto-promote"
 
 ### 锚点(必须覆盖)
 
-- 🔹 把常见性能投诉映射到统一排障入口:卡顿 / 响应慢 / ANR / 内存 / 功耗
+- 🔹 把常见性能投诉对应到统一排障入口：卡顿 / 响应慢 / ANR / 内存 / 功耗
 - 🔹 每类问题先看什么指标、抓什么 trace、优先排哪条路径
 - 🔹 不同场景的第一嫌疑人:MainThread / RenderThread / SurfaceFlinger / Binder / IO / 调度
 - 🔹 常见误判:把系统负载当成 App 问题、把输入延迟当成掉帧、把 BufferStuffing 当成普通慢帧
@@ -326,10 +328,9 @@ finalized_by: "openclaw-task6-auto-promote"
 
 
 
-<!-- AIW-源码调研-20260507: BufferQueue 堵塞 Perfetto 特征 -->
 ### 5.1 BufferQueue 堵塞的 Perfetto 源码级特征
 
-"视频列表、SurfaceView 场景卡"的根因,经常落在 `BufferQueueProducer::dequeueBuffer()` 的锁等待上。通过 AOSP 源码(android14-release)可以精确定位以下四类 Perfetto 特征:
+在视频列表、SurfaceView 这类场景中，卡顿的根因经常落在 `BufferQueueProducer::dequeueBuffer()` 的锁等待上。通过 AOSP 源码(android14-release)可以精确定位以下四类 Perfetto 特征:
 
 #### 特征 1:dequeueBuffer 线程 slice 拉长
 
@@ -364,7 +365,6 @@ status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &foun
 - `android.surfaceflinger.frametimeline` 数据源中的帧时间线(对应 `actual_frame_timeline_slice` / `expected_frame_timeline_slice` 表)
 
 详情见调研报告:[2026-05-07-bufferqueue-blocking-perfetto-patterns.md](https://github.com/gracker/DeepResearch/blob/main/2026-05-07-bufferqueue-blocking-perfetto-patterns.md)
-<!-- AIW-源码调研-20260507 END -->
 
 
 ### 6. WebView、Flutter、混合栈场景卡
@@ -470,7 +470,7 @@ status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &foun
 
 ## 抓 trace 时,先求回答问题,不求一次最全
 
-很多团队抓 trace 的问题在于"抓错了"。更稳的做法是先保守一点:
+抓 trace 最常见的坑是配置不对——事件类别没开全或者窗口太短。建议先保守一点：
 
 - **滑动 / 动画卡顿**:抓 5-10 秒,保留 `gfx`、`view`、`sched`、`input`、`wm`
 - **启动慢**:抓冷启动全过程,最好从拉起前开始

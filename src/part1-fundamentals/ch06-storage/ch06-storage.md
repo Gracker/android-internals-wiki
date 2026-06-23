@@ -1,4 +1,10 @@
-
+---
+title: "ch06-storage"
+chapter: "06"
+status: "draft"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+tags: [storage, io, filesystem]
+---
 
 ## 参考资料
 

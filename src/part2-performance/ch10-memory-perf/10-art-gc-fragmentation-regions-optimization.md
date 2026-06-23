@@ -1,7 +1,9 @@
 ---
-title: "ART GC 区域碎片化与 Compaction 策略"
-tags: ["Android", "内存性能", "ART GC", "碎片化优化"]
+title: ART GC 区域碎片化与 Compaction 策略
+chapter: 10.10
 status: ready-for-review
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+tags: [Android, 内存性能, ART GC, 碎片化优化]
 ---
 
 # 10.14 ART GC 区域碎片化与 Compaction 策略

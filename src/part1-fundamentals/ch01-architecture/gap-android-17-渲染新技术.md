@@ -1,3 +1,11 @@
+---
+title: "Android 17 渲染新技术"
+chapter: "01"
+status: "draft"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+tags: [architecture, system]
+---
+
 # Android 17 渲染新技术
 
 ## 概述

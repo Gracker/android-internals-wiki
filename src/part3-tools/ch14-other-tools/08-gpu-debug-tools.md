@@ -1,67 +1,46 @@
 ---
-
-title: "GPU 图形调试与分析工具"
-chapter: "14.8"
-section: "14.8"
-status: finalized
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, APA 要求 Android 12+, Sokatoa 要求 Android 13+)"
-last_verified: "2026-06-12"
-last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto"
-confidence: medium
-sources:
-  - type: official
-    path: "https://developer.android.com/agi"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/gpu"
-  - type: official
-    path: "https://github.com/sarc-acl/sokatoa"
-  - type: blog
-    path: "intake/research-feeds/2026-04-05-11-agi-2026-roadmap-system-frame-profiler.md"
-  - type: blog
-    path: "intake/research-feeds/2026-04-05-11-samsung-sokatoa-gpu-profiler.md"
-  - type: blog
-    path: "intake/research-feeds/2026-04-05-11-android17-angle-vulkan14-gles-deprecation.md"
-  - type: blog
-    path: "Cubox/移动平台的GPU性能分析-2024-12-07.md"
-  - type: blog
-    path: "Cubox/基于gpu counters数据的性能优化-2025-02-27.md"
-tags: [gpu, agi, renderdoc, sokatoa, gapid, gpu-counter, profiling, vulkan, opengl-es]
-related_chapters: ["2.10", "2.14", "13.3", "14.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "AOSP结构+官方文档+研究素材"
-drafted_by: "openclaw-task2a"
-drafted_date: "2026-04-05"
-reviewed_by: "openclaw-task6"
-last_task2b_at: "2026-06-12T16:50:00+08:00"
-task2b_result: "fixed"
-reviewed_date: "2026-06-12"
-task6_result: "pass-light-edit"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
-task9_state: reviewed
-task2b_state: "fixed"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-12"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-12T18:20:00+08:00"
-last_task6_audit: "2026-06-10"
-last_task6_audit_log: "logs/review/2026-05-19-02-audit.md"
-last_task9_audit: "2026-06-12"
-last_task9_review_log: "logs/deep-review/2026-06-12-18-deep-review.md"
-queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
-task9_review_notes: "2026-06-12 18:20 Task9 deep-review: pass-tech-review; P0 0 / P1 0 / P2 0 / P3 3; 已复核 APA/AGI/Perfetto/Sokatoa 边界,queue 无 pending,自动晋升 finalized。"
-last_task6_at: "2026-06-12T17:05:00+08:00"
-task6_reviewed_at: "2026-06-12T17:05:00+08:00"
-task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-06-12-17-review.md"
-task6_review_notes: "2026-06-12 17:05 Task6 revisiting-review (3rd): pass-light-edit; 全文禁用词/高频词/翻译腔/元叙述扫描均0命中;"不是X而是Y"仅1次(上限2); 5个锚点全部覆盖; 前序Task2B修复APA/GFXReconstruct边界已到位; 无需文本修改。等待Task9复审task9_result:needs-rework的APA相关技术项。"
-finalized_date: "2026-06-12"
-finalized_by: openclaw-task9-auto-promote
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-12
-last_task9_audit_log: "logs/deep-review/2026-06-12-16-audit.md"
-task9_review_summary: "pass-tech-review; queue 无 pending; 自动晋升 finalized。"
+title: "\"GPU 图形调试与分析工具\""
+chapter: "\"14.8\""
+section: "\"14.8\""
+status: "finalized"
+pipeline_stage: "\"ready-to-publish\""
+applicable_versions: "\"Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, APA 要求 Android 12+, Sokatoa 要求 Android 13+)\""
+tags: ["[gpu, agi, renderdoc, sokatoa, gapid, gpu-counter, profiling, vulkan, opengl-es]"]
+confidence: "medium"
+last_verified: "\"2026-06-12\""
+last_verified_against: "\"developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto\""
+drafted_date: "\"2026-04-05\""
+drafted_by: "\"openclaw-task2a\""
+reviewed_date: "\"2026-06-12\""
+reviewed_by: "\"openclaw-task6\""
+path: "\"Cubox/基于gpu counters数据的性能优化-2025-02-27.md\""
+related_chapters: "\"[\\\"2.10\\\", \\\"2.14\\\", \\\"13.3\\\", \\\"14.1\\\"]\""
+created_by: "\"task2a-knowledge-gap\""
+created_date: "\"2026-04-05\""
+gap_source: "\"AOSP结构+官方文档+研究素材\""
+last_task2b_at: "\"2026-06-12T16:50:00+08:00\""
+task2b_result: "\"fixed\""
+task6_result: "\"pass-light-edit\""
+task6_state: "\"reviewed\""
+task9_state: "reviewed"
+task2b_state: "\"fixed\""
+task9_result: "pass-tech-review"
+task9_reviewed_date: "\"2026-06-12\""
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "\"2026-06-12T18:20:00+08:00\""
+last_task6_audit: "\"2026-06-10\""
+last_task6_audit_log: "\"logs/review/2026-05-19-02-audit.md\""
+last_task9_audit: "\"2026-06-12\""
+queue_entry: "\"task9-audit-20260612-14.8-apa-system-profiler-boundary\""
+last_task6_at: "\"2026-06-12T17:05:00+08:00\""
+task6_reviewed_at: "\"2026-06-12T17:05:00+08:00\""
+task6_reviewed_by: "\"openclaw-task6\""
+finalized_date: "\"2026-06-12\""
+finalized_by: "openclaw-task9-auto-promote"
+deepseek_cn_review_state: "done"
+last_deepseek_cn_review_at: "2026-06-12"
+last_task9_audit_log: "\"logs/deep-review/2026-06-12-16-audit.md\""
+task9_review_summary: "\"pass-tech-review; queue 无 pending; 自动晋升 finalized。\""
 ---
 
 # 14.8 GPU 图形调试与分析工具

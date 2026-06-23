@@ -1,6 +1,12 @@
-repaired_date: "2026-05-23"
-updated_by: "openclaw-task2b"
-updated_date: "2026-05-23"
+---
+title: 04-typical-scenarios
+chapter: 07.04
+status: draft
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+tags: [smoothness, jank]
+repaired_date: 2026-05-23
+updated_by: openclaw-task2b
+updated_date: 2026-05-23
 ---
 title: 典型场景分析
 chapter: '7.4'
@@ -64,6 +70,7 @@ task9_review_notes: "2026-05-23 Task9 深度复审：needs-rework。P0 1 / P1 1 
 auto_promoted: true
 last_task9_audit: "2026-05-23"
 last_task9_review_log: "logs/deep-review/2026-05-23-15-deep-review.md"
+---
 ---
 
 # 典型场景分析

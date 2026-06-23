@@ -1,3 +1,11 @@
+---
+title: "Android 17 GPU Vulkan 异步编译管线管理器调度策略源码实现"
+chapter: "26.15"
+status: "draft"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+tags: [rendering, gpu, vulkan]
+---
+
 # Android 17 GPU Vulkan 异步编译管线管理器调度策略源码实现
 
 > **Android 17 GPU 渲染管线异步编译优化详解**

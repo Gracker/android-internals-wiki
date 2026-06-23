@@ -1,57 +1,25 @@
 ---
 title: "Android 功耗模型"
-section: "11.1"
 chapter: "11.1"
-task9_result: "pass-tech-review"
+section: "11.1"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
+tags: [['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']]
+confidence: medium
+last_verified: "2026-06-20"
+last_verified_against: "AOSP android-17.0.0_r1 + PowerAttributor / MultiStatePowerAttributor / PowerStatsProcessor 归因管线"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
+reviewed_date: "2026-06-20"
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-06-20"
-last_verified_against: "AOSP android-17.0.0_r1 + PowerAttributor / MultiStatePowerAttributor / PowerStatsProcessor 归因管线"
-confidence: medium
-sources:
-  - type: aosp
-    path: "frameworks/base/core/res/res/xml/power_profile.xml"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsConfig.java"
-    note: "Android 17+ 高电量阈值配置"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/CpuPowerCalculator.java"
-    note: "Android 5-16; Android 17+ 由 processor/CpuPowerStatsProcessor 替代"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java"
-    note: "Android 5-16; Android 17+ 由 processor/ScreenPowerStatsProcessor 替代"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/PowerAttributor.java"
-    note: "Android 16+ 功耗归因接口"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java"
-    note: "Android 16+ 默认 PowerAttributor 实现，Android 17 归因处理器配置入口"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java"
-    note: "Android 17+ CPU 功耗归因处理器"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java"
-    note: "Android 17+ 屏幕功耗归因处理器"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
-  - type: aosp
-    path: "hardware/interfaces/power/stats/1.0/IPowerStats.hal"
-  - type: aosp
-    path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
-  - type: official
-    path: "https://source.android.com/docs/core/power"
-  - type: official
-    path: "https://developer.android.com/topic/performance/power"
-tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
-related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
+task9_result: "pass-tech-review"
+path: "https://developer.android.com/topic/performance/power"
+note: "Android 17+ 屏幕功耗归因处理器"
+related_chapters: "[\"5.4\", \"5.5\", \"5.6\", \"11.2\", \"11.3\", \"13.1\"]"
 task2b_result: "fixed"
 task2b_state: "fixed"
 last_task2b_at: "2026-06-20T00:50:00+08:00"
@@ -61,25 +29,16 @@ repaired_by: "openclaw-task2b"
 task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-20T03:27:28+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-20-03-deep-review.md"
-task9_review_notes: "2026-05-25 Task9 22:28 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；`EnergyConsumer.TYPE_CPU_CLUSTER` 不是 AOSP PowerStats AIDL 符号，应改为 `EnergyConsumerType.CPU_CLUSTER`；另记录 `cpu.active` 示例 XML 形态 P2。 | 2026-05-27 06:23 Task9 auto-fix：补全 BatteryStats/BatteryUsageStats/CpuPowerCalculator/ScreenPowerCalculator/BatteryStatsService 的 frameworks/base 源码路径前缀；无 queue pending。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 power_profile、BatteryStats/BatteryUsageStats、PowerStats AIDL、PowerMonitor、ComponentCallbacks2 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 00 Task9 闲时抽检：发现 Android 17 功耗归因管线从 *PowerCalculator 重构为 PowerAttributor / PowerStatsProcessor，写入 P1 回炉。 | 2026-06-20 01:30 Task9 auto-fix：校准 Android 16/17 功耗归因边界；补 MultiStatePowerAttributor 源码锚点；修正 Android 17 ScreenPowerStatsProcessor 不再保留 10min smear 门槛。 | 2026-06-20 03:27 Task9 deep-review：pass-tech-review。复核 power_profile、BatteryStats/BatteryUsageStats、PowerAttributor/MultiStatePowerAttributor、PowerStatsProcessor、PowerStats HAL、PowerMonitor 与 Perfetto android.power 边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_audit: "2026-06-20"
-review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
 last_task9_audit: "2026-06-20"
 last_task9_autofix_at: "2026-06-20"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-20"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task6_reviewed_date: "2026-06-20"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-06-20T03:08:00+08:00"
-last_task6_review_log: "logs/review/2026-06-20-03-review.md"
 review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
-task6_review_notes: "2026-05-26 01:12 Task6：写作复审小修 7 处；发现 1 个技术来源型 B 类问题（power_profile.xml 示例中 cpu.active 标签形态需按 Task9 审计回炉确认），已写入 queue.json。 | 2026-05-27 07:11 Task6：pass-light-edit。Task2B/Task9 修复后的 power_profile 与 EnergyConsumerType 表述已进入正文；L1/L2 未发现新增问题；无 L3/L4 回炉项。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 Android 17 归因管线重构内容已进入正文（PowerAttributor / PowerStatsProcessor）；L1 小修 1 处（em-dash 一致性）；无 L3/L4 回炉项。Task9 仍为 pending-review，未满足自动晋升条件。 | 2026-06-20 02:07 Task6 revisiting re-review：pass-light-edit。Task9 auto-fix 后的 Android 17 归因管线内容（PowerAttributor / MultiStatePowerAttributor / CpuPowerStatsProcessor / ScreenPowerStatsProcessor）已稳定；L1 小修 2 处（汇报腔"需要注意"删除 + 4处连续空行压缩）；无 L3/L4 回炉项。Task9 result 为 auto-fixed（非 pass-tech-review），未满足自动晋升条件。 | 2026-06-20 03:08 Task6 revisiting re-review：pass-light-edit。正文经多轮 review 已稳定；L1/L2 全部通过（禁用词/汇报腔/AI套话/高频词/翻译腔均无命中）；无 L3/L4 回炉项。task9_result 仍为 auto-fixed（非 pass-tech-review），未满足自动晋升条件，送 Task9 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-20
 ---

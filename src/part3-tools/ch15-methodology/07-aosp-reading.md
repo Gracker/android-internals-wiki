@@ -1,5 +1,11 @@
-updated_by: "openclaw-task2b"
-updated_date: "2026-05-23"
+---
+title: 07-aosp-reading
+chapter: 15.07
+status: draft
+applicable_versions: Android 5 (API 21) - Android 17 (API 37)
+tags: [methodology, metrics]
+updated_by: openclaw-task2b
+updated_date: 2026-05-23
 ---
 title: "AOSP 代码阅读"
 chapter: "15.7"
@@ -43,6 +49,7 @@ task9_review_notes: "2026-05-23 Task9 深度复审：needs-rework。P0 1 / P1 1 
 last_task9_audit: "2026-05-23"
 last_task9_review_log: "logs/deep-review/2026-05-23-15-deep-review.md"
 last_task9_audit_log: "logs/deep-review/2026-05-23-11-audit.md"
+---
 ---
 
 # AOSP 代码阅读

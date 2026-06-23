@@ -69,6 +69,7 @@ last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
 task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；WorkManager setBackoffCriteria 签名复核通过，FGS/后台定位/Job 配额口径与官方文档一致；满足 Task6 pass + queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
+---
 
 # 后台功耗治理
 

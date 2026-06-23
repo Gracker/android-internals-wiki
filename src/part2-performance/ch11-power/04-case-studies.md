@@ -1,26 +1,18 @@
 ---
-title: "案例集"
+title: 案例集
+chapter: 11.04
+status: finalized
+pipeline_stage: ready-to-publish
+applicable_versions: ['Android 14.0 (API 34) - Android 17.0 (API 37)']
+tags: [power, battery, energy]
 weight: 4
-applicable_versions: [Android 14.0 (API 34) - Android 17.0 (API 37)]
-source_repos: 
-  - frameworks/base/core/java/android/os/PowerManager.java
-  - frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java  # Android 17 仍在 services/core 路径
-  - frameworks/base/core/java/android/os/BatteryStats.java
-  - frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java  # Android 16+ APEX路径
-  - frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java  # Android 16+ APEX路径
-  - frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java  # JobInfo公共API
-  - frameworks/base/services/core/java/com/android/server/am/ActiveServices.java  # FGS超时/生命周期（传统路径，Android 16+ 相关逻辑随模块拆分）
-  - frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java  # FGS常量定义
-  - frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java  # 定位服务管理
-  - frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java  # 省电模式定位策略
-status: "finalized"
+source_repos: ['frameworks/base/core/java/android/os/PowerManager.java', 'frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java', 'frameworks/base/core/java/android/os/BatteryStats.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java', 'frameworks/base/services/core/java/com/android/server/am/ActiveServices.java', 'frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java', 'frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java', 'frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java']
 task2b_result: fixed
 task2b_state: fixed
 task9_state: reviewed
 task9_result: auto-fixed
 task6_result: pass-light-edit
 task6_state: reviewed
-pipeline_stage: ready-to-publish
 last_task2b_fix_at: 2026-06-18
 last_task6_at: 2026-06-18
 last_task6_review_at: 2026-06-18

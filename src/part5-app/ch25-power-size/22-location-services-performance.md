@@ -1,61 +1,42 @@
 ---
-title: "定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理"
-chapter: "25.22"
-status: finalized
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-drafted_date: "2026-06-18"
-last_verified: "2026-06-18"
-last_verified_against: "Android Developers location/background + FGS service type docs + Google Play services LocationRequest/GeofenceStatusCodes + Android API GnssStatus + AOSP android-17.0.0_r1 LocationManagerService"
-confidence: medium-high
-sources:
-  - type: official
-    path: "https://developer.android.com/develop/sensors-and-location/location/request-updates"
-  - type: official
-    path: "https://developer.android.com/develop/sensors-and-location/location/permissions"
-  - type: official
-    path: "https://developer.android.com/develop/sensors-and-location/location/geofencing"
-  - type: official
-    path: "https://developer.android.com/develop/sensors-and-location/location/background"
-  - type: official
-    path: "https://developer.android.com/about/versions/14/changes/fgs-types"
-  - type: official
-    path: "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java"
-  - type: aosp
-    path: "frameworks/base/location/java/android/location/LocationManager.java"
-tags: ["定位", "Location", "FusedLocationProvider", "功耗", "Geofencing", "FGS"]
-related_chapters: ["5.15", "11.2", "25.5", "5.17"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-18"
-gap_source: "官方文档/素材驱动"
-pipeline_stage: "ready-to-publish"
-task2b_result: "fixed-lite"
-task2b_state: "fixed"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task9_result: "auto-fixed"
-last_task2b_lite_at: "2026-06-19"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-19"
-task6_result: pass-light-edit
-last_task6_at: "2026-06-19T09:09:22+08:00"
-task6_l1_l2_fixes: 3
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-19 Task6 re-review (post-Task9 autofix): pass-light-edit。L1: 网络梗"带飞"→"拉高唤醒频率"(L111)已修。高频词: 真正1次<5合格。否定纠正0。禁用词0(收紧属自然中文)。L2: 开头/节奏/结构/读者引导通过。Task9 autofix P0x5/P1x1/P2x1 修正的段落(FLP provider/Geofence 100限制/版本表/FGS权限/GnssCapabilities/PowerStats rail)文风无回退。验证标注: 正文0处待验证,14处已验证。无L3/L4回炉项。task9_result=auto-fixed(已修复全部发现),task6 pass,queue无pending,自动晋升finalized。"
-last_task9_at: "2026-06-19T08:25:51+08:00"
-task9_reviewed_date: "2026-06-19"
-task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-06-19-08-deep-review.md"
-last_task9_autofix_at: "2026-06-19"
-updated_by: "openclaw-task9-auto-fix"
-updated_date: "2026-06-19"
-p0: 5
-p1: 1
-p2: 1
-task9_review_notes: "2026-06-19 08 Task9 deep-review: auto-fixed。P0 5 / P1 1 / P2 1。修正 FLP provider 过度保证、Geofencing 100 条超限处理、Android 9/10/12 后台定位版本表、Android 14 location FGS 权限检查、startForegroundService 版本注释、GnssCapabilities L5 不存在 API、PowerStats GNSS rail 归属边界；回到 Task6 复审。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
+title: "\"定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理\""
+chapter: "\"25.22\""
+status: "finalized"
+pipeline_stage: "\"ready-to-publish\""
+applicable_versions: "\"Android 12 (API 31) - Android 17 (API 37)\""
+tags: ["[\"定位\", \"Location\", \"FusedLocationProvider\", \"功耗\", \"Geofencing\", \"FGS\"]"]
+confidence: "medium-high"
+last_verified: "\"2026-06-18\""
+last_verified_against: "\"Android Developers location/background + FGS service type docs + Google Play services LocationRequest/GeofenceStatusCodes + Android API GnssStatus + AOSP android-17.0.0_r1 LocationManagerService\""
+drafted_date: "\"2026-06-18\""
+reviewed_date: "\"2026-06-19\""
+reviewed_by: "openclaw-task6"
+path: "\"frameworks/base/location/java/android/location/LocationManager.java\""
+related_chapters: "\"[\\\"5.15\\\", \\\"11.2\\\", \\\"25.5\\\", \\\"5.17\\\"]\""
+created_by: "\"task2a-knowledge-gap\""
+created_date: "\"2026-06-18\""
+gap_source: "\"官方文档/素材驱动\""
+task2b_result: "\"fixed-lite\""
+task2b_state: "\"fixed\""
+task6_state: "\"reviewed\""
+task9_state: "\"reviewed\""
+task9_result: "\"auto-fixed\""
+last_task2b_lite_at: "\"2026-06-19\""
+task6_result: "pass-light-edit"
+last_task6_at: "\"2026-06-19T09:09:22+08:00\""
+task6_l1_l2_fixes: "3"
+task6_l3_l4_issues: "0"
+last_task9_at: "\"2026-06-19T08:25:51+08:00\""
+task9_reviewed_date: "\"2026-06-19\""
+task9_reviewed_by: "\"openclaw-task9\""
+last_task9_autofix_at: "\"2026-06-19\""
+updated_by: "\"openclaw-task9-auto-fix\""
+updated_date: "\"2026-06-19\""
+p0: "5"
+p1: "1"
+p2: "1"
+deepseek_cn_review_state: "done"
+last_deepseek_cn_review_at: "2026-06-19"
 ---
 
 # 25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理

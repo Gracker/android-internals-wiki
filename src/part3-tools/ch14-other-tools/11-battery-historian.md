@@ -52,6 +52,8 @@ last_task9_review_log: "logs/deep-review/2026-06-19-18-audit.md"
 task9_review_notes: "2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task9 18:39：pass-tech-review。P0/P1 0；前轮 PowerMonitor 常量与 PowerStatsService 路径/版本 P0 已复核通过；新增 P2 源码锚点建议 2 条，自动晋升 finalized。 | 2026-06-19 Task9 audit 18:25：auto-fixed。闲时抽检发现 4 处源码/版本锚点小问题：Android 35 误写为 Android 15、PowerMonitorReadings.getConsumedEnergy 方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回 Task6 复审。"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
+---
+
 # 14.11 Battery Historian 与功耗分析工具
 
 ## 为什么需要专门的功耗分析工具

@@ -1,5 +1,4 @@
 ---
-
 title: Java Crash 治理
 chapter: '20.2'
 section: '20.2'
@@ -51,6 +50,7 @@ task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。补齐 outline 
 task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
 finalized_date: "2026-05-18"
 finalized_by: openclaw-task9-auto-promote---
+---
 
 # Java Crash 治理
 

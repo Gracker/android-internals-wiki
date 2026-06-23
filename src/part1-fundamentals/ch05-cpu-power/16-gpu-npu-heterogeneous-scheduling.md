@@ -1,5 +1,4 @@
 ---
-
 title: "GPU/NPU 异构负载调度与功耗归因"
 chapter: "5.16"
 section: "5.16"
@@ -9,38 +8,26 @@ applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-22"
 last_verified_against: "AOSP main + Android 官方文档 + LiteRT docs + Perfetto docs"
 confidence: medium
-tags: [gpu, npu, heterogeneous-compute, adpf, thermal, power, litert]
-related_chapters: ["5.3", "5.4", "5.9", "5.11", "5.12", "5.13", "5.14", "17.2", "22.10", "25.11"]
+tags: "[gpu, npu, heterogeneous-compute, adpf, thermal, power, litert]"
+related_chapters: "[\"5.3\", \"5.4\", \"5.9\", \"5.11\", \"5.12\", \"5.13\", \"5.14\", \"17.2\", \"22.10\", \"25.11\"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-22"
 gap_source: "章节深挖/素材驱动/官方文档"
 gap_score: 16
 material_count: 6
-sources:
-  - type: official
-    path: "https://source.android.com/docs/core/perf/performance-hint-api"
-  - type: official
-    path: "https://developer.android.com/games/optimize/adpf"
-  - type: official
-    path: "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide"
-  - type: official
-    path: "https://source.android.com/docs/core/interaction/neural-networks/device-discovery"
-  - type: official
-    path: "https://ai.google.dev/edge/litert/overview"
-  - type: official
-    path: "https://ai.google.dev/edge/litert/android/npu/overview"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/cpu-freq"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/battery-counters"
-  - type: official
-    path: "https://developer.android.com/reference/android/content/pm/PackageManager#FEATURE_NEURAL_PROCESSING_UNIT"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/release-notes"
-  - type: material
-    path: "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md"
-  - type: material
-    path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md"
+sources: 
+path: "https://source.android.com/docs/core/perf/performance-hint-api"
+path: "https://developer.android.com/games/optimize/adpf"
+path: "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide"
+path: "https://source.android.com/docs/core/interaction/neural-networks/device-discovery"
+path: "https://ai.google.dev/edge/litert/overview"
+path: "https://ai.google.dev/edge/litert/android/npu/overview"
+path: "https://perfetto.dev/docs/data-sources/cpu-freq"
+path: "https://perfetto.dev/docs/data-sources/battery-counters"
+path: "https://developer.android.com/reference/android/content/pm/PackageManager#FEATURE_NEURAL_PROCESSING_UNIT"
+path: "https://developer.android.com/about/versions/17/release-notes"
+path: "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md"
+path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md"
 reviewed_date: '2026-06-04'
 reviewed_by: "openclaw-task6"
 task6_state: reviewed
@@ -49,7 +36,6 @@ task9_state: reviewed
 pipeline_stage: ready-to-publish
 last_task6_at: '2026-06-04T22:12:00+08:00'
 last_task6_review_log: "logs/review/2026-05-22-01-review.md"
-P26-06-04 Task6 re-review (revisiting→reviewed): pass-light-edit. L1禁用词零命中,无小修,无B类大问题. 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据4/5. auto-fixed视同Task9通过但task9_result非pass-tech-review,不触发自动晋升. 2026-05-22 Task6 first review: L1/L2 pass-light-edit,修正结尾结构性元叙述;无新增回炉项,进入 Task9 技术审查。"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9

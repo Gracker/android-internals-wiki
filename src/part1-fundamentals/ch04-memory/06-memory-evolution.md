@@ -1,3 +1,4 @@
+---
 status: finalized
 title: 内存相关的版本演进
 chapter: '4.6'
@@ -79,8 +80,7 @@ last_task9_review_log: "logs/deep-review/2026-06-03-14-deep-review.md"
 last_task9_autofix_at: "2026-06-03"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
-
-
+---
 
 # 内存相关的版本演进
 

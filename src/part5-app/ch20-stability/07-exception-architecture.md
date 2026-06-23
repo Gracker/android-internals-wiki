@@ -3,68 +3,42 @@ title: "异常处理架构设计"
 chapter: "20.7"
 section: "20.7"
 status: "finalized"
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+tags: [exception-handling, safemode, hotfix, graceful-degradation]
+confidence: medium
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
-confidence: medium
 drafted_date: "2026-05-15"
 polish_count: 1
-sources:
-- type: clippings-structure-ref
-    path: "Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控:实现自定义 Crash 处理器.md"
-  - type: clippings-structure-ref
-    path: "Clippings/Android 应用稳定性剖析与优化 - Java 堆栈:深入了解 Throwable.md"
-  - type: clippings-structure-ref
-    path: "Clippings/Android 应用稳定性剖析与优化 - 线程监控:如何解决"匿名"线程?.md"
-  - type: aosp
-    path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
-  - type: aosp
-    path: "art/runtime/thread.cc"
-  - type: aosp
-    path: "system/core/debuggerd/crash_dump.cpp"
-  - type: official
-    path: "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
-  - type: official
-    path: "https://developer.android.com/topic/performance/vitals/crash"
-  - type: official
-    path: "https://kotlinlang.org/docs/exception-handling.html"
-  - type: source
-    path: "kotlinx-coroutines-core/common/src/CoroutineExceptionHandler.kt"
-  - type: source
-    path: "kotlinx-coroutines-core/jvm/src/internal/CoroutineExceptionHandlerImpl.kt"
-  - type: source
-    path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
-tags: [exception-handling, safemode, hotfix, graceful-degradation]
+path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 related_chapters: ["20.2", "20.3", "26.2"]
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-23
 task6_result: pass-light-edit
-last_task6_at: 2026-06-23T11:12:00+08:00
+last_task6_at: "2026-06-23T11:12:00+08:00"
 last_task6_review_log: "logs/review/2026-06-23-11-review.md"
-task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式在限制内。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
-last_task2b_lite_at: "2026-06-22"
+task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(parentFile.fdatasync()→android.system.Os.open()+Os.fsync(), REASON_INITIALIZATION_FAILURE 补入 SafeMode 白名单)已验证到位,无引入新写作问题。无禁用词/高频词命中(正文)。不是X而是Y 句式 1 次(在限制内)。承担 1 处(line 272,中文日常用法,非物理动作隐喻,保留)。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
 task9_result: pass-tech-review
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-06-23
-last_task9_at: 2026-06-23T11:24:00+08:00
+last_task9_at: "2026-06-23T11:24:00+08:00"
 last_task9_audit: "2026-06-23"
 last_task9_review_log: "logs/deep-review/2026-06-23-11-deep-review.md"
 task9_review_notes: "2026-06-23 Task9 最终确认: pass-tech-review。P0 0 / P1 5 / P2 8；主要技术问题已闭环，剩余 P2 建议已写入 suggestions.md。SafeMode 状态机、ApplicationExitInfo 集成、多进程崩溃处理等核心架构验证通过。"
 deepseek_cn_review_state: needs-structure-rework
 last_deepseek_cn_review_at: 2026-06-17
-task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(parentFile.fdatasync()→android.system.Os.open()+Os.fsync(), REASON_INITIALIZATION_FAILURE 补入 SafeMode 白名单)已验证到位,无引入新写作问题。无禁用词/高频词命中(正文)。不是X而是Y 句式 1 次(在限制内)。承担 1 处(line 272,中文日常用法,非物理动作隐喻,保留)。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
 task2b_state: fixed
 task2b_result: fixed
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: ready-to-publish
 auto_finalized: true
 verifier_pass: "2026-06-23T11:26:00+08:00"
-last_task2b_main_at: 2026-06-23T10:52:50+08:00
+last_task2b_main_at: "2026-06-23T10:52:50+08:00"
+---
+
 ----
 
 # 异常处理架构设计

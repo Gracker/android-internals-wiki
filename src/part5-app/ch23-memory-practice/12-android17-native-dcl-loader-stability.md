@@ -1,3 +1,11 @@
+---
+title: "Android 17 Native DCL 只读约束与动态库加载稳定性"
+chapter: "23.12"
+status: "draft"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+tags: [memory, leak, optimization]
+---
+
 # Android 17 Native DCL 只读约束与动态库加载稳定性
 
 > **Android 17 Native 延迟初始化安全机制分析**

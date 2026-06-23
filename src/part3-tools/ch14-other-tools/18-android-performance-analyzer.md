@@ -1,10 +1,9 @@
 ---
 title: Android Performance Analyzer 与系统性能分析
-tags:
-  - 工具使用
-  - 系统分析
-  - 性能诊断
-status: draft
+chapter: 14.18
+status: ready-for-review
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+tags: [工具使用, 系统分析, 性能诊断]
 author: AIW
 created: 2026-06-23
 ---

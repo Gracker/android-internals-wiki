@@ -53,6 +53,8 @@ task6_reviewed_date: "2026-06-09"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-09T14:52:28+08:00"
 last_task9_autofix_at: "2026-06-09"
+---
+
 ----
 # 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 

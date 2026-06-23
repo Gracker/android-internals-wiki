@@ -1,38 +1,24 @@
 ---
-
-task6_review_notes: 2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.21 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。
-last_task6_review_log: logs/review/2026-06-17-04-review.mdtitle: "Android Developer Verification 与安装链路边界"
+title: "1.21 Android Developer Verification 与安装链路边界"
 chapter: "1.21"
 section: "1.21"
 status: finalized
 pipeline_stage: ready-to-publish
+applicable_versions: "Enforcement: Android 7+ certified devices; PackageInstaller reason-code API: Android 16 Extension 36.1 - Android 17 (API 37)"
+tags: "[package-manager, installer, developer-verification, security, performance]"
+confidence: medium
+last_verified: "2026-06-17"
+last_verified_against: "Android Developers developer verification FAQ 2026-05-11 / PackageInstaller API version 36.1 / AOSP android-16.0.0_r1 PackageInstallerSession"
+task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.21 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
+last_task6_review_log: "logs/review/2026-06-17-04-review.mdtitle: \"Android Developer Verification 与安装链路边界\""
 task6_state: reviewed
 task9_state: "reviewed"
 drafted_date: "2026-05-20"
-applicable_versions: "Enforcement: Android 7+ certified devices; PackageInstaller reason-code API: Android 16 Extension 36.1 - Android 17 (API 37)"
-last_verified: "2026-06-17"
-last_verified_against: "Android Developers developer verification FAQ 2026-05-11 / PackageInstaller API version 36.1 / AOSP android-16.0.0_r1 PackageInstallerSession"
-confidence: medium
-tags: [package-manager, installer, developer-verification, security, performance]
-related_chapters: ["1.9", "16.5", "26.7"]
+related_chapters: "[\"1.9\", \"16.5\", \"26.7\"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-20"
 gap_source: "官方文档/每日信息/AOSP结构"
-sources:
-  - type: official
-    path: "https://developer.android.com/developer-verification"
-  - type: official
-    path: "https://developer.android.com/developer-verification/guides/faq"
-  - type: official
-    path: "https://developer.android.com/developer-verification/guides/android-developer-console"
-  - type: official
-    path: "https://developer.android.com/reference/android/content/pm/PackageInstaller"
-  - type: blog
-    path: "https://android-developers.googleblog.com/2026/03/android-developer-verification.html"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/VerifyingSession.java"
+path: "frameworks/base/services/core/java/com/android/server/pm/VerifyingSession.java"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 last_task9_at: "2026-06-17T00:29:18+08:00"

@@ -1,83 +1,34 @@
 ---
-
-title: "网络架构与连接管理"
-chapter: "24.4"
-section: "24.4"
-status: finalized
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-03"
-last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-35 SDK sources"
-confidence: medium
-drafted_date: "2026-05-14"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
-task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: pending
-task9_result: auto-fixed
-task2b_result: fixed-lite
-task2b_state: fixed
-polish_count: 2
-pipeline_stage: ready-to-publish
-sources:
-  - type: official
-    path: "https://square.github.io/okhttp/features/connections/"
-  - type: official
-    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-connection-pool/"
-  - type: official
-    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dispatcher/"
-  - type: official
-    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/"
-  - type: official
-    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/fast-fallback.html"
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/network-ops/connecting"
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/network-ops/managing"
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization"
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/minimize-effect-regular-updates"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/NetworkCapabilities"
-  - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java"
-  - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java"
-  - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/os/StrictMode.java"
-  - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/DnsResolver.java"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - 原理:重新认识应用的速度优化.md"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - CPU 优化(上):合理使用线程池,提升 CPU 利用率.md"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - CPU 优化(下):减少 CPU 闲置时刻和等待,提升利用率.md"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - 任务调度优化:线程+CPU,提升任务调度优先级.md"
-  - type: clippings
-    path: "Clippings/Android 性能优化 - 缓存优化:冷热端分离+重排序,提升缓存命中率.md"
+title: "\"网络架构与连接管理\""
+chapter: "\"24.4\""
+section: "\"24.4\""
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
-related_chapters: ["24.5", "12.2", "12.3"]
-task6_state: revisiting
-last_task6_at: "2026-06-03T04:08:00+08:00"
-last_task6_review_log: "logs/review/2026-06-03-04-review.md"
-task6_review_notes: "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 3 处;未发现新增回炉项,进入 Task9 待审。"
-task9_state: reviewed
-task2b_result: fixed-lite
-task2b_state: fixed
-pipeline_stage: ready-to-publish
-last_task2b_lite_at: "2026-06-03"
-last_task2a_at: "2026-05-14T09:21:00+08:00"
-task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-03"
-last_task9_at: "2026-06-03T09:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-03-09-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 auto-fix:移除未一手验证的 Wi-Fi 固定评分阈值,改为系统选网边界与 24.9 交叉引用,回到 Task6 复审。"
-last_task9_autofix_at: "2026-06-03"---
-
+confidence: "medium"
+last_verified: "\"2026-06-03\""
+last_verified_against: "\"Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-35 SDK sources\""
+drafted_date: "\"2026-05-14\""
+reviewed_date: "\"2026-06-03\""
+reviewed_by: "openclaw-task6"
+polish_count: "2"
+task6_result: "pass-light-edit"
+task6_state: "revisiting"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
+path: "\"Clippings/Android 性能优化 - 缓存优化:冷热端分离+重排序,提升缓存命中率.md\""
+related_chapters: "[\"24.5\", \"12.2\", \"12.3\"]"
+last_task6_at: "\"2026-06-03T04:08:00+08:00\""
+last_task2b_lite_at: "\"2026-06-03\""
+last_task2a_at: "\"2026-05-14T09:21:00+08:00\""
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "\"2026-06-03\""
+last_task9_at: "\"2026-06-03T09:20:00+08:00\""
+last_task9_autofix_at: "\"2026-06-03\""
+---
 
 # 网络架构与连接管理
 

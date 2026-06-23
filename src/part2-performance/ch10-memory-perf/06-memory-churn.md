@@ -14,15 +14,12 @@ last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.
 verified_note: "Android 17/API 37 分代 CMC 全量默认结论降级为待验证，公开 AOSP 无 android-17 tag"
 confidence: medium
 pipeline_stage: "ready-to-publish"
-sources:
-  - type: "blog"
-    path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
-  - type: "official"
-    path: "developer.android.com/topic/performance/memory"
-  - type: "official"
-    path: "perfetto.dev/docs/data-sources/native-heap-profiler"
-tags: ["memory", "gc", "churn", "object-pool", "tlab", "autoboxing", "heapprofd"]
-related_chapters: ["4.3", "7.1", "7.2", "10.1", "10.4"]
+sources: 
+path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
+path: "developer.android.com/topic/performance/memory"
+path: "perfetto.dev/docs/data-sources/native-heap-profiler"
+tags: "[\"memory\", \"gc\", \"churn\", \"object-pool\", \"tlab\", \"autoboxing\", \"heapprofd\"]"
+related_chapters: "[\"4.3\", \"7.1\", \"7.2\", \"10.1\", \"10.4\"]"
 word_count: "~7500"
 reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
@@ -49,6 +46,7 @@ review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b�
 last_task9_review_log: "logs/deep-review/2026-05-08-05-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
+---
 
 # 内存抖动与频繁 GC
 
