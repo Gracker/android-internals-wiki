@@ -1,8 +1,9 @@
 ---
+
 title: Trace 抓取
 chapter: '13.2'
 section: '13.2'
-status: "finalized"
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
@@ -28,9 +29,9 @@ path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
 tags: 
 related_chapters: 
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed

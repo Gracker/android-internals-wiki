@@ -1,7 +1,8 @@
 ---
+
 title: "Perfetto SQL 性能分析实战手册"
 chapter: "13.10"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -32,16 +33,16 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: "reviewed"
+task9_state: pending
 task2b_state: "fixed"
 task2b_result: fixed
 
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: "pass-light-edit"
 reviewed_date: "2026-05-28"
 reviewed_by: "openclaw-task6"
 last_task6_audit: "2026-06-21"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: task6_pending
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-05-29"
 task9_reviewed_by: "openclaw-task9"

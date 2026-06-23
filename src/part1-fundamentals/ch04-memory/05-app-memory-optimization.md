@@ -1,7 +1,8 @@
 ---
 
 
-status: finalized
+
+status: ready-for-review
 title: App 内存优化
 section: '4.5'
 chapter: '4.5'
@@ -54,9 +55,9 @@ review_round: 5
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task2b_result: reworked
 last_task2b_at: "2026-06-04T04:55:01"
