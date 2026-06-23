@@ -577,7 +577,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-24T01:28:33.781464+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-24T01:39:59+08:00",
+      "completed_reason": "fixed-lite: HookManager.java/IHookManager.aidl references not present in current file (phantom review finding). Task6 B-class issues fixed instead: code block label c→java, JIT optimization advice corrected, pseudo-code labels added to case studies."
     },
     {
       "section": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
@@ -597,7 +599,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-24T01:28:33.781464+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-24T01:39:59+08:00",
+      "completed_reason": "fixed-lite: HookManager.java/IHookManager.aidl references not present in current file (phantom review finding). Task6 B-class issues fixed instead: code block label c→java, JIT optimization advice corrected, pseudo-code labels added to case studies."
     }
   ]
 }
