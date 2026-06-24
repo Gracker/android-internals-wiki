@@ -349,5 +349,37 @@
     "priority": 80,
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-06-24"
+  },
+  {
+    "chapter": "2.29",
+    "title": "Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型",
+    "priority": 80,
+    "source": "source-index.json",
+    "created_date": "2026-06-24",
+    "estimated_hours": 8
+  },
+  {
+    "chapter": "2.30",
+    "title": "CameraX ZSL 与 HAL Reprocessing Request 的映射关系",
+    "priority": 80,
+    "source": "source-index.json",
+    "created_date": "2026-06-24",
+    "estimated_hours": 8
+  },
+  {
+    "chapter": "20.1",
+    "title": "Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析",
+    "priority": 80,
+    "source": "source-index.json",
+    "created_date": "2026-06-24",
+    "estimated_hours": 12
+  },
+  {
+    "chapter": "16.5",
+    "title": "Android 系统层对应用分发与内容共享的支撑机制",
+    "priority": 80,
+    "source": "source-index.json",
+    "created_date": "2026-06-24",
+    "estimated_hours": 10
   }
 ]
