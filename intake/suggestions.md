@@ -1,44 +1,45 @@
-## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-06-24
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 源码准确性
+- **类型**：源码准确性
+- **位置**：系统触发到 ProfilingManager 的触发链路
+- **问题**：缺少 ActivityManagerService 如何检测性能问题并调用 ProfilingManager 的中间环节，原理链断裂
+- **建议**：补充系统触发机制的完整流程图和关键方法调用链，明确各组件间的交互时序
+
+---
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 版本差异
+- **类型**：版本差异
+- **位置**：ProfilingManager 适用性说明
+- **问题**：未说明在不支持 ProfilingManager 的设备上的降级方案
+- **建议**：添加兼容性检查机制和降级策略说明，提供替代的性能监控方案
+
+---
+
+## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 数据支撑
 - **类型**：数据支撑
-- **位置**：量化性能数据部分
-- **问题**：缺少具体设备型号和测试条件，引用的 Google 官方数据缺乏完整样本说明
-- **建议**：补充具体测试环境（如 Pixel 8 Pro build fingerprint）、测试次数统计区间、冷启动复现方法
+- **位置**：性能对比部分
+- **问题**：缺少 LazyColumn 和 RecyclerView 的具体性能对比数据，缺乏量化分析
+- **建议**：补充 Macrobenchmark 或 Perfetto 的实际测试数据，包括不同设备、不同滚动速度下的帧耗时对比
 
-## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 2026-06-24
+---
+
+## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 版本演进
+- **类型**：版本差异
+- **位置**：PausableComposition 说明
+- **问题**：未详细说明 Compose 1.0-1.5 中 PausableComposition 的实现变化
+- **建议**：补充 PausableComposition 在不同 Compose 版本中的演进历程，重点说明 1.3 和 1.5 中的重大改进
+
+---
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 数据支撑
+- **类型**：数据支撑
+- **位置**：16KB Page Size 迁移部分
+- **问题**：缺少 16KB Page Size 对实际 App 启动时间的具体影响数据
+- **建议**：补充实际测试数据，包括不同类型应用（冷启动、热启动）的启动时间改善幅度，以及内存使用变化
+
+---
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 知识盲区补充
 - **类型**：知识盲区
-- **位置**：跨平台适配部分
-- **问题**：缺少对不同 Compose 编译后 bytecode 大小的具体影响分析
-- **建议**：补充 Compose 编译产物大小对比、实际设备上的包体积膨胀率数据
-## [Task6 Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-24
-- **类型**：技术一致性错误（B-class）
-- **位置**：trigger table（正文表格）+ version table（版本演进表）+ outline（要点大纲）
-- **问题**：TRIGGER_TYPE_COLD_START 和 TRIGGER_TYPE_APP_COMPAT 的常量值在全文三处给出三组不同的值：
-  - outline: `COLD_START=11`、`APP_COMPAT=10`
-  - trigger table: `COLD_START = 11`、`APP_COMPAT = 11`（两个不同 trigger 同值，不可能）
-  - version table: `COLD_START=10`、`APP_COMPAT=11`
-- **建议**：查阅 AOSP `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java` 中的常量定义，统一全文三处引用。这是技术事实错误，不能靠写作层面解决。
-- **review 日志**：logs/review/2026-06-24-04-review.md
-
-## [Task9 闲时抽检] 25.4 WorkManager 实战与后台任务调度 — 2026-06-24
-- **类型**：版本/术语准确性
-- **位置**：§停止原因与回归守门 末段
-- **问题**：章节称"如果任务频繁超时，系统可能把 App 放入 restricted standby bucket"。但 Android App Standby Buckets 中，"Restricted"桶需要用户主动操作，系统不会自动将 App 放入 Restricted 桶。系统可根据使用模式自动降级到"Rare"或"Limited"桶。
-- **建议**：将"restricted standby bucket"改为"更低的 standby bucket（如 Rare 或 Limited）"，或删除"restricted"这一特指，仅保留"系统可能限制 App 的后台执行能力"。
-
-## [Task2B 修复完成] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-24
-- **状态**：已修复
-- **修复内容**：
-  - COLD_START 常量值修正：outline 中 `COLD_START=11` → `10`，trigger table 中 `TRIGGER_TYPE_COLD_START = 11` → `10`，与 AOSP `android-17.0.0_r1` 源码一致
-  - APP_COMPAT 常量值修正：outline 中 `APP_COMPAT=10` → `11`，与源码一致
-  - 版本演进表中 COLD_START=10 / APP_COMPAT=11 已确认正确，无需修改
-  - Frontmatter 去重：删除重复的 `task6_review_notes`
-- **章节状态**：task2b_result/task2b_state → fixed，pipeline_stage → task6_pending（等待下一轮 Task6/Task9 review）
-- **修复日志**：logs/review/2026-06-24-04-review.md
-
-## [Task2B Lite 修复完成] 25.4 WorkManager 实战与后台任务调度 — 2026-06-24
-- **状态**：已修复 (fixed-lite)
-- **修复内容**：
-  - §停止原因与回归守门：将"restricted standby bucket"修正为"降低 standby bucket 等级（如 Rare 或 Frequent）"
-  - 原因：Restricted 桶需用户/系统特定策略触发，非 WorkManager 超时直接导致
-- **章节状态**：status → ready-for-review，pipeline_stage → task6_pending
-- **修复日志**：logs/rework/2026-06-24-05-task2b-lite.md
+- **位置**：内存优化策略部分
+- **问题**：未详细说明 Android 17 中新增的内存管理特性
+- **建议**：补充 Android 17 新增的内存相关 API 和优化建议，特别是与 Jetpack Compose 相关的内存管理最佳实践
