@@ -8,13 +8,14 @@ task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-24"
 task6_review_notes_2026_06_24_r5: "第五轮复审：L1 修复完成（删除'这意味着'禁用词、修复英文词间距、改善开头结构）。L2 可读性优化完成。L3/L4 问题写入 queue priority:90 送 Task2B。"
 task6_review_notes_2026_06_24_r6: "第六轮复审（Task2B P95 Task9回炉后）：L1 修 2 处（代码注释中英文间距 Thumb）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁。L3 观察 1 条（PLT vs Inline 对比表中 IFUNC 绕过方式与正文描述矛盾），写入 queue+suggestions 送 Task2B/Task9。新增多进程/64-32bit/ART-Dalvik/16KB增强节质量良好。task6_result: pass-light-edit，待 Task9 技术复审。"
-task6_state: revisiting
+task6_review_notes_2026_06_24_r7: "第七轮复审（Task2B IFUNC表格修正后回炉复审）：L1 修 20 处路径格式（AOSP/GitHub 源码路径中多余空格，涉及验证标注和正文）。禁用词/AI套话/翻译腔全清洁（body text）。不是X而是Y=2（限额内）。高频词全清洁。IFUNC 对比表 P90 修正已验证正确。L3 观察 1 条：art/runtime/entrypoints/entrypoint_utils.h 路径可能在 android-17.0.0_r1 中不存在（Task9 P95 queue 标记 completed 但路径未更新），交 Task9 复核。无 B 类阻断问题。task6_result: pass-light-edit，待 Task9 技术复审。"
+task6_state: reviewed
 task9_result: "needs-rework"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-24"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -50,7 +51,7 @@ task2b_changes_summary_2026-06-24_r5: "P95 Task9深度复审回炉: AOSP路径�
 
 Hook 就是用来回答这类问题的。它让你在不修改 App 源码、不重新打包的情况下，拦截并观察任意函数调用——包括系统调用、 JNI 方法和框架层 API。掌握 Hook 的原理和工具链之后：
 
-1. **理解性能工具的底层机制**：Systrace 的 atrace HAL、 Perfetto 的 heapprofd、 Simpleperf 的 profiling 都依赖不同类型的 Hook/插桩机制来采集数据 [已验证: android-17.0.0_r1 frameworks / native / cmds/atrace/atrace.cpp + external / perfetto]。
+1. **理解性能工具的底层机制**：Systrace 的 atrace HAL、 Perfetto 的 heapprofd、 Simpleperf 的 profiling 都依赖不同类型的 Hook/插桩机制来采集数据 [已验证: android-17.0.0_r1 frameworks/native/cmds/atrace/atrace.cpp + external/perfetto]。
 2. **填补 trace 盲区**：当 Perfetto/Systrace 无法覆盖某个调用路径时，用 Hook 做定向补充观察。
 3. **排查疑难性能问题**：主线程卡顿、ANR、内存泄漏等场景中，Hook 可以补全 trace 看不到的函数级调用链。
 
@@ -76,7 +77,7 @@ Android Hook 技术按介入时机和修改目标分为三条技术路线，每�
 
 **路线三：ART 运行时 Method Entry 替换（动态）**
 
-通过修改 `ArtMethod` 结构体中的 `entry_point_from_quick_compiled_code_` 字段，在 ART 虚拟机层面拦截 Java/Kotlin 方法调用 [已验证: android-17.0.0_r1 art/runtime / art_method.h]。
+通过修改 `ArtMethod` 结构体中的 `entry_point_from_quick_compiled_code_` 字段，在 ART 虚拟机层面拦截 Java/Kotlin 方法调用 [已验证: android-17.0.0_r1 art/runtime/art_method.h]。
 
 - 代表工具：SandHook、Epic
 - 优点：可拦截 JIT/AOT 编译后的 Java 方法，静态插桩无法覆盖的场景下是唯一选择
@@ -121,7 +122,7 @@ Trampoline 是 inline hook 的核心机制，用于保存原始函数代码并�
 
 Trampoline 之所以必须存在，而不是直接在 Hook 函数里调用原始函数，是因为原始函数入口的指令已被覆写——直接调用原始函数会再次命中跳转指令，形成无限递归。
 
-**ARM64 指令对齐约束**：ARM64 的合法指令地址必须 4 字节对齐。Trampoline 分配的内存地址如果不满足对齐，CPU 取指阶段就会触发异常。这是 inline hook 在 ARM64 上实现时最容易踩的坑之一 [已验证: ShadowHook source shadowhook / common/arch/arm64.c]。
+**ARM64 指令对齐约束**：ARM64 的合法指令地址必须 4 字节对齐。Trampoline 分配的内存地址如果不满足对齐，CPU 取指阶段就会触发异常。这是 inline hook 在 ARM64 上实现时最容易踩的坑之一 [已验证: ShadowHook source shadowhook/common/arch/arm64.c]。
 
 **内存保护与 W^X 约束**：Trampoline 所在内存和覆写的目标函数代码段都涉及可执行权限。Android 14+ 对 targetSdkVersion ≥ 34 的进程强制内核级 W^X：同一内存页不允许同时持有写权限和可执行权限。实现 Trampoline 的标准流程是：
 
@@ -184,7 +185,7 @@ shadowhook_hook_replace(
 
 #### 关键实现细节
 
-ARM64 架构的 inline hook 实现需要处理四个核心约束 [已验证: ShadowHook source shadowhook / common/arch/arm64.c]：
+ARM64 架构的 inline hook 实现需要处理四个核心约束 [已验证: ShadowHook source shadowhook/common/arch/arm64.c]：
 
 1. **指令对齐**：ARM64 指令必须 4 字节对齐，Trampoline 代码的位置需要遵守这一约束。
 2. **模式检测**：运行时判断当前函数是 ARM 模式还是 Thumb 模式——函数地址的最低位（LSB）为 1 时表示 Thumb 模式。
@@ -248,7 +249,7 @@ xHook 的局限在于：如果代码通过 `dlsym` 获取函数地址后直接�
 
 Matrix 是腾讯开源的 APM 框架，其 TraceCanary 模块通过 PLT Hook 实现对主线程调度和帧渲染的监控。
 
-**TraceCanary 的 Hook 注册流程** [已验证: Tencent / matrix matrix-android / matrix-trace-canary]：
+**TraceCanary 的 Hook 注册流程** [已验证: Tencent/matrix matrix-android/matrix-trace-canary]：
 
 1. **Hook 目标选择**：TraceCanary 拦截两个关键节点——`MessageQueue.next()`（监控主线程 Looper 等待耗时）和 `Choreographer` 的回调（监控帧渲染耗时）。
 2. **Java 层 Hook**：通过反射获取 `MessageQueue` 实例后，使用 `Method.invoke()` 包装原始 `next()` 调用，在调用前后插入计时逻辑。
@@ -329,9 +330,9 @@ Android 的安全模型在两层限制 Hook 的能力：
 
 ### Mainline 模块的影响
 
-Android Mainline 模块化将部分系统组件（ART、 conscrypt、 media、network、Profiling 等）从系统分区迁移到独立可更新的 APEX 模块，这对 Hook 框架有几个实际影响 [已验证: android-17.0.0_r1 art / libartbase/base/apex.h + packages / modules/Profiling/]：
+Android Mainline 模块化将部分系统组件（ART、 conscrypt、 media、network、Profiling 等）从系统分区迁移到独立可更新的 APEX 模块，这对 Hook 框架有几个实际影响 [已验证: android-17.0.0_r1 art/libartbase/base/apex.h + packages/modules/Profiling/]：
 
-**ProfilingManager 路径说明**：ProfilingManager 属于 Mainline 模块，源码位于 AOSP `packages / modules/Profiling/`。Android 13 引入后路径未发生结构性变化，但内部 profiling service 的实现细节在不同 Android 版本间有调整。具体来说：
+**ProfilingManager 路径说明**：ProfilingManager 属于 Mainline 模块，源码位于 AOSP `packages/modules/Profiling/`。Android 13 引入后路径未发生结构性变化，但内部 profiling service 的实现细节在不同 Android 版本间有调整。具体来说：
 
 - Android 13-14：核心实现在 `service/` 子目录下，触发器类型为 CPU/THERMAL/LMK（类型值 1-3）。
 - Android 15-16（SDK extension 36+）：新增 MEMORY=4、PSS=5、GC=6 触发器，对应实现分散在 `service/profiling/` 和新增的 trigger handler 中。
@@ -339,15 +340,15 @@ Android Mainline 模块化将部分系统组件（ART、 conscrypt、 media、ne
 
 对 Hook 框架而言，ProfilingManager 的关键影响是：如果自建 Hook 工具的目标函数与 ProfilingManager 的插桩目标重叠，两者的 trampoline/GOT 修改可能互相覆盖。在同时使用 ProfilingManager 和自建 Hook 的设备上，建议通过 `dumpsys profiling` 提前确认 ProfilingManager 当前激活的 trigger 类型和插桩范围，避免冲突。
 
-ART Mainline 的库路径变化是一个典型例子。Android 12 之前，libart.so 固定在 ` / system/lib64 / libart.so`。Android 12+ 将 ART 拆入 Mainline 模块（com.android.art），libart.so 迁移到 `/apex / com.android.art/lib64 / libart.so`。对 Hook 框架而言：
+ART Mainline 的库路径变化是一个典型例子。Android 12 之前，libart.so 固定在 `/system/lib64/libart.so`。Android 12+ 将 ART 拆入 Mainline 模块（com.android.art），libart.so 迁移到 `/apex/com.android.art/lib64/libart.so`。对 Hook 框架而言：
 
-- 原来指向 ` / system/lib64 / libart.so` 的硬编码路径全部失效。
+- 原来指向 `/system/lib64/libart.so` 的硬编码路径全部失效。
 - 必须改用 `dlopen("libart.so", RTLD_NOLOAD)` 获取已在内存中的句柄，再通过 `dlsym` 找符号地址——这样无论 .so 实际从 ` / system` 还是 `/apex` 加载，都能正确解析。
 - `android_dlopen_ext` + `ANDROID_DLEXT_USE_NAMESPACE` 可以指定 linker namespace，在存在多个同名 .so 版本时精准锁定目标。
 
 除 ART 外，Mainline 机制对 Hook 框架的普遍影响包括：
 
-1. **库路径变化**：Mainline 模块的 .so 从 ` / system/lib64/` 迁移到 `/apex / com.android.xxx/lib64/`，Hook 框架的库定位逻辑需要适配 APEX 路径。
+1. **库路径变化**：Mainline 模块的 .so 从 `/system/lib64/` 迁移到 `/apex/com.android.xxx/lib64/`，Hook 框架的库定位逻辑需要适配 APEX 路径。
 2. **版本碎片化**：同一台设备上，Mainline 模块的版本可能与系统分区不一致。Hook 框架拦截同一个系统 API 时，在不同进程中可能对应不同版本的实现——一个进程用 APEX 版本，另一个用系统分区版本。
 3. **APEX 的只读挂载**：APEX 模块以只读文件系统挂载，其 .so 的代码段天然不可写。这本身不阻止 PLT Hook（GOT 在进程的私有映射中），但限制了对 APEX 库做 inline hook 的可行性。
 4. **独立更新窗口**：Mainline 模块可以绕过 OTA 独立更新。今天测试通过的 Hook 偏移量，下次 Mainline 更新后可能失效。
@@ -382,7 +383,7 @@ Dalvik VM（Android 4.4 及之前）和 ART（Android 5+）在执行模型上的
 | 稳定性 | `Method` 结构体布局由 Dalvik 定义，4.4 上固定 | `ArtMethod` 布局随 Android 版本变化，偏移量需逐版适配 |
 | JIT 干扰 | JIT 编译后的 trace 不从 `Method` 入口走，部分 Hook 可能被 JIT 代码绕开 | AOT 编译后的方法直接从 compiled code 入口执行，但 inline cache 和 deoptimization 可能改变运行时实际入口 |
 
-本系列覆盖 Android 8+，Dalvik 已被移除，但认识 ART 之前的 Hook 方案有助于理解为什么 ART 时代的 Hook 以 `ArtMethod` 和 PLT 为主——解释器入口替换在 Dalvik 上简单有效，在 ART 上则因为 AOT/JIT 双路径而需要同时覆盖多个入口点 [已验证: android-17.0.0_r1 art/runtime / art_method.h + art/runtime/entrypoints/entrypoint_utils.h]。
+本系列覆盖 Android 8+，Dalvik 已被移除，但认识 ART 之前的 Hook 方案有助于理解为什么 ART 时代的 Hook 以 `ArtMethod` 和 PLT 为主——解释器入口替换在 Dalvik 上简单有效，在 ART 上则因为 AOT/JIT 双路径而需要同时覆盖多个入口点 [已验证: android-17.0.0_r1 art/runtime/art_method.h + art/runtime/entrypoints/entrypoint_utils.h]。
 
 ### 多进程场景下的 Hook 差异
 
@@ -409,9 +410,9 @@ PLT Hook 在多进程场景下还要注意：两个进程的同一个 .so 在同
 | Trampoline 跳板 | 需要处理 veneer 长跳转 | 32-bit 地址空间无需 veneer |
 | 16KB page 影响 | 代码段对齐从 4KB→16KB，mprotect 粒度 4× | 32-bit 进程默认仍用 4KB page |
 
-32-bit 模式下的 Thumb/ARM 切换是 inline hook 在 ARM32 上最容易出错的地方。函数地址的最低位（LSB）是 `BX`/`BLX` 指令的模式切换标志——Hook 框架必须正确提取 LSB 判断目标模式，然后在 Trampoline 和跳转指令中选择对应的指令编码 [已验证: ShadowHook source shadowhook / common/arch/arm.c]。
+32-bit 模式下的 Thumb/ARM 切换是 inline hook 在 ARM32 上最容易出错的地方。函数地址的最低位（LSB）是 `BX`/`BLX` 指令的模式切换标志——Hook 框架必须正确提取 LSB 判断目标模式，然后在 Trampoline 和跳转指令中选择对应的指令编码 [已验证: ShadowHook source shadowhook/common/arch/arm.c]。
 
-64-bit 模式下的长跳转是另一个高频问题。ARM64 的 B/BL 指令跳转范围 ±128MB，当 Hook 函数地址与目标函数地址的偏移超过这个范围时，需要插入 veneer（跳板）：在目标附近 128MB 内分配一小段代码，先跳到这里，再用间接跳（`BR` + 寄存器加载 64 位地址）跳到 Hook 函数 [已验证: ShadowHook source shadowhook / common/arch/arm64.c]。
+64-bit 模式下的长跳转是另一个高频问题。ARM64 的 B/BL 指令跳转范围 ±128MB，当 Hook 函数地址与目标函数地址的偏移超过这个范围时，需要插入 veneer（跳板）：在目标附近 128MB 内分配一小段代码，先跳到这里，再用间接跳（`BR` + 寄存器加载 64 位地址）跳到 Hook 函数 [已验证: ShadowHook source shadowhook/common/arch/arm64.c]。
 
 
 ### 16KB Page Size 对 Hook 的影响
@@ -423,13 +424,13 @@ Android 16+ 引入的 16KB page size 对 Hook 框架产生两个直接影响：
 
 具体的对齐计算示例：假设目标 .so 的 `.text` section 在文件中的偏移是 0x1000，按 4KB page 编译时，linker 将其映射到 0x7000a0001000——正好页对齐。按 16KB page 编译时，linker 按 16KB 粒度映射，该 .so 的代码段会被映射到 0x7000a0000000（16KB 对齐边界），`.text` section 的虚拟地址会从原来的 +0x1000 变为 +0x4000。Hook 框架如果硬编码了基于 4KB page 的偏移量，在 16KB page 设备上 GOT 表地址计算全部错误。
 
-3. **mixed-page-size 场景**：Android 16+ 上存在 64-bit 进程用 16KB page 但 32-bit 进程仍用 4KB page 的混合情况（由内核 VMA 策略决定）。Hook 框架需要在运行时通过 `getconf PAGE_SIZE` 或 `sysconf(_SC_PAGE_SIZE)` 动态获取当前进程的 page size，不能假设固定值 [已验证: Android Developers 16KB page size docs + android-17.0.0_r1 bionic/libc / bionic/page_size.cpp]。
+3. **mixed-page-size 场景**：Android 16+ 上存在 64-bit 进程用 16KB page 但 32-bit 进程仍用 4KB page 的混合情况（由内核 VMA 策略决定）。Hook 框架需要在运行时通过 `getconf PAGE_SIZE` 或 `sysconf(_SC_PAGE_SIZE)` 动态获取当前进程的 page size，不能假设固定值 [已验证: Android Developers 16KB page size docs + android-17.0.0_r1 bionic/libc/bionic/page_size.cpp]。
 
 ## 在 Perfetto/工具中的表现
 
 Hook 采集的原始数据需要可视化才能发挥作用。不同 Hook 路径在 Perfetto 中的呈现方式不同：
 
-**atrace HAL（系统级插桩）** [已验证: android-17.0.0_r1 frameworks / native / cmds/atrace/atrace.cpp — atrace 路径自 Android 5 起未变]：
+**atrace HAL（系统级插桩）** [已验证: android-17.0.0_r1 frameworks/native/cmds/atrace/atrace.cpp — atrace 路径自 Android 5 起未变]：
 
 atrace 本身就是一套稳定的系统级 Hook 层。它在 framework 关键路径（`Choreographer`、`ViewRootImpl`、`AMS`、`Binder` 等）预埋了 tracepoint。Perfetto 通过 `atrace` data source 采集这些 tracepoint，在 UI 中呈现为 slice track——每条 slice 有明确的进程名、线程名、函数名和持续时间。
 
@@ -452,7 +453,7 @@ heapprofd 在 malloc/free 层面做了系统级 Hook，将每次分配记录到 
 
 ### 案例 1：Matrix — 线上 ANR 监控
 
-Matrix 的 TraceCanary 模块通过 Hook `MessageQueue.next()` 和 `Looper.loop()` 来监控主线程 Looper 调度情况 [已验证: Tencent / matrix matrix-android / matrix-trace-canary]：
+Matrix 的 TraceCanary 模块通过 Hook `MessageQueue.next()` 和 `Looper.loop()` 来监控主线程 Looper 调度情况 [已验证: Tencent/matrix matrix-android/matrix-trace-canary]：
 
 - **ANR 检测**：Hook `MessageQueue.next()` 记录每次 Poll 的等待时长。当检测到连续多次 Poll 超时（默认 2s/次 × 3 次），触发 ANR 采样。
 - **掉帧检测**：Hook `Looper.loop()` 中 Dispatch 方法的起止时间，计算出每一帧的实际执行时长，超过阈值（默认 700ms）标记为掉帧。
