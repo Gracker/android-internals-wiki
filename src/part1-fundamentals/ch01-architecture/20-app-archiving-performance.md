@@ -64,7 +64,7 @@ last_task6_at: "2026-06-15T13:15:35+08:00"
 last_task6_review_log: "logs/review/2026-06-15-13-review.md"
 task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task2B 已补齐 requestArchive 失败路径、点击恢复 listener 口径和恢复链路时序图；本轮仅修验证标注前空格，无 L3/L4 回炉项。送 Task9 技术复审。 2026-06-15 Task6 revisiting→reviewed：pass-light-edit。L1/L2 无新问题（经多轮 review 已清洁）；L3/L4 无写作质量回炉项。Task9 闲时抽检 needs-rework（P1:2 技术口径），待 Task9 复审。 2026-06-15 Task6 revisiting→reviewed：pass-light-edit，自动晋升 finalized。Task9 auto-fixed（源码锚点已重定向 android-15/16.0.0_r1，版本边界已修正，调用者范围已拆分 Android 15 vs 16）；Task2B fixed-lite；queue.json 1.20 条目 completed。L1 全量扫描零命中（禁用词/汇报腔/AI套话/翻译腔/高频词/元叙述），L2 结构与节奏良好，L3/L4 无写作质量回炉项。✅ 自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-25
 last_task9_audit: "2026-06-15"
 last_task9_audit_at: "2026-06-15T11:26:52+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-15-11-audit.md"
@@ -286,7 +286,7 @@ Android 15–17 的其他性能行为变更可回看 16.2 节。
 
 ## 扩展：SDM 签名校验与归档恢复安全性
 
-现有素材提到 Android 16 之后存在 `.sdm` 签名文件和恢复包完整性校验线索。android-16.0.0_r1 的 `PackageInstallerSession` 确有 `verifySdmSignatures()`，但它属于 `cloudCompilationVerification()` 下的安装会话校验；本轮没有在 `PackageArchiver` 归档入口中看到专门的 SDM 恢复分支。正文只记录一个待查方向：如果安装器通过签名委托或增量包恢复归档应用，需要确认 `.sdm` 与 APK 签名校验、update owner、安装器身份（installer identity）的交互点。[待验证]
+Android 16 的 `.sdm` 签名文件和恢复包完整性校验线索，目前来自 `PackageInstallerSession` 侧，与 `PackageArchiver` 归档主路径的关系尚未在源码中建立。android-16.0.0_r1 的 `PackageInstallerSession` 确有 `verifySdmSignatures()`，但它属于 `cloudCompilationVerification()` 下的安装会话校验；本轮没有在 `PackageArchiver` 归档入口中看到专门的 SDM 恢复分支。正文只记录一个待查方向：如果安装器通过签名委托或增量包恢复归档应用，需要确认 `.sdm` 与 APK 签名校验、update owner、安装器身份（installer identity）的交互点。[待验证]
 
 后续验证路径：
 
@@ -320,7 +320,7 @@ Android 15 官方表述把平台归档定位为“让所有应用商店更容易
 App Archiving 把“卸掉代码、保留数据、保留入口、交给安装器恢复”做成了平台能力。读代码时抓住三条线：`PackageInstaller.requestArchive()` 进入 PMS，`PackageArchiver` 保存 `ArchiveState`，`ActivityStarter` 在类找不到分支把灰显图标点击转成 `ACTION_UNARCHIVE_PACKAGE`。性能分析也按这三条线拆开：系统判定通常很短，用户等待多半花在安装器下载、PackageInstaller session、编译和恢复后冷启动。
 
 
-## 扩展：版本边界与 INSTALL_UNARCHIVE 机制验证（2026-06-01 源码调研）
+## 扩展：INSTALL_UNARCHIVE 与版本边界验证
 
 ### 版本边界确认
 
@@ -333,7 +333,7 @@ App Archiving 把“卸掉代码、保留数据、保留入口、交给安装器
 | Android 16 | API 36 | ✅ 存在（SHA 4690e020，68659 bytes） | ✅ 存在 |
 | Android 17 | API 37 | ⛔ android.googlesource 未检出此 tag，无法逐文件验证 | ⛔ 无 tag |
 
-**结论：App Archiving 平台实现属于 Android 15 / API 35 特性**，原章节"applicable_versions: Android 15 (API 35) - Android 17 (API 37)"与源码一致。android-17.0.0_r1 目前无公开 tag，无法逐文件验证。按 AIW 版本边界，Android 17/API 37 适用范围待 release tag 复核，不写"视为覆盖"。
+App Archiving 平台实现属于 Android 15 / API 35 新增特性，与章节 applicable_versions 一致。android-17.0.0_r1 目前无公开 tag，无法逐文件验证。按 AIW 版本边界，Android 17/API 37 适用范围待 release tag 复核，不写"视为覆盖"。
 
 ### INSTALL_UNARCHIVE 标志与确认跳过机制
 
@@ -357,7 +357,7 @@ final boolean noUserActionNecessary = isInstallerRoot || isInstallerSystem
 
 **验证结果（源码路径）：** `PackageArchiver.java`（android-16.0.0_r1）中搜索 `sdm`、`SDM`、`signature`、`verifySdm` 关键字无匹配；它只负责创建归档/恢复 session，并设置 `INSTALL_UNARCHIVE_DRAFT | INSTALL_UNARCHIVE`。`PackageInstallerSession.java`（android-16.0.0_r1）中存在 `verifySdmSignatures()`，调用点在 `cloudCompilationVerification()` 分支，用于校验 `.sdm` 与 APK 的签名一致性；这不是 `PackageArchiver` 针对归档恢复单独增加的安全分支。
 
-**原章节该待验证条目修订：SDM 签名校验可作为 Android 16 安装会话的独立线索保留，但不能写成 App Archiving 主链路的既定恢复校验。若要进入正文结论，需要继续验证恢复安装 session 携带 `.sdm` / art-managed files 时是否走同一条 `PackageInstallerSession` 校验路径。**
+综合来看，SDM 签名校验属于 `PackageInstallerSession` 层面的能力，当前没有证据表明 `PackageArchiver` 对归档恢复单独施加了 SDM 校验。是否所有恢复安装都会经过同一条 `PackageInstallerSession` 校验路径，仍需在恢复 session 携带 `.sdm` 或 art-managed files 的场景下进一步验证。
 
 ### android-15 → android-16 后续演进（AOSP commit history，release tag 行为已复核）
 
@@ -368,4 +368,4 @@ final boolean noUserActionNecessary = isInstallerRoot || isInstallerSystem
 - `181264cb256c`（2024-09-04）：**允许 preinstalled launcher apps（非 default launcher）触发 unarchive** — 扩展了 `requestUnarchiveOnActivityStart()` 的允许调用者范围
 - `3d9cc0a12fc2`（2024-11-12）：`requestUnarchiveConfirmation` 中 sendIntent 改用 handler post
 
-**信息源：** AOSP commit log；一手源码（PackageArchiver.java @ android-15.0.0_r1、android-16.0.0_r1；PackageInstallerSession.java @ android-16.0.0_r1；ArchiveState.java @ android-16.0.0_r1）
+以上基于 AOSP commit log 及 `PackageArchiver.java` (android-15.0.0_r1 / android-16.0.0_r1)、`PackageInstallerSession.java` (android-16.0.0_r1)、`ArchiveState.java` (android-16.0.0_r1) 交叉验证。

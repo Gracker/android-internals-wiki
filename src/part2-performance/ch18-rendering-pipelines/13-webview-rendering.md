@@ -49,6 +49,8 @@ last_task9_autofix_at: "2026-06-21"
 last_task2b_verifier_at: "2026-06-02T07:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-02-07-task2b-verifier.md"
 task6_reviewed_date: "2026-06-21"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-25
 ---
 
 # WebView 渲染管线
@@ -135,6 +137,8 @@ adb shell dumpsys webviewupdate
 
 ### WebViewChromiumFactory 初始化分层
 
+渲染路径的选择，前提是 provider 和 native 库已正确加载。初始化过程如下：
+
 1. **Factory 加载**:WebView.java 的私有 `getFactory()` 最终调用 `WebViewFactory.getProvider()`，用于检查并加载当前 provider
 2. **Provider 选择**:WebViewUpdateService 选择当前可用的 Android System WebView / Trichrome provider
 3. **Native 库加载**:加载 `libwebviewchromium.so` 及相关 native 库
@@ -191,7 +195,7 @@ sequenceDiagram
 
 - Android 5-9 的公开资料里更常见 `DrawGL` / GL functor 这组旧名字。
 - Android 10+ 平台侧更常见 `Hardware Draw Functor` / `DrawFn` 口径。
-- 两组名字都指向同一类现象:网页绘制开销落在宿主窗口这一帧的 `RenderThread` 里。
+- 两组名字指向同一个现象：网页绘制开销落在宿主窗口这一帧的 `RenderThread` 里。
 
 **性能特征**:网页绘制开销会直接计入宿主窗口这帧的 `DrawFrame`。Perfetto 里如果宿主 `RenderThread` 出现长时间的 functor 回调,同时 `CrRendererMain`、Viz 或 WebView GPU 线程也在忙,网页内容仍并入宿主窗口这一帧。
 
@@ -210,7 +214,7 @@ sequenceDiagram
 
 对比 GL Functor、`SurfaceControl` 子 Surface、fullscreen custom view 和第三方 Texture-like 路径时,先用同一页面和同一 WebView provider 复现。若 provider 或页面负载变了,帧耗差异只能作为新样本,不能直接归因到路径切换。
 
-#### Functor 路径里几个容易踩的点
+#### Functor 路径中的关键架构事实
 
 排查这条路时还要确认几条架构事实:
 
@@ -274,14 +278,14 @@ adb shell dumpsys webviewupdate | grep -E "Current WebView package|packageName|v
 adb shell dumpsys SurfaceFlinger --list | grep -i "webview\\|surfaceview\\|<包名>"
 ```
 
-判断当前 WebView 是否走 `SurfaceControl` 路径,同时检查:
+判断当前 WebView 是否走 `SurfaceControl` 路径，需要同时检查：
 
 1. **平台版本**：Android 12+ 是基础要求
 2. **Provider 版本**：通过 Chromium milestone 判断具体实现能力
 3. **运行时命中**：Perfetto 中查看 Viz 线程是否与独立 child layer 产生交互
 4. **Overlay 检查**：确认 `SetOverlaysEnabledByHWUI()` 和 overlay support 检查是否通过
 
-章节不使用应用侧 Display 硬件能力探测伪代码作为公开 API 证据。应用侧能稳定拿到的是 provider 信息、fullscreen 回调、运行时 view class、Perfetto trace 与 SurfaceFlinger layer dump;overlay 检查细节属于 Chromium / HWUI 内部决策,通过源码和 trace 间接验证。
+应用侧能稳定拿到的是 provider 信息、fullscreen 回调、运行时 view class、Perfetto trace 与 SurfaceFlinger layer dump；overlay 检查细节属于 Chromium / HWUI 内部决策，通过源码和 trace 间接验证。
 
 **性能特征**:命中后,网页内容可以从宿主主窗口 buffer 中拆出去,宿主 `RenderThread` 只保留几何同步和必要协调。网页重绘压力会更容易和 App UI 预算分开观察。
 

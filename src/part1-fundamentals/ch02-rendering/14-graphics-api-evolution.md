@@ -65,7 +65,7 @@ task9_reviewed_date: 2026-06-24
 task2b_result: "fixed"
 last_task2b_at: '2026-05-12T19:36:00+08:00'
 last_task9_at: "2026-05-28T00:33:51+08:00"
-last_task9_audit: 2026-06-13
+last_task9_audit: 2026-06-25
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-05-28 Task9 00:33：pass-tech-review。无 P0/P1；P2 1 处已写入 suggestions。Task6 仍需回炉，未自动晋升。"
 review_type: task6-writing-quality-review

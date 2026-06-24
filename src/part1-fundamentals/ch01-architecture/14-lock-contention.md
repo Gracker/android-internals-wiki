@@ -67,7 +67,8 @@ task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-27 17:16 Task6：复审 Task2B 清理后的文稿，修复 6 处 L1/L2 表达与验证标注；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-27-15-deep-review.md"
 task9_review_notes: "2026-05-27 15:22 Task9 deep-review：技术复审无新增 P0/P1；既有 queue pending 为 Task6/Task2B 文末源码调研原始块清理，不自动晋升。"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-25
 ---
 
 # 1.14 锁竞争与同步性能分析
@@ -219,10 +220,9 @@ system_server 里的典型热点在服务端全局锁，不在 Binder 驱动本�
 
 AMS 的双锁结构是 system_server 锁竞争里很典型的例子。Android 10 之后，AMS 逐步把进程状态保护从单一 `ActivityManagerService.this` 拆到 `mGlobalLock` 与 `mProcLock`：前者仍保护组件生命周期、进程启动、ANR 判定这类全局状态，后者更多保护 LRU list、`ProcessRecord` 和 OOM 调整里的进程状态读取。到 Android 12+，`ENABLE_PROC_LOCK` 已经固定为 true，`OomAdjuster.updateOomAdjLSP()`、`ProcessList.forEachLruProcessesLOSP()` 这类路径会进入 `mProcLock` 保护范围。[已验证: AOSP `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` + `OomAdjuster.java`]
 
+### LRU 锁优化的代码级细节
 
-### LRU锁优化的源码级实现
-
-根据AOSP源码分析，Android 17中的双锁架构设计实现：
+上文 AMS 双锁一节讨论了 `mGlobalLock` 与 `mProcLock` 的设计意图，这里从代码层面补充具体实现：
 
 #### 1. ProcessList中的LRU锁保护
 
@@ -233,7 +233,7 @@ private final ArrayList<ProcessRecord> mLruProcesses = new ArrayList<ProcessReco
 // -LOSP: 仅任一锁即可访问
 @GuardedBy(anyOf = {"mService", "mProcLock"})
 void forEachLruProcessesLOSP(boolean iterateForward, @NonNull Consumer<ProcessRecord> callback) {
-    // 遍历LRU列表，获取或更新进程信息
+    // 遍历 LRU 列表
 }
 
 // -LSP: 必须同时持有两把锁
@@ -249,20 +249,20 @@ ArrayList<ProcessRecord> getLruProcessesLSP() {
 @GuardedBy("mService")
 void updateOomAdjLocked(@OomAdjReason int oomAdjReason) {
     synchronized (mProcLock) {
-        updateOomAdjLSP(oomAdjReason); // 仅持有mProcLock进行LRU操作
+        updateOomAdjLSP(oomAdjReason); // 仅持有 mProcLock 完成 LRU 操作
     }
 }
 ```
 
-#### 3. 实际性能收益
+#### 3. 调度层面效果
 
-在Perfetto中观测到，消息处理类操作如时区更新仅获取mProc锁：
+Perfetto 中可观测到，消息处理类操作（如时区更新）仅获取 `mProcLock`：
 
 ```java
 case UPDATE_TIME_ZONE: {
     synchronized (mProcLock) {
         mProcessList.forEachLruProcessesLOSP(false, app -> {
-            app.getThread().updateTimeZone(); // 轻量级并行操作
+            app.getThread().updateTimeZone();
         });
     }
 }
@@ -274,14 +274,13 @@ case UPDATE_TIME_ZONE: {
 - system_server吞吐量提升约3倍
 - LRU操作延迟减少68%
 
-#### 5. 关键突破点
+#### 5. 设计要点
 
-通过`@CompositeRWLock`注解和LOSP/LSP命名约定，实现了：
+`@CompositeRWLock` 注解和 LOSP/LSP 命名约定的实际效果：
 1. 读操作仅需mProcLock（避免全局锁竞争）
 2. 写操作仍需两把锁保证数据一致性
 3. 支持轻量级操作并行执行
 
-[📌 源码锚点：android-16.0.0_r4/frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java + ProcessList.java]
 
 落到 Perfetto 里，AMS 锁竞争通常表现为 App 线程或 system_server Binder worker 的长 `binder_transaction`，再接上 `ActivityManagerService.onTransact()`、`updateOomAdjLocked()`、`attachApplicationLocked()` 等调用栈。如果同一时间 `android_monitor_contention` 能看到 AMS 相关 owner / waiter，或者服务端 worker 停在 `futex_*`，就应该沿着 owner 线程继续查，而不是把这次等待归因到 Binder 驱动本身。
 
@@ -360,7 +359,7 @@ Android 17 的 DeliQueue 是这类优化的一个案例。它面向 targetSdk 37
 | Android 5.0 | Java monitor 的讨论应以 ART `monitor.cc` / `lock_word.h` 为准 | 讨论 `synchronized` 时，不要再沿用 Dalvik 时代的实现想象 |
 | Android 7.1.2 / 8.0 | `ProcessState.cpp` 两个 tag 的 `DEFAULT_MAX_BINDER_THREADS` 都是 15 | “Android 8 把 Binder 线程从 8 提到 16”这个说法不成立 |
 | Android 9 | bionic 已提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)` | 说明 native 层具备 PI mutex 能力，但是否真的启用要看具体锁属性 |
-| Android 16 | ART 强化逃逸分析，可自动消除线程私有对象上的冗余 `synchronized` 指令（如局部变量中的 `StringBuffer` 锁） | 分析 monitor contention 时，如果对象是方法局部变量且未逃逸，可能已被编译器移除，trace 里不会出现 | 
+| Android 16 | ART 强化逃逸分析，可自动消除线程私有对象上的冗余 `synchronized` 指令（如局部变量中的 `StringBuffer` 锁） | 分析 monitor contention 时，如果对象是方法局部变量且未逃逸，可能已被编译器移除，trace 里不会出现 |
 | Android 14+ | 未找到公开源码证据证明 SurfaceFlinger / InputDispatcher 核心锁“全面启用 PI-futex” | 分析 SF/Input 路径锁等待时，要按具体锁初始化代码核对，不能按版本直接假设 PI 保护 |
 | Android 17 | DeliQueue 把 targetSdk 37+ 应用的 MessageQueue 生产者路径改成无锁 | 分析主线程消息投递等待时，要把 Android 17 targetSdk 37+ 与旧行为分开看 |
 
@@ -404,9 +403,9 @@ Android 17 的 DeliQueue 是这类优化的一个案例。它面向 targetSdk 37
 
 锁竞争分析难的地方在于，不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才会变成有目标的修改。
 
-### LRU锁优化的源码级实现
+### LRU 锁优化的代码级细节
 
-根据AOSP源码分析，Android 17中的双锁架构设计实现：
+上文 AMS 双锁一节讨论了 `mGlobalLock` 与 `mProcLock` 的设计意图，这里从代码层面补充具体实现：
 
 #### 1. ProcessList中的LRU锁保护
 
@@ -417,7 +416,7 @@ private final ArrayList<ProcessRecord> mLruProcesses = new ArrayList<ProcessReco
 // -LOSP: 仅任一锁即可访问
 @GuardedBy(anyOf = {"mService", "mProcLock"})
 void forEachLruProcessesLOSP(boolean iterateForward, @NonNull Consumer<ProcessRecord> callback) {
-    // 遍历LRU列表，获取或更新进程信息
+    // 遍历 LRU 列表
 }
 
 // -LSP: 必须同时持有两把锁
@@ -433,20 +432,20 @@ ArrayList<ProcessRecord> getLruProcessesLSP() {
 @GuardedBy("mService")
 void updateOomAdjLocked(@OomAdjReason int oomAdjReason) {
     synchronized (mProcLock) {
-        updateOomAdjLSP(oomAdjReason); // 仅持有mProcLock进行LRU操作
+        updateOomAdjLSP(oomAdjReason); // 仅持有 mProcLock 完成 LRU 操作
     }
 }
 ```
 
-#### 3. 实际性能收益
+#### 3. 调度层面效果
 
-在Perfetto中观测到，消息处理类操作如时区更新仅获取mProc锁：
+Perfetto 中可观测到，消息处理类操作（如时区更新）仅获取 `mProcLock`：
 
 ```java
 case UPDATE_TIME_ZONE: {
     synchronized (mProcLock) {
         mProcessList.forEachLruProcessesLOSP(false, app -> {
-            app.getThread().updateTimeZone(); // 轻量级并行操作
+            app.getThread().updateTimeZone();
         });
     }
 }
@@ -458,11 +457,9 @@ case UPDATE_TIME_ZONE: {
 - system_server吞吐量提升约3倍
 - LRU操作延迟减少68%
 
-#### 5. 关键突破点
+#### 5. 设计要点
 
-通过`@CompositeRWLock`注解和LOSP/LSP命名约定，实现了：
+`@CompositeRWLock` 注解和 LOSP/LSP 命名约定的实际效果：
 1. 读操作仅需mProcLock（避免全局锁竞争）
 2. 写操作仍需两把锁保证数据一致性
 3. 支持轻量级操作并行执行
-
-[📌 源码锚点：android-16.0.0_r4/frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java + ProcessList.java]
