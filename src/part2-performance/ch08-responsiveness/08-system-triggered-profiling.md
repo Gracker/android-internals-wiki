@@ -7,9 +7,9 @@ created_date: 2026-04-10
 deepseek_cn_review_state: done
 gap_source: 研究素材
 last_deepseek_cn_review_at: 2026-06-08
-last_task2b_at: 2026-06-24T08:57:10+08:00+08:00
+last_task2b_at: 2026-06-24T08:57:10+08:00
 last_task2b_lite_at: 2026-06-23
-last_task6_at: 2026-06-24T09:15:00+08:00
+last_task6_at: 2026-06-24T20:13:00+08:00
 last_task6_audit: 2026-06-24
 last_task6_review_log: logs/review/2026-06-24-09-review.md
 last_task9_at: 2026-06-23T13:20:00+08:00
@@ -19,7 +19,7 @@ last_task9_review_log: logs/deep-review/2026-06-23-13-deep-review.md
 last_verified: 2026-06-24
 last_verified_against: AOSP android-17.0.0_r1 + Android Developers + Task9 audit 2026-06-24 (源码路径修正; AnomalyDetectorService 非 AOSP 公开组件已更正)
 path: https://developer.android.com/reference/android/os/ProfilingManager
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 repaired_by: openclaw-task2b
 repaired_date: 2026-05-09
 reviewed_by: openclaw-task6
@@ -30,8 +30,8 @@ tags: [responsiveness, latency, launch]
 task2b_result: fixed
 task2b_state: fixed
 task6_result: pass-light-edit
-task6_review_notes: 2026-06-24 Task6 四轮复审(Task2B fix后回归): 常量值一致性已修复。本轮修复3处编辑残留(元叙述)和2处否定-纠正句式超限,判定pass-light-edit。等待Task9复审。
-task6_state: revisiting
+task6_review_notes: "2026-06-24 Task6 五轮复审(Task2B fix后回归): Task2B已修复源码路径与AnomalyDetectorService问题。本轮禁用词零命中,高频词全量达标,翻译腔零检出。frontmatter last_task2b_at双时区已修。判定pass-light-edit,等待Task9复审确认P0修复。"
+task6_state: reviewed
 task9_result: needs-rework
 task9_review_date: 2026-06-24
 task9_review_notes: 2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。

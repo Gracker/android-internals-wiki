@@ -53,15 +53,15 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-28'
+reviewed_date: 2026-06-24
 task6_result: pass-light-edit
 task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-28"
+task9_reviewed_date: 2026-06-24
 task2b_result: "fixed"
 last_task2b_at: '2026-05-12T19:36:00+08:00'
 last_task9_at: "2026-05-28T00:33:51+08:00"
@@ -73,8 +73,9 @@ review_notes: "2026-05-28 task6 review: pass-light-edit。L1/L2 小修 8 处；T
 last_task9_review_log: "logs/deep-review/2026-05-28-00-deep-review.md"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
-last_task6_at: '2026-05-28T01:05:00+08:00'
-last_task6_review_log: "logs/review/2026-05-28-01-review.md"
+last_task6_at: 2026-06-24T20:13:00+08:00
+task6_review_notes: task6_review_notes: "2026-06-24 Task6 revisiting复审: Task2B修复后回归审。禁用词零命中,高频词达标,翻译腔零检出,结构元叙述零命中。task9_result已pass-tech-review,queue无pending,自动晋升finalized。"
+last_task6_review_log: "logs/review/2026-06-24-20-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
 ---

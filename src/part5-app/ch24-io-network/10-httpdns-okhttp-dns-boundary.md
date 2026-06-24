@@ -33,6 +33,8 @@ task9_reviewed_date: "\"2026-05-16\""
 last_task9_at: "\"2026-05-16T16:30:00+08:00\""
 last_task9_audit: "\"2026-06-09\""
 last_task9_autofix_at: "\"2026-06-09\""
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 # 24.10 HTTPDNS 与 OkHttp Dns 执行边界
@@ -71,8 +73,6 @@ last_task9_autofix_at: "\"2026-06-09\""
 HTTPDNS 接入最容易出问题的位置不在“能不能拿到 IP”，而在 `Dns.lookup()` 被 OkHttp 调用的时机。这个回调属于建连前的路由规划路径，返回 IP 列表之前，请求不能继续进入 TCP connect。把实时 HTTPDNS 请求塞进 `lookup()`，会把弱网 HTTP 请求、服务可用性和递归解析风险一起带进建连路径。
 
 24.4 已经讲过网络层的连接、解析、调度、容错四个控制面；12.3 负责连接池、TLS 和传输细节。本节只展开 HTTPDNS 与 OkHttp `Dns` 的工程边界：同步路径只读缓存，网络查询放到异步预取，兜底路径保留系统 DNS。
-
-参考书用于组织写作顺序：拆等待段、看任务预取和缓存命中，再落到指标验证。正文不使用参考书原文，也不复用参考书代码。 [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] [结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md] [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
 ## OkHttp Dns.lookup() 在哪条路径上执行
 
@@ -153,7 +153,7 @@ OkHttp 建连
     → 无可用结果时 fallback 到 Dns.SYSTEM
 ```
 
-这个设计把“提升命中率”和“控制等待段”放到了同一套工程动作里。参考书里讲预加载和缓存命中率的思路，在这里对应两个具体动作：在用户进入高概率网络场景前预取域名；在建连路径上只做常数级缓存读取。 [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+这个设计把“提升命中率”和“控制等待段”放到了同一套工程动作里：在用户进入高概率网络场景前预取域名，在建连路径上只做常数级缓存读取。
 
 同步 `Dns` 可以写成下面这种形态。代码是工程骨架，字段和持久化格式按项目替换。
 
@@ -325,7 +325,6 @@ HTTPDNS 返回结果时不要只给“最优单 IP”。单 IP 看起来减少�
 
 
 
-<!-- AIW-源码调研-2026-05-17 -->
 ## 源码补充：DnsOverHttps 同步化机制（2026-05-17 验证）
 
 > 以下补充于 2026-05-17 每日源码调研，基于 OkHttp 官方源码验证。
@@ -394,7 +393,6 @@ fun interface Dns {
 
 来源：`github.com/square/okhttp/blob/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt`
 
-<!-- AIW-源码调研-2026-05-17 end -->
 ## 工程检查清单
 
 - `Dns.lookup()` 内是否只读内存/磁盘缓存，不发 HTTP 请求。
@@ -410,7 +408,6 @@ fun interface Dns {
 
 
 
-<!-- AIW-源码调研-2026-05-25 -->
 ## 源码补充：ExchangeFinder.findConnection() 与 RealRoutePlanner 同步调用链（2026-05-25 验证）
 
 > 以下补充于 2026-05-25 每日源码调研，基于 square/okhttp commit 19cb19ab4ac31aa789bc94759d13898f64f93ce3 的 ExchangeFinder 源码，以及 OkHttp 5.x source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab 的 RealRoutePlanner 源码验证。
@@ -476,7 +473,6 @@ Fast Fallback 可以缓解 DNS 解析慢导致的建连延迟，但无法消除 
   - `okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt`（注释来源）
 - square.github.io/okhttp/features/connections/（Fast Fallback 文档）
 
-<!-- AIW-源码调研-2026-05-25 end -->
 
 
 ## 延伸阅读

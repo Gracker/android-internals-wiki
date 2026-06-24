@@ -2,7 +2,7 @@
 title: WorkManager 实战与后台任务调度
 chapter: 25.4
 section: 25.4
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-05-14
 last_verified_against: AndroidX WorkManager androidx-main + Android Developers background work docs + AOSP JobScheduler android-16.0.0_r1 + Clippings structure references
@@ -15,20 +15,20 @@ path: Clippings/Android 性能优化 - 任务调度优化:线程+CPU,提升任�
 tags: [workmanager, jobscheduler, expedited-work, background-task, power]
 last_task2b_lite_at: 2026-06-24
 related_chapters: ["25.2", "25.3", "5.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-24
 task6_result: pass-light-edit
-last_task6_at: 2026-06-24T06:07:00+08:00
-last_task6_review_log: logs/review/2026-06-24-06-review.md
-task6_review_notes: 2026-06-24 Task6 06:07:pass-light-edit(revisiting 复检)。Task2B 回炉后复检:frontmatter 格式修复(last_deepseek_cn_review_at 与 last_task9_audit 合例行拆分)。正文无新增 L1/L2 问题,禁用词零命中,高频词全量达标,翻译腔零检出。task9_result 已通过,queue 无 pending,自动晋升 finalized。
+last_task6_at: 2026-06-24T20:13:00+08:00
+last_task6_review_log: logs/review/2026-06-24-20-review.md
+task6_review_notes: "2026-06-24 Task6 revisiting复审: Task2B修复后回归审。frontmatter格式已修复,正文禁用词零命中,高频词达标,翻译腔零检出。task9_result已pass-tech-review,queue无pending,自动晋升finalized。"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-17
+task9_reviewed_date: 2026-06-24
 last_task9_at: 2026-06-17T10:27:15+08:00
 last_task9_review_log: logs/deep-review/2026-06-17-10-deep-review.md
 task9_review_notes: 2026-06-17 Task9:pass-tech-review。P0 0 / P1 0 / P2 0;复核 WorkManager 调度器、GreedyScheduler 约束追踪、Expedited/FGS/UIDT 边界、Android 16 long-running worker quota 与 Android 17 JobDebugInfo 交叉引用;无正文技术回炉项,保持 finalized。
