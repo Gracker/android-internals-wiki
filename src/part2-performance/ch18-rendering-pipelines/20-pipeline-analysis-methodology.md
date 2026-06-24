@@ -28,6 +28,8 @@ last_task6_audit: "\"2026-05-20\""
 last_task9_audit: "\"2026-05-21\""
 last_task9_audit_at: "\"2026-05-21T05:31:18+08:00\""
 last_task9_audit_log: "\"logs/deep-review/2026-05-21-05-audit.md\""
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 <!-- outline-start -->
@@ -54,8 +56,6 @@ last_task9_audit_log: "\"logs/deep-review/2026-05-21-05-audit.md\""
 
 这套四步法的目标是把“卡在哪”拆成固定顺序：识别路径，拆 Producer / Consumer，看 Perfetto，再定位到瓶颈类型。这样排查入口比较稳定，跨 Android 版本时也不容易把主窗口 BLAST 和 SurfaceView 的独立 Surface 机制混成一件事。
 
-[来源: Android Graphics Architecture；Android Graphics BufferQueue and Gralloc；§18.13、§18.14、§18.15；Perfetto Trace Processor 文档]
-
 ## Step 1：识别渲染模式
 
 分析开始时先判断：这一帧属于哪条渲染路径。
@@ -75,9 +75,7 @@ last_task9_audit_log: "\"logs/deep-review/2026-05-21-05-audit.md\""
 | PiP / Freeform | 18.18 多窗口渲染 | WM Shell transition + `QueuedBuffer - ...BLAST#...` |
 | 高刷设备 | 18.19 VRR 管线 | FrameTimeline `actual_frame_timeline_slice` |
 
-主窗口的现代 BLAST 口径从 Android 11 起常见；SurfaceView 自身接到 `BLASTBufferQueue` 的时间线要从 Android 12 再算。两个版本边界不能混用。
-
-[来源: §18.2、§18.6、§18.12、§18.13、§18.14、§18.15、§18.17、§18.18、§18.19；AOSP `frameworks/base/core/java/android/view/SurfaceView.java`；AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`]
+主窗口的现代 BLAST 口径从 Android 11 起常见；SurfaceView 自身接到 `BLASTBufferQueue` 的时间线要从 Android 12 再算。这两个版本边界不能混用：主窗口 BLAST 从 Android 11 起生效，SurfaceView 的 `BLASTBufferQueue` 要到 Android 12 才引入。
 
 ### dumpsys 快速确认
 
@@ -93,7 +91,7 @@ adb pull /data/local/tmp/sf.txt .
 adb shell dumpsys SurfaceFlinger --latency "<LayerName>"
 ```
 
-`--latency` 只能补 present 时间戳，不告诉你 composition、activeBuffer 或 transform。要看 Layer 细节，优先用 Winscope 的 SurfaceFlinger 视图；没有图形界面时再离线检索完整 dump，比依赖 `sed` 或空行分隔稳得多。
+`--latency` 只能补 present 时间戳，给不了 composition、activeBuffer 或 transform 信息。要看 Layer 细节，优先用 Winscope 的 SurfaceFlinger 视图；没有图形界面时再离线检索完整 dump，比用 `sed` 或空行分隔可靠。
 
 ## Step 2：确定 Producer / Consumer 路径
 
@@ -113,7 +111,6 @@ adb shell dumpsys SurfaceFlinger --latency "<LayerName>"
 
 排查时要回答三个问题：帧数据经过了几跳、哪一跳持有 Buffer、哪一跳在等 fence。很多“渲染卡顿”的堵点落在 `dequeueBuffer`、`updateTexImage`、`latchBuffer` 或 analysis 线程的归还点。
 
-[来源: Android Graphics BufferQueue and Gralloc；§18.6、§18.7、§18.13、§18.14；AOSP `frameworks/base/core/java/android/view/SurfaceView.java`；AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`]
 
 ## Step 3：Perfetto 关键定位
 
@@ -141,7 +138,7 @@ adb shell dumpsys SurfaceFlinger --latency "<LayerName>"
 | `latchBuffer` 阻塞 | SurfaceFlinger 等待可用 Buffer | acquire fence 未 signal、GPU / producer 还没完成 |
 | `Invoke Functor` 超长 | WebView / GL functor 回调耗时高 | 网页内容并入宿主窗口这一帧，需连看 Chromium 线程 |
 
-`DrawFrame` 表示 RenderThread 这一段的 CPU 执行窗口。分析这一段时，要把同一时间窗里的 `dequeueBuffer`、`syncFrameState`、GPU 轨道和 SurfaceFlinger 一起放进来，才能分清是命令构建重，还是后段等待把时间拖长了。
+`DrawFrame` 对应 RenderThread 的 CPU 执行窗口。分析时要连同同一时间窗的 `dequeueBuffer`、`syncFrameState`、GPU 轨道和 SurfaceFlinger 一起看，才能分清瓶颈是命令构建繁重，还是后段等待把时间拉长了。
 
 BufferQueue 空闲 buffer 回压的主要信号落在 `dequeueBuffer`：`BufferQueueProducer::dequeueBuffer()` 通过 `waitForFreeSlotThenRelock()` 等待可用 slot。`queueBuffer` 长耗时不等于队列满——它还可能由 binder callback 顺序、EGL CPU throttling（`lastQueuedFence->waitForever("Throttling EGL Production")`）或 consumer 侧处理延迟引起。定位 `queueBuffer` 长耗时时，应先检查同一时间窗的 fence 等待、EGL throttle 和 SurfaceFlinger latch 节奏，而不是直接判 BufferQueue 满。
 
@@ -185,9 +182,8 @@ ORDER BY dur DESC
 LIMIT 20;
 ```
 
-Android 12+ 直接从 `actual_frame_timeline_slice` 切时间窗，Android 10/11 再回到 `Choreographer#doFrame`、`VSYNC-app`、`VSYNC-sf` 与 `SurfaceFlinger` 同窗复盘。没有 FrameTimeline 主表时，盲目把每个长 `doFrame` 都判成“掉帧”会把 VRR 设备和系统合成延迟混在一起。
+Android 12+ 直接从 `actual_frame_timeline_slice` 切时间窗；Android 10/11 回到 `Choreographer#doFrame`、`VSYNC-app`、`VSYNC-sf` 与 `SurfaceFlinger` 同窗复盘。没有 FrameTimeline 主表时，把每个长 `doFrame` 都判成“掉帧”会混淆 VRR 设备和系统合成延迟。
 
-[来源: Perfetto Trace Processor 文档；Perfetto FrameTimeline 文档；§13.5]
 
 ## Step 4：常见瓶颈模式
 
@@ -226,7 +222,6 @@ Android 12+ 直接从 `actual_frame_timeline_slice` 切时间窗，Android 10/11
 - **定位方式**：看 `actual_frame_timeline_slice`、`present_type` 和实际 present 节奏。
 - **常见处理**：用 `setFrameRate()` 明确帧率意图，避免拿固定 16.6ms 习惯解释所有设备。
 
-[来源: §18.13、§18.14、§18.15、§18.19；Android Graphics Architecture；Perfetto FrameTimeline 文档]
 
 ## 两个复盘案例
 
@@ -238,7 +233,6 @@ Android 12+ 直接从 `actual_frame_timeline_slice` 切时间窗，Android 10/11
 - **Step 3**：Perfetto 里 App 主线程和 RenderThread 都不重，`SurfaceFlinger` 同一时间窗出现更多 client target 合成；Layer dump 里目标 Layer 的 composition 从 `DEVICE` 变成 `CLIENT`。
 - **Step 4**：问题落点在 Overlay 失效。把 `setAlpha()`、圆角或复杂变换拿掉后再抓一次 trace，GPU 额外合成段就会消失。
 
-[案例来源: §18.15 Video Overlay + HWC；AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`；Android Graphics Architecture]
 
 ### 案例 2：WebView 滚动卡顿，瓶颈落在宿主窗口这一帧
 
@@ -248,7 +242,6 @@ Android 12+ 直接从 `actual_frame_timeline_slice` 切时间窗，Android 10/11
 - **Step 3**：Perfetto 同窗能看到 `Invoke Functor` 拉长，同时 `CrRendererMain` 或 Viz 线程也在忙；宿主主线程并没有对应长度的 layout / draw。
 - **Step 4**：优化入口回到网页内容和 provider 路径。页面 DOM / Canvas 复杂度、WebView provider 版本、是否命中独立子 Surface，都会直接影响这一帧的 RenderThread 预算。
 
-[案例来源: §18.13 WebView 渲染管线；Chromium `android_webview/browser/gfx/browser_view_renderer.cc`；Chromium `android_webview/browser/gfx/hardware_renderer.cc`]
 
 ## 常用 dumpsys 命令速查
 

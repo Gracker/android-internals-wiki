@@ -1,42 +1,242 @@
-[
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md",
-    "title": "Android 17 端侧 LLM 推理架构（AICore/ML Kit GenAI/AppFunctions/LiteRT-LM）",
-    "summary": "三层 SDK + AppFunctions 平台 API，Generation.checkStatus 四态状态机，LiteRT-LM 三级 cascading fallback",
-    "chapter": "ch05 §5.20",
-    "action": "injected",
-    "processed_at": "2026-06-23T06:15:44.333266"
+{
+  "files": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md",
+      "title": "Android 17 端侧 LLM 推理架构（AICore/ML Kit GenAI/AppFunctions/LiteRT-LM）",
+      "summary": "三层 SDK + AppFunctions 平台 API，Generation.checkStatus 四态状态机，LiteRT-LM 三级 cascading fallback",
+      "chapter": "ch05 §5.20",
+      "action": "injected",
+      "processed_at": "2026-06-23T06:15:44.333266"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-choreographer-vsync-prediction-mechanism.md",
+      "title": "Android 17 Choreographer.doFrame VSync 时间戳预测机制",
+      "summary": "FRAME_TIMELINES_CAPACITY=7 多帧时间线、Buffer Stuffing Recovery 三态、VsyncCallback 接口",
+      "chapter": "ch02 §2.25",
+      "action": "injected",
+      "processed_at": "2026-06-23T06:15:44.333266"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-deliqueue-lockfree-messagequeue-source.md",
+      "title": "Android 17 DeliQueue Lock-free MessageQueue 源码",
+      "summary": "CAS + volatile + Unsafe.fullFence 无锁队列实现，tryFastEnqueue/enqueueWithRetry 双路径",
+      "chapter": "ch01 §1.26",
+      "action": "injected",
+      "processed_at": "2026-06-23T06:15:44.333266"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-android17-psi-lowmemdetector.md",
+      "title": "Android 17 PSI/LowMemDetector 内存压力检测器",
+      "summary": "libpsi 源码、lmkd PSI 阈值 70/100/70ms、BPF MemEventListener，发现 §4.4 阈值不一致",
+      "chapter": "ch04 §4.4",
+      "action": "queued",
+      "processed_at": "2026-06-23T06:15:44.333266"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-android17-networkagent-lifecycle-scoring-mechanism.md",
+      "title": "Android 17 NetworkAgent 生命周期与网络评分机制",
+      "summary": "registerNetworkAgentInternal、destroyNetwork、rematchAllNetworksAndRequests 重匹配算法",
+      "chapter": "ch12 §12.5",
+      "action": "queued",
+      "processed_at": "2026-06-23T06:15:44.333266"
+    },
+    {
+      "path": "https://juejin.cn/post/7612812060795093002",
+      "title": "Android17 为什么重写 MessageQueue",
+      "summary": "Android 的消息机制，从第一个版本到 Android 16，核心实现没怎么变过。 一个 synchronized 锁，守着一条单链表，所有线程排队等着往里塞消息。跑了二十年，终于在 Androi",
+      "chapter": "ch17-oem",
+      "action": "injected",
+      "processed_at": "2026-06-24T05:38:59.205815"
+    },
+    {
+      "path": "https://juejin.cn/post/7610233341305389099",
+      "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "summary": "Android 官方已经发布了 Android 17 的相关适配文档，其中有不少值得提前关注的内容，另外在去年谷歌也发布过 Android 开发者认证的通告，没认证的应用将无法安装，而时间节点也正好是",
+      "chapter": "ch16-aosp",
+      "action": "injected",
+      "processed_at": "2026-06-24T05:38:59.208996"
+    },
+    {
+      "path": "https://juejin.cn/post/7612545160434188297",
+      "title": "Android 17 来了！新特性介绍与适配建议",
+      "summary": "Android 17（API level 37，代号 CinnamonBun）的 Beta 2 已经发布，目前正快速推进到 Platform Stability 阶段",
+      "chapter": "ch16-aosp",
+      "action": "injected",
+      "processed_at": "2026-06-24T05:38:59.211245"
+    },
+    {
+      "title": "Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android-ai-phone-ecosystem-analysis.md",
+      "quality": "high",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "category": "android-system",
+      "sub_category": "ai-phone-ecosystem",
+      "scored_at": "2026-06-24T05:45:00Z",
+      "metadata": {
+        "chapters": [
+          "ch01",
+          "ch13"
+        ],
+        "keywords": [
+          "Android",
+          "AI",
+          "VoiceInteractionService",
+          "AIDL HAL",
+          "NNAPI",
+          "大模型协同"
+        ]
+      }
+    },
+    {
+      "title": "Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-camera-hal3-buffer-management-graphicbuffer-bufferqueue.md",
+      "quality": "high",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "category": "android-system",
+      "sub_category": "camera-hal",
+      "scored_at": "2026-06-24T05:45:00Z",
+      "metadata": {
+        "chapters": [
+          "ch18"
+        ],
+        "keywords": [
+          "Camera",
+          "HAL",
+          "BufferQueue",
+          "GraphicBuffer",
+          "内存管理",
+          "性能优化"
+        ]
+      }
+    },
+    {
+      "title": "CameraX ZSL 与 HAL Reprocessing Request 的映射关系",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-camerax-zsl-hal-reprocessing-mapping.md",
+      "quality": "high",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "category": "android-system",
+      "sub_category": "camerax-zsl",
+      "scored_at": "2026-06-24T05:45:00Z",
+      "metadata": {
+        "chapters": [
+          "ch18"
+        ],
+        "keywords": [
+          "CameraX",
+          "ZSL",
+          "HAL",
+          "Reprocessing",
+          "ZslRingBuffer",
+          "性能优化"
+        ]
+      }
+    },
+    {
+      "title": "Android 系统层对应用分发与内容共享的支撑机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android-system-app-content-distribution-stack.md",
+      "quality": "high",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "category": "android-system",
+      "sub_category": "app-distribution",
+      "scored_at": "2026-06-24T05:45:00Z",
+      "metadata": {
+        "chapters": [
+          "ch01",
+          "ch18",
+          "ch25"
+        ],
+        "keywords": [
+          "PackageInstaller",
+          "ShortcutService",
+          "ChooserActivity",
+          "App Bundle",
+          "内容分发"
+        ]
+      }
+    },
+    {
+      "title": "StatsD 原子数据与诊断能力的集成关系（Android 17）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-statsd-applicationexitinfo-atom-integration-android-17.md",
+      "quality": "medium",
+      "score": 11,
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "category": "android-system",
+      "sub_category": "statsd-diagnostic",
+      "scored_at": "2026-06-24T05:45:00Z",
+      "metadata": {
+        "chapters": [
+          "ch20",
+          "ch08",
+          "ch12"
+        ],
+        "keywords": [
+          "StatsD",
+          "ApplicationExitInfo",
+          "原子计数器",
+          "诊断",
+          "Android 17"
+        ],
+        "notes": "研究框架文档，无法访问源码，理论分析"
+      }
+    }
+  ],
+  "dr-2026-06-24-binder-ipc-latency": {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization.md",
+    "title": "Binder IPC 延迟分析与优化实践",
+    "summary": "三层观测体系 + 7 阶段延迟分解 + Android 17 trace_binder_txn_latency_free 新增 tracepoint",
+    "chapter": "ch01 (§1.29)",
+    "action": "direct-inject",
+    "processed_at": "2026-06-23T22:13:22.238680+00:00"
   },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-choreographer-vsync-prediction-mechanism.md",
-    "title": "Android 17 Choreographer.doFrame VSync 时间戳预测机制",
-    "summary": "FRAME_TIMELINES_CAPACITY=7 多帧时间线、Buffer Stuffing Recovery 三态、VsyncCallback 接口",
-    "chapter": "ch02 §2.25",
-    "action": "injected",
-    "processed_at": "2026-06-23T06:15:44.333266"
+  "dr-2026-06-24-dms-multidisplay": {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md",
+    "title": "DisplayManagerService 多 display 管理性能边界（Android 17）",
+    "summary": "SyncRoot 单锁模型、DisplayGroup/DisplayTopology 新增、设备状态异步转换路径",
+    "chapter": "ch02 (§2.28)",
+    "action": "direct-inject",
+    "processed_at": "2026-06-23T22:13:22.238680+00:00"
   },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-deliqueue-lockfree-messagequeue-source.md",
-    "title": "Android 17 DeliQueue Lock-free MessageQueue 源码",
-    "summary": "CAS + volatile + Unsafe.fullFence 无锁队列实现，tryFastEnqueue/enqueueWithRetry 双路径",
-    "chapter": "ch01 §1.26",
-    "action": "injected",
-    "processed_at": "2026-06-23T06:15:44.333266"
+  "dr-2026-06-23-litert-nnapi-mediapipe": {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android-端侧ai推理运行时源码-LiteRT-NNAPI-MediaPipe-Tasks.md",
+    "title": "Android 端侧 AI 推理运行时源码级架构分析",
+    "summary": "LiteRT V2 CompiledModel 重构 + ArenaPlanner 内存策略 + NNAPI Delegate 委托模型",
+    "chapter": "ch23 (§23.24)",
+    "action": "direct-inject",
+    "processed_at": "2026-06-23T22:13:22.238680+00:00"
   },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-android17-psi-lowmemdetector.md",
-    "title": "Android 17 PSI/LowMemDetector 内存压力检测器",
-    "summary": "libpsi 源码、lmkd PSI 阈值 70/100/70ms、BPF MemEventListener，发现 §4.4 阈值不一致",
-    "chapter": "ch04 §4.4",
-    "action": "queued",
-    "processed_at": "2026-06-23T06:15:44.333266"
+  "dr-2026-06-23-cpu-scheduler-eas-pelt-uclamp-sched_ext": {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android CPU Scheduler and Debugging Tools_ A Task's Journey Through EAS, PELT, uclamp, and sched_ext.md",
+    "title": "Android CPU 调度器与调试工具深度技术报告",
+    "summary": "EAS+PELT+uclamp 完整旅程、sched_ext BPF 调度类、vendor hook 机制、调试观测链路",
+    "chapter": "ch05 (§5.1/§5.2)",
+    "action": "queue",
+    "processed_at": "2026-06-23T22:13:22.238680+00:00"
   },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-android17-networkagent-lifecycle-scoring-mechanism.md",
-    "title": "Android 17 NetworkAgent 生命周期与网络评分机制",
-    "summary": "registerNetworkAgentInternal、destroyNetwork、rematchAllNetworksAndRequests 重匹配算法",
-    "chapter": "ch12 §12.5",
-    "action": "queued",
-    "processed_at": "2026-06-23T06:15:44.333266"
+  "dr-2026-06-22-native-memory-deep-guide": {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Native 内存深度指南：从原理到调试工具的源码级全解.md",
+    "title": "Android Native 内存深度指南：从原理到调试工具的源码级全解",
+    "summary": "Scudo 演进、PSS/smaps 度量、heapprofd/ASan/MTE 工具链、16KB page size",
+    "chapter": "ch04 (§4.1-§4.3)",
+    "action": "queue",
+    "processed_at": "2026-06-23T22:13:22.238680+00:00"
   }
-]
+}

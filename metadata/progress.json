@@ -1,6 +1,6 @@
 {
-  "total": 449,
-  "draft": 2,
+  "total": 451,
+  "draft": 4,
   "ready-for-review": 90,
   "finalized": 313,
   "task9_result": "pass-tech-review",
@@ -21,7 +21,9 @@
     "12.8",
     "2.28",
     "3.12",
-    "2.29"
+    "2.29",
+    "2.30",
+    "21.14"
   ],
   "ready_for_review_sections": [
     "5.19",
@@ -10378,15 +10380,15 @@
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-24",
-    "time": "06:06",
+    "time": "08:12",
     "mode": "gap-mining-skip",
-    "round": 190,
+    "round": 191,
     "created_sections": [],
     "created_files": [],
     "candidate_count": 0,
     "qualified_count": 0,
-    "source": "Round 190: Phase 0 无空 draft. Phase 0.5 TASK2B_BACKLOG=0. daily-info 2026-06-24 无 Android 性能增量. source-index 已耗尽. research-feeds 2026-04-14 已映射. 连续190轮无合格缺口, 跳过.",
-    "note": "连续190轮无合格缺口。0 空draft。管线堵点在Task6/Task9复审(91个ready-for-review)。"
+    "source": "Round 191: Phase 0 无空 draft (470 章节, 327 finalized + 105 ready-for-review + 26 draft). Phase 0.5 TASK2B_BACKLOG=0. Source-index 0 篇 (已耗尽). Research-feeds 2026-04-14 已映射. Daily-info 2026-06-24 无 Android 性能增量. Clippings 参考书结构已充分比对. Suggestions 16 方向已检查均 <14 分. 连续191轮无合格缺口, 跳过.",
+    "note": "连续191轮无合格缺口。0 空draft。管线堵点在Task6/Task9复审(65个ready-for-review)。"
   },
   "task9_last_sections": [
     "7.9",
@@ -14868,7 +14870,7 @@
       }
     ]
   },
-  "task2a_gap_mining_at": "2026-06-24T06:06:40.518716+08:00",
+  "task2a_gap_mining_at": "2026-06-24T08:12:45.360542+08:00",
   "task2b_log": [
     {
       "section": "18.14",

@@ -28,6 +28,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "\"2026-06-03\""
 last_task9_at: "\"2026-06-03T09:20:00+08:00\""
 last_task9_autofix_at: "\"2026-06-03\""
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 # 网络架构与连接管理
@@ -59,7 +61,7 @@ last_task9_autofix_at: "\"2026-06-03\""
 
 网络性能问题很少只由一个接口慢导致。DNS 抖动、连接复用失效、并发请求挤占、弱网重试放大流量,都会把一次页面加载拖成多段等待。12.2 和 12.3 已经讲过网络耗时拆分、TLS 与传输细节;App 架构侧还要回答四个工程问题:客户端该怎样复用连接、怎样接入 DNS/HTTPDNS、怎样给请求排队、怎样在弱网下收敛失败。
 
-判断依据来自三类材料:OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 相关官方文档,以及本地 Android 35 SDK sources 中的 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver`。参考书只用于组织知识点顺序:先拆速度来源,再看线程/调度,再看缓存和命中率,不使用参考书原文段落。 [结构参考: Clippings/Android 性能优化 - 原理:重新认识应用的速度优化.md] [结构参考: Clippings/Android 性能优化 - CPU 优化(上):合理使用线程池,提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - CPU 优化(下):减少 CPU 闲置时刻和等待,提升利用率.md] [结构参考: Clippings/Android 性能优化 - 任务调度优化:线程+CPU,提升任务调度优先级.md] [结构参考: Clippings/Android 性能优化 - 缓存优化:冷热端分离+重排序,提升缓存命中率.md]
+本节判断基于 OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 官方文档,以及本地 Android 35 SDK 中 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver` 的源码。知识点的组织顺序是:先拆速度来源,再看线程和调度,最后看缓存与命中率。
 
 ## 网络架构的四个控制面
 
@@ -82,7 +84,7 @@ OkHttp 判断连接复用时先看 `Address`,但不能把它理解成唯一边�
 
 工程上最稳的做法是按网络策略复用 `OkHttpClient`,而不是每个业务模块都 new 一个 client。`OkHttpClient` 持有自己的 `ConnectionPool`、`Dispatcher`、DNS、TLS 配置和拦截器。随手创建 client 会带来三个问题:连接池被切碎、Dispatcher 并发不可控、Cookie/Auth/证书策略容易分叉。
 
-一个可维护的组织方式如下:
+一个可维护的组织方式:
 
 ```kotlin
 object NetworkClients {
@@ -240,7 +242,7 @@ fun nextDelayMs(attempt: Int): Long {
 
 弱网体验还要有产品侧降级:列表页优先展示缓存和骨架屏;图片加载从低清到高清;非必要模块延迟加载;上传任务进入后台队列;需要用户确认的操作给出明确状态。技术层能收敛失败,不能把所有网络问题都变成"转圈等待"。
 
-## [自动发现] 连接池边界也决定账号和安全边界
+## 连接池边界也决定账号和安全边界
 
 连接池复用看起来是性能问题,但它也影响账号、证书和代理策略。不同业务如果使用不同证书固定策略、不同代理、不同 Authenticator、不同 CookieJar,就不应该强行合并到一个 client;相同 host、相同安全策略、相同登录态的 API 请求才适合共享连接池。
 
@@ -258,9 +260,9 @@ fun nextDelayMs(attempt: Int): Long {
 
 
 
-## [自动发现] Wi-Fi 评分与系统选网只保留观测边界
+## Wi-Fi 评分与系统选网只保留观测边界
 
-Wi-Fi 评分和默认网络选择属于系统侧策略，展开见 24.9。本节只保留 App 网络架构需要接住的边界：Android 12 及以上 Connectivity 侧使用 `NetworkScore` flags 和 `NetworkRanker` 选择网络；Wi-Fi 侧候选评分会受 RSSI、吞吐估计、用户近期选择、metered / validated 状态和 OEM overlay 影响。不要把旧资料里的"0-20/40/60 固定阈值"或某个 scorer 权重写成通用结论。
+Wi-Fi 评分和默认网络选择属于系统侧策略，展开见 24.9。本节只保留 App 网络架构需要接住的边界：Android 12 及以上 Connectivity 侧使用 `NetworkScore` flags 和 `NetworkRanker` 选择网络；Wi-Fi 侧候选评分会受 RSSI、吞吐估计、用户近期选择、metered / validated 状态和 OEM overlay 影响。旧资料里的"0-20/40/60 固定阈值"和特定 scorer 权重不能当作通用结论。
 
 App 侧要记录 default network、transport、`NET_CAPABILITY_VALIDATED`、`NET_CAPABILITY_NOT_METERED`、DNS / TCP / TLS / TTFB 分段耗时和切网事件序号。系统侧排查再通过 bugreport、`dumpsys wifi`、`dumpsys connectivity` 与 Perfetto / logcat 还原决策过程。
 
@@ -270,9 +272,8 @@ App 侧要记录 default network、transport、`NET_CAPABILITY_VALIDATED`、`NET
 
 
 
-## [AIW-源码调研-2026-05-15] OkHttp Dns.lookup() 同步阻塞边界与死锁风险
+## OkHttp Dns.lookup() 同步阻塞边界与死锁风险
 
-> 来源:每日源码调研 `2026-05-15-okhttp-dns-lookup-sync-httpdns-async-prefetch.md`
 
 ### 核心发现
 

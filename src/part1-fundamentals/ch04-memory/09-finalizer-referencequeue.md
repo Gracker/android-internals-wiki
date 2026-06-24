@@ -53,6 +53,8 @@ task6_reviewed_date: "2026-06-09"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-09T14:52:28+08:00"
 last_task9_autofix_at: "2026-06-09"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 ----
@@ -89,7 +91,7 @@ last_task9_autofix_at: "2026-06-09"
 
 <!-- outline-end -->
 
-`finalize()`、`ReferenceQueue`、`Cleaner` 和资源泄漏经常出现在同一类问题里:内存没有降、FD 数持续涨、日志里出现 CloseGuard 警告,Trace 里还能看到 `FinalizerDaemon` 在忙。本节把这条路径拆清楚:哪些工作由 GC 和 ART 守护线程完成,哪些工作必须由应用显式释放,遇到队列堆积时该采集哪些证据。
+`finalize()`、`ReferenceQueue`、`Cleaner` 和资源泄漏经常出现在同一类问题里:内存降不下来,FD 数持续涨,日志里出现 CloseGuard 警告,Trace 里还能看到 `FinalizerDaemon` 在忙。本节把这条链路拆开:哪些工作由 GC 和 ART 守护线程完成,哪些必须由应用显式释放,遇到队列堆积时应该采集哪些证据。
 
 本节的判断基于 AOSP `android-16.0.0_r1` 的 libcore 源码。结论边界也要写在前面:Android 16 的 `ReferenceQueue` 仍是带锁 FIFO 队列,未找到它接入 `ConcurrentMessageQueue` 或无锁投递路径的证据;Android 17/API 37 的公开源码 tag 仍需后续复核；在 tag 出现前，本节不把 Android 17 行为写成正文结论。
 
@@ -108,7 +110,7 @@ last_task9_autofix_at: "2026-06-09"
 - `FinalizerDaemon`: 从 `FinalizerReference.queue` 取对象,执行 `finalize()`,处理异常和超时监控。
 - 应用代码: 对 FD、socket、数据库 cursor、native handle、图形 buffer 等资源执行确定性释放。
 
-`ReferenceQueue` 在源码里用一个实例锁保护队列状态,`poll()`、`remove()`、`enqueue()` 都围绕同一个 `lock` 工作。它保证的是队列结构一致,不保证释放动作及时完成。
+`ReferenceQueue` 在源码里用一个实例锁保护队列状态,`poll()`、`remove()`、`enqueue()` 都围绕同一个 `lock` 工作。它保证队列结构一致,但不保证释放动作及时。
 
 这段源码展示了 `ReferenceQueue` 的同步边界,重点看 `lock` 和 FIFO 头尾指针:
 
@@ -141,7 +143,7 @@ public Reference<? extends T> remove(long timeout)
 }
 ```
 
-`remove()` 阻塞在队列锁上,`poll()` 走非阻塞路径。两者都只回答"有没有引用可处理",不回答"资源是否已经释放"。把资源释放寄托给这条路径,就会把释放时机交给 GC、队列转移、守护线程调度和 `finalize()` 执行速度。
+`remove()` 阻塞在队列锁上,`poll()` 走非阻塞路径。两者只回答"有没有引用可处理",不回答"资源是否已经释放"。把资源释放寄托在这条路径上,等于把释放时机交给了 GC、队列转移、守护线程调度和 `finalize()` 的执行速度。
 
 [已验证: AOSP android-16.0.0_r1, ReferenceQueue.java lines 46-51, 170-217]
 
@@ -305,11 +307,11 @@ adb shell debuggerd -b <pid> > threads_after.txt
 
 | 现象 | 更可能的原因 | 下一步 |
 |---|---|---|
-| FD 数持续上涨,CloseGuard 有资源未关闭警告 | 显式 `close()` 缺失或异常路径漏关 | 查资源获取栈和关闭路径,补 `try/finally` 或 Kotlin `use {}` |
+| FD 数持续上涨,CloseGuard 出现资源未关闭警告 | 显式 `close()` 缺失或异常路径漏关 | 查资源获取栈和关闭路径,补 `try/finally` 或 Kotlin `use {}` |
 | Java heap 可回落,Native Heap 不回落 | Java wrapper 生命周期和 native 释放脱节 | 查 JNI 引用、native handle 所有权、析构函数是否只放在 finalizer |
 | `FinalizerDaemon` 长时间卡在业务清理 | `finalize()` 做了慢操作或拿了业务锁 | 移走慢操作,改成显式关闭和后台释放队列 |
 
-`FinalizerWatchdogDaemon` 的存在说明 ART 也把 finalizer 卡住视为 VM 级风险。源码注释写明:如果 `FinalizerDaemon` 处理一个实例超过阈值,或者 `ReferenceQueueDaemon` 长时间卡在 `enqueuePending()`,watchdog 会构造超时异常并结束 VM。应用侧不应该把复杂清理逻辑放进 `finalize()`。
+`FinalizerWatchdogDaemon` 的设计说明 ART 将 finalizer 卡住视为 VM 级风险。源码注释写明:如果 `FinalizerDaemon` 处理一个实例超过阈值,或者 `ReferenceQueueDaemon` 长时间卡在 `enqueuePending()`,watchdog 会构造超时异常并结束 VM。应用侧不应该把复杂清理逻辑放进 `finalize()`。
 
 [已验证: AOSP android-16.0.0_r1, Daemons.java lines 414-449]
 
@@ -453,10 +455,6 @@ Native 资源问题通常来自"小 wrapper 持有大资源",不一定对应 Jav
 工程上的结论是:不要把 finalizer 当成资源释放方案。发现 FD、native 内存或图形资源上涨时,先采集资源计数和线程证据,再回到 owner 生命周期修关闭路径。finalizer 只能提示"有对象没被及时处理",不能替代显式释放。
 
 ## 延伸阅读
-### ART FinalizerDaemon 与 ReferenceQueue 版本对照表补全
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-art-finalizer-referencequeue-cleaner-close-guard-version-matrix.md
-- 类型:DeepResearch 调研结果
-- 摘要:补全 Android 8-16 区间 sun.misc.Cleaner(ReferenceQueueDaemon.enqueuePending() 直接 clean())、java.lang.ref.Cleaner(CleanerImpl 自有 daemon 线程)、Android system cleaner(FinalizerDaemon#doClean() 路径)、dalvik.system.CloseGuard 与 android.util.CloseGuard 四条清理路径的版本边界、源码位置和执行触发链。ReferenceQueue enqueuePending() 批处理逻辑与 FIFO 队列实现已验证。
-- 注入时间:2026-05-25
-- 价值:完整的 Cleaner/Finalizer/CloseGuard 版本对照表和源码路径,填补 §4.9 多版本边界空白
+
+Cleaner、Finalizer 和 CloseGuard 在 Android 8-16 区间的四条清理路径——`sun.misc.Cleaner`(在 `ReferenceQueueDaemon.enqueuePending()` 直接执行)、`java.lang.ref.Cleaner`(独立的 `CleanerImpl` daemon 线程)、Android system cleaner(`FinalizerDaemon#doClean()` 路径)、以及 `dalvik.system.CloseGuard` 与 `android.util.CloseGuard`——已在正文版本对照表中覆盖。`ReferenceQueue.enqueuePending()` 的批处理与 FIFO 队列实现也已在源码分析中验证。
 

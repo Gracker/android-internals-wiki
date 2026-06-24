@@ -262,3 +262,13 @@ Compose 在折叠态的性能关注点：
 Android 17 桌面模式（Desktop Windowing）在折叠屏展开态的行为参见 §22.14 桌面窗口化与大屏渲染性能实践。桌面模式下多窗口对 GPU 合成负载的影响、以及展开态进入桌面模式的窗口管理开销，在 §2.20 多窗口与桌面模式渲染中有基础机制说明。
 
 > 本节已加工完成，等待 Review。
+
+
+## 参考资料
+
+### 源码调研：DisplayManagerService 多 display 管理性能边界（Android 17 / API 37）
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 源码，深入 DMS 的 SyncRoot 单锁模型、四类 DisplayAdapter 事件投递、LogicalDisplayMapper 到 DisplayTopologyCoordinator 的完整架构。揭示 Android 17 新增 DisplayGroup/DisplayTopology 拓扑关系显式化机制，以及设备状态驱动的异步 display 转换路径。分析多 display 锁竞争边界——序列化路径的锁等待是潜在瓶颈但当前瓶颈更可能在 SF 合成。
+- 注入时间：2026-06-24
+- 价值：为折叠屏/多显示器渲染管线性能分析提供了 DMS 侧的系统服务级上下文，补充了 §2.28 仅有 SF/Compose 视角的不足

@@ -710,3 +710,29 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 - 价值：从「调优杠杆」视角补齐 §1.4 已有队列/frozen/oneway 之外的 IPC 性能调优操作手册，与 2026-06-20 单次事务性能建模形成完整「建模 + 调优」闭环
 - 目标章节（待创建）：`src/part2-performance/ch04-system/06-binder-transaction-optimization.md`
 
+
+
+### Android 17 Binder IPC 延迟分析与优化实践
+- 来源：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization.md`
+- 类型：DeepResearch 调研结果
+- 摘要：从「延迟怎么测量、怎么定位、怎么改」三个动作出发，建立 Android 17 Binder IPC 延迟的**三层观测体系**：
+  - **内核 tracepoints**：`trace_binder_transaction` / `trace_binder_transaction_received` / `trace_binder_transaction_alloc_buf` / `trace_binder_ioctl_*` / `trace_binder_write_done` / `trace_binder_read_done` / `trace_binder_wait_for_work` / `trace_binder_transaction_update_buffer_release` —— 覆盖 7 段延迟分解（①mOut 累积 ②ioctl ③buffer ④node/ref 查找 ⑤目标线程选择与唤醒 ⑥业务 ⑦reply）
+  - **v6.12 新增 `trace_binder_txn_latency_free`**（`drivers/android/binder.c:1645-1656`）：在 `binder_free_transaction` 时记录 `from_proc/thread → to_proc/thread` pid 映射 + 内核时钟，主时钟源用于完整事务生命周期归因（frozen 进程、BR_DEAD_REPLY 死进程、TF_UPDATE_TXN 替换三种特殊路径各有含义）
+  - **用户态 Perfetto `android_binder_txns` 视图**（`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`）：`_binder_txn_merged` CTE 把 `binder transaction` slice 与 `AIDL::*Server` slice 通过 `flow` 边连接，提供 `ts`/`dur`/`server_ts`/`server_dur`/`aidl_name`/`aidl_dur` 字段用于延迟分解
+  - **`binder_transaction_log` 32 项循环日志**（`drivers/android/binder.c:206-230`）：失败事务环形缓冲，仅 `dmesg`/`printk` 可见，**未在 mainline 暴露用户态 read ioctl**（待验证）
+- 5 个隐藏延迟来源（已源码验证）：
+  1. **红黑树 handle 查找 O(log n)**（`binder_get_ref_olocked:1019-1039`）—— n=100 引用时 ~7 次比较 ≈ 70-150ns
+  2. **target node/proc 引用计数**（`binder_get_node_refs_for_txn:2957-2996`）—— 每次跨进程调用 3 次 atomic op，~15-30ns
+  3. **目标线程选择 + 唤醒**（`binder_select_thread_ilocked:612-621` + `binder_wakeup_thread_ilocked:637-674`）—— 同步 `wake_up_interruptible_sync` 唤醒 < 50μs；epoll 模式 `binder_wakeup_poll_threads_ilocked` 唤醒全部 worker 延迟放大 5-10×
+  4. **spinlock 嵌套**（`proc->outer_lock` / `proc->inner_lock` / `node->lock`）—— 高频 binder 服务 `inner_lock` 竞争 5-50μs 凸起
+  5. **frozen 状态机额外路径**（`binder_proc_transaction:2860-2872`）—— frozen 进程 sync 立即 `BR_FROZEN_REPLY`（延迟 ~0）但业务不投递
+- 6 个优化动作含量化预期：
+  1. `flushCommands` 批处理：system_server 启动峰值 ② 段延迟从 200-1000μs 降到 8-20μs
+  2. `setThreadPoolMaxThreadCount`：线程数 = max_pending × avg_dur / target_latency；surfaceflinger 15→31 后 `server_dispatch` P99 从 ~1.5ms 降到 ~200μs
+  3. 客户端避免主线程 binder sync：trace 中 `is_main_thread=true AND aidl_dur > 5ms` 立即定位
+  4. frozen 进程感知：`FROZEN_OBJECT` 异常指数退避 retry
+  5. oneway spam 监控：`BR_ONEWAY_SPAM_SUSPECT` + `IF_LOG_COMMANDS()` 配合
+  6. TF_UPDATE_TXN 替换：高频 oneway 单次替换 ~200-500ns，**净收益**：解冻时 O(1) 而非 O(n)
+- 注入时间：2026-06-24
+- 价值：从「延迟归因方法学」角度补齐 §1.4 已有「5 段开销建模（2026-06-20）+ 5 个杠杆调优（2026-06-21）」之外的「tracepoints+SQL 视图+隐藏来源+量化优化」完整方法论闭环
+- 关联 DeepResearch：`DeepResearch/2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization.md`
