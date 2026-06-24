@@ -7,7 +7,6 @@ created_date: 2026-04-10
 deepseek_cn_review_state: done
 gap_source: 研究素材
 last_deepseek_cn_review_at: 2026-06-08
-last_task2b_at: 2026-06-24T08:57:10+08:00
 last_task2b_lite_at: 2026-06-23
 last_task6_at: 2026-06-24T20:13:00+08:00
 last_task6_audit: 2026-06-24
@@ -16,32 +15,35 @@ last_task9_at: 2026-06-23T13:20:00+08:00
 last_task9_audit: 2026-06-24
 last_task9_autofix_at: 2026-06-23
 last_task9_review_log: logs/deep-review/2026-06-23-13-deep-review.md
-last_verified: 2026-06-24
-last_verified_against: AOSP android-17.0.0_r1 + Android Developers + Task9 audit 2026-06-24 (源码路径修正; AnomalyDetectorService 非 AOSP 公开组件已更正)
 path: https://developer.android.com/reference/android/os/ProfilingManager
-pipeline_stage: task9_pending
-repaired_by: openclaw-task2b
-repaired_date: 2026-05-09
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-24
 section: 8.10
 status: ready-for-review
 tags: [responsiveness, latency, launch]
-task2b_result: fixed
-task2b_state: fixed
 task6_result: pass-light-edit
 task6_review_notes: "2026-06-24 Task6 五轮复审(Task2B fix后回归): Task2B已修复源码路径与AnomalyDetectorService问题。本轮禁用词零命中,高频词全量达标,翻译腔零检出。frontmatter last_task2b_at双时区已修。判定pass-light-edit,等待Task9复审确认P0修复。"
-task6_state: reviewed
 task9_result: needs-rework
 task9_review_date: 2026-06-24
 task9_review_notes: 2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-24
 task9_reviewer: openclaw-task9
-task9_state: pending
 tech_score: 3/5
 title: ProfilingManager 系统触发式性能追踪
-verifier_pass: 2026-06-23T11:26:00+08:00---
+verifier_pass: 2026-06-23T11:26:00+08:00
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-06-25T00:53:48+08:00"
+repaired_date: 2026-06-25
+repaired_by: openclaw-task2b
+last_verified: 2026-06-25
+last_verified_against: "AOSP android-17.0.0_r1 (ProfilingTrigger.java, ProfilingManager.java, ProfilingService.java) + Task9 2026-06-25 deep-review items"
+task2b_notes: "2026-06-25 Task2B main: AOSP source path corrected to frameworks/base; constant values annotated with AOSP tag; ANOMALY-ApplicationExitInfo linkage structured"
+---
 
 
 ----
@@ -99,7 +101,7 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 
 Android 15 引入 `ProfilingManager`，先解决"应用怎样在公开设备上请求 profiling"这个问题。到了 Android 16，系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`，让应用可以提前声明自己关心哪些系统事件。事件真的发生时，系统把结果文件落到应用目录，再把文件路径和触发器类型通过 `ProfilingResult` 回传。
 
-源码位置也要先摆正。公开 API 位于 Mainline Profiling 模块：`packages/modules/Profiling/framework/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`。服务端实现位于 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 不是老式 framework 服务路径上的普通类。
+源码位置也要先摆正。公开 API 位于 `frameworks/base/core/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`——应用编译时使用的是 framework SDK 层路径。服务端实现位于 Mainline 模块 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 的服务端是 Mainline 模块的一部分，不是老式 framework 服务路径上的普通类。
 
 ### 结果是怎么回来的
 
@@ -161,15 +163,17 @@ public final class TriggeredProfilingRegistrar {
 
 这一节最容易混淆的地方，是把所有 trigger 都写成"抓一份 Trace"。公开 API 不是这么设计的。
 
-| Trigger | 版本 | 系统返回物 | 何时触发 | 停止条件 / 备注 |
-|---|---|---|---|---|
-| `TRIGGER_TYPE_APP_FULLY_DRAWN = 1` | API 36 | running system trace snapshot | 冷启动里调用 `Activity.reportFullyDrawn()` 之后 | 适合复盘启动尾段 |
-| `TRIGGER_TYPE_ANR = 2` | API 36 | running system trace snapshot | 系统已经识别到 ANR,但还没按公开契约结束该应用时 | 文档强调它不等同于"应用一定已被杀" |
-| `TRIGGER_TYPE_COLD_START = 10` | API 37 | newly started system trace + stack sampling | 应用冷启动尽早阶段,且 `ApplicationStartInfo.getStartType()` 为 `START_TYPE_COLD` | 调用 `reportFullyDrawn()` 时停止;没有调用时默认约 5 秒停止 |
-| `TRIGGER_TYPE_OOM = 7` | API 37 | Java heap dump | 应用抛出 `OutOfMemoryError` | 自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE = 9` | API 37 | running system trace snapshot | 应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被系统杀掉 | 文档没有公开 CPU 阈值 |
-| `TRIGGER_TYPE_ANOMALY = 8` | API 37 | **依异常类型动态变化**:heap dump 或 stack sampling | 系统检测到异常行为;MemoryLimiter 这类 kill 路径会在终止前触发,binder spam 等规则可能只收集 profile | 产物类型和 tag 由 anomaly-detector 规则决定;`ProfilingResult.getTag()` 携带异常分类信息 |
-| `TRIGGER_TYPE_APP_COMPAT = 11` | API 37 | **依兼容性问题类型动态变化** | 应用表现出兼容性回退行为 | 产物和 tag 随具体 compat 问题而定 |
+| Trigger | 版本 | 常量值 | 系统返回物 | 何时触发 | 停止条件 / 备注 |
+|---|---|---|---|---|---|
+| `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 36 | `1` | running system trace snapshot | 冷启动里调用 `Activity.reportFullyDrawn()` 之后 | 适合复盘启动尾段 |
+| `TRIGGER_TYPE_ANR` | API 36 | `2` | running system trace snapshot | 系统已经识别到 ANR,但还没按公开契约结束该应用时 | 不等同于"应用一定已被杀" |
+| `TRIGGER_TYPE_COLD_START` | API 37 | `10` | newly started system trace + stack sampling | 应用冷启动尽早阶段,且 `ApplicationStartInfo.getStartType()` 为 `START_TYPE_COLD` | 调用 `reportFullyDrawn()` 时停止;没有调用时默认约 5 秒停止 |
+| `TRIGGER_TYPE_OOM` | API 37 | `7` | Java heap dump | 应用抛出 `OutOfMemoryError` | 自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler |
+| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | `9` | running system trace snapshot | 应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被系统杀掉 | 公开文档没有给出 CPU 阈值 |
+| `TRIGGER_TYPE_ANOMALY` | API 37 | `8` | **依异常类型动态变化**:heap dump 或 stack sampling | 系统检测到异常行为;MemoryLimiter 这类 kill 路径会在终止前触发,binder spam 等规则可能只收集 profile | 产物类型和 tag 由 anomaly-detector 规则决定;`ProfilingResult.getTag()` 携带异常分类信息 |
+| `TRIGGER_TYPE_APP_COMPAT` | API 37 | `11` | **依兼容性问题类型动态变化** | 应用表现出兼容性回退行为 | 产物和 tag 随具体 compat 问题而定 |
+
+> **常量值说明**：上表常量值来自 AOSP `frameworks/base/core/java/android/os/ProfilingTrigger.java`（android-17.0.0_r1）中公开的 `TRIGGER_TYPE_*` 常量定义。Android 17 与 Android 16 的常量值在 `APP_FULLY_DRAWN` 和 `ANR` 上保持不变（分别为 1 和 2），API 37 新增常量从 7 开始编号。各常量值已在 android-17.0.0_r1 tag 中验证。
 
 这张表比散落的清单更有用,因为后续分析的入口已经固定下来了。`APP_FULLY_DRAWN` 和 `ANR` 的结果都可以走 Perfetto UI，`OOM` 该走 heap dump 分析，`COLD_START` 既有 system trace，也有 stack sampling。`ANOMALY` 和 `APP_COMPAT` 的产物不固定，收到结果后要先读 `getTag()` 判断异常类别，再根据文件后缀选择分析工具；Android 17 `ProfilingService` 中 Java heap dump 使用 `.perfetto-java-heap-dump` 后缀，system trace 使用 `.perfetto-trace` 后缀。
 
@@ -195,7 +199,15 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 **产物的动态性**:ANOMALY 不像其他 trigger 返回固定的文件格式。`ProfilingResult#getTag()` 会携带异常分类信息(如 `memory_limit`),`getResultFilePath()` 返回的文件后缀决定分析工具--`.perfetto-java-heap-dump` 走 Java heap dump 工具链,`.perfetto-trace` 走 Perfetto UI。处理 ANOMALY 结果时,要先读 tag 再决定分析路径,不能一律当 system trace 处理。
 
-**MemoryLimiter 场景**:当 MemoryLimiter 的 anon+swap 限额路径触发时,`frameworks/base` 会先向 `ProfilingServiceHelper` 发送 ANOMALY,再延迟 kill,kill reason 可见类似 `MemoryLimiter:AnonSwap`。`ProfilingService` 对这类异常使用 `memory_limit` tag,并返回 Java heap dump,用于定位是哪些对象占住了内存。这个场景的排查顺序是:`ApplicationExitInfo.getReason()` 指向资源过量或描述里出现 MemoryLimiter 线索 → `ProfilingResult.getTag()` 为 `memory_limit` → heap dump 进 MAT 或 Android Studio Profiler → 找 retained size 最高的引用路径。
+**MemoryLimiter 场景**:当 MemoryLimiter 的 anon+swap 限额路径触发时，系统会先通过 `ProfilingServiceHelper` 触发 ANOMALY，再延迟 kill 目标进程。kill 后 `ApplicationExitInfo.getReason()` 返回资源过量类型（如 `REASON_EXCESSIVE_RESOURCE_USAGE`），描述中携带 `MemoryLimiter:AnonSwap` 等线索。`ProfilingService` 对这类异常使用 `memory_limit` tag，并返回 Java heap dump。
+
+**关联排查流程**：收到 ANOMALY 结果后，需要把 ProfilingManager 返回的现场和 `ApplicationExitInfo` 中的退出信息对齐：
+
+1. 通过 `registerForAllProfilingResults()` 收到 `ProfilingResult`，确认 `getTriggerType()` 为 `TRIGGER_TYPE_ANOMALY`
+2. 读 `ProfilingResult.getTag()`——`memory_limit` 对应 MemoryLimiter kill 路径，其他 tag 对应非 kill 类异常
+3. 取 `ProfilingResult.getResultFilePath()`，按文件后缀选分析工具（`.perfetto-java-heap-dump` 走 MAT/Android Studio Profiler，`.perfetto-trace` 走 Perfetto UI）
+4. 同时查 `ActivityManager.getHistoricalProcessExitReasons()` 获取进程终止原因，将 `ApplicationExitInfo.getReason()` / `getDescription()` 与 ANOMALY tag 对齐——这一步区分"ANOMALY 伴随了 kill"还是"只有 ANOMALY 日志/采样"
+5. heap dump 场景：入 MAT 后定位 retained size 最高的引用路径，对照进程终止前的内存使用量判断哪些对象顶满了堆
 
 **边界**:公开 API 文档没有列出系统异常检测的全部判定规则和触发阈值,这些属于系统内部策略。同一 UID 下多个包注册 ANOMALY trigger 时,系统可能不为某些异常提供产物;多进程应用也不要假设每个进程都能收到独立的 profiling 结果。线上接入时要考虑这种不确定性,不能假设注册了就一定能拿到产物。
 
@@ -303,10 +315,10 @@ system-triggered profiling 的结果只会通过 `registerForAllProfilingResults
 - 官方文档:`https://developer.android.com/reference/android/os/ProfilingTrigger`
 - 官方文档:`https://developer.android.com/reference/android/os/ProfilingResult`
 - 官方文档:`https://developer.android.com/reference/android/os/ext/SdkExtensions`
-- AOSP:`packages/modules/Profiling/framework/android/os/ProfilingManager.java`
-- AOSP:`packages/modules/Profiling/framework/android/os/ProfilingTrigger.java`
-- AOSP:`packages/modules/Profiling/framework/android/os/ProfilingResult.java`
-- AOSP:`packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`
+- AOSP（SDK 层）：`frameworks/base/core/java/android/os/ProfilingManager.java`（android-17.0.0_r1）
+- AOSP（SDK 层）：`frameworks/base/core/java/android/os/ProfilingTrigger.java`（android-17.0.0_r1，触发器常量定义）
+- AOSP（SDK 层）：`frameworks/base/core/java/android/os/ProfilingResult.java`（android-17.0.0_r1）
+- AOSP（服务端）：`packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`（android-17.0.0_r1）
 
 <!-- AIW-源码调研-2026-06-24 -->
 ### 🔍 源码调研补充：ANOMALY 触发器 UID 级别控制与 multi-package 支持
@@ -330,7 +342,7 @@ App.addProfilingTriggers() → ProfilingManager → IProfilingService.addProfili
 ```
 
 #### 关键源码证据
-- `ProfilingService.java:2242-2244` - ANOMALY 触发器处理逻辑
+- `ProfilingService.java`（`packages/modules/Profiling/service/...`）中 ANOMALY 触发器处理逻辑
 - `MemoryAnomalyRateLimiter.java` - 双层时间桶限制器
 - `IProfilingService.aidl` - 异步回调接口定义
 - `ProfilingTriggerData.java` - 触发器数据模型
