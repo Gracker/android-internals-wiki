@@ -43,3 +43,10 @@
 - **位置**：内存优化策略部分
 - **问题**：未详细说明 Android 17 中新增的内存管理特性
 - **建议**：补充 Android 17 新增的内存相关 API 和优化建议，特别是与 Jetpack Compose 相关的内存管理最佳实践
+
+## [Task6 Review] 14.13 Hook 基础设施 — 2026-06-24
+- **类型**：技术矛盾（L3）
+- **位置**：PLT vs Inline Hook 对比表 — "绕过方式"行
+- **问题**：对比表将 IFUNC resolver 列为 Inline Hook 的绕过方式（"函数内跳指令（如 IFUNC resolver）"），但正文紧接其下明确写道"使用 IFUNC resolver 在 linker 阶段替换实现，PLT Hook 就拦截不到。这些场景必须用 inline hook"。表格与正文对 IFUNC 的定位矛盾。
+- **建议**：修正对比表 — PLT Hook 的绕过方式应包含"dlsym 直接调用"和"IFUNC resolver 替换"；Inline Hook 的绕过方式应改为"函数内 tail call / 间接分支"等真正能绕过入口覆写的场景。
+- **review 日志**：logs/review/2026-06-24-12-review.md
