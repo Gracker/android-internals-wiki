@@ -54,6 +54,8 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-03T21:36:06+08:00"
 last_task6_review_log: logs/review/2026-05-14-19-review.md
 task6_review_notes: "2026-05-14 Task6：L1/L2 小修 2 处；写作层通过。保留 Task9 P1 回炉队列，未自动晋升。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 # 定位与传感器功耗优化
@@ -87,7 +89,6 @@ task6_review_notes: "2026-05-14 Task6：L1/L2 小修 2 处；写作层通过。�
 
 Clippings 的《Android 性能优化》没有单独展开定位或传感器，但它给出的组织方式适合迁移到本节：先把硬件资源、系统调度和 App 业务放在同一张表里，再按场景决定使用频率。定位和传感器的写法也是这样，先问业务要什么精度、多久交付、能否延迟，再选择 FLP、Geofencing、被动定位或传感器批处理。
 
-[结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md]
 
 ## 定位精度与功耗的权衡
 
@@ -272,7 +273,7 @@ Android 12（API 31）对后台传感器访问追加了速率硬限制：
 | 状态变化检测 | 优先 on-change、one-shot、significant motion 等语义化传感器 | 用高频 accelerometer 自己轮询判断阈值 |
 | 长时后台采样 | 前台服务 + 低频 + 批处理 + 明确停止条件 | 静默后台常驻采样 |
 
-## [自动发现] 定位和传感器的回归守门
+## 定位和传感器的回归守门
 
 定位和传感器优化要进入回归守门，不能只靠代码 review。§25.1 已经覆盖 Battery Historian、Power Profiler 和 `dumpsys batterystats`，这里补一组和本节参数直接相关的检查项。
 

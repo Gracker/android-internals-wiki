@@ -77,6 +77,7 @@ tags:
   - [2.26 Android 17 Edge-to-Edge 渲染与 WindowInsets 处理性能](part1-fundamentals/ch02-rendering/26-edge-to-edge-inset-rendering-performance.md)
   - [2.27 SurfaceFlinger Transaction Queue 无锁架构与消息分流](part1-fundamentals/ch02-rendering/27-sf-transaction-queue-lockless.md)
   - [2.28 折叠屏显示管线与铰链状态渲染性能](part1-fundamentals/ch02-rendering/28-foldable-display-pipeline-performance.md)
+  - [2.29 Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型](part1-fundamentals/ch02-rendering/2-29-camera-hal3-buffer-management.md)
   - [2.29 TaskSnapshot 系统架构与 Recents 渲染性能](part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md)
   - [2.30 DisplayManagerService Display Lifecycle 与拓扑性能](part1-fundamentals/ch02-rendering/30-displaymanager-service-lifecycle.md)
 
