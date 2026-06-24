@@ -1,12 +1,11 @@
 ---
+
 title: "其他开源 APM 库(AndroidGodEye、Collie、Rabbit)"
 chapter: "19"
 section: "19.10"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "['apm', 'monitoring']"
-confidence: "medium"
 last_verified: "2026-04-24"
 last_verified_against: "AndroidGodEye / Collie / Rabbit / Matrix GitHub READMEs + AGP API updates + Android developers docs"
 drafted_date: "2026-04-24"
@@ -17,7 +16,6 @@ path: "https://github.com/Tencent/matrix"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task2b_result: "fixed-lite"
 pipeline_stage: "task6_pending"
 task6_result: "revisiting"
 last_task6_audit: "2026-06-24"
@@ -36,7 +34,6 @@ confidence: "medium"
 tech_score: "3/5"
 last_task9_audit: "2026-05-20"
 ---
--
 
 # 其他开源 APM 库(AndroidGodEye、Collie、Rabbit)
 
