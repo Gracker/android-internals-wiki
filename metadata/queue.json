@@ -215,7 +215,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-24T14:23:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-24T15:42:00+08:00",
+    "completed_by": "task2b-lite",
+    "reason": "fixed-lite"
   },
   {
     "section": "25.4",
