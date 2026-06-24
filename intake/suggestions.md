@@ -283,3 +283,11 @@
 - **Compose Compiler Metrics**: 与 22.20 重叠 (9/20)
 - **Domain Verification/App Links**: 非性能核心 (6/20)
 - **备注**: 确认 6-25 结论，全书仍处素材消化期。462 小节 / 313 finalized (67.7%)，31 个 Android 17 专项章节。Part 3 ch27 Performance Engineering 6 个 draft 待加工，93 个 ready-for-review 待审核。
+
+## [Task2A Gap Mining] 2026-06-25 05:08 已检查方向（无合格缺口）
+- **AVF (Android Virtualization Framework)**: 偏安全隔离，性能素材不足 (9/20)
+- **Wear OS 性能优化**: 有素材但受众窄，Wear OS 6 基于 A15 (11/20)
+- **Rust in System Services**: 已有部分覆盖，独立章节素材不足 (11/20)
+- **Gradle 构建性能**: 偏离 App 运行时性能主线 (10/20)
+- **Compose Multiplatform / KMP**: 与 Compose Android 性能高度重叠 (10/20)
+- **备注**: 连续193轮无合格缺口。全书 264+ 小节 / 201 finalized。0 空draft。当前处于素材消化期，管线堵点在 Task6/Task9 复审环节（64 ready-for-review 待审核）。
