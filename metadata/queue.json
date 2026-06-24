@@ -538,5 +538,65 @@
     "completed_at": "2026-06-25T04:52:10.051720+08:00",
     "completed_by": "task2b-main",
     "completed_notes": "P85修复: 版本边界细化(applicable_versions per API), [待验证]标记全部消除"
+  },
+  {
+    "section": "19.10",
+    "section_title": "APM 工具基准测试与兼容性验证",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：APM 工具（Matrix/KOOM/AndroidGodEye）性能开销源码级对比与 Android 17 兼容性分析，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-apm-tools-benchmark-source-analysis.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "APM 工具性能开销与机制对比 — Matrix LooperMonitor setMessageLogging hook、KOOM fork-and-dump ART 符号稳定性、Choreographer 反射在 API 37 的兼容性验证",
+        "suggestion": "判断是否适合补充为 §19.10 或 §14.12 的章节参考资料，覆盖开源 APM 工具在 Android 17 的实测兼容性数据"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-25T06:12:33",
+    "status": "pending"
+  },
+  {
+    "section": "5.11",
+    "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+    "priority": 82,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：LiteRT V2 运行时核心（ArenaPlanner/Subgraph）与 NNAPI Delegate 委托模型的源码级分析，覆盖 MediaPipe Tasks 架构",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android-端侧ai推理运行时源码-LiteRT-NNAPI-MediaPipe-Tasks.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "端侧 AI 推理运行时源码分析 — LiteRT ArenaPlanner 静态内存复用、NNAPI Delegate 节点级委托、符号-神经混合执行切入点分析",
+        "suggestion": "判断是否适合补充为 §5.11 或 §5.14 的延伸阅读，提供 LiteRT V2 重构后的内存规划与 GenAI 混合推理架构参考"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-25T06:12:33",
+    "status": "pending"
+  },
+  {
+    "section": "14.2",
+    "section_title": "Simpleperf",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：Simpleperf 与 Android 热节流机制的交互分析，揭示 simpleperf 无 thermal listener 的单向解耦设计",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-simpleperf-thermal-throttling-interaction.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Simpleperf 热节流交互研究 — AdjustPerfEventLimit 只调 4 个 perf_event sysctl 不读 thermal HAL、PowerStats HAL v2 与 simpleperf 完全解耦、task-clock 抗热节流指标分析",
+        "suggestion": "判断是否适合补充为 §14.2 Simpleperf 的参考资料，提供 profiling 精度受热节流干扰的校正方法论"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-25T06:12:33",
+    "status": "pending"
   }
 ]
