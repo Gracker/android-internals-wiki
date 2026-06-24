@@ -24,6 +24,28 @@
   },
   "l3_l4_issues": [
     {
+      "section": "14.13",
+      "title": "Hook 基础设施与性能工具实现原理",
+      "priority": "P2",
+      "category": "L4",
+      "issue": "缺乏个人经验表达，学术化倾向过重",
+      "description": "文章缺乏实际使用场景的个人经验描述，温度感不足，偏向教科书式技术文档",
+      "evidence": "全文未出现个人实践案例、踩坑经历、实测发现等第一手经验描述",
+      "action_required": "建议补充实际使用 Hook 工具时的经验教训、问题排查过程、性能测试数据等个人经验内容",
+      "task2b_dependency": "Task 2B 可考虑增加实操性经验补充"
+    },
+    {
+      "section": "14.13",
+      "title": "Hook 基础设施与性能工具实现原理",
+      "priority": "P2",
+      "category": "L3",
+      "issue": "逻辑进展标记不足，阅读连续性待提升",
+      "description": "文章缺乏清晰的逻辑进展标记，读者难以跟随技术思路的推进",
+      "evidence": "全文仅 1 处逻辑进展标记，技术概念展开的连贯性不足",
+      "action_required": "建议在关键技术概念转换处增加进展标记，如'至此我们理解了...'、'接下来进入...'、'从上面的分析可以得出...'",
+      "task2b_dependency": "Task 2B 可考虑优化文章逻辑进展标记"
+    },
+    {
       "section": "16.5",
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
       "priority": "P1",
@@ -63,6 +85,33 @@
   ],
   "notes": "本轮（2026-06-17）巡检：发现 6.4 存储相关的版本演进逾期 64 天（version_evolution 阈值 30 天），已在 queue 中（pending from 2026-06-15, priority 90）。新增 2.14 图形 API 演进逾期 22 天（version_evolution 阈值 30 天），加入 queue priority 70。Android 17/API 37 边界严格遵守，无 Android 18/API 38+ 越界内容。",
   "queue": [
+    {
+      "section": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 90,
+      "reason": "[Task 6 Review] L3/L4 内容质量提升：增加个人经验和逻辑进展标记",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "内容深度",
+          "location": "全文",
+          "detail": "缺乏个人经验表达，学术化倾向过重，温度感不足",
+          "suggestion": "补充实际使用 Hook 工具时的经验教训、踩坑经历、实测发现等个人经验内容"
+        },
+        {
+          "type": "可读性",
+          "location": "全文",
+          "detail": "逻辑进展标记不足，技术概念展开的连贯性不足",
+          "suggestion": "在关键技术概念转换处增加进展标记，如'至此我们理解了...'、'接下来进入...'、'从上面的分析可以得出...'",
+          "priority": "medium"
+        }
+      ],
+      "added_by": "task6-draft-review",
+      "added_at": "2026-06-24T11:17:00+08:00",
+      "status": "pending"
+    },
     {
       "section": "16.5",
       "section_title": "Android 17 (API 37) 性能行为变更与适配方法",

@@ -1,5 +1,5 @@
 ---
-status: "ready-for-review"
+status: finalized
 title: 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 chapter: '2.14'
 drafted_date: '2026-04-05'
