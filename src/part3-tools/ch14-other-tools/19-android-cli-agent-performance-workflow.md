@@ -45,6 +45,8 @@ task9_review_notes: "2026-05-22 task9 deep-review: pass-tech-review。P0 0 / P1 
 last_task9_review_log: "logs/deep-review/2026-05-22-04-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 # 14.19 Android CLI 与 Agent 化性能调试工作流

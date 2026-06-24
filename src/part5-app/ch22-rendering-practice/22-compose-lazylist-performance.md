@@ -183,6 +183,58 @@ fun ScrollToTopButton(listState: LazyListState) {
 
 如果不加 `derivedStateOf`，`listState.firstVisibleItemIndex` 的每一帧变化都会触发 `ScrollToTopButton` 重组。加上后，只有 `index > 5` 的结果从 false 变成 true（或反过来）时才重组。
 
+
+<!-- AIW-源码调研-2026-06-24 -->
+## SlotTable 与 RecomposeScope：LazyList 性能行为的运行时底座
+
+§22.22 上文讨论的 key / contentType / derivedStateOf 都只是 Compose Runtime 提供的"用户层杠杆"。要理解为什么这些杠杆有效，需要直接看 androidx-main 的 `SlotTable` 数据结构。本节从源码角度补充 LazyList 滚动时 SlotTable 实际发生的事。
+
+### SlotTable 的双 IntArray + gap buffer 结构
+
+`compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SlotTable.kt` 中 `internal class SlotTable`（line 82）持有两个核心数组：
+
+- `groups: IntArray` —— 存储 group fields，每个 group 占用 `Group_Fields_Size` 个连续 int（key / nodeCount / groupSize / parentAnchor / dataAnchor + flags）
+- `slots: Array<Any?>` —— 存储 Composable 实际状态值（`remember` 结果、CompositionLocal 等）
+
+源码注释（`SlotTable.kt:31-77` 的 `Nomenclature` 段落）明确定义了 Anchor 的语义：
+
+> Anchor — an encoding of Index that allows it to not need to be updated when groups or slots are inserted or deleted. An anchor is positive if the Index it is tracking is before the gap and negative if it is after the gap.
+
+这一设计是 Compose 滚动不移动状态引用、RecomposeScope 命中稳定的根本原因。LazyList 滚出 item 时，对应 group 被删除（gap 移动到该位置）；RecomposeScope 通过 Anchor 仍能命中 gap 之后的真实位置。
+
+### LazyList 的 subcomposition 路径
+
+源码 `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyListMeasuredItemProvider.kt:46`：
+
+```kotlin
+fun getAndMeasure(index: Int): LazyListMeasuredItem {
+    val key = itemProvider.getKey(index)
+    val contentType = itemProvider.getContentType(index)
+    val placeables = measureScope.measure(index, childConstraints)
+    return createItem(index, key, contentType, placeables)
+}
+```
+
+调用链：`measureLazyList`（`LazyListMeasure.kt:43`）→ 对每个可见 item 调 `getAndMeasure` → `LazyLayoutMeasureScope.measure(index, ...)` → `SubcomposeLayout.subcompose(slotId, content)` → `Composer` 在 SlotTable 上开 `SlotWriter` 写新 group。每次 `subcompose` 都会触碰 `anchors: ArrayList<Anchor>`（`SlotTable.kt:133`）并走 `ArrayList.search` 二分查找（`SlotTable.kt:3370`）。
+
+### 对性能排查的具体含义
+
+1. **滚动卡顿如果是 Composition 阶段占比高**：怀疑 item 内部 `State` 写入频繁 → RecomposeScope 频繁 invalid → 多次重写 SlotTable。`derivedStateOf` 把高频 state 转成低频派生是最直接的修复。
+2. **如果是 Layout 阶段占比高**：检查是否有嵌套 LazyList 或 `SubcomposeLayout` 在 item 内被调用 —— 因为 `SubcomposeLayout` 会在每次 measure 时强制重走 SlotWriter 路径。
+3. **如果是 GC 暂停叠加**：检查 `key {}` 是否稳定。`key = index` 会让 list 头部插入新 item 时所有 group 被销毁重建，groups 数组触发扩容。
+4. **预取的内存代价**：`LazyLayoutPrefetchState.schedulePrefetch(index, ...)`（`LazyLayoutPrefetchState.kt:30`）会让 prefetcher 提前对远端 item 调 `measureScope.measure`，这些 item 也会进入 SlotTable。默认 prefetch 策略较保守；自定义时要权衡"少 subcomposition 延迟"和"多 SlotTable 内存占用"。
+
+### 与已有 best practices 的对应关系
+
+| §22.22 上层建议 | SlotTable 底层机制 |
+|----------------|------------------|
+| `key {}` 必须稳定 | 避免 Anchor 失效 → 避免 group 树频繁插入 / 删除 → 避免 `IntArray` 扩容 |
+| `contentType` 分池 | 相同 contentType 的 item 复用 group 节点，slots 数组增量更新 |
+| `derivedStateOf` | 减少 RecomposeScope.invalidate 调用次数 → 减少 `Composer.invalidations` 队列长度 |
+| `remember(calculation) { ... }` | 让结果进入 `slots: Array<Any?>` 一次，多次 recomposition 命中已有 slot 而非重新计算 |
+
+[源码锚点: androidx-compose-integration-release / SlotTable.kt (3480行) / LazyListMeasure.kt (580行) / LazyListState.kt (509行) / LazyLayoutPrefetchState.kt (61行) / LazyListMeasuredItemProvider.kt (64行)]
+
 ## LazyList 预取、子项合成与嵌套滚动
 
 ### 预取机制源码行为

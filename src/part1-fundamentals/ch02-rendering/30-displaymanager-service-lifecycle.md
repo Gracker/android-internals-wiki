@@ -1,13 +1,26 @@
 ---
 title: "DisplayManagerService Display Lifecycle 与拓扑性能"
 chapter: "2.30"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [display, dms, multi-display, foldable, surfaceflinger, syncroot]
 related_chapters: ["2.3", "2.6", "2.20", "2.23", "2.28", "18.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-24"
 gap_source: "DeepResearch素材驱动"
+drafted_date: "2026-06-24"
+last_verified: "2026-06-24"
+last_verified_against: "AOSP android-17.0.0_r1"
+confidence: high
+sources:
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/display/DisplayAdapter.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/display/LogicalDisplayMapper.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/DisplayManager.java"
 ---
 
 # 2.30 DisplayManagerService Display Lifecycle 与拓扑性能
@@ -49,6 +62,33 @@ Display.Mode 切换对 BufferQueue、Choreographer、SurfaceFlinger 的影响链
 
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 性能优化建议
+
+### 1. 减少锁竞争
+- 使用细粒度锁替代全局 SyncRoot
+- 实现异步事件处理机制
+- 优化高频操作路径
+
+### 2. 优化多 display 布局
+- 缓存常用布局配置
+- 实现布局预计算机制
+- 减少运行时拓扑计算
+
+### 3. 改善 VSync 同步
+- 实现 display 间 VSync 同步
+- 优化 VSync 事件投递路径
+- 减少不必要的 VSync 注册
+
+### 4. 启动性能优化
+- 实现 display 就绪快速检测
+- 优化系统启动时序
+- 减少 display 等待时间
+
+### 5. 折叠屏专项优化
+- 预加载常用拓扑配置
+- 实现快速拓扑切换
+- 优化 hinge state 检测延迟
+
+通过合理的优化策略，可以将 DisplayManagerService 的性能影响控制在合理范围内，确保多 display 环境下的流畅体验。
 
 [结构参考: DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md]

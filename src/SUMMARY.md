@@ -184,6 +184,7 @@ tags:
   - [8.13 BiometricPrompt 与 Credential Manager 登录链路性能](part2-performance/ch08-responsiveness/13-biometric-credential-login-performance.md)
   - [8.14 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染](part2-performance/ch08-responsiveness/14-push-notification-pipeline-performance.md)
   - [8.15 Play Integrity API 性能与集成延迟](part2-performance/ch08-responsiveness/15-play-integrity-api-performance.md)
+  - [8.16 ProfilingManager 系统触发式性能追踪](part2-performance/ch08-responsiveness/16-profilingmanager-系统触发式性能追踪.md)
 
 - [第 9 章：ANR](part2-performance/ch09-anr/README.md)
   - [9.1 ANR 设计思想](part2-performance/ch09-anr/01-anr-design.md)
@@ -532,3 +533,9 @@ tags:
 - [D. 性能分析 Checklist](appendix/analysis-checklist.md)
 - [E. 术语表（中英对照）](appendix/glossary.md)
 - [F. 推荐阅读与资源](appendix/recommended-reading.md)
+
+  - [Hook 技术限制与边界条件](part5-app/ch23-memory-practice/part1-fundamentals/ch01-architecture/08.09-hook-technology-boundary-conditions.md)
+  - [APM 工具基准测试与兼容性验证](part5-app/ch23-memory-practice/part3-tools/ch19-apm/19.10-apm-tool-compatibility.md)
+  - [渲染管线性能监控与优化](part5-app/ch23-memory-practice/part2-performance/ch07-smoothness/21.12-rendering-pipeline-monitoring.md)
+  - [端侧大模型推理的内存管理](part5-app/ch23-memory-practice/part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md)
+  - [游戏性能优化实战指南](part5-app/ch23-memory-practice/part2-performance/ch08-responsiveness/23.8-game-performance-optimization.md)
