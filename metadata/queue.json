@@ -557,7 +557,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-25T06:12:33",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-25T06:51:35+08:00",
+    "completed_by": "task2b-main-material-injection",
+    "completed_reason": "DeepResearch APM 源码分析已注入到 §19.10 参考资料"
   },
   {
     "section": "5.11",
@@ -577,7 +580,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-25T06:12:33",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-25T06:51:35+08:00",
+    "completed_by": "task2b-main-material-injection",
+    "completed_reason": "DeepResearch LiteRT/NNAPI/MediaPipe 源码分析已注入到 §5.11 延伸阅读"
   },
   {
     "section": "14.2",
@@ -597,6 +603,9 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-25T06:12:33",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-25T06:51:35+08:00",
+    "completed_by": "task2b-main-material-injection",
+    "completed_reason": "DeepResearch Simpleperf 热节流交互分析已注入到 §14.2 参考资料"
   }
 ]
