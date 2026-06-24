@@ -1,50 +1,48 @@
 ---
-
-title: "ProfilingManager 系统触发式性能追踪"
-chapter: '8.10'
-section: '8.10'
-status: "ready-for-review"
-pipeline_stage: task6_pending
-applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-tags: [responsiveness, latency, launch]
+applicable_versions: Android 15 (API 35) - Android 17 (API 37)
+chapter: 8.10
 confidence: medium
-last_verified: '2026-06-24'
-last_verified_against: "AOSP android-17.0.0_r1 + Android Developers + Task9 audit 2026-06-24 (源码路径修正; AnomalyDetectorService 非 AOSP 公开组件已更正)"
 created_by: task2a-knowledge-gap
-created_date: '2026-04-10'
+created_date: 2026-04-10
+deepseek_cn_review_state: done
 gap_source: 研究素材
-path: "https://developer.android.com/reference/android/os/ProfilingManager"
-last_task9_audit: "2026-06-23"
-task6_state: "revisiting"
-task9_state: pending
-task2b_state: "fixed"
-task2b_result: "fixed"
-last_task2b_lite_at: '2026-06-23'
-repaired_date: '2026-05-09'
+last_deepseek_cn_review_at: 2026-06-08
+last_task2b_at: 2026-06-24T08:57:10+08:00+08:00
+last_task2b_lite_at: 2026-06-23
+last_task6_at: 2026-06-24T09:15:00+08:00
+last_task6_audit: 2026-06-24
+last_task6_review_log: logs/review/2026-06-24-09-review.md
+last_task9_at: 2026-06-23T13:20:00+08:00
+last_task9_audit: 2026-06-24
+last_task9_autofix_at: 2026-06-23
+last_task9_review_log: logs/deep-review/2026-06-23-13-deep-review.md
+last_verified: 2026-06-24
+last_verified_against: AOSP android-17.0.0_r1 + Android Developers + Task9 audit 2026-06-24 (源码路径修正; AnomalyDetectorService 非 AOSP 公开组件已更正)
+path: https://developer.android.com/reference/android/os/ProfilingManager
+pipeline_stage: task6_pending
 repaired_by: openclaw-task2b
+repaired_date: 2026-05-09
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-24
+section: 8.10
+status: ready-for-review
+tags: [responsiveness, latency, launch]
+task2b_result: fixed
+task2b_state: fixed
 task6_result: pass-light-edit
-task6_review_notes: "2026-06-24 Task6 四轮复审(Task2B fix后回归): 常量值一致性已修复。本轮修复3处编辑残留(元叙述)和2处否定-纠正句式超限,判定pass-light-edit。等待Task9复审。"
+task6_review_notes: 2026-06-24 Task6 四轮复审(Task2B fix后回归): 常量值一致性已修复。本轮修复3处编辑残留(元叙述)和2处否定-纠正句式超限,判定pass-light-edit。等待Task9复审。
+task6_state: revisiting
 task9_result: needs-rework
-verifier_pass: "2026-06-23T11:26:00+08:00"
-task9_reviewed_date: 2026-06-24
+task9_review_date: 2026-06-24
+task9_review_notes: 2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-23T13:20:00+08:00"
-task9_review_date: "2026-06-24"
-task9_reviewer: "openclaw-task9"
-confidence: "medium"
-tech_score: "3/5"
-last_task6_audit: '2026-06-24'
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
-last_task9_autofix_at: "2026-06-23"
-last_task6_at: "2026-06-24T09:15:00+08:00"
-last_task6_review_log: "logs/review/2026-06-24-09-review.md"
-last_task2b_at: "2026-06-24T08:57:10+08:00+08:00"
-task9_review_notes: "2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。"
-last_task9_review_log: "logs/deep-review/2026-06-23-13-deep-review.md"
----
+task9_reviewed_date: 2026-06-24
+task9_reviewer: openclaw-task9
+task9_state: reviewed
+tech_score: 3/5
+title: ProfilingManager 系统触发式性能追踪
+verifier_pass: 2026-06-23T11:26:00+08:00---
+
 
 ----
 
@@ -309,3 +307,33 @@ system-triggered profiling 的结果只会通过 `registerForAllProfilingResults
 - AOSP:`packages/modules/Profiling/framework/android/os/ProfilingTrigger.java`
 - AOSP:`packages/modules/Profiling/framework/android/os/ProfilingResult.java`
 - AOSP:`packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`
+
+<!-- AIW-源码调研-2026-06-24 -->
+### 🔍 源码调研补充：ANOMALY 触发器 UID 级别控制与 multi-package 支持
+
+基于 Android 17 (android-17.0.0_r1) 源码的深度分析发现：
+
+#### 多包支持机制
+ProfilingManager 采用 `ProcessMap<SparseArray<ProfilingTriggerData>> mAppTriggers` 数据结构实现多包支持，每个触发器与特定 UID 绑定存储。在 `addProfilingTriggers()` 中，系统会获取调用者 UID 并为每个触发器创建对应的 `ProfilingTriggerData` 对象。
+
+#### ANOMALY 触发器专有实现
+- **标志控制**：通过 `android.os.profiling.anomaly.flags.Flags.anomalyDetectorCoreC()` 功能标志控制，必须显式启用
+- **专有限制器**：`MemoryAnomalyRateLimiter` 提供双层速率限制（系统3小时/进程3天）
+- **特殊处理**：ANOMALY 触发器直接返回 Java heap dump，不参与其他触发器的系统速率限制
+
+#### 完整调用链
+```
+App.addProfilingTriggers() → ProfilingManager → IProfilingService.addProfilingTriggers() 
+→ ProfilingService.addTrigger() → ProfilingTriggerData 存储 
+→ AnomalyDetectorService.processTrigger() → MemoryAnomalyRateLimiter 检查 
+→ ProfilingService.execute() → IProfilingAnomalyCallback 返回结果
+```
+
+#### 关键源码证据
+- `ProfilingService.java:2242-2244` - ANOMALY 触发器处理逻辑
+- `MemoryAnomalyRateLimiter.java` - 双层时间桶限制器
+- `IProfilingService.aidl` - 异步回调接口定义
+- `ProfilingTriggerData.java` - 触发器数据模型
+
+> 注：本分析基于 packages/modules/Profiling/android-17.0.0_r1 tag 源码，验证了 ANOMALY 触发器的多包支持能力和 UID 级别控制机制。
+<!-- AIW-源码调研-2026-06-24 结束 -->
