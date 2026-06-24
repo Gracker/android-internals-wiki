@@ -11951,8 +11951,8 @@
     "task6_new_rework": false,
     "task6_note": "首次 review 通过；清理正文结构参考/素材说明 4 处，无新增 L3/L4 回炉。Task9 尚未技术复核，未自动晋升。"
   },
-  "last_task2a_completed": "24.19",
-  "last_task2a_completed_at": "2026-05-25T17:37:00+08:00",
+  "last_task2a_completed": "22.9",
+  "last_task2a_completed_at": "2026-06-25T04:11:15.314396+08:00",
   "section_24_15": {
     "section": "24.15",
     "title": "移动网络性能优化实战：DNS、连接、传输与容灾",
@@ -14929,5 +14929,23 @@
     "14.13"
   ],
   "finalized_count": 201,
-  "reviewed_count": 64
+  "reviewed_count": 64,
+  "section_22_9": {
+    "section": "22.9",
+    "title": "端侧大模型推理的内存管理",
+    "file": "src/part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24",
+    "drafted_date": "2026-06-25",
+    "drafted_by": "openclaw-task2a",
+    "last_task2a_at": "2026-06-25T04:11:15.314396+08:00",
+    "task2a_result": "drafted",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "note": "5 锚点全部覆盖，3 扩展全部覆盖",
+    "queue_priority": 80
+  }
 }
