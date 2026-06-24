@@ -1,28 +1,92 @@
-{
-  "section": "14.13",
-  "section_title": "Hook 基础设施与性能工具实现原理",
-  "priority": 95,
-  "reason": "[Deep Tech Review] 引用的 AOSP 源码路径验证版本与适用版本范围不匹配。章节声明适用版本为 Android 8-37，但验证版本为 android-16.0.0_r1，存在版本不一致问题。",
-  "material_paths": [
-    "intake/suggestions.md"
-  ],
-  "review_issues": [
-    {
-      "type": "源码错误",
-      "location": "源码引用验证部分",
-      "detail": "章节 frontmatter 中 last_verified_against: \"AOSP android-16.0.0_r1\"，但 applicable_versions 声明为 \"Android 8 (API 26) - Android 17 (API 37)\"，验证版本覆盖范围不足，无法确保 Android 17 API 37 内容准确性",
-      "suggestion": "需要更新验证版本为 android-17.0.0_r1 或更高版本，或明确标注哪些内容仅适用于 Android 16 及以下版本"
-    },
-    {
-      "type": "源码错误",
-      "location": "8.10 ProfilingManager章节的源码路径描述",
-      "detail": "packages/modules/Profiling/ 路径在不同 Android 版本中可能存在结构变化，需要确认 Android 17 中的准确路径和实现位置",
-      "suggestion": "需要精确指定 AOSP 源码路径，并在版本差异部分说明路径变化情况"
-    }
-  ],
-  "added_by": "task9-deep-tech-review",
-  "added_at": "2026-06-24T06:20:00+08:00",
-  "status": "completed",
-  "completed_at": "2026-06-24T06:51:46+08:00",
-  "completed_by": "task2b-main-rework"
-}
+[
+  {
+    "section": "14.13",
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 引用的 AOSP 源码路径验证版本与适用版本范围不匹配。章节声明适用版本为 Android 8-37，但验证版本为 android-16.0.0_r1，存在版本不一致问题。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "源码引用验证部分",
+        "detail": "章节 frontmatter 中 last_verified_against: \"AOSP android-16.0.0_r1\"，但 applicable_versions 声明为 \"Android 8 (API 26) - Android 17 (API 37)\"，验证版本覆盖范围不足，无法确保 Android 17 API 37 内容准确性",
+        "suggestion": "需要更新验证版本为 android-17.0.0_r1 或更高版本，或明确标注哪些内容仅适用于 Android 16 及以下版本"
+      },
+      {
+        "type": "源码错误",
+        "location": "8.10 ProfilingManager章节的源码路径描述",
+        "detail": "packages/modules/Profiling/ 路径在不同 Android 版本中可能存在结构变化，需要确认 Android 17 中的准确路径和实现位置",
+        "suggestion": "需要精确指定 AOSP 源码路径，并在版本差异部分说明路径变化情况"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T06:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T06:51:46+08:00",
+    "completed_by": "task2b-main-rework"
+  },
+  {
+    "section": "8.10",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在严重源码引用错误和原理链断裂，需要 Task2B 重构章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "AOSP 源码路径",
+        "detail": "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java 路径错误，Android 17 中实际路径为 packages/modules/Profiling/framework/android/os/ProfilingManager.java",
+        "suggestion": "修正源码路径并明确标注 Android 版本边界"
+      },
+      {
+        "type": "源码错误",
+        "location": "AnomalyDetectorService",
+        "detail": "AnomalyDetectorService 在 Android 17 AOSP 源码中不存在，该服务为厂商定制实现",
+        "suggestion": "移除对不存在 AOSP 组件的引用"
+      },
+      {
+        "type": "版本差异",
+        "location": "API 版本对应",
+        "detail": "ProfilingManager 实际在 API 35 (Android 15) 引入，不是 API 36",
+        "suggestion": "修正版本号对应关系"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T08:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T08:57:00+08:00",
+    "completed_by": "task2b-main"
+  },
+  {
+    "section": "7.7",
+    "section_title": "Jetpack Compose 性能优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 存在重要的原理链缺失和版本差异覆盖问题",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "PausableComposition",
+        "detail": "未说明 PausableComposition 的版本边界和具体使用场景",
+        "suggestion": "明确 PausableComposition 在不同 Compose 版本中的可用性和限制"
+      },
+      {
+        "type": "版本差异",
+        "location": "Strong Skipping",
+        "detail": "未说明 Strong Skipping 在不同 Kotlin/Compose 版本中的演进",
+        "suggestion": "补充 Strong Skipping 的版本兼容性说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T08:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T08:57:00+08:00",
+    "completed_by": "task2b-main"
+  }
+]
