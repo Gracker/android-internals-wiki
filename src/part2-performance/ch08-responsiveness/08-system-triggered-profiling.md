@@ -1,21 +1,24 @@
 ---
+
 title: "ProfilingManager 系统触发式性能追踪"
 chapter: '8.10'
 section: '8.10'
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
-applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
+pipeline_stage: "task6_pending"
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [responsiveness, latency, launch]
 confidence: medium
-last_verified: '2026-04-20'
-last_verified_against: "AOSP android-17.0.0_r1 + Android Developers + Task9 audit 2026-06-23 (auto-fix: AnomalyDetectorService)"
+last_verified: '2026-06-24'
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers + Task9 audit 2026-06-24 (源码路径修正; AnomalyDetectorService 非 AOSP 公开组件已更正)"
 created_by: task2a-knowledge-gap
 created_date: '2026-04-10'
 gap_source: 研究素材
 path: "https://developer.android.com/reference/android/os/ProfilingManager"
 last_task9_audit: "2026-06-23"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task2b_lite_at: '2026-06-23'
 repaired_date: '2026-05-09'
 repaired_by: openclaw-task2b
@@ -34,9 +37,7 @@ last_deepseek_cn_review_at: 2026-06-08
 last_task9_autofix_at: "2026-06-23"
 last_task6_at: "2026-06-24T05:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-24-05-review.md"
-task2b_result: "fixed"
-task2b_state: "fixed"
-last_task2b_at: "2026-06-23T13:35:00+08:00"
+last_task2b_at: "2026-06-24T08:57:10+08:00+08:00"
 task9_review_notes: "2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。"
 last_task9_review_log: "logs/deep-review/2026-06-23-13-deep-review.md"
 ---
@@ -61,7 +62,7 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 
 ### 🔹 ProfilingManager 的角色与源码位置
 - `ProfilingManager` 本体在 Android 15 提供手动请求能力,system-triggered profiling 从 Android 16 才开始可用
-- 公开 API 位于 `packages/modules/Profiling/framework/java/android/os/`
+- 公开 API 位于 `packages/modules/Profiling/framework/android/os/`
 - 服务端实现位于 `packages/modules/Profiling/service/java/com/android/os/profiling/`
 
 ### 🔹 trigger → artifact → stop condition → result delivery
@@ -96,7 +97,7 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 
 Android 15 引入 `ProfilingManager`,先解决"应用怎样在公开设备上请求 profiling"这个问题。到了 Android 16,系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`,让应用可以提前声明自己关心哪些系统事件。事件真的发生时,系统把结果文件落到应用目录,再把文件路径和触发器类型通过 `ProfilingResult` 回传。
 
-源码位置也要先摆正。公开 API 位于 Mainline Profiling 模块:`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`。服务端实现位于 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 不是老式 framework 服务路径上的普通类。
+源码位置也要先摆正。公开 API 位于 Mainline Profiling 模块:`packages/modules/Profiling/framework/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`。服务端实现位于 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 不是老式 framework 服务路径上的普通类。
 
 ### 结果是怎么回来的
 
@@ -188,13 +189,13 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 ### ANOMALY:按异常类型收集现场
 
-`TRIGGER_TYPE_ANOMALY`(API 37,常量值 8)由 Android 17 新增的 `AnomalyDetectorService` 驱动。这个服务在设备端根据规则监控异常行为,Android 17 源码中已包含 binder spam detector;MemoryLimiter 的 anon+swap 超限路径会先通知 `ProfilingServiceHelper` 触发 ANOMALY,再延迟 kill 目标进程。也就是说,ANOMALY 不是"所有异常都代表进程马上被杀"的统一信号:有些规则只触发日志或 profile 收集,只有 MemoryLimiter 这类 kill 路径才适合按进程终止前现场来理解。
+`TRIGGER_TYPE_ANOMALY`(API 37,常量值 8)由 Android 17 系统层的异常检测机制驱动。设备端根据规则监控异常行为,Android 17 `ProfilingService` 源码中已包含 binder spam detector 的采集路径;MemoryLimiter 的 anon+swap 超限路径会先通知 `ProfilingServiceHelper` 触发 ANOMALY,再延迟 kill 目标进程。也就是说,ANOMALY 不是"所有异常都代表进程马上被杀"的统一信号:有些规则只触发日志或 profile 收集,只有 MemoryLimiter 这类 kill 路径才适合按进程终止前现场来理解。
 
 **产物的动态性**:ANOMALY 不像其他 trigger 返回固定的文件格式。`ProfilingResult#getTag()` 会携带异常分类信息(如 `memory_limit`),`getResultFilePath()` 返回的文件后缀决定分析工具--`.perfetto-java-heap-dump` 走 Java heap dump 工具链,`.perfetto-trace` 走 Perfetto UI。处理 ANOMALY 结果时,要先读 tag 再决定分析路径,不能一律当 system trace 处理。
 
 **MemoryLimiter 场景**:当 MemoryLimiter 的 anon+swap 限额路径触发时,`frameworks/base` 会先向 `ProfilingServiceHelper` 发送 ANOMALY,再延迟 kill,kill reason 可见类似 `MemoryLimiter:AnonSwap`。`ProfilingService` 对这类异常使用 `memory_limit` tag,并返回 Java heap dump,用于定位是哪些对象占住了内存。这个场景的排查顺序是:`ApplicationExitInfo.getReason()` 指向资源过量或描述里出现 MemoryLimiter 线索 → `ProfilingResult.getTag()` 为 `memory_limit` → heap dump 进 MAT 或 Android Studio Profiler → 找 retained size 最高的引用路径。
 
-**边界**:公开 API 文档没有列出 `AnomalyDetectorService` 的全部判定规则和触发阈值,这些属于系统内部策略。同一 UID 下多个包注册 ANOMALY trigger 时,系统可能不为某些异常提供产物;多进程应用也不要假设每个进程都能收到独立的 profiling 结果。线上接入时要考虑这种不确定性,不能假设注册了就一定能拿到产物。
+**边界**:公开 API 文档没有列出系统异常检测的全部判定规则和触发阈值,这些属于系统内部策略。同一 UID 下多个包注册 ANOMALY trigger 时,系统可能不为某些异常提供产物;多进程应用也不要假设每个进程都能收到独立的 profiling 结果。线上接入时要考虑这种不确定性,不能假设注册了就一定能拿到产物。
 
 ### ANR 和 excessive CPU 也不要发明内部阈值
 
@@ -272,7 +273,7 @@ device_config delete profiling_testing system_triggered_profiling.testing_packag
 | Android 15 (API 35) | `ProfilingManager` 基础请求能力 | 重点是 `requestProfiling()` 和结果回调,本节的 system-triggered profiling 还没出现 |
 | Android 16 (API 36) | `addProfilingTriggers()`、`APP_FULLY_DRAWN=1`、`ANR=2` | 首次把"由系统条件触发结果采集"放进公开 API |
 | Android 16 extension 36.1 | `APP_REQUEST_RUNNING_TRACE=3`、`KILL_FORCE_STOP=4`、`KILL_RECENTS=5`、`KILL_TASK_MANAGER=6` | 这几类都属于 running system trace snapshot,运行时要按 extension 36.1 做 gating |
-| Android 17 (API 37) | `OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=10`、`APP_COMPAT=11` | 触发器不再只返回 running trace,开始出现新开 trace、stack sampling、heap dump 和"artifact varies" 这类更细分的模型。`AnomalyDetectorService` 新增设备端异常检测;MemoryLimiter 等 kill 路径可在终止前触发 ANOMALY,其他 anomaly 规则按配置收集 profile 或日志 |
+| Android 17 (API 37) | `OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=10`、`APP_COMPAT=11` | 触发器不再只返回 running trace,开始出现新开 trace、stack sampling、heap dump 和"artifact varies" 这类更细分的模型。系统异常检测机制新增设备端异常检测;MemoryLimiter 等 kill 路径可在终止前触发 ANOMALY,其他 anomaly 规则按配置收集 profile 或日志 |
 
 `ANOMALY` 和 `APP_COMPAT` 也要点一下。文档没有把它们都固定成某一种结果文件,而是明确写了 artifact 会按 anomaly 类型变化,`ProfilingResult#getTag()` 里会带额外信息。写版本表时,如果把 Android 17 只概括成 OOM 和 excessive CPU,就把 public surface 少写了一截。
 
@@ -300,7 +301,7 @@ system-triggered profiling 的结果只会通过 `registerForAllProfilingResults
 - 官方文档:`https://developer.android.com/reference/android/os/ProfilingTrigger`
 - 官方文档:`https://developer.android.com/reference/android/os/ProfilingResult`
 - 官方文档:`https://developer.android.com/reference/android/os/ext/SdkExtensions`
-- AOSP:`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
-- AOSP:`packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`
-- AOSP:`packages/modules/Profiling/framework/java/android/os/ProfilingResult.java`
+- AOSP:`packages/modules/Profiling/framework/android/os/ProfilingManager.java`
+- AOSP:`packages/modules/Profiling/framework/android/os/ProfilingTrigger.java`
+- AOSP:`packages/modules/Profiling/framework/android/os/ProfilingResult.java`
 - AOSP:`packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`
