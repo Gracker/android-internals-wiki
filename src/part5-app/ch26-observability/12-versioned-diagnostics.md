@@ -4,12 +4,12 @@ title: "\"Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingM
 chapter: "\"26.12\""
 section: "\"26.12\""
 status: "finalized"
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
 last_verified: "\"2026-06-03\""
-last_verified_against: "\"AOSP main ApplicationExitInfo / ActivityManager / packages/modules/Profiling, Android Developers docs, Clippings structure references\""
+last_verified_against: "\"AOSP main / android16-release: ApplicationExitInfo, ActivityManager, ProfilingManager, ProfilingResult; Android Developers docs; android-17.0.0_r1 tag 不存在（404）\""
 drafted_date: "\"2026-05-17\""
 drafted_by: "\"openclaw-task2a\""
 reviewed_date: "\"2026-05-17\""
@@ -20,7 +20,7 @@ created_by: "\"task2a-knowledge-gap\""
 created_date: "\"2026-05-17\""
 gap_source: "\"研究素材/官方文档/章节深挖\""
 gap_score: "18"
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "\"2026-06-23T20:08:00+08:00\""
 task9_state: pending
 task6_result: "pass-light-edit"
@@ -31,11 +31,11 @@ task9_reviewed_date: "\"2026-05-17\""
 task9_reviewed_by: "\"openclaw-task9\""
 last_task9_at: "\"2026-05-17T06:36:36+08:00\""
 last_task9_autofix_at: "\"2026-06-02\""
-task2b_result: "fixed-lite"
+task2b_result: fixed
 task2b_state: fixed
 last_task2b_lite_at: "\"2026-06-03\""
-last_task2b_at: "2026-06-23T14:57:24+08:00"
-repaired_date: "2026-06-23"
+last_task2b_at: "2026-06-24T14:53:26+08:00"
+repaired_date: "2026-06-24"
 repaired_by: "openclaw-task2b"
 ---
 
@@ -101,6 +101,40 @@ Android 10 之后，线上诊断能力不是一次性开放出来的，而是沿
 
 这三条路径不能混用。Crash / ANR 事后补证据走 `ApplicationExitInfo`；卡顿、启动慢、内存异常正在灰度复现时走 `ProfilingManager`；冷启动、ANR、OOM 这类系统能识别的事件再注册 `ProfilingTrigger`。完整 Trace 抓取细节详见 13.2，ProfilingManager 的 builder 和结果分发表详见 14.7，系统触发式 profiling 的 trigger 语义详见 8.10。
 
+**诊断路径选择决策**：线上排障时按以下顺序判断该走哪条路径，不是三条平行选一——后一条路径往往是前一条的补充，同一次 case 可能同时用到多条。
+
+```mermaid
+flowchart TD
+    A[线上问题发生] --> B{进程是否已退出?}
+    B -->|是| C[退出追溯路径]
+    B -->|否，正在复现| D[运行时采集路径]
+    C --> C1{Android ≥ 11?}
+    C1 -->|是| C2[ActivityManager#getHistoricalProcessExitReasons]
+    C1 -->|否| C3[降级：自有日志 + Perfetto + Crash SDK]
+    C2 --> C4{Reason 类型?}
+    C4 -->|ANR| C5[traceInputStream → ANR trace]
+    C4 -->|Native Crash| C6[tombstone protobuf + SDK minidump 交叉验证]
+    C4 -->|OOM / Low Memory| C7[PSS/RSS + 自有内存采样回溯]
+    D --> D1{Android ≥ 15?}
+    D1 -->|是| D2{是否已知触发条件?}
+    D1 -->|否| D3[降级：自有监控 + Perfetto bug report]
+    D2 -->|系统事件触发| D4{Android ≥ 16?}
+    D2 -->|App 主动触发| D5[ProfilingManager#requestProfiling]
+    D4 -->|是| D6[addProfilingTriggers 注册 event-triggered profiling]
+    D4 -->|否| D5
+    D6 --> D7{API 37 trigger 可用?}
+    D7 -->|COLD_START| D8[system trace + call stack]
+    D7 -->|OOM| D9[Java heap dump]
+    D7 -->|ANOMALY| D10[产物不固定，看 tag 分发]
+    D7 -->|API 36 ANR/APP_FULLY_DRAWN| D11[running trace snapshot]
+```
+
+关键决策点：
+- **退出追溯和运行时采集可以共存**：进程被杀后下次启动，先拿 `ApplicationExitInfo` 确认死因，再按复现路径触发 `ProfilingManager` 或 `ProfilingTrigger` 补运行时证据。
+- **事件触发是运行时采集的子集**：`ProfilingTrigger` 需要 Android 16+ 且设备支持，Android 15 只能走 App 主动请求路径。
+- **降级路径不可跳过**：Android 10-14 没有 ProfilingManager 和 ProfilingTrigger，所有线上诊断必须靠自有证据体系 + `ApplicationExitInfo`（11+）。
+- **同一 case 内可用多条路径**：例如冷启动慢 → 先拿 `ApplicationExitInfo` 确认非系统杀 → 注册 `TRIGGER_TYPE_COLD_START` → 灰度复现时 `requestProfiling(SYSTEM_TRACE)`。
+
 [已验证: AOSP main, frameworks/base/core/java/android/app/ActivityManager.java]
 [已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 [已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
@@ -165,11 +199,22 @@ Native crash 有两份证据来源：SDK 自有 minidump，以及 Android 12+ `A
 
 **版本边界补充**：`REASON_FREEZER` 在 API 33（Android 13）引入，App Freezer 杀进程时返回；`REASON_PACKAGE_STATE_CHANGE` 和 `REASON_PACKAGE_UPDATED` 在 API 34（Android 14）引入。按 `Build.VERSION.SDK_INT` 判断常量可用性，低于对应 API level 的设备上不会返回这些 reason。
 
-**Android 17 MemoryLimiter**：Android 17（API 37）对高 RAM 设备（总 RAM ≥ 6GB）引入保守的应用内存限制。targetSdk ≥ 36 的应用触发 MemoryLimiter 杀灭时，`ApplicationExitInfo.getReason()` 返回 `REASON_OTHER`（兜底原因），`getDescription()` 包含字符串 "MemoryLimiter"。进程退出前没有 OOM 异常，`TRIGGER_TYPE_OOM` 不会触发，应通过退出记录归因。与 `REASON_EXCESSIVE_RESOURCE_USAGE` 的区别：后者基于资源用量阈值，MemoryLimiter 基于设备 RAM 总量的应用上限。
+**Android 17 MemoryLimiter**：Android 17（API 37）对高 RAM 设备（总 RAM ≥ 6GB）引入保守的应用内存限制。行为按 targetSdk 分两档：
+
+| targetSdk | 行为 | 表现 |
+|---|---|---|
+| ≥ 36 | 受 MemoryLimiter 限制 | `ApplicationExitInfo.getReason()` 返回 `REASON_OTHER`，`getDescription()` 包含 "MemoryLimiter"；进程退出前无 OOM 异常，`TRIGGER_TYPE_OOM` 不会触发 |
+| < 36 | 不受 MemoryLimiter 限制 | 沿用 Android 16 的 `REASON_EXCESSIVE_RESOURCE_USAGE` 路径，按资源用量阈值触发 |
+
+关键差异：targetSdk ≥ 36 的应用在高 RAM 设备上，MemoryLimiter 杀灭时没有 OOM 异常，也没有 `REASON_LOW_MEMORY`，只能通过退出记录 `getDescription()` 字符串匹配 "MemoryLimiter" 归因。与 `REASON_EXCESSIVE_RESOURCE_USAGE` 的区别：后者基于资源用量阈值，MemoryLimiter 基于设备 RAM 总量的应用上限（限制值更低、触发更早）。
+
+线上处理要点：不要依赖 `OutOfMemoryError` 捕获或 `onTrimMemory(TRIM_MEMORY_COMPLETE)` 来识别 MemoryLimiter 杀灭——这两个回调在 MemoryLimiter 路径下不会触发。必须在下一次启动时扫描 `ApplicationExitInfo`，通过 `getDescription()` 包含 "MemoryLimiter" 来判定。
+
+示例设备：Pixel 6a (6GB RAM) 在 Android 17 Beta 4 下触发 MemoryLimiter 限制。
 
 ## Android 15：ProfilingManager 的应用驱动采集
 
-Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复现，App 能不能请求系统保存一份 profile”的问题。AOSP `ProfilingManager.java` 注释列出四类 profiling：system trace、Java heap dump、heap profile、stack sampling。公开 API 路径在 Mainline Profiling 模块 `packages/modules/Profiling/framework/java/android/os/`，不是旧的 `frameworks/base/core/java/android/os/` 路径。[已验证: AOSP android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
+Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复现，App 能不能请求系统保存一份 profile”的问题。AOSP `ProfilingManager.java` 注释列出四类 profiling：system trace、Java heap dump、heap profile、stack sampling。公开 API 路径在 Mainline Profiling 模块 `packages/modules/Profiling/framework/java/android/os/`，不是旧的 `frameworks/base/core/java/android/os/` 路径。[已验证: AOSP main / android16-release, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java；android-17.0.0_r1 tag 不存在（404），以可用分支为准]
 
 | profiling type | 适合场景 | 主要风险 | 结果处理 |
 |---|---|---|---|
@@ -193,10 +238,10 @@ Android 16 / API 36 把 ProfilingManager 从“App 主动请求”扩展到“�
 | API 36 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | running system trace snapshot | 复盘 `reportFullyDrawn()` 前后启动尾段 | 不等于 Android 17 的 `COLD_START` |
 | API 36 | `TRIGGER_TYPE_ANR` | running system trace snapshot | ANR 前后线程、Binder、锁等待 | 不是 ANR 文本 trace 的替代品 |
 | Extension 36.1 | `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` | running system trace snapshot | App 请求 / 用户关闭 / 任务管理器关闭相关取证 | 要用 Extension 版本做运行时判断 |
-| API 37 | `TRIGGER_TYPE_COLD_START` | system trace + call stack sample | 进程冷启动早期到 fully drawn 的窗口 | 无 `reportFullyDrawn()` 时按系统默认窗口截止 |
-| API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java `OutOfMemoryError` | 不是 LMK / lmkd 现场 |
-| API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 系统因过量 CPU 使用杀进程后复盘 | 公开文档没有给出阈值 |
-| API 37 | `TRIGGER_TYPE_ANOMALY` / `APP_COMPAT` | 依事件类型变化 | 设备端异常检测、兼容性回退 | 收到结果后先看 tag 和扩展名 |
+| API 37 | ⚠️ `TRIGGER_TYPE_COLD_START`（仅文档声明，AOSP 源码未命中） | system trace + call stack sample | 进程冷启动早期到 fully drawn 的窗口 | 无 `reportFullyDrawn()` 时按系统默认窗口截止 |
+| API 37 | ⚠️ `TRIGGER_TYPE_OOM`（仅文档声明，AOSP 源码未命中） | Java heap dump | Java `OutOfMemoryError` | 不是 LMK / lmkd 现场 |
+| API 37 | ⚠️ `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（仅文档声明，AOSP 源码未命中） | running system trace snapshot | 系统因过量 CPU 使用杀进程后复盘 | 公开文档没有给出阈值 |
+| API 37 | ⚠️ `TRIGGER_TYPE_ANOMALY` / `APP_COMPAT`（仅 Android Developers 文档声明，AOSP 源码未命中） | 依事件类型变化 | 设备端异常检测、兼容性回退 | 收到结果后先看 tag 和扩展名；源码不可见，本章结论基于官方文档 |
 
 Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释。前者在冷启动早期开始，返回 system trace 和 call stack sample；后者是在 `reportFullyDrawn()` 之后给 running trace snapshot。写启动排障时，混用这两个名字会直接改变时间窗口。[已验证: 官方文档, developer.android.com/about/versions/17/features][详见 8.10 节]
 
