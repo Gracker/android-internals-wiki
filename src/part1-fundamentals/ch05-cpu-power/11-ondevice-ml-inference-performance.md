@@ -357,6 +357,9 @@ App (LiteRT / Google AI Edge SDK)
 ## 延伸阅读
 - **从 NNAPI 到 LiteRT：Android NPU 性能优化全景**：从 NNAPI 在 Android 15 弃用切入，对比 LiteRT、CompiledModel、AICore 与主流 NPU 厂商栈，补齐量化、AOT、内存/功耗调度、基准可信度和迁移策略，适合端侧 AI 性能选型。详见相关 DeepResearch 调研。
 
+- **Android 端侧 AI 推理运行时源码分析——LiteRT V2、NNAPI Delegate 与 MediaPipe Tasks**：LiteRT ArenaPlanner 静态内存复用机制（`arena_planner.cc: ResetAllocationsAfter`）、NNAPI Delegate 按节点粒度委托模型（未委托节点保留 CPU）、MediaPipe Tasks 架构——符号-神经混合推理运行时的源码能力评估，覆盖 LiteRT V2 重构后的 `CompiledModel` 与 `TensorBuffer` 抽象对 GenAI 混合推理的支撑。详见 DeepResearch 调研：`DeepResearch/2026-06-23-android-端侧ai推理运行时源码-LiteRT-NNAPI-MediaPipe-Tasks.md`。
+
+
 ## AICore 版本边界
 
 ### AICore 版本澄清
@@ -444,5 +447,4 @@ AICore 是 Android 系统级 AI 推理 service，主要支持 Gemini Nano 端侧
 - AICore 包名 `com.google.mlkit:aicore` 来源为社区/XDA 论坛，未获一手 AOSP 源码验证
 - LiteRT CompiledModel API V2 的具体接口和 AOT 编译机制待进一步源码锚点验证
 - Android 16 NPU feature 变更暂无一手数据覆盖
-
 

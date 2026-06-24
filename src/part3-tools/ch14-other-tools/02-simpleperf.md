@@ -978,3 +978,7 @@ private void onTemperatureMapChangedLocked() {
 ### Simpleperf 多进程 IPC 架构
 
 Simpleperf 内部多进程数据通路主要包括三层：(1) RecordReadThread 用 lock-free ring buffer + `pipe2(O_CLOEXEC)` 将 kernel mmap buffer 与用户态处理线程解耦；(2) ProfileSession 用 pipe + vfork + dup2 在 app 进程内嵌 simpleperf 子进程；(3) system-wide maps 在 Android 17 中由 `DumpMapsForRecord()` 首次命中 pid 时按需读取。跨进程数据整合通过 `cmd_merge` 按元数据 + 符号表一致性校验合并多份 `perf.data`。
+### Simpleperf 与 Android 热节流机制交互研究
+
+Simpleperf 无 thermal listener 的单向解耦设计：`cmd_record.cpp::AdjustPerfEventLimit()`（android-17.0.0_r1:1445）只调整 4 个 `perf_event` sysctl，不读也不订阅 thermal HAL；PowerStats HAL v2 与 simpleperf 完全解耦；`task-clock`（sw event）是 AOSP 默认脚本隐式选用的抗热节流指标（偏差 0% vs `cpu-cycles` 偏差 32%）。详见 DeepResearch 调研：`DeepResearch/2026-06-22-simpleperf-thermal-throttling-interaction.md`。
+
