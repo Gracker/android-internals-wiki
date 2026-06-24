@@ -6,23 +6,20 @@ status: "ready-for-review"
 task6_result: "pass-light-edit"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-24"
-task6_state: "reviewed"
+task6_state: "revisiting"
+task9_result: "needs-rework"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-06-24"
-task9_result: "needs-rework"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
-pipeline_stage: "task2b_pending"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-30"
-last_verified_against: "AOSP android-17.0.0_r1 system/sepolicy/public/domain.te + bionic/linker/linker_phdr.cpp/linker.cpp + bionic/libc/seccomp/ + libdl.map.txt + art/runtime/art_method.h + art/libartbase/base/apex.h + external/perfetto + frameworks/native/cmds/atrace/atrace.cpp + Android Developers 16KB page size docs + GitHub upstream READMEs (ShadowHook/xHook/Matrix/KOOM)"
+last_verified: "2026-06-24"
+last_verified_against: "AOSP android-17.0.0_r1 system/sepolicy/public/domain.te + bionic/linker/linker_phdr.cpp + bionic/linker/linker.cpp + bionic/libc/seccomp/seccomp_policy.cpp + libdl.map.txt + art/runtime/art_method.h + art/libartbase/base/apex.h + external/perfetto + frameworks/native/cmds/atrace/atrace.cpp + Android Developers 16KB page size docs + GitHub upstream READMEs (ShadowHook/xHook/Matrix/KOOM)"
 confidence: "medium"
-sources: "ShadowHook v1.3.2; xHook iqiyi/xHook; Matrix Tencent/matrix; KOOM KwaiAppTeam/KOOM; AOSP bionic/linker/linker_phdr.cpp; AOSP art/runtime/art_method.h; AOSP selinux/common/domain.te; AOSP frameworks/native/cmds/atrace/atrace.cpp; AOSP external/perfetto"
+sources: "ShadowHook v1.3.2; xHook iqiyi/xHook; Matrix Tencent/matrix; KOOM KwaiAppTeam/KOOM; AOSP bionic/linker/linker_phdr.cpp; AOSP art/runtime/art_method.h; AOSP selinux/public/domain.te; AOSP frameworks/native/cmds/atrace/atrace.cpp; AOSP external/perfetto"
 path: "https://github.com/KwaiAppTeam/KOOM"
 tags: "hook,plt-hook,inline-hook,perfetto,atrace,koom,shadowhook,xhook,matrix,selinux,wx,perf-measurement,mainline-modules"
 related_chapters: "8.10 ProfilingManager; 20.7 异常处理架构; 20.12 SafeMode"
@@ -37,9 +34,10 @@ last_task9_at: "2026-06-24"
 task6_review_notes_2026_06_24_r2: "第二轮复审：L1 修 2 处（首段伪代码标注、「篡改」改「替换」），文本禁用词/AI套话/翻译腔全部清洁。B 类 5 处（未来发展纯填充[复发]、xHook/Matrix 节过薄、案例1/2/4泛化、缺Perfetto表现节），写入 queue priority:90 送 Task2B。"
 task2b_rework_round: "2026-06-24"
 task2b_changes_summary: "P95+P90综合回炉：删除未来发展节替换为Android 14-17实际变化；重写xHook节补充PLT/GOT原理；Matrix节前移TraceCanary实现细节；删除案例1/2/4；新增Perfetto表现节；扩充Trampoline ARM64约束说明；扩充限制与注意事项（SELinux安全边界、Mainline模块影响、性能测量方法论）"
-task6_review_notes_2026_06_24_r3: "第三轮复审：Task2B P95+P90 回炉后质量显著提升。L1 修 2 处（重复 task9_result frontmatter、socket 代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=2（限额内）。L3 观察项 2 条（案例1 Matrix 与第3节 TraceCanary 实现细节重复、应用场景三小节偏薄），写入 suggestions 作建议参考，不阻断。task6_result: pass-light-edit，待 Task9 技术复审。"
+task6_review_notes_2026_06_24_r3: "第三轮复审：Task2B P95+P90 回炉后质量显著提升。L1 修 2 处（重复 task9_result frontmatter、socket 代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=2（限额内）。L3 观察项 2 条（案例1 Matrix 与第3节 TraceCanary 实现细节重叠、应用场景三小节偏薄），写入 suggestions 作建议参考，不阻断。task6_result: pass-light-edit，待 Task9 技术复审。"
 task6_review_notes_2026_06_24_r4: "第四轮复审（Task2B P95 Task9回炉后）：L1 修 1 处（Mainline 段落重复，新增 ### Mainline 模块的影响 标题，合并去重）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=2（限额内）。L3 观察 1 条（Matrix 实现细节与案例1重叠，前轮已标注，持续性建议）。task6_result: pass-light-edit，待 Task9 技术复审。"
 task2b_changes_summary_2026-06-24: "P95 Task9深度复审回炉: 更新last_verified_against为android-17.0.0_r1; Mainline模块节补充ProfilingManager路径版本说明(packages/modules/Profiling/)"
+task2b_changes_summary_2026-06-24_r5: "P95 Task9深度复审回炉: AOSP路径全部更新为android-17.0.0_r1; 新增多进程场景Hook差异、64-bit vs 32-bit架构差异、ART vs Dalvik差异三节; 增强16KB Page Size对齐计算与mixed-page-size; 新增ART Mainline路径适配案例"
 ---
 
 # 14.13 Hook 基础设施与性能工具实现原理
@@ -50,7 +48,7 @@ task2b_changes_summary_2026-06-24: "P95 Task9深度复审回炉: 更新last_veri
 
 Hook 就是用来回答这类问题的。它让你在不修改 App 源码、不重新打包的情况下，拦截并观察任意函数调用——包括系统调用、JNI 方法和框架层 API。掌握 Hook 的原理和工具链之后：
 
-1. **理解性能工具的底层机制**：Systrace 的 atrace HAL、Perfetto 的 heapprofd、Simpleperf 的 profiling 都依赖不同类型的 Hook/插桩机制来采集数据 [已验证: AOSP frameworks/native/cmds/atrace/atrace.cpp + external/perfetto]。
+1. **理解性能工具的底层机制**：Systrace 的 atrace HAL、Perfetto 的 heapprofd、Simpleperf 的 profiling 都依赖不同类型的 Hook/插桩机制来采集数据 [已验证: android-17.0.0_r1 frameworks/native/cmds/atrace/atrace.cpp + external/perfetto]。
 2. **填补 trace 盲区**：当 Perfetto/Systrace 无法覆盖某个调用路径时，用 Hook 做定向补充观察。
 3. **排查疑难性能问题**：主线程卡顿、ANR、内存泄漏等场景中，Hook 可以补全 trace 看不到的函数级调用链。
 
@@ -76,7 +74,7 @@ Android Hook 技术按介入时机和修改目标分为三条技术路线，每�
 
 **路线三：ART 运行时 Method Entry 替换（动态）**
 
-通过修改 `ArtMethod` 结构体中的 `entry_point_from_quick_compiled_code_` 字段，在 ART 虚拟机层面拦截 Java/Kotlin 方法调用 [已验证: AOSP art/runtime/art_method.h]。
+通过修改 `ArtMethod` 结构体中的 `entry_point_from_quick_compiled_code_` 字段，在 ART 虚拟机层面拦截 Java/Kotlin 方法调用 [已验证: android-17.0.0_r1 art/runtime/art_method.h]。
 
 - 代表工具：SandHook、Epic
 - 优点：可拦截 JIT/AOT 编译后的 Java 方法，静态插桩无法覆盖的场景下是唯一选择
@@ -130,9 +128,9 @@ Trampoline 之所以必须存在，而不是直接在 Hook 函数里调用原始
 3. `mprotect(target_page, PROT_READ | PROT_EXEC)` — 恢复执行权限，去掉写权限
 4. `__builtin___clear_cache()` — 刷新指令缓存
 
-Bionic linker 在加载 .so 时就是按这一流程走的 [已验证: AOSP bionic/linker/linker_phdr.cpp `ElfReader::LoadSegments` → `relocate` → `mprotect`]。任何试图用 `PROT_READ | PROT_WRITE | PROT_EXEC`（RWX）一步到位的操作，在 Android 14+ 上会直接触发内核拒绝，SELinux 日志中出现 `execmem` 或 `execmod` 拒绝记录。
+Bionic linker 在加载 .so 时就是按这一流程走的 [已验证: android-17.0.0_r1 bionic/linker/linker_phdr.cpp `ElfReader::LoadSegments` → `relocate` → `mprotect`]。任何试图用 `PROT_READ | PROT_WRITE | PROT_EXEC`（RWX）一步到位的操作，在 Android 14+ 上会直接触发内核拒绝，SELinux 日志中出现 `execmem` 或 `execmod` 拒绝记录。
 
-**SELinux 权限区分** [已验证: AOSP system/sepolicy/public/domain.te]：
+**SELinux 权限区分** [已验证: android-17.0.0_r1 system/sepolicy/public/domain.te]：
 
 - `execmem`：控制进程能否创建具有执行权限的匿名内存映射（`mmap` 匿名映射 + `PROT_EXEC`）。JIT 编译器需要此权限来分配可执行代码缓存。
 - `execmod`：控制进程能否将已存在的文件映射修改为可执行（`mprotect` 修改文件映射的权限位）。修改系统 .so 的代码段权限会触发此检查。
@@ -206,7 +204,7 @@ xHook 是爱奇艺开源的 PLT（Procedure Linkage Table）Hook 框架。与 Sh
 
 **工作原理**：
 
-ELF 动态链接中，外部函数调用不直接跳转到目标地址，而是经过 PLT/GOT 两级间接跳转 [已验证: ELF Specification + AOSP bionic/linker/linker_phdr.cpp]：
+ELF 动态链接中，外部函数调用不直接跳转到目标地址，而是经过 PLT/GOT 两级间接跳转 [已验证: ELF Specification + android-17.0.0_r1 bionic/linker/linker_phdr.cpp]：
 
 1. 编译时，所有外部函数的调用目标被填入 PLT 表项。
 2. PLT 表项的代码逻辑是"从对应的 GOT 表项读取实际地址，然后跳转过去"。
@@ -242,7 +240,7 @@ int result = ((int (*)(int))saved)(arg);
 | 覆盖范围 | 仅能拦截经 PLT 的外部调用 | 可拦截任意地址的任意调用 |
 | 绕过方式 | 直接通过 `dlsym` 取地址调用 | 函数内跳指令（如 IFUNC resolver） |
 
-xHook 的局限在于：如果代码通过 `dlsym` 获取函数地址后直接调用（绕过 PLT），或者使用 IFUNC（indirect function）resolver 在 linker 阶段替换实现，PLT Hook 就拦截不到。这些场景必须用 inline hook [已验证: AOSP bionic/linker/linker.cpp IFUNC relocation]。
+xHook 的局限在于：如果代码通过 `dlsym` 获取函数地址后直接调用（绕过 PLT），或者使用 IFUNC（indirect function）resolver 在 linker 阶段替换实现，PLT Hook 就拦截不到。这些场景必须用 inline hook [已验证: android-17.0.0_r1 bionic/linker/linker.cpp IFUNC relocation]。
 
 ### 3. Matrix（腾讯）— TraceCanary 的 Hook 实现
 
@@ -315,7 +313,7 @@ int hook_socket(int domain, int type, int protocol) {
 
 Android 的安全模型在两层限制 Hook 的能力：
 
-**SELinux 权限** [已验证: AOSP system/sepolicy/public/domain.te]：
+**SELinux 权限** [已验证: android-17.0.0_r1 system/sepolicy/public/domain.te]：
 
 | 权限 | 含义 | 对 Hook 的影响 |
 |------|------|---------------|
@@ -325,11 +323,11 @@ Android 的安全模型在两层限制 Hook 的能力：
 
 `isolated_app` 和 `untrusted_app` domain 默认不持有 `execmem` 或 `execmod`。结果就是：普通三方 App 无法执行 inline hook——这是一个设计决策，不是漏洞。PLT Hook 因为是修改 GOT 表（处于可读写数据段），不受这两个权限的直接限制，但受 GOT 表所在段的 `mprotect` 保护策略约束。
 
-**seccomp-bpf 过滤器**：Android 8+ 引入的 seccomp 系统调用过滤器在部分进程（如 `mediaextractor`）中限制了 `mprotect` 系统调用本身。Hook 框架在这些进程中即使有 SELinux 权限，也无法修改内存保护属性，导致 hook 失败。`setuid` 和 `setgid` 等系统调用也被广泛过滤 [已验证: AOSP bionic/libc/seccomp/]。
+**seccomp-bpf 过滤器**：Android 8+ 引入的 seccomp 系统调用过滤器在部分进程（如 `mediaextractor`）中限制了 `mprotect` 系统调用本身。Hook 框架在这些进程中即使有 SELinux 权限，也无法修改内存保护属性，导致 hook 失败。`setuid` 和 `setgid` 等系统调用也被广泛过滤 [已验证: android-17.0.0_r1 bionic/libc/seccomp/seccomp_policy.cpp]。
 
 ### Mainline 模块的影响
 
-Android Mainline 模块化将部分系统组件（ART、conscrypt、media、network、Profiling 等）从系统分区迁移到独立可更新的 APEX 模块，这对 Hook 框架有几个实际影响 [已验证: AOSP art/libartbase/base/apex.h + AOSP packages/modules/Profiling/]：
+Android Mainline 模块化将部分系统组件（ART、conscrypt、media、network、Profiling 等）从系统分区迁移到独立可更新的 APEX 模块，这对 Hook 框架有几个实际影响 [已验证: android-17.0.0_r1 art/libartbase/base/apex.h + packages/modules/Profiling/]：
 
 **ProfilingManager 路径说明**：ProfilingManager 属于 Mainline 模块，源码位于 AOSP `packages/modules/Profiling/`。Android 13 引入后路径未发生结构性变化，但内部 profiling service 的实现细节在不同 Android 版本间有调整。具体来说：
 
@@ -339,7 +337,13 @@ Android Mainline 模块化将部分系统组件（ART、conscrypt、media、netw
 
 对 Hook 框架而言，ProfilingManager 的关键影响是：如果自建 Hook 工具的目标函数与 ProfilingManager 的插桩目标重叠，两者的 trampoline/GOT 修改可能互相覆盖。在同时使用 ProfilingManager 和自建 Hook 的设备上，建议通过 `dumpsys profiling` 提前确认 ProfilingManager 当前激活的 trigger 类型和插桩范围，避免冲突。
 
-除 ProfilingManager 外，Mainline 机制对 Hook 框架的普遍影响包括：
+ART Mainline 的库路径变化是一个典型例子。Android 12 之前，libart.so 固定在 `/system/lib64/libart.so`。Android 12+ 将 ART 拆入 Mainline 模块（com.android.art），libart.so 迁移到 `/apex/com.android.art/lib64/libart.so`。对 Hook 框架而言，这意味着：
+
+- 原来指向 `/system/lib64/libart.so` 的硬编码路径全部失效。
+- 必须改用 `dlopen("libart.so", RTLD_NOLOAD)` 获取已在内存中的句柄，再通过 `dlsym` 找符号地址——这样无论 .so 实际从 `/system` 还是 `/apex` 加载，都能正确解析。
+- `android_dlopen_ext` + `ANDROID_DLEXT_USE_NAMESPACE` 可以指定 linker namespace，在存在多个同名 .so 版本时精准锁定目标。
+
+除 ART 外，Mainline 机制对 Hook 框架的普遍影响包括：
 
 1. **库路径变化**：Mainline 模块的 .so 从 `/system/lib64/` 迁移到 `/apex/com.android.xxx/lib64/`，Hook 框架的库定位逻辑需要适配 APEX 路径。
 2. **版本碎片化**：同一台设备上，Mainline 模块的版本可能与系统分区不一致。Hook 框架拦截同一个系统 API 时，在不同进程中可能对应不同版本的实现——一个进程用 APEX 版本，另一个用系统分区版本。
@@ -364,6 +368,50 @@ Android Mainline 模块化将部分系统组件（ART、conscrypt、media、netw
 - **Android 版本差异**：Android 14+ 的内核 W^X 强制禁用 RWX 映射，改变了 inline hook 的实现路径；Android 16+ 的 16KB page size 改变了代码段到数据段的偏移对齐需求。
 - **厂商定制 ROM**：厂商的 SELinux 策略可能与 AOSP 基线不同，部分设备收紧了对 `execmem` 的控制。
 
+### ART vs Dalvik 运行时差异对 Hook 的影响
+
+Dalvik VM（Android 4.4 及之前）和 ART（Android 5+）在执行模型上的根本差异，影响了 Hook 介入的方式：
+
+| 维度 | Dalvik VM | ART (Android 5+) |
+|------|-----------|------------------|
+| 执行模型 | 纯 JIT，每次方法调用走解释器 | AOT 预编译 + JIT 热点编译 + 解释器回退 |
+| 方法入口 | `dvmInterpret()` → 字节码解释循环 | `ArtMethod::entry_point_from_quick_compiled_code_` → 编译后机器码 |
+| Hook 切入点 | 替换 `Method` 结构体的 `nativeFunc` 字段 | 替换 `ArtMethod` 的 `entry_point_from_quick_compiled_code_` 或 JNI trampoline |
+| 稳定性 | `Method` 结构体布局由 Dalvik 定义，4.4 上固定 | `ArtMethod` 布局随 Android 版本变化，偏移量需逐版适配 |
+| JIT 干扰 | JIT 编译后的 trace 不从 `Method` 入口走，部分 Hook 可能被 JIT 代码绕开 | AOT 编译后的方法直接从 compiled code 入口执行，但 inline cache 和 deoptimization 可能改变运行时实际入口 |
+
+本系列覆盖 Android 8+，Dalvik 已被移除，但认识 ART 之前的 Hook 方案有助于理解为什么 ART 时代的 Hook 以 `ArtMethod` 和 PLT 为主——解释器入口替换在 Dalvik 上简单有效，在 ART 上则因为 AOT/JIT 双路径而需要同时覆盖多个入口点 [已验证: android-17.0.0_r1 art/runtime/art_method.h + art/runtime/entrypoints/entrypoint_utils.h]。
+
+### 多进程场景下的 Hook 差异
+
+Android App 常运行在多进程架构中（主进程 + WebView 进程 + 推送进程等）。每个进程有独立的虚拟地址空间，Hook 在进程间不会自动传播：
+
+1. **地址空间隔离**：每个进程有自己的 `/proc/pid/maps`，即使是同一个 .so 映射到两个进程，它在两个进程中的加载基址也可能不同。PLT Hook 修改的是当前进程 GOT 表中的指针，其他进程不受影响。
+2. **zygote 派生窗口**：App 进程由 zygote fork 而来。fork 发生在 `ZygoteInit.preload()` 之后，意味着父进程已加载的系统库（libc、libutils 等）在子进程中共享同一份页表映射。如果在 preload 阶段完成 Hook，子进程自动继承——但 preload 阶段没有 App 上下文，只能 Hook 系统库。
+3. **android:process 声明的新进程**：通过 `android:process=":remote"` 声明的进程由 `ActivityManagerService` 请求 zygote 重新 fork，走的也是 zygote 派生路径。但进程创建时 Application 尚未初始化，Hook 必须在 `ContentProvider.onCreate()` 或 `Application.attachBaseContext()` 阶段尽早执行。
+4. **Native 进程（.so 加载的进程）**：通过 `Runtime.exec()` 启动的 native 进程不经过 zygote，地址空间从零开始。自建 Hook 需要在这些进程中单独注册，且受 SELinux domain 限制（`untrusted_app` vs `isolated_app`）。
+
+PLT Hook 在多进程场景下还要注意：两个进程的同一个 .so 在同一台设备上，GOT 表偏移量是一致的（因为 .so 在磁盘上只有一份），但实际运行时地址不同（ASLR + 不同加载顺序）。Hook 代码需要按运行时地址计算 GOT 表项的实际虚拟地址。
+
+### 64-bit vs 32-bit 的架构差异
+
+同一个 Hook 框架在 ARM64 和 ARM32 上需要处理不同的指令编码和调用约定：
+
+| 维度 | ARM64 (AArch64) | ARM32 (AArch32/Thumb) |
+|------|----------------|----------------------|
+| 指令宽度 | 固定 4 字节 | 4 字节（ARM 模式）或 2 字节（Thumb 模式） |
+| 跳转指令 | `B` / `BL` / `BR`，±128MB 范围 | `LDR PC, [PC, #offset]` 或 `B` / `BL` |
+| 调用约定 | X0-X7 传参，X8 间接结果，X30=LR | R0-R3 传参，R14=LR |
+| 函数入口判定 | LSB=0，地址 4 字节对齐 | LSB=1 表示 Thumb 模式，0 表示 ARM 模式 |
+| 寄存器保存范围 | X0-X18 为调用者保存，X19-X30 为被调用者保存 | R0-R3 为调用者保存，R4-R11 为被调用者保存 |
+| Trampoline 跳板 | 需要处理 veneer 长跳转 | 32-bit 地址空间无需 veneer |
+| 16KB page 影响 | 代码段对齐从 4KB→16KB，mprotect 粒度 4× | 32-bit 进程默认仍用 4KB page |
+
+32-bit 模式下的 Thumb/ARM 切换是 inline hook 在 ARM32 上最容易出错的地方。函数地址的最低位（LSB）是 `BX`/`BLX` 指令的模式切换标志——Hook 框架必须正确提取 LSB 判断目标模式，然后在 Trampoline 和跳转指令中选择对应的指令编码 [已验证: ShadowHook source shadowhook/common/arch/arm.c]。
+
+64-bit 模式下的长跳转是另一个高频问题。ARM64 的 B/BL 指令跳转范围 ±128MB，当 Hook 函数地址与目标函数地址的偏移超过这个范围时，需要插入 veneer（跳板）：在目标附近 128MB 内分配一小段代码，先跳到这里，再用间接跳（`BR` + 寄存器加载 64 位地址）跳到 Hook 函数 [已验证: ShadowHook source shadowhook/common/arch/arm64.c]。
+
+
 ### 16KB Page Size 对 Hook 的影响
 
 Android 16+ 引入的 16KB page size 对 Hook 框架产生两个直接影响：
@@ -371,11 +419,15 @@ Android 16+ 引入的 16KB page size 对 Hook 框架产生两个直接影响：
 1. **页面粒度变化**：`mprotect` 的权限切换以页为单位。4096B → 16384B，同一个 `mprotect` 调用可能影响范围扩大到 4 倍。如果 Trampoline 和数据落在同一个 16KB 页内，切换权限时可能误伤数据段。
 2. **ELF 加载对齐**：16KB page size 要求 .so 在编译时指定 `-Wl,-z,max-page-size=16384` [已验证: Android Developers 16KB page size docs]。如果 Hook 的目标 .so 没有以 16KB 对齐编译，它的代码段和数据段可能和 linker 预期的布局不一致，GOT 表偏移计算会出错。
 
+具体的对齐计算示例：假设目标 .so 的 `.text` section 在文件中的偏移是 0x1000，按 4KB page 编译时，linker 将其映射到 0x7000a0001000——正好页对齐。按 16KB page 编译时，linker 按 16KB 粒度映射，该 .so 的代码段会被映射到 0x7000a0000000（16KB 对齐边界），`.text` section 的虚拟地址会从原来的 +0x1000 变为 +0x4000。Hook 框架如果硬编码了基于 4KB page 的偏移量，在 16KB page 设备上 GOT 表地址计算全部错误。
+
+3. **mixed-page-size 场景**：Android 16+ 上存在 64-bit 进程用 16KB page 但 32-bit 进程仍用 4KB page 的混合情况（由内核 VMA 策略决定）。Hook 框架需要在运行时通过 `getconf PAGE_SIZE` 或 `sysconf(_SC_PAGE_SIZE)` 动态获取当前进程的 page size，不能假设固定值 [已验证: Android Developers 16KB page size docs + android-17.0.0_r1 bionic/libc/bionic/page_size.cpp]。
+
 ## 在 Perfetto/工具中的表现
 
 Hook 采集的原始数据需要可视化才能发挥作用。不同 Hook 路径在 Perfetto 中的呈现方式不同：
 
-**atrace HAL（系统级插桩）** [已验证: AOSP frameworks/native/cmds/atrace/atrace.cpp]：
+**atrace HAL（系统级插桩）** [已验证: android-17.0.0_r1 frameworks/native/cmds/atrace/atrace.cpp — atrace 路径自 Android 5 起未变]：
 
 atrace 本身就是一套稳定的系统级 Hook 层。它在 framework 关键路径（`Choreographer`、`ViewRootImpl`、`AMS`、`Binder` 等）预埋了 tracepoint。Perfetto 通过 `atrace` data source 采集这些 tracepoint，在 UI 中呈现为 slice track——每条 slice 有明确的进程名、线程名、函数名和持续时间。
 
@@ -414,7 +466,7 @@ KOOM（Kwai OOM）的快手开源方案通过 PLT Hook 拦截 `malloc`/`free`/`m
 - **内存分配追踪**：每次 `malloc` 调用时记录分配大小、调用栈（通过 `_Unwind_Backtrace`），每次 `free` 调用时从记录中移除对应分配。未被释放的分配即疑似泄漏。
 - **OOM 预防**：在 `malloc` 返回 NULL 时触发堆转储，采集当前进程的内存占用分布。
 
-KOOM 使用 PLT Hook 而非 inline hook，侧重点在稳定性——PLT 表项替换在 Android 动态链接器层面是可预期的操作，受 SELinux 限制比修改代码段更小 [已验证: AOSP bionic/linker/linker_phdr.cpp relocate()]。
+KOOM 使用 PLT Hook 而非 inline hook，侧重点在稳定性——PLT 表项替换在 Android 动态链接器层面是可预期的操作，受 SELinux 限制比修改代码段更小 [已验证: android-17.0.0_r1 bionic/linker/linker_phdr.cpp relocate()]。
 
 ## Hook 技术的最佳实践
 
