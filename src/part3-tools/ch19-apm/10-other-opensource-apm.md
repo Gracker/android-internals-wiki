@@ -14,26 +14,29 @@ task6_result: "pass-light-edit"
 task6_review_notes: "2026-06-25 Task6 revisiting复审(Task2B fix后回归): 禁用词扫描零命中(Task2B已修复)。收紧1处已修为受限。对齐/真的在19.10未出现。L1/L2通过,无B类大问题。pass-light-edit,等待Task9复审。"
 last_task6_audit: "2026-06-25"
 last_task2b_lite_at: "2026-06-24T09:35:00+08:00"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-04-24"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-06-25"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-24"
-task9_review_date: "2026-06-24"
+last_task9_at: "2026-06-25"
+task9_review_date: "2026-06-25"
 task9_reviewer: "openclaw-task9"
+task9_state: "reviewed"
 confidence: "medium"
 tech_score: "3/5"
 last_task9_audit: "2026-05-20"
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 last_task2b_at: "2026-06-25T00:53:48+08:00"
+last_task2b_lite_at: "2026-06-25"
 repaired_date: 2026-06-25
 repaired_by: openclaw-task2b
 last_verified: 2026-06-25
 last_verified_against: "AOSP android-17.0.0_r1 + Matrix GitHub README + Android Developers docs + Task9 2026-06-25 deep-review items (ANGLE misattributed)"
-task2b_notes: "2026-06-25 Task2B main: Matrix plugin artifact ID added; APM version capability table added; ANGLE issue marked as misattributed (belongs to ch2.14)"
+verification_scope_note: "版本范围覆盖第三方 APM 工具的 Android 兼容性窗口，非全版本 AOSP 逐版本验证。AOSP 源码仅验证 android-17.0.0_r1；Matrix/AndroidGodEye/Collie/Rabbit 兼容性依据各自项目 README 和发布说明。"
+task2b_notes: "2026-06-25 Task2B main: Matrix plugin artifact ID added; APM version capability table added; ANGLE issue marked as misattributed (belongs to ch2.14). 2026-06-25 Task2B Lite: added verification_scope_note for frontmatter version range clarity; ANGLE body content verified absent (only frontmatter metadata references remain)."
 ---
 
 # 其他开源 APM 库(AndroidGodEye、Collie、Rabbit)

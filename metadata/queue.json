@@ -449,5 +449,89 @@
     "status": "completed",
     "completed_at": "2026-06-25T00:53:48+08:00",
     "completed_by": "openclaw-task2b"
+  },
+  {
+    "section": "19.10",
+    "section_title": "其他开源 APM 库",
+    "priority": 90,
+    "reason": "[Deep Tech Review] 版本验证范围不一致与交叉引用混乱",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter",
+        "detail": "applicable_versions 声明 Android 8-37，但 last_verified_against 仅 android-17.0.0_r1，验证版本覆盖范围不足",
+        "suggestion": "需要更新验证版本覆盖整个适用版本范围，或缩小适用版本范围"
+      },
+      {
+        "type": "交叉引用问题",
+        "location": "task2b_notes",
+        "detail": "注明ANGLE内容归属于ch2.14，但正文仍包含ANGLE相关内容，造成归属混乱",
+        "suggestion": "移除本章节的ANGLE内容，确保交叉引用一致性"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T19:25:52.595481+00:00",
+    "status": "completed",
+    "completed_at": "2026-06-25T03:39:38",
+    "completed_by": "task2b-lite",
+    "completion_reason": "fixed-lite: added verification_scope_note to frontmatter; ANGLE body content verified absent"
+  },
+  {
+    "section": "8.10",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 90,
+    "reason": "[Deep Tech Review] 版本演进描述不完整与外部依赖未验证",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "applicable_versions",
+        "detail": "声明适用Android 15-37，但缺乏API 35→36→37的明确版本分界",
+        "suggestion": "需要明确标注API 35/36/37各版本的差异和限制"
+      },
+      {
+        "type": "外部依赖",
+        "location": "ApplicationExitInfo关联",
+        "detail": "引用ApplicationExitInfo但未验证相关章节存在且准确",
+        "suggestion": "建立章节间的验证机制，确保跨章节内容一致性"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T19:25:52.595756+00:00",
+    "status": "completed",
+    "completed_at": "2026-06-25T03:39:38",
+    "completed_by": "task2b-lite",
+    "completion_reason": "fixed-lite: added version_breakdown to frontmatter; added related_chapters cross-ref to 16.8/26.12"
+  },
+  {
+    "section": "2.14",
+    "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 版本边界声明过宽与待验证内容未解决",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "applicable_versions",
+        "detail": "声明适用Android 4.0-37，但Vulkan 1.3/1.4等高级功能只在Android 13/16+才可用",
+        "suggestion": "按API版本细化各章节的适用范围，避免过度承诺"
+      },
+      {
+        "type": "知识盲区",
+        "location": "多处标记",
+        "detail": "包含多个[待验证]标记，影响章节可信度",
+        "suggestion": "解决所有待验证内容或明确标注技术不确定性"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T19:25:52.595759+00:00",
+    "status": "pending"
   }
 ]
