@@ -265,3 +265,21 @@
 - **Content Capture / Autofill**: IPC 开销有限 (8/20)
 - **Domain Verification / App Links**: 非性能核心 (6/20)
 - **备注**: 6-24 刚完成大规模缺口挖掘（19 新章节），全书 264 小节 / 196 finalized，当前处于素材消化期而非新章节创建期
+
+## [Task2A Gap Mining] 2026-06-25 03:12 已检查方向（无合格缺口）
+- **Download Manager**: 非性能关键路径，多数应用使用 WorkManager (5/20)
+- **MediaRouter**: 极低性能影响 (4/20)
+- **Wear OS 性能**: 有素材但受众窄，Wear OS 6 基于 A15 (11/20)
+- **Gradle 构建性能**: 偏离 App 运行时性能主线 (10/20)
+- **Compose Multiplatform**: 与 Compose Android 性能高度重叠 (10/20)
+- **Nearby Connections**: P2P 连接非核心场景 (8/20)
+- **Work Profile/Enterprise**: 企业场景 niche (7/20)
+- **VPN/VpnService**: 影响面窄 (8/20)
+- **DRM/MediaDRM**: 不透明黑盒 (7/20)
+- **SpellChecker**: 极低性能影响 (4/20)
+- **Android Print**: 极低性能影响 (4/20)
+- **Rust in System Services**: 已有部分覆盖，独立章节素材不足 (11/20)
+- **SnapshotAPI/SavedStateHandle**: 与 ViewModel 重叠 (10/20)
+- **Compose Compiler Metrics**: 与 22.20 重叠 (9/20)
+- **Domain Verification/App Links**: 非性能核心 (6/20)
+- **备注**: 确认 6-25 结论，全书仍处素材消化期。462 小节 / 313 finalized (67.7%)，31 个 Android 17 专项章节。Part 3 ch27 Performance Engineering 6 个 draft 待加工，93 个 ready-for-review 待审核。
