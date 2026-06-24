@@ -19,10 +19,10 @@ reviewed_by: "openclaw-task6"
 polish_count: "1"
 polish_date: "'2026-04-04'"
 polish_by: "task2b-polish"
-last_task6_at: "2026-06-04T12:11:00+08:00"
-last_task6_audit: "'2026-05-22'"
+last_task6_at: "2026-06-24T09:15:00+08:00"
+last_task6_audit: "'2026-06-24'"
 last_task6_audit_result: "pass-light-edit"
-last_task6_audit_log: "logs/review/2026-05-22-19-audit.md"
+last_task6_audit_log: "logs/review/2026-06-24-09-review.md"
 last_task2b_at: "2026-06-24T08:57:16+08:00+08:00"
 task6_result: "pass-light-edit"
 task9_result: "auto-fixed"
@@ -84,9 +84,9 @@ Compose 需要单独建立一套分析视角。它的渲染管线、状态管理
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/mental-model]
 
-传统 View 体系的渲染过程,我们在前面章节已经讲过了:measure → layout → draw,由 Choreographer 驱动,每个 VSync 周期最多执行一轮。Compose 的渲染过程同样有 Layout 和 Drawing,但在前面多了一个 Composition 阶段。
+传统 View 体系的渲染过程，我们在前面章节已经讲过了：measure → layout → draw，由 Choreographer 驱动，每个 VSync 周期最多执行一轮。Compose 的渲染过程同样有 Layout 和 Drawing，但在前面多了一个 Composition 阶段。
 
-**Composition(组合)** 会执行 @Composable 函数,更新运行时记录的 group / slot 信息,并通过 Applier 维护后续阶段要消费的节点。这里不能把 `SlotTable` 写成 UI 树:`SlotTable` 是 Compose runtime 的扁平存储结构,底层用 gap buffer 管理 group 和 slot,保存 Composition 过程中产生的调用结构、key、`remember` 值等信息。
+**Composition(组合)** 会执行 @Composable 函数，更新运行时记录的 group / slot 信息，并通过 Applier 维护后续阶段要消费的节点。这里不能把 `SlotTable` 写成 UI 树：`SlotTable` 是 Compose runtime 的扁平存储结构，底层用 gap buffer 管理 group 和 slot，保存 Composition 过程中产生的调用结构、key、`remember` 值等信息。
 
 进入 **Layout** 阶段时,负责测量和布局的是 `LayoutNode` 树。`LayoutNode` 对应 Compose UI 的布局节点,承接 measure、layout、draw 相关的 modifier / coordinator 信息。Composition 更新运行时状态与节点关系,Layout / Drawing 再沿 `LayoutNode` 树完成尺寸协商和绘制提交。
 
@@ -175,7 +175,7 @@ _items.value = _items.value + newItem
 
 Strong Skipping 降低了稳定性标记的门槛,但没有替代不可变数据设计。列表、Map、复杂状态对象仍要避免原地修改。
 
-有一个边界条件值得注意:Strong Skipping 的稳定性推断仅对当前模块(已开启 Compose 编译器插件)生效。如果一个不稳定类定义在独立的数据模块或三方库中(未启用 Compose 编译器),即使 UI 模块开启了 Strong Skipping,编译器也无法推断该类的稳定性--它仍然会被视为不稳定参数,走引用相等比较。这种情况下,要么在数据模块的 `build.gradle` 中也启用 Compose 编译器插件,要么为跨模块传递的类型显式添加 `@Stable` / `@Immutable` 标记。
+有一个边界条件需要注意：Strong Skipping 的稳定性推断仅对当前模块（已开启 Compose 编译器插件）生效。如果一个不稳定类定义在独立的数据模块或三方库中（未启用 Compose 编译器），即使 UI 模块开启了 Strong Skipping，编译器也无法推断该类的稳定性——它仍然会被视为不稳定参数，走引用相等比较。这种情况下，要么在数据模块的 `build.gradle` 中也启用 Compose 编译器插件，要么为跨模块传递的类型显式添加 `@Stable` / `@Immutable` 标记。
 
 稳定性没有失效,但角色变了。`@Stable`、`@Immutable`、不可变集合和清晰的 State holder 设计,现在更像是在解决三类问题:
 
@@ -185,7 +185,7 @@ Strong Skipping 降低了稳定性标记的门槛,但没有替代不可变数据
 
 有两种常见手段可以显式表达这种语义:
 
-**@Immutable**:标记完全不可变的类。一旦创建,内部任何内容都不会改变。这适合纯数据模型:
+**@Immutable**：标记完全不可变的类。一旦创建，内部任何内容都不会改变。这适合纯数据模型：
 
 ```kotlin
 @Immutable
@@ -196,7 +196,7 @@ data class ProductListState(
 ```
 
 
-**@Stable**:标记"属性会变,但变化路径对 Compose 可见"的类,常见于 State holder:
+**@Stable**：标记"属性会变，但变化路径对 Compose 可见"的类，常见于 State holder：
 
 ```kotlin
 @Stable
@@ -206,13 +206,13 @@ class ProductListState(
 )
 ```
 
-`@Immutable` 和 `@Stable` 是**契约**,不是提示。如果标记和真实行为不一致,Compose 可能会跳过本该执行的重组,UI 反而更难排查。
+`@Immutable` 和 `@Stable` 是**契约**，不是提示。如果标记和真实行为不一致，Compose 可能会跳过本该执行的重组，UI 反而更难排查。
 
 ### remember:跨重组保持数据
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/composition#remember]
 
-`remember` 的作用是在 Composable 函数的多次重组中保持数据。每次重组时,普通变量会被重新初始化,而 `remember` 包裹的值会保留上一次的结果。
+`remember` 的作用是在 Composable 函数的多次重组中保持数据。每次重组时，普通变量会被重新初始化，而 `remember` 包裹的值会保留上一次的结果。
 
 最常见的用法是配合 `mutableStateOf` 创建响应式状态:
 
@@ -232,7 +232,7 @@ val sortedItems = remember(items) { items.sortedBy { it.priority } }
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/side-effects#derivedstateof]
 
-`derivedStateOf` 是减少不必要重组的利器。它创建一个"派生状态"--只有当派生表达式的**结果**发生变化时,才会通知 Compose 触发重组。
+`derivedStateOf` 是减少不必要重组的利器。它创建一个"派生状态"——只有当派生表达式的**结果**发生变化时，才会通知 Compose 触发重组。
 
 一个经典的场景是:根据列表滚动位置控制 FAB 按钮的显隐。
 
@@ -356,13 +356,13 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 ## Compose 中的性能陷阱
 
-了解优化策略之后,再看实际项目中最容易踩的坑。
+了解优化策略之后，再看实际项目中最容易踩的坑。
 
-### 陷阱一:不稳定参数导致整个页面被拖着重组
+### 陷阱一：不稳定参数导致整个页面被拖着重组
 
-这是 Compose 性能问题中最常见的一类。把包含 `var` 属性的类,或者普通 `List<T>` 传给 Composable 时,编译器通常会把它们归为不稳定参数。Strong Skipping 默认开启后,这类问题会出现两种表现:父组件频繁创建新的 List 会让子项重组;原地修改同一个 MutableList 又可能因为引用没变而被跳过。
+这是 Compose 性能问题中最常见的一类。把包含 `var` 属性的类，或者普通 `List<T>` 传给 Composable 时，编译器通常会把它们归为不稳定参数。Strong Skipping 默认开启后，这类问题会出现两种表现：父组件频繁创建新的 List 会让子项重组；原地修改同一个 MutableList 又可能因为引用没变而被跳过。
 
-一个典型案例:ViewModel 暴露 `StateFlow<List<Item>>`,Compose 侧通过 `collectAsState()` 收集。安全的状态更新方式是把列表当成不可变快照,每次内容变化都发布新的 List 实例。直接修改 `ArrayList` 并复用原引用,既可能被 StateFlow 的相等性判断吞掉,也可能被 Strong Skipping 的引用比较跳过。
+一个典型案例：ViewModel 暴露 `StateFlow<List<Item>>`，Compose 侧通过 `collectAsState()` 收集。安全的状态更新方式是把列表当成不可变快照，每次内容变化都发布新的 List 实例。直接修改 `ArrayList` 并复用原引用，既可能被 StateFlow 的相等性判断吞掉，也可能被 Strong Skipping 的引用比较跳过。
 
 解决方案:
 
@@ -373,7 +373,7 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 [已验证: Kotlin 2.0.20+ Strong Skipping 对不稳定参数使用引用相等比较;这能减少过度重组,也会放大可变集合原地修改的刷新风险。来源: Android Developers Strong Skipping 文档]
 
-### 陷阱二:LazyColumn 缺少 key 导致整列表重组
+### 陷阱二：LazyColumn 缺少 key 导致整列表重组
 
 
 LazyColumn 默认用 item 在列表中的位置(index)作为标识。所以当我们在列表头部插入一个新 item,Compose 会认为所有 item 都变了(因为它们的 index 都变了),导致整列表重组。
@@ -393,7 +393,7 @@ LazyColumn {
 
 有了 key 之后,Compose 就能识别出哪些 item 是新增的、哪些是移动的、哪些没变,只重组发生变化的 item。
 
-### 陷阱三:在 Composable 函数中做计算
+### 陷阱三：在 Composable 函数中做计算
 
 如果一个 Composable 函数里有排序、过滤等计算操作,而且这些操作的结果在多次重组间不会变化(或只在特定参数变化时才需要重新计算),那就应该用 `remember` 包裹:
 
@@ -419,11 +419,11 @@ fun ProductList(products: List<Product>) {
 
 ## Compose 性能检测工具
 
-优化之前,先要能发现问题。Compose 提供了几个层次的检测工具。
+优化之前，先要能发现问题。Compose 提供了几个层次的检测工具。
 
 ### Perfetto / System Trace:先打开 composition tracing
 
-Perfetto 能看到的内容,取决于 trace 是否启用了 composition tracing。官方文档给出的前提条件是:Android Studio Flamingo 或更高版本、Compose UI 1.3.0+、Compose Compiler 1.3.0+、API 30+ 设备或模拟器,以及工程里加入 `androidx.compose.runtime:runtime-tracing` 依赖。
+Perfetto 能看到的内容，取决于 trace 是否启用了 composition tracing。官方文档给出的前提条件是：Android Studio Flamingo 或更高版本、Compose UI 1.3.0+、Compose Compiler 1.3.0+、API 30+ 设备或模拟器，以及工程里加入 `androidx.compose.runtime:runtime-tracing` 依赖。
 
 ```gradle
 dependencies {
@@ -443,7 +443,7 @@ Android Studio 的 Layout Inspector 可以实时显示每个 Composable 的重�
 2. 连接正在运行的 debug 应用(需要 API 29+,Compose 1.2.0+)
 3. 在 Component Tree 中找到"Show Recomposition Counts"选项并启用
 
-启用后,每个 Composable 旁边会显示两个数字:**recomposition count**(实际重组的次数)和 **skip count**(被跳过的次数)。如果某个 Composable 的重组次数异常高--比如我们在滑动列表时,一个不相关的头部组件被重组了几十次--那就是需要优化的信号。
+启用后，每个 Composable 旁边会显示两个数字：**recomposition count**（实际重组的次数）和 **skip count**（被跳过的次数）。如果某个 Composable 的重组次数异常高——比如我们在滑动列表时，一个不相关的头部组件被重组了几十次——那就是需要优化的信号。
 
 Layout Inspector 还会用颜色渐变来可视化重组热度:颜色越深表示重组越频繁。双击一个 Composable 可以直接跳转到源码。
 
@@ -491,7 +491,7 @@ Baseline Profiles 用来解决这个问题。它把关键用户路径上的方�
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/migrate/interoperability-apis]
 
-很少有项目能一次性把所有页面都迁移到 Compose。更常见的情况是项目中同时存在传统 View 和 Compose,通过互操作 API 桥接。但"桥"本身是有开销的。
+很少有项目能一次性把所有页面都迁移到 Compose。更常见的情况是项目中同时存在传统 View 和 Compose，通过互操作 API 桥接。但"桥"本身是有开销的。
 
 ### ComposeView:在传统布局中嵌入 Compose
 
@@ -512,7 +512,7 @@ Baseline Profiles 用来解决这个问题。它把关键用户路径上的方�
 
 ### AndroidView:在 Compose 中嵌入传统 View
 
-`AndroidView` 是反向的桥接--在 Compose 布局中嵌入一个传统 View。最常见的场景是使用 WebView、MapView 等没有 Compose 替代品的组件:
+`AndroidView` 是反向的桥接——在 Compose 布局中嵌入一个传统 View。最常见的场景是使用 WebView、MapView 等没有 Compose 替代品的组件：
 
 ```kotlin
 @Composable
@@ -558,15 +558,15 @@ fun WebViewScreen(url: String) {
 
 ## 与其他章节的关系
 
-我们在本章讨论的 Compose 性能问题,与本书其他章节有密切的关联。
+我们在本章讨论的 Compose 性能问题，与本书其他章节有密切的关联。
 
-从卡顿的定义来看(7.1),Compose 的卡顿仍然是"某帧耗时超限",只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。从分析方法论来看(7.3),通用的分析框架同样适用--先定位到掉帧的时间段,再分析是什么导致了长帧,只是在 Compose 场景下需要额外检查重组次数。
+从卡顿的定义来看（7.1），Compose 的卡顿仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。从分析方法论来看（7.3），通用的分析框架同样适用——先定位到掉帧的时间段，再分析是什么导致了长帧，只是在 Compose 场景下需要额外检查重组次数。
 
 在底层渲染管线上,Compose 的渲染同样由 Choreographer 驱动(2.4),VSync → doFrame → Composition/Layout/Draw 的过程和传统 View 一致。Composition 和 Layout 阶段在主线程执行,Draw 阶段可能涉及 RenderThread(2.5)。Jetpack Compose 与 Flutter(2.11)的渲染模型有相似的思路--都采用了组合式的 UI 树和差异化的更新策略,但两者的运行时实现完全不同。
 
 ## 常见问题与误区
 
-**误区一:"Compose 比 View 慢,所以不应该用 Compose"**
+**误区一："Compose 比 View 慢，所以不应该用 Compose"**
 
 实际情况更微妙。Compose 的 Canvas 绘制性能与传统 View 几乎一致,差距主要在 LazyColumn 的快速滑动场景。对于大多数应用,这个差距在实际使用中并不显著。而且随着 Compose 版本迭代(特别是 1.5+ 的 Strong Skipping 和 1.9/1.10 的 API 优化),性能在持续改善。
 

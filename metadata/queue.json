@@ -88,5 +88,28 @@
     "status": "completed",
     "completed_at": "2026-06-24T08:57:00+08:00",
     "completed_by": "task2b-main"
+  },
+  {
+    "section": "2.30",
+    "section_title": "DisplayManagerService Display Lifecycle 与拓扑性能",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] ch02 渲染系统缺少 DMS 系统服务层分析。DeepResearch 报告提供 android-17.0.0_r1 源码素材。评分 14/20。",
+    "material_paths": [
+      "DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-24T09:06:00+08:00"
+  },
+  {
+    "section": "21.14",
+    "section_title": "依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] 全书无 DI 框架性能覆盖。Dagger/Hilt component 图初始化是应用 Top3 启动开销。评分 15/20。",
+    "material_paths": [
+      "developer.android.com/training/dependency-injection/hilt-android",
+      "dagger.dev/performance"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-24T09:06:00+08:00"
   }
 ]

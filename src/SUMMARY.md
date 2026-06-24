@@ -78,6 +78,7 @@ tags:
   - [2.27 SurfaceFlinger Transaction Queue 无锁架构与消息分流](part1-fundamentals/ch02-rendering/27-sf-transaction-queue-lockless.md)
   - [2.28 折叠屏显示管线与铰链状态渲染性能](part1-fundamentals/ch02-rendering/28-foldable-display-pipeline-performance.md)
   - [2.29 TaskSnapshot 系统架构与 Recents 渲染性能](part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md)
+  - [2.30 DisplayManagerService Display Lifecycle 与拓扑性能](part1-fundamentals/ch02-rendering/30-displaymanager-service-lifecycle.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -411,6 +412,7 @@ tags:
   - [21.11 云端 Profile、DM 文件与安装后编译优化](part5-app/ch21-startup/11-cloud-profile-dm-install-compile.md)
   - [21.12 Startup Profile 与 DEX Layout 启动优化](part5-app/ch21-startup/12-startup-profile-dex-layout.md)
   - [21.13 ART GC 抑制与启动性能优化](part5-app/ch21-startup/13-art-gc-suppression-startup-performance.md)
+  - [21.14 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化](part5-app/ch21-startup/14-di-framework-performance.md)
 
 - [第 22 章：渲染优化实战](part5-app/ch22-rendering-practice/README.md)
   - [22.1 布局优化策略](part5-app/ch22-rendering-practice/01-layout-optimization.md)

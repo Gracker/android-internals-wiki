@@ -633,3 +633,84 @@ Debug.getPss() (Debug.java:1942)
 线上策略：周期采样走 `SmapsOrRollupPss`，事件触发（watch heap 命中 / dumpsys / OOM 前兆）走全量 `SmapsOrRollup`，大批量 RSS 监控走 `StatusVmRSS`。
 
 [调研来源: DeepResearch/2026-06-18-memory-metrics-collection-source-stack.md §1-§7]
+
+
+### 2026-06-24 补充：MemoryTracking JNI 汇聚点与 AMS 侧节流
+
+> 本节补足 2026-06-15 / 2026-06-18 / 2026-06-22 三份 libmeminfo 报告未覆盖的 **Java ↔ C++ ↔ HAL 端到端桥接**与 **system_server 侧限速实现**。源码锚点：android-17.0.0_r1。
+
+#### JNI 汇聚点：`core/jni/android_os_Debug.cpp`
+
+`Debug.getMemoryInfo(int pid, MemoryInfo)` 的 JNI 实现是 `android_os_Debug_getDirtyPagesPid`（`core/jni/android_os_Debug.cpp:188-260`），**把 libmeminfo 与 memtrack HAL 双源汇合到 Java MemoryInfo**：
+
+```
+Java: Debug.getMemoryInfo(pid, mi)
+  └─ JNI: android_os_Debug_getDirtyPagesPid(env, clazz, pid, mi)
+       ├─ libmeminfo: ExtractAndroidHeapStats(pid, stats, ...)
+       │    └─ procinfo::ReadProcessMaps(pid) + smaps parse
+       │    └─ 按 VMA 名归类到 HEAP_DALVIK/HEAP_NATIVE/HEAP_STACK/...
+       ├─ memtrack HAL: read_memtrack_memory(pid)
+       │    └─ /proc/<pid>/memtrack 或 memtrack HAL v1.0 callback
+       │    └─ 返回 graphics_mem.{graphics, gl, other}
+       └─ 写回 Java 字段（HEAP_DALVIK 等 7 个 core + 其他 14 个 exclusive）
+```
+
+**关键事实**：
+- `HEAP_GRAPHICS / HEAP_GL / HEAP_OTHER_MEMTRACK` 这三项由 memtrack HAL 注入，**不**由 smaps 解析填充。如果设备 HAL 报 0，`getMemoryInfo` 拿到的 graphics 永远是 0——这是 Pixel 设备与某些国产 ROM 报告 PSS 差距的根源。
+- `androidprocheaps.h` 定义的完整 HEAP 分区（节选）：`HEAP_DALVIK / HEAP_NATIVE / HEAP_STACK / HEAP_ASHMEM / HEAP_GL_DEV / HEAP_SO / HEAP_DEX / HEAP_OAT / HEAP_ART / HEAP_GRAPHICS / HEAP_GL / HEAP_OTHER_MEMTRACK / HEAP_MEMFD / HEAP_DALVIK_NORMAL / HEAP_DALVIK_LARGE / HEAP_DALVIK_ZYGOTE / HEAP_ART_APP / HEAP_ART_BOOT` 等共 `_NUM_HEAP` 项。
+
+#### `Debug.getPss()` 与 `Debug.getRss()` 双轨实现
+
+Android 17 新增 `Debug.getRss()`（`@FlaggedApi(Flags.FLAG_REMOVE_APP_PROFILER_PSS_COLLECTION)`，`Debug.java:2034`），与 `getPss()` 形成轻/重两条采样轨：
+
+| 入口 | libmeminfo 调用 | 典型耗时 | 适用 |
+|---|---|---|---|
+| `getPss()` | `proc_mem.SmapsOrRollup(&stats)` | 1-5 ms (rollup) / 50-300 ms (smaps) | 事件触发、低频 |
+| `getRss()` | `proc_mem.StatusVmRSS(&status_rss)` | < 0.1 ms | 周期采样、大批量 |
+
+`getRss()` 同样叠加 memtrack HAL（`read_memtrack_memory`），所以"RSS = VmRSS + graphics + gl + other"。线上周期采样走 `getRss()` 可避免 smaps_rollup 解析开销，**批量 1000 个进程从 5 s 降到 100 ms 量级**。
+
+#### AMS 侧第二层 throttle：`ActivityManagerService.getProcessMemoryInfo`
+
+应用端 `ActivityManager.getMemoryInfo()` 已有 `RateLimitingCache<MemoryInfo>`（10/秒，100/秒上限），但跨进程调 `getProcessMemoryInfo`（Binder 服务端）还有**第二层 throttle**——线上高频调用真正命中的层级是这里（`ActivityManagerService.java:4625`）：
+
+```java
+public Debug.MemoryInfo[] getProcessMemoryInfo(int[] pids) {
+    final long lastNow = SystemClock.uptimeMillis() - mConstants.MEMORY_INFO_THROTTLE_TIME;
+    ...
+    // 核心节流逻辑
+    if (profile.getLastMemInfoTime() >= lastNow
+        && profile.getLastMemInfo() != null
+        && !isCallerInstrumentedFromShell) {
+        mi.set(profile.getLastMemInfo());  // ← 直接返回 ProcessProfileRecord 缓存
+        continue;
+    }
+    ...
+    Debug.getMemoryInfo(pids[i], memInfo);  // 真正采样
+    profile.setLastMemInfo(memInfo);
+    profile.setLastMemInfoTime(SystemClock.uptimeMillis());
+    profile.addPss(mi.getTotalPss(), mi.getTotalUss(), mi.getTotalRss(),
+        false, ProcessStats.ADD_PSS_EXTERNAL_SLOW, duration);
+}
+```
+
+**关键事实**：
+1. **`MEMORY_INFO_THROTTLE_TIME` 默认 5 分钟**（300_000 ms）。`profile.getLastMemInfoTime() >= lastNow` 直接返回 `ProcessProfileRecord.getLastMemInfo()` 缓存，**完全不再调用 JNI**——这是线上为什么采样频率提到 1Hz 后内存开销仍可控的根源。
+2. **`ProcessProfileRecord`** 是 `ProcessRecord.mProfile` 字段，跟随 `ProcessRecord` 生命周期，**进程死后 LRU 释放**。它**只在 AMS 侧维护**，与 Java 应用端 `RateLimitingCache<MemoryInfo>`（10 条/秒）不互通。
+3. **shell/instrumentation bypass**：`isCallerInstrumentedFromShell` 标志让 `adb shell dumpsys meminfo` 和 `am instrument` 跳过 5 分钟 throttle——这是 `dumpsys meminfo` 拿到的总是新值的原因。
+4. **permission gate**：跨 UID 需要 `mAtmInternal.isGetTasksAllowed("getProcessMemoryInfo", ...)`，跨 user 需要 `INTERACT_ACROSS_USERS_FULL` 权限，普通应用调这个 API 拿其他进程数据会被 `continue` 跳过。
+5. **`addPss(... ADD_PSS_EXTERNAL_SLOW, duration)`**：把这次采样结果和采样耗时一起喂给 `ProcessStats`，`ProcessStats` 据此在 OOM/lowmemory 时推算"实际 PSS 增量"——`duration` 是采样的可观测性指标。
+
+#### 实战：线上策略对照
+
+| 场景 | 推荐 API | 节流层级 | 单次开销 |
+|---|---|---|---|
+| 应用端 `getMemoryInfo()`（自己进程） | `ActivityManager.getMemoryInfo()` | App 端 RateLimitingCache 10/s + 100/s 上限 | < 0.1 ms (全 cache) |
+| 跨进程 PSS 采样（`getProcessMemoryInfo`） | 同上（Binder） | AMS `MEMORY_INFO_THROTTLE_TIME` 5 min | < 0.1 ms (cache) / 1-5 ms (miss) |
+| `dumpsys meminfo` / `am instrument` | `Debug.getMemoryInfo(pid, mi)` | shell bypass | 1-5 ms (smaps_rollup) |
+| 周期 RSS 大批量采样 | `Debug.getRss(pid)` | 无（直走 libmeminfo） | < 0.1 ms (StatusVmRSS + memtrack) |
+| OOM 现场 / dump heap | `Debug.getMemoryInfo(pid, mi)` | 无 | 1-5 ms (smaps_rollup) |
+
+**Android 17 演进方向**：`@FlaggedApi(Flags.FLAG_REMOVE_APP_PROFILER_PSS_COLLECTION)` 标注意味着未来 `AppProfiler` 将完全切换到 RSS 路径——线上监控可以 **不再依赖 smaps_rollup**。
+
+[调研来源: DeepResearch/2026-06-24-android17-memtrack-jni-aggregation-ams-throttle.md]
