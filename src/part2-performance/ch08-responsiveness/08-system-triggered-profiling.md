@@ -1,5 +1,7 @@
 ---
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
+version_breakdown: "API 35 (Android 15): ProfilingManager 手动请求能力; API 36 (Android 16): addProfilingTriggers 系统触发式 profiling, APP_FULLY_DRAWN=1/ANR=2; extension 36.1: APP_REQUEST_RUNNING_TRACE=3/KILL_FORCE_STOP=4/KILL_RECENTS=5/KILL_TASK_MANAGER=6; API 37 (Android 17): OOM=7/ANOMALY=8/KILL_EXCESSIVE_CPU_USAGE=9/COLD_START=10/APP_COMPAT=11"
+related_chapters: ["16.8", "26.12"]
 chapter: 8.10
 confidence: medium
 created_by: task2a-knowledge-gap
@@ -23,26 +25,28 @@ status: ready-for-review
 tags: [responsiveness, latency, launch]
 task6_result: pass-light-edit
 task6_review_notes: "2026-06-25 Task6 revisiting复审(Task2B fix后回归): Task2B已修复源码路径与常量标注。本轮禁用词扫描:对齐2处已修(关联比对/对照),真的1处已修(实际)。negation-correction 1处在限额内。L1/L2通过,无B类大问题。pass-light-edit,等待Task9复审确认P0修复。"
-task9_result: needs-rework
-task9_review_date: 2026-06-24
-task9_review_notes: 2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。
+task9_result: pass-tech-review
+task9_review_date: 2026-06-25
+task9_review_notes: 2026-06-25 Task9 deep-review: 无 P0/P1 问题，P2 建议改进 3 处，已写入 suggestions.md。
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-24
+task9_reviewed_date: 2026-06-25
 task9_reviewer: openclaw-task9
+task9_state: reviewed
 tech_score: 3/5
 title: ProfilingManager 系统触发式性能追踪
 verifier_pass: 2026-06-23T11:26:00+08:00
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 last_task2b_at: "2026-06-25T00:53:48+08:00"
+last_task2b_lite_at: "2026-06-25"
 repaired_date: 2026-06-25
 repaired_by: openclaw-task2b
 last_verified: 2026-06-25
 last_verified_against: "AOSP android-17.0.0_r1 (ProfilingTrigger.java, ProfilingManager.java, ProfilingService.java) + Task9 2026-06-25 deep-review items"
-task2b_notes: "2026-06-25 Task2B main: AOSP source path corrected to frameworks/base; constant values annotated with AOSP tag; ANOMALY-ApplicationExitInfo linkage structured"
+task2b_notes: "2026-06-25 Task2B main: AOSP source path corrected to frameworks/base; constant values annotated with AOSP tag; ANOMALY-ApplicationExitInfo linkage structured. 2026-06-25 Task2B Lite: added version_breakdown to frontmatter for API 35/36/37 boundary clarity; added related_chapters cross-reference to 16.8 (ApplicationExitInfo) and 26.12 (versioned diagnostics)."
 ---
 
 
