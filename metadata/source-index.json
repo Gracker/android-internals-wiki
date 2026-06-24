@@ -197,46 +197,102 @@
         ],
         "notes": "研究框架文档，无法访问源码，理论分析"
       }
+    },
+    {
+      "title": "2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization",
+      "path": "DeepResearch/2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization.md",
+      "score": 16,
+      "breakdown": "R:5 T:3 Ti:5 V:3",
+      "timestamp": "2026-06-25T05:46:06.375543",
+      "scored_at": "2026-06-25T05:46:28.521235"
+    },
+    {
+      "title": "2026-06-24-android17-cross-app-agent-system-primitive-accessibility-voiceinteraction-appfunction",
+      "path": "DeepResearch/2026-06-24-android17-cross-app-agent-system-primitive-accessibility-voiceinteraction-appfunction.md",
+      "score": 15,
+      "breakdown": "R:4 T:3 Ti:5 V:3",
+      "timestamp": "2026-06-25T05:46:06.437699",
+      "scored_at": "2026-06-25T05:46:34.256707"
+    },
+    {
+      "title": "2026-06-24-android17-memtrack-jni-aggregation-ams-throttle",
+      "path": "DeepResearch/2026-06-24-android17-memtrack-jni-aggregation-ams-throttle.md",
+      "score": 13,
+      "breakdown": "R:5 T:2 Ti:5 V:1",
+      "timestamp": "2026-06-25T05:46:06.498811",
+      "scored_at": "2026-06-25T05:46:45.875439"
+    },
+    {
+      "title": "2026-06-24-compose-20-strong-skipping-performance",
+      "path": "DeepResearch/2026-06-24-compose-20-strong-skipping-performance.md",
+      "score": 13,
+      "breakdown": "R:3 T:2 Ti:5 V:3",
+      "timestamp": "2026-06-25T05:46:06.560019",
+      "scored_at": "2026-06-25T05:46:45.875446"
+    },
+    {
+      "title": "2026-06-24-compose-lazylist-slottable-recomposescope",
+      "path": "DeepResearch/2026-06-24-compose-lazylist-slottable-recomposescope.md",
+      "score": 15,
+      "breakdown": "R:3 T:2 Ti:5 V:5",
+      "timestamp": "2026-06-25T05:46:06.619480",
+      "scored_at": "2026-06-25T05:46:45.875448"
+    },
+    {
+      "title": "2026-06-24-hook-infrastructure-16kb-page-size-adaptive",
+      "path": "DeepResearch/2026-06-24-hook-infrastructure-16kb-page-size-adaptive.md",
+      "score": 13,
+      "breakdown": "R:5 T:2 Ti:5 V:1",
+      "timestamp": "2026-06-25T05:46:06.684315",
+      "scored_at": "2026-06-25T05:46:45.875450"
+    },
+    {
+      "title": "2026-06-24-profilingmanager-anomaly-trigger",
+      "path": "DeepResearch/2026-06-24-profilingmanager-anomaly-trigger.md",
+      "score": 15,
+      "breakdown": "R:4 T:3 Ti:5 V:3",
+      "timestamp": "2026-06-25T05:46:06.750541",
+      "scored_at": "2026-06-25T05:46:45.875452"
+    },
+    {
+      "title": "2026-06-25-profilingmanager-anomaly-detection",
+      "path": "DeepResearch/2026-06-25-profilingmanager-anomaly-detection.md",
+      "score": 15,
+      "breakdown": "R:4 T:3 Ti:5 V:3",
+      "timestamp": "2026-06-25T05:46:06.816972",
+      "scored_at": "2026-06-25T05:46:45.875453"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-apm-tools-benchmark-source-analysis.md",
+      "title": "APM 工具性能开销与机制对比（Matrix/KOOM/AndroidGodEye 源码级分析）",
+      "summary": "源码级对比 Matrix LooperMonitor、KOOM fork-and-dump、AndroidGodEye 的性能开销机制，验证 API 37 兼容性现状",
+      "chapter_mapping": "ch19/ch14.12",
+      "processed_at": "2026-06-25T06:12:33",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md",
+      "title": "DisplayManagerService 多 display 管理性能边界（Android 17 / API 37）",
+      "summary": "DMS SyncRoot 单锁模型、LogicalDisplayMapper、DisplayTopology 拓扑协调架构源码分析",
+      "chapter_mapping": "ch02",
+      "processed_at": "2026-06-25T06:12:33",
+      "action": "inject-ch02-30"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android-端侧ai推理运行时源码-LiteRT-NNAPI-MediaPipe-Tasks.md",
+      "title": "端侧 AI 推理运行时：LiteRT/NNAPI/MediaPipe Tasks 源码级架构分析",
+      "summary": "LiteRT V2 ArenaPlanner 内存规划、NNAPI Delegate 委托模型、符号-神经混合执行切入点",
+      "chapter_mapping": "ch05",
+      "processed_at": "2026-06-25T06:12:33",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-simpleperf-thermal-throttling-interaction.md",
+      "title": "Simpleperf 与 Android 电源管理系统热节流机制交互研究",
+      "summary": "simpleperf 无 thermal listener 的单向解耦设计，task-clock 抗热节流，PowerStats HAL 独立通道",
+      "chapter_mapping": "ch14/ch05",
+      "processed_at": "2026-06-25T06:12:33",
+      "action": "queue"
     }
-  ],
-  "dr-2026-06-24-binder-ipc-latency": {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization.md",
-    "title": "Binder IPC 延迟分析与优化实践",
-    "summary": "三层观测体系 + 7 阶段延迟分解 + Android 17 trace_binder_txn_latency_free 新增 tracepoint",
-    "chapter": "ch01 (§1.29)",
-    "action": "direct-inject",
-    "processed_at": "2026-06-23T22:13:22.238680+00:00"
-  },
-  "dr-2026-06-24-dms-multidisplay": {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md",
-    "title": "DisplayManagerService 多 display 管理性能边界（Android 17）",
-    "summary": "SyncRoot 单锁模型、DisplayGroup/DisplayTopology 新增、设备状态异步转换路径",
-    "chapter": "ch02 (§2.28)",
-    "action": "direct-inject",
-    "processed_at": "2026-06-23T22:13:22.238680+00:00"
-  },
-  "dr-2026-06-23-litert-nnapi-mediapipe": {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android-端侧ai推理运行时源码-LiteRT-NNAPI-MediaPipe-Tasks.md",
-    "title": "Android 端侧 AI 推理运行时源码级架构分析",
-    "summary": "LiteRT V2 CompiledModel 重构 + ArenaPlanner 内存策略 + NNAPI Delegate 委托模型",
-    "chapter": "ch23 (§23.24)",
-    "action": "direct-inject",
-    "processed_at": "2026-06-23T22:13:22.238680+00:00"
-  },
-  "dr-2026-06-23-cpu-scheduler-eas-pelt-uclamp-sched_ext": {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android CPU Scheduler and Debugging Tools_ A Task's Journey Through EAS, PELT, uclamp, and sched_ext.md",
-    "title": "Android CPU 调度器与调试工具深度技术报告",
-    "summary": "EAS+PELT+uclamp 完整旅程、sched_ext BPF 调度类、vendor hook 机制、调试观测链路",
-    "chapter": "ch05 (§5.1/§5.2)",
-    "action": "queue",
-    "processed_at": "2026-06-23T22:13:22.238680+00:00"
-  },
-  "dr-2026-06-22-native-memory-deep-guide": {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Native 内存深度指南：从原理到调试工具的源码级全解.md",
-    "title": "Android Native 内存深度指南：从原理到调试工具的源码级全解",
-    "summary": "Scudo 演进、PSS/smaps 度量、heapprofd/ASan/MTE 工具链、16KB page size",
-    "chapter": "ch04 (§4.1-§4.3)",
-    "action": "queue",
-    "processed_at": "2026-06-23T22:13:22.238680+00:00"
-  }
+  ]
 }
