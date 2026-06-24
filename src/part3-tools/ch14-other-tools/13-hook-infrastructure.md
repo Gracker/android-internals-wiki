@@ -8,13 +8,13 @@ task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-24"
 task6_review_notes_2026_06_24_r5: "第五轮复审：L1 修复完成（删除'这意味着'禁用词、修复英文词间距、改善开头结构）。L2 可读性优化完成。L3/L4 问题写入 queue priority:90 送 Task2B。"
 task6_review_notes_2026_06_24_r6: "第六轮复审（Task2B P95 Task9回炉后）：L1 修 2 处（代码注释中英文间距 Thumb）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁。L3 观察 1 条（PLT vs Inline 对比表中 IFUNC 绕过方式与正文描述矛盾），写入 queue+suggestions 送 Task2B/Task9。新增多进程/64-32bit/ART-Dalvik/16KB增强节质量良好。task6_result: pass-light-edit，待 Task9 技术复审。"
-task6_state: "reviewed"
+task6_state: revisiting
 task9_result: "needs-rework"
-task9_state: "pending"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: "2026-06-24"
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -240,7 +240,7 @@ int result = ((int (*)(int))saved)(arg);
 | 稳定性 | 高 — 只改数据表，不动代码段 | 中 — 指令覆写依赖架构特性 |
 | SELinux 友好度 | 好 — GOT 表在可读写段，无需 `execmod` | 受限 — 修改代码段需要临时 W^X 切换 |
 | 覆盖范围 | 仅能拦截经 PLT 的外部调用 | 可拦截任意地址的任意调用 |
-| 绕过方式 | 直接通过 `dlsym` 取地址调用 | 函数内跳指令（如 IFUNC resolver） |
+| 绕过方式 | 直接通过 `dlsym` 取地址调用 / IFUNC resolver 替换 | 函数内分支跳转（如 tail call）或未被覆写的间接调用路径 |
 
 xHook 的局限在于：如果代码通过 `dlsym` 获取函数地址后直接调用（绕过 PLT），或者使用 IFUNC（indirect function）resolver 在 linker 阶段替换实现，PLT Hook 就拦截不到。这些场景必须用 inline hook [已验证: android-17.0.0_r1 bionic/linker/linker.cpp IFUNC relocation]。
 
