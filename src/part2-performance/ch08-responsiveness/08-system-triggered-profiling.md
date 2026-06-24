@@ -4,7 +4,7 @@ title: "ProfilingManager 系统触发式性能追踪"
 chapter: '8.10'
 section: '8.10'
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: task6_pending
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [responsiveness, latency, launch]
 confidence: medium
@@ -16,7 +16,7 @@ gap_source: 研究素材
 path: "https://developer.android.com/reference/android/os/ProfilingManager"
 last_task9_audit: "2026-06-23"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: pending
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_lite_at: '2026-06-23'
@@ -31,6 +31,10 @@ verifier_pass: "2026-06-23T11:26:00+08:00"
 task9_reviewed_date: 2026-06-24
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-23T13:20:00+08:00"
+task9_review_date: "2026-06-24"
+task9_reviewer: "openclaw-task9"
+confidence: "medium"
+tech_score: "3/5"
 last_task6_audit: '2026-06-24'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
@@ -95,7 +99,7 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 
 ### ProfilingManager 在这里到底负责什么
 
-Android 15 引入 `ProfilingManager`,先解决"应用怎样在公开设备上请求 profiling"这个问题。到了 Android 16,系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`,让应用可以提前声明自己关心哪些系统事件。事件真的发生时,系统把结果文件落到应用目录,再把文件路径和触发器类型通过 `ProfilingResult` 回传。
+Android 15 引入 `ProfilingManager`，先解决"应用怎样在公开设备上请求 profiling"这个问题。到了 Android 16，系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`，让应用可以提前声明自己关心哪些系统事件。事件真的发生时，系统把结果文件落到应用目录，再把文件路径和触发器类型通过 `ProfilingResult` 回传。
 
 源码位置也要先摆正。公开 API 位于 Mainline Profiling 模块：`packages/modules/Profiling/framework/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`。服务端实现位于 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 不是老式 framework 服务路径上的普通类。
 
@@ -112,7 +116,7 @@ system-triggered profiling 有一个容易写错的地方，结果只会发给�
 
 ### 最小可用流程
 
-下面这段代码只做一件事,注册全局结果回调,再添加两个 Android 16 就能使用的触发器。
+下面这段代码只做一件事：注册全局结果回调，再添加两个 Android 16 就能使用的触发器。
 ```java
 import android.content.Context;
 import android.os.ProfilingManager;

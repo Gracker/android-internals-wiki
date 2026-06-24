@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: "ready-for-review"
 title: 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 chapter: '2.14'
 drafted_date: '2026-04-05'
@@ -53,9 +53,9 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-28'
