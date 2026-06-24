@@ -39,7 +39,7 @@
       {
         "type": "源码错误",
         "location": "AOSP 源码路径",
-        "detail": "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java 路径错误，Android 17 中实际路径为 packages/modules/Profiling/framework/android/os/ProfilingManager.java",
+        "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 路径错误，Android 17 AOSP 中不存在该路径",
         "suggestion": "修正源码路径并明确标注 Android 版本边界"
       },
       {
@@ -56,10 +56,10 @@
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-24T08:20:00+08:00",
+    "added_at": "2026-06-24T09:20:00+08:00",
     "status": "completed",
-    "completed_at": "2026-06-24T08:57:00+08:00",
-    "completed_by": "task2b-main"
+    "completed_at": "2026-06-24T09:27:00+08:00",
+    "completed_by": "task9-deep-tech-review"
   },
   {
     "section": "7.7",
