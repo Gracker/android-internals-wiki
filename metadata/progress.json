@@ -1,6 +1,6 @@
 {
-  "total": 451,
-  "draft": 4,
+  "total": 452,
+  "draft": 5,
   "ready-for-review": 90,
   "finalized": 313,
   "task9_result": "pass-tech-review",
@@ -12844,7 +12844,13 @@
       "log": "logs/rework/2026-06-03-04-task2b-main.md"
     },
     "task9-20260614-1410-ebpf-source-api-regression",
-    "task6-20260614-1410-ebpf-revisit-rework"
+    "task6-20260614-1410-ebpf-revisit-rework",
+    {
+      "section": "14.13",
+      "timestamp": "2026-06-24T12:50:00",
+      "lane": "main",
+      "fix_type": "技术矛盾修复: PLT vs Inline 对比表 IFUNC 绕过方式"
+    }
   ],
   "last_task2b_completed": [
     {

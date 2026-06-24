@@ -19,6 +19,36 @@
         "location": "8.10 ProfilingManager章节的源码路径描述",
         "detail": "packages/modules/Profiling/ 路径在不同 Android 版本中可能存在结构变化，需要确认 Android 17 中的准确路径和实现位置",
         "suggestion": "需要精确指定 AOSP 源码路径，并在版本差异部分说明路径变化情况"
+      },
+      {
+        "type": "源码错误",
+        "location": "packages/modules/Profiling/ 路径引用",
+        "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 在 android-17.0.0_r1 中不存在，实际路径应为其他位置",
+        "suggestion": "验证并修正 AOSP 源码路径引用"
+      },
+      {
+        "type": "源码错误",
+        "location": "external/perfetto 源码路径",
+        "detail": "章节引用 external/perfetto 但未提供具体源码文件路径，应为 external/perfetto/src/",
+        "suggestion": "补充完整的 AOSP 源码文件路径"
+      },
+      {
+        "type": "源码错误",
+        "location": "art/runtime/entrypoints/entrypoint_utils.h",
+        "detail": "art/runtime/entrypoints/entrypoint_utils.h 在 android-17.0.0_r1 中不存在，应为 art/runtime/quick/entrypoints/entrypoint_utils.h",
+        "suggestion": "修正 ART 源码路径引用"
+      },
+      {
+        "type": "原理断裂",
+        "location": "Trampoline 机制解释",
+        "detail": "Trampoline 机制缺少内存分配失败场景的处理说明",
+        "suggestion": "补充内存分配失败时的异常处理和回退策略"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Mainline模块影响",
+        "detail": "缺少 Android 15+ 的 Mainline 模块对 Hook 的实际影响案例",
+        "suggestion": "补充具体版本的 Mainline 模块 Hook 实际影响案例"
       }
     ],
     "added_by": "task9-deep-tech-review",
@@ -144,7 +174,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-24T12:17:03",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-24-12-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-24-12-review.md",
+    "completed_at": "2026-06-24T12:50:00",
+    "completed_by": "task2b-main"
   }
 ]
