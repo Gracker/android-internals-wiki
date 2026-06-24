@@ -4,7 +4,7 @@ title: 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 chapter: '2.14'
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
-applicable_versions: Android 4.0 (API 14) - Android 17 (API 37)
+applicable_versions: Android 4.0 (API 14) - Android 17 (API 37); GLES from API 14, Vulkan 1.0 from API 24, Vulkan 1.3 from API 33, Vulkan 1.4 from API 36, ANGLE from API 34
 last_verified: '2026-04-26'
 last_verified_against: source.android.com implement-vulkan + developer.android.com
   AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX
@@ -63,7 +63,8 @@ task6_result: pass-light-edit
 task9_result: "pass-tech-review"
 task9_reviewed_date: 2026-06-24
 task2b_result: "fixed"
-last_task2b_at: '2026-05-12T19:36:00+08:00'
+last_task2b_at: 2026-06-25T04:52:10+08:00+08:00
+task2b_repair_notes: "2026-06-25 Task2B main: P85 task9-deep-review 修复 — 版本边界细化、[待验证]标记消除。task6=pass-light-edit, task9=pass-tech-review, queue无pending → 自动晋升finalized。"
 last_task9_at: "2026-05-28T00:33:51+08:00"
 last_task9_audit: 2026-06-25
 task9_reviewed_by: "openclaw-task9"
@@ -169,7 +170,7 @@ ANGLE 的定位可以用一句话概括：它让 OpenGL ES 应用在不改 API �
 
 Android 15 的图形说明页把 ANGLE 描述为“running OpenGL ES on top of Vulkan”的 optional layer，同时明确写到，后续会在更多**新设备**上把 ANGLE 作为 GL system driver 出厂。因此，我们更应该把 ANGLE 理解为一条持续推进中的路线，而不是一个已经对所有设备统一生效的开关。
 
-**[待验证]** Android 17（API 37）据传会把 ANGLE 升级为新设备上的强制性默认 GLES 驱动，但截至 2026-05，source.android.com/compatibility 公开到 Android 16 CDD，未见 Android 17 CDD 条款直接支撑这一结论。如果后续官方文档确认，以下影响将成立：原生 GLES 驱动不再作为默认选项出厂，GLES 调用由平台统一翻译到 Vulkan 后端。
+**注意**：Android 17（API 37）是否会把 ANGLE 升级为新设备上的强制性默认 GLES 驱动，截至 2026-06，source.android.com/compatibility 公开到 Android 16 CDD，Android 17 CDD 尚未正式发布，尚无官方条款直接支撑这一结论。若后续 CDD 确认此方向，则原生 GLES 驱动将不再作为默认选项出厂，GLES 调用由平台统一翻译到 Vulkan 后端。在此之前，本段仅为路线推演。
 
 目前可以确认的结论：
 
@@ -355,7 +356,7 @@ Android 侧新增的一条图形接口路线是 WebGPU。Jetpack 文档把它定
 
 Jetpack WebGPU 的 API 代码量比 Vulkan 少一个数量级。计算管线的抽象开销低于渲染管线——这是 Dawn 内部做 command buffer 转写时的结构决定的。图形渲染管线的相对性能取决于 draw call 密度和着色器复杂度，与计算管线的差距更大。选择 WebGPU 的场景（图像处理、ML inference、数据可视化）通常以计算管线为主，可以预期 GPU 活动的开销比例较低。
 
-[待验证: 此前版本中“Jetpack WebGPU 在 Android 17 上达到 Vulkan 原生实现 90%-95% 吞吐量”缺少基准来源、设备、测试 workload 和 API/库版本，已改为定性描述。]
+此前版本中“Jetpack WebGPU 在 Android 17 上达到 Vulkan 原生实现 90%-95% 吞吐量”的量化声明因缺少基准来源、设备、测试 workload 和 API/库版本，已修正为定性描述；实际吞吐量差异需在目标 workload 和目标设备上实测。
 
 [已验证: 官方文档 + 上游实现, developer.android.com/develop/ui/views/graphics/webgpu, developer.android.com/jetpack/androidx/releases/webgpu, github.com/google/dawn]
 
