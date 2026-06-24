@@ -381,5 +381,65 @@
     "source": "source-index.json",
     "created_date": "2026-06-24",
     "estimated_hours": 10
+  },
+  {
+    "section": "19.10",
+    "section_title": "其他开源 APM 库",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在源码引用错误和版本差异覆盖问题，需要 Task2B 重构章节",
+    "material_paths": ["intake/suggestions.md"],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "Matrix Gradle 插件路径",
+        "detail": "Matrix Gradle 插件路径描述不准确。Matrix Android Gradle plugin 位于 com.tencent.matrix:matrix-gradle-plugin，不是 appExtension.registerTransform，AGP 8.0+ 兼容性是通过 AsmClassVisitorFactory 实现，不是 Transform API。",
+        "suggestion": "修正 Matrix Gradle 插件引用路径和兼容性说明"
+      },
+      {
+        "type": "版本差异",
+        "location": "ANGLE 驱动策略",
+        "detail": "章节提到'Android 15 把 ANGLE 定位为 optional layer，官方 roadmap 表明后续会在更多新设备上把 ANGLE 作为 GL system driver 出厂'，但截至 Android 17，ANGLE 仍不是强制性默认 GLES 驱动，只是选择性启用。",
+        "suggestion": "明确说明 ANGLE 在不同 Android 版本中的可选性和选择性启用机制"
+      },
+      {
+        "type": "版本差异",
+        "location": "APM 能力版本演进",
+        "detail": "章节适用的 Android 版本范围是 'Android 8 (API 26) - Android 17 (API 37)'，但没有详细说明各个版本的 APM 能力差异，比如 Android 15 的 ProfilingManager 对 APM 的影响。",
+        "suggestion": "补充各个 Android 版本中 APM 能力的关键差异和演进说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-25T00:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "8.10",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在严重源码引用错误和原理链断裂，需要 Task2B 重构章节",
+    "material_paths": ["intake/suggestions.md"],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "AOSP 源码路径",
+        "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 路径错误，Android 17 AOSP 中不存在该路径，实际应为 frameworks/base/core/java/android/os/ProfilingManager.java。",
+        "suggestion": "修正源码路径并明确标注 Android 版本边界"
+      },
+      {
+        "type": "源码错误",
+        "location": "常量值定义",
+        "detail": "章节中提到的 TRIGGER_TYPE_APP_FULLY_DRAWN=1 等常量值在 Android 17 中已被重新定义，需要确认最新的常量值。",
+        "suggestion": "更新 ProfilingTrigger 常量值为 Android 17 中的正确定义"
+      },
+      {
+        "type": "原理断裂",
+        "location": "ANOMALY 与 ApplicationExitInfo 关联",
+        "detail": "章节解释了 ANOMALY 触发器的机制，但没有说明如何将 ANOMALY 结果与 ApplicationExitInfo 关联起来进行问题定位。",
+        "suggestion": "补充 ANOMALY 结果与 ApplicationExitInfo 的关联机制和问题定位方法"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-25T00:20:00+08:00",
+    "status": "pending"
   }
 ]

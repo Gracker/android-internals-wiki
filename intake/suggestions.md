@@ -71,3 +71,109 @@
 - **位置**：WorkManager与JobScheduler选型部分
 - **问题**：选型表格缺少具体的性能特征对比
 - **建议**：在选型表格中增加"调度延迟"、"可靠性保证"、"功耗开销"等性能特征列，帮助开发者根据性能需求做选择
+
+## [2026-06-25 00:04] Task 2A 知识缺口挖掘 — 已检查方向记录
+
+本轮未发现 ≥14 分且与现有章节无重叠的新章节候选。以下方向已检查，下次可跳过：
+
+### 系统服务方向（全部 ❌ 低于阈值或已有覆盖）
+- SoundTrigger / VoiceInteractionService / Hotword — 5 篇文件提及但无独立章节，素材不足（3+4+3+3=13）
+- Clipboard / ClipboardService — 0 文件提及，性能影响极小
+- ContentCapture / ContentSuggestions — 0 文件提及，niche
+- Dream / DreamService / Screensaver — 0 文件提及，niche
+- Magnifier — 0 文件提及
+- AppOps — 2 文件提及，偏安全/权限非性能
+- DevicePolicy / DeviceAdmin — 3 文件提及，OEM/Enterprise 向
+- AppSearch — 0 文件提及
+- HealthConnect — 0 文件提及
+- IntentFirewall — 0 文件提及
+- SystemConfig / ConfigStore — 0 文件提及
+- ResolverActivity / IntentResolver — 0 文件提及，影响 deep link 延迟但素材不足（11 分）
+
+### 形态因子方向（全部 ❌ 低于阈值或已有覆盖）
+- Wear OS — 96 文件提及但无独立章节，niche for AIW 范围（11 分）
+- Android TV — 同上
+- Desktop Windowing — 已有 2.20 + 22.14 覆盖，新章节会重叠（14 分但 overlap）
+- Android Auto/Car — 已有 25.21 覆盖
+
+### 通信/网络方向（全部 ❌ 低于阈值或已有覆盖）
+- TelephonyManager / Modem / Radio — 42 文件提及但偏 telephony 层，app 开发者关注度低（12 分）
+- VPN Service — 性能影响有限
+- DNS over HTTPS / Private DNS — 12.6 已覆盖 DNS 层
+- Network Validation / Captive Portal — 影响有限（8 分）
+
+### 框架/平台方向（全部 ❌ 低于阈值或已有覆盖）
+- Android Virtualization Framework (AVF / pVM) — niche security 用例（10 分）
+- App Cloning / Parallel App — 2 文件提及，素材不足（12 分）
+- Android Backup/Restore — 20 文件提及但偏 I/O，非性能热点
+- PlatformCompat / CompatFramework — OEM/平台关注，app 开发者少用
+
+### 已有覆盖的强候选（不建议新建）
+- 端侧 LLM 部署性能（17 分）→ 与 22.09 draft 重叠，建议 Task 2B 加工时扩展
+- Rust 系统组件迁移（14 分）→ 与 3.8 InputFlinger Rust + 1.25 Binder 异步 重叠
+- Desktop 窗口化全链路（14 分）→ 与 2.20 + 22.14 重叠
+
+### 结论
+全书 250+ 小节已覆盖 Android 性能工程几乎所有主流方向。后续挖掘应转向：
+1. 已有章节的深度扩展（特别是 Part 5 的 draft 章节）
+2. research-gaps.md 中标记的已有章节内部盲区
+3. source-index.json 重建后基于素材驱动发现新缺口
+## [Task9 Deep Review] 19.10 其他开源 APM 库 — 2026-06-25
+- **类型**：数据缺失
+- **位置**：章节开头
+- **问题**：章节说"接入成本低,能力基础"，但没有提供具体的接入成本数据（如代码改动量、编译时间增加）
+- **建议**：补充具体的接入成本数据，包括编译时间增加、代码改动量、性能影响等量化指标
+
+## [Task9 Deep Review] 19.10 其他开源 APM 库 — 2026-06-25
+- **类型**：数据缺失
+- **位置**：章节中间
+- **问题**：提到"数据深度有限"，但没有给出具体的能力对比数据
+- **建议**：提供各个开源 APM 工具（Matrix、GodEye、Collie、Rabbit）在监控深度、准确度、开销方面的具体对比数据表
+
+## [Task9 Deep Review] 19.10 其他开源 APM 库 — 2026-06-25
+- **类型**：案例缺失
+- **位置**：迁移策略部分
+- **问题**：缺少实际项目的迁移前后对比案例
+- **建议**：补充1-2个实际项目从某个 APM 工具迁移到另一个工具的案例，包括迁移原因、迁移过程、效果对比
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略 — 2026-06-25
+- **类型**：版本边界模糊
+- **位置**：版本演进表格
+- **问题**：章节提到 VP_ANDROID_16 Profile 与 Vulkan 1.4 的关系，但没有明确说明这两个概念的层次差异以及实际开发中的选择策略
+- **建议**：补充 VP_ANDROID_16 Profile 与 Vulkan 1.4 的层次关系说明，以及在开发中的具体选择决策指引
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略 — 2026-06-25
+- **类型**：数据缺失
+- **位置**：ANGLE 性能描述
+- **问题**：章节提到"ANGLE 没有统一适用的固定性能百分比"，但没有提供任何具体的测试数据或基准
+- **建议**：提供不同设备上 ANGLE 相比原生 GLES 的典型性能下降范围数据
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略 — 2026-06-25
+- **类型**：案例缺失
+- **位置**：章节结尾
+- **问题**：缺少实际项目中从 OpenGL ES 迁移到 Vulkan 的性能对比案例
+- **建议**：补充1-2个实际应用从 OpenGL ES 迁移到 Vulkan 的案例，包括迁移策略、性能收益、遇到的问题和解决方案
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-25
+- **类型**：数据缺失
+- **位置**：章节中间
+- **问题**：章节提到"的内部阈值"，但没有提供任何具体的阈值数据
+- **建议**：补充 ANR 和 excessive CPU 使用率的内部预警阈值范围数据，或者说明这些阈值因厂商而异无法提供具体数值
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-25
+- **类型**：数据缺失
+- **位置**：章节中间
+- **问题**：提到"超限路径"，但没有具体的内存阈值数据
+- **建议**：补充 Android 17 中 MemoryLimiter 的 anon+swap 具体阈值数据，或说明这些阈值因设备而异无法提供具体数值
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-25
+- **类型**：案例缺失
+- **位置**：章节结尾
+- **问题**：缺少使用 ProfilingManager 实际排查问题的案例
+- **建议**：补充1-2个使用 ProfilingManager 实际排查 ANR、OOM 或冷启动问题的详细案例，包括结果分析工具选择和问题定位过程
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-25
+- **类型**：交叉引用不一致
+- **位置**：章节中间
+- **问题**：章节提到 §4.4 讨论 LMK，但 §4.4 实际讨论的是其他主题
+- **建议**：修正章节引用，指向正确的 LMK 相关章节（如 4.4 内存杀手章节）
