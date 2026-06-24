@@ -1,29 +1,18 @@
 ---
-
 title: "其他开源 APM 库(AndroidGodEye、Collie、Rabbit)"
 chapter: "19"
 section: "19.10"
 status: "ready-for-review"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "['apm', 'monitoring']"
-last_verified: "2026-04-24"
-last_verified_against: "AndroidGodEye / Collie / Rabbit / Matrix GitHub READMEs + AGP API updates + Android developers docs"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 reviewed_date: "2026-06-24"
 reviewed_by: "openclaw-task6"
 path: "https://github.com/Tencent/matrix"
-task6_state: "revisiting"
-task9_state: "pending"
-task2b_state: "fixed"
-pipeline_stage: "task6_pending"
 task6_result: "revisiting"
 last_task6_audit: "2026-06-24"
-task2b_result: "fixed-lite"
-last_task2b_at: "2026-06-24T09:35:00+08:00"
 last_task2b_lite_at: "2026-06-24T09:35:00+08:00"
-repaired_date: "2026-06-24"
-repaired_by: "openclaw-task2b"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
@@ -33,6 +22,17 @@ task9_reviewer: "openclaw-task9"
 confidence: "medium"
 tech_score: "3/5"
 last_task9_audit: "2026-05-20"
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-06-25T00:53:48+08:00"
+repaired_date: 2026-06-25
+repaired_by: openclaw-task2b
+last_verified: 2026-06-25
+last_verified_against: "AOSP android-17.0.0_r1 + Matrix GitHub README + Android Developers docs + Task9 2026-06-25 deep-review items (ANGLE misattributed)"
+task2b_notes: "2026-06-25 Task2B main: Matrix plugin artifact ID added; APM version capability table added; ANGLE issue marked as misattributed (belongs to ch2.14)"
 ---
 
 # 其他开源 APM 库(AndroidGodEye、Collie、Rabbit)
@@ -125,11 +125,29 @@ Matrix 的定位容易写歪。Matrix upstream README 的原话是 **plugin styl
 | 轻量开源方案(Collie、局部自研) | 成本低,能快速起步 | 归因深度、治理能力、稳定 schema 较弱 | 团队先把启动、慢帧、主线程 block、网络耗时跑通 |
 | 客户端监控框架(Matrix、KOOM) | 端侧采集能力更全,专项模块更成熟 | 接入、调参与兼容性验证成本更高;Matrix Gradle Trace 插件仍依赖 Transform API,仅声明支持 AGP 3.5/4.0/4.1,AGP 8.0+ 工程不能直接接入 | 已经明确要做客户端专项治理 |
 
-> **Matrix Gradle 插件兼容性边界**:Matrix Android Gradle plugin 当前仍通过 `appExtension.registerTransform` 注册字节码插桩,依赖 `com.android.build.api.transform.*`(AGP 8.0 已移除)。官方 README 仅声明 AGP 3.5.0/4.0.0/4.1.0。AGP 8.0+ 工程接入 Matrix 时,Gradle Trace 插件不能直接使用;可以只参考端侧采集设计、非 Gradle 模块(如 Resource Canary、IO Canary),或寻找已迁到 `AsmClassVisitorFactory` / Instrumentation API 的社区分支。
+> **Matrix Gradle 插件兼容性边界**：Matrix Android Gradle plugin（artifact `com.tencent.matrix:matrix-gradle-plugin`）当前仍通过 `appExtension.registerTransform` 注册字节码插桩，依赖 `com.android.build.api.transform.*`（AGP 8.0 已移除）。官方 README 仅声明 AGP 3.5.0/4.0.0/4.1.0。AGP 8.0+ 工程接入 Matrix 时，Gradle Trace 插件不能直接使用；如需在 AGP 8.0+ 环境中使用，迁移路径是将字节码插桩迁到 `com.android.build.api.instrumentation.AsmClassVisitorFactory` + Instrumentation API，但 upstream Matrix 尚未完成此迁移。建议只参考端侧采集设计、非 Gradle 模块（如 Resource Canary、IO Canary），或寻找已完成迁移的社区分支。
 | 官方 SDK / 系统能力(JankStats、FrameMetrics、ApplicationExitInfo、ProfilingManager) | 口径稳定,系统兼容性好,适合长期维护 | `ProfilingManager` 仅限 Android 15(API 35)+;功能面通常更窄,需要自己补治理流程 | 希望先建立稳定基础指标与诊断入口 |
 | 商业 / 平台型方案(Firebase Performance、Measure、Sentry、APMPlus、Bugly) | 会话、告警、看板、权限管理、协同流程完整 | 成本、数据所有权、私有化、迁移锁定要评估 | 团队已经需要跨端看板、告警治理和组织级协作 |
 
 决策时别只看"哪个工具功能多"。更关键的是:谁负责端侧采集,谁负责样本治理,谁负责看板与告警,谁负责数据合同。
+
+## Android 版本与 APM 能力演进
+
+Android 版本迭代也意味着 APM 可用的系统级能力在逐步变化。下面这张版本-能力对照表比散落的"XX 版本支持 XX"更有用：
+
+| Android 版本 | API Level | 新增 APM 相关能力 | 对 APM 选型的影响 |
+|---|---|---|---|
+| Android 9 | API 28 | `FrameMetrics`（`Window.OnFrameMetricsAvailableListener` API 24+ 稳定）、`Choreographer` 公开 | 慢帧采集不再只靠自定义 Looper logging |
+| Android 10 | API 29 | Scoped Storage、后台启动限制、`ProcessLifecycleOwner` | 数据存储与上报通道收紧，APK 内日志和缓存策略需要重新设计 |
+| Android 11 | API 30 | `ApplicationExitInfo`（`ActivityManager.getHistoricalProcessExitReasons()`） | Crash/ANR 归因首次有了系统级退出原因，不用只靠自己的异常处理器猜 |
+| Android 12-13 | API 31-33 | `JankStats`（Jetpack）、Performance Class、Foreground Service 限制 | 慢帧采集有了 Jetpack 官方口径；后台采样窗口进一步受限 |
+| Android 14 | API 34 | `ProfilingManager` 基础请求能力（`requestProfiling()`） | 首次出现系统级 profiling 请求接口，但 system-triggered profiling 还没来 |
+| Android 15 | API 35 | `ProfilingManager` 稳定，手动 profiling 可用 | APM SDK 可以把性能诊断能力接到系统 profiling 通道上 |
+| Android 16 | API 36 | `addProfilingTriggers()`、`APP_FULLY_DRAWN`、`ANR` 触发器 | system-triggered profiling 进入公开 API，冷启动和 ANR 不需要人工复现也能拿到 trace |
+| Android 16 ext 36.1 | extension 36.1 | `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` | 触发器覆盖范围进一步扩大，但运行时需做 extension gating |
+| Android 17 | API 37 | `OOM`、`ANOMALY`、`KILL_EXCESSIVE_CPU_USAGE`、`COLD_START`、`APP_COMPAT` | 触发器不再只返回 running trace，产物类型开始分化（heap dump、stack sampling、artifact varies） |
+
+> **关键分水岭**：Android 15 的 `ProfilingManager` 是 APM 能力从"全靠 SDK 自己采"到"系统帮忙采"的转折点。Android 16 的 system-triggered profiling 进一步解决了"问题发生时没有开启 trace"的空档。Android 17 的 `ANOMALY` 则把采集条件从显式系统事件扩展到了异常行为检测。选型时要按设备版本分布决定能在多大版本上依赖这些能力，不要假设全量用户已经升到 API 37。
 
 ## 轻量方案和商业平台的切换点
 
