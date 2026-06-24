@@ -534,6 +534,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-24T19:25:52.595759+00:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-25T04:52:10.051720+08:00",
+    "completed_by": "task2b-main",
+    "completed_notes": "P85修复: 版本边界细化(applicable_versions per API), [待验证]标记全部消除"
   }
 ]
