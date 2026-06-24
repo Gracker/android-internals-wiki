@@ -255,3 +255,13 @@
 - **位置**：章节引用
 - **问题**：引用了 §14.8 GPU 图形调试与分析工具但未确认该章节已存在
 - **建议**：确认 §14.8 章节存在，或修正引用指向正确存在的章节
+## [Task2A Gap Mining] 2026-06-25 已检查方向（无合格缺口）
+- **AVF (Android Virtualization Framework)**: 偏安全隔离，性能素材不足 (9/20)
+- **Android TV / Leanback**: 极小众平台，性能素材稀缺 (5/20)
+- **Material 3 动态色彩**: UI 渲染影响小，Compose 已覆盖 (8/20)
+- **Gesture Excluder / 边缘手势**: §3.3/§3.5 已部分覆盖 (8/20)
+- **Android Backup 服务**: 非性能关键路径 (4/20)
+- **Clipboard Manager**: 极低性能影响 (4/20)
+- **Content Capture / Autofill**: IPC 开销有限 (8/20)
+- **Domain Verification / App Links**: 非性能核心 (6/20)
+- **备注**: 6-24 刚完成大规模缺口挖掘（19 新章节），全书 264 小节 / 196 finalized，当前处于素材消化期而非新章节创建期
