@@ -7,11 +7,12 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "['apm', 'monitoring']"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-reviewed_date: "2026-06-24"
+reviewed_date: "2026-06-25"
 reviewed_by: "openclaw-task6"
 path: "https://github.com/Tencent/matrix"
-task6_result: "revisiting"
-last_task6_audit: "2026-06-24"
+task6_result: "pass-light-edit"
+task6_review_notes: "2026-06-25 Task6 revisiting复审(Task2B fix后回归): 禁用词扫描零命中(Task2B已修复)。收紧1处已修为受限。对齐/真的在19.10未出现。L1/L2通过,无B类大问题。pass-light-edit,等待Task9复审。"
+last_task6_audit: "2026-06-25"
 last_task2b_lite_at: "2026-06-24T09:35:00+08:00"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-04-24"
@@ -24,9 +25,9 @@ tech_score: "3/5"
 last_task9_audit: "2026-05-20"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-06-25T00:53:48+08:00"
 repaired_date: 2026-06-25
 repaired_by: openclaw-task2b
@@ -138,7 +139,7 @@ Android 版本迭代也意味着 APM 可用的系统级能力在逐步变化。�
 | Android 版本 | API Level | 新增 APM 相关能力 | 对 APM 选型的影响 |
 |---|---|---|---|
 | Android 9 | API 28 | `FrameMetrics`（`Window.OnFrameMetricsAvailableListener` API 24+ 稳定）、`Choreographer` 公开 | 慢帧采集不再只靠自定义 Looper logging |
-| Android 10 | API 29 | Scoped Storage、后台启动限制、`ProcessLifecycleOwner` | 数据存储与上报通道收紧，APK 内日志和缓存策略需要重新设计 |
+| Android 10 | API 29 | Scoped Storage、后台启动限制、`ProcessLifecycleOwner` | 数据存储与上报通道受限，APK 内日志和缓存策略需要重新设计 |
 | Android 11 | API 30 | `ApplicationExitInfo`（`ActivityManager.getHistoricalProcessExitReasons()`） | Crash/ANR 归因首次有了系统级退出原因，不用只靠自己的异常处理器猜 |
 | Android 12-13 | API 31-33 | `JankStats`（Jetpack）、Performance Class、Foreground Service 限制 | 慢帧采集有了 Jetpack 官方口径；后台采样窗口进一步受限 |
 | Android 14 | API 34 | `ProfilingManager` 基础请求能力（`requestProfiling()`） | 首次出现系统级 profiling 请求接口，但 system-triggered profiling 还没来 |

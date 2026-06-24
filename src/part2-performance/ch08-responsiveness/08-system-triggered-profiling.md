@@ -8,8 +8,8 @@ deepseek_cn_review_state: done
 gap_source: 研究素材
 last_deepseek_cn_review_at: 2026-06-08
 last_task2b_lite_at: 2026-06-23
-last_task6_at: 2026-06-24T20:13:00+08:00
-last_task6_audit: 2026-06-24
+last_task6_at: "2026-06-25T01:12:00+08:00"2026-06-24T20:13:00+08:00
+last_task6_audit: "2026-06-25"2026-06-24
 last_task6_review_log: logs/review/2026-06-24-09-review.md
 last_task9_at: 2026-06-23T13:20:00+08:00
 last_task9_audit: 2026-06-24
@@ -17,12 +17,12 @@ last_task9_autofix_at: 2026-06-23
 last_task9_review_log: logs/deep-review/2026-06-23-13-deep-review.md
 path: https://developer.android.com/reference/android/os/ProfilingManager
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-24
+reviewed_date: "2026-06-25"2026-06-24
 section: 8.10
 status: ready-for-review
 tags: [responsiveness, latency, launch]
 task6_result: pass-light-edit
-task6_review_notes: "2026-06-24 Task6 五轮复审(Task2B fix后回归): Task2B已修复源码路径与AnomalyDetectorService问题。本轮禁用词零命中,高频词全量达标,翻译腔零检出。frontmatter last_task2b_at双时区已修。判定pass-light-edit,等待Task9复审确认P0修复。"
+task6_review_notes: "2026-06-25 Task6 revisiting复审(Task2B fix后回归): Task2B已修复源码路径与常量标注。本轮禁用词扫描:对齐2处已修(关联比对/对照),真的1处已修(实际)。negation-correction 1处在限额内。L1/L2通过,无B类大问题。pass-light-edit,等待Task9复审确认P0修复。"
 task9_result: needs-rework
 task9_review_date: 2026-06-24
 task9_review_notes: 2026-06-23 Task9 deep-review: P0 事实错误 - AOSP 源码路径不存在，无法验证章节技术准确性；P1 重要缺失 - 交叉引用错误，引用不存在章节；P2 建议改进 - 缺少实际数据支撑和案例。2026-06-23 已写入 queue.json 要求 Task2B 重构章节。
@@ -34,9 +34,9 @@ title: ProfilingManager 系统触发式性能追踪
 verifier_pass: 2026-06-23T11:26:00+08:00
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-06-25T00:53:48+08:00"
 repaired_date: 2026-06-25
 repaired_by: openclaw-task2b
@@ -99,7 +99,7 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 
 ### ProfilingManager 在这里到底负责什么
 
-Android 15 引入 `ProfilingManager`，先解决"应用怎样在公开设备上请求 profiling"这个问题。到了 Android 16，系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`，让应用可以提前声明自己关心哪些系统事件。事件真的发生时，系统把结果文件落到应用目录，再把文件路径和触发器类型通过 `ProfilingResult` 回传。
+Android 15 引入 `ProfilingManager`，先解决"应用怎样在公开设备上请求 profiling"这个问题。到了 Android 16，系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`，让应用可以提前声明自己关心哪些系统事件。事件实际发生时，系统把结果文件落到应用目录，再把文件路径和触发器类型通过 `ProfilingResult` 回传。
 
 源码位置也要先摆正。公开 API 位于 `frameworks/base/core/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`——应用编译时使用的是 framework SDK 层路径。服务端实现位于 Mainline 模块 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 的服务端是 Mainline 模块的一部分，不是老式 framework 服务路径上的普通类。
 
@@ -201,12 +201,12 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 **MemoryLimiter 场景**:当 MemoryLimiter 的 anon+swap 限额路径触发时，系统会先通过 `ProfilingServiceHelper` 触发 ANOMALY，再延迟 kill 目标进程。kill 后 `ApplicationExitInfo.getReason()` 返回资源过量类型（如 `REASON_EXCESSIVE_RESOURCE_USAGE`），描述中携带 `MemoryLimiter:AnonSwap` 等线索。`ProfilingService` 对这类异常使用 `memory_limit` tag，并返回 Java heap dump。
 
-**关联排查流程**：收到 ANOMALY 结果后，需要把 ProfilingManager 返回的现场和 `ApplicationExitInfo` 中的退出信息对齐：
+**关联排查流程**：收到 ANOMALY 结果后，需要把 ProfilingManager 返回的现场和 `ApplicationExitInfo` 中的退出信息关联比对：
 
 1. 通过 `registerForAllProfilingResults()` 收到 `ProfilingResult`，确认 `getTriggerType()` 为 `TRIGGER_TYPE_ANOMALY`
 2. 读 `ProfilingResult.getTag()`——`memory_limit` 对应 MemoryLimiter kill 路径，其他 tag 对应非 kill 类异常
 3. 取 `ProfilingResult.getResultFilePath()`，按文件后缀选分析工具（`.perfetto-java-heap-dump` 走 MAT/Android Studio Profiler，`.perfetto-trace` 走 Perfetto UI）
-4. 同时查 `ActivityManager.getHistoricalProcessExitReasons()` 获取进程终止原因，将 `ApplicationExitInfo.getReason()` / `getDescription()` 与 ANOMALY tag 对齐——这一步区分"ANOMALY 伴随了 kill"还是"只有 ANOMALY 日志/采样"
+4. 同时查 `ActivityManager.getHistoricalProcessExitReasons()` 获取进程终止原因，将 `ApplicationExitInfo.getReason()` / `getDescription()` 与 ANOMALY tag 对照——这一步区分"ANOMALY 伴随了 kill"还是"只有 ANOMALY 日志/采样"
 5. heap dump 场景：入 MAT 后定位 retained size 最高的引用路径，对照进程终止前的内存使用量判断哪些对象顶满了堆
 
 **边界**:公开 API 文档没有列出系统异常检测的全部判定规则和触发阈值,这些属于系统内部策略。同一 UID 下多个包注册 ANOMALY trigger 时,系统可能不为某些异常提供产物;多进程应用也不要假设每个进程都能收到独立的 profiling 结果。线上接入时要考虑这种不确定性,不能假设注册了就一定能拿到产物。
