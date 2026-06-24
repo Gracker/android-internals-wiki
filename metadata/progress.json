@@ -1,7 +1,7 @@
 {
-  "total": 452,
+  "total": 453,
   "draft": 5,
-  "ready-for-review": 90,
+  "ready-for-review": 91,
   "finalized": 313,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
@@ -23,7 +23,8 @@
     "3.12",
     "2.29",
     "2.30",
-    "21.14"
+    "21.14",
+    "18.03"
   ],
   "ready_for_review_sections": [
     "5.19",
@@ -36,7 +37,8 @@
     "12.7",
     "23.12",
     "8.15",
-    "3.12"
+    "3.12",
+    "18.03"
   ],
   "review_sections": [
     "1.6",
