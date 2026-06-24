@@ -2,8 +2,8 @@
 title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger"
 chapter: "26.12"
 section: "26.12"
-status: ready-for-review
-pipeline_stage: task9_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
@@ -21,14 +21,14 @@ gap_source: "研究素材/官方文档/章节深挖"
 gap_score: "18"
 task6_state: reviewed
 last_task6_at: "2026-06-25T04:05:00+08:00"
-task9_state: pending
+task9_state: reviewed
 task6_result: pass-light-edit
 task2a_result: "draft-ready-for-review"
 last_task2a_at: "2026-05-17T06:04:00+08:00"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-24"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-25"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-17T06:36:36+08:00"
+last_task9_at: "2026-06-25T06:20:00+08:00"
 last_task9_autofix_at: "2026-06-02"
 task2b_result: fixed
 task2b_state: fixed

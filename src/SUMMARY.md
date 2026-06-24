@@ -186,6 +186,7 @@ tags:
   - [8.14 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染](part2-performance/ch08-responsiveness/14-push-notification-pipeline-performance.md)
   - [8.15 Play Integrity API 性能与集成延迟](part2-performance/ch08-responsiveness/15-play-integrity-api-performance.md)
   - [8.16 ProfilingManager 系统触发式性能追踪](part2-performance/ch08-responsiveness/16-profilingmanager-系统触发式性能追踪.md)
+  - [8.17 Kotlin Flow 背压、操作符链与响应式性能边界](part2-performance/ch08-responsiveness/17-kotlin-flow-backpressure-performance.md)
 
 - [第 9 章：ANR](part2-performance/ch09-anr/README.md)
   - [9.1 ANR 设计思想](part2-performance/ch09-anr/01-anr-design.md)
@@ -441,6 +442,7 @@ tags:
   - [22.22 Compose LazyList/LazyGrid 滑动性能深度优化](part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md)
   - [22.23 Navigation Compose 性能优化](part5-app/ch22-rendering-practice/22.23-navigation-compose-performance.md)
   - [22.24 App Widget 更新性能：RemoteViews IPC 与 Glance 渲染](part5-app/ch22-rendering-practice/24-app-widget-performance.md)
+  - [22.25 Compose 布局系统：测量阶段、缓存机制与 Intrinsic 性能](part5-app/ch22-rendering-practice/25-compose-layout-measurement-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
