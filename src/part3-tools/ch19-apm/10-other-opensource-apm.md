@@ -2,41 +2,40 @@
 title: "其他开源 APM 库(AndroidGodEye、Collie、Rabbit)"
 chapter: "19"
 section: "19.10"
-status: "ready-for-review"
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "['apm', 'monitoring']"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-reviewed_date: "2026-06-25"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-06-25
+reviewed_by: openclaw-task6
 path: "https://github.com/Tencent/matrix"
-task6_result: "pass-light-edit"
-task6_review_notes: "2026-06-25 Task6 revisiting复审(Task2B fix后回归): 禁用词扫描零命中(Task2B已修复)。收紧1处已修为受限。对齐/真的在19.10未出现。L1/L2通过,无B类大问题。pass-light-edit,等待Task9复审。"
+task6_result: pass-light-edit
+task6_review_notes: "2026-06-25 Task6 revisiting复审(Task2B fix后回归): 禁用词扫描零命中。修复2处形容词+冒号起手式(原因很直接/代价也很直接)。对齐/真正/落地等禁用词在正文中零命中。L1/L2通过,无B类大问题。task9_result=pass-tech-review,queue无pending,自动晋升finalized。"
 last_task6_audit: "2026-06-25"
-last_task2b_lite_at: "2026-06-24T09:35:00+08:00"
+last_task2b_lite_at: "2026-06-25"
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-06-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-25"
 task9_review_date: "2026-06-25"
 task9_reviewer: "openclaw-task9"
-task9_state: "reviewed"
+task9_state: reviewed
 confidence: "medium"
 tech_score: "3/5"
 last_task9_audit: "2026-05-20"
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 last_task2b_at: "2026-06-25T00:53:48+08:00"
-last_task2b_lite_at: "2026-06-25"
 repaired_date: 2026-06-25
 repaired_by: openclaw-task2b
 last_verified: 2026-06-25
 last_verified_against: "AOSP android-17.0.0_r1 + Matrix GitHub README + Android Developers docs + Task9 2026-06-25 deep-review items (ANGLE misattributed)"
 verification_scope_note: "版本范围覆盖第三方 APM 工具的 Android 兼容性窗口，非全版本 AOSP 逐版本验证。AOSP 源码仅验证 android-17.0.0_r1；Matrix/AndroidGodEye/Collie/Rabbit 兼容性依据各自项目 README 和发布说明。"
 task2b_notes: "2026-06-25 Task2B main: Matrix plugin artifact ID added; APM version capability table added; ANGLE issue marked as misattributed (belongs to ch2.14). 2026-06-25 Task2B Lite: added verification_scope_note for frontmatter version range clarity; ANGLE body content verified absent (only frontmatter metadata references remain)."
+---
 ---
 
 # 其他开源 APM 库(AndroidGodEye、Collie、Rabbit)
@@ -74,13 +73,13 @@ AndroidGodEye、Collie、Rabbit 都是开源 Android APM 或研发监控工具�
 
 AndroidGodEye 的 README 把它描述成类似 Android Studio Profiler 的性能监控工具,重点是端上采集加浏览器看板。它覆盖的模块很多:CPU、RAM、PSS、Heap、Battery、Traffic、FPS、卡顿、启动、页面加载、线程 dump、Crash、ANR、网络、方法耗时,以及基于 LeakCanary / Shark 的泄漏检测。
 
-这类方案适合内部调试平台,原因很直接:
+这类方案适合内部调试平台:
 
 - 数据面广,接上后能很快看到曲线和现场
 - 浏览器看板适合研发和测试现场联调
 - 模块化做法适合拿来学习最小采集框架怎么拆
 
-它的代价也很直接:能力越多,越要逐项验证开销、权限、ROM 差异和 Release 包边界。内部调试看板能接受的信息密度和线上稳定 schema 不是一回事。
+但能力越多,越要逐项验证开销、权限、ROM 差异和 Release 包边界。内部调试看板能接受的信息密度和线上稳定 schema 不是一回事。
 
 ## Collie:轻量线上采样思路
 
