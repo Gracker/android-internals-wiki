@@ -111,5 +111,40 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-06-24T09:06:00+08:00"
+  },
+  {
+    "chapter": "8.{new_section_num}",
+    "title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24",
+    "gap_source": "research-gaps-md",
+    "related_chapters": [
+      "2.4",
+      "7.2"
+    ],
+    "material_paths": [],
+    "draft_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch08-responsiveness/16-profilingmanager-系统触发式性能追踪.md"
+  },
+  {
+    "section": "14.13",
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "priority": 90,
+    "reason": "[review回炉] PLT vs Inline Hook 对比表中 IFUNC 绕过方式与正文描述矛盾",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "技术矛盾",
+        "location": "PLT vs Inline Hook 对比表 / 正文",
+        "detail": "对比表'绕过方式'行将 IFUNC resolver 列为 inline hook 的绕过方式，但正文明确写道 IFUNC resolver 绕过的是 PLT Hook，'这些场景必须用 inline hook'。表格与正文矛盾。",
+        "suggestion": "修正对比表'绕过方式'行：PLT Hook 格改为'dlsym 直接调用 / IFUNC resolver 替换'，Inline Hook 格改为'函数内分支跳转（如 tail call）或未被覆写的间接调用路径'"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-24T12:17:03",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-24-12-review.md"
   }
 ]
