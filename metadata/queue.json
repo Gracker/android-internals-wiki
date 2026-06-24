@@ -336,10 +336,12 @@
     "chapter": "22.9",
     "title": "端侧大模型推理的内存管理",
     "path": "part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md",
-    "status": "draft",
+    "status": "drafted",
     "priority": 80,
     "created_by": "task2a-knowledge-gap",
-    "created_date": "2026-06-24"
+    "created_date": "2026-06-24",
+    "drafted_at": "2026-06-25T04:11:15.314396+08:00",
+    "drafted_by": "openclaw-task2a"
   },
   {
     "chapter": "23.8",
