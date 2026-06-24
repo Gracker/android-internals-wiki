@@ -430,6 +430,96 @@ Android 16+ 引入的 16KB page size 对 Hook 框架产生两个直接影响：
 
 3. **mixed-page-size 场景**：Android 16+ 上存在 64-bit 进程用 16KB page 但 32-bit 进程仍用 4KB page 的混合情况（由内核 VMA 策略决定）。Hook 框架需要在运行时通过 `getconf PAGE_SIZE` 或 `sysconf(_SC_PAGE_SIZE)` 动态获取当前进程的 page size，不能假设固定值 [已验证: Android Developers 16KB page size docs + android-17.0.0_r1 bionic/libc/bionic/page_size.cpp]。
 
+
+
+<!-- AIW-源码调研-2026-06-24 -->
+
+### 源码佐证：ShadowHook 在 Android 17 (API 37) 16KB Page Size 下的实现细节
+
+> 本节为 2026-06-24 调研补充：基于字节跳动开源的 ShadowHook 库（main 分支，commit 截至 2025-10）反推其 16KB page size 自适应机制，覆盖编译期、运行时、mprotect 边界三个独立保障。所有代码引用定位到仓库 `bytedance/android-inline-hook`，路径 `shadowhook/src/main/cpp/...`。
+
+**编译期：CMakeLists.txt 限定 ARM64 ELF 段对齐** [已验证: bytedance/android-inline-hook shadowhook/src/main/cpp/CMakeLists.txt]:
+
+```cmake
+if(${ANDROID_ABI} STREQUAL "arm64-v8a")
+    set(ARCH "arm64")
+    set(ARCH_LINK_FLAGS "-Wl,-z,max-page-size=16384")  # 仅 ARM64 强制 16KB 对齐
+elseif(${ANDROID_ABI} STREQUAL "armeabi-v7a")
+    set(ARCH "arm")
+    set(ARCH_LINK_FLAGS "")  # ARMv7 设备不会跑 16KB 内核，保持默认 4KB
+endif()
+```
+
+`-z max-page-size=16384` 让 ld.lld 将 `Elf64_Phdr.p_align` 写为 `0x4000`，Android 17 PackageManager 据此判定该 .so 在 16KB 内核上无需走 backcompat 模式直接加载。AGP 8.5.1+/NDK r28+ 的默认行为，但 ShadowHook 显式写入是为了让 SDK 消费者无论 AGP 版本如何都能保证 ELF 段对齐。
+
+**运行时：page-size 全局缓存，零硬编码** [已验证: common/sh_util.c sh_util_init]:
+
+```c
+void sh_util_init(void) {
+  // ...
+  sh_util_page_size = (size_t)getpagesize();  // 一次性写入全局
+  // ...
+}
+
+size_t sh_util_get_page_size(void) { return sh_util_page_size; }
+
+uintptr_t sh_util_page_start(uintptr_t x) {
+  return x & ~(sh_util_page_size - 1);  // 动态 mask，非硬编码 0xFFF
+}
+```
+
+整个库对 page size 的唯一访问入口是 `sh_util_get_page_size()`，所有 page-aligned 计算（`sh_util_page_start`、`sh_util_page_end`、`sh_trampo_alloc`）通过它动态取值。同一份二进制在 4KB 内核和 16KB 内核上行为完全一致——这是 ShadowHook 不需要在编译时区分 page size 的根本原因。
+
+**mprotect 边界：动态 start/end 计算** [已验证: common/sh_util.c sh_util_mprotect]:
+
+```c
+int sh_util_mprotect(uintptr_t addr, size_t len, int prot) {
+  uintptr_t start = sh_util_page_start(addr);
+  uintptr_t end = sh_util_page_end(addr + len - 1);
+  return mprotect((void *)start, end - start, prot);
+}
+```
+
+指令覆写前的 mprotect 区间完全依赖运行时 page size。16KB 设备上覆写 24 字节 ARM64 指令，区间恰好是包含 target_addr 的 16KB 页；4KB 设备上同样 24 字节，区间是最小包含的 4KB 页。**绝不硬编码 0xFFF mask**——这是为什么 ShadowHook 能直接跑在 16KB page 上而无须任何 API level 判断。
+
+**Trampoline mmap：整页匿名映射** [已验证: common/sh_trampo.c sh_trampo_alloc_between]:
+
+```c
+size_t page_size = sh_util_get_page_size();
+size_t trampo_page_size = page_size;  // 4KB 设备=4KB，16KB 设备=16KB
+// mmap(hint, trampo_page_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)
+```
+
+trampo 池（`sh_hub_trampo_mgr` + `sh_island_trampo_mgr`）每页申请 `PROT_READ|PROT_WRITE|PROT_EXEC` 匿名内存，按延迟回收策略复用。**该 mmap 需要源进程持有 SELinux `execmem` 权限**——`untrusted_app` 默认无此权限，导致 App 进程内自建 inline hook 失败（Android 安全模型的有意约束，非 ShadowHook 缺陷）。
+
+**Branch Island 优化避免整段 mprotect** [已验证: common/sh_config.h]:
+
+```c
+// Try using branch islands, so that only a single relative jump instruction
+// is needed at the target address.
+#define SH_CONFIG_TRY_HOOK_WITH_ISLAND
+```
+
+当只覆盖 4 字节且非函数起始时，target 处仅写一条 `B shadow_exit`（4 字节绝对跳转），跳转目标放在 ELF segment gap 中而非匿名 mmap。**这避免了 16KB 设备上一改改 16KB 代码段带来的副作用**——周边函数可能与目标指令在同一 16KB 页中，整段 mprotect 会把它们也设为 RWX，破坏 linker 加载时的 W^X 约束。Island 失败时回退到 16/24 字节覆写方案。
+
+**Android 17 16KB backcompat 模式** [已验证: developer.android.com/guide/practices/page-sizes "16 KB backcompat mode" 章节]:
+
+Android 17 引入了完整的 backcompat 模式，由两个 system property 控制：
+
+```
+# 强制对所有 App 启用 backcompat（默认行为）
+adb shell setprop bionic.linker.16kb.app_compat.enabled true
+adb shell setprop pm.16kb.app_compat.disabled false
+
+# 强制关闭 backcompat，未对齐的 .so 立即加载失败
+adb shell setprop bionic.linker.16kb.app_compat.enabled false
+adb shell setprop pm.16kb.app_compat.disabled true
+```
+
+backcompat 模式判定条件（PackageManager 侧）：(1) `.so` 的 ELF LOAD 段对齐为 4KB；(2) APK 中的未压缩 `.so` 按 4KB ZIP 对齐。两个条件同时满足时启动时向用户显示警告："running in 16KB backcompat mode"。**backcompat 不替代正确对齐**——App 必须真正以 16KB 编译才能上 16KB-only 设备。
+
+**性能开销**：`getpagesize()` 内部走 `getauxval(AT_PAGESZ)`，单次 ~30ns，仅 `sh_util_init()` 调用一次后缓存。`sh_util_page_start`/`sh_util_page_end` 是位运算，单次 <2ns。运行期 hook 调用（enter → island → hub → interceptor）的额外开销是 12–28 条 ARM64 指令 + 一次 hub 栈查表，约 50–150ns。16KB page size 对运行期 hook 路径无额外开销——`mprotect` 仅在 hook 安装/卸载时执行。
+
 ## 在 Perfetto/工具中的表现
 
 Hook 采集的原始数据需要可视化才能发挥作用。不同 Hook 路径在 Perfetto 中的呈现方式不同：

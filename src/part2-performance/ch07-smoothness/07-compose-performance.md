@@ -603,3 +603,10 @@ fun WebViewScreen(url: String) {
 - `androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt`（`DerivedSnapshotState` 实现、`readableHash` 机制、`policy` 参数）
 - `androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateObserver.kt`（三阶段失效、`withoutReadObservation`）
 详见：`DeepResearch/2026-06-02-android-compose-derivedstate-sso-deep-source-analysis.md`
+
+**[源码调研补遗 2026-06-24]**：Compose Compiler 2.0 Strong Skipping 性能优化源码分析。一手来源：
+- `plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/ComposePlugin.kt`（FeatureFlag.StrongSkipping 架构、编译器配置）
+- `plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/lower/ComposerLambdaMemoization.kt`（Strong Skipping 代码生成、composer.startReplaceableGroup 跳过逻辑）
+- `plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/lower/ClassStabilityTransformer.kt`（类稳定性标记、StabilityBits 位掩码）
+- `plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/lower/ComposerParamTransformer.kt`（composer.changed[n] 参数生成、recomposition 优化）
+详见：`DeepResearch/2026-06-24-compose-20-strong-skipping-performance.md`

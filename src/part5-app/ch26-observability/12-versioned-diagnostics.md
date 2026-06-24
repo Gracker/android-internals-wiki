@@ -3,7 +3,7 @@
 title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger"
 chapter: "26.12"
 section: "26.12"
-status: "ready-for-review"
+status: ready-for-review
 pipeline_stage: task9_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
@@ -15,7 +15,7 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-24"
 reviewed_by: "openclaw-task6"
 path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
-related_chapters: "[\"26.2\", \"26.5\", \"14.7\", \"8.10\", \"13.2\", \"15.5\", \"20.3\", \"19.24\"]"
+related_chapters: "["26.2", "26.5", "14.7", "8.10", "13.2", "15.5", "20.3", "19.24"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"
