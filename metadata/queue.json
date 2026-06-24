@@ -83,6 +83,18 @@
         "location": "API 版本对应",
         "detail": "ProfilingManager 实际在 API 35 (Android 15) 引入，不是 API 36",
         "suggestion": "修正版本号对应关系"
+      },
+      {
+        "type": "源码错误",
+        "location": "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java",
+        "detail": "该路径在 android-17.0.0_r1 中不存在，需要修正为正确的 AOSP 路径",
+        "suggestion": "在 frameworks/native/services 目录中查找正确的 ProfilingService 实现"
+      },
+      {
+        "type": "原理断裂",
+        "location": "ProfilingManager 与 system_server 通信",
+        "detail": "未解释 ProfilingManager 如何与 system_server 进程进行 IPC 通信和权限验证",
+        "suggestion": "补充 ProfilingManager 通过 Binder 与 system_server 的 AppOpsManager 交互的具体流程"
       }
     ],
     "added_by": "task9-deep-tech-review",
