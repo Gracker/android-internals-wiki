@@ -10,20 +10,20 @@ applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-05-10"
 last_verified_against: "AOSP android-16.0.0_r1 Scheduler/VSyncPredictor.cpp + VSyncReactor.cpp + VSyncDispatchTimerQueue"
 confidence: high
-sources: 
-path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp"
-path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp"
-path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp"
-path: "frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp"
-path: "frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp"
-path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp"
-path: "frameworks/base/core/java/android/view/Choreographer.java"
-path: "frameworks/base/core/java/android/os/Looper.java"
-path: "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
-path: "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
-path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
-path: "https://source.android.com/docs/core/graphics/implement-vsync"
-path: "https://developer.android.com/about/versions/16/features"
+sources:
+  - "frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp"
+  - "frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp"
+  - "frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp"
+  - "frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp"
+  - "frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp"
+  - "frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp"
+  - "frameworks/base/core/java/android/view/Choreographer.java"
+  - "frameworks/base/core/java/android/os/Looper.java"
+  - "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
+  - "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
+  - "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
+  - "https://source.android.com/docs/core/graphics/implement-vsync"
+  - "https://developer.android.com/about/versions/16/features"
 tags: "[vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]"
 related_chapters: "[\"2.1\", \"2.4\", \"2.5\", \"2.6\", \"2.9\", \"8.1\"]"
 task6_state: reviewed
@@ -46,7 +46,7 @@ task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Cho
 task2b_result: "fixed"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
-last_task6_audit: "2026-06-18"
+last_task6_audit: "2026-06-24"
 task9_state: "reviewed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"
@@ -308,7 +308,7 @@ Android 13 引入了一个新的 VSync 信号--**vsync-appSf**,解决的是旧�
 
 这两种消费者对时序的要求不同:SurfaceFlinger 需要的是"该合成了",而 Choreographer 客户端需要的是"SurfaceFlinger 的内部状态已经更新了"。把这两种需求混在同一个 EventThread 里会导致时序歧义。
 
-vsync-appSf 将这两个职责彻底分离:
+vsync-appSf 将这两个职责分离:
 
 - **vsync-sf**:专用于驱动 SurfaceFlinger 合成
 - **vsync-appSf**:专用于需要与 SurfaceFlinger 内部状态紧密同步的 Choreographer 客户端
@@ -609,7 +609,7 @@ Android 17 的消息队列优化属于 `Looper` / `MessageQueue` 层,不直接�
 
 第二层,**主线程排队成本可能下降**。如果消息插入和取出时的锁竞争更少,`VSYNC-app` 到 `doFrame()` 之间的排队抖动理论上会更小,尤其是在多线程频繁 `post()`、动画回调密集或测试工具大量插桩的场景下。这个收益是间接影响,不是"VSync 机制本身变快了"。
 
-截至本次修复,公开材料仍缺两类我们真正需要的锚点:一是 Android 17 正式 tag 下最终采用的 MessageQueue 源码路径;二是可公开复核的量化数据来源。因此,这里先不给"掉帧下降 X%""锁竞争下降 Y%"这类数字,也不把它写成已经定案的架构结论。
+截至本次修复,公开材料仍缺两类需要的锚点:一是 Android 17 正式 tag 下最终采用的 MessageQueue 源码路径;二是可公开复核的量化数据来源。因此,这里先不给"掉帧下降 X%""锁竞争下降 Y%"这类数字,也不把它写成已经定案的架构结论。
 
 如果后续要在 Perfetto 里验证这类变化,更值得盯三处时间差:
 
