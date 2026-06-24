@@ -1,7 +1,7 @@
 ---
 title: "16KB Page Size 兼容性与 Native 崩溃治理"
 chapter: "20.13"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-18"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 last_verified: "2026-05-18"

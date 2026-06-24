@@ -92,6 +92,69 @@
     "completed_by": "task9-deep-tech-review"
   },
   {
+    "section": "26.12",
+    "section_title": "Android 版本化线上诊断能力",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在严重源码引用错误，需要Task2B重构章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "ProfilingManager源码路径",
+        "detail": "文中引用packages/modules/Profiling/framework/java/android/os/ProfilingManager.java，但在AOSP android-17.0.0_r1中该路径不存在",
+        "suggestion": "修正ProfilingManager在Android 17中的正确源码路径，并明确标注Android版本边界"
+      },
+      {
+        "type": "源码错误",
+        "location": "ProfilingTrigger常量引用",
+        "detail": "文中提到TRIGGER_TYPE_ANOMALY/TRIGGER_TYPE_APP_COMPAT常量在Android 17中可用，但AOSP源码中未找到这些常量定义",
+        "suggestion": "移除不存在的常量引用，或确认Android 17中真实的ProfilingTrigger类型"
+      },
+      {
+        "type": "原理断裂",
+        "location": "版本化诊断路径选择逻辑",
+        "detail": "三条诊断路径（退出追溯、运行时采集、事件触发）之间的互补关系和选择逻辑不够清晰",
+        "suggestion": "建立版本化诊断路径选择决策树，明确不同场景下的选择依据"
+      },
+      {
+        "type": "版本差异",
+        "location": "MemoryLimiter版本差异",
+        "detail": "文中提到Android 17的MemoryLimiter，但未明确说明不同targetSdk版本下的行为差异",
+        "suggestion": "补充MemoryLimiter在不同targetSdk版本下的行为差异和演进关系说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T14:23:56+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T14:53:33+08:00",
+    "completed_by": "task2b-main-rework"
+  },
+  {
+    "section": "14.13",
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "priority": 90,
+    "reason": "[review回炉] PLT vs Inline Hook 对比表中 IFUNC 绕过方式与正文描述矛盾",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "技术矛盾",
+        "location": "PLT vs Inline Hook 对比表 / 正文",
+        "detail": "对比表'绕过方式'行将 IFUNC resolver 列为 inline hook 的绕过方式，但正文明确写道 IFUNC resolver 绕过的是 PLT Hook，'这些场景必须用 inline hook'。表格与正文矛盾。",
+        "suggestion": "修正对比表'绕过方式'行：PLT Hook 格改为'dlsym 直接调用 / IFUNC resolver 替换'，Inline Hook 格改为'函数内分支跳转（如 tail call）或未被覆写的间接调用路径'"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-24T12:17:03",
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-24-12-review.md",
+    "completed_at": "2026-06-24T12:50:00",
+    "completed_by": "task2b-main"
+  },
+  {
     "section": "7.7",
     "section_title": "Jetpack Compose 性能优化",
     "priority": 85,
@@ -118,6 +181,78 @@
     "status": "completed",
     "completed_at": "2026-06-24T08:57:00+08:00",
     "completed_by": "task2b-main"
+  },
+  {
+    "section": "7.7",
+    "section_title": "Jetpack Compose 性能优化",
+    "priority": 85,
+    "reason": "fixed-lite",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "PausableComposition API引用",
+        "detail": "文中提到使用PausableComposition优化性能，但未标注该API对应的Compose版本和具体可用性边界，无法确认Android 17中的状态",
+        "suggestion": "明确标注PausableComposition在Android 17/Compose 1.7+中的可用性，并提供降级方案说明"
+      },
+      {
+        "type": "源码错误",
+        "location": "Strong Skipping版本差异",
+        "detail": "文中描述Strong Skipping机制，但未说明该特性在不同Kotlin/Compose版本中的演进历程和边界条件",
+        "suggestion": "补充StrongSkipping在Android 12-17中的版本演进说明和兼容性处理"
+      },
+      {
+        "type": "原理断裂",
+        "location": "布局优化部分",
+        "detail": "布局优化缺少完整的'为什么需要优化→优化原理→实现方式→验证方法'链条",
+        "suggestion": "建立完整的布局优化原理链，补充compose.compiler.metrics与渲染性能的关联机制"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 12-14兼容性",
+        "detail": "优化策略主要集中在Android 15-17，但对Android 12-14的差异覆盖不足",
+        "suggestion": "补充Android 12-14中Compose性能问题的特殊处理方式和优化策略"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T14:23:56+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T15:42:00+08:00",
+    "completed_by": "task2b-lite"
+  },
+  {
+    "section": "25.4",
+    "section_title": "WorkManager 实战与后台任务调度",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 存在源码路径错误和调度原理链不完整问题",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "SystemJobScheduler源码路径",
+        "detail": "文中引用platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/background/systemjob/SystemJobScheduler.java，但该路径在AndroidX WorkManager中可能不正确",
+        "suggestion": "确认Android 17中WorkManager的具体源码路径，并提供正确的源码引用"
+      },
+      {
+        "type": "原理断裂",
+        "location": "JobScheduler与WorkManager调度原理",
+        "detail": "缺少JobScheduler如何转换为WorkSpec、GreedyScheduler如何与JobScheduler配合的详细说明",
+        "suggestion": "完善JobScheduler与WorkManager的调度原理链条，补充任务转换和配合机制说明"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 17 long-running worker配额",
+        "detail": "未说明Android 17中long-running worker配额的进一步优化或限制变化",
+        "suggestion": "补充Android 17中long-running worker配额变化的详细说明和应对策略"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T14:23:56+08:00",
+    "status": "pending"
   },
   {
     "section": "2.30",
@@ -157,139 +292,48 @@
     "draft_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch08-responsiveness/16-profilingmanager-系统触发式性能追踪.md"
   },
   {
-    "section": "14.13",
-    "section_title": "Hook 基础设施与性能工具实现原理",
-    "priority": 90,
-    "reason": "[review回炉] PLT vs Inline Hook 对比表中 IFUNC 绕过方式与正文描述矛盾",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "技术矛盾",
-        "location": "PLT vs Inline Hook 对比表 / 正文",
-        "detail": "对比表'绕过方式'行将 IFUNC resolver 列为 inline hook 的绕过方式，但正文明确写道 IFUNC resolver 绕过的是 PLT Hook，'这些场景必须用 inline hook'。表格与正文矛盾。",
-        "suggestion": "修正对比表'绕过方式'行：PLT Hook 格改为'dlsym 直接调用 / IFUNC resolver 替换'，Inline Hook 格改为'函数内分支跳转（如 tail call）或未被覆写的间接调用路径'"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-24T12:17:03",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-06-24-12-review.md",
-    "completed_at": "2026-06-24T12:50:00",
-    "completed_by": "task2b-main"
+    "chapter": "8.9",
+    "title": "Hook 技术限制与边界条件",
+    "path": "part1-fundamentals/ch01-architecture/08.09-hook-technology-boundary-conditions.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
   },
   {
-    "section": "7.7",
-    "section_title": "Jetpack Compose 性能优化",
-    "priority": 85,
-    "reason": "[Deep Tech Review] 存在重要API版本边界和原理链缺失问题",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "PausableComposition API引用",
-        "detail": "文中提到使用PausableComposition优化性能，但未标注该API对应的Compose版本和具体可用性边界，无法确认Android 17中的状态",
-        "suggestion": "明确标注PausableComposition在Android 17/Compose 1.7+中的可用性，并提供降级方案说明"
-      },
-      {
-        "type": "源码错误",
-        "location": "Strong Skipping版本差异",
-        "detail": "文中描述Strong Skipping机制，但未说明该特性在不同Kotlin/Compose版本中的演进历程和边界条件",
-        "suggestion": "补充StrongSkipping在Android 12-17中的版本演进说明和兼容性处理"
-      },
-      {
-        "type": "原理断裂",
-        "location": "布局优化部分",
-        "detail": "布局优化缺少完整的'为什么需要优化→优化原理→实现方式→验证方法'链条",
-        "suggestion": "建立完整的布局优化原理链，补充compose.compiler.metrics与渲染性能的关联机制"
-      },
-      {
-        "type": "版本差异",
-        "location": "Android 12-14兼容性",
-        "detail": "优化策略主要集中在Android 15-17，但对Android 12-14的差异覆盖不足",
-        "suggestion": "补充Android 12-14中Compose性能问题的特殊处理方式和优化策略"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-24T14:23:56+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-24T15:42:00+08:00",
-    "completed_by": "task2b-lite",
-    "reason": "fixed-lite"
+    "chapter": "19.10",
+    "title": "APM 工具基准测试与兼容性验证",
+    "path": "part3-tools/ch19-apm/19.10-apm-tool-compatibility.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
   },
   {
-    "section": "25.4",
-    "section_title": "WorkManager 实战与后台任务调度",
-    "priority": 85,
-    "reason": "[Deep Tech Review] 存在源码路径错误和调度原理链不完整问题",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "SystemJobScheduler源码路径",
-        "detail": "文中引用platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/background/systemjob/SystemJobScheduler.java，但该路径在AndroidX WorkManager中可能不正确",
-        "suggestion": "确认Android 17中WorkManager的具体源码路径，并提供正确的源码引用"
-      },
-      {
-        "type": "原理断裂",
-        "location": "JobScheduler与WorkManager调度原理",
-        "detail": "缺少JobScheduler如何转换为WorkSpec、GreedyScheduler如何与JobScheduler配合的详细说明",
-        "suggestion": "完善JobScheduler与WorkManager的调度原理链条，补充任务转换和配合机制说明"
-      },
-      {
-        "type": "版本差异",
-        "location": "Android 17 long-running worker配额",
-        "detail": "未说明Android 17中long-running worker配额的进一步优化或限制变化",
-        "suggestion": "补充Android 17中long-running worker配额变化的详细说明和应对策略"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-24T14:23:56+08:00",
-    "status": "pending"
+    "chapter": "21.12",
+    "title": "渲染管线性能监控与优化",
+    "path": "part2-performance/ch07-smoothness/21.12-rendering-pipeline-monitoring.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
   },
   {
-    "section": "26.12",
-    "section_title": "Android 版本化线上诊断能力",
-    "priority": 95,
-    "reason": "[Deep Tech Review] 存在严重源码引用错误，需要Task2B重构章节",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "ProfilingManager源码路径",
-        "detail": "文中引用packages/modules/Profiling/framework/java/android/os/ProfilingManager.java，但在AOSP android-17.0.0_r1中该路径不存在",
-        "suggestion": "修正ProfilingManager在Android 17中的正确源码路径，并明确标注Android版本边界"
-      },
-      {
-        "type": "源码错误",
-        "location": "ProfilingTrigger常量引用",
-        "detail": "文中提到TRIGGER_TYPE_ANOMALY/TRIGGER_TYPE_APP_COMPAT常量在Android 17中可用，但AOSP源码中未找到这些常量定义",
-        "suggestion": "移除不存在的常量引用，或确认Android 17中真实的ProfilingTrigger类型"
-      },
-      {
-        "type": "原理断裂",
-        "location": "版本化诊断路径选择逻辑",
-        "detail": "三条诊断路径（退出追溯、运行时采集、事件触发）之间的互补关系和选择逻辑不够清晰",
-        "suggestion": "建立版本化诊断路径选择决策树，明确不同场景下的选择依据"
-      },
-      {
-        "type": "版本差异",
-        "location": "MemoryLimiter版本差异",
-        "detail": "文中提到Android 17的MemoryLimiter，但未明确说明不同targetSdk版本下的行为差异",
-        "suggestion": "补充MemoryLimiter在不同targetSdk版本下的行为差异和演进关系说明"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-24T14:23:56+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-24T14:53:33+08:00",
-    "completed_by": "task2b-main-rework"
+    "chapter": "22.9",
+    "title": "端侧大模型推理的内存管理",
+    "path": "part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
+  },
+  {
+    "chapter": "23.8",
+    "title": "游戏性能优化实战指南",
+    "path": "part2-performance/ch08-responsiveness/23.8-game-performance-optimization.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
   }
 ]

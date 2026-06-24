@@ -62,6 +62,8 @@ last_task9_audit: "2026-05-24"
 last_task9_audit_log: "logs/deep-review/2026-05-24-18-audit.md"
 last_task9_autofix_at: "2026-06-03"
 last_task9_review_log: "logs/deep-review/2026-06-03-14-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 # 4.7 16KB Page Size 与 Android 性能

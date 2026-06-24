@@ -78,7 +78,7 @@ task9_state: reviewed
 last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-04
+last_deepseek_cn_review_at: 2026-06-24
 ---
 
 
@@ -152,7 +152,7 @@ last_deepseek_cn_review_at: 2026-06-04
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory - 管理对象生命周期]
 
-解决思路是让对象的引用链在合适的时机断开。后面讲内存泄漏时会展开具体模式。
+解决思路是让对象的引用链在合适的时机断开。具体模式见下一节"内存泄漏的常见模式"。
 
 ### 第三层:避免泄漏
 
@@ -187,8 +187,6 @@ last_deepseek_cn_review_at: 2026-06-04
 
 在讲具体优化手段之前,需要先理解一个贯穿整个内存优化话题的核心概念--**内存抖动(Memory Churn)**,以及它如何与 4.3 节的 ART GC 产生连锁反应。
 
-[已验证: 研究素材, research-feed 2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
-
 ### 什么是内存抖动
 
 内存抖动是指**短时间内大量临时对象的创建与销毁**。在 Android Studio 的 Memory Profiler 中看到一个上下剧烈波动的"锯齿图"--内存曲线快速上升又快速下降,反复循环--那就是内存抖动的典型表现。
@@ -212,11 +210,11 @@ UI Thread    | GC Pause!    | UI Thread
 
 可以把"3ms 黄金停顿准则"作为 120Hz 设备上 GC 优化的量化目标--Young GC 单次暂停不应超过 3ms,否则就应该排查对象抖动源头。
 
-这导致一个反直觉的现象:**App 在高刷设备上反而更容易暴露内存抖动问题**。60Hz 设备的 16.6ms 帧间隔给了 GC 更多"藏身"空间,5ms 的暂停可能不丢帧;同样的暂停在 120Hz 上就是掉帧。
+所以一个反直觉的结论:**App 在高刷新率设备上反而更容易暴露内存抖动**。60Hz 设备的帧间隔 16.6ms,GC 暂停 5ms 还有 11.6ms 给 UI 工作;120Hz 设备帧间隔只有 8.3ms,同样的 5ms 暂停就只剩 3.3ms——只要 UI 工作超过 3.3ms,必然掉帧。
 
 ### 对象池:对抗内存抖动的利器
 
-理解了内存抖动的根因(高频分配 → GC 频繁 → 暂停导致掉帧),对抗策略就很自然了:**复用对象,避免重复分配**。
+根因清楚了——高频分配触发 GC 频繁暂停,导致掉帧——策略也就很自然:复用对象,减少分配。
 
 Android 系统自身就大量使用了对象池模式:
 
@@ -363,8 +361,6 @@ Android 8.0(API 26)引入了一种特殊的 Bitmap 配置:`Bitmap.Config.HARDWAR
 | 内存缓存 | LRU + WeakRef | LRU | 三层缓存 |
 | 硬件 Bitmap | API 26+ 默认 | API 26+ 默认 | 可配置 |
 | Kotlin 支持 | Java 优先 | Kotlin-first | Java 优先 |
-
-[待验证: Glide BitmapPool 默认大小 = maxMemory/8 的说法来自官方文档]
 
 ## 内存泄漏的常见模式
 
@@ -816,11 +812,11 @@ override fun onCreate() {
 
 `registerComponentCallbacks` 注册的回调会在进程的所有生命周期中生效,而不仅限于某个 Activity 的生命周期。
 
-## 16KB Page Size 迁移对 App 内存的影响
+## 16KB Page Size 迁移
 
 [已验证: 研究素材, research-feed 2026-03-31-19-ch04-app-memory-16kb-migration.md]
 
-2025-2026 年 Android 平台最大的平台级内存变更是 **16KB Page Size 的强制迁移**。Google Play 要求:自 2025-11-01 起,提交到 Google Play、面向 Android 15/API 35+ 设备的新应用和更新必须支持 16KB page size。此要求不作用于所有已发布应用的存量版本,也不作用于仅面向 Android 14 及以下设备的提交。
+前面几节聚焦 App 可控的内存策略——减少分配、复用对象、检测泄漏。但有一项平台级变更会直接影响所有这些策略的实际效果：**16KB Page Size 迁移**。Google Play 要求:自 2025-11-01 起,提交到 Google Play、面向 Android 15/API 35+ 设备的新应用和更新必须支持 16KB page size。此要求不作用于所有已发布应用的存量版本,也不作用于仅面向 Android 14 及以下设备的提交。
 
 ### 为什么 16KB Page Size 能提升性能
 
@@ -913,7 +909,9 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下,分配对齐从 
 - **`ApplicationExitInfo`(Android 11 / API 30+)**:通过 `getHistoricalProcessExitReasons()` 获取进程终止原因、状态、PSS/RSS 快照。`getPss()` / `getRss()` 也是 API 30 口径;Android 10 / API 29 设备无法按此路径回查低内存退出原因。如果 `reason == REASON_LOW_MEMORY`,说明进程被系统因内存压力终止
 - **`ProfilingManager`(Android 15/API 35+)**:可在内存水位达到阈值时触发系统级 Trace 采集,提供零侵入的内存异常捕获
 
-[待验证] Android 17 是否在 `ApplicationStartInfo` 中新增了上次运行周期的峰值内存回查方法。确认前可先用 `ApplicationExitInfo.getPss()` 和 `getRss()` 作为替代诊断数据源。
+Android 17 是否在 `ApplicationStartInfo` 中新增了上次运行周期的峰值内存回查方法,确认前可先用 `ApplicationExitInfo.getPss()` 和 `getRss()` 作为替代诊断数据源。
+
+[待验证: Android 17 ApplicationStartInfo 峰值内存回查 API]
 
 ## 常见问题与误区
 
@@ -966,7 +964,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下,分配对齐从 
 
 **GC 开销增大**。ART 的 GC 时间与堆的大小正相关--堆越大,GC 需要扫描的对象越多,单次 GC 的耗时越长。在 120Hz 设备上,帧间隔只有 8.3ms,GC 暂停多出 2-3ms 就可能导致掉帧。一个普通堆大小 256MB 的 App 和一个 largeHeap 512MB 的 App,在相同分配模式下,后者的 GC 暂停时间可能是前者的 1.5-2 倍。
 
-**设备碎片化问题**。"large heap"的具体大小由设备厂商决定,不同设备差异很大。在高内存设备上可能是 512MB,在低内存设备上可能只有 384MB--看似申请了"很大"的堆,实际可能只多了一点点。
+**设备碎片化问题**。而且"large heap"的具体大小由设备厂商决定,不同设备差异很大:高内存设备上可能是 512MB,低内存设备上可能只有 384MB——申请了"很大"的堆,实际增量可能很小。
 
 **largeHeap 不解决内存泄漏**。如果 App 存在 Activity 泄漏,申请更大的堆只是让泄漏的"容量"变大了--从"泄漏 20 个 Activity 后 OOM" 变成了"泄漏 40 个 Activity 后 OOM"。泄漏仍然存在。
 
