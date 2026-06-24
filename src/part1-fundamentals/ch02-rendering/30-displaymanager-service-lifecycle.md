@@ -92,3 +92,12 @@ Display.Mode 切换对 BufferQueue、Choreographer、SurfaceFlinger 的影响链
 通过合理的优化策略，可以将 DisplayManagerService 的性能影响控制在合理范围内，确保多 display 环境下的流畅体验。
 
 [结构参考: DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md]
+
+## 参考资料
+
+### DisplayManagerService 多 display 管理性能边界（Android 17 / API 37）
+- 来源：DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 源码，深入分析 DisplayManagerService 的 SyncRoot 单锁模型、四类 DisplayAdapter 事件投递、LogicalDisplayMapper 的 Layout 映射机制，以及 Android 17 新增的 DisplayGroup/DisplayTopology 拓扑协调架构。覆盖折叠屏 DeviceState 驱动的 display 转换流程与异步锁避免策略。
+- 注入时间：2026-06-25
+- 价值：提供了 DMS 全链路源码级分析，补充了本章缺少的多 display 锁竞争边界与拓扑重建性能路径
