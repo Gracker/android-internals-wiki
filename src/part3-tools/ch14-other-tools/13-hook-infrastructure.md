@@ -9,19 +9,20 @@ task6_reviewed_date: "2026-06-24"
 task6_review_notes_2026_06_24_r5: "第五轮复审：L1 修复完成（删除'这意味着'禁用词、修复英文词间距、改善开头结构）。L2 可读性优化完成。L3/L4 问题写入 queue priority:90 送 Task2B。"
 task6_review_notes_2026_06_24_r6: "第六轮复审（Task2B P95 Task9回炉后）：L1 修 2 处（代码注释中英文间距 Thumb）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁。L3 观察 1 条（PLT vs Inline 对比表中 IFUNC 绕过方式与正文描述矛盾），写入 queue+suggestions 送 Task2B/Task9。新增多进程/64-32bit/ART-Dalvik/16KB增强节质量良好。task6_result: pass-light-edit，待 Task9 技术复审。"
 task6_review_notes_2026_06_24_r7: "第七轮复审（Task2B IFUNC表格修正后回炉复审）：L1 修 20 处路径格式（AOSP/GitHub 源码路径中多余空格，涉及验证标注和正文）。禁用词/AI套话/翻译腔全清洁（body text）。不是X而是Y=2（限额内）。高频词全清洁。IFUNC 对比表 P90 修正已验证正确。L3 观察 1 条：art/runtime/entrypoints/entrypoint_utils.h 路径可能在 android-17.0.0_r1 中不存在（Task9 P95 queue 标记 completed 但路径未更新），交 Task9 复核。无 B 类阻断问题。task6_result: pass-light-edit，待 Task9 技术复审。"
-task6_state: reviewed
-task9_result: "needs-rework"
+task6_state: revisiting
+task9_result: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-24"
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-06-24"
 last_verified_against: "AOSP android-17.0.0_r1 system/sepolicy/public/domain.te + bionic/linker/linker_phdr.cpp + bionic/linker/linker.cpp + bionic/libc/seccomp/seccomp_policy.cpp + libdl.map.txt + art/runtime/art_method.h + art/libartbase/base/apex.h + external/perfetto + frameworks/native/cmds/atrace/atrace.cpp + Android Developers 16KB page size docs + GitHub upstream READMEs (ShadowHook/xHook/Matrix/KOOM)"
 confidence: "medium"
+tech_score: "3/5"
 sources: "ShadowHook v1.3.2; xHook iqiyi/xHook; Matrix Tencent/matrix; KOOM KwaiAppTeam/KOOM; AOSP bionic/linker/linker_phdr.cpp; AOSP art/runtime/art_method.h; AOSP selinux/public/domain.te; AOSP frameworks/native/cmds/atrace/atrace.cpp; AOSP external/perfetto"
 path: "https://github.com/KwaiAppTeam/KOOM"
 tags: "hook,plt-hook,inline-hook,perfetto,atrace,koom,shadowhook,xhook,matrix,selinux,wx,perf-measurement,mainline-modules"
@@ -34,6 +35,8 @@ polish_date: "2026-04-22"
 polish_by: "task2b-polish"
 task6_review_notes_2026_06_24: "revisiting 复审：发现 B 类问题 5 处（代码示例 Java/C 混用、try/catch C++ 语法标为 C、未来发展章节填充内容、JIT 优化建议不当、多处伪代码未标注），已修 2 处 L1 代码块标签，B 类写入 queue+ suggestions 送 Task2B。"
 last_task9_at: "2026-06-24"
+task9_review_date: "2026-06-24"
+task9_reviewer: "openclaw-task9"
 task6_review_notes_2026_06_24_r2: "第二轮复审：L1 修 2 处（首段伪代码标注、「篡改」改「替换」），文本禁用词/AI套话/翻译腔全部清洁。B 类 5 处（未来发展纯填充[复发]、xHook/Matrix 节过薄、案例1/2/4泛化、缺Perfetto表现节），写入 queue priority:90 送 Task2B。"
 task2b_rework_round: "2026-06-24"
 task2b_changes_summary: "P95+P90综合回炉：删除未来发展节替换为Android 14-17实际变化；重写xHook节补充PLT/GOT原理；Matrix节前移TraceCanary实现细节；删除案例1/2/4；新增Perfetto表现节；扩充Trampoline ARM64约束说明；扩充限制与注意事项（SELinux安全边界、Mainline模块影响、性能测量方法论）"
