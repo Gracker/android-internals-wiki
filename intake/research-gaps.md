@@ -1,3 +1,42 @@
+
+## [2026-06-24] 8.10 ProfilingManager 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+ProfilingManager 的 multi-package support 和 UID 级别控制机制在实际使用中非常重要，但章节未覆盖这些关键功能。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 ProfilingManager 如何支持多包同时的 Profiling Session
+- 分析 UID 级别的权限控制机制和安全边界
+- 查找 AOSP 中关于 multi-package support 的实现细节
+- 研究 Extension SDK 36.1 的运行时判断逻辑和版本适配
+
+### 关联章节
+- 8.10 (当前章节)
+- 1.3 权限安全
+- 2.5 渲染线程与主线程交互
+
+## [2026-06-24] 7.7 Jetpack Compose 性能优化 — 知识盲区
+
+### 盲区描述
+Compose Compiler 2.0 Strong Skipping 与 1.x 版本在底层实现和优化策略上有显著差异，需要详细对比分析。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 深入分析 derivedStateOf 与 derivedSnapshotState 的底层实现差异
+- 研究 Compose Compiler 2.0 Strong Skipping 的新特性
+- 分析 Kotlin 2.0+ 对 Compose 编译优化的影响
+- 测试不同版本间的性能差异
+
+### 关联章节
+- 7.7 (当前章节)
+- 8.10 ProfilingManager (性能测量方法)
+
+
 ## [2026-06-24] 14.13 Hook 基础设施与性能工具实现原理 — 知识盲区
 
 ### 盲区描述

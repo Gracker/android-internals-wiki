@@ -1,3 +1,29 @@
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-24
+- **类型**：源码准确性
+- **位置**：packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java
+- **问题**：该路径在 android-17.0.0_r1 中不存在，无法验证
+- **建议**：修正为 frameworks/native/services 下的正确路径，或说明这是 AOSP 未来版本路径
+
+## [Task9 Deep Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-06-24
+- **类型**：原理链完整性
+- **位置**：ProfilingManager 与 system_server 通信机制
+- **问题**：未解释 ProfilingManager 如何与 system_server 进程进行 IPC 通信
+- **建议**：补充 ProfilingManager 通过 Binder 与 system_server 的 AppOpsManager 交互的具体流程
+
+## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 2026-06-24
+- **类型**：数据支撑
+- **位置**：性能优化策略章节
+- **问题**：缺少具体的外部测试数据和基准测试案例
+- **建议**：添加来自 Macrobenchmark、社区测试的性能对比数据，以及具体的优化案例
+
+## [Task9 Deep Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-06-24
+- **类型**：交叉引用一致性
+- **位置**：章节结尾
+- **问题**：缺少明确的章节交叉引用结构
+- **建议**：添加相关章节引用，如 8.10 性能追踪、20.7 工具集成等
+
+
 ## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 2026-06-24
 - **类型**：数据缺失
 - **位置**：LazyColumn和RecyclerView性能对比部分
