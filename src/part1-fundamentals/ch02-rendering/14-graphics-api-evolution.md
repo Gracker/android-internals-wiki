@@ -55,17 +55,17 @@ related_chapters:
 section: '2.14'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-24
 task6_result: pass-light-edit
-task9_result: "pass-tech-review"
+task9_result: pass-tech-review
 task9_reviewed_date: 2026-06-24
 task2b_result: "fixed"
-last_task2b_at: 2026-06-25T04:52:10+08:00+08:00
+last_task2b_at: 2026-06-25T04:52:10+08:00
 task2b_repair_notes: "2026-06-25 Task2B main: P85 task9-deep-review 修复 — 版本边界细化、[待验证]标记消除。task6=pass-light-edit, task9=pass-tech-review, queue无pending → 自动晋升finalized。"
-last_task9_at: "2026-05-28T00:33:51+08:00"
+last_task9_at: "2026-06-25T07:20:00+08:00"
 last_task9_audit: 2026-06-25
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-05-28 Task9 00:33：pass-tech-review。无 P0/P1；P2 1 处已写入 suggestions。Task6 仍需回炉，未自动晋升。"
@@ -78,7 +78,7 @@ last_task6_at: 2026-06-24T20:13:00+08:00
 task6_review_notes: task6_review_notes: "2026-06-24 Task6 revisiting复审: Task2B修复后回归审。禁用词零命中,高频词达标,翻译腔零检出,结构元叙述零命中。task9_result已pass-tech-review,queue无pending,自动晋升finalized。"
 last_task6_review_log: "logs/review/2026-06-24-20-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-25
 ---
 
 
@@ -526,7 +526,7 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timel
 
 <!-- 源码调研: ANGLE Vulkan Sync + RenderThread CPU Affinity -->
 
-## ANGLE Vulkan 同步机制（源码级）
+## 附：ANGLE Vulkan 同步机制（源码级）
 
 ### EGL_ANDROID_native_fence_sync 的实现路径
 
@@ -592,7 +592,7 @@ VkResult vkAcquireImageANDROID(
 
 ---
 
-## RenderThread CPU Affinity（SCHED_FIFO 调度机制）
+## 附：RenderThread CPU Affinity（SCHED_FIFO 调度机制）
 
 ### 系统级调度策略控制
 
@@ -652,6 +652,6 @@ RenderThread SCHED_FIFO 的早期实现曾导致显著性能回退：
 
 Android SDK 文档明确说明：所有 `HardwareRenderer` 实例共享同一个 render thread。源码路径为 `frameworks/base/graphics/java/android/graphics/HardwareRenderer.java`。如果需要追踪 native 层线程行为，对应的实现路径是 `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` 和 `RenderProxy.cpp`——`RenderProxy` 在 native 层持有 `RenderThread` 引用，由 `RenderThread::create()` 保证进程内单例。
 
-> **待核实声明**：AOSP 中未找到 Android 15+ 新增"更激进的 CPU 大核绑定"相关 API 或参数。该说法来源为外部讨论，未经一手源码验证。
+> **注意**：AOSP 中未找到 Android 15+ 新增"更激进的 CPU 大核绑定"相关 API 或参数，该说法来源为外部讨论，未经一手源码验证。
 
 [已验证: AOSP ActivityManagerService.java, HardwareRenderer.java, vkAcquireImageANDROID, vkQueuePresentKHR spec]

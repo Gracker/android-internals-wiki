@@ -50,7 +50,7 @@ tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, f
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "5.8", "11.2"]
 pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-15T07:22:00+08:00"
@@ -64,11 +64,11 @@ task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过，无 Task6 �
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
-last_task9_at: "2026-05-15T07:35:58+08:00"
+last_task9_at: "2026-06-25T07:20:00+08:00"
 last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
 task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；WorkManager setBackoffCriteria 签名复核通过，FGS/后台定位/Job 配额口径与官方文档一致；满足 Task6 pass + queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-25
 ---
 
 # 后台功耗治理
@@ -102,7 +102,7 @@ last_deepseek_cn_review_at: 2026-06-02
 
 后台功耗治理的任务很具体：把后台工作改成可延后、可合并、可取消、可观测。系统限制会延后 CPU、网络、Job、Alarm 和定位访问，但系统不会替业务判断“这次同步是否还需要做”“这段定位是否还能降频”“这个前台服务是否应该停掉”。这些判断仍要放回 App 架构里处理。
 
-从工程习惯的角度看，功耗治理和 CPU / 任务调度的思路是通的：按用户可见度分后台任务、把可延后工作交给系统调度、把后台 CPU / 网络 / 定位采样降到最低。这和"按任务类型分线程池、把预加载放到闲时、避免核心线程被 IO 和锁拖住"是同一套工程原则在不同方向上的投影。
+功耗治理和 CPU / 任务调度的工程原则其实是相通的：按用户可见度分层、把可延后的工作交给系统调度、把后台 CPU / 网络 / 定位采样压到最低——这和"按任务类型分线程池、预加载放到闲时、避免核心线程被 IO 和锁拖住"是同一套思路在不同方向上的应用。
 
 ## Android 后台执行限制演进（Doze / App Standby / Bucket）
 
