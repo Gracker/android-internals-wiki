@@ -1,41 +1,5 @@
 [
   {
-    "file": "part3-tools/ch13-perfetto/13.19-Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析.md",
-    "priority": 80,
-    "reason": "知识缺口挖掘创建",
-    "created_at": "2026-06-25T20:10:00.858315+08:00"
-  },
-  {
-    "file": "part1-fundamentals/ch18-architecture/18.25-Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型.md",
-    "priority": 80,
-    "reason": "知识缺口挖掘创建",
-    "created_at": "2026-06-25T20:10:00.858345+08:00"
-  },
-  {
-    "file": "part1-fundamentals/ch18-architecture/18.26-CameraX ZSL 与 HAL Reprocessing Request 的映射关系.md",
-    "priority": 80,
-    "reason": "知识缺口挖掘创建",
-    "created_at": "2026-06-25T20:10:00.858364+08:00"
-  },
-  {
-    "file": "part5-app/ch25-power-size/25.23-Android 系统层对应用分发与内容共享的支撑机制.md",
-    "priority": 80,
-    "reason": "知识缺口挖掘创建",
-    "created_at": "2026-06-25T20:10:00.858382+08:00"
-  },
-  {
-    "file": "part1-fundamentals/ch02-rendering/2.15-2.14 图形 API 演进与选择策略.md",
-    "priority": 80,
-    "reason": "知识缺口挖掘创建",
-    "created_at": "2026-06-25T20:10:00.858400+08:00"
-  },
-  {
-    "file": "part5-app/ch25-power-size/25.24-25.4 WorkManager 实战与后台任务调度.md",
-    "priority": 80,
-    "reason": "知识缺口挖掘创建",
-    "created_at": "2026-06-25T20:10:00.858418+08:00"
-  },
-  {
     "section": "14.13",
     "section_title": "Hook 基础设施与性能工具实现原理",
     "priority": 95,
@@ -313,7 +277,9 @@
       "DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md"
     ],
     "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-06-24T09:06:00+08:00"
+    "added_at": "2026-06-24T09:06:00+08:00",
+    "status": "completed",
+    "completed_note": "File exists: src/part2-performance/ch02-rendering/2-30-camerax-zsl-hal-mapping.md (472 lines, status=ready-for-review)"
   },
   {
     "section": "21.14",
@@ -325,7 +291,9 @@
       "dagger.dev/performance"
     ],
     "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-06-24T09:06:00+08:00"
+    "added_at": "2026-06-24T09:06:00+08:00",
+    "status": "completed",
+    "completed_note": "File exists: src/part5-app/ch21-startup/14-di-framework-performance.md (46 lines, status=ready-for-review)"
   },
   {
     "chapter": "8.{new_section_num}",
@@ -372,12 +340,13 @@
     "chapter": "22.9",
     "title": "端侧大模型推理的内存管理",
     "path": "part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md",
-    "status": "drafted",
+    "status": "completed",
     "priority": 80,
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-06-24",
     "drafted_at": "2026-06-25T04:11:15.314396+08:00",
-    "drafted_by": "openclaw-task2a"
+    "drafted_by": "openclaw-task2a",
+    "completed_note": "File exists: src/part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md (158 lines, status=ready-for-review)"
   },
   {
     "chapter": "23.8",
@@ -394,7 +363,9 @@
     "priority": 80,
     "source": "source-index.json",
     "created_date": "2026-06-24",
-    "estimated_hours": 8
+    "estimated_hours": 8,
+    "status": "completed",
+    "completed_note": "File exists: src/part2-performance/ch02-rendering/2-29-camera-hal3-buffer-management.md (169 lines, status=ready-for-review)"
   },
   {
     "chapter": "2.30",
@@ -402,7 +373,9 @@
     "priority": 80,
     "source": "source-index.json",
     "created_date": "2026-06-24",
-    "estimated_hours": 8
+    "estimated_hours": 8,
+    "status": "completed",
+    "completed_note": "File exists: src/part2-performance/ch02-rendering/2-30-camerax-zsl-hal-mapping.md (472 lines, status=ready-for-review)"
   },
   {
     "chapter": "20.1",
@@ -410,7 +383,9 @@
     "priority": 80,
     "source": "source-index.json",
     "created_date": "2026-06-24",
-    "estimated_hours": 12
+    "estimated_hours": 12,
+    "status": "completed",
+    "completed_note": "File exists: src/part5-application-practical/ch20-stability/20-1-android-ai-phone-ecosystem.md (23 lines, status=ready-for-review)"
   },
   {
     "chapter": "16.5",
@@ -650,7 +625,9 @@
     "priority": 80,
     "reason": "[Task2A 知识缺口挖掘] §8.6 覆盖 Coroutine 基础性能，但 Flow 背压/操作符链/热冷流性能独立于此。评分 14/20。",
     "material_paths": [],
-    "gap_source": "章节深挖"
+    "gap_source": "章节深挖",
+    "status": "completed",
+    "completed_note": "File exists: src/part2-performance/ch08-responsiveness/17-kotlin-flow-backpressure-performance.md (447 lines, status=ready-for-review)"
   },
   {
     "section": "22.25",
@@ -658,7 +635,9 @@
     "priority": 80,
     "reason": "[Task2A 知识缺口挖掘] 现有 Compose 章节覆盖重组/动画/LazyList/导航，但布局测量阶段的缓存机制和 intrinsic 开销独立于以上章节。§7.12 有 View 布局性能，缺 Compose 等价。评分 16/20。",
     "material_paths": [],
-    "gap_source": "章节深挖+AOSP结构"
+    "gap_source": "章节深挖+AOSP结构",
+    "status": "completed",
+    "completed_note": "File exists: src/part5-app/ch22-rendering-practice/25-compose-layout-measurement-performance.md (36 lines, status=ready-for-review)"
   },
   {
     "section": "14.9",

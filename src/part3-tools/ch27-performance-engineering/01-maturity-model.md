@@ -2,7 +2,7 @@
 title: "性能工程成熟度模型"
 chapter: "27.1"
 section: "27.1"
-status: draft
+status: ready-for-review
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"

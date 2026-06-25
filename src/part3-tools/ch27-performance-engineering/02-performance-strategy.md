@@ -2,7 +2,7 @@
 title: "性能策略制定与路线图"
 chapter: "27.2"
 section: "27.2"
-status: draft
+status: ready-for-review
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"

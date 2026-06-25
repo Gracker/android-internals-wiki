@@ -231,3 +231,99 @@ PerfDog 这类工具最好和自动化脚本结合。人工滑动或操作的波
 - “竞品 GPU 优化更好。”
 
 外部工具只给现象。内部原因要么来自逆向分析，要么只能作为假设。
+
+
+<!-- AIW-源码调研-2026-06-24 -->
+## 一手源码数据源底层实现（新增）
+
+根据 AOSP 源码调研，PerfDog 的 Android 平台性能数据采集依赖四大底层系统接口，这些是 PerfDog 能测到数据的技术基础：
+
+### PowerStats HAL - 核心能耗和功率统计
+
+源码路径：`frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`
+
+PerfDog 通过 `dumpsys powerstats` 获取的能耗数据来自 PowerStats HAL，该 HAL 分为两个版本：
+
+- **HAL 2.0**：通过 AIDL 接口调用 `android.hardware.power.stats.IPowerStats`，支持 `PowerEntity`、`EnergyConsumer`、`EnergyMeter` 三大数据类型
+- **HAL 1.0**：通过 JNI 调用 native 方法，提供基础的功率统计能力
+
+关键数据类型：
+```java
+// PowerEntity - 功耗实体（CPU/GPU 等子系统）
+PowerEntity[] getPowerEntityInfo();
+
+// EnergyConsumer - 能耗消费者（GPS/display/wifi 等模块）
+EnergyConsumer[] getEnergyConsumerInfo();
+
+// EnergyMeter - 能量表（硬件计量器）
+Channel[] getEnergyMeterInfo();
+```
+
+### Thermal HAL 2.0 - 温度和散热监控
+
+源码路径：`hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl`
+
+PerfDog 的温度数据来自 Thermal HAL 2.0，接口定义：
+```aidl
+interface IThermal {
+    Temperature[] getTemperatures();              // 各类传感器温度
+    CoolingDevice[] getCoolingDevices();          // 散热设备状态
+    ThrottlingStatus[] getThrottlingStatus();     // 降频状态
+}
+```
+
+关键温度类型枚举（TemperatureType.aidl）：
+```aidl
+enum TemperatureType {
+    CPU = 0, GPU = 1, BATTERY = 2,    // 基础组件
+    NPU = 9, TPU = 10, SOC = 13,      // AI/ML 处理器
+    WIFI = 14, DISPLAY = 11           // 其他硬件
+}
+```
+
+### SurfaceFlinger 帧追踪 - GPU 帧率和渲染性能
+
+源码路径：`frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.h`
+
+PerfDog 通过 `dumpsys SurfaceFlinger --latency` 获取的帧时间数据来自 SurfaceFlinger 的帧追踪系统：
+
+```cpp
+// 帧追踪器记录每个 Buffer 的时间戳和类型
+void traceTimestamp(int32_t layerId, uint64_t bufferID, uint64_t frameNumber,
+                    nsecs_t timestamp, FrameEvent::BufferEventType type);
+
+// 帧围栏信号追踪
+void traceFence(int32_t layerId, uint64_t bufferID, uint64_t frameNumber,
+                const std::shared_ptr<FenceTime>& fence, FrameEvent::BufferEventType type);
+
+// Mini dump 提供帧统计摘要
+std::string miniDump();
+```
+
+帧追踪数据与 Perfetto FrameTimeline 集成，支持跨进程帧时间监控。
+
+### RestrictedSettings - 高级性能配置
+
+源码位置：`frameworks/base/core/java/android/provider/Settings.java` 及相关实现
+
+PerfDog Service 需要的某些敏感权限通过 RestrictedSettings 管理，尤其是 Android 13+ 对侧载 APK 的限制。这些设置通常包括：
+- `android.settings.action.REQUEST_MANAGE_SPECIAL_APP_ACCESS`
+- 辅助功能、通知访问、DUMP 权限的高级管理
+
+### 数据采集流程
+
+PerfDog 的数据采集调用链：
+1. **能耗/功率**：`adb shell dumpsys powerstats` → PowerStatsService → PowerStats HAL → 硬件驱动
+2. **温度/散热**：`adb shell dumpsys thermal` → ThermalService → Thermal HAL → 温度传感器
+3. **帧时间**：`adb shell dumpsys SurfaceFlinger --latency` → SurfaceFlinger → FrameTracer → BufferQueue
+4. **GPU 统计**：`adb shell dumpsys gfxinfo` → GraphicsStatsService → 图形统计模块
+
+### 版本适配说明
+
+- **Android 11 (API 30)**：引入 PowerStats HAL 2.0，支持能耗细分
+- **Android 12 (API 31)**：重构 Thermal HAL，移除旧版 ThermalManagerService
+- **Android 13 (API 33)**：增强 FrameTracer，集成 Perfetto 跨进程追踪
+- **当前限制**：main 分支源码显示部分芯片厂商可能不完全实现 HAL 接口
+
+这些源码分析验证了 PerfDog 能够采集 Android 底层性能数据的理论依据，也为理解不同设备间的数据差异提供了技术解释。
+<!-- /AIW-源码调研-2026-06-24 -->

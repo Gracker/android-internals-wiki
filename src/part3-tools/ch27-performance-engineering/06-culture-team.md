@@ -2,7 +2,7 @@
 title: "性能文化构建与团队演进"
 chapter: "27.6"
 section: "第三部分：工具与方法论"
-status: draft
+status: ready-for-review
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
