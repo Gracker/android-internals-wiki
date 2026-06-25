@@ -48,6 +48,8 @@ last_task9_at: "2026-05-13T01:43:00+08:00"
 last_task9_audit: "2026-06-07"
 last_task9_autofix_at: "2026-06-07"
 task6_autofix_trigger: true
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-25
 ---
 
 # Baseline Profile 实战
@@ -77,9 +79,9 @@ task6_autofix_trigger: true
 
 ## 为什么要做 Baseline Profile
 
-21.1 节已经把启动耗时拆成进程初始化、`Application` 初始化、`Activity` 创建和首帧绘制几段。Baseline Profile 处理的是其中一类成本：启动路径上的类和方法还没被 ART 提前编译，首装、首更、清数据后的前几次启动会经历解释执行、JIT 预热和后台编译等待。
+21.1 节已经把启动耗时拆成进程初始化、`Application` 初始化、`Activity` 创建和首帧绘制几段。Baseline Profile 处理的是其中一类成本：启动路径上的类和方法还没被 ART 提前编译，首装、首更、清数据后的前几次启动，会经过解释执行、JIT 预热，再等到后台编译完成。
 
-它不能替代延迟初始化，也不能消掉主线程 I/O、锁等待、网络请求和 SDK 同步初始化。它的价值是把已经确认的启动路径和高频路径随包交给 ART，让安装后更早进入 `speed-profile` 编译状态。详见 8.7 节和 19.15 节，下面围绕 App 团队的生成、接入、验证和维护展开。
+它不能替代延迟初始化，也不能消掉主线程 I/O、锁等待、网络请求和 SDK 同步初始化。它的价值是把已经确认的启动路径和高频路径随包交给 ART，让安装后更早进入 `speed-profile` 编译状态。详见 8.7 节和 19.15 节。下面从生成、接入、验证和维护四个环节讲起。
 
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
 [已验证: AOSP, art/profman/profman.cc + art/dex2oat/dex2oat.cc]
@@ -101,7 +103,7 @@ flowchart LR
 
 这条路径里最容易误判的是“文件存在”和“已完成编译”。包内有 `baseline.prof` 只能说明构建产物带上了规则；`ProfileVerifier` 返回 `RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION` 只能说明 profile 已经入队；`RESULT_CODE_COMPILED_WITH_PROFILE` 才能说明当前包已经按 profile 完成编译。
 
-从启动优化角度看，Baseline Profile 只影响代码执行和类加载相关成本。若 Perfetto 显示耗时集中在 `SharedPreferences` 同步读、数据库升级、主线程锁等待或网络阻塞，profile 带来的收益会被这些成本盖住。处理顺序应该是：先用 21.1 的启动分析确认瓶颈，再判断 profile 是否是合适工具。
+从启动优化角度看，Baseline Profile 只影响代码执行和类加载相关成本。若 Perfetto 显示耗时集中在 `SharedPreferences` 同步读、数据库升级、主线程锁等待或网络阻塞，profile 带来的收益会被这些成本盖住。合理的顺序是：先用 21.1 的启动分析确认瓶颈，再判断 profile 是否对症。
 
 | 观测现象 | Baseline Profile 是否优先 | 判断方式 |
 |---|---|---|

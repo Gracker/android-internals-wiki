@@ -79,7 +79,8 @@ tags:
   - [2.28 折叠屏显示管线与铰链状态渲染性能](part1-fundamentals/ch02-rendering/28-foldable-display-pipeline-performance.md)
   - [2.29 Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型](part1-fundamentals/ch02-rendering/2-29-camera-hal3-buffer-management.md)
   - [2.29 TaskSnapshot 系统架构与 Recents 渲染性能](part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md)
-  - [2.30 DisplayManagerService Display Lifecycle 与拓扑性能](part1-fundamentals/ch02-rendering/30-displaymanager-service-lifecycle.md)
+    - [2.14 图形 API 演进与选择策略](part1-fundamentals/ch02-rendering/2.15-2.14 图形 API 演进与选择策略.md)
+- [2.30 DisplayManagerService Display Lifecycle 与拓扑性能](part1-fundamentals/ch02-rendering/30-displaymanager-service-lifecycle.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
@@ -277,7 +278,8 @@ tags:
   - [13.15 BufferQueue 阻塞的 Perfetto 识别](part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md)
   - [13.16 Agent 辅助 Perfetto 分析协议](part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md)
   - [13.17 Perfetto SDK 与应用内 Trace 数据源](part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md)
-  - [13.18 SmartPerfetto 与可复用 Trace 分析平台](part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md)
+    - [Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析](part3-tools/ch13-perfetto/13.19-Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析.md)
+- [13.18 SmartPerfetto 与可复用 Trace 分析平台](part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)
@@ -314,7 +316,9 @@ tags:
   - [15.7 AOSP 代码阅读](part3-tools/ch15-methodology/07-aosp-reading.md)
   - [15.8 Android 性能问题实证：真实世界的分类与代码模式](part3-tools/ch15-methodology/08-empirical-performance-issues.md)
   - [15.9 从采集到治理的反馈回路](part3-tools/ch15-methodology/09-observability-closed-loop.md)
-  - [15.10 性能治理工程化](part3-tools/ch15-methodology/10-performance-governance.md)
+      - [CameraX ZSL 与 HAL Reprocessing Request 的映射关系](part1-fundamentals/ch18-architecture/18.26-CameraX ZSL 与 HAL Reprocessing Request 的映射关系.md)
+- [Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型](part1-fundamentals/ch18-architecture/18.25-Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型.md)
+- [15.10 性能治理工程化](part3-tools/ch15-methodology/10-performance-governance.md)
 
 - [第 19 章：APM 工具与性能监控生态](part3-tools/ch19-apm/README.md)
   - [19.1 APM 全景图与分类体系](part3-tools/ch19-apm/01-apm-landscape.md)
@@ -510,7 +514,9 @@ tags:
   - [25.19 Android Vitals 过度 WakeLock 指标与治理](part5-app/ch25-power-size/19-android-vitals-wakelock-governance.md)
   - [25.20 Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理](part5-app/ch25-power-size/20-android17-allow-while-idle-listener-alarm.md)
   - [25.21 Android Auto/Car OS 性能优化](part4-system/ch17-oem/25.21-android-auto-car-os-performance.md)
-  - [25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理](part5-app/ch25-power-size/22-location-services-performance.md)
+      - [25.4 WorkManager 实战与后台任务调度](part5-app/ch25-power-size/25.24-25.4 WorkManager 实战与后台任务调度.md)
+- [Android 系统层对应用分发与内容共享的支撑机制](part5-app/ch25-power-size/25.23-Android 系统层对应用分发与内容共享的支撑机制.md)
+- [25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理](part5-app/ch25-power-size/22-location-services-performance.md)
 
 - [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
   - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
