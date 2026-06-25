@@ -1,5 +1,41 @@
 [
   {
+    "file": "part3-tools/ch13-perfetto/13.19-Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析.md",
+    "priority": 80,
+    "reason": "知识缺口挖掘创建",
+    "created_at": "2026-06-25T20:10:00.858315+08:00"
+  },
+  {
+    "file": "part1-fundamentals/ch18-architecture/18.25-Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型.md",
+    "priority": 80,
+    "reason": "知识缺口挖掘创建",
+    "created_at": "2026-06-25T20:10:00.858345+08:00"
+  },
+  {
+    "file": "part1-fundamentals/ch18-architecture/18.26-CameraX ZSL 与 HAL Reprocessing Request 的映射关系.md",
+    "priority": 80,
+    "reason": "知识缺口挖掘创建",
+    "created_at": "2026-06-25T20:10:00.858364+08:00"
+  },
+  {
+    "file": "part5-app/ch25-power-size/25.23-Android 系统层对应用分发与内容共享的支撑机制.md",
+    "priority": 80,
+    "reason": "知识缺口挖掘创建",
+    "created_at": "2026-06-25T20:10:00.858382+08:00"
+  },
+  {
+    "file": "part1-fundamentals/ch02-rendering/2.15-2.14 图形 API 演进与选择策略.md",
+    "priority": 80,
+    "reason": "知识缺口挖掘创建",
+    "created_at": "2026-06-25T20:10:00.858400+08:00"
+  },
+  {
+    "file": "part5-app/ch25-power-size/25.24-25.4 WorkManager 实战与后台任务调度.md",
+    "priority": 80,
+    "reason": "知识缺口挖掘创建",
+    "created_at": "2026-06-25T20:10:00.858418+08:00"
+  },
+  {
     "section": "14.13",
     "section_title": "Hook 基础设施与性能工具实现原理",
     "priority": 95,

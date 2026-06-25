@@ -48,7 +48,7 @@ last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
 last_task6_review_log: "logs/review/2026-06-16-08-review.md"
 task6_review_notes: "2026-06-16 Task6：Task9 闲时抽检 auto-fix（AutoFDO README 数据同步）回流后写作复审；发现版本演进表中 AutoFDO benchmark 数据与正文不一致（Boot 1.9% vs 1.1%, Cold App launch 3.4% vs 6.6%），已按正文修正并标注 [需确认]；B 类问题 1 项写入 queue，转 Task2B 复核。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
+last_deepseek_cn_review_at: 2026-06-25
 last_task9_autofix_at: 2026-06-16
 task2b_result: "verified"
 task2b_state: "fixed"
@@ -312,7 +312,7 @@ Android 17 的 ART 运行时引入了两项与性能直接相关的变化。
 
 分代策略本身没有变化:新对象优先留在 young generation,短命对象尽量在小范围回收,存活对象再逐步晋升。收益点在于 full-heap collection 的频率更低,GC 线程的 CPU 占用也更容易被压住。
 
-把版本演进压缩来看:Android 8.0 先把 pause time 大幅压短;Android 10 之后的 Concurrent Copying 路径已经带有分代回收;Android 17 在 CMC 路径上继续强化 generational GC。对 RecyclerView 滑动和启动阶段的直接收益,是 GC 暂停与并发 GC 的 CPU 抢占都更容易被压到较小范围内。
+从版本演进角度看:Android 8.0 先把 pause time 大幅压短;Android 10 之后的 Concurrent Copying 路径已经带有分代回收;Android 17 在 CMC 路径上继续强化 generational GC。对 RecyclerView 滑动和启动阶段的直接收益,是 GC 暂停与并发 GC 的 CPU 抢占都更容易被压到较小范围内。
 
 ### DeliQueue lock-free MessageQueue
 

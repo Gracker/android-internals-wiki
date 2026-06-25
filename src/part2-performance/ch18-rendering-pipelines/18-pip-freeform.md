@@ -49,6 +49,8 @@ task9_result: pass-tech-review
 last_task6_audit: "2026-06-11"
 review_round: 1
 task2b_result: fixed
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-25
 ---
 
 <!-- outline-start -->
@@ -69,7 +71,7 @@ task2b_result: fixed
 
 ## 为什么多窗口的渲染值得关注
 
-在 SurfaceFlinger（下文简称 SF）侧，多窗口只是更多 Layer 同时参与合成。复杂度来自同一段时间内要协调更多窗口的几何信息、buffer 和合成时序。
+在 SurfaceFlinger（下文简称 SF）侧，多窗口只是更多 Layer 同时参与合成。真正的难点是：同一时刻要管理更多窗口的几何信息、buffer 和合成时序。
 
 拖拽 Freeform 边框或进入 PiP 时，窗口 bounds 往往先变，App 的新尺寸内容后到。只要几何更新和内容更新落在不同帧，画面就可能出现黑边、拉伸或一帧空洞。这类错拍现象，是多窗口渲染分析里最常见的一类问题。[已验证: AOSP WindowManagerService]
 
@@ -101,7 +103,7 @@ App 调用 `enterPictureInPictureMode()` 后，WindowManager / Shell 会先改�
 
 ### Shell 控制面与渲染边界
 
-进入 PiP、拖拽小窗、退出 PiP 这几类操作，现代 Android 往往还要经过 Shell 控制面。`TaskOrganizer` 负责接管任务级窗口容器，`WindowContainerTransaction` 描述 bounds、层级和 windowing mode 的变化，PiP 场景常见的是 `PipTaskOrganizer` 参与协调。它们负责“窗口树怎么改”；到了内容提交阶段，`SurfaceControl.Transaction` 和 BLAST 再负责“哪一帧带着哪块 buffer 生效”。排查时把这两层拆开，线索会清楚很多。[已验证: AOSP `frameworks/base/core/java/android/window/TaskOrganizer.java`、`frameworks/base/core/java/android/window/WindowContainerTransaction.java`、`frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java`]
+进入 PiP、拖拽小窗、退出 PiP 这几类操作，现代 Android 往往还要经过 Shell 控制面。`TaskOrganizer` 负责接管任务级窗口容器，`WindowContainerTransaction` 描述 bounds、层级和 windowing mode 的变化，PiP 场景常见的是 `PipTaskOrganizer` 参与协调。它们负责“窗口树怎么改”；到了内容提交阶段，`SurfaceControl.Transaction` 和 BLAST 再负责“哪一帧带着哪块 buffer 生效”。排查时把这两层分开看，更容易定位问题。[已验证: AOSP `frameworks/base/core/java/android/window/TaskOrganizer.java`、`frameworks/base/core/java/android/window/WindowContainerTransaction.java`、`frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java`]
 
 ### 持续渲染、BufferQueue 和内存占用
 
