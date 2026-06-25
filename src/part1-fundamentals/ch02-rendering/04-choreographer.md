@@ -43,9 +43,9 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
@@ -733,7 +733,7 @@ public static final class VsyncEventData {
 
 **工程意义**：多时间线架构允许系统基于不同延迟需求智能选择最优帧时间线，特别适合高刷新率屏幕和复杂动画场景。
 
-### 7.2 VsyncCallback高级调度接口
+### 7.2 VsyncCallback 高级调度接口
 
 `VsyncCallback` 接口自 API 33（Android 13）公开引入，Android 17 在此基础上扩展了多帧时间线能力（`FRAME_TIMELINES_CAPACITY=7`、`FrameData` 的 preferred index 选择），为开发者提供更精细的帧调度控制：
 

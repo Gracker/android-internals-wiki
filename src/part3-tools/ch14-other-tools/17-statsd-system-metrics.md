@@ -256,3 +256,36 @@ CTS 也依赖 statsd 验证平台 atom 和 StatsD 功能。AOSP Statsd 官方文
 - 注入时间：2026-06-08
 - 价值：补充 statsd 缓存恢复与配置持久化机制的源码级细节，是理解 statsd 服务可用性设计的关键材料
 
+
+
+## 参考资料
+
+### Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？
+- 来源：https://juejin.cn/post/7610233341305389099
+- 类型：技术文章
+- 摘要：Android 17（API 37）适配清单与 2026 开发者强制认证政策的全维度解读。非 target 变更包括 usesCleartextTraffic 弃用预警（迁移到 Network Security Config）、隐式 URI grant 在 Android 18 将收紧（为系统级 AI 读取屏幕内容铺路）、旋转后键盘状态不再自动恢复、后台音频收紧需 WIU 能力的前台服务。targetSdk=37 关键变更：MessageQueue 升级为无锁 DeliQueue（Treiber 栈+最小堆）、BAL 限制扩展到 IntentSender、新增 USE_LOOPBACK_INTERFACE 安装时权限、Certificate Transparency 默认启用、Safer DCL 扩展到 native（System.load 加载的库必须只读）、大屏强制自适应。2026 年 9 月起部分地区应用必须经开发者认证才能安装。
+- **推荐映射章节**：ch13
+- **内容类型**：技术文章
+- **相关标签**：#Android新版本 #适配
+- 入库时间：2026-06-26
+- 评分：16/20
+
+### Android 要变天：桌面端这次真的来了！
+- 来源：https://juejin.cn/post/7622696665740558386
+- 类型：技术文章
+- 摘要：Google 正式发布 Desktop Experience 设计指南和 Android Design Gallery，把桌面端体验列为一等公民。核心定义：当 App 处于桌面模式（键盘/鼠标/外接显示器）即视为桌面体验。三个核心原则：多任务是核心（必须适配各种窗口尺寸）、鼠标精度远高于手指（可提高信息密度）、光标交互是全新战场（hover 状态、文本/移动/手型光标、自定义图标）。开发者行动优先级：跑 Adaptive Design Lab、用模拟器测自由窗口模式、研究 Adaptive App Quality Guidelines、补键盘快捷键/鼠标 hover/右键菜单。Android 从口袋走向桌面不是渐进改良，而是平台战略转变。
+- **推荐映射章节**：ch13
+- **内容类型**：技术文章
+- **相关标签**：#Android新版本 #桌面模式 #多窗口
+- 入库时间：2026-06-26
+- 评分：14/20
+
+### Android 17 来了！新特性介绍与适配建议
+- 来源：https://juejin.cn/post/7612545160434188297
+- 类型：技术文章
+- 摘要：Android 17 Beta 2 适配全指南（拭心版）。最关键是大屏自适应强制化：targetSdk 37 后，sw>600dp 设备上 screenOrientation/resizeableActivity/minAspectRatio/maxAspectRatio 等属性全部失效（游戏类除外），2027 年 8 月 Google Play 强制要求。相机预览变形方案：CameraX PreviewView 首选、CameraViewfinder 兼容老项目、Camera2 手动计算需用 window metrics 而非屏幕尺寸。Bubbles 浮窗模式（长按桌面图标）、EyeDropper 颜色拾取（不需截屏权限）、联系人选择器（替代 READ_CONTACTS）、触控板指针捕获优化、跨设备 Handoff API、UWB DL-TDOA、ACCESS_LOCAL_NETWORK 运行时权限、OTP 短信读取延迟 3 小时、NPU 访问需声明 FEATURE_NEURAL_PROCESSING_UNIT、ICU 78 + Unicode 17。
+- **推荐映射章节**：ch13
+- **内容类型**：技术文章
+- **相关标签**：#Android新版本 #API37
+- 入库时间：2026-06-26
+- 评分：14/20

@@ -1414,3 +1414,62 @@ adb logcat | grep "StrictMode.*diskRead"
 - MAT 文档：https://www.eclipse.org/mat/
 - eBPF 教程：https://ebpf.io/what-is-ebpf/
 - Winscope 文档：https://source.android.com/docs/core-ui/windows/window-composition/winscope
+### IBM debuts sub-1 nanometer chip technology
+- 来源：https://newsroom.ibm.com/2026-06-25-ibm-debuts-worlds-first-sub-1-nanometer-chip-technology
+- 类型：技术资讯
+- 摘要：这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。
+- **推荐映射章节**：ch01-ch17
+- **内容类型**：技术资讯
+- **相关标签**：#Android #技术资讯
+- 入库时间：2026-06-26
+- 评分：13/20
+
+### Apple raises prices of MacBooks, iPads
+- 来源：https://www.reuters.com/world/asia-pacific/apple-raises-prices-macbooks-ipads-memory-costs-skyrocket-2026-06-25/
+- 类型：技术资讯
+- 摘要：这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。
+- **推荐映射章节**：ch01-ch17
+- **内容类型**：技术资讯
+- **相关标签**：#Android #技术资讯 #AI
+- 入库时间：2026-06-26
+- 评分：13/20
+
+### I built a GPU back end for Emacs
+- 来源：https://en.andros.dev/blog/4b707a03/how-i-built-a-gpu-backend-for-emacs/
+- 类型：技术资讯
+- 摘要：这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。
+- **推荐映射章节**：ch01-ch17
+- **内容类型**：技术资讯
+- **相关标签**：#Android #技术资讯
+- 入库时间：2026-06-26
+- 评分：13/20
+
+### IBM debuts sub-1 nanometer chip technology
+- 来源：https://newsroom.ibm.com/2026-06-25-ibm-debuts-worlds-first-sub-1-nanometer-chip-technology
+- 类型：技术资讯
+- 摘要：这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。
+- **推荐映射章节**：ch01-ch17
+- **内容类型**：技术资讯
+- **相关标签**：#Android #技术资讯
+- 入库时间：2026-06-26
+- 评分：13/20
+
+### Apple raises prices of MacBooks, iPads
+- 来源：https://www.reuters.com/world/asia-pacific/apple-raises-prices-macbooks-ipads-memory-costs-skyrocket-2026-06-25/
+- 类型：技术资讯
+- 摘要：这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。
+- **推荐映射章节**：ch01-ch17
+- **内容类型**：技术资讯
+- **相关标签**：#Android #技术资讯 #AI
+- 入库时间：2026-06-26
+- 评分：13/20
+
+### I built a GPU back end for Emacs
+- 来源：https://en.andros.dev/blog/4b707a03/how-i-built-a-gpu-backend-for-emacs/
+- 类型：技术资讯
+- 摘要：这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。
+- **推荐映射章节**：ch01-ch17
+- **内容类型**：技术资讯
+- **相关标签**：#Android #技术资讯
+- 入库时间：2026-06-26
+- 评分：13/20

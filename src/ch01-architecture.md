@@ -78,3 +78,16 @@ Android 17 在系统架构上进行了多项重要优化，主要体现在：
 **RPC 调用性能分析**：Binder 调用虽然高效，但在高频调用场景下仍需注意性能瓶颈。通过调用追踪和性能分析工具，可以识别和优化性能热点。
 
 <!-- outline-end -->
+
+
+## 参考资料
+
+### 什么 AI 写 Android 最好用？官方做了一个基准测试排名
+- 来源：https://juejin.cn/post/7614897667961143347
+- 类型：技术文章
+- 摘要：谷歌发布 Android Bench（基于 SWE-bench 思路），专门衡量 LLM 在 Android 开发场景下的表现，结果 Gemini-3.1 Pro 遥遥领先。评测采用两阶段架构（推理 + 评估），Docker+KVM 沙箱隔离，100 个任务、每个模型跑 10 次取均值；通过 fail_to_pass + pass_to_pass 双维度验证、看结果不看过程，AI 修 Bug 后跑测试套件得分。Android Bench 弥补了小红书 SWE-Bench Mobile 只测 iOS 的局限，覆盖 Compose/Coroutines/Room/Hilt/Gradle 等生态热点，结论对小屏机型适配与端侧 AI 选型有直接参考意义。
+- **推荐映射章节**：ch17
+- **内容类型**：技术文章
+- **相关标签**：#AI编程 #Android开发
+- 入库时间：2026-06-26
+- 评分：14/20

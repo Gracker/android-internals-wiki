@@ -7908,9 +7908,12 @@
       "last_task6_at": "2026-06-16T20:10:00+08:00"
     },
     "15": {
-      "status": "ready-for-review",
+      "status": "finalized",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-06-16T20:10:00+08:00"
+      "last_task6_at": "2026-06-16T20:10:00+08:00",
+      "task6_state": "reviewed",
+      "task6_date": "2026-06-26",
+      "pipeline_stage": "ready-to-publish"
     },
     "18.1": {
       "status": "ready-for-review",

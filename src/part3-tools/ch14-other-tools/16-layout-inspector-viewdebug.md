@@ -285,3 +285,13 @@ Layout Inspector 给静态结构证据，Perfetto 给时间证据。两者联用
 - [AOSP View.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/View.java)
 - [AOSP ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewRootImpl.java)
 - [AOSP ThreadedRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ThreadedRenderer.java)
+
+### 【带源码】我写了个局域网微信
+- 来源：https://juejin.cn/post/7621443853845594154
+- 类型：技术文章
+- 摘要：一款完全去中心化的局域网设备间直连通信应用（类微信）的完整实现方案。技术栈：Compose + Hilt + Navigation3 + Room3 + WebRTC + CameraX + MLKit + Coil3 + AMap。连接方式支持 Wi-Fi（NSD 服务发现 + TCP Socket）、Wi-Fi Direct（无网环境点对点，GO/GC 协商）、蓝牙（RFCOMM）、蓝牙 BLE（加好友/发现）、NFC（碰一碰）、UDP 组播（雷达）、Wi-Fi 热点。安全设计：私钥保存到 TEE/SE 硬件，公钥+私钥签名验证几乎所有消息字段+时间戳，支持 E2E AES 加密（密钥握手协商）。大文件传输采用预分配 FileChannel+position 偏移写、断点续传、SHA256 哈希秒传、引用计数去重。蓝牙 BLE 不可用电话、Wi-Fi Direct 默认超清+CD 音质通话。
+- **推荐映射章节**：ch10
+- **内容类型**：技术文章
+- **相关标签**：#近场通信 #Framework #蓝牙 #WLAN
+- 入库时间：2026-06-26
+- 评分：14/20

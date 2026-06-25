@@ -293,6 +293,247 @@
       "chapter_mapping": "ch14/ch05",
       "processed_at": "2026-06-25T06:12:33",
       "action": "queue"
+    },
+    {
+      "path": "https://newsroom.ibm.com/2026-06-25-ibm-debuts-worlds-first-sub-1-nanometer-chip-technology",
+      "title": "IBM debuts sub-1 nanometer chip technology",
+      "summary": "这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#Android #技术资讯",
+      "chapter": "ch14-other-tools",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.784916"
+    },
+    {
+      "path": "https://www.reuters.com/world/asia-pacific/apple-raises-prices-macbooks-ipads-memory-costs-skyrocket-2026-06-25/",
+      "title": "Apple raises prices of MacBooks, iPads",
+      "summary": "这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#Android #技术资讯 #AI",
+      "chapter": "ch14-other-tools",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.786057"
+    },
+    {
+      "path": "https://en.andros.dev/blog/4b707a03/how-i-built-a-gpu-backend-for-emacs/",
+      "title": "I built a GPU back end for Emacs",
+      "summary": "这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#Android #技术资讯",
+      "chapter": "ch14-other-tools",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.787127"
+    },
+    {
+      "path": "https://newsroom.ibm.com/2026-06-25-ibm-debuts-worlds-first-sub-1-nanometer-chip-technology",
+      "title": "IBM debuts sub-1 nanometer chip technology",
+      "summary": "这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#Android #技术资讯",
+      "chapter": "ch14-other-tools",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.788161"
+    },
+    {
+      "path": "https://www.reuters.com/world/asia-pacific/apple-raises-prices-macbooks-ipads-memory-costs-skyrocket-2026-06-25/",
+      "title": "Apple raises prices of MacBooks, iPads",
+      "summary": "这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#Android #技术资讯 #AI",
+      "chapter": "ch14-other-tools",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.789162"
+    },
+    {
+      "path": "https://en.andros.dev/blog/4b707a03/how-i-built-a-gpu-backend-for-emacs/",
+      "title": "I built a GPU back end for Emacs",
+      "summary": "这是示例内容。在实际应用中，这里应该使用web_fetch工具获取真实内容。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#Android #技术资讯",
+      "chapter": "ch14-other-tools",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.790219"
+    },
+    {
+      "path": "https://juejin.cn/post/7614897667961143347",
+      "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
+      "summary": "谷歌发布 Android Bench（基于 SWE-bench 思路），专门衡量 LLM 在 Android 开发场景下的表现，结果 Gemini-3.1 Pro 遥遥领先。评测采用两阶段架构（推理 + 评估），Docker+KVM 沙箱隔离，100 个任务、每个模型跑 10 次取均值；通过 fail_to_pass + pass_to_pass 双维度验证、看结果不看过程，AI 修 Bug 后跑测试套件得分。Android Bench 弥补了小红书 SWE-Bench Mobile 只测 iOS 的局限，覆盖 Compose/Coroutines/Room/Hilt/Gradle 等生态热点，结论对小屏机型适配与端侧 AI 选型有直接参考意义。\n- **推荐映射章节**：ch17\n- **内容类型**：技术文章\n- **相关标签**：#AI编程 #Android开发",
+      "chapter": "ch01-architecture",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.790868"
+    },
+    {
+      "path": "https://juejin.cn/post/7610233341305389099",
+      "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "summary": "Android 17（API 37）适配清单与 2026 开发者强制认证政策的全维度解读。非 target 变更包括 usesCleartextTraffic 弃用预警（迁移到 Network Security Config）、隐式 URI grant 在 Android 18 将收紧（为系统级 AI 读取屏幕内容铺路）、旋转后键盘状态不再自动恢复、后台音频收紧需 WIU 能力的前台服务。targetSdk=37 关键变更：MessageQueue 升级为无锁 DeliQueue（Treiber 栈+最小堆）、BAL 限制扩展到 IntentSender、新增 USE_LOOPBACK_INTERFACE 安装时权限、Certificate Transparency 默认启用、Safer DCL 扩展到 native（System.load 加载的库必须只读）、大屏强制自适应。2026 年 9 月起部分地区应用必须经开发者认证才能安装。\n- **推荐映射章节**：ch13\n- **内容类型**：技术文章\n- **相关标签**：#Android新版本 #适配",
+      "chapter": "ch17-oem",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.793177"
+    },
+    {
+      "path": "https://juejin.cn/post/7622696665740558386",
+      "title": "Android 要变天：桌面端这次真的来了！",
+      "summary": "Google 正式发布 Desktop Experience 设计指南和 Android Design Gallery，把桌面端体验列为一等公民。核心定义：当 App 处于桌面模式（键盘/鼠标/外接显示器）即视为桌面体验。三个核心原则：多任务是核心（必须适配各种窗口尺寸）、鼠标精度远高于手指（可提高信息密度）、光标交互是全新战场（hover 状态、文本/移动/手型光标、自定义图标）。开发者行动优先级：跑 Adaptive Design Lab、用模拟器测自由窗口模式、研究 Adaptive App Quality Guidelines、补键盘快捷键/鼠标 hover/右键菜单。Android 从口袋走向桌面不是渐进改良，而是平台战略转变。\n- **推荐映射章节**：ch13\n- **内容类型**：技术文章\n- **相关标签**：#Android新版本 #桌面模式 #多窗口",
+      "chapter": "ch17-oem",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.795391"
+    },
+    {
+      "path": "https://juejin.cn/post/7612545160434188297",
+      "title": "Android 17 来了！新特性介绍与适配建议",
+      "summary": "Android 17 Beta 2 适配全指南（拭心版）。最关键是大屏自适应强制化：targetSdk 37 后，sw>600dp 设备上 screenOrientation/resizeableActivity/minAspectRatio/maxAspectRatio 等属性全部失效（游戏类除外），2027 年 8 月 Google Play 强制要求。相机预览变形方案：CameraX PreviewView 首选、CameraViewfinder 兼容老项目、Camera2 手动计算需用 window metrics 而非屏幕尺寸。Bubbles 浮窗模式（长按桌面图标）、EyeDropper 颜色拾取（不需截屏权限）、联系人选择器（替代 READ_CONTACTS）、触控板指针捕获优化、跨设备 Handoff API、UWB DL-TDOA、ACCESS_LOCAL_NETWORK 运行时权限、OTP 短信读取延迟 3 小时、NPU 访问需声明 FEATURE_NEURAL_PROCESSING_UNIT、ICU 78 + Unicode 17。\n- **推荐映射章节**：ch13\n- **内容类型**：技术文章\n- **相关标签**：#Android新版本 #API37",
+      "chapter": "ch17-oem",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.797188"
+    },
+    {
+      "path": "https://juejin.cn/post/7638897090145075246",
+      "title": "为什么 Android 不用接口做 Activity 通信？",
+      "summary": "深度剖析 Android Activity 为什么不用接口而用 onActivityResult 做通信。表面原因（生命周期不稳、内存泄漏）都是现象层，本质是 Android 系统架构选择：三大通信基石（Intent、Binder、Bundle）都是消息而非引用。Android 系统的组件由 AMS 管理，A 活着与否不由开发者决定，因此不能共享对象引用，必须用序列化数据 + 系统 Token 中转。onActivityResult 本质是系统分发事件，不是函数回调；requestCode 是无状态设计的关键。现代 registerForActivityResult 只是体验优化，底层仍是 requestCode + 系统分发。理解了这一点，就知道为什么 ViewModel + Flow 是应用内通信的最佳答案。\n- **推荐映射章节**：ch09\n- **内容类型**：技术文章\n- **相关标签**：#Framework #Activity #生命周期",
+      "chapter": "ch04-memory",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.799398"
+    },
+    {
+      "path": "https://juejin.cn/post/7621443853845594154",
+      "title": "【带源码】我写了个局域网微信",
+      "summary": "一款完全去中心化的局域网设备间直连通信应用（类微信）的完整实现方案。技术栈：Compose + Hilt + Navigation3 + Room3 + WebRTC + CameraX + MLKit + Coil3 + AMap。连接方式支持 Wi-Fi（NSD 服务发现 + TCP Socket）、Wi-Fi Direct（无网环境点对点，GO/GC 协商）、蓝牙（RFCOMM）、蓝牙 BLE（加好友/发现）、NFC（碰一碰）、UDP 组播（雷达）、Wi-Fi 热点。安全设计：私钥保存到 TEE/SE 硬件，公钥+私钥签名验证几乎所有消息字段+时间戳，支持 E2E AES 加密（密钥握手协商）。大文件传输采用预分配 FileChannel+position 偏移写、断点续传、SHA256 哈希秒传、引用计数去重。蓝牙 BLE 不可用电话、Wi-Fi Direct 默认超清+CD 音质通话。\n- **推荐映射章节**：ch10\n- **内容类型**：技术文章\n- **相关标签**：#近场通信 #Framework #蓝牙 #WLAN",
+      "chapter": "ch16-aosp",
+      "action": "injected",
+      "processed_at": "2026-06-26T05:33:32.801620"
+    },
+    {
+      "title": "源码调研：PerfDog 的 Android 平台 GPU/性能采集底层数据源",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-perfdog-datasources.md",
+      "quality": "high",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "mapped_chapter": "ch13",
+      "tags": [
+        "#Android",
+        "#性能监控",
+        "#GPU",
+        "#PerfDog",
+        "#AOSP"
+      ],
+      "content_type": "深度技术调研",
+      "source_date": "2026-06-24",
+      "scored_at": "2026-06-26T05:46:42.712512"
+    },
+    {
+      "title": "源码调研：Android Studio Memory Profiler 的 JVMTI 数据通路与 Android 8.0 实际变化",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-as-memory-profiler-jvmti-source.md",
+      "quality": "high",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "mapped_chapter": "ch04",
+      "tags": [
+        "#Android",
+        "#内存分析",
+        "#JVMTI",
+        "#AndroidStudio",
+        "#AOSP"
+      ],
+      "content_type": "深度技术调研",
+      "source_date": "2026-06-25",
+      "scored_at": "2026-06-26T05:46:42.712521"
+    },
+    {
+      "title": "源码调研：公平运行内存适配实战——Android 17 onTrimMemory 链路的源码级拆解",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-fair-memory-trim-android17-source.md",
+      "quality": "high",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "mapped_chapter": "ch04",
+      "tags": [
+        "#Android",
+        "#内存管理",
+        "#LMK",
+        "#onTrimMemory",
+        "#AOSP"
+      ],
+      "content_type": "深度技术调研",
+      "source_date": "2026-06-25",
+      "scored_at": "2026-06-26T05:46:42.712525"
+    },
+    {
+      "title": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-26-76102333-Android 17 有什么需要适配的？.md",
+      "quality": "medium",
+      "score": 17,
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 4,
+      "mapped_chapter": "ch16",
+      "tags": [
+        "#Android",
+        "#适配",
+        "#安全",
+        "#政策"
+      ],
+      "content_type": "技术文章",
+      "source_date": "2026-06-26",
+      "scored_at": "2026-06-26T05:46:42.712527"
+    },
+    {
+      "title": "Android 17 来了！新特性介绍与适配建议",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-26-76125451-Android 17 来了！新特性介绍与.md",
+      "quality": "medium",
+      "score": 18,
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "mapped_chapter": "ch16",
+      "tags": [
+        "#Android",
+        "#新特性",
+        "#适配",
+        "#大屏适配"
+      ],
+      "content_type": "技术文章",
+      "source_date": "2026-06-26",
+      "scored_at": "2026-06-26T05:46:42.712528"
+    },
+    {
+      "title": "源码调研：Android 17 后台任务内存配额机制 — MemoryLimiter 与 cgroup memory.high",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-memory-limiter-cgroup-quota.md",
+      "quality": "high",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "mapped_chapter": "ch04",
+      "tags": [
+        "#Android",
+        "#内存管理",
+        "#cgroup",
+        "#MemoryLimiter",
+        "#AOSP"
+      ],
+      "content_type": "深度技术调研",
+      "source_date": "2026-06-26",
+      "scored_at": "2026-06-26T05:51:05.757705"
+    },
+    {
+      "title": "源码调研：Flutter 3.44 Agentic 开发模式与性能优化边界",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-flutter-3.44-agentic-source-analysis.md",
+      "quality": "high",
+      "score": 19,
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "mapped_chapter": "ch02",
+      "tags": [
+        "#Android",
+        "#Flutter",
+        "#性能优化",
+        "#Agentic",
+        "#AOSP"
+      ],
+      "content_type": "深度技术调研",
+      "source_date": "2026-06-25",
+      "scored_at": "2026-06-26T05:51:05.757712"
     }
   ]
 }
