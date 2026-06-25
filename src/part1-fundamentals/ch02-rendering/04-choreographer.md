@@ -57,7 +57,7 @@ last_task9_at: "2026-05-23T03:35:03+08:00"
 task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: "openclaw-task9"
 last_task6_at: "2026-05-18T18:06:00+08:00"
-\12026-06-25\2
+last_task6_audit: "2026-06-26"
 last_task6_audit_result: pass-clean
 last_task6_audit_log: "logs/review/2026-06-10-10-audit.md"
 last_task9_audit: "2026-06-14"
@@ -635,7 +635,7 @@ Compose 1.7 在内部引入了 `PausableComposition`，1.10 将其设为默认�
 
 ## 总结
 
-回到我们在开头提出的问题：为什么有时流畅，有时卡顿？答案的核心就在 Choreographer 的帧调度机制中。每一帧，Choreographer 都在 VSync 信号的驱动下，严格按照 Input → Animation → Traversal → Commit 的顺序执行回调。如果这个链条中任何一个环节超出了帧预算（60Hz 下 16.6ms，120Hz 下 8.33ms），这一帧就会延迟呈现，用户就会感知到卡顿。
+回到我们在开头提出的问题：为什么有时流畅，有时卡顿？答案的核心就在 Choreographer 的帧调度机制中。每一帧，Choreographer 都在 VSync 信号的驱动下，严格按照 Input → Animation → Insets Animation → Traversal → Commit 的顺序执行回调。如果这个链条中任何一个环节超出了帧预算（60Hz 下 16.6ms，120Hz 下 8.33ms），这一帧就会延迟呈现，用户就会感知到卡顿。
 
 Choreographer 的设计哲学——VSync 同步、回调优先级、同步屏障——都是围绕一个目标服务的：让每一帧都能在预算内完成从用户输入到像素呈现的完整旅程。而 FrameCallback 和 FrameMetrics 这套监控体系，以及 Perfetto 中那些精确的 Trace 标记，则是我们验证这段旅程是否顺利的工具。
 
