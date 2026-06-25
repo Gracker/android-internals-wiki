@@ -1,52 +1,73 @@
 ## [2026-06-25] 2.14 图形 API 演进与选择策略 — 知识盲区
 
 ### 盲区描述
-WebGPU 在 Android 上的实际性能数据基准测试较少，缺少具体设备上的吞吐量对比数据，影响开发者进行 API 选型决策。
+WebGPU 在 Android 上的实际性能数据和限制细节，包括不同设备上的吞吐量对比、内存开销、与原生 Vulkan 实现的性能差异等具体量化数据。
 
 ### 重要程度
-中
+高
 
-### �议研究方向
-- 收集不同 Android 设备（高端/中端/低端）上 WebGPU vs Vulkan vs OpenGL ES 的性能对比数据
-- 测试典型工作负载（游戏渲染、图像处理、ML推理）下的 GPU 吞吐量和延迟
-- 分析 WebGPU 在不同 Vulkan 版本（1.0/1.1/1.3/1.4）设备上的性能表现差异
-- 建立 WebGPU 的适用性评估框架，帮助开发者判断何时选择 WebGPU 更合适
+### 建议研究方向
+- 收集 Jetpack WebGPU 在主流 Android 设备上的基准测试数据
+- 分析 WebGPU vs Vulkan 在图像处理、ML inference、数据可视化等场景的性能差异
+- 研究 WebGPU 在 Android 17 上的新特性和限制变化
+- 收集 WebGPU 在不同 GPU 架构（Adreno、Mali、Immortalis）上的表现差异
 
 ### 关联章节
-2.10 GPU 渲染深入; 14.8 GPU 图形调试与分析工具
+2.14, 14.8
 
-## [2026-06-25] 2.14 图形 API 演进与选择策略 — 知识盲区
+---
+
+## [2026-06-25] 25.4 WorkManager 实战与后台任务调度 — 知识盲区
 
 ### 盲区描述
-WebGPU 在 Android 上的实际性能数据基准测试较少，缺少具体设备上的吞吐量对比数据，影响开发者进行 API 选型决策。
+Android 16/17 具体的 job quota 数量和配额调整算法，包括不同 standby bucket 下的可用 job 数量上限、quota 耗尽后的恢复机制、以及前台服务对 quota 的影响等实现细节。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析 AOSP JobSchedulerService 中的 quota 管理源码实现
+- 收集不同 standby bucket 下的实际 job 数量限制数据
+- 研究 long-running worker 与普通 job 的 quota 消耗差异
+- 分析 Android 17 WIU 权限对前台服务 quota 的影响机制
+
+### 关联章节
+25.2, 25.4, 5.10
+
+---
+
+## [2026-06-25] 25.4 WorkManager 实战与后台任务调度 — 知识盲区（本轮新增）
+
+### 盲区描述
+Android 16/17 具体的 job quota 数量和配额调整算法，包括不同 standby bucket 下的可用 job 数量上限、quota 耗尽后的恢复机制、以及前台服务对 quota 的影响等实现细节。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析 AOSP JobSchedulerService 中的 quota 管理源码实现
+- 收集不同 standby bucket 下的实际 job 数量限制数据
+- 研究 long-running worker 与普通 job 的 quota 消耗差异
+- 分析 Android 17 WIU 权限对前台服务 quota 的影响机制
+
+### 关联章节
+25.2, 25.4, 5.10
+
+---
+
+## [2026-06-25] 19.19 PerfDog — 知识盲区
+
+### 盲区描述
+PerfDog工具在Android 8-17各版本间的功能变化、API兼容性差异、采集指标完整性变化等具体信息，包括不同Android版本下权限要求、数据采集方式、指标可用性的变化细节。
 
 ### 重要程度
 中
 
 ### 建议研究方向
-- 收集不同 Android 设备（高端/中端/低端）上 WebGPU vs Vulkan vs OpenGL ES 的性能对比数据
-- 测试典型工作负载（游戏渲染、图像处理、ML推理）下的 GPU 吞吐量和延迟
-- 分析 WebGPU 在不同 Vulkan 版本（1.0/1.1/1.3/1.4）设备上的性能表现差异
-- 建立 WebGPU 的适用性评估框架，帮助开发者判断何时选择 WebGPU 更合适
+- 分析PerfDog官方文档中各Android版本的功能变化说明
+- 收集Android 13-17版本间权限限制对数据采集的影响数据
+- 研究不同Android版本下GPU温度、功耗等指标的采集准确性差异
+- 对比PerfDog在高通、联发科、三星等不同SoC上的表现一致性
 
 ### 关联章节
-2.10 GPU 渲染深入; 14.8 GPU 图形调试与分析工具
-## [2026-06-25] 26.12 Android 版本化线上诊断能力 — 知识盲区
-
-### 盲区描述
-Android 17 中  的具体触发条件和产物类型未在源码层面验证，仅基于官方文档描述。该 trigger 对应 "OS-defined memory limits" 临界点，可能覆盖 MemoryLimiter 退出的事前窗口，但具体的触发阈值、产物格式、与  的关系需要进一步研究。
-
-### 重要程度
-高（直接影响 Android 17 内存问题诊断能力）
-
-### 建议研究方向
-- 深入研究 AOSP android17-release 源码中的 ProfilingTrigger 常量定义
-- 验证 ANOMALY trigger 与 MemoryLimiter 的具体关系
-- 确定 ANOMALY trigger 的产物类型和格式规范
-- 研究 ANOMALY 与其他 trigger（如 OOM、KILL_EXCESSIVE_CPU_USAGE）的边界条件
-
-### 关联章节
-- 26.12 (本章)
-- 20.5 (OOM 治理策略)
-- 19.24 (Crash SDK 机制)
-- 8.10 (ProfilingTrigger 接入代码)
+19.0, 19.19

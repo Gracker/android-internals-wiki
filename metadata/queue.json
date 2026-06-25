@@ -1,627 +1,648 @@
 [
-    {
-        "section": "14.13",
-        "section_title": "Hook 基础设施与性能工具实现原理",
-        "priority": 95,
-        "reason": "[Deep Tech Review] 引用的 AOSP 源码路径验证版本与适用版本范围不匹配。章节声明适用版本为 Android 8-37，但验证版本为 android-16.0.0_r1，存在版本不一致问题。",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "源码错误",
-                "location": "源码引用验证部分",
-                "detail": "章节 frontmatter 中 last_verified_against: \"AOSP android-16.0.0_r1\"，但 applicable_versions 声明为 \"Android 8 (API 26) - Android 17 (API 37)\"，验证版本覆盖范围不足，无法确保 Android 17 API 37 内容准确性",
-                "suggestion": "需要更新验证版本为 android-17.0.0_r1 或更高版本，或明确标注哪些内容仅适用于 Android 16 及以下版本"
-            },
-            {
-                "type": "源码错误",
-                "location": "8.10 ProfilingManager章节的源码路径描述",
-                "detail": "packages/modules/Profiling/ 路径在不同 Android 版本中可能存在结构变化，需要确认 Android 17 中的准确路径和实现位置",
-                "suggestion": "需要精确指定 AOSP 源码路径，并在版本差异部分说明路径变化情况"
-            },
-            {
-                "type": "源码错误",
-                "location": "packages/modules/Profiling/ 路径引用",
-                "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 在 android-17.0.0_r1 中不存在，实际路径应为其他位置",
-                "suggestion": "验证并修正 AOSP 源码路径引用"
-            },
-            {
-                "type": "源码错误",
-                "location": "external/perfetto 源码路径",
-                "detail": "章节引用 external/perfetto 但未提供具体源码文件路径，应为 external/perfetto/src/",
-                "suggestion": "补充完整的 AOSP 源码文件路径"
-            },
-            {
-                "type": "源码错误",
-                "location": "art/runtime/entrypoints/entrypoint_utils.h",
-                "detail": "art/runtime/entrypoints/entrypoint_utils.h 在 android-17.0.0_r1 中不存在，应为 art/runtime/quick/entrypoints/entrypoint_utils.h",
-                "suggestion": "修正 ART 源码路径引用"
-            },
-            {
-                "type": "原理断裂",
-                "location": "Trampoline 机制解释",
-                "detail": "Trampoline 机制缺少内存分配失败场景的处理说明",
-                "suggestion": "补充内存分配失败时的异常处理和回退策略"
-            },
-            {
-                "type": "知识盲区",
-                "location": "Mainline模块影响",
-                "detail": "缺少 Android 15+ 的 Mainline 模块对 Hook 的实际影响案例",
-                "suggestion": "补充具体版本的 Mainline 模块 Hook 实际影响案例"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T06:20:00+08:00",
-        "status": "completed",
-        "completed_at": "2026-06-24T06:51:46+08:00",
-        "completed_by": "task2b-main-rework"
-    },
-    {
-        "section": "8.10",
-        "section_title": "ProfilingManager 系统触发式性能追踪",
-        "priority": 95,
-        "reason": "[Deep Tech Review] 存在严重源码引用错误和原理链断裂，需要 Task2B 重构章节",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "源码错误",
-                "location": "AOSP 源码路径",
-                "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 路径错误，Android 17 AOSP 中不存在该路径",
-                "suggestion": "修正源码路径并明确标注 Android 版本边界"
-            },
-            {
-                "type": "源码错误",
-                "location": "AnomalyDetectorService",
-                "detail": "AnomalyDetectorService 在 Android 17 AOSP 源码中不存在，该服务为厂商定制实现",
-                "suggestion": "移除对不存在 AOSP 组件的引用"
-            },
-            {
-                "type": "版本差异",
-                "location": "API 版本对应",
-                "detail": "ProfilingManager 实际在 API 35 (Android 15) 引入，不是 API 36",
-                "suggestion": "修正版本号对应关系"
-            },
-            {
-                "type": "源码错误",
-                "location": "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java",
-                "detail": "该路径在 android-17.0.0_r1 中不存在，需要修正为正确的 AOSP 路径",
-                "suggestion": "在 frameworks/native/services 目录中查找正确的 ProfilingService 实现"
-            },
-            {
-                "type": "原理断裂",
-                "location": "ProfilingManager 与 system_server 通信",
-                "detail": "未解释 ProfilingManager 如何与 system_server 进程进行 IPC 通信和权限验证",
-                "suggestion": "补充 ProfilingManager 通过 Binder 与 system_server 的 AppOpsManager 交互的具体流程"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T09:20:00+08:00",
-        "status": "completed",
-        "completed_at": "2026-06-24T09:27:00+08:00",
-        "completed_by": "task9-deep-tech-review"
-    },
-    {
-        "section": "26.12",
-        "section_title": "Android 版本化线上诊断能力",
-        "priority": 95,
-        "reason": "[Deep Tech Review] 存在严重源码引用错误，需要Task2B重构章节",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "源码错误",
-                "location": "ProfilingManager源码路径",
-                "detail": "文中引用packages/modules/Profiling/framework/java/android/os/ProfilingManager.java，但在AOSP android-17.0.0_r1中该路径不存在",
-                "suggestion": "修正ProfilingManager在Android 17中的正确源码路径，并明确标注Android版本边界"
-            },
-            {
-                "type": "源码错误",
-                "location": "ProfilingTrigger常量引用",
-                "detail": "文中提到TRIGGER_TYPE_ANOMALY/TRIGGER_TYPE_APP_COMPAT常量在Android 17中可用，但AOSP源码中未找到这些常量定义",
-                "suggestion": "移除不存在的常量引用，或确认Android 17中真实的ProfilingTrigger类型"
-            },
-            {
-                "type": "原理断裂",
-                "location": "版本化诊断路径选择逻辑",
-                "detail": "三条诊断路径（退出追溯、运行时采集、事件触发）之间的互补关系和选择逻辑不够清晰",
-                "suggestion": "建立版本化诊断路径选择决策树，明确不同场景下的选择依据"
-            },
-            {
-                "type": "版本差异",
-                "location": "MemoryLimiter版本差异",
-                "detail": "文中提到Android 17的MemoryLimiter，但未明确说明不同targetSdk版本下的行为差异",
-                "suggestion": "补充MemoryLimiter在不同targetSdk版本下的行为差异和演进关系说明"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T14:23:56+08:00",
-        "status": "completed",
-        "completed_at": "2026-06-24T14:53:33+08:00",
-        "completed_by": "task2b-main-rework"
-    },
-    {
-        "section": "14.13",
-        "section_title": "Hook 基础设施与性能工具实现原理",
-        "priority": 90,
-        "reason": "[review回炉] PLT vs Inline Hook 对比表中 IFUNC 绕过方式与正文描述矛盾",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "技术矛盾",
-                "location": "PLT vs Inline Hook 对比表 / 正文",
-                "detail": "对比表'绕过方式'行将 IFUNC resolver 列为 inline hook 的绕过方式，但正文明确写道 IFUNC resolver 绕过的是 PLT Hook，'这些场景必须用 inline hook'。表格与正文矛盾。",
-                "suggestion": "修正对比表'绕过方式'行：PLT Hook 格改为'dlsym 直接调用 / IFUNC resolver 替换'，Inline Hook 格改为'函数内分支跳转（如 tail call）或未被覆写的间接调用路径'"
-            }
-        ],
-        "added_by": "task6-review",
-        "added_at": "2026-06-24T12:17:03",
-        "status": "completed",
-        "original_review_log": "logs/review/2026-06-24-12-review.md",
-        "completed_at": "2026-06-24T12:50:00",
-        "completed_by": "task2b-main"
-    },
-    {
-        "section": "7.7",
-        "section_title": "Jetpack Compose 性能优化",
-        "priority": 85,
-        "reason": "[Deep Tech Review] 存在重要的原理链缺失和版本差异覆盖问题",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "原理断裂",
-                "location": "PausableComposition",
-                "detail": "未说明 PausableComposition 的版本边界和具体使用场景",
-                "suggestion": "明确 PausableComposition 在不同 Compose 版本中的可用性和限制"
-            },
-            {
-                "type": "版本差异",
-                "location": "Strong Skipping",
-                "detail": "未说明 Strong Skipping 在不同 Kotlin/Compose 版本中的演进",
-                "suggestion": "补充 Strong Skipping 的版本兼容性说明"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T08:20:00+08:00",
-        "status": "completed",
-        "completed_at": "2026-06-24T08:57:00+08:00",
-        "completed_by": "task2b-main"
-    },
-    {
-        "section": "7.7",
-        "section_title": "Jetpack Compose 性能优化",
-        "priority": 85,
-        "reason": "fixed-lite",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "源码错误",
-                "location": "PausableComposition API引用",
-                "detail": "文中提到使用PausableComposition优化性能，但未标注该API对应的Compose版本和具体可用性边界，无法确认Android 17中的状态",
-                "suggestion": "明确标注PausableComposition在Android 17/Compose 1.7+中的可用性，并提供降级方案说明"
-            },
-            {
-                "type": "源码错误",
-                "location": "Strong Skipping版本差异",
-                "detail": "文中描述Strong Skipping机制，但未说明该特性在不同Kotlin/Compose版本中的演进历程和边界条件",
-                "suggestion": "补充StrongSkipping在Android 12-17中的版本演进说明和兼容性处理"
-            },
-            {
-                "type": "原理断裂",
-                "location": "布局优化部分",
-                "detail": "布局优化缺少完整的'为什么需要优化→优化原理→实现方式→验证方法'链条",
-                "suggestion": "建立完整的布局优化原理链，补充compose.compiler.metrics与渲染性能的关联机制"
-            },
-            {
-                "type": "版本差异",
-                "location": "Android 12-14兼容性",
-                "detail": "优化策略主要集中在Android 15-17，但对Android 12-14的差异覆盖不足",
-                "suggestion": "补充Android 12-14中Compose性能问题的特殊处理方式和优化策略"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T14:23:56+08:00",
-        "status": "completed",
-        "completed_at": "2026-06-24T15:42:00+08:00",
-        "completed_by": "task2b-lite"
-    },
-    {
-        "section": "25.4",
-        "section_title": "WorkManager 实战与后台任务调度",
-        "priority": 85,
-        "reason": "[Deep Tech Review] 存在源码路径错误和调度原理链不完整问题",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "源码错误",
-                "location": "SystemJobScheduler源码路径",
-                "detail": "文中引用platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/background/systemjob/SystemJobScheduler.java，但该路径在AndroidX WorkManager中可能不正确",
-                "suggestion": "确认Android 17中WorkManager的具体源码路径，并提供正确的源码引用"
-            },
-            {
-                "type": "原理断裂",
-                "location": "JobScheduler与WorkManager调度原理",
-                "detail": "缺少JobScheduler如何转换为WorkSpec、GreedyScheduler如何与JobScheduler配合的详细说明",
-                "suggestion": "完善JobScheduler与WorkManager的调度原理链条，补充任务转换和配合机制说明"
-            },
-            {
-                "type": "版本差异",
-                "location": "Android 17 long-running worker配额",
-                "detail": "未说明Android 17中long-running worker配额的进一步优化或限制变化",
-                "suggestion": "补充Android 17中long-running worker配额变化的详细说明和应对策略"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T14:23:56+08:00",
-        "status": "completed",
-        "completed_at": "2026-06-24T16:56:07+08:00",
-        "completed_by": "task2b-main"
-    },
-    {
-        "section": "2.30",
-        "section_title": "DisplayManagerService Display Lifecycle 与拓扑性能",
-        "priority": 80,
-        "reason": "[Task2A gap-mining] ch02 渲染系统缺少 DMS 系统服务层分析。DeepResearch 报告提供 android-17.0.0_r1 源码素材。评分 14/20。",
-        "material_paths": [
-            "DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md"
-        ],
-        "added_by": "task2a-knowledge-gap",
-        "added_at": "2026-06-24T09:06:00+08:00"
-    },
-    {
-        "section": "21.14",
-        "section_title": "依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化",
-        "priority": 80,
-        "reason": "[Task2A gap-mining] 全书无 DI 框架性能覆盖。Dagger/Hilt component 图初始化是应用 Top3 启动开销。评分 15/20。",
-        "material_paths": [
-            "developer.android.com/training/dependency-injection/hilt-android",
-            "dagger.dev/performance"
-        ],
-        "added_by": "task2a-knowledge-gap",
-        "added_at": "2026-06-24T09:06:00+08:00"
-    },
-    {
-        "chapter": "8.{new_section_num}",
-        "title": "ProfilingManager 系统触发式性能追踪",
-        "priority": 80,
-        "created_by": "task2a-knowledge-gap",
-        "created_date": "2026-06-24",
-        "gap_source": "research-gaps-md",
-        "related_chapters": [
-            "2.4",
-            "7.2"
-        ],
-        "material_paths": [],
-        "draft_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch08-responsiveness/16-profilingmanager-系统触发式性能追踪.md"
-    },
-    {
-        "chapter": "8.9",
-        "title": "Hook 技术限制与边界条件",
-        "path": "part1-fundamentals/ch01-architecture/08.09-hook-technology-boundary-conditions.md",
-        "status": "draft",
-        "priority": 80,
-        "created_by": "task2a-knowledge-gap",
-        "created_date": "2026-06-24"
-    },
-    {
-        "chapter": "19.10",
-        "title": "APM 工具基准测试与兼容性验证",
-        "path": "part3-tools/ch19-apm/19.10-apm-tool-compatibility.md",
-        "status": "draft",
-        "priority": 80,
-        "created_by": "task2a-knowledge-gap",
-        "created_date": "2026-06-24"
-    },
-    {
-        "chapter": "21.12",
-        "title": "渲染管线性能监控与优化",
-        "path": "part2-performance/ch07-smoothness/21.12-rendering-pipeline-monitoring.md",
-        "status": "draft",
-        "priority": 80,
-        "created_by": "task2a-knowledge-gap",
-        "created_date": "2026-06-24"
-    },
-    {
-        "chapter": "22.9",
-        "title": "端侧大模型推理的内存管理",
-        "path": "part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md",
-        "status": "drafted",
-        "priority": 80,
-        "created_by": "task2a-knowledge-gap",
-        "created_date": "2026-06-24",
-        "drafted_at": "2026-06-25T04:11:15.314396+08:00",
-        "drafted_by": "openclaw-task2a"
-    },
-    {
-        "chapter": "23.8",
-        "title": "游戏性能优化实战指南",
-        "path": "part2-performance/ch08-responsiveness/23.8-game-performance-optimization.md",
-        "status": "draft",
-        "priority": 80,
-        "created_by": "task2a-knowledge-gap",
-        "created_date": "2026-06-24"
-    },
-    {
-        "chapter": "2.29",
-        "title": "Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型",
-        "priority": 80,
-        "source": "source-index.json",
-        "created_date": "2026-06-24",
-        "estimated_hours": 8
-    },
-    {
-        "chapter": "2.30",
-        "title": "CameraX ZSL 与 HAL Reprocessing Request 的映射关系",
-        "priority": 80,
-        "source": "source-index.json",
-        "created_date": "2026-06-24",
-        "estimated_hours": 8
-    },
-    {
-        "chapter": "20.1",
-        "title": "Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析",
-        "priority": 80,
-        "source": "source-index.json",
-        "created_date": "2026-06-24",
-        "estimated_hours": 12
-    },
-    {
-        "chapter": "16.5",
-        "title": "Android 系统层对应用分发与内容共享的支撑机制",
-        "priority": 80,
-        "source": "source-index.json",
-        "created_date": "2026-06-24",
-        "estimated_hours": 10
-    },
-    {
-        "section": "19.10",
-        "section_title": "其他开源 APM 库",
-        "priority": 95,
-        "reason": "[Deep Tech Review] 存在源码引用错误和版本差异覆盖问题，需要 Task2B 重构章节",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "源码错误",
-                "location": "Matrix Gradle 插件路径",
-                "detail": "Matrix Gradle 插件路径描述不准确。Matrix Android Gradle plugin 位于 com.tencent.matrix:matrix-gradle-plugin，不是 appExtension.registerTransform，AGP 8.0+ 兼容性是通过 AsmClassVisitorFactory 实现，不是 Transform API。",
-                "suggestion": "修正 Matrix Gradle 插件引用路径和兼容性说明"
-            },
-            {
-                "type": "版本差异",
-                "location": "ANGLE 驱动策略",
-                "detail": "章节提到'Android 15 把 ANGLE 定位为 optional layer，官方 roadmap 表明后续会在更多新设备上把 ANGLE 作为 GL system driver 出厂'，但截至 Android 17，ANGLE 仍不是强制性默认 GLES 驱动，只是选择性启用。",
-                "suggestion": "明确说明 ANGLE 在不同 Android 版本中的可选性和选择性启用机制"
-            },
-            {
-                "type": "版本差异",
-                "location": "APM 能力版本演进",
-                "detail": "章节适用的 Android 版本范围是 'Android 8 (API 26) - Android 17 (API 37)'，但没有详细说明各个版本的 APM 能力差异，比如 Android 15 的 ProfilingManager 对 APM 的影响。",
-                "suggestion": "补充各个 Android 版本中 APM 能力的关键差异和演进说明"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-25T00:20:00+08:00",
-        "status": "completed",
-        "completed_at": "2026-06-25T00:53:48+08:00",
-        "completed_by": "openclaw-task2b"
-    },
-    {
-        "section": "8.10",
-        "section_title": "ProfilingManager 系统触发式性能追踪",
-        "priority": 95,
-        "reason": "[Deep Tech Review] 存在严重源码引用错误和原理链断裂，需要 Task2B 重构章节",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "源码错误",
-                "location": "AOSP 源码路径",
-                "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 路径错误，Android 17 AOSP 中不存在该路径，实际应为 frameworks/base/core/java/android/os/ProfilingManager.java。",
-                "suggestion": "修正源码路径并明确标注 Android 版本边界"
-            },
-            {
-                "type": "源码错误",
-                "location": "常量值定义",
-                "detail": "章节中提到的 TRIGGER_TYPE_APP_FULLY_DRAWN=1 等常量值在 Android 17 中已被重新定义，需要确认最新的常量值。",
-                "suggestion": "更新 ProfilingTrigger 常量值为 Android 17 中的正确定义"
-            },
-            {
-                "type": "原理断裂",
-                "location": "ANOMALY 与 ApplicationExitInfo 关联",
-                "detail": "章节解释了 ANOMALY 触发器的机制，但没有说明如何将 ANOMALY 结果与 ApplicationExitInfo 关联起来进行问题定位。",
-                "suggestion": "补充 ANOMALY 结果与 ApplicationExitInfo 的关联机制和问题定位方法"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-25T00:20:00+08:00",
-        "status": "completed",
-        "completed_at": "2026-06-25T00:53:48+08:00",
-        "completed_by": "openclaw-task2b"
-    },
-    {
-        "section": "19.10",
-        "section_title": "其他开源 APM 库",
-        "priority": 90,
-        "reason": "[Deep Tech Review] 版本验证范围不一致与交叉引用混乱",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "源码错误",
-                "location": "frontmatter",
-                "detail": "applicable_versions 声明 Android 8-37，但 last_verified_against 仅 android-17.0.0_r1，验证版本覆盖范围不足",
-                "suggestion": "需要更新验证版本覆盖整个适用版本范围，或缩小适用版本范围"
-            },
-            {
-                "type": "交叉引用问题",
-                "location": "task2b_notes",
-                "detail": "注明ANGLE内容归属于ch2.14，但正文仍包含ANGLE相关内容，造成归属混乱",
-                "suggestion": "移除本章节的ANGLE内容，确保交叉引用一致性"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T19:25:52.595481+00:00",
-        "status": "completed",
-        "completed_at": "2026-06-25T03:39:38",
-        "completed_by": "task2b-lite",
-        "completion_reason": "fixed-lite: added verification_scope_note to frontmatter; ANGLE body content verified absent"
-    },
-    {
-        "section": "8.10",
-        "section_title": "ProfilingManager 系统触发式性能追踪",
-        "priority": 90,
-        "reason": "[Deep Tech Review] 版本演进描述不完整与外部依赖未验证",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "版本差异",
-                "location": "applicable_versions",
-                "detail": "声明适用Android 15-37，但缺乏API 35→36→37的明确版本分界",
-                "suggestion": "需要明确标注API 35/36/37各版本的差异和限制"
-            },
-            {
-                "type": "外部依赖",
-                "location": "ApplicationExitInfo关联",
-                "detail": "引用ApplicationExitInfo但未验证相关章节存在且准确",
-                "suggestion": "建立章节间的验证机制，确保跨章节内容一致性"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T19:25:52.595756+00:00",
-        "status": "completed",
-        "completed_at": "2026-06-25T03:39:38",
-        "completed_by": "task2b-lite",
-        "completion_reason": "fixed-lite: added version_breakdown to frontmatter; added related_chapters cross-ref to 16.8/26.12"
-    },
-    {
-        "section": "2.14",
-        "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
-        "priority": 85,
-        "reason": "[Deep Tech Review] 版本边界声明过宽与待验证内容未解决",
-        "material_paths": [
-            "intake/suggestions.md"
-        ],
-        "review_issues": [
-            {
-                "type": "版本差异",
-                "location": "applicable_versions",
-                "detail": "声明适用Android 4.0-37，但Vulkan 1.3/1.4等高级功能只在Android 13/16+才可用",
-                "suggestion": "按API版本细化各章节的适用范围，避免过度承诺"
-            },
-            {
-                "type": "知识盲区",
-                "location": "多处标记",
-                "detail": "包含多个[待验证]标记，影响章节可信度",
-                "suggestion": "解决所有待验证内容或明确标注技术不确定性"
-            }
-        ],
-        "added_by": "task9-deep-tech-review",
-        "added_at": "2026-06-24T19:25:52.595759+00:00",
-        "status": "completed",
-        "completed_at": "2026-06-25T04:52:10.051720+08:00",
-        "completed_by": "task2b-main",
-        "completed_notes": "P85修复: 版本边界细化(applicable_versions per API), [待验证]标记全部消除"
-    },
-    {
-        "section": "19.10",
-        "section_title": "APM 工具基准测试与兼容性验证",
-        "priority": 85,
-        "reason": "[DeepResearch 注入] 新增高价值调研材料：APM 工具（Matrix/KOOM/AndroidGodEye）性能开销源码级对比与 Android 17 兼容性分析，建议补充到章节",
-        "material_paths": [
-            "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-apm-tools-benchmark-source-analysis.md"
-        ],
-        "review_issues": [
-            {
-                "type": "新增参考材料",
-                "location": "参考资料/延伸阅读",
-                "detail": "APM 工具性能开销与机制对比 — Matrix LooperMonitor setMessageLogging hook、KOOM fork-and-dump ART 符号稳定性、Choreographer 反射在 API 37 的兼容性验证",
-                "suggestion": "判断是否适合补充为 §19.10 或 §14.12 的章节参考资料，覆盖开源 APM 工具在 Android 17 的实测兼容性数据"
-            }
-        ],
-        "added_by": "task-deepresearch-injector",
-        "added_at": "2026-06-25T06:12:33",
-        "status": "completed",
-        "completed_at": "2026-06-25T06:51:35+08:00",
-        "completed_by": "task2b-main-material-injection",
-        "completed_reason": "DeepResearch APM 源码分析已注入到 §19.10 参考资料"
-    },
-    {
-        "section": "5.11",
-        "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
-        "priority": 82,
-        "reason": "[DeepResearch 注入] 新增高价值调研材料：LiteRT V2 运行时核心（ArenaPlanner/Subgraph）与 NNAPI Delegate 委托模型的源码级分析，覆盖 MediaPipe Tasks 架构",
-        "material_paths": [
-            "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android-端侧ai推理运行时源码-LiteRT-NNAPI-MediaPipe-Tasks.md"
-        ],
-        "review_issues": [
-            {
-                "type": "新增参考材料",
-                "location": "参考资料/延伸阅读",
-                "detail": "端侧 AI 推理运行时源码分析 — LiteRT ArenaPlanner 静态内存复用、NNAPI Delegate 节点级委托、符号-神经混合执行切入点分析",
-                "suggestion": "判断是否适合补充为 §5.11 或 §5.14 的延伸阅读，提供 LiteRT V2 重构后的内存规划与 GenAI 混合推理架构参考"
-            }
-        ],
-        "added_by": "task-deepresearch-injector",
-        "added_at": "2026-06-25T06:12:33",
-        "status": "completed",
-        "completed_at": "2026-06-25T06:51:35+08:00",
-        "completed_by": "task2b-main-material-injection",
-        "completed_reason": "DeepResearch LiteRT/NNAPI/MediaPipe 源码分析已注入到 §5.11 延伸阅读"
-    },
-    {
-        "section": "14.2",
-        "section_title": "Simpleperf",
-        "priority": 80,
-        "reason": "[DeepResearch 注入] 新增高价值调研材料：Simpleperf 与 Android 热节流机制的交互分析，揭示 simpleperf 无 thermal listener 的单向解耦设计",
-        "material_paths": [
-            "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-simpleperf-thermal-throttling-interaction.md"
-        ],
-        "review_issues": [
-            {
-                "type": "新增参考材料",
-                "location": "参考资料/延伸阅读",
-                "detail": "Simpleperf 热节流交互研究 — AdjustPerfEventLimit 只调 4 个 perf_event sysctl 不读 thermal HAL、PowerStats HAL v2 与 simpleperf 完全解耦、task-clock 抗热节流指标分析",
-                "suggestion": "判断是否适合补充为 §14.2 Simpleperf 的参考资料，提供 profiling 精度受热节流干扰的校正方法论"
-            }
-        ],
-        "added_by": "task-deepresearch-injector",
-        "added_at": "2026-06-25T06:12:33",
-        "status": "completed",
-        "completed_at": "2026-06-25T06:51:35+08:00",
-        "completed_by": "task2b-main-material-injection",
-        "completed_reason": "DeepResearch Simpleperf 热节流交互分析已注入到 §14.2 参考资料"
-    },
-    {
-        "section": "8.17",
-        "section_title": "Kotlin Flow 背压、操作符链与响应式性能边界",
-        "priority": 80,
-        "reason": "[Task2A 知识缺口挖掘] §8.6 覆盖 Coroutine 基础性能，但 Flow 背压/操作符链/热冷流性能独立于此。评分 14/20。",
-        "material_paths": [],
-        "gap_source": "章节深挖"
-    },
-    {
-        "section": "22.25",
-        "section_title": "Compose 布局系统：测量阶段、缓存机制与 Intrinsic 性能",
-        "priority": 80,
-        "reason": "[Task2A 知识缺口挖掘] 现有 Compose 章节覆盖重组/动画/LazyList/导航，但布局测量阶段的缓存机制和 intrinsic 开销独立于以上章节。§7.12 有 View 布局性能，缺 Compose 等价。评分 16/20。",
-        "material_paths": [],
-        "gap_source": "章节深挖+AOSP结构"
-    }
+  {
+    "section": "14.13",
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 引用的 AOSP 源码路径验证版本与适用版本范围不匹配。章节声明适用版本为 Android 8-37，但验证版本为 android-16.0.0_r1，存在版本不一致问题。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "源码引用验证部分",
+        "detail": "章节 frontmatter 中 last_verified_against: \"AOSP android-16.0.0_r1\"，但 applicable_versions 声明为 \"Android 8 (API 26) - Android 17 (API 37)\"，验证版本覆盖范围不足，无法确保 Android 17 API 37 内容准确性",
+        "suggestion": "需要更新验证版本为 android-17.0.0_r1 或更高版本，或明确标注哪些内容仅适用于 Android 16 及以下版本"
+      },
+      {
+        "type": "源码错误",
+        "location": "8.10 ProfilingManager章节的源码路径描述",
+        "detail": "packages/modules/Profiling/ 路径在不同 Android 版本中可能存在结构变化，需要确认 Android 17 中的准确路径和实现位置",
+        "suggestion": "需要精确指定 AOSP 源码路径，并在版本差异部分说明路径变化情况"
+      },
+      {
+        "type": "源码错误",
+        "location": "packages/modules/Profiling/ 路径引用",
+        "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 在 android-17.0.0_r1 中不存在，实际路径应为其他位置",
+        "suggestion": "验证并修正 AOSP 源码路径引用"
+      },
+      {
+        "type": "源码错误",
+        "location": "external/perfetto 源码路径",
+        "detail": "章节引用 external/perfetto 但未提供具体源码文件路径，应为 external/perfetto/src/",
+        "suggestion": "补充完整的 AOSP 源码文件路径"
+      },
+      {
+        "type": "源码错误",
+        "location": "art/runtime/entrypoints/entrypoint_utils.h",
+        "detail": "art/runtime/entrypoints/entrypoint_utils.h 在 android-17.0.0_r1 中不存在，应为 art/runtime/quick/entrypoints/entrypoint_utils.h",
+        "suggestion": "修正 ART 源码路径引用"
+      },
+      {
+        "type": "原理断裂",
+        "location": "Trampoline 机制解释",
+        "detail": "Trampoline 机制缺少内存分配失败场景的处理说明",
+        "suggestion": "补充内存分配失败时的异常处理和回退策略"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Mainline模块影响",
+        "detail": "缺少 Android 15+ 的 Mainline 模块对 Hook 的实际影响案例",
+        "suggestion": "补充具体版本的 Mainline 模块 Hook 实际影响案例"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T06:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T06:51:46+08:00",
+    "completed_by": "task2b-main-rework"
+  },
+  {
+    "section": "8.10",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在严重源码引用错误和原理链断裂，需要 Task2B 重构章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "AOSP 源码路径",
+        "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 路径错误，Android 17 AOSP 中不存在该路径",
+        "suggestion": "修正源码路径并明确标注 Android 版本边界"
+      },
+      {
+        "type": "源码错误",
+        "location": "AnomalyDetectorService",
+        "detail": "AnomalyDetectorService 在 Android 17 AOSP 源码中不存在，该服务为厂商定制实现",
+        "suggestion": "移除对不存在 AOSP 组件的引用"
+      },
+      {
+        "type": "版本差异",
+        "location": "API 版本对应",
+        "detail": "ProfilingManager 实际在 API 35 (Android 15) 引入，不是 API 36",
+        "suggestion": "修正版本号对应关系"
+      },
+      {
+        "type": "源码错误",
+        "location": "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java",
+        "detail": "该路径在 android-17.0.0_r1 中不存在，需要修正为正确的 AOSP 路径",
+        "suggestion": "在 frameworks/native/services 目录中查找正确的 ProfilingService 实现"
+      },
+      {
+        "type": "原理断裂",
+        "location": "ProfilingManager 与 system_server 通信",
+        "detail": "未解释 ProfilingManager 如何与 system_server 进程进行 IPC 通信和权限验证",
+        "suggestion": "补充 ProfilingManager 通过 Binder 与 system_server 的 AppOpsManager 交互的具体流程"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T09:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T09:27:00+08:00",
+    "completed_by": "task9-deep-tech-review"
+  },
+  {
+    "section": "26.12",
+    "section_title": "Android 版本化线上诊断能力",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在严重源码引用错误，需要Task2B重构章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "ProfilingManager源码路径",
+        "detail": "文中引用packages/modules/Profiling/framework/java/android/os/ProfilingManager.java，但在AOSP android-17.0.0_r1中该路径不存在",
+        "suggestion": "修正ProfilingManager在Android 17中的正确源码路径，并明确标注Android版本边界"
+      },
+      {
+        "type": "源码错误",
+        "location": "ProfilingTrigger常量引用",
+        "detail": "文中提到TRIGGER_TYPE_ANOMALY/TRIGGER_TYPE_APP_COMPAT常量在Android 17中可用，但AOSP源码中未找到这些常量定义",
+        "suggestion": "移除不存在的常量引用，或确认Android 17中真实的ProfilingTrigger类型"
+      },
+      {
+        "type": "原理断裂",
+        "location": "版本化诊断路径选择逻辑",
+        "detail": "三条诊断路径（退出追溯、运行时采集、事件触发）之间的互补关系和选择逻辑不够清晰",
+        "suggestion": "建立版本化诊断路径选择决策树，明确不同场景下的选择依据"
+      },
+      {
+        "type": "版本差异",
+        "location": "MemoryLimiter版本差异",
+        "detail": "文中提到Android 17的MemoryLimiter，但未明确说明不同targetSdk版本下的行为差异",
+        "suggestion": "补充MemoryLimiter在不同targetSdk版本下的行为差异和演进关系说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T14:23:56+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T14:53:33+08:00",
+    "completed_by": "task2b-main-rework"
+  },
+  {
+    "section": "14.13",
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "priority": 90,
+    "reason": "[review回炉] PLT vs Inline Hook 对比表中 IFUNC 绕过方式与正文描述矛盾",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "技术矛盾",
+        "location": "PLT vs Inline Hook 对比表 / 正文",
+        "detail": "对比表'绕过方式'行将 IFUNC resolver 列为 inline hook 的绕过方式，但正文明确写道 IFUNC resolver 绕过的是 PLT Hook，'这些场景必须用 inline hook'。表格与正文矛盾。",
+        "suggestion": "修正对比表'绕过方式'行：PLT Hook 格改为'dlsym 直接调用 / IFUNC resolver 替换'，Inline Hook 格改为'函数内分支跳转（如 tail call）或未被覆写的间接调用路径'"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-24T12:17:03",
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-24-12-review.md",
+    "completed_at": "2026-06-24T12:50:00",
+    "completed_by": "task2b-main"
+  },
+  {
+    "section": "7.7",
+    "section_title": "Jetpack Compose 性能优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 存在重要的原理链缺失和版本差异覆盖问题",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "PausableComposition",
+        "detail": "未说明 PausableComposition 的版本边界和具体使用场景",
+        "suggestion": "明确 PausableComposition 在不同 Compose 版本中的可用性和限制"
+      },
+      {
+        "type": "版本差异",
+        "location": "Strong Skipping",
+        "detail": "未说明 Strong Skipping 在不同 Kotlin/Compose 版本中的演进",
+        "suggestion": "补充 Strong Skipping 的版本兼容性说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T08:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T08:57:00+08:00",
+    "completed_by": "task2b-main"
+  },
+  {
+    "section": "7.7",
+    "section_title": "Jetpack Compose 性能优化",
+    "priority": 85,
+    "reason": "fixed-lite",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "PausableComposition API引用",
+        "detail": "文中提到使用PausableComposition优化性能，但未标注该API对应的Compose版本和具体可用性边界，无法确认Android 17中的状态",
+        "suggestion": "明确标注PausableComposition在Android 17/Compose 1.7+中的可用性，并提供降级方案说明"
+      },
+      {
+        "type": "源码错误",
+        "location": "Strong Skipping版本差异",
+        "detail": "文中描述Strong Skipping机制，但未说明该特性在不同Kotlin/Compose版本中的演进历程和边界条件",
+        "suggestion": "补充StrongSkipping在Android 12-17中的版本演进说明和兼容性处理"
+      },
+      {
+        "type": "原理断裂",
+        "location": "布局优化部分",
+        "detail": "布局优化缺少完整的'为什么需要优化→优化原理→实现方式→验证方法'链条",
+        "suggestion": "建立完整的布局优化原理链，补充compose.compiler.metrics与渲染性能的关联机制"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 12-14兼容性",
+        "detail": "优化策略主要集中在Android 15-17，但对Android 12-14的差异覆盖不足",
+        "suggestion": "补充Android 12-14中Compose性能问题的特殊处理方式和优化策略"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T14:23:56+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T15:42:00+08:00",
+    "completed_by": "task2b-lite"
+  },
+  {
+    "section": "25.4",
+    "section_title": "WorkManager 实战与后台任务调度",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 存在源码路径错误和调度原理链不完整问题",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "SystemJobScheduler源码路径",
+        "detail": "文中引用platform/frameworks/support/work/work-runtime/src/main/java/androidx/work/impl/background/systemjob/SystemJobScheduler.java，但该路径在AndroidX WorkManager中可能不正确",
+        "suggestion": "确认Android 17中WorkManager的具体源码路径，并提供正确的源码引用"
+      },
+      {
+        "type": "原理断裂",
+        "location": "JobScheduler与WorkManager调度原理",
+        "detail": "缺少JobScheduler如何转换为WorkSpec、GreedyScheduler如何与JobScheduler配合的详细说明",
+        "suggestion": "完善JobScheduler与WorkManager的调度原理链条，补充任务转换和配合机制说明"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 17 long-running worker配额",
+        "detail": "未说明Android 17中long-running worker配额的进一步优化或限制变化",
+        "suggestion": "补充Android 17中long-running worker配额变化的详细说明和应对策略"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T14:23:56+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-24T16:56:07+08:00",
+    "completed_by": "task2b-main"
+  },
+  {
+    "section": "2.30",
+    "section_title": "DisplayManagerService Display Lifecycle 与拓扑性能",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] ch02 渲染系统缺少 DMS 系统服务层分析。DeepResearch 报告提供 android-17.0.0_r1 源码素材。评分 14/20。",
+    "material_paths": [
+      "DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-24T09:06:00+08:00"
+  },
+  {
+    "section": "21.14",
+    "section_title": "依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] 全书无 DI 框架性能覆盖。Dagger/Hilt component 图初始化是应用 Top3 启动开销。评分 15/20。",
+    "material_paths": [
+      "developer.android.com/training/dependency-injection/hilt-android",
+      "dagger.dev/performance"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-24T09:06:00+08:00"
+  },
+  {
+    "chapter": "8.{new_section_num}",
+    "title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24",
+    "gap_source": "research-gaps-md",
+    "related_chapters": [
+      "2.4",
+      "7.2"
+    ],
+    "material_paths": [],
+    "draft_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch08-responsiveness/16-profilingmanager-系统触发式性能追踪.md"
+  },
+  {
+    "chapter": "8.9",
+    "title": "Hook 技术限制与边界条件",
+    "path": "part1-fundamentals/ch01-architecture/08.09-hook-technology-boundary-conditions.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
+  },
+  {
+    "chapter": "19.10",
+    "title": "APM 工具基准测试与兼容性验证",
+    "path": "part3-tools/ch19-apm/19.10-apm-tool-compatibility.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
+  },
+  {
+    "chapter": "21.12",
+    "title": "渲染管线性能监控与优化",
+    "path": "part2-performance/ch07-smoothness/21.12-rendering-pipeline-monitoring.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
+  },
+  {
+    "chapter": "22.9",
+    "title": "端侧大模型推理的内存管理",
+    "path": "part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md",
+    "status": "drafted",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24",
+    "drafted_at": "2026-06-25T04:11:15.314396+08:00",
+    "drafted_by": "openclaw-task2a"
+  },
+  {
+    "chapter": "23.8",
+    "title": "游戏性能优化实战指南",
+    "path": "part2-performance/ch08-responsiveness/23.8-game-performance-optimization.md",
+    "status": "draft",
+    "priority": 80,
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-24"
+  },
+  {
+    "chapter": "2.29",
+    "title": "Camera HAL3 Buffer 管理与 BufferQueue 协作的内存模型",
+    "priority": 80,
+    "source": "source-index.json",
+    "created_date": "2026-06-24",
+    "estimated_hours": 8
+  },
+  {
+    "chapter": "2.30",
+    "title": "CameraX ZSL 与 HAL Reprocessing Request 的映射关系",
+    "priority": 80,
+    "source": "source-index.json",
+    "created_date": "2026-06-24",
+    "estimated_hours": 8
+  },
+  {
+    "chapter": "20.1",
+    "title": "Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析",
+    "priority": 80,
+    "source": "source-index.json",
+    "created_date": "2026-06-24",
+    "estimated_hours": 12
+  },
+  {
+    "chapter": "16.5",
+    "title": "Android 系统层对应用分发与内容共享的支撑机制",
+    "priority": 80,
+    "source": "source-index.json",
+    "created_date": "2026-06-24",
+    "estimated_hours": 10
+  },
+  {
+    "section": "19.10",
+    "section_title": "其他开源 APM 库",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在源码引用错误和版本差异覆盖问题，需要 Task2B 重构章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "Matrix Gradle 插件路径",
+        "detail": "Matrix Gradle 插件路径描述不准确。Matrix Android Gradle plugin 位于 com.tencent.matrix:matrix-gradle-plugin，不是 appExtension.registerTransform，AGP 8.0+ 兼容性是通过 AsmClassVisitorFactory 实现，不是 Transform API。",
+        "suggestion": "修正 Matrix Gradle 插件引用路径和兼容性说明"
+      },
+      {
+        "type": "版本差异",
+        "location": "ANGLE 驱动策略",
+        "detail": "章节提到'Android 15 把 ANGLE 定位为 optional layer，官方 roadmap 表明后续会在更多新设备上把 ANGLE 作为 GL system driver 出厂'，但截至 Android 17，ANGLE 仍不是强制性默认 GLES 驱动，只是选择性启用。",
+        "suggestion": "明确说明 ANGLE 在不同 Android 版本中的可选性和选择性启用机制"
+      },
+      {
+        "type": "版本差异",
+        "location": "APM 能力版本演进",
+        "detail": "章节适用的 Android 版本范围是 'Android 8 (API 26) - Android 17 (API 37)'，但没有详细说明各个版本的 APM 能力差异，比如 Android 15 的 ProfilingManager 对 APM 的影响。",
+        "suggestion": "补充各个 Android 版本中 APM 能力的关键差异和演进说明"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-25T00:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-25T00:53:48+08:00",
+    "completed_by": "openclaw-task2b"
+  },
+  {
+    "section": "8.10",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在严重源码引用错误和原理链断裂，需要 Task2B 重构章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "AOSP 源码路径",
+        "detail": "packages/modules/Profiling/framework/android/os/ProfilingManager.java 路径错误，Android 17 AOSP 中不存在该路径，实际应为 frameworks/base/core/java/android/os/ProfilingManager.java。",
+        "suggestion": "修正源码路径并明确标注 Android 版本边界"
+      },
+      {
+        "type": "源码错误",
+        "location": "常量值定义",
+        "detail": "章节中提到的 TRIGGER_TYPE_APP_FULLY_DRAWN=1 等常量值在 Android 17 中已被重新定义，需要确认最新的常量值。",
+        "suggestion": "更新 ProfilingTrigger 常量值为 Android 17 中的正确定义"
+      },
+      {
+        "type": "原理断裂",
+        "location": "ANOMALY 与 ApplicationExitInfo 关联",
+        "detail": "章节解释了 ANOMALY 触发器的机制，但没有说明如何将 ANOMALY 结果与 ApplicationExitInfo 关联起来进行问题定位。",
+        "suggestion": "补充 ANOMALY 结果与 ApplicationExitInfo 的关联机制和问题定位方法"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-25T00:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-25T00:53:48+08:00",
+    "completed_by": "openclaw-task2b"
+  },
+  {
+    "section": "19.10",
+    "section_title": "其他开源 APM 库",
+    "priority": 90,
+    "reason": "[Deep Tech Review] 版本验证范围不一致与交叉引用混乱",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter",
+        "detail": "applicable_versions 声明 Android 8-37，但 last_verified_against 仅 android-17.0.0_r1，验证版本覆盖范围不足",
+        "suggestion": "需要更新验证版本覆盖整个适用版本范围，或缩小适用版本范围"
+      },
+      {
+        "type": "交叉引用问题",
+        "location": "task2b_notes",
+        "detail": "注明ANGLE内容归属于ch2.14，但正文仍包含ANGLE相关内容，造成归属混乱",
+        "suggestion": "移除本章节的ANGLE内容，确保交叉引用一致性"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T19:25:52.595481+00:00",
+    "status": "completed",
+    "completed_at": "2026-06-25T03:39:38",
+    "completed_by": "task2b-lite",
+    "completion_reason": "fixed-lite: added verification_scope_note to frontmatter; ANGLE body content verified absent"
+  },
+  {
+    "section": "8.10",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 90,
+    "reason": "[Deep Tech Review] 版本演进描述不完整与外部依赖未验证",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "applicable_versions",
+        "detail": "声明适用Android 15-37，但缺乏API 35→36→37的明确版本分界",
+        "suggestion": "需要明确标注API 35/36/37各版本的差异和限制"
+      },
+      {
+        "type": "外部依赖",
+        "location": "ApplicationExitInfo关联",
+        "detail": "引用ApplicationExitInfo但未验证相关章节存在且准确",
+        "suggestion": "建立章节间的验证机制，确保跨章节内容一致性"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T19:25:52.595756+00:00",
+    "status": "completed",
+    "completed_at": "2026-06-25T03:39:38",
+    "completed_by": "task2b-lite",
+    "completion_reason": "fixed-lite: added version_breakdown to frontmatter; added related_chapters cross-ref to 16.8/26.12"
+  },
+  {
+    "section": "2.14",
+    "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 版本边界声明过宽与待验证内容未解决",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "applicable_versions",
+        "detail": "声明适用Android 4.0-37，但Vulkan 1.3/1.4等高级功能只在Android 13/16+才可用",
+        "suggestion": "按API版本细化各章节的适用范围，避免过度承诺"
+      },
+      {
+        "type": "知识盲区",
+        "location": "多处标记",
+        "detail": "包含多个[待验证]标记，影响章节可信度",
+        "suggestion": "解决所有待验证内容或明确标注技术不确定性"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-24T19:25:52.595759+00:00",
+    "status": "completed",
+    "completed_at": "2026-06-25T04:52:10.051720+08:00",
+    "completed_by": "task2b-main",
+    "completed_notes": "P85修复: 版本边界细化(applicable_versions per API), [待验证]标记全部消除"
+  },
+  {
+    "section": "19.10",
+    "section_title": "APM 工具基准测试与兼容性验证",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：APM 工具（Matrix/KOOM/AndroidGodEye）性能开销源码级对比与 Android 17 兼容性分析，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-apm-tools-benchmark-source-analysis.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "APM 工具性能开销与机制对比 — Matrix LooperMonitor setMessageLogging hook、KOOM fork-and-dump ART 符号稳定性、Choreographer 反射在 API 37 的兼容性验证",
+        "suggestion": "判断是否适合补充为 §19.10 或 §14.12 的章节参考资料，覆盖开源 APM 工具在 Android 17 的实测兼容性数据"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-25T06:12:33",
+    "status": "completed",
+    "completed_at": "2026-06-25T06:51:35+08:00",
+    "completed_by": "task2b-main-material-injection",
+    "completed_reason": "DeepResearch APM 源码分析已注入到 §19.10 参考资料"
+  },
+  {
+    "section": "5.11",
+    "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+    "priority": 82,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：LiteRT V2 运行时核心（ArenaPlanner/Subgraph）与 NNAPI Delegate 委托模型的源码级分析，覆盖 MediaPipe Tasks 架构",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android-端侧ai推理运行时源码-LiteRT-NNAPI-MediaPipe-Tasks.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "端侧 AI 推理运行时源码分析 — LiteRT ArenaPlanner 静态内存复用、NNAPI Delegate 节点级委托、符号-神经混合执行切入点分析",
+        "suggestion": "判断是否适合补充为 §5.11 或 §5.14 的延伸阅读，提供 LiteRT V2 重构后的内存规划与 GenAI 混合推理架构参考"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-25T06:12:33",
+    "status": "completed",
+    "completed_at": "2026-06-25T06:51:35+08:00",
+    "completed_by": "task2b-main-material-injection",
+    "completed_reason": "DeepResearch LiteRT/NNAPI/MediaPipe 源码分析已注入到 §5.11 延伸阅读"
+  },
+  {
+    "section": "14.2",
+    "section_title": "Simpleperf",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料：Simpleperf 与 Android 热节流机制的交互分析，揭示 simpleperf 无 thermal listener 的单向解耦设计",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-simpleperf-thermal-throttling-interaction.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Simpleperf 热节流交互研究 — AdjustPerfEventLimit 只调 4 个 perf_event sysctl 不读 thermal HAL、PowerStats HAL v2 与 simpleperf 完全解耦、task-clock 抗热节流指标分析",
+        "suggestion": "判断是否适合补充为 §14.2 Simpleperf 的参考资料，提供 profiling 精度受热节流干扰的校正方法论"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-25T06:12:33",
+    "status": "completed",
+    "completed_at": "2026-06-25T06:51:35+08:00",
+    "completed_by": "task2b-main-material-injection",
+    "completed_reason": "DeepResearch Simpleperf 热节流交互分析已注入到 §14.2 参考资料"
+  },
+  {
+    "section": "8.17",
+    "section_title": "Kotlin Flow 背压、操作符链与响应式性能边界",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口挖掘] §8.6 覆盖 Coroutine 基础性能，但 Flow 背压/操作符链/热冷流性能独立于此。评分 14/20。",
+    "material_paths": [],
+    "gap_source": "章节深挖"
+  },
+  {
+    "section": "22.25",
+    "section_title": "Compose 布局系统：测量阶段、缓存机制与 Intrinsic 性能",
+    "priority": 80,
+    "reason": "[Task2A 知识缺口挖掘] 现有 Compose 章节覆盖重组/动画/LazyList/导航，但布局测量阶段的缓存机制和 intrinsic 开销独立于以上章节。§7.12 有 View 布局性能，缺 Compose 等价。评分 16/20。",
+    "material_paths": [],
+    "gap_source": "章节深挖+AOSP结构"
+  },
+  {
+    "section": "14.9",
+    "section_title": "Android Camera 性能与 Perfetto 分析",
+    "priority": 90,
+    "reason": "content-depth-not-lite-eligible",
+    "material_paths": [
+      "logs/review/2026-06-25-15-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "内容深度不足",
+        "location": "Outline锚点覆盖",
+        "detail": "以下锚点缺少实质性内容：perfetto-analysis, trace-config, key-tracks, sql-framerate, sql-process, python-sdk, preview-stutter, preview-fps, buffer-exhaustion, camera-launch, related-mechanisms, camera2-vs-camerax, hal3-latency, gfxreconstruct-yuv, common-mistakes, references",
+        "suggestion": "需要为每个outline锚点补充完整的实质性内容，建立完整的Camera性能分析知识体系"
+      }
+    ],
+    "added_by": "task6-idle-audit",
+    "added_at": "2026-06-25T15:12:00+08:00",
+    "status": "blocked",
+    "original_review_log": "logs/review/2026-06-25-15-audit.md"
+  }
 ]

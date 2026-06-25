@@ -1,5 +1,5 @@
 {
-  "current_issue": 22,
+  "current_issue": 23,
   "total_issues": 58,
   "completed_issues": [
     0,
@@ -23,9 +23,10 @@
     18,
     19,
     20,
-    21
+    21,
+    22
   ],
-  "indexed_links": 443,
+  "indexed_links": 468,
   "skipped_links": 325,
   "fetch_failures": 264,
   "attempted_issues": [
@@ -45,7 +46,7 @@
     20,
     21
   ],
-  "last_attempted_issue": 21,
-  "last_attempt_date": "2026-06-18",
+  "last_attempted_issue": 22,
+  "last_attempt_date": "2026-06-25",
   "access_issues_count": 131
 }
