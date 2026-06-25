@@ -2,8 +2,8 @@
 title: "HTTPDNS 与 OkHttp Dns 执行边界"
 chapter: "24.10"
 section: "24.10"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x"
 tags: [network, httpdns, okhttp, dns, latency]
 confidence: "medium"
@@ -35,6 +35,7 @@ last_task9_audit: "2026-06-09"
 last_task9_autofix_at: "2026-06-09"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
+verifier_promoted: "2026-06-25T19:28 Task2B Verifier: both Task6(pass-light-edit) + Task9(auto-fixed) complete, queue clear, promoted to finalized"
 ---
 
 
