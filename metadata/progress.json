@@ -1,6 +1,6 @@
 {
   "total": 485,
-  "draft": 27,
+  "draft": 26,
   "ready-for-review": 130,
   "finalized": 328,
   "task9_result": "pass-tech-review",
@@ -2547,7 +2547,7 @@
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
     "src/part2-performance/ch09-anr/06-notification-performance-anr.md"
   ],
-  "ready_for_review": 87,
+  "ready_for_review": 88,
   "last_updated": "2026-06-18T02:10:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": "2026-06-18T02:10:00+08:00",

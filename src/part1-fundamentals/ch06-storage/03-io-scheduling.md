@@ -35,12 +35,9 @@ last_task6_at: "2026-06-05T21:09:00+08:00"
 task6_review_notes: "2026-06-05 Task6 revisiting re-review: pass-light-edit. task9 auto-fixed 后复检，L1/L2 全部通过(禁用词0/高频词0/元叙述0)。无B类大问题。task9_result=auto-fixed, 不等于 pass-tech-review, 不触发自动晋升。pipeline_stage→ready-to-publish, status 保持 ready-for-review。"
 last_task9_autofix_at: 2026-06-05
 last_task9_review_log: "logs/deep-review/2026-06-05-20-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-26
 ---
-
-
-
-
-
 # I/O 调度与性能
 
 <!-- outline-start -->
@@ -82,9 +79,9 @@ Android 设备的存储性能不只由芯片速度决定。即使设备用的是
 
 传统机械硬盘时代，I/O 调度的核心目标是减少磁头寻道时间。调度器会将请求按磁盘物理位置排序合并，让磁头以最少的移动完成最大的数据吞吐。这就是最早的电梯算法（elevator algorithm）。
 
-到了 SSD 和 UFS 时代，存储芯片没有机械结构，随机访问速度接近顺序读写。排序合并的意义大大降低，I/O 调度的目标转变为服务质量控制（QoS）：让交互式进程（前台 App）的 I/O 请求获得更低的延迟，同时保证系统整体的吞吐量。[已验证：来源见 Cubox/IO调度器详解-2024-03-08.md]
+到了 SSD 和 UFS 时代，存储芯片没有机械结构，随机访问速度接近顺序读写。排序合并的意义大大降低，I/O 调度的目标转变为服务质量控制（QoS）：让交互式进程（前台 App）的 I/O 请求获得更低的延迟，同时保证系统整体的吞吐量。
 
-Android 设备常用 eMMC 或 UFS 这类相对服务器 NVMe 更慢的存储芯片。内核存储栈的开销占比还不算高，所以系统仍然依赖传统的文件系统和 I/O 调度器来管理请求。服务器场景不同，SSD 太快时，内核栈本身反而会成为瓶颈，于是才有 io_uring、SPDK 这类尽量绕开内核的方案。[已验证：来源见 Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+Android 设备通常使用 eMMC 或 UFS，这些存储芯片的速度不如服务器端的 NVMe。内核存储栈的开销目前还不是主要瓶颈，因此系统仍通过传统文件系统和 I/O 调度器来管理请求。服务器场景则不同：SSD 速度足够快时，内核栈本身反而会成为瓶颈。这也催生了 io_uring、SPDK 这类尽量绕开内核的方案。
 
 ### CFQ：公平但不够好
 
@@ -94,7 +91,7 @@ CFQ 在桌面和服务器上表现不错，但在 Android 上暴露了两个问�
 
 第一，它不区分前台和后台。当后台的媒体扫描器、应用更新服务在大量写入文件时，CFQ 给它们和前台 App 同等的时间片，前台 App 的 I/O 延迟就会被拉长。用户感受到的就是滑动卡顿、应用启动变慢。
 
-第二，CFQ 优先处理同步 I/O（如 fsync），这对 SQLite 数据库场景有利，但也导致异步 I/O（预读、后台写入）的处理时间被拉长，进而影响内存回收路径中涉及的 I/O 操作。[已验证：来源见 手机Android存储性能优化架构分析]
+第二，CFQ 优先处理同步 I/O（如 fsync），这对 SQLite 数据库场景有利，但也导致异步 I/O（预读、后台写入）的处理时间被拉长，进而影响内存回收路径中涉及的 I/O 操作。
 
 CFQ 在 Linux 5.x 已被标记为 deprecated，Android GKI 内核不再使用它。
 
@@ -105,7 +102,7 @@ BFQ（Budget Fair Queuing）从 Linux 4.12 开始引入，是 CFQ 的替代者�
 - **Budget 公平**：每个线程有一个 I/O budget（可发的最大扇区数），调度器选择虚拟时间（vtime）最小的线程来服务。交互式进程只需要少量 budget 就能完成，因此能快速获得响应。
 - **权重支持**：通过 ionice 或 cgroup 设置权重，权重越高的线程被调度得越频繁。新启动的进程会获得临时的权重提升（boost），以加速冷启动。
 - **Idle 策略**：做完一个线程的 I/O 后，调度器会短暂 idle，等待该线程的后续请求，避免它重新排队。这对顺序读写有利，但对高并发场景可能增加延迟。
-- **cgroup v2 集成**：BFQ 是 Android 上唯一同时支持 io priority 和 blkio cgroup 的调度器。[已验证：来源见 IO调度器详解-2024-03-08.md]
+- **cgroup v2 集成**：BFQ 是 Android 上唯一同时支持 io priority 和 blkio cgroup 的调度器。
 
 BFQ 的缺点也很明显：算法复杂度高，最低延迟可能是 mq-deadline 的数倍。在 I/O 压力极大的场景下，BFQ 的调度开销本身就成了问题。
 
@@ -117,7 +114,7 @@ mq-deadline 是传统 deadline 调度器的多队列版本（blk-mq 架构），
 2. 调度时优先处理超时的请求（deadline 到了），然后按读写 2:1 的比例从 sort queue 中分发。
 3. 读请求的 deadline（默认 500ms）远短于写请求（默认 5s），体现了"读优先"的策略。
 
-mq-deadline 从 Linux 5.14 开始支持 io priority（RT/BE/IDLE 三个级别），但不支持 blkio cgroup。它可以区分单个进程的 I/O 优先级，但做不了进程组级别的带宽控制。[已验证：来源见 IO调度器详解-2024-03-08.md]
+mq-deadline 从 Linux 5.14 开始支持 io priority（RT/BE/IDLE 三个级别），但不支持 blkio cgroup。它可以区分单个进程的 I/O 优先级，但做不了进程组级别的带宽控制。
 
 ### none（noop）：让硬件自己决定
 
@@ -132,7 +129,7 @@ Android 上一般不使用 none 调度器，因为 UFS/eMMC 设备内部的调�
 
 Kyber 调度器从 Linux 4.12 引入，核心思想是将 I/O 按类型（读、写、擦除、其他）分成不同的调度域，每个域独立控制延迟目标。它通过动态调整每个域的队列深度来满足延迟要求：如果某类 I/O 延迟过高，就增加该域的队列深度。
 
-Kyber 目前不支持 io priority 和 blkio cgroup，因此在需要前台/后台 I/O 隔离的 Android 场景中不常用。[已验证：来源见 IO调度器详解-2024-03-08.md]
+Kyber 目前不支持 io priority 和 blkio cgroup，因此在需要前台/后台 I/O 隔离的 Android 场景中不常用。
 
 ### Android 上的选择
 
@@ -164,7 +161,7 @@ ionice -c 3 -p <pid>
 ionice -c 1 -n 0 -p <pid>
 ```
 
-在 mq-deadline 中，RT 和 IDLE 的 I/O 带宽差距非常大。RT 进程可以获得几乎全部带宽，IDLE 进程只能使用剩余的零头。[已验证：来源见 IO调度器详解-2024-03-08.md 中的 deadline idle/RT 带宽对比数据]
+在 mq-deadline 中，RT 和 IDLE 的 I/O 带宽差距非常大。RT 进程可以获得几乎全部带宽，IDLE 进程只能使用剩余的零头。
 
 ### cgroup blkio：进程组级带宽控制
 
@@ -183,7 +180,7 @@ echo 10 > /sys/fs/cgroup/blkio/background/blkio.bfq.weight
 echo "259:0 rbps=2097152 wiops=120" > /sys/fs/cgroup/background/io.max
 ```
 
-cgroup v2 的优势在于统一的层级结构，可以同时控制 CPU、内存和 I/O，实现一致的前后台隔离策略。但它对 buffered I/O 存在优先级倒置问题。写请求先经过 page cache（属于内核），再由 flush 线程异步下发到存储设备，此时 flush 线程的 cgroup 归属可能与原始发起进程不同。[已验证：来源见 手机Android存储性能优化架构分析 中关于 cgroup v2 buffered IO 优先级倒置的说明]
+cgroup v2 的优势在于统一的层级结构，可以同时控制 CPU、内存和 I/O，实现一致的前后台隔离策略。但它对 buffered I/O 存在优先级倒置问题。写请求先经过 page cache（属于内核），再由 flush 线程异步下发到存储设备，此时 flush 线程的 cgroup 归属可能与原始发起进程不同。
 
 ## 前台 App I/O 优先级保障机制
 
@@ -211,7 +208,7 @@ Android 10+ 用 `cgroups.json` 描述 controller 挂载点，用 `task_profiles.
 
 把这三件事分开看，才能解释“后台写入很多，但前台为什么慢”的根因。
 
-### [自动发现] 厂商定制的调度器
+### 厂商定制的调度器
 
 在 GKI 统一之前，各家厂商曾使用自己的 I/O 调度器：
 
@@ -220,7 +217,7 @@ Android 10+ 用 `cgroups.json` 描述 controller 挂载点，用 `task_profiles.
 - **Maple**：根据屏幕亮灭状态切换调度策略，亮屏时偏向低延迟，灭屏时偏向高吞吐。
 - **FIFO（FIOPS）**：基于 IOPS 指标做进程公平。
 
-这些调度器均未进入 Linux 主线。GKI 推行后，Android 设备统一使用上游调度器，BFQ 成为主流选择。[来源：IO调度器详解-2024-03-08.md 中的 vendor elv 章节]
+这些调度器均未进入 Linux 主线。GKI 推行后，Android 设备统一使用上游调度器，BFQ 成为主流选择。
 
 ## Page Cache 对读性能的加速与对内存的占用
 
@@ -228,7 +225,7 @@ Android 10+ 用 `cgroups.json` 描述 controller 挂载点，用 `task_profiles.
 
 当进程通过 `read()` 系统调用读取文件时，内核会先检查 page cache，也就是一段用于缓存文件内容的物理内存。如果数据已经在 page cache 中（cache hit），直接拷贝到用户空间，不需要实际的存储设备 I/O。如果不在（cache miss），内核再从存储设备读取数据，同时把数据缓存在 page cache 中，下次读取就能命中。
 
-Android 上绝大多数 I/O 都是 buffered I/O（经过 page cache），direct I/O 和异步 I/O 很少使用。所以存储性能问题往往和内存问题缠在一起。page cache 被回收（因为内存紧张）→ 缓存命中率下降 → 更多实际 I/O → 延迟增加 → 可能触发更多内存回收（因为 I/O 路径中也需要内存分配）。[已验证：来源见 手机Android存储性能优化架构分析 中关于 buffer IO 和内存/IO 交织的说明]
+Android 上绝大多数 I/O 都是 buffered I/O（经过 page cache），direct I/O 和异步 I/O 很少使用。所以存储性能问题往往和内存问题缠在一起。page cache 被回收（因为内存紧张）→ 缓存命中率下降 → 更多实际 I/O → 延迟增加 → 可能触发更多内存回收（因为 I/O 路径中也需要内存分配）。
 
 ### Page Cache 对内存的压力
 
@@ -311,12 +308,6 @@ ORDER BY max_ops_in_queue DESC;
 - fsync 耗时异常（正常 < 5ms，异常可达 50ms–200ms），通常是后台大量写入导致的。
 - 系统整体 iowait > 5%，伴随 kswapd 活跃（说明内存回收也在引发 I/O）。
 
-[图：Perfetto 片段 1。主线程在点击后进入一段连续 D 状态，调用栈落在 `vfs_read`；同一时间 CPU summary 的 iowait 抬升，这类画面通常说明前台线程正卡在同步读路径上。]
-
-[图：Perfetto 片段 2。后台同步或日志线程连续出现 `ext4_da_write_*` / `block_io` 相关事件，`linux_active_block_io_operations_by_device` 的队列深度从 1 抬到 8 以上；前台线程随后出现一簇短 D 状态。]
-
-[图：Perfetto 片段 3。`ext4_sync_file_enter` 到 `ext4_sync_file_exit` 持续 60ms 以上，同窗口里 writeback 线程活跃，主线程事务提交后阻塞在 `do_fsync`。这类片段通常能把“fsync 拉长”落到具体时间窗。]
-
 ## Direct I/O vs Buffered I/O 在 Android 场景的取舍 [扩展]
 
 ### Buffered I/O：默认选择
@@ -339,13 +330,13 @@ Direct I/O（通过 `O_DIRECT` 标志打开文件）直接在用户空间缓冲�
 
 大多数 App 不需要使用 Direct I/O，但理解它有助于分析 I/O 性能问题：当我们看到 page cache 命中率低、内存又紧张时，Direct I/O 才值得作为候选方向。
 
-[待验证：Android 上 SQLite 默认是否使用 Direct I/O 写 WAL，可能因版本和厂商定制而异]
+（Android 上 SQLite 默认是否使用 Direct I/O 写 WAL，因版本和厂商定制而异，当前为待验证项）
 
 ## 数据库 I/O 优化最佳实践 [扩展]
 
 ### SQLite 的 I/O 特征
 
-Android 上 SQLite 是 I/O 最密集的组件之一。它的核心特征是**频繁的小量同步随机写**（write + fsync），而不是大批量顺序写。每次事务提交时的 fsync 会强制将 WAL（Write-Ahead Log）或 journal 文件写入存储设备，这个操作的延迟直接受 I/O 调度和后台 I/O 压力的影响。[已验证：来源见 手机Android存储性能优化架构分析 中关于 SQLite IO 特征的说明，原始参考为三星公司的 Android IO 特性分析论文]
+Android 上 SQLite 是 I/O 最密集的组件之一。它的核心特征是**频繁的小量同步随机写**（write + fsync），而不是大批量顺序写。每次事务提交时的 fsync 会强制将 WAL（Write-Ahead Log）或 journal 文件写入存储设备，这个操作的延迟直接受 I/O 调度和后台 I/O 压力的影响。
 
 ### 优化策略
 
@@ -370,7 +361,6 @@ Android 上 SQLite 是 I/O 最密集的组件之一。它的核心特征是**频
 | 脏页回写 | ftrace: `writeback:*` | 低频 | 高频 + kswapd 活跃 |
 | memcg file cache / reclaim | `memory.stat` + Perfetto 中的 `kswapd` / `writeback:*` | `active_file`、`inactive_file` 波动平稳 | `workingset_refault_file`、major fault、`file_writeback` 同时抬升 |
 | writeback ownership / io pressure | `io.stat`、`io.pressure` + `writeback:*` | 前台窗口内 background cgroup 写回平稳 | 背景 cgroup 的 `wbytes` / `wios` 暴涨，前台窗口同步出现 fsync 拉长 |
-
 
 ## Android 16/17 I/O 栈加速：待验证材料边界
 
@@ -418,26 +408,20 @@ I/O 调度在 Android 性能优化里很容易被忽略，但它会直接影响�
 - 来源：https://lore.kernel.org/linux-f2fs-devel/
 - 类型：research
 - 摘要：F2FS Checkpoint Merge: -40%写放大(SQLite WAL commit性能提升)。io_uring multishot + zero-copy: -50%系统调用开销。dm-verity multi-buffer hashing: +35% ARM64吞吐。协同效果：随机I/O延迟-12%(fio randread 4k, UFS 4.0)。
-- 入库时间：2026-04-08
 
 ### Linux VM / cgroup writeback / Android cgroups 参考
 - 来源：https://docs.kernel.org/admin-guide/sysctl/vm.html
 - 类型：official
 - 摘要：`swappiness` 定义的是 swap I/O 与 filesystem paging I/O 的相对成本，取值 0–200，100 表示两者成本相同。
-- 入库时间：2026-04-12
 
 - 来源：https://docs.kernel.org/admin-guide/cgroup-v2.html
 - 类型：official
 - 摘要：cgroup v2 中 memory ownership 按 page 记账，writeback ownership 按 inode 归属；dirty memory 与 writeback 受 memory controller 和 io controller 共同影响。
-- 入库时间：2026-04-12
 
 - 来源：https://source.android.com/docs/core/perf/cgroups
 - 类型：official
 - 摘要：Android 10+ 通过 `cgroups.json` 和 `task_profiles.json` 描述 controller 与 task profile，Android 11+ 可由 `SetTaskProfiles()` / `SetProcessProfiles()` 应用。
-- 入库时间：2026-04-12
 
 - 来源：https://raw.githubusercontent.com/google/perfetto/main/src/trace_processor/perfetto_sql/stdlib/linux/block_io.sql
 - 类型：upstream-source
 - 摘要：Perfetto stdlib 提供 `linux_active_block_io_operations_by_device` 视图，底层来自 `slice` + `track.type = 'block_io'`。
-- 入库时间：2026-04-12
-
