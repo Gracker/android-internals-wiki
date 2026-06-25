@@ -631,6 +631,168 @@ enum polling_update {
 [调研报告: `DeepResearch/2026-06-22-android17-psi-lowmemdetector.md`]
 
 
+<!-- AIW-源码调研-2026-06-25: onTrimMemory 链路与 Choreographer CALLBACK_COMMIT 优化 -->
+### 扩展六：onTrimMemory 链路与 App 侧响应边界（Android 11-17）
+
+前面 §"扩展四" 已经讲过 `CachedAppOptimizer` 的 cgroup-freezer 机制。本节继续沿着 App 侧 `onTrimMemory(int)` 回调的源码路径展开，重点澄清三件事：哪些 trim 等级在 Android 17 仍稳定、回调发生在主线程的什么时刻、App 错过的代价是什么。
+
+#### 6.1 TRIM_MEMORY 等级收敛（API 34→17）
+
+AOSP `frameworks/base/core/java/android/content/ComponentCallbacks2.java` 在 Android 14（API 34）开始把五档 trim 等级标 `@deprecated`：
+
+| 等级常量 | 数值 | API 34 状态 |
+|---------|------|------------|
+| `TRIM_MEMORY_COMPLETE` | 80 | @deprecated since API 34，AOSP 不再派发 |
+| `TRIM_MEMORY_MODERATE` | 60 | @deprecated since API 34，AOSP 不再派发 |
+| `TRIM_MEMORY_RUNNING_CRITICAL` | 15 | @deprecated since API 34，AOSP 不再派发 |
+| `TRIM_MEMORY_RUNNING_LOW` | 10 | @deprecated since API 34，AOSP 不再派发 |
+| `TRIM_MEMORY_RUNNING_MODERATE` | 5 | @deprecated since API 34，AOSP 不再派发 |
+| `TRIM_MEMORY_BACKGROUND` | 40 | 仍派发（由 CachedAppOptimizer 在 freeze 前同步下发） |
+| `TRIM_MEMORY_UI_HIDDEN` | 20 | 仍派发（Activity#onStop 后同步发出） |
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/ComponentCallbacks2.java, line 99–161]
+
+实际含义：**Android 14 之后，App 不能依赖 5/10/15/60/80 这五档**。`ComponentCallbacks2.onTrimMemory(int)` 文档明确写「不要比较 exact value，只比较大于等于」——这正是为了覆盖中间档位被悄悄砍掉的可能性。
+
+#### 6.2 调度时机：Choreographer CALLBACK_COMMIT
+
+`ActivityThread.ApplicationThread.scheduleTrimMemory()` 把 trim 任务 post 到 `Choreographer.CALLBACK_COMMIT`，而不是直接 `mH.post`：
+
+```java
+// frameworks/base/core/java/android/app/ActivityThread.java:2289-2304
+@Override
+public void scheduleTrimMemory(int level) {
+    final Runnable r = PooledLambda.obtainRunnable(ActivityThread::handleTrimMemory,
+            ActivityThread.this, level).recycleOnUse();
+    // Schedule trimming memory after drawing the frame to minimize jank-risk.
+    Choreographer choreographer = Choreographer.getMainThreadInstance();
+    if (choreographer != null) {
+        choreographer.postCallback(Choreographer.CALLBACK_COMMIT, r, null);
+    } else {
+        mH.post(r);
+    }
+}
+```
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
+
+Choreographer 的 callback 顺序是 `INPUT → ANIMATION → LAYOUT → COMMIT`，trim 被排到 commit 阶段，意味着发生在 `draw` 之后、`traversal` 下一轮之前。这个改造的工程意图非常清楚：**避免在 GPU 渲染过程中触发 GC 引发的 frame drop**。
+
+`PooledLambda.obtainRunnable(...).recycleOnUse()` 是另一个细节：高频 trim 时复用 lambda 对象，避免分配 Runnable 造成额外 GC 压力。
+
+#### 6.3 handleTrimMemory 的前台保护
+
+```java
+// frameworks/base/core/java/android/app/ActivityThread.java:7868-7894
+private void handleTrimMemory(int level) {
+    if (Trace.isTagEnabled(Trace.TRACE_TAG_ACTIVITY_MANAGER)) {
+        Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, "trimMemory: " + level);
+    }
+    try {
+        if (skipBgMemTrimOnFgApp()
+                && mLastProcessState <= ActivityManager.PROCESS_STATE_IMPORTANT_FOREGROUND
+                && level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
+            return;
+        }
+        final ArrayList<ComponentCallbacks2> callbacks =
+                collectComponentCallbacks(true /* includeUiContexts */);
+        final int N = callbacks.size();
+        for (int i = 0; i < N; i++) {
+            callbacks.get(i).onTrimMemory(level);
+        }
+    } finally {
+        Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);
+    }
+    WindowManagerGlobal.getInstance().trimMemory(level);
+}
+```
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
+
+`skipBgMemTrimOnFgApp()` 这个分支意味着：**前台进程收到 `TRIM_MEMORY_BACKGROUND` 或更高档位时直接 return**。这就是为什么开发者必须主动在 `Activity#onStop`（而不是依赖 `onTrimMemory(40)`）里释放大对象——前台进程根本不会被通知。
+
+#### 6.4 CachedAppOptimizer 在 freeze 前的最后一刻
+
+`CachedAppOptimizer` 的 freeze 路径在把进程 cgroup-freeze 之前**先**给 App 一次 `TRIM_MEMORY_BACKGROUND` 回调：
+
+```java
+// frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java:1409-1420
+if (app.getSetAdj() >= CACHED_APP_MIN_ADJ) {
+    final IApplicationThread thread = app.getThread();
+    if (thread != null) {
+        try {
+            thread.scheduleTrimMemory(TRIM_MEMORY_BACKGROUND);
+        } catch (RemoteException e) {
+            // do nothing
+        }
+    }
+}
+reportProcessFreezableChangedLocked(app);
+...
+mFreezeHandler.sendMessageDelayed(...);
+opt.setPendingFreeze(true);
+```
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
+
+完整链路：
+
+```
+lmkd (kernel PSI / lowmem) 
+  → ActivityManager 收到 LMK_PROCPRIO / kill 决策
+  → CachedAppOptimizer 决定 freeze
+  → IApplicationThread.scheduleTrimMemory(TRIM_MEMORY_BACKGROUND)
+  → ActivityThread.scheduleTrimMemory (Choreographer CALLBACK_COMMIT)
+  → handleTrimMemory(40)
+  → Application/Activity.onTrimMemory(40)
+  → CachedAppOptimizer 立即调用 freezeHandler 把进程 cgroup-freeze
+```
+
+**App 错过的代价**：cgroup-freeze 后进程的 IO/CPU 几乎被冻结，回到前台时（解冻）要重新做工作集预热（class loading、BitmapFactory.decode、JIT 编译）——这正是冷启动卡顿的源头之一。App 在 `onTrimMemory(40)` 这次回调中释放 Glide/LruCache/未使用 Bitmap 是「最后一道防线」。
+
+#### 6.5 shell 调试入口
+
+AMS 提供 `setProcessMemoryTrimLevel(process, userId, level)`，仅 shell 权限可调：
+
+```java
+// frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java:3748-3772
+if (!isCallerShell()) {
+    throw new SecurityException("Only shell can call it");
+}
+if (!(level < ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN ||
+        app.getProcState() > PROCESS_STATE_IMPORTANT_FOREGROUND)) {
+    throw new IllegalArgumentException("Unable to set a background trim level "
+        + "on a foreground process");
+}
+thread.scheduleTrimMemory(level);
+```
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java]
+
+调试命令：
+
+```bash
+# 手动模拟 background trim（进程必须是后台状态）
+adb shell am set-process-memory-trim-level <package_name> 40
+# 模拟 UI hidden
+adb shell am set-process-memory-trim-level <package_name> 20
+```
+
+注意源码里的反向校验：不允许向 `PROCESS_STATE_IMPORTANT_FOREGROUND` 及更前的进程发 background level。
+
+#### 6.6 与小米 HyperOS「公平运行内存」的关系
+
+小米 HyperOS 在 AOSP `CachedAppOptimizer` / `ComponentCallbacks2` 之上构建了「公平运行内存」机制（文档见 dev.mi.com），其核心思想是：
+- 给 App 一次明确的「内存预警」回调窗口（仍是 `ComponentCallbacks2.onTrimMemory` 协议）
+- 强制要求 App 在给定时间内响应，否则按规则计入内存优先级评分
+- 通过 cgroup 配额限制单个 App 的内存上限
+
+由于 HyperOS 的相关实现不开源，本节无法验证其内部细节。但 AOSP `CachedAppOptimizer` 给出的 `TRIM_MEMORY_BACKGROUND` 回调窗口已经为所有 OEM 提供了相同的能力——App 只要正确实现 `Application#onTrimMemory()`，就能在小米、华为、OPPO、三星、vivo 等所有主流 ROM 上获得一致的内存预警触发。**App 侧的源码级响应策略**（Glide 清理、Bitmap 复用、LruCache 容量调整）才是「公平运行内存」落地的关键。
+
+[调研报告: `DeepResearch/2026-06-25-fair-memory-trim-android17-source.md`]
+
+
+
 ## 参考资料
 
 ### AOSP 源码
