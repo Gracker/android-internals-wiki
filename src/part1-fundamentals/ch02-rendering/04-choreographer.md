@@ -43,16 +43,16 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+status: ready-for-review
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
 task9_result: "pass-tech-review"
-task9_state: "reviewed"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
 last_task9_at: "2026-05-23T03:35:03+08:00"
 task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: "openclaw-task9"
@@ -67,6 +67,7 @@ last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
 task9_review_notes: "2026-05-23 Task9 deep review: pass-tech-review。无 P0/P1；P2：回调类型“四种/五类”内部表述需统一，已写入 suggestions.md。满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-28
+last_task2b_lite_at: 2026-06-26
 ---
 
 # Choreographer 与渲染流水线
@@ -734,7 +735,7 @@ public static final class VsyncEventData {
 
 ### 7.2 VsyncCallback高级调度接口
 
-Android 17 新增了 `VsyncCallback` 接口，为开发者提供更精细的帧调度控制：
+`VsyncCallback` 接口自 API 33（Android 13）公开引入，Android 17 在此基础上扩展了多帧时间线能力（`FRAME_TIMELINES_CAPACITY=7`、`FrameData` 的 preferred index 选择），为开发者提供更精细的帧调度控制：
 
 ```java
 public interface VsyncCallback {
