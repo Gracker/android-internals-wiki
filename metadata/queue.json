@@ -718,7 +718,31 @@
     ],
     "added_by": "task6-audit",
     "added_at": "2026-06-26T02:11:54",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-06-26-02-audit.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-06-26-02-audit.md",
+    "completed_reason": "fixed-lite: §7.2 VsyncCallback 版本归属修正（API 33 非 Android 17）",
+    "completed_at": "2026-06-26T05:35:00+08:00"
+  },
+  {
+    "section": "15",
+    "section_title": "Android 性能优化研究方法论",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Android 8 兼容性问题：章节涵盖 Android 8 但未说明 Perfetto 不支持，Android 8 应使用 Systrace 作为主要 tracing 工具",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "工具选型章节",
+        "detail": "Android 8 不支持 Perfetto，但章节适用版本包含 Android 8 且未明确说明替代方案",
+        "suggestion": "在工具选型章节明确标注：Android 8 使用 Systrace 作为主要 tracing 工具；Android 9+ 开始使用 Perfetto"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-26T05:23:33.601328",
+    "status": "completed",
+    "completed_reason": "fixed-lite: Android 8 Perfetto 兼容性版本限定补充",
+    "completed_at": "2026-06-26T05:35:00+08:00"
   }
 ]

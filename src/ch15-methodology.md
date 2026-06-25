@@ -2,19 +2,19 @@
 title: "Android 性能优化研究方法论"
 chapter: '15'
 section: '15'
-status: "finalized"
+status: ready-for-review
 
 task6_result: pass-light-edit
 task6_reviewed_by: "openclaw-task2a"
 task6_reviewed_date: "2026-06-16"
-task2b_state: "fixed"
-task2b_result: "fixed-lite"
-last_task2b_lite_at: "2026-06-25"
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: 2026-06-26
 task2b_result: "fixed"
 task2b_fixed_date: "2026-06-16"
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
-task9_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: "pass-tech-review"
 last_task9_autofix_at: 2026-06-16
 last_task9_at: "2026-06-16T21:32:37+08:00"
@@ -168,7 +168,7 @@ graph TD
 **关键工具**：
 - **Perfetto**：系统级性能数据的采集和分析
 - **SimplePerf**：应用级 CPU 性能剖析
-- **Systrace**：旧版短时系统 trace；Android 10+ 优先用 Perfetto
+- **Systrace**：旧版短时系统 trace；Android 8 必须使用 Systrace（Perfetto 不可用），Android 9+ 优先使用 Perfetto
 - **ADB**：基础性能数据获取
 
 ## 常见研究误区
@@ -229,7 +229,9 @@ graph TD
 | 启动性能分析 | Perfetto / Android Studio System Trace | 调试阶段 |
 | 内存泄漏检测 | Memory Profiler / LeakCanary / heap dump；Native 泄漏看 heapprofd + meminfo | 调试阶段 |
 | 渲染性能分析 | Perfetto / Android Studio System Trace；旧版本可用 Systrace | 调试阶段 |
-| 线上性能监控 | 自定义埋点 + 数据平台 | 运维阶段 |
+| 线上性能监控 | 自建埋点 + 数据平台 | 运维阶段 |
+
+> **版本限定**：Android 8（API 26-27）不支持 Perfetto，tracing 以 Systrace / atrace 为主；Android 9（API 28）起 Perfetto 可用，Android 10（API 29）起 Perfetto 为默认系统 trace 工具。
 
 ## 总结
 
