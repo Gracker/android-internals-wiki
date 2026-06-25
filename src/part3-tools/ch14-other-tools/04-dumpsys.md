@@ -573,3 +573,13 @@ MTK/高通等厂商的定制系统服务中广泛使用了这个机制。例如 
 - 官方文档：[Profile GPU Rendering](https://developer.android.com/studio/profile/dev-options-rendering)
 - 官方文档：[Battery Historian](https://developer.android.com/studio/profile/battery-historian)
 - 官方文档：[SurfaceFlinger and WindowManager](https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager)
+
+### 为什么 Android 不用接口做 Activity 通信？
+- 来源：https://juejin.cn/post/7638897090145075246
+- 类型：技术文章
+- 摘要：深度剖析 Android Activity 为什么不用接口而用 onActivityResult 做通信。表面原因（生命周期不稳、内存泄漏）都是现象层，本质是 Android 系统架构选择：三大通信基石（Intent、Binder、Bundle）都是消息而非引用。Android 系统的组件由 AMS 管理，A 活着与否不由开发者决定，因此不能共享对象引用，必须用序列化数据 + 系统 Token 中转。onActivityResult 本质是系统分发事件，不是函数回调；requestCode 是无状态设计的关键。现代 registerForActivityResult 只是体验优化，底层仍是 requestCode + 系统分发。理解了这一点，就知道为什么 ViewModel + Flow 是应用内通信的最佳答案。
+- **推荐映射章节**：ch09
+- **内容类型**：技术文章
+- **相关标签**：#Framework #Activity #生命周期
+- 入库时间：2026-06-26
+- 评分：14/20

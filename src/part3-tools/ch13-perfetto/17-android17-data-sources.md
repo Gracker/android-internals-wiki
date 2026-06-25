@@ -218,6 +218,71 @@ if (filterFramesBeforeTraceStarts && !shouldTraceForDataSource(ctx, timestamp)) 
 - 通过 `BackgroundExecutor::getLowPriorityInstance().sendCallbacks()` 异步推送
 - 批量阈值 `kJankDataBatchSize = 50`
 
+### 1.7 配套数据源：`android.surfaceflinger.frame`（FrameTracer，graphics frame event）
+
+<!-- AIW-源码调研-2026-06-26 -->
+
+**定位补充**：§1.1~1.6 详述的 `android.surfaceflinger.frametimeline` 解决「帧是否按时」问题，而 `android.surfaceflinger.frame`（由 `FrameTracer/FrameTracer.cpp` 承载）解决「buffer 卡在哪一步」问题。两者通过 `buffer_id` + `frame_number` 字段在 trace processor 侧可关联。
+
+**源码位置**：`frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.cpp`（android-17.0.0_r1）
+
+**注册时序**（`SurfaceFlinger.cpp:819`）：
+```cpp
+mFrameTracer->initialize();         // 跟随 onBootFinished
+mFrameTimeline->onBootFinished();   // 上一节 §1.1 已述
+```
+
+**初始化体**（`FrameTracer.cpp:36-46`）：
+```cpp
+void FrameTracer::initialize() {
+    std::call_once(mInitializationFlag, [this]() {
+        perfetto::TracingInitArgs args;
+        args.backends = perfetto::kSystemBackend;
+        perfetto::Tracing::Initialize(args);
+        registerDataSource();
+    });
+}
+```
+
+**数据源名常量**（`FrameTracer.h:90`）：`kFrameTracerDataSource[] = "android.surfaceflinger.frame"`
+
+**13 种 BufferEventType**（`external/perfetto/protos/perfetto/trace/android/graphics_frame_event.proto`）：
+
+| 类型 | 含义 | 触发位置（Layer.cpp） |
+|------|------|---------------------|
+| `DEQUEUE = 1` | App 端 dequeueBuffer | `setBuffer:982-985` |
+| `QUEUE = 2` | App 端 queueBuffer | `setBuffer:986-987` |
+| `ACQUIRE_FENCE = 4` | acquire fence signal | `latchBuffer:1269-1270` |
+| `LATCH = 5` | SF latched 该 buffer | `latchBuffer:1271-1272` |
+| `HWC_COMPOSITION_QUEUED = 6` | HWC 合成 | （HWC HAL 层） |
+| `FALLBACK_COMPOSITION = 7` | GPU/renderEngine 合成 | `onCompositionPresented:1453-1455` |
+| `PRESENT_FENCE = 8` | present fence signal 或反推时间戳 | `onCompositionPresented:1476-1498` |
+| `RELEASE_FENCE / MODIFY / DETACH / ATTACH / CANCEL = 9..13` | buffer 释放与状态变更 | 各 buffer 路径 |
+
+**Fence-异步与 Pending 队列**（`FrameTracer.cpp:79-100`）：当 fence 尚未 signal 时进入 `mTraceTracker[layerId].pendingFences[bufferID]` 队列；下次同一 buffer 的 trace 触发时由 `tracePendingFencesLocked()` 消费。**`kFenceSignallingDeadline = 60'000'000'000`（60s）** 硬超时（`FrameTracer.h:93`）防止 pending 队列无限增长导致 OOM。
+
+**Span 语义**（`FrameTracer::traceSpanLocked:172-181`）：fence 带 startTime 时生成 [startTime, endTime] 区间事件，不带时只生成 endTime 时刻的 instant 事件。
+
+**GPU stall 识别 SQL 模式**：
+```sql
+-- GPU 合成占比（HWC vs GPU 边界判定）
+SELECT
+  layer_name,
+  COUNTIF(type = 'FALLBACK_COMPOSITION') AS gpu_count,
+  COUNTIF(type = 'HWC_COMPOSITION_QUEUED') AS hwc_count,
+  ROUND(100.0 * COUNTIF(type = 'FALLBACK_COMPOSITION') /
+        NULLIF(COUNTIF(type IN ('FALLBACK_COMPOSITION','HWC_COMPOSITION_QUEUED')), 0), 2) AS gpu_pct
+FROM android.surfaceflinger.frame
+WHERE frame_number BETWEEN :start AND :end
+GROUP BY layer_name
+ORDER BY gpu_count DESC;
+```
+
+**与 FrameTimeline 的关联方式**：两者都包含 `buffer_id`（FrameTracer 中 `buffer_id = 5`，FrameTimelineEvent 中字段不同需查 `perfetto/trace/android/frame_timeline_event.proto`），实际关联依赖 `frame_number` + `layer_name` 联合键。
+
+**反哺来源**：`DeepResearch/2026-06-26-android17-frametracer-graphics-frame-event.md`（id=23 选题，high priority）
+
+
 ## 2. `linux.perf` 数据源
 
 ### 2.1 守护进程入口与生命周期

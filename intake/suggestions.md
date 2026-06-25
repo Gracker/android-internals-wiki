@@ -79,3 +79,52 @@
 - Android 17 最终稳定版发布后的新 API 变更（目前基于 Beta 2）
 - AOSP main 分支前瞻标记（不写入正文）
 - Clippings「线上疑难问题」59 篇的深层诊断思路是否有未被 ch26 覆盖的模式
+
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-06-26
+- **类型**：版本差异
+- **位置**：工具选型章节
+- **问题**：Android 8 不支持 Perfetto，但章节适用版本包含 Android 8 且未明确说明替代方案
+- **建议**：在工具选型章节明确标注：Android 8 使用 Systrace 作为主要 tracing 工具；Android 9+ 开始使用 Perfetto
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-06-26
+- **类型**：版本差异/工具选型
+- **位置**：工具选型章节
+- **问题**：未说明 Android 10+ 中 Systrace 已被 Perfetto 取代，导致工具选择困惑
+- **建议**：明确版本转换节点：Android 8-9 使用 Systrace 作为主要 tracing 工具；Android 10+ 使用 Perfetto 作为主要 tracing 工具，Systrace 仅作为兼容性补充
+
+
+## [Task2A Gap Mining Scan] 2026-06-26 06:05 — 无合格候选（≥14）
+
+### 已扫描方向（本轮）
+1. **Phase 0 空_draft 扫描** — 502 个 .md 文件，0 个空 draft（< 15 行）。
+2. **Phase 0.5 backlog 限流** — TASK2B_BACKLOG=0，允许挖矿。
+3. **source-index.json** — 1 条总条目，0 篇高质量未映射。
+4. **research-feeds** — 最近 2026-04-14（Perfetto v53/v54），已映射 ch13/ch07/ch22。
+5. **daily-info 2026-06-24~26** — IBM sub-1nm 芯片、Apple 定价、MVI vs MVVM、Android 桌面化（已 ch22.14 覆盖）、AI 编程基准测试。无性能缺口。
+6. **Clippings 三本参考书** — 5 篇稳定性参考书 6/23 有更新（ANR/OOM/Native Crash/Java Crash/稳定性全景），但 ch20 已有 17 节全覆盖。
+7. **progress.json** — 269 节总计，201 finalized + 66 ready-for-review + 0 draft。
+8. **queue.json** — 36 条总计，2 pending。
+9. **suggestions.md 已检查方向** — AVF(9分)、Wear OS(11分)、Rust(11分)、Gradle(10分)、KMP(10分) 均 < 14。
+
+### 结论
+连续 195 轮无合格缺口。全书性能知识体系完备覆盖 Android 17/API 37 范围。管线瓶颈在 Task6/Task9 复审（66 节 ready-for-review 待审）。
+
+### 下次可探索方向
+- Android 17 最终稳定版发布后的新 API 变更（目前基于 Beta 2）
+- AOSP main 分支前瞻标记（不写入正文）
+- Clippings「线上疑难问题」59 篇的深层诊断思路是否有未被 ch26 覆盖的模式
+
+## [Task6 Review] 2.4 Choreographer 与渲染流水线 — 2026-06-26
+- **类型**：需确认（格式/编号）
+- **位置**：## Android 17 VSync 时间戳预测机制深度研究（附录研究段，第 716-836 行）
+- **问题**：该段来自源码调研文档（AIW-源码调研-2026-06-22），子标题编号为 7.1-7.5，与本章节号 2.4 不匹配，显得像是独立章的编号
+- **建议**：后续整理时将 7.x 改为与本章一致的子标题编号，或改为不带数字的描述性标题
+- **review 日志**：logs/review/2026-06-26-06-review.md
+
+## [Task6 Review] 2.4 Choreographer 与渲染流水线 — 2026-06-26
+- **类型**：需确认（技术一致性）
+- **位置**：### 7.5 完整回调执行链优化（第 806-836 行）
+- **问题**：7.5 段的 doFrame 代码中 doCallbacks() 只传一个参数（如 doCallbacks(Choreographer.CALLBACK_INPUT)），但正文 android-16 代码中 doCallbacks() 传两个参数（callbackType + frameIntervalNanos）。可能是 Android 17 API 变化，也可能是调研文档简化了代码
+- **建议**：Task 9 审查时确认 Android 17 的 doCallbacks() 签名是否已变更
+- **review 日志**：logs/review/2026-06-26-06-review.md

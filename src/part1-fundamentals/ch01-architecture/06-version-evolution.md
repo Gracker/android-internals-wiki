@@ -76,7 +76,7 @@ review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/
 last_task9_review_log: logs/deep-review/2026-06-07-04-deep-review.md
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
-last_task9_audit: '2026-06-07'
+last_task9_audit: '2026-06-26'
 last_task9_autofix_at: '2026-06-07'
 ---
 
