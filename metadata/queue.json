@@ -744,5 +744,29 @@
     "status": "completed",
     "completed_reason": "fixed-lite: Android 8 Perfetto 兼容性版本限定补充",
     "completed_at": "2026-06-26T05:35:00+08:00"
+  },
+  {
+    "priority": 80,
+    "chapter": "20.18",
+    "title": "Native 堆栈回溯与符号化机制",
+    "status": "pending",
+    "created_by": "task2a-gap-mining",
+    "file": "src/part5-app/ch20-stability/18-native-stack-unwinding-symbolication.md"
+  },
+  {
+    "priority": 80,
+    "chapter": "21.16",
+    "title": "线程池与并发调度性能实战",
+    "status": "pending",
+    "created_by": "task2a-gap-mining",
+    "file": "src/part5-app/ch21-startup/16-thread-pool-concurrency-performance.md"
+  },
+  {
+    "priority": 80,
+    "chapter": "26.21",
+    "title": "编译期字节码插桩与监控自动化",
+    "status": "pending",
+    "created_by": "task2a-gap-mining",
+    "file": "src/part5-app/ch26-observability/21-bytecode-instrumentation-monitoring-automation.md"
   }
 ]
