@@ -534,6 +534,56 @@
       "content_type": "深度技术调研",
       "source_date": "2026-06-25",
       "scored_at": "2026-06-26T05:51:05.757712"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-frametracer-graphics-frame-event.md",
+      "title": "Android 17 Perfetto GPU Trace FrameTracer (graphics frame event) 数据通路源码分析",
+      "summary": "SurfaceFlinger 内 android.surfaceflinger.frame 数据源的 13 种 BufferEvent 生命周期（DEQUEUE→QUEUE→ACQUIRE_FENCE→LATCH→HWC_COMPOSITION→PRESENT_FENCE→RELEASE_FENCE），Layer.cpp 7 处调用点，与 FrameTimeline 的职责区分（buffer 生命周期 vs 帧时间线）",
+      "chapter": "ch13",
+      "chapter_title": "Perfetto",
+      "section": "13.17",
+      "processing": "queue",
+      "processed_at": "2026-06-26T06:13:41"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-webgpu-androidx-android17-source.md",
+      "title": "Jetpack WebGPU on Android — 库结构、Backend 选路与 FeatureLevel 双 Profile",
+      "summary": "androidx.webgpu (2025 年新建库, minSdk=24) 通过 Dawn prebuilt JNI 提供WebGPU Kotlin bindings。FeatureLevel 双 Profile：Compatibility (OpenGLES 3.1+) vs Core (Vulkan/Metal/D3D12)，8 种 BackendType 在 Android 上实际命中 Vulkan 或 OpenGLES",
+      "chapter": "ch02",
+      "chapter_title": "渲染",
+      "section": "2.14",
+      "processing": "queue",
+      "processed_at": "2026-06-26T06:13:41"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-libmeminfo-android17.md",
+      "title": "Android 17 libmeminfo / libmemevents 高精度内存跟踪库源码深度解析",
+      "summary": "libmeminfo (C++) 提供 ProcMemInfo (per-process PSS/USS/RSS/WSS) 与 SysMemInfo (/proc/meminfo/zram)；libmemevents 通过 eBPF ringbuffer 监听 OOM kill/direct reclaim/kswapd/vendor LMK 事件；Java 层 Debug.getMemoryInfo() 通过 JNI 调用",
+      "chapter": "ch14",
+      "chapter_title": "其他工具",
+      "section": "14.3",
+      "processing": "queue",
+      "processed_at": "2026-06-26T06:13:41"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-21-surfaceflinger-vsync-scheduler-android17.md",
+      "title": "Android 17 SurfaceFlinger VSync 调度器模块重构源码分析",
+      "summary": "DispSync 已完全移除，由 VSyncPredictor (OLS 线性回归 vsync 周期拟合) + VSyncReactor (HW/fence 时间源融合, 10% 周期容差) + VSyncDispatchTimerQueue (多客户端回调调度) + VsyncSchedule 聚合替代",
+      "chapter": "ch02",
+      "chapter_title": "渲染",
+      "section": "2.23",
+      "processing": "queue",
+      "processed_at": "2026-06-26T06:13:41"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-job-quota-management.md",
+      "title": "Android 17 JobSchedulerService Job Quota 管理机制",
+      "summary": "QuotaController + StandbyTracker + JobPackageTracker 协同架构，5 档 Standby Bucket 差异化配额，API 调用频率限制（DeviceConfig 动态配置, 最低 250 次/窗口），Expedited Job 配额检查，JobConcurrencyManager 并发管理",
+      "chapter": "ch25",
+      "chapter_title": "功耗与体积",
+      "section": "25.13",
+      "processing": "inject",
+      "processed_at": "2026-06-26T06:13:41"
     }
   ]
 }

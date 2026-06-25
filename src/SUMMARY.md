@@ -414,6 +414,7 @@ tags:
   - [20.15 Android 17 Native DCL 只读约束与动态库加载稳定性](part5-app/ch20-stability/15-android17-native-dcl-stability.md)
   - [20.16 Android 17 Keystore 配额与登录故障治理](part5-app/ch20-stability/16-keystore-quota-login-stability.md)
   - [20.17 Binder 异常体系与 IPC 故障性能边界](part5-app/ch20-stability/17-binder-exception-ipc-fault-performance.md)
+  - [20.18 Native 堆栈回溯与符号化机制](part5-app/ch20-stability/18-native-stack-unwinding-symbolication.md)
 
 - [第 21 章：启动优化](part5-app/ch21-startup/README.md)
   - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
@@ -431,6 +432,7 @@ tags:
   - [21.13 ART GC 抑制与启动性能优化](part5-app/ch21-startup/13-art-gc-suppression-startup-performance.md)
   - [21.14 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化](part5-app/ch21-startup/14-di-framework-performance.md)
   - [21.15 Compose 首次组合开销与启动性能](part5-app/ch21-startup/15-compose-first-composition-startup.md)
+  - [21.16 线程池与并发调度性能实战](part5-app/ch21-startup/16-thread-pool-concurrency-performance.md)
 
 - [第 22 章：渲染优化实战](part5-app/ch22-rendering-practice/README.md)
   - [22.1 布局优化策略](part5-app/ch22-rendering-practice/01-layout-optimization.md)
@@ -543,6 +545,7 @@ tags:
   - [26.18 App Performance Score 与性能质量评分归因](part5-app/ch26-observability/18-app-performance-score.md)
   - [26.19 端侧高可用日志与诊断命令通道](part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md)
   - [26.20 Battery Historian 与性能指标集成](part5-app/ch26-observability/26.20-battery-historian-performance-metrics-integration.md)
+  - [26.21 编译期字节码插桩与监控自动化](part5-app/ch26-observability/21-bytecode-instrumentation-monitoring-automation.md)
 
 ---
 

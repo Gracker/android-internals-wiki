@@ -137,6 +137,14 @@ FGS 和 Job 配额问题在线上经常表现成“任务偶发没完成”。�
 
 | 指标 | 建议字段 | 用途 |
 | --- | --- | --- |
+
+
+### Android 17 JobSchedulerService Job Quota 管理机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-25-job-quota-management.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 Android 17 源码深入分析 JobSchedulerService 的 QuotaController、StandbyTracker、JobPackageTracker 协同架构。涵盖 5 档 Standby Bucket（ACTIVE/WORKING/FREQUENT/RARE/NEVER/RESTRICTED）差异化配额、API 调用频率限制（DeviceConfig 动态配置，最低 250 次/窗口）、Expedited Job 配额检查，以及 JobConcurrencyManager 并发管理。配额参数通过 `DeviceConfig.NAMESPACE_JOB_SCHEDULER` 运行时热更新。
+- 注入时间：2026-06-26
+- 价值：补全 §25.13 对 JobScheduler 配额执行细节的源码级描述，与 FGS timeout 形成完整的后台资源管理闭环
 | FGS 启动 | service type、启动入口、是否前台可见、targetSdk、系统版本、ROM | 区分用户主动任务和后台补偿任务 |
 | FGS 运行时长 | start elapsed、stop elapsed、累计时长、是否进入后台 | 判断是否靠近 6 小时 / 3 分钟窗口 |
 | FGS 超时 | `onTimeout()` 命中、回调到 `stopSelf()` 耗时、剩余工作量 | 判断超时处理是否有效 |
