@@ -2452,12 +2452,17 @@
       "task2b_fixed_at": "2026-05-27T16:50:00+08:00",
       "task9_pending_queue": 0,
       "task6_pending_queue": 0,
-      "task6_l1_l2_fixes": 6,
+      "task6_l1_l2_fixes": 9,
       "task6_l3_l4_issues": 0,
       "task6_reviewed_at": "2026-05-27T17:16:52+08:00",
       "task6_log": "logs/review/2026-05-27-17-review.md",
       "task6_new_rework": false,
-      "task6_note": "Task2B fixed 后复审通过；修复 6 处 L1/L2 表达与验证标注，自动晋升 finalized。"
+      "task6_note": "Task2B fixed 后复审通过；修复 6 处 L1/L2 表达与验证标注，自动晋升 finalized。",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "last_task6_at": "2026-06-25T21:18:32+08:00",
+      "task6_review_log": "logs/review/2026-06-25-21-review.md"
     },
     "10.3": {
       "task6_result": "pass-light-edit",
@@ -5245,8 +5250,8 @@
     "24.10": {
       "title": "HTTPDNS 与 OkHttp Dns 执行边界",
       "file": "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md",
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_reviewed",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-05-16",
       "queue_priority": 80,
@@ -5260,13 +5265,14 @@
       "task9_result": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task6_l1_l2_fixes": 9,
+      "task6_l1_l2_fixes": 18,
       "task6_l3_l4_issues": 0,
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-05-16",
-      "last_task6_at": "2026-05-16T16:10:00+08:00",
+      "last_task6_at": "2026-06-25T21:18:32+08:00",
       "last_task6_review_log": "logs/review/2026-05-16-16-review.md",
-      "task6_review_notes": "2026-05-16 Task6：首次写作质检通过；修复 outline 重复描述、禁用词和兜底表述 9 处；无 L3/L4 回炉项，送 Task9 技术复核。"
+      "task6_review_notes": "2026-05-16 Task6：首次写作质检通过；修复 outline 重复描述、禁用词和兜底表述 9 处；无 L3/L4 回炉项，送 Task9 技术复核。",
+      "task6_review_log": "logs/review/2026-06-25-21-review.md"
     },
     "13.13": {
       "status": "finalized",
