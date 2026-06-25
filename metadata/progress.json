@@ -10405,13 +10405,13 @@
     }
   },
   "task2a_last_processed": {
-    "section": "2.29",
-    "title": "TaskSnapshot 系统架构与 Recents 渲染性能",
-    "file": "src/part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md",
+    "section": "18.25",
+    "title": "Jetpack Compose 渲染管线架构",
+    "file": "src/part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-24T04:06:00+08:00",
+    "processed_at": "2026-06-26T04:09:45.342602+08:00",
     "status": "ready-for-review",
-    "note": "7 锚点全部覆盖（含版本演进表+诊断路径），3 扩展点全部覆盖，素材来自 AOSP android-17.0.0_r1 源码"
+    "note": "8 锚点全部覆盖，4 扩展全部覆盖，素材来自 Compose BOM 2025.12.00 + AOSP android-17.0.0_r1"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-25",
@@ -14973,7 +14973,20 @@
   "summary": {
     "total": 269,
     "draft": 0,
-    "ready-for-review": 65,
+    "ready-for-review": 66,
     "finalized": 201
+  },
+  "18.25": {
+    "section": "18.25",
+    "title": "Jetpack Compose 渲染管线架构",
+    "file": "src/part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "last_task2a_at": "2026-06-26T04:09:45.342602+08:00",
+    "task2a_result": "ready-for-review",
+    "note": "8 锚点全部覆盖，4 扩展全部覆盖"
   }
 }

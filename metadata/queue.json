@@ -693,11 +693,13 @@
     "chapter": "18.25",
     "title": "Jetpack Compose 渲染管线架构",
     "file": "part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md",
-    "status": "pending",
+    "status": "completed",
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-06-26",
     "gap_source": "AOSP结构+章节深挖",
-    "gap_score": 19
+    "gap_score": 19,
+    "completed_at": "2026-06-26T04:09:45.342602+08:00",
+    "completed_note": "File exists: src/part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md (318 lines, status=ready-for-review)"
   },
   {
     "section": "2.4",
