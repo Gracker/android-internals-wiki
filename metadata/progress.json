@@ -12067,7 +12067,12 @@
           "title": "Choreographer 与渲染流水线",
           "fixes": [
             "VsyncEventData version: internal doFrame received VsyncEventData since API 31, public API at API 33; added Android 16 Buffer Stuffing Recovery to version timeline; replaced DeepResearch material block with cross-reference to §2.25"
-          ]
+          ],
+          "task6_state": "reviewed",
+          "task6_result": "pass-light-edit",
+          "task6_review_date": "2026-06-26",
+          "pipeline_stage": "task9_pending",
+          "last_task6_at": "2026-06-26T07:07:00+08:00"
         }
       ]
     },
