@@ -14723,8 +14723,8 @@
     "task9_state": "pending",
     "task6_review_notes": "2026-06-10 15:20 Task6 revisiting round 3：pass-light-edit。L1/L2扫描全部通过（禁用词0命中、高频词0命中、AI套话0命中）；已有内容写作质量合格；4个已知占位节（14.2.7/9/11/12）仍通过queue追踪；新增3条技术准确性确认项到已有pending queue entry；Task9 needs-rework未变，送Task9复审。"
   },
-  "last_task2b_main_at": "2026-06-16T02:50:00+08:00",
-  "last_task2b_main_chapter": "14.8",
+  "last_task2b_main_at": "2026-06-26T06:52:24.913115+08:00",
+  "last_task2b_main_chapter": "2.4",
   "last_task2b_main_status": "fixed",
   "backlog": {
     "task2b_pending": 0

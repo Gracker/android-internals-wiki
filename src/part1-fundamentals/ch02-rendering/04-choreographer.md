@@ -29,6 +29,9 @@ rework6_reason: "Task9 Deep Tech Review: Compose pausable composition 补充 Fra
 rework7_date: "2026-04-11"
 rework7_by: "openclaw-task2b"
 rework7_reason: "Task9 Deep Tech Review: doFrame源码摘录、FrameMetrics API、FrameCallback续订、Perfetto SQL、版本时间线修正"
+rework8_date: "2026-06-26"
+rework8_by: "openclaw-task2b"
+rework8_reason: "Task9 Deep Tech Review: 移除 7.1-7.5 节未验证 Android 17 源码内容，替换为标注版变更笔记；修正回调类型术语（四种→五种）"
 confidence: high
 sources:
   - type: official
@@ -43,16 +46,16 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+status: ready-for-review
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
-task9_result: "pass-tech-review"
+task9_result: pending
 task9_state: pending
 task2b_state: fixed
-task2b_result: fixed-lite
+task2b_result: fixed
 last_task9_at: "2026-05-23T03:35:03+08:00"
 task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: "openclaw-task9"
@@ -78,7 +81,7 @@ last_task2b_lite_at: 2026-06-26
 ### 锚点（必须覆盖）
 
 - 🔹 Choreographer 的角色：帧调度器，协调 Input → Animation → Traversal
-- 🔹 四种回调类型的优先级与执行顺序：INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL
+- 🔹 回调类型的优先级与执行顺序：INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 - 🔹 doFrame() 的完整执行流程
 - 🔹 FrameCallback 机制与帧耗时监控（FrameMetrics API）
 - 🔹 Choreographer 帧调度在 Systrace/Perfetto 中的标记点：Choreographer#doFrame
@@ -135,9 +138,9 @@ graph LR
 
 [已验证: 官方文档, developer.android.com/reference/android/view/Choreographer]
 
-## 四种回调类型的优先级与执行顺序：INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL
+## 回调类型的优先级与执行顺序：INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 
-Choreographer 最精妙的设计之一就是它的回调优先级机制。在每一个 `doFrame()` 执行周期中，不同类型的回调按照严格的顺序执行，确保用户体验的连贯性。
+Choreographer 的回调优先级机制是它的核心设计。在每一个 `doFrame()` 执行周期中，五种回调类型（INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT）按照严格的顺序执行，确保用户体验的连贯性。
 
 ### 回调类型的完整执行序列
 
@@ -709,131 +712,26 @@ Choreographer 不是孤立工作的，它位于 Android 渲染管线的中心节
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
 
-<!-- AIW-源码调研-2026-06-22 -->
+## Android 17 Choreographer 变更笔记
 
-## Android 17 VSync 时间戳预测机制深度研究
+> **⚠️ 本节内容来源标注**：以下描述基于 Android 官方开发者文档和公开讨论，尚未通过 `android-17.0.0_r1` 源码逐行验证。涉及具体源码细节的内容标注了验证状态，仅供方向性参考。
 
-### 7.1 多帧时间线架构 (Android 17 新增)
+### 开发者可见变更
 
-Android 17 在 `DisplayEventReceiver.VsyncEventData` 中引入了多帧时间线支持系统，允许系统在多个候选帧时间线中选择最优一个：
+Android 17 在帧调度方面对开发者可见的变更包括：
 
-```java
-// frameworks/base/core/java/android/view/DisplayEventReceiver.java
-public static final class VsyncEventData {
-    // 支持最多7个并行帧时间线选择
-    static final int FRAME_TIMELINES_CAPACITY = 7;
-    
-    public static class FrameTimeline {
-        long vsyncId;                           // VSync事件唯一标识
-        long expectedPresentationTimeNanos;    // 预期展示时间纳秒
-        long deadline;                          // 截止时间纳秒
-    }
-}
-```
+- **VsyncCallback 扩展**：`VsyncCallback` 接口自 API 33（Android 13）引入，Android 17 的 `FrameData.getPreferredFrameTimeline()` 继续提供帧时间线选择能力。高刷新率场景下，多帧时间线支持可帮助应用匹配最优 vsync 相位。[已验证: developer.android.com, VsyncCallback API 参考]
+- **FrameTimeline 信息**：`DisplayEventReceiver.VsyncEventData.FrameTimeline` 包含 `vsyncId`、`expectedPresentationTimeNanos`、`deadline` 三个字段，用于帧预期展示时间和截止时间的精确调度。
 
-**工程意义**：多时间线架构允许系统基于不同延迟需求智能选择最优帧时间线，特别适合高刷新率屏幕和复杂动画场景。
+### 需要源码验证的内容
 
-### 7.2 VsyncCallback 高级调度接口
+以下机制在 Android 17 公开讨论中被提及，但尚未通过 `android-17.0.0_r1` 源码逐行验证，不能作为正文结论：
 
-`VsyncCallback` 接口自 API 33（Android 13）公开引入，Android 17 在此基础上扩展了多帧时间线能力（`FRAME_TIMELINES_CAPACITY=7`、`FrameData` 的 preferred index 选择），为开发者提供更精细的帧调度控制：
+- Choreographer 内部 buffer stuffing recovery 的 Android 17 行为调整
+- `doFrame()` 中 jitter 重同步逻辑的具体实现
+- 回调执行链中各阶段时间标记的细节变更
 
-```java
-public interface VsyncCallback {
-    void onVsync(@NonNull FrameData data);
-}
-
-// FrameData支持多时间线选择
-public static class FrameData {
-    private FrameTimeline[] mFrameTimelines;           // 多个可能的帧时间线数组
-    private int mPreferredFrameTimelineIndex;          // 平台偏好的帧时间线索引
-    
-    @NonNull
-    public FrameTimeline getPreferredFrameTimeline() {
-        return mFrameTimelines[mPreferredFrameTimelineIndex];
-    }
-}
-```
-
-**应用场景**：游戏和视频应用可通过此接口实现更精确的帧同步，减少卡顿和撕裂。
-
-### 7.3 Buffer Stuffing Recovery 智能优化
-
-基于 Android 17 源码分析，Buffer Stuffing Recovery 机制在原有基础上增加了多恢复和偏移调整功能：
-
-```java
-BufferStuffingState.RecoveryAction updateBufferStuffingState(long frameTimeNanos,
-        DisplayEventReceiver.VsyncEventData vsyncEventData) {
-    // 多恢复模式：允许在同一动画内多次恢复填充
-    if (bufferStuffingMultiRecovery()) {
-        if (mBufferStuffingState.isStuffed.getAndSet(false)) {
-            if (!mBufferStuffingState.isRecovering) {
-                mBufferStuffingState.isRecovering = true;
-            }
-            // 智能判断：延迟已达阈值或继续恢复
-            if (bufferStuffingRecoveryThreshold() && mBufferStuffingState.maxDelayReached()) {
-                return BufferStuffingState.RecoveryAction.NONE;
-            } else {
-                return BufferStuffingState.RecoveryAction.DELAY_FRAME;
-            }
-        }
-    }
-    return BufferStuffingState.RecoveryAction.NONE;
-}
-```
-
-**性能提升**：相比Android 16，Android 17的缓冲区恢复机制支持连续恢复和动态偏移，[待验证：具体降幅未有官方数据支撑]。
-
-### 7.4 动态重同步机制
-
-Android 17 的 `doFrame` 方法实现了增强的抖动处理和重同步逻辑：
-
-```java
-// 抖动计算和帧时间调整
-final long jitterNanos = startNanos - frameTimeNanos;
-if (jitterNanos >= frameIntervalNanos) {
-    frameTimeNanos = startNanos;
-    long lastFrameOffset = jitterNanos % frameIntervalNanos;
-    frameTimeNanos = frameTimeNanos - lastFrameOffset;
-    
-    // 动态更新时间线
-    timeline = mFrameData.update(frameTimeNanos, mDisplayEventReceiver, jitterNanos);
-    resynced = true;
-}
-```
-
-**技术价值**：动态重同步机制确保在高负载情况下仍能维持稳定的帧节奏，避免帧时间回退导致的渲染异常。
-
-### 7.5 完整回调执行链优化
-
-Android 17 的渲染流水线在回调执行方面也进行了深度优化：
-
-```java
-void doFrame(long frameTimeNanos, int frame, DisplayEventReceiver.VsyncEventData vsyncEventData) {
-    // 标记输入处理开始
-    mFrameInfo.markInputHandlingStart();
-    doCallbacks(Choreographer.CALLBACK_INPUT);
-
-    // 动画阶段
-    mFrameInfo.markAnimationsStart();
-    doCallbacks(Choreographer.CALLBACK_ANIMATION);
-    doCallbacks(Choreographer.CALLBACK_INSETS_ANIMATION);
-
-    // 遍历阶段
-    mFrameInfo.markPerformTraversalsStart();
-    doCallbacks(Choreographer.CALLBACK_TRAVERSAL);
-
-    // 提交阶段
-    doCallbacks(Choreographer.CALLBACK_COMMIT);
-}
-```
-
-**性能影响**：每个阶段都有精确的时间标记和优化，[待验证：具体降幅未有官方数据支撑]。
-
----
-
-*本节内容基于 Android 17 (API 37) 源码深度分析，反映了 Android 17 在 VSync 预测和帧调度方面的调整。*
-
-<!-- AIW-源码调研-2026-06-22 -->
+> **工程建议**：使用 `android-17.0.0_r1` 源码做差异对比（diff 对照 `android-16.0.0_r1`），优先关注 `Choreographer.java`、`DisplayEventReceiver.java` 和 `FrameData` 相关类的变更。
 
 
 ## 参考资料
