@@ -8,6 +8,8 @@ task6_result: pass-light-edit
 task6_reviewed_by: "openclaw-task2a"
 task6_reviewed_date: "2026-06-16"
 task2b_state: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-06-25"
 task2b_result: "fixed"
 task2b_fixed_date: "2026-06-16"
 pipeline_stage: "ready-to-publish"
@@ -19,13 +21,13 @@ last_task9_at: "2026-06-16T21:32:37+08:00"
 task9_review_notes: "2026-06-16 Task9 auto-fix：修正 Systrace 入口和 SimplePerf/内存泄漏工具映射；依据 Android Developers tracing/simpleperf 与 Perfetto heapprofd 官方文档。 | 2026-06-16 21 Task9 deep-review：pass-tech-review。复核 20 点 auto-fix 后无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 created_by: "codex"
 created_date: '2026-06-16'
-last_task6_audit: '2026-06-19'
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+applicable_versions: Android 8-17 (API 26-37)
 last_verified: '2026-06-16'
 last_verified_against: AOSP android-16.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 confidence: high
 last_task9_audit: "2026-06-21"
-last_task6_audit: "2026-06-23"
+last_task6_audit: "2026-06-25"
+last_task6_idle_audit_at: "2026-06-25"
 sources:
 - type: official
   path: https://developer.android.com/topic/performance
@@ -67,11 +69,12 @@ last_task9_review_log: "logs/deep-review/2026-06-16-21-deep-review.md"
 last_task9_audit: "2026-06-25"
 
 ---
+<!-- outline-start -->
 # 第 15 章：Android 性能优化研究方法论
 
 ## 为什么要建立性能研究方法论？
 
-性能问题是系统性问题，不是简单的"代码慢"或"内存高"。在实际排查中，经常会遇到：
+性能问题属于系统性问题，不是简单的"代码慢"或"内存高"。在实际排查中常遇到：
 
 - **盲人摸象现象**：只看到表面的 ANR，却不知道背后的 Binder 调用链
 - **头痛医头问题**：针对某个优化点做了改进，却引发了其他性能下降
@@ -242,3 +245,5 @@ graph TD
 ---
 
 > *提示：本章方法论适用于 Android 8-17 各个版本的性能问题研究，在具体实践中需要注意各版本的 API 变化和工具差异。*
+
+<!-- outline-end -->
