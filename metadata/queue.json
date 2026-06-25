@@ -697,5 +697,25 @@
     "created_date": "2026-06-26",
     "gap_source": "AOSP结构+章节深挖",
     "gap_score": 19
+  },
+  {
+    "section": "2.4",
+    "section_title": "Choreographer 与渲染流水线",
+    "priority": 50,
+    "reason": "[audit-2026-06-26] 技术矛盾: §7.2 声称'Android 17 新增了 VsyncCallback 接口'，但正文 §2.4 主body 正确记载 VsyncCallback / FrameData / FrameTimeline 为 API 33 (Android 13) 公开引入。两处存在直接技术矛盾。",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "§7.2 VsyncCallback高级调度接口",
+        "detail": "§7.2 声称'Android 17 新增了 VsyncCallback 接口'，但正文 §2.4 主body 正确记载 VsyncCallback / FrameData / FrameTimeline 为 API 33 (Android 13) 公开引入。两处存在直接技术矛盾。",
+        "suggestion": "§7.2 应改为说明 Android 17 在 VsyncCallback / FrameData 上新增的多帧时间线能力（FRAME_TIMELINES_CAPACITY=7、preferred index 选择等），而非将 VsyncCallback 整体归为 Android 17 新增。",
+        "source": "task6-audit-2026-06-26"
+      }
+    ],
+    "added_by": "task6-audit",
+    "added_at": "2026-06-26T02:11:54",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-26-02-audit.md"
   }
 ]
