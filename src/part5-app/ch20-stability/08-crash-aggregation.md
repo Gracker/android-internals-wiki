@@ -28,8 +28,9 @@ task9_reviewed_date: "\"2026-06-03\""
 last_task9_at: "\"2026-06-03T09:20:00+08:00\""
 last_task6_at: "\"2026-06-03T03:06:00+08:00\""
 last_task9_autofix_at: "\"2026-06-03\""
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-26
 ---
-
 # 崩溃聚合与归因分析
 
 <!-- outline-start -->
@@ -56,13 +57,13 @@ last_task9_autofix_at: "\"2026-06-03\""
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-20.6 节定义了崩溃率的计算口径（UV 崩溃率、PV 崩溃率、启动崩溃率、重复崩溃率）。有了指标，下一步要回答的是：**每天几百到几千条崩溃报告，怎么把它们归成几十个有意义的簇，找到该先修哪个**。本节讲崩溃聚合的算法、归因维度、分派机制和告警体系。
+20.6 节定义了崩溃率的计算口径（UV 崩溃率、PV 崩溃率、启动崩溃率、重复崩溃率）。指标有了，下一个问题就是：**每天几百到几千条崩溃报告，怎么归成几十个有意义的簇，找到该先修哪个**。本节讲崩溃聚合的算法、归因维度、分派机制和告警体系。
 
 ## 堆栈聚合算法与去重策略
 
 ### 为什么需要聚合
 
-一个线上版本、百万级 DAU 的应用，每天产生的崩溃报告从几百到几万不等。如果每条报告都单独看，两个问题会立刻出现：
+一个百万 DAU 的线上应用，每天产生几百到几万条崩溃报告。如果每条单独看，两个问题会立刻出现：
 
 1. **同一行代码引发的崩溃被分散成几十甚至几百条记录**——不同的用户、不同的机型、不同的调用路径，但根因是同一个 NPE。如果不聚合，你会看到"今天崩溃数暴涨"，但不知道都来自同一个地方。
 2. **崩溃排序失去意义**——没有聚合就没有"Top 10 崩溃"，只有一条一条的原始报告。无法做优先级排序，也无法度量某个崩溃修复后的效果。
@@ -86,8 +87,6 @@ java.lang.NullPointerException
     ...
 ```
 
-[已验证: AOSP RuntimeInit.java LoggingHandler.logUncaught(), frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
-
 Native 崩溃的堆栈来自 tombstone（由 debuggerd 生成），格式不同但处理逻辑类似：
 
 ```text
@@ -99,8 +98,6 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
     #01 pc 00008c20  /data/app/...libnative.so (do_init+128)
     ...
 ```
-
-[已验证: AOSP system/core/debuggerd/crash_dump.cpp]
 
 ### 指纹生成算法
 
@@ -155,8 +152,6 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 
 正确做法是在服务端存储 mapping.txt，收到崩溃报告后先还原再聚合。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md]
-
 **多线程 / 异步回调的堆栈漂移。** 同一个根因的崩溃，在不同调用路径下堆栈的顶部几帧可能不同。比如一个 NullPointerException 可以从 onCreate 触发，也可以从 onResume 触发，取决于空对象在哪个生命周期被访问。
 
 常见处理方式：
@@ -167,8 +162,6 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 **Caused by 链。** Java 异常有 cause chain。指纹不能机械地只取 root cause。外层异常常带有 API 语义和业务入口，例如 `IllegalStateException` 包住底层 `IOException`，外层帧能说明是页面恢复、数据库迁移还是网络回调触发。更稳的做法是同时保留 outer exception、root cause 和两者的首个应用帧：强 key 用 root cause 防止重复，归因和分派保留外层语义。
 
 **OOM / StackOverflow 的低信息量堆栈。** StackOverflowError 可能产生上千帧；ART 的 `kMaxSavedFrames = 256` 是首轮栈帧缓存阈值，不是 Java 异常堆栈硬上限，超过该阈值时会重新 WalkStack 构建完整 trace。OOM 发生时堆栈抓取本身可能失败，只剩一行 OutOfMemoryError 没有堆栈。这种情况下指纹退化为只有异常类型，需要结合触发场景的上下文（Activity 名、最近操作）做二次聚合。
-
-[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc, Thread::CreateInternalStackTrace(), kMaxSavedFrames 是 saved_frames 快速路径阈值]
 
 ## 崩溃归因维度：版本、机型、OS、场景
 
@@ -224,8 +217,6 @@ signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
 - **应用生命周期状态**（前台 / 后台 / 启动中）
 
 这些信息需要 SDK 在崩溃发生前持续记录（breadcrumb），崩溃时附加到报告里。Firebase Crashlytics 的 `log()` 和 `setCustomKey()` 就是做这件事。
-
-[已验证: Firebase Crashlytics 文档, firebase.google.com/docs/crashlytics/customize-crash-reports]
 
 ## 自动分派与责任人匹配
 
@@ -380,5 +371,3 @@ com.example.app.network.ApiClient   → app/src/main/java/com/example/app/networ
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-crash-aggregation-ml-analysis.md
 - 类型：DeepResearch 调研结果
 - 摘要：调研 Firebase Crashlytics analysis engine 的崩溃聚类机制（基于栈帧、异常消息、错误码等5维特征向量），以及 Sentry 的 ML-driven issue ranking。梳理了 Android NDK Native crash 处理基础设施（libunwind/debuggerd/aee）和 Breakpad 符号化链路，并探讨了 LLM 在 crash 分析中的理论应用潜力。
-- 注入时间：2026-05-12
-- 价值：Firebase Crashlytics analysis engine 是目前唯一一手文档确认的 ML 崩溃聚合实现，Issue/Variation 机制对理解现代崩溃分析平台有直接参考价值

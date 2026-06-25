@@ -821,3 +821,164 @@ adb shell am set-process-memory-trim-level <package_name> 20
 - 第 1 章第 3 节「进程模型与生命周期管理」— 进程优先级的生命周期管理
 - 第 10 章第 4 节「低内存对系统性能的影响」— 低内存场景的深度分析
 
+
+
+<!-- AIW-源码调研-2026-06-26: MemoryLimiter cgroup memory.high 后台任务内存配额 -->
+### 扩展七：Android 17 MemoryLimiter — 后台任务内存配额（与 trim 路径并行的第二道防线）
+
+`onTrimMemory` 路径只解决「cached 进程 freeze 前的最后一刻释放」，**不解决「正在运行的后台任务持续占用内存」**。Android 17 在 `frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java` 引入了一个独立的配额子系统，对**正在运行的 notVisible 进程**（Service / FGS / Backup / Receiver 等）施加 cgroup v2 `memory.high` 软限制。
+
+#### 7.1 三种 LimitType 与 proc state 配额矩阵
+
+源码位置：`frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java`，`initializeMemoryLimits()`（基于 android-17.0.0_r1）。
+
+```java
+// LINT.IfChange(limitTypes)
+static final int LIMIT_TYPE_UNKNOWN = 0;
+static final int LIMIT_TYPE_MEMORY = 1;        // memory.high 触发
+static final int LIMIT_TYPE_SWAP = 2;          // memory.swap.high 触发
+static final int LIMIT_TYPE_ANON_SWAP = 3;     // anon + swap 之和超阈值
+```
+
+按 proc state 分层（节选关键状态）：
+
+| ProcessState | memHigh | swapHigh |
+|--------------|---------|----------|
+| `PERSISTENT` / `PERSISTENT_UI` | `LIMIT_IS_DISABLED`（不限） | `LIMIT_IS_DISABLED` |
+| `TOP` / `BOUND_TOP` / `IMPORTANT_FOREGROUND` / `TOP_SLEEPING` | `mConfiguration.memVisible`（默认 4G） | `mConfiguration.swapVisible`（默认 2G） |
+| `FOREGROUND_SERVICE` / `IMPORTANT_BACKGROUND` / `TRANSIENT_BACKGROUND` / `BACKUP` / `SERVICE` / `RECEIVER` / `HEAVY_WEIGHT` / `HOME` / `LAST_ACTIVITY` | `mConfiguration.memNotVisible`（默认 2G） | `mConfiguration.swapNotVisible`（默认 2G） |
+| `CACHED_ACTIVITY` / `CACHED_ACTIVITY_CLIENT` / `CACHED_RECENT` / `CACHED_EMPTY` | `LIMIT_IS_IGNORED`（不应用） | `LIMIT_IS_DISABLED` |
+
+关键设计：**cached 进程完全不在 MemoryLimiter 控制范围**，交由 lmkd 和 CachedAppOptimizer 接管；persistent 进程（system_server 等）永不限额；中间层的「正在运行的 notVisible 任务」才被配额管理。
+
+#### 7.2 cgroup memory.high 的 Java/JNI 写入路径
+
+Java 控制器 `ControllerEnabled` 的 `MESSAGE_CONFIG` 处理：
+
+```java
+case MESSAGE_CONFIG -> {
+    if (msg.obj != null && !shouldIgnore(uid)) {
+        Limits limit = (Limits) msg.obj;
+        configureLimit(service, pid, uid, limit.memHigh, limit.swapHigh);
+    }
+}
+```
+
+JNI 实现在 `services/core/jni/com_android_server_am_MemoryLimiter.cpp`：
+
+```cpp
+enum class CgroupFile {
+    kUnknown, kMemoryStat, kMemoryEvent, kMemoryHigh,
+    kSwapCurrent, kSwapMax,
+};
+
+writeLimit(cgroupPath(CgroupFile::kMemoryHigh), limit);   // 写到 memory.high
+writeLimit(cgroupPath(CgroupFile::kSwapMax), limit);      // 写到 memory.swap.high
+```
+
+监听侧用 `inotify_add_watch(memory.events, IN_MODIFY)`：
+
+```cpp
+void watch(int inotify_fd, wdmap_t& wdmap, Statistics& stats) {
+    if (mMemWatcher.mWd == UNSET) {
+        std::string cpath = cgroupPath(CgroupFile::kMemoryEvent);
+        int memWd = inotify_add_watch(inotify_fd, path, IN_MODIFY);
+        ...
+    }
+}
+```
+
+#### 7.3 触发 → ProfilingServiceHelper → 30s 宽限期后 kill
+
+`onLimitExceeded` 是配额触发的入口：
+
+```java
+public void onLimitExceeded(int pid, int uid, int type, long memHigh, long swapHigh,
+        String pkg) {
+    if (type == LIMIT_TYPE_ANON_SWAP) {
+        if (android.os.profiling.Flags.systemTriggeredProfilingNew()
+                && android.os.profiling.anomaly.flags.Flags.anomalyDetectorCoreC()
+                && pkg != null) {
+            ProfilingServiceHelper helper = ProfilingServiceHelper.getInstance();
+            helper.onProfilingTriggerOccurred(uid, pkg,
+                    ProfilingTrigger.TRIGGER_TYPE_ANOMALY);
+        }
+        // Request that the target be killed.  The delay allows the profiler to complete.
+        Message msg = mQueue.obtainMessage(MESSAGE_KILL, pid, uid,
+                "MemoryLimiter:AnonSwap");
+        mQueue.sendMessageDelayed(msg, KILL_DELAY_MS);   // KILL_DELAY_MS = 30 * 1000
+    }
+}
+```
+
+30 秒宽限期的工程意图：先让 `ProfilingServiceHelper` 在系统处理异常前抓 heap dump，再杀进程。`MESSAGE_KILL` 通过 `mInjector.killProcess(pid, uid, "MemoryLimiter:AnonSwap")` 终止，**`ApplicationExitInfo` 会以 `REASON_OTHER` 报告，description 包含 "MemoryLimiter:AnonSwap"**。
+
+#### 7.4 inotify vs 轮询的双模式与 10MB hysteresis
+
+JNI 注释：
+
+```cpp
+// Hysteresis for memory.high.  If a process is in the red zone (both memory.high and
+// memory.swap.high have fired events), cgroup events are disabled and the process is polled for
+// limit violations.  However, if the process memory drops <hysteresis> below the memory.high
+// limit, polling stops and cgroup events are re-enabled.  The value is 10MB.
+```
+
+常态走 inotify 零开销；进入 red zone（同时超过 `memory.high` 与 `memory.swap.high`）后切换为轮询，10MB hysteresis 防止在边界抖动。
+
+#### 7.5 启用条件：与 lmkd 完全独立的第二道防线
+
+```java
+static final String CONFIG_PATH = "/vendor/etc/memory-limiter-config.xml";
+
+private boolean memoryLimiterEnable() {
+    if (!Flags.memoryLimiterEnable()) {
+        return false;
+    } else if (!isMemoryLimiterSupported()) {
+        return false;
+    } else {
+        ...
+    }
+}
+```
+
+启用条件：**DeviceConfig flag `memory_limiter_enable` 为 true，且 `/vendor/etc/memory-limiter-config.xml` 存在**。这解释了为什么 Android 17 的内存配额机制**只在部分设备上启用**——大多数 AOSP 通用编译不会带 vendor 配置文件。
+
+配置结构：
+
+```java
+@VisibleForTesting
+static final Configuration sDefaultConfig =
+        new Configuration(GB * 4, GB * 2, GB * 2, GB * 2);
+// memVisible=4G, memNotVisible=2G, swapVisible=2G, swapNotVisible=2G
+```
+
+**重要区别**：MemoryLimiter 的配额由 vendor xml 配置，**不依赖 `ProcessList.updateOomLevels()` 的 `scaleMem`/`scaleDisp` 公式**——它与设备 RAM 大小、屏幕尺寸不直接挂钩。这是与 lmkd minfree 完全不同的内存决策面。
+
+#### 7.6 与 onTrimMemory 的分工
+
+| 维度 | onTrimMemory 路径 | MemoryLimiter 路径 |
+|------|-------------------|---------------------|
+| 触发对象 | cached app（`setAdj >= CACHED_APP_MIN_ADJ`） | notVisible 进程（FGS/Service/Backup/Receiver 等） |
+| 触发时机 | freeze 之前一次 | cgroup memory.high 持续监听 |
+| 通知机制 | `Application#onTrimMemory(40)` | inotify + 轮询 + 30s 后 kill |
+| 决策依据 | `setAdj`/LRU | proc state + vendor xml 配额 |
+| 终止方式 | cgroup-freeze | `killProcess("MemoryLimiter:AnonSwap")` |
+| 退出原因 | 无 explicit reason（freeze） | `REASON_OTHER` + description |
+
+App 侧接入要点：
+
+1. **`Application#onTrimMemory(40)` 是释放** Bitmap/LruCache/Glide 内存的关键窗口——错过即被 cgroup-freeze 冻结，再被 trim 时已是 cached 状态。
+2. **后台 Service/FGS 的内存配额**由 `memNotVisible`（默认 2G）+ `swapNotVisible`（默认 2G）决定。App 在 `Service` 回调中应主动监控 PSS（`dumpsys meminfo`）以避免被 MemoryLimiter 命中。
+3. **`ApplicationExitInfo.getDescription()` 含 `MemoryLimiter:AnonSwap` 字符串**：是 App 排查「被配额杀」事件的唯一线索，**不能依赖 `oom_score_adj` 或 `dumpsys meminfo` 推断**。
+4. **`ProfilingServiceHelper` 在 kill 前 30 秒抓 heap dump**：通过 `TRIGGER_TYPE_ANOMALY` 触发，结合 `ProfilingManager` API 可在系统处理异常前采集现场。
+
+#### 7.7 信息源
+
+- [一手] AOSP `android-17.0.0_r1`：
+  - `frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java` — 配额核心
+  - `frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp` — cgroup memory.high 写入与 inotify 监听
+  - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `mMemoryLimiter = MemoryLimiter.getDefaultMemoryLimiter(mContext)` 装配
+- [调研报告] `DeepResearch/2026-06-26-android17-memory-limiter-cgroup-quota.md`
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java, line 86-106 (LimitType), line 574-625 (initializeMemoryLimits), line 834 (MemoryLimiter:AnonSwap reason string), line 850 (KILL_DELAY_MS), line 1053 (memoryLimiterEnable)]
