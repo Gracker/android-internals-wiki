@@ -35,6 +35,7 @@ reviewed_date: "2026-05-22"
 task6_result: pass-light-edit
 task9_state: reviewed
 last_task6_at: "2026-05-22T04:07:00+08:00"
+last_task6_audit: "2026-06-25"
 last_task6_review_log: "logs/review/2026-05-22-04-review.md"
 task6_review_notes: "2026-05-22 task6 review：pass-light-edit。小修 1 处（补 section 元数据）。无 B 类大问题；Task9 尚未通过，未自动晋升。"
 task9_result: pass-tech-review
