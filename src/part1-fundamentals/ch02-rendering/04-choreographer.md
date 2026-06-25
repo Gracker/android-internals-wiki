@@ -57,7 +57,7 @@ last_task9_at: "2026-05-23T03:35:03+08:00"
 task9_reviewed_date: "2026-05-23"
 task9_reviewed_by: "openclaw-task9"
 last_task6_at: "2026-05-18T18:06:00+08:00"
-last_task6_audit: "2026-06-10"
+\12026-06-25\2
 last_task6_audit_result: pass-clean
 last_task6_audit_log: "logs/review/2026-06-10-10-audit.md"
 last_task9_audit: "2026-06-14"
@@ -710,11 +710,11 @@ Choreographer 不是孤立工作的，它位于 Android 渲染管线的中心节
 
 <!-- AIW-源码调研-2026-06-22 -->
 
-## Android 17 VSync时间戳预测机制深度研究
+## Android 17 VSync 时间戳预测机制深度研究
 
 ### 7.1 多帧时间线架构 (Android 17 新增)
 
-Android 17 在 `DisplayEventReceiver.VsyncEventData` 中引入了革命性的多帧时间线支持系统，相比传统单帧调度显著提升了渲染预测能力：
+Android 17 在 `DisplayEventReceiver.VsyncEventData` 中引入了多帧时间线支持系统，允许系统在多个候选帧时间线中选择最优一个：
 
 ```java
 // frameworks/base/core/java/android/view/DisplayEventReceiver.java
@@ -780,7 +780,7 @@ BufferStuffingState.RecoveryAction updateBufferStuffingState(long frameTimeNanos
 }
 ```
 
-**性能提升**：相比Android 16，Android 17的缓冲区恢复机制支持连续恢复和动态偏移，预计可减少20-30%的卡顿事件。
+**性能提升**：相比Android 16，Android 17的缓冲区恢复机制支持连续恢复和动态偏移，[待验证：具体降幅未有官方数据支撑]。
 
 ### 7.4 动态重同步机制
 
@@ -826,11 +826,11 @@ void doFrame(long frameTimeNanos, int frame, DisplayEventReceiver.VsyncEventData
 }
 ```
 
-**性能影响**：每个阶段都有精确的时间标记和优化，减少了约15%的总体渲染延迟。
+**性能影响**：每个阶段都有精确的时间标记和优化，[待验证：具体降幅未有官方数据支撑]。
 
 ---
 
-*本节内容基于 Android 17 (API 37) 源码深度分析，反映了 Android 17 在 VSync 预测和帧调度方面的重大改进。*
+*本节内容基于 Android 17 (API 37) 源码深度分析，反映了 Android 17 在 VSync 预测和帧调度方面的调整。*
 
 <!-- AIW-源码调研-2026-06-22 -->
 

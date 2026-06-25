@@ -176,7 +176,11 @@ Memory Profiler 是排查内存问题的主力工具。它的界面顶部是一�
 
 实时曲线是内存状态的"第一眼"概览。曲线上每个突然的跳升对应着一次大的内存分配，每个突然的下降对应着一次 GC。如果 GC 之后内存并没有回到之前的水平，那说明有对象无法被回收——这就是内存泄漏的典型信号。
 
-在 Android 8.0（API 26）之后，Memory Profiler 的数据精度大幅提升。这得益于 Android 8.0 引入的 JVMTI（JVM Tool Interface）机制，Profiler 通过 JVMTI 获取的内存数据比之前通过 DDMS 协议获取的数据更加准确和详细。[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
+Android Studio Memory Profiler 的分配追踪数据通路基于 device 端的 **JVMTI agent（`libperfa.so`）**，由 Android Studio 推送到 `/data/local/tmp/perfd/perfd` daemon，再通过 `am attach-agent` 注入目标应用后注册 `JVMTI_EVENT_VM_OBJECT_ALLOC` / `OBJECT_FREE` / `GARBAGE_COLLECTION_START/FINISH` / `CLASS_PREPARE` 四个事件回调获取（`tools/base/profiler/native/perfa/perfa.cc` + `memory/memory_tracking_env.cc`）。JVMTI 接口本身早于 Android 8.0（属 JDK 5 / JSR-163 标准），Google 自 Android Studio 3.0（2017 GA）即使用此机制。<!-- AIW-源码调研-2026-06-25 -->
+
+**Android 8.0（API 26）真实的新增项是去除了旧 DDMS 协议 "Java/Kotlin Allocations" 任务的 65535 条记录上限**（见 [官方文档：Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations) "On Android 7.1 and lower, you can record a maximum of 65535 allocations. If your recording session exceeds this limit, only the most recent 65535 allocations are saved in the record. (There is no practical limit on Android 8.0 and higher.)"），并引入 LeakCanary 自动泄漏检测；HPROF 抓取链路则因 Android 8.0 上 ActivityManagerService 的 HPROF fd 关闭 bug 需要在 perfd 端用 `WaitForHeapDumpFinish` 双重校验文件结尾 tag（`heap_dump_manager.cc:34` 注释 "In O+, there is a bug in ActivityManagerService where the file descriptor associated with the dump file does not get closed until the next GC"）。[已验证: AOSP tools/base mirror-goog-studio-main 源码 + 官方文档]
+
+**Profileable App 限制**：当 App 仅 `android:profileable="true"` 时（无需 debuggable），MEMORY_HEAP_DUMP / MEMORY_JVM_RECORDING / MEMORY_GC / MEMORY_LEAK_WITH_LEAKCANARY 四项 Memory Profiler 功能被禁用（`SupportLevel.kt:39-46` PROFILEABLE 配置 except 列表），只保留实时内存曲线与 Perfetto heapprofd 的 native allocation。这意味着对 release-build 的 Profileable App 而言，**JVMTI 路径不可用**，是 Memory Profiler 在 Android 9 起的硬性约束。
 
 ### Heap Dump（堆快照）
 
