@@ -14,7 +14,7 @@ reviewed_date: "\"2026-06-03\""
 reviewed_by: "openclaw-task6"
 polish_count: "1"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_result: "fixed"
@@ -30,6 +30,8 @@ last_task6_at: "\"2026-06-03T03:06:00+08:00\""
 last_task9_autofix_at: "\"2026-06-03\""
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
+task2b_verified_at: "2026-06-26T07:27:19+08:00"
+task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (already finalized)"
 ---
 # 崩溃聚合与归因分析
 

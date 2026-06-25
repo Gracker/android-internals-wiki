@@ -4088,7 +4088,8 @@
       "task6_review_notes": "2026-06-03 task6 review: pass-light-edit。L1/L2 小修 3 处；未发现新增回炉项，进入 Task9 待审。",
       "task6_review_summary": "Task6 pass-light-edit；清理开头结构性元叙述与“首先”用法，outline 4/4 覆盖，未新增回炉项，进入 Task9 待审。",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task2b_verify": "2026-06-26T07:27:49+08:00"
     },
     "24.5": {
       "status": "finalized",
@@ -4148,7 +4149,8 @@
       "reviewed_date": "2026-06-03",
       "last_task6_at": "2026-06-03T03:06:00+08:00",
       "last_task6_review_log": "logs/review/2026-06-03-03-review.md",
-      "task6_review_notes": "L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。"
+      "task6_review_notes": "L1/L2 小修：为 6 个文本/流程代码围栏补 `text` 语言；统一 Retrace 命名；将 retrain/drift 改为中文表达。无新增 L3/L4 回炉项；Task9 仍 pending/needs-rework，进入技术复审。",
+      "last_task2b_verify": "2026-06-26T07:27:49+08:00"
     },
     "20.9": {
       "status": "finalized",
@@ -4234,7 +4236,8 @@
       "title": "后台功耗治理",
       "last_task9_at": "2026-05-15T07:35:58+08:00",
       "task9_result": "pass-tech-review",
-      "last_task9_review_log": "logs/deep-review/2026-05-15-07-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-15-07-deep-review.md",
+      "last_task2b_verify": "2026-06-26T07:27:49+08:00"
     },
     "25.3": {
       "status": "finalized",
@@ -14999,5 +15002,6 @@
     "last_task2a_at": "2026-06-26T04:09:45.342602+08:00",
     "task2a_result": "ready-for-review",
     "note": "8 锚点全部覆盖，4 扩展全部覆盖"
-  }
+  },
+  "last_task2b_verifier_run": "2026-06-26T07:27:49+08:00"
 }
