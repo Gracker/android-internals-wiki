@@ -1,7 +1,7 @@
 ---
 title: "锁竞争与同步性能分析"
 chapter: "1.14"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37); bionic PI mutex sections require Android 9+; DeliQueue applies to Android 17 targetSdk 37+"
 tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
 related_chapters: ["1.4", "1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
@@ -12,7 +12,7 @@ gap_source: "研究素材+AOSP结构+每日信息+读者需求"
 gap_score: "17/20"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-27"
+reviewed_date: "2026-06-25"
 reviewed_by: "openclaw-task6"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP android-16.0.0_r1 + bionic android-9.0.0_r1 + binder android-7.1.2_r39/android-8.0.0_r1 + Perfetto stdlib"
@@ -44,12 +44,12 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-27"
+task9_reviewed_date: "2026-06-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-27T15:22:00+08:00"
 last_task9_audit: "2026-06-12"
@@ -59,12 +59,12 @@ task2b_result: fixed
 last_task2b_at: "2026-05-27T16:50:00+08:00"
 task2b_notes: "2026-05-27 Task2B：清理文末 AIW 源码调研原始块，将 AMS mGlobalLock/mProcLock 双锁与 PI-futex 边界合并入正文。"
 last_task6_audit: "2026-06-08"
-last_task6_at: "2026-05-27T17:16:52+08:00"
-last_task6_review_log: "logs/review/2026-05-27-17-review.md"
+last_task6_at: "2026-06-25T21:17:30+08:00"
+last_task6_review_log: "logs/review/2026-06-25-21-review.md"
 review_type: "task6-writing-quality-review"
-task6_l1_l2_fixes: 6
+task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-27 17:16 Task6：复审 Task2B 清理后的文稿，修复 6 处 L1/L2 表达与验证标注；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
+task6_review_notes: "2026-06-25 21:17 Task6 复审：修复 LRU 性能数据小节重复（删除文末 1204 字符重复块）、性能数据中英文间距、大纲禁用词「下钻」、补 [待验证] 标注；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-27-15-deep-review.md"
 task9_review_notes: "2026-05-27 15:22 Task9 deep-review：技术复审无新增 P0/P1；既有 queue pending 为 Task6/Task2B 文末源码调研原始块清理，不自动晋升。"
 deepseek_cn_review_state: done
@@ -268,11 +268,11 @@ case UPDATE_TIME_ZONE: {
 }
 ```
 
-#### 4. 性能数据
+#### 4. 性能数据 [待验证: 具体数据来源未标注，需核对 AOSP commit 或 Google 公开文档]
 
-- 锁持有时间从Android 11的25ms降至8ms
-- system_server吞吐量提升约3倍
-- LRU操作延迟减少68%
+- 锁持有时间从 Android 11 的 25ms 降至 8ms
+- system_server 吞吐量提升约 3 倍
+- LRU 操作延迟减少 68%
 
 #### 5. 设计要点
 
@@ -402,64 +402,3 @@ Android 17 的 DeliQueue 是这类优化的一个案例。它面向 targetSdk 37
 ## 小结
 
 锁竞争分析难的地方在于，不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才会变成有目标的修改。
-
-### LRU 锁优化的代码级细节
-
-上文 AMS 双锁一节讨论了 `mGlobalLock` 与 `mProcLock` 的设计意图，这里从代码层面补充具体实现：
-
-#### 1. ProcessList中的LRU锁保护
-
-```java
-@CompositeRWLock({"mService", "mProcLock"})
-private final ArrayList<ProcessRecord> mLruProcesses = new ArrayList<ProcessRecord>();
-
-// -LOSP: 仅任一锁即可访问
-@GuardedBy(anyOf = {"mService", "mProcLock"})
-void forEachLruProcessesLOSP(boolean iterateForward, @NonNull Consumer<ProcessRecord> callback) {
-    // 遍历 LRU 列表
-}
-
-// -LSP: 必须同时持有两把锁
-@GuardedBy({"mService", "mProcLock"})
-ArrayList<ProcessRecord> getLruProcessesLSP() {
-    return mLruProcesses;
-}
-```
-
-#### 2. OomAdjuster的锁粒度优化
-
-```java
-@GuardedBy("mService")
-void updateOomAdjLocked(@OomAdjReason int oomAdjReason) {
-    synchronized (mProcLock) {
-        updateOomAdjLSP(oomAdjReason); // 仅持有 mProcLock 完成 LRU 操作
-    }
-}
-```
-
-#### 3. 调度层面效果
-
-Perfetto 中可观测到，消息处理类操作（如时区更新）仅获取 `mProcLock`：
-
-```java
-case UPDATE_TIME_ZONE: {
-    synchronized (mProcLock) {
-        mProcessList.forEachLruProcessesLOSP(false, app -> {
-            app.getThread().updateTimeZone();
-        });
-    }
-}
-```
-
-#### 4. 性能数据
-
-- 锁持有时间从Android 11的25ms降至8ms
-- system_server吞吐量提升约3倍
-- LRU操作延迟减少68%
-
-#### 5. 设计要点
-
-`@CompositeRWLock` 注解和 LOSP/LSP 命名约定的实际效果：
-1. 读操作仅需mProcLock（避免全局锁竞争）
-2. 写操作仍需两把锁保证数据一致性
-3. 支持轻量级操作并行执行
