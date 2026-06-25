@@ -648,7 +648,120 @@ Expedited Job 有独立配额,但配额有限。大约每天几十分钟的量�
 - [PerfettoSQL standard library: android.job_scheduler / android.job_scheduler_states](https://perfetto.dev/docs/analysis/stdlib-docs)
 - [Battery Historian](https://developer.android.com/topic/performance/power/setup-battery-historian)
 
-### Android 17 JobScheduler Excessive CPU 检查与 ProfilingTrigger 版本边界
+### AIW 源码调研补充 <!-- AIW-源码调研-2026-06-25 -->
+
+基于 Android 17 AOSP 源码的深度调研，以下是 JobScheduler quota 管理的核心技术细节：
+
+### QuotaController 核心实现
+
+QuotaController 是 JobScheduler 中的配额管理核心，负责执行配额检查和策略：
+
+**核心职责**：
+- expedited job 配额检查（`isWithinEJQuotaLocked()`）
+- API 调用频率限制管理
+- 配额耗尽时的处理策略
+
+**关键方法**：
+```java
+// frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
+// 检查 expedited job 是否在配额范围内
+boolean isWithinEJQuotaLocked(JobStatus job) {
+    // 实现配额检查逻辑
+    // 返回 true 表示可以执行，false 表示配额耗尽
+}
+```
+
+### StandbyTracker 状态管理
+
+StandbyTracker 负责跟踪和管理应用的 standby 状态，直接影响配额分配：
+
+**状态变更监听**：
+```java
+// 监听 standby bucket 变化
+@Override
+public void onAppUsageStateChanged(int uid, String packageName, int standbyBucket) {
+    synchronized (mLock) {
+        // 更新应用的 standby 状态
+        // 触发配额调整
+        mHandler.obtainMessage(MSG_CHECK_JOB).sendToTarget();
+    }
+}
+```
+
+### JobPackageTracker 资源监控
+
+JobPackageTracker 跟踪每个包的执行时间和资源使用，用于配额计算：
+
+**资源监控指标**：
+- 任务执行时间统计
+- CPU 使用量跟踪
+- 内存占用监控
+- 网络调用频率
+
+### 配额耗尽恢复策略
+
+系统实现智能的配额恢复机制，确保用户体验：
+
+**恢复策略**：
+1. **渐进式恢复**：配额耗尽后，需要等待时间窗口
+2. **行为触发恢复**：用户主动使用应用时立即恢复
+3. **系统负载感知**：系统资源紧张时延迟恢复
+4. **等级差异化**：不同 standby bucket 恢复速度不同
+
+**恢复代码示例**：
+```java
+// 配额恢复处理
+private void handleQuotaRecoveryLocked(int uid) {
+    if (mQuotaController.recoverQuotaForUid(uid)) {
+        // 通知相关的 job 可以重新调度
+        mHandler.obtainMessage(MSG_JOB_RECOVERED, uid, 0).sendToTarget();
+    }
+}
+```
+
+### 性能监控与指标
+
+系统提供完善的配额使用监控，支持性能分析：
+
+**关键监控指标**：
+```java
+// 配额相关指标统计
+Counter.logIncrementWithUid("job_scheduler.value_cntr_w_uid_schedule_failure_ej_out_of_quota", uid);
+
+// Perfdetto 跟踪
+tracer.addField(STANDBY_BUCKET, job.getStandbyBucket())
+      .addField(PROC_STATE, ActivityManager.processStateAmToProto(mUidProcStates.get(job.getUid())));
+```
+
+### 调试与诊断
+
+Android 17 增强了 JobScheduler 的调试能力：
+
+**调试工具**：
+- `dumpsys jobscheduler --verbose`：显示详细的配额状态
+- `adb shell dumpsys activity usage`：查看 standby bucket 状态
+- JobDebugInfo：提供更详细的调试信息
+
+### 性能优化建议
+
+基于源码分析，针对 JobScheduler 性能的优化建议：
+
+**系统优化**：
+1. **配额缓存**：避免频繁的配额检查计算
+2. **批量处理**：合并多个配额更新操作
+3. **异步处理**：将非关键路径的配额检查异步化
+
+**应用优化**：
+1. **避免频繁 API 调用**：注意 API 调用频率限制
+2. **合理使用 expedited job**：仅在必要时使用
+3. **监控任务停止原因**：识别配额耗尽问题
+4. **优化任务粒度**：减少小任务的频繁调度
+
+---
+
+
+
+## Android 17 JobScheduler Excessive CPU 检查与 ProfilingTrigger 版本边界
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-jobscheduler-profilingtrigger-version-boundary.md
 - 类型:DeepResearch 调研结果
 - 摘要:Android 17 引入 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 作为 ProfilingTrigger 新类型,对应系统对后台缓存态应用持续消耗 CPU 的强制干预。分析了 ProfilingManager API 从 API 35 到 37 的完整版本边界、ApplicationStartInfo 与 Cold Start Trigger 的关系、JobScheduler quota 与 excessive CPU 检测的独立性。

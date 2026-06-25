@@ -8,7 +8,7 @@ created_by: task2a-knowledge-gap
 created_date: 2026-04-10
 deepseek_cn_review_state: done
 gap_source: 研究素材
-last_deepseek_cn_review_at: 2026-06-08
+last_deepseek_cn_review_at: 2026-06-25
 last_task2b_lite_at: "2026-06-25"
 last_task6_at: "2026-06-25T04:05:00+08:00"
 last_task6_audit: "2026-06-25"
@@ -48,15 +48,11 @@ task2b_notes: "2026-06-25 Task2B main: AOSP source path corrected to frameworks/
 ---
 ---
 
-
-----
-
-
 # ProfilingManager 系统触发式性能追踪
 
 ## 为什么要了解系统触发式性能追踪
 
-线上冷启动慢、偶发 ANR、一次性 OOM，最麻烦的地方不是不会分析，而是问题发生时没有开启 Trace。ProfilingManager 的 system-triggered profiling 解决的正是这个空档。我们先把关心的系统事件注册给系统，等事件发生时，再由系统把结果放到应用目录，回调给应用自己处理。
+线上冷启动慢、偶发 ANR、一次性 OOM，最麻烦的地方不是不会分析，而是问题发生时没有开启 Trace。ProfilingManager 的系统触发式 profiling 解决的正是这个空档。我们先把关心的事件注册进去，等事件发生时系统把结果放到应用目录，再回调给应用自己处理。
 
 对启动优化来说，这让 `Activity.reportFullyDrawn()` 前后的启动收尾不再只能靠人工复现。对 ANR 排查来说，我们拿到的也不再只是 `traces.txt` 的定格画面，而是一份围绕触发时刻保存下来的 trace。对 OOM 来说，返回物是 Java heap dump，与其他 trigger 返回的 trace 不同。
 
@@ -108,7 +104,7 @@ Android 15 引入 `ProfilingManager`，先解决"应用怎样在公开设备上�
 
 ### 结果是怎么回来的
 
-system-triggered profiling 有一个容易写错的地方，结果只会发给全局 listener，不会发给某一次单独请求的 listener。公开文档和 AOSP 注释都写得很直白，`registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 是接收 system-triggered profiling 结果的唯一公开入口。`addProfilingTriggers()` 只是注册触发器，不负责直接把结果塞回调用现场。
+system-triggered profiling 有一个容易写错的地方，结果只会发给全局 listener，不会发给某一次单独请求的 listener。公开文档和 AOSP 注释都写明，`registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 是接收 system-triggered profiling 结果的唯一公开入口。`addProfilingTriggers()` 只是注册触发器，不负责直接把结果塞回调用现场。
 
 拿到 `ProfilingResult` 之后，我们先看两件事：
 
@@ -226,9 +222,9 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 对冷启动来说,我们先确认返回物是不是 `.perfetto-trace`,再用 Perfetto UI 打开。`APP_FULLY_DRAWN` 更适合复盘启动收尾阶段,`COLD_START` 更适合看进程创建后的完整启动窗口。
 
-[图:`TRIGGER_TYPE_APP_FULLY_DRAWN` 返回的 `.perfetto-trace` 在 Perfetto UI 中的观测示意。标出应用主进程、主线程 `Choreographer#doFrame`、RenderThread、SurfaceFlinger 合成轨,并在启动尾段比对 `reportFullyDrawn()` 附近的最后几帧。]
+> 图：`TRIGGER_TYPE_APP_FULLY_DRAWN` 返回的 `.perfetto-trace` 在 Perfetto UI 中的观测示意。标出应用主进程、主线程 `Choreographer#doFrame`、RenderThread、SurfaceFlinger 合成轨，并在启动尾段比对 `reportFullyDrawn()` 附近的最后几帧。
 
-[图:`TRIGGER_TYPE_COLD_START` 返回的 system trace + stack sampling 结果示意。标出应用冷启动早期的进程创建、主线程首个长任务、`reportFullyDrawn()` 停止点,以及默认 5 秒停止的回退边界。]
+> 图：`TRIGGER_TYPE_COLD_START` 返回的 system trace + stack sampling 结果示意。标出应用冷启动早期的进程创建、主线程首个长任务、`reportFullyDrawn()` 停止点，以及默认 5 秒停止的回退边界。
 
 分析这两类结果时，先确定时间窗口，再看线程状态、Binder 等待、渲染帧和系统服务干预。
 
@@ -236,7 +232,7 @@ Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求�
 
 ANR 结果同样是 `.perfetto-trace`,但目标从启动耗时换成了"找到超时前的阻塞对象"。我们通常会把主线程、Binder 线程池、持锁线程、`system_server` 放在一起看,而不是只盯着一条主线程 slice。
 
-[图:`TRIGGER_TYPE_ANR` 返回的 running system trace 示意。标出应用主线程 blocked 状态、对应的 owner 线程、同步 Binder 调用等待区间,以及 `system_server` 中可能卡住的服务线程。]
+> 图：`TRIGGER_TYPE_ANR` 返回的 running system trace 示意。标出应用主线程 blocked 状态、对应的 owner 线程、同步 Binder 调用等待区间，以及 `system_server` 中可能卡住的服务线程。
 
 这种结果比单独的 `traces.txt` 多了一段历史信息。我们可以把 `traces.txt` 当成终点快照,把 system-triggered trace 当成"终点之前发生了什么"。
 
@@ -244,7 +240,7 @@ ANR 结果同样是 `.perfetto-trace`,但目标从启动耗时换成了"找到�
 
 `TRIGGER_TYPE_OOM` 不该塞回 Perfetto trace 段落里一起写。它返回的是 Java heap dump，分析目标也从线程调度切到"谁持有对象、谁把堆顶满了、是否存在大对象或意外 retained path"。
 
-[图:`TRIGGER_TYPE_OOM` 返回的 Java heap dump 分析示意。标出 dominator tree 中占用最大的对象组、retained size 最高的引用路径,以及触发 OOM 前最后一次大分配对应的业务对象。]
+> 图：`TRIGGER_TYPE_OOM` 返回的 Java heap dump 分析示意。标出 dominator tree 中占用最大的对象组、retained size 最高的引用路径，以及触发 OOM 前最后一次大分配对应的业务对象。
 
 如果一个章节把 OOM、ANR、cold start 全都说成"自动抓 Trace",读者在工具选择上就已经走偏了。
 
@@ -322,33 +318,3 @@ system-triggered profiling 的结果只会通过 `registerForAllProfilingResults
 - AOSP（SDK 层）：`frameworks/base/core/java/android/os/ProfilingTrigger.java`（android-17.0.0_r1，触发器常量定义）
 - AOSP（SDK 层）：`frameworks/base/core/java/android/os/ProfilingResult.java`（android-17.0.0_r1）
 - AOSP（服务端）：`packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`（android-17.0.0_r1）
-
-<!-- AIW-源码调研-2026-06-24 -->
-### 🔍 源码调研补充：ANOMALY 触发器 UID 级别控制与 multi-package 支持
-
-基于 Android 17 (android-17.0.0_r1) 源码的深度分析发现：
-
-#### 多包支持机制
-ProfilingManager 采用 `ProcessMap<SparseArray<ProfilingTriggerData>> mAppTriggers` 数据结构实现多包支持，每个触发器与特定 UID 绑定存储。在 `addProfilingTriggers()` 中，系统会获取调用者 UID 并为每个触发器创建对应的 `ProfilingTriggerData` 对象。
-
-#### ANOMALY 触发器专有实现
-- **标志控制**：通过 `android.os.profiling.anomaly.flags.Flags.anomalyDetectorCoreC()` 功能标志控制，必须显式启用
-- **专有限制器**：`MemoryAnomalyRateLimiter` 提供双层速率限制（系统3小时/进程3天）
-- **特殊处理**：ANOMALY 触发器直接返回 Java heap dump，不参与其他触发器的系统速率限制
-
-#### 完整调用链
-```
-App.addProfilingTriggers() → ProfilingManager → IProfilingService.addProfilingTriggers() 
-→ ProfilingService.addTrigger() → ProfilingTriggerData 存储 
-→ AnomalyDetectorService.processTrigger() → MemoryAnomalyRateLimiter 检查 
-→ ProfilingService.execute() → IProfilingAnomalyCallback 返回结果
-```
-
-#### 关键源码证据
-- `ProfilingService.java`（`packages/modules/Profiling/service/...`）中 ANOMALY 触发器处理逻辑
-- `MemoryAnomalyRateLimiter.java` - 双层时间桶限制器
-- `IProfilingService.aidl` - 异步回调接口定义
-- `ProfilingTriggerData.java` - 触发器数据模型
-
-> 注：本分析基于 packages/modules/Profiling/android-17.0.0_r1 tag 源码，验证了 ANOMALY 触发器的多包支持能力和 UID 级别控制机制。
-<!-- AIW-源码调研-2026-06-24 结束 -->

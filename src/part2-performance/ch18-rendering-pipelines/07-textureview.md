@@ -44,6 +44,8 @@ last_task9_autofix_at: "2026-06-02"
 task9_review_notes: "2026-06-02 Task9 auto-fix：将 TextureView 成本口径从额外拷贝/固定 2 倍内存修正为额外纹理采样、宿主窗口再承载合成结果；回到 Task6 复审。"
 last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-25
 ---
 
 <!-- outline-start -->
@@ -69,9 +71,9 @@ last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
 
 TextureView 表面上像普通 View：可以设置透明度、做动画、裁剪圆角，并且和其他 View 一样参与 View 树的绘制流程。但在渲染层面，它背后走的是一条多段转交路径：帧数据先到 SurfaceTexture，再由 App 的 RenderThread 采样合成，随后提交给 SurfaceFlinger。
 
-这个转交过程是 TextureView 性能不如 SurfaceView 的主要原因。理解这套流程，分析时就能在 Perfetto 中区分卡在 SurfaceTexture 的 fence 同步点，还是卡在 App 侧 GPU 绘制。[已验证: AOSP TextureView 实现]
+这个转交过程是 TextureView 性能不如 SurfaceView 的主要原因。理解这套流程，分析时就能在 Perfetto 中区分：帧卡在 SurfaceTexture 的 fence 同步，还是卡在 App 侧 GPU 绘制。[已验证: AOSP TextureView 实现]
 
-TextureView 是 Android 4.0（API 14）引入的，初衷是补足 SurfaceView 在 View 体系里的灵活性。早期 SurfaceView 的确不擅长和普通 View 一起做位置变换与透明度控制，但这个结论要按版本看：Android 7.0 起，SurfaceView 的窗口位置更新已经能和 View 渲染同步，平移和缩放不再像早期版本那样容易出错；Android 14（U）起，View alpha 也进入官方支持范围。TextureView 仍然保留旋转、复杂裁剪、圆角和与普通 View 深度融合的优势，所以在视频滤镜、直播美颜、需要和 UI 一起做复杂动画的场景里仍然常见。
+TextureView 是 Android 4.0（API 14）引入的，初衷是补足 SurfaceView 在 View 体系里的灵活性。早期 SurfaceView 和普通 View 一起做位置变换与透明度控制确实有不少限制，但这个结论要按版本看：Android 7.0 起，SurfaceView 的窗口位置更新已经能和 View 渲染同步，平移和缩放不再像早期版本那样容易出错；Android 14（U）起，View alpha 也进入官方支持范围。TextureView 仍然保留旋转、复杂裁剪、圆角和与普通 View 深度融合的优势，所以在视频滤镜、直播美颜、需要和 UI 一起做复杂动画的场景里仍然常见。
 
 ### 硬件加速是前置条件
 
@@ -235,7 +237,7 @@ DRM 视频或其它受保护内容对应的 buffer 带 `GRALLOC_USAGE_PROTECTED`
 
 ### 默认行为
 
-TextureView 章节里要分清两层 listener：
+这里要分清两层 listener：
 
 - `TextureView.SurfaceTextureListener` 面向普通 App 代码，负责 `SurfaceTexture` 的创建、尺寸变化和销毁回调
 - `SurfaceTexture.OnFrameAvailableListener` 由 `TextureView.java` 在内部绑定，用来感知 Producer 送来的新帧
@@ -336,7 +338,6 @@ TextureView 实际有两套 fence，用途不同不能混淆：
 
 ## Metal/Vulkan Backend 性能对比（Android 13-17）
 
-> AIW-源码调研-2026-06-03
 
 ### 核心结论
 
@@ -401,7 +402,7 @@ Vulkan 引入对 TextureView 的**间接**影响（Android 13+）：
 
 - AOSP `frameworks/base/core/java/android/view/TextureView.java`
 - AOSP `frameworks/base/graphics/java/android/graphics/SurfaceTexture.java`
-- **TextureView 折叠屏/异形屏行为适配优化**（2026-06-04 DeepResearch）
+- TextureView 折叠屏/异形屏行为适配（2026-06-04 深度调研）
   - 源码级分析 TextureView 在折叠屏/异形屏下的行为机制，核心依赖 WindowInsets + DisplayCutout + Choreographer 帧同步。TextureView 通过 `onSizeChanged` → `setDefaultBufferSize` 自动适应窗口形态变化，不依赖专用 API。SurfaceTexture buffer size 跟着 WindowMetrics 走，折叠/配置变更时自动调整。基于 android-16.0.0_r1 TextureView.java 源码验证。
 - Android 官方文档：TextureView
 - Android 性能优化指南：SurfaceView vs TextureView
@@ -420,7 +421,6 @@ Vulkan 引入对 TextureView 的**间接**影响（Android 13+）：
 
 ## 游戏引擎集成注意事项（Unity/Unreal）
 
-> AIW-源码调研-2026-06-04
 
 ### 核心结论
 
@@ -522,7 +522,7 @@ public final class TextureLayer implements AutoCloseable {
 
 
 
-## 折叠屏/异形屏适配（AIW-源码调研-2026-06-04）
+## 折叠屏/异形屏适配
 
 ### 核心结论
 

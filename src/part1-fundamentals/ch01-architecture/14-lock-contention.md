@@ -1,7 +1,7 @@
 ---
 title: "锁竞争与同步性能分析"
 chapter: "1.14"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37); bionic PI mutex sections require Android 9+; DeliQueue applies to Android 17 targetSdk 37+"
 tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
 related_chapters: ["1.4", "1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
@@ -44,8 +44,8 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review

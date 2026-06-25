@@ -51,13 +51,14 @@ repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-28-18-deep-review.md"
 task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 TextureView/SurfaceTexture、HAL buffer management、CameraMetadataNative 与 Perfetto SQL/Python 示例；未发现阻断问题，自动晋升 finalized。"
+last_task9_audit: "2026-06-25"
 task2b_rework_date: '2026-05-19'
 last_task2b_lite_at: "2026-05-28"
 last_task6_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-18-review.md"
-last_task6_audit: "2026-06-09"
+last_task6_audit: "2026-06-25"
 task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；修复启动拆解表格被 blockquote 截断、Python SDK 示例 config 省略占位；L1/L2 通过；outline 15/15 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
 p0: 0
 p1: 0
@@ -66,7 +67,7 @@ task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 finalized_date: "2026-05-28"
 finalized_by: openclaw-task9
-last_task9_audit: "2026-06-18"
+last_task9_audit: "2026-06-25"
 last_task9_audit_log: "logs/deep-review/2026-06-18-15-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13

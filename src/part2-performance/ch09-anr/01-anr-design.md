@@ -61,9 +61,10 @@ last_task9_audit: "2026-06-20"
 last_task9_audit_at: "2026-06-20T14:31:09+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-20-14-audit.md"
 last_task6_at: "2026-06-20T16:10:45+08:00"
-last_task6_audit: "2026-06-20"
-last_task6_review_log: "logs/review/2026-06-20-16-review.md"
-task6_review_notes: "2026-06-20 16:06 Task6：Task9 auto-fix 后 revisiting 复审；L1/L2 无新增问题（禁用词零命中、高频词达标、版本边界 Android 17 以内、无翻译腔）；锚点覆盖完整 5/5；frontmatter 清理重复 last_task6_audit；queue 无 pending、task9 auto-fixed 已完成，自动晋升 finalized。"
+last_task6_audit: "2026-06-25"
+last_task6_audit_at: "2026-06-25T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-06-25-14-audit.md"
+task6_review_notes: "2026-06-25 Task6：闲时抽检复审；L1/L2 无新增问题（禁用词命中真正×2，未达阈值；高频词达标；版本边界 Android 17 以内）；修复 1 处英文术语未翻译（state→状态）；锚点覆盖完整 5/5；无 L3/L4 问题。"
 last_task9_review_log: "logs/deep-review/2026-06-20-14-audit.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-27"
@@ -541,7 +542,7 @@ SLOW_EVENT_PROCESSING_WARNING_TIMEOUT = 2s（仅 logcat warning 不 ANR）；STA
 
 2. **无焦点窗口**（`InputDispatcher::onAnrLocked(application)` @ line 6581）：focusedWindowHandle == nullptr 且 focusedApplicationHandle != nullptr 时启动 `mNoFocusedWindowTimeoutTime = currentTime + getDispatchingTimeout(DEFAULT_INPUT_DISPATCHING_TIMEOUT)`；超时后 → `mPolicy.notifyNoFocusedWindowAnr(app)`。
 
-3. **mLastAnrState 诊断快照**（`InputDispatcher::updateLastAnrStateLocked` @ line 6605）：保留最近一次 ANR 的完整 dispatcher state，便于 dumpsys input 复盘。
+3. **mLastAnrState 诊断快照**（`InputDispatcher::updateLastAnrStateLocked` @ line 6605）：保留最近一次 ANR 的完整 dispatcher 状态，便于 dumpsys input 复盘。
 
 ### Java 侧路由：AnrController
 
