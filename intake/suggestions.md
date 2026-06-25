@@ -49,8 +49,33 @@
 9. **research-feeds 近期素材** — Perfetto v53/v54 特性已覆盖（ch13.10-14）；Frame Timeline 可视化已覆盖（ch13.08/ch2.04）；Compose Pausable Composition 已覆盖。
 10. **daily-info 近 3 天** — 内容以通用 Android 新闻/AI 工具/Compose UI 讨论为主，无可直接映射的性能缺口。
 
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-06-26
+- **类型**：版本差异/源码准确性
+- **位置**：章节适用版本声明与源码验证
+- **问题**：章节适用版本声明为 Android 12 (API 31) - Android 17 (API 37)，但源码验证仅针对 android-16.0.0_r1，存在 Android 17 变化未覆盖的风险
+- **建议**：建议更新源码验证至 android-17.0.0_r1，或通过代码确认 Android 17 中 CameraMetadataNative、HAL Buffer Management 等核心组件无重大变更
+
 ### 结论
 全书 485 节，27 个 draft 章节均有 > 15 行实质内容（无空 draft）。本轮无评分 ≥ 14 的知识缺口。下次可探索方向：
 - Android 17 最终稳定版发布后的新 API 变更（目前基于 Beta 2）
 - AOSP main 分支中即将进入 Android 下一版本的线索（仅作前瞻标记，不写入正文）
 - Clippings 中"线上疑难问题" 59 篇的深层案例模式是否有未被 ch26 覆盖的诊断思路
+
+## [Task2A Gap Mining Scan] 2026-06-26 05:08 — 无合格候选（≥14）
+
+### 已扫描方向（本轮）
+1. **source-index.json** — 1 条总条目，0 篇高质量未映射，已耗尽。
+2. **research-feeds** — 最近 2026-04-14（Perfetto v53/v54、Frame Timeline、Compose Pausable），全部已映射到 ch13/ch07/ch22。
+3. **daily-info 2026-06-24~26** — IBM sub-1nm 芯片（半导体制造，非应用层）、Apple 定价、MVI vs MVVM 架构讨论、Android 桌面化（已在 ch22.14 覆盖）。无可映射的性能缺口。
+4. **Clippings 参考书** — 5 篇稳定性参考书近期有修改（Java Crash/Native Crash/OOM/ANR/稳定性全景），但 ch20 已有 17 节（20.1-20.17）全覆盖。性能优化参考书和线上疑难问题参考书同理已充分映射。
+5. **suggestions.md 已检查** — AVF(9分)、Wear OS(11分)、Rust(11分)、Gradle(10分)、KMP(10分) 均 < 14。
+6. **AOSP 系统服务对比** — 上一轮已扫描 TelephonyManager/NfcService/ClipboardService 等长尾服务，素材 ≤ 2，读者需求 ≤ 2。
+7. **全书 269 节状态** — 201 finalized + 66 ready-for-review + 0 draft + 2 新近 ready-for-review (18.25 Compose 渲染管线, 22.9 端侧大模型内存)。全书无空 draft。
+
+### 结论
+连续 194 轮无合格缺口。全书性能知识体系完备覆盖 Android 17/API 37 范围。管线瓶颈在 Task6/Task9 复审（66 节 ready-for-review 待审）。
+
+### 下次可探索方向
+- Android 17 最终稳定版发布后的新 API 变更（目前基于 Beta 2）
+- AOSP main 分支前瞻标记（不写入正文）
+- Clippings「线上疑难问题」59 篇的深层诊断思路是否有未被 ch26 覆盖的模式
