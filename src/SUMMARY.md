@@ -135,6 +135,7 @@ tags:
   - [5.19 端侧 AI 调度与 ADPF 智能优化](part1-fundamentals/ch05-cpu-power/5.19-ondevice-ai-adpf-intelligent-scheduling.md)
   - [5.20 GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争](part1-fundamentals/ch05-cpu-power/20-genai-app-integration-performance.md)
   - [5.21 Adaptive Battery 与 App Standby Bucket 协同机制](part1-fundamentals/ch05-cpu-power/21-adaptive-battery-app-standby-coordination.md)
+  - [5.22 Bluetooth LE Audio 延迟与功耗性能](part1-fundamentals/ch05-cpu-power/22-bluetooth-le-audio-performance.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)
@@ -428,6 +429,7 @@ tags:
   - [21.12 Startup Profile 与 DEX Layout 启动优化](part5-app/ch21-startup/12-startup-profile-dex-layout.md)
   - [21.13 ART GC 抑制与启动性能优化](part5-app/ch21-startup/13-art-gc-suppression-startup-performance.md)
   - [21.14 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化](part5-app/ch21-startup/14-di-framework-performance.md)
+  - [21.15 Compose 首次组合开销与启动性能](part5-app/ch21-startup/15-compose-first-composition-startup.md)
 
 - [第 22 章：渲染优化实战](part5-app/ch22-rendering-practice/README.md)
   - [22.1 布局优化策略](part5-app/ch22-rendering-practice/01-layout-optimization.md)
@@ -455,6 +457,7 @@ tags:
   - [22.23 Navigation Compose 性能优化](part5-app/ch22-rendering-practice/22.23-navigation-compose-performance.md)
   - [22.24 App Widget 更新性能：RemoteViews IPC 与 Glance 渲染](part5-app/ch22-rendering-practice/24-app-widget-performance.md)
   - [22.25 Compose 布局系统：测量阶段、缓存机制与 Intrinsic 性能](part5-app/ch22-rendering-practice/25-compose-layout-measurement-performance.md)
+  - [22.26 Compose Snapshot 系统与状态观测性能](part5-app/ch22-rendering-practice/26-compose-snapshot-state-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)

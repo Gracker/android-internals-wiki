@@ -659,5 +659,32 @@
     "added_at": "2026-06-25T15:12:00+08:00",
     "status": "blocked",
     "original_review_log": "logs/review/2026-06-25-15-audit.md"
+  },
+  {
+    "section": "22.26",
+    "section_title": "Compose Snapshot 系统与状态观测性能",
+    "priority": 80,
+    "reason": "[task2a gap-mining] Compose 运行时核心机制，性能影响面广",
+    "status": "pending",
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-26T00:08:00+08:00"
+  },
+  {
+    "section": "21.15",
+    "section_title": "Compose 首次组合开销与启动性能",
+    "priority": 80,
+    "reason": "[task2a gap-mining] Compose 冷启动性能，与 Baseline Profile 实战联动",
+    "status": "pending",
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-26T00:08:00+08:00"
+  },
+  {
+    "section": "5.22",
+    "section_title": "Bluetooth LE Audio 延迟与功耗性能",
+    "priority": 80,
+    "reason": "[task2a gap-mining] LE Audio 替代 Classic BT Audio，延迟与功耗双维度",
+    "status": "pending",
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-26T00:08:00+08:00"
   }
 ]
