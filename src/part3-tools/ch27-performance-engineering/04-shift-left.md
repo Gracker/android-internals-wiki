@@ -2,7 +2,7 @@
 title: "左移性能工程"
 chapter: "27.4"
 section: "27.4"
-status: draft
+status: ready-for-review
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"

@@ -2,7 +2,7 @@
 title: "性能预算体系"
 chapter: "27.3"
 section: "27.3"
-status: draft
+status: ready-for-review
 drafted_date: "2026-06-21"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
