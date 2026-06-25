@@ -68,6 +68,10 @@ last_deepseek_cn_review_at: 2026-06-25
 last_task9_audit: "2026-06-15"
 last_task9_audit_at: "2026-06-15T11:26:52+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-15-11-audit.md"
+last_task6_audit: "2026-06-25"
+last_task6_audit_at: "2026-06-25T12:05:00+08:00"
+last_task6_audit_log: "logs/review/2026-06-25-12-audit.md"
+last_task6_audit_result: "pass-no-edit"
 ---
 
 # 1.20 App Archiving 机制与恢复性能
@@ -264,7 +268,7 @@ PMS 视角下，归档是包状态与删除语义的一次组合：`PackageState
 
 启动优化视角下，归档会把一次点击拆成“恢复 + 冷启动”。如果应用依赖 Baseline Profile 或云端下发动态模块，恢复后第一次启动可能比普通冷启动更慢；原因通常在包获取、安装编译和首启初始化，而不是 `PackageArchiver` 的状态判断。详见 8.2 节和 12.1 节。
 
-内存治理视角下，归档不改 LMKD 的选择模型。LMKD 依据内存压力、进程 adj、PSI 等信号做回收；归档改变的是后续是否存在可启动代码与 Launcher 入口，不是把某个进程的 RSS 从账本里扣掉。详见 4.2 节。
+内存治理视角下，归档不改 LMKD 的选择模型。LMKD 依据内存压力、进程 adj、PSI 等信号做回收；归档改变的是后续是否存在可启动代码与 Launcher 入口，不是把某个进程的 RSS 从账本里减少。详见 4.2 节。
 
 ## 版本与生态边界
 

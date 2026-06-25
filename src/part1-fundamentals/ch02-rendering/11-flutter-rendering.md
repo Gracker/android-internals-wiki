@@ -411,6 +411,75 @@ Flutter 的渲染虽然自成体系,但它仍然运行在 Android 系统之上�
 - **§7.7 Jetpack Compose 性能**:Compose 和 Flutter 都是"自绘引擎"路线(不依赖原生 View 体系),两者在 PlatformView/互操作场景下遇到类似的主线程压力和合成性能问题,优化思路可以互相参考
 - **§18.12 Flutter 渲染路径**:该章节按 Flutter 3.29+ 的 Main(UI+Platform) / Raster / IO 口径展开,可作为本章实践分析部分的延伸阅读
 
+
+### Flutter 3.44 源码侧补充（2026-06-25 AIW-源码调研）
+
+> 说明：选题 daily-topics.json id 17 标的章节为 §7.8（实际指向 RecyclerView），Flutter 3.44 主题与本节（2.11）和 §18.12 强相关，反哺在 2.11。
+
+**版本锚点**
+
+- 稳定版序列（git tag，按版本号倒排）：`3.46.0-0.1.pre` → `3.45.0-0.1.pre` → `3.44.4` → `3.44.3` → `3.44.2` → `3.44.1` → `3.44.0`
+- 引擎版本（`bin/internal/engine.version`，3.44.0 与 3.44.4 一致）：`4c525dac5ebe5971c5708ef73558ed8edcf4a362`
+- Dart SDK（DEPS 中）：`98116461144f4429ab873f8497023a5ec3b08127`
+- AGP 模板（CP-beta #186099）：3.44 起 **Android 模板升级到 AGP 9**
+
+**Agentic 能力——源码中实际能验证的只有这两块**
+
+1. `agent-artifacts/` 顶层目录：`agent-artifacts/README.md` 明确为 AI 编码代理的临时文件沙箱，`.gitignore` 排除所有非 README 文件。
+2. `.agents/skills/` 顶层目录：遵循 [agentskills.io 开放标准](https://agentskills.io/specification) 与 [Claude Agent Skills 命名约定](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#naming-conventions)。首个落地 skill 为 `find-release/SKILL.md`，调用契约：
+
+   ```
+   dart run ${FIND_RELEASE_TOOL_PATH:-engine/src/flutter/third_party/dart/tools/find_release.dart} \
+     --commit=<SHA> --channel=<CHANNEL>
+   ```
+
+   **.agents/skills/README.md 的关键约束**：
+   - 提交 PR 时必须附 agent 实际使用 prompt 与产出示例
+   - "One Skill Per CLI Tool""Read-Only Mode by default""Dart Scripts"
+   - 作者负责制（Ownership），不可无主修改
+
+   **重要**："Agentic Hot Reload""GenUI 生成式 UI" 这两个选题描述的特性，在 3.44 稳定版源码中**无对应运行时类/Service Extension**（`git tree --recursive 3.44.0` 全量扫描，`agent` 命中 6 个文件全是 devicelab/skills 文档；`genui` 零命中）。属于 keynote 营销口径。
+
+**性能侧实质改进（可源码验证）**
+
+`packages/flutter_tools/lib/src/run_hot.dart`：
+
+- line 44–45：`HotRunnerConfig.asyncScanning` 新增字段
+- line 524：调用点 `asyncScanning: hotRunnerConfig!.asyncScanning`
+- line 1576–1643：`invalidateForReloadSources(..., bool asyncScanning = false)` 用 `package:pool` 的 `Pool` 做并发受控文件扫描，缩短 `findInvalidationTimer` 阶段耗时
+
+默认 `asyncScanning: false`（向后兼容），需在 `HotRunnerConfig` 注入开启。**仅影响 dev mode 热重载延迟，不影响生产帧率**。
+
+**3.44 hotfix 链的"性能"相关修复**
+
+| PR       | 描述                                                                         |
+| -------- | ---------------------------------------------------------------------------- |
+| #188192  | 修 `FlAccessibleTextField` bounds checking                                  |
+| #186899  | 修 Android 平台 GLES fence 释放时序导致 texture 崩溃                          |
+| #186953  | 修 SwiftPM 并发 build 目录竞争                                                |
+| #183179  | 修 animated PNG 帧的 pixel buffer overflow                                   |
+| #186723  | 修 `SystemUiMode → edge-to-edge` 切换后 system bars 不显示（2.11 全屏边界更新） |
+
+**Impeller 边界**
+
+3.44 稳定版（engine `4c525dac5e…`）**未携带** Impeller 新特性合并。3.44 之后的 master 才有大动作：
+
+- `#188056 [Impeller] Add anisotropic filtering support to samplers`（2026-06-25）
+- `#187573 Turn linux impeller on by default`（2026-06-24）
+- `#188188 Migrates flutter windows test to impeller`（2026-06-24）
+
+本节（2.11）原有的 Impeller 描述（"Android API 29+ 默认启用""低版本/无 Vulkan 回退 legacy OpenGL"）**继续有效**，3.44 不改这条边界。
+
+**AGP 9 模板的实操影响**
+
+切到 3.44 模板后，`./gradlew assembleRelease` 走 AGP 9 的 R8/dexopt 路径；本节（2.11）的"Profile/Release 模式"实践应同步做一次 APK 体积 + 启动类初始化 A/B。配合 `#186040`（AGP 9 报错文档链接修正）与 `#186106`（Broken Flutter Docs Link 修正），3.44 模板属于稳定的工程动作，不是实验。
+
+**与 2.11 章节"必须做的事"的更新建议**
+
+- 新增一条：**3.44 后的项目首次构建时做一次 AGP 9 → AGP 8 体积/启动 A/B**（按 minSdk 区间分别测）。
+- 已有"hot reload 文件扫描慢"现象的开发者可注入 `HotRunnerConfig.asyncScanning = true` 测试加速比；典型受益场景是大型项目（> 5k Dart 文件）首次扫描。
+
+
 ## 参考资料
 
 - Flutter 官方性能文档:https://docs.flutter.dev/perf/rendering-performance
