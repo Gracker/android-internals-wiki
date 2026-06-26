@@ -2,6 +2,12 @@
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
 status: ready-for-review
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_lite_at: 2026-06-26
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
 last_verified: "2026-06-26"
