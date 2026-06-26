@@ -50,6 +50,8 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
 task9_state: reviewed
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-26
 ---
 
 # 视频叠加与 HWC
@@ -74,17 +76,17 @@ task9_state: reviewed
 
 TextureView 播放视频时，每一帧都要经过 GPU 采样再画到 App 的 Framebuffer 上。即使 App 没有其他 UI 更新，GPU 也得每帧工作。而如果用 SurfaceView + HWC Overlay，视频帧能**绕过 GPU**，直接由显示硬件（DPU，Display Processing Unit）叠加到屏幕上。
 
-这个差异直接体现在功耗和性能上。未记录完整测试条件的带宽、GPU 利用率和功耗百分比，不能作为正文结论。这里保留可复核的方向性判断：
+这个差异直接体现在功耗和性能上：
 
-| 路径类型 | 带宽和 GPU 负载走势 | 功耗走势 | 场景适用性 |
+| 路径类型 | 带宽和 GPU 负载走势 | 功耗趋势 | 典型场景 |
 |----------|----------------------|----------|------------|
-| GPU Path | GPU 需要采样视频纹理并写入 App Framebuffer，带宽和 GPU 负载最高 | 作为同设备同条件下的对照组 | TextureView，复杂混合效果 |
+| GPU Path | GPU 需要采样视频纹理并写入 App Framebuffer，带宽和 GPU 负载最高 | 同设备条件下最高 | TextureView，复杂混合效果 |
 | DEVICE Overlay | 视频 Layer 被 HWC 判为 `DEVICE` 后，不再经过 GPU 采样，GPU 负载明显下降 | 长时间播放时通常低于 GPU Path | SurfaceView，简单视频播放 |
 | SIDEBAND Tunnel | 解码输出走 sideband stream，App 侧 per-frame buffer 交互更少 | 在支持设备上通常低于普通 DEVICE Overlay | 支持的 Android TV、机顶盒或特定高端 SoC |
 
-如果要把功耗或带宽数字写回正文，测试记录至少要包含：设备型号、SoC、系统版本、刷新率、视频分辨率和编码格式、HDR/SDR、屏幕亮度、采样工具、采样时长、样本次数、环境温度、原始 trace 或功耗日志路径。缺少这些条件时，只能写成定性趋势，不能写成跨设备百分比结论。
+> 以上为同设备条件下的定性趋势对比，具体功耗和带宽数值依赖 SoC 架构、屏幕亮度、视频格式和刷新率等因素，不可跨设备直接套用百分比。
 
-在视频播放、导航地图等长时间运行的场景下，Overlay vs GPU 合成的功耗差异与 SoC 架构、DPU plane 能力、屏幕亮度、刷新率和视频格式相关。平台越依赖 GPU 处理视频采样、色彩转换和混合，SurfaceView + DEVICE composition 的收益越容易被观察到；平台已经有更强的显示硬件通路时，两条路径的差距会收窄。
+在视频播放、导航地图等长时间运行场景下，Overlay vs GPU 合成的功耗差异取决于 SoC 架构、DPU plane 能力、屏幕亮度、刷新率和视频格式。平台越依赖 GPU 处理视频采样、色彩转换和混合，SurfaceView + DEVICE composition 的收益越明显；平台已经有更强的显示硬件通路时，两条路径的差距会收窄。
 
 ## HWC 的核心职责
 
@@ -186,10 +188,10 @@ HDR 视频会增加 HWC 合成需要处理的维度：
 - **SDR 视频**：通常不需要 PQ/HLG 转换和 HDR metadata 处理，HWC 处理流程相对简单
 - **HDR 视频**：需要处理 PQ/HLG 转换、色彩空间映射、动态范围调整，增加了 HWC 的处理负担
 
-**运行影响**：
-- HDR 视频更容易触发 HWC client fallback，因为 HDR 处理逻辑复杂
-- HDR 相比 SDR 往往需要更多色彩空间、动态范围和 metadata 处理；没有同设备 trace 与功耗记录时，不给出固定百分比
-- 一些老旧的 HWC 实现可能不支持完整 HDR 处理，直接 fallback 到 GPU 合成
+**实际影响**：
+- HDR 视频处理逻辑更复杂，更容易触发 HWC 回退到 GPU
+- HDR 相比 SDR 需要额外的色彩空间、动态范围和 metadata 处理，具体开销依设备而异
+- 部分老旧 HWC 实现不支持完整 HDR 处理，会直接回退到 GPU 合成
 
 **HDR 合成优化建议**：
 1. 避免在 HDR 视频上叠加大量透明 UI 元素
@@ -237,7 +239,7 @@ graph LR
 
 ## SurfaceFlinger 的合成决策流程
 
-SurfaceFlinger 收到本帧 Transaction 后，合成流程一般是：
+SurfaceFlinger 收到本帧的 Transaction 后，合成流程如下：
 
 1. **layer latch**：收集本帧可见 Layer，更新几何信息、裁剪区域和 acquire fence。
 2. **`validateDisplay()`**：把 Layer 栈交给 HWC，让它返回本轮 `DEVICE` / `CLIENT` / `SIDEBAND` 决策。

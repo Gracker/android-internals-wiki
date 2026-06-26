@@ -45,10 +45,12 @@ task9_p2_issues: 2
 last_task9_audit: "2026-06-21"
 last_task9_audit_at: "2026-06-21T22:30:33+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-21-22-audit.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-26
 ---
 # Jetpack Compose 性能优化实战
 
-Compose 渲染管线的原理和机制在 §7.7 已详细说明。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
+Compose 渲染管线的原理和机制在 §7.7 已经详细展开。本节聚焦工程实战：怎么写不卡顿的 Compose 代码、怎么用工具定位性能问题，以及 Compose 运行时在 2025 年底的几个关键变化如何改变了优化策略的优先级。
 
 本节使用 **Compose BOM 2025.12.00（对应 Compose 1.10）** 作为版本基线。Pausable Composition、Strong Skipping 和 LazyLayoutCacheWindow 都取决于项目引入的 Compose / Kotlin 版本，不由 Android 17（API 37）平台本身决定。没有公开测试条件的滚动性能数据不作为本文结论，只作为阅读官方演讲资料时的背景。
 
@@ -67,9 +69,9 @@ Compose 的渲染管线包含三个阶段：Composition → Layout → Draw。�
 
 Compose 运行时的跳过(skip)机制:如果一个 `@Composable` 函数的所有参数与上次调用相比都"相等"(通过 `equals()` 判断),运行时会跳过整个函数体的执行,直接复用上一次的结果。这就是 Stability 标记和 Strong Skipping Mode 要解决的问题。
 
-### Strong Skipping Mode(Kotlin 2.0.20 起默认启用)
+### Strong Skipping Mode（Kotlin 2.0.20 起默认启用）
 
-Compose compiler 从 **Kotlin 2.0.20** 起默认启用 Strong Skipping Mode。Kotlin 2.0.0-2.0.10 需要在 `build.gradle.kts` 中显式开启:
+Compose compiler 从 Kotlin 2.0.20 起默认启用 Strong Skipping Mode。Kotlin 2.0.0-2.0.10 需要在 `build.gradle.kts` 中显式开启：
 
 ```kotlin
 composeCompiler {
@@ -139,20 +141,20 @@ fun userProfile(userId: String): State<User?> {
 `produceState` 内部持有 `remember { mutableStateOf(initialValue) }`，并在 `LaunchedEffect` 中启动 producer。`userId` 这类被 producer 使用、且变化后必须重新拉取的数据要作为 key 传入；key 变化时旧协程被 cancel，新 producer 启动。只有要跟随调用点生命周期、输入变化不重启的场景，才使用 `Unit` 或 `true` 这类常量 key。
 
 **性能边界：**
-- `produceState` 每次 `value = newValue` 写入触发 Snapshot 事务，高频更新场景（如动画、传感器数据）可能造成性能压力。可考虑 `snapshotFlow` + `collectAsState` 代替直接写入。
-- `rememberCoroutineScope` 在高频重组 Composable 中调用 `launch {}` 启动协程时，需确保旧协程被正确 cancel，否则可能积累大量并发协程。
+- `produceState` 每次 `value = newValue` 都会触发一次 Snapshot 事务。在高频更新场景（如动画、传感器数据）下，这会带来显著的性能压力，可以换用 `snapshotFlow` + `collectAsState` 代替直接写入。
+- 在高频重组的 Composable 中通过 `rememberCoroutineScope` 调用 `launch {}` 时，要确保旧协程被正确 cancel，否则会积累大量并发协程。
 
-**Strong Skipping 下的非 restartable Composable：**
-- Strong Skipping 主要改变 restartable Composable 的 skippable 推断；non-restartable Composable 不会获得独立的重启边界，不应作为跳过优化目标。
-- `@NonRestartableComposable` 和 `@NonSkippableComposable` 的含义不同：前者不提供重启边界，常见于副作用 API 内部；后者仍可 restartable，但强制每次父组分重组时执行函数体。
-- `rememberCoroutineScope` 依赖 remember 机制，应放在可正常进入 Composition 的调用点，不要用它掩盖 Composable body 里的副作用
-- 正确做法：使用 `LaunchedEffect` / `produceState` 管理副作用，而不是直接在 Composable body 执行副作用
+**非 restartable Composable 与 Strong Skipping：**
+
+Strong Skipping 只改变 restartable Composable 的 skippable 推断，non-restartable Composable 没有独立重启边界，不能作为跳过优化的目标。两者的区别要分清：`@NonRestartableComposable` 不提供重启边界（常见于副作用 API 内部），`@NonSkippableComposable` 仍然 restartable，但每次父级重组时都会执行函数体。
+
+`rememberCoroutineScope` 依赖 remember 机制，应放在能正常进入 Composition 的调用点。副作用管理应该通过 `LaunchedEffect` 或 `produceState` 完成，不要在 Composable body 里直接执行副作用。
 
 
 
-**produceState 内部实现细节（源码级）：**
+**produceState 的内部实现：**
 
-`produceState` 本质是 `LaunchedEffect` 的语法糖，源码位于 `platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ProduceState.kt`：
+`produceState` 本质上是 `LaunchedEffect` 的语法糖。它的源码（`platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ProduceState.kt`）清楚地展示了这个关系：
 
 ```kotlin
 @Composable public fun <T> produceState<T>(
@@ -166,7 +168,7 @@ fun userProfile(userId: String): State<User?> {
 }
 ```
 
-**内存分配时机表：**
+每次调用的内存分配：
 
 | 操作 | 分配对象 | 触发时机 |
 |------|----------|----------|
@@ -175,7 +177,7 @@ fun userProfile(userId: String): State<User?> {
 | `ProduceStateScopeImpl(result, coroutineContext)` | 接口包装对象 | Composable 进入时 |
 | `value = newValue` | **无堆分配**（in-place 写） | producer 执行时 |
 
-`value` 写入最终落到 Compose runtime 的 `SnapshotMutableStateImpl.value` setter。`androidx-compose-release` 中 setter 通过 `next.withCurrent { ... next.overwritable(...) }` 写入 Snapshot state record；读取该 `State` 的重组作用域随后会被失效并由 Recomposer 调度重组评估。producer 内每执行一次 `value = it` 都可能触发后续重组评估，因此 `produceState` **不适合驱动 UI 动画**（动画应使用 `animateFloatAsState` 等专用 API）。
+`value` 写入最终落到 `SnapshotMutableStateImpl.value` setter，通过 `next.withCurrent { ... next.overwritable(...) }` 写入 Snapshot state record。读取该 `State` 的重组作用域随后会失效，由 Recomposer 调度重组评估。producer 内每次 `value = it` 都可能触发后续重组，因此 `produceState` 不适合驱动 UI 动画——动画场景应使用 `animateFloatAsState` 等专用 API。
 
 ### Stability 标记:什么时候还需要手动标注
 
@@ -337,7 +339,7 @@ LazyColumn {
 
 Pausable Composition 是 Compose 1.10 引入的运行时改进。它主要作用在 LazyColumn/LazyRow 的预取路径中--运行时可将预取 item 的组合工作切分成可暂停的块,在帧预算不足时暂停并在下一帧继续。
 
-**版本注意**:Pausable Composition 无 Android 平台版本门槛,只要 Compose Foundation 版本支持即可。Compose Foundation 1.10.0-alpha05 曾默认启用(通过 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled`),但 1.10.6 因稳定性问题已将其默认禁用。当前是否默认启用取决于具体 Foundation 版本,使用前要检查目标版本的默认值或手动设置 flag。对于首帧 Composition 和普通(非 Lazy)Composable,Pausable Composition 不适用--这些场景仍然在单帧内同步完成。
+**版本注意**:Pausable Composition 不依赖 Android 平台版本，只要 Compose Foundation 版本支持即可生效。Compose Foundation 1.10.0-alpha05 曾默认启用（通过 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled`），但 1.10.6 因稳定性问题已将其默认关闭。当前是否默认启用取决于具体 Foundation 版本，使用前需要检查目标版本的默认值或手动设置 flag。注意 Pausable Composition 只作用于 LazyColumn/LazyRow 预取路径——首帧 Composition 和普通（非 Lazy）Composable 仍然在单帧内同步完成。
 
 **之前的行为**:Composition 必须在单个帧内完成。如果 Composable 树很深或 LazyColumn 的可见 item 很多,组合阶段的 CPU 时间可能超过 16.67ms 帧预算,直接导致掉帧。
 
@@ -355,14 +357,14 @@ Pausable Composition 是 Compose 1.10 引入的运行时改进。它主要作用
 
 `apply()` 是 Pausable Composition 的提交阶段:只有当所有组合工作完成后,变更才会被提交到 UI 树。未完成的 UI 子树不会被渲染。
 
-运行时接口的形态可以压缩成三个动作：`resume(shouldPause)` 继续执行预组合，`shouldPause` 在帧截止时间临近时返回暂停信号，`apply()` 在组合完成后一次性提交结果。开发者通常不会直接调用这些内部接口，能控制的是 Foundation 版本、预取窗口和列表 item 的组合成本。
+运行时接口的核心逻辑可以归纳为三步：`resume(shouldPause)` 继续执行预组合，`shouldPause` 在帧截止时间临近时给出暂停信号，`apply()` 在组合完成后一次性提交结果。开发者通常不需要直接调用这些内部接口——能实际控制的是 Foundation 版本、预取窗口尺寸和列表 item 的组合成本。
 
 **对开发者的意义**:
 1. 在已启用的 LazyColumn/LazyRow 预取路径中,Pausable Composition 可以减少预取组合阻塞当前帧的概率;是否生效取决于具体 Foundation 版本和 flag 状态。
 2. 以前为了规避组合阻塞而做的各种拆分优化(手动将大 Composable 拆成小函数),在 Compose 1.10 上的效果减弱了--运行时层面已经做了时间切片。
 3. 但 `derivedStateOf`、key、stable 参数等优化仍然有效--Pausable Composition 解决的是单帧阻塞问题,不解决不必要的重组问题。
 
-没有设备、场景、Foundation 版本和采样方式的滚动性能数字，不能直接迁移为项目基线。项目内验证时，用 Perfetto 对比主线程 `composition` slice 的耗时分布，再结合 Layout Inspector 的重组次数判断是否真的减少了当前帧阻塞。
+实际效果需要在项目内用 Perfetto 对比主线程 `composition` slice 的耗时分布，结合 Layout Inspector 的重组次数来判断当前帧阻塞是否真的减少了。不同设备和 Foundation 版本下的表现会有差异，官方 benchmark 数据可以作为参考，但要落到自己的项目基线里。
 
 ### LazyColumn 预取策略
 
@@ -475,7 +477,7 @@ LIMIT 20;
 
 在 RecyclerView 等 View 系统容器中嵌入 ComposeView 时,性能瓶颈不在 Compose 的组合阶段,而在 ComposeView 的生命周期管理。
 
-**Composition 与 Recomposer 的共享关系**:每个 ComposeView 拥有自己的 Composition,但通常共享父级或窗口级 `Recomposer`--而不是每个 ComposeView 持有独立渲染上下文和独立 WindowRecomposer。`AbstractComposeView.resolveParentCompositionContext()` 实际优化了 Recomposer 的查找逻辑,优先复用父级已存在的 CompositionContext。
+**Composition 与 Recomposer 的共享关系**：每个 ComposeView 拥有自己的 Composition，但通常共享父级或窗口级 `Recomposer`——并非每个 ComposeView 都持有独立渲染上下文和独立 WindowRecomposer。`AbstractComposeView.resolveParentCompositionContext()` 优化了 Recomposer 的查找路径，优先复用父级已存在的 CompositionContext。
 
 `ViewCompositionStrategy` 决定了 ComposeView 内部的 Composition 何时被销毁和重建。
 
@@ -563,11 +565,9 @@ AndroidView(
 Android 17（API 37）上的 ART 分代 GC 会改善短生命周期对象回收成本，但 Compose 性能优化的优先级仍然是减少不必要重组、延迟状态读取和控制列表预取成本。GC 调参不能替代 Composition 层面的代码优化。
 
 
-## 版本边界
+## 版本说明
 
-Android 17（API 37）平台不内置 Compose 工具链，也不决定 Strong Skipping、Pausable Composition 或 LazyLayoutCacheWindow 的启用状态。应用侧是否获得这些优化，取决于项目锁定的 Kotlin、Compose Compiler、Compose Runtime 和 Compose Foundation 版本。
-
-本文没有把仅来自 AOSP master 或 AndroidX androidx-main、且未进入 Android 17 的源码锚点作为 Android 17 正文结论。只能证明属于 Android 17/API 37 或项目依赖版本的资料，才用于正文判断；其余资料保留为后续复核线索。
+本节讨论的 Strong Skipping、Pausable Composition 和 LazyLayoutCacheWindow 不绑定 Android 平台版本——它们由项目锁定的 Kotlin、Compose Compiler、Compose Runtime 和 Compose Foundation 版本决定，与 Android 17（API 37）系统本身没有直接关系。正文中所有用法和结论都基于 Compose BOM 2025.12.00（Compose 1.10）以及能对应到具体版本号的 AndroidX 源码锚点。
 
 ## 参考资料
 

@@ -276,6 +276,122 @@ Vulkan 的 Command Buffer 天然支持多线程。不同的线程可以各自独
 
 在 Perfetto 中，如果应用使用 Vulkan 的多线程命令构建，我们可以在多个线程的 Track 上同时看到 GPU 命令的录制活动，而最终的 `vkQueueSubmit` 只会在提交线程上出现一个很短的 slice。
 
+在 Perfetto 中，如果应用使用 Vulkan 的多线程命令构建，我们可以在多个线程的 Track 上同时看到 GPU 命令的录制活动，而最终的 `vkQueueSubmit` 只会在提交线程上出现一个很短的 slice。
+
+<!-- AIW-源码调研-2026-06-26: HWUI VulkanManager 多队列实现 -->
+#### 平台级多队列：HWUI `VulkanManager` 的两条图形队列设计
+
+上面的多线程 Command Buffer 构建主要是**应用层**的能力。Android 平台层（HWUI）已经把这个能力下沉：android-17.0.0_r1 的 `frameworks/base/libs/hwui/renderthread/VulkanManager.cpp` 在 `setupDevice()` 中**强制要求从同一 graphics queue family 取 2 个 queue**：
+
+```cpp
+// VulkanManager.cpp: setupDevice()
+constexpr auto kRequestedQueueCount = 2;
+LOG_ALWAYS_FATAL_IF(
+    queueProps[i].queueFamilyProperties.queueCount < kRequestedQueueCount);
+// ...
+const VkDeviceQueueCreateInfo queueInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        queueNextPtr, 0,
+        mGraphicsQueueIndex,    // ← 同 family
+        kRequestedQueueCount,   // ← count=2
+        queuePriorities,
+};
+```
+
+`initialize()` 把这两条 queue 分别绑定：
+
+```cpp
+// VulkanManager.cpp: initialize()
+mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 0, &mGraphicsQueue);     // ← RenderThread 帧绘制
+mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);   // ← HardwareBitmapUploader 上传
+```
+
+`VulkanManager::createContext(options, ContextType type)` 用 `kRenderThread` / `kUploadThread` 两个 enum 值把 `backendContext.fQueue` 切到对应的 VkQueue，并给 device-lost 回调打上 `"RenderThread"` / `"UploadThread"` 上下文标签，便于 GPU fault 现场定位。两个 GrDirectContext 共享同一份 `VkInstance/VkDevice/VkPhysicalDevice`，但各自持有独立的 VMA 实例（`SkiaVMA::Options.fThreadSafe = false`），互不踩内存。
+
+**对应用的影响**：这是 Android 17 上「UI 渲染与位图上传解耦」的平台级实现 —— 即便应用本身只用了单线程录制 Command Buffer，HWUI 仍然在底层把 `HardwareBitmapUploader` 的上传命令排到独立的 `mAHBUploadQueue` 上，避免大位图上传阻塞主绘制队列的 `vkQueueSubmit`。
+
+#### 队列全局优先级：`VK_EXT_global_priority` 与 EGL ContextPriority 映射
+
+`VulkanManager.cpp` 把 `Properties::contextPriority`（来自 `EGL_CONTEXT_PRIORITY_LOW_IMG/MEDIUM_IMG/HIGH_IMG`）映射到 `VK_QUEUE_GLOBAL_PRIORITY_LOW/MEDIUM/HIGH_EXT`，通过 `VkDeviceQueueGlobalPriorityCreateInfoEXT` 作为 `VkDeviceQueueCreateInfo` 的 `pNext`：
+
+```cpp
+// VulkanManager.cpp: setupDevice()
+if (Properties::contextPriority != 0 &&
+    mExtensions.hasExtension(VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME, 2)) {
+    VkQueueGlobalPriorityEXT globalPriority;
+    switch (Properties::contextPriority) {
+        case EGL_CONTEXT_PRIORITY_HIGH_IMG:
+            globalPriority = VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT; break;
+        // ...
+    }
+    queuePriorityCreateInfo.globalPriority = globalPriority;
+    queueNextPtr = &queuePriorityCreateInfo;
+}
+```
+
+驱动若不支持所请求的优先级，HWUI **不会 fatal**，而是 `ALOGW` 降级 —— 注释明确说明这是为了兼容 SysUI/Launcher 与 SurfaceFlinger 的 RT priority 共存场景。
+
+#### 帧边界：`VK_ANDROID_frame_boundary` 的双路径
+
+`VulkanManager::finishFrame()` 在收尾时根据是否在 AGI 抓取环境走两条路径：
+
+```cpp
+// VulkanManager.cpp: finishFrame()
+static uint64_t currentFrameID = 0;
+GrSubmitInfo submitInfo;
+if (!mFrameBoundaryANDROID) {
+    submitInfo.fMarkBoundary = GrMarkFrameBoundary::kYes;
+    submitInfo.fFrameID = currentFrameID++;
+}
+context->submit(submitInfo);
+
+if (submitted == GrSemaphoresSubmitted::kYes && mFrameBoundaryANDROID) {
+    // ... 取 VkImage 句柄 ...
+    mFrameBoundaryANDROID(mDevice, sharedSemaphore->semaphore(), image);
+}
+```
+
+`VK_ANDROID_frame_boundary` 是 AGI（Android GPU Inspector）Vulkan capture layer 实现的私有扩展（`VulkanManager.h` 中手动 typedef 的 `PFN_vkFrameBoundaryANDROID`），用于把 GPU 帧边界与 `VkSemaphore`、`VkImage` 一起暴露给抓取层；非抓取环境下退化为 Skia 层的 `GrMarkFrameBoundary::kYes` + `frameID`，被 Perfetto GPU renderer 用作 frame timeline 的 ID。
+
+#### 与 SurfaceFlinger 的跨进程同步：`VK_KHR_external_semaphore_fd`
+
+`VulkanManager::dequeueNextBuffer()` 把 SurfaceFlinger 通过 `dequeueBuffer` 返回的 Linux `sync_fd` 转成 VkSemaphore：
+
+```cpp
+// VulkanManager.cpp: dequeueNextBuffer()
+VkImportSemaphoreFdInfoKHR importInfo;
+importInfo.sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR;
+importInfo.semaphore = semaphore;
+importInfo.flags = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT;
+importInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT;
+importInfo.fd = fence_clone;     // ← 来自 SF producer fence
+err = mImportSemaphoreFdKHR(mDevice, &importInfo);
+GrBackendSemaphore beSemaphore = GrBackendSemaphores::MakeVk(semaphore);
+bufferInfo->skSurface->wait(1, &beSemaphore);
+skgpu::ganesh::FlushAndSubmit(bufferInfo->skSurface.get());
+```
+
+`VK_SEMAPHORE_IMPORT_TEMPORARY_BIT` 表明这是一个一次性同步原语：Skia wait 完成后即销毁 semaphore 与 fd。HWUI 不复用这些 sync object —— 这是一个潜在的性能优化点（可改用 `VulkanManager::fenceWait/createReleaseFence` 这套 explicit API 做对象池）。
+
+#### 缓冲区年龄：`SwapBehavior::BufferAge` 与 partial update
+
+```cpp
+// VulkanManager.cpp: initialize()
+if (Properties::enablePartialUpdates && Properties::useBufferAge) {
+    mSwapBehavior = SwapBehavior::BufferAge;
+}
+// VulkanManager.cpp: dequeueNextBuffer()
+int bufferAge = (mSwapBehavior == SwapBehavior::Discard) ? 0
+                                                    : surface->getCurrentBuffersAge();
+return Frame(surface->logicalWidth(), surface->logicalHeight(), bufferAge);
+```
+
+`bufferAge` 用于 Skia 的 `SkSurface::invalidated()`：当 `enablePartialUpdates && useBufferAge` 同时打开时，HWUI 基于上 N 帧未脏的 buffer 区域做精准 invalidate，减少 GPU 端 fill rate。这是 §2.8 (overdraw) 在 Vulkan 后端的对应实现。
+
+> 注：上述源码片段均来自 `android-17.0.0_r1`（commit `ae266dcb706d083868578cfedce381ef44488a07`）。本节描述的是这一 tag 的现状；"Android 17 新增"的强断言需要补充 android-14/16 对照 tag 后才能成立。
+
+<!-- /AIW-源码调研-2026-06-26 -->
+
 ### Command Buffer 复用
 
 OpenGL ES 没有命令缓冲区的概念——每次绘制都是"即时的"（虽然驱动内部可能做批处理，但开发者无法控制）。Vulkan 的 Command Buffer 可以在帧之间复用：如果一帧的渲染命令没有变化（比如静态 UI），只需要在第一帧录制 Command Buffer，后续帧直接重新提交即可。

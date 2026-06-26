@@ -169,3 +169,24 @@
 
 ### 结论
 本轮未发现评分 ≥ 14 的知识缺口。上一轮全面挖掘结论仍然有效：全书 488 节已覆盖 Android 17/API 37 范围内所有核心性能主题。建议等待新一轮 DeepResearch 素材积累后再做下一轮挖掘。
+
+## [Task6 Review] 26.3 性能指标采集与上报 — 2026-06-26
+- **类型**：需补充内容
+- **位置**：outline 锚点 [网络聚合]（L61）
+- **问题**：outline 要求说明网络性能指标如何通过 StatsD 进行 URL pattern 归一化、状态码聚合和 payload size 统计，正文完全未涉及该锚点
+- **建议**：补充网络性能指标采集专题段落，包括 URL pattern 归一化机制、状态码分组聚合、payload size 统计
+- **review 日志**：logs/review/2026-06-26-22-review.md
+
+## [Task6 Review] 26.3 性能指标采集与上报 — 2026-06-26
+- **类型**：需补充内容
+- **位置**：outline 锚点 [JankStats 关系]（L62）
+- **问题**：outline 要求区分系统级性能指标与端侧 JankStats 的数据分工，正文仅在 outline 中出现一次 JankStats，无任何实质讨论
+- **建议**：补充系统级 StatsD 指标与端侧 JankStats 的对比段落，说明各自适用场景和何时需要自采补充
+- **review 日志**：logs/review/2026-06-26-22-review.md
+
+## [Task6 Review] 26.3 性能指标采集与上报 — 2026-06-26
+- **类型**：需重写
+- **位置**：「性能监控最佳实践」+「数据处理与上报策略」两个 section
+- **问题**：两个 section 基本是裸 bullet list，每个列表项仅一句话，无展开论述。违反 writing-guide.md「叙述为主，列表为辅」原则，接近反面教材「概述式」
+- **建议**：扩充为有因果关系的叙述段落，或如果素材不足则缩减标题合并到相关 section
+- **review 日志**：logs/review/2026-06-26-22-review.md

@@ -36,13 +36,13 @@ updated_date: "2026-06-19"
 p0: "5"
 p1: "1"
 p2: "1"
-deepseek_cn_review_state: "done"
-last_deepseek_cn_review_at: "2026-06-19"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-26
 ---
 
 # 25.22 定位服务功耗与性能实战：FusedLocationProvider、地理围栏与批处理
 
-§25.5 讲过定位与传感器功耗的基础权衡——精度、频率、延迟三个旋钮怎么调。本节往下拆一层：代码层怎么选 provider、怎么设 LocationRequest 参数、怎么管地理围栏生命周期、后台定位在 Android 12-17 各版本中受了什么限制，以及线上怎么用 dumpsys 和 Battery Historian 查定位功耗。
+§25.5 从精度、频率、延迟三个维度讲了定位与传感器功耗的基础权衡。本节接着往下走：代码层面怎么选 provider、怎么配置 LocationRequest、地理围栏生命周期怎么管理、后台定位在 Android 12-17 每个版本里受了什么限制，以及线上怎么用 dumpsys 和 Battery Historian 追查定位功耗。
 
 ## 定位 Provider 的功耗特征与 FusedLocationProvider 选型策略
 
@@ -56,9 +56,9 @@ Android 定位有三个底层 provider，功耗差异跨数量级：
 
 [已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/battery]
 
-GPS provider 的功耗主要来自 GNSS 芯片持续接收卫星信号和运行的基带相关运算。冷启动阶段，芯片还要下载星历（ephemeris），这个过程大约 30 秒，功耗峰值可达 500 mA。热启动时星历仍在有效期内，锁定时间可以缩短到 1-5 秒，但芯片工作电流本身不会降低。NETWORK provider 不需要 GNSS 芯片，它通过 Wi-Fi 扫描结果和蜂窝基站 ID 匹配位置数据库来估算位置，单次扫描功耗在 20-80 mA 区间。
+GPS provider 的功耗大头在 GNSS 芯片上：持续接收卫星信号、运行基带相关运算。冷启动时芯片还要下载星历（ephemeris），耗时约 30 秒，峰值功耗能到 500 mA。热启动阶段星历还在有效期内，锁定可以压到 1-5 秒，但芯片工作电流并不会降——只是锁定快，不是功耗低。NETWORK provider 不走 GNSS 芯片，它拿 Wi-Fi 扫描结果和蜂窝基站 ID 去匹配位置数据库，单次扫描功耗 20-80 mA。
 
-PASSIVE provider 是最省电的方案，它不主动触发任何硬件，只在系统内其他 App（比如导航类 App）请求位置更新时，被动接收同样的位置结果。使用 PASSIVE provider 不需要自己持有定位权限中的 ACCESS_FINE_LOCATION（但需要至少 ACCESS_COARSE_LOCATION），适合做城市级内容推荐、天气等低精度场景。
+PASSIVE provider 是最省电的方案：不主动触发硬件，只在系统内其他 App（比如导航）请求位置更新时被动接收同样的结果。它不需要 ACCESS_FINE_LOCATION（但至少要有 ACCESS_COARSE_LOCATION），适合城市级内容推荐、天气这类低精度场景。
 
 FusedLocationProvider（FLP）是 Google Play services 提供的高层 API，它不直接对应某个底层 provider，而是根据 App 设置的 Priority 参数自动选型：
 
@@ -82,9 +82,9 @@ LocationRequest.Builder(Priority.PRIORITY_PASSIVE, Long.MAX_VALUE) // 不主动�
 
 [已验证: Google Play services LocationRequest 文档]
 
-FLP 的 Priority 只能表达精度和功耗目标，不能让客户端指定 GNSS、Wi-Fi、蜂窝或传感器组合。官方 `LocationRequest` 文档明确说客户端不能指定具体传感器，很多参数只是尽力满足；`PRIORITY_PASSIVE` 是例外，它不会主动触发定位，只接收其他客户端触发的位置更新。
+FLP 的 Priority 只表达精度和功耗目标，不能让调用方自己指定 GNSS、Wi-Fi、蜂窝或传感器组合。官方 `LocationRequest` 文档说得很明确：客户端不能指定传感器，很多参数只是尽力满足。唯一的例外是 `PRIORITY_PASSIVE`——不主动触发定位，只接收其他客户端触发的位置更新。
 
-和 `LocationManager`（系统 API）的区别：`LocationManager.requestLocationUpdates(GPS_PROVIDER, ...)` 硬编码 provider，App 自己负责切换。FLP 把选型逻辑封装在 Play services 内部，能根据设备状态（是否充电、是否移动、屏幕是否亮）做更细粒度的调整。在支持 Google Play services 的设备上优先用 FLP；在国内无 GMS 设备上，只能用 `LocationManager`。
+和 `LocationManager` 对比就很清楚：`LocationManager.requestLocationUpdates(GPS_PROVIDER, ...)` 硬编码 provider，App 自己负责切换。FLP 把选型逻辑封在 Play services 内部，能根据设备状态（是否充电、是否移动、屏幕亮灭）做更细粒度调整。在有 Google Play services 的设备上优先用 FLP；国内无 GMS 设备只能用 `LocationManager`。
 
 ## LocationRequest 参数的功耗影响
 
@@ -158,7 +158,7 @@ geofencingClient.addGeofences(request, pendingIntent)
 
 [已验证: Google Play services GeofencingClient 文档, 每应用 100 围栏限制]
 
-注册围栏本身有 IPC 开销（Play services 内部做围栏注册、冲突检测、位置感知模块同步），单次注册约 50-200 ms。频繁注册/移除围栏（比如每次定位更新后重注册）反而比直接请求位置更新更耗电。围栏列表应缓存，只在用户跨城市移动时批量更新。
+围栏注册本身有 IPC 开销——Play services 内部在注册时要处理冲突检测和位置感知模块同步，单次耗时约 50-200 ms。频繁注册再移除（比如每次定位更新后重注册），功耗反而比直接请求位置更新更高。围栏列表应该缓存起来，只在用户跨城市移动时批量更新。
 
 ## Android 12-17 后台定位限制与 FGS 适配
 
@@ -279,9 +279,9 @@ adb shell dumpsys power_stats | grep -A5 "GNSS\|MODEM"
 - **GNSS 活跃时长占比**：GNSS Active 时间 / App 运行时间，正常应 < 5%（导航类 App 除外）
 - **FLP 请求参数分布**：统计线上不同 Priority 和 interval 的使用占比，发现异常的高精度请求
 
-## 扩展定位技术：GNSS 原始测量、双频 GNSS、Wi-Fi RTT 与 BLE 测距
+## GNSS 原始测量、双频 GNSS、Wi-Fi RTT 与 BLE 测距
 
-以上是日常开发中最常用的功耗优化路径。下面三个扩展场景面向有更高精度需求的团队：GNSS 原始测量适用于 RTK 高精度定位、双频 GNSS 提升城市峡谷精度、Wi-Fi RTT 和 BLE Beacon 解决室内定位。这些技术的共同点是：精度越高，功耗代价越大，需要在上面的基础优化做完之后再按需评估。
+前面讨论的 FusedLocationProvider、地理围栏和后台定位限制，覆盖了大多数 App 的日常场景。以下三类技术面向有更高精度需求的团队：GNSS 原始测量用于 RTK 高精度定位、双频 GNSS 改善城市峡谷精度、Wi-Fi RTT 和 BLE Beacon 解决室内定位。它们的共同代价是功耗，应该在前面基础优化做完之后再按需评估。
 
 ### GNSS 原始测量与双频 GNSS
 
@@ -303,7 +303,7 @@ locationManager.registerGnssMeasurementsCallback(
 
 [已验证: 官方文档, developer.android.com/reference/android/location/GnssMeasurementsEvent]
 
-双频 GNSS（L1+L5）从 Android 8.0 开始逐步支持，Pixel 5、Galaxy S20+ 等设备配备了双频 GNSS 芯片。双频定位的优势在于城市峡谷环境（高楼遮挡）：L1 信号反射多径误差大，L5 信号带宽更宽、抗多径能力强，双频联合解算可以把峡谷场景的定位误差从 15-30 米降到 5-10 米。
+双频 GNSS（L1+L5）从 Android 8.0 开始逐步落地，Pixel 5、Galaxy S20+ 等设备已经搭载了双频 GNSS 芯片。双频的核心优势在城市峡谷——高楼遮挡下 L1 信号反射严重、多径误差大，L5 信号带宽更宽、抗多径能力更强，双频联合解算能把峡谷场景的定位误差从 15-30 米压缩到 5-10 米。
 
 双频 GNSS 的功耗比单频 L1 高约 15-25%。系统层自动管理双频开关，App 无法手动控制。Android 没有用 `GnssCapabilities` 直接暴露"支持 L5 双频"的公共开关。应用通常通过 `GnssStatus.Callback` 观察卫星状态：当某颗卫星 `hasCarrierFrequencyHz(index)` 为 true，且 `getCarrierFrequencyHz(index)` 接近 L5 频点（GPS L5 约 1176.45 MHz）时，才能判断当前观测里出现了 L5 信号。
 

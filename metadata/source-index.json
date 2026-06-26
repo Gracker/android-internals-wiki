@@ -1067,6 +1067,18 @@
       ],
       "summary": "这是关于 图解 Compose Modifier 实现原理 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 图解 Compose Mo...",
       "scored_at": "2026-06-26T09:08:20.559087"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/2026-06-26-19-知识加工(新).md",
+      "title": "Android 17 后台任务内存配额机制 — MemoryLimiter 与 cgroup memory.high",
+      "summary": "Android 17 新增的 MemoryLimiter 内存配额系统与 cgroup v2 memory.high 机制源码级解析",
+      "chapter": "ch04 §4.5",
+      "action": "created",
+      "processed_at": "2026-06-26T19:12:21.237455",
+      "status": "ready-for-review",
+      "quality_score": 25,
+      "created_by": "task2a-content-processing",
+      "notes": "基于 DeepResearch/2026-06-26-android17-memory-limiter-cgroup-quota.md 创建的高质量章节"
     }
   ]
 }

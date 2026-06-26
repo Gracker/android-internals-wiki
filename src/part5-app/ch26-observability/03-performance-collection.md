@@ -18,13 +18,13 @@ task9_state: pending
 task9_reviewed_date: "2026-06-26"
 task9_reviewed_by: openclaw-task9
 task6_result: needs-rework
-task6_state: revisiting
-last_task6_at: "2026-06-26T21:07:00+08:00"
+task6_state: reviewed
+last_task6_at: "2026-06-26T22:14:14+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-26"
-task2b_state: fixed
-task2b_result: fixed-lite
-pipeline_stage: task6_pending
+task2b_state: pending
+task2b_result: needs-rework
+pipeline_stage: task2b_pending
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
 last_task2b_deepseek: reset
@@ -82,7 +82,7 @@ related_chapters: ["26.1", "26.2", "26.4", "15.3"]
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-性能指标采集要解决三个根本问题：什么指标值得采、怎么采才不卡 App、采到的数据怎么用。Android 在内存采集和电池 Historian 集成上有持续演进。本文分析 Android 14-17 的性能采集能力变化，以及性能采集与系统特性的边界关系。
+性能指标采集要解决三个根本问题：什么指标值得采、怎么采才不卡 App、采到的数据怎么用。Android 14 到 17 期间，内存采集、Battery Historian 集成和采样策略都发生了显著变化。
 
 ## 内存监控与采集
 
@@ -128,7 +128,7 @@ String gcTime  = Debug.getRuntimeStat("art.gc.gc-time");
 
 ### 内存泄漏检测：LeakCanary
 
-标准 Android SDK 未提供系统级内存泄漏 API。当前工程实践中，内存泄漏检测由第三方库 LeakCanary 承担。检测流程：
+标准 Android SDK 未提供系统级内存泄漏 API。当前工程实践中，内存泄漏检测由第三方库 LeakCanary 负责。检测流程：
 
 ```java
 // LeakCanary 2.x 初始化（Application.onCreate 中一行接入）
@@ -268,7 +268,7 @@ Battery Historian 在 Android 17 中扩展为三层架构，数据从应用层�
 运行在 `system_server` 进程中，负责权限校验和配置管理。上层 App 通过 `StatsManager` 客户端 API 提交性能事件，`StatsManagerService` 校验调用方是否持有 `PACKAGE_USAGE_STATS` 或 `READ_PRECISE_STATS` 权限，校验通过后将事件写入共享内存缓冲区。同时管理 `DeviceConfig.NAMESPACE_STATSD_JAVA` 命名空间下的动态配置，控制各模块的采集开关与采样率。
 
 **StatsCompanionService（JNI 桥接）**
-整个链路的中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 消费事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换，再通过 `libstatssocket` 推入 `statsd` 的本地 socket。`libstatssocket` 内部通过类型映射表（`java_lang_Float` → `STATS_EVENT_TYPE_FLOAT` 等）逐字段序列化 Java 对象为 Protocol Buffer 兼容的二进制流，再写入 `statsd` socket。这里同时承担了事件过滤和格式校验——不合规的事件在 JNI 层被丢弃，避免脏数据进入后端聚合。
+整个链路的中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 消费事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换，再通过 `libstatssocket` 推入 `statsd` 的本地 socket。`libstatssocket` 内部通过类型映射表（`java_lang_Float` → `STATS_EVENT_TYPE_FLOAT` 等）逐字段序列化 Java 对象为 Protocol Buffer 兼容的二进制流，再写入 `statsd` socket。这里同时负责事件过滤和格式校验——不合规的事件在 JNI 层被丢弃，避免脏数据进入后端聚合。
 
 **Native statsd daemon**
 以 `statsd` 进程运行，接收 JNI 层推入的事件后按 `Atom` 类型聚合。Android 17 新增了 `AtomId.PERFORMANCE_METRICS_ATOM`（ID 10245），专门承载 CPU、GPU、内存和帧率四类性能指标。聚合结果按 `ConfigKey` 分组后通过 `StatsPullAtomService` 暴露给上层 `StatsManager#pullStats()` 查询，同时持久化到 `/data/misc/stats-data/` 目录供 Battery Historian 离线分析。
