@@ -15,8 +15,8 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-15"
@@ -34,7 +34,7 @@ last_task2b_at: "2026-06-26T11:40:00+08:00"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-05-22"
 last_task6_audit_log: "logs/review/2026-05-22-03-audit.md"
-last_task6_at: "2026-06-26T12:12:00+08:00"
+last_task6_at: "2026-06-26T20:11:00+08:00"
 last_task2b_lite_at: "2026-06-26T11:40:00+08:00"
 sources:
   - type: official
@@ -131,7 +131,7 @@ Treble 之前,Framework 和厂商 HAL 绑得很紧。Google 即使修好了框�
 
 Mainline 的核心动作是把"系统能力更新怎么送到设备"做成独立问题。官方 Mainline 文档写得很清楚：Android 10 引入 Mainline 后，终端可以通过 Google Play system update 或合作方 OTA 获取模块更新；模块本身可能是 APEX，也可能是 APK。ART 模块 `com.android.art` 从 Android 12 开始以 APEX 形式交付。
 
-理解 Mainline 时，一个常见的混淆是把"性能特性本身"和"特性通过什么路径交付"当成一回事。实际上至少有三条独立的路径：
+理解 Mainline 时，一个常见的混淆是把"性能特性本身"和"特性通过什么路径交付"当成一回事。至少有三条独立的路径：
 
 - Mainline / APEX / APK 模块更新。这是 ART、DNS Resolver、Permission Controller 这类系统模块的交付方式。像 ART 运行时的能力演进,才可能走这条路。
 - GKI kernel 分支与设备 OTA。AutoFDO 属于内核与系统 native binary 的构建优化,落在 `android15-6.6`、`android16-6.12` 这类内核分支和对应构建产物里,最终通过厂商 kernel OTA 或完整 OTA 到达设备,不属于 ART Mainline。
@@ -186,7 +186,7 @@ Binder 线程池和优先级继承的版本演进，社区里一直有简化说�
 把这条时间线理清楚之后，再看 Perfetto 里的 Binder track，就不会把线程池耗尽、调度延迟和优先级反转搅在一起了。Binder 的具体机制还可以回看 §1.4《Binder IPC 机制与性能影响》。
 
 ### 窗口管理:BLASTBufferQueue 优化 buffer 与 transaction 的同帧提交
-BLASTBufferQueue 常被简化成"App 直接把 buffer 发给 SurfaceFlinger"。源码里的路径更具体（android-16.0.0_r1 可稳定验证）：`BLASTBufferQueue` 仍然会创建内部的 `BufferQueueCore`、producer 和 consumer，BufferQueue 基础设施还在。它把 buffer acquire 与 `SurfaceControl.Transaction` 的提交时机绑到同一个 frame number 上。`BLASTBufferQueue.cpp` 里能直接看到这条主线：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions() 的完整调用链。`SurfaceControl.java` 里也有 `onMergeWithNextTransaction()` 这条 Java 侧钩子。
+BLASTBufferQueue 常被简化成"App 直接把 buffer 发给 SurfaceFlinger"。源码里的路径更具体（android-16.0.0_r1 可稳定验证）：`BLASTBufferQueue` 仍然会创建内部的 `BufferQueueCore`、producer 和 consumer，BufferQueue 基础设施还在。它把 buffer acquire 与 `SurfaceControl.Transaction` 的提交时机绑到同一个 frame number 上。`BLASTBufferQueue.cpp` 里能直接看到这条主线：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions()` 的完整调用链。`SurfaceControl.java` 里也有 `onMergeWithNextTransaction()` 这条 Java 侧钩子。
 
 跨进程同步场景还要把 WMS 放进来。窗口尺寸、裁剪、层级变化通常由 SystemServer 侧的 WMS 管理,App 侧 buffer 与窗口状态相关的 transaction 需要经由 `SurfaceControl.Transaction` / `WindowContainerTransaction` 参与 WMS 的统一调度。WMS 侧的 `BLASTSyncEngine` 会收集参与同一次 sync 的窗口 transaction,合并后再提交给 SurfaceFlinger。这样,内容 buffer、窗口几何变化和层级 transaction 更容易落在同一帧,减少 buffer latch 与 transaction apply 之间的错位和额外等待。窗口事务这条线如果要继续往下追,可以接着看 §2.12《Window Manager Service 与窗口管理》。
 
