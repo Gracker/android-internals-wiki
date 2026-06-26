@@ -768,5 +768,32 @@
     "status": "pending",
     "created_by": "task2a-gap-mining",
     "file": "src/part5-app/ch26-observability/21-bytecode-instrumentation-monitoring-automation.md"
+  },
+  {
+    "section": "16.1",
+    "section_title": "Google 官方的性能优化思路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在源码引用错误，引用的 master 分支源码路径未进入公开 android-17 tag，不能作为 Android 17 稳定源码锚点",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "MessageQueue 源码引用",
+        "detail": "文中引用 `platform/frameworks/base/core/java/android/os/LockedMessageQueue/MessageQueue.java` 和 `platform/frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` 属于 master 分支，但明确标注为\"未进入公开 android-17 tag\"，不能作为 Android 17 稳定源码锚点",
+        "suggestion": "等待 android-17.0.0_r1 tag 公开后更新源码引用，或明确标注这些内容仅适用于 master 分支观察"
+      },
+      {
+        "type": "源码错误",
+        "location": "Binder 线程池描述",
+        "detail": "文中关于 Binder 默认 worker 数量的描述可能与 AOSP android-16.0.0_r1 中的 `DEFAULT_MAX_BINDER_THREADS = 15` 不符",
+        "suggestion": "精确引用 AOSP 源码中的常量定义并验证其在不同 Android 版本中的变化"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-26T10:20:00+08:00",
+    "status": "pending"
   }
 ]

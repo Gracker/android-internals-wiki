@@ -584,6 +584,489 @@
       "section": "25.13",
       "processing": "inject",
       "processed_at": "2026-06-26T06:13:41"
+    },
+    {
+      "title": "Android Native | 内存问题的终极武器 ——MTE",
+      "path": "AndroidWeekly/#23/Android Native | 内存问题的终极武器 ——MTE",
+      "source_url": "https://juejin.cn/post/7013595058125406238",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "MTE (Memory Tagging Extension) 是 Android 12 引入的一项内存安全技术。 本文详细介绍了 MTE 的原理、实现方式以及在 Android Native 开发中...",
+      "scored_at": "2026-06-26T09:08:20.559058"
+    },
+    {
+      "title": "Android R 常见 GC 类型与问题案例",
+      "path": "AndroidWeekly/#23/Android R 常见 GC 类型与问题案例",
+      "source_url": "https://mp.weixin.qq.com/s/J6pYzVcOUHCt8zCqZLaD3w",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android R 版本引入了多种垃圾收集器优化。本文详细分析了不同类型的 GC （如 concurrent copying, mark-sweep 等）及其适用场景。通过实际案例 展示内存泄漏诊断...",
+      "scored_at": "2026-06-26T09:08:20.559066"
+    },
+    {
+      "title": "探索 Flutter 中线程模型 / 消息循环的底层逻辑",
+      "path": "AndroidWeekly/#23/探索 Flutter 中线程模型 / 消息循环的底层逻辑",
+      "source_url": "https://zhuanlan.zhihu.com/p/414582899",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11.0,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4.0,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-UI框架",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch06-并发",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析 Flutter 的线程架构，包括 Platform Thread、UI Thread、GPU Thread 的协作机制。文章通过源码解读展示了消息循环、动画帧调度、平台通道 的工作原理，帮...",
+      "scored_at": "2026-06-26T09:08:20.559068"
+    },
+    {
+      "title": "kotlin Android Interview Questions",
+      "path": "AndroidWeekly/#23/kotlin Android Interview Questions",
+      "source_url": "https://anandharajramasamydev.medium.com/kotlin-android-interview-questions-412332d1106e",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 kotlin Android Interview Questions 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 kot...",
+      "scored_at": "2026-06-26T09:08:20.559069"
+    },
+    {
+      "title": "Duolingo refactors on Android with MVVM and Jetpack libraries",
+      "path": "AndroidWeekly/#23/Duolingo refactors on Android with MVVM and Jetpack libraries",
+      "source_url": "https://developer.android.com/stories/apps/duolingo-excellence",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch08-UI框架",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Duolingo 分享了如何使用 Jetpack Compose、Room、Navigation Component 等现代 Android 技术栈重构现有应用。详细介绍了架构决策、迁移策略和性能优...",
+      "scored_at": "2026-06-26T09:08:20.559071"
+    },
+    {
+      "title": "Unidirectional Data Flow for Android UIs",
+      "path": "AndroidWeekly/#23/Unidirectional Data Flow for Android UIs",
+      "source_url": "https://dev.to/j1c1m1b1/unidirectional-data-flow-for-android-uis-2807",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11.5,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3.5,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch08-UI框架",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 Unidirectional Data Flow for Android UIs 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入...",
+      "scored_at": "2026-06-26T09:08:20.559072"
+    },
+    {
+      "title": "重新理解为什么 Handler 可能导致内存泄露？",
+      "path": "AndroidWeekly/#23/重新理解为什么 Handler 可能导致内存泄露？",
+      "source_url": "https://mp.weixin.qq.com/s/4duyUKTjJmV_66kZm2MQPg",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch06-并发",
+          "confidence": "high"
+        }
+      ],
+      "summary": "这是关于 重新理解为什么 Handler 可能导致内存泄露？ 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 重新理解为什么 Hand...",
+      "scored_at": "2026-06-26T09:08:20.559073"
+    },
+    {
+      "title": "视频 - 反编译 APK，Android 开发者一定用得着",
+      "path": "AndroidWeekly/#23/视频 - 反编译 APK，Android 开发者一定用得着",
+      "source_url": "https://mp.weixin.qq.com/s/HHXHsLKW8P4esKWkq_qMng",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 视频 - 反编译 APK，Android 开发者一定用得着 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 视频 - 反编译...",
+      "scored_at": "2026-06-26T09:08:20.559075"
+    },
+    {
+      "title": "使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间",
+      "path": "AndroidWeekly/#23/使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间",
+      "source_url": "https://mp.weixin.qq.com/s/_eRbF-c0BzgU_6j1SEYEMw",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮...",
+      "scored_at": "2026-06-26T09:08:20.559076"
+    },
+    {
+      "title": "Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
+      "path": "AndroidWeekly/#23/Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
+      "source_url": "https://www.cnblogs.com/houser0323/p/15115623.html",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch06-并发",
+          "confidence": "high"
+        }
+      ],
+      "summary": "通过 binder trace 分析 Android 11 的 Activity 启动流程。文章深入解析了 SystemServer、Zygote、ActivityManagerService 之间...",
+      "scored_at": "2026-06-26T09:08:20.559077"
+    },
+    {
+      "title": "更高级的 Android 启动 任务调度库",
+      "path": "AndroidWeekly/#23/更高级的 Android 启动 任务调度库",
+      "source_url": "https://mp.weixin.qq.com/s/ZEcdAeyLNJXSZNJYOEUBiw",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 更高级的 Android 启动 任务调度库 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 更高级的 Android 启动...",
+      "scored_at": "2026-06-26T09:08:20.559078"
+    },
+    {
+      "title": "Now in Android #48",
+      "path": "AndroidWeekly/#23/Now in Android #48",
+      "source_url": "https://medium.com/androiddevelopers/now-in-android-48-c499493bb83",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 Now in Android #48 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 Now in Android #48...",
+      "scored_at": "2026-06-26T09:08:20.559080"
+    },
+    {
+      "title": "Android 资源溢出崩溃轻松解",
+      "path": "AndroidWeekly/#23/Android 资源溢出崩溃轻松解",
+      "source_url": "https://zhuanlan.zhihu.com/p/420726913",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 Android 资源溢出崩溃轻松解 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 Android 资源溢出崩溃轻松解 的核...",
+      "scored_at": "2026-06-26T09:08:20.559081"
+    },
+    {
+      "title": "macOS 上 Flutter Desktop 与 Electron 的性能对比",
+      "path": "AndroidWeekly/#23/macOS 上 Flutter Desktop 与 Electron 的性能对比",
+      "source_url": "https://mp.weixin.qq.com/s/uTHi8SfCvXJfbie1A1YNVA",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11.5,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3.5,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 macOS 上 Flutter Desktop 与 Electron 的性能对比 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入...",
+      "scored_at": "2026-06-26T09:08:20.559083"
+    },
+    {
+      "title": "A Comprehensive Guide to Android 12's Splash Screen API",
+      "path": "AndroidWeekly/#23/A Comprehensive Guide to Android 12's Splash Screen API",
+      "source_url": "https://medium.com/@rackadev/a-comprehensive-guide-to-android-12s-splash-screen-api-644609c811fa",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14.5,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3.5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch08-UI框架",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 A Comprehensive Guide to Android 12's Splash Screen API 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例...",
+      "scored_at": "2026-06-26T09:08:20.559085"
+    },
+    {
+      "title": "Android Module 依赖关系的 可视化实现",
+      "path": "AndroidWeekly/#23/Android Module 依赖关系的 可视化实现",
+      "source_url": "https://zhuanlan.zhihu.com/p/421286744",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 Android Module 依赖关系的 可视化实现 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 Android Mod...",
+      "scored_at": "2026-06-26T09:08:20.559086"
+    },
+    {
+      "title": "图解 Compose Modifier 实现原理",
+      "path": "AndroidWeekly/#23/图解 Compose Modifier 实现原理",
+      "source_url": "https://mp.weixin.qq.com/s/f5KZJN_4G4LFBlEBQ_se3g",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch08-UI框架",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch04-语言与工具",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "这是关于 图解 Compose Modifier 实现原理 的技术文章内容。文章详细介绍了相关技术的原理、实现方法 和最佳实践。通过案例分析和源码解读，帮助开发者深入理解 图解 Compose Mo...",
+      "scored_at": "2026-06-26T09:08:20.559087"
     }
   ]
 }
