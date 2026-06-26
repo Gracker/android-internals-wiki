@@ -951,6 +951,54 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-26T15:32:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-26T16:54:18.191206+08:00",
+    "completed_by": "task2b-main-rework"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在源码引用错误和重要原理链断裂，需要 Task2B 重构章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "FrameData API 使用",
+        "detail": "文中声称 API 33+ 设备使用 FrameData.deadlineNanos，但 Choreographer.FrameCallback.doFrame(frameTimeNanos, frameData) 的 frameData 参数仅在 Android 14 (API 34) 完整支持，Android 13 (API 33) 只有有限支持",
+        "suggestion": "修正版本兼容性说明：API 34 (Android 14) 完整支持 FrameData.deadlineNanos，API 33 (Android 13) 需要回退机制"
+      },
+      {
+        "type": "源码错误",
+        "location": "syncAndDrawFrame 调用链",
+        "detail": "文中描述为 \"AndroidComposeView.dispatchDraw(Canvas) → HardwareRenderer.syncAndDrawFrame()\"，实际 syncAndDrawFrame 是通过 Choreographer.FrameCallback 触发，不是直接从 dispatchDraw 调用",
+        "suggestion": "修正调用链描述：AndroidComposeView.dispatchDraw → Choreographer.FrameCallback.doFrame → HardwareRenderer.syncAndDrawFrame"
+      },
+      {
+        "type": "原理断裂",
+        "location": "PausableComposition 机制",
+        "detail": "缺少 PausableComposition 如何在 Composable 函数调用栈中插入 checkpoint 的具体机制说明",
+        "suggestion": "补充 PausableComposition 在 Composition 运行时的 checkpoint 插入点和暂停决策流程"
+      },
+      {
+        "type": "原理断裂",
+        "location": "Composition 到 RenderNode 链路",
+        "detail": "没解释重组过程中如何将状态变化转换为 LayoutNode 更新，最终触发 RenderNode display list 构建",
+        "suggestion": "补充重组 → LayoutNode 更新 → RenderNode record display list 的完整流程"
+      },
+      {
+        "type": "版本差异",
+        "location": "Android 17 新特性",
+        "detail": "缺少 Android 17 (API 37) 中 HardwareRenderer 和 RenderNode 的性能优化说明",
+        "suggestion": "补充 Android 17 中 RenderNode 管理策略和 HardwareRenderer 性能优化变化"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-26T16:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-06-26T16:54:18.191206+08:00",
+    "completed_by": "task2b-main-rework"
   }
 ]
