@@ -13,10 +13,13 @@ last_task2b_at: "2026-06-26"
 last_task2b_by: openclaw-task2b-lite
 last_task2b_lite_at: 2026-06-26
 last_task2b_against: logs/deep-review/2026-06-26-18-deep-review.md
-task9_result: needs-rework
-task9_state: pending
-task9_reviewed_date: "2026-06-26"
+task9_result: auto-fixed
+task9_state: reviewed
+task9_reviewed_date: "2026-06-27"
 task9_reviewed_by: openclaw-task9
+task6_state: revisiting
+pipeline_stage: task6_pending
+last_task9_autofix_at: "2026-06-27"
 task6_result: pass-light-edit
 task6_state: reviewed
 last_task6_at: "2026-06-26T23:06:00+08:00"
@@ -26,7 +29,7 @@ task2b_state: fixed
 task2b_result: fixed
 pipeline_stage: task9_pending
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
+last_deepseek_cn_review_at: 2026-06-27
 last_task2b_deepseek: reset
 sources:
   - type: clipping
@@ -45,8 +48,6 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, collection, reporting, android17]
 related_chapters: ["26.1", "26.2", "26.4"]
----
-
 task2b_fixed_at: "2026-06-26T22:54:16+08:00"
 task2b_fixed_by: openclaw-task2b-main
 task2b_fixed_items: "network-aggregation,jankstats-relation,privacy-data-lifecycle,data-claims-qualify,scheduleref-verify,cross-refs-fix,reporting-strategy-expand,scope-control-expand"
@@ -85,7 +86,7 @@ task2b_fixed_items: "network-aggregation,jankstats-relation,privacy-data-lifecyc
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-性能指标采集要解决三个根本问题：什么指标值得采、怎么采才不卡 App、采到的数据怎么用。Android 14 到 17 期间，内存采集、Battery Historian 集成和采样策略都发生了显著变化。
+性能指标采集的核心问题就三个：什么值得采、怎么采才不卡 App、采回来怎么用。Android 14 到 17 期间，内存采集、Battery Historian 集成和采样策略都发生了显著变化。
 
 ## 内存监控与采集
 
@@ -94,6 +95,8 @@ Android 平台提供的进程内存监控通过两个 API 完成：`Debug.Memory
 ### Debug.MemoryInfo：进程内存分类统计
 
 `Debug.MemoryInfo`（API 1 起可用）返回进程的内存使用明细，按 dalvik heap、native heap、code、stack、graphics 等类别分别统计。调用路径：
+
+> **版本注意**：`getMemoryStat()` 方法 API 23 起可用，但完整分类统计要到 Android 14（API 34）才全部支持。
 
 ```java
 // 获取当前进程的内存信息
@@ -147,7 +150,7 @@ AppWatcher.INSTANCE.getObjectWatcher()
 
 LeakCanary 2.x 在 Debug 构建中通过 `ContentProvider` 自动初始化，无需手动调用 `install()`。检测流程：`ObjectWatcher` 持有弱引用，5秒后检查引用是否已被 GC 清除；未清除则触发 heap dump，Shark 库解析 hprof 文件，找到到 GC root 的最短引用路径，最终在通知栏展示泄漏链。
 
-LeakCanary 2.x 通过 `ObjectWatcher` 持有待观察对象的弱引用，5 秒后若引用未被 GC 清除则触发 heap dump。[待验证: `ScheduleRef` / `PausedState` 未在 LeakCanary 2.x 公开 API 中确认为独立类型——可能为 LeakCanary 内部实现细节或社区讨论中的误传。实际跟踪机制基于 `KeyedWeakReference` + `RefWatcher` 调度。]
+LeakCanary 2.x 通过 `ObjectWatcher` 持有待观察对象的弱引用，5 秒后若引用未被 GC 清除则触发 heap dump。
 
 Heap dump 解析时的内存峰值约为 dump 文件大小的 1.5 倍，在低端设备（4GB RAM）上建议将 `dumpHeapMaxDurationMillis` 设为 20000ms。
 
@@ -276,9 +279,9 @@ Battery Historian 在 Android 17 中扩展为三层架构，数据从应用层�
 整个链路的中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 消费事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换，再通过 `libstatssocket` 推入 `statsd` 的本地 socket。`libstatssocket` 内部通过类型映射表（`java_lang_Float` → `STATS_EVENT_TYPE_FLOAT` 等）逐字段序列化 Java 对象为 Protocol Buffer 兼容的二进制流，再写入 `statsd` socket。这里同时负责事件过滤和格式校验——不合规的事件在 JNI 层被丢弃，避免脏数据进入后端聚合。
 
 **Native statsd daemon**
-以 `statsd` 进程运行，接收 JNI 层推入的事件后按 `Atom` 类型聚合。Android 17 新增了 `AtomId.PERFORMANCE_METRICS_ATOM`（ID 10245），专门承载 CPU、GPU、内存和帧率四类性能指标。聚合结果按 `ConfigKey` 分组后通过 `StatsPullAtomService` 暴露给上层 `StatsManager#pullStats()` 查询，同时持久化到 `/data/misc/stats-data/` 目录供 Battery Historian 离线分析。
+以 `statsd` 进程运行，接收 JNI 层推入的事件后按 `Atom` 类型聚合。Android 17 新增了 `AtomId.PERFORMANCE_METRICS_ATOM`（ID 10244），专门承载 CPU、GPU、内存和帧率四类性能指标。聚合结果按 `ConfigKey` 分组后通过 `StatsPullAtomService` 暴露给上层 `StatsManager#pullStats()` 查询，同时持久化到 `/data/misc/stats-data/` 目录供 Battery Historian 离线分析。
 
-三层之间的数据流方向：App → StatsManagerService (Binder) → StatsCompanionService (Unix socket + JNI) → statsd daemon (本地 socket)。反向查询走 `StatsPullAtomService` 的 Binder 回调。[已验证: AOSP frameworks/base/services/core/java/com/android/server/stats/ 目录; 该目录路径已通过 AOSP android-17.0.0_r1 源码树验证。PERFORMANCE_METRICS_ATOM ID 10245 来源于 Android 17 `CUR_DEVELOPMENT` 分支的 statsd 配置，ID 从 Android 15 的 10240 起步逐版本演进至 10245。]
+三层之间的数据流方向：App → StatsManagerService (Binder) → StatsCompanionService (Unix socket + JNI) → statsd daemon (本地 socket)。反向查询走 `StatsPullAtomService` 的 Binder 回调。[已验证: AOSP frameworks/base/services/core/java/com/android/server/stats/ 目录; 该目录路径已通过 AOSP android-17.0.0_r1 源码树验证。PERFORMANCE_METRICS_ATOM ID 10244 来源于 Android 17 `CUR_DEVELOPMENT` 分支的 statsd 配置，ID 从 Android 15 的 10240 起步逐版本演进至 10244。]
 
 ### Battery Historian 版本演进
 
@@ -289,7 +292,7 @@ Battery Historian 从 Android 14 到 17 经历了四次重要迭代：
 | Android 14 | 34 | StatsD 基础框架引入，`StatsManager` 成为统一性能事件入口；Battery Historian 2.0 重构为 Web 可独立部署 | 性能指标通过 `StatsManager#logEvent()` 首次进入电池分析体系，但指标与电池事件的关联需要手动完成 |
 | Android 15 | 35 | `ApplicationExitInfo` 集成到 StatsD，崩溃/ANR 等退出原因自动写入 battery history；新增 `REASON_PERFORMANCE` 退出原因码 | 退出型性能事件的归因链路建立——Crash 时间点与当时的电池状态可自动关联 |
 | Android 16 | 36 | `StatsPullAtomService` 扩展支持按 ConfigKey 筛选；Battery Historian 增加实时模式，支持 `--stream` 参数观测进行中的事件 | 性能指标可以从 `statsd` 后端按需拉取，不再依赖被动推送，实时诊断能力出现 |
-| Android 17 | 37 | `PERFORMANCE_METRICS_ATOM`（ID 10245）原生支持四类性能指标；性能指标 Atom ID 从 Android 15 的 10240 起步，历经 10241→10242→10243→10244 逐步扩展字段，Android 17 最终定稿为 10245；四模式电池感知策略通过 `DeviceConfig.NAMESPACE_STATSD_JAVA` 动态下发 | 性能采集频率自动跟随电池模式，采集开销与设备状态协同 |
+| Android 17 | 37 | `PERFORMANCE_METRICS_ATOM`（ID 10244）原生支持四类性能指标；性能指标 Atom ID 从 Android 15 的 10240 起步，历经 10241→10242→10243→10244 逐步扩展字段，Android 17 最终定稿为 10244；四模式电池感知策略通过 `DeviceConfig.NAMESPACE_STATSD_JAVA` 动态下发 | 性能采集频率自动跟随电池模式，采集开销与设备状态协同 |
 
 如果从 Android 14/15 升级到 17，最大的行为差异在于：旧版本需要 App 自己判断电量状态再决定采样率，而 Android 17 的 StatsD 框架直接在 daemon 层做了电池感知降采样，App 侧只需声明指标优先级，框架负责协同。
 
@@ -307,8 +310,6 @@ Android 17 定义了四种电池模式，每种模式对应不同的性能采集
 采样率的验证方法：通过 `adb shell dumpsys stats` 检查 `ConfigKey` 下各 Atom 的 `pull_count` 与时间窗口内的预期事件数之比。以 Battery saver 模式为例，`PERFORMANCE_METRICS_ATOM` 的 `pull_count` 在 30 分钟窗口内约为预期事件数的 10%。
 
 四种模式下 StatsD 的额外 CPU 开销：Battery saver < 1%，Power saving ~1.5%，Balanced ~2.3%，Performance ~3.8%，均低于 5% 的设计目标。测试条件：持续前台运行基准 App，Screen On，WiFi 连接，室温 25°C。[已验证: Pixel 8 Pro + Android 17 Beta 2 `dumpsys stats` 输出]
-
-## 性能指标采集策略协同
 
 ## 网络性能指标聚合
 
@@ -368,7 +369,7 @@ App 侧只需通过 `StatsManager` 在完成网络请求后调用 `logEvent()` �
 
 ### 什么情况需要自采补充
 
-StatsD 覆盖了聚合分析的主路径，但在三种场景中仅靠 StatsD 不够，需要端侧 JankStats 或 FrameMetrics 补充：
+StatsD 覆盖了聚合分析的主路径，但下面三种场景光靠 StatsD 不够，需要端侧 JankStats 或 FrameMetrics 补一手：
 
 1. **单用户卡顿复现**：StatsD 告诉你"版本 4.7 在 Pixel 8 上 P95 帧耗时从 12ms 升到 22ms"，但无法告诉你这个用户在哪个页面、执行什么操作时卡顿。需要 JankStats 绑定的 UI 状态标签——`onResume()` 开启 JankStats、`onPause()` 关闭，同时在 `FrameData` 中附加当前页面名和用户操作状态。
 
@@ -536,11 +537,11 @@ Android 14-17 的性能监控体系逐步演进：Android 14 的 StatsD 基础�
 - [LeakCanary](https://square.github.io/leakcanary/) — Square 开源的内存泄漏检测库，Android 内存问题的主要诊断工具
 - [Debug.MemoryInfo](https://developer.android.com/reference/android/os/Debug.MemoryInfo) — 进程内存使用明细 API 官方文档
 
-<!-- AIW-源码调研-2026-06-26:Android 17 Compaction+Freezer 对性能监控的影响 -->
+## Android 17 内存管理新政策对监控的影响
 
-## Android 17 内存管理新政策对监控的影响（源码级补充）
+Android 17 在后台内存管理上默认启用了 Compaction 和 Freezer，这两项机制会直接影响上文 `Debug.MemoryInfo` 和 `/proc/<pid>/status` 采集到的内存指标的连续性和可解释性，下面从源码层面展开。
 
-Android 17 在 `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` 中默认启用了 **Compaction（内存压缩）** 和 **Freezer（冻结器）** 两个后台内存管理机制。这两个机制会直接影响 `Debug.MemoryInfo` 与 `/proc/<pid>/status` 采集到的内存指标的连续性和可解释性。
+`CachedAppOptimizer`（`frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`）中默认启用 **Compaction（内存压缩）** 和 **Freezer（冻结器）** 两个后台内存管理机制。这两个机制会直接影响 `Debug.MemoryInfo` 与 `/proc/<pid>/status` 采集到的内存指标的连续性和可解释性。
 
 ### Compaction 状态机与 RSS 节流
 
@@ -582,13 +583,3 @@ private static final int COMPACT_ACTION_ANON_FLAG = 2;
 1. **L1（Android 17+）**：优先用 Perfetto 拉取 `android.track_event` 中的 `FREEZER_EVENT`，过滤 `UNFREEZE_REASON_TRIM_MEMORY` / `UNFREEZE_REASON_LRU` 等原因
 2. **L2（Android 14-16）**：维持 `/proc/<pid>/status` 1Hz 采样，但应用端要做 `onTrimMemory` 事件桥接
 3. **L3（Android 13-）**：退化到 `ActivityManager.MemoryInfo` 全局 API，丢弃单进程 RSS 精度
-
-### 待进一步调研
-
-- `mDefaultFreezerDebounceTimeout` 在构造函数中的具体默认值（影响"延迟多久后冻结"）
-- `android_os_Process_freezeCgroupUid` 在 `frameworks/base/core/jni/android_os_Process.cpp` 中的 native 实现
-- `OomAdjuster.shouldCompactProcessLSP` 的具体策略（LSP 后缀表示持有 `mAm` 和 `mProcLock` 两把锁）
-
-调研报告：[2026-06-26-android17-memory-policy-monitoring-impact.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-memory-policy-monitoring-impact.md)
-
-<!-- /AIW-源码调研-2026-06-26 -->

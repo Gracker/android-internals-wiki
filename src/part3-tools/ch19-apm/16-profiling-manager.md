@@ -62,6 +62,8 @@ last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 last_task9_autofix_at: "2026-06-14"
 task6_review_notes: "2026-06-14 Task6 revisiting review: pass-light-edit；terminology 一致性修复 artifact→产物 (5处)；Task9 auto-fix SDK_INT_FULL 已验证正确；无新增 Task2B 回炉项。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 
 
@@ -94,7 +96,7 @@ task6_review_notes: "2026-06-14 Task6 revisiting review: pass-light-edit；termi
 - **app-driven profiling**：API 35 起可用。应用主动发起请求，抓 system trace、Java heap dump、heap profile、stack sampling
 - **system-triggered profiling**：从 API 36、version 36.1、API 37 逐步补齐。结果由系统事件触发，接收方式和 request callback 不同
 
-如果把这两类能力混写，版本判断、回调注册和结果归档都会写错。
+两类能力如果混在一起写，版本判断、回调注册和结果归档都容易出错。
 
 ## 按结果类型选请求
 
@@ -130,7 +132,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-这段调用只说明一件事：**请求参数、执行过程、结果回传是异步分开的**。应用线程负责提交 request，平台负责执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
+这段代码说明了一件事：**请求参数、执行过程、结果回传三者是异步分开的**。应用线程负责提交 request，平台负责执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
 
 `ProfilingManager` 的结果写入应用私有目录，发起 request 不需要外部存储权限。`<profileable android:shell="true" />` 属于本地 shell、Perfetto、simpleperf、Android Studio Profiler 这类调试工具的可分析配置，不是线上 `requestProfiling()` 成功的前提。发布包接入 `ProfilingManager` 时，重点检查 API 版本、调用频率、结果文件权限、隐私声明和后端接收策略；调试包或内测包若还要配合本地工具排查，再单独确认 `profileable` 与渠道合规要求。
 
@@ -205,13 +207,13 @@ fun supportsKillTriggeredProfiling(): Boolean {
 | `ERROR_FAILED_INVALID_REQUEST` | 参数不合法或 request 构造不满足要求 | 直接修接入代码，不走线上重试 |
 | `ERROR_UNKNOWN` | 未归类失败 | 只记日志与事件，避免自动重试放大成本 |
 
-应用侧至少要把 `tag`、`triggerType`、`errorCode`、`requestType`、`app version`、`device` 一起记下来。只有整型错误码，没有上下文，后续很难聚合。
+应用侧至少要把 `tag`、`triggerType`、`errorCode`、`requestType`、`app version`、`device` 一起记录。光有整型错误码，没有上下文，后续很难做聚合分析。
 
-限流不是简单的“每小时几次”。官方文档把 app 与 system 两层 limiter 分开计算，并按 profile type 计 cost：system trace、heap dump、heap profile、stack sampling 的成本不同，任何一种样本都会消耗对应窗口内的预算。窗口也有三档，per hour、per day、per week 任一档用完，进程侧会收到 `ERROR_FAILED_RATE_LIMIT_PROCESS`；系统全局预算用完，则收到 `ERROR_FAILED_RATE_LIMIT_SYSTEM`。端侧策略应按 request type 设置本地冷却时间，并把服务端采样开关设计成“预算不足时少抓或停抓”，不要把 rate limit 结果当成偶发失败重试。
+限流不是简单的“每小时几次”。官方文档把 app 与 system 两层 limiter 分开计算，并按 profile type 计 cost：system trace、heap dump、heap profile、stack sampling 的成本不同，任何一种样本都会消耗对应窗口内的预算。窗口也有三档，per hour、per day、per week 任一档用完，进程侧会收到 `ERROR_FAILED_RATE_LIMIT_PROCESS`；系统全局预算用完，则收到 `ERROR_FAILED_RATE_LIMIT_SYSTEM`。端侧策略应按 request type 设置本地冷却时间，并把服务端采样开关设计成“预算不足时少抓或停抓”，不要把限流结果当成偶发失败去重试。
 
 ## 结果文件生命周期
 
-结果文件不能按普通埋点处理。稳定做法是把它们当成独立产物管理。
+结果文件不能按普通埋点处理。应该把它们当成独立产物管理。
 
 ```mermaid
 sequenceDiagram
@@ -247,11 +249,11 @@ Java heap dump（`.hprof`）包含进程内所有 Java 对象的快照。如果�
 - 支付信息、订单号、地址
 - 加密密钥或证书（如果缓存在内存中）
 
-这些数据在 heap dump 里是明文的。`ProfilingManager` 简化了采集，但没有简化合规。上传前必须在本地完成脱敏或加密处理，且处理方式要和 App 隐私协议一致。
+这些数据在 heap dump 里是明文的。`ProfilingManager` 简化了采集，但没有绕过合规要求。上传前必须在本地完成脱敏或加密处理，并且处理方式要和 App 隐私协议一致。
 
 具体要求：
 
-1. **上传前脱敏**：heap dump 不能直接上传到通用诊断平台。要么在本地用工具（如 Android Studio Profiler 的脱敏导出）清除敏感对象引用，要么对整个文件做端到端加密后再上传，确保服务端无法直接读取堆内容。
+1. **上传前脱敏**：heap dump 不能直接上传到通用诊断平台。要么在本地用工具（如 Android Studio Profiler 的脱敏导出）清除敏感对象引用，要么对整个文件做端到端加密后再上传，保证服务端无法直接读取堆内容。
 2. **存储隔离**：结果文件落在应用私有目录，但要检查是否被备份到 Google Drive 或其他云同步路径。`ProfilingManager` 的结果文件应加入备份排除列表。
 3. **采样同意**：如果采集触发条件覆盖线上用户，要在隐私协议中说明"性能诊断数据可能包含内存快照"，并给用户关闭入口。system-triggered profiling 的 trigger 不受应用控制时，至少在 APM 后台展示时标注数据来源。
 4. **保留期限**：heap dump 文件体积通常在 50-500MB。本地保留超过 24 小时会显著占用存储空间。设置自动清理策略，上传成功后立即删除本地文件。

@@ -65,6 +65,7 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
 last_task9_review_log: "logs/deep-review/2026-06-16-21-deep-review.md"
 last_task9_audit: "2026-06-26"
+last_task9_idle_audit_at: "2026-06-27"
 
 ---
 <!-- outline-start -->

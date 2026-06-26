@@ -104,3 +104,42 @@ Android 17 隐私政策变化对性能数据收集的限制和影响，包括用
 - AOSP frameworks/base 服务覆盖检查
 - packages/modules Mainline 模块覆盖检查
 - 官方文档 developer.android.com 主题覆盖检查
+
+
+---
+
+## [2026-06-27 02] Task 2A 知识缺口挖掘 — 第 2 轮
+
+### 已检查并创建的缺口（评分 ≥ 14）
+
+1. **1.30 Binder Transaction Buffer 演进与大事务性能边界** — 评分 15/20
+   - 素材丰富度: 3 | 相关性: 4 | 读者需求: 4 | 时效性: 4
+   - 缺口来源: AOSP binder driver 结构 / research-gaps.md 中 ContentProvider 缓冲区 2MB 提升线索 / 官方文档
+   - 状态: ✅ 已创建 draft 章节
+
+2. **26.22 Android 17 监控降级：内存约束与隐私限制下的性能数据采集** — 评分 17/20
+   - 素材丰富度: 3 | 相关性: 5 | 读者需求: 4 | 时效性: 5
+   - 缺口来源: research-gaps.md 中 Android 17 内存政策对监控的影响 / 隐私变更对数据采集的限制
+   - 状态: ✅ 已创建 draft 章节
+
+### 本轮新增检查方向（与第 1 轮不重复）
+
+| 候选 | 评分 | 原因 |
+|------|------|------|
+| Gradle 构建性能 | 11 | 开发效率主题，非运行时性能 |
+| App Links / Deep Links 解析性能 | 10 | 素材不足 |
+| Kotlin KSP vs KAPT 性能 | 10 | 代码生成工具，间接影响 |
+| Jetpack Compose 测试性能 | 11 | 素材不足 |
+| Camera2/CameraX 性能最佳实践 | 15→跳过 | 已有 2.29/14.9/18.14/27.1/27.3 多角度覆盖 |
+| App 冷启动内存足迹优化 | 16→跳过 | 已有 16.8 AppFlow + 21.6 延迟加载 + 23.6 多进程覆盖 |
+| Paging 3 / PagingData 性能 | 未找到足够系统级素材 | — |
+| Android Theme / Material 3 性能影响 | 11 | 素材不足 |
+| 端侧大模型推理内存管理 | 12→已有 22.9 | 已覆盖 |
+| Mainline Module 更新性能影响 | 10 | 素材不足 |
+
+### 检查方向
+- Clippings 三本参考书章节结构比对（108 个文件）
+- AOSP binder driver / frameworks/base 核心服务覆盖检查
+- Android 17 MemoryLimiter / cgroup memory.high 对 APM 的影响
+- Android 14-17 隐私变更对性能数据采集的约束
+- research-gaps.md 中已有盲区条目的新章节化评估

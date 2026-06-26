@@ -41,6 +41,8 @@ last_task9_at: 2026-05-13T08:40:35+08:00
 task6_reviewed_date: "2026-05-13"
 last_task6_audit: "2026-06-21"
 last_task9_audit: "2026-06-19"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 
 # ContentProvider 启动治理
@@ -70,7 +72,7 @@ last_task9_audit: "2026-06-19"
 
 ## 本节定位
 
-21.1 节已经把冷启动拆成进程创建、`Application` 初始化、`Activity` 创建和首帧绘制几个阶段。21.2 节讲的是启动任务编排。本节只处理一个更具体的启动问题：**manifest 里的 ContentProvider 为什么会在 `Application.onCreate()` 之前执行，以及怎么把三方 SDK 借 ContentProvider 偷跑的初始化收回来**。
+21.1 节已经把冷启动拆成进程创建、`Application` 初始化、`Activity` 创建和首帧绘制几个阶段。21.2 节讲的是启动任务编排。本节只聚焦一件事：**manifest 里的 ContentProvider 为什么在 `Application.onCreate()` 之前执行，以及怎么把三方 SDK 借 ContentProvider 偷跑的初始化收回来**。
 
 ContentProvider 的系统机制详见 1.10 节。本节不重复 Binder、`CursorWindow`、CRUD 和 ANR 机制，只看 App 启动治理：怎么发现、怎么量化、怎么迁移、怎么避免改完后丢初始化依赖。
 
@@ -87,7 +89,7 @@ ActivityThread.handleBindApplication()
   mInstrumentation.callApplicationOnCreate(app)
 ```
 
-这段顺序决定了一个事实：只要某个 `<provider>` 被安装到主进程，它的 `onCreate()` 耗时就会进入冷启动关键路径。它甚至早于很多团队在 `Application.onCreate()` 里写的启动埋点，所以启动监控如果只包住 `Application.onCreate()`，会漏掉这部分耗时。
+这段顺序的含义很直接：只要 `<provider>` 被安装到主进程，它的 `onCreate()` 耗时就会进入冷启动关键路径。它甚至早于很多团队在 `Application.onCreate()` 里写的启动埋点，所以启动监控如果只包住 `Application.onCreate()`，会漏掉这部分耗时。
 
 [已验证: 官方文档, developer.android.com/guide/topics/manifest/provider-element]
 
@@ -128,7 +130,7 @@ for provider in app.findall("provider"):
     print(f"{name}\t{authorities}\t{process}\tinitOrder={init_order}\texported={exported}")
 ```
 
-这段脚本只做审计，不改 manifest。跑完之后，把结果整理成启动 Provider 清单：来源库、是否主进程、`onCreate()` 是否有 IO、是否首屏必需、是否能移除自动初始化。
+这段脚本只做审计，不改 manifest。跑完之后把结果整理成启动 Provider 清单：来源库、是否主进程、`onCreate()` 是否有 IO、是否首屏必需、是否能移除自动初始化。
 
 自有 Provider 可以直接包 trace：
 
@@ -196,7 +198,7 @@ class AppInitProvider : ContentProvider() {
 - **构建验证**：release / debug / 多渠道包的合并 manifest 都不再包含该 Provider。
 - **运行验证**：冷启动、登录、推送、crash 上报、埋点、后台任务都跑一遍；如果 SDK 有远程开关，要验证关闭自动初始化后仍能通过显式 API 初始化。
 
-不建议只改 debug 包验证。很多 Provider 来自 release-only 依赖或渠道依赖，debug 包没有问题不代表线上包没有问题。
+不要只在 debug 包验证。很多 Provider 来自 release-only 依赖或渠道依赖，debug 包正常不代表线上包正常。
 
 ## 延迟初始化与按需注册
 
@@ -284,7 +286,7 @@ object ShareSdkHolder {
 
 Jetpack App Startup 解决的是“多个库各自声明 Provider 自动初始化”的混乱问题。它把自动初始化入口集中到一个 `InitializationProvider`，再通过 `Initializer.dependencies()` 表达依赖关系。
 
-这段自动初始化仍然发生在 `Application.onCreate()` 之前，因为 `InitializationProvider` 本身就是 ContentProvider。App Startup 不会消灭 Provider 启动成本。它把多个 Provider 合并成一个入口，并把依赖顺序从 manifest 里的隐式顺序改成显式依赖图。
+`InitializationProvider` 本身就是 ContentProvider，所以自动初始化仍然发生在 `Application.onCreate()` 之前。App Startup 不会消灭 Provider 的启动成本——它只是把多个 Provider 合并成一个入口，把依赖顺序从 manifest 里的隐式顺序改成显式依赖图。
 
 ### 适合迁入 App Startup 的任务
 
@@ -373,9 +375,9 @@ ContentProvider 的 `android:process` 会改变初始化发生的位置。主进
 治理规则：
 
 - 每个 initializer 都要判断当前进程名，明确是否只在主进程执行。
-- 子进程只初始化该进程必需的能力，例如推送进程只保留推送接收和最小日志。
-- 跨进程共享状态不要依赖静态单例，使用进程安全的持久化或 Binder 服务。
-- Perfetto 中要分别看主进程和子进程，不要只看主进程启动指标。
+- 子进程只初始化该进程必需的能力。例如推送进程只保留推送接收和最小日志。
+- 跨进程共享状态不要依赖静态单例，改用进程安全的持久化或 Binder 服务。
+- Perfetto 里主进程和子进程分开看，不要只看主进程的启动指标。
 
 进程判断可以使用 `Application.getProcessName()`（API 28+）。低版本用 `/proc/self/cmdline` 兜底时要封装在统一工具里，避免每个 SDK 各读一次文件。
 
@@ -392,4 +394,4 @@ ContentProvider 启动治理完成后，不以“删了几个 Provider”作为�
 | 多进程 | 子进程没有执行主进程专属初始化 |
 | 可观测性 | 保留的 Provider 和 initializer 都有 trace 名称和耗时上报 |
 
-如果迁移后 TTID 没有变化，也不代表工作无效。很多 Provider 成本在 `Application.onCreate()` 前，过去监控没覆盖；迁移后至少能把隐式成本变成可追踪、可编排、可按需触发的启动任务。
+如果迁移后 TTID 没变，也不代表工作无效。很多 Provider 的成本在 `Application.onCreate()` 之前，过去监控没覆盖到；迁移后至少能把隐式成本变成可追踪、可编排、可按需触发的启动任务。
