@@ -28,6 +28,8 @@ last_task6_at: "2026-05-31T08:08:00+08:00"
 last_task6_reviewed_by: openclaw-task6
 last_task9_audit_log: "logs/deep-review/2026-06-11-10-audit.md"
 last_task9_autofix_at: "2026-06-11"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-26
 ---
 
 <!-- outline-start -->
@@ -105,22 +107,22 @@ sequenceDiagram
 | **RenderThread** | 渲染指令生成和提交 | `FRenderingThread` |
 | **RHIThread** | 底层图形 API 调用（GLES/Vulkan） | `FRHICommandList::Execute` |
 
-Unity 和 Unreal 都采用了**逻辑线程与渲染线程分离**的架构。逻辑线程产出 DrawList 后交给渲染线程，两者可以流水线化并行——逻辑线程在计算第 N+1 帧的同时，渲染线程在渲染第 N 帧。
+Unity 和 Unreal 都采用了**逻辑线程与渲染线程分离**的架构。逻辑线程产出 DrawList 后交给渲染线程，两者形成流水线——逻辑线程在计算第 N+1 帧的同时，渲染线程在渲染第 N 帧。
 
 ## SurfaceView + BLAST
 
-游戏引擎通常把画面输出到 `SurfaceView`，或 `GameActivity` 暴露的 `ANativeWindow`。共同点很稳定：游戏 Surface 独立于 App View 树，提交路径绕开 App RenderThread，SurfaceFlinger 直接消费游戏帧。
+游戏引擎通常把画面输出到 `SurfaceView`，或 `GameActivity` 暴露的 `ANativeWindow`。不论哪种方式，游戏 Surface 都独立于 App View 树，提交路径绕开 App RenderThread，由 SurfaceFlinger 直接消费游戏帧。
 
 - **Android 5-10**：常见路径是 `eglSwapBuffers` / `vkQueuePresentKHR` → `BufferQueue` → `SurfaceFlinger` → `HWC`。窗口尺寸和位置变化仍按旧版 SurfaceView 机制处理，排查 resize 闪烁、几何不同步时要按 [18.6 SurfaceView 章节](06-surfaceview.md) 里的 pre-BLAST 路径去看。
 - **Android 11+**：SurfaceView 更常和 `BLASTBufferQueue`、`SurfaceControl.Transaction` 一起出现。折叠、分屏、自由窗口、分辨率切换这类几何变化会经过事务同步，Buffer 与几何信息更容易在同一批次提交。对应细节见 [18.6 SurfaceView 章节](06-surfaceview.md) 的现代 SurfaceView 路径。
 
-Android 14 之后，`SurfaceView` 支持 arbitrary alpha，但两种 Z 顺序的含义不同：默认 Z-Below 模式下，alpha 作用在宿主窗口为 `SurfaceView` 留出的 hole punch 区域；调用 `setZOrderOnTop(true)` 后，alpha 才直接作用在 Surface 内容本身。排查半透明游戏画面时，要先确认 SurfaceView 的 Z 顺序，否则会把合成器行为误判成引擎输出问题。
+Android 14 之后，`SurfaceView` 支持 arbitrary alpha，但两种 Z 顺序的含义不同：默认 Z-Below 模式下，alpha 作用在宿主窗口为 `SurfaceView` 留出的 hole punch 区域；调用 `setZOrderOnTop(true)` 后，alpha 才直接作用在 Surface 内容本身。排查半透明游戏画面时，应先确认 SurfaceView 的 Z 顺序——否则容易把合成器行为误判为引擎输出问题。
 
 稳态渲染阶段，两条路径的判断方法一致：游戏线程负责生产帧，SurfaceFlinger 负责消费，App 主线程的 `doFrame()` 不是主提交流程里的提交点。
 
 ## Swappy Frame Pacing
 
-**Swappy** 是 Google 官方的帧节奏库（属于 Android Game SDK），解决游戏引擎帧节奏控制的核心问题：
+**Swappy** 是 Google 官方的帧节奏库（属于 Android Game SDK），解决游戏引擎帧节奏控制的核心问题——让游戏帧率与屏幕刷新率同步，消除帧间隔不均匀导致的视觉抖动：
 
 ### 问题
 
@@ -211,7 +213,7 @@ Swappy 没有一个默认必然出现的 `Swappy` Track。排查时把信号分�
 
 ## ADPF / Frame Rate / Game Mode：游戏侧的系统调优 API
 
-Swappy 解决的是帧节奏，不解决"系统该给我多少 CPU/GPU 资源"。这块由 ADPF（Android Dynamic Performance Framework）和两组配套 API 承担。它们不是同一个调用，但分析游戏 trace 时经常一起看。
+Swappy 解决帧节奏，但不解决"系统该给我多少 CPU/GPU 资源"的问题——这由 ADPF（Android Dynamic Performance Framework）和两组配套 API 承担。它们各自独立调用，但分析游戏 trace 时通常一起考察：
 
 ### ADPF：Performance Hint + Thermal + Game Mode/State 的集合
 

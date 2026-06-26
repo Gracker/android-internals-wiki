@@ -736,3 +736,113 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 - 注入时间：2026-06-24
 - 价值：从「延迟归因方法学」角度补齐 §1.4 已有「5 段开销建模（2026-06-20）+ 5 个杠杆调优（2026-06-21）」之外的「tracepoints+SQL 视图+隐藏来源+量化优化」完整方法论闭环
 - 关联 DeepResearch：`DeepResearch/2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization.md`
+
+
+<!-- AIW-源码调研-2026-06-26: Android 17 Binder 性能监控四层能力面 -->
+## Android 17 libbinder 性能监控接口与跨进程调用链路追踪
+
+> ⚠️ **版本边界**：本节源码锚点为 AOSP `frameworks/native` tag `android-17.0.0_r1`（commit `ae266dcb706d083868578cfedce381ef44488a07`）。源码来自社区 AOSP 镜像（`github.com/tranchikha/android_frameworks_native`），与官方 googlesource 镜像 commit 一致——sandbox 内 google.com/android.googlesource.com 不可达（web_fetch 报 `Blocked: resolves to private/internal/special-use IP address`）。
+
+Android 17 把"Binder 性能监控"在 libbinder 层拆成了**四层独立能力面**，每层都通过 `/dev/binderfs/features/` 特性文件做 capability gating，避免在老内核上做无效 syscall。这与 §1.4 既有「5 段开销建模 + 5 个杠杆调优 + 5 个隐藏延迟来源」形成对照——前几节偏"如何分析已发生的事"，本节偏"平台层在 Android 17 上提供了哪些开箱即用的 probe"。
+
+### 1. 内核→用户态性能 ioctl：`IPCThreadState` 的四个 probe
+
+源码：`frameworks/native/libs/binder/IPCThreadState.cpp:1787-1868`
+
+| ioctl | 用户态 API | 用途 | 何时调用 |
+|---|---|---|---|
+| `BINDER_GET_FROZEN_INFO` | `getProcessFreezeInfo(pid, &sync, &async)` | 取目标进程已接收并处理完成的 sync/async transaction 计数 | `freeze()` 返回 `-EAGAIN` 后轮询 |
+| `BINDER_FREEZE` | `freeze(pid, enable, timeout_ms)` | 进程级冻结 + 内核异步回收等待 | `CachedAppOptimizer` / `killProcessesForRemovedTask` 路径 |
+| `BINDER_GET_EXTENDED_ERROR` | `logExtendedError()` | 取最近一次失败的扩展错误码（含 `ENOSPC = "Binder buffer full"`） | `BR_ERROR` 出现时 |
+| `BINDER_ENABLE_ONEWAY_SPAM_DETECTION` | `enableOnewaySpamDetection(bool)` | 打开 oneway 风暴抑制 | `BBinder::onTransact` 线程池路径自动探测后调用 |
+
+**注意 `getProcessFreezeInfo` 的语义**：返回的是"目标进程在被冻结前**已接收并处理完成**的 transaction 数"，不是"调用方发出去的数"——这一点与 `killProcessesForRemovedTask` 等 AMS 路径的冻结逻辑一致，但与 perfetto trace 中"调用次数"的语义不同。诊断时不能直接相互替换。
+
+### 2. 特性探测：`ProcessState::isDriverFeatureEnabled` + `/dev/binderfs/features/`
+
+源码：`frameworks/native/libs/binder/ProcessState.cpp:538-554`
+
+```cpp
+#define DRIVER_FEATURES_PATH "/dev/binderfs/features/"
+bool ProcessState::isDriverFeatureEnabled(const DriverFeature feature) {
+    if (feature == DriverFeature::ONEWAY_SPAM_DETECTION) {
+        static bool enabled = readDriverFeatureFile(DRIVER_FEATURES_PATH "oneway_spam_detection");
+        return enabled;
+    }
+    if (feature == DriverFeature::EXTENDED_ERROR) {
+        static bool enabled = readDriverFeatureFile(DRIVER_FEATURES_PATH "extended_error");
+        return enabled;
+    }
+    if (feature == DriverFeature::FREEZE_NOTIFICATION) {
+        static bool enabled = readDriverFeatureFile(DRIVER_FEATURES_PATH "freeze_notification");
+        return enabled;
+    }
+    return false;
+}
+```
+
+**架构意图**：binderfs 是 kernel ≥ 5.15 引入的"每实例 binder 设备 + 特性文件"机制，`/dev/binderfs/features/` 下的特性文件是只读开关文件（`read` 返回 1 字节 `1`/`0`）。`static bool` 缓存在线程安全前提下避免每次 IPC 都打开文件——**单进程每个 driver feature 仅首次访问时读一次**。这与 §1.4 既有"tracepoints+SQL 视图"形成互补——前者是诊断工具，后者是平台自带的 capability 探测。
+
+### 3. 跨进程调用链路快照：`BBinder::startRecordingTransactions` + `RecordedTransaction`
+
+源码：`frameworks/native/libs/binder/Binder.cpp:399-456` 与 `RecordedTransaction.cpp:43-96`
+
+```cpp
+// Binder.cpp:556-572 — onTransact 自动录制路径
+if (kEnableKernelIpc && kEnableRecording && code != START_RECORDING_TRANSACTION) [[unlikely]] {
+    auto e = mRecording.promote();
+    if (e && e->mRecordingOn) {
+        auto transaction = android::binder::debug::RecordedTransaction::
+                fromDetails(mDescriptor, code, flags, timestamp, data, reply, err);
+        if (transaction) {
+            if (err = transaction->dumpToFile(e->mRecordingFd); err != NO_ERROR) {
+                ALOGI("Failed to dump RecordedTransaction to file with error %d", err);
+            }
+        }
+    }
+}
+```
+
+**关键设计**：
+- `kEnableRecording` 由编译期宏 `BINDER_ENABLE_RECORDING` 控制（`Binder.cpp:95-97`），**默认 `false`**——意味着默认 release build 不打开此功能，仅 `userdebug` + vendor 自定义 build 启用。
+- `[[unlikely]]` 标注让 release build 中录制功能不打开时这条分支被预测为 false，**零开销**。
+- 录制是**服务端**视角——`BBinder::onTransact` 触发，不是 `BpBinder::transact`（客户端）。要做端到端链路追踪，需要客户端侧也独立打开录制（`BpBinder` 侧对应路径在 android-17.0.0_r1 中**未经一手验证**是否存在）。
+- `RecordedTransaction` 用 Chunk 编码（Header / Sent Parcel / Reply Parcel / End 四种 Chunk），每块 64-bit XOR 校验和，**Chunk 顺序允许乱序 / 重复**（除 End Chunk），读写两端可独立演进——这是 forward-compat 的标准做法。
+
+### 4. Perfetto / atrace 入口：`ATRACE_TAG_AIDL = (1 << 24)`
+
+源码：`frameworks/native/libs/binder/include/binder/Trace.h:31-36`
+
+```cpp
+#ifdef ATRACE_TAG_AIDL
+#if ATRACE_TAG_AIDL != (1 << 24)
+#error "Mismatched ATRACE_TAG_AIDL definitions"
+#endif
+#else
+#define ATRACE_TAG_AIDL (1 << 24)
+#endif
+```
+
+**bit 24 是预留位**：`cutils/trace.h` 已经在 API 35+ 之前预留了高位 tag。`(1 << 24)` 让 `atrace --tag aidl` 在命令行可直接打开/关闭，不会与已有 tag 位冲突。`BBinder::startTrace(code)`（`Binder.cpp:479-491`）按 `code` 查表得到 AIDL 接口方法名（如 `android.app.IActivityManager.startService`），调用 `trace_begin(ATRACE_TAG_AIDL, name)` 后再 `trace_end`。
+
+`onTransact` 中的实际接入（`Binder.cpp:493-501`）：
+
+```cpp
+bool tracingEnabled = get_trace_enabled_tags() & ATRACE_TAG_AIDL;
+if (tracingEnabled) [[unlikely]] {
+    tracingEnabled = startTrace(code);
+}
+if (tracingEnabled) trace_end(ATRACE_TAG_AIDL);
+```
+
+`[[unlikely]]` + `get_trace_enabled_tags()`（syscall-less 的 user-space cache）让未启用 tag 时整段 trace 调用被预测消除。这是 Android 17 上把 libbinder 接入 Perfetto GPU/HWUI 之外 CPU 轨道的方式，与 `external/perfetto/src/trace_processor/stdlib/android/binder.sql` 的 `android_binder_txns` 视图（详见上文 6 月 24 日注入的 tracepoints 闭环）形成完整链路。
+
+### 价值定位
+
+- **诊断时**：先用 `getProcessFreezeInfo` 看数字 → 用 `RecordedTransaction` 看内容 → 用 `ATRACE_TAG_AIDL` 看时间线。三层数据互为佐证，构成可量化的可观测性闭环。
+- **应用适配**：录制与 ioctl 不需要应用层改动。`ATRACE_TAG_AIDL` 只需在抓取时打开 `atrace --tag aidl`，无需重新编译应用。
+- **平台依赖**：四个 ioctl 都需要 kernel ≥ 5.15 + binderfs + 对应特性文件。在老内核上 `isDriverFeatureEnabled` 返回 false，整个特性路径被预测消除，不会有无效 syscall。
+- **注入时间**：2026-06-26
+- **关联 DeepResearch**：`DeepResearch/2026-06-26-android17-binder-perf-monitor-recording-aidl-trace.md`
+
+<!-- /AIW-源码调研-2026-06-26 -->

@@ -42,11 +42,13 @@ related_chapters: ["2.4", "2.5", "2.6", "22.3", "22.20", "22.25", "22.26"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-26"
 gap_source: "AOSP结构+章节深挖"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-26
 ---
 
 # 18.25 Jetpack Compose 渲染管线架构
 
-Jetpack Compose 没有独立于 Android 的图形后端。它的每个像素仍然走 Android 的 HardwareRenderer → RenderThread → SurfaceFlinger 管线。Compose 做的是替换了 View 体系的 measure/layout/draw 递归和 invalidation 模型，用自己的 LayoutNode 树和 Snapshot 状态系统重新组织了 UI 的构建和更新流程。
+Jetpack Compose 没有独立于 Android 的图形后端。它的每个像素仍然走 Android 的 HardwareRenderer → RenderThread → SurfaceFlinger 管线。Compose 做的事情是用自己的 LayoutNode 树和 Snapshot 状态系统替代 View 体系的 measure/layout/draw 递归与 invalidation 模型，接管 UI 的构建和更新全程。
 
 本节展开 Compose 从状态变更到像素上屏的完整链路：AndroidComposeView 如何挂载到 View 树、LayoutNode 如何完成测量与绘制、RenderNode 如何提交 display list、PausableComposition 如何在帧预算内分块组合、以及互操作场景下两条管线如何同步。
 
@@ -64,9 +66,9 @@ internal class AndroidComposeView(...) : ViewGroup(...) {
 }
 ```
 
-关键设计：`AndroidComposeView` 虽然继承 `ViewGroup`，但不走 `ViewGroup` 的 `measureChild` / `layoutChildren` 递归。它的 `onMeasure` 调用 Compose 的 `LayoutNode` 测量协议，`dispatchDraw` 调用 Compose 的绘制协议。View 体系的 `measure`/`layout`/`draw` 三阶段框架还在，但内部逻辑全部替换。
+要点：`AndroidComposeView` 继承 `ViewGroup`，但不走 `ViewGroup` 的 `measureChild` / `layoutChildren` 递归。它的 `onMeasure` 调用 Compose 的 LayoutNode 测量协议，`dispatchDraw` 调用 Compose 的绘制协议——View 体系的 `measure`/`layout`/`draw` 三阶段框架还在，内部逻辑全部替换为 Compose 的实现。
 
-这种"借用壳子、替换引擎"的方式让 Compose 能复用 Android 的 attach/detach 生命周期、Surface 分配、Choreographer 注册等基础设施，同时用自己的节点树和状态系统管理 UI 内容。
+通过"借用壳子、替换引擎"，Compose 复用了 Android 的 attach/detach 生命周期、Surface 分配、Choreographer 注册等底层机制，同时用自己的节点树和状态系统管理 UI 内容。
 
 ### 与 Choreographer 的绑定
 
@@ -395,7 +397,7 @@ while (shouldRun) {
 
 View 体系用 `invalidate()` 显式标记重绘区域。Compose 用 Snapshot 的自动读写追踪替代了显式 invalidation——开发者不需要手动调用 `requestLayout` 或 `invalidate`，Snapshot 系统在状态变更时自动确定需要重组的范围。
 
-代价是 Snapshot 系统本身的开销：每次状态读写都需要更新 reader/writer map，帧提交时需要比对快照差异。高频状态写入（如动画循环中每帧更新 `mutableStateOf`）会产生持续的 Snapshot apply 压力：
+Snapshot 自动追踪也有代价：每次状态读写都需要更新 reader/writer map，帧提交时需要比对快照差异。高频状态写入（如动画循环中每帧更新 `mutableStateOf`）会持续产生 Snapshot apply 压力：
 
 - **reader/writer map 膨胀**：大量 scope 注册为同一 state 的 reader 时，invalidation 广播成本随 reader 数量线性增长
 - **apply 阶段遍历**：`sendApplyNotifications()` 需要遍历所有变更的 state 对象，通知其 observer
@@ -566,10 +568,9 @@ Compose 的渲染管线可以拆成两层理解：
 
 ---
 
-## 扩展 6：并发组合的线程安全机制与 Snapshot 同步原语 <!-- AIW-源码调研-2026-06-26 -->
+## 扩展 6：并发组合的线程安全机制与 Snapshot 同步原语
 
-> 资料来源：DeepResearch/2026-06-26-compose-concurrent-snapshot-source.md
-> 源码引用：`androidx-main` 分支 `compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt` 与 `snapshots/Snapshot.kt`
+源码引用：`androidx-main` 分支 `compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt` 与 `snapshots/Snapshot.kt`
 
 本节回答两个问题：(1) 多个 Recomposer 实例如何共存？(2) 跨线程状态写入和重组如何避免竞争？
 
@@ -675,7 +676,7 @@ private fun applyAndCheck(snapshot: MutableSnapshot) {
 
 当前 Snapshot 系统**不保证可串行化隔离（SI）**——它阻止「同一 state object 在两个 snapshot 中都有未提交的写入」，但放行「两个 snapshot 各自修改不同 state object 后交叉提交」的 race。这意味着应用层若依赖「一次 apply 看到一组 state 写入的原子视图」，必须自己加锁或使用 `Snapshot.takeMutableSnapshot { ... }` 包裹关键段。
 
-### 反误区
+### 扩展误区
 
 - **误区 6**："Compose 是无锁的，所以跨线程写入绝对安全"
   **事实**：Snapshot 系统**不保证 SI**（`Snapshot.kt:818-819`）。不同 state object 的交叉写入无锁安全，但**同一 state object** 跨线程写入需走 `sync(lock)` 的 apply 路径，冲突时抛 IllegalStateException（`Recomposer.kt:1469`）。
