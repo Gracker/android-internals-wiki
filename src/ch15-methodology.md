@@ -2,22 +2,22 @@
 title: "Android 性能优化研究方法论"
 chapter: '15'
 section: '15'
-status: finalized
+status: ready-for-review
 
 task6_result: pass-light-edit
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-06-16"
 task2b_state: fixed
 task2b_result: fixed-lite
-last_task2b_lite_at: 2026-06-26
+last_task2b_lite_at: 2026-06-27
 task2b_fixed_date: "2026-06-16"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task9_result: pass-tech-review
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: pending
 last_task9_autofix_at: 2026-06-16
 last_task9_at: "2026-06-26T11:20:00+08:00"
-task9_review_notes: "2026-06-16 Task9 auto-fix：修正 Systrace 入口和 SimplePerf/内存泄漏工具映射；依据 Android Developers tracing/simpleperf 与 Perfetto heapprofd 官方文档。 | 2026-06-16 21 Task9 deep-review：pass-tech-review。复核 20 点 auto-fix 后无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-26 07 Task9 deep-review：pass-tech-review。无 P0/P1，5项 P2 建议已写入 suggestions.md，满足晋升条件。 | 2026-06-26 08 Task9 deep-review：pass-tech-review。无 P0/P1，P2建议已写入 suggestions.md 和 research-gaps.md，满足晋升条件，自动晋升 finalized。 | 2026-06-26 11 Task9 deep-review：pass-tech-review。无 P0/P1，5项 P2 建议已写入 suggestions.md，满足晋升条件，自动晋升 finalized。"
+task9_review_notes: "2026-06-16 Task9 auto-fix：修正 Systrace 入口和 SimplePerf/内存泄漏工具映射；依据 Android Developers tracing/simpleperf 与 Perfetto heapprofd 官方文档。 | 2026-06-16 21 Task9 deep-review：pass-tech-review。复核 20 点 auto-fix 后无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-26 07 Task9 deep-review：pass-tech-review。无 P0/P1，5项 P2 建议已写入 suggestions.md，满足晋升条件。 | 2026-06-26 08 Task9 deep-review：pass-tech-review。无 P0/P1，P2建议已写入 suggestions.md 和 research-gaps.md，满足晋升条件，自动晋升 finalized。 | 2026-06-26 11 Task9 deep-review：pass-tech-review。无 P0/P1，5项 P2 建议已写入 suggestions.md，满足晋升条件，自动晋升 finalized。 | 2026-06-27 Task2B Lite: 修复 P1 Perfetto 版本描述（Android 9 traced 入 system image 但非 Pixel 需手动 enable，Android 11+ 默认启用），P2 ADB 命令补版本限定。回 Task6/Task9 复审。"
 created_by: "codex"
 created_date: '2026-06-16'
 applicable_versions: Android 8-17 (API 26-37)
@@ -26,6 +26,8 @@ last_verified_against: AOSP android-16.0.0_r1, Android Developers 文档, Perfet
 confidence: high
 last_task6_audit: "2026-06-25"
 last_task6_idle_audit_at: "2026-06-25"
+last_task9_idle_audit_at: "2026-06-27"
+last_task9_idle_audit_note: "闲时抽检发现版本差异问题，需核实 Perfetto 准确引入版本并补充 Android 12+ 新特性说明"
 sources:
 - type: official
   path: https://developer.android.com/topic/performance
@@ -201,9 +203,9 @@ graph TD
 ### 基础工具
 
 1. **ADB 命令集**：
-   - `adb shell dumpsys meminfo`：内存使用分析
-   - `adb shell top`：进程级别 CPU 使用情况
-   - `adb shell dumpsys batterystats`：电池使用统计
+   - `adb shell dumpsys meminfo`：内存使用分析（输出格式在 Android 8+ 调整，新增 DMA buffer 等字段）
+   - `adb shell top`：进程级别 CPU 使用情况（Android 9+ 切换到 toybox 实现，默认输出格式变化）
+   - `adb shell dumpsys batterystats`：电池使用统计（Android 5+ 引入，`--reset` 用于清零历史数据）
 
 2. **Trace 工具**：
    - `adb shell atrace`：系统级跟踪
@@ -230,7 +232,7 @@ graph TD
 | 渲染性能分析 | Perfetto / Android Studio System Trace；旧版本可用 Systrace | 调试阶段 |
 | 线上性能监控 | 自建埋点 + 数据平台 | 运维阶段 |
 
-> **版本限定**：Android 8（API 26-27）不支持 Perfetto，tracing 以 Systrace / atrace 为主；Android 9（API 28）起 Perfetto 可用，Android 10（API 29）起 Perfetto 为默认系统 trace 工具。
+> **版本限定**：Android 8（API 26-27）不支持 Perfetto，tracing 以 Systrace / atrace 为主。Android 9（API 28）起 `traced` / `traced_probes` 进入 system image，但 Android 9/10 的非 Pixel 设备常需手动 enable；Android 11+ 大多数设备默认启用 Perfetto 服务，系统追踪基本转到 Perfetto 体系（与第 13 章 Perfetto 章节口径一致）。[已验证: source.android.com/docs/core/debug/perfetto, AOSP external/perfetto]
 
 ## 总结
 
