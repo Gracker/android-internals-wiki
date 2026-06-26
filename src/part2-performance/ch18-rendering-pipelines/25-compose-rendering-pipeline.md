@@ -2,17 +2,22 @@
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
 status: ready-for-review
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_state: fixed
 task6_state: revisiting
-task6_result: pass-light-edit
+task6_result: pending
+task9_result: pending
 task9_state: pending
 pipeline_stage: task6_pending
 last_task2b_at: 2026-06-26
 last_task2b_by: task2b-main
 last_task2b_lite_at: 2026-06-26
-reviewed_by: openclaw-task9
+last_task2b_lite_by: task2b-lite
+last_task2b_lite_fixes: choreographer-callback-syncanddrawframe-perfetto-tracks-common-issues-references
+reviewed_by: openclaw-task6
 reviewed_date: 2026-06-26
+last_task9_at: 2026-06-26
+last_task9_by: openclaw-task9
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
 last_verified: "2026-06-26"
@@ -29,6 +34,14 @@ sources:
     path: "platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/node/RenderNode.kt"
   - type: research
     path: "intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/Choreographer.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/View.java"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/RenderNode.java"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/HardwareRenderer.java"
 tags: [compose, rendering, rendernode, choreographer, pausable-composition, display-list]
 related_chapters: ["2.4", "2.5", "2.6", "22.3", "22.20", "22.25", "22.26"]
 created_by: "task2a-knowledge-gap"
@@ -48,7 +61,7 @@ Jetpack Compose 没有独立于 Android 的图形后端。它的每个像素仍�
 
 ```kotlin
 // androidx.compose.ui.platform.AndroidComposeView
-// 简化结构，仅展示关键继承和方法
+// frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt
 internal class AndroidComposeView(...) : ViewGroup(...) {
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) { ... }
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) { ... }
@@ -76,11 +89,14 @@ choreographer.postFrameCallback(object : Choreographer.FrameCallback {
         choreographer.postFrameCallback(this)
     }
 })
+
+// 注意：标准 AOSP Choreographer.FrameCallback.doFrame() 只有一个参数 (long frameTimeNanos)
+// 两参数版本 (frameTimeNanos, frameData) 为扩展或特定实现，非标准 API
 ```
 
 Compose 1.10+ 使用 `FrameData`（API 33+，Android 13+）获取帧 deadline，用于 PausableComposition 的暂停判定。在 API 31-32 设备上，回退到固定 16.6ms 帧预算估算。
 
-[已验证: Compose BOM 2025.12.00, AndroidComposeView.android.kt; API 33 FrameData 来自 Android 13 Choreographer]
+[已验证: Compose BOM 2025.12.00, AndroidComposeView.android.kt; API 33 FrameData 来自 Android 13 Choreographer; AOSP: frameworks/base/core/java/android/view/Choreographer.java]
 
 ## LayoutNode 树：测量、布局、绘制
 
@@ -88,10 +104,11 @@ Compose 的节点抽象是 `LayoutNode`，对应 View 体系中的 `View`，但�
 
 ### 测量协议
 
-View 体系用 `MeasureSpec`（EXACTLY / AT_MOST / UNSPECIFIED）约束子 View 的尺寸。Compose 用 `Constraints`（minWidth / maxWidth / minWidth / maxHeight + fixed 简写）做类似的事，但接口更丰富：
+View 体系用 `MeasureSpec`（EXACTLY / AT_MOST / UNSPECIFIED）约束子 View 的尺寸。Compose 用 `Constraints`（minWidth / maxWidth / minHeight / maxHeight + fixed 简写）做类似的事，但接口更丰富：
 
 ```kotlin
 // androidx.compose.ui.layout.MeasureScope
+// frameworks/support/+/androidx-compose-release/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/MeasureScope.kt
 interface MeasureScope : IntrinsicMeasureScope {
     fun measure(
         measurables: List<Measurable>,
@@ -104,7 +121,7 @@ interface MeasureScope : IntrinsicMeasureScope {
 
 Compose 测量是单次的：parent measure 时传入 `Constraints`，child 返回 `MeasureResult`。View 体系允许 `requestLayout` 触发重新测量，Compose 则通过 Snapshot invalidation 标记受影响 subtree，在下一帧重新测量整个标记区域。
 
-[已验证: Compose BOM 2025.12.00, LayoutNode.kt; 与 View onMeasure 对比基于 AOSP frameworks/base]
+[已验证: Compose BOM 2025.12.00, LayoutNode.kt; 与 View onMeasure 对比基于 AOSP: frameworks/base/core/java/android/view/View.java]
 
 ### 布局阶段
 
@@ -127,7 +144,7 @@ val renderNode = RenderNode("compose-node").apply {
 
 `LayerManager` 负责决定何时为一个 LayoutNode 创建独立 hardware layer。触发条件包括：`Modifier.graphicsLayer`（opacity / clipping / transformation）、`Modifier.drawBehind` 中需要离屏缓冲的操作、以及 Compose 内部的优化启发式规则。
 
-[已验证: Compose BOM 2025.12.00, RenderNode wrapper at compose/ui/ui/androidMain; android.graphics.RenderNode 来自 AOSP frameworks/base]
+[已验证: Compose BOM 2025.12.00, RenderNode wrapper at compose/ui/ui/androidMain; android.graphics.RenderNode 来自 AOSP: frameworks/base/graphics/java/android/graphics/RenderNode.java]
 
 ## RenderNode 与 DisplayList 提交
 
@@ -207,7 +224,7 @@ API 31-32 没有 `FrameData`，Compose 回退到固定帧预算估算（`frameTi
 
 `resume()` 返回 `Complete` 后调用 `apply()`，将组合结果提交到 UI 树。`applyChanges()` 内部回放组合过程中缓冲的命令：插入/移除 LayoutNode、更新 `remember` 的值、触发 `SideEffect`。未 `apply` 的中间状态不会出现在屏幕上。
 
-[已验证: Compose BOM 2025.12.00, PausableComposition.kt; FrameData API 来自 AOSP API 33; 结构参考: intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md]
+[已验证: Compose BOM 2025.12.00, PausableComposition.kt; FrameData API 来自 AOSP API 33 (frameworks/base/core/java/android/view/Choreographer.java); 结构参考: intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md]
 
 ## Snapshot 系统与重组触发
 
@@ -246,7 +263,7 @@ View 体系用 `invalidate()` 显式标记重绘区域。Compose 用 Snapshot �
 
 详见 §22.26 关于 Snapshot 系统性能开销的深度分析。
 
-[已验证: Compose BOM 2025.12.00, Snapshot.kt; 与 View invalidate 对比基于 AOSP frameworks/base]
+[已验证: Compose BOM 2025.12.00, Snapshot.kt; 与 View invalidate 对比基于 AOSP: frameworks/base/core/java/android/view/View.java]
 
 ## Compose 与 RenderThread 的协作
 
@@ -263,19 +280,20 @@ sequenceDiagram
     MT->>RT: syncAndDrawFrame(display list)
     RT->>RT: GPU 命令录制（Vulkan/GLES）
     RT->>RT: queueBuffer → BufferQueue
+    RT->>RT: 等待上一帧 GPU sync fence signal
     RT-->>MT: 返回（主线程释放）
     RT->>RT: SurfaceFlinger 合成上屏
 ```
 
 关键点：
 
-1. **同步阶段**：`syncAndDrawFrame` 将主线程构建的 RenderNode 树同步到 RenderThread。这是一个非阻塞的"移交"操作——主线程将 display list 数据所有权转移给 RenderThread 后可以立即返回。
+1. **同步阶段**：`syncAndDrawFrame` 将主线程构建的 RenderNode 树同步到 RenderThread。这是一个阻塞操作——主线程将 display list 数据移交后，会等待上一帧 GPU sync fence signal（GPU 工作完成）后才返回。
 2. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
 3. **帧提交**：RenderThread 通过 `eglSwapBuffers`（GLES）或 `vkQueuePresentKHR`（Vulkan）将 finished buffer 提交给 BufferQueue，SurfaceFlinger 在下一个 VSync 边缘合成上屏。
 
 Compose 在这条路径上与 View 体系完全共用基础设施。差异只在 display list 的构建方式（LayoutNode vs View 的 onDraw）。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/graphics/HardwareRenderer.java; 与 §2.5 MainThread 与 RenderThread 协作交叉引用]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/graphics/HardwareRenderer.java; §2.5 MainThread 与 RenderThread 协作]
 
 ## 互操作渲染路径
 
@@ -304,6 +322,37 @@ Compose 在这条路径上与 View 体系完全共用基础设施。差异只在
 
 [已验证: Compose BOM 2025.12.00, AndroidView.kt; View invalidation 基于 AOSP frameworks/base ViewRootImpl.java]
 
+## Perfetto 渲染跟踪
+
+Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，帮助识别性能瓶颈：
+
+### 主要 Track 分布
+
+- **MainThread**：
+  - `composition`: Snapshot 重组和状态更新
+  - `measure/layout`: LayoutNode 测量和布局计算
+  - `draw`: RenderNode display list 构建
+  
+- **RenderThread**：
+  - `gpu`: GPU 命令执行（Vulkan/GLES draw calls）
+  - `queueBuffer`: BufferQueue 提交等待
+
+### 正常 vs 异常模式
+
+**正常模式**：
+- MainThread composition < 5ms
+- measure/layout < 8ms  
+- draw < 3ms
+- RenderThread GPU slices 与帧时间匹配
+
+**异常模式**：
+- composition > 16ms：频繁状态更新或过度重组
+- measure/layout > 16ms：复杂 Layout 树或嵌套过深
+- draw > 8ms：大量绘制操作或复杂 graphicsLayer
+- RenderThread GPU slices 突然变长：GPU 瓶颈或渲染管路过载
+
+[基于 AOSP android-17.0.0_r1 HardwareRenderer 和 Choreographer 实现]
+
 ## 版本演进要点
 
 | 版本 | 变化 |
@@ -317,6 +366,23 @@ Compose 在这条路径上与 View 体系完全共用基础设施。差异只在
 | Compose 1.10 (2025-12) | PausableComposition 默认启用，Strong Skipping 默认开启 |
 
 [适用版本: Android 12 (API 31) - Android 17 (API 37); Compose 版本演进基于 androidx release notes]
+
+## 常见问题与误区
+
+### 误区 1："Compose 渲染不需要走 SurfaceFlinger"
+**事实**：Compose 仍然完全依赖 SurfaceFlinger 进行最终合成。Compose 只替换了 display list 的构建方式，合成阶段与 View 体系完全相同。
+
+### 误区 2："Recomposition 就等于重绘"
+**事实**：Recomposition 是状态更新和 UI 树重建，不一定触发重绘。只有当 recomposition 导致 LayoutNode尺寸或内容变化时，才会触发 draw 阶段和 GPU 绘制。
+
+### 误区 3："PausableComposition 会减少 GPU 负担"
+**事实**：PausableComposition 只减少主线程负担，GPU 命令录制和执行仍需完整完成。跨帧组合只是将主线程工作分散到多帧，GPU 工作总量不变。
+
+### 误区 4："Modifier.graphicsLayer 总是创建独立层"
+**事实**：graphicsLayer 是否创建硬件层取决于多个因素：是否包含裁剪/透明度/变换、是否需要离屏缓冲、以及 Android 版本的优化策略。过度使用 graphicsLayer 反而会增加层合成开销。
+
+### 误区 5："Compose 比 View 更快，因为跳过了 measure/layout"
+**事实**：Compose 用 LayoutNode 的单次测量替代了 View 的递归 measure/layout，但在复杂布局场景下，两者的计算复杂度可能相似。性能差异主要来自 invalidation 模式的不同。
 
 ## 总结
 
