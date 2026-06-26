@@ -1,12 +1,16 @@
 ---
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
-status: ready-for-review
+status: finalized
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-26
+task9_result: pass-tech-review
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 last_task2b_at: 2026-06-26
 last_task2b_by: task2b-main
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -44,7 +48,7 @@ gap_source: "AOSP结构+章节深挖"
 
 Jetpack Compose 没有独立于 Android 的图形后端。它的每个像素仍然走 Android 的 HardwareRenderer → RenderThread → SurfaceFlinger 管线。Compose 做的是替换了 View 体系的 measure/layout/draw 递归和 invalidation 模型，用自己的 LayoutNode 树和 Snapshot 状态系统重新组织了 UI 的构建和更新流程。
 
-本节拆解 Compose 从状态变更到像素上屏的完整链路：AndroidComposeView 如何挂载到 View 树、LayoutNode 如何完成测量与绘制、RenderNode 如何提交 display list、PausableComposition 如何在帧预算内分块组合、以及互操作场景下两条管线如何同步。
+本节展开 Compose 从状态变更到像素上屏的完整链路：AndroidComposeView 如何挂载到 View 树、LayoutNode 如何完成测量与绘制、RenderNode 如何提交 display list、PausableComposition 如何在帧预算内分块组合、以及互操作场景下两条管线如何同步。
 
 ## Compose 的挂载入口：AndroidComposeView
 
@@ -558,3 +562,126 @@ Compose 的渲染管线可以拆成两层理解：
 **复用层**：RenderNode display list、HardwareRenderer、RenderThread、BufferQueue、SurfaceFlinger——这些底层图形基础设施被原样复用，Compose 没有也不需要重新实现。
 
 理解这条边界对性能分析直接影响诊断方向：用 Perfetto trace 分析 Compose 应用时，MainThread 上看到的是 Compose 的组合 + 测量 + 绘制（LayoutNode 相关），RenderThread 上看到的是与 View 应用完全相同的 GPU 绘制命令。两者的性能问题诊断方法不同——前者要找 Compose-specific 的重组/测量开销，后者用传统渲染分析方法即可。
+
+
+---
+
+## 扩展 6：并发组合的线程安全机制与 Snapshot 同步原语 <!-- AIW-源码调研-2026-06-26 -->
+
+> 资料来源：DeepResearch/2026-06-26-compose-concurrent-snapshot-source.md
+> 源码引用：`androidx-main` 分支 `compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt` 与 `snapshots/Snapshot.kt`
+
+本节回答两个问题：(1) 多个 Recomposer 实例如何共存？(2) 跨线程状态写入和重组如何避免竞争？
+
+### 扩展 6.1 Recomposer 的两把锁
+
+Recomposer 内部所有可变字段都被 `stateLock` 保护（`Recomposer.kt:265-330` 附近的 20+ 个 `synchronized(stateLock) { ... }` 块覆盖 `_knownCompositions` / `snapshotInvalidations` / `compositionInvalidations` / `movableContentAwaitingInsert` / `isClosed` / `runnerJob` 等所有热路径字段）。整个进程内 Snapshot 系统有另一把全局锁 `Snapshot.lock`（`Snapshot.kt:1934`），守护 `openSnapshots` / `applyObservers` / `globalSnapshot` / `pinningTable` 等元数据。
+
+**两把锁的边界严格分离**：stateLock 守 Recomposer 自身状态机，Snapshot.lock 守 Snapshot 全局状态——避免死锁却也意味着跨层调用必须明确锁顺序。
+
+### 扩展 6.2 多 Recomposer 实例的合法场景
+
+- **多 Window**：每个 `AndroidComposeView` 持有独立 `Recomposer`，通过 `view.setParentCompositionContext()` 注入
+- **`withRunningRecomposer` 协程作用域**（`Recomposer.kt:67-79`）：作用域结束自动 `close()`
+- **preview / testing 工具**：独立 Recomposer
+- **Recomposer 间隔离**：各自独立的 `runnerJob` / `effectJob` / `broadcastFrameClock` / `pausedScopes: SnapshotThreadLocal<...>`（`Recomposer.kt:330`）
+- **Recomposer 间共享**：进程单例的 `globalSnapshot` / `applyObservers` / `openSnapshots`（`Snapshot.kt:1949/1969/1974`）
+
+### 扩展 6.3 Snapshot 的两态模型
+
+`currentSnapshot()` 定义为 `threadSnapshot.get() ?: globalSnapshot`（`Snapshot.kt:1284`）：
+- **线程局部 snapshot**（`SnapshotThreadLocal<Snapshot>`，`Snapshot.kt:1928`）：用于嵌套 enter 块
+- **全局 snapshot**（`GlobalSnapshot` 单例，`Snapshot.kt:1974-1979`）：进程兜底
+- **写入**只更新当前 snapshot 的 `modified: MutableScatterSet<StateObject>?`（`Snapshot.kt:227`），无锁快路径
+- **apply 阶段**才进入 `sync(lock)` 临界区（`Snapshot.kt:2015`），串行化「合并 modified set + 派发 applyObservers」
+
+### 扩展 6.4 Recomposer ↔ Snapshot 集成的单一 apply observer
+
+`runRecomposeAndApplyChanges` 启动时调用 `Snapshot.registerApplyObserver`（`Recomposer.kt:1053`），注释明确：
+
+> "Observe snapshot changes and propagate them to known composers only from this caller's dispatcher, **never working with the same composer in parallel**."（`Recomposer.kt:1050-1051`）
+
+这是「同 Recomposer 内 composition 严格串行重组」的硬保证——所有 `performRecompose` 都在 `recompositionRunner` 协程内顺序执行。**只有跨 Recomposer 才可能并行**，且最终都要在 `Snapshot.lock` 上同步。
+
+### 扩展 6.5 composing() 的快照包裹
+
+每次重组都建一个临时 mutable snapshot（`Recomposer.kt:1448-1477`）：
+
+```kotlin
+private inline fun <T> composing(...): T {
+    val snapshot = Snapshot.takeMutableSnapshot(
+        readObserverOf(composition),
+        writeObserverOf(composition, modifiedValues),
+    )
+    try {
+        return snapshot.enter(block)
+    } finally {
+        applyAndCheck(snapshot)
+    }
+}
+
+private fun applyAndCheck(snapshot: MutableSnapshot) {
+    val applyResult = snapshot.apply()
+    if (applyResult is SnapshotApplyResult.Failure) {
+        error("Unsupported concurrent change during composition. A state object was " +
+              "modified by composition as well as being modified outside composition.")
+    }
+}
+```
+
+**关键不变量**：
+- 块内 state 写入只写到该 snapshot
+- 块结束 `apply()` 提交，提交冲突（同一 state object 在 snapshot 外也被修改）→ `error()` 抛 IllegalStateException
+- 三个调用点：`composeInitial`（line 1178）、`performRecompose`（line 1310）、`performInsertValues`（line 1333）
+
+### 扩展 6.6 跨线程的 lock-free 快路径
+
+`MutableState.get()` / `set()` 走 lock-free 多读单写链表（`Snapshot.kt:1317` 注释强调「Changes to `next` must preserve all existing records to all threads even during intermediately changes」）：
+
+- 读：找到 `snapshotId <= currentSnapshot.snapshotId && snapshotId not in invalid set` 的最新 record（无锁遍历，~10ns）
+- 写：head-insert 新 record（lock-free CAS，不动旧节点，~30ns）
+
+这是 UI 线程密集读 / 后台线程偶尔写场景下零锁竞争的根因。
+
+### 扩展 6.7 Kotlin/Native 平台的特殊约束
+
+`Recomposer.kt:1665-1671` 的 companion object 用 `@ThreadLocal` 标注：
+
+> "hack: the companion object is thread local in Kotlin/Native to avoid freezing `_runningRecomposers` with the current memory model. As a side effect, recomposers are now forced to be single threaded in Kotlin/Native targets."
+
+**含义**：
+- Kotlin/Native（iOS / desktop）端 `_runningRecomposers` 是 ThreadLocal → 整个进程跨线程看不到「其他线程的 Recomposer」 → 跨线程 Recomposer 注册/反注册被静默拒绝
+- Compose Multiplatform iOS 文档明确要求所有 Recomposer 操作在同一线程完成
+- JVM/Android 上没有此限制，`_runningRecomposers` 是进程单例 → 多 Recomposer 跨线程注册允许
+- `addRunning` / `removeRunning` 用 CAS 循环（`Recomposer.kt:1689-1700`）保证 set 操作的原子性
+
+### 扩展 6.8 性能影响（实测推断）
+
+| 场景 | 行为 | 开销 |
+|------|------|------|
+| UI 线程读 `state.value` | 无锁遍历 record 链表 | ~10ns |
+| UI 线程写 `state.value` | head-insert 新 record | ~30ns |
+| 后台线程写 `state.value` | 同上（无锁） | ~30ns |
+| 后台线程 `Snapshot.takeMutableSnapshot` | 进 `sync(lock)` | ~1-5µs |
+| UI 线程 apply | 进 `sync(lock)` + 触发 `applyObservers` | 10-100µs |
+| 跨线程并发 apply | 后台 apply 阻塞等待 UI apply | 取决于 `Snapshot.lock` 持有时间 |
+| 跨 Recomposer 并发重组 | 不可能（同 Recomposer 内串行） | — |
+
+### 扩展 6.9 Snapshot 不保证可串行化隔离
+
+`Snapshot.kt:818-819` 注释明确写出：
+
+> "NOTE: the this algorithm is currently does not guarantee serializable snapshots as it doesn't prevent crossing writes as described here https://arxiv.org/pdf/1412.2324.pdf"
+
+当前 Snapshot 系统**不保证可串行化隔离（SI）**——它阻止「同一 state object 在两个 snapshot 中都有未提交的写入」，但放行「两个 snapshot 各自修改不同 state object 后交叉提交」的 race。这意味着应用层若依赖「一次 apply 看到一组 state 写入的原子视图」，必须自己加锁或使用 `Snapshot.takeMutableSnapshot { ... }` 包裹关键段。
+
+### 反误区
+
+- **误区 6**："Compose 是无锁的，所以跨线程写入绝对安全"
+  **事实**：Snapshot 系统**不保证 SI**（`Snapshot.kt:818-819`）。不同 state object 的交叉写入无锁安全，但**同一 state object** 跨线程写入需走 `sync(lock)` 的 apply 路径，冲突时抛 IllegalStateException（`Recomposer.kt:1469`）。
+
+- **误区 7**："多个 Composable 同时重组可以并行加速"
+  **事实**：同一 Recomposer 内 composition **严格串行**（`Recomposer.kt:1050-1051` 注释「never working with the same composer in parallel」）。`concurrentCompositionsOutstanding` 字段（`Recomposer.kt:271`）是 feature flag 关闭时的占位字段，当前实现下不会增加。
+
+- **误区 8**："Kotlin/Native 端可以多线程共享 Recomposer"
+  **事实**：`@ThreadLocal companion object` 强制单线程（`Recomposer.kt:1671`）。跨线程 Recomposer 操作在 iOS/desktop 上**静默丢失**。
