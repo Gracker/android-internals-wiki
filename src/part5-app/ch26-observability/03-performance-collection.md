@@ -13,9 +13,9 @@ last_task2b_at: "2026-06-26"
 last_task2b_by: openclaw-task2b-main
 last_task2b_against: logs/deep-review/2026-06-26-18-deep-review.md
 task9_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task9_reviewed_date: "2026-06-26"
-task9_reviewed_by: openclaw-task9-idle-audit
+task9_reviewed_by: openclaw-task9
 task6_result: needs-rework
 task6_state: reviewed
 last_task6_at: "2026-06-26T21:07:00+08:00"
