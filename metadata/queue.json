@@ -867,7 +867,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-26T15:32:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-26T15:50:00+08:00",
+    "completed_by": "task2b-lite",
+    "completed_reason": "fixed-lite: 标准化 FrameCallback.doFrame() 签名引用，补充两参数版本的说明"
   },
   {
     "section": "18.25",
@@ -885,7 +888,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-26T15:32:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-26T15:50:00+08:00",
+    "completed_by": "task2b-lite",
+    "completed_reason": "fixed-lite: 修正 syncAndDrawFrame 阻塞行为描述"
   },
   {
     "section": "18.25",
@@ -903,7 +909,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-26T15:32:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-26T15:50:00+08:00",
+    "completed_by": "task2b-lite",
+    "completed_reason": "fixed-lite: 添加独立 Perfetto/Trace 小节，描述 Track 分布和正常vs异常模式"
   },
   {
     "section": "18.25",
@@ -921,7 +930,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-26T15:32:56+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-26T15:50:00+08:00",
+    "completed_by": "task2b-lite",
+    "completed_reason": "fixed-lite: 添加常见问题与误区小节，包含5个典型误解点"
   },
   {
     "section": "18.25",
