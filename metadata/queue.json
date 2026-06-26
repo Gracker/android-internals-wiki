@@ -1061,7 +1061,7 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-06-26T22:14:50+08:00",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-06-26-21-review.md",
     "task2b_lite_partial": {
       "fixed_at": "2026-06-26T21:37:59+08:00",
@@ -1071,7 +1071,9 @@
       ],
       "fixed_count": 3,
       "remaining_count": 5
-    }
+    },
+    "completed_at": "2026-06-26T22:54:16+08:00",
+    "completed_by": "openclaw-task2b-main"
   },
   {
     "section": "26.3",
@@ -1109,6 +1111,8 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-26T22:25:17.025021+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-26T22:54:16+08:00",
+    "completed_by": "openclaw-task2b-main"
   }
 ]

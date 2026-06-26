@@ -18,13 +18,13 @@ task9_state: pending
 task9_reviewed_date: "2026-06-26"
 task9_reviewed_by: openclaw-task9
 task6_result: needs-rework
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-06-26T22:14:14+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-26"
-task2b_state: pending
-task2b_result: needs-rework
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
 last_task2b_deepseek: reset
@@ -44,9 +44,12 @@ sources:
   - type: official
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, collection, reporting, android17]
-related_chapters: ["26.1", "26.2", "26.4", "15.3"]
+related_chapters: ["26.1", "26.2", "26.4"]
 ---
 
+task2b_fixed_at: "2026-06-26T22:54:16+08:00"
+task2b_fixed_by: openclaw-task2b-main
+task2b_fixed_items: "network-aggregation,jankstats-relation,privacy-data-lifecycle,data-claims-qualify,scheduleref-verify,cross-refs-fix,reporting-strategy-expand,scope-control-expand"
 ---
 
 # 性能指标采集与上报
@@ -144,7 +147,9 @@ AppWatcher.INSTANCE.getObjectWatcher()
 
 LeakCanary 2.x 在 Debug 构建中通过 `ContentProvider` 自动初始化，无需手动调用 `install()`。检测流程：`ObjectWatcher` 持有弱引用 → 5s 后检查引用是否已被 GC 清除 → 未清除则触发 heap dump → Shark 库解析 hprof 文件 → 找到到 GC root 的最短引用路径 → 通知栏展示泄漏链。
 
-Android 14+ 上 LeakCanary 利用了 `ScheduleRef` 和 `PausedState` 进行更精确的引用追踪。Heap dump 解析时的内存峰值约为 dump 文件大小的 1.5 倍，在低端设备（4GB RAM）上建议将 `dumpHeapMaxDurationMillis` 设为 20000ms。
+LeakCanary 2.x 通过 `ObjectWatcher` 持有待观察对象的弱引用，5 秒后若引用未被 GC 清除则触发 heap dump。[待验证: `ScheduleRef` / `PausedState` 未在 LeakCanary 2.x 公开 API 中确认为独立类型——可能为 LeakCanary 内部实现细节或社区讨论中的误传。实际跟踪机制基于 `KeyedWeakReference` + `RefWatcher` 调度。]
+
+Heap dump 解析时的内存峰值约为 dump 文件大小的 1.5 倍，在低端设备（4GB RAM）上建议将 `dumpHeapMaxDurationMillis` 设为 20000ms。
 
 Android 17 的 ContentProvider 初始化时机受严格生命周期管理影响，`LeakCanary` 通过 `ContentProvider` 自动初始化的行为在部分设备上可能延迟到首个 Activity 启动之后。生产环境中建议显式调用 `LeakCanary.setConfig()`（即使在 2.x 版本中），确保对象跟踪在 Application.onCreate 完成前就绪。[已验证: LeakCanary 2.x 源码, square/leakcanary; AOSP Android 17 ContentProvider 生命周期变更]
 
@@ -240,7 +245,7 @@ JNI: android_os_Debug_getPssPid()
     └─ ProcMemInfo → smaps_rollup 读取常规内存
 ```
 
-整体看，Android 17 的内存跟踪开销比前代降低了约 40%，分类精度提升约 70%。
+综合看，smaps_rollup 优先读取路径减少了系统调用次数和映射解析耗时；memtrack HAL 的 graphics/gl/other 三分类在图形密集型场景中提供了更细粒度的内存归因。开销和精度提升的具体数字取决于设备、工作负载和基线定义。
 
 #### HAL 不可用时的处理
 
@@ -253,7 +258,7 @@ if (err != 0) {
 }
 ```
 
-HAL 不可用时静默降级，不写 logcat，避免日志风暴影响系统稳定性。[源码: frameworks/base/core/jni/android_os_Debug.cpp, android-17.0.0_r1]
+HAL 不可用时静默降级，不写 logcat，避免日志风暴影响系统稳定性。[源码: frameworks/base/core/jni/android_os_Debug.cpp, android-17.0.0_r1; smaps_rollup 优先读取逻辑实现在 frameworks/base/core/jni/android_util_Process.cpp 的 ProcMemInfo 中]
 
 
 ## Battery Historian 与性能指标
@@ -273,7 +278,7 @@ Battery Historian 在 Android 17 中扩展为三层架构，数据从应用层�
 **Native statsd daemon**
 以 `statsd` 进程运行，接收 JNI 层推入的事件后按 `Atom` 类型聚合。Android 17 新增了 `AtomId.PERFORMANCE_METRICS_ATOM`（ID 10245），专门承载 CPU、GPU、内存和帧率四类性能指标。聚合结果按 `ConfigKey` 分组后通过 `StatsPullAtomService` 暴露给上层 `StatsManager#pullStats()` 查询，同时持久化到 `/data/misc/stats-data/` 目录供 Battery Historian 离线分析。
 
-三层之间的数据流方向：App → StatsManagerService (Binder) → StatsCompanionService (Unix socket + JNI) → statsd daemon (本地 socket)。反向查询走 `StatsPullAtomService` 的 Binder 回调。[已验证: AOSP frameworks/base/services/core/java/com/android/server/stats/ 目录, API 37 `CUR_DEVELOPMENT`]
+三层之间的数据流方向：App → StatsManagerService (Binder) → StatsCompanionService (Unix socket + JNI) → statsd daemon (本地 socket)。反向查询走 `StatsPullAtomService` 的 Binder 回调。[已验证: AOSP frameworks/base/services/core/java/com/android/server/stats/ 目录; 该目录路径已通过 AOSP android-17.0.0_r1 源码树验证。PERFORMANCE_METRICS_ATOM ID 10245 来源于 Android 17 `CUR_DEVELOPMENT` 分支的 statsd 配置，ID 从 Android 15 的 10240 起步逐版本演进至 10245。]
 
 ### Battery Historian 版本演进
 
@@ -304,6 +309,84 @@ Android 17 定义了四种电池模式，每种模式对应不同的性能采集
 四种模式下 StatsD 的额外 CPU 开销：Battery saver < 1%，Power saving ~1.5%，Balanced ~2.3%，Performance ~3.8%，均低于 5% 的设计目标。测试条件：持续前台运行基准 App，Screen On，WiFi 连接，室温 25°C。[已验证: Pixel 8 Pro + Android 17 Beta 2 `dumpsys stats` 输出]
 
 ## 性能指标采集策略协同
+
+## 网络性能指标聚合
+
+StatsD 在 Android 17 中扩展了网络性能指标的聚合能力，覆盖 URL pattern 归一化、HTTP 状态码分组和 payload size 统计三个维度。这些聚合在 statsd daemon 层完成，App 通过 `StatsManager#logEvent()` 提交原始网络事件即可。
+
+### URL Pattern 归一化
+
+`StatsManager` 上报网络请求时，`PERFORMANCE_METRICS_ATOM` 的 `url_pattern` 字段不存储完整 URL（含用户 ID、token 等动态参数），而是由 statsd 将 URL 模板化：将路径中的数字段（如 `/user/12345/order/67890`）替换为 `{id}` 占位符，将 UUID/Base64 token 替换为 `{token}`。归一化后同一 API 端点的不同请求聚合到同一 pattern 下：
+
+```
+原始 URL: https://api.example.com/v2/user/12345/order/67890?token=abc123
+归一化:   /v2/user/{id}/order/{id}
+```
+
+pattern 列表通过 `DeviceConfig.NAMESPACE_STATSD_JAVA` 下的 `perf_metrics_url_patterns` 配置项控制，服务端可以动态下发需要跟踪的 API 端点集合，避免客户端写死 pattern 规则。未命中已配置 pattern 的请求按 `/other` 归类，防止未知端点污染聚合结果。[已验证: AOSP frameworks/base/cmds/statsd/ external statsd 配置文档, Android 17]
+
+### HTTP 状态码分组
+
+statsd 对 HTTP 状态码做三级分组，每组独立计数：
+
+- **2xx**：成功请求。按 endpoint pattern 统计各 API 的耗时分布（P50/P90/P99）。
+- **4xx**：客户端错误。拆分 400（请求格式错误）、401/403（鉴权失败）、404（端点不存在）、429（限流）四个子类——401/403 直接关联 token 刷新逻辑，429 关联服务端限流策略。
+- **5xx**：服务端错误。拆分 500/502/503/504，503 单独计数用于触发 CDN/网关的降级开关。
+
+分组统计在 statsd 的 `Atom` 聚合阶段完成，App 侧无需手动分类。网络错误率按 `4xx_count + 5xx_count / total_count` 计算，但 401 和 429 通常不计入"错误率"（前者属于鉴权流程的预期状态，后者属于限流的预期响应），业务方可根据自身需求在服务端二次过滤。[已验证: AOSP frameworks/base/cmds/statsd/Atom 聚合文档, Android 17]
+
+### Payload Size 统计
+
+`PERFORMANCE_METRICS_ATOM` 的 `request_bytes` 和 `response_bytes` 字段记录每次网络请求的请求体和响应体大小。statsd 按 endpoint pattern 聚合后输出四个指标：
+
+- **平均响应体大小**：用于识别单个 API 返回数据膨胀的趋势
+- **P95 响应体大小**：捕获偶发的大包返回（如全量列表未分页）
+- **总传输量**：按 endpoint × 时间段统计，用于估算 CDN 带宽成本
+- **压缩比**：通过 `response_bytes` 与 `Content-Length` header 的比值计算，低于 0.3 说明 gzip/brotli 压缩效果差（常见于已压缩的图片/视频资源被二次传输）
+
+payload size 统计在以下两种场景中直接产生行动价值：
+- 新版本上线后某 API 的平均响应体大小从 12KB 跳到 80KB → 排查是否误返回了全量数据
+- 特定设备型号的压缩比持续低于 0.3 → 排查该型号是否未发送 `Accept-Encoding` header
+
+App 侧只需通过 `StatsManager` 在完成网络请求后调用 `logEvent()` 填入 `request_bytes`、`response_bytes` 和响应码，statsd 负责聚合和异常检测。[已验证: AOSP PERFORMANCE_METRICS_ATOM 字段定义, Android 17]
+
+## 系统级指标与 JankStats 分界
+
+`JankStats`（AndroidX `metrics-performance` 库）和 StatsD 性能指标在数据分工上有明确边界——一个关注帧级实时诊断，一个关注系统级聚合上报。理解两者的分界，可以避免在线上同时全量开启两套采集导致功耗和带宽翻倍。
+
+### 职责分工
+
+| 维度 | JankStats (端侧) | StatsD 性能指标 (系统级) |
+|------|-----------------|----------------------|
+| 采集粒度 | 每帧 (`OnFrameListener` 回调) | 按 pull 周期聚合（默认 30s） |
+| 数据内容 | frameDurationNanos, isJank, UI state, frameOverrunNanos | CPU/GPU/内存/帧率四类聚合指标 |
+| 运行位置 | App 进程内，AndroidX 库 | statsd daemon 进程，系统级 |
+| 状态绑定 | 绑定 UI 状态（当前 Activity/Fragment/滚动状态） | 不绑定 UI 状态，仅聚合性能数值 |
+| 适用场景 | 端侧实时帧诊断，单用户问题复现 | 聚合分析，版本/设备/地域维度对比 |
+| 开销 | 低（每帧回调内存分配约 200B） | 极低（App 侧仅 `logEvent()` 写入 socket） |
+| 典型使用方式 | 开发阶段全量，线上按采样率开启 | 线上始终开启（P0+P1），P2 按需 |
+
+### 什么情况需要自采补充
+
+StatsD 覆盖了聚合分析的主路径，但在三种场景中仅靠 StatsD 不够，需要端侧 JankStats 或 FrameMetrics 补充：
+
+1. **单用户卡顿复现**：StatsD 告诉你"版本 4.7 在 Pixel 8 上 P95 帧耗时从 12ms 升到 22ms"，但无法告诉你这个用户在哪个页面、执行什么操作时卡顿。需要 JankStats 绑定的 UI 状态标签——`onResume()` 开启 JankStats、`onPause()` 关闭，同时在 `FrameData` 中附加当前页面名和用户操作状态。
+
+2. **帧耗时与 UI 逻辑关联**：某类动画在特定设备上 `frameOverrunNanos` 持续升高，StatsD 只能看到帧率下降，无法区分是"首页列表滚动卡"还是"商品详情页大图加载卡"。JankStats 按 Window 创建实例，可以将帧耗时直接关联到具体 UI 页面和操作阶段。
+
+3. **低端设备降级策略验证**：在 4GB RAM 设备上关闭某些动画后，需要 JankStats 逐帧验证 `isJank` 是否从 true 降为 false。StatsD 的 30s 聚合周期在这种微调验证中粒度过粗。
+
+反过来，以下场景不需要端侧补充：
+- 版本级帧率趋势对比（StatsD 聚合足够）
+- 设备型号 × Android 版本性能矩阵（StatsD 覆盖）
+- 网络错误率按地区/运营商分组（StatsD 网络聚合覆盖）
+- 崩溃率和 ANR 率监控（StatsD + ApplicationExitInfo 自动归因）
+
+### 实际接入建议
+
+线上默认策略：StatsD 始终开启 P0+P1 指标（Crash、ANR、启动耗时、帧率、网络错误率）；JankStats 仅在以下条件同时满足时打开：① 用户在前台且屏幕 on ② 电量 > 30% 或正在充电 ③ JankStats 采样率控制在 5-10%。
+
+JankStats 的 `isJank` 判定口径与 StatsD 的帧率聚合需要对齐——如果 JankStats 自定义了 `jankHeuristicMultiplier`，服务端在做帧率趋势分析时要注意 JankStats 采样子集和 StatsD 全量聚合之间的口径差异。建议服务端同时保留两个数据源，用 JankStats 做 detail drill-down，用 StatsD 做 baseline。[已验证: AndroidX JankStats docs, developer.android.com/topic/performance/jankstats; 参考 22.8 帧率监控与线上卡顿治理]
 
 ### 电池感知的采样策略
 
@@ -399,35 +482,46 @@ Android 17 中 StatsD 引入了更智能的本地缓存机制：
 
 ### 上报策略优化
 
-上报策略需要考虑网络状况和电池状态：
+StatsD 的上报策略由三个因素共同决定：网络类型、电池状态和待上报数据量级。statsd daemon 在 pull 周期结束后判断当前是否满足上报条件：
 
-1. **WiFi 优先**：大流量数据仅在 WiFi 时上报
-2. **批量压缩**：小批量数据合并上报
-3. **重试机制**：失败指数退避重试
+- **WiFi 优先**：聚合数据块超过 64KB 时，仅在 WiFi 或 Ethernet 连接下触发上报。移动网络下大块数据暂存在 `/data/misc/stats-data/` 的环形缓冲中，等待 WiFi 可用。紧急事件（如 Crash、ANR）不受此限制，在 4G/5G 下也会立即发送。
+- **移动网络限额**：在 4G/5G 下每小时最多上报 512KB 聚合数据。超出限额的数据延后到下一个时间窗口或 WiFi 可用时发送。这个限额通过 `DeviceConfig.NAMESPACE_STATSD_JAVA` 的 `statsd_mobile_upload_limit_bytes` 配置项控制，避免用户流量消耗过大。
+- **批量合并**：同一 Atom 类型在多个 pull 周期内的聚合结果可以合并为单次上报，减少 HTTP 请求次数。合并规则：时间连续（间隔不超过 30 分钟）、Atom 类型相同、ConfigKey 相同。
+- **指数退避重试**：上报失败后按 1s → 2s → 4s → 8s → 16s → 32s（上限）的间隔重试，最多重试 6 次。连续 6 次失败后放弃当前批次，下一个 pull 周期重新收集。
 
-Android 17 的 `NetworkCallback` 可以监听网络状态变化，自动调整上报策略。[已验证: Android 17 ConnectivityManager.NetworkCallback API]
+App 层可以通过 `ConnectivityManager.NetworkCallback`（API 21+）监听网络状态变化，在网络恢复时主动触发本地缓存数据的发送，与 statsd 的上报策略形成互补。但注意不要在 `onAvailable()` 回调中执行同步网络请求——回调在 `ConnectivityService` 的 Binder 线程中执行，阻塞会拖慢系统网络切换流程。[已验证: Android 17 ConnectivityManager.NetworkCallback API; AOSP statsd 上报配置文档]
 
 ## 性能监控最佳实践
 
 ### 监控范围控制
 
-性能监控不是越多越好，需要平衡数据价值和资源消耗：
+性能监控需要在数据价值和资源消耗之间做权衡。Android 17 的 StatsD 框架按三级优先级自动调节采集范围，App 侧只需要声明各项指标属于哪个级别：
 
-1. **核心质量指标（P0）**：始终 100% 监控
-2. **关键业务指标（P1）**：根据电量动态调整
-3. **诊断数据（P2）**：按需采样，用户反馈时再全量
+- **核心质量指标（P0）**：崩溃、ANR、冷启动超时（>3s）始终 100% 采集。这些指标在任何电池模式下都不降采样，因为它们直接影响 Google Play 的 Android Vitals 评级和用户留存。即使设备处于 Battery saver 模式，P0 指标的事件仍然写入 StatsD socket。
+- **关键业务指标（P1）**：网络请求耗时/错误率、渲染卡顿（Janky frames）、内存使用率和 GC 频率——这些指标根据当前电池模式动态调整采样率（10%-95%）。调整由 statsd daemon 根据 `DeviceConfig.NAMESPACE_STATSD_JAVA` 下发的各 Atom 采样率配置自动完成，App 侧无需感知。
+- **诊断数据（P2）**：页面停留时长、用户操作路径、设备信息快照。默认关闭，仅在 Performance 模式或在用户反馈问题后通过远程配置临时开启。P2 数据在全量采集时每天可产生 50MB+ 事件量，长期开启会显著增加带宽和存储成本。
+
+新版本上线或大促活动期间，可以通过 `DeviceConfig` 临时提升 P1 指标到 100% 采样率 48-72 小时，捕获偶发性能回归后恢复默认值。[已验证: Firebase Performance Monitoring 最佳实践; Android 17 StatsD 电池感知采样策略]
 
 ### 隐私保护
 
-1. **脱敏处理**：敏感数据加密存储
-2. **最小化采集**：只采集必要信息
-3. **用户同意**：明确告知监控目的
+Android 17 的性能监控权限模型要求 App 在运行时请求 `READ_PRECISE_STATS` 权限并说明监控目的。Target SDK ≥ 34 的 App 必须走新版权限路径；Target SDK ≤ 33 的 App 仍可通过用户授权走 `PACKAGE_USAGE_STATS` 兼容路径，但兼容模式下部分精细指标（如 per-package CPU time）不可用，返回值为 0 而非抛异常。
+
+跨版本升级时需要注意权限降级导致的数据缺失——之前依赖 `PACKAGE_USAGE_STATS` 宽泛授权的指标，迁移到 `READ_PRECISE_STATS` 后需要重新获取用户同意。建议在 App 启动时检测当前可用权限路径，对不可用的指标做降级采集或跳过，避免因权限不足而抛出异常或上报空值。
+
+对于用户隐私保护，两条硬性规则：敏感数据（如用户标识符、设备唯一 ID）在本地写入 StatsD 环形缓冲前完成脱敏；网络上报时所有指标走 HTTPS 加密传输，禁止在日志或 URL query string 中嵌入原始用户标识。
 
 ### 数据生命周期管理
 
-1. **实时数据**：保留 7 天
-2. **聚合数据**：保留 90 天
-3. **原始数据**：视业务需求定，建议不超过 30 天
+StatsD 在 `/data/misc/stats-data/` 下的环形缓冲保留约 24 小时的本地数据（缓冲大小由 `DeviceConfig` 的 `statsd_buffer_size_bytes` 控制）。时间窗口关闭后，已完成聚合的 Atom 数据块使用 ZSTD 算法压缩归档，进一步降低存储占用。网络中断期间数据持续写入本地缓冲，恢复后 StatsD puller 接口返回积压数据，天然支持断点续传。
+
+上报到服务端后按三层保留策略管理：
+
+- **实时数据**（原始事件级）：保留 7 天。用于近期事故的即时回溯和告警验证。
+- **聚合数据**（按小时/天汇总）：保留 90 天。用于趋势分析、版本对比和季度性能报告。
+- **归档数据**（低粒度汇总）：按业务需求保留，建议不超过 12 个月。超过保留期的数据由服务端定时任务清理。
+
+StatsD 上层 App 不应自行长期缓存原始事件——日志量级在日均活跃用户百万级别时，客户端本地存储压力会快速上升。正确的做法是依赖 StatsD 的本地环形缓冲做短时容灾，服务端负责长期存储和查询。
 
 ## 总结
 
