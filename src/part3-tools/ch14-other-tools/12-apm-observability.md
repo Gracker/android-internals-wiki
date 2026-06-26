@@ -58,9 +58,9 @@ task2b_result: fixed
 last_task2b_at: "2026-05-28T12:50:00+08:00"
 task9_review_notes: "2026-05-29 Task9 pass-tech-review: 复核 JankStats / FrameMetrics / ApplicationExitInfo / Matrix AGP 边界 / KOOM / btrace / Measure 选型口径，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-28T14:05:00+08:00"
-last_task6_audit: "2026-06-11"
-last_task6_audit_result: pass-no-issues
-last_task6_audit_log: "logs/review/2026-06-11-16-audit.md"
+last_task6_audit: "2026-06-27"
+last_task6_audit_result: pass-light-edit
+last_task6_audit_log: "logs/review/2026-06-27-03-audit.md"
 last_task9_audit: "2026-06-16"
 last_task9_audit_at: "2026-06-16T16:25:24+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-16-16-audit.md"
@@ -129,7 +129,7 @@ p2: 0
 
 ## 第一层：官方基线能力，决定了你的最低起点
 
-官方能力最适合拿来做基础信号。它们的优点很明显：系统支持、口径相对稳定、兼容性通常更好。缺点也一样直接：系统没暴露的东西，它们给不了。
+官方能力最适合拿来做基础信号。系统支持、口径相对稳定、兼容性通常更好。缺点也一样直接：系统没暴露的东西，它们给不了。
 
 ### JankStats：先把帧级信号拿稳
 
@@ -207,7 +207,7 @@ Matrix 最值得写的一点，是它把客户端常见的监控问题组织成�
 
 ### KOOM：内存问题成为主矛盾时，它的价值更明显
 
-`KOOM` 的优势很集中：Java Heap、Native Heap、线程泄漏、OOM 治理。
+`KOOM` 集中在 Java Heap、Native Heap、线程泄漏、OOM 治理。
 所以它更像一把专项刀，而不是总平台入口。
 
 如果团队当前最痛的是：
@@ -223,10 +223,10 @@ KOOM 的 Java heap 方案常见做法是让主进程短暂停住 ART VM，`fork(
 
 ### LeakCanary：本地排泄漏，仍然非常强
 
-`LeakCanary` 的位置很清楚：它更偏开发和测试阶段的本地排查工具。
+`LeakCanary` 更偏开发和测试阶段的本地排查工具。
 它最擅长的是把“谁没有被回收、为什么还活着”讲清楚。
 
-所以更稳的理解是：
+因此：
 
 - `LeakCanary` 用来本地查泄漏
 - `KOOM` 用来线上治理内存问题
