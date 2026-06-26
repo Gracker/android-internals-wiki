@@ -1159,6 +1159,33 @@
       ],
       "description": "精读论文：Sustainability Is Not Linear - 在Samsung Galaxy S25 Ultra上测量8个LLM(0.5B-9B)的能耗、延迟、质量权衡关系",
       "scored_at": "2026-06-27T05:47:56.229878"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-binder-rpc-transaction-limit-600kb.md",
+      "title": "Android 17 RPC Binder 事务上限从 100KB 提升到 600KB",
+      "summary": "Constants.h 将 RPC binder 单笔事务上限从 100KB→600KB（6×），告警阈值 300KB。三处事务校验统一引用。kernel binder BINDER_VM_SIZE 1MB 未改。",
+      "chapter": "1.30",
+      "processed_at": "2026-06-27T06:15:15.201015",
+      "status": "injected",
+      "target_file": "src/part1-fundamentals/ch01-architecture/30-binder-transaction-buffer-performance.md"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-hwui-vulkanmanager-multi-queue-frame-boundary.md",
+      "title": "Android 17 HWUI VulkanManager 多队列并行渲染与帧边界管理",
+      "summary": "双图形队列并行：RenderThread + Hardware Bitmap Uploader 解耦。硬性要求 2+ 并发 graphics queue。VK_EXT_global_priority + VK_ANDROID_frame_boundary 支持。",
+      "chapter": "18.26",
+      "processed_at": "2026-06-27T06:15:15.201015",
+      "status": "referenced",
+      "target_file": "src/part2-performance/ch18-rendering-pipelines/26-android17-hwui-vulkan-multi-queue.md"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android17-cross-app-agent-system-primitive-accessibility-voiceinteraction-appfunction.md",
+      "title": "Android 17 跨应用 AI Agent 系统原语三路径对比",
+      "summary": "AccessibilityService / VoiceInteractionService / AppFunctionService(API 37 新增) 三路径源码级对比。AppFunctionService = on-device MCP 协议。",
+      "chapter": "5.21",
+      "processed_at": "2026-06-27T06:15:15.201015",
+      "status": "referenced",
+      "target_file": "src/part1-fundamentals/ch05-cpu-power/5.21-cross-app-agent-system-primitive.md"
     }
   ]
 }

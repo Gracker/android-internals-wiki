@@ -1166,5 +1166,82 @@
       "Obsidian/DeepResearch/2026-06-26-android17-hwui-vulkanmanager-multi-queue-frame-boundary.md"
     ],
     "status": "pending"
+  },
+  {
+    "section": "26.3",
+    "section_title": "性能采集与监控（Performance Collection）",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] Android 17 MemoryLimiter（memcg memory.high 策略）对 Debug.MemoryInfo 性能监控的影响——新增 system_server 第三道后台内存防线，Java+JNI+内核三层架构，对 PSS 抖动、anon swap kill 30s 窗口、memory.high vs PSS 差异有关键源码级发现",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-memorylimiter-policy-monitor-impact.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 MemoryLimiter 源码调研 — MemoryLimiter.java(1291行)+JNI(1276行)+cgroup v2 memory.events，三类限制类型(LIMIT_TYPE_MEMORY/SWAP/ANON_SWAP)，对 Debug.MemoryInfo 的三重影响",
+        "suggestion": "建议在 §26.3 性能采集章节补充 MemoryLimiter 对 APM/监控 SDK 的影响分析，或在 §4.x 内存管理章节补充 MemoryLimiter 架构"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-27T06:15:15.201015",
+    "status": "pending"
+  },
+  {
+    "section": "13.17",
+    "section_title": "Android 17 Perfetto 数据源边界与验证",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] FrameTracer（android.surfaceflinger.frame）数据通路深度分析——13 种 BufferEventType、Layer.cpp 7 处调用点、与 FrameTimeline 关联方式",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-frametracer-graphics-frame-event.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "FrameTracer 数据通路 — 13 种 BufferEventType 完整生命周期，Layer.cpp 调用点分布，与 FrameTimeline 通过 buffer_id+frame_number 关联",
+        "suggestion": "建议在 §13.17 补充 FrameTracer 与 FrameTimeline 区别说明、BufferEventType 生命周期图谱"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-27T06:15:15.201015",
+    "status": "pending"
+  },
+  {
+    "section": "22.28",
+    "section_title": "Compose Compiler Metrics 与 Recomposition 诊断体系",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] Compose 性能诊断工具缺口。现有章节覆盖优化技术但缺少 compiler metrics 诊断方法论。评分 17/20。",
+    "material_paths": [],
+    "gap_source": "章节深挖+官方文档",
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-27T07:04:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.23",
+    "section_title": "Android 17 JobScheduler 系统级五维节流架构",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] 系统级 JobScheduler 节流架构缺口。§25.13/14 覆盖应用侧配额治理，系统侧五维节流机制无覆盖。评分 16/20。",
+    "material_paths": [
+      "DeepResearch/2026-06-26-android17-jobservice-priority-cpu-quota.md"
+    ],
+    "gap_source": "DeepResearch+AOSP结构",
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-27T07:04:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.31",
+    "section_title": "Android 17 Binder 性能录制与跨进程 Trace 链路",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] Binder 性能监控录制 API 缺口。§1.30 覆盖 transaction buffer 边界，性能录制与 IPC trace 链路无覆盖。评分 15/20。",
+    "material_paths": [
+      "DeepResearch/2026-06-26-android17-binder-perf-monitor-recording-aidl-trace.md"
+    ],
+    "gap_source": "DeepResearch",
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-27T07:04:00+08:00",
+    "status": "pending"
   }
 ]
