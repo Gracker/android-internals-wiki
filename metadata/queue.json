@@ -1004,8 +1004,8 @@
   {
     "section": "26.3",
     "section_title": "性能指标采集与上报",
-    "priority": 90,
-    "reason": "[review回炉] 2个outline锚点完全缺失（网络聚合、JankStats关系）；最佳实践章节内容过薄",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 3处 P0 源码引用错误",
     "material_paths": [
       "intake/suggestions.md（含 review 意见）"
     ],
@@ -1039,6 +1039,24 @@
         "location": "内存泄漏检测：LeakCanary",
         "detail": "'Android 14+ 上 LeakCanary 利用了 ScheduleRef 和 PausedState 进行更精确的引用追踪'——ScheduleRef 的 API 名称准确性存疑，可能是对 LeakCanary 内部机制的误述",
         "suggestion": "核实 LeakCanary 2.x 源码中是否存在 ScheduleRef 类型；如不存在，修正为准确的机制描述"
+      },
+      {
+        "type": "源码错误",
+        "location": "summary.art-heap 关键字说明",
+        "detail": "声称 Android 17 的 Debug.MemoryInfo API 包含  关键字用于查询 ART 虚拟机内部堆状态，但实际 AOSP android.os.Debug.MemoryInfo 中不存在此关键字",
+        "suggestion": "移除不存在的  关键字说明，使用正确的 AOSP API 如 、 等"
+      },
+      {
+        "type": "源码错误",
+        "location": "android_os_Debug_getGpuPrivateMemoryKb 方法",
+        "detail": "引用了不存在的方法 ，声称用于查询 GPU 私有内存，但实际 AOSP android_os_Debug.cpp 中无此方法",
+        "suggestion": "使用正确的 AOSP GPU 内存查询 API，如  的正确方法或系统统计接口"
+      },
+      {
+        "type": "源码错误",
+        "location": "MEMTRACK_FLAG_GPU_PRIVATE 标志位",
+        "detail": "声称 Android 17 引入了  标志位区分 GPU 私有内存和共享内存，但实际 memtrack.h 中未定义此标志",
+        "suggestion": "使用正确的 memtrack HAL 标志位或 API，如 、 等"
       }
     ],
     "added_by": "task6-review",
