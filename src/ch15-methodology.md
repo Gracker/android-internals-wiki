@@ -6,13 +6,13 @@ status: ready-for-review
 
 task6_result: pass-light-edit
 task6_reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-06-16"
+task6_reviewed_date: "2026-06-27"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-06-27
 task2b_fixed_date: "2026-06-16"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: pending
 last_task9_autofix_at: 2026-06-16
@@ -61,8 +61,8 @@ related_chapters:
 - '15.5'
 - '15.9'
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-26
-last_task6_at: 2026-06-26T06:05:00+08:00
+reviewed_date: 2026-06-27
+last_task6_at: 2026-06-27T04:09:00+08:00
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-16"
 last_task9_review_log: "logs/deep-review/2026-06-16-21-deep-review.md"
@@ -209,7 +209,7 @@ graph TD
 
 2. **Trace 工具**：
    - `adb shell atrace`：系统级跟踪
-   - `systrace`（主机侧命令）/ Android Studio System Trace：短时系统跟踪；Android 10+ 优先用 Perfetto
+   - `systrace`（主机侧命令）/ Android Studio System Trace：短时系统跟踪；Android 9+ 优先使用 Perfetto
 
 ### 专业工具
 
