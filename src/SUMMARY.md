@@ -46,6 +46,7 @@ tags:
   - [1.25 Android 17 Binder IPC 异步机制与批处理流水线](part1-fundamentals/ch01-architecture/01.25-binder-ipc-async-pipeline.md)
   - [1.26 Android 17 MessageQueue 重构与 DeliQueue 无锁优化](part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md)
   - [1.27 AMS 双锁架构与 system_server 锁竞争优化](part1-fundamentals/ch01-architecture/25-ams-dual-lock-system-server-contention.md)
+  - [1.30 Binder Transaction Buffer 演进与大事务性能边界](part1-fundamentals/ch01-architecture/30-binder-transaction-buffer-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -549,6 +550,7 @@ tags:
   - [26.19 端侧高可用日志与诊断命令通道](part5-app/ch26-observability/19-client-log-diagnostic-command-channel.md)
   - [26.20 Battery Historian 与性能指标集成](part5-app/ch26-observability/26.20-battery-historian-performance-metrics-integration.md)
   - [26.21 编译期字节码插桩与监控自动化](part5-app/ch26-observability/21-bytecode-instrumentation-monitoring-automation.md)
+  - [26.22 Android 17 监控降级：内存约束与隐私限制下的性能数据采集](part5-app/ch26-observability/22-monitoring-under-memory-privacy-constraints.md)
 
 ---
 
