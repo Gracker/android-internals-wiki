@@ -95,6 +95,7 @@ tags:
   - [3.10 InputDispatcher stale event 判定与事件丢弃](part1-fundamentals/ch03-input/10-inputdispatcher-stale-event.md)
   - [3.11 InputMethodManager 与软键盘性能](part1-fundamentals/ch03-input/11-input-method-manager-performance.md)
   - [3.12 Predictive Back 系统架构与动画管线性能](part1-fundamentals/ch03-input/12-predictive-back-system-architecture.md)
+  - [3.13 键盘、鼠标与指针输入性能 — 桌面模式交互管线](part1-fundamentals/ch03-input/13-keyboard-mouse-pointer-input-performance.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.1 Android 内存模型全景](part1-fundamentals/ch04-memory/01-memory-overview.md)
@@ -462,6 +463,7 @@ tags:
   - [22.24 App Widget 更新性能：RemoteViews IPC 与 Glance 渲染](part5-app/ch22-rendering-practice/24-app-widget-performance.md)
   - [22.25 Compose 布局系统：测量阶段、缓存机制与 Intrinsic 性能](part5-app/ch22-rendering-practice/25-compose-layout-measurement-performance.md)
   - [22.26 Compose Snapshot 系统与状态观测性能](part5-app/ch22-rendering-practice/26-compose-snapshot-state-performance.md)
+  - [22.27 Adaptive Layout 与多形态设备渲染适配性能](part5-app/ch22-rendering-practice/27-adaptive-layout-multi-form-factor-performance.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
