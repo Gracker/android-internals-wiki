@@ -4,10 +4,13 @@ chapter: "18.25"
 status: ready-for-review
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_lite_at: 2026-06-26
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-26
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
 last_verified: "2026-06-26"
@@ -295,7 +298,7 @@ Compose 在这条路径上与 View 体系完全共用基础设施。差异只在
 - Compose invalidation：Snapshot → Recomposer → LayoutNode 更新
 - View invalidation：`invalidate()` → `ViewRootImpl.performTraversals`
 
-两者都由同一个 `Choreographer` 驱动，因此在同一帧中对齐。但 PausableComposition 可能导致 Compose 部分跨帧完成，而 View 部分在同帧完成——这种时序差异在混合动画场景中可能导致视觉不同步。
+两者都由同一个 `Choreographer` 驱动，因此在同一帧中同步。但 PausableComposition 可能导致 Compose 部分跨帧完成，而 View 部分在同帧完成——这种时序差异在混合动画场景中可能导致视觉不同步。
 
 [已验证: Compose BOM 2025.12.00, AndroidView.kt; View invalidation 基于 AOSP frameworks/base ViewRootImpl.java]
 
