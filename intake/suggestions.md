@@ -85,3 +85,29 @@
 - **问题**："Android 14+ 上 LeakCanary 利用了 ScheduleRef 和 PausedState 进行更精确的引用追踪"——ScheduleRef 不是已知的 LeakCanary 公开 API 类型，可能是对内部机制的误述。
 - **建议**：核实 LeakCanary 2.x 源码（square/leakcanary）中是否存在 ScheduleRef 类型；如不存在，修正为准确的机制描述或删除该句。
 - **review 日志**：logs/review/2026-06-26-21-review.md
+
+## [2026-06-26 21] Task2A 知识缺口挖掘 — 已检查方向记录
+
+本轮检查方向（避免下次重复扫描）：
+
+### 素材驱动
+- 41 个 unmapped DeepResearch 源全部逐一评估
+- 高优先源：binder-ipc-latency、memtrack-jni-aggregation、profilingmanager-anomaly、fair-memory-trim、flutter-3.44-agentic、as-memory-profiler-jvmti、apm-tools-benchmark、perfdog-datasources
+- 结论：大部分与现有章节重叠（1.4 Binder、4.6 onTrimMemory、8.10/8.16 ProfilingManager、14.1 AS Profiler、19.10 APM 工具、19.19 PerfDog 等）或素材不足（单一 DeepResearch 无交叉验证源）
+
+### AOSP 结构对照
+- frameworks/base 核心服务：AMS、PMS、WMS、InputManager、DisplayManager 全部已有章节
+- system/ 核心组件：vold、netd、lmkd、installd、tombstoned 均已覆盖或隐含覆盖
+- packages/modules/：Mainline Module 性能影响无足够素材
+
+### 官方文档对照
+- Android 17 behavior changes 全面对照：Edge-to-Edge (2.26)、16KB (4.7/20.13)、FGS types (5.17)、Predictive Back (3.12/22.13) 均已覆盖
+- 无发现未覆盖的 Android 17 性能相关行为变更
+
+### 章节深挖
+- ch01-ch06（Part 1）：27+30+12+15+22+7 节，覆盖极为充分
+- ch20-ch26（Part 5）：18+16+26+12+20+22+21 节，实战篇覆盖极为充分
+- Clippings 三本参考书（90+ 篇）的知识点已全部映射到现有章节
+
+### 结论
+全书 488 节已覆盖 Android 17/API 37 范围内所有核心性能主题。本轮未发现评分 ≥ 14 的知识缺口。下一轮建议探索：Wear OS/TV/Auto 性能专题、Android 17 企业/MDM 性能约束、或等待新的 DeepResearch 素材积累。
