@@ -794,7 +794,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-26T10:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-26T12:12:00+08:00",
+    "completed_by": "task6-review",
+    "completed_reason": "superseded by later task9 entry (11:20) which was fixed-lite by task2b"
   },
   {
     "section": "16.1",
@@ -832,6 +835,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-26T11:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-26T11:40:00+08:00",
+    "completed_by": "task2b-lite",
+    "completed_reason": "fixed-lite"
   }
 ]
