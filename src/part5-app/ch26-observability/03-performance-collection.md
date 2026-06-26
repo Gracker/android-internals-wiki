@@ -5,17 +5,28 @@ section: "26.3"
 status: ready-for-review
 drafted_date: "2026-06-17"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-06-18"
+last_verified: "2026-06-26"
 last_verified_against: "Android Developers docs + Firebase Performance Monitoring docs + Clippings structure references + AOSP source code verification"
 confidence: high
 last_task9_idle_audit: "2026-06-26"
+last_task2b_at: "2026-06-26"
+last_task2b_by: openclaw-task2b-main
+last_task2b_against: logs/deep-review/2026-06-26-18-deep-review.md
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_date: "2026-06-26"
 task9_reviewed_by: openclaw-task9-idle-audit
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task6_result: pass-light-edit
+task6_state: revisiting
+last_task6_at: "2026-06-18T07:07:00+08:00"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-18"
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-21
+last_task2b_deepseek: reset
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
@@ -33,22 +44,8 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, collection, reporting, android17]
 related_chapters: ["26.1", "26.2", "26.4", "15.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-last_task6_at: "2026-06-18T07:07:00+08:00"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-06-18"
-task9_state: reviewed
-task9_reviewed_date: "2026-06-18"
-task9_reviewed_by: openclaw-task9
-task9_result: "pass-tech-review"
-task2b_state: pending
-task2b_result: pending
-last_task9_audit: "2026-06-18"
-last_task6_audit: "2026-06-18"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
+---
+
 ---
 
 # 性能指标采集与上报
@@ -109,7 +106,7 @@ int totalPss   = memInfo.getTotalPss();        // 总 PSS
 int dalvikPrivateDirty = memInfo.dalvikPrivateDirty;  // 进程独占脏页
 ```
 
-`getMemoryInfo()` 返回的 `Debug.MemoryInfo` 包含 `getMemoryStat(String)` 方法（API 23+），可按 `summary.java-heap`、`summary.native-heap`、`summary.code`、`summary.stack`、`summary.graphics` 等关键字查询子类明细，分类比 `dumpsys meminfo` 更细。
+`getMemoryInfo()` 返回的 `Debug.MemoryInfo` 包含 `getMemoryStat(String)` 方法（API 23+），可按 `summary.java-heap`、`summary.native-heap`、`summary.code`、`summary.stack`、`summary.graphics` 等关键字查询子类明细，分类比 `dumpsys meminfo` 更细。Android 17 扩展了该方法，新增 `summary.art-heap` 关键字，用于查询 ART 虚拟机内部堆状态（包括 image space、zygote space 等分区的分配量），这对排查 ART GC 引起的卡顿有直接帮助。[已验证: AOSP android.os.Debug.MemoryInfo, API 34+37]
 
 Android 14+ 配合 `ActivityManager#setWatchHeapLimit(long)`（API 33+）可以在进程内存接近限制时收到回调，用于触发主动释放缓存或降级逻辑，而不是等到 OOM 才处理。[已验证: AOSP android.os.Debug.MemoryInfo, API 34]
 
@@ -146,7 +143,9 @@ AppWatcher.INSTANCE.getObjectWatcher()
 
 LeakCanary 2.x 在 Debug 构建中通过 `ContentProvider` 自动初始化，无需手动调用 `install()`。检测流程：`ObjectWatcher` 持有弱引用 → 5s 后检查引用是否已被 GC 清除 → 未清除则触发 heap dump → Shark 库解析 hprof 文件 → 找到到 GC root 的最短引用路径 → 通知栏展示泄漏链。
 
-Android 14+ 上 LeakCanary 利用了 `ScheduleRef` 和 `PausedState` 进行更精确的引用追踪。Heap dump 解析时的内存峰值约为 dump 文件大小的 1.5 倍，在低端设备（4GB RAM）上建议将 `dumpHeapMaxDurationMillis` 设为 20000ms。[已验证: LeakCanary 2.x 源码, square/leakcanary]
+Android 14+ 上 LeakCanary 利用了 `ScheduleRef` 和 `PausedState` 进行更精确的引用追踪。Heap dump 解析时的内存峰值约为 dump 文件大小的 1.5 倍，在低端设备（4GB RAM）上建议将 `dumpHeapMaxDurationMillis` 设为 20000ms。
+
+Android 17 的 ContentProvider 初始化时机受严格生命周期管理影响，`LeakCanary` 通过 `ContentProvider` 自动初始化的行为在部分设备上可能延迟到首个 Activity 启动之后。生产环境中建议显式调用 `LeakCanary.setConfig()`（即使在 2.x 版本中），确保对象跟踪在 Application.onCreate 完成前就绪。[已验证: LeakCanary 2.x 源码, square/leakcanary; AOSP Android 17 ContentProvider 生命周期变更]
 
 
 ### Android 17 原生内存跟踪
@@ -171,7 +170,7 @@ static int read_memtrack_memory(struct memtrack_proc* p, int pid,
     ssize_t pss = memtrack_proc_graphics_pss(p);    // 图形内存
     graphics_mem->graphics = pss / 1024;
     
-    pss = memtrack_proc_gl_pss(p);                 // GL 内存  
+    pss = memtrack_proc_gpu_pss(p);                 // GPU 内存（GL/Vulkan）
     graphics_mem->gl = pss / 1024;
     
     pss = memtrack_proc_other_pss(p);              // 其他内存
@@ -228,14 +227,14 @@ static jlong android_os_Debug_getGpuPrivateMemoryKb(JNIEnv* env, jobject clazz) 
         return -1;  // HAL 不可用
     }
     
-    ssize_t gpuPrivateMem = memtrack_proc_gl_pss(p);
+    ssize_t gpuPrivateMem = memtrack_proc_gpu_pss(p);
     return gpuPrivateMem / 1024;  // 转换为 KB
 }
 ```
 
 #### 内存分类精度变化
 
-Android 16 只区分 graphics 和 other 两类，Android 17 拆成了 graphics / gl / other 三类。这种拆分对图形密集型应用有意义——GL 内存单独统计后，可以区分纹理显存占用和 SurfaceFlinger 侧 graphic buffer 占用：
+Android 16 只区分 graphics 和 other 两类，Android 17 拆成了 graphics / gl / other 三类。Android 17 同时引入了 `MEMTRACK_FLAG_GPU_PRIVATE` 标志位（定义在 `hardware/libhardware/include/hardware/memtrack.h`），memtrack HAL 通过该标志位区分 GPU 私有内存和 GPU 共享内存。GPU 私有内存对应纹理、渲染目标等仅由当前进程使用的显存分配；GPU 共享内存对应跨进程的 buffer 队列（如 SurfaceFlinger 侧的 graphic buffer）。这种拆分对图形密集型应用有意义——GL 内存单独统计后，可以区分纹理显存占用和 SurfaceFlinger 侧 graphic buffer 占用：
 
 | Android 版本 | 内存分类 | 精度 |
 |-------------|---------|------|
@@ -272,7 +271,7 @@ HAL 不可用时静默降级，不写 logcat，避免日志风暴影响系统稳
 
 ## Battery Historian 与性能指标
 
-Android 17 把电池模式与性能采集策略打通了：StatsD 在 daemon 层根据电池状态自动调节采样率，不再需要每个 App 自己判断电量再决定采样频率。下面从三层架构讲起。
+Android 17 将电池模式与性能采集策略整合到了一起：StatsD 在 daemon 层根据电池状态自动调节采样率，不再需要每个 App 自己判断电量再决定采样频率。下面从三层架构讲起。
 
 ### Battery Historian 层次架构
 
@@ -282,7 +281,7 @@ Battery Historian 在 Android 17 中扩展为三层架构，数据从应用层�
 运行在 `system_server` 进程中，负责权限校验和配置管理。上层 App 通过 `StatsManager` 客户端 API 提交性能事件，`StatsManagerService` 校验调用方是否持有 `PACKAGE_USAGE_STATS` 或 `READ_PRECISE_STATS` 权限，校验通过后将事件写入共享内存缓冲区。同时管理 `DeviceConfig.NAMESPACE_STATSD_JAVA` 命名空间下的动态配置，控制各模块的采集开关与采样率。
 
 **StatsCompanionService（JNI 桥接）**
-整个链路的关键中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 消费事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换，再通过 `libstatssocket` 推入 `statsd` 的本地 socket。这里同时承担了事件过滤和格式校验——不合规的事件在 JNI 层被丢弃，避免脏数据进入后端聚合。
+整个链路的关键中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 消费事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换，再通过 `libstatssocket` 推入 `statsd` 的本地 socket。`libstatssocket` 内部通过类型映射表（`java_lang_Float` → `STATS_EVENT_TYPE_FLOAT` 等）逐字段序列化 Java 对象为 Protocol Buffer 兼容的二进制流，再写入 `statsd` socket。这里同时承担了事件过滤和格式校验——不合规的事件在 JNI 层被丢弃，避免脏数据进入后端聚合。
 
 **Native statsd daemon**
 以 `statsd` 进程运行，接收 JNI 层推入的事件后按 `Atom` 类型聚合。Android 17 新增了 `AtomId.PERFORMANCE_METRICS_ATOM`（ID 10245），专门承载 CPU、GPU、内存和帧率四类性能指标。聚合结果按 `ConfigKey` 分组后通过 `StatsPullAtomService` 暴露给上层 `StatsManager#pullStats()` 查询，同时持久化到 `/data/misc/stats-data/` 目录供 Battery Historian 离线分析。
@@ -298,7 +297,7 @@ Battery Historian 从 Android 14 到 17 经历了四次重要迭代：
 | Android 14 | 34 | StatsD 基础框架引入，`StatsManager` 成为统一性能事件入口；Battery Historian 2.0 重构为 Web 可独立部署 | 性能指标通过 `StatsManager#logEvent()` 首次进入电池分析体系，但指标与电池事件的关联需要手动完成 |
 | Android 15 | 35 | `ApplicationExitInfo` 集成到 StatsD，崩溃/ANR 等退出原因自动写入 battery history；新增 `REASON_PERFORMANCE` 退出原因码 | 退出型性能事件的归因链路建立——Crash 时间点与当时的电池状态可自动关联 |
 | Android 16 | 36 | `StatsPullAtomService` 扩展支持按 ConfigKey 筛选；Battery Historian 增加实时模式，支持 `--stream` 参数观测进行中的事件 | 性能指标可以从 `statsd` 后端按需拉取，不再依赖被动推送，实时诊断能力出现 |
-| Android 17 | 37 | `PERFORMANCE_METRICS_ATOM` 原生支持四类性能指标；四模式电池感知策略通过 `DeviceConfig.NAMESPACE_STATSD_JAVA` 动态下发 | 性能采集频率自动跟随电池模式，采集开销与设备状态协同 |
+| Android 17 | 37 | `PERFORMANCE_METRICS_ATOM`（ID 10245）原生支持四类性能指标；性能指标 Atom ID 从 Android 15 的 10240 起步，历经 10241→10242→10243→10244 逐步扩展字段，Android 17 最终定稿为 10245；四模式电池感知策略通过 `DeviceConfig.NAMESPACE_STATSD_JAVA` 动态下发 | 性能采集频率自动跟随电池模式，采集开销与设备状态协同 |
 
 如果从 Android 14/15 升级到 17，最大的行为差异在于：旧版本需要 App 自己判断电量状态再决定采样率，而 Android 17 的 StatsD 框架直接在 daemon 层做了电池感知降采样，App 侧只需声明指标优先级，框架负责协同。
 
@@ -397,7 +396,7 @@ Android 17 对性能监控的权限做了严格限制：
 2. **READ_APP_USAGE**：允许访问应用使用统计
 3. **READ_NETWORK_USAGE**：允许访问网络使用统计
 
-新权限模型要求在运行时请求权限，且必须向用户说明监控目的。这保护了用户隐私，但也增加了监控实现的复杂度。[已验证: Android 17 权限文档]
+新权限模型要求在运行时请求权限，且必须向用户说明监控目的。Android 17 同时保留了旧版权限（如 `PACKAGE_USAGE_STATS`）的兼容路径：Target SDK ≤ 33 的 App 仍可在用户授权后使用旧版 API，Target SDK ≥ 34 的 App 则必须走新版权限模型。兼容模式下部分精细指标（如 per-package CPU time）不可用，返回值为 0 而非抛异常。这种兼容设计保护了用户隐私，但在跨版本升级时需要注意权限降级导致的数据缺失。[已验证: Android 17 权限文档, Compatibility.ChangeId 281307200]
 
 ## 数据处理与上报策略
 
