@@ -10417,13 +10417,13 @@
     }
   },
   "task2a_last_processed": {
-    "section": "26.22",
-    "title": "Android 17 监控降级：内存约束与隐私限制下的性能数据采集",
-    "file": "src/part5-app/ch26-observability/22-monitoring-under-memory-privacy-constraints.md",
+    "section": "21.15",
+    "title": "Compose 首次组合开销与启动性能",
+    "file": "src/part5-app/ch21-startup/15-compose-first-composition-startup.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-27T03:10:13.283022+08:00",
+    "processed_at": "2026-06-27T05:13:44.042828+08:00",
     "status": "ready-for-review",
-    "note": "7 锚点全部覆盖，3 扩展点全部覆盖，素材来自 Android 14-17 官方文档 + AOSP + §23.9/§4.11/§26.9 交叉引用",
+    "note": "6 锚点全部覆盖，2 扩展全部覆盖，素材来自 Compose BOM 2025.12 官方行为 + AOSP androidx-compose-release 源码 + §22.3/§21.4 交叉引用",
     "pipeline_stage": "task6_pending"
   },
   "task2a_last_gap_mining": {
@@ -10442,7 +10442,7 @@
     "7.9",
     "18.10"
   ],
-  "last_task2a_processed_at": "2026-06-27T03:10:13.283022+08:00",
+  "last_task2a_processed_at": "2026-06-27T05:13:44.042828+08:00",
   "last_task9_files": [
     "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
@@ -10774,7 +10774,7 @@
       "result": "fixed-returned-to-task6"
     }
   ],
-  "task2a_result": "processed-draft",
+  "task2a_result": "ready-for-review",
   "section_25_6": {
     "status": "finalized",
     "pipeline_stage": "ready-to-publish",
@@ -14990,8 +14990,8 @@
   },
   "summary": {
     "total": 271,
-    "draft": 1,
-    "ready-for-review": 67,
+    "draft": 0,
+    "ready-for-review": 68,
     "finalized": 201
   },
   "18.25": {
@@ -15056,5 +15056,23 @@
     "last_task2a_at": "2026-06-27T03:10:13.283022+08:00",
     "task2a_result": "ready-for-review",
     "note": "7 锚点全部覆盖，3 扩展点全部覆盖"
+  },
+  "21.15": {
+    "section": "21.15",
+    "title": "Compose 首次组合开销与启动性能",
+    "file": "src/part5-app/ch21-startup/15-compose-first-composition-startup.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-26",
+    "drafted_date": "2026-06-27",
+    "drafted_by": "openclaw-task2a",
+    "last_task2a_at": "2026-06-27T05:13:44.042828+08:00",
+    "task2a_result": "ready-for-review",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "note": "6 锚点全部覆盖，2 扩展全部覆盖",
+    "queue_priority": 80
   }
 }
