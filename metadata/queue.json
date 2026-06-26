@@ -850,5 +850,95 @@
     "completed_at": "2026-06-26T11:40:00+08:00",
     "completed_by": "task2b-lite",
     "completed_reason": "fixed-lite"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 80,
+    "reason": "[Task6 Review L3] Choreographer.FrameCallback doFrame 两参数重载 — 标准 AOSP FrameCallback.doFrame() 只有一个参数 (long frameTimeNanos)，需确认两参数版本是否存在或应改为其他获取 FrameData 的方式",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "存疑: 技术准确性",
+        "location": "L193 Choreographer.FrameCallback doFrame 签名",
+        "detail": "doFrame(frameTimeNanos, frameData) 两参数重载需验证。标准 AOSP FrameCallback.doFrame() 只有一个参数 (long frameTimeNanos)",
+        "suggestion": "Task 9 验证 AOSP API 33 源码中 FrameCallback 接口定义，确认是否有两参数版本"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-26T15:32:56+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 78,
+    "reason": "[Task6 Review L3] syncAndDrawFrame 描述为非阻塞移交操作，但实际会阻塞等待上一帧 sync fence signal（GPU 工作完成），非完全非阻塞",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "存疑: 技术准确性",
+        "location": "L272 syncAndDrawFrame 行为描述",
+        "detail": "syncAndDrawFrame 被描述为非阻塞移交操作，实际会阻塞等待上一帧 GPU sync fence signal",
+        "suggestion": "若确认阻塞行为则修正为：主线程将 display list 数据移交 RenderThread，同时等待上一帧 GPU 工作完成后返回"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-26T15:32:56+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 70,
+    "reason": "[Task6 Review L3] writing-guide Type A 模板要求独立的 Perfetto/工具 表现小节（Track 分布、正常 vs 异常），当前仅在总结段有简述",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "结构完整性",
+        "location": "全文",
+        "detail": "缺少独立 Perfetto/Trace 小节，描述 Compose 渲染在 trace 中的 Track 分布（MainThread composition/measure/draw slices、RenderThread GPU slices）",
+        "suggestion": "Task 2B 补充独立 Perfetto/Trace 小节"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-26T15:32:56+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 65,
+    "reason": "[Task6 Review L4] writing-guide 要求常见问题与误区小节，当前缺失",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "结构完整性",
+        "location": "全文",
+        "detail": "缺少常见问题与误区小节（如 Compose 渲染不需要走 SurfaceFlinger、Recomposition 就等于重绘等新手误解点）",
+        "suggestion": "Task 2B 补充常见问题小节"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-26T15:32:56+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 65,
+    "reason": "[Task6 Review L4] writing-guide 要求独立参考资料小节（AOSP 源码精确到文件和关键函数、官方文档链接），当前仅在 frontmatter sources 中",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "结构完整性",
+        "location": "全文",
+        "detail": "正文缺少精确 AOSP 源码路径引用（如 Choreographer.java#scheduleFrameLocked），仅有 frontmatter sources",
+        "suggestion": "Task 2B 在正文关键段落补充精确 AOSP 源码路径引用"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-26T15:32:56+08:00",
+    "status": "pending"
   }
 ]
