@@ -2,7 +2,7 @@
 title: "Activity Manager Service 与性能分析"
 chapter: "1.8"
 section: "1.8"
-status: "ready-for-review"
+status: "finalized"
 last_task2b_lite_at: "2026-06-26T09:35:00+08:00"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"

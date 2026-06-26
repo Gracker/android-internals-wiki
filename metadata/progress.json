@@ -1,8 +1,8 @@
 {
   "total": 490,
   "draft": 30,
-  "ready-for-review": 131,
-  "finalized": 328,
+  "ready-for-review": 130,
+  "finalized": 329,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
   "task9_reviewed_by": "openclaw-task9",
@@ -220,7 +220,6 @@
     "1.11",
     "20.13",
     "2.23",
-    "1.8",
     "9.5",
     "19.13",
     "20.3",

@@ -14,7 +14,7 @@ last_task2b_by: openclaw-task2b-lite
 last_task2b_lite_at: 2026-06-26
 last_task2b_against: logs/deep-review/2026-06-26-18-deep-review.md
 task9_result: auto-fixed
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_date: "2026-06-27"
 task9_reviewed_by: openclaw-task9
 task6_state: revisiting
