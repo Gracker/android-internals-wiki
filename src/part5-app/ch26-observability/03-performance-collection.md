@@ -535,3 +535,60 @@ Android 14-17 的性能监控体系逐步演进：Android 14 的 StatsD 基础�
 - [Battery Historian 源码（AOSP）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:tools/battery-historian/) — Battery Historian 离线分析工具的 Android 17 分支源码
 - [LeakCanary](https://square.github.io/leakcanary/) — Square 开源的内存泄漏检测库，Android 内存问题的主要诊断工具
 - [Debug.MemoryInfo](https://developer.android.com/reference/android/os/Debug.MemoryInfo) — 进程内存使用明细 API 官方文档
+
+<!-- AIW-源码调研-2026-06-26:Android 17 Compaction+Freezer 对性能监控的影响 -->
+
+## Android 17 内存管理新政策对监控的影响（源码级补充）
+
+Android 17 在 `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` 中默认启用了 **Compaction（内存压缩）** 和 **Freezer（冻结器）** 两个后台内存管理机制。这两个机制会直接影响 `Debug.MemoryInfo` 与 `/proc/<pid>/status` 采集到的内存指标的连续性和可解释性。
+
+### Compaction 状态机与 RSS 节流
+
+```java
+// CachedAppOptimizer.java L135-136
+@VisibleForTesting static final String KEY_USE_COMPACTION = "use_compaction";
+@VisibleForTesting static final String KEY_USE_FREEZER = "use_freezer";
+
+// L313-314: Android 17 默认两个机制都开启
+@VisibleForTesting static final boolean DEFAULT_USE_COMPACTION = true;
+@VisibleForTesting static final boolean DEFAULT_USE_FREEZER = true;
+
+// L299-300: 压缩动作位图
+private static final int COMPACT_ACTION_FILE_FLAG = 1;
+private static final int COMPACT_ACTION_ANON_FLAG = 2;
+```
+
+四个压缩档位（`CompactProfile` enum，L393-398）：
+
+| 档位 | 压缩范围 | 触发位图 |
+|---|---|---|
+| NONE | 不压缩 | — |
+| SOME | file 缓存页 | `COMPACT_ACTION_FILE_FLAG=1` |
+| ANON | anon 堆页 | `COMPACT_ACTION_ANON_FLAG=2` |
+| FULL | file + anon | `FILE_FLAG \| ANON_FLAG=3` |
+
+默认节流窗口：Some→Some 5 秒，Some→Full 10 秒，Full→Some 500 毫秒，Full→Full 10 秒（L315-319）。这意味着以 1Hz 采样 RSS 的监控 SDK 在 Android 17 上**可能完全无法捕捉到压缩事件**，因为压缩触发间隔远大于采样间隔。
+
+### Freezer（冻结器）子系统
+
+`CachedAppOptimizer.freezeAppAsyncInternalLSP`（L1386-1430）触发冻结前会**先发送 `TRIM_MEMORY_BACKGROUND`**（L1416），然后延迟 `delayMillis` 后通过 `mFreezeHandler` 投递 `SET_FROZEN_PROCESS_MSG → DO_FREEZE`。
+
+底层调用链：`CachedAppOptimizer` → `ProcessList.freezePackageCgroup`（L3028-3035）→ `Process.freezeCgroupUid` (JNI) → cgroup v2 的 `cgroup.freeze` 文件。冻结态下进程进入 D-state，`/proc/<pid>/status` 仍可读取但 RSS 不再变化。
+
+冻结事件写入 Perfetto `android.track_event` 数据源（`FREEZER_CATEGORY` + `FREEZER_EVENT`，L42-46），`FROZEN_DUR_MS` 字段记录冻结时长——这是 Android 17 性能监控的**首选数据源**。
+
+### 监控适配建议（三层降级）
+
+1. **L1（Android 17+）**：优先用 Perfetto 拉取 `android.track_event` 中的 `FREEZER_EVENT`，过滤 `UNFREEZE_REASON_TRIM_MEMORY` / `UNFREEZE_REASON_LRU` 等原因
+2. **L2（Android 14-16）**：维持 `/proc/<pid>/status` 1Hz 采样，但应用端要做 `onTrimMemory` 事件桥接
+3. **L3（Android 13-）**：退化到 `ActivityManager.MemoryInfo` 全局 API，丢弃单进程 RSS 精度
+
+### 待进一步调研
+
+- `mDefaultFreezerDebounceTimeout` 在构造函数中的具体默认值（影响"延迟多久后冻结"）
+- `android_os_Process_freezeCgroupUid` 在 `frameworks/base/core/jni/android_os_Process.cpp` 中的 native 实现
+- `OomAdjuster.shouldCompactProcessLSP` 的具体策略（LSP 后缀表示持有 `mAm` 和 `mProcLock` 两把锁）
+
+调研报告：[2026-06-26-android17-memory-policy-monitoring-impact.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-memory-policy-monitoring-impact.md)
+
+<!-- /AIW-源码调研-2026-06-26 -->
