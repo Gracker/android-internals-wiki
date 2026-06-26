@@ -1072,5 +1072,43 @@
       "fixed_count": 3,
       "remaining_count": 5
     }
+  },
+  {
+    "section": "26.3",
+    "section_title": "性能指标采集与上报",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 存在严重源码引用错误，需要 Task2B 重构章节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "AOSP 源码路径",
+        "detail": "无法验证 frameworks/base/core/jni/android_os_Debug.cpp 路径在当前 AOSP 源码中的存在性",
+        "suggestion": "需要验证并修正源码路径，或明确标注为 [待验证]"
+      },
+      {
+        "type": "源码错误",
+        "location": "StatsD 服务目录",
+        "detail": "无法验证 frameworks/base/services/core/java/com/android/server/stats/ 目录结构",
+        "suggestion": "需要确认正确的 AOSP StatsD 服务实现路径"
+      },
+      {
+        "type": "源码错误",
+        "location": "PERFORMANCE_METRICS_ATOM ID",
+        "detail": "PERFORMANCE_METRICS_ATOM ID 10245 的版本归属未能在官方文档中验证",
+        "suggestion": "需要确认该常量的正确定义版本和来源"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "章节引用",
+        "detail": "引用 \"26.1\"、\"26.2\"、\"26.4\"、\"15.3\" 但实际文件不存在或无法确定",
+        "suggestion": "修正章节交叉引用，确保引用的目标章节存在且内容一致"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-26T22:25:17.025021+08:00",
+    "status": "pending"
   }
 ]
