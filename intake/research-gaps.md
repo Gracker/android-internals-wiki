@@ -64,3 +64,43 @@ Android 17 隐私政策变化对性能数据收集的限制和影响，包括用
 
 ### 关联章节
 26.1, 15.3, 20.1
+
+
+---
+
+## [2026-06-27 01] Task 2A 知识缺口挖掘 — 检查记录
+
+### 已检查并创建的缺口（评分 ≥ 14）
+
+1. **3.13 键盘、鼠标与指针输入性能** — 评分 16/20
+   - 素材丰富度: 3 | 相关性: 4 | 读者需求: 4 | 时效性: 5
+   - 缺口来源: Android 17 Desktop Experience + Adaptive App Quality
+   - 状态: ✅ 已创建 draft 章节
+
+2. **22.27 Adaptive Layout 与多形态设备渲染适配性能** — 评分 19/20
+   - 素材丰富度: 4 | 相关性: 5 | 读者需求: 5 | 时效性: 5
+   - 缺口来源: Google Adaptive App Quality Guidelines + Desktop Experience 设计指南
+   - 状态: ✅ 已创建 draft 章节
+
+### 已检查但未达 14 分的候选（避免重复挖掘）
+
+| 候选 | 评分 | 原因 |
+|------|------|------|
+| Compose Multiplatform 性能边界 | 13 | 素材不足，超出 Android 系统范围 |
+| SafetyCenter 安全状态监控性能 | 9 | 安全功能，非核心性能主题 |
+| Backup/Restore 性能影响 | 8 | 素材稀缺，niche 场景 |
+| DevicePolicyManager/Enterprise 性能 | 8 | 素材稀缺，niche 场景 |
+| AppSearch (Jetpack) 性能 | 11 | 新组件但性能素材不足 |
+| Wear OS 性能优化 | 13 | 超出当前 AIW 范围 |
+| Android TV 性能优化 | 8 | 素材稀缺，niche |
+| Compose Material 3 Expressive 性能 | 15→12 | 已有 22.21 动画性能覆盖，重叠较多 |
+| Drag and Drop 性能 | 11 | 素材不足，已并入 3.13 大纲 |
+| Android Game Performance Pack | 12 | niche，已有 8.9 游戏性能覆盖 |
+
+### 检查方向
+- source-index.json 高质量未映射素材（0 条）
+- research-feeds 最近 5 个文件（Perfetto v53/v54、Compose Pausable 等）
+- daily-info 最近 3 天（Android 17 适配、桌面模式、AI 编程）
+- AOSP frameworks/base 服务覆盖检查
+- packages/modules Mainline 模块覆盖检查
+- 官方文档 developer.android.com 主题覆盖检查
