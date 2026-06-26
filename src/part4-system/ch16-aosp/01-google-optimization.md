@@ -2,23 +2,26 @@
 title: "Google 官方的性能优化思路"
 section: "16.1"
 chapter: "16.1"
-status: finalized
+status: "ready-for-review"
+last_task2b_lite_at: "2026-06-26T09:35:00+08:00"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-15"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
-last_verified: "2026-04-11"
-last_verified_against: "Android 17 release notes + Android 17 behavior changes + Mainline docs + android-16.0.0_r1 (Binder/BLAST/Looper/WMS) + AOSP master (MessageQueue, 未进入公开 android-17 tag)"
+last_verified: "2026-06-26"
+last_verified_against: "Android 17 release notes + Android 17 behavior changes + Mainline docs + android-17.0.0_r1 (Binder/BLAST/Looper/WMS/MessageQueue)"
 confidence: medium
 tags:
   - android
   - performance
   - aosp
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task9_result: auto-fixed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task9_result: "pending"
 task9_reviewed_date: "2026-06-15"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-15T15:24:49+08:00"

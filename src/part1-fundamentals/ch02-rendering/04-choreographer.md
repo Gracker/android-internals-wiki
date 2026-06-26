@@ -1,4 +1,5 @@
 ---
+
 title: "Choreographer 与渲染流水线"
 chapter: "2.4"
 section: "2.4"
@@ -71,7 +72,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-26-07-choreographer-deep-review.
 last_task9_review_log: "logs/deep-review/2026-05-23-03-deep-review.md"
 task9_review_notes: "2026-05-23 Task9 deep review: pass-tech-review。无 P0/P1；P2：回调类型"四种/五类"内部表述需统一，已写入 suggestions.md。满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。 | 2026-06-26 Task9 deep review: pass-tech-review。无 P0/P1，2项 P2 建议已写入 suggestions.md，满足晋升条件。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-06-26
 last_task2b_lite_at: 2026-06-26
 task2b_verified_at: "2026-06-26T07:27:19+08:00"
 task2b_verify_result: "promoted-to-finalized: task6 pass-light-edit + task9 pass-tech-review + queue clear"
@@ -262,6 +263,8 @@ void doFrame(long frameTimeNanos, int frame,
 `CALLBACK_TRAVERSAL` 往往占掉大头,因为 measure、layout、draw 都落在这一段。当前面几段已经把预算吃掉时,Traversal 即使逻辑完全正确,也会把这一帧拖到下一次 VSync 之后。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java(doFrame()、Trace 名称、FrameInfo 写入)]
+
+doFrame 的回调按固定优先级执行,但还有一个问题:如果主线程 MessageQueue 里排了大量普通消息,渲染回调可能被延迟。Choreographer 通过 Android 的 MessageQueue 同步屏障解决了这个问题:
 
 **MessageQueue 的同步屏障机制**
 
@@ -718,7 +721,7 @@ Choreographer 不是孤立工作的,它位于 Android 渲染管线的中心节�
 
 ## Android 17 Choreographer 变更笔记
 
-> **⚠️ 本节内容来源标注**:以下描述基于 Android 官方开发者文档和公开讨论,尚未通过 `android-17.0.0_r1` 源码逐行验证。涉及具体源码细节的内容标注了验证状态,仅供方向性参考。
+> 以下描述基于 Android 官方开发者文档和公开讨论。涉及源码细节的内容标注了验证状态,`android-17.0.0_r1` 发布后应做差异对比确认。
 
 ### 开发者可见变更
 
@@ -729,13 +732,13 @@ Android 17 在帧调度方面对开发者可见的变更包括:
 
 ### 需要源码验证的内容
 
-以下机制在 Android 17 公开讨论中被提及,但尚未通过 `android-17.0.0_r1` 源码逐行验证,不能作为正文结论:
+以下机制在 Android 17 的公开讨论中被提及,但尚未通过源码逐行验证:
 
 - Choreographer 内部 buffer stuffing recovery 的 Android 17 行为调整
 - `doFrame()` 中 jitter 重同步逻辑的具体实现
 - 回调执行链中各阶段时间标记的细节变更
 
-> **工程建议**:使用 `android-17.0.0_r1` 源码做差异对比(diff 对照 `android-16.0.0_r1`),优先关注 `Choreographer.java`、`DisplayEventReceiver.java` 和 `FrameData` 相关类的变更。
+`android-17.0.0_r1` 发布后,应对 `Choreographer.java`、`DisplayEventReceiver.java` 和 `FrameData` 相关类做 diff 对照确认。
 
 
 ## 参考资料

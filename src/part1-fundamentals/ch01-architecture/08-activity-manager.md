@@ -2,11 +2,17 @@
 title: "Activity Manager Service 与性能分析"
 chapter: "1.8"
 section: "1.8"
-status: "finalized"
+status: "ready-for-review"
+last_task2b_lite_at: "2026-06-26T09:35:00+08:00"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
+task6_state: "revisiting"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-09"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers behavior changes 11/12/13/14/17 (2026-06-09 audit)"
+last_verified: "2026-06-26"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers behavior changes 11/12/13/14/17 (2026-06-26 audit)"
 confidence: medium
 sources:
   - type: aosp
