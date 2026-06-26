@@ -1000,5 +1000,50 @@
     "status": "completed",
     "completed_at": "2026-06-26T16:54:18.191206+08:00",
     "completed_by": "task2b-main-rework"
+  },
+  {
+    "section": "26.3",
+    "section_title": "性能指标采集与上报",
+    "priority": 90,
+    "reason": "[review回炉] 2个outline锚点完全缺失（网络聚合、JankStats关系）；最佳实践章节内容过薄",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "全文缺失",
+        "detail": "🔹 [网络聚合] 锚点完全缺失：StatsD URL pattern归一化、状态码聚合和 payload size 统计在正文中没有任何覆盖。outline明确要求此锚点。",
+        "suggestion": "补充 StatsD 网络性能指标聚合机制：URL pattern 归一化方法、HTTP 状态码分组统计、payload size 采集与分类"
+      },
+      {
+        "type": "需补充素材",
+        "location": "全文缺失",
+        "detail": "🔹 [JankStats 关系] 锚点完全缺失：系统级性能指标（StatsD）与端侧 JankStats 的数据分工未提及，JankStats 在正文中零出现。",
+        "suggestion": "补充一段说明 JankStats 与 StatsD 性能指标的分工边界：JankStats 端侧实时帧级诊断 vs StatsD 系统级聚合上报，什么场景需要自采补充"
+      },
+      {
+        "type": "需重写",
+        "location": "性能监控最佳实践 > 隐私保护 / 数据生命周期管理",
+        "detail": "隐私保护（3条泛化建议）和数据生命周期管理（3条泛化建议）过于笼统，没有 Android 17 特有的隐私机制或 StatsD 数据保留策略的具体细节",
+        "suggestion": "隐私保护应结合 Android 17 权限模型（READ_PRECISE_STATS等）展开；数据生命周期应与正文提到的 StatsD 环形缓冲、ZSTD压缩、24h本地保留等机制关联"
+      },
+      {
+        "type": "需确认",
+        "location": "Android 17 原生内存跟踪 > 内存分类精度变化（表格后）",
+        "detail": "'整体看，Android 17 的内存跟踪开销比前代降低了约 40%，分类精度提升约 70%'——这两个数据缺乏测试条件（设备、测试方法、基线定义），违反数据规范",
+        "suggestion": "补充测试条件或标注数据来源；如无法找到来源，改为定性描述"
+      },
+      {
+        "type": "需确认",
+        "location": "内存泄漏检测：LeakCanary",
+        "detail": "'Android 14+ 上 LeakCanary 利用了 ScheduleRef 和 PausedState 进行更精确的引用追踪'——ScheduleRef 的 API 名称准确性存疑，可能是对 LeakCanary 内部机制的误述",
+        "suggestion": "核实 LeakCanary 2.x 源码中是否存在 ScheduleRef 类型；如不存在，修正为准确的机制描述"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-26T21:07:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-26-21-review.md"
   }
 ]

@@ -16,14 +16,14 @@ task9_result: needs-rework
 task9_state: pending
 task9_reviewed_date: "2026-06-26"
 task9_reviewed_by: openclaw-task9-idle-audit
-task6_result: pass-light-edit
-task6_state: revisiting
-last_task6_at: "2026-06-18T07:07:00+08:00"
+task6_result: needs-rework
+task6_state: reviewed
+last_task6_at: "2026-06-26T21:07:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-18"
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: task6_pending
+reviewed_date: "2026-06-26"
+task2b_state: pending
+task2b_result: needs-fix
+pipeline_stage: task2b_pending
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
 last_task2b_deepseek: reset
@@ -106,7 +106,7 @@ int totalPss   = memInfo.getTotalPss();        // 总 PSS
 int dalvikPrivateDirty = memInfo.dalvikPrivateDirty;  // 进程独占脏页
 ```
 
-`getMemoryInfo()` 返回的 `Debug.MemoryInfo` 包含 `getMemoryStat(String)` 方法（API 23+），可按 `summary.java-heap`、`summary.native-heap`、`summary.code`、`summary.stack`、`summary.graphics` 等关键字查询子类明细，分类比 `dumpsys meminfo` 更细。Android 17 扩展了该方法，新增 `summary.art-heap` 关键字，用于查询 ART 虚拟机内部堆状态（包括 image space、zygote space 等分区的分配量），这对排查 ART GC 引起的卡顿有直接帮助。[已验证: AOSP android.os.Debug.MemoryInfo, API 34+37]
+`getProcessMemoryInfo()` 返回的 `Debug.MemoryInfo` 包含 `getMemoryStat(String)` 方法（API 23+），可按 `summary.java-heap`、`summary.native-heap`、`summary.code`、`summary.stack`、`summary.graphics` 等关键字查询子类明细，分类比 `dumpsys meminfo` 更细。Android 17 扩展了该方法，新增 `summary.art-heap` 关键字，用于查询 ART 虚拟机内部堆状态（包括 image space、zygote space 等分区的分配量），这对排查 ART GC 引起的卡顿有直接帮助。[已验证: AOSP android.os.Debug.MemoryInfo, API 34+37]
 
 Android 14+ 配合 `ActivityManager#setWatchHeapLimit(long)`（API 33+）可以在进程内存接近限制时收到回调，用于触发主动释放缓存或降级逻辑，而不是等到 OOM 才处理。[已验证: AOSP android.os.Debug.MemoryInfo, API 34]
 
@@ -281,7 +281,7 @@ Battery Historian 在 Android 17 中扩展为三层架构，数据从应用层�
 运行在 `system_server` 进程中，负责权限校验和配置管理。上层 App 通过 `StatsManager` 客户端 API 提交性能事件，`StatsManagerService` 校验调用方是否持有 `PACKAGE_USAGE_STATS` 或 `READ_PRECISE_STATS` 权限，校验通过后将事件写入共享内存缓冲区。同时管理 `DeviceConfig.NAMESPACE_STATSD_JAVA` 命名空间下的动态配置，控制各模块的采集开关与采样率。
 
 **StatsCompanionService（JNI 桥接）**
-整个链路的关键中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 消费事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换，再通过 `libstatssocket` 推入 `statsd` 的本地 socket。`libstatssocket` 内部通过类型映射表（`java_lang_Float` → `STATS_EVENT_TYPE_FLOAT` 等）逐字段序列化 Java 对象为 Protocol Buffer 兼容的二进制流，再写入 `statsd` socket。这里同时承担了事件过滤和格式校验——不合规的事件在 JNI 层被丢弃，避免脏数据进入后端聚合。
+整个链路的中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 消费事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换，再通过 `libstatssocket` 推入 `statsd` 的本地 socket。`libstatssocket` 内部通过类型映射表（`java_lang_Float` → `STATS_EVENT_TYPE_FLOAT` 等）逐字段序列化 Java 对象为 Protocol Buffer 兼容的二进制流，再写入 `statsd` socket。这里同时承担了事件过滤和格式校验——不合规的事件在 JNI 层被丢弃，避免脏数据进入后端聚合。
 
 **Native statsd daemon**
 以 `statsd` 进程运行，接收 JNI 层推入的事件后按 `Atom` 类型聚合。Android 17 新增了 `AtomId.PERFORMANCE_METRICS_ATOM`（ID 10245），专门承载 CPU、GPU、内存和帧率四类性能指标。聚合结果按 `ConfigKey` 分组后通过 `StatsPullAtomService` 暴露给上层 `StatsManager#pullStats()` 查询，同时持久化到 `/data/misc/stats-data/` 目录供 Battery Historian 离线分析。
@@ -374,7 +374,7 @@ Android 17 的性能指标分为三级优先级，每级对应不同的采集保
 
 > 业务案例：社交类 App 的用户操作路径采集，在全量时每天产生约 50MB 事件数据。仅在 Performance 模式下全开，其余模式关闭——大部分性能诊断不需要操作路径数据，开启 P2 主要为产品侧的路径分析需求服务，不应挤占性能监控的资源预算。
 
-这种分级设计确保在资源受限时最关键的监控数据仍能被采集。P0 和 P1 的分界线在于：P0 是"丢了就无法还原线上问题根因"的指标；P1 是"丢了会让排查困难但仍有其他线索可追"的指标。[已验证: Firebase Performance Monitoring 最佳实践 + 测试数据]
+这种分级设计确保在资源受限时P0 级监控数据仍能被采集。P0 和 P1 的分界线在于：P0 是"丢了就无法还原线上问题根因"的指标；P1 是"丢了会让排查困难但仍有其他线索可追"的指标。[已验证: Firebase Performance Monitoring 最佳实践 + 测试数据]
 
 ## 线上采集的边界条件
 
