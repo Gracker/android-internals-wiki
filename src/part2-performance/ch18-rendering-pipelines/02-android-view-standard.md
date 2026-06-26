@@ -1,5 +1,6 @@
 ---
 
+
 title: Android View 标准管线（BLAST 深入）
 chapter: '18.2'
 section: '18.2'
@@ -64,7 +65,7 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-15
+last_deepseek_cn_review_at: 2026-06-26
 last_task9_audit: 2026-06-21
 last_task9_autofix_at: 2026-06-21
 last_task9_audit_log: "logs/deep-review/2026-06-21-21-audit.md"
@@ -314,9 +315,7 @@ Compose 一帧在 MainThread 侧分三个阶段：
 
 三阶段执行完后，Compose 把结果挂到 Host View（`ComposeView` / `AbstractComposeView`）上。这个 Host View 对外仍是普通 Android View，继续走 `ViewRootImpl` 的 `performTraversals()` / `performDraw()` 路径。RenderThread 之后的一切和 View 标准管线完全相同。
 
-**运行时层演进**：Android 17 的 Generational CMC（分代并发标记压缩）对 Compose Composition 阶段的 GC 停顿有潜在优化空间。Composition 阶段会产生大量 `Snapshot` 状态快照对象，属于短生命周期分配。分代 GC 的 young generation 回收范围更小，理论上停顿时间比全堆回收更短。
-
-注意：Slot Table 条目不是简单的每帧短生命周期临时对象——它们在重组间持续存在，生命周期与 Composition group 绑定。GC 策略对 Composition 阶段分配停顿的实际影响取决于 ART 运行时版本、堆大小和具体 Composable 复杂度，需要按场景实测确认。[待验证: 目前缺少 ART generational CMC 与 Compose Composition 阶段的一手 benchmark 数据（设备、模型、量化配置和 jank 指标），无法确认具体收益幅度]
+**运行时层演进**：Compose Composition 阶段会产生大量 `Snapshot` 状态快照对象,属于短生命周期分配。Android 17 的 Generational CMC（分代并发标记压缩）的分代 GC 回收范围更小,理论上 Composition 阶段的 GC 停顿比全堆回收更短。但要注意:Slot Table 条目不是简单的每帧短生命周期临时对象——它们在重组间持续存在，生命周期与 Composition group 绑定。GC 策略对 Composition 阶段分配停顿的实际影响取决于 ART 运行时版本、堆大小和具体 Composable 复杂度，需要按场景实测确认。GC 策略对 Composition 阶段分配停顿的实际影响取决于 ART 运行时版本、堆大小和具体 Composable 复杂度,缺少跨设备的一手 benchmark 数据,收益幅度需要按场景实测确认。
 
 
 
@@ -395,6 +394,6 @@ Android 17（CP2A.260605.016）的 BLAST 版本线需要拆开看：Android 16�
 | EGL 客户端 buffer 保留 | 0~max | 同 | 同 | 同 |
 | FrameTimeline 绑定 Transaction | API 31 引入 | 稳定 | 稳定 | 稳定 |
 
-`apply_picture_profiles` 的可验证行为是 BBQ 保留 `mPictureProfileHandle`，在 `update()` 或 `acquireNextBufferLocked()` 中把 profile 写入当前 `SurfaceControl.Transaction`。这能帮助 SurfaceControl 切换时延续 picture profile；本节不再给出缺少设备、场景和 trace 条件的量化收益。
+`apply_picture_profiles` 的可验证行为是 BBQ 保留 `mPictureProfileHandle`，在 `update()` 或 `acquireNextBufferLocked()` 中把 profile 写入当前 `SurfaceControl.Transaction`。这能帮助 SurfaceControl 切换时延续 picture profile；缺乏设备和 trace 条件时,暂不给出量化收益估计。
 
 [已验证: AOSP `frameworks/native/libs/gui/BLASTBufferQueue.{cpp,h}` android-15.0.0_r1 / android-16.0.0_r1 / android-17.0.0_r1；`platform/build/release` AP3A / BP2A / CP2A aconfig value sets；`frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp` android-17.0.0_r1]

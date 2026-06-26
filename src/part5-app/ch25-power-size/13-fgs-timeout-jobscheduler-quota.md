@@ -205,6 +205,77 @@ adb shell dumpsys deviceidle
 
 Android 16 的兼容性开关也可用于定位 quota 行为。官方文档给了 `OVERRIDE_QUOTA_ENFORCEMENT_TO_TOP_STARTED_JOBS` 和 `OVERRIDE_QUOTA_ENFORCEMENT_TO_FGS_JOBS` 两个测试入口，用于对比 top state / FGS 并发 Job 受配额约束前后的表现。测试结论只能用于适配分析，不应作为线上规避策略。
 
+
+<!-- AIW-源码调研-2026-06-26 配额源码扩展 -->
+
+## Android 17 QuotaController 与 JobConcurrencyManager 源码扩展
+
+> 来源：DeepResearch/2026-06-26-android17-jobservice-priority-cpu-quota.md
+> 类型：DeepResearch 调研结果（基于 android-17.0.0_r1 AOSP 源码）
+> 注入时间：2026-06-26
+> 价值：补全 §25.4 与 §25.13 对 JobScheduler 配额执行细节的源码级描述，覆盖 API 调用频率、Standby Bucket 差异化、运行时硬上限、并发达上限四个维度。
+
+### API 调用频率配额（`.schedulePersisted()` 节流）
+
+`JobSchedulerService.java` 默认开启 `ENABLE_API_QUOTAS`，单 App 1 分钟内最多调 250 次 `JobScheduler.schedule()`，超限抛 `IllegalStateException`（`DEFAULT_API_QUOTA_SCHEDULE_THROW_EXCEPTION=true`）。EJ 路径超限直接返回 `RESULT_FAILURE`。源码强制最小值 250（`updateApiQuotaConstantsLocked()` 中 `Math.max(250, ...)`），OEM 无法把阈值调到 250 以下。
+
+```java
+private static final int DEFAULT_API_QUOTA_SCHEDULE_COUNT = 250;
+private static final long DEFAULT_API_QUOTA_SCHEDULE_WINDOW_MS = MINUTE_IN_MILLIS;
+```
+
+### Standby Bucket 差异化运行时配额（QuotaController）
+
+`QuotaController.mAllowedTimePerPeriodMs[7]` 按 7 档 bucket 分配运行时长（EXEMPTED=10min/40min 窗口、ACTIVE=10min/60min 窗口、WORKING=10min/2h、FREQUENT=10min/8h、RARE=10min/24h、RESTRICTED=10min/24h、NEVER=0）。单任务硬上限 `DEFAULT_MAX_EXECUTION_TIME_MS = 4h`。
+
+```java
+private static final long DEFAULT_LEGACY_ALLOWED_TIME_PER_PERIOD_ACTIVE_MS = 10 * 60 * 1000L;
+private static final long DEFAULT_WINDOW_SIZE_RARE_MS = 24 * 60 * 60 * 1000L;
+```
+
+EJ 单独维护 24h 滚动窗口：`EXEMPTED=60min`、`ACTIVE=30min`、`WORKING=15min`、`FREQUENT=10min`、`RESTRICTED=5min`。`getMaxJobExecutionTimeMsLocked` 决策链：充电中或 TOP+PRIORITY_HIGH 组合直接拿到 `RUNTIME_FREE_QUOTA_MAX_LIMIT_MS`（30 分钟），跳过桶配额。
+
+### 运行时常量硬上限（JobSchedulerService.Constants）
+
+```java
+public static final long DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS = 30 * MINUTE_IN_MILLIS;
+public static final long DEFAULT_RUNTIME_MIN_GUARANTEE_MS        = 10 * MINUTE_IN_MILLIS;
+public static final long DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS     = 3 * MINUTE_IN_MILLIS;
+public static final long DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS     = Math.max(6 * HOUR_IN_MILLIS, ...);
+public static final long DEFAULT_RUNTIME_UI_LIMIT_MS             = Math.max(12 * HOUR_IN_MILLIS, ...);
+public static final long DEFAULT_RUNTIME_CUMULATIVE_UI_LIMIT_MS  = 24 * HOUR_IN_MILLIS;
+```
+
+`updateRuntimeConstantsLocked()` 用 `Math.max(10 * MINUTE_IN_MILLIS, ...)` 钳制最小值：普通 Job 至少 10 分钟，EJ 至少 3 分钟，UI Job 至少 6 小时。这是 §25.4 中 "WorkManager 用户主动任务不应被截断" 的硬底线。
+
+### 全局并发达上限（JobConcurrencyManager）
+
+`DEFAULT_CONCURRENCY_LIMIT` 按设备 RAM 分档：低 RAM=8、≤6GB=16、≤8GB=20、≤12GB=32、>12GB=40。单 App 普通 Job 最多 `DEFAULT_CONCURRENCY_LIMIT/2` 并发，单 App EJ 最多 3 并发。
+
+```java
+if (ActivityManager.isLowRamDeviceStatic()) {
+    DEFAULT_CONCURRENCY_LIMIT = 8;
+} else if (ramBytes <= GIGABYTES.toBytes(12)) {
+    DEFAULT_CONCURRENCY_LIMIT = 32;
+} else {
+    DEFAULT_CONCURRENCY_LIMIT = 40;
+}
+private static final int DEFAULT_PKG_CONCURRENCY_LIMIT_EJ = 3;
+```
+
+### Standby Bucket → BucketIndex 映射
+
+`JobSchedulerService.standbyBucketToBucketIndex(int bucket)` 把 6 档 `UsageStatsManager.STANDBY_BUCKET_*` 加 NEVER 映射为 `QuotaController` 数组下标（0=ACTIVE、1=WORKING、2=FREQUENT、3=RARE、4=NEVER、5=RESTRICTED、6=EXEMPTED）。所有配额数组维度按这个映射对齐。
+
+### 优先级权重的真正生效点
+
+§25.4 中提到 "WorkManager `setPriority()` 在 Android 12+ 会映射到 `JobInfo.PRIORITY_*`"，但权重实际生效点只有两处：
+
+1. `getMaxJobExecutionTimeMsLocked` 中 `isJobImportant = jobStatus.getEffectivePriority() >= JobInfo.PRIORITY_HIGH`，决定是否能拿到 free quota。
+2. `MaybeReadyJobQueueFunctor.accept` 中 batching 决策：RESTRICTED 桶强制 batch；prefetch Job 在用户近期不会启动（>1h）时强制 batch。
+
+`WorkTypeConfig`（normal/moderate/low/critical + screen on/off）在 `JobConcurrencyManager.java:250-330` 决定具体并发配额，但**开发者无法直接控制**，只能间接通过 `JobInfo` priority 影响 `isJobImportant`。
+
 ## 小结
 
 Foreground Service 负责用户可见和短时间执行，不再是后台长任务的无限运行通道。Android 15 给 `dataSync`、`mediaProcessing` 加了后台累计时长窗口，Android 16 又让与 FGS 并发的 Job 回到 runtime quota 约束下。
