@@ -250,6 +250,7 @@ tags:
   - [18.23 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR](part2-performance/ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md)
   - [18.24 Advanced Professional Video 与专业视频编解码管线](part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md)
   - [18.25 Jetpack Compose 渲染管线架构](part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)
+  - [18.26 Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理](part2-performance/ch18-rendering-pipelines/26-android17-hwui-vulkan-multi-queue.md)
 
 - [第 12 章：包体积与其他](part2-performance/ch12-apk-network/README.md)
   - [12.1 APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)

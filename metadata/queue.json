@@ -1156,5 +1156,15 @@
     "source": "task2a-gap-mining",
     "status": "pending",
     "created_date": "2026-06-27T02:10:46.189104+08:00"
+  },
+  {
+    "section": "18.26",
+    "section_title": "Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理",
+    "priority": 80,
+    "reason": "知识缺口挖掘 — Android 17 HWUI VulkanManager 双队列并行渲染、frame_boundary 扩展、HardwareBitmapUploader 异步上传管线",
+    "material_paths": [
+      "Obsidian/DeepResearch/2026-06-26-android17-hwui-vulkanmanager-multi-queue-frame-boundary.md"
+    ],
+    "status": "pending"
   }
 ]
