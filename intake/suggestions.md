@@ -190,3 +190,33 @@
 - **问题**：两个 section 基本是裸 bullet list，每个列表项仅一句话，无展开论述。违反 writing-guide.md「叙述为主，列表为辅」原则，接近反面教材「概述式」
 - **建议**：扩充为有因果关系的叙述段落，或如果素材不足则缩减标题合并到相关 section
 - **review 日志**：logs/review/2026-06-26-22-review.md
+
+## [2026-06-26 23] Task 2A 知识缺口挖掘方向记录
+
+本轮已检查以下方向，未发现评分 ≥ 14 的合格缺口：
+
+### Clippings 参考书对照
+- 《Android 应用稳定性剖析与优化》(25 篇)：Crash/ANR/OOM/Binder/线程监控/FD 监控/Native Backtrace → 全部已被 Ch20 + Ch23 + Ch26 覆盖
+- 《Android 性能优化》(20 篇)：CPU 线程池/任务调度/GC 抑制/Java Heap/Native 内存/Bitmap/包体积 → 全部已覆盖；缓存优化(冷热分离+DEX重排) 被 5.18 (CPU Cache) 部分覆盖；虚拟内存优化 → 随 32 位退出，时效性下降，评分 12
+- 《线上疑难问题》(58 篇)：APM/Crash/Memory/Jank/Startup/IO/Storage/Network/Power/UI/Size/CI-CD/编译插桩/A-B/上报组件/日志 → 全部已覆盖
+
+### AOSP 框架服务覆盖检查
+- frameworks/base/ 核心服务：AMS/WMS/PMS/IMS/ContentProvider/JobScheduler/PowerManager/NotificationManager/AudioManager/StorageManager/DisplayManager → 全部已覆盖
+- packages/modules/：Bluetooth/WiFi/Media → 已覆盖
+- system/ 核心组件：vold/netd/lmkd/installd → 已覆盖
+
+### Android 17 新特性覆盖检查
+- DeliQueue ✅ | Binder 异步 ✅ | Safer DCL ✅ | Certificate Transparency ✅ | Desktop Mode ✅ | Edge-to-Edge ✅ | NPU 声明 ✅ | Network Quota ✅ | Audio Hardening ✅ | Excessive CPU Kill ✅ | App Memory Limits ✅ | MemoryLimiter ✅ | FGS Type ✅ | Predictive Back ✅
+
+### 潜在候选但评分不足 14
+1. 缓存架构与命中率优化（app-level LruCache 冷热分离）：素材3 相关3 需求3 时效2 = 11
+2. 虚拟内存优化实战（线程栈/多进程 VSS）：素材4 相关3 需求3 时效2 = 12（32 位退出降低时效）
+3. Compose 语义树与无障碍性能开销：素材2 相关3 需求2 时效4 = 11
+4. Android 17 App Intents 与 AI Agent 集成性能：素材2 相关3 需求3 时效5 = 13
+5. Profiling 设备校准与虚拟设备偏差：素材3 相关5 需求4 时效3 = 15（但与 15.6 测试最佳实践重叠度高，独立成节价值不足）
+
+### 下次挖掘建议方向
+- 关注 Android 18 Preview（但受版本边界限制，仅可记录趋势）
+- 关注 Compose 2.x 渲染管线变更
+- 关注端侧 AI 推理框架（NPU SDK 生态）的性能基准
+- 关注 Android XR 性能（当前仅 18.22 覆盖）
