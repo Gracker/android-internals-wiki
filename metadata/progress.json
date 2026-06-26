@@ -7935,11 +7935,13 @@
       "status": "finalized",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "last_task2a_at": "2026-06-17T21:12:51.408821+00:00",
       "task6_result": "pass-light-edit",
-      "last_task6_at": "2026-06-19T09:09:43+08:00"
+      "last_task6_at": "2026-06-26T08:10:15+08:00",
+      "task9_result": "auto-fixed",
+      "last_task6_review_log": "logs/review/2026-06-26-08-review.md"
     },
     "10.2": {
       "status": "finalized",
