@@ -2,12 +2,20 @@
 title: "性能指标采集与上报"
 chapter: "26.3"
 section: "26.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-06-17"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-18"
 last_verified_against: "Android Developers docs + Firebase Performance Monitoring docs + Clippings structure references + AOSP source code verification"
 confidence: high
+last_task9_idle_audit: "2026-06-26"
+task9_result: needs-rework
+task9_state: reviewed
+task9_reviewed_date: "2026-06-26"
+task9_reviewed_by: openclaw-task9-idle-audit
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
@@ -25,7 +33,7 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, collection, reporting, android17]
 related_chapters: ["26.1", "26.2", "26.4", "15.3"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_at: "2026-06-18T07:07:00+08:00"
@@ -35,9 +43,8 @@ task9_state: reviewed
 task9_reviewed_date: "2026-06-18"
 task9_reviewed_by: openclaw-task9
 task9_result: "pass-tech-review"
-task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-18"
+task2b_state: pending
+task2b_result: pending
 last_task9_audit: "2026-06-18"
 last_task6_audit: "2026-06-18"
 deepseek_cn_review_state: done
