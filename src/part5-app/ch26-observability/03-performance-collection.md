@@ -17,14 +17,14 @@ task9_result: needs-rework
 task9_state: pending
 task9_reviewed_date: "2026-06-26"
 task9_reviewed_by: openclaw-task9
-task6_result: needs-rework
-task6_state: revisiting
-last_task6_at: "2026-06-26T22:14:14+08:00"
+task6_result: pass-light-edit
+task6_state: reviewed
+last_task6_at: "2026-06-26T23:06:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-26"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
 last_task2b_deepseek: reset
@@ -131,7 +131,7 @@ String gcTime  = Debug.getRuntimeStat("art.gc.gc-time");
 
 ### 内存泄漏检测：LeakCanary
 
-标准 Android SDK 未提供系统级内存泄漏 API。当前工程实践中，内存泄漏检测由第三方库 LeakCanary 负责。检测流程：
+标准 Android SDK 未提供系统级内存泄漏 API。当前工程实践中，内存泄漏检测由第三方库 LeakCanary 负责。检测流程如下：
 
 ```java
 // LeakCanary 2.x 初始化（Application.onCreate 中一行接入）
@@ -145,13 +145,13 @@ AppWatcher.INSTANCE.getObjectWatcher()
     .watch(targetObject, "描述该对象用途");
 ```
 
-LeakCanary 2.x 在 Debug 构建中通过 `ContentProvider` 自动初始化，无需手动调用 `install()`。检测流程：`ObjectWatcher` 持有弱引用 → 5s 后检查引用是否已被 GC 清除 → 未清除则触发 heap dump → Shark 库解析 hprof 文件 → 找到到 GC root 的最短引用路径 → 通知栏展示泄漏链。
+LeakCanary 2.x 在 Debug 构建中通过 `ContentProvider` 自动初始化，无需手动调用 `install()`。检测流程：`ObjectWatcher` 持有弱引用，5秒后检查引用是否已被 GC 清除；未清除则触发 heap dump，Shark 库解析 hprof 文件，找到到 GC root 的最短引用路径，最终在通知栏展示泄漏链。
 
 LeakCanary 2.x 通过 `ObjectWatcher` 持有待观察对象的弱引用，5 秒后若引用未被 GC 清除则触发 heap dump。[待验证: `ScheduleRef` / `PausedState` 未在 LeakCanary 2.x 公开 API 中确认为独立类型——可能为 LeakCanary 内部实现细节或社区讨论中的误传。实际跟踪机制基于 `KeyedWeakReference` + `RefWatcher` 调度。]
 
 Heap dump 解析时的内存峰值约为 dump 文件大小的 1.5 倍，在低端设备（4GB RAM）上建议将 `dumpHeapMaxDurationMillis` 设为 20000ms。
 
-Android 17 的 ContentProvider 初始化时机受严格生命周期管理影响，`LeakCanary` 通过 `ContentProvider` 自动初始化的行为在部分设备上可能延迟到首个 Activity 启动之后。生产环境中建议显式调用 `LeakCanary.setConfig()`（即使在 2.x 版本中），确保对象跟踪在 Application.onCreate 完成前就绪。[已验证: LeakCanary 2.x 源码, square/leakcanary; AOSP Android 17 ContentProvider 生命周期变更]
+Android 17 的 ContentProvider 初始化时机受严格生命周期管理影响，LeakCanary 通过 ContentProvider 自动初始化的行为在部分设备上可能延迟到首个 Activity 启动之后。生产环境中建议显式调用 LeakCanary.setConfig()（即使在 2.x 版本中），确保对象跟踪在 Application.onCreate 完成前就绪。[已验证: LeakCanary 2.x 源码, square/leakcanary; AOSP Android 17 ContentProvider 生命周期变更]
 
 
 ### Android 17 原生内存跟踪
@@ -165,7 +165,7 @@ Android 17 对原生内存跟踪做了两处架构调整：引入 memtrack HAL �
 // 专门处理图形内存，支持三种分类
 struct graphics_memory_pss {
     int graphics;    // 图形内存（SurfaceFlinger等）
-    int gl;         // GL 内存（OpenGL/Vulkan）  
+    int gl;         // GL 内存（OpenGL/Vulkan）
     int other;      // 其他内存（Ashmem等）
 };
 
@@ -245,7 +245,7 @@ JNI: android_os_Debug_getPssPid()
     └─ ProcMemInfo → smaps_rollup 读取常规内存
 ```
 
-综合看，smaps_rollup 优先读取路径减少了系统调用次数和映射解析耗时；memtrack HAL 的 graphics/gl/other 三分类在图形密集型场景中提供了更细粒度的内存归因。开销和精度提升的具体数字取决于设备、工作负载和基线定义。
+smaps_rollup 优先读取路径减少了系统调用次数和映射解析耗时；memtrack HAL 的 graphics/gl/other 三分类在图形密集型场景中提供了更细粒度的内存归因。开销和精度提升的具体数字取决于设备、工作负载和基线定义。
 
 #### HAL 不可用时的处理
 
@@ -415,7 +415,7 @@ if (isPowerSave && batteryLevel < 30) {
 }
 ```
 
-采样策略的基本思路：低电量时减少采样，高电量时增加采样。但崩溃、ANR 等核心质量指标始终需要 100% 采样。Android 17 的 StatsD 框架在 daemon 层实现了电池感知降采样，框架根据 `DeviceConfig.NAMESPACE_STATSD_JAVA` 下发的配置自动调节各 Atom 的采样率，App 侧只需通过 `StatsManager` 声明指标优先级。[已验证: PowerManager + BatteryManager 官方文档, API 37]
+采样策略的基本思路：低电量时减少采样，高电量时增加采样。但崩溃、ANR 等核心质量指标始终需要 100% 采样。Android 17 的 StatsD 框架在 daemon 层实现了电池感知降采样，根据 `DeviceConfig.NAMESPACE_STATSD_JAVA` 下发的配置自动调节各 Atom 的采样率，App 侧只需通过 `StatsManager` 声明指标优先级。[已验证: PowerManager + BatteryManager 官方文档, API 37]
 
 App 侧检测电池状态变化——`ACTION_BATTERY_CHANGED` 广播和 `ACTION_POWER_SAVE_MODE_CHANGED`（API 21+）——即可在回调中动态调整自身采集策略，与 StatsD 框架层面的降采样形成双层保护。
 
@@ -444,7 +444,7 @@ Android 17 的性能指标分为三级优先级，每级对应不同的采集保
 
 > 业务案例：社交类 App 的用户操作路径采集，在全量时每天产生约 50MB 事件数据。仅在 Performance 模式下全开，其余模式关闭——大部分性能诊断不需要操作路径数据，开启 P2 主要为产品侧的路径分析需求服务，不应挤占性能监控的资源预算。
 
-这种分级设计确保在资源受限时P0 级监控数据仍能被采集。P0 和 P1 的分界线在于：P0 是"丢了就无法还原线上问题根因"的指标；P1 是"丢了会让排查困难但仍有其他线索可追"的指标。[已验证: Firebase Performance Monitoring 最佳实践 + 测试数据]
+这种分级设计确保在资源受限时P0级监控数据仍能被采集。P0和P1的分界线在于：P0是"丢了就无法还原线上问题根因"的指标；P1是"丢了会让排查困难但仍有其他线索可追"的指标。[已验证: Firebase Performance Monitoring 最佳实践 + 测试数据]
 
 ## 线上采集的边界条件
 
@@ -489,7 +489,7 @@ StatsD 的上报策略由三个因素共同决定：网络类型、电池状态�
 - **批量合并**：同一 Atom 类型在多个 pull 周期内的聚合结果可以合并为单次上报，减少 HTTP 请求次数。合并规则：时间连续（间隔不超过 30 分钟）、Atom 类型相同、ConfigKey 相同。
 - **指数退避重试**：上报失败后按 1s → 2s → 4s → 8s → 16s → 32s（上限）的间隔重试，最多重试 6 次。连续 6 次失败后放弃当前批次，下一个 pull 周期重新收集。
 
-App 层可以通过 `ConnectivityManager.NetworkCallback`（API 21+）监听网络状态变化，在网络恢复时主动触发本地缓存数据的发送，与 statsd 的上报策略形成互补。但注意不要在 `onAvailable()` 回调中执行同步网络请求——回调在 `ConnectivityService` 的 Binder 线程中执行，阻塞会拖慢系统网络切换流程。[已验证: Android 17 ConnectivityManager.NetworkCallback API; AOSP statsd 上报配置文档]
+App 层可以通过 `ConnectivityManager.NetworkCallback`（API 21+）监听网络状态变化，在网络恢复时主动触发本地缓存数据的发送，与 statsd 的上报策略形成互补。注意不要在 `onAvailable()` 回调中执行同步网络请求——回调在 `ConnectivityService` 的 Binder 线程中执行，阻塞会拖慢系统网络切换流程。[已验证: Android 17 ConnectivityManager.NetworkCallback API; AOSP statsd 上报配置文档]
 
 ## 性能监控最佳实践
 
