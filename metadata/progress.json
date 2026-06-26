@@ -10418,17 +10418,14 @@
     }
   },
   "task2a_last_processed": {
-    "section": "18.25",
-    "title": "Jetpack Compose 渲染管线架构",
-    "file": "src/part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md",
+    "section": "26.22",
+    "title": "Android 17 监控降级：内存约束与隐私限制下的性能数据采集",
+    "file": "src/part5-app/ch26-observability/22-monitoring-under-memory-privacy-constraints.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-26T04:09:45.342602+08:00",
-    "status": "finalized",
-    "note": "8 锚点全部覆盖，4 扩展全部覆盖，素材来自 Compose BOM 2025.12.00 + AOSP android-17.0.0_r1",
-    "pipeline_stage": "ready-to-publish",
-    "task6_result": "pass-light-edit",
-    "task6_state": "reviewed",
-    "last_task6_at": "2026-06-26"
+    "processed_at": "2026-06-27T03:10:13.283022+08:00",
+    "status": "ready-for-review",
+    "note": "7 锚点全部覆盖，3 扩展点全部覆盖，素材来自 Android 14-17 官方文档 + AOSP + §23.9/§4.11/§26.9 交叉引用",
+    "pipeline_stage": "task6_pending"
   },
   "task2a_last_gap_mining": {
     "date": "2026-06-26",
@@ -10446,7 +10443,7 @@
     "7.9",
     "18.10"
   ],
-  "last_task2a_processed_at": "2026-05-26T05:20:00+08:00",
+  "last_task2a_processed_at": "2026-06-27T03:10:13.283022+08:00",
   "last_task9_files": [
     "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
@@ -10490,7 +10487,7 @@
     "src/part5-app/ch22-rendering-practice/12-fragment-transaction-performance.md",
     "src/part5-app/ch24-io-network/04-network-architecture.md"
   ],
-  "last_task2a_date": "2026-06-07",
+  "last_task2a_date": "2026-06-27",
   "task9_last_review_summary": "14.8 GPU 图形调试与分析工具：pass-tech-review；无 P0/P1；自动晋升 finalized / ready-to-publish。",
   "task2b_history": [
     {
@@ -14994,8 +14991,8 @@
   },
   "summary": {
     "total": 271,
-    "draft": 2,
-    "ready-for-review": 66,
+    "draft": 1,
+    "ready-for-review": 67,
     "finalized": 201
   },
   "18.25": {
@@ -15039,10 +15036,10 @@
     "section": "26.22",
     "title": "Android 17 监控降级：内存约束与隐私限制下的性能数据采集",
     "file": "src/part5-app/ch26-observability/22-monitoring-under-memory-privacy-constraints.md",
-    "status": "draft",
-    "pipeline_stage": "task2a_created",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
     "created_by": "task2a-knowledge-gap",
-    "created_date": "2026-06-27T02:10:46.189104+08:00",
+    "created_date": "2026-06-27",
     "queue_priority": 80,
     "gap_score": {
       "素材丰富度": 3,
@@ -15054,6 +15051,11 @@
     "gap_source": "研究素材/官方文档/AOSP结构/知识盲区",
     "task6_state": "pending",
     "task9_state": "pending",
-    "task2b_state": "pending"
+    "task2b_state": "pending",
+    "drafted_date": "2026-06-27",
+    "drafted_by": "openclaw-task2a",
+    "last_task2a_at": "2026-06-27T03:10:13.283022+08:00",
+    "task2a_result": "ready-for-review",
+    "note": "7 锚点全部覆盖，3 扩展点全部覆盖"
   }
 }
