@@ -61,8 +61,8 @@ task9_reviewed_date: "2026-06-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-20T05:27:05+08:00"
 task9_review_notes: "2026-05-26 Task9 deep-review 04:30: pass-tech-review。P0 0 / P1 0 / P2 1；JIT code cache 4MB 工程值仍需补实测出处；Task6 已通过且 queue 无 pending，自动晋升 finalized。 2026-06-20 Task9 idle-audit auto-fixed: JitCodeCache 回收入口按 android-15/16/17 修正为 DoCollection(Thread*)，保留 android-14 旧名边界；修正两个 404 source.android 官方链接；回到 Task6 复审。"
-last_task6_audit: "2026-05-22"
-last_task6_audit_log: "logs/review/2026-05-22-20-audit.md"
+last_task6_audit: "2026-06-27"
+last_task6_audit_log: "logs/review/2026-06-27-07-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-20-05-audit.md"
 last_task9_audit: 2026-06-20
 deepseek_cn_review_state: done
@@ -602,7 +602,7 @@ Baseline Profiles、ProfileInstaller 和 Play Cloud Profiles 属于应用分发�
 
 Android 17 公开确认的是 `static final` 的行为约束进一步明确，运行时可变性比旧版本更小。对编译器来说，这提供了更稳定的前提，常量传播、分支裁剪和内联缓存的假设空间也会更宽。
 
-不过这里要把结论收紧：
+不过这里要限定结论范围：
 
 - **能确认的是行为变化**：字段可变性边界更清楚，编译器不需要像旧版本那样为运行时改写留大量防御性假设。
 - **能确认的是优化机会**：`static final` 参与的常量传播、条件折叠和部分内联决策，更容易满足前提。
