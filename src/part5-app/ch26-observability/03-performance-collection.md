@@ -10,20 +10,21 @@ last_verified_against: "Android Developers docs + Firebase Performance Monitorin
 confidence: high
 last_task9_idle_audit: "2026-06-26"
 last_task2b_at: "2026-06-26"
-last_task2b_by: openclaw-task2b-main
+last_task2b_by: openclaw-task2b-lite
+last_task2b_lite_at: 2026-06-26
 last_task2b_against: logs/deep-review/2026-06-26-18-deep-review.md
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_date: "2026-06-26"
 task9_reviewed_by: openclaw-task9
 task6_result: needs-rework
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-06-26T21:07:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-26"
-task2b_state: pending
-task2b_result: needs-fix
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed-lite
+pipeline_stage: task6_pending
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
 last_task2b_deepseek: reset
@@ -106,7 +107,7 @@ int totalPss   = memInfo.getTotalPss();        // 总 PSS
 int dalvikPrivateDirty = memInfo.dalvikPrivateDirty;  // 进程独占脏页
 ```
 
-`getProcessMemoryInfo()` 返回的 `Debug.MemoryInfo` 包含 `getMemoryStat(String)` 方法（API 23+），可按 `summary.java-heap`、`summary.native-heap`、`summary.code`、`summary.stack`、`summary.graphics` 等关键字查询子类明细，分类比 `dumpsys meminfo` 更细。Android 17 扩展了该方法，新增 `summary.art-heap` 关键字，用于查询 ART 虚拟机内部堆状态（包括 image space、zygote space 等分区的分配量），这对排查 ART GC 引起的卡顿有直接帮助。[已验证: AOSP android.os.Debug.MemoryInfo, API 34+37]
+`getProcessMemoryInfo()` 返回的 `Debug.MemoryInfo` 包含 `getMemoryStat(String)` 方法（API 23+），可按 `summary.java-heap`、`summary.native-heap`、`summary.code`、`summary.stack`、`summary.graphics` 等关键字查询子类明细，分类比 `dumpsys meminfo` 更细。ART GC 行为需要通过 `Debug.getRuntimeStat()` 查询（如 `art.gc.gc-count`、`art.gc.gc-time`），`getMemoryStat()` 不提供 ART 内部堆分区明细，仅覆盖 java-heap / native-heap / code / stack / graphics 等进程级分类。[已验证: AOSP android.os.Debug.MemoryInfo, API 34-37; art.gc.* 键见 Debug.getRuntimeStat 官方文档]
 
 Android 14+ 配合 `ActivityManager#setWatchHeapLimit(long)`（API 33+）可以在进程内存接近限制时收到回调，用于触发主动释放缓存或降级逻辑，而不是等到 OOM 才处理。[已验证: AOSP android.os.Debug.MemoryInfo, API 34]
 
@@ -214,27 +215,13 @@ if (proc_mem.SmapsOrRollup(&stats)) {
 }
 ```
 
-#### GPU 私有内存独立查询
+#### GPU 内存的查询路径
 
-Android 17 通过 memtrack HAL 暴露了 GPU 私有内存的查询接口：
-
-```cpp
-static jlong android_os_Debug_getGpuPrivateMemoryKb(JNIEnv* env, jobject clazz) {
-    struct memtrack_proc* p = memtrack_proc_new();
-    
-    // PID 0 表示 GPU 私有内存的全局总计
-    if (memtrack_proc_get(p, 0) != 0) {
-        return -1;  // HAL 不可用
-    }
-    
-    ssize_t gpuPrivateMem = memtrack_proc_gpu_pss(p);
-    return gpuPrivateMem / 1024;  // 转换为 KB
-}
-```
+Android 17 没有 Java 层直接查询 GPU 私有内存的独立 API。GPU 内存信息通过两条路径获取：`Debug.MemoryInfo` 的 `getMemoryStat("summary.graphics")` 返回图形内存 PSS（底层走 memtrack HAL），`dumpsys gfxinfo` 在 native 层通过 `memtrack_proc_graphics_pss()` 读取。memtrack HAL 不提供独立的"GPU 私有/共享"拆分接口。
 
 #### 内存分类精度变化
 
-Android 16 只区分 graphics 和 other 两类，Android 17 拆成了 graphics / gl / other 三类。Android 17 同时引入了 `MEMTRACK_FLAG_GPU_PRIVATE` 标志位（定义在 `hardware/libhardware/include/hardware/memtrack.h`），memtrack HAL 通过该标志位区分 GPU 私有内存和 GPU 共享内存。GPU 私有内存对应纹理、渲染目标等仅由当前进程使用的显存分配；GPU 共享内存对应跨进程的 buffer 队列（如 SurfaceFlinger 侧的 graphic buffer）。这种拆分对图形密集型应用有意义——GL 内存单独统计后，可以区分纹理显存占用和 SurfaceFlinger 侧 graphic buffer 占用：
+Android 16 只区分 graphics 和 other 两类，Android 17 拆成了 graphics / gl / other 三类。memtrack HAL 按 `MEMTRACK_TYPE_GRAPHICS`（图形内存，如 SurfaceFlinger 侧 graphic buffer）、`MEMTRACK_TYPE_GL`（GL/Vulkan 内存，如纹理和渲染目标）、`MEMTRACK_TYPE_OTHER`（其他 Ashmem 等）三种类型分类。类型定义在 `hardware/interfaces/memtrack/aidl/android/hardware/memtrack/MemtrackType.aidl`（Android 14+ 迁移为 AIDL 接口）。这种拆分对图形密集型应用有意义——GL 内存单独统计后，可以区分纹理显存占用和 SurfaceFlinger 侧 graphic buffer 占用：
 
 | Android 版本 | 内存分类 | 精度 |
 |-------------|---------|------|
