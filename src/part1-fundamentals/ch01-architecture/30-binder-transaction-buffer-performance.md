@@ -71,4 +71,88 @@ gap_score:
 
 <!-- outline-end -->
 
+<!-- AIW-源码调研-2026-06-27 -->
+
+## 🔬 源码调研补遗（基于 AOSP android-17.0.0_r1 实测）
+
+### ⚠️ 事实校正：RPC binder 上限是 100KB → 600KB，不是 1MB → 2MB
+
+outline 中「Android 17 缓冲区扩展 → 2MB 缓冲区提升」描述与 AOSP 提交 `ae266dc`（26Q2-release）实际内容不符。**实测发现**：
+
+`frameworks/native/libs/binder/Constants.h`（android-17.0.0_r1 首次引入）：
+
+```cpp
+namespace android::binder {
+
+/**
+ * See also BINDER_VM_SIZE. In kernel binder, the sum of all transactions must be allocated in this
+ * space. Large transactions are very error prone. In general, we should work to reduce this limit.
+ * The same limit is used in RPC binder for consistency.
+ */
+constexpr size_t kLogTransactionsOverBytes = 300 * 1024;
+
+/**
+ * See b/392575419 - this limit is chosen for a specific usecase, because RPC binder does not have
+ * support for shared memory in the Android Baklava timeframe. This was 100 KB during and before
+ * Android V.
+ *
+ * Keeping this low helps preserve overall system performance. Transactions of this size are far too
+ * expensive to make multiple copies over binder or sockets, and they should be avoided if at all
+ * possible and transition to shared memory.
+ */
+constexpr size_t kRpcTransactionLimitBytes = 600 * 1024;
+
+} // namespace android::binder
+```
+
+- `kRpcTransactionLimitBytes = 600 * 1024` = **600 KB**（不是 1MB 也不是 2MB）
+- 注释明确：「**This was 100 KB during and before Android V**」——Android V（API 35）及其之前是 100 KB，Android 17（API 37 / "Baklava"）提升到 600 KB，**6× 提升**
+- `BINDER_VM_SIZE` 仍为 `1MB - 2*PAGE_SIZE`（`frameworks/native/libs/binder/ProcessState.cpp:48`），**未改**
+
+### 三处事务侧校验都引用同一常量
+
+| 位置 | 检查语义 |
+|------|----------|
+| `RpcState.cpp:381` | **分配**：`size > kRpcTransactionLimitBytes` → `ALOGE "Transaction requested too much data allocation"` 并 return 拒绝 |
+| `RpcState.cpp:670` | **发送**：`bodySize >= kRpcTransactionLimitBytes - sizeof(RpcWireHeader)` → 返回 `FAILED_TRANSACTION` |
+| `RpcState.cpp:1345` | **接收/回复**：反向判断 break |
+| `RpcTransportUtils.h:67` | `kChunkMax = kRpcTransactionLimitBytes` —— iovec 分块发送 |
+
+300 KB 告警阈值的使用点：
+- `Binder.cpp:510` 服务端收请求 → `ALOGW "Large data transaction"`
+- `Binder.cpp:548` 服务端写 reply → `ALOGW "Large reply transaction"`
+- `BpBinder.cpp:433` 客户端发出 → `ALOGW "Large outgoing transaction"`
+
+### ContentProvider 适用性边界
+
+调用链（`frameworks/native/libs/binder/BpBinder.cpp:419-426`）：
+
+```cpp
+if (isRpcBinder()) [[unlikely]] {
+    status = rpcSession()->transact(...);   // 走 RPC 通道 → 命中 600KB 上限
+} else {
+    status = IPCThreadState::self()->transact(...);  // 走 kernel binder → 命中 BINDER_VM_SIZE=1MB
+}
+```
+
+**关键判断**：
+- 绝大多数 App ↔ ContentProvider 路径走 **kernel binder**（`/dev/binder`），**不受** 600KB 影响，仍受 1MB 进程池约束
+- 600KB 上限的真正受益方是 **RPC binder 通道**：系统虚拟化（Microdroid）、`RpcServer` 形式注册的服务
+- 注释说 RPC binder 在 Android Baklava timeframe **没有 shared memory 支持**，所以单笔事务必须能装下中大块数据——这是 600KB 提升的根本动因（`b/392575419`）
+
+### 性能取舍
+
+- 正面：跨 RPC 通道的 `ContentProvider.call` / `applyBatch` / 大 Bundle 一次提交，**减少 fallback 拆包与事务重试**
+- 负面：600KB 占用 1MB 进程池的 60%，并发 2 笔即可能触发 `BR_DEAD_REPLY`；多次内存拷贝（client→kernel→server，RPC 还有 vsock/socket 路径）；`MAP_PRIVATE|MAP_NORESERVE` 不可见，LMKD 不感知
+- 观测：过滤 logcat 关键字 `"Large (data|reply|outgoing) transaction"` 即可定位大事务
+
+### 章节后续加工建议
+
+- 「Android 17 缓冲区扩展」小节应重写为：「RPC binder 单笔事务上限 100KB→600KB（6×）；kernel binder 的 BINDER_VM_SIZE 1MB 未变；Constants.h 是新引入的常量文件」
+- 「Binder 事务标志位性能语义」小节可补充 `FLAG_CLEAR_BUF`（0x20）的具体开销（`Binder.cpp:506`，仅在 reply 非 nullptr 时 `reply->markSensitive()`）
+- 「Binder 线程池与事务排队」小节可补充默认线程上限 15 来自 `DEFAULT_MAX_BINDER_THREADS`（`ProcessState.cpp:49`），且 16KB page size 下分配粒度变化
+
+<!-- /AIW-源码调研-2026-06-27 -->
+
+
 > 本节内容待加工。

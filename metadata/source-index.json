@@ -1079,6 +1079,86 @@
       "quality_score": 25,
       "created_by": "task2a-content-processing",
       "notes": "基于 DeepResearch/2026-06-26-android17-memory-limiter-cgroup-quota.md 创建的高质量章节"
+    },
+    {
+      "title": "Android 17 Binder IPC 性能监控接口与跨进程调用链路追踪机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-binder-perf-monitor-recording-aidl-trace.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "01",
+      "tags": [
+        "Android",
+        "Binder",
+        "IPC",
+        "性能监控",
+        "Android17"
+      ],
+      "description": "深度分析Android 17 Binder IPC新增性能监控接口，包括内核ioctl特性探测、跨进程调用链路录制机制、Perfetto集成实现",
+      "scored_at": "2026-06-27T05:47:11.876136"
+    },
+    {
+      "title": "Android 17 JobSchedulerService 后台任务优先级与 CPU 时间配额管理机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-jobservice-priority-cpu-quota.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "25",
+      "tags": [
+        "Android",
+        "JobScheduler",
+        "后台任务",
+        "CPU配额",
+        "Android17"
+      ],
+      "description": "研究Android 17 JobSchedulerService的API调用频率配额、Standby Bucket差异化配额、全局并发达上限等五维节流机制",
+      "scored_at": "2026-06-27T05:47:22.852047"
+    },
+    {
+      "title": "Android 17 内存管理政策（Compaction + Freezer）对性能监控的影响",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-android17-memory-policy-monitoring-impact.md",
+      "quality": "high",
+      "score": 20,
+      "chapter": "26",
+      "tags": [
+        "Android",
+        "内存管理",
+        "性能监控",
+        "Compaction",
+        "Freezer",
+        "Android17"
+      ],
+      "description": "分析Android 17 Compaction压缩和Freezer冻结机制对Debug.MemoryInfo、/proc/pid/status等监控指标的影响机制",
+      "scored_at": "2026-06-27T05:47:33.631507"
+    },
+    {
+      "title": "Android 17 来了！新特性介绍与适配建议",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juegin-android/2026-06-27-76125451-Android_17_来了！新特性介绍与适配建议.md",
+      "quality": "medium",
+      "score": 15,
+      "chapter": "01",
+      "tags": [
+        "Android17",
+        "开发指南",
+        "新特性",
+        "适配"
+      ],
+      "description": "掘金技术文章：Android 17自适应大屏、Bubbles浮窗、EyeDropper颜色拾取、隐私权限等新特性介绍与开发适配建议",
+      "scored_at": "2026-06-27T05:47:44.057827"
+    },
+    {
+      "title": "端侧 LLM 能耗/性能/质量权衡研究精读",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2026-06-26-sustainability-on-device-llm-energy/03-精读.md",
+      "quality": "high",
+      "score": 19,
+      "chapter": "26",
+      "tags": [
+        "Android",
+        "LLM",
+        "能耗",
+        "性能优化",
+        "端侧AI"
+      ],
+      "description": "精读论文：Sustainability Is Not Linear - 在Samsung Galaxy S25 Ultra上测量8个LLM(0.5B-9B)的能耗、延迟、质量权衡关系",
+      "scored_at": "2026-06-27T05:47:56.229878"
     }
   ]
 }
