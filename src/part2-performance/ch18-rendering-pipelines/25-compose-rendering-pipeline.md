@@ -2,14 +2,16 @@
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
 status: ready-for-review
-task2b_result: fixed-lite
+task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
+last_task2b_at: 2026-06-26
+last_task2b_by: task2b-main
 last_task2b_lite_at: 2026-06-26
-reviewed_by: openclaw-task6
+reviewed_by: openclaw-task9
 reviewed_date: 2026-06-26
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
@@ -28,7 +30,7 @@ sources:
   - type: research
     path: "intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md"
 tags: [compose, rendering, rendernode, choreographer, pausable-composition, display-list]
-related_chapters: ["2.4", "2.5", "2.6", "7.7", "22.3", "22.20", "22.25", "22.26"]
+related_chapters: ["2.4", "2.5", "2.6", "22.3", "22.20", "22.25", "22.26"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-26"
 gap_source: "AOSP结构+章节深挖"
