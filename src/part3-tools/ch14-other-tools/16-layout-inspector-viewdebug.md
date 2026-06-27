@@ -2,13 +2,14 @@
 
 title: Layout Inspector 与 ViewDebug 布局调试
 chapter: 14.16
-status: ready-for-review
+status: finalized
 task6_state: reviewed
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed-lite
-task9_state: pending
-pipeline_stage: task9_pending
+task9_result: pass-tech-review
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 last_task2b_lite_at: 2026-06-28
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-28
@@ -224,7 +225,9 @@ private void updateViewTreeDisplayList(View view) {
 }
 ```
 
-排查时可以这样分流：Layout Inspector 里节点 bounds、约束、父子关系已经错，优先查布局；Inspector 里结构正确，但屏幕内容不刷新，再看 `invalidate()` 是否触发、`onDraw()` 是否依赖未更新状态、Perfetto 中是否出现 View draw / RenderThread 相关 slice。
+排查时可以这样分流：Layout Inspector 里节点 bounds、约束、父子关系已经错，优先查布局问题（measure/layout 阶段）；Inspector 里结构正确，但屏幕内容不刷新，需要区分 measure/layout 和 draw 两个阶段：
+- 如果 invalidate 后没有触发 measure/layout：检查是否依赖未更新的状态变量、父节点是否正确标记 PFLAG_DIRTY、Choreographer 是否收到回调
+- 如果 invalidate 后 measure/layout 正常但内容不刷新：检查 onDraw() 是否依赖未更新状态、RenderNode 是否正确标记 mRecreateDisplayList、Perfetto 中是否出现 View draw / RenderThread 相关 slice
 
 ## 第三方布局调试工具的适用边界
 
