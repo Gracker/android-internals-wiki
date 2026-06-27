@@ -67,7 +67,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-27T22:24:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_by": "task2b-main-fix",
+      "completed_at": "2026-06-27T22:50:00+08:00",
+      "resolution": "Fixed: (1) FLAG_ONEWAY verified correct at 78-79, Task9 annotation was wrong; (2) transact range corrected to 948-996; (3) Added frozen state mermaid sequence diagram; (4) Added Android 16 vs 17 comparison table; (5) Added quantified performance comparison table + marked gaps as [待补充]; (6) Added Binder thread pool scheduling explanation; (7) Rewrote from source-index to narrative prose; (8) Added motivation intro; (9) Filled extension anchors; (10) Rewrote AI-style outline; (11) Cleaned processing metadata; (12) Added Perfetto trace section."
     }
   ]
 }
