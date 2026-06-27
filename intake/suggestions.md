@@ -295,3 +295,149 @@
 - ch05.23
 - ch06.5
 - ch24.20
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：源码准确性
+- **位置**：数据源名称引用
+- **问题**：文档中提到 `android.java_hprof` 数据源名，但实际 AOSP 源码中的常量定义在 `java_hprof_producer.cc:25` 为 `kJavaHprofDataSource`，需要确认 proto 字段名和数据源名的对应关系
+- **建议**：修正数据源名称引用，确保与实际源码常量定义一致
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：源码准确性
+- **位置**：heap_graph 表结构
+- **问题**：SQL 查询示例中提到的 heap_graph_object 表结构（如包含 id, type_name 字段）与 AOSP `profiler_tables.py` 中实际定义不符
+- **建议**：根据实际 AOSP 表结构修正 SQL 查询，使用正确的字段名如 type_id 而非 type_name
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：性能影响分析
+- **问题**：heap dump 对应用影响的量化数据不足，如 "100MB 堆约 5-10 秒，500MB 堆可能超过 30 秒" 的估算数据缺乏实际基准测试支撑
+- **建议**：补充不同设备规格下 heap dump 的实际性能基准数据，包括 dump 时长、文件大小、内存占用等量化指标
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：知识盲区
+- **位置**：版本兼容性
+- **问题**：缺少对 hprof 文件在不同 Android 版本中格式变化的说明
+- **建议**：补充 hprof 文件格式在 Android 12-17 中的主要变化和兼容性注意事项
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：知识盲区
+- **位置**：实践工具链
+- **问题**：缺少对 heap_graph 在不同 Perfetto 版本中的 schema 变化说明
+- **建议**：补充 heap_graph 表结构在不同 Perfetto 版本中的演进和兼容性处理
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：KOOM fork-dump 实测数据
+- **问题**：fork-dump 的 20ms 阻塞时间缺少实测数据支撑
+- **建议**：补充 KOOM fork-dump 在不同设备上的实际延迟测试数据
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：批处理性能提升
+- **问题**：批处理性能提升缺少量化数据
+- **建议**：补充 batch IPC 与传统 IPC 在 syscall 次数上的对比数据
+
+## [Task9 Deep Review] 14.16 Layout Inspector 与 ViewDebug 布局调试 — 2026-06-28
+- **类型**：版本差异
+- **位置**：3D 模式移除信息
+- **问题**：3D 模式移除信息不够明确，仅提到 "从 Android Studio Panda 2 起已废弃并移除"
+- **建议**：明确说明 3D 模式在具体哪个 Android Studio 版本中完全移除，并提供替代方案建议
+
+## [Task9 Deep Review] 14.16 Layout Inspector 与 ViewDebug 布局调试 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：性能基准数据
+- **问题**：层级优化建议缺乏实际测量的性能提升数据，"回到 7.12、22.1 做布局简化"的指导缺乏量化依据
+- **建议**：补充实际测量的布局优化前后性能对比数据，包括 measure/layout 耗时变化、帧率提升等量化指标
+
+## [Task9 Deep Review] 14.16 Layout Inspector 与 ViewDebug 布局调试 — 2026-06-28
+- **类型**：知识盲区
+- **位置**：第三方工具分析
+- **问题**：缺少对第三方工具 AYA 具体布局分析能力的说明
+- **建议**：补充 AYA 工具在布局分析方面的具体能力边界和特色功能
+
+## [Task9 Deep Review] 14.16 Layout Inspector 与 ViewDebug 布局调试 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：px/dp/density 换算示例
+- **问题**：px/dp/density 换算部分缺少实际场景示例
+- **建议**：添加具体的 UI 走查案例，说明如何从截图 px 换算到设计稿 dp
+
+## [Task9 Deep Review] 14.16 Layout Inspector 与 ViewDebug 布局调试 — 2026-06-28
+- **类型**：源码准确性
+- **位置**：AOSP 源码引用
+- **问题**：参考的 AOSP 源码链接格式不统一，部分缺少版本锚点
+- **建议**：统一所有 AOSP 源码引用格式，确保都指向 android-17.0.0_r1 版本
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：源码准确性
+- **位置**：源码路径版本标注
+- **问题**：文档中多次提到 android-17.0.0_r1，但部分源码路径未明确标注版本，可能与实际版本存在差异
+- **建议**：为所有源码路径添加明确的版本锚点，确保与 android-17.0.0_r1 实际文件一致
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：知识盲区
+- **位置**：高并发调度策略
+- **问题**：缺少对 Binder 线程池在高并发场景下的具体调度策略说明
+- **建议**：补充 Binder 线程池在大量 oneway 请求下的具体调度机制和优先级处理
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：知识盲区
+- **位置**：spam 检测机制
+- **问题**：缺少对 oneway spam 检测具体阈值的说明
+- **建议**：补充内核 oneway spam 检测的具体计数器算法和触发阈值
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：性能对比数据
+- **问题**：性能对比表格中的数据标注为 "待补充"，缺少实际测试数据
+- **建议**：补充 oneway vs 同步调用的端到端延迟对比、批处理模式下的 syscall 减少量等实测数据
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：syscall 开销对比
+- **问题**：syscall 开销对比缺少实测数据
+- **建议**：补充传统 IPC 与批处理 IPC 在 syscall 次量上的对比数据
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：冻结回执性能优势
+- **问题**：冻结回执机制的性能优势缺少量化数据
+- **建议**：补充 BR_FROZEN_REPLY 立即返回 vs 5s 超时在实际场景的 ANR 次数对比
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：交叉引用
+- **位置**：关联章节引用
+- **问题**：关联章节 §1.27 和 §1.30 在当前章节结构中不存在
+- **建议**：修正引用为已存在的章节号，或标注为"未来章节"，避免误导读者
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：交叉引用
+- **位置**：章节号格式
+- **问题**：参考的章节号格式不统一（有的用 §1.x，有的直接写章节号）
+- **建议**：统一章节号格式，建议使用 § 符号格式
+
+
+## [Task2A 缺口挖掘] 2026-06-28 — 已检查方向
+
+### 本轮清理动作
+- 7 个重复空 draft 已标记 superseded：ch01.35, ch01.36, ch02.31, ch05.26, ch06.8, ch23.14, ch24.21
+- 原因：均为上一轮缺口挖掘创建，但与已有章节高度重复
+
+### 本轮缺口挖掘检查方向（未发现 ≥14 分候选）
+
+1. **Bluetooth/BLE 协议栈性能** — 已有 ch05.22 (LE Audio), ch11.06 (扫描功耗), ch24.19 (Socket 治理)，覆盖充分
+2. **SQLite/Room 内部性能** — 已有 ch10.07, ch24.02, ch24.17 (Room 3.0)，覆盖充分
+3. **NotificationManagerService 性能** — 已有 ch09.06 (Notification ANR), ch08.14 (推送管线)，覆盖充分
+4. **AlarmManager 性能** — 已有 ch25.20 (allow-while-idle), ch25.03 (WakeLock/Alarm)，覆盖充分
+5. **MediaCodec/媒体管线** — 已有 ch08.08, ch18.23 (Codec2/Media3)，覆盖充分
+6. **SystemUI 性能** — 已有 ch07.13 (SystemUI 分析)，覆盖充分
+7. **AccessibilityService 性能** — 已有 ch05.21 中提及，覆盖率尚可
+8. **Privacy Sandbox** — 已有 ch12.07 (Privacy Sandbox API 性能)，覆盖充分
+9. **VirtualDevice/MediaProjection/SpeechRecognizer/ClipboardService** — 0 mentions 但均为冷门主题，素材丰富度和读者需求度不足（<14分）
+10. **Android 17 新 API 覆盖检查** — Desktop Windowing、Predictive Back、16KB Page、Edge-to-Edge、MemoryLimiter、DeliQueue、Binder Async、FUSE BPF、LE Audio、ADPF 等均已有独立章节
+
+### 结论
+全书 513 节、26 章覆盖充分，本轮未发现评分 ≥14 的知识缺口。下一轮可探索方向：
+- Part 4 (ch16/ch17) 深度扩展（AOSP 内核优化、OEM 定制案例）
+- 端侧 AI 推理性能边界（已有 ch05.14/ch05.20，可考虑独立实战章节）
+- Android 17 安全特性对性能的影响（Play Integrity、SafetyCore 等）

@@ -1,7 +1,11 @@
 ---
+
 title: "SharedPreferencesImpl Android 16-17 变更分析与适配"
 chapter: "ch06.8"
-status: draft
+status: superseded
+superseded_date: "2026-06-28"
+superseded_by: "6.5 (SharedPreferences/DataStore 性能与 ANR 优化)"
+superseded_reason: "6.5 已含 Android 17 源码验证结论（L564-622），确认 SharedPreferencesImpl.java 在 android-17.0.0_r1 仅 diff 2 行；DataStore MultiProcess 内容也已在 6.5 覆盖"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['SharedPreferences', '存储', 'Android17', '兼容性']
 related_chapters: ['6.5']

@@ -1,7 +1,11 @@
 ---
+
 title: "AppFlow 与 LMKD v2 兼容性分析"
 chapter: "ch23.14"
-status: draft
+status: superseded
+superseded_date: "2026-06-28"
+superseded_by: "16.8 (AppFlow：GB 级应用冷启动内存联合调度)"
+superseded_reason: "16.8 已完整覆盖 AppFlow 三段式模型、LMKD 策略边界、兼容性矩阵（283行，ready-for-review），且 ch23.14 的 LMKD 兼容性锚点已在 16.8 "Context-Aware Kill 与 LMKD 策略边界" 覆盖"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['AppFlow', 'LMKD', '内存管理', '兼容性']
 related_chapters: ['4.4', '4.15']

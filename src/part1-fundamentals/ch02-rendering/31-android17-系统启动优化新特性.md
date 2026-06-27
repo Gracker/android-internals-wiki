@@ -1,7 +1,11 @@
 ---
+
 title: "Android 17 系统启动优化新特性"
 chapter: "ch02.31"
-status: draft
+status: superseded
+superseded_date: "2026-06-28"
+superseded_by: "1.02 (启动流程) / research-gap 16.7"
+superseded_reason: "主题为"系统启动优化"但被放在 ch02-rendering（渲染章节），章节归属错误；且 ch01.02 已覆盖启动流程，research-gap 16.7 已记录该方向"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['系统启动', '启动优化', 'Android17', '性能']
 related_chapters: ['1.2', '1.11']

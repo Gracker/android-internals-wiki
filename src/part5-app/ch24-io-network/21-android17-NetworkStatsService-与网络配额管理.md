@@ -1,7 +1,11 @@
 ---
+
 title: "Android 17 NetworkStatsService 与网络配额管理"
 chapter: "ch24.21"
-status: draft
+status: superseded
+superseded_date: "2026-06-28"
+superseded_by: "24.20 (Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径)"
+superseded_reason: "与已有章节 24.20 主题完全相同，24.20 已有 1413 行实质内容（draft），完整覆盖 NetworkStatsService 架构、BPF 数据采集、配额管理、防火墙链"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['网络管理', 'NetworkStats', '配额', '流量']
 related_chapters: ['24.4', '24.14']

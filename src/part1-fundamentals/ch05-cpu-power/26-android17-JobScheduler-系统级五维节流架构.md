@@ -1,7 +1,11 @@
 ---
+
 title: "Android 17 JobScheduler 系统级五维节流架构"
 chapter: "ch05.26"
-status: draft
+status: superseded
+superseded_date: "2026-06-28"
+superseded_by: "5.23 (Android 17 JobScheduler 系统级五维节流架构)"
+superseded_reason: "与已有章节 5.23 标题完全相同（同一文件名不同编号），5.23 已有 74 行 outline（含详细五维节流结构）"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['JobScheduler', 'CPU配额', '后台节流', '任务调度']
 related_chapters: ['5.10', '5.17']
