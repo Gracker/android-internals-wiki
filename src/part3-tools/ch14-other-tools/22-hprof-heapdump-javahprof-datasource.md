@@ -3,10 +3,10 @@
 title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-28
 drafted_date: 2026-06-07
@@ -32,7 +32,10 @@ tags: [hprof, heap-dump, art, perfetto, java_hprof, memory-analysis]
 related_chapters: ["10.1", "10.2", "14.3", "14.14", "19.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-06-07
-gap_source: 素材驱动/DeepResearch/AOSP结构
+gap_source: 素材驱动/DeepResearch/AOSP
+task9_result: needs-rework
+task2b_state: pending
+
 ---
 -
 
