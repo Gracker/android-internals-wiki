@@ -155,3 +155,16 @@
 - **位置**：oneway spam 检测机制
 - **问题**：未解释内核计数器如何工作、阈值多少、与用户态的协作机制
 - **建议**：补充 oneway spam 检测的完整工作机制，包括计数器算法、触发阈值和用户态日志记录的触发条件
+## [Task6 Review] 14.22 HPROF Heap Dump — 2026-06-28
+- **类型**：需确认
+- **位置**：扩展节 SQL 查询
+- **问题**：heap_graph_object 表无 type_name 列（前文已纠正），但扩展节 SQL 仍使用 o.type_name，前后矛盾
+- **建议**：统一使用 type_id JOIN heap_graph_class 获取类名
+- **review 日志**：logs/review/2026-06-28-01-review.md
+
+## [Task6 Review] 14.16 Layout Inspector — 2026-06-28
+- **类型**：版本基线
+- **位置**：frontmatter last_verified_against + 全文 6 处 [已验证] 标注 + 参考资料区 4 个 AOSP 链接
+- **问题**：全部 AOSP 源码引用指向 android-16.0.0_r1，不符合版本基线要求 android-17.0.0_r1
+- **建议**：Task 9 重新验证 ViewDebug.java、View.java、ViewRootImpl.java、ThreadedRenderer.java 在 android-17.0.0_r1 中的差异
+- **review 日志**：logs/review/2026-06-28-01-review.md
