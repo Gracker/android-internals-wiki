@@ -240,6 +240,34 @@
       "completed_by": "task2b-main"
     },
     {
+      "section": "1.25",
+      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "priority": 95,
+      "reason": "[Deep Tech Review 2026-06-28] 新发现源码引用错误和原理链断裂问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "IPCThreadState.cpp transact 方法行号",
+          "detail": "文中提到 IPCThreadState.cpp:1056-1104 作为 transact 方法位置，但需验证 android-17.0.0_r1 中的准确行号",
+          "suggestion": "在 android-17.0.0_r1 中实际查找 transact 方法的准确位置并更新引用"
+        },
+        {
+          "type": "原理断裂",
+          "location": "oneway vs 同步调用设计原理",
+          "detail": "解释了 oneway 调用如何工作，但未说明 Android 系统需要同时支持两种调用的架构决策原因",
+          "suggestion": "补充架构设计决策推理，说明同步和异步调用的适用场景和权衡"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-28T06:20:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-28T06:50:00+08:00",
+      "completed_by": "task2b-main-rework"
+    },
+    {
       "section": "1.37",
       "section_title": "Android logd 日志系统性能与开销",
       "priority": 80,
