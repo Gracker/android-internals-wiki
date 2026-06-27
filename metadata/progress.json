@@ -1590,7 +1590,7 @@
     },
     "1.25": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "last_review": "2026-06-28"
