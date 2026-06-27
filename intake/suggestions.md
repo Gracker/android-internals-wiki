@@ -228,3 +228,45 @@
 - **问题**：全部 AOSP 源码引用指向 android-16.0.0_r1，不符合版本基线要求 android-17.0.0_r1
 - **建议**：Task 9 重新验证 ViewDebug.java、View.java、ViewRootImpl.java、ThreadedRenderer.java 在 android-17.0.0_r1 中的差异
 - **review 日志**：logs/review/2026-06-28-01-review.md
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：性能影响分析
+- **问题**：heap dump 对应用影响的量化数据不足，如"100MB 堆约 5-10 秒，500MB 堆可能超过 30 秒"的估算数据缺乏实际基准测试支撑
+- **建议**：补充不同设备规格下 heap dump 的实际性能基准数据，包括 dump 时长、文件大小、内存占用等量化指标
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：SQL 查询验证
+- **问题**：heap_graph SQL 分析查询示例的准确性未经验证，缺少对实际 trace_processor 版本兼容性的说明
+- **建议**：提供基于实际 Perfetto 版本验证的查询示例，并注明版本兼容性注意事项
+
+## [Task9 Deep Review] 14.16 Layout Inspector 与 ViewDebug 布局调试 — 2026-06-28
+- **类型**：版本差异
+- **位置**：3D 模式移除信息
+- **问题**：3D 模式移除信息不够明确，仅提到"从 Android Studio Panda 2 起已废弃并移除"
+- **建议**：明确说明 3D 模式在具体哪个 Android Studio 版本中完全移除，并提供替代方案建议
+
+## [Task9 Deep Review] 14.16 Layout Inspector 与 ViewDebug 布局调试 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：性能基准数据
+- **问题**：层级优化建议缺乏实际测量的性能提升数据，"回到 7.12、22.1 做布局简化"的指导缺乏量化依据
+- **建议**：补充实际测量的布局优化前后性能对比数据，包括 measure/layout 耗时变化、帧率提升等量化指标
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：性能基准测试
+- **问题**：多处标注 [待补充]，包括 oneway vs 同步调用的延迟对比、批处理 syscall 减少量、冻结回执对 ANR 的影响等关键性能数据缺失
+- **建议**：补充实测的性能基准数据，如 oneway 调用平均延迟减少百分比、批处理模式下的 syscall 优化倍数、BR_FROZEN_REPLY 立即返回 vs 5s 超时的 ANR 次数对比
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：知识盲区
+- **位置**：生产环境实际案例
+- **问题**：缺少生产环境中 oneway spam 检测阈值的实际案例和数据，以及 oneway spam 导致的具体性能问题场景
+- **建议**：补充实际生产环境中 oneway spam 检测的触发阈值、典型案例和影响分析
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：Perfetto Trace 示例
+- **问题**："[待补充：Trace 截图]" 标注的内容未完成，缺少实际观察到的 Binder 相关 trace 表现
+- **建议**：补充 Binder 异步机制在 Perfetto 中的具体 trace 观察示例和截图

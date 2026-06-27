@@ -146,6 +146,46 @@
       "completed_at": "2026-06-27T17:36:57+00:00",
       "completed_by": "task2b-lite",
       "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 (10 refs updated)"
+    },
+    {
+      "section": "1.25",
+      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 关键源码引用缺少 android-17.0.0_r1 验证，存在事实错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "BR_ 命令和 BC_ 命令枚举值和语义描述",
+          "detail": "文中多处引用 BR_ 命令和 BC_ 命令的枚举值和语义描述，但未实际验证 android-17.0.0_r1 源码中的具体实现",
+          "suggestion": "在 IPCThreadState.cpp 和 ProcessState.cpp 中实际查找并验证 android-17.0.0_r1 的 BR_ 和 BC_ 命令定义和语义"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-28T02:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.22",
+      "section_title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径验证不充分，存在关键源码引用未经验证",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "多处源码路径验证",
+          "detail": "文中多处标注 '[待验证: 源码路径基于 master 分支分析，android-17.0.0_r1 中类名和字段名可能有细微差异]'，缺乏实际 android-17.0.0_r1 的源码验证",
+          "suggestion": "对 art/runtime/hprof/hprof.cc、frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java 等关键文件进行实际验证"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-28T02:20:00+08:00",
+      "status": "pending"
     }
   ]
 }
