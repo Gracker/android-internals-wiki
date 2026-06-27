@@ -162,6 +162,66 @@
 - **建议**：统一使用 type_id JOIN heap_graph_class 获取类名
 - **review 日志**：logs/review/2026-06-28-01-review.md
 
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：源码准确性
+- **位置**：src/profiling/memory/java_hprof_producer.cc:25
+- **问题**：数据源路径引用错误，实际位于 external/perfetto/src/profiling/memory/java_hprof_producer.cc
+- **建议**：修正源码路径引用，确保与android-17.0.0_r1实际路径一致
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：源码准确性
+- **位置**：external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
+- **问题**：proto字段编号引用不准确，部分字段已过时或变更
+- **建议**：根据android-17.0.0_r1实际proto定义更新字段编号和描述
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：版本差异
+- **位置**：Android 17 java_hperf数据源特性
+- **问题**：未详细说明Android 17相对于Android 16在java_hperf数据源上的具体增强
+- **建议**：补充Android 17中java_hperf新增的数据源特性和优化点
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：原理完整性
+- **位置**：HPROF章节整体
+- **问题**：缺少对ART GC算法差异对dump结果影响的分析
+- **建议**：补充不同GC算法（Concurrent Copy、Generational GC等）对heap dump结果的影响分析
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：数据缺失
+- **位置**：性能影响分析
+- **问题**：heap dump对应用影响的量化数据不足，如内存占用、解析时间等
+- **建议**：补充不同设备规格下的heap dump性能基准数据
+
+## [Task9 Deep Review] 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源 — 2026-06-28
+- **类型**：知识盲区
+- **位置**：实践指导
+- **问题**：缺少设备厂商定制差异对hprof解析的影响分析
+- **建议**：增加对不同设备厂商hprof实现差异的兼容性建议
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：源码准确性
+- **位置**：ProcessState.cpp:48 BINDER_VM_SIZE定义
+- **问题**：未提供BINDER_VM_SIZE的完整定义和计算逻辑
+- **建议**：补充BINDER_VM_SIZE的完整定义，包括内存映射大小的详细计算
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：原理完整性
+- **位置**：冻结回执机制与进程生命周期
+- **问题**：缺少BR_FROZEN_REPLY与进程生命周期的完整交互链
+- **建议**：补充冻结回执机制在进程生命周期不同阶段的具体表现
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：版本差异
+- **位置**：Android 17 vs 16差异
+- **问题**：RPC Binder缓冲区扩容数据不准确
+- **建议**：精确验证kDefaultRpcBinderSize在Android 17中的实际值和变更时间点
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：知识盲区
+- **位置**：安全性和权限
+- **问题**：缺少oneway调用与安全权限关系的分析
+- **建议**：补充Binder异步机制在安全性方面的考虑和限制
+
 ## [Task6 Review] 14.16 Layout Inspector — 2026-06-28
 - **类型**：版本基线
 - **位置**：frontmatter last_verified_against + 全文 6 处 [已验证] 标注 + 参考资料区 4 个 AOSP 链接
