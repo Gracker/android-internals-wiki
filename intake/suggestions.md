@@ -5,6 +5,30 @@
 - **问题**：Systrace 使用方法缺少明确的 Android 8 版本命令参数限制说明
 - **建议**：补充说明 Android 8 下 Systrace 的具体参数限制（如缓冲区大小限制、不支持的功能等），与其他版本的差异点
 
+## [Task9 Deep Review] 1.26 Android 17 MessageQueue 重构与 DeliQueue 无锁优化 - 2026-06-27
+- **类型**：知识盲区
+- **位置**：开发者指导缺失
+- **问题**：未说明普通应用开发者如何观察/测试/受益于 DeliQueue
+- **建议**：补充普通应用开发者观察 MessageQueue 行为的方法、测试 DeliQueue 性能收益的具体方案、以及开发者在实际项目中应该关注的要点
+
+## [Task9 Deep Review] 1.26 Android 17 MessageQueue 重构与 DeliQueue 无锁优化 - 2026-06-27
+- **类型**：知识盲区
+- **位置**：内存开销讨论缺失
+- **问题**：MessageNode 对象分配的内存成本未分析
+- **建议**：补充 DeliQueue 相比传统 MessageQueue 的内存开销对比、MessageNode 对象分配频率分析、内存优化建议
+
+## [Task9 Deep Review] 1.26 Android 17 MessageQueue 重构与 DeliQueue 无锁优化 - 2026-06-27
+- **类型**：数据缺失
+- **位置**：性能数据缺失
+- **问题**："~3x faster" 和 "30% lower message delay" 无具体基准测试数据支撑
+- **建议**：提供具体的性能测试场景、测试设备配置、基准测试方法和实际数据表格
+
+## [Task9 Deep Review] 1.26 Android 17 MessageQueue 重构与 DeliQueue 无锁优化 - 2026-06-27
+- **类型**：知识盲区
+- **位置**：交叉引用一致性
+- **问题**：related_chapters ["1.4", "1.13"] 需要确认内容一致性
+- **建议**：验证相关章节 1.4 和 1.13 中关于 MessageQueue 和 Binder IPC 的描述与当前章节是否一致，确保技术术语和概念定义统一
+
 ## [Task9 Deep Review] 15 Android 性能优化研究方法论 - 2026-06-27
 - **类型**:源码准确性
 - **位置**:Line 204-210 (ADB 命令引用)
@@ -82,6 +106,18 @@
 - **位置**：3.2.1 Android 9+ 工具演进
 - **问题**：缺少 Android 10 (API 29-30) 中间状态说明，Perfetto 从 Android 9 到 Android 11+ 的渐进过程描述不完整
 - **建议**：补充 Android 10 中 Perfetto 的可用性、限制和启用方法，说明其作为 Android 9 和 Android 11+ 之间过渡版本的特点
+
+## [Task9 Deep Review] 1.26 DeliQueue 无锁队列源码解析（AOSP android-16.0.0_r1） — 2026-06-27
+- **类型**：版本差异覆盖
+- **位置**：§1.26.6 版本边界说明段
+- **问题**：对 Android 17 targetSdk 37 的表述不准确。官方 blog 仅宣布启用，但未明确说明所有 targetSdk 37+ 应用自动获得 DeliQueue
+- **建议**：修正为 "Android 17 官方宣布面向 targetSdk 37+ 应用默认启用，但具体 aconfig 策略需参考 android-17.0.0_r1 源码"
+
+## [Task9 Deep Review] 1.26 DeliQueue 无锁队列源码解析（AOSP android-16.0.0_r1） — 2026-06-27
+- **类型**：数据与案例支撑
+- **位置**：§1.26.8 性能特征段
+- **问题**："CAS ~3x 快于 LL/SC" 的性能数据缺少具体测试环境和基准数据
+- **建议**：补充测试设备型号、Android 版本、测试方法和具体的性能对比数据
 
 ## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
 - **类型**：版本差异覆盖
@@ -178,3 +214,31 @@
 - **位置**：1.26.2 + 参考资料
 - **问题**：正文说「L3 review 中基于数组的优先级队列实现错误，实际使用 ConcurrentSkipListSet」，但 DeepResearch 摘要说「L3 review 的纠正本身也有误」。这条纠错链需要 Task 9 定夺。
 - **建议**：Task 9 直接读 AOSP 源码确认数据结构类型，消除全部矛盾，简化为一段准确描述。
+
+## [Task2A Gap Mining Round 2] 已检查方向补充 — 2026-06-27 14:00
+
+**本轮结论**: 0 个合格缺口（所有候选 < 14 分）。全书 519 小节覆盖已高度成熟。
+
+**新增检查方向**（下次跳过）：
+
+### Compose 专项深度检查
+- ✅ Compose Modifier Chain Performance → 22.25 已有专门小节「Modifier 链对布局性能的影响」，覆盖链长影响、排序优化、缓存失效、自定义 Layout 注意事项
+- ✅ Compose Pausable Composition → 22.22 (LazyList) 已详细解释 Pausable Composition 与预取的关系、Foundation 1.10.6 默认禁用状态
+- ✅ Compose LookaheadScope / Shared Element Transition → 18.25 (Compose 渲染管线) + 7.04 (典型场景) 已覆盖
+- ✅ Compose Test Tag Overhead → 开发期调试关注点，非生产性能问题 (评分 10)
+- ✅ Compose Materialization Overhead → 2.12 (WMS) 已覆盖 materialization 相关内容
+
+### Android 17 新特性补充检查
+- ✅ Android 17 Predictive Animation Target Progress API → 2.12 (WMS) + 3.12 (Predictive Back) 已覆盖
+- ✅ Android 17 Bubbles API 渲染性能 → 使用率极低，素材不足 (评分 10)
+- ✅ Android 17 Certificate Transparency 网络性能 → 影响面窄，已有 12.4 (TLS 性能) 覆盖基础
+
+### 构建/工具链方向
+- ✅ Gradle / KSP Build Throughput → 非本书定位（本书聚焦运行时性能，非构建性能）
+- ✅ R8 Full Mode 启动性能 → 25.7 + 14.20 已覆盖
+
+### 总结
+全书 5 个 Part、18+ Chapters、519 小节的覆盖结构已高度完整。连续两轮 Gap Mining 均未发现 ≥ 14 分的新缺口。剩余优化空间集中在：
+1. 已有章节的内容深化（Task 2B / Task 9 / Task 14 负责）
+2. Draft 章节的持续加工（29 个 draft → ready-for-review）
+3. Android 18+ 内容（超出 AIW 范围边界）
