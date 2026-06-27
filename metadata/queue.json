@@ -30,7 +30,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-27T10:21:24.035169+00:00",
-      "status": "pending"
+      "status": "blocked",
+      "blocked_reason": "empty-shell-needs-content — Task2B 无法加工空 draft 章节，需先由 Task2A 填充内容",
+      "blocked_at": "2026-06-27T18:50:00+08:00"
     }
   ]
 }

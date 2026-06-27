@@ -235,3 +235,49 @@ Baseline Profile、Cloud Profile、ART profile 和 AppFlow 处理的是不同层
 - `intake/research-feeds/2026-04-02-15-ch05-appflow-cold-launch-scheduler.md`（其中旧 arXiv 号按本节核对结果更正为 2603.17259）
 - Android Open Source Project: Low memory killer daemon
 - Android Developers: App startup time, Low memory killers, ApplicationExitInfo
+
+<!-- AIW-源码调研-2026-06-27 -->
+
+## Android 17 源码验证结论（2026-06-27 调研补充）
+
+依据 `AOSP android-17.0.0_r1` 实测源码（`system/memory/lmkd/lmkd.cpp` 4218 行 / `include/lmkd.h` 179+ 行 / `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` 6193 行 / `CachedAppOptimizer.java` 3092 行 / `ActivityManagerService.java` 21242 行 / `am/psc/Constants.java` 130 行 / `services/core/java/com/android/server/am/flags.aconfig` 175 行），本节对"AppFlow 与 Android 17 LMKD 新机制兼容性"命题补充以下事实校正与边界界定。
+
+### 1. AppFlow 三段式组件在 AOSP 17 主线的存在性核查
+
+| AppFlow 论文组件 | 论文声明 | AOSP 17 grep 结果 |
+|---|---|---|
+| Selective File Preloader | 启动前/中按 128KB 分大小文件、100MB 预算 | **不存在**——`AMS.java` / `ProcessList.java` / `lmkd.cpp` / `CachedAppOptimizer.java` 全文件 `grep -n "AppFlow\|appFlow\|APP_FLOW\|app_flow"` 0 命中 |
+| Adaptive Memory Reclaimer | Linux mm/vmscan 1,107 行新增 + 100ms 轮询 n_alloc > 12800 高压检测 | **不存在**——AOSP 走 PSI 三级阈值（70ms/100ms/70ms，`lmkd.cpp:231-235`），不修改内核 vmscan 路径 |
+| Context-Aware Process Killer | 引入 ΔM = Mcurr − Mrelaunch 净释放收益与 30%-50% 内存膨胀周期 | **不存在**——AOSP 杀进程顺序仅依赖 oom_score_adj（900-999 cached）+ cached idle 时长，不感知重启代价 |
+
+AppFlow 是研究原型（西北工大/西北大学/哈工程，arXiv 2603.17259，2026-03-18，MobiCom '26 录用），代码量 1,107 行内核 + 1,672 行 Framework，实验平台 Pixel 7/8 + Raspberry Pi 4B + Android 15，**未在 Android 17 验证**。
+
+### 2. AOSP 17 与 AppFlow 的真实能力边界
+
+- **LMKD 控制命令集饱和**：`lmkd.h:29-42` 已定义 12 个命令（LMK_TARGET/LMK_PROCPRIO/LMK_PROCREMOVE/LMK_PROCPURGE/LMK_GETKILLCNT/LMK_SUBSCRIBE/LMK_PROCKILL/LMK_UPDATE_PROPS/LMK_STAT_KILL_OCCURRED/LMK_START_MONITORING/LMK_BOOT_COMPLETED/LMK_PROCS_PRIO），无 `reclaim_priority`、`context_aware`、`appflow` 等命令。Java 端在 `ProcessList.java:297-308` 通过字节常量严格镜像。
+- **cached 进程调度阈值**：`ProcessList.java:243-249` 用 `MIN_CACHED_APPS=2`/`TRIM_CRITICAL_THRESHOLD=3`/`TRIM_LOW_THRESHOLD=5` 做"内存临界"近似判断，不是页面分配率 n_alloc 也不是 ΔM——这是与 AppFlow 的策略分叉点。
+- **oom_score_adj 阶梯**：`Constants.java:76-77` 定义 `CACHED_APP_MAX_ADJ=999`、`CACHED_APP_MIN_ADJ=900`、`CACHED_APP_LMK_FIRST_ADJ=950`，是 LMK 杀进程的唯一优先级输入。
+- **唯一冷启动相关 flag**：Android 17 主线仅 `flags.aconfig:152` 定义 `expedite_activity_launch_on_cold_start`（namespace `system_performance`，bug 319519089），在 `AMS.java:5526` 与 `AMS.java:5620` 各一个 hook——「提前通知 ActivityTaskManager 冷启动以修正应用启动行为」，**仅与 AppFlow 的 Context-Aware Kill 间接相关，与文件预加载/页回收保护无关**。
+
+### 3. 与 AOSP 17 §4.4「公平运行内存」的接续点
+
+`CachedAppOptimizer.java` 已有 file/anon 分通道压缩能力（`CompactProfile` 枚举 NONE/SOME/ANON/FULL，行 394-398），由 `swapFreePercent < COMPACT_DOWNGRADE_FREE_SWAP_THRESHOLD` 触发（行 1731-1742）；`performMemcgCompaction` 走 cgroup 路径（行 2739-2744）+ `performNativeCompaction` 走 madvise(MADV_PAGEOUT) 路径（行 2767-2771）。这是 AOSP 17 的"事后回收"路径：
+
+- **AppFlow 提案"启动期主动保护文件页"** → AOSP 17 当前的"冻结后压缩"是事后行为，不存在启动期主动保护机制。
+- **`onProcessFrozen` 回调**（行 1706-1716）：冻结进程后做 FULL 压缩，触发条件是 oom_score_adj ≥ CACHED_APP_MIN_ADJ=900；与 AppFlow 的"启动前识别即将启动"路径正交。
+
+### 4. 兼容性矩阵总结（节选三段式）
+
+| 维度 | AppFlow 提案 | AOSP 17 等价物 | 评估 |
+|---|---|---|---|
+| 文件预读调度 | framework 显式控制 | VFS readahead + fadvise | **AOSP 不感知** |
+| 高压检测 | n_alloc > 12800/100ms | PSI 三级阈值 | **算法不兼容，但都是滞后指标** |
+| 杀进程收益评估 | ΔM = Mcurr − Mrelaunch | oom_score_adj + cached idle | **AOSP 缺能力**，最有差异化价值的部分 |
+| 内核接入位置 | mm/vmscan 1,107 行 | GKI 6.12（Android 17 内核基线）不修改 | **GKI 阻塞**，vendor kernel 升级成本高 |
+
+### 5. 边界声明
+
+- AppFlow 论文公开仓库作者未提供；论文仅描述算法（Algorithm 1 in §4.2）与代码量声明（1,107+1,672 行）。
+- 本节"AppFlow × Android 17 兼容性"结论**仅适用于 android-17.0.0_r1**，与论文实验平台 Android 15 不构成跨版本兼容证据。
+- AOSP 17 实际**没有 MemoryManagerPolicy.java、没有 LMKD v2**——LMKD 仍是 `system/memory/lmkd/lmkd.cpp` 渐进演进，memcg v1 已 `[[deprecated("memcg v1 is not supported after Dec. 2026")]]`（行 3206），use_new_strategy 推广，PROCS_PRIO 批量命令新增。
+- 详细调研报告见 `DeepResearch/2026-06-27-appflow-lmkd-android17-compatibility.md`。
