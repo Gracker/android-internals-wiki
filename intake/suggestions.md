@@ -272,3 +272,21 @@
 - **位置**：bootanalyze工具使用说明
 - **问题**：未提供具体的Perfetto trace实例和配置示例
 - **建议**：添加具体的Perfetto trace配置文件示例，包括启动期需要采集的关键事件类型、采样频率建议、以及如何结合bootanalyze数据进行交叉验证
+
+## [Task2A Gap Mining] 知识缺口挖掘方向记录 — 2026-06-27 18:09
+
+本轮已检查以下方向，未发现评分 ≥ 14 的合格缺口：
+
+### 已检查方向
+1. **Recent DeepResearch (2026-06-26~27)**：10 篇最新源码调研，均为已有章节的源码验证（Binder RPC、MemoryLimiter、HWC Composition、SharedPreferences、Compose Snapshot、AppFlow+LMKD、Perfetto 版本、ContentProvider），非新主题
+2. **daily-info (2026-06-26~27)**：掘金/ClawFeed 文章均映射到已有章节（AI 工具、桌面端、Android 17 适配、Handler vs 协程、MVVM/MVI），无性能领域新主题
+3. **AOSP 子系统覆盖**：ch1-6 已覆盖 Binder/Render/Input/Memory/Scheduler/Storage 全部核心子系统，32+32+13+17+25+7 = 126 节
+4. **Android 17 新特性增量**：DeliQueue、Binder Async、MemoryLimiter、JobScheduler 五维节流、App Hibernation、Low Power Standby、HWC Queue、HWUI Vulkan Multi-Queue 等 Android 17 特性已全部有独立章节
+5. **跨平台/新兴渲染**：Flutter(ch2.11, ch18.12)、Compose 渲染(ch18.25)、WebGPU(ch18.27)、Android XR(ch18.22)、ANGLE(ch18.11) 均已覆盖
+6. **OEM/行业**：sched_ext、MUSCHED、Media Performance Class、Private Space、Game Mode 均已覆盖
+7. **source-index.json**：当前为空，无高质量未映射素材
+
+### 结论
+全书 502 节（329 finalized + 136 ready-for-review + 36 draft 均有内容），覆盖极度饱和。
+连续多轮无合格缺口（评分 ≥14），所有候选方向均已被现有章节覆盖。
+建议优先处理 136 个 ready-for-review 章节的 Task 6 复审积压。
