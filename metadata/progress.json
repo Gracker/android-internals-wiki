@@ -1,7 +1,7 @@
 {
   "total": 513,
-  "draft": 46,
-  "ready-for-review": 137,
+  "draft": 45,
+  "ready-for-review": 138,
   "finalized": 329,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
@@ -1096,7 +1096,7 @@
       "task6_reviewed_at": "2026-05-27T05:14:00+08:00",
       "task6_log": "logs/review/2026-05-27-05-review.md",
       "task6_new_rework": false,
-      "task6_note": "L1/L2 小修 2 处（补齐 outline 块；禁用词"落地"替换为"确认"）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
+      "task6_note": "L1/L2 小修 2 处（补齐 outline 块；禁用词\"落地\"替换为\"确认\"）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
     },
     "3.4": {
       "p0": 0,
