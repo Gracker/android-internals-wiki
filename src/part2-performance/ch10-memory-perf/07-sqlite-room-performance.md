@@ -71,6 +71,8 @@ review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作�
 last_task9_review_log: logs/deep-review/2026-06-07-05-deep-review.md
 last_task9_audit: "2026-06-06"
 last_task9_autofix_at: "2026-06-07"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 10.7 SQLite/Room 数据库性能优化
@@ -94,9 +96,7 @@ last_task9_autofix_at: "2026-06-07"
 
 ### 1.1 WAL 模式 vs 回滚日志模式
 
-SQLite 默认使用回滚日志（rollback journal）模式。在这种模式下，每次写操作之前，SQLite 会先把即将被修改的数据页复制到一个独立的回滚日志文件中，然后再写入新数据。这带来了一个关键的限制：**写操作期间，整个数据库被锁定，所有其他读写操作都会被阻塞**。读者阻塞写者，写者也阻塞读者。
-
-[图：回滚日志模式下读写互斥的时序示意]
+SQLite 默认使用回滚日志（rollback journal）模式：每次写操作前先把将被修改的数据页复制到独立的回滚日志文件，再写入新数据。这个模式的代价很直接：**写操作期间数据库整体被锁定，读写互相阻塞**。
 
 WAL（Write-Ahead Logging）模式反转了这个模型。写操作不再直接修改数据库文件，而是将变更追加到一个独立的 WAL 文件（`.db-wal`）中。读操作可以从数据库文件和 WAL 文件中同时读取，但看到的是各自一致的快照。这样，一个写者可以持续追加变更，多个读者也能同时读取，读写不再互斥。
 
@@ -107,15 +107,13 @@ WAL（Write-Ahead Logging）模式反转了这个模型。写操作不再直接�
 PRAGMA journal_mode=WAL;
 ```
 
-WAL 模式的收益主要来自两个更稳定的事实。
+WAL 的收益来自两条底层改进。
 
-第一，事务提交路径里的 `fsync()` 次数通常更少。回滚日志模式需要先回写原页，再提交事务；WAL 把改动追加到 `-wal` 文件，检查点再把脏页并回主库。收益幅度受文件系统、闪存控制器、检查点策略和事务大小影响，不宜用固定倍数概括。
+其一，事务提交路径里的 `fsync()` 次数通常更少。回滚日志模式先回写原页再提交事务，WAL 把改动追加到 `-wal` 文件，检查点再把脏页并回主库。具体收益受文件系统、闪存控制器、检查点策略和事务大小影响，不宜用固定倍数概括。
 
-第二，WAL 把大部分写入变成 append-only I/O。它少了一次“先复制旧页再覆盖新页”的往返，对频繁小事务和批量写入都更友好。Room 在默认 `JournalMode.AUTOMATIC` 配置下，通常也会优先选择 WAL；最终行为仍然取决于 API 级别、低内存设备判定和具体打开配置。
+其二，WAL 把大部分写入变成 append-only I/O。它少了一次“先复制旧页再覆盖新页”的往返，对频繁小事务和批量写入都更友好。Room 在默认 `JournalMode.AUTOMATIC` 配置下，通常也会优先选择 WAL；最终行为仍然取决于 API 级别、低内存设备判定和具体打开配置。
 
-WAL 模式也有三个限制：只有一个写者可以活跃（写操作仍然串行），WAL 文件如果不及时做检查点可能无限增长，以及它不适用于网络文件系统（需要共享内存）。
-
-[待验证：F2FS 文件系统上 WAL 的写入放大 10-15% 是否影响实际性能]
+WAL 有三条边界要记住：同一时刻仍然只有一个活跃写者（写操作串行），WAL 文件不及时做检查点可能无限增长，以及不适用于网络文件系统（需要共享内存）。
 
 ### 1.2 SQLite 的锁层级
 
@@ -193,8 +191,6 @@ public boolean onMove(int oldPosition, int newPosition) {
 
 `fillWindow(newPosition)` 之后会进入 `SQLiteQuery.fillWindow()`，再由 `SQLiteSession.executeForCursorWindow()` 把结果写进当前窗口。跨进程时，Provider 侧的 `CursorToBulkCursorAdaptor.getWindow(position)` 会先看已有窗口是否覆盖目标位置，不够再调用 `mCursor.fillWindow(position, window)`。CursorWindow refill 发生在 Cursor / Provider 这一层，Room Paging 是另一层更高的装载协议。
 
-[图：`SQLiteCursor.onMove()` → `fillWindow()` → `SQLiteQuery.fillWindow()`，以及跨进程 `CursorToBulkCursorAdaptor.getWindow()` 的对照示意]
-
 ### 2.3 CursorWindow、ashmem 与 TransactionTooLargeException
 
 把“大查询”直接等同为“Binder buffer 溢出”太粗。跨进程 Cursor 返回时，常见路径是 `BulkCursorDescriptor` 携带窗口描述信息，窗口内容通过 ashmem FD 共享。容易混在一起的有三类问题：
@@ -259,8 +255,6 @@ suspend fun insertAll(items: List<Item>) {
 
 使用事务后，锁获取和 WAL 提交只发生一次，1000 条数据批量写入 WAL 文件。批量插入的速度提升可达数量级差异（常见 10x-100x），具体幅度取决于事务大小、sync mode、存储栈和设备性能。
 
-[已验证：官方文档， developer.android.com/reference/androidx/room/Transaction; AOSP config.xml db_wal_sync_mode=NORMAL]
-
 ### 3.3 Paging 3 的懒加载与预取策略
 
 Room 对 Paging 3 的支持通常通过 `PagingSource<Int, T>` 暴露，但默认实现不等于 Keyset。AndroidX `room-paging` 当前提供的是 `LimitOffsetPagingSource`，`RoomPagingUtil.kt` 会基于 DAO 查询生成 `LIMIT / OFFSET` 形式的分页 SQL。
@@ -283,8 +277,6 @@ val db = Room.databaseBuilder(context, AppDb::class.java, "app.db")
 ```
 
 更稳妥的做法是把“首次 open + migration”提前到可控的后台时机，例如启动前置预热、冷启动后的 dedicated executor，或者由 App Startup 触发一次后台 prewarm。App Startup 在这里是调度手段，不是 Room 的专用优化开关。
-
-[待补充：Migration 耗时在不同数据量级下的基准测试数据]
 
 ## 4. 索引与查询优化
 
@@ -351,8 +343,6 @@ CREATE TABLE user_prefs (
 
 `synchronous=NORMAL` 在 WAL 模式下是安全的：正常使用时数据不会丢失，只有在系统崩溃（非应用崩溃）的极端情况下才可能丢失最近一次检查点之后的事务。对于绝大多数应用来说，这个风险可以接受。
 
-[已验证：sqlite.org/pragma.html]
-
 ## 5. 数据库与 ANR 的关联分析
 
 ### 5.1 主线程数据库操作的连锁反应
@@ -413,8 +403,6 @@ LIMIT 20;
 模块名是 `android.monitor_contention`，表名是 `android_monitor_contention`。这组数据只覆盖 Java monitor 竞争，不会直接告诉我们 SQLite 原生文件锁或 connection pool 等待。
 
 **第三步**：如果主线程停在 Binder reply、Provider query 或 `Object.wait()`，而 `android_monitor_contention` 没给出明显的 owner / waiter 关系，就回到 `sched`、Binder slices 和 Provider 侧线程看有没有长事务、Migration 或 `waitForConnection()` 排队。对数据库问题来说，这一步通常更贴近当前实现，因为主要热点往往出在连接池争用。
-
-[图：Perfetto 中“主线程等 Binder reply，Provider 侧卡在长事务 / waitForConnection()”的对照示意]
 
 ### 5.4 StrictMode 检测
 
@@ -480,8 +468,6 @@ SQLCipher 在 SQLite 之上增加了加密层，每次读写操作都需要进�
 
 在性能敏感的场景中，可以考虑只在特定表或列上使用加密，而非全库加密。Android Keystore + 自定义加密方案是另一种思路。
 
-[待验证：SQLCipher 与原生 SQLite 在 ARM 设备上的具体性能差异数据]
-
 ### 🔸 扩展点 2：多进程数据库访问
 
 多进程场景下的数据库访问需要特别注意：
@@ -491,5 +477,3 @@ SQLCipher 在 SQLite 之上增加了加密层，每次读写操作都需要进�
 - **避免多进程写冲突**：建议使用单一进程写、多进程读的模式，或者使用 `ContentResolver.applyBatch()` 将写操作聚合
 
 多进程场景下的数据库问题在 Perfetto 中通常表现为：一个进程持有 SQLite 锁，另一个进程的线程在 `sqlite3BusyWait()` 或 `usleep()` 中等待。如果看到这种模式，需要检查是否有跨进程的写冲突。
-
-[图：多进程数据库访问的锁竞争时序]

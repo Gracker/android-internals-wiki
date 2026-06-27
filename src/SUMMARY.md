@@ -121,6 +121,7 @@ tags:
   - [4.15 Android 17 PSI/LowMemDetector 与 lmkd 内存压力检测架构演进](part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md)
   - [4.16 ART TLAB 与对象分配性能](part1-fundamentals/ch04-memory/16-art-tlab-object-allocation-performance.md)
 
+  - [4.17 Android 17 MemoryLimiter 与内存监控影响](part1-fundamentals/ch04-memory/17-android17-MemoryLimiter-与内存监控影响.md)
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
   - [5.2 EAS 能量感知调度](part1-fundamentals/ch05-cpu-power/02-eas.md)
