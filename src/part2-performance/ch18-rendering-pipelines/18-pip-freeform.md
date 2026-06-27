@@ -46,7 +46,7 @@ last_task9_audit: "2026-06-13"
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
 task9_result: pass-tech-review
-last_task6_audit: "2026-06-11"
+last_task6_audit: "2026-06-27"
 review_round: 1
 task2b_result: fixed
 deepseek_cn_review_state: done
