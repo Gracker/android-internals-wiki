@@ -48,6 +48,7 @@ tags:
   - [1.27 AMS 双锁架构与 system_server 锁竞争优化](part1-fundamentals/ch01-architecture/25-ams-dual-lock-system-server-contention.md)
   - [1.30 Binder Transaction Buffer 演进与大事务性能边界](part1-fundamentals/ch01-architecture/30-binder-transaction-buffer-performance.md)
   - [1.31 Android 17 Binder 性能录制与跨进程 Trace 链路](part1-fundamentals/ch01-architecture/31-binder-performance-recording-trace.md)
+  - [1.32 Android Virtualization Framework 架构与 pKVM 隔离性能边界](part1-fundamentals/ch01-architecture/32-virtualization-framework-pkvm-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -141,6 +142,8 @@ tags:
   - [5.21 Adaptive Battery 与 App Standby Bucket 协同机制](part1-fundamentals/ch05-cpu-power/21-adaptive-battery-app-standby-coordination.md)
   - [5.22 Bluetooth LE Audio 延迟与功耗性能](part1-fundamentals/ch05-cpu-power/22-bluetooth-le-audio-performance.md)
   - [5.23 Android 17 JobScheduler 系统级五维节流架构](part1-fundamentals/ch05-cpu-power/23-android17-jobscheduler-system-throttling.md)
+  - [5.24 Android 17 App Hibernation 状态机与冷启动恢复性能](part1-fundamentals/ch05-cpu-power/24-android17-app-hibernation-performance.md)
+  - [5.25 Android Low Power Standby 深度休眠与后台任务性能边界](part1-fundamentals/ch05-cpu-power/25-low-power-standby-background-performance.md)
 
 - [第 6 章：存储与 I/O](part1-fundamentals/ch06-storage/README.md)
   - [6.1 Android 存储架构](part1-fundamentals/ch06-storage/01-storage-architecture.md)

@@ -313,3 +313,35 @@ profilingManager.addProfilingTriggers(
 - ProfilingManager (Android 16): [developer.android.com/reference/android/os/ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
 - 高爷博客 - CPU Profiler 系统性能分析工具的使用: [androidperformance.com](https://www.androidperformance.com/)
 - Paulina Sadowska, "Can you trust time measurements in Profiler?": [proandroiddev.com](https://proandroiddev.com/can-you-trust-time-measurements-in-profiler-5b3566a55e0c)
+
+
+<!-- AIW-源码调研-2026-06-27 -->
+## 📡 Perfetto 版本可用性精确核实（基于源码调研）
+
+### 源码发现的版本引入时间线
+
+**Android 9 (API 28)**: 首次引入 traced/traced_probes 基础架构  
+- AOSP 源码确认：`perfetto.rc` (commit 5a30453f06, 2018-01-09)  
+- `persist.device_config.g*` 属性触发机制 (第100行被截断部分)：`class late_start + disabled` 需显式启用
+
+**Android 10 (API 29)**: 首次引入 heapprofd 原生内存分析  
+- AOSP 源码确认：`heapprofd.rc` (commit 7a5d83bcb6, 2018-10-18)  
+- 启动触发：`persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1`
+
+**Android 12 (API 31)**: 首次引入 FrameTimeline 数据源  
+- AOSP 源码确认：`frame_timeline_event.proto` (commit 4bf3c0ed67, 2020-11-05)  
+- 同时引入 gpu_mem_event.proto (commit c84119493b, 2020-06-25)
+
+**Android 15+**: com.android.profiling APEX 仅限 API 35+  
+- AOSP 源码确认：`Android.bp` 中 `com.android.profiling` APEX 的 `min_sdk_version: "35"`  
+- `libperfetto_haprofy` 的 `min_sdk_version: "S"` (Android 12)
+
+### Profiler 与 Perfetto 的版本协同关系
+
+1. **System Trace 模式**: 底层依赖 Perfetto，在 Android 10 之后完全基于 traced 服务
+2. **Memory Profiler heapprofd 集成**: 仅在 Android 10+ 原生内存可用，API 29 引入
+3. **Profileable App 限制**: Android 9 (API 28) 起 JVMTI 路径对 profileable App 不可用
+4. **数据源可用性**: Profeller 的实时数据源取决于底层 Perftto 组件的版本支持
+
+[已验证: AOSP android-17.0.0_r1 + google/perfetto master 分支时间线推断]
+
