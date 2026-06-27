@@ -33,6 +33,7 @@ reviewed_date: '2026-06-17'
 last_task6_at: "2026-06-17T04:06:00+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17
+last_task6_audit: "2026-06-27"
 ---
 
 # 1.21 Android Developer Verification 与安装链路边界
