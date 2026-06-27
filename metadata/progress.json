@@ -13306,6 +13306,20 @@
       "fixes": 2,
       "result": "ready-for-task6",
       "note": "status finalized→ready-for-review; task9 auto-fix 回流"
+    },
+    {
+      "timestamp": "2026-06-27T15:30:58+08:00",
+      "action": "auto-promote",
+      "section": "1.26",
+      "file": "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md",
+      "detail": "task6 pass-light-edit + task9 pass-tech-review + queue clear → finalized"
+    },
+    {
+      "timestamp": "2026-06-27T15:30:58+08:00",
+      "action": "blocked-empty-shell",
+      "section": "1.25",
+      "file": "src/part1-fundamentals/ch01-architecture/01.25-binder-ipc-async-pipeline.md",
+      "detail": "body_lines=20, task6_result=placeholder-no-content, task9_result=placeholder-no-content → sent back to draft"
     }
   ],
   "last_task2b_files": [
