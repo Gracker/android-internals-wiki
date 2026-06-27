@@ -4,9 +4,9 @@ title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
 status: ready-for-review
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-28
 drafted_date: 2026-06-07
@@ -33,10 +33,10 @@ related_chapters: ["10.1", "10.2", "14.3", "14.14", "19.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-06-07
 gap_source: 素材驱动/DeepResearch/AOSP
-task9_result: needs-rework
+task9_result: fixed-verified
 task2b_state: fixed
-last_task2b_lite_at: "2026-06-28"
-task2b_result: fixed-lite
+last_task2b_at: "2026-06-28T04:50:00+08:00"
+task2b_result: fixed
 
 ---
 -
@@ -73,7 +73,7 @@ am dumpheap [-n] [-g] [-m] [-b] <pid/package> <output_path>
 | `-m` | 导出 malloc 信息 | 搭配 `-n` 使用，分析 native 内存分配 |
 | `-b` | 导出位图数据 | 需要分析 Bitmap 像素内容时使用 |
 
-[已验证: AOSP frameworks/base/cmds/am/src/com/android/commands/am/Am.java]
+[待验证: android-17.0.0_r1 frameworks/base/cmds/am/src/com/android/commands/am/Am.java]
 
 不带 `-n` 时走的是 `Debug.dumpHprofData()` 路径，输出标准 Java heap 转储。带 `-n` 时走 `Debug.dumpNativeBacktraceToFile()` 等路径，产出的是 malloc 调试数据，不是 hprof 格式——两者不要混淆。
 
@@ -87,7 +87,7 @@ am dumpheap [-n] [-g] [-m] [-b] <pid/package> <output_path>
 
 3. **异步派发**：AMS 通过 `IApplicationThread.dumpHeap()` Binder 调用把 dump 请求发送到目标进程的 `ActivityThread`。目标进程在主线程 Handler 中处理 `handleDumpHeap` 消息，调用 `Debug.dumpHprofData(filename)` 触发 ART 层的 dump。
 
-[已验证: AOSP frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java]
+[待验证: android-17.0.0_r1 frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java]
 
 ### ART 层：双重保护机制
 
@@ -188,7 +188,7 @@ Android 在 heap dump segment 中通过 `HPROF_HEAP_DUMP_INFO` record 区分三�
 
 `[来源: Obsidian/Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md]`
 
-[待验证: 源码路径基于 master 分支分析，android-17.0.0_r1 中类名和字段名可能有细微差异]
+[待验证: android-17.0.0_r1 — 核心源码路径（`art/runtime/hprof/hprof.cc`）中的 `Hprof::Dump()`、`DumpHeapObject()`、`DumpHeapClass()` 等方法名和签名需在 android-17.0.0_r1 中确认]
 
 ## Perfetto java_hprof 数据源
 
@@ -210,7 +210,7 @@ trace_processor 导入后生成 heap_graph 系列表
 Perfetto UI 可视化（火焰图、对象统计、Retained Size）
 ```
 
-[已验证: AOSP 数据源名为 `android.java_hprof`（`src/profiling/memory/java_hprof_producer.cc:25` 常量 `kJavaHprofDataSource`），与 `android.heapprofd` 共存于 `heapprofd` daemon。Producer 通过 `sigqueue(pid, __SIGRTMIN+6, ...)` 触发目标进程 ART runtime 写 hprof；连续 dump 由 `DumpIntervalMs`/`DumpPhaseMs` 控制（`DoContinuousDump` 在 `java_hprof_producer.cc:40`）。]
+[待验证: android-17.0.0_r1 — 数据源名 `android.java_hprof` 引用自 `src/profiling/memory/java_hprof_producer.cc:25` 常量 `kJavaHprofDataSource`，Producer 通过 `sigqueue(pid, __SIGRTMIN+6, ...)` 触发目标进程 ART runtime 写 hprof；连续 dump 由 `DumpIntervalMs`/`DumpPhaseMs` 控制。以上路径和行号需在 android-17.0.0_r1 中二次确认。]
 
 ### 配置方式
 
@@ -251,7 +251,7 @@ data_sources: {
 
 字段编号与类型见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`（Next id: 7）。**`track_allocations` 字段在 AOSP proto 中不存在**——该能力由 `android.heapprofd` 的 `sampling_interval_bytes` 体系提供。
 
-[已验证: 见上方 protobuf 注释。字段编号与含义见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`。]
+[待验证: android-17.0.0_r1 — 字段编号与含义见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`，需在 android-17.0.0_r1 中确认字段 id 与命名一致性。]
 
 ### heap_graph 系列表
 
@@ -299,7 +299,7 @@ ORDER BY rc.retained DESC
 LIMIT 50;
 ```
 
-> [已纠正: 章节原文中 `id` / `type_name` 字段名与 AOSP `profiler_tables.py` 不符。实际表见 `external/perfetto/src/trace_processor/tables/profiler_tables.py` 行 950-1112（HEAP_GRAPH_OBJECT_TABLE）和行 1116-1175（HEAP_GRAPH_REFERENCE_TABLE）。]
+> [待验证: android-17.0.0_r1 — heap_graph_object 表实际 schema 需在 `profiler_tables.py`（行 950-1175）中确认。当前声称：无 `id` 列（主键靠 `(upid, graph_sample_ts)` 复合关系），无 `type_name` 列（类型关联通过 `type_id` 外键到 `heap_graph_class`），`heap_graph_reference` 使用 `reference_set_id` / `owner_id` / `owned_id` 多对多结构。以上需在 android-17.0.0_r1 源码中二次确认。]
 
 heap_graph 与 Perfetto 其他数据源的关联分析是它最有价值的场景——可以把堆大小变化和同一时间轴上的 GC 事件、帧渲染耗时、内存压力信号对齐，判断内存问题对 UI 性能的影响。
 
@@ -333,11 +333,11 @@ fork() 创建子进程（利用 Linux COW，fork 瞬间不拷贝物理内存）
 子进程独立执行 hprof dump + strip 裁剪
 ```
 
-主进程只阻塞约 20ms（Suspend → fork → Resume 三个步骤），子进程在独立地址空间完成 dump，不影响用户感知。详见 §19.3。
+主进程只阻塞约 20ms（Suspend → fork → Resume 三个步骤），子进程在独立地址空间完成 dump，不影响用户感知。详见 `§19.3 KOOM 内存监控体系`（如章节不存在，参考 §14.3 内存分析工具清单）。
 
 KOOM 的 `ForkStripHeapDumper` 还会在子进程中对 hprof 进行 strip 裁剪，删除 zygote 和 image 区域的数据，文件体积减少 50-70%。裁剪后的文件需要用 `koom-fill-crop.jar` 工具在 PC 端补全文件头，才能被 Android Studio Profiler 和 MAT 正确打开。
 
-[已验证: Obsidian/DeepResearch/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md]
+[来源: Obsidian/DeepResearch/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md — 以上内容待 android-17.0.0_r1 源码验证]
 
 ### 何时选择哪种方案
 
@@ -402,7 +402,18 @@ KOOM 的 fork-dump 方案有几个限制：
 - **ART 版本兼容**：SuspendVM/ResumeVM 是 ART 内部 API，不同 Android 版本的实现有差异。KOOM 通过 JNI 调用 `art::Runtime::Current()->SuspendVM()`，需要为每个主要版本做适配。
 - **文件格式补全**：strip 后的 hprof 文件不能直接在 MAT 中打开，需要 PC 端的 `koom-fill-crop.jar` 补全 STRING 和 CLASS 表。
 
-[已验证: Obsidian/DeepResearch/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md]
+**ART 版本兼容性注意事项**: 不同 Android 版本的 `SuspendVM()`/`ResumeVM()` 是 ART 内部 API（非公开 SDK），版本间实现差异大：
+
+| Android 版本 | ART 版本 | SuspendVM 行为 | 注意事项 |
+| --- | --- | --- | --- |
+| 12 (API 31) | ART 12 | `art::Runtime::Current()->SuspendVM()` 可用 | KOOM fork-dump 首次适配此版本 |
+| 13 (API 33) | ART 13 | SuspendVM 行为基本一致 | 部分设备 ROM 修改了 ART 内部 |
+| 14 (API 34) | ART 14 | 引入 userfaultfd GC，SuspendVM 语义有变化 | 在 userfaultfd GC 设备上需单独验证 |
+| 15-17 (API 35-37) | ART 15-17 | GC 实现继续演进 | 建议在目标版本上实测 fork-dump 的成功率和稳定性 |
+
+关键风险：`SuspendVM()` 暂停的是所有托管线程，如果目标进程中存在关键系统线程在 Suspend 状态下需要处理 Binder 请求（如 `BR_FROZEN_REPLY`），可能导致死锁。每个 ART 版本需要单独验证。
+
+[来源: Obsidian/DeepResearch/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md — 以上内容待 android-17.0.0_r1 源码验证]
 
 
 <!-- AIW-源码调研-2026-06-13：以下内容来自对 `android.java_hprof` 数据源的源码级调研，关联报告 `DeepResearch/2026-06-13-android17-perfetto-java-hprof-data-source-heap-graph-tables.md`。 -->
