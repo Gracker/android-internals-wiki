@@ -1,74 +1,44 @@
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：源码引用准确性
-- **位置**：3.2.2 Android 9 (API 28) - Perfetto 启动命令
-- **问题**：文中提到 Android 9 需要手动启用 Perfetto traced，但命令 `adb shell traced &` 可能不准确。Android 9 的 Perfetto 可能需要使用不同参数或路径，建议验证官方文档中的正确命令格式。
-- **建议**：核实 Android 9 中 Perfetto traced 的准确启用方法和命令参数，确保与 android-17.0.0_r1 实际实现一致。
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：源码准确性
+- **位置**：IPCThreadState::transact() 行号引用
+- **问题**：文中引用 IPCThreadState.cpp:948-996，但实际 android-17.0.0_r1 中该函数行号为 1056-1104
+- **建议**：修正行号引用为 1056-1104，确保源码引用准确
 
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：源码引用准确性
-- **位置**：3.2.5 Android 17 (API 37) - traced 异步模式
-- **问题**：文中提到 Android 17 支持异步模式 `adb shell traced --async`，该命令参数和功能需要在官方文档中验证，确保符合实际实现。
-- **建议**：验证 Android 17 中 traced --async 命令的准确性和功能特性，补充具体的参数说明和使用场景。
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：源码准确性
+- **位置**：BR_FROZEN_REPLY 处理逻辑
+- **问题**：文中提到 BR_FROZEN_REPLY 但未给出 IPCThreadState.cpp:1183-1188 的具体处理代码片段
+- **建议**：补充完整的 BR_FROZEN_REPLY 处理代码，包括错误类型判断和返回值处理逻辑
 
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：版本差异覆盖
-- **位置**：3.3 工具选择的具体策略 - Android 14-17
-- **问题**：文中提到"Android 14-17: Perfetto 完全替代 Systrace"，但这个时间点可能不准确。需要验证 Systrace 完全移除的准确时间点和 AOSP 变更。
-- **建议**：核实 Systrace 完全移除的准确 Android 版本，补充 Systrace 到 Perfetto 迁移的具体时间线和兼容性说明。
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：源码准确性
+- **位置**：enableFrozenObjectErrorCode() 函数实现
+- **问题**：文中引用 enableFrozenObjectErrorCode() 函数但未说明其在 IPCThreadState.cpp:104-107 的具体实现
+- **建议**：补充该函数的完整实现代码，包括 aconfig flag 查询逻辑
 
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：版本差异覆盖
-- **位置**：3.2.3 Android 14 (API 34) - Perfetto 缓冲区大小
-- **问题**：文中提到 Android 14 支持 `-b 16384` 缓冲区选项，需要确认该参数在 android-17.0.0_r1 中的可用性和具体实现细节。
-- **建议**：验证 Android 14-17 各版本中 traced 命令的缓冲区参数支持情况，补充具体的参数限制和性能影响说明。
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：版本差异
+- **位置**：Android 12-17 的渐进式优化
+- **问题**：文中提到 Android 12 引入冻结回执，但未说明 Android 13/14/15/16/17 在这个机制上的具体增量改进
+- **建议**：补充 Android 12-17 各版本中冻结回执机制的具体演进变化
 
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：版本差异覆盖
-- **位置**：3.2.2 Android 11+ (API 30+) - Perfetto 默认启用
-- **问题**：文中提到"Android 11+ (API 30+): Perfetto 默认启用"，但需要确认是否所有 Android 11 设备都默认启用，还是需要特定条件，避免以偏概全。
-- **建议**：补充 Android 11+ 中 Perfetto 启用条件的详细说明，包括不同设备类型、系统版本的具体差异和配置要求。
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：数据缺失
+- **位置**：关键性能断言部分
+- **问题**："oneway 调用延迟对比"、"批处理吞吐提升"、"冻结回执对 ANR 的影响"等关键断言缺少量化数据支撑
+- **建议**：补充实测数据，包括端到端延迟对比、syscall 减少量统计、ANR window 优化效果等
 
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：版本差异覆盖
-- **位置**：3.2.1 Android 9+ 工具演进 - 缺少 Android 10 说明
-- **问题**：文中缺少 Android 10 (API 29-30) 中间状态说明，Perfetto 从 Android 9 到 Android 11+ 的渐进过程描述不完整。
-- **建议**：补充 Android 10 中 Perfetto 的可用性、限制和启用方法，说明其作为 Android 9 和 Android 11+ 之间过渡版本的特点。
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：交叉引用
+- **位置**：相关章节引用
+- **问题**：文中提到 1.27 和 1.30 章节，但 src/ 目录下不存在这两个章节
+- **建议**：修正引用为已存在的章节号，或标注为"未来章节"，避免误导读者
 
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：版本差异覆盖
-- **位置**：3.2.5 Android 17 (API 37) - Perfetto 进一步优化描述
-- **问题**：Android 17 的 Perfetto 进一步优化和异步采集描述过于简略，缺少具体的新增功能说明。
-- **建议**：补充 Android 17 中 Perfetto 的具体新增特性，如异步采集的具体实现方式、电池感知策略的具体参数、性能分析增强功能等。
-
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：源码引用准确性
-- **位置**：工具选择的具体策略 - 各版本 ADB 命令
-- **问题**：文中提到的 ADB 命令（如 traced、dumpsys meminfo、top、batterystats）在不同 Android 版本中的参数和行为可能有差异。
-- **建议**：为每个 ADB 命令添加版本限定说明，特别是参数变化和功能差异的详细说明。
-
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：版本差异覆盖
-- **位置**：3.3 工具选择的具体策略 - 各版本工具组合
-- **问题**：文中提到的工具组合在不同 Android 版本间的过渡和兼容性描述不够详细。
-- **建议**：补充各版本间工具组合的平滑过渡建议，以及兼容性问题的解决方案。
-
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：版本差异覆盖
-- **位置**：4.1 数据采集策略 - 采样策略设计
-- **问题**：文中提到的采样策略可能需要根据不同 Android 版本的特点进行调整。
-- **建议**：补充针对不同 Android 版本的采样策略优化建议，特别是 Android 14-17 新特性对数据采集的影响。
-
-## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
-- **类型**：版本差异覆盖
-- **位置**：13.3 方法论实施建议 - 技术层面
-- **问题**：文中提到"选择合适工具"但缺少针对不同 Android 版本的具体工具选择指导。
-- **建议**：补充针对不同 Android 版本的工具选择决策树，帮助开发者根据目标版本选择合适的性能分析工具。
 ## [Task6 Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
 - **类型**：需重写
 - **位置**：全文结构
 - **问题**：正文以源码验证注释为主，缺乏工程师视角的叙述串联。当前风格是"源码索引+行号注释"，不是连贯叙述。writing-guide §三.1 明确要求"叙述为主，列表为辅"。
 - **建议**：在已验证源码结论基础上，增加叙述性段落。每个机制按"为什么存在→怎么工作→在 trace 中怎么观察"展开。参考 writing-guide 类型A结构模板。
-- **review 日志**：logs/review/2026-06-27-22-review.md
 
 ## [Task6 Review] 1.25 — 2026-06-27
 - **类型**：需补充素材
@@ -167,3 +137,21 @@
 
 ---
 *review 日志：logs/review/2026-06-27-23-review.md*
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：源码准确性
+- **位置**：BINDER_VM_SIZE 定义
+- **问题**：文中提到共享缓冲区大小定义，但未给出 ProcessState.cpp:48 的具体行号和定义内容
+- **建议**：补充 BINDER_VM_SIZE 的完整定义和注释说明，包括内存映射大小的计算逻辑
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：原理完整性
+- **位置**：冻结回执与进程生命周期关系
+- **问题**：缺少 BR_FROZEN_REPLY 和 BR_TRANSACTION_PENDING_FROZEN 与进程 freezer、oom_adj、app lifecycle 的完整交互链
+- **建议**：补充冻结回执机制与进程生命周期的完整关系图，包括冻结状态转换的条件和时机
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-28
+- **类型**：原理完整性
+- **位置**：oneway spam 检测机制
+- **问题**：未解释内核计数器如何工作、阈值多少、与用户态的协作机制
+- **建议**：补充 oneway spam 检测的完整工作机制，包括计数器算法、触发阈值和用户态日志记录的触发条件
