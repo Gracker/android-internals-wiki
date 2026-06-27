@@ -270,3 +270,28 @@
 - **位置**：Perfetto Trace 示例
 - **问题**："[待补充：Trace 截图]" 标注的内容未完成，缺少实际观察到的 Binder 相关 trace 表现
 - **建议**：补充 Binder 异步机制在 Perfetto 中的具体 trace 观察示例和截图
+
+## [2026-06-28] ch01.35 / ch01.36 / ch05.26 / ch06.8 / ch24.21 — 重复章节标记
+
+### 问题描述
+知识缺口挖掘创建的以下空 draft 与已有章节高度重复，建议合并或删除：
+
+| 空 draft | 重复目标 | 重叠度 |
+|----------|----------|--------|
+| ch01.35 Binder IPC 性能监控与跨进程 Trace 链路 | ch01.31 Binder 性能录制与跨进程 Trace 链路 (162 lines, ready-for-review) | ~95% |
+| ch01.36 Binder IPC 异步机制深度分析 | ch01.25 Binder IPC 异步机制与批处理流水线 (228 lines, ready-for-review) | ~90% |
+| ch05.26 JobScheduler 系统级五维节流架构 | ch05.23 JobScheduler 系统级五维节流架构 (74 lines, draft) | 100% (同名) |
+| ch06.8 SharedPreferencesImpl Android 16-17 变更分析 | ch06.5 SharedPreferences/DataStore 性能与 ANR 优化 (630 lines, finalized, 已验证 android-17.0.0_r1) | ~80% |
+| ch24.21 NetworkStatsService 与网络配额管理 | ch24.20 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速 (1412 lines, draft) | ~95% |
+
+### 建议
+1. ch01.35、ch05.26、ch24.21 直接删除（100% 或近 100% 重复）
+2. ch01.36 如果需要，将其唯一非重复内容（Android 16→17 异步演进 timeline）合并到 ch01.25
+3. ch06.8 唯一增量是 DataStore 1.1.0+ MultiProcessDataStoreFactory，建议合并到 ch06.5 的扩展部分
+4. 未来 gap mining 应增加 cross-check 步骤：在创建新 draft 前搜索同目录下是否已有相似 title 的文件
+
+### 关联章节
+- ch01.25, ch01.31
+- ch05.23
+- ch06.5
+- ch24.20
