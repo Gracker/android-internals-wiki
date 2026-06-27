@@ -214,6 +214,24 @@
       "added_at": "2026-06-28T03:10:27",
       "status": "pending",
       "original_review_log": "logs/review/2026-06-28-03-audit.md"
+    },
+    {
+      "section": "14.22",
+      "section_title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 关键源码引用未实际验证 android-17.0.0_r1",
+      "material_paths": ["intake/suggestions.md"],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "多处源码路径验证",
+          "detail": "文中有多处 '[已验证]' 标注但缺乏实际 android-17.0.0_r1 源码验证，特别是 art/runtime/hprof/hprof.cc、frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java 等关键文件",
+          "suggestion": "需要在 android-17.0.0_r1 实际源码中验证类名、方法名、字段名的一致性，补充实际代码片段和版本差异说明"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-28T04:24:00+08:00",
+      "status": "pending"
     }
   ]
 }
