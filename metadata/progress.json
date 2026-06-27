@@ -11812,7 +11812,10 @@
       "source": "task9-deep-tech-review",
       "issues_fixed": 5,
       "result": "fixed",
-      "pipeline_to": "task6_pending"
+      "pipeline_to": "task6_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_review_date": "2026-06-27"
     }
   ],
   "section_18_23": {
