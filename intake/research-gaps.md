@@ -34,3 +34,41 @@
 - 9.1 多进程数据一致性
 - 8.2 主线程性能优化
 
+## [2026-06-27] 16.8 AppFlow：GB 级应用冷启动内存联合调度 — LMKD新机制兼容性
+
+### 盲区描述
+章节中AppFlow研究原型与Android现有内存管理机制的兼容性分析不充分。缺少对Android 17中LMKD v2、Memory Reclaim Priority、Adaptive Background Activity Manager等新机制的兼容性讨论，未分析AppFlow与这些现有机制的协作或冲突关系。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析AppFlow三段式调度模型与Android 17 LMKD v2的职责边界和协作方式
+- 研究Memory Reclaim Priority如何影响AppFlow的Adaptive Memory Reclaimer策略
+- 调研AppFlow在Adaptive Background Activity Manager调度框架下的适用性
+- 分析AppFlow与Android现有Low Memory Killer属性的兼容性配置
+
+### 关联章节
+- 16.7 系统启动耗时优化
+- 16.1 内存管理基础
+- 8.2 后台进程管理
+
+## [2026-06-27] 16.7 Android 系统启动耗时优化与 bootanalyze — Android 17新特性缺失
+
+### 盲区描述
+章节缺少Android 17中系统启动优化的新特性分析。未涵盖Android 17中Zygote启动优化的新机制、APEX模块化对启动影响的深入分析、以及后台服务调度的新特性。缺少对Android 17启动时间性能基准的量化数据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析Android 17中Zygote启动优化的新机制和性能表现
+- 调研Android 17中APEX模块化对系统启动时序和service依赖的影响
+- 研究Android 17中后台服务调度的新特性和优化策略
+- 收集Android 17设备在不同启动场景下的性能基准数据
+
+### 关联章节
+- 1.2 Android进程模型
+- 16.1 内存管理基础
+- 8.2 后台进程管理
+
