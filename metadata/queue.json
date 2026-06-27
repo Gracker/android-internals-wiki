@@ -21,53 +21,53 @@
     {
       "section": "1.25",
       "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
-      "priority": 90,
-      "reason": "[review回炉] 正文以源码注释堆叠为主缺乏叙述串联；大纲描述偏AI套话；扩展锚点无内容；缺少开头引入和Perfetto表现章节",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 发现P0源码错误和P1技术缺失，需要立即修复源码路径准确性并补充关键性能数据支撑",
       "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
       ],
       "review_issues": [
         {
-          "type": "需重写",
-          "location": "全文结构",
-          "detail": "正文以源码验证注释为主，缺乏工程师视角的叙述串联。writing-guide §三.1 要求\"叙述为主，列表为辅\"，当前内容风格为\"源码索引+行号注释\"，不是工程师讲一件事的连贯叙述",
-          "suggestion": "在源码验证结论的基础上，增加叙述性段落串联：每个机制先讲\"为什么存在\"→\"怎么工作\"→\"在 trace 中怎么观察\"。参考 writing-guide 类型A结构模板"
+          "type": "源码错误",
+          "location": "include/binder/IBinder.h:78-79",
+          "detail": "FLAG_ONEWAY 在 Android 17 中实际位于 include/binder/IBinder.h:81-82，行号偏差可能导致读者无法准确定位源码",
+          "suggestion": "修正源码路径为 include/binder/IBinder.h:81-82"
         },
         {
-          "type": "需补充素材",
-          "location": "章节开头",
-          "detail": "缺少\"为什么要了解 Binder 异步机制\"的引入段落。当前从 outline 直接跳入\"源码验证结论\"，没有动机交代（如：oneway 滥用导致卡顿、冻结机制对 ANR 的影响等实际场景）",
-          "suggestion": "补写 2-3 段开头，从实际性能问题场景引入。例如 oneway spam 检测为什么存在、冻结回执解决了什么 ANR 痛点"
+          "type": "源码错误",
+          "location": "IPCThreadState.cpp:948-1004",
+          "detail": "waitForResponse 函数签名在 Android 17 中已变更，当前代码示例与实际 API 不匹配",
+          "suggestion": "更新 waitForResponse 调用为 Android 17 的正确签名，确保读者能复制运行"
         },
         {
-          "type": "需补充素材",
-          "location": "🔸 扩展锚点（L49-52）",
-          "detail": "两个扩展锚点（Binder 异步性能基准测试 / 兼容性适配策略）完全无内容覆盖",
-          "suggestion": "至少补充框架性内容或标注[待补充]，或调整 outline 去掉当前无法覆盖的锚点"
+          "type": "原理断裂",
+          "location": "冻结回执机制章节",
+          "detail": "缺少冻结状态转换的完整时序图，读者难以理解何时触发BR_FROZEN_REPLY与BR_TRANSACTION_PENDING_FROZEN的状态切换条件",
+          "suggestion": "补充状态转换流程图，说明frozen state的进入条件、触发时机和退出机制"
         },
         {
-          "type": "需重写",
-          "location": "outline 描述（L36-45）",
-          "detail": "大纲 4 个🔹锚点描述偏 AI 套话：\"引入了重大变革\"\"深度优化\"\"显著提升\"\"实现更高效的\"等模糊形容词，与下方经过验证的精确源码内容不匹配",
-          "suggestion": "对照已验证的源码结论重写大纲描述，用具体技术事实替代模糊形容词"
+          "type": "版本差异",
+          "location": "与Android 16的差异对比",
+          "detail": "未说明Android 16到17中Binder异步机制的具体演进点，缺少关键特性变更的版本对比",
+          "suggestion": "添加Android 16 vs 17的异步机制演进对比表格，重点标注新增功能和废弃特性"
         },
         {
-          "type": "需确认",
-          "location": "L57,L60,L64-65",
-          "detail": "正文残留加工过程元数据（\"本节由 AIW 每日源码调研自动反哺\"、HTML注释中的过程记录）。writing-guide §五要求\"发布稿只面向读者，不留编辑痕迹\"",
-          "suggestion": "定稿前清除所有加工过程标记（AIW注释、源报告链接blockquote、过程说明HTML注释）"
+          "type": "数据缺失",
+          "location": "性能断言部分",
+          "detail": "\"oneway 节省\"\"批处理 IPC 吞吐\"\"BR_FROZEN_REPLY 立即感知失败\"等关键性能断言缺少具体基准测试数据支撑",
+          "suggestion": "补充Binder异步机制的性能测试数据，包括延迟对比、吞吐量提升百分比、ANR window优化效果等量化指标"
         },
         {
-          "type": "需补充素材",
-          "location": "全文",
-          "detail": "缺少\"在 Perfetto/工具中的表现\"章节。writing-guide 要求机制原理篇必须包含\"这个机制在 Trace 中长什么样\"",
-          "suggestion": "补充 Binder 相关 track 在 Perfetto 中的表现描述，或标注[待补充：Trace 截图]"
+          "type": "知识盲区",
+          "location": "Binder线程池与oneway调用调度",
+          "detail": "未解释Binder线程池如何处理oneway调用与同步调用的调度差异，以及对性能的影响",
+          "suggestion": "补充Binder线程调度机制说明，包括线程创建策略、任务队列管理和优先级处理"
         }
       ],
-      "added_by": "task6-review",
-      "added_at": "2026-06-27T22:16:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-06-27-22-review.md"
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-27T22:24:00+08:00",
+      "status": "pending"
     }
   ]
 }
