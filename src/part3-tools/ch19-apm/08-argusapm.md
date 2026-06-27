@@ -29,8 +29,8 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；源码路径需回炉修正，已写入 queue.json。；2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task6_at: "2026-05-05T22:07:00+08:00"
-last_task6_audit: "2026-06-27T08:05:00+08:00"
+last_task6_at: "2026-06-27T10:13:02+08:00"
+last_task6_audit: "2026-06-27T10:13:02+08:00"
 last_task9_audit: "2026-06-17"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
@@ -115,7 +115,7 @@ README 中列出的监控模块覆盖面较广。把它们当架构样本看时�
 | 卡顿分析 | 主线程 Looper 边界 + 抓栈样本 | block 样本、堆栈签名、页面上下文 |
 | ANR 分析 | ANR 现场抓取、主线程堆栈和进程状态快照 | ANR 现场样本、线程栈、版本聚类 |
 
-这些方向至今仍是移动 APM 的主干。变化主要发生在实现细节上：Android 版本提高、权限控制控制、AGP 插件 API 变化、隐私审查变严，都会影响旧方案直接复用。
+这些方向至今仍是移动 APM 的主干。变化主要发生在实现细节上：Android 版本提高、权限管控、AGP 插件 API 变化、隐私审查变严，都会影响旧方案直接复用。
 
 ## 新项目使用要谨慎
 
