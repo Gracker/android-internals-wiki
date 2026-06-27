@@ -24,9 +24,11 @@
       "title": "Android 17 MemoryLimiter 与内存监控影响",
       "chapter": "ch04.17",
       "priority": 80,
-      "status": "pending",
+      "status": "completed",
       "gap_score": 19,
-      "gap_source": "daily-info"
+      "gap_source": "daily-info",
+      "completed_at": "2026-06-28T02:15:00+08:00",
+      "completed_by": "task2a-knowledge-processing"
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/29-android17-GPU-Vulkan-异步编译管线管理器调度策略.md",

@@ -60,6 +60,8 @@ last_task9_audit: "2026-06-18"
 task6_reviewed_date: "2026-06-19"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（cpu_freq linux.cpu.frequency cpu_frequency_counters 修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过（两处模板引导语属于代码块用途句，不算元叙述）。outline 8/8 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
 last_task6_review_log: "logs/review/2026-06-19-04-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 13.16 Agent 辅助 Perfetto 分析协议
@@ -107,13 +109,13 @@ last_task6_review_log: "logs/review/2026-06-19-04-review.md"
 
 <!-- outline-end -->
 
-Agent 辅助 Perfetto 分析要解决的问题是让一次 trace 调查能复查。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的思路改写成 AIW 的工作协议：输入要收齐，SQL 要查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
+Agent 辅助 Perfetto 分析的核心目标是让 trace 调查可以复查。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的分析思路整理为 AIW 的工作协议：输入要收齐，SQL 要先查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
 
-13.2 节已经覆盖 Trace 抓取，13.10 节已经覆盖 Perfetto SQL 常用模板，13.15 节展示了 BufferQueue 阻塞案例。在这三节基础上，13.16 聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免早停。[来源: ../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]
+在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，本节聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。[来源: ../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]
 
 ## 协议定位：Perfetto 教程之外的调查规范
 
-`android/skills/profilers` 目录包含两个能力包：`perfetto-sql` 与 `perfetto-trace-analysis`。前者把自然语言取数意图转换成可执行的 Perfetto SQL；后者面向开放式 trace 调查，要求 Agent 建立 scratchpad、读取 CPU / Graphics / I/O / IPC / Memory / Power 六类提示，并在结论前完成依赖追踪和全局复核。[已验证: android/skills profilers, commit 4328beaf36f00265db107eb316f9add6b8764144]
+`android/skills/profilers` 目录包含两个能力包：`perfetto-sql` 负责把自然语言取数意图转换成可执行的 Perfetto SQL；`perfetto-trace-analysis` 面向开放式 trace 调查，要求 Agent 建立 scratchpad、读取 CPU / Graphics / I/O / IPC / Memory / Power 六类提示，并在结论前完成依赖追踪和全局复核。[已验证: android/skills profilers, commit 4328beaf36f00265db107eb316f9add6b8764144]
 
 这套协议和普通 Perfetto 教程的差异在这里：教程关注概念、UI 操作和案例解释；协议关注 Agent 行为约束。一次合格的 Agent 调查至少要留下四类材料：输入条件、查询语句、查询结果、排除过的方向。没有这些材料，报告里的“主线程卡在 Binder”“GPU 阻塞”“I/O 竞争”都只是口头判断。
 
@@ -121,7 +123,7 @@ Agent 辅助 Perfetto 分析要解决的问题是让一次 trace 调查能复查
 
 ## 输入约束：分析前先把问题收窄
 
-Agent 分析 trace 前必须拿到最小输入。输入越含糊，后面的查询越容易变成全量扫描；trace 越大，这种成本越高。
+Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊，后续查询越容易变成全量扫描；trace 越大，成本越高。
 
 | 输入项 | 必填性 | 作用 | 缺失时的处理 |
 |---|---:|---|---|
@@ -135,7 +137,7 @@ Agent 分析 trace 前必须拿到最小输入。输入越含糊，后面的查�
 
 一个可分析的问题应该写成：“这份 trace 来自 Pixel 8 / Android 15，包名 `com.example.app`，复现冷启动首屏慢，采集包含 `sched`、`freq`、`am`、`wm`、`gfx`、`view`、`binder_driver`，希望确认慢在 App 主线程、系统服务、I/O 还是渲染提交。”这比“帮我看一下为什么慢”少很多歧义。
 
-[自动发现] 输入约束还应该反向检查采集质量。缺少 `sched` 时无法分离 wall time 和 CPU time；缺少 FrameTimeline 时 jank 只能退回到 `Choreographer#doFrame`、RenderThread 和 SurfaceFlinger 轨道；缺少 Binder 事件或 flow 时，跨进程等待可能断在客户端。采集规划可回到 13.2 节，线上证据包可回到 26.5 节。[已验证: Perfetto Trace Processor docs, perfetto.dev/docs/analysis/trace-processor]
+输入约束还应该反向检查采集质量。缺少 `sched` 时无法分离 wall time 和 CPU time；缺少 FrameTimeline 时 jank 只能退回到 `Choreographer#doFrame`、RenderThread 和 SurfaceFlinger 轨道；缺少 Binder 事件或 flow 时，跨进程等待可能断在客户端。采集规划可回到 13.2 节，线上证据包可回到 26.5 节。[已验证: Perfetto Trace Processor docs, perfetto.dev/docs/analysis/trace-processor]
 
 ## Scratchpad 证据链：事实和假设分开
 
@@ -252,9 +254,9 @@ ORDER BY dur_ms DESC;
 
 ## Wall time 与 CPU time 必须分离
 
-长 slice 的 `dur` 是 wall time，不等于 CPU time。一个 200ms 的 `bindApplication` slice 可能有 160ms 在 CPU 上运行，也可能 150ms 在等 Binder 或 I/O；优化方向完全不同。Agent 协议要求每个可疑长 slice 都查 `thread_state`，并按状态解释。[已验证: Perfetto Trace Processor docs, perfetto.dev/docs/analysis/trace-processor]
+长 slice 的 `dur` 是 wall time，不等于 CPU time。一个 200ms 的 `bindApplication` slice，可能是 160ms 在 CPU 上计算，也可能是 150ms 在等 Binder 或 I/O——优化方向完全不同。Agent 协议要求每个可疑长 slice 都查 `thread_state`，按状态解释。[已验证: Perfetto Trace Processor docs, perfetto.dev/docs/analysis/trace-processor]
 
-可操作的判断顺序如下：
+判断顺序分五步：
 
 1. 定位目标 slice 的 `ts`、`dur`、线程和进程。
 2. 查同一时间窗内该线程的 `thread_state` overlap。
@@ -304,7 +306,7 @@ LIMIT 20;
 
 ## 输出模板：证据表、阻塞方、边界与补采建议
 
-Agent 的最终报告不应该像 Perfetto UI 截图说明，而应该像一次工程调查记录。建议固定成八段：
+Agent 的最终报告应该是一次工程调查记录，而不是 Perfetto UI 截图说明。建议固定成八段：
 
 | 段落 | 内容 | 要求 |
 |---|---|---|
@@ -348,7 +350,7 @@ Agent 的最终报告不应该像 Perfetto UI 截图说明，而应该像一次�
 
 ## Trace 采集规划器
 
-[自动发现] `android/skills/profilers` 偏分析阶段，缺少按问题生成采集配置的能力。AIW 版本应补一个轻量采集规划器：用户给问题类型，Agent 输出 `TraceConfig`、atrace category、buffer、时长和风险提示。13.2 节已经讲抓取方式，这里只定义问题到字段的映射。
+`android/skills/profilers` 偏分析阶段，缺少按问题生成采集配置的能力。AIW 版本应补一个轻量采集规划器：用户给问题类型，Agent 输出 `TraceConfig`、atrace category、buffer、时长和风险提示。13.2 节已经讲抓取方式，这里只定义问题到字段的映射。
 
 | 问题类型 | 必要数据 | 建议补充 | 缺失风险 |
 |---|---|---|---|
