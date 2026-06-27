@@ -17,6 +17,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-28T07:22:06",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completed_at": "2026-06-28T07:35:00+08:00",
+    "completion_note": "fixed-lite: removed unverified enum integer values from CallRestriction table"
   }
 ]
