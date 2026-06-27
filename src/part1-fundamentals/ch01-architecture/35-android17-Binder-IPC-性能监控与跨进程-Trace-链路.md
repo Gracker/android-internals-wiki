@@ -1,7 +1,11 @@
 ---
+
 title: "Android 17 Binder IPC 性能监控与跨进程 Trace 链路"
 chapter: "ch01.35"
-status: draft
+status: superseded
+superseded_date: "2026-06-28"
+superseded_by: "1.31 (Android 17 Binder 性能录制与跨进程 Trace 链路)"
+superseded_reason: "与已有章节 1.31 完全重复（标题、主题、锚点范围一致），1.31 已有 270 行实质内容（ready-for-review）"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['binder', 'ipc', '性能监控', 'trace']
 related_chapters: ['1.4', '1.25']

@@ -1,7 +1,11 @@
 ---
+
 title: "Binder IPC 异步机制深度分析"
 chapter: "ch01.36"
-status: draft
+status: superseded
+superseded_date: "2026-06-28"
+superseded_by: "1.25 / 1.27 (Android 17 Binder IPC 异步机制与批处理流水线)"
+superseded_reason: "与已有章节 1.25（374行）和 1.27（336行）高度重复，两者已覆盖 oneway/冻结回执/批处理/线程池调度等全部锚点"
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ['Binder', 'IPC', '异步机制', '批处理']
 related_chapters: ['1.4', '1.25']
