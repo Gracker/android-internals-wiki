@@ -49,6 +49,8 @@ tags:
   - [1.30 Binder Transaction Buffer 演进与大事务性能边界](part1-fundamentals/ch01-architecture/30-binder-transaction-buffer-performance.md)
   - [1.31 Android 17 Binder 性能录制与跨进程 Trace 链路](part1-fundamentals/ch01-architecture/31-binder-performance-recording-trace.md)
   - [1.32 Android Virtualization Framework 架构与 pKVM 隔离性能边界](part1-fundamentals/ch01-architecture/32-virtualization-framework-pkvm-performance.md)
+  - [1.33 BroadcastQueue 调度与广播性能](part1-fundamentals/ch01-architecture/33-broadcastqueue-scheduling-performance.md)
+  - [1.34 OomAdjuster 与进程优先级计算](part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -117,6 +119,7 @@ tags:
   - [4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能](part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md)
   - [4.14 ART GC Region 碎片化与 Compaction 策略](part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md)
   - [4.15 Android 17 PSI/LowMemDetector 与 lmkd 内存压力检测架构演进](part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md)
+  - [4.16 ART TLAB 与对象分配性能](part1-fundamentals/ch04-memory/16-art-tlab-object-allocation-performance.md)
 
 - [第 5 章：CPU 调度与能耗管理](part1-fundamentals/ch05-cpu-power/README.md)
   - [5.1 Linux 进程调度基础](part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)
@@ -178,6 +181,7 @@ tags:
   - [7.17 FragmentTransaction 提交时序与主线程卡顿](part2-performance/ch07-smoothness/17-fragmenttransaction-commit-jank.md)
   - [7.18 HWC Overlay Plane 与合成降级排查](part2-performance/ch07-smoothness/18-hwc-overlay-composition-downgrade.md)
   - [7.19 AccessibilityManagerService 与无障碍服务性能影响](part2-performance/ch07-smoothness/19-accessibility-manager-performance.md)
+  - [7.20 ContentCaptureService 与 Autofill 性能影响](part2-performance/ch07-smoothness/20-contentcapture-autofill-performance.md)
 
 - [第 8 章：响应速度](part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
