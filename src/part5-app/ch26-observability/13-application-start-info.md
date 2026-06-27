@@ -47,11 +47,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/章节深挖/Clippings结构参考"
 source_refs:
-  - "[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md]"
-  - "[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]"
-  - "[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]"
-  - "[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]"
-  - "[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]"
+  - ""
+  - ""
+  - ""
+  - ""
+  - ""
   - "intake/research-gaps.md#2026-05-17-26-12"
   - "developer.android.com/reference/android/app/ApplicationStartInfo"
   - "developer.android.com/about/versions/17/features"
@@ -68,6 +68,8 @@ reviewed_by: openclaw-task6
 reviewed_date: 2026-06-05
 last_task6_at: "2026-06-05T13:11:00+08:00"
 last_task6_review_log: "logs/review/2026-06-05-13-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 
 # 26.13 ApplicationStartInfo 与启动归因上报
@@ -111,7 +113,7 @@ last_task6_review_log: "logs/review/2026-06-05-13-review.md"
 
 本节只讨论启动归因上报。8.2 已经讲启动流程和 TTID / TTFD 定义，21.8 讲启动监控指标，26.12 讲版本化诊断入口总表；这里补齐 Android 15 之后应用能从系统拿到的启动原因、启动类型、阶段时间戳，以及这些字段怎样进入线上 SDK 协议。
 
-参考资料里，启动监控部分把启动耗时拆成实验室监控、线上监控、启动类型、耗时扣除和线上堆栈采样；数据上报部分把采样、存储、上报、容灾和自监控放在同一套组件里。本节借鉴这个组织顺序，但字段和 API 以 Android 公开文档、AOSP 路径和现有章节为准，不复用参考书原文。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+启动监控把启动耗时拆成实验室监控、线上监控、启动类型、耗时扣除和线上堆栈采样；数据上报把采样、存储、上报、容灾和自监控放在同一套组件里。本节以此组织顺序展开，但字段和 API 以 Android 公开文档、AOSP 路径和现有章节为准。
 
 ## 启动归因补的是线上证据缺口
 
@@ -183,7 +185,7 @@ fun collectLatestStartInfo(context: Context): StartInfoSnapshot? {
 - `START_REASON_CONTENT_PROVIDER`：重点排查三方 SDK、初始化 Provider 和跨进程查询，详见 1.10。
 - `START_REASON_OTHER`：保留原始系统字段和业务上下文，进入待分类样本池。
 
-这套分流口径和参考书中的“冷启动、温启动、首次安装启动、覆盖安装启动分开统计”方向一致，但 Android 15 之后可以把其中一部分判断交给系统字段。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
+这套分流口径和参考书中的“冷启动、温启动、首次安装启动、覆盖安装启动分开统计”方向一致，但 Android 15 之后可以把其中一部分判断交给系统字段。
 
 ## 系统时间戳要和业务首屏协议合并
 
@@ -200,7 +202,7 @@ fun collectLatestStartInfo(context: Context): StartInfoSnapshot? {
 | 诊断关联 | `session_id`、`trace_id`、`case_id`、`app_version`、`build_fingerprint_hash` | 用于关联 Crash / ANR / trace / 服务端日志 |
 | 隐私控制 | `sample_policy_version`、`consent_state`、`upload_policy` | 记录采样和授权状态，便于审计 |
 
-参考书强调线上启动耗时要处理结束点、广告 / 引导扣除和启动类型。这里建议保留“原始耗时”和“业务扣除后耗时”两列：原始列用于研发回归，扣除列用于产品体验报表。只保留扣除后数字，会让版本之间的技术变化难以复盘。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
+线上启动耗时需要处理结束点、广告扣除和启动类型。这里建议保留“原始耗时”和“业务扣除后耗时”两列：原始列用于研发回归，扣除列用于产品体验报表。只保留扣除后数字，会让版本之间的技术变化难以复盘。
 
 系统时间戳计算阶段耗时时，使用相邻 timestamp 的差值，不跨口径硬算。例如 `APPLICATION_ONCREATE - BIND_APPLICATION` 可以近似看应用 `onCreate()` 入口前后；`FIRST_FRAME - LAUNCH` 可以作为系统首帧链路观察值；`FULLY_DRAWN` 只有业务主动调用 `reportFullyDrawn()` 后才有意义。TTID / TTFD 的定义和平台统计口径详见 8.2。
 
@@ -223,7 +225,7 @@ ProfilingManager 的 builder、结果回调、文件目录和错误码详见 14.
 
 ## 数据上报要按高可用组件设计
 
-启动归因字段很轻，但冷启动 trace、stack sample、用户日志都可能很重。上报组件至少要处理采样、端侧缓存、上传、容灾和自监控五类问题。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+启动归因字段很轻，但冷启动 trace、stack sample、用户日志都可能很重。上报组件至少要处理采样、端侧缓存、上传、容灾和自监控五类问题。
 
 - 采样策略：轻量结构化字段可以按 UV 采样或问题版本提高比例；profiling 文件必须低比例，并受远程开关、系统限流和本地磁盘预算共同约束。
 - 端侧缓存：启动 envelope 先写本地小文件或 mmap 队列，避免首启阶段同步网络请求；上传失败后按过期时间和磁盘上限清理。
@@ -231,7 +233,7 @@ ProfilingManager 的 builder、结果回调、文件目录和错误码详见 14.
 - 自监控：记录采样命中率、落盘失败率、上传到达率、文件超限清理次数、ProfilingResult 错误码分布。
 - 容灾处理：如果本地文件堆积、加密失败、压缩失败或服务端拒收，SDK 要自动降级为只上传轻量字段。
 
-采样配置需要有版本号。客户端每次上报携带本地策略版本，服务端发现版本落后时在回包里返回新策略。这样不依赖推送，也能让采样和开关随正常上报逐步生效。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
+采样配置需要有版本号。客户端每次上报携带本地策略版本，服务端发现版本落后时在回包里返回新策略。这样不依赖推送，也能让采样和开关随正常上报逐步生效。
 
 ## 隐私边界要写进协议
 
@@ -245,7 +247,7 @@ ProfilingManager 的 builder、结果回调、文件目录和错误码详见 14.
 - trace / heap / stack sample 文件进入脱敏和访问审计，不和普通 BI 数据混库。
 - 对未登录用户使用端侧随机 ID 或安装 ID 时，记录生成方式、重置条件和跨 App 边界。
 
-用户日志章节里提到全量日志、主动上报和按用户拉取能提升疑难问题排查效率；放到启动归因场景，原则是“先轻量字段定位，再按授权和采样拿重文件”。不要把冷启动诊断能力扩成长期、无限制的行为采集。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+用户日志章节里提到全量日志、主动上报和按用户拉取能提升疑难问题排查效率；放到启动归因场景，原则是“先轻量字段定位，再按授权和采样拿重文件”。不要把冷启动诊断能力扩成长期、无限制的行为采集。
 
 ## 和 ApplicationExitInfo 合并做启动后验
 
@@ -282,7 +284,7 @@ ProfilingManager 的 builder、结果回调、文件目录和错误码详见 14.
 | 灰度 | 启动 envelope、`ApplicationStartInfo`、采样 trace | `start_type`、`start_reason`、`route_name`、P50 / P90 / P99、异常版本号 | 普通冷启动、升级首启、后台拉起分桶判断 |
 | 线上问题 | `ApplicationExitInfo` + `ApplicationStartInfo` + profiling 文件 | previous exit、current start、trace / stack sample 索引 | 判断是否进入 Crash / ANR / 启动性能排障队列 |
 
-灰度回滚不要只看平均值。启动耗时通常长尾明显，P90 / P99、超阈值比例、低端机分桶、升级首启分桶更能反映用户体感。参考书对“90% 用户启动时间”和启动类型分流的建议，在 Android 15+ 可以落到 `start_type`、`start_reason` 和业务 route 三个维度上。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md]
+灰度回滚不要只看平均值。启动耗时通常长尾明显，P90 / P99、超阈值比例、低端机分桶、升级首启分桶更能反映用户体感。参考书对“90% 用户启动时间”和启动类型分流的建议，在 Android 15+ 可以落到 `start_type`、`start_reason` 和业务 route 三个维度上。
 
 ## 与 26.12 的拆分边界
 

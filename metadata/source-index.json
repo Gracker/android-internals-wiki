@@ -1186,6 +1186,190 @@
       "processed_at": "2026-06-27T06:15:15.201015",
       "status": "referenced",
       "target_file": "src/part1-fundamentals/ch05-cpu-power/5.21-cross-app-agent-system-primitive.md"
+    },
+    {
+      "title": "Android Native | 内存问题的终极武器——MTE",
+      "path": "AndroidWeekly/#23/Android Native 内存问题的终极武器MTE",
+      "source_url": "https://juejin.cn/post/7013595058125406238",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析ARM MTE(Memory Tagging Extension)在Android 12中的应用，对比ASan/HWASan/MTE三种内存检测工具原理，涵盖Scudo分配器中MTE实现、IRG/STG指令、同步/异步检测模式及性能开销对比",
+      "scored_at": "2026-06-27T09:06:13.501649"
+    },
+    {
+      "title": "Android R 常见 GC 类型与问题案例",
+      "path": "AndroidWeekly/#23/Android R 常见GC类型与问题案例",
+      "source_url": "https://mp.weixin.qq.com/s/J6pYzVcOUHCt8zCqZLaD3w",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "系统介绍ART虚拟机Heap布局(RegionSpace/ImageSpace/ZygoteSpace/LOS)及CC并发复制回收器原理，结合Background GC/Native GC/Alloc GC/Explicit GC类型，分析实际案例中的卡顿、高负载、功耗问题",
+      "scored_at": "2026-06-27T09:06:13.501657"
+    },
+    {
+      "title": "得物App ANR监控平台设计",
+      "path": "AndroidWeekly/#23/得物App ANR监控平台设计",
+      "source_url": "https://juejin.cn/post/7009297034440081422",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-稳定性",
+          "confidence": "high"
+        }
+      ],
+      "summary": "得物自建ANR监控平台方案，涵盖ProcessErrorStateInfo/tombstone/Looper Message回溯/堆栈采样等多维信息采集，基于火焰图和聚合策略的ANR问题定位方法论",
+      "scored_at": "2026-06-27T09:06:13.501660"
+    },
+    {
+      "title": "重新理解为什么Handler可能导致内存泄露",
+      "path": "AndroidWeekly/#23/重新理解为什么Handler可能导致内存泄露",
+      "source_url": "https://mp.weixin.qq.com/s/4duyUKTjJmV_66kZm2MQPg",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "从GC Root引用链角度分析Handler导致Activity内存泄露的真正原因：sMainLooper静态引用和MessageQueue间接持有，对比ThreadLocal弱引用不会导致泄露",
+      "scored_at": "2026-06-27T09:06:13.501662"
+    },
+    {
+      "title": "使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间",
+      "path": "AndroidWeekly/#23/使用Kotlin Symbol Processing 1.0缩短Kotlin构建时间",
+      "source_url": "https://mp.weixin.qq.com/s/_eRbF-c0BzgU_6j1SEYEMw",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-编译",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Google官方介绍KSP 1.0稳定版，对比KAPT存根生成模型的缺陷，KSP作为编译器插件运行提升Room构建速度2倍，支持Kotlin/Native和JS多平台",
+      "scored_at": "2026-06-27T09:06:13.501663"
+    },
+    {
+      "title": "Android11系统源码分析：从binder trace视角看Activity冷启动",
+      "path": "AndroidWeekly/#23/Android11系统源码分析从binder trace视角看Activity冷启动",
+      "source_url": "https://www.cnblogs.com/houser0323/p/15115623.html",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-系统启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从Binder trace视角完整梳理Android 11 Activity冷启动全流程：Launcher→ATMS→Zygote fork→APP生命周期，每个环节附带具体Binder调用栈trace",
+      "scored_at": "2026-06-27T09:06:13.501664"
+    },
+    {
+      "title": "更高级的Android启动任务调度库",
+      "path": "AndroidWeekly/#23/更高级的Android启动任务调度库",
+      "source_url": "https://mp.weixin.qq.com/s/ZEcdAeyLNJXSZNJYOEUBiw",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-系统启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "AndroidStartup 2.2版本升级：支持多线程模型、非阻塞通知唤醒调度、字符串依赖方式支持组件化、任务优先级和指定进程执行",
+      "scored_at": "2026-06-27T09:06:13.501666"
+    },
+    {
+      "title": "图解Compose Modifier实现原理",
+      "path": "AndroidWeekly/#23/图解Compose Modifier实现原理",
+      "source_url": "https://mp.weixin.qq.com/s/f5KZJN_4G4LFBlEBQ_se3g",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "深入图解Jetpack Compose Modifier链底层实现：Modifier接口/Element/CombinedModifier数据结构，then()方法连接机制和Modifier调用顺序对UI渲染的影响",
+      "scored_at": "2026-06-27T09:06:13.501668"
     }
   ]
 }

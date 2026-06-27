@@ -77,6 +77,18 @@
 - **建议补充**：补充 ART 源码级异常处理流程细节（Thread::SetException 标记、tlsPtr_.exception 存储、HandleUncaughtExceptions 清除与分发链路），当前 ch20.2 已 finalized 但未深入 ART 源码级实现
 - **参考书覆盖深度**：中等
 
+## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
+- **类型**：版本差异覆盖
+- **位置**：3.2.1 Android 9+ 工具演进
+- **问题**：缺少 Android 10 (API 29-30) 中间状态说明，Perfetto 从 Android 9 到 Android 11+ 的渐进过程描述不完整
+- **建议**：补充 Android 10 中 Perfetto 的可用性、限制和启用方法，说明其作为 Android 9 和 Android 11+ 之间过渡版本的特点
+
+## [Task9 Idle Audit] ch15 Android 性能优化研究方法论 — 2026-06-27
+- **类型**：版本差异覆盖
+- **位置**：3.2.5 Android 17 (API 37) - Perfetto 进一步优化描述
+- **问题**：Android 17 的 Perfetto 进一步优化和异步采集描述过于简略，缺少具体的新增功能说明
+- **建议**：补充 Android 17 中 Perfetto 的具体新增特性，如异步采集的具体实现方式、电池感知策略的具体参数、性能分析增强功能等
+
 ## [Task2A Gap Mining] 已检查方向记录 — 2026-06-27
 
 **本轮结论**: 0 个合格缺口（所有候选 < 14 分）。全书 495 小节覆盖已趋成熟。
@@ -115,3 +127,54 @@
 1. 已有小节的内容深化（由 Task 2B / Task 9 负责）
 2. Android 18+ 内容（超出 AIW 范围边界）
 3. 开发者侧无法直接调优的系统级/内核层话题
+
+
+## [Task9 Deep Review] 14.12 APM / 可观测性平台与 SDK 选型 — 2026-06-27
+
+- **类型**：版本差异
+- **位置**：Matrix AGP 兼容性描述段落
+- **问题**：文中提到 "AGP 7/8+ 项目接 Trace Canary 前，应先用最小样本验证"，但基于当前 Matrix 最新文档，AGP 7.x+ 兼容性已显著改善，建议更新 AGP 支持范围说明
+- **建议**：根据 Matrix 最新文档更新 AGP 版本支持范围，明确哪些版本已验证兼容，哪些需要额外测试
+
+- **类型**：源码引用
+- **位置**：Android 16 KillHandler 详细描述段落  
+- **问题**：文中详细描述了 Android 16 的  消息处理和 lmkd 交互，但未说明 Android 17 中的相关变化
+- **建议**：补充 Android 17 中 KillHandler 和 lmkd 相关的变化说明，明确 android-17.0.0_r1 与 android-16.0.0_r1 的差异
+
+## [Task6 Review] 1.26 Android 17 MessageQueue 重构与 DeliQueue 无锁优化 — 2026-06-27
+
+### 问题 1：章节结构需重写
+- **类型**：需重写
+- **位置**：全文结构
+- **问题**：outline 定义的 4 个锚点（MessageQueue 重构背景 / DeliQueue 无锁队列设计 / 内存与缓存优化 / 消息分发时序优化）+ 2 个扩展锚点，与正文 6 个小节（目录结构拆分 / DeliQueue 真实数据结构 / Treiber Stack 状态机 / Gating 条件与生效范围 / Looper 调用链 / 性能影响）几乎完全不对应。现有正文为 DeepResearch 注入的源码调研笔记，不是叙述体章节。
+- **建议**：按 writing-guide.md Type A（机制原理篇）结构重写。保留现有源码调研内容作为素材，用叙述体串联。开头讲清楚 MessageQueue 为什么要重构 → 核心机制（Combined/Concurrent/Legacy 三条路线）→ Perfetto 中的表现 → 版本演进 → 常见误区。
+
+### 问题 2：outline 锚点未覆盖
+- **类型**：需补充素材
+- **位置**：outline 锚点「内存与缓存优化」「消息分发时序优化」
+- **问题**：这两个锚点完全没有对应正文。扩展锚点「无锁队列性能对比分析」「线程池协同优化」也未覆盖。
+- **建议**：补充内存布局优化（缓存行对齐、数据局部性）、消息分发时序（上下文切换减少的具体路径）、性能对比数据（benchmark 数据而非泛泛描述）。
+
+### 问题 3：缺少必要段落
+- **类型**：需补充素材
+- **位置**：全文
+- **问题**：writing-guide Type A 要求：①开头 1-2 段讲「为什么要了解这个」②Perfetto/Trace 表现段 ③版本演进段 ④常见问题与误区段。四者全部缺失。
+- **建议**：①开头用具体现象引入（如「在 Perfetto 中你看到的 message_queue_receive slice」）；②Perfetto 段说明如何观察 MessageQueue 行为；③版本演进从 Android 15/16 的优化到 17 的重构；④常见误区如「误以为普通 App 自动获得 DeliQueue」。
+
+### 问题 4：源码版本与标题不一致
+- **类型**：需确认（交 Task 9）
+- **位置**：标题 vs 源码锚点
+- **问题**：标题为「Android 17 MessageQueue 重构」，但源码锚点标注为 `android-16.0.0_r1`。DeliQueue/CMQ 到底是 Android 16 还是 17 引入？需 Task 9 核实并统一。
+- **建议**：Task 9 核实 AOSP changelog，确定 DeliQueue/CMQ 首次引入的版本，统一标题、applicable_versions、源码锚点三者。
+
+### 问题 5：术语不一致
+- **类型**：需确认（交 Task 9）
+- **位置**：全文
+- **问题**：标题用「DeliQueue」，正文用「ConcurrentMessageQueue (CMQ)」，两者关系未说明。DeepResearch 资料也混用。需明确规范术语。
+- **建议**：首次出现时定义「DeliQueue 是该机制的内部代号，实现类为 ConcurrentMessageQueue」，之后全文统一。
+
+### 问题 6：数据结构描述存在矛盾链
+- **类型**：需确认（交 Task 9）
+- **位置**：1.26.2 + 参考资料
+- **问题**：正文说「L3 review 中基于数组的优先级队列实现错误，实际使用 ConcurrentSkipListSet」，但 DeepResearch 摘要说「L3 review 的纠正本身也有误」。这条纠错链需要 Task 9 定夺。
+- **建议**：Task 9 直接读 AOSP 源码确认数据结构类型，消除全部矛盾，简化为一段准确描述。
