@@ -10430,13 +10430,13 @@
     "1.31": "ready-for-review"
   },
   "task2a_last_processed": {
-    "section": "21.15",
-    "title": "Compose 首次组合开销与启动性能",
-    "file": "src/part5-app/ch21-startup/15-compose-first-composition-startup.md",
+    "section": "1.33",
+    "title": "BroadcastQueue 调度与广播性能",
+    "file": "src/part1-fundamentals/ch01-architecture/33-broadcastqueue-scheduling-performance.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-27T05:13:44.042828+08:00",
+    "processed_at": "2026-06-27T19:08:03.746599+08:00",
     "status": "ready-for-review",
-    "note": "6 锚点全部覆盖，2 扩展全部覆盖，素材来自 Compose BOM 2025.12 官方行为 + AOSP androidx-compose-release 源码 + §22.3/§21.4 交叉引用",
+    "note": "7 锚点全部覆盖，2 扩展全部覆盖，素材来自 AOSP android-17.0.0_r1 源码分析",
     "pipeline_stage": "task6_pending"
   },
   "task2a_last_gap_mining": {
@@ -15034,8 +15034,8 @@
   },
   "summary": {
     "total": 272,
-    "draft": 1,
-    "ready-for-review": 68,
+    "draft": 0,
+    "ready-for-review": 69,
     "finalized": 201
   },
   "18.25": {
@@ -15139,5 +15139,23 @@
     "task6_state": "pending",
     "task9_state": "pending",
     "task2b_state": "pending"
+  },
+  "1.33": {
+    "section": "1.33",
+    "title": "BroadcastQueue 调度与广播性能",
+    "file": "src/part1-fundamentals/ch01-architecture/33-broadcastqueue-scheduling-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-27",
+    "drafted_date": "2026-06-27",
+    "drafted_by": "openclaw-task2a",
+    "last_task2a_at": "2026-06-27T19:08:03.746321+08:00",
+    "task2a_result": "ready-for-review",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "note": "7 锚点全部覆盖，2 扩展全部覆盖",
+    "queue_priority": 80
   }
 }
