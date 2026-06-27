@@ -253,6 +253,7 @@ tags:
   - [18.24 Advanced Professional Video 与专业视频编解码管线](part2-performance/ch18-rendering-pipelines/24-advanced-professional-video-apv.md)
   - [18.25 Jetpack Compose 渲染管线架构](part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)
   - [18.26 Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理](part2-performance/ch18-rendering-pipelines/26-android17-hwui-vulkan-multi-queue.md)
+  - [18.27 WebGPU on Android 渲染与计算管线](part2-performance/ch18-rendering-pipelines/27-webgpu-android-pipeline.md)
 
 - [第 12 章：包体积与其他](part2-performance/ch12-apk-network/README.md)
   - [12.1 APK 体积优化](part2-performance/ch12-apk-network/01-apk-size.md)
@@ -288,6 +289,7 @@ tags:
   - [13.17 Perfetto SDK 与应用内 Trace 数据源](part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md)
     - [Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析](part3-tools/ch13-perfetto/13.19-Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析.md)
 - [13.18 SmartPerfetto 与可复用 Trace 分析平台](part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md)
+  - [13.19 FrameTracer 与 Graphics Frame Event 数据通路](part3-tools/ch13-perfetto/19-frametracer-graphics-frame-event.md)
 
 - [第 14 章：其他分析工具](part3-tools/ch14-other-tools/README.md)
   - [14.1 Android Studio Profiler](part3-tools/ch14-other-tools/01-as-profiler.md)

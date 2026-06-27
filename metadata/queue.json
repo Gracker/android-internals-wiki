@@ -1243,5 +1243,27 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-06-27T07:04:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.19",
+    "section_title": "FrameTracer 与 Graphics Frame Event 数据通路",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] ch13 Perfetto 缺少 FrameTracer (android.surfaceflinger.frame) 数据源覆盖。DeepResearch 2026-06-26 提供完整源码分析。评分 16/20。",
+    "material_paths": [
+      "DeepResearch/2026-06-26-android17-frametracer-graphics-frame-event.md"
+    ],
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-27"
+  },
+  {
+    "section": "18.27",
+    "section_title": "WebGPU on Android 渲染与计算管线",
+    "priority": 80,
+    "reason": "[Task2A gap-mining] ch18 渲染链路缺少 WebGPU/Jetpack WebGPU 管线。DeepResearch 2026-06-25 提供完整源码分析。评分 16/20。",
+    "material_paths": [
+      "DeepResearch/2026-06-25-webgpu-androidx-android17-source.md"
+    ],
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-27"
   }
 ]

@@ -54,6 +54,8 @@ task2b_result: fixed
 last_task2b_at: "2026-06-16T00:51:53"
 task2b_fixed_date: "2026-06-16"
 last_task9_autofix_at: "2026-06-16"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 # Splash Screen 与感知启动速度
 
@@ -170,10 +172,8 @@ implementation "androidx.core:core-splashscreen:1.2.0"
     <!-- 背景色 -->
     <item name="windowSplashScreenBackground">@color/brand_background</item>
     <!-- 中央图标，支持 AnimatedVectorDrawable -->
-    ```xml
-<item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     <!-- 图标动画时长，上限 1000ms -->
-```
     <item name="windowSplashScreenAnimationDuration">1000</item>
     <!-- 启动画面结束后的 Activity 主题 -->
     <item name="postSplashScreenTheme">@style/Theme.App</item>
@@ -287,7 +287,7 @@ splashScreen.setOnExitAnimationListener { provider ->
 
 SplashScreen 解决的是"点击到 App 首帧"这段时间的系统侧反馈。但 SplashScreen 消失之后、App 内容完全加载出来之前，用户可能面对一个半成品的页面——空白的列表、未加载的图片、loading indicator 满天飞。
 
-感知优化要解决的是这个问题：让用户在内容加载完成之前就感受到"App 已经准备好了"。
+感知优化要解决的就是这个阶段的问题：让用户在内容加载完成之前就感受到"App 已经准备好了"。
 
 ### 骨架屏（Skeleton Screen）
 
@@ -333,7 +333,7 @@ SplashScreen 解决的是"点击到 App 首帧"这段时间的系统侧反馈。
 
 用 `ShimmerLayout` 或 `SkeletonLayout` 这类库，在真实布局外面套一层，把子 View 的背景替换成灰色占位。这种方式维护成本低——布局改了骨架自动跟着变——但可控性不如方式一。
 
-骨架屏的时机：在 `setContentView` 之后就显示骨架状态，等数据加载完成后再切到真实内容。不要等数据回来才显示任何东西——用户从 SplashScreen 过渡到一个空页面，体验比白屏好不了多少。
+骨架屏的时机：在 `setContentView` 之后就显示骨架状态，等数据加载完成后再切到真实内容。不要等数据回来才显示任何东西——用户从 SplashScreen 跳到空页面，体验不会比白屏好多少。
 
 ### 预渲染策略
 
