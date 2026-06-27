@@ -24,7 +24,7 @@ reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task6_audit: "2026-06-12"
+last_task6_audit: "2026-06-27"
 last_task2b_at: "2026-04-27T22:40:00+08:00"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-06"
