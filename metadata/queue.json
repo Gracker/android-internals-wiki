@@ -239,5 +239,27 @@
       "completed_at": "2026-06-28T04:52:43.775178+08:00",
       "completed_by": "task2b-main"
     }
+  ],
+  "items": [
+    {
+      "section": "1.35",
+      "section_title": "ART 去优化（Deoptimization）触发机制与性能影响",
+      "priority": 80,
+      "reason": "[task2a-gap-mining] 新创建章节，知识缺口挖掘",
+      "material_paths": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-06-28T05:05:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.36",
+      "section_title": "Android Java 类加载链路与启动期类加载性能",
+      "priority": 80,
+      "reason": "[task2a-gap-mining] 新创建章节，知识缺口挖掘",
+      "material_paths": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-06-28T05:05:00+08:00",
+      "status": "pending"
+    }
   ]
 }

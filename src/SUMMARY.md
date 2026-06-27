@@ -51,6 +51,8 @@ tags:
   - [1.32 Android Virtualization Framework 架构与 pKVM 隔离性能边界](part1-fundamentals/ch01-architecture/32-virtualization-framework-pkvm-performance.md)
   - [1.33 BroadcastQueue 调度与广播性能](part1-fundamentals/ch01-architecture/33-broadcastqueue-scheduling-performance.md)
   - [1.34 OomAdjuster 与进程优先级计算](part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md)
+  - [1.35 ART 去优化（Deoptimization）触发机制与性能影响](part1-fundamentals/ch01-architecture/35-art-deoptimization-performance.md)
+  - [1.36 Android Java 类加载链路与启动期类加载性能](part1-fundamentals/ch01-architecture/36-java-class-loading-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
