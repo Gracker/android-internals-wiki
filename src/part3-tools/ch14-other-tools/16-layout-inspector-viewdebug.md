@@ -13,6 +13,7 @@ pipeline_stage: ready-to-publish
 last_task2b_lite_at: 2026-06-28
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-28
+last_task6_audit: 2026-06-28
 drafted_date: 2026-05-19
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-05-19
@@ -117,7 +118,7 @@ Compose 场景下，Layout Inspector 能展示 composable 层级、semantics 信
 Compose 重组计数的读法要保守。高 recomposition count 说明节点在交互过程中被频繁重新执行，但它不自动等于掉帧；skipped count 说明 Compose 判断该节点本轮不必重组，也不自动等于性能好。排查时按三步走：
 
 - 在 Inspector 里选中重组热点节点，双击跳到源码，确认它读取了哪些状态。
-- 对照交互动作，判断状态变化范围是否过大，例如父层 state 变动导致大范围子树重组。
+- 对照交互动作，判断状态变化范围是否过大，例如父层状态变动导致大范围子树重组。
 - 用 Perfetto 或 Compose tracing 验证该重组是否对应主线程耗时、FrameTimeline jank 或内存分配峰值。
 
 Semantics 面板适合补 accessibility 和自动化测试视角。一个 Compose 节点在视觉上存在，不代表它有正确的 semantics；反过来，semantics 合并也可能让 Inspector 中的可访问性树和视觉树不同。UI 走查时，视觉树、semantics 树和测试定位符要分开记录。
