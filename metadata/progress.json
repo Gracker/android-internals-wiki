@@ -7906,13 +7906,14 @@
       "task2a_state": "processed",
       "task2a_result": "processed-draft",
       "last_task2a_at": "2026-06-11T13:04:00+08:00",
-      "task6_state": "pending",
+      "task6_state": "reviewed",
       "queue_priority": 80,
       "task6_review_date": "2026-06-27",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task6_issues": 6,
       "task6_small_fixes": 6,
-      "last_review": "2026-06-27-task6"
+      "last_review": "2026-06-27-task6",
+      "last_task6_at": "2026-06-27T23:12:26+08:00"
     },
     "7.9": {
       "status": "ready-for-review",

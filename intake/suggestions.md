@@ -132,3 +132,38 @@
 - [Task6] Outline AI 套话：已重写
 - [Task6] 加工过程元数据：已清除
 - [Task6] Perfetto 表现：已添加 Trace 观察表，截图标注 [待补充]
+
+## [Task6 Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+
+### 问题 1：Binder 线程池数量计算逻辑存疑
+- **类型**：需确认（技术准确性）
+- **位置**：§6 Binder 线程池与 oneway 调用的调度，"应用进程：8 个 binder 线程（`BINDER_VM_SIZE` / 128KB，实际由 `DEFAULT_MAX_BINDER_THREADS` 控制）"
+- **问题**：`BINDER_VM_SIZE / 128KB = 8` 的除法逻辑有误导性——binder 线程池上限不由缓冲区大小除法决定，而是由 `DEFAULT_MAX_BINDER_THREADS` 常量控制。括号内的除法算式容易让读者误解因果关系。
+- **建议**：Task 9 验证 `DEFAULT_MAX_BINDER_THREADS` 在 android-17.0.0_r1 中的实际值和定义位置；修正或删除除法表述。
+
+### 问题 2：enableFrozenObjectErrorCode() aconfig flag 默认值不确定
+- **类型**：需确认（版本差异）
+- **位置**：§7 与 Android 16 的关键区别，对比表最后一行
+- **问题**：表格中写 "aconfig flag 默认关闭（部分构建）" → "aconfig flag，默认可能不同"，"可能不同"是不确定表述
+- **建议**：Task 9 查证 Android 17 中 `enable_frozen_object_error` aconfig flag 的实际默认值，明确写入或删除该行。
+
+### 问题 3：BR_FROZEN_REPLY 响应时间数据无来源
+- **类型**：需确认（数据来源）
+- **位置**：§5 关键性能特征，对比表 "冻结进程响应" 行
+- **问题**：`BR_FROZEN_REPLY 立即感知（< 1ms）` 中的 < 1ms 没有标注数据来源或测试条件
+- **建议**：补充实测数据来源，或改为定性描述（"立即返回，不走超时等待"）。
+
+### 问题 4：RPC Binder 缓冲区版本归属待验证
+- **类型**：需确认（版本归属）
+- **位置**：§5 末尾 "与 RPC Binder 的缓冲区边界" 段落
+- **问题**：提到 `kDefaultRpcBinderSize` 从 ~100KB 扩到 ~600KB，但未明确这个变更发生在哪个 Android 版本
+- **建议**：Task 9 验证该扩容变更的具体版本（是否属于 Android 17），明确标注。
+
+### 问题 5：性能数据和 Perfetto trace 描述大量待补充
+- **类型**：需补充素材
+- **位置**：§5 "量化数据 [待补充]"、§8 整节 [待补充：Trace 截图]
+- **问题**：章节核心性能数据（oneway vs 同步延迟对比、批处理 syscall 减少量、ANR 次数对比）和 Perfetto trace 观察描述均为空
+- **建议**：不阻塞当前 review 流程，但需后续补充实测 trace 数据。建议在 Task 9 完成技术验证后，由 Task 2B 补充。
+
+---
+*review 日志：logs/review/2026-06-27-23-review.md*
