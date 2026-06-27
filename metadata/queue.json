@@ -119,5 +119,28 @@
       "completed_at": "2026-06-28T00:50:00+08:00",
       "completed_by": "task2b-main-cleanup"
     }
+  ],
+  "queue": [
+    {
+      "section": "14.16",
+      "section_title": "Layout Inspector 与 ViewDebug 布局调试",
+      "priority": 90,
+      "reason": "[review回炉] 版本基线不合规：全文 AOSP 源码引用指向 android-16.0.0_r1，需升级到 android-17.0.0_r1",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本基线",
+          "location": "frontmatter last_verified_against + 全文 6 处 [已验证] 标注 + 参考资料区 4 个 AOSP 链接",
+          "detail": "全部 AOSP 源码引用指向 android-16.0.0_r1，不符合 AIW_ANDROID_VERSION_BASELINE_2026_06_27 要求的 android-17.0.0_r1 基准",
+          "suggestion": "Task 9 重新验证 ViewDebug.java、View.java、ViewRootImpl.java、ThreadedRenderer.java 在 android-17.0.0_r1 中的差异，更新验证标注和链接"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-28T01:15:57",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-28-01-review.md"
+    }
   ]
 }

@@ -3,8 +3,12 @@
 title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
 status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-28
 drafted_date: 2026-06-07
 drafted_by: openclaw-task2a
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
@@ -34,7 +38,7 @@ gap_source: 素材驱动/DeepResearch/AOSP结构
 
 # 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 
-这节拆解 Android 上 Java 堆转储（heap dump）从命令到文件的完整路径，以及在 Perfetto 中通过 `java_hprof` 数据源做结构化分析的方式。
+这节梳理 Android 上 Java 堆转储（heap dump）从命令到文件的完整路径，以及在 Perfetto 中通过 `java_hprof` 数据源做结构化分析的方式。
 
 堆转储是内存泄漏排查的核心证据。§10.2 讲了泄漏的定义和分类，§14.3 列了内存分析工具清单，§14.14 讲了 Android Studio Memory Profiler 和 LeakCanary 的堆转储分析流程。本节聚焦在更底层的问题：heap dump 在系统内部是怎么产生的、dump 过程对应用有多大影响、以及 Perfetto 如何把原始 hprof 文件转化为可查询的结构化数据。
 
@@ -90,7 +94,7 @@ ART 中 `Hprof::Dump()` 的执行受两个保护机制约束：
 
 `[来源: Obsidian/Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md]`
 
-这两个保护机制是 heap dump 对应用性能影响巨大的根因——所有线程暂停，GC 停止，应用处于完全冻结状态，直到 dump 写完。
+这两个保护机制是 heap dump 导致应用长时间冻结的根因——所有线程暂停，GC 停止，应用处于完全冻结状态，直到 dump 写完。
 
 ## HPROF 文件格式与解析
 
