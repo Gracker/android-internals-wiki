@@ -186,6 +186,25 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-28T02:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "2.16",
+      "section_title": "Sync Fence 框架与帧同步机制",
+      "priority": 70,
+      "reason": "[Task6抽检] 版本基线不合规：全文 AOSP 源码引用指向 android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1，需升级验证到 android-17.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需验证",
+          "location": "全文源码引用 + frontmatter last_verified_against",
+          "detail": "版本边界规则要求源码链接锚定 android-17.0.0_r1。当前 17 处 AOSP tag 引用全部指向旧版本。需核对 Fence.cpp、HWC2.h、sync.c、sw_sync.h、SkiaOpenGLPipeline.cpp、SkiaVulkanPipeline.cpp、VulkanManager.cpp 在 android-17.0.0_r1 中是否有变更。",
+          "suggestion": "对 android-17.0.0_r1 逐文件核对，更新源码引用和 last_verified_against；如无变化则更新 tag 引用即可"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-06-28T03:10:27",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-28-03-audit.md"
     }
   ]
 }
