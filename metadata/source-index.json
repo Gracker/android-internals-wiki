@@ -1370,6 +1370,27 @@
       ],
       "summary": "深入图解Jetpack Compose Modifier链底层实现：Modifier接口/Element/CombinedModifier数据结构，then()方法连接机制和Modifier调用顺序对UI渲染的影响",
       "scored_at": "2026-06-27T09:06:13.501668"
+    },
+    {
+      "file": "DeepResearch/2026-06-27-android-perfetto-versions.md",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "summary": "Source code analysis confirming Perfetto version availability and Android 12+ new data sources",
+      "categories": [
+        "Android",
+        "Perfetto",
+        "Performance",
+        "Analysis"
+      ],
+      "related_chapters": [
+        "14.1",
+        "14.2",
+        "14.5"
+      ],
+      "scored_at": "2026-06-28T05:48:17.189336"
     }
   ]
 }

@@ -238,6 +238,33 @@
       "status": "completed",
       "completed_at": "2026-06-28T04:52:43.775178+08:00",
       "completed_by": "task2b-main"
+    },
+    {
+      "section": "1.37",
+      "section_title": "Android logd 日志系统性能与开销",
+      "priority": 80,
+      "status": "pending",
+      "added_at": "2026-06-28T06:08:00+08:00",
+      "added_by": "task2a-knowledge-gap",
+      "reason": "知识缺口挖掘：logd 系统性能开销缺乏专题覆盖（评分 14/20）"
+    },
+    {
+      "section": "1.38",
+      "section_title": "Binder 线程池管理与 IPC 线程饥饿性能边界",
+      "priority": 80,
+      "status": "pending",
+      "added_at": "2026-06-28T06:08:00+08:00",
+      "added_by": "task2a-knowledge-gap",
+      "reason": "知识缺口挖掘：Binder 线程池饥饿作为高频 ANR 根因缺乏专题覆盖（评分 14/20）"
+    },
+    {
+      "section": "2.31",
+      "section_title": "HDR 显示管线与色彩管理性能",
+      "priority": 80,
+      "status": "pending",
+      "added_at": "2026-06-28T06:08:00+08:00",
+      "added_by": "task2a-knowledge-gap",
+      "reason": "知识缺口挖掘：HDR/WCG 显示管线性能开销在 Android 17 快速演进下缺乏覆盖（评分 14/20）"
     }
   ],
   "items": [
@@ -259,6 +286,268 @@
       "material_paths": [],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-06-28T05:05:00+08:00",
+      "status": "pending"
+    }
+  ],
+  "pending": [
+    {
+      "section": "01.0",
+      "section_title": "ch01-architecture - 待完善",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-03 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android17 为什么重写 MessageQueue — https://juejin.cn/post/7612812060795093002...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-31 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 要变天：桌面端这次真的来了！ — https://juejin.cn/post/7622696665740558386...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-03 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 来了！新特性介绍与适配建议 — https://juejin.cn/post/7612545160434188297...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-04 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 协程时代，Handler 应该退休了吗？ — https://juejin.cn/post/7612905767059800074...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-05-11 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Kotlin 官网为什么不再强调协程是轻量级线程了？ — https://juejin.cn/post/7638297326452441134...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-05-13 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "为什么 Android 不用接口做 Activity 通信？ — https://juejin.cn/post/7638897090145075246...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-16 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Room 3.0 来了，这次改得有点狠 — https://juejin.cn/post/7617108607432736778...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-31 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 要变天：桌面端这次真的来了！ — https://juejin.cn/post/7622696665740558386...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-03 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 来了！新特性介绍与适配建议 — https://juejin.cn/post/7612545160434188297...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-04 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 协程时代，Handler 应该退休了吗？ — https://juejin.cn/post/7612905767059800074...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-05-11 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Kotlin 官网为什么不再强调协程是轻量级线程了？ — https://juejin.cn/post/7638297326452441134...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-05-13 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "为什么 Android 不用接口做 Activity 通信？ — https://juejin.cn/post/7638897090145075246...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.0",
+      "section_title": "ch17-oem - 待完善",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "2026-03-16 00:00"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Room 3.0 来了，这次改得有点狠 — https://juejin.cn/post/7617108607432736778...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-28T00:00:00",
       "status": "pending"
     }
   ]

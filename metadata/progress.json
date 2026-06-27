@@ -1,6 +1,6 @@
 {
-  "total": 515,
-  "draft": 38,
+  "total": 518,
+  "draft": 41,
   "ready-for-review": 140,
   "finalized": 329,
   "task9_result": "pass-tech-review",
@@ -51,7 +51,10 @@
     "23.13",
     "14.24",
     "1.35",
-    "1.36"
+    "1.36",
+    "1.37",
+    "1.38",
+    "2.31"
   ],
   "ready_for_review_sections": [
     "5.19",
@@ -1574,7 +1577,7 @@
       "reviewed_at": "2026-05-15T16:20:00+08:00"
     }
   },
-  "completion_percentage": 63.9,
+  "completion_percentage": 63.5,
   "superseded": 7,
   "sections": {
     "14.22": {
