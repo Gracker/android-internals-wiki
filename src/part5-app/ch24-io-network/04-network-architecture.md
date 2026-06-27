@@ -22,6 +22,7 @@ task2b_state: "fixed"
 path: "\"Clippings/Android 性能优化 - 缓存优化:冷热端分离+重排序,提升缓存命中率.md\""
 related_chapters: "[\"24.5\", \"12.2\", \"12.3\"]"
 last_task6_at: "\"2026-06-03T04:08:00+08:00\""
+last_task6_audit: "2026-06-27"
 last_task2b_lite_at: "\"2026-06-03\""
 last_task2a_at: "\"2026-05-14T09:21:00+08:00\""
 task9_reviewed_by: "openclaw-task9"
@@ -63,7 +64,7 @@ task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (alr
 
 网络性能问题很少只由一个接口慢导致。DNS 抖动、连接复用失效、并发请求挤占、弱网重试放大流量,都会把一次页面加载拖成多段等待。12.2 和 12.3 已经讲过网络耗时拆分、TLS 与传输细节;App 架构侧还要回答四个工程问题:客户端该怎样复用连接、怎样接入 DNS/HTTPDNS、怎样给请求排队、怎样在弱网下收敛失败。
 
-本节判断基于 OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 官方文档,以及本地 Android 35 SDK 中 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver` 的源码。知识点的组织顺序是:先拆速度来源,再看线程和调度,最后看缓存与命中率。
+本节判断基于 OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 官方文档,以及本地 Android 35 SDK 中 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver` 的源码。
 
 ## 网络架构的四个控制面
 
@@ -264,7 +265,7 @@ fun nextDelayMs(attempt: Int): Long {
 
 ## Wi-Fi 评分与系统选网只保留观测边界
 
-Wi-Fi 评分和默认网络选择属于系统侧策略，展开见 24.9。本节只保留 App 网络架构需要接住的边界：Android 12 及以上 Connectivity 侧使用 `NetworkScore` flags 和 `NetworkRanker` 选择网络；Wi-Fi 侧候选评分会受 RSSI、吞吐估计、用户近期选择、metered / validated 状态和 OEM overlay 影响。旧资料里的"0-20/40/60 固定阈值"和特定 scorer 权重不能当作通用结论。
+Wi-Fi 评分和默认网络选择属于系统侧策略，展开见 24.9。本节只保留 App 网络架构需要关注的边界：Android 12 及以上 Connectivity 侧使用 `NetworkScore` flags 和 `NetworkRanker` 选择网络；Wi-Fi 侧候选评分会受 RSSI、吞吐估计、用户近期选择、metered / validated 状态和 OEM overlay 影响。旧资料里的"0-20/40/60 固定阈值"和特定 scorer 权重不能当作通用结论。
 
 App 侧要记录 default network、transport、`NET_CAPABILITY_VALIDATED`、`NET_CAPABILITY_NOT_METERED`、DNS / TCP / TLS / TTFB 分段耗时和切网事件序号。系统侧排查再通过 bugreport、`dumpsys wifi`、`dumpsys connectivity` 与 Perfetto / logcat 还原决策过程。
 
