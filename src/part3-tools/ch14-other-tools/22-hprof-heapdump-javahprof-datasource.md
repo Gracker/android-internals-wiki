@@ -3,6 +3,8 @@
 title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
 status: ready-for-review
+pipeline_stage: task6_pending
+task6_state: pending
 drafted_date: 2026-06-07
 drafted_by: openclaw-task2a
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)

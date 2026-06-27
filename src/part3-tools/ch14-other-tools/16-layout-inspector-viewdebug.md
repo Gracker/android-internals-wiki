@@ -3,6 +3,8 @@
 title: Layout Inspector 与 ViewDebug 布局调试
 chapter: 14.16
 status: ready-for-review
+pipeline_stage: task6_pending
+task6_state: pending
 drafted_date: 2026-05-19
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-05-19
