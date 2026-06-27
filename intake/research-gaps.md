@@ -137,4 +137,21 @@
 - 调研 Android 17 中是否引入了新的事务优先级相关的 BR_/BC_ 命令或 ioctl 调用
 
 ### 关联章节
-1.4 (Binder 基础架构)，1.13 (IPC 通信机制)，§4.11 (进程生命周期与 Freezer)
+1.4 (Binder 基础架构)，1.13 (IPC 通信机制)，§4.11 (进程生命周期与 Freezer)## [2026-06-28] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 知识盲区 (Task9新发现)
+
+### 盲区描述
+基于Deep Tech Review发现的关键知识盲区：
+1. **Binder 线程池内部调度机制** - 未解释在大量 oneway 调用场景下，binder 线程池的内部调度策略和线程竞争机制
+2. **BR_TRANSACTION_PENDING_FROZEN 重投递机制** - 未解冻后事务重新投递的内部机制，包括解冻判断和事务重排序逻辑
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析 binder 线程池在高频 oneway 调用下的内部调度算法和线程状态管理
+- 研究 BR_TRANSACTION_PENDING_FROZEN 的事务暂存和重投递机制，包括解冻触发条件
+- 调研不同进程类型（应用进程 vs system_server）的 binder 线程池配置差异
+- 分析 oneway 调用在高频场景下的内存管理和性能瓶颈
+
+### 关联章节
+1.4 (Binder 基础架构)，1.13 (IPC 通信机制)，1.27 (协议层解析)
