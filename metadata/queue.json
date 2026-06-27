@@ -171,7 +171,7 @@
       "section": "14.22",
       "section_title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
       "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径验证不充分，存在关键源码引用未经验证",
+      "reason": "[Deep Tech Review] 关键源码引用缺少 android-17.0.0_r1 验证，存在源码路径错误",
       "material_paths": [
         "intake/suggestions.md"
       ],
@@ -181,11 +181,20 @@
           "location": "多处源码路径验证",
           "detail": "文中多处标注 '[待验证: 源码路径基于 master 分支分析，android-17.0.0_r1 中类名和字段名可能有细微差异]'，缺乏实际 android-17.0.0_r1 的源码验证",
           "suggestion": "对 art/runtime/hprof/hprof.cc、frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java 等关键文件进行实际验证"
+        },
+        {
+          "type": "源码错误",
+          "location": "android.java_hprof 数据源配置",
+          "detail": "数据源配置示例中 `track_allocations` 字段在 AOSP proto 中不存在，该能力由 `android.heapprofd` 的 `sampling_interval_bytes` 体系提供",
+          "suggestion": "删除 `track_allocations` 字段引用，修正数据源配置说明"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-28T02:20:00+08:00",
-      "status": "pending"
+      "added_at": "2026-06-28T03:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-28T03:35:00+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: track_allocations issue was already corrected in text (explicit note + no such field in protobuf example). SQL queries in 扩展 section fixed to use heap_graph_class JOIN instead of non-existent o.type_name column. Source path verification [待验证] tags retained for main Task2B lane."
     },
     {
       "section": "2.16",
