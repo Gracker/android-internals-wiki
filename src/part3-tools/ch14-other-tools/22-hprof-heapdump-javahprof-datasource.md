@@ -3,10 +3,10 @@
 title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-28
 drafted_date: 2026-06-07
@@ -34,7 +34,9 @@ created_by: task2a-knowledge-gap
 created_date: 2026-06-07
 gap_source: 素材驱动/DeepResearch/AOSP
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+last_task2b_lite_at: "2026-06-28"
+task2b_result: fixed-lite
 
 ---
 -
@@ -356,17 +358,18 @@ KOOM 的 `ForkStripHeapDumper` 还会在子进程中对 hprof 进行 strip 裁�
 
 ```sql
 SELECT
-  o.type_name,
-  COUNT(*) as instance_count,
-  SUM(o.self_size) as total_size
+  c.name AS class_name,
+  COUNT(*) AS instance_count,
+  SUM(o.self_size) AS total_size
 FROM heap_graph_object o
+JOIN heap_graph_class c ON o.type_id = c.id
 WHERE o.reachable = 1
-  AND o.type_name IN (
+  AND c.name IN (
     'android.app.Activity',
     'android.app.Fragment',
     'androidx.fragment.app.Fragment'
   )
-GROUP BY o.type_name
+GROUP BY c.name
 ORDER BY total_size DESC;
 ```
 
@@ -375,10 +378,11 @@ ORDER BY total_size DESC;
 ```sql
 -- 通过 heap_graph_reference 追踪独占引用链
 SELECT
-  o.type_name,
+  c.name AS class_name,
   o.self_size,
-  COUNT(r.owner_id) as ref_count
+  COUNT(r.owner_id) AS ref_count
 FROM heap_graph_object o
+JOIN heap_graph_class c ON o.type_id = c.id
 LEFT JOIN heap_graph_reference r ON r.owned_id = o.id
 WHERE o.reachable = 1
 GROUP BY o.id
@@ -387,7 +391,7 @@ ORDER BY o.self_size DESC
 LIMIT 20;
 ```
 
-[待验证: SQL 查询的准确性依赖 trace_processor 版本和 heap_graph 表的 schema 定义]
+[已修正: SQL 查询已按 heap_graph_object 实际 schema（type_id → heap_graph_class JOIN）对齐]
 
 ### KOOM fork-dump 的实现边界
 
