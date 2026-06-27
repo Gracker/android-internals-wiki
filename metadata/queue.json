@@ -1,76 +1,86 @@
 {
-  "items": [
+  "created_date": "2026-06-27",
+  "sections": [
     {
-      "chapter": "23.13",
-      "title": "Android 17 onTrimMemory 链路源码解析与公平内存适配实战",
-      "path": "src/part5-app/ch23-memory-practice/13-ontrimmemory-source-fair-adaptation.md",
+      "path": "src/part1-fundamentals/ch01-architecture/35-android17-Binder-IPC-性能监控与跨进程-Trace-链路.md",
+      "title": "Android 17 Binder IPC 性能监控与跨进程 Trace 链路",
+      "chapter": "ch01.35",
       "priority": 80,
       "status": "pending",
-      "added": "2026-06-27"
+      "gap_score": 19,
+      "gap_source": "daily-info"
     },
     {
-      "chapter": "14.24",
-      "title": "Android Studio Memory Profiler JVMTI 数据通路源码分析",
-      "path": "src/part3-tools/ch14-other-tools/24-as-profiler-jvmti-data-path.md",
+      "path": "src/part1-fundamentals/ch05-cpu-power/26-android17-JobScheduler-系统级五维节流架构.md",
+      "title": "Android 17 JobScheduler 系统级五维节流架构",
+      "chapter": "ch05.26",
       "priority": 80,
       "status": "pending",
-      "added": "2026-06-27"
-    }
-  ],
-  "queue": [
+      "gap_score": 19,
+      "gap_source": "daily-info"
+    },
     {
-      "section": "1.25",
-      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 发现P0源码错误和P1技术缺失，需要立即修复源码路径准确性并补充关键性能数据支撑",
-      "material_paths": [
-        "intake/suggestions.md",
-        "intake/research-gaps.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "include/binder/IBinder.h:78-79",
-          "detail": "FLAG_ONEWAY 在 Android 17 中实际位于 include/binder/IBinder.h:81-82，行号偏差可能导致读者无法准确定位源码",
-          "suggestion": "修正源码路径为 include/binder/IBinder.h:81-82"
-        },
-        {
-          "type": "源码错误",
-          "location": "IPCThreadState.cpp:948-1004",
-          "detail": "waitForResponse 函数签名在 Android 17 中已变更，当前代码示例与实际 API 不匹配",
-          "suggestion": "更新 waitForResponse 调用为 Android 17 的正确签名，确保读者能复制运行"
-        },
-        {
-          "type": "原理断裂",
-          "location": "冻结回执机制章节",
-          "detail": "缺少冻结状态转换的完整时序图，读者难以理解何时触发BR_FROZEN_REPLY与BR_TRANSACTION_PENDING_FROZEN的状态切换条件",
-          "suggestion": "补充状态转换流程图，说明frozen state的进入条件、触发时机和退出机制"
-        },
-        {
-          "type": "版本差异",
-          "location": "与Android 16的差异对比",
-          "detail": "未说明Android 16到17中Binder异步机制的具体演进点，缺少关键特性变更的版本对比",
-          "suggestion": "添加Android 16 vs 17的异步机制演进对比表格，重点标注新增功能和废弃特性"
-        },
-        {
-          "type": "数据缺失",
-          "location": "性能断言部分",
-          "detail": "\"oneway 节省\"\"批处理 IPC 吞吐\"\"BR_FROZEN_REPLY 立即感知失败\"等关键性能断言缺少具体基准测试数据支撑",
-          "suggestion": "补充Binder异步机制的性能测试数据，包括延迟对比、吞吐量提升百分比、ANR window优化效果等量化指标"
-        },
-        {
-          "type": "知识盲区",
-          "location": "Binder线程池与oneway调用调度",
-          "detail": "未解释Binder线程池如何处理oneway调用与同步调用的调度差异，以及对性能的影响",
-          "suggestion": "补充Binder线程调度机制说明，包括线程创建策略、任务队列管理和优先级处理"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-27T22:24:00+08:00",
-      "status": "completed",
-      "completed_by": "task2b-main-fix",
-      "completed_at": "2026-06-27T22:50:00+08:00",
-      "resolution": "Fixed: (1) FLAG_ONEWAY verified correct at 78-79, Task9 annotation was wrong; (2) transact range corrected to 948-996; (3) Added frozen state mermaid sequence diagram; (4) Added Android 16 vs 17 comparison table; (5) Added quantified performance comparison table + marked gaps as [待补充]; (6) Added Binder thread pool scheduling explanation; (7) Rewrote from source-index to narrative prose; (8) Added motivation intro; (9) Filled extension anchors; (10) Rewrote AI-style outline; (11) Cleaned processing metadata; (12) Added Perfetto trace section."
+      "path": "src/part1-fundamentals/ch04-memory/17-android17-MemoryLimiter-与内存监控影响.md",
+      "title": "Android 17 MemoryLimiter 与内存监控影响",
+      "chapter": "ch04.17",
+      "priority": 80,
+      "status": "pending",
+      "gap_score": 19,
+      "gap_source": "daily-info"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/29-android17-GPU-Vulkan-异步编译管线管理器调度策略.md",
+      "title": "Android 17 GPU Vulkan 异步编译管线管理器调度策略",
+      "chapter": "ch22.29",
+      "priority": 80,
+      "status": "pending",
+      "gap_score": 19,
+      "gap_source": "daily-info"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/21-android17-NetworkStatsService-与网络配额管理.md",
+      "title": "Android 17 NetworkStatsService 与网络配额管理",
+      "chapter": "ch24.21",
+      "priority": 80,
+      "status": "pending",
+      "gap_score": 19,
+      "gap_source": "daily-info"
+    },
+    {
+      "path": "src/part1-fundamentals/ch06-storage/8-SharedPreferencesImpl-Android-16-17-变更分析与适配.md",
+      "title": "SharedPreferencesImpl Android 16-17 变更分析与适配",
+      "chapter": "ch06.8",
+      "priority": 80,
+      "status": "pending",
+      "gap_score": 18,
+      "gap_source": "research-gaps"
+    },
+    {
+      "path": "src/part5-app/ch23-memory/14-AppFlow-与-LMKD-v2-兼容性分析.md",
+      "title": "AppFlow 与 LMKD v2 兼容性分析",
+      "chapter": "ch23.14",
+      "priority": 80,
+      "status": "pending",
+      "gap_score": 18,
+      "gap_source": "research-gaps"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/31-android17-系统启动优化新特性.md",
+      "title": "Android 17 系统启动优化新特性",
+      "chapter": "ch02.31",
+      "priority": 80,
+      "status": "pending",
+      "gap_score": 18,
+      "gap_source": "research-gaps"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/36-Binder-IPC-异步机制深度分析.md",
+      "title": "Binder IPC 异步机制深度分析",
+      "chapter": "ch01.36",
+      "priority": 80,
+      "status": "pending",
+      "gap_score": 18,
+      "gap_source": "research-gaps"
     }
   ]
 }
