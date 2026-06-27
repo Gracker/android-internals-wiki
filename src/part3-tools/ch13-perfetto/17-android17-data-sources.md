@@ -48,6 +48,8 @@ last_task9_autofix_at: "2026-06-23"
 auto_promoted_at: "2026-06-16T23:16:33+08:00"
 last_task9_audit: "2026-06-22"
 last_task2b_at: "2026-06-23T00:51:41+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 
 
@@ -220,9 +222,7 @@ if (filterFramesBeforeTraceStarts && !shouldTraceForDataSource(ctx, timestamp)) 
 
 ### 1.7 配套数据源：`android.surfaceflinger.frame`（FrameTracer，graphics frame event）
 
-<!-- AIW-源码调研-2026-06-26 -->
-
-**定位补充**：§1.1~1.6 详述的 `android.surfaceflinger.frametimeline` 解决「帧是否按时」问题，而 `android.surfaceflinger.frame`（由 `FrameTracer/FrameTracer.cpp` 承载）解决「buffer 卡在哪一步」问题。两者通过 `buffer_id` + `frame_number` 字段在 trace processor 侧可关联。
+`android.surfaceflinger.frame` 数据源（由 `FrameTracer` 承载）解决「buffer 卡在哪一步」问题，与 §1.1~1.6 的 `frametimeline`（解决「帧是否按时」）互补。两者通过 `buffer_id` + `frame_number` 字段在 trace processor 侧可关联。
 
 **源码位置**：`frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.cpp`（android-17.0.0_r1）
 
@@ -280,13 +280,10 @@ ORDER BY gpu_count DESC;
 
 **与 FrameTimeline 的关联方式**：两者都包含 `buffer_id`（FrameTracer 中 `buffer_id = 5`，FrameTimelineEvent 中字段不同需查 `perfetto/trace/android/frame_timeline_event.proto`），实际关联依赖 `frame_number` + `layer_name` 联合键。
 
-**反哺来源**：`DeepResearch/2026-06-26-android17-frametracer-graphics-frame-event.md`（id=23 选题，high priority）
 
 ### 1.8 HWC 合成路径与 `HWC_COMPOSITION_QUEUED` 的真实状态（校正）
 
-<!-- AIW-源码调研-2026-06-27 -->
-
-**校正 daily-topics 描述**：daily-topics id=30 描述"Android 17 Perfetto GPU Trace 新增的 HWC_COMPOSITION_QUEUED 事件"，与 AOSP 源码事实不符。**HWC_COMPOSITION_QUEUED 自 Android 12（API 31）即在 proto 中存在，android-17.0.0_r1 与 android-16.0.0_r3、android-15.0.0_r1、android-12.0.0_r1 四个 tag 的 `graphics_frame_event.proto` 完全一致（diff 为空）**。
+`HWC_COMPOSITION_QUEUED` 并非 Android 17 新增事件。它自 Android 12 / API 31 即在 `graphics_frame_event.proto` 中定义，android-17.0.0_r1 与 android-16.0.0_r3、android-15.0.0_r1、android-12.0.0_r1 四个 tag 的该 proto 文件完全一致。
 
 **AOSP 真实 emit 站点**（android-17.0.0_r1，已逐文件确认）：
 - 6 种事件在 AOSP 中可观测：`DEQUEUE`（Layer.cpp:982-985）、`QUEUE`（Layer.cpp:986-987）、`ACQUIRE_FENCE`（Layer.cpp:1269-1270）、`LATCH`（Layer.cpp:1271-1272）、`FALLBACK_COMPOSITION`（Layer.cpp:1453-1455）、`PRESENT_FENCE`（Layer.cpp:1476 / 1496-1498）。
@@ -332,10 +329,6 @@ ORDER BY avg_gpu_render_ns DESC;
 ```
 
 **版本差异**（Layer.cpp:1453）：Android 17 把 `getCurrentBufferId()` 替换为 `getLatchedBufferId()`，仅是 buffer 标识 API 的一致性改动，与 HWC 合成事件无关。
-
-**反哺来源**：`DeepResearch/2026-06-27-android17-hwc-composition-queue-event-source.md`（daily-topics id=30，high priority）
-
-## 2. `linux.perf` 数据源
 
 
 ## 2. `linux.perf` 数据源

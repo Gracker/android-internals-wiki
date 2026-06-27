@@ -1265,5 +1265,57 @@
     ],
     "created_by": "task2a-knowledge-gap",
     "created_date": "2026-06-27"
+  },
+  {
+    "section": "1.26",
+    "section_title": "Android 17 MessageQueue 重构与 DeliQueue 无锁优化",
+    "priority": 90,
+    "reason": "[review回炉] 章节结构与写作质量不达标：outline锚点与正文内容脱节，缺少开头/Perfetto/版本演进/常见误区等必要段落，正文为研究笔记风格而非叙述体，需要按writing-guide Type A结构完整重写",
+    "material_paths": [
+      "intake/suggestions.md（含 review 意见）",
+      "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md（含已注入的源码调研内容，作为素材保留）"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文结构",
+        "detail": "outline 定义4个锚点（重构背景/DeliQueue设计/内存缓存优化/分发时序优化）+ 2个扩展锚点，但正文6个小节（目录拆分/数据结构/Treiber Stack/Gating/Looper/性能）与outline几乎无对应关系。需要按writing-guide Type A（机制原理篇）结构重写：开头动机→核心机制叙述→Perfetto表现→与其他机制关系→版本演进→常见问题→参考资料",
+        "suggestion": "保留现有源码调研内容作为素材核心，用writing-guide要求的叙述体重写，确保每个outline锚点都有对应段落"
+      },
+      {
+        "type": "需补充素材",
+        "location": "outline锚点'内存与缓存优化'、'消息分发时序优化'",
+        "detail": "这两个锚点完全没有对应正文内容。扩展锚点'无锁队列性能对比分析'和'线程池协同优化'也未覆盖",
+        "suggestion": "需要补充内存布局优化、缓存行对齐等具体内容；分发时序优化需要结合trace说明；性能对比需要具体benchmark数据"
+      },
+      {
+        "type": "需补充素材",
+        "location": "缺少开头、Perfetto section、版本演进、常见误区",
+        "detail": "writing-guide Type A 要求：开头1-2段讲'为什么要了解这个'；必须有Perfetto/Trace表现段落；版本演进（Android 16→17变化）；常见问题与误区。这些全部缺失",
+        "suggestion": "补充开头动机段、Perfetto中MessageQueue相关track说明、Android 16到17的演进时间线、常见误区（如误以为普通App自动获得DeliQueue）"
+      },
+      {
+        "type": "需确认",
+        "location": "源码锚点 vs 章节标题",
+        "detail": "标题为'Android 17 MessageQueue 重构'，但源码锚点标注为 android-16.0.0_r1。需Task9确认：DeliQueue/CMQ是Android 16引入还是Android 17引入？版本边界检查要求锚点使用 android-17.0.0_r1 或更低，android-16.0.0_r1 在范围内但需要明确版本归属",
+        "suggestion": "Task9核实后更新版本标注，确保标题、applicable_versions、源码锚点三者一致"
+      },
+      {
+        "type": "需确认",
+        "location": "术语 DeliQueue vs ConcurrentMessageQueue/CMQ",
+        "detail": "章节标题用'DeliQueue'，正文用'ConcurrentMessageQueue (CMQ)'，两者关系未说明。DeepResearch资料也混用。需要Task9确认规范术语",
+        "suggestion": "明确：DeliQueue是Android内部代号？CMQ是实现类名？首次出现时定义关系，全文统一使用"
+      },
+      {
+        "type": "需确认",
+        "location": "参考资料中的纠错链",
+        "detail": "正文1.26.2说'L3 review中的基于数组的优先级队列实现错误，实际使用ConcurrentSkipListSet'。但DeepResearch摘要又说'L3 review的纠正本身也有误'。这条纠错链需要Task9定夺最终结论",
+        "suggestion": "Task9核实AOSP源码，确定MessageQueue实际使用的数据结构，消除矛盾"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-27T14:11:16",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-27-14-review.md"
   }
 ]
