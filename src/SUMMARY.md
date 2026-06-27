@@ -322,6 +322,7 @@ tags:
   - [14.21 eBPF 系统架构：bpfloader Rust 化与 BPF 程序组织](part3-tools/ch14-other-tools/21-ebpf-bpfloader-architecture.md)
   - [14.22 HPROF Heap Dump 管线与 Perfetto java\_hprof 数据源](part3-tools/ch14-other-tools/22-hprof-heapdump-javahprof-datasource.md)
   - [14.23 StrictMode 性能检查与开发期诊断](part3-tools/ch14-other-tools/23-strictmode-performance-diagnostics.md)
+  - [14.24 Android Studio Memory Profiler JVMTI 数据通路源码分析](part3-tools/ch14-other-tools/24-as-profiler-jvmti-data-path.md)
 
 - [第 15 章：方法论](part3-tools/ch15-methodology/README.md)
   - [15.1 性能优化的术、道、器](part3-tools/ch15-methodology/01-philosophy.md)
@@ -492,6 +493,7 @@ tags:
   - [23.10 Memory Advice API 与游戏内存压力治理](part5-app/ch23-memory-practice/10-memory-advice-api.md)
   - [23.11 Scudo 分配器与 Native Heap 性能边界](part5-app/ch23-memory-practice/11-scudo-native-heap-allocator.md)
   - [23.12 Jetpack Compose 内存分配与 GC 影响](part5-app/ch23-memory-practice/12-compose-memory-allocation-gc.md)
+  - [23.13 Android 17 onTrimMemory 链路源码解析与公平内存适配实战](part5-app/ch23-memory-practice/13-ontrimmemory-source-fair-adaptation.md)
 
 - [第 24 章：I/O 与网络优化](part5-app/ch24-io-network/README.md)
   - [23.24 Android 17 AI 推理加速与 NeuralNetworks HAL 优化](part5-app/ch23-memory/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md)

@@ -16,34 +16,34 @@ last_task6_at: "2026-05-16T03:16:00+08:00"
 last_task6_review_log: "logs/review/2026-05-16-03-review.md"
 last_task6_audit: "2026-06-07"
 sources:
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons"
-  - type: official
-    path: "https://developer.android.com/topic/performance/vitals/anr"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java"
-  - type: aosp
-    path: "system/core/lmkd/"
-  - type: material
-    path: "DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md"
-  - type: material
-    path: "DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md"
-  - type: open-source
-    path: "github.com/KwaiAppTeam/KOOM/koom-java-leak/README.md"
-  - type: structure
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md"
-  - type: structure
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md"
-  - type: structure
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md"
-  - type: structure
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md"
-  - type: structure
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 50.md"
+ - type: official
+ path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+ - type: official
+ path: "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons"
+ - type: official
+ path: "https://developer.android.com/topic/performance/vitals/anr"
+ - type: aosp
+ path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
+ - type: aosp
+ path: "frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+ - type: aosp
+ path: "system/core/lmkd/"
+ - type: material
+ path: "DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md"
+ - type: material
+ path: "DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md"
+ - type: open-source
+ path: "github.com/KwaiAppTeam/KOOM/koom-java-leak/README.md"
+ - type: structure
+ path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md"
+ - type: structure
+ path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md"
+ - type: structure
+ path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md"
+ - type: structure
+ path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md"
+ - type: structure
+ path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 50.md"
 tags: ["applicationexitinfo", "process-exit", "apm", "legacy-android", "stability"]
 related_chapters: ["9.3", "19.24", "20.8", "23.7", "26.2", "26.9"]
 created_by: "task2a-knowledge-gap"
@@ -64,27 +64,29 @@ p0: 0
 p1: 0
 p2: 3
 task9_review_notes: "2026-05-17 Task9 00: pass-tech-review。Task2B 已修复 P0/P1；本轮仅保留既有 P2 来源路径/JVMTI 权限边界建议。Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。已写入 logs/deep-review/2026-05-17-00-deep-review.md。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 
 # 26.10 Android 11 以下进程退出归因方案
 
-Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出记录。APM SDK 需要在下一次启动时把崩溃文件、ANR 线索、内存压力、上次心跳、进程状态快照放到同一个证据模型里，给出带置信度的退出原因。
+Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出记录。进程退出后，SDK 只能在下次启动时从崩溃文件、ANR 线索、内存压力、上次心跳和进程状态快照里拼出证据，推断上一次为什么退出。
 
-这里的范围限定在 Android 5.0 到 Android 10。Android 11 及以上的系统能力详见 26.9 节；Crash 上报的 envelope 和去重详见 26.2 节；ANR 触发机制详见 9.3 节；低内存治理详见 23.7 节。
+本节覆盖 Android 5.0 到 Android 10。Android 11+ 的系统退出记录见 26.9 节，Crash 上报模型见 26.2 节，ANR 触发机制见 9.3 节，低内存治理见 23.7 节。
 
 ## 要点
 
 ### 🔹 API 30 以下缺少系统退出记录带来的观测缺口
 
-`ApplicationExitInfo` 从 API 30 开始提供，应用可以通过 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 读取历史退出记录，并拿到 `reason`、`timestamp`、`pid`、`processName`、`description` 等字段。系统侧由 `AppExitInfoTracker` 维护近期进程退出信息，相关容器类位于 `frameworks/base/core/java/android/app/ApplicationExitInfo.java`。低版本没有这层系统记录，进程退出时也不会自动给应用留下一条标准化事件。[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo] [已验证: AOSP master, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+`ApplicationExitInfo` 从 API 30 开始提供，应用可以通过 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 读取历史退出记录，并拿到 `reason`、`timestamp`、`pid`、`processName`、`description` 等字段。系统侧由 `AppExitInfoTracker` 维护近期进程退出信息，相关容器类位于 `frameworks/base/core/java/android/app/ApplicationExitInfo.java`。低版本没有这层系统记录，进程退出时也不会自动给应用留下一条标准化事件。
 
 低版本的缺口集中在三类场景：
 
 - 进程被系统或用户直接杀掉：`SIGKILL` 不能被应用捕获，LMKD、任务管理器清理、系统回收都可能表现为“上次没有正常退出”。
-- ANR 之后进程被结束：系统会写 ANR trace，但普通应用不能稳定读取 `/data/anr/`，只能通过下次启动时的本地痕迹、日志平台、Play Vitals 或用户 bugreport 补证据。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+- ANR 之后进程被结束：系统会写 ANR trace，但普通应用不能稳定读取 `/data/anr/`，只能通过下次启动时的本地痕迹、日志平台、Play Vitals 或用户 bugreport 补证据。
 - OOM 前后现场丢失：Java heap OOM、虚拟内存耗尽、线程/fd 逼近上限都可能让写文件、分配对象、启动上报线程失败，进程内补救路径必须尽量短。
 
-参考书的崩溃分析章节把“现场信息”拆成崩溃类型、线程、Logcat、机型、系统、内存、fd、线程数、业务路径等维度；这里沿用这种组织方式，但不复用原文表述。低版本退出归因也要按“证据”拆，而不是只给一个 reason。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md]
+参考书的崩溃分析章节把“现场信息”拆成崩溃类型、线程、Logcat、机型、系统、内存、fd、线程数、业务路径等维度；这里沿用这种组织方式，但不复用原文表述。低版本退出归因也要按“证据”拆，而不是只给一个 reason。
 
 工程上可以先把退出分成四档：
 
@@ -112,9 +114,9 @@ Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出�
 | `dumpsys activity processes` / `meminfo` / `procstats` | 进程状态、adj、内存 | 低 | 多数命令需要 shell、dump 权限或调试环境 | 实验室复现、售后诊断、灰度白名单 |
 | `/proc/self/*` | 当前进程内存、线程、fd、maps | 高 | 只能在进程还活着时采集；字段随内核版本有差异 | 崩溃前快照、周期性轻量采样 |
 
-Native crash 的处理要把“捕获信号”和“可靠写文件”分开。信号到来时堆、锁、线程状态都可能不可用，handler 里应只做最小记录，并尽量交给独立 handler 进程或 fork 出的子进程处理。参考书在 Breakpad 章节强调了文件句柄泄漏、栈溢出、堆破坏、二次崩溃这些失败路径；低版本退出归因可以复用这个风险清单，但实现要以当前 SDK 的 crash 组件为准。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md]
+Native crash 的处理要把“捕获信号”和“可靠写文件”分开。信号到来时堆、锁、线程状态都可能不可用，handler 里应只做最小记录，并尽量交给独立 handler 进程或 fork 出的子进程处理。参考书在 Breakpad 章节强调了文件句柄泄漏、栈溢出、堆破坏、二次崩溃这些失败路径；低版本退出归因可以复用这个风险清单，但实现要以当前 SDK 的 crash 组件为准。
 
-ANR traces 不能按“线上 SDK 可直接读文件”设计。Android 官方文档说明，旧版本会有单个 `/data/anr/traces.txt`，新版本会有多个 `/data/anr/anr_*` 文件；这描述的是设备上的系统 trace 文件形态，不等于普通应用有读取权限。SDK 更稳妥的路径是在主线程长时间无响应时先保存本进程可拿到的栈、队列等待时间、前后台状态和最近业务事件，再把 Play Vitals、用户 bugreport、厂商诊断结果作为后补证据。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+ANR traces 不能按“线上 SDK 可直接读文件”设计。Android 官方文档说明，旧版本会有单个 `/data/anr/traces.txt`，新版本会有多个 `/data/anr/anr_*` 文件；这描述的是设备上的系统 trace 文件形态，不等于普通应用有读取权限。SDK 更稳妥的路径是在主线程长时间无响应时先保存本进程可拿到的栈、队列等待时间、前后台状态和最近业务事件，再把 Play Vitals、用户 bugreport、厂商诊断结果作为后补证据。
 
 LMKD 也不能写成“应用监听到系统杀进程”。LMKD 结束进程时使用的是不可捕获的 kill 路径，应用侧只能在进程还活着时采样 `PSS/RSS/VSS`、Java heap、线程数、fd 数、前后台状态、最近心跳；下次启动发现 marker 未闭合，再结合设备内存桶、上次前后台、OOM 前置预警判断。详见 23.7 节。
 
@@ -122,7 +124,7 @@ LMKD 也不能写成“应用监听到系统杀进程”。LMKD 结束进程时�
 
 ### 🔹 KOOM fork dump 在低版本 OOM 现场保留中的位置
 
-KOOM 的价值在于“进程死掉前保存 Java heap 现场”，不是替代 `ApplicationExitInfo`。它通过轮询 Java heap、线程数、fd、虚拟内存等阈值，在连续超过阈值后触发 HPROF dump；dump 过程使用 `Suspend ART VM -> fork VM process -> Resume ART VM -> Dump Hprof`，把传统 dump 对主进程的长时间冻结压到 20ms 以内。KOOM 官方 README 标注兼容 Android L 及以上，也就是 API 21+。[已验证: 开源项目, github.com/KwaiAppTeam/KOOM/koom-java-leak/README.md]
+KOOM 的价值在于“进程死掉前保存 Java heap 现场”，它不能替代 `ApplicationExitInfo`。它通过轮询 Java heap、线程数、fd、虚拟内存等阈值，在连续超过阈值后触发 HPROF dump；dump 过程使用 `Suspend ART VM -> fork VM process -> Resume ART VM -> Dump Hprof`，把传统 dump 对主进程的长时间冻结压到 20ms 以内。KOOM 官方 README 标注兼容 Android L 及以上，也就是 API 21+。
 
 这套策略解决的是两个低版本问题：
 
@@ -138,7 +140,7 @@ KOOM 的价值在于“进程死掉前保存 Java heap 现场”，不是替代 
 
 在退出归因模型里，KOOM 产物适合放进 `evidence[]`，而不是直接改写 reason。例子：上次 session 未正常关闭，进程重启前 2 分钟内出现 Java heap 阈值连续超限，同时保存了 HPROF 报告，这时可以给 `LOW_MEMORY_SUSPECTED`，置信度为 medium；如果同时有系统侧 `ApplicationExitInfo.REASON_LOW_MEMORY`，才把它升为系统确认。低版本没有系统侧记录，所以不要升到 high。
 
-参考书的内存现场章节把 `/proc/meminfo`、`/proc/self/status`、`/proc/self/maps`、fd、线程数作为崩溃分析素材；KOOM 补上的只是 heap dump 这一块。退出归因要把这些轻量快照和 HPROF 组合起来，避免只看 Java heap 就把所有退出都归成 OOM。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 50.md]
+参考书的内存现场章节把 `/proc/meminfo`、`/proc/self/status`、`/proc/self/maps`、fd、线程数作为崩溃分析素材；KOOM 补上的只是 heap dump 这一块。退出归因要把这些轻量快照和 HPROF 组合起来，避免只看 Java heap 就把所有退出都归成 OOM。
 
 ### 🔹 权限、兼容性与厂商 ROM 差异
 
@@ -154,7 +156,7 @@ KOOM 的价值在于“进程死掉前保存 Java heap 现场”，不是替代 
 | `dumpsys` | 低 | shell/调试权限；输出格式无稳定协议 |
 | ROM 私有诊断接口 | 低到中 | 需要厂商合作；版本升级易断 |
 
-Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于低版本都能无成本拿到所有退出证据。JVMTI 更适合收集对象分配、线程创建、类加载、GC 事件等过程数据；退出归因只把它当作“进程活着时的补充证据”。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 53.md]
+Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于低版本都能无成本拿到所有退出证据。JVMTI 更适合收集对象分配、线程创建、类加载、GC 事件等过程数据；退出归因只把它当作“进程活着时的补充证据”。
 
 厂商 ROM 还会影响三类判断：
 
@@ -205,7 +207,7 @@ Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于�
 
 默认层只保存小对象：session marker、最近一次前后台状态、Java heap/RSS/PSS 摘要、fd/线程数、最近关键业务事件摘要、crash envelope。这个层级要覆盖全量用户，写入路径要短，文件采用原子写策略，避免为了诊断退出原因再引入新的 I/O 问题。
 
-加深层只对灰度人群、问题版本、特定机型或服务端命令开启。可增加主线程 watchdog 栈、本进程关键线程栈、`/proc/self/maps` 摘要、最近 N 秒的 SDK 日志、KOOM dump 触发。参考书的线上疑难问题章节强调全量日志、用户拉取、主动上报和动态诊断的组合；这里采用同样的分层思路，但退出归因不应默认打开高成本采集。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+加深层只对灰度人群、问题版本、特定机型或服务端命令开启。可增加主线程 watchdog 栈、本进程关键线程栈、`/proc/self/maps` 摘要、最近 N 秒的 SDK 日志、KOOM dump 触发。参考书的线上疑难问题章节强调全量日志、用户拉取、主动上报和动态诊断的组合；这里采用同样的分层思路，但退出归因不应默认打开高成本采集。
 
 原始文件层只在强触发下上传：minidump、HPROF、maps、线程栈、用户日志都可能包含文件路径、账号片段、URL、业务参数、设备信息。上传前要做四件事：
 
@@ -220,7 +222,7 @@ Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于�
 
 ### 🔸 低版本 ANR 文件可读性变化记录
 
-官方文档给出的文件形态是：旧版本设备上可能是单个 `/data/anr/traces.txt`，新版本设备上可能是多个 `/data/anr/anr_*` 文件。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+官方文档给出的文件形态是：旧版本设备上可能是单个 `/data/anr/traces.txt`，新版本设备上可能是多个 `/data/anr/anr_*` 文件。
 
 对 SDK 来说，可读性要按访问主体区分：
 
@@ -250,21 +252,21 @@ Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于�
 
 ```sql
 CREATE TABLE process_exit_event (
-  event_id STRING,
-  app_version STRING,
-  api_level INT64,
-  device_fingerprint_hash STRING,
-  session_id STRING,
-  process_name STRING,
-  pid INT64,
-  start_elapsed_ms INT64,
-  detected_elapsed_ms INT64,
-  system_reason STRING,
-  legacy_reason STRING,
-  confidence STRING,
-  foreground_status STRING,
-  collector_version STRING,
-  created_at TIMESTAMP
+ event_id STRING,
+ app_version STRING,
+ api_level INT64,
+ device_fingerprint_hash STRING,
+ session_id STRING,
+ process_name STRING,
+ pid INT64,
+ start_elapsed_ms INT64,
+ detected_elapsed_ms INT64,
+ system_reason STRING,
+ legacy_reason STRING,
+ confidence STRING,
+ foreground_status STRING,
+ collector_version STRING,
+ created_at TIMESTAMP
 );
 ```
 
