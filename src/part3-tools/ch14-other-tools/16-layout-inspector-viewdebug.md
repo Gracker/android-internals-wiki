@@ -3,16 +3,19 @@
 title: Layout Inspector 与 ViewDebug 布局调试
 chapter: 14.16
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_lite_at: 2026-06-28
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-28
 drafted_date: 2026-05-19
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-05-19
-last_verified_against: AOSP android-16.0.0_r1 / Android Developers Layout Inspector docs
+last_verified_against: AOSP android-17.0.0_r1 / Android Developers Layout Inspector docs
 confidence: medium
 sources: 
   - type: official
@@ -123,7 +126,7 @@ Semantics 面板适合补 accessibility 和自动化测试视角。一个 Compos
 
 Layout Inspector 能读到的 View 属性，底层和 `ViewDebug`、View hierarchy dump、运行时反射/编码机制有关。AOSP `ViewDebug.java` 中保留了 `@ExportedProperty` 和 `@CapturedViewProperty` 两套注解。`@ExportedProperty` 可以标记字段或无参非 void 方法，支持 `resolveId`、int/string 映射、flag 映射、`category` 等信息；`@CapturedViewProperty` 用于捕获 View 相关属性，`dumpCapturedView()` 会把捕获到的属性写入 log。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewDebug.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewDebug.java]
 
 这段 AOSP 节选说明 `@ExportedProperty` 能把字段归类，并把 id、flag、枚举值转成人能读的字符串：
 
@@ -159,7 +162,7 @@ public static void dumpCapturedView(String tag, Object view) {
 
 布局问题和绘制问题容易混在一起。控件位置不对通常来自 measure / layout；内容没刷新、局部残影、动画过程中某一块没重绘，往往要看 invalidate 和 DisplayList 录制。AOSP `View.invalidate()` 会进入 `invalidateInternal()`，设置 `PFLAG_DIRTY` / `PFLAG_INVALIDATED`，再把 damage rectangle 传给 parent。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java]
 
 这段代码回答了 `invalidate()` 的第一跳：它不是直接绘制，而是标记脏区并向父节点传播。
 
@@ -192,7 +195,7 @@ void invalidateInternal(int l, int t, int r, int b, boolean invalidateCache,
 
 `ViewRootImpl.scheduleTraversals()` 再把遍历投递到 Choreographer 的 traversal 回调。也就是说，`invalidate()` 只是把下一帧的 draw 工作安排起来；如果问题发生在 measure / layout，单纯调用 `invalidate()` 解决不了。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
 
 ```java
 void scheduleTraversals() {
@@ -209,7 +212,7 @@ void scheduleTraversals() {
 
 硬件加速路径下，View 内容会进入 `RenderNode` 的 DisplayList。`View.updateDisplayListIfDirty()` 会在 drawing cache 无效、RenderNode 没有 DisplayList、或 `mRecreateDisplayList` 为 true 时重新录制；`ThreadedRenderer.updateViewTreeDisplayList()` 会根据 `PFLAG_INVALIDATED` 设置 `mRecreateDisplayList`，再调用 `updateDisplayListIfDirty()`。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ThreadedRenderer.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ThreadedRenderer.java]
 
 ```java
 private void updateViewTreeDisplayList(View view) {
@@ -287,7 +290,7 @@ Layout Inspector 给静态结构证据，Perfetto 给时间证据。两者联用
 - [Debug your Compose UI](https://developer.android.com/develop/ui/compose/tooling/debug)
 - [Optimize layout hierarchies](https://developer.android.com/develop/ui/views/layout/improving-layouts/optimizing-layouts)
 - [UI Automator legacy API](https://developer.android.com/training/testing/other-components/ui-automator-legacy)
-- [AOSP ViewDebug.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewDebug.java)
-- [AOSP View.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/View.java)
-- [AOSP ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ViewRootImpl.java)
-- [AOSP ThreadedRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ThreadedRenderer.java)
+- [AOSP ViewDebug.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewDebug.java)
+- [AOSP View.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)
+- [AOSP ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [AOSP ThreadedRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)
