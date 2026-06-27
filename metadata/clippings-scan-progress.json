@@ -1,11 +1,11 @@
 {
   "current_book": 0,
-  "current_offset": 8,
+  "current_offset": 12,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
       "total_files": 25,
-      "completed_files": 8,
+      "completed_files": 12,
       "files": [
         "Android 应用稳定性剖析与优化 - ANR 治理实践.md",
         "Android 应用稳定性剖析与优化 - ART 堆内存分布与黑科技扩量：拯救 OOM 的利器.md",
@@ -129,8 +129,8 @@
       ]
     }
   ],
-  "last_scan_date": "2026-06-27",
-  "total_knowledge_points": 27,
+  "last_scan_date": "2026-06-28",
+  "total_knowledge_points": 52,
   "total_suggestions": 5,
   "total_gaps": 2,
   "skipped_files": [

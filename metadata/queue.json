@@ -1,23 +1,27 @@
 {
-  "created_date": "2026-06-27",
+  "created_date": "2026-06-28",
   "sections": [
     {
       "path": "src/part1-fundamentals/ch01-architecture/35-android17-Binder-IPC-性能监控与跨进程-Trace-链路.md",
       "title": "Android 17 Binder IPC 性能监控与跨进程 Trace 链路",
       "chapter": "ch01.35",
       "priority": 80,
-      "status": "pending",
+      "status": "completed-duplicate",
       "gap_score": 19,
-      "gap_source": "daily-info"
+      "gap_source": "daily-info",
+      "completed_at": "2026-06-28T07:05:00+08:00",
+      "completed_note": "Duplicate of existing section, cleaned up by task2a gap-mining"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/26-android17-JobScheduler-系统级五维节流架构.md",
       "title": "Android 17 JobScheduler 系统级五维节流架构",
       "chapter": "ch05.26",
       "priority": 80,
-      "status": "pending",
+      "status": "completed-duplicate",
       "gap_score": 19,
-      "gap_source": "daily-info"
+      "gap_source": "daily-info",
+      "completed_at": "2026-06-28T07:05:00+08:00",
+      "completed_note": "Duplicate of existing section, cleaned up by task2a gap-mining"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/17-android17-MemoryLimiter-与内存监控影响.md",
@@ -35,45 +39,55 @@
       "title": "Android 17 GPU Vulkan 异步编译管线管理器调度策略",
       "chapter": "ch22.29",
       "priority": 80,
-      "status": "pending",
+      "status": "completed-duplicate",
       "gap_score": 19,
-      "gap_source": "daily-info"
+      "gap_source": "daily-info",
+      "completed_at": "2026-06-28T07:05:00+08:00",
+      "completed_note": "Duplicate of existing section, cleaned up by task2a gap-mining"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/8-SharedPreferencesImpl-Android-16-17-变更分析与适配.md",
       "title": "SharedPreferencesImpl Android 16-17 变更分析与适配",
       "chapter": "ch06.8",
       "priority": 80,
-      "status": "pending",
+      "status": "completed-duplicate",
       "gap_score": 18,
-      "gap_source": "research-gaps"
+      "gap_source": "research-gaps",
+      "completed_at": "2026-06-28T07:05:00+08:00",
+      "completed_note": "Duplicate of existing section, cleaned up by task2a gap-mining"
     },
     {
       "path": "src/part5-app/ch23-memory/14-AppFlow-与-LMKD-v2-兼容性分析.md",
       "title": "AppFlow 与 LMKD v2 兼容性分析",
       "chapter": "ch23.14",
       "priority": 80,
-      "status": "pending",
+      "status": "completed-duplicate",
       "gap_score": 18,
-      "gap_source": "research-gaps"
+      "gap_source": "research-gaps",
+      "completed_at": "2026-06-28T07:05:00+08:00",
+      "completed_note": "Duplicate of existing section, cleaned up by task2a gap-mining"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/31-android17-系统启动优化新特性.md",
       "title": "Android 17 系统启动优化新特性",
       "chapter": "ch02.31",
       "priority": 80,
-      "status": "pending",
+      "status": "completed-duplicate",
       "gap_score": 18,
-      "gap_source": "research-gaps"
+      "gap_source": "research-gaps",
+      "completed_at": "2026-06-28T07:05:00+08:00",
+      "completed_note": "Duplicate of existing section, cleaned up by task2a gap-mining"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/36-Binder-IPC-异步机制深度分析.md",
       "title": "Binder IPC 异步机制深度分析",
       "chapter": "ch01.36",
       "priority": 80,
-      "status": "pending",
+      "status": "completed-duplicate",
       "gap_score": 18,
-      "gap_source": "research-gaps"
+      "gap_source": "research-gaps",
+      "completed_at": "2026-06-28T07:05:00+08:00",
+      "completed_note": "Duplicate of existing section, cleaned up by task2a gap-mining"
     },
     {
       "section": "1.25",
@@ -120,6 +134,15 @@
       "status": "completed",
       "completed_at": "2026-06-28T00:50:00+08:00",
       "completed_by": "task2b-main-cleanup"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/39-art-method-tracing-instrumentation-performance.md",
+      "title": "ART 方法追踪与插桩性能边界",
+      "chapter": "ch01.39",
+      "priority": 80,
+      "status": "pending",
+      "gap_score": 16,
+      "gap_source": "研究素材"
     }
   ],
   "queue": [
