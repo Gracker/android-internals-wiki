@@ -10430,13 +10430,13 @@
     "1.31": "ready-for-review"
   },
   "task2a_last_processed": {
-    "section": "1.34",
-    "title": "OomAdjuster 与进程优先级计算",
-    "file": "src/part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md",
+    "section": "4.16",
+    "title": "ART TLAB 与对象分配性能",
+    "file": "src/part1-fundamentals/ch04-memory/16-art-tlab-object-allocation-performance.md",
     "result": "ready-for-review",
-    "processed_at": "2026-06-27T20:10:32.812767+08:00",
+    "processed_at": "2026-06-27T21:10:00+08:00",
     "status": "ready-for-review",
-    "note": "7 锚点全部覆盖，3 扩展全部覆盖，素材来自 AOSP android-17.0.0_r1 源码分析",
+    "note": "7 锚点全部覆盖，2 扩展全部覆盖",
     "pipeline_stage": "task6_pending"
   },
   "task2a_last_gap_mining": {
@@ -10459,7 +10459,7 @@
     "7.9",
     "18.10"
   ],
-  "last_task2a_processed_at": "2026-06-27T20:10:32.812767+08:00",
+  "last_task2a_processed_at": "2026-06-27T21:10:00+08:00",
   "last_task9_files": [
     "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
@@ -15176,5 +15176,22 @@
     "task2b_state": "pending",
     "note": "7 锚点全部覆盖，3 扩展全部覆盖",
     "queue_priority": 80
+  },
+  "section_4_16": {
+    "section": "4.16",
+    "title": "ART TLAB 与对象分配性能",
+    "file": "src/part1-fundamentals/ch04-memory/16-art-tlab-object-allocation-performance.md",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "created_by": "task2a-knowledge-gap",
+    "created_date": "2026-06-27",
+    "drafted_date": "2026-06-27",
+    "drafted_by": "openclaw-task2a",
+    "last_task2a_at": "2026-06-27T21:10:00+08:00",
+    "task2a_result": "ready-for-review",
+    "task6_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "pending",
+    "note": "7 锚点全部覆盖，2 扩展全部覆盖"
   }
 }
