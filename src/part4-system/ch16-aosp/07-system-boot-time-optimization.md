@@ -29,6 +29,8 @@ related_chapters: ["1.2", "8.2", "13.2", "16.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "官方文档/AOSP结构"
+last_research_at: "2026-06-28"
+last_research_source: "DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md"
 ---
 
 # 16.7 Android 系统启动耗时优化与 bootanalyze
@@ -320,3 +322,156 @@ Android 17 启动优化技术的综合性能影响：
 | 后台广播优化 | 广播延迟 +15% | 内存 -5% | 跳过检查 +2% | 后台密集场景 |
 
 **验证结论**：Android 17 的启动优化技术整体提升了系统的模块化程度和可观测性，但在技术选型上仍保持保守策略，bootanalyze 工具缺乏现代化升级。
+
+
+
+<!-- AIW-源码调研-2026-06-28 -->
+
+## Android 17 启动优化源码级补强（2026-06-28 增量）
+
+本节基于 `android-17.0.0_r1` 标签下 AOSP 主线源码的逐行验证，对上节报告中的几处**未经验证**或**路径错误**内容进行补强。所有路径都已通过 `git ls-tree` 在 `https://android.googlesource.com/platform/system/{core,extras}/+/refs/tags/android-17.0.0_r1/` 上验证。
+
+### bootanalyze 工具链的真实源码路径
+
+**daily-topics.json id=35 给出的 `system/core/bootstat/bootanalyze.cpp` 在 android-17.0.0_r1 中并不存在**。`system/core/bootstat/` 目录下只有 `boot_event_record_store.{cpp,h}`、`bootstat.{cpp,h}`、`bootstat.rc`、`boot_event_record_store_test.cpp` 等文件，**没有任何 bootanalyze 源码**。
+
+bootanalyze 工具的真实位置是：
+
+| 文件 | 行数 | 角色 |
+|---|---|---|
+| `system/extras/boottime_tools/bootanalyze/bootanalyze.py` | 1382 | 主脚本（Python 3） |
+| `system/extras/boottime_tools/bootanalyze/bootanalyze.sh` | ~80 | bash 包装 |
+| `system/extras/boottime_tools/bootanalyze/config.yaml` | ~90 | 事件/时长正则 |
+| `system/extras/boottime_tools/bootanalyze/README.md` | ~30 | **文档漂移：仍写 "Python 2.7"，但脚本 shebang 是 `#!/usr/bin/python3`** |
+
+**已知文档漂移**：bootanalyze 的 README（android-17.0.0_r1）写"This only works on Linux with Python 2.7, PyYAML and pybootchartgui"，但 `bootanalyze.py` 第 1 行已经是 `#!/usr/bin/python3`。README 描述落后于代码至少一个主版本（Android 15+ 已经迁移）。
+
+### bootanalyze.py 的三类事件规则
+
+```python
+# bootanalyze.py line 117-127（android-17.0.0_r1）
+search_events_pattern = {
+    key: re.compile(pattern)
+    for key, pattern in cfg['events'].items()
+}
+timing_events_pattern = {
+    key: re.compile(pattern)
+    for key, pattern in cfg['timings'].items()
+}
+shutdown_events_pattern = {
+    key: re.compile(pattern)
+    for key, pattern in cfg['shutdown_events'].items()
+}
+```
+
+`cfg` 来自 config.yaml 的四个字段：`events`（单点）、`timings`（带命名捕获组 `(?P<name>...)` 的阶段耗时）、`shutdown_events`（关机事件）、`time_correction_key`（时钟漂移修正 key）。`timings` 与 `events` 的关键区别是**正则必须用 `(?P<name>...)` 抽取子阶段名**，例如：
+
+```yaml
+timings:
+  system_server: SystemServerTiming(Async)?\s*:\s*(?P<name>\S+) took to complete:\s(?P<time>[0-9]+)ms
+```
+
+这条规则匹配 `SystemServerTiming: StartActivityManager took to complete: 234ms`，自动抽取 `name=StartActivityManager`、`time=234`。
+
+### config.yaml 中的 APEX 启动追踪
+
+android-17.0.0_r1 的 `config.yaml` 包含 3 个 APEX 事件：
+
+```yaml
+events:
+  apexd_activated: apexd.*Marking APEXd as activated
+  apexd_bootstrapping_done: apexd.*Bootstrapping done
+  apexd_ready: apexd.*Marking APEXd as ready
+```
+
+**关键缺口**：config.yaml **没有**双命名空间挂载（`/apex` 与 `/bootstrap-apex`）的独立追踪事件。昨日报告提到的"APEX 双命名空间挂载优化"在 bootanalyze 工具链层面**没有现成观测点**，需要从 `apexd` 内部日志或自己加正则来抓。
+
+### bootstat.cpp 的完整 boot event 清单
+
+**源码位置**：`system/core/bootstat/bootstat.cpp` line 95-175（android-17.0.0_r1）
+
+`kBootEventToAtomInfo` 字典共登记 **25+ 个** boot event，分 4 类：
+
+| 类别 | 数量 | 代表事件 |
+|---|---|---|
+| ELAPSED_TIME | 10 | `boot_complete`、`boot_complete_no_encryption`、`factory_reset_boot_complete`、`ota_boot_complete`、`ro.boottime.event.zygote-start` 等 |
+| DURATION | 10 | `boottime.bootloader.1BLE/.1BLL/.KL/.2BLE/.2BLL/.SW/.splash/.total`（8 段 bootloader）、`absolute_boot_time`、`boottime.init.cold_boot_wait` |
+| UTC_TIME | 3 | `factory_reset`、`factory_reset_current_time`、`factory_reset_record_value` |
+| ERROR_CODE | 1 | `factory_reset_current_time_failure` |
+
+`--record_boot_complete` 命令会触发 `RecordBootComplete()`（line 1595），除写 `boot_complete` / `ota_boot_complete` 外，还会调用 `RecordInitBootTimeProp()` 14 次，自动捕获 init rc 阶段（early-init/init/late-init/early-fs/fs/post-fs/late-fs/post-fs-data/zygote-start/early-boot/boot 等）。
+
+**`boottime.bootloader.*` 8 段是 Pixel 等 OEM 必须填充的契约**：`GetBootLoaderTimings()` 从 `ro.boot.bootloader` property 读取 bootloader 端填入的 `bootloader.duration.<key>=<value>` 字符串。OEM 不填，bootstat 拿不到数据。
+
+### Zygote 延迟预加载的真实源码位置
+
+**`ZygoteInit.java` line 178-183（android-17.0.0_r1）**：
+
+```java
+static void lazyPreload() {
+    Preconditions.checkState(!sPreloadComplete);
+    Log.i(TAG, "Lazily preloading resources.");
+    preload(new TimingsTraceLog("ZygoteInitTiming_lazy", Trace.TRACE_TAG_DALVIK));
+}
+```
+
+**`ZygoteInit.java` line 854-898（命令行解析 + 启动期决策）**：
+
+```java
+boolean enableLazyPreload = false;
+for (int i = 1; i < argv.length; i++) {
+    if ("start-system-server".equals(argv[i])) {
+        startSystemServer = true;
+    } else if ("--enable-lazy-preload".equals(argv[i])) {
+        enableLazyPreload = true;
+    }
+    ...
+}
+// ...
+if (!enableLazyPreload) {
+    bootTimingsTraceLog.traceBegin("ZygotePreload");
+    EventLog.writeEvent(LOG_BOOT_PROGRESS_PRELOAD_START, SystemClock.uptimeMillis());
+    preload(bootTimingsTraceLog);
+    EventLog.writeEvent(LOG_BOOT_PROGRESS_PRELOAD_END, SystemClock.uptimeMillis());
+    bootTimingsTraceLog.traceEnd(); // ZygotePreload
+}
+```
+
+**关键澄清**：
+- `lazyPreload()` 仍然调用完整的 `preload()`，**不是把 9 个步骤拆开分阶段执行**，只是把"启动期 preload"延后到"首次 fork 前"。
+- Perfetto 抓 trace 时可通过 `ZygoteInitTiming_lazy` 这个独立 tag 区分正常 preload 与 lazy preload，便于回归对比。
+- `--enable-lazy-preload` 是 AOSP 主线 Zygote 命令行参数，由 init.rc 在启动 Zygote 时传入。**不是厂商私有扩展**。
+- `preload()` 第 154-156 行新增 `HttpEngine.preload()` 步骤（25Q2 ramp 的 flag `preloadHttpengineInZygote`），相关 bug 编号 b/206676167。这是 Android 17 的 preload 步骤增量。
+
+### SystemServer 4MB Perfetto 缓冲区的具体实现
+
+**`SystemServer.java` line 862-863（android-17.0.0_r1）**：
+
+```java
+// Explicitly initialize a 4 MB shmem buffer for Perfetto producers (b/382369925)
+android.tracing.perfetto.Producer.init(new InitArguments(
+        InitArguments.PERFETTO_BACKEND_SYSTEM, 4 * 1024));
+```
+
+- `4 * 1024` 即 4096 KB = 4 MiB，参数 `PERFETTO_BACKEND_SYSTEM` 表示使用 system backend。
+- bug 编号 b/382369925 是 Google 内部跟踪，公开树只能从这条注释推断原因（system_server 启动早期 Perfetto buffer 不足）。
+- 7 个 boot phase 触发点：`PHASE_WAIT_FOR_DEFAULT_DISPLAY` (line 1355)、`PHASE_WAIT_FOR_SENSOR_SERVICE` (line 1755)、`PHASE_LOCK_SETTINGS_READY` (line 3162)、`PHASE_SYSTEM_SERVICES_READY` (line 3205)、`PHASE_DEVICE_SPECIFIC_SERVICES_READY` (line 3318)、`PHASE_ACTIVITY_MANAGER_READY` (line 3397)、`PHASE_THIRD_PARTY_APPS_CAN_START` (line 3535)。
+
+### 上节报告需要修正的几处
+
+1. **bootanalyze 工具不是 "Python 2.7 + PyYAML + pybootchartgui"**：README 文档漂移，实际 `bootanalyze.py` 已是 Python 3；pybootchartgui 仅在 `bootanalyze.sh` 调用 `pybootchartgui` 时才需要。
+2. **"APEX 双命名空间挂载优化"在 bootanalyze config.yaml 中没有追踪事件**，意味着这条机制在 AOSP 主线可观测性工具中**没有现成观测点**，需要从 apexd 内部日志或自定义正则抓取。
+3. **bootanalyze.py 不仅分析 boot_complete**：原生支持 `_LAUNCHER_START`、`_LAUNCHER_SHOWN`、`_LOGIN_END`、`_CARWATCHDOG_BOOT_COMPLETE` 等多个停止事件，**也支持 `--fs_check`、`--prefetch_metrics`、`--trace_login` 等可选行为**。
+4. **HttpEngine.preload() 是 Android 17 新增的 preload 步骤**（25Q2 ramp），相关 aconfig flag 是 `preloadHttpengineInZygote`（在 `android.net.http.Flags` 中）。上游 Zygote 用 `try/catch NoSuchMethodError` 兼容老版本 Tethering 模块。
+
+## 信息源
+
+**一手（已读关键段）**：
+- `android.googlesource.com/.../system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/bootanalyze.py`（line 1-700）
+- `android.googlesource.com/.../system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/config.yaml`
+- `android.googlesource.com/.../system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/bootanalyze.sh`
+- `android.googlesource.com/.../system/core/+/refs/tags/android-17.0.0_r1/bootstat/bootstat.cpp`（line 90-1648）
+- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java`（line 100-925）
+- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java`（line 855-880）
+
+**关联报告**：`DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md`（今日增量报告）

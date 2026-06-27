@@ -92,3 +92,10 @@ tags: [architecture, system]
 - 摘要：告别 Modifier 地狱，Compose 样式系统要变天了 又写了一坨 InteractionS... 本文详细介绍了告别 Modifier 地狱，Compose 样式系统要变天了的核心技术要点和实践经验，包含作者深度分析和技术实践。
 - 入库时间：2026-06-25
 - 评分：12/20
+
+### Android17 为什么重写 MessageQueue
+- 来源：2026-03-03 00:00
+- 类型：技术文章
+- 摘要：https://juejin.cn/post/7612812060795093002
+- 入库时间：2026-06-28
+- 评分：14/20

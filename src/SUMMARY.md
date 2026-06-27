@@ -53,6 +53,8 @@ tags:
   - [1.34 OomAdjuster 与进程优先级计算](part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md)
   - [1.35 ART 去优化（Deoptimization）触发机制与性能影响](part1-fundamentals/ch01-architecture/35-art-deoptimization-performance.md)
   - [1.36 Android Java 类加载链路与启动期类加载性能](part1-fundamentals/ch01-architecture/36-java-class-loading-performance.md)
+  - [1.37 Android logd 日志系统性能与开销](part1-fundamentals/ch01-architecture/37-logd-logging-system-performance.md)
+  - [1.38 Binder 线程池管理与 IPC 线程饥饿性能边界](part1-fundamentals/ch01-architecture/38-binder-thread-pool-starvation-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -88,6 +90,7 @@ tags:
   - [2.29 TaskSnapshot 系统架构与 Recents 渲染性能](part1-fundamentals/ch02-rendering/29-tasksnapshot-recents-rendering.md)
     - [2.14 图形 API 演进与选择策略](part1-fundamentals/ch02-rendering/2.15-2.14 图形 API 演进与选择策略.md)
 - [2.30 DisplayManagerService Display Lifecycle 与拓扑性能](part1-fundamentals/ch02-rendering/30-displaymanager-service-lifecycle.md)
+  - [2.31 HDR 显示管线与色彩管理性能](part1-fundamentals/ch02-rendering/31-hdr-color-management-pipeline-performance.md)
 
 - [第 3 章：输入系统](part1-fundamentals/ch03-input/README.md)
   - [3.1 Input 事件分发全流程](part1-fundamentals/ch03-input/01-input-dispatch.md)
