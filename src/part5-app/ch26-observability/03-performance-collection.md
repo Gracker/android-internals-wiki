@@ -11,13 +11,15 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified_against: "Android Developers docs + Firebase Performance Monitoring docs + Clippings structure references + AOSP source code verification"
 task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。回 Task6/Task9 复审。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 4.2/5"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 
 # 性能指标采集与上报
 
 ## 概览
 
-Android 17 中的性能监控体系已从单一工具演进为系统级的指标采集与上报框架。StatsD 成为统一入口，通过三层架构（Java 层服务 → JNI 桥接 → Native daemon）实现跨进程性能事件聚合。本文将详细讲解从底层 Debug API 到上层 Battery Historian 的完整指标链路，以及 Android 17 电池感知策略和内存监控新特性。
+Android 的性能监控体系在 14 到 17 这几个版本里逐步收敛：StatsD 成为统一的事件入口，从 App 侧的 `Debug` API、`StatsManager` 客户端，到底层 statsd daemon 的聚合与持久化，形成了一条完整的指标链路。Android 17 在此基础上加入了电池感知的自动降采样和更细的内存分类，本文按从采集到上报的顺序梳理这条链路。
 
 ---
 
@@ -43,7 +45,7 @@ boolean isSamplingEnabled = config.getBoolean("perf_metrics_enabled", true);
 上层 App 通过 `StatsManager` 客户端 API 提交性能事件，`StatsManagerService` 校验调用方权限后写入共享内存缓冲区。同时管理 `DeviceConfig.NAMESPACE_STATSD_JAVA` 命名空间下的动态配置，控制各模块的采集开关与采样率。
 
 **StatsCompanionService（JNI 桥接）**
-整个链路的中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 消费事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换：
+整个链路的中转层。上层 `StatsManagerService` 通过 Binder 调用将事件写入 `statsd_writer` 的 Unix domain socket（位于 `/dev/socket/statsdw`），`StatsCompanionService` 从该 socket 读取事件流，经 `libstats_jni.so` 完成 Java 对象到 C++ `StatsEvent` 结构体的转换：
 
 ```cpp
 // JNI 桥接示例 - Java 对象到 C++ 序列化
@@ -68,7 +70,7 @@ void convertToStatsEvent(JNIEnv* env, jobject javaEvent, StatsEvent* statsEvent)
 
 ### 1.2 数据流方向与反向查询
 
-三层之间的数据流方向：
+数据流方向（正向）：
 ```
 App → StatsManagerService (Binder) → StatsCompanionService (Unix socket + JNI) → statsd daemon (本地 socket)
 ```
@@ -239,34 +241,19 @@ enum CompactProfile {
 
 冻结态下进程进入 D-state，`/proc/<pid>/status` 仍可读取但 RSS 不再变化。冻结事件写入 Perfetto `android.track_event` 数据源，这是 Android 17 性能监控的**首选数据源**。
 
-<!-- AIW-源码调研-2026-06-27 -->
-#### MemoryLimiter：memcg memory.high / memory.swap.high 内核级节流子系统（Android 17 默认架构）
+#### MemoryLimiter：memcg 内核级节流子系统（Android 17 默认架构）
 
-除 `CachedAppOptimizer`（Compaction + Freezer）之外，Android 17 在 system_server 引入了**第三道后台内存防线** —— `MemoryLimiter`，通过直接在内核 memcg v2 层写 `memory.high` / `memory.swap.high` 实现硬性节流。该子系统对监控的影响远超 onTrimMemory 回调，必须在 `Debug.MemoryInfo` 采集通路之外额外关注。
+除 `CachedAppOptimizer`（Compaction + Freezer）之外，Android 17 在 system_server 引入了第三道后台内存防线——`MemoryLimiter`。它直接在内核 memcg v2 层写 `memory.high` / `memory.swap.high` 控制阈值，对 `Debug.MemoryInfo` 采集的影响远超 `onTrimMemory` 回调。
 
-**关键源码位置（android-17.0.0_r1 tag）**：
+**对监控采集的三类影响：**
 
-- `frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java:776` —— `mMemoryLimiter` 字段定义
-- `ActivityManagerService.java:9699` —— `mMemoryLimiter.onSystemReady()` 调用点
-- `ProcessRecord.java:416/649/699/734/1625` —— 每个进程绑定独立 `Limiter`，proc 状态变化触发限制重算
-- `MemoryLimiter.java:84-92` —— 三类限制：`LIMIT_TYPE_MEMORY / LIMIT_TYPE_SWAP / LIMIT_TYPE_ANON_SWAP`
+1. **PSS 抖动加剧**：memcg `memory.high` 触发后内核主动回收 anon 页面，`getProcessMemoryInfo()` 可能在毫秒级观测到 PSS 突降，1Hz 采样容易误判为业务侧主动释放。
+2. **30 秒 kill 窗口**：`LIMIT_TYPE_ANON_SWAP`（anon + swap 联合超限）触发后，进程进入 30 秒倒计时（`KILL_DELAY_MS = 30*1000`），超时后系统 kill 该进程。APM SDK 需要在这个窗口内完成 `ApplicationExitInfo.REASON_LOW_MEMORY` 归因并 flush 数据。
+3. **PSS 对 cgroup swap 不可见**：PSS 不含 `mDmabufMapped`（cgroup `memory.current` 包含），可能出现业务侧 PSS 显示未超限、但内核已在回收 anon 的情况。
 
-**对 `Debug.MemoryInfo` 采集的三大影响**：
+**工程约束：** statsd 通道每天最多上报 28 条 `MEMORY_LIMITER_OVER_LIMIT_EVENT` 事件（token bucket 限流），不能替代高频告警。被 `MemoryLimiter` 豁免的进程（白名单）永远不会参与限制，其 PSS 数据无法用于判断"内存限制是否生效"。Native 端 `mMemHighMargin = 100 MB` 提供了一个灰色地带——cgroup memory.high 硬限制比 memHigh 多 100MB，监控面板上看到的 PSS 和实际触发线之间存在这段缓冲。
 
-1. **PSS 抖动加剧**：memcg `memory.high` 触发后内核主动回收 anon，`getProcessMemoryInfo()` 在毫秒级观测到 PSS 突降，1Hz 采样可能误报为业务侧主动释放
-2. **30 秒 kill 窗口**：`LIMIT_TYPE_ANON_SWAP`（anon + swap 联合超限）触发后，进程被强制 `LIMIT_IS_DISABLED`（行 802-806），30 秒延迟后 `MESSAGE_KILL` 投递（行 826-832，`KILL_DELAY_MS = 30*1000`）。APM SDK 必须在该窗口内完成 `ApplicationExitInfo.REASON_LOW_MEMORY`（reason 9）归因与数据 flush
-3. **PSS 不可见 cgroup swap**：PSS 不含 `mDmabufMapped`（cgroup `memory.current` 包含），业务侧 PSS 显示"未超限"时内核可能已在回收 anon
-
-**statsd 节流**：每天最多 28 条 `MEMORY_LIMITER_OVER_LIMIT_EVENT` 事件（`MemoryLimiter.java:785`，token bucket `MAX_TOKENS=4 / TOKEN_PERIOD_MS=1h`）。业务侧不能依赖 statsd 通路做高频告警，仍需自建 `onTrimMemory` hook 或 `dumpsys meminfo --proto` 轮询。
-
-**豁免机制**：`MemoryLimiter.java:1085-1111` 的 `updateIsReady()` 判定 `isExempt(pkg)` 时返回 false，被豁免的进程永远不参与限制——白名单内系统的 PSS 数据无法反推"内存限制是否实际生效"。
-
-**Native 端关键常量**（`com_android_server_am_MemoryLimiter.cpp`）：
-- `mMemHighMargin = 100 MB`（行 145）：cgroup memory.high = memHigh + 100MB，监控面板的"灰色地带"
-- `mMemHighHysteresis = 10 MB`（行 152）：离开 red zone（hot→cold）的滞回带宽
-- `RED_POLL_PERIOD_MS = 30s`（行 54）：red zone 进程轮询周期
-
-**完整调用链**：`ProcessRecord.setPid → maybeStart → native MESSAGE_START → epoll 注册 cgroup memory.events → setProcState 触发 → onProcStateUpdated → mController.getStateLimit → setLimit → native 写 cgroup 文件 → memory.high 触发 → epoll 唤醒 → onLimitExceeded → statsd + (ANON_SWAP 时) ProfilingServiceHelper + 30s 后 kill`。
+[已验证: AOSP android-17.0.0_r1 MemoryLimiter.java 行 84-92/776-832/1085-1180；com_android_server_am_MemoryLimiter.cpp 行 49-152；ProcessRecord.java 行 416/649/699/734/1625；ActivityManagerService.java 行 776/9699。来源：daily-topics.json id=29，调研产物 DeepResearch/2026-06-27-android17-memorylimiter-policy-monitor-impact.md]
 
 [已验证: AOSP android-17.0.0_r1 MemoryLimiter.java 行 84-92/776-832/1085-1180；com_android_server_am_MemoryLimiter.cpp 行 49-152；ProcessRecord.java 行 416/649/699/734/1625；ActivityManagerService.java 行 776/9699。来源：daily-topics.json id=29，调研产物 DeepResearch/2026-06-27-android17-memorylimiter-policy-monitor-impact.md]
 
@@ -354,32 +341,11 @@ Android 17 将电池模式与性能采集策略整合到了一起：StatsD 在 d
 | Android 16 | 36 | StatsPullAtomService 扩展支持 | 支持按需拉取，实时诊断能力出现 |
 | Android 17 | 37 | PERFORMANCE_METRICS_ATOM 原生支持 | 性能采集频率自动跟随电池模式 |
 
-### 4.2 三层架构数据流
+### 4.2 数据流与版本差异
 
-**StatsManagerService（Java 层）**
-```java
-// StatsManagerService 事件提交示例
-public class StatsManagerService {
-    public void logEvent(String eventName, Map<String, Object> data) {
-        // 权限校验
-        if (checkCallingPermission(READ_PRECISE_STATS) != PERMISSION_GRANTED) {
-            throw new SecurityException("Missing READ_PRECISE_STATS permission");
-        }
-        
-        // 事件序列化
-        StatsEvent event = createStatsEvent(eventName, data);
-        
-        // 写入共享内存
-        writeToSharedMemory(event);
-    }
-}
-```
+StatsD 三层架构已在 1.1 节详述。对 Battery Historian 的使用者来说，Android 14→17 的核心变化在于电池状态如何影响性能指标采集，而不在于架构本身是否改变。
 
-**StatsCompanionService（JNI 桥接）**
-StatsCompanionService 从 `/dev/socket/statsdw` 读取 Java 事件流，通过 `libstats_jni.so` 转换为 C++ `StatsEvent` 结构体，再通过 `libstatssocket` 推入 `statsd` 的本地 socket。
-
-**Native statsd daemon**
-以 `statsd` 进程运行，接收 JNI 层推入的事件后按 `Atom` 类型聚合。Android 17 新增了 `AtomId.PERFORMANCE_METRICS_ATOM`（ID 10244），专门承载四类性能指标。
+如果从 Android 14/15 升级到 17，最大的行为差异在于：旧版本需要 App 自己判断电量状态再决定采样率，而 Android 17 的 StatsD 框架直接在 daemon 层做了电池感知降采样，App 侧只需声明指标优先级，框架负责协同。
 
 ### 4.3 Battery Historian 版本演进
 
@@ -398,10 +364,7 @@ StatsD 在 Android 17 中扩展了网络性能指标的聚合能力，覆盖 URL
 归一化:   /v2/user/{id}/order/{id}
 ```
 
-归一化后的优势：
-- 同一 API 端点的不同请求聚合到同一 pattern 下
-- 服务端可以动态下发需要跟踪的 API 端点集合
-- 避免未知端点污染聚合结果
+归一化后，同一端点的不同请求自动聚合到一个 pattern 下，服务端可以动态下发需要跟踪的端点列表，未匹配的请求收拢到 `/other` 防止噪声数据干扰聚合结果。
 
 实现机制：
 ```java
@@ -712,10 +675,7 @@ public class StatsUploadManager {
 - 用户操作路径（完整的 Activity 跳转序列）
 - 设备信息快照（传感器状态、存储余量）
 
-**业务案例**：
-- P0：电商大促期间，启动超时每增加 1s，次日留存下降 2-4%（Google 官方公开数据）
-- P1：视频类 App 在 Balanced 模式下对播放卡顿做 70% 采样，足以捕获 > 99% 的卡顿事件
-- P2：社交类 App 的用户操作路径采集，在全量时每天产生约 50MB 事件数据
+以实际场景为例：P0 级启动超时每增加 1s，次日留存可能下降 2-4%（Google 官方公开数据），所以 Crash、ANR、启动超时应当始终全量采集。P1 级帧率和网络错误率在 Balanced 模式 70% 采样率下足以捕获绝大多数异常事件。P2 级用户操作路径全量采集时每天约产生 50MB 事件数据，适合按需开启。
 
 新版本上线或大促活动期间，可以通过 `DeviceConfig` 临时提升 P1 指标到 100% 采样率 48-72 小时，捕获偶发性能回归后恢复默认值。
 

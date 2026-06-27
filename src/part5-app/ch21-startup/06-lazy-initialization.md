@@ -41,6 +41,8 @@ task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T01:43:00+08:00"
 last_task9_audit: "2026-06-07"
 task2b_result: skipped-no-rework-needed
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 
 # 延迟初始化与按需加载
@@ -275,7 +277,7 @@ fallback: skip | retry | degrade_page
 metrics: [cost_ms, success, trigger_source]
 ```
 
-这份声明用于在出问题时回放决策：任务为什么没有在启动时执行，为什么在这个入口触发，失败后走了哪条降级路径。
+这些字段的用途是在出问题时回放决策：任务为什么没在启动时执行、为什么在这个入口触发、失败后走了什么降级路径。
 
 ### 验证方式
 
