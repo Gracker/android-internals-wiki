@@ -2787,7 +2787,7 @@
       "summary": "删除不可复查实测数据；保守改写 Android 12-17 平台/provider 版本边界；替换非公开 API 风险示例。"
     }
   ],
-  "last_task2b_at": "2026-06-24T06:51:46+08:00",
+  "last_task2b_at": "2026-06-27T14:54:32.371809+08:00",
   "last_task2b_sections": [
     "14.8"
   ],
@@ -11803,6 +11803,16 @@
       "returned_to": "task6_pending",
       "source_log": "logs/deep-review/2026-05-14-13-deep-review.md",
       "log": "logs/rework/2026-06-03-04-task2b-main.md"
+    },
+    {
+      "timestamp": "2026-06-27T14:54:32.371809+08:00",
+      "lane": "main",
+      "section": "1.26",
+      "file": "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md",
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 5,
+      "result": "fixed",
+      "pipeline_to": "task6_pending"
     }
   ],
   "section_18_23": {
@@ -13998,9 +14008,9 @@
     "13.2",
     "8.6"
   ],
-  "last_task2b_section": "14.13",
-  "last_task2b_file": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
-  "last_task2b_result": "fixed-returned-to-task6",
+  "last_task2b_section": "1.26",
+  "last_task2b_file": "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md",
+  "last_task2b_result": "fixed",
   "section_6_1": {
     "section": "6.1",
     "title": "Android 存储架构",
