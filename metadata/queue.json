@@ -16,5 +16,58 @@
       "status": "pending",
       "added": "2026-06-27"
     }
+  ],
+  "queue": [
+    {
+      "section": "1.25",
+      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "priority": 90,
+      "reason": "[review回炉] 正文以源码注释堆叠为主缺乏叙述串联；大纲描述偏AI套话；扩展锚点无内容；缺少开头引入和Perfetto表现章节",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文结构",
+          "detail": "正文以源码验证注释为主，缺乏工程师视角的叙述串联。writing-guide §三.1 要求\"叙述为主，列表为辅\"，当前内容风格为\"源码索引+行号注释\"，不是工程师讲一件事的连贯叙述",
+          "suggestion": "在源码验证结论的基础上，增加叙述性段落串联：每个机制先讲\"为什么存在\"→\"怎么工作\"→\"在 trace 中怎么观察\"。参考 writing-guide 类型A结构模板"
+        },
+        {
+          "type": "需补充素材",
+          "location": "章节开头",
+          "detail": "缺少\"为什么要了解 Binder 异步机制\"的引入段落。当前从 outline 直接跳入\"源码验证结论\"，没有动机交代（如：oneway 滥用导致卡顿、冻结机制对 ANR 的影响等实际场景）",
+          "suggestion": "补写 2-3 段开头，从实际性能问题场景引入。例如 oneway spam 检测为什么存在、冻结回执解决了什么 ANR 痛点"
+        },
+        {
+          "type": "需补充素材",
+          "location": "🔸 扩展锚点（L49-52）",
+          "detail": "两个扩展锚点（Binder 异步性能基准测试 / 兼容性适配策略）完全无内容覆盖",
+          "suggestion": "至少补充框架性内容或标注[待补充]，或调整 outline 去掉当前无法覆盖的锚点"
+        },
+        {
+          "type": "需重写",
+          "location": "outline 描述（L36-45）",
+          "detail": "大纲 4 个🔹锚点描述偏 AI 套话：\"引入了重大变革\"\"深度优化\"\"显著提升\"\"实现更高效的\"等模糊形容词，与下方经过验证的精确源码内容不匹配",
+          "suggestion": "对照已验证的源码结论重写大纲描述，用具体技术事实替代模糊形容词"
+        },
+        {
+          "type": "需确认",
+          "location": "L57,L60,L64-65",
+          "detail": "正文残留加工过程元数据（\"本节由 AIW 每日源码调研自动反哺\"、HTML注释中的过程记录）。writing-guide §五要求\"发布稿只面向读者，不留编辑痕迹\"",
+          "suggestion": "定稿前清除所有加工过程标记（AIW注释、源报告链接blockquote、过程说明HTML注释）"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文",
+          "detail": "缺少\"在 Perfetto/工具中的表现\"章节。writing-guide 要求机制原理篇必须包含\"这个机制在 Trace 中长什么样\"",
+          "suggestion": "补充 Binder 相关 track 在 Perfetto 中的表现描述，或标注[待补充：Trace 截图]"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-06-27T22:16:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-06-27-22-review.md"
+    }
   ]
 }
