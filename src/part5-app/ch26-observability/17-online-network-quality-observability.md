@@ -9,28 +9,28 @@ last_verified: "2026-05-22"
 last_verified_against: "Android Developers docs 2026-05-22 + local Android SDK sources android-34/android-35 + OkHttp 5.x docs + Clippings structure references"
 confidence: medium
 sources:
-  - type: clippings
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md"
-  - type: clippings
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md"
-  - type: clippings
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/TrafficStats"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/NetworkCapabilities"
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
-  - type: official
-    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/"
-  - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/TrafficStats.java"
-  - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java"
-  - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java"
-  - type: aosp
-    path: "https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java"
+ - type: clippings
+ path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md"
+ - type: clippings
+ path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md"
+ - type: clippings
+ path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md"
+ - type: official
+ path: "https://developer.android.com/reference/android/net/TrafficStats"
+ - type: official
+ path: "https://developer.android.com/reference/android/net/NetworkCapabilities"
+ - type: official
+ path: "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
+ - type: official
+ path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/"
+ - type: aosp
+ path: "/Users/gracker/Android/sources/android-35/android/net/TrafficStats.java"
+ - type: aosp
+ path: "/Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java"
+ - type: aosp
+ path: "/Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java"
+ - type: aosp
+ path: "https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java"
 tags: [observability, network, trafficstats, apm, alerting]
 related_chapters: ["19.23", "24.4", "24.10", "26.3", "26.5"]
 created_by: "task2a-knowledge-gap"
@@ -65,7 +65,8 @@ p0: 0
 p1: 0
 p2: 0
 section: "26.17"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-27
 ---
 
 # 26.17 线上网络质量监控与接入层协同
@@ -107,9 +108,9 @@ section: "26.17"
 
 <!-- outline-end -->
 
-网络质量监控要回答三件事：慢发生在哪一段、影响哪些用户、客户端和接入层看到的事实是否一致。只看接口总耗时，DNS、建连、TLS、服务端等待、响应体读取、重试和本地队列等待都会混在一起，排障时只能按经验猜。
+网络质量监控回答三个问题：慢发生在哪一段？影响哪些用户？客户端和接入层看到的是不是同一件事？只看接口总耗时，DNS、建连、TLS、服务端等待、响应体读取、重试和本地队列等待全搅在一起，排障时只能按经验猜。
 
-本节把 24.4 的连接管理、24.10 的 HTTPDNS 边界、19.23 的网络 APM 采集方式和 26.3 的指标上报模型接到同一张网络质量表里。读者需要能从一条慢请求样本出发，判断慢发生在哪一段，圈出影响范围，再用接入层日志做对账。
+本节把 24.4 的连接管理、24.10 的 HTTPDNS 边界、19.23 的网络 APM 采集和 26.3 的指标上报模型串到同一张网络质量表里，让读者能从一条慢请求出发，判断瓶颈在哪一段，圈出影响范围，再用接入层日志对账。
 
 ## 网络监控的分层目标
 
@@ -123,21 +124,17 @@ section: "26.17"
 
 客户端样本适合解释“用户为什么慢”，接入层日志适合发现“服务入口是否异常”，系统网络状态适合判断“这条样本处在什么网络环境”。一个可靠的看板要能把同一个 `request_id` 或 `trace_id` 同时落在三套口径里，否则客户端和服务端各看一张图，很容易把同一场故障拆成两个结论。
 
-[已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/reading-network-state] [已验证: AOSP android-35 SDK sources, android/net/ConnectivityManager.java]
-
 ## 客户端阶段耗时采集
 
 客户端阶段耗时要按请求生命周期记录，不要只存一个 `duration_ms`。一条 HTTP 请求至少要保留这些时间段：排队等待、DNS、TCP 建连、TLS 握手、连接复用命中、请求头/请求体发送、首包等待、响应体读取、重试与 follow-up。24.10 已经讲过 `Dns.lookup()` 在 OkHttp 建连前同步执行，这里只记录网络质量看板需要的指标口径，避免重复展开 HTTPDNS 接入细节。
 
-OkHttp 的 `EventListener` 是 Android 端最常用的阶段采集入口。官方文档列出的事件包含 dispatcher queue、DNS、connect、secure connect、connection acquire/release、request headers/body、response headers/body，并且说明连接复用时 DNS 和 connect 事件可能不会出现，重试和 follow-up 会重复触发事件序列。采集代码要按一次 `Call` 内的多次 exchange 建模，不能把第二次重试的 `connectStart` 覆盖到第一次失败样本上。 [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/]
+OkHttp 的 `EventListener` 是 Android 端最常用的阶段采集入口。官方文档列出的事件包含 dispatcher queue、DNS、connect、secure connect、connection acquire/release、request headers/body、response headers/body，并且说明连接复用时 DNS 和 connect 事件可能不会出现，重试和 follow-up 会重复触发事件序列。采集代码要按一次 `Call` 内的多次 exchange 建模，不能把第二次重试的 `connectStart` 覆盖到第一次失败样本上。
 
 Cronet 的口径更接近 Chromium 网络栈。公开 Cronet API 的稳定包名是 `org.chromium.net.RequestFinishedInfo`，其中 `Metrics` 提供 DNS、connect、SSL、sending、response 阶段时间戳、socket 复用判断、TTFB、总耗时和传输字节数。采集入口是 `RequestFinishedInfo.Listener` 的 `onRequestFinished(RequestFinishedInfo)` 回调。
 
 需要注意：Android platform 的 `android.net.http.RequestFinishedInfo` 是隐藏/版本化实现细节（android-34 SDK source 中带 `{@hide}` / prototype 注释，android-35 SDK source 中已无该文件），不作为 App 侧稳定 API。App 接入应使用 `org.chromium.net` 包下的 public Cronet API，或通过 AndroidX Cronet wrapper（`androidx.cronet`）。
 
 Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cronet 的 OkHttp、`HttpURLConnection` 或 Native 自研协议。
-
-[已验证: Chromium Cronet source, org/chromium/net/RequestFinishedInfo.java; AOSP android-34/android-35 SDK sources]
 
 自研网络库要从开始就把阶段事件作为协议的一部分，不要等线上问题多了再补埋点。最小事件模型可以这样设计：
 
@@ -153,7 +150,7 @@ Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cr
 
 ## 流量与网络状态维度
 
-`TrafficStats` 适合记录 App 级流量变化。Android API reference 提供 `getUidRxBytes()`、`getUidTxBytes()`、`getTotalRxBytes()`、`getTotalTxBytes()` 等接口；本地 Android 35 SDK source 中 `getUidRxBytes(int uid)` 和 `getUidTxBytes(int uid)` 仍是 UID 维度读取入口。它能说明“这段时间 App 收发了多少字节”，不能说明某个请求慢在 DNS、TLS 还是服务端等待。 [已验证: 官方文档, https://developer.android.com/reference/android/net/TrafficStats] [已验证: AOSP android-35 SDK sources, android/net/TrafficStats.java]
+`TrafficStats` 适合记录 App 级流量变化。Android API reference 提供 `getUidRxBytes()`、`getUidTxBytes()`、`getTotalRxBytes()`、`getTotalTxBytes()` 等接口；本地 Android 35 SDK source 中 `getUidRxBytes(int uid)` 和 `getUidTxBytes(int uid)` 仍是 UID 维度读取入口。它能说明“这段时间 App 收发了多少字节”，不能说明某个请求慢在 DNS、TLS 还是服务端等待。
 
 流量指标适合放在三类场景里：
 
@@ -161,9 +158,9 @@ Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cr
 - **故障旁证**：某个运营商请求失败率升高，同时发送字节数上升、接收字节数下降，常见原因是连接建立后响应读不到或重试风暴。
 - **上报通道健康度**：业务请求失败率升高时，监控上报自身的发送/接收量和延迟要单独看，避免把“没有上报”误读成“没有故障”。
 
-`NetworkCapabilities` 负责描述当前网络能做什么。Android 官方文档把 `NET_CAPABILITY_VALIDATED` 用于表示系统验证过该网络可访问公共互联网；Captive Portal 登录后网络会获得 `VALIDATED` 并失去 `CAPTIVE_PORTAL`。它还提供 `TRANSPORT_WIFI`、`TRANSPORT_CELLULAR`、`TRANSPORT_VPN` 等传输类型，以及 `NET_CAPABILITY_NOT_METERED`、`NET_CAPABILITY_NOT_ROAMING` 等能力。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/reading-network-state] [已验证: AOSP android-35 SDK sources, android/net/NetworkCapabilities.java]
+`NetworkCapabilities` 负责描述当前网络能做什么。Android 官方文档把 `NET_CAPABILITY_VALIDATED` 用于表示系统验证过该网络可访问公共互联网；Captive Portal 登录后网络会获得 `VALIDATED` 并失去 `CAPTIVE_PORTAL`。它还提供 `TRANSPORT_WIFI`、`TRANSPORT_CELLULAR`、`TRANSPORT_VPN` 等传输类型，以及 `NET_CAPABILITY_NOT_METERED`、`NET_CAPABILITY_NOT_ROAMING` 等能力。
 
-网络状态要按“样本发生时”记录，而不是只在 App 启动时读一次。默认网络可能在一次会话中从 Wi-Fi 切到蜂窝，VPN 的 underlying network 也可能变化。`ConnectivityManager.NetworkCallback` 能收到可用性、丢失和能力变化；Android 文档说明 callback 默认运行在 App 的 connectivity thread。采集代码只更新内存态网络快照，不要在 callback 中做同步上报。 [已验证: 官方文档, https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback]
+网络状态要按“样本发生时”记录，而不是只在 App 启动时读一次。默认网络可能在一次会话中从 Wi-Fi 切到蜂窝，VPN 的 underlying network 也可能变化。`ConnectivityManager.NetworkCallback` 能收到可用性、丢失和能力变化；Android 文档说明 callback 默认运行在 App 的 connectivity thread。采集代码只更新内存态网络快照，不要在 callback 中做同步上报。
 
 ## Native Hook 与统一网络库的边界
 
@@ -176,7 +173,7 @@ Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cr
 | Native / PLT Hook | `connect`、`send`、`recv`、`SSL_read`、`SSL_write` 等底层调用 | 能发现绕过 Java 网络层的调用和总流量 | Android 版本、ABI、符号、加固、静态链接都会影响稳定性；发布前必须灰度 |
 | 统一网络库 | App 自有业务请求 | 最适合做策略、埋点、trace id、HTTPDNS、重试和容灾 | 迁移成本高；三方 SDK 和 WebView 仍需旁路监控 |
 
-工程决策上，Hook 适合补盲区，统一网络库适合承载稳定能力。19.23 已经展开网络 APM 的底层捕获原理；放到线上质量监控里，指标可解释要排在覆盖所有 socket 前面。覆盖率提高但误归因增加，看板会更难用。 [详见 19.23 节]
+工程决策上，Hook 适合补盲区，统一网络库适合承载稳定能力。19.23 已经展开网络 APM 的底层捕获原理；放到线上质量监控里，指标可解释要排在覆盖所有 socket 前面。覆盖率提高但误归因增加，看板会更难用。（详见 19.23 节）
 
 发布风险按能力分级。纯 `EventListener` 采集可以随版本发布；ASM 插桩要配合构建期白名单和回滚开关；Native Hook 必须有 ABI 灰度、崩溃率护栏、远程关闭和端上自检。不要在全量用户上直接启用新的 Hook 表。
 
@@ -221,11 +218,11 @@ Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cr
 | 失败信息 | Java 异常类、errno、TLS alert、HTTP 状态码、业务错误码、超时类型、重试次数、是否命中降级 | 区分网络失败、服务端失败和业务失败 |
 | 上报健康度 | 样本采样率、落盘成功、上传时间、上传网络、丢弃原因、压缩后大小 | 判断监控数据是否受同一故障影响 |
 
-26.5 已经给出通用线上问题证据包模板；网络场景要把“请求尝试”和“接入层日志索引”加进去。排障单里至少要能填出：哪个域名、哪个协议、哪个网络类型、哪个运营商、哪一段耗时异常、客户端样本是否到达接入层、上报通道是否正常。 [详见 26.5 节]
+26.5 已经给出通用线上问题证据包模板；网络场景要把“请求尝试”和“接入层日志索引”加进去。排障单里至少要能填出：哪个域名、哪个协议、哪个网络类型、哪个运营商、哪一段耗时异常、客户端样本是否到达接入层、上报通道是否正常。（详见 26.5 节）
 
 ## QUIC / HTTP/3 指标口径
 
-QUIC / HTTP/3 会改变传统 TCP/TLS 阶段的含义。HTTP/3 基于 QUIC，连接建立、TLS 1.3 加密握手和传输可靠性都在 QUIC 层处理；0-RTT、连接迁移、connection id、UDP 路径验证都会影响耗时解释。继续把所有字段命名为 `tcp_ms`、`tls_ms`，会让看板误导排障人员。 [待验证: 需补充 Android 17 / Cronet 当前 HTTP/3 指标字段官方文档]
+QUIC / HTTP/3 会改变传统 TCP/TLS 阶段的含义。HTTP/3 基于 QUIC，连接建立、TLS 1.3 加密握手和传输可靠性都在 QUIC 层处理；0-RTT、连接迁移、connection id、UDP 路径验证都会影响耗时解释。继续把所有字段命名为 `tcp_ms`、`tls_ms`，会让看板误导排障人员。（Android 17 / Cronet 当前 HTTP/3 指标字段官方文档待补充）
 
 协议字段要升级成显式模型：`protocol=h1/h2/h3`、`transport=tcp/quic`、`handshake_ms`、`zero_rtt_used`、`connection_migration_count`、`path_validation_ms`、`packet_loss_estimate`。在 h1/h2 下继续记录 TCP/TLS 分段；在 h3 下记录 QUIC handshake 和首包等待，并把连接迁移单独作为事件。这样同一张看板可以比较用户体验，又不会把协议内部阶段强行套成 TCP 字段。
 
@@ -239,10 +236,10 @@ QUIC / HTTP/3 会改变传统 TCP/TLS 阶段的含义。HTTP/3 基于 QUIC，连
 
 ## Wi-Fi 稳定性与系统网络验证
 
-应用侧不能直接知道 Wi-Fi 射频质量、AP 拥塞和基站状态，但可以利用系统给出的网络能力缩小范围。`NET_CAPABILITY_VALIDATED` 表示系统验证网络可访问公共互联网；`NET_CAPABILITY_CAPTIVE_PORTAL` 表示网络可能需要登录门户。用户投诉“Wi-Fi 满格但打不开”时，客户端样本里的 `VALIDATED=false`、`CAPTIVE_PORTAL=true`、默认网络频繁切换，会比 RSSI 文案更有排障价值。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/reading-network-state]
+应用侧不能直接知道 Wi-Fi 射频质量、AP 拥塞和基站状态，但可以利用系统给出的网络能力缩小范围。`NET_CAPABILITY_VALIDATED` 表示系统验证网络可访问公共互联网；`NET_CAPABILITY_CAPTIVE_PORTAL` 表示网络可能需要登录门户。用户投诉“Wi-Fi 满格但打不开”时，客户端样本里的 `VALIDATED=false`、`CAPTIVE_PORTAL=true`、默认网络频繁切换，会比 RSSI 文案更有排障价值。
 
 厂商 Wi-Fi 助手、蜂窝补偿和自适应 WLAN 会让同一会话内的默认网络切换更频繁。应用侧要把网络快照绑定到每次请求，而不是绑定到页面。请求 A 在 Wi-Fi 上失败，请求 B 已经切到蜂窝成功，这两条样本不能被聚合成“同一网络下恢复”。网络 id、transport、validated 状态和时间戳要一起进入样本。
 
 ## 收束
 
-线上网络质量监控的可用性，取决于样本能否解释差异。客户端保留阶段耗时和网络状态，接入层保留秒级入口事实，二者用 request id / trace id 对账。告警用少量强指标快速发现问题，离线分析再展开地域、运营商、协议、CDN 和机型。这样处理网络故障时，排障人员拿到的是证据，而不是一串互相矛盾的平均耗时。
+线上网络质量监控的可用性，取决于样本能否解释差异。客户端保留阶段耗时和网络状态，接入层保留秒级入口事实，二者用 request id / trace id 对账。告警用少量强指标快速发现问题，离线分析再展开地域、运营商、协议、CDN 和机型。排障人员拿到的就是一组可对账的证据，而不是一串互相矛盾的平均耗时。

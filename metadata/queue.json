@@ -1,38 +1,20 @@
 {
-  "entries": [
+  "items": [
     {
-      "section": "1.25",
-      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Chapter is empty shell with no technical content",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "整章",
-          "detail": "章节完全缺失源码引用，无任何AOSP路径、类名、方法名等技术内容",
-          "suggestion": "补充Binder IPC相关的核心源码路径，如frameworks/native/cmds/servicemanager/binder.c、frameworks/native/libs/binder/等"
-        },
-        {
-          "type": "原理断裂",
-          "location": "整章",
-          "detail": "章节仅有标题结构，无任何技术原理解释、因果链或机制说明",
-          "suggestion": "补充异步IPC的工作原理、线程模型、事务处理流程等技术内容"
-        },
-        {
-          "type": "版本差异",
-          "location": "frontmatter标注",
-          "detail": "标注了Android 17适用但未提供版本差异说明",
-          "suggestion": "补充与Android 16及之前版本的异步机制差异说明"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-27T10:21:24.035169+00:00",
-      "status": "blocked",
-      "blocked_reason": "empty-shell-needs-content — Task2B 无法加工空 draft 章节，需先由 Task2A 填充内容",
-      "blocked_at": "2026-06-27T18:50:00+08:00"
+      "chapter": "23.13",
+      "title": "Android 17 onTrimMemory 链路源码解析与公平内存适配实战",
+      "path": "src/part5-app/ch23-memory-practice/13-ontrimmemory-source-fair-adaptation.md",
+      "priority": 80,
+      "status": "pending",
+      "added": "2026-06-27"
+    },
+    {
+      "chapter": "14.24",
+      "title": "Android Studio Memory Profiler JVMTI 数据通路源码分析",
+      "path": "src/part3-tools/ch14-other-tools/24-as-profiler-jvmti-data-path.md",
+      "priority": 80,
+      "status": "pending",
+      "added": "2026-06-27"
     }
   ]
 }
