@@ -1,6 +1,6 @@
 {
-  "total": 498,
-  "draft": 32,
+  "total": 502,
+  "draft": 36,
   "ready-for-review": 136,
   "finalized": 329,
   "task9_result": "pass-tech-review",
@@ -43,7 +43,11 @@
     "18.27",
     "5.24",
     "5.25",
-    "1.32"
+    "1.32",
+    "1.33",
+    "1.34",
+    "4.16",
+    "7.20"
   ],
   "ready_for_review_sections": [
     "5.19",
