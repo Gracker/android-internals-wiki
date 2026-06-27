@@ -99,3 +99,21 @@
 - **位置**：全文
 - **问题**：缺少"在 Perfetto/工具中的表现"章节。writing-guide 要求机制原理篇必须包含 Trace 中的表现描述。
 - **建议**：补充 Binder 相关 track 在 Perfetto 中的表现，或标注[待补充：Trace 截图]。
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：原理断裂
+- **位置**：冻结回执机制章节
+- **问题**：缺少冻结状态转换的完整时序图，读者难以理解何时触发BR_FROZEN_REPLY与BR_TRANSACTION_PENDING_FROZEN的状态切换条件
+- **建议**：补充状态转换流程图，说明frozen state的进入条件、触发时机和退出机制
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：版本差异
+- **位置**：与Android 16的差异对比
+- **问题**：未说明Android 16到17中Binder异步机制的具体演进点，缺少关键特性变更的版本对比
+- **建议**：添加Android 16 vs 17的异步机制演进对比表格，重点标注新增功能和废弃特性
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-06-27
+- **类型**：数据缺失
+- **位置**：性能断言部分
+- **问题**："oneway 节省""批处理 IPC 吞吐""BR_FROZEN_REPLY 立即感知失败"等关键性能断言缺少具体基准测试数据支撑
+- **建议**：补充Binder异步机制的性能测试数据，包括延迟对比、吞吐量提升百分比、ANR window优化效果等量化指标
