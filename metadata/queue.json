@@ -1312,5 +1312,35 @@
     "original_review_log": "logs/deep-review/2026-06-27-14-deep-review.md",
     "completed_at": "2026-06-27T14:50:00+08:00",
     "completed_by": "task2b-main-rework"
+  },
+  {
+    "section": "5.24",
+    "section_title": "Android 17 App Hibernation 状态机与冷启动恢复性能",
+    "priority": 80,
+    "reason": "知识缺口挖掘：App Hibernation 状态机与冷启动恢复性能边界",
+    "material_paths": [],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-27T08:12:23+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.25",
+    "section_title": "Android Low Power Standby 深度休眠与后台任务性能边界",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Low Power Standby 深度休眠对后台任务的性能影响",
+    "material_paths": [],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-27T08:12:23+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.32",
+    "section_title": "Android Virtualization Framework 架构与 pKVM 隔离性能边界",
+    "priority": 80,
+    "reason": "知识缺口挖掘：AVF/pKVM 虚拟化隔离的性能边界与 VM 生命周期开销",
+    "material_paths": [],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-27T08:12:23+08:00",
+    "status": "pending"
   }
 ]
