@@ -38,15 +38,6 @@
       "gap_source": "daily-info"
     },
     {
-      "path": "src/part5-app/ch24-io-network/21-android17-NetworkStatsService-与网络配额管理.md",
-      "title": "Android 17 NetworkStatsService 与网络配额管理",
-      "chapter": "ch24.21",
-      "priority": 80,
-      "status": "pending",
-      "gap_score": 19,
-      "gap_source": "daily-info"
-    },
-    {
       "path": "src/part1-fundamentals/ch06-storage/8-SharedPreferencesImpl-Android-16-17-变更分析与适配.md",
       "title": "SharedPreferencesImpl Android 16-17 变更分析与适配",
       "chapter": "ch06.8",
@@ -81,6 +72,48 @@
       "status": "pending",
       "gap_score": 18,
       "gap_source": "research-gaps"
+    },
+    {
+      "section": "1.25",
+      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "priority": 95,
+      "reason": "[Deep Tech Review] P0 事实错误：源码行号错误、P1 重要缺失：关键原理机制缺失",
+      "material_paths": ["intake/suggestions.md"],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "IPCThreadState::transact() 行号",
+          "detail": "文中引用 IPCThreadState.cpp:948-996，但实际 android-17.0.0_r1 中该函数行号为 1056-1104",
+          "suggestion": "修正行号引用为 1056-1104"
+        },
+        {
+          "type": "源码错误",
+          "location": "waitForResponse 参数注释",
+          "detail": "文中说 oneway 调用传 nullptr, nullptr 注释误导，实际代码正确处理",
+          "suggestion": "修正注释说明"
+        },
+        {
+          "type": "原理缺失",
+          "location": "冻结回执机制原理",
+          "detail": "未解释 BR_FROZEN_REPLY 和 BR_TRANSACTION_PENDING_FROZEN 与进程 freezer、oom_adj、app lifecycle 的完整交互链",
+          "suggestion": "补充冻结回执与进程生命周期的完整机制说明"
+        },
+        {
+          "type": "原理缺失",
+          "location": "oneway spam 检测机制",
+          "detail": "未解释内核计数器如何工作、阈值多少、与用户态的协作机制",
+          "suggestion": "补充 spam 检测的具体工作机制和阈值设定"
+        },
+        {
+          "type": "原理缺失",
+          "location": "源码细节",
+          "detail": "BINDER_VM_SIZE 定义、BR_FROZEN_REPLY 处理逻辑、enableFrozenObjectErrorCode() 关键细节缺失",
+          "suggestion": "补充完整的源码实现细节"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-27T00:20:00+08:00",
+      "status": "pending"
     }
   ]
 }
