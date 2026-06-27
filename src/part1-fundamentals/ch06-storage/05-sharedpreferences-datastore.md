@@ -37,7 +37,7 @@ task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
-last_task9_audit: "2026-06-11"
+last_task9_audit: "2026-06-27T09:23:02+0800"
 last_task6_audit: "2026-06-25"
 last_task9_audit_log: "logs/deep-review/2026-06-11-14-audit.md"
 deepseek_cn_review_state: done

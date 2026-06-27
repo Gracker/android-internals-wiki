@@ -282,6 +282,61 @@ ORDER BY gpu_count DESC;
 
 **反哺来源**：`DeepResearch/2026-06-26-android17-frametracer-graphics-frame-event.md`（id=23 选题，high priority）
 
+### 1.8 HWC 合成路径与 `HWC_COMPOSITION_QUEUED` 的真实状态（校正）
+
+<!-- AIW-源码调研-2026-06-27 -->
+
+**校正 daily-topics 描述**：daily-topics id=30 描述"Android 17 Perfetto GPU Trace 新增的 HWC_COMPOSITION_QUEUED 事件"，与 AOSP 源码事实不符。**HWC_COMPOSITION_QUEUED 自 Android 12（API 31）即在 proto 中存在，android-17.0.0_r1 与 android-16.0.0_r3、android-15.0.0_r1、android-12.0.0_r1 四个 tag 的 `graphics_frame_event.proto` 完全一致（diff 为空）**。
+
+**AOSP 真实 emit 站点**（android-17.0.0_r1，已逐文件确认）：
+- 6 种事件在 AOSP 中可观测：`DEQUEUE`（Layer.cpp:982-985）、`QUEUE`（Layer.cpp:986-987）、`ACQUIRE_FENCE`（Layer.cpp:1269-1270）、`LATCH`（Layer.cpp:1271-1272）、`FALLBACK_COMPOSITION`（Layer.cpp:1453-1455）、`PRESENT_FENCE`（Layer.cpp:1476 / 1496-1498）。
+- `HWC_COMPOSITION_QUEUED` 在 `FrameTracer.cpp`、`Layer.cpp`、`SurfaceFlinger.cpp`、`HWComposer.cpp`、`AidlComposerHal.cpp`、`OutputLayer.cpp`、`HwcAsyncWorker.cpp` 中**无任何 `traceTimestamp/traceFence` 调用**。该值是 proto 占位符，部分 OEM 在 HWC HAL callback 中自定义发射（Pixel/Samsung 等闭源实现）。
+
+**GPU vs HWC 合成边界的真实判定**（`OutputLayer.cpp:1137-1140`）：
+```cpp
+bool OutputLayer::requiresClientComposition() const {
+    const auto& state = getState();
+    return !state.hwc || state.hwc->hwcCompositionType == Composition::CLIENT;
+}
+```
+边界条件：① `state.hwc == nullptr`（无 HWC 关联）；② `hwcCompositionType == Composition::CLIENT`（HWC 决策回退）；其余 6 种类型（DEVICE / SOLID_COLOR / CURSOR / SIDEBAND / DISPLAY_DECORATION / REFRESH_RATE_INDICATOR）走 HWC 路径。
+
+**validateDisplay / presentOrValidate 状态机**（`HWComposer.cpp:537-628`）：
+- `canSkipValidate` 三条条件：① `frameUsesClientComposition == true` → 必走 validate；② `earliestPresentTime 已知` → 可跳；③ 当前时间已过 earliestPresentTime → 可跳。
+- `presentOrValidate` 快速路径：`state == 1`（PresentOrValidate::Result::Presented）→ HWC 直接 present，跳过 changedTypes / acceptChanges，节省约 100-300μs 的 IPC。
+- `validate` 慢速路径：完整跑 getChangedCompositionTypes / getRequests / clientTargetProperty / getRequestedLuts / acceptChanges 五个 IPC。
+
+**FALLBACK_COMPOSITION 真实语义**：当 `requiresClientComposition()` 返回 true 时，`Layer::onCompositionPresented` 把 `outputLayer->getState().clientCompositionTimestamp` 作为时间戳 emit FALLBACK_COMPOSITION。这意味着 **FALLBACK_COMPOSITION = "GPU 实际完成合成的时间"**，是 GPU 渲染耗时的真实指标，不是决定走 GPU 合成的瞬间。
+
+**GPU stall 识别 SQL**（校正后的查询模式）：
+```sql
+-- LATCH → FALLBACK_COMPOSITION 间隔 = GPU 实际渲染耗时
+SELECT
+  layer_name,
+  COUNT(*) AS frames,
+  AVG(LEAD_FALLBACK - ts_latch) AS avg_gpu_render_ns,
+  MAX(LEAD_FALLBACK - ts_latch) AS max_gpu_render_ns
+FROM (
+  SELECT
+    layer_name,
+    ts AS ts_latch,
+    LEAD(ts) OVER (PARTITION BY layer_name, frame_number ORDER BY ts) AS LEAD_FALLBACK,
+    type,
+    frame_number
+  FROM android.surfaceflinger.frame
+  WHERE type IN ('LATCH', 'FALLBACK_COMPOSITION')
+)
+WHERE LEAD_FALLBACK IS NOT NULL
+GROUP BY layer_name
+ORDER BY avg_gpu_render_ns DESC;
+```
+
+**版本差异**（Layer.cpp:1453）：Android 17 把 `getCurrentBufferId()` 替换为 `getLatchedBufferId()`，仅是 buffer 标识 API 的一致性改动，与 HWC 合成事件无关。
+
+**反哺来源**：`DeepResearch/2026-06-27-android17-hwc-composition-queue-event-source.md`（daily-topics id=30，high priority）
+
+## 2. `linux.perf` 数据源
+
 
 ## 2. `linux.perf` 数据源
 
