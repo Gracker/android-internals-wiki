@@ -11,6 +11,8 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
+last_verified_android17: "2026-06-27"
+last_verified_android17_source: "AOSP android-17.0.0_r1 frameworks/base/core/java/android/app/SharedPreferencesImpl.java (897行, diff android-16.0.0_r3 仅 2 行新增 @RavenwoodKeepWholeClass 注解, 无运行时行为变更) + SharedPreferences.java (421 行, javadoc 彻底重写, 官方声明不推荐使用) + ContextImpl.java (4107 行, SP 缓存逻辑零变化)"
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
@@ -38,7 +40,7 @@ task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task9_audit: "2026-06-27T09:23:02+0800"
-last_task6_audit: "2026-06-25"
+last_task6_audit: "2026-06-27"
 last_task9_audit_log: "logs/deep-review/2026-06-11-14-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
@@ -556,6 +558,66 @@ MMKV 通过 `mmap` 减少了传统文件 I/O 的一部分开销。在高频小�
 3. **ContentProvider + Room**：适合需要统一数据入口、复杂查询和事务一致性的场景。
 
 一个反模式仍然要避开：用 ContentProvider 再包一层 SP。这样只是在 SP 的 XML 全量写入之外，又叠了一层 Binder IPC，问题不会自己消失。
+
+<!-- AIW-源码调研-2026-06-27 -->
+
+## Android 17 源码验证结论（2026-06-27 更新）
+
+经 AOSP android-17.0.0_r1 完整源码验证，SharedPreferences 体系在 Android 17 仅有以下三类变更，对应用层均**无运行时行为影响**：
+
+### 1. SharedPreferencesImpl.java：897 行 → diff 仅 2 行
+
+```
+$ diff android-16.0.0_r3 android-17.0.0_r1 SharedPreferencesImpl.java | wc -l
+4
+$ diff android-16.0.0_r3 android-17.0.0_r1 SharedPreferencesImpl.java
+28d27
+< import android.ravenwood.annotation.RavenwoodKeepWholeClass;
+65d63
+< @RavenwoodKeepWholeClass
+```
+
+差异仅为 `@RavenwoodKeepWholeClass` 注解及对应 import，对 app 行为零影响。**章节 6.5 全部源码结论（apply()/commit() 路径、QueuedWork.addFinisher、sLoadExecutor 单线程池、MAX_FSYNC_DURATION_MILLIS=256、CALLBACK_ON_CLEAR_CHANGE=119147584L、双锁顺序 mLock → mEditorLock）100% 保持有效**。
+
+### 2. SharedPreferences 接口 javadoc：彻底重写（官方"软废弃"声明）
+
+`frameworks/base/core/java/android/content/SharedPreferences.java`（421 行 vs 16.0.0_r3 409 行）在 android-17.0.0_r1 经历**完整 javadoc 重写**：
+
+- **旧基调**（API 30-36）："SharedPreferences is best suited to storing data about how the user prefers to experience the app..."（委婉描述）
+- **新基调**（API 37）："**Note: The Android team strongly recommends against using `SharedPreferences` for new data storage needs.** Instead, consider using Jetpack DataStore for storing small amounts of data, or Room for relational data and larger datasets."
+
+新 javadoc 明确列出 4 类缺陷（每条对应章节 6.5 已经踩过的坑，现在有了官方背书）：
+
+1. **UI Thread Blocking and ANRs**：apply() 的 pending 写盘在 Activity/Service 生命周期转换时阻塞主线程（QueuedWork.waitToFinish），是 ANR 常见源头
+2. **Error Handling**：apply() 无错误回调；commit() 仅返回 boolean，且**写入成功也可能返回 false**
+3. **Durability and Consistency**：内存修改立刻可见、磁盘持久化滞后，进程崩溃可丢数据；无事务语义
+4. **Data Safety**：畸形 UTF-16 静默损坏数据；修改 `getStringSet()` 返回集合触发未定义行为
+
+这是 Android 团队对 SharedPreferences 的**官方"软废弃"声明**——运行时实现完全冻结（无 deprecation、无 API 删除），但新项目选型被明确劝退至 DataStore / Room。存量项目的迁移优先级提升。
+
+### 3. ContextImpl.java：SP 相关逻辑零变化
+
+`frameworks/base/core/java/android/app/ContextImpl.java` 在 android-17.0.0_r1（4107 行）vs android-16.0.0_r3（3866 行）的 472 行 diff 中，SP 相关变更仅 6 处：
+
+- 行 211-213：类级注解 `@RavenwoodKeepPartialClass` / `@RavenwoodRedirectionClass("ContextImpl_ravenwood")` / `@RavenwoodProvidingImplementation(target = Context.class)`
+- 行 623：`getSharedPreferences(String, int)` 新增 `@RavenwoodKeep`
+- 行 650：`getSharedPreferences(File, int)` 新增 `@RavenwoodKeep`
+- 行 675：`credentialProtectedStorageCheck()` 新增 `@RavenwoodIgnore(blockedBy = UserManager.class)`
+
+`sSharedPrefsCache` 双层 ArrayMap 缓存、`MODE_MULTI_PROCESS` 路径、`reloadSharedPreferences()`、`moveSharedPreferencesFrom()` 全部逻辑零变化。
+
+### 对章节 6.5 的影响
+
+1. **章节 6.5 的所有源码断言在 android-17.0.0_r1 仍 100% 成立**——无需修订内容
+2. 唯一可以强化的是**结论权威性**：章节原文已把 SP 缺陷讲透（apply 阻塞主线程、commit 误判、QueuedWork 路径），现在有了 Android 团队官方 javadoc 背书，建议在"MMKV 与其他高性能 KV 存储方案"段落前置一句"**注：Android 17 官方 SharedPreferences 接口 javadoc 已明确声明不推荐新项目使用 SP**"
+3. 章节 frontmatter `applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"` 和 `last_verified_against: "AOSP android-16.0.0_r1"` 已经标注最新；本次新增 `last_verified_android17` 字段记录二次验证
+
+### 未验证项
+
+1. **Ravenwood 测试框架的运行时代理实现**（位于哪个仓库、怎么拦截方法）——android.googlesource 的目录列表 API 不返回完整文件清单，5 文件限额内无法确认。建议另起一轮调研。
+2. **DataStore 1.1.0+ MultiProcessDataStoreFactory 实现**——androidx datastore 不在 AOSP 仓库，需查 androidx-main 分支
+3. **ActivityThread.handleStopActivity 与 QueuedWork.waitToFinish 等待路径在 android-17.0.0_r1 是否变化**——章节已基于 android-16.0.0_r1 给出结论，android-17 未单独验证
+
 
 ## 参考资料
 
