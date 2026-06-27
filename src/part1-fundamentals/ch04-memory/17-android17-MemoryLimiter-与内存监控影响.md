@@ -328,3 +328,12 @@ MemoryLimiter 的限制值不是静态的——当 `ProcessState` 变化时，`L
 
 > [!warning] ComponentCallbacks2 trim 等级变化
 > Android 14（API 34）起，`TRIM_MEMORY_COMPLETE(80)` / `TRIM_MEMORY_MODERATE(60)` / `TRIM_MEMORY_RUNNING_CRITICAL(15)` / `TRIM_MEMORY_RUNNING_LOW(10)` / `TRIM_MEMORY_RUNNING_MODERATE(5)` 五档已标记 `@Deprecated` 且**不再派发**。App 只会收到 `TRIM_MEMORY_BACKGROUND(40)` 和 `TRIM_MEMORY_UI_HIDDEN(20)`。源码注释明确写「不要比较 exact value，只比较 ≥」。详见 `frameworks/base/core/java/android/content/ComponentCallbacks2.java`。
+
+## 延伸阅读
+
+### Android 17 MemoryLimiter 对 Debug.MemoryInfo 性能监控的影响
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-memorylimiter-policy-monitor-impact.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 新增 MemoryLimiter 子系统作为第三道后台内存防线，通过 memcg v2 memory.high/swap.high + epoll 监听实现内核级硬限流。三类限制类型（MEMORY/SWAP/ANON_SWAP）对 Debug.MemoryInfo 的影响：PSS 抖动加剧、30s kill 窗口、PSS 不含 swap 导致总内存指标失真。
+- 注入时间：2026-06-28
+- 价值：首次系统揭示 MemoryLimiter 三层架构（Java/JNI/Kernel）对应用性能监控 SDK 的三类影响，是内存监控适配 Android 17 的必读材料

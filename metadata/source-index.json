@@ -1391,6 +1391,51 @@
         "14.5"
       ],
       "scored_at": "2026-06-28T05:48:17.189336"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md",
+      "title": "Android 17 bootanalyze 工具链 + Zygote 延迟预加载源码级验证",
+      "summary": "修正 bootanalyze.cpp 不存在路径为 bootanalyze.py（system/extras/boottime_tools/），揭示 bootanalyze 三类事件规则、双源时间校正算法、bootstat 25+ boot event 清单，以及 Zygote --enable-l",
+      "chapter_mapping": "ch16 §16.7",
+      "processed_at": "2026-06-28T06:19:16.935790",
+      "type": "deepresearch",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-binder-async-frozen-batch-pipeline.md",
+      "title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "summary": "完整拆解 oneway 异步三层架构：FLAG_ONEWAY 协议位只等 BR_TRANSACTION_COMPLETE 即返回；冻结回执 4 个 BR_ 命令 + FROZEN_OBJECT 错误码；批处理通过 1MB BINDER_VM_SIZE mmap + ioctl 双向环形缓冲。Andr",
+      "chapter_mapping": "ch01 §1.27",
+      "processed_at": "2026-06-28T06:19:16.935790",
+      "type": "deepresearch",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-appflow-lmkd-android17-compatibility.md",
+      "title": "AppFlow 与 Android 17 LMKD 兼容性源码级事实核查",
+      "summary": "基于 android-17.0.0_r1 的 lmkd.cpp（4218行）、ProcessList.java（6193行）实测确认：AppFlow（MobiCom'26）的三段式调度模型在 AOSP 17 中完全不存在。LMKD 真实能力为 PSI 三级阈值 + oom_score_adj kil",
+      "chapter_mapping": "ch16 §16.8",
+      "processed_at": "2026-06-28T06:19:16.935790",
+      "type": "deepresearch",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-hwc-composition-queue-event-source.md",
+      "title": "Android 17 HWC Composition Queue 事件追踪与 GPU 渲染性能边界判定",
+      "summary": "基于 4 个 AOSP tag 的 proto diff 证明 HWC_COMPOSITION_QUEUED 自 Android 12 即存在且无 emit 站点，FALLBACK_COMPOSITION 才是真实 GPU 合成事件。完整记录 presentOrValidate 快速/慢速路径状态机",
+      "chapter_mapping": "ch13 §13.19",
+      "processed_at": "2026-06-28T06:19:16.935790",
+      "type": "deepresearch",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-memorylimiter-policy-monitor-impact.md",
+      "title": "Android 17 MemoryLimiter 对 Debug.MemoryInfo 性能监控的影响",
+      "summary": "Android 17 新增 MemoryLimiter 子系统作为第三道后台内存防线，通过 memcg v2 memory.high/swap.high + epoll 监听实现内核级硬限流。三类限制类型对 Debug.MemoryInfo 的影响：PSS 抖动加剧、30s kill 窗口、PSS ",
+      "chapter_mapping": "ch04 §4.17",
+      "processed_at": "2026-06-28T06:19:16.935790",
+      "type": "deepresearch",
+      "status": "injected"
     }
   ]
 }

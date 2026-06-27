@@ -475,3 +475,12 @@ android.tracing.perfetto.Producer.init(new InitArguments(
 - `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java`（line 855-880）
 
 **关联报告**：`DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md`（今日增量报告）
+
+## 延伸阅读
+
+### Android 17 bootanalyze 工具链 + Zygote 延迟预加载源码级验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md
+- 类型：DeepResearch 调研结果
+- 摘要：修正 bootanalyze.cpp 不存在路径为 bootanalyze.py（system/extras/boottime_tools/），揭示 bootanalyze 三类事件规则、双源时间校正算法、bootstat 25+ boot event 清单，以及 Zygote --enable-lazy-preload 的 9 步 preload 链和 SystemServer 4MB Perfetto buffer 真实实现（b/382369925）。
+- 注入时间：2026-06-28
+- 价值：提供 bootanalyze 工具链的一手源码路径修正和 Zygote lazy preload 完整调用链，填补启动优化工具章节的源码级空白

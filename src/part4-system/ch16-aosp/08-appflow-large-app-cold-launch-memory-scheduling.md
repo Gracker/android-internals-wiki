@@ -228,6 +228,14 @@ Baseline Profile、Cloud Profile、ART profile 和 AppFlow 处理的是不同层
 
 复审时要保留一个边界：AppFlow 是论文原型；AOSP 主线可以验证 LMKD、UsageStats、ApplicationExitInfo、页回收和 I/O 观察入口，但不能据此推断 Android 已合入 AppFlow。
 
+
+### AppFlow 与 Android 17 LMKD 兼容性源码级事实核查
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-appflow-lmkd-android17-compatibility.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 的 lmkd.cpp（4218行）、ProcessList.java（6193行）实测确认：AppFlow（MobiCom'26）的三段式调度模型在 AOSP 17 中完全不存在。LMKD 真实能力为 PSI 三级阈值 + oom_score_adj kill 链，memcg v1 已标记 deprecated。这是区分学术提案与生产实现的关键参考。
+- 注入时间：2026-06-28
+- 价值：明确区分学术论文（AppFlow）与 AOSP 生产实现的真实边界，避免将未合入的研究原型误认为 Android 17 能力
+
 ## 参考资料
 
 - AppFlow: Memory Scheduling for Cold Launch of Large Apps on Mobile and Vehicle Systems, arXiv:2603.17259

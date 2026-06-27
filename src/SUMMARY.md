@@ -55,6 +55,7 @@ tags:
   - [1.36 Android Java 类加载链路与启动期类加载性能](part1-fundamentals/ch01-architecture/36-java-class-loading-performance.md)
   - [1.37 Android logd 日志系统性能与开销](part1-fundamentals/ch01-architecture/37-logd-logging-system-performance.md)
   - [1.38 Binder 线程池管理与 IPC 线程饥饿性能边界](part1-fundamentals/ch01-architecture/38-binder-thread-pool-starvation-performance.md)
+  - [1.39 ART 方法追踪与插桩性能边界](part1-fundamentals/ch01-architecture/39-art-method-tracing-instrumentation-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)

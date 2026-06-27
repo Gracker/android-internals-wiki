@@ -393,3 +393,12 @@ LIMIT 20;
 - **帧率不匹配**：游戏跑 30/60/90/120fps 时，FrameTimeline 的 vsync 周期预期不同。FrameTracer 的 `frame_number` 是连续的，但并非每个 frame_number 都对应一次上屏——游戏丢帧时 buffer 被 cancel 或 reuse。
 
 对游戏场景，建议同时开启 `gfx` + `gpu` atrace category 配合 FrameTracer 分析，`gpu` category 包含 GPU 频率和 GPU queue 深度信息，能补齐 FrameTracer 在 GPU 侧的观测盲区。
+
+## 延伸阅读
+
+### Android 17 HWC Composition Queue 事件追踪与 GPU 渲染性能边界判定
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-hwc-composition-queue-event-source.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 4 个 AOSP tag 的 proto diff 证明 HWC_COMPOSITION_QUEUED 自 Android 12 即存在且无 emit 站点，FALLBACK_COMPOSITION 才是真实 GPU 合成事件。完整记录 presentOrValidate 快速/慢速路径状态机、traceFence pending 队列机制，以及 GPU/HWC 合成边界的 OutputLayer 判定逻辑。
+- 注入时间：2026-06-28
+- 价值：修正 HWC_COMPOSITION_QUEUED 为 Android 17 新增的错误认知，提供 FrameTracer 事件 emit 站点的完整源码排查，对 Perfetto GPU 分析至关重要
