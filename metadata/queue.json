@@ -101,5 +101,24 @@
     "completed_by": "task2b-main",
     "completed_at": "2026-06-28T08:52:35.926319+08:00",
     "completion_note": "fixed: 全章6处源码级-原理级修复（mCallRestriction/freezer分离、oneway spam检测算法、BINDER_VM_SIZE数据流、flushIfNeeded调用链、oneway async_todo调度、frozen sync/oneway分支）"
+  },
+  {
+    "section": "25.2",
+    "section_title": "后台功耗治理",
+    "priority": 70,
+    "reason": "[Task6 抽检] 全部 5 处源码验证标签 + frontmatter last_verified_against 指向 android-16.0.0_r1，需按版本基线规则重新验证并更新为 android-17.0.0_r1",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "正文 5 处 [已验证] 标签 + frontmatter last_verified_against",
+        "detail": "DeviceIdleController / AppStandbyController / QuotaController / UsageStatsManager / ServiceInfo 的源码路径验证全部锚定 android-16.0.0_r1。按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1。需 Task9 确认这些路径在 android-17 中是否仍然有效，有效则更新标签。",
+        "suggestion": "逐条核对 AOSP android-17.0.0_r1 中对应文件路径，更新验证标签版本号"
+      }
+    ],
+    "added_by": "task6-audit",
+    "added_at": "2026-06-28T11:13:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-06-28-11-audit.md"
   }
 ]
