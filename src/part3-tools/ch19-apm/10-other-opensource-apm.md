@@ -2,7 +2,7 @@
 title: "其他开源 APM 库(AndroidGodEye、Collie、Rabbit)"
 chapter: "19"
 section: "19.10"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "['apm', 'monitoring']"
 drafted_date: "2026-04-24"
