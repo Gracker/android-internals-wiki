@@ -3,7 +3,7 @@ title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingMan
 chapter: "26.12"
 section: "26.12"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
@@ -19,9 +19,9 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"
 gap_score: "18"
-task6_state: revisiting
-last_task6_at: "2026-06-28T20:13:50+08:00"
-task9_state: reviewed
+task6_state: reviewed
+last_task6_at: "2026-06-28T22:10:00+08:00"
+task9_state: pending
 task6_result: "pass-light-edit"
 task2a_result: "draft-ready-for-review"
 last_task2a_at: "2026-05-17T06:04:00+08:00"
@@ -81,7 +81,7 @@ last_task9_review_log: "logs/deep-review/2026-06-28-20-deep-review.md"
 
 <!-- outline-end -->
 
-线上诊断的核心矛盾在于：不同 Android 版本的设备能给 App 提供的系统证据不一样。Android 10 的用户和 Android 17 的用户遇到同一个 ANR，能拿到的信息完全不同。本节不重复排障流程（详见 26.5），也不展开 ProfilingManager 工具细节（详见 14.7 和 8.10）——只聚焦一个问题：线上问题落在不同系统版本时，App 能从系统拿到哪类证据、证据该怎么归档、哪些情况必须降级。
+不同 Android 版本能为线上问题提供不同类型的系统证据。这个版本的差异直接影响 App 的线上排障能力——Android 10 的用户和 Android 17 的用户遇到同一个 ANR，能拿到的系统证据完全不同。本节不重复排障流程（详见 26.5），也不展开 ProfilingManager 工具细节（详见 14.7 和 8.10）——只聚焦一个问题：线上问题落在不同系统版本时，App 能从系统拿到哪类证据、证据该怎么归档、哪些情况必须降级。
 
 **两类系统证据的互补关系**：`ApplicationExitInfo` 负责"进程为什么死了"，给出死因、时间戳、内存快照和 trace 附件；`ProfilingManager` / `ProfilingTrigger` 负责"进程活着时发生了什么"，给出 system trace、heap dump、stack sample 和 call stack。去重和互补的规则：
 
