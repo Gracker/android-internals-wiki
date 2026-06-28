@@ -190,5 +190,31 @@
     "added_by": "task6-review-revisit",
     "added_at": "2026-06-28T17:13:08+08:00",
     "status": "pending"
+  },
+  {
+    "section": "26.12",
+    "section_title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 17 源码基线与 ProfilingTrigger 常量矩阵需重审",
+    "material_paths": [
+      "logs/deep-review/2026-06-28-17-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "frontmatter last_verified_against；正文“源码层验证”与“待复核项”中关于 android-17.0.0_r1 的说明",
+        "detail": "章节仍写“android-17.0.0_r1 tag 不存在（404）”，并以 AOSP main / android16-release 作为主线验证来源；本轮已确认 frameworks/base、packages/modules/Profiling、frameworks/proto_logging 均存在 android-17.0.0_r1 tag。",
+        "suggestion": "把所有主线源码锚点改为 refs/tags/android-17.0.0_r1；只有无法在 Android 17 tag 验证的公开文档信息，正文必须标注“未进入 Android 17 / 仅官方文档声明”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "“Android 16-17：ProfilingTrigger 的事件触发采集”表格与“源码层验证：ProfilingTrigger 实际可见性”",
+        "detail": "章节断言 API 37/Extension 36.1 trigger 常量在 AOSP 源码不可见，且 isValidRequestTriggerType() 只放行 APP_FULLY_DRAWN 与 ANR；android-17.0.0_r1 的 packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java 已包含 APP_REQUEST_RUNNING_TRACE、KILL_FORCE_STOP、KILL_RECENTS、KILL_TASK_MANAGER、OOM、ANOMALY、KILL_EXCESSIVE_CPU_USAGE、COLD_START、APP_COMPAT，并在 isValidRequestTriggerType() 中按 feature flags 放行。",
+        "suggestion": "按 Android 17 源码重写 trigger 常量矩阵：区分“常量存在”“flag gate”“设备/扩展版本可用”“文档语义”；删除“源码不可见/只放行两类 trigger”的旧结论。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-28T17:26:38+08:00",
+    "status": "pending"
   }
 ]

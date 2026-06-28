@@ -2,13 +2,13 @@
 title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger"
 chapter: "26.12"
 section: "26.12"
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
+pipeline_stage: task2b_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
-confidence: "medium"
-last_verified: "2026-06-03"
-last_verified_against: "AOSP main / android16-release: ApplicationExitInfo, ActivityManager, ProfilingManager, ProfilingResult; Android Developers docs; android-17.0.0_r1 tag 不存在（404）"
+confidence: "low"
+last_verified: "2026-06-28"
+last_verified_against: "NEEDS_REWORK: android-17.0.0_r1 source tag exists; chapter still contains stale AOSP main/android16-release verification"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 reviewed_date: 2026-06-25
@@ -25,19 +25,20 @@ task9_state: reviewed
 task6_result: pass-light-edit
 task2a_result: "draft-ready-for-review"
 last_task2a_at: "2026-05-17T06:04:00+08:00"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-25"
+task9_result: needs-rework
+task9_reviewed_date: "2026-06-28"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-25T06:20:00+08:00"
+last_task9_at: "2026-06-28T17:26:38+08:00"
 last_task9_autofix_at: "2026-06-02"
-task2b_result: fixed
-task2b_state: fixed
+task2b_result: needs-rework
+task2b_state: pending
 last_task2b_lite_at: "2026-06-03"
 last_task2b_at: "2026-06-24T14:53:26+08:00"
 repaired_date: "2026-06-24"
 repaired_by: "openclaw-task2b"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
+last_task9_audit: "2026-06-28"
 ---
 ---
 
