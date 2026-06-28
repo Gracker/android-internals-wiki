@@ -1,22 +1,22 @@
 ---
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
-status: finalized
+status: ready-for-review
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-26
 last_task6_audit: "2026-06-27"
 task9_result: needs-rework
-task9_state: reviewed
-pipeline_stage: task2b_pending
-last_task2b_at: 2026-06-26
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-06-29T00:52"
 last_task2b_by: task2b-main
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
-last_verified: "2026-06-26"
+last_verified: "2026-06-29"
 last_verified_against: "Compose BOM 2025.12.00 (Compose 1.10), AOSP android-17.0.0_r1"
 confidence: high
 sources:
@@ -74,51 +74,53 @@ internal class AndroidComposeView(...) : ViewGroup(...) {
 
 ### 与 Choreographer 的绑定
 
-`AndroidComposeView` 在 `onAttachedToWindow` 时注册 `Choreographer.FrameCallback`。一帧的完整执行流程如下：
+`AndroidComposeView` 在 `onAttachedToWindow` 时注册 `Choreographer.FrameCallback`。但 Compose 帧提交的完整路径涉及两层回调：Compose 自己的 `FrameCallback` 负责重组和测量调度，`ViewRootImpl.TraversalRunnable` 负责驱动 `dispatchDraw` → `HardwareRenderer` 的帧提交。
 
 ```mermaid
 sequenceDiagram
     participant VSYNC as VSYNC
     participant Choreo as Choreographer
-    participant CB as FrameCallback.doFrame()
+    participant CB_Compose as Compose FrameCallback
     participant Comp as Composition
-    participant View as AndroidComposeView
+    participant VRI as ViewRootImpl
+    participant ACP as AndroidComposeView
     participant HR as HardwareRenderer
     
     VSYNC->>Choreo: VSYNC 信号
-    Choreo->>CB: doFrame(frameTimeNanos)
-    CB->>Comp: 1. 触发 recomposition（invalidated scopes）
-    CB->>Comp: 2. 执行 measure/layout（changed LayoutNodes）
-    CB->>View: 3. dispatchDraw(canvas)
-    View->>View: 构建/更新 RenderNode display lists
-    CB->>HR: 4. syncAndDrawFrame()
-    HR->>HR: RenderThread: GPU 命令录制
-    CB->>Choreo: 5. postFrameCallback(下一帧)
+    Choreo->>CB_Compose: doFrame(frameTimeNanos)
+    CB_Compose->>Comp: 1. 触发 recomposition（invalidated scopes）
+    CB_Compose->>Comp: 2. 触发 LayoutNode measure/layout
+    CB_Compose->>Choreo: postFrameCallback(下一帧)
+    Choreo->>VRI: TraversalRunnable.doTraversal()
+    VRI->>VRI: performMeasure / performLayout
+    VRI->>ACP: performDraw → dispatchDraw(canvas)
+    ACP->>ACP: root.draw + dirty layer 更新
+    VRI->>HR: ThreadedRenderer.draw(view, attachInfo, callbacks)
+    HR->>HR: syncAndDrawFrame → RenderThread GPU 录制
 ```
 
-注意：`syncAndDrawFrame()` 在 `FrameCallback.doFrame()` 回调中调用，不是在 `dispatchDraw()` 中直接调用。`dispatchDraw` 负责构建 RenderNode 的 display list 内容，而 `syncAndDrawFrame` 在 `doFrame` 回调的末尾将构建好的 display list 同步到 RenderThread。
+关键点：
+- Compose 的 `FrameCallback` 在 `doFrame` 中触发重组与测量，不负责帧提交
+- `dispatchDraw` 和 `HardwareRenderer.syncAndDrawFrame()` 由 `ViewRootImpl.performTraversals()` 流程驱动，不是 Compose 自己的 `FrameCallback` 直接调用
+- `AndroidComposeView.dispatchDraw()` 执行 Compose 的 root draw 和脏 layer 更新，RenderNode display list 内容在此阶段构建
+- 帧的最终提交（`syncAndDrawFrame`）发生在 `ViewRootImpl.performDraw()` → `ThreadedRenderer.draw()` 中，对 Compose 和 View 完全相同
 
 ```kotlin
-// AOSP: frameworks/base/core/java/android/view/Choreographer.java
-// Choreographer.FrameCallback — 标准签名
+// AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/Choreographer.java
+// 标准 FrameCallback 签名——单参数
 choreographer.postFrameCallback(object : Choreographer.FrameCallback {
     override fun doFrame(frameTimeNanos: Long) {
-        // 1. 触发 recomposition（如果有 invalidated state）
-        // 2. 执行 measure/layout（如果 LayoutNode 树有变化）
-        // 3. 调用 dispatchDraw → 构建/更新 RenderNode display list
-        // 4. 调用 syncAndDrawFrame 同步到 RenderThread
-        // 5. 注册下一帧的 callback
+        // Compose 内部：触发 recomposition + measure/layout
+        // 注意：这里不调用 dispatchDraw 或 syncAndDrawFrame
+        // 帧提交由 ViewRootImpl 的 TraversalRunnable 驱动
         choreographer.postFrameCallback(this)
     }
 })
-// 注意：标准 AOSP Choreographer.FrameCallback.doFrame() 只有一个参数 (long frameTimeNanos)
-// API 34 (Android 14) 起可通过 Choreographer.getFrameTimeline() 获取 FrameData.deadlineNanos
-// API 33 (Android 13) 的 FrameData 仅提供有限支持，不能可靠使用 deadlineNanos
 ```
 
-Compose 1.10+ 在 API 34+ 设备上通过 `Choreographer.getFrameTimeline()` 获取帧 deadline，用于 PausableComposition 的暂停判定。在 API 33 设备上回退到 `frameTimeNanos + 16_666_666L` 估算帧预算；API 31-32 使用相同固定估算。
+`AndroidUiFrameClock`（Compose 内连接 Choreographer 的桥接类）通过 `postFrameCallback` 注册回调，`doFrame` 中把 `frameTimeNanos` 传给 `withFrameNanos` 协程恢复重组。Compose 1.10 的 `AndroidUiFrameClock.android.kt` 只使用 `postFrameCallback(frameTimeNanos)` 这一种 Choreographer 交互方式。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java, frameworks/base/core/java/android/view/ViewRootImpl.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt, AndroidUiFrameClock.android.kt]
 
 ## LayoutNode 树：测量、布局、绘制
 
@@ -174,10 +176,7 @@ Compose 测量是单次的：parent measure 时传入 `Constraints`，child 返�
 
 不满足这些条件的 LayoutNode，其绘制内容委托给父节点的 RenderNode display list。
 
-**LayerManager 决策规则**：`LayerManager`（位于 `RenderNodeLayer.android.kt`）在 draw 阶段遍历 LayoutNode 树，对每个节点评估是否创建/更新硬件层。决策依据：
-- `graphicsLayer` modifier 的参数（`alpha < 1.0`、`scaleX/scaleY != 1`、`rotationX/rotationY/rotationZ != 0`、`shadowElevation > 0`、`clip = true`）
-- 更新频率（高频 invalidated 节点倾向于拥有独立 layer 以减少重绘范围）
-- 尺寸（大尺寸节点创建独立 layer 的成本更高，Compose 在 Android 17 中优化了此权衡）
+**硬件层创建策略**：Compose 的 `AndroidComposeView.createLayer()` 用于创建硬件层（`GraphicsLayerOwnerLayer`），它封装 `GraphicsContext.createGraphicsLayer()` 返回的 `GraphicsLayer`。RenderNode 是否创建独立硬件层取决于 `Modifier.graphicsLayer` 的参数——`alpha < 1.0`、`scaleX/scaleY != 1`、`rotationX/Y/Z != 0`、`shadowElevation > 0` 或 `clip = true` 会触发图层创建。不满足这些条件的 `graphicsLayer` 仅影响 RenderNode 属性设置，不创建离屏缓冲。`RenderNodeLayer.android.kt` 本身不包含全局 `LayerManager` 类，绘制阶段 RenderNode 的创建/复用由 `LayoutNode.draw()` 调用链内部的 RenderNodeLayer 实例管理。
 
 ```kotlin
 // 简化：RenderNodeLayer 的创建与 display list 录制
@@ -311,31 +310,28 @@ Checkpoint 的粒度由 Compose compiler 在编译期决定。compiler 在每个
 2. 控制权返回给调用方（LazyList cache window 或 Recomposer）
 3. 下一帧 `resume()` 调用时，从保存位置继续组合，`shouldPause` lambda 绑定到新的帧 deadline
 
-### 与 Choreographer FrameData 的协作
+### 与 Choreographer 帧 deadline 的协作
 
-API 34（Android 14）起 `Choreographer.getFrameTimeline()` 提供 `FrameTimeline.getDeadlineNanos()`。Compose 1.10+ 在 API 34+ 设备上使用此 deadline 作为 `shouldPause` 的判定依据：
+Choreographer 通过内部 `VsyncCallback` 接收 VSYNC 信号时附带 `FrameData`。`FrameData.getPreferredFrameTimeline().getDeadlineNanos()` 返回本帧的 deadline 时间戳，这是获取帧 deadline 的标准路径。
 
 ```kotlin
-// 简化：PausableComposition 的 shouldPause 实现（API 34+）
-val shouldPause: () -> Boolean = {
-    val now = System.nanoTime()
-    val deadline = frameTimeline.deadlineNanos  // API 34+
-    val remaining = deadline - now
-    remaining < RESERVE_TIME_NANOS  // 预留 ~2ms 给 draw 与 syncAndDrawFrame
-}
+// AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/Choreographer.java
+// VsyncCallback 通过 FrameData 暴露 deadline
+// FrameData.getPreferredFrameTimeline().getDeadlineNanos() — 公开 API
+// getFrameDeadline() — 隐藏方法（@hide），不用于应用层
 ```
 
-API 31-33 设备回退到固定帧预算估算（`frameTimeNanos + 16_666_666L`），但估算精度不如 API 34+ 的 FrameTimeline.deadline。
-
-**版本差异下的 deadline 计算策略**：
+Compose 1.10 的 `AndroidUiFrameClock` 当前只使用 `postFrameCallback(frameTimeNanos)` → `withFrameNanos`，不直接调用 `FrameData` / `FrameTimeline` API。PausableComposition 的 `shouldPause` 判定在 Android 14+ 设备上可以通过 Choreographer 的 `VsyncCallback` 附带 `FrameData` 拿取 deadline，在 Android 12-13 上回退到固定帧预算估算（`frameTimeNanos + 16_666_666L`）：
 
 | API 级别 | Android 版本 | deadline 来源 | 精度 |
 |----------|-------------|--------------|------|
 | 31-32 | Android 12-12L | frameTimeNanos + 16.6ms 固定估算 | 粗略 |
-| 33 | Android 13 | FrameData 有限支持，回退到固定估算 | 粗略 |
-| 34-37 | Android 14-17 | Choreographer.getFrameTimeline().deadlineNanos | 精确 |
+| 33 | Android 13 | 回退到固定估算 | 粗略 |
+| 34-37 | Android 14-17 | VsyncCallback → FrameData.getPreferredFrameTimeline().getDeadlineNanos() | 精确 |
 
-[已验证: Compose BOM 2025.12.00, PausableComposition.kt, Composer.kt; FrameData/FrameTimeline 来自 AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/Choreographer.java; 结构参考: intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md]
+若应用需要帧 deadline 做自己的暂停判定，应注册 `Choreographer.VsyncCallback` 而非仅依赖 `FrameCallback`。
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java; Compose BOM 2025.12.00, PausableComposition.kt, AndroidUiFrameClock.android.kt; 结构参考: intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md]
 
 ### apply 提交机制
 
@@ -411,59 +407,65 @@ Snapshot 自动追踪也有代价：每次状态读写都需要更新 reader/wri
 
 ## RenderNode 与 DisplayList 提交
 
-Compose 使用 `android.graphics.RenderNode` 构建展示列表（display list），提交路径与 View 体系一致：
+Compose 使用 `android.graphics.RenderNode` 构建 display list。RenderNode 提交路径由 `ViewRootImpl` 的 traversal 驱动，Compose 参与其中但帧提交本身不是 Compose 专有逻辑：
 
 ```mermaid
 flowchart TD
-    A["Choreographer.FrameCallback.doFrame()"] --> B["Composer.recompose(): 重组 invalidated scopes"]
-    B --> C["LayoutNode.measure/layout: 更新布局"]
+    A["Choreographer → ViewRootImpl.TraversalRunnable"] --> B["performMeasure / performLayout"]
+    B --> C["performDraw() → draw()"]
     C --> D["AndroidComposeView.dispatchDraw(Canvas)"]
-    D --> E["LayoutNode.draw(): 构建/更新 RenderNode display list"]
-    E --> F["HardwareRenderer.syncAndDrawFrame()"]
-    F --> G["RenderThread: GPU 命令录制（Vulkan/GLES）"]
+    D --> E["Comp: root.draw → dirty layer 更新 → RenderNode display list 构建"]
+    C --> F["ThreadedRenderer.draw(view, attachInfo, callbacks)"]
+    F --> G["syncAndDrawFrame → RenderThread GPU 命令录制"]
     G --> H["queueBuffer → BufferQueue"]
     H --> I["SurfaceFlinger: VSYNC 合成上屏"]
 ```
 
 关键设计：
 
-1. **FrameCallback 驱动的同步**：`syncAndDrawFrame()` 在 `FrameCallback.doFrame()` 回调的末尾触发——重组、测量/布局、dispatchDraw 都完成后，主线程将构建好的 RenderNode 树同步到 RenderThread。回调结束后，主线程释放给下一帧的工作。
-2. **同步阻塞**：`syncAndDrawFrame` 是阻塞操作——主线程将 display list 移交 RenderThread 后，等待上一帧的 GPU sync fence signal（GPU 工作完成）后才返回。这是 GPU 渲染的帧节流机制：防止主线程排队过多帧导致内存占用和延迟累积。
-3. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
-4. **与 View 体系共用**：View 体系通过 `ViewRootImpl.performTraversals()` → `performDraw()` → `ThreadedRenderer.syncAndDrawFrame()` 提交。Compose 通过 `FrameCallback.doFrame()` → `dispatchDraw()` → `HardwareRenderer.syncAndDrawFrame()` 提交。两者在 RenderThread 以下共用同一条路径。
+1. **ViewRootImpl 驱动帧提交**：`syncAndDrawFrame()` 由 `ViewRootImpl.performDraw()` → `draw()` → `ThreadedRenderer.draw(view, attachInfo, callbacks)` 调用。Compose 的 `FrameCallback` 只负责重组与测量调度，不在自己的回调中直接调用 `syncAndDrawFrame()`。
+2. **Compose 参与 dispatchDraw**：`ViewRootImpl.performDraw` 遍历 View 树时调用 `AndroidComposeView.dispatchDraw()`，Compose 在此阶段执行 root draw 和脏 layer 更新，构建 RenderNode display list。Compose 融入 View 体系的 traversal，不需要独立发起帧提交。
+3. **同步阻塞**：`syncAndDrawFrame` 是阻塞操作——主线程将 display list 移交 RenderThread 后，等待上一帧的 GPU sync fence signal 完成才返回。这是 GPU 渲染的帧节流机制：防止主线程排队过多帧。
+4. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
+5. **与 View 体系共用**：View 和 Compose 共享同一 `ViewRootImpl.performTraversals()` → `ThreadedRenderer.draw()` 提交路径。两者在 RenderThread 以下完全相同，差异仅在 display list 的构建方式（LayoutNode.draw vs View.onDraw）。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java, frameworks/base/graphics/java/android/graphics/ThreadedRenderer.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt]
 
 ## Compose 与 RenderThread 的协作
 
-Compose 构建 display list 的过程在主线程完成，GPU 绘制命令录制和提交在 RenderThread 完成。两条线程通过 `HardwareRenderer.syncAndDrawFrame()` 同步：
+Compose 构建 display list 在主线程完成，GPU 绘制录制和提交在 RenderThread 完成。两条线程通过 `ViewRootImpl` 的 traversal 流程同步：
 
 ```mermaid
 sequenceDiagram
     participant MT as MainThread
+    participant ACP as AndroidComposeView
+    participant VRI as ViewRootImpl
+    participant HR as HardwareRenderer
     participant RT as RenderThread
     
-    MT->>MT: doFrame: recomposition
-    MT->>MT: doFrame: measure/layout
-    MT->>MT: dispatchDraw → record RenderNode display list
-    MT->>RT: syncAndDrawFrame(display list 数据)
+    MT->>MT: Compose FrameCallback: recomposition + measure/layout
+    Choreographer->>VRI: TraversalRunnable.doTraversal()
+    VRI->>VRI: performMeasure / performLayout
+    VRI->>ACP: performDraw → dispatchDraw(canvas)
+    ACP->>ACP: root.draw → 构建 RenderNode display list
+    VRI->>HR: ThreadedRenderer.draw(view, attachInfo)
+    HR->>RT: syncAndDrawFrame(display list 数据)
     Note over MT,RT: MT 等待 GPU sync fence signal
     RT->>RT: GPU 命令录制（Vulkan/GLES）
     RT->>RT: queueBuffer → BufferQueue
-    RT->>RT: 等待上一帧 GPU sync fence signal
-    RT-->>MT: 返回（上一帧 GPU 完成，MT 释放）
+    RT-->>MT: fence signal → MT 释放
     RT->>RT: SurfaceFlinger 合成上屏
 ```
 
 关键点：
 
-1. **同步阶段**：`syncAndDrawFrame` 将主线程构建的 RenderNode 树同步到 RenderThread，同时等待上一帧 GPU sync fence signal 完成后才返回。这个等待确保 render pipeline 深度（in-flight 帧数）不超过 `eglSwapInterval` 限制。
+1. **同步阶段**：`syncAndDrawFrame` 由 `ThreadedRenderer.draw()` 内调用，将主线程构建的 RenderNode 树同步到 RenderThread，等待上一帧 GPU sync fence signal 完成后返回。这确保 render pipeline 深度（in-flight 帧数）不超过 swap interval 限制。
 2. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
 3. **帧提交**：RenderThread 通过 `eglSwapBuffers`（GLES）或 `vkQueuePresentKHR`（Vulkan）将 finished buffer 提交给 BufferQueue，SurfaceFlinger 在下一个 VSYNC 边缘合成上屏。
 
-Compose 在这条路径上与 View 体系完全共用基础设施。差异只在 display list 的构建方式（LayoutNode vs View 的 onDraw）。
+Compose 与 View 体系完全共用 `ViewRootImpl` → `ThreadedRenderer` → `RenderThread` 这条基础设施。差异只在 display list 的构建方式（LayoutNode.draw vs View.onDraw）。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java; §2.5 MainThread 与 RenderThread 协作]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java, frameworks/base/graphics/java/android/graphics/ThreadedRenderer.java; §2.5 MainThread 与 RenderThread 协作]
 
 ## 互操作渲染路径
 
@@ -501,7 +503,7 @@ Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，�
 - **MainThread**：
   - `composition`: Snapshot 重组和状态更新（Composer.recompose() → LayoutNode 属性更新）
   - `measure/layout`: LayoutNode 测量和布局计算（LayoutNode.measure/placeAt）
-  - `draw`: RenderNode display list 构建（LayoutNode.draw → RenderNodeLayer.updateDisplayList → RenderNode.beginRecording/endRecording）
+  - `ViewRootImpl draw`: ViewRootImpl.performDraw → AndroidComposeView.dispatchDraw → RenderNode display list 构建（LayoutNode.draw → RenderNodeLayer.updateDisplayList → RenderNode.beginRecording/endRecording）
 
 - **RenderThread**：
   - `gpu`: GPU 命令执行（Vulkan vkCmd* / GLES glDraw*）
@@ -536,9 +538,9 @@ Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，�
 | Compose 1.7 (2024) | PausableComposition 引入（非默认），Strong Skipping 实验性 |
 | Compose 1.8-1.9 (2025) | PausableComposition 改进，CacheWindow API，LazyList 集成深化 |
 | Compose 1.10 (2025-12) | PausableComposition 默认启用，Strong Skipping 默认开启 |
-| **Android 17 (API 37)** | RenderNode batching 优化：多个相邻 RenderNode 的 display list 提交合并为单个 GPU 帧命令块，减少 RenderThread 同步开销。HardwareRenderer 帧 pacing 改进：引入 `FramePacing` API（`HardwareRenderer.setFramePacingEnabled()`），根据实际 GPU 完成时间动态调整帧节奏，减少 VSYNC 未命中。LayerManager 大尺寸节点创建独立 layer 的权衡优化——Android 17 中大幅降低了离屏缓冲的分配成本 |
+| **Android 17 (API 37)** | Compose 1.10 是 Android 17 同期 stable 版本，PausableComposition 和 Strong Skipping 均默认开启。Compose 本身在 Android 17 的 graphics 层继续沿用 RenderNode / HardwareRenderer 标准路径，组合与绘制优化主要在 Compose runtime 侧推进 |
 
-[适用版本: Android 12 (API 31) - Android 17 (API 37); Compose 版本演进基于 androidx release notes; Android 17 RenderNode/HardwareRenderer 优化基于 AOSP android-17.0.0_r1: frameworks/base/graphics/java/android/graphics/HardwareRenderer.java + RenderNode.java]
+[适用版本: Android 12 (API 31) - Android 17 (API 37); Compose 版本演进基于 androidx release notes; Compose 1.10 特性基于 androidx release notes]
 
 ## 常见问题与误区
 
