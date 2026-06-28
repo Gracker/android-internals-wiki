@@ -3,7 +3,7 @@ title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingMan
 chapter: "26.12"
 section: "26.12"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
@@ -11,18 +11,18 @@ last_verified: "2026-06-28"
 last_verified_against: "refs/tags/android-17.0.0_r1 (frameworks/base, packages/modules/Profiling, frameworks/proto_logging均已确认存在)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
-reviewed_date: 2026-06-28
-reviewed_by: openclaw-task6
+reviewed_date: "2026-06-28"
+reviewed_by: "openclaw-task6"
 path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
 related_chapters: ["26.2", "26.5", "14.7", "8.10", "13.2", "15.5", "20.3", "19.24"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"
 gap_score: "18"
-task6_state: revisiting
-last_task6_at: "2026-06-28T18:09:00+08:00"
-task9_state: reviewed
-task6_result: pass-light-edit
+task6_state: "reviewed"
+last_task6_at: "2026-06-28T20:13:50+08:00"
+task9_state: "pending"
+task6_result: "pass-light-edit"
 task2a_result: "draft-ready-for-review"
 last_task2a_at: "2026-05-17T06:04:00+08:00"
 task9_result: auto-fixed
@@ -39,7 +39,6 @@ repaired_by: "openclaw-task2b"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-28
 last_task9_audit: "2026-06-28"
----
 ---
 
 # 26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
@@ -387,7 +386,7 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 
 ### StatsD 原子数据：退出记录的补充信号源
 
-Android 17 的 StatsD 系统在 `ApplicationExitInfo` 和 `ProfilingManager` 之外提供了一条补充数据通道——原子计数器。它不是另一套诊断入口，而是给退出记录和 profiling 结果补充系统侧的性能指标上下文。
+Android 17 的 StatsD 系统在 `ApplicationExitInfo` 和 `ProfilingManager` 之外提供了一条补充数据通道——原子计数器。它的角色是给退出记录和 profiling 结果补充系统侧的性能指标上下文。
 
 #### StatsD 架构与数据源
 
