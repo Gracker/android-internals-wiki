@@ -48,5 +48,55 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-06-28T08:05:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.25",
+    "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Binder 异步机制存在多处源码级事实错误",
+    "material_paths": [
+      "logs/deep-review/2026-06-28-08-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "要点「cached/frozen 进程上强制 oneway」、第2节 mCallRestriction、迁移要点第3条",
+        "detail": "章节把 ProcessState::CallRestriction 写成 CachedAppOptimizer/MemoryFreezer 在冻结目标进程前设置的远端约束。Android 17 源码中 setCallRestriction 是当前进程级设置，必须在线程池启动前配置；CachedAppOptimizer 冻结应用时调用的是 freezer/binder freeze ioctl，不会写入目标进程 libbinder 的 mCallRestriction。",
+        "suggestion": "把 mCallRestriction 改成本进程主动配置的阻塞调用限制；冻结进程约束用 BINDER_FREEZE、BR_FROZEN_REPLY、BR_TRANSACTION_PENDING_FROZEN 解释，避免把 cached/frozen 状态等同于强制 oneway。"
+      },
+      {
+        "type": "源码错误",
+        "location": "第2节 oneway spam 检测、第6节 oneway spam 检测缓解",
+        "detail": "章节写成“每进程计数器 + 时间窗口默认约 1 秒 + 阈值默认约 100 次”。Android 17 common kernel 的 binder_alloc.c 使用 async buffer 剩余空间触发检测：free_async_space 低于总 buffer 10% 后，统计当前 pid 已占用 async buffer，num_buffers > 50 或 total_alloc_size > buffer_size/4 才标记 oneway_spam_suspect；没有 1 秒时间窗口，也不是 100 次阈值。",
+        "suggestion": "按 binder_alloc.c 的低 async 空间 + 当前 pid 占用阈值重写，说明 BR_ONEWAY_SPAM_SUSPECT 是低 async buffer 压力下的诊断信号。"
+      },
+      {
+        "type": "源码错误",
+        "location": "第4节 BINDER_VM_SIZE：1MB 共享映射",
+        "detail": "章节称 BC_TRANSACTION 的事务数据直接写进这片共享区域、内核在共享区域读取。Android 17 binder.c 在目标进程 binder_alloc 中分配 buffer，并通过 binder_alloc_copy_user_to_buffer 从发送方用户地址复制数据/offsets；不是调用方直接把事务数据写入 mmap 共享区后由内核读取。",
+        "suggestion": "区分发送方 ioctl 参数中的用户态 Parcel 指针、目标进程 binder_alloc buffer、接收方 mmap 可见 buffer，重写“共享映射”段落。"
+      },
+      {
+        "type": "源码错误",
+        "location": "第4节 flushIfNeeded 条件刷",
+        "detail": "章节写普通应用线程走 talkWithDriver(true) 立即刷出。Android 17 IPCThreadState::flushIfNeeded() 实际调用 flushCommands()；flushCommands() 使用 talkWithDriver(false)，必要时二次 talkWithDriver(false)，只写不读。",
+        "suggestion": "修正为 flushIfNeeded() -> flushCommands() -> talkWithDriver(false)，并解释 doReceive=false 对只 flush mOut 的意义。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "第6节 oneway 调度关键差异第3条",
+        "detail": "章节称 Binder 驱动不区分 oneway 和同步调用调度优先级、两者在目标进程队列中平等竞争。Android 17 common kernel 中 oneway 会受 node->has_async_transaction 控制，后续 async 进入 node->async_todo；同步事务可选择目标线程/进程 todo，并且只有非 oneway 继承调用方调度策略。该段遗漏 async_todo、pending_async 和同步优先级继承。",
+        "suggestion": "补充 binder_proc_transaction() 中 oneway 的 node async 队列、pending_async 串行化语义，以及同步事务的 priority inheritance 差异。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "第3节冻结回执机制时序逻辑",
+        "detail": "章节先说冻结后所有新 Binder 事务都在内核队列排队，又说 system_server 收到 FROZEN_OBJECT 后可 BINDER_CLEAR_FREEZE + 重试。Android 17 binder.c 对 frozen + sync 返回 BR_FROZEN_REPLY，只有 frozen + oneway 才可能返回 BR_TRANSACTION_PENDING_FROZEN 并入队；CachedAppOptimizer 对 frozen app 收到 sync transaction 的处理是 killFrozenProcess，而不是通用的清冻重试策略。",
+        "suggestion": "拆开 sync/oneway：sync frozen 是拒绝并上报错误，oneway frozen 是 pending；system_server/AMS 行为要按 CachedAppOptimizer.handleBinderReport()/binderErrorInternal() 重写。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-28T08:28:13+08:00",
+    "status": "pending"
   }
 ]
