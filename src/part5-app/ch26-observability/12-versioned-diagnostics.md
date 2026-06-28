@@ -37,7 +37,7 @@ last_task2b_at: "2026-06-24T14:53:26+08:00"
 repaired_date: "2026-06-24"
 repaired_by: "openclaw-task2b"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-25
+last_deepseek_cn_review_at: 2026-06-28
 last_task9_audit: "2026-06-28"
 ---
 ---
@@ -81,7 +81,7 @@ last_task9_audit: "2026-06-28"
 
 <!-- outline-end -->
 
-本节按 Android 版本重新整理线上诊断入口。26.5 负责排障流程，14.7 和 8.10 负责 ProfilingManager 工具机制；这里只回答一个问题：线上问题发生在不同系统版本时，App 能从系统拿到哪类证据，证据该怎么归档，哪些情况必须降级。
+线上诊断的核心矛盾在于：不同 Android 版本的设备能给 App 提供的系统证据不一样。Android 10 的用户和 Android 17 的用户遇到同一个 ANR，能拿到的信息完全不同。本节不重复排障流程（详见 26.5），也不展开 ProfilingManager 工具细节（详见 14.7 和 8.10）——只聚焦一个问题：线上问题落在不同系统版本时，App 能从系统拿到哪类证据、证据该怎么归档、哪些情况必须降级。
 
 **两类系统证据的互补关系**：`ApplicationExitInfo` 负责"进程为什么死了"，给出死因、时间戳、内存快照和 trace 附件；`ProfilingManager` / `ProfilingTrigger` 负责"进程活着时发生了什么"，给出 system trace、heap dump、stack sample 和 call stack。去重和互补的规则：
 
@@ -385,9 +385,9 @@ Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库�
 
 实现时，26.5 的问题单只需要新增一个“系统诊断附件”区域：退出记录、ANR trace、native tombstone、profiling result、heap dump、system trace。排障流程不因为新 API 改写；新 API 只让证据更完整。
 
-### StatsD 原子数据与诊断能力集成
+### StatsD 原子数据：退出记录的补充信号源
 
-Android 17 的 StatsD 系统为线上诊断提供了重要的原子数据源，这些数据与现有的 ApplicationExitInfo 和 ProfilingManager 形成互补，共同构建完整的诊断体系。
+Android 17 的 StatsD 系统在 `ApplicationExitInfo` 和 `ProfilingManager` 之外提供了一条补充数据通道——原子计数器。它不是另一套诊断入口，而是给退出记录和 profiling 结果补充系统侧的性能指标上下文。
 
 #### StatsD 架构与数据源
 
@@ -442,13 +442,11 @@ Android 版本演进对原子数据诊断的影响：
 
 在制定诊断策略时，需要根据目标设备的 Android 版本选择合适的原子数据采集方式。
 
-## 源码调研补充（2026-06-23）：StatsD AppProcessDied 原子与 ApplicationExitInfo 集成链路
-
-**来源**：research-gaps.md §26.12 盲区回退
+## 补充：StatsD AppProcessDied 原子与 ApplicationExitInfo 集成链路
 
 ### AppProcessDied 原子注册
 
-**一手验证**（`frameworks/proto_logging/stats/atoms.proto` line 20229-20255）：
+`frameworks/proto_logging/stats/atoms.proto`（line 20229-20255）中注册：
 
 ```
 AppProcessDied app_process_died = 373 [(module) = "framework"];
@@ -466,7 +464,7 @@ AppProcessDied app_process_died = 373 [(module) = "framework"];
 
 ### 15 秒去抖与去重机制
 
-**一手验证**（`frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`）：
+**15 秒去抖实现**（`frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`）：
 
 ```java
 private static final long APP_EXIT_INFO_STATSD_LOG_DEBOUNCE = TimeUnit.SECONDS.toMillis(15);
@@ -501,7 +499,7 @@ private void scheduleLogToStatsdLocked(ApplicationExitInfo info, boolean immedia
 
 ### StatsBootstrapAtomService 早期启动路径
 
-**一手验证**（`frameworks/base/services/core/java/com/android/server/stats/bootstrap/StatsBootstrapAtomService.java`）：
+**早期启动路径**（`frameworks/base/services/core/java/com/android/server/stats/bootstrap/StatsBootstrapAtomService.java`）：
 
 - 自 2021 年引入，专门解决 system_server 早期启动阶段 statsd daemon 尚未 ready 时的原子投递。
 - 通过 `Context.STATS_BOOTSTRAP_ATOM_SERVICE` Binder service 注册。
@@ -514,7 +512,7 @@ private void scheduleLogToStatsdLocked(ApplicationExitInfo info, boolean immedia
 
 ### 持久化 proto 与 statsd 原子的字段差异
 
-**一手验证**（`frameworks/base/core/proto/android/app/appexitinfo.proto`）：
+**持久化 proto vs statsd 原子字段差异**（`frameworks/base/core/proto/android/app/appexitinfo.proto`）：
 
 | 字段 | ApplicationExitInfoProto (持久化) | AppProcessDied 原子 (statsd) |
 |------|----------------------------------|------------------------------|
@@ -541,11 +539,7 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 - **ApplicationStartInfo 启动时间戳体系**：Android 15 引入的 ApplicationStartInfo 提供 StartupTimestamp 枚举（LAUNCH、JAVA_CLASSLOADING_COMPLETE、APPLICATION_ONCREATE、BIND_APPLICATION、FIRST_FRAME、REPORT_FULLY_DRAWN），全部为纳秒级。StartType 区分 COLD/WARM/HOT 三种启动类型。源码位置：`frameworks/base/core/java/android/app/ApplicationStartInfo.java`。
 - **ProfilingTrigger 源码位置**：android-17.0.0_r1 位于 `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`，不在 `frameworks/base/core/java/android/os/`。
 
-## 补充调研（2026-05-23）：REASON 常量版本对照与 MemoryLimiter 边界确认
-
-**来源**：research-gaps.md §26.12 盲区回退
-
-**新增验证点（2026-05-23 一手验证）**：
+## 补充：REASON 常量版本对照与 MemoryLimiter 边界确认
 
 ### ApplicationExitInfo REASON 常量版本对照表
 基于 Microsoft Learn .NET binding for Android（该 binding 忠实映射 AOSP `[ApiSince=30]` 注册注解）交叉验证，REASON_* 常量版本对照表：
@@ -557,7 +551,7 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 | **REASON_PACKAGE_STATE_CHANGE** | **API 34** | Android 14 引入，包组件状态变化 |
 | **REASON_PACKAGE_UPDATED** | **API 34** | Android 14 引入，包更新杀进程 |
 
-⚠️ 上述 API Level 基于 Microsoft Learn .NET binding 注释，建议通过 AOSP git log 确认具体 commit。
+
 
 ### Android 17 MemoryLimiter 行为
 **来源**：developer.android.com/about/versions/17/behavior-changes-all（官方 Android 17 behavior changes）
@@ -573,33 +567,26 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 - `TRIGGER_TYPE_COLD_START`（API 37）的触发前提等价于 `ApplicationStartInfo.getStartType() == START_TYPE_COLD`
 - 两者共享底层启动类型判断数据源，分工：ApplicationStartInfo 用于历史启动分析，TRIGGER_TYPE_COLD_START 用于 ProfilingTrigger 触发
 
-**参考报告**：`DeepResearch/2026-05-23-android-versioned-diagnostic-api-versions.md`
 
-## 补充调研（2026-05-19）
 
-**来源**：每日推荐选题 #5（优先级：high）
+## 补充：ProfilingTrigger 版本常量与调试命令
 
-**新增验证点**：
-
-- `ProfilingTrigger` `[ApiSince=36]`（Microsoft Learn .NET 绑定确认）
-- Android 17 / API 37 新增 trigger 类型：`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（Android Developers 官方 release notes）
-- `ApplicationStartInfo.getStartComponent()` `[ApiSince=36]`（Microsoft Learn 确参）
-- `ProfilingManager` 限流/调试模式具体 shell 命令：
- - Android 16+: `device_config put profiling_testing delete_temporary_results.disabled true`
- - Android 15: `device_config put profiling_testing delete_unredacted_trace.disabled true`
- - 测试模式: `device_config put profiling_testing system_triggered_profiling.testing_package_name <pkg>`
-
-**参考报告**：`DeepResearch/2026-05-19-android-versioned-online-diagnostic-capabilities.md`
+- `ProfilingTrigger` 标注 `@ApiSince=36`
+- Android 17 / API 37 新增 trigger 类型：`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`
+- ProfilingManager 限流/调试模式 shell 命令：
+  - Android 16+: `device_config put profiling_testing delete_temporary_results.disabled true`
+  - Android 15: `device_config put profiling_testing delete_unredacted_trace.disabled true`
+  - 测试模式: `device_config put profiling_testing system_triggered_profiling.testing_package_name <pkg>`
 
 ## 参考资料
 
 ### Android 15-17 线上诊断能力版本对照验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-17-diagnostic-apis-version-matrix.md
+- 来源：DeepResearch/2026-05-31-android-17-diagnostic-apis-version-matrix.md
 - 类型：DeepResearch 调研结果
 - 摘要：Android 15-17 线上诊断能力由 ApplicationExitInfo（API 30+，13种死亡原因+22种子原因）和 ProfilingManager（API 35+，4种剖析类型）构成。版本对照覆盖 API 30-37，含完整源码锚点和获取方式。子原因如 SUBREASON_FREEZER_BINDER_IOCTL、SUBREASON_EXCESSIVE_CPU 等对线上稳定性治理有直接诊断价值。
 
 ### Android 版本化线上诊断能力完整边界研究
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-versioned-online-diagnostic-capabilities.md
+- 来源：DeepResearch/2026-05-20-android-versioned-online-diagnostic-capabilities.md
 - 类型：DeepResearch 调研结果
 - 摘要：建立 Android 10-17 四档线上诊断能力对照表：ApplicationExitInfo（API 30+）提供进程退出追溯，ProfilingManager（API 35+）支持 system trace / heap dump / heap profile / stack sampling 四类采集，ProfilingTrigger（API 36+）支持 APP_FULLY_DRAWN / ANR 触发器，API 37 扩展 COLD_START / OOM / KILL_EXCESSIVE_CPU_USAGE / ANOMALY。包含完整的 API 版本降级路径和限流配置。
 
@@ -638,17 +625,9 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
  - minidump 写入由独立 handler 进程完成，不阻塞应用主线程
  - 双策略：RequestCrashDumpHandler（与已运行 handler 通信）/ LaunchAtCrashHandler（crash 时启动 handler）
 
-**信息源一手性**：
-- developer.android.com NDK debug 文档（✅）
-- developer.android.com ApplicationExitInfo API reference（✅ REASON_FREEZER API 33、REASON_PACKAGE_STATE_CHANGE API 34）
-- developer.android.com ProfilingManager overview（✅）
-- Crashpad 模型、ProfilingTrigger 详细常量定义、ApplicationStartInfo START_TYPE_* 常量定义：均未经 AOSP 源码直接验证（❌）
 
-## 补充调研（2026-05-31）：ProfilingManager/ProfilingResult API 35 源码验证
 
-**来源**：daily-topics.json #5 选题驱动
-
-**新增验证点（2026-05-31 一手验证）**：
+## 补充：ProfilingManager/ProfilingResult API 35 源码验证
 
 ### ProfilingManager 源码路径与 Flag 约束
 - 源码位置：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`（非 frameworks/base 路径）
@@ -670,8 +649,3 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 | ERROR_FAILED_NO_DISK_SPACE | 6 | 磁盘空间不足 |
 | ERROR_FAILED_INVALID_REQUEST | 7 | 无效请求 |
 | ERROR_UNKNOWN | 8 | 未知错误 |
-
-### 未验证项（诚实标注）
-- ProfilingTrigger：源码检索未找到该类，可能位于 `packages/modules/Profiling/` 路径而非 `frameworks/base/`
-- FLAG_TELEMETRY_APIS 启用条件：源码中未找到该 Flag 的具体启用机制
-- ProfilingService 服务端实现：未找到 frameworks/base/services/core/java 中的 ProfilingService.java

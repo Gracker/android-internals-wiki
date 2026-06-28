@@ -66,7 +66,7 @@ last_task9_autofix_at: "2026-06-28"
 last_task9_audit_log: "logs/deep-review/2026-06-28-16-audit.md"
 task6_reviewed_date: "2026-06-07"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 18.9 Vulkan 原生渲染管线
@@ -89,9 +89,9 @@ last_deepseek_cn_review_at: 2026-06-11
 
 <!-- outline-end -->
 
-Vulkan 是 Android 的主要底层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的关键区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只执行提交的命令，不再替应用推断状态。换来的是更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
+Vulkan 是 Android 目前的主要底层图形 API，Android 15 起通过 AVP（Android Vulkan Profile）进一步统一了设备能力基线。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心差异在于**“显式优于隐式”**——内存分配、同步原语、命令提交全部由 App 显式控制，驱动只负责执行已提交的命令，不再替应用猜测意图。换来的收益是更低的 CPU 开销、更少的驱动行为不确定性，以及更高的调试可控性。
 
-关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。Vulkan 渲染管线的实战视角包括三件事：Acquire 到 Present 的完整流程、Presentation Mode 的选择，以及 Trace 中的调用路径识别。
+关于图形 API 的演进历史，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。从实战角度看，Vulkan 渲染管线要讲清楚三件事：Acquire 到 Present 的完整流程、Presentation Mode 怎么选，以及 Trace 里怎么识别 Vulkan 调用路径。
 
 ## 为什么选择 Vulkan
 
@@ -127,7 +127,7 @@ Vulkan 的代价是**开发复杂度**。应用需要自行管理：
 
 ## Android Vulkan Profile (AVP)
 
-Vulkan 面临的主要难点是碎片化：不同设备支持的 Extension 不同，App 需要运行时查询并处理各种 fallback。AVP（Android Vulkan Profile）是 Google 推出的标准化方案，目标是让 App 开发者只需要检查"设备是否支持某个 Profile"，而不需要逐一查询 Extension。
+Vulkan 在 Android 上的核心痛点是碎片化：不同设备支持的 Extension 各不相同，App 必须在运行时逐个查询并处理 fallback。AVP（Android Vulkan Profile）是 Google 推出的标准化方案，目标是让 App 开发者只需要检查"设备是否支持某个 Profile"，而不需要逐一查询 Extension。
 
 ### 问题背景
 
