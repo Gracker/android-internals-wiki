@@ -440,33 +440,46 @@
   {
     "section": "18.25",
     "section_title": "Jetpack Compose 渲染管线架构",
-    "priority": 90,
-    "reason": "[Task2B Lite 转交] Issues 2,3,5 需要 Task2B 主修复处理：Choreographer 绑定路径重写 + 时序图更新、requestRedraw/RenderNodeLayer 流程图修正、Snapshot 同步原语与性能表重写",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Compose 渲染管线仍存在 FrameClock/traversal 边界、GraphicsLayer 主路径、Snapshot 锁语义与 PausableComposition 版本边界错误",
     "material_paths": [
-      "logs/deep-review/2026-06-29-03-deep-review.md"
+      "logs/deep-review/2026-06-29-03-deep-review.md",
+      "logs/deep-review/2026-06-29-04-deep-review.md"
     ],
     "review_issues": [
       {
-        "type": "原理断裂",
-        "location": "§与 Choreographer 的绑定、§布局阶段、§Compose 与 RenderThread 的协作",
-        "detail": "Compose FrameCallback 描述为在 doFrame 中直接执行重组并触发 LayoutNode measure/layout。实际 Recomposer 通过 AndroidUiFrameClock/AndroidUiDispatcher 对齐 Choreographer frame，LayoutNode 测量/布局由 AndroidComposeView.onMeasure()/onLayout() 以及 dispatchDraw() 开头的 measureAndLayout() 在 ViewRootImpl traversal 中执行。",
-        "suggestion": "把'Compose FrameCallback 执行 measure/layout'改成 Recomposer/frame clock + ViewRoot traversal 描述。同步更新两张时序图。"
+        "type": "源码错误/原理断裂",
+        "location": "§与 Choreographer 的绑定、§布局阶段、§Compose 与 RenderThread 的协作（约 82-110、176、469-476 行）",
+        "detail": "正文仍写成 AndroidComposeView.onAttachedToWindow 注册 Choreographer.FrameCallback，且 Compose FrameCallback 在 doFrame 中执行 recomposition + measure/layout。androidx-compose-release 的 AndroidComposeView.onAttachedToWindow 只做 attach/window/snapshot observer 与 invalidation；AndroidUiFrameClock.withFrameNanos 只通过 Choreographer.FrameCallback 恢复协程。LayoutNode 测量/布局由 AndroidComposeView.onMeasure/onLayout/dispatchDraw 中的 MeasureAndLayoutDelegate 参与 ViewRootImpl traversal 完成。",
+        "suggestion": "重写为“Recomposer 通过 AndroidUiFrameClock 对齐帧并执行重组/apply；measure/layout/draw 由 AndroidComposeView 在 ViewRootImpl traversal 中完成”。同步修正两张时序图，不再把 measure/layout 放进 Compose FrameCallback。"
       },
       {
         "type": "源码错误",
-        "location": "§Compose 重组到 RenderNode 的完整链路 / §绘制阶段与 RenderNode 构建",
-        "detail": "LayoutNode.kt 中不存在 requestRedraw()；AndroidComposeView.createLayer() 在 SDK >= M 路径优先创建 GraphicsLayerOwnerLayer，RenderNodeLayer 是旧/回退实现。",
-        "suggestion": "将 requestRedraw 改为 layer/root layer invalidation；将 RenderNodeLayer 限定为旧路径或兼容回退。"
+        "location": "§Compose 重组到 RenderNode 的完整链路、§绘制阶段与 RenderNode 构建、§Perfetto 渲染跟踪（约 228-233、196-207、526-529 行）",
+        "detail": "流程图仍包含不存在的 LayoutNode.requestRedraw()，并把 RenderNodeLayer.updateDisplayList()/RenderNode.beginRecording() 写成 Compose 1.10 Android 主路径。androidx-compose-release 的 LayoutNode.kt 无 requestRedraw；AndroidComposeView.createLayer() 在 SDK >= M 优先返回 GraphicsLayerOwnerLayer(graphicsContext.createGraphicsLayer())，RenderNodeLayer 只是旧路径/兼容回退。",
+        "suggestion": "将 requestRedraw 改为 layer/root layer invalidation；将绘制路径表述为 OwnedLayer/GraphicsLayer 更新 display list，RenderNodeLayer 仅作为旧路径或兼容回退说明。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§RenderNode 与 DisplayList 提交、§Compose 与 RenderThread 的协作的源码锚点（约 455、491 行）",
+        "detail": "正文把 ThreadedRenderer.java 锚到 frameworks/base/graphics/java/android/graphics/ThreadedRenderer.java。android-17.0.0_r1 中该路径不存在；正确路径是 frameworks/base/core/java/android/view/ThreadedRenderer.java，syncAndDrawFrame 调用位于 ThreadedRenderer.draw()。",
+        "suggestion": "修正 ThreadedRenderer 的 AOSP 路径，并保留 HardwareRenderer.java 位于 frameworks/base/graphics/java/android/graphics/HardwareRenderer.java 的区分。"
       },
       {
         "type": "源码错误/数据缺失",
-        "location": "扩展 6.6-6.9 Snapshot 同步原语与性能表",
-        "detail": "MutableState 写描述成 lock-free CAS 快路径并给出 ~10ns/~30ns 数字。实际写路径进入 sync(lock)；纳秒数字无基准来源。'跨 Recomposer 并发重组：不可能'描述不准确。",
-        "suggestion": "重写 Snapshot 性能段，删除未验证纳秒数字，修正并发边界描述。"
+        "location": "扩展 6.3、6.6、6.8 Snapshot 同步原语与性能表（约 623-624、665-696 行）",
+        "detail": "正文称写入只更新 modified set、MutableState.set() 是 lock-free CAS，并给出 ~10ns/~30ns/~1-5µs 数字。androidx-compose-release 的 SnapshotMutableStateImpl.value setter 走 next.overwritable(...); Snapshot.kt 的 overwritable()/overwritableRecord() 进入 sync(lock)。当前纳秒级性能数字没有 benchmark 条件；“跨 Recomposer 并发重组：不可能”也只适用于同一 composer/Recomposer 串行，不等于跨 Recomposer 不可能。",
+        "suggestion": "重写 Snapshot 性能段：读路径可无锁遍历但存在 sync fallback，写路径进入 Snapshot.lock；删除未验证数字或补充 benchmark；并发边界改为同一 Recomposer 串行、跨 Recomposer 可能并行但会在 Snapshot.lock / apply 冲突上同步。"
+      },
+      {
+        "type": "版本差异",
+        "location": "§PausableComposition：问题背景、§版本演进要点（约 255、563-564 行）",
+        "detail": "正文把“Compose 1.10 stable 将 PausableComposition 设为默认行为”写成无条件事实，并进一步绑定到 Android 17。Compose Foundation release notes 显示 1.10.0-alpha05 曾默认启用 ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled，但 1.10.6 已因稳定性问题默认禁用。该能力是 Compose Foundation 版本/flag 边界，不是 Android 17 平台事实。",
+        "suggestion": "把版本结论收窄为“PausableComposition 支持存在，但预取默认启用状态依赖 Foundation 具体版本与 flag；1.10.0-alpha05 曾启用，1.10.6 默认禁用”。删除“Android 17 同期 stable 默认开启”的绑定。"
       }
     ],
-    "added_by": "task2b-lite-handoff",
-    "added_at": "2026-06-29T03:37:11+08:00",
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T04:29:07.107245+08:00",
     "status": "pending"
   }
 ]
