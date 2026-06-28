@@ -2,10 +2,10 @@
 title: "后台功耗治理"
 chapter: "25.2"
 section: "25.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers power / background work docs + Clippings structure references"
+last_verified: "2026-06-28"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers power / background work docs + Clippings structure references"
 confidence: medium-high
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -48,12 +48,13 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, foreground-service, location-power]
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "5.8", "11.2"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
 last_task2b_at: "2026-05-15T07:22:00+08:00"
+last_task2b_lite_at: "2026-06-28"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
@@ -109,7 +110,7 @@ last_deepseek_cn_review_at: 2026-06-25
 
 ## Android 后台执行限制演进（Doze / App Standby / Bucket）
 
-Android 后台限制可以按“设备状态、App 使用状态、任务 API”三层理解。设备进入 Doze 后，系统延后后台 CPU 和网络活动，把普通 Job、同步适配器、常规 Alarm 推迟到 maintenance window；App 长时间未被用户使用后，App Standby 会限制后台网络；Android 9 引入 App Standby Buckets 后，限制还会跟随用户使用频率变化。 [已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby] [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java]
+Android 后台限制可以按“设备状态、App 使用状态、任务 API”三层理解。设备进入 Doze 后，系统延后后台 CPU 和网络活动，把普通 Job、同步适配器、常规 Alarm 推迟到 maintenance window；App 长时间未被用户使用后，App Standby 会限制后台网络；Android 9 引入 App Standby Buckets 后，限制还会跟随用户使用频率变化。 [已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby] [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java]
 
 | 版本节点 | 后台规则变化 | App 侧治理动作 |
 |----------|--------------|----------------|
@@ -122,7 +123,7 @@ Android 后台限制可以按“设备状态、App 使用状态、任务 API”�
 
 Android Developers 的 power resource limits 文档把限制分成两种：一种是设备低功耗状态下延后执行，例如 Doze 期间普通 Job 和非精确 Alarm 延后；另一种是根据 standby bucket 限制唤醒频率和可运行时长，例如 rare bucket 下 Job 运行预算更少。WorkManager 在 App 不可见时通过 JobScheduler 执行，也会受到这些限制。 [已验证: 官方文档, developer.android.com/topic/performance/power/power-details]
 
-AOSP 的入口能对应到这三层：`DeviceIdleController` 维护 idle / maintenance 状态，`AppStandbyController` 维护 bucket，`QuotaController` 根据 bucket 和 Job 状态计算剩余执行时间，`UsageStatsManager` 暴露 `STANDBY_BUCKET_ACTIVE`、`WORKING_SET`、`FREQUENT`、`RARE`、`RESTRICTED` 等常量。 [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/usage/UsageStatsManager.java]
+AOSP 的入口能对应到这三层：`DeviceIdleController` 维护 idle / maintenance 状态，`AppStandbyController` 维护 bucket，`QuotaController` 根据 bucket 和 Job 状态计算剩余执行时间，`UsageStatsManager` 暴露 `STANDBY_BUCKET_ACTIVE`、`WORKING_SET`、`FREQUENT`、`RARE`、`RESTRICTED` 等常量。 [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/usage/UsageStatsManager.java]
 
 到 App 实战层，判断顺序不要从“怎么绕过限制”开始，而是先问四个问题：
 
@@ -193,7 +194,7 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 
 Android 12 以后，targetSdk 31+ 的 App 从后台启动前台服务会被限制，只有用户可见状态切换、用户触发的精确 Alarm、地理围栏或 activity recognition 事件、部分启动广播和系统角色等豁免场景可以启动。涉及 camera、microphone、location、body sensor 等 while-in-use 权限的前台服务，即使命中部分豁免，也不能在后台直接创建。 [已验证: 官方文档, developer.android.com/develop/background-work/services/fgs/restrictions-bg-start]
 
-Android 14 对前台服务再加一层类型约束。targetSdk 34+ 的 App 必须在 manifest 中为每个前台服务声明合适的 `android:foregroundServiceType`，并声明对应的 `FOREGROUND_SERVICE_*` 权限；调用 `startForeground()` 时缺类型会触发 `MissingForegroundServiceTypeException`，类型不匹配会触发对应运行时异常。AOSP `ServiceInfo` 中的 `FOREGROUND_SERVICE_TYPE_*` 常量也能看到这些类型和部分超时说明。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/fgs-types-required] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/pm/ServiceInfo.java]
+Android 14 对前台服务再加一层类型约束。targetSdk 34+ 的 App 必须在 manifest 中为每个前台服务声明合适的 `android:foregroundServiceType`，并声明对应的 `FOREGROUND_SERVICE_*` 权限；调用 `startForeground()` 时缺类型会触发 `MissingForegroundServiceTypeException`，类型不匹配会触发对应运行时异常。AOSP `ServiceInfo` 中的 `FOREGROUND_SERVICE_TYPE_*` 常量也能看到这些类型和部分超时说明。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/fgs-types-required] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/pm/ServiceInfo.java]
 
 这段 manifest 片段用于检查位置型前台服务的最小声明：服务类型、基础前台服务权限、类型权限、运行时位置权限必须同时满足。
 
