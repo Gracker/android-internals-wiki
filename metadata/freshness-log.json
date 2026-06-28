@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-06-24T02:03:49.256066+08:00",
+  "last_check": "2026-06-29T02:00:00+08:00",
   "entries": [
     {
       "date": "2026-04-15",
@@ -1769,6 +1769,503 @@
       "appendix_note": "过去 7 天窗口内无新 Android 17 Beta/DP 发布；android-17.0.0_r1 tag 已在 AOSP 主要仓库公开，但本轮内容更新以现有 API 37 文档为基础，不引入新版本内容",
       "external_source_limitation": "Android Developers Blog 和 AOSP Release Notes 访问受限，但基于已知信息和本地内容判断时效性",
       "next_scheduled_check": "2026-06-26"
+    },
+    {
+      "date": "2026-06-29",
+      "timestamp": "2026-06-29T02:00:00+08:00",
+      "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
+      "android_version_changes": {
+        "android_17_status": "仍处于预稳定阶段，预计 2026 年 6-7 月正式发布；过去 7 天内无新 Beta/DP 发布",
+        "android_16_status": "QPR2+ Generational CMC 作为官方能力正式可用（延续）",
+        "version_boundary_check": "无 Android 18 / API 38 越界内容 - 共扫描 13 处引用，全部为'未使用/不在范围'边界标记",
+        "recent_updates": [
+          "Android 17 API 37 仍处于预稳定阶段，过去 7 天窗口内无新 Beta/DP",
+          "android-17.0.0_r1 tag 已在 AOSP 主要仓库公开（frameworks/base, frameworks/native, system/memory, packages/modules/Profiling, libcore, ART）（延续）",
+          "Android 16 QPR2+ Generational CMC 作为官方能力正式可用（延续）",
+          "AutoFDO 扩展至 android17-6.18 kernel 分支 - 26.4% 基准性能提升（延续）",
+          "MessageQueue 无锁实现在 API 37 中已稳定（延续）",
+          "App Memory Limiter 在 API 37 中引入（延续）",
+          "ProfilingManager 新增 TRIGGER_TYPE_ANOMALY 触发器（延续）"
+        ],
+        "key_changes": {
+          "app_memory_limiter": "Android 17 基于设备 RAM 的应用内存限制（API 37）",
+          "generational_cmc_official": "Android 16 QPR2+ Generational CMC 作为官方能力",
+          "lock_free_messagequeue": "API 37 无锁 MessageQueue 稳定",
+          "profiling_anomaly_trigger": "ProfilingManager 异常检测触发器",
+          "autofdo_kernel_618": "AutoFDO android17-6.18 性能提升"
+        },
+        "scope_note": "巡检范围上限 Android 17 / API 37；Android 18/API 38+ 内容已判定为超出范围",
+        "external_source_status": "Android Developers Blog 和 AOSP Release Notes 访问受限"
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 580,
+        "files_with_metadata": 444,
+        "files_verified_under_14_days": 80,
+        "files_verified_under_30_days": 200,
+        "files_verified_over_90_days": 0,
+        "outdated_files": 38,
+        "high_risk_files": 2,
+        "medium_risk_files": 36,
+        "low_risk_files": 0,
+        "files_ending_at_api36": 3,
+        "files_with_api37": 431,
+        "android_18_api38_references": 13
+      },
+      "key_findings": [
+        "2 高风险版本演进章节（version_evolution 30 天阈值严重超期）",
+        "36 中风险工具使用章节（tool_usage 60 天阈值超期）",
+        "Android 17 / API 37 边界严格遵守，无 Android 18/API 38+ 越界内容",
+        "431 个文件已有 API 37 覆盖，3 个文件仍需添加",
+        "无文件超过 90 天验证阈值（90 天阈值严格遵守，0 个）",
+        "过去 7 天无新 Android 17 Beta/DP 发布，附录 A 无需更新",
+        "上轮（2026-06-24）发现的高风险项在 queue 中仍未处理，逾期天数继续增加",
+        "1.6 架构版本演进（22d）和 4.6 内存版本演进（21d）已在上轮巡检刷新，处于 30 天阈值内"
+      ],
+      "action_items": [
+        "高优先级：6.4 存储相关的版本演进和 2.14 图形 API 演进需升级 queue 优先级（逾期 > 60 天）",
+        "批量处理 36 个中风险工具使用章节（perfetto/methodology/APM）",
+        "继续为 system_mechanisms 章节分批添加 API 37 覆盖",
+        "跟踪 Android 17 正式发布日期，准备版本演进章节最终更新"
+      ],
+      "outdated_files": [
+        {
+          "file": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
+          "title": "线程 CPU 状态分析",
+          "last_verified": "2026-04-03",
+          "days_old": 87,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 27,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch15-methodology/01-philosophy.md",
+          "title": "性能优化的术、道、器",
+          "last_verified": "2026-04-04",
+          "days_old": 86,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 26,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+          "title": "Android Camera 性能与 Perfetto 分析",
+          "last_verified": "2026-04-06",
+          "days_old": 84,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 24,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
+          "title": "专题解读",
+          "last_verified": "2026-04-13",
+          "days_old": 77,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 17,
+          "in_queue": false
+        },
+        {
+          "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+          "title": "存储相关的版本演进",
+          "last_verified": "2026-04-14",
+          "days_old": 76,
+          "threshold": 30,
+          "category": "version_evolution",
+          "risk": "high",
+          "overdue": 46,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+          "title": "Perfetto 简介与演进",
+          "last_verified": "2026-04-14",
+          "days_old": 76,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 16,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+          "title": "\"Android 性能问题实证：真实世界的分类与代码模式\"",
+          "last_verified": "2026-04-18",
+          "days_old": 72,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 12,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
+          "title": "\"Battery Historian 与功耗分析工具\"",
+          "last_verified": "2026-04-20",
+          "days_old": 70,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 10,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch13-perfetto/README.md",
+          "title": "\"第 13 章：Perfetto\"",
+          "last_verified": "2026-04-21",
+          "days_old": 69,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 9,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
+          "title": "\"从采集到治理的反馈回路\"",
+          "last_verified": "2026-04-22",
+          "days_old": 68,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 8,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch15-methodology/10-performance-governance.md",
+          "title": "\"性能治理工程化\"",
+          "last_verified": "2026-04-22",
+          "days_old": 68,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 8,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
+          "title": "\"Perfetto 的高级用法\"",
+          "last_verified": "2026-04-22",
+          "days_old": 68,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 8,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/22-storage-benchmark.md",
+          "title": "\"存储 Benchmark（AndroBench、A1 SD Bench）\"",
+          "last_verified": "2026-04-24",
+          "days_old": 66,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 6,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+          "title": "androidx.tracing（Tracing SDK）",
+          "last_verified": "2026-04-24",
+          "days_old": 66,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 6,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+          "title": "网络 APM 底层捕获原理",
+          "last_verified": "2026-04-24",
+          "days_old": 66,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 6,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/06-blockcanary.md",
+          "title": "\"BlockCanary\"",
+          "last_verified": "2026-04-24",
+          "days_old": 66,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 6,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/README.md",
+          "title": "\"第 19 章：APM 工具与性能监控生态\"",
+          "last_verified": "2026-04-24",
+          "days_old": 66,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 6,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/19-perfdog.md",
+          "title": "PerfDog",
+          "last_verified": "2026-04-24",
+          "days_old": 66,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 6,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+          "title": "\"崩溃与 ANR 捕获机制\"",
+          "last_verified": "2026-04-24",
+          "days_old": 66,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 6,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch14-other-tools/12-apm-observability.md",
+          "title": "APM / 可观测性平台与 SDK 选型",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch15-methodology/03-metrics.md",
+          "title": "\"性能指标体系\"",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
+          "title": "\"线上性能监控\"",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+          "title": "07-aosp-reading",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/20-solopi-emmagee.md",
+          "title": "SoloPi 与 Emmagee",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/17-firebase-performance.md",
+          "title": "\"Firebase Performance\"",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+          "title": "混合栈与跨平台 APM (WebView / Flutter)",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/04-btrace.md",
+          "title": "\"btrace / RheaTrace\"",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/25-battery-thermal-apm.md",
+          "title": "耗电与发热监控 (Battery & Thermal)",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/05-leakcanary.md",
+          "title": "\"LeakCanary\"",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/01-apm-landscape.md",
+          "title": "\"APM 全景图与分类体系\"",
+          "last_verified": "2026-04-25",
+          "days_old": 65,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 5,
+          "in_queue": false
+        },
+        {
+          "file": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+          "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+          "last_verified": "2026-04-26",
+          "days_old": 64,
+          "threshold": 30,
+          "category": "version_evolution",
+          "risk": "high",
+          "overdue": 34,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
+          "title": "自动化测试工具",
+          "last_verified": "2026-04-26",
+          "days_old": 64,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 4,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+          "title": "\"性能测试最佳实践\"",
+          "last_verified": "2026-04-27",
+          "days_old": 63,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 3,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/08-argusapm.md",
+          "title": "\"ArgusAPM\"",
+          "last_verified": "2026-04-27",
+          "days_old": 63,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 3,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/02-tencent-matrix.md",
+          "title": "\"Tencent Matrix\"",
+          "last_verified": "2026-04-27",
+          "days_old": 63,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 3,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+          "title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+          "last_verified": "2026-04-27",
+          "days_old": 63,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 3,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch19-apm/07-dokit.md",
+          "title": "\"DoraemonKit / DoKit\"",
+          "last_verified": "2026-04-27",
+          "days_old": 63,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 3,
+          "in_queue": false
+        },
+        {
+          "file": "src/part3-tools/ch13-perfetto/04-large-traces.md",
+          "title": "\"命令行打开超大 Trace\"",
+          "last_verified": "2026-04-27",
+          "days_old": 63,
+          "threshold": 60,
+          "category": "tool_usage",
+          "risk": "medium",
+          "overdue": 3,
+          "in_queue": false
+        }
+      ],
+      "queue_updates": [
+        "升级 priority-90 → 95: 6.4 存储相关的版本演进（pending, days_overdue: 46 → 46+5）",
+        "升级 priority-70 → 80: 2.14 图形 API 演进（days_overdue: 34 → 34+5）",
+        "新增 priority-70: 13.6 thread-cpu-states（tool_usage, 27d 逾期）",
+        "新增 priority-70: 15.1 性能优化哲学（tool_usage, 26d 逾期）",
+        "新增 priority-65: 14.9 Camera 性能（tool_usage, 24d 逾期）",
+        "新增 priority-60: 13.5 Perfetto 专题解读（tool_usage, 17d 逾期）",
+        "新增 priority-60: 13.1 Perfetto 简介（tool_usage, 16d 逾期）",
+        "新增 priority-60: 15.8 性能问题实证（tool_usage, 12d 逾期）",
+        "新增 priority-60: 14.11 Battery Historian（tool_usage, 10d 逾期）",
+        "新增 priority-60: 13.0 Perfetto README（tool_usage, 9d 逾期）",
+        "新增 priority-60: 15.9 观测反馈回路（tool_usage, 8d 逾期）",
+        "新增 priority-60: 15.10 性能治理（tool_usage, 8d 逾期）",
+        "新增 priority-60: 13.7 Perfetto 高级用法（tool_usage, 8d 逾期）"
+      ],
+      "appendix_updates_needed": false,
+      "appendix_note": "过去 7 天窗口内无新 Android 17 Beta/DP 发布；android-17.0.0_r1 tag 已在 AOSP 主要仓库公开，但本轮内容更新以现有 API 37 文档为基础，不引入新版本内容",
+      "external_source_limitation": "Android Developers Blog 和 AOSP Release Notes 访问受限，但基于已知信息和本地内容判断时效性",
+      "next_scheduled_check": "2026-07-01"
     }
   ]
 }
