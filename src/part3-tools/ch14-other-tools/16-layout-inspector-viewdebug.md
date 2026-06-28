@@ -45,13 +45,13 @@ related_chapters: ["7.12", "14.1", "22.1", "22.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-05-19
 gap_source: 素材驱动/官方文档/AOSP结构
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 14.16 Layout Inspector 与 ViewDebug 布局调试
 
 Layout Inspector 解决的是 UI 现场证据问题：当前屏幕上的节点树是什么、某个节点的尺寸和坐标是多少、属性值来自哪里、Compose 节点是否在频繁重组。它不替代 Perfetto、CPU Profiler、Memory Profiler 或 Winscope。Layout Inspector 面向应用内部的 View / Compose 层级；Perfetto 面向线程、调度、FrameTimeline 和系统 trace；Winscope 面向 WindowManager 与 SurfaceFlinger 状态。排查布局错位、遮挡、点击区域异常时，从 Layout Inspector 拿静态结构证据，再切到 Perfetto 或 Winscope 追时间和系统状态，成本最低。
-
-[已验证: 官方文档, developer.android.com/studio/debug/layout-inspector] [详见 14.1 节、7.12 节、22.3 节]
 
 ## Layout Inspector 的证据边界
 
@@ -74,8 +74,6 @@ Layout Inspector 在 Android Studio 中连接运行中的应用进程，展示 V
 
 Live Layout Inspector 适合复现中的交互问题。连接设备后，在 Android Studio 里选择目标进程，Inspector 会展示组件树、预览画面和属性面板；应用 UI 变化时，Live 模式会更新当前层级。官方文档还提到，Layout Inspector 启动时会自动设置 `debug_view_attributes`，用于让工具读取更多调试属性；工具结束后可以用 adb 删除该全局设置。
 
-[已验证: 官方文档, developer.android.com/studio/debug/layout-inspector]
-
 ```bash
 adb shell settings put global debug_view_attributes 1
 adb shell settings delete global debug_view_attributes
@@ -84,8 +82,6 @@ adb shell settings delete global debug_view_attributes
 这两个命令只用于说明工具依赖的系统设置。日常使用 Android Studio 时，Layout Inspector 会自动处理；脚本化排障或设备状态异常时，再手工核对这个开关。
 
 Snapshot 适合复盘和协作。把某一刻的 layout hierarchy 导出后，可以离线打开，不再依赖设备和进程。官方文档说明，snapshot 会保存 View、Compose 或混合布局的组件树、属性和 3D 渲染数据。团队内讨论 UI 走查问题时，snapshot 比截图更有用，因为它保留了节点级证据。
-
-[已验证: 官方文档, developer.android.com/studio/debug/layout-inspector]
 
 构建类型会影响可见信息。`debuggable=true` 的构建最适合调试，源码跳转和属性信息更完整；release 构建默认可见性更受限；`profileable` 让性能工具能附着，但不等同于完整调试权限。三方应用、系统应用和厂商 ROM 的调试限制也可能让连接失败或属性缺失。遇到这类情况，记录 Android Studio 版本、设备系统版本、App 构建类型和 adb 连接状态，比反复重启工具更快。
 
@@ -103,17 +99,11 @@ Layout Inspector 的属性面板适合查这类问题：
 
 3D 模式的版本边界要单独记。官方文档明确说明，3D mode 从 Android Studio Panda 2 起已废弃并移除；在保留该能力的旧版 Android Studio 中，3D mode 需要先 capture snapshot，再在 snapshot inspector 里打开。写排障文档时，不要把 3D 视图当成所有团队都能使用的能力。
 
-[已验证: 官方文档, developer.android.com/studio/debug/layout-inspector]
-
 布局层级优化的判断也不能只看节点数量。官方 View 布局优化文档把 Layout Inspector 和 lint 放在一起：Inspector 用于观察运行时层级，lint 用于发现 XML 中可优化的嵌套。对性能排查来说，层级深只是线索；是否导致卡顿，还要看 `measure/layout` slice、调用频率、节点数量和复现路径。布局优化策略详见 22.1 节，View measure / layout 成本详见 7.12 节。
-
-[已验证: 官方文档, developer.android.com/develop/ui/views/layout/improving-layouts/optimizing-layouts] [详见 7.12 节、22.1 节]
 
 ## Compose UI 调试与重组计数
 
 Compose 场景下，Layout Inspector 能展示 composable 层级、semantics 信息、源码跳转、recomposition counts 和 skipped counts。官方 Compose 调试文档给出的版本条件是：查看重组计数时，App 需要运行在 API level 29 或更高版本，并使用 Compose 1.2.0 或更高版本。文档还提到，如果 Inspector 看不到 Compose 组件，要确认 APK 里包含 `META-INF/androidx.compose.*.version` 这类 Compose 版本元数据。
-
-[已验证: 官方文档, developer.android.com/develop/ui/compose/tooling/debug]
 
 Compose 重组计数的读法要保守。高 recomposition count 说明节点在交互过程中被频繁重新执行，但它不自动等于掉帧；skipped count 说明 Compose 判断该节点本轮不必重组，也不自动等于性能好。排查时按三步走：
 
@@ -126,8 +116,6 @@ Semantics 面板适合补 accessibility 和自动化测试视角。一个 Compos
 ## ViewDebug 与 AOSP 属性导出机制
 
 Layout Inspector 能读到的 View 属性，底层和 `ViewDebug`、View hierarchy dump、运行时反射/编码机制有关。AOSP `ViewDebug.java` 中保留了 `@ExportedProperty` 和 `@CapturedViewProperty` 两套注解。`@ExportedProperty` 可以标记字段或无参非 void 方法，支持 `resolveId`、int/string 映射、flag 映射、`category` 等信息；`@CapturedViewProperty` 用于捕获 View 相关属性，`dumpCapturedView()` 会把捕获到的属性写入 log。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewDebug.java]
 
 这段 AOSP 节选说明 `@ExportedProperty` 能把字段归类，并把 id、flag、枚举值转成人能读的字符串：
 
@@ -163,8 +151,6 @@ public static void dumpCapturedView(String tag, Object view) {
 
 布局问题和绘制问题容易混在一起。控件位置不对通常来自 measure / layout；内容没刷新、局部残影、动画过程中某一块没重绘，往往要看 invalidate 和 DisplayList 录制。AOSP `View.invalidate()` 会进入 `invalidateInternal()`，设置 `PFLAG_DIRTY` / `PFLAG_INVALIDATED`，再把 damage rectangle 传给 parent。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java]
-
 这段代码回答了 `invalidate()` 的第一跳：它不是直接绘制，而是标记脏区并向父节点传播。
 
 ```java
@@ -196,8 +182,6 @@ void invalidateInternal(int l, int t, int r, int b, boolean invalidateCache,
 
 `ViewRootImpl.scheduleTraversals()` 再把遍历投递到 Choreographer 的 traversal 回调。也就是说，`invalidate()` 只是把下一帧的 draw 工作安排起来；如果问题发生在 measure / layout，单纯调用 `invalidate()` 解决不了。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
-
 ```java
 void scheduleTraversals() {
     if (!mTraversalScheduled) {
@@ -212,8 +196,6 @@ void scheduleTraversals() {
 ```
 
 硬件加速路径下，View 内容会进入 `RenderNode` 的 DisplayList。`View.updateDisplayListIfDirty()` 会在 drawing cache 无效、RenderNode 没有 DisplayList、或 `mRecreateDisplayList` 为 true 时重新录制；`ThreadedRenderer.updateViewTreeDisplayList()` 会根据 `PFLAG_INVALIDATED` 设置 `mRecreateDisplayList`，再调用 `updateDisplayListIfDirty()`。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ThreadedRenderer.java]
 
 ```java
 private void updateViewTreeDisplayList(View view) {
@@ -233,8 +215,6 @@ private void updateViewTreeDisplayList(View view) {
 ## 第三方布局调试工具的适用边界
 
 AYA、`uiautomator dump`、Accessibility 抓取和 Layout Inspector 常被放在一起比较，但它们看到的不是同一棵树。Layout Inspector 连接目标应用调试通道，能拿到更接近 View / Compose 内部的属性；`uiautomator` 和 Accessibility 更接近可访问性树，适合黑盒查看 release App 的可见节点、文本、bounds 和可点击状态，但无法保证拿到完整 View 私有属性，也看不到业务内部状态。
-
-[已验证: 官方文档, developer.android.com/training/testing/other-components/ui-automator-legacy] [来源: source/juejin-android/2026-05-11-75967106-2026年了，Android开发该如何调.md]
 
 | 工具 | 可见范围 | 优势 | 边界 |
 |------|----------|------|------|

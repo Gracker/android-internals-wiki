@@ -69,6 +69,8 @@ p2: 0
 task6_reviewed_date: "2026-06-19"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（AOSP anchor android-17.0.0_r1；ProfilingManager API 35 / ProfilingTrigger API 36 边界修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过。outline 8/8 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
 last_task6_review_log: "logs/review/2026-06-19-04-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 13.17 Perfetto SDK 与应用内 Trace 数据源
@@ -108,8 +110,6 @@ last_task6_review_log: "logs/review/2026-06-19-04-review.md"
 
 Perfetto SDK 解决的是应用内部事件如何进入 Perfetto trace 的问题。它适合把 C / C++ 模块、游戏引擎、Native 渲染管线、端侧推理模块的区间和计数器放进同一份 `.pftrace`，让系统调度、Binder、渲染和应用自定义事件能在同一条时间轴上分析。读完这一节，应该能判断什么时候继续用 `android.os.Trace` / `androidx.tracing`，什么时候引入 Perfetto SDK，以及线上采集时不能越过哪些权限和隐私边界。
 
-[已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
-
 ## Perfetto SDK 和 AndroidX Tracing 的边界
 
 `androidx.tracing` 和平台 `android.os.Trace` 的定位很窄：给 Java / Kotlin 代码区间打 trace section，并通过 Android 的 atrace 数据源进入系统 trace。Macrobenchmark、Perfetto 命令行抓取、Android Studio 采样都能读取这些标记。Java / Kotlin 页面、RecyclerView、启动初始化这类场景，用它就够了。详见 19.13 节。
@@ -120,8 +120,6 @@ Perfetto SDK 的入口在 Native 侧。官方文档把它定义为 C++17 userspa
 - custom data source: 用 protobuf schema 写入强类型数据，适合把子系统状态快照、引擎内部队列、水位或调度决策写成结构化 trace packet。
 
 这两个层级不是互斥关系。`track_event` 负责时间轴上最常见的切片和计数器；custom data source 负责 Perfetto 原生数据源覆盖不到的结构化状态。
-
-[已验证: AOSP android-17.0.0_r1, external/perfetto/docs/instrumentation/tracing-sdk.md]
 
 选择时按这张表判断：
 
@@ -136,8 +134,6 @@ Perfetto SDK 的入口在 Native 侧。官方文档把它定义为 C++17 userspa
 ## in-process 后端的最小采集路径
 
 in-process backend 把 Perfetto service 和应用 data source 放在同一进程内，不连接系统 `traced` 守护进程。它只采集本应用写出的事件，不包含 ftrace、syscalls、调度等系统数据。这个模式适合开发期自测、Native 模块单元验证、SDK 内部可控采样，也适合把 `.pftrace` 文件作为复现材料附到 bug report。
-
-[已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
 
 这段代码展示 in-process 模式的最小路径，读代码时看四个动作：初始化 backend、注册 `TrackEvent`、配置 `track_event` data source、停止后读取 trace。
 
@@ -192,8 +188,6 @@ void DrawFrame() {
 
 system backend 把应用写入的事件送到系统 Perfetto daemon。应用在这里扮演 producer：注册 data source，等待外部 trace session 选择是否启用。采集的开始、停止、buffer 大小、是否同时打开 ftrace，由外部 Perfetto CLI、Android Studio、系统工具或受控诊断通道决定。
 
-[已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
-
 system backend 的价值在于合并时间轴。Native 模块写出的 `TRACE_EVENT("rendering", "DrawFrame")` 可以和 `sched_switch`、Binder transaction、SurfaceFlinger slice 一起分析，避免只看应用日志时丢掉线程迁移、CPU 抢占和系统服务等待。
 
 这类配置文件展示了应用 `track_event` 与 ftrace 同采的思路。`linux.ftrace` 给出系统调度事件，`track_event` 接收应用 producer 事件。
@@ -235,8 +229,6 @@ write_into_file: true
 
 `track_event` 适合时间轴问题：某段代码什么时候开始、持续多久、当时 counter 是多少。custom data source 适合状态问题：队列里有多少任务、调度器把帧分到哪个阶段、推理运行时选择了哪个 delegate、缓存池水位如何变化。
 
-[已验证: AOSP android-17.0.0_r1, external/perfetto/docs/instrumentation/tracing-sdk.md]
-
 引入 custom data source 前先过三条检查：
 
 - 数据必须有稳定 schema：字段名、枚举值、单位和版本兼容规则要能长期维护，不能把它当成任意日志字符串。
@@ -251,8 +243,6 @@ write_into_file: true
 
 启动早期事件的难点是 trace session 还没建立，Native 初始化、引擎加载、SoLoader、JNI 注册可能已经跑完。Perfetto SDK 提供 startup tracing 方案，但官方 `example_startup_trace.cc` 走的是 `kSystemBackend`：进程初始化后设置 startup tracing，早期 data source 事件先写入，外部 system trace session 建立后再统一导出。in-process backend 只在应用进程内控制 session 生命周期，不应承诺缓存 session 建立前事件。
 
-[已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
-
 这组方案要拆开看：
 
 - 冷启动首屏：Native 运行时、引擎初始化、资源预热在 Java 层 trace 建立前已经发生，需要把它们补进启动时间轴。
@@ -263,9 +253,7 @@ write_into_file: true
 
 ## 构建、体积和版本兼容边界
 
-Perfetto SDK 发布包通常以两个 amalgamated 文件接入：`perfetto.h` 和 `perfetto.cc`。C++ SDK 需要 C++17 标准库，CMake 中一般把 `perfetto.cc` 编成静态库，再链接到应用或 Native 模块。Cubox 素材里的 v54 示例也采用这种路径：下载 release zip，把 SDK 链到示例目录，编出 `example`、`example_system_wide`、`example_custom_data_source`、`example_startup_trace` 等二进制。[来源: obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md]
-
-[已验证: 官方文档, perfetto.dev/docs/getting-started/in-app-tracing]
+Perfetto SDK 发布包通常以两个 amalgamated 文件接入：`perfetto.h` 和 `perfetto.cc`。C++ SDK 需要 C++17 标准库，CMake 中一般把 `perfetto.cc` 编成静态库，再链接到应用或 Native 模块。官方示例也是这种路径：下载 release zip，把 SDK 链到示例目录，编出 `example`、`example_system_wide`、`example_custom_data_source`、`example_startup_trace` 等二进制。
 
 工程接入时重点看四个成本：
 
@@ -279,8 +267,6 @@ C SDK 和 C++ SDK 的差异可以按团队语言栈判断。纯 C / Rust FFI / �
 ## 隐私和数据治理
 
 trace 数据比日志更容易暴露上下文，因为它把时间、线程、进程、函数名、参数、counter 和系统状态放在同一份文件里。Perfetto SDK 事件进入 `.pftrace` 后，分析者可以按线程、category、参数过滤，也可以用 PerfettoSQL 批量查询。写入前就要把字段当作可上传诊断材料设计。
-
-[已验证: 官方文档, developer.android.com/topic/performance/tracing/custom-events]
 
 应用内 trace 至少遵守这几条规则：
 
@@ -312,10 +298,3 @@ Perfetto SDK 不是 APM 的替代品。它负责把应用事件写成 Perfetto �
 - [待补充] 自定义 data source 的 PerfettoSQL 解析样例，可以在后续章节用一个 Native 渲染队列或端侧推理队列做完整演示。
 
 ## 参考资料
-
-- [已验证: 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk]
-- [已验证: 官方文档, perfetto.dev/docs/getting-started/in-app-tracing]
-- [已验证: AOSP android-17.0.0_r1, external/perfetto/docs/instrumentation/tracing-sdk.md]
-- [已验证: 官方文档, developer.android.com/topic/performance/tracing/custom-events]
-- [已验证: 官方文档, developer.android.com/topic/performance/tracing]
-- [来源: obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md]
