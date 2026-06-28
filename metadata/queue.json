@@ -307,9 +307,10 @@
     "section": "18.25",
     "section_title": "Jetpack Compose 渲染管线架构",
     "priority": 95,
-    "reason": "[Deep Tech Review] Compose 渲染管线剩余 4 个源码错误：PausableComposition API 重写、Checkpoint 暂停恢复机制、RenderNode/graphicsLayer/offscreen 三层概念、Recomposer 调度路径无 priority 队列",
+    "reason": "[Deep Tech Review] Compose 渲染管线剩余源码错误：PausableComposition API/checkpoint/deadline、graphicsLayer/RenderNode 层语义、Recomposer 调度路径",
     "material_paths": [
-      "logs/deep-review/2026-06-29-01-deep-review.md"
+      "logs/deep-review/2026-06-29-01-deep-review.md",
+      "logs/deep-review/2026-06-29-02-deep-review.md"
     ],
     "review_issues": [
       {
@@ -335,6 +336,12 @@
         "location": "§Snapshot 系统与重组触发 / Recomposer 收集与调度（约 225、349-351、374-392 行）",
         "detail": "章节称 Recomposer 按 priority 排序维护双队列。实际 Recomposer.kt 使用 snapshotInvalidations、compositionInvalidations、toRecompose/toApply 集合，无 priority 排序。",
         "suggestion": "删除 priority/双队列描述，改为 Snapshot.registerApplyObserver → snapshotInvalidations → compositionInvalidations → performRecompose() 的实际调度路径。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "§PausableComposition：跨帧分块组合 / 与 Choreographer 帧 deadline 的协作（约 317-336 行）",
+        "detail": "章节称 Android 14-17 的 PausableComposition shouldPause 判定可通过 Choreographer.VsyncCallback 的 FrameData.getPreferredFrameTimeline().getDeadlineNanos() 获取精确 deadline，Android 12-13 回退到 frameTimeNanos + 16.6ms。androidx-compose-release 的 AndroidPrefetchScheduler 实际仍实现 Choreographer.FrameCallback，doFrame(frameTimeNanos) 只记录 frameStartTimeNanos；PrefetchRequestScope.availableTimeNanos() = max(0, nextFrameTimeNs - System.nanoTime())，nextFrameTimeNs 来自 max(view.drawingTime, frameStartTimeNanos) + frameIntervalNs，没有接入 VsyncCallback/FrameData。",
+        "suggestion": "删除 Android 14-17 精确 FrameData deadline / Android 12-13 固定估算的分版本表述，改为基于 AndroidPrefetchScheduler.availableTimeNanos() 的实际实现：view drawing time 与 Choreographer.FrameCallback frameTime 估算下一帧时间，再用剩余时间决定是否暂停。"
       }
     ],
     "added_by": "task9-deep-tech-review",
