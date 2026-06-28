@@ -346,7 +346,48 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-29T01:37:37+08:00",
-    "status": "pending",
-    "split_from": "task2b-lite partial completion of original 18.25 queue entry"
+    "status": "completed",
+    "split_from": "task2b-lite partial completion of original 18.25 queue entry",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-06-29T02:52:24+08:00",
+    "completion_note": "fixed: 5项P0源码错误修复——PausableComposition API重写为setPausableContent→PausedComposition、Checkpoint机制改为shouldPause参数传递+scope级检查、Choreographer deadline改为AndroidPrefetchScheduler.availableTimeNanos()估算、RenderNode/graphicsLayer拆为三层概念模型(LayoutNode默认/OwnedLayer/offscreen buffer)、Recomposer调度改为snapshotInvalidations→compositionInvalidations路径+删除priority双队列；附加修复androidx-main→androidx-compose-release版本边界、误区4三层重写"
+  },
+  {
+    "section": "4.6",
+    "section_title": "内存相关的版本演进",
+    "priority": 90,
+    "reason": "时效性巡检：4.6 内存相关的版本演进 78 天逾期（version_evolution 阈值 30 天），缺少 Android 17 API 37 稳定版特性",
+    "material_paths": [
+      "intake/suggestions.md",
+      "AOSP art/runtime/gc/collector/concurrent_mark_sweep.h",
+      "Android 17 Generational GC 官方文档"
+    ],
+    "missing_content": [
+      "ART Generational GC 在 Android 17 稳定版中的特性",
+      "App Memory Limiter（API 37）每应用基于设备 RAM 的内存限制",
+      "CMC 版本边界更正（android-14.0.0_r1 已具备相关源码）"
+    ],
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-06-29T02:12:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.9",
+    "section_title": "渲染相关的版本演进",
+    "priority": 70,
+    "reason": "时效性巡检：2.9 渲染相关的版本演进 84 天逾期（version_evolution 阈值 30 天），已超阈值 54 天",
+    "material_paths": [
+      "intake/suggestions.md",
+      "AOSP frameworks/native/libs/renderengine",
+      "Android 17 HWUI 官方文档"
+    ],
+    "missing_content": [
+      "Android 17 稳定版 HWUI Vulkan 队列改进",
+      "HWComposer AIDL 变更",
+      "Skia Vulkan 渲染管线优化"
+    ],
+    "added_by": "task3-freshness-check",
+    "added_at": "2026-06-29T02:12:00+08:00",
+    "status": "pending"
   }
 ]
