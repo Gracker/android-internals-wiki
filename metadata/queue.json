@@ -298,6 +298,48 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-29T01:27:07+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-29T01:37:37+08:00",
+    "completed_by": "task2b-lite",
+    "completion_note": "Lite 修复：仅 §AndroidComposeView 创建入口（issue 5/5）。剩余 4 个问题（PausableComposition API、Checkpoint 机制、RenderNode/graphicsLayer 三层概念、Recomposer 调度模型）超出 Lite 范围，需主 Task2B 处理。"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Compose 渲染管线剩余 4 个源码错误：PausableComposition API 重写、Checkpoint 暂停恢复机制、RenderNode/graphicsLayer/offscreen 三层概念、Recomposer 调度路径无 priority 队列",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-01-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "§PausableComposition：跨帧分块组合 / 控制流（约 243-268 行）",
+        "detail": "章节把 PausableComposition 写成直接包含 resume(shouldPause): CompositionResult 与 apply()，并声明 CompositionResult.Incomplete/Complete。实际 PausableComposition 只提供 setPausableContent/setPausableContentWithReuse，返回 PausedComposition；PausedComposition.resume(ShouldPauseCallback) 返回 Boolean。",
+        "suggestion": "按 PausableComposition.kt 重写 API 代码块。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§PausableComposition / Checkpoint 插入机制（约 271-312 行）",
+        "detail": "章节伪代码写 Composer.startGroup/endGroup 调用 pauseIfNeeded()，用 PauseException 保存 slot table 位置。Composer.kt 未定义 pauseIfNeeded 或 PauseException。",
+        "suggestion": "删除无源码锚点断言，改为基于 PausedCompositionImpl.resume() 的可验证路径描述。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§绘制阶段与 RenderNode 构建 / §误区 4（约 171-180、557-558 行）",
+        "detail": "章节把 RenderNode/graphicsLayer/离屏缓冲混成同一概念。GraphicsLayerModifier 通过 placeWithLayer 创建 layer；CompositingStrategy 决定 offscreen buffer。",
+        "suggestion": "重写为三层概念：LayoutNode 默认不一定有独立 OwnedLayer；Modifier.graphicsLayer 创建 graphics layer；CompositingStrategy.Offscreen 决定中间 buffer。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§Snapshot 系统与重组触发 / Recomposer 收集与调度（约 225、349-351、374-392 行）",
+        "detail": "章节称 Recomposer 按 priority 排序维护双队列。实际 Recomposer.kt 使用 snapshotInvalidations、compositionInvalidations、toRecompose/toApply 集合，无 priority 排序。",
+        "suggestion": "删除 priority/双队列描述，改为 Snapshot.registerApplyObserver → snapshotInvalidations → compositionInvalidations → performRecompose() 的实际调度路径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T01:37:37+08:00",
+    "status": "pending",
+    "split_from": "task2b-lite partial completion of original 18.25 queue entry"
   }
 ]

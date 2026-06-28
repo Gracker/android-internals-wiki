@@ -2,18 +2,19 @@
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
 status: ready-for-review
-task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-29
 last_task6_audit: "2026-06-27"
 task9_result: needs-rework
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task9_state: pending
+pipeline_stage: task6_pending
 last_task2b_at: "2026-06-29T00:52"
 last_task2b_by: task2b-main
+last_task2b_lite_at: "2026-06-29"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
 last_verified: "2026-06-29"
@@ -59,7 +60,7 @@ Jetpack Compose 没有独立于 Android 的图形后端。它的每个像素仍�
 
 ## Compose 的挂载入口：AndroidComposeView
 
-`AndroidComposeView` 继承 `ViewGroup`，是 Compose UI 挂载到传统 View 树的根节点。每个 `ComposeView`（或 `AbstractComposeView`）在 `dispatchDraw` 时创建或复用一个 `AndroidComposeView` 实例。
+`AndroidComposeView` 继承 `ViewGroup`，是 Compose UI 挂载到传统 View 树的根节点。每个 `ComposeView`（或 `AbstractComposeView`）在 `setContent` 后，由 `onAttachedToWindow()` 或 `onMeasure()` 触发 `ensureCompositionCreated()`——后者调用 `setContent(composeViewContext)` 创建 composition 及对应的 `AndroidComposeView` 子节点。`dispatchDraw` 只负责后续的绘制阶段，不是创建入口。
 
 ```kotlin
 // androidx.compose.ui.platform.AndroidComposeView
