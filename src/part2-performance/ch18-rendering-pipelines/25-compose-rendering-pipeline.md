@@ -2,19 +2,19 @@
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
 status: ready-for-review
-task2b_result: fixed-lite
-task2b_state: pending
-task6_state: reviewed
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-29
 last_task6_audit: "2026-06-27"
 task9_result: needs-rework
-task9_state: reviewed
-pipeline_stage: task2b_pending
-last_task2b_at: "2026-06-29T00:52"
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-06-29T02:52:24+08:00"
 last_task2b_by: task2b-main
-last_task2b_lite_at: "2026-06-29"
+last_task2b_lite_at: "2026-06-29T02:52:24+08:00"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
 last_verified: "2026-06-29"
@@ -122,7 +122,9 @@ choreographer.postFrameCallback(object : Choreographer.FrameCallback {
 })
 ```
 
-`AndroidUiFrameClock`（Compose 内连接 Choreographer 的桥接类）通过 `postFrameCallback` 注册回调，`doFrame` 中把 `frameTimeNanos` 传给 `withFrameNanos` 协程恢复重组。Compose 1.10 的 `AndroidUiFrameClock.android.kt` 只使用 `postFrameCallback(frameTimeNanos)` 这一种 Choreographer 交互方式。
+`AndroidUiFrameClock`（Compose 内连接 Choreographer 的桥接类）通过 `postFrameCallback` 注册回调，`doFrame` 中把 `frameTimeNanos` 传给 `withFrameNanos` 协程恢复重组。Compose 1.10 的 `AndroidUiFrameClock.android.kt` 只使用 `Choreographer.FrameCallback`（`doFrame(frameTimeNanos)` 单参数回调）这一种 Choreographer 交互方式，未接入 `VsyncCallback` / `FrameData` / `FrameTimeline` 等平台层 deadline API。
+
+若讨论帧 deadline，需区分：平台层 `Choreographer.VsyncCallback` 通过 `FrameData.getPreferredFrameTimeline().getDeadlineNanos()` 提供精确 deadline（Android 12+ 可用），以及隐藏方法 `getFrameDeadline()`。Compose 当前预取和重组调度未接入此路径。
 
 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java, frameworks/base/core/java/android/view/ViewRootImpl.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt, AndroidUiFrameClock.android.kt]
 
@@ -171,16 +173,23 @@ Compose 测量是单次的：parent measure 时传入 `Constraints`，child 返�
 
 ### 绘制阶段与 RenderNode 构建
 
-`LayoutNode.draw(canvas)` 是绘制入口。每个 LayoutNode 通过 `RenderNodeLayer` 持有一个 `android.graphics.RenderNode`（Android framework 原生类），在 draw 时构建 display list。
+`LayoutNode.draw(canvas)` 是绘制入口。Compose 的 RenderNode 和 graphics layer 创建采用三层概念模型：
 
-**RenderNode 创建策略**：Compose 不会为每个 LayoutNode 创建独立 RenderNode。RenderNode 按需创建，触发条件包括：
-- 需要硬件层（`Modifier.graphicsLayer` 含 opacity < 1、clip、transform 等）
-- 需要独立离屏缓冲（`Modifier.drawBehind` 中复杂绘制）
-- Compose 内部启发式优化（大尺寸、频繁更新）
+**第一层：LayoutNode 默认绘制**。普通的 `Text`、`Row`、`Column` 等 Composable 不会为每个 LayoutNode 创建独立 `OwnedLayer`。它们的绘制内容通过父节点的 display list 合并录制。这意味着大多数简单 LayoutNode 没有独立 RenderNode 或离屏缓冲的开销。
 
-不满足这些条件的 LayoutNode，其绘制内容委托给父节点的 RenderNode display list。
+**第二层：`Modifier.graphicsLayer` 创建 draw layer**。`GraphicsLayerModifier`（`graphicsLayer { }`）调用 `placeWithLayer` 将内容放置到一个独立的 `OwnedLayer`（GraphicsLayer 或 RenderNodeLayer）中。这一层提供属性操作——`alpha`、`scaleX/Y`、`rotation`、`translation`、`clip`、`shadowElevation`——这些属性修改对应 `RenderNode` 的原生属性，不需要重新录制 display list 即可在 GPU 合成时应用变换。
 
-**硬件层创建策略**：Compose 的 `AndroidComposeView.createLayer()` 用于创建硬件层（`GraphicsLayerOwnerLayer`），它封装 `GraphicsContext.createGraphicsLayer()` 返回的 `GraphicsLayer`。RenderNode 是否创建独立硬件层取决于 `Modifier.graphicsLayer` 的参数——`alpha < 1.0`、`scaleX/scaleY != 1`、`rotationX/Y/Z != 0`、`shadowElevation > 0` 或 `clip = true` 会触发图层创建。不满足这些条件的 `graphicsLayer` 仅影响 RenderNode 属性设置，不创建离屏缓冲。`RenderNodeLayer.android.kt` 本身不包含全局 `LayerManager` 类，绘制阶段 RenderNode 的创建/复用由 `LayoutNode.draw()` 调用链内部的 RenderNodeLayer 实例管理。
+**第三层：CompositingStrategy 决定 offscreen buffer**。`CompositingStrategy.Offscreen` 或 `CompositingStrategy.Auto` 在某些场景（如 `alpha < 1.0`、`RenderEffect` 非 null、`AutoLifted` 条件满足）下，会让第二层的 graphics layer 内容先渲染到一个 offscreen buffer，再将结果合成到父 surface。没有 offscreen buffer 时，graphics layer 的绘制命令直接写入父 display list，合成阶段通过 RenderNode 属性做变换。
+
+三层之间从开销最小到最大递进：
+
+| 层 | 触发条件 | 是否独立 RenderNode | 是否 offscreen buffer |
+|----|---------|-------------------|----------------------|
+| 默认绘制 | LayoutNode 无显式 layer 修饰符 | 否（合入父节点） | 否 |
+| graphics layer（直接） | `Modifier.graphicsLayer { }`（未触发 offscreen 条件） | 是（OwnedLayer/GraphicsLayer） | 否 |
+| graphics layer（offscreen） | `CompositingStrategy.Offscreen` / `alpha < 1` + `RenderEffect` 等 | 是 | 是 |
+
+`AndroidComposeView.createLayer()` 负责创建 `GraphicsLayerOwnerLayer` 或 `RenderNodeLayer`，具体类型由 Compose 内部按需选择。绘制阶段 RenderNode 的创建/复用由 `LayoutNode.draw()` 调用链内部的 layer 实例管理。
 
 ```kotlin
 // 简化：RenderNodeLayer 的创建与 display list 录制
@@ -225,7 +234,7 @@ flowchart TD
 
 1. **Snapshot.sendApplyNotifications()**（AOSP: `platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Snapshot.kt`）：全局 apply 完成后，遍历所有 invalidated snapshot states，通知其 observer。
 
-2. **Recomposer.runRecomposeAndApplyChanges()**（AOSP: `platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt`）：收集所有需要重组的 scope（`RecomposeScopeImpl`），按 priority 排序，交给 Composer 执行重组。
+2. **Recomposer.runRecomposeAndApplyChanges()**（AOSP: `platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt`）：通过 `Snapshot.registerApplyObserver` 监听 `snapshotInvalidations`，经 `recordComposerModifications()` 传播到 `compositionInvalidations`，最后对受影响的 scope 执行重组。
 
 3. **Composer.recompose()**：重放标记为 invalidated 的 Composable 函数调用，更新 LayoutNode 的 measurePolicy、modifier 和子节点列表。重组本身不触发测量——只更新数据模型。
 
@@ -248,94 +257,100 @@ PausableComposition 的核心 API：
 ```kotlin
 // AOSP Compose: platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt
 interface PausableComposition {
-    fun resume(shouldPause: () -> Boolean): CompositionResult
-    fun apply()
+    fun setPausableContent(content: @Composable () -> Unit): PausedComposition
 }
 
-sealed class CompositionResult {
-    object Incomplete : CompositionResult()
-    object Complete : CompositionResult()
+interface PausedComposition {
+    fun resume(shouldPause: ShouldPauseCallback): Boolean
+    fun apply()
+    fun cancel()
+    val isComplete: Boolean
+    val isApplied: Boolean
+    val isCancelled: Boolean
 }
 ```
 
-LazyList 预取系统是典型用例。滚动时，LazyColumn 在空闲时间调用 `resume()`，增量组合即将进入视口的列表项：
+`PausableComposition` 只提供 `setPausableContent()`（或 `setPausableContentWithReuse()`），返回 `PausedComposition` 句柄。调用方通过 `PausedComposition.resume(shouldPause)` 逐步推进组合，返回值 `Boolean` 指示本帧 chunk 完成后是否还有剩余工作——`true` 表示已完成，可调用 `apply()` 提交结果；`false` 表示仍需在下帧继续 `resume()`。
+
+LazyList 预取系统是典型用例。`SubcomposeLayoutState.createPausedPrecomposition()` 创建 `PausedComposition`，滚动时 `LazyLayoutPrefetcher` 在空闲帧调用 `resume()` 分块组合即将进入视口的列表项：
 
 ```kotlin
-// 简化：LazyLayoutCacheWindow 中的预取逻辑
-val result = pausableComposition.resume {
-    // shouldPause: 检查帧 deadline
-    frameClock.hasTimeRemaining(frameDeadlineNanos).not()
+// 简化：PausedComposition 的帧预算驱动模式
+// 来源: androidx-compose-release compose/runtime/PausableComposition.kt
+//       compose/foundation/lazy/LazyLayoutPrefetcher.android.kt
+val pausedComp = pausableComposition.setPausableContent {
+    // 即将进入视口的列表项 Composable
+    LazyColumnItem(item)
 }
-if (result == CompositionResult.Complete) {
-    pausableComposition.apply()
+var isComplete = false
+while (!isComplete) {
+    isComplete = pausedComp.resume {
+        // shouldPause: 本帧剩余时间不足即暂停
+        !prefetchScheduler.hasAvailableTime()
+    }
+    if (!isComplete) break  // 下帧继续
 }
+if (isComplete) pausedComp.apply()
 ```
 
 ### Checkpoint 插入机制
 
-`shouldPause` lambda 在 Compose runtime 内部被频繁调用。Composer 在调用栈的特定位置插入 checkpoint（检测点）——这些 checkpoint 是分散在 Composable 函数调用链中的 `composer.nextSlot()` 之后的 `pauseIfNeeded()` 调用：
+`shouldPause` 回调不是通过 Composer 内部显式的 `pauseIfNeeded()` 调用链来轮询的，而是作为参数传入 `InternalComposer.composeContent()` 和 `recompose()` 等入口。在 androidx-compose-release 的 `Composer.kt` 中，未定义 `pauseIfNeeded` 或 `PauseException` 类——暂停不是靠异常抛出，而是在 `recompose()` 的逐 scope 循环中逐次检查 `shouldPause`：
 
 ```kotlin
-// 简化：Composer 中 checkpoint 的插入模式
+// 简化：recompose 中 shouldPause 的检查位置
 // AOSP Compose: platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composer.kt
-fun startGroup(key: Int) {
-    // ...创建/进入 group...
-    // checkpoint: group 边界是天然的分割点
-    pauseIfNeeded()
-}
-
-fun endGroup() {
-    // ...退出 group...
-    pauseIfNeeded()  // 同样在 group 结束时检查
-}
-
-private fun pauseIfNeeded() {
-    if (shouldPause != null && shouldPause!!()) {
-        // 保存当前 slot table 位置
-        // 保存当前 start/end 标记状态
-        // 返回 Paused 信号给上层循环
-        throw PauseException()  // 实际实现使用异常或返回值标记暂停
+fun recompose(
+    scopes: Iterable<RecomposeScopeImpl>,
+    shouldPause: () -> Boolean = { false }
+) {
+    for (scope in scopes) {
+        if (shouldPause()) return  // 每个 scope 完成后暂停
+        scope.compose(this)
     }
 }
 ```
 
-**插入位置**：checkpoint 分布在以下位置：
-- 每个 Composable 函数的开始和结束（`startRestartGroup` / `endRestartGroup`）
-- `remember` 调用点之后（记忆化计算完成后是可暂停的安全点）
-- `emit` 节点之后（子节点插入完成后）
-- `reuse` 完成后（复用节点处理完毕后）
+**暂停恢复协议**由 `PausedCompositionImpl` 实现：
+1. `resume(shouldPause)` 根据是否有已保存的 `CompositionContext` 分别调用 `composeInitialPaused()` 或 `recomposePaused()`
+2. 每次调用内部逐 scope 推进组合，`shouldPause` 在 scope 边界检查
+3. 若 `shouldPause` 返回 `true`，保存当前 `CompositionContext` 和 `invalidScopes` 状态后返回 `false`（未完成）
+4. 若所有 scope 组合完成且 `invalidScopes` 为空，返回 `true`（完成），调用方可调用 `apply()` 提交
 
-Checkpoint 的粒度由 Compose compiler 在编译期决定。compiler 在每个 Composable 函数的 group 边界自动插入 checkpoint 调用，确保暂停发生时 slot table 处于一致状态——所有已完成的 group 都已正确关闭，所有正在进行的操作可以被安全恢复。
-
-### 暂停恢复协议
-
-当 `shouldPause` 返回 `true`，Composer 抛出 `PauseException`（或等价机制），捕获后：
-1. 当前 slot table 位置和 group 栈被保存到 `PausableComposition` 内部
-2. 控制权返回给调用方（LazyList cache window 或 Recomposer）
-3. 下一帧 `resume()` 调用时，从保存位置继续组合，`shouldPause` lambda 绑定到新的帧 deadline
+与正文其他部分描述的 checkpoint 分布点不同：当前公开源码中 `shouldPause` 的检查粒度是按 compose/recompose scope 而非每个 `startGroup/endGroup`——Compose compiler 在编译阶段生成的 group 边界不暴露独立的 `pauseIfNeeded` 调用。checkpoint 的精确粒度取决于 `InternalComposer` 内部实现，公开 API 层面的检查点在 scope 级别。
 
 ### 与 Choreographer 帧 deadline 的协作
 
-Choreographer 通过内部 `VsyncCallback` 接收 VSYNC 信号时附带 `FrameData`。`FrameData.getPreferredFrameTimeline().getDeadlineNanos()` 返回本帧的 deadline 时间戳，这是获取帧 deadline 的标准路径。
+Compose 的 PausableComposition `shouldPause` 判定通过 `AndroidPrefetchScheduler` 完成。`AndroidPrefetchScheduler` 实现 `Choreographer.FrameCallback`，在 `doFrame(frameTimeNanos)` 中记录帧起始时间，并通过以下方式估算 `availableTimeNanos()`：
 
 ```kotlin
-// AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/Choreographer.java
-// VsyncCallback 通过 FrameData 暴露 deadline
-// FrameData.getPreferredFrameTimeline().getDeadlineNanos() — 公开 API
-// getFrameDeadline() — 隐藏方法（@hide），不用于应用层
+// 简化：AndroidPrefetchScheduler 的帧时间估算
+// AOSP Compose: platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/PrefetchScheduler.android.kt
+class AndroidPrefetchScheduler (...) : Choreographer.FrameCallback {
+    private var frameStartTimeNanos = 0L
+    private val frameIntervalNs = 16_666_666L
+
+    override fun doFrame(frameTimeNanos: Long) {
+        frameStartTimeNanos = frameTimeNanos
+    }
+
+    fun availableTimeNanos(): Long {
+        val nextFrameTimeNs = maxOf(view.drawingTime, frameStartTimeNanos) + frameIntervalNs
+        return max(0L, nextFrameTimeNs - System.nanoTime())
+    }
+}
 ```
 
-Compose 1.10 的 `AndroidUiFrameClock` 当前只使用 `postFrameCallback(frameTimeNanos)` → `withFrameNanos`，不直接调用 `FrameData` / `FrameTimeline` API。PausableComposition 的 `shouldPause` 判定在 Android 14+ 设备上可以通过 Choreographer 的 `VsyncCallback` 附带 `FrameData` 拿取 deadline，在 Android 12-13 上回退到固定帧预算估算（`frameTimeNanos + 16_666_666L`）：
+关键点：
+- `nextFrameTimeNs` 取 `view.drawingTime` 和 `frameStartTimeNanos` 的较大值 + 一帧间隔，以此估算下一帧开始时间
+- `availableTimeNanos()` = 估算的下一帧时间 − 当前时刻，正值表示本帧还有预算
+- 与平台层 `Choreographer.VsyncCallback` + `FrameData.getPreferredFrameTimeline().getDeadlineNanos()` 不同：Compose 的 prefetch scheduler **未接入 VsyncCallback/FrameData 路径**，而是基于 `FrameCallback` 的 `frameTimeNanos` + `view.drawingTime` 做估算。平台层 `VsyncCallback` 提供的精确 deadline 信息目前未被 Compose prefetch 使用。
 
-| API 级别 | Android 版本 | deadline 来源 | 精度 |
-|----------|-------------|--------------|------|
-| 31-32 | Android 12-12L | frameTimeNanos + 16.6ms 固定估算 | 粗略 |
-| 33 | Android 13 | 回退到固定估算 | 粗略 |
-| 34-37 | Android 14-17 | VsyncCallback → FrameData.getPreferredFrameTimeline().getDeadlineNanos() | 精确 |
+`shouldPause` 回调中调用 `!prefetchScheduler.hasAvailableTime()`（封装 `availableTimeNanos() <= 0`），判定本帧剩余预算不足以继续组合时返回 `true` 触发暂停。
 
-若应用需要帧 deadline 做自己的暂停判定，应注册 `Choreographer.VsyncCallback` 而非仅依赖 `FrameCallback`。
+若应用自行实现帧 deadline 判定，可注册 `Choreographer.VsyncCallback` 获取 `FrameData.getPreferredFrameTimeline().getDeadlineNanos()`——平台层该 API 在 Android 12+ 上可用。Compose 当前未接入此路径。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java; Compose BOM 2025.12.00, PausableComposition.kt, AndroidUiFrameClock.android.kt; 结构参考: intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java; Compose BOM 2025.12.00, PausableComposition.kt, PrefetchScheduler.android.kt]
 
 ### apply 提交机制
 
@@ -351,7 +366,7 @@ Compose 的状态管理建立在 Snapshot（快照）系统上。Snapshot 提供
 
 - **读**：在 Composition 过程中，读取 `state.value` 会将当前 recomposition scope 注册为该 state 的 reader。这是通过 `Snapshot.observe()` 或 `Snapshot.registerApplyObserver()` 实现的。
 - **写**：修改 `state.value` 会标记所有注册的 reader scope 为 invalidated。写入操作在 snapshot 事务中完成。
-- **传播**：帧提交时（`Snapshot.sendApplyNotifications()`），所有 invalidated scope 被收集到 `Recomposer` 的待重组队列。`Recomposer` 维护两个队列——高优先级 scope（user input 相关）和普通 scope（动画、状态变更）。
+- **传播**：帧提交时（`Snapshot.sendApplyNotifications()`），snapshot 变更通过 `recordComposerModifications()` 传播到 `Recomposer.compositionInvalidations`。各 composition 的已知 scope 中，使用到被修改 state 的 scope 被标记为待重组。
 
 ```kotlin
 // 简化：Snapshot 状态读写追踪
@@ -381,16 +396,16 @@ fun increment() {
 // AOSP Compose: platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt
 while (shouldRun) {
     val snapshotChanges = snapshotInvalidations.take()  // 等待 Snapshot 变更通知
-    // 收集 invalidated scopes，去重，按 priority 排序
+    // 将 snapshot 变更传播到 compositionInvalidations
     val frames = recordComposerModifications(composer, snapshotChanges)
-    val modifiedValues = frames.flatMap { it.modifiedValues }
-    // 找到对应的 RecomposeScopeImpl
-    val scopesToRecompose = invalidatedScopes.filter { scope ->
-        scope.usedValues.any { it in modifiedValues }
-    }
+    // 找出使用了已变更 state 的 composition scope
+    val toRecompose = frames.flatMap { it.modifiedValues }
+        .mapNotNull { value -> compositionInvalidations[value] }
+        .flatten()
+        .toSet()
     // 执行重组
-    composer.recompose(scopesToRecompose)
-    // 提交变更
+    composer.recompose(toRecompose)
+    // 提交变更到 UI 树
     composer.applyChanges()
 }
 ```
@@ -557,8 +572,8 @@ Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，�
 ### 误区 3："PausableComposition 会减少 GPU 负担"
 **事实**：PausableComposition 只减少主线程负担，GPU 命令录制和执行仍需完整完成。跨帧组合只是将主线程工作分散到多帧，GPU 工作总量不变。
 
-### 误区 4："Modifier.graphicsLayer 总是创建独立层"
-**事实**：`graphicsLayer` 是否创建硬件层取决于多个因素：`alpha < 1.0`、`scaleX/Y != 1`、`rotationX/Y/Z != 0`、`clip = true` 或 `shadowElevation > 0` 会触发图层创建。不满足这些条件的 `graphicsLayer` 仅影响 RenderNode 属性设置，不创建离屏缓冲。过度使用 graphicsLayer 会增加层合成开销和 GPU 内存占用。
+### 误区 4："Modifier.graphicsLayer 总是创建独立 RenderNode 和离屏缓冲"
+**事实**：`graphicsLayer` 的行为需要分两层判断：(1) 是否创建独立 `OwnedLayer`（GraphicsLayer/RenderNodeLayer）：`graphicsLayer { }` 通过 `placeWithLayer` 始终创建独立 draw layer，但未必触发 offscreen buffer；(2) 是否触发离屏缓冲：只有 `CompositingStrategy.Offscreen`、`alpha < 1` + `RenderEffect` 等特定组合才会将内容先渲染到 offscreen buffer，再合成到父 surface。仅仅设置 `scaleX` 或 `rotation` 不触发 offscreen buffer——RenderNode 原生支持这些属性变换。过度使用 `CompositingStrategy.Offscreen` 会增加层合成开销和 GPU 内存占用。
 
 ### 误区 5："Compose 比 View 更快，因为跳过了 measure/layout"
 **事实**：Compose 用 LayoutNode 的单次测量替代了 View 的递归 measure/layout，但在复杂布局场景下，两者的计算复杂度可能相似。性能差异主要来自 invalidation 模式的不同（Snapshot 自动追踪 vs View 显式 invalidate）。
@@ -578,7 +593,7 @@ Compose 的渲染管线可以拆成两层理解：
 
 ## 扩展 6：并发组合的线程安全机制与 Snapshot 同步原语
 
-源码引用：`androidx-main` 分支 `compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt` 与 `snapshots/Snapshot.kt`
+源码引用：`androidx-compose-release` 分支 `compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt` 与 `snapshots/Snapshot.kt`
 
 本节回答两个问题：(1) 多个 Recomposer 实例如何共存？(2) 跨线程状态写入和重组如何避免竞争？
 
