@@ -123,5 +123,31 @@
     "completed_by": "task2b-lite",
     "completed_at": "2026-06-28T11:40:30+08:00",
     "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1，5 处源码路径已验证存在于 android-17 tag"
+  },
+  {
+    "section": "1.26",
+    "section_title": "DeliQueue 无锁队列源码解析（AOSP android-16.0.0_r1）",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 17 DeliQueue 源码主线仍锚在 Android 16 实现",
+    "material_paths": [
+      "logs/deep-review/2026-06-28-14-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter/title、§1.26.2-§1.26.5、§1.26.7",
+        "detail": "章节主干仍以 android-16.0.0_r1 的 ConcurrentMessageQueue/MessageQueue.java 为源码锚点，并描述 ConcurrentSkipListSet<MessageNode>、STACK_NODE_*、drainStack 等结构。android-17.0.0_r1 下 core/java/android/os/ConcurrentMessageQueue/MessageQueue.java 返回 404；实际存在的是 CombinedDeliMessageQueue/MessageQueue.java、MessageStack.java、MessageHeap.java。Android 17 DeliQueue 使用 MessageStack.pushMessage() + MessageHeap min-heap（sync/async 两个堆）维护顺序，不是 ConcurrentSkipListSet。",
+        "suggestion": "将正文主线改为 android-17.0.0_r1：源码锚点换成 frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java、MessageStack.java、MessageHeap.java、Message.java；用 MessageStack/MessageHeap/WaitState 解释 Android 17 实现。android-16.0.0_r1 的 Combined/Concurrent/Legacy 只能放到历史演进对比。"
+      },
+      {
+        "type": "版本差异",
+        "location": "applicable_versions、last_verified_against、§1.26.6 版本边界说明、参考资料",
+        "detail": "frontmatter 和正文明确写“本节源码全部来自 android-16.0.0_r1”“android-17.0.0_r1 的源码级验证尚未执行”。这与 2026-06-27 AIW Android 版本基准冲突：AIW 主线结论必须基于 android-17.0.0_r1，不得把 Android 16 源码作为正文主线。",
+        "suggestion": "更新 last_verified_against 为 AOSP android-17.0.0_r1；把 Android 17 targetSdk 37 默认启用的证据落到 @EnabledAfter(targetSdkVersion = Build.VERSION_CODES.BAKLAVA) 的 USE_NEW_MESSAGEQUEUE changeId、CompatChanges.isChangeEnabled(USE_NEW_MESSAGEQUEUE) 与 Flags.useConcurrentMessageQueueInApps()；保留 Android 16 段落时标注为历史 rollout，不作为当前实现结论。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-28T14:27:58+0800",
+    "status": "pending"
   }
 ]
