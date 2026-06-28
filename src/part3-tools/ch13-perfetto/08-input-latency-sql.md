@@ -806,3 +806,20 @@ for name, stats in results.items():
   - §13.3 Perfetto View 解读 — UI 可视化分析方法
   - §13.5 专题解读 — 专题分析实战
   - §9.3 ANR 分析方法 — ANR 分析完整流程
+
+
+---
+
+<!-- AIW-源码调研-2026-06-28 -->
+## 交叉引用：FrameTimeline 数据结构与 GPU/HWC 合成边界
+
+本节原聚焦 input latency SQL 分析。daily-topics #36（FrameTimeline 边界判定）的 source_refs 与本节无关，实际归属 §13.19。本次研究已完成，详见：
+
+- **DeepResearch**：`DeepResearch/2026-06-28-android17-frametimeline-gpu-cpu-boundary-hwc-composition.md`
+- **章节**：§13.19 FrameTracer 与 Graphics Frame Event 数据通路 → "FrameTimeline 数据结构详解（android-17.0.0_r1 补充）"
+
+关键交叉点：
+
+1. FrameTracer 的 `FALLBACK_COMPOSITION` 事件与 FrameTimeline 的 `gpu_composition` 字段共享 `OutputLayer::requiresClientComposition()` 判定结果（Layer.cpp:1451）。
+2. FrameTimeline 的 16 项 JankType bitmask 中，Android 17 新增 `JANK_DISPLAY_NOT_ON`（8192）、`JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS`（16384）、`JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS`（32768）三项，反映 display 切换对帧调度的影响——这一信号与 input latency 分析中的 display mode change → vsync 漂移强相关。
+3. Perfetto 标准表 `actual_frame_timeline_slice` 的 `vsync_resynced_jitter_millis` 字段（Android 17 新增）可用于 input 路径上的 vsync 漂移量化，间接补充 §13.8 的输入延迟分析。
