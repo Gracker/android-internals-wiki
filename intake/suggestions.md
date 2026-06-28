@@ -134,3 +134,87 @@
 - Part 5 覆盖：ch20(18) + ch21(17) + ch22(30) + ch23(17) + ch24(20) + ch25(23) + ch26(23) = 148 节
 - 空 draft（<15行）：0 个
 - 小 draft（<60行有 outline）：20 个 → 这些是 Phase 2 的加工目标
+
+## [Task2A 知识缺口挖掘] 2026-06-28 缺口挖掘方向记录
+
+**本轮扫描结果**: 无空 draft 章节需加工，Task2B backlog = 0，进入 Phase 1 缺口挖掘。
+**本轮挖掘结论**: 未发现评分 ≥ 14 的知识缺口。
+
+### 已检查方向（避免下轮重复）
+
+1. **source-index.json 高质量未映射素材**: 0 条（索引为空）
+2. **research-feeds 近期研究**: 检查 5 个文件，已全部映射到现有章节（Perfetto v53/v54, Compose Pausable, FrameTimeline）
+3. **daily-info 近期信息**: 检查 suggestions.md 和 incremental-scan，无新缺口方向
+4. **research-gaps.md 已知盲区**: 5 条记录，全部针对**已有章节的深化**（非新章节创建）
+   - 15.x Perfetto 版本准确性
+   - 6.5 SharedPreferences Android 17 验证
+   - 16.8 AppFlow LMKD 兼容性
+   - 16.7 系统启动 Android 17 新特性
+   - 14.22/1.25 Deep Review 发现的细节
+5. **AOSP 系统服务覆盖率**: 检查 frameworks/base/services/core 下核心服务
+   - ActivityManagerService ✓, PackageManagerService ✓, WindowManagerService ✓
+   - NotificationManagerService ✓ (partial), InputManagerService ✓
+   - DisplayManagerService ✓, SensorService ✓, ConnectivityService ✓
+   - AudioService ✓ (1.16), Keystore2 ✓ (8.12)
+   - AppOpsService: 3 处提及（非核心性能瓶颈）
+   - UsageStatsService: 低性能影响
+6. **AOSP packages/modules 覆盖率**: Bluetooth ✓, WiFi ✓(partial), Media ✓, Networking ✓
+7. **官方文档对照**: web_fetch 对 developer.android.com 不可达，基于已有知识分析
+8. **章节稀疏度分析**: 
+   - Ch6 (8节), Ch11 (8节), Ch12 (8节) — 但这些章节主题本身就相对集中
+   - 所有章节均有足够覆盖
+9. **Topic-level 覆盖率扫描**: 检查 200+ 技术关键词
+   - 零覆盖项: AppSearch, Vulkan Pipeline Cache（概念已覆盖）, Speech/TTS（低影响）
+   - 低覆盖项: BLE Scanning, AudioRecord, Protocol Buffers, kotlinx.serialization 等 — 均在现有章节有概念覆盖
+10. **Clippings 参考书对照**: 三本参考书（稳定性15篇、性能优化16篇、线上疑难59篇）内容已全部映射到现有章节
+11. **Android 17 新特性全覆盖检查**: 
+    - DeliQueue ✓, Binder async ✓, MemoryLimiter ✓, App Hibernation ✓
+    - Low Power Standby ✓, FGS Type ✓, Native DCL ✓, Keystore Quota ✓
+    - Excessive CPU Kill ✓, Background Audio ✓, Network Quota ✓
+    - ECH/DomainEncryption ✓, allow-while-idle Alarm ✓
+12. **Draft 章节分析**: 39 个 draft 章节，其中 14 个 < 50 行 — 这些需要 Task2B 加工而非新建
+
+### 统计
+- 全书总小节: 521
+- 已完成 (finalized): 296
+- Ready for review: 141
+- Draft: 43 (其中 14 个 < 50 行，0 个 < 15 行)
+- 空章节: 0
+
+### 建议下一步
+1. 优先让 Task2B 处理 14 个 thin draft 章节（< 50 行内容）
+2. 让 Task9 Deep Review 继续处理 ready-for-review 章节
+3. 下一轮 Task2A 可探索: Android 18 预览特性（如公开）、或聚焦已有章节的扩展锚点深挖
+
+## [Task2A Gap Mining] 已检查方向记录 — 2026-06-28 12:04
+
+**结论：本轮未发现评分 ≥ 14 的知识缺口，跳过新章节创建。**
+
+### 补充检查方向（在 09:11 轮基础上新增）
+
+#### AOSP 系统服务零覆盖检查
+对 frameworks/base/services/core 下 50+ 系统服务进行全库搜索，以下服务 mentions=0：
+- ❌ VibratorService / Haptic Feedback Performance（9/20）— VibrationEffect/HapticGenerator 细分领域
+- ❌ AccountManagerService（5/20）— 非性能瓶颈
+- ❌ BackupManager / Backup/Restore（6/20）— 非性能关键路径
+- ❌ VpnManagerService / VPN Performance（10/20）— 网络优化边缘
+- ❌ StatusBarService（7/20）— SystemUI 覆盖在 7.13
+
+#### 新兴主题零覆盖检查
+- ❌ Terminal Emulator / Linux Terminal（8/20）— Android 16+ 新增但过于小众
+- ❌ AppSearch / AppSearch API（9/20）— Jetpack 库，系统性能影响低
+- ❌ Android Studio Bot / Gemini IDE（5/20）— 开发工具非运行时性能
+
+### 本轮统计
+- 全书总小节：521（finalized: 329, ready-for-review: 141, draft: 43, 其他: 8）
+- 空 draft（<15 有效行）：0 个
+- Thin draft（15-60 行）：39 个 — 需 Task2B 加工
+- Task2B backlog：0（已清空）
+- 知识缺口 ≥14 分：0 个
+
+### 建议
+1. 下一轮可探索方向已趋枯竭，建议聚焦：
+   a. Task2B 加工 39 个 thin draft（15-60 行）
+   b. Task9 Deep Review 处理 ready-for-review 章节
+   c. Part 5 参考书交叉验证已有章节
+2. 如有新 DeepResearch 材料，可在后续轮次中重新评估
