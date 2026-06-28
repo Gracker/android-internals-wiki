@@ -1,18 +1,20 @@
 ---
 title: "性能指标采集与上报"
 status: "finalized"
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task6_result: "pass-light-edit"
 task6_state: "completed"
 task9_state: "reviewed"
 task2b_result: "fixed-lite"
+task2b_state: "pending"
 last_task2b_lite_at: "2026-06-27"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified_against: "Android Developers docs + Firebase Performance Monitoring docs + Clippings structure references + AOSP source code verification"
-task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。回 Task6/Task9 复审。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 4.2/5"
+task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。回 Task6/Task9 复审。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 4.2/5 2026-06-29 Task9 Idle Audit: StatsD 性能指标主线与 android-17.0.0_r1 源码不一致，已写入 queue P95，回 Task2B 重做技术主线。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
+last_task9_audit: "2026-06-29"
 ---
 
 # 性能指标采集与上报
