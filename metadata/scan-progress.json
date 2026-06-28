@@ -1,5 +1,6 @@
 {
   "current_issue": 24,
+  "total_issues": 58,
   "completed_issues": [
     0,
     1,
@@ -48,6 +49,6 @@
     23
   ],
   "last_attempted_issue": 23,
-  "last_attempt_date": "2026-06-27",
+  "last_attempt_date": "2026-06-28",
   "access_issues_count": 133
 }

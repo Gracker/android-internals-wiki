@@ -1408,7 +1408,11 @@
       "p3": 0,
       "reviewed_at": "2026-05-15T07:35:58+08:00",
       "log": "logs/deep-review/2026-05-15-07-deep-review.md",
-      "summary": "无 P0/P1/P2；WorkManager setBackoffCriteria、FGS/后台定位/Job 配额口径复核通过，自动晋升 finalized。"
+      "summary": "无 P0/P1/P2；WorkManager setBackoffCriteria、FGS/后台定位/Job 配额口径复核通过，自动晋升 finalized。",
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_date": "2026-06-28",
+      "pipeline_stage": "ready-to-publish"
     },
     "25.4": {
       "task9_result": "needs-rework",

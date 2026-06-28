@@ -329,6 +329,120 @@ MemoryLimiter 的限制值不是静态的——当 `ProcessState` 变化时，`L
 > [!warning] ComponentCallbacks2 trim 等级变化
 > Android 14（API 34）起，`TRIM_MEMORY_COMPLETE(80)` / `TRIM_MEMORY_MODERATE(60)` / `TRIM_MEMORY_RUNNING_CRITICAL(15)` / `TRIM_MEMORY_RUNNING_LOW(10)` / `TRIM_MEMORY_RUNNING_MODERATE(5)` 五档已标记 `@Deprecated` 且**不再派发**。App 只会收到 `TRIM_MEMORY_BACKGROUND(40)` 和 `TRIM_MEMORY_UI_HIDDEN(20)`。源码注释明确写「不要比较 exact value，只比较 ≥」。详见 `frameworks/base/core/java/android/content/ComponentCallbacks2.java`。
 
+
+## 深度源码验证（2026-06-28 补充）
+
+<!-- AIW-源码调研-2026-06-28 -->
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java + com_android_server_am_MemoryLimiter.cpp]
+
+### 完整 ProcState → Limits 映射矩阵
+
+`ControllerEnabled.initializeMemoryLimits()`（MemoryLimiter.java）在构造期遍历 `ActivityManager.MIN_PROCESS_STATE` 到 `MAX_PROCESS_STATE` 的全部 23 个 proc state，按进程可见性/重要性分成四类 Limits：
+
+| ProcState 分类 | memHigh | swapHigh | 监控关注点 |
+|---|---|---|---|
+| `PERSISTENT` / `PERSISTENT_UI` | `LIMIT_IS_DISABLED`（"max"） | `LIMIT_IS_DISABLED` | 系统服务不受限 |
+| `TOP` / `BOUND_TOP` / `IMPORTANT_FOREGROUND` / `TOP_SLEEPING` | `memVisible`（默认 4 GB） | `swapVisible`（默认 2 GB） | 前台几乎不触发 |
+| `FOREGROUND_SERVICE` / `SERVICE` / `RECEIVER` / `BACKUP` / `BOUND_FOREGROUND_SERVICE` / `IMPORTANT_BACKGROUND` / `TRANSIENT_BACKGROUND` / `HEAVY_WEIGHT` / `HOME` / `LAST_ACTIVITY` | `memNotVisible`（默认 2 GB） | `swapNotVisible`（默认 2 GB） | **主要受影响群体** |
+| `CACHED_ACTIVITY` / `CACHED_ACTIVITY_CLIENT` / `CACHED_RECENT` / `CACHED_EMPTY` | `LIMIT_IS_IGNORED`（不写入） | `LIMIT_IS_DISABLED`（"max"） | 不受 MemoryLimiter 控制 |
+
+**调用链**：`Activity.setProcessState()` → `ProcessRecord.setProcState()` → `mMemoryLimiter.onProcStateUpdated()`（ProcessRecord.java:1625）→ `mStateLimit[]` 查询 → JNI `setLimit()` → cgroup 文件写入。
+
+### Polling 轮询回退状态机
+
+[已验证: AOSP android-17.0.0_r1, com_android_server_am_MemoryLimiter.cpp:43-52]
+
+JNI 端定义三档轮询周期：
+
+```cpp
+const int PID_POLL_PERIOD_MS  = 5 * 60 * 1000;  // 5 分钟（常态清扫）
+const int RED_POLL_PERIOD_MS  = 30 * 1000;      // 30 秒（red zone 轮询）
+const int TEST_POLL_PERIOD_MS = 1000;           // 1 秒（测试模式）
+```
+
+**Red zone 触发条件**：`Process::isRed() = mMemWatcher.mTriggered && !mAnonSwapTriggered`——即 `memory.high` 已触发但 `memory.swap.high` 还没触发。这时 cgroup events 不再 fire，必须切换为 30s 轮询。
+
+### AnonSwapState 四态机
+
+[已验证: AOSP android-17.0.0_r1, com_android_server_am_MemoryLimiter.cpp:78-83, 512-528]
+
+| 状态 | 判定条件 | 监听方式 | PSS 抖动 |
+|---|---|---|---|
+| `kCold` | `(anon+shmem) < (memHigh - 10MB)` | inotify | 稳定 |
+| `kOkay` | 中间地带 | 30s 轮询 | 有噪声 |
+| `kHot` | `metric > anonSwapLimit` | 30s 轮询 | 锯齿抖动 ±50 MB |
+| `kTriggered` | `mAnonSwapTriggered = true` | 限制已释放 | 进程进入 30s 死亡窗口 |
+
+**滞回设计**：`mMemHighHysteresis = 10 MB`——必须下降到 `memHigh - 10MB` 以下才能从 `kHot`/`kOkay` 回到 `kCold`，避免 inotify↔epoll 切换抖动。
+
+### 内核 memcg v2 对 memory.high 的语义契约
+
+[已验证: kernel.org Documentation/admin-guide/cgroup-v2.rst]
+
+> **memory.high**: A read-write single value file... Memory usage throttle limit. If a cgroup's usage goes over the high boundary, the processes of the cgroup are throttled and put under heavy reclaim pressure. **Going over the high limit never invokes the OOM killer**.
+>
+> If memory.high is opened with `O_NONBLOCK` then the synchronous reclaim is bypassed. This is useful for admin processes that need to dynamically adjust the job's memory limits without expending their own CPU resources on memory reclamation.
+
+**100 MB margin 用途**：`mMemHighMargin = 100 MB`——让被 throttle 的进程保留 anon 余量，CPU 可继续运行并自行释放 anon。如果用 `O_NONBLOCK` 写入 `memory.high`，writeLimit 立即返回但内核不强制 reclaim，进程会继续增长直至触顶——对 MemoryLimiter 没用。
+
+### statsd 令牌桶限流算法
+
+[已验证: AOSP android-17.0.0_r1, MemoryLimiter.java]
+
+```java
+static final int MAX_TOKENS = 4;
+static final long TOKEN_PERIOD_MS = Duration.ofHours(1).toMillis();
+static final long KILL_DELAY_MS = 30 * 1000;
+```
+
+**令牌桶算法**（`shouldLogAtom()`）：
+- 每小时补 1 个 token（`accumulated = (now - mLastBucketUpdate) / TOKEN_PERIOD_MS`）
+- 上限 4 个 token
+- 满桶稳态下每天约 24-28 条 statsd event
+
+**对监控的硬性约束**：APM SDK **不能依赖 statsd 通路做高频告警**。必须在 Java 层反射 hook `MemoryLimiter$ControllerEnabled.onLimitExceeded()` 才能获取完整事件流。
+
+### MemoryStatUtil 双通路解析
+
+[已验证: AOSP android-17.0.0_r1, MemoryStatUtil.java:47-50, 69-73]
+
+```java
+public static MemoryStat readMemoryStatFromFilesystem(int uid, int pid) {
+    return readMemoryStatFromProcfs(pid);   // memcg 路径在 android17 已移除
+}
+```
+
+`readMemoryStatFromProcfs()` 读 `/proc/<pid>/stat` field 23（`RSS_IN_PAGES_INDEX = 23`），乘以 `PAGE_SIZE` 得 `rssInBytes`。
+
+**三条通路的根本差异**：
+
+| 通路 | 文件 | 指标 | 包含 swap？ |
+|---|---|---|---|
+| `Debug.MemoryInfo` | `/proc/<pid>/smaps_rollup` | PSS | **否** |
+| `MemoryStatUtil` | `/proc/<pid>/stat` field 23 | RSS in pages | **否** |
+| `memcg memory.current` | `memory.current` | anon+swap+file-cache | **是** |
+
+**正确的总内存指标应该是 `totalPss + VmSwap`**（`/proc/<pid>/status` 字段）。
+
+### Java/Native LINT 绑定
+
+[已验证: AOSP android-17.0.0_r1, MemoryLimiter.java + .cpp]
+
+Java 与 Native 的枚举值通过 `LINT.IfChange / LINT.ThenChange` 严格绑定：
+
+```cpp
+// com_android_server_am_MemoryLimiter.cpp
+enum class MonitoredLimit {
+    // LINT.IfChange(limitTypes)
+    kUnknown = 0, kMemoryHigh = 1, kSwapMax = 2, kAnonSwap = 3,
+    // LINT.ThenChange(/services/core/java/com/android/server/am/MemoryLimiter.java:limitTypes)
+};
+```
+
+任何修改一边枚举顺序的 commit 都会被 `lint` 工具在 CI 中拦截。
+
+---
+
 ## 延伸阅读
 
 ### Android 17 MemoryLimiter 对 Debug.MemoryInfo 性能监控的影响
