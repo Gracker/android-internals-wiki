@@ -255,5 +255,49 @@
     "added_at": "2026-06-29T00:25:44",
     "status": "completed",
     "completed_at": "2026-06-29T00:52:48"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Compose 渲染管线仍存在 PausableComposition API、graphicsLayer/RenderNode 层语义与 Recomposer 调度源码错误",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-01-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "§PausableComposition：跨帧分块组合 / 控制流（约 243-268 行）",
+        "detail": "章节把 PausableComposition 写成直接包含 resume(shouldPause): CompositionResult 与 apply()，并声明 CompositionResult.Incomplete/Complete。androidx-compose-release 的 PausableComposition.kt 中 PausableComposition 只提供 setPausableContent/setPausableContentWithReuse，返回 PausedComposition；PausedComposition.resume(ShouldPauseCallback) 返回 Boolean，并通过 isComplete/isApplied/isCancelled 管理状态，不存在 CompositionResult sealed class。",
+        "suggestion": "按 PausableComposition.kt 重写 API 代码块：PausableComposition -> setPausableContent() -> PausedComposition；resume() 返回 Boolean，完成后检查 isComplete 再 apply()。删除 CompositionResult.Incomplete/Complete。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§PausableComposition / Checkpoint 插入机制与暂停恢复协议（约 271-312 行）",
+        "detail": "章节伪代码写 Composer.startGroup/endGroup 调用 pauseIfNeeded()，并用 PauseException 保存 slot table 位置。androidx-compose-release 的 Composer.kt 未定义 pauseIfNeeded 或 PauseException；当前公开源码中 shouldPause 只作为 InternalComposer.composeContent/recompose 的参数向下传递，PausedCompositionImpl.resume() 调用 composeInitialPaused()/recomposePaused() 并以 invalidScopes 是否为空决定完成。",
+        "suggestion": "删除“compiler 自动在 start/end/remember/emit/reuse 后插入 pauseIfNeeded()”这类无源码锚点断言，改为基于 PausedCompositionImpl.resume()、CompositionContext.composeInitialPaused()/recomposePaused()、InternalComposer.recompose(..., shouldPause) 的可验证路径描述；无法定位的 checkpoint 粒度标为待验证。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§绘制阶段与 RenderNode 构建 / §误区 4（约 171-180、557-558 行）",
+        "detail": "章节把 RenderNode/graphicsLayer/离屏缓冲混成同一概念：一方面说每个 LayoutNode 都通过 RenderNodeLayer 持有 RenderNode，另一方面说 graphicsLayer 只有 alpha/scale/rotation/clip/shadow 等参数才创建独立硬件层，还称 drawBehind 复杂绘制会触发独立离屏缓冲。androidx-compose-release 的 GraphicsLayerModifier 文档明确 graphicsLayer 会让内容 draw into a draw layer，Simple/BlockGraphicsLayerModifier.measure() 调用 placeWithLayer；CompositingStrategy 才决定是否渲染到 offscreen buffer。AndroidComposeView.createLayer() 负责创建 GraphicsLayerOwnerLayer/RenderNodeLayer，不是由 drawBehind 复杂度触发。",
+        "suggestion": "重写为三层概念：LayoutNode 默认不一定有独立 OwnedLayer；Modifier.graphicsLayer 会通过 placeWithLayer 创建 graphics layer/OwnedLayer；alpha、RenderEffect、CompositingStrategy.Offscreen 等决定是否需要中间 offscreen buffer。删除 drawBehind 复杂绘制触发独立 RenderNode/离屏缓冲的断言。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§Snapshot 系统与重组触发 / Recomposer 收集与调度（约 225、349-351、374-392 行）",
+        "detail": "章节称 Recomposer 收集 invalidated scopes 后按 priority 排序，并维护 user input 高优先级队列与普通队列。androidx-compose-release 的 Recomposer.kt 使用 snapshotInvalidations、compositionInvalidations、toRecompose/toApply 等集合；recordComposerModifications() 把 Snapshot 变化传播给 known compositions，runRecomposeAndApplyChanges() 迭代 compositionInvalidations/knownCompositions，没有 priority 排序或“高优先级 scope/普通 scope”双队列模型。",
+        "suggestion": "删除 priority/高低优队列描述，改成 Snapshot.registerApplyObserver -> snapshotInvalidations -> recordComposerModifications() -> compositionInvalidations -> performRecompose() 的实际调度路径；如果要讨论输入优先级，需要另找 Android input/FrameClock 证据，不要放在 Recomposer scope 队列。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "§Compose 的挂载入口：AndroidComposeView（约 60 行）",
+        "detail": "章节称每个 ComposeView 在 dispatchDraw 时创建或复用 AndroidComposeView。androidx-compose-release 的 ComposeView.android.kt 中 ComposeView.setContent() 设置 shouldCreateCompositionOnAttachedToWindow，onAttachedToWindow()/onMeasure()/createComposition() 触发 ensureCompositionCreated()，ensureCompositionCreated() 调用 setContent(composeViewContext) 创建 composition/AndroidComposeView 子节点；dispatchDraw 是后续绘制阶段，不是创建入口。",
+        "suggestion": "把创建时机改为 setContent 后在 attach/onMeasure/createComposition 触发 ensureCompositionCreated；dispatchDraw 只保留为 AndroidComposeView 执行 measureAndLayout/root.draw/dirtyLayers.updateDisplayList 的绘制阶段。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T01:27:07+08:00",
+    "status": "pending"
   }
 ]
