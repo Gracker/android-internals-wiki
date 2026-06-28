@@ -97,6 +97,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-28T08:28:13+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-06-28T08:52:35.926319+08:00",
+    "completion_note": "fixed: 全章6处源码级-原理级修复（mCallRestriction/freezer分离、oneway spam检测算法、BINDER_VM_SIZE数据流、flushIfNeeded调用链、oneway async_todo调度、frozen sync/oneway分支）"
   }
 ]

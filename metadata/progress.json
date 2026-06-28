@@ -1597,5 +1597,15 @@
       "task9_result": "needs-rework",
       "last_review": "2026-06-28"
     }
-  }
+  },
+  "chapters": {
+    "1.25": {
+      "last_task2b_at": "2026-06-28T08:52:35.926319+08:00",
+      "last_task2b_by": "task2b-main",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task6_pending",
+      "task9_result": "pending"
+    }
+  },
+  "last_updated": "2026-06-28T08:52:35.926319+08:00"
 }
