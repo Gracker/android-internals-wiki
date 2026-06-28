@@ -75,35 +75,10 @@ last_task9_review_log: "logs/deep-review/2026-06-14-03-deep-review.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-14"
 last_task9_autofix_at: "2026-06-14"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-28
 ---
 
-## 修复记录
-
-**2026-06-14 Task9 Auto-fix**:
-- 修正 sched-ext loader 表述：`tools/sched_ext` 示例由用户态调度器程序加载为 `struct sched_ext_ops`，不归入 Android `system/bpf` 的 `bpfloader`。
-- 修正 Perfetto `linux.ebpf` 表述：Android 16 release tag 中没有稳定 `linux.ebpf` data source；自定义 eBPF 事件需经用户态 reader 或系统服务中转进入 trace。
-
-**2026-06-14 Task2B 主修复（完整回炉）**:
-- 重写开头：编号列表改为叙事段落（Task6#5）
-- 重写发展历程：百科式列表改为阶段性叙事，标注平台 BPF loader / 网络 BPF / UprobeStats Mainline / Perfetto 四类能力边界（Task6#1）
-- 合并"核心应用"+"实际应用"为统一"实战应用"节：每场景按 问题→方案→trace 观测→注意事项 结构展开（Task6#4）
-- 新增"eBPF Attach 点与上下文模型"节：区分 raw tracepoint / tracepoint / kprobe / kretprobe / uprobe 的 ctx 与参数模型（Task9 知识盲区#1）
-- 修复 syscall tracepoint 示例：改用 raw_syscalls/sys_enter（id + args[6]）或 syscall-specific 结构体字段（Task9#0）
-- 修复 vmalloc/vfree 示例：entry kprobe 只取 size，分配地址改为 kretprobe 返回值（Task9#1）
-- 修复 UprobeStats 描述：删除虚假 CLI 和 syscall 监控，改为 config→Guardrail→probe→perf_event_open 真实链路（Task9#2, Task9 原理链#1）
-- 修复 Perfetto 配置示例：替换为有效 TraceConfig text proto（ftrace_config + perf_event_config）（Task9#3）
-- 修复 GPU 监控示例：amdgpu → gpuMem.c 的 gpu_mem/gpu_mem_total，标注边界（Task9#4）
-- 删除虚构伪代码：BPFLoader / unload_ebpf_program / log_error / semanage，替换为 AOSP bpfloader 真实流程（Task9#5, Task6#2）
-- 修复权限模型：删除"所有 map AID_SYSTEM"，按 timeInState/gpuMem/netd 分别列出 owner/group（Task9#6）
-- 删除"未来发展趋势"空话节，替换为一句基于 main 分支观察的谨慎展望（Task6#2）
-- 删除虚构 SELinux 命令（semanage fcontext / restorecon），替换为 Android sepolicy 边界说明（Task9#5）
-- 新增 Perfetto trace 观测描述（Task6#3）
-- SKILL.md L1 扫描：禁用词 0 命中；高频词 < 5
-- 自动晋升检查：task6_result=pass-light-edit（待 Task6 重新审核）+ task9_result=pass-tech-review（待 Task9 重新审核）+ queue 清理后 → 条件暂不满足（需重新经 Task6/Task9 审核），未晋升 finalized
-
-**2026-06-14 Task2B Lite 修复**: 修复 Rust bpfloader 调用序列；收紧 Android 17 版本边界标注
-**2026-06-13 Task2B 修复**: 清理 frontmatter；CPU 利用率保守表述；传统工具对比；模糊形容词替换
-**2026-05-30 Task2B Lite 修复**: 版本适应性与数据支撑；Android 17 系统级优化引用
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
 
