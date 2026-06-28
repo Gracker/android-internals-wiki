@@ -218,3 +218,126 @@
    b. Task9 Deep Review 处理 ready-for-review 章节
    c. Part 5 参考书交叉验证已有章节
 2. 如有新 DeepResearch 材料，可在后续轮次中重新评估
+
+## [Task2A Gap Mining] 已检查方向记录 — 2026-06-28 13:12
+
+**结论：本轮未发现评分 ≥ 14 的知识缺口，跳过新章节创建。**
+
+### 本轮新增检查方向（在 12:04 轮基础上进一步扩展）
+
+#### 深度零覆盖率扫描（100+ 关键词）
+对全书 `src/` 全文进行 100+ 技术关键词的零覆盖率扫描，覆盖以下维度：
+
+1. **Android 17 行为变更/新特性（补充检查）**
+   - ✅ Notification trampoline restrictions — 非性能核心
+   - ✅ FGS timeout/type — 已覆盖（5.17/25.13）
+   - ✅ 3p-apps-standby — 已覆盖（5.21/5.23）
+
+2. **AOSP 子系统零覆盖（补充检查）**
+   - ❌ VibratorService（9/20）— 已评估
+   - ❌ Dream Manager / Screensaver（6/20）— 过于小众
+   - ❌ AccountManagerService（5/20）— 非性能瓶颈
+   - ❌ StatusBarService（7/20）— 已在 7.13 SystemUI 覆盖
+
+3. **Jetpack / SDK 库覆盖检查**
+   - ✅ Paging 3 — 已在 RecyclerView/列表优化覆盖
+   - ✅ Navigation Compose — 22.23 专门覆盖
+   - ✅ WorkManager — 5.10/25.4/25.13 覆盖
+   - ✅ Room / SQLite — 10.7/24.2/24.17 覆盖
+   - ✅ DataStore — 6.5 专门覆盖
+   - ✅ CameraX — 多章节覆盖
+   - ❌ AppSearch（9/20）— 系统性能影响低
+   - ❌ Companion Device Manager（8/20）— 素材不足
+
+4. **Media / Codec 覆盖检查**
+   - ✅ MediaCodec / Codec2 — 8.8/18.23 覆盖
+   - ✅ Media3 / ExoPlayer — 18.23 覆盖
+   - ✅ Audio Offload — 25.18 专门覆盖
+   - ❌ AV1 Codec（8/20）— 编解码器细分
+   - ❌ Spatializer（7/20）— 音频特效细分
+   - ❌ Media DRM / Crypto（6/20）— 安全模块
+
+5. **On-device ML 覆盖检查（深度验证）**
+   - ✅ TFLite（65 mentions）/ LiteRT（188 mentions）— 5.11 覆盖
+   - ✅ NNAPI（132 mentions）— 5.11/5.14 覆盖
+   - ✅ Model quantization — 在 5.11/5.13 有技术讨论
+   - ❌ Model distillation / pruning（7/20）— ML 工程话题
+   - ❌ Executorch / PyTorch Mobile（8/20）— 框架选择，非系统性能
+
+6. **Cross-cutting concern 检查**
+   - ❌ Performance Regression Testing — ch15/ch27 已覆盖方法论
+   - ❌ App Size vs Performance Trade-offs — ch12/ch25 已覆盖
+   - ❌ Performance Incident Response — ch15.9 已覆盖
+   - ❌ Canary Release / Feature Flag — ch15.6 已覆盖测试
+   - ❌ Clean Architecture / MVI / MVP — 架构模式非系统性能
+
+7. **新兴主题零覆盖检查（补充）**
+   - ❌ Android Emulator / AVD Performance（8/20）— 开发工具非运行时
+   - ❌ Dynamic Color / Material You（8/20）— 已在 1.24 ResourcesManager 概念覆盖
+   - ❌ Trusted Web Activity / PWA（7/20）— 小众
+   - ❌ Cuttlefish / crosvm（8/20）— 测试基础设施
+   - ❌ Bazel / Build System（6/20）— 构建工具非运行时
+
+8. **Kotlin 语言级性能检查**
+   - ✅ Suspend function / Continuation — 8.6/8.17 覆盖
+   - ✅ Value class / Inline class — 在 Compose 性能章节覆盖
+   - ✅ Coroutine Dispatcher — 8.6/21.16 覆盖
+   - ❌ Reified generics 开销（7/20）— 编译器层面
+
+9. **Compose 工具链检查**
+   - ✅ Compose Compiler Metrics — 22.28 专门覆盖
+   - ✅ Recomposition 诊断 — 22.28 覆盖
+   - ✅ Layout Inspector — 14.16 覆盖
+   - ❌ Composition Tracer（8/20）— 已被 22.28 概念覆盖
+
+10. **通知系统性能（补充检查）**
+    - ✅ NotificationManagerService — 8.14/9.6 已覆盖
+    - ✅ RemoteViews（132 mentions）— 多章节覆盖
+    - ❌ HUN（Heads-Up Notification）渲染性能（9/20）— 子话题
+    - ❌ Notification stacking / Smart Reply（7/20）— 子话题
+
+### 本轮统计
+- 全书总小节：521（finalized: 329, ready-for-review: 141, draft: 43, 其他: 8）
+- 空 draft（<15 有效行）：0 个
+- Thin draft（15-60 行）：21 个 — 需 Task2B 加工
+- Task2B backlog：0（已清空）
+- 知识缺口 ≥14 分：0 个
+- 累计已检查关键词：300+
+
+### 建议下一步
+1. **优先处理 21 个 thin draft**（15-60 行）→ 需 Task2B 加工
+2. **Task9 Deep Review** 继续 review ready-for-review 章节
+3. **知识缺口挖掘已趋饱和** — 连续 3 轮（09:11/12:04/13:04）均无 ≥14 候选
+4. 如有新 DeepResearch 或外部素材入库，可在后续轮次重新评估
+
+
+## [Task6 Review] 1.26 DeliQueue 无锁队列源码解析 — 2026-06-28
+
+本轮为 Task 2B android-16→android-17 结构性重写后的首次 Task 6 复检。
+
+### 1. [需补充] MessageHeap min-heap 内部操作未展开
+- **位置**：§1.26.3
+- **问题**：仅展示了 `Message[] mHeap` 数组声明和排序比较器，未展示 bubble-up/bubble-down 的实际实现逻辑。作为"源码解析"章节，读者需要理解 min-heap 如何在插入和删除时维持堆性质。
+- **建议**：补充 `MessageHeap.insert()` 和 `MessageHeap.poll()` 的关键代码路径（示意即可），说明 sift-up/sift-down 策略。
+
+### 2. [需补充] heapSweep drainStack() 原子操作细节
+- **位置**：§1.26.4
+- **问题**：`heapSweep()` 的第一步 `drainStack()` 是整个无锁设计的关键——它需要原子性地排空整个栈。当前仅写 `Message drained = drainStack()` 一行，未说明内部 CAS 操作。
+- **建议**：展开 drainStack() 的原子 swap 操作（HEAD.getAndSet(null) 或等价 CAS），解释为什么这一步是线程安全的。
+
+### 3. [需补充] removeMessages() tombstone 延迟删除机制
+- **位置**：§1.26.2（仅一句话提及）
+- **问题**：`MessageStack.removeMessages()` 使用 tombstone 逻辑删除，但章节从未解释 tombstone 是什么、如何标记、何时清理。
+- **建议**：补充 tombstone 的标记方式（compareAndSet 状态位？替换 Message 对象？）和 Looper 线程在 heapSweep 时的清理逻辑。
+
+### 4. [需补充] Perfetto 集成部分过于简略
+- **位置**：§1.26.7
+- **问题**：仅一段文字提到 `message_queue_receive` trace slice，缺少：(1) 具体(track/counter 名称；(2) slice 的关键字段（cookie、msg_name 等）；(3) 可用的 SQL 查询示例（如统计消息处理延迟 P95）；(4) 正常 vs 异常 trace 图样描述。
+- **建议**：按 writing-guide 要求补充 Perfetto 表现段——具体 track 名、SQL 查询模板、典型异常 pattern。
+
+### 5. [需补充] 缺少"常见问题与误区"小节
+- **位置**：全文末尾
+- **问题**：writing-guide Type A 模板建议包含"常见问题与误区"小节。DeliQueue 场景下常见误区包括：误以为 CAS 队列在低竞争场景也更快、误以为 heapSweep 每消息成本恒定、混淆 targetSdk gating 与设备 Android 版本的关系。
+- **建议**：补充 3-5 条 FAQ。
+
+**review 日志**：logs/review/2026-06-28-15-review.md

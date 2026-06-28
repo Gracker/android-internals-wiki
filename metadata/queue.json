@@ -152,5 +152,49 @@
     "completed_by": "task2b-main",
     "completed_at": "2026-06-28T14:52:38+08:00",
     "completion_note": "fixed: 全章结构性重写 android-16→android-17——目录结构(CombinedDeliMessageQueue+MessageStack+MessageHeap)、优先级队列(MessageHeap min-heap替代ConcurrentSkipListSet)、无锁入队(MessageStack CAS替代Treiber Stack 4态节点)、gating(USE_NEW_MESSAGEQUEUE+BACKLAVA+CompatChanges)、Android 16历史对照仅作演进参照"
+  },
+  {
+    "section": "1.26",
+    "section_title": "DeliQueue 无锁队列源码解析（AOSP android-17.0.0_r1）",
+    "priority": 70,
+    "reason": "[Task6 Review] L3 内容深度补充：heapSweep 内部操作、tombstone 删除机制、Perfetto 集成详情、FAQ 小节",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充",
+        "location": "§1.26.3",
+        "detail": "MessageHeap min-heap 内部操作（bubble-up/bubble-down）未展开",
+        "suggestion": "补充 insert()/poll() 关键代码路径和 sift 策略"
+      },
+      {
+        "type": "需补充",
+        "location": "§1.26.4",
+        "detail": "heapSweep drainStack() 原子操作细节缺失",
+        "suggestion": "展开 drainStack() 的原子 swap 操作和线程安全保证"
+      },
+      {
+        "type": "需补充",
+        "location": "§1.26.2",
+        "detail": "removeMessages() tombstone 延迟删除机制仅提及未展开",
+        "suggestion": "补充 tombstone 标记方式和清理逻辑"
+      },
+      {
+        "type": "需补充",
+        "location": "§1.26.7",
+        "detail": "Perfetto 集成部分过于简略——缺 track 名、SQL 查询、异常 pattern 描述",
+        "suggestion": "按 writing-guide 要求补充 Perfetto 表现段"
+      },
+      {
+        "type": "需补充",
+        "location": "全文末尾",
+        "detail": "缺少\"常见问题与误区\"小节",
+        "suggestion": "补充 3-5 条 FAQ（CAS 低竞争场景、heapSweep 成本、targetSdk vs 设备版本混淆等）"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-06-28T15:15:00+08:00",
+    "status": "pending"
   }
 ]
