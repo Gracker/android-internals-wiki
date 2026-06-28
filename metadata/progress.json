@@ -529,6 +529,16 @@
       "auto_promoted": false,
       "issues_found": 2,
       "fixes_applied": 6
+    },
+    {
+      "date": "2026-06-29",
+      "task": "task6",
+      "sections": [
+        "18.25"
+      ],
+      "result": "pass-light-edit",
+      "auto_promoted": false,
+      "notes": "No auto-promotion: queue has pending items + task9 needs-rework"
     }
   ],
   "task6_review_summary": {
@@ -1651,6 +1661,15 @@
         "4.7"
       ],
       "result": "19.10: finalized, 1.26: pass-light-edit (queue pending), 4.7: finalized"
+    },
+    {
+      "date": "2026-06-29T02:12:00+08:00",
+      "task": "task6-draft-review",
+      "sections": [
+        "18.25"
+      ],
+      "result": "pass-light-edit",
+      "notes": "Writing quality clean. 4 technical issues remain in queue.json (Task 9 tracked). Pipeline: task2b_pending."
     }
   ],
   "rework_log": [
