@@ -2,18 +2,18 @@
 
 title: Layout Inspector 与 ViewDebug 布局调试
 chapter: 14.16
-status: ready-for-review
-task6_state: revisiting
+status: finalized
+task6_state: reviewed
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed-lite
 task9_result: auto-fixed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_task2b_lite_at: 2026-06-28
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-28
-last_task6_audit: 2026-06-28
+reviewed_date: 2026-06-29
+last_task6_audit: 2026-06-29
 last_task9_autofix_at: 2026-06-28
 last_task9_audit: 2026-06-28
 drafted_date: 2026-05-19
@@ -49,6 +49,7 @@ created_date: 2026-05-19
 gap_source: 素材驱动/官方文档/AOSP结构
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-28
+---
 ---
 
 # 14.16 Layout Inspector 与 ViewDebug 布局调试
