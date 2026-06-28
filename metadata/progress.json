@@ -1600,6 +1600,21 @@
       "task6_result": "pass-light-edit",
       "task9_result": "auto-fixed",
       "last_review": "2026-06-28"
+    },
+    "1.26": {
+      "chapter": "1.26",
+      "title": "DeliQueue 无锁队列源码解析（AOSP android-17.0.0_r1）",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "last_task2b_at": "2026-06-28T14:52:38+08:00",
+      "last_task2b_by": "task2b-main-rework",
+      "last_verified_against": "AOSP android-17.0.0_r1",
+      "last_task9_audit": "2026-06-28"
     }
   },
   "chapters": {

@@ -148,6 +148,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-28T14:27:58+0800",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-06-28T14:52:38+08:00",
+    "completion_note": "fixed: 全章结构性重写 android-16→android-17——目录结构(CombinedDeliMessageQueue+MessageStack+MessageHeap)、优先级队列(MessageHeap min-heap替代ConcurrentSkipListSet)、无锁入队(MessageStack CAS替代Treiber Stack 4态节点)、gating(USE_NEW_MESSAGEQUEUE+BACKLAVA+CompatChanges)、Android 16历史对照仅作演进参照"
   }
 ]
