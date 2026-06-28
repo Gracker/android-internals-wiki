@@ -3,9 +3,9 @@
 title: "16KB Page Size 与 Android 性能"
 chapter: "4.7"
 section: "4.7"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-06"
-reviewed_date: "2026-06-03"
+reviewed_date: "2026-06-28"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-08"
@@ -44,15 +44,15 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_reviewed_date: "2026-05-08"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task6_reviewed_date: "2026-06-28"
 task9_state: reviewed
 task2b_result: fixed-lite
 task2b_state: fixed
 task6_result: "pass-light-edit"
 task9_result: auto-fixed
-task9_reviewed_date: "2026-06-03"
+task9_reviewed_date: "2026-06-28"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-28T12:33:34+08:00"
 last_task2b_lite_at: 2026-06-03
@@ -61,9 +61,9 @@ repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
 review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 2 / P2 1；THP/mTHP/contpte 与 compat RELRO 边界仍需回炉。"
-last_task6_at: "2026-06-03T21:36:06+08:00"
+last_task6_at: "2026-06-28T16:11:12+08:00"
 review_log: "logs/review/2026-05-08-04-review.md"
-task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 26 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、代码块语言标注、compat 说明句和 mTHP 重复段落；无新增回炉项，送 Task9 复审。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。 | 2026-06-24 01:13 Task6 revisiting 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2 全部通过；无新增 B 类回炉项。转 Task9 确认 auto-fix 结果。"
+task6_review_notes: "2026-06-28 16:11 Task6 revisiting 复审(Task9 auto-fix后回归): 修复1处英文句首Starting in→从…开始。L1禁用词/高频词/物理动词/元叙述/翻译腔grep全部零命中。L2结构/节奏/开头/读者视角均通过。task9_result=auto-fixed(无遗留P0/P1),queue无pending,自动晋升finalized。"
 last_task9_audit: "2026-06-28"
 last_task9_audit_log: "logs/deep-review/2026-06-28-12-audit.md"
 last_task9_autofix_at: "2026-06-28"
@@ -497,7 +497,7 @@ contpte 与 THP 的区别：THP（PMD 级）需要物理连续的 32MB 大块内
 
 ### Android 16 源码侧验证入口
 
-Starting in Android 16，构建系统支持对 prebuilt `.so` 做 16KB 对齐检查：在 `BoardConfig.mk` 中设置 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true`。如果某个 prebuilt 暂时不满足 16KB 对齐，可以用 `ignore_max_page_size`（模块级）或 `LOCAL_IGNORE_MAX_PAGE_SIZE`（旧式 Android.mk）临时豁免。对应的自动化测试入口是 `atest elf_alignment_test`。
+从 Android 16 开始，构建系统支持对 prebuilt `.so` 做 16KB 对齐检查：在 `BoardConfig.mk` 中设置 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true`。如果某个 prebuilt 暂时不满足 16KB 对齐，可以用 `ignore_max_page_size`（模块级）或 `LOCAL_IGNORE_MAX_PAGE_SIZE`（旧式 Android.mk）临时豁免。对应的自动化测试入口是 `atest elf_alignment_test`。
 
 ### Android 16 / 17 的设备策略
 
