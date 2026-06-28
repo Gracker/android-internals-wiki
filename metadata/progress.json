@@ -1604,7 +1604,10 @@
     "1.26": {
       "status": "ready-for-review",
       "last_review": "2026-06-28",
-      "note": "pass-light-edit, queue pending for L3"
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "task2b_pending",
+      "note": "pass-light-edit, queue pending for L3 supplements (heap ops/tombstone/Perfetto SQL/FAQ)"
     },
     "19.10": {
       "status": "finalized",

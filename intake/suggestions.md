@@ -391,3 +391,42 @@
    b. Task9 Deep Review 继续 review 141 个 ready-for-review 章节
    c. 如有 Android 18 DP 或新 DeepResearch 素材入库，可重新启动缺口挖掘
 3. 本轮不新增章节、不更新元数据、不产生 Git 提交
+
+## [Task2A Gap Mining] 已检查方向记录 — 2026-06-28 17:04
+
+**结论：本轮未发现评分 ≥ 14 的知识缺口，跳过新章节创建。**
+
+### 本轮状态
+- 空 draft（<15行）：0 个 → 进入 Phase 1
+- Task2B backlog：0 → 允许缺口挖掘
+- 上一轮（16:05）同样未发现 ≥14 缺口
+- **连续第 5 轮（09:11/12:04/13:12/16:05/17:04）无新缺口**
+
+### 新增检查（与前三轮互补）
+1. **新素材检查**：research-feeds 自 16:05 以来无新文件，daily-info 2026-06-28 已在 16:05 轮检查
+2. **src/ 变更**：4 个文件在 16:05 后被修改，均为 Task2B 加工已有 draft（非新章节）
+3. **无需重复扫描**：300+ 关键词已在 13:12 轮完成全覆盖
+
+### 累计统计
+- 全书总小节：521
+- 空 draft（<15行）：0 个
+- Thin draft（15-60行）：~18 个 → 需 Task2B 加工
+- Task2B backlog：0
+- 知识缺口 ≥14 分：0 个（连续第 5 轮无新缺口）
+
+### 建议
+知识缺口挖掘已完全饱和。建议：
+1. Task2B 加工 thin draft 章节
+2. Task9 Deep Review review ready-for-review 章节
+3. 等待新素材（Android 18 DP / 新 DeepResearch）后重启缺口挖掘
+
+## [Task6 Review Revisit] 1.26 DeliQueue 无锁队列源码解析 — 2026-06-28
+- **模式**：revisiting（Task 2B android-16→17 重写后复检）
+- **L1/L2 结果**：pass-light-edit（零修复项）
+- **L3 内容深度补充**（4 项，已在 queue.json 更新 priority 70）：
+  1. §1.26.3 — MessageHeap min-heap 内部操作（add/poll/sift）未展开
+  2. §1.26.2 — tombstone 延迟删除机制（markRemoved/isRemoved）未展开
+  3. §1.26.7 — Perfetto 集成缺 SQL 查询和异常 pattern
+  4. 全文末尾 — 缺常见问题与误区小节
+- **已解决**：heapSweep 细节（§1.26.4 已补全）、android-16→17 源码主线迁移
+- **review 日志**：logs/review/2026-06-28-17-review.md

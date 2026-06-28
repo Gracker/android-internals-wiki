@@ -157,7 +157,7 @@
     "section": "1.26",
     "section_title": "DeliQueue 无锁队列源码解析（AOSP android-17.0.0_r1）",
     "priority": 70,
-    "reason": "[Task6 Review] L3 内容深度补充：heapSweep 内部操作、tombstone 删除机制、Perfetto 集成详情、FAQ 小节",
+    "reason": "[Task6 Review revisit] L3 内容深度补充：heapSweep 细节已部分补全（§1.26.4），剩余 heap 内部操作/tombstone/Perfetto SQL/FAQ",
     "material_paths": [
       "intake/suggestions.md"
     ],
@@ -165,36 +165,30 @@
       {
         "type": "需补充",
         "location": "§1.26.3",
-        "detail": "MessageHeap min-heap 内部操作（bubble-up/bubble-down）未展开",
-        "suggestion": "补充 insert()/poll() 关键代码路径和 sift 策略"
-      },
-      {
-        "type": "需补充",
-        "location": "§1.26.4",
-        "detail": "heapSweep 的 getAcquire 栈顶读取、mLooperProcessed 增量扫描边界、同步/异步 heap 分流细节仍可进一步展开",
-        "suggestion": "补充 heapSweep() 中 sTop.getAcquire、mLooperProcessed、getHeap(current).add(current) 的线程安全保证"
+        "detail": "MessageHeap min-heap 内部操作（bubble-up/bubble-down/sift）未展开，仅展示了 compareMessages 排序比较器",
+        "suggestion": "补充 add()/poll() 关键代码路径和 sift 策略，说明 Looper 独占访问下无需同步"
       },
       {
         "type": "需补充",
         "location": "§1.26.2",
-        "detail": "removeMessages() tombstone 延迟删除机制仅提及未展开",
-        "suggestion": "补充 tombstone 标记方式和清理逻辑"
+        "detail": "removeMessages() / markRemoved() tombstone 延迟删除机制仅提及函数名未展开",
+        "suggestion": "补充 tombstone 标记方式（markRemoved 修改 flag）、heapSweep 中 isRemoved() 过滤逻辑"
       },
       {
         "type": "需补充",
         "location": "§1.26.7",
-        "detail": "Perfetto 集成部分过于简略——缺 track 名、SQL 查询、异常 pattern 描述",
-        "suggestion": "按 writing-guide 要求补充 Perfetto 表现段"
+        "detail": "Perfetto 集成部分仅提及 track 名和字段，缺 SQL 查询示例、异常 pattern 描述",
+        "suggestion": "补充 monitor_contention SQL 查询、MessageQueue dispatch 延迟分析方法"
       },
       {
         "type": "需补充",
         "location": "全文末尾",
-        "detail": "缺少\"常见问题与误区\"小节",
-        "suggestion": "补充 3-5 条 FAQ（CAS 低竞争场景、heapSweep 成本、targetSdk vs 设备版本混淆等）"
+        "detail": "缺少常见问题与误区小节",
+        "suggestion": "补充 3-5 条 FAQ：CAS 低竞争场景差异、heapSweep 摊销成本、targetSdk vs 设备版本混淆、测试框架适配"
       }
     ],
-    "added_by": "task6-review",
-    "added_at": "2026-06-28T15:15:00+08:00",
+    "added_by": "task6-review-revisit",
+    "added_at": "2026-06-28T17:13:08+08:00",
     "status": "pending"
   }
 ]
