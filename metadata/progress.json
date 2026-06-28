@@ -1649,7 +1649,7 @@
       "task9_result": "pending"
     }
   },
-  "last_updated": "2026-06-29T02:15:00+08:00",
+  "last_updated": "2026-06-29T04:15:51+08:00",
   "ready_for_review": 3,
   "reviews": [
     {
@@ -1684,6 +1684,14 @@
         "P0: LayerManager removed - class does not exist in RenderNodeLayer.android.kt",
         "P0: FramePacing API removed from version table - API not found in android-17.0.0_r1"
       ]
+    },
+    {
+      "section": "18.25",
+      "action": "task6-review",
+      "timestamp": "2026-06-29T04:15:51+08:00",
+      "result": "pass-light-edit",
+      "details": "Writing quality re-review passed. No L1/L2 issues. 3 B-class technical issues remain in queue.json (priority 90) for Task2B main.",
+      "task6_state": "reviewed"
     }
   ]
 }

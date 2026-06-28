@@ -72,7 +72,7 @@ task9_review_notes: "2026-05-18 Task9 00:25 → pass-tech-review；前轮 P0/P1 
 last_task9_review_log: "logs/deep-review/2026-06-11-15-audit.md"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
+last_deepseek_cn_review_at: 2026-06-29
 last_task6_audit: "2026-06-12"
 last_task9_audit: "2026-06-11"
 last_task9_autofix_at: "2026-06-11"
@@ -442,7 +442,7 @@ Perfetto 提供了线程唤醒关系的可视化：点击一个 Running 的线�
 
 在看完调度延迟的分析方法后，我们再补一块正在进入 Android 生态的新变化。2023 年，Linux 6.6 将 EEVDF（Earliest Eligible Virtual Deadline First）并入默认调度路径，用它替代了原来的 CFS 调度逻辑。
 
-这项工作由 Peter Zijlstra 主导，理论基础来自 1995 年发表的同名调度算法论文。对 Android 性能分析来说，理解 EEVDF 的重点不在于立刻分析它的每个细节，因为当前大多数 Android 设备的内核还停留在 5.x 或 6.1。
+EEVDF 由 Peter Zijlstra 主导合入，算法理论基础来自 1995 年发表的同名论文。对 Android 性能分析来说，目前不需要逐行拆解 EEVDF 的实现细节——当前大多数 Android 设备的内核还停留在 5.x 或 6.1，EEVDF 还没到需要日常排查的地步。
 
 更实际的意义是，当设备升级到 6.6+ 内核后，我们在 Perfetto 中看到的 Runnable 分布、交互线程延迟和抢占行为都可能变化，分析时需要知道背后的原因。
 

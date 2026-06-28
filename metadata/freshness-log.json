@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-06-29T02:00:00+08:00",
+  "last_check": "2026-06-29T02:12:00+08:00",
   "entries": [
     {
       "date": "2026-04-15",
@@ -2264,6 +2264,110 @@
       ],
       "appendix_updates_needed": false,
       "appendix_note": "过去 7 天窗口内无新 Android 17 Beta/DP 发布；android-17.0.0_r1 tag 已在 AOSP 主要仓库公开，但本轮内容更新以现有 API 37 文档为基础，不引入新版本内容",
+      "external_source_limitation": "Android Developers Blog 和 AOSP Release Notes 访问受限，但基于已知信息和本地内容判断时效性",
+      "next_scheduled_check": "2026-07-01"
+    },
+    {
+      "date": "2026-06-29",
+      "timestamp": "2026-06-29T02:12:00+08:00",
+      "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
+      "android_version_changes": {
+        "android_17_status": "仍处于预稳定阶段，预计 2026 年 6-7 月正式发布；过去 7 天内无新 Beta/DP 发布",
+        "android_16_status": "QPR2 已发布（2026-05-07），Generational CMC 作为官方功能正式可用",
+        "android_17_tag": "android-17.0.0_r1 tag 已在 AOSP 主要仓库公开（2026-05-27 cron 上轮确认）",
+        "version_boundary_check": "无 Android 18 / API 38 引用 - 边界严格遵守（所有引用均为标注性提及）",
+        "recent_updates": [
+          "Android 17 API 37 仍处于预稳定阶段，过去 7 天窗口内无新 Beta/DP",
+          "android-17.0.0_r1 tag 已就绪，源码主线基准已确定",
+          "Android 16 QPR2+ Generational CMC 作为官方能力正式可用（延续）",
+          "AutoFDO 扩展至 android17-6.18 kernel 分支 - 26.4% 基准性能提升（延续）",
+          "MessageQueue 无锁实现在 API 37 中已稳定（延续）",
+          "App Memory Limiter 在 API 37 中引入 - 每应用基于设备 RAM 的内存限制（延续）",
+          "ProfilingManager 新增 TRIGGER_TYPE_ANOMALY 触发器（延续）"
+        ],
+        "key_changes": {
+          "app_memory_limiter": "Android 17 基于设备 RAM 的应用内存限制（API 37）",
+          "generational_cmc_official": "Android 16 QPR2+ Generational CMC 作为官方能力",
+          "lock_free_messagequeue": "API 37 无锁 MessageQueue 稳定",
+          "profiling_anomaly_trigger": "ProfilingManager 异常检测触发器",
+          "autofdo_kernel_618": "AutoFDO android17-6.18 性能提升",
+          "baseline_tag": "android-17.0.0_r1 已就位作为源码主线基准"
+        },
+        "scope_note": "巡检范围上限 Android 17 / API 37（android-17.0.0_r1）；Android 18/API 38+ 内容已判定为超出范围",
+        "external_source_status": "Android Developers Blog 和 AOSP Release Notes 访问受限，但本轮以 android-17.0.0_r1 tag 作为权威基准"
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 453,
+        "files_with_metadata": 453,
+        "files_verified_under_14_days": 102,
+        "files_verified_under_30_days": 222,
+        "files_verified_over_90_days": 0,
+        "outdated_files": 167,
+        "high_risk_files": 1,
+        "medium_risk_files": 16,
+        "low_risk_files": 150,
+        "files_ending_at_api36": 152,
+        "files_with_api37": 217,
+        "android_18_api38_references": 0
+      },
+      "key_findings": [
+        "1 高风险版本演进章节：4.6 内存相关的版本演进（66 天逾期，缺少 API 37 稳定版特性覆盖）",
+        "1 中风险版本演进章节：2.9 渲染相关的版本演进（53 天逾期，23 天超阈值）",
+        "14 中风险工具使用章节（ch07/ch08/ch10/ch13/ch14/ch15 部分工具方法，< 30 天逾期）",
+        "Android 17 / API 37 边界严格遵守，无 Android 18/API 38+ 越界内容",
+        "217 个文件已有 API 37 覆盖，152 个文件仍需添加（主要为 system_mechanisms 180 天阈值内文件）",
+        "无文件超过 90 天验证阈值（90 天阈值严格遵守）",
+        "过去 7 天无新 Android 17 Beta/DP 发布，附录 A 无需更新",
+        "android-17.0.0_r1 tag 已就绪，可作为源码引用基准"
+      ],
+      "action_items": [
+        "将 4.6 内存相关的版本演进加入队列（priority 90）",
+        "跟踪 6.4 存储相关的版本演进在队列中的处理进度（已有 priority 90）",
+        "将 2.9 渲染相关的版本演进加入队列（priority 70）",
+        "为 14 个中风险工具使用章节准备刷新（ch07-07/ch08-06/ch10-02/ch13-01/05/07/14/15/ch15-01/08/10 等）",
+        "继续为系统机制章节分批添加 API 37 覆盖（152 个文件）",
+        "跟踪 Android 17 正式发布日期，准备版本演进章节最终更新"
+      ],
+      "outdated_files": [
+        {
+          "file": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+          "title": "内存相关的版本演进",
+          "section": "4.6",
+          "last_verified": "2026-04-12",
+          "days_overdue": 78,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "high",
+          "has_api37_coverage": false,
+          "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
+          "missing_content": "Android 17 API 37：ART Generational GC 稳定版、App Memory Limiter、CMC 版本边界（android-14.0.0_r1）",
+          "suggested_action": "加入 queue.json，priority 90",
+          "already_in_queue": false
+        },
+        {
+          "file": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+          "title": "渲染相关的版本演进",
+          "section": "2.9",
+          "last_verified": "2026-04-06",
+          "days_overdue": 84,
+          "threshold_days": 30,
+          "category": "version_evolution",
+          "risk_level": "medium",
+          "has_api37_coverage": true,
+          "applicable_versions": "Android 4.0 (API 14) - Android 17 (API 37)",
+          "missing_content": "Android 17 稳定版渲染特性（HWUI Vulkan 队列、HWComposer AIDL）",
+          "suggested_action": "加入 queue.json，priority 70",
+          "already_in_queue": false
+        }
+      ],
+      "queue_updates": [
+        "NEW priority-90: 4.6 内存相关的版本演进 Android 17 补充（added by task3-freshness-check 2026-06-29）",
+        "NEW priority-70: 2.9 渲染相关的版本演进 Android 17 补充（added by task3-freshness-check 2026-06-29）",
+        "EXISTING priority-90: 6.4 存储相关的版本演进 (in-flight)",
+        "EXISTING priority-70: 2.14 图形 API 演进 (in-flight)"
+      ],
+      "appendix_updates_needed": false,
+      "appendix_note": "过去 7 天窗口内无新 Android 17 Beta/DP 发布；appendix/version-changelog.md 保持当前状态",
       "external_source_limitation": "Android Developers Blog 和 AOSP Release Notes 访问受限，但基于已知信息和本地内容判断时效性",
       "next_scheduled_check": "2026-07-01"
     }

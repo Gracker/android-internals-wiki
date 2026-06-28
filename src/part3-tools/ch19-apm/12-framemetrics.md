@@ -45,6 +45,8 @@ task6_state: "reviewed"
 task9_state: reviewed
 pipeline_stage: ready-to-publish
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 扫描无新增正文修复；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-29
 ---
 
 # FrameMetrics
@@ -164,13 +166,9 @@ class FrameMetricsTracker(private val activity: Activity) {
 
 ## 它的边界
 
-FrameMetrics 数据来自 Window。它适合观察应用 UI 帧，但不覆盖所有系统层细节：
+FrameMetrics 数据来自 Window，它的视野就限定在应用 UI 帧的这几个阶段内。以下几个问题它回答不了：
 
-- 它不能直接告诉你 CPU 被哪个线程抢走。
-- 它不能完整解释 SurfaceFlinger、HWC、GPU driver 的问题。
-- 它不能判断 SurfaceView、播放器或相机预览内部生产帧的耗时。
-- 它不能替代方法调用栈。
-- 它不能自动关联业务页面状态。
+CPU 被哪个线程抢走了——这要看调度 Trace；SurfaceFlinger、HWC、GPU driver 有没有瓶颈——FrameMetrics 只看到自己的 buffer 交换等了多久，看不到下游在干什么；SurfaceView、播放器、相机预览这类独立渲染通道的帧耗时也不在它的覆盖范围。另外它没有方法调用栈，也不会自动关联业务页面状态，阶段归因之后还得靠 Perfetto 或 Profiler 继续深挖。
 
 FrameMetrics 更适合做 JankStats 的增强字段。比如线上慢帧率抬升时，同时看高版本设备的 `LAYOUT_MEASURE_DURATION` 是否抬升，可以快速判断问题更像 UI 树复杂度，还是主线程消息等待。
 
@@ -268,8 +266,4 @@ FrameMetrics 不直接告诉你 Compose 哪个 Composable 慢，也不告诉你 
 FrameMetrics 适合做线上分流：先判断慢在布局、绘制、sync 还是 GPU 提交，再选择对应线下工具。
 ## 延伸阅读
 
-### Measure + Perfetto/FrameMetrics 系统级渲染分析集成点
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-measure-perfetto-framemetrics-integration.md
-- 类型：DeepResearch 源码调研
-- 摘要：分析 FrameMetrics API 与 HWUI 层 FrameInfo 结构体（24 个时间戳索引）的对应关系，梳理 Window.addOnFrameMetricsAvailableListener() → FrameMetricsReporter → FrameInfoBuffer 的调用链，以及 Perfetto 通过 systrace 收集相同数据源实现系统级分析的过程。FrameMetrics 是 Perfetto 数据的上层包装。
-- 注入时间：2026-06-07
+FrameMetrics 的数据源与 Perfetto 的渲染 Trace 共享同一套底层机制：HWUI 层通过 `FrameInfo` 结构体（24 个时间戳索引）采集帧阶段耗时，`FrameMetricsReporter` 将其包装为 `FrameMetrics` API 回调，而 Perfetto 通过 systrace 收集同一数据源实现系统级分析。理解这层关系有助于在 FrameMetrics 发现问题后，平滑切换到 Perfetto 做深度排查。

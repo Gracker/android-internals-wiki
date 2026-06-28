@@ -72,6 +72,8 @@ last_task9_audit_log: "logs/deep-review/2026-06-17-05-audit.md"
 last_task2b_verifier_at: "2026-06-17T07:29:33+08:00"
 task2b_verifier_note: "status finalized→ready-for-review; task9 auto-fix 回流 Task6 复审"
 task6_refinalize_note: "2026-06-17 Task6 复审通过（revisiting）；Task9 auto-fix 内容无文风/格式问题，L1/L2 全部通过；自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-29
 ---
 
 
@@ -185,10 +187,13 @@ KOOM（Kwai OOM）是快手团队开源的内存监控方案。它最适合解�
 
 KOOM 的 Java 堆泄漏检测采用"阈值触发 + Hprof 裁剪"的方案。它通过 Runtime.totalMemory() 和 maxMemory() 计算当前 Java 堆使用率，当使用率超过阈值（如 80%）时触发 Dump。Dump 出的 Hprof 文件会在客户端进行裁剪——KOOM 实现了一套 Hprof 文件解析和裁剪机制，只保留泄漏分析所需的关键数据（如 GC Root 引用链、必要对象记录和 bitmap buffer 相关信息）。公开 README 与源码能支撑“裁剪后再上报”这个机制，但具体压缩比例要看堆内容、bitmap 占比和裁剪策略，线上文档里不应写成固定 10%~20%。
 
-一个关键优化是：KOOM 使用了 Fork 子进程来执行 Hprof Dump，避免在主进程中执行耗时的 Dump 操作导致卡顿或 ANR。
-<!-- AIW-源码调研-2026-05-08 -->
-> **深度研究补充**：KOOM FastDump 的 Suspend-Fork-Resume 机制有更完整的源码级分析，见 [[DeepResearch/2026-05-08-koom-fastdump-suspend-fork-resume-mechanism|2026-05-08: KOOM FastDump Suspend-Fork-Resume 机制]]。核心发现：主进程冻结 <20ms 依赖 Suspend VM → fork → Resume 三步；koom-fast-dump.so（闭源）是核心实现，hprof_dump.cpp 等 6 个 native 源文件构建该 so；OOMMonitor 组合 5 个 OOMTracker（HeapOOMTracker/ThreadOOMTracker/FdOOMTracker/PhysicalMemoryOOMTracker/FastHugeMemoryOOMTracker）；hprof_strip.cpp 直接解析 Hprof 二进制格式裁剪 system heap，体积减少 50-70%。
-这在 Perfetto 中的体现是：Dump 期间主线程不会出现长时间的阻塞，用户感知不到监控本身的存在。
+一个关键优化是：KOOM 使用了 Fork 子进程来执行 Hprof Dump，避免在主进程中执行耗时的 Dump 操作导致卡顿或 ANR。Fork 子进程前主进程会先 Suspend VM，fork 完成后立即 Resume——整个冻结窗口控制在 20ms 以内，所以 Dump 期间主线程不会出现长时间阻塞，用户感知不到监控本身的存在。
+
+KOOM 的 Hprof 裁剪也做了针对性优化：`hprof_strip.cpp` 直接解析 Hprof 二进制格式，只保留泄漏分析所需的关键数据，裁剪后体积通常可减少 50-70%。
+
+[已验证: github.com/KwaiAppTeam/KOOM]
+
+KOOM 的 Hprof 裁剪策略也值得一提：`hprof_strip.cpp` 直接解析 Hprof 二进制格式，只保留泄漏分析所需的关键数据（GC Root 引用链、必要对象记录和 bitmap buffer 信息），裁剪后体积通常可减少 50-70%。
 
 [已验证: github.com/KwaiAppTeam/KOOM]
 
