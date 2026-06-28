@@ -17,9 +17,13 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/power/power-details"
   - type: official
+    path: "https://developer.android.com/about/versions/16/behavior-changes-all"
+  - type: official
     path: "https://developer.android.com/develop/background-work/background-tasks/optimize-battery"
   - type: official
     path: "https://developer.android.com/develop/background-work/services/fgs/service-types"
+  - type: official
+    path: "https://developer.android.com/develop/background-work/services/fgs/timeout"
   - type: official
     path: "https://developer.android.com/about/versions/14/changes/fgs-types-required"
   - type: official
@@ -35,6 +39,8 @@ sources:
   - type: aosp
     path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java"
   - type: aosp
+    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
+  - type: aosp
     path: "frameworks/base/core/java/android/app/usage/UsageStatsManager.java"
   - type: aosp
     path: "frameworks/base/core/java/android/content/pm/ServiceInfo.java"
@@ -47,10 +53,10 @@ sources:
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, foreground-service, location-power]
-related_chapters: ["25.1", "25.3", "25.4", "25.5", "5.8", "11.2"]
+related_chapters: ["25.1", "25.3", "25.4", "25.5", "25.13", "5.8", "11.2"]
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: "2026-05-15T07:22:00+08:00"
@@ -63,14 +69,15 @@ last_task6_at: "2026-05-14T15:12:00+08:00"
 last_task6_audit: "2026-06-28"
 last_task6_review_log: logs/review/2026-05-14-15-review.md
 task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过，无 Task6 回炉项，送 Task9 技术复审。"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-15"
-last_task9_at: "2026-06-25T07:20:00+08:00"
+task9_reviewed_date: "2026-06-28"
+last_task9_at: "2026-06-28T11:50:29+08:00"
 task2b_verified_at: "2026-06-26T07:27:19+08:00"
 task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (already finalized)"
-last_task9_review_log: logs/deep-review/2026-05-15-07-deep-review.md
-task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；WorkManager setBackoffCriteria 签名复核通过，FGS/后台定位/Job 配额口径与官方文档一致；满足 Task6 pass + queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: logs/deep-review/2026-06-28-11-deep-review.md
+task9_review_notes: "2026-06-28 Task9：auto-fixed。P0 2 / P1 1 / P2 1 均为局部修复；修正 UsageStatsManager bucket 常量、Android 16 Job 配额口径、FGS timeout 版本边界，并补 §25.13 交叉引用；回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-28"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
 ---
@@ -102,7 +109,7 @@ last_deepseek_cn_review_at: 2026-06-25
 
 ## 为什么要了解后台功耗治理
 
-本节讲 App 侧怎么把后台耗电收住，不重复 Doze、App Standby、Job 配额的系统实现。后台执行限制的版本演进和 AOSP 入口见 §5.8；App 耗电模型、WakeLock、Alarm、定位和 FCM 的横向策略见 §11.2；功耗诊断流程见 §25.1。
+本节讲 App 侧怎么把后台耗电收住，不重复 Doze、App Standby、Job 配额的系统实现。后台执行限制的版本演进和 AOSP 入口见 §5.8；App 耗电模型、WakeLock、Alarm、定位和 FCM 的横向策略见 §11.2；功耗诊断流程见 §25.1；FGS 超时与 Android 16 Job 配额细节见 §25.13。
 
 后台功耗治理的任务很具体：把后台工作改成可延后、可合并、可取消、可观测。系统限制会延后 CPU、网络、Job、Alarm 和定位访问，但系统不会替业务判断“这次同步是否还需要做”“这段定位是否还能降频”“这个前台服务是否应该停掉”。这些判断仍要放回 App 架构里处理。
 
@@ -119,11 +126,11 @@ Android 后台限制可以按“设备状态、App 使用状态、任务 API”�
 | Android 9 | App Standby Buckets 按使用频率限制资源 | 在测试里记录 bucket；不要把 rare / restricted 下的延迟误判成代码失败 |
 | Android 12 | 后台启动前台服务受限，`ForegroundServiceStartNotAllowedException` 成为运行时风险 | 前台服务启动必须来自用户可见动作或官方豁免场景 |
 | Android 14 | 前台服务类型和对应权限成为硬性约束 | Manifest 声明 `foregroundServiceType`，补对应 `FOREGROUND_SERVICE_*` 权限 |
-| Android 16 | Job 执行配额与 App 状态关系更细；前台服务场景下的 Job 也可能受配额影响 | 把前台服务内派生的后台 Job 纳入功耗预算和超时监控，引入基于前台服务类型的动态配额调整 |
+| Android 16 | Job 执行配额与 App 状态关系更细；与前台服务并发执行的 Job 也会受运行时配额约束 | 把前台服务并发 Job 纳入功耗预算和超时监控，记录 `WorkInfo.getStopReason()` / `JobParameters.getStopReason()` 与 `JobScheduler#getPendingJobReasonsHistory()` |
 
 Android Developers 的 power resource limits 文档把限制分成两种：一种是设备低功耗状态下延后执行，例如 Doze 期间普通 Job 和非精确 Alarm 延后；另一种是根据 standby bucket 限制唤醒频率和可运行时长，例如 rare bucket 下 Job 运行预算更少。WorkManager 在 App 不可见时通过 JobScheduler 执行，也会受到这些限制。 [已验证: 官方文档, developer.android.com/topic/performance/power/power-details]
 
-AOSP 的入口能对应到这三层：`DeviceIdleController` 维护 idle / maintenance 状态，`AppStandbyController` 维护 bucket，`QuotaController` 根据 bucket 和 Job 状态计算剩余执行时间，`UsageStatsManager` 暴露 `STANDBY_BUCKET_ACTIVE`、`WORKING_SET`、`FREQUENT`、`RARE`、`RESTRICTED` 等常量。 [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/usage/UsageStatsManager.java]
+AOSP 的入口能对应到这三层：`DeviceIdleController` 维护 idle / maintenance 状态，`AppStandbyController` 维护 bucket，`QuotaController` 根据 bucket 和 Job 状态计算剩余执行时间，`UsageStatsManager` 暴露 `STANDBY_BUCKET_ACTIVE`、`STANDBY_BUCKET_WORKING_SET`、`STANDBY_BUCKET_FREQUENT`、`STANDBY_BUCKET_RARE`、`STANDBY_BUCKET_RESTRICTED` 等常量。 [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/usage/UsageStatsManager.java]
 
 到 App 实战层，判断顺序不要从“怎么绕过限制”开始，而是先问四个问题：
 
@@ -220,7 +227,7 @@ Android 14 对前台服务再加一层类型约束。targetSdk 34+ 的 App 必�
 - 服务命名和通知文案能让用户知道正在发生什么，例如“正在导航”“正在上传 3 个视频”，不要写“同步中”这种无法判断成本的文案。
 - 启动入口来自用户动作或官方豁免场景，后台广播里不要直接兜底启动前台服务。
 - 每个服务都有停止条件：任务完成、用户取消、超时、约束不满足、App 登出、权限撤销。
-- dataSync、mediaProcessing、shortService 等有超时语义的类型要在业务层主动停止，不要等系统回调。
+- `shortService` 有约 3 分钟上限；targetSdk 35+ 的 `dataSync` / `mediaProcessing` 在后台运行时按 24 小时窗口累计 6 小时，业务层要主动停止，不要等系统回调。
 - 服务里再派生的 Worker / Job 仍要记入后台任务预算，Android 16 起不要把“前台服务正在跑”当成 Job 无配额的保证。
 
 ## 后台定位与传感器管控
