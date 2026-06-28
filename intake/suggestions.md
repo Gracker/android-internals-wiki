@@ -430,3 +430,9 @@
   4. 全文末尾 — 缺常见问题与误区小节
 - **已解决**：heapSweep 细节（§1.26.4 已补全）、android-16→17 源码主线迁移
 - **review 日志**：logs/review/2026-06-28-17-review.md
+
+## [Task9 Deep Review] 18.9 Vulkan 原生渲染管线 — 2026-06-28
+- **类型**：源码准确性/工具命令
+- **位置**：调试工具 / Validation Layers
+- **问题**：当前示例只写 `debug.vulkan.enable` 和 `debug.vulkan.layers` 两个 property，没有覆盖 Android 官方 GPU debug layers 流程里的 target app、layer package、settings/global 开关等步骤，实机启用容易失败。
+- **建议**：按 Android 官方 validation layer / AGI 文档重新收敛 Android 15-17 的启用流程；区分 debug build、layer APK 安装、系统镜像内置 layer 与目标包名选择。

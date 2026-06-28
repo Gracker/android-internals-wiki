@@ -3,7 +3,7 @@ title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingMan
 chapter: "26.12"
 section: "26.12"
 status: ready-for-review
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
@@ -19,16 +19,16 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"
 gap_score: "18"
-task6_state: "reviewed"
+task6_state: revisiting
 last_task6_at: "2026-06-28T20:13:50+08:00"
-task9_state: "pending"
+task9_state: reviewed
 task6_result: "pass-light-edit"
 task2a_result: "draft-ready-for-review"
 last_task2a_at: "2026-05-17T06:04:00+08:00"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-28T19:30:49+08:00"
+last_task9_at: "2026-06-28T20:34:19+08:00"
 last_task9_autofix_at: "2026-06-28"
 task2b_result: fixed-lite
 task2b_state: fixed
@@ -39,6 +39,7 @@ repaired_by: "openclaw-task2b"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-28
 last_task9_audit: "2026-06-28"
+last_task9_review_log: "logs/deep-review/2026-06-28-20-deep-review.md"
 ---
 
 # 26.12 Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
@@ -396,7 +397,7 @@ StatsD 在 Android 17 中采用三层架构：
 2. **StatsCompanionService**：JNI 桥接层，连接 Java 服务与 native daemon
 3. **StatsD daemon**：native 二进制层，运行主循环处理原子事件
 
-原子数据通过 StatsdConfig 配置定义，分为 Pull atom 和 Push atom 两种类型，在 Perfetto 中映射为 `android_*_states` 表。
+原子数据通过 StatsdConfig 配置定义，分为 Pull atom 和 Push atom 两种类型。statsd 侧负责聚合与告警；Perfetto 侧只有启用对应数据源或 framework 侧发出 TrackEvent 时才会出现相关轨道，不能默认把 Pull / Push atom 等同为 `android_*_states` 表。
 
 #### 原子数据与诊断能力的互补关系
 
@@ -412,15 +413,15 @@ StatsD 在 Android 17 中采用三层架构：
 
 Android 17 中原子数据访问的权限边界：
 
-- **REGISTER_STATS_PULL_ATOM**：第三方应用注册拉取原子数据
-- **READ_RESTRICTED_STATS**：访问限制性原子数据
-- **PACKAGE_USAGE_STATS**：系统应用级别，作用范围收窄
+- **REGISTER_STATS_PULL_ATOM**：`signature|privileged`，`AndroidManifest.xml` 明确标注“不供第三方应用使用”。
+- **READ_RESTRICTED_STATS**：`internal|privileged`，只面向受信系统组件读取受限 statsd 数据。
+- **PACKAGE_USAGE_STATS**：`signature|privileged|development|appop|retailDemo`，普通应用需要用户或设备策略授予 app-op 才能读 usage stats。
 
-这些权限边界直接影响线上诊断的数据可用性，需要在诊断能力评估时考虑。
+这些权限边界直接影响线上诊断的数据可用性。普通第三方 App 不能把 statsd Pull atom 当作默认可用通道；只有系统应用、平台集成或企业管控设备才适合把它纳入证据包。
 
 #### 诊断证据中的原子数据字段
 
-在 26.12 节的证据归档表中，建议增加原子数据相关字段：
+在系统应用或平台侧排障场景中，证据归档表可以增加原子数据相关字段：
 
 | 字段 | 类型 | 用途 |
 |---|---|---|
@@ -436,8 +437,8 @@ Android 版本演进对原子数据诊断的影响：
 | 版本 | 原子数据能力 | 诊断策略变化 |
 |---|---|---|
 | Android 10-14 | 基础原子计数器 | 依赖第三方 SDK 监控 |
-| Android 15+ | 完整的 Pull/Push 原子 | 结合 Perfetto 表查询 |
-| Android 17 | 细粒度权限控制 | 需要考虑权限边界 |
+| Android 15+ | 系统/平台侧 Pull / Push atom 更完整 | 与 statsd 聚合结果、Perfetto TrackEvent 或专项 trace 联判 |
+| Android 17 | 细粒度权限控制 | 先确认签名/特权/app-op 边界，再决定是否能进入线上证据包 |
 
 在制定诊断策略时，需要根据目标设备的 Android 版本选择合适的原子数据采集方式。
 
@@ -445,10 +446,10 @@ Android 版本演进对原子数据诊断的影响：
 
 ### AppProcessDied 原子注册
 
-`frameworks/proto_logging/stats/atoms.proto`（line 20229-20255）中注册：
+`frameworks/proto_logging/stats/atoms.proto` 中同时包含 `Atom` oneof 注册和 `AppProcessDied` message 定义：
 
 ```
-AppProcessDied app_process_died = 373 [(module) = "framework"];
+AppProcessDied app_process_died = 373 [(module_name) = "framework"];
 ```
 
 字段顺序（与 `AppExitInfoTracker.performLogToStatsdLocked` 调用顺序严格对齐）：
@@ -460,6 +461,7 @@ AppProcessDied app_process_died = 373 [(module) = "framework"];
 6. `pss` (int32, kB)
 7. `rss` (int32, kB)
 8. `has_foreground_services` (bool)
+9. `exit_status` (int32，`exit()` 参数或 signal number)
 
 ### 15 秒去抖与去重机制
 
@@ -507,7 +509,7 @@ private void scheduleLogToStatsdLocked(ApplicationExitInfo info, boolean immedia
 
 ### PSS/RSS int 强转精度边界
 
-`performLogToStatsdLocked` 调用 `(int) info.getPss()` / `(int) info.getRss()`，意味着 statsd 原子记录的 PSS/RSS 上限为 2GB（int32 上界）。对绝大多数移动应用（PSS 通常 100MB 量级）无影响，但对调试 OOM/内存压力场景时需要注意 statsd 端的精度损失——这是设计上的精度折中，原始数据仍保留在 `ApplicationExitInfo` Java API 端。
+`performLogToStatsdLocked` 调用 `(int) info.getPss()` / `(int) info.getRss()`，而 atoms.proto 字段单位是 kB；int32 上限约为 2 TiB（2^31-1 kB），不是 2GB。对移动设备 PSS/RSS 基本不会触顶，但 statsd 端仍只保留聚合字段，原始诊断信息保留在 `ApplicationExitInfo` Java API 端。
 
 ### 持久化 proto 与 statsd 原子的字段差异
 
@@ -516,7 +518,7 @@ private void scheduleLogToStatsdLocked(ApplicationExitInfo info, boolean immedia
 | 字段 | ApplicationExitInfoProto (持久化) | AppProcessDied 原子 (statsd) |
 |------|----------------------------------|------------------------------|
 | pid / real_uid / defining_uid / connection_group | ✅ | ❌（只保留 package_uid） |
-| status（信号号 / exit code） | ✅ | ❌ |
+| status / exit_status（信号号 / exit code） | ✅ | ✅（字段名 `exit_status`） |
 | description | ✅ (DEST_EXPLICIT) | ❌ |
 | state / trace_file | ✅ | ❌ |
 
@@ -524,7 +526,7 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 
 ### 未验证项
 
-- `FrameworkStatsLog.APP_PROCESS_DIED` 常量值 373 是基于 atoms.proto 中 enum 注册顺序推断，生成的 `FrameworkStatsLog.java` 不在 git tree 中可直读。
+- `FrameworkStatsLog.APP_PROCESS_DIED` 的生成 Java 常量不在 git tree 中可直读，但 atom id 373 已由 atoms.proto 的 `app_process_died = 373` 注册确认。
 - Android 17 未在 `ApplicationExitInfo.java` 公开独立 `REASON_MEMORY_LIMITER` 常量；上一轮 AIW 调研（2026-05-23）已记录 Android 17 引入保守应用内存限制（targetSdk>=36），但具体 reason / subreason 与 description 组合仍需设备样本补查。
 - `StatsdStatsService` / `StatsService.java` 在 `services/core/java/com/android/server/stats/` 目录下的 Android.bp 视角未在本轮核对，与本主题相关度低但建议后续补查。
 
