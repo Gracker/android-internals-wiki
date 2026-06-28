@@ -1603,11 +1603,10 @@
     },
     "1.26": {
       "status": "ready-for-review",
-      "last_review": "2026-06-28",
-      "task6_state": "reviewed",
-      "task6_result": "pass-light-edit",
-      "pipeline_stage": "task2b_pending",
-      "note": "pass-light-edit, queue pending for L3 supplements (heap ops/tombstone/Perfetto SQL/FAQ)"
+      "pipeline_stage": "task6_pending",
+      "last_task2b_at": "2026-06-28T18:52:49+08:00",
+      "last_task2b_by": "task2b-main-rework",
+      "task2b_result": "fixed"
     },
     "19.10": {
       "status": "finalized",
@@ -1634,7 +1633,7 @@
       "task9_result": "pending"
     }
   },
-  "last_updated": "2026-06-28T18:04:00+08:00",
+  "last_updated": "2026-06-28T18:52:49+08:00",
   "ready_for_review": 2,
   "reviews": [
     {
