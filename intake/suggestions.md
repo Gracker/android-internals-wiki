@@ -84,3 +84,53 @@
 - **位置**：全文
 - **问题**：不同章节中对 "binder 线程" 和 "IPC 线程" 的术语使用可能存在差异
 - **建议**：统一术语使用，明确 binder 线程和 IPC 线程的定义和关系
+## [Task2A Gap Mining] 已检查方向记录 — 2026-06-28 09:11
+
+**结论：本轮未发现评分 ≥ 14 的知识缺口，跳过新章节创建。**
+
+### 已检查方向（避免重复挖掘）
+
+#### AOSP 子系统覆盖检查
+- ✅ frameworks/base/ 核心服务（AMS, PMS, WMS, InputFlinger, etc.）— 全部已覆盖
+- ✅ system/ 核心组件（lmkd, vold, netd, installd）— 全部已覆盖
+- ✅ packages/modules/（DNSResolver, Bluetooth, Media）— 主要模块已覆盖
+- ✅ frameworks/native/（Binder, SurfaceFlinger, etc.）— 已覆盖
+
+#### Android 17 新特性覆盖检查
+- ✅ Binder 异步批处理（1.25/1.27）、DeliQueue（1.26/1.28）
+- ✅ MemoryLimiter（4.17）、App Hibernation（5.24）
+- ✅ 16KB Page Size（4.7/20.13）、Edge-to-Edge（2.26）
+- ✅ Predictive Back（3.12/22.13）、Desktop Mode（2.20/22.14）
+- ✅ Private Space（17.7）、App Archiving（1.20）
+- ✅ AVF/pKVM（1.32）、MTE（20.11）
+- ✅ JobScheduler 五维节流（5.23）、Low Power Standby（5.25）
+- ✅ HWUI Vulkan 多队列（18.26）、WebGPU（18.27）
+
+#### 官方文档覆盖检查
+- ✅ ADPF（5.9/8.19/25.11/25.16）、Baseline Profiles（8.7/21.4/19.15）
+- ✅ ProfilingManager（8.10/8.16/14.7/19.16）
+- ✅ ApplicationExitInfo（26.9）、ApplicationStartInfo（26.13）
+- ✅ Photo Picker（24.13）、MediaStore（24.12）
+- ✅ Compose 性能（7.7/22.3/22.15-22.28/18.25）
+
+#### 新兴方向评估（均 < 14 分）
+- ❌ Wear OS 性能（8/20）— 素材不足，受众窄
+- ❌ Android TV 性能（7/20）— 素材不足
+- ❌ KMP 性能（12/20）— 素材丰富度不够
+- ❌ io_uring on Android（10/20）— 缺 Android 特定素材
+- ❌ VPN 性能（8/20）— 太窄
+- ❌ OTA/Update Engine 性能（7/20）— 超出本书范围
+- ❌ File-Based Encryption 性能（9/20）— 已有稳定文档，缺新素材
+- ❌ Shader 编译/纹理流式传输性能（9/20）— 主要面向游戏开发者
+- ❌ Kotlin Multiplatform 性能（12/20）— 最接近但素材不够
+
+#### 参考书交叉验证
+- ✅ 《Android 应用稳定性剖析与优化》15 篇 — 全部主题已映射到 ch20（18 节）
+- ✅ 《Android 性能优化》16 篇 — 全部主题已映射到 ch21-ch25
+- ✅ 《线上疑难问题》59 篇 — 全部主题已映射到 ch26 及各章节案例
+
+### 当前全书规模
+- 总小节：545（finalized: 334, ready-for-review: 144, draft: 40, 其他: 27）
+- Part 5 覆盖：ch20(18) + ch21(17) + ch22(30) + ch23(17) + ch24(20) + ch25(23) + ch26(23) = 148 节
+- 空 draft（<15行）：0 个
+- 小 draft（<60行有 outline）：20 个 → 这些是 Phase 2 的加工目标
