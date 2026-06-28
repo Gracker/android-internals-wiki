@@ -486,6 +486,26 @@
     "completion_note": "fixed: 5项P0源码错误/原理修复——FrameClock/traversal边界重写(AndroidUiFrameClock负责recomposition+apply，measure/layout在ViewRootImpl traversal中)、流程图替换requestRedraw→Owner invalidation路径+RenderNodeLayer→OwnedLayer/GraphicsLayer主路径、ThreadedRenderer源码锚点修正为core/view、Snapshot写路径修正为sync(lock)+删除未验证性能数字+跨Recomposer并发边界、PausableComposition默认启用状态收窄为Foundation flag边界(1.10.0-alpha05曾启用/1.10.6默认禁用)"
   },
   {
+    "section": "13.01",
+    "section_title": "Perfetto 简介与架构",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-perfetto-version-availability-android9-17.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 9-17 Perfetto 版本可用性与新特性源码验证 — 通过 android-17.0.0_r1 源码系统验证各版本 Perfetto 可用性，解决官方文档矛盾",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-06-29T06:16:38.757742",
+    "status": "pending"
+  },
+  {
     "section": "26.3",
     "section_title": "性能指标采集与上报",
     "priority": 95,
@@ -515,6 +535,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-29T06:27:27+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-06-29T06:50:00+08:00",
+    "completion_note": "fixed: 全章源码级重写——移除虚构PERFORMANCE_METRICS_ATOM(10244)、删除不存在的StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正StatsManager→addConfig/query/setPullAtomCallback、重写StatsCompanionService描述、电池感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例、修正atoms.proto引用"
   }
 ]
