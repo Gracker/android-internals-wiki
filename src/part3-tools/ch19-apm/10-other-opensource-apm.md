@@ -14,20 +14,20 @@ task6_result: pass-light-edit
 task6_review_notes: "2026-06-25 Task6 revisiting复审(Task2B fix后回归): 禁用词扫描零命中。修复2处形容词+冒号起手式(原因很直接/代价也很直接)。对齐/真正/落地等禁用词在正文中零命中。L1/L2通过,无B类大问题。task9_result=pass-tech-review,queue无pending,自动晋升finalized。"
 last_task6_audit: "2026-06-25"
 last_task2b_lite_at: "2026-06-25"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-25"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-25"
+last_task9_at: "2026-06-28T13:30:41+08:00"
 task9_review_date: "2026-06-25"
 task9_reviewer: "openclaw-task9"
 task9_state: reviewed
 confidence: "medium"
 tech_score: "3/5"
-last_task9_audit: "2026-05-20"
+last_task9_audit: "2026-06-28"
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: revisiting
+pipeline_stage: task6_pending
 last_task2b_at: "2026-06-25T00:53:48+08:00"
 repaired_date: 2026-06-25
 repaired_by: openclaw-task2b
@@ -35,6 +35,9 @@ last_verified: 2026-06-25
 last_verified_against: "AOSP android-17.0.0_r1 + Matrix GitHub README + Android Developers docs + Task9 2026-06-25 deep-review items (ANGLE misattributed)"
 verification_scope_note: "版本范围覆盖第三方 APM 工具的 Android 兼容性窗口，非全版本 AOSP 逐版本验证。AOSP 源码仅验证 android-17.0.0_r1；Matrix/AndroidGodEye/Collie/Rabbit 兼容性依据各自项目 README 和发布说明。"
 task2b_notes: "2026-06-25 Task2B main: Matrix plugin artifact ID added; APM version capability table added; ANGLE issue marked as misattributed (belongs to ch2.14). 2026-06-25 Task2B Lite: added verification_scope_note for frontmatter version range clarity; ANGLE body content verified absent (only frontmatter metadata references remain)."
+last_task9_autofix_at: "2026-06-28"
+last_task9_review_log: "logs/deep-review/2026-06-28-13-audit.md"
+task9_review_notes: "2026-06-28 闲时抽检 AUTO-FIX: 修正 Android 14/API 34 误写 ProfilingManager requestProfiling 的版本表；ProfilingManager/requestProfiling 以 API 35 为下限；无遗留 P0/P1。"
 ---
 ---
 
@@ -144,7 +147,7 @@ Android 版本迭代也意味着 APM 可用的系统级能力在逐步变化。�
 | Android 10 | API 29 | Scoped Storage、后台启动限制、`ProcessLifecycleOwner` | 数据存储与上报通道受限，APK 内日志和缓存策略需要重新设计 |
 | Android 11 | API 30 | `ApplicationExitInfo`（`ActivityManager.getHistoricalProcessExitReasons()`） | Crash/ANR 归因首次有了系统级退出原因，不用只靠自己的异常处理器猜 |
 | Android 12-13 | API 31-33 | `JankStats`（Jetpack）、Performance Class、Foreground Service 限制 | 慢帧采集有了 Jetpack 官方口径；后台采样窗口进一步受限 |
-| Android 14 | API 34 | `ProfilingManager` 基础请求能力（`requestProfiling()`） | 首次出现系统级 profiling 请求接口，但 system-triggered profiling 还没来 |
+| Android 14 | API 34 | 无 `ProfilingManager` 公共 API；仍依赖 `JankStats`、`FrameMetrics`、`ApplicationExitInfo`、Perfetto / profileable 等既有通道 | APM 侧不能在 Android 14 及以下调用 `requestProfiling()`，只能保留低版本抓取流程 |
 | Android 15 | API 35 | `ProfilingManager` 稳定，手动 profiling 可用 | APM SDK 可以把性能诊断能力接到系统 profiling 通道上 |
 | Android 16 | API 36 | `addProfilingTriggers()`、`APP_FULLY_DRAWN`、`ANR` 触发器 | system-triggered profiling 进入公开 API，冷启动和 ANR 不需要人工复现也能拿到 trace |
 | Android 16 ext 36.1 | extension 36.1 | `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` | 触发器覆盖范围进一步扩大，但运行时需做 extension gating |
