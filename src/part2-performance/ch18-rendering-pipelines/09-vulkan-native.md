@@ -48,24 +48,25 @@ repaired_by: openclaw-task2b
 last_task9_review_log: logs/deep-review/2026-06-07-05-deep-review.md
 task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Present/Swappy 时序图把 CPU `queueBuffer()` 误画成 GPU 动作；P2 1：Validation Layer 启用命令仍需按官方 GPU debug layer 流程收敛。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-06 Task9 闲时抽检：AUTO-FIX P1 1 / P2 1；Android native WSI present modes 在 AOSP android-16.0.0_r4 中只返回 FIFO、条件返回 MAILBOX/shared，不返回 IMMEDIATE/FIFO_RELAXED；已局部修正文档，并把 Swappy source 从未固定版本的 AOSP main header 改为 Android Game SDK 官方 API reference，送 Task6 复审。 | 2026-06-07 Task9 05: pass-tech-review。P0/P1 0；前次 Android native WSI present mode 与 Swappy API auto-fix 已复核通过；记录 P2 1（Validation Layer 启用命令建议按官方 GPU debug layer 流程收敛），Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-28 Task9 闲时抽检 AUTO-FIX：按 android-17.0.0_r1 复核 Vulkan native WSI 与 SurfaceFlinger RenderEngine Graphite；补充 Android 17 条件返回 VK_PRESENT_MODE_FIFO_LATEST_READY_EXT，修正旧的 main/android16 源码锚点，并将 Graphite 口径收敛为 Android 17 已包含可选后端、是否启用受 flags/property/OEM 配置影响。回 Task6 复审。"
 status: ready-for-review
-reviewed_date: "2026-05-09"
+reviewed_date: "2026-06-28"
 reviewed_by: "openclaw-task6"
-last_task6_at: "2026-06-07T05:18:00+08:00"
+last_task6_at: "2026-06-28T20:13:50+08:00"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-15-audit.md"
 last_task6_review_log: "logs/review/2026-06-07-05-review.md"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 4 处（GLSE 拼写、VSync 同步用词、否定纠正式、口语化工具描述），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-09 Task6 02:08：revisiting 写作复审；轻修 L1/L2 文风 4 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-06 task9 audit auto-fix：收敛 Android native WSI Presentation Mode 边界，并将 Swappy source 改为官方 API reference；AOSP android-16.0.0_r4 `swapchain.cpp` 不把 IMMEDIATE/FIFO_RELAXED 作为普通 Surface 返回模式，改回 Task6 复审。 | 2026-06-07 Task6 05:18：revisiting 复审 Task9 auto-fix 后文稿；L1/L2 全部通过，无禁用词命中，无 B 类回炉问题。auto-fix 涉及的源码锚点和口径修正写作质量合格。task9_result=auto-fixed，需 Task9 正式 pass-tech-review 后再晋升。 | 2026-06-28 Task9 闲时抽检 AUTO-FIX：按 android-17.0.0_r1 复核 Vulkan native WSI 与 SurfaceFlinger RenderEngine Graphite；补充 Android 17 条件返回 VK_PRESENT_MODE_FIFO_LATEST_READY_EXT，修正旧的 main/android16 源码锚点，并将 Graphite 口径收敛为 Android 17 已包含可选后端、是否启用受 flags/property/OEM 配置影响。回 Task6 复审。"
 last_task9_audit: "2026-06-28"
 last_task9_autofix_at: "2026-06-28"
 last_task9_audit_log: "logs/deep-review/2026-06-28-16-audit.md"
-task6_reviewed_date: "2026-06-07"
+task6_reviewed_date: "2026-06-28"
 deepseek_cn_review_state: done
+review_notes_append: "| 2026-06-28 Task6 20:13：revisiting 复审 Task9 2026-06-28 auto-fix（android-17.0.0_r1 WSI present mode + Graphite 口径修正）；L1 修 1 处禁用词（核心痛点→主要问题），L2 通过，无 B 类回炉项。task9_result=auto-fixed，转 Task9 最终确认。"
 last_deepseek_cn_review_at: 2026-06-28
 ---
 
@@ -127,7 +128,7 @@ Vulkan 的代价是**开发复杂度**。应用需要自行管理：
 
 ## Android Vulkan Profile (AVP)
 
-Vulkan 在 Android 上的核心痛点是碎片化：不同设备支持的 Extension 各不相同，App 必须在运行时逐个查询并处理 fallback。AVP（Android Vulkan Profile）是 Google 推出的标准化方案，目标是让 App 开发者只需要检查"设备是否支持某个 Profile"，而不需要逐一查询 Extension。
+Vulkan 在 Android 上面临的主要问题是碎片化：不同设备支持的 Extension 各不相同，App 必须在运行时逐个查询并处理 fallback。AVP（Android Vulkan Profile）是 Google 推出的标准化方案，目标是让 App 开发者只需要检查"设备是否支持某个 Profile"，而不需要逐一查询 Extension。
 
 ### 问题背景
 
