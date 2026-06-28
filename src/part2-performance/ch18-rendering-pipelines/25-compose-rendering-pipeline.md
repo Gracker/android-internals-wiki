@@ -4,15 +4,15 @@ chapter: "18.25"
 status: ready-for-review
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-29
 last_task6_at: "2026-06-29T05:09:53+08:00"
 last_task6_audit: "2026-06-29"
-task9_result: needs-rework
-task9_state: pending
-pipeline_stage: task9_pending
+task9_result: auto-fixed
+task9_state: reviewed
+pipeline_stage: task6_pending
 last_task2b_at: "2026-06-29T04:50:00+08:00"
 last_task2b_by: task2b-lite
 last_task2b_lite_at: "2026-06-29"
@@ -50,8 +50,9 @@ gap_source: "AOSP结构+章节深挖"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
 last_task9_audit: "2026-06-29"
-last_task9_at: "2026-06-29T04:29:07.107245+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-29-04-deep-review.md"
+last_task9_at: "2026-06-29T05:24:42.380077+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-29-05-deep-review.md"
+last_task9_autofix_at: "2026-06-29"
 ---
 ---
 
@@ -198,7 +199,7 @@ Compose 测量是单次的：parent measure 时传入 `Constraints`，child 返�
 |----|---------|-------------------|----------------------|
 | 默认绘制 | LayoutNode 无显式 layer 修饰符 | 否（合入父节点） | 否 |
 | graphics layer（直接） | `Modifier.graphicsLayer { }`（未触发 offscreen 条件） | 是（OwnedLayer/GraphicsLayer） | 否 |
-| graphics layer（offscreen） | `CompositingStrategy.Offscreen` / `alpha < 1` + `RenderEffect` 等 | 是 | 是 |
+| graphics layer（offscreen） | `CompositingStrategy.Offscreen` / Auto 下的 `alpha < 1`、`RenderEffect`、非默认 `BlendMode`/`ColorFilter` 等 | 是 | 是 |
 
 `AndroidComposeView.createLayer()` 负责创建 `GraphicsLayerOwnerLayer` 或 `RenderNodeLayer`，具体类型由 Compose 内部按需选择。绘制阶段 RenderNode 的创建/复用由 `LayoutNode.draw()` 调用链内部的 layer 实例管理。
 
@@ -365,7 +366,7 @@ class AndroidPrefetchScheduler (...) : Choreographer.FrameCallback {
 
 ### apply 提交机制
 
-`resume()` 返回 `Complete` 后调用 `apply()`，将组合结果提交到 UI 树。`apply()` 内部回放组合过程中缓冲的命令：插入/移除 LayoutNode、更新 `remember` 的值、触发 `SideEffect`。未 `apply` 的中间状态不会出现在屏幕上。
+`resume()` 返回 `true`（或 `isComplete == true`）后调用 `apply()`，将组合结果提交到 UI 树。`apply()` 内部回放组合过程中缓冲的命令：插入/移除 LayoutNode、更新 `remember` 的值、触发 `SideEffect`。未 `apply` 的中间状态不会出现在屏幕上。
 
 ## Snapshot 系统与重组触发
 
@@ -375,7 +376,7 @@ Compose 的状态管理建立在 Snapshot（快照）系统上。Snapshot 提供
 
 `mutableStateOf` 返回的 `SnapshotMutableState` 在读写时触发观察者回调：
 
-- **读**：在 Composition 过程中，读取 `state.value` 会将当前 recomposition scope 注册为该 state 的 reader。这是通过 `Snapshot.observe()` 或 `Snapshot.registerApplyObserver()` 实现的。
+- **读**：在 Composition 过程中，读取 `state.value` 会将当前 recomposition scope 注册为该 state 的 reader。读集合由 Composer / `SnapshotStateObserver` 的 read observer 记录；`Snapshot.registerApplyObserver` 只负责 apply 后的写集合通知。
 - **写**：修改 `state.value` 会标记所有注册的 reader scope 为 invalidated。写入操作在 snapshot 事务中完成。
 - **传播**：帧提交时（`Snapshot.sendApplyNotifications()`），snapshot 变更通过 `recordComposerModifications()` 传播到 `Recomposer.compositionInvalidations`。各 composition 的已知 scope 中，使用到被修改 state 的 scope 被标记为待重组。
 
@@ -483,7 +484,7 @@ sequenceDiagram
     Note over MT,RT: MT 等待 HWUI syncFrameState 完成
     RT->>RT: GPU 命令录制（Vulkan/GLES）
     RT->>RT: queueBuffer → BufferQueue
-    RT-->>MT: fence signal → MT 释放
+    RT-->>MT: HWUI sync 完成 → postAndWait 返回
     RT->>RT: SurfaceFlinger 合成上屏
 ```
 
@@ -503,9 +504,9 @@ Compose 与 View 体系完全共用 `ViewRootImpl` → `ThreadedRenderer` → `R
 
 `AndroidView` composable 允许在 Compose 树中嵌入传统 View。渲染路径：
 
-1. `AndroidView` 创建一个 `LayoutNode`，其 `draw` 方法委托给被包装 View 的 `draw`
-2. 被包装 View 的 `measure`/`layout` 被 Compose 的 `Constraints` 驱动
-3. View 内部的 `invalidate` 不会传播到 Compose 的 Snapshot 系统——它直接走 View 的 invalidation 路径，触发 `AndroidComposeView` 的 `dispatchDraw` 重绘对应区域
+1. `AndroidView` 通过 `ComposeNode<LayoutNode, UiApplier>` 创建代理 `LayoutNode`，`AndroidViewHolder` 持有实际 View，并在 attach 时通过 `AndroidComposeView.addAndroidView()` 加入 interop handler
+2. 被包装 View 的 `measure`/`layout` 由代理 `LayoutNode.measurePolicy` 将 Compose `Constraints` 转成 View `MeasureSpec` 后驱动
+3. View 内部的 `invalidate` 不会进入 Compose Snapshot 读写追踪；`AndroidViewHolder.invalidateChildInParent()` / `onDescendantInvalidated()` 会调用 `layoutNode.invalidateLayer()`，让对应 layer 在后续 `dispatchDraw` 中重绘
 
 性能开销来自测量协议转换（`Constraints` → `MeasureSpec`）和 invalidation 跨系统传播。单层 `AndroidView` 开销可忽略，嵌套使用（如 ViewPager2 内含 ComposeView）会增加同步成本。
 
@@ -584,7 +585,7 @@ Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，�
 **事实**：PausableComposition 只减少主线程负担，GPU 命令录制和执行仍需完整完成。跨帧组合只是将主线程工作分散到多帧，GPU 工作总量不变。
 
 ### 误区 4："Modifier.graphicsLayer 总是创建独立 RenderNode 和离屏缓冲"
-**事实**：`graphicsLayer` 的行为需要分两层判断：(1) 是否创建独立 `OwnedLayer`（GraphicsLayer/RenderNodeLayer）：`graphicsLayer { }` 通过 `placeWithLayer` 始终创建独立 draw layer，但未必触发 offscreen buffer；(2) 是否触发离屏缓冲：只有 `CompositingStrategy.Offscreen`、`alpha < 1` + `RenderEffect` 等特定组合才会将内容先渲染到 offscreen buffer，再合成到父 surface。仅仅设置 `scaleX` 或 `rotation` 不触发 offscreen buffer——RenderNode 原生支持这些属性变换。过度使用 `CompositingStrategy.Offscreen` 会增加层合成开销和 GPU 内存占用。
+**事实**：`graphicsLayer` 的行为需要分两层判断：(1) 是否创建独立 `OwnedLayer`（GraphicsLayer/RenderNodeLayer）：`graphicsLayer { }` 通过 `placeWithLayer` 始终创建独立 draw layer，但未必触发 offscreen buffer；(2) 是否触发离屏缓冲：只有 `CompositingStrategy.Offscreen`、`CompositingStrategy.Auto` 下的 `alpha < 1`、`RenderEffect`、非默认 `BlendMode`/`ColorFilter` 等条件才会将内容先渲染到 offscreen buffer，再合成到父 surface。仅仅设置 `scaleX` 或 `rotation` 不触发 offscreen buffer——RenderNode 原生支持这些属性变换。过度使用 `CompositingStrategy.Offscreen` 会增加层合成开销和 GPU 内存占用。
 
 ### 误区 5："Compose 比 View 更快，因为跳过了 measure/layout"
 **事实**：Compose 用 LayoutNode 的单次测量替代了 View 的递归 measure/layout，但在复杂布局场景下，两者的计算复杂度可能相似。性能差异主要来自 invalidation 模式的不同（Snapshot 自动追踪 vs View 显式 invalidate）。
