@@ -3,20 +3,22 @@
 title: Layout Inspector 与 ViewDebug 布局调试
 chapter: 14.16
 status: finalized
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed-lite
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 last_task2b_lite_at: 2026-06-28
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-28
 last_task6_audit: 2026-06-28
+last_task9_autofix_at: 2026-06-28
+last_task9_audit: 2026-06-28
 drafted_date: 2026-05-19
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: 2026-05-19
+last_verified: 2026-06-28
 last_verified_against: AOSP android-17.0.0_r1 / Android Developers Layout Inspector docs
 confidence: medium
 sources: 
@@ -184,11 +186,12 @@ void invalidateInternal(int l, int t, int r, int b, boolean invalidateCache,
 
 ```java
 void scheduleTraversals() {
+    checkThreadCompat();
     if (!mTraversalScheduled) {
         mTraversalScheduled = true;
-        mTraversalBarrier = mHandler.getLooper().getQueue().postSyncBarrier();
-        mChoreographer.postCallback(
-                Choreographer.CALLBACK_TRAVERSAL, mTraversalRunnable, null);
+        postTraversalBarrier();
+        mChoreographer.postVsyncCallback(
+                Choreographer.CALLBACK_TRAVERSAL, mTraversalCallback);
         notifyRendererOfFramePending();
         pokeDrawLockIfNeeded();
     }
