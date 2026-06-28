@@ -215,6 +215,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-28T17:26:38+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-06-28T17:40:16+08:00",
+    "completed_by": "task2b-lite",
+    "completion_reason": "fixed-lite: 源码锚点修正为 refs/tags/android-17.0.0_r1；删除\"tag 不存在\"错误声明；更新 ProfilingTrigger 常量可见性表格和代码块。trigger 常量矩阵四层重写（常量存在/flag gate/设备可用/文档语义）留给主 Task2B。"
   }
 ]

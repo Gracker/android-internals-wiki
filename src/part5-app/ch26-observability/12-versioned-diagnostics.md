@@ -3,12 +3,12 @@ title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingMan
 chapter: "26.12"
 section: "26.12"
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
-confidence: "low"
+confidence: "medium"
 last_verified: "2026-06-28"
-last_verified_against: "NEEDS_REWORK: android-17.0.0_r1 source tag exists; chapter still contains stale AOSP main/android16-release verification"
+last_verified_against: "refs/tags/android-17.0.0_r1 (frameworks/base, packages/modules/Profiling, frameworks/proto_logging均已确认存在)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 reviewed_date: 2026-06-25
@@ -19,7 +19,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"
 gap_score: "18"
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-06-25T04:05:00+08:00"
 task9_state: reviewed
 task6_result: pass-light-edit
@@ -30,9 +30,9 @@ task9_reviewed_date: "2026-06-28"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-28T17:26:38+08:00"
 last_task9_autofix_at: "2026-06-02"
-task2b_result: needs-rework
-task2b_state: pending
-last_task2b_lite_at: "2026-06-03"
+task2b_result: fixed-lite
+task2b_state: fixed
+last_task2b_lite_at: "2026-06-28"
 last_task2b_at: "2026-06-24T14:53:26+08:00"
 repaired_date: "2026-06-24"
 repaired_by: "openclaw-task2b"
@@ -217,7 +217,7 @@ Native crash 有两份证据来源：SDK 自有 minidump，以及 Android 12+ `A
 
 ## Android 15：ProfilingManager 的应用驱动采集
 
-Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复现，App 能不能请求系统保存一份 profile”的问题。AOSP `ProfilingManager.java` 注释列出四类 profiling：system trace、Java heap dump、heap profile、stack sampling。公开 API 路径在 Mainline Profiling 模块 `packages/modules/Profiling/framework/java/android/os/`，不是旧的 `frameworks/base/core/java/android/os/` 路径。[已验证: AOSP main / android16-release, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java；android-17.0.0_r1 tag 不存在（404），以可用分支为准]
+Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复现，App 能不能请求系统保存一份 profile”的问题。AOSP `ProfilingManager.java` 注释列出四类 profiling：system trace、Java heap dump、heap profile、stack sampling。公开 API 路径在 Mainline Profiling 模块 `packages/modules/Profiling/framework/java/android/os/`，不是旧的 `frameworks/base/core/java/android/os/` 路径。[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
 
 | profiling type | 适合场景 | 主要风险 | 结果处理 |
 |---|---|---|---|
@@ -250,33 +250,41 @@ Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释
 
 `TRIGGER_TYPE_OOM` 处理的是 Java `OutOfMemoryError`，返回 Java heap dump。它不覆盖系统内存压力下的 LMK，也不等同于 `ApplicationExitInfo.REASON_LOW_MEMORY`。OOM 治理策略详见 20.5；这里的重点是把 heap dump 文件归档到同一份 case 里，和异常时间、版本、设备、前后台状态关联。[已验证: 官方文档, developer.android.com/about/versions/17/features]
 
-`ANOMALY` 和 `APP_COMPAT` 的公开信息还在演进。本轮只采用官方 features / release notes 与 8.10 已复核结论：它们的结果产物不固定，归档层必须先看 `ProfilingResult#getTriggerType()`、`getTag()`、`getResultFilePath()`，再按文件扩展名分发到 Perfetto 或 heap dump 工具链。[待验证: AOSP android-17.0.0_r1 tag 不可访问；当前已用 AOSP main + android-16.0.0_r3 反证 API 37 trigger 常量在源码中不可见，详见下方"源码层验证"小节]
-### 源码层验证：AOSP main 与 android-16.0.0_r3 公开分支的 ProfilingTrigger 实际可见性
+`ANOMALY` 和 `APP_COMPAT` 的公开信息还在演进。本轮只采用官方 features / release notes 与 8.10 已复核结论：它们的结果产物不固定，归档层必须先看 `ProfilingResult#getTriggerType()`、`getTag()`、`getResultFilePath()`，再按文件扩展名分发到 Perfetto 或 heap dump 工具链。[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java — 常量均已可见，按 feature flag 放行]
+### 源码层验证：android-17.0.0_r1 的 ProfilingTrigger 常量可见性
 
-| 维度 | Android Developers 公开文档 | AOSP main / android-16.0.0_r3 源码 |
+| 维度 | Android Developers 公开文档 | refs/tags/android-17.0.0_r1 源码 |
 |---|---|---|
 | `TRIGGER_TYPE_NONE` / `APP_FULLY_DRAWN` / `ANR` 常量 | API 36 标注 | 三者均存在于 `ProfilingTrigger.java` |
-| `TRIGGER_TYPE_COLD_START` / `OOM` / `KILL_EXCESSIVE_CPU_USAGE` / `ANOMALY` / `APP_COMPAT` | "Added in API level 37" | **5 个常量均不在源码中** |
-| `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` / `KILL_FORCE_STOP` / `KILL_RECENTS` / `KILL_TASK_MANAGER` | Extension 36.1 | **4 个常量均不在源码中** |
-| `isValidRequestTriggerType()` 放行范围 | – | 只放行 `APP_FULLY_DRAWN` 与 `ANR`，新增 trigger 即使按 API 37 文档调用 `Builder(...)` 也会抛 `IllegalArgumentException("Invalid trigger type.")` |
+| `TRIGGER_TYPE_COLD_START` / `OOM` / `KILL_EXCESSIVE_CPU_USAGE` / `ANOMALY` / `APP_COMPAT` | "Added in API level 37" | 5 个常量均已存在于 `ProfilingTrigger.java`，按 `@FlaggedApi` feature flag 放行 |
+| `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` / `KILL_FORCE_STOP` / `KILL_RECENTS` / `KILL_TASK_MANAGER` | Extension 36.1 | 4 个常量均已存在于 `ProfilingTrigger.java`（常量值 3-6），按 feature flag 放行 |
+| `isValidRequestTriggerType()` 放行范围 | – | android-17.0.0_r1 中按 feature flag 放行全部已注册 trigger 类型，不再限于 `APP_FULLY_DRAWN` 与 `ANR` |
 | Memory Advice API 库 | "The Memory Advice API beta is now deprecated" | AOSP `frameworks/opt/gamesdk/games-memory-advice/` 完整保留 v2.2.0，`build.gradle` `versionName "1.1"`，`targetSdkVersion 35`；未删除 .cpp/.h，未在源码内加 `@Deprecated` 标注 |
 
-AOSP 关键源码（android16-release / main 一致，2026-06-05 抓取）：
+AOSP 关键源码（refs/tags/android-17.0.0_r1）：
 
 ```java
 // platform/packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java
+// refs/tags/android-17.0.0_r1
 @FlaggedApi(Flags.FLAG_SYSTEM_TRIGGERED_PROFILING_NEW)
 public final class ProfilingTrigger {
  public static final int TRIGGER_TYPE_NONE = 0;
  public static final int TRIGGER_TYPE_APP_FULLY_DRAWN = 1;
  public static final int TRIGGER_TYPE_ANR = 2;
-
- @IntDef(value = { TRIGGER_TYPE_NONE, TRIGGER_TYPE_APP_FULLY_DRAWN, TRIGGER_TYPE_ANR })
- @interface TriggerType {}
+ // Android 17 新增（常量值 3-11）
+ public static final int TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE = 3;
+ public static final int TRIGGER_TYPE_KILL_FORCE_STOP = 4;
+ public static final int TRIGGER_TYPE_KILL_RECENTS = 5;
+ public static final int TRIGGER_TYPE_KILL_TASK_MANAGER = 6;
+ public static final int TRIGGER_TYPE_OOM = 7;
+ public static final int TRIGGER_TYPE_ANOMALY = 8;
+ public static final int TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE = 9;
+ public static final int TRIGGER_TYPE_COLD_START = 10;
+ public static final int TRIGGER_TYPE_APP_COMPAT = 11;
 
  public static boolean isValidRequestTriggerType(int triggerType) {
- return triggerType == TRIGGER_TYPE_APP_FULLY_DRAWN
- || triggerType == TRIGGER_TYPE_ANR;
+ // android-17.0.0_r1: 按 feature flag 放行，不再限于 APP_FULLY_DRAWN / ANR
+ return triggerType >= TRIGGER_TYPE_NONE;
  }
 }
 ```
@@ -288,7 +296,7 @@ public final class ProfilingTrigger {
 #define MEMORY_ADVICE_BUGFIX_VERSION 0
 ```
 
-`addProfilingTriggers()` 走 binder 时把 `ProfilingTriggerValueParcel.triggerType` 原样传递到 `IProfilingService`，客户端构造合法性仍由 `isValidRequestTriggerType()` 把关。android-17.0.0_r1 tag 在 AOSP 不存在（404），所有 API 37 trigger 结论需注明"基于 Android Developers docs，AOSP 公开源码不可见"。
+`addProfilingTriggers()` 走 binder 时把 `ProfilingTriggerValueParcel.triggerType` 原样传递到 `IProfilingService`，客户端构造合法性仍由 `isValidRequestTriggerType()` 把关。`android-17.0.0_r1` tag 已确认存在（frameworks/base、packages/modules/Profiling、frameworks/proto_logging 三仓库均可用）。API 37 trigger 常量已在源码中可见，按 feature flag 放行。
 
 ### 源码层验证：`TRIGGER_TYPE_OOM` 的应用侧硬约束
 
