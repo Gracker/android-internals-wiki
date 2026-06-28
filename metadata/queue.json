@@ -389,5 +389,49 @@
     "added_by": "task3-freshness-check",
     "added_at": "2026-06-29T02:12:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Compose 渲染管线仍存在 MeasurePolicy/LayoutNode 源码引用、重组-测量驱动路径与 HWUI/Snapshot 同步语义错误",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-03-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "§LayoutNode 树：测量、布局、绘制 / 测量协议（约 136-167 行）",
+        "detail": "章节的 LayoutNode 代码块把 nodes 写成 OwnerSnapshotObserver，并写出不存在的 measure(constraints): Placeable；MeasureScope 代码块也把 measure(measurables, constraints) 放进 MeasureScope。androidx-compose-release 中 LayoutNode.nodes 是 NodeChain，draw 签名为 draw(canvas, graphicsLayer)；measure(measurables, constraints) 属于 MeasurePolicy 的 MeasureScope 扩展函数，child measure 返回 Placeable，MeasureResult 由父布局的 MeasurePolicy 返回。",
+        "suggestion": "重写两个代码块：LayoutNode 只保留 isVirtual / isVirtualLookaheadRoot / lookaheadRoot / nodes = NodeChain / draw(canvas, graphicsLayer) 等可验证成员；测量协议改为 MeasurePolicy.fun MeasureScope.measure(...)，并说明 child 返回 Placeable、父返回 MeasureResult。"
+      },
+      {
+        "type": "源码错误/原理断裂",
+        "location": "§与 Choreographer 的绑定、§布局阶段、§Compose 与 RenderThread 的协作（约 82-110、171-173、466-473 行）",
+        "detail": "章节仍把 Compose FrameCallback 描述为在 doFrame 中直接执行重组并触发 LayoutNode measure/layout。实际 Recomposer 通过 AndroidUiFrameClock/AndroidUiDispatcher 对齐 Choreographer frame，负责重组和 apply；LayoutNode 测量/布局由 AndroidComposeView.onMeasure()/onLayout() 以及 dispatchDraw() 开头的 measureAndLayout() 在 ViewRootImpl traversal 中执行。AndroidComposeView.onAttachedToWindow 也没有直接注册 Choreographer.FrameCallback。",
+        "suggestion": "把“Compose FrameCallback 执行 measure/layout”改成“Recomposer 在 frame clock 中重组并应用变更，变更通过 Owner.onRequestMeasure/onRequestRelayout 安排 ViewRoot traversal；实际测量/布局在 AndroidComposeView.onMeasure/onLayout/dispatchDraw 的 measureAndLayoutDelegate 中完成”。同步更新两张时序图。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§Compose 重组到 RenderNode 的完整链路 / 绘制阶段与 RenderNode 构建（约 223-244、193-204 行）",
+        "detail": "流程图写出 LayoutNode.requestRedraw() 和 RenderNodeLayer.updateDisplayList() 作为通用路径。LayoutNode.kt 中不存在 requestRedraw()，重绘请求通过 invalidateLayer()/invalidateLayers()/owner.invalidateRootLayer() 等路径传播；AndroidComposeView.createLayer() 在当前 androidx-compose-release 的 SDK >= M 路径优先创建 GraphicsLayerOwnerLayer，RenderNodeLayer 是旧/回退实现，不能作为 Compose 1.10 Android 主路径泛化描述。",
+        "suggestion": "将流程中的 requestRedraw 改为 layer/root layer invalidation；将 updateDisplayList 描述为 OwnedLayer/GraphicsLayer 路径，并把 RenderNodeLayer 限定为旧路径或兼容回退，不再把 RenderNodeLayer 代码块当成当前主路径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§RenderNode 与 DisplayList 提交 / §Compose 与 RenderThread 的协作（约 448、473-476、482 行）",
+        "detail": "章节称 syncAndDrawFrame 会让主线程等待上一帧 GPU sync fence signal 后才返回。android-17.0.0_r1 中 HardwareRenderer.FrameRenderRequest.setWaitForPresent 默认 false，只有 waitForPresent 或 reportNextDraw/fence 场景才显式 fence；ThreadedRenderer.draw() 调用 syncAndDrawFrame 后，native DrawFrameTask.postAndWait() 通常在 syncFrameState/prepareTree 完成后即可 unblock UI thread，GPU 绘制和 swapBuffers 继续在 RenderThread 执行。",
+        "suggestion": "改为“UI 线程会等待 HWUI 同步阶段完成，异常情况下可能等到 draw 结束；默认不等待 buffer present/GPU fence。present/fence 等待只在 setWaitForPresent、reportNextDraw 或同步事务等特殊路径出现”。"
+      },
+      {
+        "type": "源码错误/数据缺失",
+        "location": "扩展 6.6-6.9 Snapshot 同步原语与性能表（约 662-693 行）",
+        "detail": "章节把 MutableState 写描述成 lock-free CAS 快路径，并给出 ~10ns/~30ns 数字。实际 SnapshotMutableStateImpl.value setter 调用 next.overwritable(...)，Snapshot.kt 的 overwritable/writable 明确进入 sync(lock)；readable() 在全局 snapshot 前进竞争时也会 fallback 到 sync。表格中的纳秒级数字没有基准来源；“跨 Recomposer 并发重组：不可能”也与 Recomposer.kt 注释“never working with the same composer in parallel”不等价，源码只保证同一 composer/Recomposer 串行，跨 Recomposer 不能直接写成不可能。",
+        "suggestion": "重写 Snapshot 性能段：读路径可无锁遍历 StateRecord 但存在 sync fallback；写路径进入 Snapshot.lock；删除未验证纳秒数字或补 benchmark；把并发边界改为“同一 Recomposer/ControlledComposition 严格串行，跨 Recomposer 是否并行取决于各自 runner 与共享 Snapshot.lock 冲突”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T03:30:10+08:00",
+    "status": "pending"
   }
 ]
