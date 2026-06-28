@@ -4,14 +4,15 @@ chapter: "18.25"
 status: ready-for-review
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-29
-last_task6_audit: "2026-06-27"
+last_task6_at: "2026-06-29T03:07:00+08:00"
+last_task6_audit: "2026-06-29"
 task9_result: needs-rework
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-06-29T02:52:24+08:00"
 last_task2b_by: task2b-main
 last_task2b_lite_at: "2026-06-29T02:52:24+08:00"
@@ -341,7 +342,7 @@ class AndroidPrefetchScheduler (...) : Choreographer.FrameCallback {
 }
 ```
 
-关键点：
+时间估算的实现细节：
 - `nextFrameTimeNs` 取 `view.drawingTime` 和 `frameStartTimeNanos` 的较大值 + 一帧间隔，以此估算下一帧开始时间
 - `availableTimeNanos()` = 估算的下一帧时间 − 当前时刻，正值表示本帧还有预算
 - 与平台层 `Choreographer.VsyncCallback` + `FrameData.getPreferredFrameTimeline().getDeadlineNanos()` 不同：Compose 的 prefetch scheduler **未接入 VsyncCallback/FrameData 路径**，而是基于 `FrameCallback` 的 `frameTimeNanos` + `view.drawingTime` 做估算。平台层 `VsyncCallback` 提供的精确 deadline 信息目前未被 Compose prefetch 使用。
@@ -476,7 +477,7 @@ sequenceDiagram
     RT->>RT: SurfaceFlinger 合成上屏
 ```
 
-关键点：
+三个阶段的同步行为：
 
 1. **同步阶段**：`syncAndDrawFrame` 由 `ThreadedRenderer.draw()` 内调用，将主线程构建的 RenderNode 树同步到 RenderThread，等待上一帧 GPU sync fence signal 完成后返回。这确保 render pipeline 深度（in-flight 帧数）不超过 swap interval 限制。
 2. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
@@ -595,7 +596,7 @@ Compose 的渲染管线可以拆成两层理解：
 
 源码引用：`androidx-compose-release` 分支 `compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt` 与 `snapshots/Snapshot.kt`
 
-本节回答两个问题：(1) 多个 Recomposer 实例如何共存？(2) 跨线程状态写入和重组如何避免竞争？
+多个 Recomposer 实例在同一进程中共存，各自的调度相互隔离；跨线程的状态写入和重组通过 Snapshot 同步原语协调。
 
 ### 扩展 6.1 Recomposer 的两把锁
 
