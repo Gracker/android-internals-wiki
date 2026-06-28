@@ -539,5 +539,37 @@
     "completed_by": "task2b-main",
     "completed_at": "2026-06-29T06:50:00+08:00",
     "completion_note": "fixed: 全章源码级重写——移除虚构PERFORMANCE_METRICS_ATOM(10244)、删除不存在的StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正StatsManager→addConfig/query/setPullAtomCallback、重写StatsCompanionService描述、电池感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例、修正atoms.proto引用"
+  },
+  {
+    "section": "26.3",
+    "section_title": "性能指标采集与上报",
+    "priority": 95,
+    "reason": "[Deep Tech Review] StatsD pull atom / StatsManager / JankStats API 主线仍有源码级错误",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-07-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "§1.1-§1.3、§4.2、§6.1、§8.1、总结：StatsManager / setPullAtomCallback 主线",
+        "detail": "章节把 StatsManager.setPullAtomCallback() 写成特权 App 订阅系统级指标的出站通道，并称回调拿到 List<Atom> 聚合结果。android-17.0.0_r1 的 StatsManager.java 明确说明该 callback 是 stats service 需要 pulled atom 时调用客户端“供数”；签名为 onPullAtom(int atomTag, List<StatsEvent> data)，客户端填充 StatsEvent 后由 resultReceiver.pullFinished() 返回。StatsManager.addConfig() 实际返回 void；query() 实际为 query(long configKey, String configPackage, StatsQuery, Executor, OutcomeReceiver)，查询报告主路径另有 getReports(long)。PullAtomMetadata 默认 cooldown=1000ms、timeout=1500ms，不是默认 30s pull 周期。",
+        "suggestion": "重写 StatsD 主线：addConfig 注册 StatsdConfig，getReports/query 读取 statsd 已收集报告；setPullAtomCallback 仅描述为特权/系统组件向 statsd 提供自定义 pulled atom 数据的入口。删除“订阅多个 pull atom 并自行聚合”“App 获取聚合性能数据的主要方式”“回调拿到聚合后的 List<Atom>”等反向叙述。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§1.3 反向查询示例：APP_START_OCCURRED atom ID 与字段",
+        "detail": "示例写“APP_START_OCCURRED atom (ID 10141)”并调用 atom.getAppStartOccurred().getLatencyMillis()。android-17.0.0_r1 的 atoms.proto 中 AppStartOccurred app_start_occurred = 48；10141 是 ImsDedicatedBearerEvent。AppStartOccurred 字段包含 transition_delay_millis、starting_window_delay_millis、bind_application_delay_millis、windows_drawn_delay_millis 等，不存在 latencyMillis 字段。",
+        "suggestion": "删除该 setPullAtomCallback 订阅示例，或改成真实 pulled atom provider 示例（StatsEvent.newBuilder().setAtomId(atomTag)...）。若保留 AppStartOccurred，应放在 StatsdConfig/getReports/query 读取报告的语境中，并使用 android-17.0.0_r1 的 atom ID 与字段名。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§6.1-§6.3：JankStats 示例 API 与字段",
+        "detail": "章节使用 jankStats.addFrameListener(new JankStats.OnFrameListener(){ onFrame(FrameData, String activityName) })、frameData.addTag(...)、jankStats.setSamplingRate(0.05f) 等 API。AndroidX metrics-performance 源码中 OnFrameListener 只有 onFrame(FrameData)；JankStats 通过 createAndTrack(window, listener) 创建并用 isTrackingEnabled 控制开关；UI 状态通过 PerformanceMetricsState.putState 管理；FrameData 字段是 frameDurationUiNanos、isJank、states，API24 子类有 frameDurationCpuNanos，未见 addFrameListener/addTag/setSamplingRate/frameOverrunNanos。",
+        "suggestion": "按 AndroidX metrics-performance 源码重写示例：创建 JankStats 时传入 listener，在 listener 中拷贝 FrameData；用 PerformanceMetricsState.getForHierarchy(window.decorView).state?.putState(...) 绑定页面/滚动状态；采样率放到 App 自建上报层控制，不写成 JankStats API。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T07:25:52+08:00",
+    "status": "pending"
   }
 ]
