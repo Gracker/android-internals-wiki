@@ -222,5 +222,37 @@
     "completed_at": "2026-06-28T17:40:16+08:00",
     "completed_by": "task2b-lite",
     "completion_reason": "fixed-lite: 源码锚点修正为 refs/tags/android-17.0.0_r1；删除\"tag 不存在\"错误声明；更新 ProfilingTrigger 常量可见性表格和代码块。trigger 常量矩阵四层重写（常量存在/flag gate/设备可用/文档语义）留给主 Task2B。"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Compose 渲染管线存在 Choreographer deadline、HWUI 提交路径与 Android 17 版本断言错误",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-00-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "「与 Choreographer 的绑定」和「与 Choreographer FrameData 的协作」",
+        "detail": "章节写成 API 34+ 通过 Choreographer.getFrameTimeline()/FrameData.deadlineNanos 获取 deadline；android-17.0.0_r1 的 Choreographer 没有 getFrameTimeline()，FrameCallback 仍只有 doFrame(long)，FrameTimeline deadline 需通过 VsyncCallback 的 FrameData.getPreferredFrameTimeline().getDeadlineNanos() 读取，另有隐藏 getFrameDeadline()。AndroidUiFrameClock 当前只使用 postFrameCallback(frameTimeNanos)。",
+        "suggestion": "改为基于 Choreographer.FrameCallback 的帧时间描述；若要讨论 deadline，必须区分 VsyncCallback/FrameData API 与隐藏 getFrameDeadline()，并补充 Compose 是否实际接入该 API 的源码证据。"
+      },
+      {
+        "type": "源码错误",
+        "location": "「与 Choreographer 的绑定」「RenderNode 与 DisplayList 提交」「Compose 与 RenderThread 的协作」",
+        "detail": "章节多处写成 Compose 在 FrameCallback.doFrame() 中直接执行 dispatchDraw() 并调用 HardwareRenderer.syncAndDrawFrame()。android-17.0.0_r1 中 ViewRootImpl.performDraw()/draw() 才负责调用 ThreadedRenderer.draw(rootView, attachInfo, callbacks)，AndroidComposeView.dispatchDraw() 只负责 Compose root.draw/脏 layer 更新；AndroidUiFrameClock 的 FrameCallback 只恢复 withFrameNanos 协程。",
+        "suggestion": "重写帧提交路径：Compose 通过 AndroidComposeView 参与 ViewRootImpl 的 traversal/draw，最终由 ViewRootImpl/ThreadedRenderer 进入 HWUI；不要把 HardwareRenderer.syncAndDrawFrame() 放进 Compose 自己的 FrameCallback 伪代码。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "「绘制阶段与 RenderNode 构建」「版本演进要点」",
+        "detail": "章节称 RenderNodeLayer.android.kt 中有 LayerManager 决策规则，并称 Android 17 提供 HardwareRenderer.setFramePacingEnabled()/FramePacing API、RenderNode batching 优化。androidx-compose-release 的 RenderNodeLayer.android.kt 未定义 LayerManager；AndroidComposeView.createLayer() 在当前分支优先返回 GraphicsLayerOwnerLayer/GraphicsLayer。android-17.0.0_r1 的 HardwareRenderer.java 中未找到 setFramePacingEnabled、FramePacing 或 pacing 相关 API。",
+        "suggestion": "删除或重写 LayerManager 与 Android 17 FramePacing/RenderNode batching 断言；只保留能在 android-17.0.0_r1 和 androidx-compose-release 中定位到的类、方法和版本差异。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T00:25:44",
+    "status": "pending"
   }
 ]
