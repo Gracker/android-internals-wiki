@@ -394,6 +394,150 @@ LIMIT 20;
 
 对游戏场景，建议同时开启 `gfx` + `gpu` atrace category 配合 FrameTracer 分析，`gpu` category 包含 GPU 频率和 GPU queue 深度信息，能补齐 FrameTracer 在 GPU 侧的观测盲区。
 
+
+<!-- AIW-源码调研-2026-06-28 -->
+## FrameTimeline 数据结构详解（android-17.0.0_r1 补充）
+
+### FrameTimelineEvent proto 与 JankType bitmask
+
+**源码位置**：`external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto`（android-17.0.0_r1）
+
+FrameTimeline 的核心是 `FrameTimelineEvent` 消息，按 `oneof event` 区分五类子消息：`ExpectedDisplayFrameStart` / `ActualDisplayFrameStart` / `ExpectedSurfaceFrameStart` / `ActualSurfaceFrameStart` / `FrameEnd`。每条事件通过 `cookie`（int64）关联 start / end，每帧内部由若干 SurfaceFrame 和一个 DisplayFrame 组成（多对一关系：`One DisplayFrame can map to N SurfaceFrame(s)`，通过 `display_frame_token` 字段关联）。
+
+`ActualSurfaceFrameStart` 是诊断 jank 的核心字段（节选）：
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| `present_type` | enum | 帧实际呈现时机：ON_TIME=1 / LATE=2 / EARLY=3 / DROPPED=4 / UNKNOWN=5 |
+| `on_time_finish` | bool | 是否在预测 deadline 内完成 |
+| `gpu_composition` | bool | **GPU 合成 vs HWC 合成的边界标志** |
+| `jank_type` | int32 | **bitmask，可同时标记多个 jank 原因** |
+| `prediction_type` | enum | PREDICTION_VALID=1 / EXPIRED=2 / UNKNOWN=3 |
+| `is_buffer` | bool | 是否为 buffer 路径（vs bufferless） |
+| `jank_severity_type` | enum | SEVERITY_UNKNOWN=0 / NONE=1 / PARTIAL=2 / FULL=3 |
+| `present_delay_millis` | float | 上屏相对预测时刻的延迟（ms） |
+| `vsync_resynced_jitter_millis` | float | vsync 重新同步后的抖动（ms） |
+| `jank_severity_score` | float | 综合严重度分数（连续值） |
+
+**Android 17 新增的 JankType bitmask 项**：
+
+| bit 值 | 名称 | 引入版本 |
+|--------|------|----------|
+| 8192 | `JANK_DISPLAY_NOT_ON` | **Android 17 新增** |
+| 16384 | `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` | **Android 17 新增** |
+| 32768 | `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS` | **Android 17 新增** |
+
+判断依据：`frame_timeline_event.proto` 在 android-12.0.0_r1 起即存在，bit 0-12 共 13 个 JankType；Android 14 引入 `JANK_APP_RESYNCED_JITTER`（bit 12）；Android 17 新增 bit 13-15 三个 display 相关 jank 原因，反映 17 对 display power / mode 切换的额外关注。
+
+完整 bitmask 表（android-17.0.0_r1，按 bit 位置排序）：
+
+```
+bit 0: JANK_UNSPECIFIED = 0
+bit 1: JANK_NONE = 1
+bit 2: JANK_SF_SCHEDULING = 2
+bit 3: JANK_PREDICTION_ERROR = 4
+bit 4: JANK_DISPLAY_HAL = 8
+bit 5: JANK_SF_CPU_DEADLINE_MISSED = 16
+bit 6: JANK_SF_GPU_DEADLINE_MISSED = 32
+bit 7: JANK_APP_DEADLINE_MISSED = 64
+bit 8: JANK_BUFFER_STUFFING = 128
+bit 9: JANK_UNKNOWN = 256
+bit 10: JANK_SF_STUFFING = 512
+bit 11: JANK_DROPPED = 1024
+bit 12: JANK_NON_ANIMATING = 2048
+bit 13: JANK_APP_RESYNCED_JITTER = 4096   (Android 14+)
+bit 14: JANK_DISPLAY_NOT_ON = 8192          (Android 17+)
+bit 15: JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS = 16384  (Android 17+)
+bit 16: JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS = 32768  (Android 17+)
+```
+
+### GPU/HWC 合成边界在 FrameTimeline 中的判定路径
+
+FrameTimeline 的 `gpu_composition` 字段与 FrameTracer 的 `FALLBACK_COMPOSITION` 事件由同一段代码设置：
+
+**源码位置**：`frameworks/native/services/surfaceflinger/Layer.cpp:1451-1462`（android-17.0.0_r1）
+
+```cpp
+const auto outputLayer = findOutputLayerForDisplay(display);
+if (outputLayer && outputLayer->requiresClientComposition()) {
+    nsecs_t clientCompositionTimestamp = outputLayer->getState().clientCompositionTimestamp;
+    mFlinger->mFrameTracer->traceTimestamp(layerId, getLatchedBufferId(), mCurrentFrameNumber,
+                                           clientCompositionTimestamp,
+                                           FrameTracer::FrameEvent::FALLBACK_COMPOSITION);
+    if (mDrawingState.bufferSurfaceFrameTX) {
+        mDrawingState.bufferSurfaceFrameTX->setGpuComposition();   // ← 与 FrameTimeline 共享标志
+    }
+    ...
+}
+```
+
+**数据通路**：`OutputLayer::requiresClientComposition()` → 返回 true → `setGpuComposition()` 写 SurfaceFrame → FrameTimeline 上报时读取该标志填充 `ActualSurfaceFrameStart.gpu_composition` 字段。
+
+判断 GPU stall 的两步走法：
+
+1. **过滤**：在 `actual_frame_timeline_slice` 中筛 `gpu_composition = true AND present_type = PRESENT_LATE OR PRESENT_DROPPED`，拿到所有 GPU 合成路径下的 jank 帧；
+2. **关联**：用 `frame_number` + `display_frame_token` 关联到 `android.surfaceflinger.frame` 的 `FALLBACK_COMPOSITION` 事件，读 `clientCompositionTimestamp` 与 `ts_present` 的差值，量化 GPU 合成耗时。
+
+### PRESENT_FENCE 双发射路径
+
+**源码位置**：`frameworks/native/services/surfaceflinger/Layer.cpp:1473-1499`（android-17.0.0_r1）
+
+```cpp
+if (presentFence->isValid()) {
+    mFlinger->mFrameTracer->traceFence(layerId, getLatchedBufferId(), mCurrentFrameNumber,
+                                       presentFence,
+                                       FrameTracer::FrameEvent::PRESENT_FENCE);   // 现代 HWC 路径
+} else if (... && mFlinger->getHwComposer().isConnected(*displayId)) {
+    // HWC doesn't support present fences, so use the present timestamp instead.
+    const nsecs_t presentTimestamp = mFlinger->getHwComposer().getPresentTimestamp(*displayId);
+    const nsecs_t vsyncPeriod = ...;
+    const nsecs_t actualPresentTime = now - ((now - presentTimestamp) % vsyncPeriod);
+    mFlinger->mFrameTracer->traceTimestamp(layerId, getLatchedBufferId(),
+                                           mCurrentFrameNumber, actualPresentTime,
+                                           FrameTracer::FrameEvent::PRESENT_FENCE);  // 老硬件路径
+}
+```
+
+**判断**：Pixel / 三星等现代设备的 trace 中 PRESENT_FENCE 几乎都来自 fence 路径；车机 / 旧 IoT 设备可能命中 timestamp 路径，分析时需要区分。
+
+### AOSP 不发射的两个事件（边界确认）
+
+通过 grep 验证（android-17.0.0_r1）：
+
+| 事件 | proto 值 | AOSP 发射点 |
+|------|----------|-------------|
+| `HWC_COMPOSITION_QUEUED` | 6 | **0 个**（OEM HWC HAL 扩展占位） |
+| `RELEASE_FENCE` | 9 | **0 个**（proto 保留，无 Layer.cpp / FrameTracer.cpp 调用） |
+
+结论：trace 中看到 `HWC_COMPOSITION_QUEUED` 一定来自 OEM HAL；`RELEASE_FENCE` 在 AOSP 设备上不会出现，分析"上屏→buffer 回收"延迟只能依赖其他信号（如 buffer 复用率、BufferQueue counter track）。
+
+### FrameTracer fence 处理：60s 过期机制
+
+**源码位置**：`frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.h:72`
+
+```cpp
+static constexpr nsecs_t kFenceSignallingDeadline = 60'000'000'000; // 60 seconds
+```
+
+`FrameTracer::tracePendingFencesLocked()` 把未 signal 的 fence 挂到 `pendingFences[bufferID]` 列表，等下次同 buffer 的 trace 调用时检查；若 60s 内仍未 signal 则丢弃，避免旧 trace 的 fence 在新 trace 中误触发事件。
+
+### Perfetto 标准表名
+
+`actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 是 Perfetto UI 默认加载的标准化表，字段含义：
+
+| 标准表字段 | 来源 proto 字段 |
+|-----------|-----------------|
+| `ts, dur` | 事件时间戳与持续时间 |
+| `surface_frame_token` | `ActualSurfaceFrameStart.token`（App 侧工作 token） |
+| `display_frame_token` | `ActualSurfaceFrameStart.display_frame_token`（SF 侧工作 token） |
+| `process.name` | 通过 `upid` JOIN `process` 表获得 |
+
+> 来源：[Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)（确认 GPU Composition 字段语义、Android 12+ 要求、数据源名 `android.surfaceflinger.frametimeline`）
+
+### 与 HWC_COMPOSITION_QUEUED 校正报告的关系
+
+本文档与 2026-06-27 的 `2026-06-27-android17-hwc-composition-queue-event-source.md` 是同根但不同侧重：本次校正已覆盖 HWC_COMPOSITION_QUEUED 的"AOSP 无发射点"事实，本节补充 FrameTimeline 数据结构与 Android 17 的 jank 原因新增项（`JANK_DISPLAY_NOT_ON` / `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` / `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS`），二者不冲突。
+
 ## 延伸阅读
 
 ### Android 17 HWC Composition Queue 事件追踪与 GPU 渲染性能边界判定
