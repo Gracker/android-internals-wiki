@@ -47,7 +47,7 @@ repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
 last_task9_review_log: logs/deep-review/2026-06-07-05-deep-review.md
 task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Present/Swappy 时序图把 CPU `queueBuffer()` 误画成 GPU 动作；P2 1：Validation Layer 启用命令仍需按官方 GPU debug layer 流程收敛。 | 2026-05-09 Task9 02:30：pass-tech-review。P0/P1 0；P2 Validation Layer 命令为既有 suggestions，不阻塞；Task6 已通过且 queue 无本节 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-06 Task9 闲时抽检：AUTO-FIX P1 1 / P2 1；Android native WSI present modes 在 AOSP android-16.0.0_r4 中只返回 FIFO、条件返回 MAILBOX/shared，不返回 IMMEDIATE/FIFO_RELAXED；已局部修正文档，并把 Swappy source 从未固定版本的 AOSP main header 改为 Android Game SDK 官方 API reference，送 Task6 复审。 | 2026-06-07 Task9 05: pass-tech-review。P0/P1 0；前次 Android native WSI present mode 与 Swappy API auto-fix 已复核通过；记录 P2 1（Validation Layer 启用命令建议按官方 GPU debug layer 流程收敛），Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-28 Task9 闲时抽检 AUTO-FIX：按 android-17.0.0_r1 复核 Vulkan native WSI 与 SurfaceFlinger RenderEngine Graphite；补充 Android 17 条件返回 VK_PRESENT_MODE_FIFO_LATEST_READY_EXT，修正旧的 main/android16 源码锚点，并将 Graphite 口径收敛为 Android 17 已包含可选后端、是否启用受 flags/property/OEM 配置影响。回 Task6 复审。"
-status: finalized
+status: ready-for-review
 reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
 last_task6_at: "2026-06-07T05:18:00+08:00"
