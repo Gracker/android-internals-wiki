@@ -628,3 +628,27 @@ $ diff android-16.0.0_r3 android-17.0.0_r1 SharedPreferencesImpl.java
 - [Jetpack DataStore 官方文档](https://developer.android.com/topic/libraries/architecture/datastore)
 - [今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待](https://mp.weixin.qq.com/s/kfF83UmsGM5w43rDCH544g)
 - [Google I/O 2024: DataStore 最佳实践](https://developer.android.com/videos/play/live/308012)
+
+
+<!-- AIW-源码调研-2026-06-28 -->
+### Android 17 源码验证结论
+
+基于 android-17.0.0_r1 的源码验证结果：
+
+1. **实现完全冻结**：SharedPreferencesImpl.java 在 Android 16 → Android 17 期间 diff 仅 2 行新增 @RavenwoodKeepWholeClass 注解，核心逻辑完全一致。
+
+2. **官方弃用声明**：SharedPreferences.java javadoc 在 Android 17 中彻底重写，Android 团队明确表示：
+   > "强烈不建议将 SharedPreferences 用于新的数据存储需求"
+   > 推荐 DataStore/Room 作为替代方案
+
+3. **官方认可缺陷**：新文档明确列出 SharedPreferences 的 4 类核心问题：
+   - UI 线程阻塞/ANR 风险（QueuedWork.waitToFinish 阻塞生命周期）
+   - apply() 无错误回调/commit() 可能误返 false
+   - 内存/磁盘不一致无事务保证
+   - UTF-16 静默损坏 + getStringSet 集合修改未定义行为
+
+4. **缓存机制不变**：ContextImpl 中的 sSharedPrefsCache 双层 ArrayMap 缓存逻辑完全冻结，MODE_MULTI_PROCESS 处理路径无变化。
+
+5. **性能参数冻结**：MAX_FSYNC_DURATION_MILLIS=256、CALLBACK_ON_CLEAR_CHANGE=119147584L 等性能参数保持不变。
+
+**结论**：Android 17 中 SharedPreferences 的性能瓶颈和 ANR 机制未解决，但官方已明确弃用方向，推荐向 DataStore 迁移。
