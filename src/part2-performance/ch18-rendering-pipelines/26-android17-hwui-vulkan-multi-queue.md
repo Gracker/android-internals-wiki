@@ -289,3 +289,68 @@ AGI（Android GPU Inspector）通过 `VK_ANDROID_frame_boundary` 抓取完整 GP
 
 [来源: DeepResearch/2026-06-26-android17-hwui-vulkanmanager-multi-queue-frame-boundary.md]
 [结构参考: DeepResearch/2026-06-26-android17-hwui-vulkanmanager-multi-queue-frame-boundary.md]
+
+
+<!-- AIW-源码调研-2026-06-28 (id=38 重验证) -->
+
+## 源码重验证补充（2026-06-28）
+
+本章基于 android-17.0.0_r1 tag 重新走读 `VulkanManager.cpp`（910 行）、`VulkanManager.h`（219 行）、`RenderThread.cpp`（512 行）、`HardwareBitmapUploader.cpp`（481 行），事实与正文一致。补充三处源码级细节：
+
+### VkUploader 上传路径
+
+`HardwareBitmapUploader.cpp` L223-289 定义 `class VkUploader : public AHBUploader`。关键上传入口：
+
+```cpp
+// HardwareBitmapUploader.cpp L252-259
+mGrContext = vkManager->createContext(options,
+        renderthread::VulkanManager::ContextType::kUploadThread);
+sk_sp<SkImage> image =
+    SkImages::TextureFromAHardwareBufferWithData(mGrContext.get(), bitmap.pixmap(), ahb);
+mGrContext->submit(GrSyncCpu::kYes);
+```
+
+调用链：`allocateHardwareBitmap()` → `sUploader->uploadHardwareBitmap()` → `VkUploader::onUploadHardwareBitmap()` 在 `GrallocUploadThread` 上执行 → `VulkanManager::createContext(kUploadThread)` 创建专属 GrDirectContext → `SkImages::TextureFromAHardwareBufferWithData` 把 `AHardwareBuffer` 直接绑成 Skia 纹理对象（零拷贝入口）→ `GrSyncCpu::kYes` 等待 GPU 完成。
+
+### UploadThread 闲置超时（kThreadTimeout = 60000_ms）
+
+`HardwareBitmapUploader.cpp` L48：
+
+```cpp
+static constexpr auto kThreadTimeout = 60000_ms;
+```
+
+`AHBUploader::postIdleTimeoutCheck()` 发起 60 秒后的一次性任务。`VkUploader::onIdle()` → `onDestroy()` → `mGrContext.reset()` + `mVulkanManagerStrong.clear()`。闲置 60 秒后 GrDirectContext 与 Skia VMA pool 释放，下次上传时重建。中低端设备长时间浏览图片/视频后切换应用，能回收数十 MB GPU 内存。RenderThread 自身的 GrContext 没有此超时机制（始终保持活跃）。
+
+### VkFunctorInitParams 暴露路径
+
+`VulkanManager::getVkFunctorInitParams()`（L557-573）：
+
+```cpp
+return VkFunctorInitParams{
+        .instance = mInstance,
+        .physical_device = mPhysicalDevice,
+        .device = mDevice,
+        .queue = mGraphicsQueue,           // 只暴露 graphics queue，不暴露 upload queue
+        .graphics_queue_index = mGraphicsQueueIndex,
+        .api_version = mAPIVersion,
+        .enabled_instance_extension_names = mInstanceExtensions.data(),
+        .enabled_device_extension_names = mDeviceExtensions.data(),
+        .device_features_2 = &mPhysicalDeviceFeatures2,
+};
+```
+
+这是 HWUI Vulkan 设备与 native 渲染代码（WebView Chromium Skia、SurfaceView 自定义渲染）的桥梁，让调用方复用 HWUI 已创建的 `VkInstance/VkDevice`，避免重复创建。**只暴露 `mGraphicsQueue`**——VkFunctor 调用方做主帧渲染，理论上不应抢 upload queue 优先级。
+
+### 事实自检
+
+正文 12 项核心断言全部与 android-17.0.0_r1 源码一致（详见 `DeepResearch/2026-06-28-android17-hwui-vulkanmanager-multi-queue-reverified.md` 自检表）。
+
+### 待验证事项
+
+- 硬件层「Vulkan 1.1+，queue family >= 2」的最低要求基于 `LOG_ALWAYS_FATAL_IF` 推断，未在芯片厂商驱动层验证降级路径
+- `Properties::contextPriority` 在 SysUI/Launcher 进程的真实生效机制未追溯调用链
+- `SkiaVMA::Options{.fThreadSafe = false}` 在 AGI capture layer 路径下的跨线程行为未追踪
+
+[来源: DeepResearch/2026-06-28-android17-hwui-vulkanmanager-multi-queue-reverified.md]
+[验证状态: 一手源码重读完成，2026-06-28]
