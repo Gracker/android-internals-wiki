@@ -3,7 +3,7 @@
 title: "16KB Page Size 与 Android 性能"
 chapter: "4.7"
 section: "4.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 reviewed_date: "2026-06-03"
 reviewed_by: "openclaw-task6"
