@@ -341,3 +341,53 @@
 - **建议**：补充 3-5 条 FAQ。
 
 **review 日志**：logs/review/2026-06-28-15-review.md
+
+## [Task2A Gap Mining] 已检查方向记录 — 2026-06-28 16:05
+
+**结论：本轮未发现评分 ≥ 14 的知识缺口，跳过新章节创建。**
+
+### 本轮状态
+- 空 draft（<15行）：0 个 → 进入 Phase 1
+- Task2B backlog：0 → 允许缺口挖掘
+- 上一轮（13:12）同样未发现 ≥14 缺口
+
+### 新增检查（与前三轮 09:11/12:04/13:12 互补）
+
+1. **DeepResearch 新文件检查**：仅 1 个新文件（2026-06-28-android17-hwui-vulkanmanager-multi-queue-reverified.md），是已有 18.26 章节的源码再验证，不产生新缺口。
+
+2. **daily-info 2026-06-28 内容检查**：
+   - XTrace 论文（字节跳动 ART 非侵入式追踪）→ 映射到已有 1.39 draft
+   - Sustainability Is Not Linear（MoE 能效）→ 映射到已有 5.13/5.14
+   - 7 篇 DeepResearch 均映射到现有章节
+
+3. **AI Agent 系统原语性能**（重点评估）：
+   - DeepResearch 2026-06-24-android17-cross-app-agent-system-primitive-accessibility-voiceinteraction-appfunction.md
+   - 评分：素材 2 + 相关性 3 + 读者需求 4 + 时效性 4 = 13/20 → **低于阈值**
+   - 素材不足：仅 1 篇 DeepResearch，缺乏官方文档和社区素材
+   - 已有覆盖：7.19 AccessibilityManagerService + 7.20 ContentCaptureService + 5.20 GenAI
+
+4. **Binder RPC 600KB Transaction Limit**：
+   - DeepResearch 2026-06-27-android17-binder-rpc-transaction-limit-600kb.md
+   - 评分：素材 2 + 相关性 3 + 读者需求 2 + 时效性 3 = 10/20 → 低于阈值
+   - 已有 1.30 覆盖 Binder Transaction Buffer 演进
+
+5. **Perfetto Remote Trace Processor**：
+   - DeepResearch 2026-06-20-perfetto-remote-trace-processor-architecture.md
+   - 评分：素材 2 + 相关性 2 + 读者需求 2 + 时效性 3 = 9/20 → 低于阈值
+   - 工具架构话题，非核心性能话题
+
+### 累计统计
+- 全书总小节：521
+- 空 draft（<15行）：0 个
+- Thin draft（15-60行）：18 个 → 需 Task2B 加工
+- Task2B backlog：0
+- 知识缺口 ≥14 分：0 个（连续第 4 轮无新缺口）
+- 累计检查关键词：300+（含本轮新增 AI Agent/RPC/Remote Trace Processor 评估）
+
+### 建议
+1. **知识缺口挖掘已达到覆盖率饱和点**——连续 4 轮无 ≥14 候选
+2. 下一阶段优先级：
+   a. Task2B 加工 18 个 thin draft（15-60 行内容）
+   b. Task9 Deep Review 继续 review 141 个 ready-for-review 章节
+   c. 如有 Android 18 DP 或新 DeepResearch 素材入库，可重新启动缺口挖掘
+3. 本轮不新增章节、不更新元数据、不产生 Git 提交
