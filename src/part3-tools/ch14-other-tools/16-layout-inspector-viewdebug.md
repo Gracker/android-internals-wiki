@@ -2,7 +2,7 @@
 
 title: Layout Inspector 与 ViewDebug 布局调试
 chapter: 14.16
-status: finalized
+status: ready-for-review
 task6_state: revisiting
 task6_result: pass-light-edit
 task2b_state: fixed
