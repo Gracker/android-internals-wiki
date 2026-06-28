@@ -53,6 +53,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-24"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-05-24T05:09:00+08:00"
+last_task6_audit: "2026-06-28"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
 task9_result: pass-tech-review
