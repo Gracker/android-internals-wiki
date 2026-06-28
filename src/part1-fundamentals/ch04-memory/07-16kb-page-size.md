@@ -11,24 +11,30 @@ polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-04-27"
-last_verified_against: "developer.android.com, source.android.com, AOSP android-16.0.0_r1, ARM Architecture Reference Manual"
+last_verified: "2026-06-28"
+last_verified_against: "developer.android.com page size docs, source.android.com 16KB architecture docs, AOSP android-17.0.0_r1 bionic/linker + libc/private/WriteProtected.h, ARM Architecture Reference Manual"
 confidence: medium
 sources:
   - type: official
     path: "developer.android.com/guide/practices/page-sizes"
   - type: official
-    path: "source.android.com/docs/architecture/16kb-page-size"
+    path: "source.android.com/docs/core/architecture/16kb-page-size/16kb"
   - type: official
-    path: "android-developers.googleblog.com/16kb-page-size"
+    path: "android-developers.googleblog.com/2024/08/adding-16-kb-page-size-to-android.html"
+  - type: official
+    path: "android-developers.googleblog.com/2025/05/prepare-play-apps-for-devices-with-16kb-page-size.html"
   - type: aosp
-    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker_phdr.cpp"
+    path: "platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp"
   - type: aosp
-    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker_phdr_16kib_compat.cpp"
+    path: "platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.h"
   - type: aosp
-    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/linker/linker.cpp"
+    path: "platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr_16kib_compat.cpp"
   - type: aosp
-    path: "platform/bionic/+/refs/tags/android-16.0.0_r1/libc/platform/bionic/page.h"
+    path: "platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp"
+  - type: aosp
+    path: "platform/bionic/+/refs/tags/android-17.0.0_r1/libc/platform/bionic/page.h"
+  - type: aosp
+    path: "platform/bionic/+/refs/tags/android-17.0.0_r1/libc/private/WriteProtected.h"
   - type: research
     path: "ARM Architecture Reference Manual — TLB 结构与页大小"
 tags:
@@ -38,19 +44,19 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-08"
 task9_state: reviewed
 task2b_result: fixed-lite
 task2b_state: fixed
 task6_result: "pass-light-edit"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-03T14:26:33+08:00"
+last_task9_at: "2026-06-28T12:33:34+08:00"
 last_task2b_lite_at: 2026-06-03
-task9_review_notes: "2026-06-03 Task9 14:20 auto-fixed：将 Bionic 16KB compat 源码锚点从 AOSP main 改为已核验的 android-16.0.0_r1；补 Android 17 backcompat fatal 验证开关；补 Pixel 9a 测试入口并扩展 applicable_versions 到 Android 17/API 37。P0 0 / P1 0 / AUTO-FIX 3；回到 Task6 复审。 | 2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 2 / P2 0；第三方 SDK 迁移建议中的 llvm-objcopy 修复路径缺少官方依据且可能误导；frontmatter 覆盖 Android 17 但当前无 AOSP 17 release tag，同时遗漏 Android 16 PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE / elf_alignment_test 版本边界。"
+task9_review_notes: "2026-06-28 Task9 闲时抽检 auto-fix：将 16KB Page Size 章节源码锚点重定到 android-17.0.0_r1；修正 source.android / Android Developers Blog 无效路径；按 Android 17 Bionic 修正 ElfReader compat 分支、RELRO 保护路径和 WriteProtected.h 当前实现。P0 3 / P1 2，均已小范围修复，回到 Task6 复审。 | 2026-06-03 Task9 14:20 auto-fixed：将 Bionic 16KB compat 源码锚点从 AOSP main 改为已核验的 android-16.0.0_r1；补 Android 17 backcompat fatal 验证开关；补 Pixel 9a 测试入口并扩展 applicable_versions 到 Android 17/API 37。P0 0 / P1 0 / AUTO-FIX 3；回到 Task6 复审。 | 2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 2 / P2 0；第三方 SDK 迁移建议中的 llvm-objcopy 修复路径缺少官方依据且可能误导；frontmatter 覆盖 Android 17 但当前无 AOSP 17 release tag，同时遗漏 Android 16 PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE / elf_alignment_test 版本边界。"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
@@ -58,10 +64,10 @@ review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 2 / P2 1；THP/mT
 last_task6_at: "2026-06-03T21:36:06+08:00"
 review_log: "logs/review/2026-05-08-04-review.md"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 26 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、代码块语言标注、compat 说明句和 mTHP 重复段落；无新增回炉项，送 Task9 复审。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。 | 2026-06-24 01:13 Task6 revisiting 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2 全部通过；无新增 B 类回炉项。转 Task9 确认 auto-fix 结果。"
-last_task9_audit: "2026-05-24"
-last_task9_audit_log: "logs/deep-review/2026-05-24-18-audit.md"
-last_task9_autofix_at: "2026-06-03"
-last_task9_review_log: "logs/deep-review/2026-06-03-14-deep-review.md"
+last_task9_audit: "2026-06-28"
+last_task9_audit_log: "logs/deep-review/2026-06-28-12-audit.md"
+last_task9_autofix_at: "2026-06-28"
+last_task9_review_log: "logs/deep-review/2026-06-28-12-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
 ---
@@ -181,21 +187,26 @@ Bionic 的页大小查询由 `libc/platform/bionic/page.h` 里的 `page_size()` 
 Bionic Linker 加载 ELF 时，`linker_phdr.cpp` 先在 `ElfReader::Read()` 中读取 program header，并通过 `CheckProgramHeaderAlignment()` 得到 `min_align_`。下面保留关键分支，省略无关检查；它用于说明条件判断，不作为可编译片段。
 
 ```cpp
-// bionic/linker/linker_phdr.cpp (AOSP android-16.0.0_r1)
+// bionic/linker/linker_phdr.cpp (AOSP android-17.0.0_r1)
 bool ElfReader::Read(...) {
     // Several unrelated ELF header, section and dynamic checks are omitted.
     CheckProgramHeaderAlignment();
 
-    if (kPageSize == 16 * 1024 && min_align_ == 4096) {
+    if (kPageSize == 16 * 1024 && min_align_ < kPageSize) {
+        auto compat_prop_val =
+            android::base::GetProperty("bionic.linker.16kb.app_compat.enabled", "false");
         should_use_16kib_app_compat_ =
-            android::base::GetBoolProperty(
-                "bionic.linker.16kb.app_compat.enabled", false) ||
+            android::base::ParseBool(compat_prop_val) ==
+                android::base::ParseBoolResult::kTrue ||
             get_16kb_appcompat_mode();
+        if (compat_prop_val == "fatal") {
+            dlopen_16kib_err_is_fatal_ = true;
+        }
     }
 }
 ```
 
-**`kPageSize`** 是 Linker 看到的运行时页大小；**`min_align_`** 来自 ELF program header 的最小 `p_align`。在 16KB 系统上遇到以 4KB 作为 `p_align` 的 ELF，Linker 才会读取 `bionic.linker.16kb.app_compat.enabled` 和 per-app compat mode。没有启用 compat 时，`LoadSegments()` 会在 `min_align_ < kPageSize` 的分支报错：`program alignment (4096) cannot be smaller than system page size (16384)`。
+**`kPageSize`** 是 Linker 看到的运行时页大小；**`min_align_`** 来自 ELF program header 的最小 `p_align`。在 16KB 系统上遇到 `min_align_ < kPageSize` 的 ELF，Linker 才会读取 `bionic.linker.16kb.app_compat.enabled` 和 per-app compat mode。没有启用 compat 时，`LoadSegments()` 会在 `min_align_ < kPageSize` 的分支报错：`program alignment (4096) cannot be smaller than system page size (16384)`。
 
 ### 错误消息改进（commit fc89c8ae，2024-08-05）
 
@@ -213,7 +224,7 @@ program alignment (4096) cannot be smaller than system page size (16384)
 
 启用 compat 后，`LoadSegments()` 使用 `kCompatPageSize` 对 `p_vaddr` / `p_offset` 向下取整。`CompatMapSegment()` 不直接 `mmap64()` 文件段，而是把按 4KB 边界组织的 LOAD segment 读入匿名 RW 映射；`Setup16KiBAppCompat()` 再调整 `load_bias_`，让 RX/RW permission boundary 位于 16KB 页起点。
 
-RELRO 保护仍然存在。`soinfo::protect_relro()` 在 compat 分支调用 `phdr_table_protect_gnu_relro_16kib_compat()`，对 compat RELRO 区域执行 `mprotect(PROT_READ | PROT_EXEC)`；普通分支走 `phdr_table_protect_gnu_relro()` / `_phdr_table_set_gnu_relro_prot(..., PROT_READ, ...)`。因此本节不能写“compat mode 禁用 RELRO”。它的代价集中在匿名映射、额外地址空间预留、VMA 数量和 16KB 权限边界处理上。
+RELRO 保护仍然存在。Android 17 中，`soinfo::protect_relro()` 在 compat 分支直接返回，普通分支走 `phdr_table_protect_gnu_relro(..., PROT_READ)`；compat loaded binary 的权限恢复由 `protect_16kib_app_compat_code()` / `protect_16kib_app_compat_middle_pages()` 完成。后者遍历 `PT_LOAD` 与 `PT_GNU_RELRO`，`protect_segment_middle_pages()` 对 `PT_GNU_RELRO` 强制使用 `PROT_READ`。因此本节不能写“compat mode 禁用 RELRO”。它的代价集中在匿名映射、额外地址空间预留、VMA 数量和 16KB 权限边界处理上。
 
 ### 兼容模式不具备性能红利
 
@@ -239,7 +250,7 @@ compat 只用于临时兼容验证，不应作为发布态性能方案。对于�
 
 ### 对开发者的实际含义
 
-链接参数 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384` 的作用是告诉链接器将 ELF 的 `p_align` 设为 16384，使 `min_palign` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
+链接参数 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384` 的作用是告诉链接器将 ELF 的 `p_align` 设为 16384，使最小 `p_align` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
 
 ## Bionic Linker 16KB Compat Mode 常量与 mprotect 修复
 
@@ -280,15 +291,25 @@ Crash with WriteProtected mprotect 1 failed: Invalid argument.
 
 ### RELRO 保护在 Compat 模式下的差异
 
-Compat 模式使用 `phdr_table_protect_gnu_relro_16kib_compat()` 设置 PROT_READ | PROT_EXEC，而标准 RELRO 使用 PROT_READ：
+Compat 模式先在 `protect_16kib_app_compat_code()` 中把 compat code region 设为 `PROT_READ | PROT_EXEC`（必要时附加 `PROT_WRITE` / `PROT_BTI`），再由 `protect_16kib_app_compat_middle_pages()` 恢复中间页权限。遇到 `PT_GNU_RELRO` 时，`protect_segment_middle_pages()` 强制使用 `PROT_READ`：
 
 ```cpp
-int phdr_table_protect_gnu_relro_16kib_compat(ElfW(Addr) start, ElfW(Addr) size) {
-    return mprotect(reinterpret_cast<void*>(start), size, PROT_READ | PROT_EXEC);
+// bionic/linker/linker_phdr_16kib_compat.cpp (AOSP android-17.0.0_r1)
+static bool protect_segment_middle_pages(const soinfo* si, const ElfW(Phdr)* phdr) {
+    int prot = PFLAGS_TO_PROT(phdr->p_flags);
+    if (phdr->p_type == PT_GNU_RELRO) prot = PROT_READ;
+    uintptr_t seg_start = si->load_bias + phdr->p_vaddr;
+    uintptr_t seg_end = seg_start + phdr->p_memsz;
+    uintptr_t p_start = __builtin_align_up(seg_start, page_size());
+    uintptr_t p_end = __builtin_align_down(seg_end, page_size());
+    if (p_start < p_end) {
+        return mprotect(reinterpret_cast<void*>(p_start), p_end - p_start, prot) == 0;
+    }
+    return true;
 }
 ```
 
-这反映了对未重新链接的 ELF 的特殊处理逻辑。
+这反映了 Android 17 compat 模式把 RELRO 保护拆到 16KB compat code / middle pages 保护阶段，而不是单独的 `phdr_table_protect_gnu_relro_16kib_compat()` 函数。
 
 ### Google Play 兼容要求
 
@@ -349,9 +370,9 @@ Play Console 的 App Bundle Explorer 也提供了自动化的边界检查。上�
 char padding[PAGE_SIZE];                      // PAGE_SIZE = 4096 always
 mprotect(addr, PAGE_SIZE, prot);             // EINVAL on 16KB device
 
-// 修复后：padding[MAX_PAGE_SIZE] 和 mprotect(addr, MAX_PAGE_SIZE, prot)
-char padding[MAX_PAGE_SIZE];                  // MAX(4096, actual_page_size) = 16384
-mprotect(addr, MAX_PAGE_SIZE, prot);         // works on both 4KB and 16KB
+// Android 17 当前实现：使用 max_android_page_size() 作为 padding 与 mprotect 粒度
+char padding[max_android_page_size()];
+mprotect(addr, max_android_page_size(), prot);  // works on both 4KB and 16KB
 ```
 
 `WriteProtected<T>` 是 Bionic 用来对齐并写保护静态对象的模板联合类。静态链接 NDK r27 `libc.a` 的任何 `.so` 在 16KB 设备上启动时都会触发：`WriteProtected mprotect 1 failed: Invalid argument`。
@@ -516,7 +537,7 @@ adb shell getconf PAGE_SIZE
 ## 参考资料
 
 - [已验证: developer.android.com/guide/practices/page-sizes — Google 官方 16KB 迁移指南]
-- [已验证: source.android.com/docs/architecture/16kb-page-size — AOSP 架构文档]
+- [已验证: source.android.com/docs/core/architecture/16kb-page-size/16kb — AOSP 16KB 架构文档]
 - [已验证: ARM Architecture Reference Manual — TLB 结构与页大小]
 - [已标注边界: Google 官方 16KB 性能数据缺少完整样本与 build 细节，本章只作方向性参考]
 - [待验证: 16KB 基础页 + THP 在各 Android 16/17 OEM 设备上的默认策略需逐设备核验 /sys/kernel/mm/transparent_hugepage/enabled；contpte/mTHP 依赖内核配置 CONFIG_ARM64_CONTPTE]
