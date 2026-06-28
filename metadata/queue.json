@@ -21,5 +21,32 @@
     "completed_by": "task2b-lite",
     "completed_at": "2026-06-28T07:35:00+08:00",
     "completion_note": "fixed-lite: removed unverified enum integer values from CallRestriction table"
+  },
+  {
+    "section": "1.40",
+    "section_title": "Bionic libc 性能演进与系统级影响",
+    "priority": 80,
+    "reason": "知识缺口挖掘：AOSP Bionic libc 是 Android 原生层基础，全书缺少系统性性能分析",
+    "material_paths": [
+      "AOSP bionic/ directory",
+      "NDK docs"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-28T08:05:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "16.10",
+    "section_title": "Rust 化系统服务性能边界与 FFI 开销分析",
+    "priority": 80,
+    "reason": "知识缺口挖掘：Android 17 多个系统服务已 Rust 化，缺少 FFI 开销与性能边界分析",
+    "material_paths": [
+      "AOSP system/security/keystore2",
+      "AOSP packages/modules/DnsResolver",
+      "Google Security Blog"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-28T08:05:00+08:00",
+    "status": "pending"
   }
 ]

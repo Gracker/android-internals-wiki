@@ -56,6 +56,7 @@ tags:
   - [1.37 Android logd 日志系统性能与开销](part1-fundamentals/ch01-architecture/37-logd-logging-system-performance.md)
   - [1.38 Binder 线程池管理与 IPC 线程饥饿性能边界](part1-fundamentals/ch01-architecture/38-binder-thread-pool-starvation-performance.md)
   - [1.39 ART 方法追踪与插桩性能边界](part1-fundamentals/ch01-architecture/39-art-method-tracing-instrumentation-performance.md)
+  - [1.40 Bionic libc 性能演进与系统级影响](part1-fundamentals/ch01-architecture/40-bionic-libc-performance.md)
 
 
 - [第 2 章：渲染系统](part1-fundamentals/ch02-rendering/README.md)
@@ -404,6 +405,7 @@ tags:
   - [16.7 Android 系统启动耗时优化与 bootanalyze](part4-system/ch16-aosp/07-system-boot-time-optimization.md)
   - [16.8 AppFlow：GB 级应用冷启动内存联合调度](part4-system/ch16-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md)
   - [16.9 Android 17 SDM 安装编译链路性能](part4-system/ch16-aosp/09-android17-sdm-install-performance.md)
+  - [16.10 Rust 化系统服务性能边界与 FFI 开销分析](part4-system/ch16-aosp/10-rust-system-services-performance.md)
 
 - [第 17 章：厂商优化实践](part4-system/ch17-oem/README.md)
   - [17.1 OEM 性能优化的通用思路](part4-system/ch17-oem/01-oem-overview.md)
