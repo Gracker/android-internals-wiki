@@ -2,7 +2,7 @@
 title: "后台功耗治理"
 chapter: "25.2"
 section: "25.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-28"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers power / background work docs + Clippings structure references"
@@ -54,8 +54,8 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, foreground-service, location-power]
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "25.13", "5.8", "11.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -63,12 +63,12 @@ last_task2b_at: "2026-05-15T07:22:00+08:00"
 last_task2b_lite_at: "2026-06-28"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
-task6_reviewed_date: "2026-05-14"
-last_task6_at: "2026-05-14T15:12:00+08:00"
+reviewed_date: "2026-06-28"
+task6_reviewed_date: "2026-06-28"
+last_task6_at: "2026-06-28T12:09:00+08:00"
 last_task6_audit: "2026-06-28"
 last_task6_review_log: logs/review/2026-05-14-15-review.md
-task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过，无 Task6 回炉项，送 Task9 技术复审。"
+task6_review_notes: "2026-06-28 复审（Task9 auto-fix 后）：L1 修复 1 处（删多余口水词）；写作质量通过，无回炉项。task9 auto-fixed 全部完成 + queue 无 pending → 自动晋升 finalized。"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-28"
@@ -113,7 +113,7 @@ last_deepseek_cn_review_at: 2026-06-25
 
 后台功耗治理的任务很具体：把后台工作改成可延后、可合并、可取消、可观测。系统限制会延后 CPU、网络、Job、Alarm 和定位访问，但系统不会替业务判断“这次同步是否还需要做”“这段定位是否还能降频”“这个前台服务是否应该停掉”。这些判断仍要放回 App 架构里处理。
 
-功耗治理和 CPU / 任务调度的工程原则其实是相通的：按用户可见度分层、把可延后的工作交给系统调度、把后台 CPU / 网络 / 定位采样压到最低——这和"按任务类型分线程池、预加载放到闲时、避免核心线程被 IO 和锁拖住"是同一套思路在不同方向上的应用。
+功耗治理和 CPU / 任务调度的工程原则是相通的：按用户可见度分层、把可延后的工作交给系统调度、把后台 CPU / 网络 / 定位采样压到最低——这和"按任务类型分线程池、预加载放到闲时、避免核心线程被 IO 和锁拖住"是同一套思路在不同方向上的应用。
 
 ## Android 后台执行限制演进（Doze / App Standby / Bucket）
 
