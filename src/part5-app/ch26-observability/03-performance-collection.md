@@ -3,12 +3,14 @@ title: "性能指标采集与上报"
 status: "ready-for-review"
 task9_result: "needs-rework"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_result: "fixed"
 task2b_state: "fixed"
 last_task2b_main_at: "2026-06-29T06:50:00+08:00"
-pipeline_stage: "task6_pending"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-29"
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified_against: "AOSP android-17.0.0_r1 + AndroidX metrics-performance + Firebase Performance Monitoring docs + LeakCanary 2.x + Debug.MemoryInfo API docs"
 task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题。2026-06-29 Task9 Idle Audit: StatsD 虚构 PERFORMANCE_METRICS_ATOM/API/权限主线已重写为 android-17.0.0_r1 可验证内容。2026-06-29 Task2B 主修复: 全章源码级重写——移除虚构 PERFORMANCE_METRICS_ATOM(10244)、删除不存在的 StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正 StatsManager→addConfig/query/setPullAtomCallback、重写 StatsCompanionService 描述、电机感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例。"
@@ -19,7 +21,7 @@ last_task9_audit: "2026-06-29"
 
 ## 概览
 
-Android 的性能监控体系没有提供单一的"性能指标大 Atom"。当前工程实践中，性能采集由三组可验证的构建块组成：系统级 StatsD 负责系统健康指标与自定义 pull atom，AndroidX `JankStats` 负责帧级实时诊断，App 自建上报通道负责业务指标聚合与上传。Android 17 在此基础上加强了内存管理策略（Compaction + Freezer + MemoryLimiter），直接改变了内存指标的采集方式和解读方法。本文按从系统到 App 的顺序梳理这些构建块，以及如何把它们组合成一套可用的性能监控管线。
+Android 的性能监控体系没有提供单一的"性能指标大 Atom"。当前工程实践中，性能采集由三组可验证的构建块组成：系统级 StatsD 负责系统健康指标与自定义 pull atom，AndroidX `JankStats` 负责帧级实时诊断，App 自建上报通道负责业务指标聚合与上传。Android 17 在此基础上加强了内存管理策略（Compaction + Freezer + MemoryLimiter），直接改变了内存指标的采集方式和解读方法。这些构建块从系统层延伸到 App 层，组合起来就是一套可用的性能监控管线。
 
 ---
 
