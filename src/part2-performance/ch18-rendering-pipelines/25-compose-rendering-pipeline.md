@@ -1,18 +1,18 @@
 ---
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
-status: ready-for-review
+status: finalized
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-29
-last_task6_at: "2026-06-29T05:09:53+08:00"
+reviewed_date: "2026-06-29"
+last_task6_at: "2026-06-29T06:10:04+08:00"
 last_task6_audit: "2026-06-29"
 task9_result: auto-fixed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_task2b_at: "2026-06-29T04:50:00+08:00"
 last_task2b_by: task2b-lite
 last_task2b_lite_at: "2026-06-29"
@@ -569,7 +569,7 @@ Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，�
 | Compose 1.7 (2024) | PausableComposition 引入（非默认），Strong Skipping 实验性 |
 | Compose 1.8-1.9 (2025) | PausableComposition 改进，CacheWindow API，LazyList 集成深化 |
 | Compose 1.10 (2025-12) | PausableComposition 支持存在但默认状态依赖 Foundation 子版本与 flag（1.10.0-alpha05 曾默认启用，1.10.6 默认禁用）。Strong Skipping 默认开启 |
-| **Android 17 (API 37)** | Compose 1.10 是 Android 17 同期 stable 版本。PausableComposition 能力可用，具体默认启用状态由 Compose Foundation 版本/flag 决定；Strong Skipping 默认开启。Compose 本身在 Android 17 的 graphics 层继续沿用 RenderNode / HardwareRenderer 标准路径，组合与绘制优化主要在 Compose runtime 侧推进 |
+| **Android 17 (API 37)** | Compose 1.10 是 Android 17 同期 stable 版本。PausableComposition 能力可用，具体默认启用状态由 Compose Foundation 版本/flag 决定；Strong Skipping 默认开启。Compose 本身在 Android 17 的 graphics 层继续沿用 RenderNode / HardwareRenderer 标准路径，组合与绘制优化主要在 Compose 运行时侧推进 |
 
 [适用版本: Android 12 (API 31) - Android 17 (API 37); Compose 版本演进基于 androidx release notes; Compose 1.10 特性基于 androidx release notes]
 
