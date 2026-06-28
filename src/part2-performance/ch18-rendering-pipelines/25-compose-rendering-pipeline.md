@@ -4,11 +4,11 @@ chapter: "18.25"
 status: ready-for-review
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-29
-last_task6_at: "2026-06-29T03:07:00+08:00"
+last_task6_at: "2026-06-29T04:15:06+08:00"
 last_task6_audit: "2026-06-29"
 task9_result: needs-rework
 task9_state: pending
