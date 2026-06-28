@@ -3,7 +3,7 @@ title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingMan
 chapter: "26.12"
 section: "26.12"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
@@ -11,7 +11,7 @@ last_verified: "2026-06-28"
 last_verified_against: "refs/tags/android-17.0.0_r1 (frameworks/base, packages/modules/Profiling, frameworks/proto_logging均已确认存在)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
-reviewed_date: 2026-06-25
+reviewed_date: 2026-06-28
 reviewed_by: openclaw-task6
 path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
 related_chapters: "["26.2", "26.5", "14.7", "8.10", "13.2", "15.5", "20.3", "19.24"]"
@@ -19,9 +19,9 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"
 gap_score: "18"
-task6_state: revisiting
-last_task6_at: "2026-06-25T04:05:00+08:00"
-task9_state: reviewed
+task6_state: reviewed
+last_task6_at: "2026-06-28T18:09:00+08:00"
+task9_state: pending
 task6_result: pass-light-edit
 task2a_result: "draft-ready-for-review"
 last_task2a_at: "2026-05-17T06:04:00+08:00"
@@ -138,9 +138,9 @@ flowchart TD
 - **降级路径不可跳过**：Android 10-14 没有 ProfilingManager 和 ProfilingTrigger，所有线上诊断必须靠自有证据体系 + `ApplicationExitInfo`（11+）。
 - **同一 case 内可用多条路径**：例如冷启动慢 → 先拿 `ApplicationExitInfo` 确认非系统杀 → 注册 `TRIGGER_TYPE_COLD_START` → 灰度复现时 `requestProfiling(SYSTEM_TRACE)`。
 
-[已验证: AOSP main, frameworks/base/core/java/android/app/ActivityManager.java]
-[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
-[已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
+[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java]
+[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
 
 ## Android 10-14：以退出补偿和人工取证为主
 
@@ -148,7 +148,7 @@ Android 10 / API 29 没有 `ApplicationExitInfo`。线上排障仍然依赖 App 
 
 Android 11 / API 30 开始，App 能通过 `ActivityManager#getHistoricalProcessExitReasons(packageName, pid, maxNum)` 读取最近的进程退出记录。AOSP `ActivityManager.java` 明确返回 `ApplicationExitInfo` 列表，并按从近到远排序。它不是 Crash SDK 的替代品，而是下次启动时的系统补偿入口：SDK 没来得及写完、ANR 当时没有 App 回调、低内存杀进程没有 Java 异常时，这条记录能提供基础死因。
 
-`ApplicationExitInfo` 的公共字段要按“可归档”和“只辅助阅读”分开处理。`getPid()`、`getProcessName()`、`getReason()`、`getStatus()`、`getTimestamp()`、`getPss()`、`getRss()`、`getProcessStateSummary()` 适合落库；`getDescription()` 只适合人工排查，AOSP 注释说明它是 human-readable 字符串，系统不保证跨设备、跨版本格式稳定。[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+`ApplicationExitInfo` 的公共字段要按“可归档”和“只辅助阅读”分开处理。`getPid()`、`getProcessName()`、`getReason()`、`getStatus()`、`getTimestamp()`、`getPss()`、`getRss()`、`getProcessStateSummary()` 适合落库；`getDescription()` 只适合人工排查，AOSP 注释说明它是 human-readable 字符串，系统不保证跨设备、跨版本格式稳定。[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
 这段代码只演示下次启动扫描退出记录的最小路径。重点是把 `reason` 和 `traceInputStream` 分开处理，不能因为有退出记录就假设有 trace 文件。
 
@@ -180,13 +180,13 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 }
 ```
 
-`getTraceInputStream()` 的返回值要按 `null` 处理。AOSP 注释写明：它通常在 `REASON_ANR` 可用；API 31 起，`REASON_CRASH_NATIVE` 可返回 native tombstone protobuf；native crash trace 放在全局环形缓冲里，可能被新 crash 覆盖，所以仍然会返回 `null`。ANR trace 路径返回的是 gzip stream，native tombstone 路径返回的是 tombstone protobuf stream。两种结果不能按同一种文本格式解析。[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+`getTraceInputStream()` 的返回值要按 `null` 处理。AOSP 注释写明：它通常在 `REASON_ANR` 可用；API 31 起，`REASON_CRASH_NATIVE` 可返回 native tombstone protobuf；native crash trace 放在全局环形缓冲里，可能被新 crash 覆盖，所以仍然会返回 `null`。ANR trace 路径返回的是 gzip stream，native tombstone 路径返回的是 tombstone protobuf stream。两种结果不能按同一种文本格式解析。[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
 `REASON_APPLICATION_SPECIFIC_ERROR` 需要单独标注。当前 AOSP main 的 `ApplicationExitInfo` 公共 reason 列表没有这个常量；公开列表包含 `REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR`、`REASON_EXCESSIVE_RESOURCE_USAGE`、`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED` 等。既有调研材料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 未能在本轮 AOSP 复核中确认，正文不把它当作可用 API。[待验证: 既有研究素材提到 REASON_APPLICATION_SPECIFIC_ERROR，但 AOSP main 未命中该常量，后续以正式 SDK 文档为准]
 
 ## ApplicationExitInfo 证据边界
 
-`ApplicationExitInfo` 适合做“退出原因补偿”，不适合做“完整现场还原”。退出记录的时间戳来自系统记录，PSS / RSS 是系统最近一次采样值，不等于死亡前一刻的精确内存。低内存杀进程也不是所有设备都能稳定报 `REASON_LOW_MEMORY`；AOSP 注释说明，不支持 low memory kill report 的设备可能以 `REASON_SIGNALED` + `SIGKILL` 呈现，需要通过 `ActivityManager.isLowMemoryKillReportSupported()` 判断能力。[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+`ApplicationExitInfo` 适合做“退出原因补偿”，不适合做“完整现场还原”。退出记录的时间戳来自系统记录，PSS / RSS 是系统最近一次采样值，不等于死亡前一刻的精确内存。低内存杀进程也不是所有设备都能稳定报 `REASON_LOW_MEMORY`；AOSP 注释说明，不支持 low memory kill report 的设备可能以 `REASON_SIGNALED` + `SIGKILL` 呈现，需要通过 `ActivityManager.isLowMemoryKillReportSupported()` 判断能力。[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
 线上处理时，把 reason 分成五组更稳：
 
@@ -198,7 +198,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 | 用户或包状态变化 | `REASON_USER_REQUESTED`、`REASON_PACKAGE_STATE_CHANGE`、`REASON_PACKAGE_UPDATED` | 不应按 crash 计算 | 进入非异常退出分组 |
 | 其他系统原因 | `REASON_OTHER`、`REASON_DEPENDENCY_DIED`、`REASON_FREEZER` | 需要人工复核描述和版本分布 | 只做辅助归因 |
 
-Native crash 有两份证据来源：SDK 自有 minidump，以及 Android 12+ `ApplicationExitInfo#getTraceInputStream()` 暴露的 tombstone protobuf。Crashpad / Breakpad 的价值在于崩溃当下由 SDK 控制写入；系统 tombstone 的价值在于系统侧也保存了 native crash 证据。两者要合并，不要互相替代。Native signal handler、out-of-process handler、minidump 写入边界详见 20.3 和 19.24。[已验证: 官方文档, developer.android.com/ndk/guides/debug][已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+Native crash 有两份证据来源：SDK 自有 minidump，以及 Android 12+ `ApplicationExitInfo#getTraceInputStream()` 暴露的 tombstone protobuf。Crashpad / Breakpad 的价值在于崩溃当下由 SDK 控制写入；系统 tombstone 的价值在于系统侧也保存了 native crash 证据。两者要合并，不要互相替代。Native signal handler、out-of-process handler、minidump 写入边界详见 20.3 和 19.24。[已验证: 官方文档, developer.android.com/ndk/guides/debug][已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
 **版本边界补充**：`REASON_FREEZER` 在 API 33（Android 13）引入，App Freezer 杀进程时返回；`REASON_PACKAGE_STATE_CHANGE` 和 `REASON_PACKAGE_UPDATED` 在 API 34（Android 14）引入。按 `Build.VERSION.SDK_INT` 判断常量可用性，低于对应 API level 的设备上不会返回这些 reason。
 
@@ -226,7 +226,7 @@ Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复�
 | `PROFILING_TYPE_HEAP_PROFILE` | 分配增长、内存抖动来源 | 采样有偏差，时间窗口要提前覆盖 | 归档 heap profile trace |
 | `PROFILING_TYPE_STACK_SAMPLING` | CPU 消耗热点、较长窗口低成本观察 | 采样不保证覆盖短函数 | 归档 stack sample trace |
 
-`requestProfiling()` 的结果通过 `ProfilingResult` 回调返回。成功时读取 `getResultFilePath()`，失败时读取 `getErrorCode()` 和 `getErrorMessage()`。AOSP `ProfilingResult` 把失败分成 system rate limit、process rate limit、profiling already in progress、执行失败、post-processing 失败、磁盘不足、请求非法等。线上系统不能只记录“采集失败”，要把这些错误码落库，否则值班同学无法判断是系统保护、并发采集、磁盘空间还是参数错误。[已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/ProfilingResult.java]
+`requestProfiling()` 的结果通过 `ProfilingResult` 回调返回。成功时读取 `getResultFilePath()`，失败时读取 `getErrorCode()` 和 `getErrorMessage()`。AOSP `ProfilingResult` 把失败分成 system rate limit、process rate limit、profiling already in progress、执行失败、post-processing 失败、磁盘不足、请求非法等。线上系统不能只记录“采集失败”，要把这些错误码落库，否则值班同学无法判断是系统保护、并发采集、磁盘空间还是参数错误。[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingResult.java]
 
 官方文档说明，ProfilingManager 存在 rate limiter，用来降低重复 profiling 对设备性能的影响；调试时可以用 `device_config put profiling_testing rate_limiter.disabled true` 关闭 App 进程级和系统级 rate limiter。线上版本不能依赖调试开关，必须有自己的远程开关、采样比例、单用户频率上限和文件大小上限。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected][已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/debug-mode]
 
@@ -234,7 +234,7 @@ Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复�
 
 ## Android 16-17：ProfilingTrigger 的事件触发采集
 
-Android 16 / API 36 把 ProfilingManager 从“App 主动请求”扩展到“系统事件触发”。应用先注册 `ProfilingTrigger`，结果只能通过 `registerForAllProfilingResults()` 的全局 listener 收到；`addProfilingTriggers()` 只是注册条件，不提供 request-scoped callback。14.7 和 8.10 已经展开接入代码，本节只保留排障表。[已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
+Android 16 / API 36 把 ProfilingManager 从“App 主动请求”扩展到“系统事件触发”。应用先注册 `ProfilingTrigger`，结果只能通过 `registerForAllProfilingResults()` 的全局 listener 收到；`addProfilingTriggers()` 只是注册条件，不提供 request-scoped callback。14.7 和 8.10 已经展开接入代码，本节只保留排障表。[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
 
 | 版本层 | trigger | 返回物 | 使用场景 | 边界 |
 |---|---|---|---|---|
@@ -529,14 +529,14 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 - **ApplicationStartInfo 启动时间戳体系**（2026-05-22 一手验证）：Android 15 引入的 ApplicationStartInfo 提供 6 个 StartupTimestamp 枚举（LAUNCH、JAVA_CLASSLOADING_COMPLETE、APPLICATION_ONCREATE、BIND_APPLICATION、FIRST_FRAME、REPORT_FULLY_DRAWN），全部为纳秒级。StartType 区分 COLD/WARM/HOT 三种启动类型。源码位置：`frameworks/base/core/java/android/app/ApplicationStartInfo.java`。
 - **ProfilingTrigger 源码位置**：未在 `frameworks/base` 路径找到 ProfilingTrigger.java，源码路径待进一步核实（可能位于 `packages/modules/Profiling/` 而非 `frameworks/base/`）。
 
-## 补充调研（2026-05-23）：REASON 常量版本矩阵与 MemoryLimiter 边界确认
+## 补充调研（2026-05-23）：REASON 常量版本对照与 MemoryLimiter 边界确认
 
 **来源**：research-gaps.md §26.12 盲区回退
 
 **新增验证点（2026-05-23 一手验证）**：
 
-### ApplicationExitInfo REASON 常量版本矩阵
-基于 Microsoft Learn .NET binding for Android（该 binding 忠实映射 AOSP `[ApiSince=30]` 注册注解）交叉验证，REASON_* 常量版本矩阵：
+### ApplicationExitInfo REASON 常量版本对照表
+基于 Microsoft Learn .NET binding for Android（该 binding 忠实映射 AOSP `[ApiSince=30]` 注册注解）交叉验证，REASON_* 常量版本对照表：
 
 | 常量 | API Level | 备注 |
 |------|-----------|------|
@@ -581,10 +581,10 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 
 ## 参考资料
 
-### Android 15-17 线上诊断能力版本矩阵验证
+### Android 15-17 线上诊断能力版本对照验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-17-diagnostic-apis-version-matrix.md
 - 类型：DeepResearch 调研结果
-- 摘要：Android 15-17 线上诊断能力由 ApplicationExitInfo（API 30+，13种死亡原因+22种子原因）和 ProfilingManager（API 35+，4种剖析类型）构成。版本矩阵覆盖 API 30-37，含完整源码锚点和获取方式。子原因如 SUBREASON_FREEZER_BINDER_IOCTL、SUBREASON_EXCESSIVE_CPU 等对线上稳定性治理有直接诊断价值。
+- 摘要：Android 15-17 线上诊断能力由 ApplicationExitInfo（API 30+，13种死亡原因+22种子原因）和 ProfilingManager（API 35+，4种剖析类型）构成。版本对照覆盖 API 30-37，含完整源码锚点和获取方式。子原因如 SUBREASON_FREEZER_BINDER_IOCTL、SUBREASON_EXCESSIVE_CPU 等对线上稳定性治理有直接诊断价值。
 
 ### Android 版本化线上诊断能力完整边界研究
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-20-android-versioned-online-diagnostic-capabilities.md
@@ -632,39 +632,7 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 - developer.android.com ProfilingManager overview（✅）
 - Crashpad 模型、ProfilingTrigger 详细常量定义、ApplicationStartInfo START_TYPE_* 常量定义：均未经 AOSP 源码直接验证（❌）
 
-## 补充调研（2026-05-31）：ProfilingManager/ProfilingResult API 35 源码闭环确认
-
-**来源**：daily-topics.json #5 选题驱动
-
-**新增验证点（2026-05-31 一手验证）**：
-
-### ProfilingManager 源码路径与 Flag 约束
-- 源码位置：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`（非 frameworks/base 路径）
-- API Level：35（Android 15+）
-- Flag 约束：`@FlaggedApi(Flags.FLAG_TELEMETRY_APIS)` — 需设备启用 Telemetry APIs 才可用
-- ProfilingType 常量：JAVA_HEAP_DUMP=1、HEAP_PROFILE=2、STACK_SAMPLING=3、SYSTEM_TRACE=4
-- 服务端通信：使用 `IProfilingService` Binder + `IProfilingResultCallback` 异步回调
-- 结果文件路径：`mContext.getFilesDir().getPath()` + tag
-
-### ProfilingResult Error Codes（9 个）
-| 常量 | 值 | 含义 |
-|------|-----|------|
-| ERROR_NONE | 0 | 成功 |
-| ERROR_FAILED_RATE_LIMIT_SYSTEM | 1 | 系统级限流 |
-| ERROR_FAILED_RATE_LIMIT_PROCESS | 2 | 进程级限流 |
-| ERROR_FAILED_PROFILING_IN_PROGRESS | 3 | 已有采集进行中 |
-| ERROR_FAILED_EXECUTING | 4 | 执行失败 |
-| ERROR_FAILED_POST_PROCESSING | 5 | 后处理失败 |
-| ERROR_FAILED_NO_DISK_SPACE | 6 | 磁盘空间不足 |
-| ERROR_FAILED_INVALID_REQUEST | 7 | 无效请求 |
-| ERROR_UNKNOWN | 8 | 未知错误 |
-
-### 未验证项（诚实标注）
-- ProfilingTrigger：源码检索未找到该类，可能位于 `packages/modules/Profiling/` 路径而非 `frameworks/base/`
-- FLAG_TELEMETRY_APIS 启用条件：源码中未找到该 Flag 的具体启用机制
-- ProfilingService 服务端实现：未找到 frameworks/base/services/core/java 中的 ProfilingService.java
-
-### 补充调研（2026-05-31）：ProfilingManager/ProfilingResult API 35 源码闭环确认
+## 补充调研（2026-05-31）：ProfilingManager/ProfilingResult API 35 源码验证
 
 **来源**：daily-topics.json #5 选题驱动
 
