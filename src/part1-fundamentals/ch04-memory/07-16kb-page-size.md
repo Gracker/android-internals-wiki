@@ -69,7 +69,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-28-12-audit.md"
 last_task9_autofix_at: "2026-06-28"
 last_task9_review_log: "logs/deep-review/2026-06-28-12-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
+last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 4.7 16KB Page Size 与 Android 性能
@@ -123,7 +123,7 @@ Google 在 Pixel 设备上的测试给出了以下具体数据：
 
 [已验证: 来源见 Google 官方 16KB Page Size 文档及 Android Developers Blog]
 
-公开页面没有给出完整样本 App 列表、每个 build fingerprint、重复次数和统计区间。本章把这些数字当作方向性收益，不把它们写成所有 App 的固定收益。冷启动提升 3.16% 是平均值，30% 的最佳值更接近内存访问密集型 App（如大型游戏、图片编辑类 App）。这类 App 在启动时需要映射大量代码和资源文件，TLB Miss 和 Page Fault 是主要瓶颈，因此 16KB 页的收益最大。
+公开资料没有给出完整样本 App 列表、每个 build fingerprint、重复次数和统计区间。本章把这些数字当作方向性收益，不把它们写成所有 App 的固定收益。冷启动提升 3.16% 是平均值，30% 的最佳值更接近内存访问密集型 App（如大型游戏、图片编辑类 App）。这类 App 在启动时需要映射大量代码和资源文件，TLB Miss 和 Page Fault 是主要瓶颈，因此 16KB 页的收益最大。
 
 功耗降低 4.56% 来自 CPU 减少了 TLB refill 和 Page Table Walk 的次数。这些操作需要访问内存中的页表，相比直接命中 TLB，功耗要高出数倍。减少这类"管理开销"，CPU 可以把更多时间用在有意义的计算上。
 
@@ -144,8 +144,6 @@ Google 的测试表明，16KB 页大小下系统平均内存使用量增加约 5
 **LMK 交互。** 内存使用量增加意味着 lmkd 可能更早触发回收（§4.5「低内存影响与 lmkd」详细分析了 LMK 的触发策略）。16KB 页下 Page Fault 减少带来的性能收益是否足以抵消 LMK 的额外开销，取决于具体的内存压力水平。6GB 以下的设备需要特别关注这个权衡；8GB+ 的设备上，5-10% 的内存增长（约 400-800MB）在可用 RAM 的占比中不太敏感。
 
 ## 对 App 开发者的影响
-
-这是所有 App 开发者必须面对的现实问题。
 
 ### 纯 Java/Kotlin App
 
@@ -520,7 +518,7 @@ adb shell getconf PAGE_SIZE
 
 ### "16KB 页会让 App 占用更多内存"
 
-这个说法过于简化。页表本身变小了（节省内存），内部碎片会增加（浪费内存）。最终效果取决于 App 的分配模式：大量小对象的 App 内存增长更多，以大块分配为主的 App 几乎没有增长。Google 的平均数据是 5-10%，但对于 8GB+ 设备来说，这个增长在整体内存预算中占比不大。
+不能只看一面。页大小变大后，页表本身变小了（节省内存），但内部碎片会增加（浪费内存）。最终效果取决于 App 的分配模式：大量小对象的 App 内存增长更多，以大块分配为主的 App 几乎没有增长。Google 的平均数据是 5-10%，但对于 8GB+ 设备来说，这个增长在整体内存预算中占比不大。
 
 ### "纯 Java App 不需要关心 16KB"
 
@@ -528,7 +526,7 @@ adb shell getconf PAGE_SIZE
 
 ### "16KB 页大小只影响启动速度"
 
-这个判断不完整。16KB 页影响所有涉及内存访问的场景，不只影响启动。滑动时的大量 Bitmap 解码、WebView 的页面渲染、视频解码的 buffer 管理都会受益。只是启动阶段的收益最容易量化（因为 page fault 最密集），所以 Google 在官方文档中重点展示了启动数据。从 Perfetto 分析的实际案例来看，列表滑动场景中 Bitmap 频繁 mmap/unmmap 导致的 Minor Page Fault 也是一个可观测的改善点（参见 §7.8「RecyclerView 列表滑动性能深度优化」中的内存访问模式分析）。
+不只启动。16KB 页影响所有涉及内存访问的场景：滑动时的大量 Bitmap 解码、WebView 的页面渲染、视频解码的 buffer 管理都会受益。启动阶段的收益最容易量化（因为 page fault 最密集），所以 Google 在官方文档中重点展示了启动数据。从 Perfetto 分析的实际案例来看，列表滑动场景中 Bitmap 频繁 mmap/unmmap 导致的 Minor Page Fault 也是一个可观测的改善点（参见 §7.8「RecyclerView 列表滑动性能深度优化」中的内存访问模式分析）。
 
 ### "我需要在代码中硬编码 16384"
 

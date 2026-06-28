@@ -79,7 +79,7 @@ last_task9_review_log: logs/deep-review/2026-06-28-11-deep-review.md
 task9_review_notes: "2026-06-28 Task9：auto-fixed。P0 2 / P1 1 / P2 1 均为局部修复；修正 UsageStatsManager bucket 常量、Android 16 Job 配额口径、FGS timeout 版本边界，并补 §25.13 交叉引用；回到 Task6 复审。"
 last_task9_autofix_at: "2026-06-28"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-25
+last_deepseek_cn_review_at: 2026-06-28
 ---
 
 # 后台功耗治理
@@ -128,7 +128,7 @@ Android 后台限制可以按“设备状态、App 使用状态、任务 API”�
 | Android 14 | 前台服务类型和对应权限成为硬性约束 | Manifest 声明 `foregroundServiceType`，补对应 `FOREGROUND_SERVICE_*` 权限 |
 | Android 16 | Job 执行配额与 App 状态关系更细；与前台服务并发执行的 Job 也会受运行时配额约束 | 把前台服务并发 Job 纳入功耗预算和超时监控，记录 `WorkInfo.getStopReason()` / `JobParameters.getStopReason()` 与 `JobScheduler#getPendingJobReasonsHistory()` |
 
-Android Developers 的 power resource limits 文档把限制分成两种：一种是设备低功耗状态下延后执行，例如 Doze 期间普通 Job 和非精确 Alarm 延后；另一种是根据 standby bucket 限制唤醒频率和可运行时长，例如 rare bucket 下 Job 运行预算更少。WorkManager 在 App 不可见时通过 JobScheduler 执行，也会受到这些限制。 [已验证: 官方文档, developer.android.com/topic/performance/power/power-details]
+系统限制实际上有两层：设备进入 Doze 后，普通 Job、同步适配器和非精确 Alarm 会被推到 maintenance window 执行；长时间未被用户使用的 App 则按 standby bucket 限制唤醒频率和执行预算，rare bucket 下 Job 运行预算更少，restricted bucket 可能完全不给执行窗口。WorkManager 在 App 不可见时通过 JobScheduler 执行，这两层限制都会生效。 [已验证: 官方文档, developer.android.com/topic/performance/power/power-details]
 
 AOSP 的入口能对应到这三层：`DeviceIdleController` 维护 idle / maintenance 状态，`AppStandbyController` 维护 bucket，`QuotaController` 根据 bucket 和 Job 状态计算剩余执行时间，`UsageStatsManager` 暴露 `STANDBY_BUCKET_ACTIVE`、`STANDBY_BUCKET_WORKING_SET`、`STANDBY_BUCKET_FREQUENT`、`STANDBY_BUCKET_RARE`、`STANDBY_BUCKET_RESTRICTED` 等常量。 [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/usage/UsageStatsManager.java]
 
@@ -179,7 +179,7 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 
 这段代码把“网络不贵、设备电量不低、同一同步不重复排队”写进调度条件。它不会保证任务立刻执行；在 Doze、rare bucket、restricted bucket 或系统负载高时，执行时间仍由系统决定。治理时要记录 `WorkInfo.stopReason`、任务开始时间、结束时间和失败原因，不能只看业务日志里“没跑”。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/optimize-battery]
 
-后台任务还有一个容易漏掉的成本：任务自身超时会影响系统对 App 的判断。Android Developers 明确建议追踪任务是否被停止及停止原因；Android 14 及以上，如果任务超时过多，系统可能把 App 放进 restricted standby bucket。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/optimize-battery]
+后台任务还有一个容易漏掉的成本：任务自身超时会影响系统对 App 的判断。官方文档建议追踪任务是否被停止及停止原因；Android 14 及以上，如果任务超时过多，系统可能把 App 放进 restricted standby bucket。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/optimize-battery]
 
 工程上可以把后台任务接入统一表结构，至少记录以下字段：
 
@@ -201,7 +201,7 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 
 Android 12 以后，targetSdk 31+ 的 App 从后台启动前台服务会被限制，只有用户可见状态切换、用户触发的精确 Alarm、地理围栏或 activity recognition 事件、部分启动广播和系统角色等豁免场景可以启动。涉及 camera、microphone、location、body sensor 等 while-in-use 权限的前台服务，即使命中部分豁免，也不能在后台直接创建。 [已验证: 官方文档, developer.android.com/develop/background-work/services/fgs/restrictions-bg-start]
 
-Android 14 对前台服务再加一层类型约束。targetSdk 34+ 的 App 必须在 manifest 中为每个前台服务声明合适的 `android:foregroundServiceType`，并声明对应的 `FOREGROUND_SERVICE_*` 权限；调用 `startForeground()` 时缺类型会触发 `MissingForegroundServiceTypeException`，类型不匹配会触发对应运行时异常。AOSP `ServiceInfo` 中的 `FOREGROUND_SERVICE_TYPE_*` 常量也能看到这些类型和部分超时说明。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/fgs-types-required] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/pm/ServiceInfo.java]
+Android 14 对前台服务再加一层类型约束。targetSdk 34+ 的 App 必须在 manifest 中为每个前台服务声明合适的 `android:foregroundServiceType`，并声明对应的 `FOREGROUND_SERVICE_*` 权限；调用 `startForeground()` 时缺类型会触发 `MissingForegroundServiceTypeException`，类型不匹配会触发对应运行时异常。AOSP `ServiceInfo` 也列出了 `FOREGROUND_SERVICE_TYPE_*` 常量和部分超时说明。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/fgs-types-required] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/pm/ServiceInfo.java]
 
 这段 manifest 片段用于检查位置型前台服务的最小声明：服务类型、基础前台服务权限、类型权限、运行时位置权限必须同时满足。
 
