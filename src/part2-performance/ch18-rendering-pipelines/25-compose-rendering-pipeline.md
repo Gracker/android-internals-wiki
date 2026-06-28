@@ -2,20 +2,20 @@
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
 status: ready-for-review
-task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-29
 last_task6_at: "2026-06-29T03:07:00+08:00"
 last_task6_audit: "2026-06-29"
 task9_result: needs-rework
-task9_state: reviewed
-pipeline_stage: task2b_pending
-last_task2b_at: "2026-06-29T02:52:24+08:00"
-last_task2b_by: task2b-main
-last_task2b_lite_at: "2026-06-29T02:52:24+08:00"
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-06-29T03:37:11+08:00"
+last_task2b_by: task2b-lite
+last_task2b_lite_at: "2026-06-29"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
 last_verified: "2026-06-29"
@@ -138,12 +138,13 @@ Compose 的节点抽象是 `LayoutNode`，对应 View 体系中的 `View`，但�
 internal class LayoutNode(
     // 是否可以复用上一帧的 display list
     private var isVirtual: Boolean = false,
-    private var lookaheadRoot: Boolean = false
+    private var isVirtualLookaheadRoot: Boolean = false
 ) : ... {
-    // 持有 android.graphics.RenderNode（通过 RenderNodeLayer 间接持有）
-    internal val nodes: OwnerSnapshotObserver = ...
-    fun measure(constraints: Constraints): Placeable = ...
-    fun draw(canvas: Canvas) = ...  // 构建 display list 的入口
+    // 子节点链，管理 Compose 节点树结构
+    internal val nodes: NodeChain = ...
+    // 共享 lookahead 树的根节点查找
+    internal val lookaheadRoot: LayoutNode? get() = ...
+    fun draw(canvas: Canvas, graphicsLayer: GraphicsLayer?) = ...  // 构建 display list 的入口
 }
 ```
 
@@ -152,15 +153,17 @@ internal class LayoutNode(
 View 体系用 `MeasureSpec`（EXACTLY / AT_MOST / UNSPECIFIED）约束子 View 的尺寸。Compose 用 `Constraints`（minWidth / maxWidth / minHeight / maxHeight + fixed 简写）做类似的事，但接口更丰富：
 
 ```kotlin
-// androidx.compose.ui.layout.MeasureScope
-// AOSP Compose: platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/MeasureScope.kt
-interface MeasureScope : IntrinsicMeasureScope {
-    fun measure(
+// androidx.compose.ui.layout.MeasurePolicy
+// AOSP Compose: platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/MeasurePolicy.kt
+interface MeasurePolicy {
+    fun MeasureScope.measure(
         measurables: List<Measurable>,
         constraints: Constraints
     ): MeasureResult
 }
 ```
+
+`MeasureScope.measure(...)` 是 `MeasurePolicy` 的扩展函数。child measure 返回 `Placeable`，父布局的 `MeasurePolicy` 返回 `MeasureResult`。
 
 `MeasureResult` 包含子节点放置位置和自身尺寸。与 View 的 `onMeasure` 比，Compose 的测量结果可以返回任意放置坐标（`place(x, y)`），不需要等 `onLayout` 阶段单独处理。
 
@@ -445,7 +448,7 @@ flowchart TD
 
 1. **ViewRootImpl 驱动帧提交**：`syncAndDrawFrame()` 由 `ViewRootImpl.performDraw()` → `draw()` → `ThreadedRenderer.draw(view, attachInfo, callbacks)` 调用。Compose 的 `FrameCallback` 只负责重组与测量调度，不在自己的回调中直接调用 `syncAndDrawFrame()`。
 2. **Compose 参与 dispatchDraw**：`ViewRootImpl.performDraw` 遍历 View 树时调用 `AndroidComposeView.dispatchDraw()`，Compose 在此阶段执行 root draw 和脏 layer 更新，构建 RenderNode display list。Compose 融入 View 体系的 traversal，不需要独立发起帧提交。
-3. **同步阻塞**：`syncAndDrawFrame` 是阻塞操作——主线程将 display list 移交 RenderThread 后，等待上一帧的 GPU sync fence signal 完成才返回。这是 GPU 渲染的帧节流机制：防止主线程排队过多帧。
+3. **同步阻塞**：`syncAndDrawFrame` 是阻塞操作——主线程将 display list 移交 RenderThread，等待 HWUI 同步阶段（`syncFrameState`/`prepareTree`）完成后返回。默认不等待 buffer present 或 GPU fence（`setWaitForPresent` 默认 false）；只有 `setWaitForPresent`、`reportNextDraw` 或同步事务等特殊路径才显式等 fence。
 4. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
 5. **与 View 体系共用**：View 和 Compose 共享同一 `ViewRootImpl.performTraversals()` → `ThreadedRenderer.draw()` 提交路径。两者在 RenderThread 以下完全相同，差异仅在 display list 的构建方式（LayoutNode.draw vs View.onDraw）。
 
@@ -470,7 +473,7 @@ sequenceDiagram
     ACP->>ACP: root.draw → 构建 RenderNode display list
     VRI->>HR: ThreadedRenderer.draw(view, attachInfo)
     HR->>RT: syncAndDrawFrame(display list 数据)
-    Note over MT,RT: MT 等待 GPU sync fence signal
+    Note over MT,RT: MT 等待 HWUI syncFrameState 完成
     RT->>RT: GPU 命令录制（Vulkan/GLES）
     RT->>RT: queueBuffer → BufferQueue
     RT-->>MT: fence signal → MT 释放
@@ -479,7 +482,7 @@ sequenceDiagram
 
 三个阶段的同步行为：
 
-1. **同步阶段**：`syncAndDrawFrame` 由 `ThreadedRenderer.draw()` 内调用，将主线程构建的 RenderNode 树同步到 RenderThread，等待上一帧 GPU sync fence signal 完成后返回。这确保 render pipeline 深度（in-flight 帧数）不超过 swap interval 限制。
+1. **同步阶段**：`syncAndDrawFrame` 由 `ThreadedRenderer.draw()` 内调用，将主线程构建的 RenderNode 树同步到 RenderThread。native `DrawFrameTask.postAndWait()` 在 `syncFrameState`/`prepareTree` 完成后即解除 UI 线程阻塞，GPU 绘制和 `swapBuffers` 继续在 RenderThread 执行。`setWaitForPresent` 默认 false，只有 `reportNextDraw` 或显式 fence 场景才等 GPU 完成。
 2. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
 3. **帧提交**：RenderThread 通过 `eglSwapBuffers`（GLES）或 `vkQueuePresentKHR`（Vulkan）将 finished buffer 提交给 BufferQueue，SurfaceFlinger 在下一个 VSYNC 边缘合成上屏。
 

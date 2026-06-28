@@ -432,6 +432,41 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-29T03:30:10+08:00",
+    "status": "completed",
+    "completed_reason": "fixed-lite: Issue 1 (LayoutNode/MeasurePolicy API names) and Issue 4 (syncAndDrawFrame fence semantics) fixed by Task2B Lite. Issues 2,3,5 require main Task2B lane (structural changes, diagram rewrites, performance section rewrites).",
+    "completed_at": "2026-06-29T03:37:11+08:00",
+    "completed_by": "task2b-lite"
+  },
+  {
+    "section": "18.25",
+    "section_title": "Jetpack Compose 渲染管线架构",
+    "priority": 90,
+    "reason": "[Task2B Lite 转交] Issues 2,3,5 需要 Task2B 主修复处理：Choreographer 绑定路径重写 + 时序图更新、requestRedraw/RenderNodeLayer 流程图修正、Snapshot 同步原语与性能表重写",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-03-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "§与 Choreographer 的绑定、§布局阶段、§Compose 与 RenderThread 的协作",
+        "detail": "Compose FrameCallback 描述为在 doFrame 中直接执行重组并触发 LayoutNode measure/layout。实际 Recomposer 通过 AndroidUiFrameClock/AndroidUiDispatcher 对齐 Choreographer frame，LayoutNode 测量/布局由 AndroidComposeView.onMeasure()/onLayout() 以及 dispatchDraw() 开头的 measureAndLayout() 在 ViewRootImpl traversal 中执行。",
+        "suggestion": "把'Compose FrameCallback 执行 measure/layout'改成 Recomposer/frame clock + ViewRoot traversal 描述。同步更新两张时序图。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§Compose 重组到 RenderNode 的完整链路 / §绘制阶段与 RenderNode 构建",
+        "detail": "LayoutNode.kt 中不存在 requestRedraw()；AndroidComposeView.createLayer() 在 SDK >= M 路径优先创建 GraphicsLayerOwnerLayer，RenderNodeLayer 是旧/回退实现。",
+        "suggestion": "将 requestRedraw 改为 layer/root layer invalidation；将 RenderNodeLayer 限定为旧路径或兼容回退。"
+      },
+      {
+        "type": "源码错误/数据缺失",
+        "location": "扩展 6.6-6.9 Snapshot 同步原语与性能表",
+        "detail": "MutableState 写描述成 lock-free CAS 快路径并给出 ~10ns/~30ns 数字。实际写路径进入 sync(lock)；纳秒数字无基准来源。'跨 Recomposer 并发重组：不可能'描述不准确。",
+        "suggestion": "重写 Snapshot 性能段，删除未验证纳秒数字，修正并发边界描述。"
+      }
+    ],
+    "added_by": "task2b-lite-handoff",
+    "added_at": "2026-06-29T03:37:11+08:00",
     "status": "pending"
   }
 ]
