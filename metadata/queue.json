@@ -484,5 +484,37 @@
     "completed_by": "task2b-main",
     "completed_at": "2026-06-29T04:52:15.978146+08:00",
     "completion_note": "fixed: 5项P0源码错误/原理修复——FrameClock/traversal边界重写(AndroidUiFrameClock负责recomposition+apply，measure/layout在ViewRootImpl traversal中)、流程图替换requestRedraw→Owner invalidation路径+RenderNodeLayer→OwnedLayer/GraphicsLayer主路径、ThreadedRenderer源码锚点修正为core/view、Snapshot写路径修正为sync(lock)+删除未验证性能数字+跨Recomposer并发边界、PausableComposition默认启用状态收窄为Foundation flag边界(1.10.0-alpha05曾启用/1.10.6默认禁用)"
+  },
+  {
+    "section": "26.3",
+    "section_title": "性能指标采集与上报",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 闲时抽检发现 Android 17 StatsD 性能监控主线与 android-17.0.0_r1 源码不一致",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "§1.1/§1.2/§4-§10：PERFORMANCE_METRICS_ATOM / AtomId 10244 主线",
+        "detail": "章节称 Android 17 新增 AtomId.PERFORMANCE_METRICS_ATOM（ID 10244）承载 CPU/GPU/内存/帧率，并把网络、帧率、采样、上报策略都挂到该 Atom；android-17.0.0_r1 的 frameworks/proto_logging/stats/atoms.proto 中 10244 实际是 DeviceLockPotentialBypassSnapshot，未发现 PERFORMANCE_METRICS_ATOM 符号。",
+        "suggestion": "移除以 PERFORMANCE_METRICS_ATOM 为中心的叙述，改用 android-17.0.0_r1 已存在的 statsd atoms / AndroidX JankStats / Firebase Performance / App 自建指标边界，所有 Atom ID 必须锚定 atoms.proto。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§1.1/§1.2/§8.1/§8.2/§10.2：StatsManager API、StatsCompanionService、权限模型",
+        "detail": "android-17.0.0_r1 的 StatsManager 位于 packages/modules/StatsD/framework/java/android/app/StatsManager.java，核心 API 是 addConfig/query/setPullAtomCallback；未提供文中的 pullAtoms() 或 StatsManager.logEvent()。AndroidManifest.xml 中没有 READ_PRECISE_STATS，StatsManagerService 权限校验使用 DUMP、PACKAGE_USAGE_STATS、REGISTER_STATS_PULL_ATOM 等。StatsCompanionService 是 statsd helper service，通过 IStatsd/DeviceConfig 等路径协作，不是文中描述的“JNI 桥接并从 /dev/socket/statsdw 读取事件流”。",
+        "suggestion": "重写 StatsD 数据流：区分 app 侧可用 API、系统/特权权限、statsd native daemon、StatsCompanionService helper 和 libstatssocket/socket 写入路径；删除不存在的 public API 与权限名。"
+      },
+      {
+        "type": "版本差异",
+        "location": "§2/§4/§5/§9/§10：Android 17 daemon 级电池感知采样、网络归一化、移动网络限额、本地缓存策略",
+        "detail": "在 packages/modules/StatsD android-17.0.0_r1 中未检出 perf_metrics_*、statsd_buffer_size_bytes、statsd_mobile_upload_limit_bytes、url_pattern/request_bytes/response_bytes 等章节所依赖的配置键或性能 Atom 字段；这些段落把 App/APM 侧策略写成 Android 17 StatsD 原生能力，缺少源码支撑。",
+        "suggestion": "将这些内容降级为“APM/业务自建上报策略示例”，或补入可验证的一手源码/官方文档；不能作为 Android 17 StatsD 主线结论。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T06:27:27+08:00",
+    "status": "pending"
   }
 ]
