@@ -480,6 +480,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-29T04:29:07.107245+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-06-29T04:52:15.978146+08:00",
+    "completion_note": "fixed: 5项P0源码错误/原理修复——FrameClock/traversal边界重写(AndroidUiFrameClock负责recomposition+apply，measure/layout在ViewRootImpl traversal中)、流程图替换requestRedraw→Owner invalidation路径+RenderNodeLayer→OwnedLayer/GraphicsLayer主路径、ThreadedRenderer源码锚点修正为core/view、Snapshot写路径修正为sync(lock)+删除未验证性能数字+跨Recomposer并发边界、PausableComposition默认启用状态收窄为Foundation flag边界(1.10.0-alpha05曾启用/1.10.6默认禁用)"
   }
 ]

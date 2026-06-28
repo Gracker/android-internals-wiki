@@ -2,18 +2,18 @@
 title: "Jetpack Compose 渲染管线架构"
 chapter: "18.25"
 status: ready-for-review
-task2b_result: fixed-lite
-task2b_state: pending
-task6_state: reviewed
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-29
 last_task6_at: "2026-06-29T04:15:06+08:00"
 last_task6_audit: "2026-06-29"
 task9_result: needs-rework
-task9_state: reviewed
-pipeline_stage: task2b_pending
-last_task2b_at: "2026-06-29T03:37:11+08:00"
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-06-29T04:50:00+08:00"
 last_task2b_by: task2b-lite
 last_task2b_lite_at: "2026-06-29"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -40,6 +40,8 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java"
   - type: aosp
     path: "frameworks/base/graphics/java/android/graphics/HardwareRenderer.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/ThreadedRenderer.java"
 tags: [compose, rendering, rendernode, choreographer, pausable-composition, display-list]
 related_chapters: ["2.4", "2.5", "2.6", "22.3", "22.20", "22.25", "22.26"]
 created_by: "task2a-knowledge-gap"
@@ -79,45 +81,50 @@ internal class AndroidComposeView(...) : ViewGroup(...) {
 
 ### 与 Choreographer 的绑定
 
-`AndroidComposeView` 在 `onAttachedToWindow` 时注册 `Choreographer.FrameCallback`。但 Compose 帧提交的完整路径涉及两层回调：Compose 自己的 `FrameCallback` 负责重组和测量调度，`ViewRootImpl.TraversalRunnable` 负责驱动 `dispatchDraw` → `HardwareRenderer` 的帧提交。
+`AndroidUiFrameClock`（Compose 内部连接 Choreographer 的桥接类）通过 `postFrameCallback` 注册 `Choreographer.FrameCallback`，`doFrame` 中把 `frameTimeNanos` 传给 `withFrameNanos` 协程恢复重组流程。`AndroidComposeView.onAttachedToWindow` 不直接注册 `Choreographer.FrameCallback`——它只负责 attach/window/snapshot observer 与 invalidation 初始化。
+
+Compose 帧的完整路径涉及两层驱动：`Recomposer` 通过 `AndroidUiFrameClock` 对齐 Choreographer 帧并执行重组与 apply——这部分是 Compose 自主的帧对齐；`ViewRootImpl.TraversalRunnable` 负责驱动 `onMeasure`/`onLayout`/`dispatchDraw` → `HardwareRenderer` 的帧提交——这部分是 View 体系的基础设施。
 
 ```mermaid
 sequenceDiagram
     participant VSYNC as VSYNC
     participant Choreo as Choreographer
-    participant CB_Compose as Compose FrameCallback
-    participant Comp as Composition
+    participant UiFC as AndroidUiFrameClock
+    participant Rec as Recomposer
     participant VRI as ViewRootImpl
     participant ACP as AndroidComposeView
     participant HR as HardwareRenderer
     
     VSYNC->>Choreo: VSYNC 信号
-    Choreo->>CB_Compose: doFrame(frameTimeNanos)
-    CB_Compose->>Comp: 1. 触发 recomposition（invalidated scopes）
-    CB_Compose->>Comp: 2. 触发 LayoutNode measure/layout
-    CB_Compose->>Choreo: postFrameCallback(下一帧)
+    Choreo->>UiFC: doFrame(frameTimeNanos)
+    UiFC->>Rec: withFrameNanos → recompose + applyChanges
+    Rec->>Rec: 重组 invalidated scopes → 更新 LayoutNode 数据
+    Rec->>Rec: applyChanges → 安排 onRequestMeasure/onRequestRelayout
     Choreo->>VRI: TraversalRunnable.doTraversal()
-    VRI->>VRI: performMeasure / performLayout
+    VRI->>ACP: onMeasure → MeasureAndLayoutDelegate.measureAndLayout
+    VRI->>ACP: onLayout → place children
     VRI->>ACP: performDraw → dispatchDraw(canvas)
-    ACP->>ACP: root.draw + dirty layer 更新
+    ACP->>ACP: root.draw + dirty layer 更新 → RenderNode display list 构建
     VRI->>HR: ThreadedRenderer.draw(view, attachInfo, callbacks)
     HR->>HR: syncAndDrawFrame → RenderThread GPU 录制
 ```
 
 关键点：
-- Compose 的 `FrameCallback` 在 `doFrame` 中触发重组与测量，不负责帧提交
-- `dispatchDraw` 和 `HardwareRenderer.syncAndDrawFrame()` 由 `ViewRootImpl.performTraversals()` 流程驱动，不是 Compose 自己的 `FrameCallback` 直接调用
-- `AndroidComposeView.dispatchDraw()` 执行 Compose 的 root draw 和脏 layer 更新，RenderNode display list 内容在此阶段构建
+- `AndroidUiFrameClock.FrameCallback` 只在 `doFrame` 中恢复 `withFrameNanos` 协程，让 `Recomposer` 执行重组与 `applyChanges`——不直接执行测量/布局/绘制
+- 重组完成后，`applyChanges` 通过 `Owner.onRequestMeasure`/`onRequestRelayout` 安排 ViewRoot traversal
+- LayoutNode 的测量/布局由 `AndroidComposeView.onMeasure`/`onLayout` 在 `ViewRootImpl.performTraversals()` 流程中完成，调用 `MeasureAndLayoutDelegate.measureAndLayout()`
+- `dispatchDraw` 和 `HardwareRenderer.syncAndDrawFrame()` 由 `ViewRootImpl.performDraw()` 驱动，不是 Compose 自己的 `FrameCallback` 直接调用
 - 帧的最终提交（`syncAndDrawFrame`）发生在 `ViewRootImpl.performDraw()` → `ThreadedRenderer.draw()` 中，对 Compose 和 View 完全相同
 
 ```kotlin
 // AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/Choreographer.java
-// 标准 FrameCallback 签名——单参数
+// AndroidUiFrameClock 注册 FrameCallback 的简化示意
+// AOSP Compose: platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidUiFrameClock.android.kt
 choreographer.postFrameCallback(object : Choreographer.FrameCallback {
     override fun doFrame(frameTimeNanos: Long) {
-        // Compose 内部：触发 recomposition + measure/layout
-        // 注意：这里不调用 dispatchDraw 或 syncAndDrawFrame
-        // 帧提交由 ViewRootImpl 的 TraversalRunnable 驱动
+        // 恢复 withFrameNanos 协程 → Recomposer 执行重组+apply
+        // 这里不调用 dispatchDraw / syncAndDrawFrame / measure / layout
+        withFrameNanos(frameTimeNanos)
         choreographer.postFrameCallback(this)
     }
 })
@@ -179,7 +186,7 @@ Compose 测量是单次的：parent measure 时传入 `Constraints`，child 返�
 
 `LayoutNode.draw(canvas)` 是绘制入口。Compose 的 RenderNode 和 graphics layer 创建采用三层概念模型：
 
-**第一层：LayoutNode 默认绘制**。普通的 `Text`、`Row`、`Column` 等 Composable 不会为每个 LayoutNode 创建独立 `OwnedLayer`。它们的绘制内容通过父节点的 display list 合并录制。这意味着大多数简单 LayoutNode 没有独立 RenderNode 或离屏缓冲的开销。
+**第一层：LayoutNode 默认绘制**。普通的 `Text`、`Row`、`Column` 等 Composable 不会为每个 LayoutNode 创建独立 `OwnedLayer`。它们的绘制内容通过父节点的 display list 合并录制——大多数简单 LayoutNode 没有独立 RenderNode 或离屏缓冲的开销。
 
 **第二层：`Modifier.graphicsLayer` 创建 draw layer**。`GraphicsLayerModifier`（`graphicsLayer { }`）调用 `placeWithLayer` 将内容放置到一个独立的 `OwnedLayer`（GraphicsLayer 或 RenderNodeLayer）中。这一层提供属性操作——`alpha`、`scaleX/Y`、`rotation`、`translation`、`clip`、`shadowElevation`——这些属性修改对应 `RenderNode` 的原生属性，不需要重新录制 display list 即可在 GPU 合成时应用变换。
 
@@ -224,12 +231,12 @@ flowchart TD
     E --> F["Composer.recompose() 重放 Composable 函数"]
     F --> G["LayoutNode 属性更新 (measurePolicy, modifier, children)"]
     G --> H{"LayoutNode 尺寸/位置 变化?"}
-    H -->|是| I["LayoutNode.requestRelayout()"]
-    H -->|否| J["LayoutNode.requestRedraw()"]
-    I --> K["下一帧 doFrame: measure → layout"]
+    H -->|是| I["owner.onRequestMeasure() / onRequestRelayout()"]
+    H -->|否| J["invalidateLayer() → owner.invalidateRootLayer()"]
+    I --> K["ViewRootImpl traversal: onMeasure → onLayout"]
     J --> K
-    K --> L["LayoutNode.draw(canvas)"]
-    L --> M["RenderNodeLayer.updateDisplayList()"]
+    K --> L["dispatchDraw → LayoutNode.draw(canvas)"]
+    L --> M["OwnedLayer.updateDisplayList() 或 RenderNodeLayer（旧路径）"]
     M --> N["RenderNode.beginRecording() → 绘制 → endRecording()"]
     N --> O["硬件加速管线 (RenderThread → SurfaceFlinger)"]
 ```
@@ -242,9 +249,9 @@ flowchart TD
 
 3. **Composer.recompose()**：重放标记为 invalidated 的 Composable 函数调用，更新 LayoutNode 的 measurePolicy、modifier 和子节点列表。重组本身不触发测量——只更新数据模型。
 
-4. **LayoutNode.requestRelayout/requestRedraw**：根据变化类型请求重新测量或重新绘制。`requestRelayout` 会触发整条 subtree 的测量链；`requestRedraw` 只标记需要重新录制 display list。
+4. **变更传播**：重组 `applyChanges` 后，根据变化类型通过 `Owner.onRequestMeasure`/`onRequestRelayout` 安排 ViewRoot traversal。需要重绘的节点通过 `invalidateLayer()` → `owner.invalidateRootLayer()` 传播到根 layer。
 
-5. **RenderNodeLayer.updateDisplayList()**：在 draw 阶段，`RenderNodeLayer` 调用 `RenderNode.beginRecording()` 录制绘制命令（`drawRect`、`drawImage`、`drawText` 等），然后 `endRecording()` 提交 display list。
+5. **OwnedLayer 更新**：在 draw 阶段，`AndroidComposeView.createLayer()` 创建的 `GraphicsLayerOwnerLayer`（SDK >= M 主路径）或 `RenderNodeLayer`（旧路径/兼容回退）调用对应 RenderNode 的 `beginRecording()` 录制绘制命令，然后 `endRecording()` 提交 display list。
 
 [已验证: Compose BOM 2025.12.00, Snapshot.kt, Recomposer.kt, LayoutNode.kt, RenderNodeLayer.android.kt]
 
@@ -252,7 +259,7 @@ flowchart TD
 
 ### 问题背景
 
-Compose 1.7 之前，一次 composition 必须在单帧内完成。长 `LazyColumn` 的首次组合耗时可能达几十毫秒，直接导致掉帧。Compose 1.7 引入 PausableComposition，1.10（2025 年 12 月 stable）将其设为默认行为。
+Compose 1.7 之前，一次 composition 必须在单帧内完成。长 `LazyColumn` 的首次组合耗时可能达几十毫秒，直接导致掉帧。Compose 1.7 引入 PausableComposition 能力。PausableComposition 的默认启用状态是 Compose Foundation 版本与 flag 边界，不是 Android 17 平台事实：Compose Foundation 1.10.0-alpha05 曾通过 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认启用，但 1.10.6 已因稳定性问题默认禁用该 flag。应用可通过 flag 自行启用。
 
 ### 控制流
 
@@ -452,7 +459,7 @@ flowchart TD
 4. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
 5. **与 View 体系共用**：View 和 Compose 共享同一 `ViewRootImpl.performTraversals()` → `ThreadedRenderer.draw()` 提交路径。两者在 RenderThread 以下完全相同，差异仅在 display list 的构建方式（LayoutNode.draw vs View.onDraw）。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java, frameworks/base/graphics/java/android/graphics/ThreadedRenderer.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java, frameworks/base/core/java/android/view/ThreadedRenderer.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt]
 
 ## Compose 与 RenderThread 的协作
 
@@ -466,7 +473,7 @@ sequenceDiagram
     participant HR as HardwareRenderer
     participant RT as RenderThread
     
-    MT->>MT: Compose FrameCallback: recomposition + measure/layout
+    MT->>MT: Recomposer FrameClock: recomposition + apply
     Choreographer->>VRI: TraversalRunnable.doTraversal()
     VRI->>VRI: performMeasure / performLayout
     VRI->>ACP: performDraw → dispatchDraw(canvas)
@@ -488,7 +495,7 @@ sequenceDiagram
 
 Compose 与 View 体系完全共用 `ViewRootImpl` → `ThreadedRenderer` → `RenderThread` 这条基础设施。差异只在 display list 的构建方式（LayoutNode.draw vs View.onDraw）。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java, frameworks/base/graphics/java/android/graphics/ThreadedRenderer.java; §2.5 MainThread 与 RenderThread 协作]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java, frameworks/base/core/java/android/view/ThreadedRenderer.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java; §2.5 MainThread 与 RenderThread 协作]
 
 ## 互操作渲染路径
 
@@ -526,7 +533,7 @@ Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，�
 - **MainThread**：
   - `composition`: Snapshot 重组和状态更新（Composer.recompose() → LayoutNode 属性更新）
   - `measure/layout`: LayoutNode 测量和布局计算（LayoutNode.measure/placeAt）
-  - `ViewRootImpl draw`: ViewRootImpl.performDraw → AndroidComposeView.dispatchDraw → RenderNode display list 构建（LayoutNode.draw → RenderNodeLayer.updateDisplayList → RenderNode.beginRecording/endRecording）
+  - `ViewRootImpl draw`: ViewRootImpl.performDraw → AndroidComposeView.dispatchDraw → RenderNode display list 构建（LayoutNode.draw → OwnedLayer 更新 → RenderNode.beginRecording/endRecording）
 
 - **RenderThread**：
   - `gpu`: GPU 命令执行（Vulkan vkCmd* / GLES glDraw*）
@@ -560,8 +567,8 @@ Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，�
 | Compose 1.6 (2024) | 自定义 draw 性能改进，RenderNode 管理策略优化 |
 | Compose 1.7 (2024) | PausableComposition 引入（非默认），Strong Skipping 实验性 |
 | Compose 1.8-1.9 (2025) | PausableComposition 改进，CacheWindow API，LazyList 集成深化 |
-| Compose 1.10 (2025-12) | PausableComposition 默认启用，Strong Skipping 默认开启 |
-| **Android 17 (API 37)** | Compose 1.10 是 Android 17 同期 stable 版本，PausableComposition 和 Strong Skipping 均默认开启。Compose 本身在 Android 17 的 graphics 层继续沿用 RenderNode / HardwareRenderer 标准路径，组合与绘制优化主要在 Compose runtime 侧推进 |
+| Compose 1.10 (2025-12) | PausableComposition 支持存在但默认状态依赖 Foundation 子版本与 flag（1.10.0-alpha05 曾默认启用，1.10.6 默认禁用）。Strong Skipping 默认开启 |
+| **Android 17 (API 37)** | Compose 1.10 是 Android 17 同期 stable 版本。PausableComposition 能力可用，具体默认启用状态由 Compose Foundation 版本/flag 决定；Strong Skipping 默认开启。Compose 本身在 Android 17 的 graphics 层继续沿用 RenderNode / HardwareRenderer 标准路径，组合与绘制优化主要在 Compose runtime 侧推进 |
 
 [适用版本: Android 12 (API 31) - Android 17 (API 37); Compose 版本演进基于 androidx release notes; Compose 1.10 特性基于 androidx release notes]
 
@@ -620,8 +627,8 @@ Recomposer 内部所有可变字段都被 `stateLock` 保护（`Recomposer.kt:26
 `currentSnapshot()` 定义为 `threadSnapshot.get() ?: globalSnapshot`（`Snapshot.kt:1284`）：
 - **线程局部 snapshot**（`SnapshotThreadLocal<Snapshot>`，`Snapshot.kt:1928`）：用于嵌套 enter 块
 - **全局 snapshot**（`GlobalSnapshot` 单例，`Snapshot.kt:1974-1979`）：进程兜底
-- **写入**只更新当前 snapshot 的 `modified: MutableScatterSet<StateObject>?`（`Snapshot.kt:227`），无锁快路径
-- **apply 阶段**才进入 `sync(lock)` 临界区（`Snapshot.kt:2015`），串行化「合并 modified set + 派发 applyObservers」
+- **写入**进入全局 `sync(lock)` 临界区（`Snapshot.kt:2122/2102`，`overwritable()`/`writable()` 路径），保证 snapshot 一致性
+- **apply 阶段**同样进入 `sync(lock)` 临界区（`Snapshot.kt:2015`），串行化「合并 modified set + 派发 applyObservers」
 
 ### 扩展 6.4 Recomposer ↔ Snapshot 集成的单一 apply observer
 
@@ -662,14 +669,17 @@ private fun applyAndCheck(snapshot: MutableSnapshot) {
 - 块结束 `apply()` 提交，提交冲突（同一 state object 在 snapshot 外也被修改）→ `error()` 抛 IllegalStateException
 - 三个调用点：`composeInitial`（line 1178）、`performRecompose`（line 1310）、`performInsertValues`（line 1333）
 
-### 扩展 6.6 跨线程的 lock-free 快路径
+### 扩展 6.6 跨线程的快照读写路径
 
-`MutableState.get()` / `set()` 走 lock-free 多读单写链表（`Snapshot.kt:1317` 注释强调「Changes to `next` must preserve all existing records to all threads even during intermediately changes」）：
+`SnapshotMutableStateImpl.value` 的读写机制：
 
-- 读：找到 `snapshotId <= currentSnapshot.snapshotId && snapshotId not in invalid set` 的最新 record（无锁遍历，~10ns）
-- 写：head-insert 新 record（lock-free CAS，不动旧节点，~30ns）
+- **读路径**：`get()` 遍历 record 链表找到 `snapshotId <= currentSnapshot.snapshotId && snapshotId not in invalid set` 的最新 record。该链表按 `Snapshot.kt:1317` 注释所述设计为「Changes to `next` must preserve all existing records to all threads even during intermediately changes」，读路径可无锁遍历。但当当前 snapshot 已前进且读端持有旧 snapshot 引用时，`readable()` 存在 `sync(lock)` fallback（`Snapshot.kt:1383`）。
+- **写路径**：`SnapshotMutableStateImpl.value setter` 调用 `next.overwritable(...)`，`Snapshot.kt` 中 `overwritable()`/`writable()` 进入 `sync(lock)`（`Snapshot.kt:2122/2102`）。写入不是 lock-free CAS — 写操作需要获取 `Snapshot.lock` 来保证 snapshot 状态一致性。
 
-这是 UI 线程密集读 / 后台线程偶尔写场景下零锁竞争的根因。
+Snapshot 并发边界：
+- **同一 Recomposer 内**：composition 严格串行（`Recomposer.kt:1050-1051` 注释「never working with the same composer in parallel」）
+- **跨 Recomposer**：可能并行重组，各自在 `Snapshot.lock` 的写路径/apply 路径上同步
+- **跨线程 state 写入**：`sync(lock)` 串行化，同一 state object 跨线程写入在 apply 冲突时抛 `IllegalStateException`（`Recomposer.kt:1469`）
 
 ### 扩展 6.7 Kotlin/Native 平台的特殊约束
 
@@ -683,17 +693,19 @@ private fun applyAndCheck(snapshot: MutableSnapshot) {
 - JVM/Android 上没有此限制，`_runningRecomposers` 是进程单例 → 多 Recomposer 跨线程注册允许
 - `addRunning` / `removeRunning` 用 CAS 循环（`Recomposer.kt:1689-1700`）保证 set 操作的原子性
 
-### 扩展 6.8 性能影响（实测推断）
+### 扩展 6.8 性能影响
 
-| 场景 | 行为 | 开销 |
+以下为源码路径定性分析（具体耗时依赖设备、Compose 版本与并发场景，无独立 benchmark 数据）：
+
+| 场景 | 行为 | 开销特征 |
 |------|------|------|
-| UI 线程读 `state.value` | 无锁遍历 record 链表 | ~10ns |
-| UI 线程写 `state.value` | head-insert 新 record | ~30ns |
-| 后台线程写 `state.value` | 同上（无锁） | ~30ns |
-| 后台线程 `Snapshot.takeMutableSnapshot` | 进 `sync(lock)` | ~1-5µs |
-| UI 线程 apply | 进 `sync(lock)` + 触发 `applyObservers` | 10-100µs |
-| 跨线程并发 apply | 后台 apply 阻塞等待 UI apply | 取决于 `Snapshot.lock` 持有时间 |
-| 跨 Recomposer 并发重组 | 不可能（同 Recomposer 内串行） | — |
+| UI 线程读 `state.value` | 无锁遍历 record 链表 | 低；遍历深度 = snapshot 历史长度 |
+| UI 线程写 `state.value` | 进 `sync(lock)` + `overwritable()` | 需获取 Snapshot.lock |
+| 后台线程写 `state.value` | 同上 | 同 UI 线程写 |
+| 后台线程 `Snapshot.takeMutableSnapshot` | 进 `sync(lock)` | 需获取 Snapshot.lock |
+| UI 线程 apply | 进 `sync(lock)` + 触发 `applyObservers` | 耗时取决于 observer 数量 |
+| 跨线程并发 apply | 后台 apply 等待 UI apply 释放 lock | 取决于 `Snapshot.lock` 持有时间 |
+| 跨 Recomposer 重组 | 各自串行，Snapshot 层通过 `Sync(lock)` 同步 | 并行度受 Snapshot.lock 竞争限制 |
 
 ### 扩展 6.9 Snapshot 不保证可串行化隔离
 
@@ -701,7 +713,7 @@ private fun applyAndCheck(snapshot: MutableSnapshot) {
 
 > "NOTE: the this algorithm is currently does not guarantee serializable snapshots as it doesn't prevent crossing writes as described here https://arxiv.org/pdf/1412.2324.pdf"
 
-当前 Snapshot 系统**不保证可串行化隔离（SI）**——它阻止「同一 state object 在两个 snapshot 中都有未提交的写入」，但放行「两个 snapshot 各自修改不同 state object 后交叉提交」的 race。这意味着应用层若依赖「一次 apply 看到一组 state 写入的原子视图」，必须自己加锁或使用 `Snapshot.takeMutableSnapshot { ... }` 包裹关键段。
+当前 Snapshot 系统**不保证可串行化隔离（SI）**——它阻止「同一 state object 在两个 snapshot 中都有未提交的写入」，但放行「两个 snapshot 各自修改不同 state object 后交叉提交」的 race。应用层若依赖「一次 apply 看到一组 state 写入的原子视图」，必须自己加锁或使用 `Snapshot.takeMutableSnapshot { ... }` 包裹关键段。
 
 ### 扩展误区
 
