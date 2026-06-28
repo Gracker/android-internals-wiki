@@ -1652,5 +1652,19 @@
       ],
       "result": "19.10: finalized, 1.26: pass-light-edit (queue pending), 4.7: finalized"
     }
+  ],
+  "rework_log": [
+    {
+      "section": "18.25",
+      "action": "task2b-main-fix",
+      "timestamp": "2026-06-29T00:52:48.378062+08:00",
+      "issues_fixed": 4,
+      "details": [
+        "P0: Choreographer API corrected - removed getFrameTimeline(), added VsyncCallback/FrameTimeline path",
+        "P0: Frame submission path corrected - syncAndDrawFrame goes through ViewRootImpl, not Compose FrameCallback",
+        "P0: LayerManager removed - class does not exist in RenderNodeLayer.android.kt",
+        "P0: FramePacing API removed from version table - API not found in android-17.0.0_r1"
+      ]
+    }
   ]
 }
