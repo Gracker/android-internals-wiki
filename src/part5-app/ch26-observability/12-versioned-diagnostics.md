@@ -3,7 +3,7 @@ title: "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingMan
 chapter: "26.12"
 section: "26.12"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
@@ -14,22 +14,22 @@ drafted_by: "openclaw-task2a"
 reviewed_date: 2026-06-28
 reviewed_by: openclaw-task6
 path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
-related_chapters: "["26.2", "26.5", "14.7", "8.10", "13.2", "15.5", "20.3", "19.24"]"
+related_chapters: ["26.2", "26.5", "14.7", "8.10", "13.2", "15.5", "20.3", "19.24"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材/官方文档/章节深挖"
 gap_score: "18"
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-06-28T18:09:00+08:00"
-task9_state: pending
+task9_state: reviewed
 task6_result: pass-light-edit
 task2a_result: "draft-ready-for-review"
 last_task2a_at: "2026-05-17T06:04:00+08:00"
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_date: "2026-06-28"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-28T17:26:38+08:00"
-last_task9_autofix_at: "2026-06-02"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-06-28T19:30:49+08:00"
+last_task9_autofix_at: "2026-06-28"
 task2b_result: fixed-lite
 task2b_state: fixed
 last_task2b_lite_at: "2026-06-28"
@@ -54,7 +54,7 @@ last_task9_audit: "2026-06-28"
 说明 Android 10 主要依赖 Perfetto、bug report、日志和人工协助；Android 11-14 可用 `ApplicationExitInfo` 做退出原因补偿，但采集范围和 trace 类型有版本边界。
 
 ### 🔹 ApplicationExitInfo 的退出证据边界
-覆盖 `ActivityManager#getHistoricalProcessExitReasons()`、`ApplicationExitInfo#getReason()`、`getTraceInputStream()`、`REASON_ANR`、`REASON_CRASH_NATIVE`、`REASON_APPLICATION_SPECIFIC_ERROR` 的 API 版本差异和空返回条件。
+覆盖 `ActivityManager#getHistoricalProcessExitReasons()`、`ApplicationExitInfo#getReason()`、`getTraceInputStream()`、`REASON_ANR`、`REASON_CRASH_NATIVE` 的 API 版本差异和空返回条件；对未进入 Android 17 公开 reason 列表的旧素材单独标注。
 
 ### 🔹 ProfilingManager 的应用驱动采集
 覆盖 Android 15+ `ProfilingManager` / AndroidX Profiling 的 system trace、heap dump、heap profile、stack sampling 四类采集，说明结果回调、文件归档、限流和采集成本。
@@ -182,7 +182,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 
 `getTraceInputStream()` 的返回值要按 `null` 处理。AOSP 注释写明：它通常在 `REASON_ANR` 可用；API 31 起，`REASON_CRASH_NATIVE` 可返回 native tombstone protobuf；native crash trace 放在全局环形缓冲里，可能被新 crash 覆盖，所以仍然会返回 `null`。ANR trace 路径返回的是 gzip stream，native tombstone 路径返回的是 tombstone protobuf stream。两种结果不能按同一种文本格式解析。[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
-`REASON_APPLICATION_SPECIFIC_ERROR` 需要单独标注。当前 AOSP main 的 `ApplicationExitInfo` 公共 reason 列表没有这个常量；公开列表包含 `REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR`、`REASON_EXCESSIVE_RESOURCE_USAGE`、`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED` 等。既有调研材料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 未能在本轮 AOSP 复核中确认，正文不把它当作可用 API。[待验证: 既有研究素材提到 REASON_APPLICATION_SPECIFIC_ERROR，但 AOSP main 未命中该常量，后续以正式 SDK 文档为准]
+`REASON_APPLICATION_SPECIFIC_ERROR` 需要单独标注。`refs/tags/android-17.0.0_r1` 的 `ApplicationExitInfo` 公共 reason 列表没有这个常量；公开列表包含 `REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR`、`REASON_EXCESSIVE_RESOURCE_USAGE`、`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED` 等。既有调研材料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 未能在本轮 AOSP 17 复核中确认，正文不把它当作可用 API。[待验证: 既有研究素材提到 REASON_APPLICATION_SPECIFIC_ERROR，但 android-17.0.0_r1 未命中该常量，后续如正式 SDK 文档新增再补]
 
 ## ApplicationExitInfo 证据边界
 
@@ -241,10 +241,10 @@ Android 16 / API 36 把 ProfilingManager 从“App 主动请求”扩展到“�
 | API 36 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | running system trace snapshot | 复盘 `reportFullyDrawn()` 前后启动尾段 | 不等于 Android 17 的 `COLD_START` |
 | API 36 | `TRIGGER_TYPE_ANR` | running system trace snapshot | ANR 前后线程、Binder、锁等待 | 不是 ANR 文本 trace 的替代品 |
 | Extension 36.1 | `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` | running system trace snapshot | App 请求 / 用户关闭 / 任务管理器关闭相关取证 | 要用 Extension 版本做运行时判断 |
-| API 37 | ⚠️ `TRIGGER_TYPE_COLD_START`（仅文档声明，AOSP 源码未命中） | system trace + call stack sample | 进程冷启动早期到 fully drawn 的窗口 | 无 `reportFullyDrawn()` 时按系统默认窗口截止 |
-| API 37 | ⚠️ `TRIGGER_TYPE_OOM`（仅文档声明，AOSP 源码未命中） | Java heap dump | Java `OutOfMemoryError` | 不是 LMK / lmkd 现场 |
-| API 37 | ⚠️ `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（仅文档声明，AOSP 源码未命中） | running system trace snapshot | 系统因过量 CPU 使用杀进程后复盘 | 公开文档没有给出阈值 |
-| API 37 | ⚠️ `TRIGGER_TYPE_ANOMALY` / `APP_COMPAT`（仅 Android Developers 文档声明，AOSP 源码未命中） | 依事件类型变化 | 设备端异常检测、兼容性回退 | 收到结果后先看 tag 和扩展名；源码不可见，本章结论基于官方文档 |
+| API 37 | `TRIGGER_TYPE_COLD_START` | system trace + call stack sample | 进程冷启动早期到 fully drawn 的窗口 | 常量在 android-17.0.0_r1 可见，受 feature flag 和设备能力控制 |
+| API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java `OutOfMemoryError` | 不是 LMK / lmkd 现场；自定义 uncaught handler 必须调用默认 handler |
+| API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 系统因过量 CPU 使用杀进程后复盘 | 对应 `REASON_EXCESSIVE_RESOURCE_USAGE`，公开文档没有给出阈值 |
+| API 37 | `TRIGGER_TYPE_ANOMALY` / `APP_COMPAT` | 依事件类型变化，可能是 heap dump 或 stack sampling | 设备端异常检测、兼容性回退 | 收到结果后先看 tag 和扩展名；常量在源码可见，语义以官方文档和返回 tag 为准 |
 
 Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释。前者在冷启动早期开始，返回 system trace 和 call stack sample；后者是在 `reportFullyDrawn()` 之后给 running trace snapshot。写启动排障时，混用这两个名字会直接改变时间窗口。[已验证: 官方文档, developer.android.com/about/versions/17/features][详见 8.10 节]
 
@@ -258,7 +258,7 @@ Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释
 | `TRIGGER_TYPE_NONE` / `APP_FULLY_DRAWN` / `ANR` 常量 | API 36 标注 | 三者均存在于 `ProfilingTrigger.java` |
 | `TRIGGER_TYPE_COLD_START` / `OOM` / `KILL_EXCESSIVE_CPU_USAGE` / `ANOMALY` / `APP_COMPAT` | "Added in API level 37" | 5 个常量均已存在于 `ProfilingTrigger.java`，按 `@FlaggedApi` feature flag 放行 |
 | `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` / `KILL_FORCE_STOP` / `KILL_RECENTS` / `KILL_TASK_MANAGER` | Extension 36.1 | 4 个常量均已存在于 `ProfilingTrigger.java`（常量值 3-6），按 feature flag 放行 |
-| `isValidRequestTriggerType()` 放行范围 | – | android-17.0.0_r1 中按 feature flag 放行全部已注册 trigger 类型，不再限于 `APP_FULLY_DRAWN` 与 `ANR` |
+| `isValidRequestTriggerType()` 放行范围 | – | android-17.0.0_r1 中 `APP_FULLY_DRAWN` / `ANR` 直接放行，其余 trigger 按各自 feature flag 判定 |
 | Memory Advice API 库 | "The Memory Advice API beta is now deprecated" | AOSP `frameworks/opt/gamesdk/games-memory-advice/` 完整保留 v2.2.0，`build.gradle` `versionName "1.1"`，`targetSdkVersion 35`；未删除 .cpp/.h，未在源码内加 `@Deprecated` 标注 |
 
 AOSP 关键源码（refs/tags/android-17.0.0_r1）：
@@ -283,8 +283,20 @@ public final class ProfilingTrigger {
  public static final int TRIGGER_TYPE_APP_COMPAT = 11;
 
  public static boolean isValidRequestTriggerType(int triggerType) {
- // android-17.0.0_r1: 按 feature flag 放行，不再限于 APP_FULLY_DRAWN / ANR
- return triggerType >= TRIGGER_TYPE_NONE;
+ return triggerType == TRIGGER_TYPE_APP_FULLY_DRAWN
+ || triggerType == TRIGGER_TYPE_ANR
+ || (Flags.profiling25q4() && triggerType == TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE)
+ || (Flags.profiling25q4() && triggerType == TRIGGER_TYPE_KILL_FORCE_STOP)
+ || (Flags.profilingTriggerKillRecents() && triggerType == TRIGGER_TYPE_KILL_RECENTS)
+ || (Flags.profiling25q4() && triggerType == TRIGGER_TYPE_KILL_TASK_MANAGER)
+ || (Flags.profilingTriggerOom() && triggerType == TRIGGER_TYPE_OOM)
+ || (android.os.profiling.anomaly.flags.Flags.anomalyDetectorCoreC()
+ && triggerType == TRIGGER_TYPE_ANOMALY)
+ || (Flags.profilingTriggerKillExcessiveCpuUsage()
+ && triggerType == TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE)
+ || (Flags.profilingTriggerColdStart() && triggerType == TRIGGER_TYPE_COLD_START)
+ || (android.os.profiling.anomaly.flags.Flags.anomalyDetectorCoreC()
+ && triggerType == TRIGGER_TYPE_APP_COMPAT);
  }
 }
 ```
@@ -296,7 +308,7 @@ public final class ProfilingTrigger {
 #define MEMORY_ADVICE_BUGFIX_VERSION 0
 ```
 
-`addProfilingTriggers()` 走 binder 时把 `ProfilingTriggerValueParcel.triggerType` 原样传递到 `IProfilingService`，客户端构造合法性仍由 `isValidRequestTriggerType()` 把关。`android-17.0.0_r1` tag 已确认存在（frameworks/base、packages/modules/Profiling、frameworks/proto_logging 三仓库均可用）。API 37 trigger 常量已在源码中可见，按 feature flag 放行。
+`addProfilingTriggers()` 走 binder 时把 `ProfilingTriggerValueParcel.triggerType` 原样传递到 `IProfilingService`，客户端构造合法性仍由 `isValidRequestTriggerType()` 把关。`android-17.0.0_r1` tag 已确认存在（frameworks/base、packages/modules/Profiling、frameworks/proto_logging 三仓库均可用）。API 37 trigger 常量已在源码中可见，其中新增 trigger 依赖各自 feature flag 放行。
 
 ### 源码层验证：`TRIGGER_TYPE_OOM` 的应用侧硬约束
 
@@ -321,7 +333,7 @@ public final class ProfilingTrigger {
 
 AOSP `frameworks/base/core/java/android/app/ApplicationExitInfo.java` 中 `REASON_EXCESSIVE_RESOURCE_USAGE` 在 API 36 已可见，可与 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 配对；但 `TRIGGER_TYPE_ANOMALY` 的 "OS-defined memory limits" 阈值官方未公开。
 
-23.9 节"线上告警与隐私合规"层提到"诊断层：灰度或内部用户开启 `TRIGGER_TYPE_ANOMALY`"——按 Android 17 features 文档描述，这个 trigger 实际能捕到的是 OS-defined memory limits 临界点，对应 `REASON_OTHER + MemoryLimiter:AnonSwap` 退出的事前窗口；OOM trigger 捕的是 Java OOM 异常的当场 heap dump，不直接覆盖 `REASON_LOW_MEMORY`。
+23.9 节"线上告警与隐私合规"层提到"诊断层：灰度或内部用户开启 `TRIGGER_TYPE_ANOMALY`"——按 Android 17 features 文档描述，这个 trigger 可覆盖 OS-defined memory limits 临界点，并在 excessive binder spam 场景返回 stack sampling profile。具体是否对应 `REASON_OTHER + MemoryLimiter:AnonSwap` 退出，需要以 `ProfilingResult#getTag()`、文件类型和 `ApplicationExitInfo` 描述联判；OOM trigger 捕的是 Java OOM 异常的当场 heap dump，不直接覆盖 `REASON_LOW_MEMORY` 或 MemoryLimiter 退出。
 
 ## 证据归档与去重字段
 
@@ -516,18 +528,18 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 ### 未验证项
 
 - `FrameworkStatsLog.APP_PROCESS_DIED` 常量值 373 是基于 atoms.proto 中 enum 注册顺序推断，生成的 `FrameworkStatsLog.java` 不在 git tree 中可直读。
-- Android 17 是否新增独立 Reason 常量（如 `REASON_MEMORY_LIMITER`）未在 android17-release 分支验证；上一轮 AIW 调研（2026-05-23）已记录 Android 17 引入保守应用内存限制（targetSdk>=36），但 Reason 路径需补查。
+- Android 17 未在 `ApplicationExitInfo.java` 公开独立 `REASON_MEMORY_LIMITER` 常量；上一轮 AIW 调研（2026-05-23）已记录 Android 17 引入保守应用内存限制（targetSdk>=36），但具体 reason / subreason 与 description 组合仍需设备样本补查。
 - `StatsdStatsService` / `StatsService.java` 在 `services/core/java/com/android/server/stats/` 目录下的 Android.bp 视角未在本轮核对，与本主题相关度低但建议后续补查。
 
 ## 待复核项
 
-- `REASON_APPLICATION_SPECIFIC_ERROR`：本轮 AOSP main 未确认该公开常量，后续以正式 SDK 文档为准。
-- Android 17 `ANOMALY` / `APP_COMPAT`：本轮按官方 features 和 8.10 既有复核写入，API 37 final 后复核常量值、tag 规则和结果产物类型。
+- `REASON_APPLICATION_SPECIFIC_ERROR`：本轮 android-17.0.0_r1 未确认该公开常量，后续如正式 SDK 文档新增再补。
+- Android 17 `ANOMALY` / `APP_COMPAT`：常量值已在 android-17.0.0_r1 复核，tag 规则和结果产物类型仍以设备返回的 `ProfilingResult#getTag()` 与文件类型为准。
 - Extension 36.1：实际接入时必须在运行时检查 Extension 版本，本节不写死具体设备覆盖率。
 
-- **ApplicationExitInfo master 分支常量验证**（2026-05-22 一手验证）：master 分支（对应 API 34+）的 Reason 常量共 17 个（REASON_UNKNOWN=0 到 REASON_PACKAGE_UPDATED=16），SubReason 扩展至 32 个（0-31），包含 SUBREASON_OOM_KILL、SUBREASON_FREEZER_BINDER_IOCTL 等新增常量。源码位置：`frameworks/base/core/java/android/app/ApplicationExitInfo.java`。
-- **ApplicationStartInfo 启动时间戳体系**（2026-05-22 一手验证）：Android 15 引入的 ApplicationStartInfo 提供 6 个 StartupTimestamp 枚举（LAUNCH、JAVA_CLASSLOADING_COMPLETE、APPLICATION_ONCREATE、BIND_APPLICATION、FIRST_FRAME、REPORT_FULLY_DRAWN），全部为纳秒级。StartType 区分 COLD/WARM/HOT 三种启动类型。源码位置：`frameworks/base/core/java/android/app/ApplicationStartInfo.java`。
-- **ProfilingTrigger 源码位置**：未在 `frameworks/base` 路径找到 ProfilingTrigger.java，源码路径待进一步核实（可能位于 `packages/modules/Profiling/` 而非 `frameworks/base/`）。
+- **ApplicationExitInfo android-17.0.0_r1 常量验证**：Reason 常量为 `REASON_UNKNOWN=0` 到 `REASON_PACKAGE_UPDATED=16`，SubReason 已包含 `SUBREASON_OOM_KILL`、`SUBREASON_FREEZER_BINDER_IOCTL`、`SUBREASON_FREEZER_BINDER_ASYNC_FULL`、ANR 类型细分等。源码位置：`frameworks/base/core/java/android/app/ApplicationExitInfo.java`。
+- **ApplicationStartInfo 启动时间戳体系**：Android 15 引入的 ApplicationStartInfo 提供 StartupTimestamp 枚举（LAUNCH、JAVA_CLASSLOADING_COMPLETE、APPLICATION_ONCREATE、BIND_APPLICATION、FIRST_FRAME、REPORT_FULLY_DRAWN），全部为纳秒级。StartType 区分 COLD/WARM/HOT 三种启动类型。源码位置：`frameworks/base/core/java/android/app/ApplicationStartInfo.java`。
+- **ProfilingTrigger 源码位置**：android-17.0.0_r1 位于 `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`，不在 `frameworks/base/core/java/android/os/`。
 
 ## 补充调研（2026-05-23）：REASON 常量版本对照与 MemoryLimiter 边界确认
 
