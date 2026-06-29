@@ -75,7 +75,7 @@ review_notes: 'task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/
   12+ 或拆分 8-11/12+；P2 1：GSI 验证术语 CTS-V 应改为 VTS / CTS-on-GSI。'
 last_task9_review_log: logs/deep-review/2026-06-07-04-deep-review.md
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-07
+last_deepseek_cn_review_at: 2026-06-29
 last_task9_audit: '2026-06-26'
 last_task9_autofix_at: '2026-06-07'
 ---
@@ -172,7 +172,7 @@ Treble 让 Framework 可以独立于 Vendor 升级，Mainline 又把 Framework �
 
 一个容易混淆的时间点：Android 10/11 已经有 Mainline 架构，但 `com.android.art` 模块直到 Android 12 才进入 Mainline。分析编译器、Profile-Guided Compilation 或 dex2oat 行为时，如果误以为 Android 10/11 的 ART 也可通过 Play Store 独立更新，就会得出错误结论。
 
-ART 进入 Mainline 后产生了可量化的收益。根据 Google 2024 年 ART Mainline 更新数据，ART 14 通过编译器优化和运行时改进，为全球设备累计节省了约 95 PB 存储空间，平均每个应用瘦身约 9.3%。这个效果来自 dex2oat 编译产物去重与 Profile-Guided 编译的叠加——更多设备命中 speed-profile 而非 speed（全量编译）时，OAT 文件体积显著缩小。这也解释了为什么理解编译策略的版本差异对性能分析很重要：不同版本的 ART 行为可能已经通过 Mainline 更新发生了变化，而不仅仅是大版本升级才会改。
+ART 进入 Mainline 后产生了可量化的收益。根据 Google 2024 年数据，ART 14 通过编译器优化和运行时改进，为全球设备累计节省约 95 PB 存储空间，平均每个应用瘦身约 9.3%。这是 dex2oat 编译产物去重与 Profile-Guided 编译叠加的结果——更多设备命中 speed-profile 而非 speed（全量编译）时，OAT 文件体积显著缩小。理解编译策略的版本差异之所以重要，正是因为不同版本的 ART 行为可能已通过 Mainline 更新发生变化，而不只是大版本升级才会改。
 
 ### Android 12（API 31）：GKI 与 Material You
 
@@ -182,7 +182,7 @@ GKI 将模块化的边界推进到了 Linux 内核。在 GKI 之前，每个设�
 
 搭载 Android 12 且使用 Linux 5.10+ 内核的设备被要求使用 GKI 内核。同一个 GKI 内核镜像因此可以运行在不同 SoC 的设备上，这在以前是不可想象的。
 
-对性能分析的影响：GKI 意味着内核行为更加标准化。在做跨设备的性能对比时，内核层面的差异会越来越小，更多差异集中在 HAL 和 Vendor 层。
+GKI 让内核行为更加标准化。跨设备性能对比时，内核层面的差异会越来越小，更多差异集中在 HAL 和 Vendor 层。
 
 ### Android 16-17 Baklava（API 36-37）：最新架构变化
 
@@ -202,17 +202,9 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **修订的 SDK 发布节奏。** Android 16 引入了新的 SDK 发布结构——2025 年内发布两个 API 版本。第一个包含新 API 和行为变更，第二个只增加 API 不改变行为。这对 App 开发者意味着更平滑的适配周期。
 
-**Android 17 / API 37 延续的变化。** Android 17 在 API 36 基础上补充了多项与性能分析直接相关的能力。[来源: Android 17 官方 Features 与 behavior-changes 页面]
+**Android 17 / API 37 延续的变化。** Android 17 在 API 36 基础上补充了多项与性能分析直接相关的能力。**MessageQueue lock-free 实现。** 对 targetSdkVersion 37+ 的 App，Android 17 会启用新的 lock-free `android.os.MessageQueue`；低 target App 仍受 compat change 控制，可用 `USE_NEW_MESSAGEQUEUE` 开关测试。新实现让主线程 Looper 的消息分发路径不再依赖传统互斥锁。观察 `Looper.loop()` wall duration 时，Android 17 且已启用该变更的进程中，锁竞争导致的尾部延迟应有所减少。**ProfilingManager 自动触发条件扩展。** API 37 新增 `ProfilingTrigger` 类型，覆盖主要性能异常场景：`TRIGGER_TYPE_OOM`（内存不足）、`TRIGGER_TYPE_ANOMALY`（系统异常）、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（CPU 过量被杀）、`TRIGGER_TYPE_COLD_START`（冷启动）和 `TRIGGER_TYPE_APP_COMPAT`（兼容性问题）。这些事件发生时系统自动捕获 Trace，App 无需主动请求——对线上性能问题的复现和定位非常实用。
 
-**MessageQueue lock-free 实现。** 对 targetSdkVersion 37+ 的 App，Android 17 会启用新的 lock-free `android.os.MessageQueue`；低 target App 仍受 compat change 控制，可用 `USE_NEW_MESSAGEQUEUE` 开关测试。新实现让主线程 Looper 的消息分发路径不再依赖传统互斥锁。观察 `Looper.loop()` wall duration 时，Android 17 且已启用该变更的进程中，锁竞争导致的尾部延迟应有所减少。[来源: Android 17 behavior changes for target 37]
-
-**ProfilingManager 自动触发条件扩展。** API 37 新增的 `ProfilingTrigger` 类型覆盖了主要性能异常场景：`TRIGGER_TYPE_OOM`（内存不足）、`TRIGGER_TYPE_ANOMALY`（系统异常）、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（CPU 过量被杀）、`TRIGGER_TYPE_COLD_START`（冷启动）和 `TRIGGER_TYPE_APP_COMPAT`（兼容性问题）。系统可以在这些事件发生时自动捕获 Trace，App 侧无需主动请求——这对线上性能问题的复现和定位价值很大。
-
-**JobDebugInfo 与后台任务诊断。** Android 17 新增 `JobDebugInfo` API，提供后台 Job 未运行原因、累计 pending 时长和运行时长等聚合信息。排查后台任务性能问题时，可以把 `getPendingJobReasonStats()` / `getPendingJobReasonsHistory()` 与 `JobParameters.getStopReason()`、standby bucket 一起看，区分“尚未满足约束”和“运行后被系统停止”。[来源: Android 17 Features]
-
-**16KB 页面：强制关闭兼容模式。** Android 17 允许通过系统属性关闭 16KB backcompat，让不支持 16KB 页面对齐的 binary 直接 abort 而非降级运行，进一步推动开发者在 16KB 设备上正确对齐。[来源: Android 16KB page sizes 文档]
-
-## Project Treble → VINTF → GSI → GKI：模块化的完整链条
+**JobDebugInfo 与后台任务诊断。** Android 17 新增 `JobDebugInfo` API，提供后台 Job 未运行原因、累计 pending 时长和运行时长等聚合信息。排查后台任务性能问题时，可以把 `getPendingJobReasonStats()` / `getPendingJobReasonsHistory()` 与 `JobParameters.getStopReason()`、standby bucket 一起看，区分“尚未满足约束”和“运行后被系统停止”。**16KB 页面：强制关闭兼容模式。** Android 17 允许通过系统属性关闭 16KB backcompat，让不支持 16KB 页面对齐的 binary 直接 abort 而非降级运行，进一步推动开发者在 16KB 设备上正确对齐。## Project Treble → VINTF → GSI → GKI：模块化的完整链条
 
 前面按版本逐个介绍了架构里程碑，但它们之间不是孤立的。Treble、VINTF、GSI、GKI 串起来，形成了一条从 Framework 一直延伸到内核的模块化链条——每层各有边界，但目标一致：**让 Android 的每一层都可以独立更新。**
 
@@ -262,7 +254,7 @@ GSI（Generic System Image）是 Treble 架构的一个副产品——如果 Tre
 
 GSI 能成为 Treble 合规性的试金石，有两个前提：HAL 版本匹配，以及 vendor 分区对 system 镜像的 native 依赖已经被压缩到 VNDK / LL-NDK / namespace 允许的范围内。设备能启动纯 AOSP GSI，再通过 CTS-on-GSI / VTS，说明这台设备同时满足了接口兼容和 ABI 隔离两项约束。
 
-从系统工程师的视角看，Android 架构设计离不开四个对象：接口定义（IDL）、接口约束（VINTF / CTS）、ABI 可见范围（VNDK / linker namespace），以及配套的测试套件。Treble 和 GKI 都沿着这条思路演进。
+纵观 Treble 到 GKI，Android 架构设计始终围绕四件事：接口定义（IDL）、接口约束（VINTF / CTS）、ABI 可见范围（VNDK / linker namespace），以及配套的测试套件。
 
 ## 从 Dalvik 到 ART：编译策略的演进
 
@@ -308,7 +300,7 @@ Android 7.0 引入了**混合编译策略**，这是 ART 编译策略的最终�
 - **Cloud Profiles（Android 9+）**：Google Play 收集大量用户的 Profile 数据，在 App 安装时就提供聚合后的 Profile，让首次启动就有 AOT 编译的热点代码
 - **Baseline Profiles（Android 7+，库开发者可提供）**：开发者可以在 APK 中内置 Profile 文件，定义自己 App 的关键代码路径。Jetpack 库（如 Compose）已经内置了 Baseline Profiles。这直接影响 Compose 的首次启动性能——没有 Baseline Profile 的 Compose App 在首次启动时会有明显的卡顿。
 
-从 Perfetto 的角度看，编译策略直接影响你在 Trace 中看到的模式：如果一个 App 首次安装后启动很慢但后续变快，那就是 Profile-Guided 编译在起作用。我们可以在 Trace 中观察到首次启动时更多的 JIT 编译活动（对应 CPU 使用率高峰），以及后续启动时这些活动消失。
+编译策略直接影响你在 Trace 中看到的模式：如果一个 App 首次安装后启动很慢但后续变快，那就是 Profile-Guided 编译在起作用。我们可以在 Trace 中观察到首次启动时更多的 JIT 编译活动（对应 CPU 使用率高峰），以及后续启动时这些活动消失。
 
 ## Privacy 变更对性能监控工具的影响
 
@@ -337,8 +329,6 @@ Android 11（API 30）引入了**包可见性（Package Visibility）限制**。
 - **Android 14**：前台服务必须声明类型并申请对应权限（如 `FOREGROUND_SERVICE_CAMERA`）；多数新安装且 target Android 13+ 的 App 不再默认获得 `SCHEDULE_EXACT_ALARM`
 - **Android 15**：`dataSync` 和 `mediaProcessing` 类型的前台服务有 6 小时/24 小时的配额限制；处于停止态或特定后台生命周期的 App 网络请求受到约束（WorkManager / 前台服务场景不受影响）
 
-[适用版本: Android 10 (API 29) 起，隐私限制逐版本收紧]
-
 对性能分析工具开发者的启示：设计工具时就要考虑最小权限原则。能用 `<queries>` 精确声明的就不要申请 `QUERY_ALL_PACKAGES`；能用 WorkManager 的就不要用前台服务；能用 ProfilingManager API 的就不要自己做 proc 文件读取。
 
 ## 扩展：后台限制的持续收紧
@@ -355,9 +345,7 @@ Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程�
 
 **Android 14（2023）——前台服务类型强制声明，精确闹钟默认收紧。** 所有前台服务必须在 Manifest 中声明具体类型（mediaPlayback、location、connectedDevice 等），并申请对应权限。`BOOT_COMPLETED` 广播对某些前台服务类型的启动也做了限制。同时，`SCHEDULE_EXACT_ALARM` 不再预授予多数新安装且 target Android 13+ 的 App，默认处于拒绝状态。
 
-**Android 15（2024）——配额制。** `dataSync` 和 `mediaProcessing` 前台服务类型引入了 6 小时/24 小时的配额。后台 App 的网络请求约束有具体触发条件：App 处于停止态（force-stopped）、不在前台服务或 WorkManager 调度上下文中时，网络访问可能失败（`UnknownHostException`）。使用前台服务、WorkManager 或用户可见交互触发的网络请求不在约束范围内。[来源: Android 15 behavior changes, developer.android.com]
-
-**Android 16（2025）——配额扩展。** 从前台服务启动的后台 Job 也必须遵守运行时配额。JobScheduler 的配额根据 App 的 standby bucket 和启动时的状态动态调整。
+**Android 15（2024）——配额制。** `dataSync` 和 `mediaProcessing` 前台服务类型引入了 6 小时/24 小时的配额。后台 App 的网络请求约束有具体触发条件：App 处于停止态（force-stopped）、不在前台服务或 WorkManager 调度上下文中时，网络访问可能失败（`UnknownHostException`）。使用前台服务、WorkManager 或用户可见交互触发的网络请求不在约束范围内。**Android 16（2025）——配额扩展。** 从前台服务启动的后台 Job 也必须遵守运行时配额。JobScheduler 的配额根据 App 的 standby bucket 和启动时的状态动态调整。
 
 
 
