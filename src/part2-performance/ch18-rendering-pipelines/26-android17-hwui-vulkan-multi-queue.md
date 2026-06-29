@@ -354,3 +354,12 @@ return VkFunctorInitParams{
 
 [来源: DeepResearch/2026-06-28-android17-hwui-vulkanmanager-multi-queue-reverified.md]
 [验证状态: 一手源码重读完成，2026-06-28]
+
+## 延伸阅读
+
+### Android 17 Vulkan 多队列并行渲染与 GPU 负载均衡
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-vulkan-dual-queue-graphics-ahb-upload.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 HWUI Vulkan 后端强制要求同一 graphics queue family 申请 2 个 queue（mGraphicsQueue + mAHBUploadQueue），分别服务 RenderThread 和 GrallocUploadThread。两 queue 共享 VkDevice 但各自独立 GrDirectContext 与 VMA。VK_EXT_global_priority 默认关闭。
+- 注入时间：2026-06-30
+- 价值：Vulkan 双队列创建、上传线程独立 GrDirectContext、global_priority 降级策略的源码级分析

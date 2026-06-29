@@ -1,72 +1,49 @@
 {
-  "files": [
+  "entries": [
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md",
-      "title": "Android 17 MemoryLimiter — ProcState 限制矩阵、轮询回退状态机、memcg 契约与 statsd 节流",
-      "summary": "深度拆解 MemoryLimiter 五大子系统：完整 23 个 ProcState→Limits 映射矩阵；inotify→polling 回退机制（red zone 30s、常态 5min）；AnonSwapState 四态机；内核 memcg v2 memory.high 的 throttle+reclaim 语义；statsd 令牌桶限流（4 token/h、≤28 events/day）。",
-      "chapter_mapping": "§4.17",
-      "processed_at": "2026-06-29T06:16:38.757742",
-      "action": "inject",
-      "source": "DeepResearch"
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-binder-priority-inheritance-kernel-batch-pipeline.md",
+      "title": "Android 17 Binder IPC 优先级继承机制与内核批处理流水线",
+      "summary": "深入分析 Android 17 Binder 内核驱动三层协同调度：优先级继承从用户态 BC_SET_PRIORITY 迁移到内核 binder_transaction_data 隐式传递；目标线程选择采用 waiting_threads FIFO 简单策略；批处理两段式设计（内核 binder_thread_read 批量返回 + 用户态 flushCommands 双次 talkWithDriver），单次业务调用通常仅 1-2 次 ioctl syscall。",
+      "chapter": "ch01",
+      "processed_at": "2026-06-30T06:12:49.346340",
+      "processed_by": "task-deepresearch-injector",
+      "action": "direct_inject"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-frametimeline-gpu-cpu-boundary-hwc-composition.md",
-      "title": "Android 17 FrameTimeline 数据结构与 GPU/CPU 合成边界判定机制",
-      "summary": "揭示 FrameTracer 6类事件与 FrameTimeline 5类子消息双数据源；HWC_COMPOSITION_QUEUED 和 RELEASE_FENCE 在 AOSP 无发射点；GPU/HWC 合成边界由 gpu_composition 标志位判定。",
-      "chapter_mapping": "§13.19",
-      "processed_at": "2026-06-29T06:16:38.757742",
-      "action": "inject",
-      "source": "DeepResearch"
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-multiprocess-datastore-mmipc-verification.md",
+      "title": "Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证",
+      "summary": "DataStore 多进程协调由三层内核 IPC 机制叠加：FileChannel.tryLock 跨进程互斥锁、mmap(MAP_SHARED)+std::atomic<uint32_t> 跨进程版本号、FileObserver(MOVED_TO) 跨进程写入通知。共涉及 5 个源码文件，实现 eventual consistency 模型。",
+      "chapter": "ch06",
+      "processed_at": "2026-06-30T06:12:49.346340",
+      "processed_by": "task-deepresearch-injector",
+      "action": "queue"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-binder-rpc-transaction-limit-600kb.md",
-      "title": "Android 17 RPC Binder 事务上限从 100KB 提升到 600KB",
-      "summary": "Android 17 RPC binder 单笔事务上限从 100KB→600KB（6×），告警阈值 300KB；传统 kernel binder BINDER_VM_SIZE（1MB）未修改。对 ContentProvider 大批量操作减少 ashmem fallback。",
-      "chapter_mapping": "§1.30",
-      "processed_at": "2026-06-29T06:16:38.757742",
-      "action": "inject",
-      "source": "DeepResearch"
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-memorylimiter-30s-kill-window-and-profiling.md",
+      "title": "Android 17 MemoryLimiter 的 30 秒 Kill 窗口真相与 ProfilingServiceHelper 触发条件",
+      "summary": "源码揭示 MemoryLimiter 30s kill 延迟实为等待 ProfilingServiceHelper 完成 heap dump。触发需三重门控全满足（默认全关闭）。100MB margin 仅在 cgroup memory.high 事件触发后写入。MemoryLimiter.java 在 Android 15 不存在，确认为 16/17 新子系统。",
+      "chapter": "ch04",
+      "processed_at": "2026-06-30T06:12:49.346340",
+      "processed_by": "task-deepresearch-injector",
+      "action": "direct_inject"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-compose-concurrent-snapshot-source.md",
-      "title": "Jetpack Compose 并发组合线程安全机制与 Snapshot 系统同步原语",
-      "summary": "Compose 并发安全双锁架构：Snapshot 全局 lock 串行化 modified set 合并，Recomposer stateLock 保护状态机。多 Recomposer 实例通过独立 effectCoroutineContext 隔离但共享全局 Snapshot。",
-      "chapter_mapping": "§22.26",
-      "processed_at": "2026-06-29T06:16:38.757742",
-      "action": "inject",
-      "source": "DeepResearch"
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-boot-optimization-bootanalyze-v2.md",
+      "title": "Android 17 系统启动耗时优化新特性与 bootanalyze 工具链",
+      "summary": "Android 17 启动优化 3 个可验证演进：SystemServer startSystemConfigInit 无条件早启；ZygoteInit.preload() 新增 preloadSharedLibraries/preloadCompatConfig；6 个启动相关 aconfig flag。bootanalyze 工具链迁移到 Python 3。",
+      "chapter": "ch16",
+      "processed_at": "2026-06-30T06:12:49.346340",
+      "processed_by": "task-deepresearch-injector",
+      "action": "direct_inject"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-perfetto-version-availability-android9-17.md",
-      "title": "Android 9-17 Perfetto 版本可用性与新特性源码验证",
-      "summary": "源码验证 Perfetto 各版本可用性：Android 9 基础服务、Android 10 完整可用、Android 11 默认启用。数据源从 ftrace 发展到 77 个 protobuf。关键里程碑：heapprofd、FrameTimeline、exclusive tracing。",
-      "chapter_mapping": "§13.01",
-      "processed_at": "2026-06-29T06:16:38.757742",
-      "action": "queue",
-      "source": "DeepResearch"
-    },
-    {
-      "title": "Duolingo refactors on Android with MVVM and Jetpack libraries",
-      "path": "AndroidWeekly/#23/Duolingo refactors on Android with MVVM and Jetpack libraries",
-      "source_url": "https://developer.android.com/stories/apps/duolingo-excellence",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 10,
-      "quality": "medium",
-      "scores": {
-        "relevance": 3,
-        "depth": 4,
-        "timeliness": 3,
-        "verifiability": 0
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch03-UI优化",
-          "confidence": "high"
-        }
-      ],
-      "summary": "\n        \n        这是一篇关于 Android 开发的技术文章，包含了实际的代码示...",
-      "scored_at": "2026-06-29T09:06:39.069411"
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-vulkan-dual-queue-graphics-ahb-upload.md",
+      "title": "Android 17 Vulkan 多队列并行渲染与 GPU 负载均衡",
+      "summary": "Android 17 HWUI Vulkan 后端强制要求同一 graphics queue family 申请 2 个 queue（mGraphicsQueue + mAHBUploadQueue），分别服务 RenderThread 和 GrallocUploadThread。两 queue 共享 VkDevice 但各自独立 GrDirectContext 与 VMA。VK_EXT_global_priority 默认关闭。",
+      "chapter": "ch18",
+      "processed_at": "2026-06-30T06:12:49.346340",
+      "processed_by": "task-deepresearch-injector",
+      "action": "direct_inject"
     }
   ]
 }
