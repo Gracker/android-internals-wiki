@@ -2,16 +2,18 @@
 title: "性能指标采集与上报"
 status: "ready-for-review"
 task9_result: "needs-rework"
-task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_result: "pass-light-edit-v2"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_result: "fixed"
 task2b_state: "fixed"
 last_task2b_main_at: "2026-06-29T08:52:56+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-29"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
+tags: [android, performance, statsd, jankstats, memory-monitoring, leakcanary, apm, android-17]
+sources: ["AOSP android-17.0.0_r1 StatsManager.java", "AOSP atoms.proto", "AndroidX metrics-performance", "Firebase Performance Monitoring docs", "LeakCanary 2.x", "Debug.MemoryInfo API docs"]
 last_verified_against: "AOSP android-17.0.0_r1 + AndroidX metrics-performance + Firebase Performance Monitoring docs + LeakCanary 2.x + Debug.MemoryInfo API docs"
 task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题。2026-06-29 Task9 Idle Audit: StatsD 虚构 PERFORMANCE_METRICS_ATOM/API/权限主线已重写为 android-17.0.0_r1 可验证内容。2026-06-29 Task2B 主修复: 全章源码级重写——移除虚构 PERFORMANCE_METRICS_ATOM(10244)、删除不存在的 StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正 StatsManager→addConfig/query/setPullAtomCallback、重写 StatsCompanionService 描述、电机感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例。 2026-06-29 Task9 Deep Tech Review: 发现 StatsD pull atom 方向、StatsManager 签名/查询路径、APP_START_OCCURRED ID/字段、JankStats API 多处源码级错误，已写入 queue P95 回 Task2B。 2026-06-29 Task2B 主修复: 修正 StatsD pull atom 方向(setPullAtomCallback 是数据提供方非消费方)、修正 addConfig 返回 void + 补充 getReports 查询路径、重写 §1.3 示例(删除虚构 APP_START_OCCURRED ID 10141/atom.getLatencyMillis() + 改为三条 App 可用路径+特权组件 pull atom 提供方示例)、修正 JankStats API(createAndTrack/isTrackingEnabled/createAndTrack 替代 addFrameListener/setEnabled/setSamplingRate)、修正 FrameData 字段(frameDurationUiNanos/states 替代 frameOverrunNanos)、修正 §4.2/§6.1/§8.1/总结 中 pull atom 描述。"
 last_task9_audit: "2026-06-29"
@@ -386,7 +388,7 @@ Firebase Performance Monitoring 提供了内置的 URL pattern 归一化——�
 | 维度 | JankStats（端侧） | StatsD（系统级） |
 |------|-----------------|----------------|
 | 采集粒度 | 每帧（`OnFrameListener` 回调） | 按 StatsdConfig 配置聚合周期 |
-| 数据内容 | frameDurationNanos, isJank, UI state, frameOverrunNanos | 订阅的 atom 字段（见 atoms.proto） |
+| 数据内容 | frameDurationUiNanos, isJank, UI states | 订阅的 atom 字段（见 atoms.proto） |
 | 运行位置 | App 进程内，AndroidX 库 | statsd daemon 进程 |
 | 状态绑定 | 绑定 UI 状态（Activity/Fragment/滚动状态） | 不绑定 UI 状态 |
 | 适用场景 | 端侧实时帧诊断，单用户问题复现 | 系统健康指标聚合，版本/设备维度对比 |
@@ -612,7 +614,7 @@ public class UploadManager {
 - 用户操作路径
 - 设备信息快照
 
-Google 公开数据显示：P0 级启动超时每增加 1s，次日留存可能下降 2-4%。Crash、ANR、启动超时应始终全量采集。
+Google 公开数据显示 P0 级启动超时每增加 1s，次日留存可能下降 2-4% [待验证: 需补充具体来源链接，如 Android Vitals / Google Play Console 文档]。Crash、ANR、启动超时应始终全量采集。
 
 ### 10.2 隐私保护
 
@@ -672,7 +674,7 @@ Android 14-17 的性能监控不是按一个虚构的 "PERFORMANCE_METRICS_ATOM"
 2. **框架层**：AndroidX `JankStats` 负责帧级实时诊断，`Debug.MemoryInfo` 负责进程级内存采集——两者都不需要特殊权限。
 3. **App 层**：电池感知采样率、网络指标聚合、上报策略和缓存管理由 App 自行实现或通过 Firebase Performance 等 SDK 接入。
 
-Android 17 对这套体系的实质扩展不在 StatsD API，而在后台内存管理（Compaction + Freezer + MemoryLimiter）——这些机制直接改变了内存指标的采集方式和解读方法。P0 始终全量，P1 跟随电量和场景动态调整，P2 按需开启。
+Android 17 对这套体系的实质扩展集中在后台内存管理（Compaction + Freezer + MemoryLimiter），StatsD API 本身未变。这些机制直接改变了内存指标的采集方式和解读方法。P0 始终全量，P1 跟随电量和场景动态调整，P2 按需开启。
 
 ## 延伸阅读
 
