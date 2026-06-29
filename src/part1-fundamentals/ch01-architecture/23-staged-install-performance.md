@@ -20,6 +20,12 @@ sources:
     path: frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java
   - type: aosp
     path: frameworks/native/cmds/installd/dexopt.cpp
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_result: fixed-lite
+task2b_state: fixed
+last_task2b_lite_at: 2026-06-30
 ---
 
 # 1.23 Android Staged Install 与安装原子性性能
