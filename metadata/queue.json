@@ -634,5 +634,47 @@
     "added_at": "2026-06-29T10:31:41+08:00",
     "status": "completed",
     "completed_date": "2026-06-29"
+  },
+  {
+    "chapter": "1.31",
+    "title": "Android 17 机器学习驱动任务调度器",
+    "path": "partfundamentals-ch01-architecture/1.31-Android-17-机器学习驱动任务调度器.md",
+    "priority": 80,
+    "reason": "新创建的知识缺口章节（评分20/20）"
+  },
+  {
+    "chapter": "2.28",
+    "title": "Compose Pausable Composition 深度分析",
+    "path": "partfundamentals-ch02-rendering/2.28-Compose-Pausable-Composition-深度分析.md",
+    "priority": 80,
+    "reason": "新创建的知识缺口章节（评分19/20）"
+  },
+  {
+    "chapter": "22.28",
+    "title": "Adaptive Layout 多形态设备性能",
+    "path": "partapp-ch22-rendering-practice/22.28-Adaptive-Layout-多形态设备性能.md",
+    "priority": 80,
+    "reason": "新创建的知识缺口章节（评分19/20）"
+  },
+  {
+    "chapter": "2.29",
+    "title": "Android 17 桌面模式窗口管理性能",
+    "path": "partfundamentals-ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md",
+    "priority": 80,
+    "reason": "新创建的知识缺口章节（评分18/20）"
+  },
+  {
+    "chapter": "13.20",
+    "title": "Perfetto v54 Data Explorer 与 Jank CUJ",
+    "path": "partfundamentals-ch13-profiling/13.20-Perfetto-v54-Data-Explorer-与-Jank-CUJ.md",
+    "priority": 80,
+    "reason": "新创建的知识缺口章节（评分20/20）"
+  },
+  {
+    "chapter": "6.18",
+    "title": "Linux 6.10 内存碎片整理机制",
+    "path": "partfundamentals-ch06-memory/6.18-Linux-6.10-内存碎片整理机制.md",
+    "priority": 80,
+    "reason": "新创建的知识缺口章节（评分15/20）"
   }
 ]

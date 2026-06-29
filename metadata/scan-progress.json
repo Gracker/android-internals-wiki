@@ -27,9 +27,9 @@
     22,
     23
   ],
-  "indexed_links": 476,
+  "indexed_links": 469,
   "skipped_links": 332,
-  "fetch_failures": 271,
+  "fetch_failures": 264,
   "attempted_issues": [
     6,
     7,
@@ -46,9 +46,10 @@
     19,
     20,
     21,
+    22,
     23
   ],
   "last_attempted_issue": 23,
-  "last_attempt_date": "2026-06-28",
-  "access_issues_count": 133
+  "last_attempt_date": "2026-06-29",
+  "access_issues_count": 131
 }
