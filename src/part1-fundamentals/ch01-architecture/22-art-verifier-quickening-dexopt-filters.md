@@ -10,7 +10,7 @@ confidence: high
 last_verified: "2026-06-17"
 last_verified_against: "source.android.com ART configure / ART Service configuration 2026-05; AOSP android-16.0.0_r1 platform/art compiler_filter.h / dex2oat.cc / libartservice/service/README.md; Android Developers ART compatibility docs"
 task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.22 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
-last_task6_review_log: "logs/review/2026-06-17-04-review.mdtitle: \"ART Verifier Quickening 与 dexopt 过滤器性能边界\""
+last_task6_review_log: "logs/review/2026-06-17-04-review.md"
 task6_state: reviewed
 task9_state: "reviewed"
 drafted_date: "2026-05-24"
@@ -28,6 +28,8 @@ task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; replaced AOSP 
 last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
 last_task9_autofix_at: "2026-06-17"
 task6_result: pass-light-edit
+last_task2b_lite_at: "2026-06-30"
+task2b_lite_note: "2026-06-30 Task2B Lite: 修复 last_task6_review_log 字段被 title 污染的机械错误。"
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-17'
 last_task6_at: "2026-06-17T04:06:00+08:00"
