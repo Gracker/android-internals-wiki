@@ -84,7 +84,7 @@ task9_review_notes: "2026-06-29 19:26 Task9 闲时抽检 auto-fixed：P1 1；And
 last_task9_audit: '2026-06-29'
 review_type: task9-idle-audit
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
+last_deepseek_cn_review_at: 2026-06-29
 ---
 
 
@@ -520,7 +520,7 @@ GPU 频率变化同样可以通过 Perfetto 观察。如果设备支持，我们
 
 ## 与其他机制的关联
 
-DVFS 不是独立运行的，它和本书中讨论的多个机制密切相关：
+DVFS 和本书多个机制互相影响，理解这些关联对性能分析很重要：
 
 - **[5.1 进程调度基础](01-linux-scheduling.md)**：schedutil 直接依赖 PELT 的利用率数据，调度器的负载追踪精度决定了调频的质量
 - **[5.2 EAS 能量感知调度](02-eas.md)**：EAS 在选核时需要考虑不同 CPU 的能效比，而能效比本身取决于当前的频率/电压（即 DVFS 状态）
@@ -556,11 +556,10 @@ schedutil 是一个通用方案，它对典型 Android 应用场景做了优化�
 - RTG 聚合调频分析：OPPO 内核工匠《调度器分支之RTG》
 - GPU 性能原理：腾讯技术工程《GPU 性能原理拆解》
 
-<!-- AIW-源码调研-2026-06-01 · 2026-06-29 Task9 抽检：Android 17 tag 已公开，GameManager/Power HAL 锚点升级到 android-17.0.0_r1 -->
 ## 游戏调度框架与 Power HAL 协同
 
 
-> **版本说明**：截至 2026-06-29，AOSP 公开 Gitiles 已发布 `refs/tags/android-17.0.0_r1`。本节 GameManagerService、PowerManagerService 与 Power HAL AIDL 锚点已复核到该 tag；kernel/common 仍未提供 `android17-6.12` 分支或 `android-17.0.0_r1` tag，schedutil / SCMI 代码段保留 `android15-6.6`、`android16-6.12` ACK 分支边界，不写成 Android 17 新增行为。
+> **版本说明**：本节 Framework 与 Power HAL AIDL 锚点已复核到 `android-17.0.0_r1`；schedutil / SCMI 代码段保留 `android15-6.6` 和 `android16-6.12` 边界（kernel/common 尚无 android-17 tag），不写成 Android 17 新增行为。
 
 ### GameManagerService 游戏模式感知层
 

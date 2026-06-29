@@ -32,20 +32,20 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [layout, constraintlayout, viewstub, inflate, hierarchy]
 related_chapters: ["22.3", "7.12", "2.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: fixed
 task2b_result: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_reviewed_date: "2026-05-13"
-task6_result: pass-light-edit
-last_task6_at: "2026-05-13T06:19:26+08:00"
-last_task6_review_log: "logs/review/2026-05-13-06-review.md"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-29"
+task6_reviewed_date: "2026-06-29"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-06-29T20:15:13+08:00"
+last_task6_review_log: "logs/review/2026-06-29-20-review.md"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-19-audit.md"
-task6_review_notes: "2026-05-13 Task6：L1/L2 轻修后通过；无新增回炉项，转入 Task9 技术复核。"
+task6_review_notes: "2026-05-13 Task6：L1/L2 轻修后通过；无新增回炉项，转入 Task9 技术复核。 | 2026-06-29 Task6 复审（Task9 auto-fix 后）：pass-light-edit。L1 修复 5 处（移除正文残留的 Clippings 结构参考标记 + 改写引用内部材料的段落）；L2 全部通过。无 B 类回炉项，送 Task9 确认。"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-29"
 task9_reviewed_by: openclaw-task9
@@ -86,10 +86,6 @@ task9_p2_issues: 0
 <!-- outline-end -->
 
 22.1 节讲应用侧布局优化的落手策略。View 体系的递归测量、`LayoutInflater` 流程、`requestLayout()` 触发路径已经在 7.12 节展开；本节不重复写机制，只把这些机制转成页面改造、代码选型和 trace 验收方法。目标很具体：减少首帧和页面切换里的主线程布局时间，让 `performMeasure` / `performLayout` 不再挤占一帧预算。
-
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
 ## 布局层级对渲染性能的影响
 
@@ -183,10 +179,7 @@ fun showError(root: View) {
 
 ## 布局预加载与异步 Inflate
 
-Clippings 中的速度优化章节把“减少核心场景当下要执行的指令数”作为页面加速思路：能提前做、且不会抢占关键路径的工作，放到空闲期；必须当场做的工作，尽量减少范围。布局预加载也是这个逻辑。它不能让总成本消失，只是把成本从用户等待的关键帧移到更合适的时间段。
-
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
+页面加速的一个核心思路是“减少核心场景当下要执行的指令数”：能提前做、且不会抢占关键路径的工作，放到空闲期；必须当场做的工作，尽量减少范围。布局预加载也是这个逻辑。它不能让总成本消失，只是把成本从用户等待的关键帧移到更合适的时间段。
 
 可选方案分三类：
 

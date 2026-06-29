@@ -45,7 +45,7 @@ task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-12
+last_deepseek_cn_review_at: 2026-06-29
 task9_result: "auto-fixed"
 task9_state: reviewed
 task2b_state: fixed
@@ -265,7 +265,7 @@ Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法�
 
 ### 自适应应用：大屏强制可调整
 
-Android 16 对大屏设备（smallest width ≥ 600dp）强制忽略 `screenOrientation`、`resizableActivity="false"`、`minAspectRatio`、`maxAspectRatio` 以及对应的 runtime API（`setRequestedOrientation()` / `getRequestedOrientation()`）。
+Android 16 对大屏设备（smallest width ≥ 600dp）强制忽略 `screenOrientation`、`resizableActivity="false"`、`minAspectRatio`、`maxAspectRatio` 以及对应的 运行时 API（`setRequestedOrientation()` / `getRequestedOrientation()`）。
 
 Activity 会因窗口尺寸变化更频繁地 recreate，这对性能有直接影响。如果你的 App 在配置变更时没有正确保存和恢复 UI 状态（通过 ViewModel + `rememberSaveable`），用户会感知到界面闪烁和数据丢失——这不只是功能 bug，也是响应速度的退化。
 
@@ -292,8 +292,6 @@ Android 16 在 `android.os.health.SystemHealthManager` 中放入了 `getCpuHeadr
 Android 16 调整了 `JobScheduler` 的配额计算方式，基于 App 的 standby bucket 和是否以前台服务启动来动态调整运行时间配额。新增的 `getPendingJobReasons()` 和 `getPendingJobReasonsHistory()` API 让开发者可以查询 Job 未执行的具体原因（如待机桶限制、电量不足、网络不可用等），不再只能靠猜测。
 
 ## Android 17（API 37）：NN HAL 1.3 稳态与 ProfilingManager 异常检测
-
-<!-- AIW-源码调研-2026-06-14 -->
 
 Android 17 的性能侧改动集中在 **ProfilingManager 触发器扩展** 和 **系统级 AI 异常检测**，NN HAL 本身仍维持 1.3 不变（自 Android 13 起的稳定状态）。下面把与 AI 推理直接相关的两条线拆开讲。
 
@@ -344,8 +342,8 @@ device.prepareModel(makeModel, preference, priority, deadline, cacheInfo, cacheT
 CacheToken 由 framework 哈希组成包括：`device.getName()` + `device.getVersionString()` + `executionPreference` + `compilationPriority` + extension metadata + 已被 framework 在 SIMPLE/COMPOUND body 阶段哈希过的 op index。这意味着：
 
 - 同一 model + 同一 driver 同一执行偏好 → 直接复用 prepared model 文件
-- driver 升级到不同 versionString → cache 失效，需重新编译
-- 同一个 app 在不同 SoC 上的 cache 不通用（device name 不同）
+- driver 升级到不同 versionString → 缓存失效，需重新编译
+- 同一个 app 在不同 SoC 上的 缓存不通用（device name 不同）
 
 HAL 接口约定 token 碰撞由 app 承担风险：
 
@@ -371,7 +369,7 @@ Android 17 的 ProfilingManager 公开参考页新增的 4 个 trigger（API 37�
 - `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：异常高 CPU 触发，返回 call stack sample
 - `TRIGGER_TYPE_ANOMALY`：**异常检测 service**，监视 binder spam、excessive memory usage；在系统强杀前回调 app，可用于 AI 推理的内存/算力异常自我诊断
 
-最后一个 trigger 与 AI 推理直接相关——它把"系统判定资源滥用 → 强杀"的单向路径变成"先通知 app → app 自报异常数据 → 再判定"的闭环。AI 推理 app 注册这个 trigger 后，可以在被 system 强杀前拿到 call stack + heap dump，反推推理 pipeline 哪一步异常（如 LLM 的 KV cache 持续增长触顶、端侧 diffusion 推理中某 layer 内存峰值溢出）。
+最后一个 trigger 与 AI 推理直接相关——它把"系统判定资源滥用 → 强杀"的单向路径变成"先通知 app → app 自报异常数据 → 再判定"的交互式流程。AI 推理 app 注册这个 trigger 后，可以在被 system 强杀前拿到 call stack + heap dump，反推推理 pipeline 哪一步异常（如 LLM 的 KV cache 持续增长触顶、端侧 diffusion 推理中某 layer 内存峰值溢出）。
 
 ### HAL 接口签名（关键源码摘录）
 
@@ -591,12 +589,9 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 
 ## 参考资料
 
-### Android 17 系统服务启动顺序与 Binder IPC 性能优化源码解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android17-system-server-binder-ipc-startup-optimization.md
-- 类型：DeepResearch 调研结果
-- 摘要：SystemServer 启动演进为三阶段分层 init + InitThreadPool 并行子任务模型，四段方法（startBootstrapServices → startCoreServices → startOtherServices → startApexServices）串联八个 PHASE_* 阶段广播。Binder 端通过 ProcessState::setThreadPoolMaxThreadCount 配置 31 个主线程，借助 BR_FROZEN_* 命令与 cached app freezer 协同避免启动抖动。
-- 注入时间：2026-06-17
-- 价值：AIW ch16 版本变更章节缺少 SystemServer 四阶段启动模型与 PHASE_* 阶段广播的源码级拆解，Binder 线程池配置 + BR_FROZEN_* 协同机制是启动优化的关键背景知识
+### Android 17 系统服务启动与 Binder IPC 优化
+- 来源：DeepResearch/2026-06-12-android17-system-server-binder-ipc-startup-optimization.md
+- 摘要：SystemServer 启动采用三阶段分层 init + InitThreadPool 并行子任务模型，四段方法贯穿八个 PHASE_* 阶段广播。Binder 端通过线程池配置与 BR_FROZEN_* 命令协同 cached app freezer 避免启动抖动。
 
 ### 官方文档
 - Android 12 Behavior Changes: developer.android.com/about/versions/12/behavior-changes-12
@@ -644,8 +639,6 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 ---
 
 ## 附录：Android 17 端侧 AI 资源调度（ADPF + PowerHAL）源码调研
-
-<!-- AIW-源码调研-2026-06-13 -->
 
 **调研时间**：2026-06-13
 **来源选题**：daily-topics.json id=15
@@ -695,7 +688,7 @@ Android 17 平台代码通过 `getInterfaceVersion()` 动态判断 PowerHAL 接�
 - `frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java`：[android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java) — `HeadroomCache` / `onUidStateChanged` / `getSessionChannel` / `AppHintSessionSnapshot`
 - `hardware/interfaces/power/aidl/android/hardware/power/`：[android-17.0.0_r1](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/) — `CpuHeadroomParams.aidl`（`calculationWindowMillis`）、`ChannelMessage.aidl`、`SupportInfo.aidl`（50-10000ms 范围）等全部 AIDL 文件
 
-> 本节 2026-06-13 初研时依赖 main 分支；本轮（2026-06-29）已逐项重锚 `android-17.0.0_r1`，并对 `DEFAULT_GPU_HEADROOM_INTERVAL_MILLIS` 等不存在的常量做了修正。
+> 本节源码锚点均已复核到 `android-17.0.0_r1`。
 
 ## 附录：Android 16 ART Generational CMC / userfaultfd GC 机制源码调研
 

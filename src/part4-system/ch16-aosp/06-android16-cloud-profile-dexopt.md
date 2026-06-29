@@ -32,28 +32,29 @@ sources:
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
     path: "https://www.androidauthority.com/android-16-cloud-compilation-3541910/"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-06-29"
 review_type: task6-writing-quality-review
-task6_result: pass-light-edit
-last_task6_at: "2026-05-15T23:21:00+08:00"
+task6_result: "pass-light-edit"
+last_task6_at: "2026-06-29T20:15:13+08:00"
 last_task6_audit: "2026-06-07"
-last_task6_review_log: logs/review/2026-05-15-23-review.md
-review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。"
+last_task6_review_log: "logs/review/2026-06-29-20-review.md"
+review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。 | 2026-06-29 Task6 复审（Task9 auto-fix 后）：pass-light-edit。L1/L2 全部通过；禁用词零命中；SDM 证据边界写法清晰。Task9 auto-fix 涉及的源码锚点重锚（android-16→17.0.0_r1）写作质量合格。无 B 类回炉项，送 Task9 确认。"
 last_task9_audit: "2026-06-08"
 last_task9_audit_log: "logs/deep-review/2026-06-08-18-audit.md"
 last_task2b_lite_at: "2026-06-29"
 task9_result: "auto-fixed"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+pipeline_stage: "task9_pending"
 last_task9_at: "2026-06-29T16:41:24+08:00"
 last_task9_autofix_at: "2026-06-29"
 last_task9_review_log: "logs/deep-review/2026-06-29-16-deep-review.md"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-29"
 task9_review_notes: "2026-06-29 Task9 auto-fix: 将 SDM 产物管理源码锚点从 android-16.0.0_r1 重锚到 android-17.0.0_r1；无新增 P0/P1。"
+task6_reviewed_date: "2026-06-29"
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化
