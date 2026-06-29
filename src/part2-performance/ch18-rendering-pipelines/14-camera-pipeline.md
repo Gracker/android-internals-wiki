@@ -12,7 +12,7 @@ related_chapters: "[\"2.13\", \"2.15\", \"14.9\", \"18.6\"]"
 created_by: "\"rendering-pipelines-merge\""
 created_date: "\"2026-04-09\""
 task6_state: reviewed
-task9_state: auto-fixed
+task9_state: reviewed
 task9_result: "auto-fixed"
 task2b_state: fixed
 task6_result: "pass-light-edit"
