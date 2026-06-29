@@ -2,11 +2,15 @@
 title: "Android 17 SDM 安装编译链路性能"
 chapter: "16.9"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_state: fixed-lite
 last_task2b_lite_at: "2026-06-29"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-29"
+last_task6_at: "2026-06-29"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
 last_verified: "2026-06-11"
@@ -144,11 +148,11 @@ private static void verifySdmSignatures(List<String> artManagedFilePaths,
 }
 ```
 
-三个要点：
+关键细节：
 
-1. **强制 v3 签名块**（APK Signature Scheme v3），不兼容 v1/v2。源码注释写明 "SDM is a format introduced in Android 16, so we don't need to support older signature schemes"
-2. **签名必须与 APK 完全匹配**（`signaturesMatchExactly`），包括轮换密钥
-3. 校验失败返回 `INSTALL_FAILED_INVALID_APK`，安装直接中止
+1. **强制 v3 签名块**（APK Signature Scheme v3），不兼容 v1/v2。源码注释明确 SDM 不支持旧签名方案
+2. **签名必须与 APK 完全匹配**（`signaturesMatchExactly`），包括密钥轮换
+3. 校验失败直接抛出 `INSTALL_FAILED_INVALID_APK`，安装中止
 
 源码注释同时写明："SDM is a file format that contains the cloud compilation artifacts. As a requirement, the SDM file should be signed with the same key as the APK."这是公开源码中唯一直接确认 SDM 与 cloud compilation 对应关系的注释。
 
@@ -243,7 +247,7 @@ ndk::ScopedAStatus Artd::maybeCreateSdc(
   Result<std::unique_ptr<File>> sdm_file = OpenFileForReading(sdm_path);
   if (!sdm_file.ok()) {
     if (sdm_file.error().code() == ENOENT) {
-      // No SDM file found. That's typical.
+      // 未找到 SDM 文件，这是正常情况
       return ScopedAStatus::ok();
     }
     return NonFatal(sdm_file.error().message());
@@ -254,7 +258,7 @@ ndk::ScopedAStatus Artd::maybeCreateSdc(
   std::unique_ptr<SdcReader> sdc_reader = SdcReader::Load(sdc_path, &error_msg);
   if (sdc_reader != nullptr &&
       sdc_reader->GetSdmTimestampNs() == TimeSpecToNs(sdm_st.st_mtim)) {
-    // Already has an SDC file for the SDM file.
+    // SDC 文件已存在且时间戳匹配
     return ScopedAStatus::ok();
   }
   ...
@@ -351,7 +355,7 @@ sequenceDiagram
     ART->>artd: deleteSdmSdcFiles() ── 回收磁盘
 ```
 
-文字版调用链：
+实际调用流程：
 
 ```
 安装器 (APK + .sdm + .dm + .prof)
@@ -368,7 +372,7 @@ PMS 安装完成 → ART Service 调度
     ▼
 artd (native)
     │  Artd::maybeCreateSdc()
-    │      └─ 比对 SDM mtime, SDC 缺失或过期则重写
+    │      └─ 对比 SDM mtime，SDC 缺失或过期则重写
     ▼
 dex2oat 执行
     │  读取 SDC 携带的编译产物
@@ -376,7 +380,7 @@ dex2oat 执行
 PrimaryDexopter.onDexoptTargetResult()
     └─ 成功 → deleteSdmSdcFiles()         ── 释放磁盘
 卸载 / 重装 → ArtManagerLocal.deleteDexoptArtifacts()
-    └─ 三组循环: artifacts / runtimeArtifacts / sdmFiles
+    └─ 三组循环清理: artifacts / runtimeArtifacts / sdmFiles
 ```
 
 ## SDM 对安装和启动性能的影响
@@ -393,9 +397,9 @@ SDM 的安装性能收益来自跳过本地 `dex2oat`：
 | 产物写入 | OAT + VDEX + ART | SDC + OAT/VDEX/ART |
 | 后续清理 | 无 | `deleteSdmSdcFiles()` 回收 |
 
-低端设备受益最大：`dex2oat` 同时占用 CPU、内存和闪存 I/O，在低端设备上可能占安装总耗时的 50% 以上。SDM 命中时，这段开销几乎消失。
+低端设备受益最大：`dex2oat` 同时占用 CPU、内存和闪存 I/O，在低端设备上可能占安装总耗时 50% 以上。SDM 命中时，这段开销基本消失。
 
-额外开销有两处：(1) `.sdm` 文件本身的 I/O 传输和存储；(2) `verifySdmSignatures()` 的签名校验。相对于 `dex2oat` 的开销，这两项可以忽略。
+额外开销来自：(1) `.sdm` 文件本身的 I/O 传输和存储；(2) `verifySdmSignatures()` 的签名校验。与 `dex2oat` 开销相比，这两项影响很小。
 
 ### 启动阶段
 
@@ -414,23 +418,23 @@ Baseline Profile 面向 Day-0（新安装设备），Startup Profile 面向 DEX 
 
 ### 排查入口
 
-验证 SDM 是否命中的方法：
+排查 SDM 命中的方法：
 
 ```bash
 # 查看编译状态和编译原因
 adb shell dumpsys package dexopt | grep -A 10 com.example.app
 
-# 检查 SDM/SDC 文件是否存在（编译前检查）
+# 检查 SDM/SDC 文件是否存在
 adb shell ls -la /data/app/*/com.example.app*/oat/arm64/
 
 # 查看 ART Service 日志
 adb logcat -s ArtServiceLogging
 
-# 强制重新编译并观察结果
+# 强制重新编译并观察
 adb shell pm compile -m speed-profile -f -v com.example.app
 ```
 
-如果编译状态显示 `compilationReason=install` 且 `actualCompilerFilter=speed-profile`，安装耗时却明显低于同级别设备，可能说明 SDM 命中了云端编译产物——设备端跳过了大部分 `dex2oat` 工作。
+如果编译状态显示 `compilationReason=install` 且 `actualCompilerFilter=speed-profile`，但安装耗时明显低于同级别设备，可能说明 SDM 命中了云端编译产物——设备端跳过了大部分 `dex2oat` 工作。
 
 [适用版本: Android 16 (API 36) - Android 17 (API 37)]
 
