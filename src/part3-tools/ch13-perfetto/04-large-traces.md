@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-27"
-last_verified_against: "AOSP external/perfetto trace_processor_shell.cc + Perfetto docs/python api"
+last_verified: "2026-06-30"
+last_verified_against: "AOSP android-17.0.0_r1 external/perfetto trace_processor_shell.cc / traceconv main.cc; Perfetto trace_processor / Python API / traceconv docs"
 confidence: medium
 sources:
   - type: official
@@ -16,27 +16,33 @@ sources:
     path: "https://perfetto.dev/docs/analysis/trace-analysis-with-sql"
   - type: official
     path: "https://perfetto.dev/docs/analysis/batch-trace-processor"
+  - type: official
+    path: "https://perfetto.dev/docs/quickstart/traceconv"
   - type: aosp
     path: "external/perfetto/src/trace_processor/"
+  - type: aosp
+    path: "external/perfetto/src/traceconv/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6
-pipeline_stage: ready-to-publish
-task9_reviewed_date: "2026-04-28"
+pipeline_stage: task6_pending
+task9_reviewed_date: "2026-06-30"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-28T06:20:00+08:00"
+last_task9_at: "2026-06-30T07:25:03+08:00"
 last_task2b_at: "2026-04-27T12:54:09+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。"
+task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。 | 2026-06-30 Task9 idle audit auto-fix: Android 17 trace_processor HTTP 参数口径更新；trace_processor SQLite export 命令、traceconv 文档链接与 profile --output-dir 命令修正。无待入 queue P0/P1。"
 last_task6_audit: "2026-06-27"
-last_task9_audit: "2026-06-11"
-last_task9_audit_log: "logs/deep-review/2026-06-11-16-audit.md"
+last_task9_audit: "2026-06-30"
+last_task9_audit_log: "logs/deep-review/2026-06-30-07-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-30-07-audit.md"
+last_task9_autofix_at: "2026-06-30"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 ---
@@ -362,10 +368,10 @@ done
 **方案二：导出为 SQLite 数据库**
 
 ```bash
-./trace_processor -q analysis.sql -e result.sqlite trace.perfetto-trace
+./trace_processor export sqlite -o result.sqlite trace.perfetto-trace
 ```
 
-`-e` 参数会把 trace_processor 的内存数据库导出为 SQLite 文件，之后可以用任意 SQLite 工具查询，也可以用 `sqlite3` 命令行的 `.mode json` 输出 JSON。
+`export sqlite -o` 子命令会把 trace_processor 的内存数据库导出为 SQLite 文件；classic interface 也可以用 `./trace_processor -e result.sqlite trace.perfetto-trace`，但不能和 `-q/--query-file` 同时使用。导出后可以用任意 SQLite 工具查询，也可以用 `sqlite3` 命令行的 `.mode json` 输出 JSON。
 
 **方案三：shell 脚本后处理**
 
@@ -375,13 +381,13 @@ done
 
 一些实用的启动参数：
 
-`--httpd` 启动 HTTP 守护进程模式，配合 Perfetto UI 使用。前面已经讲过。AOSP `external/perfetto` 版本公开的 HTTP 参数包含 `--http-port PORT`；不要在教程里假设存在 `--http-ip-address`。如果使用的是独立上游二进制，先以 `trace_processor --help` 的本机输出为准。
+`--httpd` 启动 HTTP 守护进程模式，配合 Perfetto UI 使用。前面已经讲过。AOSP android-17.0.0_r1 `external/perfetto` 的 classic help 同时包含 `--http-port PORT` 和 `--http-ip-address ip`；旧版平台或独立上游二进制仍以本机 `trace_processor --help` 输出为准。
 
 `-W` 或 `--wide` 加宽输出列宽，让长字符串（如完整 Slice 名称）不被截断。在交互式查询中查看长名称时很有用。
 
-`-e <path>` 将内存中的数据库导出为 SQLite 文件。分析完成后可以把整个 Trace 数据库持久化，后续用 `sqlite3` 命令行或其他工具继续分析，不用重新加载原始 Trace。
+`-e <path>` 将内存中的数据库导出为 SQLite 文件，classic interface 下不能和 `-q/--query-file` 同时使用。分析完成后可以把整个 Trace 数据库持久化，后续用 `sqlite3` 命令行或其他工具继续分析，不用重新加载原始 Trace。
 
-[已验证: perfetto.dev docs + trace_processor shell v52.0 --help / 最小查询, 2026-04-22]
+[已验证: perfetto.dev docs + AOSP android-17.0.0_r1 trace_processor_shell.cc, 2026-06-30]
 
 ## 用 Python 的 perfetto.trace_processor 库做自动化分析
 
@@ -540,7 +546,7 @@ tp = TraceProcessor(trace='trace.perfetto-trace', config=config)
 
 ## traceconv：格式转换工具
 
-[已验证: 官方文档, perfetto.dev/docs/analysis/traceconv]
+[已验证: 官方文档, perfetto.dev/docs/quickstart/traceconv]
 
 在有些场景下，我们需要把 Perfetto 的 protobuf 格式 Trace 转成其他格式。比如需要在 `chrome://tracing` 中打开，或者需要人类可读的文本格式做快速检查。
 
@@ -560,8 +566,8 @@ chmod +x traceconv
 # 转为 systrace 文本格式（兼容旧版 Android systrace 工具）
 ./traceconv systrace trace.perfetto-trace output.txt
 
-# 提取 heapprofd 的 profile 数据为 pprof 格式
-./traceconv profile trace.perfetto-trace heap_profile.pb
+# 提取 heapprofd / perf / Java heap profile 数据为 pprof 文件目录
+./traceconv profile --output-dir ./profiles trace.perfetto-trace
 ```
 
 其中 `text` 格式输出的是 protobuf 的文本序列化形式，每个事件一行，适合用 `grep`、`awk` 等文本工具做快速过滤。`json` 格式则是 Chrome Trace Event 格式，可以直接拖入 `chrome://tracing` 查看。
@@ -644,6 +650,6 @@ print(recent.groupby('date')['oncreate_ms'].describe())
 - Perfetto 官方文档 - Trace Processor: https://perfetto.dev/docs/analysis/trace-processor
 - Perfetto 官方文档 - SQL 分析: https://perfetto.dev/docs/analysis/trace-analysis-with-sql
 - Perfetto 官方文档 - Batch Trace Processor: https://perfetto.dev/docs/analysis/batch-trace-processor
-- Perfetto 官方文档 - traceconv: https://perfetto.dev/docs/analysis/traceconv
+- Perfetto 官方文档 - traceconv: https://perfetto.dev/docs/quickstart/traceconv
 - Perfetto SQL 表参考: https://perfetto.dev/docs/analysis/sql-tables
 - AOSP 源码路径: external/perfetto/src/trace_processor/
