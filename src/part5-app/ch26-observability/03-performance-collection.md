@@ -3,17 +3,17 @@ title: "性能指标采集与上报"
 status: "ready-for-review"
 task9_result: "needs-rework"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: "reviewed"
+task6_state: "revisiting"
+task9_state: "pending"
 task2b_result: "fixed"
-task2b_state: "pending"
-last_task2b_main_at: "2026-06-29T06:50:00+08:00"
+task2b_state: "fixed"
+last_task2b_main_at: "2026-06-29T08:52:56+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-29"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified_against: "AOSP android-17.0.0_r1 + AndroidX metrics-performance + Firebase Performance Monitoring docs + LeakCanary 2.x + Debug.MemoryInfo API docs"
-task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题。2026-06-29 Task9 Idle Audit: StatsD 虚构 PERFORMANCE_METRICS_ATOM/API/权限主线已重写为 android-17.0.0_r1 可验证内容。2026-06-29 Task2B 主修复: 全章源码级重写——移除虚构 PERFORMANCE_METRICS_ATOM(10244)、删除不存在的 StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正 StatsManager→addConfig/query/setPullAtomCallback、重写 StatsCompanionService 描述、电机感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例。 2026-06-29 Task9 Deep Tech Review: 发现 StatsD pull atom 方向、StatsManager 签名/查询路径、APP_START_OCCURRED ID/字段、JankStats API 多处源码级错误，已写入 queue P95 回 Task2B。"
+task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题。2026-06-29 Task9 Idle Audit: StatsD 虚构 PERFORMANCE_METRICS_ATOM/API/权限主线已重写为 android-17.0.0_r1 可验证内容。2026-06-29 Task2B 主修复: 全章源码级重写——移除虚构 PERFORMANCE_METRICS_ATOM(10244)、删除不存在的 StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正 StatsManager→addConfig/query/setPullAtomCallback、重写 StatsCompanionService 描述、电机感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例。 2026-06-29 Task9 Deep Tech Review: 发现 StatsD pull atom 方向、StatsManager 签名/查询路径、APP_START_OCCURRED ID/字段、JankStats API 多处源码级错误，已写入 queue P95 回 Task2B。 2026-06-29 Task2B 主修复: 修正 StatsD pull atom 方向(setPullAtomCallback 是数据提供方非消费方)、修正 addConfig 返回 void + 补充 getReports 查询路径、重写 §1.3 示例(删除虚构 APP_START_OCCURRED ID 10141/atom.getLatencyMillis() + 改为三条 App 可用路径+特权组件 pull atom 提供方示例)、修正 JankStats API(createAndTrack/isTrackingEnabled/createAndTrack 替代 addFrameListener/setEnabled/setSamplingRate)、修正 FrameData 字段(frameDurationUiNanos/states 替代 frameOverrunNanos)、修正 §4.2/§6.1/§8.1/总结 中 pull atom 描述。"
 last_task9_audit: "2026-06-29"
 last_task9_at: "2026-06-29T07:25:52+08:00"
 ---
@@ -38,23 +38,27 @@ Android 17 (`android-17.0.0_r1`) 中 `StatsManager` 的公开 API 只有三个�
 // packages/modules/StatsD/framework/java/android/app/StatsManager.java
 // Android 17 公开 API 子集
 
-// 注册 pull atom 回调
+// 注册 pull atom 数据提供方（客户端向 statsd 提供自定义 pulled atom）
 public void setPullAtomCallback(int atomTag, @Nullable PullAtomMetadata metadata,
         @NonNull @CallbackExecutor Executor executor,
         @NonNull StatsPullAtomCallback callback)
 
-// 添加 config 订阅
-public boolean addConfig(long configId, byte[] config)
+// 注册 StatsdConfig 订阅（返回 void）
+public void addConfig(long configId, byte[] config)
 
-// 查询已注册 config
-public byte[] query(long configId)
+// 读取已收集报告（主查询路径）
+public byte[] getReports(long configId)
 ```
 
-App 侧不能直接调用 `StatsManager` 写入事件——`StatsManager` 的写入路径（`StatsLog.logStart/logStop/logEvent` 系列）是 `@hide` 的内部 API，仅供系统服务和特权进程使用。`StatsPullAtomCallback` 的回调粒度由 `PullAtomMetadata` 控制，默认每 30 秒触发一次。
+App 侧不能直接调用 `StatsManager` 写入事件——`StatsManager` 的写入路径（`StatsLog.logStart/logStop/logEvent` 系列）是 `@hide` 的内部 API，仅供系统服务和特权进程使用。
+
+`setPullAtomCallback()` 的语义是**客户端向 statsd 提供自定义 pulled atom 数据**，而不是客户端从 statsd 接收聚合指标。当 statsd 需要拉取某个 atom 时，它会回调已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，客户端负责往 `data` 列表中填充 `StatsEvent`，填充完成后通过 `resultReceiver.pullFinished()` 通知 statsd。`PullAtomMetadata` 的默认冷却间隔为 1000ms，超时为 1500ms——这不是周期性定时回调，而是 statsd 按需拉取时的节流参数。
+
+`addConfig()` 返回 `void`（非 boolean），用于向 statsd 注册 `StatsdConfig`；`getReports(long configId)` 用于读取 statsd 已收集的报告——这是特权 App 获取 statsd 聚合数据的主路径。`query()` 签名为 `query(long configKey, String configPackage, StatsQuery query, Executor executor, OutcomeReceiver<StatsQuery, StatsQueryException> callback)`。
 
 **权限要求：**
-- 注册 pull atom 回调需要 `REGISTER_STATS_PULL_ATOM` 权限（位于 `frameworks/base/core/res/AndroidManifest.xml`）
-- 查询 config 需要 `DUMP` 或 `PACKAGE_USAGE_STATS`
+- 注册 pull atom 数据提供方（`setPullAtomCallback`）需要 `REGISTER_STATS_PULL_ATOM` 权限（位于 `frameworks/base/core/res/AndroidManifest.xml`）
+- 注册 config 和查询报告（`addConfig`、`getReports`）需要 `DUMP` 或 `PACKAGE_USAGE_STATS` 权限
 - AndroidManifest 中不存在 `READ_PRECISE_STATS` 权限；当前 StatsD 权限模型以 `REGISTER_STATS_PULL_ATOM`、`DUMP`、`PACKAGE_USAGE_STATS` 三项为主
 
 ### 1.2 数据流路径
@@ -68,44 +72,84 @@ system_server → StatsLog.logStart/logStop/logEvent (@hide) → libstatssocket 
 
 `StatsLog` 在 `frameworks/base/core/java/android/util/StatsLog.java` 中定义，所有 `logEvent()` 方法均为 `@hide`，调用方需要通过 `libstatssocket` 的本地 socket 写入 statsd daemon。App 进程无法直接使用这条路径。
 
-**Pull atom 出站（statsd → 特权 App）：**
+**Config 订阅与报告读取（statsd ⇄ 特权 App）：**
 ```
-StatsPullAtomCallback.onPullAtom(int atomTag, List<Atom> data) ← statsd daemon pull 调度
+StatsManager.addConfig(configId, config) → statsd daemon 按 config 聚合
+StatsManager.getReports(configId) ← statsd daemon 返回已收集报告
 ```
 
-这是 App 获取聚合性能数据的主要方式。当前 `atoms.proto`（android-17.0.0_r1）中定义了大量系统健康原子（如 `APP_START_OCCURRED`、`ANR_OCCURRED`、`BATTERY_LEVEL_CHANGED` 等），但没有统一的 "性能指标大 Atom"。App 侧需要按自己的需求订阅多个 pull atom 并自行聚合。
+特权 App 通过 `addConfig()` 向 statsd 注册 `StatsdConfig`（定义要收集哪些 atom、聚合方式），statsd 按 config 持续收集并聚合。App 通过 `getReports()` 读取聚合结果——这是获取 statsd 系统健康指标的主路径。
+
+**Pull atom 数据提供（特权组件 → statsd）：**
+```
+StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data) → statsd 向客户端拉取自定义 pulled atom
+```
+
+`setPullAtomCallback()` 注册的是**数据提供方**：当 statsd 的 config 中包含 pulled atom 时，statsd 回调已注册的 callback，由客户端向 `List<StatsEvent>` 中填充指标数据。这不是 App 从 statsd 拉取系统聚合指标的通道——读取聚合指标应走 `addConfig` + `getReports` 路径。
+
+当前 `atoms.proto`（android-17.0.0_r1）中定义了大量系统健康原子（如 `AppStartOccurred`（ID 48）、`AnrOccurred`、`BatteryLevelChanged` 等），但没有统一的 "性能指标大 Atom"。App 侧如需收集系统级指标，优先通过 AndroidX API（如 `JankStats`）和 `Debug.MemoryInfo` 等公开接口，而非直接依赖 StatsD。
 
 **StatsCompanionService 的真实角色：**
 `StatsCompanionService` 运行在 system_server 中，是一个 helper service，通过 `IStatsd` 接口与 statsd daemon 交互，主要处理 config 管理和 puller 注册。它**不是**从 `/dev/socket/statsdw` 读取事件流的 JNI 桥接层。事件写入由 `StatsLog` 通过 `libstatssocket` 直连 statsd daemon 的本地 socket 完成，不经过 `StatsCompanionService`。
 
-### 1.3 反向查询示例
+### 1.3 系统指标采集边界与 App 侧替代方案
 
-特权 App 通过 `StatsManager.setPullAtomCallback()` 订阅系统级指标：
+StatsD 的 pull atom 订阅和 config 查询两条路径均需要特权权限（`REGISTER_STATS_PULL_ATOM`、`DUMP` 或 `PACKAGE_USAGE_STATS`），普通 App 无法直接使用 StatsD 获取系统级性能指标。实际工程中，App 侧采集系统级指标的三条可用路径为：
+
+**路径 1：AndroidX JankStats — 帧级实时诊断**
 
 ```java
-StatsManager statsManager = (StatsManager) getSystemService(Context.STATS_SERVICE);
+// AndroidX metrics-performance 库
+JankStats jankStats = JankStats.createAndTrack(window, frameData -> {
+    long frameDurationNs = frameData.getFrameDurationUiNanos();
+    boolean isJank = frameData.isJank();
+    // frameData.getStates() 返回 UI 状态列表
+    for (int i = 0; i < frameData.getStates().size(); i++) {
+        FrameData.StateInfo state = frameData.getStates().get(i);
+        String stateKey = state.getState();
+    }
+});
+```
 
-// 订阅 APP_START_OCCURRED atom (ID 10141) 的 pull 回调
+详见 §6。
+
+**路径 2：Debug.MemoryInfo — 进程级内存采集**
+
+```java
+ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+Debug.MemoryInfo[] info = am.getProcessMemoryInfo(new int[]{Process.myPid()});
+int totalPss = info[0].getTotalPss();
+```
+
+详见 §3。
+
+**路径 3：Firebase Performance / 自建 APM SDK**
+
+网络耗时、启动耗时、自定义业务指标由 APM SDK 在 App 进程中直接采集，无需经过 StatsD。详见 §5、§9。
+
+特权系统组件如需向 statsd 提供自定义 pulled atom（而非读取系统聚合指标），使用 `setPullAtomCallback()` 作为数据提供方：
+
+```java
+// 特权组件向 statsd 提供自定义 pulled atom 数据
 statsManager.setPullAtomCallback(
-    10141,  // atomTag — 见 atoms.proto
-    null,   // metadata = null 使用默认 30s 间隔
+    MY_CUSTOM_ATOM_TAG,
+    new PullAtomMetadata.Builder()
+        .setAdditiveFields(new int[]{/* additive field IDs */})
+        .build(),
     executor,
     (atomTag, data) -> {
-        for (Atom atom : data) {
-            // Atom 是 protobuf 消息，字段定义见 atoms.proto
-            // 例如 AppStartOccurred.package_name、AppStartOccurred.type 等
-            if (atom.getAppStartOccurred().getType()
-                    == AppStartOccurred.StartType.COLD) {
-                long coldStartLatency = atom.getAppStartOccurred().getLatencyMillis();
-                // 上报到 APM 后端
-            }
-        }
+        // data 是 List<StatsEvent>，调用方向其填充数据
+        StatsEvent event = StatsEvent.newBuilder()
+            .setAtomId(atomTag)
+            .writeInt(myMetricValue)
+            .build();
+        data.add(event);
         return StatsPullAtomCallback.RESULT_SUCCESS;
     }
 );
 ```
 
-Pull atom ID 需要对照 `frameworks/proto_logging/stats/atoms.proto` 的 `android-17.0.0_r1` tag 确认。
+Pull atom ID 和字段定义需要对照 `frameworks/proto_logging/stats/atoms.proto` 的 `android-17.0.0_r1` tag 确认。`AppStartOccurred` atom 在 atoms.proto 中的 ID 为 48（`app_start_occurred = 48`），字段包括 `transition_delay_millis`、`starting_window_delay_millis`、`bind_application_delay_millis`、`windows_drawn_delay_millis` 等，不存在 `latencyMillis` 字段。
 
 [已确认: AOSP android-17.0.0_r1 packages/modules/StatsD/framework/java/android/app/StatsManager.java; frameworks/proto_logging/stats/atoms.proto]
 
@@ -285,7 +329,7 @@ adb bugreport bugreport.zip
 
 ### 4.2 实际使用建议
 
-Battery Historian 更适合系统级功耗/唤醒问题排查。对于 App 性能诊断，`Android Studio Profiler` + `Perfetto trace` 是更直接的工具。StatsD 的 pull atom 机制（§1.2）可用于 App 侧采集系统级事件，但这套路径的入口是特权权限（`REGISTER_STATS_PULL_ATOM` + `DUMP`），普通 App 无法在线上大规模使用。
+Battery Historian 更适合系统级功耗/唤醒问题排查。对于 App 性能诊断，`Android Studio Profiler` + `Perfetto trace` 是更直接的工具。StatsD 的 config 订阅与报告查询机制（`addConfig` + `getReports`，见 §1.2）需要特权权限（`REGISTER_STATS_PULL_ATOM` + `DUMP` 或 `PACKAGE_USAGE_STATS`），普通 App 无法在线上大规模使用。App 侧系统事件采集应优先使用 AndroidX 公开 API（JankStats、Debug.MemoryInfo 等）。
 
 ---
 
@@ -341,7 +385,7 @@ Firebase Performance Monitoring 提供了内置的 URL pattern 归一化——�
 
 | 维度 | JankStats（端侧） | StatsD（系统级） |
 |------|-----------------|----------------|
-| 采集粒度 | 每帧（`OnFrameListener` 回调） | 配置粒度（默认 30s pull） |
+| 采集粒度 | 每帧（`OnFrameListener` 回调） | 按 StatsdConfig 配置聚合周期 |
 | 数据内容 | frameDurationNanos, isJank, UI state, frameOverrunNanos | 订阅的 atom 字段（见 atoms.proto） |
 | 运行位置 | App 进程内，AndroidX 库 | statsd daemon 进程 |
 | 状态绑定 | 绑定 UI 状态（Activity/Fragment/滚动状态） | 不绑定 UI 状态 |
@@ -354,11 +398,16 @@ Firebase Performance Monitoring 提供了内置的 URL pattern 归一化——�
 StatsD 可以告诉你"版本 4.7 在 Pixel 8 上 P95 帧耗时从 12ms 升到 22ms"，但无法告诉你这个用户在哪个页面、执行什么操作时卡顿。需要 JankStats 绑定的 UI 状态标签：
 
 ```java
-jankStats.addFrameListener(new JankStats.OnFrameListener() {
-    @Override
-    public void onFrame(JankStats.FrameData frameData, String activityName) {
-        frameData.addTag("page", activityName);
-        frameData.addTag("scrolling", isScrolling);
+// AndroidX metrics-performance: 创建 JankStats 时传入 OnFrameListener
+JankStats jankStats = JankStats.createAndTrack(window, frameData -> {
+    // frameData.getFrameDurationUiNanos() — 帧耗时 (ns)
+    // frameData.isJank() — 是否判定为卡顿
+    // frameData.getStates() — UI 状态列表 (通过 PerformanceMetricsState 绑定)
+    long frameDurationNs = frameData.getFrameDurationUiNanos();
+    boolean isJank = frameData.isJank();
+    if (isJank) {
+        // 上报卡顿帧，附带当前 UI 状态
+        reportJankFrame(frameDurationNs, frameData.getStates());
     }
 });
 ```
@@ -378,7 +427,10 @@ JankStats 在以下条件同时满足时打开：
 
 ```java
 public class JankStatsController {
-    public void enableJankStatsIfAppropriate(Context context) {
+    private JankStats jankStats;
+    private boolean isTracking = false;
+
+    public void enableJankStatsIfAppropriate(Window window, Context context) {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         BatteryManager bm = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
 
@@ -387,8 +439,19 @@ public class JankStatsController {
         boolean charging = bm.isCharging();
 
         if (!powerSave && (level > 30 || charging)) {
-            jankStats.setEnabled(true);
-            jankStats.setSamplingRate(0.05f);
+            if (jankStats == null) {
+                jankStats = JankStats.createAndTrack(window, frameData -> {
+                    // 帧级回调：frameDurationUiNanos, isJank, states
+                    if (frameData.isJank()) {
+                        handleJankFrame(frameData);
+                    }
+                });
+            }
+            jankStats.isTrackingEnabled = true;
+            isTracking = true;
+        } else if (jankStats != null) {
+            jankStats.isTrackingEnabled = false;
+            isTracking = false;
         }
     }
 }
@@ -450,10 +513,10 @@ LeakCanary.setConfig(LeakCanary.getConfig().newBuilder()
 性能监控本身带来的开销需要控制在可接受范围。
 
 **异步采集：**
-所有指标采集应在独立线程执行。`StatsManager.setPullAtomCallback()` 的回调在 statsd 提供的 executor 线程中运行，不阻塞主线程。
+所有指标采集应在独立线程执行。`StatsManager.setPullAtomCallback()` 注册的 callback 在 statsd 回调时运行于指定的 executor 线程中，不阻塞主线程。`JankStats.OnFrameListener` 回调在帧提交后的 Choreographer 回调线程中触发，应尽量轻量。
 
 **批量处理：**
-StatsD 的 pull 周期默认 30 秒，回调中拿到的是聚合后的 `List<Atom>`，已避免逐事件处理。App 自建的指标缓冲也应该按周期批量写入上报通道，而不是每采集一点就发一次网络请求。
+StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事件，`getReports()` 返回的是聚合后的报告。App 自建的指标缓冲也应该按周期批量写入上报通道，而不是每采集一点就发一次网络请求。
 
 **内存池管理：**
 频繁创建的事件对象应通过对象池复用，避免高频采集下的内存分配抖动。
@@ -605,7 +668,7 @@ public class AdaptiveMemoryMonitor {
 
 Android 14-17 的性能监控不是按一个虚构的 "PERFORMANCE_METRICS_ATOM" 运转的。实际工程中，这套体系由三层构建块组成：
 
-1. **系统层**：StatsD 通过 `StatsManager.setPullAtomCallback()` 向特权 App 暴露 `atoms.proto` 中的系统原子（如 `APP_START_OCCURRED`、`ANR_OCCURRED`、`ApplicationExitInfo`），权限边界为 `REGISTER_STATS_PULL_ATOM`。
+1. **系统层**：StatsD 通过 `StatsManager.addConfig()` + `getReports()` 向特权 App 提供 `atoms.proto` 中系统原子（如 `AppStartOccurred`（ID 48）、`AnrOccurred`、`ApplicationExitInfo`）的聚合报告；`setPullAtomCallback()` 是特权组件向 statsd 提供自定义 pulled atom 数据的入口。权限边界为 `REGISTER_STATS_PULL_ATOM` + `DUMP` 或 `PACKAGE_USAGE_STATS`。
 2. **框架层**：AndroidX `JankStats` 负责帧级实时诊断，`Debug.MemoryInfo` 负责进程级内存采集——两者都不需要特殊权限。
 3. **App 层**：电池感知采样率、网络指标聚合、上报策略和缓存管理由 App 自行实现或通过 Firebase Performance 等 SDK 接入。
 
