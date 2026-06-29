@@ -2,7 +2,7 @@
 title: "ART 虚拟机内存管理"
 chapter: '4.3'
 section: '4.3'
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: "task6_pending"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [memory, lmk, gc]

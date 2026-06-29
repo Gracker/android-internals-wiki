@@ -2,7 +2,7 @@
 
 title: "Android 17 SDM 安装编译链路性能"
 chapter: "16.9"
-status: finalized
+status: ready-for-review
 last_task2b_lite_at: "2026-06-29"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6

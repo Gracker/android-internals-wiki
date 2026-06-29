@@ -2,7 +2,7 @@
 title: "内存泄漏检测与治理"
 chapter: "23.1"
 section: "23.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-13"
 reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"

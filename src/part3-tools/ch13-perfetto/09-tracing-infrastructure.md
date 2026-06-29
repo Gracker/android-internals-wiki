@@ -2,7 +2,7 @@
 title: "\"Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理\""
 chapter: "\"13.9\""
 section: "\"13.9\""
-status: finalized
+status: ready-for-review
 pipeline_stage: ready-to-publish
 
 # Frontmatter updates for Task 6 review
