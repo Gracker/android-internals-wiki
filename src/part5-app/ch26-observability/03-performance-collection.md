@@ -1,23 +1,24 @@
 ---
 title: "性能指标采集与上报"
 status: "ready-for-review"
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 task6_result: "pass-light-edit-v2"
-task6_state: "reviewed"
-task9_state: "pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 task2b_result: "fixed"
 task2b_state: "fixed"
 last_task2b_main_at: "2026-06-29T08:52:56+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-29"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [android, performance, statsd, jankstats, memory-monitoring, leakcanary, apm, android-17]
-sources: ["AOSP android-17.0.0_r1 StatsManager.java", "AOSP atoms.proto", "AndroidX metrics-performance", "Firebase Performance Monitoring docs", "LeakCanary 2.x", "Debug.MemoryInfo API docs"]
-last_verified_against: "AOSP android-17.0.0_r1 + AndroidX metrics-performance + Firebase Performance Monitoring docs + LeakCanary 2.x + Debug.MemoryInfo API docs"
-task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题。2026-06-29 Task9 Idle Audit: StatsD 虚构 PERFORMANCE_METRICS_ATOM/API/权限主线已重写为 android-17.0.0_r1 可验证内容。2026-06-29 Task2B 主修复: 全章源码级重写——移除虚构 PERFORMANCE_METRICS_ATOM(10244)、删除不存在的 StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正 StatsManager→addConfig/query/setPullAtomCallback、重写 StatsCompanionService 描述、电机感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例。 2026-06-29 Task9 Deep Tech Review: 发现 StatsD pull atom 方向、StatsManager 签名/查询路径、APP_START_OCCURRED ID/字段、JankStats API 多处源码级错误，已写入 queue P95 回 Task2B。 2026-06-29 Task2B 主修复: 修正 StatsD pull atom 方向(setPullAtomCallback 是数据提供方非消费方)、修正 addConfig 返回 void + 补充 getReports 查询路径、重写 §1.3 示例(删除虚构 APP_START_OCCURRED ID 10141/atom.getLatencyMillis() + 改为三条 App 可用路径+特权组件 pull atom 提供方示例)、修正 JankStats API(createAndTrack/isTrackingEnabled/createAndTrack 替代 addFrameListener/setEnabled/setSamplingRate)、修正 FrameData 字段(frameDurationUiNanos/states 替代 frameOverrunNanos)、修正 §4.2/§6.1/§8.1/总结 中 pull atom 描述。"
+sources: ["AOSP android-17.0.0_r1 StatsManager.java", "AOSP android-17.0.0_r1 StatsLog.java", "AOSP android-17.0.0_r1 CachedAppOptimizer.java", "AOSP android-17.0.0_r1 MemoryLimiter.java", "AOSP android-17.0.0_r1 Build.java", "AOSP atoms.proto", "AndroidX metrics-performance", "Firebase Performance Monitoring docs", "LeakCanary 2.x", "Debug.MemoryInfo API docs"]
+last_verified_against: "AOSP android-17.0.0_r1 StatsD/AM/Debug/Build sources + AndroidX metrics-performance + Firebase Performance Monitoring docs + LeakCanary 2.x + Debug.MemoryInfo API docs"
+task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关系锚点缺失，重写隐私保护与数据生命周期管理，验证内存分类精度数据补充测试条件，确认 LeakCanary ScheduleRef 机制描述准确性。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题。2026-06-29 Task9 Idle Audit: StatsD 虚构 PERFORMANCE_METRICS_ATOM/API/权限主线已重写为 android-17.0.0_r1 可验证内容。2026-06-29 Task2B 主修复: 全章源码级重写——移除虚构 PERFORMANCE_METRICS_ATOM(10244)、删除不存在的 StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正 StatsManager→addConfig/query/setPullAtomCallback、重写 StatsCompanionService 描述、电机感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例。 2026-06-29 Task9 Deep Tech Review: 发现 StatsD pull atom 方向、StatsManager 签名/查询路径、APP_START_OCCURRED ID/字段、JankStats API 多处源码级错误，已写入 queue P95 回 Task2B。 2026-06-29 Task2B 主修复: 修正 StatsD pull atom 方向(setPullAtomCallback 是数据提供方非消费方)、修正 addConfig 返回 void + 补充 getReports 查询路径、重写 §1.3 示例(删除虚构 APP_START_OCCURRED ID 10141/atom.getLatencyMillis() + 改为三条 App 可用路径+特权组件 pull atom 提供方示例)、修正 JankStats API(createAndTrack/isTrackingEnabled/createAndTrack 替代 addFrameListener/setEnabled/setSamplingRate)、修正 FrameData 字段(frameDurationUiNanos/states 替代 frameOverrunNanos)、修正 §4.2/§6.1/§8.1/总结 中 pull atom 描述。 2026-06-29 Task9 Deep Tech Review auto-fix: 修正 StatsLog 公开 breadcrumb 与任意 StatsEvent SystemApi 边界、StatsManager query/权限签名、JankStats StateInfo/Java setter、Freezer cgroup 语义、memtrack/StatsD 版本演进表、Android 17 SDK 常量与未验证留存数据。"
 last_task9_audit: "2026-06-29"
-last_task9_at: "2026-06-29T07:25:52+08:00"
+last_task9_at: "2026-06-29T09:31:38+08:00"
+last_task9_autofix_at: "2026-06-29"
 ---
 
 # 性能指标采集与上报
@@ -34,7 +35,7 @@ Android 17 的 StatsD 模块位于 `packages/modules/StatsD`，核心能力是�
 
 ### 1.1 StatsManager 客户端 API
 
-Android 17 (`android-17.0.0_r1`) 中 `StatsManager` 的公开 API 只有三个核心方法：
+Android 17 (`android-17.0.0_r1`) 中，与性能指标订阅、读取和 pull 数据提供相关的 `StatsManager` 公开 API 主要是三组方法：
 
 ```java
 // packages/modules/StatsD/framework/java/android/app/StatsManager.java
@@ -52,16 +53,17 @@ public void addConfig(long configId, byte[] config)
 public byte[] getReports(long configId)
 ```
 
-App 侧不能直接调用 `StatsManager` 写入事件——`StatsManager` 的写入路径（`StatsLog.logStart/logStop/logEvent` 系列）是 `@hide` 的内部 API，仅供系统服务和特权进程使用。
+App 侧不能通过 `StatsManager` 写入事件。`android.util.StatsLog.logStart/logStop/logEvent(int)` 是公开的 breadcrumb API，只写入 `APP_BREADCRUMB_REPORTED`；任意 `StatsEvent` 写入路径 `StatsLog.write(StatsEvent)` 是 `@SystemApi`，系统服务通常走生成的 `FrameworkStatsLog` / `StatsdStatsLog`。
 
-`setPullAtomCallback()` 的语义是**客户端向 statsd 提供自定义 pulled atom 数据**，而不是客户端从 statsd 接收聚合指标。当 statsd 需要拉取某个 atom 时，它会回调已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，客户端负责往 `data` 列表中填充 `StatsEvent`，填充完成后通过 `resultReceiver.pullFinished()` 通知 statsd。`PullAtomMetadata` 的默认冷却间隔为 1000ms，超时为 1500ms——这不是周期性定时回调，而是 statsd 按需拉取时的节流参数。
+`setPullAtomCallback()` 的语义是**客户端向 statsd 提供自定义 pulled atom 数据**，而不是客户端从 statsd 接收聚合指标。当 statsd 需要拉取某个 atom 时，它会回调已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，客户端负责往 `data` 列表中填充 `StatsEvent` 并返回 `RESULT_SUCCESS` / `RESULT_SKIP` 等结果；`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 回传给 statsd。`PullAtomMetadata` 的默认冷却间隔为 1000ms，超时为 1500ms——这不是周期性定时回调，而是 statsd 按需拉取时的节流参数。
 
-`addConfig()` 返回 `void`（非 boolean），用于向 statsd 注册 `StatsdConfig`；`getReports(long configId)` 用于读取 statsd 已收集的报告——这是特权 App 获取 statsd 聚合数据的主路径。`query()` 签名为 `query(long configKey, String configPackage, StatsQuery query, Executor executor, OutcomeReceiver<StatsQuery, StatsQueryException> callback)`。
+`addConfig()` 返回 `void`（非 boolean），用于向 statsd 注册 `StatsdConfig`；`getReports(long configId)` 用于读取 statsd 已收集的报告——这是特权 App 获取 statsd 聚合数据的主路径。`query()` 需要 `READ_RESTRICTED_STATS` 权限，签名为 `query(long configKey, String configPackage, StatsQuery query, Executor executor, OutcomeReceiver<StatsCursor, StatsQueryException> outcomeReceiver)`。
 
 **权限要求：**
 - 注册 pull atom 数据提供方（`setPullAtomCallback`）需要 `REGISTER_STATS_PULL_ATOM` 权限（位于 `frameworks/base/core/res/AndroidManifest.xml`）
-- 注册 config 和查询报告（`addConfig`、`getReports`）需要 `DUMP` 或 `PACKAGE_USAGE_STATS` 权限
-- AndroidManifest 中不存在 `READ_PRECISE_STATS` 权限；当前 StatsD 权限模型以 `REGISTER_STATS_PULL_ATOM`、`DUMP`、`PACKAGE_USAGE_STATS` 三项为主
+- 注册 config 和读取报告（`addConfig`、`getReports`）同时需要 `DUMP` 和 `PACKAGE_USAGE_STATS` 权限
+- SQL 查询路径 `query()` 需要 `READ_RESTRICTED_STATS` 权限
+- AndroidManifest 中不存在 `READ_PRECISE_STATS` 权限；当前 StatsD 权限模型以 `REGISTER_STATS_PULL_ATOM`、`DUMP`、`PACKAGE_USAGE_STATS`、`READ_RESTRICTED_STATS` 为主
 
 ### 1.2 数据流路径
 
@@ -69,10 +71,10 @@ App 侧不能直接调用 `StatsManager` 写入事件——`StatsManager` 的写
 
 **系统事件入站（系统服务 → statsd daemon）：**
 ```
-system_server → StatsLog.logStart/logStop/logEvent (@hide) → libstatssocket → statsd daemon (本地 socket)
+App breadcrumb / system service → StatsLog / FrameworkStatsLog / StatsdStatsLog → libstatssocket → statsd daemon (本地 socket)
 ```
 
-`StatsLog` 在 `frameworks/base/core/java/android/util/StatsLog.java` 中定义，所有 `logEvent()` 方法均为 `@hide`，调用方需要通过 `libstatssocket` 的本地 socket 写入 statsd daemon。App 进程无法直接使用这条路径。
+`StatsLog` 在 `packages/modules/StatsD/framework/java/android/util/StatsLog.java` 中定义。普通 App 可调用 `logStart/logStop/logEvent(int)` 写 breadcrumb；系统服务写入框架原子通常走生成的 `FrameworkStatsLog.write()` / `StatsdStatsLog.write()`，最终通过 `libstatssocket` 的本地 socket 写入 statsd daemon。普通 App 不能用这条路径写任意系统 atom。
 
 **Config 订阅与报告读取（statsd ⇄ 特权 App）：**
 ```
@@ -96,7 +98,7 @@ StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data) → statsd 
 
 ### 1.3 系统指标采集边界与 App 侧替代方案
 
-StatsD 的 pull atom 订阅和 config 查询两条路径均需要特权权限（`REGISTER_STATS_PULL_ATOM`、`DUMP` 或 `PACKAGE_USAGE_STATS`），普通 App 无法直接使用 StatsD 获取系统级性能指标。实际工程中，App 侧采集系统级指标的三条可用路径为：
+StatsD 的 pull atom 数据提供、config 注册/报告读取、SQL query 都是特权路径，分别需要 `REGISTER_STATS_PULL_ATOM`、`DUMP` + `PACKAGE_USAGE_STATS`、`READ_RESTRICTED_STATS`。普通 App 无法直接使用 StatsD 获取系统级性能指标。实际工程中，App 侧采集系统级指标的三条可用路径为：
 
 **路径 1：AndroidX JankStats — 帧级实时诊断**
 
@@ -107,8 +109,9 @@ JankStats jankStats = JankStats.createAndTrack(window, frameData -> {
     boolean isJank = frameData.isJank();
     // frameData.getStates() 返回 UI 状态列表
     for (int i = 0; i < frameData.getStates().size(); i++) {
-        FrameData.StateInfo state = frameData.getStates().get(i);
-        String stateKey = state.getState();
+        StateInfo state = frameData.getStates().get(i);
+        String stateKey = state.getKey();
+        String stateValue = state.getValue();
     }
 });
 ```
@@ -263,7 +266,7 @@ enum CompactProfile {
 
 #### Freezer 冻结器子系统
 
-`CachedAppOptimizer.freezeAppAsyncInternalLSP` 触发冻结前先发送 `TRIM_MEMORY_BACKGROUND`，延迟后通过 `mFreezeHandler` 投递 `DO_FREEZE`。冻结态下进程进入 D-state，`/proc/<pid>/status` 仍可读取但 RSS 不再变化。冻结事件写入 Perfetto `android.track_event` 数据源。
+`CachedAppOptimizer.freezeAppAsyncInternalLSP` 触发冻结前先发送 `TRIM_MEMORY_BACKGROUND`，延迟后通过 `mFreezeHandler` 投递 `DO_FREEZE`。冻结由 cgroup freezer 生效，源码侧记录为 `opt.setFrozen(true)` 并放入 `mFrozenProcesses`，不能等同于 Linux 进程 `D` 状态；冻结期间 `/proc/<pid>/status` 仍可读取，但 RSS 变化会停在冻结前的观测点。开启 `perfettoSdkTracingV3` 时，冻结/解冻事件写入 Perfetto `android.track_event` 的 `FREEZER_EVENT`。
 
 #### MemoryLimiter：memcg 内核级节流
 
@@ -300,10 +303,10 @@ if (proc_mem.SmapsOrRollup(&stats)) {
 }
 ```
 
-| Android 版本 | 内存分类 | 精度 |
-|-------------|---------|------|
-| Android 16 | graphics / other 二分类 | ±15% |
-| Android 17 | graphics / gl / other 三分类 | ±5% |
+| Android 版本 | 内存分类口径 | 说明 |
+|-------------|--------------|------|
+| Android 14-17 | graphics / gl / other 三类 memtrack PSS | `android_os_Debug.cpp` 中 `graphics_memory_pss` 与 `memtrack_proc_graphics_pss()` / `memtrack_proc_gl_pss()` / `memtrack_proc_other_pss()` 在这些版本均存在 |
+| Android 17 | 同一分类口径，叠加 MemoryLimiter / Freezer 影响 | 三分类不是 Android 17 新增能力；精度取决于 HAL/driver，上述源码没有给出 ±5% 平台保证 |
 
 [已验证: AOSP android-17.0.0_r1 frameworks/base/core/jni/android_os_Debug.cpp, android_util_Process.cpp]
 
@@ -317,10 +320,10 @@ Battery Historian 是一个离线分析工具，通过解析 `bugreport` 中的 
 
 | 版本 | API | 关键变化 |
 |------|-----|---------|
-| Android 14 | 34 | StatsD 基础框架，性能相关 atom 初步加入 |
-| Android 15 | 35 | ApplicationExitInfo 的退出事件进入 statsd |
-| Android 16 | 36 | StatsPullAtomService 扩展，按需拉取支持 |
-| Android 17 | 37 | Compaction/Freezer/MemoryLimiter 事件进入 Perfetto 数据源 |
+| Android 14 | 34 | `StatsManager.addConfig()` / `query()` / `setPullAtomCallback()` 已存在，StatsD 不是 Android 14 才出现的基础框架 |
+| Android 15 | 35 | `ApplicationExitInfo.REASON_LOW_MEMORY` / `REASON_FREEZER` 继续作为退出归因 API，不能写成 Android 15 才进入 statsd |
+| Android 16 | 36 | StatsD pull callback 主线与 Android 14 基本一致，不应写成 Android 16 新增按需拉取 |
+| Android 17 | 37 | `CachedAppOptimizer` 可写入 `FREEZER_EVENT`，`MemoryLimiter` 记录 over-limit 事件；内存策略对监控口径影响更大 |
 
 Android 14→17 对性能采集的核心影响不是 StatsD 框架本身的改变，而是后台内存管理策略（§3.3）和系统事件类型（ApplicationExitInfo、Freezer Event）的扩展。Battery Historian 通过 `adb bugreport` 导出后离线分析这些数据，导出命令：
 
@@ -331,7 +334,7 @@ adb bugreport bugreport.zip
 
 ### 4.2 实际使用建议
 
-Battery Historian 更适合系统级功耗/唤醒问题排查。对于 App 性能诊断，`Android Studio Profiler` + `Perfetto trace` 是更直接的工具。StatsD 的 config 订阅与报告查询机制（`addConfig` + `getReports`，见 §1.2）需要特权权限（`REGISTER_STATS_PULL_ATOM` + `DUMP` 或 `PACKAGE_USAGE_STATS`），普通 App 无法在线上大规模使用。App 侧系统事件采集应优先使用 AndroidX 公开 API（JankStats、Debug.MemoryInfo 等）。
+Battery Historian 更适合系统级功耗/唤醒问题排查。对于 App 性能诊断，`Android Studio Profiler` + `Perfetto trace` 是更直接的工具。StatsD 的 config 订阅与报告查询机制（`addConfig` + `getReports`，见 §1.2）同时需要 `DUMP` 和 `PACKAGE_USAGE_STATS` 特权权限；只有注册自定义 pull atom 数据提供方时才需要 `REGISTER_STATS_PULL_ATOM`。普通 App 无法在线上大规模使用这条路径。App 侧系统事件采集应优先使用 AndroidX 公开 API（JankStats、Debug.MemoryInfo 等）。
 
 ---
 
@@ -449,10 +452,10 @@ public class JankStatsController {
                     }
                 });
             }
-            jankStats.isTrackingEnabled = true;
+            jankStats.setTrackingEnabled(true);
             isTracking = true;
         } else if (jankStats != null) {
-            jankStats.isTrackingEnabled = false;
+            jankStats.setTrackingEnabled(false);
             isTracking = false;
         }
     }
@@ -532,9 +535,10 @@ StatsD 的 config 订阅机制按 `StatsdConfig` 定义的周期聚合原子事�
 
 Android 17 的性能监控权限分层明确：
 
-**StatsD pull atom 路径（需要特权权限）：**
+**StatsD config/report/query 路径（需要特权权限）：**
 - `REGISTER_STATS_PULL_ATOM`：注册 pull 回调
-- `DUMP` 或 `PACKAGE_USAGE_STATS`：查询 config
+- `DUMP` + `PACKAGE_USAGE_STATS`：注册 config、读取 `getReports()`
+- `READ_RESTRICTED_STATS`：使用 `query()` 查询 SQL 结果
 
 **App 自建指标路径（无需特殊权限）：**
 - `Debug.MemoryInfo`：无需额外权限
@@ -614,7 +618,7 @@ public class UploadManager {
 - 用户操作路径
 - 设备信息快照
 
-Google 公开数据显示 P0 级启动超时每增加 1s，次日留存可能下降 2-4% [待验证: 需补充具体来源链接，如 Android Vitals / Google Play Console 文档]。Crash、ANR、启动超时应始终全量采集。
+启动超时对留存有明确负向影响，但“每增加 1s 下降 2-4%”这类数字需要补充公开来源、样本条件和适用边界后才能进入正文。Crash、ANR、启动超时应始终全量采集。
 
 ### 10.2 隐私保护
 
@@ -637,7 +641,7 @@ Google 公开数据显示 P0 级启动超时每增加 1s，次日留存可能下
 ### 11.1 三层降级策略
 
 **L1（Android 17+）：**
-优先用 Perfetto 拉取 `android.track_event` 中的 `FREEZER_EVENT`，过滤 `UNFREEZE_REASON_TRIM_MEMORY` / `UNFREEZE_REASON_LRU` 等原因。
+优先用 Perfetto 拉取 `android.track_event` 中的 `FREEZER_EVENT`，过滤 `UNFREEZE_REASON_TRIM_MEMORY` / `UNFREEZE_REASON_ACTIVITY` / `UNFREEZE_REASON_UID_IDLE` 等源码中存在的原因。
 
 **L2（Android 14-16）：**
 维持 `/proc/<pid>/status` 1Hz 采样，但应用端要做 `onTrimMemory` 事件桥接。
@@ -652,7 +656,7 @@ public class AdaptiveMemoryMonitor {
     public MemorySnapshot getMemorySnapshot(Context context) {
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) {
             Debug.MemoryInfo[] info = am.getProcessMemoryInfo(new int[]{Process.myPid()});
             return fromDebugMemoryInfo(info[0]);
         } else {
@@ -670,7 +674,7 @@ public class AdaptiveMemoryMonitor {
 
 Android 14-17 的性能监控不是按一个虚构的 "PERFORMANCE_METRICS_ATOM" 运转的。实际工程中，这套体系由三层构建块组成：
 
-1. **系统层**：StatsD 通过 `StatsManager.addConfig()` + `getReports()` 向特权 App 提供 `atoms.proto` 中系统原子（如 `AppStartOccurred`（ID 48）、`AnrOccurred`、`ApplicationExitInfo`）的聚合报告；`setPullAtomCallback()` 是特权组件向 statsd 提供自定义 pulled atom 数据的入口。权限边界为 `REGISTER_STATS_PULL_ATOM` + `DUMP` 或 `PACKAGE_USAGE_STATS`。
+1. **系统层**：StatsD 通过 `StatsManager.addConfig()` + `getReports()` 向特权 App 提供 `atoms.proto` 中系统原子（如 `AppStartOccurred`（ID 48）、`AnrOccurred`、`ApplicationExitInfo`）的聚合报告；`setPullAtomCallback()` 是特权组件向 statsd 提供自定义 pulled atom 数据的入口。权限边界为：`setPullAtomCallback()` 需要 `REGISTER_STATS_PULL_ATOM`，`addConfig()` / `getReports()` 同时需要 `DUMP` 和 `PACKAGE_USAGE_STATS`，`query()` 需要 `READ_RESTRICTED_STATS`。
 2. **框架层**：AndroidX `JankStats` 负责帧级实时诊断，`Debug.MemoryInfo` 负责进程级内存采集——两者都不需要特殊权限。
 3. **App 层**：电池感知采样率、网络指标聚合、上报策略和缓存管理由 App 自行实现或通过 Firebase Performance 等 SDK 接入。
 
