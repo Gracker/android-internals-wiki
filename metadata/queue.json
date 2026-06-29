@@ -369,7 +369,10 @@
     ],
     "added_by": "task3-freshness-check",
     "added_at": "2026-06-29T02:12:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-06-29T14:53:01.246869+08:00",
+    "completion_note": "closed: freshness concerns already addressed by Task9 deep-review (Generational CMC/MemoryLimiter/CMC boundary all covered in android-17.0.0_r1); verified by Task6 review 2026-06-29"
   },
   {
     "section": "2.9",

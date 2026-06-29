@@ -1,6 +1,4 @@
 ---
-
-status: ready-for-review
 title: 内存相关的版本演进
 chapter: '4.6'
 section: '4.6'
@@ -61,7 +59,6 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 9
-pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit-v2
 last_task6_at: "2026-06-29T13:16:34+08:00"
@@ -70,9 +67,6 @@ task6_review_notes: '2026-06-29 Task6 复审(revisiting→reviewed)：Task9 auto
 task9_state: reviewed
 task9_result: auto-fixed
 last_task9_at: "2026-06-29T11:34:21+08:00"
-task2b_state: pending
-task2b_result: fixed
-last_task2b_at: "2026-06-29T09:40:00+08:00"
 last_task2b_lite_at: "2026-06-29"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-29"
@@ -86,6 +80,13 @@ p1: 0
 p2: 0
 updated_by: "openclaw-task9"
 updated_date: "2026-06-29"
+status: finalized
+pipeline_stage: ready-to-publish
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: 2026-06-29T14:53:01.246869+08:00
+promoted_at: 2026-06-29T14:53:01.246869+08:00
+promotion_note: Auto-promoted: Task6(pass-light-edit-v2) + Task9(auto-fixed) + queue cleared. Freshness check concerns resolved by Task9 deep-review.
 ----
 
 # 内存相关的版本演进
