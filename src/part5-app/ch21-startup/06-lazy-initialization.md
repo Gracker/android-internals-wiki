@@ -2,16 +2,16 @@
 title: "延迟初始化与按需加载"
 chapter: "21.6"
 section: "21.6"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android-15.0.0_r1 MessageQueue, Android Developers launch-time / App Startup / Play Feature Delivery docs"
+last_verified: "2026-06-29"
+last_verified_against: "AOSP android-17.0.0_r1 LegacyMessageQueue / CombinedDeliMessageQueue, Android Developers launch-time / App Startup / Play Feature Delivery docs"
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 0
 sources:
   - type: aosp
-    path: "frameworks/base/core/java/android/os/MessageQueue.java (android-15.0.0_r1, IdleHandler / next())"
+    path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java + frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java (android-17.0.0_r1, IdleHandler / next())"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/launch-time"
   - type: official
@@ -26,21 +26,24 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [lazy-init, idlehandler, on-demand-loading, app-startup]
 related_chapters: ["21.2", "21.3", "1.13"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task2b_state: skipped
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
 last_task6_audit: "2026-06-21"
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-13"
-last_task9_at: "2026-05-13T01:43:00+08:00"
-last_task9_audit: "2026-06-07"
-task2b_result: skipped-no-rework-needed
+last_task9_at: "2026-06-29T21:30:52+08:00"
+last_task9_audit: "2026-06-29"
+task9_review_notes: "2026-06-29 闲时抽检 AUTO-FIX：将 IdleHandler / MessageQueue 源码锚点从 android-15.0.0_r1 更新到 android-17.0.0_r1 LegacyMessageQueue + CombinedDeliMessageQueue，并补 targetSdk 37 DeliQueue 版本边界；回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-29-21-audit.md"
+last_task9_autofix_at: "2026-06-29"
+task2b_result: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
 ---
@@ -151,12 +154,14 @@ class FeatureGate<T>(
 
 `MessageQueue.IdleHandler` 是 Android 主线程空闲加载里最常见的工具。AOSP 对它的定义很明确：当 MessageQueue 没有可立即分发的消息、即将等待更多消息时调用 `queueIdle()`；返回 `true` 会保留这个 IdleHandler，返回 `false` 会在本次执行后移除。
 
-[已验证: AOSP android-15.0.0_r1, frameworks/base/core/java/android/os/MessageQueue.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java 与 frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java]
 [详见 1.13 节]
 
-### 它在 `next()` 里的触发条件
+Android 17 下，`targetSdkVersion >= 37` 的应用会进入新的 lock-free `MessageQueue` 路径；AOSP `android-17.0.0_r1` 中旧路径在 `LegacyMessageQueue/MessageQueue.java`，新路径在 `CombinedDeliMessageQueue/MessageQueue.java`。`IdleHandler` 的 API、返回值和“没有可立即分发消息时触发”的语义保留，但新路径不再等同于旧版 `synchronized (this) + mMessages` 单链表结构。下面的流程只用于解释旧实现路径；Android 17 DeliQueue 场景要看 `nextDeliQueue()`、`mStack.hasMessages(...)` 和 `mIdleHandlersLock`。
 
-`MessageQueue.next()` 的流程可以压缩成这样：
+### 它在 `next()` 里的触发条件与 Android 17 边界
+
+旧实现 `MessageQueue.next()` 的流程可以压缩成这样：
 
 ```text
 nativePollOnce(ptr, timeout)
@@ -204,7 +209,7 @@ Looper.myQueue().addIdleHandler {
 | 所有 SDK 都注册 IdleHandler | 空闲窗口被多个 SDK 抢占 | 接入启动框架，由框架统一排队 |
 | 把 IdleHandler 当首帧后回调 | 首帧前也可能出现队列空闲 | 首帧后任务用绘制完成信号或启动框架状态触发 |
 
-[已验证: AOSP android-15.0.0_r1, MessageQueue.IdleHandler.queueIdle()]
+[已验证: AOSP android-17.0.0_r1, LegacyMessageQueue/MessageQueue.java 与 CombinedDeliMessageQueue/MessageQueue.java, MessageQueue.IdleHandler.queueIdle()]
 
 ## 按需加载与模块懒加载
 
