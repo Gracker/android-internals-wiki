@@ -458,3 +458,152 @@ enum class MonitoredLimit {
 - 摘要：深度拆解 MemoryLimiter 五大子系统：完整 23 个 ProcState→Limits 映射矩阵（persistent 无限制→cached 交 lmkd）；inotify→polling 回退机制（red zone 30s 轮询、常态 5min、测试 1s）；AnonSwapState 四态机（kCold/kOkay/kHot/kTriggered）；内核 memcg v2 memory.high 的 throttle+reclaim 语义（永不 OOM）；statsd 令牌桶限流（4 token/h、≤28 events/day）。
 - 注入时间：2026-06-29
 - 价值：提供 MemoryLimiter 从 Java→JNI→Kernel 的完整运行时行为模型，是 APM SDK 适配 Android 17 后台内存限制的源码级必读参考
+
+
+### AIW 源码调研（2026-06-29）— Kill 窗口真相、ProfilingServiceHelper 三重门控与 Limiter 状态机
+
+<!-- AIW-源码调研-2026-06-29 -->
+[已验证: AOSP android-17.0.0_r1, MemoryLimiter.java:813-836 + com_android_server_am_MemoryLimiter.cpp:103-111, 472-483, 511-528]
+
+#### 30 秒 Kill 延迟的真实目的——为 ProfilingServiceHelper 留的窗口
+
+[已验证: AOSP android-17.0.0_r1, MemoryLimiter.java:828-836]
+
+源码注释直接揭示 30s 的设计意图：
+
+```java
+// MemoryLimiter.java:828-836
+// Request that the target be killed.  The delay allows the profiler, if
+// configured to complete.
+// TODO: eliminate this when the ProfilingServiceHelper API accepts a "kill when
+// finsished" flag.
+Message msg = mQueue.obtainMessage(MESSAGE_KILL, pid, uid,
+        "MemoryLimiter:AnonSwap");
+mQueue.sendMessageDelayed(msg, KILL_DELAY_MS);
+```
+
+**关键事实**：
+- 30s 不是架构层面的"缓冲期"——**完全是为 ProfilingServiceHelper 抓 heap dump 留的时间**
+- 源码中存在显式 TODO，希望扩展 ProfilingServiceHelper 接受 "kill-when-finished" 标志位后消除 30s 硬延迟
+- 注释中存在拼写错误 "finsished"（应为 "finished"）——可作提交者身份线索
+
+**对应用监控的修正**：30s 窗口同时承担两个职责（profile 抓取 + 软着陆），但只有当 profiling 真的触发时才是前者。
+
+#### ProfilingServiceHelper 的三重门控——默认不触发
+
+[已验证: AOSP android-17.0.0_r1, MemoryLimiter.java:815-826]
+
+```java
+if (android.os.profiling.Flags.systemTriggeredProfilingNew()        // flag 1
+        && android.os.profiling.anomaly.flags.Flags.anomalyDetectorCoreC()  // flag 2
+        && pkg != null) {                                            // 条件 3
+    ProfilingServiceHelper helper = ProfilingServiceHelper.getInstance();
+    helper.onProfilingTriggerOccurred(uid, pkg,
+            ProfilingTrigger.TRIGGER_TYPE_ANOMALY);
+}
+```
+
+| 条件 | 默认状态 | 含义 |
+|---|---|---|
+| `systemTriggeredProfilingNew()` | **关闭** | SystemTriggeredProfiling 新版 flag |
+| `anomalyDetectorCoreC()` | **关闭** | anomalyDetector 模块的 core-c 标志 |
+| `pkg != null` | 多数应用满足 | 进程必须能解析出 package name |
+
+**Android 17 GA 设备上 30s 窗口里默认不会触发 profiling**——APM SDK 不应假设"被 MemoryLimiter kill 一定伴随 heap dump"。
+
+#### 100 MB Margin 仅在 cgroup 事件触发后才写入
+
+[已验证: AOSP android-17.0.0_r1, com_android_server_am_MemoryLimiter.cpp:472-483]
+
+之前章节描述"cgroup memory.high 实际写入值 = memHigh + 100MB"是**有条件的**——通过 `mMemWatcher.mTriggered` 状态门控：
+
+```cpp
+case MonitoredLimit::kMemoryHigh:
+    mMemoryHighLimit = limit;
+    if (mMemWatcher.mTriggered) {
+        // Add some margin to memHigh so that the CPU can run and perhaps shed anon
+        // memory before hitting the limit.
+        limit = incrLimit(limit, mMemWatcher.mMargin);
+    }
+    writeLimit(cgroupPath(CgroupFile::kMemoryHigh), limit);
+```
+
+- **常态下**：cgroup 收到原始 memHigh
+- **触发后**：cgroup 收到 memHigh + 100MB
+- Margin 用途：给被 throttle 的进程留 CPU 时间回收 anon
+
+#### AnonSwapState 四态机与状态转换
+
+[已验证: AOSP android-17.0.0_r1, com_android_server_am_MemoryLimiter.cpp:103-111, 511-528]
+
+```cpp
+enum class AnonSwapState { kCold, kOkay, kHot, kTriggered };
+
+AnonSwapState testAnonSwap() const {
+    if (mAnonSwapTriggered) return AnonSwapState::kTriggered;
+    int64_t metric = getMetric(MonitoredLimit::kAnonSwap);
+    if (mAnonSwapLimit < 0) return AnonSwapState::kOkay;
+    else if (metric > mAnonSwapLimit) return AnonSwapState::kHot;
+    else if (metric < (mMemoryHighLimit - mMemHighHysteresis)) return AnonSwapState::kCold;
+    else return AnonSwapState::kOkay;
+}
+```
+
+- `kCold -> kOkay` 与 `kOkay -> kCold` 的转换阈值都是 `memHigh - 10MB`——`mMemHighHysteresis` 防止 inotify/轮询切换抖动
+- 10MB 在 cpp 注释中自承"主要为测试方便"，无深层架构理由
+
+#### 配置文件"最大匹配"选择算法
+
+[已验证: AOSP android-17.0.0_r1, MemoryLimiter.java:920-986]
+
+`/vendor/etc/memory-limiter-config.xml` 中的多组 LimitSet 通过"最大匹配"算法选择：
+
+```java
+// 选取 minMemTotal <= memTotal 中最大的那一组
+for (int i = 0; i < sets.size(); i++) {
+    long minMemTotal = cfg.getMinimumRequiredMemTotal().longValue() * MB;
+    if (minMemTotal > memTotal || minMemTotal < minRequiredMem) continue;
+    minRequiredMem = minMemTotal;
+    result = new Configuration(...);
+}
+```
+
+- `cfg.getVersion()` 必须 == 1，否则抛 `IllegalArgumentException`
+- `clist.size() < 1` 也抛异常
+- 解析失败/无匹配 LimitSet 时 MemoryLimiter **静默禁用**，不阻止 system_server 启动
+
+#### ProcessState 数量校正——22 个而非 23 个
+
+[已验证: AOSP android-17.0.0_r1, MemoryLimiter.java:574-617]
+
+之前章节表格列出 23 个 proc state。源码 `initializeMemoryLimits()` 的 switch 实际只有 **22 个 case 分支**（UNKNOWN、PERSISTENT、PERSISTENT_UI、TOP、BOUND_TOP、FOREGROUND_SERVICE、BOUND_FOREGROUND_SERVICE、IMPORTANT_FOREGROUND、IMPORTANT_BACKGROUND、TRANSIENT_BACKGROUND、BACKUP、SERVICE、RECEIVER、TOP_SLEEPING、HEAVY_WEIGHT、HOME、LAST_ACTIVITY、CACHED_ACTIVITY、CACHED_ACTIVITY_CLIENT、CACHED_RECENT、CACHED_EMPTY、NONEXISTENT）。
+
+**关键细节**：
+- `TOP_SLEEPING` 走 `memVisible`（非 `memNotVisible`）——屏幕关并不立即降级
+- `HOME`（应用退到后台但 Activity 还在）走 `memNotVisible`——区别于 `CACHED_*`
+- `CACHED_*` 4 个状态完全交 lmkd——印证四层防护体系中 MemoryLimiter 与 CachedAppOptimizer 的边界
+- `NONEXISTENT` 是 `memHigh = IGNORED, swapHigh = IGNORED`——避免 stale 限制
+
+#### 版本差异——Android 15 不存在 MemoryLimiter
+
+[已验证: AOSP android-15.0.0_r1]
+
+| 版本 | MemoryLimiter 状态 |
+|---|---|
+| Android 15.0.0_r1 (API 35) | **不存在**（googlesource 404） |
+| Android 16.0.0_r1 (API 36) | 引入（Copyright 2025） |
+| Android 17.0.0_r1 (API 37) | 1291 行 Java + 1276 行 JNI C++ |
+
+MemoryLimiter 是 **Android 16 引入、17 增强**的子系统——任何 Android 15 设备的内存监控兼容性测试结果**不能直接外推到 Android 16/17**。
+
+---
+
+#### 延伸阅读
+
+### Android 17 MemoryLimiter — 30s Kill 窗口、ProfilingServiceHelper 触发条件与 Limiter 状态机
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-memorylimiter-30s-kill-window-and-profiling.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码注释直接揭示 30s 延迟完全是为 ProfilingServiceHelper 留的窗口（TODO 明确写"等 ProfilingServiceHelper 提供 kill-when-finished 标志位后消除"）。ProfilingServiceHelper 触发需三重门控（systemTriggeredProfilingNew + anomalyDetectorCoreC + pkg != null），Android 17 GA 默认全关闭。100MB margin 仅在 cgroup memory.high 事件触发后写入 cgroup。配置文件采用"最大匹配"算法（minMemTotal <= memTotal 中最大者）。ProcessState 实际为 22 个 case 分支（之前章节误标 23）。Android 15.0.0_r1 中 MemoryLimiter.java 不存在（404），确认是 Android 16 引入。
+- 注入时间：2026-06-29
+- 价值：填补 4.17 章节在"30s 等待的真实目的"、"margin 激活条件"、"配置匹配算法"、"ProcessState 数量校正"四个细节盲区，为 APM 监控 SDK 提供精确的归因与告警阈值参考。
+

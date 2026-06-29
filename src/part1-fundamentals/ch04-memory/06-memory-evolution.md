@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: ready-for-review
 title: 内存相关的版本演进
 chapter: '4.6'
 section: '4.6'
@@ -60,19 +60,19 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 9
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-06-03T21:36:06+08:00"
 last_task6_review_log: logs/review/2026-06-03-13-review.md
 task6_review_notes: '2026-06-03 Task6 13:05：pass-light-edit（状态修复+确认）。前次 12:15 review 已通过但 task6_state 未从 revisiting 更新为 reviewed。本轮确认无新增 L1/L2 问题，修复 frontmatter 状态。源码索引表 linker_phdr.cpp 版本标注不一致（代码注释 android-16.0.0_r1 vs 索引 android-mainline）已记入日志。task9_result 仍 needs-rework，不可自动晋升。'
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 last_task9_at: "2026-06-03T14:26:33+08:00"
 task2b_state: fixed
 task2b_result: fixed-lite
-last_task2b_at: '2026-05-13T19:33:05+08:00'
-last_task2b_lite_at: '2026-06-03'
+last_task2b_at: "2026-06-29T09:40:00+08:00"
+last_task2b_lite_at: "2026-06-29"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-03"
 task9_review_notes: "2026-06-03 Task9 14:20 auto-fixed：修正 16KB Page Size 段落中的 Pixel 10/Tensor G5 未证实设备结论，改为 Android 官方已列出的 Pixel 8/9/9a 测试入口；将 Bionic 16KB compat 源码索引从 android-mainline 收敛到已核验的 android-16.0.0_r1。P0 0 / P1 0 / AUTO-FIX 2；回到 Task6 复审。 | 2026-05-13 Task9 20:35：needs-rework。P0 0 / P1 1 / P2 0；CMC/Mark Compact 版本边界写成 Android 15 首次进入 AOSP，实际 android-14.0.0_r1 已有源码路径与 kCollectorTypeCMC/userfaultfd 探测。"
@@ -532,8 +532,8 @@ if (kPageSize == 16*1024 && min_palign == 4096) {
 | 文件路径 | 关键内容 | 版本 |
 |---------|---------|------|
 | `frameworks/base/core/jni/android_os_Debug.cpp` | PSS JNI 读取，read_mapinfo() 解析 smaps | android-14+ |
-| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode，`ElfReader::LoadSegments()` 入口 | android-16.0.0_r1 |
-| `bionic/linker/linker_phdr_16kib_compat.cpp` | `Setup16KiBAppCompat()` / `IsEligibleFor16KiBAppCompat()` | android-16.0.0_r1 |
+| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode，`ElfReader::LoadSegments()` 入口 | android-17.0.0_r1 |
+| `bionic/linker/linker_phdr_16kib_compat.cpp` | `Setup16KiBAppCompat()` / `IsEligibleFor16KiBAppCompat()` | android-17.0.0_r1 |
 | `android.googlesource.com commit fc89c8ae1dfc` | 16KB 错误消息改进 | 2024-08-05 |
 | `kernel/common/arch/arm64/Kconfig` | CONFIG_ARM64_16K_PAGES=y | ACK 6.6+ |
 
