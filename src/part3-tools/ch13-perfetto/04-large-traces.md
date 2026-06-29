@@ -2,7 +2,7 @@
 title: "命令行打开超大 Trace"
 chapter: "13.4"
 section: "13.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -45,6 +45,7 @@ last_task9_review_log: "logs/deep-review/2026-06-30-07-audit.md"
 last_task9_autofix_at: "2026-06-30"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
+task2b_verifier_note: "status finalized→ready-for-review for Task6 pickup (2026-06-30T07:29:40+08:00)"
 ---
 
 # 命令行打开超大 Trace
