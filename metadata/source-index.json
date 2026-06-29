@@ -1,47 +1,72 @@
-[
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md",
-    "title": "Android 17 MemoryLimiter — ProcState 限制矩阵、轮询回退状态机、memcg 契约与 statsd 节流",
-    "summary": "深度拆解 MemoryLimiter 五大子系统：完整 23 个 ProcState→Limits 映射矩阵；inotify→polling 回退机制（red zone 30s、常态 5min）；AnonSwapState 四态机；内核 memcg v2 memory.high 的 throttle+reclaim 语义；statsd 令牌桶限流（4 token/h、≤28 events/day）。",
-    "chapter_mapping": "§4.17",
-    "processed_at": "2026-06-29T06:16:38.757742",
-    "action": "inject",
-    "source": "DeepResearch"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-frametimeline-gpu-cpu-boundary-hwc-composition.md",
-    "title": "Android 17 FrameTimeline 数据结构与 GPU/CPU 合成边界判定机制",
-    "summary": "揭示 FrameTracer 6类事件与 FrameTimeline 5类子消息双数据源；HWC_COMPOSITION_QUEUED 和 RELEASE_FENCE 在 AOSP 无发射点；GPU/HWC 合成边界由 gpu_composition 标志位判定。",
-    "chapter_mapping": "§13.19",
-    "processed_at": "2026-06-29T06:16:38.757742",
-    "action": "inject",
-    "source": "DeepResearch"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-binder-rpc-transaction-limit-600kb.md",
-    "title": "Android 17 RPC Binder 事务上限从 100KB 提升到 600KB",
-    "summary": "Android 17 RPC binder 单笔事务上限从 100KB→600KB（6×），告警阈值 300KB；传统 kernel binder BINDER_VM_SIZE（1MB）未修改。对 ContentProvider 大批量操作减少 ashmem fallback。",
-    "chapter_mapping": "§1.30",
-    "processed_at": "2026-06-29T06:16:38.757742",
-    "action": "inject",
-    "source": "DeepResearch"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-compose-concurrent-snapshot-source.md",
-    "title": "Jetpack Compose 并发组合线程安全机制与 Snapshot 系统同步原语",
-    "summary": "Compose 并发安全双锁架构：Snapshot 全局 lock 串行化 modified set 合并，Recomposer stateLock 保护状态机。多 Recomposer 实例通过独立 effectCoroutineContext 隔离但共享全局 Snapshot。",
-    "chapter_mapping": "§22.26",
-    "processed_at": "2026-06-29T06:16:38.757742",
-    "action": "inject",
-    "source": "DeepResearch"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-perfetto-version-availability-android9-17.md",
-    "title": "Android 9-17 Perfetto 版本可用性与新特性源码验证",
-    "summary": "源码验证 Perfetto 各版本可用性：Android 9 基础服务、Android 10 完整可用、Android 11 默认启用。数据源从 ftrace 发展到 77 个 protobuf。关键里程碑：heapprofd、FrameTimeline、exclusive tracing。",
-    "chapter_mapping": "§13.01",
-    "processed_at": "2026-06-29T06:16:38.757742",
-    "action": "queue",
-    "source": "DeepResearch"
-  }
-]
+{
+  "files": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md",
+      "title": "Android 17 MemoryLimiter — ProcState 限制矩阵、轮询回退状态机、memcg 契约与 statsd 节流",
+      "summary": "深度拆解 MemoryLimiter 五大子系统：完整 23 个 ProcState→Limits 映射矩阵；inotify→polling 回退机制（red zone 30s、常态 5min）；AnonSwapState 四态机；内核 memcg v2 memory.high 的 throttle+reclaim 语义；statsd 令牌桶限流（4 token/h、≤28 events/day）。",
+      "chapter_mapping": "§4.17",
+      "processed_at": "2026-06-29T06:16:38.757742",
+      "action": "inject",
+      "source": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-frametimeline-gpu-cpu-boundary-hwc-composition.md",
+      "title": "Android 17 FrameTimeline 数据结构与 GPU/CPU 合成边界判定机制",
+      "summary": "揭示 FrameTracer 6类事件与 FrameTimeline 5类子消息双数据源；HWC_COMPOSITION_QUEUED 和 RELEASE_FENCE 在 AOSP 无发射点；GPU/HWC 合成边界由 gpu_composition 标志位判定。",
+      "chapter_mapping": "§13.19",
+      "processed_at": "2026-06-29T06:16:38.757742",
+      "action": "inject",
+      "source": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-binder-rpc-transaction-limit-600kb.md",
+      "title": "Android 17 RPC Binder 事务上限从 100KB 提升到 600KB",
+      "summary": "Android 17 RPC binder 单笔事务上限从 100KB→600KB（6×），告警阈值 300KB；传统 kernel binder BINDER_VM_SIZE（1MB）未修改。对 ContentProvider 大批量操作减少 ashmem fallback。",
+      "chapter_mapping": "§1.30",
+      "processed_at": "2026-06-29T06:16:38.757742",
+      "action": "inject",
+      "source": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-compose-concurrent-snapshot-source.md",
+      "title": "Jetpack Compose 并发组合线程安全机制与 Snapshot 系统同步原语",
+      "summary": "Compose 并发安全双锁架构：Snapshot 全局 lock 串行化 modified set 合并，Recomposer stateLock 保护状态机。多 Recomposer 实例通过独立 effectCoroutineContext 隔离但共享全局 Snapshot。",
+      "chapter_mapping": "§22.26",
+      "processed_at": "2026-06-29T06:16:38.757742",
+      "action": "inject",
+      "source": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-perfetto-version-availability-android9-17.md",
+      "title": "Android 9-17 Perfetto 版本可用性与新特性源码验证",
+      "summary": "源码验证 Perfetto 各版本可用性：Android 9 基础服务、Android 10 完整可用、Android 11 默认启用。数据源从 ftrace 发展到 77 个 protobuf。关键里程碑：heapprofd、FrameTimeline、exclusive tracing。",
+      "chapter_mapping": "§13.01",
+      "processed_at": "2026-06-29T06:16:38.757742",
+      "action": "queue",
+      "source": "DeepResearch"
+    },
+    {
+      "title": "Duolingo refactors on Android with MVVM and Jetpack libraries",
+      "path": "AndroidWeekly/#23/Duolingo refactors on Android with MVVM and Jetpack libraries",
+      "source_url": "https://developer.android.com/stories/apps/duolingo-excellence",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 0
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-UI优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "\n        \n        这是一篇关于 Android 开发的技术文章，包含了实际的代码示...",
+      "scored_at": "2026-06-29T09:06:39.069411"
+    }
+  ]
+}

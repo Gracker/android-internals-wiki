@@ -164,6 +164,7 @@ tags:
   - [6.5 SharedPreferences/DataStore 性能与 ANR 优化](part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md)
   - [6.6 vold、FUSE 与 Scoped Storage I/O 性能边界](part1-fundamentals/ch06-storage/06-vold-fuse-scoped-storage-io.md)
   - [6.7 Linux 6.12 FUSE Passthrough 内核机制与 Android Scoped Storage I/O](part1-fundamentals/ch06-storage/07-fuse-bpf-scoped-storage-io-performance.md)
+  - [6.18 Linux 6.10 内存碎片整理机制](partfundamentals-ch06-memory/6.18-Linux-6.10-内存碎片整理机制.md)
 
 ---
 
@@ -230,6 +231,7 @@ tags:
   - [10.6 内存抖动与频繁 GC](part2-performance/ch10-memory-perf/06-memory-churn.md)
   - [10.7 SQLite/Room 数据库性能优化](part2-performance/ch10-memory-perf/07-sqlite-room-performance.md)
   - [10.8 GPU / 图形内存统计与实战监控](part2-performance/ch10-memory-perf/08-gpu-memory-tracking.md)
+  - [1.31 Android 17 机器学习驱动任务调度器](partfundamentals-ch01-architecture/1.31-Android-17-机器学习驱动任务调度器.md)
 
 - [第 11 章：功耗](part2-performance/ch11-power/README.md)
   - [11.1 Android 功耗模型](part2-performance/ch11-power/01-power-model.md)
@@ -302,6 +304,7 @@ tags:
   - [13.15 BufferQueue 阻塞的 Perfetto 识别](part3-tools/ch13-perfetto/15-bufferqueue-blocking-perfetto.md)
   - [13.16 Agent 辅助 Perfetto 分析协议](part3-tools/ch13-perfetto/16-agent-perfetto-analysis-protocol.md)
   - [13.17 Perfetto SDK 与应用内 Trace 数据源](part3-tools/ch13-perfetto/17-perfetto-sdk-in-app-tracing.md)
+  - [13.20 Perfetto v54 Data Explorer 与 Jank CUJ](partfundamentals-ch13-profiling/13.20-Perfetto-v54-Data-Explorer-与-Jank-CUJ.md)
     - [Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析](part3-tools/ch13-perfetto/13.19-Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析.md)
 - [13.18 SmartPerfetto 与可复用 Trace 分析平台](part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md)
   - [13.19 FrameTracer 与 Graphics Frame Event 数据通路](part3-tools/ch13-perfetto/19-frametracer-graphics-frame-event.md)
@@ -440,6 +443,8 @@ tags:
   - [20.16 Android 17 Keystore 配额与登录故障治理](part5-app/ch20-stability/16-keystore-quota-login-stability.md)
   - [20.17 Binder 异常体系与 IPC 故障性能边界](part5-app/ch20-stability/17-binder-exception-ipc-fault-performance.md)
   - [20.18 Native 堆栈回溯与符号化机制](part5-app/ch20-stability/18-native-stack-unwinding-symbolication.md)
+  - [2.28 Compose Pausable Composition 深度分析](partfundamentals-ch02-rendering/2.28-Compose-Pausable-Composition-深度分析.md)
+  - [2.29 Android 17 桌面模式窗口管理性能](partfundamentals-ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md)
 
 - [第 21 章：启动优化](part5-app/ch21-startup/README.md)
   - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
@@ -488,6 +493,7 @@ tags:
   - [22.26 Compose Snapshot 系统与状态观测性能](part5-app/ch22-rendering-practice/26-compose-snapshot-state-performance.md)
   - [22.27 Adaptive Layout 与多形态设备渲染适配性能](part5-app/ch22-rendering-practice/27-adaptive-layout-multi-form-factor-performance.md)
   - [22.28 Compose Compiler Metrics 与 Recomposition 诊断体系](part5-app/ch22-rendering-practice/28-compose-compiler-metrics-recomposition-diagnostics.md)
+  - [22.28 Adaptive Layout 多形态设备性能](partapp-ch22-rendering-practice/22.28-Adaptive-Layout-多形态设备性能.md)
 
 - [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
   - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
