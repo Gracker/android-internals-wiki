@@ -9,7 +9,7 @@ section: "25.6"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-14"
-last_verified_against: "Android Developers docs 2026-06 + AOSP android-16.0.0_r1"
+last_verified_against: "Android Developers docs 2026-06 + AOSP android-17.0.0_r1"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
