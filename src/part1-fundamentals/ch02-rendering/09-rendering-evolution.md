@@ -8,7 +8,7 @@ applicable_versions: Android 3.0 (API 11) ~ Android 17 (API 37)
 tags: [rendering, gpu, vsync]
 confidence: medium
 last_verified: 2026-06-15
-last_verified_against: AOSP android-16.0.0_r1 FrameMetrics/ARR/AGSL + android-5.0.0_r1/android-6.0.0_r1 Choreographer + Android 16 CDD + Android 17 docs
+last_verified_against: AOSP android-17.0.0_r1 FrameMetrics/ARR/AGSL + android-5.0.0_r1/android-6.0.0_r1 Choreographer + Android 16 CDD + Android 17 docs
 sources: [{'type': 'official', 'path': 'developer.android.com/about/versions'}, {'type': 'official', 'path': 'developer.android.com/about/versions/16/features'}, {'type': 'official', 'path': 'source.android.com'}, {'type': 'aosp', 'path': 'external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto'}, {'type': 'aosp', 'path': 'frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java'}, {'type': 'aosp', 'path': 'frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java'}, {'type': 'aosp', 'path': 'frameworks/base/graphics/java/android/graphics/RuntimeXfermode.java'}, {'type': 'official', 'path': 'developer.android.com/about/versions/17/summary'}, {'type': 'official', 'path': 'developer.android.com/reference/android/view/Choreographer.FrameTimeline'}, {'type': 'official', 'path': 'developer.android.com/games/develop/vulkan/overview'}, {'type': 'official', 'path': 'developer.android.com/ndk/guides/graphics/android-vulkan-profile'}, {'type': 'official', 'path': 'source.android.com/docs/compatibility/16/android-16-cdd'}, {'type': 'official', 'path': 'source.android.com/docs/core/graphics/implement-vulkan'}, {'type': 'official', 'path': 'github.com/KhronosGroup/Vulkan-Profiles/blob/main/profiles/VP_ANDROID_16_minimums.json'}, {'type': 'aosp', 'path': 'frameworks/base/core/java/android/view/Choreographer.java (android-5.0.0_r1)'}]
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
@@ -23,9 +23,9 @@ task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
 last_task2b_at: "2026-06-15T06:50:00+08:00"
-last_task2b_lite_at: 2026-05-27
+last_task2b_lite_at: 2026-06-29
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-15
 last_task9_at: "2026-06-15T07:26:56+08:00"
