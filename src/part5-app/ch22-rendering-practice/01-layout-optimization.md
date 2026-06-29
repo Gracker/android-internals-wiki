@@ -2,7 +2,7 @@
 title: "布局优化策略"
 chapter: "22.1"
 section: "22.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl/View/LayoutInflater/ViewStub/FrameMetrics, Android Developers Blog ConstraintLayout benchmark, AndroidX AsyncLayoutInflater 1.1.0 source/docs, AIW 7.12/22.3"
@@ -32,9 +32,9 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [layout, constraintlayout, viewstub, inflate, hierarchy]
 related_chapters: ["22.3", "7.12", "2.5"]
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
@@ -46,17 +46,17 @@ last_task6_review_log: "logs/review/2026-06-29-20-review.md"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-19-audit.md"
 task6_review_notes: "2026-05-13 Task6：L1/L2 轻修后通过；无新增回炉项，转入 Task9 技术复核。 | 2026-06-29 Task6 复审（Task9 auto-fix 后）：pass-light-edit。L1 修复 5 处（移除正文残留的 Clippings 结构参考标记 + 改写引用内部材料的段落）；L2 全部通过。无 B 类回炉项，送 Task9 确认。"
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-29"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-29T18:34:36+08:00"
-task9_review_notes: "2026-06-29 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 0；将 AOSP 源码锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1，复核 ViewRootImpl/View/LayoutInflater/ViewStub/FrameMetrics；回到 Task6 复审。详见 logs/deep-review/2026-06-29-18-audit.md。 | 2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；自动晋升 finalized。详见 logs/deep-review/2026-05-13-06-deep-review.md。"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-06-29T20:26:01+08:00"
+task9_review_notes: "2026-06-29 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 0；将 AOSP 源码锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1，复核 ViewRootImpl/View/LayoutInflater/ViewStub/FrameMetrics；回到 Task6 复审。详见 logs/deep-review/2026-06-29-18-audit.md。 | 2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；自动晋升 finalized。详见 logs/deep-review/2026-05-13-06-deep-review.md。 | 2026-06-29 Task9 confirmation: pass-tech-review。P0 0 / P1 0 / P2 0；复核 View traversal、ViewStub、include/merge、AsyncLayoutInflater 回退边界；Android 17 基准锚点有效，未发现新 P0/P1。 Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-06-29-20-deep-review.md。"
 last_task9_audit: "2026-06-29"
 last_task9_audit_log: "logs/deep-review/2026-06-29-18-audit.md"
 last_task9_autofix_at: "2026-06-29"
-last_task9_review_log: "logs/deep-review/2026-06-29-18-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-29-20-deep-review.md"
 task9_p0_issues: 0
-task9_p1_issues: 1
+task9_p1_issues: 0
 task9_p2_issues: 0
 ---
 
