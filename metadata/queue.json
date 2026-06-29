@@ -1,988 +1,121 @@
-[
-  {
-    "section": "1.25",
-    "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
-    "priority": 95,
-    "reason": "[Deep Tech Review] mCallRestriction 状态值描述错误",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "IPCThreadState.cpp:949-957 的三态检查描述",
-        "detail": "文中称 ERROR_IF_NOT_ONEWAY 为 1，FATAL_IF_NOT_ONEWAY 为 2，但实际是枚举值，此假设不成立",
-        "suggestion": "修正为：ERROR_IF_NOT_ONEWAY 和 FATAL_IF_NOT_ONEWAY 是 ProcessState::CallRestriction 枚举值，不应假设为连续整数"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-28T07:22:06",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-28T07:35:00+08:00",
-    "completion_note": "fixed-lite: removed unverified enum integer values from CallRestriction table"
-  },
-  {
-    "section": "1.40",
-    "section_title": "Bionic libc 性能演进与系统级影响",
-    "priority": 80,
-    "reason": "知识缺口挖掘：AOSP Bionic libc 是 Android 原生层基础，全书缺少系统性性能分析",
-    "material_paths": [
-      "AOSP bionic/ directory",
-      "NDK docs"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-06-28T08:05:00+08:00",
-    "status": "pending"
-  },
-  {
-    "section": "16.10",
-    "section_title": "Rust 化系统服务性能边界与 FFI 开销分析",
-    "priority": 80,
-    "reason": "知识缺口挖掘：Android 17 多个系统服务已 Rust 化，缺少 FFI 开销与性能边界分析",
-    "material_paths": [
-      "AOSP system/security/keystore2",
-      "AOSP packages/modules/DnsResolver",
-      "Google Security Blog"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-06-28T08:05:00+08:00",
-    "status": "pending"
-  },
-  {
-    "section": "1.25",
-    "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Binder 异步机制存在多处源码级事实错误",
-    "material_paths": [
-      "logs/deep-review/2026-06-28-08-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "要点「cached/frozen 进程上强制 oneway」、第2节 mCallRestriction、迁移要点第3条",
-        "detail": "章节把 ProcessState::CallRestriction 写成 CachedAppOptimizer/MemoryFreezer 在冻结目标进程前设置的远端约束。Android 17 源码中 setCallRestriction 是当前进程级设置，必须在线程池启动前配置；CachedAppOptimizer 冻结应用时调用的是 freezer/binder freeze ioctl，不会写入目标进程 libbinder 的 mCallRestriction。",
-        "suggestion": "把 mCallRestriction 改成本进程主动配置的阻塞调用限制；冻结进程约束用 BINDER_FREEZE、BR_FROZEN_REPLY、BR_TRANSACTION_PENDING_FROZEN 解释，避免把 cached/frozen 状态等同于强制 oneway。"
-      },
-      {
-        "type": "源码错误",
-        "location": "第2节 oneway spam 检测、第6节 oneway spam 检测缓解",
-        "detail": "章节写成“每进程计数器 + 时间窗口默认约 1 秒 + 阈值默认约 100 次”。Android 17 common kernel 的 binder_alloc.c 使用 async buffer 剩余空间触发检测：free_async_space 低于总 buffer 10% 后，统计当前 pid 已占用 async buffer，num_buffers > 50 或 total_alloc_size > buffer_size/4 才标记 oneway_spam_suspect；没有 1 秒时间窗口，也不是 100 次阈值。",
-        "suggestion": "按 binder_alloc.c 的低 async 空间 + 当前 pid 占用阈值重写，说明 BR_ONEWAY_SPAM_SUSPECT 是低 async buffer 压力下的诊断信号。"
-      },
-      {
-        "type": "源码错误",
-        "location": "第4节 BINDER_VM_SIZE：1MB 共享映射",
-        "detail": "章节称 BC_TRANSACTION 的事务数据直接写进这片共享区域、内核在共享区域读取。Android 17 binder.c 在目标进程 binder_alloc 中分配 buffer，并通过 binder_alloc_copy_user_to_buffer 从发送方用户地址复制数据/offsets；不是调用方直接把事务数据写入 mmap 共享区后由内核读取。",
-        "suggestion": "区分发送方 ioctl 参数中的用户态 Parcel 指针、目标进程 binder_alloc buffer、接收方 mmap 可见 buffer，重写“共享映射”段落。"
-      },
-      {
-        "type": "源码错误",
-        "location": "第4节 flushIfNeeded 条件刷",
-        "detail": "章节写普通应用线程走 talkWithDriver(true) 立即刷出。Android 17 IPCThreadState::flushIfNeeded() 实际调用 flushCommands()；flushCommands() 使用 talkWithDriver(false)，必要时二次 talkWithDriver(false)，只写不读。",
-        "suggestion": "修正为 flushIfNeeded() -> flushCommands() -> talkWithDriver(false)，并解释 doReceive=false 对只 flush mOut 的意义。"
-      },
-      {
-        "type": "原理断裂",
-        "location": "第6节 oneway 调度关键差异第3条",
-        "detail": "章节称 Binder 驱动不区分 oneway 和同步调用调度优先级、两者在目标进程队列中平等竞争。Android 17 common kernel 中 oneway 会受 node->has_async_transaction 控制，后续 async 进入 node->async_todo；同步事务可选择目标线程/进程 todo，并且只有非 oneway 继承调用方调度策略。该段遗漏 async_todo、pending_async 和同步优先级继承。",
-        "suggestion": "补充 binder_proc_transaction() 中 oneway 的 node async 队列、pending_async 串行化语义，以及同步事务的 priority inheritance 差异。"
-      },
-      {
-        "type": "原理断裂",
-        "location": "第3节冻结回执机制时序逻辑",
-        "detail": "章节先说冻结后所有新 Binder 事务都在内核队列排队，又说 system_server 收到 FROZEN_OBJECT 后可 BINDER_CLEAR_FREEZE + 重试。Android 17 binder.c 对 frozen + sync 返回 BR_FROZEN_REPLY，只有 frozen + oneway 才可能返回 BR_TRANSACTION_PENDING_FROZEN 并入队；CachedAppOptimizer 对 frozen app 收到 sync transaction 的处理是 killFrozenProcess，而不是通用的清冻重试策略。",
-        "suggestion": "拆开 sync/oneway：sync frozen 是拒绝并上报错误，oneway frozen 是 pending；system_server/AMS 行为要按 CachedAppOptimizer.handleBinderReport()/binderErrorInternal() 重写。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-28T08:28:13+08:00",
-    "status": "completed",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-28T08:52:35.926319+08:00",
-    "completion_note": "fixed: 全章6处源码级-原理级修复（mCallRestriction/freezer分离、oneway spam检测算法、BINDER_VM_SIZE数据流、flushIfNeeded调用链、oneway async_todo调度、frozen sync/oneway分支）"
-  },
-  {
-    "section": "25.2",
-    "section_title": "后台功耗治理",
-    "priority": 70,
-    "reason": "[Task6 抽检] 全部 5 处源码验证标签 + frontmatter last_verified_against 指向 android-16.0.0_r1，需按版本基线规则重新验证并更新为 android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "正文 5 处 [已验证] 标签 + frontmatter last_verified_against",
-        "detail": "DeviceIdleController / AppStandbyController / QuotaController / UsageStatsManager / ServiceInfo 的源码路径验证全部锚定 android-16.0.0_r1。按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1。需 Task9 确认这些路径在 android-17 中是否仍然有效，有效则更新标签。",
-        "suggestion": "逐条核对 AOSP android-17.0.0_r1 中对应文件路径，更新验证标签版本号"
-      }
-    ],
-    "added_by": "task6-audit",
-    "added_at": "2026-06-28T11:13:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-06-28-11-audit.md",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-28T11:40:30+08:00",
-    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1，5 处源码路径已验证存在于 android-17 tag"
-  },
-  {
-    "section": "1.26",
-    "section_title": "DeliQueue 无锁队列源码解析（AOSP android-16.0.0_r1）",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Android 17 DeliQueue 源码主线仍锚在 Android 16 实现",
-    "material_paths": [
-      "logs/deep-review/2026-06-28-14-audit.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "frontmatter/title、§1.26.2-§1.26.5、§1.26.7",
-        "detail": "章节主干仍以 android-16.0.0_r1 的 ConcurrentMessageQueue/MessageQueue.java 为源码锚点，并描述 ConcurrentSkipListSet<MessageNode>、STACK_NODE_*、drainStack 等结构。android-17.0.0_r1 下 core/java/android/os/ConcurrentMessageQueue/MessageQueue.java 返回 404；实际存在的是 CombinedDeliMessageQueue/MessageQueue.java、MessageStack.java、MessageHeap.java。Android 17 DeliQueue 使用 MessageStack.pushMessage() + MessageHeap min-heap（sync/async 两个堆）维护顺序，不是 ConcurrentSkipListSet。",
-        "suggestion": "将正文主线改为 android-17.0.0_r1：源码锚点换成 frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java、MessageStack.java、MessageHeap.java、Message.java；用 MessageStack/MessageHeap/WaitState 解释 Android 17 实现。android-16.0.0_r1 的 Combined/Concurrent/Legacy 只能放到历史演进对比。"
-      },
-      {
-        "type": "版本差异",
-        "location": "applicable_versions、last_verified_against、§1.26.6 版本边界说明、参考资料",
-        "detail": "frontmatter 和正文明确写“本节源码全部来自 android-16.0.0_r1”“android-17.0.0_r1 的源码级验证尚未执行”。这与 2026-06-27 AIW Android 版本基准冲突：AIW 主线结论必须基于 android-17.0.0_r1，不得把 Android 16 源码作为正文主线。",
-        "suggestion": "更新 last_verified_against 为 AOSP android-17.0.0_r1；把 Android 17 targetSdk 37 默认启用的证据落到 @EnabledAfter(targetSdkVersion = Build.VERSION_CODES.BAKLAVA) 的 USE_NEW_MESSAGEQUEUE changeId、CompatChanges.isChangeEnabled(USE_NEW_MESSAGEQUEUE) 与 Flags.useConcurrentMessageQueueInApps()；保留 Android 16 段落时标注为历史 rollout，不作为当前实现结论。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-28T14:27:58+0800",
-    "status": "completed",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-28T14:52:38+08:00",
-    "completion_note": "fixed: 全章结构性重写 android-16→android-17——目录结构(CombinedDeliMessageQueue+MessageStack+MessageHeap)、优先级队列(MessageHeap min-heap替代ConcurrentSkipListSet)、无锁入队(MessageStack CAS替代Treiber Stack 4态节点)、gating(USE_NEW_MESSAGEQUEUE+BACKLAVA+CompatChanges)、Android 16历史对照仅作演进参照"
-  },
-  {
-    "section": "1.26",
-    "section_title": "DeliQueue 无锁队列源码解析（AOSP android-17.0.0_r1）",
-    "priority": 70,
-    "reason": "[Task6 Review revisit] L3 内容深度补充：heapSweep 细节已部分补全（§1.26.4），剩余 heap 内部操作/tombstone/Perfetto SQL/FAQ",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需补充",
-        "location": "§1.26.3",
-        "detail": "MessageHeap min-heap 内部操作（bubble-up/bubble-down/sift）未展开，仅展示了 compareMessages 排序比较器",
-        "suggestion": "补充 add()/poll() 关键代码路径和 sift 策略，说明 Looper 独占访问下无需同步"
-      },
-      {
-        "type": "需补充",
-        "location": "§1.26.2",
-        "detail": "removeMessages() / markRemoved() tombstone 延迟删除机制仅提及函数名未展开",
-        "suggestion": "补充 tombstone 标记方式（markRemoved 修改 flag）、heapSweep 中 isRemoved() 过滤逻辑"
-      },
-      {
-        "type": "需补充",
-        "location": "§1.26.7",
-        "detail": "Perfetto 集成部分仅提及 track 名和字段，缺 SQL 查询示例、异常 pattern 描述",
-        "suggestion": "补充 monitor_contention SQL 查询、MessageQueue dispatch 延迟分析方法"
-      },
-      {
-        "type": "需补充",
-        "location": "全文末尾",
-        "detail": "缺少常见问题与误区小节",
-        "suggestion": "补充 3-5 条 FAQ：CAS 低竞争场景差异、heapSweep 摊销成本、targetSdk vs 设备版本混淆、测试框架适配"
-      }
-    ],
-    "added_by": "task6-review-revisit",
-    "added_at": "2026-06-28T17:13:08+08:00",
-    "status": "completed",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-28T18:52:49+08:00",
-    "completion_note": "fixed: 4项L3内容深度补充——MessageHeap sift-up/sift-down、tombstone两阶段删除机制、Perfetto SQL+异常pattern、FAQ小节"
-  },
-  {
-    "section": "26.12",
-    "section_title": "Android 版本化线上诊断能力：ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Android 17 源码基线与 ProfilingTrigger 常量矩阵需重审",
-    "material_paths": [
-      "logs/deep-review/2026-06-28-17-audit.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误/版本差异",
-        "location": "frontmatter last_verified_against；正文“源码层验证”与“待复核项”中关于 android-17.0.0_r1 的说明",
-        "detail": "章节仍写“android-17.0.0_r1 tag 不存在（404）”，并以 AOSP main / android16-release 作为主线验证来源；本轮已确认 frameworks/base、packages/modules/Profiling、frameworks/proto_logging 均存在 android-17.0.0_r1 tag。",
-        "suggestion": "把所有主线源码锚点改为 refs/tags/android-17.0.0_r1；只有无法在 Android 17 tag 验证的公开文档信息，正文必须标注“未进入 Android 17 / 仅官方文档声明”。"
-      },
-      {
-        "type": "源码错误",
-        "location": "“Android 16-17：ProfilingTrigger 的事件触发采集”表格与“源码层验证：ProfilingTrigger 实际可见性”",
-        "detail": "章节断言 API 37/Extension 36.1 trigger 常量在 AOSP 源码不可见，且 isValidRequestTriggerType() 只放行 APP_FULLY_DRAWN 与 ANR；android-17.0.0_r1 的 packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java 已包含 APP_REQUEST_RUNNING_TRACE、KILL_FORCE_STOP、KILL_RECENTS、KILL_TASK_MANAGER、OOM、ANOMALY、KILL_EXCESSIVE_CPU_USAGE、COLD_START、APP_COMPAT，并在 isValidRequestTriggerType() 中按 feature flags 放行。",
-        "suggestion": "按 Android 17 源码重写 trigger 常量矩阵：区分“常量存在”“flag gate”“设备/扩展版本可用”“文档语义”；删除“源码不可见/只放行两类 trigger”的旧结论。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-28T17:26:38+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-28T17:40:16+08:00",
-    "completed_by": "task2b-lite",
-    "completion_reason": "fixed-lite: 源码锚点修正为 refs/tags/android-17.0.0_r1；删除\"tag 不存在\"错误声明；更新 ProfilingTrigger 常量可见性表格和代码块。trigger 常量矩阵四层重写（常量存在/flag gate/设备可用/文档语义）留给主 Task2B。"
-  },
-  {
-    "section": "18.25",
-    "section_title": "Jetpack Compose 渲染管线架构",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Compose 渲染管线存在 Choreographer deadline、HWUI 提交路径与 Android 17 版本断言错误",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-00-audit.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "「与 Choreographer 的绑定」和「与 Choreographer FrameData 的协作」",
-        "detail": "章节写成 API 34+ 通过 Choreographer.getFrameTimeline()/FrameData.deadlineNanos 获取 deadline；android-17.0.0_r1 的 Choreographer 没有 getFrameTimeline()，FrameCallback 仍只有 doFrame(long)，FrameTimeline deadline 需通过 VsyncCallback 的 FrameData.getPreferredFrameTimeline().getDeadlineNanos() 读取，另有隐藏 getFrameDeadline()。AndroidUiFrameClock 当前只使用 postFrameCallback(frameTimeNanos)。",
-        "suggestion": "改为基于 Choreographer.FrameCallback 的帧时间描述；若要讨论 deadline，必须区分 VsyncCallback/FrameData API 与隐藏 getFrameDeadline()，并补充 Compose 是否实际接入该 API 的源码证据。"
-      },
-      {
-        "type": "源码错误",
-        "location": "「与 Choreographer 的绑定」「RenderNode 与 DisplayList 提交」「Compose 与 RenderThread 的协作」",
-        "detail": "章节多处写成 Compose 在 FrameCallback.doFrame() 中直接执行 dispatchDraw() 并调用 HardwareRenderer.syncAndDrawFrame()。android-17.0.0_r1 中 ViewRootImpl.performDraw()/draw() 才负责调用 ThreadedRenderer.draw(rootView, attachInfo, callbacks)，AndroidComposeView.dispatchDraw() 只负责 Compose root.draw/脏 layer 更新；AndroidUiFrameClock 的 FrameCallback 只恢复 withFrameNanos 协程。",
-        "suggestion": "重写帧提交路径：Compose 通过 AndroidComposeView 参与 ViewRootImpl 的 traversal/draw，最终由 ViewRootImpl/ThreadedRenderer 进入 HWUI；不要把 HardwareRenderer.syncAndDrawFrame() 放进 Compose 自己的 FrameCallback 伪代码。"
-      },
-      {
-        "type": "源码错误/版本差异",
-        "location": "「绘制阶段与 RenderNode 构建」「版本演进要点」",
-        "detail": "章节称 RenderNodeLayer.android.kt 中有 LayerManager 决策规则，并称 Android 17 提供 HardwareRenderer.setFramePacingEnabled()/FramePacing API、RenderNode batching 优化。androidx-compose-release 的 RenderNodeLayer.android.kt 未定义 LayerManager；AndroidComposeView.createLayer() 在当前分支优先返回 GraphicsLayerOwnerLayer/GraphicsLayer。android-17.0.0_r1 的 HardwareRenderer.java 中未找到 setFramePacingEnabled、FramePacing 或 pacing 相关 API。",
-        "suggestion": "删除或重写 LayerManager 与 Android 17 FramePacing/RenderNode batching 断言；只保留能在 android-17.0.0_r1 和 androidx-compose-release 中定位到的类、方法和版本差异。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T00:25:44",
-    "status": "completed",
-    "completed_at": "2026-06-29T00:52:48"
-  },
-  {
-    "section": "18.25",
-    "section_title": "Jetpack Compose 渲染管线架构",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Compose 渲染管线仍存在 PausableComposition API、graphicsLayer/RenderNode 层语义与 Recomposer 调度源码错误",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-01-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "§PausableComposition：跨帧分块组合 / 控制流（约 243-268 行）",
-        "detail": "章节把 PausableComposition 写成直接包含 resume(shouldPause): CompositionResult 与 apply()，并声明 CompositionResult.Incomplete/Complete。androidx-compose-release 的 PausableComposition.kt 中 PausableComposition 只提供 setPausableContent/setPausableContentWithReuse，返回 PausedComposition；PausedComposition.resume(ShouldPauseCallback) 返回 Boolean，并通过 isComplete/isApplied/isCancelled 管理状态，不存在 CompositionResult sealed class。",
-        "suggestion": "按 PausableComposition.kt 重写 API 代码块：PausableComposition -> setPausableContent() -> PausedComposition；resume() 返回 Boolean，完成后检查 isComplete 再 apply()。删除 CompositionResult.Incomplete/Complete。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§PausableComposition / Checkpoint 插入机制与暂停恢复协议（约 271-312 行）",
-        "detail": "章节伪代码写 Composer.startGroup/endGroup 调用 pauseIfNeeded()，并用 PauseException 保存 slot table 位置。androidx-compose-release 的 Composer.kt 未定义 pauseIfNeeded 或 PauseException；当前公开源码中 shouldPause 只作为 InternalComposer.composeContent/recompose 的参数向下传递，PausedCompositionImpl.resume() 调用 composeInitialPaused()/recomposePaused() 并以 invalidScopes 是否为空决定完成。",
-        "suggestion": "删除“compiler 自动在 start/end/remember/emit/reuse 后插入 pauseIfNeeded()”这类无源码锚点断言，改为基于 PausedCompositionImpl.resume()、CompositionContext.composeInitialPaused()/recomposePaused()、InternalComposer.recompose(..., shouldPause) 的可验证路径描述；无法定位的 checkpoint 粒度标为待验证。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§绘制阶段与 RenderNode 构建 / §误区 4（约 171-180、557-558 行）",
-        "detail": "章节把 RenderNode/graphicsLayer/离屏缓冲混成同一概念：一方面说每个 LayoutNode 都通过 RenderNodeLayer 持有 RenderNode，另一方面说 graphicsLayer 只有 alpha/scale/rotation/clip/shadow 等参数才创建独立硬件层，还称 drawBehind 复杂绘制会触发独立离屏缓冲。androidx-compose-release 的 GraphicsLayerModifier 文档明确 graphicsLayer 会让内容 draw into a draw layer，Simple/BlockGraphicsLayerModifier.measure() 调用 placeWithLayer；CompositingStrategy 才决定是否渲染到 offscreen buffer。AndroidComposeView.createLayer() 负责创建 GraphicsLayerOwnerLayer/RenderNodeLayer，不是由 drawBehind 复杂度触发。",
-        "suggestion": "重写为三层概念：LayoutNode 默认不一定有独立 OwnedLayer；Modifier.graphicsLayer 会通过 placeWithLayer 创建 graphics layer/OwnedLayer；alpha、RenderEffect、CompositingStrategy.Offscreen 等决定是否需要中间 offscreen buffer。删除 drawBehind 复杂绘制触发独立 RenderNode/离屏缓冲的断言。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§Snapshot 系统与重组触发 / Recomposer 收集与调度（约 225、349-351、374-392 行）",
-        "detail": "章节称 Recomposer 收集 invalidated scopes 后按 priority 排序，并维护 user input 高优先级队列与普通队列。androidx-compose-release 的 Recomposer.kt 使用 snapshotInvalidations、compositionInvalidations、toRecompose/toApply 等集合；recordComposerModifications() 把 Snapshot 变化传播给 known compositions，runRecomposeAndApplyChanges() 迭代 compositionInvalidations/knownCompositions，没有 priority 排序或“高优先级 scope/普通 scope”双队列模型。",
-        "suggestion": "删除 priority/高低优队列描述，改成 Snapshot.registerApplyObserver -> snapshotInvalidations -> recordComposerModifications() -> compositionInvalidations -> performRecompose() 的实际调度路径；如果要讨论输入优先级，需要另找 Android input/FrameClock 证据，不要放在 Recomposer scope 队列。"
-      },
-      {
-        "type": "原理断裂",
-        "location": "§Compose 的挂载入口：AndroidComposeView（约 60 行）",
-        "detail": "章节称每个 ComposeView 在 dispatchDraw 时创建或复用 AndroidComposeView。androidx-compose-release 的 ComposeView.android.kt 中 ComposeView.setContent() 设置 shouldCreateCompositionOnAttachedToWindow，onAttachedToWindow()/onMeasure()/createComposition() 触发 ensureCompositionCreated()，ensureCompositionCreated() 调用 setContent(composeViewContext) 创建 composition/AndroidComposeView 子节点；dispatchDraw 是后续绘制阶段，不是创建入口。",
-        "suggestion": "把创建时机改为 setContent 后在 attach/onMeasure/createComposition 触发 ensureCompositionCreated；dispatchDraw 只保留为 AndroidComposeView 执行 measureAndLayout/root.draw/dirtyLayers.updateDisplayList 的绘制阶段。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T01:27:07+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-29T01:37:37+08:00",
-    "completed_by": "task2b-lite",
-    "completion_note": "Lite 修复：仅 §AndroidComposeView 创建入口（issue 5/5）。剩余 4 个问题（PausableComposition API、Checkpoint 机制、RenderNode/graphicsLayer 三层概念、Recomposer 调度模型）超出 Lite 范围，需主 Task2B 处理。"
-  },
-  {
-    "section": "18.25",
-    "section_title": "Jetpack Compose 渲染管线架构",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Compose 渲染管线剩余源码错误：PausableComposition API/checkpoint/deadline、graphicsLayer/RenderNode 层语义、Recomposer 调度路径",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-01-deep-review.md",
-      "logs/deep-review/2026-06-29-02-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "§PausableComposition：跨帧分块组合 / 控制流（约 243-268 行）",
-        "detail": "章节把 PausableComposition 写成直接包含 resume(shouldPause): CompositionResult 与 apply()，并声明 CompositionResult.Incomplete/Complete。实际 PausableComposition 只提供 setPausableContent/setPausableContentWithReuse，返回 PausedComposition；PausedComposition.resume(ShouldPauseCallback) 返回 Boolean。",
-        "suggestion": "按 PausableComposition.kt 重写 API 代码块。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§PausableComposition / Checkpoint 插入机制（约 271-312 行）",
-        "detail": "章节伪代码写 Composer.startGroup/endGroup 调用 pauseIfNeeded()，用 PauseException 保存 slot table 位置。Composer.kt 未定义 pauseIfNeeded 或 PauseException。",
-        "suggestion": "删除无源码锚点断言，改为基于 PausedCompositionImpl.resume() 的可验证路径描述。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§绘制阶段与 RenderNode 构建 / §误区 4（约 171-180、557-558 行）",
-        "detail": "章节把 RenderNode/graphicsLayer/离屏缓冲混成同一概念。GraphicsLayerModifier 通过 placeWithLayer 创建 layer；CompositingStrategy 决定 offscreen buffer。",
-        "suggestion": "重写为三层概念：LayoutNode 默认不一定有独立 OwnedLayer；Modifier.graphicsLayer 创建 graphics layer；CompositingStrategy.Offscreen 决定中间 buffer。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§Snapshot 系统与重组触发 / Recomposer 收集与调度（约 225、349-351、374-392 行）",
-        "detail": "章节称 Recomposer 按 priority 排序维护双队列。实际 Recomposer.kt 使用 snapshotInvalidations、compositionInvalidations、toRecompose/toApply 集合，无 priority 排序。",
-        "suggestion": "删除 priority/双队列描述，改为 Snapshot.registerApplyObserver → snapshotInvalidations → compositionInvalidations → performRecompose() 的实际调度路径。"
-      },
-      {
-        "type": "源码错误/版本差异",
-        "location": "§PausableComposition：跨帧分块组合 / 与 Choreographer 帧 deadline 的协作（约 317-336 行）",
-        "detail": "章节称 Android 14-17 的 PausableComposition shouldPause 判定可通过 Choreographer.VsyncCallback 的 FrameData.getPreferredFrameTimeline().getDeadlineNanos() 获取精确 deadline，Android 12-13 回退到 frameTimeNanos + 16.6ms。androidx-compose-release 的 AndroidPrefetchScheduler 实际仍实现 Choreographer.FrameCallback，doFrame(frameTimeNanos) 只记录 frameStartTimeNanos；PrefetchRequestScope.availableTimeNanos() = max(0, nextFrameTimeNs - System.nanoTime())，nextFrameTimeNs 来自 max(view.drawingTime, frameStartTimeNanos) + frameIntervalNs，没有接入 VsyncCallback/FrameData。",
-        "suggestion": "删除 Android 14-17 精确 FrameData deadline / Android 12-13 固定估算的分版本表述，改为基于 AndroidPrefetchScheduler.availableTimeNanos() 的实际实现：view drawing time 与 Choreographer.FrameCallback frameTime 估算下一帧时间，再用剩余时间决定是否暂停。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T01:37:37+08:00",
-    "status": "completed",
-    "split_from": "task2b-lite partial completion of original 18.25 queue entry",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-29T02:52:24+08:00",
-    "completion_note": "fixed: 5项P0源码错误修复——PausableComposition API重写为setPausableContent→PausedComposition、Checkpoint机制改为shouldPause参数传递+scope级检查、Choreographer deadline改为AndroidPrefetchScheduler.availableTimeNanos()估算、RenderNode/graphicsLayer拆为三层概念模型(LayoutNode默认/OwnedLayer/offscreen buffer)、Recomposer调度改为snapshotInvalidations→compositionInvalidations路径+删除priority双队列；附加修复androidx-main→androidx-compose-release版本边界、误区4三层重写"
-  },
-  {
-    "section": "4.6",
-    "section_title": "内存相关的版本演进",
-    "priority": 90,
-    "reason": "时效性巡检：4.6 内存相关的版本演进 78 天逾期（version_evolution 阈值 30 天），缺少 Android 17 API 37 稳定版特性",
-    "material_paths": [
-      "intake/suggestions.md",
-      "AOSP art/runtime/gc/collector/concurrent_mark_sweep.h",
-      "Android 17 Generational GC 官方文档"
-    ],
-    "missing_content": [
-      "ART Generational GC 在 Android 17 稳定版中的特性",
-      "App Memory Limiter（API 37）每应用基于设备 RAM 的内存限制",
-      "CMC 版本边界更正（android-14.0.0_r1 已具备相关源码）"
-    ],
-    "added_by": "task3-freshness-check",
-    "added_at": "2026-06-29T02:12:00+08:00",
-    "status": "completed",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-29T14:53:01.246869+08:00",
-    "completion_note": "closed: freshness concerns already addressed by Task9 deep-review (Generational CMC/MemoryLimiter/CMC boundary all covered in android-17.0.0_r1); verified by Task6 review 2026-06-29"
-  },
-  {
-    "section": "2.9",
-    "section_title": "渲染相关的版本演进",
-    "priority": 70,
-    "reason": "时效性巡检：2.9 渲染相关的版本演进 84 天逾期（version_evolution 阈值 30 天），已超阈值 54 天",
-    "material_paths": [
-      "intake/suggestions.md",
-      "AOSP frameworks/native/libs/renderengine",
-      "Android 17 HWUI 官方文档"
-    ],
-    "missing_content": [
-      "Android 17 稳定版 HWUI Vulkan 队列改进",
-      "HWComposer AIDL 变更",
-      "Skia Vulkan 渲染管线优化"
-    ],
-    "added_by": "task3-freshness-check",
-    "added_at": "2026-06-29T02:12:00+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completion_note": "fixed-lite: reanchored android-16.0.0_r1 to android-17.0.0_r1 in last_verified_against field"
-  },
-  {
-    "section": "18.25",
-    "section_title": "Jetpack Compose 渲染管线架构",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Compose 渲染管线仍存在 MeasurePolicy/LayoutNode 源码引用、重组-测量驱动路径与 HWUI/Snapshot 同步语义错误",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-03-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "§LayoutNode 树：测量、布局、绘制 / 测量协议（约 136-167 行）",
-        "detail": "章节的 LayoutNode 代码块把 nodes 写成 OwnerSnapshotObserver，并写出不存在的 measure(constraints): Placeable；MeasureScope 代码块也把 measure(measurables, constraints) 放进 MeasureScope。androidx-compose-release 中 LayoutNode.nodes 是 NodeChain，draw 签名为 draw(canvas, graphicsLayer)；measure(measurables, constraints) 属于 MeasurePolicy 的 MeasureScope 扩展函数，child measure 返回 Placeable，MeasureResult 由父布局的 MeasurePolicy 返回。",
-        "suggestion": "重写两个代码块：LayoutNode 只保留 isVirtual / isVirtualLookaheadRoot / lookaheadRoot / nodes = NodeChain / draw(canvas, graphicsLayer) 等可验证成员；测量协议改为 MeasurePolicy.fun MeasureScope.measure(...)，并说明 child 返回 Placeable、父返回 MeasureResult。"
-      },
-      {
-        "type": "源码错误/原理断裂",
-        "location": "§与 Choreographer 的绑定、§布局阶段、§Compose 与 RenderThread 的协作（约 82-110、171-173、466-473 行）",
-        "detail": "章节仍把 Compose FrameCallback 描述为在 doFrame 中直接执行重组并触发 LayoutNode measure/layout。实际 Recomposer 通过 AndroidUiFrameClock/AndroidUiDispatcher 对齐 Choreographer frame，负责重组和 apply；LayoutNode 测量/布局由 AndroidComposeView.onMeasure()/onLayout() 以及 dispatchDraw() 开头的 measureAndLayout() 在 ViewRootImpl traversal 中执行。AndroidComposeView.onAttachedToWindow 也没有直接注册 Choreographer.FrameCallback。",
-        "suggestion": "把“Compose FrameCallback 执行 measure/layout”改成“Recomposer 在 frame clock 中重组并应用变更，变更通过 Owner.onRequestMeasure/onRequestRelayout 安排 ViewRoot traversal；实际测量/布局在 AndroidComposeView.onMeasure/onLayout/dispatchDraw 的 measureAndLayoutDelegate 中完成”。同步更新两张时序图。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§Compose 重组到 RenderNode 的完整链路 / 绘制阶段与 RenderNode 构建（约 223-244、193-204 行）",
-        "detail": "流程图写出 LayoutNode.requestRedraw() 和 RenderNodeLayer.updateDisplayList() 作为通用路径。LayoutNode.kt 中不存在 requestRedraw()，重绘请求通过 invalidateLayer()/invalidateLayers()/owner.invalidateRootLayer() 等路径传播；AndroidComposeView.createLayer() 在当前 androidx-compose-release 的 SDK >= M 路径优先创建 GraphicsLayerOwnerLayer，RenderNodeLayer 是旧/回退实现，不能作为 Compose 1.10 Android 主路径泛化描述。",
-        "suggestion": "将流程中的 requestRedraw 改为 layer/root layer invalidation；将 updateDisplayList 描述为 OwnedLayer/GraphicsLayer 路径，并把 RenderNodeLayer 限定为旧路径或兼容回退，不再把 RenderNodeLayer 代码块当成当前主路径。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§RenderNode 与 DisplayList 提交 / §Compose 与 RenderThread 的协作（约 448、473-476、482 行）",
-        "detail": "章节称 syncAndDrawFrame 会让主线程等待上一帧 GPU sync fence signal 后才返回。android-17.0.0_r1 中 HardwareRenderer.FrameRenderRequest.setWaitForPresent 默认 false，只有 waitForPresent 或 reportNextDraw/fence 场景才显式 fence；ThreadedRenderer.draw() 调用 syncAndDrawFrame 后，native DrawFrameTask.postAndWait() 通常在 syncFrameState/prepareTree 完成后即可 unblock UI thread，GPU 绘制和 swapBuffers 继续在 RenderThread 执行。",
-        "suggestion": "改为“UI 线程会等待 HWUI 同步阶段完成，异常情况下可能等到 draw 结束；默认不等待 buffer present/GPU fence。present/fence 等待只在 setWaitForPresent、reportNextDraw 或同步事务等特殊路径出现”。"
-      },
-      {
-        "type": "源码错误/数据缺失",
-        "location": "扩展 6.6-6.9 Snapshot 同步原语与性能表（约 662-693 行）",
-        "detail": "章节把 MutableState 写描述成 lock-free CAS 快路径，并给出 ~10ns/~30ns 数字。实际 SnapshotMutableStateImpl.value setter 调用 next.overwritable(...)，Snapshot.kt 的 overwritable/writable 明确进入 sync(lock)；readable() 在全局 snapshot 前进竞争时也会 fallback 到 sync。表格中的纳秒级数字没有基准来源；“跨 Recomposer 并发重组：不可能”也与 Recomposer.kt 注释“never working with the same composer in parallel”不等价，源码只保证同一 composer/Recomposer 串行，跨 Recomposer 不能直接写成不可能。",
-        "suggestion": "重写 Snapshot 性能段：读路径可无锁遍历 StateRecord 但存在 sync fallback；写路径进入 Snapshot.lock；删除未验证纳秒数字或补 benchmark；把并发边界改为“同一 Recomposer/ControlledComposition 严格串行，跨 Recomposer 是否并行取决于各自 runner 与共享 Snapshot.lock 冲突”。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T03:30:10+08:00",
-    "status": "completed",
-    "completed_reason": "fixed-lite: Issue 1 (LayoutNode/MeasurePolicy API names) and Issue 4 (syncAndDrawFrame fence semantics) fixed by Task2B Lite. Issues 2,3,5 require main Task2B lane (structural changes, diagram rewrites, performance section rewrites).",
-    "completed_at": "2026-06-29T03:37:11+08:00",
-    "completed_by": "task2b-lite"
-  },
-  {
-    "section": "18.25",
-    "section_title": "Jetpack Compose 渲染管线架构",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Compose 渲染管线仍存在 FrameClock/traversal 边界、GraphicsLayer 主路径、Snapshot 锁语义与 PausableComposition 版本边界错误",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-03-deep-review.md",
-      "logs/deep-review/2026-06-29-04-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误/原理断裂",
-        "location": "§与 Choreographer 的绑定、§布局阶段、§Compose 与 RenderThread 的协作（约 82-110、176、469-476 行）",
-        "detail": "正文仍写成 AndroidComposeView.onAttachedToWindow 注册 Choreographer.FrameCallback，且 Compose FrameCallback 在 doFrame 中执行 recomposition + measure/layout。androidx-compose-release 的 AndroidComposeView.onAttachedToWindow 只做 attach/window/snapshot observer 与 invalidation；AndroidUiFrameClock.withFrameNanos 只通过 Choreographer.FrameCallback 恢复协程。LayoutNode 测量/布局由 AndroidComposeView.onMeasure/onLayout/dispatchDraw 中的 MeasureAndLayoutDelegate 参与 ViewRootImpl traversal 完成。",
-        "suggestion": "重写为“Recomposer 通过 AndroidUiFrameClock 对齐帧并执行重组/apply；measure/layout/draw 由 AndroidComposeView 在 ViewRootImpl traversal 中完成”。同步修正两张时序图，不再把 measure/layout 放进 Compose FrameCallback。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§Compose 重组到 RenderNode 的完整链路、§绘制阶段与 RenderNode 构建、§Perfetto 渲染跟踪（约 228-233、196-207、526-529 行）",
-        "detail": "流程图仍包含不存在的 LayoutNode.requestRedraw()，并把 RenderNodeLayer.updateDisplayList()/RenderNode.beginRecording() 写成 Compose 1.10 Android 主路径。androidx-compose-release 的 LayoutNode.kt 无 requestRedraw；AndroidComposeView.createLayer() 在 SDK >= M 优先返回 GraphicsLayerOwnerLayer(graphicsContext.createGraphicsLayer())，RenderNodeLayer 只是旧路径/兼容回退。",
-        "suggestion": "将 requestRedraw 改为 layer/root layer invalidation；将绘制路径表述为 OwnedLayer/GraphicsLayer 更新 display list，RenderNodeLayer 仅作为旧路径或兼容回退说明。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§RenderNode 与 DisplayList 提交、§Compose 与 RenderThread 的协作的源码锚点（约 455、491 行）",
-        "detail": "正文把 ThreadedRenderer.java 锚到 frameworks/base/graphics/java/android/graphics/ThreadedRenderer.java。android-17.0.0_r1 中该路径不存在；正确路径是 frameworks/base/core/java/android/view/ThreadedRenderer.java，syncAndDrawFrame 调用位于 ThreadedRenderer.draw()。",
-        "suggestion": "修正 ThreadedRenderer 的 AOSP 路径，并保留 HardwareRenderer.java 位于 frameworks/base/graphics/java/android/graphics/HardwareRenderer.java 的区分。"
-      },
-      {
-        "type": "源码错误/数据缺失",
-        "location": "扩展 6.3、6.6、6.8 Snapshot 同步原语与性能表（约 623-624、665-696 行）",
-        "detail": "正文称写入只更新 modified set、MutableState.set() 是 lock-free CAS，并给出 ~10ns/~30ns/~1-5µs 数字。androidx-compose-release 的 SnapshotMutableStateImpl.value setter 走 next.overwritable(...); Snapshot.kt 的 overwritable()/overwritableRecord() 进入 sync(lock)。当前纳秒级性能数字没有 benchmark 条件；“跨 Recomposer 并发重组：不可能”也只适用于同一 composer/Recomposer 串行，不等于跨 Recomposer 不可能。",
-        "suggestion": "重写 Snapshot 性能段：读路径可无锁遍历但存在 sync fallback，写路径进入 Snapshot.lock；删除未验证数字或补充 benchmark；并发边界改为同一 Recomposer 串行、跨 Recomposer 可能并行但会在 Snapshot.lock / apply 冲突上同步。"
-      },
-      {
-        "type": "版本差异",
-        "location": "§PausableComposition：问题背景、§版本演进要点（约 255、563-564 行）",
-        "detail": "正文把“Compose 1.10 stable 将 PausableComposition 设为默认行为”写成无条件事实，并进一步绑定到 Android 17。Compose Foundation release notes 显示 1.10.0-alpha05 曾默认启用 ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled，但 1.10.6 已因稳定性问题默认禁用。该能力是 Compose Foundation 版本/flag 边界，不是 Android 17 平台事实。",
-        "suggestion": "把版本结论收窄为“PausableComposition 支持存在，但预取默认启用状态依赖 Foundation 具体版本与 flag；1.10.0-alpha05 曾启用，1.10.6 默认禁用”。删除“Android 17 同期 stable 默认开启”的绑定。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T04:29:07.107245+08:00",
-    "status": "completed",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-29T04:52:15.978146+08:00",
-    "completion_note": "fixed: 5项P0源码错误/原理修复——FrameClock/traversal边界重写(AndroidUiFrameClock负责recomposition+apply，measure/layout在ViewRootImpl traversal中)、流程图替换requestRedraw→Owner invalidation路径+RenderNodeLayer→OwnedLayer/GraphicsLayer主路径、ThreadedRenderer源码锚点修正为core/view、Snapshot写路径修正为sync(lock)+删除未验证性能数字+跨Recomposer并发边界、PausableComposition默认启用状态收窄为Foundation flag边界(1.10.0-alpha05曾启用/1.10.6默认禁用)"
-  },
-  {
-    "section": "13.01",
-    "section_title": "Perfetto 简介与架构",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-    "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-perfetto-version-availability-android9-17.md"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "Android 9-17 Perfetto 版本可用性与新特性源码验证 — 通过 android-17.0.0_r1 源码系统验证各版本 Perfetto 可用性，解决官方文档矛盾",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-06-29T06:16:38.757742",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T11:36:00+08:00",
-    "completion_note": "fixed-lite: 添加参考资料章节，补充 Android 9-17 Perfetto 版本可用性源码验证报告"
-  },
-  {
-    "section": "26.3",
-    "section_title": "性能指标采集与上报",
-    "priority": 95,
-    "reason": "[Deep Tech Review] 闲时抽检发现 Android 17 StatsD 性能监控主线与 android-17.0.0_r1 源码不一致",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "§1.1/§1.2/§4-§10：PERFORMANCE_METRICS_ATOM / AtomId 10244 主线",
-        "detail": "章节称 Android 17 新增 AtomId.PERFORMANCE_METRICS_ATOM（ID 10244）承载 CPU/GPU/内存/帧率，并把网络、帧率、采样、上报策略都挂到该 Atom；android-17.0.0_r1 的 frameworks/proto_logging/stats/atoms.proto 中 10244 实际是 DeviceLockPotentialBypassSnapshot，未发现 PERFORMANCE_METRICS_ATOM 符号。",
-        "suggestion": "移除以 PERFORMANCE_METRICS_ATOM 为中心的叙述，改用 android-17.0.0_r1 已存在的 statsd atoms / AndroidX JankStats / Firebase Performance / App 自建指标边界，所有 Atom ID 必须锚定 atoms.proto。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§1.1/§1.2/§8.1/§8.2/§10.2：StatsManager API、StatsCompanionService、权限模型",
-        "detail": "android-17.0.0_r1 的 StatsManager 位于 packages/modules/StatsD/framework/java/android/app/StatsManager.java，核心 API 是 addConfig/query/setPullAtomCallback；未提供文中的 pullAtoms() 或 StatsManager.logEvent()。AndroidManifest.xml 中没有 READ_PRECISE_STATS，StatsManagerService 权限校验使用 DUMP、PACKAGE_USAGE_STATS、REGISTER_STATS_PULL_ATOM 等。StatsCompanionService 是 statsd helper service，通过 IStatsd/DeviceConfig 等路径协作，不是文中描述的“JNI 桥接并从 /dev/socket/statsdw 读取事件流”。",
-        "suggestion": "重写 StatsD 数据流：区分 app 侧可用 API、系统/特权权限、statsd native daemon、StatsCompanionService helper 和 libstatssocket/socket 写入路径；删除不存在的 public API 与权限名。"
-      },
-      {
-        "type": "版本差异",
-        "location": "§2/§4/§5/§9/§10：Android 17 daemon 级电池感知采样、网络归一化、移动网络限额、本地缓存策略",
-        "detail": "在 packages/modules/StatsD android-17.0.0_r1 中未检出 perf_metrics_*、statsd_buffer_size_bytes、statsd_mobile_upload_limit_bytes、url_pattern/request_bytes/response_bytes 等章节所依赖的配置键或性能 Atom 字段；这些段落把 App/APM 侧策略写成 Android 17 StatsD 原生能力，缺少源码支撑。",
-        "suggestion": "将这些内容降级为“APM/业务自建上报策略示例”，或补入可验证的一手源码/官方文档；不能作为 Android 17 StatsD 主线结论。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T06:27:27+08:00",
-    "status": "completed",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-29T06:50:00+08:00",
-    "completion_note": "fixed: 全章源码级重写——移除虚构PERFORMANCE_METRICS_ATOM(10244)、删除不存在的StatsManager.pullAtoms()/logEvent()/READ_PRECISE_STATS、修正StatsManager→addConfig/query/setPullAtomCallback、重写StatsCompanionService描述、电池感知/URL归一化/网络限额/缓存策略降级为APM自建策略示例、修正atoms.proto引用"
-  },
-  {
-    "section": "26.3",
-    "section_title": "性能指标采集与上报",
-    "priority": 95,
-    "reason": "[Deep Tech Review] StatsD pull atom / StatsManager / JankStats API 主线仍有源码级错误",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-07-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "§1.1-§1.3、§4.2、§6.1、§8.1、总结：StatsManager / setPullAtomCallback 主线",
-        "detail": "章节把 StatsManager.setPullAtomCallback() 写成特权 App 订阅系统级指标的出站通道，并称回调拿到 List<Atom> 聚合结果。android-17.0.0_r1 的 StatsManager.java 明确说明该 callback 是 stats service 需要 pulled atom 时调用客户端“供数”；签名为 onPullAtom(int atomTag, List<StatsEvent> data)，客户端填充 StatsEvent 后由 resultReceiver.pullFinished() 返回。StatsManager.addConfig() 实际返回 void；query() 实际为 query(long configKey, String configPackage, StatsQuery, Executor, OutcomeReceiver)，查询报告主路径另有 getReports(long)。PullAtomMetadata 默认 cooldown=1000ms、timeout=1500ms，不是默认 30s pull 周期。",
-        "suggestion": "重写 StatsD 主线：addConfig 注册 StatsdConfig，getReports/query 读取 statsd 已收集报告；setPullAtomCallback 仅描述为特权/系统组件向 statsd 提供自定义 pulled atom 数据的入口。删除“订阅多个 pull atom 并自行聚合”“App 获取聚合性能数据的主要方式”“回调拿到聚合后的 List<Atom>”等反向叙述。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§1.3 反向查询示例：APP_START_OCCURRED atom ID 与字段",
-        "detail": "示例写“APP_START_OCCURRED atom (ID 10141)”并调用 atom.getAppStartOccurred().getLatencyMillis()。android-17.0.0_r1 的 atoms.proto 中 AppStartOccurred app_start_occurred = 48；10141 是 ImsDedicatedBearerEvent。AppStartOccurred 字段包含 transition_delay_millis、starting_window_delay_millis、bind_application_delay_millis、windows_drawn_delay_millis 等，不存在 latencyMillis 字段。",
-        "suggestion": "删除该 setPullAtomCallback 订阅示例，或改成真实 pulled atom provider 示例（StatsEvent.newBuilder().setAtomId(atomTag)...）。若保留 AppStartOccurred，应放在 StatsdConfig/getReports/query 读取报告的语境中，并使用 android-17.0.0_r1 的 atom ID 与字段名。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§6.1-§6.3：JankStats 示例 API 与字段",
-        "detail": "章节使用 jankStats.addFrameListener(new JankStats.OnFrameListener(){ onFrame(FrameData, String activityName) })、frameData.addTag(...)、jankStats.setSamplingRate(0.05f) 等 API。AndroidX metrics-performance 源码中 OnFrameListener 只有 onFrame(FrameData)；JankStats 通过 createAndTrack(window, listener) 创建并用 isTrackingEnabled 控制开关；UI 状态通过 PerformanceMetricsState.putState 管理；FrameData 字段是 frameDurationUiNanos、isJank、states，API24 子类有 frameDurationCpuNanos，未见 addFrameListener/addTag/setSamplingRate/frameOverrunNanos。",
-        "suggestion": "按 AndroidX metrics-performance 源码重写示例：创建 JankStats 时传入 listener，在 listener 中拷贝 FrameData；用 PerformanceMetricsState.getForHierarchy(window.decorView).state?.putState(...) 绑定页面/滚动状态；采样率放到 App 自建上报层控制，不写成 JankStats API。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T07:25:52+08:00",
-    "status": "completed",
-    "completed_by": "task2b-main",
-    "completed_at": "2026-06-29T08:53:09+08:00",
-    "completion_note": "fixed: 3项P0源码级修复——StatsD pull atom方向修正(setPullAtomCallback是数据提供方非消费方,addConfig返回void,getReports为主查询路径)、§1.3完整重写(删除虚构APP_START_OCCURRED ID 10141/latencyMillis)+特权组件示例、JankStats API全面修正(createAndTrack/isTrackingEnabled/createAndTrack替代addFrameListener/setEnabled/setSamplingRate,frameDurationUiNanos/states替代frameOverrunNanos)"
-  },
-  {
-    "section": "4.6",
-    "section_title": "内存相关的版本演进",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Android 17 MemoryLimiter / Generational CMC 段落存在源码级错误",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-10-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "L556-L608 App Memory Limiter 段落；L637 版本速查表",
-        "detail": "正文把 Android 17 MemoryLimiter 写成 MemoryLimiterService.java、android.app.MemoryState、ActivityManager.setAppMemoryLimit()、dumpsys meminfo --limiter/--policy、Perfetto MemoryLimiter track。android-17.0.0_r1 中实际类是 frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java，native 实现在 services/core/jni/com_android_server_am_MemoryLimiter.cpp；MemoryLimiterService.java 与 android/app/MemoryState.java 返回 404，ActivityManager.java 无 setAppMemoryLimit。调试入口是 am memory-limiter status/ignore/manual。",
-        "suggestion": "按 android-17.0.0_r1 的 MemoryLimiter.java、ActivityManagerService.java、ActivityManagerShellCommand.java 和 JNI 实现重写：说明它是 system_server 内部 cgroup memory.high / memory.swap.high / anon+swap 限制器，依赖 /vendor/etc/memory-limiter-config.xml 与 feature flags；不要写成公开 App API。"
-      },
-      {
-        "type": "原理断裂/版本差异",
-        "location": "L542-L554 ART Generational GC 稳定化描述",
-        "detail": "正文把 Generational GC 稳定化、Android 12+ GPSU 下发、自适应 Young/Old 比例、dumpsys meminfo --gc 和固定 2-5 秒 Young GC 节奏写成结论，但本轮只核到 android-17.0.0_r1 art/runtime/gc/collector/mark_compact.cc 中存在 Generational CMC、YoungMarkCompact、UFFD 路径，未核到这些对外行为/命令。",
-        "suggestion": "保留可由 mark_compact.cc 证明的 Generational CMC / YoungMarkCompact / UFFD 页级并发内容；其他对外发布、下发范围、命令和经验数据需补官方文档或删除。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T10:31:41+08:00",
-    "status": "completed",
-    "completed_date": "2026-06-29"
-  },
-  {
-    "section": "13.1",
-    "section_title": "Perfetto 简介与演进",
-    "priority": 95,
-    "reason": "[Deep Tech Review] Perfetto 版本可用性源码调研块存在多处版本事实错误",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-10-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "L515-L525、L535-L540 Android.bp / rc 片段",
-        "detail": "尾部源码调研块写 traced 使用 init_rc [\"traced.rc\"]、traced_probes 使用 [\"traced_probes.rc\"]，但 android-17.0.0_r1 的 external/perfetto/Android.bp 中 traced 的 init_rc 是 perfetto.rc，traced_probes cc_binary 没有独立 init_rc；两个 service 均声明在 external/perfetto/perfetto.rc。",
-        "suggestion": "把源码锚点改为 external/perfetto/Android.bp + external/perfetto/perfetto.rc，删除 traced.rc/traced_probes.rc 的错误路径。"
-      },
-      {
-        "type": "版本差异",
-        "location": "L543-L545 与 L457-L460 配置文件路径边界",
-        "detail": "尾部块称 Android 10 user device 已放行配置文件读取路径，但 android-10.0.0_r1 与 android-11.0.0_r1 的 perfetto.rc 均未创建 /data/misc/perfetto-configs；android-12.0.0_r1 才出现该 mkdir。正文前面的 Android 10/11 需 stdin、Android 12+ 可用配置目录口径才与源码一致。",
-        "suggestion": "删除尾部 Android 10 配置目录可用结论，保留 Android 10/11 stdin、Android 12+ /data/misc/perfetto-configs 的分界。"
-      },
-      {
-        "type": "版本差异",
-        "location": "L548-L556 数据源演进表",
-        "detail": "表中写 FrameTimeline 数据源 Android 11、Java heap dump Android 12。AOSP android-11.0.0_r1 中 frame_timeline_event.proto 与 frameworks/native FrameTimeline 路径均不存在，android-12.0.0_r1 才有 kFrameTimelineDataSource；反过来 android.java_hprof 的 config/profiling/java_hprof_config.proto、java_hprof_producer.cc 和 DataSourceConfig 字段在 android-11.0.0_r1 已存在。",
-        "suggestion": "将 FrameTimeline 边界改为 Android 12+，Java heap dump / android.java_hprof 边界改回 Android 11+；尾部源码调研块需整合到正文或删除，避免与 L330-L334 已正确表格互相冲突。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T10:31:41+08:00",
-    "status": "completed",
-    "completed_date": "2026-06-29"
-  },
-  {
-    "chapter": "1.31",
-    "title": "Android 17 机器学习驱动任务调度器",
-    "path": "partfundamentals-ch01-architecture/1.31-Android-17-机器学习驱动任务调度器.md",
-    "priority": 80,
-    "reason": "新创建的知识缺口章节（评分20/20）"
-  },
-  {
-    "chapter": "2.28",
-    "title": "Compose Pausable Composition 深度分析",
-    "path": "partfundamentals-ch02-rendering/2.28-Compose-Pausable-Composition-深度分析.md",
-    "priority": 80,
-    "reason": "新创建的知识缺口章节（评分19/20）"
-  },
-  {
-    "chapter": "22.28",
-    "title": "Adaptive Layout 多形态设备性能",
-    "path": "partapp-ch22-rendering-practice/22.28-Adaptive-Layout-多形态设备性能.md",
-    "priority": 80,
-    "reason": "新创建的知识缺口章节（评分19/20）"
-  },
-  {
-    "chapter": "2.29",
-    "title": "Android 17 桌面模式窗口管理性能",
-    "path": "partfundamentals-ch02-rendering/2.29-Android-17-桌面模式窗口管理性能.md",
-    "priority": 80,
-    "reason": "新创建的知识缺口章节（评分18/20）"
-  },
-  {
-    "chapter": "13.20",
-    "title": "Perfetto v54 Data Explorer 与 Jank CUJ",
-    "path": "partfundamentals-ch13-profiling/13.20-Perfetto-v54-Data-Explorer-与-Jank-CUJ.md",
-    "priority": 80,
-    "reason": "新创建的知识缺口章节（评分20/20）"
-  },
-  {
-    "chapter": "6.18",
-    "title": "Linux 6.10 内存碎片整理机制",
-    "path": "partfundamentals-ch06-memory/6.18-Linux-6.10-内存碎片整理机制.md",
-    "priority": 80,
-    "reason": "新创建的知识缺口章节（评分15/20）"
-  },
-  {
-    "section": "16.9",
-    "section_title": "Android 17 SDM 安装编译链路性能",
-    "priority": 90,
-    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "frontmatter last_verified_against",
-        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
-        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
-      }
-    ],
-    "added_by": "task2b-lite-auto-detected",
-    "added_at": "2026-06-29T15:48:00+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T15:48:30+08:00",
-    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
-  },
-  {
-    "section": "16.2",
-    "section_title": "各 Android 版本性能变更追踪",
-    "priority": 90,
-    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "frontmatter last_verified_against",
-        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
-        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
-      }
-    ],
-    "added_by": "task2b-lite-auto-detected",
-    "added_at": "2026-06-29T15:48:00+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T15:48:30+08:00",
-    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
-  },
-  {
-    "section": "16.6",
-    "section_title": "Android 16 云端 Profile 与 dexopt 安装优化",
-    "priority": 90,
-    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "frontmatter last_verified_against",
-        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
-        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
-      }
-    ],
-    "added_by": "task2b-lite-auto-detected",
-    "added_at": "2026-06-29T15:50:00+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T15:50:30+08:00",
-    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
-  },
-  {
-    "section": "17.2",
-    "section_title": "SoC 平台差异",
-    "priority": 90,
-    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "frontmatter last_verified_against",
-        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0_r1",
-        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
-      }
-    ],
-    "added_by": "task2b-lite-auto-detected",
-    "added_at": "2026-06-29T15:50:00+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T15:50:30+08:00",
-    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
-  },
-  {
-    "section": "25.6",
-    "section_title": "APK 体积分析与瘦身",
-    "priority": 85,
-    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "frontmatter last_verified_against",
-        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
-        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
-      }
-    ],
-    "added_by": "task2b-lite-auto-detected",
-    "added_at": "2026-06-29T15:52:00+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T15:52:30+08:00",
-    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
-  },
-  {
-    "section": "25.3",
-    "section_title": "WakeLock 与 Alarm 管理",
-    "priority": 85,
-    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "frontmatter last_verified_against",
-        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
-        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
-      }
-    ],
-    "added_by": "task2b-lite-auto-detected",
-    "added_at": "2026-06-29T15:52:00+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T15:52:30+08:00",
-    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
-  },
-  {
-    "priority": 80,
-    "section": "1.41",
-    "section_title": "Android 17 机器学习驱动的任务调度器",
-    "path": "src/part1-fundamentals/ch01-architecture/1.41-android-17-机器学习驱动的任务调度器.md",
-    "created_at": "2026-06-29T16:18:00Z",
-    "reason": "新章节 - 知识缺口挖掘产出"
-  },
-  {
-    "priority": 80,
-    "section": "1.42",
-    "section_title": "Android 17 RPC Binder 事务上限提升",
-    "path": "src/part1-fundamentals/ch01-architecture/1.42-android-17-rpc-binder-事务上限提升.md",
-    "created_at": "2026-06-29T16:18:00Z",
-    "reason": "新章节 - 知识缺口挖掘产出"
-  },
-  {
-    "priority": 80,
-    "section": "2.32",
-    "section_title": "Android 17 FrameTimeline 数据结构",
-    "path": "src/part1-fundamentals/ch02-rendering/2.32-android-17-frametimeline-数据结构.md",
-    "created_at": "2026-06-29T16:18:00Z",
-    "reason": "新章节 - 知识缺口挖掘产出"
-  },
-  {
-    "priority": 80,
-    "section": "4.18",
-    "section_title": "Android 17 MemoryLimiter 深度解析",
-    "path": "src/part1-fundamentals/ch04-memory/4.18-android-17-memorylimiter-深度解析.md",
-    "created_at": "2026-06-29T16:18:00Z",
-    "reason": "新章节 - 知识缺口挖掘产出"
-  },
-  {
-    "priority": 80,
-    "section": "6.19",
-    "section_title": "Linux 6.10 内存碎片整理机制",
-    "path": "src/part1-fundamentals/ch06-storage/6.19-linux-6.10-内存碎片整理机制.md",
-    "created_at": "2026-06-29T16:18:00Z",
-    "reason": "新章节 - 知识缺口挖掘产出"
-  },
-  {
-    "priority": 80,
-    "section": "22.29",
-    "section_title": "Jetpack Compose 并发安全机制",
-    "path": "src/part5-app/ch22-rendering-practice/22.29-jetpack-compose-并发安全机制.md",
-    "created_at": "2026-06-29T16:18:00Z",
-    "reason": "新章节 - 知识缺口挖掘产出"
-  },
-  {
-    "section": "16.2",
-    "section_title": "各 Android 版本性能变更追踪",
-    "priority": 85,
-    "reason": "[Deep Tech Review] Android 17 端侧 AI 调度附录仍以 main 分支代表 Android 17",
-    "material_paths": [
-      "logs/deep-review/2026-06-29-16-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异/源码准确性",
-        "location": "附录“Android 17 端侧 AI 资源调度（ADPF + PowerHAL）源码调研”信息源段（约 656-698 行）",
-        "detail": "章节声明 AOSP android-17.0.0_r1 tag 未发布，并以 frameworks/base、hardware/interfaces/power 等 main 分支代表 Android 17 当前方向。当前 android-17.0.0_r1 已可用，按 AIW 版本基线规则，main/master 资料不得作为 Android 17 正文结论。",
-        "suggestion": "将该附录逐项重锚到 android-17.0.0_r1；无法在 tag 中确认的 PowerHAL AIDL v6、ChannelMessage、HintManagerService 缓存窗口等内容标注“未进入 Android 17”或移出正文结论。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-29T16:41:24+08:00",
-    "status": "completed",
-    "completed_at": "2026-06-29T16:56:18+08:00",
-    "completed_by": "openclaw-task2b"
-  },
-  {
-    "section": "4.3",
-    "section_title": "ART 虚拟机内存管理",
-    "priority": 90,
-    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 -> android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "frontmatter last_verified_against + body L117/L540",
-        "detail": "last_verified_against 声称 android-17.0.0_r1 tag unavailable, tag 已可用",
-        "suggestion": "重锚到 android-17.0.0_r1"
-      }
-    ],
-    "added_by": "task2b-lite-auto-detected",
-    "added_at": "2026-06-29T21:38:39+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T21:38:39+08:00",
-    "completion_note": "fixed-lite: 版本基线重锚; 删除 tag unavailable 错误声明; 更新验证标签"
-  },
-  {
-    "section": "4.14",
-    "section_title": "ART GC Region 碎片化与 Compaction 策略",
-    "priority": 90,
-    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 -> android-17.0.0_r1",
-    "material_paths": [],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "frontmatter last_verified_against/sources + body",
-        "detail": "全章锚定 android-16.0.0_r1, 声称 tag 404",
-        "suggestion": "重锚到 android-17.0.0_r1"
-      }
-    ],
-    "added_by": "task2b-lite-auto-detected",
-    "added_at": "2026-06-29T21:38:39+08:00",
-    "status": "completed",
-    "completed_by": "task2b-lite",
-    "completed_at": "2026-06-29T21:38:39+08:00",
-    "completion_note": "fixed-lite: 全量重锚 android-16->android-17 (frontmatter+sources+8处验证标签+2处body注释)"
-  },
-  {
-    "section": "5.27",
-    "section_title": "端侧大模型推理能效选型：MoE 架构与量化策略",
-    "priority": 80,
-    "reason": "知识缺口挖掘：端侧 LLM 能效选型指导缺失，论文提供定量实测数据",
-    "material_paths": [
-      "Obsidian/论文/Android-2026-06-26-sustainability-on-device-llm-energy/03-精读.md",
-      "Obsidian/DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-06-30T01:04:00+08:00",
-    "status": "completed",
-    "completed_by": "task2a-content-processing",
-    "completed_at": "2026-06-30T02:04:00+08:00",
-    "completion_note": "Draft processed: BatteryManager methodology + quantization-energy paradox + MoE energy characteristics + 3B sweet spot + model-device matching"
-  },
-  {
-    "section": "16.19",
-    "section_title": "Android 17 bootanalyze 工具链与 Zygote 延迟预加载源码级分析",
-    "priority": 80,
-    "reason": "知识缺口挖掘：bootanalyze 工具路径修正与 Zygote 延迟预加载机制未覆盖",
-    "material_paths": [
-      "Obsidian/DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-06-30T01:04:00+08:00",
-    "status": "pending"
-  },
-  {
-    "section": "26.23",
-    "section_title": "生产级 ART 动态方法追踪 — XTrace 架构与实战",
-    "priority": 80,
-    "reason": "知识缺口挖掘：生产级 ART 动态追踪实践缺失，ByteDance 论文提供 1 亿 DAU 验证数据",
-    "material_paths": [
-      "https://arxiv.org/abs/2512.21555"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-06-30T01:04:00+08:00",
-    "status": "pending"
-  },
-  {
-    "section": "22.2",
-    "section_title": "RecyclerView 最佳实践",
-    "priority": 85,
-    "reason": "[Deep Tech Review] RecyclerView 章节源码锚点使用 androidx-main，未固定到 Android 17 可接受基线或不可变 AndroidX 版本。",
-    "material_paths": [
-      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异/源码锚点",
-        "location": "frontmatter sources / last_verified_against；正文多处 [已验证: AndroidX ...]",
-        "detail": "章节把 AndroidX RecyclerView 机制锚定到 platform/frameworks/support/+/androidx-main。androidx-main 是移动分支，本轮抽检未找到 platform/frameworks/support 的 android-17.0.0_r1 tag；按 Android 17 基线规则，main/master 资料不得作为正文结论依据，除非明确标注未进入 Android 17。",
-        "suggestion": "重新选定 RecyclerView 对应的 AndroidX artifact 版本或不可变 commit 作为源码基线，并在 sources/last_verified_against 中写明；若只能引用 androidx-main，正文必须标注“未进入 Android 17”，且相关内容不能作为 Android 17 主线结论。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-06-30T01:28:33+08:00",
-    "status": "completed",
-    "completed_reason": "fixed-lite: 源码锚点标注 androidx-main 未进入 android-17.0.0_r1，新增 androidx_source_note frontmatter 和正文说明",
-    "completed_at": "2026-06-30T01:38:01+08:00"
-  }
-]
+{
+  "pending": [],
+  "completed": [
+    {
+      "section": "05",
+      "section_title": "CPU与功耗",
+      "priority": 74,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "Gracker RSS 订阅"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — https://android-developers.googleblog.com/2026/06/android-17-performance-optimization",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-30T05:32:46.212810",
+      "status": "completed",
+      "completed_at": "2026-06-30T06:54:54.619428+08:00",
+      "completed_by": "task2b-main",
+      "completed_reason": "URL 不可访问，跳过 — android-developers.googleblog.com 解析到私有 IP"
+    },
+    {
+      "section": "05",
+      "section_title": "CPU与功耗",
+      "priority": 74,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "Gracker RSS 订阅"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — https://android-developers.googleblog.com/2026/06/android-17-performance-optimization",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-30T05:33:02.977215",
+      "status": "completed",
+      "completed_at": "2026-06-30T06:54:54.619428+08:00",
+      "completed_by": "task2b-main",
+      "completed_reason": "URL 不可访问，跳过 — android-developers.googleblog.com 解析到私有 IP（重复条目）"
+    },
+    {
+      "section": "04",
+      "section_title": "内存管理",
+      "priority": 72,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "Gracker RSS 订阅"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux 6.10 引入内存碎片整理新机制 — https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-30T05:33:02.979560",
+      "status": "completed",
+      "completed_at": "2026-06-30T06:54:54.619428+08:00",
+      "completed_by": "task2b-main",
+      "completed_reason": "URL 不可访问，跳过 — phoronix.com 解析到私有 IP"
+    },
+    {
+      "section": "04",
+      "section_title": "内存管理",
+      "priority": 74,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "ClawFeed 24小时高价值一览"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 14 性能优化：内存管理新机制 — https://developer.android.com/about/versions/14/features",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-06-30T05:33:02.980489",
+      "status": "completed",
+      "completed_at": "2026-06-30T06:54:54.619428+08:00",
+      "completed_by": "task2b-main",
+      "completed_reason": "URL 不可访问，跳过 — developer.android.com 解析到私有 IP"
+    },
+    {
+      "section": "ch06",
+      "section_title": "存储与 I/O",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-multiprocess-datastore-mmipc-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证 — DataStore 多进程协调由三层内核 IPC 机制叠加：FileChannel.tryLock 跨进程互斥锁、mmap(MAP_SHARED)+std::atomic<uint32_t> 跨进程版",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-06-30T06:12:34.125360",
+      "status": "completed",
+      "completed_at": "2026-06-30T06:54:54.619428+08:00",
+      "completed_by": "task2b-main",
+      "completed_reason": "内容已存在于章节 6.5（src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md）mmap+atomic+inotify 三层 IPC 分析已注入，无需重复注入"
+    }
+  ],
+  "last_updated": "2026-06-30T06:54:54.619428+08:00"
+}
