@@ -3,12 +3,12 @@ title: "\"Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集
 chapter: "\"13.9\""
 section: "\"13.9\""
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 applicable_versions: "\"Android 8.0 (API 26) - Android 17 (API 37)\""
 tags: ["[tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]"]
 confidence: "medium"
-last_verified: "\"2026-06-06\""
-last_verified_against: "\"AOSP android-16.0.0_r1, frameworks/base/core/jni/android_os_Trace.cpp, frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp, frameworks/native/cmds/atrace/atrace.cpp, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/\""
+last_verified: "2026-06-29"
+last_verified_against: "AOSP android-17.0.0_r1, frameworks/base/core/jni/android_os_Trace.cpp, frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp, frameworks/native/cmds/atrace/atrace.cpp, system/core/libcutils/{trace-dev.cpp,include/cutils/trace.h}, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,tracefs.cc,tracefs.h}, external/perfetto/perfetto.rc, external/perfetto/src/profiling/perf/perf_producer.cc, frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp}"
 drafted_date: "\"2026-04-08\""
 drafted_by: "\"openclaw-task2a\""
 reviewed_date: "2026-06-07"
@@ -17,7 +17,7 @@ path: "\"intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestat
 related_chapters: "\"[\\\"13.1\\\", \\\"13.2\\\", \\\"13.5\\\", \\\"14.10\\\", \\\"1.5\\\"]\""
 task2b_state: "fixed"
 last_task2b_rerun_at: "\"2026-05-08T16:50:00+08:00\""
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_result: "fixed"
 rework_date: "\"2026-04-25\""
 rework_by: "openclaw-task2b"
@@ -31,15 +31,15 @@ updated_by: "openclaw-task2b"
 updated_date: "\"2026-06-06\""
 task2b_fix_notes: "\"2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_marker 单路径→双路径(libtracing_perfetto TrackEvent 分支),移除 AOSP main 锚点引用,更新数据流图;C/C++ ATRACE 仍走 trace_marker 路径单独说明。\""
 task6_result: "\"pass-light-edit\""
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task6_reviewed_date: "\"2026-05-08\""
 last_task6_at: "\"2026-06-07T04:12:51+08:00\""
 last_task6_audit: "2026-06-27"
 deepseek_polish_state: "done"
 last_deepseek_polish_at: "2026-05-27"
-last_task9_audit: "\"2026-06-06\""
-last_task9_autofix_at: "\"2026-06-07\""
+last_task9_audit: "2026-06-29"
+last_task9_autofix_at: "2026-06-29"
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-07"
 ---
@@ -234,7 +234,7 @@ traced_probes 读取 ftrace 数据的源码路径:
 
 - `FtraceController`(`external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc`)负责读取 `TraceConfig`、启停 ftrace,并按 `FtraceConfig.drain_period_ms` 触发采集循环
 - `CpuReader`(`external/perfetto/src/traced/probes/ftrace/cpu_reader.cc`)负责解析单个 CPU 的原始 ftrace page
-- `FtraceProcfs`(`external/perfetto/src/traced/probes/ftrace/ftrace_procfs.cc`)封装 tracefs 访问;`OpenPipeForCpu()` 打开 `/sys/kernel/tracing/per_cpu/cpu<N>/trace_pipe_raw`
+- `Tracefs`(`external/perfetto/src/traced/probes/ftrace/tracefs.cc` / `tracefs.h`)封装 tracefs 访问;`OpenPipeForCpu()` 打开 `/sys/kernel/tracing/per_cpu/cpu<N>/trace_pipe_raw`
 - 原始二进制事件通过 ftrace parser / event filter 处理后,写入 Perfetto protobuf 流并交给 traced service
 - `trace_pipe_raw` 与 `trace`(文本格式)的区别:前者输出二进制 ftrace event 结构体,由 traced_probes 直接解析,避免一次文本序列化和反序列化
 
@@ -487,6 +487,6 @@ Java android.os.Trace (Android 15+) ──┬── Perfetto TrackEvent ──�
 ### Perfetto 关键数据源 linux.perf 与 frametimeline 的 AOSP 17 边界验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-08-android-17-perfetto-data-sources-boundary-verification.md
 - 类型：DeepResearch 调研结果
-- 摘要：基于 android-16.0.0_r3 锚点验证：linux.perf(traced_perf 守护进程)与 android.surfaceflinger.frametimeline 两个数据源在 Android 16 中保持完整实现，包括 kDataSourceName 常量、注册入口、FrameTimeline jank 分类状态机(11 种 JankType 枚举)与阈值参数。基于 AOSP API 兼容性政策，两者在 Android 17/API 37 中预期仍可用，需等公开 tag 后二次确认。
+- 摘要：基于 android-17.0.0_r1 锚点验证：linux.perf(traced_perf/perf_producer 路径)与 android.surfaceflinger.frametimeline 两个数据源在 Android 17 中保持完整实现，包括 external/perfetto/src/profiling/perf/perf_producer.cc 的 kDataSourceName="linux.perf"、frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp} 的 kFrameTimelineDataSource 注册路径、JankType 分类逻辑与阈值参数。
 - 注入时间：2026-06-09
 - 价值：精确到文件+行号+函数名的一手源码证据，补全 §13.9 对 linux.perf 和 frametimeline 数据源的验证边界声明
