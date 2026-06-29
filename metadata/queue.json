@@ -959,5 +959,25 @@
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-06-30T01:04:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "22.2",
+    "section_title": "RecyclerView 最佳实践",
+    "priority": 85,
+    "reason": "[Deep Tech Review] RecyclerView 章节源码锚点使用 androidx-main，未固定到 Android 17 可接受基线或不可变 AndroidX 版本。",
+    "material_paths": [
+      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/源码锚点",
+        "location": "frontmatter sources / last_verified_against；正文多处 [已验证: AndroidX ...]",
+        "detail": "章节把 AndroidX RecyclerView 机制锚定到 platform/frameworks/support/+/androidx-main。androidx-main 是移动分支，本轮抽检未找到 platform/frameworks/support 的 android-17.0.0_r1 tag；按 Android 17 基线规则，main/master 资料不得作为正文结论依据，除非明确标注未进入 Android 17。",
+        "suggestion": "重新选定 RecyclerView 对应的 AndroidX artifact 版本或不可变 commit 作为源码基线，并在 sources/last_verified_against 中写明；若只能引用 androidx-main，正文必须标注“未进入 Android 17”，且相关内容不能作为 Android 17 主线结论。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-30T01:28:33+08:00",
+    "status": "pending"
   }
 ]
