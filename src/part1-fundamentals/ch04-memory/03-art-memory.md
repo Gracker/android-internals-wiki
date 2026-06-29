@@ -2,8 +2,8 @@
 title: "ART 虚拟机内存管理"
 chapter: '4.3'
 section: '4.3'
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [memory, lmk, gc]
 confidence: medium
@@ -11,19 +11,19 @@ last_verified: '2026-06-29'
 last_verified_against: "AOSP android-17.0.0_r1 (主线) / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 (版本演进对比) + Android Developers Blog (Android 16 QPR2)"
 drafted_date: '2026-03-31'
 drafted_by: openclaw-task2
-reviewed_date: '2026-06-10'
+reviewed_date: '2026-06-30'
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 last_task2b_at: "2026-06-09T20:59:35+08:00"
-last_task6_at: '2026-06-10T01:07:00+08:00'
+last_task6_at: '2026-06-30T05:09:02+08:00'
 last_task6_audit: 2026-06-09
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "reviewed"
-task9_reviewed_date: '2026-06-29'
+task9_reviewed_date: '2026-06-30'
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-29T22:20:00+08:00"
 task2b_state: "fixed"

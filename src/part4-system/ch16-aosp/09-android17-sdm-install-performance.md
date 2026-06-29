@@ -2,12 +2,12 @@
 
 title: "Android 17 SDM 安装编译链路性能"
 chapter: "16.9"
-status: ready-for-review
+status: finalized
 last_task2b_lite_at: "2026-06-29"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-29"
-last_task6_at: "2026-06-29T22:07:00+08:00"
+last_task6_at: "2026-06-30T05:09:02+08:00"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
 last_verified: "2026-06-11"
@@ -46,8 +46,8 @@ gap_source: "DeepResearch 调研结果（score 18）+ AOSP 源码结构"
 task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 last_task9_at: "2026-06-29T16:41:24+08:00"
 last_task9_autofix_at: "2026-06-29"
 last_task9_review_log: "logs/deep-review/2026-06-29-16-deep-review.md"
@@ -62,7 +62,7 @@ last_deepseek_cn_review_at: 2026-06-29
 
 Android 16 在 AOSP 设备侧引入了 SDM（Secure Dex Metadata）产物管理路径。SDM 是云端编译产物的 ZIP 容器，承载 Play 侧 `dex2oat` 预编译结果，目标是让设备端跳过本地编译——这在低端设备上尤其关键，因为 `dex2oat` 可能占安装总耗时的一半以上。
 
-本节展开 SDM 从安装会话到 ART Service 产物管理的设备侧全链路。核心流程是：`PackageInstallerSession` 识别并暂存 `.sdm` 文件 → `verifySdmSignatures()` 用 APK 同一签名密钥校验 → ART Service 通过 `SdkLevel.isAtLeastB()` 门控决定是否创建 SDC → `artd` 读取 SDM 写出 SDC Companion → dexopt 完成后清理回收。本节聚焦设备侧源码链路和性能影响，不覆盖 Play 端的 SDM 生成策略和灰度分发（公开资料不完整）。Profile 体系的职责划分和开发者控制点详见 16.6 节，`.dm` 文件与编译模式的实战配合详见 21.11 节。
+本节展开 SDM 从安装会话到 ART Service 产物管理的设备侧完整路径。核心流程是：`PackageInstallerSession` 识别并暂存 `.sdm` 文件 → `verifySdmSignatures()` 用 APK 同一签名密钥校验 → ART Service 通过 `SdkLevel.isAtLeastB()` 门控决定是否创建 SDC → `artd` 读取 SDM 写出 SDC Companion → dexopt 完成后清理回收。本节聚焦设备侧源码链路和性能影响，不覆盖 Play 端的 SDM 生成策略和灰度分发（公开资料不完整）。Profile 体系的职责划分和开发者控制点详见 16.6 节，`.dm` 文件与编译模式的实战配合详见 21.11 节。
 
 ## SDM 产物管理架构
 
