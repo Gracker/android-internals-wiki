@@ -19,6 +19,7 @@ task9_review_notes: "2026-06-27 Task2B Lite: 修复网络聚合、JankStats关�
 last_task9_audit: "2026-06-29"
 last_task9_at: "2026-06-29T09:31:38+08:00"
 last_task9_autofix_at: "2026-06-29"
+last_task6_audit: "2026-06-30"
 ---
 
 # 性能指标采集与上报
