@@ -7,6 +7,9 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_at: "2026-06-28T05:10:00+08:00"
+last_task6_audit: "2026-06-30"
+last_task6_audit_at: "2026-06-30T06:05:00+08:00"
+last_task6_audit_reason: "idle audit: L1零命中, frontmatter修复stray dash + CJK-Latin空格, outline N/A"
 task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-28
@@ -40,7 +43,6 @@ last_task2b_at: "2026-06-28T04:50:00+08:00"
 task2b_result: fixed
 
 ---
--
 
 # 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 
@@ -459,58 +461,58 @@ OnPushDataToSorter 阶段 Populate{Classes,Objects,References,FieldValues} 写 S
 `__SIGRTMIN+4` 被 native heapprofd 占用（`heapprofd_producer.cc:64`），`__SIGRTMIN+6` 是 java_hprof 专用（`java_hprof_producer.cc:24`）；bionic 实时信号区为 SIGRTMIN..SIGRTMAX，Android 默认留 SIGRTMIN+0..+3 给 libc。Java 堆抓取走信号而非 LD_PRELOAD，因为 hprof 格式由 ART 直接产生，绕过了 native unwinding 的栈回溯开销。
 
 
-<!-- AIW-源码调研-2026-06-28：以下内容来自对 `android.java_hprof` 数据源和HPROF管线的Android 17源码级深度调研，关联报告 `DeepResearch/2026-06-28-hprof-heapdump-javahprof-datasource.md` -->
+<!-- AIW-源码调研-2026-06-28：以下内容来自对 `android.java_hprof` 数据源和 HPROF 管线的 Android 17 源码级深度调研，关联报告 `DeepResearch/2026-06-28-hprof-heapdump-javahprof-datasource.md` -->
 
 ## 源码验证结论（Android 17.0.0_r1）
 
-基于对AOSP Perfetto v50.1源码的深度调研，发现以下关键结论：
+基于对 AOSP Perfetto v50.1 源码的深度调研，发现以下关键结论：
 
 ### 1. 数据源名称更正
 **源码位置**：`src/profiling/memory/java_hprof_producer.cc`
 ```cpp
 constexpr const char* kJavaHprofDataSource = "android.java_hprof";
 ```
-实际数据源名为`android.java_hprof`，而非章节所述`art_hprof`，需更新章节内容。
+实际数据源名为 `android.java_hprof`，而非章节所述 `art_hprof`，需更新章节内容。
 
-### 2. 堆图表Schema重构
+### 2. 堆图表 Schema 重构
 **源码位置**：`src/trace_processor/tables/profiler_tables.py`
-实际仅定义3张核心表，非章节所述6张：
-- **HEAP_GRAPH_CLASS_TABLE** (行461)：类信息定义
-- **HEAP_GRAPH_OBJECT_TABLE** (行496)：对象实例，包含self_size、native_size、reachable等字段  
-- **HEAP_GRAPH_REFERENCE_TABLE** (行546)：对象间引用关系映射
+实际仅定义 3 张核心表，非章节所述 6 张：
+- **HEAP_GRAPH_CLASS_TABLE** (行 461)：类信息定义
+- **HEAP_GRAPH_OBJECT_TABLE** (行 496)：对象实例，包含 self_size、native_size、reachable 等字段  
+- **HEAP_GRAPH_REFERENCE_TABLE** (行 546)：对象间引用关系映射
 
 ### 3. 二进制解析架构澄清
 **源码位置**：`src/trace_processor/importers/proto/heap_graph_module.cc`
-`trace_processor`侧**无hprof二进制解析器**，而是接收预解析好的HeapGraph proto packet。hprof→HeapGraph proto的转换发生在ART侧或heapprofd daemon内部（具体位置待进一步确认）。
+`trace_processor` 侧**无 hprof 二进制解析器**，而是接收预解析好的 HeapGraph proto packet。hprof→HeapGraph proto 的转换发生在 ART 侧或 heapprofd daemon 内部（具体位置待进一步确认）。
 
-### 4. 双Producer架构验证
+### 4. 双 Producer 架构验证
 **源码位置**：`src/profiling/memory/heapprofd.cc:89`
 ```cpp
 JavaHprofProducer java_producer(&task_runner);
 ```
-与native producer并行存在：
-- `__SIGRTMIN+4`：HeapprofdProducer (native，占用行71)
+与 native producer 并行存在：
+- `__SIGRTMIN+4`：HeapprofdProducer (native，占用行 71)
 - `__SIGRTMIN+6`：JavaHprofProducer (java，专用信号)
 
 ### 5. 反向转换器实现
 **源码位置**：`src/traceconv/trace_to_hprof.cc`
 存在反向转换器，特性如下：
-- 自定义header：`PERFETTO_JAVA_HEAP`
-- 8字节ID标识
+- 自定义 header：`PERFETTO_JAVA_HEAP`
+- 8 字节 ID 标识
 - 大端序编码
-- 实现HeapGraph proto→标准Hprof格式的转换
+- 实现 HeapGraph proto→标准 Hprof 格式的转换
 
 ### 6. 协议层级确认
 **源码位置**：`protos/perfetto/trace/profiling/heap_graph.proto`
 定义完整的对象图表示：
-- HeapGraphRoot.Type：15种GC根类型
-- HeapGraphType.Kind：12种对象类型
+- HeapGraphRoot.Type：15 种 GC 根类型
+- HeapGraphType.Kind：12 种对象类型
 - 支持对象引用、类继承、内存占用等完整信息
 
 ### 未验证的技术盲区
-1. hprof→HeapGraph proto的实际转换位置（ART signal_catcher？heapprofd内部？）
-2. 厂商定制差异（Qualcomm/MediaTek/Samsung hprof行为）
+1. hprof→HeapGraph proto 的实际转换位置（ART signal_catcher？heapprofd 内部？）
+2. 厂商定制差异（Qualcomm/MediaTek/Samsung hprof 行为）
 3. 大内存设备性能瓶颈的具体机制
-4. KOOM ForkStripHeapDumper实现对比
+4. KOOM ForkStripHeapDumper 实现对比
 
-以上验证结论基于android-17.0.0_r1基准，建议更新章节内容以匹配实际源码实现。
+以上验证结论基于 android-17.0.0_r1 基准，建议更新章节内容以匹配实际源码实现。
