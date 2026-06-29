@@ -2,7 +2,7 @@
 title: "\"Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理\""
 chapter: "\"13.9\""
 section: "\"13.9\""
-status: "finalized"
+status: ready-for-review
 pipeline_stage: "task6_pending"
 applicable_versions: "\"Android 8.0 (API 26) - Android 17 (API 37)\""
 tags: ["[tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]"]

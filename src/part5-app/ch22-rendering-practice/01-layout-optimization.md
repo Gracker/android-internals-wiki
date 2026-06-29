@@ -2,7 +2,7 @@
 title: "布局优化策略"
 chapter: "22.1"
 section: "22.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl/View/LayoutInflater/ViewStub/FrameMetrics, Android Developers Blog ConstraintLayout benchmark, AndroidX AsyncLayoutInflater 1.1.0 source/docs, AIW 7.12/22.3"

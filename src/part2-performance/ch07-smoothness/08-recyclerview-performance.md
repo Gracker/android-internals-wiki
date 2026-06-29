@@ -3,7 +3,7 @@
 title: RecyclerView 列表滑动性能深度优化
 chapter: '7.8'
 section: '7.8'
-status: "finalized"
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - recyclerview

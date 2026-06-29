@@ -1,7 +1,7 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: finalized
+status: ready-for-review
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"

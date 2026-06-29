@@ -4,7 +4,7 @@
 title: "Android 16 云端 Profile 与 dexopt 安装优化"
 chapter: "16.6"
 section: "16.6"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-08"

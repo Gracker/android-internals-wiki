@@ -2,6 +2,7 @@
 title: DVFS 与功耗管理
 chapter: '5.4'
 section: '5.4'
+status: ready-for-review
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 last_verified: '2026-06-29'
 last_verified_against: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power), Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)
