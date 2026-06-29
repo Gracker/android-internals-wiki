@@ -4,8 +4,8 @@ chapter: "22.1"
 section: "22.1"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android-16.0.0_r1, Android Developers Blog ConstraintLayout benchmark, AndroidX AsyncLayoutInflater 1.1.0 docs, AIW 7.12/22.3"
+last_verified: "2026-06-29"
+last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl/View/LayoutInflater/ViewStub/FrameMetrics, Android Developers Blog ConstraintLayout benchmark, AndroidX AsyncLayoutInflater 1.1.0 source/docs, AIW 7.12/22.3"
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 1
@@ -32,8 +32,8 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [layout, constraintlayout, viewstub, inflate, hierarchy]
 related_chapters: ["22.3", "7.12", "2.5"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -46,13 +46,18 @@ last_task6_review_log: "logs/review/2026-05-13-06-review.md"
 last_task6_audit: "2026-05-26"
 last_task6_audit_log: "logs/review/2026-05-26-19-audit.md"
 task6_review_notes: "2026-05-13 Task6：L1/L2 轻修后通过；无新增回炉项，转入 Task9 技术复核。"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-13"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-06-29"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T06:25:00+08:00"
-task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；自动晋升 finalized。详见 logs/deep-review/2026-05-13-06-deep-review.md。"
-last_task9_audit: "2026-06-07"
-last_task9_audit_log: "logs/deep-review/2026-06-07-13-audit.md"
+last_task9_at: "2026-06-29T18:34:36+08:00"
+task9_review_notes: "2026-06-29 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 0；将 AOSP 源码锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1，复核 ViewRootImpl/View/LayoutInflater/ViewStub/FrameMetrics；回到 Task6 复审。详见 logs/deep-review/2026-06-29-18-audit.md。 | 2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；自动晋升 finalized。详见 logs/deep-review/2026-05-13-06-deep-review.md。"
+last_task9_audit: "2026-06-29"
+last_task9_audit_log: "logs/deep-review/2026-06-29-18-audit.md"
+last_task9_autofix_at: "2026-06-29"
+last_task9_review_log: "logs/deep-review/2026-06-29-18-audit.md"
+task9_p0_issues: 0
+task9_p1_issues: 1
+task9_p2_issues: 0
 ---
 
 # 布局优化策略
@@ -90,7 +95,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-07-13-audit.md"
 
 布局优化要从一帧里发生了什么看起。View 树一旦触发 `requestLayout()`，主线程会在 `ViewRootImpl.performTraversals()` 里进入 Measure、Layout，必要时再进入 Draw。Measure 和 Layout 都是自顶向下遍历，节点越多、嵌套越深、父容器规则越复杂，主线程需要执行的 Java/Kotlin 代码越多。详见 7.12 节。
 
-[已验证: AIW 7.12, AOSP `frameworks/base/core/java/android/view/ViewRootImpl.java`, `View.java`]
+[已验证: AIW 7.12, AOSP android-17.0.0_r1 `frameworks/base/core/java/android/view/ViewRootImpl.java`, `View.java`]
 
 布局层级不是单纯的“深度问题”。更常见的成本来自三类结构：
 
@@ -138,7 +143,7 @@ Google 在 2017 年用注册表单页面做过公开测试：传统 `RelativeLay
 
 `ViewStub` 适合“大概率不显示”的内容。错误页、空态页、折叠的高级筛选区，如果直接写在主布局里，首帧就会执行 inflate 和对象创建；换成 `ViewStub` 后，首帧只创建一个轻量占位符。首次需要显示时再调用 `inflate()`，拿到真实根 View 后缓存引用，后续切换只改 `visibility`。
 
-[已验证: 官方文档, `android.view.ViewStub`]
+[已验证: 官方文档, AOSP android-17.0.0_r1 `frameworks/base/core/java/android/view/ViewStub.java`]
 
 `ViewStub` 不能重复 inflate。写法上要避免每次点击都查找并 inflate：
 
@@ -174,7 +179,7 @@ fun showError(root: View) {
 
 `<include>` 更偏工程复用。它不会自动让布局更快，`LayoutInflater` 仍要解析被 include 的资源并创建 View。要让 `<include>` 有性能收益，被 include 的布局要么用 `<merge>` 去掉根容器，要么配合 `ViewStub` 延迟加载。
 
-[已验证: AIW 7.12, AOSP `LayoutInflater.parseInclude()`]
+[已验证: AIW 7.12, AOSP android-17.0.0_r1 `frameworks/base/core/java/android/view/LayoutInflater.java` `parseInclude()`]
 
 ## 布局预加载与异步 Inflate
 
@@ -191,7 +196,7 @@ Clippings 中的速度优化章节把“减少核心场景当下要执行的指�
 
 `AsyncLayoutInflater` 的使用边界要写清楚。后台 inflate 要求父容器的 `generateLayoutParams(AttributeSet)` 线程安全，被创建的 View 构造过程不能依赖主线程 `Looper`，也不适合直接处理 `<fragment>` 这类主线程语义很强的标签。遇到不满足条件的布局，AndroidX 实现会回退到主线程同步 inflate；功能正常，但性能收益消失。
 
-[已验证: 官方文档, AndroidX `AsyncLayoutInflater`]
+[已验证: 官方文档, AndroidX `AsyncLayoutInflater` 1.1.0 source]
 
 典型接入方式如下：
 
