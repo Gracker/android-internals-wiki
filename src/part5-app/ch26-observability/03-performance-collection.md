@@ -1,16 +1,16 @@
 ---
 title: "性能指标采集与上报"
-status: "ready-for-review"
+status: "finalized"
 task9_result: "auto-fixed"
-task6_result: "pass-light-edit-v2"
-task6_state: "revisiting"
+task6_result: "pass-light-edit-v3"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_result: "fixed"
 task2b_state: "fixed"
 last_task2b_main_at: "2026-06-29T08:52:56+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-29"
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [android, performance, statsd, jankstats, memory-monitoring, leakcanary, apm, android-17]
 sources: ["AOSP android-17.0.0_r1 StatsManager.java", "AOSP android-17.0.0_r1 StatsLog.java", "AOSP android-17.0.0_r1 CachedAppOptimizer.java", "AOSP android-17.0.0_r1 MemoryLimiter.java", "AOSP android-17.0.0_r1 Build.java", "AOSP atoms.proto", "AndroidX metrics-performance", "Firebase Performance Monitoring docs", "LeakCanary 2.x", "Debug.MemoryInfo API docs"]

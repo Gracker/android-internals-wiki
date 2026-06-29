@@ -4,7 +4,7 @@ status: ready-for-review
 title: 内存相关的版本演进
 chapter: '4.6'
 section: '4.6'
-reviewed_date: "2026-06-03"
+reviewed_date: "2026-06-29"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-07'
@@ -61,16 +61,16 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 9
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
-last_task6_at: "2026-06-03T21:36:06+08:00"
-last_task6_review_log: logs/review/2026-06-03-13-review.md
-task6_review_notes: '2026-06-03 Task6 13:05：pass-light-edit（状态修复+确认）。前次 12:15 review 已通过但 task6_state 未从 revisiting 更新为 reviewed。本轮确认无新增 L1/L2 问题，修复 frontmatter 状态。源码索引表 linker_phdr.cpp 版本标注不一致（代码注释 android-16.0.0_r1 vs 索引 android-mainline）已记入日志。task9_result 仍 needs-rework，不可自动晋升。'
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: pass-light-edit-v2
+last_task6_at: "2026-06-29T13:16:34+08:00"
+last_task6_review_log: logs/review/2026-06-29-13-review.md
+task6_review_notes: '2026-06-29 Task6 复审(revisiting→reviewed)：Task9 auto-fix 后写作质检通过。L1: 无禁用词命中；1 处否定纠正式句型在限额内。L2: 结构清晰、版本叙事连贯。无 L3/L4 回炉项。queue 有 pending 条目(时效性巡检)，不可自动晋升，送 Task2B 处理。'
 task9_state: reviewed
 task9_result: auto-fixed
 last_task9_at: "2026-06-29T11:34:21+08:00"
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-06-29T09:40:00+08:00"
 last_task2b_lite_at: "2026-06-29"

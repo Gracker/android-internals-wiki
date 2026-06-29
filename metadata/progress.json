@@ -1,8 +1,8 @@
 {
   "total": 528,
   "draft": 38,
-  "ready-for-review": 147,
-  "finalized": 330,
+  "ready-for-review": 145,
+  "finalized": 332,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
   "task9_reviewed_by": "openclaw-task9",
@@ -543,31 +543,29 @@
     }
   ],
   "task6_review_summary": {
-    "reviewed_at": "2026-06-16T23:17:17+08:00",
+    "reviewed_at": "2026-06-29T13:12:00+08:00",
     "reviewed_by": "openclaw-task6",
     "sections": [
-      "22.7",
-      "24.8",
-      "25.1",
-      "13.17"
+      "13.1",
+      "4.6",
+      "26.3"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
-      "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
-      "src/part5-app/ch25-power-size/01-power-diagnosis.md",
-      "src/part3-tools/ch13-perfetto/17-android17-data-sources.md"
+      "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "src/part5-app/ch26-observability/03-performance-collection.md"
     ],
-    "log": "logs/review/2026-06-16-23-review.md",
-    "review_log": "logs/review/2026-06-16-23-review.md",
+    "log": "logs/review/2026-06-29-13-review.md",
+    "review_log": "logs/review/2026-06-29-13-review.md",
     "pass_light_edit": [
-      "22.7",
-      "24.8",
-      "25.1",
-      "13.17"
+      "13.1",
+      "4.6",
+      "26.3"
     ],
     "needs_rework": [],
     "auto_promoted": [
-      "13.17"
+      "13.1",
+      "26.3"
     ],
     "auto_finalized": [
       "13.17"
@@ -1650,7 +1648,7 @@
       "task9_result": "pending"
     }
   },
-  "last_updated": "2026-06-29T06:10:37+08:00",
+  "last_updated": "2026-06-29T13:12:00+08:00",
   "ready_for_review": 2,
   "reviews": [
     {
@@ -1671,6 +1669,22 @@
       ],
       "result": "pass-light-edit",
       "notes": "Writing quality clean. 4 technical issues remain in queue.json (Task 9 tracked). Pipeline: task2b_pending."
+    },
+    {
+      "date": "2026-06-29T13:12:00+08:00",
+      "task": "task6-draft-review",
+      "sections": [
+        "13.1",
+        "4.6",
+        "26.3"
+      ],
+      "result": "pass-light-edit",
+      "auto_promoted": [
+        "13.1",
+        "26.3"
+      ],
+      "issues_found": 0,
+      "fixes_applied": 4
     }
   ],
   "rework_log": [

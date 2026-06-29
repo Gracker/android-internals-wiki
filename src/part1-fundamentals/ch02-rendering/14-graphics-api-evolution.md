@@ -392,6 +392,106 @@ return Frame(surface->logicalWidth(), surface->logicalHeight(), bufferAge);
 
 <!-- /AIW-源码调研-2026-06-26 -->
 
+<!-- AIW-源码调研-2026-06-29: HWUI Vulkan 双队列 + 独立 GrallocUploadThread 三线程模型 + VK_EXT_global_priority 整组传播 -->
+#### 双队列的真实消费者：`VkUploader` 与 `GrallocUploadThread`
+
+06-26 注入只描述了 `VulkanManager` 提供了 `mAHBUploadQueue` 这条队列。本节补充：**这条队列在 android-17.0.0_r1 中唯一的真实消费者是 `HardwareBitmapUploader` 的 `VkUploader` 子类**，且运行在一条独立 native 线程 `GrallocUploadThread` 上 —— 整个 HWUI 实际上是「**三线程 + 双 Vulkan queue**」的并行模型。
+
+**位置**：`frameworks/base/libs/hwui/HardwareBitmapUploader.cpp`
+
+`AHBUploader` 基类（line 84-122）持有独立的 `ThreadBase`，按 `mPendingUploads` 计数 + 60s idle timeout 动态启停：
+
+```cpp
+void beginUpload() {
+    std::lock_guard _lock{mLock};
+    mPendingUploads++;
+    if (!mUploadThread) { mUploadThread = new ThreadBase{}; }
+    if (!mUploadThread->isRunning()) {
+        mUploadThread->start("GrallocUploadThread");   // ← 独立 native 线程
+    }
+    onBeginUpload();
+}
+```
+
+`VkUploader::onUploadHardwareBitmap`（line 240-265）是 `kUploadThread` 在 AOSP 中**唯一**的调用点：
+
+```cpp
+renderthread::VulkanManager* vkManager = getVulkanManager();
+if (!vkManager->hasVkContext()) { vkManager->initialize(); }
+if (!mGrContext) {
+    GrContextOptions options;
+    mGrContext = vkManager->createContext(options,
+            renderthread::VulkanManager::ContextType::kUploadThread);
+    LOG_ALWAYS_FATAL_IF(!mGrContext, "failed to create GrContext for vulkan uploads");
+    this->postIdleTimeoutCheck();
+}
+sk_sp<SkImage> image =
+        SkImages::TextureFromAHardwareBufferWithData(mGrContext.get(), bitmap.pixmap(), ahb);
+mGrContext->submit(GrSyncCpu::kYes);   // CPU 同步等上传完成
+```
+
+`VulkanManager::createContext`（line 530-555）按 contextType 把 `backendContext.fQueue` 切到对应 VkQueue，且给 device-lost 回调打 `"RenderThread"` / `"UploadThread"` 标签用于 GPU fault 现场定位：
+
+```cpp
+backendContext.fQueue =
+        (contextType == ContextType::kRenderThread) ? mGraphicsQueue : mAHBUploadQueue;
+backendContext.fDeviceLostProc = (contextType == ContextType::kRenderThread)
+                                         ? deviceLostProcRenderThread
+                                         : deviceLostProcUploadThread;
+```
+
+**对应用与系统调优的隐含意义**：
+
+1. **三线程的职责边界**：
+   - **UI 线程**：录制 DisplayList / Canvas 命令（不直接提交到 GPU）。
+   - **RenderThread**：把 DisplayList 翻译成 Skia GrOps + Vulkan command buffer，`vkQueueSubmit` 到 `mGraphicsQueue`。
+   - **GrallocUploadThread**（`VkUploader` 路径）：把 CPU 端位图按需上传成 GPU 纹理，`vkQueueSubmit` 到 `mAHBUploadQueue`。
+   两条 GPU 线程**没有**显式 semaphore 同步 —— 上传产物是 `AHardwareBuffer` 句柄，由 RenderThread 后续通过 `SkImages::TextureFromAHardwareBuffer` 在自己线程里按需 wait AHB 的 producer fence（来自 gralloc）。
+
+2. **`onIdle` 销毁的代价**：`VkUploader::onIdle` 触发 `mGrContext.reset()`（line 226-228），下次上传需重新 `createContext` + 重建 VMA 实例。短间隔高并发 `copyBitmapToHardwareBuffer` 场景会反复重建，是潜在性能抖动源。
+
+3. **EGL vs Vulkan 路径互斥**：同进程只有一条 `GrallocUploadThread`；`EGLUploader`（line 134-216）走 `EGLImage + glTexSubImage2D + EGLSyncKHR` 路径，`VkUploader` 走 `SkImages::TextureFromAHardwareBufferWithData` 路径，由 `Properties::getRenderPipelineType()` 在 RenderThread 初始化时决定。
+
+#### `VK_EXT_global_priority` 的整组 queue 传播
+
+`VulkanManager.cpp:322-373` 的全局优先级映射有两个**容易踩坑**的细节：
+
+```cpp
+const VkDeviceQueueCreateInfo queueInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        queueNextPtr,           // ← 指向 queuePriorityCreateInfo
+        0,
+        mGraphicsQueueIndex,
+        kRequestedQueueCount,   // ← 2 个 queue 共享同一 globalPriority
+        queuePriorities,
+};
+```
+
+- `VkDeviceQueueGlobalPriorityCreateInfoEXT` 挂在 `VkDeviceQueueCreateInfo` 的 pNext 上，**作用域是整组 queue**（同 family 的 2 个 queue 共享同一 globalPriority）。一旦应用把 mGraphicsQueue 提到 HIGH，`mAHBUploadQueue` 也自动 HIGH —— 后台位图上传会**抢占**其他进程的 GPU 时间片。
+- 驱动不支持时**不 fatal**，降级到默认优先级（line 369-380 注释明确是为兼容 SysUI/Launcher 与 SF 的 RT priority 共存）。
+- 默认完全关闭（`Properties::contextPriority = 0`，`Properties.cpp:73`），仅在 `EGL_CONTEXT_PRIORITY_*_IMG` 被显式设置时才会激活。
+- 走的是 `VK_EXT_global_priority`（非 `VK_KHR_global_priority`），因为 EXT 版本可与 1.1 设备兼容；KHR 版本从 1.4 core 起内置，源码中 `hasGlobalPriority = mAPIVersion >= VK_API_VERSION_1_4 || 显式声明 KHR 扩展`（line 265-281）。
+
+#### 帧边界标记：`GrMarkFrameBoundary::kYes` 与 `frameID`
+
+`VulkanManager::finishFrame`（line 710-723）非 AGI 抓取环境下，把 Skia 的 `GrMarkFrameBoundary::kYes` 与递增的 `frameID` 一起塞进 `GrSubmitInfo`：
+
+```cpp
+static uint64_t currentFrameID = 0;
+GrSubmitInfo submitInfo;
+if (!mFrameBoundaryANDROID) {
+    submitInfo.fMarkBoundary = GrMarkFrameBoundary::kYes;
+    submitInfo.fFrameID = currentFrameID++;
+}
+context->submit(submitInfo);
+```
+
+`frameID` 由 Perfetto GPU renderer 用作 frame timeline 的 ID，是 trace 中「按帧聚合 GPU 时间」的基础。AGI 抓取时（`mFrameBoundaryANDROID != nullptr`）会再额外调一次 `mFrameBoundaryANDROID(mDevice, sharedSemaphore->semaphore(), image)` 把 VkImage + VkSemaphore 一并暴露给 capture layer。
+
+> 上述源码片段均来自 `android-17.0.0_r1`（commit `ae266dcb706d083868578cfedce381ef44488a07`）。`HardwareBitmapUploader.cpp:252-253` 的 `kUploadThread` 调用与 `Properties::contextPriority = 0` 的默认行为是基于本 tag 源码的实测观察。
+
+<!-- /AIW-源码调研-2026-06-29 -->
+
 ### Command Buffer 复用
 
 OpenGL ES 没有命令缓冲区的概念——每次绘制都是"即时的"（虽然驱动内部可能做批处理，但开发者无法控制）。Vulkan 的 Command Buffer 可以在帧之间复用：如果一帧的渲染命令没有变化（比如静态 UI），只需要在第一帧录制 Command Buffer，后续帧直接重新提交即可。
