@@ -47,7 +47,11 @@ last_task6_audit: "2026-06-12"
 section: "16.2"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
-task9_state: reviewed
+pipeline_stage: task6_pending
+task2b_state: fixed-lite
+last_task2b_lite_at: "2026-06-29"
+task6_state: revisiting
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite

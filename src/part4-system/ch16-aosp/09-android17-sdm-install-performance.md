@@ -2,6 +2,11 @@
 title: "Android 17 SDM 安装编译链路性能"
 chapter: "16.9"
 status: ready-for-review
+pipeline_stage: task6_pending
+task2b_state: fixed-lite
+last_task2b_lite_at: "2026-06-29"
+task6_state: revisiting
+task9_state: pending
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
 last_verified: "2026-06-11"
