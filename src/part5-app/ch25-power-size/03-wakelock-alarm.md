@@ -4,7 +4,7 @@ chapter: "25.3"
 section: "25.3"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-14"
+last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers wake lock / alarm docs + Clippings structure references"
 confidence: medium-high
 drafted_date: "2026-05-14"
