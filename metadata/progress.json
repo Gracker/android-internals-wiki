@@ -1,6 +1,6 @@
 {
-  "total": 527,
-  "draft": 39,
+  "total": 528,
+  "draft": 38,
   "ready-for-review": 147,
   "finalized": 330,
   "task9_result": "pass-tech-review",
@@ -1694,5 +1694,6 @@
       "details": "Writing quality re-review passed. No L1/L2 issues. 3 B-class technical issues remain in queue.json (priority 90) for Task2B main.",
       "task6_state": "reviewed"
     }
-  ]
+  ],
+  "ready": 1
 }
