@@ -1,7 +1,7 @@
 {
-  "total": 528,
-  "draft": 38,
-  "ready-for-review": 145,
+  "total": 529,
+  "draft": 37,
+  "ready-for-review": 146,
   "finalized": 332,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
@@ -1593,7 +1593,7 @@
       "reviewed_at": "2026-05-15T16:20:00+08:00"
     }
   },
-  "completion_percentage": 64.2,
+  "completion_percentage": 62.8,
   "superseded": 7,
   "sections": {
     "14.22": {
@@ -1637,6 +1637,15 @@
       "pipeline_stage": "task6_pending",
       "drafted_date": "2026-06-28",
       "drafted_by": "task2a-knowledge-gap"
+    },
+    "13.25": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "drafted_date": "2026-06-29",
+      "drafted_by": "task2a-knowledge-gap",
+      "last_review": "2026-06-29"
     }
   },
   "chapters": {
@@ -1648,7 +1657,7 @@
       "task9_result": "pending"
     }
   },
-  "last_updated": "2026-06-29T13:12:00+08:00",
+  "last_updated": "2026-06-29T15:14:33.254109+08:00",
   "ready_for_review": 2,
   "reviews": [
     {
@@ -1685,6 +1694,16 @@
       ],
       "issues_found": 0,
       "fixes_applied": 4
+    },
+    {
+      "date": "2026-06-29",
+      "time": "15:14",
+      "task": "task2a-draft-processing",
+      "sections": [
+        "13.25"
+      ],
+      "result": "draft completed",
+      "action": "processing section 13.25 PerfDog GPU performance data sources"
     }
   ],
   "rework_log": [
