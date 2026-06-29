@@ -4,7 +4,7 @@ chapter: "16.2"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-04"
 last_verified: 2026-06-29
-last_verified_against: AOSP android-17.0.0_r1 PerformanceHintManager / HintManagerService / hardware/interfaces/power/aidl
+last_verified_against: AOSP android-17.0.0_r1 PerformanceHintManager / HintManagerService / IHintManager / packages/modules/NeuralNetworks / hardware/interfaces/power/aidl
 confidence: medium
 sources:
   - type: official
@@ -40,21 +40,21 @@ task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-06-12T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-07-review.md"
 task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
-last_task9_autofix_at: "2026-06-11"
+last_task9_autofix_at: "2026-06-29"
 task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
-task9_result: "needs-rework"
-task9_state: pending
+task9_result: "auto-fixed"
+task9_state: reviewed
 task2b_state: fixed
 pipeline_stage: task6_pending
-last_task9_at: "2026-06-29T16:41:24+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-29-16-deep-review.md"
+last_task9_at: "2026-06-29T17:40:20+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-29-17-deep-review.md"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-29"
-task9_review_notes: "2026-06-29 Task9: 附录“Android 17 端侧 AI 资源调度”仍以 AOSP main 代表 Android 17，并声明 android-17 tag 未发布；已写入 Task2B 队列重锚 android-17.0.0_r1。"
+task9_review_notes: "2026-06-29 Task9 auto-fix: NNAPI 源码路径/ExecutionPlan.cpp 片段重锚 packages/modules/NeuralNetworks android-17.0.0_r1；ADPF CPU/GPU hints、SessionTag/SessionMode 公开 API 边界修正，回到 Task6 复审。"
 last_task2b_at: 2026-06-29T16:56:18+08:00
 last_task2b_by: openclaw-task2b
 ---
@@ -299,19 +299,20 @@ Android 17 的性能侧改动集中在 **ProfilingManager 触发器扩展** 和 
 
 ### NeuralNetworks HAL 1.3 在 Android 17 的实际状态
 
-NN HAL 1.3 是 AOSP `main` 分支（含 Android 17）唯一的 HAL 主版本，未发布 1.4 或 2.0。HAL 接口族由四个文件组成：
+NN HIDL HAL 最高版本在 AOSP `android-17.0.0_r1` 中仍是 1.3，未发布 HIDL 1.4 或 2.0。`hardware/interfaces/neuralnetworks/aidl/` 同时存在；本段讨论的是 HIDL 1.3 与 NDK NNAPI 的兼容边界。HAL 接口族由四个文件组成：
 
 - `hardware/interfaces/neuralnetworks/1.3/IDevice.hal`：设备能力声明（`getCapabilities_1_3`）、op 支持查询（`getSupportedOperations_1_3`）、model 准备入口（`prepareModel_1_3` / `prepareModelFromCache_1_3`）、driver-managed buffer 分配（`allocate`）
 - `hardware/interfaces/neuralnetworks/1.3/IPreparedModel.hal`：执行入口族——`execute_1_3`（异步）/ `executeSynchronously_1_3`（同步）/ `executeFenced`（fenced）
 - `hardware/interfaces/neuralnetworks/1.3/IExecutionCallback.hal` / `IFencedExecutionCallback.hal`：异步与 fenced 回调
 - `hardware/interfaces/neuralnetworks/1.3/types.hal`：`Capabilities` / `Model` / `Request` / `OutputShape` / `Timing` 等共用结构
 
-NDK API（`frameworks/ml/nn/runtime/include/NeuralNetworks.h`，8153 行）是 **stable header**——第三方 native 代码依赖，**不允许修改 enum / 宏 / 函数签名 / 结构体布局**。其 API level 标签最高只到 API 30（Android 11），HAL 1.3 自 API 33 起至今无新增 NDK 符号：
+NDK API（`packages/modules/NeuralNetworks/runtime/include/NeuralNetworks.h`，2492 行）是 **stable header**——第三方 native 代码依赖，**不允许修改 enum / 宏 / 函数签名 / 结构体布局**。其 `__NNAPI_INTRODUCED_IN` 标签最高到 API 31（NNAPI feature level 5），API 32-37 未继续新增 NDK 符号；Android 15 起多处入口标注 `__NNAPI_DEPRECATED_IN(35)`：
 
 > API 27（Android 8.1）：基础 NNAPI
 > API 28（Android 9）：AHardwareBuffer 集成
 > API 29（Android 10）：Capabilities 向量化、quant8/16、float16、BURST、QHIGH-priority
 > API 30（Android 11）：Fenced execution、IF/WHILE、QoS priority、MeasureTiming
+> API 31（Android 12）：runtime feature discovery、input/output padding、preferred memory alignment / padding 查询
 
 Android 15 起 NNAPI NDK API 被官方标记 deprecated（[source.android.com/docs/core/interaction/neural-networks](https://source.android.com/docs/core/interaction/neural-networks)）：
 
@@ -321,7 +322,7 @@ Android 15 起 NNAPI NDK API 被官方标记 deprecated（[source.android.com/do
 
 ### Framework 端 compilation caching 的实现机制
 
-`frameworks/ml/nn/runtime/ExecutionPlan.cpp` 中的 `compile()`（行 60-93）是 framework 端编译入口，关键逻辑：
+`packages/modules/NeuralNetworks/runtime/ExecutionPlan.cpp` 中的 `compile()`（行 105-135）是 framework 端编译入口，关键逻辑：
 
 ```cpp
 if (device.isCachingSupported() && token->ok() &&
@@ -329,13 +330,18 @@ if (device.isCachingSupported() && token->ok() &&
     token->updateFromString(device.getVersionString().c_str()) &&
     token->update(&executionPreference, sizeof(executionPreference)) &&
     token->update(&compilationPriority, sizeof(compilationPriority)) &&
+    updateTokenFromMetaData(token, metaData) &&
     token->finish()) {
     cacheToken = CacheToken{};
-    device.prepareModel(makeModel, preference, priority, deadline, cacheDir, cacheToken);
+    const uint8_t* tokenPtr = token->getCacheToken();
+    std::copy(tokenPtr, tokenPtr + cacheToken->size(), cacheToken->begin());
 }
+
+device.prepareModel(makeModel, preference, priority, deadline, cacheInfo, cacheToken,
+                    metaData, extensionNameAndPrefix);
 ```
 
-CacheToken 由 framework 哈希组成包括：`device.getName()` + `device.getVersionString()` + `executionPreference` + `compilationPriority` + 已被 framework 在 SIMPLE/COMPOUND body 阶段哈希过的 op index。这意味着：
+CacheToken 由 framework 哈希组成包括：`device.getName()` + `device.getVersionString()` + `executionPreference` + `compilationPriority` + extension metadata + 已被 framework 在 SIMPLE/COMPOUND body 阶段哈希过的 op index。这意味着：
 
 - 同一 model + 同一 driver 同一执行偏好 → 直接复用 prepared model 文件
 - driver 升级到不同 versionString → cache 失效，需重新编译
@@ -415,11 +421,11 @@ interface IPreparedModel extends @1.2::IPreparedModel {
 
 ### 信息源（全部为一手）
 
-- `android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/neuralnetworks/1.3/IDevice.hal`
-- `android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/neuralnetworks/1.3/IPreparedModel.hal`
-- `android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/neuralnetworks/1.3/types.hal`
-- `android.googlesource.com/platform/frameworks/ml/+/refs/heads/main/nn/runtime/include/NeuralNetworks.h`
-- `android.googlesource.com/platform/frameworks/ml/+/refs/heads/main/nn/runtime/ExecutionPlan.cpp`
+- `android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/neuralnetworks/1.3/IDevice.hal`
+- `android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/neuralnetworks/1.3/IPreparedModel.hal`
+- `android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/neuralnetworks/1.3/types.hal`
+- `android.googlesource.com/platform/packages/modules/NeuralNetworks/+/refs/tags/android-17.0.0_r1/runtime/include/NeuralNetworks.h`
+- `android.googlesource.com/platform/packages/modules/NeuralNetworks/+/refs/tags/android-17.0.0_r1/runtime/ExecutionPlan.cpp`
 - [source.android.com/docs/core/interaction/neural-networks](https://source.android.com/docs/core/interaction/neural-networks)
 - [developer.android.com/about/versions/17/features](https://developer.android.com/about/versions/17/features)
 - 关联 DeepResearch 报告：`DeepResearch/2026-06-14-android17-neuralnetworks-hal-inference-acceleration.md`
@@ -648,7 +654,7 @@ Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的�
 
 **1. 端侧 AI 在 Android 17 上的资源调度不是新 `AIService`，而是 ADPF 主线的延伸**
 
-SDK 端入口仍是 `PerformanceHintManager`（`frameworks/base/core/java/android/os/PerformanceHintManager.java`），`Session` 内部类承载全部 hint 语义。`CPU_LOAD_*` 是稳态负载提示，`POWER_EFFICIENCY` 是会话级省电优先模式，Android 15 起 `reportActualWorkDuration(WorkDuration)` 已能同时上报 CPU 与 GPU 耗时。`GPU_LOAD_UP/DOWN/RESET` 在 SDK 端挂 `@FlaggedApi(Flags.FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION)`，需要系统与 App 同时打开 flag 才可见。
+SDK 端入口仍是 `PerformanceHintManager`（`frameworks/base/core/java/android/os/PerformanceHintManager.java`），普通 App 公开可用的是创建 hint session、更新 target duration、上报 actual duration，以及带 flag 的 `setPreferPowerEfficiency()` / `reportActualWorkDuration(WorkDuration)`。`CPU_LOAD_*` / `GPU_LOAD_*` 走 hidden/TestApi `sendHint()`，不能写成普通 App 的公开迁移手段；其中 `GPU_LOAD_UP/DOWN/RESET` 还挂 `@FlaggedApi(Flags.FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION)`。
 
 **2. PowerHAL AIDL 把"端侧 AI 可调用边界"显式化了**
 
@@ -660,16 +666,18 @@ Android 17 平台代码通过 `getInterfaceVersion()` 动态判断 PowerHAL 接�
 
 - `mCpuHeadroomCache` / `mGpuHeadroomCache` 的缓存窗口由 HAL 上报的 `mSupportInfo.headroom.{cpu,gpu}MinIntervalMillis` 决定（`HintManagerService.java:335,358`），`HeadroomCache` 容量固定为 2；轮询间隔短于 HAL 窗口时会返回缓存结果，不会提升刷新率。
 - `MyUidObserver.onUidStateChanged` 在 uid 退出 `PROCESS_STATE_IMPORTANT_FOREGROUND` 时把所有 session 的 hint 推送静默丢弃；后台 ASR / OCR 的 hint 形同虚设，需前台服务保活。
-- `AppHintSessionSnapshot.mTag` 把 session 分类（OTHER/SURFACEFLINGER/HWUI/GAME/APP/SYSUI）写入 statsd；端侧 AI 实时滤镜建议用 `GAME`，离线推理用 `APP`，分类错会丢调度策略。
+- `AppHintSessionSnapshot.mTag` 把 session 分类（OTHER/SURFACEFLINGER/HWUI/GAME/APP/SYSUI）写入 statsd；普通 App 通过公开 SDK 创建 session 时默认走 `APP` 边界，不能自行选择 `GAME` / `APP`。
 
-**4. `SessionMode` / `SessionTag` 对端侧 AI 的实务选择**
+**4. `SessionMode` / `SessionTag` 的公开 API 边界**
 
-| 场景 | 推荐 `SessionTag` | 推荐 `SessionMode` |
-|------|------------------|-------------------|
-| 实时 AR 滤镜 / AI 美颜 | `GAME` | `GRAPHICS_PIPELINE`（如要接 SF 时序） |
-| 离线 OCR / 文档解析 | `APP` | `POWER_EFFICIENCY` |
-| 多模态模型（并行推理） | `APP` | `AUTO_CPU` / `AUTO_GPU`（让 SF 反推时序） |
-| 长时间后台 ASR | `APP` | `POWER_EFFICIENCY`（**且需前台服务**保持 `IMPORTANT_FOREGROUND`） |
+普通 App 通过 `PerformanceHintManager.createHintSession(int[] tids, long targetDurationNanos)` 创建 session，公开入口不能直接传 `SessionTag`，`IHintManager.SessionCreationReturn` 的默认 tag 是 `SessionTag.APP`。`SessionTag.GAME`、`GRAPHICS_PIPELINE`、`AUTO_CPU` / `AUTO_GPU` 出现在 hidden `IHintManager.createHintSessionWithConfig()` / `SessionCreationConfig` 路径，属于平台、OEM 或系统组件集成边界。
+
+| 场景 | App 侧可做的事 | 系统集成边界 |
+|------|----------------|--------------|
+| 实时 AR 滤镜 / AI 美颜 | 为渲染/推理线程创建 hint session，按帧更新 target duration / `WorkDuration` | `GAME` / `GRAPHICS_PIPELINE` 需要系统路径 |
+| 离线 OCR / 文档解析 | 默认 `APP` tag，必要时调用 `setPreferPowerEfficiency(true)` | 无需自选 tag |
+| 多模态模型（并行推理） | 拆分 CPU/GPU 工作时长并上报 `WorkDuration` | `AUTO_CPU` / `AUTO_GPU` 需要 hidden config |
+| 长时间后台 ASR | 前台服务保持 `IMPORTANT_FOREGROUND`，否则 hint update 会被 proc-state gating 丢弃 | 后台常驻不应依赖 ADPF hint |
 
 **5. FMQ `ChannelMessage` 不是默认必用**
 
@@ -679,7 +687,7 @@ Android 17 平台代码通过 `getInterfaceVersion()` 动态判断 PowerHAL 接�
 - Android 12 (API 31)：`PerformanceHintManager` 初版，CPU only。
 - Android 15 (API 35)：`POWER_EFFICIENCY` mode + `WorkDuration.cpuDurationNanos/gpuDurationNanos` 同报。
 - Android 16 (API 36)：`SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 公开（带 `FLAG_CPU_GPU_HEADROOMS`）。
-- Android 17 (API 37)：PowerHAL 接口 v6+（`getSupportInfo()` 要求 v6），`CpuHeadroomParams.calculationWindowMillis` 可用，`ChannelMessage` 可用；SDK 端 flag 与 AIDL 字段对齐，端侧 AI 推理可按场景精细选 hint / mode / tag。
+- Android 17 (API 37)：PowerHAL 接口 v6+（`getSupportInfo()` 要求 v6），`CpuHeadroomParams.calculationWindowMillis` 可用，`ChannelMessage` 可用；App 侧主要用 `WorkDuration`、`setPreferPowerEfficiency()` 和 headroom 查询，mode / tag 精细选择属于 hidden/system 集成边界。
 
 **信息源**（均锚定 `android-17.0.0_r1`）：
 
