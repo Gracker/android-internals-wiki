@@ -4,8 +4,8 @@ chapter: "21.7"
 section: "21.7"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android16-release, Android Developers docs, Clippings structure refs"
+last_verified: "2026-06-30"
+last_verified_against: "AOSP android-17.0.0_r1 ActivityThread.java / ZygoteProcess.java / Context.java / SharedPreferences.java; Android Developers docs; Clippings structure refs"
 confidence: medium
 drafted_date: "2026-05-13"
 reviewed_by: openclaw-task6
@@ -35,20 +35,24 @@ sources:
 tags: [multiprocess, startup, process-priority, ipc, app-startup]
 related_chapters: ["21.1", "1.3", "5.8"]
 task2b_state: fixed
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 last_task6_at: "2026-05-16T08:16:00+08:00"
 last_task6_audit: "2026-06-08"
 last_task6_review_log: logs/review/2026-05-16-08-review.md
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T00:20:00+08:00"
-last_task9_audit: "2026-06-08"
-last_task9_review_log: logs/deep-review/2026-05-14-00-deep-review.md
-task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。P2 1：MODE_MULTI_PROCESS 引用口径已由 Task2B 修正；无阻塞发布问题。"
-
+task9_reviewed_date: "2026-06-30"
+last_task9_at: "2026-06-30T03:25:00+08:00"
+last_task9_audit: "2026-06-30"
+last_task9_review_log: logs/deep-review/2026-06-30-03-audit.md
+task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。P2 1：MODE_MULTI_PROCESS 引用口径已由 Task2B 修正；无阻塞发布问题。 | 2026-06-30 Task9 闲时抽检 auto-fix: AOSP 验证锚点由 android16-release 重锚到 android-17.0.0_r1；复核 ActivityThread.handleBindApplication/installContentProviders/callApplicationOnCreate、ZygoteProcess.startViaZygote、Context.MODE_MULTI_PROCESS 与 SharedPreferences 多进程边界。未发现遗留 P0/P1，回 Task6 轻复审。"
+last_task9_audit_log: "logs/deep-review/2026-06-30-03-audit.md"
+last_task9_autofix_at: "2026-06-30"
+task9_p0_issues: 0
+task9_p1_issues: 0
+task9_p2_issues: 0
 ---
 
 # 多进程启动优化
@@ -82,9 +86,9 @@ Android 官方文档对进程的描述是:当某个组件启动且应用还没�
 
 子进程启动成本可以拆成四类:
 
-1. **进程创建成本**:系统侧经由 Zygote 创建应用进程,准备 UID/GID、运行时参数、ABI、数据目录等启动参数。AOSP `ZygoteProcess.startViaZygote()` 是应用进程通过 Zygote 创建的关键入口。[已验证: AOSP android16-release, frameworks/base/core/java/android/os/ZygoteProcess.java]
+1. **进程创建成本**:系统侧经由 Zygote 创建应用进程,准备 UID/GID、运行时参数、ABI、数据目录等启动参数。AOSP `ZygoteProcess.startViaZygote()` 是应用进程通过 Zygote 创建的关键入口。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/ZygoteProcess.java]
 2. **运行时与类加载成本**:每个进程都有独立 VM,`Application`、ClassLoader、静态单例、线程池、native 库状态不会和主进程共享。[已验证: 官方文档, developer.android.com/guide/components/fundamentals]
-3. **组件初始化成本**:AOSP `ActivityThread.handleBindApplication()` 中会先构造应用对象,安装该进程的 ContentProvider,再调用 `Application.onCreate()`。结果是 provider 初始化和 `Application.onCreate()` 都可能在子进程重复执行。[已验证: AOSP android16-release, frameworks/base/core/java/android/app/ActivityThread.java]
+3. **组件初始化成本**:AOSP `ActivityThread.handleBindApplication()` 中会先构造应用对象,安装该进程的 ContentProvider,再调用 `Application.onCreate()`。结果是 provider 初始化和 `Application.onCreate()` 都可能在子进程重复执行。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
 4. **跨进程通信成本**:模块拆到子进程后,主进程不能再直接读写内存对象,状态同步要走 Binder、ContentProvider、文件或数据库。启动阶段的同步 IPC 会把子进程冷启动耗时传回主进程。
 
 多进程适合解决"主进程背不动"的问题,不适合替代主进程启动治理。对启动场景来说,先问三个问题:这个模块是否参与首屏;它是否能在首帧后再启动;它移出主进程后节省的主进程 TTID/TTFD,是否大于子进程冷启动和 IPC 等待增加的成本。[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
