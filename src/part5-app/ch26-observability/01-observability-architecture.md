@@ -5,7 +5,7 @@ section: "26.1"
 status: finalized
 drafted_date: "2026-05-14"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-14"
+last_verified: "2026-06-30"
 last_verified_against: "Android Developers docs + Firebase Performance Monitoring docs + Clippings structure references"
 confidence: medium
 sources:
@@ -27,20 +27,24 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, logs, traces, architecture]
 related_chapters: ["26.2", "26.3", "19.27", "15.9"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task9_state: reviewed
-task9_reviewed_date: "2026-05-15"
-task9_reviewed_by: openclaw-task9
-task9_result: pass-tech-review
-last_task9_audit: "2026-06-17"
-last_idle_audit_at: "2026-06-17"
+task9_reviewed_date: "2026-06-30"
+task9_reviewed_by: "openclaw-task9"
+task9_result: auto-fixed
+last_task9_audit: "2026-06-30"
+last_idle_audit_at: "2026-06-30"
 last_task6_audit: "2026-06-26"
-task2b_state: skipped
-task2b_result: skipped-no-rework-needed
+task2b_state: fixed
+task2b_result: fixed
+last_task9_at: "2026-06-30T06:25:29+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-30-06-audit.md"
+last_task9_autofix_at: "2026-06-30"
+task9_review_notes: "2026-06-30 Task9 idle-audit auto-fix：补充 Perfetto FrameTimeline 的 Android 12（API 31）及以上版本限定；证据为 Android Developers 启动优化文档对 Perfetto FrameTimeline 的版本说明，未发现其他 P0/P1。回到 Task6 复审。"
 ---
 
 # App 可观测性架构设计
@@ -133,7 +137,7 @@ graph TD
 
 Android 官方启动优化文档把 TTID 和 TTFD 区分开：TTID 表示首帧出现，TTFD 更接近用户可交互的完整状态。启动监控不能只看一个总耗时，要把“用户看到东西”和“用户能开始操作”分开记录；Macrobenchmark 的 `StartupTimingMetric` 可用于线下基准测试，线上再用端侧指标观测真实分布。[已验证: 官方文档, developer.android.com/topic/performance/appstartup/analysis-optimization；developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]
 
-渲染也要区分指标和现场。Android 官方文档把 slow frames、frozen frames、ANR 归为不同 jank 形态；Perfetto 中的 FrameTimeline 可用于追踪慢帧或冻帧原因。线上 Metrics 负责告诉团队哪些版本、页面、机型变差；Perfetto / 会话 trace 负责解释某个样本为何变差。[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
+渲染也要区分指标和现场。Android 官方文档把 slow frames、frozen frames、ANR 归为不同 jank 形态；Android 12（API 31）及以上的 Perfetto FrameTimeline 可用于追踪慢帧或冻帧原因。线上 Metrics 负责告诉团队哪些版本、页面、机型变差；Perfetto / 会话 trace 负责解释某个样本为何变差。[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
 服务端分析层要保留几类稳定连接键：`session_id`、`trace_id`、`scene_id`、`build_version`、`device_model`、`android_version`、`network_type`。这些字段让 Crash、ANR、性能指标、用户日志和发布记录能够互相跳转。详见 15.9 节的采集到治理过程设计。
 
