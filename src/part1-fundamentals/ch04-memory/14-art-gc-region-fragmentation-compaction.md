@@ -4,13 +4,16 @@ chapter: "4.14"
 status: ready-for-review
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+task9_result: auto-fixed
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-29"
 last_task6_at: "2026-06-29T22:07:00+08:00"
+last_task9_at: "2026-06-29T22:20:00+08:00"
+last_task9_autofix_at: "2026-06-29"
 drafted_date: "2026-06-11"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-29"
@@ -62,7 +65,7 @@ enum RegionType : uint8_t {
 };
 ```
 
-每次 CC GC 运行时，RegionSpace 的 region 会在 from-space 和 to-space 之间切换。存活对象从 from-region 搬迁到 to-region，已清空的 from-region 回收。这个模型的问题在于：如果一个 region 的存活率一直很高，每次 GC 都要把它完整搬迁一遍，但实际搬走的有效数据很少，白白消耗拷贝带宽，还会导致 from-space 和 to-space 各持有一份等大的内存，RSS 居高不下。
+每次 CC GC 运行时，RegionSpace 的 region 会在 from-space 和 to-space 之间切换。存活对象从 from-region 搬迁到 to-region，已清空的 from-region 回收。这个模型的问题在于：如果一个 region 的存活率一直很高，每次 GC 都要复制大部分有效对象，但回收收益很小，白白消耗拷贝带宽，还会导致 from-space 和 to-space 在回收窗口里同时占用内存，RSS 居高不下。
 
 Android 内部 bug b/33795328 记录的就是这个问题：region 级的循环分配碎片。
 
@@ -82,7 +85,7 @@ static constexpr uint kEvacuateLivePercentThreshold = 75U;
 - 存活率 < 75% → 设为 from-space，本轮搬迁
 - 存活率 ≥ 75% → 设为 **UnevacFromSpace**，不搬迁，原地保留
 
-这个阈值从 Android 10 开始引入，后续版本（包括 Android 16）保持不变。
+这个 75% 阈值在 Android 8.0 的 CC 路径中已经存在，Android 10-17 仍保留这一判断口径。
 
 ### 原地保留如何消除循环碎片
 
@@ -116,10 +119,10 @@ CC 系列通过 UnevacFromSpace 在 region 级做碎片控制，但整个方案�
 
 | 条件 | GC 路径 |
 |------|--------|
-| `gUseReadBarrier == true` | CC（依赖 Baker read barrier，兼容性好） |
-| `gUseReadBarrier == false && gUseUserfaultfd == true` | CMC（依赖 UFFD，要求内核 ≥ 5.7） |
+| `gUseReadBarrier == true` | CC（读屏障形态取决于构建配置，可能是 Baker 或 table-lookup） |
+| `gUseReadBarrier == false && gUseUserfaultfd == true` | CMC（依赖 UFFD；还要满足 collector 选项 / 系统属性、`MREMAP_DONTUNMAP`、UFFD SIGBUS 等门控） |
 
-CC 每次访问堆对象都要查 read barrier table，开销约 5-15ns/次。CMC 不需要 read barrier，但要求内核支持 UFFD minor-fault（Linux 5.7+ 引入）。Android 16/17 的 CTS 测试设备通常要求内核 ≥ 5.10/5.15，主流机型上 UFFD 默认可用。
+CC 的读屏障成本不能写成固定纳秒值：Baker read barrier 和 table-lookup read barrier 的实现路径不同，实际开销还取决于编译配置与负载。CMC 关闭 read barrier，但 `gUseUserfaultfd` 不是单纯的 Linux 版本判断；`KernelSupportsUffd()` 在 Android 17 中会检查 `MREMAP_DONTUNMAP`（Linux 5.13 或 GKI backport）和 UFFD SIGBUS 能力。Linux 5.7 的 fault-retry 只影响并发压缩终止逻辑，不是 CMC 启用门槛。
 
 ### userfaultfd 页级压缩模型
 
@@ -129,8 +132,8 @@ CMC 把堆压缩改造为页级 fault-retry 模型：
 
 1. 标记阶段并发标记所有存活对象
 2. 计算压缩后的目标布局
-3. 按页迁移对象，利用 UFFD minor-fault 处理 mutator 线程对该页的并发访问
-4. 内核 ≥ 5.7 支持 fault-retry 特性，允许同一页重复 fault，避免 STW
+3. 按页迁移对象，利用 UFFD/SIGBUS fault 路径处理 mutator 线程对该页的并发访问
+4. 内核 ≥ 5.7 支持 fault-retry 特性时，同一页可以重复 fault，并发压缩终止逻辑会更高效
 
 源码注释明确标注了内核依赖：
 
@@ -241,7 +244,7 @@ bool LogFragmentationAllocFailure(std::ostream& os, size_t failed_alloc_bytes)
     override REQUIRES_SHARED(Locks::mutator_lock_);
 ```
 
-LOS 使用 `dlmalloc` 作为底层分配器，通过 `LargeObjectSpaceType` 枚举支持 `kMap` 和 `kFreeList` 两种实现。`kFreeList` 减少 mmap 注册开销，对 APK 体积敏感的应用更合适。
+LOS 通过 `LargeObjectSpaceType` 枚举支持 `kMap` 和 `kFreeList` 两种实现。`kMap` 按对象 `mmap` / `munmap`，`kFreeList` 预留一段连续空间并用空闲链表复用洞；不能把两种实现都概括成 `dlmalloc`。`kFreeList` 的收益主要是减少频繁大对象分配时的映射管理开销，与 APK 体积没有直接关系。
 
 ## kCyclicRegionAllocation：Debug 模式的碎片放大器
 
@@ -266,46 +269,46 @@ static constexpr bool kCyclicRegionAllocation = kIsDebugBuild;
 
 | 设备条件 | GC 路径 | 碎片控制手段 | 暂停特性 |
 |---------|--------|------------|---------|
-| kernel < 5.7 | CC（read barrier） | UnevacFromSpace 75% 阈值 | young GC 1-3ms（含 RB 标记） |
-| kernel ≥ 5.7，UFFD 可用 | CMC（userfaultfd） | UnevacFromSpace + 全堆压缩 | young GC < 1ms（UFFD 增量压缩） |
-| CMC + generational 开关开启 | 三代 CMC | 三代分代 + 压缩 | young/mid/old 分级回收 |
+| `gUseReadBarrier == true` | CC | RegionSpace + UnevacFromSpace 75% 阈值 | 暂停时间需看实际 Perfetto GC slice |
+| `gUseReadBarrier == false && gUseUserfaultfd == true` | CMC | BumpPointerSpace + UFFD 并发压缩 | 关闭逐引用 read barrier，收益需同设备实测 |
+| CMC + generational 开关开启 | 三代 CMC | young/mid/old 分代 + 压缩 | young / full 路径按 collector slice 区分 |
 
-注意：CC 路径下的 read barrier 开销是每次堆对象访问都要支付的（约 5-15ns），CMC 路径没有这笔开销，理论吞吐更高。但 CMC 依赖内核 UFFD 支持，在低端设备或旧内核上不可用。
+注意：CMC 依赖 UFFD 能力和 ART 运行时门控，不能只用 kernel 版本判断。CC 路径的读屏障形态也要按构建配置区分，不能把所有设备写成 read barrier table 查询。
 
 ### 版本演进路径
 
 | 版本 | 默认 GC | 三代模型 | Region 碎片机制 | 关键 flag |
 |------|---------|---------|---------------|----------|
-| Android 8（API 26） | CC + PartialMarkSweep | 无 | 无 UnevacFromSpace | — |
-| Android 10（API 29） | CC | 无 | UnevacFromSpace 引入 | — |
+| Android 8（API 26） | CC + PartialMarkSweep | 无 | 75% UnevacFromSpace 已存在 | — |
+| Android 10（API 29） | CC | 无 | 75% UnevacFromSpace 保留 | — |
 | Android 11（API 30） | CC + Generational CC | young + old 两代 | 75% 阈值 | — |
-| Android 14-15（API 34-35） | CC + Generational CC | young + old | 同上 | — |
+| Android 14-15（API 34-35） | CC 为主，CMC 源码路径进入主线 | young + old / CMC 非三代路径 | 同上 | UFFD / CMC 相关门控 |
 | Android 16（API 36） | CC / CMC 二选一 | **young + mid + old 三代**（CMC 路径） | UnevacFromSpace + 75% 阈值 | `use_generational_gc` 默认 true |
-| Android 17（API 37） | 同 Android 16（推断） | 同上（推断） | 同上（推断） | `use_generational_cmc` flag |
+| Android 17（API 37） | Android 17 源码已验证 CC / CMC 二选一 | 三代 CMC 源码已验证 | 同上 | `use_generational_cmc` flag |
 
-[适用版本: Android 10（API 29）引入 UnevacFromSpace，Android 11（API 30）引入 Generational CC，Android 16（API 36）引入三代 CMC]
+[适用版本: Android 8（API 26）已有 UnevacFromSpace 75% 阈值；本节主线范围从 Android 10（API 29）开始，Android 11（API 30）引入 Generational CC，Android 16（API 36）引入三代 CMC]
 
 > Android 17 行为已通过 `refs/tags/android-17.0.0_r1` 源码验证。`art/runtime/gc/collector/` 目录结构在 android-15 / android-16 / android-17 之间保持一致。
 
 ## GC 暂停预算与端侧 AI 场景
 
-整套碎片控制方案的设计目标：**把 GC 暂停压到 sub-2ms，消除 region 反复搬迁造成的 RSS 增长**。
+整套碎片控制方案的设计目标，是减少 region 反复搬迁造成的 RSS 增长，并尽量缩短前台可见暂停。具体暂停预算不能从源码常量直接推出，必须结合设备、系统版本和 Perfetto GC slice 实测。
 
 ### 对端侧大模型推理的影响
 
-端侧大模型推理在 native 侧维持一个约 GB 级的连续权重缓冲，Java 侧的常驻对象相对较少（几百 KB 量级）。这些少量常驻对象所在的 region 在 CC 周期内大概率落在 75% 阈值之上，被归入 UnevacFromSpace，避免权重缓冲的 Java 端 mirror 对象被反复复制。
+端侧大模型推理通常在 native 侧维持较大的连续权重缓冲，Java 侧只保留句柄、buffer 包装对象或调度对象。不能从 native 权重大小直接推断 Java 对象所在 region 一定超过 75% 存活率；只有当长生命周期 Java 对象在 region 中占比足够高时，CC 才会把这些 region 归入 UnevacFromSpace。
 
 需要注意的点：
 
-- Java 侧应避免在主线程持续分配中等大小（256KB-2MB）对象，否则会落入 bump-pointer space 触发频繁 young GC
-- 优先通过 LOS 预分配并复用 buffer，让大对象不参与压缩
-- `ArtMetrics` 暴露的 `metrics_gc_count_`、`gc_throughput_histogram_` 等指标在 Android 16+ Perfetto ART plugin 中默认采集，对应 `com.android.art.gc.*` slice
+- Java 侧应避免在主线程持续分配不进入 LOS 的中等大小对象；超过 LOS 阈值的 primitive array / `String` 会走 LargeObjectSpace，其他对象仍可能进入 moving space
+- 对 `byte[]`、大 `String` 这类 LOS 对象，优先预分配并复用 buffer，让它们保持在 non-moving 的 LOS 路径
+- ART metrics 和 Perfetto slice 名称会随版本、构建和数据源配置变化；分析时先在实际 trace 中确认 `ConcurrentCopying`、`MarkCompact`、`HeapTaskDaemon` 等可见事件
 
 ### 对长生命周期对象密集应用的影响
 
 相册、长会话直播等应用常驻大量 Bitmap 和 VideoDecoder buffer 对应的 Java 引用对象。这些对象所在的 region 自然晋升到 mid/old 后，UnevacFromSpace 的评估开销会随 region 稳定而降低。对象池复用可以让对应 region 更快稳定。
 
-[自动发现] Perfetto 中观察 CC/CMC 行为的方式：搜索 `com.android.art.gc.*` slice，对比 young GC 和 full GC 的频率与耗时。如果 young GC 频率异常高（> 10 次/秒），说明 young space 太小或分配速率过高。
+[自动发现] Perfetto 中观察 CC/CMC 行为的方式：先搜索 ART GC、`ConcurrentCopying`、`MarkCompact`、`HeapTaskDaemon` 等 slice，再对比 young GC 和 full GC 的频率与耗时。如果 young GC 频率异常高，需要结合对象分配速率、young space 大小和应用负载一起判断。
 
 ## 扩展
 
@@ -330,4 +333,4 @@ RegionSpace 的 region 大小（默认 256KB）是基于 4KB page size 设计的
 ---
 
 > 本节内容基于 AOSP android-17.0.0_r1 一手源码验证，详见 DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md。
-> Android 17 相关结论为延续性推断，android-17.0.0_r1 tag 发布后需二次核对。
+> Android 17 相关源码锚点已按 `refs/tags/android-17.0.0_r1` 二次核对。
