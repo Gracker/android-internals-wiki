@@ -28,8 +28,8 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-06'
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
-last_verified: '2026-05-27'
-last_verified_against: AndroidX androidx-main + Android Developers MessageQueue docs 2026-05-12 + RecyclerView 1.4.0 release notes + Android API 35/36 refs
+last_verified: '2026-06-29'
+last_verified_against: AndroidX RecyclerView 1.4.0 sources.jar + Android Developers MessageQueue docs + RecyclerView 1.4.0 release notes + AOSP android-17.0.0_r1 View/Display
 confidence: medium
 polish_count: 1
 polish_date: '2026-04-08'
@@ -39,39 +39,39 @@ reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 sources:
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java
+  path: androidx.recyclerview:recyclerview:1.4.0 sources.jar (RecyclerView.java)
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java
+  path: androidx.recyclerview:recyclerview:1.4.0 sources.jar (GapWorker.java)
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/LinearLayoutManager.java
+  path: androidx.recyclerview:recyclerview:1.4.0 sources.jar (LinearLayoutManager.java)
 - type: androidx
-  path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java
+  path: androidx.recyclerview:recyclerview:1.4.0 sources.jar (DiffUtil.java)
 - type: aosp
-  path: platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/View.java
+  path: platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java
 - type: aosp
-  path: platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java
+  path: platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Display.java
 - type: official
   path: https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/recyclerview
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-05-27T09:40:09+08:00"
-last_task9_audit: "2026-06-09"
+last_task9_at: "2026-06-29T14:27:41+08:00"
+last_task9_audit: "2026-06-29"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-27"
+task9_reviewed_date: "2026-06-29"
 review_notes: "2026-05-27 task6 review: needs-rework。L1/L2 已小修；2026-05-27 Task2B 已合并清理后半段调研素材，回流 Task6 复审；2026-05-27 Task6复审：pass-light-edit，L1/L2 小修 10 处，无回炉项，等待 Task9 复审。 | 2026-05-27 Task6 复审：pass-light-edit；queue 中 7.8 无 pending 项，outline 覆盖完整，DeliQueue/GapWorker 调研块已收敛，无新增回炉项，等待 Task9 复审。"
-task9_review_notes: "2026-05-13 02:51 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 17 DeliQueue 版本/数据口径需补一手证据；ViewHolder 缓存语义与 GapWorker 研究块作为 P2 整理。 | 2026-05-27 01:22 Task9 deep-review：needs-rework。P0 0 / P1 1 / P2 0；后半段 GapWorker measure 盲区与 DeliQueue 过程材料已由 Task2B 合并进正文，等待 Task6 复审。 | 2026-05-27 03:29 Task9 deep-review：auto-fixed。P0 0 / P1 1 / P2 1；修正 setHasFixedSize(true) 语义与 create/bind Trace 命中判断，回到 Task6 复审。 | 2026-05-27 09:40 Task9 deep-review：pass-tech-review。复核 03:29 setHasFixedSize / create-bind 语义 auto-fix 后，Task6 06:09 通过；queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-13 02:51 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 17 DeliQueue 版本/数据口径需补一手证据；ViewHolder 缓存语义与 GapWorker 研究块作为 P2 整理。 | 2026-05-27 01:22 Task9 deep-review：needs-rework。P0 0 / P1 1 / P2 0；后半段 GapWorker measure 盲区与 DeliQueue 过程材料已由 Task2B 合并进正文，等待 Task6 复审。 | 2026-05-27 03:29 Task9 deep-review：auto-fixed。P0 0 / P1 1 / P2 1；修正 setHasFixedSize(true) 语义与 create/bind Trace 命中判断，回到 Task6 复审。 | 2026-05-27 09:40 Task9 deep-review：pass-tech-review。复核 03:29 setHasFixedSize / create-bind 语义 auto-fix 后，Task6 06:09 通过；queue 无 pending，自动晋升 finalized。 | 2026-06-29 Task9 闲时抽检 AUTO-FIX：将 RecyclerView 源码锚点从漂移的 androidx-main 收敛到 RecyclerView 1.4.0 sources.jar，并把 ARR 平台源码锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1；回 Task6 复审。"
 last_task2b_verifier_at: '2026-05-26T23:25:00+08:00'
 last_task2b_at: '2026-05-27T02:50:00+08:00'
 last_task6_at: "2026-05-27T06:09:00+08:00"
 last_review_log: "logs/review/2026-05-27-06-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-27-09-deep-review.md"
-last_task9_autofix_at: "2026-05-27"
+last_task9_autofix_at: "2026-06-29"
 review_type: "task6-writing-quality-review"
 task6_reviewed_date: "2026-05-27"
 last_task6_review_log: "logs/review/2026-05-27-06-review.md"
@@ -81,6 +81,7 @@ p1: 0
 p2: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
+last_task9_audit_log: "logs/deep-review/2026-06-29-14-audit.md"
 ---
 
 # 7.8 RecyclerView 列表滑动性能深度优化
@@ -114,7 +115,7 @@ last_deepseek_cn_review_at: 2026-06-18
 
 ## RecyclerView 的布局流程
 
-RecyclerView 的一次完整布局仍然由 `dispatchLayoutStep1()`、`dispatchLayoutStep2()`、`dispatchLayoutStep3()` 组成，但 Perfetto 不会直接把这三个阶段显示成同名 slice。当前 AndroidX 主线打点的是外层入口：`onLayout()` 对应 `RV OnLayout`，`consumePendingUpdateOperations()` 在整表失效时打 `RV FullInvalidate`，在局部更新路径上打 `RV PartialInvalidate`。因此，Trace 里看到的是外层布局切片，分析时再结合调用栈和更新类型判断 step1/2/3 落在什么位置。
+RecyclerView 的一次完整布局仍然由 `dispatchLayoutStep1()`、`dispatchLayoutStep2()`、`dispatchLayoutStep3()` 组成，但 Perfetto 不会直接把这三个阶段显示成同名 slice。RecyclerView 1.4.0 源码打点的是外层入口：`onLayout()` 对应 `RV OnLayout`，`consumePendingUpdateOperations()` 在整表失效时打 `RV FullInvalidate`，在局部更新路径上打 `RV PartialInvalidate`。因此，Trace 里看到的是外层布局切片，分析时再结合调用栈和更新类型判断 step1/2/3 落在什么位置。
 
 `dispatchLayoutStep1()` 负责消费 Adapter 更新、决定是否运行 predictive animation、保存旧布局信息。列表收到 `notifyDataSetChanged()` 这类整表失效时，外层 slice 往往是 `RV FullInvalidate`。收到局部更新并且 `AdapterHelper` 能在一次 pass 里处理时，更常见的是 `RV PartialInvalidate`。
 
@@ -148,13 +149,13 @@ RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是�
 
 缓存查找的顺序是：AttachedScrap → CachedViews → ViewCacheExtension → RecycledViewPool。如果在所有缓存中都没找到，才会调用 `onCreateViewHolder()` 创建新的。
 
-在 Perfetto 中，缓存命中率不能靠假想的 `RV OnBindView` 名字判断。当前 AndroidX 打点使用的是 `RV Prefetch`、`RV onCreateViewHolder type=0x%X` 和 `RV onBindViewHolder type=0x%X`。fling 过程中频繁出现 create slice，通常说明 scrap、CachedViews、ViewCacheExtension 和 RecycledViewPool 都没有命中，只能新建 holder；频繁出现 bind slice，则说明拿到的 holder 需要重新绑定，可能来自 RecycledViewPool，也可能来自 invalid / stale holder，不能简单判成 Pool 未命中。如果只有 `RV Prefetch`，没有后续 create/bind，就要继续看 GapWorker 的时间预算是不是提前放弃了这轮预取，或者目标 holder 已经 attached / cache 命中。
+在 Perfetto 中，缓存命中率不能靠假想的 `RV OnBindView` 名字判断。RecyclerView 1.4.0 打点使用的是 `RV Prefetch`、`RV onCreateViewHolder type=0x%X` 和 `RV onBindViewHolder type=0x%X`。fling 过程中频繁出现 create slice，通常说明 scrap、CachedViews、ViewCacheExtension 和 RecycledViewPool 都没有命中，只能新建 holder；频繁出现 bind slice，则说明拿到的 holder 需要重新绑定，可能来自 RecycledViewPool，也可能来自 invalid / stale holder，不能简单判成 Pool 未命中。如果只有 `RV Prefetch`，没有后续 create/bind，就要继续看 GapWorker 的时间预算是不是提前放弃了这轮预取，或者目标 holder 已经 attached / cache 命中。
 
-[已验证: AndroidX androidx-main，`RecyclerView.java` `tryGetViewHolderForPositionByDeadline()` / Adapter trace sections]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar，`RecyclerView.java` `tryGetViewHolderForPositionByDeadline()` / Adapter trace sections]
 
 ## GapWorker 预取机制
 
-RecyclerView 的预取不是 `Choreographer#doFrame()` 的一个公开阶段。当前 AndroidX 主线里，触发点在滚动遍历之后：`scrollByInternal()` 和 `ViewFlinger.run()` 在还有滚动位移时调用 `mGapWorker.postFromTraversal()`，后者把滚动向量写进 `mPrefetchRegistry`，再用 `recyclerView.post(this)` 把 `GapWorker` 作为 Runnable 投到主线程消息队列。
+RecyclerView 的预取不是 `Choreographer#doFrame()` 的一个公开阶段。RecyclerView 1.4.0 源码里，触发点在滚动遍历之后：`scrollByInternal()` 和 `ViewFlinger.run()` 在还有滚动位移时调用 `mGapWorker.postFromTraversal()`，后者把滚动向量写进 `mPrefetchRegistry`，再用 `recyclerView.post(this)` 把 `GapWorker` 作为 Runnable 投到主线程消息队列。
 
 ```java
 // RecyclerView.java
@@ -235,7 +236,7 @@ ORDER BY SUM(dur) DESC;
 
 DeliQueue 改变了 `MessageQueue` 内部实现。部分通过反射访问 `MessageQueue.mMessages` 链表的性能监控库（如反射 hook `dispatchMessage` 追踪 `doFrame` 内各阶段耗时），在 Android 17 上可能拿不到预期字段值或回调时机。如果项目依赖这类库，建议切换到官方 `FrameMetrics` / `JankStats` 方案，或使用 `Choreographer.FrameCallback` + `FrameData` (API 33+) 的公开 API。
 
-[已验证: AndroidX androidx-main，`RecyclerView.java` `scrollByInternal()` / `ViewFlinger.run()` / `tryGetViewHolderForPositionByDeadline()`，`GapWorker.java` `postFromTraversal()` / `run()` / `prefetchPositionWithDeadline()`]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar，`RecyclerView.java` `scrollByInternal()` / `ViewFlinger.run()` / `tryGetViewHolderForPositionByDeadline()`，`GapWorker.java` `postFromTraversal()` / `run()` / `prefetchPositionWithDeadline()`]
 
 ## DiffUtil 与增量更新
 
@@ -276,7 +277,7 @@ public void onBindViewHolder(@NonNull ViewHolder holder, int position,
 }
 ```
 
-[已验证: AndroidX androidx-main，`DiffUtil.java` Myers 差分算法实现]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar，`DiffUtil.java` Myers 差分算法实现]
 
 ### RecycledViewPool 共享的典型实现
 
@@ -349,18 +350,18 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 RecyclerView 1.4.0 的 release notes 把这项能力写成 `Adaptive refresh rate support`。变化点很具体：RecyclerView 在 `OverScroller` 驱动的 fling 或 smooth scroll 过程中，会在 `ViewFlinger.run()` 里调用 `View.setFrameContentVelocity()`，把当前滚动速度上报给系统。
 
-当前 AndroidX 主线的代码路径也很直接：`ViewFlinger.run()` 在继续滚动时拿 `scroller.getCurrVelocity()`，API 35 及以上通过 `Api35Impl.setFrameContentVelocity(RecyclerView.this, Math.abs(scroller.getCurrVelocity()))` 写入 view。RecyclerView 1.4 做的是速度上报这一步，不负责查询设备是否支持 ARR，也不直接决定系统会切到多少 Hz。
+RecyclerView 1.4.0 源码的代码路径也很直接：`ViewFlinger.run()` 在继续滚动时拿 `scroller.getCurrVelocity()`，API 35 及以上通过 `Api35Impl.setFrameContentVelocity(RecyclerView.this, Math.abs(scroller.getCurrVelocity()))` 写入 view。RecyclerView 1.4 做的是速度上报这一步，不负责查询设备是否支持 ARR，也不直接决定系统会切到多少 Hz。
 
-设备能力查询属于平台 `Display` API。`android-16.0.0_r1` 的 `Display.java` 里，`hasArrSupport()`、`getSupportedRefreshRates()` 和 `getSuggestedFrameRate(int)` 都定义在 `android.view.Display` 上。它们回答的是设备支持情况和系统建议值，版本边界应和平台 API 一起写，不要和 RecyclerView 1.4.0 的库版本混成一层。
+设备能力查询属于平台 `Display` API。`android-17.0.0_r1` 的 `Display.java` 里，`hasArrSupport()`、`getSupportedRefreshRates()` 和 `getSuggestedFrameRate(int)` 都定义在 `android.view.Display` 上。它们回答的是设备支持情况和系统建议值，版本边界应和平台 API 一起写，不要和 RecyclerView 1.4.0 的库版本混成一层。
 
 工程上可以把这两层分开理解：
 
 - RecyclerView 1.4.0：滚动时调用 `View.setFrameContentVelocity()`
-- Android 16 `Display` API：查询设备是否支持 ARR，以及系统建议的刷新率区间
+- Android 17 `Display` API：查询设备是否支持 ARR，以及系统建议的刷新率区间
 
 这样写，`§2.18` 讲平台能力，`§7.8` 讲 RecyclerView 在滑动场景里怎样把速度信号交给系统，边界就清楚了。
 
-[已验证: AndroidX RecyclerView 1.4.0 release notes（2025-01-15），`RecyclerView.java` `ViewFlinger.run()`，AOSP `android-16.0.0_r1` `View.java` / `Display.java`]
+[已验证: AndroidX RecyclerView 1.4.0 release notes（2025-01-15），`RecyclerView.java` `ViewFlinger.run()`，AOSP `android-17.0.0_r1` `View.java` / `Display.java`]
 
 ## 在 Perfetto 中分析 RecyclerView 性能
 
@@ -451,14 +452,14 @@ ORDER BY max_ms DESC;
 
 ## 参考资料
 
-- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java`
-- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java`
-- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/LinearLayoutManager.java`
-- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java`
-- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/SimpleItemAnimator.java`
-- **AndroidX 源码**：`platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DefaultItemAnimator.java`
-- **平台源码**：`platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/View.java`
-- **平台源码**：`platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java`
+- **AndroidX 源码**：`androidx.recyclerview:recyclerview:1.4.0 sources.jar`（`RecyclerView.java`）
+- **AndroidX 源码**：`androidx.recyclerview:recyclerview:1.4.0 sources.jar`（`GapWorker.java`）
+- **AndroidX 源码**：`androidx.recyclerview:recyclerview:1.4.0 sources.jar`（`LinearLayoutManager.java`）
+- **AndroidX 源码**：`androidx.recyclerview:recyclerview:1.4.0 sources.jar`（`DiffUtil.java`）
+- **AndroidX 源码**：`androidx.recyclerview:recyclerview:1.4.0 sources.jar`（`SimpleItemAnimator.java`）
+- **AndroidX 源码**：`androidx.recyclerview:recyclerview:1.4.0 sources.jar`（`DefaultItemAnimator.java`）
+- **平台源码**：`platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java`
+- **平台源码**：`platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Display.java`
 - **官方文档**：[RecyclerView reference](https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView)
 - **官方文档**：[RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
 - **官方文档**：[Adaptive Refresh Rate](https://developer.android.com/reference/android/view/View#setFrameContentVelocity())
