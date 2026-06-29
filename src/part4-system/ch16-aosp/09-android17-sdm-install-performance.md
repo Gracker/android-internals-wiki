@@ -54,15 +54,15 @@ last_task9_review_log: "logs/deep-review/2026-06-29-16-deep-review.md"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-29"
 task9_review_notes: "2026-06-29 Task9 auto-fix: 按 android-17.0.0_r1 修正 SDM 源码行号、PrimaryDexopter SdkLevel 门控、PackageInstallerSession 暂存注解和 tag 未发布旧结论；P2 数据/来源建议写入 suggestions。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-29
 ---
 
 # 16.9 Android 17 SDM 安装编译链路性能
 
-Android 16 在 AOSP 设备侧落地了 SDM（Secure Dex Metadata）产物管理路径。SDM 是云端编译产物的 ZIP 容器，承载 Play 侧 `dex2oat` 预编译结果，目标是让设备端跳过本地编译。本节拆解 SDM 从安装会话到 ART Service 产物管理的设备侧全链路，给出安装耗时影响、编译收益边界和排查入口。
+Android 16 在 AOSP 设备侧引入了 SDM（Secure Dex Metadata）产物管理路径。SDM 是云端编译产物的 ZIP 容器，承载 Play 侧 `dex2oat` 预编译结果，目标是让设备端跳过本地编译——这在低端设备上尤其关键，因为 `dex2oat` 可能占安装总耗时的一半以上。
 
-SDM 的设备侧链路涉及五个阶段：(1) `PackageInstallerSession` 识别并暂存 `.sdm` 文件；(2) `verifySdmSignatures()` 用 APK 同一签名密钥校验；(3) ART Service 在 `PrimaryDexopter.onDexoptStart()` 中通过 `SdkLevel.isAtLeastB()` 的版本门控决定是否尝试创建 SDC；(4) `artd` 读取 SDM 写出 SDC Companion；(5) dexopt 完成后 `deleteSdmSdcFiles()` 回收磁盘。
-
-本节聚焦设备侧源码链路和性能影响，不覆盖 Play 端的 SDM 生成策略和灰度分发（公开资料不完整）。Profile 体系的职责划分和开发者控制点详见 16.6 节，`.dm` 文件与编译模式的实战配合详见 21.11 节。
+本节展开 SDM 从安装会话到 ART Service 产物管理的设备侧全链路。核心流程是：`PackageInstallerSession` 识别并暂存 `.sdm` 文件 → `verifySdmSignatures()` 用 APK 同一签名密钥校验 → ART Service 通过 `SdkLevel.isAtLeastB()` 门控决定是否创建 SDC → `artd` 读取 SDM 写出 SDC Companion → dexopt 完成后清理回收。本节聚焦设备侧源码链路和性能影响，不覆盖 Play 端的 SDM 生成策略和灰度分发（公开资料不完整）。Profile 体系的职责划分和开发者控制点详见 16.6 节，`.dm` 文件与编译模式的实战配合详见 21.11 节。
 
 ## SDM 产物管理架构
 
@@ -81,8 +81,6 @@ std::string GetSdmFilename(const std::string& dex_location, InstructionSet isa) 
 ```
 
 `kSdmExtension` 定义为 `".sdm"`，文件名由 DEX 路径去掉原始后缀，拼接 ISA 字符串和 `.sdm`。
-
-[已验证: AOSP android-17.0.0_r1, art/libartbase/base/file_utils.cc line 690-693]
 
 ART Service 通过 `ArtFileManager` 管理 SDM 产物的读写位置。`getWritableArtifacts()` 为 primary dex 构造 `SecureDexMetadataWithCompanionPaths`，覆盖两个存储位置：
 
@@ -109,8 +107,6 @@ DM 进入安装流程后，由 `installd/dexopt.cpp` 的 `check_profile_exists_i
 
 SDM 的消费者不是运行时，而是编译期。设备端 SDM 路径的目的是在有云端产物时跳过本地 `dex2oat`，编译完成后释放磁盘。
 
-[已验证: AOSP android-17.0.0_r1, art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java; frameworks/native/cmds/installd/dexopt.cpp]
-
 ### ART-managed Install Files 的范围
 
 `ArtManagedInstallFileHelper` 定义了三类 ART-managed install files：`.dm`、`.prof`、`.sdm`（包括 per-ISA 的 `.<isa>.sdm`）。
@@ -125,8 +121,6 @@ private static final List<String> FILE_TYPES = List.of(
 ```
 
 匹配规则是后缀判断，不涉及 I/O，在安装会话早期就能完成分类。`isArtManaged()` 对安装器传入的文件列表做过滤，只有这三类后缀的文件进入 ART 处理路径。
-
-[已验证: AOSP android-17.0.0_r1, art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java line 68-87]
 
 ## 安装会话中的 SDM 处理
 
@@ -164,8 +158,6 @@ private static void verifySdmSignatures(List<String> artManagedFilePaths,
 
 源码注释同时写明："SDM is a file format that contains the cloud compilation artifacts. As a requirement, the SDM file should be signed with the same key as the APK."这是公开源码中唯一直接确认 SDM 与 cloud compilation 对应关系的注释。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java line 5348-5368]
-
 ### 暂存流程
 
 签名校验通过后，`maybeStageArtManagedInstallFilesLocked()` 把 `.sdm`/`.dm`/`.prof` 暂存到目标路径：
@@ -186,8 +178,6 @@ private void maybeStageArtManagedInstallFilesLocked(File origFile, File targetFi
 ```
 
 整个 stage 过程对 SDM 的 I/O 开销是文件复制 + 签名校验，与 `.dm` 共用同一条路径。android-17.0.0_r1 中这段 `PackageInstallerSession` 暂存逻辑不再带 `FLAG_ART_SERVICE_V3` 注解，不能把该 flag 写成 Android 17 主线门控。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java line 5016-5028]
 
 ## Android 17 SdkLevel 门控与 SDC 创建
 
@@ -214,8 +204,6 @@ protected void onDexoptStart(@NonNull DetailedPrimaryDexInfo dexInfo) throws Rem
 2. `SdkLevel.isAtLeastB()` 为真（Android 16+ 平台路径；android-17.0.0_r1 未见 `cloudCompilationPm()` 作为这里的主线门控）
 3. 对每个 ABI 独立处理（SDM 按 ISA 分文件）
 
-[已验证: AOSP android-17.0.0_r1, art/libartservice/service/java/com/android/server/art/PrimaryDexopter.java line 191-198]
-
 ### SDC 创建过程
 
 `maybeCreateSdc()` 调用 `artd` native 端创建 SDC（Secure Dex Metadata Companion）文件：
@@ -239,8 +227,6 @@ private void maybeCreateSdc(@NonNull DetailedPrimaryDexInfo dexInfo, @NonNull St
 ```
 
 SDC 不含敏感数据，权限可设为 public。创建失败只打日志不阻塞编译流程。
-
-[已验证: AOSP android-17.0.0_r1, art/libartservice/service/java/com/android/server/art/PrimaryDexopter.java line 200-213]
 
 `artd` 端的 `maybeCreateSdc()` 用 SDM 的修改时间匹配 SDC：
 
@@ -277,8 +263,6 @@ ndk::ScopedAStatus Artd::maybeCreateSdc(const OutputSecureDexMetadataCompanion& 
 - 源码注释 `"No SDM file found. That's typical."`——设备上只有少数包命中 SDM，这是预期行为
 - SDC 通过内嵌 `sdmTimestampNs` 与 SDM 的 mtime 对齐，命中就跳过重写（幂等性保证）
 
-[已验证: AOSP android-17.0.0_r1, art/artd/artd.cc line 1164-1188]
-
 ## SDM 生命周期与磁盘回收
 
 ### 编译完成后的即时清理
@@ -302,8 +286,6 @@ protected void onDexoptTargetResult(
 ```
 
 源码注释说明这是 disk space optimization——SDM 和 SDC 在文件 GC 中也会被清理，但编译完成后立刻回收更高效。SDM/SDC 在本地 dexopt 完成后不被运行时消费，消费者是编译期的 `dex2oat`。
-
-[已验证: AOSP android-17.0.0_r1, art/libartservice/service/java/com/android/server/art/PrimaryDexopter.java line 217-225]
 
 ### 卸载与重装的清理
 
@@ -335,8 +317,6 @@ public DeleteResult deleteDexoptArtifacts(
 ```
 
 方法注释明确写道："Deletes dexopt artifacts (including cloud dexopt artifacts) of a package... This includes VDEX, ODEX, ART, SDM, and SDC files."
-
-[已验证: AOSP android-17.0.0_r1, art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java line 213-244]
 
 ### 完整设备侧调用链
 
@@ -443,7 +423,6 @@ adb shell pm compile -m speed-profile -f -v com.example.app
 
 如果编译状态显示 `compilationReason=install` 且 `actualCompilerFilter=speed-profile`，但安装耗时明显低于同级别设备，可能说明 SDM 命中了云端编译产物——设备端跳过了大部分 `dex2oat` 工作。
 
-[适用版本: Android 16 (API 36) - Android 17 (API 37)]
 
 ## SDM 安全模型
 
@@ -481,7 +460,6 @@ SDM 和 Baseline Profile 在编译管线中扮演不同角色，不存在互斥�
 
 开发者不需要在 "提供 Baseline Profile" 和 "等待 Cloud Compilation" 之间二选一。两者在设备端的处理路径完全独立：Baseline Profile 是开发者可控的保底，SDM 是 Play 分发的增量优化。CI 中应继续生成和验证 Baseline Profile，SDM 的命中与否不受应用侧控制。
 
-[结构参考: intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md]
 
 ### 多 APK / App Bundle 场景
 
@@ -491,7 +469,7 @@ SDM 按 primary dex 的 ISA 分文件，当前源码只处理了 primary dex 路
 - `ArtFileManager.getWritableArtifacts()` 当前接收 `forPrimaryDex(true)` 和 `forSecondaryDex(true)` 两个参数，没有 split 专用路径
 - Android 17 是否扩展到 secondary dex，本轮未在 android-17.0.0_r1 的 primary-dex SDM 路径中确认；需后续专门核 secondary dex 代码路径
 
-[待验证: secondary dex SDM 支持]
+（注：secondary dex 的 SDM 支持待后续确认）
 
 ### OEM 定制 ROM 的适配
 
@@ -510,7 +488,7 @@ android-17.0.0_r1 的 `PrimaryDexopter.onDexoptStart()` 未见 `cloudCompilation
 | Android 16 (API 36) | 设备端基础 | SDM 格式引入；`verifySdmSignatures()`；`maybeCreateSdc()`；`ArtManagedInstallFileHelper` |
 | Android 17 (API 37) | 已在 tag 中确认 | `PrimaryDexopter.onDexoptStart()` 使用 `SdkLevel.isAtLeastB()` 尝试创建 SDC；`PackageInstallerSession` 保留 `.sdm` 签名校验与暂存；本轮未确认 secondary dex 扩展 |
 
-Android 17 的 android-17.0.0_r1 tag 已可用，本节主线源码锚点以该 tag 为准。
+本节主线源码锚点均以 `android-17.0.0_r1` 为准。
 
 ## 交叉引用
 
