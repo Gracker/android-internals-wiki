@@ -12,8 +12,8 @@ rework_count: 5
 rework_date: "2026-05-08"
 rework_by: "task2b-rework"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-06-06"
-last_verified_against: "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service / WorkManager docs"
+last_verified: "2026-06-29"
+last_verified_against: "AOSP android-17.0.0_r1, Android Developers Android 16 JobScheduler quota / Android 17 background audio / exact alarm / foreground service / WorkManager docs"
 confidence: medium-high
 sources:
   - type: official
@@ -35,11 +35,19 @@ sources:
   - type: official
     path: "https://developer.android.com/develop/background-work/services/fgs/timeout"
   - type: official
+    path: "https://developer.android.com/about/versions/16/behavior-changes-all#job-quota-opt"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/changes/bg-audio"
+  - type: official
     path: "https://firebase.google.com/docs/cloud-messaging/android/message-priority"
   - type: aosp
     path: "frameworks/base/core/java/android/os/PowerManager.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/audio/AudioService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/audio/HardeningEnforcer.java"
   - type: blog
     path: "Obsidian Cubox - 借助 Android Studio 中的功耗性能分析器进行 A-B 测试"
   - type: blog
@@ -54,13 +62,13 @@ tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', '
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-06-06"
 last_task2b_at: "2026-05-04T01:40:00+08:00"
 task6_result: "pass-light-edit"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-06"
 repaired_date: "2026-04-26"
@@ -69,13 +77,14 @@ review_round: 5
 task9_reviewed_date: "2026-06-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-06T19:20:00+08:00"
+last_task9_autofix_at: "2026-06-29"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task6_audit: "2026-06-27"
-last_task9_audit: "2026-06-06"
+last_task9_audit: "2026-06-29"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-06
-review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。；2026-06-06 19:20 task9 deep-review: pass-tech-review；复核 Android 16 JobScheduler quota 与 Android 17 background audio hardening 已补齐；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。"
+review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。；2026-06-06 19:20 task9 deep-review: pass-tech-review；复核 Android 16 JobScheduler quota 与 Android 17 background audio hardening 已补齐；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-29 12:29 task9 idle-audit: auto-fixed；AOSP 源码锚点升级到 android-17.0.0_r1，修正 Android 17 Audio 覆盖说明，回到 Task6 复审。"
 ---
 
 # App 耗电优化
@@ -131,7 +140,7 @@ Android 的 `PowerManager` 提供了几种不同级别的 WakeLock，每种控�
 
 ```java
 // frameworks/base/core/java/android/os/PowerManager.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 // 获取 PARTIAL_WAKE_LOCK 的标准方式
 PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
 WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp:MyTag");
@@ -139,7 +148,7 @@ WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp:MyTag"
 
 这里第二个参数是 WakeLock 的 tag，它必须是一个有意义的、硬编码的字符串。这个 tag 会出现在 Battery Historian 和 bugreport 中，是分析耗电问题的重要线索。不要使用动态生成的字符串或包含 PII 的信息。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java]
 
 ### 获取与释放的正确姿势
 
@@ -459,7 +468,7 @@ Audio 的功耗优化主要关注两个方面：
 
 **后台音频要分开看 FGS 启动限制和类型声明**。后台音频如果需要长时间播放，应使用前台服务向用户展示持续通知。Android 12 的变化是限制后台直接启动 FGS：App 退到后台后，只有满足豁免条件才能启动前台服务。Android 14（targetSdk 34+）才强制要求在 manifest 中声明 `foregroundServiceType="mediaPlayback"`，并声明 `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限。不要把 Android 12 的启动限制写成 Android 14 的类型强制。
 
-**Android 17 / API 37 的 background audio hardening。** Android 17 对后台音频播放进一步收紧：后台音频交互（播放、焦点变更、音量调节）需要可见 Activity 或非 `shortService` 的 FGS；targetSdk 37 后还要求具备 while-in-use 能力，或在 exact alarm 权限 + `USAGE_ALARM` 场景下操作。本节 Audio 部分覆盖到 Android 16（API 36）。Android 17 的 background audio hardening 详见上方记录。排查 Android 17 设备上后台音频失败时，需同时检查 `AudioHardening` 日志和 FGS 类型声明。
+**Android 17 / API 37 的 background audio hardening。** Android 17 对后台音频播放进一步收紧：后台音频交互（播放、焦点变更、音量调节）需要可见 Activity 或非 `shortService` 的 FGS；targetSdk 37 后还要求具备 while-in-use 能力，或在 exact alarm 权限 + `USAGE_ALARM` 场景下操作。本节 Audio 部分覆盖到 Android 17（API 37）。排查 Android 17 设备上后台音频失败时，需同时检查 `AudioHardening` 日志和 FGS 类型声明。
 
 ## 与其他章节的关系
 
@@ -501,9 +510,13 @@ WorkManager 比手动调度更省电，但它不是银弹。如果 App 注册了
 - [Android 官方:位置服务功耗优化](https://developer.android.com/training/location)
 - [Android 官方:Foreground service types are required](https://developer.android.com/about/versions/14/changes/fgs-types-required)
 - [Android 官方:Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
+- [Android 官方:Android 16 JobScheduler quota optimizations](https://developer.android.com/about/versions/16/behavior-changes-all#job-quota-opt)
+- [Android 官方:Android 17 background audio hardening](https://developer.android.com/about/versions/17/changes/bg-audio)
 - [Android 官方:CameraDevice API](https://developer.android.com/reference/android/hardware/camera2/CameraDevice)
-- [AOSP PowerManager.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/os/PowerManager.java)
-- [AOSP PowerManagerService.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
+- [AOSP PowerManager.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/os/PowerManager.java)
+- [AOSP PowerManagerService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
+- [AOSP AudioService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/audio/AudioService.java)
+- [AOSP HardeningEnforcer.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/audio/HardeningEnforcer.java)
 - [Android 官方:位置服务 Geofencing](https://developer.android.com/training/location/geofencing)
 - [Firebase 官方:Set and manage Android message priority](https://firebase.google.com/docs/cloud-messaging/android/message-priority)
 - [Android 官方:Battery Historian 使用指南](https://developer.android.com/topic/performance/power/setup-battery-historian)
