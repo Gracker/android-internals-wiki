@@ -1,5 +1,6 @@
 ---
 
+
 title: "Android 16 云端 Profile 与 dexopt 安装优化"
 chapter: "16.6"
 section: "16.6"
@@ -31,7 +32,6 @@ sources:
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
     path: "https://www.androidauthority.com/android-16-cloud-compilation-3541910/"
-pipeline_stage: "ready-to-publish"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
 review_type: task6-writing-quality-review
@@ -40,18 +40,20 @@ last_task6_at: "2026-05-15T23:21:00+08:00"
 last_task6_audit: "2026-06-07"
 last_task6_review_log: logs/review/2026-05-15-23-review.md
 review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。"
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-05-16"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-16T00:30:00+08:00"
 last_task9_audit: "2026-06-08"
 last_task9_audit_log: "logs/deep-review/2026-06-08-18-audit.md"
-last_task9_autofix_at: "2026-06-08"
-pipeline_stage: task6_pending
-task2b_state: fixed-lite
 last_task2b_lite_at: "2026-06-29"
-task6_state: revisiting
-task9_state: pending
+task9_result: "auto-fixed"
+task9_state: "reviewed"
+task2b_state: "fixed"
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
+last_task9_at: "2026-06-29T16:41:24+08:00"
+last_task9_autofix_at: "2026-06-29"
+last_task9_review_log: "logs/deep-review/2026-06-29-16-deep-review.md"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-29"
+task9_review_notes: "2026-06-29 Task9 auto-fix: 将 SDM 产物管理源码锚点从 android-16.0.0_r1 重锚到 android-17.0.0_r1；无新增 P0/P1。"
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化
@@ -130,7 +132,7 @@ pm.dexopt.shared=speed
 
 Android 16 云端编译目前要分两层写：AOSP 里能看到设备端对 SDM 产物的支持；Play 侧如何生成、签名、下发和灰度，公开资料还不完整。
 
-AOSP android-16.0.0_r1 的 `ArtFileManager` 已经把 SDM 纳入可写与可用产物列表。源码里 `getWritableArtifacts()` 会为 primary dex 构造 `SecureDexMetadataWithCompanionPaths`；`getUsableArtifacts()` 也会识别 `ArtifactsLocation.SDM_DALVIK_CACHE` 和 `ArtifactsLocation.SDM_NEXT_TO_DEX`。这说明 ART Service 的产物管理已经知道“SDM 位置上的编译产物”这一类对象。
+AOSP android-17.0.0_r1 的 `ArtFileManager` 仍然把 SDM 纳入可写与可用产物列表。源码里 `getWritableArtifacts()` 会为 primary dex 构造 `SecureDexMetadataWithCompanionPaths`；`getUsableArtifacts()` 也会识别 `ArtifactsLocation.SDM_DALVIK_CACHE` 和 `ArtifactsLocation.SDM_NEXT_TO_DEX`。这说明 ART Service 的产物管理已经知道“SDM 位置上的编译产物”这一类对象。
 
 `ArtManagerLocal.deleteDexoptArtifacts()` 的注释还把 cloud dexopt artifacts 单列出来，删除范围包括 VDEX、ODEX、ART、SDM、SDC 文件。这能证明设备端已有云端 dexopt 产物的清理路径，但不能推出 Play 商店已经对所有 Android 16 设备启用云端编译。
 

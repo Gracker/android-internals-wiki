@@ -1,4 +1,5 @@
 ---
+
 title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -46,19 +47,10 @@ reviewed_date: "2026-06-12"
 last_task6_audit: "2026-06-12"
 section: "16.2"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-pipeline_stage: task6_pending
-task2b_state: fixed-lite
 last_task2b_lite_at: "2026-06-29"
 task6_state: revisiting
-task9_state: pending
-task9_result: auto-fixed
-task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-29"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-06-11T13:20:00+08:00"
 last_task9_audit: "2026-06-11"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: openclaw-task6
@@ -66,13 +58,20 @@ last_task6_at: "2026-06-12T01:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-07-review.md"
 task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
 last_task9_autofix_at: "2026-06-11"
-last_task9_review_log: "logs/deep-review/2026-06-11-13-audit.md"
-task9_review_notes: "2026-06-11 Task9 idle audit: auto-fixed。补齐 ProfilingTrigger API 36.1 与 API 37 触发器列表；AOSP android-17 tag 未发布，未使用 main/master 作为正文结论；无 queue P0/P1。"
 task6_reviewed_at: "2026-05-29T07:07:00+08:00"
 task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
+task9_result: "needs-rework"
+task9_state: "reviewed"
+task2b_state: "pending"
+pipeline_stage: "task2b_pending"
+last_task9_at: "2026-06-29T16:41:24+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-29-16-deep-review.md"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-06-29"
+task9_review_notes: "2026-06-29 Task9: 附录“Android 17 端侧 AI 资源调度”仍以 AOSP main 代表 Android 17，并声明 android-17 tag 未发布；已写入 Task2B 队列重锚 android-17.0.0_r1。"
 ---
 
 # 各 Android 版本性能变更追踪

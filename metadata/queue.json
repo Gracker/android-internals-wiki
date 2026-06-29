@@ -858,5 +858,25 @@
     "path": "src/part5-app/ch22-rendering-practice/22.29-jetpack-compose-并发安全机制.md",
     "created_at": "2026-06-29T16:18:00Z",
     "reason": "新章节 - 知识缺口挖掘产出"
+  },
+  {
+    "section": "16.2",
+    "section_title": "各 Android 版本性能变更追踪",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Android 17 端侧 AI 调度附录仍以 main 分支代表 Android 17",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-16-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/源码准确性",
+        "location": "附录“Android 17 端侧 AI 资源调度（ADPF + PowerHAL）源码调研”信息源段（约 656-698 行）",
+        "detail": "章节声明 AOSP android-17.0.0_r1 tag 未发布，并以 frameworks/base、hardware/interfaces/power 等 main 分支代表 Android 17 当前方向。当前 android-17.0.0_r1 已可用，按 AIW 版本基线规则，main/master 资料不得作为 Android 17 正文结论。",
+        "suggestion": "将该附录逐项重锚到 android-17.0.0_r1；无法在 tag 中确认的 PowerHAL AIDL v6、ChannelMessage、HintManagerService 缓存窗口等内容标注“未进入 Android 17”或移出正文结论。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T16:41:24+08:00",
+    "status": "pending"
   }
 ]

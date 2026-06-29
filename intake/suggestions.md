@@ -187,3 +187,16 @@
 1. **知识缺口挖掘已完全饱和**——连续 8 轮无 ≥14 候选，全书 521 小节已覆盖 Android 性能全域
 2. 下一阶段重心：Task2B 加工 thin draft（17 个待加工）+ Task9 Deep Review
 3. 本轮不新增章节、不更新元数据、不产生 Git 提交
+
+
+## [Task9 Deep Review] 16.9 Android 17 SDM 安装编译链路性能 — 2026-06-29
+- **类型**：数据缺失
+- **位置**：§SDM 对安装和启动性能的影响
+- **问题**：`dex2oat` 在低端设备上可能占安装总耗时 50% 以上、SDM 命中时这段开销基本消失等表述缺少设备型号、包体规模、trace 或公开 benchmark 支撑。
+- **建议**：补充同一 APK 在同一设备上有 / 无 SDM 的安装阶段 trace、`dexopt` 日志和耗时拆分；若暂时没有数据，将“50% 以上”和“基本消失”降级为定性边界。
+
+## [Task9 Deep Review] 16.9 Android 17 SDM 安装编译链路性能 — 2026-06-29
+- **类型**：源码准确性
+- **位置**：§DM 校验开关对比
+- **问题**：`pm.dexopt.dm.require_manifest` / `pm.dexopt.dm.require_fsverity` 段落原先锚定 `frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java line 44-53`，但 android-17.0.0_r1 该位置只能证明 `.dm` 后缀识别，不能证明两个 property 的默认值和安装失败行为。
+- **建议**：补入 Android 17 ART Service / 官方配置文档中的一手锚点；补不到时删除默认值和失败行为断言，只保留 `.dm` 与 SDM 校验机制不同这一边界。
