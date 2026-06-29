@@ -40,7 +40,7 @@ task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task9_audit: "2026-06-27T09:23:02+0800"
-last_task6_audit: "2026-06-27"
+last_task6_audit: "2026-06-29"
 last_task9_audit_log: "logs/deep-review/2026-06-11-14-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
@@ -124,7 +124,7 @@ private void awaitLoadedLocked() {
 }
 ```
 
-这里的等待点很直接：后台 executor 线程还在做 `Os.stat()`、`XmlUtils.readMapXml()` 时，主线程如果先访问 SP，就会卡在 `mLock.wait()`。如果 XML 已经长到几十 KB 甚至几百 KB，这段等待在低端机或 I/O 繁忙场景里会明显放大。
+等待点在 `mLock.wait()`：后台 executor 线程还在做 `Os.stat()`、`XmlUtils.readMapXml()` 时，主线程如果先访问 SP，就会卡在 `mLock.wait()`。如果 XML 已经长到几十 KB 甚至几百 KB，这段等待在低端机或 I/O 繁忙场景里会明显放大。
 
 在 Perfetto 里，我们更适合去找 `XmlUtils.readMapXml()`、文件读取和对应的后台 executor 线程，而不是硬写 `SharedPreferencesImpl-load` 这个旧线程名。线程名字在新版实现里不再是稳定观察点。
 
@@ -271,7 +271,7 @@ private void enqueueDiskWrite(final MemoryCommitResult mcr,
 
 第二，`commit()` 也不是每次都在当前线程 inline 执行。只有 `postWriteRunnable == null` 且 `mDiskWritesInFlight == 1` 时，当前这次同步提交才会直接 `writeToDiskRunnable.run()`。如果前面已经有未完成写盘，`commit()` 一样会走 `QueuedWork.queue(...)`。
 
-`apply()` 的行为更直接：它一定带着 `postWriteRunnable` 进入 `QueuedWork`，写盘结束后再执行 `postWriteRunnable.run()`，里面会调用 `awaitCommit.run()` 并把对应 finisher 从 `sFinishers` 里移除。
+`apply()` 则一定带着 `postWriteRunnable` 进入 `QueuedWork`，写盘结束后再执行 `postWriteRunnable.run()`，里面会调用 `awaitCommit.run()` 并把对应 finisher 从 `sFinishers` 里移除。
 
 **第三步：`writeToFile()` 全量重写 XML**
 
@@ -540,7 +540,7 @@ Android Studio 的 CPU Profiler 可以捕获 SP 相关的磁盘 I/O 操作。在
 
 ## MMKV 与其他高性能 KV 存储方案
 
-MMKV 通过 `mmap` 减少了传统文件 I/O 的一部分开销。在高频小写入场景里，它通常比 SP 更轻，迁移成本也低，所以很多存量项目会先用 MMKV 兜住 SP 的 ANR 问题。
+MMKV 通过 `mmap` 减少了传统文件 I/O 的一部分开销。在高频小写入场景里，它通常比 SP 更轻，迁移成本也低，所以很多存量项目会先用 MMKV 缓解 SP 的 ANR 问题。
 
 选型可以这样看：
 
