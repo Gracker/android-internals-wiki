@@ -922,5 +922,42 @@
     "completed_by": "task2b-lite",
     "completed_at": "2026-06-29T21:38:39+08:00",
     "completion_note": "fixed-lite: 全量重锚 android-16->android-17 (frontmatter+sources+8处验证标签+2处body注释)"
+  },
+  {
+    "section": "5.27",
+    "section_title": "端侧大模型推理能效选型：MoE 架构与量化策略",
+    "priority": 80,
+    "reason": "知识缺口挖掘：端侧 LLM 能效选型指导缺失，论文提供定量实测数据",
+    "material_paths": [
+      "Obsidian/论文/Android-2026-06-26-sustainability-on-device-llm-energy/03-精读.md",
+      "Obsidian/DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-30T01:04:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "16.19",
+    "section_title": "Android 17 bootanalyze 工具链与 Zygote 延迟预加载源码级分析",
+    "priority": 80,
+    "reason": "知识缺口挖掘：bootanalyze 工具路径修正与 Zygote 延迟预加载机制未覆盖",
+    "material_paths": [
+      "Obsidian/DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-30T01:04:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "26.23",
+    "section_title": "生产级 ART 动态方法追踪 — XTrace 架构与实战",
+    "priority": 80,
+    "reason": "知识缺口挖掘：生产级 ART 动态追踪实践缺失，ByteDance 论文提供 1 亿 DAU 验证数据",
+    "material_paths": [
+      "https://arxiv.org/abs/2512.21555"
+    ],
+    "added_by": "task2a-knowledge-gap",
+    "added_at": "2026-06-30T01:04:00+08:00",
+    "status": "pending"
   }
 ]

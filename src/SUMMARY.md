@@ -31,3 +31,7 @@ tags:
 
 - [第 16 章：AOSP 深度剖析](part16-xxx/ch16-xxx/README.md)
   - [16.18 Linux 6.10 内存碎片整理机制](part4-system/ch16-aosp/16.18-linux610-memory-fragmentation.md)
+
+- [16.19 Android 17 bootanalyze 工具链与 Zygote 延迟预加载](part4-system/ch16-aosp/16.19-android17-bootanalyze-zygote-lazy-preload.md)
+- [26.23 生产级 ART 动态方法追踪 — XTrace 架构与实战](part5-app/ch26-observability/26.23-xtrace-art-dynamic-method-tracing.md)
+- [5.27 端侧大模型推理能效选型：MoE 架构与量化策略](part1-fundamentals/ch05-cpu-power/5.27-ondevice-llm-inference-energy-efficiency.md)
