@@ -2,18 +2,15 @@
 title: "\"Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理\""
 chapter: "\"13.9\""
 section: "\"13.9\""
-status: ready-for-review
+status: finalized
 pipeline_stage: ready-to-publish
-
-# Frontmatter updates for Task 6 review
 task6_state: reviewed
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 task6_reviewed_by: openclaw-task6
-task6_reviewed_date: "2026-06-29"
+task6_reviewed_date: "\"2026-05-08\""
 task6_reviewed_at: "2026-06-29T21:07:00+08:00"
-last_task6_at: "2026-06-29T21:07:00+08:00"
+last_task6_at: "\"2026-06-07T04:12:51+08:00\""
 task6_review_notes: "2026-06-29 Task6 revisiting review: pass-light-edit；修复 L1/L2 问题，L3/L4 无新增；自动晋升 finalized。"
-pipeline_stage: "task6_pending"
 applicable_versions: "\"Android 8.0 (API 26) - Android 17 (API 37)\""
 tags: ["[tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]"]
 confidence: "medium"
@@ -40,11 +37,7 @@ repaired_date: "\"2026-04-26\""
 updated_by: "openclaw-task2b"
 updated_date: "\"2026-06-06\""
 task2b_fix_notes: "\"2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_marker 单路径→双路径(libtracing_perfetto TrackEvent 分支),移除 AOSP main 锚点引用,更新数据流图;C/C++ ATRACE 仍走 trace_marker 路径单独说明。\""
-task6_result: "\"pass-light-edit\""
-task6_state: "revisiting"
 task9_state: "reviewed"
-task6_reviewed_date: "\"2026-05-08\""
-last_task6_at: "\"2026-06-07T04:12:51+08:00\""
 last_task6_audit: "2026-06-27"
 deepseek_polish_state: "done"
 last_deepseek_polish_at: "2026-05-27"
@@ -53,6 +46,7 @@ last_task9_autofix_at: "2026-06-29"
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-07"
 ---
+
 
 # 13.9 Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理
 

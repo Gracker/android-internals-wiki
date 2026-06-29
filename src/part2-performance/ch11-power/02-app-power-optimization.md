@@ -1,12 +1,10 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: ready-for-review
+status: finalized
 pipeline_stage: ready-to-publish
-
-# Frontmatter updates for Task 6 review
 task6_state: reviewed
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 task6_reviewed_by: openclaw-task6
 task6_reviewed_date: "2026-06-29"
 task6_reviewed_at: "2026-06-29T21:07:00+08:00"
@@ -25,7 +23,7 @@ applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers Android 16 JobScheduler quota / Android 17 background audio / exact alarm / foreground service / WorkManager docs"
 confidence: medium-high
-sources:
+sources: 
   - type: official
     path: "https://developer.android.com/topic/performance/power"
   - type: official
@@ -72,12 +70,9 @@ tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', '
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-06-06"
 last_task2b_at: "2026-05-04T01:40:00+08:00"
-task6_result: "pass-light-edit"
 task9_result: auto-fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-06"
@@ -96,6 +91,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-30
 review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。；2026-06-06 19:20 task9 deep-review: pass-tech-review；复核 Android 16 JobScheduler quota 与 Android 17 background audio hardening 已补齐；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-29 12:29 task9 idle-audit: auto-fixed；AOSP 源码锚点升级到 android-17.0.0_r1，修正 Android 17 Audio 覆盖说明，回到 Task6 复审。"
 ---
+
 
 # App 耗电优化
 

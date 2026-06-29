@@ -2,14 +2,14 @@
 title: "多进程启动优化"
 chapter: "21.7"
 section: "21.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1 ActivityThread.java / ZygoteProcess.java / Context.java / SharedPreferences.java; Android Developers docs; Clippings structure refs"
 confidence: medium
 drafted_date: "2026-05-13"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-16"
+reviewed_date: "2026-06-30"
 review_notes: "2026-05-16 task6 review: pass-light-edit。Task2B 回炉后复审通过；正文锚点覆盖完整，无新增 L3/L4 回炉。Task9 已 pass-tech-review 且 queue.json 无 pending，自动晋升 finalized。"
 task6_result: pass-light-edit
 polish_count: 0
@@ -35,11 +35,12 @@ sources:
 tags: [multiprocess, startup, process-priority, ipc, app-startup]
 related_chapters: ["21.1", "1.3", "5.8"]
 task2b_state: fixed
-pipeline_stage: task6_pending
-task6_state: revisiting
-last_task6_at: "2026-05-16T08:16:00+08:00"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+last_task6_at: "2026-06-30T04:06:00+08:00"
 last_task6_audit: "2026-06-08"
-last_task6_review_log: logs/review/2026-05-16-08-review.md
+last_task6_review_log: logs/review/2026-06-30-04-review.md
+task6_review_notes: "2026-06-30 Task6 04:06 revisiting pass-light-edit. Task9 auto-fix (android-17.0.0_r1 锚点升级) 后写作复审；L1/L2 零命中，无 B 类问题；queue 无 pending，自动晋升 finalized。"
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
