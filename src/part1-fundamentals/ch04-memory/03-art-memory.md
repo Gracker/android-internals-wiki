@@ -33,7 +33,7 @@ p0: 0
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
+last_deepseek_cn_review_at: 2026-06-30
 last_task9_audit: 2026-06-09
 task9_result: "auto-fixed"
 last_task9_autofix_at: "2026-06-29"
@@ -95,7 +95,7 @@ Allocation Space 的具体实现取决于当前使用的 GC 策略：
 Android 15 针对 16KB 页环境改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐（`RoundUp(capacity, kPageSize)`）。从 `android-15.0.0_r1` 起，改为动态获取当前页大小（`RoundUp(capacity, gPageSize)`），全局变量 `gPageSize` 在 ART 初始化阶段由 `InitPageSize()` 设置，对应源码位于 `art/runtime/gc/space/bump_pointer_space.cc`。
 
 
-Allocation Space 的实现和分代策略要按平台版本拆开看。Android 8.0-13 的主线是基于 `RegionSpace` 的 CC 路径，年轻对象优先在更小的工作集里回收。到了 Android 14，AOSP 平台源码已经出现 `kCollectorTypeCMC` 和 `mark_compact.cc`，说明 UFFD 驱动的 Mark Compact / CMC 路径已经进入主线实现；Android 15 继续补齐 `kCollectorTypeCMCBackground`、`BumpPointerSpace` 等配套结构。公开发布材料把 Generational CMC 明确讲清楚，则是 Android 16 QPR2 之后的事情。
+Allocation Space 的实现路径随版本变化很大。Android 8.0–13 以 `RegionSpace` 和 CC GC 为主线，年轻对象优先在更小的工作集里回收。从 Android 14 开始，AOSP 平台源码中出现了 `kCollectorTypeCMC` 和 `mark_compact.cc`——UFFD 驱动的 Mark Compact / CMC 路径从此进入主线实现；Android 15 进一步补齐了 `kCollectorTypeCMCBackground` 和 `BumpPointerSpace` 等配套结构。至于 Generational CMC 被公开发布材料正式讲清楚，是 Android 16 QPR2 之后的事。
 
 [已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.cc]
 [已验证: AOSP android-14.0.0_r1 / android-17.0.0_r1, art/runtime/gc/collector_type.h]
@@ -170,7 +170,7 @@ ART 的 CMS 实现分布在多个文件中。核心标记-清除逻辑在 `art/r
 
 ### Android 8.0：CC GC 成为默认策略
 
-Android 8.0 Oreo 将 Concurrent Copying（CC）GC 设为默认策略，这是 ART 内存管理的一次重要切换。
+Android 8.0 Oreo 将 Concurrent Copying（CC）GC 设为默认策略，对 ART 内存管理来说，这次切换的影响范围很大。
 
 CC GC 的做法是：用两个 Space（FromSpace 和 ToSpace）交替使用，GC 时将存活对象从 FromSpace 拷贝到 ToSpace，拷贝完成后两个 Space 角色互换。这种拷贝式 GC 可以整理碎片——每次 GC 后存活对象都被紧凑排列。
 
@@ -216,7 +216,7 @@ CMC 的另一处变化，是主分配路径可以配合 `BumpPointerSpace` 这�
 
 Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响 GC 路线的写法。写 Android 16 QPR2 时，可以把 Generational CMC 当成正式能力来讨论；Android 17 的主线源码需要锚定 `android-17.0.0_r1`，其中 `ShouldUseGenerationalGC()`、`YoungMarkCompact` 和 `mid_gen_end_` 等实现已经可直接验证。写 Android 14 / 15 时，表述应收在 Mark Compact / CMC 路径本身。
 
-这条时间线更适合记成：Android 8.0-13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 之后再谈 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
+总结下来：Android 8.0–13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 之后再谈 Generational CMC。不要把 Android 8.0–14 的 generational CC 经验直接套到 Android 16 QPR2 之后的 Generational CMC 上——两者虽然都优先回收年轻对象，但底层 collector 已经不同。
 
 Generational CMC 的分代策略配合 CMC 的压缩能力，在高刷新率环境和高计算负载场景下有潜力释放可观的 CPU 吞吐量。官方博客确认了 ART includes Generational CMC and reduces CPU/battery 的定性描述，但博客原文未给出量化 benchmark 数字。如需引用具体性能数据（如 PCMark 跑分、Young GC 延迟、能效百分比），必须补充可公开访问的一手测试报告（含设备型号、系统版本、负载场景和采样条件）。
 
@@ -225,7 +225,7 @@ Generational CMC 的分代策略配合 CMC 的压缩能力，在高刷新率环�
 
 ### Generational CMC 与传统 CC 的实现差异
 
-Generational CMC 不只是把 CMC 加上了分代策略——它在几个关键实现点上与传统 CC（Concurrent Copying）有本质区别。
+Generational CMC 在几个关键点上与传统 CC 有本质区别，不只是给 CMC 套了一层分代策略。
 
 **读屏障的处理方式不同**。CC GC 使用 Baker read barrier（`kUseBakerReadBarrier`），在每次对象引用读取路径上插入屏障检查，无论 GC 是否在运行，这层开销始终存在。Generational CMC 利用 userfaultfd（UFFD）把对象迁移的同步问题从"每条引用读取"降到了"页级别"——只有当应用线程访问到正在迁移的页时才会触发 page fault，由 ART 处理完后恢复执行。两者都需要并发标记阶段的屏障配合，但 CMC 的 UFFD 页级屏障触发频率远低于 CC 的逐引用 Baker read barrier。
 
@@ -257,7 +257,7 @@ Generational CMC 不只是把 CMC 加上了分代策略——它在几个关键�
 
 ## GC 对性能的影响：暂停、吞吐与 Stall
 
-理解 GC 策略的演进后，还需要回答一个更实际的问题：GC 具体在哪些方面影响应用性能？
+了解 GC 策略的演进历史之后，要落到一个更实际的问题上：GC 到底在哪些方面影响应用性能？
 
 ### Pause Time（暂停时间）
 
@@ -287,9 +287,9 @@ GC 吞吐量指的是应用运行时间占总时间的比例。如果 GC 吞吐�
 
 ### ART FinalizerDaemon 与 ReferenceQueue 的锁边界
 
-ART 的 FinalizerDaemon 线程负责处理对象的 `finalize()` 方法。GC 完成标记后，通过 `ReferenceQueue` 将待 finalize 对象传递给 FinalizerDaemon。这条路径依赖 `synchronized(lock)` 同步——`ReferenceQueue.enqueue()` 的入口和 `enqueuePending()` 的批处理循环（`MAX_ITERS=100`）都在同一个 object monitor 内执行。当 GC 频率高、FinalizerDaemon 处理压力大时，锁竞争会导致 `TimeoutException`，极端情况下引发 ANR。
+ART 的 FinalizerDaemon 线程负责处理对象的 `finalize()` 方法。GC 完成标记后，通过 `ReferenceQueue` 将待 finalize 对象交给 FinalizerDaemon。这条路径靠 `synchronized(lock)` 同步——`ReferenceQueue.enqueue()` 的入口和 `enqueuePending()` 的批处理循环（`MAX_ITERS=100`）都在同一个 object monitor 里执行。GC 频率高、FinalizerDaemon 处理压力大时，锁竞争会导致 `TimeoutException`，极端情况下引发 ANR。
 
-Android 16 引入了 `ConcurrentMessageQueue`（无锁 Treiber 栈 + VarHandle 原子操作），但这条优化路径属于 `android.os` 层的 Handler/Looper 路径，与 ART 内部的 `ReferenceQueue` 是两条独立的调用链。源码级验证结论：
+Android 16 引入了 `ConcurrentMessageQueue`（无锁 Treiber 栈 + VarHandle 原子操作），但它的优化范围是 `android.os` 层的 Handler/Looper 路径，和 ART 内部的 `ReferenceQueue` 是两条独立的调用链。源码级验证结论：
 
 - ✅ `libcore ReferenceQueue.java` 仍使用 `private final Object lock`，所有核心方法（`enqueue`/`poll`/`remove`）都在 `synchronized(lock)` 内
 - ✅ `ConcurrentMessageQueue` 的无锁 Treiber 架构仅用于 UI 消息分发，未接入 `ReferenceQueue`
@@ -306,7 +306,7 @@ Android 16 引入了 `ConcurrentMessageQueue`（无锁 Treiber 栈 + VarHandle �
 
 ## 对象分配路径：从 TLAB 到 Full GC
 
-了解对象在 ART 中的分配路径，有助于解释某些代码模式为什么会导致性能问题。
+搞清楚对象在 ART 中的分配路径之后，就能解释某些代码模式为什么会导致性能问题。
 
 ### TLAB 分配：最快路径
 
@@ -541,9 +541,9 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 
 > 版本边界：本节源码主线锚定 android-17.0.0_r1（API 37），不涉及 Android 18/API 38+。
 
-### 4.3.x Android 16 ART 碎片控制与并发压缩（一手源码补遗）
+### 附录：CC 与 CMC 的碎片控制与并发压缩细节
 
-#### (a) RegionSpace区域级 UnevacFromSpace机制
+#### RegionSpace 区域级 UnevacFromSpace
 
 `art/runtime/gc/space/region_space.h`枚举：
 
@@ -576,7 +576,7 @@ inline bool RegionSpace::Region::ShouldBeEvacuated(EvacMode evac_mode) {
 - 高占用（≥75%存活）region 在并发复制 GC周期被降级为 UnevacFromSpace，**避免反复搬迁**。
 - `kCyclicRegionAllocation` 仅 debug模式开启，release模式关闭——Android内部 b/33795328（region级循环分配碎片）已通过 UnevacFromSpace + 单调区域分配策略抑制（`region_space.h`注释明确点名）。
 
-#### (b) MarkCompact 三代模型 + userfaultfd
+#### MarkCompact 三代模型与 userfaultfd
 
 `art/runtime/gc/collector/mark_compact.cc`门控与状态字段：
 
@@ -617,7 +617,7 @@ void YoungMarkCompact::RunPhases() {
 
 - CMC 启用条件不能简化成 Linux ≥5.7 或 minor-fault。`android-17.0.0_r1` 的 `KernelSupportsUffd()` 先检查 `MREMAP_DONTUNMAP`（源码注释写明该能力在 Linux 5.13 引入并可 backport 到 GKI）和 userfaultfd SIGBUS；minor-fault 特性只用于 minor-fault mode。未满足条件时会回退到非 UFFD 路径，不能直接写成“低于 5.7 走传统 STW 压缩”。
 
-#### (c) LargeObjectSpace不可移动 +碎片诊断
+#### LargeObjectSpace 不可移动与碎片诊断
 
 `art/runtime/gc/space/large_object_space.h`：
 
@@ -635,7 +635,7 @@ bool LogFragmentationAllocFailure(std::ostream& os, size_t failed_alloc_bytes) o
 - `LogFragmentationAllocFailure` 在分配失败路径输出「最大连续可分配块」长度——APM工具可借此判断 OOM 是否由碎片化引起。
 - LOS 不参与移动压缩；`kFreeList` 路径复用 `dlmalloc_space` 相关实现，`kMap` 路径则按对象 `mmap` / `munmap`，不能把两种实现都概括成“底层使用 dlmalloc”。
 
-#### (d) CC vs CMC 取舍
+#### CC 与 CMC 的取舍条件
 
 `art/runtime/gc/heap.cc`：
 

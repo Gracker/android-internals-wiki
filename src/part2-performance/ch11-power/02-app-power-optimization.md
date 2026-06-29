@@ -93,7 +93,7 @@ last_deepseek_polish_at: 2026-05-27
 last_task6_audit: "2026-06-27"
 last_task9_audit: "2026-06-29"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
+last_deepseek_cn_review_at: 2026-06-30
 review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-06 17:20 task9 idle-audit: needs-rework；P1 Android 16 JobScheduler quota 与 Android 17 background audio hardening 版本差异回炉。；2026-06-06 19:20 task9 deep-review: pass-tech-review；复核 Android 16 JobScheduler quota 与 Android 17 background audio hardening 已补齐；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。；2026-06-29 12:29 task9 idle-audit: auto-fixed；AOSP 源码锚点升级到 android-17.0.0_r1，修正 Android 17 Audio 覆盖说明，回到 Task6 复审。"
 ---
 
@@ -184,11 +184,11 @@ Android Vitals 会把 excessive partial wake locks 单独统计出来。局部�
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
-在 Battery Historian 中，WakeLock 持有期会以条形图显示在 `Partial Wakelock` 行。Perfetto 在打开 power data source 时可能包含 `power/wakelock` 轨道，但标准 user build 不保证这条轨道一定存在。排查时先从 bugreport、Battery Historian 和 `dumpsys batterystats --history` 入手，确认问题后再决定是否需要补抓 Perfetto。
+在 Battery Historian 中，WakeLock 的持有期在 `Partial Wakelock` 行上以条形图显示。Perfetto 打开 power data source 时可能包含 `power/wakelock` 轨道，但标准 user build 不保证这条轨道一定存在。排查时先从 bugreport、Battery Historian 和 `dumpsys batterystats --history` 入手，确认问题之后再决定是否需要补抓 Perfetto。
 
 ## 后台任务省电策略：WorkManager 与 JobScheduler
 
-Android 的后台任务调度经历了多轮演进，从最初的 Service + AlarmManager，到 JobScheduler（API 21），再到 Jetpack 的 WorkManager。演进始终围绕一个目标：省电。
+Android 的后台任务调度经历了多轮演进：从最初的 Service + AlarmManager，到 JobScheduler（API 21），再到 Jetpack 的 WorkManager。每一次切换，背后都是同一个目标——省电。
 
 ### 为什么不推荐自己管理后台任务
 
@@ -369,7 +369,7 @@ Android 的闹钟分为两种：精确闹钟(exact alarm)和不精确闹钟(inex
 
 [已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager]
 
-### Android 12 引入精确闹钟 special app access，Android 14 调整默认授权策略
+### 精确闹钟的权限收紧：从 Android 12 到 Android 14
 
 `SCHEDULE_EXACT_ALARM` 不是 Android 14 才出现的限制。Android 12（API 31）已经把它作为精确闹钟的 special app access 引入。所有精确闹钟 API——包括 `setExact()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()`——都属于 exact alarm 能力，受 `SCHEDULE_EXACT_ALARM` special app access 约束。调用前应通过 `AlarmManager.canScheduleExactAlarms()` 检查授权状态；没有授权时，用 `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM` 引导用户进入系统设置页。
 
@@ -383,7 +383,7 @@ Android 14（API 34）的变化在默认授权策略。对 targetSdk 33+ 的多�
 
 ### setAndAllowWhileIdle 的使用限制
 
-`setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 能在 Doze 中触发，但它们不是仅有的例外，`setAlarmClock()` 也会正常触发，系统会在闹钟到点前退出 Doze。实际排查时，按下面三类区分：
+`setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 可以在 Doze 中触发，但不是仅有的例外——`setAlarmClock()` 同样会正常触发，系统会在闹钟到点前先退出 Doze。实际排查时，按下面三类区分：
 
 - `setAlarmClock()`：面向用户可见闹钟，正常触发。
 - allow-while-idle alarms：可以穿过 Doze，但受频率限制，文档给出的节流口径大约是每个 App 每 9 分钟一次。
@@ -399,7 +399,7 @@ AlarmManager 的使用情况在 Battery Historian 的 "Alarm" 行中显示。如
 
 ## 前台服务的功耗考量与 Android 14+ 的限制
 
-前面讨论的后台任务调度和 Alarm 优化，核心思路都是"尽量让系统决定什么时候执行"。但有些场景 App 需要持续在后台运行，比如音乐播放、导航、位置追踪。前台服务会通过持续通知告诉用户"这个 App 还在工作"，同时提高进程优先级，降低因后台限制被回收的概率。它解决的是 app-level background limits 问题，本身不提供 device-level Doze 豁免。设备进入 Doze 后，网络、Job、普通 Alarm 等限制仍然存在，wake lock 也会被忽略。
+后台任务调度和 Alarm 优化的核心思路是一致的：尽量让系统决定什么时候执行。但有些场景就是需要持续在后台运行——音乐播放、导航、位置追踪，这些不能等系统调度。前台服务通过持续通知让用户知道"这个 App 还在工作"，同时提高进程优先级，降低被后台限制回收的概率。它解决的是 app-level background limits 问题，本身不提供 device-level Doze 豁免。设备进入 Doze 后，网络、Job、普通 Alarm 的限制仍然存在，wake lock 也会被忽略。
 
 Android 14（API 34）对 FGS 的治理经历了重大变革，系统从"信任开发者声明"转向"强制类型分类 + 运行时权限验证"。
 
@@ -478,7 +478,7 @@ Audio 的功耗优化主要关注两个方面：
 
 **后台音频要分开看 FGS 启动限制和类型声明**。后台音频如果需要长时间播放，应使用前台服务向用户展示持续通知。Android 12 的变化是限制后台直接启动 FGS：App 退到后台后，只有满足豁免条件才能启动前台服务。Android 14（targetSdk 34+）才强制要求在 manifest 中声明 `foregroundServiceType="mediaPlayback"`，并声明 `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限。不要把 Android 12 的启动限制写成 Android 14 的类型强制。
 
-**Android 17 / API 37 的 background audio hardening。** Android 17 对后台音频播放进一步收紧：后台音频交互（播放、焦点变更、音量调节）需要可见 Activity 或非 `shortService` 的 FGS；targetSdk 37 后还要求具备 while-in-use 能力，或在 exact alarm 权限 + `USAGE_ALARM` 场景下操作。本节 Audio 部分覆盖到 Android 17（API 37）。排查 Android 17 设备上后台音频失败时，需同时检查 `AudioHardening` 日志和 FGS 类型声明。
+**Android 17（API 37）收紧后台音频。** Android 17 对后台音频播放做了进一步约束：后台音频交互（播放、焦点变更、音量调节）要求可见 Activity 或非 `shortService` 的 FGS 在运行；targetSdk 37 之后还要求具备 while-in-use 能力，或者在 exact alarm 权限 + `USAGE_ALARM` 场景下操作。排查 Android 17 设备上后台音频失败时，需同时检查 `AudioHardening` 日志和 FGS 类型声明。
 
 ## 与其他章节的关系
 
