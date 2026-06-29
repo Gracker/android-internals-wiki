@@ -45,24 +45,24 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
 tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-15"
-task6_reviewed_date: "2026-05-15"
-last_task6_at: "2026-05-15T02:12:00+08:00"
+reviewed_date: "2026-06-30"
+task6_reviewed_date: "2026-06-30"
+last_task6_at: "2026-06-30T02:13:00+08:00"
 last_task6_audit: "2026-06-07"
-last_task6_review_log: logs/review/2026-05-15-02-review.md
-task6_reviewed_at: "2026-05-15T02:12:00+08:00"
+last_task6_review_log: logs/review/2026-06-30-02-review.md
+task6_reviewed_at: "2026-06-30T02:13:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_review_notes: "2026-05-15 Task6：metadata 去重并复审通过；写作层无新增回炉项，既有 Task2B 修复完成，等待 Task9 复核。"
+task6_review_notes: "2026-06-30 Task6 revisit：Task2B Lite 已修复 androidx-main 源码锚点标注；写作质检通过（禁用词0/高频词0/锚点全覆盖），清理 4 行 [结构参考] 处理残留；task9_result 仍为 needs-rework，等待 Task9 复核 Lite 修复。"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-15"
+task9_reviewed_date: "2026-06-30"
 last_task9_at: "2026-06-30T01:28:33+08:00"
 last_task9_audit: "2026-06-30"
 last_task2b_lite_at: "2026-06-30"
@@ -99,10 +99,6 @@ RecyclerView 优化不该从“调几个参数”开始，而要从滑动路径�
 
 > **⚠️ 源码锚点说明**：本节 AndroidX 源码引用基于 `platform/frameworks/support` 的 `androidx-main` 移动分支。AndroidX 独立于 AOSP platform tag，未进入 `android-17.0.0_r1` tag 覆盖范围。以下源码引用用于机制说明，不作为 Android 17 版本快照结论依据。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md]
 
 ## ViewHolder 复用与 ItemType 设计
 
