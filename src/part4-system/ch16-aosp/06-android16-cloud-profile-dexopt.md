@@ -7,7 +7,7 @@ status: "finalized"
 drafted_date: "2026-05-15"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-06-08"
-last_verified_against: "AOSP android-16.0.0_r1 ArtFileManager.java / PrimaryDexopter.java / DexMetadataHelper.java; source.android.com ART Service configuration; Android Developers Baseline Profiles docs"
+last_verified_against: "AOSP android-17.0.0_r1 ArtFileManager.java / PrimaryDexopter.java / DexMetadataHelper.java; source.android.com ART Service configuration; Android Developers Baseline Profiles docs"
 confidence: medium
 tags: ["android-16", "art", "dexopt", "baseline-profile", "cloud-profile", "package-manager"]
 related_chapters: ["1.7", "1.9", "8.7", "16.5", "21.4"]
@@ -47,14 +47,11 @@ last_task9_at: "2026-05-16T00:30:00+08:00"
 last_task9_audit: "2026-06-08"
 last_task9_audit_log: "logs/deep-review/2026-06-08-18-audit.md"
 last_task9_autofix_at: "2026-06-08"
-task2b_state: fixed
-task9_review_notes: "2026-05-16 00:30 Task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。| 2026-06-08 Task9 闲时抽检 auto-fix：移除仅基于 AOSP main、未证明进入 Android 17 稳定标签的 SDM 补充；SDM 正文证据改按 android-16.0.0_r1 锚定，回到 Task6 复审。"
-finalized_date: "2026-05-16"
-finalized_by: "openclaw-task9"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
-task6_state: "reviewed"
-task9_state: "reviewed"
+pipeline_stage: task6_pending
+task2b_state: fixed-lite
+last_task2b_lite_at: "2026-06-29"
+task6_state: revisiting
+task9_state: pending
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化

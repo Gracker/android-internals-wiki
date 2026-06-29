@@ -8,7 +8,7 @@ drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-15"
-last_verified_against: "Qualcomm / MediaTek / Samsung / Google 官方产品页，Google Tensor G5 官方博文，ARM Cortex-X925 官方资料，AOSP android-16.0.0_r1，Android common android14-6.1 / android15-6.6 / android16-6.12 / android17-6.18"
+last_verified_against: "Qualcomm / MediaTek / Samsung / Google 官方产品页，Google Tensor G5 官方博文，ARM Cortex-X925 官方资料，AOSP android-17.0.0_r1，Android common android14-6.1 / android15-6.6 / android16-6.12 / android17-6.18"
 confidence: medium
 sources:
   - type: blog
@@ -44,9 +44,11 @@ task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0
 p0: 0
 p1: 0
 p2: 0
-task2b_state: "fixed"
-last_task2b_verifier_at: "2026-05-27T07:50:00+08:00"
-task2b_verifier_result: ready-for-task6
+pipeline_stage: task6_pending
+task2b_state: fixed-lite
+last_task2b_lite_at: "2026-06-29"
+task6_state: revisiting
+task9_state: pending
 last_task9_autofix_at: "2026-06-15"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
