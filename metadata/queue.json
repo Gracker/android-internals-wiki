@@ -978,6 +978,8 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-30T01:28:33+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_reason": "fixed-lite: 源码锚点标注 androidx-main 未进入 android-17.0.0_r1，新增 androidx_source_note frontmatter 和正文说明",
+    "completed_at": "2026-06-30T01:38:01+08:00"
   }
 ]
