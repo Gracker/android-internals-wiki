@@ -2,11 +2,12 @@
 title: "RecyclerView 最佳实践"
 chapter: "22.2"
 section: "22.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-13"
-last_verified_against: "AndroidX androidx-main, Android Developers docs, AIW 7.8/22.1/2.4, Clippings 结构参考"
+last_verified_against: "Android Developers docs, AIW 7.8/22.1/2.4, Clippings 结构参考；AndroidX 源码引用 androidx-main 移动分支，未固定到不可变 tag"
 confidence: medium
+androidx_source_note: "AndroidX RecyclerView 源码路径指向 androidx-main 移动分支（platform/frameworks/support），不属于 android-17.0.0_r1 tag 覆盖范围；源码引用作为机制理解参考，不作为 Android 17 版本结论依据。"
 drafted_date: "2026-05-13"
 polish_count: 1
 sources:
@@ -44,11 +45,11 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
 tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-15"
@@ -64,6 +65,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
 last_task9_at: "2026-06-30T01:28:33+08:00"
 last_task9_audit: "2026-06-30"
+last_task2b_lite_at: "2026-06-30"
 last_task9_review_log: "logs/deep-review/2026-06-30-01-audit.md"
 task9_review_notes: "2026-06-30 Task9 闲时抽检：P1 版本/源码锚点问题；AndroidX sources 使用 androidx-main，需固定到可接受基线或标注未进入 Android 17。"
 ---
@@ -94,6 +96,8 @@ task9_review_notes: "2026-06-30 Task9 闲时抽检：P1 版本/源码锚点问�
 <!-- outline-end -->
 
 RecyclerView 优化不该从“调几个参数”开始，而要从滑动路径里的成本来源开始：创建 ViewHolder、绑定数据、计算差异、预取下一屏、处理嵌套滑动。7.8 节已经展开 RecyclerView 内部布局、缓存和 GapWorker 机制；这里把机制转成应用侧写法、验收方法和取舍边界。
+
+> **⚠️ 源码锚点说明**：本节 AndroidX 源码引用基于 `platform/frameworks/support` 的 `androidx-main` 移动分支。AndroidX 独立于 AOSP platform tag，未进入 `android-17.0.0_r1` tag 覆盖范围。以下源码引用用于机制说明，不作为 Android 17 版本快照结论依据。
 
 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 [结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
