@@ -682,5 +682,47 @@
     "path": "partfundamentals-ch06-memory/6.18-Linux-6.10-内存碎片整理机制.md",
     "priority": 80,
     "reason": "新创建的知识缺口章节（评分15/20）"
+  },
+  {
+    "section": "16.9",
+    "section_title": "Android 17 SDM 安装编译链路性能",
+    "priority": 90,
+    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "frontmatter last_verified_against",
+        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
+        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
+      }
+    ],
+    "added_by": "task2b-lite-auto-detected",
+    "added_at": "2026-06-29T15:48:00+08:00",
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completed_at": "2026-06-29T15:48:30+08:00",
+    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
+  },
+  {
+    "section": "16.2",
+    "section_title": "各 Android 版本性能变更追踪",
+    "priority": 90,
+    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "frontmatter last_verified_against",
+        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
+        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
+      }
+    ],
+    "added_by": "task2b-lite-auto-detected",
+    "added_at": "2026-06-29T15:48:00+08:00",
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completed_at": "2026-06-29T15:48:30+08:00",
+    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
   }
 ]

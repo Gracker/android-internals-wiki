@@ -4,7 +4,7 @@ chapter: "16.2"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-04"
 last_verified: "2026-06-11"
-last_verified_against: "developer.android.com API reference (ProfilingTrigger API 36/36.1/37) + AOSP android-16.0.0_r1 SystemHealthManager / Display / packages/modules/Profiling"
+last_verified_against: "developer.android.com API reference (ProfilingTrigger API 36/36.1/37) + AOSP android-17.0.0_r1 SystemHealthManager / Display / packages/modules/Profiling"
 confidence: medium
 sources:
   - type: official

@@ -5,7 +5,7 @@ status: ready-for-review
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
 last_verified: "2026-06-11"
-last_verified_against: "AOSP android-16.0.0_r1 (PrimaryDexopter / ArtFileManager / PackageInstallerSession / artd.cc / DexMetadataHelper)"
+last_verified_against: "AOSP android-17.0.0_r1 (PrimaryDexopter / ArtFileManager / PackageInstallerSession / artd.cc / DexMetadataHelper)"
 confidence: medium
 sources:
   - type: aosp
