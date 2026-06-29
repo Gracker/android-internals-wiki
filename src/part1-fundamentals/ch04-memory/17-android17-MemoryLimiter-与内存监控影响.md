@@ -607,3 +607,10 @@ MemoryLimiter 是 **Android 16 引入、17 增强**的子系统——任何 Andr
 - 注入时间：2026-06-29
 - 价值：填补 4.17 章节在"30s 等待的真实目的"、"margin 激活条件"、"配置匹配算法"、"ProcessState 数量校正"四个细节盲区，为 APM 监控 SDK 提供精确的归因与告警阈值参考。
 
+
+### Android 17 MemoryLimiter 的 30 秒 Kill 窗口真相与 ProfilingServiceHelper 触发条件
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-memorylimiter-30s-kill-window-and-profiling.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码揭示 MemoryLimiter 30s kill 延迟实为等待 ProfilingServiceHelper 完成 heap dump。触发需三重门控全满足（默认全关闭）。100MB margin 仅在 cgroup memory.high 事件触发后写入。MemoryLimiter.java 在 Android 15 不存在，确认为 16/17 新子系统。
+- 注入时间：2026-06-30
+- 价值：揭示 30s kill 窗口真正用途、ProfilingServiceHelper 三重门控、100MB margin 激活时机

@@ -1,6 +1,6 @@
 {
   "total": 538,
-  "draft": 36,
+  "draft": 35,
   "ready-for-review": 146,
   "finalized": 337,
   "task9_result": "pass-tech-review",
@@ -1678,6 +1678,15 @@
       "pipeline_stage": "task2a-draft",
       "drafted_date": "2026-06-30",
       "drafted_by": "task2a-knowledge-gap"
+    },
+    "5.23": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "drafted_date": "2026-06-30",
+      "drafted_by": "task2a-content-processing",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "last_review": "2026-06-30"
     }
   },
   "chapters": {
@@ -1690,7 +1699,7 @@
     }
   },
   "last_updated": "2026-06-29T18:22:37.564345",
-  "ready_for_review": 7,
+  "ready_for_review": 8,
   "reviews": [
     {
       "date": "2026-06-28",
@@ -1756,6 +1765,16 @@
       ],
       "result": "draft completed",
       "action": "processing section 5.27 on-device LLM inference energy efficiency selection (MoE + quantization)"
+    },
+    {
+      "date": "2026-06-30",
+      "time": "07:12",
+      "task": "task2a-draft-processing",
+      "sections": [
+        "5.23"
+      ],
+      "result": "draft completed",
+      "action": "processing section 5.23 JobScheduler five-dimensional throttling architecture"
     }
   ],
   "rework_log": [
@@ -1793,6 +1812,6 @@
     "last_review_date": "2026-06-29",
     "last_review_session": "2026-06-29-22"
   },
-  "last_task2a_at": "2026-06-30T02:04:00+08:00",
+  "last_task2a_at": "2026-06-30T07:12:00+08:00",
   "task6_last_run": "2026-06-30T04:06:00+08:00"
 }
