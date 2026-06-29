@@ -1709,5 +1709,13 @@
       "task6_state": "reviewed"
     }
   ],
-  "ready": 1
+  "ready": 1,
+  "task2b_fixed": [
+    {
+      "section": "4.6",
+      "title": "内存相关的版本演进",
+      "fixed_at": "2026-06-29T14:53:01.246869+08:00",
+      "note": "Auto-promoted: freshness check closed, chapter finalized"
+    }
+  ]
 }
