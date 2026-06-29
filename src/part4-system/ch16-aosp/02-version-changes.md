@@ -25,19 +25,19 @@ sources:
   - type: blog
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-12"
+reviewed_date: "2026-06-29"
 last_task6_audit: "2026-06-12"
 section: "16.2"
-status: ready-for-review
+status: finalized
 last_task2b_lite_at: "2026-06-29"
 task2b_result: fixed
 last_task9_audit: "2026-06-11"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-12T01:08:00+08:00"
+last_task6_at: "2026-06-29T23:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-07-review.md"
 task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；清理 1 处否定纠正式句型与参考材料中英文间距；Task9 auto-fixed 后无 queue pending，晋升 finalized；无新增 L3/L4 回炉项。"
 last_task9_autofix_at: "2026-06-29"
@@ -49,7 +49,7 @@ last_deepseek_cn_review_at: 2026-06-29
 task9_result: "auto-fixed"
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_task9_at: "2026-06-29T17:40:20+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-29-17-deep-review.md"
 task9_reviewed_by: "openclaw-task9"
@@ -66,7 +66,7 @@ last_task2b_by: openclaw-task2b
 
 ### 锚点（必须覆盖）
 
-- 🔹 Android 12-16 各版本性能相关 Release Notes 摘要
+- 🔹 Android 12-17 各版本性能相关 Release Notes 摘要
 - 🔹 Behavior Changes 对 App 性能的影响（后台限制、权限变化、进程管理）
 - 🔹 新增 API 的性能意义（FrameMetrics 增强、ProfilingManager、Dynamic Performance 等）
 - 🔹 Deprecated API 及替代方案
@@ -74,7 +74,7 @@ last_task2b_by: openclaw-task2b
 
 ### 扩展（可选深入）
 
-- 🔸 Android 16 Beta/DP 中的实验性特性
+- 🔸 Android 16/17 Beta/DP 中的实验性特性
 - 🔸 向前兼容策略：如何在支持多版本的同时利用新特性
 
 ### OpenClaw 加工指引
@@ -92,7 +92,7 @@ last_task2b_by: openclaw-task2b
 
 这一节不是简单罗列 Release Notes（你可以直接去 developer.android.com 看）。我们要做的是把这些变更**按对性能的实际影响**组织起来，告诉你在分析性能问题时，哪些版本行为差异是你需要考虑的变量。
 
-本章按两条线展开：先按版本走一遍性能相关的关键变更（从 Android 12 到 Android 16），再按主题（后台限制、性能 API、废弃 API、迁移策略）横向梳理，方便你带着具体问题来查。
+本章按两条线展开：先按版本走一遍性能相关的关键变更（从 Android 12 到 Android 17），再按主题（后台限制、性能 API、废弃 API、迁移策略）横向梳理，方便你带着具体问题来查。
 
 ## Android 12（API 31）：后台执行限制增多
 
@@ -316,7 +316,7 @@ Android 15 起 NNAPI NDK API 被官方标记 deprecated（[source.android.com/do
 
 > Starting in Android 15, the NNAPI (NDK API) is deprecated. The Neural Networks HAL interface continues to be supported.
 
-对 app 端的实际含义：**NNAPI HAL 仍是 vendor driver 的官方扩展点**，但 NDK 公共入口已经不再演进；Google 推荐的迁移路径是 [NNAPI Migration Guide](https://developer.android.com/ndk/reference/group/neural-networks)（指向 TensorFlow Lite delegate / LiteRT 路线）。§16.2 在版本变更梳理里首次明确这一边界对 AI 推理加速策略的影响。
+对 App 端的实际含义：**NNAPI HAL 仍是 vendor driver 的官方扩展点**，但 NDK 公共入口已经不再演进；Google 推荐的迁移路径是 [NNAPI Migration Guide](https://developer.android.com/ndk/reference/group/neural-networks)（指向 TensorFlow Lite delegate / LiteRT 路线）。§16.2 在版本变更梳理里首次明确这一边界对 AI 推理加速策略的影响。
 
 ### Framework 端 compilation caching 的实现机制
 

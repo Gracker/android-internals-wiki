@@ -1,17 +1,17 @@
 ---
 title: "ART GC Region 碎片化与 Compaction 策略"
 chapter: "4.14"
-status: ready-for-review
+status: finalized
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-29"
-last_task6_at: "2026-06-29T22:07:00+08:00"
+last_task6_at: "2026-06-29T23:10:00+08:00"
 last_task9_at: "2026-06-29T22:20:00+08:00"
 last_task9_autofix_at: "2026-06-29"
 drafted_date: "2026-06-11"
