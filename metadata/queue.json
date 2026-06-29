@@ -503,7 +503,10 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-06-29T06:16:38.757742",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completed_at": "2026-06-29T11:36:00+08:00",
+    "completion_note": "fixed-lite: 添加参考资料章节，补充 Android 9-17 Perfetto 版本可用性源码验证报告"
   },
   {
     "section": "26.3",

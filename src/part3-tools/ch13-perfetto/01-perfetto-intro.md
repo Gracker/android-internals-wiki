@@ -9,9 +9,14 @@ drafted_by: openclaw-task2a
 reviewed_date: "2026-05-28"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
+task6_state: revisiting
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
+task2b_result: fixed-lite
+task2b_state: fixed
+last_task2b_lite_at: '2026-06-29'
+pipeline_stage: task6_pending
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-04-14'
 last_verified_against: AOSP android-17.0.0_r1 + perfetto.dev docs + source.android.com/docs/core/debug/perfetto
@@ -584,3 +589,9 @@ readproc // 支持更多系统进程访问
 // Introduced in: Android U.
 // Supported on: Android 25Q3+.
 ```
+
+## 参考资料
+
+- 源码调研：Android 9-17 Perfetto 版本可用性与新特性源码验证
+  - 📅 2026-06-29 | 通过 android-17.0.0_r1 源码系统验证各版本 Perfetto 可用性，解决官方文档矛盾
+  - 🔗 [完整调研报告](../../../../../DeepResearch/2026-06-29-perfetto-version-availability-android9-17.md)
