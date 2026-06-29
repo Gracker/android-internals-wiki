@@ -51,7 +51,7 @@ task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-29T19:26:54+08:00'
 last_task9_autofix_at: '2026-06-29'
-status: finalized
+status: ready-for-review
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit

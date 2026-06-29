@@ -1,7 +1,7 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: finalized
+status: ready-for-review
 pipeline_stage: ready-to-publish
 
 # Frontmatter updates for Task 6 review

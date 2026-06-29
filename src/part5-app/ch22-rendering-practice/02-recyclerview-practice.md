@@ -53,7 +53,7 @@ tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
 pipeline_stage: "task9_pending"
 task6_state: "reviewed"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 task6_result: "pass-light-edit"
