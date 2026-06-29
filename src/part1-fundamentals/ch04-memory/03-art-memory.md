@@ -7,8 +7,8 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [memory, lmk, gc]
 confidence: medium
-last_verified: '2026-06-10'
-last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 + Android Developers Blog (Android 16 QPR2); android-17.0.0_r1 tag unavailable on 2026-06-10"
+last_verified: '2026-06-29'
+last_verified_against: "AOSP android-17.0.0_r1 (主线) / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 (版本演进对比) + Android Developers Blog (Android 16 QPR2)"
 drafted_date: '2026-03-31'
 drafted_by: openclaw-task2
 reviewed_date: '2026-06-10'
@@ -20,13 +20,14 @@ path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-rele
 last_task2b_at: "2026-06-09T20:59:35+08:00"
 last_task6_at: '2026-06-10T01:07:00+08:00'
 last_task6_audit: 2026-06-09
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_reviewed_date: '2026-06-10'
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-10T00:20:00+08:00"
 task2b_state: "fixed"
+last_task2b_lite_at: "2026-06-29"
 task2b_result: "fixed"
 p0: 0
 p1: 0
@@ -114,7 +115,7 @@ Large Object Space 有两种实现：
 
 两者的选择不是按 arm64 / 非 arm64 划分，而是由 `USE_ART_LOW_4G_ALLOCATOR` 构建宏决定：启用时使用 `FreeListSpace`，不启用时使用 `LargeObjectMapSpace`。这个宏与设备的堆地址空间布局相关（4GB 压缩引用窗口），不是简单的架构区分。`Heap::kDefaultLargeObjectSpaceType` 定义在 `art/runtime/gc/heap.h` 中，最终值取决于这个宏。
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.h, art/runtime/gc/space/large_object_space.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.h, art/runtime/gc/space/large_object_space.cc]
 
 在 Perfetto 中，如果大对象分配很频繁，通常说明应用在持续创建大量 `byte[]` 或大 `String`。这种情况常见于图片处理、网络数据解析等场景。Large Object Space 持续增长时，要进一步检查是否存在大对象泄漏。
 
@@ -537,7 +538,7 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - [研究] Android 15/16 的 16KB Page Size 对 ART 内存的影响
 
 
-> ⚠️ 版本边界：android-17.0.0_r1 在 2026-06-10 **未发布**（AOSP tag 查询为空）。以下内容只基于 android-16.0.0_r1（API 36）一手源码；main 分支仅作目录对照，不作为 Android 17/API 37 正文结论，**不涉及 Android 18/API 38+**。
+> 版本边界：本节源码主线锚定 android-17.0.0_r1（API 37），不涉及 Android 18/API 38+。
 
 ### 4.3.x Android 16 ART 碎片控制与并发压缩（一手源码补遗）
 

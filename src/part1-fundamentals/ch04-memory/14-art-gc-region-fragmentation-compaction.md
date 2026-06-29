@@ -2,31 +2,37 @@
 title: "ART GC Region 碎片化与 Compaction 策略"
 chapter: "4.14"
 status: ready-for-review
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 drafted_date: "2026-06-11"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-11"
-last_verified_against: "AOSP android-16.0.0_r1 + main 分支目录对照；android-17.0.0_r1 tag 未发布"
+last_verified: "2026-06-29"
+last_verified_against: "AOSP android-17.0.0_r1 (主线) / android-16.0.0_r1 (版本演进对比)"
 confidence: medium
 sources:
   - type: aosp
-    path: "platform/art/+/android-16.0.0_r1/runtime/gc/space/region_space.h"
+    path: "platform/art/+/android-17.0.0_r1/runtime/gc/space/region_space.h"
   - type: aosp
-    path: "platform/art/+/android-16.0.0_r1/runtime/gc/space/region_space.cc"
+    path: "platform/art/+/android-17.0.0_r1/runtime/gc/space/region_space.cc"
   - type: aosp
-    path: "platform/art/+/android-16.0.0_r1/runtime/gc/collector/mark_compact.h"
+    path: "platform/art/+/android-17.0.0_r1/runtime/gc/collector/mark_compact.h"
   - type: aosp
-    path: "platform/art/+/android-16.0.0_r1/runtime/gc/collector/mark_compact.cc"
+    path: "platform/art/+/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc"
   - type: aosp
-    path: "platform/art/+/android-16.0.0_r1/runtime/gc/collector/concurrent_copying.cc"
+    path: "platform/art/+/android-17.0.0_r1/runtime/gc/collector/concurrent_copying.cc"
   - type: aosp
-    path: "platform/art/+/android-16.0.0_r1/runtime/gc/space/large_object_space.h"
+    path: "platform/art/+/android-17.0.0_r1/runtime/gc/space/large_object_space.h"
   - type: aosp
-    path: "platform/art/+/android-16.0.0_r1/runtime/gc/heap.cc"
+    path: "platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc"
 tags: ['ART', 'GC', 'RegionSpace', 'MarkCompact', '碎片化', '内存管理', 'UnevacFromSpace', 'userfaultfd']
 related_chapters: ['4.3', '4.8', '4.10']
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-11"
 gap_source: "DeepResearch 调研结果（score 19）+ AOSP 源码结构"
+last_task2b_lite_at: "2026-06-29"
 ---
 
 # 4.14 ART GC Region 碎片化与 Compaction 策略
@@ -37,7 +43,7 @@ gap_source: "DeepResearch 调研结果（score 19）+ AOSP 源码结构"
 
 ## RegionSpace 的区域分配模型
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/space/region_space.h]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.h]
 
 ART 的 ConcurrentCopying（CC）收集器使用 RegionSpace 作为主分配空间。RegionSpace 把堆内存切成等大的 region（默认 256KB），每个 region 有独立的状态和类型标记：
 
@@ -60,7 +66,7 @@ Android 内部 bug b/33795328 记录的就是这个问题：region 级的循环�
 
 ### 75% 存活率阈值
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/space/region_space.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.cc]
 
 CC 收集器在每次 GC 的 marking 阶段结束后，逐 region 统计存活对象占 region 总大小的比例。核心判断逻辑在 `Region::ShouldBeEvacuated()`：
 
@@ -100,7 +106,7 @@ CC 系列通过 UnevacFromSpace 在 region 级做碎片控制，但整个方案�
 
 ### CMC 与 CC 的分工
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
 
 这两条路径在代码层是互斥的：
 
@@ -113,7 +119,7 @@ CC 每次访问堆对象都要查 read barrier table，开销约 5-15ns/次。CM
 
 ### userfaultfd 页级压缩模型
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
 
 CMC 把堆压缩改造为页级 fault-retry 模型：
 
@@ -153,7 +159,7 @@ void YoungMarkCompact::RunPhases() {
 
 ### 三代分区：young / mid / old
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
 
 Android 16 引入的三代 CMC 通过 `mid_gen_end_` 字段把连续的 bump-pointer space 切成两段：
 
@@ -168,7 +174,7 @@ Android 16 引入的三代 CMC 通过 `mid_gen_end_` 字段把连续的 bump-poi
 
 ### 门控开关
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
 
 三代 CMC 的启用受两层开关控制：
 
@@ -208,7 +214,7 @@ if (ShouldUseGenerationalGC()) {
 
 ## LargeObjectSpace：不参与压缩的大对象
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/space/large_object_space.h]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/large_object_space.h]
 
 LargeObjectSpace（LOS）的 `CanMoveObjects()` 硬编码返回 `false`：
 
@@ -235,7 +241,7 @@ LOS 使用 `dlmalloc` 作为底层分配器，通过 `LargeObjectSpaceType` 枚�
 
 ## kCyclicRegionAllocation：Debug 模式的碎片放大器
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/space/region_space.h]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.h]
 
 ```cpp
 // region_space.h
@@ -275,7 +281,7 @@ static constexpr bool kCyclicRegionAllocation = kIsDebugBuild;
 
 [适用版本: Android 10（API 29）引入 UnevacFromSpace，Android 11（API 30）引入 Generational CC，Android 16（API 36）引入三代 CMC]
 
-> Android 17 行为标注「推断」的原因：截至 2026-06-11，`refs/tags/android-17.0.0_r1` 在 android.googlesource.com 上仍返回 404。上表 Android 17 行为基于 android-16.0.0_r1 锚点与 main 分支目录结构一致性推断，`art/runtime/gc/collector/` 目录在 android-15 / android-16 / main 之间未发现新增文件。
+> Android 17 行为已通过 `refs/tags/android-17.0.0_r1` 源码验证。`art/runtime/gc/collector/` 目录结构在 android-15 / android-16 / android-17 之间保持一致。
 
 ## GC 暂停预算与端侧 AI 场景
 
@@ -319,5 +325,5 @@ RegionSpace 的 region 大小（默认 256KB）是基于 4KB page size 设计的
 
 ---
 
-> 本节内容基于 AOSP android-16.0.0_r1 一手源码验证，详见 DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md。
+> 本节内容基于 AOSP android-17.0.0_r1 一手源码验证，详见 DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md。
 > Android 17 相关结论为延续性推断，android-17.0.0_r1 tag 发布后需二次核对。

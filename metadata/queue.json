@@ -880,5 +880,47 @@
     "status": "completed",
     "completed_at": "2026-06-29T16:56:18+08:00",
     "completed_by": "openclaw-task2b"
+  },
+  {
+    "section": "4.3",
+    "section_title": "ART 虚拟机内存管理",
+    "priority": 90,
+    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 -> android-17.0.0_r1",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "frontmatter last_verified_against + body L117/L540",
+        "detail": "last_verified_against 声称 android-17.0.0_r1 tag unavailable, tag 已可用",
+        "suggestion": "重锚到 android-17.0.0_r1"
+      }
+    ],
+    "added_by": "task2b-lite-auto-detected",
+    "added_at": "2026-06-29T21:38:39+08:00",
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completed_at": "2026-06-29T21:38:39+08:00",
+    "completion_note": "fixed-lite: 版本基线重锚; 删除 tag unavailable 错误声明; 更新验证标签"
+  },
+  {
+    "section": "4.14",
+    "section_title": "ART GC Region 碎片化与 Compaction 策略",
+    "priority": 90,
+    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 -> android-17.0.0_r1",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "frontmatter last_verified_against/sources + body",
+        "detail": "全章锚定 android-16.0.0_r1, 声称 tag 404",
+        "suggestion": "重锚到 android-17.0.0_r1"
+      }
+    ],
+    "added_by": "task2b-lite-auto-detected",
+    "added_at": "2026-06-29T21:38:39+08:00",
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completed_at": "2026-06-29T21:38:39+08:00",
+    "completion_note": "fixed-lite: 全量重锚 android-16->android-17 (frontmatter+sources+8处验证标签+2处body注释)"
   }
 ]
