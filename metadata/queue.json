@@ -574,5 +574,63 @@
     "completed_by": "task2b-main",
     "completed_at": "2026-06-29T08:53:09+08:00",
     "completion_note": "fixed: 3项P0源码级修复——StatsD pull atom方向修正(setPullAtomCallback是数据提供方非消费方,addConfig返回void,getReports为主查询路径)、§1.3完整重写(删除虚构APP_START_OCCURRED ID 10141/latencyMillis)+特权组件示例、JankStats API全面修正(createAndTrack/isTrackingEnabled/createAndTrack替代addFrameListener/setEnabled/setSamplingRate,frameDurationUiNanos/states替代frameOverrunNanos)"
+  },
+  {
+    "section": "4.6",
+    "section_title": "内存相关的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 17 MemoryLimiter / Generational CMC 段落存在源码级错误",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-10-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L556-L608 App Memory Limiter 段落；L637 版本速查表",
+        "detail": "正文把 Android 17 MemoryLimiter 写成 MemoryLimiterService.java、android.app.MemoryState、ActivityManager.setAppMemoryLimit()、dumpsys meminfo --limiter/--policy、Perfetto MemoryLimiter track。android-17.0.0_r1 中实际类是 frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java，native 实现在 services/core/jni/com_android_server_am_MemoryLimiter.cpp；MemoryLimiterService.java 与 android/app/MemoryState.java 返回 404，ActivityManager.java 无 setAppMemoryLimit。调试入口是 am memory-limiter status/ignore/manual。",
+        "suggestion": "按 android-17.0.0_r1 的 MemoryLimiter.java、ActivityManagerService.java、ActivityManagerShellCommand.java 和 JNI 实现重写：说明它是 system_server 内部 cgroup memory.high / memory.swap.high / anon+swap 限制器，依赖 /vendor/etc/memory-limiter-config.xml 与 feature flags；不要写成公开 App API。"
+      },
+      {
+        "type": "原理断裂/版本差异",
+        "location": "L542-L554 ART Generational GC 稳定化描述",
+        "detail": "正文把 Generational GC 稳定化、Android 12+ GPSU 下发、自适应 Young/Old 比例、dumpsys meminfo --gc 和固定 2-5 秒 Young GC 节奏写成结论，但本轮只核到 android-17.0.0_r1 art/runtime/gc/collector/mark_compact.cc 中存在 Generational CMC、YoungMarkCompact、UFFD 路径，未核到这些对外行为/命令。",
+        "suggestion": "保留可由 mark_compact.cc 证明的 Generational CMC / YoungMarkCompact / UFFD 页级并发内容；其他对外发布、下发范围、命令和经验数据需补官方文档或删除。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T10:31:41+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.1",
+    "section_title": "Perfetto 简介与演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Perfetto 版本可用性源码调研块存在多处版本事实错误",
+    "material_paths": [
+      "logs/deep-review/2026-06-29-10-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L515-L525、L535-L540 Android.bp / rc 片段",
+        "detail": "尾部源码调研块写 traced 使用 init_rc [\"traced.rc\"]、traced_probes 使用 [\"traced_probes.rc\"]，但 android-17.0.0_r1 的 external/perfetto/Android.bp 中 traced 的 init_rc 是 perfetto.rc，traced_probes cc_binary 没有独立 init_rc；两个 service 均声明在 external/perfetto/perfetto.rc。",
+        "suggestion": "把源码锚点改为 external/perfetto/Android.bp + external/perfetto/perfetto.rc，删除 traced.rc/traced_probes.rc 的错误路径。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L543-L545 与 L457-L460 配置文件路径边界",
+        "detail": "尾部块称 Android 10 user device 已放行配置文件读取路径，但 android-10.0.0_r1 与 android-11.0.0_r1 的 perfetto.rc 均未创建 /data/misc/perfetto-configs；android-12.0.0_r1 才出现该 mkdir。正文前面的 Android 10/11 需 stdin、Android 12+ 可用配置目录口径才与源码一致。",
+        "suggestion": "删除尾部 Android 10 配置目录可用结论，保留 Android 10/11 stdin、Android 12+ /data/misc/perfetto-configs 的分界。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L548-L556 数据源演进表",
+        "detail": "表中写 FrameTimeline 数据源 Android 11、Java heap dump Android 12。AOSP android-11.0.0_r1 中 frame_timeline_event.proto 与 frameworks/native FrameTimeline 路径均不存在，android-12.0.0_r1 才有 kFrameTimelineDataSource；反过来 android.java_hprof 的 config/profiling/java_hprof_config.proto、java_hprof_producer.cc 和 DataSourceConfig 字段在 android-11.0.0_r1 已存在。",
+        "suggestion": "将 FrameTimeline 边界改为 Android 12+，Java heap dump / android.java_hprof 边界改回 Android 11+；尾部源码调研块需整合到正文或删除，避免与 L330-L334 已正确表格互相冲突。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-06-29T10:31:41+08:00",
+    "status": "pending"
   }
 ]
