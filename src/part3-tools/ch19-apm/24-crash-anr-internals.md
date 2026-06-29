@@ -55,6 +55,8 @@ last_task9_review_log: "logs/deep-review/2026-06-03-07-deep-review.md"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 last_task9_autofix_at: "2026-06-02"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-29
 ---
 
 
@@ -414,7 +416,7 @@ Native 层要额外做两件事：
 <!-- AIW-源码调研-2026-05-08 -->
 ### 12.1 核心矛盾
 
-API 30 之前，没有系统统一的进程退出历史收集。APM 必须自己构建 "Process Exit Info" 的采集、存储和上报链路。低版本缺失的 API 只是表象，背后还缺整套机制：
+低版本缺失的不只是 `ApplicationExitInfo` 这一套 API，背后还缺整套机制：
 
 - **无统一存储**：进程退出时 system_server 不会写 Proto 文件
 - **无官方 trace 路径**：`/data/anr/` 对普通 App 始终不可读
@@ -514,7 +516,7 @@ static final int FOREGROUND_APP_ADJ = 0;
 | 启动时读 `ApplicationExitInfo` (API 30+) | 普通 API | 高 | 官方方案 |
 | 反射 `ActivityManagerService` 内部接口 | 违反 Android 安全设计 | 高 | 不推荐量产 |
 
-**注**：ANR 不发信号，`sigaction` 无法截获。系统通过 SignalCatcher 线程的 `sigwait()` 消费 `SIGQUIT`，这不同于普通的异步信号处理。
+**注**：ANR 不发信号（详见 §4.2），`sigaction` 无法截获。
 
 ### 12.5 KOOM fork-dump 对低版本 OOM 的补偿
 
@@ -553,9 +555,9 @@ KOOM 的核心贡献是解决"Java heap OOM 时进程状态已经不稳定"的�
 
 ---
 
-## 13. 源码调研补充：Android 线上诊断能力版本边界（2026-05-15）
+## 13. 版本能力补充：Android 线上诊断能力总览
 
-*来源：AIW 每日源码调研 | 关联章节：§26.5、§26.2*
+*关联章节：§26.5、§26.2*
 
 ### 13.1 ApplicationExitInfo 版本行为差异
 

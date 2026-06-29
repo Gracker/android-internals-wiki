@@ -64,6 +64,8 @@ last_task9_audit: "2026-06-12"
 last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
 task9_review_notes: "2026-05-19 Task9：复核 6 维度无 P0/P1；queue 无 pending，task6_result=pass-light-edit，自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md，不重复写入。"
 task2b_result: "fixed"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-29
 ---
 
 # 图片加载与显示优化
@@ -207,7 +209,7 @@ fun decodeTile(
 }
 ```
 
-官方文档说明 `BitmapRegionDecoder` 适合“原图很大但只需要其中一部分”的场景。当前文档列出 JPEG、PNG、WebP、HEIF 等格式支持范围；AVIF 平台解码从 Android 12（API 31）起可用，Android 10 / 11 的 `BitmapRegionDecoder` 不保证 AVIF 支持，需准备 WebP / JPG fallback。API 31 起部分 `newInstance()` 入口标记 deprecated，`ImageDecoder.setCrop()` 文档同时说明它不是 `BitmapRegionDecoder.decodeRegion()` 的替代品，只是对输出做裁剪。[已验证: 官方文档, BitmapRegionDecoder][已验证: 官方文档, ImageDecoder]
+官方文档说明 `BitmapRegionDecoder` 适合“原图很大但只需要其中一部分”的场景。当前文档列出 JPEG、PNG、WebP、HEIF 等格式支持范围；AVIF 平台解码从 Android 12（API 31）起可用，Android 10 / 11 的 `BitmapRegionDecoder` 不保证 AVIF 支持，需准备 WebP / JPG fallback。API 31 起部分入口标记 deprecated；`ImageDecoder.setCrop()` 只做输出裁剪，不是 `decodeRegion()` 的替代品。[已验证: 官方文档, BitmapRegionDecoder][已验证: 官方文档, ImageDecoder]
 
 因此，大图展示不要只写成“用 ImageDecoder 裁一下”。如果业务需要平移缩放长图，仍要按 tile 设计数据结构；如果目标只是在解码时裁掉边缘区域，`ImageDecoder.setCrop()` 才合适。
 
@@ -231,7 +233,7 @@ Glide 的磁盘缓存区分 resource 和 data，能缓存变换后结果，也�
 - 低端机：优先降请求尺寸和预取数量，再调小缓存。只调缓存大小不能解决解码峰值。
 - 多进程：每个进程都有独立缓存。图片展示放在主进程时，后台进程不要初始化完整图片加载栈。
 
-[自动发现] 线上指标不要只记录“加载成功率”。图片加载至少要采集解码耗时、内存缓存命中、磁盘缓存命中、下载字节数、Bitmap 分配字节数、OOM 前最近 N 次图片请求。这样才能区分网络慢、解码慢、缓存失效和图片尺寸异常。[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
+线上指标不要只记录“加载成功率”。图片加载至少要采集解码耗时、内存缓存命中、磁盘缓存命中、下载字节数、Bitmap 分配字节数、OOM 前最近 N 次图片请求。这样才能区分网络慢、解码慢、缓存失效和图片尺寸异常。[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 
 ## AVIF / WebP 格式选型与兼容性
 
@@ -242,7 +244,7 @@ Android 官方图片压缩文档把 AVIF、PNG、JPG、WebP 放在常见格式�
 - JPG：照片类内容仍然稳，缺点是透明度不支持，反复压缩会损伤细节。
 - PNG：透明 UI 资源和小图标安全，但照片类图片体积偏大。
 - WebP：适合替代一部分 JPG / PNG，兼容性风险低于 AVIF，透明图也可覆盖不少 PNG 场景。
-- AVIF：优先用于 Android 12+ 的静态大图、内容流配图和服务端可协商下发的场景；Android 10 / 11 要准备 WebP 或 JPG fallback。
+- AVIF：优先用于 Android 12+ 的静态大图和服务端可协商下发的场景；Android 10/11 准备 WebP 或 JPG fallback。
 
 格式优化不要脱离解码成本。体积更小不一定等于首屏更快：如果某格式在目标设备上解码更慢，首帧仍可能变差。上线前至少对低端机做同图对比：下载字节数、解码耗时、峰值内存、首帧时间、视觉质量。
 

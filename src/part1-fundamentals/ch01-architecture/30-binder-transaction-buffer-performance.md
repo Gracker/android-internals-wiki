@@ -421,3 +421,12 @@ Android 16+ 开始支持 16KB page size。对 binder 缓冲区的影响：
 本文所有源码引用均锚定 `android-17.0.0_r1`（Android 17 / API 37）。涉及 Android V 及之前的版本对比，基于 `Constants.h` 注释原文：「This was 100 KB during and before Android V」。`BINDER_VM_SIZE` 自 Android 早期版本至 android-17.0.0_r1 未发生变化。
 
 > 本文由 Task 2A 知识加工于 2026-06-28 产出。素材来源：AOSP android-17.0.0_r1 源码 + DeepResearch 调研材料。所有源码引用已通过 AOSP 源码验证。
+
+## 参考资料
+
+### Android 17 RPC Binder 事务上限从 100KB 提升到 600KB
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-binder-rpc-transaction-limit-600kb.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 在 Constants.h 首次将 RPC binder 单笔事务上限从 100KB 提升到 600KB（6×），告警阈值 300KB；该常量统一约束 RpcState 的分配/发送/接收/iovec 分块四方路径。传统 kernel binder 的 BINDER_VM_SIZE（1MB）未修改。对 ContentProvider 大批量 Cursor/BulkInsert 路径可减少 fallback 到 CursorWindow/ashmem 的次数。
+- 注入时间：2026-06-29
+- 价值：源码级澄清 Android 17 Binder 事务缓冲区的真实变更范围（RPC binder 而非 kernel binder），消除'1MB→2MB'的错误描述

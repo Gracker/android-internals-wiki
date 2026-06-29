@@ -66,3 +66,12 @@ gap_source: "章节深挖"
 <!-- outline-end -->
 
 > 本节内容待加工。
+
+## 参考资料
+
+### Jetpack Compose 并发组合线程安全机制与 Snapshot 系统同步原语
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-26-compose-concurrent-snapshot-source.md
+- 类型：DeepResearch 调研结果
+- 摘要：Compose 并发安全由两层协同：Snapshot 系统按 threadSnapshot/globalSnapshot 分组 MutableState 写入，apply 阶段用单一全局 lock 串行化；Recomposer 状态机用 stateLock 保护可变字段，registerApplyObserver 回调严格在 recompose 协程线程派发。两锁边界严格分离避免死锁。多 Recomposer 实例通过独立 effectCoroutineContext 隔离但共享全局 Snapshot。
+- 注入时间：2026-06-29
+- 价值：源码级拆解 Compose 并发安全的双锁架构和 Snapshot 同步原语，填补章节在多线程 Recompose 场景分析的空白
