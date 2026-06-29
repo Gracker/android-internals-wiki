@@ -1,6 +1,6 @@
 {
-  "total": 535,
-  "draft": 35,
+  "total": 538,
+  "draft": 38,
   "ready-for-review": 151,
   "finalized": 332,
   "task9_result": "pass-tech-review",
@@ -57,7 +57,10 @@
     "2.31",
     "1.39",
     "1.40",
-    "16.10"
+    "16.10",
+    "5.27",
+    "16.19",
+    "26.23"
   ],
   "ready_for_review_sections": [
     "5.19",
@@ -1594,7 +1597,7 @@
       "reviewed_at": "2026-05-15T16:20:00+08:00"
     }
   },
-  "completion_percentage": 90.09345794392523,
+  "completion_percentage": 61.71,
   "superseded": 7,
   "sections": {
     "14.22": {
@@ -1654,6 +1657,24 @@
       "drafted_date": "2026-06-30",
       "drafted_by": "task2a-knowledge-gap",
       "last_review": "2026-06-30"
+    },
+    "5.27": {
+      "status": "draft",
+      "pipeline_stage": "task2a-draft",
+      "drafted_date": "2026-06-30",
+      "drafted_by": "task2a-knowledge-gap"
+    },
+    "16.19": {
+      "status": "draft",
+      "pipeline_stage": "task2a-draft",
+      "drafted_date": "2026-06-30",
+      "drafted_by": "task2a-knowledge-gap"
+    },
+    "26.23": {
+      "status": "draft",
+      "pipeline_stage": "task2a-draft",
+      "drafted_date": "2026-06-30",
+      "drafted_by": "task2a-knowledge-gap"
     }
   },
   "chapters": {
@@ -1759,5 +1780,5 @@
     "last_review_date": "2026-06-29",
     "last_review_session": "2026-06-29-22"
   },
-  "last_task2a_at": "2026-06-30T00:30:00+08:00"
+  "last_task2a_at": "2026-06-30T01:04:00+08:00"
 }
