@@ -3,7 +3,7 @@ title: "ART 虚拟机内存管理"
 chapter: '4.3'
 section: '4.3'
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [memory, lmk, gc]
 confidence: medium
@@ -22,10 +22,10 @@ last_task6_at: '2026-06-10T01:07:00+08:00'
 last_task6_audit: 2026-06-09
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_reviewed_date: '2026-06-10'
+task9_state: "reviewed"
+task9_reviewed_date: '2026-06-29'
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-10T00:20:00+08:00"
+last_task9_at: "2026-06-29T22:20:00+08:00"
 task2b_state: "fixed"
 last_task2b_lite_at: "2026-06-29"
 task2b_result: "fixed"
@@ -35,7 +35,8 @@ p2: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
 last_task9_audit: 2026-06-09
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
+last_task9_autofix_at: "2026-06-29"
 ---
 
 # ART 虚拟机内存管理
@@ -70,7 +71,7 @@ Image Space 是所有 Space 中最特殊的一块空间，它在应用进程启�
 Image Space 中的对象永远不会被 GC 回收，也不会被移动，因此 ART 在标记阶段可以直接跳过 Image Space，减少工作量。
 
 AOSP 源码路径：`art/runtime/gc/space/image_space.cc`
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/image_space.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/image_space.cc]
 
 ### Zygote Space：fork 之前的快照
 
@@ -80,7 +81,7 @@ Zygote Space 中的对象同样不会被 GC 移动和回收。这样做的意义
 
 在 Perfetto 的内存统计中，一个应用进程的 Zygote Space 通常占几 MB 到十几 MB，这些内存是与其他进程共享的（直到被写入）。
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc Heap::PreZygoteFork()]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc Heap::PreZygoteFork()]
 
 ### Allocation Space：应用的主要分配区域
 
@@ -89,24 +90,24 @@ Allocation Space（也叫 Main Space）是应用运行期间绝大多数对象�
 Allocation Space 的具体实现取决于当前使用的 GC 策略：
 
 - 在 Android 8.0–14 中使用 CC（Concurrent Copying）GC 时，Allocation Space 的数据结构是 `RegionSpace`，堆被划分为 256KB 固定大小的 Region
-- 在 Android 15+ 的 CMC（Concurrent Mark-Compact）GC 路径上，Allocation Space 可以使用 `BumpPointerSpace`，结构更简单，更有利于全局压缩。但启用取决于 `gUseUserfaultfd`、内核 userfaultfd/MREMAP_DONTUNMAP 能力、系统属性和构建配置，不满足条件时仍走 CC/RegionSpace 路径
+- 在 Android 14+ 已进入主线的 CMC（Concurrent Mark-Compact）GC 路径上，Allocation Space 可以使用 `BumpPointerSpace`，结构更简单，更有利于全局压缩。但启用取决于 `gUseUserfaultfd`、内核 userfaultfd/MREMAP_DONTUNMAP 能力、系统属性和构建配置，不满足条件时仍走 CC/RegionSpace 路径
 
 Android 15 针对 16KB 页环境改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐（`RoundUp(capacity, kPageSize)`）。从 `android-15.0.0_r1` 起，改为动态获取当前页大小（`RoundUp(capacity, gPageSize)`），全局变量 `gPageSize` 在 ART 初始化阶段由 `InitPageSize()` 设置，对应源码位于 `art/runtime/gc/space/bump_pointer_space.cc`。
 
 
 Allocation Space 的实现和分代策略要按平台版本拆开看。Android 8.0-13 的主线是基于 `RegionSpace` 的 CC 路径，年轻对象优先在更小的工作集里回收。到了 Android 14，AOSP 平台源码已经出现 `kCollectorTypeCMC` 和 `mark_compact.cc`，说明 UFFD 驱动的 Mark Compact / CMC 路径已经进入主线实现；Android 15 继续补齐 `kCollectorTypeCMCBackground`、`BumpPointerSpace` 等配套结构。公开发布材料把 Generational CMC 明确讲清楚，则是 Android 16 QPR2 之后的事情。
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/region_space.cc]
-[已验证: AOSP android-14.0.0_r1, art/runtime/gc/collector_type.h]
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/bump_pointer_space.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.cc]
+[已验证: AOSP android-14.0.0_r1 / android-17.0.0_r1, art/runtime/gc/collector_type.h]
+[已验证: AOSP android-15.0.0_r1 / android-17.0.0_r1, art/runtime/gc/space/bump_pointer_space.cc]
 [已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
 ### Large Object Space：大对象的特殊处理
 
-如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-15.0.0_r1` 为例，`Heap::kMinLargeObjectThreshold`（定义在 `art/runtime/gc/heap.h`）的默认值是 `12 * KB`。大对象判断入口在 `Heap::ShouldAllocLargeObject(ObjPtr<mirror::Class>, size_t)`（定义在 `art/runtime/gc/heap-inl.h`），它会检查对象类型是否为 primitive array 或 `String`。旧资料常把这个阈值写成 `3 * kPageSize`，但在 Android 15 的平台源码里它已经固定成 12KB。结合 16KB page size 的适配背景，AOSP 把 LOS 入口从页大小解耦，避免不同页大小设备出现不同的大对象分配边界。
+如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-17.0.0_r1` 为当前基准，`Heap::kMinLargeObjectThreshold`（定义在 `art/runtime/gc/heap.h`）的默认值是 `12 * KB`。大对象判断入口在 `Heap::ShouldAllocLargeObject(ObjPtr<mirror::Class>, size_t)`（定义在 `art/runtime/gc/heap-inl.h`），它会检查对象类型是否为 primitive array 或 `String`。旧资料常把这个阈值写成 `3 * kPageSize`，但从 Android 15 起，平台源码里它已经固定成 12KB。结合 16KB page size 的适配背景，AOSP 把 LOS 入口从页大小解耦，避免不同页大小设备出现不同的大对象分配边界。
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.h]
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap-inl.h]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.h]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap-inl.h]
 
 Large Object Space 有两种实现：
 
@@ -120,7 +121,7 @@ Large Object Space 有两种实现：
 在 Perfetto 中，如果大对象分配很频繁，通常说明应用在持续创建大量 `byte[]` 或大 `String`。这种情况常见于图片处理、网络数据解析等场景。Large Object Space 持续增长时，要进一步检查是否存在大对象泄漏。
 
 AOSP 源码路径：`art/runtime/gc/space/large_object_space.cc`
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/large_object_space.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/large_object_space.cc]
 
 ### Non-moving Space：地址不可变的对象
 
@@ -130,7 +131,7 @@ Android 15 上，Non-moving Space 的数据结构仍然是 `DlMallocSpace`，使
 
 有一个容易踩到的坑：Non-moving Space 和 Zygote Space 共享 64MB 的地址空间。如果应用大量使用 `DirectByteBuffer`，即使总体堆内存还有空闲，也可能因为 Non-moving Space 耗尽而抛出 `OutOfMemoryError`。
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/dlmalloc_space.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/dlmalloc_space.cc]
 
 [图：ART Heap 的五个 Space 在虚拟地址空间中的布局示意]
 
@@ -141,8 +142,8 @@ Android 15 上，Non-moving Space 的数据结构仍然是 `DlMallocSpace`，使
 
 这里说的“4GB 限制”指的是 ART 为托管堆保留的低地址窗口，而不是 64 位进程只能使用 4GB 虚拟地址空间。Native heap、Code Cache 和其他映射并不受这条约束。
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
-[已验证: AOSP android-15.0.0_r1, art/runtime/mirror/object_reference.h]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/mirror/object_reference.h]
 
 ## GC 策略演进：从 CMS 到 CC 再到 CMC
 
@@ -165,7 +166,7 @@ ART 引入了 Concurrent Mark-Sweep（CMS）GC，将标记阶段的部分工作�
 但 CMS 仍然有一个主要缺陷：它是非移动式的（non-moving）。标记-清除不会整理内存碎片。长时间运行的应用，堆中的空闲空间可能很多但都是碎片化的，导致无法分配大对象而触发更频繁的 GC，形成恶性循环。
 
 ART 的 CMS 实现分布在多个文件中。核心标记-清除逻辑在 `art/runtime/gc/collector/mark_sweep.cc`（`MarkSweep` / `PartialMarkSweep` / `StickyMarkSweep`），而非 `concurrent_mark_sweep.cc`。`art/runtime/gc/collector/` 目录下没有名为 `concurrent_mark_sweep.cc` 的文件。
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/allocator/rosalloc.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/allocator/rosalloc.cc]
 
 ### Android 8.0：CC GC 成为默认策略
 
@@ -195,7 +196,7 @@ CC GC 带来的性能变化主要落在三处：
 
 AOSP 源码路径：`art/runtime/gc/collector/concurrent_copying.cc`
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 
 ### Android 14 / 15：UFFD 驱动的 Mark Compact / CMC 路径
 
@@ -207,13 +208,13 @@ UFFD 允许用户空间监听一段虚拟内存的缺页事件。GC 压缩对象
 
 CMC 的另一处变化，是主分配路径可以配合 `BumpPointerSpace` 这类更简单的线性分配结构。对性能分析来说，重点是把 Android 8.0-13 的 CC、Android 14 / 15 的 CMC 路径、Android 16 QPR2 之后的 Generational CMC 分开看。
 
-[已验证: AOSP android-14.0.0_r1, art/runtime/gc/collector_type.h]
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
+[已验证: AOSP android-14.0.0_r1 / android-17.0.0_r1, art/runtime/gc/collector_type.h]
+[已验证: AOSP android-15.0.0_r1 / android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+[已验证: AOSP android-15.0.0_r1 / android-17.0.0_r1, art/runtime/gc/heap.cc]
 
 ### Android 16 QPR2：官方对外明确 Generational CMC
 
-Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响 GC 路线的写法。写 Android 16 QPR2 时，可以把 Generational CMC 当成正式能力来讨论；截至 2026-06-10，AOSP platform/art 仍没有 android-17.0.0_r1 tag，本节不把 Android 17 单独作为源码结论。写 Android 14 / 15 时，表述应收在 Mark Compact / CMC 路径本身。
+Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响 GC 路线的写法。写 Android 16 QPR2 时，可以把 Generational CMC 当成正式能力来讨论；Android 17 的主线源码需要锚定 `android-17.0.0_r1`，其中 `ShouldUseGenerationalGC()`、`YoungMarkCompact` 和 `mid_gen_end_` 等实现已经可直接验证。写 Android 14 / 15 时，表述应收在 Mark Compact / CMC 路径本身。
 
 这条时间线更适合记成：Android 8.0-13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 之后再谈 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
 
@@ -326,7 +327,7 @@ Object allocate(size_t size) {
 TLAB 分配的速度比 Android 7.0 快 70%，比 Dalvik 时代快约 18 倍。只要 TLAB 有空间，这就是 ART 对象分配的最快路径。
 
 AOSP 源码路径：`art/runtime/gc/space/region_space.cc (AllocNewTlab)`、`kRegionSize = 256 * KB` 定义在 `region_space.h`
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/region_space.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.cc]
 
 ### Region 分配：TLAB 耗尽后
 
@@ -349,7 +350,7 @@ AOSP 源码路径：`art/runtime/gc/space/region_space.cc (AllocNewTlab)`、`kRe
 
 前面提到，超过 12KB 的基本类型数组或 `String` 会进入 Large Object Space。大对象的分配路径与小对象完全独立，走的是 `FreeListSpace` 或 `LargeObjectMapSpace` 的分配逻辑。由于大对象不会被移动，GC 对它们的处理也更简单——只需要标记存活和清除死亡，不需要拷贝或压缩。
 
-[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc TryToAllocate]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc TryToAllocate]
 
 ## ART Profile-Guided Compilation：让代码越跑越快
 
@@ -614,7 +615,7 @@ void YoungMarkCompact::RunPhases() {
 }
 ```
 
-- CMC 启用条件不能简化成 Linux ≥5.7 或 minor-fault。`android-16.0.0_r1` 的 `KernelSupportsUffd()` 先检查 `MREMAP_DONTUNMAP`（源码注释写明该能力在 Linux 5.13 引入并可 backport 到 GKI）和 userfaultfd SIGBUS；minor-fault 特性只用于 minor-fault mode。未满足条件时会回退到非 UFFD 路径，不能直接写成“低于 5.7 走传统 STW 压缩”。
+- CMC 启用条件不能简化成 Linux ≥5.7 或 minor-fault。`android-17.0.0_r1` 的 `KernelSupportsUffd()` 先检查 `MREMAP_DONTUNMAP`（源码注释写明该能力在 Linux 5.13 引入并可 backport 到 GKI）和 userfaultfd SIGBUS；minor-fault 特性只用于 minor-fault mode。未满足条件时会回退到非 UFFD 路径，不能直接写成“低于 5.7 走传统 STW 压缩”。
 
 #### (c) LargeObjectSpace不可移动 +碎片诊断
 
@@ -656,4 +657,3 @@ if (gUseReadBarrier) {
 #### (e) 性能特征边界
 
 本补遗不保留 Young GC / Full GC 暂停时间的固定数值。`mark_compact.cc` 中的常量只能说明实现阈值，不能推出跨设备的暂停耗时。若要比较 CC 与 CMC 的 pause / CPU / battery，应使用同一设备、同一系统版本、同一负载下的 Perfetto GC slice、ART GC histogram 或公开 benchmark。
-
