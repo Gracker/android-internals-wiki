@@ -2,12 +2,12 @@
 
 title: "Android 17 SDM 安装编译链路性能"
 chapter: "16.9"
-status: ready-for-review
+status: finalized
 last_task2b_lite_at: "2026-06-29"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-29"
-last_task6_at: "2026-06-29"
+last_task6_at: "2026-06-29T22:07:00+08:00"
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
 last_verified: "2026-06-11"

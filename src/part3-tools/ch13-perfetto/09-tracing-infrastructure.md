@@ -2,7 +2,17 @@
 title: "\"Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理\""
 chapter: "\"13.9\""
 section: "\"13.9\""
-status: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
+
+# Frontmatter updates for Task 6 review
+task6_state: reviewed
+task6_result: pass-light-edit
+task6_reviewed_by: openclaw-task6
+task6_reviewed_date: "2026-06-29"
+task6_reviewed_at: "2026-06-29T21:07:00+08:00"
+last_task6_at: "2026-06-29T21:07:00+08:00"
+task6_review_notes: "2026-06-29 Task6 revisiting review: pass-light-edit；修复 L1/L2 问题，L3/L4 无新增；自动晋升 finalized。"
 pipeline_stage: "task6_pending"
 applicable_versions: "\"Android 8.0 (API 26) - Android 17 (API 37)\""
 tags: ["[tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]"]
