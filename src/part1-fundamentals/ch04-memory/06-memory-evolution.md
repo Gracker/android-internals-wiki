@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 title: 内存相关的版本演进
 chapter: '4.6'
@@ -8,7 +9,7 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-07'
 polish_by: task2b-polish
-rework_date: '2026-04-02'
+rework_date: 2026-06-29
 rework_by: openclaw-task2b
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-06-08'
@@ -60,17 +61,17 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 9
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-06-03T21:36:06+08:00"
 last_task6_review_log: logs/review/2026-06-03-13-review.md
 task6_review_notes: '2026-06-03 Task6 13:05：pass-light-edit（状态修复+确认）。前次 12:15 review 已通过但 task6_state 未从 revisiting 更新为 reviewed。本轮确认无新增 L1/L2 问题，修复 frontmatter 状态。源码索引表 linker_phdr.cpp 版本标注不一致（代码注释 android-16.0.0_r1 vs 索引 android-mainline）已记入日志。task9_result 仍 needs-rework，不可自动晋升。'
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-06-29T10:31:41+08:00"
-task2b_state: pending
-task2b_result: fixed-lite
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: "2026-06-29T09:40:00+08:00"
 last_task2b_lite_at: "2026-06-29"
 task9_reviewed_by: "openclaw-task9"
@@ -85,7 +86,7 @@ p1: 1
 p2: 0
 updated_by: "openclaw-task9"
 updated_date: "2026-06-29"
----
+----
 
 # 内存相关的版本演进
 
@@ -542,75 +543,51 @@ if (kPageSize == 16*1024 && min_palign == 4096) {
 | `android.googlesource.com commit fc89c8ae1dfc` | 16KB 错误消息改进 | 2024-08-05 |
 | `kernel/common/arch/arm64/Kconfig` | CONFIG_ARM64_16K_PAGES=y | ACK 6.6+ |
 
-## Android 17：ART Generational GC 稳定版与 App Memory Limiter
+## Android 17：ART Generational CMC 稳定化与 cgroup App Memory Limiter
 
-Android 17 正式将 Generational GC 标记为稳定版本，并通过 Google Play System Updates 向 Android 12+ 设备下发。同时，Android 17 引入了 App Memory Limiter（应用内存限制器），对应用级内存使用施加更精细的软性约束。这两个变更标志着 Android 内存管理从"被动回收"向"主动预防"的转变。
+Android 17 将 ART 分代 GC 路线中的 Generational CMC（Concurrent Mark Compact）推进到稳定版本，同时引入了 App Memory Limiter——一个基于 cgroup 的应用级内存软限制机制。两者标志着 Android 内存管理从"被动回收"向"主动预防"的转变。
 
-### ART Generational GC 的稳定化
+### ART Generational CMC 的稳定化
 
-Android 17 之前，Generational GC 主要以 Android 16 QPR2 的形式开始对外说明。在 Android 17 上，Generational GC 不再是实验性特性，而是成为默认启用且稳定的垃圾回收策略。稳定化的核心变化包括：
+Android 17 之前，分代 Mark Compact 已在 Android 14 中以 CMC 路径进入 AOSP，Android 16 QPR2 开始对外说明 Generational 方向。Android 17 对 `art/runtime/gc/collector/mark_compact.cc` 中 Generational CMC / YoungMarkCompact 的实现做了进一步稳定化，可核验的核心变化包括：
 
-**Young GC 优化**：Young Generation 的扫描策略进一步优化，通过增量式标记减少前台线程暂停。Android 17 引入了分代压缩（Generational Compaction），老年代的碎片整理可以与 Young GC 并发执行，Full GC 频率降至接近零。
+**YoungMarkCompact**：Young Generation 回收采用单独的 Mark Compact 路径（`art::gc::collector::YoungMarkCompact`），与 Full GC 路径解耦。Young GC 只扫描 Young Generation，标记存活对象并压缩到新分配区域，不涉及 Old Generation 的全局扫描。
 
-**Page-level 并发控制**：基于 UFFD 的对象移动机制在 Android 17 得到完善。GC 线程压缩对象时，应用线程可以继续执行，访问到未整理页时由内核协调完成页面迁移。这种页级并发控制将大部分 GC 工作与用户线程解耦，理论上实现了"无感知 GC"。
+**UFFD 页级并发**：基于 `userfaultfd` 的对象移动机制在 Android 17 得到完善。GC 线程压缩对象时通过 UFFD 注册受保护页，应用线程访问未完成迁移的页时由内核协调完成页面迁移，应用线程无需等待 GC 完全结束。这种页级并发将压缩阶段的大部分等待时间与用户线程解耦。
 
-**自适应分代策略**：Android 17 会根据应用的实际内存使用模式自动调整 Young Generation 和 Old Generation 的比例。对于内存敏感型应用（如社交、电商），系统会倾向保留更多 Young Generation 空间；对于内存密集型应用（如视频编辑），则可能分配更大的 Old Generation。
+> ⚠️ 以下声称无法从 `android-17.0.0_r1` 源码直接验证，暂标为待确认：
+> - Generational GC 通过 GPSU 向 Android 12+ 设备下发的范围和方式
+> - 自适应 Young/Old 比例调整的具体策略和阈值
+> - Young GC 的频率（每几秒）和暂停时间（毫秒级）的经验数据
+>
+> `adb shell dumpsys meminfo --gc` 在 android-17.0.0_r1 的 `ActivityManagerShellCommand.java` 中未找到对应选项，上述经验数据不建议直接引用。
 
-通过 `adb shell dumpsys meminfo <pkg> --gc` 可以观察到 Young GC 和 Full GC 的频率和暂停时间变化。Android 17 设备上，Young GC 应该非常频繁（通常每 2-5 秒一次）但每次暂停极短（<3ms），Full GC 应该几乎不再发生。
+### App Memory Limiter：cgroup 级软性限制
 
-### App Memory Limiter 的引入
+App Memory Limiter 是 Android 17 在 system_server 内部基于 Linux cgroup 控制器实现的应用内存软限制器，不依赖 lmkd 杀进程。它的核心机制是利用 `memory.high`、`memory.swap.high` 和 `anon+swap` 的 cgroup 接口，对每个应用进程的 cgroup 设置可动态调节的内存上限。
 
-App Memory Limiter 是 Android 17 引入的新型内存管理机制，它对单个应用的内存使用施加更精细的软性限制，而非简单依赖 lmkd 进程回收。这一机制的目标是：
+当应用进程的内存使用超过 `memory.high` 阈值时，内核 cgroup 子系统会触发对该进程的内存回收（throttle），但不直接发送 SIGKILL。超过 `memory.swap.high` 时优先回收 swap 页。这种机制让系统可以在不杀进程的情况下限制内存增长速率。
 
-- **防止内存膨胀**：监控应用内存使用增长率，当增长率异常时提前干预
-- **控制后台内存占用**：对退到后台的应用施加更严格的内存上限
-- **提供分层限制**：根据应用类型（前台/后台/系统关键）设置不同限制
+**实现位置（AOSP android-17.0.0_r1）**：
+- `frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java`：system_server 内实现 cgroup 读写与进程状态轮询
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`：MemoryLimiter 的初始化和生命周期管理
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java`：`dumpsys` 支持（实际命令参数以源码为准，不假设 `--limiter` / `--policy` 存在）
+- JNI 层：`frameworks/base/services/core/jni/` 下对应的 native 方法，负责向 cgroup 文件写入限制值
 
-App Memory Limiter 主要通过 `ActivityManager.setAppMemoryLimit()` 和相关的 `MemoryState` 监控实现。当应用接近限制时，系统会通过以下方式干预：
+**与 lmkd 的关系**：MemoryLimiter 工作在 lmkd 上游——先通过 cgroup 节流限制内存膨胀，避免进程走到 lmkd 的杀进程阈值。它不是对 lmkd 的替代，而是增加了一层预防性控制。
 
-1. **触发后台任务提前执行**：通过 WorkManager 或 JobScheduler 将内存密集型任务提前调度
-2. **建议内存优化**：通过 `MemoryStateListener` 回调提示应用优化内存
-3. **限制新的内存分配**：在极端情况下，系统可以暂时禁止 `malloc`/`new` 操作
-
-与传统的 largeHeap 不同，App Memory Limiter 是运行时动态调整的软性限制，不会直接杀死进程。通过 `adb shell dumpsys meminfo <pkg>` 的 `Memory Limiter` 部分可以观察到限制值和当前使用情况。
-
-**源码锚点**：
-- App Memory Limiter 服务：`frameworks/base/services/core/java/com/android/server/am/MemoryLimiterService.java`
-- 内存状态监控：`frameworks/base/core/java/android/app/MemoryState.java`
-- 内存限制设置：`frameworks/base/core/java/android/app/ActivityManager.java`（`setAppMemoryLimit()`）
-
-### App Memory Limiter 的监控和调试
-
-Android 17 提供了新的命令行工具来监控 App Memory Limiter 的运行状态：
-
-```bash
-# 查看当前应用的内存限制
-adb shell dumpsys activity meminfo <pkg> --limiter
-
-# 监控内存限制事件
-adb shell logcat -s MemoryLimiter
-
-# 查看内存限制策略
-adb shell dumpsys meminfo --policy
-```
-
-Perfetto 中新增了 `MemoryLimiter` 相关的 track，可以观察内存限制事件的触发和应用响应。当应用内存接近限制时，Perfetto 会记录 `memory_limiter_warning` 和 `memory_limiter_action` 事件。
+**依赖 /vendor/**：cgroup 层级路径（如 `/sys/fs/cgroup/memory/<app>/memory.high`）和阈值配置可能依赖设备 /vendor/ 的 `init.rc` 设置。不同设备的 cgroup v1/v2 选择和路径结构可能不同，MemoryLimiter 会根据实际 cgroup 类型做适配。
 
 ### 开发适配建议
 
-对于 Android 17，开发者需要关注两个新的适配点：
-
-**适配 Generational GC**：
-- 避免在 Young Generation 中创建超大对象（>1MB），以免频繁晋升到 Old Generation
-- 对于长期存活的对象，确保它们的引用被及时清理，避免长期占用 Old Generation
-- 使用 `android:largeHeap="false"` 让应用遵循系统默认的内存策略，除非有明确的内存需求
+**适配 Generational CMC**：
+- Generational CMC 下 Young GC 不再触发全局暂停，但仍在应用线程被 UFFD 缺页中断时产生微小开销——创建大量短生命周期对象的速度仍然应控制
+- 长期存活对象会晋升到 Old Generation，确认这些对象的引用关系是可控的，减少 CMC 在 Old Generation 的扫描成本
 
 **适配 App Memory Limiter**：
-- 实现自定义的 `MemoryStateListener`，在接近限制时主动优化内存
-- 将非关键内存密集型任务通过 WorkManager 调度，而不是在主线程分配大内存
-- 监控 `adb shell dumpsys meminfo` 的内存限制相关指标，避免接近系统上限
-
-Android 17 的这两个新特性共同作用，让应用的内存管理变得更加主动和精细。开发者不仅要关注应用内部的内存使用，还要与系统的内存管理机制良好协作，才能在 Android 17 设备上获得最佳性能体验。
+- MemoryLimiter 通过 cgroup 节流回收，不是回调式通知——应用层没有 "MemoryStateListener" 这样的直接接口
+- 进程被 cgroup 节流时，`malloc` / `mmap` 可能变慢（内核在后台回收页），最直观的信号是应用吞吐量下降和 CPU iowait 占比上升
+- 减少不必要的常驻内存、及时释放大块 Native 分配，仍然是避免触达 cgroup 上限的主要方式
 
 
 
@@ -639,7 +616,7 @@ MGLRU 的核心改进是把页回收决策从被动扫描变为按代分级。�
 | Android 14 | UFFD 驱动的 Mark Compact / CMC 路径进入 AOSP | GC 路线开始从 CC 扩展到 Mark Compact |
 | Android 15 | 16KB Page Size 支持 | 64 位 App 需确认 NDK / 预编译 so 的页大小兼容 |
 | Android 16 QPR2+ | 官方对外明确 Generational CMC | 版本讨论时要与 Android 14 的 Mark Compact 路径分开写 |
-| Android 17 | ART Generational GC 稳定版；App Memory Limiter 默认启用 | GC 策略优化 + 应用级内存软性限制 |
+| Android 17 | ART Generational CMC / YoungMarkCompact 稳定；cgroup MemoryLimiter 默认启用 | 分代 Mark Compact via UFFD 页级并发；cgroup memory.high / memory.swap.high 应用级软限制 |
 
 ## 常见问题与误区
 

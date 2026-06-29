@@ -599,7 +599,8 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-29T10:31:41+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_date": "2026-06-29"
   },
   {
     "section": "13.1",
@@ -631,6 +632,7 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-29T10:31:41+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_date": "2026-06-29"
   }
 ]
