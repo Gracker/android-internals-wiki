@@ -1,7 +1,17 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
+
+# Frontmatter updates for Task 6 review
+task6_state: reviewed
+task6_result: pass-light-edit
+task6_reviewed_by: openclaw-task6
+task6_reviewed_date: "2026-06-29"
+task6_reviewed_at: "2026-06-29T21:07:00+08:00"
+last_task6_at: "2026-06-29T21:07:00+08:00"
+task6_review_notes: "2026-06-29 Task6 revisiting review: pass-light-edit；修复 L1/L2 问题，L3/L4 无新增；自动晋升 finalized。"
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -427,7 +437,7 @@ Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入
 
 ### Android 16 的 JobScheduler 配额优化
 
-Android 16 起，前台服务期间并发运行的 JobScheduler、WorkManager 和 DownloadManager job 会遵守各自的运行时配额。从 top state 启动后继续运行的 job 也会计入配额。这意味着把 WorkManager 或 DownloadManager 当成 FGS 的"免费"替代路径不再成立——它们和 FGS 共享后台预算。
+Android 16 起，前台服务期间并发运行的 JobScheduler、WorkManager 和 DownloadManager job 会遵守各自的运行时配额。从 top state 启动后继续运行的 job 也会计入配额。把 WorkManager 或 DownloadManager 当成 FGS 的"免费"替代路径不再成立——它们和 FGS 共享后台预算。
 
 排查时关注 `WorkInfo.getStopReason()` 或 `JobParameters.getStopReason()`，结合 standby bucket 判断 job 是否因配额耗尽被系统终止。用户触发的大文件传输优先使用 user-initiated data transfer job，这类 job 有独立的配额窗口，不受 FGS 并发配额约束。
 

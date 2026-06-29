@@ -100,7 +100,7 @@ Android 12 在性能方面的影响，主要集中在**后台执行限制**和**
 
 ### 后台启动前台服务被禁止
 
-从 Android 12 开始，App 在后台运行时一般不能再启动前台服务（Foreground Service）。如果强行调用 `startForegroundService()`，系统会抛出 `ForegroundServiceStartNotAllowedException`。这意味着：你不能再依赖后台服务来维持长时间运行的性能监控或数据上传任务。
+从 Android 12 开始，App 在后台运行时一般不能再启动前台服务（Foreground Service）。如果强行调用 `startForegroundService()`，系统会抛出 `ForegroundServiceStartNotAllowedException`。App 不能再依赖后台服务来维持长时间运行的性能监控或数据上传任务。
 
 替代方案是使用 `WorkManager`。对于需要在后台执行的性能分析任务（如定期采样 CPU 使用率、上报 ANR 统计），`WorkManager` 的约束调度机制是更合适的方案，因为它与系统的 Doze 模式和 App Standby Bucket 配合工作，不会触发系统限制。
 
@@ -158,7 +158,7 @@ Android 14 对后台进程管理做了迄今为止最大的调整——**冻结�
 
 Android 14 引入了对缓存应用（cached app）的冻结机制。当 App 进入缓存状态一段时间后，系统会冻结其进程，使其完全不能使用 CPU。据 Google 公开数据，这一机制使缓存应用的 CPU 占用降低了约 50%。
 
-这意味着：如果你的 App 在后台有周期性工作（如定时采样、日志上报），在 Android 14+ 上这些工作会被冻结。你需要在 Trace 中看到 App 进程从 "Running" 变为 "Sleeping" 再到被冻结（frozen 状态），这不是 bug，是系统行为。
+如果 App 在后台有周期性工作（如定时采样、日志上报），Android 14+ 上这些工作会被冻结。你需要在 Trace 中看到 App 进程从 "Running" 变为 "Sleeping" 再到被冻结（frozen 状态），这不是 bug，是系统行为。
 
 冻结机制配合广播队列化（queued broadcasts）一起工作：缓存 App 注册的上下文广播会被排队，在 App 回到前台时一次性投递。如果你依赖广播来触发性能数据采集，在 Android 14+ 上这些广播可能延迟到 App 回到前台才投递。
 
@@ -339,7 +339,7 @@ device.prepareModel(makeModel, preference, priority, deadline, cacheInfo, cacheT
                     metaData, extensionNameAndPrefix);
 ```
 
-CacheToken 由 framework 哈希组成包括：`device.getName()` + `device.getVersionString()` + `executionPreference` + `compilationPriority` + extension metadata + 已被 framework 在 SIMPLE/COMPOUND body 阶段哈希过的 op index。这意味着：
+CacheToken 由 framework 哈希组成包括：`device.getName()` + `device.getVersionString()` + `executionPreference` + `compilationPriority` + extension metadata + 已被 framework 在 SIMPLE/COMPOUND body 阶段哈希过的 op index。具体来说：
 
 - 同一 model + 同一 driver 同一执行偏好 → 直接复用 prepared model 文件
 - driver 升级到不同 versionString → 缓存失效，需重新编译

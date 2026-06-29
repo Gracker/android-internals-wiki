@@ -2,7 +2,7 @@
 title: "延迟初始化与按需加载"
 chapter: "21.6"
 section: "21.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1 LegacyMessageQueue / CombinedDeliMessageQueue, Android Developers launch-time / App Startup / Play Feature Delivery docs"
@@ -26,18 +26,18 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [lazy-init, idlehandler, on-demand-loading, app-startup]
 related_chapters: ["21.2", "21.3", "1.13"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
-task6_reviewed_date: "2026-05-13"
-last_task6_audit: "2026-06-21"
+reviewed_date: "2026-06-29"
+task6_reviewed_date: "2026-06-29"
+last_task6_audit: "2026-06-29"
 task6_result: pass-light-edit
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-13"
+task9_reviewed_date: "2026-06-29"
 last_task9_at: "2026-06-29T21:30:52+08:00"
 last_task9_audit: "2026-06-29"
 task9_review_notes: "2026-06-29 闲时抽检 AUTO-FIX：将 IdleHandler / MessageQueue 源码锚点从 android-15.0.0_r1 更新到 android-17.0.0_r1 LegacyMessageQueue + CombinedDeliMessageQueue，并补 targetSdk 37 DeliQueue 版本边界；回到 Task6 复审。"

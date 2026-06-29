@@ -4,9 +4,13 @@ chapter: "4.14"
 status: ready-for-review
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-06-29"
+last_task6_at: "2026-06-29T22:07:00+08:00"
 drafted_date: "2026-06-11"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-29"
@@ -82,7 +86,7 @@ static constexpr uint kEvacuateLivePercentThreshold = 75U;
 
 ### 原地保留如何消除循环碎片
 
-降级为 UnevacFromSpace 的 region 在本轮 GC 中不会被清空，也不会被 to-space 替代。下一轮 GC 再次按 75% 阈值重新评估。长期高占用的 region 自然「沉淀」下来——它们不会在 from/to 之间反复搬迁。
+降级为 UnevacFromSpace 的 region 在本轮 GC 中不会被清空，也不会被 to-space 替代。下一轮 GC 再次按 75% 阈值重新评估。长期高占用的 region 自然稳定下来——它们不会在 from/to 之间反复搬迁。
 
 从实际效果看：
 
@@ -90,7 +94,7 @@ static constexpr uint kEvacuateLivePercentThreshold = 75U;
 |------|-------------|---------|-------------|
 | 新分配、短生命周期对象多 | < 75% | 搬迁到 to-region，原 region 回收 | 正常回收 |
 | 常驻对象、缓存、大模型权重引用 | ≥ 75% | UnevacFromSpace，不搬迁 | 避免 from/to 双份占用 |
-| 混合 region（部分常驻 + 部分临时） | ≈ 75% | 按阈值边界波动 | 稳定后沉淀为 unevac |
+| 混合 region（部分常驻 + 部分临时） | ≈ 75% | 按阈值边界波动 | 稳定后固定为 unevac |
 
 ### CC GC 单轮调用链
 
@@ -208,7 +212,7 @@ if (ShouldUseGenerationalGC()) {
 
 ### 降级策略
 
-当设备不支持 `gUseUserfaultfd` 时，`ShouldUseGenerationalGC()` 在非 Android 目标上返回 `true`，但 Heap 构造函数中 foreground collector type 不是 `kCollectorTypeCMC` 时不会创建 MarkCompact 实例。这意味着在不支持 UFFD 的设备上，系统自动回退到 CC 路径，不会走 CMC。
+当设备不支持 `gUseUserfaultfd` 时，`ShouldUseGenerationalGC()` 在非 Android 目标上返回 `true`，但 Heap 构造函数中 foreground collector type 不是 `kCollectorTypeCMC` 时不会创建 MarkCompact 实例。不支持 UFFD 的设备上，系统自动回退到 CC 路径，不会走 CMC。
 
 [待验证: `gUseUserfaultfd` 的设备级默认值由厂商在 `BoardConfig.mk` 或 `parsed_options.cc` 中配置，各厂商的分布情况未在源码中直接体现]
 
@@ -299,7 +303,7 @@ static constexpr bool kCyclicRegionAllocation = kIsDebugBuild;
 
 ### 对长生命周期对象密集应用的影响
 
-相册、长会话直播等应用常驻大量 Bitmap 和 VideoDecoder buffer 对应的 Java 引用对象。这些对象所在的 region 自然晋升到 mid/old 后，UnevacFromSpace 的评估开销会随 region 沉淀而降低。对象池复用可以让对应 region 更快沉淀。
+相册、长会话直播等应用常驻大量 Bitmap 和 VideoDecoder buffer 对应的 Java 引用对象。这些对象所在的 region 自然晋升到 mid/old 后，UnevacFromSpace 的评估开销会随 region 稳定而降低。对象池复用可以让对应 region 更快稳定。
 
 [自动发现] Perfetto 中观察 CC/CMC 行为的方式：搜索 `com.android.art.gc.*` slice，对比 young GC 和 full GC 的频率与耗时。如果 young GC 频率异常高（> 10 次/秒），说明 young space 太小或分配速率过高。
 
