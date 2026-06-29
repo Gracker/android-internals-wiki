@@ -570,6 +570,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-06-29T07:25:52+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-main",
+    "completed_at": "2026-06-29T08:53:09+08:00",
+    "completion_note": "fixed: 3项P0源码级修复——StatsD pull atom方向修正(setPullAtomCallback是数据提供方非消费方,addConfig返回void,getReports为主查询路径)、§1.3完整重写(删除虚构APP_START_OCCURRED ID 10141/latencyMillis)+特权组件示例、JankStats API全面修正(createAndTrack/isTrackingEnabled/createAndTrack替代addFrameListener/setEnabled/setSamplingRate,frameDurationUiNanos/states替代frameOverrunNanos)"
   }
 ]
