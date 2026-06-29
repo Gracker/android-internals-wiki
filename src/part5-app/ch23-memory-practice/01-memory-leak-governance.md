@@ -7,13 +7,13 @@ drafted_date: "2026-05-13"
 reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + LeakCanary fundamentals"
+last_verified: "2026-06-30"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers + LeakCanary fundamentals"
 confidence: medium
 polish_count: 0
 sources:
@@ -24,13 +24,13 @@ sources:
   - type: official
     path: "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/Handler.java"
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Handler.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/Message.java"
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Message.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/Activity.java"
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java"
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/Bitmap.java"
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java"
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]"
   - type: blog
@@ -47,11 +47,13 @@ task6_review_notes: "2026-05-13 task6 review: 替换正文中的编辑标签式�
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-13'
 last_task9_at: '2026-05-13T22:26:00+08:00'
-last_task9_audit: "2026-06-07"
+last_task9_audit: "2026-06-30"
+last_task9_autofix_at: "2026-06-30"
 last_task9_review_log: logs/deep-review/2026-05-13-22-deep-review.md
-task9_result: pass-tech-review
+last_task9_audit_log: logs/deep-review/2026-06-30-00-audit.md
+task9_result: auto-fixed
 task2b_result: fixed
-task9_review_notes: "2026-05-13 Task9 22:26：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 已写入 suggestions.md。"
+task9_review_notes: "2026-05-13 Task9 22:26：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 已写入 suggestions.md。 | 2026-06-30 Task9 闲时抽检 AUTO-FIX：将 AOSP 源码锚点从 android-16.0.0_r1 重锚到 android-17.0.0_r1；复核 Activity/Handler/Message/Bitmap 关键行为未变化，回 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-19
 ---
@@ -79,9 +81,9 @@ Android Developers 的内存文档把泄漏风险落在两个动作上：避免�
 
 ## 常见泄漏模式：生命周期长短不匹配
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/Activity.java]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Handler.java]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Message.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/Activity.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Handler.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Message.java]
 
 大多数 Java 泄漏不复杂，源头是“长生命周期对象持有短生命周期对象”。排查时先找持有者，再判断它的生命周期是否长于被持有对象。
 
@@ -89,7 +91,7 @@ Android Developers 的内存文档把泄漏风险落在两个动作上：避免�
 - **Fragment / Fragment View 泄漏**：Fragment 本体和它的 View 生命周期不同。`onDestroyView()` 后如果还持有 binding、Adapter、RecyclerView callback 或 viewLifecycleOwner 之外启动的任务，会保留整棵 View 树。修复点通常在 `onDestroyView()` 清空 View 相关字段，而不是等到 `onDestroy()`。
 - **Handler / Runnable 泄漏**：AOSP `Handler.post()` 会把 `Runnable` 包进 `Message.callback`，`enqueueMessage()` 会把 `Message.target` 指向当前 Handler。只要消息还在队列中，`Message → callback / target → 外部类` 这条路径就存在。Activity 退出前没有执行 `removeCallbacksAndMessages(null)`，延迟消息就可能把页面对象保留到执行时刻。
 - **匿名内部类与 lambda 泄漏**：非静态匿名内部类默认持有外部类引用，lambda 只要捕获了 `this`、View、binding、Context，也会产生同类路径。风险点常见于 listener、计时器、线程任务、网络回调和动画回调。
-- **Bitmap 间接泄漏**：Android 8.0 之后 Bitmap 像素内存主要由 Native 侧承载，但 AOSP `Bitmap` Java 对象仍保存 `mNativePtr`，并通过 `NativeAllocationRegistry.registerNativeAllocation()` 关联 Native 释放。Java 层 Bitmap 或持有它的 Activity 泄漏时，Native 像素内存也可能被拖住。图片问题的完整治理放到 23.2 节，本节只把它作为泄漏放大器处理。[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
+- **Bitmap 间接泄漏**：Android 8.0 之后 Bitmap 像素内存主要由 Native 侧承载，但 AOSP `Bitmap` Java 对象仍保存 `mNativePtr`，并通过 `NativeAllocationRegistry.registerNativeAllocation()` 关联 Native 释放。Java 层 Bitmap 或持有它的 Activity 泄漏时，Native 像素内存也可能被拖住。图片问题的完整治理放到 23.2 节，本节只把它作为泄漏放大器处理。[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 
 Handler 相关风险可以用下面这段代码定位。重点看两个动作：延迟任务入队，以及页面销毁时清队列。
 
