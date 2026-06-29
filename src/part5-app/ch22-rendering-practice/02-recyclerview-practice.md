@@ -44,10 +44,10 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
 tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -59,13 +59,13 @@ last_task6_review_log: logs/review/2026-05-15-02-review.md
 task6_reviewed_at: "2026-05-15T02:12:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-05-15 Task6：metadata 去重并复审通过；写作层无新增回炉项，既有 Task2B 修复完成，等待 Task9 复核。"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-15"
-last_task9_at: "2026-05-15T02:35:06+08:00"
-last_task9_audit: "2026-06-08"
-last_task9_review_log: "logs/deep-review/2026-05-15-02-deep-review.md"
-task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0/P1=0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-06-30T01:28:33+08:00"
+last_task9_audit: "2026-06-30"
+last_task9_review_log: "logs/deep-review/2026-06-30-01-audit.md"
+task9_review_notes: "2026-06-30 Task9 闲时抽检：P1 版本/源码锚点问题；AndroidX sources 使用 androidx-main，需固定到可接受基线或标注未进入 Android 17。"
 ---
 
 # RecyclerView 最佳实践
