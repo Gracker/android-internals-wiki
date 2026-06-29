@@ -2,15 +2,15 @@
 title: "内存泄漏检测与治理"
 chapter: "23.1"
 section: "23.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-13"
-reviewed_date: "2026-05-13"
+reviewed_date: "2026-06-30"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers + LeakCanary fundamentals"
@@ -41,9 +41,9 @@ sources:
     path: "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 内存泄漏监控与 OOM：Java 内存泄漏如何定义？.md]"
 tags: [memory-leak, leakcanary, activity-leak, reference-chain, java-heap]
 related_chapters: ["23.4", "10.2", "4.3", "19.5"]
-last_task6_at: "2026-05-13T22:12:00+08:00"
+last_task6_at: "2026-06-30T04:06:00+08:00"
 last_task6_audit: "2026-06-06"
-task6_review_notes: "2026-05-13 task6 review: 替换正文中的编辑标签式“用途句”，L1/L2 通过，无新增 L3/L4 回炉项。"
+task6_review_notes: "2026-06-30 Task6 04:06 revisiting pass-light-edit. Task9 auto-fix (android-17.0.0_r1 锚点升级) 后写作复审；L1/L2 零命中，无 B 类问题；queue 无 pending，自动晋升 finalized。 | 2026-05-13 task6 review: 替换正文中的编辑标签式“用途句”，L1/L2 通过，无新增 L3/L4 回炉项。"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-13'
 last_task9_at: '2026-05-13T22:26:00+08:00'

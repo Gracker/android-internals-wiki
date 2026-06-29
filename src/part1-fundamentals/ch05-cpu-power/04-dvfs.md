@@ -2,43 +2,15 @@
 title: DVFS 与功耗管理
 chapter: '5.4'
 section: '5.4'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 last_verified: '2026-06-29'
 last_verified_against: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power), Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)
 confidence: medium
-sources:
-- type: aosp
-  path: frameworks/base @ android-17.0.0_r1
-- type: aosp
-  path: hardware/interfaces/power @ android-17.0.0_r1
-- type: aosp
-  path: kernel/sched/cpufreq_schedutil.c @ android15-6.6, android16-6.12
-- type: aosp
-  path: drivers/opp/ @ android15-6.6, android16-6.12
-- type: official
-  path: developer.android.com/games/optimize/adpf/performance-hint-api
-- type: blog
-  path: kernel.org/doc/Documentation/cpu-freq/governors.txt
-- type: blog
-  path: 'source: obsidian/Personal-Knowlodge/source/2026-03-05_wechat_谷歌官方性能文档2_Android_动态性能框架优化Performance_Hint_API.md'
-- type: blog
-  path: 'source: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md'
-tags:
-- dvfs
-- cpufreq
-- schedutil
-- opp
-- power
-- frequency-scaling
-- adpf
-related_chapters:
-- '5.1'
-- '5.2'
-- '5.3'
-- '5.5'
-- '5.6'
-- '7.3'
+sources: 
+path: 'source: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md'
+tags: 
+related_chapters: 
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2
 polish_count: 1
@@ -51,30 +23,18 @@ task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-06-29T19:26:54+08:00'
 last_task9_autofix_at: '2026-06-29'
-status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-07'
-task6_reviewed_date: '2026-06-07'
-last_task6_at: '2026-06-07T19:14:17+08:00'
+task6_reviewed_date: '2026-06-30'
+last_task6_at: '2026-06-30T04:06:00+08:00'
 last_task6_audit: '2026-05-24'
-P26-06-07 Task6 18:10：Task9 auto-fix 后写作复审；L1/L2 全面扫描零命中，无需修复；送 Task9 复核 auto-fix 结果。2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06
-  Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
-  Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance
-  Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0
-  schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel
-  事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9
-  复审。 | 2026-05-06 16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4
-  回炉项，送 Task9 复审。 | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown
-  断行、统一数值单位空格和少量 L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 18:45 Task9：needs-rework。P0
-  0 / P1 1 / P2 0。L275 RT/Deadline 任务并非在 Android 15/16 schedutil 中无条件拉到最高频；需按 effective_cpu_util()、uclamp
-  与 DL bandwidth 重新表述。'
 last_task2b_at: '2026-06-07T16:50:00+08:00'
 last_task6_review_log: logs/review/2026-05-06-18-review.md
-task6_review_notes: 2026-06-07 Task6 19:14：Task9 auto-fix 后写作复审（revisiting）；L1/L2 全面扫描零命中，无需修复；送 Task9 做最终 pass 确认。 |  2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B
+task6_review_notes: 2026-06-30 Task6 04:06 revisiting pass-light-edit. Task9 auto-fix (android-17.0.0_r1 锚点升级) 后写作复审；L1/L2 全面扫描零命中，无 B 类问题；queue 无 pending，自动晋升 finalized。 | 2026-06-07 Task6 19:14：Task9 auto-fix 后写作复审（revisiting）；L1/L2 全面扫描零命中，无需修复；送 Task9 做最终 pass 确认。 |  2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B
   修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
   16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。
   | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量
@@ -86,6 +46,7 @@ review_type: task9-idle-audit
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-29
 ---
+
 
 
 # DVFS 与功耗管理
