@@ -14,8 +14,7 @@ polish_date: '2026-04-10'
 polish_by: task2b-polish
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-04-14'
-last_verified_against: perfetto.dev docs, source.android.com/docs/core/debug/perfetto,
-  developer.android.com/profileable
+last_verified_against: AOSP android-17.0.0_r1 + perfetto.dev docs + source.android.com/docs/core/debug/perfetto
 confidence: high
 sources:
 - type: official
@@ -41,8 +40,8 @@ related_chapters:
 - '7.1'
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 task2b_rework_date: "2026-05-28T06:50:00+08:00"
@@ -54,17 +53,17 @@ review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix:
   小修 19 处；移动尾部注入块到正文/参考资料；无新增 B 类回炉问题，等待 Task 9 复审。；2026-05-06 04 task6 re-review:
   pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review:
   pass-tech-review。P0 0 / P1 0 / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
-last_task9_at: "2026-06-29T10:31:41+08:00"
-task9_review_notes: "2026-06-29 Task9 deep-review: needs-rework。P0 3 / P1 0 / P2 0。尾部 AIW 源码调研块存在 Perfetto 版本边界、rc 路径和 data source 时间线错误，需回炉整理。"
+last_task9_at: "2026-06-29T11:34:21+08:00"
+task9_review_notes: "2026-06-29 Task9 deep-review: auto-fixed。P0/P1 本轮无未闭环项；已修正 Perfetto Android 9/10/11 版本边界、perfetto.rc 源码路径和 FrameTimeline 时间线，回到 Task6 复审。"
 last_task6_at: "2026-05-28T07:05:00+08:00"
 last_task6_audit: '2026-05-24'
 task6_reviewed_date: "2026-05-25"
-last_task9_review_log: "logs/deep-review/2026-06-29-10-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-06-29-11-deep-review.md"
 last_task9_audit: '2026-06-20'
 last_task9_audit_log: 'logs/deep-review/2026-06-20-02-audit.md'
 last_task6_review_log: "logs/review/2026-05-28-07-review.md"
 task6_review_notes: "2026-05-28 Task6：Task2B 回流后写作复审通过；L1/L2 小修 2 处，压掉否定纠正式句型和限制句式；无 L3/L4 回炉项，送 Task9 复核。"
-p0: 3
+p0: 0
 p1: 0
 p2: 0
 updated_by: "openclaw-task9"
@@ -75,6 +74,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
 rework_date: 2026-06-29
 rework_by: openclaw-task2b
+last_task9_autofix_at: "2026-06-29"
 ----
 
 # Perfetto 简介与演进
@@ -114,7 +114,7 @@ Perfetto 就是解决这类问题的工具。它提供的是系统级时间线�
 
 ## Perfetto 是什么
 
-Perfetto 是 Google 开源的系统级 tracing 平台。它最初服务 Android，后来扩展到 Linux 和 Chrome。在 Android 端，Android 9 已把 `traced` / `traced_probes` 等基础设施放进 system image；Android 9 和 Android 10 的非 Pixel 设备常见还要手动 enable；Android 11 起，大多数设备默认启用，日常系统追踪也基本都转到 Perfetto 体系。[已验证: 官方文档, source.android.com/docs/core/debug/perfetto]
+Perfetto 是 Google 开源的系统级 tracing 平台。它最初服务 Android，后来扩展到 Linux 和 Chrome。在 Android 端，Android 9 已集成 `traced` / `traced_probes` 基础服务但能力有限；Android 10 起完整 tracing 生态系统正式可用；Android 11 起，大多数设备默认启用日常系统追踪。[已验证: 官方文档, AOSP android-17.0.0_r1 external/perfetto]
 
 Perfetto 是一整套 tracing 基础设施，包含三个核心模块：
 
@@ -142,7 +142,7 @@ Perfetto 从架构和数据模型两边一起改了这件事。Producer 先把�
 
 | 维度 | Systrace | Perfetto |
 |------|---------|---------|
-| 引入阶段 | Android 4.1 (2012) | Android 9 服务进 system image，Android 11+ 大多数设备默认启用 |
+| 引入阶段 | Android 4.1 (2012) | Android 9 基础服务进 system image，Android 10 完整可用，Android 11+ 大多数设备默认启用 |
 | 采集模型 | atrace / ftrace 生成 HTML 报告 | shared memory + central buffers，默认内存 buffer，可选 long trace 周期刷盘 |
 | 采集时长 | 更适合短时抓取 | 默认仍受 buffer 限制，开启 `write_into_file` 后可延长到磁盘容量 |
 | 配置方式 | category + 命令行为主 | simple mode flags 或 normal mode `TraceConfig` |
@@ -465,7 +465,7 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 | Android 16 (API 36) | 默认启用 | binary protobuf + `--txt` | `/data/misc/perfetto-configs/` 可用 | System Triggered Profiling 覆盖 ANR 等场景的背景 trace 捕获 | Profiling 能力从主动采集扩展到被动捕获 |
 | Android 17 (API 37, Beta) | 默认启用 | binary protobuf + `--txt` | `/data/misc/perfetto-configs/` 可用 | system-triggered profiling 继续扩展 anomaly / OOM / excessive CPU 触发方向 | 版本表按能力来源拆分，避免把 15-17 的 profiling 变化混成一行 |
 
-注意：`traced` / `traced_probes` 仍以平台二进制方式部署（`/system/bin/traced`、`/system/bin/traced_probes`），不在独立 APEX 包内。Android 12+ 部分设备将 Perfetto 组件通过 Mainline 机制提供更新，但 AOSP `external/perfetto/Android.bp` 中并未定义 `com.android.os.perfetto` APEX 模块——实际 Mainline 更新的载体和覆盖范围因设备 build 而异。Android 15 (API 35) 起 `ProfilingManager` 相关组件通过 `com.android.profiling` APEX 单独部署（`min_sdk 35`）。具体设备上的 APEX 包名和可更新边界以实际 `/apex/` 目录和 build manifest 核对为准。[已验证: external/perfetto/Android.bp, external/perfetto/src/traced/traced.rc, AOSP android-17.0.0_r1]
+注意：`traced` / `traced_probes` 仍以平台二进制方式部署（`/system/bin/traced`、`/system/bin/traced_probes`），不在独立 APEX 包内。Android 12+ 部分设备将 Perfetto 组件通过 Mainline 机制提供更新，但 AOSP `external/perfetto/Android.bp` 中并未定义 `com.android.os.perfetto` APEX 模块——实际 Mainline 更新的载体和覆盖范围因设备 build 而异。Android 15 (API 35) 起 `ProfilingManager` 相关组件通过 `com.android.profiling` APEX 单独部署（`min_sdk 35`）。具体设备上的 APEX 包名和可更新边界以实际 `/apex/` 目录和 build manifest 核对为准。[已验证: external/perfetto/Android.bp, external/perfetto/perfetto.rc, AOSP android-17.0.0_r1]
 
 ### 常见抓取入口对照表
 
@@ -518,10 +518,12 @@ Perfetto 的定位、架构和核心概念已经铺开。接下来的章节进�
 
 #### 基础服务架构（Android 9）
 ```cpp
-// external/perfetto/Android.bp (Line ~18146)
+// external/perfetto/Android.bp (android-17.0.0_r1)
 cc_binary {
     name: "traced",
-    init_rc: ["perfetto.rc"],  // 服务已进 system image；实际 rc 文件为 external/perfetto/perfetto.rc
+    init_rc: [
+        "perfetto.rc",
+    ],  // 服务已进 system image；实际 rc 文件为 external/perfetto/perfetto.rc
     // traced_probes 是独立的 cc_binary，无独立 init_rc
 }
 ```
@@ -533,11 +535,11 @@ cc_binary {
 
 #### 完整可用时代（Android 10）
 ```ini
-// traced.rc 新增 dual-socket 支持
+// external/perfetto/perfetto.rc 中的 traced socket
 socket traced_consumer stream 0666 root root
 socket traced_producer stream 0666 root root
 
-// traced_probes.rc 新增权限
+// external/perfetto/perfetto.rc 中的 traced_probes 权限
 readproc // 支持更多系统进程访问
 ```
 **里程碑变化**：
@@ -572,7 +574,7 @@ readproc // 支持更多系统进程访问
 
 #### 新数据源时间线（源码级验证）
 - **2019-01-03**：android.log 数据源（logcat 集成）
-- **2020-11-05**：FrameTimeline 数据源（渲染边界追踪）
+- **Android 12**：FrameTimeline 数据源（渲染边界追踪）
 - **2023**：exclusive tracing 特性（独占会话管理）
 - **2026-03-23**：android.aflags 数据源（调试标志监控）
 

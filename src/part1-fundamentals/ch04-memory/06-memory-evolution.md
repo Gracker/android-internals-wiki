@@ -13,7 +13,7 @@ rework_date: 2026-06-29
 rework_by: openclaw-task2b
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-06-08'
-last_verified_against: AOSP android-16.0.0_r1 + Android 17/API 37 官方文档
+last_verified_against: AOSP android-17.0.0_r1 + Android 17/API 37 官方文档
 confidence: medium
 sources:
 - type: official
@@ -67,22 +67,22 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-03T21:36:06+08:00"
 last_task6_review_log: logs/review/2026-06-03-13-review.md
 task6_review_notes: '2026-06-03 Task6 13:05：pass-light-edit（状态修复+确认）。前次 12:15 review 已通过但 task6_state 未从 revisiting 更新为 reviewed。本轮确认无新增 L1/L2 问题，修复 frontmatter 状态。源码索引表 linker_phdr.cpp 版本标注不一致（代码注释 android-16.0.0_r1 vs 索引 android-mainline）已记入日志。task9_result 仍 needs-rework，不可自动晋升。'
-task9_state: pending
-task9_result: needs-rework
-last_task9_at: "2026-06-29T10:31:41+08:00"
+task9_state: reviewed
+task9_result: auto-fixed
+last_task9_at: "2026-06-29T11:34:21+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-29T09:40:00+08:00"
 last_task2b_lite_at: "2026-06-29"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-29"
-task9_review_notes: "2026-06-29 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。Android 17 MemoryLimiter 段落存在源码锚点/API/命令错误；Generational CMC 稳定化细节需按 android-17.0.0_r1 重新落源。"
-last_task9_review_log: "logs/deep-review/2026-06-29-10-deep-review.md"
-last_task9_autofix_at: "2026-06-03"
+task9_review_notes: "2026-06-29 Task9 deep-review: auto-fixed。P0/P1 本轮无未闭环项；已修正 Bionic 16KB compat 源码锚点/函数名与 MemoryLimiter 条件启用、anon+swap 延迟 kill 边界，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-29-11-deep-review.md"
+last_task9_autofix_at: "2026-06-29"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
-p0: 1
-p1: 1
+p0: 0
+p1: 0
 p2: 0
 updated_by: "openclaw-task9"
 updated_date: "2026-06-29"
@@ -507,20 +507,23 @@ PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻�
 
 #### Bionic Linker 16KB Compat Mode
 
-`bionic/linker/linker_phdr.cpp` 中 `ElfReader::LoadSegments()` 调用 `IsEligibleFor16KiBAppCompat()` 判断 ELF 是否需要 compat 处理——满足条件后通过 `Setup16KiBAppCompat()` 配置兼容加载参数（如放宽 RELRO 权限、改用 RW 初始映射）。具体 compat 逻辑封装在 `bionic/linker/linker_phdr_16kib_compat.cpp` 中。当 `kPageSize == 16384` 且 ELF 段 `min_palign == 4096` 时，linker 在 `ReadProgramHeaders` 阶段读取 `min_palign` 和系统属性 `bionic.linker.16kb.app_compat.enabled`，设置 `should_use_16kib_app_compat_` 标志；随后 `Load()` 调用 `Setup16KiBAppCompat()`，其中 `IsEligibleFor16KiBAppCompat()` 校验 RELRO/RW 边界条件；`LoadSegments()` 使用 compat 参数执行实际映射。
+`bionic/linker/linker_phdr.cpp` 中 `ElfReader::Read()` 在 `kPageSize == 16384` 且 `min_align_ < kPageSize` 时读取 `bionic.linker.16kb.app_compat.enabled`，设置 `should_use_16kib_app_compat_`。随后 `LoadSegments()` 调用 `Setup16KiBAppCompat()`；兼容逻辑在 `bionic/linker/linker_phdr_16kib_compat.cpp` 中，`IsEligibleForRXRWAppCompat()` 根据 LOAD / RELRO 布局判断能否走 RX|RW compat，失败时退回 RWX compat。`LoadSegments()` 再按 compat 参数映射段内容。
 
 ```cpp
-// bionic/linker/linker_phdr.cpp (android-16.0.0_r1)
-// ElfReader::LoadSegments() 内部判断：
-if (kPageSize == 16*1024 && min_palign == 4096) {
-  // IsEligibleFor16KiBAppCompat() → Setup16KiBAppCompat()
-  // 实际 compat 逻辑在 linker_phdr_16kib_compat.cpp
+// bionic/linker/linker_phdr.cpp (android-17.0.0_r1)
+// ElfReader::Read() 内部判断：
+if (kPageSize == 16 * 1024 && min_align_ < kPageSize) {
+  auto compat_prop_val =
+      android::base::GetProperty("bionic.linker.16kb.app_compat.enabled", "false");
   should_use_16kib_app_compat_ =
-    GetBoolProperty("bionic.linker.16kb.app_compat.enabled", false);
+      ParseBool(compat_prop_val) == ParseBoolResult::kTrue || get_16kb_appcompat_mode();
 }
+
+// ElfReader::LoadSegments() 中：
+if (!Setup16KiBAppCompat()) return false;
 // Compat 模式代价：
 //   1. 初始映射使用 RW（而非标准 RO），需额外 kPageSize 预留空间
-//   2. RELRO 使用 PROT_READ | PROT_EXEC（比标准 PROT_READ 的保护更弱）
+//   2. RELRO 前缀可能随代码区域使用 PROT_READ | PROT_EXEC
 //   3. 4KB ELF 的共享页变为进程独占（PSS 上升）
 ```
 
@@ -539,13 +542,13 @@ if (kPageSize == 16*1024 && min_palign == 4096) {
 |---------|---------|------|
 | `frameworks/base/core/jni/android_os_Debug.cpp` | PSS JNI 读取，read_mapinfo() 解析 smaps | android-14+ |
 | `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode，`ElfReader::LoadSegments()` 入口 | android-17.0.0_r1 |
-| `bionic/linker/linker_phdr_16kib_compat.cpp` | `Setup16KiBAppCompat()` / `IsEligibleFor16KiBAppCompat()` | android-17.0.0_r1 |
+| `bionic/linker/linker_phdr_16kib_compat.cpp` | `Setup16KiBAppCompat()` / `IsEligibleForRXRWAppCompat()` | android-17.0.0_r1 |
 | `android.googlesource.com commit fc89c8ae1dfc` | 16KB 错误消息改进 | 2024-08-05 |
 | `kernel/common/arch/arm64/Kconfig` | CONFIG_ARM64_16K_PAGES=y | ACK 6.6+ |
 
 ## Android 17：ART Generational CMC 稳定化与 cgroup App Memory Limiter
 
-Android 17 将 ART 分代 GC 路线中的 Generational CMC（Concurrent Mark Compact）推进到稳定版本，同时引入了 App Memory Limiter——一个基于 cgroup 的应用级内存软限制机制。两者标志着 Android 内存管理从"被动回收"向"主动预防"的转变。
+Android 17 将 ART 分代 GC 路线中的 Generational CMC（Concurrent Mark Compact）推进到稳定版本，同时引入了受 feature flag 和 vendor 配置控制的 App Memory Limiter。两者标志着 Android 内存管理从"被动回收"向"主动预防"的转变。
 
 ### ART Generational CMC 的稳定化
 
@@ -564,14 +567,14 @@ Android 17 之前，分代 Mark Compact 已在 Android 14 中以 CMC 路径进�
 
 ### App Memory Limiter：cgroup 级软性限制
 
-App Memory Limiter 是 Android 17 在 system_server 内部基于 Linux cgroup 控制器实现的应用内存软限制器，不依赖 lmkd 杀进程。它的核心机制是利用 `memory.high`、`memory.swap.high` 和 `anon+swap` 的 cgroup 接口，对每个应用进程的 cgroup 设置可动态调节的内存上限。
+App Memory Limiter 是 Android 17 在 system_server 内部基于 Linux cgroup 控制器实现的应用内存限制器，受 `Flags.memoryLimiterEnable()`、`/vendor/etc/memory-limiter-config.xml` 和设备内存档位 gate 控制。它不通过 lmkd 决策，而是利用 `memory.high`、`memory.swap.high` 和 `anon+swap` 的 cgroup 接口，对每个应用进程的 cgroup 设置可动态调节的内存上限。
 
-当应用进程的内存使用超过 `memory.high` 阈值时，内核 cgroup 子系统会触发对该进程的内存回收（throttle），但不直接发送 SIGKILL。超过 `memory.swap.high` 时优先回收 swap 页。这种机制让系统可以在不杀进程的情况下限制内存增长速率。
+当应用进程的内存使用超过 `memory.high` 阈值时，内核 cgroup 子系统会触发对该进程的内存回收（throttle），`memory.high` 本身不直接发送 SIGKILL。MemoryLimiter 还监控 `anon+swap` 越界；命中后可触发 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，并在 kill 未禁用时延迟调用 AMS `killPids()`。
 
 **实现位置（AOSP android-17.0.0_r1）**：
 - `frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java`：system_server 内实现 cgroup 读写与进程状态轮询
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`：MemoryLimiter 的初始化和生命周期管理
-- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java`：`dumpsys` 支持（实际命令参数以源码为准，不假设 `--limiter` / `--policy` 存在）
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java`：`am memory-limiter status/ignore/manual` 调试入口
 - JNI 层：`frameworks/base/services/core/jni/` 下对应的 native 方法，负责向 cgroup 文件写入限制值
 
 **与 lmkd 的关系**：MemoryLimiter 工作在 lmkd 上游——先通过 cgroup 节流限制内存膨胀，避免进程走到 lmkd 的杀进程阈值。它不是对 lmkd 的替代，而是增加了一层预防性控制。
@@ -616,7 +619,7 @@ MGLRU 的核心改进是把页回收决策从被动扫描变为按代分级。�
 | Android 14 | UFFD 驱动的 Mark Compact / CMC 路径进入 AOSP | GC 路线开始从 CC 扩展到 Mark Compact |
 | Android 15 | 16KB Page Size 支持 | 64 位 App 需确认 NDK / 预编译 so 的页大小兼容 |
 | Android 16 QPR2+ | 官方对外明确 Generational CMC | 版本讨论时要与 Android 14 的 Mark Compact 路径分开写 |
-| Android 17 | ART Generational CMC / YoungMarkCompact 稳定；cgroup MemoryLimiter 默认启用 | 分代 Mark Compact via UFFD 页级并发；cgroup memory.high / memory.swap.high 应用级软限制 |
+| Android 17 | ART Generational CMC / YoungMarkCompact 稳定；cgroup MemoryLimiter 条件启用 | 分代 Mark Compact via UFFD 页级并发；cgroup memory.high / memory.swap.high / anon+swap 应用级限制 |
 
 ## 常见问题与误区
 
