@@ -766,5 +766,47 @@
     "completed_by": "task2b-lite",
     "completed_at": "2026-06-29T15:50:30+08:00",
     "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
+  },
+  {
+    "section": "25.6",
+    "section_title": "APK 体积分析与瘦身",
+    "priority": 85,
+    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "frontmatter last_verified_against",
+        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
+        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
+      }
+    ],
+    "added_by": "task2b-lite-auto-detected",
+    "added_at": "2026-06-29T15:52:00+08:00",
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completed_at": "2026-06-29T15:52:30+08:00",
+    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
+  },
+  {
+    "section": "25.3",
+    "section_title": "WakeLock 与 Alarm 管理",
+    "priority": 85,
+    "reason": "[Task2B Lite] 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "frontmatter last_verified_against",
+        "detail": "按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则，主线基准必须是 android-17.0.0_r1",
+        "suggestion": "更新 last_verified_against 为 android-17.0.0_r1"
+      }
+    ],
+    "added_by": "task2b-lite-auto-detected",
+    "added_at": "2026-06-29T15:52:00+08:00",
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completed_at": "2026-06-29T15:52:30+08:00",
+    "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
   }
 ]
