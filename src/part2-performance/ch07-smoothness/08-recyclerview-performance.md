@@ -79,7 +79,7 @@ p0: 0
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
+last_deepseek_cn_review_at: 2026-06-30
 last_task9_audit_log: "logs/deep-review/2026-06-29-14-audit.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
@@ -200,19 +200,19 @@ if (deadlineNs != FOREVER_NS
 
 GapWorker 的时间预算只覆盖 ViewHolder 获取、create 和 bind 路径，不覆盖下一帧进入 `RV OnLayout` 后的 measure/layout。复杂 item 使用 `ConstraintLayout`、`match_constraint`、Barrier 或多层依赖时，`willBindInTime()` 可能根据 2ms 左右的 bind 均值判断赶得上 deadline，但下一帧 measure/layout 仍可能把 8.33ms 或 16.6ms 帧预算吃完。
 
-这种盲区在 Perfetto 里有一组稳定特征：`RV Prefetch` 已经出现，`RV onBindViewHolder type=...` 耗时正常，下一帧的 `RV OnLayout` 或子 view measure/layout 明显变长。处理方向是固定 item 尺寸、减少约束求解、降低嵌套层级，并把 bind 与 measure 分开计时。
+在 Perfetto 里，这种盲区表现为一组稳定特征：`RV Prefetch` 已经出现，`RV onBindViewHolder type=...` 耗时正常，下一帧的 `RV OnLayout` 或子 view measure/layout 明显变长。解决思路是固定 item 尺寸、减少约束求解、降低嵌套层级，同时把 bind 与 measure 的耗时分开计时。
 
 ### Android 17 DeliQueue 对预取调度的影响
 
 Android 17 为 `targetSdkVersion >= 37` 的应用启用新的 lock-free `MessageQueue` 实现 DeliQueue；低于此 target 的应用默认仍走旧的 lock-based 实现，debuggable build 可用 `adb am compat enable USE_NEW_MESSAGEQUEUE <package>` 提前测试。
 
-`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程队列。旧实现中，后台线程 `Handler.post()`、`AsyncListDiffer` diff 结果回调和主线程 `next()` 共享同一把 `MessageQueue` monitor；后台线程持锁时被调度器抢占，主线程就可能在取消息阶段等待。DeliQueue 的设计口径来自 Google Android Developers Blog：入队侧使用 Treiber stack，Looper 侧使用 min-heap 处理按 `when` 排序的消息，目标是移除这条 monitor contention 路径。
+`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程队列。旧实现中，后台线程 `Handler.post()`、`AsyncListDiffer` diff 结果回调和主线程 `next()` 共享同一把 `MessageQueue` monitor；后台线程持锁时被调度器抢占，主线程就可能在取消息阶段等待。DeliQueue 的按照 Google Android Developers Blog 的说法，入队侧使用 Treiber stack，Looper 侧使用 min-heap 处理按 `when` 排序的消息，目标是消除这条 monitor contention 路径。
 
 Google 官方 benchmark 给出的数字是 MessageQueue 级别收益：应用 missed frames 下降约 4%，System UI / Launcher 交互 missed frames 下降约 7.7%，首帧 P95 耗时下降约 9.1%。这些数字来自 Android Developers Blog，不是 RecyclerView 专项 benchmark，也不是 AOSP commit 中可直接复算的数据。
 
-落到 RecyclerView，DeliQueue 影响的是 `recyclerView.post(this)` 到 `GapWorker.run()` 开始执行之间的队列等待。它不会改变 `collectAdjacentPrefetchPositions()`、`willCreateInTime()`、`willBindInTime()` 的算法，也不会降低 `onBindViewHolder()` 或 measure/layout 的耗时。只有 trace 中能看到 `MessageQueue` monitor contention 挤压主线程时，DeliQueue 才能让预取任务更稳定地进入 deadline 窗口；瓶颈在 bind、inflate、measure 时，仍要回到 item 结构和缓存策略处理。
+对 RecyclerView 来说，DeliQueue 影响的是 `recyclerView.post(this)` 到 `GapWorker.run()` 开始执行之间的队列等待时间。它不改变 `collectAdjacentPrefetchPositions()`、`willCreateInTime()`、`willBindInTime()` 的算法，也不会降低 `onBindViewHolder()` 或 measure/layout 本身的耗时。只有当 trace 里能看到 `MessageQueue` monitor contention 在挤压主线程时，DeliQueue 才有意义——它能让预取任务更稳定地进入 deadline 窗口。如果瓶颈在 bind、inflate 或 measure，还是要回到 item 结构和缓存策略上处理。
 
-诊断 DeliQueue 是否和 RecyclerView 滑动相关时，可以先筛 `android_monitor_contention` 中阻塞主线程、方法名包含 `MessageQueue` 的记录，再和 jank frame 对齐。若 trace 中没有这类等待，DeliQueue 的收益就不该被归因到本次 RecyclerView 卡顿；若等待集中发生在 `RV Prefetch` 之前或同一段 `doFrame` 附近，再继续看 `GapWorker.run()` 是否被推迟。
+要判断 DeliQueue 是否和 RecyclerView 滑动卡顿有关，可以先筛 `android_monitor_contention` 中阻塞主线程、方法名包含 `MessageQueue` 的记录，再和 jank frame 对齐。若 trace 中没有这类等待，DeliQueue 的收益就不该被归因到本次 RecyclerView 卡顿；若等待集中发生在 `RV Prefetch` 之前或同一段 `doFrame` 附近，再继续看 `GapWorker.run()` 是否被推迟。
 
 ```sql
 INCLUDE PERFETTO MODULE android.monitor_contention;
@@ -330,21 +330,21 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 ## 滑动卡顿的根因分析
 
-理解 RecyclerView 的缓存体系、预取机制和嵌套滑动之后，分析时要回到一个更实际的问题：当 Perfetto 中出现掉帧，怎么快速定位是哪一层机制出了问题？
+了解了缓存体系、预取机制和嵌套滑动之后，要回到一个更实际的问题：Perfetto 中出现掉帧时，怎么快速定位到具体是哪一层机制出了问题？
 
 在实际工作中，RecyclerView 滑动卡顿的根因通常集中在以下几个方向。
 
-**item 布局过深** 是常见的耗时来源。如果每个 item 的 View 层级超过 4-5 层，measure 和 layout 的时间会明显增加。用 Layout Inspector 检查 item 的 View 树，如果发现深层嵌套的 LinearLayout 或 RelativeLayout，用 ConstraintLayout 替换通常能减少 measure/layout 时间。
+**item 布局过深** 是耗时的一大来源。如果每个 item 的 View 层级超过 4–5 层，measure 和 layout 的时间会明显增加。用 Layout Inspector 检查 item 的 View 树，如果发现深层嵌套的 LinearLayout 或 RelativeLayout，用 ConstraintLayout 替换通常能减少 measure/layout 时间。
 
 **onBindViewHolder 中的 IO 操作** 是另一个高频问题。图片加载的磁盘 IO、数据库查询、甚至 SharedPreferences 的同步读取，都可能在 bind 路径上引入不可预测的延迟。解决方法是将这些操作全部异步化——图片用 Glide/Coil 等库自动异步加载，数据预加载到内存，bind 方法只做轻量的视图更新。
 
 **ItemAnimator 触发的额外布局** 也是常见原因。默认的 `DefaultItemAnimator` 本身就继承自 `SimpleItemAnimator`。当 change animation 开着时，RecyclerView 需要同时保留旧、新两份位置信息来计算过渡，列表高频更新时，这部分布局和动画记录开销会持续叠加。更直接的优化做法有两种：一是对默认动画器调用 `((SimpleItemAnimator) rv.getItemAnimator()).setSupportsChangeAnimations(false)`，先关掉 change animation；二是在页面不需要任何列表动画时直接 `rv.setItemAnimator(null)`。
 
-**图片加载回调触发的 requestLayout** 是一种隐性的性能问题。当图片异步加载完成后，如果在回调中修改了 ImageView 的尺寸（比如 `wrap_content` 导致从占位图切换到真实图片时大小变化），会触发整个 RecyclerView 的重新布局。处理方向是为 ImageView 设置固定宽高，避免占位图和真实图片切换时改变 item 测量结果；如果 Adapter 内容变化不会改变 RecyclerView 自身宽高，再配合 `setHasFixedSize(true)` 减少整表 layout invalidation。
+**图片加载回调触发的 requestLayout** 比较隐性。图片异步加载完成后，如果回调中修改了 ImageView 的尺寸（比如 `wrap_content` 导致从占位图切换到真实图片时大小变化），就会触发整个 RecyclerView 的重新布局。处理方向是为 ImageView 设置固定宽高，避免占位图和真实图片切换时改变 item 测量结果；如果 Adapter 内容变化不会改变 RecyclerView 自身宽高，再配合 `setHasFixedSize(true)` 减少整表 layout invalidation。
 
-**VSync 时间精度问题** 是一个更隐蔽的根因。这个问题的来源是 Android 列表滑动在计算每帧位移时，使用的不是 VSync 的纳秒时间戳，而是取整后的毫秒值。在 120Hz 设备上（VSync 周期约 8.33ms），±1ms 的取整误差意味着约 12% 的帧间时间差异。这种微小的时间波动传递到 OverScroller 的位移计算后，会导致列表每帧滚动的像素数不均匀。用户在快速滑动时感知到"一顿一顿"的效果，但 Perfetto 的 FrameTimeline 不会标记为 Jank——因为帧在预算时间内完成了，只是步幅不均匀。
+**VSync 时间精度问题** 更隐蔽一些。根源在于：Android 列表滑动计算每帧位移时，用的是取整后的毫秒值，而不是 VSync 的纳秒时间戳。在 120Hz 设备上（VSync 周期约 8.33ms），±1ms 的取整误差就会带来约 12% 的帧间时间差异。这个微小的时间波动进入 OverScroller 的位移计算后，每帧滚动的像素数就不均匀了。
 
-这是一种"无掉帧卡顿"，和 §7.1 中讨论的帧率稳定性问题不同。帧率可能稳定在 120fps，但步幅波动仍会让用户感觉不流畅。
+用户快速滑动时感知到"一顿一顿"的效果，但 Perfetto 的 FrameTimeline 不会标记为 Jank——帧本身在预算时间内完成了，只是步幅不均匀。这是一种"无掉帧卡顿"，和 §7.1 中讨论的帧率稳定性问题不同。帧率可能稳定在 120fps，但步幅的微幅波动仍会让用户感觉不流畅。
 
 
 
