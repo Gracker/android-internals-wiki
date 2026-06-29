@@ -451,3 +451,10 @@ enum class MonitoredLimit {
 - 摘要：Android 17 新增 MemoryLimiter 子系统作为第三道后台内存防线，通过 memcg v2 memory.high/swap.high + epoll 监听实现内核级硬限流。三类限制类型（MEMORY/SWAP/ANON_SWAP）对 Debug.MemoryInfo 的影响：PSS 抖动加剧、30s kill 窗口、PSS 不含 swap 导致总内存指标失真。
 - 注入时间：2026-06-28
 - 价值：首次系统揭示 MemoryLimiter 三层架构（Java/JNI/Kernel）对应用性能监控 SDK 的三类影响，是内存监控适配 Android 17 的必读材料
+
+### Android 17 MemoryLimiter — ProcState 限制矩阵、轮询回退状态机、memcg 契约与 statsd 节流
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md
+- 类型：DeepResearch 调研结果
+- 摘要：深度拆解 MemoryLimiter 五大子系统：完整 23 个 ProcState→Limits 映射矩阵（persistent 无限制→cached 交 lmkd）；inotify→polling 回退机制（red zone 30s 轮询、常态 5min、测试 1s）；AnonSwapState 四态机（kCold/kOkay/kHot/kTriggered）；内核 memcg v2 memory.high 的 throttle+reclaim 语义（永不 OOM）；statsd 令牌桶限流（4 token/h、≤28 events/day）。
+- 注入时间：2026-06-29
+- 价值：提供 MemoryLimiter 从 Java→JNI→Kernel 的完整运行时行为模型，是 APM SDK 适配 Android 17 后台内存限制的源码级必读参考

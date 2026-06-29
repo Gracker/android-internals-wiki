@@ -48,7 +48,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-06-26"
 gap_source: "AOSP结构+章节深挖"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-26
+last_deepseek_cn_review_at: 2026-06-29
 last_task9_audit: "2026-06-29"
 last_task9_at: "2026-06-29T05:24:42.380077+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-29-05-deep-review.md"
@@ -133,9 +133,8 @@ choreographer.postFrameCallback(object : Choreographer.FrameCallback {
 
 Compose 1.10 的 `AndroidUiFrameClock.android.kt` 只使用 `Choreographer.FrameCallback`（`doFrame(frameTimeNanos)` 单参数回调）这一种 Choreographer 交互方式，未接入 `VsyncCallback` / `FrameData` / `FrameTimeline` 等平台层 deadline API。
 
-若讨论帧 deadline，需区分：平台层 `Choreographer.VsyncCallback` 通过 `FrameData.getPreferredFrameTimeline().getDeadlineNanos()` 提供精确 deadline（Android 12+ 可用），以及隐藏方法 `getFrameDeadline()`。Compose 当前预取和重组调度未接入此路径。
+帧 deadline 要分两层看：平台层 `Choreographer.VsyncCallback` 通过 `FrameData.getPreferredFrameTimeline().getDeadlineNanos()` 提供精确 deadline（Android 12+ 可用），以及隐藏方法 `getFrameDeadline()`。Compose 当前预取和重组调度未接入此路径。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java, frameworks/base/core/java/android/view/ViewRootImpl.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt, AndroidUiFrameClock.android.kt]
 
 ## LayoutNode 树：测量、布局、绘制
 
@@ -177,7 +176,6 @@ interface MeasurePolicy {
 
 Compose 测量是单次的：parent measure 时传入 `Constraints`，child 返回 `MeasureResult`。View 体系允许 `requestLayout` 触发重新测量，Compose 则通过 Snapshot invalidation 标记受影响 subtree，在下一帧重新测量整个标记区域。
 
-[已验证: Compose BOM 2025.12.00, LayoutNode.kt; 与 View onMeasure 对比基于 AOSP: frameworks/base/core/java/android/view/View.java]
 
 ### 布局阶段
 
@@ -217,7 +215,6 @@ val renderNode = RenderNode("compose-node-${layoutNode.hashCode()}").apply {
 
 **display list 复用**：Compose 不会每帧重建所有 RenderNode display list。只有 `invalidated` 的 LayoutNode 重新 record display list，其余复用上一帧结果。这是与 View 体系 `buildDrawingCache` / `setDisplayListProperties` 类似的优化——区别在于 Compose 用 Snapshot 系统自动追踪 invalidated 节点，无需手动 `invalidate()`。
 
-[已验证: Compose BOM 2025.12.00, RenderNodeLayer.android.kt; android.graphics.RenderNode 来自 AOSP android-17.0.0_r1: frameworks/base/graphics/java/android/graphics/RenderNode.java]
 
 ## Compose 重组到 RenderNode 的完整链路
 
@@ -254,7 +251,6 @@ flowchart TD
 
 5. **OwnedLayer 更新**：在 draw 阶段，`AndroidComposeView.createLayer()` 创建的 `GraphicsLayerOwnerLayer`（SDK >= M 主路径）或 `RenderNodeLayer`（旧路径/兼容回退）调用对应 RenderNode 的 `beginRecording()` 录制绘制命令，然后 `endRecording()` 提交 display list。
 
-[已验证: Compose BOM 2025.12.00, Snapshot.kt, Recomposer.kt, LayoutNode.kt, RenderNodeLayer.android.kt]
 
 ## PausableComposition：跨帧分块组合
 
@@ -329,7 +325,7 @@ fun recompose(
 3. 若 `shouldPause` 返回 `true`，保存当前 `CompositionContext` 和 `invalidScopes` 状态后返回 `false`（未完成）
 4. 若所有 scope 组合完成且 `invalidScopes` 为空，返回 `true`（完成），调用方可调用 `apply()` 提交
 
-与正文其他部分描述的 checkpoint 分布点不同：当前公开源码中 `shouldPause` 的检查粒度是按 compose/recompose scope 而非每个 `startGroup/endGroup`——Compose compiler 在编译阶段生成的 group 边界不暴露独立的 `pauseIfNeeded` 调用。checkpoint 的精确粒度取决于 `InternalComposer` 内部实现，公开 API 层面的检查点在 scope 级别。
+checkpoint 的分布粒度：当前公开源码中 `shouldPause` 的检查粒度是按 compose/recompose scope 而非每个 `startGroup/endGroup`——Compose compiler 在编译阶段生成的 group 边界不暴露独立的 `pauseIfNeeded` 调用。checkpoint 的精确粒度取决于 `InternalComposer` 内部实现，公开 API 层面的检查点在 scope 级别。
 
 ### 与 Choreographer 帧 deadline 的协作
 
@@ -362,7 +358,6 @@ class AndroidPrefetchScheduler (...) : Choreographer.FrameCallback {
 
 若应用自行实现帧 deadline 判定，可注册 `Choreographer.VsyncCallback` 获取 `FrameData.getPreferredFrameTimeline().getDeadlineNanos()`——平台层该 API 在 Android 12+ 上可用。Compose 当前未接入此路径。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java; Compose BOM 2025.12.00, PausableComposition.kt, PrefetchScheduler.android.kt]
 
 ### apply 提交机制
 
@@ -434,7 +429,6 @@ Snapshot 自动追踪也有代价：每次状态读写都需要更新 reader/wri
 
 详见 §22.26 关于 Snapshot 系统性能开销的深度分析。
 
-[已验证: Compose BOM 2025.12.00, Snapshot.kt, Recomposer.kt; 与 View invalidate 对比基于 AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/View.java]
 
 ## RenderNode 与 DisplayList 提交
 
@@ -460,7 +454,6 @@ flowchart TD
 4. **GPU 绘制**：RenderThread 对 display list 中的每个 RenderNode 执行 GPU 绘制命令。Compose 的 RenderNode 内容（`drawRect`、`drawImage`、`drawText` 等）在这里被翻译成 GLES 或 Vulkan 绘制调用。
 5. **与 View 体系共用**：View 和 Compose 共享同一 `ViewRootImpl.performTraversals()` → `ThreadedRenderer.draw()` 提交路径。两者在 RenderThread 以下完全相同，差异仅在 display list 的构建方式（LayoutNode.draw vs View.onDraw）。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java, frameworks/base/core/java/android/view/ThreadedRenderer.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java; Compose BOM 2025.12.00, AndroidComposeView.android.kt]
 
 ## Compose 与 RenderThread 的协作
 
@@ -496,7 +489,6 @@ sequenceDiagram
 
 Compose 与 View 体系完全共用 `ViewRootImpl` → `ThreadedRenderer` → `RenderThread` 这条基础设施。差异只在 display list 的构建方式（LayoutNode.draw vs View.onDraw）。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java, frameworks/base/core/java/android/view/ThreadedRenderer.java, frameworks/base/graphics/java/android/graphics/HardwareRenderer.java; §2.5 MainThread 与 RenderThread 协作]
 
 ## 互操作渲染路径
 
@@ -523,7 +515,6 @@ Compose 与 View 体系完全共用 `ViewRootImpl` → `ThreadedRenderer` → `R
 
 两者都由同一个 `Choreographer` 驱动，因此在同一帧中同步。但 PausableComposition 可能导致 Compose 部分跨帧完成，而 View 部分在同帧完成——这种时序差异在混合动画场景中可能导致视觉不同步。
 
-[已验证: Compose BOM 2025.12.00, AndroidView.kt; View invalidation 基于 AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/ViewRootImpl.java]
 
 ## Perfetto 渲染跟踪
 
@@ -556,7 +547,6 @@ Compose 渲染管线在 Perfetto trace 中呈现特定的 track 分布模式，�
 - draw > 8ms：大量绘制操作或复杂 `graphicsLayer`（检查 RenderNode display list 的 draw op 数量）
 - RenderThread GPU slices 突然变长：GPU 瓶颈或渲染管路过载（检查 GPU 频率与 thermal 状态）
 
-[基于 AOSP android-17.0.0_r1: HardwareRenderer.java, Choreographer.java; Compose BOM 2025.12.00]
 
 ## 版本演进要点
 
@@ -605,9 +595,7 @@ Compose 的渲染管线可以拆成两层理解：
 
 ## 扩展 6：并发组合的线程安全机制与 Snapshot 同步原语
 
-源码引用：`androidx-compose-release` 分支 `compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt` 与 `snapshots/Snapshot.kt`
-
-多个 Recomposer 实例在同一进程中共存，各自的调度相互隔离；跨线程的状态写入和重组通过 Snapshot 同步原语协调。
+多个 Recomposer 实例可以在同一进程中共存，各自调度相互隔离。跨线程的状态写入和重组通过 Snapshot 同步原语协调。
 
 ### 扩展 6.1 Recomposer 的两把锁
 

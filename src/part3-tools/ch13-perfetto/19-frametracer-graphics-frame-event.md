@@ -546,3 +546,10 @@ static constexpr nsecs_t kFenceSignallingDeadline = 60'000'000'000; // 60 second
 - 摘要：基于 4 个 AOSP tag 的 proto diff 证明 HWC_COMPOSITION_QUEUED 自 Android 12 即存在且无 emit 站点，FALLBACK_COMPOSITION 才是真实 GPU 合成事件。完整记录 presentOrValidate 快速/慢速路径状态机、traceFence pending 队列机制，以及 GPU/HWC 合成边界的 OutputLayer 判定逻辑。
 - 注入时间：2026-06-28
 - 价值：修正 HWC_COMPOSITION_QUEUED 为 Android 17 新增的错误认知，提供 FrameTracer 事件 emit 站点的完整源码排查，对 Perfetto GPU 分析至关重要
+
+### Android 17 FrameTimeline 数据结构与 GPU/CPU 合成边界判定机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-frametimeline-gpu-cpu-boundary-hwc-composition.md
+- 类型：DeepResearch 调研结果
+- 摘要：揭示 Android 17 Perfetto GPU trace 由 FrameTracer（6类事件）与 FrameTimeline（5类子消息）双数据源构成；HWC_COMPOSITION_QUEUED(proto值6)和 RELEASE_FENCE(proto值9)在 AOSP 主线均无发射点，是 OEM HAL 扩展占位符；GPU/HWC 合成边界由 gpu_composition 标志位判定，Layer.cpp 仅在 requiresClientComposition() 为真时触发 FALLBACK_COMPOSITION。
+- 注入时间：2026-06-29
+- 价值：修正 FrameTracer 事件体系的认知盲区，明确哪些 proto 枚举有实际 emit 站点、哪些是占位符，对 Perfetto GPU 渲染分析至关重要
