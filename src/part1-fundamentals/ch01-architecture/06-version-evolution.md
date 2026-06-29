@@ -7,7 +7,7 @@ polish_date: '2026-04-06'
 polish_by: task2b-polish
 applicable_versions: Android 4.4 (API 19) - Android 17 (API 37)
 last_verified: '2026-06-07'
-last_verified_against: 'AOSP android-16.0.0_r4, Android 16/17 官方文档'
+last_verified_against: 'AOSP android-17.0.0_r1, Android 17 官方文档'
 confidence: medium
 sources:
 - type: official
@@ -53,10 +53,10 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-07T04:33:40+08:00"
-status: finalized
-reviewed_date: '2026-05-09'
-reviewed_by: openclaw-task6
-last_task6_at: "2026-06-07T04:12:51+08:00"
+status: fixed-lite
+reviewed_date: '2026-06-29'
+reviewed_by: task2b-lite
+last_task6_at: "2026-06-29T13:35:00+08:00"
 last_task6_audit: '2026-05-23'
 last_task6_review_log: logs/review/2026-06-07-04-review.md
 task6_state: reviewed
