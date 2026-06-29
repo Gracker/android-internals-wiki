@@ -1,4 +1,5 @@
 ---
+
 title: Perfetto 简介与演进
 chapter: '13.1'
 section: '13.1'
@@ -38,12 +39,12 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: "fixed-lite"
+task2b_state: fixed
+task2b_result: fixed
 task2b_rework_date: "2026-05-28T06:50:00+08:00"
 last_task2b_lite_at: "2026-06-29"
 task9_reviewed_date: "2026-06-29"
@@ -72,7 +73,9 @@ task6_l3_l4_issues: 0
 task6_l1_l2_fixes: 2
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
----
+rework_date: 2026-06-29
+rework_by: openclaw-task2b
+----
 
 # Perfetto 简介与演进
 
@@ -509,6 +512,8 @@ Perfetto 的定位、架构和核心概念已经铺开。接下来的章节进�
 
 ### 📋 版本可用性精确源码验证
 
+> ⚠️ 本节为源码锚点补充，版本分界以正文"常见 data source 可用性对照表"为准；如有冲突，正文为正。
+
 通过 android-17.0.0_r1 源码系统验证，解决官方文档中"Android 9起可用"与"Android 10+"的矛盾：
 
 #### 基础服务架构（Android 9）
@@ -516,12 +521,8 @@ Perfetto 的定位、架构和核心概念已经铺开。接下来的章节进�
 // external/perfetto/Android.bp (Line ~18146)
 cc_binary {
     name: "traced",
-    init_rc: ["traced.rc"],  // 服务已进 system image
-}
-
-cc_binary {
-    name: "traced_probes", 
-    init_rc: ["traced_probes.rc"], // 采集层代理
+    init_rc: ["perfetto.rc"],  // 服务已进 system image；实际 rc 文件为 external/perfetto/perfetto.rc
+    // traced_probes 是独立的 cc_binary，无独立 init_rc
 }
 ```
 **实际能力**：Android 9 traced 服务虽已集成，但缺乏完整 tracing 生态系统：
@@ -541,15 +542,15 @@ readproc // 支持更多系统进程访问
 ```
 **里程碑变化**：
 - ✅ `perfetto --txt` 命令行支持
-- ✅ 配置文件读取路径可用（user device SELinux 已放行）
 - ✅ heapprofd 完整集成（2019-01-03 首次提交）
 - ✅ 正式成为 Android tracing 主线工具
+- ⚠️ 配置文件仍受 SELinux 限制，非 root 需 stdin 传入；`/data/misc/perfetto-configs/` 目录直到 Android 12 才由 perfetto.rc 创建
 
 #### 数据源演进（Android 11-17）
 | 版本 | 关键新增能力 | 源码证据 |
 |-----|-------------|---------|
-| Android 11 | FrameTimeline 数据源 | `kFrameTimelineDataSource = "android.surfaceflinger.frametimeline"` |
-| Android 12 | Java heap dump | `android.java_hprof`（2020-11-05） |
+| Android 11 | Java heap dump | `android.java_hprof`（2020-11-05）；frameworks/base/proto/src/android/heap/*.proto 已含 Java heap dump 定义 |
+| Android 12 | FrameTimeline 数据源 | `kFrameTimelineDataSource = "android.surfaceflinger.frametimeline"`；`frameworks/native/services/surfaceflinger/` FrameTimeline 路径与 `frame_timeline_event.proto` 均自 Android 12 引入 |
 | Android 14 U QPR1 | Skia integration | `AndroidSdkSyspropGuardConfig` |
 | Android 15 | ProfilingManager API | `com.android.profiling` APEX |
 | Android 15+ | Exclusive tracing | `tids_to_trace = 35` |
