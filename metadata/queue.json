@@ -391,7 +391,9 @@
     ],
     "added_by": "task3-freshness-check",
     "added_at": "2026-06-29T02:12:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-lite",
+    "completion_note": "fixed-lite: reanchored android-16.0.0_r1 to android-17.0.0_r1 in last_verified_against field"
   },
   {
     "section": "18.25",
@@ -808,5 +810,53 @@
     "completed_by": "task2b-lite",
     "completed_at": "2026-06-29T15:52:30+08:00",
     "completion_note": "fixed-lite: 版本基线重锚 android-16.0.0_r1 → android-17.0.0_r1"
+  },
+  {
+    "priority": 80,
+    "section": "1.41",
+    "section_title": "Android 17 机器学习驱动的任务调度器",
+    "path": "src/part1-fundamentals/ch01-architecture/1.41-android-17-机器学习驱动的任务调度器.md",
+    "created_at": "2026-06-29T16:18:00Z",
+    "reason": "新章节 - 知识缺口挖掘产出"
+  },
+  {
+    "priority": 80,
+    "section": "1.42",
+    "section_title": "Android 17 RPC Binder 事务上限提升",
+    "path": "src/part1-fundamentals/ch01-architecture/1.42-android-17-rpc-binder-事务上限提升.md",
+    "created_at": "2026-06-29T16:18:00Z",
+    "reason": "新章节 - 知识缺口挖掘产出"
+  },
+  {
+    "priority": 80,
+    "section": "2.32",
+    "section_title": "Android 17 FrameTimeline 数据结构",
+    "path": "src/part1-fundamentals/ch02-rendering/2.32-android-17-frametimeline-数据结构.md",
+    "created_at": "2026-06-29T16:18:00Z",
+    "reason": "新章节 - 知识缺口挖掘产出"
+  },
+  {
+    "priority": 80,
+    "section": "4.18",
+    "section_title": "Android 17 MemoryLimiter 深度解析",
+    "path": "src/part1-fundamentals/ch04-memory/4.18-android-17-memorylimiter-深度解析.md",
+    "created_at": "2026-06-29T16:18:00Z",
+    "reason": "新章节 - 知识缺口挖掘产出"
+  },
+  {
+    "priority": 80,
+    "section": "6.19",
+    "section_title": "Linux 6.10 内存碎片整理机制",
+    "path": "src/part1-fundamentals/ch06-storage/6.19-linux-6.10-内存碎片整理机制.md",
+    "created_at": "2026-06-29T16:18:00Z",
+    "reason": "新章节 - 知识缺口挖掘产出"
+  },
+  {
+    "priority": 80,
+    "section": "22.29",
+    "section_title": "Jetpack Compose 并发安全机制",
+    "path": "src/part5-app/ch22-rendering-practice/22.29-jetpack-compose-并发安全机制.md",
+    "created_at": "2026-06-29T16:18:00Z",
+    "reason": "新章节 - 知识缺口挖掘产出"
   }
 ]
