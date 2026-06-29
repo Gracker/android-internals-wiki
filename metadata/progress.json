@@ -1,6 +1,6 @@
 {
   "total": 535,
-  "draft": 36,
+  "draft": 35,
   "ready-for-review": 151,
   "finalized": 332,
   "task9_result": "pass-tech-review",
@@ -1647,6 +1647,13 @@
       "drafted_date": "2026-06-29",
       "drafted_by": "task2a-knowledge-gap",
       "last_review": "2026-06-29"
+    },
+    "1.31": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "drafted_date": "2026-06-30",
+      "drafted_by": "task2a-knowledge-gap",
+      "last_review": "2026-06-30"
     }
   },
   "chapters": {
@@ -1659,7 +1666,7 @@
     }
   },
   "last_updated": "2026-06-29T18:22:37.564345",
-  "ready_for_review": 4,
+  "ready_for_review": 5,
   "reviews": [
     {
       "date": "2026-06-28",
@@ -1705,6 +1712,16 @@
       ],
       "result": "draft completed",
       "action": "processing section 13.25 PerfDog GPU performance data sources"
+    },
+    {
+      "date": "2026-06-30",
+      "time": "00:30",
+      "task": "task2a-draft-processing",
+      "sections": [
+        "1.31"
+      ],
+      "result": "draft completed",
+      "action": "processing section 1.31 Binder RPC transaction limit optimization"
     }
   ],
   "rework_log": [
@@ -1742,5 +1759,5 @@
     "last_review_date": "2026-06-29",
     "last_review_session": "2026-06-29-22"
   },
-  "last_task2a_at": "2026-06-29T23:09:53.783716+08:00"
+  "last_task2a_at": "2026-06-30T00:30:00+08:00"
 }
