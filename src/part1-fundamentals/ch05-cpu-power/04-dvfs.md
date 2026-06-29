@@ -3,10 +3,14 @@ title: DVFS 与功耗管理
 chapter: '5.4'
 section: '5.4'
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-05-01'
-last_verified_against: Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)
+last_verified: '2026-06-29'
+last_verified_against: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power), Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)
 confidence: medium
 sources:
+- type: aosp
+  path: frameworks/base @ android-17.0.0_r1
+- type: aosp
+  path: hardware/interfaces/power @ android-17.0.0_r1
 - type: aosp
   path: kernel/sched/cpufreq_schedutil.c @ android15-6.6, android16-6.12
 - type: aosp
@@ -39,16 +43,16 @@ drafted_by: openclaw-task2
 polish_count: 1
 polish_date: '2026-04-07'
 polish_by: task2b-polish
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: '2026-06-07'
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-06-07T19:20:00+08:00'
-last_task9_autofix_at: '2026-06-07'
+last_task9_at: '2026-06-29T19:26:54+08:00'
+last_task9_autofix_at: '2026-06-29'
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
@@ -74,10 +78,10 @@ task6_review_notes: 2026-06-07 Task6 19:14：Task9 auto-fix 后写作复审（re
   16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。
   | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量
   L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。
-last_task9_review_log: logs/deep-review/2026-06-07-19-deep-review.md
-task9_review_notes: "2026-06-07 19:20 Task9 pass-tech-review：P0 0 / P1 0 / P2 0；复核今日 auto-fix 结果通过，queue 无 pending，自动晋升 finalized。 | 2026-06-07 18:20 Task9 auto-fixed：P2 3；收紧 Perfetto/SCMI 频率口径、修正 7.3 相对链接、修正 scaling_cur_freq 与 thermal trip point 设备边界。回到 Task6 复审。 | 2026-06-07 17:20 Task9 auto-fixed：P0 2；修正 GameManagerService loading power mode 入口为 setGameState/notifyGraphicsEnvironmentSetup，并将 Power HAL Mode 枚举 CAMERA 修为 CAMERA_STREAMING_*。回到 Task6 复审。 | 2026-06-07 17:05 Task6 revisiting pass-light-edit. L1 禁用词「落地」→「实现于」1处. 送Task9复审. | 2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
-last_task9_audit: '2026-06-07'
-review_type: task9-deep-tech-review
+last_task9_review_log: logs/deep-review/2026-06-29-19-audit.md
+task9_review_notes: "2026-06-29 19:26 Task9 闲时抽检 auto-fixed：P1 1；Android 17 tag 已公开，Framework/Power HAL 源码锚点从 android-16.0.0_r1 升到 android-17.0.0_r1；回到 Task6 复审。 | 2026-06-07 19:20 Task9 pass-tech-review：P0 0 / P1 0 / P2 0；复核今日 auto-fix 结果通过，queue 无 pending，自动晋升 finalized。 | 2026-06-07 18:20 Task9 auto-fixed：P2 3；收紧 Perfetto/SCMI 频率口径、修正 7.3 相对链接、修正 scaling_cur_freq 与 thermal trip point 设备边界。回到 Task6 复审。 | 2026-06-07 17:20 Task9 auto-fixed：P0 2；修正 GameManagerService loading power mode 入口为 setGameState/notifyGraphicsEnvironmentSetup，并将 Power HAL Mode 枚举 CAMERA 修为 CAMERA_STREAMING_*。回到 Task6 复审。 | 2026-06-07 17:05 Task6 revisiting pass-light-edit. L1 禁用词「落地」→「实现于」1处. 送Task9复审. | 2026-06-07 Task9 闲时抽检：needs-rework。P0 2 / P1 1；Android 17 源码锚点未公开且补充块把 GameManagerService/PowerManager powerHint 链路写错，已写入 queue P95。"
+last_task9_audit: '2026-06-29'
+review_type: task9-idle-audit
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 ---
@@ -551,15 +555,15 @@ schedutil 是一个通用方案，它对典型 Android 应用场景做了优化�
 - RTG 聚合调频分析：OPPO 内核工匠《调度器分支之RTG》
 - GPU 性能原理：腾讯技术工程《GPU 性能原理拆解》
 
-<!-- AIW-源码调研-2026-06-01 · 2026-06-07 Task2B 回炉修复：修正 GameManager/Power HAL 调用链与移除不可验证 android-17 tag -->
+<!-- AIW-源码调研-2026-06-01 · 2026-06-29 Task9 抽检：Android 17 tag 已公开，GameManager/Power HAL 锚点升级到 android-17.0.0_r1 -->
 ## 游戏调度框架与 Power HAL 协同
 
 
-> **版本说明**：截至 2026-06-07，AOSP 公开 Gitiles `refs/tags/android-17.0.0_r1` 尚未发布。以下源码锚点以 `android-16.0.0_r1` 为最新可验证 tag；Android 17/API 37 的游戏调度行为以上线设备行为为准，AOSP 确认需待 tag 公开后复核。
+> **版本说明**：截至 2026-06-29，AOSP 公开 Gitiles 已发布 `refs/tags/android-17.0.0_r1`。本节 GameManagerService、PowerManagerService 与 Power HAL AIDL 锚点已复核到该 tag；kernel/common 仍未提供 `android17-6.12` 分支或 `android-17.0.0_r1` tag，schedutil / SCMI 代码段保留 `android15-6.6`、`android16-6.12` ACK 分支边界，不写成 Android 17 新增行为。
 
 ### GameManagerService 游戏模式感知层
 
-AOSP android-16.0.0_r1 中，`GameManagerService`（路径：`frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`）负责检测和管理游戏状态。关键函数：
+AOSP android-17.0.0_r1 中，`GameManagerService`（路径：`frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`）负责检测和管理游戏状态。关键函数：
 
 - `setGameMode(String packageName, @GameMode int gameMode, int userId)` — 切换游戏模式（标准/性能/省电），更新 game mode interventions
 - `getGameMode()` — 查询当前游戏模式
@@ -572,17 +576,17 @@ GameManagerService → PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, isLo
 
 具体地，游戏进入 loading 状态有两条可验证入口：`setGameState(...)` 在应用上报 loading 状态时通过 handler 设置 `Mode.GAME_LOADING`；`notifyGraphicsEnvironmentSetup(...)` 在游戏启动的 graphics env 初始化后按配置开启 loading boost，并通过延迟消息关闭。`setGameMode(...)` 本身只更新模式与 interventions，不直接下发 loading power mode。`PowerManagerInternal` 是系统服务内部接口（`@hide`），不暴露给第三方应用。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java — `setGameState()` / `notifyGraphicsEnvironmentSetup()` / `PowerManagerInternal.setPowerMode(Mode.GAME_LOADING)`]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java — `setGameState()` / `notifyGraphicsEnvironmentSetup()` / `PowerManagerInternal.setPowerMode(Mode.GAME_LOADING)`]
 
-> **PowerManager.java / IPowerManager.aidl 复核**：android-16.0.0_r1 的 `PowerManager.java` 和 `IPowerManager.aidl` 未命中 `powerHint` 方法或 `POWER_HINT_*` 常量簇。旧版 Android（API 28 之前）曾存在 `powerHint()` / `POWER_HINT_INTERACTIVE` 等常量，已在后续版本移除，不是 Android 16/17 的公开 API。
+> **PowerManager.java / IPowerManager.aidl 复核**：android-17.0.0_r1 的 `PowerManager.java` 和 `IPowerManager.aidl` 未命中 `powerHint` 方法或 `POWER_HINT_*` 常量簇。旧版 Android（API 28 之前）曾存在 `powerHint()` / `POWER_HINT_INTERACTIVE` 等常量，已在后续版本移除，不是 Android 16/17 的公开 API。
 
 ### PowerManagerService 与 Power HAL AIDL
 
-`PowerManagerService`（路径：`frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`，android-16.0.0_r1）内部通过 `setPowerModeInternal()` 承载游戏/相机/VR 等场景的性能模式请求，JNI 入口为 `nativeSetPowerMode()`（路径：`services/core/jni/com_android_server_power_PowerManagerService.cpp`），最终通过 Power HAL AIDL 接口 `IPower.setMode()` 下发到 HAL 层。
+`PowerManagerService`（路径：`frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`，android-17.0.0_r1）内部通过 `setPowerModeInternal()` 承载游戏/相机/VR 等场景的性能模式请求，JNI 入口为 `nativeSetPowerMode()`（路径：`frameworks/base/services/core/jni/com_android_server_power_PowerManagerService.cpp`），最终通过 Power HAL AIDL 接口 `IPower.setMode()` 下发到 HAL 层。
 
-Power HAL AIDL 的 `Mode` 枚举（如 `GAME_LOADING`、`GAME`、`SUSTAINED_PERFORMANCE`、`CAMERA_STREAMING_HIGH` 等）取代了旧的 `powerHint` 整型常量机制。Android 15/16 的系统侧下发路径使用 AIDL Power HAL，具体模式到频率、调度或功耗策略的映射由 vendor 实现决定。
+`hardware/interfaces/power/aidl/android/hardware/power/Mode.aidl` 中的 `Mode` 枚举（如 `GAME_LOADING`、`GAME`、`SUSTAINED_PERFORMANCE`、`CAMERA_STREAMING_HIGH` 等）取代了旧的 `powerHint` 整型常量机制。Android 15-17 的系统侧下发路径使用 AIDL Power HAL，具体模式到频率、调度或功耗策略的映射由 vendor 实现决定。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java + services/core/jni/com_android_server_power_PowerManagerService.cpp — `nativeSetPowerMode()` / `IPower.setMode()`]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java + frameworks/base/services/core/jni/com_android_server_power_PowerManagerService.cpp + hardware/interfaces/power/aidl/android/hardware/power/Mode.aidl — `nativeSetPowerMode()` / `IPower.setMode()`]
 
 ### Power HAL 的 vendor 配置边界
 
@@ -616,5 +620,5 @@ thermal 降频路径：`/sys/class/thermal/thermal_zone*/`。具体 trip point �
 
 ### 荣耀 MUSCHED 说明
 
-荣耀 MUSCHED 为厂商私有实现，AOSP 未见源码。已验证 AOSP 路径仅覆盖通用 Android 调度框架，厂商特异调度器（如 MUSCHED）属于 vendor 分支，不在 android-16.0.0_r1 主线范围内。Android 17 厂商扩展部分待 tag 公开后复核。
+荣耀 MUSCHED 为厂商私有实现，AOSP 未见源码。已验证 AOSP 路径仅覆盖通用 Android 调度框架，厂商特异调度器（如 MUSCHED）属于 vendor 分支，不在 android-17.0.0_r1 主线范围内。Android 17 厂商扩展仍需设备厂商源码或 trace 复核。
 
