@@ -1,56 +1,39 @@
 ---
-
 title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-04"
-last_verified: "2026-06-11"
-last_verified_against: "developer.android.com API reference (ProfilingTrigger API 36/36.1/37) + AOSP android-17.0.0_r1 SystemHealthManager / Display / packages/modules/Profiling"
+last_verified: 2026-06-29
+last_verified_against: AOSP android-17.0.0_r1 PerformanceHintManager / HintManagerService / hardware/interfaces/power/aidl
 confidence: medium
 sources:
   - type: official
     path: "developer.android.com/about/versions/12/behavior-changes-12"
   - type: official
-    path: "developer.android.com/about/versions/13/behavior-changes-13"
   - type: official
-    path: "developer.android.com/about/versions/14/behavior-changes-14"
   - type: official
-    path: "developer.android.com/about/versions/15/behavior-changes-15"
   - type: official
-    path: "developer.android.com/about/versions/16/behavior-changes-16"
   - type: official
-    path: "developer.android.com/reference/android/os/ProfilingManager"
   - type: official
-    path: "developer.android.com/reference/android/os/ProfilingTrigger"
   - type: official
-    path: "developer.android.com/reference/android/os/health/SystemHealthManager"
   - type: official
-    path: "developer.android.com/reference/android/view/Display"
   - type: official
-    path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
   - type: official
-    path: "https://android.googlesource.com/platform/packages/modules/Profiling/+/android-16.0.0_r1/framework/java/android/os/ProfilingManager.java"
   - type: official
-    path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java"
   - type: official
-    path: "developer.android.com/reference/android/view/Choreographer"
   - type: official
-    path: "developer.android.com/reference/android/view/FrameMetrics"
   - type: blog
-    path: "android-developers.googleblog.com (ADPF updates)"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-12"
 last_task6_audit: "2026-06-12"
 section: "16.2"
-status: "finalized"
+status: ready-for-review
 last_task2b_lite_at: "2026-06-29"
-task6_state: revisiting
-task2b_result: fixed-lite
-last_task2b_lite_at: "2026-05-29"
+task2b_result: fixed
 last_task9_audit: "2026-06-11"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: openclaw-task6
@@ -64,14 +47,16 @@ task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
 task9_result: "needs-rework"
-task9_state: "reviewed"
-task2b_state: "pending"
-pipeline_stage: "task2b_pending"
+task9_state: pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 last_task9_at: "2026-06-29T16:41:24+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-29-16-deep-review.md"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-29"
 task9_review_notes: "2026-06-29 Task9: 附录“Android 17 端侧 AI 资源调度”仍以 AOSP main 代表 Android 17，并声明 android-17 tag 未发布；已写入 Task2B 队列重锚 android-17.0.0_r1。"
+last_task2b_at: 2026-06-29T16:56:18+08:00
+last_task2b_by: openclaw-task2b
 ---
 
 # 各 Android 版本性能变更追踪
@@ -667,11 +652,13 @@ SDK 端入口仍是 `PerformanceHintManager`（`frameworks/base/core/java/androi
 
 **2. PowerHAL AIDL 把"端侧 AI 可调用边界"显式化了**
 
-Android 17 的 PowerHAL 走 AIDL v6（`hardware/interfaces/power/aidl/android/hardware/power/`），关键文件：`IPower.aidl`、`IPowerHintSession.aidl`、`SessionHint.aidl`、`SessionMode.aidl`、`SessionTag.aidl`、`CpuHeadroomParams.aidl`、`GpuHeadroomParams.aidl`、`WorkDuration.aidl`、`ChannelMessage.aidl`。`CpuHeadroomParams.calculationWindowMillis` 是 v6 新增，HAL 须支持 `[50, 10000]`ms 超集；v6 之前 HAL 不报错但回 `Float.NaN`。
+Android 17 平台代码通过 `getInterfaceVersion()` 动态判断 PowerHAL 接口版本，`getSupportInfo()` 要求 HAL v6+（`HintManagerService.java:367`）。关键 AIDL 文件全部锚定 `android-17.0.0_r1`：`IPower.aidl`、`IPowerHintSession.aidl`、`SessionHint.aidl`、`SessionMode.aidl`、`SessionTag.aidl`、`CpuHeadroomParams.aidl`、`GpuHeadroomParams.aidl`、`WorkDuration.aidl`、`ChannelMessage.aidl`。
+
+`CpuHeadroomParams.calculationWindowMillis`（默认 1000ms）对应 `SupportInfo.aidl` 中的 `cpuMinCalculationWindowMillis=50` ~ `cpuMaxCalculationWindowMillis=10000` 范围，HAL 须支持该窗口超集；v6 之前的 HAL 不报错但 `getCpuHeadroom()` / `getGpuHeadroom()` 回 `Float.NaN`（`HintManagerService.java:335-358`）。
 
 **3. `HintManagerService` 的 3 个隐藏陷阱**
 
-- `mCpuHeadroomCache` / `mGpuHeadroomCache` 缓存窗口至少 1s（`DEFAULT_GPU_HEADROOM_INTERVAL_MILLIS = 1000`），每 token 调 `getGpuHeadroom` 不会拿到更高刷新率。
+- `mCpuHeadroomCache` / `mGpuHeadroomCache` 的缓存窗口由 HAL 上报的 `mSupportInfo.headroom.{cpu,gpu}MinIntervalMillis` 决定（`HintManagerService.java:335,358`），`HeadroomCache` 容量固定为 2；轮询间隔短于 HAL 窗口时会返回缓存结果，不会提升刷新率。
 - `MyUidObserver.onUidStateChanged` 在 uid 退出 `PROCESS_STATE_IMPORTANT_FOREGROUND` 时把所有 session 的 hint 推送静默丢弃；后台 ASR / OCR 的 hint 形同虚设，需前台服务保活。
 - `AppHintSessionSnapshot.mTag` 把 session 分类（OTHER/SURFACEFLINGER/HWUI/GAME/APP/SYSUI）写入 statsd；端侧 AI 实时滤镜建议用 `GAME`，离线推理用 `APP`，分类错会丢调度策略。
 
@@ -692,9 +679,15 @@ Android 17 的 PowerHAL 走 AIDL v6（`hardware/interfaces/power/aidl/android/ha
 - Android 12 (API 31)：`PerformanceHintManager` 初版，CPU only。
 - Android 15 (API 35)：`POWER_EFFICIENCY` mode + `WorkDuration.cpuDurationNanos/gpuDurationNanos` 同报。
 - Android 16 (API 36)：`SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 公开（带 `FLAG_CPU_GPU_HEADROOMS`）。
-- Android 17 (API 37)：PowerHAL AIDL v6，`CpuHeadroomParams.calculationWindowMillis` 落地，`ChannelMessage` 落地；SDK 端 flag 与 AIDL 字段对齐，端侧 AI 推理可按场景精细选 hint / mode / tag。
+- Android 17 (API 37)：PowerHAL 接口 v6+（`getSupportInfo()` 要求 v6），`CpuHeadroomParams.calculationWindowMillis` 可用，`ChannelMessage` 可用；SDK 端 flag 与 AIDL 字段对齐，端侧 AI 推理可按场景精细选 hint / mode / tag。
 
-**信息源**：AOSP `frameworks/base/core/java/android/os/PerformanceHintManager.java`（main）、`frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java`（main）、`hardware/interfaces/power/aidl/android/hardware/power/`（main）。AOSP `android-17.0.0_r1` tag 在 2026-06-13 抓取时未发布，本节以 main 分支代表 Android 17 当前方向，**不直接引用行号**；tag 发布后应优先 diff tag 版本。
+**信息源**（均锚定 `android-17.0.0_r1`）：
+
+- `frameworks/base/core/java/android/os/PerformanceHintManager.java`：[android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java) — `GPU_LOAD_*` hints / `setPreferPowerEfficiency` / `reportActualWorkDuration(WorkDuration)`
+- `frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java`：[android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java) — `HeadroomCache` / `onUidStateChanged` / `getSessionChannel` / `AppHintSessionSnapshot`
+- `hardware/interfaces/power/aidl/android/hardware/power/`：[android-17.0.0_r1](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/) — `CpuHeadroomParams.aidl`（`calculationWindowMillis`）、`ChannelMessage.aidl`、`SupportInfo.aidl`（50-10000ms 范围）等全部 AIDL 文件
+
+> 本节 2026-06-13 初研时依赖 main 分支；本轮（2026-06-29）已逐项重锚 `android-17.0.0_r1`，并对 `DEFAULT_GPU_HEADROOM_INTERVAL_MILLIS` 等不存在的常量做了修正。
 
 ## 附录：Android 16 ART Generational CMC / userfaultfd GC 机制源码调研
 
