@@ -4,23 +4,29 @@ chapter: "22.2"
 section: "22.2"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "Android Developers docs, AIW 7.8/22.1/2.4, Clippings 结构参考；AndroidX 源码引用 androidx-main 移动分支，未固定到不可变 tag"
+last_verified: "2026-06-30"
+last_verified_against: "AndroidX RecyclerView 1.4.0 sources.jar + Android Developers docs + AIW 7.8/22.1/2.4；AndroidX RecyclerView 为独立 artifact，不属于 android-17.0.0_r1 platform tag"
 confidence: medium
-androidx_source_note: "AndroidX RecyclerView 源码路径指向 androidx-main 移动分支（platform/frameworks/support），不属于 android-17.0.0_r1 tag 覆盖范围；源码引用作为机制理解参考，不作为 Android 17 版本结论依据。"
+androidx_source_note: "AndroidX RecyclerView 源码以 androidx.recyclerview:recyclerview:1.4.0 sources.jar 为不可变基线；RecyclerView 是 AndroidX artifact，不属于 android-17.0.0_r1 platform tag。"
 drafted_date: "2026-05-13"
 polish_count: 1
 sources:
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java"
+    path: "androidx.recyclerview:recyclerview:1.4.0 sources.jar (RecyclerView.java)"
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java"
+    path: "androidx.recyclerview:recyclerview:1.4.0 sources.jar (DiffUtil.java)"
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/AsyncListDiffer.java"
+    path: "androidx.recyclerview:recyclerview:1.4.0 sources.jar (AsyncListDiffer.java)"
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/LinearLayoutManager.java"
+    path: "androidx.recyclerview:recyclerview:1.4.0 sources.jar (ListAdapter.java)"
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java"
+    path: "androidx.recyclerview:recyclerview:1.4.0 sources.jar (LinearLayoutManager.java)"
+  - type: androidx
+    path: "androidx.recyclerview:recyclerview:1.4.0 sources.jar (GapWorker.java)"
+  - type: androidx
+    path: "androidx.recyclerview:recyclerview:1.4.0 sources.jar (SimpleItemAnimator.java)"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/recyclerview#recyclerview-1.4.0"
   - type: official
     path: "https://developer.android.com/reference/androidx/recyclerview/widget/DiffUtil"
   - type: official
@@ -45,9 +51,9 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
 tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 task6_result: pass-light-edit
@@ -59,15 +65,19 @@ last_task6_audit: "2026-06-07"
 last_task6_review_log: logs/review/2026-06-30-02-review.md
 task6_reviewed_at: "2026-06-30T02:13:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_review_notes: "2026-06-30 Task6 revisit：Task2B Lite 已修复 androidx-main 源码锚点标注；写作质检通过（禁用词0/高频词0/锚点全覆盖），清理 4 行 [结构参考] 处理残留；task9_result 仍为 needs-rework，等待 Task9 复核 Lite 修复。"
-task9_result: needs-rework
+task6_review_notes: "2026-06-30 Task6 revisit：Task2B Lite 已补充移动分支源码锚点标注；写作质检通过（禁用词0/高频词0/锚点全覆盖），清理 4 行 [结构参考] 处理残留；task9_result 仍为 needs-rework，等待 Task9 复核 Lite 修复。"
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-30"
-last_task9_at: "2026-06-30T01:28:33+08:00"
+last_task9_at: "2026-06-30T02:25:45+08:00"
 last_task9_audit: "2026-06-30"
 last_task2b_lite_at: "2026-06-30"
-last_task9_review_log: "logs/deep-review/2026-06-30-01-audit.md"
-task9_review_notes: "2026-06-30 Task9 闲时抽检：P1 版本/源码锚点问题；AndroidX sources 使用 androidx-main，需固定到可接受基线或标注未进入 Android 17。"
+last_task9_review_log: "logs/deep-review/2026-06-30-02-deep-review.md"
+task9_review_notes: "2026-06-30 Task9 闲时抽检：P1 版本/源码锚点问题；AndroidX sources 原使用移动分支，需固定到可接受基线或标注未进入 Android 17。 | 2026-06-30 Task9 auto-fix：源码锚点从移动分支收敛到 androidx.recyclerview:recyclerview:1.4.0 sources.jar；1.4.0 source jar 已验证包含 RecyclerView/DiffUtil/AsyncListDiffer/ListAdapter/LinearLayoutManager/GapWorker/SimpleItemAnimator 等本文引用标识符；回到 Task6 复审。"
+last_task9_autofix_at: "2026-06-30"
+task9_p0_issues: 0
+task9_p1_issues: 1
+task9_p2_issues: 0
 ---
 
 # RecyclerView 最佳实践
@@ -97,14 +107,14 @@ task9_review_notes: "2026-06-30 Task9 闲时抽检：P1 版本/源码锚点问�
 
 RecyclerView 优化不该从“调几个参数”开始，而要从滑动路径里的成本来源开始：创建 ViewHolder、绑定数据、计算差异、预取下一屏、处理嵌套滑动。7.8 节已经展开 RecyclerView 内部布局、缓存和 GapWorker 机制；这里把机制转成应用侧写法、验收方法和取舍边界。
 
-> **⚠️ 源码锚点说明**：本节 AndroidX 源码引用基于 `platform/frameworks/support` 的 `androidx-main` 移动分支。AndroidX 独立于 AOSP platform tag，未进入 `android-17.0.0_r1` tag 覆盖范围。以下源码引用用于机制说明，不作为 Android 17 版本快照结论依据。
+> **⚠️ 源码锚点说明**：本节 AndroidX RecyclerView 源码以 `androidx.recyclerview:recyclerview:1.4.0` 的 `recyclerview-1.4.0-sources.jar` 为不可变基线。RecyclerView 是 AndroidX artifact，不属于 `android-17.0.0_r1` platform tag；本文不使用移动分支作为 Android 17 结论依据。
 
 
 ## ViewHolder 复用与 ItemType 设计
 
 ViewHolder 设计的目标是让滑动过程尽量走缓存命中，减少反复 `inflate` 和完整绑定。AndroidX RecyclerView 源码里，`RecycledViewPool` 支持在多个 RecyclerView 之间共享 ViewHolder，默认按 `viewType` 分桶；每个类型的池容量可通过 `setMaxRecycledViews()` 调整。RecyclerView 自身还有 `mCachedViews`，默认缓存大小是 2。详见 7.8 节的四级缓存说明。
 
-[已验证: AndroidX `RecyclerView.java`, `RecycledViewPool`, `mCachedViews`, `DEFAULT_CACHE_SIZE`]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar `RecyclerView.java`, `RecycledViewPool`, `mCachedViews`, `DEFAULT_CACHE_SIZE`]
 
 `viewType` 的划分要按“布局结构是否不同”来做，避免按业务枚举一项一项拆。两个 item 如果 XML 结构一致，只是文案、图片、按钮状态不同，应该共用同一个 `viewType`。过多 `viewType` 会把池子切碎：每个类型都有自己的容量限制，某一类刚回收的 ViewHolder 无法服务另一类 item，滑动时就会重新创建。
 
@@ -117,7 +127,7 @@ ViewHolder 设计的目标是让滑动过程尽量走缓存命中，减少反复
 | `onBindViewHolder()` | 只绑定当前数据，重活交给异步组件 | 每次 bind 都重建复杂对象、重复设置监听 | `RV onBindViewHolder type=...` 在慢帧里变长 |
 | Pool | 嵌套同构列表共享 `RecycledViewPool` | 每个子列表独立持有池 | 外层滑动时内层列表反复 create |
 
-[已验证: AndroidX `RecyclerView.java`, Adapter trace sections]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar `RecyclerView.java`, Adapter trace sections]
 
 嵌套横向列表的共享池可以写成下面这样。重点是让同构子列表共用同一批 ViewHolder，再按首屏数量调容量。
 
@@ -139,7 +149,7 @@ fun bindHorizontalList(holder: SectionHolder, items: List<Card>) {
 
 这段代码把多个子列表的回收池合并到一个对象里。`TYPE_CARD` 的容量按“屏幕上可能同时出现的子列表数 × 每个子列表可见卡片数”估算，再用 Perfetto 验证滑动中 `RV onCreateViewHolder` 是否下降。容量过大会增加内存占用，不能只按峰值堆上去。
 
-[已验证: AndroidX `RecyclerView.RecycledViewPool#setMaxRecycledViews`, `LinearLayoutManager#setRecycleChildrenOnDetach`]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar `RecyclerView.RecycledViewPool#setMaxRecycledViews`, `LinearLayoutManager#setRecycleChildrenOnDetach`]
 
 [自动发现] `setHasStableIds(true)` 只适合 item 有稳定业务 ID 的列表。它能帮助 RecyclerView 在更新和动画期间识别同一个 item，但不能代替 DiffUtil，也不能修复错误的 `viewType` 设计。开启后必须保证 `getItemId(position)` 在同一条业务数据生命周期内不变，否则会出现复用错位、动画异常和状态串扰。
 
@@ -147,11 +157,11 @@ fun bindHorizontalList(holder: SectionHolder, items: List<Card>) {
 
 整表刷新是列表卡顿的高发来源。`notifyDataSetChanged()` 会让 RecyclerView 丢失细粒度变更信息，后续布局、动画和绑定都只能按大范围变更处理。`DiffUtil` 的价值是计算新旧列表差异，再把插入、删除、移动、内容变化分发给 Adapter。AndroidX 源码说明它使用 Eugene W. Myers 差分算法；`calculateDiff(callback, detectMoves)` 可以控制是否检测移动。
 
-[已验证: AndroidX `DiffUtil.java`, `calculateDiff()`, `detectMoves`, Myers algorithm]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar `DiffUtil.java`, `calculateDiff()`, `detectMoves`, Myers algorithm]
 
 应用侧优先使用 `ListAdapter` 或 `AsyncListDiffer`。`ListAdapter#submitList()` 内部委托 `AsyncListDiffer`，后者在后台线程计算 diff，完成后再回到主线程分发更新。官方文档也把 `submitList()` 作为 Room / LiveData 场景的标准接入方式。
 
-[已验证: AndroidX `ListAdapter.java`, `AsyncListDiffer.java`; 官方文档 `ListAdapter`, `AsyncListDiffer`]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar `ListAdapter.java`, `AsyncListDiffer.java`; 官方文档 `ListAdapter`, `AsyncListDiffer`]
 
 DiffUtil 写得好不好，取决于三个回调：
 
@@ -201,7 +211,7 @@ class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
 
 这段写法的收益来自减少完整 bind 的次数，diff 计算本身不会因此变少。列表中只有标题、点赞数、关注状态这类小字段变化时，payload 能明显缩短主线程绑定时间；如果 item 布局会因为字段变化触发布局重新测量，还要回到 22.1 节检查布局成本。
 
-[已验证: AndroidX `DiffUtil.ItemCallback#getChangePayload`, `Adapter#onBindViewHolder(holder, position, payloads)`]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar `DiffUtil.ItemCallback#getChangePayload`, `Adapter#onBindViewHolder(holder, position, payloads)`]
 
 大列表还有两个边界：
 
@@ -212,7 +222,7 @@ class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
 
 RecyclerView 的预取由 GapWorker 驱动。AndroidX 源码中，滚动路径会调用 `mGapWorker.postFromTraversal()`，记录滚动方向和距离，再把 GapWorker 作为 Runnable 投到主线程队列。执行时，GapWorker 根据下一帧 deadline 尝试预取目标 position；创建和绑定前会分别经过 `willCreateInTime()`、`willBindInTime()` 预算判断。
 
-[已验证: AndroidX `RecyclerView.java#postFromTraversal`, `GapWorker.java`, `RecyclerView.RecycledViewPool#willCreateInTime/willBindInTime`]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar `RecyclerView.java#postFromTraversal`, `GapWorker.java`, `RecyclerView.RecycledViewPool#willCreateInTime/willBindInTime`]
 
 `LinearLayoutManager#setInitialPrefetchItemCount()` 只影响嵌套 RecyclerView 首次出现时的 initial prefetch 数量。官方文档对它的定义是：当这个 LayoutManager 的 RecyclerView 嵌套在另一个 RecyclerView 中时，设置要预取的内部 item 数量。它不能当作“越大越流畅”的开关；item inflate 或 bind 很重时，GapWorker 会因为 deadline 不够而提前放弃。
 
@@ -266,7 +276,7 @@ fun RecyclerView.configureHorizontalCards(
 
 在同一台设备上录两段 Perfetto，一段保留 change animation，一段关闭 `supportsChangeAnimations`。如果关闭后 `RV OnLayout`、`RV onBindViewHolder` 和慢帧数量下降，并且交互视觉没有损失，就把关闭范围限定在对应 Adapter 或页面，不要全局一刀切。
 
-[已验证: AndroidX `SimpleItemAnimator#supportsChangeAnimations`; AIW 7.8 Perfetto 排查顺序]
+[已验证: AndroidX RecyclerView 1.4.0 sources.jar `SimpleItemAnimator#supportsChangeAnimations`; AIW 7.8 Perfetto 排查顺序]
 
 ## RecyclerView vs LazyColumn 性能对比
 
