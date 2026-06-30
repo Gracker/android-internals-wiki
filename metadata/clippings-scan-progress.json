@@ -1,11 +1,11 @@
 {
-  "current_book": 0,
-  "current_offset": 20,
+  "current_book": 1,
+  "current_offset": 0,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
       "total_files": 25,
-      "completed_files": 20,
+      "completed_files": 25,
       "files": [
         "Android 应用稳定性剖析与优化 - ANR 治理实践.md",
         "Android 应用稳定性剖析与优化 - ART 堆内存分布与黑科技扩量：拯救 OOM 的利器.md",
@@ -129,8 +129,8 @@
       ]
     }
   ],
-  "last_scan_date": "2026-06-30",
-  "total_knowledge_points": 104,
+  "last_scan_date": "2026-07-01",
+  "total_knowledge_points": 117,
   "total_suggestions": 12,
   "total_gaps": 2,
   "skipped_files": [
@@ -148,6 +148,11 @@
       "file": "Android 应用稳定性剖析与优化 - Binder 通信过程：客户端视角领略 Binder.md",
       "reason": "文件内容为空（仅有标题，无正文）",
       "date": "2026-06-27"
+    },
+    {
+      "file": "Android 应用稳定性剖析与优化 -Binder 异常：原来 Binder 异常真不少！.md",
+      "reason": "文件内容为空（仅有标题，无正文）",
+      "date": "2026-07-01"
     }
   ]
 }
