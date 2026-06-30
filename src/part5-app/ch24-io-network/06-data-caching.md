@@ -4,8 +4,8 @@ chapter: "24.6"
 section: "24.6"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-14"
-last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + RFC 9110/9111 + AOSP android-35 SDK sources"
+last_verified: "2026-06-30"
+last_verified_against: "Android Developers docs 2026-06-30 + OkHttp 5.x docs + RFC 9110/9111 + AOSP android-17.0.0_r1"
 confidence: medium
 drafted_date: "2026-05-14"
 reviewed_by: openclaw-task6
@@ -31,9 +31,9 @@ sources:
   - type: official
     path: "https://www.rfc-editor.org/rfc/rfc9111.html"
   - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/content/Context.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/Context.java"
   - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/os/storage/StorageManager.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/storage/StorageManager.java"
   - type: clippings
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
   - type: clippings
@@ -42,16 +42,17 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [compression, caching, gzip, brotli, offline-sync]
 related_chapters: ["24.4", "24.7", "12.2"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 last_task2a_at: "2026-05-14T11:04:00+08:00"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T11:34:00+08:00"
-last_task9_audit: "2026-06-08"
+task9_reviewed_date: "2026-06-30"
+last_task9_at: "2026-06-30T22:26:27+08:00"
+last_task9_audit: "2026-06-30"
+last_task9_autofix_at: "2026-06-30"
 ---
 
 # 数据压缩与缓存策略
@@ -111,7 +112,7 @@ HTTP 压缩由客户端和服务端共同决定。客户端通过 `Accept-Encodi
 | HTTP 缓存 | OkHttp `Cache`、CDN、代理缓存 | 带 `Cache-Control` / `ETag` / `Last-Modified` 的 GET 响应 | RFC 9111 freshness 与 revalidation | 服务端头配置错误会导致过期数据 |
 | 业务缓存 | Room、DataStore、文件索引 | 用户可见数据、离线数据、同步状态 | 业务版本、用户、租户、分页游标、服务端版本 | 一致性和冲突处理成本高 |
 
-AOSP `Context.getCacheDir()` 文档明确写到，系统会在设备空间不足时自动删除该目录文件，并且建议 App 控制在 `StorageManager.getCacheQuotaBytes()` 返回的配额以下；`StorageManager` 还提供 `setCacheBehaviorGroup()` 和 `setCacheBehaviorTombstone()`，用于把一组互相依赖的缓存文件按组处理，或在系统清理时保留零长度墓碑文件。[已验证: AOSP android-35, android/content/Context.java, android/os/storage/StorageManager.java]
+AOSP `Context.getCacheDir()` 文档明确写到，系统会在设备空间不足时自动删除该目录文件，并且建议 App 控制在 `StorageManager.getCacheQuotaBytes()` 返回的配额以下；`StorageManager` 还提供 `setCacheBehaviorGroup()` 和 `setCacheBehaviorTombstone()`，用于把一组互相依赖的缓存文件按组处理，或在系统清理时保留零长度墓碑文件。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/Context.java, frameworks/base/core/java/android/os/storage/StorageManager.java]
 
 这段代码展示 OkHttp 磁盘 HTTP 缓存的最小接入方式。这里需要确认两点：缓存目录放在 `cacheDir`，容量有明确上限。
 
@@ -194,8 +195,8 @@ Android 的网络优化文档建议把可预取的数据集中传输，减少无
 
 - [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 - [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
-- [已验证: AOSP android-35, android/content/Context.java]
-- [已验证: AOSP android-35, android/os/storage/StorageManager.java]
+- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/Context.java]
+- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/storage/StorageManager.java]
 - [已验证: 官方文档, developer.android.com/training/data-storage/app-specific]
 - [已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/network-access-optimization]
 - [已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
