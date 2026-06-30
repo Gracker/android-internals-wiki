@@ -5,8 +5,8 @@ section: "3.9"
 status: "finalized"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-16"
-last_verified_against: "AOSP android-16.0.0_r1 + Perfetto docs 2026-05"
+last_verified: "2026-07-01"
+last_verified_against: "AOSP android-17.0.0_r1 + Perfetto docs 2026-05"
 confidence: medium
 sources:
   - type: official
@@ -38,23 +38,24 @@ related_chapters: ["3.2", "3.4", "7.9", "13.8", "15.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
 task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
-task9_result: "pass-tech-review"
+pipeline_stage: "task6_pending"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-05-17"
 task9_reviewed_by: "openclaw-task9"
 task2b_state: "fixed"
 last_task9_at: "2026-05-17T15:29:34+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-17-15-deep-review.md"
 task9_review_notes: "2026-05-17 15 Task9 re-review: pass-tech-review。Perfetto android.input stdlib schema 已修正；AOSP Resampler/GameMode/RefreshRatePolicy 边界复核通过。预算表与 HCI 阈值 P2 既有 suggestions 保留。自动晋升 finalized。"
-last_task9_audit: "2026-06-09"
-last_task9_audit_log: "logs/deep-review/2026-06-09-16-audit.md"
-last_task9_audit_result: "pass-source-version-audit"
-last_task9_audit_notes: "idle audit: no P0/P1 in source anchors or version-drift check; Android 17 tag unavailable in Gitiles, no Android 17-specific source conclusion added."
+last_task9_autofix_at: "2026-07-01"
+last_task9_audit: "2026-07-01"
+last_task9_audit_log: "logs/deep-review/2026-07-01-05-audit.md"
+last_task9_audit_result: "auto-fixed-source-version-audit"
+last_task9_audit_notes: "idle audit: updated AOSP verification anchors from android-15/16 to android-17.0.0_r1 after Gitiles verification; no queue item."
 p0: 0
 p1: 0
 p2: 2
@@ -127,7 +128,7 @@ HCI 研究报告过 2 ms 级别的触摸延迟差异可被感知，也有研究�
 
 输入重采样属于这一段的特殊处理。AOSP `InputConsumer.cpp` 和 `Resampler.cpp` 中定义了 `RESAMPLE_LATENCY = 5ms`、`RESAMPLE_MIN_DELTA = 2ms`、`RESAMPLE_MAX_PREDICTION = 8ms` 等参数，用插值或外推把触摸坐标贴近 VSync 时刻。它改善的是轨迹平滑和视觉贴合，不等于把端到端延迟减少 5 ms。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/InputConsumer.cpp] [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/Resampler.cpp] [交叉引用: §3.4 输入延迟与预测输入技术]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/InputConsumer.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/Resampler.cpp] [交叉引用: §3.4 输入延迟与预测输入技术]
 
 ## 应用渲染到上屏的预算
 
@@ -185,7 +186,7 @@ Perfetto 的 `android.input` 标准库把 InputReader、InputDispatcher 和应�
 
 厂商私有 HAL 或 Framework 修改没有公开源码时，只能标成 `[待验证]`。营销名词不能写成 AOSP 机制。
 
-[已验证: AOSP android-15.0.0_r1, GameManagerService.java / RefreshRatePolicy.java / ViewGroup.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java / frameworks/base/services/core/java/com/android/server/wm/RefreshRatePolicy.java / frameworks/base/core/java/android/view/ViewGroup.java]
 
 ## 游戏、手写和普通 UI 的阈值差异
 
@@ -235,8 +236,8 @@ ANR 是系统容错机制，处理的是秒级无响应。输入体验通常在�
 - [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
 - [已验证: Perfetto docs, perfetto.dev/docs/data-sources/frametimeline]
 - [已验证: Perfetto stdlib docs, perfetto.dev/docs/analysis/stdlib-docs#android-input]
-- [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/InputConsumer.cpp]
-- [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/Resampler.cpp]
+- [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/InputConsumer.cpp]
+- [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/Resampler.cpp]
 - [引用: https://dl.acm.org/doi/10.1145/2935334.2935381]
 - [引用: https://www.researchgate.net/publication/221100500_User_Perception_of_Touch_Screen_Latency]
 -
