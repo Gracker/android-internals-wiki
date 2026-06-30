@@ -1,7 +1,7 @@
 {
   "total": 510,
-  "draft": 9,
-  "ready-for-review": 160,
+  "draft": 8,
+  "ready-for-review": 161,
   "finalized": 341,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
@@ -1719,6 +1719,15 @@
       "task6_state": "reviewed",
       "last_task2b_verifier_at": "2026-06-30T15:34:25+08:00",
       "task2b_verifier_note": "finalized 章节 task6_state revisiting 过期，修正为 reviewed；Task9 idle audit 为维护性更新。"
+    },
+    "22.28": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "drafted_date": "2026-07-01",
+      "drafted_by": "task2a-content-processing",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "last_review": "2026-07-01"
     }
   },
   "chapters": {
@@ -1821,6 +1830,16 @@
       ],
       "result": "6 empty drafts evaluated, all found to be duplicates of existing chapters, all marked superseded",
       "action": "deduplication sweep — gap mining creating redundant sections needs attention"
+    },
+    {
+      "date": "2026-07-01",
+      "time": "06:05",
+      "task": "task2a-draft-processing",
+      "sections": [
+        "22.28"
+      ],
+      "result": "draft completed",
+      "action": "processing section 22.28 Compose Compiler Metrics & Recomposition diagnostics"
     }
   ],
   "rework_log": [
@@ -1858,7 +1877,7 @@
     "last_review_date": "2026-06-29",
     "last_review_session": "2026-06-29-22"
   },
-  "last_task2a_at": "2026-07-01T00:27:10+08:00",
+  "last_task2a_at": "2026-07-01T06:05:00+08:00",
   "task6_last_run": "2026-06-30T04:06:00+08:00",
   "task6_reviews": [
     {
