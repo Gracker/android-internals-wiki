@@ -37,7 +37,7 @@ related_chapters:
   - "15.5"
   - "9.1"
   - "8.2"
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-30"
@@ -52,7 +52,7 @@ task9_review_notes: "2026-05-18 13:20 Task9 闲时抽检:needs-rework。P0 1 / P
 last_task9_review_log: "logs/deep-review/2026-06-30-20-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
-task6_state: revisiting
+task6_state: reviewed
 last_task6_audit: "2026-06-29"
 task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-30"

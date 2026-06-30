@@ -45,8 +45,8 @@ sources:
     path: "Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md"
 tags: [serialization, json, protobuf, parcelable, flatbuffers]
 related_chapters: ["24.4", "1.4", "21.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 last_task6_audit: "2026-05-24"
 task9_state: reviewed
 last_task2a_at: "2026-05-14T08:20:00+08:00"
