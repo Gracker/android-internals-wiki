@@ -2,7 +2,7 @@
 title: "ANR 监控体系"
 chapter: "26.4"
 section: "26.4"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers ANR / Android vitals docs + Clippings structure references"

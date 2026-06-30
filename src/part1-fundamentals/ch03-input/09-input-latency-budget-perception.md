@@ -2,7 +2,7 @@
 title: "端到端输入延迟预算与感知阈值"
 chapter: "3.9"
 section: "3.9"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-01"

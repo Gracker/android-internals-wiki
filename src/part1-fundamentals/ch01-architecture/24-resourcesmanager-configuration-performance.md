@@ -31,8 +31,8 @@ gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效�
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task2b_result: rework-2026-06-30-l3-l4
-task2b_state: rework-2026-06-30-l3-l4
+task2b_result: fixed
+task2b_state: fixed
 last_task2b_lite_at: 2026-06-30
 task9_result: pass-tech-review
 last_task9_at: 2026-06-30T16:31:10+08:00
