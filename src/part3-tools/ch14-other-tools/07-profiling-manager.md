@@ -24,7 +24,7 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/android/os/ProfilingResult"
   - type: official
-    path: "packages/modules/Profiling/"
+    path: "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/"
   - type: official
     path: "https://perfetto.dev/"
 tags:
@@ -32,28 +32,30 @@ tags:
   - paper
   - profiling
 related_chapters:
-  - "8.8"
+  - "8.10"
   - "13.1"
   - "15.5"
   - "9.1"
   - "8.2"
-pipeline_stage: "ready-to-publish"
-task9_state: "pending"
+pipeline_stage: "task6_pending"
+task9_state: "reviewed"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-18
+task9_reviewed_date: "2026-06-30"
 
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: "2026-05-18T15:23:37+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
-last_task9_at: "2026-05-18T15:25:00+08:00"
-task9_review_notes: "2026-05-18 13:20 Task9 闲时抽检:needs-rework。P0 1 / P1 0;显式 requestProfiling 示例把 ProfilingResult 归到 AndroidX 包,官方签名实际为 android.os.ProfilingResult。;2026-05-18 15:25 Task9 deep-review: Task2B 已修正 ProfilingResult 包名口径;本轮 P0 0 / P1 0,queue 无 pending,自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-18-15-deep-review.md"
+last_task9_at: "2026-06-30T20:32:17+08:00"
+task9_review_notes: "2026-05-18 13:20 Task9 闲时抽检:needs-rework。P0 1 / P1 0;显式 requestProfiling 示例把 ProfilingResult 归到 AndroidX 包,官方签名实际为 android.os.ProfilingResult。;2026-05-18 15:25 Task9 deep-review: Task2B 已修正 ProfilingResult 包名口径;本轮 P0 0 / P1 0,queue 无 pending,自动晋升 finalized。;2026-06-30 20:32 Task9 deep-review auto-fixed: P0 0 / P1 0 / P2 3; 修正 JavaHeapDumpRequestBuilder 参数、AOSP android-17.0.0_r1 源码锚点、§8.10 交叉引用; 回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-06-30-20-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
-task6_state: "reviewed"
+task6_state: revisiting
 last_task6_audit: "2026-06-29"
+task9_result: auto-fixed
+last_task9_autofix_at: "2026-06-30"
 ---
 -
 
@@ -76,7 +78,7 @@ ProfilingManager 解决量产设备上"问题发生时没有开工具"的空档�
 ### 扩展(可选深入)
 
 - 🔸 **归档流程**:request callback 负责就地关联 case,global listener 负责统一落盘、上传、清理
-- 🔸 **交叉引用**:逐项 trigger 行为、停止条件、AOSP 路径放到 §8.8 展开,本节只保留选型和接入所需信息
+- 🔸 **交叉引用**:逐项 trigger 行为、停止条件、AOSP 路径放到 §8.10 展开,本节只保留选型和接入所需信息
 <!-- outline-end -->
 
 ## 先按结果类型选工具
@@ -84,7 +86,7 @@ ProfilingManager 解决量产设备上"问题发生时没有开工具"的空档�
 | AndroidX builder | 回答的问题 | 结果形态 | 主要参数 | 不适合 |
 |---|---|---|---|---|
 | `SystemTraceRequestBuilder` | 卡顿在哪条线程、启动慢在哪一段、ANR 前后发生了什么 | `.perfetto-trace` | `durationMs`、`bufferSizeKb`、`bufferFillPolicy` | 直接查对象引用链 |
-| `JavaHeapDumpRequestBuilder` | 哪个对象组还活着、谁把堆顶满了 | `.hprof` | `tag` | 观察一段时间里的分配波动 |
+| `JavaHeapDumpRequestBuilder` | 哪个对象组还活着、谁把堆顶满了 | `.hprof` | `bufferSizeKb` | 观察一段时间里的分配波动 |
 | `HeapProfileRequestBuilder` | 内存为什么一直涨、哪类分配最密 | heap profile trace | `durationMs`、`samplingIntervalBytes`、`bufferSizeKb` | 直接确认 GC root |
 | `StackSamplingRequestBuilder` | CPU 时间主要花在哪段调用栈 | stack samples trace | `durationMs`、`samplingFrequencyHz`、`bufferSizeKb` | 看完整系统时间线 |
 
@@ -149,7 +151,7 @@ Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResul
 
 ## System Triggered Profiling 的版本对照表
 
-逐项 trigger 的 stop condition、产物细节和 AOSP 路径放在 §8.8《ProfilingManager 系统触发式性能追踪》展开,这里只保留接入时最容易写错的版本边界。
+逐项 trigger 的 stop condition、产物细节和 AOSP 路径放在 §8.10《ProfilingManager 系统触发式性能追踪》展开,这里只保留接入时最容易写错的版本边界。
 
 | 版本 | trigger | 返回物 | 适合场景 |
 |---|---|---|---|
@@ -181,7 +183,7 @@ Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResul
 
 ### 2. 冷启动与 ANR 回炉
 
-启动回归、偶发 ANR、用户主动结束进程这几类问题,更适合用 `registerForAllProfilingResults(...)` 建一条统一归档流程,再按版本注册 trigger。trigger 的具体行为、停止条件和 AOSP 服务端实现看 §8.8,本节只保留接入层需要的版本对照和结果分发规则。
+启动回归、偶发 ANR、用户主动结束进程这几类问题,更适合用 `registerForAllProfilingResults(...)` 建一条统一归档流程,再按版本注册 trigger。trigger 的具体行为、停止条件和 AOSP 服务端实现看 §8.10,本节只保留接入层需要的版本对照和结果分发规则。
 
 ### 3. 线上内存涨高
 
@@ -235,15 +237,15 @@ W/ProfilingCaseRepo: result failed, case=scroll-jank-20260419-01, trigger=TRIGGE
 3. **Android SDK Reference, `android.os.ProfilingManager` / `ProfilingTrigger` / `ProfilingResult`**
    https://developer.android.com/reference/android/os/ProfilingManager
 
-4. **AOSP Profiling Module**
-   `packages/modules/Profiling/`
+4. **AOSP Profiling Module (android-17.0.0_r1)**
+   https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/
 
 5. **Perfetto Documentation**
    https://perfetto.dev/
 
 ## 相关章节
 
-- **8.8 ProfilingManager 系统触发式性能追踪**,trigger 的 stop condition、artifact 差异和 AOSP 路径
+- **8.10 ProfilingManager 系统触发式性能追踪**,trigger 的 stop condition、artifact 差异和 AOSP 路径
 - **13.1 Perfetto 简介与演进**,trace 文件格式和基础分析概念
 - **15.5 线上性能监控**,线上采样预算、上传流程和告警治理
 - **9.1 ANR 设计思想**,ANR 样本和 system-triggered profiling 的配合方式
