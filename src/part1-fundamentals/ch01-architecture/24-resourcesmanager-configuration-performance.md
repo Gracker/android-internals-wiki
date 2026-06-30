@@ -11,27 +11,16 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/ResourcesManager.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ResourcesImpl.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/WindowProcessController.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/WindowToken.java"
   - type: official
-    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
   - type: official
-    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
   - type: blog
-    path: "Cubox/Android无缝旋转-Fixed Rotation - 掘金-2022-08-29.md"
 tags: [resources, configuration, activity-recreation, performance, resourcesmanager, configChanges, edge-to-edge]
 related_chapters: ["1.8", "2.12", "8.2", "16.5"]
 created_by: "task2a-knowledge-gap"
@@ -47,11 +36,10 @@ task2b_state: fixed
 last_task2b_lite_at: 2026-06-30
 task9_result: auto-fixed
 last_task9_at: 2026-06-30T13:26:27+08:00
-task6_result: pass-light-edit
+task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-last_task6_at: 2026-06-30T13:13:00+08:00
-last_task2b_at: 2026-06-30T12:56:48+08:00
+last_task6_at: 2026-06-30T14:13:00+08:00
 last_task9_autofix_at: "2026-06-30"
 last_task9_review_log: "logs/deep-review/2026-06-30-13-deep-review.md"
 task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正 SavedStateHandle 自动同步边界与 Compose/remember 跨 recreate 残留错误；回到 Task6 复审。"
@@ -193,7 +181,7 @@ onCreate() → onStart() → onRestoreInstanceState() → onResume()
 LayoutInflater 重建 View 树 → measure → layout → draw
 ```
 
-一次 recreate 的耗时构成（以下数值为工程估算框架，缺少设备型号、ROM 版本、布局规模、Perfetto trace 等可复现条件，不应作为跨设备可比的性能结论）：
+一次 recreate 的耗时构成（以下数值为工程估算，缺少设备型号、ROM 版本、布局规模、Perfetto trace 等可复现条件，不应作为跨设备可比的性能结论）：
 
 | 阶段 | 估算量级 | 影响因素 |
 |------|----------|----------|
@@ -356,7 +344,7 @@ adb shell dumpsys activity resources <package_name>
 
 ### 内存估算
 
-一个 ResourcesImpl 实例的内存占用量级（工程估算，非实测）：
+一个 ResourcesImpl 实例的内存占用量级（估算，非实测）：
 
 - Java 层：数十到上百 KB（取决于 Configuration 复杂度和 Resources 缓存状态）
 - Native 层：AssetManager 查找表和字符串缓存，量级受 APK resources.arsc 大小影响
