@@ -45,7 +45,7 @@ p0: 0
 p1: 0
 p2: 0
 pipeline_stage: task6_pending
-task2b_state: fixed-lite
+task2b_state: fixed
 last_task2b_lite_at: "2026-06-29"
 task6_state: revisiting
 task9_state: pending

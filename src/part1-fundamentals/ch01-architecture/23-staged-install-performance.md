@@ -17,11 +17,11 @@ sources:
   - type: aosp
   - type: aosp
   - type: aosp
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task2b_result: rework-2026-06-30-l3-l4
-task2b_state: rework-2026-06-30-l3-l4
+task2b_result: fixed
+task2b_state: fixed
 last_task2b_at: 2026-06-30T12:52:33+08:00
 task9_result: auto-fixed
 last_task9_at: 2026-06-30T16:31:10+08:00
