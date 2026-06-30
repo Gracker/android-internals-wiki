@@ -45,7 +45,7 @@ last_task9_review_log: "logs/deep-review/2026-06-29-21-audit.md"
 last_task9_autofix_at: "2026-06-29"
 task2b_result: fixed
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-27
+last_deepseek_cn_review_at: 2026-06-30
 ---
 
 # 延迟初始化与按需加载
@@ -75,12 +75,10 @@ last_deepseek_cn_review_at: 2026-06-27
 
 ## 本节定位
 
-21.2 节讲启动任务如何编排，21.3 节讲 ContentProvider 自动初始化怎么治理。本节处理更靠后的动作：**哪些初始化可以移出首帧前，移到哪里执行，什么时候再补回来**。
+21.2 节讲启动任务的编排，21.3 节讲 ContentProvider 自动初始化的治理。本节处理再往后一步：**哪些初始化可以移到首帧之后，移到哪里执行，什么时候补回来**。
 
-启动优化里最容易做错的事，是把所有任务都异步化。异步只改变线程，不一定改变用户等待时间；延迟初始化改变的是执行时机，把非首屏必需任务从 Time to initial display（TTID）之前移走，再用 Time to full display（TTFD）、首次使用耗时和异常率约束风险。
+启动优化里最容易犯的错，是把所有任务都异步化。异步只换线程，用户等待时间不一定变短；延迟初始化换的是执行时机——把非首屏必需的任务从 Time to initial display（TTID）之前移走，再用 Time to full display（TTFD）、首次使用耗时和异常率来约束风险。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 
 ## 延迟初始化策略：首帧后、首次使用、后台空闲
 
@@ -96,19 +94,17 @@ last_deepseek_cn_review_at: 2026-06-27
 
 Android Vitals 把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒作为过慢启动的判断边界。延迟初始化的目标是把首帧前的必要工作压到合理范围，同时确认延后的任务不会在 TTFD 或首次使用阶段反弹。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
 ### 首帧后执行
 
-首帧后执行适合放“很快会用到，但不该阻塞首帧”的任务，例如日志 SDK 的批量上传通道、二级页面的路由表预热、图片库的非首屏配置。实现上可以在首帧回调后投递到启动框架的 LOW 队列，由统一线程池分批运行。
+首帧后适合放“很快会用到，但不该阻塞首帧”的任务：日志 SDK 的批量上传通道、二级页面的路由表预热、图片库的非首屏配置。实现上在首帧回调后投递到启动框架的 LOW 队列，由统一线程池分批运行。
 
 这类任务要有时间预算。一个常见做法是每个任务声明 `maxCostMs` 和 `deadlineAfterFirstFrameMs`：任务超过预算就切片，或者放到下一轮空闲窗口。否则首帧虽然提前了，第二帧和第三帧会被集中初始化拖慢。
 
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 
 ### 首次使用执行
 
-首次使用适合低频且边界清楚的模块。典型例子是扫码、直播、地图、编辑器、AR、美颜、客服 IM。它们的共同点是：入口明确，用户点击前不必完成完整初始化。
+首次使用适合低频且边界清楚的模块——扫码、直播、地图、编辑器、AR、美颜、客服 IM。它们的共同点是入口明确，用户点击前不需要完整初始化。
 
 首次使用延迟要加两层兜底：
 
@@ -139,7 +135,7 @@ class FeatureGate<T>(
 
 ### 后台空闲执行
 
-后台空闲适合预加载和缓存重建。参考书里给出的思路是读取 `/proc/stat` 与 `/proc/[pid]/stat`，按时间窗口估算 CPU 使用率，确认应用处于低负载后再执行预加载任务。这个方向适合做跨线程的空闲判断，但它不能替代主线程队列的空闲判断。
+后台空闲适合预加载和缓存重建。一种常见做法是读取 `/proc/stat` 与 `/proc/[pid]/stat`，按时间窗口估算 CPU 使用率，确认进程处于低负载后再执行预加载任务。这个方向适合跨线程的空闲判断，但不能替代主线程空闲队列的判断。
 
 工程上通常把两类信号合并：
 
@@ -148,13 +144,11 @@ class FeatureGate<T>(
 
 两者都满足时，才执行更重的预热任务；只满足主线程空闲时，只执行几十毫秒内能结束的小任务。
 
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 
 ## IdleHandler 与空闲加载
 
-`MessageQueue.IdleHandler` 是 Android 主线程空闲加载里最常见的工具。AOSP 对它的定义很明确：当 MessageQueue 没有可立即分发的消息、即将等待更多消息时调用 `queueIdle()`；返回 `true` 会保留这个 IdleHandler，返回 `false` 会在本次执行后移除。
+`MessageQueue.IdleHandler` 是 Android 主线程空闲加载中最常用的工具。它的语义很直接：当 MessageQueue 没有可立即分发的消息、即将等待更多消息时，调用 `queueIdle()`；返回 `true` 保留这个 IdleHandler，返回 `false` 在本次执行后移除。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java 与 frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java]
 [详见 1.13 节]
 
 Android 17 下，`targetSdkVersion >= 37` 的应用会进入新的 lock-free `MessageQueue` 路径；AOSP `android-17.0.0_r1` 中旧路径在 `LegacyMessageQueue/MessageQueue.java`，新路径在 `CombinedDeliMessageQueue/MessageQueue.java`。`IdleHandler` 的 API、返回值和“没有可立即分发消息时触发”的语义保留，但新路径不再等同于旧版 `synchronized (this) + mMessages` 单链表结构。下面的流程只用于解释旧实现路径；Android 17 DeliQueue 场景要看 `nextDeliQueue()`、`mStack.hasMessages(...)` 和 `mIdleHandlersLock`。
@@ -209,7 +203,6 @@ Looper.myQueue().addIdleHandler {
 | 所有 SDK 都注册 IdleHandler | 空闲窗口被多个 SDK 抢占 | 接入启动框架，由框架统一排队 |
 | 把 IdleHandler 当首帧后回调 | 首帧前也可能出现队列空闲 | 首帧后任务用绘制完成信号或启动框架状态触发 |
 
-[已验证: AOSP android-17.0.0_r1, LegacyMessageQueue/MessageQueue.java 与 CombinedDeliMessageQueue/MessageQueue.java, MessageQueue.IdleHandler.queueIdle()]
 
 ## 按需加载与模块懒加载
 
@@ -219,7 +212,6 @@ Looper.myQueue().addIdleHandler {
 
 Jetpack App Startup 默认通过 `InitializationProvider` 自动发现并执行 `Initializer`。官方文档也支持手动初始化：移除对应 initializer 的 manifest 元数据后，用 `AppInitializer` 在需要时触发。这适合从 ContentProvider 自动初始化迁移出来的 SDK。
 
-[已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
 [详见 21.3 节]
 
 迁移时要避免两种状态：
@@ -233,7 +225,6 @@ Jetpack App Startup 默认通过 `InitializationProvider` 自动发现并执行 
 
 Google Play Feature Delivery 支持把功能拆成 feature module，并配置 install-time、conditional 或 on-demand delivery。on-demand 模块不在安装时默认可用，应用需要在使用前请求下载。
 
-[已验证: 官方文档, developer.android.com/guide/playcore/feature-delivery]
 
 这个能力适合体积大、低频、边界清楚的功能。它不适合首屏必需功能，也不适合从外部 intent 直接启动的 Activity。官方文档明确提醒：feature module 里的 Activity 不应配置 `android:exported=true`，因为设备不一定已经下载了该模块。
 
@@ -250,7 +241,6 @@ Google Play Feature Delivery 支持把功能拆成 feature module，并配置 in
 
 参考书中提到的 so 压缩与使用时解压，属于按需加载的一种形态。打包时压缩低频 so，运行时在 `System.loadLibrary()` 失败后解压，再用 `System.load()` 加载。这个方案能减少安装包体积，但会把 IO 和解压成本放到首次使用阶段。
 
-[结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
 
 启动优化场景里更常见的取舍是：首屏相关 so 保持安装时可用，低频功能 so 才压缩或下发。否则首屏可能避开了包体成本，却在首次进入关键功能时出现长等待。
 

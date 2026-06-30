@@ -2,7 +2,7 @@
 title: "命令行打开超大 Trace"
 chapter: "13.4"
 section: "13.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -28,11 +28,11 @@ task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-reviewed_date: "2026-04-27"
+reviewed_date: 2026-06-30
 reviewed_by: openclaw-task6
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-06-30"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-30T07:25:03+08:00"
@@ -46,6 +46,7 @@ last_task9_autofix_at: "2026-06-30"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 task2b_verifier_note: "status finalized→ready-for-review for Task6 pickup (2026-06-30T07:29:40+08:00)"
+last_task6_at: 2026-06-30T09:06:00+08:00
 ---
 
 # 命令行打开超大 Trace
@@ -75,15 +76,15 @@ task2b_verifier_note: "status finalized→ready-for-review for Task6 pickup (202
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要用命令行分析 Trace
+## 为什么需要命令行分析大 Trace
 
-我们在上一节里用 Perfetto UI 打开 Trace、看 Track、看 Slice，体验很流畅。但当我们遇到一个 500MB 甚至 2GB 的 Trace 文件时，情况就不一样了——浏览器标签页开始疯狂吃内存，UI 变得卡顿甚至直接崩溃。瓶颈出在浏览器的 WebAssembly（WASM）引擎——处理如此大的数据集时它力不从心。
+我们在上一节里用 Perfetto UI 打开 Trace、看 Track、看 Slice，体验很流畅。但当你处理一个 500MB 甚至 2GB 的 Trace 文件时，情况就完全不同了——浏览器标签页会疯狂吃内存，UI 变得卡顿甚至直接崩溃。瓶颈在于浏览器的 WebAssembly（WASM）引擎——面对如此大的数据集时它力不从心。
 
-更常见的一个场景是：我们需要对一批 Trace 做批量分析，比如每天自动抓取 50 个冷启动 Trace，统计 P95 启动时间。手动一个个打开 UI 不现实，我们需要一个可以用脚本驱动、不依赖浏览器的分析工具。
+另一个常见场景：我们需要对一批 Trace 做批量分析，比如每天自动抓取 50 个冷启动 Trace，统计 P95 启动时间。手动一个个打开 UI 不现实，我们需要一个可以用脚本驱动、不依赖浏览器的分析工具。
 
-Perfetto 官方为我们准备的就是 `trace_processor`——一个 C++ 实现的命令行工具，它能把 Trace 文件当作数据库来查询。我们写 SQL，它返回结果。它会把 Trace 中的每一类事件解析成结构化的表（`slice`、`sched`、`counter`……），然后我们直接用 SQL 去查。
+Perfetto 官方为我们提供的解决方案就是 `trace_processor`——一个 C++ 实现的命令行工具，它能把 Trace 文件当作数据库来查询。我们写 SQL，它返回结果。它会将 Trace 中的每一类事件解析成结构化的表（`slice`、`sched`、`counter`……），然后我们直接用 SQL 去查询。
 
-还有一个经常被忽略的好处是**隐私**。`trace_processor` 是本地工具，Trace 文件完全在本地解析，不需要上传到任何云端。对于包含敏感信息的系统级 Trace，这种本地解析方式更稳妥。
+还有一个经常被忽略的好处是**隐私保护**。`trace_processor` 是本地工具，Trace 文件完全在本地解析，不需要上传到任何云端。对于包含敏感信息的系统级 Trace，这种本地解析方式更加稳妥。
 
 ## 大 Trace 的挑战：浏览器为什么扛不住
 
@@ -197,7 +198,7 @@ PerfettoSQL 建立在 SQLite 引擎之上，语法与标准 SQL 基本一致。�
 
 ### 使用前必做：验证事件是否存在
 
-在写任何针对具体 Slice 名称的查询之前，先用一个简单查询确认目标事件在当前 Trace 中确实存在：
+在写任何针对具体 Slice 名称的查询之前，先用一个简单查询确认目标事件在当前 Trace 中存在：
 
 ```sql
 -- 查看当前 Trace 中有哪些 Slice 名称（采样前 50 条）
@@ -573,7 +574,7 @@ chmod +x traceconv
 
 其中 `text` 格式输出的是 protobuf 的文本序列化形式，每个事件一行，适合用 `grep`、`awk` 等文本工具做快速过滤。`json` 格式则是 Chrome Trace Event 格式，可以直接拖入 `chrome://tracing` 查看。
 
-需要注意：对于大 Trace 文件，`traceconv` 转换过程本身也需要相当的时间和内存。特别是 `json` 格式，输出文件可能比原始 protobuf 大好几倍。建议只在确实需要其他工具兼容时才做转换，日常分析直接用 `trace_processor` 更高效。
+需要注意：对于大 Trace 文件，`traceconv` 转换过程本身也需要相当的时间和内存。特别是 `json` 格式，输出文件可能比原始 protobuf 大好几倍。建议只在需要其他工具兼容时才做转换，日常分析直接用 `trace_processor` 更高效。
 
 ## 自建 Perfetto 分析 Pipeline 的实践建议
 
