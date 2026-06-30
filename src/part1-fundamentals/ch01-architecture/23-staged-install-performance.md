@@ -19,20 +19,20 @@ sources:
   - type: aosp
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: 2026-06-30T12:52:33+08:00
 task9_result: auto-fixed
-last_task9_at: 2026-06-30T13:26:27+08:00
+last_task9_at: 2026-06-30T16:31:10+08:00
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
 last_task6_at: 2026-06-30T14:13:00+08:00
 last_task9_autofix_at: "2026-06-30"
-last_task9_review_log: "logs/deep-review/2026-06-30-13-deep-review.md"
-task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正扩展区 rollback/abortSession 残留错误、multi-package 与 split 安装版本边界;回到 Task6 复审。"
-task9_p0_issues: 2
+last_task9_review_log: "logs/deep-review/2026-06-30-16-deep-review.md"
+task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正源码补充区 readSessionSettingsLocked() 伪方法名与 session XML 属性名；回到 Task6 复审。"
+task9_p0_issues: 1
 task9_p1_issues: 0
 task9_p2_issues: 0
 deepseek_cn_review_state: done
@@ -378,7 +378,7 @@ private boolean isInTerminalState() {        // line 1634
 
 三个 setter（`setSessionReady` line 6493 / `setSessionApplied` line 6521 / `setSessionFailed` line 6506）共享同一个守卫：`if (mDestroyed || mSessionFailed) return;` ——即 destroyed / failed 是粘性状态，ready 不能覆盖 failed。`setSessionReady()` 内部显式清零 `mSessionApplied = false; mSessionFailed = false;`，对应"ready 可重入"的语义（重启后补 verification 的场景）。
 
-这三个字段会被持久化到 `PackageInstallerService.mSessionsFile`（`AtomicFile`）的 XML 属性 `mSessionReady / mSessionApplied`，重启时由 `readSessionSettingsLocked()` 读回（line 1335–1338）。
+这三个字段会被持久化到 `PackageInstallerService.mSessionsFile`（`AtomicFile`）的 XML 属性 `isReady / isApplied / isFailed`。重启时 `PackageInstallerService#readSessionsLocked()` 调用 `PackageInstallerSession.readFromXml()` 读回，并在构造阶段填充 `mSessionReady / mSessionApplied / mSessionFailed`（line 1335–1339）。
 
 ### Pre-reboot verification 5 阶段流水线
 
@@ -449,7 +449,7 @@ apexd 内部状态由 `ApexSessionInfo` 暴露布尔字段，`frameworks/base/se
 - **staged 或 APEX**：`Environment.getDataStagingDirectory(params.volumeUuid) + "/session_" + sessionId` → `/data/app-staging/session_{id}/`
 - **普通 install**：`buildTmpSessionDir()` → `/data/app/vmdl{sessionId}.tmp`
 
-session 元数据由 `mSessionsFile = new AtomicFile(...)`（line 349）持久化；XML 属性含 `ATTR_STAGED_SESSION`（line 316）。重启时 `readSessionSettingsLocked()`（line 572）反序列化 `isReady / isApplied / isFailed` 字段并恢复 `mStagedSession` 实例（`new StagedSession()` 见 line 1343）。
+session 元数据由 `mSessionsFile = new AtomicFile(...)`（line 349）持久化；XML 属性含 `ATTR_STAGED_SESSION`（line 316）以及 `ATTR_IS_READY / ATTR_IS_APPLIED / ATTR_IS_FAILED`（line 317–319）。重启时 `PackageInstallerService#readSessionsLocked()`（line 565）调用 `PackageInstallerSession.readFromXml()` 反序列化这些字段，并恢复 `mStagedSession` 实例（`new StagedSession()` 见 line 1343）。
 
 ### Perfetto trace 查询补充
 
