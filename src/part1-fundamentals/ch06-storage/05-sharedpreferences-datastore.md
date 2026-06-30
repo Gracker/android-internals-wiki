@@ -1,6 +1,5 @@
 ---
-
-last_task9_at: "2026-04-20T11:51:17+08:00"
+last_task9_at: "2026-07-01T02:28:16+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-20
 title: "SharedPreferences/DataStore 性能与 ANR 优化"
@@ -9,9 +8,9 @@ status: finalized
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-16.0.0_r1"
-last_verified_android17: "2026-06-27"
+last_verified: "2026-07-01"
+last_verified_against: "AOSP android-17.0.0_r1 SharedPreferencesImpl.java / QueuedWork.java / ActivityThread.java / BroadcastReceiver.java / SharedPreferences.java / ContextImpl.java; AndroidX DataStore core 1.1.7 source/AAR"
+last_verified_android17: "2026-07-01"
 last_verified_android17_source: "AOSP android-17.0.0_r1 frameworks/base/core/java/android/app/SharedPreferencesImpl.java (897行, diff android-16.0.0_r3 仅 2 行新增 @RavenwoodKeepWholeClass 注解, 无运行时行为变更) + SharedPreferences.java (421 行, javadoc 彻底重写, 官方声明不推荐使用) + ContextImpl.java (4107 行, SP 缓存逻辑零变化)"
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
@@ -33,15 +32,20 @@ sources:
 tags: [sharedpreferences, datastore, anr, io, storage, performance, queuedwork]
 related_chapters: ["6.1", "6.3", "9.1", "9.2", "8.2", "4.5"]
 section: "6.5"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
 task2b_result: fixed
-last_task9_audit: "2026-06-27T09:23:02+0800"
+last_task9_audit: "2026-07-01"
 last_task6_audit: "2026-06-29"
-last_task9_audit_log: "logs/deep-review/2026-06-11-14-audit.md"
+last_task9_audit_log: "logs/deep-review/2026-07-01-02-audit.md"
+last_task9_autofix_at: "2026-07-01"
+task9_review_notes: "2026-07-01 Task9 idle audit auto-fix: AOSP anchors refreshed to android-17.0.0_r1; corrected DataStore native library packaging from nonexistent datastore-multiprocess artifact to datastore-core-android AAR and removed stale ShadowSharedCounter fallback snippet. No open P0/P1 after fix."
+task9_p0_issues: 0
+task9_p1_issues: 0
+task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 ---
@@ -88,11 +92,11 @@ SP 导致 ANR 主要有两类路径，分别发生在读取和写入阶段。
 
 ### 路径一：首次加载阻塞
 
-SP 文件创建后，`SharedPreferencesImpl` 会立刻触发一次异步读盘，但 android-16.0.0_r1 已经不是旧版本里那个固定线程名的实现。当前代码是把 `loadFromDisk()` 投递到静态 `sLoadExecutor`：
+SP 文件创建后，`SharedPreferencesImpl` 会立刻触发一次异步读盘，但 android-17.0.0_r1 已经不是旧版本里那个固定线程名的实现。当前代码是把 `loadFromDisk()` 投递到静态 `sLoadExecutor`：
 
 ```java
 // frameworks/base/core/java/android/app/SharedPreferencesImpl.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 private void startLoadFromDisk() {
     synchronized (mLock) {
         mLoaded = false;
@@ -133,7 +137,7 @@ private void awaitLoadedLocked() {
 
 `apply()` 会先把修改写进内存，再把磁盘 I/O 放进 `QueuedWork`。调用栈从 `apply()` 返回时不会阻塞，但组件收尾时系统会把这笔等待要回来。
 
-在 android-16.0.0_r1 里，等待点分成四类：
+在 android-17.0.0_r1 里，等待点分成四类：
 
 - pre-Honeycomb Activity：`ActivityThread.handlePauseActivity()` 中 `if (r.isPreHoneycomb()) QueuedWork.waitToFinish();`
 - 现代 Activity：`ActivityThread.handleStopActivity()` 中 `if (!r.isPreHoneycomb()) QueuedWork.waitToFinish();`
@@ -144,7 +148,7 @@ private void awaitLoadedLocked() {
 
 ```java
 // frameworks/base/core/java/android/app/QueuedWork.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 public static void waitToFinish() {
     synchronized (sLock) {
         handlerRemoveMessages(QueuedWorkHandler.MSG_RUN);
@@ -193,7 +197,7 @@ private static void processPendingWork() {
 
 这也是很多文章把 ANR 栈写错的地方。现代 App 更常见的栈顶是 `handleStopActivity()`，不是 `handlePauseActivity()`。`handlePauseActivity()` 里的等待只保留给 pre-Honeycomb Activity。Service 和 BroadcastReceiver 也各有自己的收尾路径，不能都折叠成一个 `onPause()` 场景。
 
-[已验证: AOSP android-16.0.0_r1, `frameworks/base/core/java/android/app/QueuedWork.java`, `frameworks/base/core/java/android/app/ActivityThread.java`, `frameworks/base/core/java/android/content/BroadcastReceiver.java`]
+[已验证: AOSP android-17.0.0_r1, `frameworks/base/core/java/android/app/QueuedWork.java`, `frameworks/base/core/java/android/app/ActivityThread.java`, `frameworks/base/core/java/android/content/BroadcastReceiver.java`]
 
 
 ## SP 写入的完整过程
@@ -279,7 +283,7 @@ private void enqueueDiskWrite(final MemoryCommitResult mcr,
 
 这就是为什么 SP 在大文件和高频写场景里会很脆弱。哪怕只改一个 key，也要重新写整份 XML。等待时间长短取决于文件大小、磁盘状态和前面排队的写盘数量，而不只取决于这次改了几个字段。
 
-[已验证: AOSP android-16.0.0_r1, `frameworks/base/core/java/android/app/SharedPreferencesImpl.java`]
+[已验证: AOSP android-17.0.0_r1, `frameworks/base/core/java/android/app/SharedPreferencesImpl.java`]
 
 ## Jetpack DataStore：为什么它是更好的替代方案
 
@@ -373,7 +377,7 @@ at android.app.ActivityThread.handleStopActivity(ActivityThread.java:XXXX)
 at android.app.ActivityThread$H.handleMessage(ActivityThread.java:XXXX)
 ```
 
-android-16.0.0_r1 里，现代 Activity 的等待点在 `handleStopActivity()`，不是 `handlePauseActivity()`。只有 pre-Honeycomb Activity 才会在 `handlePauseActivity()` 里调 `waitToFinish()`。
+android-17.0.0_r1 里，现代 Activity 的等待点在 `handleStopActivity()`，不是 `handlePauseActivity()`。只有 pre-Honeycomb Activity 才会在 `handlePauseActivity()` 里调 `waitToFinish()`。
 
 **Perfetto 观察点**：
 1. 在主线程附近找 Activity stop 相关 slice，再看 callstack 是否落在 `handleStopActivity()`
@@ -408,7 +412,7 @@ BroadcastReceiver 没有直接调用 `QueuedWork.waitToFinish()`。收尾逻辑�
 
 ```java
 // frameworks/base/core/java/android/content/BroadcastReceiver.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 if (QueuedWork.hasPendingWork()) {
     QueuedWork.queue(new Runnable() {
         @Override public void run() {
@@ -610,13 +614,13 @@ $ diff android-16.0.0_r3 android-17.0.0_r1 SharedPreferencesImpl.java
 
 1. **章节 6.5 的所有源码断言在 android-17.0.0_r1 仍 100% 成立**——无需修订内容
 2. 唯一可以强化的是**结论权威性**：章节原文已把 SP 缺陷讲透（apply 阻塞主线程、commit 误判、QueuedWork 路径），现在有了 Android 团队官方 javadoc 背书，建议在"MMKV 与其他高性能 KV 存储方案"段落前置一句"**注：Android 17 官方 SharedPreferences 接口 javadoc 已明确声明不推荐新项目使用 SP**"
-3. 章节 frontmatter `applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"` 和 `last_verified_against: "AOSP android-16.0.0_r1"` 已经标注最新；本次新增 `last_verified_android17` 字段记录二次验证
+3. 章节 frontmatter `applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"` 和 `last_verified_against: "AOSP android-17.0.0_r1 SharedPreferencesImpl.java / QueuedWork.java / ActivityThread.java / BroadcastReceiver.java / SharedPreferences.java / ContextImpl.java; AndroidX DataStore core 1.1.7 source/AAR"` 已经标注最新；本次新增 `last_verified_android17` 字段记录二次验证
 
-### 未验证项
+### 历史未验证项与补齐状态
 
 1. **Ravenwood 测试框架的运行时代理实现**（位于哪个仓库、怎么拦截方法）——android.googlesource 的目录列表 API 不返回完整文件清单，5 文件限额内无法确认。建议另起一轮调研。
-2. **DataStore 1.1.0+ MultiProcessDataStoreFactory 实现**——androidx datastore 不在 AOSP 仓库，需查 androidx-main 分支
-3. **ActivityThread.handleStopActivity 与 QueuedWork.waitToFinish 等待路径在 android-17.0.0_r1 是否变化**——章节已基于 android-16.0.0_r1 给出结论，android-17 未单独验证
+2. **DataStore 1.1.0+ MultiProcessDataStoreFactory 实现**——已在 2026-06-30 / 2026-07-01 通过 Google Maven `datastore-core-android:1.1.7` source jar 与 AAR 补齐验证。
+3. **ActivityThread.handleStopActivity 与 QueuedWork.waitToFinish 等待路径在 android-17.0.0_r1 是否变化**——已在 2026-07-01 复核 `ActivityThread.java`、`QueuedWork.java`、`BroadcastReceiver.java`，章节主线锚点已更新到 Android 17。
 
 
 ## 参考资料
@@ -771,27 +775,27 @@ internal class NativeSharedCounter {
 }
 
 companion object Factory {
-    private val nativeSharedCounter: NativeSharedCounter? = try {
-        System.loadLibrary("datastore_shared_counter")  // 单独 AAR: datastore-multiprocess
-        NativeSharedCounter()
-    } catch (th: Throwable) {
-        if (isDalvik()) throw th                         // 真机必须能加载
-        else null                                        // Robolectric 不强制
-    }
+    internal val nativeSharedCounter = NativeSharedCounter()
+
+    fun loadLib() = System.loadLibrary("datastore_shared_counter")
 
     private fun createCounterFromFd(pfd: ParcelFileDescriptor): SharedCounter {
-        if (nativeSharedCounter == null) {
-            if (!isDalvik()) return ShadowSharedCounter()  // Robolectric 降级
-            error("...")
+        val nativeFd = pfd.getFd()
+        if (nativeSharedCounter.nativeTruncateFile(nativeFd) != 0) {
+            throw IOException("Failed to truncate counter file")
         }
-        ...
+        val address = nativeSharedCounter.nativeCreateSharedCounter(nativeFd)
+        if (address < 0) {
+            throw IOException("Failed to mmap counter file")
+        }
+        return SharedCounter(address)
     }
 }
 ```
 
-**关键发现**：`System.loadLibrary("datastore_shared_counter")` 来自**单独的 AAR artifact** —— `androidx.datastore:datastore-multiprocess`。如果只用单进程版不需要引入；用 `MultiProcessDataStoreFactory` 必须显式加这个依赖，否则 JNI 找不到库崩溃。
+**关键发现**：`System.loadLibrary("datastore_shared_counter")` 加载的 native library 在 Google Maven `androidx.datastore:datastore-core-android:1.1.7` AAR 的 `jni/<abi>/libdatastore_shared_counter.so` 中。`androidx.datastore:datastore-core` 与 `androidx.datastore:datastore` 会通过 POM 依赖带入这个 AAR；Google Maven 没有发布 `androidx.datastore:datastore-multiprocess` 这个单独 artifact。使用 `MultiProcessDataStoreFactory` 时，检查点应改为最终 APK / AAB 是否打包了 `libdatastore_shared_counter.so`。
 
-Robolectric 通过 `ShadowSharedCounter` 降级为 `AtomicInteger`——意味着 Robolectric 上**多进程语义不可测**，必须用真机或 emulator。
+`datastore-core-android:1.1.7` 的公开 source jar 中没有 `ShadowSharedCounter` 降级路径；`SharedCounter.loadLib()` 失败会沿调用链暴露为 native library 加载问题。Robolectric 上不要把这段当作多进程语义验证，最终仍要用真机或 emulator 检查 JNI / mmap / fcntl 路径。
 
 **4. 跨进程写入通知（MulticastFileObserver.android.kt）**
 
@@ -870,7 +874,7 @@ SP `MODE_MULTI_PROCESS` 是**过时且不可靠**的轮询机制：进程 A 写�
 
 之前章节仅写道「`MultiProcessDataStoreFactory` 从 1.1.0 起官方支持多进程 KV」，现补强为：
 
-> `MultiProcessDataStoreFactory` 依赖三层内核 IPC：fcntl 文件锁（互斥）、mmap 4 字节 atomic uint32（版本号）、FileObserver MOVED_TO（rename 通知）。三层在不同进程视角独立运行，并通过进程内 Kotlin Mutex 防止同进程递归死锁。要使用此 API 必须显式依赖 `androidx.datastore:datastore-multiprocess` AAR；Robolectric 上多进程语义不可测（自动降级为 ShadowSharedCounter）。写入流程走 atomic rename 而非 inot-place 修改，所以监听 `MOVED_TO` 而非 `MODIFY`。
+> `MultiProcessDataStoreFactory` 依赖三层内核 IPC：fcntl 文件锁（互斥）、mmap 4 字节 atomic uint32（版本号）、FileObserver MOVED_TO（rename 通知）。三层在不同进程视角独立运行，并通过进程内 Kotlin Mutex 防止同进程递归死锁。要使用此 API，依赖链必须包含打包 `libdatastore_shared_counter.so` 的 `androidx.datastore:datastore-core-android` AAR；Robolectric 上不能替代真机验证 JNI / mmap / fcntl 路径。写入流程走 atomic rename 而非 inot-place 修改，所以监听 `MOVED_TO` 而非 `MODIFY`。
 
 **10. 写入-通知-校验完整链路**
 
