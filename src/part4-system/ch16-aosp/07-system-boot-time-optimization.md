@@ -708,6 +708,14 @@ public void onReceive(final Context context, Intent intent) {
 
 **关联报告**：`DeepResearch/2026-06-29-android17-boot-optimization-bootanalyze-v2.md`（今日增量报告）
 
+
+### Android 17 bootanalyze 工具链 5 flag 配置与 4MB Perfetto Buffer 源码验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-bootanalyze-boot-time-optimization.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 源码验证 bootanalyze 工具链的 5 个关键 flag（-a/-b/-w/-s/-l）配置与 4MB 独立 Perfetto buffer 机制（b/382369925）。揭示 SystemServer.java:861 显式初始化 4MB shmem buffer 解决 Android 16 的 trace 丢失问题；--enable-lazy-preload flag 在 init.zygote64.rc 中默认未启用，ZygoteInit.java:858 条件分支控制 9 步预加载链（preloadClasses → preloadResources → preloadSharedLibraries → preloadTextResources → preloadCompatConfig → HttpEngine.preload → WebViewFactory.prepare → endPreload → warmUpJcaProviders）；bootstat 25+ 事件双源时间校正算法；APEX 模块化导致启动事件序列重排序。
+- 注入时间：2026-07-01
+- 价值：补全 bootanalyze 5 flag 精确语义、4MB buffer 的 bug ID 与代码位置、lazy preload 完整调用链，为启动优化章节提供工具链实操指南
+
 ## 延伸阅读
 
 ### Android 17 启动优化新特性源码验证：SystemConfig 早启 + Zygote preload 步骤增量 + am 性能 flag
@@ -717,6 +725,14 @@ public void onReceive(final Context context, Intent intent) {
 - 注入时间：2026-06-29
 - 价值：补强昨日报告中未触及的 android-17 vs android-16 diff、bootanalyze.sh 入口、APEX 启动时序 3 事件、BootReceiver IO 异步化，为启动优化章节提供演进时间线
 
+
+
+### Android 17 bootanalyze 工具链 5 flag 配置与 4MB Perfetto Buffer 源码验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-bootanalyze-boot-time-optimization.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 源码验证 bootanalyze 工具链的 5 个关键 flag（-a/-b/-w/-s/-l）配置与 4MB 独立 Perfetto buffer 机制（b/382369925）。揭示 SystemServer.java:861 显式初始化 4MB shmem buffer 解决 Android 16 的 trace 丢失问题；--enable-lazy-preload flag 在 init.zygote64.rc 中默认未启用，ZygoteInit.java:858 条件分支控制 9 步预加载链（preloadClasses → preloadResources → preloadSharedLibraries → preloadTextResources → preloadCompatConfig → HttpEngine.preload → WebViewFactory.prepare → endPreload → warmUpJcaProviders）；bootstat 25+ 事件双源时间校正算法；APEX 模块化导致启动事件序列重排序。
+- 注入时间：2026-07-01
+- 价值：补全 bootanalyze 5 flag 精确语义、4MB buffer 的 bug ID 与代码位置、lazy preload 完整调用链，为启动优化章节提供工具链实操指南
 
 ## 延伸阅读
 
