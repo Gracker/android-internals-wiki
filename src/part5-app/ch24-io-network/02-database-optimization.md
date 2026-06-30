@@ -40,7 +40,7 @@ sources:
 tags: [sqlite, room, wal, database-index, query-optimization]
 related_chapters: ["24.1", "10.7", "6.3"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9

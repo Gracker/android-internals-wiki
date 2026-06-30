@@ -38,7 +38,7 @@ sources:
 tags: [bitmap, insamplesize, native-memory, inbitmap, hardware-bitmap]
 related_chapters: ["23.1", "22.6", "7.10", "4.3"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式开头、版本线表述和硬件 Bitmap 限制句；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
@@ -53,7 +53,7 @@ last_task9_review_log: "logs/deep-review/2026-06-30-10-audit.md"
 task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞问题。 | 2026-06-30 10 Task9 idle audit auto-fix: 按 Android 17 基线复核 Bitmap.java / BitmapFactory.java / BaseCanvas.java / ImageDecoder.java，将旧 AOSP 验证标记更新到 android-17.0.0_r1，并修正正文 Android 10-16 覆盖口径为 Android 10-17；回到 Task6 复审。"
 task2b_result: fixed
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-30
 last_task9_audit: "2026-06-30"
 last_task9_audit_at: "2026-06-30T10:25:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-30-10-audit.md"
@@ -89,9 +89,9 @@ updated_by: openclaw-task9
 
 ## 为什么要了解 Bitmap 与图片内存优化
 
-图片内存问题很少是单一原因——解码尺寸、缓存复用、页面生命周期、设备内存预算，这几个因素叠加在一起才会把问题放大。举个例子：一张 4000×3000 的 `ARGB_8888` 图片解码后大约 45.8 MB，但如果在列表里只显示成 200×150 的缩略图，99% 的像素根本没参与显示，却已经把 Native Heap 或 Java Heap 占满了。
+图片内存问题很少是单一原因。解码尺寸、缓存复用、页面生命周期、设备内存预算——这几个因素叠加才会把问题放大。举例：一张 4000×3000 的 `ARGB_8888` 图片解码后约 45.8 MB，如果在列表里只显示成 200×150 的缩略图，99% 的像素根本没参与显示，却已经把 Native Heap 或 Java Heap 占满了。
 
-这一节从四个应用侧入口来谈：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进入 Native Heap，对监控口径意味着什么；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载链路和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
+这一节从四个应用侧入口来谈：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进了 Native Heap，对监控口径意味着什么；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载链路和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
 
 
 ## Bitmap 内存计算与 inSampleSize
@@ -161,7 +161,7 @@ fun calculateInSampleSize(
 [已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 [已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 
-Android Developers 的 Bitmap 内存文档列出版本边界：Android 2.3.3 及更早版本，像素数据在 Native 内存；Android 3.0 到 7.1，像素数据随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上，像素数据进入 Native Heap。当前章节覆盖 Android 10 到 Android 17，排查时应按 Native Heap 口径处理 Bitmap 像素内存。
+Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更早版本放在 Native 内存；Android 3.0 到 7.1 随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上重新进入 Native Heap。当前章节覆盖 Android 10 到 Android 17，排查时应按 Native Heap 口径处理 Bitmap 像素内存。
 
 AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `getAllocationByteCount()`，再通过 `NativeAllocationRegistry.registerNativeAllocation(this, mNativePtr)` 注册 Native 释放器。这个设计带来两个工程结论：
 

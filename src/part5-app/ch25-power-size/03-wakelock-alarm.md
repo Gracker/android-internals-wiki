@@ -39,7 +39,7 @@ sources:
 tags: [wakelock, alarm, exact-alarm, wakelock-leak, power]
 related_chapters: ["25.2", "11.5", "5.6", "25.4"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 last_task9_review_log: "logs/deep-review/2026-06-30-12-audit.md"
 last_task9_at: "2026-06-30T12:30:53+08:00"
@@ -56,7 +56,7 @@ task6_result: pass-light-edit
 last_task6_review_log: logs/review/2026-05-14-16-review.md
 last_task6_audit: "2026-05-25"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
+last_deepseek_cn_review_at: 2026-06-30
 last_task9_autofix_at: "2026-06-30"
 task9_review_notes: "2026-06-30 Task9 idle audit auto-fix: 将 WakeLock 类型段落中的 AOSP PowerManager.java 验证标签从 android-16.0.0_r1 重锚到 android-17.0.0_r1；复核 AlarmManager.java / AlarmManagerService.java exact alarm 权限和 *alarm* WakeLock 路径，未发现新增 P0/P1。因 auto-fix 回到 Task6 复审。"
 ---
@@ -98,7 +98,7 @@ WakeLock 和 Alarm 很容易被写成“保活工具”，这类写法会把功�
 
 App 侧常用的 WakeLock 只有一个：`PARTIAL_WAKE_LOCK`。它保持 CPU 运行，允许屏幕关闭，适合短时间完成用户已经触发的后台收尾工作，例如一段上传、一次加密写盘、一个必须落完的本地索引更新。屏幕相关的 `SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK`、`FULL_WAKE_LOCK` 已废弃；保持屏幕常亮应交给 `FLAG_KEEP_SCREEN_ON` 或具体组件能力。 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java] [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager.WakeLock]
 
-WakeLock 的默认规则可以归纳成四条：少用、短持有、命名稳定、异常路径必释放。Android Developers 明确要求只有没有合适替代 API 时才使用 WakeLock，并且持有时间越短越好；tag 推荐包含包名、类名或方法名，不要包含个人信息，也不要加随机数或计数器，否则系统和排查工具无法聚合同一处代码的耗电。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/set] [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
+WakeLock 的默认规则可以归纳成四条：少用、短持有、命名稳定、异常路径必释放。官方文档的建议很明确：只有找不到合适替代 API 时才用 WakeLock，持有时间越短越好；tag 应包含包名、类名或方法名，不要夹带个人信息、随机数或计数器，否则系统和排查工具无法聚合同一处代码的耗电。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/set] [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
 
 | 场景 | 推荐做法 | 不建议的做法 |
 |------|----------|--------------|
@@ -152,7 +152,7 @@ WakeLock 泄漏通常不来自 `release()` 这一行代码缺失，而来自生�
 | Perfetto | CPU 运行、suspend、Alarm 唤醒附近的时序 | 把 WakeLock 与 CPU active、Doze、Alarm 触发放到同一条时间线上 |
 | Play Console Android Vitals | 线上过度持锁趋势 | 看版本、设备、场景分布，作为发布守门输入 |
 
-Android Developers 的 WakeLock 归因文档还提醒了一类容易漏掉的情况：App 没有直接调用 `PowerManager.newWakeLock()`，但系统 API 或三方库替 App 持有了锁。`AlarmManager` 触发广播时会获取名为 `*alarm*` 的 WakeLock，并把归因记到调用 App；`JobScheduler`、WorkManager、定位、FCM、媒体播放等也可能在系统侧产生可归因到 App 的 WakeLock。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls]
+还有一种容易漏掉的情况：App 没有直接调用 `PowerManager.newWakeLock()`，但系统 API 或三方库替 App 持有了锁。`AlarmManager` 触发广播时会获取名为 `*alarm*` 的 WakeLock，并把归因记到调用 App；`JobScheduler`、WorkManager、定位、FCM、媒体播放等也可能在系统侧产生可归因到 App 的 WakeLock。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls]
 
 `AlarmManager` 的广播持锁窗口只覆盖 `BroadcastReceiver.onReceive()`。API 文档写明，Alarm 触发时系统会持有 CPU WakeLock，直到 `onReceive()` 返回；如果接收器里启动 service 或提交异步任务，`onReceive()` 返回后系统会释放这把锁，后续工作要有自己的调度或持锁策略。 [已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager]
 
@@ -186,7 +186,7 @@ Alarm 的选择顺序可以按精度从低到高排列：
 | `setExactAndAllowWhileIdle()` | Doze 中也尽量按精确时间触发 | 闹钟、日历提醒等用户强预期任务 | 最高 |
 | `setAlarmClock()` | 用户可见的精确闹钟，系统会为它离开低功耗模式 | 闹钟类功能 | 最高 |
 
-非精确 Alarm 是默认选项。官方文档明确说大多数 App 可以用非精确 Alarm；Exact Alarm 会让系统难以批处理请求，在省电模式下尤其耗资源。长任务也不要直接塞进 `BroadcastReceiver.onReceive()`，应在接收器里启动 WorkManager / JobScheduler，并把业务输入持久化。 [已验证: 官方文档, developer.android.com/develop/background-work/services/alarms]
+非精确 Alarm 是默认选项。大多数 App 用非精确 Alarm 就够了；Exact Alarm 会让系统难以批处理请求，在省电模式下尤其耗资源。长任务也不要直接塞进 `BroadcastReceiver.onReceive()`，应在接收器里启动 WorkManager / JobScheduler，并把业务输入持久化。 [已验证: 官方文档, developer.android.com/develop/background-work/services/alarms]
 
 下面的写法把“到某个时间附近提醒用户”做成非精确 Alarm。读者看 `setWindow()` 的窗口长度和 `PendingIntent` 的稳定 request code。
 
@@ -267,7 +267,7 @@ fun scheduleExactReminder(
 }
 ```
 
-这段代码不能单独作为产品交互。用户拒绝权限时，业务必须有降级路径：改用 `setWindow()`、延后到 WorkManager、在 App 打开时补偿提醒，或者明确告诉用户该功能依赖精确提醒权限。Android 14 的行为变更页也要求监听 `AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`，权限被授予后重新检查并重建必要的精确 Alarm。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/schedule-exact-alarms]
+这段代码不能单独作为产品交互。用户拒绝权限时，业务必须有降级路径：改用 `setWindow()`、延后到 WorkManager、在 App 打开时补偿提醒，或者明确告诉用户该功能依赖精确提醒权限。Android 14 还要求监听 `AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`，权限被授予后重新检查并重建必要的精确 Alarm。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/schedule-exact-alarms]
 
 Exact Alarm 在工程上需要审查六项：
 
