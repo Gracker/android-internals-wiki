@@ -83,6 +83,7 @@ task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
 last_task9_audit: "2026-06-14"
+last_task6_audit: "2026-07-01"
 ---
 # 案例集
 
@@ -403,7 +404,7 @@ RenderThread 相关卡顿的 Perfetto 特征:
 |------|-----|-------------------|
 | Composition 构建 | 系统资源预编译,构建成本低 | 主线程 JSON 解析 + `LottieComposition` 构建;复杂 JSON 可达数十毫秒 |
 | 每帧更新 | 属性动画驱动 VectorDrawable 状态 | `LottieDrawable.invalidateSelf()` → Canvas draw;路径取决于 RenderMode |
-| RenderMode路径 | - | AUTOMATIC: 按内容自动选择;SOFTWARE: 内部位图渲染;HARDWARE: GPU 路径(mask/matte/merge path 可能触发纹理上传) |
+| RenderMode 路径 | - | AUTOMATIC: 按内容自动选择;SOFTWARE: 内部位图渲染;HARDWARE: GPU 路径(mask/matte/merge path 可能触发纹理上传) |
 | Perfetto 特征 | RenderThread `DrawFrame` 拉长;主线程 `syncAndDrawFrame` 等待 | 首次加载:主线程 parse/inflate slice;播放中:主线程 `LottieDrawable.draw` 或 RenderThread textureUpload(hardware path) |
 | GPU 参与 | 高(向量路径实时栅格化) | 取决于 RenderMode 和内容:mask/matte/merge path 的 hardware path 需要额外 GPU 纹理;software path 几乎不碰 GPU |
 | RT 加速 | API 25+ 可走 VectorDrawableAnimatorRT | 无 RT 加速路径 |
