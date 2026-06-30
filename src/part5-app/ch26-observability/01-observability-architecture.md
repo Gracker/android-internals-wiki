@@ -2,7 +2,7 @@
 title: "App 可观测性架构设计"
 chapter: "26.1"
 section: "26.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-14"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
@@ -27,11 +27,11 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, logs, traces, architecture]
 related_chapters: ["26.2", "26.3", "19.27", "15.9"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-14"
+reviewed_date: 2026-06-30
 task9_state: reviewed
 task9_reviewed_date: "2026-06-30"
 task9_reviewed_by: "openclaw-task9"
@@ -46,6 +46,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-30-06-audit.md"
 last_task9_autofix_at: "2026-06-30"
 task9_review_notes: "2026-06-30 Task9 idle-audit auto-fix：补充 Perfetto FrameTimeline 的 Android 12（API 31）及以上版本限定；证据为 Android Developers 启动优化文档对 Perfetto FrameTimeline 的版本说明，未发现其他 P0/P1。回到 Task6 复审。"
 task2b_verifier_note: "status finalized→ready-for-review for Task6 pickup (2026-06-30T07:29:40+08:00)"
+last_task6_at: 2026-06-30T09:06:00+08:00
 ---
 
 # App 可观测性架构设计

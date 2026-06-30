@@ -31,21 +31,25 @@ created_date: "2026-06-04"
 gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
-pipeline_stage: task2b_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed-lite
 task2b_state: pending
 last_task2b_lite_at: 2026-06-30
 task9_result: needs-rework
 last_task9_at: 2026-06-30
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: 2026-06-30
+last_task6_at: 2026-06-30T09:06:00+08:00
 ---
 
 # 1.24 ResourcesManager 与 Configuration 变更性能
 
 Configuration 变更是 Android 里频率最高的"隐式性能事件"之一。旋转屏幕、切换语言、折叠/展开折叠屏、进入桌面模式——这些用户操作都会触发系统级 Configuration 变更，导致 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销可以相当于一次完整的冷启动。
 
-本节拆解 Configuration 变更从触发到落地的完整链路：ResourcesManager 如何管理 Resources 实例、Configuration 变更的传播路径、Activity recreation 的性能代价、以及各版本的 configChanges 边界变化。
+下面分析 Configuration 变更从触发到生效的完整链路：ResourcesManager 如何管理 Resources 实例、Configuration 变更的传播路径、Activity recreation 的性能代价、以及各版本的 configChanges 边界变化。
 
 ---
 
