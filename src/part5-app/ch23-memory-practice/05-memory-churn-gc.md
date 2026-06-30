@@ -34,8 +34,8 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
 tags: [memory-churn, gc, allocation, autoboxing]
 related_chapters: ["23.4", "10.6", "4.8", "7.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-05-14"

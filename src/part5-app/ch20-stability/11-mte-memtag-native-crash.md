@@ -32,8 +32,8 @@ sources:
     path: "DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md"
   - type: structure
     path: "Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit

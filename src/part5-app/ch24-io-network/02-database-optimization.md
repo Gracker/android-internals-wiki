@@ -39,7 +39,7 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [sqlite, room, wal, database-index, query-optimization]
 related_chapters: ["24.1", "10.7", "6.3"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
