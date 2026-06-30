@@ -39,32 +39,41 @@ created_date: "2026-06-04"
 gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: "fixed"
+task2b_state: fixed
 last_task2b_lite_at: 2026-06-30
 task9_result: "auto-fixed"
 last_task9_at: 2026-06-30T11:44:43+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-last_task6_at: 2026-06-30T11:13:00+08:00
-last_task2b_at: 2026-06-30T10:55:44+08:00
+last_task6_at: 2026-06-30T12:15:00+08:00
+last_task2b_at: 2026-06-30T12:56:48+08:00
 last_task9_autofix_at: "2026-06-30"
 last_task9_review_log: "logs/deep-review/2026-06-30-11-deep-review.md"
 task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正 Configuration 传播图、FixedRotation 直接链路、多窗口 resize relaunch 边界、per-app locale 边界；回到 Task6 复审。"
 task9_p0_issues: 3
 task9_p1_issues: 0
 task9_p2_issues: 2
+task2b_rework_issues: "[L3/L4] 增加实战场景引入、降文档感、加读者技能清单"
 ---
 
 # 1.24 ResourcesManager 与 Configuration 变更性能
 
-在 Perfetto 中追踪 ANR 问题时，我们经常发现一个现象：一个看似简单的旋转操作，却在主线程上制造了上百毫秒的卡顿。这些 Configuration 变更是 Android 里频率最高的"隐式性能事件"——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销确实可以相当于一次完整的冷启动。
+## 实战场景：一次旋转引发的 180ms 主线程卡顿
 
-作为一个优化过多个大型 App 的工程师，我特别关注 Configuration 变更的完整链路。下面我们从 ResourcesManager 实例管理开始，逐步深入到系统传播路径，分析 Activity recreation 的实际代价，以及各版本中 configChanges 的边界变化——这些知识能帮你避开 90% 的坑。读完这篇，你将能独立分析任何 Configuration 变更导致的性能问题，并掌握优化实战技巧。
+打开 Perfetto，选中一段旋转屏幕前后的 trace。主线程上有一段连续的 `Choreographer#doFrame` 延迟——每次丢帧约 60-80ms，连丢三帧。往前翻，`ActivityThread.handleRelaunchActivity` 吃掉了 120ms，其中 `LayoutInflater.inflate()` 独占 85ms。
+
+这条 trace 来自一个有 200+ 个 View 节点的详情页 Activity。它声明了 `configChanges="orientation"`——但 layout 里嵌套了 12 层 LinearLayout，一次旋转走到了 destroy + create 的完整路径，加上布局 inflate 的开销，主线程阻塞 180ms。
+
+排查思路：先确认 Activity 是否真的走了 recreate（看 `handleRelaunchActivity` 的 slice），再看 recreate 内部哪个阶段最耗（`LayoutInflater.inflate` vs `onSaveInstanceState` 序列化），最后检查 `configChanges` 声明和 `onConfigurationChanged` 的处理是否匹配。
+
+Configuration 变更是 Android 里频率最高的"隐式性能事件"——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销可以相当于一次完整的冷启动。
+
+下面从 ResourcesManager 实例管理开始，逐步深入到系统传播路径，分析 Activity recreation 的实际代价，以及各版本中 configChanges 的边界变化。
 
 ---
 
@@ -72,7 +81,7 @@ task9_p2_issues: 2
 
 ResourcesManager 是 framework 层的单例（`ActivityThread` 持有），负责为整个进程创建和管理所有 `Resources` 实例。一个进程内的 Resources 实例数量取决于当前有多少种不同的 Configuration。
 
-### Resources 的三层结构（理解这个结构对性能优化至关重要）
+### Resources 的三层结构
 
 ```
 Resources（对外接口）
@@ -81,7 +90,7 @@ Resources（对外接口）
 ```
 
 - `Resources` 是给 App 用的接口层，提供 `getString()`、`getDrawable()` 等方法
-- `ResourcesImpl` 持有真正的状态：当前 Configuration、DisplayMetrics、AssetManager
+- `ResourcesImpl` 持有状态：当前 Configuration、DisplayMetrics、AssetManager
 - `AssetManager` 在 native 层通过 mmap 访问 APK 中的 `resources.arsc`，负责资源查找和解析
 
 一个 `ResourcesKey`（由 apkPaths + configuration + displayId 等参数组成）决定了一个 `ResourcesImpl` 实例。两个 ResourcesKey 相同的 Resources 共享同一个 ResourcesImpl——这是 ResourcesManager 的缓存复用机制。
@@ -150,7 +159,7 @@ Configuration 变更会拆成两条路径：进程级配置派发先更新 App �
 
 ### FixedRotation：避免旋转时重建的特殊路径
 
-Android 12 引入了 FixedRotation 机制。当启动一个方向不同的 Activity 时，系统不立即切换显示方向，而是通过 `WindowToken.applyFixedRotationTransform()` 准备旋转后的 `DisplayInfo`、`DisplayFrames` 和 `Configuration`，让 App 进程先按模拟的旋转环境完成首次绘制，绘制完成后再执行真正的旋转动画。
+Android 12 引入了 FixedRotation 机制。当启动一个方向不同的 Activity 时，系统不立即切换显示方向，而是通过 `WindowToken.applyFixedRotationTransform()` 准备旋转后的 `DisplayInfo`、`DisplayFrames` 和 `Configuration`，让 App 进程先按模拟的旋转环境完成首次绘制，绘制完成后再执行旋转动画。
 
 关键调用链（Android 17，android-17.0.0_r1）：
 
@@ -277,7 +286,7 @@ public void onConfigurationChanged(Configuration newConfig) {
 
 ### ViewModel + SavedStateHandle
 
-最根本的策略是让状态不依赖 Activity 实例。`ViewModel` 在 Configuration 变更时不会被销毁，`SavedStateHandle` 处理进程被杀后的状态恢复。
+减少 Configuration 变更代价的起点：让状态不依赖 Activity 实例。`ViewModel` 在 Configuration 变更时不会被销毁，`SavedStateHandle` 处理进程被杀后的状态恢复。
 
 ```
 Activity recreate 前的状态保存路径：
@@ -391,6 +400,17 @@ Android 15 引入 16KB page size 支持（详见 4.7 节）。对资源加载的
 - 对于大 APK，影响可以忽略——mmap 的页面对齐开销在整体内存中占比很小
 
 ---
+
+## 读完本节你将掌握
+
+- 在 Perfetto 中定位 Configuration 变更卡顿：看 `handleRelaunchActivity` 的耗时和帧延迟模式，区分 recreate 瓶颈（inflate / onSaveInstanceState 序列化）和 layout 瓶颈
+- 理解 ResourcesManager 的 ResourcesKey → ResourcesImpl 缓存复用机制，知道什么场景会产生多个 Resources 实例
+- 梳理 `AMS.updateConfiguration()` → `WindowProcessController.dispatchConfiguration()` → `ActivityRecord.shouldRelaunchLocked()` 的完整链路
+- 评估一次 Activity recreate 的耗时分布：onSaveInstanceState 序列化 → View 树重建 → measure/layout/draw 各阶段占比
+- 正确配置 `configChanges`：理解每种值的真实处理难度，知道 Android 17 大屏场景下的强制边界
+- 用 `ViewModel` + `rememberSaveable` 跨 Configuration 变更保持状态，减少不必要的数据重建
+- 用 `dumpsys activity resources` 诊断 ResourcesImpl 缓存膨胀，通过 Heap Dump 定位泄漏根因
+
 
 ## 扩展
 
