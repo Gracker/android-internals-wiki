@@ -214,5 +214,52 @@
       "completed_reason": "内容已存在于章节 6.5（src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md）mmap+atomic+inotify 三层 IPC 分析已注入，无需重复注入"
     }
   ],
-  "last_updated": "2026-06-30T08:42:42+08:00"
+  "last_updated": "2026-06-30T08:42:42+08:00",
+  "queue": [
+    {
+      "chapter": "ch4.1",
+      "path": "src/part1-fundamentals/ch04-memory/4.1-memorylimiter--30-秒-kill--profilingservicehelper-触发条件-draft.md",
+      "title": "Android 17 MemoryLimiter 的 30 秒 Kill 窗口真相与 ProfilingServiceHelper 触发条件",
+      "priority": 80,
+      "reason": "knowledge-gap-mining",
+      "score": 19,
+      "gap_source": "DeepResearch + daily-info hot topic"
+    },
+    {
+      "chapter": "ch1.9",
+      "path": "src/part1-fundamentals/ch01-architecture/1.9-binder-ipc-优先级继承内核批处理流水线-draft.md",
+      "title": "Android 17 Binder IPC 优先级继承机制与内核批处理流水线",
+      "priority": 80,
+      "reason": "knowledge-gap-mining",
+      "score": 19,
+      "gap_source": "DeepResearch + daily-info hot topic"
+    },
+    {
+      "chapter": "ch22.1",
+      "path": "src/part5-app/ch22-rendering-practice/22.1-vulkan-多队列-gpu-负载均衡-draft.md",
+      "title": "Android 17 Vulkan 多队列并行渲染与 GPU 负载均衡",
+      "priority": 80,
+      "reason": "knowledge-gap-mining",
+      "score": 17,
+      "gap_source": "DeepResearch + daily-info hot topic"
+    },
+    {
+      "chapter": "ch6.1",
+      "path": "src/part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md",
+      "title": "Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证",
+      "priority": 80,
+      "reason": "knowledge-gap-mining",
+      "score": 16,
+      "gap_source": "DeepResearch + daily-info hot topic"
+    },
+    {
+      "chapter": "ch16.20",
+      "path": "src/part4-system/ch16-aosp/16.20-系统启动耗时-bootanalyze-draft.md",
+      "title": "Android 17 系统启动耗时优化新特性与 bootanalyze 工具链",
+      "priority": 80,
+      "reason": "knowledge-gap-mining",
+      "score": 19,
+      "gap_source": "DeepResearch + daily-info hot topic"
+    }
+  ]
 }
