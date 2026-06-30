@@ -84,13 +84,48 @@
       "status": "completed",
       "completed_at": "2026-06-30T12:54:49Z",
       "completed_by": "task2b-main-2026-06-30"
+    },
+    {
+      "id": "T6-2026-07-01-01",
+      "chapter": "04-binder.md",
+      "section": "1.4",
+      "issue_type": "L3+L4",
+      "priority": 90,
+      "description": "[review回炉] 6个DeepResearch注入块(~234行)以原始研究笔记堆叠在参考资料之后，含禁用词(闭环×5/链路×4)、元数据header，风格与主体不一致；主体与注入块在oneway spam/frozen/priority inheritance/事务队列等主题大量重复。需整合融入主体叙述或拆分为独立子章节。",
+      "material_paths": [
+        "logs/review/2026-07-01-06-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "参考资料之后全部注入块（约234行）",
+          "detail": "6个DeepResearch注入块含禁用词、元数据header、源码dump，风格与主体正文断裂。需Task 2B将技术内容融入主体对应段落。",
+          "suggestion": "保留技术结论，删除注入元数据header，融入主体叙述，删除重复内容。参考writing-guide.md类型A模板。"
+        },
+        {
+          "type": "需确认",
+          "location": "全文源码锚点",
+          "detail": "主体和注入块源码锚点引用android-16.0.0_r1/r4，需Task 9确认android-17.0.0_r1中对应代码路径是否有变化后更新。",
+          "suggestion": "由Task 9对照android-17.0.0_r1验证源码路径，结果交Task 2B执行更新。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "oneway spam / frozen / priority inheritance / 事务队列",
+          "detail": "主体正文与注入块在这些主题上大量内容重复。整合时需去重，保留更详细的版本。",
+          "suggestion": "以主体正文为骨架，将注入块中的增量信息（如tracepoints列表、red-black tree查找开销量化）补充到对应段落。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-07-01T06:10:38",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-01-06-review.md"
     }
   ],
   "metadata": {
-    "total_issues": 6,
-    "l3_issues": 4,
-    "l4_issues": 2,
+    "total_issues": 7,
+    "l3_issues": 5,
+    "l4_issues": 3,
     "created_at": "2026-06-30T17:09:00Z",
-    "review_id": "2026-06-30-17-review.md"
+    "review_id": "2026-07-01-06-review.md"
   }
 }

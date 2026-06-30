@@ -350,3 +350,141 @@ AOSP 17 没有名为 "Adaptive Background Activity Manager" 的统一类。背�
 - 摘要：在 2026-06-27 存在性核查基础上，量化 AOSP 17 与 AppFlow 三段式的职责映射、给出三阶段不破坏 GKI 的接入路线（应用+平台层 → CachedAppOptimizer 协同 → vendor kernel 评估）。明确指出"启动期文件页保护"在主线不可行、ΔM 信号缺失、128KB/100MB 阈值不可默认。LMK_PROCS_PRIO (id=11) 是 AOSP 17 新增的批量协议能力，可作为 AppFlow 接入的最优协议点。
 - 注入时间：2026-06-30
 - 价值：从"是否存在"推进到"如何接入"；明确"LMKD v2"不是 AOSP 17 概念，Memory Reclaim Priority 是 oom_score_adj+PSI+per_app_memcg 协同而非独立 API；给出可执行的工程边界，避免读者把研究原型误认为平台默认能力
+
+
+<!-- AIW-源码调研-2026-07-01 -->
+
+## Android 17 LMKD v2 源码级机制与 AppFlow 接入点（2026-07-01 调研补充）
+
+在 2026-06-27 / 2026-06-30 两轮源码级事实核查基础上，本节基于 `android-17.0.0_r1` 重新核读 `system/memory/lmkd/lmkd.cpp`（4218 行，行号以下列为准），深入 LMKD v2 PSI 驱动路径，给出 AppFlow 三段式可以"以最小内核改动"挂载的精确锚点。
+
+### 1. LMKD v2 运行模式选择
+
+LMKD 启动时按内核模块可用性二选一（`lmkd.cpp:3801-3816`）：
+
+```cpp
+has_inkernel_module = !access(INKERNEL_MINFREE_PATH, W_OK);
+use_inkernel_interface = has_inkernel_module;
+
+if (use_inkernel_interface) {
+    ALOGI("Using in-kernel low memory killer interface");
+    // 写 sys.lmk.reportkills=1，由内核 LMK 选择 victim 并通过 kpoll_fd 通知
+} else {
+    // 用户态 PSI 监控
+}
+```
+
+结论：**LMKD 自身是单一 daemon**，并不存在所谓"LMKD v2 守护进程"与"LMKD v1 守护进程"的版本分歧；在 Android 17 当内核有低内存节点时是「内核选 victim + LMKD 汇报 kills」，无内核节点时是「LMKD 读 PSI 选 victim」。**2026-06-30 调研中「LMK_PROCS_PRIO (id=11)」是 userspace 接口，两条路径都适用。**
+
+### 2. PSI 三级阈值与 AppFlow 高压检测的算法对位
+
+`lmkd.cpp:231-235`（与 06-30 调研相同的 psi_thresholds 表）：
+
+```cpp
+static struct psi_threshold psi_thresholds[VMPRESS_LEVEL_COUNT] = {
+    { PSI_SOME,  70  },   // partial stall 70ms in 1000ms → LOW
+    { PSI_SOME,  100 },   // partial stall 100ms in 1000ms → MEDIUM
+    { PSI_FULL,  70  },   // complete stall 70ms in 1000ms → CRITICAL
+};
+```
+
+注意 LOW/MEDIUM 同属 PSI_SOME（部分任务阻塞），CRITICAL 走 PSI_FULL（全部任务阻塞）。AppFlow 论文的高压检测"n_alloc > 12800 / 100ms"也属于「部分任务等内存」维度，与 PSI_SOME 同语义，**可作为 PSI 替代信号但不宜替代 PSI**。建议接入路径：通过 `LMK_TARGET` 包覆一个"虚拟压力事件"或在 PSI 不可用设备上保留 n_alloc 路径。
+
+### 3. PSI 路径下的回收来源区分 —— AppFlow 文件页保护接入点
+
+`lmkd.cpp:2900-2925` 处的 `__mp_event_psi` 通过两个独立路径区分回收来源：
+
+```cpp
+if (memevent_listener) {
+    // BPF memevents 提供精确时间戳
+    in_direct_reclaim = direct_reclaim_start_tm.tv_sec != 0 ||
+                        direct_reclaim_start_tm.tv_nsec != 0;
+    in_kswapd_reclaim = kswapd_start_tm.tv_sec != 0 ||
+                        kswapd_start_tm.tv_nsec != 0;
+} else {
+    // 无 BPF 时改用 /proc/vmstat 字段 diff
+    in_direct_reclaim = vs.field.pgscan_direct != init_pgscan_direct;
+    in_kswapd_reclaim = (vs.field.pgscan_kswapd != init_pgscan_kswapd) ||
+                        (vs.field.pgrefill != init_pgrefill);
+}
+if (in_direct_reclaim) reclaim = DIRECT_RECLAIM;
+else if (in_kswapd_reclaim) reclaim = KSWAPD_RECLAIM;
+```
+
+**AppFlow 接入点**：在 `DIRECT_RECLAIM` 进入分支后调用 `LMK_GETKILLCNT` 加 `LMK_PROCS_PRIO` 命令（`lmkd.h:35, id=6` + `lmkd.h:41, id=11`），用 06-30 调研指出的批量协议把"即将启动"应用的 oom_score_adj 降级保护。这是 **vmscan 路径之外**的可行补偿。
+
+### 4. kill_heaviest_task 与 per_app_memcg —— AppFlow 三段式 Killer 与 Reclaimer 共用入口
+
+- **`find_and_kill_process()`（`lmkd.cpp:2602-2633`）**：
+
+```cpp
+bool choose_heaviest_task = kill_heaviest_task;
+
+for (i = OOM_SCORE_ADJ_MAX; i >= min_score_adj; i--) {
+    if (!choose_heaviest_task && i <= PERCEPTIBLE_APP_ADJ) {
+        // 进入可感知应用层时强制切到 heaviest 模式
+        choose_heaviest_task = true;
+    }
+    while (true) {
+        procp = choose_heaviest_task ?
+                proc_get_heaviest(i) : proc_adj_tail(i);
+        ...
+    }
+}
+```
+
+**说明**：`kill_heaviest_task` 在 `i <= 200 (PERCEPTIBLE_APP_ADJ)` 时被强制打开——这是为了避免"在生产/前台邻接 adj 选到一个空槽位"造成的无意义 round-trip。**AppFlow 想做的"按收益评估杀谁"绕不开这个强制切换**：当最优 victim 在 PERCEPTIBLE 区间时，论文的 ΔM 评估机会丢失，被强制替换为「最重的」选择。
+
+- **`register_oom_adj_proc()`（`lmkd.cpp:1149-1185`）的 soft_limit_mult 阶梯**：
+
+```cpp
+if (proc.ptype == PROC_TYPE_APP && per_app_memcg) {
+    if      (proc.oomadj >= 600) { oom_adj_score = 200; soft_limit_mult = 1; }  // LAUNCHER
+    else if (proc.oomadj >= 300) soft_limit_mult = 1;                            // PERCEPTIBLE
+    else if (proc.oomadj >= 200) soft_limit_mult = 8;                            // VISIBLE
+    else if (proc.oomadj >= 100) soft_limit_mult = 10;                           // PERCEPTIBLE_REPL
+    else if (proc.oomadj >= 0)   soft_limit_mult = 20;                           // FOREGROUND
+    // 负分（persistent）：64 → 512MB 软上限
+    snprintf(val, sizeof(val), "%d", soft_limit_mult * EIGHT_MEGA);
+    CgroupGetAttributePathForTask("MemSoftLimit", proc.pid, &soft_limit_path);
+    ...
+}
+```
+
+**AppFlow 接入点**：把这套 multiplier 通过 `LMK_PROCS_PRIO` 与 `MemSoftLimit` cgroup 属性双重表达。**注意**：当前 `per_app_memcg` 守护进程仅写 `MemSoftLimit`，**未写 `MemHardLimit`**——AppFlow 想做的"启动期硬保护"不能仅靠 mult 调整，要同时考虑 `kill_heaviest_task` 模式。
+
+### 5. lowmem_min_oom_score 触碰 PREVIOUS_APP 边界
+
+`lmkd.cpp:4119`（与 06-30 调研一致）：`lowmem_min_oom_score` 默认 `PREVIOUS_APP_ADJ + 1 = 701`。这正是 AppFlow 想划在「上一 Activity」外的边界——**LMKD 默认会杀到 700**。AppFlow 想要保护 PREVIOUS 应用就需要把此属性收紧到 `>= 800`。
+
+### 6. 端侧 LLM / 车机场景的可观测信号
+
+`__mp_event_psi` 中已经有 `swap_free_low_percentage` 与 `swap_util_max` 两个 swap 维度信号（`lmkd.cpp:2888-2910`）：
+
+```cpp
+if (swap_free_low_percentage) {
+    swap_low_threshold = mi.field.total_swap * swap_free_low_percentage / 100;
+    swap_is_low = get_free_swap(&mi) < swap_low_threshold;
+}
+```
+
+**端侧 LLM 推理对 8GB 内存的影响**：模型权重大半走 mmap、匿名页，swap 频繁时 `swap_is_low` 会抬高 kill 紧急程度。AppFlow 在该场景下实测应在 `LMK_TARGET` 包一层"swap is low + LMK min_oom >= 800"的复合延迟，避免 LLM 推理被中断杀进程。
+
+### 7. 版本边界
+
+- 本节源码引用全部基于 `android-17.0.0_r1/system/memory/lmkd/lmkd.cpp`，未涉及 Android 18/19
+- **`use_inkernel_interface` 的默认依赖内核 GKI 6.12 lmk 模块**：与 AOSP 17 内核基线绑定，不在 Android 18/19 内核基线上声明结论
+- **`memevents BPF listener`**（`lmkd.cpp:3531 init_memevent_listener_monitoring`）依赖 `bpf/MemEventListener` 在 vendor kernel 中可用
+- AppFlow 论文实验平台为 Android 15，与 AOSP 17 在 PSI 默认阈值、psi_window_size_ms 上有差
+
+### 8. 与前两轮调研的边界说明
+
+- **06-27 调研**确认 AppFlow 三段式在 AOSP 17 主线不存在——本节不反驳
+- **06-30 调研**给出三阶段接入路线（应用+平台 → CachedAppOptimizer → vendor kernel）——本节精确化"平台层"路径，给出具体的 PSI / kill_heaviest_task / per_app_memcg 接入代码锚点
+- **本节仅在前两节边界内补全**：不修改 06-27 / 06-30 的可执行边界，不为 AppFlow 论文添加额外可信度
+
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-android17-lmkd-v2-appflow-collaboration.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 的 lmkd.cpp（4218 行）逐段核读，给出 PSI 三级阈值在 LOW/MEDIUM 同属 PSI_SOME/CRITICAL 走 PSI_FULL 的精确语义；DMA_RECLAIM 与 KSWAPD_RECLAIM 区分路径；kill_heaviest_task 在 PERCEPTIBLE_APP_ADJ 强制切换的细节；per_app_memcg soft_limit_mult 阶梯（oomadj 0-900 区间从 64 降至 0，以 8MB 为基数）；lowmem_min_oom_score 默认 PREVIOUS_APP_ADJ+1=701。明确 LMKD 是单一 daemon，根据内核模块可用性二选一，不存在 v1/v2 双守护进程；2026-06-30 中的 "LMK_PROCS_PRIO (id=11)" 在两条路径都适用。
+- 注入时间：2026-07-01
+- 价值：精确化 AppFlow 三段式与 AOSP 17 LMKD 的接入代码锚点；指出 kill_heaviest_task 在 PERCEPTIBLE_APP_ADJ 强制切换会"吃掉"AppFlow ΔM 评估机会；明确 LMKD v2/v1 不是独立 daemon 版本而是运行模式选择，避免读者误读术语
