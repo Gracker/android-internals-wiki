@@ -42,8 +42,8 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [compression, caching, gzip, brotli, offline-sync]
 related_chapters: ["24.4", "24.7", "12.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 last_task2a_at: "2026-05-14T11:04:00+08:00"

@@ -19,8 +19,8 @@ sources:
     path: "https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/ConnectionMigrationOptions.java"
 tags: [http2, http3, quic, grpc, protocol]
 related_chapters: ["24.4", "12.3", "12.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 last_task2a_at: 2026-05-14T10:04:00+08:00

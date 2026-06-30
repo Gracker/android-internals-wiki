@@ -6,9 +6,9 @@ status: "finalized"
 last_task2b_lite_at: "2026-06-26T09:35:00+08:00"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-01"
@@ -119,7 +119,7 @@ last_task9_review_log: "logs/deep-review/2026-07-01-00-audit.md"
 last_task9_autofix_at: "2026-07-01"
 task9_review_notes: "2026-07-01 Task9 idle-audit: auto-fixed Android 17 source baseline; OomAdjuster moved to com.android.server.am.psc; updated OOM constants/source anchors and android-17.0.0_r1 verification markers; P0 1 / P1 0 / P2 0; returned to Task6 review. | 2026-06-09 Task9 deep-review: pass-tech-review。复核 Task9 idle-audit auto-fix 与 Task6 回流；AOSP android-16.0.0_r1 源码锚点、Android 17 官方行为边界、queue pending 状态均通过；P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-09 Task9 idle-audit: auto-fixed P0 source anchors: ProcessAnrTimer is an inner class of ActiveServices, not a standalone source file; activity cold-start process launch uses ATMS.startProcessAsync() -> ActivityManagerInternal.startProcess(), not AMS.startProcessAsync(); P0 2 / P1 0 / P2 0; returned to Task6 review. | 2026-05-28 Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
+last_deepseek_cn_review_at: 2026-07-01
 task6_l1_l2_fixes: 5
 task6_l3_l4_issues: 0
 last_task9_audit_log: "logs/deep-review/2026-07-01-00-audit.md"
@@ -182,9 +182,6 @@ AMS 与几个关键服务之间存在紧密的协作关系：
 
 应用进程通过 `ActivityManager`(客户端代理类)与 AMS 通信。这层通信走的是 Binder IPC,`IActivityManager.aidl` 定义接口,`ActivityManagerService` 实现接口。需要区分的是,`startActivity()` 这类 Activity / Task 相关调用虽然入口还在 AMS 对外接口上,但会继续委托给 `ActivityTaskManagerService`。所以你在 Perfetto 中看到的 `Binder:system` 线程调用,往往只是系统服务链路的起点,不是全部。
 
-```text
-[图：AMS 在系统架构中的位置，展示 system_server 内 AMS 与 PMS / WMS 的关系，以及 App 进程通过 Binder 与 AMS 通信的路径]
-```
 
 ### 在 Perfetto 中定位 AMS
 
@@ -203,9 +200,8 @@ AMS 与几个关键服务之间存在紧密的协作关系：
 - `am_kill` / `am_pss`:进程被杀或进行内存统计。
 - `am_create_service` / `am_destroy_service`:Service 的创建与销毁。
 
-这里要把 EventLog 和 slice 分开看。`am_proc_start`、`am_anr` 这些是 EventLog tag,在 Perfetto 里应当从 `android_logs` 这类日志数据源读取;Activity 启动本身没有 `am_activity_launch` 这个 EventLog tag,启动耗时更适合结合 `ActivityTaskManager` / `WindowManager` 的系统侧 slice、应用主线程的 `bindApplication` / Activity 生命周期,以及首帧 `doFrame` 一起看。
+EventLog 和 slice 要分开看。`am_proc_start`、`am_anr` 这些是 EventLog tag,在 Perfetto 里应当从 `android_logs` 这类日志数据源读取;Activity 启动本身没有 `am_activity_launch` 这个 EventLog tag,启动耗时更适合结合 `ActivityTaskManager` / `WindowManager` 的系统侧 slice、应用主线程的 `bindApplication` / Activity 生命周期,以及首帧 `doFrame` 一起看。
 
-> [已验证: AOSP android-17.0.0_r1,`frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` 中存在 `am_proc_start` / `am_proc_bound` / `am_anr` / `am_kill`,不存在 `am_activity_launch`]
 
 如果 trace 打开了 Android logs 数据源,可以先用下面的 SQL 看 AMS 侧 EventLog:
 
@@ -285,11 +281,8 @@ Launcher / Instrumentation.execStartActivity()
 
 AMS 与 lmkd 的协作在 §4.4 中有详细讲解,这里简要提一下:当系统内存低于阈值时,lmkd 通过 `/proc/<pid>/oom_score_adj` 读取每个进程的优先级分数,从分数最高的缓存进程开始杀。AMS 的角色是维护这个分数；每次组件状态变化时,`updateOomAdjLocked()` 都会被触发。
 
-在 Perfetto 中,我们可以通过 `Process Stats` Track 观察 `oom_score_adj` 的变化:当一个 App 从前台切到后台,你会看到它的 oom_score_adj 从 0 逐步升到 900+。如果随后出现 `am_kill` 事件,说明该进程被 lmkd 回收了。
+在 Perfetto 中,通过 `Process Stats` Track 可以观察 `oom_score_adj` 的变化:当一个 App 从前台切到后台,你会看到它的 oom_score_adj 从 0 逐步升到 900+。如果随后出现 `am_kill` 事件,说明该进程被 lmkd 回收了。
 
-```text
-[图：Perfetto 中 oom_score_adj 变化时序图，展示 App 从前台到后台再到被杀的完整过程]
-```
 
 ---
 
@@ -302,8 +295,6 @@ ANR 检测可以先按三步理解:**开始计时、取消计时、超时上报*
 1. **开始计时**:AMS 在发起一个操作时(如启动 Service、分发广播),同时启动对应的超时计时器或延时消息。
 2. **取消计时**:目标操作完成时,App 通过 Binder 通知 AMS,AMS 取消对应计时。
 3. **超时上报**:如果计时到期时操作还没有完成,系统进入 ANR 处理流程。
-
-> [来源: 掘金《Android ANR 的设计原理》]
 
 这个模式贯穿所有 ANR 类型,后面按类型说明。
 
@@ -462,9 +453,6 @@ Android 16+ 上,用 `ApplicationStartInfo.getStartComponent()` 直接获取组�
 
 > [已验证: Android 16 / API 36,`android.app.ApplicationStartInfo#getStartComponent()`;获取入口为 `ActivityManager#getHistoricalProcessStartReasons(int)`]
 
-```text
-[图：Perfetto 中冷启动的完整 Trace 片段，标注上述 6 个关键时间节点]
-```
 
 ### manifest 中的 `recreateOnConfigChanges`
 
@@ -654,9 +642,6 @@ Android 14 对广播做的变化,重点不在 Extra 大小,而在**投递时机*
 3. `android_logs` 里出现 `am_kill`
 4. 目标进程的所有线程消失
 
-```text
-[图：冷启动、ANR、进程被杀三种典型场景的 Perfetto Trace 对比截图]
-```
 
 ---
 
