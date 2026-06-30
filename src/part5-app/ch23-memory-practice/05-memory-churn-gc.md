@@ -51,7 +51,7 @@ task9_reviewed_date: "2026-06-30"
 last_task9_at: "2026-06-30T15:36:54+08:00"
 task9_review_notes: "2026-06-30 task9 idle audit auto-fix: Android 17 基线复核发现 ShouldConcurrentGCForJava() 已加入 time-based GC triggering 分支；已更新源码锚点和版本说明，回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-06-30
 last_task6_audit: "2026-06-06"
 last_task9_audit: "2026-06-30"
 last_task9_autofix_at: "2026-06-30"
@@ -84,7 +84,7 @@ last_task9_autofix_at: "2026-06-30"
 
 ## 为什么要了解内存抖动与 GC 治理
 
-内存抖动说的是短时间大量分配、很快失效、又反复触发回收的问题。前面 23.4 节讲了 Java Heap 预算和缓存控制，10.6 节和 4.8 节展开了 ART GC 的机制和 Perfetto 识别方法。这一节换到应用实战视角：把分配峰值从启动、首帧、滑动、动画这些敏感窗口里移走。
+内存抖动说的是短时间大量分配、很快失效、又反复触发回收的问题。前文已经讲过 Java Heap 预算与缓存控制（23.4 节），以及 ART GC 的机制和 Perfetto 识别方法（10.6 节、4.8 节）。这一节把视角切到应用实战：怎么把分配峰值从启动、首帧、滑动、动画这些敏感窗口里移走。
 
 Android Developers 的慢渲染文档把对象分配和 GC 列为卡顿原因，结论很明确：ART 之后 GC 的影响小了很多，但高频路径里的分配仍然会吃掉 CPU，也会让 GC 更频繁。Memory Profiler 文档也说明，Android 的 GC 会在某些时刻短暂停应用代码；如果应用分配速度快于回收速度，线程会等回收器释放出足够内存再继续分配。
 
@@ -290,7 +290,9 @@ suspend fun <T, R> mapInChunks(
 - **绘制**：自定义 View / 图表 / 动画组件在 5-10 秒压力场景下记录 allocation count。
 - **线上**：只采轻量指标，例如 Java Heap 使用率、GC 次数、页面和设备维度；发现异常后再回到线下采样。
 
-[自动发现] 对于启动、首帧和滑动，应用侧可以把重分配延后到帧稳定后执行，例如首屏渲染后再预热低优先级缓存，或者 fling 结束后再刷新非关键统计。这个动作不改变 ART GC 机制，只改变分配时间分布。[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
+对于启动、首帧和滑动，应用侧可以把重分配延后到帧稳定后执行——比如首屏渲染完再预热低优先级缓存，或者 fling 结束再刷新非关键统计。这不会改变 ART GC 机制，只改变分配的时间分布。
+
+[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
 ## 常见误区
 
@@ -324,6 +326,6 @@ Heap dump 适合看某一刻还活着的对象，抖动里的临时对象可能�
 
 ### 结构参考
 
-- [结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
-- [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？
+- Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化
+- Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型

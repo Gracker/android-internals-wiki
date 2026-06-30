@@ -46,7 +46,7 @@ task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Cho
 task2b_result: "fixed"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
-last_task6_audit: "2026-06-26"
+last_task6_audit: "2026-06-30"
 task9_state: "reviewed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"

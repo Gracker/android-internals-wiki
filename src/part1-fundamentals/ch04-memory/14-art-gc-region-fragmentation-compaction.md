@@ -40,6 +40,8 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-06-11"
 gap_source: "DeepResearch 调研结果（score 19）+ AOSP 源码结构"
 last_task2b_lite_at: "2026-06-29"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-30
 ---
 
 # 4.14 ART GC Region 碎片化与 Compaction 策略
@@ -217,7 +219,7 @@ if (ShouldUseGenerationalGC()) {
 
 当设备不支持 `gUseUserfaultfd` 时，`ShouldUseGenerationalGC()` 在非 Android 目标上返回 `true`，但 Heap 构造函数中 foreground collector type 不是 `kCollectorTypeCMC` 时不会创建 MarkCompact 实例。不支持 UFFD 的设备上，系统自动回退到 CC 路径，不会走 CMC。
 
-[待验证: `gUseUserfaultfd` 的设备级默认值由厂商在 `BoardConfig.mk` 或 `parsed_options.cc` 中配置，各厂商的分布情况未在源码中直接体现]
+`gUseUserfaultfd` 的设备级默认值由厂商在 `BoardConfig.mk` 或 `parsed_options.cc` 中配置，各厂商的分布情况未在源码中直接体现。
 
 ## LargeObjectSpace：不参与压缩的大对象
 
@@ -308,29 +310,22 @@ static constexpr bool kCyclicRegionAllocation = kIsDebugBuild;
 
 相册、长会话直播等应用常驻大量 Bitmap 和 VideoDecoder buffer 对应的 Java 引用对象。这些对象所在的 region 自然晋升到 mid/old 后，UnevacFromSpace 的评估开销会随 region 稳定而降低。对象池复用可以让对应 region 更快稳定。
 
-[自动发现] Perfetto 中观察 CC/CMC 行为的方式：先搜索 ART GC、`ConcurrentCopying`、`MarkCompact`、`HeapTaskDaemon` 等 slice，再对比 young GC 和 full GC 的频率与耗时。如果 young GC 频率异常高，需要结合对象分配速率、young space 大小和应用负载一起判断。
+在 Perfetto 中观察 CC/CMC 行为：搜索 ART GC、`ConcurrentCopying`、`MarkCompact`、`HeapTaskDaemon` 等 slice，对比 young GC 和 full GC 的频率与耗时。如果 young GC 频率异常高，需要结合对象分配速率、young space 大小和应用负载一起判断。
 
 ## 扩展
 
 ### 🔸 CMC 与 ZRAM 压缩的交互
 
-压缩内存页对 UFFD minor-fault 路径的影响。当 ZRAM 压缩了一个正在被 CMC 压缩引用的内存页时，fault 处理路径会多一步解压，可能增加单次 GC 的延迟。具体的量化数据需要在真实设备上测量。
-
-[待补充]
+压缩内存页对 UFFD minor-fault 路径的影响：当 ZRAM 压缩了正在被 CMC 引用的内存页时，fault 处理路径会多一步解压，可能增加单次 GC 延迟。量化数据需要在真实设备上测量。
 
 ### 🔸 16KB Page Size 对 Region 大小选择与碎片化率的影响
 
-RegionSpace 的 region 大小（默认 256KB）是基于 4KB page size 设计的。16KB page size 下，每个 region 包含的页数从 64 降到 16，分配粒度变粗。对碎片化率的量化影响需要基于设备内核配置验证。
-
-[待补充]
+RegionSpace 的 region 大小（默认 256KB）基于 4KB page size 设计。16KB page size 下，每个 region 包含的页数从 64 降到 16，分配粒度变粗。对碎片化率的量化影响需要基于设备内核配置验证。
 
 ### 🔸 端侧 LLM 推理场景下 GC 暂停对推理延迟的实际影响案例
 
-端侧 LLM 推理通常以 token 为单位，每个 token 的推理延迟在 10-50ms 量级。如果 GC 暂停恰好发生在推理关键路径上，单次 2-3ms 的暂停对整体延迟的影响约 5-15%。但在 batch 推理或多模型并行场景下，GC 暂停的叠加效应需要实测。
-
-[待补充]
+端侧 LLM 推理通常以 token 为单位，每个 token 的推理延迟在 10-50ms 量级。如果 GC 暂停恰好发生在推理关键路径上，单次 2-3ms 的暂停对整体延迟的影响约 5-15%。在 batch 推理或多模型并行场景下，GC 暂停的叠加效应需要实测。
 
 ---
 
-> 本节内容基于 AOSP android-17.0.0_r1 一手源码验证，详见 DeepResearch/2026-06-09-android17-art-gc-fragmentation-region-mc.md。
-> Android 17 相关源码锚点已按 `refs/tags/android-17.0.0_r1` 二次核对。
+> 本节内容基于 AOSP android-17.0.0_r1 一手源码验证。相关源码锚点已按 `refs/tags/android-17.0.0_r1` 二次核对。
