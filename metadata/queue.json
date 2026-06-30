@@ -117,8 +117,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-07-01T06:10:38",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-01-06-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-01-06-review.md",
+      "completed_at": "2026-06-30T22:52:07Z",
+      "completed_by": "task2b-main-2026-07-01"
     },
     {
       "id": "T9-2026-07-01-06-01",
@@ -160,7 +162,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-01T06:29:24+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-30T22:52:07Z",
+      "completed_by": "task2b-main-2026-07-01"
     }
   ],
   "metadata": {
@@ -170,5 +174,47 @@
     "created_at": "2026-06-30T17:09:00Z",
     "review_id": "2026-07-01-06-review.md",
     "last_task9_review_id": "logs/deep-review/2026-07-01-06-deep-review.md"
-  }
+  },
+  "pending": [
+    {
+      "section": "6.5",
+      "section_title": "SharedPreferences/DataStore 性能与 ANR 优化",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-sharedpreferences-impl-anr-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "SharedPreferencesImpl 性能与 ANR 优化机制 — 基于 android-17.0.0_r1 源码完整解析 SharedPreferencesImpl 的 ANR 触发链：首次加载 awaitLoadedLocked 主线程阻塞（BlockGuard 显式 onReadFromDisk）、commit 主线程 fsync vs apply 后台 fsync、QueuedWork.waitToFinish 在 handleStopActivity/handlePauseActivity 的 512ms 同步等待、fsync 延迟 histogram 监控（16 桶指数，MAX_FSYNC_DURATION=256ms）",
+          "suggestion": "建议在 finalized 章节的下一轮修订中补充完整调用链图和 4 大 ANR 触发点分析"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-01T06:15:25.082107",
+      "status": "pending"
+    },
+    {
+      "section": "1.24",
+      "section_title": "ResourcesManager 与 Configuration 变更性能",
+      "priority": 82,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-resourcesmanager-configuration-relaunch.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 ResourcesManager/Configuration 与 Activity Relaunch 判定模型 — 源码级验证 ATMS updateConfigurationLocked → mRootWindowContainer.onConfigurationChanged → ActivityRecord.shouldRelaunchLocked 三段式流水线；skipRelaunchConfigMask 位运算公式；Flags.enableLessActivityRecreationOnConfigChange 新机制；桌面模式 shouldSkipActivityRelaunchWhenDocking",
+          "suggestion": "建议在 finalized 章节的下一轮修订中补充 Activity relaunch 判定的完整源码链路和 Android 17 新增的 less-recreation 机制分析"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-01T06:15:25.082107",
+      "status": "pending"
+    }
+  ]
 }
