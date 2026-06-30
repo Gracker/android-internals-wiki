@@ -4,8 +4,9 @@ chapter: "24.2"
 section: "24.2"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP master snapshot 2026-05-14 + Android Developers docs + AndroidX Room source"
+last_verified: "2026-06-30"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers SQLite/Room docs + AndroidX Room source"
+last_verified_android17: "2026-06-30"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -38,15 +39,17 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [sqlite, room, wal, database-index, query-optimization]
 related_chapters: ["24.1", "10.7", "6.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-14
-last_task9_at: 2026-05-14T07:24:00+08:00
-last_task9_audit: "2026-06-08"
-task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；源码锚点需 pin 到稳定 tag，16KB page size 与 SQLite page_size/checkpoint 数据量关系需补 PRAGMA 验证。"
+task9_reviewed_date: 2026-06-30
+last_task9_at: 2026-06-30T14:25:47+08:00
+last_task9_audit: "2026-06-30"
+last_task9_autofix_at: "2026-06-30"
+last_task9_audit_log: "logs/deep-review/2026-06-30-14-audit.md"
+task9_review_notes: "2026-06-30 idle audit auto-fixed: AOSP SQLite/Room source baseline pinned to android-17.0.0_r1; WAL checkpoint sentence narrowed to actual SQLite DB page_size / PRAGMA page_size; Task6 revisiting required after localized technical edits."
 task2b_state: fixed
 last_task2a_at: "2026-05-14T07:12:00+08:00"
 task6_result: pass-light-edit
@@ -132,7 +135,7 @@ WAL 的应用侧检查项：
 
 - 确认是否使用 Room 默认 `AUTOMATIC`，不要为了“兼容”随手切回 `TRUNCATE` 或 `DELETE`。
 - 如果使用 `ATTACH DATABASE`，重新评估 WAL；Android 官方 SQLite 性能文档把 `ATTACH DATABASE` 列为启用 WAL 的例外条件。
-- 大事务后观察 `-wal` 文件增长和 checkpoint 耗时。在 16KB page size 的设备上，默认 100 页 checkpoint 阈值的实际数据量是 4KB page size 设备的 4 倍。
+- 大事务后观察 `-wal` 文件增长和 checkpoint 耗时。默认 100 页阈值按 SQLite 数据库页计算，不按设备内存页直接换算；用 `PRAGMA page_size` 或建库时的实际 DB page size 计算 checkpoint 数据量。
 - 不在主线程首次 open 数据库。首次 open 可能触发 schema 校验、Migration、预置库复制或 checkpoint。
 
 ## Room 的正确使用与性能陷阱
