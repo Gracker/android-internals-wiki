@@ -31,22 +31,24 @@ gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效�
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task2b_result: fixed
-task2b_state: fixed
+task2b_result: rework-2026-06-30-l3-l4
+task2b_state: rework-2026-06-30-l3-l4
 last_task2b_lite_at: 2026-06-30
 task9_result: pass-tech-review
 last_task9_at: 2026-06-30T16:31:10+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-last_task6_at: 2026-06-30T16:07:00+08:00
+last_task6_at: 2026-06-30T18:12:00+08:00
 last_task9_autofix_at: "2026-06-30"
 last_task9_review_log: "logs/deep-review/2026-06-30-16-deep-review.md"
 task9_review_notes: "2026-06-30 Task9 复审通过: Android 17 ResourcesManager/Configuration/FakeRotation/Compose 状态边界已按源码和官方行为限定复核，无新增 P0/P1。"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
-task2b_rework_issues: "[L3/L4] 增加实战场景引入、降文档感、加读者技能清单"
+task2b_rework_issues: "2026-06-30 Task2B main: L3 content depth — added Perfetto-based Activity recreate measurement methodology with SQL; expanded foldable/multi-window section with Perfetto diagnostic queries, Samsung/Pixel Fold divergence patterns, and multi-window resize debouncing strategies"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-06-30
 ---
 
 # 1.24 ResourcesManager 与 Configuration 变更性能
@@ -59,13 +61,13 @@ task2b_rework_issues: "[L3/L4] 增加实战场景引入、降文档感、加读�
 
 排查思路：先确认 Activity 是否真的走了 recreate（看 `handleRelaunchActivity` 的 slice），再看 recreate 内部哪个阶段最耗（`LayoutInflater.inflate` vs `onSaveInstanceState` 序列化），最后检查 `configChanges` 声明和 `onConfigurationChanged` 的处理是否匹配。
 
-Configuration 变更是 Android 里频率最高的"隐式性能事件"——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销可以相当于一次完整的冷启动。
+Configuration 变更是 Android 里最容易忽略的性能触发点——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销可以相当于一次完整的冷启动。
 
 ---
 
 ### 锚点 2: ResourcesManager 的角色与资源加载管线
 
-ResourcesManager 是 framework 层的单例（`ActivityThread` 持有），负责为整个进程创建和管理所有 `Resources` 实例。一个进程内的 Resources 实例数量取决于当前有多少种不同的 Configuration。
+ResourcesManager 是 framework 层的单例，由 `ActivityThread` 持有，负责为整个进程创建和管理所有 `Resources` 实例。进程内 Resources 实例的数量取决于当前有多少种不同的 Configuration。
 
 ### Resources 的三层结构
 
@@ -195,6 +197,49 @@ LayoutInflater 重建 View 树 → measure → layout → draw
 对于一个有 200+ 个 View 节点的 Activity，recreate 耗时通常在数十到上百毫秒量级。在折叠屏设备上展开/折叠时，如果触发了 recreate，耗时可能进一步增加（screenWidthDp、screenHeightDp、smallestScreenWidthDp 同时变化，Resources 和 View 树均需重建）。
 
 > ⚠️ **数据待验证**：上述量级基于工程经验估算，非可复现实验。建议用 Perfetto 在目标设备上采集（设备型号、ROM 版本、APK 规模、采样次数记录完整）后替换为实测数据。
+
+#### 用 Perfetto 实测 Activity recreate 耗时
+
+在目标设备上采集 trace 后，用以下查询直接拿到一次 recreate 的各阶段耗时。不需要看估算——看 trace：
+
+```sql
+-- 一次 Activity recreate 的各阶段耗时分解
+WITH recreate AS (
+  SELECT id, ts, dur FROM slice
+  WHERE name = 'handleRelaunchActivity'
+  ORDER BY ts DESC LIMIT 1
+)
+SELECT
+  CASE
+    WHEN s.name LIKE '%onSaveInstanceState%' THEN '1_onSaveInstanceState'
+    WHEN s.name LIKE '%onPause%' THEN '2_onPause'
+    WHEN s.name LIKE '%onStop%' THEN '3_onStop'
+    WHEN s.name LIKE '%onDestroy%' THEN '4_onDestroy'
+    WHEN s.name LIKE '%onCreate%' THEN '5_onCreate'
+    WHEN s.name LIKE '%onStart%' THEN '6_onStart'
+    WHEN s.name LIKE '%onResume%' THEN '7_onResume'
+    WHEN s.name LIKE '%LayoutInflater%' OR s.name LIKE '%inflate%' THEN 'LayoutInflater.inflate'
+    WHEN s.name LIKE '%measure%' OR s.name = 'measure' THEN 'measure'
+    WHEN s.name LIKE '%layout%' OR s.name = 'layout' THEN 'layout'
+    WHEN s.name LIKE '%draw%' OR s.name = 'draw' THEN 'draw'
+    ELSE s.name
+  END AS stage,
+  s.dur / 1e6 AS duration_ms
+FROM slice s, recreate r
+WHERE s.ts >= r.ts AND s.ts + s.dur <= r.ts + r.dur
+  AND (s.name LIKE '%onSave%' OR s.name LIKE '%onPause%' OR s.name LIKE '%onStop%'
+    OR s.name LIKE '%onDestroy%' OR s.name LIKE '%onCreate%' OR s.name LIKE '%onStart%'
+    OR s.name LIKE '%onResume%' OR s.name LIKE '%inflate%'
+    OR s.name IN ('measure', 'layout', 'draw'))
+ORDER BY s.ts;
+```
+
+**采集建议**：
+
+- 在目标设备上锁定同一个 Activity，在 `onConfigurationChanged` / `onCreate` 前后设置 atrace marker（`Trace.beginSection("my_recreate_measure")`），trace 中就能精确找到自己要看的 recreate
+- 至少重复触发 5 次 Configuration 变更（旋转、折叠、语言切换等），取 P50/P95
+- 对比 `configChanges` 声明前后的耗时差异，可以直接量化 `configChanges` 的收益
+- 结合 `adb shell dumpsys gfxinfo <package>` 的帧统计，对比 recreate 前后的帧耗时变化
 
 ### 序列化/反序列化的隐含开销
 
@@ -414,6 +459,59 @@ Android 15 引入 16KB page size 支持（详见 4.7 节）。对资源加载的
 2. 使用 Jetpack WindowManager 的 `WindowInfoTracker` 监听窗口状态变化
 3. 在布局中避免硬编码尺寸，使用 `dimens.xml` 的 sw600dp/sw720dp 限定符
 
+#### 折叠屏展开/折叠的 Perfetto 诊断方法
+
+折叠屏展开/折叠触发的 Configuration 变更往往伴随帧丢失。以下 Perfetto 查询直接定位折叠过程中的卡顿来源：
+
+```sql
+-- 折叠屏展开/折叠期间的帧耗时与 Configuration 变更对应关系
+SELECT
+  f.frame_number,
+  f.vsync AS vsync_ts,
+  (f.actual_present_time - f.vsync) / 1e6 AS jank_ms,
+  c.name AS config_change,
+  c.dur / 1e6 AS config_change_ms
+FROM actual_frame_timeline_slice f
+LEFT JOIN slice c ON (
+  c.ts BETWEEN f.vsync - 50000000 AND f.actual_present_time
+  AND c.name IN ('handleConfigurationChanged', 'handleRelaunchActivity')
+)
+WHERE f.jank_type != 0  -- 只关注卡顿帧
+ORDER BY f.vsync;
+```
+
+**关键信号**：
+
+- 折叠/展开一次，Perfetto 中 `FrameTimeline` 通常出现 2-5 帧 jank。如果超过 10 帧，说明 `onConfigurationChanged()` 或 recreate 中的 inflate 开销过大
+- `handleConfigurationChanged` + `performTraversal` 连续出现超过 50ms，布局需要优化（减少嵌套层级）
+- 如果折叠后出现了 `handleRelaunchActivity` slice，说明当前 Activity 没有声明并处理对应的 `configChanges`，被迫走了 recreate
+
+**三星 Fold / Pixel Fold 的已知差异**：
+
+- 三星 Fold 展开/折叠时，`DisplayContent` 可能连续发送两次 `onConfigurationChanged`（一次针对 size 变化，一次针对 density 调整）；两次之间间隔 0-2 帧
+- Pixel Fold 在折叠时，`WindowToken.applyFixedRotationTransform()` 会介入，trace 中若没有 `ActivityRelaunchItem` 就是 FixedRotation 在工作
+- 两种设备上 `dumpsys display` 输出中的 `mBaseDisplayInfo.logicalWidth/logicalHeight` 变化时序不同，三星倾向于"先改密度再改尺寸"，Pixel 倾向于"一次到位"——两个模式都会影响 `ResourcesKey` 命中率，但不改变 `shouldRelaunchLocked()` 的判定逻辑
+
+#### 多窗口 resize 的性能陷阱
+
+多窗口模式下拖拽 resize divider 时，`screenWidthDp` / `screenHeightDp` 在每次指针移动时都可能更新。在 Perfetto 中表现为连续多个 `handleConfigurationChanged` slice，每次间隔 10-50ms：
+
+```sql
+-- 多窗口 resize 期间的 Configuration 变更频率
+SELECT name, ts, dur/1e6 AS ms,
+  LAG(ts) OVER (ORDER BY ts) AS prev_ts,
+  (ts - LAG(ts) OVER (ORDER BY ts)) / 1e6 AS interval_ms
+FROM slice
+WHERE name = 'handleConfigurationChanged'
+  AND ts BETWEEN <start_ns> AND <end_ns>
+ORDER BY ts;
+```
+
+如果 `interval_ms` 小于 16ms（一帧时间），说明 Configuration 变更频率超过了屏幕刷新率——App 的 `onConfigurationChanged()` 来不及在下一帧前完成布局更新。这种情况应从两处下手：
+
+1. **在 `onConfigurationChanged()` 中去 bounce**：如果当前尺寸和上次处理的尺寸差异小于阈值（如 width 变化 < 50dp），跳过布局重建
+2. **用 `View.post()` 延迟布局更新**：等 resize 手势结束后统一触发一次 `requestLayout()`，而不是每次 pointer move 都重建 View 树
+
 ### dumpsys 实战：定位 Resources 泄漏
 
 ```bash
@@ -447,10 +545,9 @@ Compose 页面仍要按 Manifest / `ActivityRecord.shouldRelaunchLocked()` 的�
 
 ---
 
-<!-- AIW-源码调研-2026-06-30 -->
 ### 🔹 Android 17 Configuration 派发与 Relaunch 判定源码级验证
 
-基于 `android-17.0.0_r1` AOSP 源码对 ATMS / ResourcesManager / ActivityRecord 的 Configuration 派发链路进行完整链路验证（详见 `DeepResearch/2026-06-30-android17-resourcesmanager-configuration-relaunch.md`）。要点：
+基于 `android-17.0.0_r1` AOSP 源码对 ATMS / ResourcesManager / ActivityRecord 的 Configuration 派发链路进行完整链路验证。要点如下：
 
 #### 1. ATMS 入口到 ActivityRecord 的完整调用链
 
@@ -473,7 +570,7 @@ ActivityTaskManagerService#updateConfigurationLocked(values, initLocale, persist
                           └─ 否 → scheduleConfigurationChanged() 走 hot path
 ```
 
-源码锚点：`ATMS.java:5264-5438` / `ActivityRecord.java:8535-8795` / `ActivityThread.java:6784-6962`。
+对应源码锚点：`ATMS.java`、`ActivityRecord.java`、`ActivityThread.java`（以上均为 android-17.0.0_r1）。
 
 #### 2. `shouldRelaunchLocked()` 决策位掩码的精确组成
 
@@ -571,5 +668,3 @@ handleLaunchActivity(r, pendingActions, mLastReportedDeviceId, customIntent);  /
 3. **避免 manifest 把 `configChanges` 写全**：Android 17 `enableLessActivityRecreationOnConfigChange` 会按需扫描资源限定符——App 完全不写 `configChanges` 在大多数场景下也能避免不必要 recreate（前提是开启对应 meta-data）。
 4. **资源限定符补齐**：如果 App 内确实有 `values-night` / `values-w600dp` / `values-zh-rCN` 等多套资源，必须意识到切换 locale 或主题时会触发 recreate；不要在 `onSaveInstanceState` 中序列化大对象。
 5. **FixedRotation vs recreate 区分**：折叠屏展开/折叠后看到 Activity 视觉旋转但 trace 没有 `ActivityRelaunchItem`，就是 FixedRotation 在工作；不要误判为性能问题。
-
-<!-- AIW-源码调研-2026-06-30 结束 -->
