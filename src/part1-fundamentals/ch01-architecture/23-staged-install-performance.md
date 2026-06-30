@@ -21,7 +21,7 @@ sources:
   - type: aosp
     path: frameworks/native/cmds/installd/dexopt.cpp
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
@@ -31,7 +31,7 @@ last_task9_at: 2026-06-30T09:31:22+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-last_task6_at: 2026-06-30T09:06:00+08:00
+last_task6_at: 2026-06-30T13:13:00+08:00
 ---
 
 # 1.23 Android Staged Install 与安装原子性性能
