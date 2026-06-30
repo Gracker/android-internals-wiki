@@ -2,7 +2,7 @@
 title: "系统启动全流程"
 chapter: "1.2"
 section: "1.2"
-status: "finalized"
+status: "needs-rework"
 pipeline_stage: task2b_pending
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
@@ -13,14 +13,14 @@ task6_state: "reviewed"
 task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-05-27"
 task2b_state: pending
-task2b_result: fixed-lite
+task2b_result: pending
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-27"
 last_task9_at: "2026-05-27T06:23:00+08:00"
 last_task2b_at: "2026-05-06T16:04:00+08:00"
-last_task2b_lite_at: "2026-06-20"
+last_task2b_lite_at: "2026-07-01"
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -96,5 +96,6 @@ last_task6_review_log: "logs/review/2026-05-27-06-review.md"
 last_task9_audit: "2026-07-01"
 last_task9_audit_result: "needs-rework"
 task2b_lite_note: "2026-06-20 Task2B Lite: cleared stale last_task9_audit_result=needs-rework (2026-06-10 idle audit P1 phantom; text has no \"3000-4000 常用类\" reference; chapter is finalized with pass-tech-review)."
+task2b_lite_note_2: "2026-07-01 Task2B Lite: frontmatter state fix — status finalized→needs-rework (task9_result=needs-rework, body empty); stale task2b_result fixed-lite→pending. Body restoration deferred to main Task2B."
 last_task9_autofix_at: "2026-07-01"
 ---
