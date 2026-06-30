@@ -38,7 +38,7 @@ related_chapters:
   - "9.1"
   - "8.2"
 pipeline_stage: "ready-to-publish"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-18
 

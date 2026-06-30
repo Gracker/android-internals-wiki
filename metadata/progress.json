@@ -1,6 +1,6 @@
 {
   "total": 543,
-  "draft": 37,
+  "draft": 36,
   "ready-for-review": 149,
   "finalized": 337,
   "task9_result": "pass-tech-review",
@@ -1606,7 +1606,7 @@
     }
   },
   "completion_percentage": 61.71,
-  "superseded": 7,
+  "superseded": 8,
   "sections": {
     "14.22": {
       "status": "finalized",
@@ -1869,6 +1869,6 @@
     "last_review_date": "2026-06-29",
     "last_review_session": "2026-06-29-22"
   },
-  "last_task2a_at": "2026-06-30T07:12:00+08:00",
+  "last_task2a_at": "2026-06-30T19:04:00+08:00",
   "task6_last_run": "2026-06-30T04:06:00+08:00"
 }
