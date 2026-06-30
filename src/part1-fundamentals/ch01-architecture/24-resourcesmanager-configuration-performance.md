@@ -40,7 +40,7 @@ gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
@@ -50,7 +50,7 @@ last_task9_at: 2026-06-30T11:44:43+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-last_task6_at: 2026-06-30T12:15:00+08:00
+last_task6_at: 2026-06-30T13:13:00+08:00
 last_task2b_at: 2026-06-30T12:56:48+08:00
 last_task9_autofix_at: "2026-06-30"
 last_task9_review_log: "logs/deep-review/2026-06-30-11-deep-review.md"
@@ -72,8 +72,6 @@ task2b_rework_issues: "[L3/L4] 增加实战场景引入、降文档感、加读�
 排查思路：先确认 Activity 是否真的走了 recreate（看 `handleRelaunchActivity` 的 slice），再看 recreate 内部哪个阶段最耗（`LayoutInflater.inflate` vs `onSaveInstanceState` 序列化），最后检查 `configChanges` 声明和 `onConfigurationChanged` 的处理是否匹配。
 
 Configuration 变更是 Android 里频率最高的"隐式性能事件"——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销可以相当于一次完整的冷启动。
-
-下面从 ResourcesManager 实例管理开始，逐步深入到系统传播路径，分析 Activity recreation 的实际代价，以及各版本中 configChanges 的边界变化。
 
 ---
 
