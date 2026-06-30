@@ -1,5 +1,102 @@
 {
-  "pending": [],
+  "pending": [
+    {
+      "section": "1.23",
+      "section_title": "Android Staged Install 与安装原子性性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 17 源码链路存在 P0/P1 技术错误，需按 android-17.0.0_r1 重写关键机制。",
+      "material_paths": [
+        "logs/deep-review/2026-06-30-08-deep-review.md",
+        "src/part1-fundamentals/ch01-architecture/23-staged-install-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码错误",
+          "location": "L35, L90-L92",
+          "detail": "章节把 Staged Install 写成 Android 12/API 31 引入，并把权限边界写成 REQUEST_INSTALL_PACKAGES。android-10.0.0_r1 已存在 PackageInstaller.SessionParams#setStaged()；android-17.0.0_r1 中该方法仍是 @SystemApi + INSTALL_PACKAGES。",
+          "suggestion": "把版本基线改为 Android 10/API 29 起的 staged session 机制，并明确它是系统/特权安装器能力，不是普通 REQUEST_INSTALL_PACKAGES sideload 能力。"
+        },
+        {
+          "type": "源码错误/原理断裂",
+          "location": "L63-L82, L165-L184",
+          "detail": "流程图和正文引用 stageSession()/installStaged()/applyStaged()/isRebootRequired()/onBootCompleted() 等 Android 17 源码中不存在或职责不符的方法；实际路径是 PackageInstallerSession#commit() -> StagingManager#commitSession()/createSession()，重启恢复由 PackageInstallerService#restoreAndApplyStagedSessionIfNeeded() -> StagingManager#restoreSessions()/resumeSession() 处理。staged session 目录也不是 /data/app/staged/vmdl{sessionId}/，而是 PackageInstallerService#buildSessionDir() 下的 /data/app-staging/session_{id}。",
+          "suggestion": "按 android-17.0.0_r1 重画 staged session 生命周期：commit 前验证、ready 状态、reboot 后 restoreSessions/resumeSession、installApksInSession、APEX checkpoint/rollback 分支。"
+        },
+        {
+          "type": "版本差异/交叉引用错误",
+          "location": "L144, L208-L216",
+          "detail": "章节把 installd Binder 化写成 Android 16/17 优化；但 1.9 节已明确 android-9.0.0_r1 到 android-16.0.0_r1 均通过 ServiceManager.getService(\"installd\") 获取 IInstalld Binder。android-8.0.0_r1 的 InstalldNativeService 也已通过 BinderService 发布。",
+          "suggestion": "删除 Android 16/17 installd Binder 化作为版本断点的结论，改为说明现代安装链路中 PMS/Installer 通过 IInstalld Binder 调用 installd，dexopt 主耗时仍在 ART/dex2oat/文件 I/O。"
+        },
+        {
+          "type": "版本差异/数据缺失",
+          "location": "L188-L206",
+          "detail": "Android 16 Cloud Profile、ArtFileManager、15-30% 首帧收益、Staged finalize 使用 Cloud Profile 等结论没有 Android 17 AOSP 或官方文档锚点；且与 21.12 对 Cloud Profiles 属于 Play 分发聚合热点补充的边界不一致。",
+          "suggestion": "将 Cloud Profiles 改为 Play/ART profile 设备端消费的分发边界讨论；未能在 Android 17 源码确认的 Android 16/17 安装优化，不作为正文结论。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L107-L127, L156, L220-L225",
+          "detail": "安装耗时百分比、签名校验 ms、I/O 秒级估算和厂商安装优化均缺少可复现设备、包体、编译 filter、trace 或 benchmark 条件。",
+          "suggestion": "保留为待验证案例或改写成 Perfetto/benchmark 观察项；固定数值必须补设备型号、AOSP/厂商 ROM、包大小、编译模式和采样次数。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-30T08:42:42+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.24",
+      "section_title": "ResourcesManager 与 Configuration 变更性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 17 源码链路存在 P0/P1 技术错误，需按 android-17.0.0_r1 重写关键机制。",
+      "material_paths": [
+        "logs/deep-review/2026-06-30-08-deep-review.md",
+        "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L107-L122, L373-L376",
+          "detail": "章节把主链路锚到 AMS.updateConfigurationLocked() 和 ActivityManagerService.java；android-17.0.0_r1 中公开入口在 ActivityManagerService#updateConfiguration()，服务端实际委托 ActivityTaskManagerService#updateConfigurationLocked()，并通过 WindowProcessController/ActivityRecord.ensureActivityConfiguration() 判定 relaunch。",
+          "suggestion": "将传播链改为 ATMS/RootWindowContainer/WindowProcessController/ActivityRecord/ClientTransaction/ActivityThread 的 Android 17 路径，并调整 frontmatter source。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L130-L138",
+          "detail": "FixedRotation 调用链包含 notifyFixedRotationTransform(), FixedRotationAdjustmentsItem, ActivityThread.handleFixedRotationAdjustments(), ResourcesManager.overrideTokenDisplayAdjustments()；这些名称在 android-17.0.0_r1 中未命中。实际链路为 DisplayContent#handleTopActivityLaunchingInDifferentOrientation()/setFixedRotationLaunchingApp()/startFixedRotationTransform() -> WindowToken#applyFixedRotationTransform() -> ActivityRecord#ensureActivityConfiguration()。",
+          "suggestion": "用 Android 17 源码链路替换旧博客链路；博客只能作为历史参考，不能标为 android-17 已验证。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L225-L231",
+          "detail": "Android 13 density 强制 recreate、Android 14 foldable 部分尺寸变更强制 recreate 的结论缺少源码/官方依据；官方 manifest 文档仍列出 android:configChanges=\"density\"，且 ActivityRecord#shouldRelaunchLocked() 在 PiP 场景会把 CONFIG_DENSITY 加入 skip mask。",
+          "suggestion": "重做 configChanges 版本矩阵，只保留 Android 17 大屏 targetSdk 37 官方行为；density/foldable 强制 recreate 必须有对应源码或官方文档后再写。"
+        },
+        {
+          "type": "原理错误",
+          "location": "L284-L292, L403-L411",
+          "detail": "章节写 remember 在 Configuration 变更时保留、Compose 不需要声明 configChanges 且状态不会丢失。官方 Compose 文档明确 remember 只跨 recomposition 保留，不跨 configuration changes；跨 Activity/process recreation 要用 rememberSaveable 或 ViewModel/SavedStateHandle。",
+          "suggestion": "改为区分 recomposition、Activity recreate、process death 三个状态边界；不要把 Compose 的 recomposition 能力写成避免 Activity recreation。"
+        },
+        {
+          "type": "源码错误/数据缺失",
+          "location": "L300-L332, L396-L401",
+          "detail": "章节写 ResourcesImpl 缓存不会自动清理、Activity 销毁后仍留在缓存；android-17.0.0_r1 的 ResourcesManager#mResourceImpls 是 WeakReference，并通过 ReferenceQueue/cleanupResourceImplsLocked() 清理。Resources 泄漏应归因于外部强引用阻止 GC，而不是缓存本身强持有。",
+          "suggestion": "将“缓存膨胀”改成“高频 Configuration 会增加弱引用缓存键和存活对象，只有存在外部强引用时才演变为泄漏”；dumpsys 判断需结合 heap GC root。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L163-L177, L326-L332",
+          "detail": "recreate 耗时和 ResourcesImpl 内存估算已标待验证，但正文仍以固定 ms/KB/MB 区间呈现，缺少设备、布局规模、trace 和 native heap 条件。",
+          "suggestion": "保留为待测假设或补 Perfetto + meminfo/native heap 实测表；否则不要作为可复用性能结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-30T08:42:42+08:00",
+      "status": "pending"
+    }
+  ],
   "completed": [
     {
       "section": "05",
@@ -117,5 +214,5 @@
       "completed_reason": "内容已存在于章节 6.5（src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md）mmap+atomic+inotify 三层 IPC 分析已注入，无需重复注入"
     }
   ],
-  "last_updated": "2026-06-30T06:54:54.619428+08:00"
+  "last_updated": "2026-06-30T08:42:42+08:00"
 }

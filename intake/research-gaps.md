@@ -155,3 +155,34 @@
 
 ### 关联章节
 1.4 (Binder 基础架构)，1.13 (IPC 通信机制)，1.27 (协议层解析)
+## [2026-06-30] 1.23 Android Staged Install 与安装原子性性能 — 知识盲区
+
+### 盲区描述
+章节缺少 Android 17 staged session 状态机的源码级闭环：pre-reboot verification、ready/applied/failed 状态、APK-only session 与 APEX/multi-package session 的差异、checkpoint/rollback 失败恢复，以及 PackageInstallerService.restoreAndApplyStagedSessionIfNeeded() 与 StagingManager.restoreSessions()/resumeSession() 的实际分工。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 基于 `android-17.0.0_r1` 串起 `PackageInstallerSession#commit()`、`StagingManager#commitSession()`、`PackageInstallerService#restoreAndApplyStagedSessionIfNeeded()`、`StagingManager#restoreSessions()` / `resumeSession()`、`installApksInSession()`。
+- 区分 staged APK、staged APEX、APK-in-APEX、multi-package staged session 的状态和回滚路径。
+- 核实 `/data/app-staging/session_{id}`、session XML、apexd checkpoint、失败后 `setSessionFailed()` / `abortCommittedSession()` 的持久化行为。
+
+### 关联章节
+1.9 (Package Manager Service 整体架构)，1.7 (ART 编译策略)，16.6 (编译/Profile 相关章节)
+
+## [2026-06-30] 1.24 ResourcesManager 与 Configuration 变更性能 — 知识盲区
+
+### 盲区描述
+章节缺少 Android 17 Activity relaunch 判定模型：`ActivityTaskManagerService#updateConfigurationLocked()` 如何更新进程配置，`ActivityRecord#ensureActivityConfiguration()` / `shouldRelaunchLocked()` 如何结合 `info.getRealConfigChanged()`、PiP density skip、display compat policy、resource overlay policy、recreate-on-config-change policy 决定是否 relaunch。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 基于 `android-17.0.0_r1` 梳理 ATMS → WindowProcessController → ActivityRecord → ClientTransaction → ActivityThread 的 Configuration 分发链路。
+- 逐项验证 `android:configChanges` 中 `density`、`screenSize`、`smallestScreenSize`、`uiMode` 在 `shouldRelaunchLocked()` 中的处理边界。
+- 将 FixedRotation 当前源码链路从 `DisplayContent#startFixedRotationTransform()` 到 `WindowToken#applyFixedRotationTransform()`、`ActivityRecord#ensureActivityConfiguration()` 串成可对照 trace 的版本。
+
+### 关联章节
+1.8 (Activity Manager / Window Manager)，2.12 (VSync/窗口相关章节)，8.2 (Compose 状态与生命周期)，16.5 (Android 版本行为变化)
