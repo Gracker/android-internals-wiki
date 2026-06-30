@@ -1,6 +1,39 @@
 {
   "pending": [
     {
+      "section": "1.24",
+      "section_title": "ResourcesManager 与 Configuration 变更性能",
+      "priority": 85,
+      "reason": "[Writing Quality Review] L3/L4 问题单：实战场景引入不足、技术文档感过重、缺少读者预期管理",
+      "material_paths": [
+        "logs/review/2026-06-30-11-review.md",
+        "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "内容深度不足",
+          "location": "L1-开头",
+          "detail": "缺少完整实战场景引入，仅有 ANR 追踪场景，建议增加日常开发中会遇到的 Configuration 变更具体案例",
+          "suggestion": "增加一个完整案例分析，如'某社交App在旋转时卡顿30ms的排查过程'，展示从现象分析到根因确认的完整流程"
+        },
+        {
+          "type": "写作风格问题",
+          "location": "全文",
+          "detail": "技术文档感过重，整体偏重技术原理阐述，缺少工程师之间的对话感",
+          "suggestion": "增加实战经验分享，如'我在XX项目中遇到这种问题的解决过程'，让文章更有温度和实战感"
+        },
+        {
+          "type": "读者体验问题",
+          "location": "结尾",
+          "detail": "未明确告诉读者读完能带走什么具体技能",
+          "suggestion": "在结尾增加'读完本节，你将掌握'的技能清单，明确读者收益预期"
+        }
+      ],
+      "added_by": "openclaw-task6",
+      "added_at": "2026-06-30T11:13:00+08:00",
+      "status": "pending"
+    },
+    {
       "section": "1.23",
       "section_title": "Android Staged Install 与安装原子性性能",
       "priority": 95,
@@ -44,7 +77,9 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-06-30T09:31:22+08:00",
       "status": "pending"
-    },
+    }
+  ],
+  "completed": [
     {
       "section": "1.24",
       "section_title": "ResourcesManager 与 Configuration 变更性能",
@@ -97,9 +132,7 @@
       "status": "completed",
       "completed_at": "2026-06-30T10:55:44+08:00",
       "completed_by": "task2b-main"
-    }
-  ],
-  "completed": [
+    },
     {
       "section": "05",
       "section_title": "CPU与功耗",

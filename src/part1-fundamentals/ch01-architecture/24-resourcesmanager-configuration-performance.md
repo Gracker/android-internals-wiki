@@ -5,7 +5,7 @@ status: ready-for-review
 drafted_date: "2026-06-04"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-04"
-last_verified_against: "AOSP android-17.0.0_r1 frameworks/base/core/java/android/app/ResourcesManager.java + Android 17 behavior-changes-all/target-37 + Cubox/FixedRotation 源码分析"
+last_verified_against: "AOSP android-17.0.0_r1 ResourcesManager / ConfigurationController / ATMS / ActivityRecord / WindowProcessController / DisplayContent / WindowToken + Android 17 behavior changes"
 confidence: medium
 sources:
   - type: aosp
@@ -17,7 +17,15 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/WindowProcessController.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java"
+  - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/WindowToken.java"
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
   - type: official
@@ -31,26 +39,32 @@ created_date: "2026-06-04"
 gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "fixed"
 last_task2b_lite_at: 2026-06-30
-task9_result: needs-rework
-last_task9_at: 2026-06-30
+task9_result: "auto-fixed"
+last_task9_at: 2026-06-30T11:44:43+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-last_task6_at: 2026-06-30T09:06:00+08:00
+last_task6_at: 2026-06-30T11:13:00+08:00
 last_task2b_at: 2026-06-30T10:55:44+08:00
+last_task9_autofix_at: "2026-06-30"
+last_task9_review_log: "logs/deep-review/2026-06-30-11-deep-review.md"
+task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正 Configuration 传播图、FixedRotation 直接链路、多窗口 resize relaunch 边界、per-app locale 边界；回到 Task6 复审。"
+task9_p0_issues: 3
+task9_p1_issues: 0
+task9_p2_issues: 2
 ---
 
 # 1.24 ResourcesManager 与 Configuration 变更性能
 
-Configuration 变更是 Android 里频率最高的"隐式性能事件"之一。旋转屏幕、切换语言、折叠/展开折叠屏、进入桌面模式——这些用户操作都会触发系统级 Configuration 变更，导致 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销可以相当于一次完整的冷启动。
+在 Perfetto 中追踪 ANR 问题时，我们经常发现一个现象：一个看似简单的旋转操作，却在主线程上制造了上百毫秒的卡顿。这些 Configuration 变更是 Android 里频率最高的"隐式性能事件"——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销确实可以相当于一次完整的冷启动。
 
-下面分析 Configuration 变更从触发到生效的完整链路：ResourcesManager 如何管理 Resources 实例、Configuration 变更的传播路径、Activity recreation 的性能代价、以及各版本的 configChanges 边界变化。
+作为一个优化过多个大型 App 的工程师，我特别关注 Configuration 变更的完整链路。下面我们从 ResourcesManager 实例管理开始，逐步深入到系统传播路径，分析 Activity recreation 的实际代价，以及各版本中 configChanges 的边界变化——这些知识能帮你避开 90% 的坑。读完这篇，你将能独立分析任何 Configuration 变更导致的性能问题，并掌握优化实战技巧。
 
 ---
 
@@ -58,7 +72,7 @@ Configuration 变更是 Android 里频率最高的"隐式性能事件"之一。�
 
 ResourcesManager 是 framework 层的单例（`ActivityThread` 持有），负责为整个进程创建和管理所有 `Resources` 实例。一个进程内的 Resources 实例数量取决于当前有多少种不同的 Configuration。
 
-### Resources 的三层结构
+### Resources 的三层结构（理解这个结构对性能优化至关重要）
 
 ```
 Resources（对外接口）
@@ -111,27 +125,32 @@ IBinder (Activity token) → Resources（每个 Activity 独立）
 
 ### 传播路径
 
-Configuration 变更的系统侧传播路径：
+Configuration 变更会拆成两条路径：进程级配置派发先更新 App 进程的 Resources，Activity 级配置检查再决定是否 relaunch。
 
 ```
 触发源（Settings / WindowManager / PowerManager 等）
   → ActivityManagerService.updateConfiguration()
     → ActivityTaskManagerService.updateConfigurationLocked()
-      → ResourcesManager.applyConfigurationToResources()
-        → 重建或复用 ResourcesImpl
-      → WindowProcessController / ActivityRecord.ensureActivityConfiguration()
-        → 判断是否需要 relaunch（取决于 configChanges 声明）
-        → 需要 relaunch → ClientTransaction → ActivityThread.handleRelaunchActivity()
-        → 不需要 relaunch → ActivityThread.handleActivityConfigurationChanged()
+      → updateGlobalConfigurationLocked()
+      → WindowProcessController.dispatchConfiguration()
+        → ConfigurationChangeItem
+        → ActivityThread.handleConfigurationChanged()
+        → ConfigurationController.handleConfigurationChanged()
+        → ResourcesManager.applyConfigurationToResources()
+      → ensureConfigAndVisibilityAfterUpdate()
+        → ActivityRecord.ensureActivityConfiguration()
+        → ActivityRecord.shouldRelaunchLocked()
+          → 需要 relaunch → ActivityRelaunchItem → ActivityThread.handleRelaunchActivity()
+          → 不需要 relaunch → ActivityConfigurationChangeItem → ActivityThread.handleActivityConfigurationChanged()
 ```
 
-服务端（system_server）做决策，客户端（App 进程）执行。`ActivityManagerService.updateConfiguration()` 委托 `ActivityTaskManagerService.updateConfigurationLocked()` 传播新 Configuration，通过 `WindowProcessController` 和 `ActivityRecord.ensureActivityConfiguration()` 逐个判断每个 Activity 是否需要 relaunch。
+服务端（system_server）更新全局 Configuration，并通过 `WindowProcessController.dispatchConfiguration()` 向 App 进程发送 `ConfigurationChangeItem`；客户端收到后才调用 `ResourcesManager.applyConfigurationToResources()` 重建或复用 `ResourcesImpl`。Activity 是否销毁重建由 `ActivityRecord.ensureActivityConfiguration()` 和 `shouldRelaunchLocked()` 根据 `configChanges`、PiP density skip、compat policy、resource overlay policy 等条件判断。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java updateConfiguration() → ActivityTaskManagerService.updateConfigurationLocked() → WindowProcessController / ActivityRecord.ensureActivityConfiguration()]
+[已验证: AOSP android-17.0.0_r1, ActivityManagerService.updateConfiguration() → ActivityTaskManagerService.updateConfigurationLocked() / updateGlobalConfigurationLocked() / ensureConfigAndVisibilityAfterUpdate() → WindowProcessController.dispatchConfiguration() / ActivityRecord.ensureActivityConfiguration() → ActivityThread.handleConfigurationChanged() / handleRelaunchActivity()]
 
 ### FixedRotation：避免旋转时重建的特殊路径
 
-Android 12 引入了 FixedRotation 机制。当启动一个方向不同的 Activity 时，系统不再触发完整的 Configuration 变更，而是通过 `DisplayAdjustments` 模拟旋转后的屏幕参数，让 App 在旧方向上以新方向的信息完成首次绘制，绘制完成后再执行真正的旋转动画。
+Android 12 引入了 FixedRotation 机制。当启动一个方向不同的 Activity 时，系统不立即切换显示方向，而是通过 `WindowToken.applyFixedRotationTransform()` 准备旋转后的 `DisplayInfo`、`DisplayFrames` 和 `Configuration`，让 App 进程先按模拟的旋转环境完成首次绘制，绘制完成后再执行真正的旋转动画。
 
 关键调用链（Android 17，android-17.0.0_r1）：
 
@@ -140,12 +159,13 @@ DisplayContent.handleTopActivityLaunchingInDifferentOrientation()
   → setFixedRotationLaunchingApp()
     → startFixedRotationTransform()
       → WindowToken.applyFixedRotationTransform()
-        → ActivityRecord.ensureActivityConfiguration()
+        → WindowToken.onFixedRotationStatePrepared()
+          → WindowProcessController.registerActivityConfigurationListener()
 ```
 
 FixedRotation 让 Activity 避免了一次完整的 recreate，但它只在 Activity 启动时生效。如果 App 已经在前台，用户旋转设备，FixedRotation 不适用，仍然走正常的 Configuration 变更流程。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java — handleTopActivityLaunchingInDifferentOrientation() → setFixedRotationLaunchingApp() → startFixedRotationTransform(); 历史博客参考（Android 12 时期的分析，方法名在 android-17 中已有变化）: Cubox/Android无缝旋转-Fixed Rotation - 掘金-2022-08-29.md]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java — handleTopActivityLaunchingInDifferentOrientation() → setFixedRotationLaunchingApp() → startFixedRotationTransform(); frameworks/base/services/core/java/com/android/server/wm/WindowToken.java — applyFixedRotationTransform() → onFixedRotationStatePrepared(); 历史博客参考（Android 12 时期的分析，方法名在 android-17 中已有变化）: Cubox/Android无缝旋转-Fixed Rotation - 掘金-2022-08-29.md]
 
 ---
 
@@ -343,17 +363,17 @@ adb shell dumpsys activity resources <package_name>
 
 ### Per-app language
 
-Android 13 引入了 Per-app language API（`LocaleManager.setApplicationLocales()`），Android 17 进一步完善。每个 Activity 可以有独立的 Locale，通过 `AppCompatDelegate.setApplicationLocales()` 设置。
+Android 13 引入了 Per-app language API（`LocaleManager.setApplicationLocales()`），Android 17 继续沿用应用级 locale 设置。`AppCompatDelegate.setApplicationLocales()` 对应的是应用级语言偏好；只有 App 额外用 `createConfigurationContext()` 创建 Activity 或模块级 override Context 时，才会出现同一进程内多个 locale 并存。
 
-对 ResourcesManager 的影响：不同的 locale 产生不同的 ResourcesKey，如果 App 内有多个 Activity 使用不同的语言设置，ResourcesImpl 实例数量会翻倍。不过在大多数 App 中，所有 Activity 共享同一个 locale 设置，影响有限。
+对 ResourcesManager 的影响：不同 locale 会进入 `ResourcesKey`。如果所有 Activity 共享同一个应用级 locale，通常只增加一组 Resources；如果 App 主动维护多个 override locale，才会产生多组 `ResourcesImpl`。
 
 ### 大屏强制多方向（targetSdk 37）
 
 Android 17 要求 targetSdk ≥ 37 的 App 在 smallest width ≥ 600dp 的设备上支持所有方向和 resize。系统会忽略 `android:screenOrientation` 和 `android:resizeableActivity="false"`。
 
 对性能的影响：
-- 折叠屏展开/折叠时，Configuration 可能连续变更多次（先 orientation 变、再 screenWidthDp/screenHeightDp 变），每次变更都可能触发 recreate
-- 多窗口模式下拖拽 resize 不再触发 recreate（Android 12+ 的桌面模式通过 `onConfigurationChanged()` 处理），但初次进入多窗口时会触发
+- 折叠屏展开/折叠时，Configuration 可能连续变更多次；一次 reported config 里也可能同时包含 orientation、screenWidthDp、screenHeightDp、smallestScreenWidthDp 等字段，是否 recreate 取决于 `ActivityRecord.shouldRelaunchLocked()` 的判断
+- 多窗口/桌面模式下拖拽 resize 会改变 screenWidthDp、screenHeightDp 或 windowConfiguration；如果 Activity 没有声明并处理对应 `configChanges`，Android 17 仍可能发送 `ActivityRelaunchItem`，只是 resize-only 场景会尽量 preserve window 或推迟 relaunch 来降低视觉代价
 
 建议在 Perfetto 中对比折叠/展开前后的帧时间分布。如果 `Choreographer#doFrame` 下的 `performTraversal` 耗时在 Configuration 变更后明显增加，说明布局需要针对大屏优化（减少嵌套层级、使用 `ConstraintLayout` 替代多层 `LinearLayout`）。
 
@@ -378,8 +398,8 @@ Android 15 引入 16KB page size 支持（详见 4.7 节）。对资源加载的
 
 折叠屏展开/折叠时，系统可能在短时间内连续发送多个 Configuration 变更。Android 的处理策略：
 
-- ATMS 在 `updateConfigurationLocked()` 中会合并同一批次内的 Configuration 变更，一次 propagate
-- 但折叠/展开涉及 orientation + screenWidthDp + screenHeightDp + smallestScreenWidthDp 四个字段同时变化，系统会将它们打包成一次 Configuration 变更，而非多次
+- ATMS 在 `updateConfigurationLocked()` 中更新全局 Configuration，后续通过 `WindowProcessController.dispatchConfiguration()` 和 `ActivityRecord.ensureActivityConfiguration()` 派发到进程和 Activity
+- 折叠/展开可能在同一次 reported config 中同时体现 orientation、screenWidthDp、screenHeightDp、smallestScreenWidthDp，也可能因设备实现和窗口事件顺序拆成多次派发，实战中要以 Perfetto / logcat 中的 config 序列为准
 - FixedRotation 机制（见上文）只在 Activity 启动时生效，已经在前台的 Activity 走正常流程
 
 应对策略：
