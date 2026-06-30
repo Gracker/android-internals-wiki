@@ -29,8 +29,8 @@ task2b_result: fixed-lite
 task2b_fixed_at: "2026-06-26T11:40:00+08:00"
 last_task2b_at: "2026-06-26T11:40:00+08:00"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-05-22"
-last_task6_audit_log: "logs/review/2026-05-22-03-audit.md"
+last_task6_audit: "2026-06-30"
+last_task6_audit_log: "logs/review/2026-06-30-23-audit.md"
 last_task6_at: "2026-06-26T20:11:00+08:00"
 last_task2b_lite_at: "2026-06-26T11:40:00+08:00"
 sources:
