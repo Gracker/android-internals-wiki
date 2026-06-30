@@ -127,3 +127,10 @@
   3. 删除与主体重复的内容
   4. 由Task 9对照android-17.0.0_r1验证源码路径，更新frontmatter的last_verified_against
 - **review 日志**：logs/review/2026-07-01-06-review.md
+
+## [Task9 Deep Review] 1.4 Binder IPC 机制与性能影响 — 2026-07-01
+- **类型**：数据缺失
+- **位置**：参考资料后的 DeepResearch 注入块（用户态批处理、唤醒延迟、红黑树查找、surfaceflinger 线程池调优等量化段落）
+- **问题**：多处给出 70-150ns、15-30ns、5-50μs、P99 1.5ms→200μs、syscall 100-400μs→~4μs 等数值，但没有设备型号、trace/benchmark、内核配置和复现方法。
+- **建议**：整合正文时要么补充可复现测量条件和 trace 证据，要么降级为“源码路径提示/理论估算”，不要作为 Android 17 性能结论。
+- **review 日志**：logs/deep-review/2026-07-01-06-deep-review.md
