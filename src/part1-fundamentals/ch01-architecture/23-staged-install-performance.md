@@ -20,12 +20,12 @@ sources:
     path: frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java
   - type: aosp
     path: frameworks/native/cmds/installd/dexopt.cpp
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: 2026-06-30T08:59:19+08:00
+task2b_state: fixed
+last_task2b_at: 2026-06-30T12:52:33+08:00
 task9_result: needs-rework
 last_task9_at: 2026-06-30T09:31:22+08:00
 task6_result: pass-light-edit
@@ -72,29 +72,25 @@ sequenceDiagram
     PIS->>SM: commitSession()
     Note over SM: APK 暂存到 /data/app-staging/session_{id}/
     SM->>SM: pre-reboot verification
-    alt 需要重启
-        SM-->>SM: 等待 reboot
-        Note over SM: 重启后 PMS 调用 restoreAndApplyStagedSessionIfNeeded()
-        PMS->>SM: restoreSessions()
-        SM->>SM: resumeSession()
-    else 不需要重启
-        SM->>SM: resumeSession()
-    end
+    SM-->>SM: 等待下次 reboot
+    Note over SM: 重启后 PMS 调用 restoreAndApplyStagedSessionIfNeeded()
+    PMS->>SM: restoreSessions()
+    SM->>SM: resumeSession()
     SM->>IPH: installApksInSession()
     IPH->>IPH: 签名校验 + dexopt + 注册组件
 ```
 
 1. **Prepare 阶段**：通过 `PackageInstaller.createSession()` 创建 staged session，写入 APK 数据到 staging 目录（`/data/app-staging/session_{id}/`，由 `PackageInstallerService#buildSessionDir()` 生成）
-2. **Commit 阶段**：调用 `session.commit()`，`StagingManager#commitSession()` 接管，将 session 标记为 ready，并执行预重启验证
-3. **Reboot（条件触发）**：如果安装涉及 native 库更新、split APK 变更或 APEX 模块更新，需要重启才能生效
-4. **Finalize 阶段**：重启后 `PackageInstallerService#restoreAndApplyStagedSessionIfNeeded()` 触发 `StagingManager#restoreSessions()` → `resumeSession()`，完成实际安装（`installApksInSession()`）
+2. **Commit 阶段**：调用 `session.commit()`，`StagingManager#commitSession()` 接管，执行 pre-reboot verification（签名校验、磁盘空间检查）后将 session 置为 ready 状态。`PackageInstaller.SessionParams#setStaged()` 注释明确 staged session 在 "next reboot" 安装
+3. **Reboot 后恢复**：重启后 `PackageInstallerService#restoreAndApplyStagedSessionIfNeeded()` 调用 `StagingManager#restoreSessions()` → `resumeSession()`
+4. **Finalize 阶段**：`resumeSession()` 内调用 `installApksInSession()` 完成签名校验、dexopt、组件注册等实际安装步骤
 
 #### 与传统安装的区别
 
 | 维度 | 传统 installPackage() | Staged Install |
 |------|----------------------|----------------|
 | 原子性 | 无保证，中途失败留残余 | staged 目录 + reboot 后 promote 或 abort |
-| 生效时机 | commit 后立即生效 | commit 后可能延迟到下次 reboot |
+| 生效时机 | commit 后立即生效 | commit 后排队到下次 reboot 生效 |
 | 权限要求 | INSTALL_PACKAGES 签名权限 | INSTALL_PACKAGES 签名权限（`@SystemApi`） |
 | 适用场景 | 普通应用安装/更新 | 系统模块更新、大版本升级、native 库变更、APEX 更新 |
 | AOSP 起始版本 | API 21+ | Android 10 / API 29（`setStaged()` 已存在于 `android-10.0.0_r1`） |
@@ -115,7 +111,7 @@ sequenceDiagram
 
 一次完整的 APK 安装（含 dexopt）耗时可以拆成以下几个阶段。以下数据来源于参考测试环境（需在具体设备上验证），仅用于建立分析框架：
 
-> **数据说明**：以下百分比和耗时数据来自 DeepResearch 资料中的粗略估算，**缺少可复现实验条件**（设备型号、ROM 版本、APK 规模、编译 filter、采样次数均未记录）。这些数字只作为定性分析框架，不应作为跨设备可比的性能结论。建议用 Perfetto 采集实机数据后替换具体数值。
+> **数据说明**：以下百分比和耗时数据为定性分析框架，不来自可复现实测。缺少设备型号、ROM、APK 规模、compiler filter、Perfetto trace 条件和采样次数。仅用于建立分析维度，不作为跨设备可比的性能结论。标记具体数值的段落需补实机 Perfetto + meminfo 数据后才可引用为可复用性能结论。
 
 ```
 安装耗时分解（典型 ~100MB APK，首次安装，speed-profile 编译）
@@ -133,9 +129,8 @@ sequenceDiagram
 APK Signature Scheme v1/v2/v3/v3.1 的校验在 `PackageManagerService` 中执行：
 
 - v1（JAR signing）：遍历 ZIP entry 逐个校验 `.MF` / `.SF` / `.RSA`，O(n) 扫描，大 APK 耗时显著
-- v2/v3（APK Signature Scheme）：对整个 APK 做 Merkle Tree 校验，时间复杂度 O(n) 但常数更小，v3.1 支持轮转密钥
-
-签名校验是纯 CPU 密集操作，不涉及 I/O。在 Staged Install 中这一步发生在 commit 阶段，不影响最终用户感知（因为是后台执行）。
+- v2/v3（APK Signature Scheme）：对 APK 受保护区段做分块内容摘要（content digest）并验证签名，v3.1 支持轮转密钥。v4（APK Signature Scheme v4）基于 fs-verity Merkle hash tree，生成 `.idsig` 文件，配合增量安装（incremental install）使用
+- v2/v3 digest 计算需要读取 APK 受保护区段，因此有 I/O 成本（受 page cache 命中率和存储介质影响）。签名验证的密码学运算本身是 CPU 密集的，整体耗时是 CPU 计算与读取 APK 字节的 I/O 之和。在 Staged Install 中这一步发生在 commit 阶段（pre-reboot verification），不影响最终用户感知
 
 [待验证：具体 ms 级耗时需补设备型号、APK 大小、签名方案组合和采样次数]
 
@@ -151,7 +146,14 @@ APK Signature Scheme v1/v2/v3/v3.1 的校验在 `PackageManagerService` 中执�
 // "speed"  = 完整 AOT 编译（最慢安装，最快运行）
 ```
 
-dex2oat 的线程数由 `--threads` 参数控制，默认值等于 CPU 核数，但 installd 会根据系统负载动态调整。
+dex2oat 的线程数通过 `-j` 参数控制。installd 的 `run_dex2oat.cpp`（android-17.0.0_r1：`frameworks/native/cmds/installd/run_dex2oat.cpp`）根据编译场景读取系统属性：
+
+- `dalvik.vm.restore-dex2oat-threads`（staged restore 场景）
+- `dalvik.vm.background-dex2oat-threads`（后台 idle 编译）
+- `dalvik.vm.dex2oat-threads`（默认值）
+- `dalvik.vm.boot-dex2oat-threads`（boot 编译）
+
+installd 读取对应属性值传给 dex2oat 的 `-j`。属性缺省时 dex2oat 使用内部默认线程数（取决于 ART 版本）。installd 没有"按系统负载动态调整线程数"的逻辑。
 
 PMS/Installer 通过 `IInstalld` Binder 接口调用 installd（`Installer#connect()` 从 `ServiceManager.getService("installd")` 获取 Binder，这一点从 Android 8 的 `InstalldNativeService` 起就是 Binder 化路径，不是 Android 16/17 才引入的断点——详见 1.9 节）。调用链：
 
@@ -180,14 +182,13 @@ Staged Install 的 staging 阶段多了一次写入（APK 先写入 staging 目�
 
 ### 锚点 3：Staged Install 与系统重启的交互
 
-#### 哪些 staged session 需要 reboot
+#### 所有 staged session 均需要 reboot
 
-`StagingManager#commitSession()` 判断 session 是否需要重启生效：
+`PackageInstaller.SessionParams#setStaged()` 在 android-17.0.0_r1 中声明 staged session "installed at next reboot"。`StagingManager` 类注释也写明 staged install sessions "require packages to be installed only after a reboot"。
 
-- **需要 reboot**：涉及 native library（`.so` 文件变更）、APEX 模块更新、系统分区映射变更
-- **不需要 reboot**：纯 Java/Kotlin 应用更新，不涉及 native 库和 split 变更
+`StagingManager#commitSession()` 将 session 标记为 committed，执行 pre-reboot verification（签名校验、磁盘空间检查），通过后将 session 置为 ready。实际安装动作（`installApksInSession()`）不在 commit 阶段执行，而是在下次重启后由 `restoreSessions()` / `resumeSession()` 触发。
 
-判断逻辑检查 session 的 `SessionParams` 中的 `isStaged`、`requireUserAction` 和 `multiPackage` 标志，以及是否包含 native 库。
+所有 staged session——APK-only、APEX 还是混合 session——commit 后不会立即生效，而是排队等待下一次 reboot。
 
 #### 重启期间的恢复流程
 
@@ -201,15 +202,23 @@ restoreAndApplyStagedSessionIfNeeded()
         → 签名校验 + dexopt + 权限授予 + 组件注册
 ```
 
-如果某个 session 的 `resumeSession()` 失败，`StagingManager` 会调用 `abortSession()` 回退该 session，不影响其他 session。这保证了多个 staged session 之间的独立性。
+#### 失败恢复与 session 间传播
+
+单个 session 恢复失败时的行为取决于 session 类型：
+
+- **APK-only staged install**：失败走 `onInstallationFailure()` → `setSessionFailed()`，清理该 session 的 staging 目录和临时文件。`abortSession()` 主要用于从 `mStagedSessions` 内部列表中移除记录，不是将已变更系统状态恢复到安装前快照的完整回滚动作。
+- **APEX 或混合 session**：APEX 激活失败时，`restoreSessions()` 将其他 staged session 标记为 "Another apex session failed"，阻止后续 session 继续安装。APEX 涉及系统分区一致性——一个 APEX 失败意味着系统分区状态不确定，不应继续应用其余 session。
+- **checkpoint 支持**：当 system_server 支持 VAB（Virtual A/B）checkpoint 时，失败触发 `abortCheckpoint()` 回退整个系统快照。回退粒度由 checkpoint 覆盖的系统分区范围决定，不是 per-session 粒度。
+
+多个 staged session 不总是独立事务。APEX 和混合 session 存在失败传播，仅纯 APK-only 的多个 staged session 之间接近独立。
 
 #### APEX 与 APK 混合 Session 的状态分支
 
-Android 17 的 staged session 支持 APEX-only、APK-only 和混合 session。关键差异：
+Staged session 的类型决定了恢复流程和失败传播行为：
 
-- **APEX session**：涉及系统分区变更，reboot 前有 checkpoint 验证，完成后触发 `apexd` 激活
-- **APK-only session**：走标准 installApksInSession 路径
-- **混合 session**：APEX 部分先完成 checkpoint，APK 部分在后，任何一部分失败触发整体 abort
+- **APK-only session**：走 `installApksInSession()` 标准路径。单个 session 失败不影响其他 APK-only session。
+- **APEX session**：涉及系统分区变更，`resumeSession()` 中触发 `apexd` 激活。激活失败通过 `setSessionFailed()` 标记，并调 `abortCheckpoint()`（若支持 VAB checkpoint）回退系统快照。
+- **混合 session**：同时包含 APEX 和 APK。APEX 部分优先处理；若 APEX 激活失败，`restoreSessions()` 将其他 staged session 标记为 "Another apex session failed"，阻止后续 session 安装——APEX 失败导致系统分区状态不确定，不应继续应用变更。
 
 [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/StagingManager.java]
 
@@ -240,6 +249,8 @@ Android 16 文档提及 Cloud Profiles（通过 Google Play 分发聚合的应�
 - **代价**：应用首次启动时可能走解释执行，首帧渲染时间显著增加
 
 AOSP 默认行为是同步 dexopt，厂商定制可能改变这一策略。
+
+[标注: 厂商延迟 dexopt 属于 AOSP 之外的定制行为，不同厂商/ROM 实现差异大。以上"优点/代价"为定性分析，缺少设备型号、ROM 版本和实测启动耗时/首帧时间数据支撑。]
 
 ### 锚点 5：安装性能的 Perfetto 分析方法
 
@@ -337,10 +348,10 @@ Android 13+ 的 multi-package session 支持在同一个 staged session 中原�
 
 部分厂商在 AOSP 标准流程之外实现安装加速，但属于私有实现，AOSP 源码中没有对应代码：
 
-- **vivo Turbo**：缩短 `BackgroundDexOptService` 的 idle 检测窗口，提前触发批量 dexopt
-- **小米 HyperOS**：通过定制 `InstallController` 调整编译策略，部分场景优化签名校验路径
+- **vivo Turbo**：传闻缩短 `BackgroundDexOptService` 的 idle 检测窗口以提前触发批量 dexopt
+- **小米 HyperOS**：传闻通过定制 `InstallController` 调整编译策略
 
-这些优化属于厂商闭源实现，无法通过 AOSP 源码验证，需通过 Perfetto 采集实机数据观察差异。
+以上内容来自第三方观察和推测，非 AOSP 源码可验证路径。具体实现细节、性能收益和副作用均无公开源码或可复现实机数据支撑。需在对应设备上采集 Perfetto trace + 安装日志后才有判断依据，不得作为 Android 17 AOSP 结论引用。
 
 [来源: DeepResearch/2026-05-14-android-install-optimization-aosp-mechanism.md]
-[待验证: 厂商私有优化路径，无 AOSP 源码支撑]
+[标注: 非 AOSP，需实机 Perfetto/日志验证]
