@@ -1,8 +1,8 @@
 {
-  "total": 547,
-  "draft": 32,
-  "ready-for-review": 150,
-  "finalized": 337,
+  "total": 510,
+  "draft": 10,
+  "ready-for-review": 159,
+  "finalized": 341,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
   "task9_reviewed_by": "openclaw-task9",
@@ -19,7 +19,6 @@
     "8.15",
     "4.15",
     "12.8",
-    "2.28",
     "3.12",
     "2.29",
     "2.30",
@@ -27,19 +26,15 @@
     "18.03",
     "8.17",
     "22.25",
-    "8.19",
     "5.22",
     "21.15",
-    "22.26",
     "18.25",
     "20.18",
     "21.16",
     "26.21",
     "22.27",
-    "22.28",
     "5.23",
     "1.31",
-    "13.19",
     "18.27",
     "5.24",
     "5.25",
@@ -48,29 +43,18 @@
     "1.34",
     "4.16",
     "7.20",
-    "23.13",
-    "14.24",
     "1.35",
     "1.36",
     "1.37",
     "1.38",
     "2.31",
-    "1.39",
     "1.40",
     "16.10",
     "5.27",
-    "16.19",
     "26.23",
-    "ch4.1",
     "ch1.9",
-    "ch22.1",
     "ch6.1",
-    "ch16.20",
-    "1.9",
-    "4.1",
-    "1.42",
-    "16.20",
-    "22.1"
+    "1.9"
   ],
   "ready_for_review_sections": [
     "5.19",
@@ -81,13 +65,11 @@
     "5.20",
     "8.14",
     "12.7",
-    "23.12",
     "8.15",
     "3.12",
     "18.03",
     "4.15",
     "8.17",
-    "8.19",
     "3.13",
     "7.20",
     "4.18",
@@ -1609,8 +1591,8 @@
       "reviewed_at": "2026-05-15T16:20:00+08:00"
     }
   },
-  "completion_percentage": 61.75,
-  "superseded": 14,
+  "completion_percentage": 66.9,
+  "superseded": 0,
   "sections": {
     "14.22": {
       "status": "finalized",
@@ -1679,12 +1661,6 @@
       "task9_state": "pending",
       "last_review": "2026-06-30"
     },
-    "16.19": {
-      "status": "draft",
-      "pipeline_stage": "task2a-draft",
-      "drafted_date": "2026-06-30",
-      "drafted_by": "task2a-knowledge-gap"
-    },
     "26.23": {
       "status": "draft",
       "pipeline_stage": "task2a-draft",
@@ -1706,13 +1682,6 @@
       "drafted_date": "2026-06-30",
       "drafted_by": "task2a-content-processing",
       "last_review": "2026-06-30"
-    },
-    "4.1": {
-      "status": "superseded",
-      "superseded_date": "2026-07-01",
-      "superseded_by": "4.17 (MemoryLimiter 与内存监控影响)",
-      "superseded_reason": "duplicate of 616-line ready-for-review chapter",
-      "last_review": "2026-07-01"
     },
     "1.23": {
       "status": "ready-for-review",
@@ -1750,41 +1719,6 @@
       "task6_state": "reviewed",
       "last_task2b_verifier_at": "2026-06-30T15:34:25+08:00",
       "task2b_verifier_note": "finalized 章节 task6_state revisiting 过期，修正为 reviewed；Task9 idle audit 为维护性更新。"
-    },
-    "1.42": {
-      "status": "superseded",
-      "superseded_date": "2026-07-01",
-      "superseded_by": "1.31 (Binder RPC 事务上限优化)",
-      "superseded_reason": "duplicate of ready-for-review chapter",
-      "last_review": "2026-07-01"
-    },
-    "16.20": {
-      "status": "superseded",
-      "superseded_date": "2026-07-01",
-      "superseded_by": "16.7 + 16.19 (系统启动优化 + bootanalyze)",
-      "superseded_reason": "duplicate of 728+167 line chapters",
-      "last_review": "2026-07-01"
-    },
-    "22.1": {
-      "status": "superseded",
-      "superseded_date": "2026-07-01",
-      "superseded_by": "18.26 (HWUI Vulkan 多队列并行渲染)",
-      "superseded_reason": "duplicate of 365-line ready-for-review chapter",
-      "last_review": "2026-07-01"
-    },
-    "22.27_pausable": {
-      "status": "superseded",
-      "superseded_date": "2026-07-01",
-      "superseded_by": "18.25 (Compose 渲染管线 §PausableComposition)",
-      "superseded_reason": "duplicate of comprehensive section in 18.25",
-      "last_review": "2026-07-01"
-    },
-    "22.28": {
-      "status": "superseded",
-      "superseded_date": "2026-07-01",
-      "superseded_by": "22.27 (Adaptive Layout 与多形态设备渲染适配)",
-      "superseded_reason": "duplicate of 83-line draft chapter",
-      "last_review": "2026-07-01"
     }
   },
   "chapters": {
@@ -1796,7 +1730,7 @@
       "task9_result": "pending"
     }
   },
-  "last_updated": "2026-06-30T15:34:25+08:00",
+  "last_updated": "2026-07-01",
   "reviews": [
     {
       "date": "2026-06-28",
