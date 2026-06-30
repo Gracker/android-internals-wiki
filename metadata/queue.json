@@ -1,304 +1,83 @@
 {
-  "pending": [
+  "issues": [
     {
-      "section": "1.24",
-      "section_title": "ResourcesManager 与 Configuration 变更性能",
-      "priority": 85,
-      "reason": "[Writing Quality Review] L3/L4 问题单：实战场景引入不足、技术文档感过重、缺少读者预期管理",
-      "material_paths": [
-        "logs/review/2026-06-30-11-review.md",
-        "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md"
-      ],
-      "review_issues": [
-        {
-          "type": "内容深度不足",
-          "location": "L1-开头",
-          "detail": "缺少完整实战场景引入，仅有 ANR 追踪场景，建议增加日常开发中会遇到的 Configuration 变更具体案例",
-          "suggestion": "增加一个完整案例分析，如'某社交App在旋转时卡顿30ms的排查过程'，展示从现象分析到根因确认的完整流程"
-        },
-        {
-          "type": "写作风格问题",
-          "location": "全文",
-          "detail": "技术文档感过重，整体偏重技术原理阐述，缺少工程师之间的对话感",
-          "suggestion": "增加实战经验分享，如'我在XX项目中遇到这种问题的解决过程'，让文章更有温度和实战感"
-        },
-        {
-          "type": "读者体验问题",
-          "location": "结尾",
-          "detail": "未明确告诉读者读完能带走什么具体技能",
-          "suggestion": "在结尾增加'读完本节，你将掌握'的技能清单，明确读者收益预期"
-        }
-      ],
-      "added_by": "openclaw-task6",
-      "added_at": "2026-06-30T11:13:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-06-30T12:56:48+08:00",
-      "completed_by": "task2b-main"
+      "id": "L3-2026-06-30-23-01",
+      "chapter": "23-staged-install-performance.md",
+      "section": "Installation Performance Analysis",
+      "issue_type": "L3",
+      "priority": "medium",
+      "description": "Missing concrete performance metrics - contains estimated ranges ('数 ms-数十 ms', '数十到上百毫秒') but lacks specific device benchmark data or reproducible test methodology",
+      "suggested_resolution": "Add actual measurement results from specific devices (Pixel 8, Samsung S23, etc.) with concrete numbers and testing methodology",
+      "assigned_to": "Task 2B",
+      "created_at": "2026-06-30T17:09:00Z",
+      "status": "pending"
+    },
+    {
+      "id": "L3-2026-06-30-23-02", 
+      "chapter": "23-staged-install-performance.md",
+      "section": "Real-world Troubleshooting",
+      "issue_type": "L3",
+      "priority": "medium",
+      "description": "Insufficient practical examples - lacks real-world troubleshooting scenarios that readers might encounter in production environments",
+      "suggested_resolution": "Add 2-3 concrete troubleshooting walkthroughs showing how to diagnose installation failures in different scenarios (network interruption, storage full, etc.)",
+      "assigned_to": "Task 2B", 
+      "created_at": "2026-06-30T17:09:00Z",
+      "status": "pending"
+    },
+    {
+      "id": "L3-2026-06-30-24-01",
+      "chapter": "24-resourcesmanager-configuration-performance.md", 
+      "section": "Performance Cost Analysis",
+      "issue_type": "L3",
+      "priority": "medium",
+      "description": "Missing concrete performance data - contains estimated ranges but no actual benchmark data from specific devices or ROM versions",
+      "suggested_resolution": "Add concrete benchmark results from specific devices (Pixel 8 Pro, Samsung Fold, etc.) measuring actual recreation times",
+      "assigned_to": "Task 2B",
+      "created_at": "2026-06-30T17:09:00Z", 
+      "status": "pending"
+    },
+    {
+      "id": "L3-2026-06-30-24-02",
+      "chapter": "24-resourcesmanager-configuration-performance.md",
+      "section": "Foldable Device Scenarios", 
+      "issue_type": "L3",
+      "priority": "medium",
+      "description": "Insufficient edge case coverage - discussion of foldable devices and multi-window scenarios lacks specific examples of common failure patterns",
+      "suggested_resolution": "Add specific troubleshooting examples for foldable device configuration changes and multi-window resize scenarios",
+      "assigned_to": "Task 2B",
+      "created_at": "2026-06-30T17:09:00Z",
+      "status": "pending"
+    },
+    {
+      "id": "L4-2026-06-30-23-01",
+      "chapter": "23-staged-install-performance.md",
+      "section": "Reader Engagement",
+      "issue_type": "L4", 
+      "priority": "low",
+      "description": "Reader engagement could be improved - technical content is accurate but could be more engaging by framing problems as detective stories",
+      "suggested_resolution": "Add conversational tone and direct address to readers in troubleshooting sections",
+      "assigned_to": "Task 2B",
+      "created_at": "2026-06-30T17:09:00Z",
+      "status": "pending"
+    },
+    {
+      "id": "L4-2026-06-30-24-01",
+      "chapter": "24-resourcesmanager-configuration-performance.md",
+      "section": "Storytelling Elements",
+      "issue_type": "L4",
+      "priority": "low", 
+      "description": "Technical content is accurate but could be more engaging through better storytelling elements",
+      "suggested_resolution": "Add more conversational elements and frame configuration problems as detective stories that readers can follow",
+      "assigned_to": "Task 2B", 
+      "created_at": "2026-06-30T17:09:00Z",
+      "status": "pending"
     }
   ],
-  "completed": [
-    {
-      "section": "1.24",
-      "section_title": "ResourcesManager 与 Configuration 变更性能",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Android 17 源码链路存在 P0/P1 技术错误，需按 android-17.0.0_r1 重写关键机制。",
-      "material_paths": [
-        "logs/deep-review/2026-06-30-08-deep-review.md",
-        "src/part1-fundamentals/ch01-architecture/24-resourcesmanager-configuration-performance.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L107-L122, L373-L376",
-          "detail": "章节把主链路锚到 AMS.updateConfigurationLocked() 和 ActivityManagerService.java；android-17.0.0_r1 中公开入口在 ActivityManagerService#updateConfiguration()，服务端实际委托 ActivityTaskManagerService#updateConfigurationLocked()，并通过 WindowProcessController/ActivityRecord.ensureActivityConfiguration() 判定 relaunch。",
-          "suggestion": "将传播链改为 ATMS/RootWindowContainer/WindowProcessController/ActivityRecord/ClientTransaction/ActivityThread 的 Android 17 路径，并调整 frontmatter source。"
-        },
-        {
-          "type": "源码错误",
-          "location": "L130-L138",
-          "detail": "FixedRotation 调用链包含 notifyFixedRotationTransform(), FixedRotationAdjustmentsItem, ActivityThread.handleFixedRotationAdjustments(), ResourcesManager.overrideTokenDisplayAdjustments()；这些名称在 android-17.0.0_r1 中未命中。实际链路为 DisplayContent#handleTopActivityLaunchingInDifferentOrientation()/setFixedRotationLaunchingApp()/startFixedRotationTransform() -> WindowToken#applyFixedRotationTransform() -> ActivityRecord#ensureActivityConfiguration()。",
-          "suggestion": "用 Android 17 源码链路替换旧博客链路；博客只能作为历史参考，不能标为 android-17 已验证。"
-        },
-        {
-          "type": "版本差异",
-          "location": "L225-L231",
-          "detail": "Android 13 density 强制 recreate、Android 14 foldable 部分尺寸变更强制 recreate 的结论缺少源码/官方依据；官方 manifest 文档仍列出 android:configChanges=\"density\"，且 ActivityRecord#shouldRelaunchLocked() 在 PiP 场景会把 CONFIG_DENSITY 加入 skip mask。",
-          "suggestion": "重做 configChanges 版本矩阵，只保留 Android 17 大屏 targetSdk 37 官方行为；density/foldable 强制 recreate 必须有对应源码或官方文档后再写。"
-        },
-        {
-          "type": "原理错误",
-          "location": "L284-L292, L403-L411",
-          "detail": "章节写 remember 在 Configuration 变更时保留、Compose 不需要声明 configChanges 且状态不会丢失。官方 Compose 文档明确 remember 只跨 recomposition 保留，不跨 configuration changes；跨 Activity/process recreation 要用 rememberSaveable 或 ViewModel/SavedStateHandle。",
-          "suggestion": "改为区分 recomposition、Activity recreate、process death 三个状态边界；不要把 Compose 的 recomposition 能力写成避免 Activity recreation。"
-        },
-        {
-          "type": "源码错误/数据缺失",
-          "location": "L300-L332, L396-L401",
-          "detail": "章节写 ResourcesImpl 缓存不会自动清理、Activity 销毁后仍留在缓存；android-17.0.0_r1 的 ResourcesManager#mResourceImpls 是 WeakReference，并通过 ReferenceQueue/cleanupResourceImplsLocked() 清理。Resources 泄漏应归因于外部强引用阻止 GC，而不是缓存本身强持有。",
-          "suggestion": "将“缓存膨胀”改成“高频 Configuration 会增加弱引用缓存键和存活对象，只有存在外部强引用时才演变为泄漏”；dumpsys 判断需结合 heap GC root。"
-        },
-        {
-          "type": "数据缺失",
-          "location": "L163-L177, L326-L332",
-          "detail": "recreate 耗时和 ResourcesImpl 内存估算已标待验证，但正文仍以固定 ms/KB/MB 区间呈现，缺少设备、布局规模、trace 和 native heap 条件。",
-          "suggestion": "保留为待测假设或补 Perfetto + meminfo/native heap 实测表；否则不要作为可复用性能结论。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-30T08:42:42+08:00",
-      "status": "completed",
-      "completed_at": "2026-06-30T10:55:44+08:00",
-      "completed_by": "task2b-main"
-    },
-    {
-      "section": "05",
-      "section_title": "CPU与功耗",
-      "priority": 74,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        "Gracker RSS 订阅"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — https://android-developers.googleblog.com/2026/06/android-17-performance-optimization",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-06-30T05:32:46.212810",
-      "status": "completed",
-      "completed_at": "2026-06-30T06:54:54.619428+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "URL 不可访问，跳过 — android-developers.googleblog.com 解析到私有 IP"
-    },
-    {
-      "section": "05",
-      "section_title": "CPU与功耗",
-      "priority": 74,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        "Gracker RSS 订阅"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — https://android-developers.googleblog.com/2026/06/android-17-performance-optimization",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-06-30T05:33:02.977215",
-      "status": "completed",
-      "completed_at": "2026-06-30T06:54:54.619428+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "URL 不可访问，跳过 — android-developers.googleblog.com 解析到私有 IP（重复条目）"
-    },
-    {
-      "section": "04",
-      "section_title": "内存管理",
-      "priority": 72,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        "Gracker RSS 订阅"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Linux 6.10 引入内存碎片整理新机制 — https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-06-30T05:33:02.979560",
-      "status": "completed",
-      "completed_at": "2026-06-30T06:54:54.619428+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "URL 不可访问，跳过 — phoronix.com 解析到私有 IP"
-    },
-    {
-      "section": "04",
-      "section_title": "内存管理",
-      "priority": 74,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        "ClawFeed 24小时高价值一览"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Android 14 性能优化：内存管理新机制 — https://developer.android.com/about/versions/14/features",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-06-30T05:33:02.980489",
-      "status": "completed",
-      "completed_at": "2026-06-30T06:54:54.619428+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "URL 不可访问，跳过 — developer.android.com 解析到私有 IP"
-    },
-    {
-      "section": "ch06",
-      "section_title": "存储与 I/O",
-      "priority": 85,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-multiprocess-datastore-mmipc-verification.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证 — DataStore 多进程协调由三层内核 IPC 机制叠加：FileChannel.tryLock 跨进程互斥锁、mmap(MAP_SHARED)+std::atomic<uint32_t> 跨进程版",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-06-30T06:12:34.125360",
-      "status": "completed",
-      "completed_at": "2026-06-30T06:54:54.619428+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "内容已存在于章节 6.5（src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md）mmap+atomic+inotify 三层 IPC 分析已注入，无需重复注入"
-    },
-    {
-      "section": "1.23",
-      "section_title": "Android Staged Install 与安装原子性性能",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 修复后仍存在 Android 17 staged session reboot/rollback/dexopt 源码链路错误，需按 android-17.0.0_r1 重写关键机制。",
-      "material_paths": [
-        "logs/deep-review/2026-06-30-09-deep-review.md",
-        "src/part1-fundamentals/ch01-architecture/23-staged-install-performance.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误/版本语义",
-          "location": "L41, L75-L90, L97, L183-L190",
-          "detail": "正文把 staged session 写成“可能不需要 reboot”，并把 native library / split / APEX 作为 StagingManager#commitSession() 的条件重启判断。android-17.0.0_r1 中 PackageInstaller.SessionParams#setStaged() 注释明确“installed at next reboot”，StagingManager 类注释也写明 staged install session require packages to be installed only after a reboot；commitSession() 只 createSession()/handleCommittedSession()，真正恢复发生在 boot 阶段 restoreSessions()/resumeSession()。",
-          "suggestion": "删除“不需要 reboot”的流程分支与“纯 Java/Kotlin 不重启”的结论；改为 staged session 均排队到下次 reboot，由 pre-reboot verification 先把 session 置 ready，重启后 PackageInstallerService.restoreAndApplyStagedSessionIfNeeded() 调 StagingManager.restoreSessions()/resumeSession()。"
-        },
-        {
-          "type": "原理错误/回滚语义",
-          "location": "L204, L210-L212, L317",
-          "detail": "正文写某个 session 的 resumeSession() 失败后 StagingManager 调 abortSession() 回退且不影响其他 session。Android 17 源码中失败路径是 onInstallationFailure() -> setSessionFailed() -> abortCheckpoint()，APEX 失败时 restoreSessions() 会把其他 session 标记为 “Another apex session failed”；abortSession() 主要从 mStagedSessions 移除记录，不是恢复安装前状态的主回滚动作。",
-          "suggestion": "重写失败恢复段：区分 APK-only staged install、APEX/mixed staged install、checkpoint 支持与否；不要把多个 staged session 描述成完全独立事务。APEX 激活失败、checkpoint abort、revertActiveSessions() 和 setSessionFailed() 要分支说明。"
-        },
-        {
-          "type": "源码错误/dexopt 参数",
-          "location": "L154",
-          "detail": "正文写 dex2oat 线程数由 --threads 控制、默认等于 CPU 核数且 installd 会根据系统负载动态调整。android-17.0.0_r1 frameworks/native/cmds/installd/run_dex2oat.cpp 实际映射的是 -j 参数，来源为 dalvik.vm.restore-dex2oat-threads / background-dex2oat-threads / dex2oat-threads / boot-dex2oat-threads 等系统属性；未看到 installd 按实时负载动态调线程数的逻辑。",
-          "suggestion": "改为“installd 通过 RunDex2Oat 根据编译场景读取 dalvik.vm.*dex2oat-threads 属性并向 dex2oat 传 -j；属性缺省时的 dex2oat 内部默认值需另查 ART 源码/实机命令行”。"
-        },
-        {
-          "type": "源码准确性/性能归因",
-          "location": "L133-L138",
-          "detail": "正文把 v2/v3 说成“对整个 APK 做 Merkle Tree 校验”，又说签名校验是纯 CPU 密集、不涉及 I/O。官方 v2/v3 文档和 Android 17 ApkSignatureSchemeV2/V3Verifier 显示校验核心是内容 digest；v4 才是基于 fs-verity Merkle hash tree 的 .idsig。v2/v3 digest 计算需要读取 APK 内容，实际耗时会受文件读取、页缓存和存储状态影响。",
-          "suggestion": "将 v2/v3 改为“对 APK 受保护区段做分块内容摘要并验证签名”；把 v4 / incremental install 的 Merkle tree 单独列出。性能归因拆成 digest CPU 成本与读取 APK 字节的 I/O/页缓存成本。"
-        },
-        {
-          "type": "数据缺失",
-          "location": "L120-L128, L237-L242, L340-L343",
-          "detail": "安装耗时百分比、厂商延迟 dexopt、vivo/HyperOS 安装加速仍停留在粗略估算或闭源传闻，缺少设备型号、ROM、APK 规模、compiler filter、Perfetto trace 或 benchmark 条件。",
-          "suggestion": "固定数值继续降级为待测假设；若保留厂商优化，必须标“非 AOSP，需实机 Perfetto/日志验证”，不要作为 Android 17 AOSP 结论。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-30T09:31:22+08:00",
-      "status": "completed",
-      "completed_at": "2026-06-30T12:52:40+08:00",
-      "completed_by": "task2b-main"
-    }
-  ],
-  "last_updated": "2026-06-30T12:56:48+08:00",
-  "queue": [
-    {
-      "chapter": "ch4.1",
-      "path": "src/part1-fundamentals/ch04-memory/4.1-memorylimiter--30-秒-kill--profilingservicehelper-触发条件-draft.md",
-      "title": "Android 17 MemoryLimiter 的 30 秒 Kill 窗口真相与 ProfilingServiceHelper 触发条件",
-      "priority": 80,
-      "reason": "knowledge-gap-mining",
-      "score": 19,
-      "gap_source": "DeepResearch + daily-info hot topic"
-    },
-    {
-      "chapter": "ch1.9",
-      "path": "src/part1-fundamentals/ch01-architecture/1.9-binder-ipc-优先级继承内核批处理流水线-draft.md",
-      "title": "Android 17 Binder IPC 优先级继承机制与内核批处理流水线",
-      "priority": 80,
-      "reason": "knowledge-gap-mining",
-      "score": 19,
-      "gap_source": "DeepResearch + daily-info hot topic"
-    },
-    {
-      "chapter": "ch22.1",
-      "path": "src/part5-app/ch22-rendering-practice/22.1-vulkan-多队列-gpu-负载均衡-draft.md",
-      "title": "Android 17 Vulkan 多队列并行渲染与 GPU 负载均衡",
-      "priority": 80,
-      "reason": "knowledge-gap-mining",
-      "score": 17,
-      "gap_source": "DeepResearch + daily-info hot topic"
-    },
-    {
-      "chapter": "ch6.1",
-      "path": "src/part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md",
-      "title": "Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证",
-      "priority": 80,
-      "reason": "knowledge-gap-mining",
-      "score": 16,
-      "gap_source": "DeepResearch + daily-info hot topic"
-    },
-    {
-      "chapter": "ch16.20",
-      "path": "src/part4-system/ch16-aosp/16.20-系统启动耗时-bootanalyze-draft.md",
-      "title": "Android 17 系统启动耗时优化新特性与 bootanalyze 工具链",
-      "priority": 80,
-      "reason": "knowledge-gap-mining",
-      "score": 19,
-      "gap_source": "DeepResearch + daily-info hot topic"
-    }
-  ]
+  "metadata": {
+    "total_issues": 6,
+    "l3_issues": 4,
+    "l4_issues": 2,
+    "created_at": "2026-06-30T17:09:00Z",
+    "review_id": "2026-06-30-17-review.md"
+  }
 }
