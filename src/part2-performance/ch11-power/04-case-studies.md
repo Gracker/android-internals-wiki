@@ -20,6 +20,7 @@ last_task9_autofix_at: "2026-06-18"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
 last_task9_at: "2026-06-24"
+last_task6_audit: "2026-06-30"
 ---
 -
 
@@ -297,12 +298,12 @@ public class OptimizedLocationTracker implements LocationListener {
 
 ### 11.4.2.2 Battery Saver × 热节流协同机制：省电策略的温度敏感度分析
 
-通过Android 17.0.0_r1源码深度分析，揭示Battery Saver与热节流机制的独立协同架构：
+通过 Android 17.0.0_r1 源码深度分析，揭示 Battery Saver 与热节流机制的独立协同架构：
 
 #### 核心架构特性
 
 **独立性**：
-- Battery Saver由`BatterySaverController`管理，通过`PowerManagerService.registerLowPowerModeObserver()`通知
+- Battery Saver 由 `BatterySaverController` 管理，通过`PowerManagerService.registerLowPowerModeObserver()`通知
 - 热节流由`ThermalManagerService`管理，通过`IThermalStatusListener`独立通知
 - 两个系统在框架层**无融合逻辑**，职责分离明确
 
@@ -312,17 +313,17 @@ public class OptimizedLocationTracker implements LocationListener {
 
 **叠加效应**：
 应用层可通过同时监听两个状态实现协同，但系统层面需要自行处理状态冲突。例如：
-- Battery Saver开启`LOCATION_MODE_FOREGROUND_ONLY`
+- Battery Saver 开启 `LOCATION_MODE_FOREGROUND_ONLY`
 - 热节流达到`THROTTLING_MODERATE`
-- 实际效果：前台定位可用 + CPU降频 = 综合节能
+- 实际效果：前台定位可用 + CPU 降频 = 综合节能
 
 #### 源码级协同机制
 
 **统一状态传递**：
 ```java
-// PowerSaveState统一承载两类状态
+// PowerSaveState 统一承载两类状态
 public class PowerSaveState {
-    public final boolean batterySaverEnabled;  // Battery Saver状态
+    public final boolean batterySaverEnabled;  // Battery Saver 状态
     public final int locationMode;             // 定位控制策略
     public final int soundTriggerMode;         // 音频控制策略
 }
@@ -340,7 +341,7 @@ case Temperature.TYPE_BATTERY:
 #### 优化建议
 
 **三维建模**：
-建议功耗建模采用`Battery Saver级别 × 温度级别 × 设备状态`的三维模型，而非简单的二元判断。
+建议功耗建模采用`Battery Saver 级别 × 温度级别 × 设备状态`的三维模型，而非简单的二元判断。
 
 **冲突处理**：
 当 Battery Saver 允许定位但 thermal status 已升高时，应用策略应以温度保护优先，主动降级定位精度或频率。
@@ -1126,7 +1127,7 @@ if (Flags.countQuotaFix() && !nextPending.isReady()) {
 - **充电豁免的功耗副作用**：`isQuotaFreeLocked()` 充电时放行所有 Job，OEM 应避免用户态 Job 伪装成系统任务——会导致 4h 硬上限失效。
 - **排查命令**：`adb shell dumpsys jobscheduler <pkg>` 看 `whenStandbyDeferred>0` + `QuotaController is within quota=false` + `CountQuotaTracker countInWindow/countLimit` 三个字段，配合 `dumpsys batterystats --checkin` 找 `restrictApp` 调用记录。
 
-> 与 §11.4.6 Adaptive Battery 协同机制的关系：§11.4.6 解释了「**bucket 怎么被算出来**」（ML 预测 + 时间衰减），本节解释「**bucket 怎么被消费**」（三层节流 + AppStandby 联动）。两者结合构成完整的 Adaptive Battery → JobScheduler 限流闭环。
+> 与 §11.4.6 Adaptive Battery 协同机制的关系：§11.4.6 解释了「**bucket 怎么被算出来**」（ML 预测 + 时间衰减），本节解释「**bucket 怎么被消费**」（三层节流 + AppStandby 联动）。两者结合构成完整的 Adaptive Battery → JobScheduler 限流链路。
 
 
 ## 总结
