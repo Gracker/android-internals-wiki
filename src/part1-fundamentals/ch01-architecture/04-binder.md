@@ -3,19 +3,19 @@ title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
 section: "1.4"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 confidence: "medium"
 last_verified: "2026-06-09"
-last_verified_against: "AOSP android-16.0.0_r4 / kernel android16-6.12 / external/perfetto android-16.0.0_r1 / source.android / developer.android"
+last_verified_against: "AOSP android-17.0.0_r1 (framework/base/perfetto主线) / kernel android16-6.12 (非Android17基线,可查上限历史参照) / source.android / developer.android"
 drafted_date: "2026-05-13"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 related_chapters: "[\"1.1\", \"2.5\", \"7.2\", \"8.2\", \"9.1\"]"
-task6_state: "reviewed"
+task6_state: "revisiting"
 last_task2a_at: "2026-05-13T18:20:00+08:00"
 last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
 task9_state: "reviewed"
@@ -34,9 +34,12 @@ task6_review_log: "logs/review/2026-05-13-19-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-09"
-task2b_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task9_autofix_at: "2026-06-09"
 last_task2b_lite_at: "2026-07-01"
+last_task2b_at: "2026-07-01T06:52:07+08:00"
+last_task2b_note: "主修复: Task6+Task9回炉, 源码锚点迁android-17.0.0_r1, node->async_todo语义修正, 录制/trace片段修正, 禁用词清除, 注入元数据清理"
 last_task9_log: "logs/deep-review/2026-07-01-06-deep-review.md"
 ---
 
@@ -163,7 +166,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 
 这段生成代码的调用顺序是：先把参数写进 `Parcel`，再通过 `mRemote.transact()` 把事务交给 Binder 驱动，再从 reply `Parcel` 中读取结果。服务端的 `Stub.onTransact()` 会根据事务码分发到真实实现。读系统接口时，也应该把注意力放在这条调用链上，避免把示例代码误当成某个 AOSP 接口的原样拷贝。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/IWindowSession.aidl] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Binder.java] [已验证: 官方文档, developer.android.com/guide/components/aidl]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/IWindowSession.aidl] [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Binder.java] [已验证: 官方文档, developer.android.com/guide/components/aidl]
 
 ## Binder 线程池：性能分析的关键变量
 
@@ -175,7 +178,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 
 **命名规则。** AOSP `ProcessState::makeBinderThreadName()` 用 `"%.*s:%d_%X"` 生成线程名，前缀取决于 driver 名称，所以常见的是 `binder:<pid>_<hex-seq>`、`hwbinder:<pid>_<hex-seq>` 或 `vndbinder:<pid>_<hex-seq>`。这里的后缀是线程池里的十六进制序号，`_B` 只是第 11 个线程，不代表特殊角色。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp, DEFAULT_MAX_BINDER_THREADS=15]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp, DEFAULT_MAX_BINDER_THREADS=15]
 
 ### 线程池耗尽后会发生什么
 
@@ -185,7 +188,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 
 如果只看到少数 worker 在 Running，其余 worker 卡在锁或 IO，线程数通常不是主要矛盾；某个 Binder 方法把 worker 占住太久，更值得继续查。后面的排查要继续沿着 `thread_state`、Lock contention 和服务端 slice 往下看。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp] [已验证: L2, Perfetto thread_state / Binder Transactions 可观测]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp] [已验证: L2, Perfetto thread_state / Binder Transactions 可观测]
 
 ## 同步调用 vs oneway 调用
 
@@ -255,7 +258,7 @@ Perfetto 的 Binder 分析要分清两层：
 
 `client_dur` 和 `server_dur` 的差值反映 Binder 驱动排队和上下文切换开销。`is_sync` 可以快速过滤出阻塞型调用。
 
-[已验证: AOSP external/perfetto android-16.0.0_r1, src/trace_processor/perfetto_sql/stdlib/android/binder.sql 中 `android_binder_txns` 表字段] [来源: obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md]
+[已验证: AOSP external/perfetto android-17.0.0_r1, src/trace_processor/perfetto_sql/stdlib/android/binder.sql 中 `android_binder_txns` 表字段] [来源: obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md]
 
 ### 三步分析流程
 
@@ -359,7 +362,7 @@ Perfetto 的 `BinderTracker`（`src/trace_processor/importers/ftrace/binder_trac
 - `client_dur == -1`：事务被 `_binder_txn_merged` 过滤，切片已排除
 - 只有发起侧没有 reply slice：server 进程崩溃或被冻结
 
-[已验证: AOSP external/perfetto android-16.0.0_r1, src/trace_processor/importers/ftrace/binder_tracker.cc]
+[已验证: AOSP external/perfetto android-17.0.0_r1, src/trace_processor/importers/ftrace/binder_tracker.cc]
 
 ## Binder 风暴与系统负载
 
@@ -446,16 +449,14 @@ oneway 调用避免了 Client 端的阻塞等待，但仍有队列和处理成�
 
 如果线程池经常被打满，主要原因往往不在线程数，而在 Server 端某些方法的执行时间太长（比如在 Binder 线程中做了 IO 操作或等锁）。加大线程池只是延缓症状，正确的方向是缩短单次 Binder 调用的处理时间、减少锁持有时间、避免在 Binder 线程中做耗时操作。
 
+## 线程池与调度器协同：Android 17 源码观察与内核层契约
 
-
-## 线程池与调度器协同：Android 14-16 源码观察与内核层契约
-
-> ⚠️ **版本边界说明**：本节源码锚点基于 AOSP `frameworks/native` tag `android-16.0.0_r4` 与 `kernel/common` branch `android16-6.12`，未涉及 Android 17。
+> ⚠️ **版本边界说明**：本节源码锚点基于 AOSP `frameworks/native` tag `android-17.0.0_r1` 与 `kernel/common` branch `android16-6.12`。kernel/common 未发现 android-17.0.0_r1 tag 或 android17-6.12 branch，android16-6.12 仅作为 Android 17 可查上限/历史参照，不作为主线结论。
 
 ### Native 侧的协作机制
 
 #### `mOnThreadAvailableCondVar`：本进程线程池可用性等待
-AOSP 13-15 的 `IPCThreadState::blockUntilThreadAvailable()` 已经在用户态用 `pthread_cond_wait()` 等待本进程可执行 Binder 线程数低于上限。Android 16（`android-16.0.0_r1` 起）把这段实现迁移到 `std::condition_variable mOnThreadAvailableCondVar`（`include/binder/ProcessState.h:182`）；它不是从内核 `binder_thread_read` 等待切到用户态等待，而是用户态线程池等待实现从 pthread 条件变量迁移到 C++ 条件变量。Android 16 中的核心逻辑：
+AOSP 13-15 的 `IPCThreadState::blockUntilThreadAvailable()` 已经在用户态用 `pthread_cond_wait()` 等待本进程可执行 Binder 线程数低于上限。Android 16（`android-17.0.0_r1` 中该项已落地）把这段实现迁移到 `std::condition_variable mOnThreadAvailableCondVar`（`include/binder/ProcessState.h:182`）；它不是从内核 `binder_thread_read` 等待切到用户态等待，而是用户态线程池等待实现从 pthread 条件变量迁移到 C++ 条件变量。Android 16 中的核心逻辑：
 
 ```cpp
 void IPCThreadState::blockUntilThreadAvailable() {
@@ -610,9 +611,9 @@ if (is_fair_policy(policy))
 
 ### 来源
 - AOSP `frameworks/native/libs/binder/ProcessState.cpp`、`IPCThreadState.cpp`、`Parcel.cpp`、`include/binder/ProcessState.h`（tag `android-16.0.0_r4`）
-- AOSP `kernel/common/drivers/android/binder.c`、`include/uapi/linux/android/binder.h`（branch `android16-6.12`）
+- AOSP `kernel/common/drivers/android/binder.c`、`include/uapi/linux/android/binder.h`（branch `android16-6.12`，非 Android 17 基线，仅作可查上限/历史参照）
 - DeepResearch 报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md`
-- 版本边界：android-16.0.0_r4 为公开 AOSP 最高 tag，**android-17 未进入**
+- 版本边界：framework/native 使用 android-17.0.0_r1；kernel 侧使用 android16-6.12（非 Android 17 基线，仅作历史参照）
 
 ## 参考资料
 
@@ -626,7 +627,7 @@ if (is_fair_policy(policy))
   - `drivers/android/binder.c`（内核 Binder 驱动 实现）
 - [已验证: 官方文档, developer.android.com/reference/android/os/IBinder]
 - [已验证: 官方文档, developer.android.com/guide/components/aidl]
-- [已验证: AOSP external/perfetto android-16.0.0_r1, `src/trace_processor/perfetto_sql/stdlib/android/binder.sql` 中 `android_binder_txns` 表字段]
+- [已验证: AOSP external/perfetto android-17.0.0_r1, `src/trace_processor/perfetto_sql/stdlib/android/binder.sql` 中 `android_binder_txns` 表字段]
 - [引用: https://source.android.com/docs/core/architecture/aidl/aidl-hals]
 - [引用: https://source.android.com/docs/core/architecture/ipc/priority-inheritance]
 - [引用: https://source.android.com/docs/core/architecture/ipc/binder-freezer]
@@ -637,18 +638,10 @@ if (is_fair_policy(policy))
 - [引用: https://paul.pub/android-binder-driver/]
 - [引用: https://perfetto.dev/docs/data-sources/android-binder]
 
-
-### Android 17 Binder IPC 线程调度协同与性能优化
+#### Android 17 Binder IPC 线程调度协同与性能优化
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md
 - 类型：DeepResearch 调研结果
 - 摘要：AOSP libbinder 线程池由 ProcessState + IPCThreadState 双单例协同实现：setThreadPoolMaxThreadCount 通过 ioctl 写入内核 max_threads 且启动后不可缩减；blockUntilThreadAvailable 用 std::condition_variable 等待空闲 worker，配合 mExecutingThreadsCount 原子计数与 100ms 饥饿告警；内核侧 binder_select_thread_ilocked 在 inner_lock 自旋锁下从 waiting_threads 链表取 worker，优先级继承通过 sched_setscheduler_nocheck + set_user_nice 实现。
-- 注入时间：2026-06-09
-- 价值：源码级详解 ProcessState/IPCThreadState 双单例线程池机制、饥饿检测与优先级继承三层调度，补强 §1.4 Binder 性能分析维度
-
-
-### 注入块：Binder 事务队列机制与跨进程性能（2026-06-09 补充）
-
-<!-- AIW-源码调研-2026-06-09-02 -->
 
 AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 链表**结构，**所有 enqueue/dequeue 都是 O(1) list_head 操作**——`binder_enqueue_work_ilocked` 用 `list_add_tail`，`binder_dequeue_work_head_ilocked` 用 `list_first_entry_or_null`。三层的分工：
 
@@ -656,7 +649,7 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 |------|------|------|
 | 进程级 | `proc->todo` | 没有空闲 worker 时暂存；新 worker 拉取后入 `thread->todo` |
 | 线程级 | `thread->todo` | 单线程工作队列，**被 `binder_thread_read` 优先读取** |
-| Node 级 | `node->async_todo` | 每个 binder node 挂一个；**专门给 frozen 进程的 async 事务排队** |
+| Node 级 | `node->async_todo` | 每个 binder node 挂一个；**同 node 上 async/oneway 串行排队**；frozen async 是其中一条特殊路径 |
 
 `binder_thread_read()` 读取顺序严格 "**先 thread-local，再 process-wide**"——当 `thread->transaction_stack` 非空（同步调用栈中）或 `thread->todo` 非空时不读 `proc->todo`。这是单线程同步串行的根本保证。`binder_available_for_proc_work_ilocked()` 是判定核心：`!thread->transaction_stack && list_empty(&thread->todo)`。
 
@@ -673,46 +666,28 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 源码位置：
 - `kernel/common/include/linux/android/binder_internal.h`（v6.12）`struct binder_proc.todo`、`struct binder_thread.todo`、`struct binder_node.async_todo`
 - `kernel/common/drivers/android/binder.c`（v6.12）`binder_enqueue_work_ilocked:52577`、`binder_proc_transaction:2847-2923`、`binder_thread_read:4652-4700`、`binder_available_for_proc_work_ilocked:52718`
-- `frameworks/native/libs/binder/IPCThreadState.cpp`（android-16.0.0_r4）`transact`、`flushCommands`、`talkWithDriver`
-
-- 注入时间：2026-06-09
-- 价值：源码级详解 Binder 事务队列的"三层 FIFO + 两级读 + frozen async 缓冲 + 用户态批处理"四大机制，与 §1.4 既有"线程池 + 优先级继承"形成完整的事务生命周期视角
-- 关联 DeepResearch：`DeepResearch/2026-06-09-android17-binder-transaction-queue-frozen-async-arch.md`
-
+- `frameworks/native/libs/binder/IPCThreadState.cpp`（android-17.0.0_r1）`transact`、`flushCommands`、`talkWithDriver`
 
 ### Android 16/17 Binder事务队列与跨进程通信性能（kernel binder角度）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-binder-transaction-queue-frozen-async-arch.md
 - 类型：DeepResearch 调研结果
 - 摘要：内核Binder驱动采用三层FIFO list_head结构：proc->todo(进程级)/thread->todo(线程级优先)/node->async_todo(frozen进程累积)。binder_thread_read严格先thread-local后process-wide。frozen进程下oneway事务入node->async_todo返回BR_TRANSACTION_PENDING_FROZEN，解冻时批量搬移。TF_UPDATE_TXN支持同code同pid同target旧事务替换。
-- 注入时间：2026-06-10
-- 价值：包含源码级分析（AOSP锚点），对理解框架内部机制和性能调优有直接参考意义
 - [Android 17 Binder 事务队列优化与高频 IPC 性能提升](DeepResearch/2026-06-11-android17-binder-transaction-queue-optimization.md) — 分析 Android 17 Binder 驱动三层 todo 队列（thread/proc/node.async_todo）的优先级继承 binder_transaction_priority 防反转机制、deferred TRANSACTION_COMPLETE 重叠执行优化、vendor 跳过优先级 tracehook，以及 Rust/C Binder 选择器模块化重构。
 
 ### Android 17 Binder IPC 异步 oneway / 冻结回执 / 内核批处理流水线
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-binder-ipc-async-oneway-frozen-reply-pipeline.md
 - 类型：DeepResearch 调研结果
 - 摘要：深入分析 Android 17 Binder 的四级流水线：用户态自动批处理（flushCommands 双次 talkWithDriver 确保 mOut 清空）、异步 oneway 通道（TF_ONE_WAY 零阻塞 + 内核 spam 抑制 BINDER_WORK_TRANSACTION_ONEWAY_SPAM_SUSPECT）、frozen 回执机制（BR_TRANSACTION_PENDING_FROZEN / BR_FROZEN_REPLY 瞬时错误而非长阻塞）、优先级继承传递（binder_do_set_priority 临时借用 nice/RT prio）。全部在 BC_*/BR_* 命令序列层完成，对应用代码零侵入。
-- 注入时间：2026-06-13
-- 价值：源码级详解 IPCThreadState::transact 同步/异步两条完整路径，与 §1.4 已有"线程池+事务队列"形成用户态执行机制闭环
 
 ### Android 17 Binder 事务性能建模——IPC 开销量化与调度器交互
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-binder-transaction-performance-analysis.md
 - 类型：DeepResearch 调研结果
 - 摘要：将单次 Binder 事务拆解为 5 段可测量开销（用户态 mOut 写入 → ioctl 提交 → 内核入队 → 对端读取 → BBinder 分发），定位 3 个稳定性能钩子点：flushCommands 双次 talkWithDriver 批处理、BBinder::transact 内置 >1s 告警、IF_LOG_COMMANDS 十六进制 dump。Android 17 新增 kEnableKernelIpc 编译期强制校验与 RpcBinder 分支 [[unlikely]] 标注优化。
-- 注入时间：2026-06-20
-- 价值：首次从"单次事务性能建模"角度补齐 §1.4 已有队列/frozen/oneway 之外的 IPC 开销量化视角，含 ioctl/batching 开销与调度器交互分析
-
-
 
 ### Android 17 Binder IPC 调优杠杆——mmap 缓冲区 / 线程池 / 批处理 / oneway spam / frozen reply
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-21-binder-ipc-optimization-android17.md
 - 类型：DeepResearch 调研结果
 - 摘要：从 IPC 调优视角梳理 Android 17 Binder 的 5 个上层杠杆：`BINDER_VM_SIZE = 1MiB - 2*PAGE_SIZE`（`ProcessState.cpp:48`）的单进程环形物理页池、`DEFAULT_MAX_BINDER_THREADS = 15`（`ProcessState.cpp:49`）的不可下调线程池上限、`talkWithDriver` 单次 ioctl(`BINDER_WRITE_READ`)双向传输、`flushCommands` 双次调用收敛 post-write deref、`BR_ONEWAY_SPAM_SUSPECT` + `BR_FROZEN_REPLY` 软限流机制。给出 5 个具体调优动作：(1) 高频 IPC 服务（如 surfaceflinger）通过 `setThreadPoolMaxThreadCount(N>=31)` 上调；(2) 高频 fire-and-forget 必选 oneway 并监控 `BR_ONEWAY_SPAM_SUSPECT`；(3) 服务端用 `BBinder::transact` 内置 `transactionMs > 1000` `ALOGW` 定位慢调用；(4) 大 Parcel 超过 `binder::kLogTransactionsOverBytes` 触发 `ALOGW`；(5) Android 17 新增 `kEnableKernelIpc` 编译期强制校验 + `[[unlikely]]` 标注 RPC 分流优化分支预测。
-- 注入时间：2026-06-21
-- 价值：从「调优杠杆」视角补齐 §1.4 已有队列/frozen/oneway 之外的 IPC 性能调优操作手册，与 2026-06-20 单次事务性能建模形成完整「建模 + 调优」闭环
-- 目标章节（待创建）：`src/part2-performance/ch04-system/06-binder-transaction-optimization.md`
-
-
 
 ### Android 17 Binder IPC 延迟分析与优化实践
 - 来源：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization.md`
@@ -735,13 +710,9 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
   4. frozen 进程感知：`FROZEN_OBJECT` 异常指数退避 retry
   5. oneway spam 监控：`BR_ONEWAY_SPAM_SUSPECT` + `IF_LOG_COMMANDS()` 配合
   6. TF_UPDATE_TXN 替换：高频 oneway 单次替换 ~200-500ns，**净收益**：解冻时 O(1) 而非 O(n)
-- 注入时间：2026-06-24
-- 价值：从「延迟归因方法学」角度补齐 §1.4 已有「5 段开销建模（2026-06-20）+ 5 个杠杆调优（2026-06-21）」之外的「tracepoints+SQL 视图+隐藏来源+量化优化」完整方法论闭环
-- 关联 DeepResearch：`DeepResearch/2026-06-24-android-17-binder-ipc-latency-analysis-and-optimization.md`
-
 
 <!-- AIW-源码调研-2026-06-26: Android 17 Binder 性能监控四层能力面 -->
-## Android 17 libbinder 性能监控接口与跨进程调用链路追踪
+## Android 17 libbinder 性能监控接口与跨进程调用链追踪
 
 > ⚠️ **版本边界**：本节源码锚点为 AOSP `frameworks/native` tag `android-17.0.0_r1`（commit `ae266dcb706d083868578cfedce381ef44488a07`）。源码来自社区 AOSP 镜像（`github.com/tranchikha/android_frameworks_native`），与官方 googlesource 镜像 commit 一致——sandbox 内 google.com/android.googlesource.com 不可达（web_fetch 报 `Blocked: resolves to private/internal/special-use IP address`）。
 
@@ -785,19 +756,20 @@ bool ProcessState::isDriverFeatureEnabled(const DriverFeature feature) {
 
 **架构意图**：binderfs 是 kernel ≥ 5.15 引入的"每实例 binder 设备 + 特性文件"机制，`/dev/binderfs/features/` 下的特性文件是只读开关文件（`read` 返回 1 字节 `1`/`0`）。`static bool` 缓存在线程安全前提下避免每次 IPC 都打开文件——**单进程每个 driver feature 仅首次访问时读一次**。这与 §1.4 既有"tracepoints+SQL 视图"形成互补——前者是诊断工具，后者是平台自带的 capability 探测。
 
-### 3. 跨进程调用链路快照：`BBinder::startRecordingTransactions` + `RecordedTransaction`
+### 3. 跨进程调用链快照：`BBinder::startRecordingTransactions` + `RecordedTransaction`
 
 源码：`frameworks/native/libs/binder/Binder.cpp:399-456` 与 `RecordedTransaction.cpp:43-96`
 
 ```cpp
 // Binder.cpp:556-572 — onTransact 自动录制路径
 if (kEnableKernelIpc && kEnableRecording && code != START_RECORDING_TRANSACTION) [[unlikely]] {
-    auto e = mRecording.promote();
-    if (e && e->mRecordingOn) {
+    auto extras = mExtras.load();
+    if (extras && extras->mRecordingOn) {
+        RpcMutexUniqueLock _lock(extras->mRecordingLock);
         auto transaction = android::binder::debug::RecordedTransaction::
-                fromDetails(mDescriptor, code, flags, timestamp, data, reply, err);
+                fromDetails(getInterfaceDescriptor(), code, flags, ts, data, reply ? *reply : emptyReply, err);
         if (transaction) {
-            if (err = transaction->dumpToFile(e->mRecordingFd); err != NO_ERROR) {
+            if (err = transaction->dumpToFile(extras->mRecordingFd); err != NO_ERROR) {
                 ALOGI("Failed to dump RecordedTransaction to file with error %d", err);
             }
         }
@@ -808,7 +780,7 @@ if (kEnableKernelIpc && kEnableRecording && code != START_RECORDING_TRANSACTION)
 **关键设计**：
 - `kEnableRecording` 由编译期宏 `BINDER_ENABLE_RECORDING` 控制（`Binder.cpp:95-97`），**默认 `false`**——意味着默认 release build 不打开此功能，仅 `userdebug` + vendor 自定义 build 启用。
 - `[[unlikely]]` 标注让 release build 中录制功能不打开时这条分支被预测为 false，**零开销**。
-- 录制是**服务端**视角——`BBinder::onTransact` 触发，不是 `BpBinder::transact`（客户端）。要做端到端链路追踪，需要客户端侧也独立打开录制（`BpBinder` 侧对应路径在 android-17.0.0_r1 中**未经一手验证**是否存在）。
+- 录制是**服务端**视角——`BBinder::onTransact` 触发，不是 `BpBinder::transact`（客户端）。要做端到端调用链追踪，需要客户端侧也独立打开录制（`BpBinder` 侧对应路径在 android-17.0.0_r1 中**未经一手验证**是否存在）。
 - `RecordedTransaction` 用 Chunk 编码（Header / Sent Parcel / Reply Parcel / End 四种 Chunk），每块 64-bit XOR 校验和，**Chunk 顺序允许乱序 / 重复**（除 End Chunk），读写两端可独立演进——这是 forward-compat 的标准做法。
 
 ### 4. Perfetto / atrace 入口：`ATRACE_TAG_AIDL = (1 << 24)`
@@ -831,20 +803,19 @@ if (kEnableKernelIpc && kEnableRecording && code != START_RECORDING_TRANSACTION)
 
 ```cpp
 bool tracingEnabled = get_trace_enabled_tags() & ATRACE_TAG_AIDL;
-if (tracingEnabled) [[unlikely]] {
+if (tracingEnabled) {
     tracingEnabled = startTrace(code);
 }
-if (tracingEnabled) trace_end(ATRACE_TAG_AIDL);
+// trace_end() 通过 scope_guard 保证退出时调用，不在 if-block 中直接触发
 ```
 
-`[[unlikely]]` + `get_trace_enabled_tags()`（syscall-less 的 user-space cache）让未启用 tag 时整段 trace 调用被预测消除。这是 Android 17 上把 libbinder 接入 Perfetto GPU/HWUI 之外 CPU 轨道的方式，与 `external/perfetto/src/trace_processor/stdlib/android/binder.sql` 的 `android_binder_txns` 视图（详见上文 6 月 24 日注入的 tracepoints 闭环）形成完整链路。
+`get_trace_enabled_tags()`（syscall-less 的 user-space cache）让未启用 tag 时整段 trace 调用被短路。`trace_end()` 通过 scope_guard 统一管理，保证异常路径也能正确关闭 trace。这是 Android 17 上把 libbinder 接入 Perfetto GPU/HWUI 之外 CPU 轨道的方式，与 `external/perfetto/src/trace_processor/stdlib/android/binder.sql` 的 `android_binder_txns` 视图（详见上文 6 月 24 日注入的 tracepoints 完整覆盖）形成完整视图。
 
 ### 价值定位
 
-- **诊断时**：先用 `getProcessFreezeInfo` 看数字 → 用 `RecordedTransaction` 看内容 → 用 `ATRACE_TAG_AIDL` 看时间线。三层数据互为佐证，构成可量化的可观测性闭环。
+- **诊断时**：先用 `getProcessFreezeInfo` 看数字 → 用 `RecordedTransaction` 看内容 → 用 `ATRACE_TAG_AIDL` 看时间线。三层数据互为佐证，构成可量化的可观测性体系。
 - **应用适配**：录制与 ioctl 不需要应用层改动。`ATRACE_TAG_AIDL` 只需在抓取时打开 `atrace --tag aidl`，无需重新编译应用。
 - **平台依赖**：四个 ioctl 都需要 kernel ≥ 5.15 + binderfs + 对应特性文件。在老内核上 `isDriverFeatureEnabled` 返回 false，整个特性路径被预测消除，不会有无效 syscall。
 - **注入时间**：2026-06-26
 - **关联 DeepResearch**：`DeepResearch/2026-06-26-android17-binder-perf-monitor-recording-aidl-trace.md`
 
-<!-- /AIW-源码调研-2026-06-26 -->
