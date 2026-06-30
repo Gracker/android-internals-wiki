@@ -4,8 +4,8 @@ chapter: "24.3"
 section: "24.3"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP master snapshot 2026-05-14 + Android Developers docs + upstream library docs"
+last_verified: "2026-06-30"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers docs + upstream library docs"
 confidence: medium
 drafted_date: "2026-05-14"
 reviewed_by: openclaw-task6
@@ -45,18 +45,21 @@ sources:
     path: "Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md"
 tags: [serialization, json, protobuf, parcelable, flatbuffers]
 related_chapters: ["24.4", "1.4", "21.1"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 last_task6_audit: "2026-05-24"
 task9_state: reviewed
 last_task2a_at: "2026-05-14T08:20:00+08:00"
-task9_result: pass-tech-review
+task9_result: auto-fixed
+task2b_state: fixed
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T08:47:50+08:00"
-last_task9_audit: "2026-06-08"
-last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
-task9_review_notes: "2026-05-14 Task9：pass-tech-review。P0 0 / P1 0 / P2 2；技术主线通过，Moshi Codegen benchmark 示例和 AOSP 源码 tag 建议补强；Task6 尚未审，未晋升 finalized。"
+task9_reviewed_date: "2026-06-30"
+last_task9_at: "2026-06-30T21:20:00+08:00"
+last_task9_audit: "2026-06-30"
+last_task9_audit_log: "logs/deep-review/2026-06-30-21-audit.md"
+last_task9_review_log: "logs/deep-review/2026-06-30-21-audit.md"
+last_task9_autofix_at: "2026-06-30"
+task9_review_notes: "2026-06-30 Task9 idle audit auto-fix: 将 Parcel.java / TransactionTooLargeException.java 的 AOSP 验证口径从 master snapshot 固定到 android-17.0.0_r1；源码行为与 Android 17 tag 一致。无待入 queue P0/P1。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
 ---
@@ -166,11 +169,11 @@ FlatBuffers 的目标不同。FlatBuffers README 说明，它面向内存效率�
 
 ## Parcelable vs Serializable
 
-Android IPC 和组件参数传递优先使用 Parcelable。AOSP `Parcel.java` 文档写得很直接：Parcel 不是通用序列化机制，它和 Parcelable API 是为高性能 IPC transport 设计的，不适合持久化存储；Parcel 底层实现变化可能让旧数据不可读。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/Parcel.java]
+Android IPC 和组件参数传递优先使用 Parcelable。AOSP `Parcel.java` 文档写得很直接：Parcel 不是通用序列化机制，它和 Parcelable API 是为高性能 IPC transport 设计的，不适合持久化存储；Parcel 底层实现变化可能让旧数据不可读。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Parcel.java]
 
-同一份 AOSP 文档还说明，`writeTypedObject`、`writeTypedArray`、`writeTypedList`、`readTypedObject`、`createTypedArrayList` 这组方法比普通 `writeParcelable` / `readParcelable` 更高效，因为它们不把原对象的 class 信息写入 Parcel，读取方通过 `Parcelable.Creator` 明确知道类型。AIDL、Bundle、Intent extra 和跨进程回调里，能用 typed Parcelable 就不要退回泛型容器。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/Parcel.java]
+同一份 AOSP 文档还说明，`writeTypedObject`、`writeTypedArray`、`writeTypedList`、`readTypedObject`、`createTypedArrayList` 这组方法比普通 `writeParcelable` / `readParcelable` 更高效，因为它们不把原对象的 class 信息写入 Parcel，读取方通过 `Parcelable.Creator` 明确知道类型。AIDL、Bundle、Intent extra 和跨进程回调里，能用 typed Parcelable 就不要退回泛型容器。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Parcel.java]
 
-Serializable 只适合低频、兼容旧接口、数据量很小的场景。AOSP `writeValue()` 注释把 Serializable 放在支持类型列表末尾，并明确提示前面的类型都有相对高效的 Parcel 写入实现；依赖 generic serialization 的方式低效，应尽量避免。原因不需要神化：Java 序列化会走通用对象图、类描述、字段访问和流格式，Android IPC 没必要付这笔成本。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/Parcel.java]
+Serializable 只适合低频、兼容旧接口、数据量很小的场景。AOSP `writeValue()` 注释把 Serializable 放在支持类型列表末尾，并明确提示前面的类型都有相对高效的 Parcel 写入实现；依赖 generic serialization 的方式低效，应尽量避免。原因不需要神化：Java 序列化会走通用对象图、类描述、字段访问和流格式，Android IPC 没必要付这笔成本。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Parcel.java]
 
 这段 Parcelable 代码只展示写入顺序和 typed API 的配合。读写字段顺序必须稳定，新增字段要考虑版本兼容；跨进程大对象不要直接塞进 Bundle。
 
@@ -197,7 +200,7 @@ class UserServiceProxy(private val remote: IUserService) {
 
 不要在启动路径里创建大量一次性 parser、adapter 或 `Json` 实例。kotlinx.serialization 文档建议复用自定义 format 实例，因为 format 实现可能缓存和 class 相关的额外信息；Moshi 的 adapter 也应按类型复用。复用不会自动解决所有性能问题，但能减少冷启动里重复建立元数据和 adapter 查找。[已验证: 官方文档, android.googlesource.com/platform/external/kotlinx.serialization/+/refs/heads/upstream-1.2.0-release/docs/json.md][已验证: 官方文档, square.github.io/moshi]
 
-IPC 路径要控制 Parcel 大小和调用频率。`TransactionTooLargeException.java` 说明，Binder 事务 buffer 当前固定大小为 1 MB，并由进程内进行中的事务共享；异常只能作为大事务失败的启发式信号，无法判断请求没发出去还是响应没回去。规避方式是让事务保持小，避免传巨大字符串数组或大 Bitmap，把大结果拆页返回，或者先返回必要字段再让客户端按需请求。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
+IPC 路径要控制 Parcel 大小和调用频率。`TransactionTooLargeException.java` 说明，Binder 事务 buffer 当前固定大小为 1 MB，并由进程内进行中的事务共享；异常只能作为大事务失败的启发式信号，无法判断请求没发出去还是响应没回去。规避方式是让事务保持小，避免传巨大字符串数组或大 Bitmap，把大结果拆页返回，或者先返回必要字段再让客户端按需请求。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
 
 序列化问题在 Perfetto 中可以从三个方向定位：
 
@@ -221,8 +224,8 @@ IPC 路径要控制 Parcel 大小和调用频率。`TransactionTooLargeException
 
 ## 参考资料
 
-- [已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/Parcel.java]
-- [已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
+- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Parcel.java]
+- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
 - [引用: developer.android.com/reference/android/os/Parcelable]
 - [引用: developer.android.com/topic/performance/benchmarking/microbenchmark-overview]
 - [引用: github.com/google/gson/blob/main/README.md]
