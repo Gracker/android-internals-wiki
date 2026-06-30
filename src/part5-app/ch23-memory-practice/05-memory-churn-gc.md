@@ -4,8 +4,8 @@ chapter: "23.5"
 section: "23.5"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-14"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + Perfetto docs + Clippings/Android 性能优化"
+last_verified: "2026-06-30"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers Android 17 release notes + Android Developers + Perfetto docs + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -19,13 +19,13 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
   - type: aosp
-    path: "libcore/libart/src/main/java/java/lang/Daemons.java"
+    path: "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java"
   - type: aosp
-    path: "art/runtime/gc/heap-inl.h"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap-inl.h"
   - type: aosp
-    path: "art/runtime/gc/heap.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
   - type: aosp
-    path: "art/runtime/gc/task_processor.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.cc"
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]"
   - type: blog
@@ -34,8 +34,8 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
 tags: [memory-churn, gc, allocation, autoboxing]
 related_chapters: ["23.4", "10.6", "4.8", "7.2"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-05-14"
@@ -45,15 +45,16 @@ task6_reviewed_date: "2026-05-14"
 task6_review_notes: "2026-05-14 task6 review: 四层质检通过，未发现 L1/L2 正文问题；无新增 L3/L4 回炉项，送 Task9 技术复审。"
 last_task6_review_log: "logs/review/2026-05-14-02-review.md"
 last_task6_at: "2026-05-14T02:13:00+08:00"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-14"
-last_task9_at: "2026-05-14T02:37:00+08:00"
-task9_review_notes: "2026-05-14 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞技术问题。"
+task9_reviewed_date: "2026-06-30"
+last_task9_at: "2026-06-30T15:36:54+08:00"
+task9_review_notes: "2026-06-30 task9 idle audit auto-fix: Android 17 基线复核发现 ShouldConcurrentGCForJava() 已加入 time-based GC triggering 分支；已更新源码锚点和版本说明，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
 last_task6_audit: "2026-06-06"
-last_task9_audit: "2026-06-08"
+last_task9_audit: "2026-06-30"
+last_task9_autofix_at: "2026-06-30"
 ---
 
 # 内存抖动与 GC 治理
@@ -94,11 +95,11 @@ Android Developers 的慢渲染文档把对象分配和 GC 列为卡顿原因，
 
 ## 内存抖动的成因与表现
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap-inl.h]
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap-inl.h]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc]
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
-内存抖动由“分配密度”触发，而不只由“对象大小”触发。一个页面每秒创建几万个小对象，即使单个对象只有几十字节，也会快速推高 `bytes_allocated`，让 ART 更早发起并发 GC。AOSP `Heap::AllocObjectWithAllocator()` 在分配后会检查 `ShouldConcurrentGCForJava(new_num_bytes_allocated)`；该函数把 Java 已分配字节数和 `concurrent_start_bytes_` 阈值比较，达到阈值后进入 `RequestConcurrentGCAndSaveObject()` 路径。
+内存抖动由“分配密度”触发，而不只由“对象大小”触发。一个页面每秒创建几万个小对象，即使单个对象只有几十字节，也会快速推高 `bytes_allocated`，让 ART 更早发起并发 GC。AOSP android-17.0.0_r1 中，`Heap::AllocObjectWithAllocator()` 在分配后会检查 `ShouldConcurrentGCForJava(new_num_bytes_allocated)`；如果启用 time-based GC triggering 且配置了 `time_based_gc_threshold_`，该函数会结合上次 GC 后的分配量和时间进度触发 `kNeedGc` 或调度阈值检查，`concurrent_start_bytes_` 则作为防止堆空间耗尽的兜底阈值。未启用该路径时，函数退回到 Java 已分配字节数和 `concurrent_start_bytes_` 的比较，并进入 `RequestConcurrentGCAndSaveObject()` 路径。
 
 从应用层来看，内存抖动通常表现为四种现象：
 
@@ -107,12 +108,12 @@ Android Developers 的慢渲染文档把对象分配和 GC 列为卡顿原因，
 - **帧耗时波动**：Frame Timeline 里不是每一帧都慢，而是滑动、动画或输入期间隔几帧出现尖峰。
 - **Allocation Stall**：线程在分配时等 GC 或堆扩容，代码火焰图里业务函数不一定耗时长，但调用栈附近有分配和回收活动。
 
-ART 从 Android 8 起默认使用 Concurrent Copying，Android 10 之后默认以分代模式运行，短命对象的回收效率已经比早期系统好。source.android.com 的 ART GC 文档也写到，过量分配这种 mutator 行为仍会造成性能问题。应用侧不能把“现代 GC 更快”理解成“高频分配可以不管”。
+ART 从 Android 8 起默认使用 Concurrent Copying，Android 10 之后 Concurrent Copying 默认按分代模式运行；Android 17 release notes 又把 Concurrent Mark-Compact collector 的 generational GC 列为 Runtime/Performance 能力。source.android.com 的 ART GC 文档也写到，过量分配这种 mutator 行为仍会造成性能问题。应用侧不能把“现代 GC 更快”理解成“高频分配可以不管”。
 
 ## 频繁 GC 对帧率的影响
 
-[已验证: AOSP android-16.0.0_r1, libcore/libart/src/main/java/java/lang/Daemons.java]
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/task_processor.cc]
+[已验证: AOSP android-17.0.0_r1, libcore/libart/src/main/java/java/lang/Daemons.java]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/task_processor.cc]
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
@@ -227,7 +228,7 @@ class FrameBucketCounter {
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 [已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler]
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc]
 
 检测内存抖动按“现象确认 → 分配归因 → 代码修复 → 回归防护”推进。只看 heap dump 容易偏向泄漏分析，抖动更需要 allocation over time：谁在什么时间段分配、每秒分配多少、是否和慢帧或启动阶段重叠。
 
@@ -295,7 +296,7 @@ suspend fun <T, R> mapInChunks(
 
 ### “看到 GC 就要抑制 GC”
 
-GC 是结果，不是根因。AOSP 里 `ConcurrentGCTask` 是堆达到阈值后加入任务队列的结果，应用侧盲目抑制 GC 只会把回收延后。除非做虚拟机研究或受控实验，业务应用不要通过 native hook 阻塞 `HeapTaskDaemon`。
+GC 是结果，不是根因。AOSP 里 `ConcurrentGCTask` 是 `ShouldConcurrentGCForJava()` 判定需要 GC 后加入任务队列的结果，应用侧盲目抑制 GC 只会把回收延后。除非做虚拟机研究或受控实验，业务应用不要通过 native hook 阻塞 `HeapTaskDaemon`。
 
 ### “对象池一定能减少卡顿”
 
@@ -309,10 +310,10 @@ Heap dump 适合看某一刻还活着的对象，抖动里的临时对象可能�
 
 ### AOSP 源码
 
-- `libcore/libart/src/main/java/java/lang/Daemons.java`：`HeapTaskDaemon` 调用 `VMRuntime.getRuntime().runHeapTasks()`。
-- `art/runtime/gc/task_processor.cc`：`TaskProcessor::RunAllTasks()` 取出 `HeapTask` 并执行。
-- `art/runtime/gc/heap-inl.h`：`Heap::AllocObjectWithAllocator()` 分配后检查 `ShouldConcurrentGCForJava()`。
-- `art/runtime/gc/heap.cc`：`RequestConcurrentGCAndSaveObject()`、`ConcurrentGCTask` 和 GC 请求路径。
+- `android-17.0.0_r1/libcore/libart/src/main/java/java/lang/Daemons.java`：`HeapTaskDaemon` 调用 `VMRuntime.getRuntime().runHeapTasks()`。
+- `android-17.0.0_r1/art/runtime/gc/task_processor.cc`：`TaskProcessor::RunAllTasks()` 取出 `HeapTask` 并执行。
+- `android-17.0.0_r1/art/runtime/gc/heap-inl.h`：`Heap::AllocObjectWithAllocator()` 分配后检查 `ShouldConcurrentGCForJava()`；Android 17 该函数包含 time-based GC triggering 分支。
+- `android-17.0.0_r1/art/runtime/gc/heap.cc`：`RequestConcurrentGCAndSaveObject()`、`ConcurrentGCTask` 和 GC 请求路径。
 
 ### 官方文档
 
