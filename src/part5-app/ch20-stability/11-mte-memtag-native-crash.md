@@ -6,7 +6,7 @@ status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-16"
-last_verified_against: "AOSP main / Android Developers docs / source.android.com MTE docs"
+last_verified_against: "AOSP android-17.0.0_r1 / Android Developers docs / source.android.com MTE docs"
 confidence: medium
 tags: ["mte", "memtag", "native-crash", "stability", "security"]
 related_chapters: ["4.5", "10.5", "14.3", "20.3", "23.3"]
@@ -32,13 +32,14 @@ sources:
     path: "DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md"
   - type: structure
     path: "Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-16"
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
 task9_reviewed_date: "2026-05-16"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-16T01:26:00+08:00"
@@ -47,7 +48,8 @@ finalized_by: openclaw-task9
 last_task6_audit: "2026-05-24"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: "2026-06-01"
-last_task9_audit: "2026-06-09"
+last_task9_audit: "2026-06-30"
+last_task9_autofix_at: "2026-06-30"
 ---
 
 # 20.11 MTE memtagMode 与 Native 崩溃治理
@@ -114,7 +116,7 @@ Gradle 工程里，更常见的做法是只给 debug 或 canary build 合并一�
 
 ## ASYMM 为什么不是应用 API
 
-官方平台文档讨论了三种 MTE 运行模式：SYNC、ASYNC、ASYMM。但应用 manifest 只暴露 `off/default/sync/async`，没有 `asymm`。AOSP `Zygote.java` 也只定义了 `MEMORY_TAG_LEVEL_NONE`、`TBI`、`ASYNC`、`SYNC`，`memtagModeToZygoteMemtagLevel()` 只把 `ApplicationInfo.MEMTAG_ASYNC` 和 `ApplicationInfo.MEMTAG_SYNC` 转成 runtime flag。[已验证: AOSP main, frameworks/base/core/java/com/android/internal/os/Zygote.java]
+官方平台文档讨论了三种 MTE 运行模式：SYNC、ASYNC、ASYMM。但应用 manifest 只暴露 `off/default/sync/async`，没有 `asymm`。AOSP `Zygote.java` 也只定义了 `MEMORY_TAG_LEVEL_NONE`、`TBI`、`ASYNC`、`SYNC`，`memtagModeToZygoteMemtagLevel()` 只把 `ApplicationInfo.MEMTAG_ASYNC` 和 `ApplicationInfo.MEMTAG_SYNC` 转成 runtime flag。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/Zygote.java]
 
 ASYMM 的入口在设备配置侧。source.android.com 的 MTE configuration 文档说明，厂商可以在启动时写 `/sys/devices/system/cpu/cpu*/mte_tcf_preferred`，让请求 ASYNC 的用户态进程在指定 CPU 上被静默升级到 SYNC 或 ASYMM。这个配置可以做到 per-CPU，不属于单个 App 的 manifest 契约。[已验证: 官方文档, https://source.android.com/docs/security/test/memory-safety/mte-configuration]
 
@@ -135,9 +137,9 @@ AndroidManifest.xml
   → bionic allocator / Scudo 对 Native heap 分配写 tag
 ```
 
-`Zygote.java` 会读取进程级 `memtagMode`，再读应用级 `memtagMode`，随后处理 compat change 与系统属性；`decideTaggingLevel()` 再结合硬件能力把请求降级或升级。没有 MTE 硬件时，SYNC/ASYNC 会被降到 TBI 或 NONE。[已验证: AOSP main, frameworks/base/core/java/com/android/internal/os/Zygote.java]
+`Zygote.java` 会读取进程级 `memtagMode`，再读应用级 `memtagMode`，随后处理 compat change 与系统属性；`decideTaggingLevel()` 再结合硬件能力把请求降级或升级。没有 MTE 硬件时，SYNC/ASYNC 会被降到 TBI 或 NONE。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/Zygote.java]
 
-Native 层的 `com_android_internal_os_Zygote.cpp` 维护同一组 runtime flag。`SpecializeCommon()` 从 `runtime_flags` 中取出 `MEMORY_TAG_LEVEL_*`，映射成 `M_HEAP_TAGGING_LEVEL_ASYNC` 或 `M_HEAP_TAGGING_LEVEL_SYNC`，再调用 `mallopt(M_BIONIC_SET_HEAP_TAGGING_LEVEL, heap_tagging_level)`。bionic 的 `malloc_common.cpp` 对这个 mallopt 参数调用 `SetHeapTaggingLevel()`。[已验证: AOSP main, frameworks/base/core/jni/com_android_internal_os_Zygote.cpp；bionic/libc/bionic/malloc_common.cpp]
+Native 层的 `com_android_internal_os_Zygote.cpp` 维护同一组 runtime flag。`SpecializeCommon()` 从 `runtime_flags` 中取出 `MEMORY_TAG_LEVEL_*`，映射成 `M_HEAP_TAGGING_LEVEL_ASYNC` 或 `M_HEAP_TAGGING_LEVEL_SYNC`，再调用 `mallopt(M_BIONIC_SET_HEAP_TAGGING_LEVEL, heap_tagging_level)`。bionic 的 `malloc_common.cpp` 对这个 mallopt 参数调用 `SetHeapTaggingLevel()`。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/jni/com_android_internal_os_Zygote.cpp；bionic/libc/bionic/malloc_common.cpp]
 
 这个路径解释了两个线上现象：同一个 APK 在不支持 MTE 的设备上没有 MTE 崩溃；同一个进程在不同系统属性、compat change 或厂商配置下，最终 tag 检查模式可能不同。
 
