@@ -45,3 +45,30 @@
 - **阻塞原因**：需在目标设备上采集 Perfetto trace + heap dump + Compose 实战验证。AI 无法编造实测数据。
 - **前端状态**：pipeline_stage: task6_pending, frontmatter 重复键已清理
 
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-01 01:12
+
+已检查方向（评分均 < 14，无需创建新章节）：
+- Media3/ExoPlayer 缓冲管理 → 已在 8.8/18.23/18.24 覆盖
+- AlarmManager 精确闹钟功耗 → 已在 25.20/11.2/5.8 覆盖
+- Foldable/Jetpack WindowManager → 已在 2.28/2.29/22.14/22.27 覆盖
+- SystemUI/StatusBar/NavBar 渲染 → 已在 7.13 覆盖
+- NotificationManagerService → 已在 8.14/9.6 覆盖
+- HealthConnect → 非性能核心议题
+- Notification Trampoline 限制 → 素材不足 (<14)
+- Intent Resolution 性能 → 素材不足 + 读者需求低 (<14)
+- APEX 模块化性能 → 素材不足 + 开发者不直接接触 (<14)
+- Dream/Screensaver 性能 → 过于冷门 (<8)
+- LiveData/DataBinding 性能 → 被 Compose 替代，时效性低 (<10)
+- SyncAdapter 废弃迁移 → 已在 11.3/11.04 覆盖
+- Per-app Language 性能 → 已在 1.24/8.3 覆盖
+- ContentProvider applyBatch → 已在 1.10/1.30/1.31 覆盖
+- Compose Multiplatform/KMP → 已在 22.15/24.17 覆盖
+- Room KMP → 已在 24.17 覆盖
+- Compose Stability Config → 已在 18.2/22.20 覆盖
+- 76 项系统服务扫描（TelephonyManager/WifiManager/NFC/Matter/Thread/UWB 等）→ 大部分非性能核心议题
+
+结论：全书 547 节，覆盖度已饱和。后续缺口挖掘应转向：
+1. 已有章节的深度增强（Task 2B 职责）
+2. 新版本发布后再行挖掘（如 Android 18 DP）
+3. Clippings 参考书的知识点级缺口（比章节级更细粒度）
