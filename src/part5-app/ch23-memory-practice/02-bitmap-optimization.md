@@ -4,8 +4,8 @@ chapter: "23.2"
 section: "23.2"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android16-release + Android Developers"
+last_verified: "2026-06-30"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers"
 confidence: medium
 drafted_date: "2026-05-13"
 reviewed_date: "2026-05-14"
@@ -37,24 +37,29 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]"
 tags: [bitmap, insamplesize, native-memory, inbitmap, hardware-bitmap]
 related_chapters: ["23.1", "22.6", "7.10", "4.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式开头、版本线表述和硬件 Bitmap 限制句；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
 last_task6_review_log: "logs/review/2026-05-14-01-review.md"
 last_task6_at: "2026-05-14T01:14:00+08:00"
 last_task6_audit: 2026-06-06
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: 2026-05-14
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-14T01:41:44+08:00"
-last_task9_review_log: logs/deep-review/2026-05-14-01-deep-review.md
-task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞问题。"
+last_task9_at: "2026-06-30T10:25:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-06-30-10-audit.md"
+task9_review_notes: "2026-05-14 Task9 01:41：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮无阻塞问题。 | 2026-06-30 10 Task9 idle audit auto-fix: 按 Android 17 基线复核 Bitmap.java / BitmapFactory.java / BaseCanvas.java / ImageDecoder.java，将旧 AOSP 验证标记更新到 android-17.0.0_r1，并修正正文 Android 10-16 覆盖口径为 Android 10-17；回到 Task6 复审。"
 task2b_result: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
-last_task9_audit: 2026-06-08
+last_task9_audit: "2026-06-30"
+last_task9_audit_at: "2026-06-30T10:25:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-06-30-10-audit.md"
+last_task9_autofix_at: "2026-06-30"
+updated_date: "2026-06-30"
+updated_by: openclaw-task9
 ---
 
 # Bitmap 与图片内存优化
@@ -94,7 +99,7 @@ last_task9_audit: 2026-06-08
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/load-bitmap]
 [已验证: 官方文档, developer.android.com/reference/android/graphics/BitmapFactory.Options]
 [已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap.Config]
-[已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/Bitmap.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 
 Bitmap 的内存预算从三个量开始：宽、高、每像素字节数。常见配置里，`ARGB_8888` 每像素 4 字节，`RGB_565` 每像素 2 字节，`ALPHA_8` 每像素 1 字节，`RGBA_F16` 每像素 8 字节。工程估算可以先用下面的式子：
 
@@ -153,10 +158,10 @@ fun calculateInSampleSize(
 ## Android 8.0+ Bitmap Native 内存迁移
 
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
-[已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/Bitmap.java]
-[已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 
-Android Developers 的 Bitmap 内存文档列出版本边界：Android 2.3.3 及更早版本，像素数据在 Native 内存；Android 3.0 到 7.1，像素数据随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上，像素数据进入 Native Heap。当前章节覆盖 Android 10 到 Android 16，排查时应按 Native Heap 口径处理 Bitmap 像素内存。
+Android Developers 的 Bitmap 内存文档列出版本边界：Android 2.3.3 及更早版本，像素数据在 Native 内存；Android 3.0 到 7.1，像素数据随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上，像素数据进入 Native Heap。当前章节覆盖 Android 10 到 Android 17，排查时应按 Native Heap 口径处理 Bitmap 像素内存。
 
 AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `getAllocationByteCount()`，再通过 `NativeAllocationRegistry.registerNativeAllocation(this, mNativePtr)` 注册 Native 释放器。这个设计带来两个工程结论：
 
@@ -168,7 +173,7 @@ AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `ge
 ## 图片内存监控与大图检测
 
 [已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap]
-[已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 
 图片监控不要等到 OOM 再看堆。统一图片入口应记录“原图尺寸、目标 View 尺寸、解码后尺寸、配置、分配字节数、页面名、调用栈摘要”。这组信息能直接回答两个问题：是否解码了远大于显示尺寸的图片；是否有页面在退出后仍保留大图。
 
@@ -225,7 +230,7 @@ fun BitmapDecodeRecord.isSuspiciousLargeBitmap(): Boolean {
 
 [已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
 [已验证: 官方文档, developer.android.com/reference/android/graphics/BitmapFactory.Options]
-[已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 
 `inBitmap` 解决的是反复分配和释放像素内存的成本。列表快速滑动、瀑布流、聊天图片流会持续创建相近尺寸的 Bitmap；如果每次都新分配，Native Heap 峰值和分配抖动都会变大。复用池把已淘汰但容量合适的 mutable Bitmap 留下来，下一次 decode 直接写入这块内存。
 
@@ -295,8 +300,8 @@ fun decodeWithReuse(
 
 [已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap.Config]
 [已验证: 官方文档, developer.android.com/reference/android/graphics/BitmapFactory.Options]
-[已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BaseCanvas.java]
-[已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/ImageDecoder.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BaseCanvas.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/ImageDecoder.java]
 
 `Bitmap.Config.HARDWARE` 的含义很明确：像素只放在图形内存里，不走 Java/Native Heap。`ImageDecoder` 的 AOSP 注释说明，它默认创建的 Bitmap 通常是 immutable，并且常见配置是 `Config.HARDWARE`；这适合只展示、不修改、由硬件加速管线绘制的图片，例如详情页大图、列表中不需要像素读取的封面图。
 
