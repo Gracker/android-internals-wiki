@@ -32,51 +32,6 @@
       "added_by": "openclaw-task6",
       "added_at": "2026-06-30T11:13:00+08:00",
       "status": "pending"
-    },
-    {
-      "section": "1.23",
-      "section_title": "Android Staged Install 与安装原子性性能",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 修复后仍存在 Android 17 staged session reboot/rollback/dexopt 源码链路错误，需按 android-17.0.0_r1 重写关键机制。",
-      "material_paths": [
-        "logs/deep-review/2026-06-30-09-deep-review.md",
-        "src/part1-fundamentals/ch01-architecture/23-staged-install-performance.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误/版本语义",
-          "location": "L41, L75-L90, L97, L183-L190",
-          "detail": "正文把 staged session 写成“可能不需要 reboot”，并把 native library / split / APEX 作为 StagingManager#commitSession() 的条件重启判断。android-17.0.0_r1 中 PackageInstaller.SessionParams#setStaged() 注释明确“installed at next reboot”，StagingManager 类注释也写明 staged install session require packages to be installed only after a reboot；commitSession() 只 createSession()/handleCommittedSession()，真正恢复发生在 boot 阶段 restoreSessions()/resumeSession()。",
-          "suggestion": "删除“不需要 reboot”的流程分支与“纯 Java/Kotlin 不重启”的结论；改为 staged session 均排队到下次 reboot，由 pre-reboot verification 先把 session 置 ready，重启后 PackageInstallerService.restoreAndApplyStagedSessionIfNeeded() 调 StagingManager.restoreSessions()/resumeSession()。"
-        },
-        {
-          "type": "原理错误/回滚语义",
-          "location": "L204, L210-L212, L317",
-          "detail": "正文写某个 session 的 resumeSession() 失败后 StagingManager 调 abortSession() 回退且不影响其他 session。Android 17 源码中失败路径是 onInstallationFailure() -> setSessionFailed() -> abortCheckpoint()，APEX 失败时 restoreSessions() 会把其他 session 标记为 “Another apex session failed”；abortSession() 主要从 mStagedSessions 移除记录，不是恢复安装前状态的主回滚动作。",
-          "suggestion": "重写失败恢复段：区分 APK-only staged install、APEX/mixed staged install、checkpoint 支持与否；不要把多个 staged session 描述成完全独立事务。APEX 激活失败、checkpoint abort、revertActiveSessions() 和 setSessionFailed() 要分支说明。"
-        },
-        {
-          "type": "源码错误/dexopt 参数",
-          "location": "L154",
-          "detail": "正文写 dex2oat 线程数由 --threads 控制、默认等于 CPU 核数且 installd 会根据系统负载动态调整。android-17.0.0_r1 frameworks/native/cmds/installd/run_dex2oat.cpp 实际映射的是 -j 参数，来源为 dalvik.vm.restore-dex2oat-threads / background-dex2oat-threads / dex2oat-threads / boot-dex2oat-threads 等系统属性；未看到 installd 按实时负载动态调线程数的逻辑。",
-          "suggestion": "改为“installd 通过 RunDex2Oat 根据编译场景读取 dalvik.vm.*dex2oat-threads 属性并向 dex2oat 传 -j；属性缺省时的 dex2oat 内部默认值需另查 ART 源码/实机命令行”。"
-        },
-        {
-          "type": "源码准确性/性能归因",
-          "location": "L133-L138",
-          "detail": "正文把 v2/v3 说成“对整个 APK 做 Merkle Tree 校验”，又说签名校验是纯 CPU 密集、不涉及 I/O。官方 v2/v3 文档和 Android 17 ApkSignatureSchemeV2/V3Verifier 显示校验核心是内容 digest；v4 才是基于 fs-verity Merkle hash tree 的 .idsig。v2/v3 digest 计算需要读取 APK 内容，实际耗时会受文件读取、页缓存和存储状态影响。",
-          "suggestion": "将 v2/v3 改为“对 APK 受保护区段做分块内容摘要并验证签名”；把 v4 / incremental install 的 Merkle tree 单独列出。性能归因拆成 digest CPU 成本与读取 APK 字节的 I/O/页缓存成本。"
-        },
-        {
-          "type": "数据缺失",
-          "location": "L120-L128, L237-L242, L340-L343",
-          "detail": "安装耗时百分比、厂商延迟 dexopt、vivo/HyperOS 安装加速仍停留在粗略估算或闭源传闻，缺少设备型号、ROM、APK 规模、compiler filter、Perfetto trace 或 benchmark 条件。",
-          "suggestion": "固定数值继续降级为待测假设；若保留厂商优化，必须标“非 AOSP，需实机 Perfetto/日志验证”，不要作为 Android 17 AOSP 结论。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-06-30T09:31:22+08:00",
-      "status": "pending"
     }
   ],
   "completed": [
@@ -247,9 +202,56 @@
       "completed_at": "2026-06-30T06:54:54.619428+08:00",
       "completed_by": "task2b-main",
       "completed_reason": "内容已存在于章节 6.5（src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md）mmap+atomic+inotify 三层 IPC 分析已注入，无需重复注入"
+    },
+    {
+      "section": "1.23",
+      "section_title": "Android Staged Install 与安装原子性性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 修复后仍存在 Android 17 staged session reboot/rollback/dexopt 源码链路错误，需按 android-17.0.0_r1 重写关键机制。",
+      "material_paths": [
+        "logs/deep-review/2026-06-30-09-deep-review.md",
+        "src/part1-fundamentals/ch01-architecture/23-staged-install-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本语义",
+          "location": "L41, L75-L90, L97, L183-L190",
+          "detail": "正文把 staged session 写成“可能不需要 reboot”，并把 native library / split / APEX 作为 StagingManager#commitSession() 的条件重启判断。android-17.0.0_r1 中 PackageInstaller.SessionParams#setStaged() 注释明确“installed at next reboot”，StagingManager 类注释也写明 staged install session require packages to be installed only after a reboot；commitSession() 只 createSession()/handleCommittedSession()，真正恢复发生在 boot 阶段 restoreSessions()/resumeSession()。",
+          "suggestion": "删除“不需要 reboot”的流程分支与“纯 Java/Kotlin 不重启”的结论；改为 staged session 均排队到下次 reboot，由 pre-reboot verification 先把 session 置 ready，重启后 PackageInstallerService.restoreAndApplyStagedSessionIfNeeded() 调 StagingManager.restoreSessions()/resumeSession()。"
+        },
+        {
+          "type": "原理错误/回滚语义",
+          "location": "L204, L210-L212, L317",
+          "detail": "正文写某个 session 的 resumeSession() 失败后 StagingManager 调 abortSession() 回退且不影响其他 session。Android 17 源码中失败路径是 onInstallationFailure() -> setSessionFailed() -> abortCheckpoint()，APEX 失败时 restoreSessions() 会把其他 session 标记为 “Another apex session failed”；abortSession() 主要从 mStagedSessions 移除记录，不是恢复安装前状态的主回滚动作。",
+          "suggestion": "重写失败恢复段：区分 APK-only staged install、APEX/mixed staged install、checkpoint 支持与否；不要把多个 staged session 描述成完全独立事务。APEX 激活失败、checkpoint abort、revertActiveSessions() 和 setSessionFailed() 要分支说明。"
+        },
+        {
+          "type": "源码错误/dexopt 参数",
+          "location": "L154",
+          "detail": "正文写 dex2oat 线程数由 --threads 控制、默认等于 CPU 核数且 installd 会根据系统负载动态调整。android-17.0.0_r1 frameworks/native/cmds/installd/run_dex2oat.cpp 实际映射的是 -j 参数，来源为 dalvik.vm.restore-dex2oat-threads / background-dex2oat-threads / dex2oat-threads / boot-dex2oat-threads 等系统属性；未看到 installd 按实时负载动态调线程数的逻辑。",
+          "suggestion": "改为“installd 通过 RunDex2Oat 根据编译场景读取 dalvik.vm.*dex2oat-threads 属性并向 dex2oat 传 -j；属性缺省时的 dex2oat 内部默认值需另查 ART 源码/实机命令行”。"
+        },
+        {
+          "type": "源码准确性/性能归因",
+          "location": "L133-L138",
+          "detail": "正文把 v2/v3 说成“对整个 APK 做 Merkle Tree 校验”，又说签名校验是纯 CPU 密集、不涉及 I/O。官方 v2/v3 文档和 Android 17 ApkSignatureSchemeV2/V3Verifier 显示校验核心是内容 digest；v4 才是基于 fs-verity Merkle hash tree 的 .idsig。v2/v3 digest 计算需要读取 APK 内容，实际耗时会受文件读取、页缓存和存储状态影响。",
+          "suggestion": "将 v2/v3 改为“对 APK 受保护区段做分块内容摘要并验证签名”；把 v4 / incremental install 的 Merkle tree 单独列出。性能归因拆成 digest CPU 成本与读取 APK 字节的 I/O/页缓存成本。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L120-L128, L237-L242, L340-L343",
+          "detail": "安装耗时百分比、厂商延迟 dexopt、vivo/HyperOS 安装加速仍停留在粗略估算或闭源传闻，缺少设备型号、ROM、APK 规模、compiler filter、Perfetto trace 或 benchmark 条件。",
+          "suggestion": "固定数值继续降级为待测假设；若保留厂商优化，必须标“非 AOSP，需实机 Perfetto/日志验证”，不要作为 Android 17 AOSP 结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-06-30T09:31:22+08:00",
+      "status": "completed",
+      "completed_at": "2026-06-30T12:52:40+08:00",
+      "completed_by": "task2b-main"
     }
   ],
-  "last_updated": "2026-06-30T09:31:22+08:00",
+  "last_updated": "2026-06-30T12:52:40+08:00",
   "queue": [
     {
       "chapter": "ch4.1",
