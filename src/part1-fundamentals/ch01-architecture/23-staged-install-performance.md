@@ -20,14 +20,14 @@ sources:
     path: frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java
   - type: aosp
     path: frameworks/native/cmds/installd/dexopt.cpp
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 last_task2b_at: 2026-06-30T08:59:19+08:00
 task9_result: needs-rework
-last_task9_at: 2026-06-30T08:59:19+08:00
+last_task9_at: 2026-06-30T09:31:22+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
