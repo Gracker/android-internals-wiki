@@ -4,7 +4,7 @@ chapter: "1.24"
 status: ready-for-review
 drafted_date: "2026-06-04"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-04"
+last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1 ResourcesManager / ConfigurationController / ATMS / ActivityRecord / WindowProcessController / DisplayContent / WindowToken + Android 17 behavior changes"
 confidence: medium
 sources:
@@ -40,24 +40,24 @@ gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_lite_at: 2026-06-30
-task9_result: "auto-fixed"
-last_task9_at: 2026-06-30T11:44:43+08:00
+task9_result: auto-fixed
+last_task9_at: 2026-06-30T13:26:27+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
 last_task6_at: 2026-06-30T13:13:00+08:00
 last_task2b_at: 2026-06-30T12:56:48+08:00
 last_task9_autofix_at: "2026-06-30"
-last_task9_review_log: "logs/deep-review/2026-06-30-11-deep-review.md"
-task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正 Configuration 传播图、FixedRotation 直接链路、多窗口 resize relaunch 边界、per-app locale 边界；回到 Task6 复审。"
-task9_p0_issues: 3
-task9_p1_issues: 0
-task9_p2_issues: 2
+last_task9_review_log: "logs/deep-review/2026-06-30-13-deep-review.md"
+task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正 SavedStateHandle 自动同步边界与 Compose/remember 跨 recreate 残留错误；回到 Task6 复审。"
+task9_p0_issues: 0
+task9_p1_issues: 1
+task9_p2_issues: 1
 task2b_rework_issues: "[L3/L4] 增加实战场景引入、降文档感、加读者技能清单"
 ---
 
@@ -288,15 +288,16 @@ public void onConfigurationChanged(Configuration newConfig) {
 
 ```
 Activity recreate 前的状态保存路径：
-  onSaveInstanceState → SavedStateHandle (自动同步)
-  ViewModel (内存中保留，不参与序列化)
+  SavedStateHandle 中的值 → SavedStateRegistry → Bundle
+  ViewModel（同一进程内保留，不参与 Bundle 序列化）
+  自定义 onSaveInstanceState() 只保存手动写入的 Bundle 数据，不会自动同步到 SavedStateHandle
 
 Activity recreate 后的恢复路径：
-  ViewModel 直接可用（同一个实例）
-  SavedStateHandle 自动恢复（从 Bundle 反序列化）
+  同一进程内：ViewModel 直接可用（同一个实例）
+  进程被杀后：ViewModel 重新创建，SavedStateHandle 从 Bundle 恢复已经写入的 key
 ```
 
-性能收益：省掉了自定义 `onSaveInstanceState()` 的序列化开销，同时 ViewModel 中的缓存数据（如网络请求结果）不需要重新获取。
+性能收益来自把大状态留在 ViewModel 内存缓存中，Configuration recreate 后不需要重新拉取或重新计算；只有需要跨进程恢复的小状态才写入 SavedStateHandle / Bundle。大型列表、Bitmap 或复杂对象仍不应该塞进 Bundle。
 
 ### Context.createConfigurationContext()
 
@@ -317,8 +318,8 @@ Compose 默认不依赖 Activity recreate 来更新 UI——`LocalConfiguration`
 
 Compose 的状态在三个不同边界有不同行为：
 
-- **Recomposition（最常见）**：`remember` 保留，`LocalConfiguration` 变更触发 recomposition。这是 Compose 的默认工作方式，不需要额外声明。
-- **Activity recreate（Configuration 变更触发）**：`remember` 丢失——Compose 函数重新执行，所有未用 `rememberSaveable` 保存的值重置。需要用 `rememberSaveable`（`Bundle` 序列化）或 `ViewModel` + `SavedStateHandle` 跨 recreate 保留状态。
+- **Recomposition（Activity 未被 relaunch，或新实例创建后的 UI 更新）**：`LocalConfiguration` 变更触发 recomposition；同一个 Composition 内的 `remember` 保留。
+- **Activity recreate（Configuration 变更触发 relaunch）**：旧 Composition 销毁，`remember` 丢失——Compose 函数在新 Activity 中重新执行，所有未用 `rememberSaveable` 保存的值重置。需要用 `rememberSaveable`（`Bundle` 序列化）或 `ViewModel` + `SavedStateHandle` 跨 recreate 保留状态。
 - **Process death**：只有 `rememberSaveable` 和 `ViewModel` 的 `SavedStateHandle` 能通过系统保存的 `Bundle` 恢复；`remember` 和 `derivedStateOf` 的值全部丢失。
 
 `derivedStateOf`、`produceState` 在不同边界的保留能力取决于上游数据源：基于 `remember` 的数据在 Activity recreate 后丢失，基于 `ViewModel` 或持久化存储的数据在对应边界内保留。
@@ -446,10 +447,11 @@ adb shell dumpsys activity resources <package_name> | grep "ResourcesImpl" | wc 
 
 ### Compose 与 Configuration 变更
 
-Compose 的状态管理天然适合 Configuration 变更场景：
+Compose 能降低 Configuration 变更后的 UI 更新成本，但不改变 Activity 是否被系统 relaunch：
 
-- `rememberSaveable`：跨 Configuration 变更保持状态，内部使用 `Bundle` 序列化
-- `LocalConfiguration`：Configuration 变更时自动触发 recomposition
-- `LocalContext`：随 Configuration 变更更新，不需要手动切换 Context
+- `LocalConfiguration`：Configuration 变更时让读取它的 Composable 重新执行；如果 Activity 已经 recreate，这是新 Composition 中的重新执行
+- `remember`：只在同一个 Composition 内保留，Activity recreate 后丢失
+- `rememberSaveable`：通过 `Bundle` 序列化跨 Activity recreate 保存小状态
+- `ViewModel`：同一进程内跨 Configuration recreate 保留内存状态，配合 SavedStateHandle 处理进程恢复
 
-Compose 中不需要声明 `configChanges`——Compose 的状态在 Configuration 变更时不会丢失。但如果 Compose 内容嵌套在 View 体系中（`ComposeView`），外层 Activity 的 recreate 行为仍然取决于 Manifest 声明。
+Compose 页面仍要按 Manifest / `ActivityRecord.shouldRelaunchLocked()` 的规则处理 `configChanges`。如果没有声明并处理对应变更，系统仍可能销毁并重建 Activity；Compose 只能决定新旧 Composition 中哪些状态能恢复，不能让 `remember` 自动跨 recreate 存活。

@@ -21,17 +21,23 @@ sources:
   - type: aosp
     path: frameworks/native/cmds/installd/dexopt.cpp
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: 2026-06-30T12:52:33+08:00
-task9_result: needs-rework
-last_task9_at: 2026-06-30T09:31:22+08:00
+task9_result: auto-fixed
+last_task9_at: 2026-06-30T13:26:27+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
 last_task6_at: 2026-06-30T13:13:00+08:00
+last_task9_autofix_at: "2026-06-30"
+last_task9_review_log: "logs/deep-review/2026-06-30-13-deep-review.md"
+task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正扩展区 rollback/abortSession 残留错误、multi-package 与 split 安装版本边界；回到 Task6 复审。"
+task9_p0_issues: 2
+task9_p1_issues: 0
+task9_p2_issues: 0
 ---
 
 # 1.23 Android Staged Install 与安装原子性性能
@@ -325,24 +331,23 @@ ORDER BY slice.ts;
 
 ### 扩展点 1：Staged Install 回滚机制
 
-Staged Install 内建了回滚支持。如果 `resumeSession()` / `installApksInSession()` 过程中发生错误（签名不匹配、dexopt 失败、磁盘空间不足），`StagingManager` 会调用 `abortSession()` 清理该 session 的所有临时文件，恢复到安装前的状态。
+Staged Install 的失败处理分成两层。`resumeSession()` / `installApksInSession()` 抛出异常时，Android 17 先走 `onInstallationFailure()` → `setSessionFailed()`，再按设备是否支持 checkpoint 决定是否 `abortCheckpoint()` 回退系统快照。`abortSession()` 只是把 session 从 `mStagedSessions` 记录中移除，不承担“恢复到安装前状态”的主回滚语义。
 
-Android 12+ 的 Guaranteed Rollback（GS1）机制在此基础上增加了版本级回滚：系统记录每次 staged install 前的快照，如果新版本启动后发生连续崩溃，可以自动回退到前一个版本。这个机制与 `RollbackManagerService` 协同工作。
+版本级回滚由 RollbackManager / RollbackManagerService 维护可回滚版本和启用策略。APEX 或 mixed staged session 失败时，还要结合 apexd 激活状态、`revertActiveSessions()` 和 checkpoint 支持判断；纯 APK-only session 失败通常只标记该 session failed，不等价于整机快照回滚。
 
-[待补充: RollbackManagerService 与 StagingManager 的交互细节]
+[已验证: AOSP android-17.0.0_r1, StagingManager#onInstallationFailure() / abortCheckpoint() / abortSession()]
 
 ### 扩展点 2：多 APK / App Bundle 安装性能
 
 Split APK（App Bundle 的交付格式）的安装路径与单 APK 有差异：
 
-- **单 APK**：一次 commit，一次 dexopt
-- **Split APK**：`multiPackage` session 包含多个 split，需要逐个校验签名、统一编译
+- **单 APK**：一个 session 写入一个 base APK，commit 后按该包的 code paths 执行校验和 dexopt
+- **Split APK**：同一个 package session 可写入 base APK 和多个 split；系统统一校验包名、签名和 split 元数据，dexopt 针对该 package 的 code paths 执行
+- **Multi-package session**：父 session 本身不包含 APK，只引用多个 child session。`setMultiPackage()` 在 Android 10 已存在，staged parent 可以在 reboot 时原子提交多个 child；任一 child 安装失败会导致同组 child 一起失败
 
-Split APK 的安装耗时主要增加在签名校验阶段（每个 split 需要独立校验），dexopt 阶段可以将所有 split 的 DEX 合并编译。
+Split APK 的额外成本主要来自每个 split 的文件读取、签名校验和资源/代码路径登记。不要把 split 数量直接等同于 dexopt 次数，也不要把 multi-package session 写成“多个 split 的容器”；它解决的是多个 install session 的原子提交问题。
 
-Android 13+ 的 multi-package session 支持在同一个 staged session 中原子更新多个 split，保证了 split 之间的一致性。
-
-[待补充: Split APK 合并编译的具体源码路径]
+[已验证: AOSP android-17.0.0_r1, PackageInstaller.SessionParams#setMultiPackage() / setStaged() / Session#addChildSessionId()]
 
 ### 扩展点 3：安装加速的厂商私有实现
 
