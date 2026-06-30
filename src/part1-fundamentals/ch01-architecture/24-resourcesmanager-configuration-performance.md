@@ -31,11 +31,11 @@ created_date: "2026-06-04"
 gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_result: fixed-lite
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 last_task2b_lite_at: 2026-06-30
 task9_result: needs-rework
 last_task9_at: 2026-06-30
@@ -43,6 +43,7 @@ task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
 last_task6_at: 2026-06-30T09:06:00+08:00
+last_task2b_at: 2026-06-30T10:55:44+08:00
 ---
 
 # 1.24 ResourcesManager 与 Configuration 变更性能
@@ -114,38 +115,37 @@ Configuration 变更的系统侧传播路径：
 
 ```
 触发源（Settings / WindowManager / PowerManager 等）
-  → AMS.updateConfigurationLocked()
-    → ResourcesManager.applyConfigurationToResources()
-      → 重建或复用 ResourcesImpl
-    → 遍历所有 ActivityRecord
-      → 判断是否需要 recreate（取决于 configChanges 声明）
-      → 需要 recreate → ActivityThread.handleRelaunchActivity()
-      → 不需要 recreate → ActivityThread.handleActivityConfigurationChanged()
+  → ActivityManagerService.updateConfiguration()
+    → ActivityTaskManagerService.updateConfigurationLocked()
+      → ResourcesManager.applyConfigurationToResources()
+        → 重建或复用 ResourcesImpl
+      → WindowProcessController / ActivityRecord.ensureActivityConfiguration()
+        → 判断是否需要 relaunch（取决于 configChanges 声明）
+        → 需要 relaunch → ClientTransaction → ActivityThread.handleRelaunchActivity()
+        → 不需要 relaunch → ActivityThread.handleActivityConfigurationChanged()
 ```
 
-服务端（system_server）做决策，客户端（App 进程）执行。`AMS.updateConfigurationLocked()` 会先把新 Configuration 应用到进程级的 Resources，再逐个判断每个 Activity 是否需要 recreate。
+服务端（system_server）做决策，客户端（App 进程）执行。`ActivityManagerService.updateConfiguration()` 委托 `ActivityTaskManagerService.updateConfigurationLocked()` 传播新 Configuration，通过 `WindowProcessController` 和 `ActivityRecord.ensureActivityConfiguration()` 逐个判断每个 Activity 是否需要 relaunch。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java — updateConfigurationLocked()]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java updateConfiguration() → ActivityTaskManagerService.updateConfigurationLocked() → WindowProcessController / ActivityRecord.ensureActivityConfiguration()]
 
 ### FixedRotation：避免旋转时重建的特殊路径
 
 Android 12 引入了 FixedRotation 机制。当启动一个方向不同的 Activity 时，系统不再触发完整的 Configuration 变更，而是通过 `DisplayAdjustments` 模拟旋转后的屏幕参数，让 App 在旧方向上以新方向的信息完成首次绘制，绘制完成后再执行真正的旋转动画。
 
-关键调用链（Android 12+，android-17.0.0_r1 中仍然适用）：
+关键调用链（Android 17，android-17.0.0_r1）：
 
 ```
 DisplayContent.handleTopActivityLaunchingInDifferentOrientation()
   → setFixedRotationLaunchingApp()
-    → startFixedRotationTransform()  // 模拟新方向的 Configuration
-      → token.applyFixedRotationTransform()
-        → notifyFixedRotationTransform()  // 通过 FixedRotationAdjustmentsItem 通知 App
-          → ActivityThread.handleFixedRotationAdjustments()
-            → ResourcesManager.overrideTokenDisplayAdjustments()
+    → startFixedRotationTransform()
+      → WindowToken.applyFixedRotationTransform()
+        → ActivityRecord.ensureActivityConfiguration()
 ```
 
 FixedRotation 让 Activity 避免了一次完整的 recreate，但它只在 Activity 启动时生效。如果 App 已经在前台，用户旋转设备，FixedRotation 不适用，仍然走正常的 Configuration 变更流程。
 
-[结构参考: Cubox/Android无缝旋转-Fixed Rotation - 掘金-2022-08-29.md，源码调用链基于 AOSP android-12 验证，android-17.0.0_r1 中该机制仍存在]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java — handleTopActivityLaunchingInDifferentOrientation() → setFixedRotationLaunchingApp() → startFixedRotationTransform(); 历史博客参考（Android 12 时期的分析，方法名在 android-17 中已有变化）: Cubox/Android无缝旋转-Fixed Rotation - 掘金-2022-08-29.md]
 
 ---
 
@@ -166,21 +166,20 @@ onCreate() → onStart() → onRestoreInstanceState() → onResume()
 LayoutInflater 重建 View 树 → measure → layout → draw
 ```
 
-一次 recreate 的耗时构成：
+一次 recreate 的耗时构成（以下数值为工程估算框架，缺少设备型号、ROM 版本、布局规模、Perfetto trace 等可复现条件，不应作为跨设备可比的性能结论）：
 
-| 阶段 | 典型耗时 | 影响因素 |
+| 阶段 | 估算量级 | 影响因素 |
 |------|----------|----------|
-| onSaveInstanceState 序列化 | 1-5ms | 状态数据量 |
-| onDestroy 清理 | 1-3ms | 释放的引用数量 |
-| Activity 对象创建 + onCreate | 5-20ms | 初始化逻辑复杂度 |
-| LayoutInflater 重建 View 树 | 20-100ms | 布局层级深度和 View 数量 |
-| measure + layout | 10-50ms | 布局复杂度、ConstraintLayout vs LinearLayout |
-| draw（首帧） | 5-30ms | View 数量、是否启用硬件加速 |
-| **总计** | **50-200ms** | 中等复杂度 Activity |
+| onSaveInstanceState 序列化 | 数 ms | 状态数据量（Parcel 序列化开销） |
+| onDestroy 清理 | 数 ms | 释放的引用数量 |
+| Activity 对象创建 + onCreate | 数 ms-数十 ms | 初始化逻辑复杂度 |
+| LayoutInflater 重建 View 树 | 数十 ms-上百 ms | 布局层级深度和 View 数量 |
+| measure + layout | 数十 ms | 布局复杂度、ConstraintLayout vs LinearLayout |
+| draw（首帧） | 数 ms-数十 ms | View 数量、是否启用硬件加速 |
 
-对于一个有 200+ 个 View 节点的 Activity，recreate 耗时通常在 80-150ms。在折叠屏设备上展开/折叠时，如果触发了 recreate，耗时可能翻倍（因为 Configuration 变化涉及更多维度：screenWidthDp、screenHeightDp、smallestScreenWidthDp 同时变化）。
+对于一个有 200+ 个 View 节点的 Activity，recreate 耗时通常在数十到上百毫秒量级。在折叠屏设备上展开/折叠时，如果触发了 recreate，耗时可能进一步增加（screenWidthDp、screenHeightDp、smallestScreenWidthDp 同时变化，Resources 和 View 树均需重建）。
 
-[待验证: 具体数据需要 Perfetto trace 实测验证，此处为基于经验的估算]
+> ⚠️ **数据待验证**：上述量级基于工程经验估算，非可复现实验。建议用 Perfetto 在目标设备上采集（设备型号、ROM 版本、APK 规模、采样次数记录完整）后替换为实测数据。
 
 ### 序列化/反序列化的隐含开销
 
@@ -230,11 +229,9 @@ LayoutInflater 重建是 recreate 中最重的操作。`LayoutInflater.inflate()
 
 ### 各版本的 configChanges 演进
 
-**Android 13 (API 33)**：density 变更不再允许应用自行处理。系统会忽略 `configChanges` 中对 `density` 的声明，强制 recreate Activity。原因是密度变化影响所有尺寸计算，应用手动处理容易出 bug。
+**Android 17 (API 37)**：在 smallest width ≥ 600dp 的设备上（平板、折叠屏展开态），系统忽略 `android:screenOrientation`、`android:resizeableActivity="false"` 和宽高比限制。targetSdk ≥ 37 的 App 在大屏设备上因此必须处理连续的 Configuration 变更——不能再通过锁屏方向来规避。
 
-**Android 14 (API 34)**：对 foldable 设备，部分屏幕尺寸变更场景下系统会强制 recreate，即使声明了对应的 configChanges。
-
-**Android 17 (API 37)**：在 smallest width ≥ 600dp 的设备上（平板、折叠屏展开态），系统忽略 `android:screenOrientation`、`android:resizeableActivity="false"` 和宽高比限制。这意味着 targetSdk ≥ 37 的 App 在大屏设备上必须处理连续的 Configuration 变更——不能再通过锁屏方向来规避。
+> **关于 density 和 foldable 强制 recreate 的说明**：坊间流传 "Android 13 density 变更不再允许应用自行处理""Android 14 foldable 场景强制 recreate" 等说法，但 Android 17 `ActivityRecord#shouldRelaunchLocked()` 在 PiP 场景下会把 `CONFIG_DENSITY` 加入 skip mask（不触发 relaunch），且官方 manifest 文档仍列出 `density` 为 `configChanges` 的有效值。这些说法缺少公开源码和官方行为变更文档的支撑，不作为确定性结论。
 
 [已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17 — targetSdk 37 大屏适配]
 
@@ -289,13 +286,15 @@ Context localizedContext = baseContext.createConfigurationContext(override);
 
 ### Compose 对 Configuration 变更的处理
 
-Compose 默认不依赖 Activity recreate。`rememberSaveable` 在 Configuration 变更时自动保存和恢复状态，不需要 `onSaveInstanceState`。`LocalConfiguration` 作为 CompositionLocal 提供，Configuration 变更时会触发 recomposition，但不触发 Activity recreate。
+Compose 默认不依赖 Activity recreate 来更新 UI——`LocalConfiguration` 作为 CompositionLocal 提供，Configuration 变更时触发 recomposition，将新配置反映到 UI 树中。但 **recomposition 不等于 Activity recreate**：`remember` 仅在 recomposition 间保留状态，Activity recreate（以及更严重的 process death）会清空所有 `remember` 值——需要使用 `rememberSaveable`（依赖 `Bundle` 序列化）或 `ViewModel` + `SavedStateHandle` 才能在跨 recreate 或跨进程死亡时恢复状态。
 
-Compose 的状态管理在 Configuration 变更时的行为：
+Compose 的状态在三个不同边界有不同行为：
 
-- `remember`：Configuration 变更时保留（和 ViewModel 一样，不随 Activity destroy 销毁）
-- `rememberSaveable`：Configuration 变更和进程被杀两种场景都保留
-- `derivedStateOf`、`produceState`：基于上游状态自动更新，不需要手动处理 Configuration
+- **Recomposition（最常见）**：`remember` 保留，`LocalConfiguration` 变更触发 recomposition。这是 Compose 的默认工作方式，不需要额外声明。
+- **Activity recreate（Configuration 变更触发）**：`remember` 丢失——Compose 函数重新执行，所有未用 `rememberSaveable` 保存的值重置。需要用 `rememberSaveable`（`Bundle` 序列化）或 `ViewModel` + `SavedStateHandle` 跨 recreate 保留状态。
+- **Process death**：只有 `rememberSaveable` 和 `ViewModel` 的 `SavedStateHandle` 能通过系统保存的 `Bundle` 恢复；`remember` 和 `derivedStateOf` 的值全部丢失。
+
+`derivedStateOf`、`produceState` 在不同边界的保留能力取决于上游数据源：基于 `remember` 的数据在 Activity recreate 后丢失，基于 `ViewModel` 或持久化存储的数据在对应边界内保留。
 
 详见 7.7 节和 22.3 节。
 
@@ -305,9 +304,9 @@ Compose 的状态管理在 Configuration 变更时的行为：
 
 ### ResourcesImpl 缓存膨胀
 
-ResourcesManager 维护 `ResourcesKey → ResourcesImpl` 的全局缓存。缓存不会自动清理——只要 ResourcesKey 对应的 ResourcesImpl 被创建过，即使对应的 Activity 已经销毁，ResourcesImpl 仍然留在缓存中。
+ResourcesManager 维护 `ResourcesKey → ResourcesImpl` 的全局缓存。Android 17 中 `mResourceImpls` 使用 `WeakReference<ResourcesImpl>`，通过 `ReferenceQueue` 和 `cleanupResourceImplsLocked()` 清理已无外部强引用的实例。ResourcesImpl 对象本身不会因为留在缓存容器中而无法 GC——根源在于外部强引用阻止 GC（如静态变量持有 Resources、单例持有 Activity Context 等），导致弱引用无法被回收。
 
-在以下场景中，缓存会快速膨胀：
+在以下高频 Configuration 变更场景中，多个存活 ResourcesImpl 会被同时持有，增加弱引用缓存键数量和原生资源开销：
 
 - 多窗口模式下频繁拖拽 resize：每次 resize 产生新的 screenWidthDp/screenHeightDp 组合
 - 折叠屏反复折叠/展开：产生多组 Configuration
@@ -323,19 +322,20 @@ adb shell dumpsys activity resources <package_name>
 
 输出中关注：
 
-- `ResourcesKey` 的数量——如果远大于当前 Activity 数量，说明有缓存膨胀
+- `ResourcesKey` 的数量——如果远大于当前 Activity 数量，说明可能存在外部强引用阻止 GC 导致弱引用无法被清理
 - `ResourcesImpl` 的数量——应该等于 ResourcesKey 的去重数量
 - 最近创建的 ResourcesImpl 的时间戳——如果频繁创建，说明 Configuration 在高频变化
 
 ### 内存估算
 
-一个 ResourcesImpl 实例的典型内存占用：
-- Java 层：约 50-200KB（取决于 Configuration 复杂度和缓存状态）
-- Native 层：约 100-500KB（AssetManager 的查找表和缓存）
+一个 ResourcesImpl 实例的内存占用量级（工程估算，非实测）：
 
-如果进程中有 20+ 个 ResourcesImpl 实例（在多窗口 + 折叠屏场景下可能出现），额外的内存开销可能达到 5-10MB。
+- Java 层：数十到上百 KB（取决于 Configuration 复杂度和 Resources 缓存状态）
+- Native 层：AssetManager 查找表和字符串缓存，量级受 APK resources.arsc 大小影响
 
-[待验证: 具体内存数据需要通过 `adb shell dumpsys meminfo` 和 native heap 分析确认]
+如果进程中有 20+ 个 ResourcesImpl 实例同时被强引用持有（在多窗口 + 折叠屏场景下可能出现），额外的内存开销可能在数 MB 量级。
+
+> ⚠️ **数据待验证**：上述量级基于工程经验估算，缺少设备型号、APK 规模和 native heap dump 等可复现条件。建议用 `dumpsys meminfo` + native heap profiler 在目标设备上实测后替换。
 
 ---
 
@@ -378,7 +378,7 @@ Android 15 引入 16KB page size 支持（详见 4.7 节）。对资源加载的
 
 折叠屏展开/折叠时，系统可能在短时间内连续发送多个 Configuration 变更。Android 的处理策略：
 
-- AMS 在 `updateConfigurationLocked()` 中会合并同一批次内的 Configuration 变更，一次 propagate
+- ATMS 在 `updateConfigurationLocked()` 中会合并同一批次内的 Configuration 变更，一次 propagate
 - 但折叠/展开涉及 orientation + screenWidthDp + screenHeightDp + smallestScreenWidthDp 四个字段同时变化，系统会将它们打包成一次 Configuration 变更，而非多次
 - FixedRotation 机制（见上文）只在 Activity 启动时生效，已经在前台的 Activity 走正常流程
 
