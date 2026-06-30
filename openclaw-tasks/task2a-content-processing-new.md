@@ -109,10 +109,25 @@ PY
 
 ### Step 1.1：理解全书现有覆盖范围
 
-读取 `src/SUMMARY.md`，提取：
-- 全书 4 个 Part、17 个 Chapter 的结构
-- 每章的已有小节数量与标题
-- 每个小节的大致主题
+⚠️ **硬性门禁：不能只读 `src/SUMMARY.md`。**
+
+必须构建“全书覆盖语料”，覆盖范围包括：
+- `src/SUMMARY.md`：提取 Part / Chapter / 小节目录与路径
+- `src/**/*.md`：逐篇读取 frontmatter、标题、正文、`outline-start` 大纲、`🔸 扩展`、`related_chapters`
+- 纳入状态：`draft`（只要大纲或正文有实质内容）、`ready-for-review`、`finalized`、`ready-to-publish`
+- 排除状态：`superseded`、`deprecated`、`archived`
+
+覆盖判断必须按“主题/机制/关键术语”而不是“标题是否完全相同”：
+- 新候选如果已被 `ready-for-review` / `finalized` 章节正文覆盖，不能创建
+- 新候选如果已被一个有实质大纲的 `draft` 覆盖，不能创建，只能补充到既有 draft 的素材/建议
+- 新候选如果只是已有章节的扩展点深化，优先写入 `intake/suggestions.md` 或等待 Task 2B/Task 9，不拆新节
+
+可执行检查入口：
+```bash
+python3 scripts/task2a_gap_dedup_guard.py --candidate "候选章节标题" --keywords "关键术语1,关键术语2,关键术语3"
+```
+
+该脚本命中重复时会以 exit code 2 退出；**任何 exit code 2 的候选必须剔除，禁止进入 Step 1.9 / Step 1.10。**
 
 ### Step 1.2：从素材索引发现未覆盖的高质量内容
 
@@ -166,9 +181,43 @@ PY
 
 总分 ≥ 14 的候选才创建章节。
 
+### Step 1.8.5：创建前去重硬门禁
+
+对 Step 1.8 中所有评分 ≥ 14 的候选，必须先写成候选 JSON 并运行去重 guard：
+
+```bash
+python3 scripts/task2a_gap_dedup_guard.py --json-file /tmp/task2a-gap-candidates.json
+```
+
+候选 JSON 格式：
+```json
+[
+  {
+    "title": "候选章节标题",
+    "keywords": ["核心机制", "关键类名/API", "版本特性", "诊断工具"]
+  }
+]
+```
+
+处理规则：
+- guard 输出 `status: blocked` 或进程 exit code 2：命中的候选视为“已覆盖”，从合格候选池移除
+- 被移除的候选必须在报告中列出“覆盖于哪一章 / 哪个路径 / 命中关键词”，不得静默丢弃
+- guard 输出 `status: clear` 且评分仍 ≥14：才允许进入 Step 1.9
+- 如果所有 ≥14 候选都被 guard 阻断：本轮输出“无新章节创建：合格候选均已被既有章节覆盖”
+
+已知回归样本必须全部被 guard 阻断：
+
+```bash
+python3 scripts/task2a_gap_dedup_guard.py --self-test
+```
+
+这 6 类主题不得再被创建为空 draft：RPC Binder 事务上限、MemoryLimiter 30 秒 kill 窗口、bootanalyze 系统启动优化、HWUI Vulkan 多队列、Compose PausableComposition、Adaptive Layout。
+
 ### Step 1.9：录入所有合格缺口（全部 ≥ 14 分）
 
 ⚠️ **铁律：所有评分 ≥ 14 的候选缺口必须全部录入，不能只选1个。**
+
+前提：这里只指 **通过 Step 1.8.5 去重 guard 后仍然 clear** 的候选。评分 ≥14 但被 guard 判定已覆盖的候选，不得录入，不得创建文件，不得更新 SUMMARY/progress/queue。
 
 理由：
 1. 缺口挖掘本身昂贵（跑一轮 AOSP 分析 + 文档比对 + 素材评估），筛出来的合格候选扔掉浪费
