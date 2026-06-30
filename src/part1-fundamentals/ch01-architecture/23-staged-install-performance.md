@@ -17,18 +17,18 @@ sources:
   - type: aosp
   - type: aosp
   - type: aosp
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: reviewed
-task2b_result: fixed
-task2b_state: fixed
+task2b_result: rework-2026-06-30-l3-l4
+task2b_state: rework-2026-06-30-l3-l4
 last_task2b_at: 2026-06-30T12:52:33+08:00
 task9_result: auto-fixed
 last_task9_at: 2026-06-30T16:31:10+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-30
-last_task6_at: 2026-06-30T16:07:00+08:00
+reviewed_date: 2026-06-30T19:24:00+08:00
+last_task6_at: 2026-06-30T19:24:00+08:00
 last_task9_autofix_at: "2026-06-30"
 last_task9_review_log: "logs/deep-review/2026-06-30-16-deep-review.md"
 task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正源码补充区 readSessionSettingsLocked() 伪方法名与 session XML 属性名;回到 Task6 复审。"
@@ -38,6 +38,7 @@ task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-30
 ---
+task2b_rework_notes: "2026-06-30 Task2B main: L3 content depth fixes — replaced estimated % breakdown with reproducible Perfetto measurement methodology; added 3 concrete troubleshooting scenarios (session stuck/dex2oat timeout/storage full) with Perfetto SQL and logcat diagnostic steps"
 
 # 1.23 Android Staged Install 与安装原子性性能
 
@@ -114,20 +115,28 @@ sequenceDiagram
 
 ### 锚点 2: 安装性能瓶颈分析
 
-一次完整的 APK 安装(含 dexopt)耗时可以拆解为以下几个阶段。以下数据来源于参考测试环境(需在具体设备上验证),仅用于建立分析框架:
+一次完整的 APK 安装(含 dexopt)耗时可以分解为以下几个阶段。以下数据来源于参考测试环境(需在具体设备上验证),仅用于建立分析框架:
 
-> **数据说明**:以下百分比为定性分析框架,用于建立分析维度,不来自可复现实测。具体数值受设备型号、ROM、APK 规模、compiler filter 和采样条件影响,不可跨设备直接比较。
+#### 各阶段耗时构成与 Perfetto 测量方法
 
-```
-安装耗时分解(典型 ~100MB APK,首次安装,speed-profile 编译)
-┌─────────────────────────────────────────────────────────────┐
-│ APK 解压 + 签名校验              ~15-20%                     │
-│ DEX 编译 (dex2oat)              ~55-65%(主要瓶颈)        │
-│ .odex/.vdex 写入                 ~10-15%                     │
-│ 权限授予 + 组件注册               ~5-8%                      │
-│ SELinux relabel + fsync           ~5-10%                     │
-└─────────────────────────────────────────────────────────────┘
-```
+以下按 Perfetto trace 中可观测的阶段分解安装耗时。每项附 SQL 查询——直接在目标设备上采集 trace 跑一遍就能拿到实际数据,不需要依赖估算:
+
+| 阶段 | Perfetto 观测点 | 测量方法 | 参考 SQL |
+|------|----------------|----------|----------|
+| APK 解压 + 签名校验 | `PackageManager` 轨道 `verifyPackage` / `collectCertificates` slice | 按 package 名称过滤对应 slice,`SUM(dur) / 1e6` 得总耗时 ms | `SELECT name, SUM(dur)/1e6 AS ms FROM slice WHERE name LIKE '%verifyPackage%' GROUP BY name` |
+| DEX 编译 (dex2oat) | `dex2oat` 进程的 CPU 调度时间 | 过滤 `process.name = 'dex2oat'`,`SUM(sched.dur) / 1e6` 得 CPU 耗时 ms | `SELECT SUM(sched.dur)/1e6 AS cpu_ms FROM sched JOIN thread USING(utid) JOIN process USING(upid) WHERE process.name='dex2oat'` |
+| .odex/.vdex 写入 | `installd` 线程的 `write` / `fsync` slice | installd 进程内的写入系统调用耗时 | `SELECT name, SUM(dur)/1e6 AS ms FROM slice JOIN thread_track USING(track_id) JOIN thread USING(utid) JOIN process USING(upid) WHERE process.name='installd' AND name IN ('write','fsync') GROUP BY name` |
+| 权限授予 + 组件注册 | `PackageManager` 轨道 `commitPackageSettings` / `updatePermissions` slice | 过滤对应 slice 名并按 session 分组 | `SELECT name, dur/1e6 AS ms FROM slice WHERE name IN ('commitPackageSettings','updatePermissions') ORDER BY ts` |
+| SELinux relabel | `installd` 的 `relabel` slice | 过滤 `name LIKE '%relabel%'` | `SELECT name, dur/1e6 AS ms FROM slice WHERE name LIKE '%relabel%'` |
+
+**跨设备对比方法**:
+
+1. 在目标设备上采集 Perfetto trace:`perfetto -c -t 120s -b 64mb -o /data/local/tmp/install.perfetto-trace`
+2. 触发安装后等待完成,用 `trace_processor_shell` 跑上述 SQL
+3. 锁定同一个 APK + 同一个 `compilerFilter`(由 `dalvik.vm.dex2oat-filter` 系统属性决定),不同设备间可横向对比
+4. 每台设备至少采集 3 次冷安装 trace(先卸载清除残留),取中位数
+
+> 上述阶段的源码级调用链:`PackageInstallerSession.commit()` → `StagingManager.commitSession()` (pre-reboot 阶段 1-2)和 `resumeSession()` → `installApksInSession()` (post-reboot 阶段 3-5)。Perfetto 中对应 `Trace.TRACE_TAG_PACKAGE_MANAGER` tag 的 slice 可直接追踪。
 
 #### 签名校验阶段
 
@@ -322,6 +331,114 @@ ORDER BY slice.ts;
 - `PackageManager` 轨道中的 `installPackage` slice 标记整个安装流程
 - `installd` 轨道中的 `dexopt` slice 标记编译阶段
 - `dex2oat` 进程的 CPU 使用率反映编译负载
+
+## 实战排障:Staged Install 故障诊断
+
+以下三个场景来自 `StagingManager` / `PackageInstallerSession` 源码中可追溯的故障路径。每个场景都附对应的 Perfetto 信号和 dumpsys 检查点——对着 trace 和 logcat 就能定位根因。
+
+### 场景 1:重启后 Staged Session 卡在 ready 不生效
+
+**现象**:`adb shell dumpsys package` 显示 session 状态为 `ready`,但应用版本未更新,`dmesg` 中看不到安装失败的日志。
+
+**根因分析**:session 通过了 pre-reboot verification(`PackageSessionVerifier.verifyStaged()` 5 阶段都通过),但没有进入 `resumeSession()`。常见原因:
+
+1. **boot 已完成**:`StagingManager.restoreSessions()` 第 1 步检查 `sys.boot_completed`,若已为 true 则直接返回——session 的 `restoreSessions()` 只在开机早期阶段触发,设备已在运行时不会自动重试
+2. **build fingerprint 变化**:第 2 步比较 `Build.FINGERPRINT`,若 OTA 后 fingerprint 变了,所有 staged session 被 fail 并 early return
+3. **孤儿 child session**:multi-package 场景下 parent 缺失,child 被 `restoreAndApplyStagedSessionIfNeeded()` 标记为 `ACTIVATION_FAILED` 并附带 "orphan" 错误信息
+
+**诊断步骤**:
+
+```bash
+# 1. 检查 session 当前状态(关注 isReady / isApplied / isFailed 三个 boolean)
+adb shell dumpsys package | grep -A 20 "staged"
+
+# 2. 搜索 StagingManager 的 decision log
+adb logcat -d | grep -E "StagingManager|PackageInstaller.*staged|restoreSessions"
+
+# 3. 在 Perfetto trace 中搜索关键 slice
+# restoreSessions → 如果存在,看其子 slice 走到了哪一步
+```
+
+**Perfetto SQL**:
+
+```sql
+-- 检查 restoreSessions 和 resumeSession 的耗时与是否存在
+SELECT name, dur/1e6 AS ms FROM slice
+WHERE name IN ('restoreSessions', 'resumeSession', 'installApksInSession')
+ORDER BY ts;
+```
+
+如果上述 slice 都不存在,说明 `restoreAndApplyStagedSessionIfNeeded()` 在早期被短路——查 `logcat -b all | grep restoreAndApply` 看退出原因。
+
+### 场景 2:dex2oat 执行超时导致安装失败
+
+**现象**:`logcat` 中 `PackageManager` 抛出 `INSTALL_FAILED_DEXOPT` 或 installd 返回超时错误。应用无法启动。
+
+**根因分析**:dex2oat 编译超时常见于:
+- APK 体积大 + `compilerFilter=speed`(全量 AOT),dex2oat 进程被 `lmkd` 杀掉
+- `/data` 分区剩余空间不足以容纳 `.odex` + `.vdex` 文件
+- 多个应用同时安装,dex2oat 竞争 CPU 核
+
+**诊断步骤**:
+
+```bash
+# 1. 查看 dex2oat 是否被 OOM-kill
+adb logcat -b all -d | grep -E "dex2oat.*kill|lmkd.*dex2oat"
+
+# 2. 检查 /data 剩余空间
+adb shell df -h /data
+
+# 3. 检查 dex2oat 的编译参数
+adb shell cat /proc/$(adb shell pidof dex2oat)/cmdline
+```
+
+**Perfetto SQL**:
+
+```sql
+-- dex2oat 是否被杀(进程退出前最后一刻的 CPU 和 RSS)
+SELECT process.name, sched.ts, sched.dur/1e6 AS cpu_ms, counter.value/1024 AS rss_mb
+FROM sched JOIN thread USING(utid) JOIN process USING(upid)
+LEFT JOIN counter ON counter.track_id IN (
+  SELECT id FROM process_counter_track WHERE upid=process.upid AND name='mem.rss'
+)
+WHERE process.name='dex2oat'
+ORDER BY sched.ts DESC LIMIT 50;
+```
+
+### 场景 3:Staging 目录空间不足,commit 阶段失败
+
+**现象**:`session.commit()` 返回失败,`logcat` 显示 `INSTALL_FAILED_INSUFFICIENT_STORAGE` 或 staging 目录写入异常。
+
+**根因分析**:`PackageInstallerSession.write()` 通过 `Bridge.insertFile()` 或 `doWriteInternal()` 写入 staging 目录(staged session 使用 `/data/app-staging/session_{id}/`)。当 `/data` 分区剩余空间小于 APK 体积时就失败。APEX session 还涉及 `apexd` 的 staging 目录(`/data/apex/active` 和 `/data/apex/decompressed`),一个 APEX session 失败会使同批次的其他 session 也失败。
+
+**诊断步骤**:
+
+```bash
+# 1. 检查 staging 目录状态
+adb shell ls -lh /data/app-staging/
+
+# 2. 检查分区使用情况
+adb shell df -h /data
+
+# 3. 查看失败原因
+adb logcat -d | grep -A 5 "INSTALL_FAILED"
+```
+
+APEX 混合 session 的额外检查:
+
+```bash
+adb shell ls -lh /data/apex/
+adb logcat -d | grep -E "apexd|ApexManager|abortCheckpoint"
+```
+
+**排障检查清单**:排查 staged install 故障时按这个顺序走——
+
+1. `dumpsys package | grep staged` — session 的 `isReady/isApplied/isFailed` 三个 boolean
+2. `logcat -d | grep StagingManager` — restore 阶段走到了哪一步
+3. Perfetto `restoreSessions` / `resumeSession` / `installApksInSession` slice 是否存在
+4. `/data` 分区剩余空间 + `/data/app-staging/` 目录状态
+5. 如果是 APEX 混合 session,再加 `apexd` 状态:`adb shell cmd apexservice list`
+
 
 ## 扩展知识
 
