@@ -56,13 +56,15 @@ task6_reviewed_date: "2026-06-29"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-01
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化
 
-Android 14 之后，应用侧 AOT 编译的控制面转到 ART Service。到 Android 16，公开源码已经出现 SDM 相关的产物管理路径，外部报道也把它和 Play 分发侧的 Cloud Compilation 放在一起讨论。
+Android 14 之后，应用侧 AOT 编译的控制面转到了 ART Service。Android 16 的公开源码中，ART Service 已经包含 SDM（Secure Dex Metadata）相关的产物管理路径。与此同时，外部报道将这套能力与 Play 分发侧的 Cloud Compilation 关联在一起讨论——但设备端能力和 Play 分发策略是两层问题。
 
-Cloud Profile、Baseline Profile、Startup Profile、Dex Metadata 和 SDM 处在同一套 ART 编译体系里，但解决的问题不同。应用开发者能稳定控制的是 Baseline Profile、Startup Profile、`.dm` 验证和本地编译状态检查；云端编译是否命中，取决于安装渠道、Play 分发策略、设备端 ART 支持和产物校验结果。
+Cloud Profile、Baseline Profile 和 Startup Profile 都处在 ART 编译体系里，但解决的问题不同。应用开发者能稳定控制的是 Baseline Profile、Startup Profile、`.dm` 验证和本地编译状态检查。云端编译是否命中，取决于安装渠道、Play 分发策略、设备端 ART 支持和产物校验结果。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -140,7 +142,6 @@ AOSP android-17.0.0_r1 的 `ArtFileManager` 仍然把 SDM 纳入可写与可用�
 
 外部报道把 Android 16 Cloud Compilation 描述为：Play 侧运行 `dex2oat`，再把预编译产物放进 SDM（Secure Dex Metadata）随 APK 下发，设备端避免重复执行本地 `dex2oat`。这条说法和 AOSP 中 SDM 产物管理路径相互印证，但签名绑定、产物适配 ABI、Play 灰度策略、是否对所有包开放，仍缺少官方开发者文档或 AOSP 端到端说明。
 
-[待验证: Android Authority, android-16-cloud-compilation-3541910]
 
 因此，写性能结论时只能给出这个边界：Android 16 具备接收和管理 SDM / cloud dexopt artifacts 的设备端基础；Play 分发是否命中云端编译，需要用实际安装包、设备版本和 `dumpsys package dexopt` 结果确认。不能把“支持 SDM”写成“所有安装都会跳过设备端 dex2oat”。
 
@@ -195,5 +196,5 @@ Profile 体系经常同时影响安装、首次启动和后续启动，但三个
 - PMS 安装路径、`PackageInstallerSession`、`InstallPackageHelper` 和 `DexOptHelper` 的位置详见 1.9 节。
 - 启动优化实战中如何把 profile 结果转成 TTID / TTFD 收益，详见 21.4 节。
 
-可确认的边界是：设备端 ART Service 和 SDM 管理路径已有可核对源码；Play 云端编译的分发策略仍要以官方文档、实机安装和 `dumpsys package dexopt` 结果为准。
+总结：设备端 ART Service 和 SDM 管理路径已有可核对源码，开发者可以通过 `dumpsys package dexopt` 和 `pm compile` 在设备上直接验证。Play 云端编译的分发策略仍要以官方文档和实机安装结果为准，不能仅凭 AOSP 源码推断。
 

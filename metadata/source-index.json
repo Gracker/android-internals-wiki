@@ -1,49 +1,208 @@
 {
-  "entries": [
+  "files": [
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-binder-priority-inheritance-kernel-batch-pipeline.md",
-      "title": "Android 17 Binder IPC 优先级继承机制与内核批处理流水线",
-      "summary": "深入分析 Android 17 Binder 内核驱动三层协同调度：优先级继承从用户态 BC_SET_PRIORITY 迁移到内核 binder_transaction_data 隐式传递；目标线程选择采用 waiting_threads FIFO 简单策略；批处理两段式设计（内核 binder_thread_read 批量返回 + 用户态 flushCommands 双次 talkWithDriver），单次业务调用通常仅 1-2 次 ioctl syscall。",
+      "title": "Android 17 Binder优先级继承与内核批处理流水线",
+      "path": "DeepResearch/2026-06-30-android17-binder-priority-inheritance-kernel-batch-pipeline.md",
+      "score": 18,
+      "relevance": 5,
+      "depth": 5,
+      "timeliness": 4,
+      "verifiability": 4,
       "chapter": "ch01",
-      "processed_at": "2026-06-30T06:12:49.346340",
-      "processed_by": "task-deepresearch-injector",
-      "action": "direct_inject"
+      "tags": [
+        "Binder",
+        "IPC",
+        "内核",
+        "优先级继承",
+        "批处理"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407874"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-multiprocess-datastore-mmipc-verification.md",
-      "title": "Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证",
-      "summary": "DataStore 多进程协调由三层内核 IPC 机制叠加：FileChannel.tryLock 跨进程互斥锁、mmap(MAP_SHARED)+std::atomic<uint32_t> 跨进程版本号、FileObserver(MOVED_TO) 跨进程写入通知。共涉及 5 个源码文件，实现 eventual consistency 模型。",
+      "title": "Android 17 SharedPreferencesImpl ANR机制",
+      "path": "DeepResearch/2026-07-01-sharedpreferences-impl-anr-mechanism.md",
+      "score": 17,
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
       "chapter": "ch06",
-      "processed_at": "2026-06-30T06:12:49.346340",
-      "processed_by": "task-deepresearch-injector",
-      "action": "queue"
+      "tags": [
+        "SharedPreferences",
+        "ANR",
+        "fsync",
+        "存储"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407881"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-memorylimiter-30s-kill-window-and-profiling.md",
-      "title": "Android 17 MemoryLimiter 的 30 秒 Kill 窗口真相与 ProfilingServiceHelper 触发条件",
-      "summary": "源码揭示 MemoryLimiter 30s kill 延迟实为等待 ProfilingServiceHelper 完成 heap dump。触发需三重门控全满足（默认全关闭）。100MB margin 仅在 cgroup memory.high 事件触发后写入。MemoryLimiter.java 在 Android 15 不存在，确认为 16/17 新子系统。",
+      "title": "Android 17 系统启动优化与bootanalyze工具链",
+      "path": "DeepResearch/2026-06-30-android17-bootanalyze-boot-time-optimization.md",
+      "score": 16,
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapter": "ch08",
+      "tags": [
+        "启动",
+        "bootanalyze",
+        "Perfetto",
+        "Zygote"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407884"
+    },
+    {
+      "title": "AppFlow与Android 17 LMKD兼容性方案",
+      "path": "DeepResearch/2026-06-30-appflow-lmkd-android17-integration-scheme.md",
+      "score": 17,
+      "relevance": 5,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
       "chapter": "ch04",
-      "processed_at": "2026-06-30T06:12:49.346340",
-      "processed_by": "task-deepresearch-injector",
-      "action": "direct_inject"
+      "tags": [
+        "AppFlow",
+        "LMKD",
+        "内存",
+        "冷启动",
+        "进程管理"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407886"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-boot-optimization-bootanalyze-v2.md",
-      "title": "Android 17 系统启动耗时优化新特性与 bootanalyze 工具链",
-      "summary": "Android 17 启动优化 3 个可验证演进：SystemServer startSystemConfigInit 无条件早启；ZygoteInit.preload() 新增 preloadSharedLibraries/preloadCompatConfig；6 个启动相关 aconfig flag。bootanalyze 工具链迁移到 Python 3。",
-      "chapter": "ch16",
-      "processed_at": "2026-06-30T06:12:49.346340",
-      "processed_by": "task-deepresearch-injector",
-      "action": "direct_inject"
+      "title": "Linux 6.10内存碎片整理机制",
+      "path": "DeepResearch/2026-06-30-linux610-memory-fragmentation-analysis.md",
+      "score": 15,
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 3,
+      "verifiability": 4,
+      "chapter": "ch04",
+      "tags": [
+        "内存",
+        "碎片整理",
+        "compaction",
+        "Linux 6.10"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407887"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-vulkan-dual-queue-graphics-ahb-upload.md",
-      "title": "Android 17 Vulkan 多队列并行渲染与 GPU 负载均衡",
-      "summary": "Android 17 HWUI Vulkan 后端强制要求同一 graphics queue family 申请 2 个 queue（mGraphicsQueue + mAHBUploadQueue），分别服务 RenderThread 和 GrallocUploadThread。两 queue 共享 VkDevice 但各自独立 GrDirectContext 与 VMA。VK_EXT_global_priority 默认关闭。",
-      "chapter": "ch18",
-      "processed_at": "2026-06-30T06:12:49.346340",
-      "processed_by": "task-deepresearch-injector",
-      "action": "direct_inject"
+      "title": "Android 17 Perfetto版本可用性验证",
+      "path": "DeepResearch/2026-06-30-android17-perfetto-version-availability-verification.md",
+      "score": 14,
+      "relevance": 4,
+      "depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapter": "ch13",
+      "tags": [
+        "Perfetto",
+        "Trace",
+        "版本",
+        "AOSP"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407888"
+    },
+    {
+      "title": "Virtual Memory from First Principles",
+      "path": "Cubox/Virtual Memory from First Principles-2026-06-30.md",
+      "score": 12,
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 2,
+      "verifiability": 2,
+      "chapter": "ch04",
+      "tags": [
+        "虚拟内存",
+        "页表",
+        "TLB",
+        "NUMA",
+        "Linux"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407890"
+    },
+    {
+      "title": "每日论文精读·AppFlow冷启动内存调度",
+      "path": "每日论文精读（Android）/Android-2026-06-30.md",
+      "score": 14,
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapter": "ch08",
+      "tags": [
+        "AppFlow",
+        "冷启动",
+        "内存调度",
+        "MobiCom 2026"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407891"
+    },
+    {
+      "title": "AppFlow精读笔记",
+      "path": "论文/Android-2026-06-30-appflow-cold-launch/03-精读.md",
+      "score": 14,
+      "relevance": 4,
+      "depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "chapter": "ch08",
+      "tags": [
+        "AppFlow",
+        "论文精读",
+        "冷启动",
+        "内存"
+      ],
+      "scored_at": "2026-07-01T05:45:42.407892"
+    },
+    {
+      "title": "Android 17 ResourcesManager/Configuration 与 Activity Relaunch 判定模型源码级验证",
+      "path": "DeepResearch/2026-06-30-android17-resourcesmanager-configuration-relaunch.md",
+      "quality": "high",
+      "score": 19,
+      "mapped_chapter": "ch01",
+      "relevance_tags": [
+        "Android",
+        "ResourcesManager",
+        "Configuration",
+        "ActivityRelaunch",
+        "Android17"
+      ],
+      "content_type": "research",
+      "technical_depth": "源码级分析",
+      "key_concepts": [
+        "Configuration分发链路",
+        "shouldRelaunchLocked",
+        "ActivityRelaunch",
+        "ClientTransaction",
+        "configChanges"
+      ],
+      "scored_at": "2026-07-01T05:48:59.322569"
+    },
+    {
+      "title": "Android 17 Staged Install 状态机与提交/恢复链路源码级闭环",
+      "path": "DeepResearch/2026-06-30-android17-staged-install-state-machine-source-verification.md",
+      "quality": "high",
+      "score": 19,
+      "mapped_chapter": "ch01",
+      "relevance_tags": [
+        "Android",
+        "StagedInstall",
+        "状态机",
+        "PackageInstaller",
+        "Android17"
+      ],
+      "content_type": "research",
+      "technical_depth": "源码级分析",
+      "key_concepts": [
+        "状态机三态",
+        "Pre-reboot verification",
+        "Boot-time restore",
+        "APEX",
+        "PackageInstallerSession"
+      ],
+      "scored_at": "2026-07-01T05:48:59.322576"
     }
   ]
 }

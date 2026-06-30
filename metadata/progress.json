@@ -1859,5 +1859,15 @@
     "last_review_session": "2026-06-29-22"
   },
   "last_task2a_at": "2026-07-01T00:27:10+08:00",
-  "task6_last_run": "2026-06-30T04:06:00+08:00"
+  "task6_last_run": "2026-06-30T04:06:00+08:00",
+  "task6_reviews": [
+    {
+      "section": "1.4",
+      "chapter": "04-binder.md",
+      "date": "2026-07-01",
+      "result": "needs-rework",
+      "issues": 3,
+      "log": "logs/review/2026-07-01-06-review.md"
+    }
+  ]
 }

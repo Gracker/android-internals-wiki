@@ -61,7 +61,7 @@ last_task9_review_log: "logs/deep-review/2026-06-30-21-audit.md"
 last_task9_autofix_at: "2026-06-30"
 task9_review_notes: "2026-06-30 Task9 idle audit auto-fix: 将 Parcel.java / TransactionTooLargeException.java 的 AOSP 验证口径从 master snapshot 固定到 android-17.0.0_r1；源码行为与 Android 17 tag 一致。无待入 queue P0/P1。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
+last_deepseek_cn_review_at: 2026-07-01
 ---
 
 # 序列化性能对比与选型
@@ -98,9 +98,9 @@ last_deepseek_cn_review_at: 2026-06-14
 
 ## JSON（Gson / Moshi / kotlinx.serialization）性能对比
 
-JSON 的优势是可读、调试方便、后端兼容成本低。代价是文本格式本身需要 token 扫描和字符串处理，对象绑定还会产生字段匹配、构造对象、集合扩容和临时字符串。小请求里这部分成本通常被网络延迟盖住，大列表、配置下发、启动预拉取和离线缓存恢复时，序列化就会进入用户可感知路径。
+JSON 的优势是可读、调试方便、后端兼容成本低。代价是文本格式本身需要 token 扫描和字符串处理；对象绑定还会产生字段匹配、构造对象、集合扩容和临时字符串。小请求里这部分成本通常被网络延迟盖住，大列表、配置下发、启动预拉取和离线缓存恢复时，序列化就会进入用户可感知路径。
 
-Gson 的主要问题不只在速度。Gson README 已明确说明，它不推荐作为 Android JSON 方案；原因是运行时开放反射与 shrink/optimization/obfuscation 不好配合，Android 场景更适合 Kotlin Serialization 或 Moshi Codegen 这类代码生成方案。已有 Gson 存量项目可以保留在非关键路径，但新模型不要继续把 Gson 放进启动、列表首屏或大批量缓存恢复路径。[已验证: 官方文档, github.com/google/gson/blob/main/README.md]
+Gson 的主要问题不只在速度。Gson README 已明确说明，它不推荐作为 Android JSON 方案：运行时开放反射与 shrink/optimization/obfuscation 不好配合，Android 场景更适合 Kotlin Serialization 或 Moshi Codegen 这类代码生成方案。已有 Gson 存量项目可以保留在非关键路径，但新模型不要继续把 Gson 放进启动、列表首屏或大批量缓存恢复路径。[已验证: 官方文档, github.com/google/gson/blob/main/README.md]
 
 Moshi 适合 Kotlin/Java 混合项目。Moshi README 说明，Kotlin 场景可以用 reflection、codegen 或二者混用；Codegen 通过 KSP 为每个 Kotlin class 生成小而快的 adapter。Moshi 的价值不在于所有场景都最快；主要收益是把字段访问和构造逻辑提前到编译期，减少运行时反射、降低混淆风险。对 Android 业务代码，默认把 `@JsonClass(generateAdapter = true)` 作为数据模型约束更稳。[已验证: 官方文档, github.com/square/moshi/blob/master/README.md]
 

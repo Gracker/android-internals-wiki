@@ -93,3 +93,37 @@
 
 结论：全书 510 节，覆盖度确认饱和。与上一轮结论一致。
 下一可行动方向：等待 Android 18 DP 或针对已有章节做知识点级深度增强（Task 2B）。
+
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-01 05:11
+
+本轮第三轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（所有 9 个 draft 章节 >15 行有效内容）
+**Phase 0.5**: Task2B backlog = 0，允许挖掘
+**Phase 1**: 全书 495 节，覆盖度确认饱和
+
+与前两轮（01:12, 03:08）结论一致：
+- 无新增 research-feeds（最新仍为 2026-04-14）
+- 无新增 daily-info 中的 Android 相关内容
+- 无 Android 18 DP 或新版本素材
+- Clippings 三本参考书的知识点已在 ch20-ch26 各节中结构化覆盖
+
+结论：全书覆盖度三次确认饱和。可行动方向不变：
+1. 已有章节深度增强（Task 2B）
+2. 等待 Android 18 DP
+3. Clippings 知识点级缺口（比章节级更细粒度，属于 Task 2B 职责）
+
+## [Task6 Review] 1.4 Binder IPC 机制与性能影响 — 2026-07-01
+- **类型**：需重写 / 需确认 / 需补充素材
+- **位置**：参考资料之后的全部注入块（~234行）；全文源码锚点
+- **问题**：
+  1. 6个DeepResearch注入块以原始研究笔记形式堆叠在参考资料之后，含禁用词（闭环×5、链路×4）、DeepResearch元数据header（注入时间/价值/关联），风格与主体正文完全不一致
+  2. 主体与注入块在oneway spam、frozen process、priority inheritance、事务队列等主题大量重复
+  3. 源码锚点引用android-16.0.0_r1/r4，未锚定android-17.0.0_r1（版本基线要求）
+- **建议**：
+  1. 将注入块中有增量价值的技术内容（如tracepoints完整列表、red-black tree查找O(log n)开销量化、epoll worker显式唤醒机制、用户态批处理syscall开销数据）融入主体对应段落
+  2. 删除注入块元数据header（注入时间/价值/关联DeepResearch等）
+  3. 删除与主体重复的内容
+  4. 由Task 9对照android-17.0.0_r1验证源码路径，更新frontmatter的last_verified_against
+- **review 日志**：logs/review/2026-07-01-06-review.md
