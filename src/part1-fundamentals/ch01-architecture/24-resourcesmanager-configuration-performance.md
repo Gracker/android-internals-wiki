@@ -30,7 +30,7 @@ gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_lite_at: 2026-06-30
@@ -51,7 +51,7 @@ task2b_rework_issues: "[L3/L4] 增加实战场景引入、降文档感、加读�
 
 # 1.24 ResourcesManager 与 Configuration 变更性能
 
-## 实战场景：一次旋转引发的 180ms 主线程卡顿
+## 实战场景：一次旋转引发的主线程卡顿
 
 打开 Perfetto，选中一段旋转屏幕前后的 trace。主线程上有一段连续的 `Choreographer#doFrame` 延迟——每次丢帧约 60-80ms，连丢三帧。往前翻，`ActivityThread.handleRelaunchActivity` 吃掉了 120ms，其中 `LayoutInflater.inflate()` 独占 85ms。
 
@@ -99,7 +99,7 @@ IBinder (Activity token) → Resources（每个 Activity 独立）
 
 缓存命中条件严格：apkPaths、orientation、locale、density、screenWidthDp、screenHeightDp 等字段必须完全一致。任何一个字段不同，就需要新建 ResourcesImpl。
 
-[已验证: AOSP android-17.0.0_r1, ResourcesManager.findOrCreateResourcesImplForKeyLocked()]
+[已验证：AOSP android-17.0.0_r1, ResourcesManager.findOrCreateResourcesImplForKeyLocked()]
 
 ---
 
@@ -141,7 +141,7 @@ Configuration 变更会拆成两条路径：进程级配置派发先更新 App �
 
 服务端（system_server）更新全局 Configuration，并通过 `WindowProcessController.dispatchConfiguration()` 向 App 进程发送 `ConfigurationChangeItem`；客户端收到后才调用 `ResourcesManager.applyConfigurationToResources()` 重建或复用 `ResourcesImpl`。Activity 是否销毁重建由 `ActivityRecord.ensureActivityConfiguration()` 和 `shouldRelaunchLocked()` 根据 `configChanges`、PiP density skip、compat policy、resource overlay policy 等条件判断。
 
-[已验证: AOSP android-17.0.0_r1, ActivityManagerService.updateConfiguration() → ActivityTaskManagerService.updateConfigurationLocked() / updateGlobalConfigurationLocked() / ensureConfigAndVisibilityAfterUpdate() → WindowProcessController.dispatchConfiguration() / ActivityRecord.ensureActivityConfiguration() → ActivityThread.handleConfigurationChanged() / handleRelaunchActivity()]
+[已验证：AOSP android-17.0.0_r1, ActivityManagerService.updateConfiguration() → ActivityTaskManagerService.updateConfigurationLocked() / updateGlobalConfigurationLocked() / ensureConfigAndVisibilityAfterUpdate() → WindowProcessController.dispatchConfiguration() / ActivityRecord.ensureActivityConfiguration() → ActivityThread.handleConfigurationChanged() / handleRelaunchActivity()]
 
 ### FixedRotation：避免旋转时重建的特殊路径
 
@@ -160,7 +160,7 @@ DisplayContent.handleTopActivityLaunchingInDifferentOrientation()
 
 FixedRotation 让 Activity 避免了一次完整的 recreate，但它只在 Activity 启动时生效。如果 App 已经在前台，用户旋转设备，FixedRotation 不适用，仍然走正常的 Configuration 变更流程。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java — handleTopActivityLaunchingInDifferentOrientation() → setFixedRotationLaunchingApp() → startFixedRotationTransform(); frameworks/base/services/core/java/com/android/server/wm/WindowToken.java — applyFixedRotationTransform() → onFixedRotationStatePrepared(); 历史博客参考（Android 12 时期的分析，方法名在 android-17 中已有变化）: Cubox/Android无缝旋转-Fixed Rotation - 掘金-2022-08-29.md]
+[已验证：AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java — handleTopActivityLaunchingInDifferentOrientation() → setFixedRotationLaunchingApp() → startFixedRotationTransform(); frameworks/base/services/core/java/com/android/server/wm/WindowToken.java — applyFixedRotationTransform() → onFixedRotationStatePrepared(); 历史博客参考（Android 12 时期的分析，方法名在 android-17 中已有变化）: Cubox/Android无缝旋转-Fixed Rotation - 掘金-2022-08-29.md]
 
 ---
 

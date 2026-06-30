@@ -1707,6 +1707,43 @@
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "last_review": "2026-06-30"
+    },
+    "1.23": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "last_task2b_verifier_at": "2026-06-30T15:34:25+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，Task9 auto-fix 后回流 Task6 复审；修正 task9_state reviewed→pending。"
+    },
+    "1.24": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task9_result": "auto-fixed",
+      "last_task2b_verifier_at": "2026-06-30T15:34:25+08:00",
+      "task2b_verifier_note": "queue 无 pending 且正文充分，Task9 auto-fix 后回流 Task6 复审；修正 task9_state reviewed→pending。"
+    },
+    "23.2": {
+      "task6_state": "reviewed",
+      "last_task2b_verifier_at": "2026-06-30T15:34:25+08:00",
+      "task2b_verifier_note": "finalized 章节 task6_state revisiting 过期，修正为 reviewed；Task9 idle audit 为维护性更新。"
+    },
+    "24.2": {
+      "task6_state": "reviewed",
+      "last_task2b_verifier_at": "2026-06-30T15:34:25+08:00",
+      "task2b_verifier_note": "finalized 章节 task6_state revisiting 过期，修正为 reviewed；Task9 idle audit 为维护性更新。"
+    },
+    "25.3": {
+      "task6_state": "reviewed",
+      "last_task2b_verifier_at": "2026-06-30T15:34:25+08:00",
+      "task2b_verifier_note": "finalized 章节 task6_state revisiting 过期，修正为 reviewed；Task9 idle audit 为维护性更新。"
     }
   },
   "chapters": {
@@ -1718,7 +1755,7 @@
       "task9_result": "pending"
     }
   },
-  "last_updated": "2026-06-30T13:11:52.479924",
+  "last_updated": "2026-06-30T15:34:25+08:00",
   "ready_for_review": 8,
   "reviews": [
     {
