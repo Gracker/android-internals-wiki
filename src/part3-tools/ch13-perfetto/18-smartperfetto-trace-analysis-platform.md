@@ -42,7 +42,7 @@ last_task9_audit: "2026-06-19"
 last_task9_audit_log: "logs/deep-review/2026-06-19-15-audit.md"
 sources:
   - type: blog
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-18_RSS_886623bf54.md"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/RSS/rss-tech/2026-05-18_RSS_886623bf54.md"
   - type: github
     path: "https://github.com/Gracker/SmartPerfetto"
   - type: internal
@@ -107,7 +107,7 @@ finalized_date: "2026-06-19"
 
 <!-- outline-end -->
 
-SmartPerfetto 解决的是 trace 调查的工程化问题：SQL 能重跑，证据能定位，报告能分享，多次分析能比较。13.10 节已经讲 Perfetto SQL，13.16 节已经讲 Agent 调查协议，本节把 SmartPerfetto 放在工具系统的位置上看：它把 Perfetto UI、`trace_processor_shell`、YAML Skill、场景策略、模型运行时和报告存储放到同一个分析界面里。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-18_RSS_886623bf54.md]
+SmartPerfetto 解决的是 trace 调查的工程化问题：SQL 能重跑，证据能定位，报告能分享，多次分析能比较。13.10 节已经讲 Perfetto SQL，13.16 节已经讲 Agent 调查协议，本节把 SmartPerfetto 放在工具系统的位置上看：它把 Perfetto UI、`trace_processor_shell`、YAML Skill、场景策略、模型运行时和报告存储放到同一个分析界面里。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/RSS/rss-tech/2026-05-18_RSS_886623bf54.md]
 
 ## 从单次 Trace 问答到可复用分析结果
 
@@ -123,7 +123,7 @@ SmartPerfetto 解决的是 trace 调查的工程化问题：SQL 能重跑，证�
 
 这个路径里有一个边界要写清：模型不直接读取完整 trace 文件。SmartPerfetto 后端用 `trace_processor_shell`、SQL 和 Skill 取数，模型接触的是工具返回的结构化结果、表格摘要、选区上下文和已有报告片段。这样做可以降低两类风险：trace 文件体积过大导致上下文失控，模型绕过查询口径直接猜结论。
 
-人工复核入口也在同一条路径上。报告里的数字、线程名、slice 名、Result ID、SQL 和 evidence id 都应能回到工具调用结果。分析结论不符合预期时，反馈不应只写“AI 判断错了”，而要贴出报告中的 `evidenceRefId`、SQL 表格行列或 Result ID。这样维护者才能判断问题来自 SQL、Skill、trace 数据缺失、模型归纳还是报告渲染。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-18_RSS_886623bf54.md]
+人工复核入口也在同一条路径上。报告里的数字、线程名、slice 名、Result ID、SQL 和 evidence id 都应能回到工具调用结果。分析结论不符合预期时，反馈不应只写“AI 判断错了”，而要贴出报告中的 `evidenceRefId`、SQL 表格行列或 Result ID。这样维护者才能判断问题来自 SQL、Skill、trace 数据缺失、模型归纳还是报告渲染。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/RSS/rss-tech/2026-05-18_RSS_886623bf54.md]
 
 ## YAML Skill 与场景策略的分层设计
 
@@ -294,4 +294,3 @@ export SMARTPERFETTO_ENTERPRISE=false
 2. **验证数据存在性**：检查文件系统和数据库中的 trace 记录
 3. **检查权限配置**：验证 SSO 头部和用户权限
 4. **验证网络连接**：确认数据库连接和文件系统权限
-
