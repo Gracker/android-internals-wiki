@@ -2,6 +2,7 @@
 title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
 chapter: "13.11"
 section: "13.11"
+section_title: "Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数"
 status: finalized
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
@@ -51,6 +52,9 @@ last_task9_audit_result: "pass-idle-audit"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_main_at: 2026-06-16T02:50:00+08:00
+updated_by: "openclaw-task6"
+updated_date: "2026-06-30"
+last_task6_audit: "2026-06-30"
 ---
 
 # 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
