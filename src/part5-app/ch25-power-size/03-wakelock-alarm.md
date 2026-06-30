@@ -38,7 +38,7 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [wakelock, alarm, exact-alarm, wakelock-leak, power]
 related_chapters: ["25.2", "11.5", "5.6", "25.4"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 last_task9_review_log: "logs/deep-review/2026-06-30-12-audit.md"

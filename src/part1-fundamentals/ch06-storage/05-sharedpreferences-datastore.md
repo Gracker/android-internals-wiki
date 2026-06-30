@@ -32,8 +32,8 @@ sources:
 tags: [sharedpreferences, datastore, anr, io, storage, performance, queuedwork]
 related_chapters: ["6.1", "6.3", "9.1", "9.2", "8.2", "4.5"]
 section: "6.5"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
@@ -656,6 +656,125 @@ $ diff android-16.0.0_r3 android-17.0.0_r1 SharedPreferencesImpl.java
 5. **性能参数冻结**：MAX_FSYNC_DURATION_MILLIS=256、CALLBACK_ON_CLEAR_CHANGE=119147584L 等性能参数保持不变。
 
 **结论**：Android 17 中 SharedPreferences 的性能瓶颈和 ANR 机制未解决，但官方已明确弃用方向，推荐向 DataStore 迁移。
+
+
+
+
+<!-- AIW-源码调研-2026-07-01 -->
+### SharedPreferencesImpl ANR 触发完整调用链补强（2026-07-01 增量）
+
+2026-06-27 调研已确认 SharedPreferencesImpl 在 Android 17 实现冻结（仅 2 行 `@RavenwoodKeepWholeClass` 注解差异），本节补齐**ANR 触发完整调用链**——`apply()` 看似异步，但 `QueuedWork.waitToFinish()` 会把主线程同步挂起，是 `apply()` 仍能在 `Activity.onPause` 触发 ANR 的根因。
+
+**1. 读路径：主线程 `mLock.wait()` 阻塞点**
+
+```java
+// SharedPreferencesImpl.java:285
+@GuardedBy("mLock")
+private void awaitLoadedLocked() {
+    if (!mLoaded) {
+        // 显式声明 StrictMode，让主线程在 IO 真在另一个线程时也能抓到违规
+        BlockGuard.getThreadPolicy().onReadFromDisk();
+    }
+    while (!mLoaded) {
+        try { mLock.wait(); } catch (InterruptedException unused) {}
+    }
+    if (mThrowable != null) throw new IllegalStateException(mThrowable);
+}
+```
+
+- **触发面**：所有 `getXxx()` / `contains()` / `getAll()` / `edit()` 都会先 `awaitLoadedLocked()`
+- **加载线程**：`sLoadExecutor = new ThreadPoolExecutor(0, 1, 10s, ..., new SharedPreferencesThreadFactory())`，名字固定为 "SharedPreferences"
+- **恢复机制**：`loadFromDisk()` 开头自动 `mBackupFile.renameTo(mFile)`，崩溃后下次启动恢复
+
+**2. 写路径：apply 真异步，但 fsync 串行**
+
+```java
+// SharedPreferencesImpl.java:671 (enqueueDiskWrite)
+final Runnable writeToDiskRunnable = () -> {
+    synchronized (mWritingToDiskLock) { writeToFile(mcr, isFromSyncCommit); }
+    synchronized (mLock) { mDiskWritesInFlight--; }
+    if (postWriteRunnable != null) postWriteRunnable.run();
+};
+if (isFromSyncCommit) {                  // commit() 路径
+    boolean wasEmpty = (mDiskWritesInFlight == 1);
+    if (wasEmpty) { writeToDiskRunnable.run(); return; }  // ← 主线程同步 fsync
+}
+QueuedWork.queue(writeToDiskRunnable, !isFromSyncCommit);  // apply() 路径
+```
+
+- `commit()` 在 **无并发写** 时直接在调用线程 fsync（仅一次 `writtenToDiskLatch.await()`，不切线程）
+- `apply()` 必走 `queued-work-looper`（独立 HandlerThread，名字 "queued-work-looper"）
+- **`mDiskWritesInFlight > 0` 时** `commitToMemory()` 浅拷贝 `mMap` 防止读写竞争
+
+**3. ANR 根因：`QueuedWork.waitToFinish()` 主线程同步**
+
+`QueuedWork.java` 关键 30 行：
+
+```java
+public static void waitToFinish() {
+    long startTime = System.currentTimeMillis();
+    synchronized (sLock) {
+        handlerRemoveMessages(QueuedWorkHandler.MSG_RUN);
+        sCanDelay = false;  // 后续 apply 不再走 100ms 延迟
+    }
+    StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskWrites();
+    try { processPendingWork(); }  // ← 在调用线程（主线程）同步跑完所有 sWork
+    finally { StrictMode.setThreadPolicy(oldPolicy); }
+    while ((finisher = sFinishers.poll()) != null) finisher.run();
+    sCanDelay = true;
+    // mWaitTimes histogram，>512ms 立即 log
+}
+```
+
+**主线程调用点**（`ActivityThread.java` grep 实测）：
+
+| 行号 | 调用栈 | 触发场景 |
+|---|---|---|
+| 5820 | `Service.handleStartCommand` 后 | Service 启动完成后 |
+| 5852 | `Service.handleStopService` 清理后 | Service 销毁前 |
+| 6179 | `handlePauseActivity` | 仅 `r.isPreHoneycomb()` legacy 路径 |
+| 6430 | `handleStopActivity` | **关键路径，所有 Activity 停止时** |
+
+**`MAX_WAIT_TIME_MILLIS = 512ms`**：超过就 log，但**不中断**——如果 fsync 跑 5s，主线程直接 ANR。
+
+**4. fsync 监控机制（writeToFile 末尾）**
+
+```java
+long fsyncDuration = fsyncTime - writeTime;  // ms
+mSyncTimes.add((int) fsyncDuration);
+mNumSync++;
+if (DEBUG || mNumSync % 1024 == 0 || fsyncDuration > MAX_FSYNC_DURATION_MILLIS) {
+    mSyncTimes.log(TAG, "Time required to fsync " + mFile + ": ");
+}
+```
+
+- `MAX_FSYNC_DURATION_MILLIS = 256`：单次 fsync 超过 256ms 立即打 log（无需等 1024 次累计）
+- `ExponentiallyBucketedHistogram(16)`：16 桶指数分布
+- **盲点**：`mSyncTimes` 只在 fsync 完成后记录，**不监控等待队列长度**。`sWork` 队列堆积时无指标可查
+
+**5. 章节 6.5 既有 ANR 描述的修订**
+
+之前章节 6.5 仅概括"apply 在 onPause 卡顿"，现补强为完整因果链：
+
+> `apply()` 看似异步（`QueuedWork.queue` 在 `queued-work-looper` 线程 fsync），但 ActivityThread 在 `handleStopActivity`（行 6430）会调用 `QueuedWork.waitToFinish()`，**把 queued-work-looper 上未完成的 fsync 同步搬到主线程等待**。如果上一次 apply 的 fsync 因 UFS 抖动跑到 1s+，下一次 Activity 跳转就会直接卡 1s+（5s+ 即 ANR）。这是 `apply()` "看起来不阻塞、实际上仍能 ANR" 的根因，与 DataStore 无关——DataStore 写也走 FileChannel + fsync，但写完即返回、无 waitToFinish 同步点。
+
+**6. 官方 javadoc 软废弃声明（Android 17 重写）**
+
+`SharedPreferences.java` 头部 50 行 javadoc 在 android-17.0.0_r1 已被**彻底重写**，列出 4 大缺陷：
+
+1. **UI Thread Blocking and ANRs**：apply 在组件生命周期切换时阻塞主线程
+2. **Error Handling**：apply 无错误信号，commit 仅返回 boolean
+3. **Durability and Consistency**：内存先于磁盘，崩溃可能丢数据
+4. **Data Safety**：畸形 UTF-16 静默损坏，`getStringSet` 返回的集合不可改
+
+> **强推 DataStore**：`<em>Note: The Android team strongly recommends against using SharedPreferences for new data storage needs.</em>` 措辞比 16 更明确。
+
+**7. 反模式与风险点（补充）**
+
+- **`commit()` 不一定在后台线程**：`enqueueDiskWrite` 中 `mDiskWritesInFlight == 1` 时直接在调用线程 fsync，"用 commit 等于同步" 不成立
+- **`Activity.onPause` 后不要再 apply**：onPause 触发的 `waitToFinish` 正在主线程等 fsync，新 apply 会被序列化进同一个等待队列，**ANR 时间线性叠加**
+- **`StrictMode.allowThreadDiskWrites` 在 waitToFinish 内被临时打开**：意味着 waitToFinish 自身在 StrictMode 下不可见，无法被 StrictMode 抓到——这是 Android 团队"为正确性牺牲可观测性"的设计权衡
+- **Ravenwood 注解**：`@RavenwoodKeepWholeClass` 是新测试框架标记，**零运行时影响**，但意味着 SharedPreferencesImpl 已被纳入 Ravenwood 单元测试覆盖（替代 Robolectric 的新机制）
 
 
 <!-- AIW-源码调研-2026-06-30 -->
