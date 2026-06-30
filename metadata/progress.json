@@ -1,7 +1,7 @@
 {
   "total": 543,
-  "draft": 39,
-  "ready-for-review": 147,
+  "draft": 38,
+  "ready-for-review": 148,
   "finalized": 337,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
@@ -65,7 +65,8 @@
     "ch1.9",
     "ch22.1",
     "ch6.1",
-    "ch16.20"
+    "ch16.20",
+    "1.9"
   ],
   "ready_for_review_sections": [
     "5.19",
@@ -87,7 +88,8 @@
     "7.20",
     "4.18",
     "2.29",
-    "6.18"
+    "6.18",
+    "1.9"
   ],
   "review_sections": [
     "1.6",
@@ -1693,6 +1695,13 @@
       "task6_state": "pending",
       "task9_state": "pending",
       "last_review": "2026-06-30"
+    },
+    "1.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "drafted_date": "2026-06-30",
+      "drafted_by": "task2a-content-processing",
+      "last_review": "2026-06-30"
     }
   },
   "chapters": {
@@ -1704,7 +1713,7 @@
       "task9_result": "pending"
     }
   },
-  "last_updated": "2026-06-29T18:22:37.564345",
+  "last_updated": "2026-06-30T10:04:00+08:00",
   "ready_for_review": 8,
   "reviews": [
     {
