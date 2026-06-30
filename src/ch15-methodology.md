@@ -107,6 +107,17 @@ Android 8 下的优化重点在于：
 - 优化 UI 响应性
 - 控制内存使用
 
+
+
+<!-- AIW-源码调研-2026-06-30 -->
+**⚠️ 重要源码级修正**（2026-06-30 基于 AOSP android-17.0.0_r1 验证）：
+
+传统认知中的"Android 11+ 默认启用 Perfetto"缺乏源码证据。AOSP 默认配置中，所有 Perfetto 服务均为 ，需通过系统属性显式启用：
+
+
+
+**Pixel 设备默认启用**：Pixel 系列设备通过 vendor init.rc 覆盖默认配置，但标准 AOSP 设备仍需手动启用。
+
 #### Android 9+ 工具演进
 
 **Android 9 开始支持 Perfetto，但需要注意版本差异**：

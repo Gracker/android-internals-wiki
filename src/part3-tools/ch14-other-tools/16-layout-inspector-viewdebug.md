@@ -41,7 +41,7 @@ sources:
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-viewdebug-layout-trace.md"
   - type: blog
-    path: "source/juejin-android/2026-05-11-75967106-2026年了，Android开发该如何调.md"
+    path: "技术文章/source/juejin-android/2026-05-11-75967106-2026年了，Android开发该如何调.md"
 tags: [layout-inspector, viewdebug, android-studio, compose, view-hierarchy]
 related_chapters: ["7.12", "14.1", "22.1", "22.3"]
 created_by: task2a-knowledge-gap
