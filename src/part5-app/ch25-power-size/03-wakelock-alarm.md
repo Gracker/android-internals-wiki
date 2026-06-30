@@ -38,15 +38,16 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [wakelock, alarm, exact-alarm, wakelock-leak, power]
 related_chapters: ["25.2", "11.5", "5.6", "25.4"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-last_task9_review_log: "logs/deep-review/2026-05-14-16-deep-review.md"
-last_task9_at: "2026-05-14T16:30:00+08:00"
-last_task9_audit: "2026-06-08"
+last_task9_review_log: "logs/deep-review/2026-06-30-12-audit.md"
+last_task9_at: "2026-06-30T12:30:53+08:00"
+last_task9_audit: "2026-06-30"
+last_task9_audit_log: "logs/deep-review/2026-06-30-12-audit.md"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-14"
-task9_result: pass-tech-review
+task9_reviewed_date: "2026-06-30"
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
@@ -56,6 +57,8 @@ last_task6_review_log: logs/review/2026-05-14-16-review.md
 last_task6_audit: "2026-05-25"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
+last_task9_autofix_at: "2026-06-30"
+task9_review_notes: "2026-06-30 Task9 idle audit auto-fix: 将 WakeLock 类型段落中的 AOSP PowerManager.java 验证标签从 android-16.0.0_r1 重锚到 android-17.0.0_r1；复核 AlarmManager.java / AlarmManagerService.java exact alarm 权限和 *alarm* WakeLock 路径，未发现新增 P0/P1。因 auto-fix 回到 Task6 复审。"
 ---
 
 # WakeLock 与 Alarm 管理
@@ -93,7 +96,7 @@ WakeLock 和 Alarm 很容易被写成“保活工具”，这类写法会把功�
 
 ## WakeLock 类型与使用规范
 
-App 侧常用的 WakeLock 只有一个：`PARTIAL_WAKE_LOCK`。它保持 CPU 运行，允许屏幕关闭，适合短时间完成用户已经触发的后台收尾工作，例如一段上传、一次加密写盘、一个必须落完的本地索引更新。屏幕相关的 `SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK`、`FULL_WAKE_LOCK` 已废弃；保持屏幕常亮应交给 `FLAG_KEEP_SCREEN_ON` 或具体组件能力。 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java] [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager.WakeLock]
+App 侧常用的 WakeLock 只有一个：`PARTIAL_WAKE_LOCK`。它保持 CPU 运行，允许屏幕关闭，适合短时间完成用户已经触发的后台收尾工作，例如一段上传、一次加密写盘、一个必须落完的本地索引更新。屏幕相关的 `SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK`、`FULL_WAKE_LOCK` 已废弃；保持屏幕常亮应交给 `FLAG_KEEP_SCREEN_ON` 或具体组件能力。 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java] [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager.WakeLock]
 
 WakeLock 的默认规则可以归纳成四条：少用、短持有、命名稳定、异常路径必释放。Android Developers 明确要求只有没有合适替代 API 时才使用 WakeLock，并且持有时间越短越好；tag 推荐包含包名、类名或方法名，不要包含个人信息，也不要加随机数或计数器，否则系统和排查工具无法聚合同一处代码的耗电。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/set] [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
 
