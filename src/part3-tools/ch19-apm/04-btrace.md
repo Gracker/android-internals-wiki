@@ -32,7 +32,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T13:23:00+08:00"
 last_task9_audit: "2026-06-13"
 last_task2b_at: "2026-04-25T07:48:00+08:00"
-last_task6_audit: "2026-06-12"
+last_task6_audit: "2026-07-01"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 ---
@@ -97,7 +97,7 @@ Android 侧接入分成两段：
 java -jar rhea-trace-shell.jar -a your.package.name -t 10 -o output.pb -r sched
 ```
 
-这个命令的含义是抓取指定包名 10 秒 trace，输出 `output.pb`，用 `-r` 重启 App 以覆盖启动阶段，并把 `sched` 作为系统 trace category 一起采集。`sched` 会带来 CPU 调度事件，后面才能判断线程是 Running、Runnable，还是被切走。生成文件可以直接放进 Perfetto UI 分析。
+这个命令的含义是抓取指定包名 10 秒 trace，输出 `output.pb`，用 `-r` 重启 App 以覆盖启动阶段，并把 `sched` 作为系统 trace category 一起采集。`sched` 会同时采集 CPU 调度事件，后面才能判断线程是 Running、Runnable，还是被切走。生成的 .pb 文件可以直接拖入 Perfetto UI 打开分析。
 
 ## perfetto 模式和 simple 模式
 
