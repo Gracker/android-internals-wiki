@@ -30,7 +30,7 @@ tags: [hwc, surfaceflinger, overlay-plane, client-composition, jank, perfetto, w
 related_chapters: ["2.6", "2.15", "2.16", "7.6", "7.15", "14.15", "18.15"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-23"
-gap_source: "章节深挖/研究素材/AOSP结构/官方文档"
+gap_source: "章节深挖/研究素材/AOSP 结构/官方文档"
 gap_score: 18
 material_count: 4
 pipeline_stage: ready-to-publish
@@ -52,6 +52,7 @@ deepseek_cn_review_state: done
 finalized_date: "2026-06-23"
 finalized_by: "openclaw-task6-auto-promote"
 last_deepseek_cn_review_at: 2026-06-23
+last_task6_audit: "2026-07-01T02:15:04+08:00"
 ---
 
 # 7.18 HWC Overlay Plane 与合成降级排查
@@ -189,7 +190,7 @@ order by ts;
 
 ### Fence：区分 GPU 合成慢和显示侧持有慢
 
-合成降级常和 fence 等待混在一起。`CLIENT` 升高后，如果卡点落在 `RenderEngine::drawLayers()` 或 client target 的 ready fence 上，优化方向偏向减少 client composition；如果卡点落在 `presentDisplay()`、present fence 或 release fence，问题可能在 HWC / display HAL / panel 侧。Fence 方向详见 2.16 节，这里只做排查引用，不重复展开原理。
+合成降级常和 fence 等待混在一起。`CLIENT` 升高后，如果卡点落在 `RenderEngine::drawLayers()` 或 client target 的 ready fence 上，优化方向偏向减少 client composition；如果卡点落在 `presentDisplay()`、present fence 或 release fence，问题可能在 HWC / display HAL / panel 侧。Fence 方向的原理详见 2.16 节。
 
 ## 典型触发场景
 
@@ -201,7 +202,7 @@ order by ts;
 
 ### 相机预览 + 业务浮层
 
-相机预览常见 YUV buffer、特定 dataspace 和固定裁剪比例。叠加人脸框、AR 道具、半透明引导层后，HWC 既要处理格式，又要处理 z-order、alpha 和 crop。TextureView 路线天然更依赖 App/GPU；SurfaceView 路线更依赖 HWC 是否支持预览层与浮层组合。相机链路详见 18.14 节，视频叠加和 HWC 原理详见 18.15 节。
+相机预览常见 YUV buffer、特定 dataspace 和固定裁剪比例。叠加人脸框、AR 道具、半透明引导层后，HWC 既要处理格式，又要处理 z-order、alpha 和 crop。TextureView 路线天然更依赖 App/GPU；SurfaceView 路线更依赖 HWC 是否支持预览层与浮层组合。相机相关内容详见 18.14 节，视频叠加和 HWC 原理详见 18.15 节。
 
 排查动作：把预览分辨率、预览帧率、浮层数量和缩放比例作为四个变量。不要只测默认预览；高分辨率拍照预览、视频录制预览、画中画预览分别抓 trace。
 
@@ -264,4 +265,4 @@ order by ts;
 ### HWC Overlay Plane 与 SurfaceFlinger 合成降级机制
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-25-hwc-overlay-plane-sf-composition-degradation.md
 - 类型：DeepResearch 调研结果
-- 摘要：从HWC HAL/Composer AIDL源码梳理Overlay Plane典型4个、presentOrValidate回调序列、Layer compositionType分类、RenderEngine GPU fallback路径，以及dumpsys/Winscope/Perfetto frametimeline设备级证据采集方法。
+- 摘要：从 HWC HAL/Composer AIDL 源码梳理 Overlay Plane 典型 4 个、presentOrValidate 回调序列、Layer compositionType 分类、RenderEngine GPU fallback 路径，以及 dumpsys/Winscope/Perfetto frametimeline 设备级证据采集方法。
