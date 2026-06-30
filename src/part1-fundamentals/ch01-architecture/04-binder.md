@@ -3,7 +3,7 @@ title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
 section: "1.4"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 confidence: "medium"
@@ -15,7 +15,7 @@ reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 related_chapters: "[\"1.1\", \"2.5\", \"7.2\", \"8.2\", \"9.1\"]"
-task6_state: "revisiting"
+task6_state: "reviewed"
 last_task2a_at: "2026-05-13T18:20:00+08:00"
 last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
 task9_state: "reviewed"
@@ -26,11 +26,11 @@ last_task9_at: "2026-07-01T06:29:24+08:00"
 last_task9_audit: "2026-06-09"
 last_task9_audit_at: "2026-06-09T01:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-09-01-audit.md"
-task6_result: "needs-rework"
+task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-07-01"
-last_task6_at: "2026-07-01T06:10:38+08:00"
+last_task6_at: "2026-07-01T07:12:59+08:00"
 last_task6_audit: "2026-05-19"
-task6_review_log: "logs/review/2026-05-13-19-review.md"
+task6_review_log: "logs/review/2026-07-01-07-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-09"
@@ -99,7 +99,7 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。业�
 3. Server 端的 Binder 线程被唤醒，Stub 类从 `Parcel` 反序列化参数，调用实际实现代码，将结果序列化回 `Parcel`。
 4. Binder 驱动将结果数据传回 Client，唤醒等待中的 Client 线程。
 
-[已验证: AOSP 源码, frameworks/native/libs/binder/BpBinder.cpp] [来源: obsidian/Cubox/Binder驱动中的流程详解-2024-07-12.md]
+[已验证: AOSP 源码, frameworks/native/libs/binder/BpBinder.cpp] [来源: obsidian/Cubox/Binder 驱动中的流程详解-2024-07-12.md]
 
 ### 为什么 Binder 只需要"一次拷贝"
 
@@ -456,7 +456,7 @@ oneway 调用避免了 Client 端的阻塞等待，但仍有队列和处理成�
 ### Native 侧的协作机制
 
 #### `mOnThreadAvailableCondVar`：本进程线程池可用性等待
-AOSP 13-15 的 `IPCThreadState::blockUntilThreadAvailable()` 已经在用户态用 `pthread_cond_wait()` 等待本进程可执行 Binder 线程数低于上限。Android 16（`android-17.0.0_r1` 中该项已落地）把这段实现迁移到 `std::condition_variable mOnThreadAvailableCondVar`（`include/binder/ProcessState.h:182`）；它不是从内核 `binder_thread_read` 等待切到用户态等待，而是用户态线程池等待实现从 pthread 条件变量迁移到 C++ 条件变量。Android 16 中的核心逻辑：
+AOSP 13-15 的 `IPCThreadState::blockUntilThreadAvailable()` 已经在用户态用 `pthread_cond_wait()` 等待本进程可执行 Binder 线程数低于上限。Android 16（`android-17.0.0_r1` 中该项已合入）把这段实现迁移到 `std::condition_variable mOnThreadAvailableCondVar`（`include/binder/ProcessState.h:182`）；它不是从内核 `binder_thread_read` 等待切到用户态等待，而是用户态线程池等待实现从 pthread 条件变量迁移到 C++ 条件变量。Android 16 中的核心逻辑：
 
 ```cpp
 void IPCThreadState::blockUntilThreadAvailable() {
@@ -634,7 +634,7 @@ if (is_fair_policy(policy))
 - [引用: https://source.android.com/docs/core/perf/cached-apps-freezer]
 - [来源: obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md]（高爷原创：Android Perfetto 系列 10 - Binder 调度与锁竞争）
 - [来源: obsidian/Blog/Blog/source/_posts/Android-Systrace-Binder.md]（高爷原创：Android Systrace 基础知识 - Binder 和锁竞争解读）
-- [来源: obsidian/Cubox/Binder驱动中的流程详解-2024-07-12.md]（OPPO 内核工匠：Binder 驱动中的流程详解）
+- [来源: obsidian/Cubox/Binder 驱动中的流程详解-2024-07-12.md]（OPPO 内核工匠：Binder 驱动中的流程详解）
 - [引用: https://paul.pub/android-binder-driver/]
 - [引用: https://perfetto.dev/docs/data-sources/android-binder]
 
@@ -668,10 +668,10 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 - `kernel/common/drivers/android/binder.c`（v6.12）`binder_enqueue_work_ilocked:52577`、`binder_proc_transaction:2847-2923`、`binder_thread_read:4652-4700`、`binder_available_for_proc_work_ilocked:52718`
 - `frameworks/native/libs/binder/IPCThreadState.cpp`（android-17.0.0_r1）`transact`、`flushCommands`、`talkWithDriver`
 
-### Android 16/17 Binder事务队列与跨进程通信性能（kernel binder角度）
+### Android 16/17 Binder 事务队列与跨进程通信性能（kernel binder 角度）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-binder-transaction-queue-frozen-async-arch.md
 - 类型：DeepResearch 调研结果
-- 摘要：内核Binder驱动采用三层FIFO list_head结构：proc->todo(进程级)/thread->todo(线程级优先)/node->async_todo(frozen进程累积)。binder_thread_read严格先thread-local后process-wide。frozen进程下oneway事务入node->async_todo返回BR_TRANSACTION_PENDING_FROZEN，解冻时批量搬移。TF_UPDATE_TXN支持同code同pid同target旧事务替换。
+- 摘要：内核 Binder 驱动采用三层 FIFO list_head 结构：proc->todo（进程级）/thread->todo(线程级优先)/node->async_todo(frozen 进程累积)。binder_thread_read 严格先 thread-local 后 process-wide。frozen 进程下 oneway 事务入 node->async_todo 返回 BR_TRANSACTION_PENDING_FROZEN，解冻时批量搬移。TF_UPDATE_TXN 支持同 code 同 pid 同 target 旧事务替换。
 - [Android 17 Binder 事务队列优化与高频 IPC 性能提升](DeepResearch/2026-06-11-android17-binder-transaction-queue-optimization.md) — 分析 Android 17 Binder 驱动三层 todo 队列（thread/proc/node.async_todo）的优先级继承 binder_transaction_priority 防反转机制、deferred TRANSACTION_COMPLETE 重叠执行优化、vendor 跳过优先级 tracehook，以及 Rust/C Binder 选择器模块化重构。
 
 ### Android 17 Binder IPC 异步 oneway / 冻结回执 / 内核批处理流水线
@@ -682,7 +682,7 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 ### Android 17 Binder 事务性能建模——IPC 开销量化与调度器交互
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-binder-transaction-performance-analysis.md
 - 类型：DeepResearch 调研结果
-- 摘要：将单次 Binder 事务拆解为 5 段可测量开销（用户态 mOut 写入 → ioctl 提交 → 内核入队 → 对端读取 → BBinder 分发），定位 3 个稳定性能钩子点：flushCommands 双次 talkWithDriver 批处理、BBinder::transact 内置 >1s 告警、IF_LOG_COMMANDS 十六进制 dump。Android 17 新增 kEnableKernelIpc 编译期强制校验与 RpcBinder 分支 [[unlikely]] 标注优化。
+- 摘要：将单次 Binder 事务分解为 5 段可测量开销（用户态 mOut 写入 → ioctl 提交 → 内核入队 → 对端读取 → BBinder 分发），定位 3 个稳定性能钩子点：flushCommands 双次 talkWithDriver 批处理、BBinder::transact 内置 >1s 告警、IF_LOG_COMMANDS 十六进制 dump。Android 17 新增 kEnableKernelIpc 编译期强制校验与 RpcBinder 分支 [[unlikely]] 标注优化。
 
 ### Android 17 Binder IPC 调优杠杆——mmap 缓冲区 / 线程池 / 批处理 / oneway spam / frozen reply
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-21-binder-ipc-optimization-android17.md
