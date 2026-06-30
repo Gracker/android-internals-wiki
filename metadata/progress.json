@@ -1,7 +1,7 @@
 {
   "total": 543,
-  "draft": 38,
-  "ready-for-review": 148,
+  "draft": 37,
+  "ready-for-review": 149,
   "finalized": 337,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-06-17",
@@ -1702,6 +1702,11 @@
       "drafted_date": "2026-06-30",
       "drafted_by": "task2a-content-processing",
       "last_review": "2026-06-30"
+    },
+    "4.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "last_review": "2026-06-30"
     }
   },
   "chapters": {
@@ -1713,7 +1718,7 @@
       "task9_result": "pending"
     }
   },
-  "last_updated": "2026-06-30T10:04:00+08:00",
+  "last_updated": "2026-06-30T13:11:52.479924",
   "ready_for_review": 8,
   "reviews": [
     {

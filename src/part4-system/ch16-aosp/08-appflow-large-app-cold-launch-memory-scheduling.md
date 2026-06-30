@@ -289,3 +289,64 @@ AppFlow 是研究原型（西北工大/西北大学/哈工程，arXiv 2603.17259
 - 本节"AppFlow × Android 17 兼容性"结论**仅适用于 android-17.0.0_r1**，与论文实验平台 Android 15 不构成跨版本兼容证据。
 - AOSP 17 实际**没有 MemoryManagerPolicy.java、没有 LMKD v2**——LMKD 仍是 `system/memory/lmkd/lmkd.cpp` 渐进演进，memcg v1 已 `[[deprecated("memcg v1 is not supported after Dec. 2026")]]`（行 3206），use_new_strategy 推广，PROCS_PRIO 批量命令新增。
 - 详细调研报告见 `DeepResearch/2026-06-27-appflow-lmkd-android17-compatibility.md`。
+
+
+### AppFlow × Android 17 集成实施方案（2026-06-30 调研补充）
+
+在 2026-06-27 完成"AppFlow × Android 17 LMKD 兼容性源码级事实核查"的基础上，本节进一步给出**不破坏 GKI 的三阶段接入方案**，覆盖三段式组件与 AOSP 17 真实能力的职责映射、Memory Reclaim Priority 的实际实现、Adaptive Background Activity Manager 的拆解、以及分阶段、可回滚的实施路径。
+
+#### 1. 三段式组件与 AOSP 17 真实能力的职责映射
+
+基于 `system/memory/lmkd/lmkd.cpp:2539 find_and_kill_process` 与 `lmkd.cpp:1142 apply_proc_prio` 的源码实测，AppFlow 三段式在 AOSP 17 内的真实协作面如下：
+
+| AppFlow 论文组件 | AOSP 17 等价物 | 源码锚点 | 缺口 |
+|---|---|---|---|
+| Selective File Preloader | VFS readahead + 应用 fadvise | (kernel side, 不在采样范围内) | AOSP 不感知"启动窗口" |
+| Adaptive Memory Reclaimer | CachedAppOptimizer CompactProfile.FULL | `CachedAppOptimizer.java:1679 onProcessFrozen` | 是事后回收，无启动期保护 |
+| Context-Aware Process Killer | find_and_kill_process + heaviest 切换 | `lmkd.cpp:2539-2572` | 缺 ΔM 与重启代价信号 |
+
+#### 2. Memory Reclaim Priority 的真实实现（不是独立 API）
+
+AOSP 17 没有名为 "Memory Reclaim Priority" 的独立类。优先级机制由三部分协同：
+
+- **oom_score_adj 阶梯**（`ProcessList.java:206-212`）：CACHED_APP_MAX_ADJ=999 / LMK_FIRST_ADJ=950 / MIN_ADJ=900，约 18 个档位
+- **per_app_memcg soft_limit_mult 映射**（`lmkd.cpp:1142-1176`）：oomadj 0-900 区间 soft_limit_mult 从 64 降至 0
+- **PSI 三级阈值**（`lmkd.cpp:262-264`）：partial 70ms/100ms、complete 70ms
+
+**关键发现**：`LMK_PROCS_PRIO`（`lmkd.h:41`，id=11，批量版本）是 AOSP 17 新增的协议能力，AppFlow 可直接挂载此接口做"即将启动应用的批量 oom_score_adj 调整"。
+
+#### 3. Adaptive Background Activity Manager 的拆解
+
+AOSP 17 没有名为 "Adaptive Background Activity Manager" 的统一类。背景应用调度由三套独立机制协同：
+
+- **CachedAppOptimizer**：`CompactProfile` 枚举 NONE/SOME/ANON/FULL（`CachedAppOptimizer.java:308-313`），进程 frozen 后自动走 FULL 压缩
+- **ProcessList 阈值**：`MIN_CACHED_APPS=2` / `TRIM_CRITICAL_THRESHOLD=3` / `TRIM_LOW_THRESHOLD=5`（`ProcessList.java:314-320`），基于进程数
+- **BackgroundStartPrivileges**：`AMS.java:17318 isBackgroundActivityStartsEnabled`，控制后台启动（与内存管理正交）
+
+#### 4. 三阶段实施路线（不破坏 GKI）
+
+**阶段 1：应用 + 平台层接入**
+- 应用侧：`UsageStatsManager.queryEvents` 推断启动序列 + `posix_fadvise(FADV_WILLNEED)` 预热
+- 平台侧：`LMK_PROCPRIO` / `LMK_PROCS_PRIO` 把"已知即将启动应用" oom_score_adj 调到 CACHED_APP_LMK_FIRST_ADJ=950 以下的安全区
+- 验证：Perfetto + ApplicationExitInfo 双指标对照
+
+**阶段 2：CachedAppOptimizer 协同**
+- 对频繁切换的 GB 级应用，**主动接受 frozen 状态**让 framework 走 FULL 压缩
+- 用 `am set-isolated-process-uid-list`（API 33+）保护导航/通话/语音等车机关键进程
+
+**阶段 3：vendor kernel / 自研 ROM 评估（破坏 GKI）**
+- 仅对有 vendor kernel 维护能力的厂商：在 `mm/vmscan.c` 增加"启动期保护"逻辑，配合 `/proc/preload_list`
+- 必须重新过 CTS/VTS、PSI 路径兼容、memcg v2 启用下的基准——**不得直接套用论文 1,107 行改动**
+
+#### 5. 风险与不可行项（明确边界）
+
+- **"启动期文件页保护"在 AOSP 17 主线无法实现**——GKI 6.12 的 vmscan 不可改，只能通过 cached 区间保留 + readahead 概率命中近似
+- **ΔM 净释放信号无直接来源**——只能用历史 `ApplicationExitInfo` 推断
+- **AppFlow 论文中的 128KB 阈值 / 100MB 预算不可作平台默认**——必须按设备/应用集重新建模
+- **论文实验平台 Android 15 vs AOSP 17**：cgroup v2 普及、psi_thresholds 默认值调整、CompactProfile.FULL 降级路径都是论文后出现的新约束
+
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-appflow-lmkd-android17-integration-scheme.md
+- 类型：DeepResearch 调研结果
+- 摘要：在 2026-06-27 存在性核查基础上，量化 AOSP 17 与 AppFlow 三段式的职责映射、给出三阶段不破坏 GKI 的接入路线（应用+平台层 → CachedAppOptimizer 协同 → vendor kernel 评估）。明确指出"启动期文件页保护"在主线不可行、ΔM 信号缺失、128KB/100MB 阈值不可默认。LMK_PROCS_PRIO (id=11) 是 AOSP 17 新增的批量协议能力，可作为 AppFlow 接入的最优协议点。
+- 注入时间：2026-06-30
+- 价值：从"是否存在"推进到"如何接入"；明确"LMKD v2"不是 AOSP 17 概念，Memory Reclaim Priority 是 oom_score_adj+PSI+per_app_memcg 协同而非独立 API；给出可执行的工程边界，避免读者把研究原型误认为平台默认能力
