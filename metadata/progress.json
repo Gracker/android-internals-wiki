@@ -1,6 +1,6 @@
 {
   "total": 547,
-  "draft": 38,
+  "draft": 32,
   "ready-for-review": 150,
   "finalized": 337,
   "task9_result": "pass-tech-review",
@@ -1610,7 +1610,7 @@
     }
   },
   "completion_percentage": 61.75,
-  "superseded": 8,
+  "superseded": 14,
   "sections": {
     "14.22": {
       "status": "finalized",
@@ -1708,9 +1708,11 @@
       "last_review": "2026-06-30"
     },
     "4.1": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "last_review": "2026-06-30"
+      "status": "superseded",
+      "superseded_date": "2026-07-01",
+      "superseded_by": "4.17 (MemoryLimiter 与内存监控影响)",
+      "superseded_reason": "duplicate of 616-line ready-for-review chapter",
+      "last_review": "2026-07-01"
     },
     "1.23": {
       "status": "ready-for-review",
@@ -1748,6 +1750,41 @@
       "task6_state": "reviewed",
       "last_task2b_verifier_at": "2026-06-30T15:34:25+08:00",
       "task2b_verifier_note": "finalized 章节 task6_state revisiting 过期，修正为 reviewed；Task9 idle audit 为维护性更新。"
+    },
+    "1.42": {
+      "status": "superseded",
+      "superseded_date": "2026-07-01",
+      "superseded_by": "1.31 (Binder RPC 事务上限优化)",
+      "superseded_reason": "duplicate of ready-for-review chapter",
+      "last_review": "2026-07-01"
+    },
+    "16.20": {
+      "status": "superseded",
+      "superseded_date": "2026-07-01",
+      "superseded_by": "16.7 + 16.19 (系统启动优化 + bootanalyze)",
+      "superseded_reason": "duplicate of 728+167 line chapters",
+      "last_review": "2026-07-01"
+    },
+    "22.1": {
+      "status": "superseded",
+      "superseded_date": "2026-07-01",
+      "superseded_by": "18.26 (HWUI Vulkan 多队列并行渲染)",
+      "superseded_reason": "duplicate of 365-line ready-for-review chapter",
+      "last_review": "2026-07-01"
+    },
+    "22.27_pausable": {
+      "status": "superseded",
+      "superseded_date": "2026-07-01",
+      "superseded_by": "18.25 (Compose 渲染管线 §PausableComposition)",
+      "superseded_reason": "duplicate of comprehensive section in 18.25",
+      "last_review": "2026-07-01"
+    },
+    "22.28": {
+      "status": "superseded",
+      "superseded_date": "2026-07-01",
+      "superseded_by": "22.27 (Adaptive Layout 与多形态设备渲染适配)",
+      "superseded_reason": "duplicate of 83-line draft chapter",
+      "last_review": "2026-07-01"
     }
   },
   "chapters": {
@@ -1835,6 +1872,21 @@
       ],
       "result": "draft completed",
       "action": "processing section 5.23 JobScheduler five-dimensional throttling architecture"
+    },
+    {
+      "date": "2026-07-01",
+      "time": "00:27",
+      "task": "task2a-dedup-review",
+      "sections": [
+        "1.42",
+        "4.1",
+        "16.20",
+        "22.1",
+        "22.27",
+        "22.28"
+      ],
+      "result": "6 empty drafts evaluated, all found to be duplicates of existing chapters, all marked superseded",
+      "action": "deduplication sweep — gap mining creating redundant sections needs attention"
     }
   ],
   "rework_log": [
@@ -1872,6 +1924,6 @@
     "last_review_date": "2026-06-29",
     "last_review_session": "2026-06-29-22"
   },
-  "last_task2a_at": "2026-06-30T19:04:00+08:00",
+  "last_task2a_at": "2026-07-01T00:27:10+08:00",
   "task6_last_run": "2026-06-30T04:06:00+08:00"
 }
