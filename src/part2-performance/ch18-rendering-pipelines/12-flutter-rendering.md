@@ -3,19 +3,19 @@ title: "Flutter 渲染管线"
 chapter: "'18.12'"
 section: "'18.12'"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-applicable_versions: "Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android"
+pipeline_stage: task6_pending
+applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android"
 tags: ['rendering', 'pipeline']
 reviewed_date: "2026-06-04"
 reviewed_by: "\"openclaw-task6\""
 created_by: "rendering-pipelines-merge"
 created_date: "'2026-04-09'"
-task6_state: "\"reviewed\""
-task9_state: "reviewed"
-task2b_state: "fixed"
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task6_result: "\"pass-light-edit\""
-task2b_result: "fixed"
-last_task2b_at: "2026-06-04T12:54:39"
+task2b_result: fixed
+last_task2b_at: "2026-07-01T18:54:04+08:00"
 task9_result: "pass-tech-review"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "\"2026-06-05\""
@@ -30,12 +30,14 @@ task6_reviewed_date: "2026-06-04"
 task6_reviewed_by: "\"openclaw-task6\""
 task6_l1_l2_fixes: "0"
 task6_l3_l4_issues: "0"
----
+last_verified_against: "Flutter 3.32 architecture/thread merge docs (issue #150525 + release-notes-3.32.0)"
+task2b_fix_source: task9-deep-tech-review
+task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"---
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- Flutter 线程模型：Flutter 3.29+ 的 Merged Platform Model（UI + Platform 合并）
+- Flutter 线程模型：Flutter 3.32 stable+ 的 Merged Platform Model（UI + Platform 合并）
 - Main Thread（Dart UI task）→ Raster Thread → GPU → Display 的渲染管线
 - Impeller vs Skia 渲染后端
 - SurfaceView render mode vs TextureView render mode
@@ -43,7 +45,7 @@ task6_l3_l4_issues: "0"
 - 在 Perfetto 中识别 Flutter 渲染管线的方法
 
 **扩展（可选深入）：**
-- Flutter 3.29+ Merged Model 的线程优化
+- Flutter 3.32 stable+ Merged Model 的线程优化
 - Platform View 的 Z-Order 和手势问题
 - Flutter 与宿主 App 的 VSync 协调
 
@@ -59,14 +61,14 @@ Flutter 在 Android 上的渲染管线与原生 App 有本质区别：**Flutter 
 
 这一章把三个边界拆开写，避免把线程模型、渲染后端和 Android API 范围压成一个版本号：
 
-- **线程模型**：正文主线按 Flutter 3.29+ 的 merged model 讲，UI task 和平台回调都落在宿主 Main thread
+- **线程模型**：正文主线按 Flutter 3.32 stable+ 的 merged model 讲，UI task 和平台回调都落在宿主 Main thread
 - **渲染后端**：Impeller 自 Flutter 3.27 起在 Android API 29+ 默认启用，低版本或不满足条件时仍可能回退到 Skia
 - **Android 侧范围**：Platform Views、SurfaceView、TextureView 的组合能力跨多个 Android 版本存在，具体代价要按嵌入控件和系统版本分别判断
 - **Platform Views 演进**：Flutter 3.44+ 新增 Hybrid Composition++（HCPP），实验性 opt-in，要求 Android API 34+ 和 Vulkan，不满足条件时回退到 HC/TLHC
 
 ## 线程模型：Merged Platform Model
 
-本文主线按 Flutter 3.29+ 在 Android 上的 merged model 讲。此时 Dart UI task、MethodChannel、插件回调和 Activity 生命周期回调都落在宿主 Main thread 上。Perfetto 里最先要找的是一个合并后的 Main 视图，而不是单独的 `Platform Thread`。
+本文主线按 Flutter 3.32 stable+ 在 Android 上的 merged model 讲。此时 Dart UI task、MethodChannel、插件回调和 Activity 生命周期回调都落在宿主 Main thread 上。Perfetto 里最先要找的是一个合并后的 Main 视图，而不是单独的 `Platform Thread`。
 
 ```mermaid
 graph TD
@@ -220,7 +222,7 @@ Android Choreographer → VsyncWaiter.asyncWaitForVsync()
 
 `VsyncWaiter` 在 Android embedding 层以 `Choreographer.FrameCallback` 注册回调，每次 `doFrame` 到达时通过 JNI 通知 engine 的 `Shell::OnVsync`。engine 内部把这当成"可以开始下一帧"的信号，驱动整个 Dart → Raster 管线。
 
-**Merged Model 下的区别（Flutter 3.29+）**：
+**Merged Model 下的区别（Flutter 3.32 stable+）**：
 
 在旧版 engine（UI Thread 独立）中，`VsyncWaiter` 收到回调后还需要跨线程唤醒 UI Thread，增加一次线程同步延迟。Merged Model 下，`VsyncWaiter`、Dart UI task、平台回调都在同一条 Main Thread 上，VSync 回调到达后可以立即进入 Build/Layout/Paint——没有跨线程唤醒开销。
 
