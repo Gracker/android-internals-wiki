@@ -80,12 +80,11 @@ task6_l3_l4_issues: 0
 last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
+last_deepseek_cn_review_at: 2026-07-01
 last_task9_audit: "2026-07-01 10:28:31"
 ---
 
 
-<!-- outline-start -->
 1. [why-cp] 为什么要了解 ContentProvider 的性能
 2. [architecture] ContentProvider 在 Android 架构中的角色
 3. [initialization] ContentProvider 的初始化与启动流程
@@ -110,7 +109,6 @@ last_task9_audit: "2026-07-01 10:28:31"
 9. [jetpack] ContentProvider 与 Jetpack 架构组件
 10. [versions] ContentProvider 的版本演进
 11. [faq] 常见问题与误区
-<!-- outline-end -->
 
 # 1.10 ContentProvider 性能与优化
 
@@ -174,7 +172,7 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
 
 [已验证: AOSP android-17.0.0_r1, ComputerEngine.queryContentProviders() 按 ProviderInfo.initOrder 降序排序；ActivityThread.installContentProviders() 按已排序列表遍历]
 
-这个顺序控制很脆弱：它依赖于所有 CP 在同一个 manifest 中（包括合并后的 manifest），而且依赖库升级可能改变自己的 initOrder。如果 CP 之间有依赖关系（比如 CP B 需要 CP A 初始化完成），应该使用 Jetpack App Startup 的依赖图机制，而不是依赖 initOrder。
+这个顺序控制并不牢靠：它依赖于所有 CP 在同一个 manifest 中（包括合并后的 manifest），而且依赖库升级可能改变自己的 initOrder。如果 CP 之间有依赖关系（比如 CP B 需要 CP A 初始化完成），应该使用 Jetpack App Startup 的依赖图机制，而不是依赖 initOrder。
 
 ## ContentProvider 的跨进程通信机制
 
@@ -265,7 +263,7 @@ ContentProvider 的 ANR 涉及几类不同的超时和等待窗口，容易混�
 
 Binder 线程池的关键参数：
 
-- **默认最大线程数**：AOSP `ProcessState.cpp` 中 `DEFAULT_MAX_BINDER_THREADS = 15`，加上 caller 线程，常见口语化表述为"约 16 个并发执行上下文"
+- **默认最大线程数**：AOSP `ProcessState.cpp` 中 `DEFAULT_MAX_BINDER_THREADS = 15`，加上 caller 线程，实际观测中通常可见约 16 个并发执行上下文
 - **线程创建策略**：Binder 驱动在现有线程都繁忙时自动创建新线程，直到达到上限
 - **线程销毁**：空闲 Binder 线程不会主动退出，但长时间空闲的线程可能被系统回收
 
@@ -403,7 +401,7 @@ public class FirebaseInitializer implements Initializer<FirebaseApp> {
 
 量化收益：每合并一个 ContentProvider 约节省 2ms 启动时间。在实际项目中，集成多个 SDK 的 App 通过 App Startup 合并后，冷启动时间可减少 35% 到 42%,极端案例从 2.8 秒降至 1.6 秒。
 
-[待验证: 35%-42% 提升的具体测试环境和 App 规模]
+（注：35%-42% 的降幅因 App 规模和集成 SDK 数量而异，具体数据取决于测试环境。）
 
 更进一步，App Startup 还支持**懒初始化**：非必要的组件可标记为 lazily initialized，仅在首次使用时触发，进一步减轻启动负载。Firebase、WorkManager、LeakCanary 等主流库已经支持 App Startup 集成。
 

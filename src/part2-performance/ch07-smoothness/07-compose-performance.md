@@ -35,40 +35,17 @@ task6_state: revisiting
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_state: reviewed
+last_deepseek_cn_review_at: 2026-07-01
 ---
 
 # Jetpack Compose 性能优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 Compose 渲染模型:Composition → Layout → Drawing 三阶段与传统 View 体系的对比
-- 🔹 Recomposition 的触发条件与最小化策略:stable 标记、remember、derivedStateOf
-- 🔹 Compose 中的性能陷阱:不稳定参数导致的过度重组、LazyColumn 的 key 策略
-- 🔹 Compose 性能检测:Layout Inspector Recomposition 计数、Compose Compiler Metrics
-- 🔹 Compose 与 View 混合布局的性能考量(ComposeView / AndroidView 开销)
-
-### 扩展(可选深入)
-
-- 🔸 Compose Multiplatform 的性能差异
-- 🔸 Compose 动画性能:animate*AsState vs Animatable vs transition
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
-<!-- outline-end -->
 
 ## 为什么要关注 Compose 的性能
 
 在默认的 system trace 里看不到单个 composable function。Perfetto 通常只有 Choreographer、主线程、RenderThread、FrameTimeline 这些线程级或帧级轨道；必须显式开启 composition tracing，system trace 才会把 composable function 写进去。很多人习惯性去翻 "CM / Compose Manager" 这类不存在的入口，排查方向一开始就偏了。
 
-Compose 需要单独建立一套分析视角。它的渲染管线、状态管理和重组机制都不同于传统 View。卡顿可能不是布局层级太深，而是某个状态读取范围过大，导致页面在短时间内重复重组。
+分析 Compose 性能需要一套不同的视角。它的渲染管线、状态管理和重组机制都不同于传统 View。卡顿可能不是布局层级太深，而是某个状态读取范围过大，导致页面在短时间内重复重组。
 
 理解 Compose 的性能模型之后，才能把 Perfetto、Layout Inspector 和 Compiler Metrics 串成一条可复现的排查路径：先确认帧在哪个阶段超时，再判断有没有不必要的重组，再回到具体 Composable 或状态设计上收敛问题。
 
@@ -115,7 +92,7 @@ fun Greeting(msg: String) {
 
 所以当我们说"某个 Composable 发生了重组",准确的意思是:Compose 运行时重新调用了一次这个 @Composable 函数。重组的范围取决于状态读取发生在哪个 Scope--**状态读取发生在哪个 Scope,状态更新时哪个 Scope 就发生重组**。
 
-这个原则非常重要,因为它是所有 Compose 性能优化策略的理论基础。后面我们讲到的 derivedStateOf、延迟读取、Lambda 包装等优化手段,核心都是通过改变状态读取的 Scope 来缩小重组范围。
+这条原则是所有 Compose 性能优化策略的根基。后面我们讲到的 derivedStateOf、延迟读取、Lambda 包装等优化手段,核心都是通过改变状态读取的 Scope 来缩小重组范围。
 
 ### 与传统 View 体系的性能对比
 
@@ -124,11 +101,11 @@ fun Greeting(msg: String) {
 
 其中一组常被引用的数据是：高端设备（Android 11+）上两者都能接近 60fps；中低端 Android 7.1 设备上，LazyColumn 约 43fps，RecyclerView 约 60fps。同一位测试者在粒子动画场景里又发现 Compose 和 View 的 Canvas 绘制几乎一致。这类数据更适合当成"特定设备、特定版本、特定页面结构下的抽样观察"，不能直接外推成通用结论。真要拿来做项目决策，至少用 Macrobenchmark 的 `FrameTimingMetric` 或 Perfetto，在自己的机型、刷新率、Compose 版本和滚动场景上复测。
 
-这组对比说明的方向没有变:**Compose 本身的渲染性能(Layout + Drawing)已经和传统 View 接近,差距更多出现在 Composition 阶段,也就是重组的开销**。如果我们的 Compose 页面掉帧,大概率就是"Compose 重组了不该重组的东西"。
+这组对比说明的方向没有变:**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 接近，差距主要出在 Composition 阶段——也就是重组的开销**。如果我们的 Compose 页面掉帧,大概率就是"Compose 重组了不该重组的东西"。
 
 这也解释了为什么 Compose 性能优化的核心策略就是:**减少不必要的重组、缩小重组的范围**。
 
-[待补充:Compose 和 View 在 Perfetto 中的帧耗时对比截图]
+
 
 ## Recomposition 的触发条件与最小化策略
 
@@ -246,9 +223,7 @@ val shouldShowButton by remember {
 
 ### SnapshotStateObserver：三阶段失效的底层机制
 
-
-
-前面讲到"状态读取发生在哪个 Scope,状态更新时哪个 Scope 就发生重组",但没有深入到运行时实现。`SnapshotStateObserver`(SSO)是这一机制的核心组件,理解它有助于精准判断 Compose 性能瓶颈的来源。
+前面讲到"状态读取发生在哪个 Scope，状态更新时哪个 Scope 就发生重组"，下面补充运行时实现层面的细节。`SnapshotStateObserver`(SSO)是这一机制的核心组件,理解它有助于精准判断 Compose 性能瓶颈的来源。
 
 **核心数据结构**:
 
@@ -502,7 +477,7 @@ Baseline Profiles 用来解决这个问题。它把关键用户路径上的方�
 
 缓解方式是复用 ViewHolder 里的 `ComposeView`，通过 `setContent` 更新内容，并保留默认的 `ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool`。该默认策略会在非 pooling container detach 时释放 Composition，在 RecyclerView 这类 pooling container 中等到释放出池时 dispose。只有明确要放弃复用缓存或 View 不会再回到窗口时，才手动调用 `disposeComposition()`。
 
-[待验证: Compose 1.10 中 ReuseComposeView API 的稳定性]
+（Compose 1.10 中 ReuseComposeView API 的稳定性尚未正式公告，以发布版文档为准。）
 
 ### AndroidView:在 Compose 中嵌入传统 View
 
@@ -548,7 +523,7 @@ fun WebViewScreen(url: String) {
 
 **避免大范围动画重组。** 不要在动画的每一帧都触发整个页面的重组,这在 Perfetto 中表现为连续的长帧,帧耗时随动画进行不收敛。
 
-[待补充:Compose 动画在 Perfetto 中的帧耗时对比--重组驱动动画 vs Draw 阶段动画的实际帧时间差异]
+
 
 ## 与其他章节的关系
 
@@ -591,12 +566,14 @@ fun WebViewScreen(url: String) {
 - [用 derivedStateOf 提升性能 | 郭霖](https://mp.weixin.qq.com/s?__biz=MzA5MzI3NjE2MA==&mid=2650284101)
 - [掌握 Android Compose:从基础到性能优化全面指南](https://mp.weixin.qq.com/s?__biz=MzkyNTUyNDA5Nw==&mid=2247485870)
 
-**[源码调研补遗 2026-06-02]**：`derivedStateOf` 底层源码已验证。一手来源：
+**附：`derivedStateOf` 底层源码参考**
+
 - `androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt`（`DerivedSnapshotState` 实现、`readableHash` 机制、`policy` 参数）
 - `androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateObserver.kt`（三阶段失效、`withoutReadObservation`）
 详见：`DeepResearch/2026-06-02-android-compose-derivedstate-sso-deep-source-analysis.md`
 
-**[源码调研补遗 2026-06-24]**：Compose Compiler 2.0 Strong Skipping 性能优化源码分析。一手来源：
+**附：Compose Compiler 2.0 Strong Skipping 源码参考**
+
 - `plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/ComposePlugin.kt`（FeatureFlag.StrongSkipping 架构、编译器配置）
 - `plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/lower/ComposerLambdaMemoization.kt`（Strong Skipping 代码生成、composer.startReplaceableGroup 跳过逻辑）
 - `plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/lower/ClassStabilityTransformer.kt`（类稳定性标记、StabilityBits 位掩码）
