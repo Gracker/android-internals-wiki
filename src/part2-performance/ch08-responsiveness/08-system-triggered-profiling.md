@@ -1,51 +1,65 @@
 ---
+title: ProfilingManager 系统触发式性能追踪
+chapter: '8.10'
+section: '8.10'
+status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-version_breakdown: "API 35 (Android 15): ProfilingManager 手动请求能力; API 36 (Android 16): addProfilingTriggers 系统触发式 profiling, APP_FULLY_DRAWN=1/ANR=2; extension 36.1: APP_REQUEST_RUNNING_TRACE=3/KILL_FORCE_STOP=4/KILL_RECENTS=5/KILL_TASK_MANAGER=6; API 37 (Android 17): OOM=7/ANOMALY=8/KILL_EXCESSIVE_CPU_USAGE=9/COLD_START=10/APP_COMPAT=11"
-related_chapters: ["16.8", "26.12"]
-chapter: 8.10
+last_verified: '2026-06-25'
+last_verified_against: AOSP android-17.0.0_r1 (ProfilingTrigger.java, ProfilingManager.java,
+  ProfilingService.java) + Task9 2026-06-25 deep-review items
 confidence: medium
+tags:
+- responsiveness
+- latency
+- launch
+related_chapters:
+- '16.8'
+- '26.12'
+version_breakdown: 'API 35 (Android 15): ProfilingManager 手动请求能力; API 36 (Android
+  16): addProfilingTriggers 系统触发式 profiling, APP_FULLY_DRAWN=1/ANR=2; extension 36.1:
+  APP_REQUEST_RUNNING_TRACE=3/KILL_FORCE_STOP=4/KILL_RECENTS=5/KILL_TASK_MANAGER=6;
+  API 37 (Android 17): OOM=7/ANOMALY=8/KILL_EXCESSIVE_CPU_USAGE=9/COLD_START=10/APP_COMPAT=11'
 created_by: task2a-knowledge-gap
-created_date: 2026-04-10
+created_date: '2026-04-10'
 deepseek_cn_review_state: done
 gap_source: 研究素材
-last_deepseek_cn_review_at: 2026-06-25
-last_task2b_lite_at: "2026-06-25"
-last_task6_at: "2026-06-25T04:05:00+08:00"
-last_task6_audit: "2026-06-25"
+last_deepseek_cn_review_at: '2026-06-25'
+last_task2b_lite_at: '2026-06-25'
+last_task6_at: '2026-06-25T04:05:00+08:00'
+last_task6_audit: '2026-06-25'
 last_task6_review_log: logs/review/2026-06-24-09-review.md
-last_task9_at: 2026-06-23T13:20:00+08:00
-last_task9_audit: 2026-06-24
-last_task9_autofix_at: 2026-06-23
+last_task9_at: '2026-06-23T13:20:00+08:00'
+last_task9_audit: '2026-06-24'
+last_task9_autofix_at: '2026-06-23'
 last_task9_review_log: logs/deep-review/2026-06-23-13-deep-review.md
 path: https://developer.android.com/reference/android/os/ProfilingManager
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-25
-section: 8.10
-status: finalized
-tags: [responsiveness, latency, launch]
+reviewed_date: '2026-06-25'
 task6_result: pass-light-edit
-task6_review_notes: "2026-06-25 Task6 revisiting复审(Task2B fix后回归): 禁用词扫描零命中(Task2B已修复)。否定-纠正结构1处在限额内。L1/L2通过,无B类大问题。task9_result=pass-tech-review,queue无pending,自动晋升finalized。"
+task6_review_notes: '2026-06-25 Task6 revisiting复审(Task2B fix后回归): 禁用词扫描零命中(Task2B已修复)。否定-纠正结构1处在限额内。L1/L2通过,无B类大问题。task9_result=pass-tech-review,queue无pending,自动晋升finalized。'
 task9_result: pass-tech-review
-task9_review_date: 2026-06-25
-task9_review_notes: 2026-06-25 Task9 deep-review: 无 P0/P1 问题，P2 建议改进 3 处，已写入 suggestions.md。
+task9_review_date: '2026-06-25'
+task9_review_notes: '2026-06-25 Task9 deep-review: 无 P0/P1 问题，P2 建议改进 3 处，已写入 suggestions.md。'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-25
+task9_reviewed_date: '2026-06-25'
 task9_reviewer: openclaw-task9
 task9_state: reviewed
 tech_score: 3/5
-title: ProfilingManager 系统触发式性能追踪
-verifier_pass: 2026-06-23T11:26:00+08:00
+verifier_pass: '2026-06-23T11:26:00+08:00'
 task2b_result: fixed-lite
 task2b_state: fixed
 task6_state: reviewed
 pipeline_stage: ready-to-publish
-last_task2b_at: "2026-06-25T00:53:48+08:00"
-repaired_date: 2026-06-25
+last_task2b_at: '2026-06-25T00:53:48+08:00'
+repaired_date: '2026-06-25'
 repaired_by: openclaw-task2b
-last_verified: 2026-06-25
-last_verified_against: "AOSP android-17.0.0_r1 (ProfilingTrigger.java, ProfilingManager.java, ProfilingService.java) + Task9 2026-06-25 deep-review items"
-task2b_notes: "2026-06-25 Task2B main: AOSP source path corrected to frameworks/base; constant values annotated with AOSP tag; ANOMALY-ApplicationExitInfo linkage structured. 2026-06-25 Task2B Lite: added version_breakdown to frontmatter for API 35/36/37 boundary clarity; added related_chapters cross-reference to 16.8 (ApplicationExitInfo) and 26.12 (versioned diagnostics)."
+task2b_notes: '2026-06-25 Task2B main: AOSP source path corrected to frameworks/base;
+  constant values annotated with AOSP tag; ANOMALY-ApplicationExitInfo linkage structured.
+  2026-06-25 Task2B Lite: added version_breakdown to frontmatter for API 35/36/37
+  boundary clarity; added related_chapters cross-reference to 16.8 (ApplicationExitInfo)
+  and 26.12 (versioned diagnostics).'
 ---
+
 ---
 
 # ProfilingManager 系统触发式性能追踪

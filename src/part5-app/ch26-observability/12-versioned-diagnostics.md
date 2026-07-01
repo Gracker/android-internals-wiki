@@ -60,7 +60,7 @@ last_task9_review_log: "logs/deep-review/2026-06-28-22-deep-review.md"
 覆盖 Android 15+ `ProfilingManager` / AndroidX Profiling 的 system trace、heap dump、heap profile、stack sampling 四类采集，说明结果回调、文件归档、限流和采集成本。
 
 ### 🔹 ProfilingTrigger 与 Extension 版本
-覆盖 Android 16/API 36、Extension 36.1、Android 17/API 37 的 trigger 差异，区分 `APP_FULLY_DRAWN`、`ANR`、`COLD_START`、`OOM`、`ANOMALY` 等触发器的返回物和使用场景。
+覆盖 Android 16/API 36、Extension 36.1、Android 17/API 37 的 trigger 差异，区分 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANR`、`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_ANOMALY` 等触发器的返回物和使用场景。
 
 ### 🔹 证据归档与去重字段
 设计一套线上证据归档字段：pid、timestamp、processName、reason、triggerType、profilingType、resultFilePath、caseId、sessionId、appVersion、device、API level。说明 Java crash、native crash、ANR、OOM 和用户手动杀进程如何去重。
@@ -238,15 +238,15 @@ Android 16 / API 36 把 ProfilingManager 从“App 主动请求”扩展到“�
 
 | 版本层 | trigger | 返回物 | 使用场景 | 边界 |
 |---|---|---|---|---|
-| API 36 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | running system trace snapshot | 复盘 `reportFullyDrawn()` 前后启动尾段 | 不等于 Android 17 的 `COLD_START` |
+| API 36 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | running system trace snapshot | 复盘 `reportFullyDrawn()` 前后启动尾段 | 不等于 Android 17 的 `TRIGGER_TYPE_COLD_START` |
 | API 36 | `TRIGGER_TYPE_ANR` | running system trace snapshot | ANR 前后线程、Binder、锁等待 | 不是 ANR 文本 trace 的替代品 |
-| Extension 36.1 | `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` | running system trace snapshot | App 请求 / 用户关闭 / 任务管理器关闭相关取证 | 要用 Extension 版本做运行时判断 |
+| Extension 36.1 | `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`、`TRIGGER_TYPE_KILL_FORCE_STOP`、`TRIGGER_TYPE_KILL_RECENTS`、`TRIGGER_TYPE_KILL_TASK_MANAGER` | running system trace snapshot | App 请求 / 用户关闭 / 任务管理器关闭相关取证 | App 请求入口是 `requestRunningSystemTrace(tag)`，且要先注册对应 trigger |
 | API 37 | `TRIGGER_TYPE_COLD_START` | system trace + call stack sample | 进程冷启动早期到 fully drawn 的窗口 | 常量在 android-17.0.0_r1 可见，受 feature flag 和设备能力控制 |
 | API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java `OutOfMemoryError` | 不是 LMK / lmkd 现场；自定义 uncaught handler 必须调用默认 handler |
 | API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 系统因过量 CPU 使用杀进程后复盘 | 对应 `REASON_EXCESSIVE_RESOURCE_USAGE`，公开文档没有给出阈值 |
-| API 37 | `TRIGGER_TYPE_ANOMALY` / `APP_COMPAT` | 依事件类型变化，可能是 heap dump 或 stack sampling | 设备端异常检测、兼容性回退 | 收到结果后先看 tag 和扩展名；常量在源码可见，语义以官方文档和返回 tag 为准 |
+| API 37 | `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT` | 依事件类型变化，可能是 heap dump 或 stack sampling | 设备端异常检测、兼容性回退 | 收到结果后先看 tag 和扩展名；常量在源码可见，语义以官方文档和返回 tag 为准 |
 
-Android 17 的 `COLD_START` 和 Android 16 的 `APP_FULLY_DRAWN` 要分开解释。前者在冷启动早期开始，返回 system trace 和 call stack sample；后者是在 `reportFullyDrawn()` 之后给 running trace snapshot。写启动排障时，混用这两个名字会直接改变时间窗口。[已验证: 官方文档, developer.android.com/about/versions/17/features][详见 8.10 节]
+Android 17 的 `TRIGGER_TYPE_COLD_START` 和 Android 16 的 `TRIGGER_TYPE_APP_FULLY_DRAWN` 要分开解释。前者在冷启动早期开始，返回 system trace 和 call stack sample；后者是在 `reportFullyDrawn()` 之后给 running trace snapshot。写启动排障时，混用这两个名字会直接改变时间窗口。[已验证: 官方文档, developer.android.com/about/versions/17/features][详见 8.10 节]
 
 `TRIGGER_TYPE_OOM` 处理的是 Java `OutOfMemoryError`，返回 Java heap dump。它不覆盖系统内存压力下的 LMK，也不等同于 `ApplicationExitInfo.REASON_LOW_MEMORY`。OOM 治理策略详见 20.5；这里的重点是把 heap dump 文件归档到同一份 case 里，和异常时间、版本、设备、前后台状态关联。[已验证: 官方文档, developer.android.com/about/versions/17/features]
 
@@ -363,11 +363,11 @@ AOSP `frameworks/base/core/java/android/app/ApplicationExitInfo.java` 中 `REASO
 
 | 问题 | Android 10 | Android 11-14 | Android 15 | Android 16 | Android 17 |
 |---|---|---|---|---|---|
-| 慢启动 | 自有耗时埋点 + 人工 Perfetto | 同左，退出后补 `ApplicationExitInfo` | `requestProfiling(SYSTEM_TRACE)` | `APP_FULLY_DRAWN` snapshot | `COLD_START` trace + stack sample |
+| 慢启动 | 自有耗时埋点 + 人工 Perfetto | 同左，退出后补 `ApplicationExitInfo` | `requestProfiling(SYSTEM_TRACE)` | `TRIGGER_TYPE_APP_FULLY_DRAWN` snapshot | `TRIGGER_TYPE_COLD_START` trace + stack sample |
 | ANR | 自有卡顿监控 + 用户 bug report | `REASON_ANR` + `getTraceInputStream()` | App-driven system trace 辅助复现 | `TRIGGER_TYPE_ANR` snapshot | 同左 |
 | Native crash | Crashpad / Breakpad minidump | API 31+ 可补 tombstone protobuf | 同左 | 同左 | 同左 |
 | Java OOM | Crash SDK + 内存采样 | 同左 + 退出记录 | App-driven heap dump / heap profile | 同左 | `TRIGGER_TYPE_OOM` heap dump |
-| 被系统杀进程 | 自有前后台和内存采样 | `REASON_LOW_MEMORY` / `REASON_EXCESSIVE_RESOURCE_USAGE` 能力探测 | 同左 | 同左 | `KILL_EXCESSIVE_CPU_USAGE` / `ANOMALY` 辅助 |
+| 被系统杀进程 | 自有前后台和内存采样 | `REASON_LOW_MEMORY` / `REASON_EXCESSIVE_RESOURCE_USAGE` 能力探测 | 同左 | 同左 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` / `TRIGGER_TYPE_ANOMALY` 辅助 |
 
 这个表也说明了降级策略：低版本靠自有证据体系，高版本再叠加系统证据。不能因为 Android 17 有 trigger，就删除 Android 10-14 的日志、指标、Crash SDK 和反馈证据包；线上版本分布决定了这些降级路径会长期存在。
 
@@ -589,7 +589,7 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 ### Android 版本化线上诊断能力完整边界研究
 - 来源：DeepResearch/2026-05-20-android-versioned-online-diagnostic-capabilities.md
 - 类型：DeepResearch 调研结果
-- 摘要：建立 Android 10-17 四档线上诊断能力对照表：ApplicationExitInfo（API 30+）提供进程退出追溯，ProfilingManager（API 35+）支持 system trace / heap dump / heap profile / stack sampling 四类采集，ProfilingTrigger（API 36+）支持 APP_FULLY_DRAWN / ANR 触发器，API 37 扩展 COLD_START / OOM / KILL_EXCESSIVE_CPU_USAGE / ANOMALY。包含完整的 API 版本降级路径和限流配置。
+- 摘要：建立 Android 10-17 四档线上诊断能力对照表：ApplicationExitInfo（API 30+）提供进程退出追溯，ProfilingManager（API 35+）支持 system trace / heap dump / heap profile / stack sampling 四类采集，ProfilingTrigger（API 36+）支持 `TRIGGER_TYPE_APP_FULLY_DRAWN` / `TRIGGER_TYPE_ANR` 触发器，API 37 扩展 `TRIGGER_TYPE_COLD_START` / `TRIGGER_TYPE_OOM` / `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` / `TRIGGER_TYPE_ANOMALY`。包含完整的 API 版本降级路径和限流配置。
 
 ### 源码调研补充（2026-05-25）
 
@@ -613,8 +613,8 @@ statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保�
 4. **ProfilingTrigger 触发类型**（API 36+，未经一手 AOSP 源码验证）
  - `TRIGGER_TYPE_ANR` — ANR 发生时触发
  - `TRIGGER_TYPE_COLD_START` — 冷启动时触发，前提：`ApplicationStartInfo.getStartType() == START_TYPE_COLD`
- - `TRIGGER_TYPE_FULLY_DRAWN` — 应用首帧完成时触发
- - `TRIGGER_TYPE_APP_REQUEST` — 应用主动请求时触发
+ - `TRIGGER_TYPE_APP_FULLY_DRAWN` — 应用首帧完成时触发
+ - `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` — 应用通过 `requestRunningSystemTrace(tag)` 主动请求 running trace 时触发
 
 5. **ApplicationStartInfo 启动类型**（API 35+，未经一手 AOSP 源码验证）
  - `getStartType()` 返回 `START_TYPE_COLD` / `START_TYPE_WARM` / `START_TYPE_HOT`

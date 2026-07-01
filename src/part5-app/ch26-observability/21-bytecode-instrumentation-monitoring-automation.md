@@ -1,28 +1,43 @@
 ---
-title: "编译期字节码插桩与监控自动化"
-chapter: "26.21"
+title: 编译期字节码插桩与监控自动化
+chapter: '26.21'
 status: ready-for-review
-drafted_date: "2026-06-26"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-06-26"
-last_verified_against: "AGP 8.x docs + AOSP android-17.0.0_r1 + ASM 9.x docs"
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-06-26'
+last_verified_against: AGP 8.x docs + AOSP android-17.0.0_r1 + ASM 9.x docs
 confidence: high
 sources:
-  - type: clipping
-    path: "Clippings/Android 应用稳定性剖析与优化 - ASM 与字节码插桩：改写字节码的"神器".md"
-  - type: official
-    path: "https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory"
-  - type: official
-    path: "https://developer.android.com/build/asm-instrumentation"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/Trace.java"
-  - type: aosp
-    path: "tools/base/build-system/gradle-api/src/main/java/com/android/build/api/instrumentation/"
-tags: [asm, bytecode, instrumentation, agp, apm, monitoring, compile-time]
-related_chapters: ["20.2", "20.7", "20.14", "26.3", "14.13", "19.2", "19.23", "19.27"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-06-26"
-gap_source: "素材驱动/参考书"
+- type: clipping
+  path: Clippings/Android 应用稳定性剖析与优化 - ASM 与字节码插桩：改写字节码的"神器".md
+- type: official
+  path: https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory
+- type: official
+  path: https://developer.android.com/build/asm-instrumentation
+- type: aosp
+  path: frameworks/base/core/java/android/os/Trace.java
+- type: aosp
+  path: tools/base/build-system/gradle-api/src/main/java/com/android/build/api/instrumentation/
+tags:
+- asm
+- bytecode
+- instrumentation
+- agp
+- apm
+- monitoring
+- compile-time
+related_chapters:
+- '20.2'
+- '20.7'
+- '20.14'
+- '26.3'
+- '14.13'
+- '19.2'
+- '19.23'
+- '19.27'
+drafted_date: '2026-06-26'
+created_by: task2a-knowledge-gap
+created_date: '2026-06-26'
+gap_source: 素材驱动/参考书
 ---
 
 # 26.21 编译期字节码插桩与监控自动化

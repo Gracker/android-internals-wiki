@@ -2,13 +2,7 @@
 title: 内存相关的版本演进
 chapter: '4.6'
 section: '4.6'
-reviewed_date: "2026-06-29"
-reviewed_by: openclaw-task6
-polish_count: 1
-polish_date: '2026-04-07'
-polish_by: task2b-polish
-rework_date: 2026-06-29
-rework_by: openclaw-task2b
+status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-06-08'
 last_verified_against: AOSP android-17.0.0_r1 + Android 17/API 37 官方文档
@@ -56,38 +50,48 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.9'
+reviewed_date: '2026-06-29'
+reviewed_by: openclaw-task6
+polish_count: '1'
+polish_date: '2026-04-07'
+polish_by: task2b-polish
+rework_date: '2026-06-29'
+rework_by: openclaw-task2b
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
-review_count: 9
+review_count: '9'
 task6_state: reviewed
 task6_result: pass-light-edit-v2
-last_task6_at: "2026-06-29T13:16:34+08:00"
+last_task6_at: '2026-06-29T13:16:34+08:00'
 last_task6_review_log: logs/review/2026-06-29-13-review.md
-task6_review_notes: '2026-06-29 Task6 复审(revisiting→reviewed)：Task9 auto-fix 后写作质检通过。L1: 无禁用词命中；1 处否定纠正式句型在限额内。L2: 结构清晰、版本叙事连贯。无 L3/L4 回炉项。queue 有 pending 条目(时效性巡检)，不可自动晋升，送 Task2B 处理。'
+task6_review_notes: '2026-06-29 Task6 复审(revisiting→reviewed)：Task9 auto-fix 后写作质检通过。L1:
+  无禁用词命中；1 处否定纠正式句型在限额内。L2: 结构清晰、版本叙事连贯。无 L3/L4 回炉项。queue 有 pending 条目(时效性巡检)，不可自动晋升，送
+  Task2B 处理。'
 task9_state: reviewed
 task9_result: auto-fixed
-last_task9_at: "2026-06-29T11:34:21+08:00"
-last_task2b_lite_at: "2026-06-29"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-29"
-task9_review_notes: "2026-06-29 Task9 deep-review: auto-fixed。P0/P1 本轮无未闭环项；已修正 Bionic 16KB compat 源码锚点/函数名与 MemoryLimiter 条件启用、anon+swap 延迟 kill 边界，回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-29-11-deep-review.md"
-last_task9_autofix_at: "2026-06-29"
+last_task9_at: '2026-06-29T11:34:21+08:00'
+last_task2b_lite_at: '2026-06-29'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-06-29'
+task9_review_notes: '2026-06-29 Task9 deep-review: auto-fixed。P0/P1 本轮无未闭环项；已修正 Bionic
+  16KB compat 源码锚点/函数名与 MemoryLimiter 条件启用、anon+swap 延迟 kill 边界，回到 Task6 复审。'
+last_task9_review_log: logs/deep-review/2026-06-29-11-deep-review.md
+last_task9_autofix_at: '2026-06-29'
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
-p0: 0
-p1: 0
-p2: 0
-updated_by: "openclaw-task9"
-updated_date: "2026-06-29"
-status: finalized
+last_deepseek_cn_review_at: '2026-06-03'
+p0: '0'
+p1: '0'
+p2: '0'
+updated_by: openclaw-task9
+updated_date: '2026-06-29'
 pipeline_stage: ready-to-publish
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: 2026-06-29T14:53:01.246869+08:00
-promoted_at: 2026-06-29T14:53:01.246869+08:00
-promotion_note: Auto-promoted: Task6(pass-light-edit-v2) + Task9(auto-fixed) + queue cleared. Freshness check concerns resolved by Task9 deep-review.
-----
+last_task2b_at: '2026-06-29T14:53:01.246869+08:00'
+promoted_at: '2026-06-29T14:53:01.246869+08:00'
+promotion_note: 'Auto-promoted: Task6(pass-light-edit-v2) + Task9(auto-fixed) + queue
+  cleared. Freshness check concerns resolved by Task9 deep-review.'
+---
 
 # 内存相关的版本演进
 

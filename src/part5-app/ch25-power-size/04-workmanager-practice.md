@@ -1,43 +1,57 @@
 ---
 title: WorkManager 实战与后台任务调度
-chapter: 25.4
-section: 25.4
+chapter: '25.4'
+section: '25.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: 2026-05-14
-last_verified_against: AndroidX WorkManager androidx-main + Android Developers background work docs + AOSP JobScheduler android-16.0.0_r1 + Clippings structure references
+last_verified: '2026-05-14'
+last_verified_against: AndroidX WorkManager androidx-main + Android Developers background
+  work docs + AOSP JobScheduler android-16.0.0_r1 + Clippings structure references
 confidence: high
-drafted_date: 2026-05-14
-polish_count: 1
-sources: 
+sources:
 - type: clippings-structure-ref
+  path: Clippings/Android 性能优化 - 任务调度优化:线程+CPU,提升任务调度优先级.md
+tags:
+- workmanager
+- jobscheduler
+- expedited-work
+- background-task
+- power
+related_chapters:
+- '25.2'
+- '25.3'
+- '5.10'
+drafted_date: '2026-05-14'
+polish_count: '1'
 path: Clippings/Android 性能优化 - 任务调度优化:线程+CPU,提升任务调度优先级.md
-tags: [workmanager, jobscheduler, expedited-work, background-task, power]
-last_task2b_lite_at: 2026-06-24
-related_chapters: ["25.2", "25.3", "5.10"]
+last_task2b_lite_at: '2026-06-24'
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-24
+reviewed_date: '2026-06-24'
 task6_result: pass-light-edit
-last_task6_at: 2026-06-24T20:13:00+08:00
+last_task6_at: '2026-06-24T20:13:00+08:00'
 last_task6_review_log: logs/review/2026-06-24-20-review.md
-task6_review_notes: "2026-06-24 Task6 revisiting复审: Task2B修复后回归审。frontmatter格式已修复,正文禁用词零命中,高频词达标,翻译腔零检出。task9_result已pass-tech-review,queue无pending,自动晋升finalized。"
+task6_review_notes: '2026-06-24 Task6 revisiting复审: Task2B修复后回归审。frontmatter格式已修复,正文禁用词零命中,高频词达标,翻译腔零检出。task9_result已pass-tech-review,queue无pending,自动晋升finalized。'
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-24
-last_task9_at: 2026-06-25T07:20:00+08:00
+task9_reviewed_date: '2026-06-24'
+last_task9_at: '2026-06-25T07:20:00+08:00'
 last_task9_review_log: logs/deep-review/2026-06-17-10-deep-review.md
-task9_review_notes: 2026-06-17 Task9:pass-tech-review。P0 0 / P1 0 / P2 0;复核 WorkManager 调度器、GreedyScheduler 约束追踪、Expedited/FGS/UIDT 边界、Android 16 long-running worker quota 与 Android 17 JobDebugInfo 交叉引用;无正文技术回炉项,保持 finalized。
-last_task2b_at: 2026-06-24T16:56:07+08:00
-task2b_fix_summary: Fixed P2: 源码路径修正(platform/→frameworks/support/) + SystemJobInfoConverter转换细节与GreedyScheduler双轨协作机制 + Android 16/17 long-running worker quota差异与WIU硬化
+task9_review_notes: 2026-06-17 Task9:pass-tech-review。P0 0 / P1 0 / P2 0;复核 WorkManager
+  调度器、GreedyScheduler 约束追踪、Expedited/FGS/UIDT 边界、Android 16 long-running worker quota
+  与 Android 17 JobDebugInfo 交叉引用;无正文技术回炉项,保持 finalized。
+last_task2b_at: '2026-06-24T16:56:07+08:00'
+task2b_fix_summary: 'Fixed P2: 源码路径修正(platform/→frameworks/support/) + SystemJobInfoConverter转换细节与GreedyScheduler双轨协作机制
+  + Android 16/17 long-running worker quota差异与WIU硬化'
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-25
-last_task9_audit: 2026-06-24
+last_deepseek_cn_review_at: '2026-06-25'
+last_task9_audit: '2026-06-24'
 ---
+
 ---
 
 # WorkManager 实战与后台任务调度
