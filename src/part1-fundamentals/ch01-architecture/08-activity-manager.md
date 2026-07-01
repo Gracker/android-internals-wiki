@@ -93,9 +93,9 @@ gap_source: "AOSP结构+官方文档+研究素材+读者需求"
 rework_date: "2026-04-05"
 rework_by: "task2a"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-09"
+reviewed_date: "2026-07-01"
 task6_result: pass-light-edit
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
 last_task6_audit: "2026-06-08"
 task9_state: "reviewed"
@@ -109,9 +109,9 @@ review_round: "9"
 last_task9_audit: "2026-07-01"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-18T20:16:50+08:00"
-last_task6_at: "2026-06-09T09:09:00+08:00"
+last_task6_at: "2026-07-01T08:09:00+08:00"
 last_task6_review_log: "logs/review/2026-06-09-09-review.md"
-task6_review_notes: "2026-06-09 Task6 revisiting review：Task9 idle-audit auto-fix 后写作复审通过；L1/L2 无新增问题；0 回炉项。送 Task9 确认 auto-fix。"
+task6_review_notes: "2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后): pass-light-edit。L1 小修 7 处（禁用词"链路"×7 → 流程/调用链/计算路径/路径）；无 L2/L3/L4 新增问题。Task9 idle-audit source version anchoring 后写作复审通过。自动晋升 finalized。"
 last_task2b_at: "2026-05-27T22:50:00+08:00"
 last_task2b_log: "frontmatter backlog fallback: logs/deep-review/2026-05-18-19-deep-review.md"
 task2b_notes: "修复 Task9 P95：top-sleeping oom_adj、Service ANR ProcessAnrTimer、ANR dump 文件路径、Broadcast delivery timeout 起点与 Android 14/15/16 广播队列类名。"
@@ -136,7 +136,7 @@ last_task9_audit_log: "logs/deep-review/2026-07-01-00-audit.md"
 - 🔹 **AMS / ATMS 分工与 Perfetto 入口**:[已验证: AOSP android-17.0.0_r1]
   AMS 负责进程管理、ANR、Service / Broadcast / Provider 调度;Activity / Task 容器管理在 ATMS / WindowManager。Perfetto 入口看 `system_server` 的 `ActivityManager` 线程和 `am_*` 事件。
 
-- 🔹 **进程优先级、启动与回收链路**:[已验证: AOSP android-17.0.0_r1]
+- 🔹 **进程优先级、启动与回收流程**:[已验证: AOSP android-17.0.0_r1]
   关注 `oom_adj`、`am_proc_start`、`am_proc_bound`、lmkd 协作与冷启动关键时间点。
 
 - 🔹 **ANR 类型与超时差异**:[已验证: AOSP + 官方文档]
@@ -180,7 +180,7 @@ AMS 与几个关键服务之间存在紧密的协作关系：
 - **SurfaceFlinger**:虽然不直接交互,但 AMS 决定了哪个 Activity 可见 → WMS 据此决定 Surface 的层级 → SurfaceFlinger 合成显示。
 - **ProcessList**:AMS 内部维护的进程列表,和 lmkd(Low Memory Killer Daemon)协作完成内存回收。我们在 §4.4 会专门讲这个机制。
 
-应用进程通过 `ActivityManager`(客户端代理类)与 AMS 通信。这层通信走的是 Binder IPC,`IActivityManager.aidl` 定义接口,`ActivityManagerService` 实现接口。需要区分的是,`startActivity()` 这类 Activity / Task 相关调用虽然入口还在 AMS 对外接口上,但会继续委托给 `ActivityTaskManagerService`。所以你在 Perfetto 中看到的 `Binder:system` 线程调用,往往只是系统服务链路的起点,不是全部。
+应用进程通过 `ActivityManager`(客户端代理类)与 AMS 通信。这层通信走的是 Binder IPC,`IActivityManager.aidl` 定义接口,`ActivityManagerService` 实现接口。需要区分的是,`startActivity()` 这类 Activity / Task 相关调用虽然入口还在 AMS 对外接口上,但会继续委托给 `ActivityTaskManagerService`。所以你在 Perfetto 中看到的 `Binder:system` 线程调用,往往只是系统服务调用链的起点,不是全部。
 
 
 ### 在 Perfetto 中定位 AMS
@@ -245,13 +245,13 @@ Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了�
 
 > 上表中 `PERCEPTIBLE_MEDIUM_APP_ADJ = 225`、`CACHED_APP_LMK_FIRST_ADJ = 950` 和 `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50` 在 AOSP android-17.0.0_r1 的 `com.android.server.am.psc.Constants` 中定义。`TOP_SLEEPING` 在 `com.android.server.am.psc.OomAdjusterImpl` 中是 `adjType=top-sleeping` 分支,`adj` 仍落到 `FOREGROUND_APP_ADJ = 0`,不是 `PERCEPTIBLE_APP_ADJ = 200` 的独立表项。其余细分档位在厂商 ROM 中可能继续调整;FGS 的 50 / 200 档位已按 `psc/Constants.java`、`psc/OomAdjuster.java` 与 `psc/OomAdjusterImpl.java` 核对。
 
-Android 17 中,`ActivityManagerService.updateOomAdjLocked()` 仍是 AMS 侧触发入口,但实际计算已经落到 `com.android.server.am.psc.OomAdjuster` / `OomAdjusterImpl`;adj 常量定义在 `com.android.server.am.psc.Constants`。这条链路会根据进程中运行的 Activity、Service、Provider、广播接收器状态重新计算优先级。
+Android 17 中,`ActivityManagerService.updateOomAdjLocked()` 仍是 AMS 侧触发入口,但实际计算已经落到 `com.android.server.am.psc.OomAdjuster` / `OomAdjusterImpl`;adj 常量定义在 `com.android.server.am.psc.Constants`。这条计算路径会根据进程中运行的 Activity、Service、Provider、广播接收器状态重新计算优先级。
 
 一个进程可能同时持有多种组件。比如一个 App 进程可能既有前台 Activity,又有后台 Service 在跑。AMS / OomAdjuster 会取所有组件中最高的优先级作为进程的最终优先级。这个策略确保了"只要进程中有任何重要组件,就不会被轻易杀掉"。
 
 ### 进程启动流程
 
-当用户点击一个 App 图标时,客户端入口是 Launcher 进程里的 `Instrumentation.execStartActivity()`。它通过 `ActivityTaskManager.getService().startActivity()` 进入 `system_server`,先由 ATMS / `ActivityStarter` 做任务容器和启动模式决策;只有在发现目标进程还不存在时,才会继续落到 AMS 的进程启动链路。`ActivityManagerService.startActivity()` 在现代版本里更多是兼容旧接口的转发层。
+当用户点击一个 App 图标时,客户端入口是 Launcher 进程里的 `Instrumentation.execStartActivity()`。它通过 `ActivityTaskManager.getService().startActivity()` 进入 `system_server`,先由 ATMS / `ActivityStarter` 做任务容器和启动模式决策;只有在发现目标进程还不存在时,才会继续落到 AMS 的进程启动流程。`ActivityManagerService.startActivity()` 在现代版本里更多是兼容旧接口的转发层。
 
 ```text
 Launcher / Instrumentation.execStartActivity()
@@ -422,7 +422,7 @@ RootWindowContainer
 
 `RootWindowContainer` 是整台设备的顶层窗口容器;每个 `DisplayContent` 下面可以有一个或多个 `TaskDisplayArea`;`TaskDisplayArea` 的孩子既可以是 `Task`,也可以是嵌套的 `TaskDisplayArea`;`Task` 本身既可能是用户在 Recents 里看到的一张任务卡片,也可能继续包含子 `Task`。所以今天谈"Activity 落在哪个栈里"时,更准确的表述是:ATMS / WindowManager 在目标 `TaskDisplayArea` 中选择或创建合适的 `Task`,再把 `ActivityRecord` 挂进去。
 
-落实到启动链路,`ActivityStarter.startActivityInner()` 会先计算 `mPreferredTaskDisplayArea`,再通过 `TaskDisplayArea.getOrCreateRootTask()` 找到或创建目标 root task,最后把新的 `ActivityRecord` 放进目标 `Task`。这对性能分析有一个直接影响:我们不能再假设 Perfetto 里存在一个统一的 `am_activity_launch` EventLog 作为启动锚点。应该把 `android_logs` 里的 `am_proc_start` / `am_proc_bound`、`system_server` 侧的 ATMS / WindowManager slice,以及应用主线程的 `bindApplication`、Activity 生命周期和首帧 `doFrame` 串起来看。AMS 负责把进程和全局状态管起来,ATMS 负责把 Activity 放到正确的容器里,这两条线要放在一起看,启动链路才完整。
+落实到启动流程,`ActivityStarter.startActivityInner()` 会先计算 `mPreferredTaskDisplayArea`,再通过 `TaskDisplayArea.getOrCreateRootTask()` 找到或创建目标 root task,最后把新的 `ActivityRecord` 放进目标 `Task`。这对性能分析有一个直接影响:我们不能再假设 Perfetto 里存在一个统一的 `am_activity_launch` EventLog 作为启动锚点。应该把 `android_logs` 里的 `am_proc_start` / `am_proc_bound`、`system_server` 侧的 ATMS / WindowManager slice,以及应用主线程的 `bindApplication`、Activity 生命周期和首帧 `doFrame` 串起来看。AMS 负责把进程和全局状态管起来,ATMS 负责把 Activity 放到正确的容器里,这两条线要放在一起看,启动流程才完整。
 
 > [已验证: AOSP android-17.0.0_r1,`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 中 `startActivity()` 委托给 `mActivityTaskManager.startActivity()`;`frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java`、`TaskDisplayArea.java`、`Task.java` 定义了当前任务容器层级]
 
@@ -460,7 +460,7 @@ Android 16+ 上,用 `ApplicationStartInfo.getStartComponent()` 直接获取组�
 
 因此我们分析配置变更带来的重启问题时,不能把 `recreateOnConfigChanges` 当成一个"通用的 Activity 重启开关"。就公开源码可验证的语义来看,它主要针对 `mcc` / `mnc` 这类运营商和区域配置变化。屏幕旋转、夜间模式、窗口尺寸变化这类更常见的场景,仍然应该先看 `android:configChanges`、`onConfigurationChanged()` 和实际生命周期回调,而不是先假设系统会因为 `recreateOnConfigChanges` 把 Activity 杀掉重建。
 
-从性能角度,这个属性主要影响少见但难查的区域 / 运营商切换场景,不是高频日常交互。假如你在跨境 SIM、eSIM 切换或运营商配置更新后看到 Activity 没有按预期重建,先查 manifest 是否声明了 `mcc|mnc` 的 `recreateOnConfigChanges`,再决定是否继续沿着 AMS / ATMS 的重启链路追。至少就当前公开的 AOSP 与 Android Developers 文档,我们没有证据把它解释成 Android 17 的通用行为变更。
+从性能角度,这个属性主要影响少见但难查的区域 / 运营商切换场景,不是高频日常交互。假如你在跨境 SIM、eSIM 切换或运营商配置更新后看到 Activity 没有按预期重建,先查 manifest 是否声明了 `mcc|mnc` 的 `recreateOnConfigChanges`,再决定是否继续沿着 AMS / ATMS 的重启路径追。至少就当前公开的 AOSP 与 Android Developers 文档,我们没有证据把它解释成 Android 17 的通用行为变更。
 
 > [已验证: AOSP android-17.0.0_r1,`frameworks/base/core/res/res/values/attrs_manifest.xml`;Android Developers `android.R.attr#recreateOnConfigChanges`]
 

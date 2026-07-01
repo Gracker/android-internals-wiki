@@ -47,7 +47,7 @@ task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
+last_deepseek_cn_review_at: 2026-07-01
 ---
 
 # 6.5 SharedPreferences/DataStore 性能与 ANR 优化
@@ -130,7 +130,7 @@ private void awaitLoadedLocked() {
 
 等待点在 `mLock.wait()`：后台 executor 线程还在做 `Os.stat()`、`XmlUtils.readMapXml()` 时，主线程如果先访问 SP，就会卡在 `mLock.wait()`。如果 XML 已经长到几十 KB 甚至几百 KB，这段等待在低端机或 I/O 繁忙场景里会明显放大。
 
-在 Perfetto 里，我们更适合去找 `XmlUtils.readMapXml()`、文件读取和对应的后台 executor 线程，而不是硬写 `SharedPreferencesImpl-load` 这个旧线程名。线程名字在新版实现里不再是稳定观察点。
+在 Perfetto 里更适合观察 `XmlUtils.readMapXml()`、文件读取和对应的后台 executor 线程，而不是硬套 `SharedPreferencesImpl-load` 这个旧线程名。线程名字在新版实现里不再是稳定观察点。
 
 
 ### 路径二：`apply()` 只对调用方异步
@@ -195,7 +195,7 @@ private static void processPendingWork() {
 
 `sWork` 是实际写盘任务，`sFinishers` 才是 `awaitCommit` 这一类收尾等待。`waitToFinish()` 先执行 `processPendingWork()`，意味着主线程有时会自己把 `writeToDiskRunnable` 跑掉；如果写盘已经在后台线程里开始了，主线程随后又会在 `sFinishers` 里卡到 `CountDownLatch.await()`。
 
-这也是很多文章把 ANR 栈写错的地方。现代 App 更常见的栈顶是 `handleStopActivity()`，不是 `handlePauseActivity()`。`handlePauseActivity()` 里的等待只保留给 pre-Honeycomb Activity。Service 和 BroadcastReceiver 也各有自己的收尾路径，不能都折叠成一个 `onPause()` 场景。
+这里常被写错：现代 App 的栈顶是 `handleStopActivity()`，不是 `handlePauseActivity()`。`handlePauseActivity()` 里的等待只保留给 pre-Honeycomb Activity。Service 和 BroadcastReceiver 也各有自己的收尾路径，不能都折叠成一个 `onPause()` 场景。
 
 [已验证: AOSP android-17.0.0_r1, `frameworks/base/core/java/android/app/QueuedWork.java`, `frameworks/base/core/java/android/app/ActivityThread.java`, `frameworks/base/core/java/android/content/BroadcastReceiver.java`]
 
@@ -563,7 +563,6 @@ MMKV 通过 `mmap` 减少了传统文件 I/O 的一部分开销。在高频小�
 
 一个反模式仍然要避开：用 ContentProvider 再包一层 SP。这样只是在 SP 的 XML 全量写入之外，又叠了一层 Binder IPC，问题不会自己消失。
 
-<!-- AIW-源码调研-2026-06-27 -->
 
 ## Android 17 源码验证结论（2026-06-27 更新）
 
@@ -634,36 +633,10 @@ $ diff android-16.0.0_r3 android-17.0.0_r1 SharedPreferencesImpl.java
 - [Google I/O 2024: DataStore 最佳实践](https://developer.android.com/videos/play/live/308012)
 
 
-<!-- AIW-源码调研-2026-06-28 -->
-### Android 17 源码验证结论
 
-基于 android-17.0.0_r1 的源码验证结果：
-
-1. **实现完全冻结**：SharedPreferencesImpl.java 在 Android 16 → Android 17 期间 diff 仅 2 行新增 @RavenwoodKeepWholeClass 注解，核心逻辑完全一致。
-
-2. **官方弃用声明**：SharedPreferences.java javadoc 在 Android 17 中彻底重写，Android 团队明确表示：
-   > "强烈不建议将 SharedPreferences 用于新的数据存储需求"
-   > 推荐 DataStore/Room 作为替代方案
-
-3. **官方认可缺陷**：新文档明确列出 SharedPreferences 的 4 类核心问题：
-   - UI 线程阻塞/ANR 风险（QueuedWork.waitToFinish 阻塞生命周期）
-   - apply() 无错误回调/commit() 可能误返 false
-   - 内存/磁盘不一致无事务保证
-   - UTF-16 静默损坏 + getStringSet 集合修改未定义行为
-
-4. **缓存机制不变**：ContextImpl 中的 sSharedPrefsCache 双层 ArrayMap 缓存逻辑完全冻结，MODE_MULTI_PROCESS 处理路径无变化。
-
-5. **性能参数冻结**：MAX_FSYNC_DURATION_MILLIS=256、CALLBACK_ON_CLEAR_CHANGE=119147584L 等性能参数保持不变。
-
-**结论**：Android 17 中 SharedPreferences 的性能瓶颈和 ANR 机制未解决，但官方已明确弃用方向，推荐向 DataStore 迁移。
-
-
-
-
-<!-- AIW-源码调研-2026-07-01 -->
 ### SharedPreferencesImpl ANR 触发完整调用链补强（2026-07-01 增量）
 
-2026-06-27 调研已确认 SharedPreferencesImpl 在 Android 17 实现冻结（仅 2 行 `@RavenwoodKeepWholeClass` 注解差异），本节补齐**ANR 触发完整调用链**——`apply()` 看似异步，但 `QueuedWork.waitToFinish()` 会把主线程同步挂起，是 `apply()` 仍能在 `Activity.onPause` 触发 ANR 的根因。
+SharedPreferencesImpl 在 Android 17 实现冻结（仅 2 行 `@RavenwoodKeepWholeClass` 注解差异），以下补全**ANR 触发完整调用链**——`apply()` 看似异步，但 `QueuedWork.waitToFinish()` 会把主线程同步挂起，是 `apply()` 仍能在 `Activity.onPause` 触发 ANR 的根因。
 
 **1. 读路径：主线程 `mLock.wait()` 阻塞点**
 
@@ -754,7 +727,7 @@ if (DEBUG || mNumSync % 1024 == 0 || fsyncDuration > MAX_FSYNC_DURATION_MILLIS) 
 
 **5. 章节 6.5 既有 ANR 描述的修订**
 
-之前章节 6.5 仅概括"apply 在 onPause 卡顿"，现补强为完整因果链：
+把上述路径串起来，`apply()` 的 ANR 根因可以总结为：
 
 > `apply()` 看似异步（`QueuedWork.queue` 在 `queued-work-looper` 线程 fsync），但 ActivityThread 在 `handleStopActivity`（行 6430）会调用 `QueuedWork.waitToFinish()`，**把 queued-work-looper 上未完成的 fsync 同步搬到主线程等待**。如果上一次 apply 的 fsync 因 UFS 抖动跑到 1s+，下一次 Activity 跳转就会直接卡 1s+（5s+ 即 ANR）。这是 `apply()` "看起来不阻塞、实际上仍能 ANR" 的根因，与 DataStore 无关——DataStore 写也走 FileChannel + fsync，但写完即返回、无 waitToFinish 同步点。
 
@@ -777,7 +750,6 @@ if (DEBUG || mNumSync % 1024 == 0 || fsyncDuration > MAX_FSYNC_DURATION_MILLIS) 
 - **Ravenwood 注解**：`@RavenwoodKeepWholeClass` 是新测试框架标记，**零运行时影响**，但意味着 SharedPreferencesImpl 已被纳入 Ravenwood 单元测试覆盖（替代 Robolectric 的新机制）
 
 
-<!-- AIW-源码调研-2026-06-30 -->
 ### MultiProcess DataStore 源码级验证（2026-06-30 增量）
 
 2026-06-27 已经验证 SharedPreferences 在 Android 17 中实现冻结；本节针对章节 6.5 提及但未深挖的 `MultiProcessDataStoreFactory` 做了源码级补强——验证多进程协调底层的三件套：`FileChannel` fcntl 文件锁 + `mmap(MAP_SHARED)` + `FileObserver(MOVED_TO)`。

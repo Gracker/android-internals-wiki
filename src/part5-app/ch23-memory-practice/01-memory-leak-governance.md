@@ -55,7 +55,7 @@ task9_result: auto-fixed
 task2b_result: fixed
 task9_review_notes: "2026-05-13 Task9 22:26：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 已写入 suggestions.md。 | 2026-06-30 Task9 闲时抽检 AUTO-FIX：将 AOSP 源码锚点从 android-16.0.0_r1 重锚到 android-17.0.0_r1；复核 Activity/Handler/Message/Bitmap 关键行为未变化，回 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
+last_deepseek_cn_review_at: 2026-07-01
 ---
 
 # 内存泄漏检测与治理
@@ -70,7 +70,7 @@ last_deepseek_cn_review_at: 2026-06-19
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory]
 
-Android Developers 的内存文档把泄漏风险落在两个动作上：避免把对象引用长期放进 static 字段，并按生命周期释放引用对象。落到 Java Heap 上，泄漏可以写成一句更工程化的判断：对象已经超出业务生命周期，仍然存在一条从 GC Root 到它的强引用路径。
+官方内存文档把泄漏风险概括为两条：避免把对象引用长期放进 static 字段，按生命周期释放引用。落到 Java Heap 上，泄漏的判断更工程化——对象已经超出业务生命周期，仍然存在一条从 GC Root 到它的强引用路径。
 
 这条判断包含两个条件：
 
@@ -93,7 +93,7 @@ Android Developers 的内存文档把泄漏风险落在两个动作上：避免�
 - **匿名内部类与 lambda 泄漏**：非静态匿名内部类默认持有外部类引用，lambda 只要捕获了 `this`、View、binding、Context，也会产生同类路径。风险点常见于 listener、计时器、线程任务、网络回调和动画回调。
 - **Bitmap 间接泄漏**：Android 8.0 之后 Bitmap 像素内存主要由 Native 侧承载，但 AOSP `Bitmap` Java 对象仍保存 `mNativePtr`，并通过 `NativeAllocationRegistry.registerNativeAllocation()` 关联 Native 释放。Java 层 Bitmap 或持有它的 Activity 泄漏时，Native 像素内存也可能被拖住。图片问题的完整治理放到 23.2 节，本节只把它作为泄漏放大器处理。[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 
-Handler 相关风险可以用下面这段代码定位。重点看两个动作：延迟任务入队，以及页面销毁时清队列。
+Handler 相关风险的排查样板如下。重点看两个动作：延迟任务入队，以及页面销毁时清队列。
 
 ```kotlin
 class DetailActivity : AppCompatActivity() {
