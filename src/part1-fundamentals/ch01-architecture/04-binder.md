@@ -3,7 +3,7 @@ title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
 section: "1.4"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 confidence: "medium"
@@ -15,14 +15,14 @@ reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 related_chapters: "[\"1.1\", \"2.5\", \"7.2\", \"8.2\", \"9.1\"]"
-task6_state: "reviewed"
+task6_state: revisiting
 last_task2a_at: "2026-05-13T18:20:00+08:00"
 last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
-task9_state: "pending"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-07-01"
+task9_state: reviewed
+task9_result: auto-fixed
+task9_reviewed_date: "2026-07-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-01T06:29:24+08:00"
+last_task9_at: "2026-07-02T00:28:41+08:00"
 last_task9_audit: "2026-06-09"
 last_task9_audit_at: "2026-06-09T01:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-09-01-audit.md"
@@ -34,13 +34,18 @@ task6_review_log: "logs/review/2026-07-01-07-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-09"
-task2b_state: "fixed"
+task2b_state: fixed
 task2b_result: "fixed"
-last_task9_autofix_at: "2026-06-09"
+last_task9_autofix_at: "2026-07-02"
 last_task2b_lite_at: "2026-07-01"
 last_task2b_at: "2026-07-01T06:52:07+08:00"
 last_task2b_note: "主修复: Task6+Task9回炉, 源码锚点迁android-17.0.0_r1, node->async_todo语义修正, 录制/trace片段修正, 禁用词清除, 注入元数据清理"
-last_task9_log: "logs/deep-review/2026-07-01-06-deep-review.md"
+last_task9_log: "logs/deep-review/2026-07-02-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-02-00-deep-review.md"
+p0: 1
+p1: 1
+p2: 0
+task9_review_notes: "2026-07-02 00 Task9 deep-review: auto-fixed。P0 1(auto-fixed) / P1 1(auto-fixed) / P2 0；修正 BINDER_ENABLE_ONEWAY_SPAM_DETECTION 所属 API/源码路径为 ProcessState，并将 frameworks/native 来源标签统一到 android-17.0.0_r1，回到 Task6 复审。"
 ---
 
 # Binder IPC 机制与性能影响
@@ -610,7 +615,7 @@ if (is_fair_policy(policy))
 - DeepResearch 报告：`2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md` 给出本节全部源码锚点。
 
 ### 来源
-- AOSP `frameworks/native/libs/binder/ProcessState.cpp`、`IPCThreadState.cpp`、`Parcel.cpp`、`include/binder/ProcessState.h`（tag `android-16.0.0_r4`）
+- AOSP `frameworks/native/libs/binder/ProcessState.cpp`、`IPCThreadState.cpp`、`Parcel.cpp`、`include/binder/ProcessState.h`（tag `android-17.0.0_r1`）
 - AOSP `kernel/common/drivers/android/binder.c`、`include/uapi/linux/android/binder.h`（branch `android16-6.12`，非 Android 17 基线，仅作可查上限/历史参照）
 - DeepResearch 报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-android-17-binder-ipc-thread-scheduling-cooperation.md`
 - 版本边界：framework/native 使用 android-17.0.0_r1；kernel 侧使用 android16-6.12（非 Android 17 基线，仅作历史参照）
@@ -718,16 +723,16 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
 
 Android 17 把"Binder 性能监控"在 libbinder 层拆成了**四层独立能力面**，每层都通过 `/dev/binderfs/features/` 特性文件做 capability gating，避免在老内核上做无效 syscall。这与 §1.4 既有「5 段开销建模 + 5 个杠杆调优 + 5 个隐藏延迟来源」形成对照——前几节偏"如何分析已发生的事"，本节偏"平台层在 Android 17 上提供了哪些开箱即用的 probe"。
 
-### 1. 内核→用户态性能 ioctl：`IPCThreadState` 的四个 probe
+### 1. 内核→用户态性能 ioctl：`IPCThreadState` + `ProcessState` 的四个 probe
 
-源码：`frameworks/native/libs/binder/IPCThreadState.cpp:1787-1868`
+源码：`frameworks/native/libs/binder/IPCThreadState.cpp:1787-1868` 与 `frameworks/native/libs/binder/ProcessState.cpp:555-562`
 
 | ioctl | 用户态 API | 用途 | 何时调用 |
 |---|---|---|---|
 | `BINDER_GET_FROZEN_INFO` | `getProcessFreezeInfo(pid, &sync, &async)` | 取目标进程已接收并处理完成的 sync/async transaction 计数 | `freeze()` 返回 `-EAGAIN` 后轮询 |
 | `BINDER_FREEZE` | `freeze(pid, enable, timeout_ms)` | 进程级冻结 + 内核异步回收等待 | `CachedAppOptimizer` / `killProcessesForRemovedTask` 路径 |
 | `BINDER_GET_EXTENDED_ERROR` | `logExtendedError()` | 取最近一次失败的扩展错误码（含 `ENOSPC = "Binder buffer full"`） | `BR_ERROR` 出现时 |
-| `BINDER_ENABLE_ONEWAY_SPAM_DETECTION` | `enableOnewaySpamDetection(bool)` | 打开 oneway 风暴抑制 | `BBinder::onTransact` 线程池路径自动探测后调用 |
+| `BINDER_ENABLE_ONEWAY_SPAM_DETECTION` | `ProcessState::enableOnewaySpamDetection(bool)` | 打开 oneway 风暴抑制 | `ProcessState` 初始化路径自动探测后调用 |
 
 **注意 `getProcessFreezeInfo` 的语义**：返回的是"目标进程在被冻结前**已接收并处理完成**的 transaction 数"，不是"调用方发出去的数"——这一点与 `killProcessesForRemovedTask` 等 AMS 路径的冻结逻辑一致，但与 perfetto trace 中"调用次数"的语义不同。诊断时不能直接相互替换。
 
