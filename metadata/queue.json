@@ -287,7 +287,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-01T17:26:47+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-01T17:38:36",
+      "completed_by": "task2b-lite-2026-07-01",
+      "fix_summary": "Flutter APM 版本边界从 3.29+ 更新为 3.32 stable+，旧模型边界从 3.28- 更新为 3.31-，确保与官方 Flutter 3.32 stable 默认合并线程口径一致"
     }
   ]
 }

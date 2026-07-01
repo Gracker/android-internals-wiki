@@ -30,8 +30,9 @@ tags:
   - webview
   - flutter
   - hybrid
-task2b_result: fixed
-task2b_state: "pending"
+task2b_result: "fixed-lite"
+task2b_state: "fixed"
+last_task2b_lite_at: "2026-07-01"
 task6_result: pass-light-edit
 task6_review_notes: "2026-05-16 task6 review: pass-light-edit。清理 frontmatter 中 1 处填充副词；正文锚点覆盖完整，无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
 task6_reviewed_at: "2026-05-16T08:16:00+08:00"
@@ -41,7 +42,7 @@ task9_result: "needs-rework"
 task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。2026-07-01 Task9 闲时抽检: needs-rework。P1 1（Flutter merged UI+Platform 线程模型版本边界缺失）；已写入 queue.json。 2026-07-01 Task2B 回炉修复: Flutter APM 小节线程模型按 3.29+ merged model (Main(UI+Platform)/Raster/IO) 改写，同步更新大纲、section 5 标题与正文；与 2.11、18.12 口径对齐。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Flutter merged UI+Platform 默认合并版本边界应为 Flutter 3.32 stable+，正文与 2.11/18.12 仍写 3.29+；已写入 queue.json。"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-01"
-task9_state: "reviewed"
+task9_state: "pending"
 title: "混合栈与跨平台 APM (WebView / Flutter)"
 last_task9_review_log: "logs/deep-review/2026-07-01-17-deep-review.md"
 last_task6_review_log: "logs/review/2026-05-16-08-review.md"
@@ -63,7 +64,7 @@ last_task9_audit_log: "logs/deep-review/2026-07-01-16-audit.md"
 - 🔹 [WebView 性能主要指标] 解释前端性能监控（FCP、LCP、TTI、loadEventEnd）如何与 Android Native 的容器初始化耗时（Container Init）拼接，算出真实的"端到端页面加载耗时"。
 - 🔹 [H5 白屏检测] 解析线上识别 WebView 白屏的几种流派：基于 DOM 树节点抓取、基于 `onPageFinished` 拦截、以及基于 Native 层的 `PixelCopy` 异步像素采样。
 - 🔹 [JSBridge 监控] 探讨 JS 与 Native 通信桥梁的性能瓶颈监控，如何记录高频注入、大 Payload 序列化及主线程阻塞情况。
-- 🔹 [Flutter APM 融合] 说明 Flutter 3.29+ merged model 下 Main(UI+Platform) / Raster / IO 线程的卡顿如何暴露给 Android 宿主；旧版与定制 Embedder 的独立 UI 线程边界何时适用；Dart 异常（Crash）如何由 Native APM 统一收集。线程归因以 2.11、18.12 的版本边界为准。
+- 🔹 [Flutter APM 融合] 说明 Flutter 3.32 stable+ merged model 下 Main(UI+Platform) / Raster / IO 线程的卡顿如何暴露给 Android 宿主；旧版与定制 Embedder 的独立 UI 线程边界何时适用；Dart 异常（Crash）如何由 Native APM 统一收集。线程归因以 2.11、18.12 的版本边界为准。
 - 🔹 [Session Timeline 统一] 讲解跨端监控的工程难点：如何在 Native、H5、Flutter 之间传递统一的 Session ID / Trace ID，确保混合页面的交互轨迹不混乱、不中断。
 
 ### 扩展（可选深入）
@@ -75,7 +76,7 @@ last_task9_audit_log: "logs/deep-review/2026-07-01-16-audit.md"
 ### 流水线加工要求
 
 - 避免写成纯前端（FE）的性能监控教程，所有的指标与视角必须围绕 Android Native 容器组织。
-- 必须明确跨平台引擎（如 Flutter）自成体系的渲染管线与 Android 系统的 Choreographer 之间的时序关系。Flutter APM 小节必须按版本标记线程模型：3.29+ merged model（Main(UI+Platform) / Raster / IO）、旧版/定制 Embedder（独立 UI 线程），与全书 2.11、18.12 口径一致。
+- 必须明确跨平台引擎（如 Flutter）自成体系的渲染管线与 Android 系统的 Choreographer 之间的时序关系。Flutter APM 小节必须按版本标记线程模型：3.32 stable+ merged model（Main(UI+Platform) / Raster / IO）、旧版/定制 Embedder（独立 UI 线程），与全书 2.11、18.12 口径一致。
 
 ### OpenClaw 加工指引
 
@@ -83,7 +84,7 @@ last_task9_audit_log: "logs/deep-review/2026-07-01-16-audit.md"
 > **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
-混合栈 APM 的难点在边界。Native APM 能看到 Activity、Fragment、主线程、网络和崩溃，却看不到 WebView 内部的 FCP、LCP、JS 执行和 DOM 状态；Flutter 页面也有自成体系的 Dart Build/Layout/Paint、Raster 光栅化和 Dart 异常体系——其线程模型因 Flutter 版本而异（3.29+ merged model 用 Main(UI+Platform)/Raster/IO，旧版/定制 Embedder 才有独立 UI 线程）。端侧要把容器生命周期、前端指标、Flutter 帧耗时和统一会话信息放进同一份样本。
+混合栈 APM 的难点在边界。Native APM 能看到 Activity、Fragment、主线程、网络和崩溃，却看不到 WebView 内部的 FCP、LCP、JS 执行和 DOM 状态；Flutter 页面也有自成体系的 Dart Build/Layout/Paint、Raster 光栅化和 Dart 异常体系——其线程模型因 Flutter 版本而异（3.32 stable+ merged model 用 Main(UI+Platform)/Raster/IO，旧版/定制 Embedder 才有独立 UI 线程）。端侧要把容器生命周期、前端指标、Flutter 帧耗时和统一会话信息放进同一份样本。
 
 Android 容器仍然是主视角。页面从 Native 创建容器开始，到 WebView 或 Flutter 首屏完成，中间经过初始化、资源加载、引擎调度和渲染输出。只看前端 `loadEventEnd` 会漏掉容器创建；只看 Native `Activity.onResume()` 到首帧会漏掉页面内部渲染。混合栈 APM 要记录两边的时钟、事件名和会话 ID，再在端侧或服务端合并。
 
@@ -228,7 +229,7 @@ Native 调 JS 时，`evaluateJavascript()` 是优先选择。它异步执行并�
 
 ## 5. Flutter APM：按版本标记线程模型，用 `FrameTiming` 量化帧耗时
 
-Flutter 页面有独立的渲染调度。线程模型因版本而异：Flutter 3.29+ 在 Android 上的主线是 Main(UI+Platform) / Raster / IO——Dart Build/Layout/Paint 与 Platform/插件回调共用宿主主线程；Flutter 3.28- 或定制 Embedder 才按独立 UI 线程（Dart isolate）观察。Raster 线程始终独立，负责把 layer tree 栅格化并提交到 Surface。版本边界以 2.11、18.12 的详细说明为准。Android 的 Choreographer 只能观察宿主视图的帧节奏，无法直接告诉你 Flutter 内部是 build 慢还是 raster 慢。
+Flutter 页面有独立的渲染调度。线程模型因版本而异：Flutter 3.32 stable+ 在 Android 上的主线是 Main(UI+Platform) / Raster / IO——Dart Build/Layout/Paint 与 Platform/插件回调共用宿主主线程；Flutter 3.31- 或定制 Embedder 才按独立 UI 线程（Dart isolate）观察。Raster 线程始终独立，负责把 layer tree 栅格化并提交到 Surface。版本边界以 2.11、18.12 的详细说明为准。Android 的 Choreographer 只能观察宿主视图的帧节奏，无法直接告诉你 Flutter 内部是 build 慢还是 raster 慢。
 
 Flutter 官方的 `FrameTiming` 是线上采样的主要入口。`buildDuration` 对应 Dart Build/Layout/Paint 的 CPU 耗时（3.29+ merged model 在宿主主线程上运行，旧版/定制 Embedder 在独立 UI 线程上运行），`rasterDuration` 对应 Raster 线程光栅化耗时。60Hz 下单项超过约 16.6ms 就可能丢帧；90Hz、120Hz 设备阈值更短。端侧 APM 应把 Flutter 帧预算按设备刷新率计算，避免固定写死 16ms。
 
