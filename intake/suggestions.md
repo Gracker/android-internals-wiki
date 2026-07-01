@@ -134,3 +134,45 @@
 - **问题**：多处给出 70-150ns、15-30ns、5-50μs、P99 1.5ms→200μs、syscall 100-400μs→~4μs 等数值，但没有设备型号、trace/benchmark、内核配置和复现方法。
 - **建议**：整合正文时要么补充可复现测量条件和 trace 证据，要么降级为“源码路径提示/理论估算”，不要作为 Android 17 性能结论。
 - **review 日志**：logs/deep-review/2026-07-01-06-deep-review.md
+
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-01 08:09
+
+本轮第四轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（所有 7 个 draft 章节 >15 行有效内容，最小 35 行）
+**Phase 0.5**: Task2B backlog = 1，允许挖掘
+**Phase 1**: 全书 510 节，覆盖度确认饱和
+
+增量复查内容：
+- daily-info 2026-07-01：7 条增量扫描全部已映射到现有章节（Binder IPC/SP ANR/bootanalyze/AppFlow/LMKD/Linux 6.10/Perfetto）
+- Clippings 三本参考书（24+20+59=103 篇）知识点交叉验证：ch20-ch26 已结构化覆盖
+- 25 个 unknown 状态文件检查：1 个 preface <15 行（target-audience，非性能章节），其余均有实质内容
+- 无新增 research-feeds（最新仍为 2026-04-14）
+- 无 Android 18 DP 或新版本素材
+
+结论：全书覆盖度四轮确认饱和（与前序 01:12/03:08/05:11 一致）。可行动方向不变：
+1. 已有章节深度增强（Task 2B）
+2. 等待 Android 18 DP
+3. Clippings 知识点级缺口（比章节级更细粒度，属于 Task 2B 职责）
+
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-01 09:08
+
+本轮第五轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（所有 7 个 draft 章节 >15 行有效内容，最小 35 行）
+**Phase 0.5**: Task2B backlog = 1，允许挖掘
+**Phase 1**: 全书 532 节，覆盖度确认饱和
+
+增量复查内容：
+- daily-info 2026-07-01 新增条目（代码坏味道重构对能耗影响论文、FlexServe TrustZone LLM）均已映射到现有章节（ch05 功耗/ch14 AI 移动端）
+- 无新增 research-feeds（最新仍为 2026-04-14）
+- 无 Android 18 DP 或新版本素材
+- 前四轮（01:12/03:08/05:11/08:09）已覆盖 76+ 系统服务扫描、Clippings 103 篇交叉验证、25 个 unknown 文件检查
+
+结论：全书覆盖度五轮确认饱和（532 节，334 finalized + 164 ready-for-review + 7 draft + 25 unknown + 2 其他）。
+可行动方向不变：
+1. 已有章节深度增强（Task 2B）
+2. 等待 Android 18 DP
+3. Clippings 知识点级缺口（比章节级更细粒度，属于 Task 2B 职责）
