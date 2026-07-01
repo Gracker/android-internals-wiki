@@ -1,21 +1,26 @@
 ---
-title: "Android 性能优化研究方法论"
-status: "finalized"
-task9_result: "pass-tech-review"
-task6_result: "pass-light-edit"
-task6_state: "completed"
-task9_state: "reviewed"
-task2b_state: "fixed"
-task2b_result: "fixed-lite"
-last_task2b_lite_at: "2026-06-27"
-pipeline_stage: "ready-to-publish"
-applicable_versions: "Android 8-17 (API 26-37)"
-last_verified_against: "AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客"
-task9_review_notes: "2026-06-27 Task2B Lite: 修复 P1 Perfetto 版本描述（Android 9 traced 入 system image 但非 Pixel 需手动 enable，Android 11+ 默认启用），P2 ADB 命令补版本限定。回 Task6/Task9 复审。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5"
-last_task9_audit: "2026-06-27"
-last_idle_audit_at: "2026-06-28T06:20:00+08:00"
+title: Android 性能优化研究方法论
+chapter: '15'
+status: finalized
+applicable_versions: Android 8-17 (API 26-37)
+last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档,
+  官方性能博客
+tags:
+- methodology
+task9_result: pass-tech-review
+task6_result: pass-light-edit
+task6_state: completed
+task9_state: reviewed
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: '2026-06-27'
+pipeline_stage: ready-to-publish
+task9_review_notes: '2026-06-27 Task2B Lite: 修复 P1 Perfetto 版本描述（Android 9 traced
+  入 system image 但非 Pixel 需手动 enable，Android 11+ 默认启用），P2 ADB 命令补版本限定。回 Task6/Task9
+  复审。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5'
+last_task9_audit: '2026-06-27'
+last_idle_audit_at: '2026-06-28T06:20:00+08:00'
 deepseek_cn_review_state: needs-structure-rework
-last_deepseek_cn_review_at: 2026-06-29
 ---
 
 # Android 性能优化研究方法论

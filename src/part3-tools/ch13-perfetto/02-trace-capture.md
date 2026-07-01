@@ -1,67 +1,18 @@
 ---
-
-titl e: T r a c e 抓取
-ch a pt e r : '13.2'
-s e ction : '13.2'
-st a t u s : r e ady-f or-r e vi e w
-dr a ft e d_d a t e: '2026-04-03'
-dr a ft e d_by : op e ncl a w-t a sk 2 a
-a pplic a bl e_v e rsions : A ndroid 10 (A P I 29) - A ndroid 17 (A P I 37)
-l a st_v e ri f i e d : 2026-06-05
-l a st_v e ri f i e d_a g a inst : "A O S P e xt e rn a l/p e r f etto a ndroid-12.0.0_r 1 + a ndroid-16.0.0_r 3, p e r f etto.d e v docs, A ndroid T r a c e A P I"
-con f id e nc e: high
-r e vi e w e d_d a t e: "2026-06-05"
-r e vi e w e d_by : "op e ncl a w-t a sk 6"
-t a sk 6_r e s u lt : "p a ss-light-e dit"
-polish_co u nt : 1
-polish_d a t e: '2026-04-06'
-polish_by : t a sk 2 b-polish
-r e vi e w_typ e: post-polish-q u ality-g a t e
-r e vi e w_ro u nd : 2
-so u rc e s : 
-p a th : "https ://www.a ndroidp e r f orm a nc e.com/2024/05/21/A ndroid-P e r f etto-02-how-to-g e t-p e r f etto/"
-p a th : "https ://p e r f etto.d e v/docs/q u ickst a rt/a ndroid-tr a cing"
-p a th : C u box/P e r f etto 快速上手指南1 —— T r a c e 的抓取-2025-03-20.md
-p a th : C u box/A ndroid P e r f etto 系列 4：使用命令行在本地打开超大 T r a c e · A ndroid P e r f orm a nc e-2025-02-09.md
-p a th : "https ://p e r f etto.d e v/docs/d a t a-so u rc e s/n a tiv e-h e ap-pro f il e r"
-p a th : e xt e rn a l/p e r f etto/protos/p e r f etto/con f ig/d a t a_so u rc e_con f ig.proto
-p a th : e xt e rn a l/p e r f etto/protos/p e r f etto/con f ig/pro f iling/j a v a_hpro f_con f ig.proto
-t a gs : 
-r e l a t e d_ch a pt e rs : 
-r e-r e vi e w-r e s u lt : 审查 2 条素材，无需修改（素材内容为 T r a c e P roc e ssor S Q L 分析，与 T r a c e 抓取阶段不匹配，更适合 §13.3/§13.5）
-pip e lin e_st a g e: t a sk 6_p e nding
-t a sk 6_st a t e: r e visiting
-t a sk 9_st a t e: p e nding
-t a sk 9_r e s u lt : a u to-f ix e d
-t a sk 2 b_st a t e: f ix e d
-t a sk 2 b_r e s u lt : f ix e d
-t a sk 9_r e vi e w e d_d a t e: "2026-06-05"
-t a sk 9_r e vi e w e d_by : "op e ncl a w-t a sk 9"
-l a st_t a sk 9_a t : "2026-06-05 T 19:28:13+08:00"
-r e p a ir e d_d a t e: 2026-06-05
-r e p a ir e d_by : op e ncl a w-t a sk 2 b
-t a sk 2 b_f ix e d_by : op e ncl a w-t a sk 2 b
-l a st_t a sk 2 b_a t : "2026-06-05 T 16:53:39"
-r e vi e w_not e s : '2026-05-13 t a sk 9 d e ep-r e vi e w : n e eds-r e work。P 0 0，P 1 2，P 2 1；问题已写入 q u e u e/s u gg e stions，等待 T a sk 2 B 回炉。'
-l a st_t a sk 6_a t : "2026-06-05 T 20:08:00+08:00"
-l a st_t a sk 6_a u dit : "2026-06-21"
-t a sk 6_r e vi e w_not e s_r 7: "2026-06-05 T a sk 6 r e visit-r e vi e w #4: L 1/L 2 p a ss (禁用词 0, 确实 x 1 f u nction a l). A ll 6 a nchors cov e r e d. t a sk 9 a u to-f ix e d r e solv e d q u e u e 13.2 contr a diction. A u to-promot e d to f in a liz e d."
-l a st_t a sk 6_r e vi e w_log : logs/r e vi e w/2026-05-09-07-r e vi e w.md
-t a sk 6_r e vi e w_not e s_r 6: "2026-06-05 T a sk 6 r e visit-r e vi e w #3: L 1/L 2 p a ss (确实 x 3 a ll f u nction a l). B-typ e: two contr a dictory so u rc e r e s e arch a pp e ndic e s on lin u x.p e r f/f r a m e tim e lin e — f l a gg e d f or t a sk 9/t a sk 2 b cl e an u p. R o u t e s to t a sk 9."
-t a sk 6_r e vi e w_not e s : "2026-06-05 T a sk 6 r e visit-r e vi e w : L 1/L 2 p a ss (轻修 0 处，前序已修 27 处)。t a sk 9 n e eds r e-r e vi e w (t a sk 9_r e s u lt = p e nding)。送 T a sk 9 复审。"
-l a st_t a sk 9_r e vi e w_log : "logs/d e ep-r e vi e w/2026-06-05-19-d e ep-r e vi e w.md"
-l a st_t a sk 9_a u to f ix_a t : "2026-06-05"
-t a sk 9_r e vi e w_not e s : "2026-06-05 T a sk 9 d e ep-r e vi e w : a u to-f ix e d。将 P e r f etto/lin u x.p e r f/F r a m e Tim e lin e 的直接源码验证边界从不存在的 a ndroid-17.0.0_r 1 回退到 a ndroid-12.0.0_r 1 与 a ndroid-16.0.0_r 3；A ndroid 17 保留为待公开 t a g 复核。"
-d e eps e ek_cn_r e vi e w_st a t e: don e
-l a st_d e eps e ek_cn_r e vi e w_a t : 2026-06-06
+title: T r a c e 抓取
+chapter: '13.2'
 status: finalized
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+tags:
+- tools
+- perfetto
+- trace
+- capture
+polish_by: t a sk 2 b-polish
 task6_state: reviewed
 task6_result: pass-light-edit
 pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-23
-last_task6_audit: 2026-06-23
-last_task6_at: 2026-06-23T18:06:00+08:00
 ---
 
 # T r a c e 抓取
