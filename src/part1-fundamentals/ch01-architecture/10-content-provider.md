@@ -8,9 +8,9 @@ status: finalized
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-27'
-last_verified_against: AOSP android-16.0.0_r1 ContentProvider.applyBatch / CursorWindow
-  / SQLiteCursor / SQLiteQuery / SQLiteSession; Android SDK Application.getProcessName
+last_verified: '2026-07-01'
+last_verified_against: AOSP android-17.0.0_r1 ActivityThread / ContentProviderHelper
+  / ContentResolver / ContentProviderClient / CursorWindow / SQLiteCursor / SQLiteQuery / SQLiteSession; frameworks/native ProcessState.cpp; Android SDK Application.getProcessName
 confidence: medium
 sources:
 - type: aosp
@@ -18,7 +18,17 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/android/content/ContentProvider.java
 - type: aosp
+  path: frameworks/base/core/java/android/content/ContentResolver.java
+- type: aosp
+  path: frameworks/base/core/java/android/content/ContentProviderClient.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/ComputerEngine.java
+- type: aosp
   path: frameworks/base/core/java/android/database/CursorWindow.java
+- type: aosp
+  path: frameworks/native/libs/binder/ProcessState.cpp
 - type: aosp
   path: frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java
 - type: official
@@ -33,11 +43,11 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-27T13:35:00+08:00'
@@ -46,14 +56,14 @@ reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 review_round: 8
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T16:21:00+08:00"
-task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。 | 2026-05-27 14:20 Task9 auto-fix：修正 Provider 进程冷启动序列，明确 `attachBaseContext()` / provider install / publish / `Application.onCreate()` 的先后关系；回到 Task6 复审。 | 2026-05-27 15:22 Task9 auto-fix：修正 ContentProvider publish/ready/getType 超时口径，并把 Binder 线程池默认值统一为 ProcessState DEFAULT_MAX_BINDER_THREADS=15；回到 Task6 复审。 | 2026-05-27 16:21 Task9 deep-review: pass-tech-review；P0 0 / P1 0 / P2 0 新增；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-07-01"
+last_task9_at: "2026-07-01T10:28:31+08:00"
+task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。 | 2026-05-27 14:20 Task9 auto-fix：修正 Provider 进程冷启动序列，明确 `attachBaseContext()` / provider install / publish / `Application.onCreate()` 的先后关系；回到 Task6 复审。 | 2026-05-27 15:22 Task9 auto-fix：修正 ContentProvider publish/ready/getType 超时口径，并把 Binder 线程池默认值统一为 ProcessState DEFAULT_MAX_BINDER_THREADS=15；回到 Task6 复审。 | 2026-05-27 16:21 Task9 deep-review: pass-tech-review；P0 0 / P1 0 / P2 0 新增；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-01 10:28 Task9 idle-audit AUTO-FIX: 修正 ContentProviderTimeout / contentProviderTimeout 非 AOSP android-17.0.0_r1 稳定日志关键字，改为 ContentProviderHelper 的 publish/ready/not-responding 实际路径；同步 source anchor 到 android-17.0.0_r1。回到 Task6 复审。详见 logs/deep-review/2026-07-01-10-audit.md。"
 review_notes: '2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-edit。Frontmatter去重整理。无新增L1/L2问题。无B类大问题。评分:
   结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-last_task9_review_log: "logs/deep-review/2026-05-27-16-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-01-10-audit.md"
 task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。 | 2026-05-27 15:08 Task6：复审 Task9 auto-fix 后内容；统一中英文混排周边标点与少量第一人称引导，未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；统一正文半角标点、括号和少量发布稿格式；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
@@ -64,14 +74,14 @@ review_type: "task6-writing-quality-review"
 p0: 0
 p1: 0
 p2: 0
-last_task9_autofix_at: "2026-05-27"
+last_task9_autofix_at: "2026-07-01"
 task6_l1_l2_fixes: 54
 task6_l3_l4_issues: 0
 last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
-last_task9_audit: "2026-06-10 11:24:39"
+last_task9_audit: "2026-07-01 10:28:31"
 ---
 
 
@@ -108,7 +118,7 @@ last_task9_audit: "2026-06-10 11:24:39"
 
 ContentProvider 是 Android 四大组件中最「安静」的一个。日常开发中很少直接感知到它的存在，但它对性能的影响往往比直觉更大。做启动速度优化时，发现冷启动时间中有数十到数百毫秒无法解释的耗时，很可能就是 ContentProvider 在背后初始化了第三方 SDK。排查 ANR 时，看到 traces.txt 里有 `ContentProvider$Transport.query` 的栈帧，说明远端进程的数据库操作阻塞了主线程。
 
-理解 ContentProvider 的性能特征，要回答三个问题：**它在什么时候执行**（启动阶段，而且比 Application.onCreate 还早）、**它怎么跨进程传输数据**（Binder + 共享内存，有一套复杂但精巧的窗口机制）、**出问题时怎么在 Trace 里定位**（Binder track + ContentProviderTimeout 日志）。搞清楚这三件事之后，后续就能在启动优化、ANR 排查、数据库性能调优中准确识别 ContentProvider 相关的问题。
+理解 ContentProvider 的性能特征，要回答三个问题：**它在什么时候执行**（启动阶段，而且比 Application.onCreate 还早）、**它怎么跨进程传输数据**（Binder + 共享内存，有一套复杂但精巧的窗口机制）、**出问题时怎么在 Trace 里定位**（Binder track + provider publish / not-responding 日志）。搞清楚这三件事之后，后续就能在启动优化、ANR 排查、数据库性能调优中准确识别 ContentProvider 相关的问题。
 
 ## ContentProvider 在 Android 架构中的角色
 
@@ -139,7 +149,7 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
 4. **`installContentProviders()`** → 逐一实例化并初始化所有 ContentProvider
 5. `Application.onCreate()` → 才轮到 Application 的初始化
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java, handleBindApplication() → installContentProviders()]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java, handleBindApplication() → installContentProviders() → callApplicationOnCreate()]
 
 要点是第 4 步：`installContentProviders()` 会遍历当前进程需要安装的 `<provider>`，对每一个调用 `installProvider()`，而 `installProvider()` 会依次调用 `ContentProvider.attachInfo()` 和 `ContentProvider.onCreate()`。**当前进程内 ContentProvider 的 onCreate() 都在 Application.onCreate() 之前执行，而且在主线程上顺序执行。**
 
@@ -162,7 +172,7 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
     android:authorities="com.example.analytics" />
 ```
 
-[已验证: AOSP, ActivityThread.installContentProviders() 按 initOrder 排序后遍历]
+[已验证: AOSP android-17.0.0_r1, ComputerEngine.queryContentProviders() 按 ProviderInfo.initOrder 降序排序；ActivityThread.installContentProviders() 按已排序列表遍历]
 
 这个顺序控制很脆弱：它依赖于所有 CP 在同一个 manifest 中（包括合并后的 manifest），而且依赖库升级可能改变自己的 initOrder。如果 CP 之间有依赖关系（比如 CP B 需要 CP A 初始化完成），应该使用 Jetpack App Startup 的依赖图机制，而不是依赖 initOrder。
 
@@ -192,7 +202,7 @@ App B: ContentProvider$Transport.query()
 
 `query()` 返回的是 `Cursor`，跨进程返回时不会把所有行塞进 Binder 事务。Provider 进程先把一批行写入 `CursorWindow`——这是一个共享内存窗口，底层通过文件描述符映射；Binder 只传描述符和少量元数据，不拷贝行数据。窗口默认大小来自 `config_cursorWindowSize`，AOSP 默认 2MB，厂商可调。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/database/CursorWindow.java, CursorWindow(String) + getCursorWindowSize()]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/database/CursorWindow.java, CursorWindow(String) + getCursorWindowSize()；core/res/res/values/config.xml config_cursorWindowSize=2048KB]
 
 工作流程是这样的：
 
@@ -216,7 +226,7 @@ CursorWindow 容量有限，查询结果可能远大于当前窗口。SQLiteCurs
 
 `executeForCursorWindow()` 接收原始 SQL、绑定参数、`startPos` 和 `requiredPos`。源码没有把 SQL 改写成 `LIMIT/OFFSET`；性能风险来自窗口起点变大后，底层执行需要逐步走过前面的结果行，直到填到目标窗口。
 
-[已验证: AOSP android-16.0.0_r1, SQLiteCursor.onMove()/fillWindow(), SQLiteQuery.fillWindow(), SQLiteSession.executeForCursorWindow()]
+[已验证: AOSP android-17.0.0_r1, SQLiteCursor.onMove()/fillWindow(), SQLiteQuery.fillWindow(), SQLiteSession.executeForCursorWindow()]
 
 偏移越深，填充下一窗口越慢。第 1 个窗口只需要从结果集起点填充；访问很靠后的行时，SQLite 仍要走过前面的结果，再把目标附近的行写入 CursorWindow。Perfetto 中的表现通常是 ContentProvider 所在进程的数据库查询耗时随翻页深度增长，`ContentProvider$Transport.query` 或数据库执行 slice 呈现阶梯式变长。
 
@@ -245,7 +255,7 @@ ContentProvider 的 ANR 涉及几类不同的超时和等待窗口，容易混�
 | **CRUD 操作超时** | 无独立超时 | 无 ContentProvider 专用超时；依赖调用方所在组件的 ANR 机制 | query/insert/update/delete 操作本身没有独立的 ContentProvider 级超时。ANR 来自调用方所在的组件（如 Activity 的 Input 超时 5 秒、Service 超时等），而非 ContentProvider 自身 |
 | **MIME / canonicalize 等已连接 provider 异步回调超时** | 3 秒 | `ContentResolver.CONTENT_PROVIDER_TIMEOUT_MILLIS` | Provider 已获取后，`getTypeAsync()`、`canonicalizeAsync()` 等异步回调默认等待 3 秒；这不是普通 CRUD 的统一超时 |
 
-[已验证: AOSP master / android-16-qpr2, `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` = 10s, `CONTENT_PROVIDER_READY_TIMEOUT_MILLIS` = 20s, `CONTENT_PROVIDER_TIMEOUT_MILLIS` = 3s；CRUD 操作无独立超时常量，ANR 由调用方组件超时机制触发]
+[已验证: AOSP android-17.0.0_r1, `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` = 10s, `CONTENT_PROVIDER_READY_TIMEOUT_MILLIS` = 20s, `CONTENT_PROVIDER_TIMEOUT_MILLIS` = 3s；CRUD 操作无独立超时常量，ANR 由调用方组件超时机制触发]
 
 这些超时里最容易误判的是「CRUD 操作超时」。ContentProvider 的 query/insert/update/delete **没有自己的 10 秒超时**——常见误解是 ContentProvider 有一套类似 Service 的独立超时，但 AOSP 中并不存在这样的常量。traces.txt 中出现 ContentProvider 调用导致的 ANR 时，超时来源是调用方所在的组件（比如 Activity 的 Input dispatching timeout 5 秒）。
 
@@ -299,7 +309,7 @@ Binder 线程池的关键参数：
 - **调用方进程**：主线程栈帧包含 `ContentResolver.query()` → `IContentProvider$Stub$Proxy.query()`，线程状态为 `WAITING` 或 `TIMED_WAITING`
 - **提供方进程**：Binder 线程栈帧包含 `ContentProvider$Transport.query()` 或 `ContentProvider$Transport.insert()` 等
 - **冷启动场景**：提供方进程的主线程栈帧包含 `ActivityThread.handleBindApplication()`，说明它正在初始化过程中
-- **日志关键字**：`ContentProviderTimeout` 出现在 system_server 的日志中
+- **日志关键字**：发布超时对应 `timeout publishing content providers` / `Timeout waiting for provider ...`；已连接 provider 的 system API 检测路径对应 `ContentProvider not responding`
 
 在 Perfetto 里把三类轨道放到同一时间轴：调用方主线程的 `binder transaction`，提供方进程的 Binder 线程，以及提供方主线程的启动切片。调用方只看到等待区间，实际执行位置要从 Binder reply 对应到提供方线程。
 
@@ -475,11 +485,10 @@ ContentProvider 相关的性能问题在 Perfetto 中有几个典型的观测点
 
 ### ContentProvider ANR 时间线
 
-ContentProvider ANR 在 system_server 的 track 中通常有以下事件序列：
+ContentProvider 相关 ANR 在 system_server 侧要区分两条路径：
 
-1. system_server 发出 `contentProviderTimeout` 消息
-2. 对应的 App 进程收到 ANR 回调
-3. App 进程 dump traces
+1. provider 发布/ready 等待超时：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` / `WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG` 驱动清理与失败返回，日志可见 `timeout publishing content providers` 或 `Timeout waiting for provider ...`
+2. 已连接 provider 被 system API 标记无响应：`ContentProviderClient.setDetectNotResponding()` 的 `NotRespondingRunnable` 进入 `appNotRespondingViaProvider()`，ANR reason 是 `ContentProvider not responding`
 
 在 App A 的 track 中，主线程从发起 ContentProvider 调用到 ANR 触发的整个区间就是阻塞时间。
 
@@ -601,18 +610,18 @@ Android 12 的变化发生在 framework 内部。应用可见的公开 API 仍�
 
 Android 14 在 Photo Picker 基础上增加了 Selected Photos Access 能力。用户可以选择授权部分照片（而非全部），对应新权限 `READ_MEDIA_VISUAL_USER_SELECTED`。配合 Photo Picker 使用，App 可以在不持有完整 media 权限的情况下完成图片选择场景——这对权限最小化原则是一次实质推进。
 
-### Android 16（API 36）：超时口径继续沿用旧模型
+### Android 16-17（API 36-37）：超时口径继续沿用旧模型
 
-截至 Android 16，ContentProvider 仍没有新增统一的 CRUD 10 秒阈值，容易混淆的超时口径要拆开看：
+截至 Android 17，ContentProvider 仍没有新增统一的 CRUD 10 秒阈值，容易混淆的超时口径要拆开看：
 
 - provider publish timeout 是 10 秒。
 - provider ready wait timeout 是 20 秒，用于调用方等待新启动 provider 发布。
 - 已连接 provider 的 MIME / canonicalize 等异步回调默认等待 3 秒。
 - `query()`、`insert()`、`update()`、`delete()` 仍然没有 ContentProvider 专用超时，ANR 归到调用方组件或系统内部 watchdog。
 
-Android 15/16 的变化更多在 ANR 收集和异步处理流程，例如 `AnrHelper` 一类实现继续演进；它没有把 CRUD 操作改成"常规 10 秒超时"。
+Android 15-17 的变化更多在 ANR 收集和异步处理流程，例如 `AnrHelper` 一类实现继续演进；它没有把 CRUD 操作改成"常规 10 秒超时"。
 
-[已验证: AOSP master / android-16-qpr2, ContentResolver 与 ContentProviderHelper 超时路径；CRUD 仍无独立 10 秒超时常量]
+[已验证: AOSP android-17.0.0_r1, ContentResolver 与 ContentProviderHelper 超时路径；CRUD 仍无独立 10 秒超时常量]
 
 ## 常见问题与误区
 
