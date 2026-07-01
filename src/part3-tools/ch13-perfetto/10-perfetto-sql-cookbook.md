@@ -1,78 +1,17 @@
 ---
-
-titl e: "P e r f etto S Q L 性能分析实战手册"
-ch a pt e r : "13.10"
-st a t u s : r e ady-f or-r e vi e w
-dr a ft e d_d a t e: "2026-04-09"
-dr a ft e d_by : "op e ncl a w-t a sk 2 a"
-a pplic a bl e_v e rsions : "A ndroid 10 (A P I 29) - A ndroid 17 (A P I 37)"
-l a st_v e ri f i e d : "2026-05-28"
-l a st_v e ri f i e d_a g a inst : "A O S P B ind e r/Z ygot e Init r e vi e w a nchors, P e r f etto S Q L t a bl e s/stdlib docs, T r a c e P roc e ssor l a rg e tr a c e q u ery p a tt e rns"
-con f id e nc e: m e di u m
-so u rc e s :
-  - typ e: o f fici a l
-    p a th : "https ://p e r f etto.d e v/docs/a n a lysis/stdlib-docs"
-  - typ e: o f fici a l
-    p a th : "https ://p e r f etto.d e v/docs/a n a lysis/tr a c e-proc e ssor"
-  - typ e: o f fici a l
-    p a th : "https ://p e r f etto.d e v/docs/a n a lysis/sql-t a bl e s"
-  - typ e: blog
-    p a th : "int a k e/r e s e arch-f e eds/2026-04-04-15-ch 13-p e r f etto-v 54-d a t a-e xplor e r.md"
-  - typ e: blog
-    p a th : "int a k e/r e s e arch-f e eds/2026-04-05-15-p e r f etto-inp u t-l a t e ncy-sql.md"
-  - typ e: blog
-    p a th : "int a k e/r e s e arch-f e eds/2026-04-01-07-ch 01-bind e r-p e r f etto-l a t e ncy-m e trics.md"
-  - typ e: blog
-    p a th : "int a k e/r e s e arch-f e eds/2026-04-06-15-p e r f etto-monitor-cont e ntion-a rt-lock-a n a lysis.md"
-  - typ e: blog
-    p a th : "int a k e/r e s e arch-f e eds/2026-04-07-16-p e r f etto-f r a m e-tim e lin e-p e rc e iv e d-smoothn e ss-a n a lysis.md"
-t a gs : [ P e r f etto, S Q L, T r a c e P roc e ssor, 性能分析, 帧时间, A N R, 启动时间, B ind e r]
-r e l a t e d_ch a pt e rs : ["13.1", "13.3", "13.5", "13.8", "7.1", "7.9", "8.2", "9.3", "1.4", "1.14"]
-s e ction : "13.10"
-cr e at e d_by : "t a sk 2 a-knowl e dg e-g a p"
-cr e at e d_d a t e: "2026-04-09"
-g a p_so u rc e: "官方文档 + 读者需求 + A O S P 结构"
-g a p_scor e: "19/20"
-t a sk 9_st a t e: p e nding
-t a sk 2 b_st a t e: "f ix e d"
-t a sk 2 b_r e s u lt : f ix e d
-
-t a sk 6_st a t e: r e visiting
-t a sk 6_r e s u lt : "p a ss-light-e dit"
-r e vi e w e d_d a t e: "2026-05-28"
-r e vi e w e d_by : "op e ncl a w-t a sk 6"
-l a st_t a sk 6_a u dit : "2026-06-21"
-pip e lin e_st a g e: t a sk 6_p e nding
-t a sk 9_r e s u lt : "p a ss-t e ch-r e vi e w"
-t a sk 9_r e vi e w e d_d a t e: "2026-05-29"
-t a sk 9_r e vi e w e d_by : "op e ncl a w-t a sk 9"
-l a st_t a sk 9_a t : "2026-05-29 T 05:20:00+08:00"
-l a st_t a sk 2 b_a t : "2026-05-28 T 08:50:00+08:00"
-r e work_d a t e: "2026-05-28"
-r e work_by : op e ncl a w-t a sk 2 b
-r e vi e w_not e s : "2026-04-27 t a sk 2 b : f ix e d B ind e r f tr a c e tr a c e point wording ; r e mov e d non e xist e nt bind e r_r e ply tr a c e point a nd cl a ri f i e d r e ply corr e l a tion vi a bind e r_r e t u rn/bind e r_comm a nd or P e r f etto B ind e r slic e s.；2026-04-28 t a sk 6 r e-r e vi e w : p a ss-light-e dit，L 1/L 2 通过，代码块语言标签系统性缺失已记录；2026-05-28 t a sk 2 b : f ix e d do F r a m e A ndroid 12+ tr a c e n a m e m a tching a nd S P A N_J O I N u tid p a rtition iss u e, r e t u rn e d to T a sk 6."
-t a sk 9_r e vi e w_not e s : "2026-04-28 t a sk 9 d e ep-r e vi e w : n e eds-r e work。P 0 1 / P 1 2 / P 2 2。；2026-04-29 t a sk 9 r e-r e vi e w : p a ss-t e ch-r e vi e w，P 0 0 / P 1 0 / P 2 2，自动晋升 f in a liz e d。；2026-05-22 t a sk 9 idl e-a u dit : n e eds-r e work，P 0 1 / P 1 1，写入 q u e u e t a sk 9-a u dit-20260522-13.10-p e r f etto-sql-do f r a m e-sp a njoin。；2026-05-28 T a sk 9 d e ep-r e vi e w : a u to-f ix e d。P 0 1 / P 1 0 / P 2 0；修正 a ndroid_monitor_cont e ntion lock_n a m e 当前 stdlib 口径，回到 T a sk 6 复审。 | 2026-05-28 17 T a sk 9 d e ep-r e vi e w : a u to-f ix e d。P 0 1 / P 1 0 / P 2 1；修正 P e r f etto v 54.0 monitor_cont e ntion.lock_n a m e 版本口径，并把不存在的 I N T E R V A L_I N T E R S E C T 名称改为 int e rv a ls 标准库入口，回到 T a sk 6 复审。 | 2026-05-29 05 T a sk 9 d e ep-r e vi e w : p a ss-t e ch-r e vi e w。P 0 0 / P 1 0 / P 2 0；q u e u e 无 p e nding 且 T a sk 6 已通过，自动晋升 f in a liz e d。"
-l a st_t a sk 9_a u dit : "2026-06-16"
-l a st_t a sk 6_a t : "2026-05-28 T 18:20:12+08:00"
-l a st_t a sk 6_r e vi e w_log : "logs/r e vi e w/2026-05-28-18-r e vi e w.md"
-t a sk 6_l 1_l 2_f ix e s : 1
-t a sk 6_l 3_l 4_iss u es : 0
-t a sk 6_r e vi e w_not e s : "2026-05-28 18 T a sk 6 r e visiting-r e vi e w : p a ss-light-e dit；修复 S P A N_J O I N 示例中的 S Q L 省略占位；L 1/L 2 通过；o u tlin e 6/6 覆盖；无 L 3/L 4 回炉项。t a sk 9_r e s u lt = a u to-f ix e d，未命中 p a ss-t e ch-r e vi e w 精确条件，未自动晋升。"
-t a sk 6_r e vi e w e d_by : "op e ncl a w-t a sk 6"
-t a sk 6_r e vi e w e d_a t : "2026-05-28 T 18:20:12+08:00"
-u pd a t e d_by : "op e ncl a w-t a sk 9"
-u pd a t e d_d a t e: "2026-05-29"
-t a sk 9_r e vi e w e d_a t : "2026-05-29 T 05:20:00+08:00"
-l a st_t a sk 9_r e vi e w_log : "logs/d e ep-r e vi e w/2026-05-29-05-d e ep-r e vi e w.md"
-l a st_t a sk 9_a u to f ix_a t : "2026-05-28"
+title: 13.10 P e r f etto S Q L 性能分析实战手册
+chapter: '13.10'
 status: finalized
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+tags:
+- tools
+- perfetto
+- sql
+- cookbook
 task6_state: reviewed
 task6_result: pass-light-edit
 pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-23
-last_task6_audit: 2026-06-23
-last_task6_at: 2026-06-23T18:06:00+08:00
 ---
 
 # 13.10 P e r f etto S Q L 性能分析实战手册

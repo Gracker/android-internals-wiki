@@ -1,72 +1,83 @@
 ---
-
-title: "线上网络质量监控与接入层协同"
-chapter: "26.17"
+title: 线上网络质量监控与接入层协同
+chapter: '26.17'
+section: '26.17'
 status: finalized
-drafted_date: "2026-05-22"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-22"
-last_verified_against: "Android Developers docs 2026-05-22 + local Android SDK sources android-34/android-35 + OkHttp 5.x docs + Clippings structure references"
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-05-22'
+last_verified_against: Android Developers docs 2026-05-22 + local Android SDK sources
+  android-34/android-35 + OkHttp 5.x docs + Clippings structure references
 confidence: medium
 sources:
- - type: clippings
- path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md"
- - type: clippings
- path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md"
- - type: clippings
- path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md"
- - type: official
- path: "https://developer.android.com/reference/android/net/TrafficStats"
- - type: official
- path: "https://developer.android.com/reference/android/net/NetworkCapabilities"
- - type: official
- path: "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
- - type: official
- path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/"
- - type: aosp
- path: "/Users/gracker/Android/sources/android-35/android/net/TrafficStats.java"
- - type: aosp
- path: "/Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java"
- - type: aosp
- path: "/Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java"
- - type: aosp
- path: "https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java"
-tags: [observability, network, trafficstats, apm, alerting]
-related_chapters: ["19.23", "24.4", "24.10", "26.3", "26.5"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-22"
-gap_source: "参考书素材/知识盲区/官方文档/AOSP结构"
-last_task2a_at: "2026-05-22T15:04:00+08:00"
+- type: clippings
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md
+- type: clippings
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md
+- type: clippings
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md
+- type: official
+  path: https://developer.android.com/reference/android/net/TrafficStats
+- type: official
+  path: https://developer.android.com/reference/android/net/NetworkCapabilities
+- type: official
+  path: https://developer.android.com/develop/connectivity/network-ops/reading-network-state
+- type: official
+  path: https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/
+- type: aosp
+  path: /Users/gracker/Android/sources/android-35/android/net/TrafficStats.java
+- type: aosp
+  path: /Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java
+- type: aosp
+  path: /Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java
+- type: aosp
+  path: https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java
+tags:
+- observability
+- network
+- trafficstats
+- apm
+- alerting
+related_chapters:
+- '19.23'
+- '24.4'
+- '24.10'
+- '26.3'
+- '26.5'
+drafted_date: '2026-05-22'
+created_by: task2a-knowledge-gap
+created_date: '2026-05-22'
+gap_source: 参考书素材/知识盲区/官方文档/AOSP结构
+last_task2a_at: '2026-05-22T15:04:00+08:00'
 pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-04"
-last_task6_at: "2026-06-04T03:10:02+08:00"
-last_task6_review_log: "logs/review/2026-05-22-15-review.md"
+reviewed_date: '2026-06-04'
+last_task6_at: '2026-06-04T03:10:02+08:00'
+last_task6_review_log: logs/review/2026-05-22-15-review.md
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-04"
-last_task9_at: "2026-06-04T09:20:00+08:00"
-last_task9_audit: "2026-06-22"
+task9_reviewed_date: '2026-06-04'
+last_task9_at: '2026-06-04T09:20:00+08:00'
+last_task9_audit: '2026-06-22'
 last_task9_audit_log: logs/deep-review/2026-06-22-06-audit.md
 last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
-task9_review_notes: "2026-06-04 Task9 deep review: pass-tech-review。P0/P1 0；HTTP/3/Cronet Android 17 指标字段保留为 P3 follow-up，不阻塞发布。"
+task9_review_notes: '2026-06-04 Task9 deep review: pass-tech-review。P0/P1 0；HTTP/3/Cronet
+  Android 17 指标字段保留为 P3 follow-up，不阻塞发布。'
 task2b_result: fixed
 task2b_state: fixed
-last_task2b_at: "2026-06-03T14:50:00+08:00"
-task2b_fixed_by: "openclaw-task2b"
-task2b_fixed_date: "2026-06-03"
-last_task2b_review_log: "logs/deep-review/2026-05-22-15-deep-review.md"
-updated_by: "openclaw-task9"
-updated_date: "2026-06-04"
-p0: 0
-p1: 0
-p2: 0
-section: "26.17"
+last_task2b_at: '2026-06-03T14:50:00+08:00'
+task2b_fixed_by: openclaw-task2b
+task2b_fixed_date: '2026-06-03'
+last_task2b_review_log: logs/deep-review/2026-05-22-15-deep-review.md
+updated_by: openclaw-task9
+updated_date: '2026-06-04'
+p0: '0'
+p1: '0'
+p2: '0'
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-27
+last_deepseek_cn_review_at: '2026-06-27'
 ---
 
 # 26.17 线上网络质量监控与接入层协同

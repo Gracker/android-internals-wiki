@@ -1,47 +1,39 @@
 ---
+title: Jetpack Compose 性能优化---
+chapter: '7.7'
+section: '7.7'
+status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
+last_verified: '2026-06-24'
+last_verified_against: Android 16 Developer Preview
+confidence: medium
+tags:
+- smoothness
+- jank
 auto_promoted_by: \"openclaw-task6\
 auto_promoted_date: \"2026-05-04\
-chapter: 7.7
-confidence: medium
 deepseek_cn_review_state: done
 drafted_by: openclaw-task2a
-drafted_date: 2026-04-01
-last_deepseek_cn_review_at: 2026-06-23
 last_task2b_at: 2026-06-24T08:57:16+08:00+08:00
-last_task6_at: 2026-06-24T09:15:00+08:00
-last_task6_audit: 2026-06-24
 last_task6_audit_log: logs/review/2026-06-24-09-review.md
 last_task6_audit_result: pass-light-edit
 last_task9_at: \"2026-06-04T20:24:00+08:00\
-last_task9_audit: 2026-06-24
 last_task9_audit_result: needs-rework
-last_task9_autofix_at: 2026-06-04
-last_verified: 2026-06-24
-last_verified_against: Android 16 Developer Preview
 path: Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md
 pipeline_stage: task6_pending
 polish_by: task2b-polish
-polish_count: 1
-polish_date: 2026-04-04
-review_round: 3
+polish_count: '1'
+review_round: '3'
 review_type: post-polish-quality-gate
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-04
-section: 7.7
-status: finalized
-tags: ['smoothness', 'jank']
-task2b_lite_at: 2026-06-24
 task2b_result: fixed-lite
 task2b_state: fixed
 task6_result: pass-light-edit
 task6_state: revisiting
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-06-04
 task9_state: reviewed
-title: Jetpack Compose 性能优化---
-
+---
 
 # Jetpack Compose 性能优化
 
