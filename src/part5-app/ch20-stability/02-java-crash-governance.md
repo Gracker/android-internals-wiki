@@ -4,8 +4,8 @@ chapter: '20.2'
 section: '20.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-05-11'
-last_verified_against: AOSP android-16.0.0_r1, developer.android.com
+last_verified: '2026-07-01'
+last_verified_against: AOSP android-17.0.0_r1, developer.android.com
 confidence: medium
 drafted_date: '2026-05-10'
 polish_count: 0
@@ -13,11 +13,11 @@ task2b_result: fixed
 reviewed_date: "2026-05-18"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: "reviewed"
-task9_result: pass-tech-review
+task6_state: revisiting
+task9_result: auto-fixed
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
@@ -38,17 +38,18 @@ related_chapters:
 - '1.7'
 task9_reviewed_date: "2026-05-18"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-18T03:31:27+08:00"
-last_task9_audit: "2026-06-09"
-task9_review_notes: "2026-05-18 task9 deep-review: pass-tech-review。P0 0 / P1 0；UncaughtExceptionHandler 持久化链路已闭合。既有 P2 数据/异常类型建议不重复写入。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-18 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。UncaughtExceptionHandler 崩溃上报持久化链路不完整；RuntimeInit 异常类型与 Crash 分布数据需补证据。已写入 queue.json / suggestions.md。 | 2026-05-17 18:20 Task9 idle audit → 2026-05-18 Task2B fixed: Throwable 256 帧说法已修正为 saved_frames 优化阈值。"
-last_task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
+last_task9_at: "2026-07-01T08:20:00+08:00"
+last_task9_audit: "2026-07-01"
+last_task9_autofix_at: "2026-07-01"
+task9_review_notes: "2026-07-01 Task9 idle audit auto-fix: 已用 AOSP android-17.0.0_r1 复核 RuntimeInit / Thread / ART Throwable 路径，将验证锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1，并修正 KillApplicationHandler 上报异常 catch 边界；无 P0/P1 机制错误，回到 Task6 复审。 | 2026-05-18 task9 deep-review: pass-tech-review。P0 0 / P1 0；UncaughtExceptionHandler 持久化链路已闭合。既有 P2 数据/异常类型建议不重复写入。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-18 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。UncaughtExceptionHandler 崩溃上报持久化链路不完整；RuntimeInit 异常类型与 Crash 分布数据需补证据。已写入 queue.json / suggestions.md。 | 2026-05-17 18:20 Task9 idle audit → 2026-05-18 Task2B fixed: Throwable 256 帧说法已修正为 saved_frames 优化阈值。"
+last_task9_review_log: "logs/deep-review/2026-07-01-08-audit.md"
 reviewed_at: "2026-05-18T03:31:27+08:00"
 last_task6_at: "2026-05-18T01:08:00+08:00"
 last_task6_audit: "2026-06-23"
 task6_reviewed_date: "2026-05-18"
 last_task6_review_log: "logs/review/2026-05-18-01-review.md"
 task6_review_notes: "2026-05-18 task6 复审：pass-light-edit。补齐 outline 锚点、去重来源、小修 Kotlin 协程段落间距并补验证标注；无新增 B 类问题。Task9 仍需复核，未自动晋升。"
-task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
+task9_review_log: "logs/deep-review/2026-07-01-08-audit.md"
 finalized_date: "2026-05-18"
 finalized_by: openclaw-task9-auto-promote
 ---
@@ -83,7 +84,7 @@ Android Java 层的异常按 ART 虚拟机处理路径分为 Exception 和 Error
 
 工程上的区别：Checked Exception 的治理重点是"是否该 catch、catch 后做什么"；RuntimeException 的治理重点是"为什么会发生、在哪个版本引入"。两类问题的排查策略不同。
 
-[适用版本: Android 10 - Android 16]
+[适用版本: Android 10 - Android 17]
 [结构参考: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md]
 
 ## UncaughtExceptionHandler 机制与全局捕获
@@ -103,9 +104,9 @@ Android Java 层的异常按 ART 虚拟机处理路径分为 Exception 和 Error
 | `LoggingHandler` | 打印 crash 日志 | 输出 `FATAL EXCEPTION` 日志（线程名、进程名、PID、Throwable 堆栈） |
 | `KillApplicationHandler` | 终止进程 | 通知 AMS → `Process.killProcess(Process.myPid())` + `System.exit(10)` |
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
 
-`KillApplicationHandler` 通知 AMS 这一步不保证完成。如果 Binder buffer 已满或 AMS 异常，会抛 `DeadObjectException`，直接进入 `finally` 块杀进程——crash 信息可能来不及写入系统日志。
+`KillApplicationHandler` 通知 AMS 这一步不保证完成。Android 17 源码对上报路径捕获的是 `Throwable`，其中 `DeadObjectException` 只表示 system_server 已不可用；其他上报异常会被额外记录后同样进入 `finally` 块杀进程——crash 信息可能来不及写入系统日志。
 
 ### 自定义 UncaughtExceptionHandler 的正确做法
 
@@ -167,7 +168,7 @@ Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
 
 堆栈捕获有性能开销。不能在高频路径上频繁创建 `Throwable` 对象。如需在性能敏感位置采集调用栈，考虑用 `Thread.getStackTrace()` 替代，或做采样（如每 100 次采集 1 次）。
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc CreateInternalStackTrace; art/runtime/native/java_lang_Throwable.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/thread.cc CreateInternalStackTrace; art/runtime/native/java_lang_Throwable.cc]
 [结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md]
 
 ## Top Crash 模式与根因分析
@@ -266,7 +267,7 @@ String name = user != null ? user.getName() : "";
 3. 按 OS 版本聚合 → 确认是否是系统行为变更
 4. 修复上线 → 验证 crash rate 下降 → 持续观察
 
-[适用版本: Android 10 - Android 16]
+[适用版本: Android 10 - Android 17]
 [自动发现: 监控与反馈流程]
 
 ## 扩展
