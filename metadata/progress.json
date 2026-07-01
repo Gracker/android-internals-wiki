@@ -9,5 +9,12 @@
     "last_section": "19.26",
     "result": "fixed",
     "fix_count": 1
-  }
+  },
+  "last_task2b_main": "2026-07-01T18:54:04+08:00",
+  "last_task2b_main_files": [
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+    "src/part3-tools/ch19-apm/26-hybrid-apm.md"
+  ],
+  "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26"
 }
