@@ -1,7 +1,7 @@
 {
   "total": 133,
-  "draft": 3,
-  "ready_for_review": 13,
+  "draft": 2,
+  "ready_for_review": 14,
   "finalized": 119,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -66,6 +66,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-01T23:04:00+08:00",
       "note": "FrameTimeline 数据结构：BufferEvent Proto 13 种类型、SurfaceFrame 数据结构、JankClassificationThresholds、TokenManager、pending fence 队列、FALLBACK_COMPOSITION vs HWC_COMPOSITION_QUEUED"
+    },
+    {
+      "section": "9.10",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-02T02:04:00+08:00",
+      "note": "ANR 预警回调与类型枚举：AnrTypes/AnrWarningResult/IAnrWarningCallback 三组件架构、三层可观测性体系、APM SDK 集成指引"
     }
   ],
   "review_history": [
