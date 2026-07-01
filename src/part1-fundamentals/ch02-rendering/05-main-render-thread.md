@@ -10,19 +10,19 @@ polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 review_round: 4
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-04-28"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-07-01"
+last_verified_against: "AOSP android-17.0.0_r1 frameworks/base libs/hwui, ThreadedRenderer.java, Bitmap.java; historical tags android-5.0.2_r1 / android-11.0.0_r1 only for version evolution"
 confidence: high
 reviewed_date: "2026-06-01"
 reviewed_by: "openclaw-task6"
 last_task6_audit: "2026-06-08"
 review_note: "Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 10 处 L1/L2 小修,未新增回炉项,转入 Task 9"
-last_task9_at: "2026-06-03T01:26:00+08:00"
-last_task9_audit: "2026-06-11"
+last_task9_at: "2026-07-01T14:28:36+08:00"
+last_task9_audit: "2026-07-01"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-03"
-last_task9_review_log: "logs/deep-review/2026-06-03-01-deep-review.md"
-task9_review_notes: "2026-06-03 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-07-01"
+last_task9_review_log: "logs/deep-review/2026-07-01-14-audit.md"
+task9_review_notes: "2026-06-03 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-01 Task9 闲时抽检 auto-fix：将 MainThread/RenderThread 主线源码锚点重锚到 android-17.0.0_r1；修正 Bitmap.java 源码路径为 frameworks/base/graphics/java/android/graphics/Bitmap.java；按 Android 17 复核 RenderThread / ThreadedRenderer / CanvasContext 关键节选。P0/P1 均已局部修复，回到 Task6 复审。详见 logs/deep-review/2026-07-01-14-audit.md。"
 sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
@@ -36,14 +36,14 @@ sources:
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
 tags: ['renderthread', 'mainthread', 'displaylist', 'rendernode', 'syncframestate', 'hwui', '渲染流水线', 'GPU绘制']
 related_chapters: ["2.3", "2.4", "2.6", "2.15", "2.16", "3.1"]
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 task6_result: "pass-light-edit"
-task6_state: reviewed
+task6_state: "revisiting"
 task6_reviewed_date: "2026-06-02"
 reviewed_date: "2026-06-02"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_state: "reviewed"
-task2b_state: fixed
+task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: "2026-06-01T04:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B main：修复 Task9 P95：复核 syncFrameState 阻塞语义，区分 Android 14+ ADPF hint session 与 Android 16 headroom API，并清理源码调研补注中与正文冲突的同步描述。"
@@ -54,7 +54,7 @@ task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
-last_task9_autofix_at: "2026-06-02"
+last_task9_autofix_at: "2026-07-01"
 p0: "0"
 p1: "0"
 p2: "0"
@@ -62,6 +62,10 @@ last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
+last_task9_audit_log: "logs/deep-review/2026-07-01-14-audit.md"
+task9_p0_issues: 0
+task9_p1_issues: 0
+task9_p2_issues: 0
 ---
 
 # MainThread 与 RenderThread 协作
@@ -116,7 +120,7 @@ DisplayList 是一份绘制指令清单,记录了"在什么位置画什么形状
 
 ```java
 // frameworks/base/core/java/android/view/View.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 // [简化示意:实际 draw() 逻辑更复杂,此处仅展示硬件加速路径]
 void draw(Canvas canvas) {
     // ...
@@ -144,11 +148,11 @@ RenderThread 是一个在 App 进程内运行的后台线程,它拥有独立的 
 
 **提交(QueueBuffer)**--将渲染完成的帧提交给 SurfaceFlinger。Android 11+ 的窗口路径通常会进入 BLASTBufferQueue / SurfaceControl transaction 编排;Android 5-10 仍按传统 BufferQueue / Surface 交换路径理解。
 
-RenderThread 由 `RenderThread::getInstance()` 在进程内按单例启动。`threadLoop()` 先完成线程优先级、Looper 绑定和线程本地对象初始化,再进入 `waitForWork()` → `processQueue()` 的循环。android-16 的真实骨架如下:
+RenderThread 由 `RenderThread::getInstance()` 在进程内按单例启动。`threadLoop()` 先完成线程优先级、Looper 绑定和线程本地对象初始化,再进入 `waitForWork()` → `processQueue()` 的循环。android-17 的关键骨架如下:
 
 ```cpp
 // frameworks/base/libs/hwui/renderthread/RenderThread.cpp
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 bool RenderThread::threadLoop() {
     setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY);
     Looper::setForThread(mLooper);
@@ -169,14 +173,18 @@ RenderThread 不主动轮询。它大部分时间都在等主线程或系统其�
 
 ## 同步栅栏:SyncFrameState
 
-主线程侧的阻塞点来自 `syncAndDrawFrame()`,但这段等待不该直接解释成"上一帧 GPU 还没跑完"。按 android-16 的真实路径,UI Thread 先走 `ViewRootImpl.performDraw()` 和 `ThreadedRenderer.draw()`,再通过 `syncAndDrawFrame(frameInfo)` 进入 native。JNI 入口在 `frameworks/base/libs/hwui/jni/android_graphics_HardwareRenderer.cpp`,后面再落到 `RenderProxy::syncAndDrawFrame()` 和 `DrawFrameTask::drawFrame()`。
+主线程侧的阻塞点来自 `syncAndDrawFrame()`,但这段等待不该直接解释成"上一帧 GPU 还没跑完"。按 android-17 的主线路径,UI Thread 先走 `ViewRootImpl.performDraw()` 和 `ThreadedRenderer.draw()`,再通过 `syncAndDrawFrame(frameInfo)` 进入 native。JNI 入口在 `frameworks/base/libs/hwui/jni/android_graphics_HardwareRenderer.cpp`,后面再落到 `RenderProxy::syncAndDrawFrame()` 和 `DrawFrameTask::drawFrame()`。
 
 ```java
 // frameworks/base/core/java/android/view/ThreadedRenderer.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 void draw(View view, AttachInfo attachInfo, DrawCallbacks callbacks) {
+    attachInfo.mViewRootImpl.mViewFrameInfo.markDrawStart();
+    updateRootDisplayList(view, callbacks);
+
     final FrameInfo frameInfo = attachInfo.mViewRootImpl.getUpdatedFrameInfo();
     int syncResult = syncAndDrawFrame(frameInfo);
+    // 省略 surface 丢失和重绘请求处理分支。
 }
 ```
 
@@ -184,7 +192,7 @@ void draw(View view, AttachInfo attachInfo, DrawCallbacks callbacks) {
 // frameworks/base/libs/hwui/jni/android_graphics_HardwareRenderer.cpp
 // frameworks/base/libs/hwui/renderthread/RenderProxy.cpp
 // frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 static int android_view_ThreadedRenderer_syncAndDrawFrame(...) {
     return proxy->syncAndDrawFrame();
 }
@@ -212,7 +220,7 @@ int DrawFrameTask::drawFrame() {
 
 Android 17 的 DeliQueue 作用在 `android.os.MessageQueue` 这条应用消息循环路径上，默认面向 targetSdk 37+ 的应用启用。这里容易混淆的是：DeliQueue 优化的是主线程 Looper 的消息入队/出队锁竞争，和 HWUI RenderThread 内部的 WorkQueue 是两条独立的队列，不能混为一谈。
 
-AOSP android-16.0.0_r1 的 HWUI `libs/hwui/thread/WorkQueue.h` 仍是 `std::mutex` 保护的 `std::vector<WorkItem>`。UI Thread 通过 `DrawFrameTask::postAndWait()` 把任务投给 `mRenderThread->queue().post()` 时，讨论的是 HWUI RenderThread 的 WorkQueue；DeliQueue 官方性能数据不该直接拿来解释这条队列的锁竞争。
+AOSP android-17.0.0_r1 的 HWUI `libs/hwui/thread/WorkQueue.h` 仍是 `std::mutex` 保护的 `std::vector<WorkItem>`。UI Thread 通过 `DrawFrameTask::postAndWait()` 把任务投给 `mRenderThread->queue().post()` 时，讨论的是 HWUI RenderThread 的 WorkQueue；DeliQueue 官方性能数据不该直接拿来解释这条队列的锁竞争。
 
 Perfetto 分析时要把两类队列分开：主线程 `Looper` 消息入队 / 出队的锁竞争，可以参考 DeliQueue 的 Android 17 行为变化；`syncAndDrawFrame()` 到 RenderThread 的同步等待，仍要回到 `DrawFrameTask`、`WorkQueue`、`syncFrameState()` 和 `CanvasContext::draw()` 观察。
 
@@ -230,19 +238,27 @@ RenderThread 遍历 DisplayList 树,将其中记录的绘制命令翻译为 GPU 
 
 ```cpp
 // frameworks/base/libs/hwui/renderthread/CanvasContext.cpp
-// @ AOSP android-16.0.0_r1
-void CanvasContext::draw() {
-    // 1. 从 BLASTBufferQueue 获取一个可用的 Buffer
-    //    对应 Perfetto 中的 dequeueBuffer 切片
-    status_t status = mRenderPipeline->getFrame();
+// @ AOSP android-17.0.0_r1
+void CanvasContext::draw(bool solelyTextureViewUpdates) {
+    SkRect dirty;
+    mDamageAccumulator.finish(&dirty);
 
-    // 2. 遍历 DisplayList,生成 GPU 命令
-    //    对应 Perfetto 中的 flush commands
-    bool drew = mRenderPipeline->draw(frame, layers);
+    // 1. 从 BufferQueue/NativeWindow 获取一个可用的 Buffer。
+    Frame frame = getFrame();
+    SkRect windowDirty = computeDirtyRect(frame, &dirty);
 
-    // 3. 将渲染结果提交给 SurfaceFlinger
-    //    对应 Perfetto 中的 queueBuffer / eglSwapBuffers
-    mRenderPipeline->swapBuffers(frame);
+    // 2. 遍历 DisplayList，生成并提交 GPU 命令。
+    IRenderPipeline::DrawResult drawResult = mRenderPipeline->draw(
+            frame, windowDirty, dirty, mLightGeometry, &mLayerUpdateQueue,
+            mContentDrawBounds, mOpaque, mLightInfo, mRenderNodes,
+            &(profiler()), mBufferParams, profilerLock());
+
+    waitOnFences();
+
+    // 3. 将渲染结果提交给 SurfaceFlinger。
+    bool requireSwap = false;
+    bool didSwap = mRenderPipeline->swapBuffers(
+            frame, drawResult, windowDirty, mCurrentFrameInfo, &requireSwap);
 }
 ```
 
@@ -250,7 +266,7 @@ GPU 命令的提交是**异步的**。CPU(RenderThread)把命令扔给 GPU 后,G
 
 ### ADPF 性能反馈机制（Android 14+ / Android 16 headroom）
 
-先澄清一个常见口径问题：AOSP android-14.0.0_r1、android-15.0.0_r1 和 android-16.0.0_r1 的 `CanvasContext.cpp` 都已包含 `HintSessionWrapper`、`updateTargetWorkDuration()` 与 `reportActualWorkDuration()`。也就是说，RenderThread 向 ADPF hint session 上报帧工作时长从 Android 14 就开始了，不是 Android 16 才接入的。
+先澄清一个常见口径问题：AOSP android-14.0.0_r1 到 android-17.0.0_r1 的 `CanvasContext.cpp` 都已包含 `HintSessionWrapper`、`updateTargetWorkDuration()` 与 `reportActualWorkDuration()`。也就是说，RenderThread 向 ADPF hint session 上报帧工作时长从 Android 14 就开始了，不是 Android 16 才接入的。
 
 Android 16 要单独看的是 headroom 相关 API，比如 GPU headroom 查询。工程上把两件事拆开：RenderThread 的 hint session 上报描述每帧实际工作时长；headroom API 判断设备还剩多少性能余量。不能把两者合并成一个 "Android 16 新特性"。
 
@@ -285,7 +301,7 @@ Android 的硬件加速渲染管线中,通过 `Canvas.drawBitmap()` 绘制的 Bi
 
 ### syncFrameState 中的同步 upload
 
-**关键源码路径**(AOSP android-14/16):
+**关键源码路径**(AOSP android-17.0.0_r1；Android 14+ 历史行为参照):
 ```
 DrawFrameTask::run()
   → syncFrameState(info)
@@ -328,7 +344,7 @@ Texture 尺寸大于显示尺寸时,upload 开销浪费尤为明显--这是"图�
 
 本节讨论的 syncFrameState 阻塞点在 bitmap upload 场景下有了具体量化:一次 1080p Bitmap 的同步 upload 就可能贡献 4-8ms 的 RenderThread 阻塞。结合 §2.1 的整体渲染流水线理解,可以更准确地判断"掉帧是主线程 measure/layout 过重"还是"RenderThread 被 texture upload 阻塞"。
 
-[已验证: AOSP android-14 `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`; `frameworks/base/libs/hwui/renderthread/CanvasContext.cpp`; `frameworks/base/core/java/android/graphics/Bitmap.java`; androidperformance.com - RenderThread Bitmap Upload; developer.android.com - Bitmap.prepareToDraw()]
+[已验证: AOSP android-17.0.0_r1 `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`; `frameworks/base/libs/hwui/renderthread/CanvasContext.cpp`; `frameworks/base/graphics/java/android/graphics/Bitmap.java`; Android 14+ 历史行为参照; androidperformance.com - RenderThread Bitmap Upload; developer.android.com - Bitmap.prepareToDraw()]
 
 ## 在 Perfetto 中的表现
 
@@ -474,7 +490,7 @@ GPU 过载的优化方向是"减少 GPU 的工作量":降低过度绘制(在开�
 
 同进程双窗口与跨进程分屏的 RenderThread 时序对比如下：上半部分为同进程两个窗口共用一条 UI Thread 和一条 RenderThread；下半部分为双进程各自渲染，竞争汇合到 SurfaceFlinger、GPU 和 fence。
 
-[已验证: AOSP android-16.0.0_r1 `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` 单例 `getInstance()`;Obsidian 素材 `Android/rendering_pipelines/presentation.md`]
+[已验证: AOSP android-17.0.0_r1 `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` 单例 `getInstance()`;Obsidian 素材 `Android/rendering_pipelines/presentation.md`]
 
 ## 扩展:Deferred GPU Commands 与 Pipeline Flush
 
@@ -488,7 +504,7 @@ RenderThread 并不是收到一条 DisplayList 命令就立即翻译成一条 GP
 
 在 Perfetto 中,我们可以通过 RenderThread 上的 `flushCommands` 切片观察到这个 flush 操作的时机和耗时。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/libs/hwui/]
 
 ## 扩展:RenderThread 里的动画(RenderThread Animations)
 
@@ -569,12 +585,12 @@ MainThread 与 RenderThread 的协作构成了 Android 硬件加速渲染的核�
 ## 参考资料
 
 1. **AOSP 源码**:
-   - [RenderThread.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
-   - [DrawFrameTask.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)
-   - [RenderProxy.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp)
-   - [CanvasContext.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)
-   - [android_graphics_HardwareRenderer.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/hwui/jni/android_graphics_HardwareRenderer.cpp)
-   - [ThreadedRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/ThreadedRenderer.java)
+   - [RenderThread.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
+   - [DrawFrameTask.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)
+   - [RenderProxy.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp)
+   - [CanvasContext.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)
+   - [android_graphics_HardwareRenderer.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/android_graphics_HardwareRenderer.cpp)
+   - [ThreadedRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)
    - [ViewPropertyAnimatorRT.java](https://android.googlesource.com/platform/frameworks/base/+/android-5.0.2_r1/core/java/android/view/ViewPropertyAnimatorRT.java)
    - [RenderNodeAnimator.java](https://android.googlesource.com/platform/frameworks/base/+/android-5.0.2_r1/core/java/android/view/RenderNodeAnimator.java)
    - [BLASTBufferQueue.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-11.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
