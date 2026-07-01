@@ -20,7 +20,6 @@ tags:
 
 - [第 1 章：系统架构全景](part1-fundamentals/ch01-architecture/README.md)
   - [1.1 Android 分层架构](part1-fundamentals/ch01-architecture/01-layered-architecture.md)
-  - [1.41 Android 17 机器学习驱动的任务调度器](part1-fundamentals/ch01-architecture/1.41-android-17-机器学习驱动的任务调度器.md)
   - [1.43 Android 17 机器学习驱动任务调度器](part1-fundamentals/ch01-architecture/1.43-android17-ml-scheduler.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
