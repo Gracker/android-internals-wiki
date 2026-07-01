@@ -1,7 +1,7 @@
 {
   "total": 130,
-  "draft": 1,
-  "ready_for_review": 11,
+  "draft": 0,
+  "ready_for_review": 12,
   "finalized": 119,
   "last_updated": "2026-07-01",
   "task2b": {
@@ -59,6 +59,13 @@
       "status": "verified",
       "verified_at": "2026-07-01T19:35:46.150110",
       "note": "DeliQueue chapter status corrected and returned to Task6"
+    },
+    {
+      "section": "2.32",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-01T23:04:00+08:00",
+      "note": "FrameTimeline 数据结构：BufferEvent Proto 13 种类型、SurfaceFrame 数据结构、JankClassificationThresholds、TokenManager、pending fence 队列、FALLBACK_COMPOSITION vs HWC_COMPOSITION_QUEUED"
     }
   ],
   "review_history": [
