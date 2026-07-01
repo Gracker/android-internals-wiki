@@ -1,443 +1,86 @@
-{
-  "drafts": [
-    {
-      "section": "1.47",
-      "section_title": "Android 17 ResourcesManager Configuration 性能优化",
-      "priority": 80,
-      "reason": "[新章节创建] 知识缺口挖掘发现的高价值 AOSP 结构分析",
-      "material_paths": [
-        "DeepResearch/2026-06-30-android17-resourcesmanager-configuration-relaunch.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新章节创建",
-          "location": "新章节",
-          "detail": "基于 Android 17 源码级的 ResourcesManager/Configuration 与 Activity relaunch 判定模型，包含 ATMS 三段式分发链路、shouldRelaunchLocked 位运算公式、新机制分析",
-          "suggestion": "需基于 android-17.0.0_r1 源码展开内容，确保版本边界准确性"
-        }
-      ],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-01T20:04:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "1.48",
-      "section_title": "Android 17 Staged Install 状态机与原子性安装",
-      "priority": 80,
-      "reason": "[新章节创建] 知识缺口挖掘发现的高价值 AOSP 结构分析",
-      "material_paths": [
-        "DeepResearch/2026-06-30-android17-staged-install-state-machine-source-verification.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新章节创建",
-          "location": "新章节",
-          "detail": "基于 Android 17 源码级的 staged session 状态机分析，包含 pre-reboot verification、三态机制、checkpoint/rollback 分析",
-          "suggestion": "需基于 android-17.0.0_r1 源码展开内容，确保版本边界准确性"
-        }
-      ],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-01T20:04:00+08:00",
-      "status": "pending"
-    }
-  ],
-  "issues": [
-    {
-      "id": "L3-2026-06-30-23-01",
-      "chapter": "23-staged-install-performance.md",
-      "section": "Installation Performance Analysis",
-      "issue_type": "L3",
-      "priority": "medium",
-      "description": "Missing concrete performance metrics - contains estimated ranges ('数 ms-数十 ms', '数十到上百毫秒') but lacks specific device benchmark data or reproducible test methodology",
-      "suggested_resolution": "Add actual measurement results from specific devices (Pixel 8, Samsung S23, etc.) with concrete numbers and testing methodology",
-      "assigned_to": "Task 2B",
-      "created_at": "2026-06-30T17:09:00Z",
-      "status": "completed",
-      "completed_at": "2026-06-30T12:54:49Z",
-      "completed_by": "task2b-main-2026-06-30"
-    },
-    {
-      "id": "L3-2026-06-30-23-02",
-      "chapter": "23-staged-install-performance.md",
-      "section": "Real-world Troubleshooting",
-      "issue_type": "L3",
-      "priority": "medium",
-      "description": "Insufficient practical examples - lacks real-world troubleshooting scenarios that readers might encounter in production environments",
-      "suggested_resolution": "Add 2-3 concrete troubleshooting walkthroughs showing how to diagnose installation failures in different scenarios (network interruption, storage full, etc.)",
-      "assigned_to": "Task 2B",
-      "created_at": "2026-06-30T17:09:00Z",
-      "status": "completed",
-      "completed_at": "2026-06-30T12:54:49Z",
-      "completed_by": "task2b-main-2026-06-30"
-    },
-    {
-      "id": "L3-2026-06-30-24-01",
-      "chapter": "24-resourcesmanager-configuration-performance.md",
-      "section": "Performance Cost Analysis",
-      "issue_type": "L3",
-      "priority": "medium",
-      "description": "Missing concrete performance data - contains estimated ranges but no actual benchmark data from specific devices or ROM versions",
-      "suggested_resolution": "Add concrete benchmark results from specific devices (Pixel 8 Pro, Samsung Fold, etc.) measuring actual recreation times",
-      "assigned_to": "Task 2B",
-      "created_at": "2026-06-30T17:09:00Z",
-      "status": "completed",
-      "completed_at": "2026-06-30T12:54:49Z",
-      "completed_by": "task2b-main-2026-06-30"
-    },
-    {
-      "id": "L3-2026-06-30-24-02",
-      "chapter": "24-resourcesmanager-configuration-performance.md",
-      "section": "Foldable Device Scenarios",
-      "issue_type": "L3",
-      "priority": "medium",
-      "description": "Insufficient edge case coverage - discussion of foldable devices and multi-window scenarios lacks specific examples of common failure patterns",
-      "suggested_resolution": "Add specific troubleshooting examples for foldable device configuration changes and multi-window resize scenarios",
-      "assigned_to": "Task 2B",
-      "created_at": "2026-06-30T17:09:00Z",
-      "status": "completed",
-      "completed_at": "2026-06-30T12:54:49Z",
-      "completed_by": "task2b-main-2026-06-30"
-    },
-    {
-      "id": "L4-2026-06-30-23-01",
-      "chapter": "23-staged-install-performance.md",
-      "section": "Reader Engagement",
-      "issue_type": "L4",
-      "priority": "low",
-      "description": "Reader engagement could be improved - technical content is accurate but could be more engaging by framing problems as detective stories",
-      "suggested_resolution": "Add conversational tone and direct address to readers in troubleshooting sections",
-      "assigned_to": "Task 2B",
-      "created_at": "2026-06-30T17:09:00Z",
-      "status": "completed",
-      "completed_at": "2026-06-30T12:54:49Z",
-      "completed_by": "task2b-main-2026-06-30"
-    },
-    {
-      "id": "L4-2026-06-30-24-01",
-      "chapter": "24-resourcesmanager-configuration-performance.md",
-      "section": "Storytelling Elements",
-      "issue_type": "L4",
-      "priority": "low",
-      "description": "Technical content is accurate but could be more engaging through better storytelling elements",
-      "suggested_resolution": "Add more conversational elements and frame configuration problems as detective stories that readers can follow",
-      "assigned_to": "Task 2B",
-      "created_at": "2026-06-30T17:09:00Z",
-      "status": "completed",
-      "completed_at": "2026-06-30T12:54:49Z",
-      "completed_by": "task2b-main-2026-06-30"
-    },
-    {
-      "id": "T6-2026-07-01-01",
-      "chapter": "04-binder.md",
-      "section": "1.4",
-      "issue_type": "L3+L4",
-      "priority": 90,
-      "description": "[review回炉] 6个DeepResearch注入块(~234行)以原始研究笔记堆叠在参考资料之后，含禁用词(闭环×5/链路×4)、元数据header，风格与主体不一致；主体与注入块在oneway spam/frozen/priority inheritance/事务队列等主题大量重复。需整合融入主体叙述或拆分为独立子章节。",
-      "material_paths": [
-        "logs/review/2026-07-01-06-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "需重写",
-          "location": "参考资料之后全部注入块（约234行）",
-          "detail": "6个DeepResearch注入块含禁用词、元数据header、源码dump，风格与主体正文断裂。需Task 2B将技术内容融入主体对应段落。",
-          "suggestion": "保留技术结论，删除注入元数据header，融入主体叙述，删除重复内容。参考writing-guide.md类型A模板。"
-        },
-        {
-          "type": "需确认",
-          "location": "全文源码锚点",
-          "detail": "主体和注入块源码锚点引用android-16.0.0_r1/r4，需Task 9确认android-17.0.0_r1中对应代码路径是否有变化后更新。",
-          "suggestion": "由Task 9对照android-17.0.0_r1验证源码路径，结果交Task 2B执行更新。"
-        },
-        {
-          "type": "需补充素材",
-          "location": "oneway spam / frozen / priority inheritance / 事务队列",
-          "detail": "主体正文与注入块在这些主题上大量内容重复。整合时需去重，保留更详细的版本。",
-          "suggestion": "以主体正文为骨架，将注入块中的增量信息（如tracepoints列表、red-black tree查找开销量化）补充到对应段落。"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-07-01T06:10:38",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-01-06-review.md",
-      "completed_at": "2026-06-30T22:52:07Z",
-      "completed_by": "task2b-main-2026-07-01"
-    },
-    {
-      "id": "T9-2026-07-01-06-01",
-      "chapter": "04-binder.md",
-      "section": "1.4",
-      "section_title": "Binder IPC 机制与性能影响",
-      "issue_type": "P0/P1",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Android 17 libbinder 源码片段不一致、node->async_todo 语义错误、Android 17 基线锚点未完成",
-      "description": "[Task9] 发现 Android 17 libbinder 代码片段与 android-17.0.0_r1 不一致，Binder async 队列语义把通用 oneway 串行队列误写成 frozen 专用队列，并且多处主线源码锚点仍停留在 android-16。",
-      "material_paths": [
-        "logs/deep-review/2026-07-01-06-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "Android 17 libbinder 性能监控接口与跨进程调用链路追踪 / BBinder::startRecordingTransactions 代码片段",
-          "detail": "正文片段使用 mRecording.promote()、mDescriptor、timestamp、reply 直接传参；官方 AOSP android-17.0.0_r1 frameworks/native/libs/binder/Binder.cpp:556-570 实际为 mExtras.load() + RpcMutexUniqueLock，fromDetails(getInterfaceDescriptor(), code, flags, ts, data, reply ? *reply : emptyReply, err)。这是源码片段与 Android 17 实现不一致。",
-          "suggestion": "Task2B 整合注入块时按 android-17.0.0_r1 Binder.cpp:556-570 重写片段，或只保留结论并链接源码锚点。"
-        },
-        {
-          "type": "源码错误",
-          "location": "Android 17 libbinder 性能监控接口与跨进程调用链路追踪 / ATRACE_TAG_AIDL 代码片段",
-          "detail": "正文写成 if (tracingEnabled) [[unlikely]] 且直接 if(trace_end)，但 android-17.0.0_r1 Binder.cpp:493-500 没有 [[unlikely]]，并通过 scope_guard 统一 trace_end。",
-          "suggestion": "删除该处 [[unlikely]] 结论，按 Binder.cpp:493-500 的 get_trace_enabled_tags + scope_guard 描述。"
-        },
-        {
-          "type": "原理错误",
-          "location": "注入块：Binder 事务队列机制与跨进程性能 / node->async_todo",
-          "detail": "正文把 node->async_todo 描述为“专门给 frozen 进程的 async 事务排队”或“frozen 进程累积”。kernel/common android16-6.12 drivers/android/binder.c:3040-3091 显示 node->async_todo 是同一 binder node 上 oneway 串行化的通用队列：node->has_async_transaction 为真时 pending_async 入 node->async_todo；frozen 只是在该路径上叠加 TF_UPDATE_TXN 替换逻辑。",
-          "suggestion": "改为“node->async_todo 用于同一 binder node 的 async/oneway 串行排队；frozen async 是其中一条特殊路径”。"
-        },
-        {
-          "type": "版本差异",
-          "location": "frontmatter last_verified_against、主体多个 [已验证: AOSP android-16.*] 标注、线程池与调度器协同整节",
-          "detail": "本章适用版本写到 Android 17/API 37，但主线锚点仍大量停在 android-16.0.0_r1/r4、external/perfetto android-16.0.0_r1 和 kernel android16-6.12。已确认 frameworks/native、frameworks/base、external/perfetto 均有 android-17.0.0_r1 tag；kernel/common 未找到 android-17.0.0_r1 tag 或 android17-6.12 branch，不能把 android16-6.12 当作 Android 17 主线结论。",
-          "suggestion": "Task2B 回炉时将 framework/base/perfetto 锚点统一迁到 android-17.0.0_r1；kernel 侧若只能用 android16-6.12，应明确标注为“Android 17 未进入的一手可查上限/历史参照”，不要作为主线结论。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-01T06:29:24+08:00",
-      "status": "completed",
-      "completed_at": "2026-06-30T22:52:07Z",
-      "completed_by": "task2b-main-2026-07-01"
-    },
-    {
-      "id": "T9-2026-07-01-21-01",
-      "chapter": "01.25-binder-ipc-async-pipeline.md",
-      "section": "1.25",
-      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Binder frozen oneway 回执、async 队列、1MB buffer 与版本锚点存在 Android 17 源码级错配",
-      "material_paths": [
-        "logs/deep-review/2026-07-01-21-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误/原理断裂",
-          "location": "§10.2 BR_TRANSACTION_PENDING_FROZEN 重投递机制，L473-L494",
-          "detail": "正文把 BINDER_WORK_TRANSACTION_PENDING 写成“延后回执”，并称调用方线程池暂时不会拿到 work、目标进程解冻处理后才改回 BINDER_WORK_TRANSACTION_COMPLETE。android17-6.18-2026-06_r1 drivers/android/binder.c:4005-4037 实际是在 oneway frozen 时把 tcomplete->type 设为 BINDER_WORK_TRANSACTION_PENDING 后立即 enqueue 到调用方线程；binder_thread_read:5081-5088 直接把该 work 映射为 BR_TRANSACTION_PENDING_FROZEN 并释放 work。用户态 IPCThreadState.cpp:1183-1185 收到后 goto finish，不存在“解冻后再改回 COMPLETE”的调用方回执链。",
-          "suggestion": "重写为：BR_TRANSACTION_PENDING_FROZEN 是“目标 frozen 且 async 事务已入队”的即时诊断回执；目标事务仍等待解冻后由目标进程处理，但调用方不会等待后续 COMPLETE。"
-        },
-        {
-          "type": "源码错误/队列语义",
-          "location": "§10.2 L471 与 §6 L351",
-          "detail": "正文把 frozen oneway 统一写成排入 node->async_todo。Android 17 binder_proc_transaction() 中只有 node->has_async_transaction 已为真时 pending_async 才进入 node->async_todo；否则会选择 waiting thread 的 thread todo，或进入 proc->todo。此前已修正过“frozen 专用队列”误读，本次新增段落又把通用 async 串行队列和 frozen 特例混在一起。",
-          "suggestion": "按源码拆成三路：thread todo / proc->todo / node->async_todo；node->async_todo 只负责同一 binder node 上已有 async 未完成时的串行排队，frozen 只叠加 BR_TRANSACTION_PENDING_FROZEN 回执和 TF_UPDATE_TXN 替换机会。"
-        },
-        {
-          "type": "源码错误/缓冲区语义",
-          "location": "§11.6 1MB 缓冲区溢出处理策略，L564-L603；§12.D L836-L844",
-          "detail": "正文写“异步事务与同步事务使用独立的内存池”，并把 TF_UPDATE_TXN 描述成 oneway 溢出时抢占老事务的通用防护。android17-6.18-2026-06_r1 binder_alloc.c:516-613 显示 sync/async 共用同一个 binder_alloc mmap 空间，只用 free_async_space 给 async 做配额隔离；空间不足返回 -ENOSPC，用户态看到 BR_FAILED_REPLY/FAILED_TRANSACTION。TF_UPDATE_TXN 替换只在 frozen、pending_async 且事务携带 TF_UPDATE_TXN 时扫描 node->async_todo，不是 1MB buffer 溢出的通用回收策略。",
-          "suggestion": "改为“同一 mmap + async 配额隔离 + ENOSPC 失败”；把 TF_UPDATE_TXN 放到 frozen pending async 去重小节，不要写成 buffer overflow 处理。"
-        },
-        {
-          "type": "版本差异/版本锚点",
-          "location": "§10.2 L462、§12.A L790、§12.E L846-L855、附录 A L862-L1052",
-          "detail": "正文同时把 Android 17 Binder 内核锚点写成 Linux v6.6/android17-6.6、v6.12 mainline、kernel 6.12/6.18，主线结论版本不一致。当前项目基线要求正文主线锚定 android-17.0.0_r1；内核侧若使用 common kernel，应统一到 Android 17 tag（本轮复核使用 android17-6.18-2026-06_r1），v6.6/v6.12 只能作为历史对照。",
-          "suggestion": "统一源码版本表和正文锚点：platform 使用 android-17.0.0_r1；kernel/common 使用 android17-6.18-2026-06_r1 或明确标注为 Android 17 common kernel；Android 16/更旧 tag 只保留在历史差异表。"
-        },
-        {
-          "type": "数据缺失/事实边界",
-          "location": "§11.6 L641-L654、§11.5 L771-L779、附录 A.6 L1042-L1046",
-          "detail": "正文给出“priority 切换增加约 3-5% 上下文切换开销”“缓冲区分裂增加约 2% 分配时间”“setpriority 1-5µs”“最坏约 32K 次 memcmp”等量化结论，但没有设备、kernel build、trace/benchmark 方法或样本；同时把 CountDownLatch.await(1, TimeUnit.SECONDS) 写成轮询等待并持续占用 CPU，与 Java timed wait 会 park 当前线程的语义不一致。",
-          "suggestion": "删除无来源量化数字，或补可复现实验条件；CountDownLatch 段改为“按超时周期唤醒检查，不是 busy polling”，风险重点放在 Binder 线程池中等待回调会占用线程和造成超时。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-01T21:30:25+08:00",
-      "status": "pending"
-    }
-  ],
-  "metadata": {
-    "total_issues": 8,
-    "l3_issues": 5,
-    "l4_issues": 3,
-    "created_at": "2026-06-30T17:09:00Z",
-    "review_id": "2026-07-01-06-review.md",
-    "last_task9_review_id": "logs/deep-review/2026-07-01-16-audit.md"
+[
+  {
+    "section": "1.25",
+    "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+    "priority": 90,
+    "reason": "[review回炉] oneway 三路排队路由在 Section 6/10.2/13.A.4 三处重复展开",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "Section 6 / 10.2 / 13.A.4",
+        "detail": "同一套 oneway 三路排队机制在三个 section 重复展开",
+        "suggestion": "Section 6 保留完整描述，10.2 和 13.A.4 简化为引用"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-01T23:18:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-01-23-review.md"
   },
-  "pending": [
-    {
-      "section": "6.5",
-      "section_title": "SharedPreferences/DataStore 性能与 ANR 优化",
-      "priority": 85,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-sharedpreferences-impl-anr-mechanism.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "SharedPreferencesImpl 性能与 ANR 优化机制 — 基于 android-17.0.0_r1 源码完整解析 SharedPreferencesImpl 的 ANR 触发链：首次加载 awaitLoadedLocked 主线程阻塞（BlockGuard 显式 onReadFromDisk）、commit 主线程 fsync vs apply 后台 fsync、QueuedWork.waitToFinish 在 handleStopActivity/handlePauseActivity 的 512ms 同步等待、fsync 延迟 histogram 监控（16 桶指数，MAX_FSYNC_DURATION=256ms）",
-          "suggestion": "建议在 finalized 章节的下一轮修订中补充完整调用链图和 4 大 ANR 触发点分析"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-07-01T06:15:25.082107",
-      "status": "pending"
-    },
-    {
-      "section": "1.24",
-      "section_title": "ResourcesManager 与 Configuration 变更性能",
-      "priority": 82,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-resourcesmanager-configuration-relaunch.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 ResourcesManager/Configuration 与 Activity Relaunch 判定模型 — 源码级验证 ATMS updateConfigurationLocked → mRootWindowContainer.onConfigurationChanged → ActivityRecord.shouldRelaunchLocked 三段式流水线；skipRelaunchConfigMask 位运算公式；Flags.enableLessActivityRecreationOnConfigChange 新机制；桌面模式 shouldSkipActivityRelaunchWhenDocking",
-          "suggestion": "建议在 finalized 章节的下一轮修订中补充 Activity relaunch 判定的完整源码链路和 Android 17 新增的 less-recreation 机制分析"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-07-01T06:15:25.082107",
-      "status": "pending"
-    },
-    {
-      "id": "task9-1.2-body-missing-202607010725",
-      "section": "1.2",
-      "section_title": "系统启动全流程",
-      "priority": 85,
-      "reason": "[Deep Tech Review] finalized 章节正文为空，无法进行源码引用与版本差异复核",
-      "material_paths": [
-        "src/part1-fundamentals/ch01-architecture/02-boot-process.md"
-      ],
-      "review_issues": [
-        {
-          "type": "原理断裂/内容缺失",
-          "location": "全文：frontmatter 后无正文（文件共 99 行）",
-          "detail": "章节处于 finalized/pass-tech-review，但第二个 frontmatter 分隔符之后没有 Markdown 正文，Task9 无法复核源码引用、启动流程原理链或 Android 17 版本差异。",
-          "suggestion": "从可信历史版本或原始材料恢复正文，再按 android-17.0.0_r1 重新核对 init、Zygote、SystemServer、bootstat 与 preloaded-classes 相关源码锚点。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-01T07:25:51+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-01T12:52:40+08:00",
-      "completed_by": "task2b-main-2026-07-01",
-      "fix_summary": "从 git 历史恢复正文（commit eaa95019），更新 android-16.0.0_r1→android-17.0.0_r1 源码引用，标注 kernel android16-6.12 为非主线参照"
-    },
-    {
-      "id": "T9-2026-07-01-20-01",
-      "chapter": "13-messagequeue-deliqueue.md",
-      "section": "1.13",
-      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
-      "priority": 85,
-      "reason": "[Deep Tech Review] Android 17 MessageQueue 主线源码锚点仍停在 Android 16 ConcurrentMessageQueue，缺少 android-17.0.0_r1 CombinedDeliMessageQueue / MessageStack / MessageHeap 口径",
-      "material_paths": [
-        "logs/deep-review/2026-07-01-20-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本差异/源码锚点",
-          "location": "§Android 16 和 Android 17 要分成两步看 / §公开源码里能确认哪些并发结构 / 参考资料",
-          "detail": "章节 frontmatter 已标注 last_verified_against=android-17.0.0_r1，但正文主要源码说明仍以 android-16.0.0_r1 CombinedMessageQueue/ConcurrentMessageQueue/LegacyMessageQueue 为锚点，并把 ConcurrentSkipListSet 双队列作为可确认并发结构。android-17.0.0_r1 已发布 CombinedDeliMessageQueue/MessageQueue.java、MessageStack.java、MessageHeap.java、Message.java，正式实现为 MessageStack + 同步/异步 MessageHeap。现正文与 §1.26 的 Android 17 源码口径不一致。",
-          "suggestion": "Task2B 回炉时保留 Android 16 作为历史 rollout 对照，把 Android 17 主线源码锚点迁移到 CombinedDeliMessageQueue/MessageQueue.java、MessageStack.java、MessageHeap.java、Message.java，并将 ConcurrentSkipListSet 仅标注为 Android 16 历史原型。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-01T20:36:16+08:00",
-      "status": "pending"
-    },
-    {
-      "id": "T9-2026-07-01-21-01",
-      "chapter": "01.25-binder-ipc-async-pipeline.md",
-      "section": "1.25",
-      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Binder frozen oneway 回执、async 队列、1MB buffer 与版本锚点存在 Android 17 源码级错配",
-      "material_paths": [
-        "logs/deep-review/2026-07-01-21-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误/原理断裂",
-          "location": "§10.2 BR_TRANSACTION_PENDING_FROZEN 重投递机制，L473-L494",
-          "detail": "正文把 BINDER_WORK_TRANSACTION_PENDING 写成“延后回执”，并称调用方线程池暂时不会拿到 work、目标进程解冻处理后才改回 BINDER_WORK_TRANSACTION_COMPLETE。android17-6.18-2026-06_r1 drivers/android/binder.c:4005-4037 实际是在 oneway frozen 时把 tcomplete->type 设为 BINDER_WORK_TRANSACTION_PENDING 后立即 enqueue 到调用方线程；binder_thread_read:5081-5088 直接把该 work 映射为 BR_TRANSACTION_PENDING_FROZEN 并释放 work。用户态 IPCThreadState.cpp:1183-1185 收到后 goto finish，不存在“解冻后再改回 COMPLETE”的调用方回执链。",
-          "suggestion": "重写为：BR_TRANSACTION_PENDING_FROZEN 是“目标 frozen 且 async 事务已入队”的即时诊断回执；目标事务仍等待解冻后由目标进程处理，但调用方不会等待后续 COMPLETE。"
-        },
-        {
-          "type": "源码错误/队列语义",
-          "location": "§10.2 L471 与 §6 L351",
-          "detail": "正文把 frozen oneway 统一写成排入 node->async_todo。Android 17 binder_proc_transaction() 中只有 node->has_async_transaction 已为真时 pending_async 才进入 node->async_todo；否则会选择 waiting thread 的 thread todo，或进入 proc->todo。此前已修正过“frozen 专用队列”误读，本次新增段落又把通用 async 串行队列和 frozen 特例混在一起。",
-          "suggestion": "按源码拆成三路：thread todo / proc->todo / node->async_todo；node->async_todo 只负责同一 binder node 上已有 async 未完成时的串行排队，frozen 只叠加 BR_TRANSACTION_PENDING_FROZEN 回执和 TF_UPDATE_TXN 替换机会。"
-        },
-        {
-          "type": "源码错误/缓冲区语义",
-          "location": "§11.6 1MB 缓冲区溢出处理策略，L564-L603；§12.D L836-L844",
-          "detail": "正文写“异步事务与同步事务使用独立的内存池”，并把 TF_UPDATE_TXN 描述成 oneway 溢出时抢占老事务的通用防护。android17-6.18-2026-06_r1 binder_alloc.c:516-613 显示 sync/async 共用同一个 binder_alloc mmap 空间，只用 free_async_space 给 async 做配额隔离；空间不足返回 -ENOSPC，用户态看到 BR_FAILED_REPLY/FAILED_TRANSACTION。TF_UPDATE_TXN 替换只在 frozen、pending_async 且事务携带 TF_UPDATE_TXN 时扫描 node->async_todo，不是 1MB buffer 溢出的通用回收策略。",
-          "suggestion": "改为“同一 mmap + async 配额隔离 + ENOSPC 失败”；把 TF_UPDATE_TXN 放到 frozen pending async 去重小节，不要写成 buffer overflow 处理。"
-        },
-        {
-          "type": "版本差异/版本锚点",
-          "location": "§10.2 L462、§12.A L790、§12.E L846-L855、附录 A L862-L1052",
-          "detail": "正文同时把 Android 17 Binder 内核锚点写成 Linux v6.6/android17-6.6、v6.12 mainline、kernel 6.12/6.18，主线结论版本不一致。当前项目基线要求正文主线锚定 android-17.0.0_r1；内核侧若使用 common kernel，应统一到 Android 17 tag（本轮复核使用 android17-6.18-2026-06_r1），v6.6/v6.12 只能作为历史对照。",
-          "suggestion": "统一源码版本表和正文锚点：platform 使用 android-17.0.0_r1；kernel/common 使用 android17-6.18-2026-06_r1 或明确标注为 Android 17 common kernel；Android 16/更旧 tag 只保留在历史差异表。"
-        },
-        {
-          "type": "数据缺失/事实边界",
-          "location": "§11.6 L641-L654、§11.5 L771-L779、附录 A.6 L1042-L1046",
-          "detail": "正文给出“priority 切换增加约 3-5% 上下文切换开销”“缓冲区分裂增加约 2% 分配时间”“setpriority 1-5µs”“最坏约 32K 次 memcmp”等量化结论，但没有设备、kernel build、trace/benchmark 方法或样本；同时把 CountDownLatch.await(1, TimeUnit.SECONDS) 写成轮询等待并持续占用 CPU，与 Java timed wait 会 park 当前线程的语义不一致。",
-          "suggestion": "删除无来源量化数字，或补可复现实验条件；CountDownLatch 段改为“按超时周期唤醒检查，不是 busy polling”，风险重点放在 Binder 线程池中等待回调会占用线程和造成超时。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-01T21:30:25+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-01T22:54:24.250420+08:00",
-      "completed_by": "task2b-main-2026-07-01",
-      "fix_summary": "修复 5 个 P0/P1: BR_TRANSACTION_PENDING_FROZEN 语义、async 三路排队路由、sync/async buffer 共用、版本锚点统一、未验证性能数据"
-    }
-  ],
-  "entries": [
-    {
-      "section": "1.25",
-      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
-      "priority": 90,
-      "reason": "[review回炉] Task 6 re-review + Task 9 P0:3/P1:2 技术问题",
-      "material_paths": [
-        "intake/suggestions.md（含 Task 6 + Task 9 review 意见）"
-      ],
-      "review_issues": [
-        {
-          "type": "需重写",
-          "location": "Section 6 / 10.2 / 13.A.4 — oneway 三路排队路由重复展开",
-          "detail": "同一套三路排队路由机制（thread todo / proc->todo / node->async_todo）在 section 6、section 10.2、section 13.A.4 三处重复描述，读者会感到冗余。建议合并到一处完整描述，其他处仅交叉引用。",
-          "suggestion": "在 section 6 保留完整描述，section 10.2 和 13.A.4 简化为引用 + 补充差异点"
-        },
-        {
-          "type": "存疑",
-          "location": "Section 11.1 — FLAT_BINDER_FLAG 优先级调度",
-          "detail": "正文写「Android 17 引入了基于 FLAT_BINDER_FLAG 的完整优先级调度体系」，但附录 A.5 的版本差异表显示该机制从 Android 12 起逐步演进。「Android 17 引入了...完整...」的表述可能不准确，建议改为「Android 17 在既有机制上强化了...」。",
-          "suggestion": "核实 FLAT_BINDER_FLAG 优先级机制的引入版本，修正表述"
-        },
-        {
-          "type": "需确认",
-          "location": "Section 11.3 — 标题「多进程路由策略优化」与内容不匹配",
-          "detail": "标题为「多进程路由策略优化」，但正文展示的是 BR_FAILED_REPLY / BR_DEAD_REPLY / BR_FROZEN_REPLY 三种错误码处理逻辑和线程池动态扩容，内容更接近「错误处理与回退」，不是「路由策略」。标题需要修正或内容需要重写以匹配标题。",
-          "suggestion": "修正标题为「错误处理与线程池动态扩容」或重写内容"
-        },
-        {
-          "type": "存疑",
-          "location": "Section 11.1/11.2 — 内核代码注释格式",
-          "detail": "Section 11.1 和 11.2 的 C 代码块中，函数体前带有「// 1. 优先级标志位解析」「// 2. 异步空间隔离检测」等编号注释，这些注释风格与 AOSP 源码不一致，可能是 Task 2 加工时添加的。建议核实是否为源码原文。",
-          "suggestion": "核实注释是否为源码原文，如为加工添加则删除或改为正文说明"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-07-01T23:11:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-01-23-review.md"
-    }
-  ]
-}
+  {
+    "section": "1.25",
+    "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+    "priority": 90,
+    "reason": "[review回炉] 「Android 17 引入了完整优先级调度体系」表述不准确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "存疑",
+        "location": "Section 11.1",
+        "detail": "附录 A.5 显示该机制从 Android 12 起逐步演进，'引入'表述不准确",
+        "suggestion": "核实版本，修正为'在既有机制上强化'"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-01T23:18:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-01-23-review.md"
+  },
+  {
+    "section": "1.25",
+    "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+    "priority": 90,
+    "reason": "[review回炉] Section 11.3 标题与内容不匹配",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "Section 11.3",
+        "detail": "标题为'多进程路由策略优化'但内容是错误码处理和线程池扩容",
+        "suggestion": "修正标题或重写内容"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-01T23:18:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-01-23-review.md"
+  },
+  {
+    "section": "1.25",
+    "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+    "priority": 90,
+    "reason": "[review回炉] Section 11.1/11.2 内核代码注释格式疑似加工添加",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "存疑",
+        "location": "Section 11.1 / 11.2",
+        "detail": "编号注释（// 1. // 2. // 3.）风格与 AOSP 源码不一致，疑似加工添加",
+        "suggestion": "核实注释来源，非源码原文则删除"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-01T23:18:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-01-23-review.md"
+  }
+]
