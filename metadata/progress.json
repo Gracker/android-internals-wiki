@@ -16,5 +16,49 @@
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
     "src/part3-tools/ch19-apm/26-hybrid-apm.md"
   ],
-  "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26"
+  "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
+  "progress": [
+    {
+      "section": "1.2",
+      "action": "task2b-verify",
+      "status": "verified",
+      "verified_at": "2026-07-01T19:35:46.150100",
+      "note": "Boot Process chapter correctly returned to Task6"
+    },
+    {
+      "section": "1.10",
+      "action": "task2b-verify",
+      "status": "verified",
+      "verified_at": "2026-07-01T19:35:46.150105",
+      "note": "ContentProvider chapter correctly returned to Task6"
+    },
+    {
+      "section": "1.13",
+      "action": "task2b-verify",
+      "status": "verified",
+      "verified_at": "2026-07-01T19:35:46.150107",
+      "note": "MessageQueue chapter status corrected and returned to Task6"
+    },
+    {
+      "section": "1.19",
+      "action": "task2b-verify",
+      "status": "verified",
+      "verified_at": "2026-07-01T19:35:46.150108",
+      "note": "Zygote Graphics chapter status corrected and returned to Task6"
+    },
+    {
+      "section": "1.25",
+      "action": "task2b-verify",
+      "status": "verified",
+      "verified_at": "2026-07-01T19:35:46.150109",
+      "note": "Binder IPC chapter status corrected and returned to Task6"
+    },
+    {
+      "section": "1.26",
+      "action": "task2b-verify",
+      "status": "verified",
+      "verified_at": "2026-07-01T19:35:46.150110",
+      "note": "DeliQueue chapter status corrected and returned to Task6"
+    }
+  ]
 }
