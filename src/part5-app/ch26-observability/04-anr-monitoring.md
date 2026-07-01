@@ -39,17 +39,17 @@ sources:
 
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
-task6_review_notes: '2026-06-08 task6 re-review (revisiting): pass-light-edit。L1 小修 3 处（禁用词"对齐"×2 + 中英文间距×1）；无 L2/L3/L4 新增问题。Task9 needs-rework 已由 Task2B 修复，待 Task9 复审。'
-last_task6_at: "2026-06-08T17:17:44+08:00"
+task6_review_notes: "2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后): pass-light-edit。L1/L2 无新增问题；Task9 idle-audit source version anchoring 后写作复审通过。自动晋升 finalized。"
+last_task6_at: "2026-07-01T08:09:00+08:00"
 task6_result: pass-light-edit
-reviewed_date: "2026-06-08"
+reviewed_date: "2026-07-01"
 reviewed_by: openclaw-task6
 task9_state: "reviewed"
 task2b_state: "fixed"
 task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-08"
+task9_reviewed_date: "2026-07-01"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-08T17:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-08-17-deep-review.md"

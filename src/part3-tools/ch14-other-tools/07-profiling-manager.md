@@ -56,12 +56,14 @@ task6_state: reviewed
 last_task6_audit: "2026-06-29"
 task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-30"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-01
 ---
 -
 
 # 14.7 ProfilingManager
 
-ProfilingManager 解决量产设备上"问题发生时没有开工具"的空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 及后续 extension/API 版本补齐系统事件触发。拆开显式请求、trigger 版本边界、结果回传三个环节,线上取证流程才不会写乱。
+ProfilingManager 解决量产设备上"问题发生时没有开工具"的空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 及后续版本补齐了系统事件触发。线上取证流程要拆成三个环节来理解:显式请求怎么发、trigger 版本边界在哪、结果怎么收。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -111,14 +113,14 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-这套接口把三件事拆开。请求对象只描述采集内容、时长,平台负责执行、限流、脱敏和落盘,应用在 listener 里做归档。调用线程不会被长 trace 挂住,四种请求共用同一套结果处理。
+这套接口把三件事拆开:请求对象只描述采集内容和时长,平台负责执行、限流、脱敏和落盘,应用在 listener 里做归档。调用线程不会被长 trace 挂住,四种请求共用同一套结果消费逻辑。
 
-四个 builder 的共同字段主要来自 `ProfilingRequestBuilder`:
+四个 builder 共用 `ProfilingRequestBuilder` 的两个关键字段:
 
 - `setTag(...)`:把 case id、场景名、回归单号写进去,后续聚合比靠文件名稳
 - `setCancellationSignal(...)`:更适合手动短 trace;heap dump 和较长 profile 通常让系统自然结束更稳
 
-## BufferFillPolicy 只写两个公开枚举
+## BufferFillPolicy 的两个公开枚举
 
 `SystemTraceRequestBuilder` 里最容易写错的是 buffer 策略。AndroidX 公开文档只有两个枚举:
 
@@ -175,7 +177,7 @@ Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResul
 
 启动章节如果把这两个 trigger 写成同一件事,读者对采样起点、停止点和 artifact 都会判断失准。
 
-## 三个更常用的用法
+## 三种典型用法
 
 ### 1. 交互卡顿
 

@@ -1,7 +1,7 @@
 ---
 title: "Android Staged Install 与安装原子性性能"
 chapter: "1.23"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [package-manager, staged-install, apk-install, atomicity, performance, dexopt]
 related_chapters: ["1.9", "1.7", "1.20", "16.6"]
@@ -17,8 +17,8 @@ sources:
   - type: aosp
   - type: aosp
   - type: aosp
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
@@ -27,8 +27,9 @@ task9_result: auto-fixed
 last_task9_at: 2026-06-30T16:31:10+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-30T19:24:00+08:00
-last_task6_at: 2026-06-30T19:24:00+08:00
+reviewed_date: "2026-07-01"
+last_task6_at: "2026-07-01T08:09:00+08:00"
+task6_review_notes: "2026-07-01 Task6 revisiting re-review: pass-light-edit。L1 小修 4 处（禁用词"链路"×3 → 路径/序列 + mermaid 箭头中文破折号修正）；无 L2/L3/L4 新增问题。Task9 auto-fix（P0 伪方法名已修正）后写作复审通过。自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-30"
 last_task9_review_log: "logs/deep-review/2026-06-30-16-deep-review.md"
 task9_review_notes: "2026-06-30 Task9 复审 auto-fix: 修正源码补充区 readSessionSettingsLocked() 伪方法名与 session XML 属性名;回到 Task6 复审。"
@@ -78,7 +79,7 @@ sequenceDiagram
     PIS->>SM: commitSession()
     Note over SM: APK 暂存到 /data/app-staging/session_{id}/
     SM->>SM: pre-reboot verification
-    SM——>>SM: 等待下次 reboot
+    SM-->>SM: 等待下次 reboot
     Note over SM: 重启后 PMS 调用 restoreAndApplyStagedSessionIfNeeded()
     PMS->>SM: restoreSessions()
     SM->>SM: resumeSession()
@@ -250,7 +251,7 @@ Android 16 文档提及 Cloud Profiles(通过 Google Play 分发聚合的应用�
 - Profile 文件通过 `ArtFileManager` 管理,存放在 `/data/misc/profiles/cur/{userId}/{packageName}/`
 - 安装时的 dexopt 能否使用 Cloud Profile,取决于 profile 是否已在安装前注入到设备--这依赖 Play Store 的预取时序,而不是安装框架的保证
 
-**与 21.12 节的交叉引用**:21.12 节已说明 Cloud Profiles 属于 Play 分发聚合热点数据的补充机制,不是 AOSP 安装框架的内建能力。Cloud Profile 15-30% 首帧收益、Staged finalize 使用 Cloud Profile 等说法缺少 Android 17 源码验证链路,不作为正文结论。
+**与 21.12 节的交叉引用**:21.12 节已说明 Cloud Profiles 属于 Play 分发聚合热点数据的补充机制,不是 AOSP 安装框架的内建能力。Cloud Profile 15-30% 首帧收益、Staged finalize 使用 Cloud Profile 等说法缺少 Android 17 源码验证路径,不作为正文结论。
 
 #### dexopt 延迟策略
 
@@ -307,7 +308,7 @@ ORDER BY slice.ts;
 
 #### 安装过程端到端度量
 
-从应用调用 `session.commit()` 到应用可启动的完整链路:
+从应用调用 `session.commit()` 到应用可启动的完整路径:
 
 ```sql
 -- 安装总耗时(从 commit 到应用可用)
@@ -516,7 +517,7 @@ private boolean isInTerminalState() {        // line 1634
 
 ### Boot-time restore 的两道闸门
 
-正文锚点 3 提到 `PackageInstallerService#restoreAndApplyStagedSessionIfNeeded()` 与 `StagingManager#restoreSessions()`,但未串成单一对照链路。源码揭示实际是**两道闸门**:
+正文锚点 3 提到 `PackageInstallerService#restoreAndApplyStagedSessionIfNeeded()` 与 `StagingManager#restoreSessions()`,但未串成单一对照序列。源码揭示实际是**两道闸门**:
 
 **第一道:PackageInstallerService#restoreAndApplyStagedSessionIfNeeded()**(line 441)-- 仅筛选满足 **无 parent && isCommitted && !isInTerminalState** 的 session;同时处理孤儿场景:child session 但 parent 缺失 → 立即 `setSessionFailed(ACTIVATION_FAILED, "An orphan staged session X is found, parent Y is missing")`。
 
