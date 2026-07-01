@@ -1,8 +1,9 @@
 ---
+
 title: "端到端输入延迟预算与感知阈值"
 chapter: "3.9"
 section: "3.9"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-01"
@@ -10,27 +11,16 @@ last_verified_against: "AOSP android-17.0.0_r1 + Perfetto docs 2026-05"
 confidence: medium
 sources:
   - type: official
-    path: "source.android.com/docs/core/interaction/input"
   - type: official
-    path: "source.android.com/docs/core/graphics/implement-vsync"
   - type: official
-    path: "developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features"
   - type: official
-    path: "perfetto.dev/docs/data-sources/frametimeline"
   - type: official
-    path: "perfetto.dev/docs/analysis/stdlib-docs#android-input"
   - type: aosp
-    path: "frameworks/native/libs/input/InputConsumer.cpp"
   - type: aosp
-    path: "frameworks/native/libs/input/Resampler.cpp"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/app/GameManagerService.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/RefreshRatePolicy.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/ViewGroup.java"
   - type: paper
-    path: "ACM MobileHCI 2016, Software-reduced touchscreen latency"
   - type: research
     path: "DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md"
 tags: [input-latency, hci, touch, jank, perception]
@@ -38,9 +28,9 @@ related_chapters: ["3.2", "3.4", "7.9", "13.8", "15.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/官方文档"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-last_task6_at: "2026-07-01T08:09:00+08:00"
+last_task6_at: "2026-07-01T09:07:00+08:00"
 task6_review_notes: "2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后): pass-light-edit。L1/L2 无新增问题；Task9 idle-audit source version anchoring（android-16→17）后写作复审通过。自动晋升 finalized。"
 reviewed_date: "2026-07-01"
 reviewed_by: "openclaw-task6"
@@ -63,7 +53,7 @@ p1: 0
 p2: 2
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
-last_task6_audit: "2026-06-09"
+last_task6_audit: "2026-07-01"
 ---
 
 # 3.9 端到端输入延迟预算与感知阈值

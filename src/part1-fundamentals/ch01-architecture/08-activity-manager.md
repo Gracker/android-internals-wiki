@@ -1,14 +1,10 @@
 ---
+
 title: "Activity Manager Service 与性能分析"
 chapter: "1.8"
 section: "1.8"
-status: "ready-for-review"
+status: "finalized"
 last_task2b_lite_at: "2026-06-26T09:35:00+08:00"
-task2b_result: "fixed-lite"
-task2b_state: "fixed"
-task6_state: "reviewed"
-task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-01"
@@ -16,73 +12,39 @@ last_verified_against: "AOSP android-17.0.0_r1 + Android Developers behavior cha
 confidence: medium
 sources:
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/utils/AnrTimer.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/psc/Constants.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastProcessQueue.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/content/ContentResolver.java"
   - type: aosp
-    path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/InputManagerCallback.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/AnrController.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/Instrumentation.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/RootWindowContainer.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/TaskDisplayArea.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/Task.java"
   - type: aosp
-    path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
   - type: blog
-    path: "https://juejin.cn/post/7083438148843225102"
   - type: blog
-    path: "https://juejin.cn/post/7136008620658917407"
   - type: official
-    path: "https://developer.android.com/about/versions/11/behavior-changes-all"
   - type: official
-    path: "https://developer.android.com/about/versions/12/behavior-changes-12"
   - type: official
-    path: "https://developer.android.com/about/versions/13/behavior-changes-all"
   - type: official
-    path: "https://developer.android.com/about/versions/14/behavior-changes-14"
   - type: official
-    path: "https://developer.android.com/about/versions/14/behavior-changes-all"
   - type: official
-    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
   - type: official
     path: "https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges"
 tags: [ams, activity-manager, process-lifecycle, anr, service-management, broadcast, content-provider]
@@ -96,8 +58,8 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-07-01"
 task6_result: pass-light-edit
 pipeline_stage: "ready-to-publish"
-task6_state: "revisiting"
-last_task6_audit: "2026-06-08"
+task6_state: "reviewed"
+last_task6_audit: "2026-07-01"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
@@ -109,7 +71,7 @@ review_round: "9"
 last_task9_audit: "2026-07-01"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-18T20:16:50+08:00"
-last_task6_at: "2026-07-01T08:09:00+08:00"
+last_task6_at: "2026-07-01T09:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-09-09-review.md"
 task6_review_notes: "2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后): pass-light-edit。L1 小修 7 处（禁用词"链路"×7 → 流程/调用链/计算路径/路径）；无 L2/L3/L4 新增问题。Task9 idle-audit source version anchoring 后写作复审通过。自动晋升 finalized。"
 last_task2b_at: "2026-05-27T22:50:00+08:00"

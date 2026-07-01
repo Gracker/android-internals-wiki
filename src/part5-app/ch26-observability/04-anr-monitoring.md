@@ -1,8 +1,9 @@
 ---
+
 title: "ANR 监控体系"
 chapter: "26.4"
 section: "26.4"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-06-30"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers ANR / Android vitals docs + Clippings structure references"
@@ -11,38 +12,26 @@ drafted_date: "2026-05-15"
 polish_count: 0
 sources:
   - type: clippings-structure-ref
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"
   - type: clippings-structure-ref
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md"
   - type: clippings-structure-ref
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md"
   - type: clippings-structure-ref
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md"
   - type: clippings-structure-ref
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
   - type: official
-    path: "https://developer.android.com/topic/performance/vitals/anr"
   - type: official
-    path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
   - type: official
-    path: "https://developer.android.com/topic/performance/anrs/find-unresponsive-thread"
   - type: official
-    path: "https://developer.android.com/training/articles/perf-anr"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/AnrHelper.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
 
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
 pipeline_stage: "ready-to-publish"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_review_notes: "2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后): pass-light-edit。L1/L2 无新增问题；Task9 idle-audit source version anchoring 后写作复审通过。自动晋升 finalized。"
-last_task6_at: "2026-07-01T08:09:00+08:00"
+last_task6_at: "2026-07-01T09:07:00+08:00"
 task6_result: pass-light-edit
 reviewed_date: "2026-07-01"
 reviewed_by: openclaw-task6
@@ -53,7 +42,7 @@ task9_reviewed_date: "2026-07-01"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-08T17:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-08-17-deep-review.md"
-last_task6_audit: "2026-06-07"
+last_task6_audit: "2026-07-01"
 task9_review_notes: "2026-06-08 Task9 复审：pass-tech-review，P0/P1 0；P2 1（ApplicationExitInfo trace 保留细节已写入 suggestions）。自动晋升 finalized。 | 2026-06-30 Task9 闲时抽检 auto-fix：将 AOSP 源码验证锚点从 android-16.0.0_r1 重锚到 android-17.0.0_r1；AnrHelper / ProcessErrorStateRecord / StackTracesDumpHelper / ApplicationExitInfo 在 Android 17 tag 复核通过。章节回到 Task6 复审。"
 task2b_result: "fixed"
 last_task9_audit: "2026-06-30"
