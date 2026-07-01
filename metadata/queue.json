@@ -38,8 +38,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-01T23:18:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-07-01-23-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-07-01-23-review.md",
+    "completed_reason": "fixed-lite: 版本表述修正为\"在既有机制上强化\"",
+    "completed_at": "2026-07-01T23:38:33+08:00"
   },
   {
     "section": "1.25",
@@ -80,7 +82,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-01T23:18:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-07-01-23-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-07-01-23-review.md",
+    "completed_reason": "fixed-lite: 删除6行加工添加的编号注释",
+    "completed_at": "2026-07-01T23:38:33+08:00"
   }
 ]
