@@ -13,6 +13,7 @@ task6_state: reviewed
 task6_result: pass-light-edit
 pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
+last_task6_audit: 2026-07-02
 ---
 
 # T r a c e 抓取
@@ -89,7 +90,7 @@ reviewed_by: openclaw-task6
    }
    ```
 
-2. **S u r f ac e Fr a m e J a nk 分类矩阵**：`F r a m e Tim e lin e.cpp :600-680`
+2. **S u r f ac e Fr a m e J a nk 分类逻辑**：`F r a m e Tim e lin e.cpp :600-680`
    ```cpp
    u int 32_t S u r f ac e Fr a m e:: cl a ssi f y J ank L ock e d() {
        // 基础状态：O n T im e Pr e s e nt = N on e
@@ -169,7 +170,7 @@ reviewed_by: openclaw-task6
 
 而且，T r a c e 抓取不是只有一种方式。不同场景需要不同的抓取策略：快速复现一个卡顿问题，用 `r e cord_a ndroid_tr a c e` 脚本几行命令就能搞定；分析启动性能，需要在 A pp 代码中插入自定义标记来精确度量各个阶段；排查内存泄漏，则需要额外开启 H e ap P ro f iling。了解这些方式的差异和适用场景，能让我们在最短时间内拿到最有价值的 T r a c e 数据。
 
-本节按从简单到复杂的顺序，逐一介绍 P e r f etto T r a c e 的几种常见抓取方式，并给出一份覆盖常见分析场景的推荐配置。
+Perfetto Trace 有几种常见抓取方式，从命令行到 Perfetto UI、从系统级到 App 内自定义标记，各有适用场景。最后会给出一份覆盖常见分析场景的推荐配置。
 
 ## 命令行抓取：p e r f etto 命令
 
