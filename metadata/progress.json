@@ -1728,6 +1728,24 @@
       "task6_state": "pending",
       "task9_state": "pending",
       "last_review": "2026-07-01"
+    },
+    "1.8": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "pipeline_stage": "ready-to-publish"
+    },
+    "3.9": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "pipeline_stage": "ready-to-publish"
+    },
+    "26.4": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "pipeline_stage": "ready-to-publish"
     }
   },
   "chapters": {
