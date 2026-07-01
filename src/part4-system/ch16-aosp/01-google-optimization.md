@@ -5,8 +5,8 @@ chapter: "16.1"
 status: ready-for-review
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-06-26"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-07-02
+reviewed_by: openclaw-task6
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-07-01"
 last_verified_against: "AOSP android-17.0.0_r1 (MessageQueue/Looper/Binder/BLAST/WMS) + Android 17 release notes/behavior changes + Mainline docs"
@@ -15,9 +15,9 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "reviewed"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-26"
 task9_reviewed_by: openclaw-task9
@@ -30,10 +30,11 @@ task2b_state: fixed
 task2b_result: fixed-lite
 task2b_fixed_at: "2026-06-26T11:40:00+08:00"
 last_task2b_at: "2026-06-26T11:40:00+08:00"
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 last_task6_audit: "2026-06-30"
 last_task6_audit_log: "logs/review/2026-06-30-23-audit.md"
-last_task6_at: "2026-06-26T20:11:00+08:00"
+last_task6_at: 2026-07-02T05:06:00+08:00
+task6_review_notes: "2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。Task9 idle-audit 将 MessageQueue 源码锚点从 master/android-16 刷新到 android-17.0.0_r1，正文落地正确；无新增 L1/L2 问题。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
 last_task2b_lite_at: "2026-06-26T11:40:00+08:00"
 sources:
   - type: official

@@ -35,13 +35,13 @@ tags:
 - art
 - gc
 - perfetto
-reviewed_date: "2026-06-11"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-07-02
+reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1/L2无需修改，文章质量良好。无需回炉。'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: "pass-light-edit"
-task9_state: "reviewed"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
 task9_result: "auto-fixed"
 last_task9_at: "2026-07-02T03:28:30+08:00"
 task2b_state: "fixed"
@@ -55,9 +55,9 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_review_log: "logs/deep-review/2026-07-02-03-audit.md"
 task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Perfetto FrameTimeline jank_type 过滤大小写、LOS/old-gen 归属和 CMC 晋升阈值口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review auto-fix：修正 Android 15/16/17 Gen-CMC 版本边界、AOSP main 锚点和未验证 pause/开关口径；回到 Task6 复审。 | 2026-06-11 Task9 deep review: pass-tech-review；复核 20:40 auto-fix 与 21:10 Task6 复审后无 P0/P1，自动晋升 finalized。 | 2026-07-02 Task9 idle audit auto-fix：将 ART GC 源码锚点从 android-16.0.0_r1 / master 旧口径刷新到 android-17.0.0_r1，并移除 Android 17 tag 未公开的过期说明；回到 Task6 复审。"
 last_task9_autofix_at: "2026-07-02"
-last_task6_at: "2026-06-11T21:15:43+08:00"
+last_task6_at: 2026-07-02T05:06:00+08:00
 last_task6_review_log: "logs/review/2026-06-11-21-review.md"
-task6_review_notes: "2026-06-11 Task6 21:10: pass-light-edit（revisiting re-review after task9 auto-fix round 2）。L1 形容词+冒号起手式修正 1 处（card_table 注释描述）；无其他新增问题，无回炉项。task9_result=auto-fixed 非 pass-tech-review，不满足自动晋升条件，退回 task9 做正式通过。"
+task6_review_notes: "2026-06-11 Task6 21:10: pass-light-edit（revisiting re-review after task9 auto-fix round 2）。L1 形容词+冒号起手式修正 1 处（card_table 注释描述）；无其他新增问题，无回炉项。task9_result=auto-fixed 非 pass-tech-review，不满足自动晋升条件，退回 task9 做正式通过。 | 2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。L1 修正 4 处：禁用词"链路"×3（引用描述/附录待验证项）、"矩阵"×1（引用描述）、元叙述"本节采用"×1。Task9 idle-audit 源码锚点刷新已正确落地。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 deepseek_cn_review_state: needs-structure-rework
@@ -321,7 +321,7 @@ ORDER BY avg_running_ms DESC;
 
 ### 用 heap_profile 找分配热点，用 Java heap dump 看保留关系
 
-对 Java allocation churn，本节采用 Perfetto 文档里的 host 侧 `tools/heap_profile` 入口。`heap_profile` 文档写明 `--heaps` 可以填 `malloc,art`，需要 Android 12。
+对 Java allocation churn，Perfetto 文档提供了 host 侧 `tools/heap_profile` 入口。`heap_profile` 文档写明 `--heaps` 可以填 `malloc,art`，需要 Android 12。
 
 ```bash
 tools/heap_profile -p <PID> --heaps art
@@ -622,7 +622,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-16-art-generational-cmc-uffd.md
 - 类型：DeepResearch 调研结果
 - 摘要：验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_init_mte 与 SELinux 策略对 userfaultfd 的权限要求，澄清 Generational CMC 属于描述性概念，不对应独立开关。
-- 价值：源码级完整 CMC GC 启用链路，补充 UFFD 与 SELinux 策略交互、版本扩展路径
+- 价值：源码级完整 CMC GC 启用机制，补充 UFFD 与 SELinux 策略交互、版本扩展路径
 
 ---
 
@@ -647,7 +647,7 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 
 ### 待验证
 
-- Generational CMC 开关链路（`use_generational_cmc` flag 与 `persist.device_config.runtime_native_boot.use_generational_gc` 生效路径）
+- Generational CMC 开关机制（`use_generational_cmc` flag 与 `persist.device_config.runtime_native_boot.use_generational_gc` 生效路径）
 - UFFD write_range 在 concurrent_copying.cc 中的具体调用
 - 20%+ 对象分配开销降低的设备/场景 benchmark 数据
 - §4.5 章节（Compose Composition 与 GC 因果链）需进一步补充
@@ -763,4 +763,4 @@ Generational CMC 的启用并非通过独立 system property 或 DeviceConfig fl
 - 类型：DeepResearch 调研结果
 - 摘要：Android 17 release notes 把 ART CMC collector 的 generational GC 支持列为运行时性能特性；源码细节已用公开 `android-17.0.0_r1` tag 约束。调试开关和 Mainline 下发范围仍需一手资料复核，不作为正文结论。
 - 注入时间：2026-05-31
-- 价值：提供 Generational CMC 的官方博客一手来源、调试属性、版本差异矩阵和向后兼容下发机制，填补章节中源码级开关与版本边界细节
+- 价值：提供 Generational CMC 的官方博客一手来源、调试属性、版本差异对照和向后兼容下发机制，填补章节中源码级开关与版本边界细节
