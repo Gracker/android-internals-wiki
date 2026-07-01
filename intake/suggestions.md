@@ -303,3 +303,9 @@
 - AppJankTest → 测试应用 (8/20)
 - Winscope Angular 迁移 → 构建工具 (6/20)
 - AISealHostService → 语义不明 (6/20)
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-07-02
+- **类型**：源码准确性
+- **位置**：要点 / Section 2 中“调用方线程零阻塞”
+- **问题**：`waitForResponse(nullptr, nullptr)` 仍需等待内核返回 `BR_TRANSACTION_COMPLETE` / `BR_TRANSACTION_PENDING_FROZEN` 等回执；oneway 不等待对端执行和 `BR_REPLY`，但不宜写成绝对零阻塞。
+- **建议**：后续精修时将“零阻塞”统一改为“不等待对端执行结果 / 不等待 `BR_REPLY`”，并保留 `BR_TRANSACTION_COMPLETE` 快路径边界。
