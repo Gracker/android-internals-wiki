@@ -43,16 +43,16 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-27T13:35:00+08:00'
 last_task2b_lite_at: '2026-05-27'
-reviewed_date: "2026-05-27"
+reviewed_date: 2026-07-02
 reviewed_by: openclaw-task6
 review_round: 8
 task9_reviewed_by: openclaw-task9
@@ -64,10 +64,10 @@ review_notes: '2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-07-01-10-audit.md"
-task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。 | 2026-05-27 15:08 Task6：复审 Task9 auto-fix 后内容；统一中英文混排周边标点与少量第一人称引导，未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；统一正文半角标点、括号和少量发布稿格式；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。"
+task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。 | 2026-05-27 15:08 Task6：复审 Task9 auto-fix 后内容；统一中英文混排周边标点与少量第一人称引导，未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；统一正文半角标点、括号和少量发布稿格式；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。 | 2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit. Task9 idle-audit 修正 ContentProviderTimeout 日志关键字路径已平滑落地，正文无新增 L1/L2 问题；无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
-last_task6_at: "2026-05-27T16:08:00+08:00"
+last_task6_at: 2026-07-02T05:06:00+08:00
 last_task6_audit: "2026-06-14"
 last_task6_review_log: "logs/review/2026-05-27-16-review.md"
 review_type: "task6-writing-quality-review"
