@@ -121,6 +121,8 @@ task2b_lite_note_2: '2026-07-01 Task2B Lite: frontmatter state fix — status fi
 last_task9_autofix_at: '2026-07-01'
 task2b_fixed_at: '2026-07-01T12:52:40+08:00'
 task2b_fixed_by: task2b-main-2026-07-01
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-01
 ---
 
 # 系统启动全流程
@@ -185,7 +187,7 @@ Android 16 起强烈建议 ARM64 设备部署 Google 审计的 GBL（Generic Boo
 
 ### Linux Kernel：把调度器、驱动和最小用户态入口拉起来
 
-Kernel 阶段负责建立页表、初始化调度器、内存管理和关键驱动，然后创建 PID 1 的 `/init`。这里要把边界拆清楚：Kernel 会准备 rootfs / ramdisk 和最小设备节点，但 system、vendor、product 这些启动必需分区的 early mount，在现代 Android 里属于 first-stage init，不该写进 Kernel 阶段。
+Kernel 阶段负责建立页表，初始化调度器、内存管理和关键驱动，然后创建 PID 1 的 `/init`。一个需要明确拆开的边界是：Kernel 会准备 rootfs / ramdisk 和最小设备节点，但 system、vendor、product 这些启动必需分区的 early mount 在现代 Android 里属于 first-stage init，不属于 Kernel 阶段。
 
 Linux 侧最早的进程关系仍然成立：PID 0 是 swapper，`rest_init()` 会拉起 PID 1 的 init 和 PID 2 的 kthreadd。对启动分析来说，Kernel 阶段的结束标志更适合看“控制权何时进入 `/init`”，而不是“system 分区何时挂好”。
 
@@ -481,7 +483,6 @@ init 是用户空间所有进程的鼻祖。PID 0 的 swapper 才是 Linux 侧�
 
 Zygote 预加载能解决的是公共运行时准备工作，解决不了业务进程自己的 `Application.onCreate()`、主线程 I/O、首次 profile / dex2oat、网络初始化。把更多业务类塞进预加载列表，很可能会把整机开机时间和常驻内存一起抬高。
 
-<!-- AIW-源码调研-2026-04-15 -->
 ### Zygote fork SystemServer 的触发机制（源码级补充）
 
 正文描述"Zygote 预加载完成后 fork SystemServer"，这里补充 fork 触发的精确机制。
@@ -521,7 +522,6 @@ init.zygote64.rc:  service zygote /system/bin/app_process64 ... --start-system-s
 2. **system_server 不进入 Zygote 事件循环**：子进程 fork 后直接执行 handleSystemServerProcess() → SystemServer.main()，然后 return 退出 ZygoteInit.main()，与 runSelectLoop() 无关。
 3. **fork 前 GC 的目的**：`gcAndFinalize()`（行 893）在 fork 前回收软可达对象，减少 fork 后 COW 页数量。
 
-<!-- /AIW-源码调研-2026-04-15 -->
 
 ## 参考资料
 

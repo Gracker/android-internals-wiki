@@ -33,3 +33,5 @@
   - [Android 17 Binder IPC 优先级继承机制与内核批处理流水线](part1-fundamentals/ch01-architecture/1.9-binder-ipc-优先级继承内核批处理流水线-draft.md)
 
   - [Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证](part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md)
+  - [1.47 Android 17 ResourcesManager Configuration 性能优化](part1-fundamentals/ch01-architecture/1.47-android17-resourcesmanager-configuration-performance.md)
+  - [1.48 Android 17 Staged Install 状态机与原子性安装](part1-fundamentals/ch01-architecture/1.48-android17-staged-install-state-machine.md)

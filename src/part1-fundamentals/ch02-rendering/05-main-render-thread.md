@@ -61,7 +61,7 @@ p2: "0"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
+last_deepseek_cn_review_at: 2026-07-01
 last_task9_audit_log: "logs/deep-review/2026-07-01-14-audit.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
@@ -218,17 +218,15 @@ int DrawFrameTask::drawFrame() {
 
 ### DeliQueue 与 RenderThread 队列边界（Android 17）
 
-Android 17 的 DeliQueue 作用在 `android.os.MessageQueue` 这条应用消息循环路径上，默认面向 targetSdk 37+ 的应用启用。这里容易混淆的是：DeliQueue 优化的是主线程 Looper 的消息入队/出队锁竞争，和 HWUI RenderThread 内部的 WorkQueue 是两条独立的队列，不能混为一谈。
+Android 17 在 `android.os.MessageQueue` 上引入了 DeliQueue，面向 targetSdk 37+ 的应用默认启用。DeliQueue 优化的是主线程 Looper 的消息入队/出队锁竞争，和 HWUI RenderThread 内部的 WorkQueue 是两条独立的队列。
 
-AOSP android-17.0.0_r1 的 HWUI `libs/hwui/thread/WorkQueue.h` 仍是 `std::mutex` 保护的 `std::vector<WorkItem>`。UI Thread 通过 `DrawFrameTask::postAndWait()` 把任务投给 `mRenderThread->queue().post()` 时，讨论的是 HWUI RenderThread 的 WorkQueue；DeliQueue 官方性能数据不该直接拿来解释这条队列的锁竞争。
+AOSP android-17.0.0_r1 的 HWUI `libs/hwui/thread/WorkQueue.h` 仍是 `std::mutex` 保护的 `std::vector<WorkItem>`。UI Thread 通过 `DrawFrameTask::postAndWait()` 把任务投给 `mRenderThread->queue().post()` 时走的是 HWUI RenderThread 的 WorkQueue，DeliQueue 的性能数据不适用于这条队列的锁竞争分析。
 
-Perfetto 分析时要把两类队列分开：主线程 `Looper` 消息入队 / 出队的锁竞争，可以参考 DeliQueue 的 Android 17 行为变化；`syncAndDrawFrame()` 到 RenderThread 的同步等待，仍要回到 `DrawFrameTask`、`WorkQueue`、`syncFrameState()` 和 `CanvasContext::draw()` 观察。
+在 Perfetto 中分析时需要区分类别：主线程 `Looper` 消息入队/出队的锁竞争，对照 DeliQueue 在 Android 17 的行为变化来看；`syncAndDrawFrame()` 到 RenderThread 的同步等待，则回到 `DrawFrameTask`、`WorkQueue`、`syncFrameState()` 和 `CanvasContext::draw()` 上观察。
 
 数据传递层面,同步过去的是 RenderNode 树的最新状态、脏区和相关资源引用。这里更接近共享对象的状态同步,不是把整棵 DisplayList 的所有权直接交给 RenderThread。
 
 ## RenderThread 的 GPU 渲染与 Fence 等待
-
-下图展示了 DisplayList 构建 → SyncFrameState → GPU 渲染 → QueueBuffer 的完整数据流：
 
 同步完成后,RenderThread 开始独立的渲染工作。这个阶段在 Perfetto 中表现为 RenderThread Track 上的 `DrawFrame` 切片。
 
@@ -266,9 +264,9 @@ GPU 命令的提交是**异步的**。CPU(RenderThread)把命令扔给 GPU 后,G
 
 ### ADPF 性能反馈机制（Android 14+ / Android 16 headroom）
 
-先澄清一个常见口径问题：AOSP android-14.0.0_r1 到 android-17.0.0_r1 的 `CanvasContext.cpp` 都已包含 `HintSessionWrapper`、`updateTargetWorkDuration()` 与 `reportActualWorkDuration()`。也就是说，RenderThread 向 ADPF hint session 上报帧工作时长从 Android 14 就开始了，不是 Android 16 才接入的。
+AOSP android-14.0.0_r1 到 android-17.0.0_r1 的 `CanvasContext.cpp` 都已包含 `HintSessionWrapper`、`updateTargetWorkDuration()` 与 `reportActualWorkDuration()`。RenderThread 向 ADPF hint session 上报帧工作时长从 Android 14 就开始了，不是 Android 16 才接入的。
 
-Android 16 要单独看的是 headroom 相关 API，比如 GPU headroom 查询。工程上把两件事拆开：RenderThread 的 hint session 上报描述每帧实际工作时长；headroom API 判断设备还剩多少性能余量。不能把两者合并成一个 "Android 16 新特性"。
+Android 16 新增的是 headroom 相关 API（比如 GPU headroom 查询）。两件事分工不同：RenderThread 的 hint session 上报描述每帧实际工作时长；headroom API 判断设备还剩多少性能余量，两者的引入版本和用途都要分开看。
 
 ### Fence 机制
 

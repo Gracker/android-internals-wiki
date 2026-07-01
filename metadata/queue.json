@@ -1,5 +1,46 @@
 {
-  "drafts": [],
+  "drafts": [
+    {
+      "section": "1.47",
+      "section_title": "Android 17 ResourcesManager Configuration 性能优化",
+      "priority": 80,
+      "reason": "[新章节创建] 知识缺口挖掘发现的高价值 AOSP 结构分析",
+      "material_paths": [
+        "DeepResearch/2026-06-30-android17-resourcesmanager-configuration-relaunch.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新章节创建",
+          "location": "新章节",
+          "detail": "基于 Android 17 源码级的 ResourcesManager/Configuration 与 Activity relaunch 判定模型，包含 ATMS 三段式分发链路、shouldRelaunchLocked 位运算公式、新机制分析",
+          "suggestion": "需基于 android-17.0.0_r1 源码展开内容，确保版本边界准确性"
+        }
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-01T20:04:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.48",
+      "section_title": "Android 17 Staged Install 状态机与原子性安装",
+      "priority": 80,
+      "reason": "[新章节创建] 知识缺口挖掘发现的高价值 AOSP 结构分析",
+      "material_paths": [
+        "DeepResearch/2026-06-30-android17-staged-install-state-machine-source-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新章节创建",
+          "location": "新章节",
+          "detail": "基于 Android 17 源码级的 staged session 状态机分析，包含 pre-reboot verification、三态机制、checkpoint/rollback 分析",
+          "suggestion": "需基于 android-17.0.0_r1 源码展开内容，确保版本边界准确性"
+        }
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-01T20:04:00+08:00",
+      "status": "pending"
+    }
+  ],
   "issues": [
     {
       "id": "L3-2026-06-30-23-01",
