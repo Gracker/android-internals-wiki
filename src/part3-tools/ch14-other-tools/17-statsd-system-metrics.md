@@ -33,8 +33,12 @@ task2b_result: fixed-lite
 task2b_state: fixed
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 last_task2b_lite_at: 2026-07-02
+task9_result: auto-fixed
+last_task9_autofix_at: 2026-07-02
+last_task9_at: 2026-07-02
+task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；收窄 AOSP 证据锚点到 android-17.0.0_r1，补齐 StatsManagerService 在配置/权限/重注册链路中的角色，修正 DeepResearch 延伸阅读中的 JNI/Android 17 新增权限表述；回到 Task6 复审。详见 logs/deep-review/2026-07-02-07-deep-review.md。"
 ---
 -
 
@@ -89,12 +93,15 @@ statsd 是 Android 平台侧的指标守护进程。AOSP 文档把 Statsd 模块
 | 组件 | 位置 | 职责 | 排障时提供的信息 |
 | --- | --- | --- | --- |
 | `statsd` | `packages/modules/StatsD/statsd/src/` | 接收 atom、维护配置、聚合 metric、生成 report | 事件计数、状态持续时间、拉取样本、异常触发 |
-| `StatsCompanionService` | `packages/modules/StatsD/service/java/com/android/server/stats/`，历史路径在 `frameworks/base/services/core/java/com/android/server/stats/` | 在 system_server 内桥接 Java 系统服务和 native statsd | alarm、uid map、pull atom、系统服务侧状态 |
+| `StatsManager` / `StatsManagerService` | `packages/modules/StatsD/framework/java/android/app/StatsManager.java`、`packages/modules/StatsD/service/java/com/android/server/stats/StatsManagerService.java` | 管理特权客户端的配置、report、query、pull atom callback 注册和权限检查 | 配置是否注册、report/query 是否允许读取、statsd 重启后的注册回灌 |
+| `StatsCompanionService` | `packages/modules/StatsD/service/java/com/android/server/stats/`，历史路径在 `frameworks/base/services/core/java/com/android/server/stats/` | 作为 statsd 的 system_server helper，处理 alarm、uid map、pulled atom、statsd ready 通知 | alarm、uid map、pull atom、系统服务侧状态 |
 | `StatsLog` / `FrameworkStatsLog` | 由 proto 生成的日志 API | 平台代码写入 pushed atom | 某个系统事件发生的事实和字段 |
 | `atoms.proto` | `frameworks/proto_logging/stats/atoms.proto` | 定义 atom ID、字段和 pushed / pulled 分类 | 字段口径、版本差异、模块归属 |
 | `statsd_config.proto` | `packages/modules/StatsD/statsd/src/statsd_config.proto` | 定义 metric、matcher、predicate、alert 等配置 | 采集什么、按什么条件聚合、何时上报 |
 
-AOSP 的 `atoms.proto` 明确写到：`Atom` 消息定义 Android 系统可用的 raw stats log events，也就是 atom；`stats-log-api-gen` 在构建期生成 `android.util.StatsLog` 相关常量和方法；`Atom` 消息本身不直接内置进系统，Android 上的 statsd 会按 `atoms.proto` 和 `stats_log.proto` 描述的格式合成这些消息。[已验证: AOSP main, frameworks/proto_logging/stats/atoms.proto]
+配置、report、query 这条 Java API 路径不直接走 StatsCompanionService：`StatsManager` 调用 system_server 中的 `StatsManagerService`，后者检查 `DUMP` + `PACKAGE_USAGE_STATS`、`REGISTER_STATS_PULL_ATOM` 或 `READ_RESTRICTED_STATS` 等权限，再通过 `IStatsd` 与 native statsd 通信；statsd 重启后，`StatsCompanionService.statsdReady()` 会触发 `StatsManagerService.statsdReady(IStatsd)`，把已缓存的 puller、data fetch、active config、subscriber 和 restricted metric 回灌给 native 端。[已验证: AOSP android-17.0.0_r1, packages/modules/StatsD/service/java/com/android/server/stats/StatsManagerService.java; packages/modules/StatsD/service/java/com/android/server/stats/StatsCompanionService.java]
+
+AOSP 的 `atoms.proto` 明确写到：`Atom` 消息定义 Android 系统可用的 raw stats log events，也就是 atom；`stats-log-api-gen` 在构建期生成 `android.util.StatsLog` 相关常量和方法；`Atom` 消息本身不直接内置进系统，Android 上的 statsd 会按 `atoms.proto` 和 `stats_log.proto` 描述的格式合成这些消息。[已验证: AOSP android-17.0.0_r1, frameworks/proto_logging/stats/atoms.proto]
 
 这也解释了一个常见误判：statsd report 里的 ANR 或 LMK 事件不是“现场”。它只能证明某个 atom 按字段口径被记录过，不能替代 traces.txt、tombstone、Perfetto Trace 或 dumpsys 状态。
 
@@ -105,7 +112,7 @@ statsd 的输入是 atom，输出是 metric report。atom 负责描述平台事�
 `atoms.proto` 把 atom 分成两类：
 
 - pushed atom：由系统服务或 native 组件在事件发生时写入。例如 `ScheduledJobStateChanged`、`WakelockStateChanged`、`AppCrashOccurred`、`ANROccurred`、`LmkKillOccurred`、`AppStartOccurred` 都属于 pushed atom。事件发生时写入 stats log buffer，statsd 再按配置消费。
-- pulled atom：statsd 按配置或命令向系统侧拉取当前状态。例如 `KernelWakelock`、`CpuTimePerUid`、`CpuTimePerUidFreq`、`ProcessMemoryState`、`SystemElapsedRealtime` 等位于 pulled 区间。AOSP 中 pulled atom 从 field 10000 开始。[已验证: AOSP main, frameworks/proto_logging/stats/atoms.proto]
+- pulled atom：statsd 按配置或命令向系统侧拉取当前状态。例如 `KernelWakelock`、`CpuTimePerUid`、`CpuTimePerUidFreq`、`ProcessMemoryState`、`SystemElapsedRealtime` 等位于 pulled 区间。AOSP 中 pulled atom 从 field 10000 开始。[已验证: AOSP android-17.0.0_r1, frameworks/proto_logging/stats/atoms.proto]
 
 metric 配置定义在 `statsd_config.proto`。这一层不关心“系统怎么产生事件”，只关心“哪些 atom 算命中、怎么聚合、报告里保留哪些字段”。常用对象包括：
 
@@ -119,7 +126,7 @@ metric 配置定义在 `statsd_config.proto`。这一层不关心“系统怎么
 | `GaugeMetric` | 对 pulled atom 或触发事件做采样 | 周期性采集 CPU 时间、内存状态、电量相关样本 |
 | `ValueMetric` / `KllMetric` | 对数值字段做聚合或分布估计 | 统计耗时、大小、数量等数值指标 |
 
-`StatsdConfig` 把这些对象组合在同一个配置里：`event_metric`、`count_metric`、`value_metric`、`gauge_metric`、`duration_metric`、`kll_metric`、`atom_matcher`、`predicate`、`alert`、`subscription` 等字段都在这个 proto 中定义。[已验证: AOSP main, packages/modules/StatsD/statsd/src/statsd_config.proto]
+`StatsdConfig` 把这些对象组合在同一个配置里：`event_metric`、`count_metric`、`value_metric`、`gauge_metric`、`duration_metric`、`kll_metric`、`atom_matcher`、`predicate`、`alert`、`subscription` 等字段都在这个 proto 中定义。[已验证: AOSP android-17.0.0_r1, packages/modules/StatsD/statsd/src/statsd_config.proto]
 
 排障时要把 atom 和 metric 分开看。atom 是原始事实，metric 是采集口径。同一个 atom 可以被多个 metric 以不同维度聚合；同一个 report 中缺少某个 metric，也可能只是配置没有收集，并不代表系统没有产生过对应事件。
 
@@ -138,13 +145,13 @@ statsd 在性能排障里最有价值的地方，是提供跨版本相对稳定�
 | 游戏与帧相关 | `GameModeChanged`、`GameModeConfigurationChanged`、`InputEventLatencyReported` | 游戏模式和输入延迟相关事件是否出现 | FrameTimeline、SurfaceFlinger、GPU counter，详见 22.x |
 | UprobeStats / eBPF | UprobeStats 模块相关扩展 atom、Perfetto statsd atom proto | 动态探针产出的系统侧事件是否进入统一指标通道 | eBPF 程序、Perfetto trace、UprobeStats 模块日志，详见 14.10 节 |
 
-[已验证: AOSP main, frameworks/proto_logging/stats/atoms.proto]
+[已验证: AOSP android-17.0.0_r1, frameworks/proto_logging/stats/atoms.proto]
 
 表里的字段不应该直接写死到长期看板里。`atoms.proto` 会随平台版本演进，同名 atom 的字段语义、可见范围、模块归属都有变动风险。长期看板要记录 Android 版本、构建指纹、atom ID、字段版本，并保留配置文件的版本号。
 
 ## adb / cmd stats 本地调试流程
 
-本地验证 statsd 采集，通常走四步：准备二进制 StatsdConfig、下发配置、触发场景、拉取 report。`cmd stats` 的 shell 命令入口在 `StatsService::handleShellCommand()` 中实现，只允许 root 或 shell UID 调用。[已验证: AOSP main, packages/modules/StatsD/statsd/src/StatsService.cpp]
+本地验证 statsd 采集，通常走四步：准备二进制 StatsdConfig、下发配置、触发场景、拉取 report。`cmd stats` 的 shell 命令入口在 `StatsService::handleShellCommand()` 中实现，只允许 root 或 shell UID 调用。[已验证: AOSP android-17.0.0_r1, packages/modules/StatsD/statsd/src/StatsService.cpp]
 
 下面这组命令展示最小调试路径。这里假设 `config.pb` 已经是 wire-encoded `StatsdConfig`，`123456` 是数字配置 ID。AOSP 源码要求 `config update` 读取 stdin，并把 `NAME` 解析成 int64 配置 ID。
 
@@ -203,7 +210,7 @@ LMK 也一样。`LmkKillOccurred` 能把“哪个进程被杀”落成事件，�
 
 ## 权限、版本与 OEM 边界
 
-statsd 位于系统侧，权限边界比普通 App 埋点严格。AOSP `StatsService` 对 shell 命令入口检查 root / shell UID，跨 UID 配置和 report 操作又受 eng / userdebug 构建限制。服务端 API 还会检查 `android.permission.DUMP`、`REGISTER_STATS_PULL_ATOM` 等权限。[已验证: AOSP main, packages/modules/StatsD/statsd/src/StatsService.cpp]
+statsd 位于系统侧，权限边界比普通 App 埋点严格。AOSP `StatsService` 对 shell 命令入口检查 root / shell UID，跨 UID 配置和 report 操作又受 eng / userdebug 构建限制。StatsManagerService 侧 API 还会按入口检查 `android.permission.DUMP` + `PACKAGE_USAGE_STATS`、`REGISTER_STATS_PULL_ATOM`、`READ_RESTRICTED_STATS` 等权限。[已验证: AOSP android-17.0.0_r1, packages/modules/StatsD/statsd/src/StatsService.cpp; packages/modules/StatsD/service/java/com/android/server/stats/StatsManagerService.java]
 
 版本边界也要写进排障手册：
 
@@ -249,7 +256,7 @@ CTS 也依赖 statsd 验证平台 atom 和 StatsD 功能。AOSP Statsd 官方文
 ### Android 17 StatsD 三层架构链路边界验证（StatsManagerService/StatsCompanionService/native daemon）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-07-statsd-service-chain-validation.md
 - 类型：DeepResearch 调研结果
-- 摘要：StatsD 系统三层架构源码验证：Java 层 StatsManagerService 负责权限管理，StatsCompanionService 作为 JNI 桥接，native statsd 通过 StatsSocketListener 主循环处理事件。StatsdConfig 的 pull/push atom 需严格权限验证，数据通过 atrace.pbtxt 与 Perfetto 集成。Android 17 新增 DeviceConfig.NAMESPACE_STATSD_JAVA 命名空间和 READ_RESTRICTED_STATS 权限。
+- 摘要：StatsD 系统三层架构源码验证：Java 层 StatsManagerService 负责权限和配置/report/query 入口，StatsCompanionService 通过 Binder 处理 statsd ready、alarm、uid map 和 pulled atom 辅助能力，native statsd 通过 StatsSocketListener / StatsSocketListenerIoUring 监听 stats log socket 事件。StatsManagerService 对 addConfig/getReports、pull atom callback、query/restricted metrics 分别检查 DUMP + PACKAGE_USAGE_STATS、REGISTER_STATS_PULL_ATOM、READ_RESTRICTED_STATS；DeviceConfig.NAMESPACE_STATSD_JAVA 在 Android 17 源码中存在，但不作为 Android 17 新增结论。
 - 注入时间：2026-06-08
 - 价值：验证 StatsD 三层架构的源码实现和权限边界，补齐 ch14.17 缺少的服务链路验证
 
