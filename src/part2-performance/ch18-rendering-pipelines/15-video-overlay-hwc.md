@@ -10,7 +10,18 @@ tags:
 - GPU-Composition
 - DRM
 - Tunnel-Mode
-- 渲染链路
+- 渲染管线
+sources:
+- type: aosp
+  path: "frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+- type: aosp
+  path: "frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp"
+- type: aosp
+  path: "hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl"
+- type: official
+  path: "https://developer.android.com/reference/android/view/SurfaceView"
+- type: web
+  path: "https://source.android.com/docs/core/graphics"
 related_chapters:
 - '2.6'
 - '2.10'
@@ -52,6 +63,7 @@ review_type: "task6-writing-quality-review"
 task9_state: reviewed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
+last_task6_audit: "2026-07-02"
 ---
 
 # 视频叠加与 HWC
@@ -60,7 +72,7 @@ last_deepseek_cn_review_at: 2026-06-26
 
 **锚点(必须覆盖):**
 - 🔹 HWC (Hardware Composer) 的核心职责：决定哪些 Layer 走硬件合成，哪些走 GPU
-- 🔹 GPU Path vs Overlay Path 的链路对比
+- 🔹 GPU Path vs Overlay Path 的通路对比
 - 🔹 SurfaceFlinger 的合成决策流程
 - 🔹 DRM / Secure Video Path 与 Overlay 的关系
 - 🔹 在 dumpsys SurfaceFlinger 和 Perfetto 中识别 Overlay 模式
@@ -81,7 +93,7 @@ TextureView 播放视频时，每一帧都要经过 GPU 采样再画到 App 的 
 | 路径类型 | 带宽和 GPU 负载走势 | 功耗趋势 | 典型场景 |
 |----------|----------------------|----------|------------|
 | GPU Path | GPU 需要采样视频纹理并写入 App Framebuffer，带宽和 GPU 负载最高 | 同设备条件下最高 | TextureView，复杂混合效果 |
-| DEVICE Overlay | 视频 Layer 被 HWC 判为 `DEVICE` 后，不再经过 GPU 采样，GPU 负载明显下降 | 长时间播放时通常低于 GPU Path | SurfaceView，简单视频播放 |
+| DEVICE Overlay | 视频 Layer 被 HWC 判为 `DEVICE` 后，不再经过 GPU 采样，GPU 负载明显下降 | 长时间播放时低于 GPU Path | SurfaceView，简单视频播放 |
 | SIDEBAND Tunnel | 解码输出走 sideband stream，App 侧 per-frame buffer 交互更少 | 在支持设备上通常低于普通 DEVICE Overlay | 支持的 Android TV、机顶盒或特定高端 SoC |
 
 > 以上为同设备条件下的定性趋势对比，具体功耗和带宽数值依赖 SoC 架构、屏幕亮度、视频格式和刷新率等因素，不可跨设备直接套用百分比。
@@ -125,7 +137,7 @@ graph LR
 4. 只要存在 `CLIENT` Layer，SurfaceFlinger 就先用 RenderEngine/GPU 合成这些 Layer，再通过 `setClientTarget()` 把 client target 交回 HWC。
 5. 随后调用 `presentDisplay()`，把 `DEVICE` Layer 和 client target 一起提交给显示硬件。
 
-这里需要区分 SurfaceFlinger 包装层里的 `validate()` / `present()` 方法和 HAL 暴露的 `validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()`、`setClientTarget()`、`presentDisplay()`。HWC3 把接口迁到 AIDL，但这套协商流程没有变成“纯 HWC 直出”，SurfaceFlinger 仍然负责 layer latch、client composition 和 fence 协调。
+这里需要区分 SurfaceFlinger 包装层里的 `validate()` / `present()` 方法和 HAL 暴露的 `validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()`、`setClientTarget()`、`presentDisplay()`。HWC3 把接口迁到 AIDL，但这套协商流程没有变成“纯 HWC 直出”，SurfaceFlinger 继续负责 layer latch、client composition 和 fence 协调。
 
 **Skip Validate 的版本边界**：
 - **Android 8.0-13 (API 26-33)**：`HWC2_CAPABILITY_SKIP_VALIDATE` / AIDL `SKIP_VALIDATE` 仍是显式能力声明，设备实现需要报告支持
@@ -137,7 +149,7 @@ graph LR
 - `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl` 中 Capability 枚举
 
 **实际厂商实现差异**：
-- **Qualcomm Adreno**：较新平台上通常能看到 skip validate 命中，但仍要以具体设备的 Composer HAL 行为为准
+- **Qualcomm Adreno**：较新平台上能看到 skip validate 命中，但仍要以具体设备的 Composer HAL 行为为准
 - **ARM Mali**：部分老款 Mali-G 系列对 skip validate 支持不完整，可能回到完整 validate
 - **MediaTek**：常见策略偏保守，对 Layer 变化的判断更严格
 - **Samsung Exynos**：One UI 设备可能在系统层增加额外优化，具体收益仍依赖机型实现
@@ -157,7 +169,7 @@ Decoder → SurfaceTexture → GPU Shader (Sample) → FrameBuffer → SurfaceFl
 - GPU 需要逐像素采样视频纹理，再写入 App Framebuffer。
 - 视频帧每次更新都会占用 GPU 带宽和计算资源。
 - 即使 UI 本身不变，视频帧也会持续消耗内存带宽。
-- 长时间播放时，功耗通常高于可走 `DEVICE` composition 的路径。
+- 长时间播放时，功耗高于可走 `DEVICE` composition 的路径。
 
 ### Overlay Path（SurfaceView + DEVICE composition）
 
@@ -165,9 +177,9 @@ Decoder → SurfaceTexture → GPU Shader (Sample) → FrameBuffer → SurfaceFl
 Decoder → BufferQueue / BLASTBufferQueue → SurfaceFlinger layer latch → HWC DEVICE composition → Display
 ```
 
-- Decoder 仍然把帧写入 Surface 对应的队列，常见实现是 BufferQueue 或 BLASTBufferQueue。
+- Decoder 继续把帧写入 Surface 对应的队列，常见实现是 BufferQueue 或 BLASTBufferQueue。
 - SurfaceFlinger 仍然要 latch 这层 buffer，并把它带进本帧的合成规划。
-- 如果 HWC 把该 Layer 判成 `DEVICE`，视频像素不会再经过 GPU 采样，但 SurfaceFlinger 和 HWC 仍然要完成时序、fence 和送显协调。
+- 如果 HWC 把该 Layer 判成 `DEVICE`，视频像素不会再经过 GPU 采样，但 SurfaceFlinger 和 HWC 还需完成时序、fence 和送显协调。
 - 长时间播放时，功耗通常低于 GPU 采样路径。
 
 ### Sideband / tunneled playback（可选能力）
@@ -185,7 +197,7 @@ Decoder / Video Pipeline → Sideband Stream / Tunnel → HWC / Display
 HDR 视频会增加 HWC 合成需要处理的维度：
 
 **HDR vs SDR 的路径差异**：
-- **SDR 视频**：通常不需要 PQ/HLG 转换和 HDR metadata 处理，HWC 处理流程相对简单
+- **SDR 视频**：不需要 PQ/HLG 转换和 HDR metadata 处理，HWC 处理流程相对简单
 - **HDR 视频**：需要处理 PQ/HLG 转换、色彩空间映射、动态范围调整，增加了 HWC 的处理负担
 
 **实际影响**：
@@ -267,7 +279,7 @@ HWC 是否接受某个 Layer，取决于 SoC、DPU plane 数量、HWC HAL 代际
 
 不同厂商的 HWC 实现对 overlay 回退的处理策略有明显差异：
 
-- **Qualcomm Adreno**：YUV 视频 overlay 通常较容易命中，但 RGBA 和 HDR 处理能力仍要看具体平台
+- **Qualcomm Adreno**：YUV 视频 overlay 较容易命中，但 RGBA 和 HDR 处理能力仍要看具体平台
 - **ARM Mali**：新一代 Mali-G 系列的 overlay 能力更强，老款设备更容易触发回退
 - **MediaTek**：通常支持基础 YUV overlay，对复杂变换的支持更依赖机型实现
 - **Samsung Exynos**：One UI 设备可能对 video overlay 增加额外优化，也可能对特定格式保留限制
@@ -278,10 +290,10 @@ HWC 是否接受某个 Layer，取决于 SoC、DPU plane 数量、HWC HAL 代际
 
 | 能力维度 | HWC2.x / 常见旧平台 | HWC3 / 较新平台常见情况 | 结论 |
 |:---|:---|:---|:---|
-| **YUV 视频 Layer** | 常见支持 1-2 路 `DEVICE` composition | 仍然是最容易走 `DEVICE` 的类型 | 视频 YUV Layer 通常是 Overlay 首选 |
+| **YUV 视频 Layer** | 常见支持 1-2 路 `DEVICE` composition | 是最容易走 `DEVICE` 的类型 | 视频 YUV Layer 是 Overlay 首选 |
 | **RGBA / UI Layer** | 简单不透明场景有时能上 plane，复杂 blending 经常回退 | 部分平台支持更多 RGBA plane，但接口升级不保证能力升级 | 不能把"RGBA 一定 GPU"写成通用规则 |
 | **Plane alpha / rounded corner** | per-layer alpha、圆角、阴影常受限 | 一些新平台支持更强，但仍经常回退 | 半透明和圆角是高频触发点 |
-| **Crop / scale / rotation** | 支持范围因 DPU 而异，90°/270° 更敏感 | 约束仍在，只是范围通常更宽 | 大变换先怀疑 plane 能力不足 |
+| **Crop / scale / rotation** | 支持范围因 DPU 而异，90°/270° 更敏感 | 约束仍在，只是范围往往更宽 | 大变换先怀疑 plane 能力不足 |
 | **HDR / protected content** | 依赖 secure plane、vendor 扩展或受保护 GPU 路径 | 新平台更常见 protected texture / secure GPU path | protected 不等于 tunneled，Overlay 也不是唯一答案 |
 
 ## 受保护内容、Overlay 与 Tunnel 的关系
@@ -290,7 +302,7 @@ HWC 是否接受某个 Layer，取决于 SoC、DPU plane 数量、HWC HAL 代际
 
 ### 1. 标准 Overlay / DEVICE composition
 
-这是普通 SurfaceView 视频播放最常见的低功耗路径。视频 buffer 仍然经由 BufferQueue / SurfaceFlinger 进入本帧合成，只是 HWC 最终把该 Layer 标成 `DEVICE`，像素不再经过 GPU 采样。
+这是普通 SurfaceView 视频播放最常见的低功耗路径。视频 buffer 经由 BufferQueue / SurfaceFlinger 进入本帧合成，只是 HWC 最终把该 Layer 标成 `DEVICE`，像素不再经过 GPU 采样。
 
 ### 2. Protected texture / secure GPU path
 
