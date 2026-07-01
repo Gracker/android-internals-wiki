@@ -3,7 +3,7 @@
 title: "Zygote 图形驱动预加载与启动性能"
 chapter: "1.19"
 section: "1.19"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-05-16"
@@ -33,15 +33,15 @@ sources:
     path: "frameworks/native/libs/ui/GraphicBufferMapper.cpp @ android-13.0.0_r1 / android-14.0.0_r1 / android-17.0.0_r1"
   - type: obsidian
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md"
-reviewed_date: "2026-05-27"
+reviewed_date: 2026-07-02
 reviewed_by: openclaw-task6
 review_round: 2
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-pipeline_stage: task6_pending
-task6_review_notes: "2026-05-27 Task6：回炉复审通过。07-01 22 Task6 revisiting：pass-light-edit。Task9 auto-fixed P1:1 已确认（版本锚点迁移至 android-17.0.0_r1，口径闭合）；禁用词零命中；outline 7/7 覆盖；无新增 L1/L2/L3/L4 问题。待 Task9 最终确认 auto-fixed → pass-tech-review 后可自动晋升。"
-last_task6_at: "2026-07-01T22:13:00+08:00"
+pipeline_stage: ready-to-publish
+task6_review_notes: 2026-05-27 Task6：回炉复审通过。07-01 22 Task6 revisiting：pass-light-edit。Task9 auto-fixed P1:1 已确认（版本锚点迁移至 android-17.0.0_r1，口径闭合）；禁用词零命中；outline 7/7 覆盖；无新增 L1/L2/L3/L4 问题。待 Task9 最终确认 auto-fixed → pass-tech-review 后可自动晋升。07-02 01 Task6 revisiting：pass-light-edit。L1 零命中；L2 开头、节奏、结构均通过；outline 7/7 覆盖。Task9 auto-fixed（P0:0 P1:1-auto-fixed），queue.json 无 pending，自动晋升 finalized。
+last_task6_at: 2026-07-02T01:10:00+08:00
 last_task6_review_log: "logs/review/2026-05-27-19-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0

@@ -2,8 +2,8 @@
 title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
 section: "1.4"
-status: "ready-for-review"
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 confidence: "medium"
@@ -11,11 +11,11 @@ last_verified: "2026-06-09"
 last_verified_against: "AOSP android-17.0.0_r1 (framework/base/perfetto主线) / kernel android16-6.12 (非Android17基线,可查上限历史参照) / source.android / developer.android"
 drafted_date: "2026-05-13"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-13"
+reviewed_date: 2026-07-02
 reviewed_by: "openclaw-task6"
 path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 related_chapters: "[\"1.1\", \"2.5\", \"7.2\", \"8.2\", \"9.1\"]"
-task6_state: revisiting
+task6_state: reviewed
 last_task2a_at: "2026-05-13T18:20:00+08:00"
 last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
 task9_state: reviewed
@@ -26,9 +26,9 @@ last_task9_at: "2026-07-02T00:28:41+08:00"
 last_task9_audit: "2026-06-09"
 last_task9_audit_at: "2026-06-09T01:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-09-01-audit.md"
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 task6_reviewed_date: "2026-07-01"
-last_task6_at: "2026-07-01T07:12:59+08:00"
+last_task6_at: 2026-07-02T01:10:00+08:00
 last_task6_audit: "2026-05-19"
 task6_review_log: "logs/review/2026-07-01-07-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
@@ -46,6 +46,8 @@ p0: 1
 p1: 1
 p2: 0
 task9_review_notes: "2026-07-02 00 Task9 deep-review: auto-fixed。P0 1(auto-fixed) / P1 1(auto-fixed) / P2 0；修正 BINDER_ENABLE_ONEWAY_SPAM_DETECTION 所属 API/源码路径为 ProcessState，并将 frameworks/native 来源标签统一到 android-17.0.0_r1，回到 Task6 复审。"
+task6_review_notes: 07-01 07 Task6 revisiting：pass-light-edit。07-02 01 Task6 revisiting：pass-light-edit。L1 零命中（禁用词/高频词均通过）；L2 开头、节奏、结构通过；outline 6/6 锚点覆盖、2/3 扩展。Task9 auto-fixed（P0:1-auto-fixed P1:1-auto-fixed：BINDER_ENABLE_ONEWAY_SPAM_DETECTION 路径修正为 ProcessState、frameworks/native 标签统一 android-17.0.0_r1），已确认 auto-fix 正确应用；queue.json 无 pending，自动晋升 finalized。
+
 ---
 
 # Binder IPC 机制与性能影响
