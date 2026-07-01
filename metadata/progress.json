@@ -99,5 +99,29 @@
       "auto_promoted": [],
       "rework_items": 0
     }
+  ],
+  "reviews": [
+    {
+      "date": "2026-07-02",
+      "time": "01:10",
+      "task": "task6",
+      "chapters": [
+        "1.13",
+        "1.19",
+        "1.25",
+        "1.4"
+      ],
+      "results": {
+        "1.13": "pass-light-edit",
+        "1.19": "pass-light-edit → finalized",
+        "1.25": "pass-light-edit",
+        "1.4": "pass-light-edit → finalized"
+      },
+      "auto_promoted": [
+        "1.19",
+        "1.4"
+      ],
+      "log": "logs/review/2026-07-02-01-review.md"
+    }
   ]
 }
