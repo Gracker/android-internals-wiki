@@ -214,7 +214,7 @@ android {
 
 ## WakeLock 泄漏导致的电量投诉治理
 
-WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法进入应有的低功耗状态。Android Vitals 对后台 Partial WakeLock 有两类视角：excessive partial wake lock 和 stuck partial wake lock。前者关注 28 天内超过 5% session 的坏行为阈值，以及 24 小时内累计 ≥2h 的持续持锁；后者关注 24 小时内至少一次后台持续 1 小时的 Partial WakeLock。Vitals 只统计非豁免的后台或前台服务中持有的 wake lock，音频、定位、JobScheduler 用户发起 API 等场景有豁免。
+WakeLock 泄漏的特征是明确的：用户看不到任务，设备却无法进入应有的低功耗状态。Android Vitals 对后台 Partial WakeLock 有两类视角：excessive partial wake lock 和 stuck partial wake lock。前者关注 24 小时内后台 Partial WakeLock 累计持有至少 2 小时，且 28 天内影响超过 5% session 的坏行为阈值；后者关注 24 小时内至少一次后台持续 1 小时的 Partial WakeLock。Vitals 只统计非豁免的后台或前台服务中持有的 wake lock，音频、定位、JobScheduler 用户发起 API 等场景有豁免。
 
 治理从 Play Console 或本地复现都能开始，但两个入口的侧重点不同。
 

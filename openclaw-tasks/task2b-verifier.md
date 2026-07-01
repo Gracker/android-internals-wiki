@@ -27,6 +27,10 @@
 - `pipeline_stage: task6_pending`
 - queue.json 中该 section 已无 pending，但 frontmatter 仍停在 `task2b_pending`
 
+队列来源边界：
+- 只把 `task6-review`、`task9-deep-tech-review`、`task9-deep-tech-review-audit`、`external-ai-review` 视为 Task2B 回炉条目。
+- `task-deepresearch-injector`、`task8-classifier`、`task2a-knowledge-gap` 是素材/新章队列，不阻塞 Task2B 回流。
+
 允许修改：
 - frontmatter 状态字段
 - metadata/queue.json 条目状态

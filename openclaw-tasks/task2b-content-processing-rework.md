@@ -18,6 +18,8 @@
 3. 修复 External AI Review 整合后进入 queue 的技术问题与重要缺失（priority 95 / 85）
 4. 将 review / deep review / external review 产出的具体问题单落地为可再次进入 review 的章节
 
+**非回炉队列边界：** `task-deepresearch-injector`、`task8-classifier`、`task2a-knowledge-gap` 这类 `added_by` 表示素材注入或新章挖掘，不属于 Task2B 回炉阻塞项。它们可以被专门的素材整合任务消费，但不得让 Task2B / Lite / Verifier 停在“queue 仍 pending”，也不得阻止 frontmatter backlog fallback。
+
 **绝不写新章节，不主动全书精修，不重新做 review 裁决。每轮处理 1-3 个章节，默认 2 个；仅当问题范围清晰且总工作量可控时处理 3 个。若问题跨度大或存在重度源码修复，退回处理 1 个。**
 
 ## Task2B 分流模型（2026-05-26）
@@ -99,6 +101,7 @@ PY
 - queue.json 中 `priority: 95` 或 `priority: 85` + `status: pending` 的条目
 - 来源可以是：
   - Task 9 写入（`added_by: "task9-deep-tech-review"`）
+  - Task 9 Audit 写入（`added_by: "task9-deep-tech-review-audit"`）
   - 外部 Review 整合写入（`added_by: "external-ai-review"`）
 - 通常为源码路径错误、API 签名错误、原理描述与实际行为矛盾、关键版本差异缺失、重要知识盲区等技术问题
 
@@ -126,7 +129,12 @@ PY
 ### Step 1：读取回炉任务
 从 queue.json 中取出待处理条目，**严格按 priority 95 → 90 → 85 排序**，且仅选择：
 - `status: pending`
-- `added_by` 属于 `task6-review`、`task9-deep-tech-review` 或 `external-ai-review`
+- `added_by` 属于 `task6-review`、`task9-deep-tech-review`、`task9-deep-tech-review-audit` 或 `external-ai-review`
+
+以下 `added_by` 不属于本 lane 的回炉来源，只记录为 material/intake pending，不参与 Task2B 目标选择，也不阻塞 fallback：
+- `task-deepresearch-injector`
+- `task8-classifier`
+- `task2a-knowledge-gap`
 
 如需进一步过滤，优先选择对应章节 frontmatter 满足以下任一条件的条目：
 - `pipeline_stage: task2b_pending`
