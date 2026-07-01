@@ -359,6 +359,28 @@
       "completed_at": "2026-07-01T18:54:12+08:00",
       "completed_by": "task2b-main-2026-07-01",
       "fix_summary": "Flutter merged UI+Platform 线程模型版本边界：2.11/18.12/19.26 全部从 3.29+→3.32 stable+, 3.28-→3.31-（依据 Flutter issue #150525 + release-notes-3.32.0）"
+    },
+    {
+      "id": "T9-2026-07-01-20-01",
+      "chapter": "13-messagequeue-deliqueue.md",
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Android 17 MessageQueue 主线源码锚点仍停在 Android 16 ConcurrentMessageQueue，缺少 android-17.0.0_r1 CombinedDeliMessageQueue / MessageStack / MessageHeap 口径",
+      "material_paths": [
+        "logs/deep-review/2026-07-01-20-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码锚点",
+          "location": "§Android 16 和 Android 17 要分成两步看 / §公开源码里能确认哪些并发结构 / 参考资料",
+          "detail": "章节 frontmatter 已标注 last_verified_against=android-17.0.0_r1，但正文主要源码说明仍以 android-16.0.0_r1 CombinedMessageQueue/ConcurrentMessageQueue/LegacyMessageQueue 为锚点，并把 ConcurrentSkipListSet 双队列作为可确认并发结构。android-17.0.0_r1 已发布 CombinedDeliMessageQueue/MessageQueue.java、MessageStack.java、MessageHeap.java、Message.java，正式实现为 MessageStack + 同步/异步 MessageHeap。现正文与 §1.26 的 Android 17 源码口径不一致。",
+          "suggestion": "Task2B 回炉时保留 Android 16 作为历史 rollout 对照，把 Android 17 主线源码锚点迁移到 CombinedDeliMessageQueue/MessageQueue.java、MessageStack.java、MessageHeap.java、Message.java，并将 ConcurrentSkipListSet 仅标注为 Android 16 历史原型。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-01T20:36:16+08:00",
+      "status": "pending"
     }
   ]
 }
