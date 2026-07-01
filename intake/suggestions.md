@@ -336,3 +336,52 @@
 1. 已有章节深度增强（Task 2B）
 2. 等待 Android 18 DP
 3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）
+
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-02 04:05
+
+本轮第五轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（实质内容 < 15 行）
+**Phase 0.5**: Task2B backlog = 0，允许挖掘
+**Phase 1**: 全书 541+ 节，覆盖度第五轮确认饱和
+
+新增复查方向（本轮探索）：
+- Android 17 RenderCommandBuffer (client-driven 渲染命令缓冲) → SF/HWUI 内部实现细节，已有 ch02/ch18 覆盖 (10/20)
+- ProfilingTrigger (系统事件触发采集) → 已在 14.07/8.16 覆盖 (不单独计分)
+- BinderObserver/BinderNetlink (聚合直方图/事务报告) → 应更新 1.30/1.31 Binder 章节 (12/20)
+- amemdiff (内存碎片化对比工具) → 工具使用，素材单一 (10/20)
+- Android 17 simpleperf 后台录制/包名跟踪 → 已创建 14.24 draft（>15行，非空 draft）
+- 所有 Android 17 系统层面新特性 43 篇 → 前四轮已逐一评估
+
+结论：全书覆盖度五轮确认饱和（541+ 节）。与前四轮结论一致。
+可行动方向不变：
+1. 已有章节深度增强（Task 2B）
+2. 等待 Android 18 DP
+3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）
+4. 14.24/14.25/22.27/23.25/26.23/26.14 等 draft 章节需 Task 2B 加工内容
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-02 05:06
+
+本轮第六轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（实质内容 < 15 行）。全部 18 个 draft 章节均 >15 行有效内容。
+**Phase 0.5**: Task2B backlog = 0，允许挖掘
+**Phase 1**: 全书 547 节，覆盖度第六轮确认饱和
+
+本轮增量复查内容：
+- daily-info 2026-07-02：仅 2 条 RSS + 2 条 ClawFeed
+  - Android 17 任务调度器博客 → 已覆盖于 1.43
+  - Linux 6.10 内存碎片整理 → 已覆盖于 6.19
+  - Linux kernel scheduler 基础文 → ch01/ch05 已覆盖
+  - Z-Jail 沙箱 → 非性能核心议题
+- Clippings 目录无新增（最新文件仍为 2026-06-23）
+- research-feeds 无新增（最新仍为 2026-04-14）
+- 无 Android 18 DP 或新版本素材
+
+结论：全书覆盖度六轮确认饱和（547 节：336 finalized + 178 ready-for-review + 18 draft + 14 unknown + 1 verified）。
+可行动方向不变：
+1. 已有章节深度增强（Task 2B）
+2. 等待 Android 18 DP
+3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）
+4. 14.24/14.25/9.10/22.27/23.25/26.23/26.14 等 draft 章节需内容加工或 Task 2B 处理
