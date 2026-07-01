@@ -1,7 +1,7 @@
 ---
-last_task9_at: "2026-04-30T16:20:00+08:00"
+last_task9_at: "2026-07-02T06:28:00+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-30"
+task9_reviewed_date: "2026-07-02"
 title: "手势导航与系统交互"
 section: "3.3"
 chapter: "3.3"
@@ -15,13 +15,14 @@ drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-29"
 last_task6_audit: "2026-06-14"
-last_task9_audit: "2026-06-12"
-last_task9_audit_log: "logs/deep-review/2026-06-12-05-audit.md"
+last_task9_audit: "2026-07-02"
+last_task9_audit_log: "logs/deep-review/2026-07-02-06-audit.md"
+last_task9_autofix_at: "2026-07-02"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-03-31"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-07-02"
+last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
 sources:
   - type: blog
@@ -62,13 +63,13 @@ sources:
     path: "https://developer.android.com/reference/androidx/activity/OnBackPressedCallback"
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: fixed
 task2b_result: fixed
-task9_review_notes: "2026-04-30 16:20 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；queue 无 pending，已自动晋升 finalized / ready-to-publish。"
+task9_review_notes: "2026-07-02 Task9 idle audit auto-fix: 用 AOSP android-17.0.0_r1 复核 EdgeBackGestureHandler / InputDispatcher / DisplayContent / OnBackInvokedDispatcher，将主线源码锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1，并补充 API 36 FlaggedApi / API 37 observer 限制边界；回到 Task6 复审。 | 2026-04-30 16:20 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；queue 无 pending，已自动晋升 finalized / ready-to-publish。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
 ---
@@ -112,11 +113,11 @@ Android 13 引入了 Predictive Back 相关 API。到 Android 15，官方文档�
 
 ### SystemUI 中的 EdgeBackGestureHandler
 
-返回手势的入口仍然是 SystemUI 的 `EdgeBackGestureHandler`，但 android-16.0.0_r1 的实现与 Android 10 初版资料有几处关键差异。当前版本里，`updateIsEnabledInner()` 在手势导航模式启用后会完成三件事：向 WMS 注册 `ISystemGestureExclusionListener`、为当前 display 创建 `InputMonitorResource`、调用 `resetEdgeBackPlugin()` 挂起默认的边缘反馈插件。
+返回手势的入口仍然是 SystemUI 的 `EdgeBackGestureHandler`，但 android-17.0.0_r1 的实现与 Android 10 初版资料有几处关键差异。当前版本里，`updateIsEnabledInner()` 在手势导航模式启用后会完成三件事：向 WMS 注册 `ISystemGestureExclusionListener`、为当前 display 创建 `InputMonitorResource`、调用 `resetEdgeBackPlugin()` 挂起默认的边缘反馈插件。
 
-`InputMonitorResource` 内部并没有自己发明一套输入通道，它只是用 `InputMonitorCompat("edge-swipe", displayId)` 包装 `InputManagerGlobal.monitorGestureInput()`，让 SystemUI 在当前屏幕上收到名为 `edge-swipe` 的 gesture monitor 事件流。视觉反馈这一侧，旧资料经常提 `NavigationBarEdgePanel`，但 android-16.0.0_r1 当前默认插件已经换成 `BackPanelController` / `BackPanel.kt`，通过 `TYPE_NAVIGATION_BAR_PANEL` overlay window 显示边缘箭头和面板动画。
+`InputMonitorResource` 内部并没有自己发明一套输入通道，它只是用 `InputMonitorCompat("edge-swipe", displayId)` 包装 `InputManagerGlobal.monitorGestureInput()`，让 SystemUI 在当前屏幕上收到名为 `edge-swipe` 的 gesture monitor 事件流。视觉反馈这一侧，旧资料经常提 `NavigationBarEdgePanel`，但 android-17.0.0_r1 当前默认插件已经换成 `BackPanelController` / `BackPanel.kt`，通过 `TYPE_NAVIGATION_BAR_PANEL` overlay window 显示边缘箭头和面板动画。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java]
 
 ### InputMonitor 的工作原理
 
@@ -126,7 +127,7 @@ Android 13 引入了 Predictive Back 相关 API。到 Android 15，官方文档�
 
 legacy back path 里，一旦横向位移越过阈值且 `mBackAnimation == null`，`EdgeBackGestureHandler` 会调用 `pilferPointers()`。这一调用最终进入 `InputDispatcher::pilferPointersLocked()`，后者会对原目标窗口合成 `CANCEL_POINTER_EVENTS`。App 端收到的不是“完整滑到结束的一串 MotionEvent”，而是一条被系统夺走后的 cancel 结尾。边缘冲突里常见的“手指还在动，App 为什么突然不再收到后续 MOVE”，根因通常就在这里。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
 ### 从边缘滑动到返回事件的完整流程
 
@@ -149,7 +150,7 @@ legacy back path 里，一旦横向位移越过阈值且 `mBackAnimation == null
 
 这个拆分直接影响性能分析。legacy path 里常见的现象，是 pointer 被 pilfer 之后 App 为什么突然收到 cancel；predictive path 里更常见的现象，是 back progress 动画、跨 Activity 预览和 App 自定义返回动画之间的配合是否掉帧。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/window/OnBackInvokedCallback.java; frameworks/base/core/java/android/window/OnBackAnimationCallback.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/window/OnBackInvokedCallback.java; frameworks/base/core/java/android/window/OnBackAnimationCallback.java]
 
 ## 手势冲突处理：系统手势优先区域 vs App 的 WindowInsets
 
@@ -223,7 +224,8 @@ App 端注册时，platform 走 `OnBackInvokedDispatcher`，AndroidX 走 `OnBack
 | Android 13 | 33 | 官方文档给出的测试入口仍是开发者选项里的 predictive back animations。 | App 或 Activity 通过 `android:enableOnBackInvokedCallback` 管理 opt in / opt out。 | platform `OnBackInvokedCallback` 从这一版开始可用；未 opt in 的工程按 legacy path 看待更稳妥。 | 官方页面能直接确认 `OnBackInvokedCallback` 和 back-to-home 测试路径。 |
 | Android 14 | 34 | 系统动画测试仍和开发者选项绑定，文档没有把所有预览都写成默认行为。 | 条件和 Android 13 同一层。 | platform progress callback 从 API 34 开始；AndroidX 1.8.0 的 progress 方法也只有在 API 34+ 才会被 framework 调用。 | `OnBackAnimationCallback` 提供 started / progressed / cancelled。 |
 | Android 15 | 35 | 官方文档明确写到：developer option 不再承载 back-to-home、cross-task、cross-activity 系统动画，这些动画会对 opted-in 的 App 或 Activity 直接出现。 | 仍然要看 app / activity 是否 opt in；如果 Fragment back stack 或自定义回调还在消费返回，系统动画不会接管。 | 不把 targetSdk 单独写成唯一总开关，仍要和 opt in、回调消费状态一起判断。 | 系统级 back-to-home、cross-task、cross-activity 预览在文档里有了明确落点。 |
-| Android 16 | 36 | 动画基础延续 Android 15。 | 同上。 | `OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 从 API 36 增加。 | 可以注册 observer-only callback，只观察系统级返回，不消费事件。 |
+| Android 16 | 36 | 动画基础延续 Android 15。 | 同上。 | `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 在 android-16.0.0_r1 `current.txt` 中仍带 `@FlaggedApi`。 | 可以注册 observer-only callback，但 API 36 同时存在一次只允许一个 observer callback 的限制。 |
+| Android 17 | 37 | 延续 Android 15+ 系统动画模型。 | 同上。 | `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 在 android-17.0.0_r1 公共 API 中已去掉 `@FlaggedApi`。 | observer-only callback 只观察系统级返回，不消费事件；API 37 起 observer callback 数量不再受 API 36 单实例限制。 |
 
 这张表故意没有把“targetSdk >= 某值就一定出现某种预览”写成硬编码结论。官方页面给出的锚点更可靠的部分，是 API 可用性、manifest / activity opt in，以及 Android 15 起系统动画默认展示范围的变化。
 
@@ -235,7 +237,7 @@ Predictive Back 把返回处理拆成 progress 阶段和 commit 阶段，性能�
 
 1. App 在 progress 回调里更适合只改 `translationX`、`alpha`、scale 这类动画属性，避免重新做一轮复杂 measure/layout。平台这层对应 `OnBackAnimationCallback`，AndroidX 这层对应 `handleOnBackStarted()` / `handleOnBackProgressed()` / `handleOnBackCancelled()`。
 2. 系统级 cross-activity / cross-task 预览会把当前层和目标层一起拉进渲染路径。掉帧时，不能只盯着当前 Activity 的 RenderThread，还要把目标 Activity 或 Launcher 的 surface 一起看。
-3. observer-only 回调适合埋点和业务日志，不该在这里再去消费返回。Android 16 把这条边界单独做成 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`，就是为了把“观察”和“拦截”拆开。
+3. observer-only 回调适合埋点和业务日志，不该在这里再去消费返回。API 36 先把这条边界做成带 `@FlaggedApi` 的 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`，API 37 再稳定为无 `@FlaggedApi` 的公共常量；这个设计就是为了把“观察”和“拦截”拆开。
 
 ## 边缘滑动检测的性能敏感点
 
@@ -257,9 +259,9 @@ EdgeBackGestureHandler 中有一个 `mLongPressTimeout` 参数，它限制了从
 
 ### 动画渲染的开销
 
-android-16.0.0_r1 默认的边缘反馈插件是 `BackPanelController` / `BackPanel.kt`，不再是很多旧资料里的 `NavigationBarEdgePanel`。它被挂到 `TYPE_NAVIGATION_BAR_PANEL` overlay window 上，手势跟随阶段会更新 panel 形态、阈值状态和返回动画进度。排查这一段的渲染成本时，更适合把 SystemUI 的 UI thread、RenderThread 和合成线程一起看，不要只盯着某个已经换掉的旧类名。
+android-17.0.0_r1 默认的边缘反馈插件是 `BackPanelController` / `BackPanel.kt`，不再是很多旧资料里的 `NavigationBarEdgePanel`。它被挂到 `TYPE_NAVIGATION_BAR_PANEL` overlay window 上，手势跟随阶段会更新 panel 形态、阈值状态和返回动画进度。排查这一段的渲染成本时，更适合把 SystemUI 的 UI thread、RenderThread 和合成线程一起看，不要只盯着某个已经换掉的旧类名。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanel.kt; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanel.kt; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java]
 
 ## 在 Perfetto 中的表现
 
@@ -328,7 +330,7 @@ Predictive Back 的关键区别，是提交阶段不一定再出现 injected `KE
 
 ### 误区 1：所有返回手势都会走 `KEYCODE_BACK` 注入
 
-**错误。** 这只覆盖了 legacy edge-back 的一条路径。android-16.0.0_r1 的 `EdgeBackGestureHandler.triggerBack()` 明确写着：只有 `mBackAnimation == null` 时才注入 `KEYCODE_BACK`；启用了 predictive back / ahead-of-time back dispatch 之后，提交走的是 `mBackAnimation.setTriggerBack(true)`，App 侧配套接口也变成 `OnBackInvokedCallback` / `OnBackAnimationCallback` 或 AndroidX 的 `OnBackPressedCallback`。
+**错误。** 这只覆盖了 legacy edge-back 的一条路径。android-17.0.0_r1 的 `EdgeBackGestureHandler.triggerBack()` 明确写着：只有 `mBackAnimation == null` 时才注入 `KEYCODE_BACK`；启用了 predictive back / ahead-of-time back dispatch 之后，提交走的是 `mBackAnimation.setTriggerBack(true)`，App 侧配套接口也变成 `OnBackInvokedCallback` / `OnBackAnimationCallback` 或 AndroidX 的 `OnBackPressedCallback`。
 
 ### 误区 2：设置了 exclusion rect，系统就一定不会截获边缘手势
 
@@ -338,9 +340,9 @@ Predictive Back 的关键区别，是提交阶段不一定再出现 injected `KE
 
 **错误。** 左右 back edge 和底部 Home / quick-switch 区域不是同一层。前者更接近 `WindowInsets.Type.systemGestures()`，后者要看 `WindowInsets.Type.mandatorySystemGestures()`。如果把这两类区域压成一句“systemGestureInsets 没处理好”，游戏、沉浸式视频和底部导航栏的冲突会很难定位。
 
-### 误区 4：Android 13 到 Android 16 的 Predictive Back 开关和预览范围都一样
+### 误区 4：Android 13 到 Android 17 的 Predictive Back 开关和预览范围都一样
 
-**错误。** API 33 才引入 `OnBackInvokedCallback`，API 34 才有 `OnBackAnimationCallback` 的 progress 回调，Android 15 官方文档才把 back-to-home、cross-task、cross-activity 系统动画从开发者选项后面拿出来，API 36 又新增了 observer-only 的 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`。版本边界压成一句话，读者很容易把 API 可用性、系统动画默认状态和 opt-in 条件混成一层。
+**错误。** API 33 才引入 `OnBackInvokedCallback`，API 34 才有 `OnBackAnimationCallback` 的 progress 回调，Android 15 官方文档才把 back-to-home、cross-task、cross-activity 系统动画从开发者选项后面拿出来，API 36 先出现 observer-only 的 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`（带 `@FlaggedApi` 且单实例限制），API 37 再去掉 `@FlaggedApi` 并放开 observer callback 数量限制。版本边界压成一句话，读者很容易把 API 可用性、系统动画默认状态和 opt-in 条件混成一层。
 
 ### 误区 5：Gesture Monitor 收到事件副本后，App 一定还能收到完整的 pointer stream
 
