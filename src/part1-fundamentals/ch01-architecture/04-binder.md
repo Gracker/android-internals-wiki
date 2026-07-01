@@ -32,8 +32,8 @@ last_task6_at: 2026-07-02T01:10:00+08:00
 last_task6_audit: "2026-05-19"
 task6_review_log: "logs/review/2026-07-01-07-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
-deepseek_cn_review_state: "done"
-last_deepseek_cn_review_at: "2026-06-09"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-02
 task2b_state: fixed
 task2b_result: "fixed"
 last_task9_autofix_at: "2026-07-02"
@@ -47,7 +47,6 @@ p1: 1
 p2: 0
 task9_review_notes: "2026-07-02 00 Task9 deep-review: auto-fixed。P0 1(auto-fixed) / P1 1(auto-fixed) / P2 0；修正 BINDER_ENABLE_ONEWAY_SPAM_DETECTION 所属 API/源码路径为 ProcessState，并将 frameworks/native 来源标签统一到 android-17.0.0_r1，回到 Task6 复审。"
 task6_review_notes: 07-01 07 Task6 revisiting：pass-light-edit。07-02 01 Task6 revisiting：pass-light-edit。L1 零命中（禁用词/高频词均通过）；L2 开头、节奏、结构通过；outline 6/6 锚点覆盖、2/3 扩展。Task9 auto-fixed（P0:1-auto-fixed P1:1-auto-fixed：BINDER_ENABLE_ONEWAY_SPAM_DETECTION 路径修正为 ProcessState、frameworks/native 标签统一 android-17.0.0_r1），已确认 auto-fix 正确应用；queue.json 无 pending，自动晋升 finalized。
-
 ---
 
 # Binder IPC 机制与性能影响
@@ -458,7 +457,7 @@ oneway 调用避免了 Client 端的阻塞等待，但仍有队列和处理成�
 
 ## 线程池与调度器协同：Android 17 源码观察与内核层契约
 
-> ⚠️ **版本边界说明**：本节源码锚点基于 AOSP `frameworks/native` tag `android-17.0.0_r1` 与 `kernel/common` branch `android16-6.12`。kernel/common 未发现 android-17.0.0_r1 tag 或 android17-6.12 branch，android16-6.12 仅作为 Android 17 可查上限/历史参照，不作为主线结论。
+> ⚠️ **版本边界**：本节 framework/native 源码锚定 `android-17.0.0_r1`；kernel/common 使用 `android16-6.12`（无 android-17 tag，仅作历史参照）。
 
 ### Native 侧的协作机制
 
@@ -718,7 +717,6 @@ AOSP `android16-6.12` 内核 Binder 驱动的事务队列体系是**三层 FIFO 
   5. oneway spam 监控：`BR_ONEWAY_SPAM_SUSPECT` + `IF_LOG_COMMANDS()` 配合
   6. TF_UPDATE_TXN 替换：高频 oneway 单次替换 ~200-500ns，**净收益**：解冻时 O(1) 而非 O(n)
 
-<!-- AIW-源码调研-2026-06-26: Android 17 Binder 性能监控四层能力面 -->
 ## Android 17 libbinder 性能监控接口与跨进程调用链追踪
 
 > ⚠️ **版本边界**：本节源码锚点为 AOSP `frameworks/native` tag `android-17.0.0_r1`（commit `ae266dcb706d083868578cfedce381ef44488a07`）。源码来自社区 AOSP 镜像（`github.com/tranchikha/android_frameworks_native`），与官方 googlesource 镜像 commit 一致——sandbox 内 google.com/android.googlesource.com 不可达（web_fetch 报 `Blocked: resolves to private/internal/special-use IP address`）。
@@ -823,6 +821,4 @@ if (tracingEnabled) {
 - **诊断时**：先用 `getProcessFreezeInfo` 看数字 → 用 `RecordedTransaction` 看内容 → 用 `ATRACE_TAG_AIDL` 看时间线。三层数据互为佐证，构成可量化的可观测性体系。
 - **应用适配**：录制与 ioctl 不需要应用层改动。`ATRACE_TAG_AIDL` 只需在抓取时打开 `atrace --tag aidl`，无需重新编译应用。
 - **平台依赖**：四个 ioctl 都需要 kernel ≥ 5.15 + binderfs + 对应特性文件。在老内核上 `isDriverFeatureEnabled` 返回 false，整个特性路径被预测消除，不会有无效 syscall。
-- **注入时间**：2026-06-26
-- **关联 DeepResearch**：`DeepResearch/2026-06-26-android17-binder-perf-monitor-recording-aidl-trace.md`
 

@@ -73,7 +73,7 @@ finalized_date: "2026-06-14"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-22"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-23
+last_deepseek_cn_review_at: 2026-07-02
 last_task6_audit: "2026-06-20"
 ---
 
@@ -163,7 +163,7 @@ boolean enqueueMessage(Message msg, long when) {
 
 一旦多个线程同时高频 `post`,旧实现就会把它们串行化。主线程如果刚好也在 `next()` 里扫描队列,后台线程就得等;后台线程先拿到锁,主线程也得等。调度层的延迟就这样叠起来了。
 
-[图:旧 MessageQueue 的典型竞争流程。多个生产者线程同时调用 `enqueueMessage()`,UI 线程在 `next()` 里扫描链表,三者共用一把 monitor。]
+旧 MessageQueue 的竞争流程可概括为：多个生产者线程同时调用 `enqueueMessage()`，UI 线程在 `next()` 里扫描链表，三者共用一把 monitor。
 
 ### 哪些场景更容易把问题放大
 
@@ -240,7 +240,7 @@ Android 17 的行为变更页面把面向应用的边界写清楚了:
 - **Android 16**：公开源码出现 CombinedMessageQueue 和 ConcurrentMessageQueue，属于内部试点和受控 rollout。
 - **Android 17**:新的 MessageQueue 对 `targetSdk 37` 的应用默认生效,进入 app-facing 阶段。
 
-## 公开源码里能确认哪些并发结构
+## 并发数据结构
 
 android-17.0.0_r1 已在 `CombinedDeliMessageQueue/MessageQueue.java` 中将实现收敛为 `MessageStack` + `MessageHeap` + `Message` 三类组件——`MessageStack` 替代早期 Treiber-style CAS 栈，`MessageHeap` 替代 `ConcurrentSkipListSet` 做有序出队，`Message` 承载 tombstone 标记与生命周期。以下基于 Android 16 公开源码梳理的结构分析反映的是原型阶段，Android 17 已验证并正式发布。
 
@@ -303,11 +303,11 @@ Android 16 原型阶段在 `ConcurrentMessageQueue/MessageQueue.java` 中引入�
 
 对渲染流程的影响也要这样写:新实现减少的是 **queue operation 的竞争**,不是把 layout、draw、measure 本身做快了。布局开销仍在 `dispatchMessage()` 之后;VSync 到 `doFrame()` 的抖动,则有机会因为队列竞争减少而更稳定。
 
-[图:传统实现与并发实现的 VSync 调度对比。上半部分画 barrier + async message 如何越过同步消息;下半部分画 Android 16 legacy 与 Android 17 新实现下的入队路径差异,重点标出后台线程 `enqueueMessage()`、主线程 `next()`、VSync-app 到 `doFrame()` 之间的等待位置。]
+传统实现与并发实现在 VSync 调度上的关键差异：barrier + async message 跳过同步消息的路径不变，变化发生在入队侧——Android 16 legacy 下后台线程 `enqueueMessage()` 和主线程 `next()` 抢同一把 monitor；Android 17 新实现下生产者 CAS 入栈，不再与消费者互斥。对比 VSYNC-app 到 `doFrame()` 之间的等待位置，就能直接看到竞争消除的效果。
 
 如果手里暂时没有同机型双版本 trace,这里先用等价图示更稳。图里只需要标三处:`VSYNC-app` 的到达点、主线程从 `nativePollOnce()` 返回到 `doFrame` 的间隔、以及旧实现里可能出现的 main thread monitor contention / blocked 片段。这样读者至少知道要去哪里看,而不是只看一句"锁竞争减少了"。
 
-## 量化数据现在该怎么写
+## 量化数据与性能收益
 
 这一节可以恢复一组公开可追溯的数字,但要把实验场景一起写出来。Android Developers Blog 在 2026-02-17 发布的《Under the hood: Android 17's lock-free MessageQueue》中给了三类数据:
 
@@ -369,7 +369,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 如果 `targetSdk 37` 后测试挂了、反射拿不到队列内容、旧监控脚本失效,这更像兼容性问题。它和"主线程调度有没有更稳"是两类事。
 
-[图:Perfetto 观察路径示意。左侧画 Android 16 legacy 场景,标出 `VSYNC-app`、`doFrame`、main thread 的 blocked/monitor contention 片段;右侧画 Android 17 新实现场景,标出 contention 缩短或消失后,仍需继续检查 `dispatchMessage()`、layout、draw 的位置。]
+Perfetto 中的观察路径：Android 16 legacy 场景重点看 main thread 的 blocked / monitor contention 片段是否出现在 `VSYNC-app` 和 `doFrame` 之间；Android 17 新实现下 contention 缩短或消失后，顺着 `dispatchMessage()` 往下查 layout、draw 和 Binder 调用。
 
 ## 版本演进
 
