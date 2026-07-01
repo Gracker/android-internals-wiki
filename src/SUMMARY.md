@@ -1,10 +1,3 @@
----
-tags:
-  - android
-  - ai
-  - binder
-  - summary
----
 # 目录
 
 [写在前面](preface/intro.md)
