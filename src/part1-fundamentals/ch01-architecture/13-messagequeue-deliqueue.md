@@ -3,7 +3,7 @@ title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
 section: "1.13"
 status: ready-for-review
-applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现公开源码:Android 16;面向应用默认启用:Android 17 (API 37)"
+applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现原型:Android 16 (API 36);DeliQueue 正式实现:Android 17 (API 37)"
 drafted_date: "2026-04-04"
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
@@ -27,6 +27,14 @@ sources:
     path: "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java (android-16.0.0_r1)"
   - type: aosp
     path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java (android-16.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/MessageStack.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/MessageHeap.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/Message.java (android-17.0.0_r1)"
   - type: wiki
     path: "https://en.wikipedia.org/wiki/Treiber_Stack"
 tags:
@@ -35,19 +43,20 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-06-14-08-review.md"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_autofix_at: "2026-06-14"
 last_task9_at: "2026-07-01T20:36:16+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-01"
-task2b_state: pending
-task2b_result: "fixed"
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 last_task2b_at: "2026-05-27T12:50:00+08:00"
+task2b_main_at: "2026-07-02T00:57:10.552430+08:00"
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 Android 16 Combined/Concurrent/Legacy MessageQueue 路径、Android 17 行为变更页、DeliQueue 官方性能数据；未发现 P0/P1，自动晋升 finalized。 | 2026-06-14 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 Android 16 Combined/Concurrent/Legacy MessageQueue 源码路径、Android 17 MessageQueue 行为变更页、官方 DeliQueue 性能数据与内部交叉引用；无阻断问题，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 AOSP android-16.0.0_r1 Combined/Concurrent/Legacy MessageQueue、Android 17 MessageQueue 行为变更页与官方性能数据；Android 17/API 37 边界清楚，无 P0/P1。 | 2026-07-01 20 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；正文仍以 Android 16 ConcurrentMessageQueue/ConcurrentSkipListSet 作为 Android 17 新 MessageQueue 的主要源码说明，缺少 android-17.0.0_r1 CombinedDeliMessageQueue/MessageStack/MessageHeap 主线锚点，已写入 Task2B queue。"
 task6_reviewed_date: "2026-07-01"
 last_task6_at: "2026-07-01T22:13:00+08:00"
@@ -233,11 +242,13 @@ Android 17 的行为变更页面把面向应用的边界写清楚了:
 
 ## 公开源码里能确认哪些并发结构
 
-如果只看 `android-16.0.0_r1` 公开源码,能确认的事情有四件。
+android-17.0.0_r1 已在 `CombinedDeliMessageQueue/MessageQueue.java` 中将实现收敛为 `MessageStack` + `MessageHeap` + `Message` 三类组件——`MessageStack` 替代早期 Treiber-style CAS 栈，`MessageHeap` 替代 `ConcurrentSkipListSet` 做有序出队，`Message` 承载 tombstone 标记与生命周期。以下基于 Android 16 公开源码梳理的结构分析反映的是原型阶段，Android 17 已验证并正式落地。
 
 ### 1. 生产者路径是 Treiber 风格的无锁栈
 
-`ConcurrentMessageQueue` 维护了一组 stack state node。非 Looper 线程入队时,通过 CAS 把新的 `MessageNode` 挂到栈顶。这里属于典型的 Treiber stack 家族:单指针、CAS、失败就重试。
+> **Android 17 落地**：上述 CAS 栈在 android-17.0.0_r1 中收敛为 `MessageStack`（`frameworks/base/core/java/android/os/MessageStack.java`），采用 `weakCompareAndSetRelease` 实现入队，`acquire` 语义读取栈顶；`heapSweep()` 负责将栈中消息批量迁移到 `MessageHeap`。
+
+Android 16 原型阶段通过 `ConcurrentMessageQueue` 维护了一组 stack state node。非 Looper 线程入队时，通过 CAS 把新的 `MessageNode` 挂到栈顶。这里属于典型的 Treiber stack 家族：单指针、CAS、失败就重试。
 
 这个结论能说明两件事:
 
@@ -246,9 +257,11 @@ Android 17 的行为变更页面把面向应用的边界写清楚了:
 
 Android 的公开实现里,相关处理分散在 state node、取消路径、`nextMessage()` 的重试逻辑和消息生命周期管理里。源码没有支持"天然完全避免 ABA"这个结论。
 
-### 2. 消费者端不是单一优先队列模型,公开源码里至少有两组有序优先队列
+### 2. 消费者端不是单一优先队列模型，Android 17 收敛为 MessageHeap
 
-`ConcurrentMessageQueue/MessageQueue.java` 直接引入了 `ConcurrentSkipListSet`。`nextMessage()` 里的注释也写明白了:
+> **Android 17 落地**：android-17.0.0_r1 用 `MessageHeap`（`frameworks/base/core/java/android/os/MessageHeap.java`）替代了 `ConcurrentSkipListSet`。`MessageHeap` 是基于数组的最小堆，按 `when + insertSeq` 排序；`FLAG_REMOVED` tombstone 标记替代了原型阶段的节点删除逻辑。
+
+Android 16 原型阶段在 `ConcurrentMessageQueue/MessageQueue.java` 中引入了 `ConcurrentSkipListSet` 做有序队列。`nextMessage()` 里的注释也写明白了:
 
 > We have two queues to juggle and the presence of barriers throws an additional wrench into our plans.
 
@@ -259,7 +272,9 @@ Android 的公开实现里,相关处理分散在 state node、取消路径、`ne
 
 这和"Treiber 栈 + 一个最小堆"的单线条描述不一样。Barrier、同步消息、异步消息,要在两组有序队列之间一起调度。
 
-### 3. barrier 和 async queue 仍然存在,而且逻辑被保留下来了
+### 3. barrier 和 async queue 仍然存在，逻辑在 Android 17 中保留
+
+> **Android 17 落地**：`CombinedDeliMessageQueue` 在 `MessageHeap` 内部仍然维持同步队列与异步队列的分立结构，barrier 语义未变——`nextMessage()` 在普通队列头部存在 barrier 时优先从异步 `MessageHeap` 取 ready 消息。
 
 `nextMessage()` 的分支：
 
@@ -364,7 +379,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 | Android 4.1 (API 16) | `Choreographer` 开始大规模使用同步屏障 + 异步消息 |
 | Android 15 (API 35) | 公开 legacy 参考仍是单链表 + `synchronized` |
 | Android 16 (API 36) | 公开源码出现 `CombinedMessageQueue`,内部通过 `mUseConcurrent` 标志和 allowlist 选择 legacy 或 concurrent 实现;同时放出 `LegacyMessageQueue`、`ConcurrentMessageQueue` 多种实现;legacy 默认,concurrent 先给 system processes / SystemUI |
-| Android 17 (API 37) | `targetSdk 37` 的应用默认启用新的 lock-free MessageQueue |
+| Android 17 (API 37) | `targetSdk 37` 的应用默认启用新的 lock-free MessageQueue；源码收敛为 `CombinedDeliMessageQueue` + `MessageStack` + `MessageHeap` + `Message`；`ConcurrentSkipListSet` 被 `MessageHeap` 替代，CAS 栈收敛为 `MessageStack` |
 
 ## 常见误区
 
@@ -412,5 +427,13 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
   `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
 - AOSP `android-16.0.0_r1`
   `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java`
+- AOSP `android-17.0.0_r1`
+  `frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java`
+- AOSP `android-17.0.0_r1`
+  `frameworks/base/core/java/android/os/MessageStack.java`
+- AOSP `android-17.0.0_r1`
+  `frameworks/base/core/java/android/os/MessageHeap.java`
+- AOSP `android-17.0.0_r1`
+  `frameworks/base/core/java/android/os/Message.java`
 - Treiber stack
   https://en.wikipedia.org/wiki/Treiber_Stack

@@ -17,8 +17,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-01T23:18:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-07-01-23-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-07-01-23-review.md",
+    "completed_at": "2026-07-02T00:55:01.138143+08:00"
   },
   {
     "section": "1.25",
@@ -61,8 +62,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-01T23:18:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-07-01-23-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-07-01-23-review.md",
+    "completed_at": "2026-07-02T00:55:01.138143+08:00"
   },
   {
     "section": "1.25",
