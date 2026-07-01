@@ -77,6 +77,7 @@ task6_review_notes_2026_07_01_r8: "第八轮复审（revisiting 回炉后）：L
 task6_reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-07-01'
 task6_state: reviewed
+last_task6_audit: '2026-07-01'
 task9_result: pass-tech-review
 task9_review_date: '2026-06-24'
 task9_reviewer: openclaw-task9
