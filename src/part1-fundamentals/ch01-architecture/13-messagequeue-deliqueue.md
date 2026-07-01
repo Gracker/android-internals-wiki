@@ -43,10 +43,10 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-06-14-08-review.md"
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 last_task9_autofix_at: "2026-07-02"
 last_task9_at: "2026-07-02T01:30:46+08:00"
@@ -54,12 +54,12 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-02"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-05-27T12:50:00+08:00"
 task2b_main_at: "2026-07-02T00:57:10.552430+08:00"
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 Android 16 Combined/Concurrent/Legacy MessageQueue 路径、Android 17 行为变更页、DeliQueue 官方性能数据；未发现 P0/P1，自动晋升 finalized。 | 2026-06-14 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 Android 16 Combined/Concurrent/Legacy MessageQueue 源码路径、Android 17 MessageQueue 行为变更页、官方 DeliQueue 性能数据与内部交叉引用；无阻断问题，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 AOSP android-16.0.0_r1 Combined/Concurrent/Legacy MessageQueue、Android 17 MessageQueue 行为变更页与官方性能数据；Android 17/API 37 边界清楚，无 P0/P1。 | 2026-07-01 20 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；正文仍以 Android 16 ConcurrentMessageQueue/ConcurrentSkipListSet 作为 Android 17 新 MessageQueue 的主要源码说明，缺少 android-17.0.0_r1 CombinedDeliMessageQueue/MessageStack/MessageHeap 主线锚点，已写入 Task2B queue。"
 task6_reviewed_date: "2026-07-01"
-last_task6_at: 2026-07-02T01:10:00+08:00
+last_task6_at: 2026-07-02T02:11:00+08:00
 task6_review_notes: 06-14 08 Task6 revisiting：pass-light-edit。L1 小修 3 处（3.3.9 形容词+冒号起手式 ×3）；outline 5/5 覆盖。07-01 22 Task6 revisiting：pass-light-edit。L1 小修 2 处（3.3.9 形容词+冒号 ×2：分工很清晰→按固定顺序执行、区分很关键→在trace里直接体现）；outline 5/5 覆盖；Task9 needs-rework P1:1（android-17 源码锚点缺失），待 Task2B 修复。07-02 01 Task6 revisiting：pass-light-edit。L1 小修 4 处（禁用词"落地"×4 → 实现/发布）；Task2B 已补充 android-17.0.0_r1 源码锚点（MessageStack/MessageHeap/CombinedDeliMessageQueue）；outline 5/5 覆盖、2/2 扩展；待 Task9 确认 Task2B 修复后可晋升。
 last_task9_audit: "2026-06-14"
 last_task9_audit_log: "logs/deep-review/2026-06-14-04-audit.md"
@@ -129,7 +129,7 @@ private static boolean loopOnce(final Looper me, /* 省略其他参数 */) {
 }
 ```
 
-这条边界很重要。复杂 layout、draw、Binder 回调、数据库访问,都发生在 `dispatchMessage()` 之后。它们会拖慢一帧,也会推迟下一次 `next()` 的时点;它们不会直接拉长本次 `MessageQueue` 的锁持有时间。如果把这两段混在一起看，后续因果分析会走偏。
+复杂 layout、draw、Binder 回调、数据库访问,都发生在 `dispatchMessage()` 之后。它们会拖慢一帧,也会推迟下一次 `next()` 的时点;它们不会直接拉长本次 `MessageQueue` 的锁持有时间。如果把这两段混在一起看，后续因果分析会走偏。
 
 ## 传统实现为什么容易出现锁竞争
 
@@ -163,7 +163,7 @@ boolean enqueueMessage(Message msg, long when) {
 
 一旦多个线程同时高频 `post`,旧实现就会把它们串行化。主线程如果刚好也在 `next()` 里扫描队列,后台线程就得等;后台线程先拿到锁,主线程也得等。调度层的延迟就这样叠起来了。
 
-旧 MessageQueue 的竞争流程可概括为：多个生产者线程同时调用 `enqueueMessage()`，UI 线程在 `next()` 里扫描链表，三者共用一把 monitor。
+旧 MessageQueue 的竞争流程可概括为：多个生产者线程同时调用 `enqueueMessage()`，UI 线程在 `next()` 里扫描链表，两者共用同一把 monitor。
 
 ### 哪些场景更容易把问题放大
 

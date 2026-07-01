@@ -130,5 +130,16 @@
       ],
       "log": "logs/review/2026-07-02-01-review.md"
     }
+  ],
+  "review_logs": [
+    {
+      "date": "2026-07-02T02:11:00+08:00",
+      "log": "logs/review/2026-07-02-02-review.md",
+      "sections": [
+        "1.13",
+        "1.25"
+      ],
+      "type": "task6-revisiting"
+    }
   ]
 }
