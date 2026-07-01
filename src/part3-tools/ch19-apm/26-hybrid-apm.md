@@ -6,7 +6,7 @@ confidence: high
 drafted_by: gemini
 drafted_date: "2026-04-24"
 last_task6_at: "2026-05-16T08:16:00+08:00"
-last_task9_at: "2026-07-01T17:26:47+08:00"
+last_task9_at: "2026-07-01T18:29:19+08:00"
 last_verified: "2026-04-25"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-25"
@@ -31,7 +31,7 @@ tags:
   - flutter
   - hybrid
 task2b_result: "fixed-lite"
-task2b_state: "fixed"
+task2b_state: "pending"
 last_task2b_lite_at: "2026-07-01"
 task6_result: pass-light-edit
 task6_review_notes: "2026-05-16 task6 review: pass-light-edit。清理 frontmatter 中 1 处填充副词；正文锚点覆盖完整，无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
@@ -39,12 +39,12 @@ task6_reviewed_at: "2026-05-16T08:16:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_state: "revisiting"
 task9_result: "needs-rework"
-task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。2026-07-01 Task9 闲时抽检: needs-rework。P1 1（Flutter merged UI+Platform 线程模型版本边界缺失）；已写入 queue.json。 2026-07-01 Task2B 回炉修复: Flutter APM 小节线程模型按 3.29+ merged model (Main(UI+Platform)/Raster/IO) 改写，同步更新大纲、section 5 标题与正文；与 2.11、18.12 口径对齐。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Flutter merged UI+Platform 默认合并版本边界应为 Flutter 3.32 stable+，正文与 2.11/18.12 仍写 3.29+；已写入 queue.json。"
+task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。2026-07-01 Task9 闲时抽检: needs-rework。P1 1（Flutter merged UI+Platform 线程模型版本边界缺失）；已写入 queue.json。 2026-07-01 Task2B 回炉修复: Flutter APM 小节线程模型按 3.29+ merged model (Main(UI+Platform)/Raster/IO) 改写，同步更新大纲、section 5 标题与正文；与 2.11、18.12 口径对齐。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Flutter merged UI+Platform 默认合并版本边界应为 Flutter 3.32 stable+，正文与 2.11/18.12 仍写 3.29+；已写入 queue.json。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；AUTO-FIX 19.26 残留 3.29+→3.32 stable+；2.11/18.12 仍是 3.29+，交叉引用未闭环；已写入 queue.json。"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-01"
-task9_state: "pending"
+task9_state: "reviewed"
 title: "混合栈与跨平台 APM (WebView / Flutter)"
-last_task9_review_log: "logs/deep-review/2026-07-01-17-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-01-18-deep-review.md"
 last_task6_review_log: "logs/review/2026-05-16-08-review.md"
 task2b_fix_source: "task9-deep-tech-review"
 task2b_fix_summary: "Flutter APM 线程模型从旧独立 UI 线程主线改为 3.29+ merged model (Main(UI+Platform)/Raster/IO) 主线，旧版/定制 Embedder 为边界；同步更新大纲、标题与正文；与 2.11、18.12 对齐"
@@ -231,7 +231,7 @@ Native 调 JS 时，`evaluateJavascript()` 是优先选择。它异步执行并�
 
 Flutter 页面有独立的渲染调度。线程模型因版本而异：Flutter 3.32 stable+ 在 Android 上的主线是 Main(UI+Platform) / Raster / IO——Dart Build/Layout/Paint 与 Platform/插件回调共用宿主主线程；Flutter 3.31- 或定制 Embedder 才按独立 UI 线程（Dart isolate）观察。Raster 线程始终独立，负责把 layer tree 栅格化并提交到 Surface。版本边界以 2.11、18.12 的详细说明为准。Android 的 Choreographer 只能观察宿主视图的帧节奏，无法直接告诉你 Flutter 内部是 build 慢还是 raster 慢。
 
-Flutter 官方的 `FrameTiming` 是线上采样的主要入口。`buildDuration` 对应 Dart Build/Layout/Paint 的 CPU 耗时（3.29+ merged model 在宿主主线程上运行，旧版/定制 Embedder 在独立 UI 线程上运行），`rasterDuration` 对应 Raster 线程光栅化耗时。60Hz 下单项超过约 16.6ms 就可能丢帧；90Hz、120Hz 设备阈值更短。端侧 APM 应把 Flutter 帧预算按设备刷新率计算，避免固定写死 16ms。
+Flutter 官方的 `FrameTiming` 是线上采样的主要入口。`buildDuration` 对应 Dart Build/Layout/Paint 的 CPU 耗时（3.32 stable+ merged model 在宿主主线程上运行，Flutter 3.31-、opt-out 或定制 Embedder 在独立 UI 线程上运行），`rasterDuration` 对应 Raster 线程光栅化耗时。60Hz 下单项超过约 16.6ms 就可能丢帧；90Hz、120Hz 设备阈值更短。端侧 APM 应把 Flutter 帧预算按设备刷新率计算，避免固定写死 16ms。
 
 这段 Dart 示例用于把 `FrameTiming` 批量回传给 Native。重点看 `buildDuration` 与 `rasterDuration` 分开上报。
 

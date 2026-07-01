@@ -291,6 +291,30 @@
       "completed_at": "2026-07-01T17:38:36",
       "completed_by": "task2b-lite-2026-07-01",
       "fix_summary": "Flutter APM 版本边界从 3.29+ 更新为 3.32 stable+，旧模型边界从 3.28- 更新为 3.31-，确保与官方 Flutter 3.32 stable 默认合并线程口径一致"
+    },
+    {
+      "section": "19.26",
+      "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Flutter merged UI+Platform 版本边界仍未在 2.11 / 18.12 交叉引用中闭环",
+      "material_paths": [
+        "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+        "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+        "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+        "https://github.com/flutter/flutter/issues/150525#issuecomment-2898172052",
+        "https://docs.flutter.dev/release/release-notes/release-notes-3.32.0"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/交叉引用一致性",
+          "location": "19.26 §5 已局部修复；2.11 L58/L87/L107/L115/L117 等；18.12 L7/L38/L46/L62/L69/L223",
+          "detail": "本轮已把 19.26 中残留的 3.29+ FrameTiming 线程归因改为 3.32 stable+。但 19.26 明确写“线程归因以 2.11、18.12 的版本边界为准”，而 2.11 与 18.12 仍多处把 Flutter 3.29+ 当作 Android/iOS merged UI+Platform 主线，并把旧模型边界写成 3.28-。Flutter 官方 issue #150525 的 2025-05-21 更新写明“As of Flutter 3.32 stable, threads are merged by default on iOS and Android”，3.32.0 release notes 含 PR #162944；3.29.0 release notes 未含该 merged-thread 变更。",
+          "suggestion": "将 2.11 与 18.12 的线程模型主线统一为 Flutter 3.32 stable+（iOS/Android 默认合并，仍可 opt-out），旧模型边界统一为 Flutter 3.31-、opt-out 或定制 Embedder；同步更新 last_verified_against、参考资料和含 3.29+ / 3.28- 的图注、Perfetto 观察说明。修完后再回 19.26 复核交叉引用。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-01T18:29:19+08:00",
+      "status": "pending"
     }
   ]
 }
