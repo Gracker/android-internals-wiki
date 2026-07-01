@@ -1,24 +1,26 @@
 ---
-title: Jetpack Compose 性能优化---
+title: Jetpack Compose 性能优化
 chapter: '7.7'
 section: '7.7'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-06-24'
-last_verified_against: Android 16 Developer Preview
+last_verified: '2026-07-01'
+last_verified_against: Android 17 (API 37) / Compose Runtime 1.8.0-1.11.3 source jars
 confidence: medium
 tags:
 - smoothness
 - jank
-auto_promoted_by: \"openclaw-task6\
-auto_promoted_date: \"2026-05-04\
+auto_promoted_by: openclaw-task6
+auto_promoted_date: '2026-05-04'
 deepseek_cn_review_state: done
 drafted_by: openclaw-task2a
-last_task2b_at: 2026-06-24T08:57:16+08:00+08:00
+last_task2b_at: 2026-06-24T08:57:16+08:00
 last_task6_audit_log: logs/review/2026-06-24-09-review.md
 last_task6_audit_result: pass-light-edit
-last_task9_at: \"2026-06-04T20:24:00+08:00\
-last_task9_audit_result: needs-rework
+last_task9_at: 2026-07-01T12:30:15+08:00
+last_task9_audit_result: auto-fixed
+last_task9_audit: 2026-07-01
+last_task9_autofix_at: 2026-07-01
 path: Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md
 pipeline_stage: task6_pending
 polish_by: task2b-polish
@@ -30,7 +32,7 @@ task2b_result: fixed-lite
 task2b_state: fixed
 task6_result: pass-light-edit
 task6_state: revisiting
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_state: reviewed
 ---
@@ -84,13 +86,11 @@ Compose 需要单独建立一套分析视角。它的渲染管线、状态管理
 
 主要区别在于：传统 View 体系只在 UI 结构发生变化时才重新创建 View 对象（比如 addView/removeView），而 **Compose 的 Composition 阶段在每次状态变化时都可能重新执行**。这就是所谓的“Recomposition”（重组）。
 
-`PausableComposition` 属于 Compose Runtime 的内部子组合机制，从 Compose Runtime 1.0 起就已存在于源码中，但主要用于 `LazyList` 等惰性布局的内部实现，不是面向应用开发者的公开 API。
+`PausableComposition` 是 Compose Runtime 1.8.0 起可在 sources.jar 中确认的子组合机制；1.7.x sources.jar 中还没有 `PausableComposition.kt`。它的设计目标是让子组合可暂停、可恢复，用帧间隙提前准备 Lazy 列表等即将进入视口的内容，不是面向应用开发者的常规 API。
 
-**版本边界**：`PausableComposition` 本身是 Compose Runtime 的类，不依赖 Android API level。但在 Android 17 (API 37) 环境中，其外部可见行为受 Compose UI 版本影响——`LazyList` 的预组合窗口在 Compose UI 1.3+ 中逐步扩大，1.5+ 中进一步优化了跨帧拆分策略。建议在使用时明确标注 Compose BOM 版本，确保与 Android 17 兼容。
+**版本边界**：`PausableComposition` 属于 AndroidX Compose Runtime，不随 Android API level 发布。Android 17 (API 37) 只是运行环境上限；是否可用、是否被 Lazy layout prefetch 使用，取决于项目采用的 Compose Runtime/Foundation/BOM 版本。当前 AndroidX 源码中，Lazy layout prefetch 通过 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 决定是否走 pausable composition 路径，因此不能把它描述成 Android 17 系统能力。
 
-**使用场景**：它的典型用途是 `LazyList` 在列表滚动时，利用帧间隙预先组合即将进入视口的 item，避免 item 出现时才同步组合导致的帧超时。调用方（`LazyList` 内部）通过 `pausableComposition()` 工厂函数创建子组合，并在每帧预算允许的范围内推进组合工作。应用开发者不需要直接使用此类；排查重组性能时，如果 Perfetto 中看到 Composition 阶段被拆成多段，通常就是 `PausableComposition` 在生效。
-
-不要把 `PausableComposition` 理解成系统会自动把任意 Composition 跨帧续跑——只有显式通过 `pausableComposition()` 创建的子组合才具备这种能力，普通顶层 Composition 仍然是单帧内完成的。
+**使用场景**：它的典型用途是 Lazy layout 在列表滚动时，利用帧间隙预先组合即将进入视口的 item，避免 item 出现时才同步组合导致帧超时。调用方通过 `setPausableContent` / `PausedComposition.resume()` 推进子组合；应用开发者通常不需要直接使用此类。
 
 [图:Compose 渲染管线三阶段示意--Composition 更新 SlotTable 并维护 LayoutNode 树 → Layout 沿 LayoutNode 测量定位 → Drawing 绘制到 Canvas,与传统 View 体系 measure → layout → draw 对比]
 
@@ -140,11 +140,11 @@ fun Greeting(msg: String) {
 
 Strong Skipping 的版本演进分为三个阶段：
 
-| 阶段 | Compose Compiler | Kotlin | Strong Skipping | 稳定性推断 | Android API 兼容性 |
-|------|-----------------|--------|----------------|-----------|------------------|
-| 早期（2023） | 1.4.x - 1.5.0 | 1.8.x - 1.9.0 | 不支持 | 仅 `@Stable`/`@Immutable` 手动标记的类才可能让 Composable skippable；不稳定参数导致 Composable 完全不 skippable | Android 8-13 (API 26-33) |
-| 过渡期（2024 上半年） | 1.5.1 - 1.5.9 | 1.9.10 - 1.9.24 | 实验性，需显式开启 `experimentalStrongSkipping = true` | 不稳定参数开始支持引用相等比较，但仍需编译器 flag | Android 14-15 (API 34-35) |
-| 当前（2024 中至今） | 1.5.10+ / 2.0.0+ | 2.0.20+ | 默认开启 | 所有 restartable Composable 默认 skippable；稳定参数 `equals()` 比较，不稳定参数 `===` 比较 | Android 16-17 (API 36-37) |
+| 阶段 | Compose Compiler / Kotlin | Strong Skipping | 稳定性推断 | Android API 关系 |
+|------|---------------------------|----------------|-----------|----------------|
+| 早期（2023） | Kotlin 2.0.20 之前，且未显式开启 | 默认不开启 | 只有稳定参数的 restartable Composable 才容易被判定为 skippable | 与设备 API 无直接绑定 |
+| 过渡期（2024 上半年） | Kotlin 2.0.20 之前，显式配置 `enableStrongSkippingMode = true` | 可手动开启 | 不稳定参数可按引用相等比较，但取决于编译器配置 | 与设备 API 无直接绑定 |
+| 当前（Kotlin 2.0.20+） | Compose Compiler Gradle Plugin 随 Kotlin 2.0.20+ 使用 | 默认开启 | 所有 restartable Composable 默认 skippable；稳定参数 `equals()` 比较，不稳定参数 `===` 比较 | 与设备 API 无直接绑定 |
 
 关键转折点是 Kotlin 2.0.20 + Compose Compiler 2.0+ 的组合——从这个版本起，Strong Skipping 不需要任何编译器 flag 或显式 opt-in，所有使用新版 Kotlin/Compose 的项目自动获得跳过能力。
 
@@ -154,7 +154,7 @@ Strong Skipping 的版本演进分为三个阶段：
 
 这条规则也改变了可变集合的失败方式。不稳定参数按引用比较,`ArrayList`、`MutableList` 这类对象如果原地修改后继续传同一个引用,restartable Composable 会把它视为同一个输入。UI 是否刷新还取决于上游状态容器有没有发出新值;如果 ViewModel 只执行 `items.add(newItem)`,再把同一个列表引用传下去,StateFlow / Compose 都可能看不到这次内容变化。
 
-**Android 12-14 兼容性注意**：在 Android 12-14 (API 31-34) 设备上，部分 Kotlin 1.8.x 版本可能存在 Strong Skipping 实验性功能的不稳定性。建议在这些版本上显式使用 `@Stable` 注解或不可变集合，避免引用比较带来的刷新不一致问题。
+**版本边界注意**：Strong Skipping 是 Compose 编译器行为，与 Android 12-14 这类设备 API 分段没有直接关系。Kotlin 2.0.20 之前要看项目是否显式开启 `enableStrongSkippingMode`；Kotlin 2.0.20+ 默认开启。无论运行在哪个 Android 版本上，可变集合原地修改的风险都来自引用相等和上游状态是否发布新实例。
 
 ```kotlin
 // 容易漏刷新:原地修改同一个 ArrayList
@@ -187,7 +187,7 @@ data class ProductListState(
 )
 ```
 
-**Android 版本兼容性**：`@Immutable` 注解在 Android 8+ (API 26+) 中稳定可用。在 Android 11 (API 30) 之前的版本中，确保使用 Kotlin 1.6.0+ 以获得完整的注解支持。
+**版本边界**：`@Immutable` 是 Compose Runtime 的编译期契约注解，Compose Runtime 1.0.0 sources.jar 已包含 `Immutable.kt`；它不随 Android 8/11 这类平台 API 切换。真正需要核对的是项目的 Compose Runtime/Compiler 版本，以及被标记类型是否真的不可变。
 
 
 **@Stable**：标记"属性会变，但变化路径对 Compose 可见"的类，常见于 State holder：
