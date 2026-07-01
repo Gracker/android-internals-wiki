@@ -8,22 +8,24 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-26"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
-last_verified: "2026-06-26"
-last_verified_against: "Android 17 release notes + Android 17 behavior changes + Mainline docs + android-17.0.0_r1 (Binder/BLAST/Looper/WMS/MessageQueue)"
+last_verified: "2026-07-01"
+last_verified_against: "AOSP android-17.0.0_r1 (MessageQueue/Looper/Binder/BLAST/WMS) + Android 17 release notes/behavior changes + Mainline docs"
 confidence: medium
 tags:
   - android
   - performance
   - aosp
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-26"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-26T20:21:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-26-20-deep-review.md"
-last_task9_review_notes: "2026-06-26 Task9 review: Deep technical review completed. P0=0, P1=0, P2=5, No auto-fix required. Overall technical score: 4.2/5. Eligible for auto-promotion to finalized."
+last_task9_at: "2026-07-01T22:30:22+08:00"
+last_task9_audit: "2026-07-01"
+last_task9_autofix_at: "2026-07-01"
+last_task9_review_log: "logs/deep-review/2026-07-01-22-audit.md"
+last_task9_review_notes: "2026-07-01 Task9 idle audit AUTO-FIX: AOSP android-17.0.0_r1 已公开，MessageQueue 稳定源码目录复核为 LegacyMessageQueue / CombinedMessageQueue / CombinedDeliMessageQueue；将 refs/heads/master 与 android-16.0.0_r1 源码锚点更新到 android-17.0.0_r1，并修正正文中“tag 尚未公开”的过期说明。回到 Task6 复审。 | 2026-06-26 Task9 review: Deep technical review completed. P0=0, P1=0, P2=5, No auto-fix required. Overall technical score: 4.2/5. Eligible for auto-promotion to finalized."
 task2b_state: fixed
 task2b_result: fixed-lite
 task2b_fixed_at: "2026-06-26T11:40:00+08:00"
@@ -49,13 +51,15 @@ sources:
   - type: official
     path: "https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html"
   - type: aosp
-    path: "platform/frameworks/base/core/java/android/os/LockedMessageQueue/MessageQueue.java (refs/heads/master,观察用，未进入 android-17.0.0_r1 稳定版本)"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
   - type: aosp
-    path: "platform/frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java (refs/heads/master,观察用，未进入 android-17.0.0_r1 稳定版本)"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
   - type: aosp
-    path: "platform/frameworks/native/libs/binder/ProcessState.cpp (android-16.0.0_r1)"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java"
   - type: aosp
-    path: "platform/frameworks/native/libs/gui/BLASTBufferQueue.cpp (android-16.0.0_r1)"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
 ---
@@ -169,21 +173,21 @@ MessageQueue 的性能问题,在于"很多生产者在并发入队"和"Looper �
 
 在 legacy locked queue 里,这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息,生产者在 `enqueueMessage()` 里按 `when` 插入单链表,两边都会碰到同一份队列状态。分析旧实现时,可以说它围绕一把锁序列化访问;源码引用应指向 `MessageQueue` 自身,不能只引用 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层,队列实现应该看 `Looper.java` 和 `MessageQueue` 的具体实现文件。
 
-到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`，官方 DeliQueue 博客也确认了 lock-free 设计方向与性能收益。源码侧，AOSP master 的 `core/java/android/os/` 目录里能看到 `LockedMessageQueue/`、`ConcurrentMessageQueue/`、`CombinedMessageQueue/`、`SemiConcurrentMessageQueue/` 这些实现拆分，但其中 `LockedMessageQueue` 与 `SemiConcurrentMessageQueue` 两个目录名属于当前 master 观察——android-17.0.0_r1 tag 尚未公开，master-only 路径不能直接写成 Android 17 稳定源码锚点。对比 android-16.0.0_r1，对应目录为 `LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue`，命名与 master 不同。这说明"MessageQueue 就是一份带 `mLock` 的单一实现"只对历史 locked queue 成立，涉及 master 具体目录名和类名的判断需等 android-17.0.0_r1 公开后再确认。
+到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`，官方 DeliQueue 博客也确认了 lock-free 设计方向与性能收益。源码侧，android-17.0.0_r1 的 `core/java/android/os/` 目录里可以稳定锚定 `LegacyMessageQueue/`、`CombinedMessageQueue/`、`CombinedDeliMessageQueue/` 这几条实现路径，其中 `CombinedMessageQueue` 和 `CombinedDeliMessageQueue` 上的 `@EnabledAfter(targetSdkVersion = android.os.Build.VERSION_CODES.BAKLAVA)` 对应 targetSdk 37+ 的兼容门槛。旧稿里从 master 观察到的 `LockedMessageQueue/`、`ConcurrentMessageQueue/`、`SemiConcurrentMessageQueue/` 不能作为 Android 17 稳定源码锚点；对比 android-16.0.0_r1，Android 17 新增了 `CombinedDeliMessageQueue`，讨论 DeliQueue 时应以 android-17.0.0_r1 为主线。
 
 Google 在 DeliQueue 技术博客里给出的主线也和这个拆分一致,生产者尽量走无锁入队,Looper 再在自己的视角里整理待执行消息。对我们做性能分析来说,这个变化的意义是,不能再看到 `Handler.post()` 就默认脑补成"老式单锁链表"。必须先分清设备系统版本和 App 的 targetSdk,再决定该看 legacy locked queue 还是新的 concurrent queue。更细的实现与兼容边界,可以继续看 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》。
 
 ### Binder：线程池与优先级继承的时间线
 Binder 线程池和优先级继承的版本演进，社区里一直有简化说法，比如"Android 8 动态扩展线程池，Android 10 才有优先级继承"。实际情况要更细致一些。
 
-先看线程池。AOSP `frameworks/native/libs/binder/ProcessState.cpp`（android-16.0.0_r1 稳定锚点）很早就把默认 worker 上限定义成 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `BINDER_SET_MAX_THREADS` 把这个上限交给 driver。也就是说,Binder 线程池从早期就是"driver 按需唤醒或拉起 worker,userspace 负责设置上限"的模型。工程里常说的"16 线程"，大多是把发起调用的线程也口语化算进去了；driver 默认 worker 上限仍是 15。
+先看线程池。AOSP `frameworks/native/libs/binder/ProcessState.cpp`（android-17.0.0_r1 稳定锚点）很早就把默认 worker 上限定义成 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `BINDER_SET_MAX_THREADS` 把这个上限交给 driver。也就是说,Binder 线程池从早期就是"driver 按需唤醒或拉起 worker,userspace 负责设置上限"的模型。工程里常说的"16 线程"，大多是把发起调用的线程也口语化算进去了；driver 默认 worker 上限仍是 15。
 
 再看优先级继承。官方 binder IPC 文档写得很明确,binder driver 一直支持 nice priority inheritance。Android 8 借 Treble 引入 `/dev/hwbinder` 域,同时把 real-time priority inheritance 加进 binder driver;到了 Android 10,Stable AIDL 又让满足稳定性要求的 HAL 可以回到 `/dev/binder`。准确的演进线是:早期已有 nice priority inheritance,Android 8 加入 RT inheritance 与 hwbinder 域,Android 10 通过 Stable AIDL 重新整理 binder domain 边界。
 
 把这条时间线理清楚之后，再看 Perfetto 里的 Binder track，就不会把线程池耗尽、调度延迟和优先级反转搅在一起了。Binder 的具体机制还可以回看 §1.4《Binder IPC 机制与性能影响》。
 
 ### 窗口管理:BLASTBufferQueue 优化 buffer 与 transaction 的同帧提交
-BLASTBufferQueue 常被简化成"App 直接把 buffer 发给 SurfaceFlinger"。源码里的路径更具体（android-16.0.0_r1 可稳定验证）：`BLASTBufferQueue` 仍然会创建内部的 `BufferQueueCore`、producer 和 consumer，BufferQueue 基础设施还在。它把 buffer acquire 与 `SurfaceControl.Transaction` 的提交时机绑到同一个 frame number 上。`BLASTBufferQueue.cpp` 里能直接看到这条主线：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions()` 的完整调用链。`SurfaceControl.java` 里也有 `onMergeWithNextTransaction()` 这条 Java 侧钩子。
+BLASTBufferQueue 常被简化成"App 直接把 buffer 发给 SurfaceFlinger"。源码里的路径更具体（android-17.0.0_r1 可稳定验证）：`BLASTBufferQueue` 仍然会创建内部的 `BufferQueueCore`、producer 和 consumer，BufferQueue 基础设施还在。它把 buffer acquire 与 `SurfaceControl.Transaction` 的提交时机绑到同一个 frame number 上。`BLASTBufferQueue.cpp` 里能直接看到这条主线：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions()` 的完整调用链。`SurfaceControl.java` 里也有 `onMergeWithNextTransaction()` 这条 Java 侧钩子。
 
 跨进程同步场景还要把 WMS 放进来。窗口尺寸、裁剪、层级变化通常由 SystemServer 侧的 WMS 管理,App 侧 buffer 与窗口状态相关的 transaction 需要经由 `SurfaceControl.Transaction` / `WindowContainerTransaction` 参与 WMS 的统一调度。WMS 侧的 `BLASTSyncEngine` 会收集参与同一次 sync 的窗口 transaction,合并后再提交给 SurfaceFlinger。这样,内容 buffer、窗口几何变化和层级 transaction 更容易落在同一帧,减少 buffer latch 与 transaction apply 之间的错位和额外等待。窗口事务这条线如果要继续往下追,可以接着看 §2.12《Window Manager Service 与窗口管理》。
 
@@ -236,16 +240,17 @@ Baseline Profiles 解决的是"关键代码路径尽早编译成机器码",但�
 
 ## 参考资料
 - AOSP / 官方源码路径
-  - `platform/frameworks/base/core/java/android/view/Choreographer.java`(android-16.0.0_r1,VSync 驱动的帧调度入口)
-  - `platform/frameworks/base/core/java/android/os/Looper.java`(android-16.0.0_r1,Looper 驱动 MessageQueue)
-  - `platform/frameworks/base/core/java/android/os/LockedMessageQueue/MessageQueue.java`(refs/heads/master,观察用，未进入 android-17.0.0_r1 稳定版本)
-  - `platform/frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`(refs/heads/master,观察用，未进入 android-17.0.0_r1 稳定版本)
-  - `platform/frameworks/native/libs/binder/ProcessState.cpp`(android-16.0.0_r1，`DEFAULT_MAX_BINDER_THREADS` / `BINDER_SET_MAX_THREADS`)
-  - `platform/frameworks/native/libs/gui/BLASTBufferQueue.cpp`(android-16.0.0_r1，完整调用链：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions()`
-  - `platform/frameworks/native/libs/gui/include/gui/BLASTBufferQueue.h`(android-16.0.0_r1，BLAST 的同步接口定义)
-  - `platform/frameworks/base/core/java/android/view/SurfaceControl.java`(android-16.0.0_r1,`mergeWithNextTransaction` Java 侧钩子)
-  - `platform/frameworks/base/services/core/java/com/android/server/wm/BLASTSyncEngine.java`(android-16.0.0_r1,WMS 侧 BLAST sync 收集与提交)
-  - `platform/frameworks/base/core/java/android/window/WindowContainerTransaction.java`(android-16.0.0_r1,窗口事务跨进程传递对象)
+  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java`(VSync 驱动的帧调度入口)
+  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java`(Looper 驱动 MessageQueue)
+  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java`(legacy MessageQueue 实现)
+  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java`(Android 17 MessageQueue 兼容门槛与组合实现)
+  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java`(Android 17 DeliQueue 实现)
+  - `https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp`(`DEFAULT_MAX_BINDER_THREADS` / `BINDER_SET_MAX_THREADS`)
+  - `https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp`(完整调用链：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions()`)
+  - `https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/include/gui/BLASTBufferQueue.h`(BLAST 的同步接口定义)
+  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java`(`mergeWithNextTransaction` Java 侧钩子)
+  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java`(WMS 侧 BLAST sync 收集与提交)
+  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/WindowContainerTransaction.java`(窗口事务跨进程传递对象)
 - 官方文档
   - `https://developer.android.com/topic/performance`
   - `https://developer.android.com/topic/performance/baselineprofiles/overview`
