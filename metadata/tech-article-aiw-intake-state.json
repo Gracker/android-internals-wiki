@@ -516,27 +516,115 @@
       "size": 975,
       "status": "appended",
       "title": "AISealHostService：AI 内容密封主机服务"
+    },
+    "技术文章/技术文章/daily-info.md": {
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782937015.1677003,
+      "sha256": "e0e915a3882e98325943e34cf37561e4f6a3fe6187c32feb3eed56463d4d7267",
+      "size": 585,
+      "status": "skipped-low-score"
+    },
+    "技术文章/技术文章/digests/daily_digest_2026-07-02.md": {
+      "chapter": "待分类",
+      "entry_id": "392b28d61ed7a61f",
+      "last_appended": "2026-07-02T05:30:57.165861+08:00",
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782937015.1675255,
+      "score": 8,
+      "sha256": "a4783242349d869e7ee98515c43fd702b7a5160072830db73a5707fb767de258",
+      "size": 3067,
+      "status": "appended",
+      "title": "技术日报 - 2026-07-02"
+    },
+    "技术文章/技术文章/source/juejin-android/2026-07-02/76010772-火爆全网的Skills，看这一篇就够了.md": {
+      "chapter": "待分类",
+      "entry_id": "c5abfaf0323f5b08",
+      "last_appended": "2026-07-02T05:30:57.165861+08:00",
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782936877.4101167,
+      "score": 10,
+      "sha256": "9306447897a78d7f9e299fe2ed314076258e3b5f4ea36748e825842676986fb4",
+      "size": 14776,
+      "status": "appended",
+      "title": "火爆全网的Skills，看这一篇就够了！大家好，我是势必要把Skills咬烂嚼碎的码哥！ Skills 最近火得一塌糊涂"
+    },
+    "技术文章/技术文章/source/juejin-android/2026-07-02/76047574-10万人都在用的_top10_skill.md": {
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782936877.410439,
+      "sha256": "604c4fb7bd4c17fef711db6244339e52557e43254dde295b8f0861202fdead67",
+      "size": 17695,
+      "status": "skipped-low-score"
+    },
+    "技术文章/技术文章/source/juejin-android/2026-07-02/76182267-从_MVVM_到_MVI_为什么说_MV.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "fb0385d41e9e5dfd",
+      "last_appended": "2026-07-02T05:30:57.165861+08:00",
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782936877.408516,
+      "score": 9,
+      "sha256": "8d22b86f4f10841918ec4dcb54ed2c09b6b8b09703b30cbb5605565c543547fa",
+      "size": 9011,
+      "status": "appended",
+      "title": "从 MVVM 到 MVI：为什么说 MVVM 的 UI 状态像“网”，而 MVI 像“一条线”？在 Android 开发"
+    },
+    "技术文章/技术文章/source/juejin-android/2026-07-02/76184335-你可能还不知道_Compose_Page.md": {
+      "chapter": "待分类",
+      "entry_id": "73346201707845d9",
+      "last_appended": "2026-07-02T05:30:57.165861+08:00",
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782936877.4095745,
+      "score": 8,
+      "sha256": "ba9ef654a998f1a0f33d1c5a217a9fb1e4c2e78302b76794b5a062c4bc503d1c",
+      "size": 24046,
+      "status": "appended",
+      "title": "你可能还不知道 Compose Pager 有多强大从传统的 ViewPager 过渡到 Compose Pager，代"
+    },
+    "技术文章/技术文章/source/juejin-android/2026-07-02/76226966-Android_要变天_桌面端这次真的来.md": {
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782936877.4089048,
+      "sha256": "c49c0920cecc5985b967659a63617ca4c9bf92177ee46ba6a12a53445b565c25",
+      "size": 5987,
+      "status": "skipped-low-score"
+    },
+    "技术文章/技术文章/source/juejin-android/2026-07-02/76388970-为什么_Android_不用接口做_Ac.md": {
+      "chapter": "待分类",
+      "entry_id": "b36f4250fe89a50c",
+      "last_appended": "2026-07-02T05:30:57.165861+08:00",
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782936877.409212,
+      "score": 13,
+      "sha256": "af792290aafe1ec2198c8e02a7966a652ff9e2701148481232d963324f10c9a2",
+      "size": 6018,
+      "status": "appended",
+      "title": "为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO"
+    },
+    "技术文章/技术文章/source/juejin-android/2026-07-02/76412297-Android_开发者再不转Kotlin.md": {
+      "last_seen": "2026-07-02T05:30:57.165861+08:00",
+      "mtime": 1782936877.4107502,
+      "sha256": "4eba7ba09c670746acccf1314bd3bd8007a5990fea4835a480cf4a5ae0653679",
+      "size": 11167,
+      "status": "skipped-low-score"
     }
   },
   "last_report": {
-    "appended": 43,
-    "considered": 43,
-    "cutoff": "2026-06-30T21:16:33.566343+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-01.md",
+    "appended": 5,
+    "considered": 9,
+    "cutoff": "2026-07-01T21:11:33.566343+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-02.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1463,
+    "scanned": 1472,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 4,
       "max_files": 0,
       "old_unseen": 1394,
       "path": 26,
-      "unchanged": 0
+      "unchanged": 43
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-01T21:16:33.566343+08:00",
+  "last_run_at": "2026-07-02T05:30:57.165861+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

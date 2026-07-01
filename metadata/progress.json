@@ -1,7 +1,7 @@
 {
   "total": 133,
-  "draft": 2,
-  "ready_for_review": 14,
+  "draft": 1,
+  "ready_for_review": 15,
   "finalized": 119,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -73,6 +73,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T02:04:00+08:00",
       "note": "ANR 预警回调与类型枚举：AnrTypes/AnrWarningResult/IAnrWarningCallback 三组件架构、三层可观测性体系、APM SDK 集成指引"
+    },
+    {
+      "section": "4.18",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-02T06:08:00+08:00",
+      "note": "MemoryLimiter 五大子系统架构设计分析：ProcState映射矩阵设计决策(22个case)、inotify/polling回退协议、AnonSwapState四态机转换分析、memcg v2 memory.high vs max架构选择、statsd令牌桶设计、vendor overlay配置机制、与lmkd系统设计对比"
     }
   ],
   "review_history": [
