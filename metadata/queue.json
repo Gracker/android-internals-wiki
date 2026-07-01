@@ -206,6 +206,52 @@
       "status": "completed",
       "completed_at": "2026-06-30T22:52:07Z",
       "completed_by": "task2b-main-2026-07-01"
+    },
+    {
+      "id": "T9-2026-07-01-21-01",
+      "chapter": "01.25-binder-ipc-async-pipeline.md",
+      "section": "1.25",
+      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Binder frozen oneway 回执、async 队列、1MB buffer 与版本锚点存在 Android 17 源码级错配",
+      "material_paths": [
+        "logs/deep-review/2026-07-01-21-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理断裂",
+          "location": "§10.2 BR_TRANSACTION_PENDING_FROZEN 重投递机制，L473-L494",
+          "detail": "正文把 BINDER_WORK_TRANSACTION_PENDING 写成“延后回执”，并称调用方线程池暂时不会拿到 work、目标进程解冻处理后才改回 BINDER_WORK_TRANSACTION_COMPLETE。android17-6.18-2026-06_r1 drivers/android/binder.c:4005-4037 实际是在 oneway frozen 时把 tcomplete->type 设为 BINDER_WORK_TRANSACTION_PENDING 后立即 enqueue 到调用方线程；binder_thread_read:5081-5088 直接把该 work 映射为 BR_TRANSACTION_PENDING_FROZEN 并释放 work。用户态 IPCThreadState.cpp:1183-1185 收到后 goto finish，不存在“解冻后再改回 COMPLETE”的调用方回执链。",
+          "suggestion": "重写为：BR_TRANSACTION_PENDING_FROZEN 是“目标 frozen 且 async 事务已入队”的即时诊断回执；目标事务仍等待解冻后由目标进程处理，但调用方不会等待后续 COMPLETE。"
+        },
+        {
+          "type": "源码错误/队列语义",
+          "location": "§10.2 L471 与 §6 L351",
+          "detail": "正文把 frozen oneway 统一写成排入 node->async_todo。Android 17 binder_proc_transaction() 中只有 node->has_async_transaction 已为真时 pending_async 才进入 node->async_todo；否则会选择 waiting thread 的 thread todo，或进入 proc->todo。此前已修正过“frozen 专用队列”误读，本次新增段落又把通用 async 串行队列和 frozen 特例混在一起。",
+          "suggestion": "按源码拆成三路：thread todo / proc->todo / node->async_todo；node->async_todo 只负责同一 binder node 上已有 async 未完成时的串行排队，frozen 只叠加 BR_TRANSACTION_PENDING_FROZEN 回执和 TF_UPDATE_TXN 替换机会。"
+        },
+        {
+          "type": "源码错误/缓冲区语义",
+          "location": "§11.6 1MB 缓冲区溢出处理策略，L564-L603；§12.D L836-L844",
+          "detail": "正文写“异步事务与同步事务使用独立的内存池”，并把 TF_UPDATE_TXN 描述成 oneway 溢出时抢占老事务的通用防护。android17-6.18-2026-06_r1 binder_alloc.c:516-613 显示 sync/async 共用同一个 binder_alloc mmap 空间，只用 free_async_space 给 async 做配额隔离；空间不足返回 -ENOSPC，用户态看到 BR_FAILED_REPLY/FAILED_TRANSACTION。TF_UPDATE_TXN 替换只在 frozen、pending_async 且事务携带 TF_UPDATE_TXN 时扫描 node->async_todo，不是 1MB buffer 溢出的通用回收策略。",
+          "suggestion": "改为“同一 mmap + async 配额隔离 + ENOSPC 失败”；把 TF_UPDATE_TXN 放到 frozen pending async 去重小节，不要写成 buffer overflow 处理。"
+        },
+        {
+          "type": "版本差异/版本锚点",
+          "location": "§10.2 L462、§12.A L790、§12.E L846-L855、附录 A L862-L1052",
+          "detail": "正文同时把 Android 17 Binder 内核锚点写成 Linux v6.6/android17-6.6、v6.12 mainline、kernel 6.12/6.18，主线结论版本不一致。当前项目基线要求正文主线锚定 android-17.0.0_r1；内核侧若使用 common kernel，应统一到 Android 17 tag（本轮复核使用 android17-6.18-2026-06_r1），v6.6/v6.12 只能作为历史对照。",
+          "suggestion": "统一源码版本表和正文锚点：platform 使用 android-17.0.0_r1；kernel/common 使用 android17-6.18-2026-06_r1 或明确标注为 Android 17 common kernel；Android 16/更旧 tag 只保留在历史差异表。"
+        },
+        {
+          "type": "数据缺失/事实边界",
+          "location": "§11.6 L641-L654、§11.5 L771-L779、附录 A.6 L1042-L1046",
+          "detail": "正文给出“priority 切换增加约 3-5% 上下文切换开销”“缓冲区分裂增加约 2% 分配时间”“setpriority 1-5µs”“最坏约 32K 次 memcmp”等量化结论，但没有设备、kernel build、trace/benchmark 方法或样本；同时把 CountDownLatch.await(1, TimeUnit.SECONDS) 写成轮询等待并持续占用 CPU，与 Java timed wait 会 park 当前线程的语义不一致。",
+          "suggestion": "删除无来源量化数字，或补可复现实验条件；CountDownLatch 段改为“按超时周期唤醒检查，不是 busy polling”，风险重点放在 Binder 线程池中等待回调会占用线程和造成超时。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-01T21:30:25+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
@@ -380,6 +426,52 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-01T20:36:16+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "T9-2026-07-01-21-01",
+      "chapter": "01.25-binder-ipc-async-pipeline.md",
+      "section": "1.25",
+      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Binder frozen oneway 回执、async 队列、1MB buffer 与版本锚点存在 Android 17 源码级错配",
+      "material_paths": [
+        "logs/deep-review/2026-07-01-21-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理断裂",
+          "location": "§10.2 BR_TRANSACTION_PENDING_FROZEN 重投递机制，L473-L494",
+          "detail": "正文把 BINDER_WORK_TRANSACTION_PENDING 写成“延后回执”，并称调用方线程池暂时不会拿到 work、目标进程解冻处理后才改回 BINDER_WORK_TRANSACTION_COMPLETE。android17-6.18-2026-06_r1 drivers/android/binder.c:4005-4037 实际是在 oneway frozen 时把 tcomplete->type 设为 BINDER_WORK_TRANSACTION_PENDING 后立即 enqueue 到调用方线程；binder_thread_read:5081-5088 直接把该 work 映射为 BR_TRANSACTION_PENDING_FROZEN 并释放 work。用户态 IPCThreadState.cpp:1183-1185 收到后 goto finish，不存在“解冻后再改回 COMPLETE”的调用方回执链。",
+          "suggestion": "重写为：BR_TRANSACTION_PENDING_FROZEN 是“目标 frozen 且 async 事务已入队”的即时诊断回执；目标事务仍等待解冻后由目标进程处理，但调用方不会等待后续 COMPLETE。"
+        },
+        {
+          "type": "源码错误/队列语义",
+          "location": "§10.2 L471 与 §6 L351",
+          "detail": "正文把 frozen oneway 统一写成排入 node->async_todo。Android 17 binder_proc_transaction() 中只有 node->has_async_transaction 已为真时 pending_async 才进入 node->async_todo；否则会选择 waiting thread 的 thread todo，或进入 proc->todo。此前已修正过“frozen 专用队列”误读，本次新增段落又把通用 async 串行队列和 frozen 特例混在一起。",
+          "suggestion": "按源码拆成三路：thread todo / proc->todo / node->async_todo；node->async_todo 只负责同一 binder node 上已有 async 未完成时的串行排队，frozen 只叠加 BR_TRANSACTION_PENDING_FROZEN 回执和 TF_UPDATE_TXN 替换机会。"
+        },
+        {
+          "type": "源码错误/缓冲区语义",
+          "location": "§11.6 1MB 缓冲区溢出处理策略，L564-L603；§12.D L836-L844",
+          "detail": "正文写“异步事务与同步事务使用独立的内存池”，并把 TF_UPDATE_TXN 描述成 oneway 溢出时抢占老事务的通用防护。android17-6.18-2026-06_r1 binder_alloc.c:516-613 显示 sync/async 共用同一个 binder_alloc mmap 空间，只用 free_async_space 给 async 做配额隔离；空间不足返回 -ENOSPC，用户态看到 BR_FAILED_REPLY/FAILED_TRANSACTION。TF_UPDATE_TXN 替换只在 frozen、pending_async 且事务携带 TF_UPDATE_TXN 时扫描 node->async_todo，不是 1MB buffer 溢出的通用回收策略。",
+          "suggestion": "改为“同一 mmap + async 配额隔离 + ENOSPC 失败”；把 TF_UPDATE_TXN 放到 frozen pending async 去重小节，不要写成 buffer overflow 处理。"
+        },
+        {
+          "type": "版本差异/版本锚点",
+          "location": "§10.2 L462、§12.A L790、§12.E L846-L855、附录 A L862-L1052",
+          "detail": "正文同时把 Android 17 Binder 内核锚点写成 Linux v6.6/android17-6.6、v6.12 mainline、kernel 6.12/6.18，主线结论版本不一致。当前项目基线要求正文主线锚定 android-17.0.0_r1；内核侧若使用 common kernel，应统一到 Android 17 tag（本轮复核使用 android17-6.18-2026-06_r1），v6.6/v6.12 只能作为历史对照。",
+          "suggestion": "统一源码版本表和正文锚点：platform 使用 android-17.0.0_r1；kernel/common 使用 android17-6.18-2026-06_r1 或明确标注为 Android 17 common kernel；Android 16/更旧 tag 只保留在历史差异表。"
+        },
+        {
+          "type": "数据缺失/事实边界",
+          "location": "§11.6 L641-L654、§11.5 L771-L779、附录 A.6 L1042-L1046",
+          "detail": "正文给出“priority 切换增加约 3-5% 上下文切换开销”“缓冲区分裂增加约 2% 分配时间”“setpriority 1-5µs”“最坏约 32K 次 memcmp”等量化结论，但没有设备、kernel build、trace/benchmark 方法或样本；同时把 CountDownLatch.await(1, TimeUnit.SECONDS) 写成轮询等待并持续占用 CPU，与 Java timed wait 会 park 当前线程的语义不一致。",
+          "suggestion": "删除无来源量化数字，或补可复现实验条件；CountDownLatch 段改为“按超时周期唤醒检查，不是 busy polling”，风险重点放在 Binder 线程池中等待回调会占用线程和造成超时。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-01T21:30:25+08:00",
       "status": "pending"
     }
   ]
