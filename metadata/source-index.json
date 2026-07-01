@@ -203,40 +203,123 @@
         "PackageInstallerSession"
       ],
       "scored_at": "2026-07-01T05:48:59.322576"
-    }
-  ],
-  "entries": [
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-binder-priority-inheritance-kernel-batch-pipeline.md",
-      "title": "Android 17 Binder IPC 优先级继承机制与内核批处理流水线",
-      "summary": "内核 6.12 binder.c 源码级分析：优先级继承自动化、FIFO 线程选择、批处理两段式",
-      "chapter": "ch01/1.9",
-      "action": "injected",
-      "processed_at": "2026-07-01T06:15:47.129960"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-bootanalyze-boot-time-optimization.md",
-      "title": "Android 17 bootanalyze 工具链 5 flag + 4MB Perfetto Buffer 源码验证",
-      "summary": "bootanalyze 5 flag、4MB Perfetto buffer、lazy preload 9 步链、bootstat 25+ 事件校正",
-      "chapter": "ch16-aosp/07",
-      "action": "injected",
-      "processed_at": "2026-07-01T06:15:47.129960"
+      "title": "2026-07-01-android17-binder-tf-update-txn-frozen-batch-pipeline",
+      "path": "DeepResearch/2026-07-01-android17-binder-tf-update-txn-frozen-batch-pipeline.md",
+      "score": 16,
+      "chapter": "ch03",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "scored_at": "2026-07-02T05:46:08.161801"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-sharedpreferences-impl-anr-mechanism.md",
-      "title": "SharedPreferencesImpl 性能与 ANR 优化机制",
-      "summary": "ANR 4 触发点：awaitLoadedLocked 阻塞、commit/apply fsync、waitToFinish 512ms、histogram 监控",
-      "chapter": "ch06-storage/05",
-      "action": "queued",
-      "processed_at": "2026-07-01T06:15:47.129960"
+      "title": "2026-07-01-android17-boot-optimization-apex-psi-statslog",
+      "path": "DeepResearch/2026-07-01-android17-boot-optimization-apex-psi-statslog.md",
+      "score": 18,
+      "chapter": "ch04",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-07-02T05:46:08.161808"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-resourcesmanager-configuration-relaunch.md",
-      "title": "ResourcesManager/Configuration 与 Activity Relaunch 判定模型",
-      "summary": "ATMS 三段式 Configuration 分发、shouldRelaunchLocked 位运算、less-recreation 新机制",
-      "chapter": "ch01/24",
-      "action": "queued",
-      "processed_at": "2026-07-01T06:15:47.129960"
+      "title": "2026-07-01-android17-boot-optimization-new-mechanisms",
+      "path": "DeepResearch/2026-07-01-android17-boot-optimization-new-mechanisms.md",
+      "score": 17,
+      "chapter": "ch04",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-07-02T05:46:08.161811"
+    },
+    {
+      "title": "2026-07-01-android17-hprof-heapdump-pipeline-perfetto-art-hprof-importer",
+      "path": "DeepResearch/2026-07-01-android17-hprof-heapdump-pipeline-perfetto-art-hprof-importer.md",
+      "score": 18,
+      "chapter": "ch04",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "scored_at": "2026-07-02T05:46:08.161812"
+    },
+    {
+      "title": "2026-07-01-android17-lmkd-v2-appflow-collaboration",
+      "path": "DeepResearch/2026-07-01-android17-lmkd-v2-appflow-collaboration.md",
+      "score": 17,
+      "chapter": "ch04",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "scored_at": "2026-07-02T05:46:08.161815"
+    },
+    {
+      "title": "2026-07-01-android17-relaunch-mask-policies-deep-dive",
+      "path": "DeepResearch/2026-07-01-android17-relaunch-mask-policies-deep-dive.md",
+      "score": 16,
+      "chapter": "ch02",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "scored_at": "2026-07-02T05:46:08.161816"
+    },
+    {
+      "title": "2026-07-01-android17-resourcesmanager-config-activity-relaunch-pipeline",
+      "path": "DeepResearch/2026-07-01-android17-resourcesmanager-config-activity-relaunch-pipeline.md",
+      "score": 15,
+      "chapter": "ch02",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "scored_at": "2026-07-02T05:46:08.161818"
+    },
+    {
+      "title": "2026-07-01-android17-staged-install-state-machine-commit-restore",
+      "path": "DeepResearch/2026-07-01-android17-staged-install-state-machine-commit-restore.md",
+      "score": 17,
+      "chapter": "ch04",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "scored_at": "2026-07-02T05:46:08.161819"
+    },
+    {
+      "title": "2026-07-02-android-17-boot-execution-model",
+      "path": "DeepResearch/2026-07-02-android-17-boot-execution-model.md",
+      "score": 15,
+      "chapter": "ch06",
+      "score_detail": {
+        "relevance": 5,
+        "technical_depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "scored_at": "2026-07-02T05:46:08.161821"
     }
   ]
 }
