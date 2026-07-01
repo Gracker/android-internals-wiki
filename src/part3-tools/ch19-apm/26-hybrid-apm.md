@@ -12,7 +12,7 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
 last_verified_against: Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming
   docs
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 related_chapters:
 - '19.0'
 - '19.01'
@@ -32,14 +32,14 @@ tags:
 - flutter
 - hybrid
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "pending"
 task6_result: pass-light-edit
 task6_review_notes: "2026-05-16 task6 review: pass-light-edit。清理 frontmatter 中 1 处填充副词；正文锚点覆盖完整，无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
 task6_reviewed_at: "2026-05-16T08:16:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_state: reviewed
-task9_result: "pass-tech-review"
-task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。"
+task9_result: "needs-rework"
+task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。2026-07-01 Task9 闲时抽检: needs-rework。P1 1（Flutter merged UI+Platform 线程模型版本边界缺失）；已写入 queue.json。"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-16"
 task9_state: "reviewed"
@@ -47,7 +47,8 @@ title: 混合栈与跨平台 APM (WebView / Flutter)
 last_task9_review_log: "logs/deep-review/2026-05-16-08-deep-review.md"
 last_task6_review_log: logs/review/2026-05-16-08-review.md
 last_task6_audit: "2026-06-07"
-last_task9_audit: "2026-06-09"
+last_task9_audit: "2026-07-01"
+last_task9_audit_log: logs/deep-review/2026-07-01-16-audit.md
 ---
 
 

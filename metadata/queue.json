@@ -173,7 +173,7 @@
     "l4_issues": 3,
     "created_at": "2026-06-30T17:09:00Z",
     "review_id": "2026-07-01-06-review.md",
-    "last_task9_review_id": "logs/deep-review/2026-07-01-06-deep-review.md"
+    "last_task9_review_id": "logs/deep-review/2026-07-01-16-audit.md"
   },
   "pending": [
     {
@@ -239,6 +239,28 @@
       "completed_at": "2026-07-01T12:52:40+08:00",
       "completed_by": "task2b-main-2026-07-01",
       "fix_summary": "从 git 历史恢复正文（commit eaa95019），更新 android-16.0.0_r1→android-17.0.0_r1 源码引用，标注 kernel android16-6.12 为非主线参照"
+    },
+    {
+      "section": "19.26",
+      "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Flutter APM 小节缺少 merged UI+Platform 线程模型版本边界，可能误导 Android 端 APM 线程归因",
+      "material_paths": [
+        "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+        "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+        "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/交叉引用一致性",
+          "location": "L66 / L86 / L231 / L233",
+          "detail": "正文仍按“Flutter 自己的 UI 线程 / Dart UI 线程 + Raster 线程”描述 Flutter APM。当前书内 2.11 与 18.12 已把 Flutter 移动端主线路径收敛为 Main(UI+Platform) / Raster / IO，并保留旧版或定制 Embedder 的独立 UI thread 边界；Flutter 上游 issue #150525 也说明 Android/iOS stable 默认合并线程。19.26 若继续把独立 UI thread 写成无条件主线，会误导 Android 端 APM 线程归因与 Perfetto 观察入口。",
+          "suggestion": "把 Flutter APM 小节改成“按 Flutter 版本/Embedder 标记 thread_model”：current stable / merged model 下 Dart Build/Layout/Paint 与 Platform/插件回调在宿主 Main(UI+Platform) 线程观察，Raster 独立；Flutter 旧版或定制 Embedder 才按独立 UI thread 观察。同步更新开头与大纲中“自己的 UI 线程”口径，并与 2.11、18.12 保持一致。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-01T16:29:41+08:00",
+      "status": "pending"
     }
   ],
   "queue": [
