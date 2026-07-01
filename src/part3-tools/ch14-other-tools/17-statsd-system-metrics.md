@@ -32,6 +32,8 @@ gap_source: AOSP结构/官方文档/已有章节深挖
 task2b_result: fixed-lite
 task2b_state: fixed
 pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 last_task2b_lite_at: 2026-07-02
 ---
 -
