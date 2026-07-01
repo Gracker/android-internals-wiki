@@ -260,7 +260,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-01T16:29:41+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-01T16:54:06+08:00",
+      "completed_by": "task2b-main-2026-07-01",
+      "fix_summary": "Flutter APM 线程模型按 3.29+ merged model (Main(UI+Platform)/Raster/IO) 改写，同步更新大纲、section 5 标题与正文；旧版/定制 Embedder 边界保留；与 2.11、18.12 口径对齐"
     }
   ]
 }
