@@ -88,5 +88,32 @@
     "original_review_log": "logs/review/2026-07-01-23-review.md",
     "completed_reason": "fixed-lite: 删除6行加工添加的编号注释",
     "completed_at": "2026-07-01T23:38:33+08:00"
+  },
+  {
+    "chapter": "9.10",
+    "title": "Android 17 ANR 预警回调与类型枚举",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-07-02",
+    "file": "src/part2-performance/ch09-anr/10-android17-anr-warning-callback.md"
+  },
+  {
+    "chapter": "14.24",
+    "title": "Android 17 simpleperf 微架构级性能采样与工作流增强",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-07-02",
+    "file": "src/part3-tools/ch14-other-tools/24-android17-simpleperf-microarch-profiling.md"
+  },
+  {
+    "chapter": "14.25",
+    "title": "Android 17 eBPF 性能可观测性程序矩阵扩展",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-07-02",
+    "file": "src/part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md"
   }
 ]

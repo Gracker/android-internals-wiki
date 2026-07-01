@@ -35,3 +35,7 @@
   - [Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证](part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md)
   - [1.47 Android 17 ResourcesManager Configuration 性能优化](part1-fundamentals/ch01-architecture/1.47-android17-resourcesmanager-configuration-performance.md)
   - [1.48 Android 17 Staged Install 状态机与原子性安装](part1-fundamentals/ch01-architecture/1.48-android17-staged-install-state-machine.md)
+
+  - [9.10 Android 17 ANR 预警回调与类型枚举](part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
+  - [14.24 Android 17 simpleperf 微架构级性能采样与工作流增强](part3-tools/ch14-other-tools/24-android17-simpleperf-microarch-profiling.md)
+  - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展](part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md)
