@@ -69,15 +69,15 @@ related_chapters:
 - '8.2'
 - '1.11'
 - '8.3'
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 drafted_date: '2026-03-30'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-27'
+reviewed_date: '2026-07-01'
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-task6_reviewed_date: '2026-05-27'
+task6_reviewed_date: 2026-07-01
 task2b_state: fixed
 task2b_result: fixed
 task9_state: pending
@@ -103,10 +103,10 @@ task9_review_notes: '2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0
   已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-01 07:25 Task9 idle audit: AUTO-FIX
   AOSP source anchors android-16.0.0_r1→android-17.0.0_r1; P1 queued because finalized
   chapter has no markdown body after frontmatter.'
-last_task6_at: '2026-05-27T06:09:00+08:00'
+last_task6_at: 2026-07-01T13:30:00+08:00
 last_task6_audit: '2026-06-08'
 last_task6_audit_result: pass-no-edit
-task6_review_notes: 2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送
+task6_review_notes: 2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 | 2026-07-01 13:30 Task6：Task2B main body restoration 后复审；禁用词扫描零命中，outline 全覆盖（6/6 锚点+3/3 扩展），CN-EN spacing/L1/L2 全部通过；无新增 L3/L4 回炉项；正文约 6300 字，待验证 2 处/待补充 4 处均在合理范围。送 Task9 复审 restored body。
   Task9 复审。 | 2026-05-27 06:09 Task6：复审通过；禁用词扫描无新增硬伤，outline 覆盖完整，无新增 L3/L4 回炉项，送
   Task9 复审。
 last_task6_review_log: logs/review/2026-05-27-06-review.md
