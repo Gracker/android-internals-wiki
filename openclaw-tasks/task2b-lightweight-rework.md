@@ -39,7 +39,9 @@
 ## 目标选择
 
 优先级：
-1. queue.json 中 `status: pending` 且 `added_by` 属于 `task9-deep-tech-review` / `external-ai-review` / `task6-review`，并且 `review_issues` 明确属于小修范围。
+1. queue.json 中 `status: pending` 且 `added_by` 属于 `task9-deep-tech-review` / `task9-deep-tech-review-audit` / `external-ai-review` / `task6-review`，并且 `review_issues` 明确属于小修范围。
+
+`task-deepresearch-injector`、`task8-classifier`、`task2a-knowledge-gap` 是素材/新章来源，不属于 Lite 回炉来源；这些 pending 条目不应让 Lite 跳过 frontmatter fallback。
 2. queue 为空时，按主 Task2B 文档的 frontmatter backlog fallback 扫描，但只选择能在最近 review/deep-review 日志中反查到明确小修问题的章节。
 3. 已被主 Task2B 或其他 lane 加锁的章节必须跳过。
 
