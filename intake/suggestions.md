@@ -309,3 +309,30 @@
 - **位置**：要点 / Section 2 中“调用方线程零阻塞”
 - **问题**：`waitForResponse(nullptr, nullptr)` 仍需等待内核返回 `BR_TRANSACTION_COMPLETE` / `BR_TRANSACTION_PENDING_FROZEN` 等回执；oneway 不等待对端执行和 `BR_REPLY`，但不宜写成绝对零阻塞。
 - **建议**：后续精修时将“零阻塞”统一改为“不等待对端执行结果 / 不等待 `BR_REPLY`”，并保留 `BR_TRANSACTION_COMPLETE` 快路径边界。
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-02 03:05
+
+本轮第四轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（实质内容 < 15 行）。6.2 和 8.1 虽有模板占位符但行数 >15，且均为已有章节的重复（6.2 重复 6.5，8.1 重复 8.02）。4.18 重复 4.19。ch10 为目录级 stub。
+**Phase 0.5**: Task2B backlog = 0，允许挖掘
+**Phase 1**: 全书 547 节，覆盖度第四次确认饱和
+
+新增复查方向（本轮探索）：
+- storaged / Storage Health Service → 素材不足 + 非性能核心 (6/20)
+- Runtime Resource Overlays 性能 → 素材不足 + 开发者不直接接触 (7/20)
+- Safety Center 性能 → 素材不足 + 冷门 (5/20)
+- madvise → 已有 7 文件覆盖
+- IncFS/Incremental → 已有 2 文件覆盖
+- FUSE → 已有 14 文件覆盖
+- Frame Freeze/Frozen Frame → 已有 15 文件覆盖
+- ADPF/Thermal/GameMode → 已有 43 文件覆盖
+- FGS types → 已有 50 文件覆盖
+- Photo Picker → 已有 7 文件覆盖
+- App Archiving → 已有 4 文件覆盖
+
+结论：全书覆盖度四轮确认饱和（547 节）。与前三轮（07-01 01:12, 03:08, 05:11）结论一致。
+可行动方向不变：
+1. 已有章节深度增强（Task 2B）
+2. 等待 Android 18 DP
+3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）

@@ -1056,3 +1056,228 @@ service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-s
 ### 关联报告
 
 `DeepResearch/2026-07-01-android17-boot-optimization-new-mechanisms.md`（今日增量报告）
+
+<!-- AIW-源码调研-2026-07-02 -->
+
+## Android 17 启动执行模型源码级补强：init层级结构与Service Class启动机制
+
+本节基于 `android-17.0.0_r1` AOSP 源码的深度分析，补强前述章节中关于**init.rc文件层级结构**、**service class启动顺序**、以及**并行执行模型**的源码级验证。
+
+### 1. init.rc 文件层级结构与导入机制
+
+**源码位置**：`system/core/rootdir/init.rc`（android-17.0.0_r1）
+
+```bash
+# 核心导入链（按优先级）
+import /init.environ.rc          # 环境变量配置
+import /system/etc/init/hw/init.usb.rc      # USB配置
+import /init.${ro.hardware}.rc             # 硬件特定配置  
+import /vendor/etc/init/hw/init.${ro.hardware}.rc    # Vendor硬件配置
+import /system/etc/init/hw/init.usb.configfs.rc    # USB configfs
+import /system/etc/init/hw/init.${ro.zygote}.rc     # Zygote配置
+
+# 关键执行序列（启动阶段）
+on early-init                              # 早期初始化
+    bootchart start                        # 启动性能追踪
+    # SELinux、sysrq、modprobe等初始化
+
+on init                                    # init阶段
+    # 属性设置、SELinux等
+
+on late-init                               # 晚期初始化
+    trigger early-fs                        # 早期文件系统
+    trigger fs                             # 早期挂载
+    trigger post-fs                        # post文件系统
+    trigger late-fs                        # 晚期挂载
+    trigger post-fs-data                   # 数据分区
+    trigger zygote-start                   # Zygote启动
+    trigger early-boot                     # 早期启动
+    trigger boot                           # 系统启动完成
+
+on post-fs-data                           # 数据分区挂载后
+    # 数据分区服务启动、keystore初始化
+```
+
+**关键发现**：
+1. **优先级导入**：init.rc 严格按顺序导入配置，后导入的配置可以覆盖前导入的同名配置
+2. **动态硬件配置**：`/init.${ro.hardware}.rc` 和 `/vendor/etc/init/hw/init.${ro.hardware}.rc` 支持硬件差异化配置
+3. **阶段触发机制**：通过 `trigger` 关键字实现阶段化执行，避免所有动作堆积在 `on init` 阶段
+
+### 2. Service Class 启动顺序机制
+
+**源码位置**：`init/builtins.cpp:167`
+
+```cpp
+static Result<void> do_class_start(const BuiltinArguments& args) {
+    // 检查是否禁用该class
+    if (android::base::GetBoolProperty("persist.init.dont_start_class." + args[1], false))
+        return {};
+    
+    // 遍历属于该class的所有service并启动
+    for (const auto& service : ServiceList::GetInstance()) {
+        if (service->classnames().count(args[1])) {
+            if (auto result = service->StartIfNotDisabled(); !result.ok()) {
+                LOG(ERROR) << "Could not start service '" << service->name()
+                          << "' as part of class '" << args[1] << "': " << result.error();
+            }
+        }
+    }
+    return {};
+}
+```
+
+**启动顺序（按class定义的优先级）**：
+
+| Service Class | 启动时机 | 代表服务 | 功能描述 |
+|---|---|---|---|
+| `class main` | late-init 阶段 | zygote, servicemanager | 核心系统服务 |
+| `class core` | early-init 阶段 | ueventd, vold | 基础系统服务 |
+| `class early_hal` | late-fs 阶段 | audio, display | 早期硬件抽象层 |
+| `class late_hal` | post-fs-data 阶段 | camera, sensor | 晚期硬件抽象层 |
+
+**关键发现**：
+1. **类名顺序启动**：`class_start <classname>` 按定义顺序依次启动，无并行机制
+2. **禁用状态保护**：`disabled` 服务不会随 class 自动启动，必须显式调用 `start` 或 `enable`
+3. **错误处理**：单个服务启动失败不影响同 class 其他服务，但会记录错误日志
+
+### 3. Android 17 动作队列执行模型（非并行）
+
+**源码位置**：`init/init.cpp:1295-1347`
+
+```cpp
+while (true) {
+    // 处理关机命令
+    auto shutdown_command = shutdown_state.CheckShutdown();
+    if (shutdown_command) {
+        HandlePowerctlMessage(*shutdown_command);
+    }
+
+    // 核心执行逻辑：每次只执行一个命令
+    if (!(prop_waiter_state.MightBeWaiting() || Service::is_exec_service_running())) {
+        am.ExecuteOneCommand();  // 每次只执行一个命令
+        // 如果还有更多工作，立即唤醒
+        if (am.HasMoreCommands()) {
+            next_action_time = boot_clock::now();
+        }
+    }
+    
+    // 处理服务状态和进程检查...
+    auto next_process_action_time = HandleProcessActions();
+    if (next_process_action_time) {
+        next_action_time = std::min(next_action_time, *next_process_action_time);
+    }
+}
+```
+
+**关键发现**：
+1. **单线程执行**：`ExecuteOneCommand()` 确保每次只执行一个命令，**无并行执行机制**
+2. **非阻塞命令支持**：`exec_background` 不会阻塞后续 command，但 `exec` 会阻塞
+3. **智能唤醒机制**：如果还有待执行命令，立即唤醒主循环
+
+### 4. Android 16 vs Android 17 启动队列关键差异
+
+**源码位置对比**：`init/init.cpp` main queue builtin actions
+
+**Android 16 启动队列**：
+```cpp
+am.QueueBuiltinAction(SetupCgroupsAction, "SetupCgroups");
+am.QueueBuiltinAction(SetKptrRestrictAction, "SetKptrRestrict");        // 移除
+am.QueueBuiltinAction(TestPerfEventSelinuxAction, "TestPerfEventSelinux"); // 移除
+am.QueueEventTrigger("early-init");
+am.QueueBuiltinAction(ConnectEarlyStageSnapuserdAction, "ConnectEarlyStageSnapuserd");
+am.QueueBuiltinAction(wait_for_coldboot_done_action, "wait_for_coldboot_done");
+am.QueueBuiltinAction(CheckTradeInModeStatus, "CheckTradeInModeStatus");
+am.QueueBuiltinAction(SetMmapRndBitsAction, "SetMmapRndBits");
+```
+
+**Android 17 启动队列**：
+```cpp
+am.QueueBuiltinAction(SetupCgroupsAction, "SetupCgroups");
+am.QueueEventTrigger("early-init");                                     // 顺序调整
+am.QueueBuiltinAction(ConnectEarlyStageSnapuserdAction, "ConnectEarlyStageSnapuserd");
+am.QueueBuiltinAction(wait_for_coldboot_done_action, "wait_for_coldboot_done");
+if (!IsMicrodroid()) {
+    am.QueueBuiltinAction(CheckTradeInModeStatus, "CheckTradeInModeStatus"); // 条件执行
+}
+am.QueueBuiltinAction(SetMmapRndBitsAction, "SetMmapRndBits");
+am.QueueBuiltinAction(SetCopyRollbackLogsAction, "CopyRollbackLogs");   // 新增
+```
+
+**关键差异**：
+1. **移除组件**：`SetKptrRestrictAction` 和 `TestPerfEventSelinuxAction` 被移除
+2. **新增组件**：`SetCopyRollbackLogsAction` 新增用于日志复制
+3. **顺序调整**：`SetupCgroupsAction` 后直接 `early-init`，减少不必要的动作
+4. **条件执行**：`CheckTradeInModeStatus` 在 Microdroid 场景下跳过
+
+### 5. Zygote 启动机制源码验证
+
+**源码位置**：`rootdir/init.zygote64.rc`（android-17.0.0_r1）
+
+```bash
+service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server --socket-name=zygote
+    class main
+    priority -20
+    user root
+    group root readproc reserved_disk
+    socket zygote stream 660 root system
+    socket usap_pool_primary stream 660 root system
+    onrestart exec_background - system system -- /system/bin/vdc volume abort_fuse
+    onrestart write /sys/power/state on
+    onrestart write /sys/power/wake_lock zygote_kwl
+    onrestart restart audioserver
+    onrestart restart cameraserver
+    onrestart restart media
+    onrestart restart --only-if-running media.tuner
+    onrestart restart netd
+    onrestart restart wificond
+    task_profiles ProcessCapacityHigh MaxPerformance
+    critical window=${zygote.critical_window.minute:-off} target=zygote-fatal
+```
+
+**关键特性**：
+1. **启动参数**：`--start-system-server` 指示 zygote 启动 system_server
+2. **优先级设置**：`priority -20` 为 Linux 最高优先级
+3. **关键监控**：`critical window` 允许在 zygote 进程失败时快速恢复
+4. **资源限制**：`task_profiles ProcessCapacityHigh MaxPerformance` 确保获得大核资源
+
+### 6. 启动性能影响分析
+
+基于源码分析，Android 17 启动模型的主要性能影响：
+
+| 约束类型 | 影响范围 | 性能影响 | 优化方向 |
+|---|---|---|---|
+| **单线程动作队列** | 整个启动序列 | 串行执行限制并行度 | 拆分长 action，优化命令顺序 |
+| **Service Class 顺序启动** | 服务生命周期 | 按类名顺序启动，无法跨类并行 | 重新组织服务分类，减少依赖 |
+| **PSI 监控延后** | 内存管理 | boot 完成后才开启 PSI 监控 | 减少启动期内存压力感知开销 |
+| **APEX 硬约束** | 服务注册 | APEX 服务必须在其他服务前注册 | 优化服务注册顺序 |
+
+### 7. 启动优化实践建议
+
+基于源码分析，提出以下启动优化建议：
+
+1. **动作队列优化**：
+   - 拆分长 action，避免单个 command 占用时间过长
+   - 使用 `exec_background` 替代 `exec` 进行非阻塞操作
+   - 合理使用 `trigger` 机制实现阶段化执行
+
+2. **Service Class 优化**：
+   - 将依赖 `/data` 的服务放入 `post-fs-data` 后的 class
+   - 将无依赖的基础服务放入 `early-init` 或 `class core`
+   - 避免 class 间循环依赖
+
+3. **并行化考虑**：
+   - 由于无真正的并行执行，需要优化命令执行顺序
+   - 将不相关的 command 排列在同一个 action 中
+   - 使用 property trigger 实现条件化执行
+
+### 关联报告
+
+`DeepResearch/2026-07-02-android-17-boot-execution-model.md`（今日完整报告）
+
+**核心发现总结**：Android 17 系统启动采用**单线程动作队列模型**，核心机制包括：
+- init.rc 层级化导入与阶段触发
+- Service Class 顺序启动机制（无并行）
+- Android 16→17 的启动队列精简（移除 2 个动作，新增 1 个）
+- Zygote 高优先级启动与 fail-fast 机制
+
+本补强内容填补了前述章节在源码级实现细节的空白，为启动性能优化提供了可操作的技术路径。
