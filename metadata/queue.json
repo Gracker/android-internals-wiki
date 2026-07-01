@@ -240,5 +240,63 @@
       "completed_by": "task2b-main-2026-07-01",
       "fix_summary": "从 git 历史恢复正文（commit eaa95019），更新 android-16.0.0_r1→android-17.0.0_r1 源码引用，标注 kernel android16-6.12 为非主线参照"
     }
+  ],
+  "queue": [
+    {
+      "path": "part1-fundamentals/ch01-architecture/ch01.1-Android-17-Binder优先级继承与内核批处理流水线.md",
+      "priority": 80,
+      "title": "Android 17 Binder优先级继承与内核批处理流水线",
+      "created_at": "2026-07-01T16:09:36.053999",
+      "reason": "knowledge_gap_mining"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/ch01.1-Android-17-ResourcesManager-Configuration-与-Activity-Relaunch-判定模型源码级验证.md",
+      "priority": 80,
+      "title": "Android 17 ResourcesManager/Configuration 与 Activity Relaunch 判定模型源码级验证",
+      "created_at": "2026-07-01T16:09:36.054005",
+      "reason": "knowledge_gap_mining"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/ch01.1-Android-17-Staged-Install-状态机与提交-恢复链路源码级闭环.md",
+      "priority": 80,
+      "title": "Android 17 Staged Install 状态机与提交/恢复链路源码级闭环",
+      "created_at": "2026-07-01T16:09:36.054007",
+      "reason": "knowledge_gap_mining"
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/ch04.1-AppFlow与Android-17-LMKD兼容性方案.md",
+      "priority": 80,
+      "title": "AppFlow与Android 17 LMKD兼容性方案",
+      "created_at": "2026-07-01T16:09:36.054008",
+      "reason": "knowledge_gap_mining"
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/ch04.1-Linux-6.10内存碎片整理机制.md",
+      "priority": 80,
+      "title": "Linux 6.10内存碎片整理机制",
+      "created_at": "2026-07-01T16:09:36.054009",
+      "reason": "knowledge_gap_mining"
+    },
+    {
+      "path": "part1-fundamentals/ch06-storage/ch06.1-Android-17-SharedPreferencesImpl-ANR机制.md",
+      "priority": 80,
+      "title": "Android 17 SharedPreferencesImpl ANR机制",
+      "created_at": "2026-07-01T16:09:36.054010",
+      "reason": "knowledge_gap_mining"
+    },
+    {
+      "path": "part1-fundamentals/ch08-startup/ch08.1-Android-17-系统启动优化与bootanalyze工具链.md",
+      "priority": 80,
+      "title": "Android 17 系统启动优化与bootanalyze工具链",
+      "created_at": "2026-07-01T16:09:36.054011",
+      "reason": "knowledge_gap_mining"
+    },
+    {
+      "path": "part1-fundamentals/ch08-startup/ch08.1-AppFlow精读笔记.md",
+      "priority": 80,
+      "title": "AppFlow精读笔记",
+      "created_at": "2026-07-01T16:09:36.054012",
+      "reason": "knowledge_gap_mining"
+    }
   ]
 }
