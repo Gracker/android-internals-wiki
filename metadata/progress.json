@@ -141,5 +141,23 @@
       ],
       "type": "task6-revisiting"
     }
-  ]
+  ],
+  "task2b_verifier": {
+    "last_run": "2026-07-02T03:29+08:00",
+    "last_action": "status fix: 6 chapters finalized→ready-for-review (task6_pending blocked by status)",
+    "chapters_fixed": [
+      "1.2",
+      "1.10",
+      "2.5",
+      "4.8",
+      "7.7",
+      "16.1"
+    ],
+    "remaining_task6_pending": [
+      "16.6",
+      "19",
+      "20.2",
+      "26.10"
+    ]
+  }
 }
