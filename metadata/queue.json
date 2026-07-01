@@ -398,5 +398,46 @@
       "completed_by": "task2b-main-2026-07-01",
       "fix_summary": "修复 5 个 P0/P1: BR_TRANSACTION_PENDING_FROZEN 语义、async 三路排队路由、sync/async buffer 共用、版本锚点统一、未验证性能数据"
     }
+  ],
+  "entries": [
+    {
+      "section": "1.25",
+      "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "priority": 90,
+      "reason": "[review回炉] Task 6 re-review + Task 9 P0:3/P1:2 技术问题",
+      "material_paths": [
+        "intake/suggestions.md（含 Task 6 + Task 9 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "Section 6 / 10.2 / 13.A.4 — oneway 三路排队路由重复展开",
+          "detail": "同一套三路排队路由机制（thread todo / proc->todo / node->async_todo）在 section 6、section 10.2、section 13.A.4 三处重复描述，读者会感到冗余。建议合并到一处完整描述，其他处仅交叉引用。",
+          "suggestion": "在 section 6 保留完整描述，section 10.2 和 13.A.4 简化为引用 + 补充差异点"
+        },
+        {
+          "type": "存疑",
+          "location": "Section 11.1 — FLAT_BINDER_FLAG 优先级调度",
+          "detail": "正文写「Android 17 引入了基于 FLAT_BINDER_FLAG 的完整优先级调度体系」，但附录 A.5 的版本差异表显示该机制从 Android 12 起逐步演进。「Android 17 引入了...完整...」的表述可能不准确，建议改为「Android 17 在既有机制上强化了...」。",
+          "suggestion": "核实 FLAT_BINDER_FLAG 优先级机制的引入版本，修正表述"
+        },
+        {
+          "type": "需确认",
+          "location": "Section 11.3 — 标题「多进程路由策略优化」与内容不匹配",
+          "detail": "标题为「多进程路由策略优化」，但正文展示的是 BR_FAILED_REPLY / BR_DEAD_REPLY / BR_FROZEN_REPLY 三种错误码处理逻辑和线程池动态扩容，内容更接近「错误处理与回退」，不是「路由策略」。标题需要修正或内容需要重写以匹配标题。",
+          "suggestion": "修正标题为「错误处理与线程池动态扩容」或重写内容"
+        },
+        {
+          "type": "存疑",
+          "location": "Section 11.1/11.2 — 内核代码注释格式",
+          "detail": "Section 11.1 和 11.2 的 C 代码块中，函数体前带有「// 1. 优先级标志位解析」「// 2. 异步空间隔离检测」等编号注释，这些注释风格与 AOSP 源码不一致，可能是 Task 2 加工时添加的。建议核实是否为源码原文。",
+          "suggestion": "核实注释是否为源码原文，如为加工添加则删除或改为正文说明"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-07-01T23:11:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-01-23-review.md"
+    }
   ]
 }

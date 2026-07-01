@@ -176,3 +176,94 @@
 1. 已有章节深度增强（Task 2B）
 2. 等待 Android 18 DP
 3. Clippings 知识点级缺口（比章节级更细粒度，属于 Task 2B 职责）
+
+## [Task2A Gap Mining] 已检查方向记录 — 2026-07-01 19:16
+
+本轮知识缺口挖掘已检查以下方向，未发现评分 ≥ 14 的合格候选：
+
+### 素材驱动（source-index.json + research-feeds）
+- Perfetto v53/v54 新特性 → 已覆盖于 13.14/13.17/13.20/13.21
+- Frame Timeline API 33 → 已覆盖于 2.30/2.32
+- Compose Pausable Composition → 已覆盖于 2.28
+- AudioFlinger FAST Mixer / AAudio MMAP → 已覆盖于 1.16
+- Android 17 后台音频强化 → 已覆盖于 25.17
+- View hierarchy measure/layout → 已覆盖于 7.12
+
+### Clippings 参考书驱动
+- 虚拟内存优化（线程栈/多进程 VSS） → 已覆盖于 23.6
+- Native 内存优化（so 库/malloc） → 已覆盖于 23.3
+- 缓存优化（冷热分离） → 已覆盖于 24.6/7.10
+- GC 抑制提升启动速度 → 已覆盖于 21.13
+- Java Heap 内存优化 → 已覆盖于 23.4
+- CPU 优化/线程池 → 已覆盖于 5.18/21.16
+
+### AOSP 结构对照
+- TelephonyManager/Modem 交互 → 太边缘
+- Drag-and-Drop → 素材不足
+- Project Mainline/APEX 性能影响 → 素材不足
+- Companion Device Manager → 素材不足
+
+### 官方文档对照
+- developer.android.com/topic/performance 全部 topic → 均有对应章节
+- Android 17 行为变更 → 逐项对照均有覆盖
+
+### 章节深挖
+- Compose Navigation/Text/并发安全 → draft 已存在
+- XTrace/内存跟踪 API → draft 已存在
+
+### 下一轮建议探索方向
+- Android 17 Compose Material 3 Expressive 组件性能特征
+- Android XR 性能发展
+- Kernel 6.12 新特性对性能的影响
+- GenAI 应用端到端性能链路
+- Compose Multiplatform Android 性能边界
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-01 21:16
+
+本轮第七轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（所有 19 个 draft 章节 >15 行有效内容，最小 35 行）
+**Phase 0.5**: Task2B backlog = 1，允许挖掘
+**Phase 1**: 全书 544 节，覆盖度七轮确认饱和
+
+本轮专项评估上轮建议的 5 个新方向：
+1. Compose Material 3 Expressive 组件性能特征 — 12/20 ❌（素材不足，与ch22重叠）
+2. Android XR 性能发展 — 8/20 ❌（不在android-17版本边界内）
+3. Kernel 6.12 新特性对性能的影响 — 13/20 ❌（Binder/memory/EAS/DVFS均已在各自领域章节覆盖，独立章节将违反深度原则）
+4. GenAI 应用端到端性能链路 — 13/20 ❌（已被22.09+23.24+5.27三节联合覆盖）
+5. Compose Multiplatform Android 性能边界 — 11/20 ❌（已在22.15/24.17覆盖）
+
+结论：全书覆盖度七轮确认饱和（与前序 01:12/03:08/05:11/08:09/09:08/19:16 一致）。
+可行动方向不变：
+1. 已有章节深度增强（Task 2B）
+2. 等待 Android 18 DP
+3. Clippings 知识点级缺口（属于 Task 2B 职责）
+4. 新设备实测数据补充（需人工采集）
+
+## [Task6 Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-07-01
+
+### Issue 1: [需重写] oneway 三路排队路由三处重复
+- **类型**：需重写
+- **位置**：Section 6 / Section 10.2 / Section 13.A.4
+- **问题**：同一套三路排队路由机制（thread todo / proc->todo / node->async_todo）在三个位置重复展开，造成冗余。读者在不同位置读到相同内容会感到混乱。
+- **建议**：在 section 6 保留完整首次描述，section 10.2 和 13.A.4 简化为引用 + 仅补充差异点。
+
+### Issue 2: [存疑] 「Android 17 引入了...完整优先级调度体系」表述
+- **类型**：存疑
+- **位置**：Section 11.1
+- **问题**：正文称「Android 17 引入了基于 FLAT_BINDER_FLAG 的完整优先级调度体系」，但附录 A.5 版本差异表显示该机制从 Android 12 起逐步演进（Android 12 引入 BR_FROZEN_REPLY，14 引入 TF_UPDATE_TXN 和三态状态机，16 引入 node->min_priority）。「引入了完整体系」的表述不够准确。
+- **建议**：改为「Android 17 在既有优先级调度机制上强化了 vendor hook 介入和 binder_supported_policy 校验」。
+
+### Issue 3: [需确认] Section 11.3 标题与内容不匹配
+- **类型**：需确认
+- **位置**：Section 11.3「多进程路由策略优化」
+- **问题**：标题为「多进程路由策略优化」，但正文内容是 BR_FAILED_REPLY / BR_DEAD_REPLY / BR_FROZEN_REPLY 错误码处理和线程池动态扩容（spawnPooledThread），与「路由策略」不匹配。
+- **建议**：修正标题为「错误处理与线程池动态扩容」，或重写内容以匹配标题。
+
+### Issue 4: [存疑] 内核代码注释格式
+- **类型**：存疑
+- **位置**：Section 11.1 / 11.2 代码块
+- **问题**：C 代码块中带有「// 1. 优先级标志位解析」「// 2. 异步空间隔离检测」等编号注释，这些注释风格与 AOSP 源码不一致，疑似 Task 2 加工时添加。
+- **建议**：核实是否为源码原文。如为加工添加，删除编号注释或改写为正文说明。
+
+- **review 日志**：logs/review/2026-07-01-23-review.md
