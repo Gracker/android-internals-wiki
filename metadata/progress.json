@@ -1,7 +1,7 @@
 {
   "total": 133,
-  "draft": 1,
-  "ready_for_review": 15,
+  "draft": 0,
+  "ready_for_review": 16,
   "finalized": 119,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -80,6 +80,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T06:08:00+08:00",
       "note": "MemoryLimiter 五大子系统架构设计分析：ProcState映射矩阵设计决策(22个case)、inotify/polling回退协议、AnonSwapState四态机转换分析、memcg v2 memory.high vs max架构选择、statsd令牌桶设计、vendor overlay配置机制、与lmkd系统设计对比"
+    },
+    {
+      "section": "6.2",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-02T07:05:00+08:00",
+      "note": "SharedPreferencesImpl ANR deep mechanism - source verified against android-17.0.0_r1"
     }
   ],
   "review_history": [
