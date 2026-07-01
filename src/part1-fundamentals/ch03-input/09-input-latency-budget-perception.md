@@ -52,7 +52,7 @@ p0: 0
 p1: 0
 p2: 2
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
+last_deepseek_cn_review_at: 2026-07-01
 last_task6_audit: "2026-07-01"
 ---
 
@@ -232,5 +232,3 @@ ANR 是系统容错机制，处理的是秒级无响应。输入体验通常在�
 - [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/Resampler.cpp]
 - [引用: https://dl.acm.org/doi/10.1145/2935334.2935381]
 - [引用: https://www.researchgate.net/publication/221100500_User_Perception_of_Touch_Screen_Latency]
--
--
