@@ -51,7 +51,7 @@ task9_p0_issues: '1'
 task9_p1_issues: '0'
 task9_p2_issues: '0'
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-06-30'
+last_deepseek_cn_review_at: 2026-07-01
 ---
 
 task2b_rework_notes: "2026-06-30 Task2B main: L3 content depth fixes — replaced estimated % breakdown with reproducible Perfetto measurement methodology; added 3 concrete troubleshooting scenarios (session stuck/dex2oat timeout/storage full) with Perfetto SQL and logcat diagnostic steps"
@@ -204,8 +204,6 @@ Binder 调用本身的延迟在微秒到毫秒级，对整体安装耗时影响�
 
 Staged Install 的 staging 阶段多了一次写入(APK 先写入 staging 目录),但通过 `rename` 而非 `copy` 在支持同一文件系统的设备上可避免实际数据拷贝。
 
-
-[来源:DeepResearch/2026-05-14-android-install-optimization-aosp-mechanism.md]
 
 ### 锚点 3: Staged Install 与系统重启的交互
 
@@ -487,10 +485,9 @@ Split APK 的额外成本主要来自每个 split 的文件读取、签名校验
 
 以上为第三方观察,非 AOSP 源码可验证路径,具体实现细节和性能收益均需在对应设备上采集 Perfetto trace + 安装日志后才有判断依据。
 
-<!-- AIW-源码调研-2026-06-30 -->
-## 源码补充(2026-06-30 调研)
+## 源码补充（2026-06-30 调研）
 
-> 基于 `AOSP android-17.0.0_r1` 源码,对正文中提到的关键路径补充**源码级证据**。
+> 以下内容基于 `AOSP android-17.0.0_r1` 源码，对正文中提到的关键路径做源码级补充。
 
 ### 状态机三态:`mSessionReady / mSessionApplied / mSessionFailed`
 
