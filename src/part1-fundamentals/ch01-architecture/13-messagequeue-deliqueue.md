@@ -35,7 +35,7 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-06-14-08-review.md"
 task9_state: reviewed
@@ -49,9 +49,9 @@ task2b_result: "fixed"
 pipeline_stage: task2b_pending
 last_task2b_at: "2026-05-27T12:50:00+08:00"
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 Android 16 Combined/Concurrent/Legacy MessageQueue 路径、Android 17 行为变更页、DeliQueue 官方性能数据；未发现 P0/P1，自动晋升 finalized。 | 2026-06-14 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 Android 16 Combined/Concurrent/Legacy MessageQueue 源码路径、Android 17 MessageQueue 行为变更页、官方 DeliQueue 性能数据与内部交叉引用；无阻断问题，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 AOSP android-16.0.0_r1 Combined/Concurrent/Legacy MessageQueue、Android 17 MessageQueue 行为变更页与官方性能数据；Android 17/API 37 边界清楚，无 P0/P1。 | 2026-07-01 20 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；正文仍以 Android 16 ConcurrentMessageQueue/ConcurrentSkipListSet 作为 Android 17 新 MessageQueue 的主要源码说明，缺少 android-17.0.0_r1 CombinedDeliMessageQueue/MessageStack/MessageHeap 主线锚点，已写入 Task2B queue。"
-task6_reviewed_date: "2026-06-14"
-last_task6_at: "2026-06-14T08:08:21+08:00"
-task6_review_notes: "06-14 08 Task6 revisiting：pass-light-edit。L1 小修 3 处（3.3.9 形容词+冒号起手式 ×3）；outline 5/5 覆盖；无新增 L3/L4 回炉项。Task9 idle audit auto-fixed 链接修正已确认，送 Task9 复审。"
+task6_reviewed_date: "2026-07-01"
+last_task6_at: "2026-07-01T22:13:00+08:00"
+task6_review_notes: "06-14 08 Task6 revisiting：pass-light-edit。L1 小修 3 处（3.3.9 形容词+冒号起手式 ×3）；outline 5/5 覆盖。07-01 22 Task6 revisiting：pass-light-edit。L1 小修 2 处（3.3.9 形容词+冒号 ×2：分工很清晰→按固定顺序执行、区分很关键→在trace里直接体现）；outline 5/5 覆盖；Task9 needs-rework P1:1（android-17 源码锚点缺失），待 Task2B 修复。"
 last_task9_audit: "2026-06-14"
 last_task9_audit_log: "logs/deep-review/2026-06-14-04-audit.md"
 task9_audit_notes: "2026-06-14 Task9 idle audit: auto-fixed。P0 1：将不可定位的 `ConcurrentMessageQueue.java` 文件名修正为 AOSP android-16.0.0_r1 实际路径 `ConcurrentMessageQueue/MessageQueue.java`。"
@@ -104,7 +104,7 @@ MessageQueue 就在这个位置上。Input 事件、`Handler.post()`、`Choreogr
 
 ## MessageQueue 在主线程里扮演什么角色
 
-先把队列操作和业务执行分开。`Looper.loopOnce()` 在 Android 16 的分工很清晰：先调用 `me.mQueue.next()` 取消息，拿到消息后才进入 `msg.target.dispatchMessage(msg)`：
+先把队列操作和业务执行分开。`Looper.loopOnce()` 在 Android 16 中按固定顺序执行：先调用 `me.mQueue.next()` 取消息，拿到消息后才进入 `msg.target.dispatchMessage(msg)`：
 
 ```java
 // frameworks/base/core/java/android/os/Looper.java
@@ -163,7 +163,7 @@ boolean enqueueMessage(Message msg, long when) {
 - 后台线程密集往主线程发消息,比如实时流、频繁状态刷新、复杂初始化。
 - 主线程业务很忙,导致它下一次回到 `next()` 的时间被推迟。这里受影响的是"回到队列口的时机",不是"当前这次 queue 锁持有得更久"。
 
-这个区分很关键：trace 里如果看到 `dispatchMessage()` 很长,那是业务执行慢;如果看到 `enqueueMessage()` 或 `next()` 周边出现 monitor contention,那才是队列竞争。
+这个区分在 trace 里直接体现：如果看到 `dispatchMessage()` 很长,那是业务执行慢;如果看到 `enqueueMessage()` 或 `next()` 周边出现 monitor contention,那才是队列竞争。
 
 ## `next()` 里面到底做了什么
 

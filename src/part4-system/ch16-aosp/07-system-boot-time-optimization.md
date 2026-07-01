@@ -732,3 +732,327 @@ public void onReceive(final Context context, Intent intent) {
 - 摘要：修正 bootanalyze.cpp 不存在路径为 bootanalyze.py（system/extras/boottime_tools/），揭示 bootanalyze 三类事件规则、双源时间校正算法、bootstat 25+ boot event 清单，以及 Zygote --enable-lazy-preload 的 9 步 preload 链和 SystemServer 4MB Perfetto buffer 真实实现（b/382369925）。
 - 注入时间：2026-06-28
 - 价值：提供 bootanalyze 工具链的一手源码路径修正和 Zygote lazy preload 完整调用链，填补启动优化工具章节的源码级空白
+
+
+<!-- AIW-源码调研-2026-07-01 -->
+
+## Android 17 启动优化新源码验证（2026-07-01 增量：APEX / PSI / StatsLog）
+
+本节基于 `android-17.0.0_r1` 标签下 AOSP 主线源码，补完今日（三次调研累计后）仍未触及的 3 块空白：**APEX 启动时序新机制**、**后台服务调度（PSI 监控延后 + SystemServerInitThreadPool 并行）**、**BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED StatsLog 启动时间基准事件集**。
+
+### 1. SystemServer.startApexServices：APEX 启动时序硬约束（sealStartedServices）
+
+**源码位置**：`frameworks/base/services/java/com/android/server/SystemServer.java` line 3685-3711（android-17.0.0_r1）
+
+```java
+private void startApexServices(@NonNull TimingsTraceAndSlog t) {
+    if (Build.IS_DEBUGGABLE
+            && SystemProperties.getBoolean("debug.crash_system", false)) {
+        throw new RuntimeException();
+    }
+    t.traceBegin("startApexServices");
+    List<ApexSystemServiceInfo> services = ApexManager.getInstance().getApexSystemServices();
+    for (ApexSystemServiceInfo info : services) {
+        String name = info.getName();
+        String jarPath = info.getJarPath();
+        t.traceBegin("starting " + name);
+        if (TextUtils.isEmpty(jarPath)) {
+            mSystemServiceManager.startService(name);
+        } else {
+            mSystemServiceManager.startServiceFromJar(name, jarPath);
+        }
+        t.traceEnd();
+    }
+    // make sure no other services are started after this point
+    mSystemServiceManager.sealStartedServices();
+    t.traceEnd(); // startApexServices
+}
+```
+
+**调用链（SystemServer.java:1043-1051）**：
+```
+startBootstrapServices(t) → startCoreServices(t) → startOtherServices(t) → startApexServices(t)
+```
+
+**关键约束（android-17 相对 android-16 的硬升级）**：
+- `sealStartedServices()` 调用后**禁止再 start 任何 service**（在 SystemServiceManager 中抛 IllegalStateException）
+- 所有 core/bootstrap/other services 必须在 APEX 阶段前注册
+- 新增的 mainline module 提供的 service 自动归入 APEX 阶段
+- RescuelyParty / OTA 升级后 APEX 重启系统时，APEX 服务 init 顺序可控
+
+**APEX 路径二选一**：
+- `jarPath` 为空 → `startService(name)` 走同进程 ServiceManager
+- `jarPath` 非空 → `startServiceFromJar(name, jarPath)` 走独立 classloader（典型如 com.android.permission、com.android.tzdata 等可热更新模块）
+
+**与 Android 16 对比**：android-16 中 startApexServices 已存在，但 `sealStartedServices()` 的硬约束**在 android-17 才完整生效**（参见 b/192880996 迁移注释）。
+
+### 2. PSI 监控延后到 boot 完成：ProcessList.startPsiMonitoringAfterBoot()
+
+**源码位置 A**：`frameworks/base/services/core/java/com/android/server/am/ProcessList.java` line 1657-1660（android-17.0.0_r1）
+
+```java
+public static void startPsiMonitoringAfterBoot() {
+    ByteBuffer buf = ByteBuffer.allocate(4);
+    buf.putInt(LMK_START_MONITORING);
+    writeLmkd(buf, null);
+}
+```
+
+**调用点 B**：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` line 5991-5995
+
+```java
+SystemProperties.set("sys.boot_completed", "1");
+SystemProperties.set("dev.bootcomplete", "1");
+
+// Start PSI monitoring in LMKD if it was skipped earlier.
+ProcessList.startPsiMonitoringAfterBoot();
+```
+
+**机制**：
+- LMK_START_MONITORING 是 lmkd 二进制 cmd（参见 lmkd.h 与 lmkd.cpp，2026-07-01 LMKD v2 报告已覆盖）
+- 启动阶段 lmkd 不开 PSI 监控（默认 PSI_MONITOR_PERIOD_MS=0 / 关闭），避免 boot 早期 memcg event 高频触发干扰
+- boot 完成后由 AMS **显式触发**开启，恢复正常的 PSI SOME/FULL 阈值采样
+- 这是典型的"冷启动性能 vs 运行期内存压力感知"trade-off：boot 阶段可损失少量内存压力感知精度，换取几十 ms 启动速度
+
+**配合 SystemServerInitThreadPool 的并行化**：SystemServer.java:967-985 在 SystemServerInitThreadPool 启动后**并行**执行 `startSystemConfigInit(t)`（异步加载 `/system/etc/system_fonts.xml` + permissions）+ `System.loadLibrary("android_servers")` + `initZygoteChildHeapProfiling()`。SystemServerInitThreadPool 自身是独立线程池（SystemServer.java:960），并行任务包括 SystemConfig::getInstance()、Looper 准备、ContentService 注册等。
+
+### 3. BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED 启动时间基准（6 个事件点）
+
+android-17 在 ZygoteInit / SystemServer / AMS 三个层共埋 **6 个** BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED 事件（StatsLog 持久化跨重启）：
+
+| 事件 | 埋点位置 |
+|---|---|
+| `ZYGOTE_INIT_START` | ZygoteInit.java:872-879（isPrimaryZygote） |
+| `SECONDARY_ZYGOTE_INIT_START` | ZygoteInit.java:880-883 |
+| `SYSTEM_SERVER_INIT_START` | SystemServer.java:910-914 |
+| `SYSTEM_SERVER_READY` | SystemServer.java:1067-1069 |
+| `PACKAGE_MANAGER_INIT_START` | SystemServer.java:1360-1362 |
+| `PACKAGE_MANAGER_INIT_READY` | SystemServer.java:1394-1396 |
+
+**关键代码（SystemServer.java:1063-1075）**：
+```java
+StrictMode.initVmDefaults(null);
+
+if (!mRuntimeRestart && !isFirstBootOrUpgrade()) {
+    final long uptimeMillis = SystemClock.elapsedRealtime();
+    FrameworkStatsLog.write(FrameworkStatsLog.BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED,
+            FrameworkStatsLog.BOOT_TIME_EVENT_ELAPSED_TIME__EVENT__SYSTEM_SERVER_READY,
+            uptimeMillis);
+    final long maxUptimeMillis = 60 * 1000;
+    if (uptimeMillis > maxUptimeMillis) {
+        Slog.wtf(SYSTEM_SERVER_TIMING_TAG,
+                "SystemServer init took too long. uptimeMillis=" + uptimeMillis);
+    }
+```
+
+**两个守门条件**：
+1. `!mRuntimeRestart`（非 runtime restart）—— OTA / Zygote 重新 fork 时不重置基准
+2. `!isFirstBootOrUpgrade()`（非首次启动或升级后首次启动）—— 升级后第一次启动耗时本身异常，不参与基准告警
+
+**60s 硬阈值告警**：若 SYSTEM_SERVER_READY > 60_000ms，触发 `Slog.wtf(SYSTEM_SERVER_TIMING_TAG, ...)`。
+
+**StatsLog vs bootstat event log 对比**：
+
+| 维度 | BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED | bootstat event log |
+|---|---|---|
+| 持久化 | StatsLog（持久化跨重启） | event log（仅本启动周期） |
+| 观测接口 | `dumpsys statsd` / `tracer` metrics | `bootstat -p` |
+| 时钟源 | `SystemClock.elapsedRealtime()` | `SystemClock.uptimeMillis()` |
+| 适用场景 | 跨版本回归、metrics dashboard | 单次启动分段报告 |
+
+### 4. AMS.finishBooting 收尾序列（11 步）
+
+**源码位置**：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` line 5910-6015（android-17.0.0_r1）
+
+1. `t.traceBegin("FinishBooting")`
+2. `synchronized (mGlobalLock)` 检查 mBootAnimationComplete
+3. `ZYGOTE_PROCESS.bootCompleted()` → 通知 zygote
+4. `VMRuntime.bootCompleted()` → ART 收尾
+5. 注册 `ACTION_QUERY_PACKAGE_RESTART` 接收器
+6. `storageManager.commitChanges()` → checkpoint commit
+7. `mSystemServiceManager.startBootPhase(t, PHASE_BOOT_COMPLETED)`
+8. 启动 mProcessesOnHold 队列
+9. `SystemProperties.set("sys.boot_completed", "1")` + `"dev.bootcomplete", "1"`
+10. **`ProcessList.startPsiMonitoringAfterBoot()`** → LMKD PSI 开启
+11. `mUserController.onBootComplete(...)` → 用户级完成
+12. **`mBootCompletedTimestamp = SystemClock.uptimeMillis()`**
+13. **全量 PSS 推迟 60s**（android-17 比 android-16 的 30s 更激进）
+
+### 5. Zygote 启动命令：init.zygote64.rc 关键参数
+
+**源码位置**：`system/core/rootdir/init.zygote64.rc`（android-17.0.0_r1 全文）
+
+```
+service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server --socket-name=zygote
+    class main
+    priority -20
+    user root
+    group root readproc reserved_disk
+    socket zygote stream 660 root system
+    socket usap_pool_primary stream 660 root system
+    onrestart exec_background - system system -- /system/bin/vdc volume abort_fuse
+    onrestart write /sys/power/state on
+    onrestart write /sys/power/wake_lock zygote_kwl
+    onrestart restart audioserver
+    onrestart restart cameraserver
+    onrestart restart media
+    onrestart restart --only-if-running media.tuner
+    onrestart restart netd
+    onrestart restart wificond
+    task_profiles ProcessCapacityHigh MaxPerformance
+    critical window=${zygote.critical_window.minute:-off} target=zygote-fatal
+```
+
+**关键确认**：
+- `--enable-lazy-preload` 标志**AOSP 默认不开启**（与 2026-07-01 早间报告一致），仅当实验性 property `persist.device_config.runtime_native_boot.profilesystemserver` 等开启时才进入 lazy preload 分支
+- `priority -20` 是 Linux 最高优先级，配合 `task_profiles ProcessCapacityHigh MaxPerformance`（cpuset 大核 + 高频）
+- `critical window=${zygote.critical_window.minute:-off} target=zygote-fatal`：respawn 窗口（默认 off，可由 device config 设置 minute 数）
+- `usap_pool_primary` socket：USAP（Unspecialized App Process）池，与 64-bit primary zygote 关联
+
+### 关联报告
+
+`DeepResearch/2026-07-01-android17-boot-optimization-apex-psi-statslog.md`（今日增量报告）
+
+**与今日前 3 次调研的差异化**：
+- 2026-06-28：bootanalyze 工具链 + Zygote --enable-lazy-preload 源码修正
+- 2026-06-29：SystemServer startSystemConfigInit 固化 + preloadSharedLibraries 新增 + am flags 清单
+- 2026-07-01 早：4MB Perfetto buffer + bootanalyze 5 flag + bootstat 25+ 事件
+- **2026-07-01 晚（本节）**：APEX 硬约束 + PSI 延后 + StatsLog 6 事件 + finishBooting 13 步序列
+
+
+<!-- AIW-源码调研-2026-07-01 -->
+
+## Android 17 启动优化新源码验证（2026-07-01 增量：APEX / PSI / StatsLog）
+
+本节基于 `android-17.0.0_r1` 标签下 AOSP 主线源码，补完今日调研聚焦的 4 块关键演进：**APEX 启动时序硬约束**、**PSI 监控延后到 boot 完成**、**BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED StatsLog 启动时间基准事件集**、**finishBooting 收尾序列优化**。
+
+### 1. SystemServer.startApexServices：APEX 启动时序硬约束（sealStartedServices）
+
+**源码位置**：`frameworks/base/services/java/com/android/server/SystemServer.java` line 3685-3711（android-17.0.0_r1）
+
+```java
+private void startApexServices(@NonNull TimingsTraceAndSlog t) {
+    // For debugging RescueParty
+    if (Build.IS_DEBUGGABLE
+            && SystemProperties.getBoolean("debug.crash_system", false)) {
+        throw new RuntimeException();
+    }
+
+    t.traceBegin("startApexServices");
+    List<ApexSystemServiceInfo> services = ApexManager.getInstance().getApexSystemServices();
+    for (ApexSystemServiceInfo info : services) {
+        String name = info.getName();
+        String jarPath = info.getJarPath();
+        t.traceBegin("starting " + name);
+        if (TextUtils.isEmpty(jarPath)) {
+            mSystemServiceManager.startService(name);
+        } else {
+            mSystemServiceManager.startServiceFromJar(name, jarPath);
+        }
+        t.traceEnd();
+    }
+    // make sure no other services are started after this point
+    mSystemServiceManager.sealStartedServices();
+    t.traceEnd(); // startApexServices
+}
+```
+
+**调用链**：
+SystemServer.main (line 1043-1051) → startBootstrapServices → startCoreServices → startOtherServices → startApexServices
+
+**关键约束（android-17 相对 android-16 的硬升级）**：
+- `sealStartedServices()` 调用后**禁止再 start 任何 service**
+- 所有 core/bootstrap/other services 必须在 APEX 阶段前注册
+- 新增的 mainline module 提供的 service 自动归入 APEX 阶段
+
+### 2. PSI 监控延后到 boot 完成：ProcessList.startPsiMonitoringAfterBoot()
+
+**源码位置**：`frameworks/base/services/core/java/com/android/server/am/ProcessList.java` line 1657-1660
+
+```java
+public static void startPsiMonitoringAfterBoot() {
+    ByteBuffer buf = ByteBuffer.allocate(4);
+    buf.putInt(LMK_START_MONITORING);
+    writeLkmdbuf, null);
+}
+```
+
+**调用点**：`ActivityManagerService.finishBooting()` line 5991-5995（在 `sys.boot_completed=1` 后）
+
+**机制**：
+- 启动阶段 lmkd 不开 PSI 监控（默认 PSI_MONITOR_PERIOD_MS=0）
+- boot 完成后由 AMS **显式触发**开启 PSI 监控
+- 典型的"冷启动性能 vs 运行期内存压力感知"trade-off
+
+### 3. BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED 启动时间基准（6 个事件点）
+
+android-17 在 ZygoteInit/SystemServer/AMS 三个层共埋 **6 个** BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED 事件（StatsLog 持久化跨重启）：
+
+| 事件 | 埋点位置 |
+|---|---|
+| `ZYGOTE_INIT_START` | ZygoteInit.java:872-879 |
+| `SECONDARY_ZYGOTE_INIT_START` | ZygoteInit.java:880-883 |
+| `SYSTEM_SERVER_INIT_START` | SystemServer.java:910-914 |
+| `SYSTEM_SERVER_READY` | SystemServer.java:1067-1069 |
+| `PACKAGE_MANAGER_INIT_START` | SystemServer.java:1360-1362 |
+| `PACKAGE_MANAGER_INIT_READY` | SystemServer.java:1394-1396 |
+
+**60s 硬阈值告警**：若 SYSTEM_SERVER_READY > 60_000ms，触发 Slog.wtf。
+
+**StatsLog vs bootstat event log 对比**：
+
+| 维度 | BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED | bootstat event log |
+|---|---|---|
+| 持久化 | StatsLog（跨重启） | event log（仅本启动周期） |
+| 观测接口 | `dumpsys statsd` / `tracer` metrics | `bootstat -p` |
+
+### 4. AMS.finishBooting 收尾序列（13 步）
+
+调用链：
+1. `t.traceBegin("FinishBooting")`
+2. `synchronized (mGlobalLock)` 检查 mBootAnimationComplete
+3. `ZYGOTE_PROCESS.bootCompleted()` → 通知 zygote
+4. `VMRuntime.bootCompleted()` → ART 收尾
+5. 注册 `ACTION_QUERY_PACKAGE_RESTART` 接收器
+6. `storageManager.commitChanges()` → checkpoint commit
+7. `mSystemServiceManager.startBootPhase(t, PHASE_BOOT_COMPLETED)`
+8. 启动 mProcessesOnHold 队列
+9. `SystemProperties.set("sys.boot_completed", "1")` + `"dev.bootcomplete", "1"`
+10. **`ProcessList.startPsiMonitoringAfterBoot()`** → LMKD PSI 开启
+11. `mUserController.onBootComplete(...)` → 用户级完成
+12. `mBootCompletedTimestamp = SystemClock.uptimeMillis()`
+13. **全量 PSS 推迟 60s**（android-17 比 android-16 的 30s 更激进）
+
+### 5. Zygote 启动命令：init.zygote64.rc
+
+**源码位置**：`system/core/rootdir/init.zygote64.rc`（android-17.0.0_r1 全文）
+
+```
+service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server --socket-name=zygote
+    class main
+    priority -20
+    user root
+    group root readproc reserved_disk
+    socket zygote stream 660 root system
+    socket usap_pool_primary stream 660 root system
+    onrestart exec_background - system system -- /system/bin/vdc volume abort_fuse
+    onrestart write /sys/power/state on
+    onrestart write /sys/power/wake_lock zygote_kwl
+    onrestart restart audioserver
+    onrestart restart cameraserver
+    onrestart restart media
+    onrestart restart --only-if-running media.tuner
+    onrestart restart netd
+    onrestart restart wificond
+    task_profiles ProcessCapacityHigh MaxPerformance
+    critical window=${zygote.critical_window.minute:-off} target=zygote-fatal
+```
+
+**关键确认**：
+- `--enable-lazy-preload` 标志**AOSP 默认不开启**（实验性 feature）
+- `priority -20` 是 Linux 最高优先级
+- `critical window=${zygote.critical_window.minute:-off} target=zygote-fatal`：respawn 窗口控制
+
+### 关联报告
+
+`DeepResearch/2026-07-01-android17-boot-optimization-new-mechanisms.md`（今日增量报告）
