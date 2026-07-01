@@ -69,29 +69,29 @@ related_chapters:
 - '8.2'
 - '1.11'
 - '8.3'
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 drafted_date: '2026-03-30'
 drafted_by: openclaw-task2a
 reviewed_date: '2026-07-01'
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: 2026-07-01
 task2b_state: fixed
 task2b_result: fixed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-27'
-last_task9_at: '2026-05-27T06:23:00+08:00'
+task9_reviewed_date: '2026-07-01'
+last_task9_at: '2026-07-01T13:41:01+08:00'
 last_task2b_at: '2026-05-06T16:04:00+08:00'
 last_task2b_lite_at: '2026-07-01'
 review_v2_fix: 误区 section boot_completed 事件描述修正 + 事件排序修正
 polish_count: '1'
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-last_task9_review_log: logs/deep-review/2026-07-01-07-audit.md
+last_task9_review_log: logs/deep-review/2026-07-01-13-deep-review.md
 review_notes: '2026-05-06T16:04 Task2B：P0 module.layout 修正为 modules.load / BOARD_VENDOR_KERNEL_MODULES_LOAD
   / BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD + MODULE_SOFTDEP() + async_probe=1。送
   Task6 复审。 | 2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source
@@ -209,7 +209,7 @@ Android 官方的 boot-time optimization 文档强调两个 Kernel 阶段优化�
 
 Zygote 的目标还是老问题，减少每个 App 冷启动都重复做的基础工作。它会预加载类、资源、共享库，再通过 fork 把这份运行时状态复制给 SystemServer 和 App 进程。
 
-有一个常见旧说法需要修正。老文章常把 preloaded classes 写成“3000-4000 个常用类”。android-17.0.0_r1 的 `frameworks/base/config/preloaded-classes` 去掉注释和空行后有 18431 条，打包产物会进入 ART APEX 提供的 preloaded-classes 文件。老数字放在 Android 8/9 的上下文里还勉强能看，直接拿到新分支会偏差很大。
+有一个常见旧说法需要修正。老文章常把 preloaded classes 写成“3000-4000 个常用类”。android-17.0.0_r1 的 `frameworks/base/config/preloaded-classes` 去掉注释和空行后有 18784 条，打包产物会进入 ART APEX 提供的 preloaded-classes 文件。老数字放在 Android 8/9 的上下文里还勉强能看，直接拿到新分支会偏差很大。
 
 fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所以 SystemServer 和 App 进程能复用 Zygote 已经装好的大量类与资源。启动慢到 `Application.onCreate()` 之前时，先看 Zygote 预加载、dexpreopt / odsign 产物是否命中，再看业务进程自己的初始化。
 
@@ -228,7 +228,7 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 
 **Core services** 里是第二层基础服务，典型例子有 `BatteryService`、`UsageStatsService`、`WebViewUpdateService`。这些服务依赖前一层基础服务，但还没到窗口和输入这一层。
 
-**Other services** 里才会启动 `InputManagerService`、`WindowManagerService`、`AlarmManagerService`、`JobSchedulerService`、`NotificationManagerService` 等更大一包服务。WMS 和 InputManagerService 属于这一段。`SensorService` 也不是这里直接 new 出来的 Java service，SystemServer 只是通过 `PHASE_WAIT_FOR_SENSOR_SERVICE` 等待相关前置条件，再继续启动 WMS。
+**Other services** 里才会启动 `InputManagerService`、`WindowManagerService`、`AlarmManagerService`、`JobSchedulerService`、`NotificationManagerService` 等更大一包服务。WMS 和 InputManagerService 属于这一段。`SensorService` 在 bootstrap 末尾由 `SystemServiceManager.startService(SensorService.class)` 启动；Other 阶段只是通过 `PHASE_WAIT_FOR_SENSOR_SERVICE` 等待它完成前置准备，再继续启动 WMS。
 
 `startApexServices(t)` 在 Android 13 引入。APEX 模块化从 Android 10 开始，但独立的 apex services 启动阶段在 `SystemServer.java` 中直到 Android 13 才出现（对比 `android-12.0.0_r34` / `android-12.1.0_r27` 均无此方法）。写文章时最好直接注明“本文按 android-17.0.0_r1 观察到的阶段顺序”，少做未经核对的版本断言。
 
@@ -361,7 +361,7 @@ adb pull /data/misc/perfetto-traces/boot-userspace.pftrace .
 > | Kernel | ~3-5s | 10-15% | 驱动初始化、dm-verity |
 > | first-stage init | ~1-2s | 3-5% | early mount、SELinux policy load |
 > | second-stage init | ~2-4s | 5-10% | rc 解析、核心 native 服务 |
-> | Zygote 预加载 | ~5-8s | 15-20% | 18431 类 + 资源 + 共享库 |
+> | Zygote 预加载 | ~5-8s | 15-20% | 18784 类 + 资源 + 共享库 |
 > | SystemServer | ~8-12s | 25-35% | 四段 StartServices |
 > | Home 首帧 + 广播长尾 | ~5-10s | 15-25% | Launcher 渲染 + BOOT_COMPLETED 尾声 |
 >
@@ -444,7 +444,7 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 - **安全性更高** → 启动稍慢
 - **可以关闭 dm-verity**（需要解锁 bootloader）→ 启动更快但失去安全保护
 
-[适用版本: Android 7.0 (Nougat) 起 dm-verity 默认启用]
+[适用版本: Android 4.4 起支持 Verified Boot + dm-verity；Android 7.0 起严格强制 Verified Boot；Android 8.0 起引入 AVB 参考实现]
 
 ## 在 Perfetto 中识别启动各阶段
 
