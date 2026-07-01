@@ -1,8 +1,8 @@
 ---
-title: Hook 基础设施与性能工具实现原理---
+title: Hook 基础设施与性能工具实现原理
 chapter: '14.13'
 section: '14.13'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-24'
 last_verified_against: AOSP android-17.0.0_r1 system/sepolicy/public/domain.te + bionic/linker/linker_phdr.cpp
@@ -35,7 +35,7 @@ last_task2b_at: '2026-06-24'
 last_task9_at: '2026-06-24'
 last_task9_audit: '2026-06-24'
 path: https://github.com/KwaiAppTeam/KOOM
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 polish_by: task2b-polish
 polish_count: '1'
 polish_date: '2026-04-22'
@@ -69,13 +69,14 @@ task6_review_notes_2026_06_24_r6: '第六轮复审（Task2B P95 Task9回炉后�
   观察 1 条（PLT vs Inline 对比表中 IFUNC 绕过方式与正文描述矛盾），写入 queue+suggestions 送 Task2B/Task9。新增多进程/64-32bit/ART-Dalvik/16KB增强节质量良好。task6_result:
   pass-light-edit，待 Task9 技术复审。'
 task6_review_notes_2026_06_24_r7: '第七轮复审（Task2B IFUNC表格修正后回炉复审）：L1 修 20 处路径格式（AOSP/GitHub
+task6_review_notes_2026_07_01_r8: "第八轮复审（revisiting 回炉后）：L1 修 3 处（frontmatter title 残留---、禁用词链路→跳转回路、错误处理代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁（核心6次均作形容词修饰，关键7次均作形容词修饰，非汇报腔用法）。L3 观察 1 条（应用场景三小节持续偏薄，前轮已标注，持续性建议不阻断）。无 B 类阻断问题。task9_result: pass-tech-review + queue.json 无 pending → 自动晋升 finalized。"
   源码路径中多余空格，涉及验证标注和正文）。禁用词/AI套话/翻译腔全清洁（body text）。不是X而是Y=2（限额内）。高频词全清洁。IFUNC 对比表 P90
   修正已验证正确。L3 观察 1 条：art/runtime/entrypoints/entrypoint_utils.h 路径可能在 android-17.0.0_r1
   中不存在（Task9 P95 queue 标记 completed 但路径未更新），交 Task9 复核。无 B 类阻断问题。task6_result: pass-light-edit，待
   Task9 技术复审。'
 task6_reviewed_by: openclaw-task6
-task6_reviewed_date: '2026-06-24'
-task6_state: revisiting
+task6_reviewed_date: '2026-07-01'
+task6_state: reviewed
 task9_result: pass-tech-review
 task9_review_date: '2026-06-24'
 task9_reviewer: openclaw-task9
@@ -158,7 +159,7 @@ Trampoline 是 inline hook 的核心机制，用于保存原始函数代码并�
 
 1. **备份原始指令**：将被替换位置（函数入口）的前若干条指令复制到一段独立分配的 Trampoline 内存中。
 2. **写入跳转指令**：在目标函数入口写入无条件跳转指令（ARM64 的 B/BL 或 ARM 的 LDR PC, [PC, #offset]），跳向 Hook 函数。
-3. **Trampoline 闭合链路**：Trampoline 执行完被备份的原始指令后，跳回原始函数的剩余部分（入口 + 被覆写指令长度），保证调用原始逻辑时不丢前缀指令。
+3. **Trampoline 跳转回路**：Trampoline 执行完被备份的原始指令后，跳回原始函数的剩余部分（入口 + 被覆写指令长度），保证调用原始逻辑时不丢前缀指令。
 
 Trampoline 之所以必须存在，而不是直接在 Hook 函数里调用原始函数，是因为原始函数入口的指令已被覆写——直接调用原始函数会再次命中跳转指令，形成无限递归。
 
@@ -630,6 +631,7 @@ KOOM 使用 PLT Hook 而非 inline hook，侧重点在稳定性——PLT 表项�
 ### 4. 错误处理和恢复
 
 ```cpp
+// [概念示意图] 仅用于展示 Hook 错误处理模式，不可直接编译运行
 // Hook 函数的错误处理 — 通过错误码返回代替异常
 int hook_system_call() {
     int ret = real_system_call();
