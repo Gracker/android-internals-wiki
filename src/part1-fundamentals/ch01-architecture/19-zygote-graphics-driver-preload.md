@@ -38,7 +38,7 @@ reviewed_by: openclaw-task6
 review_round: 2
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 pipeline_stage: task9_pending
 task6_review_notes: "2026-05-27 Task6：回炉复审通过。07-01 22 Task6 revisiting：pass-light-edit。Task9 auto-fixed P1:1 已确认（版本锚点迁移至 android-17.0.0_r1，口径闭合）；禁用词零命中；outline 7/7 覆盖；无新增 L1/L2/L3/L4 问题。待 Task9 最终确认 auto-fixed → pass-tech-review 后可自动晋升。"
 last_task6_at: "2026-07-01T22:13:00+08:00"
