@@ -1,10 +1,3 @@
----
-tags:
-  - android
-  - ai
-  - binder
-  - summary
----
 # 目录
 
 [写在前面](preface/intro.md)
@@ -20,7 +13,6 @@ tags:
 
 - [第 1 章：系统架构全景](part1-fundamentals/ch01-architecture/README.md)
   - [1.1 Android 分层架构](part1-fundamentals/ch01-architecture/01-layered-architecture.md)
-  - [1.41 Android 17 机器学习驱动的任务调度器](part1-fundamentals/ch01-architecture/1.41-android-17-机器学习驱动的任务调度器.md)
   - [1.43 Android 17 机器学习驱动任务调度器](part1-fundamentals/ch01-architecture/1.43-android17-ml-scheduler.md)
   - [1.44 Android 17 Binder IPC 优先级继承与内核批处理流水线](part1-fundamentals/ch01-architecture/1.44-binder-ipc-priority-inheritance.md)
   - [1.45 Android 17 Staged Install 状态机与原子性安装](part1-fundamentals/ch01-architecture/1.45-staged-install-state-machine.md)

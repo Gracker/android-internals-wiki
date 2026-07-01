@@ -1,76 +1,93 @@
 ---
-title: "Android 11 以下进程退出归因方案"
-chapter: "26.10"
-section: "26.10"
-drafted_date: "2026-05-16"
-applicable_versions: "Android 5.0 (API 21) - Android 10 (API 29)"
-last_verified: "2026-07-01"
-last_verified_against: "AOSP android-17.0.0_r1 (ApplicationExitInfo/ActivityManager/AppExitInfoTracker/lmkd); AOSP android-10.0.0_r47 system/core/lmkd historical path; Android Developers docs; KOOM README"
-confidence: medium
-polish_count: 1
-task6_state: revisiting
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-16"
-task6_result: pass-light-edit
-last_task6_at: "2026-05-16T03:16:00+08:00"
-last_task6_review_log: "logs/review/2026-05-16-03-review.md"
-last_task6_audit: "2026-06-07"
-sources:
- - type: official
- path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
- - type: official
- path: "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons"
- - type: official
- path: "https://developer.android.com/topic/performance/vitals/anr"
- - type: aosp
- path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
- - type: aosp
- path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
- - type: aosp
- path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
- - type: aosp
- path: "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/"
- - type: aosp-historical
- path: "https://android.googlesource.com/platform/system/core/+/refs/tags/android-10.0.0_r47/lmkd/"
- - type: material
- path: "DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md"
- - type: material
- path: "DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md"
- - type: open-source
- path: "github.com/KwaiAppTeam/KOOM/koom-java-leak/README.md"
- - type: structure
- path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md"
- - type: structure
- path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md"
- - type: structure
- path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md"
- - type: structure
- path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md"
- - type: structure
- path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 50.md"
-tags: ["applicationexitinfo", "process-exit", "apm", "legacy-android", "stability"]
-related_chapters: ["9.3", "19.24", "20.8", "23.7", "26.2", "26.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-15"
-gap_source: "素材驱动/官方文档/章节深挖"
-task9_state: reviewed
-task9_reviewed_date: "2026-05-17"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-17T00:32:12+08:00"
-last_task9_audit: "2026-07-01"
-last_task9_autofix_at: "2026-07-01"
-last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
+title: Android 11 以下进程退出归因方案
+chapter: '26.10'
+section: '26.10'
 status: finalized
+applicable_versions: Android 5.0 (API 21) - Android 10 (API 29)
+last_verified: '2026-07-01'
+last_verified_against: AOSP android-17.0.0_r1 (ApplicationExitInfo/ActivityManager/AppExitInfoTracker/lmkd);
+  AOSP android-10.0.0_r47 system/core/lmkd historical path; Android Developers docs;
+  KOOM README
+confidence: medium
+sources:
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/anr
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java
+- type: aosp
+  path: https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/
+- type: aosp-historical
+  path: https://android.googlesource.com/platform/system/core/+/refs/tags/android-10.0.0_r47/lmkd/
+- type: material
+  path: DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md
+- type: material
+  path: DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md
+- type: open-source
+  path: github.com/KwaiAppTeam/KOOM/koom-java-leak/README.md
+- type: structure
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md
+- type: structure
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md
+- type: structure
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md
+- type: structure
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 45.md
+- type: structure
+  path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 50.md
+tags:
+- applicationexitinfo
+- process-exit
+- apm
+- legacy-android
+- stability
+related_chapters:
+- '9.3'
+- '19.24'
+- '20.8'
+- '23.7'
+- '26.2'
+- '26.9'
+drafted_date: '2026-05-16'
+polish_count: '1'
+task6_state: revisiting
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-16'
+task6_result: pass-light-edit
+last_task6_at: '2026-05-16T03:16:00+08:00'
+last_task6_review_log: logs/review/2026-05-16-03-review.md
+last_task6_audit: '2026-06-07'
+created_by: task2a-knowledge-gap
+created_date: '2026-05-15'
+gap_source: 素材驱动/官方文档/章节深挖
+task9_state: reviewed
+task9_reviewed_date: '2026-05-17'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-17T00:32:12+08:00'
+last_task9_audit: '2026-07-01'
+last_task9_autofix_at: '2026-07-01'
+last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
 pipeline_stage: task6_pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-p0: 0
-p1: 0
-p2: 3
-task9_review_notes: "2026-05-17 Task9 00: pass-tech-review。Task2B 已修复 P0/P1；本轮仅保留既有 P2 来源路径/JVMTI 权限边界建议。Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。已写入 logs/deep-review/2026-05-17-00-deep-review.md。 | 2026-07-01 Task9 idle-audit AUTO-FIX: 将 AOSP source 锚点从 master/裸路径改为 android-17.0.0_r1 tagged URLs；保留 Android 10 lmkd 历史路径为 android-10.0.0_r47 参照；版本上限遵守 Android 17/API 37。回到 Task6 复审。详见 logs/deep-review/2026-07-01-09-audit.md。"
+p0: '0'
+p1: '0'
+p2: '3'
+task9_review_notes: '2026-05-17 Task9 00: pass-tech-review。Task2B 已修复 P0/P1；本轮仅保留既有
+  P2 来源路径/JVMTI 权限边界建议。Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。已写入
+  logs/deep-review/2026-05-17-00-deep-review.md。 | 2026-07-01 Task9 idle-audit AUTO-FIX:
+  将 AOSP source 锚点从 master/裸路径改为 android-17.0.0_r1 tagged URLs；保留 Android 10 lmkd
+  历史路径为 android-10.0.0_r47 参照；版本上限遵守 Android 17/API 37。回到 Task6 复审。详见 logs/deep-review/2026-07-01-09-audit.md。'
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-27
+last_deepseek_cn_review_at: '2026-06-27'
 ---
 
 # 26.10 Android 11 以下进程退出归因方案

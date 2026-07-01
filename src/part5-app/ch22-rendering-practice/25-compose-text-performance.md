@@ -1,14 +1,16 @@
 ---
-title: "Compose Text 性能深度优化"
-chapter: "22.27"
-author: "AIW Task 2A"
-created: "2026-06-25"
+title: Compose Text 性能深度优化
+chapter: '22.27'
+status: draft
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
-  - "Compose"
-  - "性能优化"
-  - "文本渲染"
-  - "Android 17"
-  - "实践"
+- Compose
+- 性能优化
+- 文本渲染
+- Android 17
+- 实践
+author: AIW Task 2A
+created: '2026-06-25'
 ---
 
 # 25 Compose Text 性能深度优化

@@ -1,3 +1,14 @@
+---
+title: ch10-memory-perf
+chapter: '10'
+status: draft
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+tags:
+- performance
+- memory
+- perf
+---
+
 # ch10-memory-perf
 
 ## 内存性能优化
