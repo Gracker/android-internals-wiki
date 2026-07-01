@@ -1,12 +1,13 @@
 ---
 
+
 title: statsd 与系统级指标采集
 chapter: 14.17
 status: ready-for-review
 drafted_date: 2026-05-20
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
 last_verified: 2026-05-20
-last_verified_against: AOSP main packages/modules/StatsD, frameworks/proto_logging/stats/atoms.proto, source.android.com Statsd 文档
+last_verified_against: AOSP android-17.0.0_r1 packages/modules/StatsD, frameworks/proto_logging/stats/atoms.proto, source.android.com Statsd 文档
 confidence: medium
 sources: 
   - type: official
@@ -28,6 +29,10 @@ related_chapters: ["13.9", "13.10", "14.10", "15.3", "26.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-05-20
 gap_source: AOSP结构/官方文档/已有章节深挖
+task2b_result: fixed-lite
+task2b_state: fixed
+pipeline_stage: task6_pending
+last_task2b_lite_at: 2026-07-02
 ---
 -
 
@@ -263,7 +268,7 @@ CTS 也依赖 statsd 验证平台 atom 和 StatsD 功能。AOSP Statsd 官方文
 ### Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？
 - 来源：https://juejin.cn/post/7610233341305389099
 - 类型：技术文章
-- 摘要：Android 17（API 37）适配清单与 2026 开发者强制认证政策的全维度解读。非 target 变更包括 usesCleartextTraffic 弃用预警（迁移到 Network Security Config）、隐式 URI grant 在 Android 18 将收紧（为系统级 AI 读取屏幕内容铺路）、旋转后键盘状态不再自动恢复、后台音频收紧需 WIU 能力的前台服务。targetSdk=37 关键变更：MessageQueue 升级为无锁 DeliQueue（Treiber 栈+最小堆）、BAL 限制扩展到 IntentSender、新增 USE_LOOPBACK_INTERFACE 安装时权限、Certificate Transparency 默认启用、Safer DCL 扩展到 native（System.load 加载的库必须只读）、大屏强制自适应。2026 年 9 月起部分地区应用必须经开发者认证才能安装。
+- 摘要：Android 17（API 37）适配清单与 2026 开发者强制认证政策的全维度解读。非 target 变更包括 usesCleartextTraffic 弃用预警（迁移到 Network Security Config）、旋转后键盘状态不再自动恢复、后台音频收紧需 WIU 能力的前台服务。targetSdk=37 关键变更：MessageQueue 升级为无锁 DeliQueue（Treiber 栈+最小堆）、BAL 限制扩展到 IntentSender、新增 USE_LOOPBACK_INTERFACE 安装时权限、Certificate Transparency 默认启用、Safer DCL 扩展到 native（System.load 加载的库必须只读）、大屏强制自适应。2026 年 9 月起部分地区应用必须经开发者认证才能安装。
 - **推荐映射章节**：ch13
 - **内容类型**：技术文章
 - **相关标签**：#Android新版本 #适配
