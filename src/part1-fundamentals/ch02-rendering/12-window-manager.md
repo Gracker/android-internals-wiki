@@ -7,7 +7,7 @@ drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-26"
-last_verified_against: "AOSP main ViewRootImpl/IWindowSession/Session + BufferQueueProducer + Android 16/17 official docs + external review"
+last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl/IWindowSession/Session + BLASTBufferQueue + Android 16/17 official docs + external review"
 confidence: medium
 sources:
   - type: aosp
@@ -63,8 +63,8 @@ related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -73,18 +73,19 @@ reviewed_date: "2026-05-04"
 task6_reviewed_date: "2026-05-04"
 task6_result: "pass-light-edit"
 last_task6_audit: "2026-06-25"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-04
 last_task9_at: "2026-05-04T12:41:40+08:00"
-last_task9_audit: "2026-06-13"
+last_task9_audit: "2026-07-02"
 last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line."
 review_log: "logs/review/2026-04-11-11-review.md"
-task9_review_notes: "2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 Task6 pass 与 queue 无 pending 条目，自动晋升 finalized。 2026-06-13 Task9 idle audit: pass-tech-audit。P0 0 / P1 0 / P2 3（仅日志：InputDispatcher WindowInfo 快照表述、源码参考 master 链接、recreateOnConfigChanges 版本归因）。未改正文。"
+task9_review_notes: "2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；满足 Task6 pass 与 queue 无 pending 条目，自动晋升 finalized。 2026-06-13 Task9 idle audit: pass-tech-audit。P0 0 / P1 0 / P2 3（仅日志：InputDispatcher WindowInfo 快照表述、源码参考 master 链接、recreateOnConfigChanges 版本归因）。未改正文。 2026-07-02 Task9 idle audit auto-fix: anchored AOSP source references and verification labels to android-17.0.0_r1; returned to Task6 revisiting."
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
-last_task9_audit_log: "logs/deep-review/2026-06-13-15-audit.md"
+last_task9_audit_log: "logs/deep-review/2026-07-02-04-audit.md"
+last_task9_autofix_at: "2026-07-02"
 ---
 # 2.12 Window Manager Service 与窗口管理
 
@@ -154,7 +155,7 @@ Activity 首次显示时，窗口创建过程更接近下面这个顺序：
 
 职责分界要记住：WMS 管窗口容器和 `SurfaceControl`，SurfaceFlinger 管 layer 创建与合成，App 侧负责把 relayout 返回的 `SurfaceControl` 转成可绘制的 `Surface`。不要写成“WMS 把 Surface 包好通过 Binder 返回给 App”——这句话把三层职责搅在一起了。
 
-[已验证: AOSP android-17-beta3, `ViewRootImpl.java` / `WindowManagerService.java` / `android_view_SurfaceControl.cpp`]
+[已验证: AOSP android-17.0.0_r1, `ViewRootImpl.java` / `WindowManagerService.java` / `android_view_SurfaceControl.cpp`]
 
 ### SurfaceControl.Transaction 的批量提交
 
@@ -264,7 +265,7 @@ WMS 侧的执行过程不能简化成“`relayoutWindow()` 直接调 `performLay
 
 `ViewRootImpl.scheduleTraversals()` 是 App 侧调度入口，不跨进程。它向 Choreographer 投递 `TraversalRunnable`，在下一次 VSync 时触发 `doTraversal()` → `performTraversals()`。WMS 跨进程调用只发生在 `performTraversals()` 内部条件满足时。
 
-**关键源码路径**（android-14，`ViewRootImpl.java`）：
+**关键源码路径**（android-17.0.0_r1，`ViewRootImpl.java`）：
 
 ```java
 // 调度入口 — App 进程内，不跨进程
@@ -525,14 +526,14 @@ WMS 维护的 Window Z-order 和区域信息是 InputDispatcher 进行 hit-test 
 
 ## 参考资料
 
-- [AOSP WindowManagerService 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java) ，`relayoutWindow()` 和窗口状态管理入口
-- [AOSP WindowSurfacePlacer 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/WindowSurfacePlacer.java) ，`performSurfacePlacement(true)` 的主执行点
-- [AOSP StartingSurfaceController 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java) ，服务端 starting surface 请求入口
-- [AOSP WM Shell StartingWindowController 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java) ，Shell 侧 `addStartingWindow` / `removeStartingWindow` 入口
-- [AOSP TransitionController 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/TransitionController.java) ，WindowContainer transition 收集与调度入口
-- [AOSP ViewRootImpl 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/view/ViewRootImpl.java) ，App 侧 traversal、`relayout()` 判定和 `updateBlastSurfaceIfNeeded()`
-- [AOSP SurfaceControl JNI 路径](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/jni/android_view_SurfaceControl.cpp) ，native `createSurfaceChecked(...)` 入口
-- [AOSP BLASTBufferQueue 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java) ，客户端 surface materialization
+- [AOSP WindowManagerService 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java) ，`relayoutWindow()` 和窗口状态管理入口
+- [AOSP WindowSurfacePlacer 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/WindowSurfacePlacer.java) ，`performSurfacePlacement(true)` 的主执行点
+- [AOSP StartingSurfaceController 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java) ，服务端 starting surface 请求入口
+- [AOSP WM Shell StartingWindowController 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java) ，Shell 侧 `addStartingWindow` / `removeStartingWindow` 入口
+- [AOSP TransitionController 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/TransitionController.java) ，WindowContainer transition 收集与调度入口
+- [AOSP ViewRootImpl 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java) ，App 侧 traversal、`relayout()` 判定和 `updateBlastSurfaceIfNeeded()`
+- [AOSP SurfaceControl JNI 路径](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/jni/android_view_SurfaceControl.cpp) ，native `createSurfaceChecked(...)` 入口
+- [AOSP BLASTBufferQueue 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java) ，客户端 surface materialization
 - [Android 官方文档，SplashScreen API](https://developer.android.com/develop/ui/views/layout/splash-screen) ，StartingWindow 与统一启动体验
 - [Android 官方文档，Predictive Back](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture) ，返回手势动画与过渡回调
 - [Android 官方文档，Android 16 Features](https://developer.android.com/about/versions/16/features) ，Desktop Windowing 与 connected display 特性
