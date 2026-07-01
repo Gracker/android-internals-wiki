@@ -3,7 +3,7 @@
 title: ART 分代垃圾回收与 GC 暂停优化
 chapter: '4.8'
 section: '4.8'
-status: "finalized"
+status: ready-for-review
 drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'

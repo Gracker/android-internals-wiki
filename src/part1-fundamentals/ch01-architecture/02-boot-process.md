@@ -2,7 +2,7 @@
 title: 系统启动全流程
 chapter: '1.2'
 section: '1.2'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-17'
 last_verified_against: AOSP android-17.0.0_r1, source.android.com 官方文档

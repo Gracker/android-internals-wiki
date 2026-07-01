@@ -4,7 +4,7 @@
 title: ContentProvider 性能与优化
 chapter: '1.10'
 section: '1.10'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)

@@ -1,7 +1,7 @@
 ---
 title: "MainThread 与 RenderThread 协作"
 chapter: "2.5"
-status: "finalized"
+status: ready-for-review
 section: "2.5"
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2a"

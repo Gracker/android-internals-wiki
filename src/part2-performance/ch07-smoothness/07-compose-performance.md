@@ -2,7 +2,7 @@
 title: Jetpack Compose 性能优化
 chapter: '7.7'
 section: '7.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-01'
 last_verified_against: Android 17 (API 37) / Compose Runtime 1.8.0-1.11.3 source jars
