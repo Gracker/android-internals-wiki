@@ -36,12 +36,12 @@ sources:
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 review_round: 2
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-pipeline_stage: task6_pending
-task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。"
-last_task6_at: "2026-05-27T19:05:00+08:00"
+pipeline_stage: task9_pending
+task6_review_notes: "2026-05-27 Task6：回炉复审通过。07-01 22 Task6 revisiting：pass-light-edit。Task9 auto-fixed P1:1 已确认（版本锚点迁移至 android-17.0.0_r1，口径闭合）；禁用词零命中；outline 7/7 覆盖；无新增 L1/L2/L3/L4 问题。待 Task9 最终确认 auto-fixed → pass-tech-review 后可自动晋升。"
+last_task6_at: "2026-07-01T22:13:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-19-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0

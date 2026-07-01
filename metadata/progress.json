@@ -60,5 +60,37 @@
       "verified_at": "2026-07-01T19:35:46.150110",
       "note": "DeliQueue chapter status corrected and returned to Task6"
     }
+  ],
+  "review_history": [
+    {
+      "date": "2026-07-01",
+      "time": "22:13",
+      "task": "task6",
+      "chapters": [
+        "1.13",
+        "1.19",
+        "1.26"
+      ],
+      "mode": "revisiting",
+      "fixes": {
+        "1.13": {
+          "l1": 2,
+          "l2": 0,
+          "l3_l4_issues": 0
+        },
+        "1.19": {
+          "l1": 0,
+          "l2": 0,
+          "l3_l4_issues": 0
+        },
+        "1.26": {
+          "l1": 0,
+          "l2": 0,
+          "l3_l4_issues": 0
+        }
+      },
+      "auto_promoted": [],
+      "rework_items": 0
+    }
   ]
 }
