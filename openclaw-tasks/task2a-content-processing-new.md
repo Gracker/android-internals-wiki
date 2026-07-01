@@ -8,7 +8,8 @@ AIW 当前禁止 Task 2A 创建任何新章节。
 - 只允许加工已经存在的空 `draft` 章节。
 - 如果没有空 `draft`，本轮必须停止，输出“当前无空 draft，本轮不新增内容”。
 - 禁止新增 `src/**/*.md`，禁止新增 Chapter 目录，禁止追加 `src/SUMMARY.md`，禁止向 `metadata/progress.json` / `metadata/queue.json` 写入新章节条目。
-- 禁止 backup 选题、知识缺口落盘、批量录入候选；发现潜在选题只能写入报告中的“已跳过候选”，不得修改仓库。
+- 禁止 backup 选题、知识缺口落盘、批量录入候选；发现潜在选题必须先映射到已有章节，只能写入报告中的“既有章节映射/已跳过候选”，不得修改仓库。
+- 新挖掘出的材料不能变成新章节；如果确有价值，交给有正文编辑权限的任务（Task2B/Task8/专项注入）并入已有章节。Task2A 本身不得改非空章节。
 - `scripts/task2a_gap_dedup_guard.py` 只作为审计/阻断工具使用，不能作为“通过后即可创建”的许可。
 
 ## ⚠️ Android 版本边界（最高优先级，2026-05-29）
@@ -194,9 +195,9 @@ python3 scripts/task2a_gap_dedup_guard.py --candidate "候选章节标题" --key
 | **读者需求度** | Android 工程师高频搜索/面试高频考点 | 冷门知识点 |
 | **时效性** | Android 17 及以内最新稳定特性或近 1 年行业热点 | 已有稳定文档覆盖的老知识 |
 
-总分 ≥ 14 的候选才创建章节。
+评分只用于报告候选价值；无论分数多高，当前都不得创建章节。高分候选只能映射到已有章节，或列入“未落盘候选”交给人工/专项任务判断。
 
-### Step 1.8.5：创建前去重硬门禁
+### Step 1.8.5：既有章节映射硬门禁
 
 对 Step 1.8 中所有评分 ≥ 14 的候选，必须先写成候选 JSON 并运行去重 guard：
 
@@ -217,7 +218,7 @@ python3 scripts/task2a_gap_dedup_guard.py --json-file /tmp/task2a-gap-candidates
 处理规则：
 - guard 输出 `status: blocked` 或进程 exit code 2：命中的候选视为“已覆盖”，从合格候选池移除
 - 被移除的候选必须在报告中列出“覆盖于哪一章 / 哪个路径 / 命中关键词”，不得静默丢弃
-- guard 输出 `status: clear` 且评分仍 ≥14：才允许进入 Step 1.9
+- guard 输出 `status: clear` 且评分仍 ≥14：仍然不得创建章节；只能列入“未映射候选”，并说明需要人工决定是否并入既有章节
 - 如果所有 ≥14 候选都被 guard 阻断：本轮输出“无新章节创建：合格候选均已被既有章节覆盖”
 
 已知回归样本必须全部被 guard 阻断：
@@ -228,121 +229,51 @@ python3 scripts/task2a_gap_dedup_guard.py --self-test
 
 这 6 类主题不得再被创建为空 draft：RPC Binder 事务上限、MemoryLimiter 30 秒 kill 窗口、bootanalyze 系统启动优化、HWUI Vulkan 多队列、Compose PausableComposition、Adaptive Layout。
 
-### Step 1.9：录入所有合格缺口（全部 ≥ 14 分）
+### Step 1.9：冻结后的候选处理（不录入）
 
-⚠️ **铁律：所有评分 ≥ 14 的候选缺口必须全部录入，不能只选1个。**
+⚠️ **铁律：所有候选都不得录入为新章节。**
 
-前提：这里只指 **通过 Step 1.8.5 去重 guard 后仍然 clear** 的候选。评分 ≥14 但被 guard 判定已覆盖的候选，不得录入，不得创建文件，不得更新 SUMMARY/progress/queue。
+对评分 ≥14 的候选，只做三类归档判断：
 
-理由：
-1. 缺口挖掘本身昂贵（跑一轮 AOSP 分析 + 文档比对 + 素材评估），筛出来的合格候选扔掉浪费
-2. 不录入会导致下一轮重复挖掘同样的缺口
-3. 录入 ≠ 立刻写，queue.json 按 priority 排序，加工时再挑优先级高的写
+1. **已覆盖**：记录命中的已有章节路径、标题、命中关键词。
+2. **可并入已有章节**：记录建议并入的章节、建议插入位置、素材路径，由 Task2B/Task8/专项注入处理。
+3. **暂不落盘**：无法映射到已有章节时，只在本轮报告中列为“未映射候选”，不得写入 `src/`、`SUMMARY.md`、`progress.json`、`queue.json`、`research-gaps.md` 或 `suggestions.md`。
 
-录入顺序：按总分从高到低依次处理。同分时：
-- 素材丰富度高的优先
-- 与当前正在写作的 Part 优先（避免跳跃）
+### Step 1.10：禁止动作清单
 
-对每个合格候选，依次执行 Step 1.10（创建文件 + 更新元数据），全部完成后执行 Step 1.11（一次 Git 提交）。
+以下旧动作已经废止，任何情况下都不得执行：
 
-### Step 1.10：为每个合格候选创建新小节
+- 创建 `src/**/*.md` 新文件
+- 创建新的 Chapter 目录
+- 向 `src/SUMMARY.md` 追加目录
+- 修改 `metadata/progress.json` 的 `total` / `draft` 以登记新章节
+- 向 `metadata/queue.json` 写入 `knowledge_gap_mining` 新章队列
+- 提交 `[openclaw] gap-mining: 创建 ... 新章节` 类型 commit
 
-对 Step 1.9 中的每个合格候选（≥ 14 分），依次执行以下操作：
+### Step 1.11：输出报告（冻结模式）
 
-#### 确定位置
-- 选择最相关的 Chapter
-- 编号追加到该 Chapter 末尾（如 ch04 现有 4.1-4.6，新章节就是 4.7）
-- 如果没有合适的 Chapter，评估是否需要新建 Chapter（需要 ≥3 个小节才新建 Chapter）
-
-⚠️ 注意：多个候选可能属于同一 Chapter，编号需递增（如 4.7、4.8、4.9…）
-
-#### 创建文件
-
-在 `src/partX-xxx/chYY-xxx/` 下创建新文件：
-
-```markdown
----
-title: "小节标题"
-chapter: "X.Y"
-status: draft
-applicable_versions: "Android X (API N) - Android Y (API M)"
-tags: [tag1, tag2, tag3]
-related_chapters: ["X.Z"]
-created_by: "task2a-knowledge-gap"
-created_date: "YYYY-MM-DD"
-gap_source: "素材驱动/AOSP结构/官方文档/章节深挖/研究素材"
----
-
-# X.Y 小节标题
-
-<!-- outline-start -->
-## 要点
-
-### 🔹 锚点 1
-{基于缺口分析生成的锚点，5-8 个}
-
-### 🔹 锚点 2
-...
-
-## 扩展
-
-### 🔸 扩展点 1
-{可选深入方向}
-
-### 🔸 扩展点 2
-...
-
-<!-- outline-end -->
-
-> 本节内容待加工。
-```
-
-#### 更新 SUMMARY.md
-
-在对应 Chapter 下追加新条目：
-```markdown
-  - [X.Y 新小节标题](partX-xxx/chYY-xxx/XX-title.md)
-```
-
-#### 更新 progress.json
-- `total` +1
-- `draft` +1
-
-#### 更新 queue.json
-- 添加新章节到加工队列，priority 80
-
-### Step 1.11：Git 提交（所有新小节一次提交）
-
-所有合格候选的文件和元数据更新完成后，一次性提交：
-
-```bash
-cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
-git add src/ metadata/
-git commit -m "[openclaw] gap-mining: 创建 {N} 个新章节 — {章节号列表} — 知识缺口挖掘"
-```
-
-### Step 1.12：输出报告（挖掘模式）
-
-🏗️ 知识缺口挖掘 | {日期} {时间}
+🏗️ 知识缺口挖掘（冻结模式） | {日期} {时间}
 
 **缺口来源**：{素材驱动/AOSP结构/官方文档/章节深挖/研究素材}
 **候选缺口**：{发现的总数} 个（≥14 分：{N} 个）
-**已录入缺口**：{实际创建的个数} 个
+**新增章节**：0 个（冻结）
 
-**全部合格候选**（评分 ≥ 14，已全部录入）：
-1. ✅ {章节号} {主题} — 评分 {X}/20 — 素材 {N} 篇 → {文件路径}
-2. ✅ {章节号} {主题} — 评分 {X}/20 — 素材 {N} 篇 → {文件路径}
-3. ...
+**既有章节映射**：
+1. {主题} — 评分 {X}/20 — 已覆盖/建议并入：{已有章节路径} — 素材 {N} 篇
+2. ...
 
-**创建动作**：
-- 新增文件：{N} 个
-- SUMMARY.md 已更新（+{N} 条）
-- progress.json 已更新（total: {旧}→{新}）
-- queue.json 已添加（{N} 条，priority: 80）
-- Git 已提交 {commit hash}
-- 全书进度：{已完成}/{新总数}（{百分比}%）
+**未映射候选**：
+1. {主题} — 评分 {X}/20 — 原因：{无法安全映射/需要人工判断}
+2. ...
 
-下一轮加工任务将按 priority 从 queue.json 取最高优先级的章节写内容。
+**写入动作**：
+- 新增文件：0
+- SUMMARY.md：未修改
+- progress.json：未新增章节
+- queue.json：未新增 `knowledge_gap_mining` 条目
+- Git：如本轮只有候选报告，不提交；如只加工既有空 draft，按 Phase 2 提交
+
+下一轮 Task2A 仍然只处理既有空 `draft`；新素材只能并入已有章节，不能扩张目录。
 
 ---
 
