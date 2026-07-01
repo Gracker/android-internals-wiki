@@ -6,7 +6,7 @@ confidence: high
 drafted_by: gemini
 drafted_date: "2026-04-24"
 last_task6_at: "2026-05-16T08:16:00+08:00"
-last_task9_at: "2026-07-01T18:29:19+08:00"
+last_task9_at: "2026-07-01T19:26:42+08:00"
 last_verified: "2026-04-25"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-25"
@@ -38,13 +38,13 @@ task6_review_notes: "2026-05-16 task6 review: pass-light-edit。清理 frontmatt
 task6_reviewed_at: "2026-05-16T08:16:00+08:00"
 task6_reviewed_by: openclaw-task6
 task6_state: revisiting
-task9_result: "needs-rework"
-task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。2026-07-01 Task9 闲时抽检: needs-rework。P1 1（Flutter merged UI+Platform 线程模型版本边界缺失）；已写入 queue.json。 2026-07-01 Task2B 回炉修复: Flutter APM 小节线程模型按 3.29+ merged model (Main(UI+Platform)/Raster/IO) 改写，同步更新大纲、section 5 标题与正文；与 2.11、18.12 口径对齐。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Flutter merged UI+Platform 默认合并版本边界应为 Flutter 3.32 stable+，正文与 2.11/18.12 仍写 3.29+；已写入 queue.json。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；AUTO-FIX 19.26 残留 3.29+→3.32 stable+；2.11/18.12 仍是 3.29+，交叉引用未闭环；已写入 queue.json。"
+task9_result: "auto-fixed"
+task9_review_notes: "2026-05-16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；WebView 可见状态与 Flutter 时钟误差为 P2 建议，已写入 suggestions。自动晋升 finalized。2026-07-01 Task9 闲时抽检: needs-rework。P1 1（Flutter merged UI+Platform 线程模型版本边界缺失）；已写入 queue.json。 2026-07-01 Task2B 回炉修复: Flutter APM 小节线程模型按 3.29+ merged model (Main(UI+Platform)/Raster/IO) 改写，同步更新大纲、section 5 标题与正文；与 2.11、18.12 口径对齐。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；Flutter merged UI+Platform 默认合并版本边界应为 Flutter 3.32 stable+，正文与 2.11/18.12 仍写 3.29+；已写入 queue.json。 2026-07-01 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；AUTO-FIX 19.26 残留 3.29+→3.32 stable+；2.11/18.12 仍是 3.29+，交叉引用未闭环；已写入 queue.json。 2026-07-01 Task9 deep-review: auto-fixed。P0 0 / P1 1 / P2 0；修正 Flutter addTimingsCallback release 批量上报约 1s 的时间轴误差边界，回 Task6 复审。"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-01"
-task9_state: pending
+task9_state: reviewed
 title: "混合栈与跨平台 APM (WebView / Flutter)"
-last_task9_review_log: "logs/deep-review/2026-07-01-18-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-01-19-deep-review.md"
 last_task6_review_log: "logs/review/2026-05-16-08-review.md"
 task2b_fix_source: "task9-deep-tech-review"
 task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
@@ -52,6 +52,7 @@ last_task2b_at: "2026-07-01T18:54:04+08:00"
 last_task6_audit: "2026-06-07"
 last_task9_audit: "2026-07-01"
 last_task9_audit_log: "logs/deep-review/2026-07-01-16-audit.md"
+last_task9_autofix_at: "2026-07-01"
 ---
 # 混合栈与跨平台 APM (WebView / Flutter)
 
@@ -268,9 +269,9 @@ void installFlutterFrameReporter(String sessionId) {
 
 2. **帧内部用 raw timestamp 推算相对时序**：`buildMs` / `rasterMs` / `totalMs` 是 Flutter 引擎保证的相对时长，可以直接使用。如果需要帧内部的时序关系（如 build 开始到 raster 结束的间隔），可以用 `rawVsyncStartUs`、`rawBuildStartUs`、`rawRasterFinishUs`（来自 `FrameTiming.timestampInMicroseconds(FramePhase)`）做差值计算——这些 raw timestamp 在同一 Engine 进程内是自洽的，只是 epoch 不等于 Native monotonic clock。不要尝试把它们换算为 `elapsed_realtime_ms`。
 
-3. **标注误差来源和范围**：误差来自两方面。一是 MethodChannel 传输延迟（异步调用，通常 1-5ms），二是 `addTimingsCallback` 的批量延迟（引擎攒一批帧后才触发回调，极端情况下 50ms+）。Session Timeline 中 Flutter 帧事件的时间戳是 Native 接收回调的时刻，不是帧实际发生的时间，应标注 `clock_source: "native_receive_time"` 和估计误差范围：常规场景 <20ms，批量攒帧较多时 50ms+。只做粗粒度分析（按秒聚合丢帧率）时，直接用 `buildMs` / `rasterMs` 时长指标即可。
+3. **标注误差来源和范围**：误差来自两方面。一是 MethodChannel 传输延迟，二是 `addTimingsCallback` 的批量上报延迟。Flutter 官方文档说明，`FrameTiming` 在 release 模式大约每 1 秒批量回调一次，在 debug/profile 模式大约每 100ms 回调一次；所以 Session Timeline 中若把 Flutter 帧事件时间戳记为 Native 接收回调时刻，它只能作为批次观测时间，不是帧实际发生时间。样本应标注 `clock_source: "native_receive_time"` 和 `clock_error_ms`：release 取约 1000ms+，debug/profile 取约 100ms+，另加通道传输延迟。只做按秒聚合的丢帧率分析时，直接使用 `buildMs` / `rasterMs` 时长指标。
 
-**进程挂起边界**：App 进入后台后系统可能冻结进程（CachedAppOptimizer / cgroup freezer），恢复后 `elapsedRealtime()` 持续计时但 `DateTime.now()` 可能跳变。如果校准对是在挂起前采集的，恢复后应重新发送一次校准对。实现方式：监听 `WidgetsBindingObserver.didChangeAppLifecycleState`，在 `resumed` 时重发校准事件。
+**进程挂起边界**：App 进入后台后系统可能冻结进程（CachedAppOptimizer / cgroup freezer），恢复后 `elapsedRealtime()` 持续计时但 `DateTime.now()` 可能跳变。如果会话锚点是在挂起前采集的，恢复后应重新发送一次锚点事件。实现方式：监听 `WidgetsBindingObserver.didChangeAppLifecycleState`，在 `resumed` 时重发锚点事件。
 
 ```dart
 // 帧事件中附上 raw timestamp 用于帧内部相对时序，不做 epoch 换算
@@ -289,7 +290,7 @@ final payload = timings.map((timing) => {
 }).toList();
 ```
 
-Native 端收到帧事件后，以回调接收时刻作为 Session Timeline 锚点，`buildMs` / `rasterMs` 用作帧耗时指标。如果只做粗粒度分析（按秒聚合丢帧率），直接用时长指标即可。需要时序关联的场景（Flutter 帧卡顿与 Native ANR / 网络 / WebView 事件）主要依赖 Native 接收时间做粗粒度对齐，不能依赖 raw timestamp 的 epoch 换算。
+Native 端收到帧事件后，以回调接收时刻作为 Session Timeline 锚点，`buildMs` / `rasterMs` 用作帧耗时指标。如果只做粗粒度分析（按秒聚合丢帧率），直接用时长指标即可。需要时序关联的场景（Flutter 帧卡顿与 Native ANR / 网络 / WebView 事件）主要依赖 Native 接收时间做批次级粗粒度对齐；release 模式可能有约 1 秒批量延迟，不能把它当成单帧精确发生时刻，也不能依赖 raw timestamp 的 epoch 换算。
 
 Native 收到数据后，按页面、路由、设备刷新率、前后台和引擎后端聚合。Flutter 3.x 之后，Impeller 在部分平台替代或补充 Skia 路径，着色器编译和栅格化表现会变化。APM 样本里保留 Flutter 版本、渲染后端和设备 GPU 信息，才能解释同一页面在不同设备上的差异。
 
