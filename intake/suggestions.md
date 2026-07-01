@@ -267,3 +267,39 @@
 - **建议**：核实是否为源码原文。如为加工添加，删除编号注释或改写为正文说明。
 
 - **review 日志**：logs/review/2026-07-01-23-review.md
+
+## [Task2A Gap Mining] 3 个合格候选已录入 — 2026-07-02 01:04
+
+本轮第八轮挖掘，基于 2026-07-01 新注入的技术文章 intake（43 篇 Android 17 系统新特性）。
+
+**与前 7 轮的区别**：前 7 轮（01:12~21:16）评估的方向是系统服务扫描、Clippings、XR/Kernel/GenAI 等。
+本轮首次评估 21:16 注入的技术文章素材，发现 3 个前轮未检查的合格缺口：
+
+1. ✅ **14.24 Android 17 simpleperf 微架构级性能采样与工作流增强** — 17/20
+   - ARM SPE (SPERecorder/SPEDecoder), TRBE (TMRecorder), --background, --app, Qualcomm PMU, kernel module ETM AutoFDO
+   - 素材：6 篇技术文章 | 现有 14.02-simpleperf.md (finalized) 未覆盖这些 Android 17 新特性
+
+2. ✅ **14.25 Android 17 eBPF 性能可观测性程序矩阵扩展** — 15/20
+   - cyclePerUid, dmabufIter, kernelwakelockduration, locks, cpucycleperuid Rust FFI
+   - 素材：5 篇技术文章 | 现有 14.10-ebpf (finalized, verified against android-16) 未覆盖
+
+3. ✅ **9.10 Android 17 ANR 预警回调与类型枚举** — 17/20
+   - AnrTypes, AnrWarningResult, IAnrWarningCallback.aidl
+   - 素材：1 篇技术文章（但 ANR 相关性极高）| ch09 全部 finalized，未覆盖预警系统
+
+**已检查但 <14 分的方向**：
+- pmgd 进程守护 → 系统守护进程，开发者不直接接触 (10/20)
+- M_PURGE_FAST → bionic 细节，应更新 1.40-bionic (10/20)
+- reallocarray/bionic env/wchar SIMD → bionic 内部变更 (8-10/20)
+- SurfaceFlinger Lockless (MagicRingBuffer/RPointer/BitSet) → SF 内部基础设施 (12/20)
+- RemoteCompose 进程外 UI → 太新，采用率低 (12/20)
+- ProfilingTrigger → 已在 14.07/8.16 覆盖 (不单独计分)
+- PCC 私有计算 → 非性能核心 (8/20)
+- AppFunctions AI 调用 → 非性能核心 (8/20)
+- Parcel targetSdk37 收紧 → 兼容性而非性能 (10/20)
+- static final 不可修改 → 兼容性而非性能 (10/20)
+- amemdiff 工具 → 工具使用，素材单一 (10/20)
+- BinderObserver/BinderNetlink → 应更新 Binder 章节 (12/20)
+- AppJankTest → 测试应用 (8/20)
+- Winscope Angular 迁移 → 构建工具 (6/20)
+- AISealHostService → 语义不明 (6/20)
