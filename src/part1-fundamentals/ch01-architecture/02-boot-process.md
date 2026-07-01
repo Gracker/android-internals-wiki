@@ -2,7 +2,7 @@
 title: 系统启动全流程
 chapter: '1.2'
 section: '1.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-17'
 last_verified_against: AOSP android-17.0.0_r1, source.android.com 官方文档
@@ -166,7 +166,7 @@ task2b_fixed_by: task2b-main-2026-07-01
 
 ## 完整启动链：从按下电源到桌面可见
 
-把 Android 开机过程画成一条直线时，最容易丢掉三个节点：first-stage init、Home 首帧可见、boot completed 广播。节点丢了，Trace、logcat 和 bootstat 就对不上。按 android-17.0.0_r1 的实现，主链更接近下面这样：
+把 Android 开机过程画成一条直线时，最容易丢掉三个关键节点：first-stage init、Home 首帧可见、boot completed 广播。节点丢了，Trace、logcat 和 bootstat 就对不上了。按 android-17.0.0_r1 的实现，主链更接近下面这样：
 
 ```
 [图：Android 启动全流程时序图]
