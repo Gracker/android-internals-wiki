@@ -1918,6 +1918,14 @@
       "issues": 3,
       "log": "logs/review/2026-07-01-12-review.md",
       "auto_promoted": true
+    },
+    {
+      "date": "2026-07-01",
+      "section": "1.2",
+      "title": "系统启动全流程",
+      "result": "pass-light-edit",
+      "type": "revisiting (body restoration)",
+      "auto_promoted": false
     }
   ]
 }
