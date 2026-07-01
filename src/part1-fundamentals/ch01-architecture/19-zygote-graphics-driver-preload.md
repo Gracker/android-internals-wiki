@@ -1,8 +1,9 @@
 ---
+
 title: "Zygote 图形驱动预加载与启动性能"
 chapter: "1.19"
 section: "1.19"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-05-16"
@@ -35,10 +36,10 @@ sources:
 reviewed_date: "2026-05-27"
 reviewed_by: openclaw-task6
 review_round: 2
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-pipeline_stage: ready-to-publish
+task9_state: pending
+pipeline_stage: task6_pending
 task6_review_notes: "2026-05-27 Task6：回炉复审通过；Task9 auto-fix 后的 GraphicsEnvironment 与 zygote graphics preload 表达顺畅；本轮无正文小修，无 L3/L4 回炉项。送 Task9 技术复审。"
 last_task6_at: "2026-05-27T19:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-27-19-review.md"
@@ -62,6 +63,7 @@ p2: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
 ---
+
 
 # 1.19 Zygote 图形驱动预加载与启动性能
 

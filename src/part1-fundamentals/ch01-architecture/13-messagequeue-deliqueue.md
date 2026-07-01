@@ -2,7 +2,7 @@
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
 section: "1.13"
-status: "finalized"
+status: ready-for-review
 applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现公开源码:Android 16;面向应用默认启用:Android 17 (API 37)"
 drafted_date: "2026-04-04"
 reviewed_date: "2026-05-27"
@@ -35,10 +35,10 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-task6_state: revising
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-06-14-08-review.md"
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "pass-tech-review"
 last_task9_autofix_at: "2026-06-14"
 last_task9_at: "2026-06-22T16:31:06+08:00"
@@ -46,7 +46,7 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-22"
 task2b_state: "fixed"
 task2b_result: "fixed"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: task6_pending
 last_task2b_at: "2026-05-27T12:50:00+08:00"
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 Android 16 Combined/Concurrent/Legacy MessageQueue 路径、Android 17 行为变更页、DeliQueue 官方性能数据；未发现 P0/P1，自动晋升 finalized。 | 2026-06-14 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 Android 16 Combined/Concurrent/Legacy MessageQueue 源码路径、Android 17 MessageQueue 行为变更页、官方 DeliQueue 性能数据与内部交叉引用；无阻断问题，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 AOSP android-16.0.0_r1 Combined/Concurrent/Legacy MessageQueue、Android 17 MessageQueue 行为变更页与官方性能数据；Android 17/API 37 边界清楚，无 P0/P1。"
 task6_reviewed_date: "2026-06-14"
