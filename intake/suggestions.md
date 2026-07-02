@@ -472,3 +472,21 @@
 2. 等待 Android 18 DP
 3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）
 4. 14.24/14.25/9.10/4.9/9.11/27.1/13.21 等 draft 章节已有实质内容，需 Task 2B 加工提升质量
+
+
+## [Task2A] 6 个空 draft 标记为 deprecated — 2026-07-02 19:04
+
+本轮第十轮复查发现 6 个空 draft（1.50/1.51/1.52/4.10/6.3/8.2），全部为：
+1. **重复章节** — 与已有 ready-for-review 章节内容完全重复
+2. **大纲错误** — 全部使用 ResourcesManager/Configuration 模板（copy-paste 错误）
+
+已处理：6 个空 draft → status: deprecated，标注重复目标：
+- 1.50 → dup of 1.46 + 1.48（ResourcesManager/Configuration）
+- 1.51 → dup of 1.45 + 1.49（Staged Install）
+- 1.52 → dup of 1.44 + 1.9（Binder IPC 优先级继承）
+- 4.10 → dup of 4.5（AppFlow/LMKD）
+- 6.3 → dup of 6.2（SharedPreferencesImpl ANR）
+- 8.2 → dup of 8.1（bootanalyze）
+
+Phase 1 结论：全书覆盖度十轮确认饱和，无合格新候选。
+当前 draft 数量：18（全部已有实质内容，需 Task 2B 加工提升质量）。

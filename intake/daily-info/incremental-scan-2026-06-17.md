@@ -30,27 +30,27 @@
   映射：ch08
 
 - 标题：10万人都在用的 top10 skills，我帮你试了
-  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76047574-10万人都在用的top10skills我.md
+  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-06-17-76047574-10万人都在用的top10skills我.md
   评分：13/20
   映射：ch02
 
 - 标题：Android 要变天：桌面端这次真的来了！
-  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76226966-Android要变天桌面端这次真的来了.md
+  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-06-17-76226966-Android要变天桌面端这次真的来了.md
   评分：10/20
   映射：ch03
 
 - 标题：Android17 为什么重写 MessageQueue
-  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76128120-Android17为什么重写Messag.md
+  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-06-17-76128120-Android17为什么重写Messag.md
   评分：14/20
   映射：ch05
 
 - 标题：火爆全网的Skills，看这一篇就够了！
-  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76010772-火爆全网的Skills看这一篇就够了.md
+  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-06-17-76010772-火爆全网的Skills看这一篇就够了.md
   评分：15/20
   映射：ch03
 
 - 标题：为什么 Android 不用接口做 Activity 通信？
-  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-06-17-76388970-为什么Android不用接口做Activ.md
+  路径：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-06-17-76388970-为什么Android不用接口做Activ.md
   评分：14/20
   映射：ch04
 

@@ -186,3 +186,30 @@
 
 ### 关联章节
 1.8 (Activity Manager / Window Manager)，2.12 (VSync/窗口相关章节)，8.2 (Compose 状态与生命周期)，16.5 (Android 版本行为变化)
+
+
+## [2026-07-02] Part 5 应用层 CPU 优化实战 — 参考书素材（赵子健 性能优化）
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
+[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
+
+### 知识点
+1. **ThreadPoolExecutor 实战配置**：CPU 线程池（core=核数, max=核数, LinkedBlockingDeque）vs IO 线程池（core=0~N, max=60~100+, SynchronousQueue），execute() 调度流程源码级解读
+2. **CPU 闲置检测方案**：方案A 通过读取 /proc/stat + /proc/pid/stat 计算 CPU 占用率（含完整字段说明）；方案B 通过 Native times() 函数计算 CPU 速率（阈值 <0.1 = 闲置），推荐方案B（性能损耗更低）
+3. **闲置预加载策略**：CPU 闲置时执行预创建 View / 预拉数据 / 预创建关键对象，需打散任务避免单周期过载
+4. **锁等待对 CPU 的影响**：synchronize 等待流程（自旋→休眠），锁优化四原则（无锁优于有锁、细化粒度、粗化粒度、增加数量）
+5. **IO 等待优化**：IO 任务分离（缩短主线程等待时间）、Kotlin 协程在 IO 密集型场景的优势
+
+### 重要程度
+中—高（应用层 CPU 实战指南，AIW 当前偏系统底层调度原理，缺应用实践层）
+
+### 建议加工方向
+- 新建 Part 5 或 Part 2 章节，主题「应用层 CPU 利用率优化实战」
+- 以 ThreadPoolExecutor 配置为切入，对比 CPU/IO 线程池设计
+- CPU 闲置检测两种方案可作为可落地方案写入（含 /proc/stat 字段速查表）
+- 与 ch05（系统调度）形成「原理→实战」配对：ch05 讲 EAS/EEVDF/CFS，新章讲 App 怎么用
+- [章节待创建]
+
+### 关联章节
+ch05（CPU 与功耗）、ch07（流畅度）、ch08（启动优化）
