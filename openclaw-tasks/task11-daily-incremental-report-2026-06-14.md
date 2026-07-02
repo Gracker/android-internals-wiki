@@ -43,32 +43,32 @@
 
 #### 技术文章（掘金）
 - **标题**：Android 17 有什么需要适配的？
-- **路径**：source/juejin-android/2026-06-14-76102333-Android_17_有什么需要适配的？.md
+- **路径**：技术文章/source/juejin-android/2026-06-14-76102333-Android_17_有什么需要适配的？.md
 - **评分**：16/20
 - **映射**：ch16
 
 - **标题**：Android 17 为什么重写 Mess
-- **路径**：source/juejin-android/2026-06-14-76128120-Android17_为什么重写_Mess.md
+- **路径**：技术文章/source/juejin-android/2026-06-14-76128120-Android17_为什么重写_Mess.md
 - **评分**：16/20
 - **映射**：ch16
 
 - **标题**：2026 Flutter VS React
-- **路径**：source/juejin-android/2026-06-14-76132301-2026_Flutter_VS_Reac.md
+- **路径**：技术文章/source/juejin-android/2026-06-14-76132301-2026_Flutter_VS_Reac.md
 - **评分**：16/20
 - **映射**：ch16
 
 - **标题**：什么 AI 写 Android 最好用？
-- **路径**：source/juejin-android/2026-06-14-76148976-什么_AI_写_Android_最好用？.md
+- **路径**：技术文章/source/juejin-android/2026-06-14-76148976-什么_AI_写_Android_最好用？.md
 - **评分**：14/20
 - **映射**：ch16
 
 - **标题**：你还用 IDE 吗？AI 狂欢时代下
-- **路径**：source/juejin-android/2026-06-14-76150608-你还用_IDE_吗？_AI_狂欢时代下.md
+- **路径**：技术文章/source/juejin-android/2026-06-14-76150608-你还用_IDE_吗？_AI_狂欢时代下.md
 - **评分**：12/20
 - **映射**：ch16
 
 - **标题**：Android 要变天：桌面端这次真的来
-- **路径**：source/juejin-android/2026-06-14-76226966-Android_要变天：桌面端这次真的来.md
+- **路径**：技术文章/source/juejin-android/2026-06-14-76226966-Android_要变天：桌面端这次真的来.md
 - **评分**：12/20
 - **映射**：ch16
 

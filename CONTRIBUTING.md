@@ -1,5 +1,7 @@
 # 贡献规范
 
+本文面向当前 AIW alpha 精修期。仓库里还保留了一些早期状态名和历史脚本，新改动请遵循下面的当前规则。
+
 ## OpenClaw 操作规范
 
 ### Commit Message 格式
@@ -41,13 +43,14 @@ Action 类型：
 
 ## 内容元数据标准
 
-每篇内容的头部必须包含 YAML 元数据：
+每篇正文内容的头部必须包含 YAML 元数据。新写或大修章节优先使用以下字段：
 
 ```yaml
 ---
 title: "章节标题"
 chapter: "X.Y"
-status: verified | draft | needs-review | outdated
+status: draft | ready-for-review | finalized
+pipeline_stage: task6_pending | task9_pending | task2b_pending | ready-to-publish
 applicable_versions: "Android X (API N) - Android Y (API M)"
 last_verified: "YYYY-MM-DD"
 last_verified_against: "AOSP branch"
@@ -59,6 +62,13 @@ tags: [tag1, tag2]
 related_chapters: ["X.Y", "X.Z"]
 ---
 ```
+
+说明：
+
+- `status` 表示正文成熟度。当前主状态为 `draft`、`ready-for-review`、`finalized`。
+- `pipeline_stage` 表示流水线位置。发布就绪使用 `ready-to-publish`。
+- 早期遗留的 `verified`、`needs-review`、`outdated`、`fixed-lite` 可被脚本兼容，但不要在新章节里继续引入。
+- `src/preface/`、`src/appendix/`、`src/graphify-out/` 可按内容需要简化字段，但不得缺少标题和来源边界。
 
 ## 内容融入策略
 
@@ -81,6 +91,23 @@ related_chapters: ["X.Y", "X.Z"]
 - `[引用: url]` — 外部引用
 - `[适用版本: Android X - Android Y]` — 版本范围
 - `[争议]` — 不同来源说法不一致
+
+## 流水线文件边界
+
+当前权威文件：
+
+- `metadata/queue.json`：回炉、素材注入、人工请求队列。当前结构为列表；追加时保留既有条目，不要整体重写。
+- `metadata/progress.json`：精修跟踪子集，不等同于 `src/` 全量文件数量。
+- `metadata/source-index.json`：素材索引。大文件操作应优先使用 `scripts/source_index_helper.py`。
+- `intake/suggestions.md`、`intake/research-gaps.md`、`intake/manual-requests/`：人工建议、知识缺口、手动请求的落点。
+- `logs/`：review、research、rework、integration 的证据链。
+
+非权威或临时文件不要作为流水线输入：
+
+- 根目录的 `queue.json`、`source-index.json`
+- `temp_entries.json`、`telegram-output.md`、`rework-result-*.txt`
+- `metadata/*.backup`、`metadata/*.bak`、`metadata/*.tmp`
+- `src/**/*.bak`、根目录源码摘录 `*_java.txt` / `*_cpp.txt`
 
 ## 社区贡献指南
 
