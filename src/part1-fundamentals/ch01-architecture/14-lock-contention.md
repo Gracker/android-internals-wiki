@@ -14,22 +14,28 @@ drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-25"
 reviewed_by: "openclaw-task6"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1 + bionic android-9.0.0_r1 + binder android-7.1.2_r39/android-8.0.0_r1 + Perfetto stdlib"
+last_verified: "2026-07-02"
+last_verified_against: "AOSP android-17.0.0_r1 + kernel/common android17-6.18 + Android Developers Blog 2026-02-17 + Perfetto stdlib"
 confidence: "medium"
 sources:
   - type: aosp
-    path: "platform/art/runtime/monitor.cc (android-16.0.0_r1)"
+    path: "platform/art/runtime/monitor.cc (android-17.0.0_r1)"
   - type: aosp
-    path: "platform/art/runtime/lock_word.h (android-16.0.0_r1)"
+    path: "platform/art/runtime/lock_word.h (android-17.0.0_r1)"
   - type: aosp
-    path: "platform/bionic/libc/bionic/pthread_mutex.cpp (android-9.0.0_r1)"
+    path: "platform/bionic/libc/bionic/pthread_mutex.cpp (android-17.0.0_r1; PI API already present in android-9.0.0_r1)"
   - type: aosp
-    path: "platform/frameworks/native/libs/binder/ProcessState.cpp (android-7.1.2_r39)"
+    path: "platform/frameworks/native/libs/binder/ProcessState.cpp (android-17.0.0_r1; 7.1.2/8.0 used only for history comparison)"
   - type: aosp
-    path: "platform/frameworks/native/libs/binder/ProcessState.cpp (android-8.0.0_r1)"
+    path: "platform/frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java (android-17.0.0_r1)"
   - type: aosp
-    path: "kernel/common/drivers/android/binder.c (android-mainline)"
+    path: "platform/frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "platform/frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "platform/frameworks/base/services/core/java/com/android/server/am/ProcessList.java (android-17.0.0_r1)"
+  - type: aosp-kernel
+    path: "kernel/common/drivers/android/binder.c (android17-6.18 branch; Android 17 kernel branch)"
   - type: official
     path: "https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention"
   - type: official
@@ -44,16 +50,17 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-25"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-07-02"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T15:22:00+08:00"
-last_task9_audit: "2026-06-12"
-last_task9_audit_log: "logs/deep-review/2026-06-12-15-audit.md"
+last_task9_at: "2026-07-02T12:46:16+08:00"
+last_task9_audit: "2026-07-02"
+last_task9_audit_log: "logs/deep-review/2026-07-02-12-audit.md"
+last_task9_autofix_at: "2026-07-02"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-27T16:50:00+08:00"
@@ -65,8 +72,8 @@ review_type: "task6-writing-quality-review"
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-25 21:17 Task6 复审：修复 LRU 性能数据小节重复（删除文末 1204 字符重复块）、性能数据中英文间距、大纲禁用词「下钻」、补 [待验证] 标注；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-27-15-deep-review.md"
-task9_review_notes: "2026-05-27 15:22 Task9 deep-review：技术复审无新增 P0/P1；既有 queue pending 为 Task6/Task2B 文末源码调研原始块清理，不自动晋升。"
+last_task9_review_log: "logs/deep-review/2026-07-02-12-audit.md"
+task9_review_notes: "2026-07-02 12:46 Task9 idle audit AUTO-FIX：重锚 ART/bionic/Binder/AMS/DeliQueue 源码到 Android 17，修正 OomAdjuster Android 17 包路径与 DeliQueue 官方指标口径；回到 Task6 复审。 | 2026-05-27 15:22 Task9 deep-review：技术复审无新增 P0/P1；既有 queue pending 为 Task6/Task2B 文末源码调研原始块清理，不自动晋升。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
 ---
@@ -176,7 +183,7 @@ Perfetto 里最容易让人误判的一类问题，是线程看起来“没在�
 
 ## Monitor Lock 的实现细节
 
-`synchronized` 的底层是 ART monitor，不是什么抽象的“Java 锁”。对象头里的 lock word 先尝试走 thin lock，只有在竞争出现，或者调用 `wait()` 这类需要等待队列的操作时，才会膨胀成 fat monitor。`art/runtime/lock_word.h` 里定义了 `Unlocked`、`ThinLocked`、`FatLocked` 这些状态，`art/runtime/monitor.cc` 里则能看到 monitor 进入、膨胀和等待的实际实现。[已验证: AOSP android-16.0.0_r1, `art/runtime/monitor.cc` + `art/runtime/lock_word.h`]
+`synchronized` 的底层是 ART monitor，不是什么抽象的“Java 锁”。对象头里的 lock word 先尝试走 thin lock，只有在竞争出现，或者调用 `wait()` 这类需要等待队列的操作时，才会膨胀成 fat monitor。`art/runtime/lock_word.h` 里定义了 `Unlocked`、`ThinLocked`、`FatLocked` 这些状态，`art/runtime/monitor.cc` 里则能看到 monitor 进入、膨胀和等待的实际实现。[已验证: AOSP android-17.0.0_r1, `art/runtime/monitor.cc` + `art/runtime/lock_word.h`]
 
 这条设计解释了为什么“无竞争的 `synchronized`”和“竞争下的 `synchronized`”完全不是一个量级。前者基本上是一次对象头 CAS，后者要创建 fat monitor、进入等待队列、让线程睡眠，再等待别人把它唤醒。`wait()` 也会强制这条路径进入 fat monitor，因为只有 fat monitor 才有完整的等待集合。
 
@@ -186,13 +193,13 @@ ART 还提供一个明确的观测点。`monitor.cc` 里的 `kLongWaitMs` 设为
 
 futex 的价值在于把“无竞争时的原子操作”和“有竞争时的线程睡眠”连在一起。无竞争时，线程只在用户态改一个共享字，几乎不需要内核介入；竞争出现后，再通过 `FUTEX_WAIT` / `FUTEX_WAKE` 进入慢速路径。ART monitor、bionic 的 `pthread_mutex`、条件变量，都会建立在这套机制上。
 
-**“系统支持 futex”不等于“所有等待都叫 futex 锁竞争”，也不等于“具体锁路径启用了 PI-futex”。** `android-9.0.0_r1` 的 bionic 里已经提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)`，这说明 native mutex 层具备 PI mutex 能力；可它只说明“可以这样配置”，并不说明系统里每一把 mutex 都真的这么配了。[已验证: AOSP android-9.0.0_r1, `platform/bionic/libc/bionic/pthread_mutex.cpp`]
+**“系统支持 futex”不等于“所有等待都叫 futex 锁竞争”，也不等于“具体锁路径启用了 PI-futex”。** `android-9.0.0_r1` 的 bionic 已经提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)`，Android 17 的 bionic 仍保留这组接口；这说明 native mutex 层具备 PI mutex 能力。可它只说明“可以这样配置”，并不说明系统里每一把 mutex 都真的这么配了。[已验证: AOSP android-17.0.0_r1 + android-9.0.0_r1, `platform/bionic/libc/bionic/pthread_mutex.cpp`]
 
 普通 futex 等待走 `FUTEX_WAIT` / `FUTEX_WAKE`，内核负责睡眠和唤醒，不处理等待者优先级。PI-futex 走 `FUTEX_LOCK_PI` / `FUTEX_UNLOCK_PI`，内核会把等待者优先级传给持锁线程，并在释放锁时唤醒优先级最高的等待者。这个差异只在 mutex 按 PI 协议初始化后成立；同样看到 `futex_*`，不能直接推断成 PI 行为。
 
 还有一个容易被写过头的边界：PI futex 的用户态 word 会编码 owner TID，32 位 ABI 下 `pthread_mutex_t` 布局更紧，owner TID 编码空间需要按 bionic tag 核对。公开 AOSP 证据不能支撑 `android_pid_t` / `ANDROID_PID_MAX` 或“Android 12+ 64-bit PID 修复”这类结论，正文只保留可验证的 ABI 边界。
 
-Binder 更不能直接写成 “Binder = futex / PI-futex”。Binder 的等待和唤醒主要由 binder driver 的 wait queue、事务分发和线程选择逻辑处理。驱动里需要重点核对的入口，是 `binder_transaction_priority()`、`binder_select_thread_ilocked()`、`binder_wakeup_thread_ilocked()` 这一类函数，而不是把它硬套到 Java monitor 的语义里。[已验证: kernel/common `drivers/android/binder.c`]
+Binder 更不能直接写成 “Binder = futex / PI-futex”。Binder 的等待和唤醒主要由 binder driver 的 wait queue、事务分发和线程选择逻辑处理。驱动里需要重点核对的入口，是 `binder_transaction_priority()`、`binder_select_thread_ilocked()`、`binder_wakeup_thread_ilocked()` 这一类函数，而不是把它硬套到 Java monitor 的语义里。[已验证: kernel/common android17-6.18 `drivers/android/binder.c`]
 
 ## 优先级反转：从模型到 Android 现场
 
@@ -214,11 +221,11 @@ SurfaceFlinger 和 InputDispatcher 不能直接写成“Android 14+ 全面启用
 
 Binder 的问题，通常不是“调用慢”这四个字能概括的。调用方睡在 Binder 上，只说明它在等目标进程；瓶颈常常在服务端对象锁、Binder worker 数量，或者服务端 worker 持锁时又去做了别的慢操作。
 
-`ProcessState.cpp` 在 `android-7.1.2_r39` 和 `android-8.0.0_r1` 两个 tag 里都把 `DEFAULT_MAX_BINDER_THREADS` 定义为 15。所以“Android 8 把 Binder 默认线程从 8 提到 16”这个说法站不住脚。常见 Binder worker 上限长期稳定在 15 个工作线程，外加调用上下文里能看到的主线程或主 Binder 线程，trace 里才会让人形成“像是 16 条线程”的体感。[已验证: AOSP `frameworks/native/libs/binder/ProcessState.cpp` at `android-7.1.2_r39` / `android-8.0.0_r1`]
+`ProcessState.cpp` 在 `android-7.1.2_r39`、`android-8.0.0_r1` 和 `android-17.0.0_r1` 都把 `DEFAULT_MAX_BINDER_THREADS` 定义为 15。所以“Android 8 把 Binder 默认线程从 8 提到 16”这个说法站不住脚。常见 Binder worker 上限长期稳定在 15 个工作线程，外加调用上下文里能看到的主线程或主 Binder 线程，trace 里才会让人形成“像是 16 条线程”的体感。[已验证: AOSP `frameworks/native/libs/binder/ProcessState.cpp` at `android-17.0.0_r1`，旧 tag 仅作历史对照]
 
 system_server 里的典型热点在服务端全局锁，不在 Binder 驱动本身。比如 WindowManager 的 `WindowManagerGlobalLock`，AMS/PMS 的大对象锁，都会把一个 Binder 调用拖成一整串等待。调用方主线程睡在 `binder_thread_read`，服务端 Binder worker 可能睡在 `futex_wait`，而持锁的 owner 线程可能又在跑磁盘 I/O、跨服务调用，或者干脆在等另一把锁。只看调用方只能看到结果；把 Binder worker 和 owner 一起看，根因才会露出来。
 
-AMS 的双锁结构是 system_server 锁竞争里很典型的例子。Android 10 之后，AMS 逐步把进程状态保护从单一 `ActivityManagerService.this` 拆到 `mGlobalLock` 与 `mProcLock`：前者仍保护组件生命周期、进程启动、ANR 判定这类全局状态，后者更多保护 LRU list、`ProcessRecord` 和 OOM 调整里的进程状态读取。到 Android 12+，`ENABLE_PROC_LOCK` 已经固定为 true，`OomAdjuster.updateOomAdjLSP()`、`ProcessList.forEachLruProcessesLOSP()` 这类路径会进入 `mProcLock` 保护范围。[已验证: AOSP `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` + `OomAdjuster.java`]
+AMS 的双锁结构是 system_server 锁竞争里很典型的例子。Android 10 之后，AMS 逐步把进程状态保护从单一 `ActivityManagerService.this` 拆到 `mGlobalLock` 与 `mProcLock`：前者仍保护组件生命周期、进程启动、ANR 判定这类全局状态，后者更多保护 LRU list、`ProcessRecord` 和 OOM 调整里的进程状态读取。到 Android 17，`ENABLE_PROC_LOCK` 固定为 true，`OomAdjuster.updateOomAdjLSP()` 位于 `com/android/server/am/psc/OomAdjuster.java`，`ProcessList.forEachLruProcessesLOSP()` 也会进入 `mProcLock` 保护范围。[已验证: AOSP android-17.0.0_r1 `ActivityManagerService.java` + `psc/OomAdjuster.java` + `ProcessList.java`]
 
 ### LRU 锁优化的代码级细节
 
@@ -348,7 +355,7 @@ LIMIT 40;
 
 如果问题出在 Binder，重点是避免 Binder worker 持锁时再去做跨服务调用、磁盘 I/O，或者长时间等待。Binder 事务的持锁区间一旦拉长，整个线程池都会跟着排队。
 
-Android 17 的 DeliQueue 是这类优化的一个案例。它面向 targetSdk 37+ 应用，把多生产者插入路径改成无锁，单消费者排序和消费继续留给 Looper 自己处理。Google 给出的数据是，主线程花在 lock contention 上的时间下降 15%，应用 missed frames 下降 4%，SystemUI / Launcher 的 missed frames 下降 7.7% 到 9.1%。这组数据只支撑 MessageQueue 生产者路径的优化收益，不能外推到其他锁路径。[已验证: Android Developers Blog, 2026-02-17 DeliQueue]
+Android 17 的 DeliQueue 是这类优化的一个案例。它面向 targetSdk 37+ 应用，把多生产者插入路径改成无锁，单消费者排序和消费继续留给 Looper 自己处理。Google 给出的数据是，应用主线程花在 lock contention 上的时间下降 15%，应用 missed frames 下降 4%，SystemUI / Launcher 交互 missed frames 下降 7.7%，应用启动到首帧绘制的 p95 时间下降 9.1%。这组数据只支撑 MessageQueue 生产者路径的优化收益，不能外推到其他锁路径。[已验证: Android Developers Blog 2026-02-17 + AOSP android-17.0.0_r1 `CombinedDeliMessageQueue/MessageQueue.java`]
 
 无锁也没有免费收益。CAS 重试、cache line bouncing、生产者突发写入带来的 drain 压力，都会把收益吃回去。所以 trace 里看见“没有 monitor contention 了”，并不代表问题自然消失，还要继续看 CPU 时间、owner 行为和关键线程延迟有没有一起变好。
 
