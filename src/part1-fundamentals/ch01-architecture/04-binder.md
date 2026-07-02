@@ -29,7 +29,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-09-01-audit.md"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-07-01"
 last_task6_at: 2026-07-02T01:10:00+08:00
-last_task6_audit: "2026-05-19"
+last_task6_audit: "2026-07-02"
 task6_review_log: "logs/review/2026-07-01-07-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
 deepseek_cn_review_state: done
