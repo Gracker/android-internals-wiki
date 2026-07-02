@@ -371,6 +371,125 @@
       "processed_at": "2026-07-02T06:19:46.260063",
       "action": "inject",
       "type": "DeepResearch"
+    },
+    {
+      "title": "Android Native | 内存问题的终极武器——MTE",
+      "path": "AndroidWeekly/#23/MTE内存问题的终极武器",
+      "source_url": "https://juejin.cn/post/7013595058125406238",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 20,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "深入分析ARM MTE(Memory Tagging Extension)原理，对比ASan/HWASan/MTE三种内存检测工具，详解MTE硬件级tag生成、存储和检测机制，含性能开销对比",
+      "scored_at": "2026-07-02T09:03:50.615648"
+    },
+    {
+      "title": "得物App ANR监控平台设计",
+      "path": "AndroidWeekly/#23/得物ANR监控平台",
+      "source_url": "https://juejin.cn/post/7009297034440081422",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-稳定性",
+          "confidence": "high"
+        }
+      ],
+      "summary": "得物ANR监控平台架构设计，涵盖ProcessErrorStateInfo解析、Looper Message回溯、Method Trace堆栈采样分析、ANR日志聚合策略",
+      "scored_at": "2026-07-02T09:03:50.615656"
+    },
+    {
+      "title": "Duolingo refactors on Android with MVVM and Jetpack libraries",
+      "path": "AndroidWeekly/#23/Duolingo-MVVM-Jetpack重构",
+      "source_url": "https://developer.android.com/stories/apps/duolingo-excellence",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Duolingo Android团队使用MVVM+Jetpack重构应用的案例，涉及ViewModel、LiveData、Navigation等组件的最佳实践",
+      "scored_at": "2026-07-02T09:03:50.615658"
+    },
+    {
+      "title": "Unidirectional Data Flow for Android UIs",
+      "path": "AndroidWeekly/#23/UDF-Android-UI",
+      "source_url": "https://dev.to/j1c1m1b1/unidirectional-data-flow-for-android-uis-2807",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android UI单向数据流架构模式详解，基于ViewModel+LiveData实现状态管理，避免Fragment/Activity中多flag状态混乱",
+      "scored_at": "2026-07-02T09:03:50.615660"
+    },
+    {
+      "title": "Android11系统源码分析：从binder trace视角看Activity冷启动",
+      "path": "AndroidWeekly/#23/binder-trace-Activity冷启动",
+      "source_url": "https://www.cnblogs.com/houser0323/p/15115623.html",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 20,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-启动",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch07-系统原理",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android11源码级分析Activity冷启动全流程，从Launcher→ATMS→Zygote→APP，结合binder trace展示IPC时序，含完整调用栈",
+      "scored_at": "2026-07-02T09:03:50.615661"
     }
   ]
 }
