@@ -699,3 +699,82 @@ AIW 当前 563 个文件，覆盖范围非常全面。后续缺口挖掘应关�
 - **位置**：源码级验证 / 实战建议第 1 条
 - **问题**：“requestLayout 比 recreate 快 5-10x”“80-180ms vs 5-20ms”是可量化性能断言，但未给设备、页面规模、采样次数和 trace 来源。
 - **建议**：补充一组可复现实测数据；否则改为“通常更轻量”，避免把经验量级写成确定结论。
+
+
+---
+
+## [Task14 参考书扫描] 10.1 App 内存分析 — 2026-07-03
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
+- **建议补充**：NativeAllocationRegistry 回收机制。Android 8.0 引入，Java 对象 GC 后自动回收关联 Native 内存（Bitmap 构造函数中通过 registry.registerNativeAllocation 注册）。AIW ch10.1 当前侧重 PSS/RSS 分析工具，可补充 NativeAllocationRegistry 作为 Native 内存自动回收的核心机制说明。
+- **参考书覆盖深度**：中等（原理说明 + 构造函数源码引用）
+
+## [Task14 参考书扫描] 10.5 内存优化案例 — 2026-07-03
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
+- **建议补充**：Bitmap 异常检测与治理实践。(1) 通过 hook Bitmap.createBitmap 系列静态方法，监控创建时的 width*height*bytesPerPixel，设阈值（如高端机 15MB = 1920x1080 ARGB_8888）。(2) 治理手段：超阈值图片缩放至屏幕宽度、ARGB_8888 降级为 RGB_565（内存减半）。(3) 兜底策略：低端机按比例缩放。参考书提供了完整 hook 代码思路。
+- **参考书覆盖深度**：深入（含 hook 实现、阈值计算、治理策略）
+
+## [Task14 参考书扫描] 12.1 APK 体积优化 — 2026-07-03
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+- **过时内容**：参考书使用 `android:extractNativeLibs="true"` 控制 so 压缩，并称 minSdkVersion < 23 时默认 true。
+- **建议更新至**：AIW ch12.1 已正确使用 `jniLibs.useLegacyPackaging` 替代旧 `extractNativeLibs` 属性，无需修改正文。但参考书未涉及 Android 15+ 16KB page size 兼容约束（AIW 已覆盖）。此处仅记录差异，正文无需动作。
+
+## [Task14 参考书扫描] 12.1 APK 体积优化 — 2026-07-03
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+- **建议补充**：Native 编译级别精简配置。(1) `-ffunction-sections -fdata-sections -Wl,--gc-sections` 三件套：将每个函数/数据独立分段，链接时移除未被引用的段。(2) LTO (Link Time Optimization) `-flto -O3`：链接时检测无效代码并删除（如 if 永假分支）。需补充 CMake 和 Android.mk 两种配置写法。AIW ch12.1 当前覆盖 AGP DSL 层面的 strip（ndk.debugSymbolLevel / keepDebugSymbols），但缺少 C/C++ 编译器和链接器级别的精简配置。
+- **参考书覆盖深度**：中等（配置方法 + 原理简述，无实测数据）
+
+## [Task14 参考书扫描] 12.1 APK 体积优化 — 2026-07-03
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+- **建议补充**：`-Wl,--exclude-libs,ALL` 链接选项。当 Native 代码引入第三方静态库（.a）时，会自动带入静态库的符号表。AGP release 构建只 strip 项目自身 so 的调试符号，不清理静态库引入的符号。通过在链接选项中加入此 flag 可删除所有来自静态库的导出符号，进一步减小 so 体积。
+- **参考书覆盖深度**：概述（仅配置方法）
+
+## [Task14 参考书扫描] 12.1 APK 体积优化 — 2026-07-03
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - so 文件的体积优化实战.md]
+- **建议补充**：自定义 so 高压缩方案（zstd/7z 替代 zip）。参考书提供了完整工程方案：(1) 打包阶段在 packageTask 前 hook，将 so 用 zstd 压缩存入 assets。(2) 运行时 hook System.loadLibrary，捕获 UnsatisfiedLinkError 后从 assets 解压并通过 System.load 加载。(3) 需白名单机制排除启动关键 so。此方案适合 so 占比大且 extractNativeLibs 收益不足的场景。AIW ch12.1 当前在概念层面提及"自定义压缩"，但缺少工程实现路径。
+- **参考书覆盖深度**：深入（含 Gradle Task 代码、Java 解压代码、白名单注意事项）
+
+## [Task14 参考书扫描] 8.3 启动优化策略 — 2026-07-03
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+- **建议补充**：核心线程绑核 CPU 大核方案。通过 `sched_setaffinity()` 将主线程和 RenderThread 绑定到时钟频率最高的 CPU 核心。大核检测：遍历 `/sys/devices/system/cpu/cpuN/cpufreq/cpuinfo_max_freq`，取频率最高的核序列。RenderThread TID 获取：遍历 `/proc/<pid>/task/<tid>/stat` 匹配线程名 `(RenderThread)`。绑定后主线程和渲染线程获得更多 CPU 时间，页面显示速度提升。AIW ch8.3 当前覆盖异步初始化、延迟初始化、Baseline Profiles 等，但未涉及 CPU 亲和性绑核实战。
+- **参考书覆盖深度**：深入（含完整 Native C 绑核代码、Java 大核检测代码、RenderThread 查找代码）
+
+## [Task14 参考书扫描] 8.3 启动优化策略 — 2026-07-03
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+- **建议补充**：线程优先级调整实践。建议在 Application 的 attach 生命周期中调用 `Process.setThreadPriority(-19)` 提升主线程至最高普通优先级。RenderThread 同样提升至 -19。同时降低非核心线程优先级（如后台线程设为 THREAD_PRIORITY_BACKGROUND=10）。参考书指出 `Thread.setPriority()` 存在时序 bug（子线程未创建成功时误设主线程优先级），建议统一使用 `Process.setThreadPriority()`。AIW ch8.3 可补充此实践段落。
+- **参考书覆盖深度**：中等（API 对比 + 常量表 + 注意事项）
+
+
+## [Task2A 知识缺口挖掘 — 第16轮] 2026-07-03 07:07
+
+结论：未发现评分 ≥ 14 的知识缺口，跳过。与第 1-15 轮结论一致。
+
+### Phase 0
+- 空 draft 章节：0 个（全部 16 个 draft 均已有实质内容，最小 ~52 行有效内容）
+- Task2B backlog：0 → 允许进入 Phase 1
+
+### Phase 1 检查方向（全部 < 14 分）
+- **daily-info 2026-07-03 三篇论文复查**：
+  - AndroidDaily GUI 代理基准 → AI 代理操作 UI，非性能优化核心议题 (7/20)
+  - Android 构建失败诊断实证 → 构建系统/Gradle，非运行时性能 (8/20)
+  - 内部代码指标预测应用受欢迎程度 → 软件工程研究，非 Android 性能 (5/20)
+- **source-index 未映射高分数复查**：全部已有对应章节（与前 15 轮一致）
+- **Clippings 三本参考书**：无新增文章（最新仍为稳定性剖析系列 5 篇）
+- **research-feeds**：无新增（最新仍为 2026-04-14 Perfetto v53/v54）
+- **Android 18 DP**：未发布
+- **research-gaps.md 盲区复查**：8 个高优先级盲区全部已有对应章节覆盖
+
+### 结论
+全书 564 个文件（16 draft + 190 ready-for-review + 338 finalized + 6 deprecated + 14 unknown），覆盖范围十六轮确认饱和。与前十五轮结论一致。
+
+后续可行动方向不变：
+1. 16 个 draft 章节提升至 ready-for-review（均已有实质内容，由 Task 2B 逐步提升质量）
+2. queue.json pending 条目处理
+3. 等待 Android 18 DP 或新版本素材
