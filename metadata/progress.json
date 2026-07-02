@@ -246,5 +246,29 @@
       "20.2",
       "26.10"
     ]
-  }
+  },
+  "task2b_rework": [
+    {
+      "section": "20.3",
+      "completed_at": "2026-07-02T18:54:37+08:00",
+      "lane": "main",
+      "source": "frontmatter-backlog-fallback",
+      "fixes": "content depth + practical guidance + data models"
+    },
+    {
+      "section": "21.2",
+      "completed_at": "2026-07-02T18:54:37+08:00",
+      "lane": "main",
+      "source": "frontmatter-backlog-fallback",
+      "fixes": "content depth + practical guidance + data models"
+    },
+    {
+      "section": "26.1",
+      "completed_at": "2026-07-02T18:54:37+08:00",
+      "lane": "main",
+      "source": "frontmatter-backlog-fallback",
+      "fixes": "content depth + practical guidance + data models"
+    }
+  ],
+  "last_task2b_at": "2026-07-02T18:54:37+08:00"
 }

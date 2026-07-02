@@ -27,20 +27,20 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, logs, traces, architecture]
 related_chapters: ["26.2", "26.3", "19.27", "15.9"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_date: "2026-06-30"
 task9_reviewed_by: "openclaw-task9"
 task9_result: auto-fixed
 last_task9_audit: "2026-06-30"
 last_idle_audit_at: "2026-06-30"
 last_task6_audit: "2026-06-26"
-task2b_state: pending
-task2b_result: ""
+task2b_state: fixed
+task2b_result: fixed
 last_task9_at: "2026-06-30T06:25:29+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-30-06-audit.md"
 last_task9_autofix_at: "2026-06-30"
@@ -74,7 +74,7 @@ last_task6_at: "2026-07-02T18:10:00+08:00"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-App 可观测性要解决线上问题处理里的四件事：判断影响面、拿到现场证据、找到责任方向，并把修复结果拉回线上验证。本节把可观测性拆成四层：数据模型、端侧采集、服务端处理、问题流转。Part 5 后续小节会展开 Crash、ANR、性能指标和案例，本文聚焦总架构。
+App 可观测性要解决线上问题处理里的四件事：判断影响面、拿到现场证据、找到责任方向，并把修复结果拉回线上验证。上线后 30 分钟 crash 率飙升——先回答「影响多少用户、哪些机型、哪个版本」，再拿到具体 crash 堆栈和用户操作路径；修完后灰度验证，确认修复版本 crash 率回落。这四个环节对应 Metrics（看趋势）、Logs（还原现场）、Traces（解释慢在哪）、回验（确认修复）。本节把可观测性拆成四层：数据模型、端侧采集、服务端处理、问题流转。Part 5 后续小节会展开 Crash、ANR、性能指标和案例，本节聚焦总架构。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
 
@@ -93,6 +93,113 @@ Android Vitals 侧重 Metrics：Google Play 会收集稳定性、性能、电量
 Firebase Performance Monitoring 的模型更接近 App 内部性能观测：自动采集启动、网络请求、屏幕渲染等 trace，并允许自定义 code trace、custom metrics 和 attributes。这里的 trace 指一段任务的起止时间与附加指标，区别于 Perfetto 文件；attributes 用来按国家、设备、版本、系统等维度筛选。[已验证: 官方文档, firebase.google.com/docs/perf-mon]
 
 App 自建体系要把两者结合：Vitals 给外部质量结果，自建 Metrics 给内部维度，Logs 和 Traces 给现场证据。单看 Vitals 只能知道质量已经变差；没有 Logs 和 Traces，仍然很难解释变差发生在哪个场景、由什么触发。
+
+
+### 事件数据模型设计示例
+
+Metrics、Logs、Traces 在端侧的编码方式不同，但共享一套公共字段。把这些字段统一设计和约束，后续分析层才能跨信号跳转。
+
+**公共字段（所有事件都带）**：
+
+```json
+{
+  "$common": {
+    "event_type": "crash_summary | anr_summary | startup_metric | frame_metric | user_log | network_metric",
+    "timestamp_ms": 1719926400123,
+    "session_id": "a1b2c3d4-...",
+    "scene_id": "MainActivity_onResume",
+    "scene_seq": 12,
+    "app_version": "8.4.2",
+    "build_number": 8420,
+    "os_version": "Android 14",
+    "api_level": 34,
+    "device_model": "Pixel 8",
+    "device_brand": "Google",
+    "network_type": "WIFI",
+    "app_in_foreground": true,
+    "sample_rate": 0.1,
+    "sample_config_version": "2026-07-02-v3"
+  }
+}
+```
+
+`event_type` 决定后续展开哪个业务字段块。`session_id` 让同一个用户的一次使用会话内的所有事件可关联。`scene_id` + `scene_seq` 让事件按页面和顺序排列，比单纯用时间戳更稳定。
+
+**Metrics 事件示例（启动指标）**：
+
+```json
+{
+  "$common": { "event_type": "startup_metric" },
+  "startup": {
+    "type": "cold",
+    "ttid_ms": 1820,
+    "ttfd_ms": 2350,
+    "attach_base_ms": 120,
+    "oncreate_ms": 450,
+    "first_screen_ms": 1250,
+    "dag_critical_path_ms": 1400,
+    "thread_pool_wait_max_ms": 80,
+    "provider_init_count": 12,
+    "provider_init_total_ms": 320,
+    "sdk_init_count": 8,
+    "blocked_by_network": true,
+    "network_requests": [
+      { "name": "config_fetch", "duration_ms": 520, "cached": false },
+      { "name": "ab_test", "duration_ms": 180, "cached": true }
+    ]
+  }
+}
+```
+
+启动指标选择点状采集而不是全 trace 上报——线上网络成本不允许每个启动都上传完整 Perfetto trace。把启动分解成几个关键阶段耗时，配合线程池等指标和阻塞网络请求标记，能在不依赖 trace 的情况下定位瓶颈来源。
+
+**Logs 事件示例（用户日志摘要）**：
+
+```json
+{
+  "$common": { "event_type": "user_log" },
+  "log": {
+    "level": "ERROR",
+    "tag": "PaymentFlow",
+    "msg_hash": "sha256:abc123...",
+    "msg_summary": "payment confirm failed: timeout",
+    "error_code": 504,
+    "user_visible": true,
+    "prev_scene_id": "PaymentConfirmActivity",
+    "stack_trace_hash": "sha256:def456..."
+  }
+}
+```
+
+日志上报不传原始日志正文——传 `msg_hash`（去重）和 `msg_summary`（可读）。服务端按 `msg_hash` 聚合，发现某个错误码突然增多后，再用日志回捞拉具体用户的详细日志正文。
+
+**Traces 事件示例（方法耗时片段）**：
+
+```json
+{
+  "$common": { "event_type": "method_trace" },
+  "trace": {
+    "span_name": "MainActivity.onCreate",
+    "parent_span": "cold_start",
+    "start_offset_ms": 320,
+    "duration_ms": 145,
+    "thread": "main",
+    "sub_spans": [
+      { "name": "setContentView", "duration_ms": 45 },
+      { "name": "findViewById", "duration_ms": 12 },
+      { "name": "ViewModel.init", "duration_ms": 68 }
+    ]
+  }
+}
+```
+
+不是完整 Perfetto trace，而是关键方法耗时片段。通过 `parent_span` + `start_offset_ms` 把多个片段拼回时间线。端侧 trace SDK 在关键路径上插入 `startSpan/stopSpan`，日常只记录耗时摘要；异常时（超阈值）再触发完整 Perfetto trace 上传。
+
+**数据模型的演进策略**：
+
+先确定 `$common` 公共字段（一次性定好，后续只加不删），再逐步细化各 event_type 的专属字段。不要在开始时把 schema 设计得太复杂——schema 越细，接入方越不想用。最小版本只需要：event_type、timestamp、app_version、session_id、scene_id + 业务核心字段。其他公共字段可以后续补上。
+
+
 
 ## App 侧监控体系分层设计
 
@@ -145,7 +252,7 @@ Android 官方启动优化文档把 TTID 和 TTFD 区分开：TTID 表示首帧�
 
 ## 采样策略与数据量控制
 
-可观测性系统的成本主要来自三处：端侧 CPU / I/O、用户流量、服务端存储和计算。采样策略要同时控制这三类成本。
+可观测性系统的成本主要来自三处：端侧 CPU / I/O、用户流量、服务端存储和计算。采样策略要同时控制这三类成本。如果不做控制，端侧高频事件（如每秒帧率指标）会让 CPU 持续占用，用户流量被大量数据上传消耗，服务端存储成本线性增长——DAU 100 万的 App，日增上亿条记录并不夸张。
 
 常用策略可以分成四类：
 
@@ -160,7 +267,52 @@ Android 官方启动优化文档把 TTID 和 TTFD 区分开：TTID 表示首帧�
 
 采样后的数据必须带上采样率和采样规则版本。服务端计算比例时按采样权重还原，排查单用户问题时也能知道为什么某些日志缺失。没有这些字段，平台会把“没有采到”误判成“没有发生”。
 
-## [自动发现] 用户日志与远程诊断是现场证据层
+## 
+
+## 可观测性建设的常见陷阱
+
+以下问题在团队从零建设可观测性系统时反复出现，提前了解能少走弯路。
+
+### 陷阱 1：把所有东西都上报，然后「服务端再筛」
+
+端侧采集的默认心态是「先全量上报，服务端做过滤」。结果上线第一周，存储成本远超预期，查询也慢到无法使用。
+
+实际工作中，端侧上报量通常被严重低估。一个 DAU 100 万的 App，启动指标（设为每次启动上报一次）每天就产生 100 万条；如果加了页面级别指标，量级再乘 5-10。加上网络请求指标（每次网络请求上报一次），DAU 100 万很容易做到日增上亿条记录。
+
+正确做法：端侧先决定「什么不需要上报」——正常值不上报（只报异常）、低频场景不上报（用户确认流程、一次性向导）、可推导指标不上报（服务端能从其他指标计算的）。常见优化：网络指标只上报失败或超时的请求 + 抽样 1% 的成功请求作为基线。
+
+### 陷阱 2：用 Metrics 替代 Logs 和 Traces
+
+团队只关注 Metrics 大盘，看到 crash 率上升后没有 Logs 来定位哪个页面、哪个场景、哪个操作路径触发的，也没有 Traces 来解释「慢在哪里」。
+
+Metrics 说「这个版本变差了」，Logs 说「变差发生在支付确认页面」，Traces 说「支付确认慢在网络请求超时」。三样缺一不可。Vitals 或 Firebase Performance Monitoring 给的是外部视角的结果指标；内部自建体系要补剩下两块。
+
+### 陷阱 3：采样策略按事件随机，破坏了会话时间线
+
+高频事件按 10% 随机采样，每个事件独立决定「采或不采」。结果一个用户的会话中只保留了片段——日志说用户打开了支付页，但前面的商品页事件没采到，排查时不知道用户从哪进来的、看了什么。
+
+切换到用户级采样：用 `hash(user_id) % 100` 决定该用户是否进入采样组，同一个用户在一个时间窗内要么全采，要么全不采。采样组用户的所有事件连续上报，会话时间线完整。
+
+### 陷阱 4：端侧采集在主线程做编码和落盘
+
+采集 API 在主线程被调用，SDK 内部做了 JSON 序列化 + mmap 写入。这两个操作在主线程上各花 1-3ms，高频场景下累积成 ANR。
+
+监控 SDK 的设计原则：采集入口只收集原始值（时间戳、int、string ref），序列化和落盘全部在后台线程做。入口方法必须保证 < 0.1ms 的执行时间——只做字段赋值和原子变量更新。
+
+### 陷阱 5：把诊断数据当成默认开启的能力
+
+用户日志回捞、远程诊断命令、Perfetto trace 触发——这些能力的开关应该是「默认关闭，按需开启」。不要把全量用户日志采集当作基线能力。
+
+区分两类数据通道：基线通道（Crash/ANR 摘要、启动/帧率指标、网络失败率）默认开启、轻量固定；诊断通道（用户日志回捞、Perfetto 采集、远程诊断）默认关闭，命中灰度策略或用户反馈后才开启，并设置自动过期时间。
+
+### 陷阱 6：服务端告警阈值没有和用户感知对齐
+
+服务端告警「启动 P95 上升 50ms」，工程团队排查 3 天没发现用户有明显抱怨。后发现：P95 从 1800ms 变成 1850ms，用户完全不感知。而「慢会话比例上升 0.5 个百分点」这个指标对应的用户在首屏等待时间从 2.5 秒变成 4 秒，这些用户才是真的受影响。
+
+告警阈值要绑在「用户能感知的变化」上：TTFD 超过 3 秒的比例、ANR 率（不是次数）、冻帧次数、Crash 率。不要为每个指标都设告警——只告警那些直接反映用户体验恶化的指标。
+
+
+[自动发现] 用户日志与远程诊断是现场证据层
 
 Metrics 告诉团队哪里异常，Logs 和远程诊断帮助团队回到现场。高阶课程素材把用户日志、动态调试、远程诊断放在疑难问题排查章节里。放到 26.1，这部分补上了指标之外的现场证据层：可观测性架构除了指标看板，还要能在必要时为特定用户、特定版本、特定机型补采现场。
 

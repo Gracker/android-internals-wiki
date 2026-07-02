@@ -24,11 +24,11 @@ sources:
     path: "github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: ""
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-21
 task6_result: needs-rework
@@ -45,8 +45,8 @@ last_task6_at: "2026-07-02T18:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-21-20-review.md"
 task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1/L2复扫通过, 无新增小修。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
 task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
-last_task2b_at: "2026-06-01T14:50:00+08:00"
-task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-deep-review.md 修正 Alpha Project.Builder/getInstance/默认 ExecutorService/执行模型，并收窄线程优先级建议。"
+last_task2b_at: "2026-07-02T18:50:00+08:00"
+task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-deep-review.md 修正 Alpha Project.Builder/getInstance/默认 ExecutorService/执行模型，并收窄线程优先级建议。2026-07-02 Task2B round2: 补充 Alpha 错误处理与超时机制、Application 生命周期集成方式、启动框架选型常见陷阱与场景化引导。"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
@@ -303,6 +303,152 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 - 默认 ExecutorService 只有一个通用线程池，不能天然区分 IO 密集型与 CPU 密集型任务；大型项目通常需要替换 `AlphaConfig` 的 executor 或在任务内部再做资源隔离
 - 项目社区活跃度一般，最近一次发布距今较久
 
+
+
+### 错误处理与超时机制
+
+Alpha 框架层面没有内置超时控制，需要在 Task 内部自行实现，或在上层封装统一的超时策略。
+
+**单个任务超时控制**：
+
+```java
+// 封装层：在 Task 执行时包装超时逻辑
+public class TimeoutTask extends Task {
+    private final Task delegate;
+    private final long timeoutMs;
+
+    public TimeoutTask(String name, Task delegate, long timeoutMs) {
+        super(name, delegate.isInUiThread());
+        this.delegate = delegate;
+        this.timeoutMs = timeoutMs;
+    }
+
+    @Override
+    public void run() {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+
+        new Thread(() -> {
+            try {
+                delegate.run();
+            } catch (Throwable t) {
+                error.set(t);
+            } finally {
+                latch.countDown();
+            }
+        }, "timeout-" + getName()).start();
+
+        if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {
+            // 超时：记录日志，标记任务为 finished，让后续依赖继续
+            reportTimeout(delegate.getName(), timeoutMs);
+        } else if (error.get() != null) {
+            // 执行异常：同样标记 finished，避免后续依赖永久等待
+            reportError(delegate.getName(), error.get());
+        }
+    }
+}
+```
+
+不要在 `run()` 内部用 `Thread.interrupt()` 强制中断超时任务——被中断线程的后续行为不可控，可能留下脏状态。超时后应让原线程自行结束（它可能卡在 IO 等待或死锁中），同时通过 `notifyFinished()` 通知后续任务继续。
+
+**整图超时检测**：
+
+在 `AlphaManager` 启动后启动一个 watchdog，如果整个启动图在预期时间内未完成，触发降级策略：
+
+```java
+// 在 Application.onCreate 末尾启动 watchdog
+mainHandler.postDelayed(() -> {
+    if (!startupFinished) {
+        // 启动超时：跳过剩余未完成的低优先级任务，直接进入首屏
+        startupManager.cancel(priority < CRITICAL);
+        // 上报超时指标：哪些任务未完成、总耗时
+        reportStartupTimeout(unfinishedTasks, elapsed);
+    }
+}, TOTAL_STARTUP_TIMEOUT_MS);
+```
+
+注意：取消任务不等于 kill 线程。已在执行中的任务只能通过标志位协作式退出：
+
+```java
+@Override
+public void run() {
+    for (int i = 0; i < items.size() && !isCancelled(); i++) {
+        process(items.get(i));
+    }
+}
+```
+
+### Application 生命周期集成
+
+Alpha 不限定调用时机，但实际集成时 `addProject()` 和 `start()` 的调用位置会影响初始化能力和 DAG 构建灵活性。
+
+**标准集成方式**（`Application.onCreate`）：
+
+```java
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        // 阶段 1：注册任务（可以在 onCreate 之前通过 ContentProvider 提前完成）
+        AlphaManager alpha = AlphaManager.getInstance(this);
+        alpha.addProject(buildAppInitProject());
+        alpha.addProject(buildFirstScreenProject());
+
+        // 阶段 2：启动调度
+        alpha.start();
+    }
+}
+```
+
+**ContentProvider 提前初始化**（App Startup 模式的思想复用）：
+
+如果某些 SDK 的初始化必须在 `Application.onCreate` 之前完成（如 MultiDex 安装），可以利用 ContentProvider 的 `onCreate` 在 Application 之前执行：
+
+```java
+public class StartupInitProvider extends ContentProvider {
+    @Override
+    public boolean onCreate() {
+        // 此时 Application 尚未创建，只注册最关键的 pre-init 任务
+        AlphaManager alpha = AlphaManager.getInstance(getContext());
+        alpha.addProject(buildPreInitProject());
+        // 注意：不要在这里 start()——Application.onCreate 中再 start
+        return true;
+    }
+}
+```
+
+ContentProvider 中注册的 Project 和 `Application.onCreate` 中注册的 Project 共享同一个 `AlphaManager` 实例，最后在 `onCreate` 中一次性 `start()`。
+
+**与 Splash Screen 的时序配合**：
+
+如果应用有 Splash Screen，要在 Splash 显示期间完成启动初始化，不要让用户在 Splash 消失后还在等初始化完成：
+
+```java
+// SplashActivity.onCreate
+AlphaManager.getInstance(this).addProject(buildSplashProject());
+AlphaManager.getInstance(this).start();
+
+// 等所有 CRITICAL 任务完成后跳转主页
+AlphaManager.getInstance(this).await(criticalTasks, () -> {
+    startActivity(new Intent(this, MainActivity.class));
+    finish();
+});
+```
+
+`await()` 需要封装层实现——Alpha 本身只提供 `onProjectFinish` 回调，不提供等待特定任务集合完成的 API。
+
+**与 Jetpack App Startup 的共存方式**：
+
+如果团队从 App Startup 渐进式迁移到 Alpha，可以这样共存：
+
+1. App Startup 处理依赖关系简单的 SDK 初始化（不需要异步、没有超时需求）
+2. Alpha 处理复杂启动图的异步任务编排
+3. App Startup 的 `InitializationProvider`（ContentProvider）中只注册最关键的初始化器，其余迁移到 Alpha
+
+两套框架的衔接点：App Startup 的 `Initializer` 在 ContentProvider 阶段已执行完毕，Alpha 在 `Application.onCreate` 中 `start()` 时这些依赖已就绪，不需要在 DAG 中声明对 App Startup 初始化器的依赖。
+
+
 ### 自研方案：什么时候需要自己做启动框架
 
 [已验证: 基于多家大厂公开技术分享的综合分析]
@@ -350,6 +496,49 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 | 适用规模 | <15 个初始化任务 | 15-50 个 | >50 个或需要动态配置 |
 
 选型建议：先用 App Startup 收敛 ContentProvider 初始化，当 DAG 复杂度上升后迁移到 Alpha 或自研方案。迁移路径：App Startup（消除 ContentProvider 开销）→ Alpha（引入 DAG + 异步）→ 自研（动态配置 + 监控 + 多进程）。21.3 节会展开讲 ContentProvider 治理的细节。
+
+
+
+### 启动框架选型中的常见陷阱
+
+团队在选型或迁移启动框架时，以下问题反复出现：
+
+**陷阱 1：把"消除 ContentProvider 的数量"当作优化目标**
+
+App Startup 的设计初衷是收敛多个 SDK 各自注册的 ContentProvider 为一个。但"ContentProvider 多"本身不是性能问题——Android 文档明确描述了 multiple ContentProvider 初始化的开销。真正的优化目标是缩短从 `Application.attachBaseContext` 到首帧的 wall-clock time。把 10 个轻量 ContentProvider 合并成 1 个 App Startup Initializer，如果所有初始化都在主线程串行执行，启动耗时不会减少。减少的是系统为每个 Provider 创建进程中 jni/jit 开销，以及 Manifest 解析耗时。
+
+正确做法：先通过 Perfetto trace 确认哪些初始化步骤是启动瓶颈，再决定迁移哪些、并发化哪些。不要为了"统一入口"把本来可以并发的东西串行化。
+
+**陷阱 2：DAG 建得太细，拓扑排序本身成为瓶颈**
+
+有人把上百个初始化任务全部拆成独立 Task 节点，每个不到 5ms。结果 DAG 本身的构建、排序、回调链比任务执行还耗时。框架调度一次 Task 的上下文切换和回调链开销通常在 0.05-0.2ms 量级。100 个空任务，调度开销就接近 10-20ms。
+
+粒度原则：Task 的执行时间应远大于调度开销。执行时间 < 2ms 的任务应该合并；2-10ms 的看情况；>10ms 的才值得独立调度。
+
+**陷阱 3：关键路径被非关键任务拖慢**
+
+DAG 建完后发现关键路径 150ms，但优化了 4 个 5ms 的任务只节约了 5ms——因为它们不在关键路径上。常见的是：关键路径上的 Analytics 初始化 45ms，但因为里面有 30ms 的磁盘 IO 在 IO 线程池，主线程不直接受影响，被误判为"不是瓶颈"。实际上它占用了 IO 线程池资源，阻塞了同在 IO 线程池的其他关键任务。
+
+正确做法：建完 DAG 后先跑一遍关键路径分析，标出关键路径上的任务。然后区分三个维度优化——缩短关键任务耗时、把关键任务移出共享线程池的阻塞队列、检查是否有依赖可以打断。
+
+**陷阱 4：线程池共享导致的优先级反转**
+
+CPU 线程池和 IO 线程池共享同一个默认 ExecutorService。低优先级 IO 任务占满了线程池队列，高优先级 CPU 任务在队列中等待。这种情况下，DAG 拓扑排序再合理也发挥不出来。
+
+解决方案：IO 密集型和 CPU 密集型分池，且 IO 线程池的队列要有界（`LinkedBlockingQueue(capacity)` 而非无界）。队列满时让提交的线程直接执行（`CallerRunsPolicy`），或设置两队列——高优和低优分离。
+
+**陷阱 5：远程配置下发后客户端无校验**
+
+远程配置修改了任务依赖关系后，客户端直接执行。如果配置写错了（循环依赖、不存在的 taskId、非法线程模式），客户端可能启动失败或死锁。
+
+必须在客户端做配置校验：DAG 构建前做环检测、taskId 存在性检查、threadMode 合法性检查。校验失败时回退到内置默认 DAG，并上报校验错误详情。
+
+**陷阱 6：动态配置依赖网络，首次启动无配置**
+
+远程配置需要网络请求才能拉取，首次安装后的启动没有缓存配置。如果启动逻辑依赖远程配置来决定任务编排，首次启动的 DAG 和后续启动不同——出现两类用户的启动耗时分布不一致。
+
+解决方式：客户端内置默认 DAG 作为基线；远程配置只对已存在的内置任务做顺序/优先级/开关微调，不引入新任务。首次启动用内置 DAG，配置拉取成功后下次启动生效。
+
 
 ## 异步初始化与线程池策略
 

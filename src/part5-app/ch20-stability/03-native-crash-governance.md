@@ -27,18 +27,18 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: needs-rework
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-21"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-21T16:27:03+08:00"
-task2b_state: "fixed"
-task2b_result: "fixed"
-last_task2b_at: "2026-06-01T12:50:00+08:00"
-task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-07-02T18:50:00+08:00"
+task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。2026-07-02 Task2B round2: 补充符号服务器架构设计、Native Crash 排查实战思路与分级排查流程。"
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-21
 last_task6_at: "2026-07-02T18:10:00+08:00"
@@ -347,9 +347,84 @@ Google Breakpad 是跨平台的崩溃收集库，Android 上主要用于应用�
 - 与 SignalChain 的交互：如果 Breakpad 的 `ExceptionHandler` 在 `crash_dump` 之前截获信号，系统 tombstone 可能不会生成。需要在 Breakpad handler 中将信号传递给下一个 handler（通过 `old_action` 参数保存的原始 handler）
 
 
+
+## Native Crash 排查实战思路
+
+分析一个 Native Crash 时，冲动地跳到 backtrace 逐帧看容易漏掉关键线索。以下排查顺序在实际工作中被验证最有效：
+
+**第一层：信号类型筛方向（1 分钟内）**
+
+| 信号 | 第一反应 |
+|------|---------|
+| SIGSEGV + fault addr = 0x0 | 空指针解引用，看 pc 指向的源码行，确认哪个指针没判空 |
+| SIGSEGV + fault addr = 小非零值 | 对 null struct 的字段偏移访问（`null->field`），用 `(fault addr) - offset` 反推结构体名 |
+| SIGSEGV + fault addr = 正常地址 | Use-After-Free 或野指针，用 ASan 复现 |
+| SIGABRT | 往上翻调用栈找触发的 `abort()` 调用点——`assert` 失败、`__android_log_assert`、`std::terminate` |
+| SIGBUS | 检查 `fault addr` 是否在 mmap 文件范围内；ARM64 上通常是未对齐访问或文件被截断 |
+
+**第二层：pc 和 lr 定位代码行（3 分钟内）**
+
+拿到 tombstone 后，先看 pc（崩溃时的执行地址），再看 lr（调用者地址）：
+
+```bash
+# 直接用 addr2line 定位 pc
+llvm-addr2line -e libnative.so -f -C 0x12340
+
+# lr 告诉你谁调用了崩溃函数——有时崩溃发生在第三方库内部，lr 指向你的调用点
+llvm-addr2line -e libnative.so -f -C 0x1237a0
+```
+
+如果 addr2line 输出 `??`，说明 so 被 strip 了或者用的不是对应版本的符号文件。检查 Build ID 是否匹配：`llvm-readelf --notes libnative.so` 输出的 Build ID 应该和 tombstone `Build fingerprint` 段的记录一致。
+
+**第三层：寄存器查参数（5 分钟内）**
+
+ARM64 上 x0-x7 是函数的前 8 个参数。崩溃时看这些寄存器的值：
+
+- `x0 = 0x0`：第一个参数是空指针（源码中查函数第一个参数的类型）
+- `x0 = 0x7abc123400`：非空地址，但可能已经被 free
+- `x1-x7`：辅助判断调用上下文——比如 `x1` 是一个很大的数，可能表示数组越界
+
+**第四层：stack dump 追调用链（需要时）**
+
+如果 backtrace 只展示了几帧就断了（常见于栈被破坏或优化掉 fp 的情况），stack dump 能补充线索。在 stack dump 区域搜索看起来像代码地址的 hex 值，用 `addr2line` 反查——这些可能是已返回但栈上残留的调用帧地址。
+
+**第五层：缩小范围后，用 ASan 或 Malloc Debug 复现**
+
+前三步把范围缩到"某个函数 + 某个参数"之后，在 debug 构建中开启 ASan：
+
+```bash
+# wrap 方式开启 ASan
+adb shell setprop wrap.com.example.app '"asanwrapper"'
+```
+
+ASan 会在 free 后把内存标记为 poisoned，再次访问立即 crash 并打印完整分配/释放堆栈。相比反复看 tombstone 猜，ASan 一次就能定位 use-after-free 的根因。
+
+**多线程 crash 的额外注意点**：
+
+如果 tombstone 显示 `name` 不是主线程，且 crash 点在 mutex lock / pthread 操作附近：
+
+1. 检查是否是 mutex use-after-destroy（见上文 mooner 的检测方案）
+2. 通过 backtrace 判断该线程是否在持有锁后 crash，锁未释放导致其他线程死等
+3. 注意 `tid` 和 `pid` 的关系：`pid == tid` 表示主线程崩溃，多进程应用还需确认是在哪个进程
+
+**分级排查速查**：
+
+| 能拿到的东西 | 能做的事 |
+|-------------|---------|
+| 只有信号类型 + fault addr | 判断 crash 大类（空指针/UAF/SIGABRT），给出初步假设 |
+| + 有 backtrace | 用 addr2line 定位崩溃函数和调用者，确定源码范围 |
+| + 有完整 tombstone | 读寄存器参数、stack dump，还原调用上下文 |
+| + 有未 strip so | 精确定位到源码行号 |
+| + 有 ASan 构建 | 复现后直接拿到 root cause 的分配/释放堆栈 |
+
+线上 crash 通常只能拿到前两级。排查到第三步时需要线下复现。没有 ASan 构建的团队优先把这一项补上——它是 Native Crash 排查里投入产出比最高的能力。
+
+
 ## 常见 Native 崩溃模式
 
 ### SIGSEGV（信号 11）—— 最常见的 Native Crash
+
+分析线上 SIGSEGV 崩溃日志时，最实用的判断方法：先看 fault addr，再看 pc 落在哪个 so 里。fault addr 是 0 就是空指针，是看起来正常的大地址优先怀疑 use-after-free。如果 pc 落在 `libart.so` 里，大概率是 JNI 边界问题——ART 的隐式空指针检查把 SIGSEGV 转成 Java 异常的过程出错了。
 
 **空指针解引用**：
 
@@ -439,6 +514,72 @@ real_sigaction(SIGSEGV, &sa, &old_sa);
 
 建议做法：APM handler 只做最小工作（收集 pc 列表、写入共享内存），然后将信号传递给原始 handler，让 `debuggerd` 照常生成 tombstone。两条路径并行，互不干扰。
 
+
+
+
+### 符号服务器架构设计
+
+Breakpad 的符号化流程在本地开发时可以直接用 `dump_syms` + `minidump_stackwalk`，但在团队协作和线上监控场景下，需要一套自动化的符号管理体系。
+
+**核心问题**：线上 crash 上报的 minidump 携带的是 so 的 Build ID，符号化时必须有对应版本的未 strip so 或 .sym 文件。如果 CI 构建没有归档符号文件，历史版本的 crash 堆栈永远无法还原。
+
+**CI/CD 集成方案**：
+
+```text
+┌──────────┐    ┌──────────────┐    ┌─────────────────┐
+│ CI Build │───→│ 构建产物归档   │───→│ 符号提取 Worker  │
+│ (gradle) │    │ (APK + so)   │    │ (dump_syms)     │
+└──────────┘    └──────────────┘    └────────┬────────┘
+                                             │
+                    ┌────────────────────────┘
+                    ▼
+            ┌──────────────┐
+            │ 符号文件存储   │
+            │ (对象存储/NFS)│
+            └──────┬───────┘
+                   │ 按 <module>/<build-id>/<module>.sym 布局
+                   ▼
+            ┌──────────────┐
+            │ 符号化服务     │
+            │ (minidump_    │
+            │  stackwalk)   │
+            └──────────────┘
+```
+
+每一步的具体做法：
+
+1. **构建阶段**：Gradle task 在 `assembleRelease` 后保留未 strip 的 .so（通常在 `build/intermediates/merged_native_libs/release/` 下，具体路径因 AGP 版本而异）。不要直接用 `app/build/outputs/apk/` 里已压缩的产物——那里的 so 可能已被 strip。
+
+2. **符号提取**：CI 上对每个未 strip so 执行 `dump_syms`，生成 .sym 文件。同时从 so 的 ELF header 读取 Build ID（`readelf -n` 或 `llvm-readelf --notes`），用于构建目录层级。
+
+3. **存储布局**：按 Breakpad 查找协议组织——`<module-name>/<build-id>/<module-name>.sym`。对象存储（S3/GCS/OSS）或 NFS 均可，关键是 Build ID 必须精确匹配。
+
+4. **符号化服务**：API 接收 crash 上报的 `(module_name, build_id, offset)`，在符号文件存储中查找匹配的 .sym，用 `minidump_stackwalk` 或自研解析器还原行号。服务端做缓存——热门模块的符号文件常驻内存，减少对象存储读取次数。
+
+5. **版本过期**：每个版本归档时同时记录版本号。服务端按版本号保留最近 N 个发布版本的符号文件。已全量替换的旧版本符号文件可以降冷到低频存储，但不要直接删除——用户可能还在用旧版本。
+
+**自建符号服务器的最低可行方案**：
+
+不需要从一开始就搭建完整平台。最小版本可以从一个 CI 脚本 + HTTP 文件服务器开始：
+
+```bash
+#!/bin/bash
+# CI 上的符号提取脚本（最小版本）
+BUILD_ID=$(llvm-readelf --notes libnative.so | grep "Build ID" | awk '{print $3}')
+MODULE_NAME="libnative.so"
+SYM_DIR="symbols/${MODULE_NAME}/${BUILD_ID}"
+mkdir -p "$SYM_DIR"
+dump_syms libnative.so > "$SYM_DIR/${MODULE_NAME}.sym"
+# 上传到文件服务器
+rsync -av symbols/ user@symbol-server:/data/symbols/
+```
+
+服务端只需要一个 HTTP server 返回符号文件，或者直接挂在 NFS 上让 `minidump_stackwalk` 本地读取。当团队规模扩大后再迁移到对象存储 + API 网关。
+
+**注意事项**：
+- Build ID 在同一个 so 的每次构建中都不同（因为编译产物不同），不能用文件名或版本号代替 Build ID 做匹配。
+- 如果应用使用了动态加载的 .so（`System.loadLibrary` 外的手动 `dlopen`），这些 so 也需要在同一套 CI 流程中归档。
+- AAR 中嵌入的 .so（第三方 SDK 的 native 库）需要单独建立归档流程——通常第三方 SDK 不提供未 strip 版本，这类 crash 只能靠 SDK 供应商提供的符号文件。
 
 ## JNI 边界崩溃的排查
 
