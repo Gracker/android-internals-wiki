@@ -560,5 +560,29 @@
     "file": "src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md",
     "score": 17,
     "gap_source": "素材驱动+AOSP结构"
+  },
+  {
+    "section": "8.18",
+    "section_title": "Binder Trace 驱动的 Activity 冷启动性能分析",
+    "action": "task2a-content-processing",
+    "from_status": "draft",
+    "to_status": "ready-for-review",
+    "completed_at": "2026-07-02T23:50:00+08:00",
+    "completed_by": "task2a-content-processing",
+    "anchors_covered": "7 锚点 + 3 扩展点",
+    "outlines_completed": [
+      "🔹 冷启动中的 Binder IPC 全景",
+      "🔹 Binder Trace 采集方法",
+      "🔹 Binder 事务耗时归因分析",
+      "🔹 冷启动关键 Binder 瓶颈模式",
+      "🔹 Binder 等待与主线程阻塞的因果分析",
+      "🔹 Perfetto SQL 分析实战",
+      "🔹 优化策略与验证闭环"
+    ],
+    "material_sources": [
+      "DeepResearch/2026-04-29-binder-transaction-trace-analysis-perfetto.md",
+      "DeepResearch/2026-05-06-binder-transaction-trace-perfetto-analysis.md",
+      "DeepResearch/2026-06-13-android17-binder-ipc-async-oneway-frozen-reply-pipeline.md"
+    ]
   }
 ]
