@@ -6,8 +6,8 @@ status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-04-13'
-last_verified_against: perfetto.dev stdlib/docs, AOSP android-16.0.0_r1, 高爷博客原创
+last_verified: '2026-07-03'
+last_verified_against: perfetto.dev stdlib/docs, AOSP android-17.0.0_r1, 高爷博客原创
 confidence: medium
 sources:
 - type: blog
@@ -48,23 +48,24 @@ related_chapters:
 - '9.1'
 task9_state: reviewed
 task2b_state: "fixed"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_result: "fixed"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-05-19"
 reviewed_by: openclaw-task6
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-19"
-last_task9_at: "2026-05-19T17:20:00+08:00"
+last_task9_at: "2026-07-03T07:39:55+08:00"
+last_task9_autofix_at: "2026-07-03"
 last_task6_at: "2026-05-19T16:12:00+08:00"
 last_task6_audit: '2026-06-07'
 last_task6_audit_result: l1-light-edit
-last_task9_audit: "2026-06-13"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_review_log: "logs/deep-review/2026-05-19-17-deep-review.md"
-task9_review_notes: "2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；FrameTimeline、Binder stdlib、process_stats 内存 Counter、sched_blocked_reason 与 linux.block_io 口径复核通过。"
+last_task9_audit: "2026-07-03"
+last_task9_audit_result: "auto-fixed-idle-audit"
+last_task9_review_log: "logs/deep-review/2026-07-03-07-audit.md"
+task9_review_notes: "2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；FrameTimeline、Binder stdlib、process_stats 内存 Counter、sched_blocked_reason 与 linux.block_io 口径复核通过。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX: 将 Perfetto 专题的数据源/stdlib 版本边界复核到 AOSP android-17.0.0_r1；修正 Android 10-16/10+/11+/12+/14+ 这类未封顶或停在 16 的范围，回 Task6 复审。"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
 last_task6_review_log: "logs/review/2026-05-19-16-review.md"
 finalized_date: "2026-05-19"
@@ -257,21 +258,21 @@ ORDER BY slice.ts;
 
 流畅性问题（卡顿、掉帧）的本质，是某一帧没能在当前刷新周期内完成。120Hz 设备的预算大约是 8.33ms，60Hz 设备大约是 16.67ms。分析时要先找出哪一帧超时，再拆出超时发生在 App、RenderThread 还是 SurfaceFlinger。
 
-FrameTimeline 是 Android 12+ 的主入口，Android 10/11 还得回到 `Choreographer#doFrame`、`thread_state`、`VSYNC-app` 和 `SurfaceFlinger` 轨道做 fallback。先把后面会反复用到的数据源和判读入口摆清楚，章节里的口径才不会混在一起。
+FrameTimeline 是 Android 12-17 的主入口，Android 10/11 还得回到 `Choreographer#doFrame`、`thread_state`、`VSYNC-app` 和 `SurfaceFlinger` 轨道做 fallback。先把后面会反复用到的数据源和判读入口摆清楚，章节里的口径才不会混在一起。
 
 ### 版本、数据源与判读入口对照表
 
 | 场景 | 公开采集入口 | UI / SQL 主入口 | 适用版本 | 说明 |
 | --- | --- | --- | --- | --- |
 | 流畅性（FrameTimeline） | FrameTimeline | `Expected Timeline`、`Actual Timeline`、`actual_frame_timeline_slice` | Android 12-13 | `jank_type`、`present_type`、`on_time_finish` 都来自 `actual_frame_timeline_slice` |
-| 流畅性（FrameTimeline） | FrameTimeline | `Expected Timeline`、`Actual Timeline`、`actual_frame_timeline_slice` | Android 14+ | 主入口不变，还是先看 `jank_type`、`present_type`、`on_time_finish`，再回到 App / RenderThread / SurfaceFlinger 时间窗 |
+| 流畅性（FrameTimeline） | FrameTimeline | `Expected Timeline`、`Actual Timeline`、`actual_frame_timeline_slice` | Android 14-17 | 主入口不变，还是先看 `jank_type`、`present_type`、`on_time_finish`，再回到 App / RenderThread / SurfaceFlinger 时间窗 |
 | 流畅性 fallback | `Choreographer` / `SurfaceFlinger` / `thread_state` | `Choreographer#doFrame`、`VSYNC-app`、`VSYNC-sf`、主线程与 `RenderThread` 线程态 | Android 10-11 | 没有 `actual_frame_timeline_slice` 时，用这组入口复盘卡顿 |
-| Binder | `linux.ftrace` 的 Binder 与 `sched` 事件，加 `atrace_categories` / `atrace_apps` 保留 framework 与 App slice | Flow 箭头、Binder slice、`android_binder_txns` | Android 10-16 | `aidl_name` / `interface` / `method_name` 只有在 trace 里已有 AIDL / HIDL slice 时才会填充 |
+| Binder | `linux.ftrace` 的 Binder 与 `sched` 事件，加 `atrace_categories` / `atrace_apps` 保留 framework 与 App slice | Flow 箭头、Binder slice、`android_binder_txns` | Android 10-17 | `aidl_name` / `interface` / `method_name` 只有在 trace 里已有 AIDL / HIDL slice 时才会填充 |
 | 锁竞争 | trace 中已有 `monitor contention` slice | `android_monitor_contention` | 以 trace 是否含该 slice 为准 | 它和 `android.java_hprof` 是两套独立入口 |
-| Native heap | `android.heapprofd` | Heap Profile diamond、flamegraph、`heap_profile_allocation` | Android 10+ | 看 native alloc / free 的调用栈 |
-| Java allocation sampling | `android.heapprofd` + `heaps: "com.android.art"` | Heap Profile diamond、allocation flamegraph | Android 12+ | 看 Java 对象分配调用栈，不给 retained graph |
-| Java retained heap | `android.java_hprof` | Heap dump diamond、retention graph | Android 11+ | 看对象保留关系，不给 call-site flamegraph |
-| Block I/O | `linux.ftrace` 的 block / ext4 / f2fs / sched 事件 | `track.type='block_io'`、`linux.block_io` | Android 10-16，受内核事件可用性影响 | 设备级视角，进程归因还要再结合 `thread_state` 和文件系统事件 |
+| Native heap | `android.heapprofd` | Heap Profile diamond、flamegraph、`heap_profile_allocation` | Android 10-17 | 看 native alloc / free 的调用栈 |
+| Java allocation sampling | `android.heapprofd` + `heaps: "com.android.art"` | Heap Profile diamond、allocation flamegraph | Android 12-17 | 看 Java 对象分配调用栈，不给 retained graph |
+| Java retained heap | `android.java_hprof` | Heap dump diamond、retention graph | Android 11-17 | 看对象保留关系，不给 call-site flamegraph |
+| Block I/O | `linux.ftrace` 的 block / ext4 / f2fs / sched 事件 | `track.type='block_io'`、`linux.block_io` | Android 10-17，受内核事件可用性影响 | 设备级视角，进程归因还要再结合 `thread_state` 和文件系统事件 |
 
 ### 关键轨道解读
 
@@ -279,7 +280,7 @@ FrameTimeline 是 Android 12+ 的主入口，Android 10/11 还得回到 `Choreog
 
 **Expected Timeline 与 Actual Timeline**
 
-在 Android 12+ 的 App 进程轨道里，`Expected Timeline` 给的是系统希望这一帧在哪个窗口内完成，`Actual Timeline` 给的是这帧最终的实际完成情况。把两行放在同一时间轴下比较，超时帧会很快冒出来。
+在 Android 12-17 的 App 进程轨道里，`Expected Timeline` 给的是系统希望这一帧在哪个窗口内完成，`Actual Timeline` 给的是这帧最终的实际完成情况。把两行放在同一时间轴下比较，超时帧会很快冒出来。
 
 选中 `Actual Timeline` 里的单帧后，先看 Details 面板的三组字段：
 
@@ -297,7 +298,7 @@ Android 10/11 没有 FrameTimeline 主表时，判读入口要回到 `Choreograp
 
 在 `SurfaceFlinger` 进程下方，通常会出现 `VSYNC-app` 和 `VSYNC-sf` 两个信号轨道。`VSYNC-app` 每到一次，App 侧就有机会进入下一轮 `Choreographer#doFrame()`。如果一段卡顿里 `doFrame` 的开始时间不断向后拖，问题多半已经发生在主线程或 `RenderThread`。
 
-**FrameTimeline 轨道（Android 12+）**
+**FrameTimeline 轨道（Android 12-17）**
 
 `FrameTimeline` 把一帧从 App 提交到最终上屏的过程拆成可直接点选的 timeline slice。最省时间的做法，是先锁定一帧，再看 `jank_type`、`present_type`、`on_time_finish`，随后再顺着同一时间窗往下翻到 `Choreographer#doFrame`、`DrawFrame`、`SurfaceFlinger` 合成轨道。
 
@@ -481,7 +482,7 @@ LIMIT 20;
 内存专题最容易混淆的地方，是“分配调用栈”“对象保留关系”“进程 RSS / PSS 曲线”对应三套不同工具。
 
 - `linux.process_stats` 采样的是进程级 RSS、PSS 等指标，适合看宏观趋势
-- `android.heapprofd` 采的是分配调用栈，主战场是 native heap；Android 12+ 还能把 Java allocation sampling 记到同一条 `Heap Profile` 轨道里
+- `android.heapprofd` 采的是分配调用栈，主战场是 native heap；Android 12-17 还能把 Java allocation sampling 记到同一条 `Heap Profile` 轨道里
 - `android.java_hprof` 记录的是 Java heap dump，关注 retained graph，也就是对象之间是谁在持有谁
 
 把这三层分开后，分析路径会清楚很多。想找“谁在频繁分配内存”，用 heapprofd；想找“为什么对象还活着”，用 `android.java_hprof`；想看“系统什么时候开始顶不住”，再把进程级 Counter 放回时间轴里。
