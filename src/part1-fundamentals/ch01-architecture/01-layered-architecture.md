@@ -49,7 +49,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-27T05:28:00+08:00"
 task9_review_notes: "2026-06-08 Task9 idle audit：AUTO-FIX。复核 android-15.0.0_r1 / android-16.0.0_r1 SurfaceFlinger.cpp，Android 15 没有 postComposition trace 名；已拆分 Android 15 与 Android 13-14 的 SurfaceFlinger 搜索词，回到 Task6 复审。"
 last_task6_at: "2026-05-27T05:14:00+08:00"
-last_task6_audit: "2026-06-25"
+last_task6_audit: "2026-07-03"
 last_task6_review_log: "logs/review/2026-05-27-05-review.md"
 last_task6_audit_log: "logs/review/2026-06-25-10-audit.md"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
@@ -371,7 +371,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 ### 误区：HAL 层不影响性能，因为只是"接口封装"
 
-HAL 在现代 Android 里还承担接口定义之外的进程隔离与硬件访问协调。Treble 之后，binderized HAL（AIDL HAL 和部分 HIDL HAL）作为独立进程运行，控制面调用走 Binder IPC（参数序列化 → 内核态切换 → 目标进程反序列化 → 执行 → 原路返回）。passthrough HAL（仅限 HIDL C++ 实现）以共享库形式加载到调用方进程内，不走跨进程 Binder。对于高频数据面操作（如 Camera 预览回调、Audio 数据流），即使控制面走 Binder，数据面通常使用 FMQ、共享内存、BufferQueue/dmabuf 等零拷贝通道，不走 Binder 数据拷贝。排查 HAL 延迟时，先按传输模式（binderized / passthrough）区分，再判断瓶颈在控制面 IPC 还是数据面吞吐。
+HAL 在现代 Android 里还负责接口定义之外的进程隔离与硬件访问协调。Treble 之后，binderized HAL（AIDL HAL 和部分 HIDL HAL）作为独立进程运行，控制面调用走 Binder IPC（参数序列化 → 内核态切换 → 目标进程反序列化 → 执行 → 原路返回）。passthrough HAL（仅限 HIDL C++ 实现）以共享库形式加载到调用方进程内，不走跨进程 Binder。对于高频数据面操作（如 Camera 预览回调、Audio 数据流），即使控制面走 Binder，数据面通常使用 FMQ、共享内存、BufferQueue/dmabuf 等零拷贝通道，不走 Binder 数据拷贝。排查 HAL 延迟时，先按传输模式（binderized / passthrough）区分，再判断瓶颈在控制面 IPC 还是数据面吞吐。
 
 ### 误区：App 的性能问题一定在 App 层
 
@@ -477,4 +477,4 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 - **2026-04-19**: 源码调研「SELinux 开销对 Binder 性能的影响」已完成。发现：SELinux 通过 `selinux_binder_transaction()` 钩子对每次 Binder transaction 执行 `avc_has_perm()` 检查；AVC 缓存使稳态开销极低（~50-200 ns/次）；Android 8+ Treble 三路 binder 设备隔离设计降低了跨域误用风险。报告：`OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-19-selinux-binder-performance-overhead.md`
 
 <!-- AIW-源码调研-2026-06-23 -->
-- **2026-06-23**: 源码调研「Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析」已完成。发现：Android 17 形成了 AIDL HAL + VoiceInteractionService + AccessibilityService + NNAPI HAL 的三层技术架构，支撑了字节跳动与努比亚这类"硬件厂商+大模型厂商"合作模式；豆包手机助手通过 VoiceInteractionService 系统级认证、AccessibilityService 全局UI控制，AIDL HAL 访问高通NPU算力，实现全场景AI助手。调用链路：`AI助手App → VoiceInteractionService/AIDL HAL → NPU Vendor HAL → 芯片厂商驱动 → 硬件NPU`。NPU推理功耗比CPU低60%，响应延迟15-50ms。报告：`2026-06-23-android-ai-phone-ecosystem-analysis.md`
+- **2026-06-23**: 源码调研「Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析」已完成。发现：Android 17 形成了 AIDL HAL + VoiceInteractionService + AccessibilityService + NNAPI HAL 的三层技术架构，支撑了字节跳动与努比亚这类"硬件厂商+大模型厂商"合作模式；豆包手机助手通过 VoiceInteractionService 系统级认证、AccessibilityService 全局UI控制，AIDL HAL 访问高通NPU算力，实现全场景AI助手。调用路径：`AI助手App → VoiceInteractionService/AIDL HAL → NPU Vendor HAL → 芯片厂商驱动 → 硬件NPU`。NPU推理功耗比CPU低60%，响应延迟15-50ms。报告：`2026-06-23-android-ai-phone-ecosystem-analysis.md`
