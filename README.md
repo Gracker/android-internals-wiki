@@ -5,6 +5,8 @@
 
 一本由 AI 辅助持续进化的 Android 技术百科，面向有经验的 Android 开发者和系统工程师。
 
+当前项目处于 **alpha 精修期**。正文素材已经大规模沉淀，但发布目录、流水线状态和历史任务产物仍在收敛中；阅读和维护时请优先参考本文件下面的“当前事实口径”。
+
 ## 项目特点
 
 - **跨层覆盖**：App → Framework → Native → Kernel，完整链路
@@ -19,6 +21,8 @@
 - **第三部分：工具与方法论** — Perfetto、Simpleperf、MAT、dumpsys、APM、方法论
 - **第四部分：系统级优化与行业实践** — AOSP 优化、厂商实践
 - **第五部分：应用层优化** — 稳定性、启动、渲染、内存、I/O、功耗、可观测性
+
+`src/SUMMARY.md` 是 mdBook 的发布入口，但当前仍在重组中，不能单独代表全书覆盖范围。全量内容治理请结合 `src/` 原始扫描、`metadata/progress.json`、`metadata/queue.json` 和 `logs/` 判断。
 
 ## 语言
 
@@ -43,15 +47,26 @@ mdbook serve
 ## 目录结构
 
 ```
-├── src/              # 书的内容源文件（中文）
-├── intake/           # 外部输入（建议、资料）
-├── metadata/         # 项目元数据
-├── evidence/         # 验证证据（Trace、截图、源码引用）
-├── logs/             # review / research / integration 日志
-├── openclaw-tasks/   # 内容流水线任务定义
-├── scripts/          # 辅助脚本
-└── i18n/             # 国际化相关（术语映射等，v1.0 后启用）
+├── src/              # 书的正文源文件与 mdBook 目录
+├── intake/           # 外部输入、人工请求、素材索引入口
+├── metadata/         # 队列、进度、质量索引、扫描状态
+├── logs/             # review / research / integration / rework 日志
+├── openclaw-tasks/   # OpenClaw 流水线任务说明
+├── scripts/          # 元数据、索引、changelog、校验脚本
+├── changelog/        # 每日变更记录
+└── i18n/             # 国际化相关（v1.0 中文内容冻结后启用）
 ```
+
+## 当前事实口径
+
+截至 2026-07-02，仓库有两套常用统计口径：
+
+- `scripts/progress-report.py` 的 frontmatter 原始扫描：550 个正文元数据文件，其中 `finalized` 338、`ready-for-review` 185、`draft` 25。
+- `metadata/progress.json` 的精修跟踪子集：147 节，其中 `finalized` 119、`ready_for_review` 22、`draft` 6。
+- `metadata/queue.json` 当前为列表结构：28 条队列记录，其中 17 条 `pending`、6 条 `draft`、5 条 `completed`。
+- `src/SUMMARY.md` 当前是发布目录重组中的短目录，不要把它当作全量目录清单。
+
+如果这些口径冲突，优先级是：正在处理的 queue / frontmatter 状态 > 最近 logs > `metadata/progress.json` 汇总 > README 中的快照。
 
 ## 内容验证标准
 
@@ -67,19 +82,14 @@ mdbook serve
 
 ## 项目进度
 
-当前阶段：**alpha**（目录已扩展到 ch01-ch26，正文持续批量 review / finalize）
+当前阶段：**alpha**（正文持续批量 review / finalize，发布目录和治理口径继续收敛）
 
-| 部分 | 章节数 | 内容文件数 | 状态 |
-|------|--------|------------|------|
-| Part 1: 系统运行机制 | 6 | 97 文件 | 🔄 主体已成型，持续精修 |
-| Part 2: 性能专题 | 7 | 89 文件 | 🔄 主体已成型，持续精修 |
-| Part 3: 工具与方法论 | 4 | 79 文件 | 🔄 持续精修 |
-| Part 4: 系统级优化 | 2 | 17 文件 | 🔄 持续补齐 |
-| Part 5: 应用层优化 | 7 | 123 文件 | 🔄 批量加工与 review 中 |
-| 前言 + 附录 | - | 12 文件 | ⏳ 前言待补齐，附录已部分完成 |
+当前优先事项：
 
-目前 `src/` 中已有 400+ 篇 Markdown 内容文件。正文主体以 `ready-for-review`
-和 `finalized` 为主，但全书尚未公开发布。
+1. 重建 `src/SUMMARY.md`，让 mdBook 发布目录重新覆盖 ch01-ch26 与附录。
+2. 对齐 `metadata/progress.json` 与 frontmatter 原始扫描口径，明确“精修子集”和“全量内容”的边界。
+3. 消费 `metadata/queue.json` 中仍为 `pending` 的 Task6 / Task9 / DeepResearch 条目。
+4. 清理根目录与 metadata 下的一次性报告、旧备份和临时 JSON，避免它们再次进入提交。
 
 详细路线图见 [metadata/roadmap.md](metadata/roadmap.md)
 

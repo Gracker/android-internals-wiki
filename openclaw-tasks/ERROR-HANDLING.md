@@ -2,14 +2,19 @@
 
 ## 元数据备份
 
-每个 Task 执行前，自动备份关键元数据：
+每个 Task 执行前，可备份关键元数据。备份只用于短期恢复，不进入长期治理口径：
+
 ```bash
 BACKUP_DIR="metadata/.backups/$(date +%Y-%m-%d-%H%M)"
 mkdir -p "$BACKUP_DIR"
 cp metadata/inventory.json metadata/queue.json metadata/progress.json "$BACKUP_DIR/"
-# 清理 30 天前的备份
-find metadata/.backups -type d -mtime +30 -exec rm -rf {} +
 ```
+
+清理规则：
+
+- `metadata/.backups/.gitkeep` 保留，具体备份目录不提交。
+- 30 天以上备份应移入系统废纸篓或由 git 可恢复的删除提交清理，不用不可恢复的 `rm -rf`。
+- 单文件临时备份如 `metadata/queue.json.bak`、`metadata/progress.json.backup`、`metadata/*.tmp` 不应作为恢复链长期保留。
 
 ## 错误分类与处理
 

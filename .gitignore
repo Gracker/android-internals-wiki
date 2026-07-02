@@ -1,6 +1,34 @@
 # mdbook build output
 book/
 
+# One-off task outputs and scratch files
+/telegram-output.md
+/rework-result-*.txt
+/temp_entries.json
+/queue.json
+/source-index.json
+/changelog/.md
+/????-??-??-??-知识加工*.md
+/src/????-??-??-??-知识加工*.md
+/src/*知识加工报告.md
+
+# Generated backups / temporary metadata snapshots
+/.backup/
+/metadata/backups/
+/metadata/.backups/*
+!/metadata/.backups/.gitkeep
+/metadata/*.bak
+/metadata/*.backup
+/metadata/*.tmp
+/scripts/temp_entries.json
+*.bak
+*.backup
+*.tmp
+
+# AOSP source excerpts used during drafting
+/*_java.txt
+/*_cpp.txt
+
 # OS files
 .DS_Store
 Thumbs.db
