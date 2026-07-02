@@ -2,8 +2,8 @@
 title: 2.11 Flutter 渲染管线与性能
 chapter: 2.11
 section: 2.11
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 confidence: medium-low
@@ -26,18 +26,18 @@ last_task9_audit: 2026-06-13
 last_task9_audit_log: logs/deep-review/2026-06-13-20-audit.md
 last_task6_audit: 2026-06-13
 task9_state: reviewed
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task2b_state: fixed
 task9_reviewed_date: 2026-07-02
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-02T10:41:17+08:00"
 last_task9_review_log: logs/deep-review/2026-07-02-10-deep-review.md
 task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1/P2；16KB plugin 合规链路已拆清 AGP zip alignment、ELF p_align 与 native 4KB 假设。queue 无 pending，Task6 已通过，自动晋升 finalized。 | 2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；修正 Flutter Android VSync 入口为 NDK AChoreographer 优先、Java VsyncWaiter fallback，并同步 Perfetto trace 关键词；回到 Task6 复审。详见 logs/deep-review/2026-07-02-10-deep-review.md。"
-reviewed_date: 2026-05-22
+reviewed_date: 2026-07-02
 reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: "2026-05-22T16:06:00+08:00"
+last_task6_at: 2026-07-02T20:11:00+08:00
 last_task6_review_log: logs/review/2026-05-22-16-review.md
 review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 14 处（结构性元叙述、ASCII 破折号、标点与几处过度口语表达）。Task9 P1/P2 queue 已存在，保持 task2b_pending。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 5 处；压掉不必要的“我们”第一人称和开头问题句式；既有 Task9 P1（16KB plugin packaging/ELF/runtime 边界）queue 保留，保持 task2b_pending。 2026-05-22 19:26 Task9 re-review: pass-tech-review，P0/P1/P2=0；queue 无 pending，自动晋升 finalized。"
 updated_by: openclaw-task9

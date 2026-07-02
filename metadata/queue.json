@@ -483,5 +483,45 @@
     "added_by": "openclaw-manual-intake",
     "added_at": "2026-07-02T16:35:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "15",
+    "section_title": "Android 性能优化研究方法论",
+    "priority": 90,
+    "reason": "[review回炉] 章节整体为百科词条式罗列，违反 writing-guide 反面教材1；案例数据疑似编造；多个章节内容空泛",
+    "material_paths": [
+      "src/ch15-methodology.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文整体结构",
+        "detail": "章节以纯列表+短句罗列为主，缺少连贯叙述。writing-guide 要求'一个有经验的工程师在给另一个工程师讲一件事'的叙述风格，当前写法属于'反面教材1：百科词条式'",
+        "suggestion": "参考 writing-guide 类型A/B/C 结构模板，将核心章节（问题分类、分析方法、优化方案）改为叙述式，减少纯列表段落"
+      },
+      {
+        "type": "需确认",
+        "location": "Section 10 案例研究（10.1/10.2/10.3）",
+        "detail": "三组案例（社交应用启动、电商应用卡顿、视频应用内存）使用了精确数字（如'启动时间从 1.5s 增加到 3.2s'、'用户流失率增加 15%'），但缺少来源标注。疑似 AI 编造的示例数据，违反 writing-guide '不能编造第一手经验/实验/性能数据'",
+        "suggestion": "如为真实案例，补充来源和验证标注；如为假设性示例，明确标注 [假设性示例] 并确保数据合理性；否则删除"
+      },
+      {
+        "type": "需重写",
+        "location": "Section 12 性能优化未来趋势",
+        "detail": "云原生、5G、边缘计算等内容非常泛化，与 Android 性能优化主线关联弱，缺少具体技术落地点",
+        "suggestion": "要么补充与 Android 性优化的具体关联（如 5G 对网络性能监控的影响、边缘计算对端侧推理的性能预算），要么删除整个 Section 12"
+      },
+      {
+        "type": "需补充素材",
+        "location": "Section 3 工具选型 + Section 4 数据采集",
+        "detail": "工具介绍停留在名称列举层面，缺少 Perfetto 实际使用示例、SQL 查询、Trace 分析方法等实战内容",
+        "suggestion": "补充 Perfetto 配置示例、典型 SQL 查询、Baseline 建立方法和异常检测实操"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-02T20:11:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-02-20-review.md"
   }
 ]

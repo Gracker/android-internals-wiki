@@ -8,14 +8,15 @@ last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfet
 tags:
 - methodology
 task9_result: auto-fixed
-task6_result: pass-light-edit
-task6_state: revisiting
+task6_result: needs-rework
+task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed-lite
 last_task2b_lite_at: '2026-06-27'
-pipeline_stage: task6_pending
-task9_review_notes: '2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。'
+pipeline_stage: task2b_pending
+task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。
+review_notes: '2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。'
 last_task9_audit: '2026-07-02'
 last_task9_at: '2026-07-02T17:27:39+08:00'
 last_task9_autofix_at: '2026-07-02'
@@ -26,7 +27,7 @@ deepseek_cn_review_state: needs-structure-rework
 
 # Android 性能优化研究方法论
 
-本章将介绍 Android 性能优化的完整方法论，从研究框架到实际落地工具链。性能优化不是"玄学"，而是建立在可验证的方法论体系之上——明确问题定义、工具选择、数据采集、原因定位、方案设计、实施验证的完整闭环。
+本章将介绍 Android 性能优化的完整方法论，从研究框架到实际工具链。性能优化不是"玄学"，而是建立在可验证的方法论体系之上——明确问题定义、工具选择、数据采集、原因定位、方案设计、实施验证的完整流程。
 
 ## 1. Android 性能问题分类与优先级管理
 
@@ -327,7 +328,7 @@ AOSP android-17.0.0_r1 的 `external/perfetto/perfetto.rc` 中，`traced`、`tra
 
 ## 8. 性能优化知识管理
 
-### 8.1 知识沉淀
+### 8.1 知识积累
 
 #### 问题库建设
 建立性能问题库，记录常见问题和解决方案：
@@ -460,13 +461,7 @@ AOSP android-17.0.0_r1 的 `external/perfetto/perfetto.rc` 中，`traced`、`tra
 #### 优化效果
 内存使用从 200MB 降低到 120MB，OOM 问题解决。
 
-## 11. 性能优化前沿技术
 
-
-### 11.2 性能优化新技术
-
-#### 量子计算在性能优化中的应用
-#### 边缘计算在性能优化中的应用
 ## 12. 性能优化未来趋势
 
 ### 12.1 技术发展趋势
