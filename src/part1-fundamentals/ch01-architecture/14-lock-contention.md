@@ -50,8 +50,8 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
@@ -60,13 +60,14 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-02T12:46:16+08:00"
 last_task9_audit: "2026-07-02"
 last_task9_audit_log: "logs/deep-review/2026-07-02-12-audit.md"
+task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2 (post-Task9 autofix): pass-light-edit. Task9 idle audit auto-fixed Android 17 source re-anchoring (OomAdjuster package path, DeliQueue metrics). L1 scan: 0 banned words, 0 high-freq violations. L2: structure intact, outline 8/8 anchors covered, 4 extensions covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
 last_task9_autofix_at: "2026-07-02"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-27T16:50:00+08:00"
 task2b_notes: "2026-05-27 Task2B：清理文末 AIW 源码调研原始块，将 AMS mGlobalLock/mProcLock 双锁与 PI-futex 边界合并入正文。"
 last_task6_audit: "2026-06-08"
-last_task6_at: "2026-06-25T21:17:30+08:00"
+last_task6_at: "2026-07-02T21:14:26+08:00"
 last_task6_review_log: "logs/review/2026-06-25-21-review.md"
 review_type: "task6-writing-quality-review"
 task6_l1_l2_fixes: 9
