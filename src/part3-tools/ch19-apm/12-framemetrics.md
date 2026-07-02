@@ -6,8 +6,8 @@ status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-05-31'
-last_verified_against: "AOSP FrameMetrics.java android-7.0.0_r1 - android-16.0.0_r1 + Android FrameMetrics API reference through API 37; android-17.0.0_r1 Gitiles tag unavailable"
+last_verified: "2026-07-03"
+last_verified_against: "AOSP android-17.0.0_r1 FrameMetrics.java / Window.java / FrameMetricsObserver.java / FrameMetricsReporter.cpp / FrameInfo.h / CanvasContext.cpp; Android Developers FrameMetrics API reference through API 37"
 confidence: medium
 tags:
 - apm
@@ -16,23 +16,23 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
-task2b_state: "fixed"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-06-02"
+task2b_state: fixed
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-07-03"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-02T04:21:00+08:00"
+last_task9_at: "2026-07-03T03:26:26+08:00"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-31T17:35:00+08:00'
 last_task2b_lite_at: '2026-05-31'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
-last_task9_audit: "2026-06-13"
-last_task9_audit_log: "logs/deep-review/2026-06-13-09-audit.md"
-last_task9_review_log: "logs/deep-review/2026-06-02-04-deep-review.md"
+last_task9_audit: "2026-07-03"
+last_task9_audit_log: "logs/deep-review/2026-07-03-03-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-03-03-audit.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
-task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。复核 FrameMetrics API 24-37 字段、API 31 DEADLINE/GPU_DURATION 与 Android 12/13+ duration 边界；无 P0/P1，自动晋升 finalized。"
+task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。复核 FrameMetrics API 24-37 字段、API 31 DEADLINE/GPU_DURATION 与 Android 12/13+ duration 边界；无 P0/P1，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：按 AOSP android-17.0.0_r1 重锚 FrameMetrics 源码基线；修正延伸阅读中 FrameInfo 索引数量旧口径（Android 17 为 FRAME_STATS_COUNT=25），回到 Task6 复审。"
 last_task6_audit: '2026-06-12'
-last_task9_autofix_at: "2026-05-31"
+last_task9_autofix_at: "2026-07-03"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 reviewed_by: openclaw-task6
@@ -41,12 +41,15 @@ task6_reviewed_date: "2026-06-01"
 last_task6_at: "2026-06-01T02:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-02-review.md"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 扫描无新增正文修复；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-29
+task9_p0_issues: 1
+task9_p1_issues: 1
+task9_p2_issues: 0
 ---
 
 # FrameMetrics
@@ -266,4 +269,4 @@ FrameMetrics 不直接告诉你 Compose 哪个 Composable 慢，也不告诉你 
 FrameMetrics 适合做线上分流：先判断慢在布局、绘制、sync 还是 GPU 提交，再选择对应线下工具。
 ## 延伸阅读
 
-FrameMetrics 的数据源与 Perfetto 的渲染 Trace 共享同一套底层机制：HWUI 层通过 `FrameInfo` 结构体（24 个时间戳索引）采集帧阶段耗时，`FrameMetricsReporter` 将其包装为 `FrameMetrics` API 回调，而 Perfetto 通过 systrace 收集同一数据源实现系统级分析。理解这层关系有助于在 FrameMetrics 发现问题后，平滑切换到 Perfetto 做深度排查。
+FrameMetrics 的数据源与 Perfetto 的渲染 Trace 共享同一套底层机制：HWUI 层通过 `FrameInfo` 索引表采集帧阶段耗时；Android 17 中 `FrameMetrics.java` / `FrameInfo.h` 对齐到 `FRAME_STATS_COUNT = 25`，其中包含 flags、vsync id、input event id 等非时长项。`FrameMetricsReporter` 再把数据分发给 `FrameMetrics` API 回调，Perfetto 则通过同源的 HWUI / FrameTimeline 事件把这些帧信息放进系统级 trace。理解这层关系有助于在 FrameMetrics 发现问题后，平滑切换到 Perfetto 做深度排查。
