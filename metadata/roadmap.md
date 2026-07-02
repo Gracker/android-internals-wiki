@@ -12,10 +12,10 @@
 
 | 口径 | 数量 | 说明 |
 |------|------|------|
-| `src/` frontmatter 原始扫描 | 545 文件 | `scripts/progress-report.py` 看到的正文元数据文件 |
-| `metadata/progress.json` 精修子集 | 141 节 | 119 finalized、22 ready_for_review |
-| `metadata/queue.json` | 18 条 | 13 pending、5 completed |
-| `pipeline_stage=ready-to-publish` | 322 文件 | 来自 frontmatter 原始扫描 |
+| `src/` frontmatter 原始扫描 | 550 文件 | `scripts/progress-report.py` 看到的正文元数据文件 |
+| `metadata/progress.json` 精修子集 | 147 节 | 119 finalized、22 ready_for_review、6 draft |
+| `metadata/queue.json` | 28 条 | 17 pending、6 draft、5 completed |
+| `pipeline_stage=ready-to-publish` | 321 文件 | 来自 frontmatter 原始扫描 |
 
 当前工作重点：
 

@@ -27,9 +27,9 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-21"
@@ -41,12 +41,12 @@ last_task2b_at: "2026-06-01T12:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。"
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-21
-last_task6_at: "2026-06-21T20:07:00+08:00"
+last_task6_at: "2026-07-02T18:10:00+08:00"
 last_task6_audit: "2026-06-09"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
 last_task6_review_log: "logs/review/2026-06-21-20-review.md"
-task6_review_notes: "2026-06-21 20:07 Task6 revisiting-review (post-Task9-auto-fix): pass-light-edit。Task9 修正 NativeCrashListener -> handleApplicationCrashInner() 通知链路方法名。L1/L2 复扫通过，无新增小修，无新增回炉项。更新 applicable_versions 至 Android 17/API 37。自动晋升 finalized。"
+task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1修复: 链路→流程×3, meta-narrative×1。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
 task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-06-21-16-audit.md"
 task9_review_notes: "2026-06-21 Task9 idle-audit：auto-fixed。Android 17/API 37 源码抽检发现 native crash 通知链路方法名不准；已将 AppErrors.crashApplication()/handleApplicationCrash() 修正为 NativeCrashListener -> handleApplicationCrashInner()，回到 Task6 复审。"
@@ -73,7 +73,7 @@ Native Crash 与 Java Crash 的区别：Java Crash 的异常信息由 ART 虚拟
 
 - 🔹 **信号与收集路径**：说明 SIGSEGV、SIGABRT、SIGBUS 等信号如何进入 SignalChain、debuggerd 和 crash_dump
 - 🔹 **tombstone 解读**：覆盖头部信息、寄存器、backtrace、stack dump 和线上获取路径
-- 🔹 **符号化链路**：说明 addr2line、ndk-stack、Breakpad `.sym` 文件、目录查找协议和 minidump_stackwalk 流程
+- 🔹 **符号化流程**：说明 addr2line、ndk-stack、Breakpad `.sym` 文件、目录查找协议和 minidump_stackwalk 流程
 - 🔹 **常见崩溃模式**：区分空指针、野指针、SIGABRT、SIGBUS 与 JNI 边界崩溃的排查方向
 - 🔹 **线上监控方案**：比较系统 tombstone、Breakpad、第三方 SDK、APM 信号捕获策略的边界
 - 🔹 **线程级安全点**：说明 sigsetjmp/siglongjmp、mooner、ByteHook、shadowhook 和 mutex use-after-destroy 检测
@@ -471,7 +471,7 @@ C++ 代码 `throw` 了异常，但没有在 native 函数内部 `catch`，异常
 
 ## Native Crash 兜底机制：线程级安全点
 
-前面几节讲的都是「crash 后如何收集信息」，本节介绍一种**在线 crash 发生时不让进程崩溃**的技术：线程级安全点机制。
+除了「crash 后如何收集信息」，还有一个方向：**在 crash 发生时拦截信号、不让线程崩溃**——线程级安全点机制。
 
 ### 核心原理：sigsetjmp/siglongjmp 非局部跳转
 
@@ -665,7 +665,7 @@ hook pthread_mutex_lock/trylock/unlock/timedlock/clocklock，在每个函数入�
 
 ## 参考资料
 
-### Native Crash / ApplicationExitInfo 补偿链路与 Signal Handler 边界
+### Native Crash / ApplicationExitInfo 补偿流程与 Signal Handler 边界
 
-完整分析了 debuggerd → crash_dump → tombstone 三层 native crash 处理链路，重点厘清 signal handler 的 async-signal-safe 边界（禁止 malloc/printf/堆分配），ApplicationExitInfo 对 native tombstone 的补偿入口及版本差异（API 30–34），Crashpad/Breakpad/debuggerd 的职责边界，SDK envelope 与系统 exit reason 的去重机制。
+完整分析了 debuggerd → crash_dump → tombstone 三层 native crash 处理流程，重点厘清 signal handler 的 async-signal-safe 边界（禁止 malloc/printf/堆分配），ApplicationExitInfo 对 native tombstone 的补偿入口及版本差异（API 30–34），Crashpad/Breakpad/debuggerd 的职责边界，SDK envelope 与系统 exit reason 的去重机制。
 
