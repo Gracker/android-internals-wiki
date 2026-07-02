@@ -33,6 +33,7 @@ task2b_result: fixed-lite
 task2b_state: fixed
 pipeline_stage: ready-to-publish
 task6_state: reviewed
+last_task6_audit: 2026-07-02
 task9_state: reviewed
 last_task2b_lite_at: 2026-07-02
 task9_result: auto-fixed
@@ -40,7 +41,6 @@ last_task9_autofix_at: 2026-07-02
 last_task9_at: 2026-07-02
 task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；收窄 AOSP 证据锚点到 android-17.0.0_r1，补齐 StatsManagerService 在配置/权限/重注册链路中的角色，修正 DeepResearch 延伸阅读中的 JNI/Android 17 新增权限表述；回到 Task6 复审。详见 logs/deep-review/2026-07-02-07-deep-review.md。"
 ---
--
 
 # 14.17 statsd 与系统级指标采集
 
@@ -266,7 +266,3 @@ CTS 也依赖 statsd 验证平台 atom 和 StatsD 功能。AOSP Statsd 官方文
 - 摘要：StatsManagerService 维护五类 ArrayMap 订阅缓存（puller/dataFetch/activeConfig/broadcastSubscriber/restrictedMetrics），native statsd 重启时通过 statsdReady() 信号触发 sayHiToStatsd() 全量重注册。客户端侧缓存是 authoritative state，native 端是 mirror，registerAll* 方法采用锁内浅拷贝+锁外 binder 调用模式避免 IPC 死锁。
 - 注入时间：2026-06-08
 - 价值：补充 statsd 缓存恢复与配置持久化机制的源码级细节，是理解 statsd 服务可用性设计的关键材料
-
-
-
-## 参考资料
