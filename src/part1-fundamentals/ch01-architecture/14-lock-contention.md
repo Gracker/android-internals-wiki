@@ -1,4 +1,5 @@
 ---
+
 title: "锁竞争与同步性能分析"
 chapter: "1.14"
 status: ready-for-review
@@ -50,10 +51,10 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task9_reviewed_date: "2026-07-02"
 task9_reviewed_by: openclaw-task9
