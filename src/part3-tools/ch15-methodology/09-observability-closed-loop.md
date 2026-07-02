@@ -34,8 +34,8 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-22T07:35:00+08:00"
-last_task6_audit: "2026-06-18"
-last_task6_audit_log: "logs/review/2026-06-18-10-audit.md"
+last_task6_audit: "2026-07-03"
+last_task6_audit_log: "logs/review/2026-07-03-07-audit.md"
 last_task9_audit: "2026-07-01"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
@@ -88,7 +88,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 ## 一条完整治理回路,至少有八步
 
-这八步不是理想平台设计图;它更接近大多数成熟团队最后会形成的现实结构。
+这八步描述的是大多数成熟团队在实际运转中形成的现实结构。
 
 ### 第一步:采集
 
@@ -112,7 +112,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 - **基线全量 + 异常补采**:基础指标全量,trace / hprof 这类重证据按异常触发
 - **分群采样**:重点机型、重点渠道、灰度版本采得更密
-- **会话级采样**:一旦命中采样,一个会话里的关键链路都保持一致,避免数据割裂
+- **会话级采样**:一旦命中采样,一个会话里的关键采集通道都保持一致,避免数据割裂
 
 这一步最容易犯的错,是一开始就追求"大而全"。
 线上体系需要把该采的采稳,同时避免让不该采的数据拖累系统。
@@ -139,7 +139,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 - App MainThread
 - RenderThread / GPU
-- SurfaceFlinger / 显示链路
+- SurfaceFlinger / 显示管线
 - Binder / 系统服务
 - IO / 内存 / 调度 / thermal
 
@@ -203,7 +203,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 ## 一套治理回路需要哪些连接键
 
-治理回路难，常见原因不在平台功能数量，是在数据之间连不起来。
+治理回路难，最常见的瓶颈是数据之间连不起来。
 
 高频有用的键通常不多,但必须稳定:
 
@@ -213,7 +213,7 @@ last_deepseek_polish_at: "2026-05-24"
 - `build / version / channel`
 - `device fingerprint`
 
-这些字段的价值，不在数量，是在是否能把不同层的数据 join 起来。
+这些字段的价值取决于能否把不同层的数据 join 赬来。
 如果 trace 和指标、页面和版本、版本和报警之间连不上,平台功能再多也很难形成治理回路。
 
 ## 平台视角和工程视角,最容易断在这里
