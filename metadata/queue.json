@@ -984,5 +984,26 @@
     "added_by": "task3-freshness-check",
     "added_at": "2026-07-03T02:00:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.22",
+    "section_title": "ART Verifier Quickening 与 dexopt 过滤器性能边界",
+    "priority": 85,
+    "reason": "[Task6 闲时抽检] AOSP 源码引用锚定 android-16.0.0_r1，未更新为 android-17.0.0_r1 基线",
+    "material_paths": [
+      "src/part1-fundamentals/ch01-architecture/22-art-verifier-quickening-dexopt-filters.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/版本基线",
+        "location": "正文 compiler filter 段 + References（3 条 AOSP 引用）+ frontmatter last_verified_against",
+        "detail": "章节源码引用锚定 android-16.0.0_r1（compiler_filter.h、dex2oat.cc、libartservice/service/README.md），2026-06-27 版本基线要求主线必须锚定 android-17.0.0_r1。Task 9 曾在 2026-06-17 注明 'android-17 platform tag was not present'，需重新核实 tag 是否已可用。",
+        "suggestion": "Task 9 重新验证 android-17.0.0_r1 tag 是否已包含这些文件；如已可用，更新引用锚点；如仍不可用，明确标注 'android-17 tag 未包含此文件，基于最近可用 tag android-16.0.0_r1 验证'"
+      }
+    ],
+    "added_by": "task6-audit",
+    "added_at": "2026-07-03T03:08:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-03-03-audit.md"
   }
 ]
