@@ -16,7 +16,9 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder#detectNetwork()"
   - type: aosp
-    path: "libcore/luni/src/main/java/dalvik/system/BlockGuard.java"
+    path: "libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java"
+  - type: aosp
+    path: "libcore/luni/src/main/java/libcore/io/BlockGuardOs.java"
   - type: official
     path: "https://developer.android.com/reference/android/net/http/HttpEngine"
   - type: official
@@ -52,22 +54,22 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 review_round: 2
-task6_state: "reviewed"
-pipeline_stage: ready-to-publish
+task6_state: "revisiting"
+pipeline_stage: task6_pending
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
-last_task9_at: "2026-05-28T06:28:00+08:00"
+last_task9_at: "2026-07-03T06:27:14+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-28"
+task9_reviewed_date: "2026-07-03"
 last_task6_audit: "2026-06-10"
-last_task9_audit: "2026-06-13"
-last_task9_review_log: "logs/deep-review/2026-05-28-06-deep-review.md"
+last_task9_audit: "2026-07-03"
+last_task9_review_log: "logs/deep-review/2026-07-03-06-audit.md"
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：Android 17 主线 libcore 中 `BlockGuard.java` 位于 `libcore/dalvik/src/main/java/dalvik/system/`，socket 网络入口由 `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java` 调用 `BlockGuard.getThreadPolicy().onNetwork()`；已修正 frontmatter AOSP 源码路径并同步重锚 OkHttp 4.12.x `ConnectionPool.kt` 代码块。P0 1 / P1 0 / P2 0；回到 Task6 复审。"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-28T06:11:00+08:00"
 task6_reviewed_at: "2026-05-28T06:11:00+08:00"
@@ -78,7 +80,11 @@ last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
 last_task2b_note: "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-last_task9_autofix_at: "2026-05-28"
+last_task9_autofix_at: "2026-07-03"
+last_task9_audit_log: "logs/deep-review/2026-07-03-06-audit.md"
+task9_p0_issues: 1
+task9_p1_issues: 0
+task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 ---
@@ -156,12 +162,10 @@ OkHttp 内部使用 `ConnectionPool` 类管理所有 TCP 连接。当一个请�
 
 连接池有两个核心参数：`maxIdleConnections`（最大空闲连接数，默认 5）和 `keepAliveDuration`（空闲连接的最大存活时间，默认 5 分钟）。超过这个数量或时间的空闲连接会被后台清理线程回收。
 
-```java
-// okhttp3/ConnectionPool.java
+```kotlin
+// okhttp/src/main/kotlin/okhttp3/ConnectionPool.kt (OkHttp 4.12.x)
 // OkHttp 默认连接池配置
-public ConnectionPool() {
-    this(5, 5, TimeUnit.MINUTES);
-}
+constructor() : this(5, 5, TimeUnit.MINUTES)
 ```
 
 这段代码告诉我们一个重要的默认值：OkHttp 最多保持 5 条空闲连接，每条最多存活 5 分钟。对于大多数 App 来说，如果在 5 分钟内再次访问同一个域名，通常可以直接复用连接。如果 App 需要同时与超过 5 个不同的后端域名保持长连接，空闲连接数可能不够，需要适当调大这个参数。
