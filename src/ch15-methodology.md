@@ -7,19 +7,20 @@ last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfet
   官方性能博客
 tags:
 - methodology
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task6_result: pass-light-edit
-task6_state: completed
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: '2026-06-27'
-pipeline_stage: ready-to-publish
-task9_review_notes: '2026-06-27 Task2B Lite: 修复 P1 Perfetto 版本描述（Android 9 traced
-  入 system image 但非 Pixel 需手动 enable，Android 11+ 默认启用），P2 ADB 命令补版本限定。回 Task6/Task9
-  复审。2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5'
-last_task9_audit: '2026-06-27'
-last_idle_audit_at: '2026-06-28T06:20:00+08:00'
+pipeline_stage: task6_pending
+task9_review_notes: '2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。'
+last_task9_audit: '2026-07-02'
+last_task9_at: '2026-07-02T17:27:39+08:00'
+last_task9_autofix_at: '2026-07-02'
+last_task9_review_log: 'logs/deep-review/2026-07-02-17-audit.md'
+last_idle_audit_at: '2026-07-02T17:27:39+08:00'
 deepseek_cn_review_state: needs-structure-rework
 ---
 
@@ -114,50 +115,37 @@ Android 8 下的优化重点在于：
 
 
 
-<!-- AIW-源码调研-2026-06-30 -->
-**⚠️ 重要源码级修正**（2026-06-30 基于 AOSP android-17.0.0_r1 验证）：
+<!-- AIW-源码调研-2026-07-02 -->
+**⚠️ 重要源码级修正**（2026-07-02 基于 AOSP android-17.0.0_r1 验证）：
 
-传统认知中的"Android 11+ 默认启用 Perfetto"缺乏源码证据。AOSP 默认配置中，所有 Perfetto 服务均为 ，需通过系统属性显式启用：
+AOSP android-17.0.0_r1 的 `external/perfetto/perfetto.rc` 中，`traced`、`traced_relay`、`traced_probes` 三个 service 都是 `disabled`。标准 AOSP 通过 `persist.traced.enable=1` 的 init action 启动 `traced` / `traced_probes`，并创建 `/data/misc/perfetto-traces`、`/data/misc/perfetto-configs`；Pixel 或厂商镜像可以通过 vendor init、DeviceConfig 或属性默认值覆盖这个边界。
 
-
-
-**Pixel 设备默认启用**：Pixel 系列设备通过 vendor init.rc 覆盖默认配置，但标准 AOSP 设备仍需手动启用。
+采集 trace 的命令行入口是 `/system/bin/perfetto`，不是 `traced`。android-17.0.0_r1 `src/perfetto_cmd/perfetto_cmd.cc` 支持 `-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`；`src/traced/service/service.cc` 的 `traced` 只支持服务端选项（如 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`），没有 `-b` 或 `--async`。
 
 #### Android 9+ 工具演进
 
-**Android 9 开始支持 Perfetto，但需要注意版本差异**：
+**Android 9 开始包含 Perfetto 服务，但启用边界取决于系统镜像与设备配置**：
 
-- **Android 9 (API 28)**：Perfetto 进入系统 image，但默认未启用，需要手动开启
+- **Android 9 (API 28)**：AOSP `external/perfetto/perfetto.rc` 已包含 `traced` / `traced_probes`，但 service 默认 `disabled`；该版本使用 `sys.traced.enable_override` 映射到 `persist.traced.enable`。
   ```bash
-  # Android 9 手动启用 Perfetto traced
-  adb shell setprop debug.tracing.enable 1
-  adb shell traced &
+  # Android 9 如需手动启用 Perfetto 服务，优先通过属性触发 init action
+  adb shell setprop persist.traced.enable 1
   ```
 
-- **Android 11+ (API 30+)**：Perfetto 默认启用
+- **Android 10-13 (API 29-33)**：Perfetto CLI 与 tracing service 逐步成为系统 tracing 主入口；标准 AOSP 仍通过 `persist.traced.enable=1` 启动后台 service，设备默认值由系统配置决定。
   ```bash
-  # Android 11+ 直接使用 Perfetto traced
-  adb shell traced -b 8192
+  # 采集入口是 perfetto CLI，-b 是 perfetto 的 buffer 参数
+  adb shell perfetto -t 10s -b 32mb -o /data/misc/perfetto-traces/trace.perfetto-trace sched/sched_switch
   ```
 
-- **Android 14 (API 34)**：Perfetto 支持更多性能指标
-  ```bash
-  # Android 14 支持更多缓冲区大小选项
-  adb shell traced -b 16384
-  ```
-
-- **Android 17 (API 37)**：Perfetto 进一步优化，支持异步采集和电池感知策略
-  ```bash
-  # Android 17 支持异步模式
-  adb shell traced --async
-  ```
+- **Android 14-17 (API 34-37)**：继续使用 `perfetto` CLI 与 `traced` service 组合。长时或后台采集应使用 `perfetto -d` / `perfetto -D` 或 `--detach` / `--attach`，不要写成 `traced -b` 或 `traced --async`。
 
 ### 3.3 工具选择的具体策略
 
 根据不同的 Android 版本选择合适的工具组合：
 
 #### Android 8-9
-- **Tracing**：Systrace 主要工具，Perfetto 可用但需要手动开启
+- **Tracing**：Android 8 使用 Systrace；Android 9 可使用 Perfetto，但标准 AOSP service 默认 `disabled`，需要按设备配置启用
 - **内存**：Heap Tool + Runtime.getRuntimeStats()
 - **网络**：Network Profiler + Charles/Fiddler
 - **电池**：Battery Historian + 自定义电量日志
@@ -573,7 +561,7 @@ Android 性能优化方法论可以总结为：
 ### 14.1 官方文档
 - [Android Performance Vitals](https://developer.android.com/topic/performance/vitals) — Google 官方性能指标定义与最佳实践
 - [Android Profiler](https://developer.android.com/studio/profile/android-profiler) — Android Studio 性能分析工具
-- [Perfetto](https://perfetto.dev/) — Android 14+ 的标准 tracing 工具
+- [Perfetto](https://perfetto.dev/) — Android 10+ 的标准系统 tracing 工具；Android 9 已包含基础服务但启用边界需按设备确认
 - [Battery Historian](https://developer.android.com/topic/performance/battery-historian) — 电池使用分析工具
 
 ### 14.2 开源工具
@@ -596,6 +584,6 @@ Android 性能优化方法论可以总结为：
 ## 15. 延伸阅读
 
 - [Android 性能优化指南](https://developer.android.com/topic/performance) — Android 官方性能优化指南
-- [Perfetto 文档](https://perfetto.dev/) — Android 14+ 标准 tracing 工具文档
+- [Perfetto 文档](https://perfetto.dev/) — Android 10+ 标准系统 tracing 工具文档
 - [Battery Historian 使用指南](https://developer.android.com/topic/performance/battery-historian) — 电池使用分析工具使用指南
 - [Android Vitals](https://developer.android.com/topic/performance/vitals) — Google Play Android Vitals 评分体系
