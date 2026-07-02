@@ -515,3 +515,59 @@ Phase 1 结论：全书覆盖度十轮确认饱和，无合格新候选。
 - **建议**：按 writing-guide 类型A（机制原理篇）或类型B（实战篇）结构重写核心章节，确保每段有因果叙述而非列表罗列；案例要么用真实数据（标来源），要么标注 [假设性示例]；空泛章节删除或补深。
 - **L1 已修复**：禁用词 3 处（闭环→流程、落地→可用、沉淀→积累），空壳 Section 11 已删除
 - **review 日志**：logs/review/2026-07-02-20-review.md
+
+
+## [Task2A 知识缺口挖掘 — 已检查方向] 2026-07-02
+
+本轮全面扫描了以下维度，记录以避免重复挖掘：
+
+### 已检查并发现合格缺口（≥14 分）
+1. ✅ **Binder Trace × Activity 冷启动性能分析** (Score: 17/20) → 已创建 8.18
+   - 来源：source-index score=20 未映射素材 + AOSP binder 驱动结构
+
+### 已检查但未达阈值（< 14 分）
+- **Android 虚拟地址空间治理与优化** (13/20) — Clippings 参考书有素材但 64 位时代价值降低
+- **ART Profile 端到端优化管线全景** (16/20 → 降为 12) — 1.12/21.4/21.11/21.12/16.6 已分段覆盖，统一视图更适合 Task2B
+- **Compose 性能预算与基线管理** (14/20) — 与 22.20/22.21/22.28 高度重叠
+- **App Build 性能与 CI/CD 管线优化** (14/20) — 超出本书运行时性能范围
+- **KMP (Kotlin Multiplatform) 性能** (15/20 → 12) — KMP 性能更偏 Kotlin/Native，不在 AIW 定位内
+- **WallpaperManagerService 渲染性能** (7/20) — 太过边缘
+- **JNI Local Reference Table Overflow** (8/20) — 太过细节
+- **Android 17 TextClassifier 性能** (8/20) — 太过边缘
+- **AOSP 所有核心 system service** — ActivityManager/WindowManager/PackageManager/InputManager/SurfaceFlinger/PowerManager/SensorManager/JobScheduler/LocationManager/NotificationManager/ConnectivityManager/AudioManager/AlarmManager/BiometricService 等均已有覆盖
+- **Clippings 三本参考书全部章节标题** — 与现有章节逐一对照，均已有对应覆盖
+
+### 结论
+AIW 当前 563 个文件，覆盖范围非常全面。后续缺口挖掘应关注：
+1. Android 18 预览版新特性（但受版本基线约束，暂不纳入正文）
+2. 新兴交叉领域（如 AI Agent 系统原语、XR 性能）— 已有覆盖
+3. 已有章节的深度扩展（更适合 Task 2B 回炉而非新建章节）
+
+
+## [Task2A 知识缺口挖掘 — 已检查方向] 2026-07-02 22:04
+
+本轮（第十一轮）全面复查结果：
+
+### Phase 0
+- 空_draft_章节：0 个（全部 18 个 draft 均已有实质内容）
+- Task2B backlog：0 → 允许进入 Phase 1
+
+### Phase 1 检查方向（全部 < 14 分）
+- **Clippings Chinasys2026 MUSCHED**（荣耀调度器优化）→ 12/20：vendor-specific 内核优化，app 开发者不直接接触
+- **Unidirectional Data Flow / MVI 架构性能** → 9/20：素材不足（仅 1 篇 medium quality），属架构话题非性能核心
+- **source-index 未映射高分数复查**：
+  - "Android Native MTE"（score=20, unmapped）→ 4.9 已覆盖 ARM MTE
+  - "得物App ANR监控"（score=17, unmapped）→ 9.11 已覆盖企业级 ANR 监控
+  - "Binder Trace Activity 冷启动"（score=20, unmapped）→ 8.18 已创建
+- **daily-info 2026-06-03~06-26 热点复查**：无未被覆盖的性能相关热点
+- **research-feeds 最近 5 个文件复查**：均为已处理素材（Perfetto/Compose/ADPF/FrameTimeline）
+- **Clippings 新增**：无（最新仍为 2026-06-23）
+- **Android 18 DP**：未发布
+
+### 结论
+全书 563 个文件（18 draft + 190 ready-for-review + 336 finalized + 6 deprecated + 12 unknown + 1 verified），覆盖范围十一轮确认饱和。与前十轮结论一致。
+
+后续可行动方向不变：
+1. 已有章节深度增强（Task 2B）— queue.json 有 pending 条目待处理
+2. 等待 Android 18 DP 或新版本素材
+3. 18 个 draft 章节全部已有实质内容，可由 Task 2B 逐步提升质量
