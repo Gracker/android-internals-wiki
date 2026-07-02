@@ -4484,52 +4484,52 @@
     "score": 5
   },
   {
-    "path": "source/juejin-android/2026-04-06-75821494-已有Flutter项目适配鸿蒙6.md",
+    "path": "技术文章/source/juejin-android/2026-04-06-75821494-已有Flutter项目适配鸿蒙6.md",
     "reason": "Flutter适配鸿蒙，非Android内部机制",
     "score": 6
   },
   {
-    "path": "source/juejin-android/2026-04-09-7582149417768812594-已有Flutter项目适配鸿蒙6.md",
+    "path": "技术文章/source/juejin-android/2026-04-09-7582149417768812594-已有Flutter项目适配鸿蒙6.md",
     "reason": "Flutter适配鸿蒙(重复)",
     "score": 6
   },
   {
-    "path": "source/juejin-android/2026-04-06-75822463-Android全局悬浮拖拽视图.md",
+    "path": "技术文章/source/juejin-android/2026-04-06-75822463-Android全局悬浮拖拽视图.md",
     "reason": "UI组件开发，非性能优化",
     "score": 7
   },
   {
-    "path": "source/juejin-android/2026-04-06-75842953-Android15适配.md",
+    "path": "技术文章/source/juejin-android/2026-04-06-75842953-Android15适配.md",
     "reason": "Android 15适配，已过时(Android 17为当前)",
     "score": 8
   },
   {
-    "path": "source/juejin-android/2026-04-06-75894620-Compose输入框.md",
+    "path": "技术文章/source/juejin-android/2026-04-06-75894620-Compose输入框.md",
     "reason": "Compose输入框使用教程，无性能深度",
     "score": 7
   },
   {
-    "path": "source/juejin-android/2026-04-06-75899034-聊聊2026年Android开发.md",
+    "path": "技术文章/source/juejin-android/2026-04-06-75899034-聊聊2026年Android开发.md",
     "reason": "行业展望，无技术深度",
     "score": 7
   },
   {
-    "path": "source/juejin-android/2026-04-09-7589903499599347766-聊聊2026年Android开发.md",
+    "path": "技术文章/source/juejin-android/2026-04-09-7589903499599347766-聊聊2026年Android开发.md",
     "reason": "行业展望(重复)",
     "score": 7
   },
   {
-    "path": "source/juejin-android/2026-04-06-75967106-调试布局.md",
+    "path": "技术文章/source/juejin-android/2026-04-06-75967106-调试布局.md",
     "reason": "布局调试入门，无性能分析深度",
     "score": 8
   },
   {
-    "path": "source/juejin-android/2026-04-09-7582469532326920228-豆包手机.md",
+    "path": "技术文章/source/juejin-android/2026-04-09-7582469532326920228-豆包手机.md",
     "reason": "豆包手机商业分析，非技术内容",
     "score": 5
   },
   {
-    "path": "source/juejin-android/2026-04-09-7614897667961143347-AI写Android.md",
+    "path": "技术文章/source/juejin-android/2026-04-09-7614897667961143347-AI写Android.md",
     "reason": "AI写Android评测，非Android内部机制",
     "score": 7
   },
@@ -6112,25 +6112,25 @@
     "directory": "面试"
   },
   {
-    "path": "source/juejin-android/2026-04-06-75894620-看完你就是古希腊掌管Compose输入框.md",
+    "path": "技术文章/source/juejin-android/2026-04-06-75894620-看完你就是古希腊掌管Compose输入框.md",
     "reason": "Compose输入框教程，非性能相关",
     "score": 6,
     "directory": "source"
   },
   {
-    "path": "source/juejin-android/2026-04-06-75967106-2026年了，Android开发该如何调.md",
+    "path": "技术文章/source/juejin-android/2026-04-06-75967106-2026年了，Android开发该如何调.md",
     "reason": "Android调试方法论，泛泛而谈",
     "score": 7,
     "directory": "source"
   },
   {
-    "path": "source/juejin-android/2026-04-09-7582469532326920228-豆包手机为什么会被其他厂商抵制它的工作原.md",
+    "path": "技术文章/source/juejin-android/2026-04-09-7582469532326920228-豆包手机为什么会被其他厂商抵制它的工作原.md",
     "reason": "豆包手机工作原理，非Android性能",
     "score": 5,
     "directory": "source"
   },
   {
-    "path": "source/juejin-android/2026-04-09-7589903499599347766-聊聊2026年Android开发会是什么.md",
+    "path": "技术文章/source/juejin-android/2026-04-09-7589903499599347766-聊聊2026年Android开发会是什么.md",
     "reason": "重复文章",
     "score": 5,
     "directory": "source"

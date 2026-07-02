@@ -58,13 +58,14 @@ task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
-last_task6_audit: "2026-07-01"
+last_task6_audit: "2026-07-02"
+last_task6_audit_result: "l2-issues-fixed"
 ---
 -
 
 # 14.7 ProfilingManager
 
-ProfilingManager 解决量产设备上"问题发生时没有开工具"的空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 及后续版本补齐了系统事件触发。线上取证流程要拆成三个环节来理解:显式请求怎么发、trigger 版本边界在哪、结果怎么收。
+ProfilingManager 解决量产设备上"问题发生时没有开工具"的取证空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 补齐系统事件触发。本章讲透显式请求、trigger 版本边界、结果接收三个环节,帮你实现线上取证闭环。
 
 <!-- outline-start -->
 ## 本节要点大纲
