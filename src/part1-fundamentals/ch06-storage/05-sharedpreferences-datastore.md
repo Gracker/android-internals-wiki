@@ -990,3 +990,113 @@ SP `MODE_MULTI_PROCESS` 是**过时且不可靠**的轮询机制：进程 A 写�
 - **版本号溢出**：`uint32_t` 4 字节约 42 亿次写盘，正常 app 几年内写不到头，但长时间运行的常驻 provider 进程要警惕
 - **arm64 vs armv7**：atomic lock-free 编译期断言假设 ARMv8+，老架构可能 fall back to kernel futex 多进程语义退化
 - **`MAP_POPULATE` 在 Android 4.9 kernel 之前不支持**：Android 5.0+ 设备 OK，4.4 及更低需要显式 pread 触发 fault
+
+<!-- AIW-源码调研-2026-07-02 -->
+## 12. Android 17 (`android-17.0.0_r1`) 源码层细节补充
+
+本节基于 2026-07-02 的源码调研增补,所有结论均来自 `android-17.0.0_r1` tag 的 AOSP 源码(github mirror 不支持,直接走 `android.googlesource.com` 下载)。
+
+### 12.1 `ContextImpl.sSharedPrefsCache` 二级缓存
+
+`frameworks/base/core/java/android/app/ContextImpl.java:226`:
+
+```java
+private static ArrayMap<String, ArrayMap<File, SharedPreferencesImpl>> sSharedPrefsCache;
+```
+
+- 进程内**静态**缓存,按 `(packageName, file)` 二级索引
+- 同一个 `SharedPreferences` 文件对象在进程内**唯一**,反复 `getSharedPreferences(name)` 不会重新 `startLoadFromDisk()`
+- `getSharedPreferencesCacheLocked()` (ContextImpl.java:694) 在 `ContextImpl.class` 锁内操作
+- 跨进程场景仅当 `MODE_MULTI_PROCESS` 或 `targetSdk < HONEYCOMB` 时触发 `startReloadIfChangedUnexpectedly()` 轮询 `Os.stat().st_mtim`
+
+### 12.2 `apply()` 与 `commit()` 的关键差异
+
+| 维度 | `apply()` | `commit()` |
+|---|---|---|
+| 返回值 | void | boolean |
+| 落盘线程 | `QueuedWork` 队列(queued-work-looper HandlerThread) | 若 `mDiskWritesInFlight==1` 在调用线程同步写;否则退化为 queue |
+| ANR 风险 | `QueuedWork.waitToFinish()` 在 Activity onPause 等处阻塞主线程 | 调用线程直接卡 fsync |
+| 监听器回调时机 | `apply()` 末尾,内存已 commit 后立即回调(`notifyListeners(mcr)`) | `mcr.writtenToDiskLatch.await()` 之后回调 |
+| StrictMode 命中 | 不命中 detectDiskWrites | 同步分支会命中 |
+| `QueuedWork.addFinisher` | 注册 awaitCommit | 不注册 |
+
+源码位置:`SharedPreferencesImpl.java:485-629`。
+
+### 12.3 `MAX_FSYNC_DURATION_MILLIS = 256` 阈值常量
+
+`SharedPreferencesImpl.java:71`:
+
+```java
+/** If a fsync takes more than {@value #MAX_FSYNC_DURATION_MILLIS} ms, warn */
+private static final long MAX_FSYNC_DURATION_MILLIS = 256;
+```
+
+- 仅当 `fsyncDuration > 256 ms` 或 `mNumSync % 1024 == 0` 时打印警告
+- 累计到 `mSyncTimes`(16 桶 `ExponentiallyBucketedHistogram`),便于长期监控
+- 这是 Android 17 唯一可调的 fsync 阈值常量;**没有面向应用的 public 调优入口**(系统属性 `debug.sharedprefs.*` 也未公开)
+
+### 12.4 `sLoadExecutor` 单线程加载器
+
+`SharedPreferencesImpl.java:138`:
+
+```java
+private static final ThreadPoolExecutor sLoadExecutor = new ThreadPoolExecutor(0, 1, 10L,
+        TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+        new SharedPreferencesThreadFactory());
+```
+
+- `corePoolSize=0`、`maxPoolSize=1` → **多 SP 文件加载串行**
+- 线程名 `SharedPreferences`(由 `SharedPreferencesThreadFactory.newThread()` 设置)
+- **Perfetto/Systrace 中的稳定观察锚点**: `SharedPreferences` 线程上的 `XmlUtils.readMapXml` / `Os.stat` 而非任何业务方法
+
+### 12.5 atomic rename 协议 (crash-safe)
+
+`SharedPreferencesImpl.java:780-810`:
+
+```
+[old exists?]
+  ↓ yes
+mFile.renameTo(mBackupFile)         ← 把当前文件降级为备份
+  ↓
+FileOutputStream(mFile) → writeMapXml → fsync
+  ↓ success
+mBackupFile.delete()                ← 删除备份
+  ↓
+mDiskStateGeneration = mcr.memoryStateGeneration
+```
+
+任何中间步崩溃 → 下次 `loadFromDisk()` 时 `mBackupFile.renameTo(mFile)` 恢复。
+
+### 12.6 Android 17 平台层没有 DataStore
+
+- `android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/PreferencesDataStore.java` → 404
+- `android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/datastore/PreferencesDataStoreFile.java` → 404
+- **DataStore 在 AndroidX 仓库**(`github.com/androidx/androidx` `datastore/` 子项目),依赖链 `androidx.datastore:datastore-core-android` AAR(含 `libdatastore_shared_counter.so`),AOSP tag 不绑定 AndroidX 版本
+- §6.5「7. 与 SP MODE_MULTI_PROCESS 的本质差异」描述的 rename + inotify MOVED_TO 三层 IPC 是 **AndroidX DataStore** 实现特征,与 Android 17 平台 `SharedPreferencesImpl` 的 atomic rename 不是同一回事——前者是**跨进程 IPC**,后者是**单进程 crash-safe**
+
+### 12.7 迁移路径(应用工程层)
+
+| 场景 | 推荐 |
+|---|---|
+| 单进程中小型 KV 配置 | `Preferences DataStore`(基于 protobuf `PreferenceMap`) |
+| 大 KV 集合 / 自定义类型 | `Proto DataStore`(自定义 `.proto` schema) |
+| 多进程 KV | `MultiProcessDataStoreFactory`(1.1.0+,需 `datastore-core-android` AAR) |
+| 性能敏感(KV 读写 > 100K/s) | MMKV(mmap + 文件锁 + 自定义 codec) |
+| 已存在 SP 文件 | `SharedPreferencesMigration` API 一次性迁移,旧 SP 文件可保留读兼容 |
+
+参考依据:`developer.android.com/topic/libraries/architecture/datastore`(官方文档,作为迁移入口定义引用),实际 AAR 由 `androidx/androidx` `datastore/` 子项目维护。
+
+### 12.8 与历史版本的 diff(已验证结论的细化)
+
+| 项 | android-16.0.0_r3 | android-17.0.0_r1 |
+|---|---|---|
+| `@RavenwoodKeepWholeClass` 注解 | 缺失 | 添加 |
+| `MAX_FSYNC_DURATION_MILLIS = 256` | 存在 | 存在 |
+| `sLoadExecutor` 单线程加载 | 存在 | 存在 |
+| `apply()/commit()` 实现 | 同 | 同 |
+| `sSharedPrefsCache` 二级缓存 | 存在 | 存在 |
+| 平台 DataStore | 不存在 | 不存在 |
+| `mSyncTimes` 16 桶直方图 | 存在 | 存在 |
+
+**核心结论**:android-17.0.0_r1 相比 16.x 在 SP 运行时行为上是**零变更**(仅测试框架注解);官方强推 DataStore 的根因是 SP 的 API 架构(同步 commit / 半异步 apply / QueuedWork 收尾)从设计上无法在不破坏兼容性的前提下修正,而非 Android 17 引入了新的优化。
+
