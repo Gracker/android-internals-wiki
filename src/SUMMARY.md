@@ -21,7 +21,7 @@
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.5 Android 17 LMKD 与 AppFlow 兼容性方案](part1-fundamentals/ch04-memory/4.5-appflow-lmkd-compatibility.md)
 
-- [第 6 章：存储性能](part1-fundamentals/ch06-storage/README.md)
+  - [4.9 Android 17 ARM MTE 内存标签扩展实战](part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)- [第 6 章：存储性能](part1-fundamentals/ch06-storage/README.md)
   - [6.2 Android 17 SharedPreferencesImpl ANR 机制](part1-fundamentals/ch06-storage/6.2-sharedpreferences-anr-optimization.md)
 
 - [第 8 章：启动优化](part1-fundamentals/ch08-startup/README.md)
@@ -39,3 +39,16 @@
   - [9.10 Android 17 ANR 预警回调与类型枚举](part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
   - [14.24 Android 17 simpleperf 微架构级性能采样与工作流增强](part3-tools/ch14-other-tools/24-android17-simpleperf-microarch-profiling.md)
   - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展](part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md)
+- [第 9 章：ANR 监控与分析](src/part2-performance/ch09-anr/README.md)
+  - [9.1 Android ANR 机制概述](src/part2-performance/ch09-anr/01-anr-intro.md)
+  - [9.2 ANR 类型与触发条件](src/part2-performance/ch09-anr/02-anr-types.md)
+  - [9.3 ANR 分析方法](src/part2-performance/ch09-anr/03-anr-analysis.md)
+  - [9.4 主线程耗时检测](src/part2-performance/ch09-anr/04-main-thread-time-consuming.md)
+  - [9.5 工具使用：ANR 分析实战](src/part2-performance/ch09-anr/05-anr-tools.md)
+  - [9.6 案例分析：典型 ANR 场景](src/part2-performance/ch09-anr/05-case-studies.md)
+  - [9.7 非技术性 ANR 诊断](src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md)
+  - [9.8 ANR 监控方案设计](src/part2-performance/ch09-anr/08-anr-monitoring-design.md)
+  - [9.9 Android 17 ANR 预警系统](src/part2-performance/ch09-anr/09-android17-anr-warning-system.md)
+  - [9.10 Android 17 ANR 预警回调与类型枚举](src/part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
+  - [9.11 企业级 ANR 监控平台架构设计](src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md)
+

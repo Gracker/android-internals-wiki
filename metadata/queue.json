@@ -216,5 +216,41 @@
     "completed_at": "2026-07-02T08:58:45.014443+08:00",
     "completed_by": "task2b-main",
     "fix_summary": "fixed 4 issues: (1) §11.4.7 re-anchored to android-17.0.0_r1, removed main-branch disclaimer; (2) execution timeout source path corrected from JobServiceContext.handleFinishedLocked() to JobSchedulerService.maybeProcessBuggyJob() at android-17.0.0_r1:3543-3589; (3) RARE bucket → RESTRICTED bucket corrected in §11.4.1.2.2 (AppStandbyController.restrictApp sets STANDBY_BUCKET_RESTRICTED per android-17.0.0_r1:1699-1702); (4) reconciliation note added: §11.4.7 three defenses are sub-dimensions of §11.4.1.2.2 five-layer model"
+  },
+  {
+    "chapter": "4.9",
+    "title": "ARM MTE 内存标签扩展实战",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-07-02",
+    "file": "src/part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md"
+  },
+  {
+    "chapter": "9.11",
+    "title": "企业级 ANR 监控平台架构设计",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-07-02",
+    "file": "src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md"
+  },
+  {
+    "chapter": "27.1",
+    "title": "应用层 CPU 优化实战指南",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-07-02",
+    "file": "src/part5-app/ch27-application-cpu-optimization.md"
+  },
+  {
+    "chapter": "13.21",
+    "title": "Perfetto v54 Data Explorer 与性能分析",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-gap-mining",
+    "created_date": "2026-07-02",
+    "file": "src/part1-fundamentals/ch13-profiling/13.21-perfetto-v54-data-explorer-analysis.md"
   }
 ]

@@ -1,6 +1,6 @@
 {
-  "total": 133,
-  "draft": 0,
+  "total": 137,
+  "draft": 4,
   "ready_for_review": 17,
   "finalized": 119,
   "last_updated": "2026-07-02",
@@ -87,6 +87,34 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T07:05:00+08:00",
       "note": "SharedPreferencesImpl ANR deep mechanism - source verified against android-17.0.0_r1"
+    },
+    {
+      "section": "4.9",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-02T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (4.9)"
+    },
+    {
+      "section": "9.11",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-02T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (9.11)"
+    },
+    {
+      "section": "27.1",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-02T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (27.1)"
+    },
+    {
+      "section": "13.21",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-02T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (13.21)"
     }
   ],
   "review_history": [
