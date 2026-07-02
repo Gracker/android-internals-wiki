@@ -27,9 +27,9 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, logs, traces, architecture]
 related_chapters: ["26.2", "26.3", "19.27", "15.9"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
 task9_state: pending
@@ -45,8 +45,9 @@ last_task9_at: "2026-06-30T06:25:29+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-30-06-audit.md"
 last_task9_autofix_at: "2026-06-30"
 task9_review_notes: "2026-06-30 Task9 idle-audit auto-fix：补充 Perfetto FrameTimeline 的 Android 12（API 31）及以上版本限定；证据为 Android Developers 启动优化文档对 Perfetto FrameTimeline 的版本说明，未发现其他 P0/P1。回到 Task6 复审。"
+task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fixes: banned word, empty heading. L2 pass. No new L3/L4 issues."
 task2b_verifier_note: "status finalized→ready-for-review for Task6 pickup (2026-06-30T07:29:40+08:00)"
-last_task6_at: "2026-07-02T18:10:00+08:00"
+last_task6_at: "2026-07-02T19:14:49+08:00"
 ---
 
 # App 可观测性架构设计
@@ -267,8 +268,6 @@ Android 官方启动优化文档把 TTID 和 TTFD 区分开：TTID 表示首帧�
 
 采样后的数据必须带上采样率和采样规则版本。服务端计算比例时按采样权重还原，排查单用户问题时也能知道为什么某些日志缺失。没有这些字段，平台会把“没有采到”误判成“没有发生”。
 
-## 
-
 ## 可观测性建设的常见陷阱
 
 以下问题在团队从零建设可观测性系统时反复出现，提前了解能少走弯路。
@@ -305,7 +304,7 @@ Metrics 说「这个版本变差了」，Logs 说「变差发生在支付确认�
 
 区分两类数据通道：基线通道（Crash/ANR 摘要、启动/帧率指标、网络失败率）默认开启、轻量固定；诊断通道（用户日志回捞、Perfetto 采集、远程诊断）默认关闭，命中灰度策略或用户反馈后才开启，并设置自动过期时间。
 
-### 陷阱 6：服务端告警阈值没有和用户感知对齐
+### 陷阱 6：服务端告警阈值与用户感知脱节
 
 服务端告警「启动 P95 上升 50ms」，工程团队排查 3 天没发现用户有明显抱怨。后发现：P95 从 1800ms 变成 1850ms，用户完全不感知。而「慢会话比例上升 0.5 个百分点」这个指标对应的用户在首屏等待时间从 2.5 秒变成 4 秒，这些用户才是真的受影响。
 
