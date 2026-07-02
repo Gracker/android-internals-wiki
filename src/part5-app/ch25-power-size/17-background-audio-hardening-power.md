@@ -68,7 +68,7 @@ p0: 1
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
+last_deepseek_cn_review_at: 2026-07-02
 last_task9_audit_log: "logs/deep-review/2026-07-02-14-audit.md"
 last_task9_autofix_at: "2026-07-02"
 updated_by: openclaw-task9
@@ -116,13 +116,12 @@ updated_date: "2026-07-02"
 
 ## 为什么要把后台音频单独拿出来
 
-Android 17 的后台音频硬化把一类旧播放方案推到了系统边界上：应用退到后台后继续写 `AudioTrack`、申请音频焦点、改系统音量，如果没有可见 Activity 或合规的前台服务，系统会拦住这些操作。
+Android 17 收紧了对后台音频的控制：应用退到后台后继续写 `AudioTrack`、申请音频焦点、改系统音量，如果没有可见 Activity 或合规的前台服务，系统会直接拦截。
 
-这件事会同时影响体验和功耗。体验侧表现为锁屏后无声、弱网恢复后不再播放、耳机按键恢复失败；功耗侧表现为播放已经失效，网络、WakeLock、线程和前台服务仍在运行。处理这类问题，不能只看播放器状态，要把系统生命周期、音频焦点、前台服务、网络和电量统计放在同一条时间线上。
+这同时影响体验和功耗。体验上，表现为锁屏后无声、弱网恢复后不再播放、耳机按键恢复失败；功耗上，播放已经失效，但网络、WakeLock、线程和前台服务仍在运行。排查这类问题不能只看播放器状态——要把系统生命周期、音频焦点、前台服务、网络和电量统计放在同一条时间线上。
 
-这里聚焦应用侧适配和排障动作。AudioFlinger、AAudio、低延迟路径和音频线程调度，详见 1.16 节；后台执行规则详见 5.8 与 25.13 节；Media3、Codec2 与多媒体管线详见 8.8 节。
+本节聚焦应用侧适配和排障。AudioFlinger、AAudio、低延迟路径和音频线程调度详见 1.16 节；后台执行规则详见 5.8 与 25.13 节；Media3、Codec2 与多媒体管线详见 8.8 节。
 
-[已验证: 官方文档, developer.android.com/about/versions/17/changes/bg-audio]
 
 ## 后台音频硬化的触发条件
 
@@ -136,7 +135,6 @@ Android 17 限制三类后台音频交互：音频播放、音频焦点请求、
 | 定时提醒、闹钟音频 | `targetSdkVersion >= 37` 时，exact alarm 权限 + `USAGE_ALARM` 可豁免 WIU 要求 | 不满足豁免条件时仍按后台音频限制处理 | 区分媒体播放和闹钟用途，使用正确 `AudioAttributes` |
 | 后台调节系统音量或铃声模式 | 需要满足同样生命周期约束 | API 调用不抛异常，但系统音量没有变化 | 把音量控制放到用户可见交互或媒体通知控制里 |
 
-[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17]
 
 版本边界要拆开看：
 
@@ -158,12 +156,10 @@ Android 17 限制三类后台音频交互：音频播放、音频焦点请求、
 | 无 FGS 但仍在后台写音频 | 旧版“Service 里直接播放”方案 | 被拦，且可能只表现为无声 | `AudioHardening level: partial` 常指向“没有 FGS” |
 | exact alarm + `USAGE_ALARM` | 用户设置的闹钟、提醒 | 可豁免 WIU 要求 | 不能把普通媒体播放伪装成 alarm usage |
 
-[已验证: 官方文档, developer.android.com/media/media3/session/background-playback]
-[已验证: 官方文档, developer.android.com/develop/background-work/services/fgs/service-types]
 
-推荐的生命周期写法是：用户点击播放时创建 MediaSession，并启动 `mediaPlayback` FGS；短暂缓冲、临时网络失败、`AUDIOFOCUS_LOSS_TRANSIENT` 期间保留播放意图和 FGS；内容结束、永久焦点丢失、用户暂停或不可恢复错误时停止 FGS、关闭 MediaSession，并释放播放器。
+推荐的写法是：用户点击播放时创建 MediaSession 并启动 `mediaPlayback` FGS；短暂缓冲、临时网络失败、`AUDIOFOCUS_LOSS_TRANSIENT` 期间保留播放意图和 FGS；内容结束、永久焦点丢失、用户暂停或不可恢复错误时停止 FGS、关闭 MediaSession 并释放播放器。
 
-这套状态机不要和 §25.13 的 FGS 超时治理混在一起。`mediaPlayback` FGS 的目标是表达用户可见的持续播放意图；JobScheduler / WorkManager 负责可推迟、可恢复的后台任务。音频播放失败后继续跑下载、预拉取、唤醒保活，只会把体验问题变成功耗问题。
+这套生命周期规则不要和 §25.13 的 FGS 超时治理混在一起。`mediaPlayback` FGS 要表达的是用户可见的持续播放意图；JobScheduler / WorkManager 负责可推迟、可恢复的后台任务。音频播放失败后继续跑下载、预拉取、唤醒保活，只会把体验问题变成纯粹的功耗问题。
 
 ## 播放链路上的失败信号
 
@@ -178,14 +174,12 @@ Android 17 的难点在于部分失败是静默的。定位时要同时看播放
 | `dumpsys audio` / logcat | `AudioHardening`，`level: partial` 或 `level: full` | partial 常指无 FGS；full 常指有 FGS 但无 WIU | 回到 FGS 启动入口和 targetSdk 37 gating 检查 |
 | 音量 API | `setStreamVolume()` 等调用后音量无变化 | 后台调音量被忽略 | 改到用户可见 UI、系统媒体控制或合法的 alarm 场景 |
 
-[已验证: 官方文档, developer.android.com/about/versions/17/changes/bg-audio]
-[已验证: 官方文档, developer.android.com/media/optimize/audio-focus]
 
 业务日志建议按“播放意图”而非单个 API 调用建模。一次后台播放 session 至少包含这些字段：session id、用户入口、页面可见状态、FGS 启动时间、WIU 入口类型、MediaSession state、audio usage、focus request result、播放器 error、网络状态、蓝牙路由、停止原因。这样才能区分系统拒绝、网络失败、用户暂停和设备路由切换。
 
 ## 长时播放的功耗预算
 
-后台音频的功耗问题一般不是 AudioTrack 单点造成的。长时播放会同时拉起网络、解码、音频输出、蓝牙、WakeLock、通知和前台服务。优化要先判断哪个资源还在消耗，再决定改播放器、改网络还是改后台任务。
+后台音频的功耗很少是 AudioTrack 一个点造成的。长时播放会同时拉起网络、解码、音频输出、蓝牙、WakeLock、通知和前台服务。优化时先判断哪个资源在持续消耗，再决定动播放器、动网络还是动后台任务。
 
 | 资源 | 常见耗电模式 | 检查动作 | 治理动作 |
 | --- | --- | --- | --- |
@@ -196,12 +190,10 @@ Android 17 的难点在于部分失败是静默的。定位时要同时看播放
 | 线程 | 解码、下载、埋点、歌词、封面等线程抢 CPU | 线程名、nice 值、CPU time、队列长度 | 区分音频实时线程、IO 线程和后台统计线程；非播放必要任务降频 |
 | 蓝牙 / LE Audio | 蓝牙连接保持、路由切换、弱连接反复重连 | audio route、Bluetooth state、设备类型、断连时间 | 单独记录设备类型和路由变化，不把蓝牙断连写成播放失败 |
 
-[已验证: 官方文档, developer.android.com/media/media3/exoplayer/battery-consumption]
-[已验证: 官方文档, developer.android.com/media/media3/exoplayer/track-selection]
 
-Media3 文档给出的边界是：短音频或亮屏播放通常不用把电量放在第一位；屏幕关闭后的长时间播放，可以评估 ExoPlayer audio offload。audio offload 把部分音频处理交给专用硬件，能降低 CPU 参与度，但会限制部分音效、变速和静音跳过能力，也需要在目标设备和媒体格式上测试。
+简单来说：短音频或亮屏播放通常不用优先考虑电量；屏幕关闭后的长时间播放，可以评估 ExoPlayer 的 audio offload。audio offload 把部分音频处理交给专用硬件，降低 CPU 参与度，但会限制部分音效、变速和静音跳过能力，需要在目标设备和媒体格式上实际验证。
 
-线程治理要克制。参考书把任务调度拆成线程数量、线程优先级、CPU 利用率和等待时间几个维度，这个结构可用在后台音频上，但不能把所有播放相关线程都提到高优先级。音频输出线程和解码线程影响连续性，歌词、封面、埋点、推荐预取通常不应抢占播放预算。若需要临时提高线程优先级，也要用可观测指标证明它减少了 underrun 或焦点恢复耗时；没有证据时，优先减少非必要任务和网络重试。
+线程治理要克制。可以把任务调度拆成线程数量、线程优先级、CPU 利用率和等待时间几个维度来审视后台音频，但不能把所有播放相关线程都提到高优先级。音频输出线程和解码线程影响连续性，歌词、封面、埋点、推荐预取通常不应抢占播放预算。如果临时提高线程优先级，要用可观测指标证明它减少了 underrun 或焦点恢复耗时；没有证据时，优先减少非必要任务和网络重试。
 
 ## Perfetto、dumpsys 与 logcat 取证
 
@@ -241,8 +233,6 @@ adb shell dumpsys batterystats > batterystats.txt
 
 Perfetto 抓取时建议覆盖 `audio`、`sched`、`freq`、`power`、`battery`、`binder_driver`、`am` 等数据源。分析顺序按时间线推进：用户点击播放 → FGS 启动 → MediaSession active → focus granted → AudioTrack / AudioFlinger 活动 → 锁屏或退后台 → 网络或蓝牙事件 → 播放停止或耗电升高。发现播放停止后，如果 CPU、网络和 WakeLock 仍持续，问题就从“播放失败”转成“停止态资源释放不完整”。
 
-[已验证: 官方文档, developer.android.com/tools/perfetto]
-[已验证: 官方文档, developer.android.com/studio/command-line/dumpsys]
 
 ## Android 17 适配与灰度验证
 

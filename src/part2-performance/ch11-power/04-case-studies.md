@@ -19,7 +19,7 @@ last_task6_at: "2026-06-23T20:08:00+08:00"
 last_task6_review_at: "2026-06-23T20:08:00+08:00"
 last_task9_autofix_at: "2026-07-02"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
+last_deepseek_cn_review_at: 2026-07-02
 last_task9_at: "2026-07-02T09:31:35+08:00"
 last_task6_audit: "2026-06-30"
 last_task9_audit: "2026-07-02"
@@ -76,7 +76,7 @@ public class ForegroundService extends Service {
 
 #### 2.2 Android 17 JobScheduler 五层节流机制源码级剖析
 
-> > **本节补充自 2026-06-21 源码调研**：原 §2.1 仅以「`JobConcurrencyManager` 根据 `maxActiveJobs` 和 `maxRunningJobs` 控制并发」一笔带过节流机制，未覆盖 Android 17 APEX 模块下 JobScheduler 的完整节流路径。Android 17 (API 37) 的节流实际上是**五层叠加**的体系，下面以 `android-17.0.0_r1` 标签下 AOSP 源码为唯一一手资料，逐层给出源码位置、默认值与触发行为。
+> Android 17 (API 37) 的 JobScheduler 节流是**五层叠加**的体系，下面以 `android-17.0.0_r1` 标签下 AOSP 源码为唯一一手资料，逐层给出源码位置、默认值与触发行为。
 
 **第一层：注册数节流**（`JobSchedulerService.java:213-215, 1976-1985, 3035`）
 - `DEFAULT_MAX_JOBS_PER_APP = 150`（单 UID 持久化 Job 总数上限，临时 Job 不计）
@@ -294,7 +294,7 @@ public class OptimizedLocationTracker implements LocationListener {
 
 
 
-### 11.4.2.1 补充：省电模式与热节流对定位的系统级协同
+### 11.4.2.1 省电模式与热节流对定位的系统级协同
 
 省电模式与热节流通过各自独立的通道影响定位行为，下面从源码层面分析两条路径的协同方式。
 
@@ -364,11 +364,9 @@ Android 14-17 范围内需要按版本区分：
 - Android 17 仍沿用 Battery Saver 与 Thermal 分离模型，本节只使用 android-17.0.0_r1 及以下源码锚点。
 
 ---
-
-
-> **系统层定位功耗策略 — Battery Saver × Thermal 协同机制**。
+> **系统层定位功耗策略 — Battery Saver × Thermal 协同机制**
 >
-> 11.4.2 上文从应用层给出了定位频率优化方案，但节能的关键在系统层。Android 通过两层 PowerSave 框架叠加控制定位功耗：
+> 上文从应用层给出了定位频率优化方案，但系统层的节能策略同样关键。Android 通过两层 PowerSave 框架叠加控制定位功耗：
 >
 > **1. Battery Saver 5 种 LocationMode（`PowerManager.java:1055-1084`）**：
 > - `LOCATION_MODE_NO_CHANGE (0)` — 不影响
@@ -973,9 +971,10 @@ FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减
 
 ## 11.4.7 JobScheduler 节流机制：三层防线源码级分析
 
-> **来源调研**：[2026-06-20-job-scheduler-throttling-mechanism.md](../DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md)（AIW 每日源码调研）
-> **本节定位**：在 §11.4.6 Adaptive Battery 协同机制基础上，补充 JobScheduler 自身节流机制的源码级细节。本节源码锚点已重新对齐 `android-17.0.0_r1` tag。
-> **与 §11.4.1.2.2 五层节流模型的关系**：§11.4.1.2.2 从系统全局视角归纳了 Android 17 JobScheduler 的五层叠加节流体系（注册数节流 → API Quota 节流 → 运行时长节流 → 并发控制 → 强制批处理）。本节的三条防线对应五层中的三个子维度：**第一层「API 调度频率节流」= 五层之第二层（API Quota）**；**第二层「执行超时节流」= 五层之第三层（运行时长节流）的超时归责与降桶副作用**；**第三层「后台运行配额」= QuotaController 的配额矩阵，是五层中第四、五层（并发控制 + 批处理）的上游 gate**——QuotaController 在 `isWithinQuotaLocked()` 阶段拦截，通过后才进入 `JobConcurrencyManager` 的并发分配与 `shouldForceBatchLocked()` 的批处理延迟。两套描述不矛盾：三层防线是五层体系中被「应用可感知的后台配额」视角聚焦的子集，不覆盖注册数硬卡（层1）、纯并发名额（层4 的主体逻辑）和唤醒合并窗口（层5 的调度策略）。
+> 上文的 §11.4.1.2.2 从系统全局视角归纳了 Android 17 JobScheduler 的五层叠加节流体系（注册数节流 → API Quota 节流 → 运行时长节流 → 并发控制 → 强制批处理）。本节从「应用可感知的后台配额」视角聚焦其中三个子维度，三层防线与五层体系的关系是：
+> - **第一层「API 调度频率节流」= 五层之第二层（API Quota）**
+> - **第二层「执行超时节流」= 五层之第三层（运行时长节流）的超时归责与降桶副作用**
+> - **第三层「后台运行配额」= QuotaController 的配额矩阵，是五层中第四、五层（并发控制 + 批处理）的上游 gate**——QuotaController 在 `isWithinQuotaLocked()` 阶段拦截，通过后才进入 `JobConcurrencyManager` 的并发分配与 `shouldForceBatchLocked()` 的批处理延迟。
 
 JobScheduler 在 framework 层构建了**三层节流防线**防止应用滥用后台执行，三层互不替代、共同收敛到「应用应进入前台或 TOP 状态」的目标。
 

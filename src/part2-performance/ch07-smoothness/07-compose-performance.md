@@ -35,7 +35,7 @@ task6_state: reviewed
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_state: reviewed
-last_deepseek_cn_review_at: 2026-07-01
+last_deepseek_cn_review_at: 2026-07-02
 task6_reviewed_date: "2026-07-02"
 last_task6_at: "2026-07-02T04:05:00+08:00"
 last_task6_review_log: logs/review/2026-07-02-04-review.md
@@ -47,15 +47,14 @@ reviewed_date: "2026-07-02"
 
 ## 为什么要关注 Compose 的性能
 
-在默认的 system trace 里看不到单个 composable function。Perfetto 通常只有 Choreographer、主线程、RenderThread、FrameTimeline 这些线程级或帧级轨道；必须显式开启 composition tracing，system trace 才会把 composable function 写进去。很多人习惯性去翻 "CM / Compose Manager" 这类不存在的入口，排查方向一开始就偏了。
+默认的 system trace 里看不到单个 composable function。Perfetto 通常只有 Choreographer、主线程、RenderThread、FrameTimeline 这些线程级或帧级轨道；必须显式开启 composition tracing，system trace 才会把 composable function 写进去。很多人习惯性地去翻 "CM / Compose Manager" 这类不存在的入口，排查方向一开始就偏了。
 
-分析 Compose 性能需要一套不同的视角。它的渲染管线、状态管理和重组机制都不同于传统 View。卡顿可能不是布局层级太深，而是某个状态读取范围过大，导致页面在短时间内重复重组。
+分析 Compose 性能需要换一套视角。它的渲染管线、状态管理和重组机制都和传统 View 不同。卡顿可能不是因为布局层级太深，而是某个状态读取范围过大，导致页面在短时间内反复重组。
 
-理解 Compose 的性能模型之后，才能把 Perfetto、Layout Inspector 和 Compiler Metrics 串成一条可复现的排查路径：先确认帧在哪个阶段超时，再判断有没有不必要的重组，再回到具体 Composable 或状态设计上收敛问题。
+理解了 Compose 的性能模型之后，就能把 Perfetto、Layout Inspector 和 Compiler Metrics 串成一条可复现的排查路径：先确认帧在哪个阶段超时，再判断有没有不必要的重组，最后回到具体 Composable 或状态设计上收敛问题。
 
 ## Compose 的渲染模型:Composition → Layout → Drawing
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/mental-model]
 
 传统 View 体系的渲染过程，我们在前面章节已经讲过了：measure → layout → draw，由 Choreographer 驱动，每个 VSync 周期最多执行一轮。Compose 的渲染过程同样有 Layout 和 Drawing，但在前面多了一个 Composition 阶段。
 
@@ -77,9 +76,8 @@ reviewed_date: "2026-07-02"
 
 ### 重组到底是什么
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/mental-model#recomposition]
 
-"重组"这个词听起来像是一个复杂的机制,但它的本质非常简单:**重新调用一次 @Composable 函数**。
+"重组"这个词听起来复杂，但本质很简单：**重新调用一次 @Composable 函数**。
 
 Compose 编译器插件在编译时会改造每个 @Composable 函数。以一个简单的 Greeting 组件为例:
 
@@ -101,11 +99,11 @@ fun Greeting(msg: String) {
 ### 与传统 View 体系的性能对比
 
 
-社区做过 LazyColumn 和 RecyclerView 的对比测试：同一个列表页面，两套 UI 实现，在不同 Android 版本的设备上测量快速滑动 FPS。
+社区对 LazyColumn 和 RecyclerView 做过对比测试：同一个列表页面，两套 UI 实现，在不同 Android 版本设备上测量快速滑动 FPS。
 
 其中一组常被引用的数据是：高端设备（Android 11+）上两者都能接近 60fps；中低端 Android 7.1 设备上，LazyColumn 约 43fps，RecyclerView 约 60fps。同一位测试者在粒子动画场景里又发现 Compose 和 View 的 Canvas 绘制几乎一致。这类数据更适合当成"特定设备、特定版本、特定页面结构下的抽样观察"，不能直接外推成通用结论。真要拿来做项目决策，至少用 Macrobenchmark 的 `FrameTimingMetric` 或 Perfetto，在自己的机型、刷新率、Compose 版本和滚动场景上复测。
 
-这组对比说明的方向没有变:**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 接近，差距主要出在 Composition 阶段——也就是重组的开销**。如果我们的 Compose 页面掉帧,大概率就是"Compose 重组了不该重组的东西"。
+这组对比得出的方向没有变：**Compose 本身的渲染性能（Layout + Drawing）已经和传统 View 接近，差距主要出在 Composition 阶段——也就是重组的开销**。如果 Compose 页面掉帧，大概率就是"重组了不该重组的东西"。
 
 这也解释了为什么 Compose 性能优化的核心策略就是:**减少不必要的重组、缩小重组的范围**。
 
@@ -113,11 +111,10 @@ fun Greeting(msg: String) {
 
 ## Recomposition 的触发条件与最小化策略
 
-理解重组的本质之后,下一步是具体的触发条件和优化策略。这部分决定了 Compose 性能优化的方向。
+理解重组的本质之后，下面看具体的触发条件和优化策略。这些决定了 Compose 性能优化的方向。
 
 ### Strong Skipping 与 stable 标记:让 Compose 更容易跳过重组
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/strongskipping]
 
 Strong Skipping 的版本演进分为三个阶段：
 
@@ -129,9 +126,9 @@ Strong Skipping 的版本演进分为三个阶段：
 
 关键转折点是 Kotlin 2.0.20 + Compose Compiler 2.0+ 的组合——从这个版本起，Strong Skipping 不需要任何编译器 flag 或显式 opt-in，所有使用新版 Kotlin/Compose 的项目自动获得跳过能力。
 
-从 Kotlin 2.0.20 开始,默认开启。现在判断一个 restartable Composable 能不能跳过重组,优先看的是"这次参数和上次是不是同一个输入":稳定参数按 `Object.equals()` 比较,不稳定参数按引用相等 `===` 比较。只要比较结果没变,这个 Composable 就可以被跳过。
+从 Kotlin 2.0.20 开始默认开启。现在判断一个 restartable Composable 能不能跳过重组，优先看"这次参数和上次是不是同一个输入"：稳定参数按 `Object.equals()` 比较，不稳定参数按引用相等 `===` 比较。只要比较结果没变，这个 Composable 就可以被跳过。
 
-这改变了优化顺序。老规则里,开发者经常要先把参数都做成稳定类型,才能拿到 skippable。现在大多数 restartable Composable 默认就有跳过机会,很多只为"让它能跳过"而加的包装层可以省掉。编译器还会自动 memoize Composable 内部创建的 lambda,减少因为回调对象重新分配带来的连锁重组。
+这改变了优化顺序。老规则里，开发者经常要先把参数都做成稳定类型才能拿到 skippable。现在大多数 restartable Composable 默认就有跳过机会，很多只为"让它能跳过"而加的包装层可以省掉。编译器还会自动 memoize Composable 内部创建的 lambda，减少因回调对象重新分配带来的连锁重组。
 
 这条规则也改变了可变集合的失败方式。不稳定参数按引用比较,`ArrayList`、`MutableList` 这类对象如果原地修改后继续传同一个引用,restartable Composable 会把它视为同一个输入。UI 是否刷新还取决于上游状态容器有没有发出新值;如果 ViewModel 只执行 `items.add(newItem)`,再把同一个列表引用传下去,StateFlow / Compose 都可能看不到这次内容变化。
 
@@ -150,7 +147,7 @@ Strong Skipping 降低了稳定性标记的门槛,但没有替代不可变数据
 
 有一个边界条件需要注意：Strong Skipping 的稳定性推断仅对当前模块（已开启 Compose 编译器插件）生效。如果一个不稳定类定义在独立的数据模块或三方库中（未启用 Compose 编译器），即使 UI 模块开启了 Strong Skipping，编译器也无法推断该类的稳定性——它仍然会被视为不稳定参数，走引用相等比较。这种情况下，要么在数据模块的 `build.gradle` 中也启用 Compose 编译器插件，要么为跨模块传递的类型显式添加 `@Stable` / `@Immutable` 标记。
 
-稳定性没有失效,但角色变了。`@Stable`、`@Immutable`、不可变集合和清晰的 State holder 设计,现在更像是在解决三类问题:
+稳定性标记没有失效，但角色变了。`@Stable`、`@Immutable`、不可变集合和清晰的 State holder 设计,现在更像是在解决三类问题:
 
 - **语义正确**:避免把"内容变了但引用没变"的对象误当成没变化
 - **集合可预测**:`List`、`Map`、`Set` 这类默认不稳定的集合,仍然建议用不可变集合或稳定的包装类型来传递
@@ -185,7 +182,6 @@ class ProductListState(
 
 ### remember:跨重组保持数据
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/composition#remember]
 
 `remember` 的作用是在 Composable 函数的多次重组中保持数据。每次重组时，普通变量会被重新初始化，而 `remember` 包裹的值会保留上一次的结果。
 
@@ -205,9 +201,8 @@ val sortedItems = remember(items) { items.sortedBy { it.priority } }
 
 ### derivedStateOf:只在结果变化时触发重组
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/side-effects#derivedstateof]
 
-`derivedStateOf` 是减少不必要重组的利器。它创建一个"派生状态"——只有当派生表达式的**结果**发生变化时，才会通知 Compose 触发重组。
+`derivedStateOf` 是减少不必要重组的利器。它创建一个"派生状态"——只有当派生表达式的**结果**发生变化时，才通知 Compose 触发重组。
 
 一个经典的场景是:根据列表滚动位置控制 FAB 按钮的显隐。
 
@@ -344,7 +339,6 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 3. 用 `@Immutable` 注解标记数据类(前提是必须保证不可变)
 4. 在 Compose Compiler 1.5.5+ 中,通过 Stability Configuration File 声明外部类的稳定性
 
-[已验证: Kotlin 2.0.20+ Strong Skipping 对不稳定参数使用引用相等比较;这能减少过度重组,也会放大可变集合原地修改的刷新风险。来源: Android Developers Strong Skipping 文档]
 
 ### 陷阱二：LazyColumn 缺少 key 导致整列表重组
 
@@ -408,7 +402,6 @@ dependencies {
 
 ### Layout Inspector:实时查看重组次数
 
-[已验证: 官方文档, developer.android.com/studio/debug/layout-inspector/compose]
 
 Android Studio 的 Layout Inspector 可以实时显示每个 Composable 的重组次数。使用方式:
 
@@ -422,7 +415,6 @@ Layout Inspector 还会用颜色渐变来可视化重组热度:颜色越深表�
 
 ### Compose Compiler Metrics:在编译阶段发现不稳定类型
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance#compose-compiler-metrics]
 
 这是一个编译时工具,不需要运行应用就能分析 Compose 的稳定性。配置方式:
 
@@ -446,7 +438,6 @@ composeCompiler {
 
 ### Baseline Profiles:把首启和首轮交互先做热
 
-[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
 
 Compose 页面还有一条经常被忽略的性能轴:首次启动、首次进入页面、首次滚动。页面结构没问题,重组次数也控制住了,应用仍然可能在 cold start 或首轮交互里卡一下,原因往往是 Compose 运行时和业务热点路径还在解释执行或 JIT 预热。
 
@@ -462,7 +453,6 @@ Baseline Profiles 用来解决这个问题。它把关键用户路径上的方�
 
 ## Compose 与 View 混合布局的性能考量
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/migrate/interoperability-apis]
 
 很少有项目能一次性把所有页面都迁移到 Compose。更常见的情况是项目中同时存在传统 View 和 Compose，通过互操作 API 桥接。但"桥"本身是有开销的。
 
@@ -517,7 +507,7 @@ fun WebViewScreen(url: String) {
 
 **`updateTransition`**:用于管理多个属性的联动动画。和 `animate*AsState` 一样,它也通过 State 变化驱动重组,但可以把多个动画的状态集中管理,避免创建多个独立的 State。
 
-从性能角度,我们推荐的策略是:
+从性能角度看，推荐策略是：
 
 **优先使用 Draw 阶段动画。** 如果动画只影响绘制属性(颜色、透明度、位移),用 `Animatable` + `Modifier.graphicsLayer{}` 或 `drawBehind`,跳过 Composition 和 Layout。这种方式的开销最小,因为完全不涉及重组。
 
@@ -533,9 +523,9 @@ fun WebViewScreen(url: String) {
 
 我们在本章讨论的 Compose 性能问题，与本书其他章节有密切的关联。
 
-从卡顿的定义来看（7.1），Compose 的卡顿仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。从分析方法论来看（7.3），通用的分析框架同样适用——先定位到掉帧的时间段，再分析是什么导致了长帧，只是在 Compose 场景下需要额外检查重组次数。
+按卡顿的定义（7.1），Compose 的卡顿仍然是"某帧耗时超限"，只是卡顿的来源从传统的 measure/layout/draw 变成了 Composition/Recomposition。分析方法论上（7.3），通用框架同样适用——先定位掉帧的时间段，再分析长帧的原因，只是在 Compose 场景下需要额外检查重组次数。
 
-在底层渲染管线上,Compose 的渲染同样由 Choreographer 驱动(2.4),VSync → doFrame → Composition/Layout/Draw 的过程和传统 View 一致。Composition 和 Layout 阶段在主线程执行,Draw 阶段可能涉及 RenderThread(2.5)。Jetpack Compose 与 Flutter(2.11)的渲染模型有相似的思路--都采用了组合式的 UI 树和差异化的更新策略,但两者的运行时实现完全不同。
+在底层渲染管线上，Compose 同样由 Choreographer 驱动（2.4），VSync → doFrame → Composition/Layout/Draw 的过程和传统 View 一致。Composition 和 Layout 阶段在主线程执行，Draw 阶段可能涉及 RenderThread（2.5）。Jetpack Compose 与 Flutter（2.11）的渲染模型有相似的思路——都采用组合式 UI 树和差异化更新策略，但两者的运行时实现完全不同。
 
 ## 常见问题与误区
 
@@ -557,13 +547,13 @@ fun WebViewScreen(url: String) {
 
 ## 参考资料
 
-- [Jetpack Compose Performance | Android Developers](https://developer.android.com/develop/ui/compose/performance) [已验证: 官方文档]
-- [Compose Mental Model | Android Developers](https://developer.android.com/develop/ui/compose/mental-model) [已验证: 官方文档]
-- [Strong Skipping | Android Developers](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping) [已验证: 官方文档]
-- [Baseline Profiles Overview | Android Developers](https://developer.android.com/topic/performance/baselineprofiles/overview) [已验证: 官方文档]
-- [Compose Compiler Metrics | Android Developers](https://developer.android.com/develop/ui/compose/performance#compose-compiler-metrics) [已验证: 官方文档]
-- [Layout Inspector for Compose | Android Developers](https://developer.android.com/studio/debug/layout-inspector/compose) [已验证: 官方文档]
-- [Compose and View Interoperability | Android Developers](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis) [已验证: 官方文档]
+- [Jetpack Compose Performance | Android Developers](https://developer.android.com/develop/ui/compose/performance)
+- [Compose Mental Model | Android Developers](https://developer.android.com/develop/ui/compose/mental-model)
+- [Strong Skipping | Android Developers](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [Baseline Profiles Overview | Android Developers](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [Compose Compiler Metrics | Android Developers](https://developer.android.com/develop/ui/compose/performance#compose-compiler-metrics)
+- [Layout Inspector for Compose | Android Developers](https://developer.android.com/studio/debug/layout-inspector/compose)
+- [Compose and View Interoperability | Android Developers](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis)
 - [朱涛·沉思录:如何优化 Compose 的性能](https://mp.weixin.qq.com/s?__biz=Mzg5MDY5ODk2MQ==&mid=2247485054)
 - [提升 Jetpack Compose 性能 | Kotlin 社区](https://mp.weixin.qq.com/s?__biz=MzIyMzg2MzQxNg==&mid=2247486800)
 - [Compose 渲染性能到底怎么样 | 程序员江同学](https://mp.weixin.qq.com/s?__biz=MzkzNjMxNzY5NQ==&mid=2247484027)
