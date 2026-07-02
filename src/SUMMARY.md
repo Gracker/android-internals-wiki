@@ -52,3 +52,8 @@
   - [9.10 Android 17 ANR 预警回调与类型枚举](src/part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
   - [9.11 企业级 ANR 监控平台架构设计](src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md)
 
+---
+
+# 附录
+
+- [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)
