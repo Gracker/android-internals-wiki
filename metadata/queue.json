@@ -1005,5 +1005,15 @@
     "added_at": "2026-07-03T03:08:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-07-03-03-audit.md"
+  },
+  {
+    "chapter": "23.13",
+    "title": "应用虚拟内存优化实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch23-memory-practice/13-virtual-memory-optimization.md",
+    "created_date": "2026-07-03",
+    "source": "task2a-knowledge-gap",
+    "gap_score": 16
   }
 ]
