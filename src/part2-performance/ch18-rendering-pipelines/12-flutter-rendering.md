@@ -4,22 +4,22 @@ chapter: "'18.12'"
 section: "'18.12'"
 status: "finalized"
 pipeline_stage: task6_pending
-applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android"
+applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17"
 tags: ['rendering', 'pipeline']
 reviewed_date: "2026-06-04"
 reviewed_by: "\"openclaw-task6\""
 created_by: "rendering-pipelines-merge"
 created_date: "'2026-04-09'"
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task6_result: "\"pass-light-edit\""
 task2b_result: fixed
 last_task2b_at: "2026-07-01T18:54:04+08:00"
-task9_result: "pass-tech-review"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "\"2026-06-05\""
-last_task9_at: "\"2026-06-05T00:20:00+08:00\""
+task9_result: auto-fixed
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-07-02
+last_task9_at: "2026-07-02T10:41:17+08:00"
 repaired_date: "\"2026-04-26\""
 repaired_by: "\"openclaw-task2b\""
 last_task9_audit: "2026-06-28"
@@ -30,9 +30,17 @@ task6_reviewed_date: "2026-06-04"
 task6_reviewed_by: "\"openclaw-task6\""
 task6_l1_l2_fixes: "0"
 task6_l3_l4_issues: "0"
-last_verified_against: "Flutter 3.32 architecture/thread merge docs (issue #150525 + release-notes-3.32.0)"
+last_verified_against: "Flutter 3.32 thread merge docs + Flutter 3.44 VsyncWaiterAndroid/Choreographer/HCPP source"
 task2b_fix_source: task9-deep-tech-review
 task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
+last_task9_review_log: logs/deep-review/2026-07-02-10-deep-review.md
+last_task9_autofix_at: "2026-07-02"
+updated_by: openclaw-task9
+updated_date: 2026-07-02
+p0: 0
+p1: 1
+p2: 1
+task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 1；修正 Flutter Android VSync 入口为 NDK AChoreographer 优先、Java VsyncWaiter fallback，修正 Perfetto trace 关键词与 applicable_versions 元数据；回到 Task6 复审。详见 logs/deep-review/2026-07-02-10-deep-review.md。"
 ---
 
 <!-- outline-start -->
@@ -85,7 +93,7 @@ Engine 内部仍有 task runner 的概念，但在 merged model 下，插件和�
 
 | 线程 | 职责 | 常见观察点 |
 |:---|:---|:---|
-| **Main（UI + Platform）** | Dart Build/Layout/Paint、MethodChannel、插件回调、Activity 生命周期与输入回调 | `Engine::BeginFrame`、MethodChannel 回调、Dart Build/Layout/Paint |
+| **Main（UI + Platform）** | Dart Build/Layout/Paint、MethodChannel、插件回调、Activity 生命周期与输入回调 | `PlatformVsync`、`VsyncProcessCallback`、`Animator::BeginFrame`、MethodChannel 回调 |
 | **Raster Thread** | LayerTree 光栅化、GPU 指令提交 | `Rasterizer::DrawToSurfaces` |
 | **IO Thread** | 图片解码、资源加载 | `ImageDecoder` |
 
@@ -122,7 +130,7 @@ Android `Choreographer` 发出的 VSync-App 到达宿主 Main thread 后，Flutt
 
 这是 Flutter 在 Android 上最重要的管线选择，直接决定了性能特征。
 
-Android 侧的入口可以直接对照 Flutter engine 仓库里的 `shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java`、`FlutterTextureView.java` 和 `io/flutter/view/VsyncWaiter.java`。Render mode 决定 Embedding 层创建哪种宿主 View，`VsyncWaiter` 决定 Flutter 怎样接上 Android `Choreographer` 的节拍。
+Android 侧的入口可以直接对照 Flutter engine 仓库里的 `shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java`、`FlutterTextureView.java`、`shell/platform/android/vsync_waiter_android.cc` 和 Java fallback `io/flutter/view/VsyncWaiter.java`。Render mode 决定 Embedding 层创建哪种宿主 View，`VsyncWaiterAndroid` 决定 Flutter 怎样接上 Android `Choreographer` 的节拍。
 
 ### SurfaceView Render Mode（推荐默认）
 
@@ -215,13 +223,13 @@ Flutter engine 在 Android 上通过 `VsyncWaiter` 接上宿主 `Choreographer` 
 **核心链路**：
 
 ```
-Android Choreographer → VsyncWaiter.asyncWaitForVsync()
-    → Flutter Engine (Shell) 收到 VSync 回调
+Android Choreographer / AChoreographer → VsyncWaiterAndroid::AwaitVSync()
+    → PlatformVsync / VsyncProcessCallback
     → Animator::BeginFrame → Dart Build/Layout/Paint
     → Rasterizer::DrawToSurfaces
 ```
 
-`VsyncWaiter` 在 Android embedding 层以 `Choreographer.FrameCallback` 注册回调，每次 `doFrame` 到达时通过 JNI 通知 engine 的 `Shell::OnVsync`。engine 内部把这当成"可以开始下一帧"的信号，驱动整个 Dart → Raster 管线。
+`VsyncWaiterAndroid` 在当前 Android Engine 中优先调用 NDK `AChoreographer`，回调进入 `OnVsyncFromNDK()` 后记录 `PlatformVsync`，再通过 `VsyncWaiter::FireCallback()` 投递 `VsyncProcessCallback`。Java `Choreographer.FrameCallback` / `FlutterJNI.onVsync()` 是 `AChoreographer` 不可用时的回退路径。engine 内部把这当成"可以开始下一帧"的信号，驱动整个 Dart → Raster 管线。
 
 **Merged Model 下的区别（Flutter 3.32 stable+）**：
 
@@ -235,8 +243,8 @@ Android Choreographer → VsyncWaiter.asyncWaitForVsync()
 
 | 观察目标 | 轨道/关键词 | 怎么看 |
 |:---|:---|:---|
-| VSync 信号是否准时到达引擎 | `Choreographer#doFrame` → `VsyncWaiter.asyncWaitForVsync` | 两个 slice 之间的间隔应在 1ms 以内；超过 2ms 说明宿主主线程有阻塞 |
-| Merged Model 是否生效 | 查看 Main Thread 上是否同时有 `Engine::BeginFrame` 和 `Choreographer#doFrame` | 二者在同一线程轨上相邻出现 = merged model 生效 |
+| VSync 信号是否准时到达引擎 | `PlatformVsync` → `VsyncProcessCallback` → `Animator::BeginFrame` | 三者应在同一帧邻近出现；若走 Java fallback，再看 `Choreographer#doFrame` / `FlutterJNI.onVsync` 是否被主线程阻塞 |
+| Merged Model 是否生效 | 查看 Main Thread 上是否同时有 `VsyncProcessCallback` 和 `Animator::BeginFrame` | 二者在同一线程轨上相邻出现 = merged model 生效 |
 | TextureView 模式下的帧延迟 | `SurfaceTexture.onFrameAvailable` → `updateTexImage` → `DrawFrame` | 如果 `updateTexImage` 的 slice 比 `SurfaceTexture.onFrameAvailable` 晚超过 1 个 VSync 周期，宿主 RenderThread 在背锅 |
 
 **常见问题**：
@@ -285,11 +293,11 @@ Android Choreographer → VsyncWaiter.asyncWaitForVsync()
 
 ## 在 Perfetto 中识别 Flutter 管线
 
-先把采样条件固定下来：优先用 profile / release 构建，打开 `gfx`、`view`、`sched`、`surfaceflinger` 相关数据源，录制一段能稳定复现卡顿的交互。没有截图时，直接在 Perfetto UI 里搜 `Engine::BeginFrame`、`Rasterizer::DrawToSurfaces`、`updateTexImage`、`DrawFrame`，定位会更快。
+先把采样条件固定下来：优先用 profile / release 构建，打开 `gfx`、`view`、`sched`、`surfaceflinger` 相关数据源，录制一段能稳定复现卡顿的交互。没有截图时，直接在 Perfetto UI 里搜 `PlatformVsync`、`VsyncProcessCallback`、`Animator::BeginFrame`、`Rasterizer::DrawToSurfaces`、`updateTexImage`，定位会更快。
 
 | 场景 | 轨道 / 关键词 | 该看什么 |
 |:---|:---|:---|
-| Flutter UI 阶段 | `Engine::BeginFrame`、`Build`、`Layout`、`Paint` | Main Thread 上的 Dart UI task 是否在 VSync 后及时进入 Build/Layout/Paint |
+| Flutter UI 阶段 | `VsyncProcessCallback`、`Animator::BeginFrame`、`Build`、`Layout`、`Paint` | Main Thread 上的 Dart UI task 是否在 VSync 后及时进入 Build/Layout/Paint |
 | Flutter 光栅化 | `Rasterizer::DrawToSurfaces`、`EntityPass::*` | Raster Thread 是否把一帧及时光栅化完成 |
 | SurfaceView mode | App 进程里的 Flutter 轨道 + SurfaceFlinger 独立 Flutter Layer | Flutter 独立 Layer 是否按节拍提交；若宿主页面平稳、Flutter Layer 自己断节拍，问题多半在 Flutter 侧 |
 | TextureView mode | 宿主主线程 `invalidate()`、宿主 `RenderThread` 的 `DrawFrame` / `updateTexImage()` | Flutter 帧是否已经准备好，但卡在宿主 `RenderThread` 的采样和合成上 |
@@ -320,5 +328,7 @@ Android Choreographer → VsyncWaiter.asyncWaitForVsync()
 - Flutter Android embedding Javadoc：RenderMode
 - Flutter engine 仓库：`shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java`
 - Flutter engine 仓库：`shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java`
-- Flutter engine 仓库：`shell/platform/android/io/flutter/view/VsyncWaiter.java`
+- Flutter engine 仓库：`engine/src/flutter/shell/platform/android/vsync_waiter_android.cc`
+- Flutter engine 仓库：`engine/src/flutter/impeller/toolkit/android/choreographer.cc`
+- Flutter engine 仓库：`engine/src/flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java`（Java fallback）
 - Flutter engine 仓库：`shell/platform/android/`、`shell/`、`flow/`
