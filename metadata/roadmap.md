@@ -1,23 +1,31 @@
 # 项目路线图
 
-## 当前状态（2026-05-29）
+## 当前状态（2026-07-02）
 
 - 框架搭建：完成
-- 大纲编写：完成，当前目录覆盖 ch01-ch26
-- 内容加工：进行中，OpenClaw 定时任务持续执行 Task2A / Task2B / Task6 / Task9 / Task11
-- 当前阶段：alpha，正文主体已进入批量 review / finalize
-- 发布形态：mdBook 中文版优先，英文版在 v1.0 内容冻结后启动
+- 内容范围：正文已经覆盖 ch01-ch26、前言、附录和若干 Android 17 / 工具链扩展条目
+- 当前阶段：alpha 精修期，正文批量 review / finalize 持续进行
+- 发布形态：mdBook 中文版优先，英文版在 v1.0 中文内容冻结后启动
+- 当前风险：`src/SUMMARY.md` 是短目录，发布入口没有覆盖 `src/` 全量内容；`metadata/progress.json` 只统计精修子集，不等同于全量正文
 
-当前 `src/SUMMARY.md` 已收录 5 个部分、26 章、400+ 个 Markdown 条目：
+当前统计口径：
 
-| 部分 | 范围 | 章节数 | 目录条目数 | 当前重点 |
-|------|------|--------|------------|----------|
-| Part 1 系统运行机制 | ch01-ch06 | 6 | 97 | 继续收敛低完成度章节与待验证标注 |
-| Part 2 性能专题 | ch07-ch12, ch18 | 7 | 89 | 完成渲染管线与案例类章节 review |
-| Part 3 工具与方法论 | ch13-ch15, ch19 | 4 | 79 | 补齐 ch14 与 APM 生态审计 |
-| Part 4 系统级优化 | ch16-ch17 | 2 | 17 | 补齐 AOSP / OEM 版本边界与证据 |
-| Part 5 应用层优化 | ch20-ch26 | 7 | 123 | 推进应用层治理章节批量 review |
-| 前言与附录 | preface, appendix | - | 12 | 发布前统一补齐 |
+| 口径 | 数量 | 说明 |
+|------|------|------|
+| `src/` frontmatter 原始扫描 | 545 文件 | `scripts/progress-report.py` 看到的正文元数据文件 |
+| `metadata/progress.json` 精修子集 | 141 节 | 119 finalized、22 ready_for_review |
+| `metadata/queue.json` | 18 条 | 13 pending、5 completed |
+| `pipeline_stage=ready-to-publish` | 322 文件 | 来自 frontmatter 原始扫描 |
+
+当前工作重点：
+
+| 优先级 | 工作 | 说明 |
+|--------|------|------|
+| P0 | 重建 `src/SUMMARY.md` | 让 mdBook 发布目录重新覆盖 ch01-ch26 与附录 |
+| P0 | 统一治理口径 | 明确 progress 精修子集、frontmatter 全量扫描、queue 待处理之间的关系 |
+| P1 | 消费 `metadata/queue.json` pending 项 | 优先 Task6 / Task9 / DeepResearch 已入队问题 |
+| P1 | 清理临时产物 | 根目录报告、旧 backup、临时 JSON 不再进入提交 |
+| P2 | 前言与附录补齐 | 统一读者路径、版本约定、验证标准、术语表 |
 
 ## 里程碑
 
@@ -40,11 +48,13 @@
 
 - [x] 进度统计脚本覆盖 ch01-ch26
 - [x] README、roadmap、v1.0 发布标准与当前目录保持一致
+- [x] 明确动态队列文件与人工治理文档的边界
 - [ ] 元数据检查恢复稳定通过
-- [ ] 明确动态队列文件与人工治理文档的边界
+- [ ] `metadata/progress.json` 与 frontmatter 原始扫描完成口径对齐
 
 ### M4: Alpha 精修收敛（目标：2026-Q3）
 
+- [ ] `src/SUMMARY.md` 重建并覆盖发布范围
 - [ ] Part 1-3 主体章节进入 `ready-to-publish`
 - [ ] Part 4 关键章节完成版本边界与证据补齐
 - [ ] Part 5 应用层章节完成首轮 Task6 / Task9 review
