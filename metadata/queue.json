@@ -175,5 +175,43 @@
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-07-02T06:20:17.676813",
     "status": "pending"
+  },
+  {
+    "section": "11.04",
+    "section_title": "案例集",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ch11-power 案例集 JobScheduler 节流段存在 Android 17 基线与源码锚点错误",
+    "material_paths": [
+      "logs/deep-review/2026-07-02-08-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/版本基线",
+        "location": "§11.4.7 API 范围（约行 974-978）",
+        "detail": "章节正文声明本节基于 main 分支 2026-06-20，且 android-17.0.0_r1 tag 不可访问、未做 Android 17 tag 一手验证。实际已能从 android.googlesource.com 的 refs/tags/android-17.0.0_r1 读取 JobSchedulerService、JobConcurrencyManager、JobServiceContext、QuotaController、CountQuotaTracker、QuotaTracker。按照 AIW 版本边界，main/master 资料不能作为 Android 17 正文结论。",
+        "suggestion": "将 §11.4.7 全段重新锚定 android-17.0.0_r1；无法在 tag 验证的内容移出正文或标注为未进入 Android 17。建议与前文 §11.4.1.2.2 的 Android 17 五层节流段合并，避免同一机制出现两套口径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§11.4.7.2 / §11.4.7.5（约行 1023、1117）",
+        "detail": "执行超时节流的记录路径写成 JobServiceContext.handleFinishedLocked() / JobSchedulerService.java:3238-3266。android-17.0.0_r1 中 3238-3266 是 stopTrackingJobLocked() 的移除逻辑；timeout/ANR 计数实际在 JobSchedulerService.maybeProcessBuggyJob()，约 3543-3589 行，通过 QUOTA_TRACKER_TIMEOUT_* 与 QUOTA_TRACKER_ANR_TAG 记录并触发 restrictApp。",
+        "suggestion": "把源码锚点改为 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java 的 maybeProcessBuggyJob()；表格中“谁来执行”不要写 JobServiceContext.handleFinishedLocked。"
+      },
+      {
+        "type": "源码错误/交叉引用一致性",
+        "location": "§11.4.1.2.2 五层调用链（约行 89、130）",
+        "detail": "API Quota 超限后的副作用写成 restrictApp(RARE) / 强制降级到 RARE bucket，但 android-17.0.0_r1 的 AppStandbyController.restrictApp() 在 1699-1702 行明确 setAppStandbyBucket(..., STANDBY_BUCKET_RESTRICTED, ...)。后文 §11.4.7 又写成 RESTRICTED，章节内部口径不一致。",
+        "suggestion": "统一修正为 RESTRICTED bucket，并在排查建议中按 RESTRICTED 配额解释后续 QuotaController 行为。"
+      },
+      {
+        "type": "原理断裂/交叉引用一致性",
+        "location": "§11.4.1.2.2 与 §11.4.7",
+        "detail": "前文把 Android 17 JobScheduler 节流归纳为五层叠加，后文又以 main 分支调研归纳为三层防线，未解释“注册数/并发控制/强制批处理”与“三层防线”的关系。读者会误以为同一版本存在两套相互排斥的模型。",
+        "suggestion": "保留一套 Android 17 tag 已验证模型；若保留“三层防线”，需明确它是五层中的 API quota、执行超时、后台配额三个子维度，不覆盖注册数、并发控制与强制批处理。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-02T08:27:10+08:00",
+    "status": "pending"
   }
 ]
