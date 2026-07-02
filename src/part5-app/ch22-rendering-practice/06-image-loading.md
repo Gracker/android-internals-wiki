@@ -4,8 +4,8 @@ chapter: "22.6"
 section: "22.6"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android16-release, Android Developers docs, Glide/Coil docs, Clippings 结构参考"
+last_verified: "2026-07-02"
+last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Glide/Coil docs, Clippings 结构参考"
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 0
@@ -44,8 +44,8 @@ sources:
     path: "https://coil-kt.github.io/coil/image_loaders/"
 tags: [image-loading, glide, coil, bitmap-decode, image-cache]
 related_chapters: ["22.1", "23.2", "7.10"]
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
@@ -56,13 +56,15 @@ last_task6_at: "2026-05-13T09:12:00+08:00"
 last_task6_audit: "2026-06-09"
 last_task6_review_log: "logs/review/2026-05-13-09-review.md"
 task6_review_notes: "2026-05-13 Task6：L1/L2 轻修（术语、指标中文化、兜底表述）；四层质检通过，无新增回炉项，转入 Task9。"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-19'
-last_task9_at: '2026-05-19T07:31:24+08:00'
-last_task9_audit: "2026-06-12"
+last_task9_at: "2026-07-02T15:26:14+08:00"
+last_task9_audit: "2026-07-02"
+last_task9_audit_log: "logs/deep-review/2026-07-02-15-audit.md"
+last_task9_autofix_at: "2026-07-02"
 last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
-task9_review_notes: "2026-05-19 Task9：复核 6 维度无 P0/P1；queue 无 pending，task6_result=pass-light-edit，自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md，不重复写入。"
+task9_review_notes: "2026-07-02 Task9 闲时抽检：复核 Android 17 源码路径与 BitmapRegionDecoder 格式版本差异；auto-fix Android 17 锚点和区域解码 AVIF 版本边界，回到 Task6 复审。"
 task2b_result: "fixed"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-29
@@ -123,7 +125,7 @@ Glide 文档明确列出多层缓存：active resources、memory cache、resourc
 
 图片解码的目标不是“把图片加载出来”，而是在显示前把像素数量压到接近目标 View 尺寸。一个 4000 × 3000 的 ARGB_8888 Bitmap 约占 45.8 MB；如果屏幕上只显示 1000 × 750，原图解码会浪费 15 倍以上的像素内存。
 
-AOSP `Bitmap.java` 暴露 `getAllocationByteCount()`，`BitmapFactory.Options` 暴露 `inSampleSize`、`inBitmap`、`inDensity`、`inTargetDensity` 等控制点。Android 8.0 之后 Bitmap 像素内存主要计入 Native 侧，Java 对象被回收后，`NativeAllocationRegistry` 负责配合释放 Native 分配。[已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/Bitmap.java][结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
+AOSP `Bitmap.java` 暴露 `getAllocationByteCount()`，`BitmapFactory.Options` 暴露 `inSampleSize`、`inBitmap`、`inDensity`、`inTargetDensity` 等控制点。Android 8.0 之后 Bitmap 像素内存主要计入 Native 侧，Java 对象被回收后，`NativeAllocationRegistry` 负责配合释放 Native 分配。[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java][结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 
 这段代码只演示解码前的尺寸决策，重点看 `inJustDecodeBounds` 和 `inSampleSize` 的配合：
 
@@ -151,7 +153,7 @@ fun calculateInSampleSize(srcWidth: Int, srcHeight: Int, reqWidth: Int, reqHeigh
 }
 ```
 
-`inSampleSize > 1` 会请求解码器对原图做子采样，返回更小的 Bitmap。Android 官方文档给出的语义是节省内存；AOSP `BitmapFactory.java` 里也把 `inSampleSize` 与复用 Bitmap 的约束写在同一组选项里。[已验证: 官方文档, BitmapFactory.Options][已验证: AOSP android16-release, BitmapFactory.java]
+`inSampleSize > 1` 会请求解码器对原图做子采样，返回更小的 Bitmap。Android 官方文档给出的语义是节省内存；AOSP `BitmapFactory.java` 里也把 `inSampleSize` 与复用 Bitmap 的约束写在同一组选项里。[已验证: 官方文档, BitmapFactory.Options][已验证: AOSP android-17.0.0_r1, BitmapFactory.java]
 
 API 28 之后的新代码可优先使用 `ImageDecoder`。它支持在 `OnHeaderDecodedListener` 里设置目标尺寸、采样尺寸、目标色彩空间和部分图片回调，适合把“读 header → 决定目标尺寸 → 解码”放在一个闭合流程里。[已验证: 官方文档, ImageDecoder]
 
@@ -209,7 +211,7 @@ fun decodeTile(
 }
 ```
 
-官方文档说明 `BitmapRegionDecoder` 适合“原图很大但只需要其中一部分”的场景。当前文档列出 JPEG、PNG、WebP、HEIF 等格式支持范围；AVIF 平台解码从 Android 12（API 31）起可用，Android 10 / 11 的 `BitmapRegionDecoder` 不保证 AVIF 支持，需准备 WebP / JPG fallback。API 31 起部分入口标记 deprecated；`ImageDecoder.setCrop()` 只做输出裁剪，不是 `decodeRegion()` 的替代品。[已验证: 官方文档, BitmapRegionDecoder][已验证: 官方文档, ImageDecoder]
+官方文档说明 `BitmapRegionDecoder` 适合“原图很大但只需要其中一部分”的场景。Android 17 源码中 `BitmapRegionDecoder` 列出的格式为 JPEG、PNG、WebP、HEIF 和 AVIF；Android 10 / 11 只列 JPEG、PNG，Android 12 到 16 列 JPEG、PNG、WebP、HEIF，因此区域解码 AVIF 需要按 Android 17 能力处理，低版本准备 WebP / JPG fallback。带 `isShareable` 的 `newInstance()` 重载在 Android 17 源码中仍标记 deprecated；`ImageDecoder.setCrop()` 只做输出裁剪，不是 `decodeRegion()` 的替代品。[已验证: AOSP android-17.0.0_r1, BitmapRegionDecoder.java][已验证: 官方文档, ImageDecoder]
 
 因此，大图展示不要只写成“用 ImageDecoder 裁一下”。如果业务需要平移缩放长图，仍要按 tile 设计数据结构；如果目标只是在解码时裁掉边缘区域，`ImageDecoder.setCrop()` 才合适。
 
