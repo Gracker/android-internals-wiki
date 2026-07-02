@@ -1,7 +1,7 @@
 {
-  "total": 140,
+  "total": 141,
   "draft": 0,
-  "ready_for_review": 21,
+  "ready_for_review": 22,
   "finalized": 119,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -143,6 +143,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T16:05:00+08:00",
       "note": "Android 17 Binder 优先级继承机制详解：三层优先级体系、事务分类处理、批处理流水线、智能调度"
+    },
+    {
+      "section": "2.29",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-02T16:05:00+08:00",
+      "note": "Compose Pausable Composition 实战指南：时间片调度、优先级管理、异步构建、性能优化"
     }
   ],
   "review_history": [
