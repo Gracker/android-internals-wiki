@@ -47,7 +47,7 @@ p1: 1
 p2: 0
 auto_promoted: True
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-23
+last_deepseek_cn_review_at: 2026-07-03
 task2b_fix_source: task9-deep-tech-review
 task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
 last_task9_autofix_at: "2026-07-02"
@@ -415,9 +415,8 @@ Flutter 的渲染虽然自成体系,但它仍然运行在 Android 系统之上�
 - **§18.12 Flutter 渲染路径**:该章节按 Flutter 3.32 stable+ 的 Main(UI+Platform) / Raster / IO 口径展开,可作为本章实践分析部分的延伸阅读
 
 
-### Flutter 3.44 源码侧补充（2026-06-25 AIW-源码调研）
+### Flutter 3.44 源码侧补充（2026-06-25）
 
-> 说明：选题 daily-topics.json id 17 标的章节为 §7.8（实际指向 RecyclerView），Flutter 3.44 主题与本节（2.11）和 §18.12 强相关，反哺在 2.11。
 
 **版本锚点**
 
@@ -426,7 +425,7 @@ Flutter 的渲染虽然自成体系,但它仍然运行在 Android 系统之上�
 - Dart SDK（DEPS 中）：`98116461144f4429ab873f8497023a5ec3b08127`
 - AGP 模板（CP-beta #186099）：3.44 起 **Android 模板升级到 AGP 9**
 
-**Agentic 能力——源码中实际能验证的只有这两块**
+**Agentic 能力**
 
 1. `agent-artifacts/` 顶层目录：`agent-artifacts/README.md` 明确为 AI 编码代理的临时文件沙箱，`.gitignore` 排除所有非 README 文件。
 2. `.agents/skills/` 顶层目录：遵循 [agentskills.io 开放标准](https://agentskills.io/specification) 与 [Claude Agent Skills 命名约定](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#naming-conventions)。首个落地 skill 为 `find-release/SKILL.md`，调用契约：
@@ -441,9 +440,9 @@ Flutter 的渲染虽然自成体系,但它仍然运行在 Android 系统之上�
    - "One Skill Per CLI Tool""Read-Only Mode by default""Dart Scripts"
    - 作者负责制（Ownership），不可无主修改
 
-   **重要**："Agentic Hot Reload""GenUI 生成式 UI" 这两个选题描述的特性，在 3.44 稳定版源码中**无对应运行时类/Service Extension**（`git tree --recursive 3.44.0` 全量扫描，`agent` 命中 6 个文件全是 devicelab/skills 文档；`genui` 零命中）。属于 keynote 营销口径。
+   "Agentic Hot Reload" 和 "GenUI 生成式 UI" 这两个特性在 3.44 稳定版源码中没有对应的运行时类或 Service Extension。`agent` 命中 6 个文件全是 devicelab/skills 文档，`genui` 零命中——目前仍是 keynote 营销口径，尚未进入稳定版代码。
 
-**性能侧实质改进（可源码验证）**
+**性能侧改进**
 
 `packages/flutter_tools/lib/src/run_hot.dart`：
 
@@ -471,17 +470,11 @@ Flutter 的渲染虽然自成体系,但它仍然运行在 Android 系统之上�
 - `#187573 Turn linux impeller on by default`（2026-06-24）
 - `#188188 Migrates flutter windows test to impeller`（2026-06-24）
 
-本节（2.11）原有的 Impeller 描述（"Android API 29+ 默认启用""低版本/无 Vulkan 回退 legacy OpenGL"）**继续有效**，3.44 不改这条边界。
+Impeller 在 Android API 29+ 默认启用、低版本或无 Vulkan 时回退 legacy OpenGL 的边界，3.44 没有变化。
 
-**AGP 9 模板的实操影响**
+**AGP 9 模板的影响**
 
-切到 3.44 模板后，`./gradlew assembleRelease` 走 AGP 9 的 R8/dexopt 路径；本节（2.11）的"Profile/Release 模式"实践应同步做一次 APK 体积 + 启动类初始化 A/B。配合 `#186040`（AGP 9 报错文档链接修正）与 `#186106`（Broken Flutter Docs Link 修正），3.44 模板属于稳定的工程动作，不是实验。
-
-**与 2.11 章节"必须做的事"的更新建议**
-
-- 新增一条：**3.44 后的项目首次构建时做一次 AGP 9 → AGP 8 体积/启动 A/B**（按 minSdk 区间分别测）。
-- 已有"hot reload 文件扫描慢"现象的开发者可注入 `HotRunnerConfig.asyncScanning = true` 测试加速比；典型受益场景是大型项目（> 5k Dart 文件）首次扫描。
-
+切换到 3.44 模板后，`./gradlew assembleRelease` 会走 AGP 9 的 R8/dexopt 路径。建议做一次 AGP 9 和 AGP 8 的 APK 体积与启动初始化 A/B 对比。配合 `#186040` 和 `#186106` 的文档修正，3.44 模板是稳定工程动作。
 
 ## 参考资料
 

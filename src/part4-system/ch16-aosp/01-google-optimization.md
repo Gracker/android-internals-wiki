@@ -62,7 +62,7 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-26
+last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # Google 官方的性能优化思路
@@ -174,9 +174,9 @@ MessageQueue 的性能问题,在于"很多生产者在并发入队"和"Looper �
 
 在 legacy locked queue 里,这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息,生产者在 `enqueueMessage()` 里按 `when` 插入单链表,两边都会碰到同一份队列状态。分析旧实现时,可以说它围绕一把锁序列化访问;源码引用应指向 `MessageQueue` 自身,不能只引用 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层,队列实现应该看 `Looper.java` 和 `MessageQueue` 的具体实现文件。
 
-到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`，官方 DeliQueue 博客也确认了 lock-free 设计方向与性能收益。源码侧，android-17.0.0_r1 的 `core/java/android/os/` 目录里可以稳定锚定 `LegacyMessageQueue/`、`CombinedMessageQueue/`、`CombinedDeliMessageQueue/` 这几条实现路径，其中 `CombinedMessageQueue` 和 `CombinedDeliMessageQueue` 上的 `@EnabledAfter(targetSdkVersion = android.os.Build.VERSION_CODES.BAKLAVA)` 对应 targetSdk 37+ 的兼容门槛。旧稿里从 master 观察到的 `LockedMessageQueue/`、`ConcurrentMessageQueue/`、`SemiConcurrentMessageQueue/` 不能作为 Android 17 稳定源码锚点；对比 android-16.0.0_r1，Android 17 新增了 `CombinedDeliMessageQueue`，讨论 DeliQueue 时应以 android-17.0.0_r1 为主线。
+到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`，官方 DeliQueue 博客也确认了 lock-free 设计方向与性能收益。android-17.0.0_r1 的 `core/java/android/os/` 目录下有三条实现路径：`LegacyMessageQueue/`、`CombinedMessageQueue/`、`CombinedDeliMessageQueue/`。`CombinedMessageQueue` 和 `CombinedDeliMessageQueue` 上的 `@EnabledAfter(targetSdkVersion = android.os.Build.VERSION_CODES.BAKLAVA)` 对应 targetSdk 37+ 的兼容门槛——低于这个 targetSdk 的应用仍然走 legacy 路径。Android 17 相比 android-16.0.0_r1 新增了 `CombinedDeliMessageQueue`，这是 DeliQueue 无锁设计的落地实现。
 
-Google 在 DeliQueue 技术博客里给出的主线也和这个拆分一致,生产者尽量走无锁入队,Looper 再在自己的视角里整理待执行消息。对我们做性能分析来说,这个变化的意义是,不能再看到 `Handler.post()` 就默认脑补成"老式单锁链表"。必须先分清设备系统版本和 App 的 targetSdk,再决定该看 legacy locked queue 还是新的 concurrent queue。更细的实现与兼容边界,可以继续看 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》。
+Google 在 DeliQueue 技术博客里给出的主线也和这个拆分一致,生产者尽量走无锁入队,Looper 再在自己的视角里整理待执行消息。对我们做性能分析来说,这个变化的意义是,不能再看到 `Handler.post()` 就默认假定为"老式单锁链表"。必须先分清设备系统版本和 App 的 targetSdk,再决定该看 legacy locked queue 还是新的 concurrent queue。更细的实现与兼容边界,可以继续看 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》。
 
 ### Binder：线程池与优先级继承的时间线
 Binder 线程池和优先级继承的版本演进，社区里一直有简化说法，比如"Android 8 动态扩展线程池，Android 10 才有优先级继承"。实际情况要更细致一些。

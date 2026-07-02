@@ -27,6 +27,8 @@ task2b_fixed_at: "2026-07-02T20:56:40+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-02-21-deep-review.md"
 last_idle_audit_at: "2026-07-02T17:27:39+08:00"
 last_task6_audit: "2026-07-02"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # Android 性能优化研究方法论
@@ -138,7 +140,6 @@ adb shell perfetto -d -t 30s -b 64mb -o /data/misc/perfetto-traces/long_trace.pf
 adb shell perfetto --attach=my_trace --stop
 ```
 
-<!-- AIW-源码调研-2026-07-02 -->
 **源码验证（基于 AOSP android-17.0.0_r1）**：
 
 `external/perfetto/perfetto.rc` 中 `traced`、`traced_relay`、`traced_probes` 三个 service 均为 `disabled`。标准 AOSP 通过 `persist.traced.enable=1` 的 init action 启动 `traced` / `traced_probes`，同时创建 `/data/misc/perfetto-traces` 和 `/data/misc/perfetto-configs` 目录。Pixel 或厂商镜像可通过 vendor init、DeviceConfig 或属性默认值覆盖启用边界。
