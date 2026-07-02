@@ -23,7 +23,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-02T16:10:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-07-02T18:54:37+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "fixed: L3/L4 content depth + practical guidance added"
   },
   {
     "section": "21.2",
@@ -49,7 +52,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-02T16:10:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-07-02T18:54:37+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "fixed: L3/L4 content depth + practical guidance added"
   },
   {
     "section": "20.3",
@@ -75,7 +81,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-02T16:10:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-07-02T18:54:37+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "fixed: L3/L4 content depth + practical guidance added"
   },
   {
     "section": "14.22",
