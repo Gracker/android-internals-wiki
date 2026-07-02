@@ -33,6 +33,7 @@ task2b_lite_note: "2026-06-30 Task2B Lite: 修复 last_task6_review_log 字段�
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-17'
 last_task6_at: "2026-06-17T04:06:00+08:00"
+last_task6_audit: "2026-07-03"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17
 ---
