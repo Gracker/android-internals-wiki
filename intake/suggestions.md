@@ -630,3 +630,53 @@ AIW 当前 563 个文件，覆盖范围非常全面。后续缺口挖掘应关�
 1. 16 个 draft 章节提升至 ready-for-review（均已有实质内容，可由 Task 2B 逐步提升质量）
 2. queue.json 中有 ~20 个 pending Task2B 条目 + ~20 个时效性巡检条目待处理
 3. 等待 Android 18 DP 或新版本素材
+
+
+## [Task2A 知识缺口挖掘 — 已检查方向] 2026-07-03 03:04
+
+本轮（第十四轮）复查结果：
+
+### Phase 0
+- 空_draft_章节：0 个（全部 16 个 draft 均已有实质内容，最小 34 行为 ch10 README 占位文件）
+- Task2B backlog：0 → 允许进入 Phase 1
+
+### Phase 1 检查方向（全部 < 14 分）
+- **DeepResearch 最新文件复查**（2026-07-02~03）：
+  - `2026-07-03-android17-binder-priority-async-batch-pipeline.md` → 补充 §1.25 内核侧四子主题，§1.25 已有 6 个 ready-for-review 变体覆盖
+  - `2026-07-02-android17-input-anr-mechanism.md` → 补充 §3.1/§9.x InputDispatcher ANR 双层预警机制，已有覆盖
+  - `2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md` → 补充 §27.1 ThreadPoolExecutor 源码细节，§27.1 draft 已 1959 行
+- **daily-info 2026-07-03 热点复查**：
+  - "Android 17 性能优化：新调度器减少 30% 启动时间" → 已覆盖于 §1.43/§1.44 ML Scheduler
+  - "Linux 6.10 引入内存碎片整理新机制" → 已覆盖于 §6.18/§6.19/§6.20
+- **Android 17 潜在未覆盖系统服务检查**：
+  - PermissionManagerService 性能 → 10/20，安全话题非性能核心
+  - AppOpsManagerService 性能 → 9/20，后台限制已覆盖于 §5.8/§5.17/§5.23
+  - AppSearch 性能 → 10/20，Jetpack 库非系统性能
+  - SafetyCenter 性能 → 8/20，安全话题
+  - Notification Coordinator → 未经官方文档证实存在于 android-17.0.0_r1
+- **Clippings 三本参考书**：无新增（最新仍为 2026-06-23 ANR 治理实践）
+- **Android 18 DP**：未发布
+- **research-gaps.md 盲区复查**：8 个高优先级盲区全部已有对应章节覆盖
+- **source-index 未映射高分数复查**（5 篇 ≥16 分）：均已有对应章节
+
+### 结论
+全书 563 个文件（16 draft + 189 ready-for-review + 338 finalized + 6 deprecated + 14 unknown），覆盖范围十四轮确认饱和。与前十三轮结论一致。
+
+后续可行动方向不变：
+1. 16 个 draft 章节提升至 ready-for-review（均已有实质内容，由 Task 2B 逐步提升质量）
+2. queue.json 中有 ~20 个 pending Task2B 条目 + 20 个时效性巡检条目待处理
+3. 等待 Android 18 DP 或新版本素材
+
+
+## [Task2A 知识缺口挖掘 — 第15轮] 2026-07-03 04:07
+
+结论：未发现评分 ≥ 14 的知识缺口，跳过。与第 1-14 轮结论一致。
+
+- 距上一轮（第 14 轮 03:04）仅 1 小时，无新素材产出
+- DeepResearch / Clippings / daily-info 均无新增
+- 全书 563 文件覆盖范围饱和
+
+后续可行动方向不变：
+1. 16 个 draft 章节提升至 ready-for-review
+2. queue.json pending 条目处理
+3. 等待 Android 18 DP 或新版本素材
