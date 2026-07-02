@@ -8,8 +8,8 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 confidence: medium-low
 last_verified: 2026-05-09
-last_verified_against: Flutter 3.32 architecture/thread merge docs (issue #150525 + release-notes-3.32.0) + Flutter Impeller docs/engine impeller README + Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java / FlutterRenderer.java) + Android 16 Vulkan 1.4 VPA16 specs + ADPF PerformanceHintManager
-sources: [{'type': 'official', 'path': 'https://docs.flutter.dev/perf/rendering-performance'}, {'type': 'official', 'path': 'https://docs.flutter.dev/perf/impeller'}, {'type': 'blog', 'path': 'https://github.com/flutter/flutter/wiki/Impeller'}, {'type': 'source', 'path': 'https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/view/VsyncWaiter.java'}, {'type': 'source', 'path': 'https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java'}, {'type': 'source', 'path': 'https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java'}]
+last_verified_against: Flutter 3.32 architecture/thread merge docs (issue #150525 + release-notes-3.32.0) + Flutter 3.44 source (VsyncWaiterAndroid / Android Choreographer / VsyncWaiter.java fallback / PlatformViewsController / FlutterRenderer) + Flutter Impeller docs/engine impeller README + Android 16 Vulkan 1.4 VPA16 specs + ADPF PerformanceHintManager
+sources: [{'type': 'official', 'path': 'https://docs.flutter.dev/perf/rendering-performance'}, {'type': 'official', 'path': 'https://docs.flutter.dev/perf/impeller'}, {'type': 'blog', 'path': 'https://github.com/flutter/flutter/wiki/Impeller'}, {'type': 'source', 'path': 'https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc'}, {'type': 'source', 'path': 'https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/impeller/toolkit/android/choreographer.cc'}, {'type': 'source', 'path': 'https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java'}, {'type': 'source', 'path': 'https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java'}]
 drafted_date: 2026-04-01
 drafted_by: openclaw-task2a
 finalized_date: 2026-05-22
@@ -25,14 +25,14 @@ last_task2b_at: "2026-07-01T18:54:04+08:00"
 last_task9_audit: 2026-06-13
 last_task9_audit_log: logs/deep-review/2026-06-13-20-audit.md
 last_task6_audit: 2026-06-13
-task9_state: pending
-task9_result: pass-tech-review
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
-task9_reviewed_date: 2026-05-22
+task9_reviewed_date: 2026-07-02
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-22T19:26:00+08:00"
-last_task9_review_log: logs/deep-review/2026-05-22-19-deep-review.md
-task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1/P2；16KB plugin 合规链路已拆清 AGP zip alignment、ELF p_align 与 native 4KB 假设。queue 无 pending，Task6 已通过，自动晋升 finalized。"
+last_task9_at: "2026-07-02T10:41:17+08:00"
+last_task9_review_log: logs/deep-review/2026-07-02-10-deep-review.md
+task9_review_notes: "2026-05-22 Task9 deep review: pass-tech-review。无 P0/P1/P2；16KB plugin 合规链路已拆清 AGP zip alignment、ELF p_align 与 native 4KB 假设。queue 无 pending，Task6 已通过，自动晋升 finalized。 | 2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；修正 Flutter Android VSync 入口为 NDK AChoreographer 优先、Java VsyncWaiter fallback，并同步 Perfetto trace 关键词；回到 Task6 复审。详见 logs/deep-review/2026-07-02-10-deep-review.md。"
 reviewed_date: 2026-05-22
 reviewed_by: openclaw-task6
 task6_state: revisiting
@@ -41,15 +41,16 @@ last_task6_at: "2026-05-22T16:06:00+08:00"
 last_task6_review_log: logs/review/2026-05-22-16-review.md
 review_notes: "2026-05-09 task6 re-review (revisiting): pass-light-edit。L1 禁用词 4 处已修复。无 B 类大问题。评分：结构 5/5·措辞 4/5·一致性 5/5·验证 4/5·元数据 5/5。2026-05-22 Task6 re-review: L1/L2 pass-light-edit，修复 frontmatter 重复 key、结构性元叙述与口语化表达 7 处；Task9 P1/P2 queue 已存在，保持 task2b_pending。2026-05-22 Task6 re-review: pass-light-edit。L1/L2 小修 14 处（结构性元叙述、ASCII 破折号、标点与几处过度口语表达）。Task9 P1/P2 queue 已存在，保持 task2b_pending。 2026-05-22 16:06 Task6 re-review: pass-light-edit。L1/L2 小修 5 处；压掉不必要的“我们”第一人称和开头问题句式；既有 Task9 P1（16KB plugin packaging/ELF/runtime 边界）queue 保留，保持 task2b_pending。 2026-05-22 19:26 Task9 re-review: pass-tech-review，P0/P1/P2=0；queue 无 pending，自动晋升 finalized。"
 updated_by: openclaw-task9
-updated_date: 2026-05-22
+updated_date: 2026-07-02
 p0: 0
-p1: 0
+p1: 1
 p2: 0
 auto_promoted: True
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
 task2b_fix_source: task9-deep-tech-review
 task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
+last_task9_autofix_at: "2026-07-02"
 ---
 <!-- outline-start -->
 ## 本节要点大纲
@@ -82,9 +83,9 @@ task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29
 
 ## 为什么要了解 Flutter 的渲染
 
-在 Perfetto 中分析 Flutter 应用，第一个要切换的是线程视角。原生应用里熟悉的 `ViewRootImpl.Traversal`、RenderThread 绘制阶段，在 Flutter 自绘 UI 路径上不会出现；trace 中 `1.platform` 或 `io.flutter.platform` 上有时能看到 `Choreographer#doFrame`，那只是 Flutter 订阅系统 VSync 的入口，不等于回到了原生 View 绘制流程。
+在 Perfetto 中分析 Flutter 应用，第一个要切换的是线程视角。原生应用里熟悉的 `ViewRootImpl.Traversal`、RenderThread 绘制阶段，在 Flutter 自绘 UI 路径上不会出现；trace 中 `1.platform` 或 `io.flutter.platform` 上有时能看到 `PlatformVsync` / `VsyncProcessCallback`，或 Java 回退路径里的 `Choreographer#doFrame`，那只是 Flutter 订阅系统 VSync 的入口，不等于回到了原生 View 绘制流程。
 
-Flutter 的 Android Embedder 通过 `VsyncWaiter` 调用 `Choreographer.postFrameCallback()`。回调到达后,`VsyncWaiter.FrameCallback#doFrame()` 把时间戳交给 `FlutterJNI.onVsync()`,后续的 Build、Layout、Paint 和 Raster 调度由 Flutter Engine 接管。Flutter 不使用 Android 原生 View 树渲染自己的 Widget,也没有原生应用里的 RenderThread 分工。
+Flutter 的 Android Embedder 当前优先通过 `VsyncWaiterAndroid` 走 NDK `AChoreographer` 路径：`Choreographer::PostFrameCallback()` 收到帧时间后进入 `OnVsyncFromNDK()`，再由 `VsyncWaiter::FireCallback()` 投递到 UI task runner。Java `VsyncWaiter.asyncWaitForVsync()` / `FlutterJNI.onVsync()` 仍是 `AChoreographer` 不可用时的回退路径。后续的 Build、Layout、Paint 和 Raster 调度由 Flutter Engine 接管。Flutter 不使用 Android 原生 View 树渲染自己的 Widget,也没有原生应用里的 RenderThread 分工。
 
 这个差异直接影响排查入口。列表滚动卡顿时，Flutter 3.32 stable+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`；如果是 Flutter 3.31- 或定制 Embedder，才需要单独看 `1.ui` / `io.flutter.ui`。
 
@@ -128,9 +129,9 @@ Flutter 3.32 stable 之后,Android / iOS 的主线线程模型改成 Main(UI+Pla
 
 原生 Android 的渲染管线在 §2.3 和 §2.5 已经展开:VSync → Choreographer → MainThread(doFrame: Input/Animation/Traversal) → RenderThread → SurfaceFlinger。这条管线有几个特征:它由系统的 VSync-app 信号触发;MainThread 和 RenderThread 是流水线式的协作关系;最终的帧提交要通过 BufferQueue 和 SurfaceFlinger。
 
-Flutter 的帧起点仍来自系统 VSync。Android 侧 `VsyncWaiter` 注册 `FlutterJNI.AsyncWaitForVsyncDelegate`,在 `asyncWaitForVsync()` 中调用 `Choreographer.getInstance().postFrameCallback()`;回调进入 `FrameCallback#doFrame()` 后再调用 `flutterJNI.onVsync(delay, refreshPeriodNanos, cookie)`。Flutter 使用 Choreographer 获取系统帧信号,随后由 Engine 接管 Dart 与 Raster 调度。它没有脱离 Choreographer 自己计时,也不会进入原生 View 的 traversal 流程。
+Flutter 的帧起点仍来自系统 VSync。当前 Android Engine 优先在 C++ 侧通过 `VsyncWaiterAndroid::AwaitVSync()` 调用 NDK `AChoreographer`;只有该路径不可用时,才回退到 Java `VsyncWaiter.asyncWaitForVsync()` / `FlutterJNI.onVsync()`。Flutter 使用系统 Choreographer 获取帧信号,随后由 Engine 接管 Dart 与 Raster 调度。它没有脱离 Choreographer 自己计时,也不会进入原生 View 的 traversal 流程。
 
-拿到帧信号之后,Dart 层的 `setState()` 只负责标记需要重建的 Element;Build/Layout/Paint 在 Flutter Framework 内生成 DisplayList,再交给 Raster 线程执行 Skia 或 Impeller 绘制。在 Perfetto 中,如果开启 `view`/`gfx` 相关 atrace 类别,`1.platform` 或 `io.flutter.platform` 上可能出现 `Choreographer#doFrame`。判断是否走原生 View 绘制,不看有没有 Choreographer,而看后面有没有 `ViewRootImpl.Traversal`、HWUI / RenderThread 绘制和对应的 Android View 层级工作。Flutter 自绘 UI 的主路径会更多显示为 `BeginFrame`、`DrawFrame`、`GPURasterizer::DrawToSurface` 等 Engine 事件。
+拿到帧信号之后,Dart 层的 `setState()` 只负责标记需要重建的 Element;Build/Layout/Paint 在 Flutter Framework 内生成 DisplayList,再交给 Raster 线程执行 Skia 或 Impeller 绘制。在 Perfetto 中,如果开启 `view`/`gfx` 相关 atrace 类别,`1.platform` 或 `io.flutter.platform` 上可能出现 `PlatformVsync`、`VsyncProcessCallback` 或 Java 回退路径中的 `Choreographer#doFrame`。判断是否走原生 View 绘制,不看有没有 Choreographer,而看后面有没有 `ViewRootImpl.Traversal`、HWUI / RenderThread 绘制和对应的 Android View 层级工作。Flutter 自绘 UI 的主路径会更多显示为 `Animator::BeginFrame`、`Rasterizer::DrawToSurfaces` 等 Engine 事件。
 
 ### Surface 的使用方式
 
@@ -138,7 +139,7 @@ Flutter 在 Android 上通过一个 Surface(通常是 SurfaceView 或 TextureVie
 
 还有一个细节:Flutter 没有绕过 BufferQueue。原生 Android 中,App 通过 `queueBuffer` 将 `GraphicBuffer` 提交给 BufferQueue,然后 SurfaceFlinger 通过 `acquireBuffer` 拿到 buffer 进行合成;Flutter 也走 Surface/BufferQueue 这条系统边界。Flutter 的 buffer producer 在 Engine Raster 路径里,提交动作来自 Engine 对 `Surface` / `ANativeWindow` 的使用,不经过 Android Framework 的 HWUI / RenderThread。
 
-`[已验证: Flutter Engine 通过 Android Surface/ANativeWindow 提交帧,SurfaceFlinger 仍按普通 layer 合成;Engine VSync 入口见 VsyncWaiter.java, flutter/engine]`
+`[已验证: Flutter Engine 通过 Android Surface/ANativeWindow 提交帧,SurfaceFlinger 仍按普通 layer 合成;Engine VSync 入口见 Flutter 3.44 vsync_waiter_android.cc / choreographer.cc,Java fallback 见 VsyncWaiter.java]`
 
 ### PlatformView:Flutter 与原生 View 的桥梁
 
@@ -236,7 +237,7 @@ EOF
 - CPU 整体使用率:看 Flutter 线程和系统服务是否在争抢 CPU 时间
 - SurfaceFlinger Track:看 Flutter 的 Surface 合成是否正常
 
-在 Perfetto 中,Flutter Engine 会输出自己的 trace event。系统抓 trace 时要保留 `gfx`、`view` 这类 atrace 类别,并在 UI 里同时搜索 `flutter`、`io.flutter`、`BeginFrame`、`DrawFrame`。常见 slice 包括 `FlutterEngine::BeginFrame`、`GPURasterizer::DrawToSurface`;不同 Flutter 版本的事件名会变化,过滤时不要只依赖单个字符串。
+在 Perfetto 中,Flutter Engine 会输出自己的 trace event。系统抓 trace 时要保留 `gfx`、`view` 这类 atrace 类别,并在 UI 里同时搜索 `flutter`、`io.flutter`、`PlatformVsync`、`VsyncProcessCallback`、`BeginFrame`。Flutter 3.44 源码中的常见 slice 包括 `PlatformVsync`、`VsyncProcessCallback`、`Animator::BeginFrame`、`Rasterizer::DrawToSurfaces`;不同 Flutter 版本的事件名会变化,过滤时不要只依赖单个字符串。
 
 ### ADPF 系统级调频（待验证）
 
@@ -486,12 +487,14 @@ Flutter 的渲染虽然自成体系,但它仍然运行在 Android 系统之上�
 
 - Flutter 官方性能文档:https://docs.flutter.dev/perf/rendering-performance
 - Impeller 文档:https://docs.flutter.dev/perf/impeller
-- Impeller engine README:https://github.com/flutter/engine/blob/main/impeller/README.md
+- Impeller engine README:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/impeller/README.md
 - Flutter 3.32 线程模型说明 (merged UI+Platform 默认合并):https://docs.flutter.dev/release/release-notes/release-notes-3.32.0
 - Flutter 性能最佳实践:https://docs.flutter.dev/perf/best-practices
 - PlatformView 性能:https://docs.flutter.dev/platform-integration/android/platform-views
-- Flutter Engine 源码(Impeller 目录):https://github.com/flutter/engine/tree/main/impeller
-- Flutter Engine VSyncWaiter 源码:https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/view/VsyncWaiter.java
-- Flutter Engine PlatformViewsController 源码:https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java
-- Flutter Engine FlutterRenderer SurfaceProducer 源码:https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java
+- Flutter Engine 源码(Impeller 目录):https://github.com/flutter/flutter/tree/3.44.0/engine/src/flutter/impeller
+- Flutter Engine VsyncWaiterAndroid 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc
+- Flutter Engine Android Choreographer wrapper 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/impeller/toolkit/android/choreographer.cc
+- Flutter Engine Java VSync fallback 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java
+- Flutter Engine PlatformViewsController 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java
+- Flutter Engine FlutterRenderer SurfaceProducer 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java
 - Flutter DevTools 文档:https://docs.flutter.dev/tools/devtools
