@@ -1,7 +1,7 @@
 {
   "total": 147,
-  "draft": 6,
-  "ready_for_review": 22,
+  "draft": 5,
+  "ready_for_review": 23,
   "finalized": 119,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -150,6 +150,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T16:05:00+08:00",
       "note": "Compose Pausable Composition 实战指南：时间片调度、优先级管理、异步构建、性能优化"
+    },
+    {
+      "section": "14.25",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-02T18:10:00+08:00",
+      "note": "Android 17 eBPF 可观测性矩阵扩展：cyclePerUid/dmabufIter/kernelwakelockduration/locks 四个新 eBPF 程序 + cpucycleperuid Rust FFI 库分析"
     }
   ],
   "review_history": [
