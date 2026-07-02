@@ -1,4 +1,5 @@
 ---
+
 title: "ResourcesManager 与 Configuration 变更性能"
 chapter: "1.24"
 status: ready-for-review
@@ -28,9 +29,9 @@ created_date: "2026-06-04"
 gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_lite_at: 2026-06-30
