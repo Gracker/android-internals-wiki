@@ -6,10 +6,10 @@ status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-25"
+last_verified: "2026-07-03"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
-last_verified_against: "bytedance/btrace GitHub README, rhea-trace-shell sched category, external review 2026-04-25"
+last_verified_against: "bytedance/btrace v3.0.0/v3.1.0 README.zh-CN + Main.java default capture source; Perfetto UI"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -18,23 +18,24 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: official
     path: "https://ui.perfetto.dev/"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-24T13:23:00+08:00"
-last_task9_audit: "2026-06-13"
+last_task9_at: "2026-07-03T07:26:25+08:00"
+last_task9_audit: "2026-07-03"
 last_task2b_at: "2026-04-25T07:48:00+08:00"
 last_task6_audit: "2026-07-01"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
+last_task9_autofix_at: "2026-07-03"
 ---
 
 # btrace / RheaTrace
@@ -103,7 +104,7 @@ java -jar rhea-trace-shell.jar -a your.package.name -t 10 -o output.pb -r sched
 
 btrace 3.0 有两类模式：
 
-- **perfetto 模式**：Android 8.1 及以上默认使用，可以同时采集应用 trace、atrace、ftrace 等系统信息。
+- **perfetto 模式**：README 写的是 Android 8.1 及以上可用，但 v3.0.0/v3.1.0 的 PC 侧源码在自动选择时以 `ro.build.version.sdk >= 28` 才走 `PerfettoCapture`；Android 8.1 设备需要显式验证 `-mode perfetto` 是否可用。可同时采集应用 trace、atrace、ftrace 等系统信息。
 - **simple 模式**：设备不支持 Perfetto 时回退，只能采应用侧 trace，缺少 CPU 调度等系统视角。
 
 这一区别会直接影响分析质量。只看应用方法耗时时，容易把“主线程没跑”误判成“业务方法慢”。带上系统调度后，才能判断线程是在运行、等待锁、等 Binder、等 I/O，还是被其他进程抢走 CPU。
@@ -150,7 +151,7 @@ btrace 3.0 的 PC 侧命令参数直接影响 trace 内容。常见参数可以�
 | `-r` | 重启 App 后采集启动阶段 | 冷启动分析常用 |
 | `sched` | 系统 trace category，采集 CPU 调度事件 | 启动、滑动、卡顿样本默认带上；缺少它时很难判断 Runnable 线程是否拿到 CPU |
 | `-m` | ProGuard mapping 路径 | 混淆包必须带，否则方法名不可读 |
-| `-mode perfetto/simple` | 决定是否叠加系统信息 | Android 8.1+ 优先 perfetto |
+| `-mode perfetto/simple` | 决定是否叠加系统信息 | Android 9/API 28+ 默认走 `PerfettoCapture`；Android 8.1 按设备验证，必要时显式指定 `-mode perfetto` 或回退 simple |
 | `-sampleInterval` | 最小采样回溯间隔 | 间隔越小，细节越多，开销也越高 |
 | `-maxAppTraceBufferSize` | 应用 trace buffer 上限 | 启动和长交互要避免 buffer 被覆盖 |
 
