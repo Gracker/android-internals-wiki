@@ -680,3 +680,22 @@ AIW 当前 563 个文件，覆盖范围非常全面。后续缺口挖掘应关�
 1. 16 个 draft 章节提升至 ready-for-review
 2. queue.json pending 条目处理
 3. 等待 Android 18 DP 或新版本素材
+
+
+## [Task9 Deep Review] 1.14 锁竞争与同步性能分析 — 2026-07-03
+- **类型**：数据缺失
+- **位置**：LRU 锁优化的代码级细节 / 性能数据
+- **问题**：锁持有时间 25ms→8ms、system_server 吞吐量 3 倍、LRU 延迟减少 68% 仍标注为待验证，缺少设备、ROM、trace 或公开 commit / 文档来源。
+- **建议**：补充可复现实测条件和 Perfetto / benchmark 证据；若无法补证，发布前删除具体倍率，只保留定性结论。
+
+## [Task9 Deep Review] 1.25 Android 17 Binder IPC 异步机制与批处理流水线 — 2026-07-03
+- **类型**：数据缺失
+- **位置**：§5 关键性能特征、§8 Binder 异步机制在 Perfetto 中的表现、附录 A.6 性能影响总结
+- **问题**：oneway 延迟、批处理吞吐、冻结回执对 ANR 的影响仍为待补充；“实际场景中不会成为瓶颈”等性能判断缺少 trace / ftrace / benchmark 支撑。
+- **建议**：补 1 组 Android 17 设备上的 Perfetto 或 binder trace 示例；若没有实测，把结论降级为源码结构推断并明确边界。
+
+## [Task9 Deep Review] 1.24 ResourcesManager 与 Configuration 变更性能 — 2026-07-03
+- **类型**：数据缺失
+- **位置**：源码级验证 / 实战建议第 1 条
+- **问题**：“requestLayout 比 recreate 快 5-10x”“80-180ms vs 5-20ms”是可量化性能断言，但未给设备、页面规模、采样次数和 trace 来源。
+- **建议**：补充一组可复现实测数据；否则改为“通常更轻量”，避免把经验量级写成确定结论。
