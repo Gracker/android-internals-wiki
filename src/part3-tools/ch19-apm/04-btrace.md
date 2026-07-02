@@ -2,7 +2,7 @@
 title: "btrace / RheaTrace"
 chapter: "19"
 section: "19.04"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -36,6 +36,7 @@ last_task6_audit: "2026-07-01"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 last_task9_autofix_at: "2026-07-03"
+last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
 ---
 
 # btrace / RheaTrace
