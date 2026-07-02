@@ -523,5 +523,25 @@
     "added_at": "2026-07-02T20:11:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-07-02-20-review.md"
+  },
+  {
+    "section": "24.14",
+    "section_title": "网络请求分段优化与弱网治理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Android 17 基准源码锚点缺失：24.14 仍以 Android 35 SDK 作为主线源码证据",
+    "material_paths": [
+      "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter last_verified_against / sources；正文 HttpEngine、ConnectivityManager、TrafficStats 证据锚点",
+        "detail": "章节适用范围写到 Android 17/API 37，但主线源码证据仍锚定 Android 35 SDK sources 和本地 android-35 路径；正文多处标注 Android 35 SDK source。2026-06-27 基准要求 AIW 主线结论必须锚定 android-17.0.0_r1，旧版本只能作为历史参照。",
+        "suggestion": "Task2B 需要把 HttpEngine、QuicOptions、ConnectivityManager、TrafficStats 等源码证据重新锚定 android-17.0.0_r1；若 Android 17 tag 暂不可得，应把对应段落标为待进入 Android 17 复核，不能继续以 Android 35 作为 Android 17 主线证明。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-02T20:34:05+08:00",
+    "status": "pending"
   }
 ]
