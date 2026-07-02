@@ -49,7 +49,8 @@ auto_promoted: True
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
 task2b_fix_source: task9-deep-tech-review
-task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"---
+task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
+---
 <!-- outline-start -->
 ## 本节要点大纲
 
