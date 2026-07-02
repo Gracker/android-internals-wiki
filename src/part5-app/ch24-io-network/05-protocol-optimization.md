@@ -31,7 +31,7 @@ last_task9_at: "2026-07-01T03:30:55+08:00"
 last_task9_autofix_at: "2026-07-01"
 last_task9_review_log: logs/deep-review/2026-07-01-03-audit.md
 task9_review_notes: 2026-07-01 Task9 闲时抽检 auto-fix：将 HttpEngine / ConnectionMigrationOptions 源码锚点从旧本地 SDK source 重锚到 AOSP android-17.0.0_r1 external/cronet；P0 0 / P1 0 / P2 1（已修）；回到 Task6 复审。
-last_task6_audit: 2026-05-24
+last_task6_audit: 2026-07-03
 last_task9_audit: 2026-07-01
 last_task9_audit_log: logs/deep-review/2026-07-01-03-audit.md
 deepseek_cn_review_state: done
