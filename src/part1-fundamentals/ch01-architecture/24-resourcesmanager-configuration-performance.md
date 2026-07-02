@@ -1,7 +1,7 @@
 ---
 title: "ResourcesManager 与 Configuration 变更性能"
 chapter: "1.24"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-06-04"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-30"

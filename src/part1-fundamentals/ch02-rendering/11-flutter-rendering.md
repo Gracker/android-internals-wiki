@@ -2,7 +2,7 @@
 title: 2.11 Flutter 渲染管线与性能
 chapter: 2.11
 section: 2.11
-status: finalized
+status: ready-for-review
 pipeline_stage: task6_pending
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]

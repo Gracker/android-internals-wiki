@@ -2,7 +2,7 @@
 title: "Window Manager Service 与窗口管理"
 chapter: "2.12"
 section: "2.12"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
