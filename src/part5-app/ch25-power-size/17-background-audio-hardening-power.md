@@ -1,13 +1,12 @@
 ---
-
 title: "Android 17 后台音频硬化与播放功耗治理"
 chapter: "25.17"
 section: "25.17"
 status: finalized
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-05-24"
-last_verified_against: "Android Developers background audio hardening / Media3 / audio focus docs 2026-05；AOSP android-17 源码待复核"
+last_verified: "2026-07-02"
+last_verified_against: "Android Developers background audio hardening / Media3 / audio focus docs 2026-05；AOSP android-17.0.0_r1 AudioManagerShellCommand/AudioManager/AudioService/HardeningEnforcer/AudioFlinger Tracks.cpp"
 confidence: medium
 sources:
   - type: official
@@ -46,8 +45,8 @@ created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 task9_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-24"
@@ -56,20 +55,24 @@ last_task6_at: "2026-05-24T05:09:00+08:00"
 last_task6_audit: "2026-06-28"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-24"
-last_task9_at: "2026-05-24T07:40:43+08:00"
-last_task9_audit: "2026-06-13"
-last_task9_review_log: "logs/deep-review/2026-05-24-07-deep-review.md"
-task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 0 项；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-07-02"
+last_task9_at: "2026-07-02T14:29:53+08:00"
+last_task9_audit: "2026-07-02"
+last_task9_review_log: "logs/deep-review/2026-07-02-14-audit.md"
+task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 0 项；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Android 17 后台音频 hardening shell 命令为 `cmd audio set-hardening`/`clear-hardening`；`disable` 是强制关闭 override，不是恢复默认行为；回到 Task6 复审。"
 auto_promoted: true
-p0: 0
+p0: 1
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
+last_task9_audit_log: "logs/deep-review/2026-07-02-14-audit.md"
+last_task9_autofix_at: "2026-07-02"
+updated_by: openclaw-task9
+updated_date: "2026-07-02"
 ---
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
@@ -208,13 +211,15 @@ Media3 文档给出的边界是：短音频或亮屏播放通常不用把电量�
 
 ```bash
 # 打开 Android 17 后台音频硬化测试开关
+# Android 17 AOSP shell 子命令是 set-hardening；clear-hardening 才会回到默认 compat / flag 行为
 # enable: 对所有应用强制开启限制，WIU 前台服务要求不再受 targetSdk 37 限制
 # throw: 在 enable 基础上让失败显性化（write 持续返回错误码、部分播放模式可能崩溃）
 # 两者都只用于线下发现潜在后台音频路径，不用于验证 target 36 生产豁免或 alarm 豁免
 # targetSdk A/B 和 USAGE_ALARM 豁免要在默认平台行为 / compat 条件下单独跑
-# 测试后用 adb shell cmd audio set-enable-hardening disable 复原
-adb shell cmd audio set-enable-hardening enable
-adb shell cmd audio set-enable-hardening throw
+adb shell cmd audio set-hardening enable
+adb shell cmd audio set-hardening throw
+# 测试后恢复默认行为，避免把 disable 的强制关闭状态留在设备上
+adb shell cmd audio clear-hardening
 
 # 查看音频策略、焦点、音量和 AudioHardening 相关记录
 adb shell dumpsys audio > audio.txt
