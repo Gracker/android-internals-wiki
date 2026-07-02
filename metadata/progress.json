@@ -1,7 +1,7 @@
 {
-  "total": 138,
-  "draft": 2,
-  "ready_for_review": 19,
+  "total": 139,
+  "draft": 1,
+  "ready_for_review": 20,
   "finalized": 119,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -129,6 +129,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T16:05:00+08:00",
       "note": "Android 17 ML Scheduler 智能调度机制：LSTM预测引擎、多因素加权调度、A/B测试调优、性能基准测试"
+    },
+    {
+      "section": "1.46",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-02T16:05:00+08:00",
+      "note": "Android 17 Staged Install 深度机制解析：状态机架构、会话类型差异、原子性保证、回滚机制"
     }
   ],
   "review_history": [
