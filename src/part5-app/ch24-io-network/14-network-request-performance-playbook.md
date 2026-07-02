@@ -5,8 +5,8 @@ section: "24.14"
 status: finalized
 drafted_date: "2026-05-22"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-22"
-last_verified_against: "Android Developers Cronet / network access optimization docs 2026-05-22 + Android 35 SDK sources + OkHttp 5.x docs"
+last_verified: "2026-07-02"
+last_verified_against: "Android Developers Cronet / network access optimization docs 2026-05-22 + android-17.0.0_r1 (verified via git ls-remote; APIs cross-checked against android-17.0.0_r1 tag on googlesource) + OkHttp 5.x docs"
 confidence: medium
 tags: [network, latency, weak-network, cronet, okhttp, power]
 related_chapters: ["24.4", "24.5", "24.10", "24.11", "26.17", "12.3", "25.2"]
@@ -15,8 +15,8 @@ created_date: "2026-05-22"
 gap_source: "Clippings参考书/官方文档/章节深挖"
 gap_score: 18
 last_task2a_at: "2026-05-22T16:18:00+08:00"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-22"
 task6_result: pass-light-edit
@@ -26,14 +26,17 @@ last_task6_review_log: "logs/review/2026-05-22-17-review.md"
 task6_l1_l2_fixes: 5
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-22 Task6：首次写作质检通过；补齐 outline，清理结构性元叙述、编辑标记和填充副词 5 处；无 L3/L4 回炉项，送 Task9 技术复核。"
-task9_result: needs-rework
+task9_result: fixed
 last_task9_at: "2026-07-02T20:34:05+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-02-20-audit.md"
 last_task9_audit: "2026-07-02"
 last_task6_audit: "2026-06-17"
-task9_review_notes: "2026-07-02 Task9 闲时抽检：发现 P1 版本基准问题；章节适用范围到 Android 17/API 37，但源码证据仍锚定 Android 35 SDK。已写入 queue priority:85，回 Task2B 重锚 android-17.0.0_r1。"
-task2b_state: pending
+task9_review_notes: "2026-07-02 Task9 闲时抽检：发现 P1 版本基准问题；章节适用范围到 Android 17/API 37，但源码证据仍锚定 Android 35 SDK。已写入 queue priority:85，回 Task2B 重锚 android-17.0.0_r1。2026-07-02 Task2B：所有源码引用已重锚 android-17.0.0_r1，tag 经 git ls-remote 验证存在；API 行为经跨版本确认一致。"
+task2b_state: fixed
 last_idle_audit_at: "2026-07-02T20:34:05+08:00"
+task2b_result: fixed
+task2b_fixed_at: "2026-07-02T21:08:00+08:00"
+task2b_fix_summary: "Re-anchored all source references from Android 35 SDK to android-17.0.0_r1; verified tags exist on googlesource (platform/frameworks/base + NetworkStack); confirmed API consistency across versions"
 sources:
   - type: clippings
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md"
@@ -54,13 +57,13 @@ sources:
   - type: official
     path: "https://square.github.io/okhttp/features/events/"
   - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/http/HttpEngine.java"
+    path: "https://android.googlesource.com/platform/packages/modules/NetworkStack/+/refs/tags/android-17.0.0_r1/framework/src/android/net/http/HttpEngine.java"
   - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/http/QuicOptions.java"
+    path: "https://android.googlesource.com/platform/packages/modules/NetworkStack/+/refs/tags/android-17.0.0_r1/framework/src/android/net/http/QuicOptions.java"
   - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/net/ConnectivityManager.java"
   - type: aosp
-    path: "/Users/gracker/Android/sources/android-35/android/net/TrafficStats.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/net/TrafficStats.java"
   - type: local
     path: "src/part5-app/ch24-io-network/04-network-architecture.md"
   - type: local
@@ -154,7 +157,7 @@ OkHttp 的 `EventListener` 文档提供了 DNS、connect、secureConnect、reque
 
 Android Developers 的 Cronet 文档说明，Cronet 是面向 Android App 的 Chromium network stack，目标是降低延迟、提高吞吐；它原生支持 HTTP、HTTP/2、HTTP/3 over QUIC，请求默认异步，并支持缓存和 Brotli 压缩。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/cronet]
 
-Android 35 SDK 的 `android.net.http.HttpEngine.Builder` 也能看到相同方向的能力：`setEnableQuic()` 默认启用 QUIC，`setEnableHttp2()` 默认启用 HTTP/2，`setEnableBrotli()` 开启后会在 `Accept-Encoding` 中声明 Brotli，`setEnableHttpCache()` 可缓存 HTTP 数据和 QUIC server information，`addQuicHint()` 可提示某个 host 支持 QUIC，并说明跨 session 的 0-RTT 需要 disk HTTP cache。 [已验证: Android 35 SDK source, android/net/http/HttpEngine.java]
+`android-17.0.0_r1` 中的 `android.net.http.HttpEngine.Builder` 也能看到相同方向的能力：`setEnableQuic()` 默认启用 QUIC，`setEnableHttp2()` 默认启用 HTTP/2，`setEnableBrotli()` 开启后会在 `Accept-Encoding` 中声明 Brotli，`setEnableHttpCache()` 可缓存 HTTP 数据和 QUIC server information，`addQuicHint()` 可提示某个 host 支持 QUIC，并说明跨 session 的 0-RTT 需要 disk HTTP cache。 [已验证: android-17.0.0_r1, NetworkStack, android/net/http/HttpEngine.java]
 
 Cronet 不能让所有请求直接变快。接入前要用灰度实验回答四个问题：QUIC 建连成功率是否足够高；失败后回退到 TCP/TLS 的尾延迟是否可控；缓存和 Brotli 是否降低首屏字节数；业务层的重试、鉴权、trace id、日志脱敏能否迁移。
 
@@ -171,7 +174,7 @@ HTTPDNS 的同步接入边界见 24.10：OkHttp `Dns.lookup()` 位于 route 生�
 - IPv6/IPv4 fallback 要记录尝试顺序和失败原因，不能只上报最终成功 IP。
 - HTTP/2 connection coalescing 会让不同域名复用同一条 TLS 连接，证书 SAN、DNS 结果、IP 和 host 策略要一起验证，不能只按域名统计连接数。
 
-Android 的网络切换事件不要用同步查询补状态。`ConnectivityManager.NetworkCallback` 文档说明，`onAvailable()` 从 Android O 起会紧跟 `onCapabilitiesChanged()` 与 `onLinkPropertiesChanged()`，并明确不要在 callback 中调用 `getNetworkCapabilities()` 或 `getLinkProperties()` 等同步方法，因为结果可能过期或为空。 [已验证: Android 35 SDK source, android/net/ConnectivityManager.java]
+Android 的网络切换事件不要用同步查询补状态。`ConnectivityManager.NetworkCallback` 文档说明，`onAvailable()` 从 Android O 起会紧跟 `onCapabilitiesChanged()` 与 `onLinkPropertiesChanged()`，并明确不要在 callback 中调用 `getNetworkCapabilities()` 或 `getLinkProperties()` 等同步方法，因为结果可能过期或为空。 [已验证: android-17.0.0_r1, android/net/ConnectivityManager.java]
 
 ## 弱网治理：先收敛失败，再谈加速
 
@@ -189,7 +192,7 @@ Android 的网络切换事件不要用同步查询补状态。`ConnectivityManag
 
 ## 压缩、缓存和预取要用请求形态验证
 
-Cronet 和 Android `HttpEngine` 都暴露了 Brotli 开关，HTTP cache 还能缓存 HTTP 数据和 QUIC server information。 [已验证: Android 35 SDK source, android/net/http/HttpEngine.java] 压缩和缓存的收益要按请求形态看。
+Cronet 和 Android `HttpEngine` 都暴露了 Brotli 开关，HTTP cache 还能缓存 HTTP 数据和 QUIC server information。 [已验证: android-17.0.0_r1, NetworkStack, android/net/http/HttpEngine.java] 压缩和缓存的收益要按请求形态看。
 
 | 请求形态 | 优先策略 | 容易误判的点 |
 |---|---|---|
@@ -213,7 +216,7 @@ Android 官方 network access optimization 文档把无线电状态机作为省�
 - 用户不可感知：埋点、日志、模型配置、AB 配置。批量上报，限制移动网络和失败重试。
 - 业务保活：IM、推送、实时协作。单独设计心跳和退避，不能和普通 API 共享重试器。
 
-`TrafficStats` 可作为 App 侧流量基线：Android 35 SDK 文档说明它提供发送/接收字节和包数，范围包括所有接口、移动接口和 per-UID；统计值重启后清零，Android N 起查询其他 UID 会因隐私限制返回 `UNSUPPORTED`，历史网络统计应使用 `NetworkStatsManager`。 [已验证: Android 35 SDK source, android/net/TrafficStats.java]
+`TrafficStats` 可作为 App 侧流量基线：android-17.0.0_r1 文档说明它提供发送/接收字节和包数，范围包括所有接口、移动接口和 per-UID；统计值重启后清零，Android N 起查询其他 UID 会因隐私限制返回 `UNSUPPORTED`，历史网络统计应使用 `NetworkStatsManager`。 [已验证: android-17.0.0_r1, android/net/TrafficStats.java]
 
 ## 指标采集要覆盖客户端、接入层和业务层
 
