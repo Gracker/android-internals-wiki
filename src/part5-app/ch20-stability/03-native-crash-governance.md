@@ -62,7 +62,7 @@ task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-fo
 
 Native Crash 与 Java Crash 的区别：Java Crash 的异常信息由 ART 虚拟机在进程内部生成，调用栈完整、格式统一；Native Crash 由 Linux 信号触发，堆栈解析依赖独立的崩溃收集机制，排查路径更长。
 
-在 Perfetto 分析或线上故障排查时，我们经常遇到这样的情况：一个应用突然崩溃，但 crash 堆栈只有一行 `SIGSEGV`，或者 Native 代码抛出的异常在 Java 层完全看不到痕迹。如果不知道 Native Crash 的收集机制和解读方法，这些崩溃就像黑盒一样，很难定位问题原因。
+在 Perfetto 分析或线上故障排查时，我们经常遇到这样的情况：一个应用突然崩溃，但 ANR（应用无响应）堆栈只有一行 `SIGSEGV`，或者 Native 代码抛出的异常在 Java 层完全看不到痕迹。如果不知道 Native Crash 的收集机制和解读方法，这些崩溃就像黑盒一样，很难定位问题原因。
 
 分析 Native Crash 时，四条线最容易影响定位效率：信号怎么产生、tombstone 怎么读、堆栈怎么还原到源码行号、线上监控怎么搭。掌握这几条线，排查时就不必只盯着系统生成的 tombstone 文件。
 

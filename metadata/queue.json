@@ -1,5 +1,83 @@
 [
   {
+    "section": "26.1",
+    "section_title": "App 可观测性架构设计",
+    "priority": 75,
+    "reason": "[Task 6 L3/L4 回炉] 内容深度与活人感不足",
+    "material_paths": [
+      "src/part5-app/ch26-observability/01-observability-architecture.md"
+    ],
+    "review_issues": [
+      {
+        "type": "内容深度不足",
+        "location": "扩展内容标记为'（待扩展）",
+        "detail": "章节未能深入可观测性三支柱的实施细节，缺少 Metrics/Logs/Traces 的具体数据模型设计和编码示例",
+        "suggestion": "Task 2B 应补充可观测性数据建模、采样算法实现、存储架构等深度内容"
+      },
+      {
+        "type": "活人感缺失",
+        "location": "整个章节缺乏引导性表述",
+        "detail": "章节以平铺直叙为主，缺少对读者的引导、问题场景带入和工程实践中的难点提示",
+        "suggestion": "Task 2B 应增加\"在实际项目中，我们经常遇到...\"、\"配置采样策略时要特别注意...\"等引导性内容"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-02T16:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "21.2",
+    "section_title": "启动框架设计与任务编排",
+    "priority": 75,
+    "reason": "[Task 6 L3/L4 回炉] 内容深度与活人感不足",
+    "material_paths": [
+      "src/part5-app/ch21-startup/02-startup-framework.md"
+    ],
+    "review_issues": [
+      {
+        "type": "内容深度不足",
+        "location": "Alpha 框架源码示例部分",
+        "detail": "Alpha 框架示例代码缺少关键细节，如 Task 类的完整 API、错误处理机制、与 Android 生命周期集成等",
+        "suggestion": "Task 2B 应补充完整的 Alpha API 文档、错误处理模式、与 Android Application 生命周期绑定方式"
+      },
+      {
+        "type": "活人感缺失",
+        "location": "整个章节技术细节过多",
+        "detail": "章节侧重技术原理和API罗列，缺少实际应用场景的引导和常见陷阱提醒",
+        "suggestion": "Task 2B 应增加\"在选择启动框架时，很多团队会陷入...\"、\"配置任务依赖时要注意...\"等实践指导"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-02T16:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "20.3",
+    "section_title": "Native Crash 分析与治理",
+    "priority": 75,
+    "reason": "[Task 6 L3/L4 回炉] 内容深度与活人感不足",
+    "material_paths": [
+      "src/part5-app/ch20-stability/03-native-crash-governance.md"
+    ],
+    "review_issues": [
+      {
+        "type": "内容深度不足",
+        "location": "Breakpad 符号化部分",
+        "detail": "符号化流程缺少关键细节，如 Build ID 生成算法、minidump 格式解析、符号服务器架构等",
+        "suggestion": "Task 2B 应补充完整的符号化流程、CI/CD 集成方案、符号服务端架构设计"
+      },
+      {
+        "type": "活人感缺失",
+        "location": "Native Crash 原理部分",
+        "detail": "技术原理描述过于平铺直叙，缺少排查思路引导和实战经验分享",
+        "suggestion": "Task 2B 应增加\"排查 Native Crash 时，先看信号类型和 fault addr，再结合栈...\"、\"实际工作中我们发现 80% 的 SIGSEGV 都是...\"等实战指导"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-02T16:10:00+08:00",
+    "status": "pending"
+  },
+  {
     "section": "1.25",
     "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
     "priority": 90,
