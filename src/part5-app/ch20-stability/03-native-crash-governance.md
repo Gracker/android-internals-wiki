@@ -5,8 +5,8 @@ section: "20.3"
 section_title: "Native Crash 分析与治理"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-21"
-last_verified_against: "AOSP android-17.0.0_r1 (native crash notification chain verified by Task9)"
+last_verified: "2026-07-02"
+last_verified_against: "AOSP android-17.0.0_r1 (debuggerd/crash_dump, libunwindstack BuildId format, native crash notification chain)"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
@@ -22,19 +22,21 @@ sources:
   - type: aosp
     path: "system/core/debuggerd/libdebuggerd/tombstone.cpp"
   - type: aosp
+    path: "system/unwinding/libunwindstack/Unwinder.cpp"
+  - type: aosp
     path: "external/google-breakpad/src/processor/simple_symbol_supplier.cc"
   - type: aosp
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-21"
+task9_state: reviewed
+task9_result: auto-fixed
+task9_reviewed_date: "2026-07-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-21T16:27:03+08:00"
+last_task9_at: "2026-07-02T19:31:35+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-07-02T18:50:00+08:00"
@@ -49,9 +51,9 @@ last_task6_review_log: "logs/review/2026-06-21-20-review.md"
 task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1修复: 链路→流程×3, meta-narrative×1。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
 task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fix: remove banned word. L2 pass. Anchors all covered. No new L3/L4 issues."
 task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。"
-last_task9_review_log: "logs/deep-review/2026-06-21-16-audit.md"
-task9_review_notes: "2026-06-21 Task9 idle-audit：auto-fixed。Android 17/API 37 源码抽检发现 native crash 通知链路方法名不准；已将 AppErrors.crashApplication()/handleApplicationCrash() 修正为 NativeCrashListener -> handleApplicationCrashInner()，回到 Task6 复审。"
-last_task9_autofix_at: "2026-06-21"
+last_task9_review_log: "logs/deep-review/2026-07-02-19-deep-review.md"
+task9_review_notes: "2026-07-02 Task9 normal deep-review AUTO-FIX：对照 AOSP android-17.0.0_r1 libunwindstack Unwinder::FormatFrame() 的 BuildId 输出格式，修正 addr2line 排查段中 Build ID 与 Build fingerprint 混淆；回到 Task6 复审。"
+last_task9_autofix_at: "2026-07-02"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 last_task9_audit: "2026-06-21"
@@ -375,7 +377,7 @@ llvm-addr2line -e libnative.so -f -C 0x12340
 llvm-addr2line -e libnative.so -f -C 0x1237a0
 ```
 
-如果 addr2line 输出 `??`，说明 so 被 strip 了或者用的不是对应版本的符号文件。检查 Build ID 是否匹配：`llvm-readelf --notes libnative.so` 输出的 Build ID 应该和 tombstone `Build fingerprint` 段的记录一致。
+如果 addr2line 输出 `??`，说明 so 被 strip 了或者用的不是对应版本的符号文件。检查 Build ID 是否匹配：`llvm-readelf --notes libnative.so` 输出的 Build ID 应该和 tombstone 对应模块帧里的 `(BuildId: ...)` 一致。
 
 **第三层：寄存器查参数（5 分钟内）**
 
@@ -810,4 +812,3 @@ hook pthread_mutex_lock/trylock/unlock/timedlock/clocklock，在每个函数入�
 ### Native Crash / ApplicationExitInfo 补偿流程与 Signal Handler 边界
 
 完整分析了 debuggerd → crash_dump → tombstone 三层 native crash 处理流程，重点厘清 signal handler 的 async-signal-safe 边界（禁止 malloc/printf/堆分配），ApplicationExitInfo 对 native tombstone 的补偿入口及版本差异（API 30–34），Crashpad/Breakpad/debuggerd 的职责边界，SDK envelope 与系统 exit reason 的去重机制。
-

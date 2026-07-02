@@ -4,7 +4,7 @@ chapter: "21.2"
 section: "21.2"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-21"
+last_verified: "2026-07-02"
 last_verified_against: "AOSP android-17.0.0_r1, Jetpack App Startup 1.2.0 sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)"
 confidence: medium
 drafted_date: "2026-05-12"
@@ -12,6 +12,8 @@ polish_count: 1
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/Application.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityThread.java"
   - type: official
     path: "developer.android.com/topic/libraries/app-startup"
   - type: blog
@@ -24,23 +26,23 @@ sources:
     path: "github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-21
 task6_result: pass-light-edit
 task9_result: auto-fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-21"
-last_task9_at: "2026-06-21T18:28:08+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-07-02"
+last_task9_at: "2026-07-02T19:31:35+08:00"
 last_task9_audit: "2026-06-21"
-last_task9_autofix_at: "2026-06-21"
+last_task9_autofix_at: "2026-07-02"
 task6_reviewed_date: "2026-05-22"
-task9_review_notes: "2026-06-21 闲时抽检：AUTO-FIX。修正 Alpha 版本锚点为 GitHub HEAD 04fe7f2 / artifact 1.0.0.1；修正 AlphaManager.addProject() 链式调用；修正 THREAD_PRIORITY_DISPLAY 注释归因。回到 Task6 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-21-18-audit.md"
+task9_review_notes: "2026-07-02 Task9 normal deep-review AUTO-FIX：对照 AOSP android-17.0.0_r1 ActivityThread、Android Developers TTID/TTFD 文档和 alibaba/alpha 04fe7f2 源码，修正 ContentProvider 生命周期边界、Alpha 超时封装示例、await 封装示例和 TTID 指标说明；回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-07-02-19-deep-review.md"
 last_task6_at: "2026-07-02T19:14:49+08:00"
 last_task6_review_log: "logs/review/2026-06-21-20-review.md"
 task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1/L2复扫通过, 无新增小修。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
@@ -312,14 +314,16 @@ Alpha 框架层面没有内置超时控制，需要在 Task 内部自行实现�
 
 **单个任务超时控制**：
 
+下面这个封装只适合后台初始化任务；主线程任务应通过 `onProjectFinish`、`Handler` 或业务状态机做超时观察，避免在 Task 内部再开线程破坏 UI 时序。
+
 ```java
 // 封装层：在 Task 执行时包装超时逻辑
 public class TimeoutTask extends Task {
-    private final Task delegate;
+    private final Runnable delegate;
     private final long timeoutMs;
 
-    public TimeoutTask(String name, Task delegate, long timeoutMs) {
-        super(name, delegate.isInUiThread());
+    public TimeoutTask(String name, Runnable delegate, long timeoutMs) {
+        super(name, false);
         this.delegate = delegate;
         this.timeoutMs = timeoutMs;
     }
@@ -329,7 +333,7 @@ public class TimeoutTask extends Task {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicReference<Throwable> error = new AtomicReference<>();
 
-        new Thread(() -> {
+        Thread worker = new Thread(() -> {
             try {
                 delegate.run();
             } catch (Throwable t) {
@@ -337,14 +341,24 @@ public class TimeoutTask extends Task {
             } finally {
                 latch.countDown();
             }
-        }, "timeout-" + getName()).start();
+        }, "timeout-" + mName);
+        worker.start();
 
-        if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {
+        final boolean finished;
+        try {
+            finished = latch.await(timeoutMs, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            reportError(mName, e);
+            return;
+        }
+
+        if (!finished) {
             // 超时：记录日志，标记任务为 finished，让后续依赖继续
-            reportTimeout(delegate.getName(), timeoutMs);
+            reportTimeout(mName, timeoutMs);
         } else if (error.get() != null) {
             // 执行异常：同样标记 finished，避免后续依赖永久等待
-            reportError(delegate.getName(), error.get());
+            reportError(mName, error.get());
         }
     }
 }
@@ -404,13 +418,13 @@ public class MyApplication extends Application {
 
 **ContentProvider 提前初始化**（App Startup 模式的思想复用）：
 
-如果某些 SDK 的初始化必须在 `Application.onCreate` 之前完成（如 MultiDex 安装），可以利用 ContentProvider 的 `onCreate` 在 Application 之前执行：
+如果少量无 UI 依赖的预热任务必须早于 `Application.onCreate` 完成，可以利用 ContentProvider 的 `onCreate`。AOSP `ActivityThread.handleBindApplication()` 的顺序是先创建 Application 实例，再安装 ContentProvider，最后调用 `Application.onCreate()`。因此 Provider 只适合做早于 `onCreate` 的注册或轻量预热；MultiDex 这类必须放在 `attachBaseContext()` 的工作不适合走 Provider。
 
 ```java
 public class StartupInitProvider extends ContentProvider {
     @Override
     public boolean onCreate() {
-        // 此时 Application 尚未创建，只注册最关键的 pre-init 任务
+        // 此时 Application 对象已创建，但 Application.onCreate 尚未执行
         AlphaManager alpha = AlphaManager.getInstance(getContext());
         alpha.addProject(buildPreInitProject());
         // 注意：不要在这里 start()——Application.onCreate 中再 start
@@ -431,7 +445,8 @@ AlphaManager.getInstance(this).addProject(buildSplashProject());
 AlphaManager.getInstance(this).start();
 
 // 等所有 CRITICAL 任务完成后跳转主页
-AlphaManager.getInstance(this).await(criticalTasks, () -> {
+StartupAwaiter awaiter = new StartupAwaiter(AlphaManager.getInstance(this));
+awaiter.await(criticalTasks, () -> {
     startActivity(new Intent(this, MainActivity.class));
     finish();
 });
@@ -708,7 +723,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
 
 | 类别 | 指标 | 说明 |
 |------|------|------|
-| 性能 | P50 / P90 / P99 TTID | 首帧可交互时间 |
+| 性能 | P50 / P90 / P99 TTID | 首帧出现时间 |
 | 性能 | P50 / P90 / P99 TTFD | 首帧完全绘制时间 |
 | 性能 | 关键路径总耗时 | DAG 关键路径 wall-clock time |
 | 稳定性 | 启动阶段崩溃率 | 初始化顺序变化导致的崩溃 |
