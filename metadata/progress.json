@@ -1,8 +1,8 @@
 {
-  "total": 147,
-  "draft": 5,
-  "ready_for_review": 23,
-  "finalized": 119,
+  "total": 562,
+  "draft": 18,
+  "ready_for_review": 186,
+  "finalized": 338,
   "last_updated": "2026-07-02",
   "task2b": {
     "last_run": "2026-07-01T16:54:06+08:00",
@@ -270,5 +270,6 @@
       "fixes": "content depth + practical guidance + data models"
     }
   ],
-  "last_task2b_at": "2026-07-02T18:54:37+08:00"
+  "last_task2b_at": "2026-07-02T18:54:37+08:00",
+  "deprecated": 6
 }
