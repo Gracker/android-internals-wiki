@@ -311,5 +311,14 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 6
+  "deprecated": 6,
+  "stats": {
+    "last_review_date": "2026-07-02",
+    "last_review_by": "openclaw-task6",
+    "drafted": 17,
+    "ready_for_review": 190,
+    "finalized": 336,
+    "ready_to_publish": 0,
+    "total": 550
+  }
 }
