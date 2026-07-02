@@ -1,7 +1,7 @@
 {
-  "total": 137,
-  "draft": 3,
-  "ready_for_review": 18,
+  "total": 138,
+  "draft": 2,
+  "ready_for_review": 19,
   "finalized": 119,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -122,6 +122,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T13:04:00+08:00",
       "note": "Simpleperf microarch profiling: ARM SPE/TRBE/background/app/pmu_lib/ko AutoFDO"
+    },
+    {
+      "section": "1.44",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-02T16:05:00+08:00",
+      "note": "Android 17 ML Scheduler 智能调度机制：LSTM预测引擎、多因素加权调度、A/B测试调优、性能基准测试"
     }
   ],
   "review_history": [
