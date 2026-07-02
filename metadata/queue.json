@@ -115,5 +115,65 @@
     "source": "task2a-gap-mining",
     "created_date": "2026-07-02",
     "file": "src/part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md"
+  },
+  {
+    "section": "14.22",
+    "section_title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-hprof-heapdump-android17-java-hprof-signal-sender.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "HPROF Heap Dump 管线与 Perfetto android.java_hprof 数据源 — Android 17 已正式废弃 kill -10 触发 hprof 转储的旧路径——signal_catcher.cc 中 HandleSigUsr1 现在只做 CollectGarbage + F",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-07-02T06:19:46.260063",
+    "status": "pending"
+  },
+  {
+    "section": "14.22",
+    "section_title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-android17-hprof-heapdump-pipeline-perfetto-art-hprof-importer.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "HPROF HeapDump 管线与 Perfetto art_hprof Importer 深度解析 — trace_processor 侧有独立 HPROF 二进制解析器（art_hprof_parser.cc），直接消费 hprof blob 生成 heap_graph 系列 6 张表。纠正了之前「t",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-07-02T06:19:46.260063",
+    "status": "pending"
+  },
+  {
+    "section": "1.25",
+    "section_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，目标章节已 finalized，建议作为补充参考",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-android17-binder-tf-update-txn-frozen-batch-pipeline.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 Binder TF_UPDATE_TXN 事务去重与冻结批处理流水线 — oneway 调用命中已冻结进程时通过 binder_find_outdated_transaction_ilocked() 扫描等价事务",
+        "suggestion": "章节已 finalized，建议在下次修订时补充 TF_UPDATE_TXN 事务去重、三态优先级状态机与冻结记账的源码级细节"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-07-02T06:20:17.676813",
+    "status": "pending"
   }
 ]

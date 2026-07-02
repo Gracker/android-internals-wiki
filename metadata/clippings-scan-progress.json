@@ -1,6 +1,6 @@
 {
   "current_book": 1,
-  "current_offset": 0,
+  "current_offset": 4,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -37,7 +37,7 @@
     {
       "prefix": "Android 性能优化",
       "total_files": 21,
-      "completed_files": 0,
+      "completed_files": 4,
       "files": [
         "Android 性能优化 - Android 性能优化总结.md",
         "Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md",
@@ -129,10 +129,10 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-01",
-  "total_knowledge_points": 117,
-  "total_suggestions": 12,
-  "total_gaps": 2,
+  "last_scan_date": "2026-07-02",
+  "total_knowledge_points": 134,
+  "total_suggestions": 14,
+  "total_gaps": 3,
   "skipped_files": [
     {
       "file": "Android 应用稳定性剖析与优化 - ART 堆内存分布与黑科技扩量：拯救 OOM 的利器.md",
@@ -153,6 +153,11 @@
       "file": "Android 应用稳定性剖析与优化 -Binder 异常：原来 Binder 异常真不少！.md",
       "reason": "文件内容为空（仅有标题，无正文）",
       "date": "2026-07-01"
+    },
+    {
+      "file": "Android 性能优化 - Android 性能优化总结.md",
+      "reason": "文件内容为空（仅有标题，无正文）",
+      "date": "2026-07-02"
     }
   ]
 }
