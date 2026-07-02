@@ -28,22 +28,24 @@ created_date: "2026-06-04"
 gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_lite_at: 2026-06-30
-task9_result: pass-tech-review
-last_task9_at: 2026-06-30T16:31:10+08:00
+task9_result: auto-fixed
+last_task9_at: 2026-07-02T13:20:00+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
 last_task6_at: 2026-06-30T18:12:00+08:00
-last_task9_autofix_at: "2026-06-30"
-last_task9_review_log: "logs/deep-review/2026-06-30-16-deep-review.md"
-task9_review_notes: "2026-06-30 Task9 复审通过: Android 17 ResourcesManager/Configuration/FakeRotation/Compose 状态边界已按源码和官方行为限定复核，无新增 P0/P1。"
-task9_p0_issues: 0
+last_task9_autofix_at: "2026-07-02"
+last_task9_audit: "2026-07-02"
+last_task9_audit_log: "logs/deep-review/2026-07-02-13-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-02-13-audit.md"
+task9_review_notes: "2026-06-30 Task9 复审通过: Android 17 ResourcesManager/Configuration/FixedRotation/Compose 状态边界已按源码和官方行为限定复核，无新增 P0/P1。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Android 17 enableLessActivityRecreationOnConfigChange 适用范围、recreateOnConfigChanges/compat change 边界、FixedRotation 与 Perfetto trace 判定边界；回到 Task6 复审。"
+task9_p0_issues: 2
 task9_p1_issues: 0
 task9_p2_issues: 0
 task2b_rework_issues: "2026-06-30 Task2B main: L3 content depth — added Perfetto-based Activity recreate measurement methodology with SQL; expanded foldable/multi-window section with Perfetto diagnostic queries, Samsung/Pixel Fold divergence patterns, and multi-window resize debouncing strategies"
@@ -452,7 +454,7 @@ Android 15 引入 16KB page size 支持（详见 4.7 节）。对资源加载的
 
 - ATMS 在 `updateConfigurationLocked()` 中更新全局 Configuration，后续通过 `WindowProcessController.dispatchConfiguration()` 和 `ActivityRecord.ensureActivityConfiguration()` 派发到进程和 Activity
 - 折叠/展开可能在同一次 reported config 中同时体现 orientation、screenWidthDp、screenHeightDp、smallestScreenWidthDp，也可能因设备实现和窗口事件顺序拆成多次派发，实战中要以 Perfetto / logcat 中的 config 序列为准
-- FixedRotation 机制（见上文）只在 Activity 启动时生效，已经在前台的 Activity 走正常流程
+- FixedRotation 主要服务于 Activity 启动、非 top 可见 Activity 固定方向等旋转兼容场景；普通前台 Activity 的折叠/展开仍以 Configuration 派发和 relaunch 判定为准
 
 应对策略：
 1. 声明 `configChanges="orientation|screenSize|smallestScreenSize|screenLayout"`，在 `onConfigurationChanged()` 中处理
@@ -486,11 +488,11 @@ ORDER BY f.vsync;
 - `handleConfigurationChanged` + `performTraversal` 连续出现超过 50ms，布局需要优化（减少嵌套层级）
 - 如果折叠后出现了 `handleRelaunchActivity` slice，说明当前 Activity 没有声明并处理对应的 `configChanges`，被迫走了 recreate
 
-**三星 Fold / Pixel Fold 的已知差异**：
+**折叠屏设备差异的边界**：
 
-- 三星 Fold 展开/折叠时，`DisplayContent` 可能连续发送两次 `onConfigurationChanged`（一次针对 size 变化，一次针对 density 调整）；两次之间间隔 0-2 帧
-- Pixel Fold 在折叠时，`WindowToken.applyFixedRotationTransform()` 会介入，trace 中若没有 `ActivityRelaunchItem` 就是 FixedRotation 在工作
-- 两种设备上 `dumpsys display` 输出中的 `mBaseDisplayInfo.logicalWidth/logicalHeight` 变化时序不同，三星倾向于"先改密度再改尺寸"，Pixel 倾向于"一次到位"——两个模式都会影响 `ResourcesKey` 命中率，但不改变 `shouldRelaunchLocked()` 的判定逻辑
+- AOSP 不规定三星 Fold / Pixel Fold 在折叠时必须按某个固定顺序更新 size、density 或 logical display；设备差异需要用实机 trace 和 `dumpsys display` 确认
+- 如果 trace 中出现 `handleRelaunchActivity` / `ActivityRelaunchItem`，说明走了 Activity recreate；如果只有 `handleConfigurationChanged`，说明系统只做热派发
+- FixedRotation 是否介入要回到 `DisplayContent` / `WindowToken` 源码和窗口状态判断，不能仅凭设备型号下结论
 
 #### 多窗口 resize 的性能陷阱
 
@@ -616,13 +618,13 @@ private boolean shouldRelaunchLocked(int changes, Configuration changesConfig) {
 
 #### 3. Android 17 新机制：`enableLessActivityRecreationOnConfigChange`
 
-`AppCompatRecreateOnConfigChangePolicy#getRecreateConfigMask()` (`ARCOCP.java:71-86`) 引入**按需 recreate 决策**：当 flag 开启且 `ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE` meta-data 被声明时，系统扫描包内 `Configuration[] configs = packageResources.getResourceConfigurations()`，仅在包内同时存在以下限定符时才把对应变化加入强制 recreate 列表：
+`AppCompatRecreateOnConfigChangePolicy#getRecreateConfigMask()` (`AppCompatRecreateOnConfigChangePolicy.java:71-86`) 引入**按需 recreate 决策**：当 `enableLessActivityRecreationOnConfigChange` flag 开启且 `ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE` compat change 生效时，包解析阶段会把未写入 `android:recreateOnConfigChanges` 的冷门配置变化默认并入 `configChanges` skip mask；随后系统扫描包内 `Configuration[] configs = packageResources.getResourceConfigurations()`，只把包内确实存在资源限定符的变化重新加入强制 recreate 列表：
 
 - `CONFIG_KEYBOARD` / `CONFIG_KEYBOARD_HIDDEN` / `CONFIG_NAVIGATION` / `CONFIG_TOUCHSCREEN` / `CONFIG_COLOR_MODE`
 
-`density` / `screenSize` / `smallestScreenSize` / `uiMode` **不在扫描范围**，意味着开发者即使没声明 `configChanges`，仅靠这四个维度的变化也会走 hot path 派发（前提是 App 启用了对应的 meta-data flag）。
+`density` / `screenSize` / `smallestScreenSize` / 常规 `uiMode` **不在这套默认 skip + 按需 recreate 范围内**。这些变化仍要依赖 Manifest 中的 `configChanges`、桌面模式 `uiMode` 特例或 display compat policy；没有声明时不能假定会走 hot path 派发。
 
-工程含义：很多 App 因为没声明 `configChanges` 会在切换字体大小、键盘弹出等冷门维度时 recreate；Android 17 这一改动可减少约 20-40% 的非必要 recreate（基于内部统计，待实测验证）。
+工程含义：Android 17 主要减少外接/硬件键盘、导航设备、触控能力、colorMode 等冷门配置变化导致的非必要 recreate；字体大小、screenSize、density、locale 仍要按各自的 Configuration 位单独判断。
 
 #### 4. ResourcesManager 的 seq 早出与 override 合并
 
@@ -643,9 +645,9 @@ for (int i = mResourceImpls.size() - 1; i >= 0; i--) {
 
 #### 5. FixedRotation 当前链路（不触发 recreate）
 
-`DisplayContent#applyFixedRotationForNonTopVisibleActivityIfNeeded()` (`DC.java:2155-2270`)：折叠/旋转时，若主 Activity 透明且下面的 Activity 锁定不同方向，DisplayContent 直接给非 top Activity 的 WindowToken 加 `FixedRotationTransformState`（`WindowToken.java:116-142`）做绘制变换。`WindowToken.hasFixedRotationTransform()` 返回 `mFixedRotationTransformState != null`。整条链路**不经过 `ActivityRecord.shouldRelaunchLocked()`**——FixedRotation 只影响 Surface 变换矩阵，不影响 Configuration。
+`DisplayContent#applyFixedRotationForNonTopVisibleActivityIfNeeded()` (`DisplayContent.java:2171-2235`)：折叠/旋转时，若 top Activity 不透明度和方向条件满足，DisplayContent 会给非 top Activity 的 WindowToken 加 `FixedRotationTransformState`（`WindowToken.java:116-142`）做旋转兼容。`WindowToken.hasFixedRotationTransform()` (`WindowToken.java:414-416`) 返回 `mFixedRotationTransformState != null`。这条链路不经过 `ActivityRecord.shouldRelaunchLocked()`，但 `WindowToken#onFixedRotationStatePrepared()` 会触发 token 的 rotated configuration 派发；它影响的是旋转后的窗口配置与 Surface 变换，不等于 Activity recreate。
 
-可对照 trace：在 Perfetto 中 `DC#applyFixedRotationForNonTopVisibleActivityIfNeeded` 与 `WindowToken#linkFixedRotationTransform` 是一对关联 slice；若 recreate 路径上有 `ActivityRelaunchItem`，则一定不是 FixedRotation 引起。
+可对照 trace：默认 Perfetto 不一定会出现 `applyFixedRotationForNonTopVisibleActivityIfNeeded` 或 `linkFixedRotationTransform` 这样的 Java 方法名 slice，除非启用了对应方法跟踪或额外 trace 点。实战中先用 `handleRelaunchActivity` / `ActivityRelaunchItem` 区分 recreate，再结合 WindowManager 日志或源码路径判断 FixedRotation 是否参与。
 
 #### 6. `handleRelaunchActivityInner()` 的 destroy + create 顺序
 
@@ -665,6 +667,6 @@ handleLaunchActivity(r, pendingActions, mLastReportedDeviceId, customIntent);  /
 
 1. **声明 `configChanges` 但用 `requestLayout()` 替代 View 重建**：在 `onConfigurationChanged()` 中只调 `View#requestLayout()` / `View#invalidate()` 比整个 Activity recreate 快 5-10x（Perfetto trace 中 `handleRelaunchActivityInner` 一次典型 80-180ms vs `onConfigurationChanged + requestLayout` 5-20ms）。
 2. **Android 17 折叠屏适配**：声明 `configChanges="orientation|screenSize|smallestScreenSize|screenLayout"` 是首选；不声明会被 `displayCompatPolicy.getDisplayCompatModeConfigMask()` 加 mask，但仍可能在非 compat 模式下 recreate。
-3. **避免 manifest 把 `configChanges` 写全**：Android 17 `enableLessActivityRecreationOnConfigChange` 会按需扫描资源限定符——App 完全不写 `configChanges` 在大多数场景下也能避免不必要 recreate（前提是开启对应 meta-data）。
+3. **避免 manifest 把 `configChanges` 写全**：Android 17 `enableLessActivityRecreationOnConfigChange` 只覆盖外接/硬件输入和 colorMode 等冷门配置位；screenSize、density、locale、普通 uiMode 仍要显式声明并在 `onConfigurationChanged()` 中处理。
 4. **资源限定符补齐**：如果 App 内确实有 `values-night` / `values-w600dp` / `values-zh-rCN` 等多套资源，必须意识到切换 locale 或主题时会触发 recreate；不要在 `onSaveInstanceState` 中序列化大对象。
-5. **FixedRotation vs recreate 区分**：折叠屏展开/折叠后看到 Activity 视觉旋转但 trace 没有 `ActivityRelaunchItem`，就是 FixedRotation 在工作；不要误判为性能问题。
+5. **FixedRotation vs recreate 区分**：折叠屏展开/折叠后看到 Activity 视觉旋转但 trace 没有 `ActivityRelaunchItem`，只能说明没有走 Activity recreate；FixedRotation 是否参与要继续看 WindowManager 日志、窗口层级和 `DisplayContent` / `WindowToken` 路径。
