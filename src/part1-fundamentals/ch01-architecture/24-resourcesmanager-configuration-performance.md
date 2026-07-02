@@ -5,7 +5,7 @@ status: ready-for-review
 drafted_date: "2026-06-04"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-30"
-last_verified_against: "AOSP android-17.0.0_r1 ActivityRecord/ATMS/ResourcesManager/ConfigurationController/ActivityThread/AppCompatRecreateOnConfigChangePolicy + DisplayContent/WindowToken FixedRotation 链路"
+last_verified_against: "AOSP android-17.0.0_r1 ActivityRecord/ATMS/ResourcesManager/ConfigurationController/ActivityThread/AppCompatRecreateOnConfigChangePolicy + DisplayContent/WindowToken FixedRotation 调用路径"
 confidence: medium
 sources:
   - type: aosp
@@ -28,8 +28,8 @@ created_date: "2026-06-04"
 gap_source: "研究素材+AOSP结构"
 gap_score: 16
 gap_score_detail: "素材丰富度 3 | 相关性 4 | 读者需求度 4 | 时效性 5"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
@@ -39,11 +39,12 @@ last_task9_at: 2026-07-02T13:20:00+08:00
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-last_task6_at: 2026-06-30T18:12:00+08:00
+last_task6_at: "2026-07-02T21:14:26+08:00"
 last_task9_autofix_at: "2026-07-02"
 last_task9_audit: "2026-07-02"
 last_task9_audit_log: "logs/deep-review/2026-07-02-13-audit.md"
 last_task9_review_log: "logs/deep-review/2026-07-02-13-audit.md"
+task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2 (post-Task9 autofix): pass-light-edit. L1 fix: banned word 链路 x4 in body + x1 in frontmatter -> 路径/调用路径. Task9 idle audit auto-fixed enableLessActivityRecreationOnConfigChange scope, recreateOnConfigChanges compat change boundary, FixedRotation trace判定边界. L2: structure intact, outline 9/9 anchors covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
 task9_review_notes: "2026-06-30 Task9 复审通过: Android 17 ResourcesManager/Configuration/FixedRotation/Compose 状态边界已按源码和官方行为限定复核，无新增 P0/P1。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Android 17 enableLessActivityRecreationOnConfigChange 适用范围、recreateOnConfigChanges/compat change 边界、FixedRotation 与 Perfetto trace 判定边界；回到 Task6 复审。"
 task9_p0_issues: 2
 task9_p1_issues: 0
@@ -439,7 +440,7 @@ Android 15 引入 16KB page size 支持（详见 4.7 节）。对资源加载的
 
 - 在 Perfetto 中定位 Configuration 变更卡顿：看 `handleRelaunchActivity` 的耗时和帧延迟模式，区分 recreate 瓶颈（inflate / onSaveInstanceState 序列化）和 layout 瓶颈
 - 理解 ResourcesManager 的 ResourcesKey → ResourcesImpl 缓存复用机制，知道什么场景会产生多个 Resources 实例
-- 梳理 `AMS.updateConfiguration()` → `WindowProcessController.dispatchConfiguration()` → `ActivityRecord.shouldRelaunchLocked()` 的完整链路
+- 梳理 `AMS.updateConfiguration()` → `WindowProcessController.dispatchConfiguration()` → `ActivityRecord.shouldRelaunchLocked()` 的完整路径
 - 评估一次 Activity recreate 的耗时分布：onSaveInstanceState 序列化 → View 树重建 → measure/layout/draw 各阶段占比
 - 正确配置 `configChanges`：理解每种值的真实处理难度，知道 Android 17 大屏场景下的强制边界
 - 用 `ViewModel` + `rememberSaveable` 跨 Configuration 变更保持状态，减少不必要的数据重建
@@ -549,7 +550,7 @@ Compose 页面仍要按 Manifest / `ActivityRecord.shouldRelaunchLocked()` 的�
 
 ### 🔹 Android 17 Configuration 派发与 Relaunch 判定源码级验证
 
-基于 `android-17.0.0_r1` AOSP 源码对 ATMS / ResourcesManager / ActivityRecord 的 Configuration 派发链路进行完整链路验证。要点如下：
+基于 `android-17.0.0_r1` AOSP 源码对 ATMS / ResourcesManager / ActivityRecord 的 Configuration 派发路径进行完整验证。要点如下：
 
 #### 1. ATMS 入口到 ActivityRecord 的完整调用链
 
@@ -643,9 +644,9 @@ for (int i = mResourceImpls.size() - 1; i >= 0; i--) {
 
 每个 `ResourcesImpl` 通过 `key.mOverrideConfiguration`（Activity 维度 override config）合并后再 `updateConfiguration()`——这是 multi-window / PiP 不同尺寸的关键：`ActivityRecord.getMergedOverrideConfiguration()` 在 `updateReportedConfigurationAndSend()` 内被读取并下发给 `scheduleConfigurationChanged()`，保证 Activity 拿到的是「全局 + Activity override」合并后的 Configuration。
 
-#### 5. FixedRotation 当前链路（不触发 recreate）
+#### 5. FixedRotation 当前调用路径（不触发 recreate）
 
-`DisplayContent#applyFixedRotationForNonTopVisibleActivityIfNeeded()` (`DisplayContent.java:2171-2235`)：折叠/旋转时，若 top Activity 不透明度和方向条件满足，DisplayContent 会给非 top Activity 的 WindowToken 加 `FixedRotationTransformState`（`WindowToken.java:116-142`）做旋转兼容。`WindowToken.hasFixedRotationTransform()` (`WindowToken.java:414-416`) 返回 `mFixedRotationTransformState != null`。这条链路不经过 `ActivityRecord.shouldRelaunchLocked()`，但 `WindowToken#onFixedRotationStatePrepared()` 会触发 token 的 rotated configuration 派发；它影响的是旋转后的窗口配置与 Surface 变换，不等于 Activity recreate。
+`DisplayContent#applyFixedRotationForNonTopVisibleActivityIfNeeded()` (`DisplayContent.java:2171-2235`)：折叠/旋转时，若 top Activity 不透明度和方向条件满足，DisplayContent 会给非 top Activity 的 WindowToken 加 `FixedRotationTransformState`（`WindowToken.java:116-142`）做旋转兼容。`WindowToken.hasFixedRotationTransform()` (`WindowToken.java:414-416`) 返回 `mFixedRotationTransformState != null`。这条路径不经过 `ActivityRecord.shouldRelaunchLocked()`，但 `WindowToken#onFixedRotationStatePrepared()` 会触发 token 的 rotated configuration 派发；它影响的是旋转后的窗口配置与 Surface 变换，不等于 Activity recreate。
 
 可对照 trace：默认 Perfetto 不一定会出现 `applyFixedRotationForNonTopVisibleActivityIfNeeded` 或 `linkFixedRotationTransform` 这样的 Java 方法名 slice，除非启用了对应方法跟踪或额外 trace 点。实战中先用 `handleRelaunchActivity` / `ActivityRelaunchItem` 区分 recreate，再结合 WindowManager 日志或源码路径判断 FixedRotation 是否参与。
 

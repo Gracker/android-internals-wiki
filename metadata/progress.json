@@ -227,7 +227,8 @@
         "1.25"
       ],
       "type": "task6-revisiting"
-    }
+    },
+    "2026-07-02-21-review.md"
   ],
   "task2b_verifier": {
     "last_run": "2026-07-02T19:34:00+08:00",
@@ -323,5 +324,11 @@
     "finalized": 336,
     "ready_to_publish": 0,
     "total": 550
-  }
+  },
+  "last_task6_review": "2026-07-02T21:14:40+08:00",
+  "last_task6_reviewed_sections": [
+    "1.14",
+    "1.24",
+    "1.25"
+  ]
 }
