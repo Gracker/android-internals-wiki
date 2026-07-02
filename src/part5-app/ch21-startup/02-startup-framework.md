@@ -2,7 +2,7 @@
 title: "启动框架设计与任务编排"
 chapter: "21.2"
 section: "21.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
 last_verified_against: "AOSP android-17.0.0_r1, Jetpack App Startup 1.2.0 sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)"
@@ -26,8 +26,11 @@ sources:
     path: "github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+last_task6_at: "2026-07-02T22:09:00+08:00"
+last_task6_review_log: "logs/review/2026-07-02-22-review.md"
+task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 fix×1 (真正→删). L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -521,7 +524,7 @@ awaiter.await(criticalTasks, () -> {
 
 **陷阱 1：把"消除 ContentProvider 的数量"当作优化目标**
 
-App Startup 的设计初衷是收敛多个 SDK 各自注册的 ContentProvider 为一个。但"ContentProvider 多"本身不是性能问题——Android 文档明确描述了 multiple ContentProvider 初始化的开销。真正的优化目标是缩短从 `Application.attachBaseContext` 到首帧的 wall-clock time。把 10 个轻量 ContentProvider 合并成 1 个 App Startup Initializer，如果所有初始化都在主线程串行执行，启动耗时不会减少。减少的是系统为每个 Provider 创建进程中 jni/jit 开销，以及 Manifest 解析耗时。
+App Startup 的设计初衷是收敛多个 SDK 各自注册的 ContentProvider 为一个。但"ContentProvider 多"本身不是性能问题——Android 文档明确描述了 multiple ContentProvider 初始化的开销。优化目标是缩短从 `Application.attachBaseContext` 到首帧的 wall-clock time。把 10 个轻量 ContentProvider 合并成 1 个 App Startup Initializer，如果所有初始化都在主线程串行执行，启动耗时不会减少。减少的是系统为每个 Provider 创建进程中 jni/jit 开销，以及 Manifest 解析耗时。
 
 正确做法：先通过 Perfetto trace 确认哪些初始化步骤是启动瓶颈，再决定迁移哪些、并发化哪些。不要为了"统一入口"把本来可以并发的东西串行化。
 

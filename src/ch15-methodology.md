@@ -1,19 +1,23 @@
 ---
 title: Android 性能优化研究方法论
 chapter: "15"
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8-17 (API 26-37)
 last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 tags:
 - methodology
 task9_result: auto-fixed
-task6_result: needs-rework
-task6_state: revisiting
+task6_result: pass-light-edit
+task6_state: reviewed
+last_task6_at: "2026-07-02T22:09:00+08:00"
+last_task6_review_log: "logs/review/2026-07-02-22-review.md"
+task6_review_notes_final: "2026-07-02 Task6 revisiting-review round3 (post-Task2B-structural): pass-light-edit. L1 fix×3 (关键是→要, 链路→链, 舒服→自我安慰). L2 pass. No B-class issues. Auto-promoted: task9=pass, queue=completed."
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_lite_at: "2026-06-27"
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。"
 last_task9_audit: "2026-07-02"
@@ -68,7 +72,7 @@ PDCA（Plan-Do-Check-Act）在性能优化里对应具体的动作。
 - Check：对比优化前后的相同指标。不能只看一次——至少跑三天，覆盖不同时段、网络、电量状态。单次 2s 降到 1.5s 不代表上线后一直是这样。
 - Act：效果达标就固化方案、更新基线；效果不达标就回退、分析为什么没生效，进入下一轮。
 
-这个循环能转起来的前提是"做的改动有数据反馈"。如果采集不到变更前后的数据差异，"优化"之后说"感觉快了"只是在舒服自己的决策。
+这个循环能转起来的前提是"做的改动有数据反馈"。如果采集不到变更前后的数据差异，"优化"之后说"感觉快了"只是在自我安慰。
 
 ### 2.2 三类研究方法，各有各的着力点
 
@@ -148,7 +152,7 @@ adb shell perfetto --attach=my_trace --stop
 
 - 启动性能：冷启动 100% 采样。冷启动次数天然少（用户一天也就几次），少一个样本就可能漏掉关键退化。每个冷启动都采集 trace、记录所有阶段耗时。
 - 流畅度：按设备档位分层采样。高端/中端/低端分开统计，framedrop 的触发模式在这三档差别很大——混在一起看平均值会掩盖低端机的真实体验。
-- 内存：按生命周期节点采样。启动完成、进入关键页面、退出后台、OOM 前的快照比连续采样更有意义。关键是把峰值前后的对象分配轨迹抓下来，而不是只看时刻点的 PSS。
+- 内存：按生命周期节点采样。启动完成、进入关键页面、退出后台、OOM 前的快照比连续采样更有意义。要把峰值前后的对象分配轨迹抓下来，而不是只看时刻点的 PSS。
 - 网络：按网络类型分层。WiFi、4G、5G 的 RTT 和吞吐量差了一个数量级，混在一起得到的"平均网络耗时"没有任何优化指导意义。
 - 电量：按电池状态和系统状态采集。电量 80% 以上 vs 20% 以下，充电中 vs 未充电，前台 vs 后台——同一个网络请求的功耗成本完全不同。
 
@@ -303,7 +307,7 @@ Call Stack / Flame Graph 分析：火焰图看宽度——宽的地方就是热�
 
 内存优化：引用释放——匿名内部类持有外部 Activity 引用是最常见的泄漏源。数据结构选型——`HashMap` vs `SparseArray` 对 int key 场景的内存差异显著。缓存策略——LRU 的容量不是拍脑袋定，是按"应用在前台期间可能访问到的最大缓存集"反推出来的。
 
-网络优化：减少请求次数（聚合接口、GraphQL）、协议升级（HTTP/2 多路复用替代 HTTP/1.1 的六连接限制）、头部压缩（HPACK/QPACK）。但协议升级有迁移成本——换 HTTP/2 之前先确认接入层是否支持、客户端的证书链路是否兼容。
+网络优化：减少请求次数（聚合接口、GraphQL）、协议升级（HTTP/2 多路复用替代 HTTP/1.1 的六连接限制）、头部压缩（HPACK/QPACK）。但协议升级有迁移成本——换 HTTP/2 之前先确认接入层是否支持、客户端的证书链是否兼容。
 
 ## 7. 效果验证
 
