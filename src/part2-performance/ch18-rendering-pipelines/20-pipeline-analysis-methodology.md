@@ -3,7 +3,7 @@ title: "\"渲染管线分析方法论\""
 chapter: "\"18.20\""
 section: "\"18.20\""
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: task6_pending
 applicable_versions: "\"Android 9 (API 28) - Android 17 (API 37)\""
 tags: ["方法论", "渲染管线", "Perfetto", "dumpsys", "诊断", "BufferQueue", "性能分析"]
 reviewed_date: "\"2026-04-25\""
@@ -12,24 +12,31 @@ path: "\"frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp\""
 related_chapters: "[\"18.1\", \"2.6\", \"13.5\", \"15.1\", \"18.13\", \"18.14\", \"18.15\"]"
 created_by: "\"rendering-pipelines-merge\""
 created_date: "\"2026-04-09\""
-task6_state: "\"reviewed\""
-task9_state: "reviewed"
-task2b_state: "fixed"
+task6_state: revisiting
+task9_state: reviewed
+task2b_state: fixed
 task6_result: "pass-light-edit"
-task9_result: "pass-tech-review"
+task9_result: auto-fixed
 task9_reviewed_date: "\"2026-05-21\""
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "\"2026-05-21T07:34:33+08:00\""
+last_task9_at: 2026-07-03T02:24:40+08:00
 task2b_result: "fixed"
 repaired_date: "\"2026-04-24\""
 repaired_by: "\"openclaw-task2b\""
 last_task2b_at: "\"2026-05-21T07:17:00+08:00\""
 last_task6_audit: "\"2026-05-20\""
-last_task9_audit: "2026-06-28"
-last_task9_audit_at: "2026-06-28T09:42:31+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-28-09-audit.md"
+last_task9_audit: 2026-07-03
+last_task9_audit_at: 2026-07-03T02:24:40+08:00
+last_task9_audit_log: logs/deep-review/2026-07-03-02-audit.md
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
+last_task9_autofix_at: 2026-07-03
+updated_by: openclaw-task9
+updated_date: 2026-07-03
+p0: 0
+p1: 1
+p2: 0
+task9_review_notes: "2026-07-03 Task9 idle-audit AUTO-FIX: P1 版本差异 1 处；18.20 快速判断清单的 Flutter 观察点从旧 UI/Raster/Platform 口径修正为 Flutter 3.32 stable+ Main(UI+Platform)/Raster/IO，3.31- 或定制 Embedder 才看 UI/Platform 分离；详见 logs/deep-review/2026-07-03-02-audit.md。"
 ---
 
 <!-- outline-start -->
@@ -69,7 +76,7 @@ last_deepseek_cn_review_at: 2026-06-24
 | 视频播放（全屏） | 18.15 Video Overlay + HWC | `SurfaceView` 独立 Layer + HWC composition |
 | 视频（内嵌页面） | 18.13 WebView + 18.7 TextureView | `Invoke Functor` 或 `updateTexImage` |
 | Camera 预览 | 18.14 Camera 管线 | `cameraserver` / vendor camera + preview Layer |
-| Flutter 应用 | 18.12 Flutter 渲染路径 | UI / Raster / Platform 线程 |
+| Flutter 应用 | 18.12 Flutter 渲染路径 | Flutter 3.32 stable+ 看 Main(UI+Platform) / Raster / IO；3.31- 或定制 Embedder 再看 UI / Platform 分离 |
 | 游戏（Unity / Unreal） | 18.16 游戏引擎渲染路径 | UnityMain / RenderThread / RHI thread |
 | 离屏渲染（Android 14+） | 18.17 HardwareBufferRenderer | `HardwareBufferRenderer` draw 提交 + `setBuffer()` |
 | PiP / Freeform | 18.18 多窗口渲染 | WM Shell transition + `QueuedBuffer - ...BLAST#...` |
