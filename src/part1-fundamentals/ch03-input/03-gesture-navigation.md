@@ -71,7 +71,7 @@ task2b_state: fixed
 task2b_result: fixed
 task9_review_notes: "2026-07-02 Task9 idle audit auto-fix: 用 AOSP android-17.0.0_r1 复核 EdgeBackGestureHandler / InputDispatcher / DisplayContent / OnBackInvokedDispatcher，将主线源码锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1，并补充 API 36 FlaggedApi / API 37 observer 限制边界；回到 Task6 复审。 | 2026-04-30 16:20 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；queue 无 pending，已自动晋升 finalized / ready-to-publish。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-07-02
 ---
 
 # 3.3 手势导航与系统交互
@@ -101,7 +101,7 @@ last_deepseek_cn_review_at: 2026-05-31
 
 ## 为什么要了解手势导航
 
-如果我们在 Perfetto 中看到用户的一次触摸操作从 InputDispatcher 发出后，App 端迟迟没有收到对应的 MotionEvent，或者收到了但在 MainThread 上处理时间特别长，我们的第一反应可能是"App 卡了"或者"Input 管线出了问题"。但有一个可能性经常被忽略：**那次触摸事件被系统手势截获了**。
+在 Perfetto 里看到一次触摸操作从 InputDispatcher 发出后，App 端迟迟没收到对应的 MotionEvent——或者收到了但在主线程上处理了很久——第一反应通常是“App 卡了”或者“Input 管线出了问题”。但有一个可能性经常被忽略：**那次触摸事件被系统手势截获了**。
 
 Android 10 引入的全屏手势导航（Gesture Navigation）改变了用户与系统的交互方式。Home 键变成了底部上滑，最近任务变成了底部悬停，而返回键则变成了从屏幕两侧边缘向内滑动。这些手势不是由 App 处理的，而是由系统在 App 之前拦截的。理解这套机制，对性能分析有直接的影响：当我们分析一次"卡顿"或"无响应"时，我们需要知道事件是被系统拿走了，还是没有送达 App。
 
@@ -201,7 +201,7 @@ Predictive Back 把时序往前挪了。系统在手势进行中就要知道返�
 
 ### Predictive Back 的回调模型
 
-回调层级可以分成 platform API 和 AndroidX API 两层。
+回调接口分两层：platform API 和 AndroidX 兼容层，各有一组不同的类和版本约束。
 
 | 层级 | 接口 | 引入版本 | 可直接确认的方法 | 作用 |
 | --- | --- | --- | --- | --- |
@@ -221,13 +221,13 @@ App 端注册时，platform 走 `OnBackInvokedDispatcher`，AndroidX 走 `OnBack
 
 | Android 版本 | API | 系统动画状态 | manifest / activity 条件 | targetSdk / 兼容边界 | 回调与预览范围 |
 | --- | --- | --- | --- | --- | --- |
-| Android 13 | 33 | 官方文档给出的测试入口仍是开发者选项里的 predictive back animations。 | App 或 Activity 通过 `android:enableOnBackInvokedCallback` 管理 opt in / opt out。 | platform `OnBackInvokedCallback` 从这一版开始可用；未 opt in 的工程按 legacy path 看待更稳妥。 | 官方页面能直接确认 `OnBackInvokedCallback` 和 back-to-home 测试路径。 |
+| Android 13 | 33 | 官方文档仍将开发者选项中的 predictive back animations 作为测试入口。 | App 或 Activity 通过 `android:enableOnBackInvokedCallback` 管理 opt in / opt out。 | platform `OnBackInvokedCallback` 从这一版开始可用；未 opt in 的工程按 legacy path 看待更稳妥。 | 官方页面能直接确认 `OnBackInvokedCallback` 和 back-to-home 测试路径。 |
 | Android 14 | 34 | 系统动画测试仍和开发者选项绑定，文档没有把所有预览都写成默认行为。 | 条件和 Android 13 同一层。 | platform progress callback 从 API 34 开始；AndroidX 1.8.0 的 progress 方法也只有在 API 34+ 才会被 framework 调用。 | `OnBackAnimationCallback` 提供 started / progressed / cancelled。 |
 | Android 15 | 35 | 官方文档明确写到：developer option 不再承载 back-to-home、cross-task、cross-activity 系统动画，这些动画会对 opted-in 的 App 或 Activity 直接出现。 | 仍然要看 app / activity 是否 opt in；如果 Fragment back stack 或自定义回调还在消费返回，系统动画不会接管。 | 不把 targetSdk 单独写成唯一总开关，仍要和 opt in、回调消费状态一起判断。 | 系统级 back-to-home、cross-task、cross-activity 预览在文档里有了明确落点。 |
 | Android 16 | 36 | 动画基础延续 Android 15。 | 同上。 | `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 在 android-16.0.0_r1 `current.txt` 中仍带 `@FlaggedApi`。 | 可以注册 observer-only callback，但 API 36 同时存在一次只允许一个 observer callback 的限制。 |
 | Android 17 | 37 | 延续 Android 15+ 系统动画模型。 | 同上。 | `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 在 android-17.0.0_r1 公共 API 中已去掉 `@FlaggedApi`。 | observer-only callback 只观察系统级返回，不消费事件；API 37 起 observer callback 数量不再受 API 36 单实例限制。 |
 
-这张表故意没有把“targetSdk >= 某值就一定出现某种预览”写成硬编码结论。官方页面给出的锚点更可靠的部分，是 API 可用性、manifest / activity opt in，以及 Android 15 起系统动画默认展示范围的变化。
+这张表没有把“targetSdk >= 某值就一定出现某种预览”写成硬编码结论。官方页面给出的锚点更可靠的部分，是 API 可用性、manifest / activity opt in，以及 Android 15 起系统动画默认展示范围的变化。
 
 [已验证: 官方文档, https://developer.android.com/about/versions/13/features/predictive-back-gesture; API 参考, https://developer.android.com/reference/android/window/OnBackInvokedDispatcher]
 

@@ -61,7 +61,7 @@ p2: "0"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-01
+last_deepseek_cn_review_at: 2026-07-02
 last_task9_audit_log: "logs/deep-review/2026-07-01-14-audit.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
@@ -291,11 +291,11 @@ SurfaceFlinger:                     ←── 收到 Buffer + acquire fence
 
 ## RenderThread Bitmap 纹理上传--容易被忽视的帧时间陷阱
 
-当 RecyclerView 快速滑动、ImageView 加载大图、或任何包含 Bitmap 绘制的场景出现掉帧时,除了 measure/layout 耗时的经典分析方向,还有一个高频根因容易被忽略:**Bitmap 纹理上传(texture upload)**。
+RecyclerView 滑动掉帧、ImageView 大图加载卡顿——排查方向通常先看 measure/layout 耗时，但还有一个容易被忽略的高频根因：**Bitmap 纹理上传（texture upload）**。
 
 ### Bitmap 必须先成为 GPU Texture 才能被绘制
 
-Android 的硬件加速渲染管线中,通过 `Canvas.drawBitmap()` 绘制的 Bitmap 必须先以 GPU texture / image 形式存在于图形内存。Bitmap 的像素数据初始驻留在 CPU 堆内存(Java Heap 或 Native Heap),到 GPU 显存之间必须经过一次数据搬运--这就是纹理上传。
+Android 的硬件加速渲染管线中,通过 `Canvas.drawBitmap()` 绘制的 Bitmap 必须先以 GPU texture / image 形式存在于图形内存。Bitmap 像素数据一开始在 CPU 内存（Java Heap 或 Native Heap）里，要送进 GPU 显存就得搬一次数据——这就是纹理上传。
 
 ### syncFrameState 中的同步 upload
 
@@ -309,7 +309,7 @@ DrawFrameTask::run()
 ```
 `TreeInfo::prepareTextures` 是同步阶段里的状态开关,不是一个可调用方法;具体 Bitmap GPU upload 由 HWUI / Skia 纹理缓存路径完成。
 
-当 Bitmap 尚未上传到 GPU 时,`syncFrameState` 期间会触发同步 upload,在 Perfetto 中表现为 **"Upload `<w>x<h>` Texture"** Slice 出现在 syncFrameState 调用栈内。此 Slice 的耗时(几毫秒到几十毫秒不等)会直接阻塞 RenderThread,造成掉帧。
+当 Bitmap 尚未上传到 GPU 时,`syncFrameState` 期间会触发同步 upload,在 Perfetto 中表现为 **"Upload `<w>x<h>` Texture"** Slice 出现在 syncFrameState 调用栈内。该 slice 的耗时（几毫秒到几十毫秒）直接加在 RenderThread 上，超出帧预算就会掉帧。
 
 **1080p RGBA Bitmap 同步 upload 约 4-8ms,4K Bitmap 可达 20ms+**--这些数字直接叠加到帧时间,超出 16.67ms(60Hz)就会掉帧。
 
@@ -343,6 +343,8 @@ Texture 尺寸大于显示尺寸时,upload 开销浪费尤为明显--这是"图�
 本节讨论的 syncFrameState 阻塞点在 bitmap upload 场景下有了具体量化:一次 1080p Bitmap 的同步 upload 就可能贡献 4-8ms 的 RenderThread 阻塞。结合 §2.1 的整体渲染流水线理解,可以更准确地判断"掉帧是主线程 measure/layout 过重"还是"RenderThread 被 texture upload 阻塞"。
 
 [已验证: AOSP android-17.0.0_r1 `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`; `frameworks/base/libs/hwui/renderthread/CanvasContext.cpp`; `frameworks/base/graphics/java/android/graphics/Bitmap.java`; Android 14+ 历史行为参照; androidperformance.com - RenderThread Bitmap Upload; developer.android.com - Bitmap.prepareToDraw()]
+
+上面拆解了 MainThread 和 RenderThread 在各阶段的职责与常见瓶颈。下面把这些点落到 Perfetto 里，看怎么用 Trace 定位问题。
 
 ## 在 Perfetto 中的表现
 

@@ -80,7 +80,7 @@ task6_l3_l4_issues: 0
 last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-01
+last_deepseek_cn_review_at: 2026-07-02
 last_task9_audit: "2026-07-01 10:28:31"
 ---
 
@@ -116,7 +116,7 @@ last_task9_audit: "2026-07-01 10:28:31"
 
 ContentProvider 是 Android 四大组件中最「安静」的一个。日常开发中很少直接感知到它的存在，但它对性能的影响往往比直觉更大。做启动速度优化时，发现冷启动时间中有数十到数百毫秒无法解释的耗时，很可能就是 ContentProvider 在背后初始化了第三方 SDK。排查 ANR 时，看到 traces.txt 里有 `ContentProvider$Transport.query` 的栈帧，说明远端进程的数据库操作阻塞了主线程。
 
-理解 ContentProvider 的性能特征，要回答三个问题：**它在什么时候执行**（启动阶段，而且比 Application.onCreate 还早）、**它怎么跨进程传输数据**（Binder + 共享内存，有一套复杂但精巧的窗口机制）、**出问题时怎么在 Trace 里定位**（Binder track + provider publish / not-responding 日志）。搞清楚这三件事之后，后续就能在启动优化、ANR 排查、数据库性能调优中准确识别 ContentProvider 相关的问题。
+要理解 ContentProvider 的性能特征，关键是搞清楚三件事：**它在什么时候执行**（启动阶段，而且比 Application.onCreate 还早）、**它怎么跨进程传输数据**（Binder + 共享内存，有一套复杂但精巧的窗口机制）、**出问题时怎么在 Trace 里定位**（Binder track + provider publish / not-responding 日志）。搞清楚这三件事之后，后续就能在启动优化、ANR 排查、数据库性能调优中准确识别 ContentProvider 相关的问题。
 
 ## ContentProvider 在 Android 架构中的角色
 
@@ -360,7 +360,7 @@ ContentProvider 支持通过 `android:process` 属性声明在独立进程中运
 
 ### 多进程 ContentProvider 的适用场景与注意事项
 
-适用场景：
+适合把 Provider 放在独立进程的情况：
 - Provider 承载了重量级的数据操作（大数据库查询、文件 I/O），需要和主进程隔离
 - Provider 需要持续提供服务（如下载管理），主进程可能被系统回收
 - Provider 的内存使用量不可控（如第三方数据库缓存），需要独立进程避免影响主进程 OOM
