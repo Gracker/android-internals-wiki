@@ -1,584 +1,436 @@
 ---
 title: Android 性能优化研究方法论
-chapter: '15'
+chapter: "15"
 status: ready-for-review
 applicable_versions: Android 8-17 (API 26-37)
-last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档,
-  官方性能博客
+last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 tags:
 - methodology
 task9_result: auto-fixed
 task6_result: needs-rework
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed-lite
-last_task2b_lite_at: '2026-06-27'
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_lite_at: "2026-06-27"
+pipeline_stage: task6_pending
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。
-review_notes: '2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。'
-last_task9_audit: '2026-07-02'
-last_task9_at: '2026-07-02T17:27:39+08:00'
-last_task9_autofix_at: '2026-07-02'
-last_task9_review_log: 'logs/deep-review/2026-07-02-17-audit.md'
-last_idle_audit_at: '2026-07-02T17:27:39+08:00'
-deepseek_cn_review_state: needs-structure-rework
+review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。"
+last_task9_audit: "2026-07-02"
+last_task9_at: "2026-07-02T17:27:39+08:00"
+last_task9_autofix_at: "2026-07-02"
+task2b_fixed_at: "2026-07-02T20:56:40+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-02-17-audit.md"
+last_idle_audit_at: "2026-07-02T17:27:39+08:00"
 ---
 
 # Android 性能优化研究方法论
 
-本章将介绍 Android 性能优化的完整方法论，从研究框架到实际工具链。性能优化不是"玄学"，而是建立在可验证的方法论体系之上——明确问题定义、工具选择、数据采集、原因定位、方案设计、实施验证的完整流程。
+Android 性能优化的工作质量，取决于前面有没有把问题定义清楚、工具选对、数据采到位、根因追到底。没有这一层，后面的优化方案再漂亮也容易跑偏。
 
-## 1. Android 性能问题分类与优先级管理
+本章把性能优化的完整流程拆成几个阶段——从问题分类、工具选择、数据采集与分析，到根因定位、方案设计与效果验证。每个阶段有对应的决策框架和常见陷阱。
 
-### 1.1 性能问题的三重属性
+## 1. 性能问题分类与优先级管理
 
-处理性能问题时，从三个维度考量：
+### 1.1 问题面前的第一件事：定优先级
 
-- **影响范围**：影响用户数量的百分比（如某机型下的 10% 用户）
-- **严重程度**：问题的可感知程度（如启动延迟从 1s 增加到 3s）
-- **解决成本**：问题修复所需的开发资源和测试成本
+一个 App 同时面对的卡顿类问题可能有几十个——某机型下的滑动掉帧、特定页面的初始化慢、低端机 OOM。全部修不现实，但也不能靠直觉拍脑门。
 
-通过这三个维度构建优先级矩阵：高影响范围+高严重程度的问题为 P0，需要立即处理；影响范围小但严重程度高的问题为 P1，需要尽快处理；影响范围和严重程度都低的问题为 P2，按需处理。
+用三个维度做量化排序：影响范围（受影响的用户百分比）、严重程度（问题的可感知程度，比如从 60fps 掉到 30fps 还是 40fps）、解决成本（需要的研发人天和测试资源）。三角代入后得到一个优先级矩阵：
 
-### 1.2 性能问题分类框架
+- P0：高影响范围 + 高严重程度。启动慢、首页卡顿这类，立即投入。
+- P1：影响范围小但严重程度高。特定机型的 ANR，尽快安排。
+- P2：影响范围和严重程度都低。若干机型上偶发的微卡，排期解决。
 
-Android 性能问题可以按以下维度分类：
+排完之后，除非有新数据刷新，否则不要在修到一半时因为"这个看着也挺重要"临时换 target——P0 还没修完就去修 P1，等于两个都没修透。
 
-- **启动性能**：应用启动时间、冷启动、温启动、热启动
-- **流畅度**：帧率、卡顿、掉帧、UI 响应延迟
-- **内存性能**：内存占用、内存泄漏、内存增长、GC 频率
-- **网络性能**：加载时间、超时、重试、数据压缩率
-- **电池性能**：电量消耗、功耗异常、待机时长
-- **热稳定性**：长时间运行的性能衰减、温度过高降频
+### 1.2 分类框架：让问题先归档再动手
 
-## 2. Android 性能优化方法体系
+性能问题的分类框架是把排查路径标准化。拿到一个 issue 报告时，先归到这六类里：
 
-### 2.1 研究框架：PDCA 循环
+- 启动性能：冷启动、温启动、热启动各自的时间组成
+- 流畅度：帧率抖动、掉帧、UI 响应延迟
+- 内存：峰值占用、泄漏、碎片、GC 频率
+- 网络：总耗时 vs 分段耗时、超时模式、重试行为
+- 电量：待机消耗、前台耗电模型、后台网络唤醒
+- 热稳定性：温控降频后的性能衰减曲线
 
-Android 性能优化遵循 PDCA（Plan-Do-Check-Act）循环。四个阶段构成一个可重复的闭环：
+归完之后不要急着看代码。先确认同类问题在当前线上的分布——同一个卡顿 issue，是 80% 的用户都在某个 Activity 遇到，还是千分之一的低端机才有。这个数据决定后面投入的力度。
 
-- **Plan（计划）**：定义问题、选择工具、制定方案
-- **Do（执行）**：实施优化方案
-- **Check（检查）**：采集性能数据、对比优化前后效果
-- **Act（行动）**：标准化有效方案、处理异常情况
+## 2. 优化方法体系：问题到验证的完整循环
 
-这个循环保证了优化过程的科学性和可重复性。
+### 2.1 PDCA 的实际用法
 
-### 2.2 研究方法体系
+PDCA（Plan-Do-Check-Act）在性能优化里对应具体的动作。
 
-研究方法分为三类，按需组合：
+- Plan：定义问题的量化指标（比如"冷启动从点击到首帧 < 1.5s"），选好对比基线（优化前同一机型同一版本的数据），确定采集工具。
+- Do：实施改动。每次只改一个变量——同时改启动框架 + 布局 + 网络策略，最后看数据变好了也不知道是哪个生效的。
+- Check：对比优化前后的相同指标。不能只看一次——至少跑三天，覆盖不同时段、网络、电量状态。单次 2s 降到 1.5s 不代表上线后一直是这样。
+- Act：效果达标就固化方案、更新基线；效果不达标就回退、分析为什么没生效，进入下一轮。
 
-#### 定性分析方法
-- 问题根因分析：使用 5W2H 方法（What、Why、When、Where、Who、How、How much）
-- 对比分析：不同设备、不同版本的性能对比
-- 场景分析：特定使用场景下的性能表现分析
+这个循环能转起来的前提是"做的改动有数据反馈"。如果采集不到变更前后的数据差异，"优化"之后说"感觉快了"只是在舒服自己的决策。
 
-#### 定量分析方法
-- 基准测试：建立性能基准线
-- 统计分析：使用统计方法识别异常点
-- 机器学习：使用机器学习模型预测性能问题
+### 2.2 三类研究方法，各有各的着力点
 
-#### 实验验证方法
-- A/B 测试：不同优化方案的对比
-- 灰度发布：小范围用户验证优化效果
-- 全量发布：优化方案验证后全量发布
+性能优化要解决的问题性质不同，用的方法也不同。
+
+定性分析对应"问题是什么"。5W2H 是简单好用的起点：What（什么指标异常）、Where（哪个页面/线程/机型）、When（版本发布时间点、是否有规律性）、Who（哪类用户）、Why（追因）、How（多严重）、How much（资源与时间成本）。很多排查跑偏是因为连 What 都没定清楚就开始翻代码。
+
+定量分析对应"问题有多大"。Perfetto 导出的 trace 里有精确到微秒的 slice 数据，trace_processor 跑 SQL 能把"某段线程阻塞了多少次、每次阻塞了多久"变成一张表。统计方法派上用场是在数据已经结构化之后——先有 clean 的 trace 数据或线上指标，再谈 3σ 异常检测或趋势分析。
+
+实验验证对应"这个解法是否改善了目标指标"。A/B 测试或灰度是最后的闸口，做完优化后象征性地对一下数字还不够。验证要回答三个问题：目标指标有改善（比如 frame deadline miss 减少）、副作用在可接受范围（比如电量没有明显上涨）、不同机型表现一致（不是高端机变快、低端机更慢）。
 
 ## 3. 性能分析工具与选择策略
 
-### 3.1 工具选型矩阵
+### 3.1 先看工具能回答什么问题，再看它叫什么名字
 
-根据不同的性能问题类型，我们需要选择合适的工具：
+工具表如果只列工具名和一句话描述，等于什么都没给。下面这张表把每个工具的观测能力对应到 Android 性能问题的实测对象上。
 
-| 问题类型 | 推荐工具 | 适用场景 | 优势 |
-|---------|---------|---------|------|
-| 启动性能 | Traceview | 启动过程分析 | 函数级时间分析 |
-| 流畅度 | Perfetto | 渲染管线分析 | 毫秒级帧时间分析 |
-| 内存性能 | Heap Tool | 内存泄漏检测 | 对象分配跟踪 |
-| 网络性能 | Network Profiler | 网络请求分析 | HTTP/HTTPS 详细分析 |
-| 电池性能 | Battery Historian | 电池使用分析 | 整体电池使用分析 |
-| 热稳定性 | Thermal Profiler | 温度监控 | 硬件温度监控 |
+| 工具 | 观测能力 | 什么场景用它 | 典型输出 |
+|---|---|---|---|
+| Perfetto | 系统级 tracer：ftrace trail、atrace 标签、heapprofd、java_hprof 等 30+ 数据源 | 渲染管线、Binder 调度、IO 路径、内存分配 | trace.perfetto-trace + SQL 查询结果 |
+| Android Studio Profiler | IDE 内置的 CPU/内存/网络实时采样 | 本地调试、快速复现问题时的第一站 | 方法火焰图、内存分配时间线 |
+| Battery Historian | 解析 bugreport 中的电量事件与唤醒锁 | 待机耗电、后台网络、WakeLock 持有 | 电量消耗时间线、UID 级别统计 |
+| LeakCanary | 检测 Activity/Fragment 引用泄漏 | 开发阶段的内存泄漏自动告警 | 泄漏链 + heap dump |
+| Network Profiler | HTTP/HTTPS 请求的时间线、状态码、字节数 | 单接口排查、请求瀑布流 | 请求甘特图 + 响应头/体 |
 
-### 3.2 工具版本演进与兼容性
+工具选对的标准：拿这个工具采集到的数据，能不能直接回答"性能异常到底发生在哪个阶段"。
 
-#### Android 8 工具选型
-**Android 8 (API 26) 不支持 Perfetto，必须使用 Systrace 作为主要 tracing 工具**。
+### 3.2 版本兼容性：不是"能不能跑"，而是"能采到什么级别"
 
-- Systrace：Android 8 下的标准 tracing 工具
-- Android Profiler：Android Studio 内置的性能分析工具
-- Heap Tool：内存分析工具
-- Network Profiler：网络分析工具
+Android 各版本的 tracing 能力不一样。下面按版本交代清楚每个阶段采得到什么、采不到什么。
 
-Android 8 下的优化重点在于：
-- 减少启动时间和初始化过程
-- 优化 UI 响应性
-- 控制内存使用
+**Android 8 (API 26)**：核心 tracing 工具是 Systrace。AOSP 此版本不含 Perfetto，必须用 Systrace 的 atrace 标签体系（`sched`、`gfx`、`view`、`wm`、`am`），搭配 Android Studio Profiler 的 CPU/内存采样。采集粒度到函数级（Traceview），但做不到 Perfetto 那种跨进程 timeline 和 SQL 查询。
 
+```bash
+# Android 8 标准 trace 采集
+python systrace.py -t 10 -o trace.html gfx view wm am sched
+```
 
+**Android 9 (API 28)**：AOSP `external/perfetto/perfetto.rc` 已包含 `traced` / `traced_probes` service，默认 `disabled`。能否启用取决于设备厂商是否把 `persist.traced.enable` 设为 1。启用了就可以用 `perfetto` CLI 采集，不启用就退回到 Systrace。
+
+```bash
+# 确认 Perfetto service 状态
+adb shell getprop persist.traced.enable
+# 如返回空或 0，尝试手动触发（需 root 或 debug build）
+adb shell setprop persist.traced.enable 1
+```
+
+**Android 10-13 (API 29-33)**：Perfetto 成为系统 tracing 主入口，Systrace 逐步废弃。标准 AOSP 通过 `persist.traced.enable=1` 启动后台 service。`perfetto` CLI 支持 `-t`、`-b`、`-o` 以及 `sched/sched_switch` 等数据源名称。
+
+```bash
+# 10 秒 trace，32MB buffer
+adb shell perfetto -t 10s -b 32mb -o /data/misc/perfetto-traces/trace.pftrace sched/sched_switch gfx
+```
+
+**Android 14-17 (API 34-37)**：Perfetto CLI + traced service 的组合完全替代 Systrace。长时采集用 `perfetto -d`（后台 detach 模式）配合 `--attach` / `--detach`。`traced` 自身只接受服务端选项（`--background`、`--version`、`--set-socket-permissions`），不要给它传 `-b` 或 `--async`。
+
+```bash
+# 长时后台采集
+adb shell perfetto -d -t 30s -b 64mb -o /data/misc/perfetto-traces/long_trace.pftrace sched gfx view wm
+
+# 后台 detach 后可用 --attach 拿回结果
+adb shell perfetto --attach --stop
+```
 
 <!-- AIW-源码调研-2026-07-02 -->
-**⚠️ 重要源码级修正**（2026-07-02 基于 AOSP android-17.0.0_r1 验证）：
+**源码验证（基于 AOSP android-17.0.0_r1）**：
 
-AOSP android-17.0.0_r1 的 `external/perfetto/perfetto.rc` 中，`traced`、`traced_relay`、`traced_probes` 三个 service 都是 `disabled`。标准 AOSP 通过 `persist.traced.enable=1` 的 init action 启动 `traced` / `traced_probes`，并创建 `/data/misc/perfetto-traces`、`/data/misc/perfetto-configs`；Pixel 或厂商镜像可以通过 vendor init、DeviceConfig 或属性默认值覆盖这个边界。
+`external/perfetto/perfetto.rc` 中 `traced`、`traced_relay`、`traced_probes` 三个 service 均为 `disabled`。标准 AOSP 通过 `persist.traced.enable=1` 的 init action 启动 `traced` / `traced_probes`，同时创建 `/data/misc/perfetto-traces` 和 `/data/misc/perfetto-configs` 目录。Pixel 或厂商镜像可通过 vendor init、DeviceConfig 或属性默认值覆盖启用边界。
 
-采集 trace 的命令行入口是 `/system/bin/perfetto`，不是 `traced`。android-17.0.0_r1 `src/perfetto_cmd/perfetto_cmd.cc` 支持 `-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`；`src/traced/service/service.cc` 的 `traced` 只支持服务端选项（如 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`），没有 `-b` 或 `--async`。
+`src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`src/traced/service/service.cc` 中 `traced` 只处理 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`，不接受 `-b` 或 `--async`。
 
-#### Android 9+ 工具演进
+## 4. 数据采集与分析：从 raw data 到 actionable 结论
 
-**Android 9 开始包含 Perfetto 服务，但启用边界取决于系统镜像与设备配置**：
+### 4.1 采样策略：不同问题用不同采法
 
-- **Android 9 (API 28)**：AOSP `external/perfetto/perfetto.rc` 已包含 `traced` / `traced_probes`，但 service 默认 `disabled`；该版本使用 `sys.traced.enable_override` 映射到 `persist.traced.enable`。
-  ```bash
-  # Android 9 如需手动启用 Perfetto 服务，优先通过属性触发 init action
-  adb shell setprop persist.traced.enable 1
-  ```
+采样不是采得越多越好——采样策略取决于问题类型的自然发生频率和单个样本的价值。
 
-- **Android 10-13 (API 29-33)**：Perfetto CLI 与 tracing service 逐步成为系统 tracing 主入口；标准 AOSP 仍通过 `persist.traced.enable=1` 启动后台 service，设备默认值由系统配置决定。
-  ```bash
-  # 采集入口是 perfetto CLI，-b 是 perfetto 的 buffer 参数
-  adb shell perfetto -t 10s -b 32mb -o /data/misc/perfetto-traces/trace.perfetto-trace sched/sched_switch
-  ```
+- 启动性能：冷启动 100% 采样。冷启动次数天然少（用户一天也就几次），少一个样本就可能漏掉关键退化。每个冷启动都采集 trace、记录所有阶段耗时。
+- 流畅度：按设备档位分层采样。高端/中端/低端分开统计，framedrop 的触发模式在这三档差别很大——混在一起看平均值会掩盖低端机的真实体验。
+- 内存：按生命周期节点采样。启动完成、进入关键页面、退出后台、OOM 前的快照比连续采样更有意义。关键是把峰值前后的对象分配轨迹抓下来，而不是只看时刻点的 PSS。
+- 网络：按网络类型分层。WiFi、4G、5G 的 RTT 和吞吐量差了一个数量级，混在一起得到的"平均网络耗时"没有任何优化指导意义。
+- 电量：按电池状态和系统状态采集。电量 80% 以上 vs 20% 以下，充电中 vs 未充电，前台 vs 后台——同一个网络请求的功耗成本完全不同。
 
-- **Android 14-17 (API 34-37)**：继续使用 `perfetto` CLI 与 `traced` service 组合。长时或后台采集应使用 `perfetto -d` / `perfetto -D` 或 `--detach` / `--attach`，不要写成 `traced -b` 或 `traced --async`。
+### 4.2 基准线的三条腿
 
-### 3.3 工具选择的具体策略
+性能优化从有基线开始。三类基准不是取一个就行，是互相校准。
 
-根据不同的 Android 版本选择合适的工具组合：
+绝对基准：应用自身的当前性能值。比如"冷启动 P50 1.8s，P99 4.2s"。没有这个，优化完只能说"好像快了点"。
 
-#### Android 8-9
-- **Tracing**：Android 8 使用 Systrace；Android 9 可使用 Perfetto，但标准 AOSP service 默认 `disabled`，需要按设备配置启用
-- **内存**：Heap Tool + Runtime.getRuntimeStats()
-- **网络**：Network Profiler + Charles/Fiddler
-- **电池**：Battery Historian + 自定义电量日志
+相对基准：同一个指标在上一版本的值。冷启动 P50 从 1.8s 变成 2.1s——这个变化比绝对值更能说明问题。相对基准的坑在于"上一版本"的采集条件必须和当前版本一致（同机型、同网络、同系统版本），否则对比没有意义。
 
-#### Android 10-13
-- **Tracing**：Perfetto 逐渐成为主要工具，Systrace 逐步废弃
-- **内存**：Heap Tool + LeakCanary 2.x
-- **网络**：Network Profiler + WebPcap
-- **电池**：Battery Historian + StatsD
+行业基准：同类应用在同一个性能维度上的表现。Google Play Android Vitals 给出的 ANR 率、启动时间、帧率阈值可以作为参考锚点。行业基准当红绿灯用——知道自己相对于基准是高还是低——不要精确对标，因为用户群、机型分布和对方大概率不一样。
 
-#### Android 14-17
-- **Tracing**：Perfetto 完全替代 Systrace
-- **内存**：Debug.MemoryInfo + LeakCanary 2.x
-- **网络**：StatsD 网络指标聚合
-- **电池**：StatsD 电池感知策略
+### 4.3 Perfetto trace_processor 实战：用 SQL 把 trace 变成结论
 
-## 4. 性能数据采集与分析方法
+Perfetto 的 trace 文件要用 `trace_processor` 解析才有诊断价值。下面给几个实战 SQL，覆盖最常见的"帧为什么掉"和"线程在等谁"两类场景。
 
-### 4.1 数据采集策略
+**查询卡顿帧的渲染流水线**
 
-#### 采样策略设计
-采样策略按问题类型设计：
+```sql
+-- 找出耗时超过 16ms 的帧，按耗时降序排列
+SELECT
+  ts,
+  dur / 1000000 AS dur_ms,
+  name
+FROM slice
+WHERE name GLOB '*Choreographer#doFrame*'
+  AND dur > 16000000
+ORDER BY dur DESC
+LIMIT 20;
+```
 
-- **启动性能**：100% 采样，启动次数少但每个都很重要
-- **流畅度**：按设备类型和用户行为采样
-- **内存性能**：按时间段采样（启动、使用、退出）
-- **网络性能**：按网络类型采样（WiFi、4G、5G）
-- **电池性能**：按电量状态采样（高电量、低电量、充电中）
+这个查询告诉"哪些帧慢了"，但不告诉"为什么慢"——Choreographer 的 doFrame 只是帧的入口计时器，慢的原因可能在它内部的任何一个子阶段。
 
-#### 数据采集周期
-- **实时采集**：帧率、内存使用率、CPU 使用率
-- **定期采集**：启动时间、网络请求耗时
-- **事件驱动采集**：崩溃、ANR、用户反馈
+**展开帧内各阶段耗时**
 
-### 4.2 数据分析方法
+```sql
+-- 展开一帧内部的各阶段：input、animation、traversal、draw
+SELECT
+  name,
+  dur / 1000000 AS dur_ms
+FROM slice
+WHERE track_id IN (
+  SELECT id FROM track
+  WHERE name GLOB '*Choreographer*'
+)
+  AND ts BETWEEN <frame_start_ns> AND <frame_end_ns>
+ORDER BY ts;
+```
 
-#### 基准线建立
-建立性能基准线是优化的第一步，三类基准缺一不可：
+把 `<frame_start_ns>` 和 `<frame_end_ns>` 换成上面第一句查出来的某帧时间戳，就能看到帧内 input 处理、animation、measure/layout、draw 各花了多少时间。如果绝大多数时间都耗在 draw 里，接下来就去查 RenderThread 的 GPU 提交。
 
-- **绝对基准**：应用性能指标的绝对值
-- **相对基准**：与历史数据的对比
-- **行业基准**：与同类应用的对比
+**主线程被 Binder 调用阻塞**
 
-#### 异常检测
-使用统计方法检测性能异常：
+```sql
+-- 找主线程中对 Binder 的阻塞等待
+SELECT
+  s.name AS blocked_call,
+  s.dur / 1000000 AS blocked_ms,
+  s.ts
+FROM slice s
+JOIN thread_track t ON s.track_id = t.id
+JOIN thread ON t.utid = thread.id
+WHERE thread.name = 'main'
+  AND s.name GLOB '*binder*'
+  AND s.dur > 5000000
+ORDER BY s.dur DESC;
+```
 
-- **3σ 原则**：超出平均值±3σ 的数据点为异常
-- **移动平均线**：计算移动平均线和标准差
-- **机器学习**：使用 Isolation Forest 等算法检测异常
+Binder 调用耗时超过 5ms 就会直接吃掉帧预算。这个查询把"哪些 Binder 调用拖慢了主线程"直接列出来。结合调用名就能判断是系统服务（SurfaceFlinger、AMS）慢了还是 App 自己的 Service 慢了。
 
-#### 趋势分析
-分析性能数据的长期趋势：
+**内存分配热点（需在 Perfetto config 中开启 heapprofd）**
 
-- **时间序列分析**：使用 ARIMA 模型预测趋势
-- **季节性分析**：识别周期性性能变化
-- **相关性分析**：不同性能指标之间的相关性
+```sql
+-- 按函数统计分配次数和大小
+SELECT
+  f.name AS function_name,
+  COUNT(*) AS alloc_count,
+  SUM(a.size) AS total_bytes
+FROM heap_profile_allocation a
+JOIN stack_profile_frame f ON a.callsite_id = f.callsite_id
+GROUP BY f.name
+ORDER BY total_bytes DESC
+LIMIT 20;
+```
 
-## 5. 性能问题根因分析方法
+heapprofd 需要在 Perfetto config 中显式开启。开启后 trace 里会包含每个 malloc/free 的调用栈，上面这条 SQL 直接给出 Top 20 内存分配函数。结合分配次数和总字节数，能找到"频繁小分配"和"偶尔大分配"两类不同的内存问题模式。
 
-### 5.1 根因分析框架
+### 4.4 数据分析的三个实用原则
 
-#### 5 Whys 方法
-通过连续提问"为什么"找到根本原因：
+先看分布，再看平均值。平均值掩盖离散度。启动 P50 1.5s 看起来不错，但如果 P99 是 8s，说明有长尾用户在糟糕的体验里——长尾通常是机型、网络或内存状态导致的。修长尾和修中位数是两套策略。
 
-1. **What**：发生了什么问题？
-2. **Why**：为什么会出现这个问题？
-3. **Why**：为什么会导致这个原因？
-4. **Why**：为什么会产生这个结果？
-5. **Why**：根本原因是什么？
+切分维度后再看趋势。按机型、系统版本、网络类型、时段分开后看指标变化。如果总体启动变快了但不分维度——可能是某款新机型占比提升拉低了 P50，而老机型的体验其实在退化。
 
-#### Fishbone 图
-按类别排查原因：人员操作、开发流程、技术架构与代码质量、设备与网络环境。
+异常值不要自动丢弃。P99.9 的极端值往往是某个机型组合触发了一个边界条件——不是随机的网络中断。单次 OOM 的 trace 比一百次正常的 trace 更有诊断价值。
 
-### 5.2 根因分析工具
+## 5. 性能问题根因分析
 
-#### Call Stack 分析
-使用 Call Stack 分析性能瓶颈：
+### 5.1 从现象到原因，中间缺的是可验证的步骤
 
-- **函数级分析**：识别耗时较长的函数
-- **调用链分析**：分析函数调用关系
-- **递归深度分析**：识别无限递归问题
+根因分析最常犯的错误：看到一个可疑的调用或者一个耗时的函数，就直接定性为"原因"。衡量标准——这个判断能不改代码就验证吗？
 
-#### 内存分析
-使用内存分析工具定位内存问题：
+5 Whys 的实际用法，用卡顿排查演示：
 
-- **对象分配分析**：识别频繁创建的对象
-- **内存泄漏分析**：识别无法回收的对象
-- **内存碎片分析**：识别内存碎片问题
+1. 为什么页面卡？→ 主线程 doFrame 超过 16ms
+2. 为什么 doFrame 超时？→ measure/layout 花了 11ms（正常情况下 3ms）
+3. 为什么 measure 突然变慢？→ 某个 View 的 onMeasure 被重复调用了 4 次
+4. 为什么重复调用？→ RecyclerView item 的动画触发了 parent 重新 measure，而 parent 的布局依赖链没有 cut
+5. 为什么动画会触发 parent 布局？→ item 动画改了 View 的 margin，margin 影响 parent 的测量尺寸
 
-## 6. 性能优化方案设计
+到第五层才定位到 root cause——不是"measure 太慢"，而是一个动画改了不该改的属性，导致布局依赖链被重新触发。每一层"为什么"都对应一个可以独立验证的检查点——查 trace、看调用栈、改代码做对照——而不是在脑子里推导。
 
-### 6.1 优化方案设计原则
+Fishbone（鱼骨图）的用法是从大类到具体线索的穷举框架。排查时按这几个分支列 checklist：人员（改动者、review 流程）、流程（CI 性能回归检查是否跑了、基线是否更新）、代码（最近提交的 diff、重构影响的模块边界）、环境（设备档位、系统版本、网络条件）。每一条线索要么验证通过、要么排除，不能靠感觉选。
 
-#### 20/80 原则
-80% 的性能问题通常发生在 20% 的代码中，优先优化这部分代码：
+### 5.2 两个高频排查手段
 
-- **热点代码优化**：识别并优化热点代码
-- **数据结构优化**：选择合适的数据结构
-- **算法优化**：使用更高效的算法
+Call Stack / Flame Graph 分析：火焰图看宽度——宽的地方就是热点。Perfetto trace 导出到 Flame Graph 工具后，先看占比最高的 3-5 个调用链，再逐个做"这条路是否合理"的判断。不需要修每一个 hotspot——只处理那些调用次数多、单次耗时也高的。
 
-#### 渐进式优化
-将优化分为多个阶段，逐步实施：
+内存分析：heap dump 看两个指标——retained size（这个对象及其引用子树占了多少内存）和 alloc count（这个类型的对象被分配了多少次）。retained size 大 + alloc count 高 = 内存泄漏或缓存设计不当。单独 retained size 大但 alloc count 低，通常是某次大对象分配后没释放，这时候看 GC root path。
 
-- **快速修复**：可以快速实施的小改进
-- **中期优化**：需要较多工作量的改进
-- **长期优化**：需要大规模重构的改进
+## 6. 优化方案设计
 
-### 6.2 优化方案类型
+### 6.1 20/80 法则在性能优化里的具体含义
 
-#### 启动优化方案
-- **布局优化**：减少布局层级、使用 ConstraintLayout
-- **代码优化**：减少启动时的逻辑处理
-- **资源优化**：延迟加载非必要资源
+代码 profiling 出来的热点图中，常常是 20% 的函数占了 80% 的执行时间。这不等于"找到热点就改热点"——还要问两个问题：这个热点能不能从路径上去掉（而不仅仅是优化它），以及优化这个热点会不会把瓶颈转移到另一个地方。
 
-#### 流畅度优化方案
-- **绘制优化**：减少过度绘制、使用硬件加速
-- **动画优化**：使用属性动画、避免过度动画
-- **线程优化**：避免主线程阻塞
+如果一个函数在主线程上耗时 12ms，直接把它拆到后台线程——这是去掉了路径上的热点。如果在原地用更快的算法把 12ms 优化成 6ms——瓶颈还在，只是变轻了。前者是结构性优化，后者是增量优化。优先前者。
 
-#### 内存优化方案
-- **内存管理**：及时释放资源、避免内存泄漏
-- **数据结构优化**：选择合适的集合类型
-- **缓存策略**：使用 LRU 策略管理缓存
+### 6.2 渐进式实施：三档分类法
 
-#### 网络优化方案
-- **网络请求优化**：减少请求次数、使用 HTTP/2
-- **数据压缩**：使用 GZIP、Protobuf
-- **缓存策略**：使用 HTTP 缓存、本地缓存
+三层不能只用工作量划分，要按风险和对局部体验的改善程度分：
 
-### 6.3 优化方案实施
+| 层级 | 典型内容 | 风险 | 验证周期 |
+|---|---|---|---|
+| 快速修复 | 单函数算法优化、不合理的同步锁去掉、冗余 measure 剪枝 | 低 | 一天内跑完灰度 |
+| 中期优化 | 线程模型调整、启动框架重构、缓存策略重设计 | 中 | 至少一周，覆盖周末流量波动 |
+| 长期优化 | 架构级改动（模块化拆分、渲染管线重构） | 高 | 按版本迭代，每步有回退方案 |
 
-#### 渐进式实施
-将优化方案分为多个阶段实施：
+快速修复不能攒一堆一起上线——看似"改很小"的三个改动放到同一次灰度里，出了问题无法定位是哪个。每次只推一个快速修复，验证通过再推下一个。中期和长期优化按版本节奏走，不用追求一次新版把所有优化都带上。
 
-1. **方案设计**：明确优化目标和预期效果
-2. **方案评审**：评估优化方案的可行性和风险
-3. **方案实施**：按照优先级分阶段实施
-4. **效果验证**：验证优化效果和副作用
-5. **方案标准化**：将有效的优化方案标准化
+### 6.3 常见优化手段的适用边界
 
-#### A/B 测试
-通过 A/B 测试验证优化效果：
+启动优化：布局层级裁剪（减少 `ViewGroup` 嵌套）、延迟初始化（非首屏模块的 `ContentProvider` 改为懒加载）、闪屏策略（避免空白窗口）。关键不是在 `Application.onCreate` 里多线程——多线程初始化如果依赖关系没理清，结果是把单线程的 1.5s 变成了多线程的 1.5s（总耗时没变，只是分散了）。
 
-- **对照组**：未优化的版本
-- **实验组**：优化后的版本
-- **效果评估**：对比两组的性能指标
+流畅度优化：减少过度绘制（开发者选项打开 GPU 过度绘制检测，确认红色区域）、硬件加速与软件绘制的边界处理（某些自定义 View 的 `onDraw` 在硬件加速关闭时走到不同路径）、RenderThread 的帧提交时机（VSync offset 配置不当会导致帧延迟一整拍）。
 
-## 7. 性能优化效果验证
+内存优化：引用释放——匿名内部类持有外部 Activity 引用是最常见的泄漏源。数据结构选型——`HashMap` vs `SparseArray` 对 int key 场景的内存差异显著。缓存策略——LRU 的容量不是拍脑袋定，是按"应用在前台期间可能访问到的最大缓存集"反推出来的。
 
-### 7.1 验证方法
+网络优化：减少请求次数（聚合接口、GraphQL）、协议升级（HTTP/2 多路复用替代 HTTP/1.1 的六连接限制）、头部压缩（HPACK/QPACK）。但协议升级有迁移成本——换 HTTP/2 之前先确认接入层是否支持、客户端的证书链路是否兼容。
 
-#### 对比测试
-在相同条件下对比优化前后的性能：
+## 7. 效果验证
 
-- **性能指标对比**：对比关键性能指标
-- **用户体验对比**：对比用户体验变化
-- **资源使用对比**：对比系统资源使用情况
+### 7.1 验证的铁三角
 
-#### 用户体验验证
-通过用户反馈验证优化效果：
+量化验证、对照验证、回归验证，三者缺一条都不是完整的验证。
 
-- **问卷调查**：收集用户对性能的反馈
-- **用户行为分析**：分析用户使用行为变化
-- **应用商店评分**：关注应用商店评分变化
+量化验证：优化前后的指标在相同条件下的数据差异。不是看一次对比，是至少 3 天的数据窗口期——覆盖工作日/周末、白天/深夜的流量模式差异。只看发布后 2 小时的指标看不出真实的改善幅度。
 
-### 7.2 验证指标
+对照验证：灰度发布时实验组和对照组的性能差异。对照的前提是分组随机（不能把新用户都放实验组、老用户都放对照组）且样本量够——P99 的差异需要比 P50 更大的样本量才有统计意义。
 
-#### 性能指标
-- **启动时间**：冷启动、温启动、热启动时间
-- **帧率**：平均帧率、卡顿次数
-- **内存使用**：内存占用、内存增长率
-- **网络耗时**：请求时间、响应时间
-- **电池消耗**：电量消耗率、待机时间
+回归验证：优化目标以外的指标有没有变差。启动快了但首页帧率掉了 5%，这个优化不合格。回归检查要自动化——每次性能改动后自动跑一遍所有性能用例，不是靠人工回忆"上次好像看过那个指标"。
 
-#### 用户体验指标
-- **用户满意度**：应用评分、评论内容
-- **用户留存率**：日留存率、周留存率
-- **用户活跃度**：日活跃用户数、使用时长
+### 7.2 指标选择：不只看平均，要分场景看分布
+
+- 启动时间：P50 和 P99 一起看。P50 决定多数用户的体验，P99 暴露长尾问题。
+- 帧率：不只看平均帧率——60fps 下如果每 60 帧掉 1 帧，平均还是 59fps，但用户看到的就是一秒一卡。用 frame deadline miss rate 或 Janky frame count 替代平均帧率。
+- 内存：峰值 PSS 和 GC 暂停次数。GC 导致的 stop-the-world 暂停如果超过 10ms，UI 线程就会被明显感知到。
+- 网络：分段耗时（DNS、connect、TLS、TTFB、body read）的 P50/P90/P99，而不是只看总耗时。
 
 ## 8. 性能优化知识管理
 
-### 8.1 知识积累
+### 8.1 问题库的价值：下次不用从零排查
 
-#### 问题库建设
-建立性能问题库，记录常见问题和解决方案：
+性能问题库的标准是：每次修完后把排查路径、证据链、根因和修复方式记录下来，而不是随手记一笔症状。一个条目至少包含：
 
-- **问题分类**：按问题类型分类
-- **解决方案**：记录有效的解决方案
-- **经验总结**：总结优化经验
+- 症状描述：用户/监控看到什么现象
+- 复现条件：机型/系统版本/网络/操作步骤
+- 排查路径：从哪个工具开始、看了什么数据、按什么顺序排除
+- 根因：最终定位到的代码层面原因
+- 修复方式：改了什么、为什么这样改
+- 验证结果：修完后指标的变化
 
-#### 文档建设
-建立性能优化文档体系：
+有这份记录，团队里其他人遇到相似症状时不需要从头排查。问题库按性能类型归档（启动/流畅度/内存/网络/电量/温控），每种类型再按根因分类（框架使用问题/业务逻辑问题/系统行为）。
 
-- **技术文档**：技术方案、实现细节
-- **操作文档**：工具使用、操作流程
-- **培训文档**：培训材料、最佳实践
+### 8.2 文档与分享：知识资产化
 
-### 8.2 知识共享
+技术文档和操作文档分开。技术文档回答"为什么这样设计"，操作文档回答"怎么用这个工具/跑这个 case"。两者混在一起会让排查流程的读者找不到入口——他需要的是"这条命令怎么跑"，中间夹了半页设计理由，读完就忘了命令。
 
-#### 团队分享
-在团队内部分享性能优化经验：
+团队分享的节奏比形式重要。一个双周 20 分钟的案例复盘，比季度的 2 小时正式汇报更能积累实战经验。案例复盘的三要素：问题原貌、排查过程（保留走弯路的步骤，删掉就等于删了最有价值的部分）、最终结论和 check 清单。
 
-- **技术分享**：定期技术分享会
-- **案例分析**：案例分析讨论
-- **经验交流**：经验交流活动
+## 9. 最佳实践：在开发流程中嵌入性能意识
 
-#### 开源社区
-参与开源社区，分享优化经验：
+### 9.1 开发阶段：不在收尾时才看性能
 
-- **开源项目**：贡献开源项目
-- **技术博客**：撰写技术博客
-- **会议演讲**：参与技术会议演讲
+性能问题改得越晚越贵。开发阶段的三个嵌入点：
 
-## 9. 性能优化最佳实践
+需求评审：把性能需求写成可验证的指标。"搜索结果页首屏渲染 < 500ms（P50），< 1.2s（P99）"——不是泛泛地说"页面要快"。指标精确到这个程度，研发和 QA 才能共同验证。
 
-### 9.1 开发阶段最佳实践
+技术方案评审：新增模块的性能评估——引入的新线程数、内存峰值预估、网络请求的频次和时机。如果评估结果是"不确定"，就要求先做一次 prototype profiling 再进入正式开发。
 
-#### 早期介入
-在开发早期就考虑性能：项目规划阶段明确性能需求，技术选型时把性能作为评估维度，架构设计预留性能扩展空间。
+CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心页面帧率、内存峰值——这三个指标的回归检查是 CI 流水线的必过门禁。门禁的阈值不能设得太松（等于没门禁），也不能设得太紧（变成无意义的红灯）。
 
-#### 持续监控
-开发过程中持续监控：定期跑性能测试，代码审查时关注性能影响，对性能数据进行趋势分析。
+### 9.2 发布阶段：灰度是验证，不是仪式
 
-### 9.2 发布阶段最佳实践
+灰度发布的目的是验证真实用户在真实环境里的体验——不是在办公室 Wi-Fi 下的开发者设备上。灰度要回答：实验组的主要性能指标是否优于对照组、是否有新增的 ANR/Crash、长尾用户（低端机、弱网、低电量）的体验是否有退化。
 
-#### 渐进式发布
-采用渐进式发布策略：
+灰度数据的回溯周期至少 48 小时。发版后 2 小时的指标波动大部分是下载和安装行为导致的，不是实际的用户使用数据。
 
-- **灰度发布**：小范围用户验证
-- **A/B 测试**：对比不同版本的性能
-- **回滚机制**：准备回滚机制
+### 9.3 运维阶段：监控比优化更需要维护
 
-#### 监控反馈
-建立性能监控和反馈机制：
+线上性能监控的维护成本容易被低估。三个容易出问题的地方：
 
-- **性能监控**：持续监控应用性能
-- **用户反馈**：收集用户反馈
-- **快速响应**：快速响应性能问题
+阈值更新：App 版本迭代后，很多操作的耗时基准变了——上一个版本的"正常耗时"可能是这一版的"偏慢"。按版本更新性能基线，否则报警要么不响，要么天天响。
 
-### 9.3 运维阶段最佳实践
+埋点稳定性：关键性能埋点的采样率不能悄悄掉下去。线上监控面板上"P99 耗时为 0"不是好消息——多半是埋点数据丢了。
 
-#### 性能调优
-在运维阶段持续优化性能：
+应急机制：性能严重退化时，除了报警之外要有回滚路径。对比度发布和 A/B 实验系统，保证问题版本可以在 30 分钟内切回对照组流量。
 
-- **性能调优**：根据监控数据优化性能
-- **资源管理**：合理分配和管理资源
-- **容量规划**：规划系统容量
+## 10. 案例复盘：三个典型场景的排查思路
 
-#### 预防措施
-采取预防措施避免性能问题：
+以下案例不标注具体数值——同一类问题的表现数字在不同 App、不同机型上差异很大。重点在呈现排查路径的走法，不是比较绝对值。
 
-- **预警机制**：建立性能预警机制
-- **应急响应**：建立应急响应机制
-- **定期维护**：定期系统维护
+### 10.1 启动慢：排查从哪个阶段切入
 
-## 10. 性能优化案例研究
+症状：某版本发布后，用户反馈"打开 App 变慢了"。线上指标显示冷启动 P50 增加了约四成。
 
-### 10.1 启动性能优化案例
+排查路径：
 
-#### 问题背景
-某社交应用启动时间从 1.5s 增加到 3.2s，用户流失率增加 15%。
+1. 看线上分布——所有机型都变慢还是只有特定机型？如果是特定机型，先缩小到 SoC/系统版本/内存配置三个维度。
+2. 取受影响机型的 Perfetto trace，对照上一版本同机型的 trace，在 Choreographer 的 doFrame 之前找差距——差距在 `Application.onCreate`、`Activity.onCreate`、还是首帧绘制。
+3. 如果在 `Application.onCreate`，逐个看 `ContentProvider` 的初始化耗时——`ContentProvider.onCreate()` 在 `Application.onCreate()` 之前执行。新增的 SDK、新增的 `ContentProvider` 经常是启动变慢的来源。
+4. 定位到具体初始化项后，判断是否可以延迟——非首屏模块的初始化移到第一次使用时，或放到 IdleHandler 里。
 
-#### 问题分析
-使用 Traceview 分析发现：
-- 初始化过程耗时过长（1.2s）
-- 布局解析耗时（0.8s）
-- 网络请求阻塞主线程（0.3s）
+常见陷阱：多线程初始化如果没理清依赖关系，启动时间不变但分散到了多个线程——冷启动统计到的"完成"时间没变，但用户看到首帧的时间可能反而变晚了，因为多个线程同时争 CPU。
 
-#### 优化方案
-1. **异步初始化**：将非关键初始化任务异步执行
-2. **布局优化**：减少布局层级，使用 ConstraintLayout
-3. **网络优化**：网络请求异步执行，使用缓存
+### 10.2 卡顿：用 Perfetto 定位帧瓶颈
 
-#### 优化效果
-启动时间从 3.2s 降低到 1.8s，用户流失率降低 8%。
+症状：滑动列表时，每隔几秒出现一次明显的停顿感。
 
-### 10.2 流畅度优化案例
+排查路径：
 
-#### 问题背景
-某电商应用在某些高端设备上出现明显卡顿，帧率从 60fps 降低到 40fps。
+1. 用 Perfetto 采集包含 `gfx`、`view`、`wm`、`sched` 数据源的 trace。
+2. 在 `trace_processor` 中查 Choreographer doFrame 耗时超过 16ms 的帧（见 4.3 节 SQL）。
+3. 对超时帧展开内部阶段：input → animation → traversal → draw。多数卡顿卡在 draw 阶段。
+4. 进入 draw 阶段后，看 RenderThread 的 GPU 提交时间线和主线程的 Canvas 绘制调用——RenderThread 在等 GPU fence 时主线程如果同时在准备下一帧的绘制数据，就会出现排队等待。
+5. 如果每次卡顿的触发点都是 RecyclerView 滑动到某个特定 item 时，重点查那个 item 的布局复杂度（嵌套层级、`onBindViewHolder` 的耗时、decode bitmap 的位置）。
 
-#### 问题分析
-使用 Perfetto 分析发现：
-- 主线程绘制操作过多（占 60%）
-- 动画效果复杂（占 25%）
-- 内存频繁 GC（占 15%）
+常见陷阱：把"平均帧率正常"等同于"没有卡顿"。平均帧率不反映单帧抖动——每秒 60 帧里如果有 10 帧超过 16ms，剩下的 50 帧把平均拉上来了，但用户体验是每 100ms 一次微卡。
 
-#### 优化方案
-1. **绘制优化**：减少过度绘制，使用硬件加速
-2. **动画优化**：简化动画效果，使用属性动画
-3. **内存优化**：优化内存使用，减少 GC 频率
+### 10.3 OOM：从分配轨迹反推泄漏源头
 
-#### 优化效果
-帧率从 40fps 提升到 58fps，用户体验显著改善。
+症状：低端机用户频繁遇到 OOM 崩溃，崩溃前 PSS 持续上涨。
 
-### 10.3 内存优化案例
+排查路径：
 
-#### 问题背景
-某视频应用内存使用从 100MB 增长到 200MB，低端设备出现 OOM。
+1. 开启 heapprofd 采集目标机型在典型使用路径下的内存分配 trace（见 4.3 节 SQL）。
+2. 按 retained size 排序，确认哪类对象占用最多。
+3. 对 retained size 最高的对象类型，看 GC root path——哪条引用链让它无法被回收。
+4. 常见场景：`Activity` 被 `Handler`（匿名内部类）持有、单例持有 `Context` 的引用传入后未清理、`Bitmap` 在 `ImageView` 不可见后未 `recycle`、`WebView` 的资源释放不彻底。
+5. 用 LeakCanary 做开发阶段的自动检测，CI 中集成 LeakCanary 的 leak 检测，阻止新的泄漏引入。
 
-#### 问题分析
-使用 Heap Tool 分析发现：
-- 内存泄漏（占 40%）
-- 缓存未清理（占 35%）
-- 频繁创建临时对象（占 25%）
+常见陷阱：PSS 高不等于泄漏。先区分"峰值正常但未及时释放"（说明某个生命周期的 onDestroy 后还有引用）和"持续上涨不回落"（经典泄漏模式），两类问题的定位路径不同。
 
-#### 优化方案
-1. **内存泄漏修复**：修复内存泄漏问题
-2. **缓存管理**：实现 LRU 缓存策略
-3. **对象复用**：使用对象池减少临时对象创建
+## 11. 参考资料
 
-#### 优化效果
-内存使用从 200MB 降低到 120MB，OOM 问题解决。
-
-
-## 12. 性能优化未来趋势
-
-### 12.1 技术发展趋势
-
-#### 云原生架构
-云原生架构对性能优化的影响：
-
-- **微服务架构**：微服务架构对性能优化的要求
-- **容器化部署**：容器化部署的性能优化
-- **服务网格**：服务网格的性能优化
-
-#### 5G 与边缘计算
-5G 和边缘计算对性能优化的影响：
-
-- **超低延迟**：5G 网络的超低延迟要求
-- **边缘智能**：边缘设备上的智能处理
-- **分布式计算**：分布式计算的优化策略
-
-### 12.2 行业发展趋势
-
-#### 行业标准化
-性能优化的行业标准：
-
-- **性能指标标准**：统一的性能指标定义和测量方法
-- **测试标准**：统一的性能测试标准
-- **优化标准**：统一的性能优化标准
-
-#### 开源生态
-性能优化的开源生态：
-
-- **开源工具**：开源的性能优化工具
-- **开源框架**：开源的性能优化框架
-- **开源社区**：开源的性能优化社区
-
-## 13. 性能优化方法论总结
-
-### 13.1 方法论体系总结
-
-Android 性能优化方法论可以总结为：
-
-1. **问题定义**：明确性能问题的定义和边界
-2. **工具选择**：选择合适的性能分析工具
-3. **数据采集**：采集性能数据，建立基准线
-4. **根因分析**：使用科学方法分析性能问题的根因
-5. **方案设计**：设计合理的优化方案
-6. **实施验证**：实施优化方案，验证效果
-7. **知识管理**：积累和分享性能优化知识
-
-### 13.2 方法论应用案例
-
-#### 大型应用的性能优化
-某大型社交应用的性能优化过程：
-
-1. **问题定义**：启动时间长、卡顿严重、内存占用高
-2. **工具选择**：Perfetto、Heap Tool、Network Profiler
-3. **数据采集**：采集性能数据，建立基准线
-4. **根因分析**：分析发现热点代码、内存泄漏、网络请求过多
-5. **方案设计**：设计异步初始化、内存优化、网络优化方案
-6. **实施验证**：分阶段实施优化方案，验证效果
-7. **知识管理**：建立性能问题库，分享优化经验
-
-#### 中小应用的性能优化
-某中小型电商应用的性能优化过程：
-
-1. **问题定义**：用户反馈卡顿、加载时间长
-2. **工具选择**：Android Profiler、Systrace
-3. **数据采集**：采集用户反馈和性能数据
-4. **根因分析**：分析发现绘制过多、网络请求阻塞
-5. **方案设计**：设计绘制优化、网络优化方案
-6. **实施验证**：快速实施优化方案，验证效果
-7. **知识管理**：总结经验，应用到后续开发
-
-### 13.3 方法论实施建议
-
-#### 组织层面
-- **建立性能团队**：建立专业的性能优化团队
-- **制定性能标准**：制定应用性能标准和测试流程
-- **建立监控体系**：建立性能监控和预警体系
-
-#### 技术层面
-- **选择合适工具**：根据应用特点选择合适的性能分析工具
-- **建立性能测试**：建立自动化性能测试体系
-- **持续优化**：持续优化应用性能
-
-#### 流程层面
-- **早期介入**：在开发早期就考虑性能问题
-- **持续监控**：在开发过程中持续监控性能
-- **快速响应**：快速响应性能问题
-
-## 14. 性能优化方法论参考资料
-
-### 14.1 官方文档
+### 官方文档
 - [Android Performance Vitals](https://developer.android.com/topic/performance/vitals) — Google 官方性能指标定义与最佳实践
-- [Android Profiler](https://developer.android.com/studio/profile/android-profiler) — Android Studio 性能分析工具
-- [Perfetto](https://perfetto.dev/) — Android 10+ 的标准系统 tracing 工具；Android 9 已包含基础服务但启用边界需按设备确认
-- [Battery Historian](https://developer.android.com/topic/performance/battery-historian) — 电池使用分析工具
+- [Android Profiler](https://developer.android.com/studio/profile/android-profiler) — Android Studio 内置性能分析工具
+- [Perfetto 文档](https://perfetto.dev/) — 系统级 tracing 工具完整文档，含 trace_processor SQL 参考
+- [Perfetto SQL 参考](https://perfetto.dev/docs/analysis/sql-tables) — trace_processor 所有 SQL 表结构和查询示例
+- [Battery Historian](https://developer.android.com/topic/performance/battery-historian) — 电池使用分析工具文档
 
-### 14.2 开源工具
+### 开源工具
 - [LeakCanary](https://square.github.io/leakcanary/) — Square 开源的内存泄漏检测库
 - [Systrace](https://source.android.com/devices/tech/perf/systrace) — Android 8-9 的 tracing 工具
 - [Android GPU Inspector](https://developer.android.com/studio/profile/android-gpu-inspector) — GPU 性能分析工具
-- [Traceview](https://developer.android.com/topic/performance/tracing/traceview) — Android 函数级性能分析工具
 
-### 14.3 书籍与文章
-- [Android Performance Tips](https://developer.android.com/topic/performance) — Android 官方性能优化指南
-- [高性能 Android 应用开发](https://book.douban.com/subject/27027548/) — 高性能 Android 应用开发
-- [Android 性能优化实战](https://book.douban.com/subject/26740779/) — Android 性能优化实战
-- [深入理解 Android 性能优化](https://book.douban.com/subject/30264920/) — 深入理解 Android 性能优化
+### 书籍
+- [《高性能 Android 应用开发》](https://book.douban.com/subject/27027548/)
+- [《Android 性能优化实战》](https://book.douban.com/subject/26740779/)
+- [《深入理解 Android 性能优化》](https://book.douban.com/subject/30264920/)
 
-### 14.4 视频与课程
-- [Android Performance Patterns](https://www.youtube.com/playlist?list=PLWz5rJ2EKKc8j2Bd8Bd9-2O9V1zr-hBFY) — Google 官方 Android 性能模式视频
-- [Android Profiling Tools](https://www.youtube.com/watch?v=8rS6a_9s54A) — Android 性能分析工具使用教程
-- [Android Performance Optimization](https://www.udemy.com/course/android-performance-optimization/) — Android 性能优化在线课程
-
-## 15. 延伸阅读
-
-- [Android 性能优化指南](https://developer.android.com/topic/performance) — Android 官方性能优化指南
-- [Perfetto 文档](https://perfetto.dev/) — Android 10+ 标准系统 tracing 工具文档
-- [Battery Historian 使用指南](https://developer.android.com/topic/performance/battery-historian) — 电池使用分析工具使用指南
-- [Android Vitals](https://developer.android.com/topic/performance/vitals) — Google Play Android Vitals 评分体系
+### 延伸阅读
+- [Android Performance Patterns (YouTube)](https://www.youtube.com/playlist?list=PLWz5rJ2EKKc8j2Bd8Bd9-2O9V1zr-hBFY) — Google 官方性能模式视频系列
+- [Android Vitals](https://developer.android.com/topic/performance/vitals) — Google Play 的 ANR/启动/帧率评分体系
