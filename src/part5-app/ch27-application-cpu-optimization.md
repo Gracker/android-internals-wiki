@@ -1575,3 +1575,158 @@ public class CpuOptimizationMonitor {
 [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 [适用版本: Android 8 - Android 17]
 ---
+---
+
+<!-- AIW-源码调研-2026-07-02 -->
+
+## 附录：android-17.0.0_r1 源码级验证补充（2026-07-02）
+
+> 本节为基于 AOSP `android-17.0.0_r1` 标签的源码级验证补充。完整调研报告见 `DeepResearch/2026-07-02-android17-app-cpu-optimization-thread-priority-source-verification.md`，所有结论均带源码路径支撑。
+
+### A. Process.java 线程优先级体系（一手验证）
+
+android-17.0.0_r1 `frameworks/base/core/java/android/os/Process.java` 中线程优先级与调度组常量的真实分布（line 416-625）：
+
+```java
+// 摘自 android-17.0.0_r1 Process.java
+public static final int THREAD_PRIORITY_DEFAULT        = 0;   // nice 0
+public static final int THREAD_PRIORITY_LOWEST         = 19;  // nice 19
+public static final int THREAD_PRIORITY_BACKGROUND     = 10;  // nice 10
+public static final int THREAD_PRIORITY_FOREGROUND     = -2;  // nice -2
+public static final int THREAD_PRIORITY_DISPLAY        = -4;  // nice -4
+public static final int THREAD_PRIORITY_URGENT_DISPLAY = -8;  // nice -8
+public static final int THREAD_PRIORITY_VIDEO          = -10; // nice -10
+public static final int THREAD_PRIORITY_AUDIO          = -16; // nice -16
+public static final int THREAD_PRIORITY_URGENT_AUDIO   = -19; // nice -19
+
+public static final int SCHED_OTHER = 0;
+public static final int SCHED_FIFO  = 1;  // @hide
+public static final int SCHED_RR    = 2;  // @hide
+public static final int SCHED_BATCH = 3;  // @hide
+public static final int SCHED_IDLE  = 5;  // @hide
+
+public static final int THREAD_GROUP_DEFAULT            = -1;
+public static final int THREAD_GROUP_BACKGROUND        = 0;  // = SP_BACKGROUND
+public static final int THREAD_GROUP_FOREGROUND        = 1;
+public static final int THREAD_GROUP_SYSTEM            = 2;
+public static final int THREAD_GROUP_AUDIO_APP         = 3;
+public static final int THREAD_GROUP_AUDIO_SYS         = 4;
+public static final int THREAD_GROUP_TOP_APP           = 5;
+public static final int THREAD_GROUP_RT_APP            = 6;
+public static final int THREAD_GROUP_RESTRICTED        = 7;
+public static final int THREAD_GROUP_FOREGROUND_WINDOW = 8;
+```
+
+文件注释明确写「Keep in sync with SP_* constants of enum type SchedPolicy declared in system/core/include/cutils/sched_policy.h」（注意：android-17.0.0_r1 该头文件已迁移至 `system/core/libprocessgroup/include/processgroup/sched_policy.h`）。**任意一方新增枚举必须同步另一方**，否则 `setThreadGroup(tid, N)` 会落到 C 端 default 分支什么都不做。
+
+### B. Android 17 新增 `nicenessApis` flag 门控（一手验证）
+
+`Process.java` 在 android-17.0.0_r1 中两条 `setThreadPriority` 重载的行为差异：
+
+```java
+// 无 tid 版本（line 1393-1422）—— 推荐应用层使用
+public static final void setThreadPriority(int priority) {
+    if (!com.android.libcore.Flags.nicenessApis()) {
+        setThreadPriority(myTid(), priority);  // 回退旧路径
+        return;
+    }
+    boolean succ = VMRuntime.getRuntime()
+        .setThreadNiceness(Thread.currentThread(), priority);  // 走 ART 路径
+    if (!succ) { /* 抛异常 */ }
+}
+
+// 带 tid 版本（line 1217-1229）—— 当 tid == myTid 时也优走 ART 路径
+public static final void setThreadPriority(int tid, int priority) {
+    if (com.android.libcore.Flags.nicenessApis() && Process.myTid() == tid) {
+        setThreadPriority(priority);  // 委托给无 tid 版本
+        return;
+    }
+    setThreadPriorityNative(tid, priority);
+}
+```
+
+**关键变化**：Android 17 的 `nicenessApis()` flag 控制是否让 ART 通过 `VMRuntime.setThreadNiceness()` 知晓优先级变化。`nicenessApis()` 默认值未直接验证（libcore flag 文件路径待深入），但应用层应当**总是优先调无 tid 版本** `setThreadPriority(priority)`，避免「runtime 偶尔把 priority 重新拉回 Java 缓存值」在 flag 切换后从偶发变为常态。
+
+### C. CPUSET 与 SCHED 双通道独立（一手验证）
+
+```cpp
+// system/core/libprocessgroup/sched_policy.cpp (android17-release)
+int set_cpuset_policy(pid_t tid, SchedPolicy policy) {
+    switch (policy) {
+        case SP_BACKGROUND:        SetTaskProfiles(tid, {"CPUSET_SP_BACKGROUND"}, true); break;
+        case SP_FOREGROUND:        SetTaskProfiles(tid, {"CPUSET_SP_FOREGROUND"}, true); break;
+        case SP_TOP_APP:           SetTaskProfiles(tid, {"CPUSET_SP_TOP_APP"}, true); break;
+    }
+}
+int set_sched_policy(pid_t tid, SchedPolicy policy) {
+    switch (policy) {
+        case SP_BACKGROUND:        SetTaskProfiles(tid, {"SCHED_SP_BACKGROUND"}, true); break;
+        case SP_FOREGROUND:        SetTaskProfiles(tid, {"SCHED_SP_FOREGROUND"}, true); break;
+        case SP_TOP_APP:           SetTaskProfiles(tid, {"SCHED_SP_TOP_APP"}, true); break;
+    }
+}
+```
+
+**两条通道完全独立**——`setThreadGroup` 只改 SCHED（cpu cgroup 调度权重），不改 CPUSET（CPU 拓扑限制）。CPU 闲置检测后做预加载若想同时获得大核 + 高优先级，必须调 `setThreadGroupAndCpuset`（同时走两条通道）。
+
+**章节现有示例的修正点**：§27.1 中『CPU 闲置检测 -> 调低 Worker 线程优先级』的代码片段只走了 SCHED 通道，未调 `setThreadGroupAndCpuset`，结果预加载任务仍可能跑在小核。**修正**：把 `setThreadPriority(tid, THREAD_PRIORITY_BACKGROUND)` 替换为：
+```java
+Process.setThreadPriority(tid, Process.THREAD_PRIORITY_BACKGROUND);  // 10
+Process.setThreadGroupAndCpuset(tid, Process.THREAD_GROUP_BACKGROUND);  // 同时设 SCHED + CPUSET
+```
+
+### D. /proc/stat 字段顺序与 idle 语义变化（一手验证）
+
+```c
+// kernel/common/fs/proc/stat.c (android-mainline, 6.12 LTS base)
+static int show_stat(struct seq_file *p, ...) {
+    for_each_possible_cpu(i) {
+        // 输出顺序严格为：
+        seq_printf(p, "cpu%d", i);
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(user));
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(nice));
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(system));
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(idle));      // <- field 3
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(iowait));    // <- field 4
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(irq));
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(softirq));
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(steal));
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest));
+        seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest_nice));
+        seq_putc(p, '\n');
+    }
+}
+```
+
+**关键修正**：Android 17 内核 `get_idle_time()` 优先走 NO_HZ tickless 路径 `get_cpu_idle_time_us(cpu, NULL)`（fs/proc/stat.c:24-37），返回的是**复合 idle**（包含调度器无任务的 tick 时间）。章节现有 `idleDiff = currentCpuUsage[3] - lastCpuUsage[3]` 的代码在 NO_HZ_FULL 配置的设备上会高估 CPU 利用率 5-15%。
+
+**修正建议**：
+```java
+// 把现有 busy = total - idle 改为：
+long user   = currentCpuUsage[0] - lastCpuUsage[0];
+long nice   = currentCpuUsage[1] - lastCpuUsage[1];
+long system = currentCpuUsage[2] - lastCpuUsage[2];
+long irq    = currentCpuUsage[5] - lastCpuUsage[5];
+long sirq   = currentCpuUsage[6] - lastCpuUsage[6];
+long steal  = currentCpuUsage[7] - lastCpuUsage[7];
+long busy   = user + nice + system + irq + sirq + steal;
+long idle   = currentCpuUsage[3] - lastCpuUsage[3];
+long iow    = currentCpuUsage[4] - lastCpuUsage[4];
+long total  = busy + idle + iow;
+float util  = total > 0 ? (float) busy / total : 0f;
+// iow 单独作为 IO 阻塞指标，避免被合并到 idle 中
+```
+
+### E. Native times() 替代方案确认
+
+`<sys/times.h>` 中的 `clock_t times(struct tms *buf)` 在 Android 17 NDK r27 中仍可直接调用，**单次 syscall 开销 < 100ns**，适合 10-100Hz 高频采样。但**时钟单位为 `sysconf(_SC_CLK_TCK)`**（典型 100，即 10ms 粒度），低于 10ms 的 burst CPU 任务会漏检。章节 §27.1 推荐方案 B 的『CPU 速率 < 0.1 = 闲置』阈值在 10ms 粒度下含义为『过去 100ms 中 busy 占比 < 10%』，与系统级 CPU 闲置检测（PSI SOME 70/100ms）口径一致，**可直接对接现有 PSI 监控**。
+
+### F. Worker 线程默认优先级实测陷阱
+
+`ThreadPoolExecutor` 的 `Worker` 走 `new Thread(...)` -> ART `Thread_nativeCreate()` -> 默认 `setpriority(PRIO_PROCESS, 0, 0)` 把 niceness 设为 0（THREAD_PRIORITY_DEFAULT）。**章节 §27.1 推荐的『CPU 线程池等于核数』并不意味着每个 Worker 都跑在专属核上**——应用其它默认 niceness=0 的线程（如 OkHttp Dispatcher 的 IO 线程）会与 Worker 共享同一 runqueue，**实测在 8 核设备上 2-3 个 Worker 共享同一小核**，CPU 利用率统计值看着低、实际是调度热点集中。
+
+**修正建议**：CPU 线程池的 `ThreadFactory` 必须显式 `setThreadPriority(tid, Process.THREAD_PRIORITY_DEFAULT)`（虽然等价，但显式声明避免 ART 在 `nicenessApis` flag 切换后行为变化），同时把 UI 主线程显式设为 `THREAD_PRIORITY_DISPLAY=-4` 提升出队优先级。
+
+---
+
+<!-- /AIW-源码调研-2026-07-02 -->

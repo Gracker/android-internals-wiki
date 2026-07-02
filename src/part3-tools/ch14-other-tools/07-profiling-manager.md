@@ -59,7 +59,7 @@ last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
 last_task6_audit: "2026-07-02"
-last_task6_audit_result: "l2-issues-fixed"
+last_task6_audit_result: "l2-structural-issues-detected"
 ---
 -
 
