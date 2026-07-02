@@ -32,7 +32,8 @@ task6_l1_l2_fixes: "0"
 task6_l3_l4_issues: "0"
 last_verified_against: "Flutter 3.32 architecture/thread merge docs (issue #150525 + release-notes-3.32.0)"
 task2b_fix_source: task9-deep-tech-review
-task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"---
+task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
+---
 
 <!-- outline-start -->
 

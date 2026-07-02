@@ -57,7 +57,7 @@ task9_review_notes: "2026-06-11 Task9 deep review auto-fix：修正 Perfetto Fra
 last_task9_autofix_at: "2026-07-02"
 last_task6_at: 2026-07-02T05:06:00+08:00
 last_task6_review_log: "logs/review/2026-06-11-21-review.md"
-task6_review_notes: "2026-06-11 Task6 21:10: pass-light-edit（revisiting re-review after task9 auto-fix round 2）。L1 形容词+冒号起手式修正 1 处（card_table 注释描述）；无其他新增问题，无回炉项。task9_result=auto-fixed 非 pass-tech-review，不满足自动晋升条件，退回 task9 做正式通过。 | 2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。L1 修正 4 处：禁用词"链路"×3（引用描述/附录待验证项）、"矩阵"×1（引用描述）、元叙述"本节采用"×1。Task9 idle-audit 源码锚点刷新已正确落地。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
+task6_review_notes: '2026-06-11 Task6 21:10: pass-light-edit（revisiting re-review after task9 auto-fix round 2）。L1 形容词+冒号起手式修正 1 处（card_table 注释描述）；无其他新增问题，无回炉项。task9_result=auto-fixed 非 pass-tech-review，不满足自动晋升条件，退回 task9 做正式通过。 | 2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。L1 修正 4 处：禁用词"链路"×3（引用描述/附录待验证项）、"矩阵"×1（引用描述）、元叙述"本节采用"×1。Task9 idle-audit 源码锚点刷新已正确落地。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。'
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 deepseek_cn_review_state: needs-structure-rework
