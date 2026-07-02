@@ -9,18 +9,18 @@ tags:
 task9_result: auto-fixed
 task6_result: needs-rework
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_lite_at: "2026-06-27"
 pipeline_stage: task6_pending
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。
-review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。"
+review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。"
 last_task9_audit: "2026-07-02"
-last_task9_at: "2026-07-02T17:27:39+08:00"
+last_task9_at: "2026-07-02T21:29:24+08:00"
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-02-17-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-02-21-deep-review.md"
 last_idle_audit_at: "2026-07-02T17:27:39+08:00"
 ---
 
@@ -88,7 +88,7 @@ PDCA（Plan-Do-Check-Act）在性能优化里对应具体的动作。
 
 | 工具 | 观测能力 | 什么场景用它 | 典型输出 |
 |---|---|---|---|
-| Perfetto | 系统级 tracer：ftrace trail、atrace 标签、heapprofd、java_hprof 等 30+ 数据源 | 渲染管线、Binder 调度、IO 路径、内存分配 | trace.perfetto-trace + SQL 查询结果 |
+| Perfetto | 系统级 tracer：ftrace 事件、atrace 标签、heapprofd、java_hprof 等 30+ 数据源 | 渲染管线、Binder 调度、IO 路径、内存分配 | trace.perfetto-trace + SQL 查询结果 |
 | Android Studio Profiler | IDE 内置的 CPU/内存/网络实时采样 | 本地调试、快速复现问题时的第一站 | 方法火焰图、内存分配时间线 |
 | Battery Historian | 解析 bugreport 中的电量事件与唤醒锁 | 待机耗电、后台网络、WakeLock 持有 | 电量消耗时间线、UID 级别统计 |
 | LeakCanary | 检测 Activity/Fragment 引用泄漏 | 开发阶段的内存泄漏自动告警 | 泄漏链 + heap dump |
@@ -123,14 +123,14 @@ adb shell setprop persist.traced.enable 1
 adb shell perfetto -t 10s -b 32mb -o /data/misc/perfetto-traces/trace.pftrace sched/sched_switch gfx
 ```
 
-**Android 14-17 (API 34-37)**：Perfetto CLI + traced service 的组合完全替代 Systrace。长时采集用 `perfetto -d`（后台 detach 模式）配合 `--attach` / `--detach`。`traced` 自身只接受服务端选项（`--background`、`--version`、`--set-socket-permissions`），不要给它传 `-b` 或 `--async`。
+**Android 14-17 (API 34-37)**：Perfetto CLI + traced service 的组合完全替代 Systrace。长时采集可用 `perfetto -d` 让命令进入后台；detached session 是另一套模式，用 `--detach=<key>` 创建、`--attach=<key> --stop` 回收，不能和 `-d` 混用。`traced` 自身只接受服务端选项（`--background`、`--version`、`--set-socket-permissions`），不要给它传 `-b` 或 `--async`。
 
 ```bash
 # 长时后台采集
 adb shell perfetto -d -t 30s -b 64mb -o /data/misc/perfetto-traces/long_trace.pftrace sched gfx view wm
 
-# 后台 detach 后可用 --attach 拿回结果
-adb shell perfetto --attach --stop
+# detached session 回收时必须带 key
+adb shell perfetto --attach=my_trace --stop
 ```
 
 <!-- AIW-源码调研-2026-07-02 -->
@@ -171,7 +171,9 @@ Perfetto 的 trace 文件要用 `trace_processor` 解析才有诊断价值。下
 ```sql
 -- 找出耗时超过 16ms 的帧，按耗时降序排列
 SELECT
+  id AS frame_id,
   ts,
+  ts + dur AS ts_end,
   dur / 1000000 AS dur_ms,
   name
 FROM slice
@@ -187,19 +189,20 @@ LIMIT 20;
 
 ```sql
 -- 展开一帧内部的各阶段：input、animation、traversal、draw
-SELECT
-  name,
-  dur / 1000000 AS dur_ms
-FROM slice
-WHERE track_id IN (
-  SELECT id FROM track
-  WHERE name GLOB '*Choreographer*'
+WITH target_frame AS (
+  SELECT id
+  FROM slice
+  WHERE id = <frame_id>
 )
-  AND ts BETWEEN <frame_start_ns> AND <frame_end_ns>
-ORDER BY ts;
+SELECT
+  child.name,
+  child.dur / 1000000 AS dur_ms
+FROM slice AS child
+JOIN target_frame AS frame ON child.parent_id = frame.id
+ORDER BY child.ts;
 ```
 
-把 `<frame_start_ns>` 和 `<frame_end_ns>` 换成上面第一句查出来的某帧时间戳，就能看到帧内 input 处理、animation、measure/layout、draw 各花了多少时间。如果绝大多数时间都耗在 draw 里，接下来就去查 RenderThread 的 GPU 提交。
+把 `<frame_id>` 换成上面第一句查出来的 `frame_id`，就能看到帧内 input 处理、animation、measure/layout、draw 各花了多少时间。如果绝大多数时间都耗在 draw 里，接下来就去查 RenderThread 的 GPU 提交。
 
 **主线程被 Binder 调用阻塞**
 
@@ -211,8 +214,9 @@ SELECT
   s.ts
 FROM slice s
 JOIN thread_track t ON s.track_id = t.id
-JOIN thread ON t.utid = thread.id
-WHERE thread.name = 'main'
+JOIN thread ON t.utid = thread.utid
+LEFT JOIN process ON thread.upid = process.upid
+WHERE (thread.is_main_thread = 1 OR thread.tid = process.pid)
   AND s.name GLOB '*binder*'
   AND s.dur > 5000000
 ORDER BY s.dur DESC;
@@ -226,10 +230,12 @@ Binder 调用耗时超过 5ms 就会直接吃掉帧预算。这个查询把"哪�
 -- 按函数统计分配次数和大小
 SELECT
   f.name AS function_name,
-  COUNT(*) AS alloc_count,
+  SUM(a.count) AS alloc_count,
   SUM(a.size) AS total_bytes
 FROM heap_profile_allocation a
-JOIN stack_profile_frame f ON a.callsite_id = f.callsite_id
+JOIN stack_profile_callsite c ON a.callsite_id = c.id
+JOIN stack_profile_frame f ON c.frame_id = f.id
+WHERE a.size > 0
 GROUP BY f.name
 ORDER BY total_bytes DESC
 LIMIT 20;
