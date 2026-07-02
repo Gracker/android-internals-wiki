@@ -6,8 +6,8 @@ polish_count: 1
 polish_date: 2026-04-05
 polish_by: task2b-polish
 applicable_versions: Android 4.2 (API 17) - Android 17 (API 37)
-last_verified: 2026-04-12
-last_verified_against: AOSP android-16.0.0_r1
+last_verified: 2026-07-03
+last_verified_against: AOSP android-17.0.0_r1
 drafted_date: 2026-03-30
 confidence: high
 reviewed_date: 2026-04-30
@@ -19,8 +19,8 @@ task2b_result: fixed
 last_task2b_at: "2026-04-30T08:40:00+08:00"
 task2b_state: fixed
 task9_state: reviewed
-task6_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: revisiting
+pipeline_stage: task6_pending
 status: finalized
 sources:
 - type: blog
@@ -61,16 +61,17 @@ related_chapters:
 - 2.4
 - 2.5
 - 7.2
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-04-30"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-30T09:28:00+08:00"
-last_task9_audit: "2026-06-14"
-last_task9_audit_at: "2026-06-14T09:40:00+08:00"
-last_task9_audit_log: logs/deep-review/2026-06-14-09-40-audit.md
-review_notes: "2026-04-30 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P3 1。"
+last_task9_audit: "2026-07-03"
+last_task9_audit_at: "2026-07-03T05:26:04+08:00"
+last_task9_audit_log: logs/deep-review/2026-07-03-05-audit.md
+review_notes: "2026-04-30 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P3 1。2026-07-03 task9 audit auto-fixed：AOSP 主线锚点更新到 android-17.0.0_r1，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
+last_task9_autofix_at: "2026-07-03"
 ---
 
 # 过度绘制
@@ -301,7 +302,7 @@ protected void onDraw(Canvas canvas) {
 - **Android 8.0（API 26）**：`clipRect(..., Region.Op)`、`clipPath(..., Region.Op)` 这类旧接口开始废弃。P 之后只应继续使用 `INTERSECT` / `DIFFERENCE` 或对应的 `clipOut*` API。
 - **Android 12（API 31）起**：Perfetto 的 FrameTimeline 成为定位 jank 的主线工具之一。它不直接显示 overdraw 次数，但能把 App、RenderThread 和 SurfaceFlinger 的帧预算串起来，帮助我们判断过度绘制有没有演变成可见掉帧。
 - **Android Studio 3.1 / 3.2 之后**：Android Device Monitor 废弃并移除，Hierarchy Viewer / Tracer for OpenGL ES 退出主线，Layout Inspector 与 AGI 成为当前工具链。
-- **Android 16（API 36）**：Skia Graphite 是 Skia 的下一代 GPU 后端，其渲染管线支持 Front-to-Back 绘制顺序配合硬件 Early-Z 剔除，理论上可在不透明区域跳过被遮挡像素的填充。[待验证] 截至 android-16.0.0_r1，AOSP `frameworks/base/libs/hwui/pipeline/skia/` 目录下仍以 SkiaOpenGLPipeline / SkiaVulkanPipeline / SkiaGpuPipeline 为主，未发现 Graphite 后端的默认启用开关或设备白名单配置。Graphite 目前更适合定位为 Skia 方向上的能力储备，不能写成 Android 16 应用 UI 的通用优化行为。半透明层不在 Z-test 优化范围内，仍然需要开发者手动优化层级。GPU 计数器方面，Perfetto 在部分设备上暴露 fragment/pixel 写入相关计数器，但这些计数器完全由设备驱动决定（基于 `GpuCounterDescriptor`），ID、名称和语义各不相同，尚未形成跨厂商的通用标准化方案。所谓「标准化 pixels_drawn 数据源」在当前 Perfetto 版本中并不存在。
+- **Android 16-17（API 36-37）**：Skia Graphite 是 Skia 的下一代 GPU 后端，其渲染管线支持 Front-to-Back 绘制顺序配合硬件 Early-Z 剔除，理论上可在不透明区域跳过被遮挡像素的填充。[待验证] 截至 android-17.0.0_r1，AOSP `frameworks/base/libs/hwui/pipeline/skia/` 目录下仍以 SkiaOpenGLPipeline / SkiaVulkanPipeline / SkiaGpuPipeline 为主，未发现 Graphite 后端的默认启用开关或设备白名单配置。Graphite 目前更适合定位为 Skia 方向上的能力储备，不能写成 Android 16/17 应用 UI 的通用优化行为。半透明层不在 Z-test 优化范围内，仍然需要开发者手动优化层级。GPU 计数器方面，Perfetto 在部分设备上暴露 fragment/pixel 写入相关计数器，但这些计数器完全由设备驱动决定（基于 `GpuCounterDescriptor`），ID、名称和语义各不相同，尚未形成跨厂商的通用标准化方案。所谓「标准化 pixels_drawn 数据源」在当前 Perfetto 版本中并不存在。
 
 ## Jetpack Compose 中的过度绘制
 
@@ -349,7 +350,7 @@ Recomposition 是 Compose 在组合阶段重新执行 Composable 函数的过程
 ## 参考资料
 
 - AOSP 源码路径（早期实现）：`frameworks/base/libs/hwui/OpenGLRenderer.cpp`
-- AOSP 源码路径（android-16.0.0_r1，调试开关）：`frameworks/base/libs/hwui/Properties.h`、`frameworks/base/libs/hwui/Properties.cpp`（`debug.hwui.overdraw`）
+- AOSP 源码路径（android-17.0.0_r1，调试开关）：`frameworks/base/libs/hwui/Properties.h`、`frameworks/base/libs/hwui/Properties.cpp`（`debug.hwui.overdraw`）
 -
 -
 -
