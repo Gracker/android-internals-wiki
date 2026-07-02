@@ -571,3 +571,62 @@ AIW 当前 563 个文件，覆盖范围非常全面。后续缺口挖掘应关�
 1. 已有章节深度增强（Task 2B）— queue.json 有 pending 条目待处理
 2. 等待 Android 18 DP 或新版本素材
 3. 18 个 draft 章节全部已有实质内容，可由 Task 2B 逐步提升质量
+
+
+## [Task2A 知识缺口挖掘 — 已检查方向] 2026-07-03 00:06
+
+本轮（第十二轮）复查结果：
+
+### Phase 0
+- 空_draft_章节：0 个（全部 17 个 draft 均已有实质内容）
+- Task2B backlog：0 → 允许进入 Phase 1
+
+### Phase 1 检查方向（全部 < 14 分）
+- source-index 未映射高分数复查（5 篇 ≥16 分）：
+  - "Android Native MTE"（score=20, unmapped）→ 4.9 已覆盖 ARM MTE
+  - "得物App ANR监控"（score=17, unmapped）→ 9.11 已覆盖企业级 ANR 监控
+  - "Binder Trace Activity 冷启动"（score=20, unmapped）→ 8.18 已创建
+  - "Android 17 ResourcesManager"（score=19, unmapped）→ 1.48 已覆盖
+  - "Android 17 Staged Install"（score=19, unmapped）→ 1.49 已覆盖
+- daily-info 2026-06-27~07-02 热点复查：Android 17 调度器/Binder/启动优化/Linux 6.10 内存碎片均已有对应章节
+- research-feeds 最近 5 个文件：均为已处理素材（Perfetto/Compose/ADPF/FrameTimeline）
+- Clippings 三本参考书：无新增（最新仍为 2026-06-23）
+- Android 18 DP：未发布
+
+### 结论
+全书 563 个文件（17 draft + 188 ready-for-review + 338 finalized + 6 deprecated + 12 unknown + 1 verified），覆盖范围十二轮确认饱和。与前十一轮结论一致。
+
+后续可行动方向不变：
+1. 已有章节深度增强（Task 2B）
+2. 等待 Android 18 DP 或新版本素材
+3. 17 个 draft 章节全部已有实质内容，可由 Task 2B 逐步提升质量
+
+
+## [Task2A 知识缺口挖掘 — 已检查方向] 2026-07-03 02:11
+
+本轮（第十三轮）复查结果：
+
+### Phase 0
+- 空_draft_章节：0 个（全部 16 个 draft 均已有实质内容，平均 ~350 行/章）
+- Task2B backlog：0 → 允许进入 Phase 1
+
+### Phase 1 检查方向（全部 < 14 分）
+- source-index 未映射高分数复查（5 篇 ≥16 分）：
+  - "Android Native MTE"（score=20, unmapped）→ 4.9 已覆盖 ARM MTE（343 行）
+  - "得物App ANR监控"（score=17, unmapped）→ 9.11 已覆盖企业级 ANR 监控（756 行）
+  - "Binder Trace Activity 冷启动"（score=20, unmapped）→ 8.18 已创建并加工完成
+  - "Android 17 ResourcesManager"（score=19, unmapped）→ 1.48 已覆盖
+  - "Android 17 Staged Install"（score=19, unmapped）→ 1.49 已覆盖
+- daily-info 2026-06-26 复查：IBM sub-1nm / Apple 涨价 / Emacs GPU — 均与 Android 性能无关
+- research-feeds 最近 5 个文件：均为已处理素材（Perfetto v53/v54/Compose/FrameTimeline/ADPF）
+- Clippings 三本参考书 + Chinasys2026：无新增（最新仍为 Chinasys2026 MUSCHED，已评 12/20 不达标）
+- Android 18 DP：未发布
+- research-gaps.md 盲区复查：8 个高优先级盲区全部已有对应章节覆盖
+
+### 结论
+全书 563 个文件（16 draft + 189 ready-for-review + 338 finalized + 6 deprecated + 14 unknown），覆盖范围十三轮确认饱和。与前十二轮结论一致。
+
+后续可行动方向不变：
+1. 16 个 draft 章节提升至 ready-for-review（均已有实质内容，可由 Task 2B 逐步提升质量）
+2. queue.json 中有 ~20 个 pending Task2B 条目 + ~20 个时效性巡检条目待处理
+3. 等待 Android 18 DP 或新版本素材
