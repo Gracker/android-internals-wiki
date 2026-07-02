@@ -26,7 +26,7 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
-last_task6_audit: '2026-06-12'
+last_task6_audit: '2026-07-03'
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
@@ -234,7 +234,7 @@ PerfDog 这类工具最好和自动化脚本结合。人工滑动或操作的波
 
 
 <!-- AIW-源码调研-2026-06-24 -->
-## 一手源码数据源底层实现（新增）
+## 一手源码数据源底层实现
 
 根据 AOSP 源码调研，PerfDog 的 Android 平台性能数据采集依赖四大底层系统接口，这些是 PerfDog 能测到数据的技术基础：
 
@@ -323,7 +323,7 @@ PerfDog 的数据采集调用链：
 - **Android 11 (API 30)**：引入 PowerStats HAL 2.0，支持能耗细分
 - **Android 12 (API 31)**：重构 Thermal HAL，移除旧版 ThermalManagerService
 - **Android 13 (API 33)**：增强 FrameTracer，集成 Perfetto 跨进程追踪
-- **当前限制**：main 分支源码显示部分芯片厂商可能不完全实现 HAL 接口
+- **当前限制**：部分芯片厂商可能不完全实现 HAL 接口（此为行业普遍现象，非 Android 17 特有）
 
 这些源码分析验证了 PerfDog 能够采集 Android 底层性能数据的理论依据，也为理解不同设备间的数据差异提供了技术解释。
 <!-- /AIW-源码调研-2026-06-24 -->
