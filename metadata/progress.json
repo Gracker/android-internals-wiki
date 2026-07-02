@@ -253,21 +253,57 @@
       "completed_at": "2026-07-02T18:54:37+08:00",
       "lane": "main",
       "source": "frontmatter-backlog-fallback",
-      "fixes": "content depth + practical guidance + data models"
+      "fixes": "content depth + practical guidance + data models",
+      "last_task6_review": "2026-07-02",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "review_history": [
+        {
+          "date": "2026-07-02",
+          "result": "pass-light-edit",
+          "mode": "revisiting-review-round2",
+          "fixes": "L1: banned word fix x1"
+        }
+      ]
     },
     {
       "section": "21.2",
       "completed_at": "2026-07-02T18:54:37+08:00",
       "lane": "main",
       "source": "frontmatter-backlog-fallback",
-      "fixes": "content depth + practical guidance + data models"
+      "fixes": "content depth + practical guidance + data models",
+      "last_task6_review": "2026-07-02",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "review_history": [
+        {
+          "date": "2026-07-02",
+          "result": "pass-light-edit",
+          "mode": "revisiting-review-round2",
+          "fixes": "L1: banned word fix x1"
+        }
+      ]
     },
     {
       "section": "26.1",
       "completed_at": "2026-07-02T18:54:37+08:00",
       "lane": "main",
       "source": "frontmatter-backlog-fallback",
-      "fixes": "content depth + practical guidance + data models"
+      "fixes": "content depth + practical guidance + data models",
+      "last_task6_review": "2026-07-02",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "review_history": [
+        {
+          "date": "2026-07-02",
+          "result": "pass-light-edit",
+          "mode": "revisiting-review-round2",
+          "fixes": "L1: banned word fix x2, empty heading"
+        }
+      ]
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",

@@ -24,14 +24,14 @@ sources:
     path: "github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-21
-task6_result: needs-rework
+task6_result: pass-light-edit
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-21"
@@ -41,13 +41,14 @@ last_task9_autofix_at: "2026-06-21"
 task6_reviewed_date: "2026-05-22"
 task9_review_notes: "2026-06-21 闲时抽检：AUTO-FIX。修正 Alpha 版本锚点为 GitHub HEAD 04fe7f2 / artifact 1.0.0.1；修正 AlphaManager.addProject() 链式调用；修正 THREAD_PRIORITY_DISPLAY 注释归因。回到 Task6 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-21-18-audit.md"
-last_task6_at: "2026-07-02T18:10:00+08:00"
+last_task6_at: "2026-07-02T19:14:49+08:00"
 last_task6_review_log: "logs/review/2026-06-21-20-review.md"
 task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1/L2复扫通过, 无新增小修。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
 task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task2b_at: "2026-07-02T18:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-deep-review.md 修正 Alpha Project.Builder/getInstance/默认 ExecutorService/执行模型，并收窄线程优先级建议。2026-07-02 Task2B round2: 补充 Alpha 错误处理与超时机制、Application 生命周期集成方式、启动框架选型常见陷阱与场景化引导。"
-task6_l1_l2_fixes: 0
+task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fix: remove banned word. L2 pass. No new L3/L4 issues."
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
 last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
@@ -517,7 +518,7 @@ App Startup 的设计初衷是收敛多个 SDK 各自注册的 ContentProvider �
 
 **陷阱 3：关键路径被非关键任务拖慢**
 
-DAG 建完后发现关键路径 150ms，但优化了 4 个 5ms 的任务只节约了 5ms——因为它们不在关键路径上。常见的是：关键路径上的 Analytics 初始化 45ms，但因为里面有 30ms 的磁盘 IO 在 IO 线程池，主线程不直接受影响，被误判为"不是瓶颈"。实际上它占用了 IO 线程池资源，阻塞了同在 IO 线程池的其他关键任务。
+DAG 建完后发现关键路径 150ms，但优化了 4 个 5ms 的任务只节约了 5ms——因为它们不在关键路径上。常见的是：关键路径上的 Analytics 初始化 45ms，但因为里面有 30ms 的磁盘 IO 在 IO 线程池，主线程不直接受影响，被误判为"不是瓶颈"。它占用了 IO 线程池资源，阻塞了同在 IO 线程池的其他关键任务。
 
 正确做法：建完 DAG 后先跑一遍关键路径分析，标出关键路径上的任务。然后区分三个维度优化——缩短关键任务耗时、把关键任务移出共享线程池的阻塞队列、检查是否有依赖可以打断。
 

@@ -27,9 +27,9 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-21"
@@ -41,12 +41,13 @@ last_task2b_at: "2026-07-02T18:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。2026-07-02 Task2B round2: 补充符号服务器架构设计、Native Crash 排查实战思路与分级排查流程。"
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-21
-last_task6_at: "2026-07-02T18:10:00+08:00"
+last_task6_at: "2026-07-02T19:14:49+08:00"
 last_task6_audit: "2026-06-09"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
 last_task6_review_log: "logs/review/2026-06-21-20-review.md"
 task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1修复: 链路→流程×3, meta-narrative×1。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
+task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fix: remove banned word. L2 pass. Anchors all covered. No new L3/L4 issues."
 task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-06-21-16-audit.md"
 task9_review_notes: "2026-06-21 Task9 idle-audit：auto-fixed。Android 17/API 37 源码抽检发现 native crash 通知链路方法名不准；已将 AppErrors.crashApplication()/handleApplicationCrash() 修正为 NativeCrashListener -> handleApplicationCrashInner()，回到 Task6 复审。"
@@ -552,7 +553,7 @@ Breakpad 的符号化流程在本地开发时可以直接用 `dump_syms` + `mini
 
 2. **符号提取**：CI 上对每个未 strip so 执行 `dump_syms`，生成 .sym 文件。同时从 so 的 ELF header 读取 Build ID（`readelf -n` 或 `llvm-readelf --notes`），用于构建目录层级。
 
-3. **存储布局**：按 Breakpad 查找协议组织——`<module-name>/<build-id>/<module-name>.sym`。对象存储（S3/GCS/OSS）或 NFS 均可，关键是 Build ID 必须精确匹配。
+3. **存储布局**：按 Breakpad 查找协议组织——`<module-name>/<build-id>/<module-name>.sym`。对象存储（S3/GCS/OSS）或 NFS 均可，Build ID 必须精确匹配。
 
 4. **符号化服务**：API 接收 crash 上报的 `(module_name, build_id, offset)`，在符号文件存储中查找匹配的 .sym，用 `minidump_stackwalk` 或自研解析器还原行号。服务端做缓存——热门模块的符号文件常驻内存，减少对象存储读取次数。
 
