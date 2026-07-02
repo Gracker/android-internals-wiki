@@ -9,8 +9,8 @@ drafted_by: openclaw-task2a
 reviewed_date: "2026-05-18"
 reviewed_by: "openclaw-task6"
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-21'
-last_verified_against: AOSP android-14.0.0_r1
+last_verified: 2026-07-02
+last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
 - type: blog
@@ -46,25 +46,26 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: '2026-05-14T19:19:00+08:00'
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-18"
-last_task9_at: "2026-05-18T20:30:46+08:00"
-last_task9_audit: "2026-06-11"
-last_task9_audit_at: "2026-06-11T19:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-11-19-audit.md"
+task9_reviewed_date: "2026-07-02"
+last_task9_at: "2026-07-02T11:25:19+08:00"
+last_task9_audit: "2026-07-02"
+last_task9_audit_at: "2026-07-02T11:25:19+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-02-11-audit.md"
+last_task9_autofix_at: "2026-07-02"
 review_notes: '2026-05-05 task6 revisiting: pass-light-edit。小修18处（代码块语言、I/O术语统一、口语化表达、填充词）。无新增B类问题；既有Task9技术项已由Task2B完成，待Task9复审。
   | 2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task
   2B 回炉。 | 2026-05-05 task9 deep-review: needs-rework。P0 2，P1 1，P2 0；需回炉校正 InputDispatcher
   freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。'
-task9_review_notes: "2026-05-14 19:29 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。 | 2026-05-18 Task9：needs-rework。P0 1 / P1 1 / P2 0；Cached Apps Freezer 的 Android 15+ Input 豁免与 am_cached_process_freeze_status 缺 AOSP 证据，Android 11+ 版本边界需修正。 | 2026-05-18 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；QueuedWork、Cached Apps Freezer、WaitQueue、Binder 线程池与 ApplicationExitInfo 口径复核通过，自动晋升 finalized。"
+task9_review_notes: "2026-07-02 Task9 闲时抽检：auto-fixed。P0 0 / P1 1 / P2 0；将 QueuedWork 与 Binder 线程池两处源码锚点从 android-14.0.0_r1 升级并复核到 android-17.0.0_r1，章节回 Task6 复审。 | 2026-05-14 19:29 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。 | 2026-05-18 Task9：needs-rework。P0 1 / P1 1 / P2 0；Cached Apps Freezer 的 Android 15+ Input 豁免与 am_cached_process_freeze_status 缺 AOSP 证据，Android 11+ 版本边界需修正。 | 2026-05-18 Task9：pass-tech-review。P0 0 / P1 0 / P2 0；QueuedWork、Cached Apps Freezer、WaitQueue、Binder 线程池与 ApplicationExitInfo 口径复核通过，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-18-20-deep-review.md"
 task6_reviewed_at: "2026-05-18T20:16:50+08:00"
 task6_reviewed_by: "openclaw-task6"
@@ -252,7 +253,7 @@ Input ANR 中 "(server) is not responding" 子类型，根因几乎一定在 sys
 
 1. 先将数据写入内存缓存
 2. 将文件写入任务提交到后台线程
-3. 在 Activity 的生命周期切换时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成。AOSP android-14.0.0_r1 中，非 pre-Honeycomb Activity 的等待点在 `handleStopActivity()`（对应 `onStop()` 时机），`handlePauseActivity()` 只对 pre-Honeycomb Activity 调用 `waitToFinish()`。Service 的写入等待点在 `ActivityThread.handleServiceArgs()` 和 `handleStopService()` 中；`handleStopActivity()`（非 pre-Honeycomb）也会调用 `waitToFinish()`。BroadcastReceiver 侧，`PendingResult.sendFinished()` 通过 `QueuedWork.queue()` 延后执行，不是 `handleReceiver()` 直接调用 `waitToFinish()`
+3. 在 Activity 的生命周期切换时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成。AOSP android-17.0.0_r1 中，非 pre-Honeycomb Activity 的等待点在 `handleStopActivity()`（对应 `onStop()` 时机），`handlePauseActivity()` 只对 pre-Honeycomb Activity 调用 `waitToFinish()`。Service 的写入等待点在 `ActivityThread.handleServiceArgs()` 和 `handleStopService()` 中；`handleStopActivity()`（非 pre-Honeycomb）也会调用 `waitToFinish()`。BroadcastReceiver 侧，`PendingResult.sendFinished()` 通过 `QueuedWork.queue()` 延后执行，不是 `handleReceiver()` 直接调用 `waitToFinish()`
 
 当 App 中存在大量 `apply()` 调用但后台写入还没完成时，主线程在生命周期切换时就会被卡住。
 
@@ -451,7 +452,7 @@ public synchronized Cursor query(String table, String selection) {
 
 trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死锁的典型信号。分析方法：找到主线程等待的锁（trace 中有 `waiting to lock` 和 `held by thread` 信息），再看持有者的堆栈是否也在等另一把锁。如果形成环，就是死锁。
 
-另一类常见的 Android 死锁是 **Binder 线程池被同步调用压满**：主线程同步调用其他进程的 Binder 接口，而对方进程又回调到本进程，这时本进程需要有空闲 Binder 线程继续接收事务。AOSP android-14.0.0_r1 的 `frameworks/native/libs/binder/ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，这是 `setThreadPoolMaxThreadCount()` 下发给 Binder driver 的默认上限。调用方线程如果主动 `joinThreadPool()`，总可用处理线程可能比这个值再多 1 个，所以实战里不要把它硬记成“固定 16 个 Binder 线程”。这类问题在 trace 中更常见的表现，是大量 `Binder:XXX_X` 线程堵在事务等待上，主线程也卡在同步 Binder 调用链里。
+另一类常见的 Android 死锁是 **Binder 线程池被同步调用压满**：主线程同步调用其他进程的 Binder 接口，而对方进程又回调到本进程，这时本进程需要有空闲 Binder 线程继续接收事务。AOSP android-17.0.0_r1 的 `frameworks/native/libs/binder/ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，这是 `setThreadPoolMaxThreadCount()` 下发给 Binder driver 的默认上限。调用方线程如果主动 `joinThreadPool()`，总可用处理线程可能比这个值再多 1 个，所以实战里不要把它硬记成“固定 16 个 Binder 线程”。这类问题在 trace 中更常见的表现，是大量 `Binder:XXX_X` 线程堵在事务等待上，主线程也卡在同步 Binder 调用链里。
 
 
 ## 分析方法总结
