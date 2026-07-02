@@ -1,7 +1,7 @@
 {
   "total": 563,
-  "draft": 18,
-  "ready_for_review": 187,
+  "draft": 17,
+  "ready_for_review": 188,
   "finalized": 338,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -160,6 +160,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T18:10:00+08:00",
       "note": "Android 17 eBPF 可观测性矩阵扩展：cyclePerUid/dmabufIter/kernelwakelockduration/locks 四个新 eBPF 程序 + cpucycleperuid Rust FFI 库分析"
+    },
+    {
+      "section": "8.18",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-02T23:50:00+08:00",
+      "note": "binder-trace-cold-start-analysis: 写满 7 锚点 + 3 扩展点（从 draft → ready-for-review）"
     }
   ],
   "review_history": [
@@ -347,5 +354,14 @@
       "last_task6_at": "2026-07-02T22:09:00+08:00",
       "task6_result": "pass-light-edit"
     }
+  },
+  "task2a": {
+    "last_run": "2026-07-02T23:50:00+08:00",
+    "last_section": "8.18",
+    "result": "fixed",
+    "fix_count": 1,
+    "last_sections": [
+      "8.18"
+    ]
   }
 }
