@@ -2,7 +2,7 @@
 title: "\"渲染管线分析方法论\""
 chapter: "\"18.20\""
 section: "\"18.20\""
-status: "finalized"
+status: ready-for-review
 pipeline_stage: task6_pending
 applicable_versions: "\"Android 9 (API 28) - Android 17 (API 37)\""
 tags: ["方法论", "渲染管线", "Perfetto", "dumpsys", "诊断", "BufferQueue", "性能分析"]
@@ -37,6 +37,7 @@ p0: 0
 p1: 1
 p2: 0
 task9_review_notes: "2026-07-03 Task9 idle-audit AUTO-FIX: P1 版本差异 1 处；18.20 快速判断清单的 Flutter 观察点从旧 UI/Raster/Platform 口径修正为 Flutter 3.32 stable+ Main(UI+Platform)/Raster/IO，3.31- 或定制 Embedder 才看 UI/Platform 分离；详见 logs/deep-review/2026-07-03-02-audit.md。"
+last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
 ---
 
 <!-- outline-start -->

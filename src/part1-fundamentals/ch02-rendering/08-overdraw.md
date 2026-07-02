@@ -21,7 +21,7 @@ task2b_state: fixed
 task9_state: reviewed
 task6_state: revisiting
 pipeline_stage: task6_pending
-status: finalized
+status: ready-for-review
 sources:
 - type: blog
   path: Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md
@@ -72,6 +72,7 @@ review_notes: "2026-04-30 task9 deep-review: pass-tech-review。无 P0/P1；Task
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
 last_task9_autofix_at: "2026-07-03"
+last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
 ---
 
 # 过度绘制
