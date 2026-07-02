@@ -2,15 +2,15 @@
 title: "案例集"
 chapter: "11.04"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task2b_pending"
 applicable_versions: "['Android 14.0 (API 34) - Android 17.0 (API 37)']"
 tags: "[power, battery, energy]"
 weight: "4"
 source_repos: "['frameworks/base/core/java/android/os/PowerManager.java', 'frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java', 'frameworks/base/core/java/android/os/BatteryStats.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java', 'frameworks/base/services/core/java/com/android/server/am/ActiveServices.java', 'frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java', 'frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java', 'frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java']"
 task2b_result: "fixed"
-task2b_state: "fixed"
+task2b_state: "pending"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
 last_task2b_fix_at: "2026-06-18"
@@ -19,8 +19,9 @@ last_task6_review_at: "2026-06-23T20:08:00+08:00"
 last_task9_autofix_at: "2026-06-18"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
-last_task9_at: "2026-06-24"
+last_task9_at: "2026-07-02T08:27:10+08:00"
 last_task6_audit: "2026-06-30"
+last_task9_audit: "2026-07-02"
 ---
 -
 
