@@ -15,7 +15,7 @@ created_date: "2026-05-22"
 gap_source: "Clippings参考书/官方文档/章节深挖"
 gap_score: 18
 last_task2a_at: "2026-05-22T16:18:00+08:00"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-22"
@@ -26,12 +26,14 @@ last_task6_review_log: "logs/review/2026-05-22-17-review.md"
 task6_l1_l2_fixes: 5
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-22 Task6：首次写作质检通过；补齐 outline，清理结构性元叙述、编辑标记和填充副词 5 处；无 L3/L4 回炉项，送 Task9 技术复核。"
-task9_result: pass-tech-review
-last_task9_at: "2026-05-22T17:25:26+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-22-17-deep-review.md"
-last_task9_audit: "2026-06-12"
+task9_result: needs-rework
+last_task9_at: "2026-07-02T20:34:05+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-02-20-audit.md"
+last_task9_audit: "2026-07-02"
 last_task6_audit: "2026-06-17"
-task9_review_notes: "2026-05-22 Task9：深度技术审计通过；无 P0/P1/P2，记录 HttpEngine API floor、证书透明度默认策略、Vitals 后台移动网络阈值 3 条 P3 备查；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-07-02 Task9 闲时抽检：发现 P1 版本基准问题；章节适用范围到 Android 17/API 37，但源码证据仍锚定 Android 35 SDK。已写入 queue priority:85，回 Task2B 重锚 android-17.0.0_r1。"
+task2b_state: pending
+last_idle_audit_at: "2026-07-02T20:34:05+08:00"
 sources:
   - type: clippings
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md"
