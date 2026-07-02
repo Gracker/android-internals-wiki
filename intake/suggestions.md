@@ -398,3 +398,77 @@
 - **来源**：[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
 - **过时内容**：参考书引用源码为 master 分支（未锚定版本），其中 GWP-ASan、scudo 分配器为相对较新特性但未标注 Android 版本边界。load_maps 中 memfd:jit-cache / memfd:jit-zygote-cache 路径为 Android 11+ 引入。
 - **建议更新至**：Android 17 android-17.0.0_r1，需核实 android_os_Debug.cpp 在 Android 17 中的变化（如新增 heap 类型、MemoryLimiter 相关统计字段等）
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-02 09:07
+
+本轮第七轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（实质内容 < 15 行）。全部 15 个 draft 章节均 >15 行有效内容。
+**Phase 0.5**: Task2B backlog = 0，允许挖掘
+**Phase 1**: 全书 532 节，覆盖度第七轮确认饱和
+
+本轮增量复查内容：
+- daily-info 2026-07-02：无新增可用素材（与前轮一致）
+- Clippings 目录无新增（最新文件仍为 2026-06-23）
+- research-feeds 无新增（最新仍为 2026-04-14）
+- 新增低覆盖度话题扫描（8 个候选）：Adaptive Charging(7/20)、App Streaming(7/20)、Battery Resource Utilization(9/20)、Compose Stability(12/20)、KASLR(5/20)、Safety Center(5/20)、Seamless Transfer(8/20)、VirtualizationFramework(8/20) — 全部低于 14 分阈值
+- queue.json 仍有 7 条 pending（含 2 条 priority 95/85 的 Task 2B 处理项）
+
+结论：全书覆盖度七轮确认饱和（532 节：340 finalized + 176 ready-for-review + 15 draft + 1 verified）。
+与前六轮结论一致。
+可行动方向不变：
+1. 已有章节深度增强（Task 2B）— queue.json 有 pending 条目待处理
+2. 等待 Android 18 DP
+3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）
+4. 14.24/14.25 等 draft 章节需内容加工或 Task 2B 处理
+## [Task2A Gap Mining] 无合格候选 — 2026-07-02 11:04
+
+本轮第九轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（全部 19 个 draft 章节 >15 行有效内容，最小 17 行）
+**Phase 0.5**: Task2B backlog = 0，允许挖掘
+**Phase 1**: 全书 532+ 节，覆盖度第九轮确认饱和
+
+本轮增量复查内容：
+- source-index.json 新增 5 条 AndroidWeekly #23 素材（2026-07-02T09:03）：
+  - MTE 内存武器 → 已覆盖于 4.9（score 20, high confidence）
+  - 得物 ANR 监控平台 → 已覆盖于 9.11（score 17, high confidence）
+  - Duolingo MVVM → score 13，架构模式非性能核心 ❌
+  - UDF Android UIs → score 14，架构模式与本书聚焦点不匹配 ❌
+  - binder trace Activity 冷启动 → 已覆盖于 1.9/ch08（score 20, high confidence）
+- research-gaps.md Part 5 CPU 优化 → 已覆盖于 ch27-application-cpu-optimization（1262 行）
+- daily-info 无新增可用素材
+- Clippings 目录无新增（最新仍为 2026-06-23）
+- research-feeds 无新增（最新仍为 2026-04-14）
+- 无 Android 18 DP 或新版本素材
+
+结论：全书覆盖度九轮确认饱和（与前序 07-01 01:12~07-02 09:07 八轮一致）。
+可行动方向不变：
+1. 已有章节深度增强（Task 2B）— queue.json 有 7 条 pending 待处理
+2. 等待 Android 18 DP
+3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）
+4. 14.24/14.25/9.10/4.9/9.11/27.1/13.21 等 draft 章节已有实质内容，需 Task 2B 加工提升质量
+
+
+## [Task2A Gap Mining] 无合格候选 — 2026-07-02 12:13
+
+本轮第十轮复查（Phase 0 → 0.5 → 1 完整流程）：
+
+**Phase 0**: 0 个空 draft（全部 19 个 draft 章节 >15 行有效内容，最小 17 行）
+**Phase 0.5**: Task2B backlog = 0，允许挖掘
+**Phase 1**: 全书 532+ 节，覆盖度第十轮确认饱和
+
+本轮增量复查内容：
+- source-index.json：30 条素材，16 条 high quality（≥16 分），5 条 unmapped — 全部已在近期轮次中被覆盖确认（4.9/9.11/1.48/1.49 等 draft 已创建）
+- research-feeds 无新增（最新仍为 2026-04-14）
+- daily-info 无新增（最新仍为 2026-06-26，已 6 天无更新）
+- Clippings 目录无新增（最新仍为 2026-06-23）
+- 无 Android 18 DP 或新版本素材
+- queue.json 仍有 7 条 pending（含 2 条 DeepResearch 注入的 14.22 补充材料、1 条 1.25 补充材料、4 条 priority 80 的 draft 加工项）
+
+结论：全书覆盖度十轮确认饱和（与前序九轮一致）。
+可行动方向不变：
+1. 已有章节深度增强（Task 2B）— queue.json 有 pending 条目待处理
+2. 等待 Android 18 DP
+3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）
+4. 14.24/14.25/9.10/4.9/9.11/27.1/13.21 等 draft 章节已有实质内容，需 Task 2B 加工提升质量
