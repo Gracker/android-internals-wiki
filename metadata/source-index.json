@@ -215,7 +215,8 @@
         "timeliness": 5,
         "verifiability": 3
       },
-      "scored_at": "2026-07-02T05:46:08.161801"
+      "scored_at": "2026-07-02T05:46:08.161801",
+      "action": "queue"
     },
     {
       "title": "2026-07-01-android17-boot-optimization-apex-psi-statslog",
@@ -320,6 +321,56 @@
         "verifiability": 3
       },
       "scored_at": "2026-07-02T05:46:08.161821"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-atm-config-relaunch-analysis.md",
+      "title": "ResourcesManager 与 Activity relaunch 判定模型性能分析",
+      "summary": "Android 17 中 ActivityRecord#shouldRelaunchLocked() 已被重构为基于配置差分和 Shell Transitions 的新判定模型。配置变更不再立即触发全局 relaunch，而是通过 TransitionController 创建 TRANSIT_CHANGE 过渡动画实现原子性配置更新。新增 RELAUNCH_REASON_WINDOWING_MODE_RESIZE 和 RELAUNCH_REASON_FREE_RESIZE 两种精确触发条件，并使用 deferWindowLayout/continueWindowLayout 嵌套锁避免冗余布局计算。",
+      "chapter": "1.48",
+      "chapter_title": "Android 17 ResourcesManager/Configuration 与 Activity Relaunch 判定模型",
+      "processed_at": "2026-07-02T06:19:46.260063",
+      "action": "inject",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-hprof-heapdump-android17-java-hprof-signal-sender.md",
+      "title": "HPROF Heap Dump 管线与 Perfetto android.java_hprof 数据源",
+      "summary": "Android 17 已正式废弃 kill -10 触发 hprof 转储的旧路径——signal_catcher.cc 中 HandleSigUsr1 现在只做 CollectGarbage + ForceProcessProfiles。hprof 现在只能由 Debug.dumpHprofData() 或 Perfetto android.java_hprof 经 __SIGRTMIN+6 实时信号触发。两遍式写入 + 128 对象/4KB 分段约束直接决定 ddms/HPDS 流式消费器行为。连接断线重连采用指数退避 100ms→30s。",
+      "chapter": "14.22",
+      "chapter_title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+      "processed_at": "2026-07-02T06:19:46.260063",
+      "action": "queue",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-android17-relaunch-mask-policies-deep-dive.md",
+      "title": "Android 17 shouldRelaunchLocked 6 层掩码策略深度展开",
+      "summary": "skipRelaunchConfigMask 实际是 7 层叠加：CONFIG_RESOURCES_UNUSED 直接 return false 后，(a)~(g) 六层叠加。DisplayCompatPolicy 是双路径策略（CATEGORY_GAME vs COMPUTER_CONTROL），PiP skip CONFIG_DENSITY 是显式无条件豁免。RecreateOnConfigChangePolicy 是反向剥离子（&=~recreateMask），需 SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE opt-in。ResourceOverlayPolicy 走 OverlayManagerInternal RPC + mLastReportedOverlayPathsToConstraintsMap 差分。",
+      "chapter": "1.48",
+      "chapter_title": "Android 17 ResourcesManager/Configuration 与 Activity Relaunch 判定模型",
+      "processed_at": "2026-07-02T06:19:46.260063",
+      "action": "inject",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-android17-hprof-heapdump-pipeline-perfetto-art-hprof-importer.md",
+      "title": "HPROF HeapDump 管线与 Perfetto art_hprof Importer 深度解析",
+      "summary": "trace_processor 侧有独立 HPROF 二进制解析器（art_hprof_parser.cc），直接消费 hprof blob 生成 heap_graph 系列 6 张表。纠正了之前「trace_processor 无 hprof 解析器」的结论。ART 侧 DumpHeap 双重保护（ScopedGCCriticalSection + ScopedSuspendAll long_suspend），先 GC 临界区再 STW 挂起。app image 对象归到 HPROF_HEAP_APP 而非 IMAGE（b/35762934）。",
+      "chapter": "14.22",
+      "chapter_title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+      "processed_at": "2026-07-02T06:19:46.260063",
+      "action": "queue",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-android17-binder-tf-update-txn-frozen-batch-pipeline.md",
+      "title": "Android 17 Binder TF_UPDATE_TXN 事务去重与冻结批处理流水线",
+      "summary": "Android 17 Binder 驱动引入事务去重机制：oneway 调用命中已冻结进程时，通过 binder_find_outdated_transaction_ilocked() 扫描 async_todo 链表，找等价且未派发的过时事务直接替换。去重条件为四元组等价（code+flags+pid+target_node）。配合 BR_TRANSACTION_PENDING_FROZEN 完成冻结态批处理语义。嵌套调用优先级恢复使用三态机 BINDER_PRIO_PENDING/SET/ABORT。",
+      "chapter": "1.25",
+      "chapter_title": "Android 17 Binder IPC 异步机制与批处理流水线",
+      "processed_at": "2026-07-02T06:19:46.260063",
+      "action": "inject",
+      "type": "DeepResearch"
     }
   ]
 }
