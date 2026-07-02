@@ -1,7 +1,7 @@
 {
   "total": 137,
-  "draft": 4,
-  "ready_for_review": 17,
+  "draft": 3,
+  "ready_for_review": 18,
   "finalized": 119,
   "last_updated": "2026-07-02",
   "task2b": {
@@ -115,6 +115,13 @@
       "status": "draft",
       "drafted_at": "2026-07-02T10:04:00+08:00",
       "note": "Created from knowledge gap mining (13.21)"
+    },
+    {
+      "section": "14.24",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-02T13:04:00+08:00",
+      "note": "Simpleperf microarch profiling: ARM SPE/TRBE/background/app/pmu_lib/ko AutoFDO"
     }
   ],
   "review_history": [
