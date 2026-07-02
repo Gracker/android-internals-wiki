@@ -10,17 +10,17 @@ weight: "4"
 source_repos: "['frameworks/base/core/java/android/os/PowerManager.java', 'frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java', 'frameworks/base/core/java/android/os/BatteryStats.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java', 'frameworks/base/services/core/java/com/android/server/am/ActiveServices.java', 'frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java', 'frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java', 'frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java']"
 task2b_result: "fixed"
 task2b_state: "fixed"
-task9_state: "pending"
-task9_result: "needs-rework"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task6_result: "pass-light-edit"
 task6_state: "revisiting"
 last_task2b_fix_at: "2026-07-02T08:58:38.308091+08:00"
 last_task6_at: "2026-06-23T20:08:00+08:00"
 last_task6_review_at: "2026-06-23T20:08:00+08:00"
-last_task9_autofix_at: "2026-06-18"
+last_task9_autofix_at: "2026-07-02"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
-last_task9_at: "2026-07-02T08:27:10+08:00"
+last_task9_at: "2026-07-02T09:31:35+08:00"
 last_task6_audit: "2026-06-30"
 last_task9_audit: "2026-07-02"
 ---
@@ -147,7 +147,7 @@ app: JobScheduler.schedule(job)
 
 **对应用的可操作建议**：
 1. **不要 burst-schedule**：在 onResume / onReceive / WorkContinuation 链里 schedule 大量 Job 容易触发层 2（API Quota）→ RESTRICTED bucket
-2. **周期性 Job 实际执行时间 < 1min**：层 5 批处理可能让首启延迟 31min，且层 4 抢占发生在 `mMinExecutionGuaranteeMs=10min` 之后——短任务实际开销就是 10min CPU，**未省电反而耗电**。OEM 在做白名单节流分析时，应按"实际执行时间 / 周期时间"衡量收益
+2. **周期性 Job 实际执行时间 < 1min**：层 5 批处理可能让首启延迟 31min；层 3 的 10min guarantee 只是限制系统在保证期内抢占，不会把已完成的短任务强制跑满 10min。OEM 做白名单节流分析时，应同时看"实际执行时间 / 周期时间"、唤醒次数和批处理延迟。
 3. **EJ 不适合长任务**：层 3 EJ 最小 3min，且 EJ 之间会按 `WORK_TYPE_BGUSER_IMPORTANT > EJ > 其他` 抢占
 4. **150 Job 上限外还有隐性反压**：`countJobsForUid()` 是 O(N)，Job 数量越多 schedule 越慢
 
@@ -922,20 +922,20 @@ if (!predictionLate && app.lastPredictedBucket >= STANDBY_BUCKET_ACTIVE
 
 #### 3. 三方消费者：桶值到资源限制的完整路径
 
-**JobScheduler 消费**（`JobSchedulerService.java:5016-5058`）——`standbyBucketForPackage()` 把标准桶值映射成内部索引 `EXEMPTED/ACTIVE/WORKING/FREQUENT/RARE/RESTRICTED/NEVER`，再喂给 `QuotaController.isWithinQuotaLocked()`（`QuotaController.java:942-1017`）。`QuotaController` 默认配额矩阵（`QuotaController.java:3249-3290`）：
+**JobScheduler 消费**（`JobSchedulerService.java:5016-5058`）——`standbyBucketForPackage()` 把标准桶值映射成内部索引 `EXEMPTED/ACTIVE/WORKING/FREQUENT/RARE/RESTRICTED/NEVER`，再喂给 `QuotaController.isWithinQuotaLocked()`（`QuotaController.java:942-1017`）。`QuotaController` 默认配额矩阵（`QuotaController.java:3196-3294`）：
 
 | 桶 | 窗口 | Job 配额 | Session 配额 | EJ 配额 |
 |----|------|---------|--------------|---------|
 | EXEMPTED | 40 min | 75 | 75 | 60 min |
 | ACTIVE | 60 min | 75 | 75 | 30 min |
-| WORKING_SET | 4 h | 60 | 10 | 15 min |
+| WORKING_SET | 4 h | 120 | 10 | 15 min |
 | FREQUENT | 12 h | 200 | 8 | 10 min |
 | RARE | 24 h | 48 | 3 | 10 min |
 | RESTRICTED | 24 h | 10 | 1 | 5 min |
 
 FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减 2.5 倍。这就是 Adaptive Battery 写一次桶值的实际资源效果。
 
-**AppStateTracker 消费**（`AppStateTrackerImpl.java:771-792`）——`StandbyTracker.onAppIdleStateChanged()` 把进入 EXEMPTED 的包加入 `mExemptedBucketPackages`，进而被 `isUidActiveSynced()`（`AppStateTrackerImpl.java:1811`）和 `isInParole()`（`AppStateTrackerImpl.java:1156-1191`）读取。**EXEMPTED 不仅是配额大的桶**：它让 App 绕过 `QuotaController.isUidInForeground()` 常规检查，也影响 RIL 是否给该 UID 拉活数据 Radio。
+**AppStateTracker 消费**（`AppStateTrackerImpl.java:771-789, 1146-1195`）——`StandbyTracker.onAppIdleStateChanged()` 把进入 EXEMPTED 的包加入 `mExemptedBucketPackages`；`areAlarmsRestrictedByBatterySaver()` 与 `areJobsRestricted()` 在 `mForceAllAppsStandby` 路径下读取该集合并放行 jobs/alarms。**EXEMPTED 不等价于 UID 前台态**：`isUidActiveSynced()` 仍只查 ActivityManager，Radio/RIL 是否拉活也不能由 AppStandby bucket 直接推断。
 
 **全局强制降级**（`AppStateTrackerImpl.java:634-654`）——`mForceAllAppsStandby` 是 OEM 经常复用的钩子：华为/小米冻结后台的底层来源之一，与 Adaptive Battery 桶值是叠加而非互斥。
 
@@ -955,7 +955,7 @@ FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减
         │
         ├─→ AppStateTracker.StandbyTracker.onAppIdleStateChanged()
         │       → mExemptedBucketPackages.add/remove
-        │       → isUidActiveSynced() / isInParole() → RIL 拉活
+        │       → areAlarmsRestrictedByBatterySaver() / areJobsRestricted() 放行 jobs/alarms
         │
         └─→ JobSchedulerService.standbyBucketForPackage()
                 → QuotaController.isWithinQuotaLocked()
@@ -965,8 +965,8 @@ FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减
 
 #### 5. 性能影响与版本差异
 
-- **唤醒节省**：RARE/RESTRICTED 桶的 `mAppStandbyElapsedThresholds` 显著拉长——24h 才允许一次 RARE 桶 App 主动唤醒执行 Job。FREQUENT→RARE 后，后台 CPU 时间预算下降约 4–5 倍。
-- **EXEMPTED 副作用**：ML 推入 EXEMPTED 的 App 同时获得 RIL 旁路、QuotaController 前台旁路、高配额三层资源——实质等价于"被系统认为活跃"。
+- **唤醒节省**：RARE/RESTRICTED 桶进入 24h quota window；RARE 默认仍有 48 个 Job / 3 个 session，但总执行时间只有 10min/24h，RESTRICTED 收紧到 10 个 Job / 1 个 session。FREQUENT→RARE 后，Job 数配额下降约 4 倍。
+- **EXEMPTED 副作用**：ML 推入 EXEMPTED 的 App 同时获得更大的 JobScheduler quota，并在 AppStateTracker 的 force-all-apps-standby 路径下绕过 jobs/alarms 限制；它不是 UID active，也不是 Radio/RIL 旁路。
 - **版本差异**：RESTRICTED 自动降级 8 天阈值从 Android 13 起生效；Android 14 起 `DEFAULT_CURRENT_EJ_TOP_APP_TIME_CHUNK_SIZE_MS` 从 30s 改成 5min；Android 16+ `AppStandbyController` 整组迁移到 `apex/jobscheduler/service/`；Android 17 维持 `12 * ONE_HOUR` 默认 prediction timeout。
 
 > 排查后台任务延迟时，先用 `adb shell dumpsys jobscheduler <pkg>` 看到 `whenStandbyDeferred>0`，再 `adb shell am get-standby-bucket <pkg>` 拿当前桶，配合 `dumpsys usagestats` 里的 `adaptivebat=<provider_pkg>` 判断是 ML 预测结果还是时间阈值结果——三种情况的修复路径不同。
@@ -1049,14 +1049,14 @@ if (jobTimedOut) {
 
 ### 11.4.7.3 第三层：后台运行配额（QuotaController）
 
-**配额矩阵**（`QuotaController.java:3160-3250`，`QcConstants` 默认值）：
+**配额矩阵**（`QuotaController.java:3196-3294`，`QcConstants` 默认值）：
 
-| Bucket | AllowedTime/Period | WindowSize (legacy → current) | MaxJobCount | MaxSessionCount |
+| Bucket | AllowedTime/Period (legacy → Android 17 default) | WindowSize (legacy → Android 17 default) | MaxJobCount | MaxSessionCount |
 |--------|--------------------|-------------------------------|-------------|-----------------|
-| EXEMPTED | 10 min | 10 min (legacy) / 20 min (current) | 75 | 75 |
-| ACTIVE | 10 min | 10 min (legacy) / 30 min (current) | 75 | 75 |
-| WORKING | 10 min | 2 h (legacy) / 4 h (current) | 120 | 10 |
-| FREQUENT | 10 min | 8 h (legacy) / 12 h (current) | 200 | 8 |
+| EXEMPTED | 10 min → 20 min | 10 min → 40 min | 75 | 75 |
+| ACTIVE | 10 min → 20 min | 10 min → 60 min | 75 | 75 |
+| WORKING | 10 min | 2 h → 4 h | 120 | 10 |
+| FREQUENT | 10 min | 8 h → 12 h | 200 | 8 |
 | RARE | 10 min | 24 h | 48 | 3 |
 | RESTRICTED | 10 min | 24 h | 10 | 1 |
 | NEVER | 0 | 0 | 0 | 0 |
@@ -1068,7 +1068,7 @@ if (jobTimedOut) {
 
 **EJ 专属配额**（`QuotaController.java:481-528`）：`mEJLimitsMs[]` 给 Expedited Job 单独限额，EXEMPTED 60min、ACTIVE 30min、WORKING 15min、FREQUENT 10min、RARE 10min、RESTRICTED 5min；窗口 `mEJLimitWindowSizeMs = 24h`。
 
-**决策入口**（`QuotaController.isWithinQuotaLocked()`，line 927-967）：
+**决策入口**（`QuotaController.isWithinQuotaLocked()`，line 942-972）：
 
 ```java
 if (jobStatus.shouldTreatAsUserInitiatedJob()
@@ -1084,14 +1084,14 @@ return isUnderJobCountQuotaLocked(stats) && isUnderSessionCountQuotaLocked(stats
 
 **调用链**（在每个 Job 生命周期内）：
 
-1. `maybeStartTrackingJobLocked()`（line 615-642）：Job 被 tracking controller 接管时调用 `isWithinQuotaLocked()`，并通过 `setConstraintSatisfied(jobStatus, nowElapsed, isWithinQuota, isWithinEJQuota)` 写入 constraint 状态。
-2. `prepareForExecutionLocked()`（line 644-676）：**真正开始计时**——把 Job 装进 `Timer.startTrackingJobLocked()`，此时 `Timer` 记录 `mStartTimeElapsed` 并 `scheduleCutoff()`。
-3. `unprepareFromExecutionLocked()`（line 678-695）：Job 跑完时 `Timer.stopTrackingJob()`，若 `mRunningBgJobs` 清空则 `emitSessionLocked()`，**把整段 session 写入 `mTimingSessions`**，并 `incrementTimingSessionCountLocked`。
-4. `getRemainingExecutionTimeLocked()`（line 1039-1041）：剩余时间 = `min(allowedTime - usedInWindow, maxExecTime - usedInMaxPeriod)`，**双窗口收敛**。
+1. `maybeStartTrackingJobLocked()`（line 635-660）：Job 被 tracking controller 接管时调用 `isWithinQuotaLocked()`，并通过 `setConstraintSatisfied(jobStatus, nowElapsed, isWithinQuota, isWithinEJQuota)` 写入 constraint 状态。
+2. `prepareForExecutionLocked()`（line 664-692）：**真正开始计时**——把 Job 装进 `Timer.startTrackingJobLocked()`，此时 `Timer` 记录 `mStartTimeElapsed` 并 `scheduleCutoff()`。
+3. `unprepareFromExecutionLocked()`（line 697-707）：Job 跑完时 `Timer.stopTrackingJob()`，若 `mRunningBgJobs` 清空则 `emitSessionLocked()`，**把整段 session 写入 `mTimingSessions`**，并 `incrementTimingSessionCountLocked`。
+4. `getRemainingExecutionTimeLocked()`（line 1046-1048）：剩余时间 = `min(allowedTime - usedInWindow, maxExecTime - usedInMaxPeriod)`，**双窗口收敛**。
 
-**豁免路径**（line 882-925 + 942-960）：
+**豁免路径**（line 882-925 + 942-972）：
 
-- **User-Initiated Job**：完全不计入 quota（`prepareForExecutionLocked` 直接 return，line 657-660）。
+- **User-Initiated Job**：完全不计入 quota（`prepareForExecutionLocked` 直接 return，line 678-680）。
 - **Top started Job**：启动时 app 在 TOP 状态，整段不计入（`mTopStartedJobs` 集合 + `OVERRIDE_QUOTA_ENFORCEMENT_TO_TOP_STARTED_JOBS = 374323858L` ChangeID，line 161-164）。
 - **Foreground UID**：`isUidInForeground()` 命中即放行。
 - **BatteryCharging**：`isQuotaFreeLocked()` 返回 true（除 RESTRICTED），Job 全部放行。
@@ -1115,11 +1115,11 @@ if (Flags.countQuotaFix() && !nextPending.isReady()) {
 
 | 节流层 | 防什么 | 谁来执行 | 触顶后副作用 |
 |--------|--------|----------|--------------|
-| 1. API 节流 | 防「调太多 schedule()」 | `JobSchedulerService.scheduleAsPackage()` | debuggable 抛异常 / release 返回失败 + 降桶 |
+| 1. API 节流 | 防「调太多 schedule()」 | `JobSchedulerService.scheduleAsPackage()` | debuggable 抛异常 / release 默认继续（可配置返回失败）+ 降桶 |
 | 2. 执行超时节流 | 防「单次跑太久（>10min）」 | `JobSchedulerService.maybeProcessBuggyJob()`（android-17.0.0_r1:3543-3589） | total/ANR 触顶降桶 |
 | 3. 后台配额 | 防「算太久（>4h/24h）」 | `QuotaController.isWithinQuotaLocked()` | 静默 defer，1 分钟后 `MSG_REACHED_COUNT_QUOTA` 通知 |
 
-**调用收敛**：三层都把触顶后的副作用收敛到 `mAppStandbyInternal.restrictApp(pkg, userId, REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY)`，把包降级到 RESTRICTED 桶——这意味着 **RESTRICTED 桶的 App 实际承受了所有三层的惩罚**。
+**调用收敛**：API 节流和执行超时 total/ANR 触顶会通过 `mAppStandbyInternal.restrictApp(pkg, userId, REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY)` 把包降级到 RESTRICTED 桶；QuotaController 本身不降桶，只按当前 bucket 静默 defer。RESTRICTED 桶承受叠加惩罚，是因为前两层把应用推入最严 bucket 后，第三层再按 RESTRICTED 配额执行。
 
 ### 11.4.7.6 性能与排查
 
@@ -1171,7 +1171,7 @@ if (Flags.countQuotaFix() && !nextPending.isReady()) {
 ### Adaptive Battery 与 App Standby 协同机制（5 桶配额 + 三方消费 + 12h 衰减）
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md
 - 类型：DeepResearch 调研结果
-- 摘要：Adaptive Battery 在 AOSP 主线不是独立服务，而是「写入接口+衰减契约」：UsageStatsManagerInternal.setAppStandbyBuckets() 走 REASON_MAIN_PREDICTED 路径，AppStandbyController 把 lastPredictedBucket 持久化，12h 内调度器读取，超过则回退到时间阈值。桶值被三方消费：JobScheduler.standbyBucketForPackage()→QuotaController.isWithinQuotaLocked()（决定 EJ/Job/Session 配额）、AppStateTracker.StandbyTracker（EXEMPTED 集 + RIL 拉活旁路）、AppStateTracker.mForceAllAppsStandby（OEM 强制降级钩子）。FREQUENT→RARE 等价于 Job 配额衰减 4 倍、Session 衰减 2.5 倍。
+- 摘要：Adaptive Battery 在 AOSP 主线不是独立服务，而是「写入接口+衰减契约」：UsageStatsManagerInternal.setAppStandbyBuckets() 走 REASON_MAIN_PREDICTED 路径，AppStandbyController 把 lastPredictedBucket 持久化，12h 内调度器读取，超过则回退到时间阈值。桶值被三方消费：JobScheduler.standbyBucketForPackage()→QuotaController.isWithinQuotaLocked()（决定 EJ/Job/Session 配额）、AppStateTracker.StandbyTracker（EXEMPTED 集 + jobs/alarms 强制待机放行）、AppStateTracker.mForceAllAppsStandby（OEM 强制降级钩子）。FREQUENT→RARE 等价于 Job 配额衰减 4 倍、Session 衰减 2.5 倍。
 
 
 ### Android 12+ 隐私沙盒对定位功耗的三层判定链
