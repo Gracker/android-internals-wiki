@@ -59,7 +59,7 @@ reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-17T08:09:32+08:00"
 last_task6_review_log: "logs/review/2026-06-17-08-review.md"
-last_task6_audit: "2026-07-01"
+last_task6_audit: "2026-07-02"
 task2b_result: fixed
 last_task2b_at: "2026-05-28T18:50:00+08:00"
 repaired_date: "2026-05-28"
