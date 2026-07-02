@@ -385,3 +385,16 @@
 2. 等待 Android 18 DP
 3. 清理重复 draft（6.2/8.1/4.18 可考虑标记为 deprecated 或合并）
 4. 14.24/14.25/9.10/22.27/23.25/26.23/26.14 等 draft 章节需内容加工或 Task 2B 处理
+
+
+## [Task14 参考书扫描] 10.1 App 内存分析 — 2026-07-02
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- **建议补充**：android_os_Debug_getDirtyPagesPid() 源码级 walk-through（load_maps 函数解析逻辑，涵盖 HEAP_NATIVE/HEAP_DALVIK/HEAP_SO/HEAP_ART/HEAP_GL_DEV/HEAP_CURSOR/HEAP_ASHMEM 等完整分类枚举），以及 maps 文件每行字段含义速查表（address/perms/offset/dev/inode/pathname）。当前 ch04 和 ch10 虽提及 PSS/RSS/maps 但未做到源码级分类枚举覆盖。
+- **参考书覆盖深度**：中等（源码摘录 + 分类逻辑，但不涉及 Android 17 的变化）
+
+## [Task14 参考书扫描] 10.1 App 内存分析 — 2026-07-02
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- **过时内容**：参考书引用源码为 master 分支（未锚定版本），其中 GWP-ASan、scudo 分配器为相对较新特性但未标注 Android 版本边界。load_maps 中 memfd:jit-cache / memfd:jit-zygote-cache 路径为 Android 11+ 引入。
+- **建议更新至**：Android 17 android-17.0.0_r1，需核实 android_os_Debug.cpp 在 Android 17 中的变化（如新增 heap 类型、MemoryLimiter 相关统计字段等）
