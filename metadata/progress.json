@@ -330,5 +330,22 @@
     "1.14",
     "1.24",
     "1.25"
-  ]
+  ],
+  "sections": {
+    "15": {
+      "status": "finalized",
+      "last_task6_at": "2026-07-02T22:09:00+08:00",
+      "task6_result": "pass-light-edit"
+    },
+    "21.2": {
+      "status": "finalized",
+      "last_task6_at": "2026-07-02T22:09:00+08:00",
+      "task6_result": "pass-light-edit"
+    },
+    "20.3": {
+      "status": "finalized",
+      "last_task6_at": "2026-07-02T22:09:00+08:00",
+      "task6_result": "pass-light-edit"
+    }
+  }
 }
