@@ -1,13 +1,16 @@
 ---
 title: "AppFlow大应用冷启动内存联合调度与LMKDv2协作机制"
 chapter: "18"
-status: draft
+status: deprecated
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: ["memory", "optimization", "android17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "素材驱动/AOSP结构/章节深挖"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 4.5 + 4.12 内容重复。duplicate of 4.5; wrong chapter number; generic template outline。
+
+
 
 # 18 AppFlow大应用冷启动内存联合调度与LMKDv2协作机制
 

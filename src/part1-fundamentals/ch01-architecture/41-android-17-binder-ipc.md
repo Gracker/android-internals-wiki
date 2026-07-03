@@ -1,13 +1,16 @@
 ---
 title: "Android 17 Binder IPC优先级调度与异步批处理流水线"
 chapter: "41"
-status: draft
+status: deprecated
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: ["memory", "optimization", "android17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "素材驱动/AOSP结构/官方文档"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 1.44 + 1.53 (Binder IPC, ready-for-review) 内容重复。duplicate of 1.44/1.53; generic template outline; wrong chapter number。
+
+
 
 # 41 Android 17 Binder IPC优先级调度与异步批处理流水线
 

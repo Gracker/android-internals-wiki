@@ -1,13 +1,16 @@
 ---
 title: "Perfetto新版功能：Data Explorer与Jank CUJ SQL模块"
 chapter: "1"
-status: draft
+status: deprecated
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: ["memory", "optimization", "android17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "研究素材/素材驱动/AOSP结构"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 13.21 (finalized) + 13.22 (ready-for-review) 内容重复。duplicate of 13.21/13.22 which cover Perfetto v54 Data Explorer + Jank CUJ SQL。
+
+
 
 # 1 Perfetto新版功能：Data Explorer与Jank CUJ SQL模块
 

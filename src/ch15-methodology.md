@@ -6,12 +6,12 @@ applicable_versions: Android 8-17 (API 26-37)
 last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 tags:
 - methodology
-task9_result: needs-rework
+task9_result: pass-tech-review
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+pipeline_stage: ready-to-publish
 last_task6_at: "2026-07-04T02:10:34+08:00"
 last_task6_review_log: "logs/review/2026-07-04-02-review.md"
 last_task9_at: "2026-07-04T03:20:00+08:00"
