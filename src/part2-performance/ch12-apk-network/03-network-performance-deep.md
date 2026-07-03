@@ -122,7 +122,7 @@ last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
 > 如果后续补到了 HTTP/2 复用、Radio State Machine 或网络请求分阶段 Trace 的图示，优先插入对应锚点后并补验证来源。
 <!-- outline-end -->
 
-在 §12.2 中我们从宏观角度梳理了网络性能优化的策略和工具：HTTP/2 与 HTTP/3 的选择、弱网应对方案、OkHttp EventListener 监控等。那些内容回答了"应该做什么"。
+在 §12.2 中我们从宏观角度梳理了网络性能优化的策略和工具：HTTP/2 与 HTTP/3 的选择、弱网应对方案、OkHttp EventListener 监控等。那些内容回答了实践策略。
 
 这一节我们深入到网络请求的底层机制：一个 HTTP 请求从发起到收到响应，中间到底经历了哪些步骤？每个步骤的耗时分布在哪？为什么连接复用比新建连接快这么多？TLS 握手到底有多贵？DNS 解析在什么情况下会成为瓶颈？
 
@@ -136,7 +136,7 @@ last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
 - **Cronet**：它是以库形式提供给应用的 Chromium 网络栈，HTTP/2、HTTP/3、QUIC、连接调度和大部分网络状态机都在 Chromium 层完成。
 - **HttpEngine**：Android 14 / API 34 把 Cronet 能力以 `android.net.http` SDK 形式暴露出来，底层仍是 Chromium / Cronet 栈。
 
-把 OkHttp、Cronet、HttpEngine 压成同一条 `java.net -> Conscrypt -> kernel` 调用链，会把 QUIC、HTTP/3 和连接管理的边界写混。后续分析 DNS、TLS、连接复用或 Perfetto 线程时，都要先按具体网络栈分流。
+把 OkHttp、Cronet、HttpEngine 整合为同一条 `java.net -> Conscrypt -> kernel` 调用链，会把 QUIC、HTTP/3 和连接管理的边界写混。后续分析 DNS、TLS、连接复用或 Perfetto 线程时，都要先按具体网络栈分流。
 
 无论走哪条栈，一个 HTTPS 请求从发起到收到响应，必经的环节是相同的。下面是一次典型请求的完整时间分解：
 
@@ -185,7 +185,7 @@ HTTP/2 引入了多路复用（multiplexing）：一个 TCP 连接上可以同�
 
 在 OkHttp 中，当服务端支持 HTTP/2 时（通过 ALPN 协商），连接池的行为会发生变化：同一个地址只需要维持一条连接，所有请求复用这条连接。这大大减少了连接池的压力，也降低了服务端的资源消耗。
 
-HTTP/2 的收益来自把同域名并发请求压到一条已建立的连接上。DNS、TCP、TLS 这些固定成本通常只付一次，后续多个 stream 直接复用现有连接。收益大小取决于资源数量、RTT、服务端实现和丢包情况，正文不固定写成单一百分比。
+HTTP/2 的好处在于把同域名并发请求放到一条已建立的连接上。DNS、TCP、TLS 这些固定成本通常只付一次，后续多个 stream 直接复用现有连接。效果大小取决于资源数量、RTT、服务端实现和丢包情况，正文不固定写成单一百分比。
 
 [图：同一域名 8 个资源在 HTTP/1.1 多连接与 HTTP/2 单连接下的阶段对比，标出 DNS/TCP/TLS 只发生一次，以及多个 stream 并发返回的位置]
 
@@ -369,7 +369,7 @@ connectivityManager.registerDefaultNetworkCallback(
 
 移动网络功耗看的是基带状态切换，不是单个 HTTP 包本身用了多少 CPU。以蜂窝网络为例，调制解调器会在高功耗传输态、较低功耗的维持态和空闲态之间切换。传输结束后，modem 往往不会立刻回到最省电的空闲态，而是保留一段 tail time 等后续流量。
 
-这个 tail time 决定了网络请求为何适合批量发送。若请求零散分布，系统会反复把 modem 拉回高功耗态；若能把同一时间窗口内的请求合并，尾巴成本就能被多次请求共同摊掉。具体收益和 RAT 类型、运营商参数、设备基带实现直接相关，正文不固定写成统一毫安值或统一倍数。
+这个 tail time 决定了网络请求为何适合批量发送。若请求零散分布，系统会反复把 modem 拉回高功耗态；若能把同一时间窗口内的请求合并，尾巴成本就能被多次请求共同分摊。具体效果和 RAT 类型、运营商参数、设备基带实现直接相关，正文不固定写成统一毫安值或统一倍数。
 
 [图：蜂窝网络状态机示意，标出一次短请求后的 tail time，以及连续小请求导致 modem 多次停留在高功耗态的对比]
 
@@ -454,7 +454,7 @@ Perfetto 里更常见的现象是主线程等待网络线程，而不是主线�
 
 ### 🔸 HTTP/3 与 QUIC
 
-当 DNS、TCP、TLS、TTFB 都已经拆开看过，弱网或网络切换时尾延迟仍然抖动，再看 HTTP/3 / QUIC 这一层。QUIC 跑在 UDP 上，把丢包恢复放到 stream 级别处理，能减轻 HTTP/2 over TCP 在单连接上的 head-of-line blocking。移动端分析里，更常见的收益点是连接恢复、弱网恢复和高 RTT 下的尾延迟，而不是单纯背协议名。
+当 DNS、TCP、TLS、TTFB 都已经拆开看过，弱网或网络切换时尾延迟仍然抖动，再看 HTTP/3 / QUIC 这一层。QUIC 跑在 UDP 上，把丢包恢复放到 stream 级别处理，能减轻 HTTP/2 over TCP 在单连接上的 head-of-line blocking。移动端分析里，更常见的好处是连接恢复、弱网恢复和高 RTT 下的尾延迟，而不是单纯背协议名。
 
 | 能力 | Android / API | Cronet | HttpEngine | OkHttp | 备注 |
 | --- | --- | --- | --- | --- | --- |
