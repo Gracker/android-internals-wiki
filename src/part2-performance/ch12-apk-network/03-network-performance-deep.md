@@ -5,8 +5,8 @@ section: "12.3"
 status: ready-for-review
 drafted_date: "2026-04-07"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-21"
-last_verified_against: "Android Developers docs / source.android / OkHttp 5.x docs / Google Security Blog 2022-07 / AOSP libcore & DnsResolver paths"
+last_verified: 2026-07-03
+last_verified_against: "Android Developers docs / source.android / OkHttp 5.x docs / Google Security Blog 2022-07 / AOSP android-17.0.0_r1 libcore BlockGuard, packages/modules/Connectivity DnsResolver, packages/modules/DnsResolver rust/src/doh"
 confidence: medium
 sources:
   - type: official
@@ -26,7 +26,13 @@ sources:
   - type: official
     path: "https://developer.android.com/develop/connectivity/cronet"
   - type: aosp
-    path: "packages/modules/DnsResolver/doh"
+    path: "packages/modules/DnsResolver/rust/src/doh"
+  - type: aosp
+    path: "packages/modules/Connectivity/framework/src/android/net/DnsResolver.java"
+  - type: aosp
+    path: "packages/modules/Connectivity/framework/src/android/net/dns/HttpsRecord.java"
+  - type: aosp
+    path: "packages/modules/Connectivity/framework/src/android/net/dns/HttpsEndpoint.java"
   - type: official
     path: "https://developers.google.com/android/reference/com/google/android/gms/security/ProviderInstaller"
   - type: official
@@ -54,22 +60,22 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 review_round: 2
-task6_state: "reviewed"
-pipeline_stage: task9_pending
-task9_state: "pending"
-task9_result: "auto-fixed"
-task2b_state: "fixed"
+task6_state: revisiting
+pipeline_stage: task6_pending
+task9_state: reviewed
+task9_result: auto-fixed
+task2b_state: fixed
 task2b_result: "fixed"
-last_task9_at: "2026-07-03T06:27:14+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-03"
+last_task9_at: "2026-07-03T09:32:24+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-07-03
 last_task6_audit: "2026-06-10"
 last_task9_audit: "2026-07-03"
-last_task9_review_log: "logs/deep-review/2026-07-03-06-audit.md"
-p0: 0
-p1: 0
+last_task9_review_log: logs/deep-review/2026-07-03-09-deep-review.md
+p0: 1
+p1: 1
 p2: 0
-task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：Android 17 主线 libcore 中 `BlockGuard.java` 位于 `libcore/dalvik/src/main/java/dalvik/system/`，socket 网络入口由 `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java` 调用 `BlockGuard.getThreadPolicy().onNetwork()`；已修正 frontmatter AOSP 源码路径并同步重锚 OkHttp 4.12.x `ConnectionPool.kt` 代码块。P0 1 / P1 0 / P2 0；回到 Task6 复审。"
+task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：Android 17 主线 libcore 中 `BlockGuard.java` 位于 `libcore/dalvik/src/main/java/dalvik/system/`，socket 网络入口由 `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java` 调用 `BlockGuard.getThreadPolicy().onNetwork()`；已修正 frontmatter AOSP 源码路径并同步重锚 OkHttp 4.12.x `ConnectionPool.kt` 代码块。P0 1 / P1 0 / P2 0；回到 Task6 复审。 | 2026-07-03 09 Task9 deep-review AUTO-FIX：修正 DoH3 AOSP 路径为 packages/modules/DnsResolver/rust/src/doh，并补充 DnsResolver TYPE_HTTPS/HttpsRecord/HttpsEndpoint 在 android-17.0.0_r1 中的 FlaggedApi 边界。P0 1 / P1 1 / P2 0；回到 Task6 复审。"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-07-03T09:09:50+08:00"
 task6_reviewed_at: "2026-05-28T06:11:00+08:00"
@@ -80,10 +86,10 @@ last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
 last_task2b_note: "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-last_task9_autofix_at: "2026-07-03"
+last_task9_autofix_at: 2026-07-03
 last_task9_audit_log: "logs/deep-review/2026-07-03-06-audit.md"
 task9_p0_issues: 1
-task9_p1_issues: 0
+task9_p1_issues: 1
 task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
@@ -298,7 +304,7 @@ DNS 加密传输有三种主流协议，我们先区分清楚。DoT（DNS over T
 
 Android 系统 resolver 的公开入口，长期稳定的是 Private DNS 这条 DoT 路径。Google 在 2022 年披露，DoH3 通过 Google Play system update rollout 到 Android 11 及以上设备，另有一部分较早接入 Play system update 的 Android 10 设备也会收到这项能力。对支持的 well-known DNS servers，系统会把原来的 DoT transport 升级为 DoH3；用户使用的 DNS 服务本身不变。
 
-这部分实现位于 `packages/modules/DnsResolver/doh`，属于系统 resolver 的 transport 演进，不是 App 侧通用 API。Google 给出的初始 rollout 数据是：成功查询上，DoH3 相比 DoT 的 median query time 下降 24%，95th percentile 下降 44%。这组数据出自 Google Online Security Blog。
+这部分实现位于 `packages/modules/DnsResolver/rust/src/doh/`，并通过 `packages/modules/DnsResolver/doh.h`、`DohParamsParcel.aidl` 等入口接入系统 resolver，属于 transport 演进，不是 App 侧通用 API。Google 给出的初始 rollout 数据是：成功查询上，DoH3 相比 DoT 的 median query time 下降 24%，95th percentile 下降 44%。这组数据出自 Google Online Security Blog。
 
 对性能分析来说，这段版本线的价值在于分清瓶颈落点。若 DNS P95 偏高，要继续区分是 resolver 选择、解析协议、运营商网络，还是单个 DNS 服务实现的问题。DoT 单流上的 head-of-line blocking，和 DoH3 / QUIC 的多 stream 行为，对尾延迟的影响不同。
 
@@ -313,6 +319,8 @@ Android 系统 resolver 的公开入口，长期稳定的是 Private DNS 这条 
 ### DNS HTTPS Record（Type 65）
 
 Android 17（API 37）的 `DnsResolver` 新增了对 DNS HTTPS Record（Type 65）的公开 API 支持，包括 `DnsResolver.TYPE_HTTPS`、`android.net.dns.HttpsRecord`、`HttpsEndpoint` 以及带 `httpsTimeoutMillis` 参数的并发 A/AAAA/HTTPS 查询重载。传统 DNS 查询只返回 IP 地址；Type 65 查询一次能拿到目标服务的 HTTPS RR 信息：IP 地址、支持的 ALPN 协议列表（如 `h3` 标识 HTTP/3 可用）、ECH（Encrypted Client Hello）公钥等。
+
+源码边界也要记住：这些入口在 `android-17.0.0_r1` 中带 `@FlaggedApi(com.android.tethering.flags.Flags.FLAG_ENCRYPTED_CLIENT_HELLO_DNS)`；`HttpsRecord.getEchConfigList()` 还受 Conscrypt 的 ECH platform flag 约束。因此它们可以作为 Android 17 / API 37 的能力讨论，落地时仍要以目标设备的 SDK/API 暴露和平台 flag 状态为准。
 
 对性能的直接影响是减少了建连前的探测 RTT。旧模型下，客户端要先查 A/AAAA 记录得到 IP，再通过 ALPN 协商判断是否支持 HTTP/3，连接建立后还要单独协商 ECH——每一步都可能产生额外 RTT。Type 65 把这些信息打包进一次查询，省掉 1-2 个探测 RTT。
 
