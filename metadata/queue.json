@@ -909,8 +909,8 @@
     "status": "pending"
   },
   {
-    "section": "7.10",
-    "section_title": "WebView 性能",
+    "section": "7.11",
+    "section_title": "WebView 渲染性能与优化",
     "priority": 84,
     "reason": "[时效性巡检] last_verified 超期 81 天",
     "material_paths": [

@@ -4,7 +4,7 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
 chapter: 19
 section: 19.20
-status: ready-for-review
+status: finalized
 drafted_date: 2026-04-24
 drafted_by: codex
 applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-17 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
@@ -16,27 +16,35 @@ related_chapters:
 sources: 
 - type: official
 path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-03
 task6_result: pass-light-edit
 last_task6_audit: 2026-06-17
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-04-26T15:45:22+08:00
 repaired_date: 2026-04-26
 repaired_by: openclaw-task2b
-task9_result: auto-fixed
-task9_reviewed_date: 2026-04-25
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-07-03
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-07-03T10:26:00+08:00
+last_task9_at: 2026-07-03T12:32:56+08:00
 last_task9_audit: 2026-07-03
 last_task9_autofix_at: 2026-07-03
 rework_type: review回炉修复（External Review 问题单）
 last_task9_audit_log: logs/deep-review/2026-07-03-10-audit.md
 last_task6_at: 2026-07-03T12:13:55+08:00
+last_task9_review_log: logs/deep-review/2026-07-03-12-deep-review.md
+task9_p0_issues: 0
+task9_p1_issues: 0
+task9_p2_issues: 0
+p0: 0
+p1: 0
+p2: 0
+task9_review_notes: 2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。
 ---
 -
 
