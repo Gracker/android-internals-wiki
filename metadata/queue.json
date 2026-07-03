@@ -477,5 +477,26 @@
     "original_review_log": "logs/review/2026-07-03-20-review.md",
     "completed_at": "2026-07-03T21:45:48+08:00",
     "completed_reason": "fixed-lite: CLI parameter correction (issue #2) + systrace buffer unit fix (issue #3). Issue #1 (FrameTimeline generic content) deferred to main Task2B."
+  },
+  {
+    "section": "13.21",
+    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
+    "priority": 50,
+    "reason": "[Task6 Review round6 低优先级] FrameTimeline 集成小节末尾通用内容待替换",
+    "material_paths": [
+      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "🔹 FrameTimeline 集成 — UI 线程性能瓶颈典型场景 + 分析方法（约行 260-270）",
+        "detail": "「UI 线程性能瓶颈典型场景」（过度绘制/过度布局/阻塞操作/动画卡顿）和「分析方法」（时间线分析/资源使用分析/依赖关系分析/热路径识别）是通用 Android 性能知识，与 FrameTimeline 在 Perfetto 中的集成机制无直接关联。读者期望看到 FrameTimeline trace 查询方法、DisplayFrameTracker 使用示例等",
+        "suggestion": "替换为 FrameTimeline 在 trace_processor 中的具体查询示例，或删除通用列表让该小节聚焦于 FrameTimeline 的追踪范围与 SurfaceFlinger 协同"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-03T22:18:53",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-03-22-review.md"
   }
 ]
