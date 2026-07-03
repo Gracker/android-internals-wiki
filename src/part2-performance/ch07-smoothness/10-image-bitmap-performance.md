@@ -12,8 +12,8 @@ gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: 17
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-13"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-07-03"
+last_verified_against: "AOSP android-17.0.0_r1"
 reviewed_date: "2026-05-06"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -37,8 +37,8 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -49,13 +49,14 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-06"
 task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理 frontmatter 禁用词、口语化表达、绝对化措辞和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task9_at: "2026-05-06T12:42:00+08:00"
-last_task9_audit: "2026-06-18"
-last_task9_audit_log: "logs/deep-review/2026-06-18-12-audit.md"
+last_task9_audit: "2026-07-03"
+last_task9_audit_log: "logs/deep-review/2026-07-03-11-audit.md"
 task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决。 | 2026-05-06 12:42 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；AVIF fallback 实现名与 Perfetto 调用栈采集条件写入 suggestions；无 active queue pending，自动晋升 finalized。"
 last_task6_at: "2026-05-06T10:10:00+08:00"
 last_task6_audit: "2026-06-28"
 last_task6_review_log: "logs/review/2026-05-06-10-review.md"
-task9_result: pass-tech-review
+task9_result: auto-fixed
+last_task9_autofix_at: "2026-07-03"
 auto_promoted: true
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
@@ -304,7 +305,7 @@ Bitmap resultBitmap = BitmapFactory.decodeResource(res, resId, options);
 // decodeResource 返回值通常与 options.inBitmap 指向同一个 Bitmap 对象，
 // 底层像素缓冲被重新配置并复用；调用方应使用返回值作为后续引用，
 // 不要继续按旧尺寸/旧内容使用 reusableBitmap。
-// [已验证：AOSP android-16.0.0_r1 BitmapFactory.cpp doDecode() —
+// [已验证：AOSP android-17.0.0_r1 BitmapFactory.cpp doDecode() —
 //  javaBitmap != null 时执行 bitmap::reinitBitmap() 后 return javaBitmap]
 ```
 
@@ -507,9 +508,9 @@ software bitmap 解码完成后，像素还在 CPU 可访问内存里。第一�
 
 Hardware Bitmap 的价值就在这里。像素本来就在 GPU 可访问内存中，渲染阶段不用再做 software bitmap 的首帧上传。
 
-`Bitmap.prepareToDraw()` 从 Android 7.0 起就在 RenderThread 上异步触发纹理上传，公开 API 行为未在 Android 15 发生变更。工程实践上，在解码完成后的工作线程或图片即将显示前调用 `prepareToDraw()` 即可预上传；不需要额外配合 `Choreographer` 的 `CALLBACK_COMMIT` 阶段——`Choreographer.postFrameCallback()` 投递的是 `CALLBACK_ANIMATION` 类型，不等于 `CALLBACK_COMMIT`。[已验证：AOSP `Bitmap.java` prepareToDraw() 注释在 android-15.0.0_r1 和 android-16.0.0_r1 未变；Choreographer 回调类型见 AOSP `Choreographer.java`]
+`Bitmap.prepareToDraw()` 从 Android 7.0 起就在 RenderThread 上异步触发纹理上传，公开 API 行为在 Android 17 / API 37 基准下仍成立。工程实践上，在解码完成后的工作线程或图片即将显示前调用 `prepareToDraw()` 即可预上传；不需要额外配合 `Choreographer` 的 `CALLBACK_COMMIT` 阶段——`Choreographer.postFrameCallback()` 投递的是 `CALLBACK_ANIMATION` 类型，不等于 `CALLBACK_COMMIT`。[已验证：AOSP android-17.0.0_r1 `Bitmap.java` prepareToDraw() 注释与 `Choreographer.java` 回调类型]
 
-源码路径上，Hardware Bitmap 不能绕过 RenderNode 直接提交给 SurfaceFlinger。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理，而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[已验证：AOSP android-14 `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp`]
+源码路径上，Hardware Bitmap 不能绕过 RenderNode 直接提交给 SurfaceFlinger。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理，而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[已验证：AOSP android-17.0.0_r1 `Bitmap.java`、`DrawFrameTask.cpp`、`RecordingCanvas.cpp`、`SkiaGpuPipeline.cpp`]
 
 [图：Perfetto RenderThread 片段。`Bitmap.prepareToDraw` 或首帧 `DrawFrame` 前后出现长 slice，并且能看到同一帧的 jank frame。旁边补一张使用 Hardware Bitmap 的正常帧，说明少掉了首帧 texture upload。]
 
