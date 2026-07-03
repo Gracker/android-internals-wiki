@@ -1,38 +1,39 @@
 ## [2026-07-03] 13.21 Perfetto 版本演进与 Android 9-17 新特性验证 — 知识盲区
 
 ### 盲区描述
-Android 13+ 新增的 `android.aflags` 和 `android.game_intervention_list` 场景感知数据源在当前章节中未深入分析。根据源码调研，这两个数据源是 Android 13+ 后新增的特殊数据源，分别抓取 features.xml 开关状态和 Game Mode 干预策略，属于 Peretto 与 Android 系统深度集成的重要特性。
+heapprofd 在生产环境的实际部署模式未覆盖，包括是否默认启用、权限要求、与其他 tracing 工具的协同方案，这对开发者实际使用 heapprofd 至关重要。
 
 ### 重要程度
 高
 
 ### 建议研究方向
-- 深入分析 `android.aflags` 数据源的内部实现机制，研究其与 Android Runtime 的交互方式
-- 调研 `android.game_intervention_list` 数据源的性能影响和实际应用场景
-- 分析这两个场景感知数据源在 Android 17 中的具体实现和配置方式
-- 研究这些数据源与其他数据源之间的依赖关系和协同工作机制
+- heapprofd 在 Android 12+ 系统中的默认配置和启动机制
+- heapprofd 与其他 tracing 工具（如 Perfetto 主服务、Systrace）的协同和冲突解决方案
+- 企业级 heapprofd 部署的权限配置和最佳实践
+- heapprofd 在不同设备类型（手机、平板、TV、Auto）上的适配差异
 
 ### 关联章节
 - 13.1 Perfetto 基础架构
-- 13.20 Android Runtime 集成机制
-- 13.22 游戏性能分析专题
+- 13.20 性能分析工具集成
+- 20.3 Native Crash 分析与治理（signal handling 边界）
 
 ---
 
-## [2026-07-03] 13.21 Perfetto 版本演进与 Android 9-17 新特性验证 — 知识盲区
+## [2026-07-03] 21.2 启动框架设计与任务编排 — 知识盲区
 
 ### 盲区描述
-heapprofd 使用 __SIGRTMIN+4 和 __SIGRTMIN+6 信号进行线程间通信的机制在当前章节中未详细说明。这两个信号分别用于 Native 调用栈采样和 Java HPROF 周期 dump 的线程间同步，是 heapprofd 双 producer 模型的重要组成部分。
+模块化启动框架在微服务架构下的应用未覆盖，随着 Android 应用的微服务化趋势，传统单进程启动框架无法直接适用于多进程、跨模块的服务启动场景。
 
 ### 重要程度
-中
+高
 
 ### 建议研究方向
-- 分析 heapprofd 信号机制的具体实现细节和线程同步策略
-- 研究信号传递与共享内存的协同工作机制
-- 调研信号处理中的错误处理和边界情况
-- 分析多 session 环境下的信号冲突解决方案
+- 多进程启动框架的依赖管理机制
+- 跨模块服务发现与启动编排策略
+- 微服务架构下的启动性能监控与治理
+- 模块化启动框架与动态加载技术的集成方案
 
 ### 关联章节
-- 13.19 内存分析工具演进
-- 13.23 Android 性能调优实战
+- 21.1 启动耗时分析
+- 8.3 延迟�化策略
+- 15.1 性能优化方法论

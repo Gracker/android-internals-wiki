@@ -742,3 +742,77 @@ A/B 测试的持续时间：至少收集一个完整周（覆盖工作日 + 周�
 1. **配置延迟**：远程配置下发到客户端有 1-2 次启动的延迟。首次启动（无缓存配置）需要走默认 DAG，不能因为"等配置"而延长启动时间。
 2. **配置校验**：客户端收到远程配置后必须做合法性校验——环检测、任务 ID 存在性检查、线程模式合法性。校验失败时回退到内置默认配置。
 3. **版本兼容**：新版本客户端可能增加了新任务或删除了旧任务，远程配置中引用的任务 ID 需要和当前版本兼容。推荐在配置中增加 `min_client_version` 字段。
+
+
+<!-- AIW-源码调研-2026-07-03 -->
+## [自动发现·源码调研] 模块化启动框架在多进程/微服务场景下的实现细节
+
+本节由 `intake/research-gaps.md [2026-07-03] 21.2` 驱动补充。报告原文：`DeepResearch/2026-07-03-android17-modular-startup-microservice-cross-process.md`。版本基准：`android-17.0.0_r1` + `androidx.startup 1.2.0 (androidx-main)` + `alibaba/alpha master (artifact 1.0.0.1)`。
+
+### InitializationProvider 在 Application.onCreate 之前抢先执行
+
+`android-17.0.0_r1:frameworks/base/core/java/android/app/ActivityThread.java` 行 8260-8330 的 `handleBindApplication()` 顺序固定为：`makeApplicationInner` → `installContentProviders` → `mInstrumentation.callApplicationOnCreate`。`installContentProviders` 会触发系统中所有声明的 `<provider>` 的 `onCreate`，App Startup 的 `InitializationProvider.onCreate` 恰好卡在这个位置，于是业务在 `Application.onCreate` 里写 `AppInitializer.getInstance(ctx).initializeComponent(X.class)` 时拿到的永远是已 ready 的对象。
+
+`InitializationProvider.onCreate` 用 `getClass()` 把自己的 Class 对象传给 `AppInitializer.discoverAndInitialize`（注释 `b/183136596#comment18`），目的是让多进程 App 在 `:push` / `:web` 等子进程也能正确读到该进程 manifest 合并结果。`AppInitializer.sInstance` 是**进程内**单例（`sLock + 双重检查`），`mDiscovered` 和 `mInitialized` 在每个进程独立维护一份 HashMap/HashSet——子进程的 Initializer 集合与主进程独立。
+
+### 跨模块服务发现：`<meta-data>` 合并机制
+
+业务方在子模块的 manifest 声明：
+
+```xml
+<provider android:name="androidx.startup.InitializationProvider"
+    android:authorities="${applicationId}.androidx-startup"
+    android:exported="false" tools:node="merge">
+    <meta-data android:name="com.example.push.PushInitializer"
+        android:value="androidx.startup" />
+</provider>
+```
+
+`AppInitializer.discoverAndInitialize` 用一行 `if (startup.equals(value))`（`startup = "androidx.startup"`）过滤——SDK 作者不能任意占用 namespace。主 App 可用 `tools:node="remove"` 关掉整个机制。这是模块化 App "主 App 零代码接入新 SDK"的关键支撑。
+
+### Alpha 框架的多进程 Project 路由
+
+`AlphaManager.MAIN_PROCESS_MODE / SECONDARY_PROCESS_MODE / ALL_PROCESS_MODE` 三态路由在 `AlphaManager.start()` 中按四步优先级查找：
+
+1. `mProjectForCurrentProcess`（最高优先级，特定进程特定图）
+2. 当前若是主进程且配置了 `MAIN_PROCESS_MODE`
+3. 当前若是子进程且配置了 `SECONDARY_PROCESS_MODE`
+4. 通配 `ALL_PROCESS_MODE`
+
+`Project` 本身是 `Task` 子类，可作为 `Task` 嵌套进另一个 `Project`——这是"子模块启动图嵌入主启动图"的实现基础。`Task.start()` 状态机 `STATE_IDLE → STATE_WAIT → STATE_RUNNING → STATE_FINISHED`，重复 `start()` 抛 `"You try to run task X twice, is there a circular dependency?"`，环检测在运行时（与 App Startup DFS 构建期检测形成对比）。`Task` 通过 `android.os.Process.setThreadPriority(mThreadPriority)` 设置线程优先级——这是与 §5 线程优先级控制打通的 hook。
+
+### App Startup vs Alpha 多进程适配差异
+
+| 维度 | App Startup 1.2.0+ | Alpha 1.0.0.1 |
+| --- | --- | --- |
+| 多进程识别 | 进程内单例，子进程独立维护集合 | `AlphaUtils.isInMainProcess()` 在 `start()` 时按进程名判断 |
+| 差异化方式 | 运行时主动调用 `initializeComponent()` | 启动时按 MAIN/SECONDARY/ALL 选 Project |
+| 默认执行线程 | 主线程（`InitializationProvider.onCreate` 跑在系统 binder 线程） | 显式声明 `isInUiThread` |
+| 依赖声明 | `Initializer.dependencies()` 编译期安全 | `Builder.add(task).after(...)` 运行时构建 |
+| 环检测 | DFS + `initializing` Set，构建时 | 运行时状态机 |
+| 进程内单例 | 进程级 singleton | `sInstance` 静态 + `synchronized` |
+
+**关键差异**：App Startup 的"零业务代码"属性在多进程下变成"零业务代码 × N 进程"——子进程会重复初始化主进程跑过的 Initializer。Alpha 显式按模式选 Project，子进程只跑自己那一份 DAG。
+
+### App Startup 多进程放大效应
+
+每个进程都会跑 `discoverAndInitialize` 全表，进程数 N → Initializer 总执行次数 = Σ(每个进程实际匹配数)。如果 20 个 Initializer 在 4 个进程都会跑，每进程首屏会被初始化 20 次（除非业务自己做进程分支）。App Startup 的官方做法是 Initializer 内部按进程名 `if (processName.equals(...))` 分支——这与 §21.7 `Application.onCreate` 按进程分支的设计一致。另一种做法是 Alpha 的 `MAIN_PROCESS_MODE` 让子进程只加载子进程应该跑的那张 DAG，从源头避免重复执行。
+
+### 启动监控集成
+
+App Startup 在 `AppInitializer.doInitialize` 已经对每个 Initializer `Trace.beginSection(component.getSimpleName())` / `Trace.endSection()`，Perfetto 抓 trace 时即可看到 `Startup:PushInitializer` 这种分段切面。Alpha 用 `ExecuteMonitor.recordTaskStart/Finish` 自维护 task 级耗时，通过 `OnGetMonitorRecordCallback.onGetTaskExecuteRecord(Map<String, Long>)` 上报，需要业务自行收集。对比：App Startup 走系统 trace 不需要额外 APM；Alpha 需要对接 APM。
+
+### 与动态加载/动态特性模块的集成要点
+
+1. **动态模块 Initializer**：动态特性 manifest 在安装后才合并，`InitializationProvider` 仅扫描当前已安装的子模块——已安装但未激活的动态模块的 Initializer 不会被发现，行为正确。
+2. **类加载器隔离**：动态模块走独立 ClassLoader，`Class.forName(key)` 默认用调用方 ClassLoader；生产中需要 `clazz.getClassLoader()` 或 `Thread.currentThread().getContextClassLoader()` 显式指定。
+3. **Beta/灰度下发**：Alpha 用 XML 配置或 Builder 在运行时构建 DAG，可以从远程配置中心拉任务列表；App Startup 走静态 manifest，需要动态模块自身实现 LazyLoad 包装 Initializer。
+
+### 微服务架构下的启动治理建议
+
+- 主进程首帧不依赖任何子进程 Ready（§21.7 已述握手状态机 `NotStarted → Starting → Ready / Degraded → Dead`）。
+- App Startup 的 Initializer 必须按进程分支或被 `tools:node="remove"` 关闭，否则多进程放大效应会把首屏拉长。
+- Alpha 的 `MAIN_PROCESS_MODE / SECONDARY_PROCESS_MODE` 让每个进程只加载该进程的 DAG，是大应用多进程的更优解。
+- 跨进程数据同步走 Binder/ContentProvider，不走 `SharedPreferences.MODE_MULTI_PROCESS`（§21.7 已述 API 23 deprecated）。
+
+<!-- /AIW-源码调研-2026-07-03 -->
