@@ -409,6 +409,13 @@
       "status": "ready_for_review",
       "ts": "2026-07-04T05:07:00+08:00",
       "note": "ActivityManager 性能优化实战: 5 anchors (AMS心智模型/进程调度内存协同/Activity启动优化/生命周期内存管理/后台服务广播) + 3 extensions (跨进程启动/Cached冻结影响/Perfetto诊断). Cross-ref to 1.44/1.18/4.5/8.2/8.6. AOSP android-17.0.0_r1 验证."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-04T06:09:43+08:00",
+      "note": "Gap mining round 5: 0 candidates ≥14. Checked 12 new candidate topics across Clippings mapping (59 articles all mapped), AOSP services, daily info, keyword matrix. Coverage saturated (5th consecutive)."
     }
   ],
   "review_history": [
@@ -603,14 +610,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-04T05:07:00+08:00",
-    "last_section": "8.7",
-    "result": "processed 8.7 + deprecated 14 broken duplicate drafts",
-    "fix_count": 1,
-    "last_sections": [
-      "8.7"
-    ],
-    "note": "Processed ch8.7 ActivityManager performance (5 anchors + 3 extensions). Deprecated 9+5=14 broken duplicate drafts from automated gap-mining. Coverage saturated."
+    "last_run": "2026-07-04T06:09:43+08:00",
+    "last_section": "none",
+    "result": "no-candidates (5th consecutive)",
+    "fix_count": 0,
+    "last_sections": [],
+    "note": "Gap mining round 5: 0 candidates ≥14 after checking 12 topics. Coverage saturated."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",

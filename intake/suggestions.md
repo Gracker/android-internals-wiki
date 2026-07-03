@@ -97,3 +97,27 @@
 - **位置**：整体章节
 - **问题**：未讨论跨厂商设备（Samsung、小米、OPPO 等）的 Perfetto 行为差异
 - **建议**：补充主要厂商定制 ROM 中 Perfetto 实现的差异性说明及调试技巧
+
+## [2026-07-04] 知识缺口挖掘 — 第5轮无候选 (连续第5轮)
+
+**本轮检查方向**（全部 < 14分）：
+1. Jetpack Glance / App Widget 性能 (11/20) — 已有 24-app-widget-performance.md
+2. Predictive Back 手势性能 (12/20) — 已有 13-predictive-back-performance.md
+3. Desktop Mode / 大屏适配性能 (11/20) — 已有 14-desktop-windowing + 27-adaptive-layout
+4. 16KB Page Size 兼容性性能 (12/20) — 已在 ch16-aosp/05 + ch20-stability/13 中覆盖
+5. WorkManager 性能优化 (8/20) — 系统调度层面，ch16已有覆盖
+6. Room Database 性能 (9/20) — 已有 02-database-optimization + 17-room3-kmp
+7. Android Virtualization Framework (pKVM) (10/20) — 已有 32-virtualization-framework
+8. Media3 / ExoPlayer 性能 (9/20) — 已有 media-pipeline + audio-offload 覆盖
+9. Compose Navigation 性能 (8/20) — 已有 22.23-navigation-compose-performance
+10. Compose Macrobenchmark / Baseline Profiles (9/20) — 已在 ch21-startup/04 + ch16-aosp/01 中覆盖
+11. Satellite API 性能 (7/20) — 已有 11-satellite-low-bandwidth + 22-location-services
+12. 线上疑难问题参考书内容映射 (N/A) — 59篇全部映射到现有章节
+
+**检查维度**：
+- Clippings 三本参考书（稳定性15篇、性能优化16篇、线上疑难59篇）→ 全部主题已有对应章节
+- AOSP frameworks/base 核心服务 → WindowManager/ActivityManager/Telephony/Connectivity/PowerManager 均已覆盖
+- 12个候选关键词全文搜索 → 均有对应章节
+- 每日信息 + 研究素材 → 无新方向
+
+**结论**：全书 ~577 个小节，覆盖范围已饱和（连续第5轮确认）。建议后续挖掘周期转为已有章节深度扩展。
