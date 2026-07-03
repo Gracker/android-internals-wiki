@@ -1,7 +1,7 @@
 ---
 title: "Android 17 系统启动优化与 bootanalyze 工具链增强"
 chapter: "8.3"
-status: draft
+status: deprecated
 applicable_versions: "Android 17 (API 37)"
 tags: ["Android17", "性能优化", "系统机制"]
 related_chapters: ['ch08']
@@ -10,6 +10,9 @@ created_date: "2026-07-03"
 gap_source: "素材驱动+AOSP验证"
 gap_score: 18
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 8.1-bootanalyze-optimization-toolchain.md + 8.2 内容重复。duplicate of existing bootanalyze chapters; outline incorrectly contains Binder IPC content。
+
+
 
 # 8.3 Android 17 系统启动优化与 bootanalyze 工具链增强
 

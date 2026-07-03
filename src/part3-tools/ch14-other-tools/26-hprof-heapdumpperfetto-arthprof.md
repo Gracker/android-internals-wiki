@@ -1,13 +1,16 @@
 ---
 title: "HPROF HeapDump管线与Perfetto art_hprof优化解析"
 chapter: "26"
-status: draft
+status: deprecated
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: ["memory", "optimization", "android17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "AOSP结构/官方文档/研究素材"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 14.22 (22-hprof-heapdump-javahprof-datasource.md, finalized, 664 lines) 内容重复。duplicate of 14.22 which already comprehensively covers HPROF HeapDump + Perfetto java_hprof。
+
+
 
 # 26 HPROF HeapDump管线与Perfetto art_hprof优化解析
 

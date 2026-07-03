@@ -1,7 +1,7 @@
 ---
 title: "Android 17 SharedPreferencesImpl ANR 真因分析与迁移方案"
 chapter: "6.4"
-status: draft
+status: deprecated
 applicable_versions: "Android 17 (API 37)"
 tags: ["Android17", "性能优化", "系统机制"]
 related_chapters: ['ch06']
@@ -10,6 +10,9 @@ created_date: "2026-07-03"
 gap_source: "素材驱动+AOSP结构"
 gap_score: 18
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 6.2-sharedpreferences-anr-optimization.md (ready-for-review, 504 lines) 内容重复。duplicate of 6.2; outline incorrectly contains Binder IPC content。
+
+
 
 # 6.4 Android 17 SharedPreferencesImpl ANR 真因分析与迁移方案
 

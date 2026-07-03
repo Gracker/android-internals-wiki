@@ -1,13 +1,16 @@
 ---
 title: ch10-memory-perf
 chapter: '10'
-status: draft
+status: deprecated
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - performance
 - memory
 - perf
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 chapter README + 10 subsections (01-10) 内容重复。placeholder chapter-level file; actual content in 01-10 subsections (most finalized)。
+
+
 
 # ch10-memory-perf
 

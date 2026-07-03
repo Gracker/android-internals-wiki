@@ -1,13 +1,16 @@
 ---
 title: "Android 17系统启动优化与bootanalyze工具链增强"
 chapter: "9"
-status: draft
+status: deprecated
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: ["memory", "optimization", "android17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "素材驱动/AOSP结构/研究素材"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 8.1/8.2 (bootanalyze) 内容重复。duplicate of existing bootanalyze chapters; wrong chapter number; generic template outline。
+
+
 
 # 9 Android 17系统启动优化与bootanalyze工具链增强
 
