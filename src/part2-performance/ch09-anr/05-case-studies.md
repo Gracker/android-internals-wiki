@@ -74,7 +74,7 @@ last_task6_audit: "2026-06-08"
 last_task6_review_log: "logs/review/2026-05-18-20-review.md"
 task6_review_notes: "2026-05-14 20:10 Task6：revisiting 写作复审通过；L1/L2 小修 7 处，无新增回炉项；既有 Task9 P0 队列保留，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 4 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-18 20:16 Task6：revisiting 写作复审通过；L1/L2 小修 0 项（未改正文，仅更新 review 元数据）；无新增回炉项，Task9 复审状态继续阻止自动晋升。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # 案例集
@@ -183,7 +183,7 @@ CPU usage TOTAL: 99% 14% user + 36% kernel + 43% iowait
 
 这类 ANR 的共同特征：trace 中主线程堆栈"干净"（`nativePollOnce` 或 `WaitHoldingLocks`），但 AnrManager 的负载信息暴露真相。看到 Load 值远超 CPU 核心数、iowait 超过 20%、`kswapd0` 在排行榜前面，就要往系统负载方向分析。
 
-**16KB Page Size 下的 I/O 注意事项。** 需要区分两个概念：系统物理页大小（Android 15+ 新设备可能使用 16KB）和 SQLite 数据库页大小。AOSP SQLite 默认 `SQLITE_DEFAULT_PAGE_SIZE=4096`，**不受系统页大小影响**。只有显式执行 `PRAGMA page_size=16384` 并重建数据库后，WAL checkpoint 的单页写入量才会变为 16KB——此时默认 1000 页的 `wal_autocheckpoint` 阈值意味着单次 checkpoint 写入约 16MB（而非默认的 4MB），在 I/O 压力大的场景下脉冲更明显。实战调优方向：对写入密集的数据库，将 `PRAGMA wal_autocheckpoint` 从默认的 1000 页调低到 100-200 页，把单次大脉冲拆成多次小脉冲，降低 iowait 峰值。如果数据库使用默认 4KB page_size，16KB 系统页本身不会改变 checkpoint 行为。
+在排查 I/O 压力型 ANR 时，16KB 页面大小设备上的 SQLite 行为也值得关注。需要区分两个概念：系统物理页大小（Android 15+ 新设备可能使用 16KB）和 SQLite 数据库页大小。AOSP SQLite 默认 `SQLITE_DEFAULT_PAGE_SIZE=4096`，**不受系统页大小影响**。只有显式执行 `PRAGMA page_size=16384` 并重建数据库后，WAL checkpoint 的单页写入量才会变为 16KB——此时默认 1000 页的 `wal_autocheckpoint` 阈值意味着单次 checkpoint 写入约 16MB（而非默认的 4MB），在 I/O 压力大的场景下脉冲更明显。实战调优方向：对写入密集的数据库，将 `PRAGMA wal_autocheckpoint` 从默认的 1000 页调低到 100-200 页，把单次大脉冲拆成多次小脉冲，降低 iowait 峰值。如果数据库使用默认 4KB page_size，16KB 系统页本身不会改变 checkpoint 行为。
 
 ---
 
@@ -253,7 +253,13 @@ Input ANR 中 "(server) is not responding" 子类型，根因几乎一定在 sys
 
 1. 先将数据写入内存缓存
 2. 将文件写入任务提交到后台线程
-3. 在 Activity 的生命周期切换时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成。AOSP android-17.0.0_r1 中，非 pre-Honeycomb Activity 的等待点在 `handleStopActivity()`（对应 `onStop()` 时机），`handlePauseActivity()` 只对 pre-Honeycomb Activity 调用 `waitToFinish()`。Service 的写入等待点在 `ActivityThread.handleServiceArgs()` 和 `handleStopService()` 中；`handleStopActivity()`（非 pre-Honeycomb）也会调用 `waitToFinish()`。BroadcastReceiver 侧，`PendingResult.sendFinished()` 通过 `QueuedWork.queue()` 延后执行，不是 `handleReceiver()` 直接调用 `waitToFinish()`
+3. 在 Activity 的生命周期切换时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成
+
+不同组件的等待时机在 AOSP android-17.0.0_r1 中有所区别：
+
+- **Activity**：非 pre-Honeycomb Activity 在 `handleStopActivity()`（对应 `onStop()`）中等待；`handlePauseActivity()` 只对 pre-Honeycomb Activity 调用 `waitToFinish()`
+- **Service**：在 `ActivityThread.handleServiceArgs()` 和 `handleStopService()` 中等待
+- **BroadcastReceiver**：`PendingResult.sendFinished()` 通过 `QueuedWork.queue()` 延后执行，不是 `handleReceiver()` 直接调用 `waitToFinish()`
 
 当 App 中存在大量 `apply()` 调用但后台写入还没完成时，主线程在生命周期切换时就会被卡住。
 
@@ -452,7 +458,7 @@ public synchronized Cursor query(String table, String selection) {
 
 trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死锁的典型信号。分析方法：找到主线程等待的锁（trace 中有 `waiting to lock` 和 `held by thread` 信息），再看持有者的堆栈是否也在等另一把锁。如果形成环，就是死锁。
 
-另一类常见的 Android 死锁是 **Binder 线程池被同步调用压满**：主线程同步调用其他进程的 Binder 接口，而对方进程又回调到本进程，这时本进程需要有空闲 Binder 线程继续接收事务。AOSP android-17.0.0_r1 的 `frameworks/native/libs/binder/ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，这是 `setThreadPoolMaxThreadCount()` 下发给 Binder driver 的默认上限。调用方线程如果主动 `joinThreadPool()`，总可用处理线程可能比这个值再多 1 个，所以实战里不要把它硬记成“固定 16 个 Binder 线程”。这类问题在 trace 中更常见的表现，是大量 `Binder:XXX_X` 线程堵在事务等待上，主线程也卡在同步 Binder 调用链里。
+除了 synchronized 锁顺序问题，Android 中还有一种常见死锁形态：**Binder 线程池被同步调用压满**。主线程同步调用其他进程的 Binder 接口，而对方进程又回调到本进程，这时本进程需要有空闲 Binder 线程继续接收事务。AOSP android-17.0.0_r1 的 `frameworks/native/libs/binder/ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，这是 `setThreadPoolMaxThreadCount()` 下发给 Binder driver 的默认上限。调用方线程如果主动 `joinThreadPool()`，总可用处理线程可能比这个值再多 1 个，所以实战里不要把它硬记成“固定 16 个 Binder 线程”。这类问题在 trace 中更常见的表现，是大量 `Binder:XXX_X` 线程堵在事务等待上，主线程也卡在同步 Binder 调用链里。
 
 
 ## 分析方法总结
@@ -469,7 +475,7 @@ trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死�
 
 ### InputDispatcher WaitQueue 观察点
 
-InputDispatcher 内部维护了每个连接（connection）的 WaitQueue，存放已分发但尚未被消费（finish）的 Input 事件。这个队列长度可以通过以下途径观察：
+作为上述分析路径的补充，InputDispatcher 内部维护了每个连接（connection）的 WaitQueue，存放已分发但尚未被消费（finish）的 Input 事件。这个队列长度可以通过以下途径观察：
 
 - **dumpsys input**：`dumpsys input` 输出中每个 Connection 的 `WaitQueue` 字段直接显示队列中待确认的事件数量，是最可靠的观察手段
 - **atrace counter**：AOSP InputDispatcher 暴露 atrace counter `iq`（inbound queue）、`oq:<InputChannel>`（outbound queue per connection）、`wq:<InputChannel>`（wait queue per connection），可以观察每个连接的事件排队情况

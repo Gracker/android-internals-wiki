@@ -5,7 +5,11 @@ section: "20.3"
 section_title: "Native Crash 分析与治理"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-02"
+last_verified: "2026-07-03"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-07-03"
+task9_reviewed_by: "openclaw-task9"
+pipeline_stage: ready-to-publish
 last_verified_against: "AOSP android-17.0.0_r1 (debuggerd/crash_dump, libunwindstack BuildId format, native crash notification chain)"
 confidence: medium
 drafted_date: "2026-05-11"
@@ -37,10 +41,8 @@ task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-li
 task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean (对齐=技术内存对齐, 非黑话). L2 pass. 限制句式×2 at limit. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
 task6_result: pass-light-edit
 task9_state: pending
-task9_result: auto-fixed
-task9_reviewed_date: "2026-07-02"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-02T19:31:35+08:00"
+task9_result: pass-tech-review
+last_task9_at: "2026-07-03T19:20:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-07-02T18:50:00+08:00"

@@ -437,9 +437,35 @@
   {
     "section": "13.21",
     "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 85,
-    "reason": "P1 版本基准不符：源码引用 Android 35 SDK 与章节 Android 10-17 范围冲突",
-    "task": "task2b-reanchor",
-    "created_at": "2026-07-03T19:20:00+08:00"
+    "priority": 70,
+    "reason": "[Task6 Review round5] FrameTimeline 通用内容填充 + CLI 参数疑似错误 + Systrace 迁移示例 buffer 映射差异",
+    "material_paths": [
+      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
+      "logs/review/2026-07-03-20-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "🔹 FrameTimeline 集成 — UI 线程性能瓶颈典型场景 + 分析方法列表（约行 260-270）",
+        "detail": "FrameTimeline 集成小节末尾的「UI 线程性能瓶颈典型场景」和「分析方法」列表是通用 Android 性能知识，与 FrameTimeline 在 Perfetto 中的集成机制无关。读者期望看到 FrameTimeline 的 trace 查询方法、DisplayFrameTracker 的使用示例、帧匹配逻辑等具体内容",
+        "suggestion": "删除通用列表，替换为 FrameTimeline 在 Perfetto trace_processor 中的查询示例和实际追踪范围说明"
+      },
+      {
+        "type": "需确认",
+        "location": "🔸 性能优化与最佳实践 — CLI 命令示例（约行 280-300）",
+        "detail": "示例使用的 --buffer-size=256M、--compression=zstd、--duration-seconds=300 疑似不是标准 perfetto CLI 参数。Perfetto 的 buffer size 和 duration 通常在 config protobuf 中设置，不是 CLI flag",
+        "suggestion": "验证 perfetto CLI 是否支持这些 flag；如不支持，改为在 config 文件中设置这些参数的正确示例"
+      },
+      {
+        "type": "需确认",
+        "location": "🔸 与 Systrace 的对比 — 迁移示例（约行 330-340）",
+        "detail": "systrace -b 128 表示 128KB buffer，但等效 Perfetto 配置中 size_kb: 131072 表示 128MB，存在约 1000 倍差异",
+        "suggestion": "确认 systrace -b 参数单位（KB），修正 perfetto 等效配置中的 size_kb 值使其匹配"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-03T20:12:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-03-20-review.md"
   }
 ]

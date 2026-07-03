@@ -50,6 +50,8 @@ task2b_verifier_note: "Task2B Verifier corrected state for Task6 flow back (2026
 last_task6_at: "2026-07-02T19:14:49+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-03-18-deep-review.md"
 task6_review_notes_round3: "2026-07-03 Task6 revisiting-review round3: pass-light-edit. L1 clean (no banned words). L2 pass. No new L3/L4 issues. Auto-promoted: task9=pass-tech-review, queue=no pending."
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # App 可观测性架构设计
@@ -78,8 +80,6 @@ task6_review_notes_round3: "2026-07-03 Task6 revisiting-review round3: pass-ligh
 <!-- outline-end -->
 
 App 可观测性要解决线上问题处理里的四件事：判断影响面、拿到现场证据、找到责任方向，并把修复结果拉回线上验证。上线后 30 分钟 crash 率飙升——先回答「影响多少用户、哪些机型、哪个版本」，再拿到具体 crash 堆栈和用户操作路径；修完后灰度验证，确认修复版本 crash 率回落。这四个环节对应 Metrics（看趋势）、Logs（还原现场）、Traces（解释慢在哪）、回验（确认修复）。本节把可观测性拆成四层：数据模型、端侧采集、服务端处理、问题流转。Part 5 后续小节会展开 Crash、ANR、性能指标和案例，本节聚焦总架构。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
 
 ## Metrics / Logs / Traces 分别回答什么问题
 
@@ -229,8 +229,6 @@ graph TD
 - 上传层：按事件优先级、网络类型、前后台状态和服务端限流批量上传。弱网下优先上传摘要，延后上传大文件。
 - 控制层：服务端下发采样率、事件开关、远程诊断命令和熔断规则；每条配置带版本号、过期时间和作用范围。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
-
 这个分层里有两个约束。采集入口要足够便宜，主线程只提交事实；分析和聚合要放到服务端，端侧只做必要的压缩、脱敏和容灾。19.27 节已经展开 APM SDK 的 `mmap`、编码协议、网络投递和自监控，本节不重复实现细节。
 
 ## 从采集到告警的完整数据路径
@@ -313,11 +311,9 @@ Metrics 说「这个版本变差了」，Logs 说「变差发生在支付确认�
 告警阈值要绑在「用户能感知的变化」上：TTFD 超过 3 秒的比例、ANR 率（不是次数）、冻帧次数、Crash 率。不要为每个指标都设告警——只告警那些直接反映用户体验恶化的指标。
 
 
-[自动发现] 用户日志与远程诊断是现场证据层
+### 用户日志与远程诊断：现场证据层
 
-Metrics 告诉团队哪里异常，Logs 和远程诊断帮助团队回到现场。高阶课程素材把用户日志、动态调试、远程诊断放在疑难问题排查章节里。放到 26.1，这部分补上了指标之外的现场证据层：可观测性架构除了指标看板，还要能在必要时为特定用户、特定版本、特定机型补采现场。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md]
+Metrics 告诉团队哪里异常，Logs 和远程诊断帮助团队回到现场。本节补上了指标之外的现场证据层：可观测性架构除了指标看板，还要能在必要时为特定用户、特定版本、特定机型补采现场。
 
 可执行的设计通常包含三类能力：
 

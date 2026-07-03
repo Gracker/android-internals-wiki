@@ -2,10 +2,14 @@
 title: "网络请求分段优化与弱网治理"
 chapter: "24.14"
 section: "24.14"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-22"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-02"
+last_verified: "2026-07-03"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-07-03"
+task9_reviewed_by: "openclaw-task9"
+pipeline_stage: ready-to-publish
 last_verified_against: "Android Developers Cronet / network access optimization docs 2026-05-22 + android-17.0.0_r1 (verified via git ls-remote; APIs cross-checked against android-17.0.0_r1 tag on googlesource) + OkHttp 5.x docs"
 confidence: medium
 tags: [network, latency, weak-network, cronet, okhttp, power]
@@ -26,8 +30,8 @@ last_task6_review_log: "logs/review/2026-05-22-17-review.md"
 task6_l1_l2_fixes: 5
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-22 Task6：首次写作质检通过；补齐 outline，清理结构性元叙述、编辑标记和填充副词 5 处；无 L3/L4 回炉项，送 Task9 技术复核。"
-task9_result: fixed
-last_task9_at: "2026-07-02T20:34:05+08:00"
+task9_result: pass-tech-review
+last_task9_at: "2026-07-03T19:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-02-20-audit.md"
 last_task9_audit: "2026-07-02"
 last_task6_audit: "2026-06-17"
