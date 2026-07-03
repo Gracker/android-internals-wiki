@@ -182,3 +182,20 @@
   1. 后续精力宜聚焦于 review 195 个 ready-for-review 章节（Task 6/9 流水线）
   2. 35 个 draft 章节中多个已有实质内容，可考虑 Task 2B 深度加工
   3. 当有新 research-feeds 或 daily-info 进入时，下一轮挖掘才可能有新发现
+
+
+## [Task2A Gap Mining] 知识缺口挖掘方向记录 — 2026-07-04 01:04
+- **轮次结果**：未发现评分 ≥ 14 的知识缺口（连续第 3 轮无合格候选）
+- **触发条件**：Phase 0 无空 draft（0 个）+ Task2B backlog=0（≤20）→ 进入 Phase 1
+- **与上一轮差异**：自 2026-07-04 00:07 以来无新素材变化（research-feeds / daily-info / source-index 无更新），Clippings 三本参考书内容稳定
+- **本轮新增检查**：
+  1. developer.android.com Android 17 behavior changes → web_fetch 被 DNS 限制阻断
+  2. Clippings 稳定性 25 篇内容 → 全部映射到 ch20/ch23/ch26 对应章节
+  3. Clippings 性能优化 16 篇内容 → 全部映射到 ch21-ch25 对应章节
+  4. 50+ 关键词覆盖矩阵扫描 → 核心主题全部有专门章节（571 个有效章节）
+- **全书状态**：577 总节 / 340 finalized / 195 ready-for-review / 35 draft（多个已有实质内容） / 6 deprecated
+- **成熟度**：核心性能领域覆盖密度已达饱和，缺口挖掘 ROI 持续下降
+- **建议**：
+  1. 后续精力聚焦 review 195 个 ready-for-review 章节（Task 6/9 流水线）
+  2. 35 个 draft 章节中多个已有实质内容，可考虑 Task 2B 深度加工或直接提审
+  3. 待新 research-feeds / daily-info 进入或 Android 17 正式版 SDK 文档发布后再启动挖掘
