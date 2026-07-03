@@ -500,5 +500,37 @@
     "original_review_log": "logs/review/2026-07-03-22-review.md",
     "completed_at": "2026-07-03T23:38:55+08:00",
     "completion_reason": "fixed-lite: FrameTimeline 通用 UI 瓶颈列表替换为 trace 观察入口"
+  },
+  {
+    "section": "13.21",
+    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0 事实错误：主 body 数据源总数与源码调研增补严重矛盾",
+    "material_paths": [
+      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
+      "logs/deep-review/2026-07-04-00-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "主 body 数据源演进表格（约行 100-130）",
+        "detail": "章节声称 Android 17 有 77 个 protobuf 数据源，但底部源码调研验证为 18 个 ProbesProducer 数据源，存在严重的 P0 事实错误",
+        "suggestion": "必须以源码调研验证的 18 个 ProbesProducer 数据源为准重写数据源演进表格，删除未经源码验证的虚假数据"
+      },
+      {
+        "type": "源码错误",
+        "location": "Section 关键源码验证",
+        "detail": "引用的 frameworks/native/cmds/perfetto/main.cc 在 Android 17 中不存在，实际路径为 external/perfetto/src/perfetto_cmd/main.cc",
+        "suggestion": "修正源码路径为 external/perfetto/src/perfetto_cmd/main.cc"
+      }
+    ],
+    "added_by": "task9-review",
+    "added_at": "2026-07-04T00:25:59.548130+08:00",
+    "status": "completed",
+    "auto_fix_needed": false,
+    "task9_audit_notes": "2026-07-04 Task9 Deep Tech Review: 发现 P0 事实错误（77 vs 18 数据源），需要 Task 2B 重写数据源演进表格部分",
+    "completed_at": "2026-07-04T00:53:15.088572+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "verified-fixed: P0 data source count (18 not 77) already corrected in previous Task2B run (2026-07-03); source path already correct (external/perfetto/src/perfetto_cmd/main.cc). Content clean on verification."
   }
 ]
