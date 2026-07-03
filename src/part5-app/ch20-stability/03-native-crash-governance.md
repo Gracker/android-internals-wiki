@@ -3,7 +3,7 @@ title: "Native Crash 分析与治理"
 chapter: "20.3"
 section: "20.3"
 section_title: "Native Crash 分析与治理"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
 last_verified_against: "AOSP android-17.0.0_r1 (debuggerd/crash_dump, libunwindstack BuildId format, native crash notification chain)"
@@ -29,13 +29,13 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 last_task6_at: "2026-07-02T22:09:00+08:00"
 last_task6_review_log: "logs/review/2026-07-02-22-review.md"
 task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 clean. L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task9_reviewed_date: "2026-07-02"
 task9_reviewed_by: "openclaw-task9"

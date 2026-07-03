@@ -2,7 +2,7 @@
 title: "App 可观测性架构设计"
 chapter: "26.1"
 section: "26.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-14"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
@@ -27,12 +27,12 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, logs, traces, architecture]
 related_chapters: ["26.2", "26.3", "19.27", "15.9"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_date: "2026-07-02"
 task9_reviewed_by: "openclaw-task9"
 task9_result: pass-tech-review
@@ -46,7 +46,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-30-06-audit.md"
 last_task9_autofix_at: "2026-06-30"
 task9_review_notes: "2026-07-02 Task9 normal deep-review：复核 Android Developers / Firebase 文档与 19.27、15.9、26.2-26.5 交叉引用，未发现 P0/P1；queue 无 pending 且 Task6 已通过，自动晋升 finalized。"
 task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fixes: banned word, empty heading. L2 pass. No new L3/L4 issues."
-task2b_verifier_note: "status finalized→ready-for-review for Task6 pickup (2026-06-30T07:29:40+08:00)"
+task2b_verifier_note: "Task2B Verifier corrected state for Task6 flow back (2026-07-03T15:30:00+08:00)"
 last_task6_at: "2026-07-02T19:14:49+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-02-19-deep-review.md"
 ---
