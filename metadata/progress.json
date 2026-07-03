@@ -115,9 +115,13 @@
     {
       "section": "13.21",
       "action": "task2a-draft",
-      "status": "draft",
+      "status": "finalized",
       "drafted_at": "2026-07-02T10:04:00+08:00",
-      "note": "Created from knowledge gap mining (13.21)"
+      "note": "Created from knowledge gap mining (13.21)",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "last_task6_review": "2026-07-04T04:06:00+08:00"
     },
     {
       "section": "14.24",
@@ -628,7 +632,12 @@
     {
       "date": "2026-07-03",
       "section": "13.21",
-      "type": "source-path/cross-ref"
+      "type": "source-path/cross-ref",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "last_task6_review": "2026-07-04T04:06:00+08:00"
     }
   ],
   "verifier_logs": [
