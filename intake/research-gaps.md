@@ -51,3 +51,19 @@
 ### 关联章节
 - ch15-methodology
 - ch13-perfetto/13.21-perfetto-version-evolution
+## [2026-07-04] ch15-methodology — 知识盲区
+
+### 盲区描述
+Perfetto 在不同 Android 版本中的 tracing 能力差异和 Android 17 Adaptive RefreshRate 对性能分析的具体影响机制
+
+### 重要程度
+高
+
+### 建议研究方向
+- 深入研究 Android 17 中 FrameRateOverrides API 与 WindowManager 的交互机制
+- 分析 Perfetto 在不同 Android 版本中的数据源支持差异
+- 调查 Adaptive RefreshRate 场景下的 VSync 调整对渲染管线的影响
+
+### 关联章节
+ch15-methodology, 相关的性能优化章节
+

@@ -606,6 +606,51 @@
       "quality": "medium",
       "score": 10,
       "scored_at": "2026-07-04T05:46:35.198526"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-sharedpreferencesimpl-datastore-migration.md",
+      "title": "Android 17 SharedPreferencesImpl 性能优化与 DataStore 迁移路径",
+      "summary": "基于 android-17.0.0_r1 源码级闭环验证 SharedPreferencesImpl 加载/写入/apply/commit 全链路，揭示 sLoadExecutor 单线程串行加载瓶颈、EditorImpl.apply() 内存先于磁盘的监听器回调顺序、commit() 在队列空时主线程同步 fsync 的 StrictMode 设计，以及 ",
+      "chapter_mapping": "ch06",
+      "processed_at": "2026-07-04T06:15:59.018794",
+      "processed_by": "task-deepresearch-injector",
+      "action": "inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-multiprocess-datastore-mmipc-verification.md",
+      "title": "Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证",
+      "summary": "DataStore 多进程协调由三层内核 IPC 叠加：FileChannel.tryLock 互斥锁 + mmap(MAP_SHARED) + atomic<uint32_t> 跨进程版本号 + FileObserver(MOVED_TO) inotify 写入通知。JNI 桥接 SharedCounter.android.kt → shared_coun",
+      "chapter_mapping": "ch06",
+      "processed_at": "2026-07-04T06:15:59.018794",
+      "processed_by": "task-deepresearch-injector",
+      "action": "inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-binder-threadpool-pending-frozen-retry.md",
+      "title": "Android 17 Binder 线程池内部调度与 BR_TRANSACTION_PENDING_FROZEN 重投递机制",
+      "summary": "Binder 线程池演化为三段式调度：内核 lazy 唤醒 + 用户态原子计数器 + 进程级 condvar 等待。DEFAULT_MAX_BINDER_THREADS=15（system_server 提至 31），mExecutingThreadsCount 原子计数配合 mStarvationStartTime 100ms 饥饿告警。BR_TRANSA",
+      "chapter_mapping": "ch01",
+      "processed_at": "2026-07-04T06:15:59.018794",
+      "processed_by": "task-deepresearch-injector",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-hprof-heapdump-android17-java-hprof-signal-sender.md",
+      "title": "HPROF Heap Dump 管线与 Perfetto android.java_hprof 数据源（信号触发端）",
+      "summary": "Android 17 正式废弃 kill -10 触发 hprof 的旧路径——SIGUSR1 现仅做 GC+ForceProcessProfiles，显式日志标注 no HPROF。hprof 只能由 Debug.dumpHprofData() 或 Perfetto android.java_hprof 经 __SIGRTMIN+6 实时信号触发。Java",
+      "chapter_mapping": "ch14",
+      "processed_at": "2026-07-04T06:15:59.018794",
+      "processed_by": "task-deepresearch-injector",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-sharedpreferences-impl-anr-mechanism.md",
+      "title": "Android 17 SharedPreferencesImpl 性能与 ANR 优化机制",
+      "summary": "首次加载是隐式主线程阻塞——getXxx()/edit() 都调 awaitLoadedLocked()，sLoadExecutor 串行 HandlerThread 10s idle 回收。commit 走主线程 fsync、apply 走后台 fsync。ANR 真正触发点不在 apply 本身而在 QueuedWork.waitToFinish()——",
+      "chapter_mapping": "ch06",
+      "processed_at": "2026-07-04T06:15:59.018794",
+      "processed_by": "task-deepresearch-injector",
+      "action": "inject"
     }
   ]
 }

@@ -121,3 +121,97 @@
 - 每日信息 + 研究素材 → 无新方向
 
 **结论**：全书 ~577 个小节，覆盖范围已饱和（连续第5轮确认）。建议后续挖掘周期转为已有章节深度扩展。
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+
+- **类型**：源码准确性/版本差异/知识盲区
+- **位置**：Section 3.2 版本兼容性
+- **问题**：FrameRateOverrides API 的部分实现机制描述不够完整，缺少与 WindowManager 的交互细节
+- **建议**：补充 FrameRateOverrides 如何影响帧调度计划、VSync 偏移动态调整、以及与 FrameTimeline Expected Timeline 的协同机制
+
+- **类型**：版本差异
+- **位置**：Section 3.2 Android 17 新增内容
+- **问题**：Android 17 中 DeviceConfig 的具体实现细节描述不够准确，需要补充具体的 proto 文件和配置机制
+- **建议**：补充 Android 17 中 Perfetto DeviceConfig 机制的具体实现细节，包括配置选项和动态调整能力
+
+- **类型**：知识盲区
+- **位置**：Section 3.2 版本兼容性
+- **问题**：缺少对 Android 17 中 Adaptive RefreshRate 对性能分析影响的深入讨论
+- **建议**：分析 Adaptive RefreshRate 场景下的 VSync 调整对渲染管线的影响，以及如何在这种场景下进行性能分析
+
+## [Task14 参考书扫描] ch10 ch04 — 2026-07-04
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- **建议补充**：maps 文件解析内部机制 — load_maps() 源码中对每块内存区域的分类逻辑（HEAP_NATIVE/HEAP_DALVIK/HEAP_SO/HEAP_DEX/HEAP_ART/HEAP_GL_DEV 等），如何按 maps 条目名（[heap]、[anon:libc_malloc]、[anon:dalvik-]等）归类到 dumpsys meminfo 输出的各个类别。ch10/01 已展示 dumpsys meminfo 输出格式，但缺少内部 load_maps 分类逻辑的源码级说明
+- **参考书覆盖深度**：深入（含源码 walkthrough）
+- **价值**：帮助读者理解 meminfo 数据来源和分类原理，对线上内存异常监控时上传 maps 文件做服务端解析有直接指导意义
+
+## [Task14 参考书扫描] ch10 — 2026-07-04
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- **建议补充**：Graphic 内存三类细分 — Gfx dev（映射到进程的 GPU 内存，高通 kgsl-3d0 路径）、GL mtrack（未映射的纹理/顶点/shader）、EGL mtrack（Layer Surface via gralloc）。参考书提供了 /d/kgsl/proc/{pid}/mem 文件解析和高通 kgsl_memtrack_get_memory 源码。ch10/08-gpu-memory-tracking 可能已有覆盖，建议交叉验证
+- **参考书覆盖深度**：深入（含 HAL 层源码和文件节点示例）
+- **价值**：GPU/Graphic 内存排查时的关键参考
+
+## [Task14 参考书扫描] ch04 — 2026-07-04
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- **过时内容**：通过读取/解析 maps 文件获取内存数据无频控限制
+- **建议更新至**：Android 10 起对 maps 读取加了 5 分钟频控（因性能开销大），ch04/02-linux-memory 已讨论 page fault 等机制但未提及此限制。建议在 ch10/01 或 ch04 中补充该限制说明
+
+## [Task14 参考书扫描] ch25 — 2026-07-04
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md]
+- **建议补充**：Dex 文件数据段详解 — header/string_ids/type_ids/proto_ids/field_ids/method_ids/class_def/data 各段含义和索引→数据区查找机制。ch25.6 已覆盖 APK 结构概述和 R8 优化，但缺少 dex 文件内部数据段级别的说明
+- **参考书覆盖深度**：中等（表格形式列出各段含义）
+- **价值**：理解 dex 体积优化的底层依据
+
+## [Task14 参考书扫描] ch25 — 2026-07-04
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md]
+- **建议补充**：APK 构建流程详解 — 编译流程（aapt 资源编译→javac→R8）和打包流程（zip压缩→签名→字节对齐），以及 gradle task 全景表。ch25.6 侧重体积分析方法，构建流程细节可作为背景知识补充
+- **参考书覆盖深度**：中等（含 DX→D8→R8 演进和 gradle task 表）
+- **价值**：在构建流程中发现体积优化切入点
+
+## [Task14 参考书扫描] ch04 — 2026-07-04
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]
+- **建议补充**：malloc 内存分配策略 — malloc < 128k 时使用 sbrk()（移动 brk 指针），≥ 128k 时使用 mmap() 匿名映射。ch04/02 已覆盖 mmap 和 page fault 机制但未提及此阈值行为
+- **参考书覆盖深度**：概述
+- **价值**：理解 Native Heap 分配行为差异，对大对象内存优化有参考意义
+
+## [Task14 参考书扫描] ch05 ch27 — 2026-07-04
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
+- **建议补充**：CPU 时间公式作为理论框架 — CPU时间 = 程序指令数 × 时钟周期时间 × 每条指令平均时钟周期数(CPI)。ch05.1 侧重 Linux 调度器原理，ch27 侧重实战配置，但缺少这个三因子理论模型作为优化思路串联。基于三因子可衍生：减少指令数（多核并发/精简代码/预加载/转移计算）、降低时钟周期（避免降频）、降低 CPI（减少IO等待/编译优化）
+- **参考书覆盖深度**：概述（含三因子拆解和各类优化方案映射）
+- **价值**：为散乱的 CPU 优化手段提供统一理论框架
+
+## [Task14 参考书扫描] ch05 — 2026-07-04
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
+- **建议补充**：存储器层次结构与缓存命中率优化 — 寄存器→L1→L2→L3→主存→磁盘的读写速度差距（以骁龙888 L2=1M/L3=3M为例），局部性原理提升缓存命中率的方法论。参考书提及 Dex class 文件重排提升高速缓存命中率的思路
+- **参考书覆盖深度**：概述
+- **价值**：为缓存优化类方案提供底层依据，Dex 重排思路值得在 ch08 启动优化中展开
+
+
+## [Task2A Gap Mining Round 6] 2026-07-04 — Coverage Saturated
+
+已检查方向（全部已覆盖或 <14 分）：
+1. Desktop Mode / Freeform Window 性能 → 22.14 已覆盖 (ready-for-review)
+2. Adaptive Refresh Rate → 22.18 已覆盖 (ready-for-review, 273 lines)
+3. BLE Audio / LE Audio → ch05/22 已覆盖
+4. Vulkan GPU 编译管线 → 22.29 已覆盖 (ready-for-review)
+5. sched_ext OEM BPF 调度器 → ch17/04 已覆盖
+6. 模块化启动框架 → ch21 已有多进程启动章节 (21.7)
+7. heapprofd 生产部署 → ch14 Perfetto 工具链已覆盖
+8. LMKD batch/thrashing → 4.5 已覆盖 (ready-for-review, 504 lines)
+9. Binder 死亡通知批量派发 → ch01 Binder 系列已覆盖
+10. NSD / Wi-Fi Direct / BLE 近场通信 → 非核心性能主题 (<14)
+11. Compose Paging 3 → 库使用模式，非系统性能 (<14)
+12. 模拟器 vs 真实设备差异 → research-gaps 已记录，ch15 覆盖
+13. 新 DeepResearch (LMKD/Binder/Modular Startup/heapprofd) → 全部是现有章节的素材补充
+14. 新 Task14 参考书扫描建议 → 全部是现有章节的内容增强
+15. 队列清理：1.50/1.51/1.52/4.12/9.12 标记为 deprecated（重复章节）
+
+结论：第 6 轮连续无 ≥14 分候选。全书 577 节，覆盖已饱和。
+剩余 pending 队列 2 条（1.25 Binder 线程池补充、14.22 HPROF 补充），均为现有章节素材注入。
