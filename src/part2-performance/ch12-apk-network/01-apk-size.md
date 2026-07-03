@@ -62,7 +62,7 @@ repaired_by: openclaw-task2b
 last_task2b_at: '2026-05-06T04:41:00+08:00'
 task9_review_notes: "2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；Dynamic Feature Module 仍使用旧 Play Core Library 1.6+ 口径，需更新为 Play Feature Delivery Library 2.1.0+ 并标注 Android 14+ target SDK 版本边界。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 闲时抽检：pass-tech-review。P0 0 / P1 0 / P2 1；官方文档核对未发现 Android 18/API 38 越界；zipalign 16KB 验证命令建议后续从对齐命令改为 -c 校验命令。"
 last_task6_at: '2026-05-06T05:05:00+08:00'
-last_task6_audit: '2026-07-03'
+last_task6_audit: '2026-07-04'
 review_notes: '2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9
   已有 P1/P2 queue pending，等待 Task2B。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2
   结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 05 task9 deep-review:
@@ -117,7 +117,7 @@ last_deepseek_cn_review_at: 2026-06-18
 
 打开方式很简单：在 Android Studio 中选择 **Build → Analyze APK...**，然后选中 release APK 文件。APK Analyzer 会展示一个树状结构，列出每个文件和目录的大小，包括 **Raw Size**（未压缩原始大小）和 **Download Size**（估算的下载大小，考虑了 Google Play 的进一步压缩）。
 
-在 APK Analyzer 的顶部，有几个关键信息值得注意：
+在 APK Analyzer 的顶部，有几个关键信息：
 
 **Total Size** 给出了整个 APK 的大小概览。如果这个数字和预期差距很大，说明构建配置可能有问题（比如 debug 构建没开混淆，或者意外包含了一个大型 SDK）。
 
