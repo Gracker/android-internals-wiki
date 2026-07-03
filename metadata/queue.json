@@ -278,7 +278,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-07-03T16:32:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-07-03T20:51:00+08:00",
+    "completed_by": "task2b-content-processing-rework"
   },
   {
     "section": "13.21",
@@ -307,9 +309,15 @@
         "location": "Section FrameTimeline 集成",
         "detail": "引用的 frameworks/native/cmds/perfetto/tracing/surface_flinger_integration.cc 路径错误，正确路径为 external/perfetto/src/tracing/surface_flinger_integration.cc",
         "suggestion": "修正源码路径并补充 SurfaceFlinger 集成的具体实现细节"
+      },
+      {
+        "type": "源码错误",
+        "location": "heapprofd 深度分析章节",
+        "detail": "文中描述 heapprofd 是\"独立二进制程序（不由 traced_probes 管理，由 Android init 拉起）\"，但 android-17.0.0_r1 中 heapprofd 实际由 traced daemon 管理",
+        "suggestion": "修正 heapprofd 架构描述，准确反映其在 traced daemon 中的实际位置"
       }
     ],
-    "added_by": "task9-deep-tech-review",
+    "added_by": "task9-deep-tech-review, task9-deep-tech-review",
     "added_at": "2026-07-03T16:32:00+08:00",
     "status": "completed",
     "completed_at": "2026-07-03T16:53:22+08:00",
