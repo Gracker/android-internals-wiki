@@ -1021,5 +1021,55 @@
     "created_date": "2026-07-03",
     "source": "task2a-knowledge-gap",
     "gap_score": 16
+  },
+  {
+    "chapter": "1.53",
+    "title": "Android 17 Binder IPC 优先级继承与异步批处理流水线",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-knowledge-gap",
+    "created_date": "2026-07-03",
+    "gap_score": 20,
+    "gap_source": "AOSP结构+研究素材"
+  },
+  {
+    "chapter": "9.12",
+    "title": "Android 17 ANR 输入事件超时检测双层预警机制",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-knowledge-gap",
+    "created_date": "2026-07-03",
+    "gap_score": 18,
+    "gap_source": "研究素材+AOSP验证"
+  },
+  {
+    "chapter": "6.4",
+    "title": "Android 17 SharedPreferencesImpl ANR 真因分析与迁移方案",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-knowledge-gap",
+    "created_date": "2026-07-03",
+    "gap_score": 18,
+    "gap_source": "素材驱动+AOSP结构"
+  },
+  {
+    "chapter": "4.11",
+    "title": "Android 17 AppFlow 与 LMKD v2 内存联合调度协作机制",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-knowledge-gap",
+    "created_date": "2026-07-03",
+    "gap_score": 19,
+    "gap_source": "AOSP结构+研究素材"
+  },
+  {
+    "chapter": "8.3",
+    "title": "Android 17 系统启动优化与 bootanalyze 工具链增强",
+    "priority": 80,
+    "status": "pending",
+    "source": "task2a-knowledge-gap",
+    "created_date": "2026-07-03",
+    "gap_score": 18,
+    "gap_source": "素材驱动+AOSP验证"
   }
 ]
