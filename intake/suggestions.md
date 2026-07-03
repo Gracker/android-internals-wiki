@@ -72,3 +72,28 @@
 - ContentResolver/CursorWindow 数据访问层 → Room/SQLite深度已覆盖
 
 **结论**：全书589个文件，覆盖范围已饱和。建议后续挖掘周期转向「深度扩展」（已有章节的🔸扩展点）而非「广度新增」。
+
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：源码准确性
+- **位置**：Section 3.2 "版本兼容性"
+- **问题**：文中提到 src/perfetto_cmd/perfetto_cmd.cc，但正确路径应为 external/perfetto/src/perfetto_cmd/perfetto_cmd.cc
+- **建议**：统一所有 Perfetto 相关源码路径为 external/perfetto/src/ 前缀，确保与 AOSP android-17.0.0_r1 一致
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：数据缺失
+- **位置**：Section 10 "案例复盘"
+- **问题**："启动快了但首页帧率掉了 5%" 的优化失败案例未提供具体数据支撑
+- **建议**：补充该案例的具体数据（如优化前后指标对比、影响范围验证方法）或明确标注为假设性示例
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：知识盲区
+- **位置**：整体章节未涉及 Android 14+ 隐私限制
+- **问题**：未讨论 Android 14+ 的隐私限制（如严格的后台执行限制、精确位置权限变化）对性能分析的影响
+- **建议**：补充隐私限制条件下的性能分析替代方案和数据采集技巧
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：知识盲区
+- **位置**：整体章节
+- **问题**：未讨论跨厂商设备（Samsung、小米、OPPO 等）的 Perfetto 行为差异
+- **建议**：补充主要厂商定制 ROM 中 Perfetto 实现的差异性说明及调试技巧

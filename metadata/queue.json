@@ -532,5 +532,26 @@
     "completed_at": "2026-07-04T00:53:15.088572+08:00",
     "completed_by": "task2b-main",
     "completed_reason": "verified-fixed: P0 data source count (18 not 77) already corrected in previous Task2B run (2026-07-03); source path already correct (external/perfetto/src/perfetto_cmd/main.cc). Content clean on verification."
+  },
+  {
+    "section": "15",
+    "section_title": "Android 性能优化研究方法论",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 源码路径错误与版本基线混淆",
+    "material_paths": [
+      "src/ch15-methodology.md",
+      "logs/deep-review/2026-07-04-5-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "Section 3.2 版本兼容性 + frontmatter",
+        "detail": "文中同时提到 src/perfetto_cmd/perfetto_cmd.cc 和 external/perfetto/src/perfetto_cmd/perfetto_cmd.cc，但 frontmatter 已标注 task2b_fixed_at，暗示问题已修复。需统一源码锚点为 android-17.0.0_r1 的 external/perfetto/src/perfetto_cmd/perfetto_cmd.cc，确保章节内部路径一致性",
+        "suggestion": "统一所有 Perfetto 源码锚点为 external/perfetto/src/，并 frontmatter 中明确标注已验证的具体版本"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-04T05:21:40",
+    "status": "pending"
   }
 ]

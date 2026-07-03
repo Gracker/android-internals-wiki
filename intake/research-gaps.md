@@ -15,3 +15,39 @@
 - ch15-methodology
 - ch13-perfetto/13.21-perfetto-version-evolution
 - ch2-xxx (可能包含 Perfetto 深度分析章节)
+
+## [2026-07-04] ch15-methodology — Android 17 FrameRateOverrides 深度机制
+
+### 盲区描述
+章节介绍了 Android 17 FrameRateOverrides API 的基本使用，但缺少与底层 VSync 调度机制的深度协同工作原理解释。未说明：1) FrameRateOverrides 如何影响 SurfaceFlinger 的帧调度计划；2) 动态帧率切换时的 VSync offset 调整延迟；3) FrameTimeline Expected Timeline 与实际呈现时间的差异分析。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 深入研究 FrameRateOverrides 与 SurfaceFlinger VSync 调度的协同机制
+- 分析动态帧率切换场景下的性能瓶颈（如 offset 调整延迟）
+- 完善 FrameTimeline 数据在 Perfetto trace 中的查询方法
+
+### 关联章节
+- ch15-methodology
+- ch02-rendering/2.30-android17-frametimeline
+
+---
+
+## [2026-07-04] ch15-methodology — 模拟器 vs 真实设备性能分析差异
+
+### 盲区描述
+章节未讨论 Android 模拟器与真实设备在性能分析上的重要差异：1) 模拟器的 ARM 指令集翻译开销；2) Host-OS 资源竞争影响；3) GPU 渲染管道的完全不同实现；4) 系统调用路径差异导致的行为差异。这些差异会导致模拟器上的分析结果无法直接应用到真实设备优化。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 建立模拟器与真实设备性能差异的校准方法
+- 识别哪些性能问题可以在模拟器中准确复现
+- 提供模拟器环境下的特殊分析工具和技巧
+
+### 关联章节
+- ch15-methodology
+- ch13-perfetto/13.21-perfetto-version-evolution
