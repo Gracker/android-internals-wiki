@@ -3,15 +3,15 @@ title: "1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界"
 chapter: "1.22"
 section: "1.22"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: "[art, dex2oat, dexopt, verifier, vdex, startup]"
 confidence: high
 last_verified: "2026-07-03"
 last_verified_against: "source.android.com ART configure / ART Service configuration 2026-05; AOSP android-17.0.0_r1 platform/art compiler_filter.h / dex2oat.cc / libartservice/service/README.md; Android Developers ART compatibility docs"
-task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.22 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
+task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.22 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。 | 2026-07-03 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处（\"对齐\"为 zipalign 术语，非大厂黑话，保留）；outline 7/7 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed（AOSP 锚点 android-17.0.0_r1 重锚），未满足 pass-tech-review 自动晋升条件，送 Task9 复核。"
 last_task6_review_log: "logs/review/2026-06-17-04-review.md"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 drafted_date: "2026-05-24"
 related_chapters: "[\"1.7\", \"1.9\", \"16.6\", \"21.11\"]"
@@ -32,8 +32,8 @@ task6_result: pass-light-edit
 last_task2b_lite_at: "2026-06-30"
 task2b_lite_note: "2026-06-30 Task2B Lite: 修复 last_task6_review_log 字段被 title 污染的机械错误。"
 reviewed_by: openclaw-task6
-reviewed_date: '2026-06-17'
-last_task6_at: "2026-06-17T04:06:00+08:00"
+reviewed_date: '2026-07-03'
+last_task6_at: "2026-07-03T09:09:50+08:00"
 last_task6_audit: "2026-07-03"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17

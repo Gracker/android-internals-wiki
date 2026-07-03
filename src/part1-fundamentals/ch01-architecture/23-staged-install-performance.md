@@ -610,3 +610,94 @@ ORDER BY slice.ts;
   - `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerService.java`(2806 行)
   - `frameworks/base/services/core/java/com/android/server/pm/ApexManager.java`
 - **配套调研报告**:[DeepResearch/2026-06-30-android17-staged-install-state-machine-source-verification.md](../../../../../../../DeepResearch/2026-06-30-android17-staged-install-state-machine-source-verification.md)
+
+
+<!-- AIW-源码调研-2026-07-03: android17-staged-install-state-machine-commit-restore -->
+
+## 源码级补充（来自 2026-07-03 调研）
+
+> 本节在 1.23 主线叙述之上补全**源码调用链**与 Android 17 状态机闭环验证。引用基线：`android-17.0.0_r1`。完整调研报告：`DeepResearch/2026-07-03-android17-staged-install-state-machine-commit-restore.md`。
+
+### 提交-验证-恢复三段式状态机（源码闭环）
+
+```
+调用方 commit()
+   ↓
+PackageInstallerSession.commit()  [L2392]
+   ├─ markAsSealed(statusReceiver, forTransfer)
+   ├─ if (isMultiPackage()) 递归 seal 所有 child sessions
+   └─ dispatchSessionSealed() → mHandler.obtainMessage(MSG_ON_SESSION_SEALED)
+         ↓
+      handleSessionSealed()
+         ├─ mCallback.onSessionSealedBlocking(this)   // 持久化 sealed 标志
+         └─ dispatchStreamValidateAndCommit()
+               ↓
+            handleStreamValidateAndCommit()
+               ├─ for child : streamValidateAndCommit()
+               └─ if allReady && streamValidateAndCommit() → MSG_INSTALL
+                     ↓
+                  onVerificationComplete()  [L4237, 关键分叉]
+                     ├─ if (isStaged()) → mStagingManager.commitSession(mStagedSession)
+                     │     ├─ createSession(session)         // 注册到 mStagedSessions
+                     │     └─ handleCommittedSession(session)
+                     │           └─ if (isSessionReady && containsApexSession)
+                     │                 → notifyStagedApexObservers()
+                     └─ else → resolveLibraryDependenciesIfNeeded() / install()
+```
+
+```
+设备重启
+   ↓
+PackageInstallerService.restoreAndApplyStagedSessionIfNeeded()  [L441]
+   ├─ 过滤条件: isStaged && !isInTerminalState && !hasParentSessionId
+   ├─ 孤儿 child: setSessionFailed(INSTALL_ACTIVATION_FAILED, "orphan")
+   └─ mStagingManager.restoreSessions(stagedSessions, isDeviceUpgrading)
+         ├─ if sys.boot_completed → return
+         ├─ StorageManager.supportsCheckpoint() / needsCheckpoint()
+         ├─ handleNonReadyAndDestroyedSessions()
+         │     ├─ destroyed → abandon
+         │     └─ !ready → mBootCompleted.thenRun(verifySession)
+         ├─ 遍历 apexSessions: 校验 isUnknown / isFailed / isActivated / isStaged
+         ├─ if (supportsCheckpoint && !needsCheckpoint)
+         │     → setSessionFailed("Reverting back to safe state")
+         └─ for session : resumeSession()
+               ├─ hasApex: checkDuplicateApkInApex / snapshotAndRestoreForApexSession
+               ├─ TimingsTraceLog("StagingManagerTiming").traceBegin("installApksInSession")
+               ├─ installApksInSession(session)
+               │     └─ session.installSession().get()  // 阻塞 CompletableFuture
+               └─ markStagedSessionSuccessful()  // apex + checkpoint 路径
+```
+
+### APK-only vs Multi-package vs APEX session 源码分支
+
+`PackageInstallerSession.createInstallingSession()`（L4318–L4345）的三分支是理解 session 行为差异的关键：
+
+| Session 类型 | isMultiPackage | isApexSession | params.isStaged | installSession 行为 |
+|--------------|----------------|---------------|-----------------|---------------------|
+| APK-only | false | false | true/false | 走 `install()`（staged 时延迟到重启） |
+| Multi-package parent | true | — | true | `future.complete(success)`，不实际装 APK |
+| Multi-package child | false | false | true | 跟 parent 一起被 resumeSession 触发 |
+| Staged APEX | false | true | true | apexd 接管，`future.complete(success)` 立即返回 null |
+
+### Android 17 新增（vs 1.23 原版未覆盖）
+
+1. **`THROW_EXCEPTION_COMMIT_WITH_IMMUTABLE_PENDING_INTENT`**（`PackageInstallerSession.java` L2392–2397）：commit 时若 `statusReceiver.isImmutable()` 抛 `IllegalArgumentException`，防御恶意 installer 屏蔽用户取消。
+2. **Developer Verification 集成**（`getInitialVerificationPolicy()`/`getCurrentVerificationPolicy()` 在 L6600 附近）：Android 17 起 staged install 的 pre-reboot verification 会走 `mDeveloperVerifierController` 链路，failure 走 `DEVELOPER_VERIFICATION_FAILED_REASON_*`。
+3. **`sdkDependencyInstallerDeprecation` flag**：`onVerificationComplete()` 中 `!Flags.sdkDependencyInstallerDeprecation() && params.isAutoInstallDependenciesEnabled && !isMultiPackage()` 三联判断，决定是否走 `resolveLibraryDependenciesIfNeeded()`。
+
+### Perfetto 追踪补充
+
+源码中显式 trace 调用点（`Trace.TRACE_TAG_PACKAGE_MANAGER`）：
+
+- `StagingManager.java` L628：`t.traceBegin("restoreSessions")` / L809：`t.traceEnd()`
+- `StagingManager.java` L401：`t.traceBegin("installApksInSession")` / L412：`t.traceEnd()`
+- `PackageInstallerSession.createInstallingSession()`：通过 `mMetrics.onNativeLibExtractionStarted()` 上报 native lib 抽取阶段
+- `PackageInstallerSession.setSessionApplied()` 在 L6527 输出 `"Marking session %d as applied"` 日志（与 slice 对应）
+
+### 反向校验锚点
+
+- `commit → mStagingManager.commitSession`：`PackageInstallerSession.java:4237-4238`（明确 `mStagingManager.commitSession(mStagedSession)`）
+- `restoreAndApplyStagedSessionIfNeeded`：`PackageInstallerService.java:441`（`stagedSessionsToRestore` 列表构造）
+- `installApksInSession`：`StagingManager.java:486`（`session.installSession().get()` 阻塞调用）
+
+<!-- /AIW-源码调研-2026-07-03 -->
