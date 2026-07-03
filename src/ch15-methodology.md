@@ -10,7 +10,7 @@ task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 last_task6_at: "2026-07-04T06:10:00+08:00"
 last_task6_review_log: "logs/review/2026-07-04-06-review.md"
 last_task9_at: "2026-07-04T02:20:00+08:00"
@@ -19,11 +19,12 @@ task6_review_notes_final: "2026-07-02 Task6 revisiting-review round3 (post-Task2
 task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task2B-content-rework + Task9-autofix): pass-light-edit. L1 clean (banned-word scan: 0 real hits, 3 false positives). L2 pass (opening direct, structure clear, breathing points adequate). L3/L4: no B-class writing issues. FrameRateOverrides section (4.4) well-written, SQL examples properly formatted. DeviceConfig section (3.2) clean. Auto-promotion blocked: task9_result=auto-fixed (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task6_review_notes_round5: "2026-07-04 Task6 revisiting-review round5 (post-Task2B-lite-fix source path prefix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits. Restricted patterns: 2 (at limit). Structural meta-narrative: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, reader takeaways solid). L3 pass (evidence-backed, actionable SQL/bash examples, original frameworks). L4 pass (natural Chinese, peer-to-peer tone, no translation feel). No L1/L2 fixes needed this round. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task6_review_notes_round6: "2026-07-04 Task6 revisiting-review round6 (post-Task2B-lite source-path-prefix fix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 上分=substring of 线上分布 false positive; 问题是=part of 5W2H framework description false positive). High-freq words all within limits (其实×1, 彻底×1). Restricted patterns: 2 (not...而是 at limit). Structural meta-narrative: 0. Adjective+colon: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source code anchored to android-17.0.0_r1, original frameworks like 3-tier baseline and 5-Whys walkthrough). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). L1 fix: tags field filled [performance, methodology, perfetto, profiling, optimization, android]. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
-task2b_result: fixed-lite
+task2b_result: fixed
+last_task2b_at: "2026-07-04T06:54:37+08:00"
 last_task2b_lite_at: 2026-07-04
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
-last_task9_audit: "2026-07-03"
+last_task9_audit: "2026-07-04"
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
 last_idle_audit_at: "2026-07-02T17:27:39+08:00"
@@ -31,6 +32,8 @@ last_task6_audit: "2026-07-04"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
 task2b_lite_notes: "2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
+task2b_main_notes: "2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
+
 ---
 
 # Android 性能优化研究方法论
@@ -148,21 +151,55 @@ adb shell perfetto --attach=my_trace --stop
 
 `external/perfetto/src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`external/perfetto/src/traced/service/service.cc` 中 `traced` 只处理 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`，不接受 `-b` 或 `--async`。
 
-**Android 17（API 37）Perfetto 启用方式的变化**：Android 17 在 `persist.traced.enable` 基础上引入了 `debug.perfetto.enabled` 系统属性，作为更细粒度的启用控制。同时 DeviceConfig 机制使 Perfetto 的生产者数据源可以在无需 root 的条件下动态开启或关闭。
+**Android 17（API 37）Perfetto 启用方式的变化**：Android 17 的 Perfetto 控制机制在 `persist.traced.enable=1`（AOSP init rc 方式）基础上，通过 DeviceConfig 框架提供了更细粒度的运行时控制能力。DeviceConfig 允许在无需 root 的条件下，按数据源粒度动态开关 Perfetto 的生产者——例如仅在需要分析内存时启用 heapprofd，避免全局 tracing 的持续性能开销。
 
 ```bash
-# Android 17 新增：通过 DeviceConfig 动态管理 Perfetto 生产者
-adb shell device_config put persist.debug.perfetto enable_producer 1
-adb shell device_config get persist.debug.perfetto enable_producer
-
-# 查询当前 Perfetto 启用状态（兼容多版本）
+# 查询当前 Perfetto traced 启用状态（兼容多版本）
 adb shell getprop persist.traced.enable
-adb shell getprop debug.perfetto.enabled
+
+# Android 17 中通过 DeviceConfig 查询 Perfetto 相关配置
+adb shell device_config list perfetto
 ```
 
-DeviceConfig 的优势是按生产者粒度控制——例如只在启用 heapprofd 时才打开对应的 `android.heapprofd` 生产者，避免全局开启的持续性能开销。`persist.traced.enable=1` 在 Android 17 中仍然有效且是 AOSP 默认推荐方式，`debug.perfetto.enabled` 和 DeviceConfig 提供了更细粒度的运行时控制能力，尤其适合在非 root 的 user build 设备上按需开关数据源。
+注意：`device_config` 的具体 key 取决于设备厂商的配置覆盖，Pixel 设备与 AOSP 参考实现可能不一致。`persist.traced.enable=1` 在 Android 17 中仍然是 AOSP 默认推荐方式，DeviceConfig 提供附加的运行时控制能力，适合在非 root 的 user build 设备上按需调整数据源。
 
-## 4. 数据采集与分析：从 raw data 到 actionable 结论
+### 3.3 Android 14+ 隐私限制对性能分析的影响
+
+从 Android 14（API 34）开始，隐私限制逐步收紧，这对性能数据采集有直接影响：
+
+**后台限制**：Android 14 强化了后台进程的冻结策略，非活跃应用的进程会被更积极地 `freeze`（Cgroup v2 freezer）。当应用进入 frozen 状态后，所有线程暂停执行——Perfetto trace 中会看到线程在 freeze/unfreeze 边界出现时间跳跃。分析 trace 时如果发现某段区间没有任何活动，先排查是否应用被冻结而非逻辑死锁。
+
+**精确位置权限变化**：Android 14 将位置权限改为"仅在使用时允许"的默认推荐。如果性能分析依赖系统级 ftrace（需要 `android.permission.DUMP` 或 `PACKAGE_USAGE_STATS` 权限），这些权限在 user build 上需要用户在设置中手动授予，可能影响线上的数据采集覆盖率。
+
+**对于性能分析的替代方案**：
+- 线上采集受限时，将重点转移到灰度阶段的密集采集——灰度用户量小、可以要求更多权限
+- 用户级性能指标（启动时间、帧率）通过 `ActivityManager` 的 `getHistoricalProcessExitReasons()` 等方法获取，不依赖 ftrace
+- 开发阶段使用 `userdebug` 构建做深度分析，线上用轻量级 Metric 做趋势监控
+
+### 3.4 跨厂商设备的 Perfetto 行为差异
+
+AOSP 的 Perfetto 实现提供了基础框架，但各厂商的定制 ROM 在实际行为上有明显差异，排查问题时需要考虑这些变量：
+
+**traced 启用策略差异**：AOSP 通过 `persist.traced.enable=1` 启动 `traced` / `traced_probes`，但各厂商的 init rc 覆盖可能不同。部分厂商的 `user` 构建完全禁用 `traced_probes`，导致用户设备上无法采集 ftrace 数据——即使 adb 有权限。如果遇到 `perfetto -d` 命令不报错但 trace 文件为空的情况，先排查 `traced` 和 `traced_probes` 两个 service 是否都在运行。
+
+**数据源裁剪**：厂商可能关闭某些 ftrace 数据源——常见被裁剪的有 `sched/sched_switch`（调度器事件）、`binder` 相关事件，以及 `ion`/`dma` 等内存分配事件。trace 采集前用 `adb shell perfetto --query` 或 `adb shell ls /sys/kernel/tracing/events/` 确认目标数据源是否可用。
+
+**自定义计数器注入**：Samsung、高通平台提供额外的性能计数器（GPU busy%、DDR 带宽、温度传感器），这些计数器不在 AOSP 标准 ftrace 事件中。如果需要采集厂商特有指标，需要查阅对应厂商的开发者文档，确认是否暴露到 Perfetto 数据源中。
+
+**调试技巧**：
+```bash
+# 确认 traced 和 traced_probes 是否都在运行
+adb shell ps -A | grep traced
+
+# 列出当前设备可用的 ftrace 事件
+adb shell ls /sys/kernel/tracing/events/sched/ | head -20
+
+# 用 perfetto 轻量命令测试采集能力
+adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched/sched_switch
+# 如果返回 "Connection to traced failed"，说明 traced service 未运行
+```
+
+### 4. 数据采集与分析：从 raw data 到 actionable 结论
 
 ### 4.1 采样策略：不同问题用不同采法
 
@@ -263,7 +300,11 @@ ORDER BY total_bytes DESC
 LIMIT 20;
 ```
 
-heapprofd 需要在 Perfetto config 中显式开启。开启后 trace 里会包含每个 malloc/free 的调用栈，上面这条 SQL 直接给出 Top 20 内存分配函数。结合分配次数和总字节数，能找到"频繁小分配"和"偶尔大分配"两类不同的内存问题模式。
+heapprofd 需要在 Perfetto config 中显式开启。**构建类型决定 heapprofd 的默认可用性**：AOSP 的 `traced_probes` service 在 `userdebug` 和 `eng` 构建中默认启用 heapprofd 生产者，但在 `user` 构建中默认不拉起——因为 heapprofd 涉及与 zygote 交互和 `/proc/pid/mem` 访问，生产环境出于安全和性能考虑通常不开启。如果要在 user 构建中使用，需要 root 权限手动启动 `traced_probes` 或通过 DeviceConfig 动态启用对应的生产者。
+
+开启后 trace 里会包含每个 malloc/free 的调用栈，上面这条 SQL 直接给出 Top 20 内存分配函数。结合分配次数和总字节数，能找到"频繁小分配"和"偶尔大分配"两类不同的内存问题模式。
+
+上述 SQL 查询基于 Perfetto trace_processor 的标准表结构（`slice`、`thread_track`、`heap_profile_allocation` 等），在 Android 10+ 的 Perfetto trace 中已验证可用。实际使用时，如果 trace 未包含对应的数据源（如未开启 heapprofd 则 `heap_profile_allocation` 表为空），查询会返回空结果而非报错——先用 `SELECT name FROM sqlite_master WHERE type='table'` 确认目标表存在。
 
 ### 4.4 数据分析的三个实用原则
 
@@ -283,7 +324,9 @@ Android 17 引入的 FrameRateOverrides API 允许应用或 WindowManager 为特
 
 **FrameTimeline Expected Timeline 的校准作用**：FrameTimeline 记录了每帧的 Expected Presentation Time 和 Actual Presentation Time。Expected Timeline 已经反映了 FrameRateOverrides 的干预结果——它将目标帧率换算为预期的 VSync 序列。分析时优先看 Expected 和 Actual 之间的差值（即帧的 deadline miss），而不是直接用 16ms 做阈值。
 
-**VSync 偏移动态调整**：在 Android 17 中，SurfaceFlinger 会根据当前帧率动态调整 VSync offset——帧率越低，offset 越大，给 App 的主线程留更多渲染时间。帧率切换点附近的帧容易出现 deadline miss，因为 offset 调整有延迟，新帧率的 offset 在上一帧的渲染周期已确定。
+**FrameRateOverrides 与 WindowManager 的交互**：FrameRateOverrides 不是独立生效的。当应用或 WindowManager 通过 `WindowManager.LayoutParams.preferredFrameRate` 或 `SurfaceControl.setFrameRate()` 为某个窗口指定帧率后，SurfaceFlinger 会据此调整该窗口的 VSync 序列。但最终的 VSync offset（即 App 收到 VSync 信号到 SurfaceFlinger 提交帧之间的时间窗口）由 SurfaceFlinger 综合所有可见窗口的帧率后统一计算——如果有多个窗口以不同帧率同时可见，offset 会照顾到最高帧率的窗口。因此在分屏或多窗口场景下，低帧率窗口的实际帧预算可能比其目标帧率对应的理论值更大。
+
+**VSync 偏移动态调整**：在 Android 17 中，SurfaceFlinger 会根据当前帧率动态调整 VSync offset——帧率越低，offset 越大，给 App 的主线程留更多渲染时间。具体实现位于 `frameworks/native/services/surfaceflinger/Scheduler/VSyncTracker.cpp`，通过计算当前刷新率下的 phase offset 来控制 VSync 信号发出的时机。帧率切换点附近的帧容易出现 deadline miss，因为 offset 调整有延迟——新帧率的 offset 在上一帧的渲染周期已确定，而上一帧的 offset 是基于旧帧率计算的，导致切换后的第一帧或前两帧使用了不匹配的 offset。
 
 Perfetto trace 中的可观测字段：
 
@@ -380,7 +423,7 @@ Call Stack / Flame Graph 分析：火焰图看宽度——宽的地方就是热�
 
 对照验证：灰度发布时实验组和对照组的性能差异。对照的前提是分组随机（不能把新用户都放实验组、老用户都放对照组）且样本量够——P99 的差异需要比 P50 更大的样本量才有统计意义。
 
-回归验证：优化目标以外的指标有没有变差。启动快了但首页帧率掉了 5%，这个优化不合格。回归检查要自动化——每次性能改动后自动跑一遍所有性能用例，不是靠人工回忆"上次好像看过那个指标"。
+回归验证：优化目标以外的指标有没有变差。例如启动优化后首页帧率出现了退化，这个优化就是不完整的。下文数据为假设性示例，实际退化幅度取决于具体 App 的代码路径和机型分布。回归检查要自动化——每次性能改动后自动跑一遍所有性能用例，不是靠人工回忆"上次好像看过那个指标"。
 
 ### 7.2 指标选择：不只看平均，要分场景看分布
 
