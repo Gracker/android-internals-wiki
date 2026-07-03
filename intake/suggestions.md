@@ -36,3 +36,18 @@
 - **位置**：heapprofd 双 producer 模型
 - **问题**：章节未解释 heapprofd 内部集成 HeapprofdProducer 和 JavaHprofProducer 两个独立 producer 的架构设计原理
 - **建议**：补充 heapprofd 双 producer 模型的架构说明，解释两个 producer 的分工和协作机制
+## [Task2A Gap Mining] 知识缺口挖掘方向记录 — 2026-07-03 20:11
+- **轮次结果**：未发现评分 ≥ 14 的知识缺口
+- **已检查方向**：
+  1. AOSP `frameworks/base/services/` 核心服务覆盖（AMS/WMS/PMS/PowerManagerService/NotificationManagerService/AlarmManagerService/InputManagerService/DisplayManagerService/SensorService/AudioService/ConnectivityService/TelephonyManager/LocationManagerService/StorageManagerService/MediaSession）— 全部已有对应章节
+  2. AOSP `system/` 核心组件（lmkd/vold/netd/installd/statsd）— 全部已覆盖
+  3. AOSP `packages/modules/` 模块（Wifi/Bluetooth/Media/Connectivity）— 全部已覆盖
+  4. Clippings 三本参考书章节交叉比对（稳定性 25 篇 / 性能优化 16 篇 / 线上疑难 58+ 篇）— 核心知识点全部映射
+  5. Android 17 新特性（Certificate Transparency / Bubbles / Handoff / UWB / OTP SMS / ACCESS_LOCAL_NETWORK / Safer DCL / ICU 78 / NPU / Desktop Experience / Compose 1.10 Pausable）— 除 ICU 78（非性能话题）外全部有覆盖
+  6. 研究素材（8 篇 research-feeds：Perfetto v53/v54 / Compose Pausable / ADPF / View hierarchy / AudioTrack / Frame Timeline）— 全部已映射
+  7. 每日信息（最近 3 天 daily-info）— 热点话题（DeliQueue / 桌面模式 / MessageQueue 重写 / 协程性能 / AI 编程基准）均有对应章节
+  8. 现有章节 🔸 扩展锚点深挖 — 未发现素材丰富到足以独立成节的扩展点
+  9. Compose Snapshot 状态系统 — 已在 22.20/22.28/22.29 中覆盖
+  10. AlarmManager / NotificationManagerService 性能 — 已在 5.23/8.14 等章节中覆盖
+- **全书状态**：577 总节 / 340 finalized / 194 ready-for-review / 36 draft
+- **建议**：后续精力宜聚焦于加工 36 个 draft 章节（多个已有实质内容）和 review 194 个 ready-for-review 章节，而非继续新增章节
