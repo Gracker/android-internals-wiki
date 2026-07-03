@@ -37,7 +37,7 @@ review_notes: 2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6
 last_task9_audit: 2026-07-03
 last_task9_review_log: logs/deep-review/2026-07-03-12-deep-review.md
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-29
+last_deepseek_cn_review_at: 2026-07-03
 last_task9_audit_at: 2026-07-03T09:45:13+08:00
 last_task9_audit_log: logs/deep-review/2026-07-03-09-audit.md
 last_task9_autofix_at: 2026-07-03
@@ -97,7 +97,7 @@ App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App �
 
 ## 核心机制：内核同步原语与 userspace 名词
 
-Android 图形栈的同步基础来自内核里的显式同步框架。官方文档仍然用 `sync_timeline`、`sync_pt`、`sync_fence` 这组三件套解释它：`sync_timeline` 表示某个硬件上下文上的单调前进时间线，`sync_pt` 是时间线上的一个完成点，`sync_fence` 则把一个或多个完成点包装成可等待对象。这套命名很适合建立直觉，我们读内核文档和旧资料时也经常会遇到它。
+Android 图形栈的同步基础来自内核里的显式同步框架。官方文档仍然用 `sync_timeline`、`sync_pt`、`sync_fence` 这组三件套解释它：`sync_timeline` 表示某个硬件上下文上的单调前进时间线，`sync_pt` 是时间线上的一个完成点，`sync_fence` 则把一个或多个完成点包装成可等待对象。这套命名适合建立概念模型，读内核文档和旧资料时经常会遇到它。
 
 但如果我们直接去读较新的 userspace 源码，会发现另一个视角更常见：`sync_file_info`、`sync_fence_info`、`sync_pt_info`。`system/core/libsync/sync.c` 在 `android-8.1.0_r81` 里已经同时包含 `legacy_sync_merge()` 和 `modern_sync_merge()`，也同时保留 `legacy_sync_fence_info()` 与 `modern_sync_file_info()`。这说明从 Android 8 开始，modern `sync_file` 风格的 userspace API 已经摆在台面上了，而 legacy 名词并没有立刻消失，它更多以兼容层和文档术语的形式继续存在。
 
@@ -220,7 +220,7 @@ Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。要�
 
 ### Android 7：HWC2 已经把 acquire / release / present fence 语义钉清楚
 
-这一版最重要的变化，是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这个拆分让我们可以明确问：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后。把所有等待都糊成一个“显示慢”，排查就失去了方向。
+这一版最重要的变化，是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这个拆分让我们能明确区分：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后。把所有等待都糊成一句“显示慢”，排查就失去了方向。
 
 ### Android 8+：userspace 已经能看到 modern `sync_file` API，legacy 名词继续保留
 
@@ -302,6 +302,8 @@ Timeline Semaphore 优化的是 Vulkan 队列内部的多帧同步——用一�
 **Perfetto 可观测性。** Perfetto 的 `android.fence` / fence wait slice 观测的是 native fence fd（`dma_fence`）的 signal/wait 事件，也就是 Vulkan 与 Android 图形栈边界上的 Binary Semaphore → sync fd 桥接。纯 Vulkan Timeline Semaphore 等待不会直接进入 `android.fence` 轨道，需要 GPU counter、Vulkan layer trace 或应用侧标记辅助观察。Vulkan 规范要求 `SYNC_FD` 这类 copy payload handle 导出使用 Binary Semaphore（`VUID-VkSemaphoreGetFdInfoKHR-handleType-03253`），所以 Android native fence 边界始终以 Binary Semaphore 为桥梁，不是 Timeline Semaphore 直接导出。
 
 截至 AOSP `android-17.0.0_r1`，HWUI/native fence 边界仍然使用 Binary Semaphore 与 sync fd 桥接，未在 `VulkanManager.cpp` 中创建 Timeline Semaphore。Timeline Semaphore 是 Vulkan 1.2 核心特性，实际可用性取决于设备 GPU 驱动是否支持 `VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore`。Android 16 / VPA16 并未将 Timeline Semaphore 列为强制设备要求（VPA16 追加的是 `VK_EXT_host_image_copy`、maintenance6 等特性）；Android 17 侧是否提升为设备要求，需以 Android 17 CDD / VPA 正式条款为准。进入 Android native fence 边界的 interop 依赖 `VK_KHR_external_semaphore_fd` / `VK_KHR_external_fence_fd` 扩展。
+
+以下内容涉及一个跨内核配置的研究假设，目前缺少同机对照实测，先记在这里供后续验证。
 
 ### 16KB 页对 Fence 路径的潜在影响
 

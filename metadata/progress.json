@@ -1,6 +1,6 @@
 {
-  "total": 567,
-  "draft": 28,
+  "total": 572,
+  "draft": 33,
   "ready_for_review": 192,
   "finalized": 340,
   "last_updated": "2026-07-03",
@@ -272,6 +272,41 @@
       "status": "draft",
       "drafted_at": "2026-07-03T10:30:43+08:00",
       "note": "Created from knowledge gap mining (19.1)"
+    },
+    {
+      "section": "8.6",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-03T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (8.6)"
+    },
+    {
+      "section": "8.7",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-03T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (8.7)"
+    },
+    {
+      "section": "8.8",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-03T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (8.8)"
+    },
+    {
+      "section": "8.9",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-03T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (8.9)"
+    },
+    {
+      "section": "8.10",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-03T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (8.10)"
     }
   ],
   "review_history": [
