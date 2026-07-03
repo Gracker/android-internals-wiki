@@ -19,12 +19,11 @@ created_date: "2026-05-22"
 gap_source: "Clippings参考书/官方文档/章节深挖"
 gap_score: 18
 last_task2a_at: "2026-05-22T16:18:00+08:00"
-pipeline_stage: task9_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-22"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 last_task6_at: "2026-05-22T17:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-17-review.md"
 task6_l1_l2_fixes: 5
