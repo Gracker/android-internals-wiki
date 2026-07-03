@@ -7,8 +7,8 @@ section: '19.20'
 status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-15 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
-last_verified: '2026-04-25'
+applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-17 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
+last_verified: '2026-07-03'
 last_verified_against: SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1；Android 13 Restricted Settings behavior changes
 confidence: medium
 tags:
@@ -31,8 +31,8 @@ sources:
   path: https://github.com/NetEase/Emmagee/releases/tag/V2.5.1
 - type: official
   path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
@@ -43,13 +43,14 @@ task2b_result: fixed
 last_task2b_at: "2026-04-26T15:45:22+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-25T17:41:15+08:00"
-last_task9_audit: "2026-06-14"
+last_task9_at: "2026-07-03T10:26:00+08:00"
+last_task9_audit: "2026-07-03"
+last_task9_autofix_at: "2026-07-03"
 rework_type: "review回炉修复（External Review 问题单）"
-last_task9_audit_log: "logs/deep-review/2026-06-14-05-audit.md"
+last_task9_audit_log: "logs/deep-review/2026-07-03-10-audit.md"
 ---
 
 
@@ -112,14 +113,14 @@ SoloPi 是支付宝开源的无线化、非侵入式 Android 自动化工具。R
 
 ## SoloPi 的兼容性边界
 
-SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2，README 写明 Android Studio 4.0、Gradle 6.1.1、TargetApi 29、MinimumApi 18；GitHub latest release 仍是 v0.12.0（2022-05）。这套基线直接影响 Android 12 之后的验收方式。
+SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2，README 写明 Android Studio 4.0、Gradle 6.1.1、TargetApi 29、MinimumApi 18；GitHub latest release 仍是 v0.12.0（2022-05）。这套基线直接影响 Android 12-17 的验收方式。
 
-上游维护状态也要放进工具选型：公开 release 停在 2022-05，仓库 `targetSdkVersion` 为 29，公开构建链没有跟进 Android 14+ 前台服务类型、后台启动 Activity、受限设置等行为变化。SoloPi 可以用来固定操作路径，但不要作为自动化测试的唯一依赖；关键回归要保留 adb、Macrobenchmark、PerfDog、Perfetto 等可替代路径。
+上游维护状态也要放进工具选型：公开 release 停在 2022-05，仓库 `targetSdkVersion` 为 29，公开构建链没有跟进 Android 13-17 的受限设置，以及 Android 14-17 的前台服务类型、后台启动 Activity 等行为变化。SoloPi 可以用来固定操作路径，但不要作为自动化测试的唯一依赖；关键回归要保留 adb、Macrobenchmark、PerfDog、Perfetto 等可替代路径。
 
 | 项目 | 上游公开基线 | 对测试的影响 |
 |---|---|---|
 | AGP | 4.0.2 | 构建链停留在 Android Studio 4.0 时代，后续平台行为变化没有在仓库里公开成新基线 |
-| `compileSdkVersion` / `targetSdkVersion` | 29 | Android 12+ 的无障碍、悬浮窗、前台服务、后台弹窗、无线调试行为要逐机验证 |
+| `compileSdkVersion` / `targetSdkVersion` | 29 | Android 12-17 的无障碍、悬浮窗、前台服务、后台弹窗、无线调试行为要逐机验证 |
 | `minSdkVersion` | 18 | 老设备仍可安装，现代兼容性不等于已验证 |
 | latest release | v0.12.0（2022-05） | 近年平台改动后的兼容结果表没有上游发布说明 |
 
@@ -128,7 +129,7 @@ SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2
 | 平台段 | 当前判断 | 使用方式 |
 |---|---|---|
 | Android 4.3 - 11 | 与公开构建基线更接近 | 可作为主要试用区间，仍要检查 ROM 权限差异 |
-| Android 12 - 15 | 需要专项兼容性回归 | 先验收录制、回放、悬浮窗、无障碍、无线 ADB，再决定是否纳入日常工具链 |
+| Android 12 - 17 | 需要专项兼容性回归 | 先验收录制、回放、悬浮窗、无障碍、无线 ADB，再决定是否纳入日常工具链 |
 
 性能工具部分可以记录待测应用指标，支持悬浮窗实时观察，也可以录制性能数据后看图表。启动耗时工具支持双点标记和广播调用，适合和 UI 自动化脚本配合。它的价值在于把操作路径和现场数据放到同一台设备上完成。
 
@@ -136,7 +137,7 @@ SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2
 
 Emmagee 是网易早期开源的 Android 性能测试工具。README 写明它可监控指定 App 的 CPU、内存、流量、电池电流与状态、启动时间，并输出悬浮窗与 CSV 报告。
 
-> **Deprecated / 不可用边界**：Emmagee 不应作为 Android 8-17 主力工具。README 已声明 Android 7.0 不支持；Android 8+ 对外部进程信息读取继续收紧，Emmagee 这类外部采样工具更难获得可信 CPU、内存和 TopActivity 数据，现代设备上的结果可能是 0、空值或错误值。正文只把它作为历史工具和旧报告对照材料。
+> **Deprecated / 不可用边界**：Emmagee 不应作为 Android 8-17 主力工具。README 已声明 Android 7.0 不支持；Android 8-17 对外部进程信息读取继续收紧，Emmagee 这类外部采样工具更难获得可信 CPU、内存和 TopActivity 数据，现代设备上的结果可能是 0、空值或错误值。正文只把它作为历史工具和旧报告对照材料。
 
 版本边界要按 README 原文写：Android 5.0 以上 `getRunningTasks()` 和 `getRunningAppProcesses()` 行为受限，拿不到 TopActivity；Android 7.0 上 `/proc` 访问和 `TOP` 命令拿 pid 都受限，README 直接写出“7.0 can not be supported”。这一条比“精度下降”更强，含义就是官方已经把 Android 7.0 列为不支持平台。
 
@@ -146,7 +147,7 @@ Emmagee 是网易早期开源的 Android 性能测试工具。README 写明它�
 
 | 工具 | 维护状态 | 采集 / 自动化能力 | 报告产物 | 版本边界 | 适合阶段 |
 |---|---|---|---|---|---|
-| SoloPi | latest release v0.12.0（2022-05），仓库基线 targetSdk 29 | 录制回放、性能指标、启动耗时、弱网 / 压力场景；一机多控在 README 中展示，但开源部分暂未完整放出 | 设备侧图表、操作回放、测试记录 | minSdk 18；Android 12-15 需专项验证 | QA 回归、专项测试、兼容性测试 |
+| SoloPi | latest release v0.12.0（2022-05），仓库基线 targetSdk 29 | 录制回放、性能指标、启动耗时、弱网 / 压力场景；一机多控在 README 中展示，但开源部分暂未完整放出 | 设备侧图表、操作回放、测试记录 | minSdk 18；Android 12-17 需专项验证 | QA 回归、专项测试、兼容性测试 |
 | Emmagee | latest release V2.5.1（2017-08），历史维护状态 | 单 App CPU / 内存 / 流量 / 电流 / 启动时间悬浮窗与 CSV | 悬浮窗、CSV | README 声明 Android 7.0 起不支持 | 历史报告对照、旧设备存量流程 |
 
 测试现场工具的优势是操作成本低。它们的局限是指标来源常受系统限制，尤其是 CPU、进程、TopActivity、电流等数据，不同 Android 版本和厂商 ROM 下差异很大。
@@ -157,7 +158,7 @@ Emmagee 是网易早期开源的 Android 性能测试工具。README 写明它�
 
 - 回归测试：用 SoloPi 固定操作路径，产出设备侧报告；关键回归再用 PerfDog 或 Macrobenchmark 复核。
 - 专项测试：把启动、弱网、资源压力、录制回放拆开跑，性能采样以 Perfetto、PerfDog 或系统 trace 为准。
-- 兼容性测试：先做权限与脚本稳定性验收，再批量回放；Android 12-15 先跑一轮工具兼容性清单。
+- 兼容性测试：先做权限与脚本稳定性验收，再批量回放；Android 12-17 先跑一轮工具兼容性清单。
 
 Emmagee 只建议留在旧设备或历史报告对照流程里，不再承担现代 Android 主力测试入口。
 
@@ -190,7 +191,7 @@ SoloPi 的启动耗时口径偏视觉侧。典型路径是 MediaProjection 录�
 - 悬浮窗会参与窗口合成。
 - 工具本身占用 CPU、内存和网络。
 - 无线 ADB 或控制通道可能带来额外系统负载。
-- Android 13+ 上如果 FPS 依赖 `dumpsys SurfaceFlinger` 文本解析，先用 FrameMetrics、`dumpsys gfxinfo` 或 Perfetto 复核字段可用性。
+- Android 13-17 上如果 FPS 依赖 `dumpsys SurfaceFlinger` 文本解析，先用 FrameMetrics、`dumpsys gfxinfo` 或 Perfetto 复核字段可用性。
 
 SoloPi 也会借助本地 ADB / 无线调试能力执行部分设备侧动作。这个能力解释了它免 Root、非侵入的使用方式，也带来连接稳定性和后台保活风险。
 
@@ -229,7 +230,7 @@ SoloPi 负责把操作路径固定,PerfDog 负责外部指标,Perfetto 负责根
 |---|---|
 | USB 调试 / 无线 ADB | 设备断连，回放中断，启动按钮无法触发 |
 | 无障碍 | 录制能开始，回放点击落空，找不到控件 |
-| Android 13+ 受限设置 | 无障碍开关置灰，提示“为了您的安全，此设置目前不可用”；进入 SoloPi 应用详情页，右上角三点选择“允许受限设置”后再开启无障碍 |
+| Android 13-17 受限设置 | 无障碍开关置灰，提示“为了您的安全，此设置目前不可用”；进入 SoloPi 应用详情页，右上角三点选择“允许受限设置”后再开启无障碍 |
 | 悬浮窗 | 实时指标窗不显示，性能录制结果为空 |
 | 后台弹窗 / 后台运行 | 切后台后脚本被系统杀掉，长流程回放中断 |
 | 录屏 / 截图 | 报告缺少视频或截图证据 |
