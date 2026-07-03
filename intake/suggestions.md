@@ -778,3 +778,43 @@ AIW 当前 563 个文件，覆盖范围非常全面。后续缺口挖掘应关�
 1. 16 个 draft 章节提升至 ready-for-review（均已有实质内容，由 Task 2B 逐步提升质量）
 2. queue.json pending 条目处理
 3. 等待 Android 18 DP 或新版本素材
+
+## [2026-07-03 08:16] 知识缺口挖掘 — 已检查方向记录（Round 17）
+
+**结论**：本轮未发现评分 ≥ 14 的知识缺口，跳过新章节创建。
+
+### 已检查方向（避免下次重复）
+
+1. **Native Hook 技术体系实战** → 已被 14.13 (Hook 基础设施) 全面覆盖（finalized, P95 回炉完成）
+   - PLT Hook、Inline Hook、xHook/bhook/ShadowHook 机制 + APM 应用均已覆盖
+   - 增量价值不足以独立成节
+
+2. **pthread_create 回溯 / Native signal-based try-catch** → 已被 20.03 (native-crash-governance) 部分覆盖
+   - sigsetjmp/siglongjmp 机制、线程级安全点已有专门小节
+   - 增量：仅生产级部署模式、版本兼容矩阵 — 价值不足以独立成节
+   - 评分：12/20
+
+3. **Binder 通信监控实战** → 跨多节覆盖（14.13 Hook + 20.17 Binder 异常 + 26.11 eBPF 追踪 + 26.21 字节码插桩）
+   - 增量：仅"如何构建 Binder 调用监控仪表盘" — 属于工程实践，非基础技术缺口
+   - 评分：13/20
+
+4. **应用 CPU 缓存优化实战**（Clippings: 缓存优化冷热端分离） → 过于理论化，Android 应用层少用
+   - 评分：12/20
+
+5. **性能回归测试体系建设** → 已被 15.06 (testing-best-practices) 覆盖
+   - CI/CD benchmark 集成、Macrobenchmark 均已提及
+   - 评分：11/20
+
+6. **音频管线性能** → 多角度覆盖（1.16 audio-pipeline + 5.25/17,18 audio power + 8.08 media-pipeline + 18.23 codec2）
+   - 评分：14/20 但已有足够覆盖
+
+7. **Gradle 构建性能** → 超出 AIW 范围（运行时性能 vs 构建时性能）
+
+8. **AOSP 系统服务结构扫描** → TelephonyManager/ConnectivityManager/NotificationManager/BiometricService
+   - 多数已在 Part 1-3 中以专项小节覆盖（如 8.12 Keystore、8.13 BiometricPrompt、8.14 推送通知管线）
+
+### 下轮可探索方向
+- Flutter/RN 跨平台框架性能（如果扩展范围）
+- Android Automotive 专项性能
+- Android 17 Final SDK 行为变更扫描（等 Google I/O 后补充）
+- Clippings《Android 性能优化》赵子健剩余未映射知识点（如任务调度优化的实战补充）
