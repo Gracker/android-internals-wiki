@@ -45,8 +45,8 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
 - type: blog
   path: https://android-developers.googleblog.com/
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "ready-to-publish"
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed

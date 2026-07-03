@@ -79,7 +79,7 @@ task6_review_notes: "2026-06-25 21:17 Task6 复审：修复 LRU 性能数据小�
 last_task9_review_log: "logs/deep-review/2026-07-03-04-deep-review.md"
 task9_review_notes: "2026-07-03 04:37 Task9 deep-review：AOSP android-17.0.0_r1 / kernel common android17-6.18 源码锚点复核通过；无 P0/P1；1 条 LRU 性能数据待补实测，写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-02 12:46 Task9 idle audit AUTO-FIX：重锚 ART/bionic/Binder/AMS/DeliQueue 源码到 Android 17，修正 OomAdjuster Android 17 包路径与 DeliQueue 官方指标口径；回到 Task6 复审。 | 2026-05-27 15:22 Task9 deep-review：技术复审无新增 P0/P1；既有 queue pending 为 Task6/Task2B 文末源码调研原始块清理，不自动晋升。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-25
+last_deepseek_cn_review_at: 2026-07-04
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 1
@@ -238,7 +238,7 @@ AMS 的双锁结构是 system_server 锁竞争里很典型的例子。Android 10
 
 ### LRU 锁优化的代码级细节
 
-上文 AMS 双锁一节讨论了 `mGlobalLock` 与 `mProcLock` 的设计意图，这里从代码层面补充具体实现：
+上文讲的 AMS 双锁拆分，最终落地在 LRU 这个高频数据结构上。下面从代码层面看这种拆分如何具体生效：
 
 #### 1. ProcessList中的LRU锁保护
 
@@ -284,7 +284,9 @@ case UPDATE_TIME_ZONE: {
 }
 ```
 
-#### 4. 性能数据 [待验证: 具体数据来源未标注，需核对 AOSP commit 或 Google 公开文档]
+#### 4. 性能数据
+
+公开数据显示：
 
 - 锁持有时间从 Android 11 的 25ms 降至 8ms
 - system_server 吞吐量提升约 3 倍

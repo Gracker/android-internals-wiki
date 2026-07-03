@@ -50,11 +50,11 @@ task9_state: reviewed
 task2b_state: "fixed"
 task9_result: auto-fixed
 task2b_result: "fixed"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-05-19"
 reviewed_by: openclaw-task6
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-19"
 last_task9_at: "2026-07-03T07:39:55+08:00"

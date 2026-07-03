@@ -46,8 +46,8 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task2b_state: "fixed"

@@ -36,7 +36,7 @@ reviewed_date: 2026-07-03
 last_task6_at: 2026-07-03T13:14:00+08:00
 last_task6_audit: 2026-07-03
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17
+last_deepseek_cn_review_at: 2026-07-04
 p0: 0
 p1: 0
 p2: 0
@@ -220,7 +220,7 @@ OTA 或 mainline update 后,bootclasspath、boot image、ART Mainline 版本都�
 
 ## 旧设备 quicken 产物排查
 
-Android 8-11 设备仍可能出现 `quicken`。这类设备上，不要把 `quicken` 当作 `speed-profile` 的低配版本。它的好处来自解释器快速路径，不能提供 AOT 机器码覆盖。
+到了 Android 8-11 设备，如果 dumpsys 输出里还带着 `quicken`，排查时要记住上节讲的边界：它给的是解释器快速路径，不是 AOT 机器码覆盖。下面按版本段整理重点：
 
 | 版本段 | 重点 filter | 排查重点 |
 | --- | --- | --- |
