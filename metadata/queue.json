@@ -361,5 +361,38 @@
     "completed_at": "2026-07-03T17:44:13",
     "completed_by": "task2b-lite",
     "completion_reason": "fixed-lite: 补充 per-display FrameTimeline AOSP 源码锚点与实例化差异说明"
+  },
+  {
+    "section": "13.21",
+    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
+    "priority": 90,
+    "reason": "[review回炉] 主 body（outline 段）大量 AI 生成内容与底部源码调研增补矛盾：声称 77 个 protobuf 数据源但源码调研实测为 18 个 ProbesProducer 数据源；heapprofd/FrameTimeline/Exclusive Tracing 等功能描述含大量未经源码验证的数据（如'追踪开销降低 60%'、'纳秒级时间戳'）和疑似捏造的代码示例（ExclusiveTracer、DistributedTracer 类）。需用底部源码调研增补的实测数据重写主 body。",
+    "material_paths": [
+      "DeepResearch/2026-07-03-android17-perfetto-data-sources-evolution.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "主 body 全文（outline 段，即 outline-start 到 outline-end 之间）",
+        "detail": "主 body 大量段落为 AI 填充内容：数据源数量表（5→20→30→45→60→70→77）无源码依据，与底部源码调研的 18 个 ProbesProducer 数据源矛盾；heapprofd 引入版本标注为 Android 12 但需核实；Exclusive Tracing（Android 14）、多进程/跨设备追踪、企业级部署、未来发展展望等整节内容缺乏 AOSP 源码佐证，含疑似捏造的 C++ 类和代码块",
+        "suggestion": "以底部'2026-07-03 源码调研增补'的实测数据为基准重写主 body：用 18 个 ProbesProducer 数据源替换 77 个的假表；删除或大幅缩减企业级部署、未来发展展望等无源码佐证的填充内容；保留源码调研增补段不动"
+      },
+      {
+        "type": "需补充素材",
+        "location": "数据源演进表格",
+        "detail": "现有表格的'数据源总数'列（5/20/30/45/60/70/77）未经逐版本源码验证，源码调研增补已指出 API 32/34/35/36 中间版本差异未经 git log 验证",
+        "suggestion": "按源码调研建议，用 git log --diff-filter=A 追溯各数据源首次提交 tag，或直接删除未经验证的数字"
+      },
+      {
+        "type": "需确认",
+        "location": "heapprofd 深度分析段",
+        "detail": "HPROF 与 heapprofd 对比表中的数据（'内存占用：应用内存的 2-3 倍 vs 5-10%'）无测试条件标注；源码调研增补显示 heapprofd 实际参数（8MB 默认共享内存、5 个 unwinder 线程）与主 body 描述不一致",
+        "suggestion": "用源码调研中的实际参数（kDefaultShmemSize=8MB, kUnwinderThreads=5）替换估算值，或标注为经验值"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-07-03T18:21:20",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-03-18-review.md"
   }
 ]

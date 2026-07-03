@@ -58,8 +58,8 @@ task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
-last_task6_audit: "2026-07-02"
-last_task6_audit_result: "l2-structural-issues-detected"
+last_task6_audit: "2026-07-03"
+last_task6_audit_result: "l1-translation-style-verbs-fixed"
 ---
 -
 
@@ -77,7 +77,7 @@ ProfilingManager 解决量产设备上"问题发生时没有开工具"的取证�
 - 🔹 **BufferFillPolicy 公开枚举**：只有 `DISCARD` 和 `RING_BUFFER`
 - 🔹 **结果分发表**:`registerForAllProfilingResults()` 会收到当前 UID 的全部 profiling 结果;显式请求与 global listener 可以同时命中
 - 🔹 **trigger 版本对照表**:API 36、version 36.1、API 37 的 trigger 分层要分开写
-- 🔹 **失败结果处理**:`ProfilingResult` 的 rate limit、磁盘不足、post-processing 失败要单独归类
+- 🔹 **失败结果归类**:`ProfilingResult` 的 rate limit、磁盘不足、post-processing 失败要单独分类
 
 ### 扩展(可选深入)
 
@@ -115,7 +115,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-这套接口把三件事拆开:请求对象只描述采集内容和时长,平台负责执行、限流、脱敏和落盘,应用在 listener 里做归档。调用线程不会被长 trace 挂住,四种请求共用同一套结果消费逻辑。
+这套接口把三件事拆开:请求对象只描述采集内容和时长,平台负责运行、限流、脱敏和落盘,应用在 listener 里负责归档。调用线程不会被长 trace 挂住,四种请求共用同一套结果消费逻辑。
 
 四个 builder 共用 `ProfilingRequestBuilder` 的两个关键字段:
 
@@ -126,7 +126,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 `SystemTraceRequestBuilder` 里最容易写错的是 buffer 策略。AndroidX 公开文档只有两个枚举:
 
-| 策略 | 缓冲区满了以后怎么做 | 更适合的场景 |
+| 策略 | 缓冲区满了以后的策略 | 更适合的场景 |
 |---|---|---|
 | `RING_BUFFER` | 覆盖旧事件,保留离结束点最近的一段数据 | 手动短 trace、ANR 前后取证、滑动卡顿 |
 | `DISCARD` | 丢掉新事件,保留窗口开头那段数据 | 冷启动早期阶段、只想保住最早 tracepoint 的场景 |
@@ -147,9 +147,9 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 ## 结果文件的权限、隐私和合规
 
-Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResults(...)` 只接收当前 UID 的 profiling 结果,不能读取其他应用的结果;应用处理 `ProfilingResult.getResultFilePath()` 指向的文件时,也不需要 `READ_EXTERNAL_STORAGE` 这类外部存储权限。把它当成应用私有的诊断文件处理即可。
+Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResults(...)` 只接收当前 UID 的 profiling 结果,不能读取其他应用的结果;应用处理 `ProfilingResult.getResultFilePath()` 指向的文件时,也不需要 `READ_EXTERNAL_STORAGE` 这类外部存储权限。把它视为应用私有的诊断文件即可。
 
-隐私风险主要来自结果内容,不来自读取权限。system trace 可能包含线程名、进程名、Surface 名、Binder 调用和业务 `tag`;heap dump / heap profile 可能暴露对象类型、字符串内容和内存分配路径;stack sampling 可能包含方法名与包名。平台会对跨应用信息做裁剪,但 App 自己的业务上下文仍然可能进入结果文件。上传前要按采集类型做过滤、压缩、加密、保留期限和用户授权校验。
+隐私风险主要来自结果内容,不来自读取权限。system trace 可能包含线程名、进程名、Surface 名、Binder 调用和业务 `tag`;heap dump / heap profile 可能暴露对象类型、字符串内容和内存分配路径;stack sampling 可能包含方法名与包名。平台会对跨应用信息做裁剪,但应用自身的业务上下文仍然可能进入结果文件。上传前要按采集类型做过滤、压缩、加密、保留期限和用户授权校验。
 
 归档流程里记录三类字段:`profilingType`、`triggerType`、`fileSizeBytes`。`tag` 不要写手机号、订单号、地理位置等可识别用户的信息,用内部 case id 或哈希值更稳。采集策略写进隐私条款和内部数据留存说明,避免线上追踪能力和合规说明不一致。
 
@@ -161,7 +161,7 @@ Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResul
 |---|---|---|---|
 | API 36 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | running system trace snapshot | 冷启动收尾阶段复盘 |
 | API 36 | `TRIGGER_TYPE_ANR` | running system trace snapshot | 线上 ANR 取证 |
-| version 36.1 | `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` | running system trace snapshot | 主动拉取当前正在运行的 background trace |
+| version 36.1 | `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` | running system trace snapshot | 主动获取当前正在运行的 background trace |
 | version 36.1 | `TRIGGER_TYPE_KILL_FORCE_STOP` / `TRIGGER_TYPE_KILL_RECENTS` / `TRIGGER_TYPE_KILL_TASK_MANAGER` | running system trace snapshot | 用户手动结束进程后的现场 |
 | API 37 | `TRIGGER_TYPE_COLD_START` | newly started system trace + stack sampling | 冷启动全窗口取证 |
 | API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 因 `REASON_EXCESSIVE_RESOURCE_USAGE` 被杀的现场 |
@@ -195,13 +195,13 @@ Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResul
 
 ## 失败结果要先分清是没采到,还是采了但丢了
 
-| `ProfilingResult` 错误码 | 含义 | 应用侧处理 |
+| `ProfilingResult` 错误码 | 含义 | 应用侧处理方式 |
 |---|---|---|
 | `ERROR_FAILED_RATE_LIMIT_PROCESS` | 进程自己的预算已经用完 | 拉长手动请求间隔,trigger 注册把 `rateLimitingPeriodHours` 设到场景级别 |
 | `ERROR_FAILED_RATE_LIMIT_SYSTEM` | 系统级预算没给本次样本 | 把它当"本次没拿到样本",不要在前台循环重试 |
 | `ERROR_FAILED_NO_DISK_SPACE` | 结果文件无法落盘 | 建清理 worker,归档后及时删除旧结果 |
-| `ERROR_FAILED_POST_PROCESSING` | 采集做了,但后处理失败,结果被丢弃 | 记录设备版本、采集类型、errorCode,排查是否集中在某个系统版本 |
-| `ERROR_FAILED_PROFILING_IN_PROGRESS` | 已有 profiling 在跑 | 请求侧做串行化,避免多个长 profile 互相打架 |
+| `ERROR_FAILED_POST_PROCESSING` | 采集完成但后处理失败,结果被丢弃 | 记录设备版本、采集类型、errorCode,排查是否集中在某个系统版本 |
+| `ERROR_FAILED_PROFILING_IN_PROGRESS` | 已有 profiling 在运行 | 请求侧需要串行化处理,避免多个长 profile 互相打架 |
 
 失败日志最好是应用自己格式化出来的,不要只存一串整型错误码。下面是一条更适合排障和聚合的样例:
 
@@ -209,7 +209,7 @@ Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResul
 W/ProfilingCaseRepo: result failed, case=scroll-jank-20260419-01, trigger=TRIGGER_TYPE_NONE, code=ERROR_FAILED_RATE_LIMIT_PROCESS, path=null
 ```
 
-聚合面板按 `errorCode` 分组更稳,`errorMessage` 更适合留在原始日志里做单次排查。
+聚合面板按 `errorCode` 分组更可靠,`errorMessage` 更适合留在原始日志里做单次排查。
 
 `ERROR_FAILED_RATE_LIMIT_SYSTEM` 的预算不要写死成产品常量。Profiling 模块可通过 Mainline 和 `device_config` 调整阈值,不同版本、OEM 构建和调试配置可能不一致。实验室核验时可以用 `adb shell device_config list profiling` 查看当前设备的 profiling 参数;线上策略只按错误码退避、降采样和聚合统计,不依赖某个固定次数。
 
@@ -226,7 +226,7 @@ W/ProfilingCaseRepo: result failed, case=scroll-jank-20260419-01, trigger=TRIGGE
 
 - `tag` 直接带 case id、回归单号或场景名,别等结果回来后再猜它属于谁
 - global listener 负责统一归档、上传、清理,request callback 负责本次请求的轻量状态更新
-- 36.1 这组 trigger 要额外做 extension 版本判断,别把 API 36 和 36.1 混成一类
+- 36.1 这组 trigger 要额外做 extension 版本判断,不要将 API 36 和 36.1 混为一类
 - 结果文件要有清理策略,避免长期堆在应用目录里
 - 用户通知、隐私条款和内部合规说明要和真实采集行为一致
 

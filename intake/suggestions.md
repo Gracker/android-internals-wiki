@@ -845,3 +845,73 @@ AIW 当前 563 个文件，覆盖范围非常全面。后续缺口挖掘应关�
 - **位置**：LRU锁优化代码级细节小节
 - **问题**：引用"锁持有时间从Android 11的25ms降至8ms"、"LRU操作延迟减少68%"等性能数据，但标注[待验证]，未明确标注具体数据来源和验证方法
 - **建议**：补充数据来源说明（AOSP commit、Google公开文档、内部benchmark等），或移除无确切来源的性能数据表述，保持技术准确性
+
+## [Task9 Deep Review] 13.21 Perfetto 版本演进与 Android 9-17 新特性验证 — 2026-07-03
+
+- **类型**：数据缺失/版本差异
+- **位置**：第 80、88、148、447 行
+- **问题**：反复出现"77 个 protobuf 数据源"作为绝对数据，该数字无法在 Perfetto v54 release notes 与 AOSP 注释中找到出处（实际 Android 17 下 protos 数量在 110+ 量级，proto 对应的数据源约 50 个）。
+- **建议**：改为"约 70+ 个数据源"或明确口径来源（注明按 protos/perfetto/config/ 还是 protos/perfetto/trace/）。
+
+## [Task9 Deep Review] 13.21 Perfetto 版本演进 — 2026-07-03
+
+- **类型**：原理链断裂
+- **位置**：FrameTimeline 与 SurfaceFlinger 协同段
+- **问题**：缺少对 release fence 与 BLAST BufferQueue 收回链路的具体描述，读者按图无法定位"gpu_composition=true"如何影响 App 下一帧 buffer 可用性。
+- **建议**：保留现有代码示例但补一句："release fence 由 HWC 或 RenderEngine 在合成结束触发，App 端 BLASTBufferQueue 收到 signal 后才回收 slot"。
+
+## [Task9 Deep Review] 13.21 Perfetto 版本演进 — 2026-07-03
+
+- **类型**：数据与案例支撑
+- **位置**：heapprofd 优势对比
+- **问题**："Perfetto 比 HPROF 内存占用小 2-3 倍"与同节"5-10%"运行时开销并列使用，逻辑上有冲突（一个是输出体积，一个是运行时开销），读者易误读。
+- **建议**：在段落开头补一句"前者指落地文件大小对比，后者指运行时内存开销比例"，并给出测试条件。
+
+## [Task9 Deep Review] 13.21 Perfetto 版本演进 — 2026-07-03
+
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters: ["13.1", "13.2", "13.17"]`
+- **问题**：正文没有任何内联引用使用这些章节号，真正讨论 FrameTimeline 与 Choreographer 的其实是 2.30 / 2.4 节。
+- **建议**：在 related_chapters 补 `2.30`，并在 FrameTimeline 集成段加一句"详见 2.30 节"形成交叉锚定。
+
+## [Task9 Deep Review] 2.30 Android 17 FrameTimeline GPU/CPU 合成边界判定 — 2026-07-03
+
+- **类型**：知识盲区
+- **位置**：FrameTimeline 与 GPU/CPU 边界段
+- **问题**：章节没有涉及 Android 14+ FrameTargeter（`FrameTargeter::getNextFrameDeadline`，API 34+）与 FrameRateOverrides 的关系。Frame deadline 由 FrameTargeter 决定，2.4 节 Choreographer 与渲染流水线有互补说明，本节直接落 GPU/CPU 边界会让读者不知道"deadline 是怎么定的"。
+- **建议**：在 FrameTimeline 概念铺垫段补一段"Frame deadline 由 SurfaceFlinger FrameTargeter 决定（API 34+），Choreographer 通过 `FrameData.getDeadlineNanos()` 感知"。
+
+## [Task9 Deep Review] 2.30 Android 17 FrameTimeline — 2026-07-03
+
+- **类型**：数据缺失/版本限定
+- **位置**：案例一抓取命令
+- **问题**：`adb shell perfetto ... binder_driver hal` 中 `hal` 不是标准 ftrace 类名（标准类是 `hal_*`），该命令会被 Perfetto 拒绝采集或直接报错。
+- **建议**：去掉 `hal`（或改为具体的数据源标签如 `hal/qcom_*`）；同时附一句"采集类别若设备不支持会静默丢弃"。
+
+## [Task9 Deep Review] 2.30 Android 17 FrameTimeline — 2026-07-03
+
+- **类型**：交叉引用
+- **位置**：扩展段"不同 GPU 架构下的 FrameTimeline 表现差异"
+- **问题**：缺少对 Adreno Reference Implementation 与 Android 官方 docs/perfetto 文档的引用锚点。
+- **建议**：补 `https://source.android.com/docs/core/graphics/implement` 与 Perfetto 官方 frametimeline data-source 文档的链接。
+
+## [Task6 Review] 13.21 Perfetto 版本演进 — 2026-07-03
+- **类型**：需重写
+- **位置**：主 body 全文（outline-start 到 outline-end 之间）
+- **问题**：主 body 大量段落为 AI 填充内容，与底部源码调研增补矛盾。数据源数量（77 vs 18）、性能数据（"追踪开销降低 60%"）、代码示例（ExclusiveTracer、DistributedTracer、LargeScalePerfettoSystem 等类）均未经源码验证。企业级部署、未来发展展望等整节缺乏实质内容。
+- **建议**：以底部源码调研增补的实测数据为基准重写主 body；删除或大幅缩减无源码佐证的填充内容。
+- **review 日志**：logs/review/2026-07-03-18-review.md
+
+## [Task6 Review] 13.21 Perfetto 版本演进 — 2026-07-03
+- **类型**：需补充素材
+- **位置**：数据源演进表格
+- **问题**：数据源总数（5/20/30/45/60/70/77）未经逐版本源码验证，与实测 18 个 ProbesProducer 数据源矛盾。
+- **建议**：按源码调研建议用 git log 追溯，或删除未经验证的数字。
+- **review 日志**：logs/review/2026-07-03-18-review.md
+
+## [Task6 Review] 13.21 Perfetto 版本演进 — 2026-07-03
+- **类型**：需确认
+- **位置**：heapprofd 深度分析段
+- **问题**：HPROF 与 heapprofd 对比数据无测试条件；与源码调研中的实际参数（kDefaultShmemSize=8MB, kUnwinderThreads=5）不一致。
+- **建议**：用实际源码参数替换估算值。
+- **review 日志**：logs/review/2026-07-03-18-review.md

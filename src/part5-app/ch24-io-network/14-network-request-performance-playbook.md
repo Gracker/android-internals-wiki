@@ -15,8 +15,8 @@ created_date: "2026-05-22"
 gap_source: "Clippings参考书/官方文档/章节深挖"
 gap_score: 18
 last_task2a_at: "2026-05-22T16:18:00+08:00"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-22"
 task6_result: pass-light-edit
@@ -138,7 +138,7 @@ OkHttp 的 `EventListener` 文档提供了 DNS、connect、secureConnect、reque
 | 目标 | 主要手段 | 代价 | 适用场景 |
 |---|---|---|---|
 | 速度 | HTTP/2 复用、HTTP/3/QUIC、预连接、缓存 | 连接和缓存状态更复杂 | 首屏、多小请求、API 域名集中 |
-| 弱网可用性 | 多 IP、重试、缓存降级、请求裁剪 | 流量放大、服务端幂等要求更高 | 地铁、电梯、蜂窝切 Wi-Fi、海外链路 |
+| 弱网可用性 | 多 IP、重试、缓存降级、请求裁剪 | 流量放大、服务端幂等要求更高 | 地铁、电梯、蜂窝切 Wi-Fi、海外长距离线路 |
 | 安全 | HTTPS、证书校验、证书透明度、敏感接口 pinning | 握手成本、证书轮换成本 | 登录、支付、账号与隐私数据 |
 | 功耗/流量 | 批量同步、预取、后台约束、压缩 | 实时性下降、缓存一致性复杂 | feed、离线包、日志上报、后台同步 |
 

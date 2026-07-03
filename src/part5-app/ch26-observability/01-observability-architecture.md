@@ -2,7 +2,7 @@
 title: "App 可观测性架构设计"
 chapter: "26.1"
 section: "26.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-14"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
@@ -27,8 +27,8 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon"
 tags: [observability, metrics, logs, traces, architecture]
 related_chapters: ["26.2", "26.3", "19.27", "15.9"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-30
@@ -49,6 +49,7 @@ task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-ligh
 task2b_verifier_note: "Task2B Verifier corrected state for Task6 flow back (2026-07-03T15:30:00+08:00)"
 last_task6_at: "2026-07-02T19:14:49+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-02-19-deep-review.md"
+task6_review_notes_round3: "2026-07-03 Task6 revisiting-review round3: pass-light-edit. L1 clean (no banned words). L2 pass. No new L3/L4 issues. Auto-promoted: task9=pass-tech-review, queue=no pending."
 ---
 
 # App 可观测性架构设计
