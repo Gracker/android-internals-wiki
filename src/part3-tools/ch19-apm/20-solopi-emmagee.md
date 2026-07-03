@@ -1,57 +1,43 @@
 ---
 title: SoloPi 与 Emmagee
 deepseek_polish_state: done
-last_deepseek_polish_at: '2026-05-25'
-chapter: '19'
-section: '19.20'
-status: finalized
-drafted_date: '2026-04-24'
+last_deepseek_polish_at: 2026-05-25
+chapter: 19
+section: 19.20
+status: ready-for-review
+drafted_date: 2026-04-24
 drafted_by: codex
 applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-17 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
-last_verified: '2026-07-03'
+last_verified: 2026-07-03
 last_verified_against: SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1；Android 13 Restricted Settings behavior changes
 confidence: medium
-tags:
-- apm
-- solopi
-- emmagee
-- testing
-- automation
-- qa
-related_chapters:
-- '19.0'
-sources:
+tags: 
+related_chapters: 
+sources: 
 - type: official
-  path: https://github.com/alipay/SoloPi
-- type: official
-  path: https://github.com/alipay/SoloPi/releases/tag/v0.12.0
-- type: official
-  path: https://github.com/NetEase/Emmagee
-- type: official
-  path: https://github.com/NetEase/Emmagee/releases/tag/V2.5.1
-- type: official
-  path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
+path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
 pipeline_stage: task6_pending
 task6_state: revisiting
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-25"
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-25
 task6_result: pass-light-edit
-last_task6_audit: '2026-06-17'
-task9_state: reviewed
+last_task6_audit: 2026-06-17
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-26T15:45:22+08:00"
-repaired_date: "2026-04-26"
+last_task2b_at: 2026-04-26T15:45:22+08:00
+repaired_date: 2026-04-26
 repaired_by: openclaw-task2b
 task9_result: auto-fixed
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: 2026-04-25
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-03T10:26:00+08:00"
-last_task9_audit: "2026-07-03"
-last_task9_autofix_at: "2026-07-03"
-rework_type: "review回炉修复（External Review 问题单）"
-last_task9_audit_log: "logs/deep-review/2026-07-03-10-audit.md"
+last_task9_at: 2026-07-03T10:26:00+08:00
+last_task9_audit: 2026-07-03
+last_task9_autofix_at: 2026-07-03
+rework_type: review回炉修复（External Review 问题单）
+last_task9_audit_log: logs/deep-review/2026-07-03-10-audit.md
 ---
+-
 
 
 # SoloPi 与 Emmagee
