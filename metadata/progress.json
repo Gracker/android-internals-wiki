@@ -416,6 +416,13 @@
       "status": "no-candidates",
       "ts": "2026-07-04T06:09:43+08:00",
       "note": "Gap mining round 5: 0 candidates ≥14. Checked 12 new candidate topics across Clippings mapping (59 articles all mapped), AOSP services, daily info, keyword matrix. Coverage saturated (5th consecutive)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-04T07:14:12+08:00",
+      "note": "Gap mining round 6: 0 candidates ≥14. Checked Desktop Mode/ARR(new Clippings mappings)/LE Audio/Vulkan/sched_ext/modular startup/heapprofd/LMKD batch/Binder death notification/NSD/Wi-Fi Direct — all already covered or <14. Coverage saturated (6th consecutive). 2 new DeepResearch injections (1.25, 14.22) are material supplements for existing chapters, not new chapter candidates."
     }
   ],
   "review_history": [
@@ -610,12 +617,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-04T06:09:43+08:00",
+    "last_run": "2026-07-04T07:14:12+08:00",
     "last_section": "none",
-    "result": "no-candidates (5th consecutive)",
+    "result": "no-candidates (6th consecutive)",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 5: 0 candidates ≥14 after checking 12 topics. Coverage saturated."
+    "note": "Gap mining round 6: 0 candidates ≥14. Coverage saturated."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",

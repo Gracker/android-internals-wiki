@@ -183,10 +183,28 @@
         "location": "Section 3 工具选型 + Section 4 数据采集",
         "detail": "工具介绍停留在名称列举层面，缺少 Perfetto 实际使用示例、SQL 查询、Trace 分析方法等实战内容",
         "suggestion": "补充 Perfetto 配置示例、典型 SQL 查询、Baseline 建立方法和异常检测实操"
+      },
+      {
+        "type": "源码错误",
+        "location": "Section 3.2 版本兼容性",
+        "detail": "文中的源码路径  和  缺少  前缀。正确的 AOSP android-17.0.0_r1 路径应为  和 ",
+        "suggestion": "修正所有 Perfetto 相关源码路径，添加  前缀以匹配 AOSP 实际结构"
+      },
+      {
+        "type": "源码错误",
+        "location": "Section 3.2 traced 服务参数说明",
+        "detail": "文中描述 traced 服务接受  或  参数，但实际源码验证显示 traced 只接受 、、、",
+        "suggestion": "修正 traced 服务参数说明，删除错误的  和  参数，保留正确的参数列表"
+      },
+      {
+        "type": "版本差异",
+        "location": "Section 3.2 Android 17 新增内容",
+        "detail": "章节提到 Android 17 中  已被  和 DeviceConfig 机制替代，但源码验证显示该描述不够准确，需要补充具体的 DeviceConfig 实现机制",
+        "suggestion": "补充 Android 17 中 Perfetto DeviceConfig 机制的具体实现细节，包括配置选项和动态调整能力"
       }
     ],
     "added_by": "task6-review",
-    "added_at": "2026-07-02T20:11:00+08:00",
+    "added_at": "2026-07-04T06:27:14.286853+08:00",
     "status": "completed",
     "original_review_log": "logs/review/2026-07-02-20-review.md",
     "completed_at": "2026-07-02T20:58:27+08:00",
@@ -203,7 +221,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "pending"
+    "status": "deprecated",
+    "completed_at": "2026-07-04T07:14:12+08:00",
+    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
   },
   {
     "section": "1.51",
@@ -215,7 +235,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "pending"
+    "status": "deprecated",
+    "completed_at": "2026-07-04T07:14:12+08:00",
+    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
   },
   {
     "section": "1.52",
@@ -227,7 +249,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "pending"
+    "status": "deprecated",
+    "completed_at": "2026-07-04T07:14:12+08:00",
+    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
   },
   {
     "section": "4.12",
@@ -239,7 +263,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "pending"
+    "status": "deprecated",
+    "completed_at": "2026-07-04T07:14:12+08:00",
+    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
   },
   {
     "section": "9.12",
@@ -251,7 +277,9 @@
     ],
     "added_by": "task2a-knowledge-gap",
     "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "pending"
+    "status": "deprecated",
+    "completed_at": "2026-07-04T07:14:12+08:00",
+    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
   },
   {
     "section": "15",
@@ -556,5 +584,45 @@
     "completed_at": "2026-07-03T21:37:00+00:00",
     "completed_by": "task2b-lite",
     "completion_note": "frontmatter dedup + state correction; body paths already correct (external/perfetto/src/ prefix verified)"
+  },
+  {
+    "section": "1.25",
+    "section_title": "Binder IPC 异步流水线",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-binder-threadpool-pending-frozen-retry.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 Binder 线程池内部调度与 BR_TRANSACTION_PENDING_FROZEN 重投递机制 — Binder 线程池演化为三段式调度：内核 lazy 唤醒 + 用户态原子计数器 + 进程级 condvar 等待。DEFAULT_MAX_BINDER_THREADS=15（system_serve",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-07-04T06:15:59.018794",
+    "status": "pending"
+  },
+  {
+    "section": "14.22",
+    "section_title": "HPROF HeapDump 与 Perfetto java_hprof 数据源",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-hprof-heapdump-android17-java-hprof-signal-sender.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "HPROF Heap Dump 管线与 Perfetto android.java_hprof 数据源（信号触发端） — Android 17 正式废弃 kill -10 触发 hprof 的旧路径——SIGUSR1 现仅做 GC+ForceProcessProfiles，显式日志标注 no HPROF。hprof 只能",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-07-04T06:15:59.018794",
+    "status": "pending"
   }
 ]
