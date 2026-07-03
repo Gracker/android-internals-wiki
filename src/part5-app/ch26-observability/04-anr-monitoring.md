@@ -49,7 +49,7 @@ last_task9_audit: "2026-06-30"
 last_task9_audit_log: "logs/deep-review/2026-06-30-18-audit.md"
 last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
+last_deepseek_cn_review_at: 2026-07-03
 ---
 # ANR 监控体系
 
@@ -114,7 +114,7 @@ sequenceDiagram
 
 ## Android 11+：用 ApplicationExitInfo 补系统确认
 
-[自动发现] Android 11 引入 `ApplicationExitInfo` 后，ANR 监控多了一条系统确认路径。App 下次启动时可通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询历史退出原因；当 reason 为 `REASON_ANR` 时，再读取 `getTraceInputStream()` 保存系统生成的 traces。这个能力适合补齐“上一次进程已经被系统处理，端侧 SDK 来不及上报”的空洞。
+Android 11 引入 `ApplicationExitInfo` 后，ANR 监控多了一条系统确认路径。App 下次启动时可通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询历史退出原因；当 reason 为 `REASON_ANR` 时，再读取 `getTraceInputStream()` 保存系统生成的 traces。这个能力正好用来补齐一类常见缺口：进程已经被系统杀掉，端侧 SDK 来不及上报 ANR 事件。
 
 这条路径有三个边界：
 

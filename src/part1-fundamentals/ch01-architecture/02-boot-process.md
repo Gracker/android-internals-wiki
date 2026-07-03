@@ -122,7 +122,7 @@ last_task9_autofix_at: '2026-07-01'
 task2b_fixed_at: '2026-07-01T12:52:40+08:00'
 task2b_fixed_by: task2b-main-2026-07-01
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-01
+last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # 系统启动全流程
@@ -211,7 +211,7 @@ Android 官方的 boot-time optimization 文档强调两个 Kernel 阶段优化�
 
 Zygote 的目标还是老问题，减少每个 App 冷启动都重复做的基础工作。它会预加载类、资源、共享库，再通过 fork 把这份运行时状态复制给 SystemServer 和 App 进程。
 
-有一个常见旧说法需要修正。老文章常把 preloaded classes 写成“3000-4000 个常用类”。android-17.0.0_r1 的 `frameworks/base/config/preloaded-classes` 去掉注释和空行后有 18784 条，打包产物会进入 ART APEX 提供的 preloaded-classes 文件。老数字放在 Android 8/9 的上下文里还勉强能看，直接拿到新分支会偏差很大。
+这里需要澄清一个常见误解。老文章常把 preloaded classes 写成“3000-4000 个常用类”，但 android-17.0.0_r1 的 `frameworks/base/config/preloaded-classes` 去掉注释和空行后有 18784 条——这个数字放在 Android 8/9 的语境下还说得过去，放到现在的分支上已经差了一个数量级。这些类的打包产物会进入 ART APEX 提供的 preloaded-classes 文件。
 
 fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所以 SystemServer 和 App 进程能复用 Zygote 已经装好的大量类与资源。启动慢到 `Application.onCreate()` 之前时，先看 Zygote 预加载、dexpreopt / odsign 产物是否命中，再看业务进程自己的初始化。
 
@@ -414,9 +414,9 @@ CPU 和 I/O 调度也别只盯着老文章里的 cpuset。新分支更常见的�
 
 如果用户主观感知已经变快，但 boot completed 相关指标仍然长，就把这段单独看：哪些工作必须跟着广播走，哪些可以延到用户第一次打开某个功能时再做。
 
-### 厂商经验单独写，不要冒充平台事实
+### 厂商常见的启动优化方向
 
-厂商常见动作无非是调整分区布局、延后非关键服务、把 HAL 改成 lazy、优化预编译命中率、降低 OTA 首启的 I/O 冲突。没有公开配置、设备条件和测试口径时，文章里最好写成“某机型实测”或“厂商 release note 提到”，别直接写成 Android 平台统一事实，更别给一个孤立百分比。
+各厂商的启动优化思路大同小异：调整分区布局、延后非关键服务、把 HAL 改成 lazy、优化预编译命中率、降低 OTA 首启的 I/O 冲突。但这些手段的效果高度依赖具体配置、硬件条件和测试口径，不同机型之间不能直接套用同一组数字。阅读厂商的优化分享时，需要注意区分“某机型实测数据”和“平台通用结论”。
 
 ## 扩展：AB 分区与 dm-verity 的影响
 

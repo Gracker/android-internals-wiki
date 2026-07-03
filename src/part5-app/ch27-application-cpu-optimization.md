@@ -1957,3 +1957,12 @@ float util  = total > 0 ? (float) busy / total : 0f;
 ---
 
 <!-- /AIW-源码调研-2026-07-02 -->
+
+## 延伸阅读
+
+### Android 17 ThreadPoolExecutor 三层源码 + bionic times() 系统调用 + JNI /proc/stat 解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md
+- 类型：DeepResearch 调研结果
+- 摘要：ThreadPoolExecutor.execute() 三步决策源码含3处 Android 专属增强（@ReachabilitySensitive、SharedThreadContainer、addWorkerFailed 回滚）；bionic times() 为纯汇编 stub 无胶水代码；kernel do_sys_times 走调度器归一化路径与 /proc/stat 差值可达30%；JNI readProcFile 栈/堆双缓冲设计。
+- 注入时间：2026-07-03
+- 价值：§27 核心源码级补强：线程池决策源码 + times() 系统调用全链路 + 纠正 corePoolSize 永久保留误解

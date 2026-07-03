@@ -86,7 +86,7 @@ task9_p0_issues: 1
 task9_p1_issues: 0
 task9_p2_issues: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
+last_deepseek_cn_review_at: 2026-07-03
 last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
 ---
 # 12.3 网络性能深入：连接池、TLS 与传输优化
@@ -132,7 +132,7 @@ last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
 
 把 OkHttp、Cronet、HttpEngine 压成同一条 `java.net -> Conscrypt -> kernel` 调用链，会把 QUIC、HTTP/3 和连接管理的边界写混。后续分析 DNS、TLS、连接复用或 Perfetto 线程时，都要先按具体网络栈分流。
 
-这条路径上的每个环节都有可能成为性能瓶颈。一个典型 HTTPS 请求的完整时间分解如下：
+无论走哪条栈，一个 HTTPS 请求从发起到收到响应，必经的环节是相同的。下面是一次典型请求的完整时间分解：
 
 1. **DNS 解析**：将域名解析为 IP 地址。局域网环境下 < 1 ms，公网解析通常 20-120 ms。
 2. **TCP 连接建立**：三次握手，取决于网络 RTT（Round-Trip Time），通常 30-100 ms（4G 网络）。
@@ -212,7 +212,7 @@ responseBodyEnd()     // body 接收完成 → 得到传输耗时
 callEnd()             // 请求完成
 ```
 
-这套回调机制是网络性能监控的基础。HTTPS 请求里，`connectEnd - connectStart` 是建连总耗时，不是纯 TCP socket 耗时；TLS 耗时应使用 `secureConnectEnd - secureConnectStart`，TCP socket connect 可用 `secureConnectStart - connectStart` 近似。在线上环境中，我们可以通过 EventListener 收集每个阶段的耗时，建立网络性能的基线数据。
+这套回调是网络性能监控的核心基础设施。在 HTTPS 请求中，`connectEnd - connectStart` 是建连总耗时，不等于纯 TCP socket 耗时；TLS 耗时应使用 `secureConnectEnd - secureConnectStart`，TCP socket connect 可用 `secureConnectStart - connectStart` 近似。在线上环境中，我们可以通过 EventListener 收集每个阶段的耗时，建立网络性能的基线数据。
 
 ## TLS 握手性能与优化
 
@@ -242,7 +242,7 @@ TLS 1.3（Android 10+ 默认启用）将握手从 2-RTT 减少到 1-RTT。它通
 
 TLS 1.3 还定义了 0-RTT 恢复模式，允许客户端在恢复会话时直接携带应用数据。0-RTT 的主要风险是重放攻击（RFC 9001 §9.2），这也是 §12.2 中建议对非幂等请求禁用 0-RTT 的原因。
 
-Android 平台的标准 TLS 入口（JSSE/Conscrypt）目前不支持 0-RTT。官方 TLS 1.3 行为文档明确标注“0-RTT mode isn't supported”。Conscrypt 在 Android 15 的变化是限制 TLS 1.0/1.1，并未引入 0-RTT 或 Anti-replay 能力。如果 App 需要在移动端利用类似 0-RTT 的加速，唯一可用的路径是 Cronet/HttpEngine 的 QUIC 会话恢复（0-RTT QUIC handshake），这和标准 JSSE/Conscrypt 的 TLS 1.3 路径完全不同。
+Android 平台的标准 TLS 入口（JSSE/Conscrypt）目前不支持 0-RTT。官方 TLS 1.3 行为文档明确标注“0-RTT mode isn't supported”。Android 15 中 Conscrypt 限制了对 TLS 1.0/1.1 的支持，但并未引入 0-RTT 或 Anti-replay 能力。如果 App 需要在移动端利用类似 0-RTT 的加速，唯一可用的路径是 Cronet/HttpEngine 的 QUIC 会话恢复（0-RTT QUIC handshake），这和标准 JSSE/Conscrypt 的 TLS 1.3 路径完全不同。
 
 分析网络 trace 时，区分“TLS 1.3 完整握手”、“TLS 1.3 恢复（1-RTT）”和 QUIC 0-RTT 三种情况——其中只有 QUIC 0-RTT 会在首包携带应用数据，但走的是 QUIC/UDP 传输而非标准 TLS/TCP。
 
@@ -294,7 +294,7 @@ DNS 解析的耗时差异很大，取决于缓存命中情况和网络环境：
 
 ### DNS over HTTPS 与性能
 
-DoT、DoH、DoH3 容易被写混。DoT 是 DNS over TLS，对应 Android 9 引入的 Private DNS。DoH 是把 DNS 报文封装到 HTTP 的协议族，底层可以跑在 HTTP/2 或 HTTP/3 上。DoH3 则是 DoH over HTTP/3，底层传输是 QUIC。
+DNS 加密传输有三种主流协议，我们先区分清楚。DoT（DNS over TLS）对应 Android 9 引入的 Private DNS。DoH 是把 DNS 报文封装到 HTTP 的协议族，底层可以跑在 HTTP/2 或 HTTP/3 上。DoH3 则是 DoH over HTTP/3，底层传输是 QUIC。
 
 Android 系统 resolver 的公开入口，长期稳定的是 Private DNS 这条 DoT 路径。Google 在 2022 年披露，DoH3 通过 Google Play system update rollout 到 Android 11 及以上设备，另有一部分较早接入 Play system update 的 Android 10 设备也会收到这项能力。对支持的 well-known DNS servers，系统会把原来的 DoT transport 升级为 DoH3；用户使用的 DNS 服务本身不变。
 

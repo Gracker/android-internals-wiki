@@ -512,6 +512,13 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
   - [钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498818)
   - Android 16/17 ProfilingManager 系统触发式追踪（[ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)、[ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger)、[Android 17 features](https://developer.android.com/about/versions/17/features)）
 
+### Android 17 ANR 输入事件超时检测机制深度解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-input-anr-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 ANR 检测采用双层预警：Native InputDispatcher 实时监控输入超时并触发 pre-ANR 通知（超时前50%窗口），Java 层 InputManagerService 区分无焦点窗口 ANR 和窗口无响应 ANR。完整链路含事件生成→派发监控→超时判定→跨进程回调→ANR 触发五环节。
+- 注入时间：2026-07-03
+- 价值：ch03/ch09 交叉领域源码级补强：pre-ANR 双层预警 + InputDispatcher 超时判定完整路径
+
 ## 源码级补充：Android 14-17 ANR 检测链路（InputDispatcher → AMS → AnrHelper → ProcessErrorStateRecord）
 
 > 关联 DeepResearch：`2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md`
