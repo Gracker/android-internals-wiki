@@ -46,8 +46,8 @@ last_task2b_lite_at: "2026-06-29"
 task9_result: auto-fixed
 task9_state: reviewed
 task2b_state: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 last_task9_at: "2026-07-01T15:29:13+08:00"
 last_task9_autofix_at: "2026-07-01"
 last_task9_review_log: "logs/deep-review/2026-07-01-15-audit.md"

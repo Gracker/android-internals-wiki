@@ -58,6 +58,8 @@ task6_l3_l4_issues: 0
 task6_new_rework: false
 last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
 task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-04
 ---
 
 # 启动框架设计与任务编排
@@ -744,10 +746,11 @@ A/B 测试的持续时间：至少收集一个完整周（覆盖工作日 + 周�
 3. **版本兼容**：新版本客户端可能增加了新任务或删除了旧任务，远程配置中引用的任务 ID 需要和当前版本兼容。推荐在配置中增加 `min_client_version` 字段。
 
 
-<!-- AIW-源码调研-2026-07-03 -->
-## [自动发现·源码调研] 模块化启动框架在多进程/微服务场景下的实现细节
+## 模块化启动框架在多进程与微服务场景下的实践
 
-本节由 `intake/research-gaps.md [2026-07-03] 21.2` 驱动补充。报告原文：`DeepResearch/2026-07-03-android17-modular-startup-microservice-cross-process.md`。版本基准：`android-17.0.0_r1` + `androidx.startup 1.2.0 (androidx-main)` + `alibaba/alpha master (artifact 1.0.0.1)`。
+上面讨论的选型、线程池和陷阱，都是以单进程为前提。多进程或模块化 App 还要面对一个额外问题：每个进程该跑哪些初始化任务，跨模块的初始化器怎么发现和路由。
+
+以下内容基于 `android-17.0.0_r1` + `androidx.startup 1.2.0` + `alibaba/alpha 1.0.0.1` 源码。
 
 ### InitializationProvider 在 Application.onCreate 之前抢先执行
 
@@ -814,5 +817,3 @@ App Startup 在 `AppInitializer.doInitialize` 已经对每个 Initializer `Trace
 - App Startup 的 Initializer 必须按进程分支或被 `tools:node="remove"` 关闭，否则多进程放大效应会把首屏拉长。
 - Alpha 的 `MAIN_PROCESS_MODE / SECONDARY_PROCESS_MODE` 让每个进程只加载该进程的 DAG，是大应用多进程的更优解。
 - 跨进程数据同步走 Binder/ContentProvider，不走 `SharedPreferences.MODE_MULTI_PROCESS`（§21.7 已述 API 23 deprecated）。
-
-<!-- /AIW-源码调研-2026-07-03 -->
