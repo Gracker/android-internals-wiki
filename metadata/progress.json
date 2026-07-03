@@ -535,13 +535,15 @@
     },
     "21.2": {
       "status": "finalized",
-      "last_task6_at": "2026-07-02T22:09:00+08:00",
-      "task6_result": "pass-light-edit"
+      "last_task6_at": "2026-07-03T19:10:00+08:00",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "ready-to-publish"
     },
     "20.3": {
       "status": "finalized",
-      "last_task6_at": "2026-07-02T22:09:00+08:00",
-      "task6_result": "pass-light-edit"
+      "last_task6_at": "2026-07-03T19:10:00+08:00",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "ready-to-publish"
     }
   },
   "task2a": {
