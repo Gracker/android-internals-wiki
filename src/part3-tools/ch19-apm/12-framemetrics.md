@@ -2,7 +2,7 @@
 title: FrameMetrics
 chapter: '19'
 section: '19.12'
-status: ready-for-review
+status: "finalized"
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
@@ -17,10 +17,10 @@ sources:
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
 task2b_state: fixed
-task9_result: "auto-fixed"
+task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-07-03"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-03T03:26:26+08:00"
+last_task9_at: "2026-07-03T08:38:28+08:00"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-31T17:35:00+08:00'
 last_task2b_lite_at: '2026-05-31'
@@ -28,9 +28,9 @@ repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 last_task9_audit: "2026-07-03"
 last_task9_audit_log: "logs/deep-review/2026-07-03-03-audit.md"
-last_task9_review_log: "logs/deep-review/2026-07-03-03-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-03-08-deep-review.md"
 queue_entry: "task9-audit-2026-05-19-19-12-framemetrics-version-boundary"
-task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。复核 FrameMetrics API 24-37 字段、API 31 DEADLINE/GPU_DURATION 与 Android 12/13+ duration 边界；无 P0/P1，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：按 AOSP android-17.0.0_r1 重锚 FrameMetrics 源码基线；修正延伸阅读中 FrameInfo 索引数量旧口径（Android 17 为 FRAME_STATS_COUNT=25），回到 Task6 复审。"
+task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。复核 FrameMetrics API 24-37 字段、API 31 DEADLINE/GPU_DURATION 与 Android 12/13+ duration 边界；无 P0/P1，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：按 AOSP android-17.0.0_r1 重锚 FrameMetrics 源码基线；修正延伸阅读中 FrameInfo 索引数量旧口径（Android 17 为 FRAME_STATS_COUNT=25），回到 Task6 复审。 | 2026-07-03 Task9 deep review: pass-tech-review；无 P0/P1/P2；task6 已通过且 queue.json 无 pending，自动晋升 finalized；详见 logs/deep-review/2026-07-03-08-deep-review.md。"
 last_task6_audit: "2026-07-03"
 last_task9_autofix_at: "2026-07-03"
 last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
@@ -42,14 +42,19 @@ last_task6_at: "2026-07-03T08:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-02-review.md"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
+task9_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 扫描无新增正文修复；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-29
-task9_p0_issues: 1
-task9_p1_issues: 1
+task9_p0_issues: 0
+task9_p1_issues: 0
 task9_p2_issues: 0
+updated_by: "openclaw-task9"
+updated_date: "2026-07-03"
+p0: 0
+p1: 0
+p2: 0
 ---
 
 # FrameMetrics
