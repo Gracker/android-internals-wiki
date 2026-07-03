@@ -161,3 +161,24 @@
 - Clippings「线上疑难问题」59 篇的实际内容（需重新 clip 获取正文，非仅目录）
 - Android 17 Final SDK 行为变更文档（如 CT 默认启用、BAL IntentSender 扩展的实际性能影响）
 - GenAI/Agent 应用层性能模式（GUI 代理 benchmark、模型加载/inference 性能基线）
+
+## [Task2A Gap Mining] 知识缺口挖掘方向记录 — 2026-07-04 00:07
+- **轮次结果**：未发现评分 ≥ 14 的知识缺口（连续第 2 轮无合格候选）
+- **触发条件**：Phase 0 无空 draft（0 个）+ Task2B backlog=0（≤20）→ 进入 Phase 1
+- **与上一轮差异**：自 2026-07-03 20:12 挖掘以来无新素材（research-feeds / daily-info / source-index 均无变化），上一轮已穷尽检查全部 10 个方向
+- **已检查方向**（沿用上一轮结论，无新素材触发复查）：
+  1. AOSP `frameworks/base/services/` 核心服务 — 全部已覆盖
+  2. AOSP `system/` 核心组件 — 全部已覆盖
+  3. AOSP `packages/modules/` 模块 — 全部已覆盖
+  4. Clippings 三本参考书章节交叉比对 — 核心知识点全部映射
+  5. Android 17 新特性 — 除非性能话题外全部有覆盖
+  6. 研究素材（8 篇 research-feeds）— 全部已映射
+  7. 每日信息（最近 3 天 daily-info）— 热点话题均有对应章节
+  8. 现有章节 🔸 扩展锚点深挖 — 无素材丰富到足以独立成节
+  9. Compose Snapshot 状态系统 — 已在 22.20/22.28/22.29 中覆盖
+  10. AlarmManager / NotificationManagerService 性能 — 已在 5.23/8.14 等章节中覆盖
+- **全书状态**：577 总节 / 340 finalized / 195 ready-for-review / 35 draft（多个已有实质内容）
+- **建议**：
+  1. 后续精力宜聚焦于 review 195 个 ready-for-review 章节（Task 6/9 流水线）
+  2. 35 个 draft 章节中多个已有实质内容，可考虑 Task 2B 深度加工
+  3. 当有新 research-feeds 或 daily-info 进入时，下一轮挖掘才可能有新发现
