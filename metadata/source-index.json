@@ -462,6 +462,150 @@
       ],
       "summary": "Jetpack Compose Modifier实现原理的图解分析",
       "scored_at": "2026-07-03T09:05:11.293561"
+    },
+    {
+      "path": "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization",
+      "title": "Android 17 性能优化：新调度器减少 30% 启动时间",
+      "summary": "Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少 30%。新调度器采用机器学习模型预测用户行为，优先启动高频...",
+      "chapter": "ch05-cpu-power",
+      "action": "direct_inject",
+      "score": 18,
+      "score_detail": "相关5 深3 时效5 信源5",
+      "processed_at": "2026-07-04T05:34:25.725165",
+      "source": "RSS"
+    },
+    {
+      "path": "https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation",
+      "title": "Linux 6.10 引入内存碎片整理新机制",
+      "summary": "Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运行的系统稳定性。新机制采用分层管理策略，对频繁分配释放的热点...",
+      "chapter": "ch04-memory",
+      "action": "direct_inject",
+      "score": 14,
+      "score_detail": "相关5 深3 时效1 信源5",
+      "processed_at": "2026-07-04T05:34:25.725178",
+      "source": "RSS"
+    },
+    {
+      "path": "https://juejin.cn/post/7621443853845594154",
+      "title": "局域网微信——完整近场通信开源项目",
+      "summary": "基于 Compose+Room3+Hilt 的去中心化通信应用，集成 NSD 服务发现、Wi-Fi Direct 直连、BLE 加好友、WebRTC 音视频通话、大文件 FileChannel 分片续传和 AES 端到端加密。展示了 Android 系统底层通信能力的深度工程实践，完整源码开源。",
+      "chapter": "ch16-aosp",
+      "action": "direct_inject",
+      "score": 14,
+      "score_detail": "相关5 深5 时效1 信源3",
+      "processed_at": "2026-07-04T05:34:25.725181",
+      "source": "掘金Android"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76184335-你可能还不知道ComposePager有.md",
+      "title": "你可能还不知道 Compose Pager 有多强大从传统的 ViewPager 过渡到 Compose Pager，代",
+      "summary": "> 发布时间: 2026-03-19T00:29:43.000Z > 原文链接:  2026-03-19 2,150 阅读9分钟 我同事刚开始用 Compose 没多久，就找上我了，问我 ViewPager 有没有什么替代品。我说 Compose 的 Pager 可比那个强多了，你等我写一...",
+      "chapter": "ch17-oem",
+      "action": "direct_inject",
+      "score": 12,
+      "score_detail": "相关3 深1 时效5 信源3",
+      "processed_at": "2026-07-04T05:34:25.725183",
+      "source": "Obsidian 技术文章回流"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76214438-我写了个局域网微信带源码.md",
+      "title": "【带源码】我写了个局域网微信一款小巧的设备间直连通信应用，在交互与功能层面尽量对齐微信，同时深度挖掘安卓系统底层能力，利",
+      "summary": "> 发布时间: 2026-03-26T14:13:44.000Z > 原文链接:  2026-03-26 2,608 阅读11分钟 > 在一次爬山途中，由于手机突然没有信号让我萌生了一个大胆的想法：能不能让手机之间直接连接并像微信一样通信呢？借离职后的自由时间，我决定挑战一下自己，开发一款...",
+      "chapter": "ch16-aosp",
+      "action": "direct_inject",
+      "score": 14,
+      "score_detail": "相关1 深5 时效5 信源3",
+      "processed_at": "2026-07-04T05:34:25.725188",
+      "source": "Obsidian 技术文章回流"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76232428-我见过的最反直觉的Android架构问题.md",
+      "title": "我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂Clean Architecture 落地的",
+      "summary": "> 发布时间: 2026-03-31T09:39:53.000Z > 原文链接:  2026-03-31 1,907 阅读9分钟 Clean Architecture 被捧上神坛五六年了。但我最近 review 了几个\"按规范来的\"项目，发现一个反直觉的规律：UseCase 文件越多，项目...",
+      "chapter": "ch01-architecture",
+      "action": "direct_inject",
+      "score": 14,
+      "score_detail": "相关5 深1 时效5 信源3",
+      "processed_at": "2026-07-04T05:34:25.725191",
+      "source": "Obsidian 技术文章回流"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76388970-为什么Android不用接口做Activ.md",
+      "title": "为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO",
+      "summary": "> 发布时间: 2026-05-13T00:03:47.000Z > 原文链接:  2026-05-13 3,478 阅读4分钟 上周，一个刚从 iOS 转过来的同事问我： > “Android 为啥不喜欢用接口回调传结果？ iOS 那边 delegate、closure 不就挺好吗？”...",
+      "chapter": "ch17-oem",
+      "action": "direct_inject",
+      "score": 14,
+      "score_detail": "相关5 深1 时效5 信源3",
+      "processed_at": "2026-07-04T05:34:25.725193",
+      "source": "Obsidian 技术文章回流"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76500740-现代Android官方为什么更推荐Rep.md",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch",
+      "summary": "> 发布时间: 2026-06-11T22:41:13.000Z > 原文链接:  2026-06-12 1,642 阅读12分钟 写这篇文章，其实是因为最近看到有些公众号在介绍 Kotlin 协程时，都推荐在 Repository 中这样写： fun load() { repositor...",
+      "chapter": "ch17-oem",
+      "action": "direct_inject",
+      "score": 14,
+      "score_detail": "相关5 深1 时效5 信源3",
+      "processed_at": "2026-07-04T05:34:25.725195",
+      "source": "Obsidian 技术文章回流"
+    },
+    {
+      "title": "Perfetto v57: fixing PyTorch traces, plus journald logs and an AI skill",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Perfetto v57- fixing PyTorch traces, plus journald logs and an AI skill-2026-07-03.md",
+      "quality": "medium",
+      "score": 10,
+      "scored_at": "2026-07-04T05:46:35.198506"
+    },
+    {
+      "title": "从AI Coding到Harness Engineering的端到端工程开发实践",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/从AI Coding到Harness Engineering的端到端工程开发实践-2026-07-03.md",
+      "quality": "medium",
+      "score": 11,
+      "scored_at": "2026-07-04T05:46:35.198513"
+    },
+    {
+      "title": "源码调研：Android 17 应用层CPU优化实战：线程池配置与闲置检测方案深度研究",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-cpu-optimization-threadpool-idle-detection.md",
+      "quality": "medium",
+      "score": 10,
+      "scored_at": "2026-07-04T05:46:35.198516"
+    },
+    {
+      "title": "源码调研：Android 17 heapprofd 生产环境部署模式与默认配置",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-heapprofd-production-deployment.md",
+      "quality": "medium",
+      "score": 12,
+      "scored_at": "2026-07-04T05:46:35.198517"
+    },
+    {
+      "title": "源码调研：Android 17 模块化启动框架在多进程/微服务场景下的依赖管理、服务发现与启动编排",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-modular-startup-microservice-cross-process.md",
+      "quality": "medium",
+      "score": 12,
+      "scored_at": "2026-07-04T05:46:35.198519"
+    },
+    {
+      "title": "源码调研：Android 17 Perfetto 版本演进与新数据源特性深入分析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-perfetto-data-sources-evolution.md",
+      "quality": "medium",
+      "score": 13,
+      "scored_at": "2026-07-04T05:46:35.198523"
+    },
+    {
+      "title": "源码调研：Android 17 Staged Install 状态机与提交-恢复链路源码级闭环验证",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-staged-install-state-machine-commit-restore.md",
+      "quality": "medium",
+      "score": 12,
+      "scored_at": "2026-07-04T05:46:35.198524"
+    },
+    {
+      "title": "源码调研：Android 17 Binder 死亡通知在进程退出时的批量派发顺序源码级闭环验证",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-binder-node-release-death-notification-batch.md",
+      "quality": "medium",
+      "score": 10,
+      "scored_at": "2026-07-04T05:46:35.198526"
     }
   ]
 }
