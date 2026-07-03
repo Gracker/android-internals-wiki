@@ -1,6 +1,6 @@
 {
-  "total": 569,
-  "draft": 20,
+  "total": 572,
+  "draft": 22,
   "ready_for_review": 192,
   "finalized": 337,
   "last_updated": "2026-07-03",
@@ -251,6 +251,27 @@
       "status": "ready_for_review",
       "ts": "2026-07-03T09:06:00+08:00",
       "note": "应用虚拟内存优化实战: 6 anchors (VSS基础/线程栈治理/多进程/maps分析/WebView预留释放/ART GC Space) + 2 extensions (VSS监控/Native Hook), Clippings结构参考 + AOSP android-17.0.0_r1 源码验证"
+    },
+    {
+      "section": "11.1",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-03T10:30:43+08:00",
+      "note": "Created from knowledge gap mining (11.1)"
+    },
+    {
+      "section": "12.1",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-03T10:30:43+08:00",
+      "note": "Created from knowledge gap mining (12.1)"
+    },
+    {
+      "section": "19.1",
+      "action": "task2a-draft",
+      "status": "draft",
+      "drafted_at": "2026-07-03T10:30:43+08:00",
+      "note": "Created from knowledge gap mining (19.1)"
     }
   ],
   "review_history": [

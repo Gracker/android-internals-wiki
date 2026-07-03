@@ -55,6 +55,7 @@
   - [8.17 Kotlin Flow 背压、操作符链与响应式性能边界](src/part2-performance/ch08-responsiveness/17-kotlin-flow-backpressure-performance.md)
   - [8.18 Binder Trace 驱动的 Activity 冷启动性能分析](src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md)
   - [8.3 Android 17 系统启动优化与 bootanalyze 工具链增强](part2-fundamentals/ch08-architecture/8-3-android17-系统启动优化与-bootanalyze-工具链增强.md)
+- [第 11 章：网络性能优化](part2-performance/ch11-network-optimization/README.md)
 
 - [第 9 章：ANR 监控与分析](src/part2-performance/ch09-anr/README.md)
   - [9.1 Android ANR 机制概述](src/part2-performance/ch09-anr/01-anr-intro.md)
@@ -68,6 +69,7 @@
   - [9.9 Android 17 ANR 预警系统](src/part2-performance/ch09-anr/09-android17-anr-warning-system.md)
   - [9.10 Android 17 ANR 预警回调与类型枚举](src/part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
   - [9.11 企业级 ANR 监控平台架构设计](src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md)  - [9.12 Android 17 ANR 输入事件超时检测双层预警机制](part2-fundamentals/ch09-architecture/9-12-android17-anr-输入事件超时检测双层预警机制.md)
+- [第 12 章：音频性能优化](part3-system/ch12-audio-performance/README.md)
 
 - [23.13 应用虚拟内存优化实战](part5-app/ch23-memory-practice/13-virtual-memory-optimization.md)
 
