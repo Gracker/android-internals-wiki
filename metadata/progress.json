@@ -1,8 +1,8 @@
 {
   "total": 564,
   "draft": 16,
-  "ready_for_review": 194,
-  "finalized": 334,
+  "ready_for_review": 191,
+  "finalized": 337,
   "last_updated": "2026-07-03",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
@@ -223,6 +223,27 @@
       "status": "fixed",
       "verified_at": "2026-07-03T07:32:23+08:00",
       "note": "status finalized→ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
+    },
+    {
+      "section": "18.20",
+      "action": "task9-deep-review",
+      "status": "promoted",
+      "reviewed_at": "2026-07-03T08:38:28+08:00",
+      "note": "pass-tech-review; task6 pass-light-edit; no pending queue entry; auto-promoted finalized"
+    },
+    {
+      "section": "19.04",
+      "action": "task9-deep-review",
+      "status": "promoted",
+      "reviewed_at": "2026-07-03T08:38:28+08:00",
+      "note": "pass-tech-review; task6 pass-light-edit; no pending queue entry; auto-promoted finalized"
+    },
+    {
+      "section": "19.12",
+      "action": "task9-deep-review",
+      "status": "promoted",
+      "reviewed_at": "2026-07-03T08:38:28+08:00",
+      "note": "pass-tech-review; task6 pass-light-edit; no pending queue entry; auto-promoted finalized"
     }
   ],
   "review_history": [
