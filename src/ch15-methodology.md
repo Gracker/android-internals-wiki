@@ -6,32 +6,32 @@ applicable_versions: Android 8-17 (API 26-37)
 last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 tags:
 - methodology
-task9_result: auto-fixed
+task9_result: needs-rework
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-07-03T22:18:34+08:00"
 last_task6_review_log: "logs/review/2026-07-03-22-review.md"
 task6_review_notes_final: "2026-07-02 Task6 revisiting-review round3 (post-Task2B-structural): pass-light-edit. L1 fix×3 (关键是→要, 链路→链, 舒服→自我安慰). L2 pass. No B-class issues. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task2B-content-rework + Task9-autofix): pass-light-edit. L1 clean (banned-word scan: 0 real hits, 3 false positives). L2 pass (opening direct, structure clear, breathing points adequate). L3/L4: no B-class writing issues. FrameRateOverrides section (4.4) well-written, SQL examples properly formatted. DeviceConfig section (3.2) clean. Auto-promotion blocked: task9_result=auto-fixed (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task9_state: pending
 task2b_state: fixed
-task2b_result: fixed
-last_task2b_lite_at: "2026-06-27"
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-07-04"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
 last_task9_audit: "2026-07-03"
-last_task9_at: "2026-07-03T21:34:00+08:00"
+last_task9_at: "2026-07-04T01:22:00+08:00"
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-03-17-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-04-01-deep-review.md"
 last_idle_audit_at: "2026-07-02T17:27:39+08:00"
 last_task6_audit: "2026-07-02"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
+task2b_lite_notes: "2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
 ---
-
 # Android 性能优化研究方法论
 
 Android 性能优化的工作质量，取决于前面有没有把问题定义清楚、工具选对、数据采到位、根因追到底。没有这一层，后面的优化方案再漂亮也容易跑偏。
@@ -145,7 +145,7 @@ adb shell perfetto --attach=my_trace --stop
 
 `external/perfetto/perfetto.rc` 中 `traced`、`traced_relay`、`traced_probes` 三个 service 均为 `disabled`。标准 AOSP 通过 `persist.traced.enable=1` 的 init action 启动 `traced` / `traced_probes`，同时创建 `/data/misc/perfetto-traces` 和 `/data/misc/perfetto-configs` 目录。Pixel 或厂商镜像可通过 vendor init、DeviceConfig 或属性默认值覆盖启用边界。
 
-`src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`src/traced/service/service.cc` 中 `traced` 只处理 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`，不接受 `-b` 或 `--async`。
+`external/perfetto/src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`external/perfetto/src/traced/service/service.cc` 中 `traced` 只处理 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`，不接受 `-b` 或 `--async`。
 
 **Android 17（API 37）Perfetto 启用方式的变化**：Android 17 在 `persist.traced.enable` 基础上引入了 `debug.perfetto.enabled` 系统属性，作为更细粒度的启用控制。同时 DeviceConfig 机制使 Perfetto 的生产者数据源可以在无需 root 的条件下动态开启或关闭。
 
