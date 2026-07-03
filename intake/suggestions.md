@@ -33,6 +33,24 @@
 - **位置**：整体章节
 - **问题**：提及 "详见 2.30 章" 但缺少具体关联点
 - **建议**：补充 2.30 章与本章节的具体关联描述，明确 FrameTimeline GPU/CPU 合成边界的分析位置
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：源码准确性
+- **位置**：Section 4.3.4 "Android 17（API 37）Perfetto 启用方式的变化"
+- **问题**：`debug.perfetto.enabled` 系统属性描述与实际AOSP android-17.0.0_r1代码不符，该属性实际不存在
+- **建议**：修正或删除不存在的属性引用，改为通过DeviceConfig机制控制的正确描述
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：版本差异
+- **位置**：Section 4.3.4 "Android 17（API 37）Perfetto 启用方式的变化"
+- **问题**：未提及Android 17中VSync offset动态调整机制的具体变化
+- **建议**：补充VSync offset调整算法的具体实现或参考源码位置
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：知识盲区
+- **位置**：Section 4.3 "Perfetto trace_processor 实战"
+- **问题**：SQL查询示例缺少实际trace数据验证，未说明在实际trace中能否找到对应数据
+- **建议**：补充Perfetto trace中对应表结构的验证信息
 ## [2026-07-04] 知识缺口挖掘 — 第4轮无候选 (连续第4轮)
 
 **本轮检查方向**（全部 < 14分）：
