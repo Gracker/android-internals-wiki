@@ -1,47 +1,467 @@
-[
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-appflow-lmkd-v2-collaboration.md",
-    "title": "Android 17 AppFlow 大应用冷启动内存联合调度与 LMKD v2 机制协作研究",
-    "summary": "基于 android-17.0.0_r1 LMKD 源码发现 AppFlow 三段式调度与 LMKD 存在精确协议接入点：LMK_PROCS_PRIO (id=11) 通过 io_uring 实现批量异步处理（最多32进程），thrashing_limit 采用动态衰减策略为启动期提供保护窗口，MGLRU 状态机独立运行但已纳入内存压力辅助指标。",
-    "chapter_mapping": "ch04 §4.5",
-    "processed_at": "2026-07-03T06:15:48.543593",
-    "type": "DeepResearch",
-    "action": "injected"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-binder-priority-async-batch-pipeline.md",
-    "title": "Android 17 Binder 优先级调度与异步批处理流水线源码解析",
-    "summary": "对内核 binder.c（android17-6.18-2026-06_r1, 7460行）做源码级补强：多进程路由三路排队（thread todo / proc todo / node async_todo），1MB 缓冲区溢出返回 BR_FAILED_REPLY，Death notification 四态机完整路径，同步事务防死锁内核护栏（行3466-3479）。",
-    "chapter_mapping": "ch16 §1.25",
-    "processed_at": "2026-07-03T06:15:48.543593",
-    "type": "DeepResearch",
-    "action": "injected"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-input-anr-mechanism.md",
-    "title": "Android 17 ANR 输入事件超时检测机制深度解析",
-    "summary": "Android 17 ANR 检测采用双层预警：Native InputDispatcher 实时监控输入超时并触发 pre-ANR 通知（超时前50%窗口），Java 层 InputManagerService 区分无焦点窗口 ANR 和窗口无响应 ANR。完整链路含事件生成→派发监控→超时判定→跨进程回调→ANR 触发五环节。",
-    "chapter_mapping": "ch09 §9.1",
-    "processed_at": "2026-07-03T06:15:48.543593",
-    "type": "DeepResearch",
-    "action": "injected"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-simpleperf-spe-trbe-source-verification.md",
-    "title": "Android 17 Simpleperf SPE + TRBE + pmu_lib 新增特性源码验证",
-    "summary": "源码级对比 A16 vs A17：SPE 为 A17 全新特性（SPERecorder/SPEDecoder），--background 为 A17 新增而 --app 已存在于 A16（章节勘误），TRBE 从单模式重构为 per-cpu 多 sink，pmu_lib BEEFDEAD 冲突处理机制确认存在。",
-    "chapter_mapping": "ch13/14 §14.24",
-    "processed_at": "2026-07-03T06:15:48.543593",
-    "type": "DeepResearch",
-    "action": "injected"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md",
-    "title": "Android 17 ThreadPoolExecutor 三层源码 + bionic times() 系统调用 + JNI /proc/stat 解析",
-    "summary": "ThreadPoolExecutor.execute() 三步决策源码含3处 Android 专属增强（@ReachabilitySensitive、SharedThreadContainer、addWorkerFailed 回滚）；bionic times() 为纯汇编 stub 无胶水代码；kernel do_sys_times 走调度器归一化路径与 /proc/stat 差值可达30%；JNI readProcFile 栈/堆双缓冲设计。",
-    "chapter_mapping": "ch05/27 §27",
-    "processed_at": "2026-07-03T06:15:48.543593",
-    "type": "DeepResearch",
-    "action": "injected"
-  }
-]
+{
+  "files": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-appflow-lmkd-v2-collaboration.md",
+      "title": "Android 17 AppFlow 大应用冷启动内存联合调度与 LMKD v2 机制协作研究",
+      "summary": "基于 android-17.0.0_r1 LMKD 源码发现 AppFlow 三段式调度与 LMKD 存在精确协议接入点：LMK_PROCS_PRIO (id=11) 通过 io_uring 实现批量异步处理（最多32进程），thrashing_limit 采用动态衰减策略为启动期提供保护窗口，MGLRU 状态机独立运行但已纳入内存压力辅助指标。",
+      "chapter_mapping": "ch04 §4.5",
+      "processed_at": "2026-07-03T06:15:48.543593",
+      "type": "DeepResearch",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-binder-priority-async-batch-pipeline.md",
+      "title": "Android 17 Binder 优先级调度与异步批处理流水线源码解析",
+      "summary": "对内核 binder.c（android17-6.18-2026-06_r1, 7460行）做源码级补强：多进程路由三路排队（thread todo / proc todo / node async_todo），1MB 缓冲区溢出返回 BR_FAILED_REPLY，Death notification 四态机完整路径，同步事务防死锁内核护栏（行3466-3479）。",
+      "chapter_mapping": "ch16 §1.25",
+      "processed_at": "2026-07-03T06:15:48.543593",
+      "type": "DeepResearch",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-input-anr-mechanism.md",
+      "title": "Android 17 ANR 输入事件超时检测机制深度解析",
+      "summary": "Android 17 ANR 检测采用双层预警：Native InputDispatcher 实时监控输入超时并触发 pre-ANR 通知（超时前50%窗口），Java 层 InputManagerService 区分无焦点窗口 ANR 和窗口无响应 ANR。完整链路含事件生成→派发监控→超时判定→跨进程回调→ANR 触发五环节。",
+      "chapter_mapping": "ch09 §9.1",
+      "processed_at": "2026-07-03T06:15:48.543593",
+      "type": "DeepResearch",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-simpleperf-spe-trbe-source-verification.md",
+      "title": "Android 17 Simpleperf SPE + TRBE + pmu_lib 新增特性源码验证",
+      "summary": "源码级对比 A16 vs A17：SPE 为 A17 全新特性（SPERecorder/SPEDecoder），--background 为 A17 新增而 --app 已存在于 A16（章节勘误），TRBE 从单模式重构为 per-cpu 多 sink，pmu_lib BEEFDEAD 冲突处理机制确认存在。",
+      "chapter_mapping": "ch13/14 §14.24",
+      "processed_at": "2026-07-03T06:15:48.543593",
+      "type": "DeepResearch",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md",
+      "title": "Android 17 ThreadPoolExecutor 三层源码 + bionic times() 系统调用 + JNI /proc/stat 解析",
+      "summary": "ThreadPoolExecutor.execute() 三步决策源码含3处 Android 专属增强（@ReachabilitySensitive、SharedThreadContainer、addWorkerFailed 回滚）；bionic times() 为纯汇编 stub 无胶水代码；kernel do_sys_times 走调度器归一化路径与 /proc/stat 差值可达30%；JNI readProcFile 栈/堆双缓冲设计。",
+      "chapter_mapping": "ch05/27 §27",
+      "processed_at": "2026-07-03T06:15:48.543593",
+      "type": "DeepResearch",
+      "action": "injected"
+    },
+    {
+      "title": "Android Native | 内存问题的终极武器 ——MTE",
+      "path": "AndroidWeekly/#23/Android Native | 内存问题的终极武器 ——MTE",
+      "source_url": "https://juejin.cn/post/7013595058125406238",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "内存追踪技术MTE的深度解析，包含底层实现原理和实际应用案例",
+      "scored_at": "2026-07-03T09:05:11.293531"
+    },
+    {
+      "title": "Android R 常见 GC 类型与问题案例",
+      "path": "AndroidWeekly/#23/Android R 常见 GC 类型与问题案例",
+      "source_url": "https://mp.weixin.qq.com/s/J6pYzVcOUHCt8zCqZLaD3w",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android R版本GC机制详解和典型问题案例分析",
+      "scored_at": "2026-07-03T09:05:11.293539"
+    },
+    {
+      "title": "探索 Flutter 中线程模型 / 消息循环的底层逻辑",
+      "path": "AndroidWeekly/#23/探索 Flutter 中线程模型 / 消息循环的底层逻辑",
+      "source_url": "https://zhuanlan.zhihu.com/p/414582899",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-多线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter线程架构和消息循环机制的深度技术分析",
+      "scored_at": "2026-07-03T09:05:11.293541"
+    },
+    {
+      "title": "kotlin Android Interview Questions",
+      "path": "AndroidWeekly/#23/kotlin Android Interview Questions",
+      "source_url": "https://anandharajramasamydev.medium.com/kotlin-android-interview-questions-412332d1106e",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 10,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 2,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin Android开发常见面试题集合",
+      "scored_at": "2026-07-03T09:05:11.293543"
+    },
+    {
+      "title": "Duolingo refactors on Android with MVVM and Jetpack libraries",
+      "path": "AndroidWeekly/#23/Duolingo refactors on Android with MVVM and Jetpack libraries",
+      "source_url": "https://developer.android.com/stories/apps/duolingo-excellence",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-架构设计",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Duolingo使用MVVM和Jetpack重构Android应用的实际案例",
+      "scored_at": "2026-07-03T09:05:11.293544"
+    },
+    {
+      "title": "Unidirectional Data Flow for Android UIs",
+      "path": "AndroidWeekly/#23/Unidirectional Data Flow for Android UIs",
+      "source_url": "https://dev.to/j1c1m1b1/unidirectional-data-flow-for-android-uis-2807",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-架构设计",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android UI单向数据流架构设计和实现指南",
+      "scored_at": "2026-07-03T09:05:11.293546"
+    },
+    {
+      "title": "重新理解为什么 Handler 可能导致内存泄露？",
+      "path": "AndroidWeekly/#23/重新理解为什么 Handler 可能导致内存泄露？",
+      "source_url": "https://mp.weixin.qq.com/s/4duyUKTjJmV_66kZm2MQPg",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch06-多线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Handler导致内存泄漏的深度原理解析和解决方案",
+      "scored_at": "2026-07-03T09:05:11.293547"
+    },
+    {
+      "title": "视频 - 反编译 APK，Android 开发者一定用得着",
+      "path": "AndroidWeekly/#23/视频 - 反编译 APK，Android 开发者一定用得着",
+      "source_url": "https://mp.weixin.qq.com/s/HHXHsLKW8P4esKWkq_qMng",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-逆向",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "APK反编译工具使用教程和实战演示",
+      "scored_at": "2026-07-03T09:05:11.293548"
+    },
+    {
+      "title": "使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间",
+      "path": "AndroidWeekly/#23/使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间",
+      "source_url": "https://mp.weixin.qq.com/s/_eRbF-c0BzgU_6j1SEYEMw",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-Kotlin",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "KSP 1.0优化构建时间的原理和实践方法",
+      "scored_at": "2026-07-03T09:05:11.293549"
+    },
+    {
+      "title": "Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
+      "path": "AndroidWeekly/#23/Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
+      "source_url": "https://www.cnblogs.com/houser0323/p/15115623.html",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch09-启动优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "从binder trace角度深入分析Android 11 Activity冷启动过程",
+      "scored_at": "2026-07-03T09:05:11.293551"
+    },
+    {
+      "title": "更高级的 Android 启动 任务调度库",
+      "path": "AndroidWeekly/#23/更高级的 Android 启动 任务调度库",
+      "source_url": "https://mp.weixin.qq.com/s/ZEcdAeyLNJXSZNJYOEUBiw",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch09-启动优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android应用启动任务调度的高级实现方案",
+      "scored_at": "2026-07-03T09:05:11.293552"
+    },
+    {
+      "title": "Now in Android #48",
+      "path": "AndroidWeekly/#23/Now in Android #48",
+      "source_url": "https://medium.com/androiddevelopers/now-in-android-48-c499493bb83",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android开发官方最新技术动态和最佳实践",
+      "scored_at": "2026-07-03T09:05:11.293553"
+    },
+    {
+      "title": "Android 资源溢出崩溃轻松解",
+      "path": "AndroidWeekly/#23/Android 资源溢出崩溃轻松解",
+      "source_url": "https://zhuanlan.zhihu.com/p/420726913",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android资源溢出崩溃的原因分析和解决方案",
+      "scored_at": "2026-07-03T09:05:11.293554"
+    },
+    {
+      "title": "macOS 上 Flutter Desktop 与 Electron 的性能对比",
+      "path": "AndroidWeekly/#23/macOS 上 Flutter Desktop 与 Electron 的性能对比",
+      "source_url": "https://mp.weixin.qq.com/s/uTHi8SfCvXJfbie1A1YNVA",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch11-跨平台",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter Desktop与Electron在macOS平台上的性能对比分析",
+      "scored_at": "2026-07-03T09:05:11.293556"
+    },
+    {
+      "title": "A Comprehensive Guide to Android 12 Splash Screen API",
+      "path": "AndroidWeekly/#23/A Comprehensive Guide to Android 12 Splash Screen API",
+      "source_url": "https://medium.com/@rackadev/a-comprehensive-guide-to-android-12s-splash-screen-api-644609c811fa",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 12启动画面的完整API使用指南和最佳实践",
+      "scored_at": "2026-07-03T09:05:11.293557"
+    },
+    {
+      "title": "Android12 系统源码分析 NativeTombstoneManager",
+      "path": "AndroidWeekly/#23/Android12 系统源码分析 NativeTombstoneManager",
+      "source_url": "https://mp.weixin.qq.com/s/YPnQX1OSWhvXEuibCiCQPg",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 12 NativeTombstoneManager源码深度分析和原理",
+      "scored_at": "2026-07-03T09:05:11.293558"
+    },
+    {
+      "title": "Android Module 依赖关系的 可视化实现",
+      "path": "AndroidWeekly/#23/Android Module 依赖关系的 可视化实现",
+      "source_url": "https://zhuanlan.zhihu.com/p/421286744",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-模块化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android Module依赖关系可视化的实现方案",
+      "scored_at": "2026-07-03T09:05:11.293559"
+    },
+    {
+      "title": "图解 Compose Modifier 实现原理",
+      "path": "AndroidWeekly/#23/图解 Compose Modifier 实现原理",
+      "source_url": "https://mp.weixin.qq.com/s/f5KZJN_4G4LFBlEBQ_se3g",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Jetpack Compose Modifier实现原理的图解分析",
+      "scored_at": "2026-07-03T09:05:11.293561"
+    }
+  ]
+}

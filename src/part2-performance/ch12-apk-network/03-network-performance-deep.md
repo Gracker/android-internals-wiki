@@ -54,9 +54,9 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 review_round: 2
-task6_state: "revisiting"
-pipeline_stage: task6_pending
-task9_state: "reviewed"
+task6_state: "reviewed"
+pipeline_stage: task9_pending
+task9_state: "pending"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
@@ -71,14 +71,14 @@ p1: 0
 p2: 0
 task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：Android 17 主线 libcore 中 `BlockGuard.java` 位于 `libcore/dalvik/src/main/java/dalvik/system/`，socket 网络入口由 `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java` 调用 `BlockGuard.getThreadPolicy().onNetwork()`；已修正 frontmatter AOSP 源码路径并同步重锚 OkHttp 4.12.x `ConnectionPool.kt` 代码块。P0 1 / P1 0 / P2 0；回到 Task6 复审。"
 task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-05-28T06:11:00+08:00"
+last_task6_at: "2026-07-03T09:09:50+08:00"
 task6_reviewed_at: "2026-05-28T06:11:00+08:00"
-last_task6_review_log: "logs/review/2026-05-28-06-review.md"
-task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（删除填充强调词）。既有 Android 16 DNS prefetch 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。 | 2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。 | 2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。"
+last_task6_review_log: "logs/review/2026-07-03-09-review.md"
+task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（删除填充强调词）。既有 Android 16 DNS prefetch 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。 | 2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。 | 2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。 | 2026-07-03 09 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（禁用词\"链路\"→\"路径\", 在参考资料注释中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。"
 last_task2b_at: "2026-05-28T04:50:00+08:00"
 last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
 last_task2b_note: "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。"
-task6_l1_l2_fixes: 0
+task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 last_task9_autofix_at: "2026-07-03"
 last_task9_audit_log: "logs/deep-review/2026-07-03-06-audit.md"
@@ -485,4 +485,4 @@ Retrofit 通常不是网络慢的第一嫌疑人。若 `EventListener` 显示 DN
 - [Android Optimizing Battery Life](https://developer.android.com/training/monitoring-device-state)
 - [OkHttp EventListener API](https://square.github.io/okhttp/4.x/okhttp/okhttp3/-event-listener/)
 - [Perfetto 自定义 Trace Event](https://perfetto.dev/docs/instrumentation/tracing-sdk)
-- [Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径](DeepResearch/2026-06-17-android17-network-quota-limit-enforcement.md) — 源码级分析双服务架构（采集+策略执行）：BPF/eBPF FastDataInput 模式 4 个 BpfMap 绕过 procfs 零拷贝读取、quota 超限触发链路（内核 BPF map → netd.bandwidthSetGlobalAlert → AlertObserver.onQuotaLimitReached → performPollLocked 持久化 → firewall chain 隔离）、15K 采样率与 2MB 持久化阈值、BlockedReasons/AllowedReasons UID 级状态机
+- [Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径](DeepResearch/2026-06-17-android17-network-quota-limit-enforcement.md) — 源码级分析双服务架构（采集+策略执行）：BPF/eBPF FastDataInput 模式 4 个 BpfMap 绕过 procfs 零拷贝读取、quota 超限触发路径（内核 BPF map → netd.bandwidthSetGlobalAlert → AlertObserver.onQuotaLimitReached → performPollLocked 持久化 → firewall chain 隔离）、15K 采样率与 2MB 持久化阈值、BlockedReasons/AllowedReasons UID 级状态机
