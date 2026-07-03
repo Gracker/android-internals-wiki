@@ -2,7 +2,7 @@
 title: 网络性能深入：连接池、TLS 与传输优化
 chapter: 12.3
 section: 12.3
-status: ready-for-review
+status: finalized
 drafted_date: 2026-04-07
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: 2026-07-03
@@ -23,21 +23,21 @@ reviewed_date: 2026-07-03
 task6_result: pass-light-edit
 review_round: 2
 task6_state: reviewed
-pipeline_stage: task9_pending
-task9_state: pending
-task9_result: auto-fixed
+pipeline_stage: ready-to-publish
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: 2026-07-03T09:32:24+08:00
+last_task9_at: 2026-07-03T13:28:31+08:00
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-03
 last_task6_audit: 2026-06-10
 last_task9_audit: 2026-07-03
-last_task9_review_log: logs/deep-review/2026-07-03-09-deep-review.md
-p0: 1
-p1: 1
+last_task9_review_log: logs/deep-review/2026-07-03-13-deep-review.md
+p0: 0
+p1: 0
 p2: 0
-task9_review_notes: 2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：Android 17 主线 libcore 中 `BlockGuard.java` 位于 `libcore/dalvik/src/main/java/dalvik/system/`，socket 网络入口由 `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java` 调用 `BlockGuard.getThreadPolicy().onNetwork()`；已修正 frontmatter AOSP 源码路径并同步重锚 OkHttp 4.12.x `ConnectionPool.kt` 代码块。P0 1 / P1 0 / P2 0；回到 Task6 复审。 | 2026-07-03 09 Task9 deep-review AUTO-FIX：修正 DoH3 AOSP 路径为 packages/modules/DnsResolver/rust/src/doh，并补充 DnsResolver TYPE_HTTPS/HttpsRecord/HttpsEndpoint 在 android-17.0.0_r1 中的 FlaggedApi 边界。P0 1 / P1 1 / P2 0；回到 Task6 复审。
+task9_review_notes: 2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：Android 17 主线 libcore 中 `BlockGuard.java` 位于 `libcore/dalvik/src/main/java/dalvik/system/`，socket 网络入口由 `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java` 调用 `BlockGuard.getThreadPolicy().onNetwork()`；已修正 frontmatter AOSP 源码路径并同步重锚 OkHttp 4.12.x `ConnectionPool.kt` 代码块。P0 1 / P1 0 / P2 0；回到 Task6 复审。 | 2026-07-03 09 Task9 deep-review AUTO-FIX：修正 DoH3 AOSP 路径为 packages/modules/DnsResolver/rust/src/doh，并补充 DnsResolver TYPE_HTTPS/HttpsRecord/HttpsEndpoint 在 android-17.0.0_r1 中的 FlaggedApi 边界。P0 1 / P1 1 / P2 0；回到 Task6 复审。 | 2026-07-03 13 Task9 deep-review pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。
 task6_reviewed_by: openclaw-task6
 last_task6_at: 2026-07-03T13:14:00+08:00
 task6_reviewed_at: 2026-05-28T06:11:00+08:00
@@ -50,8 +50,8 @@ task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 last_task9_autofix_at: 2026-07-03
 last_task9_audit_log: logs/deep-review/2026-07-03-06-audit.md
-task9_p0_issues: 1
-task9_p1_issues: 1
+task9_p0_issues: 0
+task9_p1_issues: 0
 task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
