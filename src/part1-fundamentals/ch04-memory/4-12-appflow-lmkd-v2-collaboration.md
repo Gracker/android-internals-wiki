@@ -1,7 +1,7 @@
 ---
 title: "Android 17 AppFlow + LMKD v2 内存联合调度协作机制"
 chapter: "4.12"
-status: draft
+status: deprecated
 applicable_versions: "Android 17 (API 37)"
 tags: [内存管理, AppFlow, LMKD, 联合调度, OOM防护]
 related_chapters: ["4.5", "4.11", "16.7"]
@@ -9,6 +9,9 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "AOSP结构"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 4.5 (ready-for-review, 504 lines) 内容重复。
+
+
 
 # 4.12 Android 17 AppFlow + LMKD v2 内存联合调度协作机制
 

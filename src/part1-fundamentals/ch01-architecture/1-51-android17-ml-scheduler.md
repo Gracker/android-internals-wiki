@@ -1,7 +1,7 @@
 ---
 title: "Android 17 ML 驱动任务调度器"
 chapter: "1.51"
-status: draft
+status: deprecated
 applicable_versions: "Android 17 (API 37)"
 tags: [任务调度, 机器学习, EAS, EEVDF, CPU性能]
 related_chapters: ["1.43", "5.1", "8.1"]
@@ -9,6 +9,9 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "AOSP结构"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 1.43 内容重复。
+
+
 
 # 1.51 Android 17 ML 驱动任务调度器
 

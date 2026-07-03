@@ -1,7 +1,7 @@
 ---
 title: "Android 17 Binder IPC 优先级调度与异步批处理流水线"
 chapter: "1.50"
-status: draft
+status: deprecated
 applicable_versions: "Android 17 (API 37)"
 tags: [Binder, IPC, 优先级调度, 异步批处理, 内核机制]
 related_chapters: ["1.4", "1.13", "1.25"]
@@ -9,6 +9,9 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "AOSP结构"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 1.44 + 1.53 内容重复。
+
+
 
 # 1.50 Android 17 Binder IPC 优先级调度与异步批处理流水线
 
