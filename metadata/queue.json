@@ -365,6 +365,42 @@
   {
     "section": "13.21",
     "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 主 body 数据源总数与底部源码调研增补矛盾（77 vs 18）及未经验证的源码内容",
+    "material_paths": [
+      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
+      "logs/deep-review/2026-07-03-18-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "主 body 数据源演进表格（约行 100-130）",
+        "detail": "章节声称 Android 17 有 77 个 protobuf 数据源，但底部源码调研验证为 18 个 ProbesProducer 数据源，数据源数量表未经 AOSP 源码逐版本验证，与实际源码数据严重不符",
+        "suggestion": "以底部源码调研增补的 18 个 ProbesProducer 数据源为准重写数据源演进表格，删除未经源码验证的 77 个数据源的虚假数据"
+      },
+      {
+        "type": "源码错误",
+        "location": "heapprofd 深度分析段（约行 300-350）",
+        "detail": "章节声称 heapprofd 内存占用为'应用内存的 5-10%'，但源码调研增补显示实际参数为 8MB 共享内存、5 个 unwinder 线程，且缺乏测试条件标注",
+        "suggestion": "修正为源码中的实际参数：kDefaultShmemSize=8MB, kUnwinderThreads=5，并添加参数使用说明"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Exclusive Tracing 相关内容（约行 350-400）",
+        "detail": "章节中的 ExclusiveTracer、DistributedTracer 类和相关'追踪开销降低 60%'等性能指标缺乏 AOSP 源码佐证，疑似捏造代码示例",
+        "suggestion": "删除未经源码验证的 ExclusiveTracer、DistributedTracer 类示例，仅保留已验证的功能描述"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-03T18:23:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-07-03T18:53:17.889196+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "fixed: main body (outline) rewritten using verified source research supplement data (18 ProbesProducer sources, not 77); heapprofd params fixed (kDefaultShmemSize=8MB, kUnwinderThreads=5); dual producer model added; ExclusiveTracer/DistributedTracer/60% claim deleted; enterprise section trimmed; Systrace comparison table fixed"
+  },
+  {
+    "section": "13.21",
+    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
     "priority": 90,
     "reason": "[review回炉] 主 body（outline 段）大量 AI 生成内容与底部源码调研增补矛盾：声称 77 个 protobuf 数据源但源码调研实测为 18 个 ProbesProducer 数据源；heapprofd/FrameTimeline/Exclusive Tracing 等功能描述含大量未经源码验证的数据（如'追踪开销降低 60%'、'纳秒级时间戳'）和疑似捏造的代码示例（ExclusiveTracer、DistributedTracer 类）。需用底部源码调研增补的实测数据重写主 body。",
     "material_paths": [
@@ -392,7 +428,10 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-03T18:21:20",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-07-03-18-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-07-03-18-review.md",
+    "completed_at": "2026-07-03T18:53:17.889196+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "fixed: main body (outline) rewritten using verified source research supplement data (18 ProbesProducer sources, not 77); heapprofd params fixed (kDefaultShmemSize=8MB, kUnwinderThreads=5); dual producer model added; ExclusiveTracer/DistributedTracer/60% claim deleted; enterprise section trimmed; Systrace comparison table fixed"
   }
 ]
