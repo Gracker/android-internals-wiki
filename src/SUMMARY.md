@@ -61,6 +61,7 @@
   - [8.9 Android 17 ConnectivityManager 性能优化实战](part2-performance/ch08-connectivity-manager/8.9-connectivity-manager-performance.md)
   - [8.10 Android 17 PowerManager 性能优化实战](part2-performance/ch08-power-manager/8.10-power-manager-performance.md)
 - [第 11 章：网络性能优化](part2-performance/ch11-network-optimization/README.md)
+  - [11.1 Android 17 网络性能优化实战](part2-performance/ch11-network-optimization/11.1-Android 17 网络性能优化实战.md)
 
 - [第 9 章：ANR 监控与分析](src/part2-performance/ch09-anr/README.md)
   - [9.1 Android ANR 机制概述](src/part2-performance/ch09-anr/01-anr-intro.md)
