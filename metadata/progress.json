@@ -1,7 +1,7 @@
 {
   "total": 577,
-  "draft": 36,
-  "ready_for_review": 194,
+  "draft": 35,
+  "ready_for_review": 195,
   "finalized": 340,
   "last_updated": "2026-07-03",
   "task2b": {
@@ -363,6 +363,13 @@
       "status": "no-candidates",
       "ts": "2026-07-03T20:12:07.645272+08:00",
       "note": "Gap mining: 0 candidates ≥14 after checking AOSP services, system components, Clippings books, Android 17 features, research feeds, daily info, chapter extensions"
+    },
+    {
+      "section": "11.1",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-03T21:10:33.699882+08:00",
+      "note": "Android 17 网络性能优化实战: 4 anchors (网络栈架构/测量体系/请求优化策略/监控工具链) + 3 extensions (Radio State Machine/网络切换/性能基准). AOSP android-17.0.0_r1 验证 ConnectivityService/NetworkStatsManager/OkHttp EventListener. Android 17 DeliQueue/Data Plan Streaming/ACCESS_LOCAL_NETWORK/TLS增强."
     }
   ],
   "review_history": [
@@ -554,12 +561,14 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-03T20:12:07.645272+08:00",
-    "last_section": "none",
-    "result": "gap-mining-no-candidates",
-    "fix_count": 0,
-    "last_sections": [],
-    "note": "Gap mining round: checked 10 directions (AOSP services, system components, Clippings reference books, Android 17 features, research feeds, daily info, extension anchors). No candidates scored ≥14. Book is at 577 sections / 340 finalized / 194 ready-for-review / 36 draft. Recommend shifting focus to draft processing and review pipeline."
+    "last_run": "2026-07-03T21:10:33.699882+08:00",
+    "last_section": "11.1",
+    "result": "draft-processed",
+    "fix_count": 1,
+    "last_sections": [
+      "11.1"
+    ],
+    "note": "Processed borderline-empty draft (17 lines → 334 substantive lines). Android 17 network performance optimization practical guide."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",
