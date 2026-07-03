@@ -473,7 +473,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-03T20:12:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-07-03-20-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-07-03-20-review.md",
+    "completed_at": "2026-07-03T21:45:48+08:00",
+    "completed_reason": "fixed-lite: CLI parameter correction (issue #2) + systrace buffer unit fix (issue #3). Issue #1 (FrameTimeline generic content) deferred to main Task2B."
   }
 ]
