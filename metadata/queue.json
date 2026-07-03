@@ -565,6 +565,36 @@
     "section": "15",
     "section_title": "Android 性能优化研究方法论",
     "priority": 95,
+    "reason": "[Deep Tech Review] 源码引用与原理链问题 - 新发现的 P1/P2 问题",
+    "material_paths": [
+      "src/ch15-methodology.md",
+      "logs/deep-review/2026-07-04-07-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "3.2.4 小节",
+        "detail": "FrameRateOverrides 与 WindowManager 交互的源码引用不完整。文中提到 VSync offset 位于 frameworks/native/services/surfaceflinger/Scheduler/VSyncTracker.cpp，但 Android 17 中该文件已移动到 VSyncTracker.h 的实现类中，且 VSync 偏移计算逻辑分散到多个类（VSyncTracker、Scheduler、VSyncDispatch）",
+        "suggestion": "更新源码引用为 Android 17 中的实际文件路径和类结构，补充 VSync 偏移计算逻辑的分布说明"
+      },
+      {
+        "type": "原理断裂",
+        "location": "2.2 小节",
+        "detail": "定性分析\"5W2H\"与后续工具选择之间存在原理断裂。章节提到\"先归档再动手\"，但没有解释为什么归档后的性能问题类型需要配套特定的分析工具（如启动性能需要冷启动专用 trace 采集），这导致方法论与工具选择之间的逻辑链条不完整",
+        "suggestion": "补充 5W2H 分析后对应工具选择的决策逻辑，解释为什么不同类型性能问题需要配套不同的分析工具"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-04T07:20:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-07-04T07:37:01+08:00",
+    "completed_by": "task2b-lite",
+    "completion_reason": "fixed-lite: VSync source path corrected + 5W2H bridge added"
+  },
+  {
+    "section": "15",
+    "section_title": "Android 性能优化研究方法论",
+    "priority": 90,
     "reason": "[Deep Tech Review] 源码路径错误与版本基线混淆",
     "material_paths": [
       "src/ch15-methodology.md",
