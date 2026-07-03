@@ -16,10 +16,10 @@ related_chapters:
 sources: 
 - type: official
 path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-25
+reviewed_date: 2026-07-03
 task6_result: pass-light-edit
 last_task6_audit: 2026-06-17
 task9_state: pending
@@ -36,6 +36,7 @@ last_task9_audit: 2026-07-03
 last_task9_autofix_at: 2026-07-03
 rework_type: review回炉修复（External Review 问题单）
 last_task9_audit_log: logs/deep-review/2026-07-03-10-audit.md
+last_task6_at: 2026-07-03T12:13:55+08:00
 ---
 -
 

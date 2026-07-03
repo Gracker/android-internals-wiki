@@ -14,15 +14,15 @@ drafted_date: 2026-04-07
 drafted_by: openclaw-task2a
 last_verified: 2026-07-03
 last_verified_against: AOSP android-17.0.0_r1
-reviewed_date: 2026-05-06
+reviewed_date: 2026-07-03
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 confidence: medium
 sources: 
 - type: research
 path: intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -36,7 +36,7 @@ last_task9_at: 2026-05-06T12:42:00+08:00
 last_task9_audit: 2026-07-03
 last_task9_audit_log: logs/deep-review/2026-07-03-11-audit.md
 task9_review_notes: 2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决。 | 2026-05-06 12:42 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；AVIF fallback 实现名与 Perfetto 调用栈采集条件写入 suggestions；无 active queue pending，自动晋升 finalized。
-last_task6_at: 2026-05-06T10:10:00+08:00
+last_task6_at: 2026-07-03T12:13:55+08:00
 last_task6_audit: 2026-06-28
 last_task6_review_log: logs/review/2026-05-06-10-review.md
 task9_result: auto-fixed

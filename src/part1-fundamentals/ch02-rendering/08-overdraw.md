@@ -12,16 +12,16 @@ drafted_date: 2026-03-30
 confidence: high
 reviewed_date: 2026-04-30
 reviewed_by: openclaw-task6
-last_task6_at: 2026-07-03T09:09:50+08:00
+last_task6_at: 2026-07-03T12:13:55+08:00
 last_task6_audit: 2026-07-03
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: 2026-04-30T08:40:00+08:00
 task2b_state: fixed
 task9_state: pending
-task6_state: revisiting
-pipeline_stage: task6_pending
-status: ready-for-review
+task6_state: reviewed
+pipeline_stage: ready-to-publish
+status: finalized
 sources: 
 - type: official
 path: developer.android.com/develop/ui/compose/graphics/draw/modifiers
