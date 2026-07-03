@@ -818,3 +818,30 @@ AIW 当前 563 个文件，覆盖范围非常全面。后续缺口挖掘应关�
 - Android Automotive 专项性能
 - Android 17 Final SDK 行为变更扫描（等 Google I/O 后补充）
 - Clippings《Android 性能优化》赵子健剩余未映射知识点（如任务调度优化的实战补充）
+
+## [Task2A 知识缺口挖掘 — 第18轮] 2026-07-03 13:13
+
+结论：未发现评分 ≥ 14 的知识缺口，跳过。与第 1-17 轮结论一致。
+
+### Phase 0
+- 空 draft 章节：0 个（全部 28 个 draft 均已有 ≥15 有效内容行）
+- Task2B backlog：0 → 允许进入 Phase 1
+- ⚠️ 发现 6 个大纲型 stub draft 文件（有效内容 = 17 行，但无实际技术内容），且存在模板复制粘贴错误（如 ch12.1 音频章节的大纲描述含"网络性能测量工具"）。建议由 Task 2B 清理。
+
+### Phase 1 本轮新增检查方向（全部 < 14 分）
+- **Broadcast/BroadcastReceiver 性能** → 10/20（归入 ANR/后台任务范畴）
+- **LiveData/Flow 性能开销** → 11/20（ch08/17 已覆盖 Flow 背压）
+- **Navigation Component 性能** → 10/20（归入 Fragment 事务 ch22/12）
+- **Process Death / onSaveInstanceState 性能** → 10/20
+- **App Hibernation** → 9/20
+
+### 全书状态
+- 总文件：579 | draft: 28 | ready-for-review: 192 | finalized: 340
+- 覆盖范围 18 轮确认饱和
+
+
+## [Task9 Deep Review] 1.14 锁竞争与同步性能分析 — 2026-07-03
+- **类型**：数据缺失
+- **位置**：LRU锁优化代码级细节小节
+- **问题**：引用"锁持有时间从Android 11的25ms降至8ms"、"LRU操作延迟减少68%"等性能数据，但标注[待验证]，未明确标注具体数据来源和验证方法
+- **建议**：补充数据来源说明（AOSP commit、Google公开文档、内部benchmark等），或移除无确切来源的性能数据表述，保持技术准确性
