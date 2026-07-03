@@ -1,6 +1,6 @@
 {
-  "total": 572,
-  "draft": 33,
+  "total": 577,
+  "draft": 38,
   "ready_for_review": 192,
   "finalized": 340,
   "last_updated": "2026-07-03",
@@ -307,6 +307,41 @@
       "status": "draft",
       "drafted_at": "2026-07-03T14:04:00+08:00",
       "note": "Created from knowledge gap mining (8.10)"
+    },
+    {
+      "section": "1.50",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-03T16:19:00+08:00",
+      "note": "Created from knowledge gap mining (1.50)"
+    },
+    {
+      "section": "1.51",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-03T16:19:00+08:00",
+      "note": "Created from knowledge gap mining (1.51)"
+    },
+    {
+      "section": "1.52",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-03T16:19:00+08:00",
+      "note": "Created from knowledge gap mining (1.52)"
+    },
+    {
+      "section": "4.12",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-03T16:19:00+08:00",
+      "note": "Created from knowledge gap mining (4.12)"
+    },
+    {
+      "section": "9.12",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-03T16:19:00+08:00",
+      "note": "Created from knowledge gap mining (9.12)"
     }
   ],
   "review_history": [
@@ -522,5 +557,17 @@
       "19.20"
     ],
     "log": "logs/deep-review/2026-07-03-12-deep-review.md"
+  },
+  "section-13.21": {
+    "last_task2b_main": "2026-07-03T16:53:22+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "task6_pending"
+  },
+  "section-2.30": {
+    "last_task2b_main": "2026-07-03T16:53:22+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "task6_pending"
   }
 }
