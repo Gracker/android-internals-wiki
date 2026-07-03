@@ -1,68 +1,53 @@
 ---
-title: "Sync Fence 框架与帧同步机制"
-chapter: "2.16"
-section: "2.16"
-applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
-last_verified: "2026-07-03"
-last_verified_against: "AOSP android-17.0.0_r1 (Fence.cpp / HWC2.h / libsync / HWUI Skia GL-Vulkan release fence) + android-8.1.0_r81 / android-7.0.0_r1 history, source.android.com/docs/core/graphics/sync"
+title: Sync Fence 框架与帧同步机制
+chapter: 2.16
+section: 2.16
+applicable_versions: Android 7 (API 24) - Android 17 (API 37)
+last_verified: 2026-07-03
+last_verified_against: AOSP android-17.0.0_r1 (Fence.cpp / HWC2.h / libsync / HWUI Skia GL-Vulkan release fence) + android-8.1.0_r81 / android-7.0.0_r1 history, source.android.com/docs/core/graphics/sync
 confidence: medium
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
-sources:
-  - type: aosp
-    path: "frameworks/native/libs/ui/Fence.cpp"
-  - type: aosp
-    path: "frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h"
-  - type: aosp
-    path: "system/core/libsync/sw_sync.h"
-  - type: aosp
-    path: "system/core/libsync/sync.c"
-  - type: aosp
-    path: "frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp"
-  - type: aosp
-    path: "frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp"
-  - type: aosp
-    path: "frameworks/base/libs/hwui/renderthread/VulkanManager.cpp"
-  - type: official
-    path: "https://source.android.com/docs/core/graphics/sync"
-  - type: official
-    path: "https://source.android.com/docs/core/graphics/architecture"
+drafted_date: 2026-04-05
+drafted_by: openclaw-task2a
+sources: 
+- type: official
+path: https://source.android.com/docs/core/graphics/architecture
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
 task2b_state: fixed
 task9_result: auto-fixed
 task2b_result: fixed
-task9_reviewed_date: "2026-07-03"
+task9_reviewed_date: 2026-07-03
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-03T09:45:13+08:00"
-last_task2b_at: "2026-05-05T23:51:15+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。 | 2026-05-24 Task9 闲时抽检：needs-rework。P1 1：Vulkan Timeline Semaphore 不能直接导出 Android sync fd / Perfetto fence track 只能观察 native fence；P2 1：dequeueBuffer fence 命名需改为 dequeue/release fence。 | 2026-07-03 Task9 idle audit AUTO-FIX: P1 1；将 Sync Fence 主线源码验证从 android-16.0.0_r1 更新到 android-17.0.0_r1，复核 Fence::merge/libsync/HWC2/HWUI GL+Vulkan release fence/Binary Semaphore sync fd 边界；回到 Task6 复审。详见 logs/deep-review/2026-07-03-09-audit.md。"
-status: finalized
+last_task9_at: 2026-07-03T09:45:13+08:00
+last_task2b_at: 2026-05-05T23:51:15+08:00
+repaired_date: 2026-04-26
+repaired_by: openclaw-task2b
+task9_review_notes: 2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。 | 2026-05-24 Task9 闲时抽检：needs-rework。P1 1：Vulkan Timeline Semaphore 不能直接导出 Android sync fd / Perfetto fence track 只能观察 native fence；P2 1：dequeueBuffer fence 命名需改为 dequeue/release fence。 | 2026-07-03 Task9 idle audit AUTO-FIX: P1 1；将 Sync Fence 主线源码验证从 android-16.0.0_r1 更新到 android-17.0.0_r1，复核 Fence::merge/libsync/HWC2/HWUI GL+Vulkan release fence/Binary Semaphore sync fd 边界；回到 Task6 复审。详见 logs/deep-review/2026-07-03-09-audit.md。
+status: ready-for-review
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-06"
-task6_reviewed_date: "2026-05-06"
-last_task6_at: "2026-05-06T01:05:00+08:00"
-last_task6_audit: "2026-06-30T19:30:00+08:00"
-review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 HWC2 fence 语义、libsync merge、HWUI GL/Vulkan release fence、Timeline Semaphore 边界；无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Vulkan native fence 边界已改为 Binary Semaphore → sync fd 桥接，dequeue fence 命名已修正；仅留 Binary Semaphore reset 语义 P2 建议；queue 无 pending，Task6 已通过，自动晋升 finalized。"
-last_task9_audit: "2026-07-03"
-last_task9_review_log: "logs/deep-review/2026-07-03-09-audit.md"
+reviewed_date: 2026-05-06
+task6_reviewed_date: 2026-05-06
+last_task6_at: 2026-05-06T01:05:00+08:00
+last_task6_audit: 2026-06-30T19:30:00+08:00
+review_notes: 2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 HWC2 fence 语义、libsync merge、HWUI GL/Vulkan release fence、Timeline Semaphore 边界；无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Vulkan native fence 边界已改为 Binary Semaphore → sync fd 桥接，dequeue fence 命名已修正；仅留 Binary Semaphore reset 语义 P2 建议；queue 无 pending，Task6 已通过，自动晋升 finalized。
+last_task9_audit: 2026-07-03
+last_task9_review_log: logs/deep-review/2026-07-03-09-audit.md
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-29
-last_task9_audit_at: "2026-07-03T09:45:13+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-03-09-audit.md"
-last_task9_autofix_at: "2026-07-03"
+last_task9_audit_at: 2026-07-03T09:45:13+08:00
+last_task9_audit_log: logs/deep-review/2026-07-03-09-audit.md
+last_task9_autofix_at: 2026-07-03
 updated_by: openclaw-task9
-updated_date: "2026-07-03"
+updated_date: 2026-07-03
 task9_p0_issues: 0
 task9_p1_issues: 1
 task9_p2_issues: 0
 ---
+-
 
 # 2.16 Sync Fence 框架与帧同步机制
 

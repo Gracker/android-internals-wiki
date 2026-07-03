@@ -1,100 +1,63 @@
 ---
-title: "网络性能深入：连接池、TLS 与传输优化"
-chapter: "12.3"
-section: "12.3"
-status: finalized
-drafted_date: "2026-04-07"
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+title: 网络性能深入：连接池、TLS 与传输优化
+chapter: 12.3
+section: 12.3
+status: ready-for-review
+drafted_date: 2026-04-07
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: 2026-07-03
-last_verified_against: "Android Developers docs / source.android / OkHttp 5.x docs / Google Security Blog 2022-07 / AOSP android-17.0.0_r1 libcore BlockGuard, packages/modules/Connectivity DnsResolver, packages/modules/DnsResolver rust/src/doh"
+last_verified_against: Android Developers docs / source.android / OkHttp 5.x docs / Google Security Blog 2022-07 / AOSP android-17.0.0_r1 libcore BlockGuard, packages/modules/Connectivity DnsResolver, packages/modules/DnsResolver rust/src/doh
 confidence: medium
-sources:
-  - type: official
-    path: "https://developer.android.com/training/basics/network-ops/managing"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/NetworkOnMainThreadException"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder#detectNetwork()"
-  - type: aosp
-    path: "libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java"
-  - type: aosp
-    path: "libcore/luni/src/main/java/libcore/io/BlockGuardOs.java"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/http/HttpEngine"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/http/HttpEngine.Builder"
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/cronet"
-  - type: aosp
-    path: "packages/modules/DnsResolver/rust/src/doh"
-  - type: aosp
-    path: "packages/modules/Connectivity/framework/src/android/net/DnsResolver.java"
-  - type: aosp
-    path: "packages/modules/Connectivity/framework/src/android/net/dns/HttpsRecord.java"
-  - type: aosp
-    path: "packages/modules/Connectivity/framework/src/android/net/dns/HttpsEndpoint.java"
-  - type: official
-    path: "https://developers.google.com/android/reference/com/google/android/gms/security/ProviderInstaller"
-  - type: official
-    path: "https://source.android.com/docs/core/ota/modular-system/conscrypt"
-  - type: official
-    path: "https://security.googleblog.com/2022/07/dns-over-http3-in-android.html"
-  - type: official
-    path: "https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/protocols.html"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/TrafficStats"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/ConnectivityManager"
-  - type: official
-    path: "https://developer.android.com/training/monitoring-device-state"
-  - type: official
-    path: "https://perfetto.dev/docs/instrumentation/tracing-sdk"
+sources: 
+- type: official
+path: https://perfetto.dev/docs/instrumentation/tracing-sdk
 tags: [network, okhttp, retrofit, tls, http2, http3, quic, connection-pooling, dns, battery, perfetto]
 related_chapters: ["12.2", "8.2", "11.2", "5.8", "14.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-07"
-gap_source: "AOSP结构+官方文档+读者需求"
+created_by: task2a-knowledge-gap
+created_date: 2026-04-07
+gap_source: AOSP结构+官方文档+读者需求
 gap_score: 14
-drafted_by: "openclaw-task2a"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-28"
-task6_result: "pass-light-edit"
+drafted_by: openclaw-task2a
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-28
+task6_result: pass-light-edit
 review_round: 2
-task6_state: reviewed
-pipeline_stage: ready-to-publish
-task9_state: reviewed
+task6_state: revisiting
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: "fixed"
-last_task9_at: "2026-07-03T09:32:24+08:00"
+task2b_result: fixed
+last_task9_at: 2026-07-03T09:32:24+08:00
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-03
-last_task6_audit: "2026-06-10"
-last_task9_audit: "2026-07-03"
+last_task6_audit: 2026-06-10
+last_task9_audit: 2026-07-03
 last_task9_review_log: logs/deep-review/2026-07-03-09-deep-review.md
 p0: 1
 p1: 1
 p2: 0
-task9_review_notes: "2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：Android 17 主线 libcore 中 `BlockGuard.java` 位于 `libcore/dalvik/src/main/java/dalvik/system/`，socket 网络入口由 `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java` 调用 `BlockGuard.getThreadPolicy().onNetwork()`；已修正 frontmatter AOSP 源码路径并同步重锚 OkHttp 4.12.x `ConnectionPool.kt` 代码块。P0 1 / P1 0 / P2 0；回到 Task6 复审。 | 2026-07-03 09 Task9 deep-review AUTO-FIX：修正 DoH3 AOSP 路径为 packages/modules/DnsResolver/rust/src/doh，并补充 DnsResolver TYPE_HTTPS/HttpsRecord/HttpsEndpoint 在 android-17.0.0_r1 中的 FlaggedApi 边界。P0 1 / P1 1 / P2 0；回到 Task6 复审。"
-task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-07-03T11:12:00+08:00"
-task6_reviewed_at: "2026-05-28T06:11:00+08:00"
-last_task6_review_log: "logs/review/2026-07-03-11-review.md"
-task6_review_notes: "2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（删除填充强调词）。既有 Android 16 DNS prefetch 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。 | 2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。 | 2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。 | 2026-07-03 09 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（禁用词\"链路\"→\"路径\", 在参考资料注释中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。"
-last_task2b_at: "2026-05-28T04:50:00+08:00"
-last_task2b_source: "frontmatter-fallback/task9-deep-tech-review"
-last_task2b_note: "删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。"
+task9_review_notes: 2026-05-19 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。Android 16 DnsResolver Predictive Prefetching 平台能力缺公开锚点，需删除或降级待验证；2026-05-28 Task2B 已改为 App 侧受控预解析策略，回流 Task6。 | 2026-05-28 Task9 auto-fix: 修正 RouteSelector/ALPN 边界与 OkHttp EventListener connect/TTFB 指标口径，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-03 Task9 闲时抽检 AUTO-FIX：Android 17 主线 libcore 中 `BlockGuard.java` 位于 `libcore/dalvik/src/main/java/dalvik/system/`，socket 网络入口由 `libcore/luni/src/main/java/libcore/io/BlockGuardOs.java` 调用 `BlockGuard.getThreadPolicy().onNetwork()`；已修正 frontmatter AOSP 源码路径并同步重锚 OkHttp 4.12.x `ConnectionPool.kt` 代码块。P0 1 / P1 0 / P2 0；回到 Task6 复审。 | 2026-07-03 09 Task9 deep-review AUTO-FIX：修正 DoH3 AOSP 路径为 packages/modules/DnsResolver/rust/src/doh，并补充 DnsResolver TYPE_HTTPS/HttpsRecord/HttpsEndpoint 在 android-17.0.0_r1 中的 FlaggedApi 边界。P0 1 / P1 1 / P2 0；回到 Task6 复审。
+task6_reviewed_by: openclaw-task6
+last_task6_at: 2026-07-03T11:12:00+08:00
+task6_reviewed_at: 2026-05-28T06:11:00+08:00
+last_task6_review_log: logs/review/2026-07-03-11-review.md
+task6_review_notes: 2026-05-19 20 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（删除填充强调词）。既有 Android 16 DNS prefetch 技术回炉项保留交 Task2B，queue pending 阻止自动晋升。 | 2026-05-28 05 Task6 revisiting-review: pass-light-edit；L1/L2 小修 1 处（规避序数词禁用词误命中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 仍为 needs-rework，Task2B 已 fixed，送 Task9 复审。 | 2026-05-28 06 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。 | 2026-07-03 09 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（禁用词\"链路\"→\"路径\", 在参考资料注释中）；outline 6/6 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复核。
+last_task2b_at: 2026-05-28T04:50:00+08:00
+last_task2b_source: frontmatter-fallback/task9-deep-tech-review
+last_task2b_note: 删除 Android 16 DnsResolver Predictive Prefetching 确定性平台结论，改写为 App 侧受控 DNS 预解析策略。
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 last_task9_autofix_at: 2026-07-03
-last_task9_audit_log: "logs/deep-review/2026-07-03-06-audit.md"
+last_task9_audit_log: logs/deep-review/2026-07-03-06-audit.md
 task9_p0_issues: 1
 task9_p1_issues: 1
 task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
-last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
+last_task2b_verifier_at: 2026-07-03T07:32:03+08:00
 ---
+-
 # 12.3 网络性能深入：连接池、TLS 与传输优化
 
 <!-- outline-start -->

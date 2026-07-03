@@ -1,40 +1,40 @@
 ---
-title: "1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界"
-chapter: "1.22"
-section: "1.22"
-status: finalized
-pipeline_stage: ready-to-publish
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-tags: "[art, dex2oat, dexopt, verifier, vdex, startup]"
+title: 1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界
+chapter: 1.22
+section: 1.22
+status: ready-for-review
+pipeline_stage: task6_pending
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+tags: [art, dex2oat, dexopt, verifier, vdex, startup]
 confidence: high
-last_verified: "2026-07-03"
-last_verified_against: "source.android.com ART configure / ART Service configuration 2026-05; AOSP android-17.0.0_r1 platform/art compiler_filter.h / dex2oat.cc / libartservice/service/README.md; Android Developers ART compatibility docs"
-task6_review_notes: "2026-06-17 Task6 revisiting复审:pass-light-edit。L1/L2 扫描通过(1.22 复审无禁用词、高频词、元叙述命中);task9 auto-fix 已验证写作质量无回归;queue 无 pending;自动晋升 finalized。 | 2026-07-03 09 Task6 revisiting-review: pass-light-edit;L1/L2 小修 0 处(\"对齐\"为 zipalign 术语,非大厂黑话,保留);outline 7/7 覆盖;无 L3/L4 回炉项。Task9 result 为 auto-fixed(AOSP 锚点 android-17.0.0_r1 重锚),未满足 pass-tech-review 自动晋升条件,送 Task9 复核。"
-last_task6_review_log: "logs/review/2026-07-03-11-review.md"
-task6_state: reviewed
-task9_state: reviewed
-drafted_date: "2026-05-24"
-related_chapters: "[\"1.7\", \"1.9\", \"16.6\", \"21.11\"]"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-24"
-gap_source: "研究素材/官方文档/AOSP结构"
-path: "intake/daily-info/2026-05-24.md#增量扫描-源码调研art-verifier-quickening-与-dex2oat-过滤器体系"
+last_verified: 2026-07-03
+last_verified_against: source.android.com ART configure / ART Service configuration 2026-05; AOSP android-17.0.0_r1 platform/art compiler_filter.h / dex2oat.cc / libartservice/service/README.md; Android Developers ART compatibility docs
+task6_review_notes: 2026-06-17 Task6 revisiting复审:pass-light-edit。L1/L2 扫描通过(1.22 复审无禁用词、高频词、元叙述命中);task9 auto-fix 已验证写作质量无回归;queue 无 pending;自动晋升 finalized。 | 2026-07-03 09 Task6 revisiting-review: pass-light-edit;L1/L2 小修 0 处(\"对齐\"为 zipalign 术语,非大厂黑话,保留);outline 7/7 覆盖;无 L3/L4 回炉项。Task9 result 为 auto-fixed(AOSP 锚点 android-17.0.0_r1 重锚),未满足 pass-tech-review 自动晋升条件,送 Task9 复核。
+last_task6_review_log: logs/review/2026-07-03-11-review.md
+task6_state: revisiting
+task9_state: pending
+drafted_date: 2026-05-24
+related_chapters: [\"1.7\", \"1.9\", \"16.6\", \"21.11\"]
+created_by: task2a-knowledge-gap
+created_date: 2026-05-24
+gap_source: 研究素材/官方文档/AOSP结构
+path: intake/daily-info/2026-05-24.md#增量扫描-源码调研art-verifier-quickening-与-dex2oat-过滤器体系
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-07-03T09:32:24+08:00"
+last_task9_at: 2026-07-03T09:32:24+08:00
 task9_reviewed_date: 2026-07-03
 task9_reviewed_by: openclaw-task9
-task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; replaced AOSP main anchors with android-16.0.0_r1 after android-17 platform tag was not present. 2026-07-03 Task2B main: re-anchored all AOSP references from android-16.0.0_r1 to android-17.0.0_r1 (tag verified available on googlesource); no Android 18/API 38 material used. | 2026-07-03 09 Task9 deep-review AUTO-FIX:旧设备 quicken 表格把 ART Service 版本段写到 Android 14-16;android-17.0.0_r1 仍包含 platform/art libartservice,已改为 Android 14-17。P0 0 / P1 1 / P2 0;回到 Task6 复审。"
+task9_review_notes: 2026-06-17 Task9 deep-review: AUTO-FIX P1 1; replaced AOSP main anchors with android-16.0.0_r1 after android-17 platform tag was not present. 2026-07-03 Task2B main: re-anchored all AOSP references from android-16.0.0_r1 to android-17.0.0_r1 (tag verified available on googlesource); no Android 18/API 38 material used. | 2026-07-03 09 Task9 deep-review AUTO-FIX:旧设备 quicken 表格把 ART Service 版本段写到 Android 14-16;android-17.0.0_r1 仍包含 platform/art libartservice,已改为 Android 14-17。P0 0 / P1 1 / P2 0;回到 Task6 复审。
 last_task9_review_log: logs/deep-review/2026-07-03-09-deep-review.md
 last_task9_autofix_at: 2026-07-03
 task6_result: pass-light-edit
-last_task2b_lite_at: "2026-06-30"
-task2b_lite_note: "2026-06-30 Task2B Lite: 修复 last_task6_review_log 字段被 title 污染的机械错误。"
+last_task2b_lite_at: 2026-06-30
+task2b_lite_note: 2026-06-30 Task2B Lite: 修复 last_task6_review_log 字段被 title 污染的机械错误。
 reviewed_by: openclaw-task6
-reviewed_date: '2026-07-03'
-last_task6_at: "2026-07-03T11:12:00+08:00"
-last_task6_audit: "2026-07-03"
+reviewed_date: 2026-07-03
+last_task6_at: 2026-07-03T11:12:00+08:00
+last_task6_audit: 2026-07-03
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17
 p0: 0
@@ -44,6 +44,7 @@ task9_p0_issues: 0
 task9_p1_issues: 1
 task9_p2_issues: 0
 ---
+-
 
 # 1.22 ART Verifier Quickening 与 dexopt 过滤器性能边界
 
