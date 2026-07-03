@@ -4,20 +4,21 @@ chapter: "15"
 status: ready-for-review
 applicable_versions: Android 8-17 (API 26-37)
 last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
-tags: 
+tags: [performance, methodology, perfetto, profiling, optimization, android]
 task9_result: needs-rework
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
-pipeline_stage: task6_pending
-last_task6_at: "2026-07-04T02:10:34+08:00"
-last_task6_review_log: "logs/review/2026-07-04-02-review.md"
+pipeline_stage: task9_pending
+last_task6_at: "2026-07-04T06:10:00+08:00"
+last_task6_review_log: "logs/review/2026-07-04-06-review.md"
 last_task9_at: "2026-07-04T02:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-04-02-deep-review.md"
 task6_review_notes_final: "2026-07-02 Task6 revisiting-review round3 (post-Task2B-structural): pass-light-edit. L1 fix×3 (关键是→要, 链路→链, 舒服→自我安慰). L2 pass. No B-class issues. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task2B-content-rework + Task9-autofix): pass-light-edit. L1 clean (banned-word scan: 0 real hits, 3 false positives). L2 pass (opening direct, structure clear, breathing points adequate). L3/L4: no B-class writing issues. FrameRateOverrides section (4.4) well-written, SQL examples properly formatted. DeviceConfig section (3.2) clean. Auto-promotion blocked: task9_result=auto-fixed (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task6_review_notes_round5: "2026-07-04 Task6 revisiting-review round5 (post-Task2B-lite-fix source path prefix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits. Restricted patterns: 2 (at limit). Structural meta-narrative: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, reader takeaways solid). L3 pass (evidence-backed, actionable SQL/bash examples, original frameworks). L4 pass (natural Chinese, peer-to-peer tone, no translation feel). No L1/L2 fixes needed this round. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Sent to Task9 for final tech confirmation."
+task6_review_notes_round6: "2026-07-04 Task6 revisiting-review round6 (post-Task2B-lite source-path-prefix fix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 上分=substring of 线上分布 false positive; 问题是=part of 5W2H framework description false positive). High-freq words all within limits (其实×1, 彻底×1). Restricted patterns: 2 (not...而是 at limit). Structural meta-narrative: 0. Adjective+colon: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source code anchored to android-17.0.0_r1, original frameworks like 3-tier baseline and 5-Whys walkthrough). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). L1 fix: tags field filled [performance, methodology, perfetto, profiling, optimization, android]. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-07-04
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
@@ -26,7 +27,7 @@ last_task9_audit: "2026-07-03"
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
 last_idle_audit_at: "2026-07-02T17:27:39+08:00"
-last_task6_audit: "2026-07-02"
+last_task6_audit: "2026-07-04"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-03
 task2b_lite_notes: "2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
