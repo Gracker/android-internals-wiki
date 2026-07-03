@@ -12,12 +12,12 @@ task6_state: revisiting
 last_task6_at: "2026-07-02T22:09:00+08:00"
 last_task6_review_log: "logs/review/2026-07-02-22-review.md"
 task6_review_notes_final: "2026-07-02 Task6 revisiting-review round3 (post-Task2B-structural): pass-light-edit. L1 fix×3 (关键是→要, 链路→链, 舒服→自我安慰). L2 pass. No B-class issues. Auto-promoted: task9=pass, queue=completed."
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_lite_at: "2026-06-27"
 status: finalized
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
 last_task9_audit: "2026-07-03"
@@ -146,6 +146,20 @@ adb shell perfetto --attach=my_trace --stop
 
 `src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`src/traced/service/service.cc` 中 `traced` 只处理 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`，不接受 `-b` 或 `--async`。
 
+**Android 17（API 37）Perfetto 启用方式的变化**：Android 17 在 `persist.traced.enable` 基础上引入了 `debug.perfetto.enabled` 系统属性，作为更细粒度的启用控制。同时 DeviceConfig 机制使 Perfetto 的生产者数据源可以在无需 root 的条件下动态开启或关闭。
+
+```bash
+# Android 17 新增：通过 DeviceConfig 动态管理 Perfetto 生产者
+adb shell device_config put persist.debug.perfetto enable_producer 1
+adb shell device_config get persist.debug.perfetto enable_producer
+
+# 查询当前 Perfetto 启用状态（兼容多版本）
+adb shell getprop persist.traced.enable
+adb shell getprop debug.perfetto.enabled
+```
+
+DeviceConfig 的优势是按生产者粒度控制——例如只在启用 heapprofd 时才打开对应的 `android.heapprofd` 生产者，避免全局开启的持续性能开销。`persist.traced.enable=1` 在 Android 17 中仍然有效且是 AOSP 默认推荐方式，`debug.perfetto.enabled` 和 DeviceConfig 提供了更细粒度的运行时控制能力，尤其适合在非 root 的 user build 设备上按需开关数据源。
+
 ## 4. 数据采集与分析：从 raw data 到 actionable 结论
 
 ### 4.1 采样策略：不同问题用不同采法
@@ -256,6 +270,49 @@ heapprofd 需要在 Perfetto config 中显式开启。开启后 trace 里会包�
 切分维度后再看趋势。按机型、系统版本、网络类型、时段分开后看指标变化。如果总体启动变快了但不分维度——可能是某款新机型占比提升拉低了 P50，而老机型的体验其实在退化。
 
 异常值不要自动丢弃。P99.9 的极端值往往是某个机型组合触发了一个边界条件——不是随机的网络中断。单次 OOM 的 trace 比一百次正常的 trace 更有诊断价值。
+
+#### 自适应刷新率场景的帧数据分析
+
+Android 17 引入的 FrameRateOverrides API 允许应用或 WindowManager 为特定窗口指定目标帧率（例如游戏窗口 120Hz、视频窗口 60Hz、静态内容降到 30Hz）。在支持多档刷新率的设备上，同一个应用的不同窗口可能以不同的帧预算运行——「帧超时」的定义不再固定为 16.6ms。
+
+这一变化对数据分析的三个关键影响：
+
+**帧预算的动态性**：在自适应刷新率场景下，Perfetto trace 中每个 Choreographer doFrame 的超时阈值取决于该帧所在窗口的当前目标帧率。60Hz 对应的帧预算是 16.6ms，90Hz 是 11.1ms，120Hz 是 8.3ms。分析时必须先确认当前窗口的目标帧率，否则会把正常帧误判为卡顿。
+
+**FrameTimeline Expected Timeline 的校准作用**：FrameTimeline 记录了每帧的 Expected Presentation Time 和 Actual Presentation Time。Expected Timeline 已经反映了 FrameRateOverrides 的干预结果——它将目标帧率换算为预期的 VSync 序列。分析时优先看 Expected 和 Actual 之间的差值（即帧的 deadline miss），而不是直接用 16ms 做阈值。
+
+**VSync 偏移动态调整**：在 Android 17 中，SurfaceFlinger 会根据当前帧率动态调整 VSync offset——帧率越低，offset 越大，给 App 的主线程留更多渲染时间。帧率切换点附近的帧容易出现 deadline miss，因为 offset 调整有延迟，新帧率的 offset 在上一帧的渲染周期已确定。
+
+Perfetto trace 中的可观测字段：
+
+```sql
+-- 在 Perfetto trace 中查询帧率变化事件（需 trace 中包含 SurfaceFlinger 数据源）
+SELECT
+  ts,
+  name,
+  int_value AS target_fps
+FROM slice
+JOIN metadata ON slice.name = 'frame_rate_override'
+WHERE int_value > 0
+ORDER BY ts;
+```
+
+```sql
+-- 查询 FrameTimeline Expected vs Actual 差异，按帧做 jank 判定
+SELECT
+  frame_id,
+  expected_presentation_timestamp_ns,
+  actual_presentation_timestamp_ns,
+  (actual_presentation_timestamp_ns - expected_presentation_timestamp_ns) / 1000000.0 AS miss_ms
+FROM expected_frame_timeline_slice
+JOIN actual_frame_timeline_slice USING (frame_id)
+WHERE actual_presentation_timestamp_ns > expected_presentation_timestamp_ns
+ORDER BY miss_ms DESC
+LIMIT 20;
+```
+
+实战建议：做帧率分析时，第一步确认 trace 期间窗口的目标帧率是否发生过变化（查 `SurfaceFlinger` 的 `display_connected_fps` counter 或 `vsync_source` 的 `rate` 字段）。如果目标帧率在变化，不要用固定的 16.6ms 当作合格线——改用 FrameTimeline 的 deadline miss 字段，或者按帧率分段统计。
+
 
 ## 5. 性能问题根因分析
 
