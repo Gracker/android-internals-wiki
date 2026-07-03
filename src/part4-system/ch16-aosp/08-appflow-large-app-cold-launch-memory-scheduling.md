@@ -352,6 +352,124 @@ AOSP 17 没有名为 "Adaptive Background Activity Manager" 的统一类。背�
 - 价值：从"是否存在"推进到"如何接入"；明确"LMKD v2"不是 AOSP 17 概念，Memory Reclaim Priority 是 oom_score_adj+PSI+per_app_memcg 协同而非独立 API；给出可执行的工程边界，避免读者把研究原型误认为平台默认能力
 
 
+### LMKD v2 协作机制源码级锚点（2026-07-03 调研补充）
+
+基于 AOSPA/android_system_memory_lmkd vauxite 分支（android-17.0.0_r1，5158 行）的深度源码分析，AppFlow 三段式调度模型与 Android 17 LMKD 存在精确的协议接入点：
+
+#### 1. LMK_PROCS_PRIO io_uring 批量处理机制
+
+Android 17 新增 `LMK_PROCS_PRIO`（id=11）命令，通过 io_uring 实现批量异步处理，这是 AppFlow 接入的核心技术锚点：
+
+```cpp
+// 系统常量定义
+#define PROCS_PRIO_MAX_RECORD_COUNT 32
+
+// 批量处理函数：先读取 /proc/{pid}/status，再写入 /proc/{pid}/oom_score_adj
+static void handle_io_uring_procs_prio(const struct lmk_procs_prio& params, const int procs_count,
+                                       struct ucred* cred) {
+    // 异步读取进程状态
+    for (int i = 0; i < procs_count; i++) {
+        sqe = io_uring_get_sqe(&lmk_io_uring_ring);
+        io_uring_prep_read(sqe, fds[i], &buffers[i], 256, 0);
+        sqe->user_data = i;  // 读写分离标识
+    }
+    
+    // 异步写入 oom_score_adj
+    for (int i = 0; i < procs_count; i++) {
+        sqe = io_uring_get_sqe(&lmk_io_uring_ring);
+        io_uring_prep_write(sqe, fds[i], val, strlen(val), 0);
+        sqe->user_data = i + procs_count;  // 避免读写冲突
+    }
+}
+```
+
+**关键发现**：
+- PROCS_PRIO_MAX_RECORD_COUNT = 32，单次最多批量调整32个进程优先级
+- 采用读写分离设计，避免并发冲突
+- 无 io_uring 环境时降级为同步循环调用 `apply_proc_prio`
+
+#### 2. thrashing_limit 动态调整与启动保护机制
+
+Android 17 LMKD 的 thrashing 检测采用动态阈值策略，为 AppFlow 类系统提供灵活的启动保护窗口：
+
+```cpp
+// 动态调整逻辑
+static int thrashing_limit = thrashing_limit_pct;
+bool cut_thrashing_limit = false;
+
+// 在内存压力决策路径中
+if (wmark <= WMARK_HIGH && thrashing > thrashing_limit) {
+    kill_reason = LOW_MEM_AND_THRASHING;
+    cut_thrashing_limit = true;  // 触发阈值衰减标志
+    min_score_adj = VISIBLE_APP_ADJ;
+} else if (reclaim == DIRECT_RECLAIM && thrashing > thrashing_limit) {
+    kill_reason = DIRECT_RECL_AND_THRASHING;
+    cut_thrashing_limit = true;
+    min_score_adj = PERCEPTIBLE_APP_ADJ + 1;
+}
+```
+
+**AppFlow 接入价值**：
+- `cut_thrashing_limit` 机制允许在启动窗口内临时降低回收阈值
+- 动态衰减避免保护机制过度影响整体内存策略
+- 与 DIRECT_RECLAIM 路径协同，针对直接回收场景提供差异化保护
+
+#### 3. MGLRU 状态机集成与内存压力决策
+
+Android 17 LMKD 对 MGLRU（Multi-Generation LRU）的支持通过独立状态机实现：
+
+```cpp
+// MGLRU 状态获取
+static int32_t MGLRU_status = 0;
+int32_t get_MGLRU_status() {
+    static struct reread_data file_data = {
+        .filename = LRUGEN_STATUS_PATH,
+        .fd = -1,
+    };
+    char *buf;
+    if ((buf = reread_file(&file_data)) == NULL) {
+        return MGLRU_status;
+    }
+    buf[16] = '\0';  // 限制读取长度
+    MGLRU_status = (int32_t)strtol(buf, NULL, 16);
+    return MGLRU_status;
+}
+
+// 在内存压力决策中的使用
+if (MGLRU_status > 0) {
+    /* When MGLRU is enabled, don't set the pgskip delta for Normal zone */
+    // 跳过 Normal zone 的 pgskip 设置，避免无效操作
+} else {
+    // 传统 LRU 处理逻辑
+}
+```
+
+#### 4. Adaptive Background Activity Manager 框架拆解
+
+AOSP 17 中不存在统一类，背景应用调度通过三套独立机制协同：
+
+```cpp
+// 1. CachedAppOptimizer - 压缩策略
+enum CompactProfile { NONE, SOME, ANON, FULL };  // 压缩等级
+
+// 2. ProcessList - 缓存进程阈值控制
+static int MIN_CACHED_APPS = 2;              // 最小缓存进程数
+static int TRIM_CRITICAL_THRESHOLD = 3;     // 临界 trimming 阈值
+
+// 3. BackgroundStartPrivileges - 后台启动控制
+static bool isBackgroundActivityStartsEnabled() {
+    return property_get_bool("ro.config.allow_background_activity_start", true);
+}
+```
+
+**AppFlow 整合方案**：
+- 针对频繁切换的 GB 级应用，主动接受 frozen 状态触发 FULL 压缩
+- 使用 `am set-isolated-process-uid-list`（API 33+）保护关键进程
+- 通过 MIN_CACHED_APPS 调整预留启动资源空间
+
+<!-- AIW-源码调研-2026-07-03 -->
+
+
 <!-- AIW-源码调研-2026-07-01 -->
 
 ## Android 17 LMKD v2 源码级机制与 AppFlow 接入点（2026-07-01 调研补充）

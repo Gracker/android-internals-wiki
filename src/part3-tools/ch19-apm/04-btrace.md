@@ -18,13 +18,13 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: official
     path: "https://ui.perfetto.dev/"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: fixed
-reviewed_date: "2026-04-24"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+reviewed_date: "2026-07-03"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
 task2b_result: fixed
 task9_result: auto-fixed
 task9_reviewed_date: 2026-04-24
@@ -32,11 +32,12 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-03T07:26:25+08:00"
 last_task9_audit: "2026-07-03"
 last_task2b_at: "2026-04-25T07:48:00+08:00"
-last_task6_audit: "2026-07-01"
+last_task6_audit: "2026-07-03"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 last_task9_autofix_at: "2026-07-03"
 last_task2b_verifier_at: "2026-07-03T07:32:03+08:00"
+last_task6_at: "2026-07-03T08:10:00+08:00"
 ---
 
 # btrace / RheaTrace

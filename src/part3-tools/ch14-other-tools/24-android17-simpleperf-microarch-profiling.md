@@ -409,3 +409,12 @@ adb shell simpleperf record -e cs-etm/ -p <pid> --duration 10
 **🔄 对比版本：** Android 16.0.0_r1  
 **📁 源文件数量：** 5个核心源码文件（总计≈500行）  
 **✅ 验证通过：** 4/6 项技术点（2项需章节修正）
+
+## 延伸阅读
+
+### Android 17 Simpleperf SPE + TRBE + pmu_lib 新增特性源码验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-simpleperf-spe-trbe-source-verification.md
+- 类型：DeepResearch 调研结果
+- 摘要：源码级对比 A16 vs A17：SPE 为 A17 全新特性（SPERecorder/SPEDecoder），--background 为 A17 新增而 --app 已存在于 A16（章节勘误），TRBE 从单模式重构为 per-cpu 多 sink，pmu_lib BEEFDEAD 冲突处理机制确认存在。
+- 注入时间：2026-07-03
+- 价值：勘误章节中 --app 版本归属 + TMRecorder→ETMRecorder 命名修正 + SPE/TRBE 演进验证
