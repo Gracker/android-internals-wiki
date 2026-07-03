@@ -541,7 +541,7 @@
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
   "deprecated": 6,
   "stats": {
-    "last_review_date": "2026-07-02",
+    "last_review_date": "2026-07-04",
     "last_review_by": "openclaw-task6",
     "drafted": 15,
     "ready_for_review": 192,
@@ -557,9 +557,12 @@
   ],
   "sections": {
     "15": {
-      "status": "finalized",
-      "last_task6_at": "2026-07-02T22:09:00+08:00",
-      "task6_result": "pass-light-edit"
+      "status": "ready-for-review",
+      "last_task6_at": "2026-07-04T02:10:34+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "task9_state": "pending"
     },
     "21.2": {
       "status": "finalized",
