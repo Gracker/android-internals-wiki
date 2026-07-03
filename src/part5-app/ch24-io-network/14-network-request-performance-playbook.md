@@ -2,7 +2,7 @@
 title: "网络请求分段优化与弱网治理"
 chapter: "24.14"
 section: "24.14"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-22"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
@@ -20,7 +20,7 @@ task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-22"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 last_task6_at: "2026-05-22T17:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-22-17-review.md"
 task6_l1_l2_fixes: 5
