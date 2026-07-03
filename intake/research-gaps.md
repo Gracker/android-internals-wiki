@@ -1,39 +1,17 @@
-## [2026-07-03] 13.21 Perfetto 版本演进与 Android 9-17 新特性验证 — 知识盲区
+## [2026-07-04] ch15-methodology — Android 17 Perfetto 启用机制
 
 ### 盲区描述
-heapprofd 在生产环境的实际部署模式未覆盖，包括是否默认启用、权限要求、与其他 tracing 工具的协同方案，这对开发者实际使用 heapprofd 至关重要。
+当前章节对 Android 17 中 Perfetto 启用机制的描述不够准确，`debug.perfetto.enabled` 与 DeviceConfig 的关系需要进一步澄清。AOSP android-17.0.0_r1 源码显示 `debug.perfetto.enabled` 仍有效，主要启用方式为 `persist.traced.enable=1`，DeviceConfig 提供细粒度控制而非完全替代。
 
 ### 重要程度
 高
 
 ### 建议研究方向
-- heapprofd 在 Android 12+ 系统中的默认配置和启动机制
-- heapprofd 与其他 tracing 工具（如 Perfetto 主服务、Systrace）的协同和冲突解决方案
-- 企业级 heapprofd 部署的权限配置和最佳实践
-- heapprofd 在不同设备类型（手机、平板、TV、Auto）上的适配差异
+- 深入分析 AOSP android-17.0.0_r1 中 Perfetto 启用机制的完整流程
+- 验证 `debug.perfetto.enabled`、`persist.traced.enable=1` 和 DeviceConfig 的优先级关系
+- 编写准确的 Android 17 Perfetto 启用方式文档，避免误导开发者
 
 ### 关联章节
-- 13.1 Perfetto 基础架构
-- 13.20 性能分析工具集成
-- 20.3 Native Crash 分析与治理（signal handling 边界）
-
----
-
-## [2026-07-03] 21.2 启动框架设计与任务编排 — 知识盲区
-
-### 盲区描述
-模块化启动框架在微服务架构下的应用未覆盖，随着 Android 应用的微服务化趋势，传统单进程启动框架无法直接适用于多进程、跨模块的服务启动场景。
-
-### 重要程度
-高
-
-### 建议研究方向
-- 多进程启动框架的依赖管理机制
-- 跨模块服务发现与启动编排策略
-- 微服务架构下的启动性能监控与治理
-- 模块化启动框架与动态加载技术的集成方案
-
-### 关联章节
-- 21.1 启动耗时分析
-- 8.3 延迟�化策略
-- 15.1 性能优化方法论
+- ch15-methodology
+- ch13-perfetto/13.21-perfetto-version-evolution
+- ch2-xxx (可能包含 Perfetto 深度分析章节)
