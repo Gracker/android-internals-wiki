@@ -1,11 +1,10 @@
 ---
-
 title: "Sync Fence 框架与帧同步机制"
 chapter: "2.16"
 section: "2.16"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
-last_verified: "2026-04-26"
-last_verified_against: "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp, source.android.com/docs/core/graphics/sync"
+last_verified: "2026-07-03"
+last_verified_against: "AOSP android-17.0.0_r1 (Fence.cpp / HWC2.h / libsync / HWUI Skia GL-Vulkan release fence) + android-8.1.0_r81 / android-7.0.0_r1 history, source.android.com/docs/core/graphics/sync"
 confidence: medium
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
@@ -31,18 +30,18 @@ sources:
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
 task2b_state: fixed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_result: fixed
-task9_reviewed_date: "2026-05-24"
+task9_reviewed_date: "2026-07-03"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-24T15:30:04+08:00"
+last_task9_at: "2026-07-03T09:45:13+08:00"
 last_task2b_at: "2026-05-05T23:51:15+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。 | 2026-05-24 Task9 闲时抽检：needs-rework。P1 1：Vulkan Timeline Semaphore 不能直接导出 Android sync fd / Perfetto fence track 只能观察 native fence；P2 1：dequeueBuffer fence 命名需改为 dequeue/release fence。"
+task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。 | 2026-05-24 Task9 闲时抽检：needs-rework。P1 1：Vulkan Timeline Semaphore 不能直接导出 Android sync fd / Perfetto fence track 只能观察 native fence；P2 1：dequeueBuffer fence 命名需改为 dequeue/release fence。 | 2026-07-03 Task9 idle audit AUTO-FIX: P1 1；将 Sync Fence 主线源码验证从 android-16.0.0_r1 更新到 android-17.0.0_r1，复核 Fence::merge/libsync/HWC2/HWUI GL+Vulkan release fence/Binary Semaphore sync fd 边界；回到 Task6 复审。详见 logs/deep-review/2026-07-03-09-audit.md。"
 status: finalized
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
@@ -51,10 +50,18 @@ task6_reviewed_date: "2026-05-06"
 last_task6_at: "2026-05-06T01:05:00+08:00"
 last_task6_audit: "2026-06-30T19:30:00+08:00"
 review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 HWC2 fence 语义、libsync merge、HWUI GL/Vulkan release fence、Timeline Semaphore 边界；无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Vulkan native fence 边界已改为 Binary Semaphore → sync fd 桥接，dequeue fence 命名已修正；仅留 Binary Semaphore reset 语义 P2 建议；queue 无 pending，Task6 已通过，自动晋升 finalized。"
-last_task9_audit: "2026-06-14"
-last_task9_review_log: "logs/deep-review/2026-05-24-15-deep-review.md"
+last_task9_audit: "2026-07-03"
+last_task9_review_log: "logs/deep-review/2026-07-03-09-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-29
+last_task9_audit_at: "2026-07-03T09:45:13+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-03-09-audit.md"
+last_task9_autofix_at: "2026-07-03"
+updated_by: openclaw-task9
+updated_date: "2026-07-03"
+task9_p0_issues: 0
+task9_p1_issues: 1
+task9_p2_issues: 0
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制
@@ -77,14 +84,14 @@ App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App �
 - 🔹 **Acquire fence、Release fence、Present fence 的方向与两侧视角**：[已验证: source.android.com/docs/core/graphics/sync, AOSP android-7.0.0_r1 HWC2.h]
   producer 在 `queueBuffer()` 输入的 fence，到了 consumer 一侧就叫 acquire fence；consumer 在 `getReleaseFences()` / `releaseBuffer()` 返回的 fence，回到 producer 下一次 `dequeueBuffer()` 时就是“写之前先等我读完”的 release fence；present fence 表示本帧上屏。
 
-- 🔹 **Fence Merge 解释多 layer 合成里的多对一等待**：[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/Fence.cpp, system/core/libsync/sync.c]
+- 🔹 **Fence Merge 解释多 layer 合成里的多对一等待**：[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/ui/Fence.cpp, system/core/libsync/sync.c]
   `Fence::merge()` / `sync_merge()` 可以把多条 fence fd 合成一个等待对象。合并后的 fence 要等所有输入 fence signal 后才 signal，SurfaceFlinger client composition 和 HWC 多层提交都依赖这个语义。
 
 - 🔹 **在 Perfetto 中如何判断 fence 是正常同步还是掉帧瓶颈**：[已验证: source.android.com/docs/core/graphics/architecture]
   需要把 `queueBuffer()`、`latchBuffer`、`presentDisplay()`、BufferQueue 状态和 GPU busy 片段连起来看，不能只盯一段 `fence wait`。
 
-- 🔹 **版本演进的真实主线**：[已验证: AOSP android-7.0.0_r1 HWC2.h, android-8.1.0_r81 system/core/libsync/sync.c, android-16.0.0_r1 SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp]
-  Android 7 已有 HWC2；Android 8+ 用户空间已经能看到 modern libsync / sync_file API；Skia 管线在 Android 8.1 已存在。Android 14-16 核对 release fence 时要分 GL/EGL 与 Vulkan 两条后端：GL 看 `SkiaOpenGLPipeline.cpp` / `EglManager::createReleaseFence()`，Vulkan 看 `SkiaVulkanPipeline.cpp` / `VulkanManager::createReleaseFence()` / `presentFence`。
+- 🔹 **版本演进的真实主线**：[已验证: AOSP android-7.0.0_r1 HWC2.h, android-8.1.0_r81 system/core/libsync/sync.c, android-17.0.0_r1 SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp]
+  Android 7 已有 HWC2；Android 8+ 用户空间已经能看到 modern libsync / sync_file API；Skia 管线在 Android 8.1 已存在。Android 14-17 核对 release fence 时要分 GL/EGL 与 Vulkan 两条后端：GL 看 `SkiaOpenGLPipeline.cpp` / `EglManager::createReleaseFence()`，Vulkan 看 `SkiaVulkanPipeline.cpp` / `VulkanManager::createReleaseFence()` / `presentFence`。
 
 ### 扩展（可选深入）
 
@@ -122,11 +129,11 @@ Android 图形栈的同步基础来自内核里的显式同步框架。官方文
 
 这个语义支撑 Client Composition 和 HWC 多层提交。比如同一帧里既有 App 主 Surface，又有 SurfaceView 或视频 layer，SurfaceFlinger 不能只等其中一条 fence；它需要把多个 producer 的完成点合并成一个可传递对象，再交给后续合成或显示阶段。Perfetto 里看到一个 wait 覆盖多个 buffer 的完成状态时，可以沿 `Fence::merge()` / `sync_merge()` 去核对。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/Fence.cpp, system/core/libsync/sync.c]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/ui/Fence.cpp, system/core/libsync/sync.c]
 
 ### sw_sync 的边界：测试接口受权限和场景限制
 
-`android-16.0.0_r1` 的 `system/core/libsync/sw_sync.h` 公开了下面三个接口：
+`android-17.0.0_r1` 的 `system/core/libsync/sw_sync.h` 公开了下面三个接口：
 
 ```c
 int sw_sync_timeline_create(void);
@@ -138,7 +145,7 @@ int sw_sync_fence_create(int fd, const char *name, unsigned value);
 
 生产设备的 user build 上，普通 App 通常无法打开 `/dev/sw_sync`，也无法读取 `/sys/kernel/debug/sync` 这类 debugfs 节点。访问权限会被文件权限、SELinux domain、root/system/graphics 组策略共同限制。排查图形问题时，可以把 `sw_sync` 当作测试和调试入口，不能把它写成业务进程控制 acquire / release / present fence 的方案。
 
-[已验证: AOSP android-16.0.0_r1, system/core/libsync/sw_sync.h]
+[已验证: AOSP android-17.0.0_r1, system/core/libsync/sw_sync.h]
 
 ## 渲染管线里的三类 Fence
 
@@ -233,9 +240,9 @@ Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。要�
 
 这也是我们今天读代码时经常会遇到的现象，文档还在讲 `sync_timeline`，调试工具却在打印 `sync_file_info`。同一套显式同步体系在不同层暴露出的命名不同。
 
-### Android 14-16：GL/EGL 与 Vulkan 的 release fence 路径要分开看
+### Android 14-17：GL/EGL 与 Vulkan 的 release fence 路径要分开看
 
-Skia 管线在 Android 8.1 源码里已经存在。Android 16 的 HWUI 后端不能写成 Graphite 已验证路径。AOSP android-16.0.0_r1 的 `frameworks/base/libs/hwui/pipeline/skia/` 目录包含 `SkiaOpenGLPipeline.cpp`、`SkiaVulkanPipeline.cpp`、`SkiaGpuPipeline.cpp`；没有 `SkiaGraphitePipeline.cpp`。如果后续讨论 Graphite，只能标成非该 tag 已验证路径或待核对内容。
+Skia 管线在 Android 8.1 源码里已经存在。Android 17 的 HWUI 后端不能写成 Graphite 已验证路径。AOSP android-17.0.0_r1 的 `frameworks/base/libs/hwui/pipeline/skia/` 目录包含 `SkiaOpenGLPipeline.cpp`、`SkiaVulkanPipeline.cpp`、`SkiaGpuPipeline.cpp`；没有 `SkiaGraphitePipeline.cpp`。如果后续讨论 Graphite，只能标成非该 tag 已验证路径或待核对内容。
 
 GL 后端的 release fence 入口在 `SkiaOpenGLPipeline::flush()`。读代码时看下面两行就够：
 
@@ -256,7 +263,7 @@ vulkanManager().createReleaseFence(&fence, mRenderThread.getGrContext());
 
 Trace 分析时，GL 后端把 `flush commands`、EGL release fence、SurfaceFlinger acquire/release fence 放在同一时间窗里看。Vulkan 后端还要把 GPU queue submit、semaphore 导出的 sync fd、`presentFence` 和 FrameTimeline 放在同一时间窗里看。这样才能判断等待来自 HWUI 后端提交、SurfaceFlinger 消费，还是显示侧 present。
 
-[已验证: AOSP android-8.1.0_r81 / android-16.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp, frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp, frameworks/base/libs/hwui/renderthread/VulkanManager.cpp]
+[已验证: AOSP android-8.1.0_r81 / android-17.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp, frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp, frameworks/base/libs/hwui/renderthread/VulkanManager.cpp]
 
 ## Vulkan Timeline Semaphores：从一次性 fd 到长效计数器（Android 16）
 
@@ -278,7 +285,7 @@ vkWaitSemaphores(device, &waitInfo, UINT64_MAX);
 
 ### Binary Semaphore Export：HWUI 当前的真实路径
 
-进入 Android 图形栈边界时，需要通过 fd export/import 衔接 Vulkan 与 native fence。当前 AOSP `android-16.0.0_r1` 中 HWUI 的实际路径使用的是 **Binary Semaphore**（非 Timeline Semaphore）：
+进入 Android 图形栈边界时，需要通过 fd export/import 衔接 Vulkan 与 native fence。当前 AOSP `android-17.0.0_r1` 中 HWUI 的实际路径使用的是 **Binary Semaphore**（非 Timeline Semaphore）：
 
 1. `VulkanManager::createReleaseFence()` 创建一个带有 `VkExportSemaphoreCreateInfo(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT)` 的 `VkSemaphore`——这是 Binary Semaphore
 2. 通过 `GrFlushInfo` 把 semaphore 附加到 Skia flush 操作，GPU 完成后 signal
@@ -306,7 +313,7 @@ Timeline Semaphore 优化的是 Vulkan 队列内部的多帧同步——用一�
 
 **Perfetto 可观测性。** Perfetto 的 `android.fence` / fence wait slice 观测的是 native fence fd（`dma_fence`）的 signal/wait 事件，也就是 Vulkan 与 Android 图形栈边界上的 Binary Semaphore → sync fd 桥接。纯 Vulkan Timeline Semaphore 等待不会直接进入 `android.fence` 轨道，需要 GPU counter、Vulkan layer trace 或应用侧标记辅助观察。Vulkan 规范要求 `SYNC_FD` 这类 copy payload handle 导出使用 Binary Semaphore（`VUID-VkSemaphoreGetFdInfoKHR-handleType-03253`），所以 Android native fence 边界始终以 Binary Semaphore 为桥梁，不是 Timeline Semaphore 直接导出。
 
-Timeline Semaphore 是 Vulkan 1.2 核心特性，实际可用性取决于设备 GPU 驱动是否支持 `VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore`。Android 16 / VPA16 并未将 Timeline Semaphore 列为强制设备要求（VPA16 追加的是 `VK_EXT_host_image_copy`、maintenance6 等特性）。进入 Android native fence 边界的 interop 依赖 `VK_KHR_external_semaphore_fd` / `VK_KHR_external_fence_fd` 扩展。
+截至 AOSP `android-17.0.0_r1`，HWUI/native fence 边界仍然使用 Binary Semaphore 与 sync fd 桥接，未在 `VulkanManager.cpp` 中创建 Timeline Semaphore。Timeline Semaphore 是 Vulkan 1.2 核心特性，实际可用性取决于设备 GPU 驱动是否支持 `VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore`。Android 16 / VPA16 并未将 Timeline Semaphore 列为强制设备要求（VPA16 追加的是 `VK_EXT_host_image_copy`、maintenance6 等特性）；Android 17 侧是否提升为设备要求，需以 Android 17 CDD / VPA 正式条款为准。进入 Android native fence 边界的 interop 依赖 `VK_KHR_external_semaphore_fd` / `VK_KHR_external_fence_fd` 扩展。
 
 ### 16KB 页对 Fence 路径的潜在影响
 
