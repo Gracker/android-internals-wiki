@@ -27,7 +27,8 @@ task9_reviewed_by: openclaw-task9
 last_task9_autofix_at: "2026-06-17"
 last_task9_review_log: "logs/deep-review/2026-06-17-14-deep-review.md"
 task9_review_notes: "2026-06-17 Task9 auto-fix: StrictMode API 归属、VmPolicy bit 口径、Compose/ActivityScenario 边界、DropBox/netd 说明与 AOSP android-17.0.0_r1 源码锚点修正；回到 Task6 复审。"
-last_task6_audit: "2026-06-18"
+last_task6_audit: "2026-07-03"
+last_task6_audit_notes: "L1轻量优化：替换测→测量，替换需要进行→执行，优化长句表达"
 p0: 0
 p1: 0
 p2: 0
@@ -277,9 +278,9 @@ StrictMode + Perfetto 的组合使用：StrictMode 负责开发期门控（`pena
 
 ### 性能开销
 
-BlockGuard 对每次 I/O 操作都做一次策略检查。在高频操作路径上（如每帧都读文件的极端情况），StrictMode 会引入可测量的延迟。这就是为什么 StrictMode 只在 Debug 构建启用、不在生产构建开启。
+BlockGuard 对每次 I/O 操作执行策略检查。在高频操作路径上（如每帧读取文件），StrictMode 会引入可测量的延迟。因此 StrictMode 仅在 Debug 构建启用，生产环境不开启。
 
-量化 StrictMode 开销时，需要在目标设备上分别测 `penaltyLog()`、`penaltyDeath()` 和 `penaltyListener()`。结论不要直接套固定毫秒数：违规处理会构造堆栈，`penaltyDeath()` 还会抛异常，DropBox / listener 路径的耗时也取决于当时的系统负载。
+量化 StrictMode 开销时，需在目标设备上分别测量 `penaltyLog()`、`penaltyDeath()` 和 `penaltyListener()`。结论不可直接套用固定毫秒数：违规处理会构造堆栈，`penaltyDeath()` 还会抛异常，DropBox / listener 路径的耗时也取决于系统负载。
 
 ## 扩展
 
