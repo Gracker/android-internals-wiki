@@ -4,8 +4,12 @@ chapter: "21.2"
 section: "21.2"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-02"
+last_verified: "2026-07-03"
 last_verified_against: "AOSP android-17.0.0_r1, Jetpack App Startup 1.2.0 sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-07-03"
+task9_reviewed_by: "openclaw-task9"
+pipeline_stage: ready-to-publish
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 1
@@ -38,11 +42,7 @@ task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-21
 task6_result: pass-light-edit
-task9_result: auto-fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-02"
-last_task9_at: "2026-07-02T19:31:35+08:00"
-last_task9_audit: "2026-06-21"
+
 last_task9_autofix_at: "2026-07-02"
 task6_reviewed_date: "2026-05-22"
 task9_review_notes: "2026-07-02 Task9 normal deep-review AUTO-FIX：对照 AOSP android-17.0.0_r1 ActivityThread、Android Developers TTID/TTFD 文档和 alibaba/alpha 04fe7f2 源码，修正 ContentProvider 生命周期边界、Alpha 超时封装示例、await 封装示例和 TTID 指标说明；回到 Task6 复审。"

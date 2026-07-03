@@ -51,3 +51,28 @@
   10. AlarmManager / NotificationManagerService 性能 — 已在 5.23/8.14 等章节中覆盖
 - **全书状态**：577 总节 / 340 finalized / 194 ready-for-review / 36 draft
 - **建议**：后续精力宜聚焦于加工 36 个 draft 章节（多个已有实质内容）和 review 194 个 ready-for-review 章节，而非继续新增章节
+
+
+## [Task6 Review round5] 13.21 Perfetto 版本演进 — 2026-07-03
+
+### 问题 1：FrameTimeline 通用内容填充
+- **类型**：需重写
+- **位置**：🔹 FrameTimeline 集成 — UI 线程性能瓶颈典型场景 + 分析方法列表
+- **问题**：FrameTimeline 集成小节末尾的「UI 线程性能瓶颈典型场景」（过度绘制、过度布局、阻塞操作、动画卡顿）和「分析方法」（时间线分析、资源使用分析、依赖关系分析、热路径识别）是通用 Android 性能知识，与 FrameTimeline 在 Perfetto 中的集成机制无关
+- **建议**：删除通用列表，替换为 FrameTimeline 在 trace_processor 中的 SQL 查询示例、帧匹配逻辑说明或实际追踪场景
+
+### 问题 2：perfetto CLI 参数疑似非标准
+- **类型**：需确认（技术准确性）
+- **位置**：🔸 性能优化与最佳实践 — CLI 命令示例
+- **问题**：`--buffer-size=256M`、`--compression=zstd`、`--duration-seconds=300` 疑似不是标准 perfetto CLI 参数。这些参数通常在 config protobuf 中设置
+- **建议**：验证 perfetto CLI 支持的 flag；如不支持，改为使用 config 文件的正确示例
+
+### 问题 3：Systrace 迁移示例 buffer 映射差异
+- **类型**：需确认（技术准确性）
+- **位置**：🔸 与 Systrace 的对比 — 迁移示例
+- **问题**：`systrace -b 128`（128KB）映射到 `size_kb: 131072`（128MB），存在约 1000 倍差异
+- **建议**：确认 systrace -b 单位，修正等效配置值
+
+### 非阻塞性备注（不进入 queue）
+- 🔸 企业级部署考量小节仍然偏泛（MDM/RBAC/边缘-集中-混合模式），缺少 Perfetto 特有部署细节。此前 round4 已标注为 non-blocking，维持判断
+- review 日志：logs/review/2026-07-03-20-review.md
