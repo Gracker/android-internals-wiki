@@ -1,7 +1,7 @@
 {
   "total": 577,
-  "draft": 35,
-  "ready_for_review": 195,
+  "draft": 34,
+  "ready_for_review": 196,
   "finalized": 340,
   "last_updated": "2026-07-04",
   "task2b": {
@@ -384,6 +384,13 @@
       "status": "no-candidates",
       "ts": "2026-07-04T01:08:18+08:00",
       "note": "Gap mining round 3: 0 candidates ≥14 after checking Clippings content mapping, AOSP services, Android 17 docs (DNS blocked), keyword matrix. Consecutive 3rd no-candidate round."
+    },
+    {
+      "section": "8.6",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-04T03:04:00+08:00",
+      "note": "WindowManager 性能优化实战: 5 anchors (WMS瓶颈心智模型/relayoutWindow调用优化/Surface与BufferQueue/窗口动画调优/窗口生命周期内存管理) + 3 extensions (Perfetto诊断工作流/多窗口Desktop Mode性能/Android 17配置变更性能). 纠正原大纲3处不准确描述(LayoutThread/ML动画/eBPF). AOSP android-17.0.0_r1 源码验证."
     }
   ],
   "review_history": [
@@ -543,8 +550,8 @@
   "stats": {
     "last_review_date": "2026-07-04",
     "last_review_by": "openclaw-task6",
-    "drafted": 15,
-    "ready_for_review": 192,
+    "drafted": 14,
+    "ready_for_review": 193,
     "finalized": 336,
     "ready_to_publish": 0,
     "total": 550
@@ -578,12 +585,14 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-04T01:08:18+08:00",
-    "last_section": "none",
-    "result": "no-candidates",
-    "fix_count": 0,
-    "last_sections": [],
-    "note": "Gap mining round 3: 0 candidates ≥14. No new material since last run. 577 total / 340 finalized / 195 ready-for-review / 35 draft. Project at coverage saturation."
+    "last_run": "2026-07-04T03:04:00+08:00",
+    "last_section": "8.6",
+    "result": "content-processed",
+    "fix_count": 1,
+    "last_sections": [
+      "8.6"
+    ],
+    "note": "Processed 8.6 WindowManager. Corrected 3 inaccurate outline claims (LayoutThread, ML animation prediction, eBPF WindowLatency). Cross-ref §2.12 for mechanism details."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",
