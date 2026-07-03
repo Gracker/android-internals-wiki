@@ -1,7 +1,7 @@
 {
   "total": 577,
-  "draft": 37,
-  "ready_for_review": 193,
+  "draft": 36,
+  "ready_for_review": 194,
   "finalized": 340,
   "last_updated": "2026-07-03",
   "task2b": {
@@ -349,6 +349,13 @@
       "status": "ready_for_review",
       "ts": "2026-07-03T17:09:00+08:00",
       "note": "Android 17 Binder IPC 优先级继承与异步批处理流水线: 5 anchors + 3 extensions covered. AOSP android-17.0.0_r1 source code verification for priority inheritance, three-tier scheduling architecture, kernel-level batch processing pipeline, deadlock prevention kernel safeguards, user-space two-layer batch processing optimization."
+    },
+    {
+      "section": "12.1",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-03T18:04:00+08:00",
+      "note": "Android 17 音频系统深度优化: 6 anchors (延迟度量/AAudio MMAP接入/线程调度与underrun/Android17新API性能价值/后台硬化性能影响/Perfetto诊断工作流) + 3 extensions (HAL基线/CI监控/MGLRU竞争), AOSP android-17.0.0_r1 + 官方文档验证"
     }
   ],
   "review_history": [
@@ -538,14 +545,14 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-03T17:09:00+08:00",
-    "last_section": "1.53",
+    "last_run": "2026-07-03T18:04:00+08:00",
+    "last_section": "12.1",
     "result": "draft-processed",
     "fix_count": 1,
     "last_sections": [
-      "1.53"
+      "12.1"
     ],
-    "note": "Section 1.53 Android 17 Binder IPC 优先级继承与异步批处理流水线: 5 anchors + 3 extensions covered. AOSP android-17.0.0_r1 source code verification for priority inheritance, three-tier scheduling architecture, kernel-level batch processing pipeline, deadlock prevention kernel safeguards, user-space two-layer batch processing optimization."
+    "note": "Section 12.1 Android 17 音频系统深度优化: 6 anchors + 3 extensions. AOSP android-17.0.0_r1 source verification + official docs. Cross-refs to 1.16/5.22/25.17/25.18."
   },
   "last_task9_review": {
     "at": "2026-07-03T12:32:56+08:00",
