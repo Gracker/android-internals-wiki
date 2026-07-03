@@ -1,8 +1,8 @@
 {
   "total": 567,
   "draft": 28,
-  "ready_for_review": 195,
-  "finalized": 337,
+  "ready_for_review": 192,
+  "finalized": 340,
   "last_updated": "2026-07-03",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
@@ -469,5 +469,23 @@
       "23.13"
     ],
     "note": "Section 23.13 应用虚拟内存优化实战: 6 anchors + 2 extensions covered. Clippings structural reference + AOSP android-17.0.0_r1 verification. VSS composition, thread stack governance, multi-process isolation, maps analysis, WebView reservation release, ART GC space management."
+  },
+  "last_task9_review": {
+    "at": "2026-07-03T12:32:56+08:00",
+    "sections": [
+      "2.16",
+      "7.10",
+      "19.20"
+    ],
+    "result": "pass-tech-review",
+    "p0": 0,
+    "p1": 0,
+    "p2": 0,
+    "auto_promoted": [
+      "2.16",
+      "7.10",
+      "19.20"
+    ],
+    "log": "logs/deep-review/2026-07-03-12-deep-review.md"
   }
 }

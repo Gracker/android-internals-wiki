@@ -2,7 +2,7 @@
 title: 图片加载与 Bitmap 性能优化
 chapter: 7.10
 section: 7.10
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags: [bitmap, image-decode, hardware-bitmap, glide, coil, image-loading, memory, jank]
 related_chapters: ["7.4", "7.5", "7.8", "4.5", "2.10", "14.1"]
@@ -21,29 +21,36 @@ confidence: medium
 sources: 
 - type: research
 path: intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_rework_date: 2026-05-06
 last_rework_by: openclaw-task2b
 last_rework_reason: P95 Task9回炉(第四轮)：P0 inBitmap返回对象语义修正（reinitBitmap→return javaBitmap，返回值即inBitmap同一对象）
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-06
+task9_reviewed_date: 2026-07-03
 task6_review_notes: 2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理 frontmatter 禁用词、口语化表达、绝对化措辞和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。
-last_task9_at: 2026-05-06T12:42:00+08:00
+last_task9_at: 2026-07-03T12:32:56+08:00
 last_task9_audit: 2026-07-03
 last_task9_audit_log: logs/deep-review/2026-07-03-11-audit.md
-task9_review_notes: 2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决。 | 2026-05-06 12:42 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；AVIF fallback 实现名与 Perfetto 调用栈采集条件写入 suggestions；无 active queue pending，自动晋升 finalized。
+task9_review_notes: 2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决。 | 2026-05-06 12:42 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；AVIF fallback 实现名与 Perfetto 调用栈采集条件写入 suggestions；无 active queue pending，自动晋升 finalized。 | 2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 BitmapFactory.cpp、Bitmap.java、Choreographer.java、DrawFrameTask.cpp、RecordingCanvas.java、SkiaGpuPipeline.cpp 的 Android 17 锚点；P0 0 / P1 0 / P2 0；queue 中 WebView 时效性条目 section 误写为 7.10，已改为 7.11，自动晋升 finalized。
 last_task6_at: 2026-07-03T12:13:55+08:00
 last_task6_audit: 2026-06-28
 last_task6_review_log: logs/review/2026-05-06-10-review.md
-task9_result: auto-fixed
+task9_result: pass-tech-review
 last_task9_autofix_at: 2026-07-03
 auto_promoted: true
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
+last_task9_review_log: logs/deep-review/2026-07-03-12-deep-review.md
+task9_p0_issues: 0
+task9_p1_issues: 0
+task9_p2_issues: 0
+p0: 0
+p1: 0
+p2: 0
 ---
 -
 # 7.10 图片加载与 Bitmap 性能优化
