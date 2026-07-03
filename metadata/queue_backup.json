@@ -433,13 +433,5 @@
     "completed_at": "2026-07-03T18:53:17.889196+08:00",
     "completed_by": "task2b-main",
     "completed_reason": "fixed: main body (outline) rewritten using verified source research supplement data (18 ProbesProducer sources, not 77); heapprofd params fixed (kDefaultShmemSize=8MB, kUnwinderThreads=5); dual producer model added; ExclusiveTracer/DistributedTracer/60% claim deleted; enterprise section trimmed; Systrace comparison table fixed"
-  },
-  {
-    "section": "13.21",
-    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 85,
-    "reason": "P1 版本基准不符：源码引用 Android 35 SDK 与章节 Android 10-17 范围冲突",
-    "task": "task2b-reanchor",
-    "created_at": "2026-07-03T19:20:00+08:00"
   }
 ]

@@ -356,6 +356,13 @@
       "status": "ready_for_review",
       "ts": "2026-07-03T18:04:00+08:00",
       "note": "Android 17 音频系统深度优化: 6 anchors (延迟度量/AAudio MMAP接入/线程调度与underrun/Android17新API性能价值/后台硬化性能影响/Perfetto诊断工作流) + 3 extensions (HAL基线/CI监控/MGLRU竞争), AOSP android-17.0.0_r1 + 官方文档验证"
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-03T20:12:07.645272+08:00",
+      "note": "Gap mining: 0 candidates ≥14 after checking AOSP services, system components, Clippings books, Android 17 features, research feeds, daily info, chapter extensions"
     }
   ],
   "review_history": [
@@ -547,32 +554,30 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-03T18:04:00+08:00",
-    "last_section": "12.1",
-    "result": "draft-processed",
-    "fix_count": 1,
-    "last_sections": [
-      "12.1"
-    ],
-    "note": "Section 12.1 Android 17 音频系统深度优化: 6 anchors + 3 extensions. AOSP android-17.0.0_r1 source verification + official docs. Cross-refs to 1.16/5.22/25.17/25.18."
+    "last_run": "2026-07-03T20:12:07.645272+08:00",
+    "last_section": "none",
+    "result": "gap-mining-no-candidates",
+    "fix_count": 0,
+    "last_sections": [],
+    "note": "Gap mining round: checked 10 directions (AOSP services, system components, Clippings reference books, Android 17 features, research feeds, daily info, extension anchors). No candidates scored ≥14. Book is at 577 sections / 340 finalized / 194 ready-for-review / 36 draft. Recommend shifting focus to draft processing and review pipeline."
   },
   "last_task9_review": {
-    "at": "2026-07-03T12:32:56+08:00",
+    "at": "2026-07-03T19:20:00+08:00",
     "sections": [
-      "2.16",
-      "7.10",
-      "19.20"
+      "21.2",
+      "24.14",
+      "20.3"
     ],
     "result": "pass-tech-review",
     "p0": 0,
-    "p1": 0,
+    "p1": 1,
     "p2": 0,
     "auto_promoted": [
-      "2.16",
-      "7.10",
-      "19.20"
+      "21.2",
+      "24.14",
+      "20.3"
     ],
-    "log": "logs/deep-review/2026-07-03-12-deep-review.md"
+    "log": "logs/deep-review/2026-07-03-19-deep-review.md"
   },
   "section-13.21": {
     "last_task2b_main": "2026-07-03T16:53:22+08:00",
