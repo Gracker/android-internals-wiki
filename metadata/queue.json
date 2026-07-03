@@ -496,7 +496,9 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-07-03T22:18:53",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-07-03-22-review.md"
+    "status": "completed",
+    "original_review_log": "logs/review/2026-07-03-22-review.md",
+    "completed_at": "2026-07-03T23:38:55+08:00",
+    "completion_reason": "fixed-lite: FrameTimeline 通用 UI 瓶颈列表替换为 trace 观察入口"
   }
 ]
