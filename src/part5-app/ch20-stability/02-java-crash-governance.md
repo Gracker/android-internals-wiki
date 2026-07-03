@@ -1,8 +1,9 @@
 ---
+
 title: Java Crash 治理
 chapter: '20.2'
 section: '20.2'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-07-01'
 last_verified_against: AOSP android-17.0.0_r1, developer.android.com
