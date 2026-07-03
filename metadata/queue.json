@@ -337,5 +337,29 @@
     "status": "completed",
     "completed_at": "2026-07-03T16:53:22+08:00",
     "completed_by": "task2b-main"
+  },
+  {
+    "section": "13.21",
+    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 章节 Android 16-17 子节缺少 per-display FrameTimeline 在 SurfaceFlinger 中实例化的入口路径（DisplayFrameTracker / Scheduler/MessageQueue.cpp），与 2.30 章互补链路缺失",
+    "material_paths": [
+      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
+      "logs/deep-review/2026-07-03-17-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/原理链",
+        "location": "Android 16-17 子节（约行 88-90） + 版本演进时间表（约行 144-148）",
+        "detail": "Android 16-17 多显示器场景下 per-display FrameTimeline 入口路径（SurfaceFlinger 端 DisplayFrameTracker / Scheduler::MessageQueue.cpp）未在 13.21 中落点。与 2.30 (FrameTimeline GPU/CPU 合成边界) 形成跨章节互补链路缺口",
+        "suggestion": "在版本演进时间表 Android 16-17 行补 AOSP 锚点：frameworks/native/services/surfaceflinger/DisplayFrameTracker（API 36+）与 frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp；附一句 per-display vs single-display 在 FrameTimeline 中的实例化差异"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-03T17:27:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-07-03T17:44:13",
+    "completed_by": "task2b-lite",
+    "completion_reason": "fixed-lite: 补充 per-display FrameTimeline AOSP 源码锚点与实例化差异说明"
   }
 ]

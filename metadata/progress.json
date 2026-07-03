@@ -576,5 +576,12 @@
     "task2b_result": "fixed",
     "task2b_state": "fixed",
     "pipeline_stage": "task6_pending"
-  }
+  },
+  "task2b_lite_completed": [
+    {
+      "date": "2026-07-03",
+      "section": "13.21",
+      "type": "source-path/cross-ref"
+    }
+  ]
 }
