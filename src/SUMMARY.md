@@ -55,6 +55,11 @@
   - [8.17 Kotlin Flow 背压、操作符链与响应式性能边界](src/part2-performance/ch08-responsiveness/17-kotlin-flow-backpressure-performance.md)
   - [8.18 Binder Trace 驱动的 Activity 冷启动性能分析](src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md)
   - [8.3 Android 17 系统启动优化与 bootanalyze 工具链增强](part2-fundamentals/ch08-architecture/8-3-android17-系统启动优化与-bootanalyze-工具链增强.md)
+  - [8.6 Android 17 WindowManager 性能优化实战](part2-performance/ch08-window-manager/8.6-window-manager-performance.md)
+  - [8.7 Android 17 ActivityManager 性能优化实战](part2-performance/ch08-activity-manager/8.7-activity-manager-performance.md)
+  - [8.8 Android 17 TelephonyManager 性能优化实战](part2-performance/ch08-telephony-manager/8.8-telephony-manager-performance.md)
+  - [8.9 Android 17 ConnectivityManager 性能优化实战](part2-performance/ch08-connectivity-manager/8.9-connectivity-manager-performance.md)
+  - [8.10 Android 17 PowerManager 性能优化实战](part2-performance/ch08-power-manager/8.10-power-manager-performance.md)
 - [第 11 章：网络性能优化](part2-performance/ch11-network-optimization/README.md)
 
 - [第 9 章：ANR 监控与分析](src/part2-performance/ch09-anr/README.md)

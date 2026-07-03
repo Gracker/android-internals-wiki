@@ -61,7 +61,7 @@ p0: 0
 p1: 1
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
+last_deepseek_cn_review_at: 2026-07-03
 ---
 
 
@@ -108,7 +108,7 @@ Zygote fork、preloaded-classes、资源预加载详见 1.11 节；这里聚焦�
 
 App 冷启动的前半段由系统进程和 Zygote 完成，后半段才进入应用进程自己的 `ActivityThread`、主线程初始化和首帧绘制。图形驱动预加载夹在这两段之间：它发生在 Zygote 进程启动期，目标是把大多数 App 首次走到图形栈时会触发的库加载、HAL 查询和驱动初始化成本提前到 fork 之前。
 
-这类成本会落到启动体验上，因为首帧前通常要完成窗口创建、`ViewRootImpl` 注册、RenderThread 初始化、EGL / Vulkan 入口调用、buffer 申请和提交。某台设备上如果 GPU driver 首次加载慢，trace 里可能表现为 RenderThread 或应用主线程在首帧附近出现额外等待；如果同一台设备已经通过 Zygote 预热，子进程继承的是一部分已经加载过的只读代码页和进程状态，首帧附近的抖动会小一些。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteInit.java]
+这类开销会直接体现在启动耗时上。首帧前通常要完成窗口创建、`ViewRootImpl` 注册、RenderThread 初始化、EGL / Vulkan 入口调用、buffer 申请和提交，如果某台设备的 GPU driver 首次加载慢，trace 里可能看到 RenderThread 或应用主线程在首帧附近出现额外等待；同一台设备通过 Zygote 预热后，子进程继承了一部分已经加载过的只读代码页和进程状态，首帧附近的抖动通常会变小。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteInit.java]
 
 这里不能把“预加载”理解成提前创建某个 App 的图形上下文。Zygote 没有应用包名、窗口、Surface，也不会替某个 App 分配首帧 buffer。它能做的是加载通用库、预热 mapper HAL、触发一次低成本的图形驱动入口。App 进程 fork 之后，具体使用 system driver、updatable driver 还是 ANGLE，仍由应用进程里的 `GraphicsEnvironment.setup()` 决定。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/GraphicsEnvironment.java]
 

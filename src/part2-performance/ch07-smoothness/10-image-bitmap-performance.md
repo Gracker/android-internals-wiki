@@ -43,7 +43,7 @@ task9_result: pass-tech-review
 last_task9_autofix_at: 2026-07-03
 auto_promoted: true
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
+last_deepseek_cn_review_at: 2026-07-03
 last_task9_review_log: logs/deep-review/2026-07-03-12-deep-review.md
 task9_p0_issues: 0
 task9_p1_issues: 0
@@ -180,7 +180,7 @@ Bitmap 的 Java 对象一直在 Java 堆里，但像素数据放在哪里，Andr
 | ALPHA_8 | 1 | ✅（仅透明度） | 无 | 遮罩、透明度模板 |
 | RGBA_F16 | 8 | ✅ | 广色域（HDR） | HDR 照片编辑、Wide Color Gamut |
 
-一张 1080×1920 的图片在不同配置下的内存占用：ARGB_8888 = 7.9MB，RGB_565 = 3.9MB，HARDWARE ≈ 0MB（Java 堆侧）。从数字上就能看出来——列表场景如果把透明度不重要的图切成 RGB_565，内存立刻省一半。
+一张 1080×1920 的图片在不同配置下的内存占用：ARGB_8888 = 7.9MB，RGB_565 = 3.9MB，HARDWARE ≈ 0MB（Java 堆侧）。这个对比很直观：列表场景如果把不需要透明通道的图切到 RGB_565，内存立刻省一半。
 
 ### Ultra HDR / Gainmap 内存模型
 
@@ -283,7 +283,7 @@ Hardware Bitmap 的优化点：**省去 software bitmap 首次绘制前的同步
 
 Bitmap 的创建和销毁是内存抖动的主要来源之一。一次 `BitmapFactory.decodeResource` 会分配几十 KB 到几十 MB 不等的 Native 内存。当这个 Bitmap 不再使用被 GC 回收时，Native 内存释放。如果在列表滑动中反复执行这个过程——分配 → 使用 → 回收 → 分配 → 使用 → 回收——内存分配曲线会呈锯齿状，GC 被频繁触发。
 
-单次 GC 不一定很长，但 GC 期间会暂停所有线程（在 ART 的部分 GC 模式下）。如果 GC 频率达到每秒几十次，累积的暂停时间就足以导致掉帧。
+单次 GC 未必很长，但 GC 期间会暂停所有线程（在 ART 的部分 GC 模式下）。如果 GC 频率达到每秒几十次，累积的暂停时间就足以导致掉帧。
 
 ### inBitmap 的工作原理
 
@@ -301,7 +301,7 @@ Bitmap resultBitmap = BitmapFactory.decodeResource(res, resId, options);
 //  javaBitmap != null 时执行 bitmap::reinitBitmap() 后 return javaBitmap]
 ```
 
-关键细节：`decodeResource` 返回的 Bitmap 通常就是 `options.inBitmap` 传入的那个 Java 对象（不是新建对象）。底层像素缓冲被重新配置以容纳新解码的图片数据。调用方必须使用返回值作为后续引用——`reusableBitmap` 变量在解码后仍指向同一个对象，但其尺寸和内容已经改变，不应再按旧参数使用。[已验证：AOSP `BitmapFactory.cpp` `doDecode()` 中 `javaBitmap != nullptr` 分支执行 `bitmap::reinitBitmap()` 后 `return javaBitmap`]
+关键细节：`decodeResource` 返回的 Bitmap 就是 `options.inBitmap` 传入的那个 Java 对象（不是新建对象）。底层像素缓冲被重新配置以容纳新解码的图片数据。调用方必须使用返回值作为后续引用——`reusableBitmap` 变量在解码后仍指向同一个对象，但其尺寸和内容已经改变，不应再按旧参数使用。[已验证：AOSP `BitmapFactory.cpp` `doDecode()` 中 `javaBitmap != nullptr` 分支执行 `bitmap::reinitBitmap()` 后 `return javaBitmap`]
 
 ### Glide 的 BitmapPool 实现
 
@@ -409,7 +409,7 @@ Glide 在解码时会自动根据 `ImageView` 的尺寸计算采样率。流程�
 2. 获取 `ImageView` 的实际尺寸（`getWidth()` / `getHeight()`）
 3. 计算 `inSampleSize`，使解码后的尺寸 ≥ `ImageView` 尺寸且最接近
 
-这个自动降采样是 Glide 的核心价值之一——开发者不需要手动计算采样率，Glide 保证解码后的图片刚好够用，不浪费内存。
+自动降采样是 Glide 最有用的特性之一：开发者不需要手动计算采样率，Glide 保证解码后的图片刚好够用，不浪费内存。
 
 ### 常见配置误区
 
@@ -461,7 +461,7 @@ Hardware Bitmap 也不能只写成“默认开启”。Coil Android 侧的 `allo
 
 如果项目是纯 Kotlin、使用 Compose，Coil 的接入成本更低。如果项目历史较长、有大量 Java 代码，或者已经深度依赖 Glide 的扩展点，继续用 Glide 更稳妥。
 
-抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 数量下降，大盘帧率上升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。
+除了 Glide 和 Coil，国内大型 App 也有基于其他图片库深度定制的实践。抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 数量下降，大盘帧率上升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。
 
 ## 在 Perfetto 中定位图片解码卡顿
 
@@ -558,14 +558,4 @@ LIMIT 50;
 
 ---
 
-> 验证级别：L2（基于多个独立来源交叉验证，AOSP 源码路径已标注）
->
-> 主要素材来源：
-> - 万字长文 Android Bitmap 相关的一切（鸿洋/杨充，2023-04-10）
-> - 深入探索 Android Bitmap：从原理到实战（顾林海，2025-04-20）
-> - 抖音 Android 端图片优化实践（字节跳动技术团队，2024-06-11）
-> - 抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）
-> - Bitmap 内存优化：inBitmap、Bitmap Pool 与图片加载库策略（研究素材，2026-03-31）
-> - Android Developers: Managing Bitmap Memory
-> - Android Developers: Bitmap.Config.HARDWARE
-> - Glide 官方文档
+> 参考资料（非 AOSP 来源）：万字长文 Android Bitmap 相关的一切（鸿洋/杨充，2023）；深入探索 Android Bitmap：从原理到实战（顾林海，2025）；抖音 Android 端图片优化实践（字节跳动技术团队，2024）；Bitmap 内存优化（2026）；Android Developers: Managing Bitmap Memory / Bitmap.Config.HARDWARE；Glide 官方文档
