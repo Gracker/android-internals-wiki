@@ -33,3 +33,24 @@
 - **位置**：整体章节
 - **问题**：提及 "详见 2.30 章" 但缺少具体关联点
 - **建议**：补充 2.30 章与本章节的具体关联描述，明确 FrameTimeline GPU/CPU 合成边界的分析位置
+## [2026-07-04] 知识缺口挖掘 — 第4轮无候选 (连续第4轮)
+
+**本轮检查方向**（全部 < 14分）：
+1. CursorWindow/ContentResolver 批量操作性能 (7/20) — Room/SQLite已覆盖
+2. SystemServer Watchdog 超时检测 (9/20) — 系统级, 应用开发者关注度低
+3. Android Motion Prediction 输入预测 (10/20) — OEM特性, ch03已有input-latency-prediction
+4. Gradle/构建系统性能 (10/20) — 非运行时性能, 不属于本书范围
+5. WebSocket/HTTP长连接性能 (11/20) — 社区文章丰富但ch24已广泛覆盖网络性能
+6. KMP Android性能边界 (10/20) — KMP生态发展中, AOSP不覆盖
+7. 插件化包体积优化 (9/20) — DFM已取代, 过时趋势
+8. DownloadManager性能 (4/20) — 过时API
+9. Intent Resolution选择器性能 (7/20) — OEM/系统侧关注
+10. Privacy Sandbox性能 (9/20) — 已有07-privacy-sandbox-performance.md
+
+**新增检查维度**（相比前3轮）：
+- Clippings 缓存优化章节 → 已有 18-cpu-cache-friendly-code-data-layout.md
+- 25+ 关键词全文搜索（gradle/macrobenchmark/16kb-page/breakpad/ptrace等）
+- Clippings MUSCHED调度论文 → OEM专属, 无AOSP源码锚点
+- ContentResolver/CursorWindow 数据访问层 → Room/SQLite深度已覆盖
+
+**结论**：全书589个文件，覆盖范围已饱和。建议后续挖掘周期转向「深度扩展」（已有章节的🔸扩展点）而非「广度新增」。
