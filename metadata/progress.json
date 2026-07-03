@@ -613,5 +613,42 @@
       "section": "13.21",
       "type": "source-path/cross-ref"
     }
+  ],
+  "verifier_logs": [
+    {
+      "date": "2026-07-03",
+      "hour": "23:30",
+      "action": "task2b-verifier",
+      "corrections": [
+        {
+          "chapter": "13.21",
+          "file": "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
+          "fix": "task2b_state: fixed→pending, pipeline_stage: task6_pending→task2b_pending",
+          "reason": "Queue has pending P50 task6-review item; chapter should be in task2b_pending not task6_pending"
+        },
+        {
+          "chapter": "15",
+          "file": "src/ch15-methodology.md",
+          "fix": "pipeline_stage: task6_pending→task9_pending",
+          "reason": "Task6 already reviewed (pass-light-edit); needs Task9 final confirmation for auto-fix"
+        },
+        {
+          "chapter": "24.14",
+          "file": "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md",
+          "fix": "Removed duplicate pipeline_stage: task9_pending (kept ready-to-publish); task9_state: pending→reviewed",
+          "reason": "status=finalized, task9_result=pass-tech-review, queue clean"
+        },
+        {
+          "chapter": "appendix.G",
+          "file": "src/appendix/android-performance-learning-path.md",
+          "fix": "pipeline_stage: task6_pending→draft",
+          "reason": "status=draft chapter incorrectly marked as task6_pending"
+        }
+      ],
+      "blocked": [
+        "13.21"
+      ],
+      "result": "no-change"
+    }
   ]
 }
