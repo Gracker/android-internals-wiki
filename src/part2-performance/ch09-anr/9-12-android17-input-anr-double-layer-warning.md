@@ -1,7 +1,7 @@
 ---
 title: "Android 17 ANR 输入事件超时检测双层预警机制"
 chapter: "9.12"
-status: draft
+status: deprecated
 applicable_versions: "Android 17 (API 37)"
 tags: [ANR, 输入事件, 超时检测, 双层预警, 性能监控]
 related_chapters: ["9.1", "9.9", "9.10"]
@@ -9,6 +9,9 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "AOSP结构"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 9-12-android17-anr-输入事件超时检测双层预警机制.md (ready-for-review, 311 lines) 内容重复。
+
+
 
 # 9.12 Android 17 ANR 输入事件超时检测双层预警机制
 

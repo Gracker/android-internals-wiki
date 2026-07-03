@@ -1,6 +1,6 @@
 {
   "total": 577,
-  "draft": 23,
+  "draft": 22,
   "ready_for_review": 196,
   "finalized": 340,
   "last_updated": "2026-07-04",
@@ -402,6 +402,13 @@
       "status": "no-candidates",
       "ts": "2026-07-04T04:10:55.857985+08:00",
       "note": "Gap mining round 4: 0 candidates ≥14. Checked 10 new candidate topics across AOSP structure, official docs, Clippings, research feeds. Coverage saturated."
+    },
+    {
+      "section": "8.7",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-04T05:07:00+08:00",
+      "note": "ActivityManager 性能优化实战: 5 anchors (AMS心智模型/进程调度内存协同/Activity启动优化/生命周期内存管理/后台服务广播) + 3 extensions (跨进程启动/Cached冻结影响/Perfetto诊断). Cross-ref to 1.44/1.18/4.5/8.2/8.6. AOSP android-17.0.0_r1 验证."
     }
   ],
   "review_history": [
@@ -561,8 +568,8 @@
   "stats": {
     "last_review_date": "2026-07-04",
     "last_review_by": "openclaw-task6",
-    "drafted": 23,
-    "ready_for_review": 193,
+    "drafted": 22,
+    "ready_for_review": 194,
     "finalized": 336,
     "ready_to_publish": 0,
     "total": 550
@@ -597,11 +604,13 @@
   },
   "task2a": {
     "last_run": "2026-07-04T05:07:00+08:00",
-    "last_section": "cleanup",
-    "result": "deprecated 9 broken duplicate drafts, cleaned stale queue",
-    "fix_count": 9,
-    "last_sections": [],
-    "note": "All 9 empty drafts were broken duplicates from automated gap-mining (wrong outlines, wrong chapter numbers, duplicate topics). Marked all as deprecated. Gap mining has run 4 consecutive rounds with 0 candidates - coverage saturated."
+    "last_section": "8.7",
+    "result": "processed 8.7 + deprecated 14 broken duplicate drafts",
+    "fix_count": 1,
+    "last_sections": [
+      "8.7"
+    ],
+    "note": "Processed ch8.7 ActivityManager performance (5 anchors + 3 extensions). Deprecated 9+5=14 broken duplicate drafts from automated gap-mining. Coverage saturated."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",

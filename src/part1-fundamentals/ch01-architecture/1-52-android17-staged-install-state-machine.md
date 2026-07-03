@@ -1,7 +1,7 @@
 ---
 title: "Android 17 Staged Install 状态机与原子性安装"
 chapter: "1.52"
-status: draft
+status: deprecated
 applicable_versions: "Android 17 (API 37)"
 tags: [安装管理, 状态机, 原子性, APEX, 包管理]
 related_chapters: ["1.46", "1.49", "16.6"]
@@ -9,6 +9,9 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "AOSP结构"
 ---
+> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 1.45 + 1.49 内容重复。
+
+
 
 # 1.52 Android 17 Staged Install 状态机与原子性安装
 
