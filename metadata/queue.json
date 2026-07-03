@@ -552,6 +552,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-07-04T05:21:40",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-07-03T21:37:00+00:00",
+    "completed_by": "task2b-lite",
+    "completion_note": "frontmatter dedup + state correction; body paths already correct (external/perfetto/src/ prefix verified)"
   }
 ]
