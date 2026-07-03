@@ -46,6 +46,7 @@ task6_reviewed_at: "2026-05-31T10:08:00+08:00"
 task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-05-31T10:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-10-review.md"
+last_task6_audit: "2026-07-03"
 ---
 
 # 25.20 Android 17 allow-while-idle Listener Alarm 与短生命周期唤醒治理
@@ -206,7 +207,7 @@ class SocketHeartbeatController(
 
 ## 电量归因与 tag 设计
 
-API 37 强制传入 `tag`，这对治理很有价值。tag 会用于日志和电量归因，应该稳定、低基数、能定位到功能，不应包含用户 ID、会话 ID、订单号、URL、随机数或递增序号。建议格式和 25.19 的 WakeLock tag 对齐：
+API 37 强制传入 `tag`，这对治理很有价值。tag 会用于日志和电量归因，应该稳定、低基数、能定位到功能，不应包含用户 ID、会话 ID、订单号、URL、随机数或递增序号。建议格式与 25.19 的 WakeLock tag 保持一致：
 
 ```text
 com.example.messaging:socket-heartbeat
@@ -220,7 +221,7 @@ AOSP `AlarmManagerService` 使用 `*alarm*` partial WakeLock 分发 alarm，并�
 
 | 字段 | 用途 |
 | --- | --- |
-| `alarm_tag` | 对齐 AlarmManager 和电量归因 |
+| `alarm_tag` | 与 AlarmManager 和电量归因一致 |
 | `task_type` | 区分 heartbeat、short_retry、message_sync、call_timeout |
 | `scheduled_elapsed_ms` / `fired_elapsed_ms` | 计算触发延迟，避开墙钟调整 |
 | `screen_state` / `charging_state` / `app_state` | 复现 Vitals 和 Doze 条件 |
