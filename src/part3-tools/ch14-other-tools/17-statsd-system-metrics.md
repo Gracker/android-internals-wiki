@@ -33,7 +33,7 @@ task2b_result: fixed-lite
 task2b_state: fixed
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-last_task6_audit: 2026-07-04
+last_task6_audit: 2026-07-05
 task9_state: reviewed
 last_task2b_lite_at: 2026-07-02
 task9_result: auto-fixed
