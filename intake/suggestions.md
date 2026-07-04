@@ -173,3 +173,12 @@
 - **检查方向**: 1 个新 DeepResearch 文件 `2026-07-05-background-audio-hardening-power.md`
 - **评估结果**: 关联 ch25.17（已 finalized），为已有章节补充材料，非新章节候选
 - **结论**: 0 个 ≥14 分候选，连续 19 轮覆盖饱和
+
+
+## 2026-07-05 05:06 知识缺口挖掘检查记录（Round 21）
+- **检查方向**: 今日 daily-info 新内容（Clean Architecture/Repository/Compose Pager/Room 3.0/AI Benchmark/Android 17 ML Scheduler/Linux 6.10 内存碎片）
+- **评估结果**: 
+  - 5 个应用架构/UI 教程主题 <14 分（非系统性能范畴）
+  - Android 17 ML 调度器 14 分但已在 ch1.43 覆盖
+  - Linux 6.10 内存碎片 10 分，已在 ch6.19 覆盖
+- **结论**: 0 个 ≥14 分新候选，连续 21 轮覆盖饱和
