@@ -104,7 +104,7 @@ task9_review_notes: '2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0
   AOSP source anchors android-16.0.0_r1→android-17.0.0_r1; P1 queued because finalized
   chapter has no markdown body after frontmatter.'
 last_task6_at: "2026-07-02T04:05:00+08:00"
-last_task6_audit: '2026-06-08'
+last_task6_audit: '2026-07-04'
 last_task6_audit_result: pass-no-edit
 task6_review_notes: 2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 | 2026-07-01 13:30 Task6：Task2B main body restoration 后复审；禁用词扫描零命中，outline 全覆盖（6/6 锚点+3/3 扩展），CN-EN spacing/L1/L2 全部通过；无新增 L3/L4 回炉项；正文约 6300 字，待验证 2 处/待补充 4 处均在合理范围。送 Task9 复审 restored body。
   Task9 复审。 | 2026-05-27 06:09 Task6：复审通过；禁用词扫描无新增硬伤，outline 覆盖完整，无新增 L3/L4 回炉项，送
