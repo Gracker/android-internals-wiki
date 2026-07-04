@@ -47,6 +47,8 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 task2b_verifier_note: "status finalized→ready-for-review for Task6 pickup (2026-06-30T07:29:40+08:00)"
 last_task6_at: 2026-06-30T09:06:00+08:00
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-04
 ---
 
 # 命令行打开超大 Trace
@@ -78,13 +80,13 @@ last_task6_at: 2026-06-30T09:06:00+08:00
 
 ## 为什么需要命令行分析大 Trace
 
-我们在上一节里用 Perfetto UI 打开 Trace、看 Track、看 Slice，体验很流畅。但当你处理一个 500MB 甚至 2GB 的 Trace 文件时，情况就完全不同了——浏览器标签页会疯狂吃内存，UI 变得卡顿甚至直接崩溃。瓶颈在于浏览器的 WebAssembly（WASM）引擎——面对如此大的数据集时它力不从心。
+我们在上一节里用 Perfetto UI 打开 Trace、看 Track、看 Slice，体验很流畅。但当你处理一个 500MB 甚至 2GB 的 Trace 文件时，情况就完全不同了——浏览器标签页会疯狂吃内存，UI 变得卡顿甚至直接崩溃。瓶颈在浏览器的 WebAssembly（WASM）引擎——数据集一大，它就扛不住。
 
 另一个常见场景：我们需要对一批 Trace 做批量分析，比如每天自动抓取 50 个冷启动 Trace，统计 P95 启动时间。手动一个个打开 UI 不现实，我们需要一个可以用脚本驱动、不依赖浏览器的分析工具。
 
 Perfetto 官方为我们提供的解决方案就是 `trace_processor`——一个 C++ 实现的命令行工具，它能把 Trace 文件当作数据库来查询。我们写 SQL，它返回结果。它会将 Trace 中的每一类事件解析成结构化的表（`slice`、`sched`、`counter`……），然后我们直接用 SQL 去查询。
 
-还有一个经常被忽略的好处是**隐私保护**。`trace_processor` 是本地工具，Trace 文件完全在本地解析，不需要上传到任何云端。对于包含敏感信息的系统级 Trace，这种本地解析方式更加稳妥。
+另外值得一提：`trace_processor` 完全本地运行，Trace 文件不需要上传到任何云端。对于包含敏感信息的系统级 Trace，这比浏览器方案更稳妥。
 
 ## 大 Trace 的挑战：浏览器为什么扛不住
 
@@ -580,7 +582,7 @@ chmod +x traceconv
 
 [已验证: 官方文档, perfetto.dev/docs/analysis/batch-trace-processor]
 
-当我们的分析需求从"偶尔查一个 Trace"演进到"每天自动分析几十个 Trace 并出报告"时，就需要搭建一个分析 Pipeline。这里分享一些实践经验。
+分析需求从"偶尔查一两个 Trace"升级到"每天自动处理几十个 Trace 并出报告"时，就需要搭一个分析 Pipeline。下面是一些实践经验。
 
 ### 结果存储与趋势追踪
 

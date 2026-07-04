@@ -537,6 +537,108 @@ Power HAL 如何把 `Mode.GAME_LOADING` 映射到具体的调频/调压动作，
 
 这些映射逻辑不在 AOSP 主线范围内，不同 SoC 平台和 OEM 的配置差异很大，无法用一条通用调用链覆盖。在 Perfetto 中观察时，可以对比 `power/cpu_frequency` 轨迹与游戏加载区间的时间对齐关系，判断厂商的 GAME_LOADING → 提频映射是否生效，但映射表本身不暴露在 AOSP 的 public API 或 sysfs 标准接口中。
 
+### Android 17 三层协作闭环：PowerManagerService × IPower HAL × schedutil/cpuidle menu
+
+<!-- AIW-源码调研-2026-07-04 -->
+
+本节用源码锚定的方式把上层 wake lock 摘要 → 中层 IPower HAL hint → 下层 schedutil + cpuidle menu governor 的协作时序落到 AOSP 可读文件上, 替代此前用图示/概览描述的电源管理栈。三层对应文件:
+
+- **上层 (Framework)**: `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` (android-17.0.0_r1, 8258 行)
+- **中层 (HAL)**: `hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl` (android-17.0.0_r1, 200 行, `@VintfStability`)
+- **下层 (Kernel)**: `kernel/sched/cpufreq_schedutil.c` + `drivers/cpuidle/governors/menu.c` (kernel.org mainline v6.x 参照, ACK android17-6.18-2026-06_r1 继承算法)
+
+#### PowerManagerService 的 DIRTY 掩码与 wake lock 摘要
+
+PMS 用 17 个 `DIRTY_*` 位掩码追踪需要更新的电源状态子集 (line 210-237), 任何 wake lock 状态变更都触发 `mDirty |= DIRTY_WAKE_LOCKS; updatePowerStateLocked();` (line 1797-1798)。`updateWakeLockSummaryLocked()` (line 3029-3111) 聚合所有活跃 wake lock 的 flags 到 `mWakeLockSummary`, 经过 `getWakeLockSummaryFlags()` (line 3151-3177) 把 `PowerManager.PARTIAL_WAKE_LOCK` 等公共 API 映射成内部 `WAKE_LOCK_CPU` / `WAKE_LOCK_SCREEN_BRIGHT` 等 10 个 `WAKE_LOCK_*` 状态位 (line 243-251)。
+
+`adjustWakeLockSummary()` (line 3113-3177) 在已知 wakefulness (Asleep/Dozing/Awake/Dreaming) 的前提下做隐含状态推断: 例如 wakefulness == Asleep 或带 `WAKE_LOCK_DOZE` 时强制移除 `WAKE_LOCK_SCREEN_BRIGHT | WAKE_LOCK_SCREEN_DIM | WAKE_LOCK_BUTTON_BRIGHT`。这条收敛规则意味着上游组件不需要感知所有组合, wake lock summary 总是收敛到合法集合。
+
+Android 17 引入 `mPowerGroups` 多 display group 概念 (line 2400+), 每个 group 单独维护 wakefulness + wakeLockSummary。`dozePowerGroupLocked()` 在 `Flags.separateTimeouts()` 启用时引入相邻 group 唤醒规则: 默认 group 在相邻 group 仍交互时不能 doze, 这条对折叠屏/外接显示器影响很大。
+
+#### IPower HAL 的 setBoost vs HintSession
+
+`@VintfStability IPower` AIDL 接口 (android-17.0.0_r1) 提供两类调频 hook:
+
+```aidl
+oneway void setMode(in Mode type, in boolean enabled);
+boolean isModeSupported(in Mode type);
+oneway void setBoost(in Boost type, in int durationMs);  // durationMs: 0=未知, <0=取消
+IPowerHintSession createHintSession(
+    in int tgid, in int uid, in int[] threadIds, in long durationNanos);
+long getHintSessionPreferredRate();
+```
+
+关键语义差: `setMode` 是无 timeout 开关 (如 `Mode.LOW_POWER`), `setBoost` 是有 durationMs 的瞬时 hint (`Boost.INTERACTION` 抬频率几秒), vendor HAL 可完全忽略 (`A particular platform may choose to ignore any mode hint`)。Android 17 新增 `CpuHeadroomResult/GpuHeadroomResult/CompositionData/CompositionUpdate`, 让应用查询 headroom 而非单向提需求, 这是 ADPF 主动探测模式的物质基础。
+
+#### schedutil governor 的异步刷新路径
+
+`struct sugov_policy` (line 30-37) 把每次调频请求拆成 irq_work + kthread_worker 异步路径:
+
+```c
+struct sugov_policy {
+    s64 freq_update_delay_ns;  // rate_limit_us * NSEC_PER_USEC
+    struct irq_work irq_work;
+    struct kthread_work work;
+    struct kthread_worker worker;
+    struct task_struct *thread;
+    bool work_in_progress;
+};
+```
+
+调用链 `schedutil_update_util → sugov_get_util → sugov_should_update_freq → sugov_deferred_update → sugov_irq_work → sugov_work → __cpufreq_driver_target`, 其中 `sugov_get_util()` (line 220) 始终从 `scx_cpuperf_target(cpu)` 起算 (sched_ext 性能目标接口, 与 android16-6.12 对齐), 非 scx 独占时叠加 `cpu_util_cfs_boost()`, 走 `effective_cpu_util()` → `sugov_effective_cpu_perf()`。`sugov_should_update_freq()` (line 79-110) 用 `delta_ns >= freq_update_delay_ns` 守门, 这是 vendor hook 临时降 rate_limit_us 到 0 实现"触摸瞬时升频"的接入点。
+
+`sugov_iowait_boost()` (line 250+) 实现"连续 IO 唤醒指数提频": 每次 IO 唤醒 `iowait_boost <<= 1`, 封顶 `SCHED_CAPACITY_SCALE`, `delta_ns > TICK_NSEC` 时由 `sugov_iowait_reset()` 重置回 `IOWAIT_BOOST_MIN`。这条逻辑保证"连续 IO 唤醒给强 boost, 偶发 IO 唤醒给弱 boost", 避免长尾抖动。
+
+#### cpuidle menu governor 的预测修正因子
+
+menu governor 用 6 个 bucket + DECAY=8 修正因子预测下一次 idle 持续时间 (line 22-24):
+
+```c
+#define BUCKETS 6
+#define DECAY 8
+#define RESOLUTION 1024
+#define MAX_INTERESTING (50000 * NSEC_PER_USEC)  // 50ms 上限
+```
+
+`menu_select()` 优先级: (1) `latency_req == 0` 或下一个 timer 很近 → state[0]; (2) 第一个 `target_residency_ns <= predicted_ns` 的 state; (3) polling state 且 `target_residency_ns < RESIDENCY_THRESHOLD_NS && <= next_timer_ns && exit_latency_ns <= predicted_ns` 选 polling (空转); (4) tick 未停止时优先保留 tick, 防止浅 state 卡住太久。
+
+`menu_update()` (line 410+) 在 wakeup 后回写实测值, 修正因子 `new_factor -= new_factor / DECAY; new_factor += div64_u64(RESOLUTION * measured_ns, data->next_timer_ns);`——DECAY=8 让旧值衰减因子 7/8, 新值贡献 1/8, 预测曲线对单次偶发长 idle 不敏感。
+
+`tick_wakeup` 特殊处理 (line 444-453): 如果 tick 没被停止但 predictor 以为停了, 强制 measured_ns 设为 `9 × MAX_INTERESTING / 10`, 防止"CPU 醒得太早导致没机会进深 idle"的死循环。
+
+#### 三层协作时序示例
+
+App `PowerManager.WakeLock.acquire()` 触发的事件序列 (基准时间):
+
+```
+T+0ms    PowerManagerService.acquireWakeLockInternal()
+         → mWakeLocks.add(wakeLock)
+         → mDirty |= DIRTY_WAKE_LOCKS
+         → updatePowerStateLocked()            [同步]
+
+T+0ms    notifyWakeLockAcquiredLocked(wakeLock)
+         → mNotifier.onWakeLockAcquired(...)  [Binder]
+         → BatteryStatsService.noteStartWakelock(...)
+         → mHandler.post(() -> mStats.noteStartWakeLocked(...))
+
+T+0ms    acquireSuspendBlockerLocked("PowerManagerService.WakeLocks")
+         → JNI nativeAcquireSuspendBlocker
+         → SystemSuspend 引用计数 +1, 阻止 deep suspend
+
+T+1ms    PowerHAL.setBoost(Boost.INTERACTION, 200ms)
+         → mPowerHal.setBoost(...)
+         → vendor HAL 内部: schedutil rate_limit_us → 0
+         → 唤醒 idle CPU, schedutil 立即升频
+
+T+200ms  PowerHAL Boost 超时
+         → vendor HAL 还原 rate_limit_us 默认值
+         → idle CPU 重新进入 cpuidle, menu governor 预测 idle 时长
+```
+
+在 Perfetto 里抓这条链路时, 关注三类 slice: (1) `power/wake_lock` 看到 PMS 注册的 suspend blocker 状态; (2) `power/cpu_frequency` 与 wake lock 摘要变更的时间对齐; (3) `sched/cpu_util` 与 `sched/cpu_frequency` 同步轨迹, 看 schedutil 是否在 `freq_update_delay_ns` 内刷新。
+
+> ⚠️ 本节源码以 kernel.org mainline v6.x 为参照, ACK android17-6.18-2026-06_r1 在 menu / schedutil 算法上一致, 差异主要在 SoC cpuidle driver (`arm_idle`) 的 state 表与厂商私有 governor hook, 不在 AOSP 主线范围。
+
 ### Linux cpufreq + cpuset + thermal 协同
 
 Android 的 CPU 调频栈最终由 Linux kernel 实现：

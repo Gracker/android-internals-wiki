@@ -46,6 +46,8 @@ task6_review_notes: 2026-05-07 task6 review 05:05:补齐 section/H1、last_verif
 last_task9_at: '2026-06-07T11:22:00+08:00'
 last_task9_review_log: logs/deep-review/2026-06-07-11-deep-review.md
 last_task9_autofix_at: 2026-06-07
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-04
 ---
 
 
@@ -67,9 +69,9 @@ last_task9_autofix_at: 2026-06-07
 
 <!-- outline-end -->
 
-同一个 App 进程同时显示两个窗口——表面看起来只是弹了个 Dialog,底层渲染路径里却变成同一个 UI Thread 和同一个 RenderThread 串行处理两套独立绘制任务。理解这个瓶颈,是排查"为什么弹 Dialog 后 Activity 也卡了"这类问题的关键。
+同一个 App 进程同时显示两个窗口——表面看起来只是弹了个 Dialog，底层渲染路径里却变成同一个 UI Thread 和同一个 RenderThread 串行处理两套独立绘制任务。理解这个瓶颈，是排查"为什么弹 Dialog 后 Activity 也卡了"这类问题的关键。
 
-多窗口性能分析的第一步是判断拓扑:同进程还是跨进程。这两种拓扑产生的瓶颈位置完全不同--同进程卡在 App 内部的串行竞争,跨进程卡在 SurfaceFlinger 合成侧。下文先列出常见场景并标注拓扑归属,再分别展开分析。
+多窗口性能分析的第一步是判断拓扑：同进程还是跨进程。这两种拓扑产生的瓶颈位置完全不同——同进程卡在 App 内部的串行竞争，跨进程卡在 SurfaceFlinger 合成侧。下文先列出常见场景并标注拓扑归属，再分别展开分析。
 
 ## 多窗口场景分析
 
@@ -111,7 +113,7 @@ last_task9_autofix_at: 2026-06-07
 
 ### 同进程:串行挤占同一段调度时间
 
-同进程多窗口里,多个 `ViewRootImpl` 共享同一个 `Choreographer`(`Choreographer.getInstance()` 是 `ThreadLocal<Choreographer>`,同一主线程上的所有 `ViewRootImpl` 天然共享)。同一帧 `doFrame` 内,多个 `performTraversals` 按 callback 注册顺序**串行**执行;RenderThread 是进程级单例(`RenderThread::getInstance()`),`DrawFrame` 也按窗口先后串行排队。某个窗口的 `performTraversals` 长了,后续窗口的起跑点直接往后挪。
+同进程多窗口里，多个 `ViewRootImpl` 共享同一个 `Choreographer`（`Choreographer.getInstance()` 是 `ThreadLocal<Choreographer>`，同一主线程上的所有 `ViewRootImpl` 天然共享）。同一帧 `doFrame` 内，多个 `performTraversals` 按 callback 注册顺序**串行**执行；RenderThread 是进程级单例（`RenderThread::getInstance()`），`DrawFrame` 也按窗口先后串行排队。某个窗口的 `performTraversals` 长了，后续窗口的起跑点直接往后挪。
 
 ### 跨进程：各自独立跑流水线，但共享一份 SF 帧节奏
 
@@ -127,7 +129,7 @@ last_task9_autofix_at: 2026-06-07
 
 ## 核心瓶颈:串行化
 
-多窗口的性能瓶颈不在于"画的东西多了一倍",而在于**串行化执行**。两个窗口的绘制任务不能并行,只能排队。
+多窗口的性能瓶颈不在于"画的东西翻倍"，而在于**串行化执行**——两个窗口的绘制任务不能并行，只能排队。
 
 SurfaceFlinger 合成侧已经并行化了--多个 Layer 可以由 HWC 硬件同时合成,跨进程多窗口的帧率互不干扰(见 [18.2](02-android-view-standard.md))。因此,同进程多窗口的压力主要落在生产侧:App 进程内部的 UI Thread 和 RenderThread 排队。
 

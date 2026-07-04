@@ -57,6 +57,8 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-05-24T19:30:00+08:00
 last_task9_review_log: "logs/deep-review/2026-05-24-19-deep-review.md"
 last_task9_audit: "2026-06-14"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-04
 ---
 
 # 24.16 Android 17 流媒体网络预算与本地网络权限适配
@@ -99,7 +101,7 @@ last_task9_audit: "2026-06-14"
 
 Android 17 把两类网络适配推到应用侧：流媒体可以读取运营商分配的上下行速率上限，本地网络访问在 `targetSdkVersion >= 37` 后进入运行时权限模型。前者影响视频、音频、直播和 RTC 的码率选择；后者影响投屏、局域网设备发现、本地 HTTP 服务和 IoT 控制。
 
-这两个变化不应该合并成“网络请求优化”。普通 REST / GraphQL API 仍按 24.10 和 24.14 的 DNS、连接复用、超时、重试、弱网策略处理；本节只处理媒体码率预算和 LAN 访问授权两条路径。低带宽、卫星网络和请求分段策略详见 24.11、24.14，TLS / ECH / 证书透明度详见 12.4。
+这两个变化各走各的路径，不要合并成笼统的“网络请求优化”。普通 REST / GraphQL API 继续走 24.10 和 24.14 的 DNS、连接复用、超时、重试、弱网策略；本节只处理媒体码率预算和 LAN 访问授权。低带宽、卫星网络和请求分段策略见 24.11、24.14，TLS / ECH / 证书透明度见 12.4。
 
 ## 三类网络路径要分开建模
 
@@ -117,11 +119,11 @@ Android 17 相关改动落到三条路径上，触发条件和失败形态不同
 
 Android 17 在 `SubscriptionInfo` 上新增 `getStreamingAppMaxDownlinkKbps()` 和 `getStreamingAppMaxUplinkKbps()`，返回运营商为流媒体应用分配的最大下行或上行速率，单位是 Kbps；未知或不适用时返回 `SubscriptionPlan.BITRATE_UNKNOWN`。[已验证: 官方文档, https://developer.android.com/reference/android/telephony/SubscriptionInfo#getStreamingAppMaxDownlinkKbps()]
 
-这条信号适合进入 ABR 的“外部上限”，不适合替代实时带宽估计。运营商上限描述的是套餐或网络策略允许的媒体速率，Media3 / ExoPlayer 的 `BandwidthMeter` 描述的是最近传输样本推导出的吞吐估计。前者是上限，后者是估计值。两者冲突时，播放器应该取更保守的一侧，并保留冷启动默认档位。
+这条信号适合做 ABR 的“外部上限”，不要拿去替代实时带宽估计。运营商上限是套餐或网络策略允许的媒体速率，`BandwidthMeter` 是最近传输样本推导出的吞吐估计——一个是上限，一个是估计值。两者冲突时，播放器取更保守的一方，同时保留冷启动默认档位。
 
 读取 `SubscriptionInfo` 还要处理权限边界。`SubscriptionManager.getActiveSubscriptionInfoList()` 需要 `READ_PHONE_STATE` 或运营商权限，返回列表按 SIM slot 和 subscription id 排序；从 Android SDK 35 起不会返回 `null`，但仍可能返回空列表或只返回调用方可见的订阅。[已验证: 官方文档, https://developer.android.com/reference/android/telephony/SubscriptionManager#getActiveSubscriptionInfoList()]
 
-这段代码展示的是预算层的接口形状，重点看 `BITRATE_UNKNOWN` 和 `READ_PHONE_STATE` 失败后的降级路径：
+这段代码的重点是预算层的接口行为，关键看 `BITRATE_UNKNOWN` 和 `READ_PHONE_STATE` 失败后的降级路径：
 
 ```kotlin
 @RequiresApi(37)
@@ -148,7 +150,7 @@ fun streamingBudgetKbps(
 }
 ```
 
-`fallbackKbps` 不应该写死成一个全局值。冷启动可以按网络类型、历史首缓冲、地区、运营商和设备档位配置；拿到平台上限后，只把它作为 ABR 可选档位的上界。双卡设备按当前数据订阅优先；拿不到当前数据订阅到 `SubscriptionInfo` 的稳定映射时，取可见 cap 的较小值更保守。
+`fallbackKbps` 不要硬编码成全局常量。冷启动时应该按网络类型、历史首缓冲、地区、运营商和设备档位来取；拿到平台上限后，只把它用作 ABR 可选档位的上界。双卡设备按当前数据订阅优先；拿不到当前数据订阅到 `SubscriptionInfo` 的稳定映射时，取可见 cap 的较小值更保守。
 
 ## ABR 接入点：限制候选档位，不篡改测速
 
@@ -156,7 +158,7 @@ Media3 的 `AdaptiveTrackSelection` 是基于带宽的自适应选择，选中�
 
 `DefaultBandwidthMeter` 的默认初始估计是 `1_000_000` bps，网络类型不可用或离线时会用这类初始值；它还维护 2G、3G、4G、5G 和 Wi-Fi 的默认初始估计。[已验证: 官方文档, https://developer.android.com/reference/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter]
 
-工程接入时，把平台 cap 转成“可选 track 的最高码率”，不要把 `BandwidthMeter` 的实时估计直接覆盖成运营商 cap。覆盖测速会污染后续样本，也会降低 Wi-Fi 切蜂窝、蜂窝切 Wi-Fi 时的判断敏感度。
+工程接入的时候，把平台 cap 转成“可选 track 的最高码率”，不要直接用运营商 cap 覆盖掉 `BandwidthMeter` 的实时估计。覆写测速样本会污染后续估计，切换网络时的判断也会变得迟钝。
 
 | 输入信号 | 更新频率 | 适合影响 | 不适合影响 |
 | --- | --- | --- | --- |
@@ -184,7 +186,7 @@ Manifest 只解决声明问题，运行时仍要按权限状态分支。下面�
 
 Android 17 还为目标 SDK 37 及以上应用启用 ECH。ECH 只在网络库和服务器都支持时生效；无法协商时会发送带随机内容的 ECH GREASE 扩展。平台还新增 `<domainEncryption>`，允许在 Network Security Configuration 中按域名控制 ECH 模式。[已验证: 官方文档, https://developer.android.com/about/versions/17/behavior-changes-17]
 
-ECH、证书透明度、证书链、SNI 和 ALPN 属于互联网 TLS 取证；`ACCESS_LOCAL_NETWORK` 属于本地地址访问授权。把两类失败混到同一个 `NetworkError` 会让线上排查走错方向。
+ECH、证书透明度、证书链、SNI 和 ALPN 属于互联网 TLS 取证；`ACCESS_LOCAL_NETWORK` 属于本地地址访问授权。把这两类失败混到同一个 `NetworkError`，线上排查方向就会跑偏。
 
 | 失败类别 | 典型异常 / 现象 | 应记录字段 | 关联章节 |
 | --- | --- | --- | --- |
