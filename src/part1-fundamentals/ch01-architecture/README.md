@@ -72,3 +72,13 @@ last_task9_review_log: "logs/deep-review/2026-05-14-18-deep-review.md"
 - 补 Android 14/15/16/17 的平台变化时：ch01 内重点看 `1.6`（架构变化总览）、`1.7`（ART 编译管线）、`1.9`（PMS）、`1.12`（AutoFDO）、`1.13`（MessageQueue 无锁优化）、`1.15`（JNI/NDK）、`1.16`（Audio Pipeline）。需要追 Android 17 机制细节时，按主题跳转：Generational CMC → `4.3`、`4.6`、`16.5`；sched_ext → `5.7`、`14.10`、`16.4`；Energy Limiter → `5.7`（待验证）；DeliQueue / ConcurrentMessageQueue → `1.13`。
 - 只需要先建立整体印象时，先读 `1.1`、`1.2`、`1.3`、`1.6`。这四节足够把系统边界、版本变化和后面章节的入口搭起来。
 - 看完 `1.4` 之后，可以留一个检查点：能不能在 Perfetto 里认出 Binder 事务阻塞和优先级继承；看完 `1.11` 之后，再检查一次能不能解释冷启动里 Zygote、预加载和 fork 继承各自带来的收益与代价。
+
+## 参考资料
+
+### 我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂Clean Architecture 落地的
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76232428-我见过的最反直觉的Android架构问题.md
+- 类型：技术文章
+- 摘要：> 发布时间: 2026-03-31T09:39:53.000Z > 原文链接:  2026-03-31 1,907 阅读9分钟 Clean Architecture 被捧上神坛五六年了。但我最近 review 了几个"按规范来的"项目，发现一个反直觉的规律：UseCase 文件越多，项目...
+- 入库时间：2026-07-04
+- 评分：14/20
+

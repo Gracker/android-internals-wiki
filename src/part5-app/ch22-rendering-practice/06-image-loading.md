@@ -3,7 +3,7 @@
 title: "图片加载与显示优化"
 chapter: "22.6"
 section: "22.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-02"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Glide/Coil docs, Clippings 结构参考"
@@ -45,18 +45,20 @@ sources:
     path: "https://coil-kt.github.io/coil/image_loaders/"
 tags: [image-loading, glide, coil, bitmap-decode, image-cache]
 related_chapters: ["22.1", "23.2", "7.10"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
+reviewed_date: "2026-07-04"
 task6_reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
-last_task6_at: "2026-05-13T09:12:00+08:00"
-last_task6_audit: "2026-06-09"
+last_task6_at: "2026-07-04T08:05:00+08:00"
+last_task6_audit: "2026-07-04"
 last_task6_review_log: "logs/review/2026-05-13-09-review.md"
-task6_review_notes: "2026-05-13 Task6：L1/L2 轻修（术语、指标中文化、兜底表述）；四层质检通过，无新增回炉项，转入 Task9。"
+task6_review_notes: "2026-07-04 Task6 复审：L1 轻修（禁用词\"链路\"→\"流程\"；删除元叙述句）；四层质检通过，task9 已 auto-fixed，queue 无 pending，自动晋升 finalized。"
+finalized_date: "2026-07-04"
+finalized_by: "openclaw-task6-auto-promote"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-19'
@@ -100,7 +102,7 @@ last_deepseek_cn_review_at: 2026-06-29
 
 图片优化要同时看三件事：解码成本、像素内存、展示时机。列表页滑动卡顿、详情页首屏慢、低端机 OOM，很多时候都不是网络慢，而是图片在错误尺寸、错误线程、错误缓存层里反复解码。
 
-Part 5 的图片优化只讲应用侧动作。渲染管线和帧调度机制详见 22.1、7.10；Bitmap 与 Native 内存统计详见 23.2。本节把图片从 URL 或资源文件进入屏幕前的几道关口拆开：选框架、控解码、管大图、设缓存、定格式。
+Part 5 的图片优化只讲应用侧动作。渲染管线和帧调度机制详见 22.1、7.10；Bitmap 与 Native 内存统计详见 23.2。
 
 ## Glide / Coil 图片加载框架性能对比
 
@@ -240,7 +242,7 @@ Glide 的磁盘缓存区分 resource 和 data，能缓存变换后结果，也�
 
 ## AVIF / WebP 格式选型与兼容性
 
-Android 官方图片压缩文档把 AVIF、PNG、JPG、WebP 放在常见格式范围内，并说明 Android 12（API 31）及以上支持 AVIF。AVIF 在同等文件大小下通常能提供更好的静态图质量，但低版本平台、服务端转码链路、图片库解码器都要验证。[已验证: 官方文档, Reduce image sizes]
+Android 官方图片压缩文档把 AVIF、PNG、JPG、WebP 放在常见格式范围内，并说明 Android 12（API 31）及以上支持 AVIF。AVIF 在同等文件大小下通常能提供更好的静态图质量，但低版本平台、服务端转码流程、图片库解码器都要验证。[已验证: 官方文档, Reduce image sizes]
 
 格式选择可以按下面的边界处理：
 
