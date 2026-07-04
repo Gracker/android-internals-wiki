@@ -27,7 +27,7 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: revising
+task6_state: reviewed
 task9_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
@@ -57,6 +57,7 @@ updated_date: "2026-06-22"
 p0: 0
 p1: 0
 p2: 0
+last_task2b_verifier_at: "2026-07-05T03:26:57+0800"
 ---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
