@@ -2,7 +2,7 @@
 title: Android 11 以下进程退出归因方案
 chapter: '26.10'
 section: '26.10'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 10 (API 29)
 last_verified: '2026-07-01'
 last_verified_against: AOSP android-17.0.0_r1 (ApplicationExitInfo/ActivityManager/AppExitInfoTracker/lmkd);
