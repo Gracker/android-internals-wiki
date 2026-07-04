@@ -81,3 +81,31 @@
 - **问题**：缺少线上案例分析
 - **建议**：增加实际企业项目中遇到的音频硬化问题案例，包括问题现象、排查过程、解决方案和效果验证，特别关注锁屏蓝牙断连、后台播放静默等典型场景
 
+
+## [Task2A Gap Mining] 2026-07-05 01:04 知识缺口挖掘方向记录
+
+**本轮未发现评分 ≥ 14 的知识缺口。**
+
+### 已检查方向（避免下轮重复）
+
+1. **Android 17 PMS × cpuidle × schedutil 三层协作闭环**
+   - 判定：已覆盖。ch05/5.4 (DVFS) 已在 line 540-640 插入 `<!-- AIW-源码调研-2026-07-04 -->` 子节，完整覆盖 PMS DIRTY 位掩码 → IPower HAL hint → schedutil/cpuidle menu governor 闭环
+   - DeepResearch 材料 `2026-07-04-android17-pms-cpuidle-schedutil-closed-loop.md` (21KB) 已被 ch5.4 吸收
+
+2. **eScope 移动应用算子级功耗预测（论文）**
+   - 评分：12/20（素材3 × 相关3 × 需求3 × 时效3）
+   - 判定：学术方法论文，ch11.1 已覆盖功耗模型基础，eScope 的 SoC→算子关联方法离工程实践较远
+
+3. **Android Desktop Experience / 窗口管理性能**
+   - 判定：已覆盖。ch08/8.6 WindowManager 性能优化 + ch22 多窗口渲染覆盖
+
+4. **NSD / Wi-Fi Direct / BLE 近场通信性能**
+   - 评分：11/20（素材2 × 相关2 × 需求4 × 时效3）
+   - 判定：偏 API 使用教程，非系统级性能问题。ch08/8.8 (TelephonyManager) + ch08/8.9 (ConnectivityManager) 已覆盖网络栈性能
+
+5. **Repository suspend fun / 结构化并发性能**
+   - 判定：Kotlin 协程架构模式，非系统运行时性能。ch01 已覆盖 Binder/消息驱动架构
+
+### 结论
+全书 577+ 文件覆盖范围极其完整，本轮检查 5 个新候选缺口中无 ≥ 14 分通过者。
+连续 17 轮无合格候选，覆盖率真正饱和。
