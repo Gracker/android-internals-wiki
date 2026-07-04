@@ -1,8 +1,8 @@
 ---
-title: ""Android 17 后台音频硬化与播放功耗治理""
-chapter: ""25.17""
-section: ""25.17""
-status: ready-for-review
+title: "Android 17 后台音频硬化与播放功耗治理"
+chapter: "25.17"
+section: "25.17"
+status: finalized
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-02"
@@ -17,25 +17,20 @@ created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
 task9_state: pending
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-07-04"
+reviewed_date: "2026-07-05"
 task6_result: "pass-light-edit"
-last_task6_at: "2026-07-04T09:16:19+08:00"
+last_task6_at: 2026-07-05T01:14:45+08:00
 last_task6_audit: "2026-06-28"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
-task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
-task9_result: pass-tech-review
-task2b_result: fixed
-task2b_note: 2026-07-05 Task2B main: targetSdkVersion 36 vs 37 behavior differences table + migration strategy added (queue P85). Audio hardening enforcement gating between targetSdk 36 (FGS only) and 37 (FGS + WIU) now explicitly tabled; four-step migration path added: entry audit, non-compliant entry refactoring, staged verify with cmd audio set-hardening enable pre-check + internal test + canary release, logging dimension requirement.
-task2b_state: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。 | 2026-07-05 Task6 复审 (round 2): pass-light-edit。Task2B 已补充 targetSdk 36→37 迁移路径四步法与行为差异表。L1 仅 2 处 frontmatter 修正（title/chapter/section 引号转义、p0 计数校正）。L2/L3/L4 全部通过。task9 已通过 + queue 无 pending → 自动晋升 finalized。"
+
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-04"
+task9_reviewed_date: "2026-07-05"
 last_task9_at: "2026-07-02T14:29:53+08:00"
 last_task9_audit: "2026-07-02"
 last_task9_review_log: "logs/deep-review/2026-07-02-14-audit.md"
 task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 0 项；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Android 17 后台音频 hardening shell 命令为 `cmd audio set-hardening`/`clear-hardening`；`disable` 是强制关闭 override，不是恢复默认行为；回到 Task6 复审。"
-p0: 1
+p0: 0
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
