@@ -621,6 +621,27 @@
       "last_task6_at": "2026-07-03T19:10:00+08:00",
       "task6_result": "pass-light-edit",
       "pipeline_stage": "ready-to-publish"
+    },
+    "22.6": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_date": "2026-07-04",
+      "task6_result": "pass-light-edit",
+      "notes": "L1轻修(禁用词+元叙述)，自动晋升finalized"
+    },
+    "19.26": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_date": "2026-07-04",
+      "task6_result": "pass-light-edit",
+      "notes": "L1轻修(禁用词)，自动晋升finalized"
+    },
+    "20.2": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_date": "2026-07-04",
+      "task6_result": "pass-light-edit",
+      "notes": "L1轻修(元叙述)，自动晋升finalized"
     }
   },
   "task2a": {

@@ -54,7 +54,7 @@ task9_p1_issues: 0
 task9_p2_issues: 1
 task2b_rework_issues: "2026-06-30 Task2B main: L3 content depth — added Perfetto-based Activity recreate measurement methodology with SQL; expanded foldable/multi-window section with Perfetto diagnostic queries, Samsung/Pixel Fold divergence patterns, and multi-window resize debouncing strategies"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-30
+last_deepseek_cn_review_at: 2026-07-04
 task9_reviewed_date: "2026-07-03"
 task9_reviewed_by: "openclaw-task9"
 finalized_by: "openclaw-task9-auto-promote"
@@ -91,13 +91,13 @@ Resources（对外接口）
 - `ResourcesImpl` 持有状态：当前 Configuration、DisplayMetrics、AssetManager
 - `AssetManager` 在 native 层通过 mmap 访问 APK 中的 `resources.arsc`，负责资源查找和解析
 
-一个 `ResourcesKey`（由 apkPaths + configuration + displayId 等参数组成）决定了一个 `ResourcesImpl` 实例。两个 ResourcesKey 相同的 Resources 共享同一个 ResourcesImpl——这是 ResourcesManager 的缓存复用机制。
+一个 `ResourcesKey`——由 apkPaths、configuration、displayId 等参数拼合——决定一个 `ResourcesImpl` 实例。两个 ResourcesKey 相同的 Resources 共享同一个 ResourcesImpl，这是 ResourcesManager 的缓存复用机制。
 
 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ResourcesManager.java — getResources() → findOrCreateResourcesImplForKeyLocked()]
 
 ### ResourcesManager 的缓存结构
 
-ResourcesManager 内部维护两个映射：
+ResourcesManager 内部维护两组映射：
 
 ```
 ResourcesKey → ResourcesImpl（全局缓存，跨 Activity 共享）
@@ -132,7 +132,7 @@ IBinder (Activity token) → Resources（每个 Activity 独立）
 
 ### 传播路径
 
-Configuration 变更会拆成两条路径：进程级配置派发先更新 App 进程的 Resources，Activity 级配置检查再决定是否 relaunch。
+Configuration 变更沿两条路径传播：先走进程级派发，更新 App 进程的 Resources；再走 Activity 级检查，决定是否 relaunch。
 
 ```
 触发源（Settings / WindowManager / PowerManager 等）

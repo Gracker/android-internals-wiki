@@ -606,3 +606,114 @@ if (swap_free_low_percentage) {
 - 摘要：基于 android-17.0.0_r1 的 lmkd.cpp（4218 行）逐段核读，给出 PSI 三级阈值在 LOW/MEDIUM 同属 PSI_SOME/CRITICAL 走 PSI_FULL 的精确语义；DMA_RECLAIM 与 KSWAPD_RECLAIM 区分路径；kill_heaviest_task 在 PERCEPTIBLE_APP_ADJ 强制切换的细节；per_app_memcg soft_limit_mult 阶梯（oomadj 0-900 区间从 64 降至 0，以 8MB 为基数）；lowmem_min_oom_score 默认 PREVIOUS_APP_ADJ+1=701。明确 LMKD 是单一 daemon，根据内核模块可用性二选一，不存在 v1/v2 双守护进程；2026-06-30 中的 "LMK_PROCS_PRIO (id=11)" 在两条路径都适用。
 - 注入时间：2026-07-01
 - 价值：精确化 AppFlow 三段式与 AOSP 17 LMKD 的接入代码锚点；指出 kill_heaviest_task 在 PERCEPTIBLE_APP_ADJ 强制切换会"吃掉"AppFlow ΔM 评估机会；明确 LMKD v2/v1 不是独立 daemon 版本而是运行模式选择，避免读者误读术语
+
+
+<!-- AIW-源码调研-2026-07-04 -->
+
+## LMK_PROCS_PRIO 批量协议与 thrashing 衰减——主线与 fork 的事实边界（2026-07-04 调研补充）
+
+基于 `android-17.0.0_r1` 主线 `system/memory/lmkd/lmkd.cpp`（4218 行）/ `include/lmkd.h`（385 行）/ `frameworks/base/services/core/java/com/android/server/am/ProcessList.java`（6193 行）/ `CachedAppOptimizer.java`（3092 行）的源码实测，本节对前几轮调研中的 fork 特定声明做事实校正。
+
+### 1. LMK_PROCS_PRIO 在主线的真实形态（≠ io_uring）
+
+**主线无 io_uring**——`io_uring` 关键字在 lmkd.cpp 中出现 0 次。2026-07-03 调研中的 `handle_io_uring_procs_prio`、`PROCS_PRIO_MAX_RECORD_COUNT = 32`、`lmk_io_uring_ring` 是 AOSPA fork（vauxite 分支 5158 行）扩展，**不在 AOSP 主线**。
+
+**主线批量上限 = 3**（`lmkd.h:49` `MAX_PROCS_PRIO_RECORD_COUNT = 3` + `ProcessList.java:1554` `MAX_PROCS_PRIO_PACKET_SIZE = 3`），Java 端 `ProcessList.java:1554-1592 batchSetOomAdj` 按每批 3 个进程切包。
+
+**主线 cmd_procs_prio 是同步串行**（`lmkd.cpp:1512-1524`）：
+
+```cpp
+static void cmd_procs_prio(LMKD_CTRL_PACKET packet, const int field_count, struct ucred* cred) {
+    struct lmk_procs_prio params;
+    const int procs_count = lmkd_pack_get_procs_prio(packet, &params, field_count);
+    if (procs_count < 0) {
+        ALOGE("LMK_PROCS_PRIO received invalid packet format");
+        return;
+    }
+    for (int i = 0; i < procs_count; i++) {
+        apply_proc_prio(params.procs[i], cred);
+    }
+}
+```
+
+每个进程单独打开 `/proc/{pid}/oom_score_adj` 写——不存在异步队列。
+
+**包络矩阵**（主线 vs fork vs 2026-07-03 调研声明）：
+
+| 协议特性 | 主线 AOSP 17 | AOSPA fork（vauxite） | 2026-07-03 调研声明 |
+|---|---|---|---|
+| LMK_PROCS_PRIO id | 11（`lmkd.h:41`） | 11 | ✅ 一致 |
+| 单包最大记录数 | 3 | 32（fork 扩展） | 32（fork 数值） |
+| 异步 IO | 同步串行 | io_uring | "io_uring"（fork 能力） |
+| Java 端镜像常量 | `MAX_PROCS_PRIO_PACKET_SIZE = 3`（`ProcessList.java:1554`） | fork 可能已改 | fork 视角 |
+
+### 2. Memory Reclaim Priority 的协同实现（主线事实）
+
+主线**没有**名为 "Memory Reclaim Priority" 的独立 API。优先级由三部分协同：
+
+**2.1 oom_score_adj 阶梯**（`ProcessList.java:69-71` 引用 `Constants.CACHED_APP_*` + `ProcessList.java:1144/1724/5130-5131`）：MAX_ADJ=999 / LMK_FIRST_ADJ=950 / MIN_ADJ=900。
+
+**2.2 per-app memcg soft_limit_mult 阶梯**（`lmkd.cpp:1149-1186`）：
+
+| oomadj 区间 | mult | 实际软上限 (×8MB) | 备注 |
+|---|---|---|---|
+| ≥ 900 (cached) | 0 | 0 | 完全受 LMK 接管 |
+| ≥ 800 | 0 | 0 | |
+| ≥ 700 | 0 | 0 | |
+| ≥ 600 (LAUNCHER) | 1 | 8MB | `oom_adj_score` 强制重设到 200 |
+| ≥ 500 | 0 | 0 | |
+| ≥ 400 | 0 | 0 | |
+| ≥ 300 (PERCEPTIBLE) | 1 | 8MB | |
+| ≥ 200 (VISIBLE) | 8 | 64MB | |
+| ≥ 100 (PERCEPTIBLE_REPL) | 10 | 80MB | |
+| ≥ 0 (FOREGROUND) | 20 | 160MB | |
+| 负数 (persistent) | 64 | 512MB | |
+
+**2.3 PSI 三级阈值**（`lmkd.cpp:231-235`）：LOW=PSI_SOME/70ms, MEDIUM=PSI_SOME/100ms, CRITICAL=PSI_FULL/70ms。
+
+**AppFlow 接入点**：通过 `LMK_PROCS_PRIO`（单批 3 个进程限制，主线确认）把"即将启动"应用从 cached（>=900）降到 PERCEPTIBLE/VISIBLE（<=300），同步更新 memcg.MemSoftLimit。这是主线在不破坏 GKI 前提下最可行的"启动期保护"路径。
+
+### 3. Adaptive Background Activity Manager 的拆解（主线事实）
+
+主线**没有**统一类。背景应用调度由三套独立机制协同：
+
+**3.1 CachedAppOptimizer + CompactProfile**（`CachedAppOptimizer.java:393-398`）：枚举 `NONE/SOME/ANON/FULL`。`onProcessFrozen` 回调（`CachedAppOptimizer.java:1705-1713`）对 adj ≥ `mCompactThrottleMinOomAdj` 的 cached 进程触发 `CompactProfile.FULL`。`resolveCompactionProfile`（`CachedAppOptimizer.java:1728-1746`）在 `swapFreePercent < 0.2` 时把 FULL 降级为 SOME。
+
+**3.2 ProcessList 阈值**（`ProcessList.java:243-249`）：`MIN_CACHED_APPS = 2` / `TRIM_CRITICAL_THRESHOLD = 3` / `TRIM_LOW_THRESHOLD = 5` —— 基于 cached 进程数，不是 PSI 或 ΔM。
+
+**3.3 BackgroundStartPrivileges**：通过 `AMS.isBackgroundActivityStartsEnabled` + `ro.config.allow_background_activity_start` 控制，**与内存管理正交**。
+
+### 4. thrashing 衰减机制（主线完整实现，与前几轮一致）
+
+**触发**（`lmkd.cpp:3075-3095`）：`wmark < WMARK_HIGH && thrashing > thrashing_limit` 或 `reclaim == DIRECT_RECLAIM && thrashing > thrashing_limit` 时 `cut_thrashing_limit = true`。
+
+**衰减**（`lmkd.cpp:3153-3158`）：
+
+```cpp
+if (pages_freed > 0) {
+    killing = true;
+    max_thrashing = 0;
+    if (cut_thrashing_limit) {
+        thrashing_limit = (thrashing_limit * (100 - thrashing_limit_decay_pct)) / 100;
+    }
+}
+```
+
+**重置**（`lmkd.cpp:2953, 2971`）：达到 `THRASHING_RESET_INTERVAL_MS` 或 thrashing 下降后 `thrashing_limit = thrashing_limit_pct`。
+
+**AppFlow 接入边界**：thrashing 衰减机制本身**不感知启动窗口**。截至 AOSP 17 主线，**没有公开属性可以在进程级覆盖 `thrashing_limit`**——只能通过 `ro.lmk.thrashing_limit` sysprop 全局配置。这进一步印证"启动期文件页保护"在主线不可行的边界。
+
+### 5. 与前几轮调研的边界声明
+
+- **06-27 调研**：AppFlow 三段式在 AOSP 17 主线不存在 —— **本节不反驳**
+- **06-30 调研**：三阶段接入路线（应用+平台 → CachedAppOptimizer → vendor kernel）—— **本节精确化"平台层"路径**
+- **07-01 调研**：PSI 三级阈值、kill_heaviest_task、per_app_memcg 接入锚点 —— **本节与之对齐，无冲突**
+- **07-03 调研**：基于 AOSPA fork 5158 行的 io_uring 实现 —— **本节做事实校正**：该 fork 能力不进入 AOSP 主线，主线仍是同步串行 + 单批 3 上限
+
+**对 07-03 调研保留**：`thrashing 触发条件 / 衰减公式`、`CompactProfile 降级阈值`、`LAUNCHER 多重映射`、`PSI 三级阈值语义`、`kill_heaviest_task 在 PERCEPTIBLE_APP_ADJ 强制切换`、`per_app_memcg soft_limit_mult 阶梯` —— 这些主线声明与 07-03 调研一致。
+
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 主线源码实测（lmkd.cpp 4218 行/lmkd.h/ProcessList.java 6193 行/CachedAppOptimizer.java 3092 行），对 2026-07-03 调研中的 AOSPA fork 特定声明做事实校正：LMK_PROCS_PRIO 主线单批上限是 3 不是 32，主线无 io_uring 关键字，cmd_procs_prio 是同步串行。同时明确"Memory Reclaim Priority"和"Adaptive Background Activity Manager"在主线没有统一类，而是由 oom_score_adj+PSI+per_app_memcg / CachedAppOptimizer+ProcessList+BackgroundStartPrivileges 三套机制协同实现。包络矩阵表（主线 vs fork vs 调研声明）作为事实边界参考。
+- 注入时间：2026-07-04
+- 价值：明确 LMK_PROCS_PRIO 在 AOSP 17 主线的真实形态（不是 io_uring 异步），避免读者把 AOSPA fork 能力误认为平台默认；给出 soft_limit_mult 阶梯的完整表（含 LAUNCHER 的 oom_adj_score 强制重设到 200 这条容易被忽略的事实）；确认"启动期文件页保护"在主线不可行的边界（thrashing_limit 没有进程级覆盖属性）
