@@ -642,6 +642,12 @@
       "task6_date": "2026-07-04",
       "task6_result": "pass-light-edit",
       "notes": "L1轻修(元叙述)，自动晋升finalized"
+    },
+    "15.9": {
+      "last_action": "task2b-rework",
+      "last_action_at": "2026-07-04T10:53:23+08:00",
+      "status": "fixed-sent-to-task6",
+      "pipeline_stage": "task6_pending"
     }
   },
   "task2a": {
