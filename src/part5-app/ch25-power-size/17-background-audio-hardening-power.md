@@ -3,7 +3,7 @@
 title: "Android 17 后台音频硬化与播放功耗治理"
 chapter: "25.17"
 section: "25.17"
-status: ready-for-review
+status: revisiting
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-02"
@@ -57,8 +57,10 @@ last_task6_audit: "2026-06-28"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
 task9_result: auto-fixed
-task2b_state: fixed
-task2b_verifier_note: "2026-07-04T15:30:08+08:00 task9_state reviewed→pending: Task6 已于 07-04 复审通过，章节等待 Task9 复审"
+task2b_state: revisiting
+task2b_verifier_note: "2026-07-04T18:20:00+08:00 Task9 deep-review: P1 shell 命令错误需修正，返回 Task6 复审"
+task6_state: revisiting
+pipeline_stage: task6_pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-04"
 last_task9_at: "2026-07-02T14:29:53+08:00"
@@ -75,6 +77,7 @@ last_task9_audit_log: "logs/deep-review/2026-07-02-14-audit.md"
 last_task9_autofix_at: "2026-07-02"
 updated_by: openclaw-task9
 updated_date: "2026-07-02"
+task2b_lite_note: "2026-07-04 Task2B Lite 验证: set-hardening enable/throw/clear-hardening 命令已正确，无需修改。证据锚定 AudioManagerShellCommand.java:182-185,517-563。queue P90 条目标记 skipped-false-positive。"
 ---
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
