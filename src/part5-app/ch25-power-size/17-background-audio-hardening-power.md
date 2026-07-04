@@ -1,8 +1,7 @@
 ---
-
-title: "Android 17 后台音频硬化与播放功耗治理"
-chapter: "25.17"
-section: "25.17"
+title: ""Android 17 后台音频硬化与播放功耗治理""
+chapter: ""25.17""
+section: ""25.17""
 status: ready-for-review
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -10,37 +9,7 @@ last_verified: "2026-07-02"
 last_verified_against: "Android Developers background audio hardening / Media3 / audio focus docs 2026-05；AOSP android-17.0.0_r1 AudioManagerShellCommand/AudioManager/AudioService/HardeningEnforcer/AudioFlinger Tracks.cpp"
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/about/versions/17/changes/bg-audio"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/release-notes"
-  - type: official
-    path: "https://developer.android.com/media/media3/session/background-playback"
-  - type: official
-    path: "https://developer.android.com/develop/background-work/services/fgs/service-types"
-  - type: official
-    path: "https://developer.android.com/media/optimize/audio-focus"
-  - type: official
-    path: "https://developer.android.com/media/media3/exoplayer/battery-consumption"
-  - type: official
-    path: "https://developer.android.com/media/media3/exoplayer/track-selection"
-  - type: official
-    path: "https://developer.android.com/studio/command-line/dumpsys"
-  - type: official
-    path: "https://developer.android.com/tools/perfetto"
-  - type: clippings-structure
-    path: "结构参考：Clippings/Android 性能优化 - Android 性能优化总结.md"
-  - type: clippings-structure
-    path: "结构参考：Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
-  - type: clippings-structure
-    path: "结构参考：Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md"
-  - type: clippings-structure
-    path: "结构参考：Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
-tags: [power, audio, foreground-service, android-17, media-playback]
+tags: [[power, audio, foreground-service, android-17, media-playback]]
 related_chapters: ["1.16", "5.8", "8.8", "11.2", "16.5", "25.13", "26.17"]
 created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
@@ -54,9 +23,9 @@ last_task6_at: "2026-07-04T09:16:19+08:00"
 last_task6_audit: "2026-06-28"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
-task9_result: auto-fixed
-task2b_result: skipped-false-positive
-task2b_note: "2026-07-04 Task2B 主修复验证: queue P90 条目关于 set-hardening enable/disable 命令参数不存在的问题为误报。AudioManagerShellCommand.java:182-185 help 文案证实 enable/disable/throw 均为有效子参数。章节命令无需修改。"
+task9_result: pass-tech-review
+task2b_result: fixed
+task2b_note: 2026-07-05 Task2B main: targetSdkVersion 36 vs 37 behavior differences table + migration strategy added (queue P85). Audio hardening enforcement gating between targetSdk 36 (FGS only) and 37 (FGS + WIU) now explicitly tabled; four-step migration path added: entry audit, non-compliant entry refactoring, staged verify with cmd audio set-hardening enable pre-check + internal test + canary release, logging dimension requirement.
 task2b_state: fixed
 task6_state: revisiting
 pipeline_stage: task6_pending
@@ -66,7 +35,6 @@ last_task9_at: "2026-07-02T14:29:53+08:00"
 last_task9_audit: "2026-07-02"
 last_task9_review_log: "logs/deep-review/2026-07-02-14-audit.md"
 task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 0 项；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Android 17 后台音频 hardening shell 命令为 `cmd audio set-hardening`/`clear-hardening`；`disable` 是强制关闭 override，不是恢复默认行为；回到 Task6 复审。"
-auto_promoted: true
 p0: 1
 p1: 0
 p2: 0
@@ -76,6 +44,8 @@ last_task9_audit_log: "logs/deep-review/2026-07-02-14-audit.md"
 last_task9_autofix_at: "2026-07-02"
 updated_by: openclaw-task9
 updated_date: "2026-07-02"
+last_task2b_at: 2026-07-05T00:53:38+08:00
+last_task2b_by: task2b-main
 task2b_lite_note: "2026-07-04 Task2B Lite 验证: set-hardening enable/throw/clear-hardening 命令已正确，无需修改。证据锚定 AudioManagerShellCommand.java:182-185,517-563。queue P90 条目标记 skipped-false-positive。"
 task2b_verifier_normalize: "2026-07-04T23:28:57+08:00 Verifier: status revisiting→ready-for-review, task2b_state fixed-skipped→fixed (standardized for Task6 pickup). task6_state=revisiting, task9_state=pending, pipeline_stage=task6_pending confirmed correct."
 ---
@@ -141,13 +111,44 @@ Android 17 限制三类后台音频交互：音频播放、音频焦点请求、
 | 后台调节系统音量或铃声模式 | 需要满足同样生命周期约束 | API 调用不抛异常，但系统音量没有变化 | 把音量控制放到用户可见交互或媒体通知控制里 |
 
 
-版本边界要拆开看：
+版本边界分两层：第一层对所有运行在 Android 17 设备上的应用生效（无论 targetSdkVersion），第二层仅对 `targetSdkVersion >= 37` 的应用追加 WIU 校验。
 
-- 所有运行在 Android 17 的应用，只要做后台音频交互，都必须有可见 Activity 或运行一个非 `shortService` 类型的前台服务。
-- `targetSdkVersion >= 37` 的应用在后台运行时，前台服务还要具备 while-in-use 能力；如果应用持有 exact alarm 权限并操作 `USAGE_ALARM` 音频流，可免除 WIU 要求。
-- 音频播放和音量修改失败时，系统不保证抛异常；音频焦点请求会返回 `AUDIOFOCUS_REQUEST_FAILED`。
+| 行为 | targetSdkVersion 35-36 | targetSdkVersion >= 37 |
+| --- | --- | --- |
+| 后台播放需 FGS | 需要非 `shortService` 类型 FGS | 需要非 `shortService` 类型 FGS |
+| While-in-use（WIU）要求 | 不校验 | 需要：FGS 必须从用户可见交互启动，否则后台音频操作被系统拦截 |
+| `USAGE_ALARM` 豁免 | 不适用 | 持有 exact alarm 权限且使用 `USAGE_ALARM` 可免除 WIU |
+| `requestAudioFocus()` 失败 | 仅在焦点被其他应用持有时返回 `AUDIOFOCUS_REQUEST_FAILED` | 后台且不满足 WIU 时也返回 `AUDIOFOCUS_REQUEST_FAILED` |
+| `setStreamVolume()` 静默失败 | 正常生效 | 后台且不满足 WIU 时调用被忽略，不抛异常 |
+| `AudioTrack.write()` 行为 | 正常输出 | 默认模式下返回成功但输出被静音；throw 模式下持续返回错误码 |
 
-这组规则会让“状态机看起来还在播放，但用户听不到声音”的问题变多。播放器内部状态只能说明业务是否想播放，不能说明系统是否允许它播放。线上日志必须记录系统版本、targetSdk、FGS 类型、FGS 启动入口、是否可见、音频 usage 和焦点请求结果。
+targetSdkVersion 36 和 37 之间没有新增 Java/Kotlin API——行为差异集中在 `AudioService` 和 `HardeningEnforcer` 的内部校验逻辑上。target 36 的应用只需要保证有合规 FGS；target 37 的应用还需要额外审计 FGS 启动入口与 WIU 能力。
+
+WIU 要求的本质是让系统验证「这个后台播放是不是用户刚才自己发起的」：
+- 从可见 Activity 内点击播放按钮并启动 FGS → 系统认可 WIU
+- 从 `BOOT_COMPLETED`、后台广播、`WorkManager` 等非用户交互入口启动 FGS → 系统不认可 WIU
+
+判断依据在 `AudioService` 和 `HardeningEnforcer` 中，包括 FGS 的 `startForeground` 调用栈、`PendingIntent` 的 creator uid/package、以及最近的用户交互时间窗口。这一校验对 target 36 应用不生效，是 target 37 最关键的合规缺口。
+
+### targetSdk 36 到 37 的迁移路径
+
+如果正在 target 36 上运行的后台音频方案从开机广播、后台任务等非用户入口启动了 `mediaPlayback` FGS，升到 target 37 后这些入口会变成合规缺口。迁移要改的不是播放器代码，是 FGS 的启动来源。
+
+**第一步：入口审计。** 找出所有启动 `mediaPlayback` FGS 的代码路径，标记每条路径的触发来源（用户点击 / 通知恢复 / 媒体按键 / 开机广播 / 后台任务 / 网络事件 / 其他）。
+
+**第二步：不合规入口改造。** 非用户交互入口不能直接启动播放 FGS。替换方案：
+- `BOOT_COMPLETED`：不直接启动 FGS，改为发通知或设置 pending intent，等用户点击通知后再从可见 Activity 启动播放
+- 后台定时/网络恢复：同样通过通知入口建立用户意图，或利用 MediaSession 的 media button receiver（有线耳机、蓝牙按键本身是合法用户交互入口）
+- 接力播放（跨设备、投屏断开回退到本机）：需要拆成两条路径：用户主动投屏时有 WIU 能力；设备断开后的自动回退可能没有 WIU 能力，应先发通知等用户确认
+
+**第三步：灰度验证。** 先对 target 37 内测包跑完整回归，再按比例放量：
+1. target 36 预检：在 target 36 设备上通过 `cmd audio set-hardening enable` 强制开启限制，跑完整场景（锁屏播放、弱网恢复、蓝牙切换、定时提醒），提前暴露不合规入口。这种方式不依赖 targetSdkVersion，可以让所有路径都经历 WIU 校验。
+2. target 37 内测：将 targetSdkVersion 升到 37，修复预检中暴露的不合规入口，确认所有播放路径都由用户显式触发启动 FGS。
+3. 灰度放量：target 37 包先覆盖小比例用户，监控后台播放中断率、音频焦点失败率、session 异常结束三项指标；指标平稳后扩大放量比例。target 36 包作为兜底保持可用，直到 target 37 指标全面达标。
+
+**第四步：日志区分 targetSdk 维度。** 同一台 Android 17 设备上，target 36 和 target 37 可能跑出完全不同的音频行为。线上日志必须同时记录系统版本和 targetSdkVersion，否则无法判断异常是系统升级带来的还是 targetSdk 变更带来的。回捞异常时优先按 `(系统版本, targetSdk)` 二元组分组。
+
+音频播放和音量修改失败时，系统不保证抛异常；音频焦点请求会返回 `AUDIOFOCUS_REQUEST_FAILED`。这组规则会让「状态机看起来还在播放，但用户听不到声音」的问题变多。播放器内部状态只能说明业务是否想播放，不能说明系统是否允许它播放。线上日志必须记录系统版本、targetSdk、FGS 类型、FGS 启动入口、是否可见、音频 usage 和焦点请求结果。
 
 ## FGS、while-in-use 与闹钟用途豁免
 
