@@ -657,7 +657,7 @@
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-07-04T12:08:00+08:00",
+      "last_task6_at": "2026-07-04T13:09:00+08:00",
       "review_log": "logs/review/2026-07-04-12-review.md"
     },
     "26.10": {
