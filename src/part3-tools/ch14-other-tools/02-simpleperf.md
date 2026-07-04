@@ -47,9 +47,9 @@ task6_new_rework: false
 last_task2b_by: openclaw-task2b-main
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-22
-last_task6_audit: "2026-06-23"
-last_task6_audit_at: '2026-06-16T18:00:00+08:00'
-last_task6_audit_reason: 'idle audit: L1合规性、frontmatter完整性、outline锚点覆盖检查均通过'
+last_task6_audit: "2026-07-04"
+last_task6_audit_at: '2026-07-04T17:11:54+08:00'
+last_task6_audit_reason: 'idle audit: L1扫描修复3处禁用词(链路→调用过程/启动流程/折叠流程)，高频词/否定纠正/元叙述/物理动词均零命中，frontmatter完整，无outline块(工具章节不适用)'
 ---
 
 --
@@ -442,10 +442,10 @@ adb shell simpleperf record -a --duration 30 -o /data/local/tmp/p.data
 
 1. **`process_name` 取自 `/proc/<pid>/cmdline`**——Android 上 cmdline 第一行就是 process name
 2. **冒号后缀进程**：`com.example.app:search` 这种 `<package>:<processName>` 派生进程在 Manifest 的 `android:process=":search"` 声明。simpleperf 把冒号截断后只比前缀，所以多进程应用的所有派生进程一次性全部加入监控集合
-3. **`HasOpenedAppApkFile()` 是关键过滤器**：遍历 `/proc/<pid>/fd/*` 找以 `/data/app/...` 或 `/system/app/...` 开头的符号链接，过滤掉 wrap.sh → logwrapper → sh → app 链路中的中间进程 [已验证：environment.cpp 522-536，注释引用 b/79114763 修复日志]
+3. **`HasOpenedAppApkFile()` 是关键过滤器**：遍历 `/proc/<pid>/fd/*` 找以 `/data/app/...` 或 `/system/app/...` 开头的符号链接，过滤掉 wrap.sh → logwrapper → sh → app 调用过程中的中间进程 [已验证：environment.cpp 522-536，注释引用 b/79114763 修复日志]
 4. **轮询策略**：`usleep(1000)` 1ms 间隔，无超时上限
 
-> **实战陷阱**：Android Studio Debug 模式注入的 `wrap.sh` 启动链路下，logwrapper/sh/wrap.sh 进程都会被过滤掉，**只有真正执行 `app_process` 的进程被加入**。profileable 应用（release + `<profileable android:shell="true" />`）不走 wrap.sh，直接通过 `run-as` 切换 uid，无此问题。
+> **实战陷阱**：Android Studio Debug 模式注入的 `wrap.sh` 启动流程下，logwrapper/sh/wrap.sh 进程都会被过滤掉，**只有真正执行 `app_process` 的进程被加入**。profileable 应用（release + `<profileable android:shell="true" />`）不走 wrap.sh，直接通过 `run-as` 切换 uid，无此问题。
 
 #### 子进程继承：inherit 标志
 
@@ -781,7 +781,7 @@ uint64_t mlock_kb = cpus * (mmap_page_range_.second + 1) * 4;
 
 8 核 + `-m 1024`（默认）≈ 32MB 锁定；`-m 65536`（256MB 缓冲）≈ 2GB 锁定预算，**会触发 sepolicy 截断**。`-m` 值必须为 2 的幂（`cmd_record.cpp:1146-1151` `IsPowerOfTwo` 校验）。
 
-#### 进程 mmap record 折叠链路
+#### 进程 mmap record 折叠流程
 
 | 阶段 | 源码位置 | 关键行为 |
 |------|---------|---------|
