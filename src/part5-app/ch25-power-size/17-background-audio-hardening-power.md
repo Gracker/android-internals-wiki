@@ -46,8 +46,6 @@ created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
-pipeline_stage: task9_pending
-task6_state: "reviewed"
 task9_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-07-04"
@@ -57,8 +55,9 @@ last_task6_audit: "2026-06-28"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
 task9_result: auto-fixed
-task2b_state: revisiting
-task2b_verifier_note: "2026-07-04T18:20:00+08:00 Task9 deep-review: P1 shell 命令错误需修正，返回 Task6 复审"
+task2b_result: skipped-false-positive
+task2b_note: "2026-07-04 Task2B 主修复验证: queue P90 条目关于 set-hardening enable/disable 命令参数不存在的问题为误报。AudioManagerShellCommand.java:182-185 help 文案证实 enable/disable/throw 均为有效子参数。章节命令无需修改。"
+task2b_state: fixed-skipped
 task6_state: revisiting
 pipeline_stage: task6_pending
 task9_reviewed_by: openclaw-task9

@@ -790,6 +790,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-07-04T10:26:15.816768+00:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-07-04T12:52:13.940187+00:00",
+    "completed_reason": "skipped-false-positive",
+    "completed_note": "Task2B 主修复验证：set-hardening enable/throw 和 clear-hardening 均为 AOSP android-17.0.0_r1 中正确命令。AudioManagerShellCommand.java:182-185 help 文案为 \"set-hardening <1|enable|0|disable|throw>\"，enable/disable/throw 是有效子参数。Task2B Lite 已先行验证并锚定源码。本章节命令无需修改。"
   }
 ]
