@@ -182,3 +182,52 @@
   - Android 17 ML 调度器 14 分但已在 ch1.43 覆盖
   - Linux 6.10 内存碎片 10 分，已在 ch6.19 覆盖
 - **结论**: 0 个 ≥14 分新候选，连续 21 轮覆盖饱和
+
+
+## [Task9 Deep Review] 13.12 Perfetto Profile 导入与 Flamegraph 分析 — 2026-07-05
+
+- **类型**：版本说明
+- **位置**：适用版本说明部分
+- **问题**：文中提到 "Perfetto linux.perf data source 的采集前提需要单独说明：Perfetto 官方文档标注 Android command line 路径要求 **Android 15+** 设备"，但未明确说明这是指 API level 35 还是 Android 版本号
+- **建议**：在适用版本描述中明确标注 "Android 15 (API 35) - Android 17 (API 37)"，避免版本号混淆
+
+## [Task9 Deep Review] 13.12 Perfetto Profile 导入与 Flamegraph 分析 — 2026-07-05
+
+- **类型**：原理解释
+- **位置**：采样频率建议部分
+- **问题**：文中提到 "Perfetto 文档建议 Android 上非 native 调用栈采样频率低于 200Hz，避免 unwinder 压力反过来干扰被测场景"，但未解释为什么 200Hz 是分界线
+- **建议**：补充 unwinder 压力影响的具体机制，说明 200Hz 以上采样会导致 unwinder 过载的原理
+
+## [Task9 Deep Review] 13.12 Perfetto Profile 导入与 Flamegraph 分析 — 2026-07-05
+
+- **类型**：知识盲区
+- **位置**：多核分析策略
+- **问题**：未讨论多核设备上不同 CPU 核心的 profiling 策略差异
+- **建议**：补充多核设备上的 profiling 策略，包括 big.LITTLE 架构下的采样优化建议
+
+## [Task9 Deep Review] 13.12 Perfetto Profile 导入与 Flamegraph 分析 — 2026-07-05
+
+- **类型**：知识盲区
+- **位置**：功耗影响
+- **问题**：未说明 profiling 过程本身对设备功耗和性能的干扰
+- **建议**：补充 profiling 对设备功耗和性能的影响分析，以及如何最小化干扰的实用建议
+
+
+## 2026-07-05 06:07 知识缺口挖掘检查记录（Round 22）
+- **检查方向**: 
+  1. 全书空 draft 扫描（0 个空 draft）
+  2. Task2B backlog = 0（允许挖掘）
+  3. source-index.json 38 条素材中无 quality≥16 且 unmapped 的条目
+  4. research-feeds 近期 5 篇已全部映射
+  5. 全书 589 文件关键词反查（App Cloning/Wear OS/Health Connect/SafetyCore/Direct Share/MediaProjection/JVMTI/Smart Recapture 等 27 个关键词）
+  6. 对照 Clippings 三本参考书（稳定性 25 篇 / 性能优化 22 篇 / 线上疑难 58 篇）章节结构
+- **新检查候选**:
+  1. App Cloning / Multi-User Performance Isolation — 素材1×相关3×需求3×时效5 = 12
+  2. Wear OS / Wearable Performance — 素材2×相关2×需求3×时效3 = 10
+  3. SafetyCore / Security Center Performance — 素材1×相关2×需求2×时效5 = 10
+  4. Direct Share / Sharing Shortcuts Performance — 素材2×相关2×需求3×时效2 = 9
+  5. MediaProjection / Screen Capture Pipeline — 13（与 Round 1 一致，维持不达标）
+- **评估结果**: 0 个 ≥14 分新候选，连续 22 轮覆盖饱和
+- **结论**: 全书覆盖范围极度完整。建议下轮可关注：
+  - Android 17 App Cloning 对进程隔离和内存计费的性能影响（待公开素材增多后重评）
+  - SafetyCore API 在性能链路中的开销（待官方文档补充）
