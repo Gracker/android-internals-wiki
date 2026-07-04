@@ -76,7 +76,7 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T18:20:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-18-review.md"
-last_task6_audit: "2026-05-26"
+last_task6_audit: "2026-07-04"
 review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 task6 revisit: pass-light-edit。清理重复 frontmatter 并复审 Task2B 修复后的 Binder SQL 段；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。 | 2026-06-20 Task9 闲时抽检：auto-fixed。Android 17/API 37 公开 tag 已可核验；FrameTimeline.cpp 在 Android 17 移至 Scheduler/FrameTimeline.cpp，JankInfo.h 新增 NonAnimating/AppResyncedJitter/DisplayNotOn/DisplayModeChangeInProgress/DisplayPowerModeChangeInProgress；已修正源码锚点、版本边界和旧待验证枚举口径，回到 Task6 复审。 | 2026-06-21 Task9 00:25：pass-tech-review。P0/P1/P2 0；复核 Android 17 FrameTimeline/JankInfo、Perfetto android.frames.timeline/android.binder SQL 列、Android vitals/JankStats 官方口径；queue 无 pending，基于 task6_result=pass-light-edit 自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
@@ -298,8 +298,6 @@ Android 12 之前没有 FrameTimeline。那时只能靠 `Choreographer#doFrame`�
 ### Binder 阻塞如何佐证 AppDeadlineMissed
 
 在实战中，`AppDeadlineMissed` 的一类常见根因是 Binder 阻塞——主线程或 RenderThread 在帧周期内调了 Binder，被远端卡住了。但要记住，Binder 阻塞本身不等于某一类 JankType，需要回到 FrameTimeline 的 deadline 体系里做因果连接。
-
-Binder 调用出现在 App 主线程或 RenderThread 的帧关键路径上时，会造成 App 侧交帧延迟。但 Binder 阻塞本身不等于某一类 JankType——需要回到 FrameTimeline 的 deadline 体系里做因果连接。
 
 #### Binder 阻塞定位为帧关键路径证据
 
