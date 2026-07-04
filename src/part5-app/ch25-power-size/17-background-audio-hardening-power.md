@@ -46,20 +46,20 @@ created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
-pipeline_stage: task6_pending
-task6_state: "revisiting"
+pipeline_stage: task9_pending
+task6_state: "reviewed"
 task9_state: reviewed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-24"
+reviewed_date: "2026-07-04"
 task6_result: "pass-light-edit"
-last_task6_at: "2026-05-24T05:09:00+08:00"
+last_task6_at: "2026-07-04T09:16:19+08:00"
 last_task6_audit: "2026-06-28"
 last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
 task9_result: auto-fixed
 task2b_state: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-02"
+task9_reviewed_date: "2026-07-04"
 last_task9_at: "2026-07-02T14:29:53+08:00"
 last_task9_audit: "2026-07-02"
 last_task9_review_log: "logs/deep-review/2026-07-02-14-audit.md"
@@ -87,7 +87,7 @@ updated_date: "2026-07-02"
 ### 🔹 FGS、while-in-use 与闹钟用途豁免
 说明 `mediaPlayback` 前台服务、while-in-use 能力、exact alarm 权限和 `USAGE_ALARM` 之间的组合关系，避免把 FGS 类型声明误当成通行证。
 
-### 🔹 播放链路上的失败信号
+### 🔹 播放路径上的失败信号
 整理 `AudioManager.requestAudioFocus()`、MediaSession 状态、播放器回调、`AudioTrack` 写入停止和系统日志之间的对应关系，用于定位“后台无声”“焦点申请失败”“音量控制无效”。
 
 ### 🔹 长时播放的功耗预算
@@ -162,7 +162,7 @@ Android 17 限制三类后台音频交互：音频播放、音频焦点请求、
 
 这套生命周期规则不要和 §25.13 的 FGS 超时治理混在一起。`mediaPlayback` FGS 要表达的是用户可见的持续播放意图；JobScheduler / WorkManager 负责可推迟、可恢复的后台任务。音频播放失败后继续跑下载、预拉取、唤醒保活，只会把体验问题变成纯粹的功耗问题。
 
-## 播放链路上的失败信号
+## 播放路径上的失败信号
 
 Android 17 的难点在于部分失败是静默的。定位时要同时看播放器、音频焦点、系统音频服务和前台服务状态。
 
