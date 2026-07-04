@@ -3,14 +3,14 @@ title: "Flutter 渲染管线"
 chapter: "'18.12'"
 section: "'18.12'"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17"
 tags: ['rendering', 'pipeline']
-reviewed_date: "2026-06-04"
+reviewed_date: "2026-07-04"
 reviewed_by: "\"openclaw-task6\""
 created_by: "rendering-pipelines-merge"
 created_date: "'2026-04-09'"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task6_result: "\"pass-light-edit\""
@@ -25,8 +25,8 @@ repaired_by: "\"openclaw-task2b\""
 last_task9_audit: "2026-06-28"
 last_task9_audit_at: "2026-06-28T11:34:55+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-28-11-audit.md"
-last_task6_at: "\"2026-06-04T15:21:59.742576+08:00\""
-task6_reviewed_date: "2026-06-04"
+last_task6_at: "2026-07-04T09:16:19+08:00"2026-06-04T15:21:59.742576+08:00\""
+task6_reviewed_date: "2026-07-04"
 task6_reviewed_by: "\"openclaw-task6\""
 task6_l1_l2_fixes: "0"
 task6_l3_l4_issues: "0"
@@ -220,7 +220,7 @@ sequenceDiagram
 
 Flutter engine 在 Android 上通过 `VsyncWaiter` 接上宿主 `Choreographer` 的 VSync-App 节拍。这不是"Flutter 自己生成一个 VSync"，而是复用 Android 已有的帧率驱动信号。理解这一层，才能在 Perfetto 中区分"Flutter 自己慢了"和"宿主 VSync 安排出问题了"。
 
-**核心链路**：
+**核心调用链**：
 
 ```
 Android Choreographer / AChoreographer → VsyncWaiterAndroid::AwaitVSync()
@@ -262,7 +262,7 @@ Android Choreographer / AChoreographer → VsyncWaiterAndroid::AwaitVSync()
 - **Hybrid Composition 下 overlay Surface 的承载 View**：`PlatformViewsController.createOverlaySurface(...)` 在 HC 路径里创建 `ImageReader` 提供的 Surface 作为 overlay，结果由 `FlutterImageView` 承载并绘回宿主 View 层级；
 - **`FlutterView.convertToImageView()` 特殊过渡场景**：内部能力，遇到需要把当前 Flutter 内容快照为 image 时使用。
 
-`FlutterImageView` 的渲染链路是：Engine 渲染到 `ImageReader` 提供的 Surface → `acquireLatestImage()` → API 29+ 主要走 `Image` → `HardwareBuffer` → `Bitmap.wrapHardwareBuffer()`（`Config.HARDWARE`）→ `Canvas.drawBitmap` 绘到宿主。Trace 上看到 `FlutterImageView` 相关 slice 时，不要把它当成独立 root render mode 分析——它是 HC overlay 的承载形态。
+`FlutterImageView` 的渲染路径是：Engine 渲染到 `ImageReader` 提供的 Surface → `acquireLatestImage()` → API 29+ 主要走 `Image` → `HardwareBuffer` → `Bitmap.wrapHardwareBuffer()`（`Config.HARDWARE`）→ `Canvas.drawBitmap` 绘到宿主。Trace 上看到 `FlutterImageView` 相关 slice 时，不要把它当成独立 root render mode 分析——它是 HC overlay 的承载形态。
 
 [已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterImageView.java` + `io/flutter/plugin/platform/PlatformViewsController.java` `createOverlaySurface`]
 

@@ -7,18 +7,19 @@ last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfet
 tags: [performance, methodology, perfetto, profiling, optimization, android]
 task9_result: needs-rework
 task6_result: pass-light-edit
-task6_state: revisiting
-task9_state: pending
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: task6_pending
-last_task6_at: "2026-07-04T06:10:00+08:00"
+pipeline_stage: task9_pending
+last_task6_at: "2026-07-04T09:16:19+08:00"
 last_task6_review_log: "logs/review/2026-07-04-06-review.md"
-last_task9_at: "2026-07-04T02:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-07-04-02-deep-review.md"
+last_task9_at: "2026-07-04T08:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-04-08-deep-review.md"
 task6_review_notes_final: "2026-07-02 Task6 revisiting-review round3 (post-Task2B-structural): pass-light-edit. L1 fix×3 (关键是→要, 链路→链, 舒服→自我安慰). L2 pass. No B-class issues. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task2B-content-rework + Task9-autofix): pass-light-edit. L1 clean (banned-word scan: 0 real hits, 3 false positives). L2 pass (opening direct, structure clear, breathing points adequate). L3/L4: no B-class writing issues. FrameRateOverrides section (4.4) well-written, SQL examples properly formatted. DeviceConfig section (3.2) clean. Auto-promotion blocked: task9_result=auto-fixed (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task6_review_notes_round5: "2026-07-04 Task6 revisiting-review round5 (post-Task2B-lite-fix source path prefix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits. Restricted patterns: 2 (at limit). Structural meta-narrative: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, reader takeaways solid). L3 pass (evidence-backed, actionable SQL/bash examples, original frameworks). L4 pass (natural Chinese, peer-to-peer tone, no translation feel). No L1/L2 fixes needed this round. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task6_review_notes_round6: "2026-07-04 Task6 revisiting-review round6 (post-Task2B-lite source-path-prefix fix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 上分=substring of 线上分布 false positive; 问题是=part of 5W2H framework description false positive). High-freq words all within limits (其实×1, 彻底×1). Restricted patterns: 2 (not...而是 at limit). Structural meta-narrative: 0. Adjective+colon: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source code anchored to android-17.0.0_r1, original frameworks like 3-tier baseline and 5-Whys walkthrough). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). L1 fix: tags field filled [performance, methodology, perfetto, profiling, optimization, android]. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
+task6_review_notes_round7: "2026-07-04 Task6 revisiting-review round7: pass-light-edit. L1 fix×1 (其实是口水过渡词→删除). Banned-word scan: 链路=0(OK), 其实=0(after fix). High-freq words all within limits. Restricted patterns: 2 (not...而是 at limit). Structural meta-narrative: 0. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task2b_result: fixed-lite
 last_task2b_at: "2026-07-04T06:54:37+08:00"
 last_task2b_lite_at: 2026-07-04
@@ -312,7 +313,7 @@ heapprofd 需要在 Perfetto config 中显式开启。**构建类型决定 heapp
 
 先看分布，再看平均值。平均值掩盖离散度。启动 P50 1.5s 看起来不错，但如果 P99 是 8s，说明有长尾用户在糟糕的体验里——长尾通常是机型、网络或内存状态导致的。修长尾和修中位数是两套策略。
 
-切分维度后再看趋势。按机型、系统版本、网络类型、时段分开后看指标变化。如果总体启动变快了但不分维度——可能是某款新机型占比提升拉低了 P50，而老机型的体验其实在退化。
+切分维度后再看趋势。按机型、系统版本、网络类型、时段分开后看指标变化。如果总体启动变快了但不分维度——可能是某款新机型占比提升拉低了 P50，而老机型的体验在退化。
 
 异常值不要自动丢弃。P99.9 的极端值往往是某个机型组合触发了一个边界条件——不是随机的网络中断。单次 OOM 的 trace 比一百次正常的 trace 更有诊断价值。
 

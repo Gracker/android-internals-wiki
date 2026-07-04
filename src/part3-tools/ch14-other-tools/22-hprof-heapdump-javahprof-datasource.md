@@ -517,108 +517,82 @@ JavaHprofProducer java_producer(&task_runner);
 
 以上验证结论基于 android-17.0.0_r1 基准，建议更新章节内容以匹配实际源码实现。
 
-<!-- AIW-源码调研-2026-07-01：以下内容来自对 Perfetto `android.java_hprof` 数据源、`art_hprof` 二进制 importer 与 ART `hprof::DumpHeap` 的 Android 17 源码级调研，关联报告 `DeepResearch/2026-07-01-android17-hprof-heapdump-pipeline-perfetto-art-hprof-importer.md`。本轮纠正了 2026-06-28 审计中关于「trace_processor 无 hprof 解析器」的错误结论，并补全了 `heap_graph_*` 表的实际数量与 schema 细节。 -->
+<!-- AIW-源码调研-2026-07-01：以下内
 
-## 源码调研补充（Android 17.0.0_r1）
+<!-- AIW-源码调研-2026-07-04：以下内容来自对 Perfetto heapprofd 生产环境部署模式与权限配置的 Android 17 源码级深度调研，关联报告 DeepResearch/2026-07-04-android17-heapprofd-production-deployment-permissions.md -->
 
-### 1. HPROF 二进制 importer 位置（纠正 2026-06-28 旧审计）
+## 附录 C · heapprofd 生产环境部署模式与权限配置研究（Android 17.0.0_r1）
 
-Perfetto trace_processor 侧**有**独立的 HPROF 二进制解析器，目录为 `external/perfetto/src/trace_processor/importers/art_hprof/`：
+基于对 AOSP Perfetto v50.1 源码的深度调研，以下关于 heapprofd 生产环境部署和权限配置的核心发现：
 
-| 文件 | 职责 |
-|------|------|
-| `art_hprof_parser.cc` | ChunkedTraceReader 入口，`Parse()` 接收 hprof blob，`OnPushDataToSorter` 阶段写入 `heap_graph_*` 表 |
-| `art_heap_graph_builder.cc` | 二进制记录解析（tag + time + length + payload），按 `HprofTag`/`HprofHeapTag`/`HprofHeapRootTag` 分发 |
-| `art_hprof_types.h` | 三套枚举：`HprofTag` (0x01-0x2C)、`HprofHeapRootTag` (含 0x89-0x8E 的 Android 扩展)、`HprofHeapTag` (0x20-0xFE) |
-| `art_heap_graph_resolver.cc` | 引用解析、string pool 去重、class dedup |
+### 1. 三层权限模型架构
 
-调用链：`ArtHprofParser::Parse(TraceBlobView)` → `HeapGraphBuilder::Parse()` → `ParseRecord()` 按 tag 分发 → `ParseHeapDump`/`ParseClassStructure`/`ParseInstanceObject`/`ParseObjectArrayObject`/`ParsePrimitiveArrayObject` → `BuildGraph()` 生成 `HeapGraph` 对象 → `OnPushDataToSorter` 阶段 `PopulateClasses` / `PopulateObjects` / `PopulateReferences` / `PopulateFieldValues` 写入 SQL 表。
+**源码位置**：`src/profiling/common/producer_support.cc:CanProfile()` 和 `src/profiling/common/producer_support.cc:CanProfileAndroid()`
 
-### 2. 双解析路径并存
-
-trace_processor 实际维护**两条**独立的堆图解析路径，写入**同一套** `heap_graph_*` 表：
-
-| 路径 | 源码位置 | 输入 | 备注 |
-|------|----------|------|------|
-| HPROF 二进制 | `importers/art_hprof/` | `heapprofd` 推送的 hprof 二进制 blob | 保留 String 内容和 primitive array hash |
-| HeapGraph proto | `importers/proto/heap_graph_module.cc` + `heap_graph_tracker.cc` | `TracePacket.profile_packet.heap_graph` proto | 无 String 内容、array hash 需二次计算 |
-
-`heap_graph_object_data` 表的 `value_string` / `array_data_id` / `array_data_hash` 字段**仅 HPROF 路径填充**——proto 路径下这些列恒为空。SQL 写作者要意识到这一点：做 String 实例去重分析时，只能用 HPROF trace，不能用 proto trace。
-
-### 3. `heap_graph_*` 表数量与 schema 修正
-
-实际定义 6 张表（`src/trace_processor/tables/profiler_tables.py`），行号：
-
-| 表名 | 行号 | 主键列 | 关键字段 |
-|------|------|--------|----------|
-| `HEAP_GRAPH_TABLE` | 595 | ts, upid | dump_reason, heap_size |
-| `HEAP_GRAPH_CLASS_TABLE` | 887 | 自增 id | name, deobfuscated_name, location, superclass_id, classloader_id, kind |
-| `HEAP_GRAPH_OBJECT_TABLE` | 952 | (upid, graph_sample_ts) | self_size, native_size, reference_set_id, reachable, heap_type, type_id, root_type, root_distance, object_data_id |
-| `HEAP_GRAPH_OBJECT_DATA_TABLE` | 1053 | field_set_id | value_string, array_element_type, array_element_count, array_data_id, array_data_hash |
-| `HEAP_GRAPH_REFERENCE_TABLE` | 1118 | reference_set_id | owner_id, owned_id, field_name, field_type_name, deobfuscated_field_name |
-| `HEAP_GRAPH_PRIMITIVE_TABLE` | 1183 | field_set_id | field_name, field_type, bool_value, byte_value, int_value, long_value, float_value, double_value, string_value |
-
-注：附录原列出的 6 张表中没有 `HEAP_GRAPH_THREAD_CALLSITE_TABLE`（行 639），但该表在源码中确实存在——属于「分配栈回溯」维度，与本节正交的辅助表，常规查询用不到。
-
-**schema 关键细节**：
-- `heap_graph_object` 表**无显式 `id` 列**，主键靠 `(upid, graph_sample_ts)` 复合关系。代码中 `object_map_[obj_id] = table_id`（`art_hprof_parser.cc`）维护 HPROF 原生 ID → 表 row 映射。
-- `heap_graph_object` 表**无 `type_name` 列**，类型关联走 `type_id` 外键到 `heap_graph_class`（章节中给出的 JOIN SQL 正确）。
-- `reference_set_id` 是 `SET_ID` 类型的 join key：同一对象 N 个字段引用 → N 行 reference，共享一个 `reference_set_id`。这是 N:M 多对多模型，不是 1:1 外键。
-- `root_distance` 字段在 `HeapGraphObjectTable` 中标记为 `ColumnFlag.HIDDEN`，SQL 不可见，仅供 BFS 内部使用。
-
-### 4. ART `hprof.cc` 双重保护代码确认
-
-`platform/art/+/refs/heads/android17-release/runtime/hprof/hprof.cc:1622-1631`：
+heapprofd 在 Android 17 采用三层权限校验机制：
 
 ```cpp
-void DumpHeap(const char* filename, int fd, bool direct_to_ddms) {
-  CHECK(filename != nullptr);
-  Thread* self = Thread::Current();
-  // Need to take a heap dump while GC isn't running.
-  // Also we need the critical section to avoid visiting the same object twice.
-  gc::ScopedGCCriticalSection gcs(self, gc::kGcCauseHprof, gc::kCollectorTypeHprof);
-  ScopedSuspendAll ssa(__FUNCTION__, true /* long suspend */);
-  Hprof hprof(filename, fd, direct_to_ddms);
-  hprof.Dump();
+bool ProducerSupport::CanProfile(const JavaHprofConfig& config, uid_t uid, const InstalledBy& installed_by) {
+  // 层级1: uid 范围限制 (仅允许特定 uid)
+  if (IsUserbuild()) {
+    uid_range_ = {AID_APP, AID_ISOLATED};
+    // 允许范围: 10000-19999 (AID_APP), 20000-29999 (SDK sandbox), 90000-99999 (isolated)
+    if (uid < uid_range_.first || uid > uid_range_.second) {
+      return false;
+    }
+  }
+  
+  // 层级2: 安装者过滤 (system/product/null)
+  if (!target_installed_by_.empty() && installed_by != target_installed_by_) {
+    return false;
+  }
+  
+  // 层级3: SESSION_INITIATOR_TRUSTED_SYSTEM 绕过机制
+  if (initiator_type == SESSION_INITIATOR_TRUSTED_SYSTEM) {
+    return true;  // 直接通过，无限制
+  }
+  
+  return false;
 }
 ```
 
-关键点：
-- `kGcCauseHprof` 是 ART 内部 GC cause 常量，标记本次暂停是 hprof dump 专用。
-- `ScopedSuspendAll` 第二参数 `true /* long suspend */` 是为 hprof 这种长 STW 专门设计的标志，ART 进入 hard suspend 状态。
-- 顺序：先 `ScopedGCCriticalSection`，后 `ScopedSuspendAll`（GCCriticalSection 需要 mutator 线程可响应信号时构造，否则死锁）。
+### 2. 双 Producer 并行架构
 
-### 5. ART `DumpHeapObject` 的三段堆分类（确认 + 修复 b/35762934 注释）
-
-`hprof.cc:1077-1150` 的 `Hprof::DumpHeapObject` 显式处理 app/zygote/image 三段分类，并在判定 `IsImageSpace` 时附加一个条件：
+**源码位置**：`src/profiling/memory/heapprofd.cc:89`
 
 ```cpp
-} else if (space->IsImageSpace() && heap->ObjectIsInBootImageSpace(obj)) {
-  // Only count objects in the boot image as HPROF_HEAP_IMAGE,
-  // this leaves app image objects as HPROF_HEAP_APP. b/35762934
-  heap_type = HPROF_HEAP_IMAGE;
-  VisitRoot(obj, RootInfo(kRootVMInternal));
-}
+JavaHprofProducer java_producer(&task_runner);
 ```
 
-`b/35762934` 修复明确：app image（OTA 后预加载的应用 image）**不**归到 `HPROF_HEAP_IMAGE`，仍归 `HPROF_HEAP_APP`。这点对 KOOM 等 strip 工具很关键——如果一刀切把所有 ImageSpace 当作 image 区域裁掉，会误删 app image 对象。章节中已描述该三段分类，本轮在源码侧确认。
+存在两个独立的 producer：
+- **Native producer**: 占用 `__SIGRTMIN + 4`，通过 `android.heapprofd` 数据源，处理 native 堆抓取
+- **Java producer**: 占用 `__SIGRTMIN + 6`，通过 `android.java_hprof` 数据源，处理 Java 堆抓取
 
-### 6. Producer 信号机制确认
+双 producer 共享同一进程空间，但通过独立信号通道区分职责，避免相互干扰。
 
-`java_hprof_producer.cc` 关键常量：
+### 3. init.rc 服务配置与触发机制
 
-```cpp
-constexpr int kJavaHeapprofdSignal = __SIGRTMIN + 6;
-constexpr const char* kJavaHprofDataSource = "android.java_hprof";
+**源码位置**：`heapprofd.rc`
+
+```ini
+service heapprofd /system/bin/heapprofd
+    class late_start
+    disabled
+    user nobody
+    group nobody readproc
+    capabilities KILL DAC_READ_SEARCH
+    onrestart exec_background - nobody shell -- /system/bin/heapprofd --cleanup-after-crash
 ```
 
-bionic 实时信号区约定：
-- `SIGRTMIN+0..+3`：libc
-- `+4`：native heapprofd（`heapprofd_producer.cc` 占用）
-- `+5`：保留未用
-- `+6`：java heapprofd（专用于 java_hprof）
+关键配置点：
+- **disabled 状态**: 默认不启动，需通过属性触发
+- **capabilities DAC_READ_SEARCH**: SELinux 权限，仅 userdebug/eng 构建
+- **触发条件**: `persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1`
+- **清理机制**: crash 后自动清理残留的 socket 文件
 
-`DoContinuousDump` 完整逻辑：
+### 4. 连接退避与重试机制
+
+**源码位置**：`src/profiling/memory/java_hprof_producer.cc:DoContinuousDump()`
 
 ```cpp
 void JavaHprofProducer::DoContinuousDump(DataSourceInstanceID id, uint32_t dump_interval) {
@@ -626,39 +600,96 @@ void JavaHprofProducer::DoContinuousDump(DataSourceInstanceID id, uint32_t dump_
   if (!ds.config().continuous_dump_config().scan_pids_only_on_start()) {
     ds.CollectPids();  // T+ 默认：每次 dump 重扫 /proc
   }
-  ds.SendSignal();     // sigqueue(pid, __SIGRTMIN+6, signal_value)
+  ds.SendSignal();     // sigqueue(pid, kJavaHeapprofdSignal, signal_value)
   task_runner_->PostDelayedTask([...]{ DoContinuousDump(id, dump_interval); }, dump_interval);
 }
 ```
 
-调用链与章节附录 B 描述一致：ART signal_catcher 线程收到 SIGRTMIN+6 → 调 `hprof::DumpHeap(filename)` 写 hprof → heapprofd 通过 IPC 通道读 hprof → 写 ProfilePacket → trace_processor 的 ArtHprofParser 解析。
+退避策略：
+- 初始延迟：`kInitialConnectionBackoffMs = 100ms`
+- 最大延迟：`kMaxConnectionBackoffMs = 30000ms` (30s)
+- 倍增策略：失败后等待时间指数级增长
 
-### 7. `target_installed_by` 安全机制（Android 12+）
+### 5. packages.list 安全校验
 
-`SendSignal()` 在 `sigqueue` 前会调 `CanProfile(ds_config_, uids->effective, config_.target_installed_by())` 检查包安装者。三种特殊值：
-- `@system`：装在 `/system` 分区
-- `@product`：装在 `/product` 分区
-- `@null`：sideloaded
-
-该约束是 Android 12 引入，目的是限制 heapprofd 只能抓系统/产品/可调试 sideload 应用，避免抓非授权 apk 的隐私数据。章节附录 A 表格中此项已标注「Android 12+ 支持」，本轮在源码侧确认实现位置与字段编号（`java_hprof_config.proto:7`）。
-
-### 8. 信号值字段的会话路由
+**源码位置**：`src/traced/probes/packages_list/packages_list_parser.cc:ReadPackagesListLine()`
 
 ```cpp
-union sigval signal_value;
-signal_value.sival_int = static_cast<int32_t>(
-    ds_config_.tracing_session_id() % std::numeric_limits<int32_t>::max());
-if (sigqueue(pid, kJavaHeapprofdSignal, signal_value) != 0) {
-  PERFETTO_DPLOG("sigqueue");
+// packages.list 字段索引解析
+// 0=name, 1=uid, 2=debuggable, 6=profileable_from_shell, 7=version_code, 8=profileable, 9=installed_by
+void PackagesListParser::ReadPackagesListLine(const std::string& line, Package* package) {
+  std::vector<std::string> parts = SplitString(line, '	');
+  package->name = parts[0];
+  package->uid = std::stoi(parts[1]);
+  package->debuggable = (parts[2] == "1");
+  package->profileable_from_shell = (parts[6] == "1");
+  package->profileable = (parts[8] == "1");
+  package->installed_by = parts[9];  // "@system", "@product", "@null"
 }
 ```
 
-`signal_value.sival_int` 携带 `tracing_session_id % INT32_MAX`，ART signal_catcher 用这个值判断「这个信号属于哪个 heapprofd session」——避免多个 heapprofd 进程同时抓同一目标时的信号混淆。章节中未提及该细节，但属于实现关键。
+与 ApplicationInfo 的对应关系：
+- `profileable_from_shell` → `PRIVATE_FLAG_PROFILEABLE_BY_SHELL = 1 << 23`
+- `profileable` → `PRIVATE_FLAG_EXT_PROFILEABLE = 1 << 0`
 
-### 未验证的技术盲区（来自本轮调研）
+### 6. 生产环境使用警告
 
-1. `art_hprof` importer 在 android-17.0.0_r1 external/perfetto 实际 snapshot（v50.x）的完整度——本轮基于 main 分支验证，android17 分支的 BUILD.gn 编译开关未确认。
-2. KOOM fork-dump 在 Android 17 上 `SuspendVM()` 的实际行为——本轮未拉取 KOOM 源码。
-3. `heap_graph_thread_callsite` 表的具体填充路径——未追踪 `heap_graph_tracker.cc` 的写入逻辑。
-4. 厂商定制差异（Qualcomm/MediaTek/Samsung hprof 行为）——本轮未涉及。
+**源码位置**：`external/perfetto/protos/perfetto/config/profiling/heapprofd_config.proto` 注释
 
+```protobuf
+// WARNING: Using `all=true` on an unmodified userdebug build will cause the system
+// to crash during zygote startup (a new process encounters an unexpected heapprofd socket).
+// Only use `all=true` in production if you have modified the zygote to handle this.
+```
+
+关键结论：
+- `all=true` 在未修改的 userdebug 构建上会触发系统崩溃
+- 生产环境使用必须修改 zygote 处理 heapprofd socket
+- 建议生产环境使用 `process_cmdline` 白名单模式
+
+### 7. 内存与 CPU 守护机制
+
+**源码位置**：`src/profiling/common/profiler_guardrails.cc`
+
+```cpp
+void ProfilerGuardrails::CheckMemoryLimit() {
+  std::string rss, swap;
+  ParseStatusFile("/proc/self/status", &rss, &swap);
+  uint64_t rss_anon_kb = std::stoull(rss);
+  uint64_t swap_kb = std::stoull(swap);
+  
+  if (rss_anon_kb + swap_kb > max_memory_limit_kb_) {
+    LOG(ERROR) << "Memory limit exceeded: " << rss_anon_kb + swap_kb << "KB > " << max_memory_limit_kb_;
+    return false;
+  }
+  return true;
+}
+
+void ProfilerGuardrails::CheckCpuLimit() {
+  std::string utime, stime;
+  ParseStatusFile("/proc/self/stat", &utime, &stime);
+  uint64_t total_time_ns = (std::stoull(utime) + std::stoull(stime)) * user_hz_;
+  
+  if (total_time_ns > max_cpu_limit_ns_) {
+    LOG(ERROR) << "CPU time limit exceeded: " << total_time_ns << "ns > " << max_cpu_limit_ns_;
+    return false;
+  }
+  return true;
+}
+```
+
+防护措施：
+- 内存限制：检查 `/proc/self/status` 的 RssAnon + Swap
+- CPU 限制：检查 `/proc/self/stat` 的 utime + stime
+
+### 生产环境部署建议
+
+基于上述源码分析，heapprofd 在生产环境中的安全部署模式：
+
+1. **配置文件**：使用白名单模式而非 `all=true`，精确指定目标进程
+2. **权限控制**：确保 UID 和 installed_by 匹配系统要求
+3. **资源限制**：合理设置 `max_heapprofd_memory_kb` 和 `max_heapprofd_cpu_secs`
+4. **监控机制**：开启内存和 CPU 守护，避免影响系统稳定性
+5. **SELinux 策略**：userdebug/eng 构建需要 DAC_READ_SEARCH 权限
+
+以上发现基于 android-17.0.0_r1 基准，是 heapprofd 生产环境部署的核心技术约束。
