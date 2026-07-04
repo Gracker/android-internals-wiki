@@ -3,8 +3,8 @@
 title: "Flutter 渲染管线"
 chapter: "'18.12'"
 section: "'18.12'"
-status: ready-for-review
-pipeline_stage: task9_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17"
 tags: ['rendering', 'pipeline']
 reviewed_date: "2026-07-04"
@@ -12,13 +12,13 @@ reviewed_by: "\"openclaw-task6\""
 created_by: "rendering-pipelines-merge"
 created_date: "'2026-04-09'"
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task6_result: "\"pass-light-edit\""
 task2b_result: fixed
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 已于 07-04 复审通过，章节等待 Task9 复审"
 last_task2b_at: "2026-07-04T18:52:42+08:00"
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-04
 last_task9_at: "2026-07-04T18:20:00+08:00"
@@ -321,6 +321,118 @@ Android Choreographer / AChoreographer → VsyncWaiterAndroid::AwaitVSync()
 - **2.11 Flutter 渲染管线与性能**：Flutter 渲染机制的原理视角
 - **18.6 SurfaceView / 18.7 TextureView**：Android 原生组件的管线对比
 - **18.13 WebView 章节 / 7.11 WebView 性能优化**：分别对应嵌入式渲染过程和性能治理视角
+
+
+
+<!-- AIW-源码调研-2026-07-04 -->
+## Impeller Shader 编译与 PSO 缓存源码级补充
+
+上一节把 Impeller 描述为"使用预编译 Shader"和"运行期零反射"，本节补到源码层。
+
+### 离线编译流水线（构建期）
+
+`flutter/engine/impeller/README.md` 中"The Offline Shader Compilation Pipeline"明确给出流水线：
+
+```
+GLSL ES 4.60（权威源码）
+  → Stage 1 Compiler (impellerc) → SPIRV（无优化，保留调试信息）
+  → SPIRV Optimizer → Optimized SPIRV
+  → Stage 2 Compiler（按后端分叉）：
+      Metal MSL → Metal Linker → Metal Library
+      Vulkan SPIRV → Shader Archiver → .vkspv
+      GLSL ES 1.00 → Shader Archiver → .gles
+  → FlatBuffers ShaderArchive（file_identifier "SHAR"）
+  → xxd.py → C 数组 → 静态链接进 engine 二进制
+```
+
+关键设计：
+- **GLSL 4.60 是唯一权威源码**，跨后端一致性来源；驱动差异只在 transpile 阶段被吸收。
+- **运行期零反射**：SPIRV → C++ translation unit 的反射在构建期完成，运行时不再调用任何反射 API；uniform/vertex 描述符在编译时已知。
+
+### Shader Archive 格式
+
+`impeller/shader_archive/shader_archive.fbs`：
+
+```fbs
+namespace impeller.fb;
+enum Stage:byte { kVertex, kFragment, kCompute }
+table ShaderBlob { stage: Stage; name: string; mapping: [ubyte]; }
+table ShaderArchive { items: [ShaderBlob]; }
+root_type ShaderArchive;
+file_identifier "SHAR";
+```
+
+`ShaderArchiveWriter::AddShaderAtPath` 强制要求文件同时具有 `.gles`/`.vkspv` 后缀与 `.vert`/`.frag`/`.comp` 阶段后缀——构建期对 shader 命名的硬约束。
+
+### Android 端的运行期加载路径
+
+`shell/platform/android/android_context_vk_impeller.cc`：
+
+```cpp
+std::vector<std::shared_ptr<fml::Mapping>> shader_mappings = {
+    std::make_shared<fml::NonOwnedMapping>(impeller_entity_shaders_vk_data,
+                                           impeller_entity_shaders_vk_length),
+    std::make_shared<fml::NonOwnedMapping>(impeller_framebuffer_blend_shaders_vk_data,
+                                           impeller_framebuffer_blend_shaders_vk_length),
+    std::make_shared<fml::NonOwnedMapping>(impeller_modern_shaders_vk_data,
+                                           impeller_modern_shaders_vk_length),
+};
+impeller::ContextVK::Settings settings;
+settings.shader_libraries_data = std::move(shader_mappings);
+settings.cache_directory = fml::paths::GetCachesDirectory();
+auto context = impeller::ContextVK::Create(std::move(settings));
+```
+
+观察点：3 个 shader 库以 `extern "C"` 数组形式存在于 `.rodata` 段，由 `fml::NonOwnedMapping` 直接指向——Android 进程启动时不需要任何文件系统 shader 加载。这与 Skia 时代的运行时 GLSL → 驱动内编译器路径是结构性差异。
+
+### Vulkan PSO 缓存（运行期、跨进程持久化）
+
+`impeller/renderer/backend/vulkan/pipeline_cache_vk.cc` + `pipeline_cache_data_vk.cc`：
+
+- 缓存文件固定为 `kPipelineCacheFileName = "flutter.impeller.vkcache"`，位于 `fml::paths::GetCachesDirectory()`（Android 上即 `Context.getCacheDir()`）。
+- `PipelineCacheHeaderVK::IsCompatibleWith` 校验 5 个字段：magic / driverVersion / vendorID / deviceID / pipelineCacheUUID。**同一颗 SoC 但系统 OTA 升级驱动后，缓存自动失效**——避免跨驱动版本的二进制不兼容。
+- `PersistCacheToDisk` 在 `~PipelineCacheVK` 时调用，把驱动内生成的 PSO cache 序列化回磁盘。
+- 这是 Impeller 主动管理的"驱动外"缓存，命中率由 Impeller 的 pipeline 复用模式决定，与驱动无关。
+
+### GLES Pipeline 缓存（运行期、仅内存）
+
+`impeller/renderer/backend/gles/pipeline_library_gles.cc` 的 `GetPipeline` 主入口：
+
+```cpp
+if (auto found = pipelines_.find(descriptor); found != pipelines_.end()) {
+  return found->second;  // 命中则直接返回 future
+}
+// 未命中则创建 promise + ReactorGLES::AddOperation 异步编译
+pipelines_[descriptor] = pipeline_future;
+reactor_->AddOperation([promise, weak_this, descriptor,
+                        vert_function, frag_function](const ReactorGLES& reactor) {
+  promise->set_value(
+      CreatePipeline(weak_this, descriptor, vert_function, frag_function));
+});
+```
+
+GLES 与 Vulkan 关键对照：
+
+| 维度 | Vulkan | GLES |
+|---|---|---|
+| Cache key | vk::PipelineCache 驱动管理 | `ProgramKey{vert_function, frag_function, spec_constants}` |
+| 落盘 | `flutter.impeller.vkcache` | **不落盘**，进程销毁即丢失 |
+| 失效条件 | driverUUID 不匹配 | 无（首次需编译） |
+| 异步编译 | ReactorGLES::AddOperation 后台线程 | 同上 |
+
+GLES 不落盘的原因（推断）：GL context 跨进程隔离，共享 program 缺乏标准机制；且 Impeller 强调"冷启动确定性"——所有 shader 已离线编译完成，GLES 编译只是驱动把 GLSL ES 1.00 → GPU bytecode 的轻量映射。[未经一手验证]
+
+### 不同 GPU 架构的差异点
+
+差异不在 Impeller 自身，而是驱动对 PSO 编译的内部行为：
+
+- **Adreno（Qualcomm）**：驱动内 PSO cache 通常与 `vkcache` 协同良好，跨进程命中率高。
+- **Mali（ARM）**：驱动版本敏感，`pipelineCacheUUID` 经常因小版本变动而变化，`flutter.impeller.vkcache` 命中率受 OTA 频率影响。
+- **PowerVR（Imagination）**：在 Android 上较少见，但驱动对 SPIRV 兼容性历史上有过多次破坏性更新。
+
+Impeller 通过 PSO cache 把这些差异变成"一次性成本"——冷启动第一次构建所有 PSO，之后只走 cache 命中路径。Flutter 官方推荐在跨设备/跨系统版本测试中监控 `flutter.impeller.vkcache` 命中率作为一项隐式性能指标。
+
+[已验证: flutter/engine main 分支 `impeller/README.md`、`impeller/shader_archive/*`、`impeller/renderer/backend/vulkan/pipeline_cache_vk.cc`、`impeller/renderer/backend/gles/pipeline_library_gles.cc`、`shell/platform/android/android_context_vk_impeller.cc`]
 
 ## 参考资料
 

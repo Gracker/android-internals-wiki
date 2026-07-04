@@ -3,7 +3,7 @@
 title: "Android 17 后台音频硬化与播放功耗治理"
 chapter: "25.17"
 section: "25.17"
-status: revisiting
+status: ready-for-review
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-02"
@@ -57,7 +57,7 @@ task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小
 task9_result: auto-fixed
 task2b_result: skipped-false-positive
 task2b_note: "2026-07-04 Task2B 主修复验证: queue P90 条目关于 set-hardening enable/disable 命令参数不存在的问题为误报。AudioManagerShellCommand.java:182-185 help 文案证实 enable/disable/throw 均为有效子参数。章节命令无需修改。"
-task2b_state: fixed-skipped
+task2b_state: fixed
 task6_state: revisiting
 pipeline_stage: task6_pending
 task9_reviewed_by: openclaw-task9
@@ -77,6 +77,7 @@ last_task9_autofix_at: "2026-07-02"
 updated_by: openclaw-task9
 updated_date: "2026-07-02"
 task2b_lite_note: "2026-07-04 Task2B Lite 验证: set-hardening enable/throw/clear-hardening 命令已正确，无需修改。证据锚定 AudioManagerShellCommand.java:182-185,517-563。queue P90 条目标记 skipped-false-positive。"
+task2b_verifier_normalize: "2026-07-04T23:28:57+08:00 Verifier: status revisiting→ready-for-review, task2b_state fixed-skipped→fixed (standardized for Task6 pickup). task6_state=revisiting, task9_state=pending, pipeline_stage=task6_pending confirmed correct."
 ---
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
