@@ -361,3 +361,53 @@
 不属于 Task 2A 空 draft 加工范围。
 建议后续挖掘周期降低频次（每 3-6 轮挖掘一次即可），
 将算力转向已有章节的 🔸 扩展点填充和 Clippings 参考书素材注入。
+
+
+## [Task2A Gap Mining Round 10] 2026-07-04 12:14 — Coverage Saturated (Round 10)
+
+已检查方向（全部已覆盖或 <14 分）：
+1. VibratorManagerService HAL 性能 → 硬件特定，非性能核心 (6/20)
+2. ClipboardService 持久化开销 → 非性能核心主题 (6/20)
+3. AlarmManager exact alarm 批处理合并 → ch25.3/ch25.20 已覆盖
+4. PermissionManager 运行时权限检查开销 → 权限检查非核心瓶颈 (6/20)
+5. AccountManagerService token 获取延迟 → 后台认证，非性能优化核心 (6/20)
+6. DownloadManager 大文件传输 → ch24 网络系列已覆盖
+7. MediaSession 播放队列 IPC → ch25.17 后台音频已覆盖
+8. WifiRTT (802.11mc) 测距性能 → 室内定位，开发者使用率低 (6/20)
+9. NfcAdapter HCE 性能 → NFC 非性能核心 (6/20)
+10. VoiceInteractionService hotword 检测 → 语音助手特定 (6/20)
+11. TvInputService/TV 框架性能 → TV 特定，非手机核心 (6/20)
+12. DreamService 屏保性能 → 开发者关注度极低 (6/20)
+13. AttentionService 人脸检测开销 → Attention Service 非核心 (6/20)
+14. FaceService 生物识别管线延迟 → ch8.12-8.13 已覆盖
+15. GnssMeasurementProvider 定位获取成本 → ch25.22 已覆盖
+16. IHwBinder vs binder 性能 → ch1.4 IPC 全景已覆盖
+17. IncidentReport 系统遥测开销 → 系统遥测，非应用关注 (6/20)
+18. DropBoxManager 崩溃日志写入开销 → 系统日志写入 (6/20)
+19. AppOpsManager 操作检查开销 → 操作审计 (6/20)
+20. UsageStatsManager 查询开销 → 使用统计 (6/20)
+21. TextClassifierManager 文本分类 → 边缘 AI 服务 (6/20)
+22. TranslationService 翻译开销 → 翻译服务 (6/20)
+23. Companion Device Manager → Round 8 已评估 (8/20)
+24. RecoverySystem/SystemUpdateManager → OTA 更新，非性能核心 (6/20)
+25. RoleManager 角色检查 → 角色管理 (6/20)
+26. SearchManager/GlobalSearchService → 搜索框架 (6/20)
+27. ContentSuggestionsManager → 内容建议 (6/20)
+28. SmartSelectionService → 文本选择 (6/20)
+29. InputContentInfo URI permission → ch3.11 IMM 已覆盖
+30. MagisterService/ArtService → ch1.7 ART 已覆盖
+31. HardwarePropertiesManager 温度查询 → ch5.12 thermal 已覆盖
+32. SensorManager batch flush → ch25.5 已覆盖
+33. MediaCodec async mode → ch18.23 Codec2 已覆盖
+34. Camera2 state callback overhead → ch2.29-2.32/ch18.03 已覆盖
+
+新增检查维度（相比前 9 轮）：
+- 32 个 frameworks/base 与 system/ 下的系统服务/API 全面扫描
+- 包含 HIDL/HwBinder、TV/NFC/Vibrator 等硬件相关服务
+- 包含权限/审计/统计/搜索/翻译等框架服务
+- 今日 daily-info 无新性能方向（Compose Pager/局域网通信/Clean Architecture 均非性能优化主题）
+- 全书 589 节，覆盖已饱和（第 10 次确认）
+
+**结论**：第 10 轮连续无 ≥14 分候选。全书 589 节，覆盖已饱和。
+建议后续挖掘周期降低频次为每日仅检查 daily-info 新增内容，
+如连续 3 轮仍无新候选，可将 gap mining 改为每周执行一次。
