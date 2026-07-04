@@ -1,7 +1,7 @@
 {
   "total": 577,
-  "draft": 20,
-  "ready_for_review": 198,
+  "draft": 19,
+  "ready_for_review": 199,
   "finalized": 340,
   "last_updated": "2026-07-04",
   "task2b": {
@@ -444,6 +444,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-04T15:08:00+08:00",
       "note": "ConnectivityManager performance: ConnectivityThread singleton callback dispatch, MAX_NETWORK_REQUESTS_PER_UID=100 limit, NetworkCallback method filtering, WiFi/Cellular switching performance, Android 17 Data Plan streaming API"
+    },
+    {
+      "section": "8.10",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-04T15:12:00+08:00",
+      "note": "PowerManager performance: WakeLock ref counting/finalize leak, LowPowerStandby API, thermal status listener, Doze adaptation"
     }
   ],
   "review_history": [
