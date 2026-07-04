@@ -486,6 +486,13 @@
       "status": "no-candidates",
       "ts": "2026-07-04T22:09:19.683442+08:00",
       "note": "Gap mining round 15: 0 candidates ≥14. Coverage saturated (15th consecutive). No new material since round 14 (56 min ago). suggestions.md updated by Task9 (ch15/ch18.12 deep review items for existing chapters, not new chapter candidates)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-04T23:12:21+08:00",
+      "note": "Gap mining round 16: 0 candidates ≥14. Coverage saturated (16th consecutive). No new material since last round. suggestions.md has Task9 ch14/13 deep review items (existing chapter supplements, not new candidates)."
     }
   ],
   "review_history": [
@@ -722,12 +729,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-04T22:09:19.683442+08:00",
+    "last_run": "2026-07-04T23:12:21+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 15: 0 candidates ≥14. Coverage saturated (15th consecutive). No new material since round 14 (56 min ago). suggestions.md updated by Task9 (ch15/ch18.12 deep review items for existing chapters, not new chapter candidates)."
+    "note": "Gap mining round 16: 0 candidates ≥14. Coverage saturated (16th consecutive)."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",
