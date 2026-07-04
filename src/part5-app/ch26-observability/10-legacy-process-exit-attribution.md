@@ -2,7 +2,7 @@
 title: Android 11 以下进程退出归因方案
 chapter: '26.10'
 section: '26.10'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 10 (API 29)
 last_verified: '2026-07-01'
 last_verified_against: AOSP android-17.0.0_r1 (ApplicationExitInfo/ActivityManager/AppExitInfoTracker/lmkd);
@@ -57,12 +57,12 @@ related_chapters:
 - '26.9'
 drafted_date: '2026-05-16'
 polish_count: '1'
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-16'
+reviewed_date: '2026-07-04'
 task6_result: pass-light-edit
-last_task6_at: '2026-05-16T03:16:00+08:00'
-last_task6_review_log: logs/review/2026-05-16-03-review.md
+last_task6_at: 2026-07-04T12:08:00+08:00
+last_task6_review_log: logs/review/2026-07-04-12-review.md
 last_task6_audit: '2026-06-07'
 created_by: task2a-knowledge-gap
 created_date: '2026-05-15'
@@ -74,8 +74,8 @@ last_task9_at: '2026-05-17T00:32:12+08:00'
 last_task9_audit: '2026-07-01'
 last_task9_autofix_at: '2026-07-01'
 last_task9_review_log: logs/deep-review/2026-05-17-00-deep-review.md
-pipeline_stage: task6_pending
-task9_result: auto-fixed
+pipeline_stage: ready-to-publish
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 p0: '0'

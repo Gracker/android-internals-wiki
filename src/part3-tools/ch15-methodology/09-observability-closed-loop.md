@@ -14,11 +14,12 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals"
 tags: [observability, apm, pipeline, governance, monitoring]
 related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
-reviewed_date: "2026-04-21"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_date: "2026-07-04"
 reviewed_by: openclaw-task6
+last_task6_at: "2026-07-04T12:08:00+08:00"
 task9_state: pending
 repaired_date: "2026-04-22"
 repaired_by: "codex"
