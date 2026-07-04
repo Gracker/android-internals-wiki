@@ -109,3 +109,61 @@
 ### 结论
 全书 577+ 文件覆盖范围极其完整，本轮检查 5 个新候选缺口中无 ≥ 14 分通过者。
 连续 17 轮无合格候选，覆盖率真正饱和。
+
+## [Task9 Deep Review] 25.17 Android 17 后台音频硬化与播放功耗治理 — 2026-07-05
+- **类型**：源码准确性
+- **位置**：shell 命令文档章节
+- **问题**： 命令在 task2b 中已验证，但文档中缺少明确的源码锚点引用
+- **建议**：补充 AudioManagerShellCommand.java:182-185,517-563 作为证据支撑，增强可验证性
+
+## [Task9 Deep Review] 25.17 Android 17 后台音频硬化与播放功耗治理 — 2026-07-05
+- **类型**：知识盲区
+- **位置**：OEM 策略章节
+- **问题**：文档提到厂商可能有额外策略，但缺乏具体测试清单和设备差异说明
+- **建议**：补充主流设备厂商（小米、华为、OPPO、vivo）的后台音频限制实测清单，包括是否支持强制开启、默认行为差异等
+
+## [Task9 Deep Review] 25.17 Android 17 后台音频硬化与播放功耗治理 — 2026-07-05
+- **类型**：知识盲区
+- **位置**：多音频流处理章节
+- **问题**：未覆盖应用同时存在多个音频流时的硬化和冲突处理
+- **建议**：增加「多音频流场景」小节，说明 MediaSession 多实例、AudioFocus 冲突解决、优先级管理等内容
+
+## [Task9 Deep Review] 25.17 Android 17 后台音频硬化与播放功耗治理 — 2026-07-05
+- **类型**：数据支撑
+- **位置**：audio offload 功耗章节
+- **问题**：audio offload 的具体功耗节省数据、长时播放的典型功耗模型缺乏量化数据支撑
+- **建议**：补充 audio offload vs software decoding 在不同场景下的功耗对比数据，包括 CPU 占用、电池续航影响等
+
+
+## [Task2A Gap Mining] 2026-07-05 知识缺口挖掘方向记录（Round 18）
+
+**本轮未发现评分 ≥ 14 的知识缺口。连续 18 轮无合格候选。**
+
+### 已检查方向
+
+1. **PMS × cpuidle × schedutil 三层闭环**（DeepResearch 2026-07-04）
+   - 判定：已覆盖。ch05.04 (DVFS)、ch05.01 (Linux Scheduling)、ch05.02 (EAS) 已从调度器层面覆盖
+
+2. **Modular Startup Framework Dependency Graph**（DeepResearch 2026-07-04）
+   - 判定：已覆盖。ch21.01 (Startup Analysis) 已覆盖启动框架依赖分析
+
+3. **heapprofd Production Deployment Permissions**（DeepResearch 2026-07-04）
+   - 判定：已覆盖。ch14.22 (HPROF HeapDump) 和 ch13.21 (Perfetto) 已覆盖
+
+4. **Flutter Impeller Shader Compilation Pipeline**（DeepResearch 2026-07-04）
+   - 判定：已覆盖。ch02.11 和 ch18.12 有源码级覆盖
+
+5. **LMKD Procs Prio Batch Thrashing Mainline Fork**（DeepResearch 2026-07-04）
+   - 判定：已覆盖。ch04 多个小节覆盖 LMKD 机制
+
+6. **Binder Node Release Death Notification Batch**（DeepResearch 2026-07-04）
+   - 判定：已覆盖。ch01.25 (Binder IPC Async Pipeline) 已覆盖
+
+7. **Material 3 Expressive Performance** — 0 files found
+   - 判定：偏 UI 设计主题，非系统级性能。排除
+
+8. **Desktop Mode / Adaptive App Quality** — 14 files found
+   - 判定：已充分覆盖
+
+### 结论
+全书 577 文件覆盖范围极其完整。连续 18 轮无 ≥14 分通过者。覆盖率真正饱和。
