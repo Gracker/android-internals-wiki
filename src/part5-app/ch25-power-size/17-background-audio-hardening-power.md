@@ -2,7 +2,7 @@
 title: "Android 17 后台音频硬化与播放功耗治理"
 chapter: "25.17"
 section: "25.17"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-02"
@@ -15,14 +15,15 @@ created_by: "task2a-knowledge-gap"
 drafted_by: "task2a-knowledge-gap"
 created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
-task9_state: pending
+task9_state: reviewed
+task9_result: pass-tech-review
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-07-05"
 task6_result: "pass-light-edit"
-last_task6_at: 2026-07-05T01:14:45+08:00
+last_task6_at: 2026-07-05T02:13:44+08:00
 last_task6_audit: "2026-06-28"
-last_task6_review_log: "logs/review/2026-05-24-05-review.md"
-task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。 | 2026-07-05 Task6 复审 (round 2): pass-light-edit。Task2B 已补充 targetSdk 36→37 迁移路径四步法与行为差异表。L1 仅 2 处 frontmatter 修正（title/chapter/section 引号转义、p0 计数校正）。L2/L3/L4 全部通过。task9 已通过 + queue 无 pending → 自动晋升 finalized。"
+last_task6_review_log: "logs/review/2026-07-05-02-review.md"
+task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。 | 2026-07-05 Task6 复审 (round 2): pass-light-edit。Task2B 已补充 targetSdk 36→37 迁移路径四步法与行为差异表。L1 仅 2 处 frontmatter 修正（title/chapter/section 引号转义、p0 计数校正）。L2/L3/L4 全部通过。task9 已通过 + queue 无 pending → 自动晋升 finalized。 | 2026-07-05 Task6 复审 (round 3): pass-light-edit。Task2B Lite 验证 set-hardening enable/throw/clear-hardening 命令锚定 AudioManagerShellCommand.java:182-185,517-563，无需修改。L1 禁用词扫描全清、CN-EN 间距零问题、高频词全部 ≤1 次。L2/L3/L4 全部通过。queue 两条目均 completed。task9_result 补录 pass-tech-review。无 B 类问题 → 自动晋升 finalized。"
 
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-05"
@@ -45,8 +46,8 @@ task2b_lite_note: "2026-07-04 Task2B Lite 验证: set-hardening enable/throw/cle
 task2b_verifier_normalize: "2026-07-04T23:28:57+08:00 Verifier: status revisiting→ready-for-review, task2b_state fixed-skipped→fixed (standardized for Task6 pickup). task6_state=revisiting, task9_state=pending, pipeline_stage=task6_pending confirmed correct."
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 last_task2b_lite_at: 2026-07-05
 ---
 
