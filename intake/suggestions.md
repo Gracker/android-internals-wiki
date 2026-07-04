@@ -429,3 +429,52 @@
 **结论**：第 10 轮连续无 ≥14 分候选。全书 589 节，覆盖已饱和。
 建议后续挖掘周期降低频次为每日仅检查 daily-info 新增内容，
 如连续 3 轮仍无新候选，可将 gap mining 改为每周执行一次。
+
+## [Task2A Gap Mining Round 11] 2026-07-04 13:09 — Coverage Saturated (Round 11)
+
+已检查方向（全部已覆盖或 <14 分）：
+1. Repository suspend fun 模式 → Round 7 已评估，架构模式非系统性能 (8/20)
+2. Clean Architecture / UseCase 分层 → Round 7 已评估 (7/20)
+3. Compose Pager 性能 → Round 7 已评估 (9/20)
+4. 局域网通信开源项目 → 功能项目非性能主题 (5/20)
+5. Activity 接口通信模式 → 架构设计非性能优化 (7/20)
+6. Android Desktop Experience → Round 7 已评估，ch22.14 已覆盖
+7. DeepResearch SharedPreferencesImpl → ch06 系列已覆盖
+8. DeepResearch DataStore IPC → ch06 系列已覆盖
+9. DeepResearch Binder 线程池 → ch01 Binder 系列已覆盖
+10. DeepResearch HPROF Heap Dump → ch14 HPROF 系列已覆盖
+11. 增量扫描 CPU 线程池 → ch27 已覆盖
+12. 增量扫描 heapprofd 部署 → Round 6 已确认 ch14 覆盖
+13. 增量扫描 模块化启动 → Round 6 已确认 ch21.7 覆盖
+14. 增量扫描 Perfetto 版本演进 → ch13.21 已覆盖
+15. 增量扫描 Staged Install → ch01.45/1.49 已覆盖
+
+新增检查维度（相比 Round 10）：
+- 今日掘金 5 篇热门 → 全部架构/UI/通信类，无系统性能方向
+- 今日 DeepResearch 5 篇 → 全部映射到现有章节素材注入
+- 今日增量扫描 5 篇 → 全部映射到现有章节
+- 无全新 Android 17 性能特性或工具发布
+
+**结论**：第 11 轮连续无 ≥14 分候选。全书 589 节，覆盖已饱和。
+建议将 gap mining 降频为每日 1 次（仅 08:00 轮次），
+将算力转向 Task 14 参考书素材注入和已有章节深化。
+
+
+## [Task2A Gap Mining Round 12] 2026-07-04 14:08 — Coverage Saturated (Round 12)
+
+已检查方向（全部已覆盖或 <14 分）：
+1. 无空 draft 章节（Phase 0 通过，0 个 <15 行）
+2. TASK2B_BACKLOG = 0（限流通过）
+3. 2026-07-04 daily-info 内容与 Round 11 完全一致（6 篇掘金 + 5 篇增量扫描 + 5 篇 DeepResearch）
+4. 无新增 research-feeds（最新仍为 2026-04-14）
+5. 全书 577 节：finalized 340 / ready-for-review 200 / draft 16 / deprecated 20 / verified 1
+6. 16 个 draft 章节均已包含实质内容（最少 40 行），不属于空 draft 加工范围
+
+新增检查维度（相比 Round 11）：
+- developer.android.com Android 17 页面（被网络策略拦截，无法访问）
+- 全书状态分布统计：577 节中 93.4% 已有实质内容（finalized + ready-for-review + verified）
+- draft 章节内容量分析：最短的 8.9/8.10（各 40 行）也已超过空 draft 阈值（15 行）
+
+**结论**：第 12 轮连续无 ≥14 分候选。全书 577 节，覆盖已饱和。
+建议将 gap mining 降频为每日仅 08:00 轮次执行一次，
+将 14:00/20:00 算力转向 Task 14 参考书素材注入、已有章节深化、或 review 加速。
