@@ -248,3 +248,95 @@
 - **位置**：线程池参数配置
 - **问题**：推荐的线程池配置参数在Android 17+中可能需要调整，因为Android 17引入了更智能的CPU调度策略和更严格的后台任务调度限制
 - **建议**：补充Android 17+中线程池配置的注意事项
+
+---
+
+2026-07-05 Task14 扫描追加（赵子健性能优化 #12-15）
+
+## [Task14 参考书扫描] 第8章 响应速度优化 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md]
+- **建议补充**：性能优化三维方法论：硬件层→系统层→应用层自下而上的优化思维框架
+- **参考书覆盖深度**：概述
+## [Task14 参考书扫描] 第8章 响应速度优化 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md]
+- **建议补充**：性能优化三大主题划分：内存优化、速度优化、包体积优化（流量/功耗优先级较低）
+- **参考书覆盖深度**：概述
+## [Task14 参考书扫描] 第8章 响应速度优化 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md]
+- **建议补充**：性能优化常见误区：照搬网上方案缺乏体系化，未结合应用特性调整
+- **参考书覆盖深度**：概述
+## [Task14 参考书扫描] 第8章 启动优化 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+- **建议补充**：Android 8+ 系统自带启动 GC 抑制：TriggerPostForkCCGcTask 阻塞 HeapTaskDaemon 2秒
+- **参考书覆盖深度**：中等
+## [Task14 参考书扫描] Part5 ch23 内存实战 — 2026-07-05
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+- **过时内容**：符号查找使用 ndk_dlopen/ndk_dlsym 开源库（源码引用 master 分支，需验证 android-17.0.0_r1 兼容性）
+- **建议更新至**：Android 17 源码链接指向 cs.android.com master 分支，需确认在 android-17.0.0_r1 下的 API 兼容性
+## [Task14 参考书扫描] 第4章 内存管理 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+- **建议补充**：Java 堆五大 Space 组成：ImageSpace/ZygoteSpace/NonMovingSpace/LargeObjectSpace/MainSpace
+- **参考书覆盖深度**：深入
+## [Task14 参考书扫描] 第4章 内存管理 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+- **建议补充**：Java 对象申请流程：AllocObjectWithAllocator→大对象判断(ShouldAllocLargeObject,>3页)→TryToAllocate→AllocateInternalWithGc
+- **参考书覆盖深度**：深入
+## [Task14 参考书扫描] 第4章 内存管理 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+- **建议补充**：Java 堆 OOM 判定：num_bytes_allocated_ > growth_limit_（通常512M）
+- **参考书覆盖深度**：深入
+## [Task14 参考书扫描] 第4章 内存管理 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+- **建议补充**：Java 堆创建流程与 Space 管理器：DlMallocSpace/MainMallocSpace(rosalloc)/BumpPointerSpace/RegionSpace/FreeListSpace
+- **参考书覆盖深度**：深入
+## [Task14 参考书扫描] 第4章 内存管理 — 2026-07-05
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+- **过时内容**：Android 5.x~7.x vs 8.0+ GC 算法差异：SS(半空间回收) vs CC(并发复制)，对应不同 Space 创建策略
+- **建议更新至**：Android 17 源码引用 master 分支，需验证 Android 17 (API 37) 下 CC 算法是否仍为前台默认 GC
+## [Task14 参考书扫描] 第8章 启动优化 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+- **建议补充**：冷热端分离 LruCache：按使用频率拆分冷热队列，热端存高频数据，提升低端设备缓存命中率
+- **参考书覆盖深度**：中等
+## [Task14 参考书扫描] 第8章 启动优化 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+- **建议补充**：Dex 类文件重排序：按启动类加载顺序重排 dex 中 class 位置，提升 cache line 命中率
+- **参考书覆盖深度**：中等
+## [Task14 参考书扫描] 第8章 启动优化 — 2026-07-05
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+- **建议补充**：Facebook Redex 工具链：InterDexPass + coldstart_classes 配置实现 dex 重排
+- **参考书覆盖深度**：中等
+## [Task14 参考书扫描] 第8章 启动优化 — 2026-07-05
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+- **过时内容**：Baseline Profiles 作为官方推荐的编译优化方案，与 Redex dex 重排的关系和优先级需在 Android 17 语境下更新
+- **建议更新至**：Android 17 Redex 的 dex 重排在 ART Baseline Profiles 时代（Android 12+）的相关性和效果需重新评估
+
+## 2026-07-05 07:12 知识缺口挖掘检查记录（Round 23）
+
+- **检查方向**:
+  1. 全书空 draft 扫描（0 个空 draft）
+  2. Task2B backlog = 0（允许挖掘）
+  3. source-index.json 38 条素材中无 quality≥16 且 unmapped 的条目
+  4. research-feeds 近期文件已全部映射
+  5. 扩展关键词扫描：Data Saver/ANGLE/AIDL/System Intelligence/JobScheduler/ContentProvider/Broadcast/SQLite/f2fs/OkHttp/Doze 等 27+ 系统子领域
+  6. 对照 Clippings 三本参考书章节结构（108 篇）
+- **新检查候选**:
+  1. ContentProvider 性能 — 素材2×相关4×需求3×时效3 = 12（6 mentions/0 primary，已有 ch01.10 从架构覆盖）
+  2. JobScheduler 性能 — 素材2×相关4×需求3×时效3 = 12（10 mentions/0 primary，分散于 ch05 功耗章节）
+  3. Broadcast 投递性能 — 素材1×相关3×需求3×时效3 = 10（0 mentions，素材不足）
+  4. SQLite 性能 — 已充分覆盖（14 files >5 mentions，含 3 个专节 80+97 mentions）
+  5. Android System Intelligence — 素材1×相关1×需求2×时效4 = 8（偏应用层智能，非系统性能核心）
+- **评估结果**: 0 个 ≥14 分新候选，连续 23 轮覆盖饱和
