@@ -59,7 +59,7 @@
 10. **Android 17 Predictive Back Animation / Shared Element Transition Performance**
     - 判定：已覆盖。ch03/12 + ch22/13 + ch22/05 + ch22/12 + ch02/29 多章节交叉覆盖
 
-11. **Android 17 Play Integrity / DRM / KeyStore Cryptographic Overhead**
+11. **Android 17 Play Integrity / DRM / KeyStore Cryptistic Overhead**
     - 判定：已覆盖。ch08/12（Keystore）、ch08/13（BiometricPrompt）、ch08/15（Play Integrity）
 
 12. **Compose Multiplatform / KMP Performance**
@@ -231,3 +231,20 @@
 - **结论**: 全书覆盖范围极度完整。建议下轮可关注：
   - Android 17 App Cloning 对进程隔离和内存计费的性能影响（待公开素材增多后重评）
   - SafetyCore API 在性能链路中的开销（待官方文档补充）
+
+## [Task9 Deep Review] 21.2 启动框架设计与任务编排 — 2026-07-05
+
+- **类型**：源码准确性
+- **位置**：Alpha框架Task构造函数描述
+- **问题**：文中提到 `Task(String taskName, boolean isInUiThread)` 和 `Task(String taskName, int threadPriority)` 两个构造函数，但根据 alibaba/alpha 04fe7f2 源码实际只有 `Task(String taskName, boolean isInUiThread)` 一个构造函数
+- **建议**：修正Task构造函数描述，补充说明线程优先级通过 `setThreadPriority(int)` 方法设置
+
+- **类型**：版本差异覆盖
+- **位置**：App Startup环检测机制
+- **问题**：文中提到"框架层面必须在构建阶段做环检测"，但未说明不同版本的App Startup环检测实现差异
+- **建议**：补充App Startup环检测机制在Android 13+中的改进，包括运行时循环依赖检测和优雅降级
+
+- **类型**：版本差异覆盖
+- **位置**：线程池参数配置
+- **问题**：推荐的线程池配置参数在Android 17+中可能需要调整，因为Android 17引入了更智能的CPU调度策略和更严格的后台任务调度限制
+- **建议**：补充Android 17+中线程池配置的注意事项
