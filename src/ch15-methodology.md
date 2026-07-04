@@ -8,7 +8,7 @@ tags: [performance, methodology, perfetto, profiling, optimization, android]
 task9_result: needs-rework
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 pipeline_stage: task9_pending
 last_task6_at: "2026-07-04T09:16:19+08:00"
@@ -21,6 +21,7 @@ task6_review_notes_round5: "2026-07-04 Task6 revisiting-review round5 (post-Task
 task6_review_notes_round6: "2026-07-04 Task6 revisiting-review round6 (post-Task2B-lite source-path-prefix fix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 上分=substring of 线上分布 false positive; 问题是=part of 5W2H framework description false positive). High-freq words all within limits (其实×1, 彻底×1). Restricted patterns: 2 (not...而是 at limit). Structural meta-narrative: 0. Adjective+colon: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source code anchored to android-17.0.0_r1, original frameworks like 3-tier baseline and 5-Whys walkthrough). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). L1 fix: tags field filled [performance, methodology, perfetto, profiling, optimization, android]. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task6_review_notes_round7: "2026-07-04 Task6 revisiting-review round7: pass-light-edit. L1 fix×1 (其实是口水过渡词→删除). Banned-word scan: 链路=0(OK), 其实=0(after fix). High-freq words all within limits. Restricted patterns: 2 (not...而是 at limit). Structural meta-narrative: 0. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task2b_result: fixed-lite
+task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 round7 已通过并发送至 Task9 复审，task9_state 应为 pending"
 last_task2b_at: "2026-07-04T06:54:37+08:00"
 last_task2b_lite_at: 2026-07-04
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
