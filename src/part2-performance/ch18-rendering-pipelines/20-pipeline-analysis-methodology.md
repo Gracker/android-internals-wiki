@@ -29,7 +29,7 @@ last_task9_audit: 2026-07-03
 last_task9_audit_at: 2026-07-03T02:24:40+08:00
 last_task9_audit_log: logs/deep-review/2026-07-03-02-audit.md
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
+last_deepseek_cn_review_at: 2026-07-04
 last_task9_autofix_at: 2026-07-03
 updated_by: "openclaw-task9"
 updated_date: "2026-07-03"
@@ -67,7 +67,7 @@ task9_p2_issues: 0
 
 用户只说“App 卡了”时，Perfetto 往往会同时出现主线程、RenderThread、SurfaceFlinger、GPU、HWC 这些轨道。没有先把渲染路径认清，后面的时间窗和 slice 解释很容易串线。SurfaceView 现场要盯独立 Layer 与合成决策，TextureView 现场要盯 App 进程里的纹理采样，WebView 现场还要把 Chromium 的 Compositor / Viz 线程一起拉进来。
 
-这套四步法的目标是把“卡在哪”拆成固定顺序：识别路径，拆 Producer / Consumer，看 Perfetto，再定位到瓶颈类型。这样排查入口比较稳定，跨 Android 版本时也不容易把主窗口 BLAST 和 SurfaceView 的独立 Surface 机制混成一件事。
+这套四步法的目标是把“卡在哪”拆成固定顺序：先识别渲染路径，再拆开 Producer / Consumer，接着在 Perfetto 中定位关键 track，最后归类到具体瓶颈模式。按这个顺序排查，入口稳定，跨 Android 版本时也不容易把主窗口 BLAST 和 SurfaceView 的独立 Surface 机制混成一件事。
 
 ## Step 1：识别渲染模式
 

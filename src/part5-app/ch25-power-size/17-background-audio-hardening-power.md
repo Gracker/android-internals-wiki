@@ -69,7 +69,7 @@ p0: 1
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-02
+last_deepseek_cn_review_at: 2026-07-04
 last_task9_audit_log: "logs/deep-review/2026-07-02-14-audit.md"
 last_task9_autofix_at: "2026-07-02"
 updated_by: openclaw-task9
@@ -126,7 +126,7 @@ Android 17 收紧了对后台音频的控制：应用退到后台后继续写 `A
 
 ## 后台音频硬化的触发条件
 
-Android 17 限制三类后台音频交互：音频播放、音频焦点请求、音量和铃声模式修改。应用满足其中任一条件时，都要确认自己处在系统认可的生命周期里。
+Android 17 限制三类后台音频交互：音频播放、音频焦点请求、音量和铃声模式修改。只要命中其中任一场景，就必须确保应用处于系统认可的生命周期状态里。
 
 | 场景 | Android 17 上的要求 | 失败表现 | 适配动作 |
 | --- | --- | --- | --- |
@@ -194,7 +194,7 @@ Android 17 的难点在于部分失败是静默的。定位时要同时看播放
 
 简单来说：短音频或亮屏播放通常不用优先考虑电量；屏幕关闭后的长时间播放，可以评估 ExoPlayer 的 audio offload。audio offload 把部分音频处理交给专用硬件，降低 CPU 参与度，但会限制部分音效、变速和静音跳过能力，需要在目标设备和媒体格式上实际验证。
 
-线程治理要克制。可以把任务调度拆成线程数量、线程优先级、CPU 利用率和等待时间几个维度来审视后台音频，但不能把所有播放相关线程都提到高优先级。音频输出线程和解码线程影响连续性，歌词、封面、埋点、推荐预取通常不应抢占播放预算。如果临时提高线程优先级，要用可观测指标证明它减少了 underrun 或焦点恢复耗时；没有证据时，优先减少非必要任务和网络重试。
+线程治理要克制。后台音频场景里，音频输出线程和解码线程直接关联播放连续性，优先级不能压得太低；但歌词解析、封面加载、埋点上报、推荐预取这些任务不应抢占播放预算。临时提线程优先级的理由只能有一个：指标证明它确实减少了 underrun 或焦点恢复耗时。没有证据时，优先砍掉非必要任务、压网络重试频率。
 
 ## Perfetto、dumpsys 与 logcat 取证
 
@@ -265,9 +265,9 @@ Perfetto 抓取时建议覆盖 `audio`、`sched`、`freq`、`power`、`battery`�
 
 ## 小结
 
-Android 17 后台音频硬化要求应用把“用户想继续听”的意图表达清楚：可见页面内播放可以继续按页面生命周期管理；锁屏、退后台后的长时播放应使用 Media3 `MediaSessionService` 或合规的 `mediaPlayback` FGS；target 37 后还要确认 FGS 是否具备 WIU 能力，闹钟场景则按 exact alarm 与 `USAGE_ALARM` 边界处理。
+后台音频硬化的核心要求很简单：让系统知道用户还想继续听。可见页面内播放，按页面生命周期管理即可；锁屏或退后台后的长时播放，用 Media3 `MediaSessionService` 或合规的 `mediaPlayback` FGS 宣告播放意图；target 37 还需要确认 FGS 有没有 WIU 能力，闹钟场景走 exact alarm + `USAGE_ALARM` 豁免路径。
 
-功耗治理的方向也随之改变。播放被系统拦住后，不能让网络、WakeLock、线程和前台服务继续运行。后台音频适配的验收标准不是“播放器状态没有报错”，而是用户能听见、通知能控制、焦点能解释、资源能释放、线上指标能复盘。
+功耗治理的逻辑也跟着变了——播放一旦被系统拦截，网络、WakeLock、线程和前台服务都应该停下来，不能继续空转。后台音频适配的验收标准也不是“播放器没报错”就行，而是用户能听见、通知能控制、焦点能解释、资源能释放、线上指标能复盘。
 
 ## 参考资料
 
@@ -280,7 +280,4 @@ Android 17 后台音频硬化要求应用把“用户想继续听”的意图表
 - [Track selection: Audio Offload | Android media | Android Developers](https://developer.android.com/media/media3/exoplayer/track-selection)
 - [perfetto | Android Studio | Android Developers](https://developer.android.com/tools/perfetto)
 - [dumpsys | Android Studio | Android Developers](https://developer.android.com/studio/command-line/dumpsys)
-- 结构参考：Clippings/Android 性能优化 - Android 性能优化总结.md
-- 结构参考：Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md
-- 结构参考：Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md
 - 结构参考：Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md
