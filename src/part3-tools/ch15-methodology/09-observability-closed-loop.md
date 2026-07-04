@@ -5,32 +5,24 @@ section: "15.9"
 status: finalized
 drafted_date: "2026-04-21"
 drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-22"
-last_verified_against: "Android Developers docs + current upstream project docs"
+last_verified_against: "AndroidX metrics-performance 1.0.0 Maven artifact (JankStats confirmed); AOSP android-17.0.0_r1 ApplicationExitInfo.java (API 30+)"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals"
-  - type: official
-    path: "https://developer.android.com/reference/androidx/metrics/performance/JankStats"
-  - type: official
-    path: "https://firebase.google.com/docs/perf-mon"
-  - type: blog
-    path: "https://github.com/Tencent/matrix"
-  - type: blog
-    path: "https://github.com/measure-sh/measure"
 tags: [observability, apm, pipeline, governance, monitoring]
 related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task6_result: pass-light-edit
+pipeline_stage: task6_pending
+task6_state: revisiting
+task6_result: needs-rework
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
-task9_state: reviewed
+task9_state: pending
 repaired_date: "2026-04-22"
 repaired_by: "codex"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-04T10:23:45.573632+08:00"
@@ -38,10 +30,13 @@ last_task6_audit: "2026-07-03"
 last_task6_audit_log: "logs/review/2026-07-03-07-audit.md"
 last_task9_audit: "2026-07-04"
 last_task9_idle_audit: "2026-07-04"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_rework_at: "2026-07-04T10:52:54+08:00"
+last_task2b_rework_log: "Task2B 2026-07-04: 按 Task9 闲时抽检问题单修复 ApplicationExitInfo API 版本边界、JankStats 引用验证、API 演进说明补全。"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 ---
-
 # 从采集到治理的反馈回路
 
 <!-- outline-start -->
@@ -97,13 +92,15 @@ last_deepseek_polish_at: "2026-05-24"
 
 常见的信号源包括:
 
-- 帧级信号:`JankStats`、`FrameMetrics`
+- 帧级信号:`JankStats`（`androidx.metrics:metrics-performance:1.0.0`，自 API 16 起可用，API 31+ 基于 `FrameMetrics.DEADLINE`）、`FrameMetrics`
 - 启动:TTID、TTFD、自定义首屏埋点
-- 稳定性:`ApplicationExitInfo`
+- 稳定性:`ApplicationExitInfo`（API 30+，Android 11 引入；API 26-29 需依赖 `ActivityManager.getRunningAppProcesses()` 或崩溃上报 SDK 获取进程退出信息）
 - 现场证据:`Matrix`、`btrace`、`Perfetto SDK`
 
 采集这一层解决的是"有没有最基本的感知能力"。
 没有这一步,后面所有治理都无从谈起。
+
+> **API 版本说明**：上述采集通道的可用性随 Android 版本而异。`JankStats` 自 API 16 起可用（不同实现层级适配到 API 31 的 `FrameMetrics.DEADLINE`）；`FrameMetrics` 于 API 24 引入，API 31 开始支持 `FrameMetrics.DEADLINE`；`ApplicationExitInfo` 于 API 30 引入。Android 8-10（API 26-29）设备上的进程稳定性监控需依赖 `ActivityManager.getRunningAppProcesses()`、崩溃上报 SDK 或 `StrictMode` 等替代手段。
 
 ### 第二步:采样
 
@@ -214,7 +211,7 @@ last_deepseek_polish_at: "2026-05-24"
 - `build / version / channel`
 - `device fingerprint`
 
-这些字段的价值取决于能否把不同层的数据 join 赬来。
+这些字段的价值取决于能否把不同层的数据 join 起来。
 如果 trace 和指标、页面和版本、版本和报警之间连不上,平台功能再多也很难形成治理回路。
 
 ## 平台视角和工程视角,最容易断在这里
@@ -236,7 +233,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 团队初期不一定需要自建完整平台。更现实的做法,是先建立一个能稳定运转的最小版本:
 
-1. 用 `JankStats`、启动埋点、`ApplicationExitInfo` 建立基础指标。
+1. 用 `JankStats`（API 16+）、启动埋点、`ApplicationExitInfo`（API 30+）建立基础指标；低于 API 30 的设备用崩溃上报 SDK 补充进程稳定性信号。
 2. 对异常样本按低比例补采 trace 或会话时间线。
 3. 用版本、机型、页面维度做最基本聚合。
 4. 周期性把异常榜单送进 backlog。
