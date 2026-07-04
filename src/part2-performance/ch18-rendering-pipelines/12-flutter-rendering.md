@@ -3,7 +3,7 @@
 title: "Flutter 渲染管线"
 chapter: "'18.12'"
 section: "'18.12'"
-status: revisiting
+status: ready-for-review
 pipeline_stage: task6_pending
 applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17"
 tags: ['rendering', 'pipeline']
