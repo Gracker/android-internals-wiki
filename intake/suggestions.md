@@ -295,3 +295,69 @@
 
 **结论**：第 7 轮连续无 ≥14 分候选。全书 577 节，覆盖已饱和。
 建议后续挖掘周期继续维持「深度扩展」策略，聚焦已有章节的 🔸 扩展点填充和 Task14 参考书扫描建议的内容注入。
+
+
+## [Task2A Gap Mining Round 8] 2026-07-04 10:09 — Coverage Saturated (Round 8)
+
+已检查方向（全部已覆盖或 <14 分）：
+1. Safety Center → 安全特性，非性能优化 (6/20)
+2. Companion Device Manager → 配对/连接特性，非核心性能 (7/20)
+3. Backup/Restore 性能 → 后台执行，开发者关注度低 (8/20)
+4. Photo Picker → ch24.13 已覆盖 (transcoding performance)
+5. Play Integrity API → ch08.15 已覆盖
+6. App Standby Buckets → ch25.02/25.04/25.13 已覆盖
+7. Foreground Service Types → ch25.02/25.05/25.22 已覆盖
+8. Splash Screen API → ch21.05 已覆盖
+9. Predictive Back → ch22.13 已覆盖
+10. 16KB Page Size → ch20.13/ch20.15/ch23.13 已覆盖
+11. ART Module → ch01.07/ch16.01/ch23.05/ch20.03 已覆盖
+12. heapprofd 权限模型 → ch14 HPROF 系列 + DeepResearch 补充
+13. Binder node release batch → ch01 Binder 系列 + DeepResearch 补充
+14. LMKD batch/thrashing → ch04.05 + DeepResearch 补充
+
+新增检查维度（相比前 7 轮）：
+- Safety Center / Companion Device Manager / Backup-Restore 三个全新方向
+- 今日 DeepResearch 3 篇全部映射到现有章节
+- 全书 577 节状态分布：finalized 341 / ready-for-review 199 / draft 16 / deprecated 20
+
+**结论**：第 8 轮连续无 ≥14 分候选。全书 577 节，覆盖已饱和。
+建议后续挖掘周期继续维持「深度扩展」策略，聚焦已有章节的 🔸 扩展点填充和 DeepResearch 素材注入。
+
+
+## [Task2A Gap Mining Round 9] 2026-07-04 11:11 — Coverage Saturated (Round 9)
+
+已检查方向（全部已覆盖或 <14 分）：
+1. Android Virtualization Framework (AVF) → ch1.32 已覆盖
+2. Compose Compiler 代码优化 → ch22.28 已覆盖
+3. Jetpack WindowManager 性能 → ch22.14 已覆盖
+4. Foldable/Multi-display 性能 → ch2.28/ch2.30/ch22.27 已覆盖
+5. Input Method Framework 性能 → ch13.14/ch13.15/ch14.21 已覆盖
+6. Accessibility Service 性能 → ch7.19/ch7.20/ch5.21 已覆盖
+7. ContentProvider 跨进程性能 → ch10.7/ch9.2/ch9.9 已覆盖
+8. DEX/Package Parser 加载性能 → ch1.7/ch1.22/ch5.18 已覆盖
+9. Foreground Service Type 约束 → ch11.02/ch25 间接覆盖, 非核心性能 (<14)
+10. BatteryStats/PowerStats 导出 → ch11.1/ch11.5/ch11.6 已覆盖
+11. Notification Builder/Trampoline → 间接覆盖, 非独立性能主题 (<14)
+12. Backup/Restore 性能 → 后台执行, 开发者关注度低 (8/20)
+13. Runtime Resource Overlay (RRO) → OEM/框架层, 应用开发者无关 (6/20)
+14. SystemProperty read 性能 → ch13.21 等多个章节已涉及
+15. Compose Lazy Layout internals → 26 个文件涉及, 已广泛覆盖
+16. App Search/AppFunctions → ch8.18 等已涉及
+17. Credential Manager → ch8.12/ch8.13 已覆盖
+18. Predictive Animation → ch7.08 等已覆盖
+19. WindowMetrics → ch22.14 已覆盖
+20. PackageInstaller Session → ch1.46/ch1 系列已覆盖
+
+新增检查维度（相比前 8 轮）：
+- AVF/pKVM/crosvm 虚拟化性能 → ch1.32
+- Compose Foundation Lazy internals 深度搜索 → 26 文件命中
+- FGS Type / Notification Trampoline / RRO / Backup 四个全新方向
+- Jetpack WindowManager / WindowMetrics 精确搜索
+- SystemProperty read 性能（底层 IPC 性能）
+- 全书 577 节，覆盖已饱和（第 9 次确认）
+
+**结论**：第 9 轮连续无 ≥14 分候选。全书 577 节，覆盖已饱和。
+当前 16 个 draft 章节中 8.9/8.10（各 40 行有效内容）需 Task 2B 深化处理，
+不属于 Task 2A 空 draft 加工范围。
+建议后续挖掘周期降低频次（每 3-6 轮挖掘一次即可），
+将算力转向已有章节的 🔸 扩展点填充和 Clippings 参考书素材注入。
