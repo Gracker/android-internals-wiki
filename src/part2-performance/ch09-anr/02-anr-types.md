@@ -61,7 +61,7 @@ rework_by: openclaw-task2b
 rework_type: "Task9 Deep Tech Review 回炉修复（4项源码/版本/命令错误）"
 task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-06T08:15:00+08:00"
-last_task6_audit: 2026-06-12
+last_task6_audit: 2026-07-04
 auto_promoted: true
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理重复 DeepResearch 注入块与引用元信息；Task9 复审已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-06-18"
