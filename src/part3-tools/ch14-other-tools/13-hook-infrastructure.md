@@ -68,16 +68,13 @@ task6_review_notes_2026_06_24_r5: 第五轮复审：L1 修复完成（删除'这
 task6_review_notes_2026_06_24_r6: '第六轮复审（Task2B P95 Task9回炉后）：L1 修 2 处（代码注释中英文间距 Thumb）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁。L3
   观察 1 条（PLT vs Inline 对比表中 IFUNC 绕过方式与正文描述矛盾），写入 queue+suggestions 送 Task2B/Task9。新增多进程/64-32bit/ART-Dalvik/16KB增强节质量良好。task6_result:
   pass-light-edit，待 Task9 技术复审。'
-task6_review_notes_2026_06_24_r7: '第七轮复审（Task2B IFUNC表格修正后回炉复审）：L1 修 20 处路径格式（AOSP/GitHub
-task6_review_notes_2026_07_01_r8: "第八轮复审（revisiting 回炉后）：L1 修 3 处（frontmatter title 残留---、禁用词链路→跳转回路、错误处理代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁（核心6次均作形容词修饰，关键7次均作形容词修饰，非汇报腔用法）。L3 观察 1 条（应用场景三小节持续偏薄，前轮已标注，持续性建议不阻断）。无 B 类阻断问题。task9_result: pass-tech-review + queue.json 无 pending → 自动晋升 finalized。"
-  源码路径中多余空格，涉及验证标注和正文）。禁用词/AI套话/翻译腔全清洁（body text）。不是X而是Y=2（限额内）。高频词全清洁。IFUNC 对比表 P90
-  修正已验证正确。L3 观察 1 条：art/runtime/entrypoints/entrypoint_utils.h 路径可能在 android-17.0.0_r1
-  中不存在（Task9 P95 queue 标记 completed 但路径未更新），交 Task9 复核。无 B 类阻断问题。task6_result: pass-light-edit，待
-  Task9 技术复审。'
+task6_review_notes_2026_06_24_r7: '第七轮复审（Task2B IFUNC表格修正后回炉复审）：L1 修 20 处路径格式（AOSP/GitHub 源码路径中多余空格，涉及验证标注和正文）。禁用词/AI套话/翻译腔全清洁（body text）。不是X而是Y=2（限额内）。高频词全清洁。IFUNC 对比表 P90 修正已验证正确。L3 观察 1 条：art/runtime/entrypoints/entrypoint_utils.h 路径可能在 android-17.0.0_r1 中不存在（Task9 P95 queue 标记 completed 但路径未更新），交 Task9 复核。无 B 类阻断问题。task6_result: pass-light-edit，待 Task9 技术复审。'
+task6_review_notes_2026_07_01_r8: '第八轮复审（revisiting 回炉后）：L1 修 3 处（frontmatter title 残留---、禁用词链路→跳转回路、错误处理代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁（核心6次均作形容词修饰，关键7次均作形容词修饰，非汇报腔用法）。L3 观察 1 条（应用场景三小节持续偏薄，前轮已标注，持续性建议不阻断）。无 B 类阻断问题。task9_result: pass-tech-review + queue.json 无 pending → 自动晋升 finalized。'
 task6_reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-07-01'
 task6_state: reviewed
-last_task6_audit: '2026-07-01'
+last_task6_at: '2026-07-01'
+last_task6_audit: '2026-07-04'
 task9_result: pass-tech-review
 task9_review_date: '2026-06-24'
 task9_reviewer: openclaw-task9
