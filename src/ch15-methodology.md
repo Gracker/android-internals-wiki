@@ -2,15 +2,15 @@
 
 title: Android 性能优化研究方法论
 chapter: "15"
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8-17 (API 26-37)
 last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 tags: [performance, methodology, perfetto, profiling, optimization, android]
-task9_result: pending-revisit
+task9_result: pass-tech-review
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 task2b_state: fixed
 last_task6_at: 2026-07-04T19:12:25+08:00
 last_task6_review_log: logs/review/2026-07-04-19-review.md
