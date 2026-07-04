@@ -70,7 +70,7 @@ last_task9_review_log: "logs/deep-review/2026-05-19-07-deep-review.md"
 task9_review_notes: "2026-07-02 Task9 闲时抽检：复核 Android 17 源码路径与 BitmapRegionDecoder 格式版本差异；auto-fix Android 17 锚点和区域解码 AVIF 版本边界，回到 Task6 复审。"
 task2b_result: "fixed"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-29
+last_deepseek_cn_review_at: 2026-07-04
 ---
 
 # 图片加载与显示优化
@@ -89,13 +89,6 @@ last_deepseek_cn_review_at: 2026-06-29
 
 - 🔸 AVIF / WebP 格式选型与兼容性
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么要了解图片加载与显示优化
@@ -156,7 +149,7 @@ fun calculateInSampleSize(srcWidth: Int, srcHeight: Int, reqWidth: Int, reqHeigh
 }
 ```
 
-`inSampleSize > 1` 会请求解码器对原图做子采样，返回更小的 Bitmap。Android 官方文档给出的语义是节省内存；AOSP `BitmapFactory.java` 里也把 `inSampleSize` 与复用 Bitmap 的约束写在同一组选项里。[已验证: 官方文档, BitmapFactory.Options][已验证: AOSP android-17.0.0_r1, BitmapFactory.java]
+`inSampleSize > 1` 会请求解码器对原图做子采样，返回更小的 Bitmap。Android 官方文档对此的说明聚焦节省内存；AOSP `BitmapFactory.java` 里也把 `inSampleSize` 与复用 Bitmap 的约束写在同一组选项里。[已验证: 官方文档, BitmapFactory.Options][已验证: AOSP android-17.0.0_r1, BitmapFactory.java]
 
 API 28 之后的新代码可优先使用 `ImageDecoder`。它支持在 `OnHeaderDecodedListener` 里设置目标尺寸、采样尺寸、目标色彩空间和部分图片回调，适合把“读 header → 决定目标尺寸 → 解码”放在一个闭合流程里。[已验证: 官方文档, ImageDecoder]
 

@@ -7,23 +7,23 @@ drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) – Android 17 (API 37)"
 last_verified: "2026-04-22"
-last_verified_against: "AndroidX metrics-performance 1.0.0 Maven artifact (JankStats confirmed); AOSP android-17.0.0_r1 ApplicationExitInfo.java (API 30+)"
+last_verified_against: "AndroidX metrics-performance 1.0.0 Maven artifact (JankStats confirmed); AOSP android-17.0.0_r1 /base/core/java/android/app/ActivityManager.java (ApplicationExitInfo 相关方法, API 30+)"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals"
 tags: [observability, apm, pipeline, governance, monitoring]
 related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: 2026-07-04
 reviewed_by: openclaw-task6
 last_task6_at: 2026-07-04T13:09:00+08:00
-task9_state: pending
+task9_state: revisiting
 repaired_date: "2026-04-22"
 repaired_by: "codex"
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-04T10:23:45.573632+08:00"
@@ -95,7 +95,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 - 帧级信号:`JankStats`（`androidx.metrics.performance.JankStats`，Maven 坐标 `androidx.metrics:metrics-performance:1.0.0`；核心 API 包括 `JankStats.createAndTrack(window, listener)` 注册帧回调、`OnFrameMetricsAvailableListener.onFrameMetricsAvailable(report)` 接收帧报告、`FrameData.getFrames()` 获取单帧时间戳。自 API 16 起提供基础帧耗时回调，API 31+ 内部分发至 `FrameMetrics.FRAME_TIMELINE_VSYNC_ID` 实现 VSync 对齐）、`FrameMetrics`
 - 启动:TTID、TTFD、自定义首屏埋点
-- 稳定性:`ApplicationExitInfo`（API 30+，Android 11 引入；API 26-29 需依赖 `ActivityManager.getRunningAppProcesses()` 或崩溃上报 SDK 获取进程退出信息）
+- 稳定性:`ApplicationExitInfo`（API 30+，Android 11 引入；API 26-29 需依赖 `ActivityManager.getRunningAppProcesses()` 或崩溃上报 SDK 获取进程退出信息；在 `android-17.0.0_r1` 中通过 `ActivityManager.java` 管理）
 - 现场证据:`Matrix`、`btrace`、`Perfetto SDK`
 
 采集这一层解决的是"有没有最基本的感知能力"。
@@ -107,8 +107,8 @@ last_deepseek_polish_at: "2026-05-24"
 > |----------|-----------|--------------|-------------|
 > | API 26–29（Android 8–10） | ✅ 基础帧回调 | ✅ API 24 引入 | ⚠️ 需 `ActivityManager.getRunningAppProcesses()` / 崩溃 SDK / `StrictMode` |
 > | API 30（Android 11） | ✅ | ✅ | ✅ `ApplicationExitInfo` 引入 |
-> | API 31+（Android 12+） | ✅ `FrameMetrics.DEADLINE` 对齐 | ✅ `FrameMetrics.DEADLINE` | ✅ |
-> | API 37（Android 17） | ✅ | ✅ | ✅ `android-17.0.0_r1` `ApplicationExitInfo.java` 基线验证通过 |
+> | API 31+（Android 12+） | ✅ 增强帧级 `DEADLINE` 跟踪和 `FRAME_TIMELINE_VSYNC_ID` VSync 事件标识 | ✅ 增强帧级 `DEADLINE` 跟踪和 `FRAME_TIMELINE_VSYNC_ID` VSync 事件标识 | ✅ |
+> | API 37（Android 17） | ✅ 完整支持所有帧分析 API | ✅ 完整支持所有帧分析 API | ✅ `android-17.0.0_r1` `/base/core/java/android/app/ActivityManager.java` 基线验证通过 |
 >
 > 治理回路本身是版本无关的方法论框架，具体采集通道的可用性取决于目标 API 级别。API 26 以下的设备因市场占有率已极低，本节不再覆盖。
 
