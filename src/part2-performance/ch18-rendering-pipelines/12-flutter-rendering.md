@@ -1,26 +1,27 @@
 ---
+
 title: "Flutter 渲染管线"
 chapter: "'18.12'"
 section: "'18.12'"
-status: ready-for-review
-pipeline_stage: task9_pending
+status: revisiting
+pipeline_stage: task6_pending
 applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17"
 tags: ['rendering', 'pipeline']
 reviewed_date: "2026-07-04"
 reviewed_by: "\"openclaw-task6\""
 created_by: "rendering-pipelines-merge"
 created_date: "'2026-04-09'"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 task6_result: "\"pass-light-edit\""
 task2b_result: fixed
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 已于 07-04 复审通过，章节等待 Task9 复审"
-last_task2b_at: "2026-07-01T18:54:04+08:00"
+last_task2b_at: "2026-07-04T18:52:42+08:00"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-07-02
-last_task9_at: "2026-07-02T10:41:17+08:00"
+task9_reviewed_date: 2026-07-04
+last_task9_at: "2026-07-04T18:20:00+08:00"
 repaired_date: "\"2026-04-26\""
 repaired_by: "\"openclaw-task2b\""
 last_task9_audit: "2026-06-28"
@@ -230,7 +231,7 @@ Android Choreographer / AChoreographer → VsyncWaiterAndroid::AwaitVSync()
     → Rasterizer::DrawToSurfaces
 ```
 
-`VsyncWaiterAndroid` 在当前 Android Engine 中优先调用 NDK `AChoreographer`，回调进入 `OnVsyncFromNDK()` 后记录 `PlatformVsync`，再通过 `VsyncWaiter::FireCallback()` 投递 `VsyncProcessCallback`。Java `Choreographer.FrameCallback` / `FlutterJNI.onVsync()` 是 `AChoreographer` 不可用时的回退路径。engine 内部把这当成"可以开始下一帧"的信号，驱动整个 Dart → Raster 管线。
+`VsyncWaiterAndroid` 在当前 Android Engine 中优先调用 NDK `AChoreographer`，回调经由 `OnVsync()` → `ProcessVsync()` 记录 `PlatformVsync`，再通过 `VsyncWaiter::FireCallback()` 投递 `VsyncProcessCallback`。Java `Choreographer.FrameCallback` / `FlutterJNI.onVsync()` 是 `AChoreographer` 不可用时的回退路径。engine 内部把这当成"可以开始下一帧"的信号，驱动整个 Dart → Raster 管线。
 
 **Merged Model 下的区别（Flutter 3.32 stable+）**：
 
@@ -263,7 +264,7 @@ Android Choreographer / AChoreographer → VsyncWaiterAndroid::AwaitVSync()
 - **Hybrid Composition 下 overlay Surface 的承载 View**：`PlatformViewsController.createOverlaySurface(...)` 在 HC 路径里创建 `ImageReader` 提供的 Surface 作为 overlay，结果由 `FlutterImageView` 承载并绘回宿主 View 层级；
 - **`FlutterView.convertToImageView()` 特殊过渡场景**：内部能力，遇到需要把当前 Flutter 内容快照为 image 时使用。
 
-`FlutterImageView` 的渲染路径是：Engine 渲染到 `ImageReader` 提供的 Surface → `acquireLatestImage()` → API 29+ 主要走 `Image` → `HardwareBuffer` → `Bitmap.wrapHardwareBuffer()`（`Config.HARDWARE`）→ `Canvas.drawBitmap` 绘到宿主。Trace 上看到 `FlutterImageView` 相关 slice 时，不要把它当成独立 root render mode 分析——它是 HC overlay 的承载形态。
+`FlutterImageView` 的渲染路径是：Engine 渲染到 `ImageReader` 提供的 Surface → `acquireLatestImage()` → 通过 `Canvas.drawBitmap` 将帧内容绘入宿主 View 层级。API 29+ 支持通过 `Image.getHardwareBuffer()` → `Bitmap.wrapHardwareBuffer()`（`Config.HARDWARE`）实现零拷贝渲染，但此路径属实验性功能，主路径仍走 `Canvas.drawBitmap`。Trace 上看到 `FlutterImageView` 相关 slice 时，不要把它当成独立 root render mode 分析——它是 HC overlay 的承载形态。
 
 [已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterImageView.java` + `io/flutter/plugin/platform/PlatformViewsController.java` `createOverlaySurface`]
 

@@ -153,8 +153,8 @@
   {
     "section": "15",
     "section_title": "Android 性能优化研究方法论",
-    "priority": 90,
-    "reason": "[review回炉] 章节整体为百科词条式罗列，违反 writing-guide 反面教材1；案例数据疑似编造；多个章节内容空泛",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 缺少 Android 17 中新增的 FrameRateOverrides 与 FrameTimeline 协同工作机制说明",
     "material_paths": [
       "src/ch15-methodology.md",
       "intake/suggestions.md"
@@ -201,10 +201,22 @@
         "location": "Section 3.2 Android 17 新增内容",
         "detail": "章节提到 Android 17 中  已被  和 DeviceConfig 机制替代，但源码验证显示该描述不够准确，需要补充具体的 DeviceConfig 实现机制",
         "suggestion": "补充 Android 17 中 Perfetto DeviceConfig 机制的具体实现细节，包括配置选项和动态调整能力"
+      },
+      {
+        "type": "源码错误",
+        "location": "3.2 版本兼容性部分 - Android 14-17 (API 34-37) Perfetto CLI 参数说明",
+        "detail": "detached session 使用 `--attach=<key> --stop` 回收，不能和 `-d/--background` 混用，原文描述有冲突",
+        "suggestion": "修正为：detached session 是另一套模式，用 `--detach=<key>` 创建、`--attach=<key> --stop` 回收，不能和 `-d` 混用"
+      },
+      {
+        "type": "版本差异",
+        "location": "4.4 数据分析与三个实用原则",
+        "detail": "缺少 Android 17 中新增的 FrameRateOverrides 与 FrameTimeline 协同工作机制说明",
+        "suggestion": "补充 FrameRateOverrides 如何影响帧调度计划、VSync 偏移动态调整、以及与 FrameTimeline Expected Timeline 的协同机制"
       }
     ],
-    "added_by": "task6-review",
-    "added_at": "2026-07-04T06:27:14.286853+08:00",
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-04T16:22:00+08:00",
     "status": "completed",
     "original_review_log": "logs/review/2026-07-02-20-review.md",
     "completed_at": "2026-07-02T20:58:27+08:00",
@@ -698,6 +710,86 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-07-04T12:21:00+08:00",
-    "status": "completed", "completed_at": "2026-07-04T12:52:22+08:00", "completed_by": "task2b-main", "completed_reason": "fixed: JankStats full API path + SLA mapping + version consistency + multi-tenant + alert thresholds"
+    "status": "completed",
+    "completed_at": "2026-07-04T12:52:22+08:00",
+    "completed_by": "task2b-main",
+    "completed_reason": "fixed: JankStats full API path + SLA mapping + version consistency + multi-tenant + alert thresholds"
+  },
+  {
+    "section": "15",
+    "section_title": "Android 性能优化研究方法论",
+    "priority": 95,
+    "reason": "[Deep Tech Review] VSyncTracker 组件描述误导 + Android 17 Perfetto CLI detached 模式描述错误",
+    "material_paths": [
+      "src/ch15-methodology.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "3.2 Android 14-17 (API 34-37) Perfetto CLI 参数说明",
+        "detail": "章节中 detached session 描述\"detached session 是另一套模式，用 --attach=<key> --stop 回收，不能和 -d 混用\"，但在 android-17.0.0_r1 中 detached session 支持 --background-wait 和 --attach 同时使用",
+        "suggestion": "修正描述并补充具体命令示例： detached session 使用 --detach=<key> 创建，支持 --background-wait 和 --attach=<key> 同时使用，--attach=<key> --stop 回收"
+      },
+      {
+        "type": "源码错误",
+        "location": "VSyncTracker 组件描述",
+        "detail": "文中描述为\"VSyncTracker.cpp 单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作\"，但实际在 AOSP android-17.0.0_r1 中 VSyncTracker 确实是单文件实现，组件协作描述存在误导",
+        "suggestion": "修正 VSyncTracker 组件描述，准确反映其在 android-17.0.0_r1 中的单文件实现，如需说明多组件协作，应明确指出各组件的具体职责和交互方式"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-04T10:26:15.816373+00:00",
+    "status": "completed",
+    "updated_at": "2026-07-04T18:39:16.659044+08:00",
+    "completed_at": "2026-07-04T18:52:42+08:00",
+    "completed_by": "task2b-main"
+  },
+  {
+    "section": "18.12",
+    "section_title": "Flutter 渲染管线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] VSyncWaiterAndroid 调用链描述错误",
+    "material_paths": [
+      "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "VSync 调度器集成部分",
+        "detail": "章节提到\"优先调用 NDK AChoreographer，回调进入 OnVsyncFromNDK()\"，但实际在 android-17.0.0_r1 中 OnVsyncFromNDK() 不存在",
+        "suggestion": "修正调用链为：OnVsync() → ProcessVsync() → PlatformVsync；删除错误的 OnVsyncFromNDK() 引用"
+      },
+      {
+        "type": "源码错误",
+        "location": "FlutterImageView 渲染路径部分",
+        "detail": "章节提到\"API 29+ 主要走 Image → HardwareBuffer → Bitmap.wrapHardwareBuffer()\"，但在 android-17.0.0_r1 中主要路径是通过 ImageReader 获取 Image，然后 Canvas.drawBitmap",
+        "suggestion": "修正路径描述：实际路径为 ImageReader → Image → Canvas.drawBitmap，HardwareBuffer 路径是实验性功能"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-04T10:26:15.816765+00:00",
+    "status": "completed",
+    "completed_at": "2026-07-04T18:52:42+08:00",
+    "completed_by": "task2b-main"
+  },
+  {
+    "section": "25.17",
+    "section_title": "Android 17 后台音频硬化与播放功耗治理",
+    "priority": 90,
+    "reason": "[Deep Tech Review] Android 17 shell 命令错误",
+    "material_paths": [
+      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "取证命令部分",
+        "detail": "章节中 adb shell 命令错误，提到\"adb shell cmd audio set-hardening enable/disable\"，但在 android-17.0.0_r1 中正确命令是\"cmd audio set-hardening\"和\"cmd audio clear-hardening\"",
+        "suggestion": "修正命令描述：set-hardening 开启限制，clear-hardening 恢复默认行为，不存在 enable/disable 参数"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-04T10:26:15.816768+00:00",
+    "status": "pending"
   }
 ]
