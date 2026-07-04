@@ -4,14 +4,14 @@ title: "Flutter 渲染管线"
 chapter: "'18.12'"
 section: "'18.12'"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17"
 tags: ['rendering', 'pipeline']
 reviewed_date: "2026-07-04"
 reviewed_by: "\"openclaw-task6\""
 created_by: "rendering-pipelines-merge"
 created_date: "'2026-04-09'"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task6_result: "\"pass-light-edit\""
@@ -27,10 +27,10 @@ repaired_by: "\"openclaw-task2b\""
 last_task9_audit: "2026-06-28"
 last_task9_audit_at: "2026-06-28T11:34:55+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-28-11-audit.md"
-last_task6_at: "2026-07-04T09:16:19+08:00"2026-06-04T15:21:59.742576+08:00\""
-task6_reviewed_date: "2026-07-04"
+last_task6_at: "2026-07-04T20:18:00+08:00"
+task6_reviewed_date: "2026-07-04T20:18:00+08:00"
 task6_reviewed_by: "\"openclaw-task6\""
-task6_l1_l2_fixes: "0"
+task6_l1_l2_fixes: "3"
 task6_l3_l4_issues: "0"
 last_verified_against: "Flutter 3.32 thread merge docs + Flutter 3.44 VsyncWaiterAndroid/Choreographer/HCPP source"
 task2b_fix_source: task9-deep-tech-review
@@ -66,7 +66,7 @@ task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 1�
 
 Flutter 在 Android 上的渲染管线与原生 App 有本质区别：**Flutter 不走 Android View 体系的 Measure/Layout/Draw 流程**。它有一套完全独立的渲染管线，Dart 代码生成 LayerTree，C++ Raster Thread 将 LayerTree 光栅化为像素，最终通过独立 Surface 或 SurfaceTexture 提交给 SurfaceFlinger。
 
-理解这条管线，你才能在 Perfetto 中区分"Flutter Dart 代码慢了"、"Raster Thread GPU 光栅化慢了"和"宿主 App 侧的合成慢了"，这三类问题的优化方向完全不同。[已验证: Flutter 官方文档]
+理解这条管线，才能在 Perfetto 中区分"Flutter Dart 代码慢了"、"Raster Thread GPU 光栅化慢了"和"宿主 App 侧的合成慢了"，这三类问题的优化方向完全不同。[已验证: Flutter 官方文档]
 
 ## 版本边界
 
@@ -291,7 +291,7 @@ Android Choreographer / AChoreographer → VsyncWaiterAndroid::AwaitVSync()
 | **MapView** | 原生手势与无障碍行为更接近 Android 默认实现 | 适合做裁剪、缩放、透明过渡，但高频相机移动时要盯紧纹理采样成本 |
 | **SurfaceView 类控件** | 更接近原生独立 Layer 路径 | 不是默认优先项，容易触发 virtual display 退化，a11y 和合成链都会更复杂 |
 
-因此，Platform Views 这部分不能只写“Hybrid Composition 性能较好”或“Texture Layer 更灵活”。真正要看的，是目标控件类型、滚动模式、是否依赖 a11y，以及是否需要跟 Flutter 内容一起做动画。
+因此，Platform Views 这部分不能只写“Hybrid Composition 性能较好”或“Texture Layer 更灵活”。要看的是目标控件类型、滚动模式、是否依赖 a11y，以及是否需要跟 Flutter 内容一起做动画。
 
 ## 在 Perfetto 中识别 Flutter 管线
 
