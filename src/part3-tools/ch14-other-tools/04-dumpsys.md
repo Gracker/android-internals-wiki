@@ -43,7 +43,7 @@ review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHi
 last_task9_audit: "2026-06-16"
 last_task9_audit_log: "logs/deep-review/2026-06-16-19-audit.md"
 status: "finalized"
-task6_state: "revising"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
@@ -65,6 +65,7 @@ last_deepseek_cn_review_at: 2026-06-22
 p0: 0
 p1: 0
 p2: 0
+last_task2b_verifier_at: "2026-07-05T03:26:57+0800"
 ---
 
 # dumpsys 系列命令
