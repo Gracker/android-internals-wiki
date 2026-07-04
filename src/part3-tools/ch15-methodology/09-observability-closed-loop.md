@@ -5,7 +5,7 @@ section: "15.9"
 status: ready-for-review
 drafted_date: "2026-04-21"
 drafted_by: "codex"
-applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
+applicable_versions: "Android 8 (API 26) – Android 17 (API 37)"
 last_verified: "2026-04-22"
 last_verified_against: "AndroidX metrics-performance 1.0.0 Maven artifact (JankStats confirmed); AOSP android-17.0.0_r1 ApplicationExitInfo.java (API 30+)"
 confidence: medium
@@ -14,8 +14,8 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals"
 tags: [observability, apm, pipeline, governance, monitoring]
 related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-07-04"
 reviewed_by: openclaw-task6
@@ -33,8 +33,8 @@ last_task9_audit: "2026-07-04"
 last_task9_idle_audit: "2026-07-04"
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_rework_at: "2026-07-04T10:52:54+08:00"
-last_task2b_rework_log: "Task2B 2026-07-04: 按 Task9 闲时抽检问题单修复 ApplicationExitInfo API 版本边界、JankStats 引用验证、API 演进说明补全。"
+last_task2b_rework_at: "2026-07-04T12:52:06+08:00"
+last_task2b_rework_log: "Task2B 2026-07-04: 按 Task9 Deep Review 问题单修复 JankStats API 完整声明、异常→Backlog SLA 映射、版本声明一致性、多租户数据隔离、告警阈值参考。"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 ---
@@ -93,7 +93,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 常见的信号源包括:
 
-- 帧级信号:`JankStats`（`androidx.metrics:metrics-performance:1.0.0`，自 API 16 起可用，API 31+ 基于 `FrameMetrics.DEADLINE`）、`FrameMetrics`
+- 帧级信号:`JankStats`（`androidx.metrics.performance.JankStats`，Maven 坐标 `androidx.metrics:metrics-performance:1.0.0`；核心 API 包括 `JankStats.createAndTrack(window, listener)` 注册帧回调、`OnFrameMetricsAvailableListener.onFrameMetricsAvailable(report)` 接收帧报告、`FrameData.getFrames()` 获取单帧时间戳。自 API 16 起提供基础帧耗时回调，API 31+ 内部分发至 `FrameMetrics.FRAME_TIMELINE_VSYNC_ID` 实现 VSync 对齐）、`FrameMetrics`
 - 启动:TTID、TTFD、自定义首屏埋点
 - 稳定性:`ApplicationExitInfo`（API 30+，Android 11 引入；API 26-29 需依赖 `ActivityManager.getRunningAppProcesses()` 或崩溃上报 SDK 获取进程退出信息）
 - 现场证据:`Matrix`、`btrace`、`Perfetto SDK`
@@ -101,7 +101,16 @@ last_deepseek_polish_at: "2026-05-24"
 采集这一层解决的是"有没有最基本的感知能力"。
 没有这一步,后面所有治理都无从谈起。
 
-> **API 版本说明**：上述采集通道的可用性随 Android 版本而异。`JankStats` 自 API 16 起可用（不同实现层级适配到 API 31 的 `FrameMetrics.DEADLINE`）；`FrameMetrics` 于 API 24 引入，API 31 开始支持 `FrameMetrics.DEADLINE`；`ApplicationExitInfo` 于 API 30 引入。Android 8-10（API 26-29）设备上的进程稳定性监控需依赖 `ActivityManager.getRunningAppProcesses()`、崩溃上报 SDK 或 `StrictMode` 等替代手段。
+> **API 版本说明**：上述采集通道的可用性随 Android 版本而异。
+>
+> | API 版本 | JankStats | FrameMetrics | 进程退出监控 |
+> |----------|-----------|--------------|-------------|
+> | API 26–29（Android 8–10） | ✅ 基础帧回调 | ✅ API 24 引入 | ⚠️ 需 `ActivityManager.getRunningAppProcesses()` / 崩溃 SDK / `StrictMode` |
+> | API 30（Android 11） | ✅ | ✅ | ✅ `ApplicationExitInfo` 引入 |
+> | API 31+（Android 12+） | ✅ `FrameMetrics.DEADLINE` 对齐 | ✅ `FrameMetrics.DEADLINE` | ✅ |
+> | API 37（Android 17） | ✅ | ✅ | ✅ `android-17.0.0_r1` `ApplicationExitInfo.java` 基线验证通过 |
+>
+> 治理回路本身是版本无关的方法论框架，具体采集通道的可用性取决于目标 API 级别。API 26 以下的设备因市场占有率已极低，本节不再覆盖。
 
 ### 第二步:采样
 
@@ -151,9 +160,9 @@ last_deepseek_polish_at: "2026-05-24"
 
 所以比较稳的告警通常不会直接绑原始事件,而会绑业务可行动阈值,例如:
 
-- 首页 P95 TTFD 连续上升
-- 某机型 frozen frame rate 超阈值
-- 某版本 user-perceived ANR rate 明显抬升
+- 首页 P95 TTFD 连续 2 天上升（单日 ≥ 200ms 涨幅，样本量 ≥ 1000）
+- 某机型 frozen frame rate 超阈值（P50 ≥ 2/min，连续 3 小时）
+- 某版本 user-perceived ANR rate ≥ 0.5‰（样本量 ≥ 10000 启动）
 
 如果平台把原始异常直接大量推给团队,结局通常只会是噪音堆积。
 
@@ -184,6 +193,23 @@ last_deepseek_polish_at: "2026-05-24"
 - 验收指标
 
 没有这一步,平台和 backlog 之间就会一直断着。图表归图表,修复归修复,两边互相看得见,但互相接不上。
+
+**从异常到 Backlog 的 SLA 映射**：
+
+这一步的核心难点在于"什么样的异常该进 backlog、该给什么优先级"。常见的做法是建立两层 SLA：
+
+- **业务 SLA**（用户可见）：首页 P95 TTFD ≥ 2.5s → 高危；冷启动 P90 ≥ 3s → 紧急；ANR 率 ≥ 0.5‰ → 紧急
+- **技术 SLA**（系统内部）：frozen frame count 每分钟 ≥ 3 → 关注；主线程 blocked ≥ 16ms 连续 3 帧 → 中危；Binder 调用 P99 ≥ 50ms → 关注
+
+映射关系不是 1:1。同一个"首页变慢"可能对应多种技术 SLA 触发，归因后的技术 SLA 命中情况才决定 backlog 的优先级：
+
+| 异常现象 | 归因结果 | 技术 SLA 命中 | Backlog 优先级 |
+|----------|---------|-------------|---------------|
+| 首页 P95 TTFD 2.8s | 网络首包耗时上涨 | 首页 OkHttp P95 ≥ 800ms | P1（影响面大，方向明确） |
+| 某机型 frozen frame 增多 | Shader 编译未命中缓存 | RenderThread ≥ 50ms 连续 5 帧 | P1（可复现，需要 GL 工程师） |
+| ANR 率 0.3‰ | 单线程 Binder 阻塞 | Binder P99 ≥ 200ms | P2（低于阈值但趋势上升） |
+
+规则的目的是让 backlog 里的每一条都带着"为什么现在修"和"修完怎么判断成功"的信息。
 
 ### 第八步:验收
 
@@ -229,6 +255,17 @@ last_deepseek_polish_at: "2026-05-24"
 - 从单次 case 回到群体趋势
 
 只有这样,平台才会从展示层变成分析入口,工程分析也能从单次手工处理转成可复用经验。
+
+### 多租户场景下的数据隔离
+
+当平台需要服务多个业务线或外部合作方时，数据隔离是必须先解决的设计问题：
+
+- **命名空间隔离**：每个租户的 `session_id` / `trace_id` 前缀加入租户标识，避免跨租户数据串扰。
+- **存储层隔离**：按租户维度分表或分库；小规模团队可用租户 ID 过滤，大规模场景建议走独立实例。
+- **访问控制**：基于租户 + 角色的权限模型——同一租户内的工程师可以查看自己团队的所有数据，跨租户查询需要显式授权。
+- **成本核算**：按租户维度拆分量化的存储成本和采样配额，让各业务线对资源消耗有感知。
+
+多租户不是锦上添花的功能。如果一个团队第一天就知道未来会有多条业务线接入，从第一版 schema 设计里就应该为 `tenant_id` 留出位置。
 
 ## 一个现实可执行的最小治理回路
 

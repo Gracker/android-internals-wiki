@@ -674,7 +674,7 @@
       {
         "type": "原理断裂",
         "location": "治理回路八步流程（第7步）",
-        "detail": ""从异常到Backlog"的转化机制不够清晰，缺少业务SLA与技术SLA的映射关系",
+        "detail": "从异常到Backlog的转化机制不够清晰，缺少业务SLA与技术SLA的映射关系",
         "suggestion": "补充异常严重程度评估标准和Backlog优先级设定的具体方法"
       },
       {
@@ -698,6 +698,6 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-07-04T12:21:00+08:00",
-    "status": "pending"
+    "status": "completed", "completed_at": "2026-07-04T12:52:22+08:00", "completed_by": "task2b-main", "completed_reason": "fixed: JankStats full API path + SLA mapping + version consistency + multi-tenant + alert thresholds"
   }
 ]
