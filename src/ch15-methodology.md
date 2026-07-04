@@ -6,7 +6,7 @@ status: ready-for-review
 applicable_versions: Android 8-17 (API 26-37)
 last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 tags: [performance, methodology, perfetto, profiling, optimization, android]
-task9_result: needs-rework
+task9_result: pending-revisit
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: pending
