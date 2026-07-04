@@ -654,5 +654,44 @@
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-07-04T06:15:59.018794",
     "status": "pending"
+  },
+  {
+    "section": "15.9",
+    "section_title": "从采集到治理的反馈回路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 闲时抽检发现源码引用与版本声明严重错误",
+    "material_paths": [
+      "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
+      "logs/deep-review/2026-07-04-10-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "JankStats API引用",
+        "detail": "章节中引用的 JankStats API 在 Android 官方文档中返回 404，API 存在性或命名有误，可能影响整个可观测性架构的准确性",
+        "suggestion": "需要验证 JankStats API 的正确名称和路径，可能需要修正为 androidx.metrics.performance.JankStats 或其他正确的 Android 性能监控 API"
+      },
+      {
+        "type": "版本差异",
+        "location": "API版本声明不一致",
+        "detail": "章节声称支持 Android 8 (API 26) - Android 17 (API 37)，但 ApplicationExitInfo API 实际在 API 30 (Android 11) 才引入，存在版本覆盖断档",
+        "suggestion": "修正 applicable_versions 为 Android 11 (API 30) - Android 17 (API 37)，或补充说明 Android 8-10 版本中稳定性监控的替代方案"
+      },
+      {
+        "type": "源码错误",
+        "location": "ApplicationExitInfo API兼容性",
+        "detail": "章节在 Android 8 范围内讨论 ApplicationExitInfo，但该 API 实际从 Android 11 (API 30)才开始提供，早期版本需要使用其他机制获取进程退出信息",
+        "suggestion": "修正 API 使用说明，明确不同 Android 版本的进程监控 API 差异"
+      },
+      {
+        "type": "版本差异",
+        "location": "监控API演进缺失",
+        "detail": "章节未说明 Android 8-17 版本中监控关键 API 的演进历程，如进程监控从 ActivityManager.getRecentTasks() 到 ApplicationExitInfo 的变化",
+        "suggestion": "补充 Android 监控 API 的版本演进说明，确保内容与实际 API 可用性范围一致"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-04T10:23:34.650427+08:00",
+    "status": "pending"
   }
 ]
