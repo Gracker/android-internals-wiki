@@ -73,3 +73,11 @@
 - Compose 1.10+ Pausable Composition 在生产环境的实际性能数据
 - Android 17 Game Mode 3.0 / Game Intents 性能影响
 - Android 17 16KB Page Size 对 GPU/DMA 缓冲区分配的性能量化影响
+
+
+## [Task9 Deep Review] 25.17 Android 17 后台音频硬化与播放功耗治理 — 2026-07-05
+- **类型**：案例支撑
+- **位置**：Android 17 适配与灰度验证部分
+- **问题**：缺少线上案例分析
+- **建议**：增加实际企业项目中遇到的音频硬化问题案例，包括问题现象、排查过程、解决方案和效果验证，特别关注锁屏蓝牙断连、后台播放静默等典型场景
+

@@ -794,5 +794,25 @@
     "completed_at": "2026-07-04T12:52:13.940187+00:00",
     "completed_reason": "skipped-false-positive",
     "completed_note": "Task2B 主修复验证：set-hardening enable/throw 和 clear-hardening 均为 AOSP android-17.0.0_r1 中正确命令。AudioManagerShellCommand.java:182-185 help 文案为 \"set-hardening <1|enable|0|disable|throw>\"，enable/disable/throw 是有效子参数。Task2B Lite 已先行验证并锚定源码。本章节命令无需修改。"
+  },
+  {
+    "section": "25.17",
+    "section_title": "Android 17 后台音频硬化与播放功耗治理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] targetSdkVersion 37 行为差异与蓝牙场景缺失",
+    "material_paths": [
+      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "targetSdkVersion 37 与 36 的行为差异",
+        "detail": "章节提到 target 37 需要 WIU 能力，但未说明从 36 到 37 的具体 API 变化和兼容性处理方案，缺少完整的适配指导",
+        "suggestion": "补充 targetSdkVersion 36 和 37 在音频硬化行为上的具体差异，包括 API 变化、兼容性处理方案和渐进式迁移策略"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-05T00:25:49.533070+08:00",
+    "status": "pending"
   }
 ]
