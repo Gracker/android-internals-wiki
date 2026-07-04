@@ -194,6 +194,18 @@
 - **价值**：为缓存优化类方案提供底层依据，Dex 重排思路值得在 ch08 启动优化中展开
 
 
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：知识盲区
+- **位置**：Section 4.3 "Perfetto trace_processor 实战"
+- **问题**：缺少 Perfetto 在 low-memory 设备上的替代方案（如使用 perfetto --size 限制采集大小，或者使用 ftrace + simpleperf 组合方案）
+- **建议**：补充低内存环境下的性能分析策略，包括内存限制下的采样配置、轻量级替代方案等
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：数据缺失
+- **位置**：Section 7.1 "验证的铁三角"
+- **问题**："性能改动后自动跑一遍所有性能用例"缺少具体的自动化方案（如使用 AndroidX Benchmark 库，还是基于 Espresso 的自定义性能测试）
+- **建议**：补充具体的性能测试自动化工具链和实现方案，包括主流库的选择依据和配置示例
+
 ## [Task2A Gap Mining Round 6] 2026-07-04 — Coverage Saturated
 
 已检查方向（全部已覆盖或 <14 分）：
@@ -215,3 +227,46 @@
 
 结论：第 6 轮连续无 ≥14 分候选。全书 577 节，覆盖已饱和。
 剩余 pending 队列 2 条（1.25 Binder 线程池补充、14.22 HPROF 补充），均为现有章节素材注入。
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：源码准确性
+- **位置**：Section 3.2 "版本兼容性"
+- **问题**：Android 17 中 DeviceConfig.perfetto 相关配置的具体实现细节未在源码中验证
+- **建议**：补充 DeviceConfig 中具体的 perfetto 相关 key 名称和配置范围，或者在无法验证时明确标注为待验证
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：数据支撑
+- **位置**：Section 7.1 "验证的铁三角"
+- **问题**：灰度发布所需的最小样本量缺少具体数值指导
+- **建议**：补充不同置信度水平下所需的最低样本量计算公式或经验值（如 P99 指标需要比 P50 更大样本量）
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：数据支撑
+- **位置**：Section 4.4 "自适应刷新率场景的帧数据分析"
+- **问题**：FrameRateOverrides API 的性能影响缺少实测数据支撑
+- **建议**：补充典型场景下使用 FrameRateOverrides 前后的性能对比数据，包括不同刷新率设置对用户体验的实际影响
+
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：源码准确性
+- **位置**：Section 3.2 "版本兼容性"
+- **问题**：Android 17 中 DeviceConfig.perfetto 相关配置的具体实现细节未在源码中验证
+- **建议**：补充 DeviceConfig 中具体的 perfetto 相关 key 名称和配置范围，或者在无法验证时明确标注为待验证
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：数据支撑
+- **位置**：Section 7.1 "验证的铁三角"
+- **问题**：灰度发布所需的最小样本量缺少具体数值指导
+- **建议**：补充不同置信度水平下所需的最低样本量计算公式或经验值（如 P99 指标需要比 P50 更大样本量）
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：数据支撑
+- **位置**：Section 4.4 "自适应刷新率场景的帧数据分析"
+- **问题**：FrameRateOverrides API 的性能影响缺少实测数据支撑
+- **建议**：补充典型场景下使用 FrameRateOverrides 前后的性能对比数据，包括不同刷新率设置对用户体验的实际影响
+
+## [Task9 Deep Review] ch15-methodology — Android 性能优化研究方法论 — 2026-07-04
+- **类型**：原理链完整性
+- **位置**：Section 4.4 "自适应刷新率场景的帧数据分析"
+- **问题**：FrameRateOverrides 与 SurfaceFlinger 的帧调度计划协同工作机制说明不完整
+- **建议**：补充 FrameRateOverrides 如何影响 SurfaceFlinger 的具体机制说明，包括 VSync 调整延迟的影响
