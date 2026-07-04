@@ -2,7 +2,7 @@
 title: "从采集到治理的反馈回路"
 chapter: "15.9"
 section: "15.9"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
