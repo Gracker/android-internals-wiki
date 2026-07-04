@@ -507,6 +507,13 @@
       "status": "no-candidates",
       "ts": "2026-07-05T02:07:55+08:00",
       "note": "Gap mining round 18: 0 candidates ≥14. Coverage saturated (18th consecutive). No new material since round 17. All 6 newest DeepResearch files (PMS×cpuidle, Flutter Impeller, AI agent memory, modular startup, heapprofd, LMKD batch, binder death notification) map to existing chapters. 2 pending queue items are supplements for ch1.25 and ch14.22."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-05T03:06:36.803330+08:00",
+      "note": "Gap mining round 19: 0 candidates ≥14. Coverage saturated (19th consecutive). 1 new DeepResearch file (background-audio-hardening-power) maps to ch25.17 (finalized), not new chapter."
     }
   ],
   "review_history": [
@@ -743,12 +750,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-05T02:07:55+08:00",
+    "last_run": "2026-07-05T03:06:36.803330+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 18: 0 candidates ≥14. Coverage saturated (18th consecutive)."
+    "note": "Gap mining round 19: 0 candidates ≥14. Coverage saturated (19th consecutive). 1 new DeepResearch file (2026-07-05-background-audio-hardening-power.md) maps to ch25.17 (finalized), not a new chapter candidate."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",
