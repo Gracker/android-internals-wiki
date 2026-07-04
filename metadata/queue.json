@@ -1,821 +1,345 @@
-[
-  {
-    "section": "26.1",
-    "section_title": "App 可观测性架构设计",
-    "priority": 75,
-    "reason": "[Task 6 L3/L4 回炉] 内容深度与活人感不足",
-    "material_paths": [
-      "src/part5-app/ch26-observability/01-observability-architecture.md"
-    ],
-    "review_issues": [
-      {
-        "type": "内容深度不足",
-        "location": "扩展内容标记为'（待扩展）",
-        "detail": "章节未能深入可观测性三支柱的实施细节，缺少 Metrics/Logs/Traces 的具体数据模型设计和编码示例",
-        "suggestion": "Task 2B 应补充可观测性数据建模、采样算法实现、存储架构等深度内容"
-      },
-      {
-        "type": "活人感缺失",
-        "location": "整个章节缺乏引导性表述",
-        "detail": "章节以平铺直叙为主，缺少对读者的引导、问题场景带入和工程实践中的难点提示",
-        "suggestion": "Task 2B 应增加\"在实际项目中，我们经常遇到...\"、\"配置采样策略时要特别注意...\"等引导性内容"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-07-02T16:10:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-02T18:54:37+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: L3/L4 content depth + practical guidance added"
-  },
-  {
-    "section": "21.2",
-    "section_title": "启动框架设计与任务编排",
-    "priority": 75,
-    "reason": "[Task 6 L3/L4 回炉] 内容深度与活人感不足",
-    "material_paths": [
-      "src/part5-app/ch21-startup/02-startup-framework.md"
-    ],
-    "review_issues": [
-      {
-        "type": "内容深度不足",
-        "location": "Alpha 框架源码示例部分",
-        "detail": "Alpha 框架示例代码缺少关键细节，如 Task 类的完整 API、错误处理机制、与 Android 生命周期集成等",
-        "suggestion": "Task 2B 应补充完整的 Alpha API 文档、错误处理模式、与 Android Application 生命周期绑定方式"
-      },
-      {
-        "type": "活人感缺失",
-        "location": "整个章节技术细节过多",
-        "detail": "章节侧重技术原理和API罗列，缺少实际应用场景的引导和常见陷阱提醒",
-        "suggestion": "Task 2B 应增加\"在选择启动框架时，很多团队会陷入...\"、\"配置任务依赖时要注意...\"等实践指导"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-07-02T16:10:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-02T18:54:37+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: L3/L4 content depth + practical guidance added"
-  },
-  {
-    "section": "20.3",
-    "section_title": "Native Crash 分析与治理",
-    "priority": 75,
-    "reason": "[Task 6 L3/L4 回炉] 内容深度与活人感不足",
-    "material_paths": [
-      "src/part5-app/ch20-stability/03-native-crash-governance.md"
-    ],
-    "review_issues": [
-      {
-        "type": "内容深度不足",
-        "location": "Breakpad 符号化部分",
-        "detail": "符号化流程缺少关键细节，如 Build ID 生成算法、minidump 格式解析、符号服务器架构等",
-        "suggestion": "Task 2B 应补充完整的符号化流程、CI/CD 集成方案、符号服务端架构设计"
-      },
-      {
-        "type": "活人感缺失",
-        "location": "Native Crash 原理部分",
-        "detail": "技术原理描述过于平铺直叙，缺少排查思路引导和实战经验分享",
-        "suggestion": "Task 2B 应增加\"排查 Native Crash 时，先看信号类型和 fault addr，再结合栈...\"、\"实际工作中我们发现 80% 的 SIGSEGV 都是...\"等实战指导"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-07-02T16:10:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-02T18:54:37+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: L3/L4 content depth + practical guidance added"
-  },
-  {
-    "section": "11.04",
-    "section_title": "案例集",
-    "priority": 95,
-    "reason": "[Deep Tech Review] ch11-power 案例集 JobScheduler 节流段存在 Android 17 基线与源码锚点错误",
-    "material_paths": [
-      "logs/deep-review/2026-07-02-08-audit.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异/版本基线",
-        "location": "§11.4.7 API 范围（约行 974-978）",
-        "detail": "章节正文声明本节基于 main 分支 2026-06-20，且 android-17.0.0_r1 tag 不可访问、未做 Android 17 tag 一手验证。实际已能从 android.googlesource.com 的 refs/tags/android-17.0.0_r1 读取 JobSchedulerService、JobConcurrencyManager、JobServiceContext、QuotaController、CountQuotaTracker、QuotaTracker。按照 AIW 版本边界，main/master 资料不能作为 Android 17 正文结论。",
-        "suggestion": "将 §11.4.7 全段重新锚定 android-17.0.0_r1；无法在 tag 验证的内容移出正文或标注为未进入 Android 17。建议与前文 §11.4.1.2.2 的 Android 17 五层节流段合并，避免同一机制出现两套口径。"
-      },
-      {
-        "type": "源码错误",
-        "location": "§11.4.7.2 / §11.4.7.5（约行 1023、1117）",
-        "detail": "执行超时节流的记录路径写成 JobServiceContext.handleFinishedLocked() / JobSchedulerService.java:3238-3266。android-17.0.0_r1 中 3238-3266 是 stopTrackingJobLocked() 的移除逻辑；timeout/ANR 计数实际在 JobSchedulerService.maybeProcessBuggyJob()，约 3543-3589 行，通过 QUOTA_TRACKER_TIMEOUT_* 与 QUOTA_TRACKER_ANR_TAG 记录并触发 restrictApp。",
-        "suggestion": "把源码锚点改为 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java 的 maybeProcessBuggyJob()；表格中\"谁来执行\"不要写 JobServiceContext.handleFinishedLocked。"
-      },
-      {
-        "type": "源码错误/交叉引用一致性",
-        "location": "§11.4.1.2.2 五层调用链（约行 89、130）",
-        "detail": "API Quota 超限后的副作用写成 restrictApp(RARE) / 强制降级到 RARE bucket，但 android-17.0.0_r1 的 AppStandbyController.restrictApp() 在 1699-1702 行明确 setAppStandbyBucket(..., STANDBY_BUCKET_RESTRICTED, ...)。后文 §11.4.7 又写成 RESTRICTED，章节内部口径不一致。",
-        "suggestion": "统一修正为 RESTRICTED bucket，并在排查建议中按 RESTRICTED 配额解释后续 QuotaController 行为。"
-      },
-      {
-        "type": "原理断裂/交叉引用一致性",
-        "location": "§11.4.1.2.2 与 §11.4.7",
-        "detail": "前文把 Android 17 JobScheduler 节流归纳为五层叠加，后文又以 main 分支调研归纳为三层防线，未解释\"注册数/并发控制/强制批处理\"与\"三层防线\"的关系。读者会误以为同一版本存在两套相互排斥的模型。",
-        "suggestion": "保留一套 Android 17 tag 已验证模型；若保留\"三层防线\"，需明确它是五层中的 API quota、执行超时、后台配额三个子维度，不覆盖注册数、并发控制与强制批处理。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-02T08:27:10+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-02T08:58:45.014443+08:00",
-    "completed_by": "task2b-main",
-    "fix_summary": "fixed 4 issues: (1) §11.4.7 re-anchored to android-17.0.0_r1, removed main-branch disclaimer; (2) execution timeout source path corrected from JobServiceContext.handleFinishedLocked() to JobSchedulerService.maybeProcessBuggyJob() at android-17.0.0_r1:3543-3589; (3) RARE bucket → RESTRICTED bucket corrected in §11.4.1.2.2 (AppStandbyController.restrictApp sets STANDBY_BUCKET_RESTRICTED per android-17.0.0_r1:1699-1702); (4) reconciliation note added: §11.4.7 three defenses are sub-dimensions of §11.4.1.2.2 five-layer model"
-  },
-  {
-    "section": "24.14",
-    "section_title": "网络请求分段优化与弱网治理",
-    "priority": 85,
-    "reason": "[Deep Tech Review] Android 17 基准源码锚点缺失：24.14 仍以 Android 35 SDK 作为主线源码证据",
-    "material_paths": [
-      "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异",
-        "location": "frontmatter last_verified_against / sources；正文 HttpEngine、ConnectivityManager、TrafficStats 证据锚点",
-        "detail": "章节适用范围写到 Android 17/API 37，但主线源码证据仍锚定 Android 35 SDK sources 和本地 android-35 路径；正文多处标注 Android 35 SDK source。2026-06-27 基准要求 AIW 主线结论必须锚定 android-17.0.0_r1，旧版本只能作为历史参照。",
-        "suggestion": "Task2B 需要把 HttpEngine、QuicOptions、ConnectivityManager、TrafficStats 等源码证据重新锚定 android-17.0.0_r1；若 Android 17 tag 暂不可得，应把对应段落标为待进入 Android 17 复核，不能继续以 Android 35 作为 Android 17 主线证明。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-02T20:34:05+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-02T21:13:12.253734+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: re-anchored all source references from Android 35 SDK to android-17.0.0_r1; verified tags on googlesource; confirmed API consistency"
-  },
-  {
-    "section": "15",
-    "section_title": "Android 性能优化研究方法论",
-    "priority": 95,
-    "reason": "[Deep Tech Review] 缺少 Android 17 中新增的 FrameRateOverrides 与 FrameTimeline 协同工作机制说明",
-    "material_paths": [
-      "src/ch15-methodology.md",
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需重写",
-        "location": "全文整体结构",
-        "detail": "章节以纯列表+短句罗列为主，缺少连贯叙述。writing-guide 要求'一个有经验的工程师在给另一个工程师讲一件事'的叙述风格，当前写法属于'反面教材1：百科词条式'",
-        "suggestion": "参考 writing-guide 类型A/B/C 结构模板，将核心章节（问题分类、分析方法、优化方案）改为叙述式，减少纯列表段落"
-      },
-      {
-        "type": "需确认",
-        "location": "Section 10 案例研究（10.1/10.2/10.3）",
-        "detail": "三组案例（社交应用启动、电商应用卡顿、视频应用内存）使用了精确数字（如'启动时间从 1.5s 增加到 3.2s'、'用户流失率增加 15%'），但缺少来源标注。疑似 AI 编造的示例数据，违反 writing-guide '不能编造第一手经验/实验/性能数据'",
-        "suggestion": "如为真实案例，补充来源和验证标注；如为假设性示例，明确标注 [假设性示例] 并确保数据合理性；否则删除"
-      },
-      {
-        "type": "需重写",
-        "location": "Section 12 性能优化未来趋势",
-        "detail": "云原生、5G、边缘计算等内容非常泛化，与 Android 性能优化主线关联弱，缺少具体技术落地点",
-        "suggestion": "要么补充与 Android 性优化的具体关联（如 5G 对网络性能监控的影响、边缘计算对端侧推理的性能预算），要么删除整个 Section 12"
-      },
-      {
-        "type": "需补充素材",
-        "location": "Section 3 工具选型 + Section 4 数据采集",
-        "detail": "工具介绍停留在名称列举层面，缺少 Perfetto 实际使用示例、SQL 查询、Trace 分析方法等实战内容",
-        "suggestion": "补充 Perfetto 配置示例、典型 SQL 查询、Baseline 建立方法和异常检测实操"
-      },
-      {
-        "type": "源码错误",
-        "location": "Section 3.2 版本兼容性",
-        "detail": "文中的源码路径  和  缺少  前缀。正确的 AOSP android-17.0.0_r1 路径应为  和 ",
-        "suggestion": "修正所有 Perfetto 相关源码路径，添加  前缀以匹配 AOSP 实际结构"
-      },
-      {
-        "type": "源码错误",
-        "location": "Section 3.2 traced 服务参数说明",
-        "detail": "文中描述 traced 服务接受  或  参数，但实际源码验证显示 traced 只接受 、、、",
-        "suggestion": "修正 traced 服务参数说明，删除错误的  和  参数，保留正确的参数列表"
-      },
-      {
-        "type": "版本差异",
-        "location": "Section 3.2 Android 17 新增内容",
-        "detail": "章节提到 Android 17 中  已被  和 DeviceConfig 机制替代，但源码验证显示该描述不够准确，需要补充具体的 DeviceConfig 实现机制",
-        "suggestion": "补充 Android 17 中 Perfetto DeviceConfig 机制的具体实现细节，包括配置选项和动态调整能力"
-      },
-      {
-        "type": "源码错误",
-        "location": "3.2 版本兼容性部分 - Android 14-17 (API 34-37) Perfetto CLI 参数说明",
-        "detail": "detached session 使用 `--attach=<key> --stop` 回收，不能和 `-d/--background` 混用，原文描述有冲突",
-        "suggestion": "修正为：detached session 是另一套模式，用 `--detach=<key>` 创建、`--attach=<key> --stop` 回收，不能和 `-d` 混用"
-      },
-      {
-        "type": "版本差异",
-        "location": "4.4 数据分析与三个实用原则",
-        "detail": "缺少 Android 17 中新增的 FrameRateOverrides 与 FrameTimeline 协同工作机制说明",
-        "suggestion": "补充 FrameRateOverrides 如何影响帧调度计划、VSync 偏移动态调整、以及与 FrameTimeline Expected Timeline 的协同机制"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-04T16:22:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-07-02-20-review.md",
-    "completed_at": "2026-07-02T20:58:27+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: structural rewrite - converted from encyclopedia style to narrative, removed fabricated case data, deleted generic cloud/5G section, added Perfetto SQL examples"
-  },
-  {
-    "section": "1.50",
-    "section_title": "Android 17 Binder IPC 优先级调度与异步批处理流水线",
-    "priority": 80,
-    "reason": "[Task 2A 知识缺口] 高质量知识缺口，Android 17 核心 IPC 机制",
-    "material_paths": [
-      "src/part1-fundamentals/ch01-architecture/1-50-android17-binder-ipc-priority-async-batch-pipeline.md"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "deprecated",
-    "completed_at": "2026-07-04T07:14:12+08:00",
-    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
-  },
-  {
-    "section": "1.51",
-    "section_title": "Android 17 ML 驱动任务调度器",
-    "priority": 80,
-    "reason": "[Task 2A 知识缺口] 高质量知识缺口，Android 17 ML 驱动调度",
-    "material_paths": [
-      "src/part1-fundamentals/ch01-architecture/1-51-android17-ml-scheduler.md"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "deprecated",
-    "completed_at": "2026-07-04T07:14:12+08:00",
-    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
-  },
-  {
-    "section": "1.52",
-    "section_title": "Android 17 Staged Install 状态机与原子性安装",
-    "priority": 80,
-    "reason": "[Task 2A 知识缺口] 高质量知识缺口，Android 17 安装机制",
-    "material_paths": [
-      "src/part1-fundamentals/ch01-architecture/1-52-android17-staged-install-state-machine.md"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "deprecated",
-    "completed_at": "2026-07-04T07:14:12+08:00",
-    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
-  },
-  {
-    "section": "4.12",
-    "section_title": "Android 17 AppFlow + LMKD v2 内存联合调度协作机制",
-    "priority": 80,
-    "reason": "[Task 2A 知识缺口] 高质量知识缺口，Android 17 内存管理",
-    "material_paths": [
-      "src/part1-fundamentals/ch04-memory/4-12-appflow-lmkd-v2-collaboration.md"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "deprecated",
-    "completed_at": "2026-07-04T07:14:12+08:00",
-    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
-  },
-  {
-    "section": "9.12",
-    "section_title": "Android 17 ANR 输入事件超度检测双层预警机制",
-    "priority": 80,
-    "reason": "[Task 2A 知识缺口] 高质量知识缺口，Android 17 ANR 检测",
-    "material_paths": [
-      "src/part2-performance/ch09-anr/9-12-android17-input-anr-double-layer-warning.md"
-    ],
-    "added_by": "task2a-knowledge-gap",
-    "added_at": "2026-07-03T16:19:00+08:00",
-    "status": "deprecated",
-    "completed_at": "2026-07-04T07:14:12+08:00",
-    "completed_reason": "Section file deprecated as duplicate; queue entry cleaned up in gap mining round 6"
-  },
-  {
-    "section": "15",
-    "section_title": "Android 性能优化研究方法论",
-    "priority": 85,
-    "reason": "[Deep Tech Review] FrameRateOverrides 与 FrameTimeline 协同工作机制缺失",
-    "material_paths": [
-      "src/ch15-methodology.md",
-      "logs/deep-review/2026-07-03-16-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异",
-        "location": "Section 4.4 数据分析与三个实用原则",
-        "detail": "章节缺少 Android 17 中新增的 FrameRateOverrides 与 FrameTimeline 协同工作机制的说明，无法涵盖自适应刷新率场景下的性能分析",
-        "suggestion": "补充 FrameRateOverrides 如何影响帧调度计划、VSync 偏移动态调整、以及与 FrameTimeline Expected Timeline 的协同机制"
-      },
-      {
-        "type": "知识盲区",
-        "location": "Section 3.2 版本兼容性",
-        "detail": "Android 17 中 persist.traced.enable 已部分被 debug.perfetto.enabled 和 DeviceConfig 机制替代，缺少最新状态说明",
-        "suggestion": "补充 Android 17 中 Perfetto 启用方式的最新变化，包括 DeviceConfig 配置选项和动态调整机制"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-03T16:32:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-03T20:51:00+08:00",
-    "completed_by": "task2b-content-processing-rework"
-  },
-  {
-    "section": "13.21",
-    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 95,
-    "reason": "[Deep Tech Review] 源码路径错误：关键源码文件路径与 AOSP android-17.0.0_r1 不符",
-    "material_paths": [
-      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
-      "logs/deep-review/2026-07-03-16-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "Section 关键源码验证",
-        "detail": "引用的 frameworks/native/cmds/perfetto/main.cc 在 Android 17 中不存在，实际路径为 external/perfetto/src/perfetto_cmd/main.cc",
-        "suggestion": "修正源码路径为 external/perfetto/src/perfetto_cmd/main.cc 并验证 Android 17 中的具体实现"
-      },
-      {
-        "type": "源码错误",
-        "location": "Section heapprofd 深度分析",
-        "detail": "引用的 frameworks/native/cmds/perfetto/heap_profd.cc 路径错误，正确路径为 external/perfetto/src/profiling/heap_profd.cc",
-        "suggestion": "修正源码路径并补充 Android 17 中 heapprofd 的具体 API 变化"
-      },
-      {
-        "type": "源码错误",
-        "location": "Section FrameTimeline 集成",
-        "detail": "引用的 frameworks/native/cmds/perfetto/tracing/surface_flinger_integration.cc 路径错误，正确路径为 external/perfetto/src/tracing/surface_flinger_integration.cc",
-        "suggestion": "修正源码路径并补充 SurfaceFlinger 集成的具体实现细节"
-      },
-      {
-        "type": "源码错误",
-        "location": "heapprofd 深度分析章节",
-        "detail": "文中描述 heapprofd 是\"独立二进制程序（不由 traced_probes 管理，由 Android init 拉起）\"，但 android-17.0.0_r1 中 heapprofd 实际由 traced daemon 管理",
-        "suggestion": "修正 heapprofd 架构描述，准确反映其在 traced daemon 中的实际位置"
-      }
-    ],
-    "added_by": "task9-deep-tech-review, task9-deep-tech-review",
-    "added_at": "2026-07-03T16:32:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-03T16:53:22+08:00",
-    "completed_by": "task2b-main"
-  },
-  {
-    "section": "2.30",
-    "section_title": "Android 17 FrameTimeline GPU/CPU 合成边界判定机制",
-    "priority": 85,
-    "reason": "[Deep Tech Review] 源码路径错误：CompositionEngine 路径重构",
-    "material_paths": [
-      "src/part2-rendering/ch02-rendering/2.30-android17-frametimeline.md",
-      "logs/deep-review/2026-07-03-16-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "Section GPU/CPU 合成边界判定机制",
-        "detail": "引用的 frameworks/native/services/surfaceflinger/CompositionEngine/ 路径在 Android 17 中已重构为 frameworks/native/services/surfaceflinger/composition_engine/（小写）",
-        "suggestion": "修正源码路径并验证 Android 17 中 CompositionEngine 的具体实现结构"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-03T16:32:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-03T16:53:22+08:00",
-    "completed_by": "task2b-main"
-  },
-  {
-    "section": "13.21",
-    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 85,
-    "reason": "[Deep Tech Review] 章节 Android 16-17 子节缺少 per-display FrameTimeline 在 SurfaceFlinger 中实例化的入口路径（DisplayFrameTracker / Scheduler/MessageQueue.cpp），与 2.30 章互补链路缺失",
-    "material_paths": [
-      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
-      "logs/deep-review/2026-07-03-17-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异/原理链",
-        "location": "Android 16-17 子节（约行 88-90） + 版本演进时间表（约行 144-148）",
-        "detail": "Android 16-17 多显示器场景下 per-display FrameTimeline 入口路径（SurfaceFlinger 端 DisplayFrameTracker / Scheduler::MessageQueue.cpp）未在 13.21 中落点。与 2.30 (FrameTimeline GPU/CPU 合成边界) 形成跨章节互补链路缺口",
-        "suggestion": "在版本演进时间表 Android 16-17 行补 AOSP 锚点：frameworks/native/services/surfaceflinger/DisplayFrameTracker（API 36+）与 frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp；附一句 per-display vs single-display 在 FrameTimeline 中的实例化差异"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-03T17:27:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-03T17:44:13",
-    "completed_by": "task2b-lite",
-    "completion_reason": "fixed-lite: 补充 per-display FrameTimeline AOSP 源码锚点与实例化差异说明"
-  },
-  {
-    "section": "13.21",
-    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 95,
-    "reason": "[Deep Tech Review] 主 body 数据源总数与底部源码调研增补矛盾（77 vs 18）及未经验证的源码内容",
-    "material_paths": [
-      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
-      "logs/deep-review/2026-07-03-18-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "主 body 数据源演进表格（约行 100-130）",
-        "detail": "章节声称 Android 17 有 77 个 protobuf 数据源，但底部源码调研验证为 18 个 ProbesProducer 数据源，数据源数量表未经 AOSP 源码逐版本验证，与实际源码数据严重不符",
-        "suggestion": "以底部源码调研增补的 18 个 ProbesProducer 数据源为准重写数据源演进表格，删除未经源码验证的 77 个数据源的虚假数据"
-      },
-      {
-        "type": "源码错误",
-        "location": "heapprofd 深度分析段（约行 300-350）",
-        "detail": "章节声称 heapprofd 内存占用为'应用内存的 5-10%'，但源码调研增补显示实际参数为 8MB 共享内存、5 个 unwinder 线程，且缺乏测试条件标注",
-        "suggestion": "修正为源码中的实际参数：kDefaultShmemSize=8MB, kUnwinderThreads=5，并添加参数使用说明"
-      },
-      {
-        "type": "知识盲区",
-        "location": "Exclusive Tracing 相关内容（约行 350-400）",
-        "detail": "章节中的 ExclusiveTracer、DistributedTracer 类和相关'追踪开销降低 60%'等性能指标缺乏 AOSP 源码佐证，疑似捏造代码示例",
-        "suggestion": "删除未经源码验证的 ExclusiveTracer、DistributedTracer 类示例，仅保留已验证的功能描述"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-03T18:23:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-03T18:53:17.889196+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: main body (outline) rewritten using verified source research supplement data (18 ProbesProducer sources, not 77); heapprofd params fixed (kDefaultShmemSize=8MB, kUnwinderThreads=5); dual producer model added; ExclusiveTracer/DistributedTracer/60% claim deleted; enterprise section trimmed; Systrace comparison table fixed"
-  },
-  {
-    "section": "13.21",
-    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 90,
-    "reason": "[review回炉] 主 body（outline 段）大量 AI 生成内容与底部源码调研增补矛盾：声称 77 个 protobuf 数据源但源码调研实测为 18 个 ProbesProducer 数据源；heapprofd/FrameTimeline/Exclusive Tracing 等功能描述含大量未经源码验证的数据（如'追踪开销降低 60%'、'纳秒级时间戳'）和疑似捏造的代码示例（ExclusiveTracer、DistributedTracer 类）。需用底部源码调研增补的实测数据重写主 body。",
-    "material_paths": [
-      "DeepResearch/2026-07-03-android17-perfetto-data-sources-evolution.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需重写",
-        "location": "主 body 全文（outline 段，即 outline-start 到 outline-end 之间）",
-        "detail": "主 body 大量段落为 AI 填充内容：数据源数量表（5→20→30→45→60→70→77）无源码依据，与底部源码调研的 18 个 ProbesProducer 数据源矛盾；heapprofd 引入版本标注为 Android 12 但需核实；Exclusive Tracing（Android 14）、多进程/跨设备追踪、企业级部署、未来发展展望等整节内容缺乏 AOSP 源码佐证，含疑似捏造的 C++ 类和代码块",
-        "suggestion": "以底部'2026-07-03 源码调研增补'的实测数据为基准重写主 body：用 18 个 ProbesProducer 数据源替换 77 个的假表；删除或大幅缩减企业级部署、未来发展展望等无源码佐证的填充内容；保留源码调研增补段不动"
-      },
-      {
-        "type": "需补充素材",
-        "location": "数据源演进表格",
-        "detail": "现有表格的'数据源总数'列（5/20/30/45/60/70/77）未经逐版本源码验证，源码调研增补已指出 API 32/34/35/36 中间版本差异未经 git log 验证",
-        "suggestion": "按源码调研建议，用 git log --diff-filter=A 追溯各数据源首次提交 tag，或直接删除未经验证的数字"
-      },
-      {
-        "type": "需确认",
-        "location": "heapprofd 深度分析段",
-        "detail": "HPROF 与 heapprofd 对比表中的数据（'内存占用：应用内存的 2-3 倍 vs 5-10%'）无测试条件标注；源码调研增补显示 heapprofd 实际参数（8MB 默认共享内存、5 个 unwinder 线程）与主 body 描述不一致",
-        "suggestion": "用源码调研中的实际参数（kDefaultShmemSize=8MB, kUnwinderThreads=5）替换估算值，或标注为经验值"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-07-03T18:21:20",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-07-03-18-review.md",
-    "completed_at": "2026-07-03T18:53:17.889196+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: main body (outline) rewritten using verified source research supplement data (18 ProbesProducer sources, not 77); heapprofd params fixed (kDefaultShmemSize=8MB, kUnwinderThreads=5); dual producer model added; ExclusiveTracer/DistributedTracer/60% claim deleted; enterprise section trimmed; Systrace comparison table fixed"
-  },
-  {
-    "section": "13.21",
-    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 70,
-    "reason": "[Task6 Review round5] FrameTimeline 通用内容填充 + CLI 参数疑似错误 + Systrace 迁移示例 buffer 映射差异",
-    "material_paths": [
-      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
-      "logs/review/2026-07-03-20-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需重写",
-        "location": "🔹 FrameTimeline 集成 — UI 线程性能瓶颈典型场景 + 分析方法列表（约行 260-270）",
-        "detail": "FrameTimeline 集成小节末尾的「UI 线程性能瓶颈典型场景」和「分析方法」列表是通用 Android 性能知识，与 FrameTimeline 在 Perfetto 中的集成机制无关。读者期望看到 FrameTimeline 的 trace 查询方法、DisplayFrameTracker 的使用示例、帧匹配逻辑等具体内容",
-        "suggestion": "删除通用列表，替换为 FrameTimeline 在 Perfetto trace_processor 中的查询示例和实际追踪范围说明"
-      },
-      {
-        "type": "需确认",
-        "location": "🔸 性能优化与最佳实践 — CLI 命令示例（约行 280-300）",
-        "detail": "示例使用的 --buffer-size=256M、--compression=zstd、--duration-seconds=300 疑似不是标准 perfetto CLI 参数。Perfetto 的 buffer size 和 duration 通常在 config protobuf 中设置，不是 CLI flag",
-        "suggestion": "验证 perfetto CLI 是否支持这些 flag；如不支持，改为在 config 文件中设置这些参数的正确示例"
-      },
-      {
-        "type": "需确认",
-        "location": "🔸 与 Systrace 的对比 — 迁移示例（约行 330-340）",
-        "detail": "systrace -b 128 表示 128KB buffer，但等效 Perfetto 配置中 size_kb: 131072 表示 128MB，存在约 1000 倍差异",
-        "suggestion": "确认 systrace -b 参数单位（KB），修正 perfetto 等效配置中的 size_kb 值使其匹配"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-07-03T20:12:00+08:00",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-07-03-20-review.md",
-    "completed_at": "2026-07-03T21:45:48+08:00",
-    "completed_reason": "fixed-lite: CLI parameter correction (issue #2) + systrace buffer unit fix (issue #3). Issue #1 (FrameTimeline generic content) deferred to main Task2B."
-  },
-  {
-    "section": "13.21",
-    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 50,
-    "reason": "[Task6 Review round6 低优先级] FrameTimeline 集成小节末尾通用内容待替换",
-    "material_paths": [
-      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需重写",
-        "location": "🔹 FrameTimeline 集成 — UI 线程性能瓶颈典型场景 + 分析方法（约行 260-270）",
-        "detail": "「UI 线程性能瓶颈典型场景」（过度绘制/过度布局/阻塞操作/动画卡顿）和「分析方法」（时间线分析/资源使用分析/依赖关系分析/热路径识别）是通用 Android 性能知识，与 FrameTimeline 在 Perfetto 中的集成机制无直接关联。读者期望看到 FrameTimeline trace 查询方法、DisplayFrameTracker 使用示例等",
-        "suggestion": "替换为 FrameTimeline 在 trace_processor 中的具体查询示例，或删除通用列表让该小节聚焦于 FrameTimeline 的追踪范围与 SurfaceFlinger 协同"
-      }
-    ],
-    "added_by": "task6-review",
-    "added_at": "2026-07-03T22:18:53",
-    "status": "completed",
-    "original_review_log": "logs/review/2026-07-03-22-review.md",
-    "completed_at": "2026-07-03T23:38:55+08:00",
-    "completion_reason": "fixed-lite: FrameTimeline 通用 UI 瓶颈列表替换为 trace 观察入口"
-  },
-  {
-    "section": "13.21",
-    "section_title": "Perfetto 版本演进与 Android 9-17 新特性验证",
-    "priority": 95,
-    "reason": "[Deep Tech Review] P0 事实错误：主 body 数据源总数与源码调研增补严重矛盾",
-    "material_paths": [
-      "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
-      "logs/deep-review/2026-07-04-00-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "事实错误",
-        "location": "主 body 数据源演进表格（约行 100-130）",
-        "detail": "章节声称 Android 17 有 77 个 protobuf 数据源，但底部源码调研验证为 18 个 ProbesProducer 数据源，存在严重的 P0 事实错误",
-        "suggestion": "必须以源码调研验证的 18 个 ProbesProducer 数据源为准重写数据源演进表格，删除未经源码验证的虚假数据"
-      },
-      {
-        "type": "源码错误",
-        "location": "Section 关键源码验证",
-        "detail": "引用的 frameworks/native/cmds/perfetto/main.cc 在 Android 17 中不存在，实际路径为 external/perfetto/src/perfetto_cmd/main.cc",
-        "suggestion": "修正源码路径为 external/perfetto/src/perfetto_cmd/main.cc"
-      }
-    ],
-    "added_by": "task9-review",
-    "added_at": "2026-07-04T00:25:59.548130+08:00",
-    "status": "completed",
-    "auto_fix_needed": false,
-    "task9_audit_notes": "2026-07-04 Task9 Deep Tech Review: 发现 P0 事实错误（77 vs 18 数据源），需要 Task 2B 重写数据源演进表格部分",
-    "completed_at": "2026-07-04T00:53:15.088572+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "verified-fixed: P0 data source count (18 not 77) already corrected in previous Task2B run (2026-07-03); source path already correct (external/perfetto/src/perfetto_cmd/main.cc). Content clean on verification."
-  },
-  {
-    "section": "15",
-    "section_title": "Android 性能优化研究方法论",
-    "priority": 95,
-    "reason": "[Deep Tech Review] 源码引用与原理链问题 - 新发现的 P1/P2 问题",
-    "material_paths": [
-      "src/ch15-methodology.md",
-      "logs/deep-review/2026-07-04-07-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "3.2.4 小节",
-        "detail": "FrameRateOverrides 与 WindowManager 交互的源码引用不完整。文中提到 VSync offset 位于 frameworks/native/services/surfaceflinger/Scheduler/VSyncTracker.cpp，但 Android 17 中该文件已移动到 VSyncTracker.h 的实现类中，且 VSync 偏移计算逻辑分散到多个类（VSyncTracker、Scheduler、VSyncDispatch）",
-        "suggestion": "更新源码引用为 Android 17 中的实际文件路径和类结构，补充 VSync 偏移计算逻辑的分布说明"
-      },
-      {
-        "type": "原理断裂",
-        "location": "2.2 小节",
-        "detail": "定性分析\"5W2H\"与后续工具选择之间存在原理断裂。章节提到\"先归档再动手\"，但没有解释为什么归档后的性能问题类型需要配套特定的分析工具（如启动性能需要冷启动专用 trace 采集），这导致方法论与工具选择之间的逻辑链条不完整",
-        "suggestion": "补充 5W2H 分析后对应工具选择的决策逻辑，解释为什么不同类型性能问题需要配套不同的分析工具"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-04T07:20:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-04T07:37:01+08:00",
-    "completed_by": "task2b-lite",
-    "completion_reason": "fixed-lite: VSync source path corrected + 5W2H bridge added"
-  },
-  {
-    "section": "15",
-    "section_title": "Android 性能优化研究方法论",
-    "priority": 90,
-    "reason": "[Deep Tech Review] 源码路径错误与版本基线混淆",
-    "material_paths": [
-      "src/ch15-methodology.md",
-      "logs/deep-review/2026-07-04-5-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "Section 3.2 版本兼容性 + frontmatter",
-        "detail": "文中同时提到 src/perfetto_cmd/perfetto_cmd.cc 和 external/perfetto/src/perfetto_cmd/perfetto_cmd.cc，但 frontmatter 已标注 task2b_fixed_at，暗示问题已修复。需统一源码锚点为 android-17.0.0_r1 的 external/perfetto/src/perfetto_cmd/perfetto_cmd.cc，确保章节内部路径一致性",
-        "suggestion": "统一所有 Perfetto 源码锚点为 external/perfetto/src/，并 frontmatter 中明确标注已验证的具体版本"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-04T05:21:40",
-    "status": "completed",
-    "completed_at": "2026-07-03T21:37:00+00:00",
-    "completed_by": "task2b-lite",
-    "completion_note": "frontmatter dedup + state correction; body paths already correct (external/perfetto/src/ prefix verified)"
-  },
-  {
-    "section": "1.25",
-    "section_title": "Binder IPC 异步流水线",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-    "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-binder-threadpool-pending-frozen-retry.md"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "Android 17 Binder 线程池内部调度与 BR_TRANSACTION_PENDING_FROZEN 重投递机制 — Binder 线程池演化为三段式调度：内核 lazy 唤醒 + 用户态原子计数器 + 进程级 condvar 等待。DEFAULT_MAX_BINDER_THREADS=15（system_serve",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-07-04T06:15:59.018794",
-    "status": "pending"
-  },
-  {
-    "section": "14.22",
-    "section_title": "HPROF HeapDump 与 Perfetto java_hprof 数据源",
-    "priority": 80,
-    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-    "material_paths": [
-      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-hprof-heapdump-android17-java-hprof-signal-sender.md"
-    ],
-    "review_issues": [
-      {
-        "type": "新增参考材料",
-        "location": "参考资料/延伸阅读",
-        "detail": "HPROF Heap Dump 管线与 Perfetto android.java_hprof 数据源（信号触发端） — Android 17 正式废弃 kill -10 触发 hprof 的旧路径——SIGUSR1 现仅做 GC+ForceProcessProfiles，显式日志标注 no HPROF。hprof 只能",
-        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-      }
-    ],
-    "added_by": "task-deepresearch-injector",
-    "added_at": "2026-07-04T06:15:59.018794",
-    "status": "pending"
-  },
-  {
-    "section": "15.9",
-    "section_title": "从采集到治理的反馈回路",
-    "priority": 95,
-    "reason": "[Deep Tech Review] 源码引用准确性问题与治理回路机制不完整",
-    "material_paths": [
-      "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
-      "logs/deep-review/2026-07-04-12-deep-review.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "JankStats API引用（约行 79）",
-        "detail": "章节中引用的 JankStats 缺少具体的类路径和方法的完整API声明，引用准确性问题影响整个可观测性架构的准确性",
-        "suggestion": "补充完整的 androidx.metrics.performance.JankStats 类路径和关键API方法声明"
-      },
-      {
-        "type": "原理断裂",
-        "location": "治理回路八步流程（第7步）",
-        "detail": "从异常到Backlog的转化机制不够清晰，缺少业务SLA与技术SLA的映射关系",
-        "suggestion": "补充异常严重程度评估标准和Backlog优先级设定的具体方法"
-      },
-      {
-        "type": "版本差异",
-        "location": "适用版本声明不一致",
-        "detail": "frontmatter声明支持Android 11-37，但正文讨论中覆盖到API 26，存在版本声明与实际内容的不匹配",
-        "suggestion": "统一适用版本声明，补充Android 8-10版本中进程监控的API演进说明"
-      },
-      {
-        "type": "知识盲区",
-        "location": "企业级平台设计考量",
-        "detail": "章节未说明多租户场景下的数据隔离问题，这是企业级监控平台的重要考量",
-        "suggestion": "补充多租户数据隔离架构设计和访问控制机制说明"
-      },
-      {
-        "type": "数据缺失",
-        "location": "治理回路指标示例",
-        "detail": "治理回路八步中缺少具体的数据指标示例和阈值设定参考，难以指导实际落地",
-        "suggestion": "补充典型场景下的异常检测阈值设定参考和数据规模说明"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-04T12:21:00+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-04T12:52:22+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: JankStats full API path + SLA mapping + version consistency + multi-tenant + alert thresholds"
-  },
-  {
-    "section": "15",
-    "section_title": "Android 性能优化研究方法论",
-    "priority": 95,
-    "reason": "[Deep Tech Review] VSyncTracker 组件描述误导 + Android 17 Perfetto CLI detached 模式描述错误",
-    "material_paths": [
-      "src/ch15-methodology.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "3.2 Android 14-17 (API 34-37) Perfetto CLI 参数说明",
-        "detail": "章节中 detached session 描述\"detached session 是另一套模式，用 --attach=<key> --stop 回收，不能和 -d 混用\"，但在 android-17.0.0_r1 中 detached session 支持 --background-wait 和 --attach 同时使用",
-        "suggestion": "修正描述并补充具体命令示例： detached session 使用 --detach=<key> 创建，支持 --background-wait 和 --attach=<key> 同时使用，--attach=<key> --stop 回收"
-      },
-      {
-        "type": "源码错误",
-        "location": "VSyncTracker 组件描述",
-        "detail": "文中描述为\"VSyncTracker.cpp 单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作\"，但实际在 AOSP android-17.0.0_r1 中 VSyncTracker 确实是单文件实现，组件协作描述存在误导",
-        "suggestion": "修正 VSyncTracker 组件描述，准确反映其在 android-17.0.0_r1 中的单文件实现，如需说明多组件协作，应明确指出各组件的具体职责和交互方式"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-04T10:26:15.816373+00:00",
-    "status": "completed",
-    "updated_at": "2026-07-04T18:39:16.659044+08:00",
-    "completed_at": "2026-07-04T18:52:42+08:00",
-    "completed_by": "task2b-main"
-  },
-  {
-    "section": "18.12",
-    "section_title": "Flutter 渲染管线",
-    "priority": 95,
-    "reason": "[Deep Tech Review] VSyncWaiterAndroid 调用链描述错误",
-    "material_paths": [
-      "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "VSync 调度器集成部分",
-        "detail": "章节提到\"优先调用 NDK AChoreographer，回调进入 OnVsyncFromNDK()\"，但实际在 android-17.0.0_r1 中 OnVsyncFromNDK() 不存在",
-        "suggestion": "修正调用链为：OnVsync() → ProcessVsync() → PlatformVsync；删除错误的 OnVsyncFromNDK() 引用"
-      },
-      {
-        "type": "源码错误",
-        "location": "FlutterImageView 渲染路径部分",
-        "detail": "章节提到\"API 29+ 主要走 Image → HardwareBuffer → Bitmap.wrapHardwareBuffer()\"，但在 android-17.0.0_r1 中主要路径是通过 ImageReader 获取 Image，然后 Canvas.drawBitmap",
-        "suggestion": "修正路径描述：实际路径为 ImageReader → Image → Canvas.drawBitmap，HardwareBuffer 路径是实验性功能"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-04T10:26:15.816765+00:00",
-    "status": "completed",
-    "completed_at": "2026-07-04T18:52:42+08:00",
-    "completed_by": "task2b-main"
-  },
-  {
-    "section": "25.17",
-    "section_title": "Android 17 后台音频硬化与播放功耗治理",
-    "priority": 90,
-    "reason": "[Deep Tech Review] Android 17 shell 命令错误",
-    "material_paths": [
-      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "取证命令部分",
-        "detail": "章节中 adb shell 命令错误，提到\"adb shell cmd audio set-hardening enable/disable\"，但在 android-17.0.0_r1 中正确命令是\"cmd audio set-hardening\"和\"cmd audio clear-hardening\"",
-        "suggestion": "修正命令描述：set-hardening 开启限制，clear-hardening 恢复默认行为，不存在 enable/disable 参数"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-04T10:26:15.816768+00:00",
-    "status": "completed",
-    "completed_at": "2026-07-04T12:52:13.940187+00:00",
-    "completed_reason": "skipped-false-positive",
-    "completed_note": "Task2B 主修复验证：set-hardening enable/throw 和 clear-hardening 均为 AOSP android-17.0.0_r1 中正确命令。AudioManagerShellCommand.java:182-185 help 文案为 \"set-hardening <1|enable|0|disable|throw>\"，enable/disable/throw 是有效子参数。Task2B Lite 已先行验证并锚定源码。本章节命令无需修改。"
-  },
-  {
-    "section": "25.17",
-    "section_title": "Android 17 后台音频硬化与播放功耗治理",
-    "priority": 85,
-    "reason": "[Deep Tech Review] targetSdkVersion 37 行为差异与蓝牙场景缺失",
-    "material_paths": [
-      "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
-    ],
-    "review_issues": [
-      {
-        "type": "版本差异",
-        "location": "targetSdkVersion 37 与 36 的行为差异",
-        "detail": "章节提到 target 37 需要 WIU 能力，但未说明从 36 到 37 的具体 API 变化和兼容性处理方案，缺少完整的适配指导",
-        "suggestion": "补充 targetSdkVersion 36 和 37 在音频硬化行为上的具体差异，包括 API 变化、兼容性处理方案和渐进式迁移策略"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-05T00:25:49.533070+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-05T00:52:57+08:00",
-    "completed_by": "task2b-main",
-    "completed_reason": "fixed: targetSdkVersion 36 vs 37 behavior differences table + four-step migration path added (entry audit, non-compliant entry refactoring, staged verify, logging dimension)"
-  }
-]
+{
+  "pending": [
+    {
+      "section": "ch04-memory",
+      "section_title": "Chapter ch04-memory",
+      "priority": 68,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Developers Blog - Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少... — Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少 30%。新调度器采用机器学习模型预测用户行为，优先启动高频使用的应用。同时，系统资源分配更加智能，",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:35:08.663894+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Chapter ch04-memory",
+      "priority": 66,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Phoronix - Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运... — Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运行的系统稳定性。新机制采用分层管理策略，对频繁分配释放的热点区域进行重点优化。测试显示，在高负载服务",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:35:08.664923+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch01-architecture",
+      "section_title": "Chapter ch01-architecture",
+      "priority": 61,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7623242804392247305"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "1. UseCase 越多，项目越烂 — Clean Architecture 落地误区 — 作者从真实代码 review 总结出无业务逻辑的纯转发 UseCase 是架构负担，给出三条存在标准：多数据源聚合、业务规则校验、数据源屏蔽。延伸到 Compose 时代 MVI 契约设计和 KMP ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:35:08.665308+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch01-architecture",
+      "section_title": "Chapter ch01-architecture",
+      "priority": 61,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7650074080125599790"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2. Repository 应暴露 suspend fun 而非内部 launch — 从结构化并发角度分析 Repository 内部 launch 导致生命周期失控、异常传播断裂、取消能力削弱。核心原则：suspend 表达能力，launch 表达任务归属。withContext 只",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:35:08.665643+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch02-rendering",
+      "section_title": "Chapter ch02-rendering",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7618433588125007923"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "3. Compose Pager 从基础到高级动画 — 系统教程覆盖 PagerState、自定义 PageSize、SnapPosition、负间距堆叠、Paging 3 集成和 graphicsLayer 3D 旋转变换。currentPageOffs",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:35:08.666398+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch10-memory-perf",
+      "section_title": "Chapter ch10-memory-perf",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7617108607432736778"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "4. Room 3.0 破坏性变化与迁移路径 — Room 3.0 四大变化：新包名 androidx.room3、仅生成 Kotlin 代码、仅支持 KSP、禁止同步 DAO 必须 suspend 或 Flow。跨平台新增 JS/WASM 支持，通",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:35:08.666924+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch15-methodology",
+      "section_title": "Chapter ch15-methodology",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7614897667961143347"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "5. Google Android Bench：AI 编码能力评测方法论 — 拆解 Android Bench 的两阶段评测架构（推理+评估分离），七项公正性机制包括 Docker 隔离沙箱、git apply 排除测试文件防篡改、fail_to_pass + pass_to_",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:35:08.667195+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Chapter ch04-memory",
+      "priority": 68,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Developers Blog - Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少... — Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少 30%。新调度器采用机器学习模型预测用户行为，优先启动高频使用的应用。同时，系统资源分配更加智能，",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:36:17.885467+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Chapter ch04-memory",
+      "priority": 66,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Phoronix - Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运... — Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运行的系统稳定性。新机制采用分层管理策略，对频繁分配释放的热点区域进行重点优化。测试显示，在高负载服务",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:36:17.887084+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch01-architecture",
+      "section_title": "Chapter ch01-architecture",
+      "priority": 61,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7623242804392247305"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "1. UseCase 越多，项目越烂 — Clean Architecture 落地误区 — 作者从真实代码 review 总结出无业务逻辑的纯转发 UseCase 是架构负担，给出三条存在标准：多数据源聚合、业务规则校验、数据源屏蔽。延伸到 Compose 时代 MVI 契约设计和 KMP ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:36:17.887549+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch01-architecture",
+      "section_title": "Chapter ch01-architecture",
+      "priority": 61,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7650074080125599790"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2. Repository 应暴露 suspend fun 而非内部 launch — 从结构化并发角度分析 Repository 内部 launch 导致生命周期失控、异常传播断裂、取消能力削弱。核心原则：suspend 表达能力，launch 表达任务归属。withContext 只",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:36:17.887871+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch02-rendering",
+      "section_title": "Chapter ch02-rendering",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7618433588125007923"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "3. Compose Pager 从基础到高级动画 — 系统教程覆盖 PagerState、自定义 PageSize、SnapPosition、负间距堆叠、Paging 3 集成和 graphicsLayer 3D 旋转变换。currentPageOffs",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:36:17.888688+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch10-memory-perf",
+      "section_title": "Chapter ch10-memory-perf",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7617108607432736778"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "4. Room 3.0 破坏性变化与迁移路径 — Room 3.0 四大变化：新包名 androidx.room3、仅生成 Kotlin 代码、仅支持 KSP、禁止同步 DAO 必须 suspend 或 Flow。跨平台新增 JS/WASM 支持，通",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:36:17.889215+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch15-methodology",
+      "section_title": "Chapter ch15-methodology",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7614897667961143347"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "5. Google Android Bench：AI 编码能力评测方法论 — 拆解 Android Bench 的两阶段评测架构（推理+评估分离），七项公正性机制包括 Docker 隔离沙箱、git apply 排除测试文件防篡改、fail_to_pass + pass_to_",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-04T21:36:17.889481+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.55",
+      "section_title": "Android 17 Binder IPC 优先级继承与内核缓冲池新特性",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Binder 4MB 内核侧缓冲池上限与事务优先级算法源码级闭环 — 源码级分析 Binder 驱动 mmap 上限从 SZ_1M 到 SZ_4M 的演化、50% async space 配额、binder_transaction_priority() 的 min(cl",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-05T06:18:33.276257+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.1",
+      "section_title": "Perfetto heapprofd 生产环境部署与权限配置",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-heapprofd-production-deployment-permissions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Perfetto heapprofd 生产环境部署模式与权限配置 — 三层权限模型（uid 范围/安装者过滤/SESSION_INITIATOR_TRUSTED_SYSTEM 绕过）、双 Producer 并行架构（Native+Java）、init.rc 服务配置、连",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-05T06:18:33.276257+08:00",
+      "status": "pending"
+    }
+  ],
+  "items": [
+    {
+      "section": "2.15",
+      "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "priority": 60,
+      "reason": "[task6抽检] 版本基线 android-17.0.0_r1 待验证：当前 last_verified_against 和全部 [已验证] 标注均为 android-16.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需验证",
+          "location": "全文所有 [已验证] 标注 + frontmatter last_verified_against",
+          "detail": "AIW 版本基线要求 android-17.0.0_r1，但本章验证标注全部指向 android-16.0.0_r1。需 Task 9 重新核对源码引用是否在 android-17.0.0_r1 中仍然成立，并更新验证标注。",
+          "suggestion": "Task 9 重新验证后更新 last_verified_against 和正文 [已验证] 标注"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-05T07:06:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-05-07-audit.md"
+    }
+  ]
+}
