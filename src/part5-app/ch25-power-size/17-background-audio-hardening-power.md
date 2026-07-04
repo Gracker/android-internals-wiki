@@ -2,7 +2,7 @@
 title: "Android 17 后台音频硬化与播放功耗治理"
 chapter: "25.17"
 section: "25.17"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-24"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-02"
@@ -43,6 +43,11 @@ last_task2b_at: 2026-07-05T00:53:38+08:00
 last_task2b_by: task2b-main
 task2b_lite_note: "2026-07-04 Task2B Lite 验证: set-hardening enable/throw/clear-hardening 命令已正确，无需修改。证据锚定 AudioManagerShellCommand.java:182-185,517-563。queue P90 条目标记 skipped-false-positive。"
 task2b_verifier_normalize: "2026-07-04T23:28:57+08:00 Verifier: status revisiting→ready-for-review, task2b_state fixed-skipped→fixed (standardized for Task6 pickup). task6_state=revisiting, task9_state=pending, pipeline_stage=task6_pending confirmed correct."
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+pipeline_stage: task6_pending
+last_task2b_lite_at: 2026-07-05
 ---
 
 # 25.17 Android 17 后台音频硬化与播放功耗治理
@@ -205,6 +210,7 @@ Android 17 的难点在于部分失败是静默的。定位时要同时看播放
 ```bash
 # 打开 Android 17 后台音频硬化测试开关
 # Android 17 AOSP shell 子命令是 set-hardening；clear-hardening 才会回到默认 compat / flag 行为
+# 源码锚点: AudioManagerShellCommand.java:182-185 (help 文案定义), 517-563 (enable/disable/throw/default 模式映射)
 # enable: 对所有应用强制开启限制，WIU 前台服务要求不再受 targetSdk 37 限制
 # throw: 在 enable 基础上让失败显性化（write 持续返回错误码、部分播放模式可能崩溃）
 # 两者都只用于线下发现潜在后台音频路径，不用于验证 target 36 生产豁免或 alarm 豁免
