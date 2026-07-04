@@ -651,10 +651,25 @@
       "notes": "L1轻修(元叙述)，自动晋升finalized"
     },
     "15.9": {
-      "last_action": "task2b-rework",
-      "last_action_at": "2026-07-04T10:53:23+08:00",
-      "status": "fixed-sent-to-task6",
-      "pipeline_stage": "task6_pending"
+      "title": "从采集到治理的反馈回路",
+      "status": "ready-for-review",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-07-04T12:08:00+08:00",
+      "review_log": "logs/review/2026-07-04-12-review.md"
+    },
+    "26.10": {
+      "title": "Android 11 以下进程退出归因方案",
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-07-04T12:08:00+08:00",
+      "review_log": "logs/review/2026-07-04-12-review.md"
     }
   },
   "task2a": {

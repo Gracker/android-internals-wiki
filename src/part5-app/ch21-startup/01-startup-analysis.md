@@ -621,3 +621,118 @@ synchronized (mLoaders) {
 | 35 | `Resources.preloadResources()` 静态化 | `ZygoteInit15.java#preload` |
 
 > **Android 17 / API 37 为本文最高版本边界**。未读取或引用 Android 18 / API 38+ 内容。
+
+
+## 模块化启动框架与依赖管理（Android 17 源码级闭环）
+
+> 源码调研：`DeepResearch/2026-07-04-android17-modular-startup-framework-dependency-graph.md`
+> 一手源码：`frameworks/base/core/java/android/app/ActivityThread.java`、`LoadedApk.java`、`Application.java`（android-17.0.0_r1）；AndroidX `Initializer.java` / `InitializationProvider.java` / `AppInitializer.java`（androidx-main）
+
+模块化启动框架把"每个 SDK 各自在 manifest 注入一个 ContentProvider 自动初始化"改成"单一 InitializationProvider + Initializer 依赖图"。理解它的可行性必须从 `ActivityThread` 源码看三层基座。
+
+### 三层启动流水线（Framework 侧）
+
+`ActivityThread.main()`（`ActivityThread.java:9465`）调用顺序固定：
+
+1. `initializeMainlineModules()`（`:9533`）—— Telephony/Stats/Media/Bluetooth/NFC/DeviceConfig/SE/Profiling 八类 mainline 模块通过各自 `XxxFrameworkInitializer.setXxxServiceManager(new XxxServiceManager())` 注入到进程内的 `ServiceManager` 单例。这是 Android 14+ 后替代直接 `ServiceManager.getService()` 的耦合方式。
+2. `Looper.prepareMainLooper()` + `new ActivityThread()` + `thread.attach(false, startSeq)`（`:9275`）—— `attachApplication(mAppThread, startSeq)` 把 `IApplicationThread` Binder 推给 system_server。
+3. `Looper.loop()` —— 主线程进入消息循环，等 H.BIND_APPLICATION 投递。
+
+AMS 收到 `attachApplication` 后回调 `bindApplication()`，主线程在 `handleBindApplication(AppBindData data)`（`:7974`）内串行执行：
+
+| 阶段 | 行号 | 关键动作 |
+| --- | --- | --- |
+| Compat & Ddm | `:7978-8031` | `AppCompatCallbacks.install()`、`VMRuntime.setProcessDataDirectory()` |
+| Proxy | `:8193-8220` | `ConnectivityManager.onEarlyInit()`（Android 17 新增 `enableMultiProxySystemPlatform` 路径） |
+| **ContentProvider 安装** | `:8311-8315` | `installContentProviders(app, data.providers)` —— 这一步是 AndroidX Startup 选择 ContentProvider 形态的根本原因 |
+| **Application.onCreate** | `:8335` | `mInstrumentation.callApplicationOnCreate(app)` |
+
+固定顺序：`ContentProvider.onCreate()` 早于 `Application.onCreate()`。所以模块化框架在 `Application` 之前已经把所有 Initializer 跑完。
+
+### LoadedApk 实例化与 ClassLoader 复用
+
+`LoadedApk.makeApplicationInner()`（`LoadedApk.java:1595`）通过 `ApplicationLoaders` 全局缓存（`mLoaders` map）复用 `PathClassLoader`。`getClassLoader()`（`:1276`）走 `createOrUpdateClassLoaderLocked()`（`:1003`）— 第二次同进程再调用命中缓存，零成本。`sApplications` 静态 map（`:1604`）守护同 package 单例，避免重复创建 Application。
+
+这对模块化框架的影响：
+- 同一进程的多个 `Initializer` 实现共享 ClassLoader，静态字段、单例天然一致。
+- 多进程 App 每个子进程独立创建 ClassLoader，但每个进程内仍走缓存。
+
+### AndroidX Startup 的依赖图执行模型
+
+`Initializer<T>` 接口（androidx-main `Initializer.java`）只有两个方法：`create(Context)` 和 `dependencies()`。`InitializationProvider.onCreate()`（`InitializationProvider.java:36`）调用 `AppInitializer.getInstance(context).discoverAndInitialize(getClass())`，把工作转交给单例 `AppInitializer`。
+
+`AppInitializer.discoverAndInitialize(Bundle metadata)`（`AppInitializer.java:210`）两步走：
+
+1. **Discovery**：遍历 `metaData.keySet()`，匹配 value == `androidx_startup` 字符串的 key（`mContext.getString(R.string.androidx_startup)`），把 `Class.forName(key)` 加进 `mDiscovered` 集合。
+2. **Topological initialize**：对 `mDiscovered` 每个 component 调用 `doInitialize(component, initializing)`。
+
+`AppInitializer.doInitialize()`（`AppInitializer.java:140`）是核心 DFS：
+
+```java
+private <T> T doInitialize(Class<? extends Initializer<?>> component,
+                            Set<Class<?>> initializing) {
+    if (initializing.contains(component)) {
+        throw new IllegalStateException("Cannot initialize " + component.getName()
+                + ". Cycle detected.");   // ★ 运行期环检测
+    }
+    if (!mInitialized.containsKey(component)) {
+        initializing.add(component);
+        Object instance = component.getDeclaredConstructor().newInstance();
+        Initializer<?> initializer = (Initializer<?>) instance;
+        List<Class<? extends Initializer<?>>> dependencies = initializer.dependencies();
+        if (!dependencies.isEmpty()) {
+            for (Class<? extends Initializer<?>> clazz : dependencies) {
+                if (!mInitialized.containsKey(clazz)) {
+                    doInitialize(clazz, initializing);   // 递归 DFS
+                }
+            }
+        }
+        result = initializer.create(mContext);
+        initializing.remove(component);
+        mInitialized.put(component, result);
+    }
+    return (T) result;
+}
+```
+
+四个关键属性：
+1. **DFS 后序**：每个 Initializer 在所有依赖都 `mInitialized` 后才执行 `create()`。
+2. **环检测**：`initializing` 集合记录"正在初始化栈"，再次进入抛 `Cycle detected` 异常。比 manifest `android:initOrder` 静态排序更可靠。
+3. **同步锁**：外层 `doInitialize(Class)` 通过 `synchronized (sLock)` 保护 `mInitialized` map，并发调用去重。
+4. **惰性入口**：`AppInitializer.initializeComponent(SomeInitializer.class)` 单点触发，依赖自动补齐。
+
+### 多进程微服务架构下的依赖管理
+
+把上面三层组合起来，依赖管理分三层：
+
+**(a) 进程级**：每个子进程独立跑 `main → attach → handleBindApplication` 流水线。`handleBindApplication` 不感知 Application 内部模块结构，但提供 `installContentProviders`（在 App.onCreate 之前）和 `callApplicationOnCreate` 两个钩子。
+
+**(b) 模块级**：用 `InitializationProvider` 聚合 meta-data。`android:authorities="${applicationId}.androidx-startup"` 拼接 applicationId，多进程 App 不冲突。每个进程的 `InitializationProvider.onCreate` 各自跑一次 `discoverAndInitialize`。
+
+**(c) 子模块级**：业务模块把"日志→崩溃→网络→业务"用 `Initializer.dependencies()` 串起来。运行期环检测比 `android:initOrder` 可靠——`initOrder` 是 manifest 顺序，静态且容易因 manifest merger 出错。
+
+### 与动态加载的集成约束
+
+源码调研发现三种典型冲突场景：
+
+1. **动态加载的 dex 中含 Initializer 实现**：`Class.forName(key)` 在主 ClassLoader 找不到，抛 `ClassNotFoundException` 包成 `StartupException`（`AppInitializer.java:238`）。解法：把动态 feature 的 Initializer 注册到主 module 的 manifest，或主 module 用 lazy `AppInitializer.initializeComponent()` 触发。
+2. **跨进程 feature 在多个进程重复触发**：每个进程的 `InitializationProvider.onCreate` 都跑一遍。在 `Initializer.create()` 内用 `Process.myProcessName()` 过滤非目标进程。
+3. **多模块各自声明 InitializationProvider**：manifest merger 后只剩一个（`tools:node="merge"` 默认行为），其它模块需要靠 `tools:node="remove"` 替换。用 `tools:node="merge"` 显式声明聚合策略，避免覆盖。
+
+### 性能取舍
+
+- **合并 Provider 的收益**：N 个三方 SDK 各自声明 Provider，AMS 要 publishContentProviders() N 次、`mProviderMap` 维护 N 个 holder。AndroidX Startup 合并成 1 个 Provider + 1 次 publish，但 `doInitialize` 内部仍是同步串行 DFS，整体初始化耗时不变。省的是 AMS 侧 framework 开销，不是应用侧代码开销。
+- **环检测的代价**：每次递归都做 `initializing.contains(component)` 哈希查询，开销远小于一次方法调用。`<clinit>` 和反射构造器的开销主导整体耗时。
+- **多进程二次启动**：每个子进程都跑 `InitializationProvider.onCreate`，但 `sApplications.get(mPackageName)`（`LoadedApk.java:1604`）只在 system_server 包命中，正常 App 子进程不触发"App instance already created"警告。
+
+### 版本差异（Android 17 / API 37 基线）
+
+| API level | 变化 | 证据 |
+| --- | --- | --- |
+| 26 | `Application.onCreate` 在 ContentProvider 之后 | `ActivityThread.handleBindApplication` 顺序固定 |
+| 30 | `Application.getProcessName()` 静态化 | `Application.java:343` `public static String getProcessName()` |
+| 37 | `ActivityThread.main` 增 `initializeMainlineModules()` | `ActivityThread.java:9533`（android-17.0.0_r1 实测）|
+| 37 | `handleBindApplication` 增 `NetworkSecurityConfigProvider.install` 前置化、Compat 变更安装 | `ActivityThread.java:7978-8244`（实测）|
+| 37 | `enableMultiProxySystemPlatform` 路径走 `ConnectivityManager.onEarlyInit()` | `ActivityThread.java:8205`（实测）|
+
+> **Android 17 / API 37 为本文最高版本边界**。未读取或引用 Android 18 / API 38+ 内容。
