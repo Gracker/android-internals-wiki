@@ -37,6 +37,7 @@ last_task9_at: "2026-04-22T07:35:00+08:00"
 last_task6_audit: "2026-07-03"
 last_task6_audit_log: "logs/review/2026-07-03-07-audit.md"
 last_task9_audit: "2026-07-01"
+last_task9_idle_audit: "2026-07-04"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 ---
