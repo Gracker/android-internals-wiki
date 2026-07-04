@@ -500,6 +500,13 @@
       "status": "no-candidates",
       "ts": "2026-07-05T01:10:34.318671+08:00",
       "note": "Gap mining round 17: 0 candidates ≥14. Coverage saturated (17th consecutive). Checked PMS×cpuidle×schedutil (already in ch5.4), eScope paper, Desktop Experience, NSD/BLE perf, Repository suspend fun."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-05T02:07:55+08:00",
+      "note": "Gap mining round 18: 0 candidates ≥14. Coverage saturated (18th consecutive). No new material since round 17. All 6 newest DeepResearch files (PMS×cpuidle, Flutter Impeller, AI agent memory, modular startup, heapprofd, LMKD batch, binder death notification) map to existing chapters. 2 pending queue items are supplements for ch1.25 and ch14.22."
     }
   ],
   "review_history": [
@@ -736,12 +743,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-05T01:10:34.318671+08:00",
+    "last_run": "2026-07-05T02:07:55+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 17: 0 candidates ≥14. Coverage saturated (17th consecutive). Checked PMS×cpuidle×schedutil (already in ch5.4), eScope paper, Desktop Experience, NSD/BLE perf, Repository suspend fun."
+    "note": "Gap mining round 18: 0 candidates ≥14. Coverage saturated (18th consecutive)."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",
