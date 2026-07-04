@@ -48,7 +48,7 @@ created_date: "2026-05-24"
 gap_source: "官方文档/已有章节深挖/每日信息"
 pipeline_stage: task9_pending
 task6_state: "reviewed"
-task9_state: reviewed
+task9_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-07-04"
 task6_result: "pass-light-edit"
@@ -58,6 +58,7 @@ last_task6_review_log: "logs/review/2026-05-24-05-review.md"
 task6_review_notes: "2026-05-24 Task6 首次 review: pass-light-edit。L1/L2 小修 3 处（补 Task6/section/drafted_by 元数据与 FGS service-type 来源、首次展开 WIU 缩写、修正锚点标题一致性）。无新增 Task6 回炉；转 Task9 技术复核。"
 task9_result: auto-fixed
 task2b_state: fixed
+task2b_verifier_note: "2026-07-04T15:30:08+08:00 task9_state reviewed→pending: Task6 已于 07-04 复审通过，章节等待 Task9 复审"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-04"
 last_task9_at: "2026-07-02T14:29:53+08:00"

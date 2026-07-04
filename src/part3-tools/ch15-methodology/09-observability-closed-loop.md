@@ -14,13 +14,13 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals"
 tags: [observability, apm, pipeline, governance, monitoring]
 related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: 2026-07-04
 reviewed_by: openclaw-task6
 last_task6_at: 2026-07-04T13:09:00+08:00
-task9_state: revisiting
+task9_state: pending
 repaired_date: "2026-04-22"
 repaired_by: "codex"
 task9_result: auto-fixed
@@ -33,6 +33,7 @@ last_task9_audit: "2026-07-04"
 last_task9_idle_audit: "2026-07-04"
 task2b_state: fixed
 task2b_result: fixed
+task2b_verifier_note: "2026-07-04T15:29:52+08:00 pipeline task6_pending→task9_pending, task9_state revisiting→pending: Task6 已于 13:09 复审通过(pass-light-edit)，章节应进入 Task9 复审"
 last_task2b_rework_at: "2026-07-04T12:52:06+08:00"
 last_task2b_rework_log: "Task2B 2026-07-04: 按 Task9 Deep Review 问题单修复 JankStats API 完整声明、异常→Backlog SLA 映射、版本声明一致性、多租户数据隔离、告警阈值参考。"
 deepseek_polish_state: done

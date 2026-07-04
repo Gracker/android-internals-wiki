@@ -11,10 +11,11 @@ reviewed_by: "\"openclaw-task6\""
 created_by: "rendering-pipelines-merge"
 created_date: "'2026-04-09'"
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task6_result: "\"pass-light-edit\""
 task2b_result: fixed
+task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 已于 07-04 复审通过，章节等待 Task9 复审"
 last_task2b_at: "2026-07-01T18:54:04+08:00"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
