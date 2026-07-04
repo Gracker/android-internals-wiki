@@ -270,3 +270,28 @@
 - **位置**：Section 4.4 "自适应刷新率场景的帧数据分析"
 - **问题**：FrameRateOverrides 与 SurfaceFlinger 的帧调度计划协同工作机制说明不完整
 - **建议**：补充 FrameRateOverrides 如何影响 SurfaceFlinger 的具体机制说明，包括 VSync 调整延迟的影响
+
+
+## [Task2A Gap Mining Round 7] 2026-07-04 09:15 — Coverage Saturated (Round 7)
+
+已检查方向（全部已覆盖或 <14 分）：
+1. Repository suspend fun / 结构化并发性能 → 架构模式，非系统性能主题 (8/20)
+2. Clean Architecture / UseCase 分层 → 软件工程，非运行时性能 (7/20)
+3. Compose Pager 性能 → UI 组件教程，非系统级性能 (9/20)
+4. GUI 代理基准 (AndroidDaily) → AI/ML 评估，非性能优化 (6/20)
+5. 构建失败诊断研究 → 构建时，非运行时性能 (5/20)
+6. 代码指标预测应用受欢迎度 → 代码质量，非性能 (5/20)
+7. MVVM/MVI 架构对比 → 架构模式，非性能 (7/20)
+8. Linux 内核沙箱 (Z-Jail) → 安全隔离，非性能优化 (6/20)
+9. NSD/Wi-Fi Direct/BLE 近场通信 → Round 4-6 已评估 <14 (9/20)
+10. Android 17 ML Scheduler → ch01.43 已覆盖
+11. Linux 6.10 内存碎片整理 → ch06.19 已覆盖
+12. Desktop Experience → 22.14 已覆盖
+
+新增检查维度（相比前 6 轮）：
+- 今日掘金 5 篇热门文章全部映射 → 无系统性能方向
+- 今日论文精读 3 篇 → 全部非性能优化主题
+- ClawFeed 技术资讯 → Linux 沙箱等非 Android 性能主题
+
+**结论**：第 7 轮连续无 ≥14 分候选。全书 577 节，覆盖已饱和。
+建议后续挖掘周期继续维持「深度扩展」策略，聚焦已有章节的 🔸 扩展点填充和 Task14 参考书扫描建议的内容注入。
