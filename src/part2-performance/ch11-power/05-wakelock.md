@@ -409,6 +409,78 @@ Power HAL 负责向厂商侧电源策略发送性能和模式 hint，和 wakeloc
 ```text
 App: PowerManager.newWakeLock(PARTIAL_WAKE_LOCK).acquire()
   ↓
+
+
+<!-- AIW-源码调研-2026-07-04 补充:PMS 内部 DIRTY 位状态机与 Notifier/BatteryStats 链路 -->
+
+### PMS 内部状态机:DIRTY 位与 updatePowerStateLocked
+
+`PowerManagerService.java` (android-17.0.0_r1) 用 17 个 `DIRTY_*` 位掩码追踪需要更新的电源状态子集 (line 210-237), `mDirty` 是状态机的核心:
+
+```java
+private static final int DIRTY_WAKE_LOCKS = 1 << 0;     // mWakeLocks 变化
+private static final int DIRTY_WAKEFULNESS = 1 << 1;    // mWakefulness 变化
+private static final int DIRTY_USER_ACTIVITY = 1 << 2;  // user activity poke 或超时
+private static final int DIRTY_BOOT_COMPLETED = 1 << 4;
+private static final int DIRTY_SETTINGS = 1 << 5;
+private static final int DIRTY_IS_POWERED = 1 << 6;
+private static final int DIRTY_BATTERY_STATE = 1 << 8;
+private static final int DIRTY_QUIESCENT = 1 << 12;
+private static final int DIRTY_DISPLAY_GROUP_WAKEFULNESS = 1 << 16;  // Android 17 多屏
+private static final int DIRTY_POSTURED_STATE = 1 << 17;
+```
+
+任一 App `acquire()` 都会触发 `mDirty |= DIRTY_WAKE_LOCKS; updatePowerStateLocked();` (line 1797-1798)。`updatePowerStateLocked()` 是 PMS 主线程消息循环上的单入口, 根据 `mDirty` 各 bit 决定本次循环要重算哪些状态子集。这种"位掩码聚合 → 单线程串行执行"模式保证多并发 App wake lock 不会触发多轮冗余刷新。
+
+#### Notifier → BatteryStats 的异步链路
+
+`acquireWakeLockInternal()` (line 1750+) 末尾 (line 1806):
+
+```java
+mDirty |= DIRTY_WAKE_LOCKS;
+updatePowerStateLocked();
+mWakelockMapper.addWakeLock(wakeLock);
+if (notifyAcquire) {
+    notifyWakeLockAcquiredLocked(wakeLock);  // line 1806
+}
+```
+
+`notifyWakeLockAcquiredLocked()` (line 2138-2145) 仅调 `mNotifier.onWakeLockAcquired(...)` 再 `restartNofifyLongTimerLocked()` 设置 60 秒定时 (`MIN_LONG_WAKE_CHECK_INTERVAL`), 超时后通过 `MSG_CHECK_FOR_LONG_WAKELOCKS` 异步消息触发 `notifyWakeLockLongStartedLocked`, 标记 wake lock 持有超过 60 秒。
+
+**`mNotifier` 实际注入点**: `mInjector.createNotifier(Looper.getMainLooper(), mContext, mBatteryStats, ...)` 在 `systemReady()` 阶段构造 (line 1461-1462)。`mBatteryStats` 是 `IBatteryStats` AIDL 接口 (line 362), 实现类是 `BatteryStatsService`。
+
+`BatteryStatsService.java` (line 1519-1553) 的 `noteStartWakelock()` 把事件投递到 `mHandler`:
+
+```java
+public void noteStartWakelock(final int uid, final int pid, final String name,
+        final String historyName, final int type, final boolean unimportantForLogging) {
+    super.noteStartWakelock_enforcePermission();
+    synchronized (mClock) {
+        final long elapsedRealtime = mClock.elapsedRealtime();
+        final long uptime = mClock.uptimeMillis();
+        mHandler.post(() -> {
+            synchronized (mStats) {
+                mStats.noteStartWakeLocked(uid, pid, null, name, historyName, type,
+                        unimportantForLogging, elapsedRealtime, uptime);
+            }
+        });
+    }
+}
+```
+
+注意 `mHandler.post(...)`——BatteryStatsService 把所有 wake lock 事件扔到自己的 Handler 线程上异步累加, 这是为什么 dumpsys batterystats 在高频 wake lock 场景下会有几百 ms 延迟的原因。
+
+#### 隐含状态推断:adjustWakeLockSummary
+
+`adjustWakeLockSummary()` (line 3113-3177) 在已知 wakefulness (Asleep/Dozing/Awake/Dreaming) 时强制收敛 wake lock 摘要:
+
+- wakefulness ≠ Dozing → 移除 `WAKE_LOCK_DOZE | WAKE_LOCK_DRAW`
+- wakefulness == Asleep 或带 `WAKE_LOCK_DOZE` → 移除 `WAKE_LOCK_SCREEN_BRIGHT | WAKE_LOCK_SCREEN_DIM | WAKE_LOCK_BUTTON_BRIGHT`
+- 含 `WAKE_LOCK_PARTIAL_SLEEP` → 强制覆盖为 `WAKE_LOCK_PARTIAL_SLEEP | WAKE_LOCK_CPU`
+- 含 `WAKE_LOCK_SCREEN_BRIGHT | WAKE_LOCK_SCREEN_DIM` 且 wakefulness == Awake → 累加 `WAKE_LOCK_CPU | WAKE_LOCK_STAY_AWAKE`
+
+实际排查时如果发现 `mWakeLockSummary` 含 `WAKE_LOCK_CPU` 但 PMS 没把它转成 kernel wakeup_source, 多半是 `adjustWakeLockSummary()` 在收敛阶段把 SCREEN 类 flag 移除掉了。
+
 PowerManagerService: 更新 WakeLock 记录和 mWakeLockSummary
   ↓
 acquireSuspendBlockerLocked("PowerManagerService.WakeLocks")
