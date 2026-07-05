@@ -48,6 +48,7 @@ last_task2b_source: "task9-deep-tech-review"
 last_task2b_priority: 95
 task2b_note: "重写 Native Crash 统一 signal handler 示例：handler 内只写预分配快照并 re-raise；unwind、符号化、文件写入移到安全上下文；补充 SA_ONSTACK/旧 handler 链边界。"
 last_task6_at: "2026-05-28T03:16:00+08:00"
+last_task6_audit: "2026-07-06"
 last_task6_review_log: "logs/review/2026-05-28-03-review.md"
 task6_l1_l2_fixes: 6
 task6_l3_l4_issues: 0
