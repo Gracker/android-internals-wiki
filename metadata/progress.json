@@ -819,11 +819,13 @@
       "review_log": "logs/review/2026-07-04-12-review.md"
     },
     "14.8": {
-      "status": "completed",
+      "status": "ready-for-review",
       "task2b_result": "fixed",
-      "task2b_auto_promoted": true,
-      "finalized_at": "2026-07-05T22:51:24+08:00",
-      "finalized_by": "openclaw-task2b"
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-07-06T01:20:33.675283+08:00",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "pipeline_stage": "task9_pending"
     }
   },
   "task2a": {
