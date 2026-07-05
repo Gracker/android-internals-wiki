@@ -77,3 +77,22 @@
 - 线上疑难问题参考书 59 篇全量映射 → 所有主题均已有对应章节
 - Android 性能优化参考书 16 篇全量映射 → 所有主题均已有对应章节
 - 26 轮连续挖掘（24+25+26 轮无合格候选），覆盖率确认饱和
+
+## [Task9 Idle Audit] 1.5 线程模型 — 2026-07-05
+- **类型**：版本差异
+- **位置**：章节适用版本声明与源码引用不一致
+- **问题**：章节声明适用 Android 5.0 - Android 17 (API 21-37)，但所有源码引用和分析均基于 android-16.0.0_r1（Android 16，API 35）。存在版本覆盖声明与实际分析基准版本不匹配的问题。
+- **建议**：① 修正章节适用版本范围至 Android 5.0 - Android 16（API 21-35），或② 将源码引用更新为 android-17.0.0_r1 并补充 Android 17 行为差异分析。建议优先选择方案①，因为当前源码分析深度与 Android 16 更匹配。
+
+### [2026-07-05 16:05] Task2A Round 27 Gap Mining — No Candidates
+已检查方向（本轮新增）：
+- 无新增 DeepResearch 文件（自 Round 24 起无变化）
+- 无新增 Clippings 文件（自 2026-06-23 起无变化，12 天）
+- 无新增 research-feeds（最新 mtime: 2026-04-14，近 3 个月无更新）
+- Source index: 0 unmapped high-quality items
+- 14 draft sections all have >15 lines content（无空 draft，本轮无法进入 Phase 2）
+- Task2B backlog: 0（≤20，允许挖掘）
+- queue.json 6 条 pending 均为素材注入（非新章节创建）
+- 27 轮连续无合格候选，覆盖率确认饱和
+- 全书 577 小节：finalized 342 + ready-for-review 197 + draft 19 + 其他 19
+- 本轮无新增可挖掘方向，所有信息源自 Round 24-26 已穷尽
