@@ -339,6 +339,19 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-05T06:18:33.276257+08:00",
       "status": "pending"
+    },
+    {
+      "section": "4.21",
+      "section_title": "ART HeapTask 调度管线与 Android 17 新增子类",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop.md"
+      ],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-05T17:10:13+08:00",
+      "status": "pending"
     }
   ],
   "items": [

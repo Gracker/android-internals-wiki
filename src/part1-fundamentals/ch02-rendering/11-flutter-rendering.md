@@ -22,8 +22,8 @@ polish_by: task2b-polish
 related_chapters: ['2.1', '2.3', '2.4', '2.5', '7.1', '7.7', '18.12']
 task2b_result: fixed
 last_task2b_at: "2026-07-01T18:54:04+08:00"
-last_task9_audit: 2026-06-13
-last_task9_audit_log: logs/deep-review/2026-06-13-20-audit.md
+last_task9_audit: 2026-07-05
+last_task9_audit_log: logs/deep-review/2026-07-05-10-audit.md
 last_task6_audit: 2026-06-13
 task9_state: reviewed
 task9_result: pass-tech-review
