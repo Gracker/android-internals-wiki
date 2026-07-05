@@ -812,11 +812,11 @@
       "review_log": "logs/review/2026-07-04-12-review.md"
     },
     "14.8": {
-      "status": "finalized",
-      "pipeline_stage": "ready-to-publish",
-      "last_task6_at": "2026-07-05T18:17:09+08:00",
-      "finalized_date": "2026-07-05",
-      "finalized_by": "openclaw-task6-auto-promote"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_auto_promoted": true,
+      "finalized_at": "2026-07-05T22:51:24+08:00",
+      "finalized_by": "openclaw-task2b"
     }
   },
   "task2a": {

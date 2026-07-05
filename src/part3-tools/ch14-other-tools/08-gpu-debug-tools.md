@@ -1,49 +1,50 @@
 ---
-
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
-tags: ["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]
+tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
 confidence: "medium"
-last_verified: "2026-06-12"
+last_verified: "2026-07-05"
 last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-12"
 reviewed_by: "openclaw-task6"
 path: "Cubox/基于gpu counters数据的性能优化-2025-02-27.md"
-related_chapters: ["2.10", "2.14", "13.3", "14.1"]
+related_chapters: "["2.10", "2.14", "13.3", "14.1"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
-last_task2b_at: "2026-07-05T20:51:52.136438+08:00"
+last_task2b_at: "2026-07-05T22:51:24+08:00"
 last_task2b_by: "openclaw-task2b"
 task2b_result: "fixed"
 task6_result: "pass-light-edit"
 task6_state: "revisiting"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
-task9_result: "auto-fixed"
-task9_reviewed_date: 2026-07-05
-task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-07-05T20:20:00+08:00
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-07-05"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-07-05T22:31:37"
 last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
-last_task9_audit: 2026-07-05T20:20:00+08:00
+last_task9_audit: "2026-07-05T20:20:00+08:00"
 queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
 last_task6_at: "2026-07-05T19:14:56+08:00"
+task6_reviewed_date: "2026-07-05"
 task6_reviewed_at: "2026-07-05T21:05:00+08:00"
 task6_reviewed_by: "openclaw-task6"
-finalized_date: ""
-finalized_by: ""
+finalized_date: "2026-07-05"
+finalized_by: "openclaw-task2b-auto-promote"
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-12"
-last_task9_audit_log: "logs/deep-review/2026-07-05-20-deep-review.md"
+last_task9_audit_log: "logs/deep-review/2026-07-05-22-deep-review.md"
 task9_review_summary: "发现 P0 源码命令错误、P1 版本差异覆盖不完整、P2 数据缺失等问题，已写入 queue.json 和 suggestions.md"
 last_task2b_lite_at: "2026-07-05"
+---
 ---
 
 # 14.8 GPU 图形调试与分析工具
@@ -60,7 +61,7 @@ last_task2b_lite_at: "2026-07-05"
   System Profiler 用来观察 GPU 利用率、频率、计数器和进程级 GPU 时间;Frame Profiler 用来定位单帧中的慢 Draw Call、Shader 和资源热点。
 
 - 🔹 **Perfetto 中的 GPU 观察点**:[已验证:perfetto.dev/docs/data-sources/gpu]
-  `gpu.counters` 用来观察频率、利用率、带宽,`gpu.renderstages` 用来对齐 CPU 提交和 GPU 执行时间,适合作为 GPU 分析入口。
+  `gpu.counters` 用来观察频率、利用率、带宽,`gpu.renderstages` 用来记录 CPU 提交和 GPU 执行时间,适合作为 GPU 分析入口。
 
 - 🔹 **RenderDoc 与 Sokatoa 的角色差异**:[已验证:renderdoc.org,github.com/sarc-acl/sokatoa]
   RenderDoc 适合单帧图形调试和状态检查,Sokatoa 适合多帧对比和间歇性 GPU 卡顿定位,两者与 AGI 互补。
@@ -247,7 +248,7 @@ data_sources {
 }
 ```
 
-`gpu_counter_config` 的字段定义在 AOSP `android-17.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时,先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出来,再回填这些 ID;不同 GPU 的编号和含义都不通用。
+`gpu_counter_config` 的字段定义在 AOSP `android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时,先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出来,再回填这些 ID;不同 GPU 的编号和含义都不通用。
 
 ### 关键 GPU 指标
 
