@@ -41,3 +41,16 @@
 - 入库时间：2026-07-04
 - 评分：18/20
 
+### Android 17 不同 SoC 架构下的电池优化策略深度分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-battery-optimization-soc-architecture-power-management.md
+- 类型：DeepResearch 调研结果
+- 摘要：分层架构设计（硬件层 Perfetto → 框架层 BatteryManager → 服务层 PMS → 应用层 JobScheduler），SoC 差异化策略（ARM Big.LITTLE / Qualcomm Adreno / MediaTek APU），BatteryCounters proto 指标定义，电源域管理粒度对比。
+- 注入时间：2026-07-05
+- 价值：提供不同 SoC 厂商电源优化策略的系统性对比，补强 ch05 功耗优化章节参考资料
+
+### Android 17 PowerManagerService × cpuidle menu governor × schedutil 三层协作闭环
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-pms-cpuidle-schedutil-closed-loop.md
+- 类型：DeepResearch 调研结果
+- 摘要：PMS 17 个 DIRTY_* 位掩码 + 10 个 WAKE_LOCK_* 状态聚合、adjustWakeLockSummary 隐含状态推断、IPower AIDL Hint Session、schedutil sugov_get_util() 聚合 uclamp/iowait boost、cpuidle menu governor 6-bucket 预测。源码锚定 android-17.0.0_r1。
+- 注入时间：2026-07-05
+- 价值：三层协作闭环的源码级剖析，填补 PMS→HAL→内核调度链路空白

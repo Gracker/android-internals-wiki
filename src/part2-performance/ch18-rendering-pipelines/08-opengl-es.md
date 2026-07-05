@@ -40,6 +40,8 @@ last_task9_audit: "2026-07-03"
 last_task9_review_log: "logs/deep-review/2026-05-25-20-deep-review.md"
 task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 1 / P1 1 / P2 1；P0 为 EGL native fence 示例缺少 flush/flush flag 且混用 wait 与 FD 导出；P1 为 dequeueBuffer/release fence 归因需补 slot/outstanding buffer 边界。 | 2026-05-25 Task9 深度复核：pass-tech-review。P0 0 / P1 0 / P2 0（历史 P2 triple buffering 口径已在 suggestions.md，不重复新增）；Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。"
 task6_review_notes: "2026-05-25 20:12 Task6：Task2B 修复后写作复审；小修 10 处（否定纠正式、直接称呼、图/代码说明、Buffer 等待措辞）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-05
 ---
 
 <!-- outline-start -->
@@ -68,7 +70,7 @@ task6_review_notes: "2026-05-25 20:12 Task6：Task2B 修复后写作复审；小
 
 ### EGL：连接 GLES 与 Android 的桥梁
 
-EGL 是 Khronos 定义的窗口系统绑定层，它在 Android 上的作用是充当 OpenGL ES API 与本地窗口系统（Surface）之间的桥梁。理解 EGL 的三个核心对象是分析 GLES 链路的基础：
+EGL 是 Khronos 定义的窗口系统绑定层，它把 OpenGL ES API 接到 Android 的本地窗口系统（Surface）上。理解 EGL 的三个核心对象是分析 GLES 链路的基础：
 
 - **EGLContext**：GPU 上下文，存储着色器程序、纹理、顶点缓冲等资源。一个 App 可以有多个 EGLContext（比如后台加载纹理用一个，前台渲染用另一个），但每个线程同时只能绑定一个
 - **EGLSurface**：对应一个可绘目标。`EGLWindowSurface` 对应一个 Android `Surface`（可以通过 `eglCreateWindowSurface` 从 SurfaceView 获取），`EGLPbufferSurface` 用于离屏渲染
@@ -230,7 +232,7 @@ GLES 的 BufferQueue 通常配置为 3 个 Slot（Triple Buffering）。理解 B
 
 ## Fence 机制
 
-Fence（同步栅栏）是跨 GPU/CPU/Display 的关键同步原语。在 GLES 链路上，Fence 用于处理"生产者"（GL Thread）和"消费者"（SurfaceFlinger/Display）之间的速度差异。理解 Fence 是读懂 Trace 中等待行为的基础。
+Fence（同步栅栏）是跨 GPU/CPU/Display 的关键同步原语。在 GLES 链路上，Fence 用于处理"生产者"（GL Thread）和"消费者"（SurfaceFlinger/Display）之间的速度差异。Fence 读不懂，Trace 里的等待行为就看不明白。
 
 ### Release Fence（释放栅栏）
 
@@ -292,7 +294,7 @@ eglDestroySyncKHR(display, sync);
 
 ## ANGLE 路径
 
-Android 14+ / 15+ 上，部分设备会更多地采用 **ANGLE**（Almost Native Graphics Layer Engine）作为 GLES 后端。ANGLE 将 GLES API 调用翻译为 Vulkan 指令执行。[已验证: ANGLE for Android 文档]
+上面讲的 Fence、Buffer 流转，前提是 App 走 native GLES 驱动。但在 Android 14+ 设备上，部分设备会更多地通过 **ANGLE** 来执行 GLES 调用（Almost Native Graphics Layer Engine）作为 GLES 后端。ANGLE 将 GLES API 调用翻译为 Vulkan 指令执行。[已验证: ANGLE for Android 文档]
 
 ### ANGLE 解决什么问题
 
@@ -363,7 +365,7 @@ adb shell settings delete global angle_gl_driver_selection_values
 
 ## GLSurfaceView vs 原生 EGL 集成
 
-`GLSurfaceView` 是 Android 提供的 GLES 渲染封装，它在内部处理了 EGLContext 创建、Surface 生命周期、GLThread 管理等所有样板代码。但高性能场景可能需要绕过 `GLSurfaceView`，直接使用 EGL API 与 SurfaceView 集成：
+前面完整链路分析都基于 `GLSurfaceView`。但它不适合所有场景。`GLSurfaceView` 是 Android 提供的 GLES 渲染封装，它在内部处理了 EGLContext 创建、Surface 生命周期、GLThread 管理等所有样板代码。但高性能场景可能需要绕过 `GLSurfaceView`，直接使用 EGL API 与 SurfaceView 集成：
 
 **GLSurfaceView 的局限**：
 - 只支持一个 EGLSurface，不支持多 Surface 并行渲染

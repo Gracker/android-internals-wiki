@@ -80,6 +80,8 @@ task9_review_date: '2026-06-24'
 task9_reviewer: openclaw-task9
 task9_state: reviewed
 tech_score: 3/5
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-05
 ---
 
 # 14.13 Hook 基础设施与性能工具实现原理
@@ -377,7 +379,7 @@ Android Mainline 模块化将部分系统组件（ART、 conscrypt、 media、ne
 - Android 15-16（SDK extension 36+）：新增 MEMORY=4、PSS=5、GC=6 触发器，对应实现分散在 `service/profiling/` 和新增的 trigger handler 中。
 - Android 17（SDK extension 37+）：新增 OOM=7、ANOMALY=8 触发器。
 
-对 Hook 框架而言，ProfilingManager 的关键影响是：如果自建 Hook 工具的目标函数与 ProfilingManager 的插桩目标重叠，两者的 trampoline/GOT 修改可能互相覆盖。在同时使用 ProfilingManager 和自建 Hook 的设备上，建议通过 `dumpsys profiling` 提前确认 ProfilingManager 当前激活的 trigger 类型和插桩范围，避免冲突。
+ProfilingManager 对 Hook 框架有一个实际影响：如果自建 Hook 工具的目标函数与 ProfilingManager 的插桩目标重叠，两者的 trampoline/GOT 修改可能互相覆盖。在同时使用 ProfilingManager 和自建 Hook 的设备上，建议通过 `dumpsys profiling` 提前确认 ProfilingManager 当前激活的 trigger 类型和插桩范围，避免冲突。
 
 ART Mainline 的库路径变化是一个典型例子。Android 12 之前，libart.so 固定在 `/system/lib64/libart.so`。Android 12+ 将 ART 拆入 Mainline 模块（com.android.art），libart.so 迁移到 `/apex/com.android.art/lib64/libart.so`。对 Hook 框架而言：
 
@@ -392,7 +394,7 @@ ART Mainline 的库路径变化是一个典型例子。Android 12 之前，libar
 3. **APEX 的只读挂载**：APEX 模块以只读文件系统挂载，其 .so 的代码段天然不可写。这本身不阻止 PLT Hook（GOT 在进程的私有映射中），但限制了对 APEX 库做 inline hook 的可行性。
 4. **独立更新窗口**：Mainline 模块可以绕过 OTA 独立更新。今天测试通过的 Hook 偏移量，下次 Mainline 更新后可能失效。
 
-处理 Mainline 模块的 Hook 时，策略是：用 PLT Hook 拦截接口层（GOT 表跨 APEX 仍然生效），避免 inline hook 直接修改 APEX 内部实现；如果需要接入具体逻辑，通过 linker namespace 可视化确认目标 .so 的确切加载路径。
+处理 Mainline 模块的 Hook，一条实用策略：用 PLT Hook 拦截接口层（GOT 表跨 APEX 仍然生效），避免 inline hook 直接修改 APEX 内部实现；需要接入具体逻辑时，通过 linker namespace 可视化确认目标 .so 的确切加载路径。
 
 ### Hook 性能测量方法论
 
@@ -467,11 +469,9 @@ Android 16+ 引入的 16KB page size 对 Hook 框架产生两个直接影响：
 
 
 
-<!-- AIW-源码调研-2026-06-24 -->
-
 ### 源码佐证：ShadowHook 在 Android 17 (API 37) 16KB Page Size 下的实现细节
 
-> 本节为 2026-06-24 调研补充：基于字节跳动开源的 ShadowHook 库（main 分支，commit 截至 2025-10）反推其 16KB page size 自适应机制，覆盖编译期、运行时、mprotect 边界三个独立保障。所有代码引用定位到仓库 `bytedance/android-inline-hook`，路径 `shadowhook/src/main/cpp/...`。
+> 以下分析基于字节跳动开源的 ShadowHook 库（main 分支，commit 截至 2025-10），拆解其 16KB page size 自适应机制的三个层面：编译期、运行时、mprotect 边界。代码引用定位到仓库 `bytedance/android-inline-hook`，路径 `shadowhook/src/main/cpp/...`。
 
 **编译期：CMakeLists.txt 限定 ARM64 ELF 段对齐** [已验证: bytedance/android-inline-hook shadowhook/src/main/cpp/CMakeLists.txt]:
 
@@ -551,7 +551,7 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled false
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-backcompat 模式判定条件（PackageManager 侧）：(1) `.so` 的 ELF LOAD 段对齐为 4KB；(2) APK 中的未压缩 `.so` 按 4KB ZIP 对齐。两个条件同时满足时启动时向用户显示警告："running in 16KB backcompat mode"。**backcompat 不替代正确对齐**——App 必须真正以 16KB 编译才能上 16KB-only 设备。
+backcompat 模式判定条件（PackageManager 侧）：(1) `.so` 的 ELF LOAD 段对齐为 4KB；(2) APK 中的未压缩 `.so` 按 4KB ZIP 对齐。两个条件同时满足时启动时向用户显示警告："running in 16KB backcompat mode"。**backcompat 只是兼容缓冲，不是长期方案**——要上 16KB-only 设备，App 仍然需要以 16KB 对齐编译。
 
 **性能开销**：`getpagesize()` 内部走 `getauxval(AT_PAGESZ)`，单次 ~30ns，仅 `sh_util_init()` 调用一次后缓存。`sh_util_page_start`/`sh_util_page_end` 是位运算，单次 <2ns。运行期 hook 调用（enter → island → hub → interceptor）的额外开销是 12–28 条 ARM64 指令 + 一次 hub 栈查表，约 50–150ns。16KB page size 对运行期 hook 路径无额外开销——`mprotect` 仅在 hook 安装/卸载时执行。
 

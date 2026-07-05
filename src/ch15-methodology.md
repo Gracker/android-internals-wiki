@@ -33,8 +33,9 @@ last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
 last_idle_audit_at: "2026-07-02T17:27:39+08:00"
 last_task6_audit: 2026-07-04
+last_task9_audit: "2026-07-05"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-03
+last_deepseek_cn_review_at: 2026-07-05
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
 task2b_main_notes: "2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
 ---
@@ -51,7 +52,7 @@ Android 性能优化的工作质量，取决于前面有没有把问题定义清
 
 一个 App 同时面对的卡顿类问题可能有几十个——某机型下的滑动掉帧、特定页面的初始化慢、低端机 OOM。全部修不现实，但也不能靠直觉拍脑门。
 
-用三个维度做量化排序：影响范围（受影响的用户百分比）、严重程度（问题的可感知程度，比如从 60fps 掉到 30fps 还是 40fps）、解决成本（需要的研发人天和测试资源）。三角代入后得到一个优先级矩阵：
+用三个维度做量化排序：影响范围（受影响的用户百分比）、严重程度（问题的可感知程度，比如从 60fps 掉到 30fps 还是 40fps）、解决成本（需要的研发人天和测试资源）。三个维度落到坐标系里，得到一个优先级矩阵：
 
 - P0：高影响范围 + 高严重程度。启动慢、首页卡顿这类，立即投入。
 - P1：影响范围小但严重程度高。特定机型的 ANR，尽快安排。
@@ -204,6 +205,8 @@ adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched
 # 如果返回 "Connection to traced failed"，说明 traced service 未运行
 ```
 
+> 工具层面的问题理清之后，接下来是另一道坎：把采集到的原始数据变成能指导决策的结论。
+
 ### 4. 数据采集与分析：从 raw data 到 actionable 结论
 
 ### 4.1 采样策略：不同问题用不同采法
@@ -321,7 +324,7 @@ heapprofd 需要在 Perfetto config 中显式开启。**构建类型决定 heapp
 
 #### 自适应刷新率场景的帧数据分析
 
-Android 17 引入的 FrameRateOverrides API 允许应用或 WindowManager 为特定窗口指定目标帧率（例如游戏窗口 120Hz、视频窗口 60Hz、静态内容降到 30Hz）。在支持多档刷新率的设备上，同一个应用的不同窗口可能以不同的帧预算运行——「帧超时」的定义不再固定为 16.6ms。
+前面三条原则适用于固定刷新率场景。在多档刷新率设备上，帧预算本身会随窗口变化——Android 17 的 FrameRateOverrides API 允许应用或 WindowManager 为特定窗口指定目标帧率（例如游戏窗口 120Hz、视频窗口 60Hz、静态内容降到 30Hz）。在支持多档刷新率的设备上，同一个应用的不同窗口可能以不同的帧预算运行——「帧超时」的定义不再固定为 16.6ms。
 
 这一变化对数据分析的三个关键影响：
 
