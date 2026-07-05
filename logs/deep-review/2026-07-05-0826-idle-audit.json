@@ -1,0 +1,40 @@
+{
+  "chapter": "启动框架设计与任务编排",
+  "chapter_path": "02-startup-framework.md",
+  "status": "finalized",
+  "audit_date": "2026-07-05",
+  "audit_time": "08:26",
+  "dimensions": {
+    "source_code": {
+      "score": 5,
+      "issues": []
+    },
+    "version_differences": {
+      "score": 5,
+      "issues": []
+    },
+    "principle_chain": {
+      "score": 3,
+      "issues": []
+    },
+    "knowledge_gaps": {
+      "score": 3,
+      "issues": []
+    },
+    "data_support": {
+      "score": 2,
+      "issues": []
+    },
+    "cross_references": {
+      "score": 5,
+      "issues": []
+    }
+  },
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 2,
+    "P3": 3,
+    "total_score": 3.8
+  }
+}

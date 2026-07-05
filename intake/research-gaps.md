@@ -1,3 +1,20 @@
+## [2026-07-05] 21.2 启动框架设计与任务编排 — 知识盲区
+
+### 盲区描述
+Android 15+ 引入了 Startup Insights 新机制，与现有的 Perfetto trace 分析互补，提供更细粒度的启动性能监控 API。该机制在 Application startup phase 提供实时性能数据收集和分析能力，包括任务级别的延迟分布、资源使用统计和异常检测。本章节未覆盖这一新特性。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 Startup Insights API 与传统 Perfetto trace 的协同使用方式
+- 分析 Startup Insights 对启动任务编排策略的影响
+- 探索如何将 Startup Insights 数据用于动态启动优化
+- 评估不同 Android 版本间的兼容性和迁移路径
+
+### 关联章节
+21.1, 21.3, 21.4
+
 
 ## [2026-07-05] ch25.17 Android 17 后台音频硬化与播放功耗治理 — 知识盲区
 
@@ -64,3 +81,150 @@ Impeller shader 编译性能对 Flutter 渲染管线的影响机制，包括：
 
 ### 关联章节
 ch18.12（本章）、新增章节建议：Flutter 渲染性能深度优化
+
+---
+
+## [2026-07-05] Part 5 内存/性能实战 — 参考书素材
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+
+### 知识点
+1. HeapTaskDaemon 线程的起源与作用：Daemons.java 中创建，执行 VMRuntime.runHeapTasks()→RunAllTasks→GetTask 循环
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+
+### 知识点
+1. HeapTask 继承体系：HeapTask→SelfDeletingTask→Task→Closure，定义 Run/Finalize 虚函数
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+
+### 知识点
+1. ART GC 七种 HeapTask 子类：ConcurrentGCTask/CollectorTransitionTask/HeapTrimTask/TriggerPostForkCCGcTask/ReduceTargetFootprintTask/ClearedReferenceTask/NotifyStartupCompletedTask
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+
+### 知识点
+1. ConcurrentGCTask 触发流程：AllocObjectWithAllocator→ShouldConcurrentGCForJava→RequestConcurrentGCAndSaveObject→AddTask
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+
+### 知识点
+1. ELF .symtab 段符号查找：通过 Section 段遍历定位 symtab，根据符号名匹配函数地址
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+
+### 知识点
+1. 虚函数 Hook 实现 GC 抑制：通过符号定位 ConcurrentGCTask 对象→遍历虚函数表→mprotect 修改内存页权限→替换 Run 函数指针
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+
+### 知识点
+1. Java 堆优化三条方法论：减少加载进 Java 堆的数据 / 及时清理 / 增加 Java 堆可用大小
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+
+### 知识点
+1. 转移数据优化：Java→Native（Bitmap 8.0+迁移/Ashmem）、主进程→子进程（多进程模型隔离 WebView/Flutter/RN）
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+
+### 知识点
+1. 内存不足检测机制：子线程轮询 Runtime.getRuntime().maxMemory()/totalMemory()，超阈值回调清理缓存
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+
+### 知识点
+1. 字节 mSponge 黑科技：Hook num_bytes_allocated_ 变量使 LargeObjectSpace 不计入已分配统计，突破 512M 限制
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段
+
+### 来源
+[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+
+### 知识点
+1. CPU 高速缓存 cache line（64字节）与空间局部性原理：相邻内存数据会被预取到 cache line
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 Android 17 (android-17.0.0_r1) 源码验证该技术方案的适用性
+- 补充该知识点到对应章节作为实战优化手段

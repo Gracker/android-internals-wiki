@@ -1,3 +1,15 @@
+## [Task9 Deep Review] 21.2 启动框架设计与任务编排 -- 2026-07-05
+- **类型**: 版本差异覆盖
+- **位置**: 启动框架选型章节
+- **问题**: Android 16+ 引入的 Baseline Profile 优化机制对启动任务编排有重要影响，但在选型章节中未提及。Baseline Profile 能够预编译关键启动路径，影响 DAG 的任务拆分和优先级策略。
+- **建议**: 在三种方案选型表格中增加"Baseline Profile 适配性"列，说明各方案对预编译路径的支持程度；补充 Alpha 框架如何与 Baseline Profile 集成优化的建议
+
+## [Task9 Deep Review] 21.2 启动框架设计与任务编排 -- 2026-07-05
+- **类型**: 源码准确性
+- **位置**: Jetpack App Startup 源码引用部分
+- **问题**: 将 androidx.startup:AppInitializer.java、StartupLogger.java 描述为 AOSP 源码引用，但实际上它们属于 Jetpack 组件库，非 Android 系统源码范畴。
+- **建议**: 明确标注"Jetpack App Startup（AndroidX 组件）"与"AOSP 系统源码"的区别，避免读者混淆第三方库与系统源码的边界
+
 ## [Task9 Deep Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-07-04
 - **类型**：源码准确性
 - **位置**：entrypoint_utils.h路径引用
