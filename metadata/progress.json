@@ -584,6 +584,13 @@
       "status": "no-candidates",
       "ts": "2026-07-06T01:11:06.913881+08:00",
       "note": "Gap mining round 31: 0 candidates ≥14. Coverage saturated (31st consecutive). 1 new DeepResearch file (2026-07-06 startup-insights-gaps) maps to existing ch21.17. No new Clippings in 7+ days. No new daily-info since 07-05. 19 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-06T05:06:57.198034+08:00",
+      "note": "Gap mining round 32: 0 candidates ≥14. Coverage saturated (32nd consecutive). 2 new DeepResearch files map to existing §14.8 and §25.17."
     }
   ],
   "review_history": [
@@ -838,12 +845,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-06T01:11:06.913881+08:00",
+    "last_run": "2026-07-06T05:06:57.198034+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 31: 0 candidates ≥14. Coverage saturated (31st consecutive). 1 new DeepResearch file maps to existing ch21.17. No new Clippings. No new daily-info."
+    "note": "Gap mining round 32: 0 candidates ≥14. Coverage saturated (32nd consecutive). 2 new DeepResearch files (GPU debug tools → §14.8, background audio LE Audio → §25.17) both map to existing chapters. Daily-info topics all <14 or already covered. No new Clippings in 7+ days."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",
