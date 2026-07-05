@@ -2,11 +2,17 @@
 title: "内存优化案例集"
 chapter: "23.8"
 section: "23.8"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-27"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers memory/profileable docs + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers memory/profileable docs + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化"
 confidence: medium
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_lite_at: 2026-07-05
 drafted_date: "2026-05-14"
 drafted_by: openclaw-task2a
 polish_count: 0
@@ -28,9 +34,9 @@ sources:
   - type: official
     path: "https://developer.android.com/guide/topics/manifest/profileable-element"
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/Bitmap.java @ android-16.0.0_r1"
+    path: "frameworks/base/graphics/java/android/graphics/Bitmap.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/Debug.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/android/os/Debug.java @ android-17.0.0_r1"
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - Native 内存优化(下):Bitmap 的内存占用优化.md]"
   - type: blog
