@@ -2,8 +2,8 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, APA 要求 Android 12+, Sokatoa 要求 Android 13+)"
 tags: ["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]
 confidence: "medium"
@@ -21,7 +21,7 @@ gap_source: "AOSP结构+官方文档+研究素材"
 last_task2b_at: "2026-06-12T16:50:00+08:00"
 task2b_result: "fixed-lite"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "pass-tech-review"
@@ -32,11 +32,11 @@ last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
 last_task9_audit: "2026-06-25T16:24:00+0800"
 queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
-last_task6_at: "2026-06-12T17:05:00+08:00"
-task6_reviewed_at: "2026-06-12T17:05:00+08:00"
+last_task6_at: "2026-07-05T18:17:09+08:00"
+task6_reviewed_at: "2026-07-05T18:17:09+08:00"
 task6_reviewed_by: "openclaw-task6"
-finalized_date: "2026-06-12"
-finalized_by: "openclaw-task9-auto-promote"
+finalized_date: "2026-07-05"
+finalized_by: "openclaw-task6-auto-promote"
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-12"
 last_task9_audit_log: "logs/deep-review/2026-06-12-16-audit.md"
@@ -451,7 +451,7 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 GPU 分析工具的使用建立在几个前置章节的知识上:
 
 - **§2.10 GPU 渲染深入**:理解 GPU 渲染管线是使用 GPU 分析工具的前提。不知道 Vertex Shader → Rasterizer → Fragment Shader 的流程,就看不懂 AGI Frame Profiler 的输出
-- **§§2.14 图形 API 演进与选择策略**:Android 17 的 ANGLE denylist 意味着 GLES 应用实际通过 Vulkan 运行,这影响 GPU 分析工具的选择和结果解读
+- **§2.14 图形 API 演进与选择策略**:Android 17 的 ANGLE denylist 意味着 GLES 应用实际通过 Vulkan 运行,这影响 GPU 分析工具的选择和结果解读
 - **§13.3 Perfetto View 解读**:Perfetto GPU counter track 是 GPU 分析的起点,在深入帧级分析之前先用 Perfetto 确认瓶颈
 - **§14.1 Android Studio Profiler**:AS Profiler 也有 GPU 分析能力(虽然不如 AGI 专业),适合快速检查
 
