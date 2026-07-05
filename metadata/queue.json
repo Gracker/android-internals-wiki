@@ -18,7 +18,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.663894+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T00:51:13.507937+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
     },
     {
       "section": "ch04-memory",
@@ -38,7 +40,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.664923+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T00:51:13.508255+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
     },
     {
       "section": "ch01-architecture",
@@ -58,7 +62,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.665308+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T00:51:13.508259+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
     },
     {
       "section": "ch01-architecture",
