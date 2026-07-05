@@ -215,6 +215,24 @@ adb shell cat /proc/$(adb shell pidof com.example.app:editor)/smaps_rollup
 | 后台被系统杀 | oom_adj、PSS、后台任务、缓存大小 | 降低后台缓存，响应 `onTrimMemory()`，减少后台并发 | 提高 heap 上限或保活 |
 | 低端机运行不稳 | `isLowRamDevice()`、ABI、RAM、zRAM、LMKD 日志 | 降级分辨率、批大小、缓存和并发数 | 沿用高端机预算 |
 
+## 附：mSponge 黑科技源码级边界（android-17.0.0_r1）
+
+本书多次提及的字节 mSponge 黑科技，核心是在 Android 17 ART Heap::num_bytes_allocated_（Atomic<size_t>）字段下 Hook。通过 ELF .symtab 定位符号 _ZN3art2gc5Heap19num_bytes_allocated_E，mprotect 修改页权限，在每次 LargeObjectMapSpace::Alloc 后对 num_bytes_allocated_.fetch_sub(allocation_size)，使 LOS 分配不计入 GC 触发统计，从而突破 LargeObjectSpace 总容量上限。
+
+**源码机制**：
+- art/runtime/gc/heap.h：Atomic<size_t> num_bytes_allocated_; 是 GC 触发唯一权威源（行 1535）
+- art/runtime/gc/heap.cc：UpdateAndReportBytesAllocated → AddBytesAllocated 把 LOS 字节汇入总计数（行 4975–4982）
+- art/runtime/gc/space/large_object_space.cc：LargeObjectMapSpace::Alloc 同时更新 LOS 自身计数和返回 *bytes_allocated（行 138–177）
+
+**可行性边界**：
+1. **安全性**：Android 13+ ART runtime 对 libart.so bss 段完整性校验会使 mprotect 修改触发 tampering 检测
+2. **副作用**：Heap::CalculateGcWeightedAllocatedBytes 基于偏小值计算权重，导致后台 GC 调度异常
+3. **收益窗口**：在 64 位进程时代，突破 32 位进程 512MB 限制的工程意义已大幅收窄
+
+**与大内存策略关联**：mSponge 的"突破"实际是绕过 GC 触发阈值，本质仍是单一进程内打满内存。在 §23.6 实战决策表中，LargeObject OOM 情景应当优先评估：① 原因（Image 大小异常？Glide/WebView/Media 编码器占压？）② 减少对象生命周期加载或拆进程，而非依赖 mSponge 规避风险。因为 mSponge 虽能"绕过"统计，但硬件内存压力终会传导到进程本身 OOM 和 LMKD 回收。
+
+<!-- AIW-源码调研-2026-07-05 -->
+
 ## 小结
 
 大内存策略的安全顺序是：先定位 OOM 类型，再缩小对象和线程的常驻面，随后用多进程隔离高峰值任务，再评估 largeHeap。64 位迁移适合解决地址空间瓶颈，但不能替代预算管理。每一种方案都要用 PSS、Java Heap、Native / Graphics、线程数、GC 停顿和 LMKD 结果复测，避免把一个进程里的 OOM 转移成整机内存压力。

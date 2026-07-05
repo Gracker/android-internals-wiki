@@ -45,7 +45,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-16T01:26:00+08:00"
 finalized_date: "2026-05-16"
 finalized_by: openclaw-task9
-last_task6_audit: "2026-05-24"
+last_task6_audit: "2026-07-05"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: "2026-06-01"
 last_task9_audit: "2026-06-30"
