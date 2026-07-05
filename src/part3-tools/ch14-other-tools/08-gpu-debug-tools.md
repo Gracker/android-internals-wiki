@@ -2,13 +2,13 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, APA 要求 Android 12+, Sokatoa 要求 Android 13+)"
 tags: ["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]
 confidence: "medium"
 last_verified: "2026-06-12"
-last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto"
+last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-17.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-12"
@@ -19,10 +19,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
 last_task2b_at: "2026-06-12T16:50:00+08:00"
-task2b_result: "fixed"
+task2b_result: "fixed-lite"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: "reviewed"
+task6_state: "revisiting"
+task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-06-12"
@@ -41,7 +41,7 @@ deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-12"
 last_task9_audit_log: "logs/deep-review/2026-06-12-16-audit.md"
 task9_review_summary: "pass-tech-review; queue 无 pending; 自动晋升 finalized。"
-last_task2b_lite_at: "2026-06-26"
+last_task2b_lite_at: "2026-07-05"
 ---
 
 # 14.8 GPU 图形调试与分析工具
@@ -233,7 +233,7 @@ data_sources {
 ```
 
 
-`gpu_counter_config` 的字段定义在 AOSP `android-16.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时,先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出来,再回填这些 ID;不同 GPU 的编号和含义都不通用。
+`gpu_counter_config` 的字段定义在 AOSP `android-17.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时,先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出来,再回填这些 ID;不同 GPU 的编号和含义都不通用。
 
 ### 关键 GPU 指标
 
