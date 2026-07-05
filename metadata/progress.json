@@ -577,6 +577,13 @@
       "status": "no-candidates",
       "ts": "2026-07-05T21:07:58.129279+08:00",
       "note": "Gap mining round 30: 0 candidates ≥14. Coverage saturated (30th consecutive). 1 new DeepResearch (mSponge) maps to existing §23.6/§4.21. No new Clippings. No new daily-info."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-06T01:11:06.913881+08:00",
+      "note": "Gap mining round 31: 0 candidates ≥14. Coverage saturated (31st consecutive). 1 new DeepResearch file (2026-07-06 startup-insights-gaps) maps to existing ch21.17. No new Clippings in 7+ days. No new daily-info since 07-05. 19 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
     }
   ],
   "review_history": [
@@ -820,12 +827,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-05T21:07:58.129279+08:00",
+    "last_run": "2026-07-06T01:11:06.913881+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 30: 0 candidates ≥14. Coverage saturated (30th consecutive). 1 new DeepResearch file (mSponge/LargeObjectSpace) maps to existing §23.6 and §4.21. No new Clippings in 7+ days. No new daily-info. 14 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
+    "note": "Gap mining round 31: 0 candidates ≥14. Coverage saturated (31st consecutive). 1 new DeepResearch file maps to existing ch21.17. No new Clippings. No new daily-info."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",
