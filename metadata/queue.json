@@ -375,11 +375,35 @@
           "location": "Android 17 ANGLE denylist 配置段落",
           "detail": "章节中的 `adb shell settings get global angle_gl_driver_all_angle` 命令在 AOSP android-17.0.0_r1 中实际路径为 `adb shell settings get global angle_gl_driver_enabled`，此错误会导致开发者无法正确判断设备的 ANGLE 模式状态",
           "suggestion": "修正 adb 命令为正确的版本，并补充该命令的返回值含义说明"
+        },
+        {
+          "type": "源码错误",
+          "location": "Perfetto 配置中的 proto 路径",
+          "detail": "protos/perfetto/config/gpu/gpu_counter_config.proto 应该是 android-17.0.0_r1/protos/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto",
+          "suggestion": "更新为正确的 AOSP android-17.0.0_r1 路径结构"
+        },
+        {
+          "type": "源码错误",
+          "location": "ANGLE 驱动选择命令验证",
+          "detail": "adb shell settings 命令输出解释在 denylist/allowlist 两种模式下语义相反，缺少验证逻辑",
+          "suggestion": "添加模式检测和相应命令输出解释指南"
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "Android 17 ANGLE 策略",
+          "detail": "denylist vs allowlist 模式下的命令输出差异未充分说明",
+          "suggestion": "补充完整的模式检测和命令解释指南"
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "GPU 厂商计数器映射",
+          "detail": "Adreno/Mali/PowerVR 各 GPU 厂商的计数器 ID 定义不统一",
+          "suggestion": "添加各厂商计数器映射表和注意事项"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-06T00:21:00",
-      "status": "completed",
+      "added_at": "2026-07-06T03:32:22.510082",
+      "status": "pending",
       "completed_at": "2026-07-05T16:54:29+00:00",
       "completed_by": "openclaw-task2b-main",
       "completed_reason": "stale duplicate: already fixed by openclaw-task2b-rework (2026-07-05T22:51:24+08:00); all angle_gl_driver_enabled references verified correct"
