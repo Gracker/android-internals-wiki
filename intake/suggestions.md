@@ -189,3 +189,38 @@
 - **位置**：GPU 性能分析的核心指标章节
 - **问题**：Draw Call数量阈值缺乏数据支撑，提到"UI渲染:通常<100个Draw Call"等阈值，但未提供数据来源
 - **建议**：补充这些阈值的实际测试数据或引用权威来源，增加阈值设置的科学依据
+
+---
+
+## [Task2A 知识缺口挖掘 — 2026-07-06] 已检查方向（无 ≥14 分候选）
+
+**全书规模**：584 小节
+**检查范围**：
+1. source-index.json 高质量未映射素材 → 0 篇
+2. research-feeds/ 最近 5 个文件 → 已覆盖
+3. daily-info/ 最近 3 天 → 无新增方向
+4. AOSP 源码结构（frameworks/base, packages/modules, system/）→ 核心服务已覆盖
+5. 官方文档 developer.android.com → 核心主题已覆盖
+6. Clippings 三本参考书交叉对照 → 知识点已在 AIW 中覆盖
+7. 200+ 关键词全文搜索 → 未发现 ≥14 分缺口
+
+**检查过的候选方向**（均 <14 分）：
+- AlarmManager / Doze → 已在 ch25.3, ch25.20 覆盖
+- LocationManager / FusedLocation → 已在 ch25.5, ch25.22 覆盖
+- AccountManager → 0 覆盖但需求度低（legacy API，迁移中）score: 8
+- BackupManager / BackupAgent → 0 覆盖但需求度低 score: 10
+- OnDeviceIntelligence API → 0 覆盖，素材不足 score: 12
+- AppWidget / RemoteViews → 已在 ch22.24 覆盖
+- Compose Multiplatform / KMP → 相关度低（非 Android 系统内部）score: 11
+- SyncAdapter / AccountAuthenticator → legacy，score: 9
+- App Exit Reasons → 已在 ch26.9 覆盖
+- Intent 解析与 Component 寻址性能 → 素材不足 score: 12
+- DRM/KMS 显示驱动管线 → 过于底层，需求度低 score: 11
+- Profiling 开销与采集准确性 → 部分散布于 ch13/ch14/ch26，score: 13（最接近）
+- VirtualDeviceManager → 极小众，score: 8
+- SafetyCenter → 非性能相关
+- HealthServices → Wear OS 专用，超出范围
+- NFC → 非性能核心主题
+
+**结论**：全书 584 小节已高度完备，本轮未发现评分 ≥14 的知识缺口。
+下轮可探索方向：Android 17 秋季补丁更新引入的新性能行为变更、端侧 AI 应用性能模式总结。
