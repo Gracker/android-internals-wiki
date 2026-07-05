@@ -563,6 +563,13 @@
       "status": "draft",
       "drafted_at": "2026-07-05T17:10:13+08:00",
       "note": "ART HeapTask 调度管线与 Android 17 新增子类: 4层管线/7种子类/优先队列/PostFork/GC抑制风险/Perfetto可观测性. Created from DeepResearch 2026-07-05"
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-05T20:07:59.780608+08:00",
+      "note": "Gap mining round 29: 0 candidates ≥14. Coverage saturated. No new material since Round 28 (2h ago). 14 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
     }
   ],
   "review_history": [
@@ -806,14 +813,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-05T17:10:13+08:00",
-    "last_section": "4.21",
-    "result": "created",
-    "fix_count": 1,
-    "last_sections": [
-      "4.21"
-    ],
-    "note": "Gap mining round 27: 1 candidate ≥14. New DeepResearch file (art-heaptask-system, 14:56) evaluated after round 26 (14:08). Created §4.21 ART HeapTask 调度管线 (score 16/20). Coverage was not truly saturated — new material arrived between rounds."
+    "last_run": "2026-07-05T20:07:59.780608+08:00",
+    "last_section": "none",
+    "result": "no-candidates",
+    "fix_count": 0,
+    "last_sections": [],
+    "note": "Gap mining round 29: 0 candidates ≥14. Coverage saturated. No new material since Round 28. 14 non-empty drafts (min 90+ lines), 0 empty drafts, 0 Task2B backlog."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",
