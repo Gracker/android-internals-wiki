@@ -96,3 +96,51 @@
 - 27 轮连续无合格候选，覆盖率确认饱和
 - 全书 577 小节：finalized 342 + ready-for-review 197 + draft 19 + 其他 19
 - 本轮无新增可挖掘方向，所有信息源自 Round 24-26 已穷尽
+
+
+### [2026-07-05 18:04] Task2A Round 28 Gap Mining — No Candidates
+已检查方向（本轮新增）：
+- 新增 DeepResearch 文件（自 Round 27 后）：
+  - `2026-07-05-android17-startup-insights-application-start-info.md`（18KB）→ ApplicationStartInfo 已由 §26.13（finalized）+ §21.2（finalized）覆盖，评分 10/20
+  - `2026-07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop.md`（22KB）→ 映射到 §4.21（draft，23 行），非新章节
+- btrace 3.0 专项评估：§19.04 已 finalized，`last_verified_against: "bytedance/btrace v3.0.0/v3.1.0"`，60KB+35KB DeepResearch 素材是对已有章节的补充验证，非新缺口
+- 字节跳动全栈调研（34KB）：行业概览文档，工具层（btrace/bhook/ShadowHook/ByteX）+ 平台层（Slardar/APMPlus）均有对应章节覆盖
+- 从 NNAPI 到 LiteRT（37KB）：§5.11（端侧 AI 推理）+ §5.14（Android 17 ML Runtime）已覆盖
+- 荣耀 MUSCHED 调研（25KB）：§17.8（MUSCHED 调度实践）已 ready-for-review
+- 无新增 Clippings 文件（12+ 天无变化）
+- Source index: 0 unmapped high-quality items
+- 14 draft sections all have >15 lines content（无空 draft）
+- Task2B backlog: 0（≤20，允许挖掘）
+- 28 轮连续无合格候选，覆盖率确认饱和
+- 全书进度：578 小节，finalized 342 + ready-for-review 197 + draft 20 + 其他 19
+
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-05
+- **类型**：知识盲区 / 数据支撑
+- **位置**：Perfetto GPU 分析能力 §
+- **问题**：未提及 Perfetto 的 `vulkan.memory_tracker` 数据源。该数据源可追踪 GPU 内存分配/释放/映射，对诊断 GPU 内存泄漏和显存压力有价值。
+- **建议**：在"Perfetto 中的 GPU 分析能力"章节补充 `vulkan.memory_tracker` 简介，与 gpu.counters / gpu.renderstages 并列。
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-05
+- **类型**：知识盲区
+- **位置**：Sokatoa § / 厂商专用工具 §
+- **问题**：Samsung Xclipse GPU（AMD RDNA 架构）仅作为 Sokatoa 支持平台提及，缺少 Samsung 自身的 Xclipse profiling 工具/方法的说明。
+- **建议**：补充 Xclipse profiling 工具的可用性和限制，或在"厂商专用工具"中注明 Samsung 当前依赖 Sokatoa 而无独立工具。
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-05
+- **类型**：数据支撑
+- **位置**：GPU 性能分析的核心指标 → Draw Call 数量 §
+- **问题**：Draw Call 阈值（UI < 100、2D < 500、3D > 2000）未标注来源且高度依赖 GPU 架构。Mali TBDR 和 Adreno IMR 的 Draw Call 开销差异显著。
+- **建议**：标注为参考范围，注明"因 GPU 架构而异，Mali TBDR 对 Draw Call 数量更敏感"或类似限定。
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-05
+- **类型**：版本差异
+- **位置**：AGI 2025-2026 演进 §
+- **问题**：2026-04-05 研究素材将 GFXReconstruct Frame Profiler Alpha 归入 AGI H2 2026 路线图，但 APA（2026-05-19 发布）后章节将其归入 APA 后续路线图。两者的过渡关系未明确说明，措辞与 AGI 自身路线图存在张力。
+- **建议**：补充一句说明 GFXReconstruct frame profiling 的归属变动，或标注"原 AGI 路线图中的 GFXReconstruct Frame Profiler Alpha 计划在 APA 发布后可能已整合至 APA 产品线"。
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-05
+- **类型**：原理链
+- **位置**：关键 GPU 指标 → GPU Utilization §
+- **问题**：首次引入"GPU Utilization"时说"100% 意味着 GPU 在满负荷运行"，但后文"不同设备的 GPU 计数器差异"节指出同一计数器在 Adreno 和 Mali 上含义不同。首次引入时缺少限定。
+- **建议**：在首次定义 Utilization 时加一句"不同厂商 GPU 的 Utilization 计算方式不完全相同，后文有详细说明"的前向引用。
