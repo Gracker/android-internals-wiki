@@ -528,6 +528,13 @@
             "status": "no-candidates",
             "ts": "2026-07-05T05:06:46.014004+08:00",
             "note": "Gap mining round 21: 0 candidates ≥14. Coverage saturated (21st consecutive). Daily info topics all <14 or already covered."
+        },
+        {
+            "section": "none",
+            "action": "task2a-knowledge-gap-mining",
+            "status": "no-candidates",
+            "ts": "2026-07-05T10:08:55+08:00",
+            "note": "Gap mining round 22: 0 candidates ≥14. Coverage saturated (22nd consecutive). Checked 4 new DeepResearch files (2026-07-05): Perfetto v57 AI Skill → 13.23 already exists; Binder SZ_4M → supplement to 1.25/1.30/1.53; Battery/SoC → maps to ch05/ch25; Background audio → maps to ch25. All material maps to existing chapters. source-index: 0 unmapped high-quality. Clippings: no new files in 7 days."
         }
     ],
     "review_history": [
@@ -764,12 +771,12 @@
         }
     },
     "task2a": {
-        "last_run": "2026-07-05T05:06:46.014004+08:00",
+        "last_run": "2026-07-05T10:08:55+08:00",
         "last_section": "none",
         "result": "no-candidates",
         "fix_count": 0,
         "last_sections": [],
-        "note": "Gap mining round 21: 0 candidates ≥14. Coverage saturated (21st consecutive). Daily info had Clean Architecture/Repository/Compose Pager/Room 3.0/AI Benchmark — all <14 or already covered. Android 17 ML scheduler scored 14 but already in ch1.43."
+        "note": "Gap mining round 22: 0 candidates ≥14. Coverage saturated (22nd consecutive). All 4 new DeepResearch files (2026-07-05) map to existing chapters."
     },
     "last_task9_review": {
         "at": "2026-07-03T19:20:00+08:00",
