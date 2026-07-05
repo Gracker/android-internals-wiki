@@ -365,13 +365,16 @@
         {
           "type": "源码错误",
           "location": "Android 17 ANGLE denylist 配置段落",
-          "detail": "章节中的 \`adb shell settings get global angle_gl_driver_all_angle\` 命令在 AOSP android-17.0.0_r1 中实际路径为 \`adb shell settings get global angle_gl_driver_enabled\`，此错误会导致开发者无法正确判断设备的 ANGLE 模式状态",
+          "detail": "章节中的 `adb shell settings get global angle_gl_driver_all_angle` 命令在 AOSP android-17.0.0_r1 中实际路径为 `adb shell settings get global angle_gl_driver_enabled`，此错误会导致开发者无法正确判断设备的 ANGLE 模式状态",
           "suggestion": "修正 adb 命令为正确的版本，并补充该命令的返回值含义说明"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-06T00:21:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T16:54:29+00:00",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "stale duplicate: already fixed by openclaw-task2b-rework (2026-07-05T22:51:24+08:00); all angle_gl_driver_enabled references verified correct"
     },
     {
       "section": "14.8",
@@ -391,7 +394,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-06T00:21:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T16:54:29+00:00",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "fixed: 新增 APA System Profiler 版本覆盖章节 (Android 12-17 逐版本说明)，补充 AGI vs APA 9维对比表和按场景迁移建议"
     },
     {
       "section": "14.8",
@@ -411,7 +417,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-05T22:25:49",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T16:54:29+00:00",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "fixed: merged with P85 APA coverage; 新增 AGI vs APA System Profiler 详细对比表 (9维) 和按场景迁移建议"
     },
     {
       "section": "14.27",

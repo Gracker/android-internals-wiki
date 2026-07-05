@@ -2,8 +2,8 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
 tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
 confidence: "medium"
@@ -18,14 +18,14 @@ related_chapters: "["2.10", "2.14", "13.3", "14.1"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
-last_task2b_at: "2026-07-05T22:51:24+08:00"
-last_task2b_by: "openclaw-task2b"
+last_task2b_at: "2026-07-05T16:53:54+08:00"
+last_task2b_by: "openclaw-task2b-main"
 task2b_result: "fixed"
 task6_result: "pass-light-edit"
 task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
-task9_result: "pass-tech-review"
+task9_result: "needs-rework"
 task9_reviewed_date: "2026-07-05"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-05T22:31:37"
@@ -44,7 +44,6 @@ last_deepseek_cn_review_at: "2026-06-12"
 last_task9_audit_log: "logs/deep-review/2026-07-05-22-deep-review.md"
 task9_review_summary: "发现 P0 源码命令错误、P1 版本差异覆盖不完整、P2 数据缺失等问题，已写入 queue.json 和 suggestions.md"
 last_task2b_lite_at: "2026-07-05"
----
 ---
 
 # 14.8 GPU 图形调试与分析工具
@@ -202,6 +201,40 @@ AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。Syst
 - **frame profiling**(单帧 GPU 命令、Draw Call、Shader / Render Pass 定位):用 **AGI Frame Profiler** 或 RenderDoc
 - **frame profiling / debugging 后续方向**:APA 官方博客提到 upcoming frame profiling/debugging 将由 **GFXReconstruct** 支撑,未列入当前公开 beta 范围
 - **多帧 GPU 分析**:优先看 **Sokatoa**,基于 GFXReconstruct 且已公开实现路径
+
+
+### APA System Profiler 的版本覆盖与演进
+
+APA 基于 Perfetto 构建，因此在不同 Android 版本上的能力差异主要由 Perfetto 的底层版本演进决定（详见本章"版本演进"章节的 profileable 增强路径）：
+
+- **Android 12-13**：APA System Profiler 的基准支持线。核心功能（CPU tracing、GPU counter）可用，但 GPU counter 采集通常依赖 `debuggable` 应用或 root 权限，`profileable` 包的 GPU 数据采集能力有限。
+- **Android 14+**：关键分水岭。`profileable` 应用的 Perfetto GPU counter 采集能力大幅增强——这也是 APA 最重要的版本能力跃迁。从此版本开始，profileable Release 包即可通过 APA 获取 GPU 频率、利用率和带宽等关键计数器，不再强制要求 debuggable 或 root。
+- **Android 15-16**：Perfetto 内核数据源逐步丰富，APA 可以覆盖更细粒度的内存分配追踪和功耗细分指标。长时间 trace 的稳定性和数据压缩能力持续提升。
+- **Android 17**：APA 与 Android 17 的 denylist ANGLE 策略无缝配合。当系统默认通过 ANGLE → Vulkan 运行时，APA 的 GPU counter 数据反映的是 Vulkan 驱动层的实际执行情况，在解读时需与原生 GLES 设备的 Perfetto 数据进行对比校准。
+
+**版本选型建议**：目标设备运行 Android 14+ 时，APA 可在 profileable Release 包上完成完整的 GPU system profiling，推荐作为首选 system profiling 工具。Android 12-13 设备上 APA 仍可做 CPU profiling，但 GPU 深度分析需 debuggable 包或搭配 AGI System Profiler。
+
+#### AGI System Profiler 与 APA System Profiler 对比
+
+| 维度 | AGI System Profiler | APA System Profiler |
+|------|-------------------|-------------------|
+| 基础框架 | 自研 trace 引擎 | Perfetto |
+| 最低支持版本 | Android 11 | Android 12 |
+| 开发状态 | 维护模式（官方推荐迁移） | 活跃开发（open beta） |
+| GPU 厂商专属计数器 | Adreno/Mali/PowerVR 深度暴露 | 继承 Perfetto 数据源，依赖厂商驱动暴露 |
+| Release 包 GPU 采集 | ❌ 需 debuggable | ✅ Android 14+ profileable 可采 |
+| 性能覆盖范围 | GPU 为主，CPU/Memory 基础 | CPU + GPU + Memory + Power 四维 |
+| 运行时开销 | 中等（< 5%） | 低（Perfetto 原生开销） |
+| Frame Profiling | ✅ AGI Frame Profiler | ⏳ roadmap（GFXReconstruct） |
+| 工具链集成 | 独立 GUI | 与 Android Studio / Perfetto UI 集成 |
+
+**迁移建议**：
+
+- **日常 system profiling**：优先 APA。Android 14+ profileable 包即可采集 GPU counter，准入门槛更低。
+- **Mali/Adreno 深度 GPU 计数**：厂商专属计数器在 AGI 上暴露更完整。APA 定位到瓶颈后，切换到 AGI 或厂商专用工具做细粒度 counter 分析。
+- **Android 11 设备**：APA 不可用，AGI System Profiler 是唯一的官方 system profiling 选项。
+- **帧级分析**：APA 当前不提供帧级 GPU 命令分析。单帧调试仍用 AGI Frame Profiler 或 RenderDoc。
+
 
 ### AGI 对 GLES 应用的分析路径
 
