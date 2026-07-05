@@ -579,7 +579,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-06T02:20:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T18:53:20.112136+00:00",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "fixed: AGI Frame Profiler 最低版本更正为 Android 12+ (API 31)，GLES over Vulkan 完整分析路径说明"
     },
     {
       "section": "14.8",
@@ -599,7 +602,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-06T02:20:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T18:53:20.112136+00:00",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "fixed: counter_ids → counters (android-17.0.0_r1 规范字段名); 补充了版本差异说明"
     }
   ],
   "entries": [
