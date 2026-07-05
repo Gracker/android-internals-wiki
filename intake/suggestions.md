@@ -18,6 +18,24 @@
 
 ## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
 - **类型**：数据支撑
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：源码引用准确性
+- **位置**：Perfetto GPU counter配置部分
+- **问题**：引用的gpu_counter_config.proto中的counters字段名错误，实际应为counter_ids
+- **建议**：修正字段名引用并添加版本兼容性说明
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异覆盖
+- **位置**：Android 14 profileable GPU counter能力
+- **问题**：未详细说明profileable包下可用的具体GPU计数器类型和限制
+- **建议**：补充Android 14+ profileable包GPU counter的具体API级别差异和可用计数器列表
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：数据缺失
+- **位置**：GPU性能指标参考值章节
+- **问题**：缺少GPU利用率、显存带宽等关键指标的具体数值参考范围
+- **建议**：添加各类GPU指标的正常/警告/异常值参考范围，帮助开发者判断性能数据是否异常
 - **位置**：性能基准数据章节
 - **问题**：缺少具体的GPU性能基准数据和优化效果量化
 - **建议**：添加不同GPU厂商(Adreno/Mali/PowerVR)的典型FPS、Draw Call数量、带宽等基准值

@@ -45,6 +45,24 @@
       "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
     },
     {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] AOSP源码路径错误",
+      "material_paths": ["intake/suggestions.md"],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Perfetto GPU counter配置部分",
+          "detail": "文中引用android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto中的counters字段，但在实际AOSP版本中，该字段应为counter_ids，新版本才改为counters",
+          "suggestion": "修正gpu_counter_config.proto中的字段名引用，添加版本兼容性说明"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T04:21:00+00:00",
+      "status": "pending"
+    },
+    {
       "section": "ch01-architecture",
       "section_title": "Chapter ch01-architecture",
       "priority": 61,
