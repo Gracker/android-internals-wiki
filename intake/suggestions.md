@@ -360,3 +360,40 @@
   1. 线程优先级调度实战 — 素材3×相关4×需求3×时效2 = 12（已有 ch05 调度理论覆盖，ch27.1 线程池 draft 覆盖）
   2. 启动内存峰值控制 — 素材2×相关4×需求3×时效3 = 12（AppFlow 为研究原型，ch16.8 已系统侧覆盖）
 - **评估结果**: 0 个 ≥14 分新候选，连续 24 轮覆盖饱和
+
+
+## 2026-07-05 09:04 知识缺口挖掘检查记录（Round 25）
+
+- **检查方向**:
+  1. 全书空 draft 扫描（0 个空 draft）
+  2. Task2B backlog = 0（允许挖掘）
+  3. source-index.json 无 quality≥16 且 unmapped 的条目
+  4. research-feeds 近期 5 篇已全部映射（Perfetto v54 / Compose Pausable / Frame Timeline / View Hierarchy / ADPF）
+  5. 新增关键词反查（50+ 关键词）：
+     - AlarmManager / setExact / SCHEDULE_EXACT_ALARM → 34 mentions，ch11.5 + ch25.3 + ch25.20 已充分覆盖
+     - LocationManager / FusedLocationProvider / Geofencing → ch25.22 专节 + ch11 多处覆盖
+     - BLE / BluetoothLeScanner / WiFi scanning → ch11.6 专节覆盖
+     - MediaCodec / MediaExtractor / AudioTrack → ch8.8 多媒体管线 + ch25.18 Audio Offload 覆盖
+     - Compose Snapshot / RecomposeScope / StrongSkipping → ch22.20 + ch22.29 已源码级覆盖
+     - Compose PausableComposition → ch2.28 + ch2.29 + ch1.25 三节覆盖
+     - Camera2 / CameraX / CameraService → ch18.03 Camera HAL3 + ch14.09 Camera 性能覆盖
+     - PictureInPicture / MultiWindow / DesktopMode → ch22.14 桌面窗口化 + ch22.13 覆盖
+     - PredictiveBack / BackInvokedDispatcher → ch3.12 + ch22.13 覆盖
+     - AutofillService / ContentCapture / ViewStructure → 各 1-5 mentions，部分覆盖
+     - LowPowerStandby / DeviceIdleController / Doze → ch5.25 + ch11.3 覆盖
+     - PSI / MemoryPressure / SyncBarrier → ch4 多节 + ch1.13 覆盖
+     - Watchdog / system_server watchdog → 25 mentions，分散覆盖
+  6. AOSP `frameworks/base/` 核心服务审计：AMS/WMS/PMS/AlarmManager/PowerManager/SensorService/LocationManager/ConnectivityService/JobScheduler/InputManager/DisplayManager/NotificationManager/AudioManager/CameraService 全部已有专节
+  7. 对照 Clippings 三本参考书（108 篇全文扫描）结构交叉验证
+  8. Android 17 新特性终审：AppFlow/LMKD v2/MTE/16KB Page/Staged Install/ResourcesManager Configuration/DCL/Excessive CPU Kill/ANR Warning/ML Scheduler/eBPF/simpleperf 全部已覆盖
+- **新检查候选**:
+  1. Accessibility Services Performance Impact — 素材1×相关3×需求3×时效2 = 9（6 mentions，无独立专节，但影响面不足以独立成节）
+  2. ImeTracker / IME Tracing 性能 — 素材1×相关2×需求2×时效3 = 8（0 mentions，素材匮乏）
+  3. Platform Compat Framework 性能影响 — 素材1×相关3×需求2×时效3 = 9（0 mentions，CompatChanges 3 mentions 分散）
+  4. TaskFragments / 多窗口调度 — 素材1×相关3×需求2×时效3 = 9（0 mentions，DesktopMode 已有 ch22.14）
+  5. ContentCapture / ContentSuggestions 性能 — 素材1×相关1×需求1×时效2 = 5（极低，偏小众系统功能）
+- **评估结果**: 0 个 ≥14 分新候选，连续 25 轮覆盖饱和
+- **结论**: 全书 590 文件、577+ 小节、17+ 章，覆盖范围极度完整。全书关键词反查 100+ 个系统组件/技术点，核心性能领域无遗漏。建议后续挖掘轮次可直接跳过，仅在以下触发条件时恢复挖掘：
+  - Android 18 预览版发布后新增 API 的性能影响分析
+  - Clippings 参考书库新增内容
+  - 高爷指定的新方向
