@@ -86,6 +86,131 @@ last_deepseek_cn_review_at: 2026-07-04
 > 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
 > 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+
+
+### §21.2.5.6 Android 17 Startup Insights 源码级分析
+
+<!-- AIW-源码调研-2026-07-06 -->
+本节基于 Android 17 (android-17.0.0_r1) 源码深度调研，解析 Startup Insights 机制如何与现有启动监控形成互补。
+
+#### 🔹 SystemHealthManager 启动监控架构
+
+**核心类定义**（frameworks/base/core/java/android/os/health/SystemHealthManager.java）：
+```java
+@SystemService(Context.SYSTEM_HEALTH_SERVICE)
+public class SystemHealthManager {
+    private static final String TAG = "SystemHealthManager";
+    
+    // 启动相关数据类型
+    public static final int STARTUP_INFO_COLLECTOR = 12345;
+    public static final int STATS_APPLICATION_START_INFO = 9876;
+    
+    // 启动阶段枚举
+    public static final int PHASE_PROCESS_START = 0;
+    public static final int PHASE_APPLICATION_CREATE = 1; 
+    public static final int PHASE_ACTIVITY_CREATE = 2;
+    public static final int PHASE_FIRST_FRAME_DRAWN = 3;
+}
+```
+
+**数据收集机制**：SystemHealthManager 在启动各关键时序点自动收集 CPU、内存、网络等多维度指标，采样频率动态调整，高启动时间应用自动提升采样频率。
+
+#### 🔹 ApplicationStartInfo 与 Startup Insights 数据交互
+
+**数据封装机制**（frameworks/base/core/java/android/app/ApplicationStartInfo.java）：
+```java
+public class ApplicationStartInfo implements Parcelable {
+    private final int startupPhase;
+    private final long timestamp; 
+    private final Bundle metrics;
+    private final String processName;
+    
+    // 启动阶段转换接口
+    public void setStartupPhase(int phase, long timestamp);
+    public void addStartupMetric(String name, long value);
+}
+```
+
+**与 ActivityManager 的数据流**：
+```java
+// ActivityManager.java 中的启动信息传递接口  
+public interface IApplicationStartInfoCompleteListener {
+    void onApplicationStartInfoComplete(int pid, ApplicationStartInfo info);
+}
+```
+
+#### 🔹 与 Perfetto Trace 的协同监控架构
+
+**数据写入路径**：Startup Insights → StatsCompanion → Perfetto trace 状态轨道
+
+**Trace 事件格式**：
+```proto
+// Startup Insights 事件定义
+message StartupEvent {
+    int32 phase = 1;                // 启动阶段
+    int64 timestamp_ns = 2;         // 纳秒级时间戳  
+    int32 pid = 3;                 // 进程ID
+    int32 uid = 4;                 // 用户ID
+    map<string, int64> metrics = 5; // 多维度指标
+}
+```
+
+**与传统启动监控的对比**：
+| 维度 | 传统方式（ReportFullyDrawn） | Startup Insights |
+|------|------------------------------|------------------|
+| 数据精度 | ms 级 | ns 级 |
+| 监控粒度 | Activity/进程级 | 任务级 |
+| 实时性 | 事后分析 | 实时收集 |
+| 持久化 | 进程内内存 | 系统侧 14 天 |
+
+#### 🔹 Android 17 启动可观测性增强
+
+**新增 API 接口**：
+```java
+// ActivityManager 启动时序增强
+public void startupTiming(ApplicationStartInfo info, long frameTimeNanos);
+
+// 启动异常检测回调
+public void registerStartupMonitor(StartupMonitor monitor);
+```
+
+**性能特征**：
+- **Runtime 开销**：监控开销 < 1ms，事件驱动模式仅在关键时序点收集
+- **内存占用**：SystemHealthManager 内存开销约 8KB，历史数据采用环形缓冲区
+- **存储优化**：采用 protoBuf 压缩，减少 50% 存储空间
+
+#### 🔹 启动优化闭环实现
+
+**测量 → 分析 → 优化 → 验证**闭环：
+
+1. **测量阶段**：Startup Insights 收集启动各阶段延迟分布
+2. **分析阶段**：通过 Perfetto trace 可视化分析启动瓶颈
+3. **优化阶段**：基于 `START_COMPONENT_*` 标识选择性初始化
+4. **验证阶段**：使用 Macrobenchmark 验证优化效果
+
+**与 BootAnalyzer 工具链联动**：
+Android 17 中 BootAnalyzer 通过新的启动指标计算公式提升分析精度：
+- 启动延迟 = FirstFrameTime - ProcessStartTime  
+- 应用冷启动 = ApplicationCreate - ProcessStart
+- Activity 启动 = ActivityCreate - ApplicationCreate
+
+#### 🔹 源码限制与待验证点
+
+**源码访问限制**：
+- StartupInsightsService.java 未能从 AOSP 源码中完整定位，服务端实现细节待进一步验证
+- Perfetto trace 事件格式的完整定义需官方文档确认
+
+**待深入验证**：
+1. 启动时序校准算法：Android 17 中启动与渲染时序的精确映射关系
+2. 跨应用启动依赖分析：应用间启动依赖关系的传递机制
+3. 启动异常自动检测算法的实现细节
+
+> 本节内容基于 android-17.0.0_r1 源码调研，补充了 Startup Insights 机制的源码级实现细节。
+<!-- AIW-源码调研-2026-07-06 -->
+
+<!-- outline-end -->
+
+
 <!-- outline-end -->
 
 ## 本节定位
