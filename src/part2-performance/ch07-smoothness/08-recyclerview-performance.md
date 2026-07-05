@@ -75,6 +75,7 @@ review_type: "task6-writing-quality-review"
 task6_reviewed_date: "2026-06-29"
 last_task6_review_log: "logs/review/2026-06-29-20-review.md"
 task6_review_notes: "2026-05-27 06:09 Task6：复审通过；禁用词扫描仅剩技术语境豁免项，无新增 L3/L4 回炉项。 | 2026-06-29 Task6 复审（Task9 auto-fix 后）：pass-light-edit。L1/L2 全部通过；禁用词零命中；高频词在阈值内。Task9 auto-fix 涉及的源码锚点收敛（RecyclerView 1.4.0 sources.jar + android-17.0.0_r1）写作质量合格。无 B 类回炉项，送 Task9 确认。"
+last_task6_audit: "2026-07-05"
 p0: 0
 p1: 0
 p2: 0
@@ -206,7 +207,7 @@ GapWorker 的时间预算只覆盖 ViewHolder 获取、create 和 bind 路径，
 
 Android 17 为 `targetSdkVersion >= 37` 的应用启用新的 lock-free `MessageQueue` 实现 DeliQueue；低于此 target 的应用默认仍走旧的 lock-based 实现，debuggable build 可用 `adb am compat enable USE_NEW_MESSAGEQUEUE <package>` 提前测试。
 
-`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程队列。旧实现中，后台线程 `Handler.post()`、`AsyncListDiffer` diff 结果回调和主线程 `next()` 共享同一把 `MessageQueue` monitor；后台线程持锁时被调度器抢占，主线程就可能在取消息阶段等待。DeliQueue 的按照 Google Android Developers Blog 的说法，入队侧使用 Treiber stack，Looper 侧使用 min-heap 处理按 `when` 排序的消息，目标是消除这条 monitor contention 路径。
+`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程队列。旧实现中，后台线程 `Handler.post()`、`AsyncListDiffer` diff 结果回调和主线程 `next()` 共享同一把 `MessageQueue` monitor；后台线程持锁时被调度器抢占，主线程就可能在取消息阶段等待。按照 Google Android Developers Blog 的说法，DeliQueue 入队侧使用 Treiber stack，Looper 侧使用 min-heap 处理按 `when` 排序的消息，目标是消除这条 monitor contention 路径。
 
 Google 官方 benchmark 给出的数字是 MessageQueue 级别收益：应用 missed frames 下降约 4%，System UI / Launcher 交互 missed frames 下降约 7.7%，首帧 P95 耗时下降约 9.1%。这些数字来自 Android Developers Blog，不是 RecyclerView 专项 benchmark，也不是 AOSP commit 中可直接复算的数据。
 
