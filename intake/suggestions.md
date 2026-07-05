@@ -52,3 +52,28 @@
 - 5 个 2026-07-05 DeepResearch 文件均映射到已有章节（binder-sz4m→§1.25/1.30/1.53, battery→ch05/ch25, perfetto-v57→§13.23, audio-hardening→ch25.17, ai-agent-memory→§20.3/ch04）
 - Task2B backlog: 0（≤20，允许挖掘）
 - 26 轮连续无合格候选，覆盖率饱和
+
+### [2026-07-05 15:12] Task2A Round 26 Gap Mining — No Candidates
+已检查方向（本轮新增）：
+- App Links / Deep Links resolution 性能 → 评分 11/20（素材 2, 相关性 3, 读者需求 3, 时效性 3），低于阈值
+- Activity Embedding / 大屏多窗口性能 → 22.14 已覆盖桌面窗口化渲染，ActivityEmbedding 更偏 UI/UX
+- Notification Trampoline 限制迁移 → 非性能优化主题，是兼容性行为变更
+- BroadcastReceiver 动态注册性能 → 仅 1 篇素材，评分 9/20
+- ClipboardService / 剪贴板访问延迟 → 非核心性能瓶颈，评分 8/20
+- Backup/Restore 性能影响 → 系统级调度，App 层不可控，评分 8/20
+- Runtime Permission 检查 IPC 开销 → 单次调用 <1ms，评分 8/20
+- Data Binding vs View Binding vs Compose 迁移性能 → 评分 11/20（衰落技术，时效性低）
+- TransitionManager / Transition API 性能 → SharedElement 已有 1 篇覆盖
+- Lint 自定义性能规则 → 工具类话题，评分 8/20
+- Storage Access Framework (SAF) 性能 → 已有 3 篇文件涉及
+- Room Auto Migration 性能 → 已有 1 篇覆盖
+- ExoPlayer / Media3 性能 → 已有 1 篇覆盖
+- MediaCodec 硬件编解码性能 → 已有 3 篇覆盖
+- ViewPager2 性能 → 已有 3 篇覆盖
+- ProGuard / R8 full mode → 已有 5 篇覆盖
+- ConfigStore / WallpaperColors / Compose Multipreview → 非性能主题或过于边缘
+- Companion Device Manager presence → 极小众场景，评分 7/20
+- Screen Recorder / MediaProjection 性能 → 细分场景，评分 9/20
+- 线上疑难问题参考书 59 篇全量映射 → 所有主题均已有对应章节
+- Android 性能优化参考书 16 篇全量映射 → 所有主题均已有对应章节
+- 26 轮连续挖掘（24+25+26 轮无合格候选），覆盖率确认饱和
