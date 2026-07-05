@@ -25,7 +25,7 @@ task6_reviewed_date: "2026-06-19"
 last_task6_at: "2026-06-19T12:09:00+08:00"
 auto_promoted_date: "2026-06-05"
 auto_promoted_by: "openclaw-task6"
-last_task6_audit: "2026-05-23"
+last_task6_audit: "2026-07-06"
 review_type: "task6-writing-quality-review"
 repaired_date: 2026-05-05
 repaired_by: openclaw-task2b
