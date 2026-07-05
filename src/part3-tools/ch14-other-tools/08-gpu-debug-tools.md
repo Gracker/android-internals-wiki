@@ -23,12 +23,12 @@ last_task2b_by: "openclaw-task2b-main"
 task2b_result: fixed
 task6_result: "pass-light-edit"
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-07-06"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-06T04:21:00+08:00"
+last_task9_at: "2026-07-06T06:20:00+08:00"
 last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
 last_task9_audit: "2026-07-05T20:20:00+08:00"
@@ -676,4 +676,9 @@ adb shell settings put global angle_gl_driver_selection_values native
 ### 进阶阅读
 - 移动平台 GPU 性能分析(知乎):https://zhuanlan.zhihu.com/p/560738175
 - 基于 GPU Counters 数据的性能优化(Cubox 收藏)：GPU 工具链方法论参考
-
+### Android 17 SurfaceFlinger GPU 调试系统与性能工具链源码调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-gpu-debug-performance-tools-source.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 锚定 SurfaceFlinger GPU 调试开关系统（debug.sf.* 属性体系）、FPSReporter 分层 FPS 监控架构、JankTracker 异步卡顿检测（BackgroundExecutor 低优先级批处理 50 条批次）、FrameTracer 与 Perfetto 集成的帧追踪管线。附 grallocusage 转换与 GPU 回压控制源码路径。
+- 注入时间：2026-07-06
+- 价值：补充 GPU 工具链的 AOSP 源码级实现细节，超越官方文档层面，对工具开发者与性能分析师有直接参考价值

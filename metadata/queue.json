@@ -553,6 +553,78 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-06T05:31:34.985435",
+      "status": "completed",
+      "completed_at": "2026-07-05T22:53:20.488895+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
+    },
+    {
+      "section": "25.17",
+      "section_title": "后台音频硬化与蓝牙 LE Audio 功耗治理机制",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-background-audio-hardening-leaudio-power-source.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 后台音频硬化与 LE Audio 功耗治理源码调研 — 基于 android-17.0.0_r1 深度解析 HardeningEnforcer 双源决策矩阵（Java + C++ AudioFlinger）、LE Audio LC3 codec offload 与 ADSP 协商路径、MediaFocusControl 音频焦点恢复策略",
+          "suggestion": "章节已 finalized，建议判断是否需要补充音频硬化状态机模型、LE Audio 功耗治理链路、焦点恢复策略等内容，或仅作为参考资料追加"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-06T06:12:51.402781",
+      "status": "pending"
+    },
+    {
+      "section": "13.23",
+      "section_title": "Perfetto v57 AI 技能与状态轨道在 Android 内存调试中的应用",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-perfetto-v57-ai-skill-state-tracks-android-memory.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Perfetto v57 AI 技能与状态轨道 — v57.1 引入 ai-agents 分支与 AI Skill（heap_dump/heap_dump_caching_optimizer 等 6 个工作流），状态轨道 TYPE_STATE=5 作为一等公民轨道类型，形成 AI 读→SQL 取→状态轨道证三段闭环",
+          "suggestion": "ch13 README 已 finalized，建议在 13.20-13.23 系列章节中补充 Perfetto v57 AI 技能安装与内存调试工作流内容，或作为延伸阅读追加"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-06T06:12:51.402781",
+      "status": "pending"
+    },
+    {
+      "section": "14.28",
+      "section_title": "GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "file_path": "src/part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-06T07:18:59+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "26.24",
+      "section_title": "heapprofd 生产级部署与权限模型",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "file_path": "src/part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-06T07:18:59+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "4.22",
+      "section_title": "AI Agent 内存沙箱化与跨应用数据复用",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "file_path": "src/part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-06T07:18:59+08:00",
       "status": "pending"
     }
   ],
