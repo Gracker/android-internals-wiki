@@ -106,7 +106,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.666398+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T06:51:06.527457+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
     },
     {
       "section": "ch10-memory-perf",
@@ -126,7 +128,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.666924+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T06:51:06.527457+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
     },
     {
       "section": "ch15-methodology",
@@ -146,7 +150,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.667195+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T06:51:06.527457+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
     },
     {
       "section": "ch04-memory",
