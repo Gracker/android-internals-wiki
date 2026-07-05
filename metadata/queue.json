@@ -373,6 +373,66 @@
       "added_at": "2026-07-05T07:06:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-07-05-07-audit.md"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 闲时抽检发现源码基线违规和版本差异问题",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter last_verified_against + 文中源码引用",
+          "detail": "章节引用 android-16.0.0_r1 AOSP 源码，但 AIW 版本基线要求锚定 android-17.0.0_r1。 violates android version boundary rule.",
+          "suggestion": "重新验证 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto 在 android-17.0.0_r1 中的路径和API变更，更新所有版本标注为 android-17.0.0_r1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-05T17:22:36.377490+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-05T17:39:34+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 更新，proto 路径未变"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 闲时抽检发现源码基线违规和版本差异问题",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Perfetto GPU counter config section",
+          "detail": "引用 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto 路径和配置需在 android-17.0.0_r1 中重新验证，确保计数器ID和字段定义未发生重大变更",
+          "suggestion": "验证 android-17.0.0_r1 中 Perfetto GPU counter 配置的兼容性，更新 counter_ids 和 counter_period_ns 字段说明"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-05T17:22:36.377490+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-05T17:39:34+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 更新，proto 路径未变"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 闲时抽检发现版本差异覆盖不完整",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "Android 17 ANGLE 策略描述段落",
+          "detail": "章节提到 Android 17 的 ANGLE denylist 策略，但缺少具体配置命令、实际影响分析和与旧版本策略的根本性差异对比。开发者在升级到 Android 17 后无法准确判断工具配置变化。",
+          "suggestion": "补充 Android 17 ANGLE denylist 的具体配置命令、实际影响分析、与旧版本策略对比，以及开发者迁移指南"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-05T17:22:36.377490+08:00",
+      "status": "pending"
     }
   ],
   "entries": [
