@@ -18,11 +18,11 @@ related_chapters: "["2.10", "2.14", "13.3", "14.1"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
-last_task2b_at: "2026-07-05T16:53:54+08:00"
+last_task2b_at: "2026-07-06T02:50:00+08:00"
 last_task2b_by: "openclaw-task2b-main"
 task2b_result: "fixed"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "needs-rework"
@@ -159,7 +159,7 @@ Frame Profiler 更强大也更复杂。
 
 1. **应用必须是 debuggable 的**。Frame Profiler 需要注入 Vulkan/GLES 拦截层来捕获 GPU 命令,这要求 `android:debuggable="true"`(或在 AndroidManifest 中声明)。Release 包无法使用 Frame Profiler,需要临时切换到 debuggable 构建。
 
-2. **目标 API 最低要求 Android 11 (API 30)**。AGI 的完整功能(包括 System Profiler 和 Frame Profiler)从 Android 11 开始支持。Android 10 及以下只能使用部分功能。
+2. **AGI Frame Profiler 完整功能要求 Android 12+ (API 31)**。Frame Profiler 的 GLES over Vulkan 完整分析路径需要 Android 12+。Android 11 (API 30) 仅支持部分 GPU 分析功能，无法走完整的 GLES→Vulkan 翻译路径。AGI System Profiler 从 Android 11 开始支持。Android 10 及以下只能使用部分功能。
 
 3. **Vulkan 应用无需额外配置**。AGI 通过 Vulkan Layer 拦截 API 调用,Vulkan 应用开箱即用。
 
@@ -274,14 +274,14 @@ data_sources {
   config {
     name: "gpu.counters"
     gpu_counter_config {
-      counter_ids: [1, 2, 3, ...]   # 先用设备暴露的 counter 列表确认具体 ID
+      counters: [1, 2, 3, ...]         # 先用设备暴露的 counter 列表确认具体 ID（android-17.0.0_r1 规范字段名）
       counter_period_ns: 1000000    # 1 ms 采样间隔
     }
   }
 }
 ```
 
-`gpu_counter_config` 的字段定义在 AOSP `android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时,先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出来,再回填这些 ID;不同 GPU 的编号和含义都不通用。
+`gpu_counter_config` 的字段定义在 AOSP `android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto`。注意 android-17.0.0_r1 中该字段为 `counters`（旧版本中曾使用 `counter_ids`），对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时，先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出，再回填这些 ID；不同 GPU 的编号和含义都不通用。
 
 ### 关键 GPU 指标
 
