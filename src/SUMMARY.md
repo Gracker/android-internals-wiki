@@ -82,6 +82,12 @@
 
 ---
 
+  - [14.27 Macrobenchmark 框架与自动化性能门禁](part3-tools/ch14-other-tools/27-macrobenchmark-automation-gate.md)
+  - [13.26 android.os.Trace API 深度解析与应用级自定义追踪](part3-tools/ch13-perfetto/13.26-android-trace-api-custom-tracing.md)
+  - [21.17 Startup Insights API 与启动性能可观测性](part5-app/ch21-startup/17-startup-insights-api-observability.md)
+  - [17.9 SoC 特异性功耗优化策略：高通/联发科/三星](part4-system/ch17-oem/09-soc-specific-power-optimization.md)
+  - [22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性](part5-app/ch22-rendering-practice/30-impeller-shader-compilation-flutter.md)
+
 # 附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)

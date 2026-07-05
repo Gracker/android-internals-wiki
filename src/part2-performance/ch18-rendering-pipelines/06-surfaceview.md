@@ -82,6 +82,8 @@ task6_l3_l4_issues: 0
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-06-20T08:08:00+08:00"
 last_task9_autofix_at: "2026-06-20"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-05
 ---
 
 # 18.6 SurfaceView 直出路径
@@ -107,13 +109,13 @@ last_task9_autofix_at: "2026-06-20"
 
 ## 为什么需要 SurfaceView
 
-Perfetto 中如果出现 App 主线程卡了 50ms、视频画面仍然流畅播放的现象，背后通常就是 SurfaceView 的独立路径。
+在 Perfetto 中看到 App 主线程卡了 50ms，视频画面却依然流畅播放——这通常就是 SurfaceView 的独立路径在工作。
 
-SurfaceView 是 Android 里效率很高的视图组件之一，设计目标是 **去耦**。普通 View 的渲染必须经过 App 主线程的 Measure/Layout/Draw 流程，再由 RenderThread 提交给 SurfaceFlinger。如果主线程被阻塞——比如做了一次数据库查询或 JSON 解析——整帧画面都会卡住。
+SurfaceView 是 Android 渲染效率最高的视图组件之一，设计目标就是**去耦**。普通 View 的渲染必须经过 App 主线程的 Measure/Layout/Draw 流程，再由 RenderThread 提交给 SurfaceFlinger。如果主线程被阻塞——比如做了一次数据库查询或 JSON 解析——整帧画面都会卡住。
 
-SurfaceView 打破了这个限制。它拥有独立的 Surface，Producer 线程把帧送进自己的 BufferQueue，App 主线程不参与逐帧绘制。现代 Android 上，这条路通常会先经过 App 进程内的 BLASTBufferQueue / BLASTBufferItemConsumer，再由 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这也是视频播放器、游戏引擎、Camera 预览通常优先使用 SurfaceView 的原因。[已验证: AOSP SurfaceView 实现]
+SurfaceView 打破了这个限制。它拥有独立的 Surface，Producer 线程把帧送进自己的 BufferQueue，App 主线程不参与逐帧绘制。现代 Android 上，这条路通常会先经过 App 进程内的 BLASTBufferQueue / BLASTBufferItemConsumer，再由 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这也是视频播放器、游戏引擎、Camera 预览通常优先使用 SurfaceView 的原因。
 
-SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 TextureView。旧版本里的平移、缩放和透明度支持都很受限，圆角、复杂变换、特效叠加也不自然。Android 7.0 起位置更新会和 View 渲染同步，Android 14 起支持任意 alpha 混合。圆角能力需要按 Android 11/12+ 的 `setCornerRadius()` 与具体设备合成能力判断；缺少源码差异时，不把它归因到 Android 15 的新增同步机制。涉及复杂动画、裁剪和多层混合时，TextureView 的实现成本仍然更低。
+SurfaceView 的代价也很明确：在 View 树里的能力始终弱于 TextureView。旧版本中平移、缩放和透明度都受限，圆角、复杂变换、特效叠加的实现也不自然。Android 7.0 起位置更新会和 View 渲染同步，Android 14 起支持任意 alpha 混合。圆角能力需要按 Android 11/12+ 的 `setCornerRadius()` 与具体设备合成能力判断；缺少源码差异时，不把它归因到 Android 15 的新增同步机制。涉及复杂动画、裁剪和多层混合时，TextureView 的实现成本仍然更低。
 
 ## 独立 Surface 与挖洞机制
 
@@ -128,7 +130,7 @@ ViewRootImpl bounds layer
        └─ background layer (挖洞背景色)
 ```
 
-BLASTBufferQueue 在 App 进程内 acquire buffer，再通过 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这种模式下 Layer 的创建和 buffer 流转都在 SurfaceControl 框架内完成，不再依赖 WMS 的独立窗口模型。[已验证: AOSP `android-12.0.0_r1` SurfaceView.updateSurface / createBlastSurfaceControls；`android-11.0.0_r1` SurfaceView 仍使用旧 Window 模型]
+BLASTBufferQueue 在 App 进程内 acquire buffer，再通过 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这种模式下 Layer 的创建和 buffer 流转都在 SurfaceControl 框架内完成，不再依赖 WMS 的独立窗口模型。
 
 ### Z-Order 与图层结构
 
@@ -183,8 +185,8 @@ SurfaceView 的渲染路径可以分为三个阶段，每个阶段对应不同�
 
 这通常是视频解码线程（MediaCodec）、Camera 数据线程或游戏逻辑线程：
 
-1. **dequeueBuffer**：从 BufferQueue 申请一个空闲 Buffer。如果队列满了（Consumer 没来得及消费），这里会阻塞。[已验证: AOSP BufferQueue]
-   - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()` 持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `BufferQueueConsumer::releaseBuffer()` 通过 `BufferQueueCore::notifyBufferReleased()` / `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。[已验证: AOSP android-17.0.0_r1 BufferQueueProducer.cpp / BufferQueueConsumer.cpp / BufferQueueCore.cpp]
+1. **dequeueBuffer**：从 BufferQueue 申请一个空闲 Buffer。如果队列满了（Consumer 没来得及消费），这里会阻塞。
+   - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()` 持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `BufferQueueConsumer::releaseBuffer()` 通过 `BufferQueueCore::notifyBufferReleased()` / `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。
    - **O(n) 热点**：每次 `waitForFreeSlotThenRelock` 重试都要遍历 `mActiveBuffers` 集合统计 dequeued/acquired 数量（默认 Slot=4），n 越大竞争越激烈
    - **Android 16+ 变化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 包装点；但 `android-16.0.0_r1` / `android-17.0.0_r1` 中 `BufferQueueCore::notifyBufferReleased()` 仍调用 `mDequeueCondition.notify_all()`，不能写成已经实现的精确唤醒优化
    - **Allocation 期间释放锁**：`mIsAllocating=true` 时 `waitWhileAllocatingLocked()` 主动释放 `mMutex`，避免 GraphicBuffer 分配 I/O 导致全局阻塞——这能防止分配期间整个 BufferQueue 冻结
@@ -211,7 +213,7 @@ SurfaceView 解耦的是独立 Surface/BufferQueue 与 View hierarchy 的逐帧�
 3. **Build Transaction**：BLASTBufferQueue 组装 `SurfaceControl.Transaction`，把 Buffer、Fence、Layer 几何和可见性一并打包
 4. **apply Transaction**：Transaction 通过 Binder 交给 SurfaceFlinger，等待下一次合成
 
-BLAST 解决的是几何变化和 Buffer 更新的同步问题。旧架构里，SurfaceView resize 或移动时，主窗口里的透明洞和 Surface 自身 Buffer 往往不是同一拍提交，所以容易看到黑边、拉伸和闪烁。BLAST 把这些状态放进同一套事务里协调，问题少了很多，但在窗口频繁变化、Producer 掉帧或系统负载高时，仍然可能看到短暂抖动。[已验证: AOSP BLASTBufferQueue]
+BLAST 解决的是几何变化和 Buffer 更新的同步问题。旧架构里，SurfaceView resize 或移动时，主窗口里的透明洞和 Surface 自身 Buffer 往往不是同一拍提交，所以容易看到黑边、拉伸和闪烁。BLAST 把这些状态放进同一套事务里协调，问题少了很多，但在窗口频繁变化、Producer 掉帧或系统负载高时，仍然可能看到短暂抖动。
 
 ### 第三阶段：SurfaceFlinger 合成
 
@@ -325,8 +327,6 @@ SurfaceView 能走 Overlay 需要同时满足下面这几条。视频和相机�
 4. **Overlay plane 数量上限**：HWC 提供的 plane 通常 3-4 个，同屏活跃 layer 超过上限时多出来的会回退为 client composition。Status Bar / Navigation Bar 已经占用 slot 时，留给 SurfaceView 的余量更小。
 5. **缩放比例与旋转**：超出 HWC scaler 能力或不支持的旋转会触发回退。
 6. **色彩空间与 HDR**：不在 HWC 支持列表里的色域 / HDR 元数据会触发 GPU 端的 tone mapping，结果也是回退到 client 合成。
-
-[已验证: AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` `getDeviceCompositionChanges()` / `validate()` / `getChangedCompositionTypes()` 路径 + Android Graphics Architecture overlay 章节]
 
 ### Overlay 失效的常见原因
 

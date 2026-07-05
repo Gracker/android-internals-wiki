@@ -72,7 +72,8 @@ finalized_date: "2026-05-19"
 finalized_by: openclaw-task9-auto-promote
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-26
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-05
 ---
 
 # 专题解读
@@ -102,9 +103,9 @@ last_deepseek_polish_at: 2026-05-26
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-当一个 Trace 同时铺开 `system_server`、`zygote64`、App 主线程和 `RenderThread` 时，把 Perfetto 打开只是开始；难点在于知道先看哪里、看到什么算异常、下一步该追哪条线索。
+当一个 Trace 里同时铺开 `system_server`、`zygote64`、App 主线程和 `RenderThread` 时，打开 Perfetto 只是第一步；真正的难点在于知道先看哪里、什么算异常、下一步该追哪条线索。
 
-本节把日常最常见的五类分析场景，即启动、流畅性、Binder、内存、I/O，整理成独立的专题工作流。每个专题都按“问题现象 → 抓取配置 → Trace 中的定位步骤 → 关键判读方法”的顺序展开，拿到问题后可以直接照着走一遍。
+本节把日常最常见的五类分析场景——启动、流畅性、Binder、内存、I/O——整理成独立专题工作流。每个专题都按“问题现象 → 抓取配置 → Trace 中的定位步骤 → 关键判读方法”的顺序展开，拿到问题后可以直接照着走一遍。
 
 ## 13.5.1 启动分析专题：从 Trace 中定位冷启动各阶段耗时
 
@@ -250,8 +251,6 @@ WHERE process.name = '<你的App包名>'
 ORDER BY slice.ts;
 ```
 
-[已验证: 来源见 perfetto.dev/docs/analysis/sql-tables 及高爷博客 Android-Perfetto-03]
-
 ## 13.5.2 流畅性分析专题：FrameTimeline 分析与 Jank 帧定位
 
 ### 流畅性分析的核心思路
@@ -350,8 +349,6 @@ ORDER BY missed_deadline_frames DESC, app_janks DESC;
 
 这条查询直接落在 `actual_frame_timeline_slice` 的公开字段上。Android 10/11 没有这张表时，回到 `Choreographer#doFrame` 与线程态做手工判读，别把这条 SQL 硬套到旧版本 trace 上。
 
-[已验证: `actual_frame_timeline_slice`、`present_type`、`on_time_finish` 字段见 Perfetto stdlib docs，`android_is_app_jank_type()` / `android_is_sf_jank_type()` 见 `android.frames.jank_type` 模块]
-
 ## 13.5.3 Binder 分析专题：调用频率、耗时与跨进程追踪
 
 ### Binder 分析为什么重要
@@ -386,8 +383,6 @@ data_sources {
 ```
 
 `android_binder_txns` 是 trace processor 侧的标准库表，不是抓取阶段单独开启的数据源。trace 里只有 Binder driver 事件时，它仍然能给出 client / server 两端的 tids、进程名和 wall clock dur；如果同一段 trace 里还有 AIDL / HIDL slice，`aidl_name`、`interface`、`method_name` 这些字段才会补齐。
-
-[已验证: `android_binder_txns` / `android_sync_binder_*` 见 Perfetto stdlib docs 与 `stdlib/android/binder.sql`]
 
 ### 三步 Binder 分析工作流
 
@@ -539,8 +534,6 @@ data_sources {
 
 在 `user` build 上，`android.heapprofd` 仍然要求 App 带 `debuggable` 或 `profileable`。做 App 侧问题定位时，先确认 Manifest 已经开了对应标志。
 
-[已验证: heapprofd docs 明确使用 `android.heapprofd`，Java allocation sampling 用 `heaps: "com.android.art"`，Java heap dump 另走 `android.java_hprof`]
-
 ### 在 Perfetto UI 中分析堆数据
 
 `android.heapprofd` 和 `android.java_hprof` 都会在进程轨道附近留下 diamond 标记，但点开后的含义不同。
@@ -614,8 +607,6 @@ data_sources {
 }
 ```
 
-[已验证: perfetto.dev/docs/data-sources/process-stats，counter track 名称为 mem.rss / mem.rss.anon / mem.rss.file / mem.rss.shmem；PSS 需要 scan_smaps_rollup]
-
 ## 13.5.5 I/O 分析专题：Block I/O 与文件系统事件追踪
 
 ### I/O 问题为什么难查
@@ -650,8 +641,6 @@ data_sources {
 ```
 
 `block_rq_issue` 表示一个 I/O 请求被提交到块设备层；`block_rq_complete` 表示请求完成。两者之间的时间差就是单次 I/O 的实际耗时。`sched_blocked_reason` 记录线程进入 `D` 状态时的等待调用点（`caller` 字段）和 `io_wait` 标记——用于判断 D 状态等待是否由 I/O 引起。block device 和扇区信息不来自 `sched_blocked_reason`，需要同时间窗关联 `block_rq_issue` / `block_rq_complete` 或 `ext4_*` / `f2fs_*` 文件系统事件。
-
-[已验证: perfetto.dev/docs/data-sources/ftrace；kernel sched_blocked_reason tracepoint 字段为 pid/caller/io_wait，不含 block device/sector]
 
 ### 在 Trace 中定位 I/O 瓶颈
 
@@ -700,8 +689,6 @@ LIMIT 20;
 
 这条 SQL 统计的是设备级 `block_io` slice。要把它归回具体的 App 或线程，还得把结果再和 `thread_state`、`sched_blocked_reason`、`ext4_*` / `f2fs_*` 事件放到同一时间窗里。
 
-[已验证: `linux.block_io` 模块和 `track.type='block_io'` 见 Perfetto stdlib docs 与 `stdlib/linux/block_io.sql`]
-
 ## 13.5.6 功耗分析专题：CPU 频率、Suspend/Resume 与 Wakelock
 
 > 本节为扩展内容，视素材丰富程度选择性深入。
@@ -743,15 +730,13 @@ data_sources {
 }
 ```
 
-[已验证: 来源见 perfetto.dev/docs/data-sources/ftrace 及 Android Power documentation]
-
 ## 13.5.7 多进程协同分析：System Server + App 联合分析
 
 > 本节为扩展内容，视素材丰富程度选择性深入。
 
 ### 为什么需要多进程协同分析
 
-Android 的很多操作都跨进程。App 发起请求，`system_server` 处理，`surfaceflinger` 合成，再到屏幕。只盯一个进程，很难知道延迟卡在 App、系统服务，还是合成阶段。Perfetto 的优势，是能把这几段工作放在同一时间轴里一起看。
+Android 的很多操作都跨进程。App 发起请求，`system_server` 处理，`surfaceflinger` 合成，再到屏幕。只盯一个进程，很难知道延迟卡在 App、系统服务，还是合成阶段。Perfetto 的优势，是能把这几段工作放到同一时间轴里一起看。
 
 ### Pin 功能的实战应用
 

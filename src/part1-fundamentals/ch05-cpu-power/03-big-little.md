@@ -48,10 +48,11 @@ task6_review_notes: "2026-05-18 Task6：修正口语化迁移描述和结构性�
 last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
 task9_review_notes: "2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-18 task9 deep-review: P0 1 / P1 0 / P2 1；android16-6.12 sugov_get_util() 代码块与实际源码不一致，需 Task2B 修正；骁龙 8 Elite capacity 数值需补一手锚点。；2026-06-05 task9 deep-review: pass-tech-review。P0/P1 0；schedutil android16-6.12 源码与正文一致；GPU+NPU 扩展占位作为 P2 建议记录。"
 last_task6_audit: "2026-06-05"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-05
 ---
 
 # 大小核架构
-
 
 ## 为什么要了解大小核架构
 
@@ -59,9 +60,7 @@ Perfetto 的 CPU 视图会列出 8 个（或更多）CPU 核心，编号从 0 �
 
 现代手机 SoC 普遍采用大小核（big.LITTLE）异构多核架构，不同类型的核心在性能和功耗之间存在巨大的设计权衡。理解这种架构，是读懂 CPU Scheduling 轨道、判断调度器行为是否合理的基础。一个计算密集型任务如果长时间运行在小核上，它的耗时可能比在大核上慢 2-3 倍；反过来，一个后台同步任务如果被错误地调度到大核上，会白白浪费电量。
 
-这一节的任务是讲清大小核架构的设计方式、核心迁移的触发机制，以及 cpufreq governor（尤其是 schedutil）如何根据负载动态调频。读懂这些，后面分析 CPU Scheduling 轨道时才知道线程为什么跑在某个核心上。
-
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
+这一节讲大小核架构的设计方式、核心迁移的触发机制，以及 cpufreq governor（尤其是 schedutil）如何根据负载动态调频。读懂这些，后面分析 CPU Scheduling 轨道时才知道线程为什么跑在某个核心上。
 
 ## ARM big.LITTLE 与 DynamIQ 架构原理
 
@@ -77,13 +76,11 @@ ARM 在 2011 年提出的 big.LITTLE 架构就是为了解决这个矛盾：在�
 
 这种架构下有三种软件调度模型：
 
-1. **集群迁移（Cluster Migration）**：同一时刻只有一个集群在线。负载低时用小核集群，负载高时整个系统切换到大核集群。切换过程需要把缓存数据从 L2 搬到另一个集群的 L2，会产生一次"不可忽略"的中断。如果系统里只有一个高负载任务，但其他核心都在空闲，也会被迫把整个集群切到大核，浪费功耗。
+1. **集群迁移（Cluster Migration）**：同一时刻只有一个集群在线。负载低时用小核集群，负载高时整个系统切换到大核集群。切换过程需要把缓存数据从 L2 搬到另一个集群的 L2，会需要一次明显的中断。如果系统里只有一个高负载任务，但其他核心都在空闲，也会被迫把整个集群切到大核，浪费功耗。
 
 2. **CPU 迁移（In-Kernel Switcher, IKS）**：每个大核和一个小核组成虚拟对，调度器在配对的核心之间迁移任务。迁移延迟大约 30 微秒，比 DVFS 变频还快，用户基本感知不到。但限制是大核和小核数量必须 1:1 配对，且同一时刻只有一半核心在线。
 
 3. **全局任务调度（Global Task Scheduling / HMP）**：调度器同时感知所有大核和小核，可以独立地把单个任务分配到任意核心上。所有核心可以同时在线，也支持不对称配置（比如 4 小核 + 2 大核）。这是 big.LITTLE 最成熟的软件模型，也是 Android 设备实际采用的方案。
-
-[已验证: ARM 官方文档, developer.arm.com/documentation]
 
 ### DynamIQ：从双集群到统一集群
 
@@ -98,8 +95,6 @@ DynamIQ 带来了几个关键优势：
 - **更低迁移延迟**：由于大核和小核共享 L3 缓存，任务在核心间迁移时不再需要通过 CCI 互联搬运缓存行，迁移延迟从"跨集群级别"降低到"集群内级别"。
 - **更大的 L3 缓存**：DSU-120（配合 Armv9 世代的核心）支持最高 32MB L3 缓存，显著减少了核心访问主存的次数，对内存密集型任务的性能提升尤为明显。
 - **16KB 页与互联层的潜在收益**：理论上，更大的页粒度可能降低 DSU 内部 snoop filter 的探测频率——每个页表条目覆盖更大的物理地址范围，跨核缓存一致性事务的粒度也随之放大。但这一机制取决于 SoC 厂商对 DSU-120 的具体实装方式，公开 ARM TRM 目前未明确记载"16KB 页模式"作为 DSU 的可配置选项。16KB 页在 CPU 侧的确定性收益主要来自 TLB Reach 提升（§4.7 有展开），互联层的收益可作为性能分析的观察方向，但不应作为已验证事实引用。
-
-[待验证: ARM DSU-120 TRM 中与页粒度相关的寄存器配置；如有确切证据再补实]
 
 ### 在 Perfetto 中识别核心类型
 
@@ -129,9 +124,6 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 ```
 
 通过最大频率，可以把核心分组。比如一个 8 核处理器中，`cpuinfo_max_freq` 为 1804800 的 4 个核心是小核，2419200 的 3 个核心是大核，2841600 的 1 个核心是超大核。
-
-[来源: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ## 典型 SoC 核心配置
 
@@ -163,9 +155,6 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 
 联发科天玑 9400 也被称为"All Big Core"设计——它的"最小"核心是 Cortex-A720，这在几年前已经算是大核级别了。这说明 ARM 的核心设计也在不断提升：每一代小核的性能都在逼近上一代大核的水平。
 
-[已验证: ARM 官方文档, MediaTek 官方发布, Qualcomm Snapdragon 8 Elite 技术规格]
-[适用版本: Android 13 - Android 16]
-
 ### 配置趋势对性能分析的影响
 
 核心配置的多样化意味着性能分析时不能简单地套用一个通用的"大核 = CPU 7"规则。分析时需要注意：
@@ -173,8 +162,6 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 1. **确认目标设备的核心布局**。不同设备的核心编号、频率、capacity 值都不同。在 Perfetto 中可以通过 CPU Frequency 轨道和 CPU Scheduling 轨道来推断。
 2. **关注线程在核心间的迁移模式**。一个线程如果频繁在小核和大核之间反复迁移，可能意味着调度器的 upmigrate/downmigrate 阈值设置不合理，或者线程本身的负载波动很大。
 3. **理解不同 SoC 厂商的客制化策略差异很大**。OEM 厂商通常会对调度器做大量定制（比如 OPPO 的蜂鸟引擎、小米的 MIUI 调度策略），导致同样的负载在不同手机上的调度行为完全不同。
-
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ## 核心迁移的触发条件与性能影响
 
@@ -202,8 +189,6 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 
 **3. RTG（Related Thread Group）驱动的集群偏好**
 
-[来源: Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md]
-
 部分 Android 厂商内核（以 Qualcomm vendor 分支为代表）中有一个客制化机制叫 **RTG（Related Thread Group）**。它的核心思想是：把一组有关联的线程（比如同一个 App 的主线程、RenderThread、Binder 线程）放在同一个 CPU 集群上，以利用集群内的共享缓存，减少缓存未命中。
 
 RTG 维护了一个 `preferred_cluster`（偏好集群）字段，根据组内所有线程的累计负载来决定应该优先使用哪个集群。当组内某个线程被设置了 `SCHED_BOOST_ON_BIG` 属性时，整个组都会被"boost"到大核集群上。
@@ -211,8 +196,6 @@ RTG 维护了一个 `preferred_cluster`（偏好集群）字段，根据组内�
 RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 组内的高负载线程被调度到大核上时，schedutil governor 在计算大核的频率时，会把 RTG 组的累计负载也纳入考虑，而不仅仅是当前核心上的单个任务负载。大核频率会被适当拉高，以更好地服务整组线程。
 
 > **注意：** RTG 并非 AOSP/GKI 主线机制，在 android16-6.12 common kernel 的 `kernel/sched/` 中未找到对应符号。它主要存在于 Qualcomm 等厂商的 vendor kernel 分支中。GKI 主线上实现类似效果的机制包括 task_profiles、cpuset、uclamp 和 Power HAL 提示链（§5.2、§5.4）。
-
-[来源: Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — 可能基于 vendor kernel 分析]
 
 ### 迁移的性能影响
 
@@ -225,8 +208,6 @@ RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 
 **DVFS 延迟**
 
 同一集群内的核心通常共享电压/频率域。当任务从小核迁移到大核时，大核可能处于低频状态，需要 DVFS 把频率提上来。DVFS 的响应时间通常在几百微秒到几毫秒之间，取决于硬件和驱动实现。任务迁移到大核后，需要一小段时间才能达到全速运行。这也是为什么 Android 厂商在应用启动等场景会通过 Power HAL 预先把大核频率拉高——减少迁移后的"爬坡时间"。
-
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ### 在 Perfetto 中观察核心迁移
 
@@ -245,8 +226,6 @@ WHERE t.tid = <target_tid>
 GROUP BY s.cpu
 ORDER BY s.cpu;
 ```
-
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ## cpufreq governor：schedutil 的工作原理
 
@@ -309,8 +288,6 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
 
 android16-6.12 与 Linux v6.6 mainline 的关键差异：mainline 的 `sugov_get_util` 接受单个 `struct sugov_cpu *` 参数，内部用 `FREQUENCY_UTIL` / `ENERGY_UTIL` 枚举区分调频与选核；android16-6.12 增加了 `unsigned long boost` 参数，显式拆分 util 汇总和 perf 映射两步，并前置了 `scx_cpuperf_target()` 对 sched_ext 的支持。RT/DL 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：`bw_min > 0` 时频率下限被锁定到带宽约束对应的最低频率，如果带宽需求接近 CPU 满载，最终频率自然会接近最高值。
 
-[已验证: android16-6.12 kernel/sched/cpufreq_schedutil.c; Linux v6.6 mainline 同文件对比]
-
 ### schedutil 与 EAS 的配合
 
 在上一节 [5.2 EAS 能量感知调度] 中我们讲到，EAS 负责决定任务放在哪个核心上。schedutil 负责决定核心跑多快。两者通过 PELT 共享的利用率数据来协调：
@@ -339,9 +316,6 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 3. **省电模式**：低电量或手动开启省电模式时，系统同样会压低天花板频。
 
 在 Perfetto 中，CPU Frequency 轨道上能直接看到频率的上下限变化。如果频率被压在某个较低值不变，且不受负载变化影响，大概率是温控或省电模式在起作用。
-
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
-[已验证: 官方文档, perfetto.dev/docs/data-sources/cpu-scheduling]
 
 ## 不同核心对单线程性能和多线程吞吐量的差异
 
@@ -382,9 +356,6 @@ schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedu
 
 这也解释了为什么在持续重负载场景（如长时间游戏），即使有 8 个核心，我们可能也只能看到 3-4 个核心在高频运行，其余核心被降频甚至离线。
 
-[已验证: ARM 官方文档 — Cortex-X925 技术规格, developer.arm.com]
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
-
 ## 在 Perfetto/工具中的表现
 
 ### 识别核心类型
@@ -417,9 +388,6 @@ ORDER BY s.cpu;
 - 主线程长时间运行在小核上（CPU 0-3），导致启动慢、卡顿多。可能的原因：调度器 upmigrate 阈值过高，或者 RTG 没有正确地将关键线程聚合到大核。
 - 线程在大核和小核之间频繁来回迁移（乒乓效应），导致缓存命中率低。在 Perfetto 中会看到同一时段内，线程的 Running 切片分布在不同 CPU 上。
 - 大核频率被限制在较低水平（温控或省电模式），即使有高负载任务也无法提速。在 CPU Frequency 轨道上会看到频率上限被压低。
-
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
-[来源: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
 
 ## 与其他机制的关系
 
@@ -456,9 +424,6 @@ ORDER BY s.cpu;
 
 绑核能解决"关键线程被调度到小核"的问题，但也有代价：一旦绑定了某个核心，即使那个核心被温控降频，线程也无法迁移到其他核心上。在实际优化中，绑核通常是"兜底手段"，更稳的做法是调整 RTG 策略或调度器 upmigrate 阈值，让调度器自己做出正确的选核决策。绑核适合用于经过充分验证的固定场景（比如已知 RenderThread 的负载特征稳定），但不适合负载波动大的场景。
 
-[来源: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
-[来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
-
 ## 版本演进
 
 | 时期 | 架构/技术 | 特点 |
@@ -469,8 +434,6 @@ ORDER BY s.cpu;
 | 2019-2021 | Cortex-X 系列引入 | 超大核概念，1+3+4 配置成为主流 |
 | 2022-2024 | 三层核心普及 | A710/A715/A720 + A510/A520 + X2/X3/X4，三层核心成为旗舰标配 |
 | 2024-2025 | "全大核"趋势 | 天玑 9400（全 Cortex-A 系核心），骁龙 8 Elite（2+6 Oryon 核心），小核逐步退出旗舰 |
-
-[已验证: ARM 官方发布时间线, MediaTek/Qualcomm 官方技术文档]
 
 ## 扩展：Cortex-X 系列超大核的定位与功耗特性
 
@@ -483,8 +446,6 @@ Cortex-X 系列的核心特点：
 - **通常只配置 1 个**：由于芯片面积和功耗预算的限制，旗舰 SoC 通常只配置 1 个 Cortex-X 核心，专门用于应用启动、页面加载等突发单线程场景。
 
 从性能分析角度看，超大核的存在意味着"CPU 7 上的线程不一定比 CPU 4-6 上的线程快多少"这个判断不再成立——如果设备有 Cortex-X 超大核，CPU 7 上的单核性能可能比其他大核高 20-30%。在分析启动性能时，确认主线程是否被调度到了超大核上是一个重要的检查点。
-
-[已验证: ARM 官方文档 — Cortex-X925, developer.arm.com/products/silicon-ip-cpu/cortex-x925]
 
 ## 扩展：GPU + NPU 的协同调度概念
 

@@ -432,6 +432,61 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-05T22:28:48",
       "status": "pending"
+    },
+    {
+      "section": "14.27",
+      "section_title": "Macrobenchmark 框架与自动化性能门禁",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-05T23:10:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.26",
+      "section_title": "android.os.Trace API 深度解析与应用级自定义追踪",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-05T23:10:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "21.17",
+      "section_title": "Startup Insights API 与启动性能可观测性",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-05T23:10:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.9",
+      "section_title": "SoC 特异性功耗优化策略：高通/联发科/三星",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-05T23:10:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "22.30",
+      "section_title": "Impeller Shader 编译性能与 Flutter 渲染稳定性",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-05T23:10:00+08:00",
+      "status": "pending"
     }
   ],
   "items": [

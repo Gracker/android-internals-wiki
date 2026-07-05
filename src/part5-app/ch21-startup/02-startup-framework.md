@@ -818,3 +818,90 @@ App Startup 在 `AppInitializer.doInitialize` 已经对每个 Initializer `Trace
 - App Startup 的 Initializer 必须按进程分支或被 `tools:node="remove"` 关闭，否则多进程放大效应会把首屏拉长。
 - Alpha 的 `MAIN_PROCESS_MODE / SECONDARY_PROCESS_MODE` 让每个进程只加载该进程的 DAG，是大应用多进程的更优解。
 - 跨进程数据同步走 Binder/ContentProvider，不走 `SharedPreferences.MODE_MULTI_PROCESS`（§21.7 已述 API 23 deprecated）。
+
+
+<!-- AIW-源码调研-2026-07-05 -->
+## Android 17 Startup Insights（ApplicationStartInfo）源码级补充
+
+> 本节为 2026-07-05 源码调研反哺。版本基线 `android-17.0.0_r1`（API 37）。对应报告：`DeepResearch/2026-07-05-android17-startup-insights-application-start-info.md`。
+
+### §21.2.5 Startup Insights 与启动框架的协同
+
+Android 17（API 37）引入的 **Startup Insights** 机制是 §21.2 启动框架在「观测层」的天然搭档。`android.app.ApplicationStartInfo` 通过系统侧持久化每个进程最近 14 天的启动快照（`APP_START_INFO_HISTORY_LENGTH_MS = TimeUnit.DAYS.toMillis(14)`），提供 Pull（`ActivityManager.getHistoricalProcessStartReasons(maxNum)`）与 Push（`addApplicationStartInfoCompletionListener(executor, listener)`）两种消费模式，**与 §21.4 启动监控使用的 Perfetto trace 形成"瞬时 trace"与"持久化 telemetry"的互补视角**。
+
+**源码位置**：
+- `frameworks/base/core/java/android/app/ApplicationStartInfo.java`（行 81-218 定义 13 种 `START_REASON_*`、4 种 `START_TYPE_*`、8 种 `START_TIMESTAMP_*`、5 种 `LAUNCH_MODE_*`、4 种 `START_COMPONENT_*`）
+- `frameworks/base/core/java/android/app/ActivityManager.java:4580-4720`（客户端 API）
+- `frameworks/base/services/core/java/com/android/server/am/AppStartInfoTracker.java`（服务端核心）
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java:10866-10950`（AMS 集成）
+
+### §21.2.5.1 关键状态机（AppStartInfoTracker.mInProgressRecords）
+
+```
+ActivityMetricsLaunchObserver.onActivityIntentStarted()
+   └─ new ApplicationStartInfo(monotonicTimeMs) + START_TIMESTAMP_LAUNCH
+       └─ 放入 mInProgressRecords（ArrayMap<Long, ApplicationStartInfo>，max 5 条）
+            └─ 超过 5 条按 timestampNanos 升序淘汰最旧
+   onActivityLaunched()
+   └─ setStartType(COLD/WARM/HOT) + addBaseFieldsFromProcessRecord
+       └─ addStartInfoLocked() → mData[包名][UID] → AppStartInfoContainer 环形缓冲
+   onActivityReportFullyDrawn()
+   └─ addStartupTimestamp(START_TIMESTAMP_FULLY_DRAWN)
+       └─ mInProgressRecords.removeAt()
+   首帧绘制完
+   └─ checkCompletenessAndCallback() → 触发 Push 模式一次性回调
+```
+
+### §21.2.5.2 与现有启动框架的差异化集成点
+
+| 维度 | App Startup / Alpha（§21.2 主体） | Startup Insights（本节） |
+|---|---|---|
+| 触发时机 | 进程内执行任务时 | `ActivityMetricsLaunchObserver` 在系统侧捕获 |
+| 数据可见性 | 进程内内存，进程死即失 | 系统侧持久化 14 天，跨重启可查 |
+| 观测对象 | 任务 DAG 内部粒度 | 整进程粒度（包含 fork、bindApplication、onCreate、首帧、fully drawn） |
+| 消费方式 | 业务代码直接读 `Task.start()` | Pull: `getHistoricalProcessStartReasons(maxNum)`；Push: `addApplicationStartInfoCompletionListener` |
+| 与 Perfetto 关系 | Alpha 自维护 `ExecuteMonitor`，App Startup 走 `Trace.beginSection` | 与 Perfetto trace 共用 `elapsedRealtimeNanos()` 时钟域，但走独立序列化通道 |
+
+### §21.2.5.3 Android 17 任务编排增强：`START_COMPONENT_*`
+
+Android 17 在 `ApplicationStartInfo` 新增 `START_COMPONENT_*` 字段（`ACTIVITY=1 / BROADCAST=2 / CONTENT_PROVIDER=3 / SERVICE=4 / OTHER=5`），由 `@FlaggedApi(Flags.FLAG_APP_START_INFO_COMPONENT)` 守门。**对启动框架的实战意义**：
+
+```java
+// 业务可在 onApplicationStartInfoComplete 回调里实现"按组件类型选择性初始化"
+public void onApplicationStartInfoComplete(ApplicationStartInfo info) {
+    switch (info.getStartComponent()) {
+        case ApplicationStartInfo.START_COMPONENT_BROADCAST:
+            // 广播触发的拉起：跳过 UI 初始化，仅做数据预热
+            initDataLayerOnly();
+            break;
+        case ApplicationStartInfo.START_COMPONENT_ACTIVITY:
+            // Activity 触发的全量启动：走完整 DAG
+            appInitializer.discoverAndInitialize();
+            break;
+        case ApplicationStartInfo.START_COMPONENT_CONTENT_PROVIDER:
+            // ContentProvider 触发的子进程：与 §21.3 ContentProvider 优化联动
+            initProviderCriticalPath();
+            break;
+    }
+}
+```
+
+**与 §21.3 ContentProvider 优化的闭环**：
+- §21.3 用 `tools:node="remove"` 关闭 Initializer，**事前**减少不必要任务
+- §21.2.5 Startup Insights 提供 `START_COMPONENT_CONTENT_PROVIDER` 标识，**事后**让 App 知道"本次拉起是 ContentProvider 触发，下次启动是否需要主动初始化 UI 模块"
+
+### §21.2.5.4 数据时效与持久化边界
+
+`AppStartInfoTracker` 的设计上有两条重要的"硬性边界"，工程上必须了解：
+
+1. **14 天保留窗口**（`APP_START_INFO_HISTORY_LENGTH_MS`）：超过 14 天的记录在 `removeOlderThan` 路径被裁掉，**任何启动框架的"基于历史优化"策略应限制在最近 14 天数据内**。
+2. **30 分钟持久化周期**（`APP_START_INFO_PERSIST_INTERVAL`）：所有 in-memory 修改不会立刻落盘，**最坏情况下丢失 30 分钟内的新增记录**。但 `addStartInfoLocked` 末尾会调用 `schedulePersistProcessStartInfo(false)`，意味着正常情况下 30 分钟内一定持久化一次。
+3. **首次启动丢失风险**：`addStartInfoLocked` 头部检查 `mAppStartInfoLoaded.get()`，系统启动初几秒钟如果应用启动，记录会被丢弃并打 `Slog.w(TAG, "Skipping saving the start info due to ongoing loading from storage")`。
+4. **跨重启时钟**：`MonotonicClock` 持久化 offset（行 120 注释），跨重启时钟稳定；不依赖 system uptime。
+
+### §21.2.5.5 与 §5（CPU/电源）和 §21.1（启动分析）的联动
+
+`AppStartInfoTracker` 写入的 `START_TIMESTAMP_*` 字段是 §21.1 Perfetto trace 时间线的**同构子集**——应用可以：
+- 从 `ApplicationStartInfo.getStartupTimestamps()` 拿到与 Perfetto 一致的 `elapsedRealtimeNanos()` 时间戳
+- 通过 `pid` + `startupTimestampsNs[START_TIMESTAMP_BIND_APPLICATION]` 与 Perfetto 中对应 pid 的 `bindApplication` slice 做交叉校验
+- 与 §5 cpuidle/schedutil 的 IRT (interrupt response time) 关联——如果 `START_TIMESTAMP_FORK` 到 `START_TIMESTAMP_BIND_APPLICATION` 间隔异常长，可怀疑是 §15 调度或 §5 大核冷启动延迟
