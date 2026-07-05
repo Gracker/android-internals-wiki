@@ -1,9 +1,10 @@
 ---
+
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, APA 要求 Android 12+, Sokatoa 要求 Android 13+)"
 tags: ["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]
 confidence: "medium"
@@ -18,20 +19,20 @@ related_chapters: ["2.10", "2.14", "13.3", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
-last_task2b_at: "2026-07-05T18:53:25+08:00"
+last_task2b_at: "2026-07-05T20:51:52.136438+08:00"
 last_task2b_by: "openclaw-task2b"
 task2b_result: "fixed"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "needs-rework"
 task9_reviewed_date: 2026-07-05
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-07-05T18:29:27+08:00
+last_task9_at: 2026-07-05T20:20:00+08:00
 last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
-last_task9_audit: 2026-07-05T18:29:27+08:00
+last_task9_audit: 2026-07-05T20:20:00+08:00
 queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
 last_task6_at: "2026-07-05T19:14:56+08:00"
 task6_reviewed_at: "2026-07-05T19:14:56+08:00"
@@ -40,8 +41,8 @@ finalized_date: ""
 finalized_by: ""
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-12"
-last_task9_audit_log: "logs/deep-review/2026-06-12-16-audit.md"
-task9_review_summary: "pass-tech-review; queue 无 pending; 自动晋升 finalized。"
+last_task9_audit_log: "logs/deep-review/2026-07-05-20-deep-review.md"
+task9_review_summary: "发现 P0 源码命令错误、P1 版本差异覆盖不完整、P2 数据缺失等问题，已写入 queue.json 和 suggestions.md"
 last_task2b_lite_at: "2026-07-05"
 ---
 
@@ -79,7 +80,6 @@ last_task2b_lite_at: "2026-07-05"
 
 Perfetto 能告诉我们"GPU 在忙",但它看不到 GPU 内部发生了什么。GPU 是不是在等显存带宽?Shader 太复杂了导致 ALU 打满?还是 Draw Call 数量太多,驱动开销成了瓶颈?这些问题的答案,CPU profiling 工具给不了。
 
-
 这就是 GPU 专用分析工具存在的意义。它们能深入 GPU 内部,告诉我们每一帧的 GPU 时间花在了哪里:哪个 Draw Call 最耗时,哪个 Shader 吃掉了最多的 ALU 周期,显存带宽是不是被 Overdraw 吃光了。
 
 GPU 分析工具和 CPU 分析工具不是替代关系,是互补关系。先用 Perfetto 定位"问题在 GPU",再用 GPU 工具找到"GPU 的哪个环节慢"。两者配合,才能完成一次完整的渲染性能分析。
@@ -89,7 +89,6 @@ GPU 分析工具和 CPU 分析工具不是替代关系,是互补关系。先用 
 ## GPU 分析工具全景
 
 Android 平台上的 GPU 分析工具大致分三层,对应的定位也不同:
-
 
 **系统级追踪工具**:不分析单帧的 Draw Call 细节,而是看 GPU 在时间轴上的整体行为。适合回答"GPU 是不是瓶颈""GPU 利用率如何""显存带宽够不够"这类问题。
 
@@ -118,7 +117,6 @@ Android 平台上的 GPU 分析工具大致分三层,对应的定位也不同:
 3. **偶发性 GPU 卡顿(间歇性掉帧)?** → Sokatoa 多帧分析
 4. **Mali GPU 深度分析?** → ARM Streamline
 5. **游戏实时性能监控?** → PerfDog
-
 
 
 ## Android GPU Inspector (AGI)
@@ -150,7 +148,6 @@ AGI 支持的 GPU 计数器因 GPU 厂商而异:
 - **Qualcomm Adreno**:ALU 利用率、纹理读取带宽、L2 cache 命中率
 - **ARM Mali**:Fragment 线程活跃数、Vertex 线程活跃数、内存带宽
 - **PowerVR**:Tiler 利用率、Renderer 利用率、Shader 处理量
-
 
 ### Frame Profiler 的使用
 
@@ -194,7 +191,6 @@ Frame Profiler 的核心视图:
 
 ### AGI 的近期演进与 APA 的出现
 
-
 AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。System Profiler 负责长时间 trace、GPU counter 和进程级 GPU 时间;Frame Profiler 负责单帧命令、shader 和 render target 的深入查看。
 
 2026 年 5 月,Google 发布了 **Android Performance Analyzer (APA)**,这是一个基于 Perfetto 的新一代 system profiling 工具,覆盖 CPU、GPU、Memory 和 power 分析。APA System Profiler 已经 open beta,官方在 AGI 文档中建议开发者向 APA 迁移。
@@ -208,7 +204,6 @@ AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。Syst
 
 ### AGI 对 GLES 应用的分析路径
 
-
 Android 15 开始,ANGLE 已经有了更明确的系统开关和每应用切换入口。到 Android 16 的新设备,ANGLE 覆盖范围继续扩大;Android 17 的新设备再转到 denylist 策略,默认大多数应用经由 ANGLE,兼容性例外回退到原生 GLES 驱动。AGI 的帧分析沿着这条迁移线工作:它会用自定义 ANGLE 构建把 GLES 命令翻译为 Vulkan 再做追踪。
 
 排查时先确认设备当前走的是哪条 driver 路径,再决定怎么解读 Draw Call 和 Shader 时间。开发阶段常用的固定方法有两类:用前面的 `settings put global angle_gl_driver_selection_*`,或在带 gpu shell 封装的系统镜像上用 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时,改从 Settings / Graphics Driver Preferences 进入。
@@ -217,7 +212,7 @@ Android 15 开始,ANGLE 已经有了更明确的系统开关和每应用切换�
 
 ```bash
 # 1. 确认系统是否已启用 denylist 模式
-adb shell settings get global angle_gl_driver_all_angle
+adb shell settings get global angle_gl_driver_enabled
 # Android 17 新设备默认返回 1(denylist 已生效);旧设备升级可能返回 null
 
 # 2. 确认当前 app 是否在 denylist 中(被排除使用 ANGLE)
@@ -230,7 +225,7 @@ adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
 adb shell settings put global angle_gl_driver_selection_values native
 ```
 
-**allowlist 与 denylist 的语义反转**。Android 15-16 新设备的 ANGLE 机制是 allowlist(允许列表):`angle_gl_driver_selection_pkgs` 中列出的应用走 ANGLE,其余走原生 GLES。Android 17 新设备反转为 denylist(拒绝列表):列表中的应用反而被排除在 ANGLE 之外、走原生 GLES,不在列表中的应用默认通过 ANGLE 运行。同一条 `settings put` 指令在两种模式下语义相反——allowlist 设备上是"把我加进去走 ANGLE",denylist 设备上是"把我排除掉走原生 GLES"。排查前必须先用 `angle_gl_driver_all_angle` 确认模式,否则可能误判 driver 路径。
+**allowlist 与 denylist 的语义反转**。Android 15-16 新设备的 ANGLE 机制是 allowlist(允许列表):`angle_gl_driver_selection_pkgs` 中列出的应用走 ANGLE,其余走原生 GLES。Android 17 新设备反转为 denylist(拒绝列表):列表中的应用反而被排除在 ANGLE 之外、走原生 GLES,不在列表中的应用默认通过 ANGLE 运行。同一条 `settings put` 指令在两种模式下语义相反——allowlist 设备上是"把我加进去走 ANGLE",denylist 设备上是"把我排除掉走原生 GLES"。排查前必须先用 `angle_gl_driver_enabled` 确认模式,否则可能误判 driver 路径。
 
 ## Perfetto 中的 GPU 分析能力
 
@@ -252,7 +247,6 @@ data_sources {
 }
 ```
 
-
 `gpu_counter_config` 的字段定义在 AOSP `android-17.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时,先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出来,再回填这些 ID;不同 GPU 的编号和含义都不通用。
 
 ### 关键 GPU 指标
@@ -273,7 +267,6 @@ Perfetto 中还有 `gpu.renderstages` 数据源,可以显示 Vulkan 或 GLES 提
 
 - CPU 提交很快完成,GPU 执行时间长 → GPU bound
 - CPU 提交耗时长(比如在等 dequeueBuffer),GPU 执行很快 → CPU/buffer bound
-
 
 ### Perfetto GPU 分析的局限
 
@@ -319,7 +312,6 @@ RenderDoc 最初是调试工具,不是性能分析工具。但它的一些功能
 2. **Overdraw 可视化**:RenderDoc 可以用热力图显示屏幕上每个像素被绘制了几次。红色区域(Overdraw > 4 次)通常是性能热点
 3. **资源统计**:统计一帧使用的纹理总内存、Buffer 总量、Draw Call 数量等
 
-
 ### 与 AGI 的对比
 
 RenderDoc 和 AGI 的 Frame Profiler 功能有重叠但定位不同:
@@ -336,11 +328,9 @@ RenderDoc 有几个重要的厂商 fork:
 - **Samsung 贡献**:Samsung 向主线贡献了大量 Android Vulkan/GLES 支持代码
 - **Meta Fork**:针对 Quest XR 设备的 fork,支持 Snapdragon 835/XR2/XR2+ 的底层 GPU 数据
 
-
 ## Sokatoa:多帧 GPU 分析的新范式
 
 2026 年 3 月,Samsung 发布了 Sokatoa,这是一个面向 Android 的多帧 GPU 性能分析器,基于 LunarG GFXReconstruct 引擎构建,计划 2026 年底开源。它的核心创新是多帧分析能力,和 AGI / RenderDoc 的单帧分析正好互补。
-
 
 ### 为什么需要多帧分析
 
@@ -405,7 +395,6 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 - GPU 计数器中,ALU 利用率 > 80% 说明 Shader 复杂度是瓶颈
 - 解决方向:简化 Shader 逻辑、减少纹理采样次数、使用 LOD(Level of Detail)让远处的物体用更简单的 Shader
 
-
 ## 实战案例
 
 ### 案例 1:UI 渲染中的 GPU 带宽瓶颈
@@ -427,7 +416,6 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 
 **结果**:Overdraw 从 4x 降到 1.5x,GPU 带宽使用量降低 60%,滑动帧率恢复到 115fps。
 
-
 ### 案例 2:Shader 编译导致的间歇性卡顿
 
 **现象**:3D 游戏在运行过程中,每隔 30-60 秒出现一次 2-3 帧的掉帧。Perfetto 中显示掉帧期间 GPU 时间从正常的 8ms 飙升到 40ms。
@@ -446,7 +434,6 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 
 **结果**:间歇性卡顿消失,帧时间方差从 3.2ms 降到 0.8ms。
 
-
 ### 案例 3:Perfetto GPU counter 定位功耗热点
 
 **现象**:一款导航 App 在导航模式下功耗异常高,GPU 占总功耗的 45%。
@@ -464,7 +451,6 @@ Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不
 - 在不需要频繁更新的场景使用 Choreographer.postFrameCallback 的节流机制
 
 **结果**:GPU 平均频率从 800MHz 降到 400MHz,GPU 功耗降低约 40%。
-
 
 ## 与其他章节的关系
 
@@ -507,7 +493,6 @@ ARM Streamline 集成在 ARM Development Studio 中,可以同时分析 CPU、GPU
 
 Streamline 的独特价值在于 CPU-GPU 联合分析。它可以在同一个时间轴上显示 CPU 调度、GPU 执行和内存访问模式,帮助定位 CPU 和 GPU 之间的数据依赖问题。
 
-
 ### Qualcomm Adreno:Snapdragon Profiler
 
 Snapdragon Profiler 是高通的 GPU 分析工具,专为 Adreno GPU 设计。Snapdragon Profiler 仍在活跃维护,它和 AGI 的定位是互补的。AGI 擅长通用的 GPU 性能分析(跨 GPU 厂商),Snapdragon Profiler 擅长 Adreno 微架构级别的深度分析--比如 Adreno 专属的性能计数器、实时 GPU 频率/电压监控、Shader 编译器优化建议。在 Adreno 设备上做 GPU 深度优化时,两个工具配合使用效果最好。
@@ -540,7 +525,6 @@ MediaTek 没有独立的 GPU 分析工具,但 AGI 对 Mali GPU(MediaTek SoC 通�
 | Adreno 深度分析 | Snapdragon Profiler + AGI | - |
 | Mali 深度分析 | ARM Streamline + AGI | - |
 
-
 ## GPU 分析的注意事项
 
 ### GPU Profiling 的性能开销
@@ -553,7 +537,6 @@ MediaTek 没有独立的 GPU 分析工具,但 AGI 对 Mali GPU(MediaTek SoC 通�
 - GPU counter 采样频率拉得很高时,System Profiler 也会引入可观测扰动;某些 Mali 驱动上会看到额外的 CPU 中断或 kworker 活动。长时间录制先用默认采样率,只在短窗口提高采样频率
 
 ### profileable vs debuggable
-
 
 - **debuggable**:AGI 帧捕获、RenderDoc 都需要。但 debuggable 应用会有性能损失(JIT 不做某些优化、运行时检查更多)
 - **`<profileable>`**:从 Android 10 (API 29) 引入。Perfetto 可以采集(包括 GPU counter),但 AGI 帧捕获不可用。Android 14 增强了 GPU counter 采集能力。性能损失比 debuggable 小得多
@@ -569,7 +552,6 @@ MediaTek 没有独立的 GPU 分析工具,但 AGI 对 Mali GPU(MediaTek SoC 通�
 ### 不同设备的 GPU 计数器差异
 
 同一个"GPU Utilization"计数器,在 Adreno 和 Mali 上的含义不完全一样。Adreno 的 Utilization 可能只计算 ALU 活跃时间,而 Mali 的 Utilization 可能包含等待内存的时间。跨设备对比 GPU 计数器数据时,需要查阅对应 GPU 厂商的计数器文档。
-
 
 ## 版本演进
 
@@ -603,7 +585,7 @@ Android 15 开始,ANGLE 已经从"可选实验路径"走到"系统内可显式�
 
 ```bash
 # 确认 denylist 模式是否已生效
-adb shell settings get global angle_gl_driver_all_angle
+adb shell settings get global angle_gl_driver_enabled
 # 返回 1 → denylist 模式;返回 null → 非 denylist(旧设备或旧版本)
 
 # 查看当前 denylist 中的包名(即被排除不走 ANGLE 的 app)
@@ -618,15 +600,15 @@ adb shell settings put global angle_gl_driver_selection_values native
 
 **开发者迁移指引**:
 
-- **确认版本前提**:`adb shell getprop ro.build.version.sdk` 确认设备 API Level(≥37 为 Android 17);旧设备升级到 Android 17 不受 denylist 强制约束,`angle_gl_driver_all_angle` 返回 null 时按 allowlist 逻辑处理
-- **帧分析工作流调整**:Android 17 新设备上优先用 `angle_gl_driver_all_angle` 确认模式,再决定 AGI 的抓帧策略;如果 app 不在 denylist 中,AGI 帧分析看到的是 ANGLE 翻译后的 Vulkan 命令
+- **确认版本前提**:`adb shell getprop ro.build.version.sdk` 确认设备 API Level(≥37 为 Android 17);旧设备升级到 Android 17 不受 denylist 强制约束,`angle_gl_driver_enabled` 返回 null 时按 allowlist 逻辑处理
+- **帧分析工作流调整**:Android 17 新设备上优先用 `angle_gl_driver_enabled` 确认模式,再决定 AGI 的抓帧策略;如果 app 不在 denylist 中,AGI 帧分析看到的是 ANGLE 翻译后的 Vulkan 命令
 - **对比测试建议**:同一 GLES app 在 Android 16(allowlist)和 Android 17(denylist)上分别做 GPU 帧分析,确认 ANGLE 翻译是否引入了额外的性能差异
 
 **这对 GPU 帧分析的版本级影响总结**:
 
 - **Android 15**:开发者已经可以在系统设置或 adb 中强制指定应用走 ANGLE,排查时要先确认真实 driver 选择
 - **Android 16 新设备**:ANGLE 覆盖范围继续扩大,很多新机型上的 GLES 工作负载已经更接近 GLES-over-Vulkan;仍为 allowlist 模式
-- **Android 17 新设备**:默认大多数应用走 ANGLE,通过 `angle_gl_driver_all_angle` 启用 denylist;名单上的例外回退到原生 GLES
+- **Android 17 新设备**:默认大多数应用走 ANGLE,通过 `angle_gl_driver_enabled` 启用 denylist;名单上的例外回退到原生 GLES
 - **旧设备升级场景**:系统版本升上去,不等于所有旧设备都立刻切到同一条 ANGLE 策略,结论仍要和设备实测一致
 
 ### APA 发布(2026 年 5 月)
