@@ -652,7 +652,15 @@
       ],
       "type": "task6-revisiting"
     },
-    "2026-07-02-21-review.md"
+    "2026-07-02-21-review.md",
+    {
+      "date": "2026-07-06",
+      "log": "logs/review/2026-07-06-03-review.md",
+      "sections": [
+        "14.8"
+      ],
+      "type": "revisit"
+    }
   ],
   "task2b_verifier": {
     "last_run": "2026-07-02T19:34:00+08:00",
@@ -822,10 +830,11 @@
       "status": "ready-for-review",
       "task2b_result": "fixed",
       "task6_result": "pass-light-edit",
-      "task6_reviewed_at": "2026-07-06T01:20:33.675283+08:00",
+      "task6_reviewed_at": "2026-07-06T03:20:00+08:00",
       "task6_state": "reviewed",
       "task9_state": "pending",
-      "pipeline_stage": "task9_pending"
+      "pipeline_stage": "task9_pending",
+      "last_task6_review": "2026-07-06T03:20:00+08:00"
     }
   },
   "task2a": {

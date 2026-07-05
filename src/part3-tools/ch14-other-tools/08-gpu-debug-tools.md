@@ -22,20 +22,20 @@ last_task2b_at: "2026-07-06T02:50:00+08:00"
 last_task2b_by: "openclaw-task2b-main"
 task2b_result: "fixed"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "needs-rework"
-task9_reviewed_date: "2026-07-05"
+task9_reviewed_date: "2026-07-06"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-05T22:31:37"
 last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
 last_task9_audit: "2026-07-05T20:20:00+08:00"
 queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
-last_task6_at: "2026-07-06T01:19:09+08:00"
+last_task6_at: "2026-07-06T03:20:00+08:00"
 task6_reviewed_date: "2026-07-06"
-task6_reviewed_at: "2026-07-06T01:19:09+08:00"
+task6_reviewed_at: "2026-07-06T03:20:00+08:00"
 task6_reviewed_by: "openclaw-task6"
 finalized_date: "2026-07-05"
 finalized_by: "openclaw-task2b-auto-promote"
@@ -529,7 +529,7 @@ Streamline 的独特价值在于 CPU-GPU 联合分析。它可以在同一个时
 
 ### Qualcomm Adreno:Snapdragon Profiler
 
-Snapdragon Profiler 是高通的 GPU 分析工具,专为 Adreno GPU 设计。Snapdragon Profiler 仍在活跃维护,它和 AGI 的定位是互补的。AGI 擅长通用的 GPU 性能分析(跨 GPU 厂商),Snapdragon Profiler 擅长 Adreno 微架构级别的深度分析--比如 Adreno 专属的性能计数器、实时 GPU 频率/电压监控、Shader 编译器优化建议。在 Adreno 设备上做 GPU 深度优化时,两个工具配合使用效果最好。
+Snapdragon Profiler 是高通的 GPU 分析工具,专为 Adreno GPU 设计。Snapdragon Profiler 仍在活跃维护,它和 AGI 的定位是互补的。AGI 擅长通用的 GPU 性能分析(跨 GPU 厂商),Snapdragon Profiler 擅长 Adreno 微架构级别的深度分析——比如 Adreno 专属的性能计数器、实时 GPU 频率/电压监控、Shader 编译器优化建议。在 Adreno 设备上做 GPU 深度优化时,两个工具配合使用效果最好。
 
 ### MediaTek
 
