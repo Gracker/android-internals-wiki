@@ -432,7 +432,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-05T17:22:36.377490+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T18:53:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "已补全 Android 17 ANGLE denylist 配置命令、allowlist→denylist 策略对比表和开发者迁移指引"
     }
   ],
   "entries": [
