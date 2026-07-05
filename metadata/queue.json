@@ -357,20 +357,40 @@
       "section": "14.8",
       "section_title": "GPU 图形调试与分析工具",
       "priority": 95,
-      "reason": "[Deep Tech Review] ANGLE allowlist/denylist 语义反转解释不完整",
+      "reason": "[Deep Tech Review] Android 17 ANGLE denylist 命令错误",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "原理断裂",
-          "location": "ANGLE allowlist/denylist 语义解释",
-          "detail": "ANGLE 在 Android 15-16 使用 allowlist 模式，Android 17 反转为 denylist 模式，但章节未明确说明这种语义反转会导致配置指令行为完全相反",
-          "suggestion": "添加对比表说明两种模式下的配置语义差异，并提供针对不同版本的确认命令"
+          "type": "源码错误",
+          "location": "Android 17 ANGLE denylist 配置段落",
+          "detail": "章节中的 \`adb shell settings get global angle_gl_driver_all_angle\` 命令在 AOSP android-17.0.0_r1 中实际路径为 \`adb shell settings get global angle_gl_driver_enabled\`，此错误会导致开发者无法正确判断设备的 ANGLE 模式状态",
+          "suggestion": "修正 adb 命令为正确的版本，并补充该命令的返回值含义说明"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-05T22:25:49",
+      "added_at": "2026-07-06T00:21:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Android 12-16 工具演进差异未充分覆盖",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "Android 12-16 工具演进路径",
+          "detail": "章节缺少 APA (Android Performance Analyzer) 在不同 Android 版本 (12-16) 的具体支持范围和功能演进路径，影响开发者在不同版本上的工具选型决策",
+          "suggestion": "补充 APA System Profiler 在 Android 12、13、14、15、16 中的功能差异、支持特性和推荐使用场景"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T00:21:00",
       "status": "pending"
     },
     {
