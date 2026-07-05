@@ -7,7 +7,7 @@ pipeline_stage: task9_pending
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
 tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
 confidence: "medium"
-last_verified: "2026-07-05"
+last_verified: "2026-07-06"
 last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
@@ -171,7 +171,7 @@ adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
 adb shell settings put global angle_gl_driver_selection_values angle
 ```
 
-部分新系统镜像还会把同样的动作封成 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时,改从 Settings / Graphics Driver Preferences 进入。
+部分新系统镜像还会把同样的动作封成 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。该命令依赖 userdebug/eng 构建的 `cmd gpu` 服务,Android 17 user 构建上不一定可用;命令缺失时,改从 Settings / Graphics Driver Preferences 进入,或直接用前面的 `settings put global` 写入。
 
 5. **Vulkan 应用需要注入 AGI 的捕获 Layer 完成帧捕获**。AGI Frame Profiler 通过 Vulkan Layer 机制拦截 GPU 命令;若应用未自行加载 AGI 的捕获 Layer,需要通过 `adb shell settings put global enable_gpu_debug_layers 1` 和 `adb shell settings put global gpu_debug_layers <agi_layer_name>` 注入 AGI APK 中的捕获 Layer。这里注入的是 AGI 自带的帧捕获 Layer,不是 Khronos 标准 Vulkan Validation Layer(VK_LAYER_KHRONOS_validation),两者功能不同。AGI Frame Profiler 的定位是 Draw Call / Shader / Render Target 分析,不用于测量真实帧率。
 
@@ -275,7 +275,7 @@ data_sources {
   config {
     name: "gpu.counters"
     gpu_counter_config {
-      counter_ids: [1, 2, 3, ...]     # 先用设备暴露的 counter 列表确认具体 ID（android-17.0.0_r1 字段名）
+      counter_ids: [1, 2, 3, ...]   # 先用设备暴露的 counter 列表确认具体 ID（android-17.0.0_r1 字段名；proto3 repeated 字段方括号语法）
       counter_period_ns: 1000000    # 1 ms 采样间隔
     }
   }

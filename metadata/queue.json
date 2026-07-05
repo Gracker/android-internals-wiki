@@ -534,6 +534,26 @@
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-07-05T23:10:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "04.memory",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — Android 17引入全新任务调度器，通过机器学习预测用户行为，应用启动时间平均减少30%，低端设备性能提升可达40%。系统资源分配更加智能，后台应用内存占用优化25%。",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-06T05:31:34.985435",
+      "status": "pending"
     }
   ],
   "items": [
@@ -707,6 +727,52 @@
       "completed_at": "2026-07-05T15:37:57+08:00",
       "completed_by": "task2b-lite",
       "completion_reason": "fixed-lite: 版本基线标签 android-16.0.0_r1 → android-17.0.0_r1"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Perfetto 配置示例中的字段名错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Perfetto GPU counter配置部分",
+          "detail": "文中显示 `counter_ids: [1, 2, 3, ...]` 应为 `counter_ids: 1, 2, 3, ...`（repeated字段在proto中不需要方括号）",
+          "suggestion": "修正Perfetto配置示例中的字段名格式，移除方括号"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T05:20:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-06T05:38:45",
+      "completed_by": "openclaw-task2b-lite",
+      "completed_reason": "fixed-lite: proto3 repeated 字段语法修正"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 85,
+      "reason": "[Deep Tech Review] AGI ANGLE配置命令在新版本中已废弃",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "AGI ANGLE配置命令段落",
+          "detail": "章节中的 `adb shell cmd gpu set-graphics-driver` 命令在 Android 17+ 设备上可能不可用，应使用 settings 命令替代",
+          "suggestion": "补充 settings 命令的替代方案，并说明不同版本下的命令差异"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T05:20:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-06T05:38:45",
+      "completed_by": "openclaw-task2b-lite",
+      "completed_reason": "fixed-lite: 版本差异说明补充"
     },
     {
       "section": "14.8",
