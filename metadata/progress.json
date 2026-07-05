@@ -3,7 +3,7 @@
   "draft": 24,
   "ready_for_review": 198,
   "finalized": 342,
-  "last_updated": "2026-07-05",
+  "last_updated": "2026-07-06",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -591,6 +591,13 @@
       "status": "no-candidates",
       "ts": "2026-07-06T05:06:57.198034+08:00",
       "note": "Gap mining round 32: 0 candidates ≥14. Coverage saturated (32nd consecutive). 2 new DeepResearch files map to existing §14.8 and §25.17."
+    },
+    {
+      "section": "14.8",
+      "action": "task6-revisiting-review",
+      "status": "reviewed",
+      "reviewed_at": "2026-07-06T05:05:00+08:00",
+      "note": "Task 2B counter_ids fix verified; 2 L1/L2 小修; awaiting Task 9 re-review"
     }
   ],
   "review_history": [
