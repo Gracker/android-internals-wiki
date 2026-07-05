@@ -2,8 +2,8 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: ready-for-review
-pipeline_stage: task9_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
 tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
 confidence: "medium"
