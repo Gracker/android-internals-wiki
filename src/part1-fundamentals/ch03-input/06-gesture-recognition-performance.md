@@ -49,7 +49,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-06T09:20:00+08:00"
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
-last_task6_audit: "2026-06-19"
+last_task6_audit: "2026-07-05"
 task6_result: "pass-light-edit"
 review_notes: '2026-04-12 task6 review: needs-rework。小修 8 处（frontmatter 标签、禁用词替换、段落拆分、代码注释格式统一）。回炉
   4 项（VelocityTracker 版本演进、双击回调语义、Perfetto 证据、扩展素材与来源）。评分: 结构 4/5·措辞 4/5·一致性 3/5·验证
