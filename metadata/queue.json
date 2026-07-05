@@ -481,6 +481,24 @@
       "completed_at": "2026-07-05T20:52:48.719920+08:00",
       "completed_by": "openclaw-task2b",
       "completed_reason": "fixed: angle_gl_driver_all_angle → angle_gl_driver_enabled (6处), frontmatter malformed line 修复"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Perfetto 配置路径错误",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Perfetto GPU counter config section",
+          "detail": "章节引用 `external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto` 路径，但实际在 AOSP android-17.0.0_r1 中正确路径为 `protos/perfetto/config/gpu/gpu_counter_config.proto`。路径错误导致开发者无法找到对应配置文件。",
+          "suggestion": "修正 Perfetto GPU counter config 路径为正确路径，确保与 AOSP android-17.0.0_r1 文件结构一致"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-05T21:20:00+08:00",
+      "status": "pending"
     }
   ]
 }
