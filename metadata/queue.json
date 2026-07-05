@@ -379,8 +379,11 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-05T10:15:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-05-10-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-05-10-audit.md",
+      "completed_at": "2026-07-05T15:37:57+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: 版本基线标签 android-16.0.0_r1 → android-17.0.0_r1"
     }
   ]
 }
