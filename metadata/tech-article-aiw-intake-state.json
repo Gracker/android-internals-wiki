@@ -667,6 +667,66 @@
       "status": "appended",
       "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
     },
+    "source/juejin-android/2026-07-06-76148976-AI写Android基准测试.md": {
+      "chapter": "待分类",
+      "entry_id": "4690fe5b970f583d",
+      "last_appended": "2026-07-06T05:26:51.056581+08:00",
+      "last_seen": "2026-07-06T05:26:51.056581+08:00",
+      "mtime": 1783282808.2541997,
+      "score": 9,
+      "sha256": "a2ecc4028986d1a534ba26c265ad7fc047207959718d40ca1b1fa761866527bd",
+      "size": 9376,
+      "status": "appended",
+      "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名近日，谷歌发布一个了 Android Bench ，目的"
+    },
+    "source/juejin-android/2026-07-06-76184335-Compose Pager强大用法.md": {
+      "chapter": "待分类",
+      "entry_id": "c522bf13613f180d",
+      "last_appended": "2026-07-06T05:26:51.056581+08:00",
+      "last_seen": "2026-07-06T05:26:51.056581+08:00",
+      "mtime": 1783282808.25456,
+      "score": 8,
+      "sha256": "1fcf6ae21aa3fe68031b947334eb92d40441ebdf3be304b820a4ff427ffd4adb",
+      "size": 24046,
+      "status": "appended",
+      "title": "你可能还不知道 Compose Pager 有多强大从传统的 ViewPager 过渡到 Compose Pager，代"
+    },
+    "source/juejin-android/2026-07-06-76232428-UseCase越多项目越烂.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "51ebbd92e75b1dfa",
+      "last_appended": "2026-07-06T05:26:51.056581+08:00",
+      "last_seen": "2026-07-06T05:26:51.056581+08:00",
+      "mtime": 1783282808.2537706,
+      "score": 7,
+      "sha256": "dce4b88f47b54a9f4cea86a436bc5d73bb8f48e1075aa6449f4647049fa313a2",
+      "size": 15897,
+      "status": "appended",
+      "title": "我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂Clean Architecture 落地的"
+    },
+    "source/juejin-android/2026-07-06-76340687-Compose性能优化技巧.md": {
+      "chapter": "待分类",
+      "entry_id": "23590f7ddfc1138e",
+      "last_appended": "2026-07-06T05:26:51.056581+08:00",
+      "last_seen": "2026-07-06T05:26:51.056581+08:00",
+      "mtime": 1783282808.254364,
+      "score": 14,
+      "sha256": "022cfead4f901ac6430d893d88b3bcb7d2b28d603a8801d3f5d2b2052e677189",
+      "size": 10676,
+      "status": "appended",
+      "title": "我想让同事知道我很懂 Compose 怎么办？我的好同事彭于晏读完我前面几篇关于 Compose 的文章后，准备在组内好"
+    },
+    "source/juejin-android/2026-07-06-76500740-Repository暴露suspend函数.md": {
+      "chapter": "待分类",
+      "entry_id": "f9bc92a8839f9c72",
+      "last_appended": "2026-07-06T05:26:51.056581+08:00",
+      "last_seen": "2026-07-06T05:26:51.056581+08:00",
+      "mtime": 1783282808.2539966,
+      "score": 11,
+      "sha256": "10d869056307f096c5ac1879eb848258e90a90529e4f648ae14d8412814d38ea",
+      "size": 13149,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
     "技术文章/技术文章/daily-info.md": {
       "last_seen": "2026-07-02T05:30:57.165861+08:00",
       "mtime": 1782937015.1677003,
@@ -757,24 +817,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 9,
-    "cutoff": "2026-07-04T05:20:22.605566+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-05.md",
+    "appended": 5,
+    "considered": 5,
+    "cutoff": "2026-07-05T05:20:07.020373+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-06.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1484,
+    "scanned": 1489,
     "skipped": {
       "existing_link": 0,
-      "low_score": 5,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1400,
       "path": 26,
-      "unchanged": 49
+      "unchanged": 58
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-05T05:25:07.020373+08:00",
+  "last_run_at": "2026-07-06T05:26:51.056581+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

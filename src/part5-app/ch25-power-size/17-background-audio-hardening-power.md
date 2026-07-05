@@ -276,6 +276,206 @@ Perfetto 抓取时建议覆盖 `audio`、`sched`、`freq`、`power`、`battery`�
 
 功耗治理的逻辑也跟着变了——播放一旦被系统拦截，网络、WakeLock、线程和前台服务都应该停下来，不能继续空转。后台音频适配的验收标准也不是“播放器没报错”就行，而是用户能听见、通知能控制、焦点能解释、资源能释放、线上指标能复盘。
 
+## AIW-源码调研-2026-07-06（音频硬化双源决策 + LE Audio suspend/resume）
+
+<!-- AIW-源码调研-2026-07-06:start -->
+
+> 本节基于 android-17.0.0_r1 一手源码，对 25.17 主体的应用层规则做底层闭环补充。重点：
+> 1) Java + C++ 双源硬化决策矩阵；
+> 2) AudioFlinger Tracks 的 asyncBroadcast 与 OP 异步回调；
+> 3) Bluetooth LE Audio 的系统 suspend/resume + HFP 切换；
+> 4) LC3 codec 与 ADSP 协商。
+>
+> 完整调研报告见 `DeepResearch/2026-07-06-android17-background-audio-hardening-leaudio-power-source.md`。
+
+### 25.17.5 硬化双源决策（Java + C++）
+
+后台音频硬化在原生层并非单一网关，而是 **Java AudioService.HardeningEnforcer + C++ AudioFlinger.Tracks.getHardeningDecision()** 双源独立判定、同步下发：
+
+- `AudioService.java:1389` `mHardeningOverride = new AtomicInteger(HardeningOverride.DEFAULT)`
+- `AudioService.java:16794` `setHardeningOverride()` 同时写 Java 缓存并下发 `mAudioPolicy.setHardeningOverride()`
+- `AudioFlinger.cpp:2234` `AudioFlinger::getHardeningOverride()` 通过 `mAudioPolicyServiceLocal` 回调到 native 端
+- `Tracks.cpp:3730` `getHardeningDecision(usage, cb, uid)` 每次 Track 创建独立判定
+
+判定矩阵（Tracks.cpp:3733-3780 + HardeningEnforcer.java:329-348, 421-453）：
+
+| 条件 | Java 端决策 | C++ 端决策 | 豁免原因 |
+| --- | --- | --- | --- |
+| `HardeningOverride.ENABLE` | DENIED_IF_FULL | FULL | 无（强制开启） |
+| `HardeningOverride.DISABLE` | ALLOWED | NONE | OVERRIDE |
+| `USAGE_VIRTUAL_SOURCE` / systemUsage | — | NONE | SYSTEM_USAGE |
+| `MODIFY_AUDIO_ROUTING` / `MODIFY_PHONE_STATE` | ALLOWED | NONE | PRIVILEGED_APP |
+| `BLUETOOTH_CONNECT` 权限 | DENIED_IF_PARTIAL | PARTIAL | PRIVILEGED_APP（蓝牙栈只豁免至 partial） |
+| `USAGE_ALARM` + `USE_EXACT_ALARM` | DENIED_IF_PARTIAL | PARTIAL | ALARM |
+| targetSdkVersion < 37 | DENIED_IF_PARTIAL | PARTIAL | TARGET_SDK |
+| hardeningStrict flag 关闭 | — | NONE 或 PARTIAL | FLAG_DISABLED |
+| targetSdkVersion >= 37 + hardeningStrict | DENIED_IF_FULL | FULL | NONE |
+
+> 注：BLUETOOTH_CONNECT 在 HardeningEnforcer 与 Tracks 中位置不同（HardeningEnforcer.java:444 在 hardeningPartial 分支内、Tracks.cpp:3770 在 hardeningStrict 分支内），但判定结果都是 PARTIAL，因此蓝牙场景在 25.17 主体"蓝牙、LE Audio 与车机场景"小节提到的"焦距 / 路由恢复"诉求必须在硬化 partial 路径上做。
+
+### 25.17.6 AudioFlinger Tracks 的 OP 异步校验与 kBroadcastDelay
+
+Tracks.cpp:3803 `constexpr auto kBroadcastDelay = std::chrono::milliseconds(40)`。每条 Track 创建时同时挂两条异步 OP 校验：
+
+```cpp
+mOpControlPartialSession.emplace(  // partial
+        ValidatedAttributionSourceState::createFromTrustedSource(attributionSource),
+        Ops{.attributedOp = OP_CONTROL_AUDIO_PARTIAL},
+        [this, isOffloadOrMmap, thread_wp, kBroadcastDelay](bool isPermitted) {
+            mHasOpControlPartial.store(isPermitted, std::memory_order_release);
+            if (isOffloadOrMmap) {
+                if (const auto thread = thread_wp.promote()) {
+                    thread->asyncBroadcast(kBroadcastDelay);
+                }
+            }
+        }
+);
+mOpControlFullSession.emplace(  // full
+        ...Ops{.attributedOp = OP_CONTROL_AUDIO},
+        [this, ...](bool isPermitted) { ... }
+);
+```
+
+40ms 延迟是 Offload / MMap track 的特化设计：确保 partial + full 两条 OP 回调都完成后再唤醒 Thread，避免音量调节走半路。普通 PCM 路径直接读 atomic，无额外延迟。
+
+硬化事件去重守门（Tracks.cpp:3841）：
+
+```cpp
+if (!mPlaybackHardeningLogged.exchange(true, std::memory_order_acq_rel)) {
+    am.playbackHardeningEvent(mSelf.uid(), PARTIAL,
+            !isPlaybackRestrictedControl(), mExemptionReason, mSelf.attributes().usage);
+}
+```
+
+`mPlaybackHardeningLogged` 用 `acq_rel` exchange 实现「一次写」守门，防止同一 Track 重复上报硬化 metrics。
+
+### 25.17.7 音频焦点栈与设备切换恢复
+
+焦点栈结构（MediaFocusControl.java:700）：
+
+```java
+private final Stack<FocusRequester> mFocusStack = new Stack<FocusRequester>();
+```
+
+设备切换 / LE Audio 切换场景下的焦点恢复走两条路径：
+
+1. **sendFocusLossAndUpdate（MediaFocusControl.java:534-555）**：移除栈顶丢失者后，`mFocusStack.peek().handleFocusGain(AudioManager.AUDIOFOCUS_GAIN)` 把下一位提升为栈顶。
+2. **sendFocusLoss（MediaFocusControl.java:601-628）**：遍历栈移除指定丢失者后，同步把栈顶 `handleFocusGain(AUDIOFOCUS_GAIN)`。
+
+硬化 gate 在 AudioService 入口：
+
+```java
+// AudioService.java:12795
+if (mHardeningEnforcer.blockFocusMethod(uid,
+        HardeningEnforcer.METHOD_AUDIO_MANAGER_REQUEST_AUDIO_FOCUS,
+        ...)) {
+    return AudioManager.AUDIOFOCUS_REQUEST_FAILED;
+}
+```
+
+这一行是 25.17 主体中"锁屏后 `requestAudioFocus()` 返回 AUDIOFOCUS_REQUEST_FAILED"的源码根因——焦点请求先过硬化 gate，进栈前已被拦截。
+
+### 25.17.8 蓝牙 LE Audio suspend/resume 与 HFP 切换
+
+`LeAudioService.java:2218` `setSystemSuspended(boolean)` 是系统 suspend 与 LE 扫描联动的关键 hook：
+
+```java
+public void setSystemSuspended(boolean suspended) {
+    mSystemSuspended = suspended;
+    if (suspended) {
+        Log.d(TAG, "system suspended, stop background scan");
+        mScanCallback.stopBackgroundScan();
+    } else if (isScannerNeeded()) {
+        Log.d(TAG, "system resumed, restore background scan");
+        mScanCallback.startBackgroundScan();
+    }
+}
+```
+
+`isScannerNeeded()`（LeAudioService.java:2227-2247）四级短路：设备为空 → 已全部连接 → 系统已 suspend → 蓝牙未启用 → 才需要扫描。suspend 状态下的扫描停止可避免周期性 CAP 扫描唤醒 Radio，是 LE Audio 在 25.17 功耗治理的核心收益。
+
+HFP → LE Audio 切换回退（LeAudioService.java:4779-4794）：
+
+```java
+mLeAudioDeviceInactivatedForHfpHandover = mExposedActiveDevice;
+...
+if (mLeAudioDeviceInactivatedForHfpHandover != null) {
+    Log.i(TAG, "handover to LE audio device=" + mLeAudioDeviceInactivatedForHfpHandover);
+    setActiveDevice(mLeAudioDeviceInactivatedForHfpHandover);
+    mLeAudioDeviceInactivatedForHfpHandover = null;
+}
+```
+
+记录上次 LE 设备地址，handover 完成后无需用户重新配对。这是 25.17 主体"车机系统中的音频保持机制"在原生层的具体实现。
+
+### 25.17.9 LC3 codec 与 ADSP 协商路径
+
+codec_manager.cc:229-242 只识别 LC3 与 vendor codec：
+
+```cpp
+static bool IsKnownCodec(const types::LeAudioCodecId& codec_id) {
+    switch (codec_id.coding_format) {
+        case types::kLeAudioCodingFormatLC3:
+            return true;
+        case types::kLeAudioCodingFormatVendorSpecific:
+            return vendor::IsKnownCodec(codec_id);
+    }
+    return false;
+}
+```
+
+ADSP offload 判定 codec_manager.cc:1127 `IsLc3ConfigMatched`：
+
+```cpp
+bool IsLc3ConfigMatched(const types::CodecConfigSetting& target_config,
+                        const types::CodecConfigSetting& adsp_config) {
+    if (adsp_config.id.coding_format != types::kLeAudioCodingFormatLC3 ||
+        target_config.id.coding_format != types::kLeAudioCodingFormatLC3) {
+        return false;
+    }
+    const auto adsp_lc3_config = adsp_config.params.GetAsCoreCodecConfig();
+    const auto target_lc3_config = target_config.params.GetAsCoreCodecConfig();
+
+    if (adsp_lc3_config.sampling_frequency != target_lc3_config.sampling_frequency ||
+        adsp_lc3_config.frame_duration != target_lc3_config.frame_duration ||
+        adsp_config.GetChannelCountPerIsoStream() != target_config.GetChannelCountPerIsoStream() ||
+        adsp_lc3_config.octets_per_codec_frame != target_lc3_config.octets_per_codec_frame) {
+        return false;
+    }
+    return true;
+}
+```
+
+匹配维度：采样率 + 帧时长（7500us / 10000us）+ 每 ISO stream 通道数 + 每 codec 帧字节数。任意一个不匹配就走应用态解码，应用态解码在锁屏/后台会被硬化直接静音。
+
+`target_latency` 来自 ASE（Audio Stream Endpoint）能力（state_machine.cc:1662/2276），影响 ISO interval 配置，与功耗正相关：低延迟配置 = 高占空比 = 高功耗。
+
+### 25.17.10 关键源码锚点速查
+
+| 关注点 | 文件 : 行 |
+| --- | --- |
+| Java 硬化决策主体 | HardeningEnforcer.java:329-348, 421-453 |
+| Java 焦点请求 gate | AudioService.java:12795 |
+| Java 焦点栈结构 | MediaFocusControl.java:700 |
+| Java 焦点丢失后栈顶重获 GAIN | MediaFocusControl.java:534-555 |
+| Java 焦点丢失传播 | MediaFocusControl.java:660-682 |
+| C++ 硬化决策 | Tracks.cpp:3730-3780 |
+| C++ Track OP 异步校验 | Tracks.cpp:3783-3835 |
+| C++ 硬化 events 去重守门 | Tracks.cpp:3841-3860 |
+| Shell set-hardening 实现 | AudioManagerShellCommand.java:517-549 |
+| Shell clear-hardening 实现 | AudioManagerShellCommand.java:554-562 |
+| HARDENING_* 常量定义 | AudioManager.java:11192-11210 |
+| mHardeningOverride AtomicInteger | AudioService.java:1389 |
+| setHardeningOverride 同步 native | AudioService.java:16794-16797 |
+| AudioFlinger getHardeningOverride | AudioFlinger.cpp:2234-2237 |
+| LE Audio suspend/resume 扫描控制 | LeAudioService.java:2218-2250 |
+| LE Audio setActiveDevice | LeAudioService.java:2823-2856 |
+| LE Audio HFP 切换回退 | LeAudioService.java:4779-4794 |
+| LC3 codec 识别 | codec_manager.cc:229-242 |
+| LC3 codec ADSP 协商 | codec_manager.cc:1127-1145 |
+
+<!-- AIW-源码调研-2026-07-06:end -->
+
 ## 参考资料
 
 - [Background audio hardening | Android Developers](https://developer.android.com/about/versions/17/changes/bg-audio)

@@ -218,6 +218,19 @@ adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched
 - 内存：按生命周期节点采样。启动完成、进入关键页面、退出后台、OOM 前的快照比连续采样更有意义。要把峰值前后的对象分配轨迹抓下来，而不是只看时刻点的 PSS。
 - 网络：按网络类型分层。WiFi、4G、5G 的 RTT 和吞吐量差了一个数量级，混在一起得到的"平均网络耗时"没有任何优化指导意义。
 - 电量：按电池状态和系统状态采集。电量 80% 以上 vs 20% 以下，充电中 vs 未充电，前台 vs 后台——同一个网络请求的功耗成本完全不同。
+- SoC 跨厂商分层：**必须按 SoC 厂商 + 芯片型号分层**，不同厂商的功率优化接口、AIDL 实现、cpufreq governor 路径都不同。
+
+  Android 17 的 SoC 级电池优化分 5 层闭环：① Framework `PowerManager.setMode()` → ② `PowerManagerService.java` 维护 `DIRTY_*` 位掩码 → ③ `IPower` AIDL 跨进到 vendor HAL（厂商必须提供 SO 库） → ④ vendor 服务调内核 cpufreq/devfreq 节点，或在 `setBoost` 路径上调用 CPU/GPU 驱动 → ⑤ 内核 `schedutil` 通过 `sugov_should_update_freq()` 守门 `rate_limit_us` 决定是否下发新频率。源：android-17.0.0_r1，`hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
+
+  跨厂商差异不在 AIDL 接口层（AOSP 强制统一，`@VintfStability` 跨版本固化），而在**实现层**与**驱动层**：
+
+  | 厂商 | HAL 库 | 关键路径 | 内核 / 服务 |
+  |---|---|---|---|
+  | Qualcomm | `libqti-power-hal.so` | RPMh (`rpmh_send_data`) + PDC (`set_collapse`) | `qcom-cpufreq-hw`/`qcom-rpmh-regulators` |
+  | MediaTek | `libmtkpower-hal.so` | mtlp → hw_flower → `mediatek-dvfsrc` | `mtk-cpufreq-hw`/`mediatek-cci-devfreq` |
+  | Samsung Exynos | `libexynos-power.so` | ASV + TMU + `exynos-pmu` | `exynos-cpufreq` |
+
+  内核侧统一由 `kernel/sched/cpufreq_schedutil.c` 的 `sugov_should_update_freq()` 做频率守门，`freq_update_delay_ns` 默认值由 `rate_limit_us`（默认 10000μs）驱动。这意味着同一 PowerHAL `setMode(GAME, true)` 行为：高通方案映射到 RPMh wakeup vote；联发科走 `mtk-pmic` 触发 Vcore boost；三星经 TMU 协调 CPU/GPU/CAMERA 三 rail——但最终都汇总到 schedutil 的 10ms 节流闸。要做精确的电池基线，**必须分 SoC 看，不能简单按设备档位（高端 / 中端 / 低端）聚合**。更多细节见 DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md。
 
 ### 4.2 基准线的三条腿
 

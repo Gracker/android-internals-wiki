@@ -544,53 +544,96 @@
         "系统优化"
       ],
       "scored_at": "2026-07-05T05:47:52.299038"
-    }
-  ],
-  "entries": [
+    },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-battery-optimization-soc-architecture-power-management.md",
-      "title": "Android 17 不同 SoC 架构下的电池优化策略深度分析",
-      "summary": "分层架构设计（硬件层 Perfetto → 框架层 BatteryManager → 服务层 PMS → 应用层 JobScheduler），SoC 差异化策略（ARM Big.LITTLE / Qualcomm Adreno / MediaTek APU），BatteryCounters proto 指标定义，电源域管理粒度对比。",
+      "title": "2026-07-05-android17-ai-agent-memory-sandboxed-data-reuse",
+      "path": "DeepResearch/2026-07-05-android17-ai-agent-memory-sandboxed-data-reuse.md",
+      "score": 20,
+      "chapter": "ch04",
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087181"
+    },
+    {
+      "title": "2026-07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop",
+      "path": "DeepResearch/2026-07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop.md",
+      "score": 16,
+      "chapter": "ch04",
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087190"
+    },
+    {
+      "title": "2026-07-05-android17-art-largeobjectspace-msponge-512m-bypass",
+      "path": "DeepResearch/2026-07-05-android17-art-largeobjectspace-msponge-512m-bypass.md",
+      "score": 13,
+      "chapter": "ch04",
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087192"
+    },
+    {
+      "title": "2026-07-05-android17-battery-optimization-soc-architecture-power-management",
+      "path": "DeepResearch/2026-07-05-android17-battery-optimization-soc-architecture-power-management.md",
+      "score": 19,
+      "chapter": "ch02",
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087194"
+    },
+    {
+      "title": "2026-07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup",
+      "path": "DeepResearch/2026-07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md",
+      "score": 16,
       "chapter": "ch05",
-      "processed_at": "2026-07-05T06:18:33.276257+08:00",
-      "action": "inject",
-      "task": "deepresearch-injector"
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087195"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-pms-cpuidle-schedutil-closed-loop.md",
-      "title": "Android 17 PowerManagerService × cpuidle menu governor × schedutil 三层协作闭环",
-      "summary": "PMS 17 个 DIRTY_* 位掩码 + 10 个 WAKE_LOCK_* 状态聚合、adjustWakeLockSummary 隐含状态推断、IPower AIDL Hint Session、schedutil sugov_get_util() 聚合 uclamp/iowait boost、cpuidle menu governor 6-bucket 预测。源码锚定 android-17.0.0_r1。",
+      "title": "2026-07-05-android17-startup-insights-application-start-info",
+      "path": "DeepResearch/2026-07-05-android17-startup-insights-application-start-info.md",
+      "score": 19,
+      "chapter": "ch02",
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087196"
+    },
+    {
+      "title": "2026-07-05-perfetto-v57-ai-skill-state-tracks-android-memory",
+      "path": "DeepResearch/2026-07-05-perfetto-v57-ai-skill-state-tracks-android-memory.md",
+      "score": 18,
+      "chapter": "ch02",
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087198"
+    },
+    {
+      "title": "2026-07-06-android17-background-audio-hardening-leaudio-power-source",
+      "path": "DeepResearch/2026-07-06-android17-background-audio-hardening-leaudio-power-source.md",
+      "score": 16,
       "chapter": "ch05",
-      "processed_at": "2026-07-05T06:18:33.276257+08:00",
-      "action": "inject",
-      "task": "deepresearch-injector"
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087199"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-flutter-impeller-shader-compilation-pipeline.md",
-      "title": "Flutter Impeller 着色器编译管线与运行期 PSO 缓存机制",
-      "summary": "Impeller 全 AOT 离线编译策略（GLSL→SPIRV→后端 Shader→FlatBuffers ShaderArchive→C 数组静态链接），运行期零反射加载，Vulkan vk::PipelineCache 落盘 vs GLES 内存表不落盘，消除运行时 shader 编译抖动的架构设计。",
-      "chapter": "ch18",
-      "processed_at": "2026-07-05T06:18:33.276257+08:00",
-      "action": "inject",
-      "task": "deepresearch-injector"
+      "title": "2026-07-06-android17-gpu-debug-performance-tools-source",
+      "path": "DeepResearch/2026-07-06-android17-gpu-debug-performance-tools-source.md",
+      "score": 20,
+      "chapter": "ch02",
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087200"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md",
-      "title": "Android 17 Binder 4MB 内核侧缓冲池上限与事务优先级算法源码级闭环",
-      "summary": "源码级分析 Binder 驱动 mmap 上限从 SZ_1M 到 SZ_4M 的演化、50% async space 配额、binder_transaction_priority() 的 min(client,node) 优先级收敛算法、set_priority_called 单飞标志防止嵌套重复升级。锚定 android17-6.18 内核 binder.c/binder_alloc.c。",
-      "chapter": "ch01",
-      "processed_at": "2026-07-05T06:18:33.276257+08:00",
-      "action": "queue",
-      "task": "deepresearch-injector"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-heapprofd-production-deployment-permissions.md",
-      "title": "Android 17 Perfetto heapprofd 生产环境部署模式与权限配置",
-      "summary": "三层权限模型（uid 范围/安装者过滤/SESSION_INITIATOR_TRUSTED_SYSTEM 绕过）、双 Producer 并行架构（Native+Java）、init.rc 服务配置、连接退避指数倍增策略、packages.list 安全校验、all=true 生产崩溃警告。",
-      "chapter": "ch13",
-      "processed_at": "2026-07-05T06:18:33.276257+08:00",
-      "action": "queue",
-      "task": "deepresearch-injector"
+      "title": "2026-07-06-android17-startup-insights-gaps",
+      "path": "DeepResearch/2026-07-06-android17-startup-insights-gaps.md",
+      "score": 20,
+      "chapter": "ch02",
+      "source": "Task11-增量扫描",
+      "date": "2026-07-06 05:46",
+      "scored_at": "2026-07-06T05:46:41.087201"
     }
   ]
 }
