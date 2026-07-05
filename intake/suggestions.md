@@ -254,3 +254,45 @@
 - **问题**：缺少 GPU 调度算法介绍
 - **建议**：补充 Adreno FrameBuffer、Mali L2 等GPU调度器的工作原理及其对性能分析的影响
 
+
+## [Task2A Gap Mining] 已检查方向 — 2026-07-06
+
+本轮缺口挖掘已检查以下方向，均未发现评分 ≥ 14 的合格候选：
+
+### 素材驱动
+- Clippings 性能优化 (21篇)：CPU优化、Native内存、dex/so体积、任务调度、内存模型、GC抑制、缓存优化、虚拟内存、资源体积 — **全部已有对应章节**
+- Clippings 稳定性剖析 (25篇)：ANR治理、ART堆分布、ASM插桩、Binder监控、Java/Native Crash、Native Hook、Native内存泄漏、OOM路径、FD监控、线程监控 — **全部已有对应章节**
+- Clippings 线上疑难问题 (59篇)：交付流程、崩溃、内存、卡顿、启动、I/O、存储、序列化、SQLite、网络、耗电、UI渲染、安装包、编译插桩、测试、灰度、上报、埋点、日志、架构、Native Hook、跨平台、手游、音视频、ML、Flutter — **全部已有对应章节**
+
+### AOSP 结构
+- frameworks/base 核心服务：ActivityManager、WindowManager、NotificationManager、PackageManager、InputManager — **均已覆盖**
+- system/ 核心组件：lmkd、vold、netd、installd — **均已覆盖**
+- packages/modules/：Bluetooth、WiFi、Media — **均已覆盖**
+
+### 官方文档
+- PerformanceHintManager / ADPF — 28+文件覆盖
+- 16KB page size — 72+文件覆盖
+- Compose performance — 31 sections in ch22
+- AppStandbyBucket、Predictive Back、WindowInsets、SdkExtensions — 均有提及
+
+### 研究素材
+- Perfetto v53/v54 新特性 — 已有 13.21 节覆盖
+- Frame Timeline 可视化 — 已有覆盖
+- Compose Pausable Composition — 已有覆盖
+- MUSCHED/sched-ext — 18+文件覆盖
+
+### 章节深挖
+- ch14.8 GPU 工具扩展点：GPU 内存管理、CPU-GPU 同步、DVFS、安全、Compute Shader — 多个子缺口已记录但评分均 < 14
+- Compose recomposition tracking、Compose navigation performance — 已有专用章节
+- Android 17 Compilation pipeline (dex2oat) — Material 3 / Relevance 3 / Demand 3 / Timeliness 3 = 12 分
+
+### 近似合格但未达 14 分的候选
+1. **JVM TI Agent 性能监控** — 13/20 (Material 3, Relevance 4, Demand 3, Timeliness 3)
+2. **dex2oat 编译管线性能** — 12/20 (Material 3, Relevance 3, Demand 3, Timeliness 3)
+3. **Compose Recomposition 深度诊断** — 已被 22.28 覆盖
+
+### 下次探索建议
+- 深入 Clippings 线上疑难问题 59 篇的**具体段落**级别知识点提取
+- 关注 Android 17.1 / Android 18 预览版新特性（但仅做参照，不写入正文）
+- 考虑对现有 19 个 draft 章节进行内容深化（当前均 >15 行但部分仅 30-37 行）
+- 探索跨章节综合实战案例方向（如"启动优化全链路案例"综合多个章节知识点）
