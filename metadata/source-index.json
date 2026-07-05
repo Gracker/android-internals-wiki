@@ -1,656 +1,596 @@
 {
   "files": [
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-appflow-lmkd-v2-collaboration.md",
-      "title": "Android 17 AppFlow 大应用冷启动内存联合调度与 LMKD v2 机制协作研究",
-      "summary": "基于 android-17.0.0_r1 LMKD 源码发现 AppFlow 三段式调度与 LMKD 存在精确协议接入点：LMK_PROCS_PRIO (id=11) 通过 io_uring 实现批量异步处理（最多32进程），thrashing_limit 采用动态衰减策略为启动期提供保护窗口，MGLRU 状态机独立运行但已纳入内存压力辅助指标。",
-      "chapter_mapping": "ch04 §4.5",
-      "processed_at": "2026-07-03T06:15:48.543593",
-      "type": "DeepResearch",
-      "action": "injected"
+      "url": "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization",
+      "title": "Android Developers Blog - Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少...",
+      "section": "ch04-memory",
+      "added_date": "2026-07-05",
+      "score": 20
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-binder-priority-async-batch-pipeline.md",
-      "title": "Android 17 Binder 优先级调度与异步批处理流水线源码解析",
-      "summary": "对内核 binder.c（android17-6.18-2026-06_r1, 7460行）做源码级补强：多进程路由三路排队（thread todo / proc todo / node async_todo），1MB 缓冲区溢出返回 BR_FAILED_REPLY，Death notification 四态机完整路径，同步事务防死锁内核护栏（行3466-3479）。",
-      "chapter_mapping": "ch16 §1.25",
-      "processed_at": "2026-07-03T06:15:48.543593",
-      "type": "DeepResearch",
-      "action": "injected"
+      "url": "https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation",
+      "title": "Phoronix - Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运...",
+      "section": "ch04-memory",
+      "added_date": "2026-07-05",
+      "score": 18
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-input-anr-mechanism.md",
-      "title": "Android 17 ANR 输入事件超时检测机制深度解析",
-      "summary": "Android 17 ANR 检测采用双层预警：Native InputDispatcher 实时监控输入超时并触发 pre-ANR 通知（超时前50%窗口），Java 层 InputManagerService 区分无焦点窗口 ANR 和窗口无响应 ANR。完整链路含事件生成→派发监控→超时判定→跨进程回调→ANR 触发五环节。",
-      "chapter_mapping": "ch09 §9.1",
-      "processed_at": "2026-07-03T06:15:48.543593",
-      "type": "DeepResearch",
-      "action": "injected"
+      "url": "https://juejin.cn/post/7623242804392247305",
+      "title": "1. UseCase 越多，项目越烂 — Clean Architecture 落地误区",
+      "section": "ch01-architecture",
+      "added_date": "2026-07-05",
+      "score": 13
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-simpleperf-spe-trbe-source-verification.md",
-      "title": "Android 17 Simpleperf SPE + TRBE + pmu_lib 新增特性源码验证",
-      "summary": "源码级对比 A16 vs A17：SPE 为 A17 全新特性（SPERecorder/SPEDecoder），--background 为 A17 新增而 --app 已存在于 A16（章节勘误），TRBE 从单模式重构为 per-cpu 多 sink，pmu_lib BEEFDEAD 冲突处理机制确认存在。",
-      "chapter_mapping": "ch13/14 §14.24",
-      "processed_at": "2026-07-03T06:15:48.543593",
-      "type": "DeepResearch",
-      "action": "injected"
+      "url": "https://juejin.cn/post/7650074080125599790",
+      "title": "2. Repository 应暴露 suspend fun 而非内部 launch",
+      "section": "ch01-architecture",
+      "added_date": "2026-07-05",
+      "score": 13
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md",
-      "title": "Android 17 ThreadPoolExecutor 三层源码 + bionic times() 系统调用 + JNI /proc/stat 解析",
-      "summary": "ThreadPoolExecutor.execute() 三步决策源码含3处 Android 专属增强（@ReachabilitySensitive、SharedThreadContainer、addWorkerFailed 回滚）；bionic times() 为纯汇编 stub 无胶水代码；kernel do_sys_times 走调度器归一化路径与 /proc/stat 差值可达30%；JNI readProcFile 栈/堆双缓冲设计。",
-      "chapter_mapping": "ch05/27 §27",
-      "processed_at": "2026-07-03T06:15:48.543593",
-      "type": "DeepResearch",
-      "action": "injected"
+      "url": "https://juejin.cn/post/7618433588125007923",
+      "title": "3. Compose Pager 从基础到高级动画",
+      "section": "ch02-rendering",
+      "added_date": "2026-07-05",
+      "score": 17
     },
     {
-      "title": "Android Native | 内存问题的终极武器 ——MTE",
-      "path": "AndroidWeekly/#23/Android Native | 内存问题的终极武器 ——MTE",
-      "source_url": "https://juejin.cn/post/7013595058125406238",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
+      "url": "https://juejin.cn/post/7617108607432736778",
+      "title": "4. Room 3.0 破坏性变化与迁移路径",
+      "section": "ch10-memory-perf",
+      "added_date": "2026-07-05",
+      "score": 17
+    },
+    {
+      "url": "https://juejin.cn/post/7614897667961143347",
+      "title": "5. Google Android Bench：AI 编码能力评测方法论",
+      "section": "ch15-methodology",
+      "added_date": "2026-07-05",
+      "score": 17
+    },
+    {
+      "title": "AOSP 整机源码 Harness 工程探索-2026-07-04",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/AOSP 整机源码 Harness 工程探索-2026-07-04.md",
+      "score": 15,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:45.090206",
+      "summary": "--- id: \"7472998844062499128\" cubox_url: https://cubox.pro/web/card/7472998844062499128 url: https://mp.weixin.qq.com/s?__biz=MzIyMDg5MzEyMA==&mid=2247489675&idx=1&sn=a008ab2fbf69516f760a6dbfe3d033eb&",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.298987"
+    },
+    {
+      "title": "2026-07-04-ai-agent-memory-management",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-ai-agent-memory-management.md",
       "score": 16,
-      "quality": "high",
-      "scores": {
-        "relevance": 5,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch03-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "内存追踪技术MTE的深度解析，包含底层实现原理和实际应用案例",
-      "scored_at": "2026-07-03T09:05:11.293531"
-    },
-    {
-      "title": "Android R 常见 GC 类型与问题案例",
-      "path": "AndroidWeekly/#23/Android R 常见 GC 类型与问题案例",
-      "source_url": "https://mp.weixin.qq.com/s/J6pYzVcOUHCt8zCqZLaD3w",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 15,
-      "quality": "high",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch03-内存",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Android R版本GC机制详解和典型问题案例分析",
-      "scored_at": "2026-07-03T09:05:11.293539"
-    },
-    {
-      "title": "探索 Flutter 中线程模型 / 消息循环的底层逻辑",
-      "path": "AndroidWeekly/#23/探索 Flutter 中线程模型 / 消息循环的底层逻辑",
-      "source_url": "https://zhuanlan.zhihu.com/p/414582899",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 14,
       "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 3,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch06-多线程",
-          "confidence": "medium"
-        }
+      "relevance": "medium",
+      "indexed_at": "2026-07-05T05:47:45.140381",
+      "summary": "# 源码调研：AI Agent 在端侧设备上的内存管理挑战与 Sandboxed 数据复用方案  📅 2026-07-04 | AIW · 每日源码调研  ## 盲区来源 关联章节 §20.3（实际文件 src/part5-app/ch23-memory-practice/22.09-ondevice-llm-memory-management.md），重要程度：高 原始描述：AI Agent 在",
+      "chapter": "ch04",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
       ],
-      "summary": "Flutter线程架构和消息循环机制的深度技术分析",
-      "scored_at": "2026-07-03T09:05:11.293541"
+      "scored_at": "2026-07-05T05:47:52.298995"
     },
     {
-      "title": "kotlin Android Interview Questions",
-      "path": "AndroidWeekly/#23/kotlin Android Interview Questions",
-      "source_url": "https://anandharajramasamydev.medium.com/kotlin-android-interview-questions-412332d1106e",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 10,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 2,
-        "timeliness": 2,
-        "verifiability": 2
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch04-Kotlin",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Kotlin Android开发常见面试题集合",
-      "scored_at": "2026-07-03T09:05:11.293543"
-    },
-    {
-      "title": "Duolingo refactors on Android with MVVM and Jetpack libraries",
-      "path": "AndroidWeekly/#23/Duolingo refactors on Android with MVVM and Jetpack libraries",
-      "source_url": "https://developer.android.com/stories/apps/duolingo-excellence",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 13,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch08-架构设计",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Duolingo使用MVVM和Jetpack重构Android应用的实际案例",
-      "scored_at": "2026-07-03T09:05:11.293544"
-    },
-    {
-      "title": "Unidirectional Data Flow for Android UIs",
-      "path": "AndroidWeekly/#23/Unidirectional Data Flow for Android UIs",
-      "source_url": "https://dev.to/j1c1m1b1/unidirectional-data-flow-for-android-uis-2807",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 11,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 2,
-        "timeliness": 3,
-        "verifiability": 2
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch08-架构设计",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android UI单向数据流架构设计和实现指南",
-      "scored_at": "2026-07-03T09:05:11.293546"
-    },
-    {
-      "title": "重新理解为什么 Handler 可能导致内存泄露？",
-      "path": "AndroidWeekly/#23/重新理解为什么 Handler 可能导致内存泄露？",
-      "source_url": "https://mp.weixin.qq.com/s/4duyUKTjJmV_66kZm2MQPg",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 15,
-      "quality": "high",
-      "scores": {
-        "relevance": 5,
-        "depth": 4,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch03-内存",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch06-多线程",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Handler导致内存泄漏的深度原理解析和解决方案",
-      "scored_at": "2026-07-03T09:05:11.293547"
-    },
-    {
-      "title": "视频 - 反编译 APK，Android 开发者一定用得着",
-      "path": "AndroidWeekly/#23/视频 - 反编译 APK，Android 开发者一定用得着",
-      "source_url": "https://mp.weixin.qq.com/s/HHXHsLKW8P4esKWkq_qMng",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 12,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 2
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch01-逆向",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "APK反编译工具使用教程和实战演示",
-      "scored_at": "2026-07-03T09:05:11.293548"
-    },
-    {
-      "title": "使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间",
-      "path": "AndroidWeekly/#23/使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间",
-      "source_url": "https://mp.weixin.qq.com/s/_eRbF-c0BzgU_6j1SEYEMw",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 13,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 3,
-        "timeliness": 4,
-        "verifiability": 2
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch04-Kotlin",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "KSP 1.0优化构建时间的原理和实践方法",
-      "scored_at": "2026-07-03T09:05:11.293549"
-    },
-    {
-      "title": "Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
-      "path": "AndroidWeekly/#23/Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
-      "source_url": "https://www.cnblogs.com/houser0323/p/15115623.html",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
+      "title": "2026-07-04-android17-heapprofd-production-deployment-permissions",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-heapprofd-production-deployment-permissions.md",
       "score": 17,
-      "quality": "high",
-      "scores": {
-        "relevance": 5,
-        "depth": 5,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch09-启动优化",
-          "confidence": "high"
-        }
-      ],
-      "summary": "从binder trace角度深入分析Android 11 Activity冷启动过程",
-      "scored_at": "2026-07-03T09:05:11.293551"
-    },
-    {
-      "title": "更高级的 Android 启动 任务调度库",
-      "path": "AndroidWeekly/#23/更高级的 Android 启动 任务调度库",
-      "source_url": "https://mp.weixin.qq.com/s/ZEcdAeyLNJXSZNJYOEUBiw",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 14,
       "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 3,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch09-启动优化",
-          "confidence": "medium"
-        }
+      "relevance": "medium",
+      "indexed_at": "2026-07-05T05:47:45.190511",
+      "summary": "# 源码调研：Android 17 Perfetto heapprofd 生产环境部署模式与权限配置研究  📅 2026-07-04 | AIW · 每日源码调研  ## 盲区来源 关联章节：§14.1 (HPROF Heap Dump 管线与 Perfetto java_hprof 数据源) 重要程度：高 原始描述：验证heapprofd在Android 12+系统中的默认配置和启动机制，调研与",
+      "chapter": "ch08",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
       ],
-      "summary": "Android应用启动任务调度的高级实现方案",
-      "scored_at": "2026-07-03T09:05:11.293552"
+      "scored_at": "2026-07-05T05:47:52.298997"
     },
     {
-      "title": "Now in Android #48",
-      "path": "AndroidWeekly/#23/Now in Android #48",
-      "source_url": "https://medium.com/androiddevelopers/now-in-android-48-c499493bb83",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
+      "title": "2026-07-04-android17-lmkd-procs-prio-batch-thrashing-mainline-fork",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md",
+      "score": 17,
+      "quality": "medium",
+      "relevance": "medium",
+      "indexed_at": "2026-07-05T05:47:45.242405",
+      "summary": "# 源码调研：Android 17 LMK_PROCS_PRIO 批量命令与 thrashing 衰减机制——主线与 fork 的事实边界  📅 2026-07-04 | AIW · 每日源码调研 · daily-topics id=7  ## 盲区来源  - **daily-topics.json** id=7：\"Android 17 AppFlow 大应用冷启动内存联合调度与LMKD机制协作研",
+      "chapter": "ch04",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.298999"
+    },
+    {
+      "title": "2026-07-04-android17-modular-startup-framework-dependency-graph",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-modular-startup-framework-dependency-graph.md",
+      "score": 17,
+      "quality": "medium",
+      "relevance": "medium",
+      "indexed_at": "2026-07-05T05:47:45.292599",
+      "summary": "# 源码调研：Android 17 模块化启动框架与多进程微服务架构下的依赖管理机制  📅 2026-07-04 | AIW · 每日源码调研  ## 盲区来源 - 选题 ID：`daily-topics.json #9`（status: pending → completed） - 关联章节：`src/part5-app/ch21-startup/`（§21.1–§21.16） - 重要程度：高",
+      "chapter": "ch08",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299002"
+    },
+    {
+      "title": "2026-07-04-android17-pms-cpuidle-schedutil-closed-loop",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-pms-cpuidle-schedutil-closed-loop.md",
+      "score": 17,
+      "quality": "medium",
+      "relevance": "medium",
+      "indexed_at": "2026-07-05T05:47:45.346370",
+      "summary": "# 源码调研：Android 17 PowerManagerService × cpuidle menu governor × schedutil 三层协作闭环  📅 2026-07-04 | AIW · 每日源码调研  ## 盲区来源 - 章节：ch15 性能优化研究方法论 + ch05-cpu-power (DVFS) - 盲区条目：[2026-07-04] ch15 性能优化研究方法论 — ",
+      "chapter": "ch16",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299004"
+    },
+    {
+      "title": "2026-07-04-flutter-impeller-shader-compilation-pipeline",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-flutter-impeller-shader-compilation-pipeline.md",
       "score": 12,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 2,
-        "timeliness": 4,
-        "verifiability": 2
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "medium"
-        }
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:45.399788",
+      "summary": "# 源码调研：Flutter Impeller 着色器编译管线与运行期 PSO 缓存机制  📅 2026-07-04 | AIW · 每日源码调研  ## 盲区来源 - **关联章节**：`src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md`（ch18.12 Flutter 渲染管线） - **盲区条目**：",
+      "chapter": "ch02",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
       ],
-      "summary": "Android开发官方最新技术动态和最佳实践",
-      "scored_at": "2026-07-03T09:05:11.293553"
+      "scored_at": "2026-07-05T05:47:52.299005"
     },
     {
-      "title": "Android 资源溢出崩溃轻松解",
-      "path": "AndroidWeekly/#23/Android 资源溢出崩溃轻松解",
-      "source_url": "https://zhuanlan.zhihu.com/p/420726913",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 13,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch03-内存",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android资源溢出崩溃的原因分析和解决方案",
-      "scored_at": "2026-07-03T09:05:11.293554"
-    },
-    {
-      "title": "macOS 上 Flutter Desktop 与 Electron 的性能对比",
-      "path": "AndroidWeekly/#23/macOS 上 Flutter Desktop 与 Electron 的性能对比",
-      "source_url": "https://mp.weixin.qq.com/s/uTHi8SfCvXJfbie1A1YNVA",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 11,
-      "quality": "medium",
-      "scores": {
-        "relevance": 3,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 2
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch11-跨平台",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Flutter Desktop与Electron在macOS平台上的性能对比分析",
-      "scored_at": "2026-07-03T09:05:11.293556"
-    },
-    {
-      "title": "A Comprehensive Guide to Android 12 Splash Screen API",
-      "path": "AndroidWeekly/#23/A Comprehensive Guide to Android 12 Splash Screen API",
-      "source_url": "https://medium.com/@rackadev/a-comprehensive-guide-to-android-12s-splash-screen-api-644609c811fa",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
+      "title": "2026-07-05-background-audio-hardening-power",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-background-audio-hardening-power.md",
       "score": 15,
-      "quality": "high",
-      "scores": {
-        "relevance": 4,
-        "depth": 4,
-        "timeliness": 4,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:45.450091",
+      "summary": "# 源码调研：Android 17 后台音频硬化与播放功耗治理机制  📅 2026-07-05 | AIW · 每日源码调研  ## 盲区来源 关联章节：AIW/src/part5-app/ch25-power-size/17-background-audio-hardening-power.md（已 finalized 状态） 重要程度：高 原始描述：研究蓝牙和 LE Audio 场景下音频硬化",
+      "chapter": "ch11",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
       ],
-      "summary": "Android 12启动画面的完整API使用指南和最佳实践",
-      "scored_at": "2026-07-03T09:05:11.293557"
+      "scored_at": "2026-07-05T05:47:52.299006"
     },
     {
-      "title": "Android12 系统源码分析 NativeTombstoneManager",
-      "path": "AndroidWeekly/#23/Android12 系统源码分析 NativeTombstoneManager",
-      "source_url": "https://mp.weixin.qq.com/s/YPnQX1OSWhvXEuibCiCQPg",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 16,
-      "quality": "high",
-      "scores": {
-        "relevance": 5,
-        "depth": 5,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch03-内存",
-          "confidence": "high"
-        }
+      "title": "2026-07-04-Obsidian新增文件与今日总结（22点）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-07-04-Obsidian新增文件与今日总结（22点）.md",
+      "score": 15,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:45.859672",
+      "summary": "[cron:7359266d-fd19-42a8-a3ca-2718a346d185 Obsidian新增文件与今日总结（22点）] # Obsidian新增文件与今日总结 · 2026-07-04  ## 今日新增文件总览 - 今日新增文件总数：0 - 定时任务落盘文件数：0 - 其他 Obsidian 新增文件数：0  ## 定时任务落盘文件（按任务分组，完整列出所有文件路径）  ### Da",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
       ],
-      "summary": "Android 12 NativeTombstoneManager源码深度分析和原理",
-      "scored_at": "2026-07-03T09:05:11.293558"
+      "scored_at": "2026-07-05T05:47:52.299008"
     },
     {
-      "title": "Android Module 依赖关系的 可视化实现",
-      "path": "AndroidWeekly/#23/Android Module 依赖关系的 可视化实现",
-      "source_url": "https://zhuanlan.zhihu.com/p/421286744",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 12,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 2,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch07-模块化",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android Module依赖关系可视化的实现方案",
-      "scored_at": "2026-07-03T09:05:11.293559"
-    },
-    {
-      "title": "图解 Compose Modifier 实现原理",
-      "path": "AndroidWeekly/#23/图解 Compose Modifier 实现原理",
-      "source_url": "https://mp.weixin.qq.com/s/f5KZJN_4G4LFBlEBQ_se3g",
-      "weekly_issue": "#23",
-      "weekly_date": "2021-10-15",
-      "score": 14,
-      "quality": "medium",
-      "scores": {
-        "relevance": 5,
-        "depth": 3,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        }
-      ],
-      "summary": "Jetpack Compose Modifier实现原理的图解分析",
-      "scored_at": "2026-07-03T09:05:11.293561"
-    },
-    {
-      "path": "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization",
-      "title": "Android 17 性能优化：新调度器减少 30% 启动时间",
-      "summary": "Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少 30%。新调度器采用机器学习模型预测用户行为，优先启动高频...",
-      "chapter": "ch05-cpu-power",
-      "action": "direct_inject",
-      "score": 18,
-      "score_detail": "相关5 深3 时效5 信源5",
-      "processed_at": "2026-07-04T05:34:25.725165",
-      "source": "RSS"
-    },
-    {
-      "path": "https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation",
-      "title": "Linux 6.10 引入内存碎片整理新机制",
-      "summary": "Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运行的系统稳定性。新机制采用分层管理策略，对频繁分配释放的热点...",
-      "chapter": "ch04-memory",
-      "action": "direct_inject",
-      "score": 14,
-      "score_detail": "相关5 深3 时效1 信源5",
-      "processed_at": "2026-07-04T05:34:25.725178",
-      "source": "RSS"
-    },
-    {
-      "path": "https://juejin.cn/post/7621443853845594154",
-      "title": "局域网微信——完整近场通信开源项目",
-      "summary": "基于 Compose+Room3+Hilt 的去中心化通信应用，集成 NSD 服务发现、Wi-Fi Direct 直连、BLE 加好友、WebRTC 音视频通话、大文件 FileChannel 分片续传和 AES 端到端加密。展示了 Android 系统底层通信能力的深度工程实践，完整源码开源。",
-      "chapter": "ch16-aosp",
-      "action": "direct_inject",
-      "score": 14,
-      "score_detail": "相关5 深5 时效1 信源3",
-      "processed_at": "2026-07-04T05:34:25.725181",
-      "source": "掘金Android"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76184335-你可能还不知道ComposePager有.md",
-      "title": "你可能还不知道 Compose Pager 有多强大从传统的 ViewPager 过渡到 Compose Pager，代",
-      "summary": "> 发布时间: 2026-03-19T00:29:43.000Z > 原文链接:  2026-03-19 2,150 阅读9分钟 我同事刚开始用 Compose 没多久，就找上我了，问我 ViewPager 有没有什么替代品。我说 Compose 的 Pager 可比那个强多了，你等我写一...",
-      "chapter": "ch17-oem",
-      "action": "direct_inject",
-      "score": 12,
-      "score_detail": "相关3 深1 时效5 信源3",
-      "processed_at": "2026-07-04T05:34:25.725183",
-      "source": "Obsidian 技术文章回流"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76214438-我写了个局域网微信带源码.md",
-      "title": "【带源码】我写了个局域网微信一款小巧的设备间直连通信应用，在交互与功能层面尽量对齐微信，同时深度挖掘安卓系统底层能力，利",
-      "summary": "> 发布时间: 2026-03-26T14:13:44.000Z > 原文链接:  2026-03-26 2,608 阅读11分钟 > 在一次爬山途中，由于手机突然没有信号让我萌生了一个大胆的想法：能不能让手机之间直接连接并像微信一样通信呢？借离职后的自由时间，我决定挑战一下自己，开发一款...",
-      "chapter": "ch16-aosp",
-      "action": "direct_inject",
-      "score": 14,
-      "score_detail": "相关1 深5 时效5 信源3",
-      "processed_at": "2026-07-04T05:34:25.725188",
-      "source": "Obsidian 技术文章回流"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76232428-我见过的最反直觉的Android架构问题.md",
-      "title": "我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂Clean Architecture 落地的",
-      "summary": "> 发布时间: 2026-03-31T09:39:53.000Z > 原文链接:  2026-03-31 1,907 阅读9分钟 Clean Architecture 被捧上神坛五六年了。但我最近 review 了几个\"按规范来的\"项目，发现一个反直觉的规律：UseCase 文件越多，项目...",
-      "chapter": "ch01-architecture",
-      "action": "direct_inject",
-      "score": 14,
-      "score_detail": "相关5 深1 时效5 信源3",
-      "processed_at": "2026-07-04T05:34:25.725191",
-      "source": "Obsidian 技术文章回流"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76388970-为什么Android不用接口做Activ.md",
-      "title": "为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO",
-      "summary": "> 发布时间: 2026-05-13T00:03:47.000Z > 原文链接:  2026-05-13 3,478 阅读4分钟 上周，一个刚从 iOS 转过来的同事问我： > “Android 为啥不喜欢用接口回调传结果？ iOS 那边 delegate、closure 不就挺好吗？”...",
-      "chapter": "ch17-oem",
-      "action": "direct_inject",
-      "score": 14,
-      "score_detail": "相关5 深1 时效5 信源3",
-      "processed_at": "2026-07-04T05:34:25.725193",
-      "source": "Obsidian 技术文章回流"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-04-76500740-现代Android官方为什么更推荐Rep.md",
-      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch",
-      "summary": "> 发布时间: 2026-06-11T22:41:13.000Z > 原文链接:  2026-06-12 1,642 阅读12分钟 写这篇文章，其实是因为最近看到有些公众号在介绍 Kotlin 协程时，都推荐在 Repository 中这样写： fun load() { repositor...",
-      "chapter": "ch17-oem",
-      "action": "direct_inject",
-      "score": 14,
-      "score_detail": "相关5 深1 时效5 信源3",
-      "processed_at": "2026-07-04T05:34:25.725195",
-      "source": "Obsidian 技术文章回流"
-    },
-    {
-      "title": "Perfetto v57: fixing PyTorch traces, plus journald logs and an AI skill",
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Perfetto v57- fixing PyTorch traces, plus journald logs and an AI skill-2026-07-03.md",
-      "quality": "medium",
+      "title": "2026-07-04-今天干了啥日报（OpenClaw）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-07-04-今天干了啥日报（OpenClaw）.md",
       "score": 10,
-      "scored_at": "2026-07-04T05:46:35.198506"
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:46.211789",
+      "summary": "# 今天 OpenClaw 帮我干了点啥？！· 2026-07-04  ## 取证范围 - cron 运行记录（最近24小时） - 当日任务落盘文件 - memory/YYYY-MM-DD.md  ## 正文（7条）  ### 1. SmartPerfetto v1.0.38 重大发布 ",
+      "chapter": "ch13",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299009"
     },
     {
-      "title": "从AI Coding到Harness Engineering的端到端工程开发实践",
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/从AI Coding到Harness Engineering的端到端工程开发实践-2026-07-03.md",
-      "quality": "medium",
+      "title": "2026-07-04-binder-ipc-latency-7-stages",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每周深度文草稿/2026-07-04-binder-ipc-latency-7-stages.md",
       "score": 11,
-      "scored_at": "2026-07-04T05:46:35.198513"
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:46.460241",
+      "summary": "# Binder 调用的 7 段延迟：80% 花在线程唤醒上  Binder 是 Android 系统里最高频的跨进程调用机制。一帧渲染管线涉及 20+ 次 Binder 调用，每次几百微秒。多数工程师的直觉是 Binder 慢因为数据序列化、内存拷贝。这个直觉是错的。  Android 17 内核（`android17-6.18`）新增的 `trace_binder_txn_latency_fr",
+      "chapter": "ch02",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299011"
     },
     {
-      "title": "源码调研：Android 17 应用层CPU优化实战：线程池配置与闲置检测方案深度研究",
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-cpu-optimization-threadpool-idle-detection.md",
-      "quality": "medium",
-      "score": 10,
-      "scored_at": "2026-07-04T05:46:35.198516"
+      "title": "2026-07-04-每日深度研究选题",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日深度研究选题/2026-07-04-每日深度研究选题.md",
+      "score": 14,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:46.609216",
+      "summary": "# 每日深度研究选题 · 2026-07-04  ## 选题  ### 1. Android 17 Binder IPC 异步批处理流水线深度解析 - **来源**：AIW research-gaps Task9新发现 §1.4 - **一手资料来源**：`https://cs.android.com/android/platform/superproject/+/master:framework",
+      "chapter": "ch16",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299012"
     },
     {
-      "title": "源码调研：Android 17 heapprofd 生产环境部署模式与默认配置",
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-heapprofd-production-deployment.md",
-      "quality": "medium",
-      "score": 12,
-      "scored_at": "2026-07-04T05:46:35.198517"
-    },
-    {
-      "title": "源码调研：Android 17 模块化启动框架在多进程/微服务场景下的依赖管理、服务发现与启动编排",
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-modular-startup-microservice-cross-process.md",
-      "quality": "medium",
-      "score": 12,
-      "scored_at": "2026-07-04T05:46:35.198519"
-    },
-    {
-      "title": "源码调研：Android 17 Perfetto 版本演进与新数据源特性深入分析",
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-perfetto-data-sources-evolution.md",
-      "quality": "medium",
+      "title": "2026-07-04-06-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-06-知识加工(回炉).md",
       "score": 13,
-      "scored_at": "2026-07-04T05:46:35.198523"
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:46.708781",
+      "summary": "# 🔄 回炉修复 · 2026-07-04 06:55  ## 来源：frontmatter backlog fallback ch15-methodology (task9_result: needs-rework)  ## 修复章节 - **ch15-methodology** — Android 性能优化研究方法论  ## 问题来源 Task9 Deep Tech Review（2026-0",
+      "chapter": "ch16",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299014"
     },
     {
-      "title": "源码调研：Android 17 Staged Install 状态机与提交-恢复链路源码级闭环验证",
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-03-android17-staged-install-state-machine-commit-restore.md",
-      "quality": "medium",
-      "score": 12,
-      "scored_at": "2026-07-04T05:46:35.198524"
-    },
-    {
-      "title": "源码调研：Android 17 Binder 死亡通知在进程退出时的批量派发顺序源码级闭环验证",
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-binder-node-release-death-notification-batch.md",
-      "quality": "medium",
+      "title": "2026-07-04-06-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-06-知识加工(新).md",
       "score": 10,
-      "scored_at": "2026-07-04T05:46:35.198526"
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:46.762985",
+      "summary": "# 🏗️ 知识缺口挖掘报告 | 2026-07-04 06:10  ## 执行概况  | 项目 | 结果 | |------|------| | Phase 0：空 draft 检查 | ❌ 无空 draft（17 个 draft 均有实质内容） | | Phase 0.5：backlog 限流 | ✅ TASK2B_BACKLOG = 0（≤20，允许挖掘） | | Phase 1：知识缺口挖掘",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299015"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-sharedpreferencesimpl-datastore-migration.md",
-      "title": "Android 17 SharedPreferencesImpl 性能优化与 DataStore 迁移路径",
-      "summary": "基于 android-17.0.0_r1 源码级闭环验证 SharedPreferencesImpl 加载/写入/apply/commit 全链路，揭示 sLoadExecutor 单线程串行加载瓶颈、EditorImpl.apply() 内存先于磁盘的监听器回调顺序、commit() 在队列空时主线程同步 fsync 的 StrictMode 设计，以及 ",
-      "chapter_mapping": "ch06",
-      "processed_at": "2026-07-04T06:15:59.018794",
-      "processed_by": "task-deepresearch-injector",
-      "action": "inject"
+      "title": "2026-07-04-08-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-08-深度技术Review.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:46.912975",
+      "summary": "# 深度技术 Review · 2026-07-04 08:29  ## 审计目标 - 章节：15 Android 性能优化研究方法论 - 文件：src/ch15-methodology.md - 状态：ready-for-review  ## 审查结果概览  ### 六维度评分 ",
+      "chapter": "ch16",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299016"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-multiprocess-datastore-mmipc-verification.md",
-      "title": "Android 17 androidx DataStore 多进程 IPC 底层实现源码级验证",
-      "summary": "DataStore 多进程协调由三层内核 IPC 叠加：FileChannel.tryLock 互斥锁 + mmap(MAP_SHARED) + atomic<uint32_t> 跨进程版本号 + FileObserver(MOVED_TO) inotify 写入通知。JNI 桥接 SharedCounter.android.kt → shared_coun",
-      "chapter_mapping": "ch06",
-      "processed_at": "2026-07-04T06:15:59.018794",
-      "processed_by": "task-deepresearch-injector",
-      "action": "inject"
+      "title": "2026-07-04-08-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-08-知识加工(新).md",
+      "score": 10,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.011945",
+      "summary": "# 📝 知识加工报告 | 2026-07-04 08:10  ## Task 2A — 新章节加工  ### 加工内容 **章节**：8.8 Android 17 TelephonyManager 性能优化实战 **来源**：stub draft（task2a-knowledge-gap 创建，原有 36 行大纲式占位内容）  ### 加工覆盖  ",
+      "chapter": "ch16",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299017"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-binder-threadpool-pending-frozen-retry.md",
-      "title": "Android 17 Binder 线程池内部调度与 BR_TRANSACTION_PENDING_FROZEN 重投递机制",
-      "summary": "Binder 线程池演化为三段式调度：内核 lazy 唤醒 + 用户态原子计数器 + 进程级 condvar 等待。DEFAULT_MAX_BINDER_THREADS=15（system_server 提至 31），mExecutingThreadsCount 原子计数配合 mStarvationStartTime 100ms 饥饿告警。BR_TRANSA",
-      "chapter_mapping": "ch01",
-      "processed_at": "2026-07-04T06:15:59.018794",
-      "processed_by": "task-deepresearch-injector",
-      "action": "queue"
+      "title": "2026-07-04-09-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-09-知识加工(新).md",
+      "score": 10,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.061732",
+      "summary": "# 🏗️ 知识缺口挖掘报告 | 2026-07-04 09:16  **模式**：Phase 1 — 知识缺口挖掘（连续第 7 轮） **Phase 0 结果**：无空 draft 章节（16 个 draft 均有 ≥15 行内容） **Phase 0.5 结果**：Task2B backlog = 0（≤20，允许进入 Phase 1）  ---  ## 本轮检查方向（12 项，全部 < 14 ",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299018"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-hprof-heapdump-android17-java-hprof-signal-sender.md",
-      "title": "HPROF Heap Dump 管线与 Perfetto android.java_hprof 数据源（信号触发端）",
-      "summary": "Android 17 正式废弃 kill -10 触发 hprof 的旧路径——SIGUSR1 现仅做 GC+ForceProcessProfiles，显式日志标注 no HPROF。hprof 只能由 Debug.dumpHprofData() 或 Perfetto android.java_hprof 经 __SIGRTMIN+6 实时信号触发。Java",
-      "chapter_mapping": "ch14",
-      "processed_at": "2026-07-04T06:15:59.018794",
-      "processed_by": "task-deepresearch-injector",
-      "action": "queue"
+      "title": "2026-07-04-12-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-12-知识加工(新).md",
+      "score": 13,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.310991",
+      "summary": "# 知识加工（新章节+草稿加工）| 2026-07-04 12:14  ## 模式：知识缺口挖掘（Round 10）  ### 执行摘要 - **Phase 0 — 空 draft 扫描**：16 个 draft 章节均已有 >15 行有效内容，无空 draft - **Phase 0.5 — backlog 限流**：TASK2B_BACKLOG = 0 (≤20)，允许进入 Phase 1 -",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299020"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-sharedpreferences-impl-anr-mechanism.md",
-      "title": "Android 17 SharedPreferencesImpl 性能与 ANR 优化机制",
-      "summary": "首次加载是隐式主线程阻塞——getXxx()/edit() 都调 awaitLoadedLocked()，sLoadExecutor 串行 HandlerThread 10s idle 回收。commit 走主线程 fsync、apply 走后台 fsync。ANR 真正触发点不在 apply 本身而在 QueuedWork.waitToFinish()——",
-      "chapter_mapping": "ch06",
-      "processed_at": "2026-07-04T06:15:59.018794",
-      "processed_by": "task-deepresearch-injector",
-      "action": "inject"
+      "title": "2026-07-04-13-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-13-知识加工(新).md",
+      "score": 11,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.414735",
+      "summary": "# 📝 知识加工报告（新章节+缺口挖掘）| 2026-07-04 13:08  ## 执行摘要  | 项目 | 结果 | |------|------| | Phase 0 空 draft 扫描 | ❌ 无空 draft（0/16 章节正文 < 15 行） | | Phase 0.5 backlog 限流 | ✅ TASK2B_BACKLOG = 0（≤20，允许挖掘） | | Phase 1 缺",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299021"
+    },
+    {
+      "title": "2026-07-04-16-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-16-深度技术Review.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.564319",
+      "summary": "# Task 9 · 深度技术Review · 2026-07-04  ## 概览 - **审计章节**：4个候选章节 - **执行时间**：2026-07-04 16:22 (Asia/Shanghai) - **审计范围**：源码准确性、原理链、版本差异、数据支撑、知识盲区、交叉引用一致性  ## 审计结果  ### 自动晋升 finalized ",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299022"
+    },
+    {
+      "title": "2026-07-04-16-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-16-知识加工(新).md",
+      "score": 10,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.663826",
+      "summary": "# 知识加工（新章节+草稿加工）— 2026-07-04 16:21  ## 📋 执行摘要  **模式**：Phase 1 知识缺口挖掘（第 10 轮） **结果**：❌ 无评分 ≥ 14 的候选缺口 **连续无候选轮次**：第 10 次  ## Phase 0：空 draft 检查 - 扫描 src/ 目录：589 个 .md 文件 ",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299024"
+    },
+    {
+      "title": "2026-07-04-17-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-17-深度技术Review.md",
+      "score": 14,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.713573",
+      "summary": "# 深度技术 Review · 2026-07-04 17:20  ## Review 目标 - 章节：15 Android 性能优化研究方法论、15.9 从采集到治理的反馈回路、18.12 Flutter 渲染管线、25.17 Android 17 后台音频硬化与播放功耗治理 - 文件：src/ch15-methodology.md、src/part3-tools/ch15-methodolog",
+      "chapter": "ch02",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299025"
+    },
+    {
+      "title": "2026-07-04-18-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-18-深度技术Review.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.812837",
+      "summary": "# 深度技术Review · 2026-07-04 18:28  ## 审计目标章节 - **15**: Android 性能优化研究方法论 - **15.9**: 从采集到治理的反馈回路   - **18.12**: Flutter 渲染管线 - **25.17**: Android 17 后台音频硬化与播放功耗治理  ## 自动晋升 - ✅ **15.9**: 从采集到治理的反馈回路 (P0=",
+      "chapter": "ch02",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299026"
+    },
+    {
+      "title": "2026-07-04-18-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-18-知识加工(新).md",
+      "score": 12,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.912800",
+      "summary": "# 知识加工（新章节+草稿加工）— 2026-07-04 18:13  ## 结果：无新工作（覆盖饱和 · 第 12 轮连续无候选）  ### Phase 0：空 draft 扫描 - 扫描 src/ 全目录：**0 个空 draft** - 14 个 draft 章节均有实质内容（90–1733 有效行）  ### Phase 0.5：backlog 限流 - `TASK2B_BACKLOG =",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299027"
+    },
+    {
+      "title": "2026-07-04-19-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-19-知识加工(新).md",
+      "score": 11,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:47.963130",
+      "summary": "# 知识加工（新章节+草稿加工）— 2026-07-04 19:06  ## 运行结果：无可加工内容（第 13 轮连续饱和）  ### Phase 0：空 draft 扫描 - 结果：**0 个空 draft** - 全部 14 个 draft 章节均有实质内容（90–1735 行有效内容） - 最低：appendix.G（90 行），最高：13.21（1735 行）  ### Phase 0.5",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299029"
+    },
+    {
+      "title": "2026-07-04-20-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-20-知识加工(新).md",
+      "score": 10,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:48.062363",
+      "summary": "# 🏗️ 知识缺口挖掘报告 | 2026-07-04 20:17  ## 本轮结果：无评分 ≥ 14 的知识缺口  ### 执行路径 - Phase 0（空 draft 扫描）：0 个空 draft - Phase 0.5（backlog 限流）：TASK2B_BACKLOG = 0（≤ 20，允许进入 Phase 1） - Phase 1（知识缺口挖掘）：评估 18 个方向，0 个 ≥ 14 分",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299030"
+    },
+    {
+      "title": "2026-07-04-21-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-21-知识加工(新).md",
+      "score": 10,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:48.112247",
+      "summary": "🏗️ 知识缺口挖掘 | 2026-07-04 21:09  **结果**：本轮未发现评分 ≥ 14 的知识缺口（第 14 轮连续无候选）  **检查范围**： - 空草稿章节：0 个（14 个 draft 均有 80+ 行实质内容） - Task2B backlog：0（≤20，允许挖掘） - 新增 DeepResearch 文件（6 篇，2026-07-04）：   - `flutter-imp",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299031"
+    },
+    {
+      "title": "2026-07-04-23-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-23-知识加工(新).md",
+      "score": 12,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:48.260503",
+      "summary": "# 🏗️ 知识缺口挖掘 | 2026-07-04 23:12  ## 结果：无合格候选（≥14 分）  **本轮为第 16 轮连续无候选**，全书覆盖已饱和。  ## 检查范围 - **SUMMARY.md**：5 个 Part、28 个 Chapter、577 个小节 - **source-index.json**：高质量未映射素材 0 篇 - **research-feeds/**：最近 5 ",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299034"
+    },
+    {
+      "title": "2026-07-04-参考资料差异扫描",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-04-参考资料差异扫描.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:48.310559",
+      "summary": "# 2026-07-04 参考资料差异扫描  ## 扫描范围 - 书目：Android 性能优化（赵子健）#8-#11 - 文件：   1. 原理：掌握 App 运行时的内存模型   2. 原理：重新认识 APK 安装包   3. 原理：重新认识内存   4. 原理：重新认识应用的速度优化  ",
+      "chapter": "ch04",
+      "is_android_related": true,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299035"
+    },
+    {
+      "title": "2026-07-05-00-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-05-00-知识加工(新).md",
+      "score": 15,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:48.410067",
+      "summary": "# 🏗️ 知识缺口挖掘 | 2026-07-05 00:22  ## 本轮结论  **本轮未发现评分 ≥ 14 的知识缺口，跳过新章节创建。**  ---  ## 缺口来源 素材驱动 / AOSP 结构 / 官方文档 / 章节深挖 / 研究素材 ",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299036"
+    },
+    {
+      "title": "2026-07-05-04-知识加工(新)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-07-05-04-知识加工(新).md",
+      "score": 10,
+      "quality": "low",
+      "relevance": "low",
+      "indexed_at": "2026-07-05T05:47:48.706223",
+      "summary": "# 🏗️ 知识缺口挖掘 | 2026-07-05 04:07  **结果**：❌ 本轮未发现评分 ≥ 14 的知识缺口（连续第 20 轮）  ## 检查范围  ### Phase 0：空 Draft 扫描 - 空 draft（<15 行）：**0 个** - Task2B backlog：**0 个** - → 进入 Phase 1 挖掘模式 ",
+      "chapter": "ch16",
+      "is_android_related": false,
+      "tags": [
+        "Android开发",
+        "系统优化"
+      ],
+      "scored_at": "2026-07-05T05:47:52.299038"
+    }
+  ],
+  "entries": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-battery-optimization-soc-architecture-power-management.md",
+      "title": "Android 17 不同 SoC 架构下的电池优化策略深度分析",
+      "summary": "分层架构设计（硬件层 Perfetto → 框架层 BatteryManager → 服务层 PMS → 应用层 JobScheduler），SoC 差异化策略（ARM Big.LITTLE / Qualcomm Adreno / MediaTek APU），BatteryCounters proto 指标定义，电源域管理粒度对比。",
+      "chapter": "ch05",
+      "processed_at": "2026-07-05T06:18:33.276257+08:00",
+      "action": "inject",
+      "task": "deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-pms-cpuidle-schedutil-closed-loop.md",
+      "title": "Android 17 PowerManagerService × cpuidle menu governor × schedutil 三层协作闭环",
+      "summary": "PMS 17 个 DIRTY_* 位掩码 + 10 个 WAKE_LOCK_* 状态聚合、adjustWakeLockSummary 隐含状态推断、IPower AIDL Hint Session、schedutil sugov_get_util() 聚合 uclamp/iowait boost、cpuidle menu governor 6-bucket 预测。源码锚定 android-17.0.0_r1。",
+      "chapter": "ch05",
+      "processed_at": "2026-07-05T06:18:33.276257+08:00",
+      "action": "inject",
+      "task": "deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-flutter-impeller-shader-compilation-pipeline.md",
+      "title": "Flutter Impeller 着色器编译管线与运行期 PSO 缓存机制",
+      "summary": "Impeller 全 AOT 离线编译策略（GLSL→SPIRV→后端 Shader→FlatBuffers ShaderArchive→C 数组静态链接），运行期零反射加载，Vulkan vk::PipelineCache 落盘 vs GLES 内存表不落盘，消除运行时 shader 编译抖动的架构设计。",
+      "chapter": "ch18",
+      "processed_at": "2026-07-05T06:18:33.276257+08:00",
+      "action": "inject",
+      "task": "deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md",
+      "title": "Android 17 Binder 4MB 内核侧缓冲池上限与事务优先级算法源码级闭环",
+      "summary": "源码级分析 Binder 驱动 mmap 上限从 SZ_1M 到 SZ_4M 的演化、50% async space 配额、binder_transaction_priority() 的 min(client,node) 优先级收敛算法、set_priority_called 单飞标志防止嵌套重复升级。锚定 android17-6.18 内核 binder.c/binder_alloc.c。",
+      "chapter": "ch01",
+      "processed_at": "2026-07-05T06:18:33.276257+08:00",
+      "action": "queue",
+      "task": "deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-heapprofd-production-deployment-permissions.md",
+      "title": "Android 17 Perfetto heapprofd 生产环境部署模式与权限配置",
+      "summary": "三层权限模型（uid 范围/安装者过滤/SESSION_INITIATOR_TRUSTED_SYSTEM 绕过）、双 Producer 并行架构（Native+Java）、init.rc 服务配置、连接退避指数倍增策略、packages.list 安全校验、all=true 生产崩溃警告。",
+      "chapter": "ch13",
+      "processed_at": "2026-07-05T06:18:33.276257+08:00",
+      "action": "queue",
+      "task": "deepresearch-injector"
     }
   ]
 }

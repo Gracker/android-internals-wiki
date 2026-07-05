@@ -517,6 +517,34 @@
       "status": "appended",
       "title": "AISealHostService：AI 内容密封主机服务"
     },
+    "Clippings/how-does-a-gpu-work-for-deep-learning-en.md": {
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783164829.0874057,
+      "sha256": "659969a5541c529a09d9fde36559611530cbd36c7b0d5f1bd2a82d251982358e",
+      "size": 11178,
+      "status": "skipped-low-score"
+    },
+    "Clippings/how-does-a-gpu-work-for-deep-learning-zh.md": {
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783164912.7785559,
+      "sha256": "0b0359f0a183386429a0009f85e176294d17d4a05f9c2e7cd1dde8e6d9faafc6",
+      "size": 14150,
+      "status": "skipped-low-score"
+    },
+    "GPU如何为深度学习工作-原文.md": {
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783174172.8329632,
+      "sha256": "679e27a843b249e4651b7c7b42cc70eb058b3c72557367aceba88980f7e33f74",
+      "size": 25295,
+      "status": "skipped-low-score"
+    },
+    "GPU如何为深度学习工作.md": {
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783174172.835825,
+      "sha256": "1ce54242447a9a20d57c4026d2b076abf8a950e1f411ff9c9c3a88c5624b3a05",
+      "size": 22054,
+      "status": "skipped-low-score"
+    },
     "source/juejin-android/2026-07-04-76184335-你可能还不知道ComposePager有.md": {
       "chapter": "待分类",
       "entry_id": "970f43ab2800be1d",
@@ -580,6 +608,61 @@
       "mtime": 1783109685.2652364,
       "score": 11,
       "sha256": "f55035eb7330beef3dd80721c0a13d668b131dbffeb0d833b768335a55d9d025",
+      "size": 13149,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
+    "source/juejin-android/2026-07-05-76148976-AI写Android基准测试.md": {
+      "chapter": "待分类",
+      "entry_id": "d03411e26ca28a93",
+      "last_appended": "2026-07-05T05:25:07.020373+08:00",
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783195964.9544635,
+      "score": 9,
+      "sha256": "cc96514252b3388f851ad167c3358c1120a0d7627f7a03fbaaa7ee5b157e0242",
+      "size": 9376,
+      "status": "appended",
+      "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名近日，谷歌发布一个了 Android Bench ，目的"
+    },
+    "source/juejin-android/2026-07-05-76171086-Room 3.0来了.md": {
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783195951.7842329,
+      "sha256": "efd8f430e34c54371f988646fa2e7f4563ca50f31c4e8d7bd8c68753aa3a2c12",
+      "size": 5735,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-07-05-76184335-Compose Pager强大.md": {
+      "chapter": "待分类",
+      "entry_id": "e8109701f1681487",
+      "last_appended": "2026-07-05T05:25:07.020373+08:00",
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783195947.3083868,
+      "score": 8,
+      "sha256": "1fcf6ae21aa3fe68031b947334eb92d40441ebdf3be304b820a4ff427ffd4adb",
+      "size": 24046,
+      "status": "appended",
+      "title": "你可能还不知道 Compose Pager 有多强大从传统的 ViewPager 过渡到 Compose Pager，代"
+    },
+    "source/juejin-android/2026-07-05-76232428-UseCase越多项目越烂.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "8102e7e1988809d0",
+      "last_appended": "2026-07-05T05:25:07.020373+08:00",
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783195941.6285903,
+      "score": 7,
+      "sha256": "422f77a5c83f3db67224390927e3e1f9e3b707deee5f6959558d80b06bfc5833",
+      "size": 15897,
+      "status": "appended",
+      "title": "我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂Clean Architecture 落地的"
+    },
+    "source/juejin-android/2026-07-05-76500740-Repository暴露suspend .md": {
+      "chapter": "待分类",
+      "entry_id": "9a08df82f793d965",
+      "last_appended": "2026-07-05T05:25:07.020373+08:00",
+      "last_seen": "2026-07-05T05:25:07.020373+08:00",
+      "mtime": 1783195936.3312352,
+      "score": 11,
+      "sha256": "0cecc865ed8e334ced9bd261680845edf0ad9ad2f86ad21ede7a393773ac10f0",
       "size": 13149,
       "status": "appended",
       "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
@@ -674,24 +757,24 @@
     }
   },
   "last_report": {
-    "appended": 5,
-    "considered": 6,
-    "cutoff": "2026-07-03T05:23:17.240710+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-04.md",
+    "appended": 4,
+    "considered": 9,
+    "cutoff": "2026-07-04T05:20:22.605566+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-05.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1475,
+    "scanned": 1484,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
+      "low_score": 5,
       "max_files": 0,
       "old_unseen": 1400,
       "path": 26,
-      "unchanged": 43
+      "unchanged": 49
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-04T05:25:22.605566+08:00",
+  "last_run_at": "2026-07-05T05:25:07.020373+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

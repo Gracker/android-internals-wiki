@@ -1,6 +1,6 @@
 {
   "current_book": 1,
-  "current_offset": 12,
+  "current_offset": 16,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -37,7 +37,7 @@
     {
       "prefix": "Android 性能优化",
       "total_files": 21,
-      "completed_files": 12,
+      "completed_files": 16,
       "files": [
         "Android 性能优化 - Android 性能优化总结.md",
         "Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md",
@@ -129,10 +129,10 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-04",
-  "total_knowledge_points": 174,
-  "total_suggestions": 29,
-  "total_gaps": 3,
+  "last_scan_date": "2026-07-05",
+  "total_knowledge_points": 199,
+  "total_suggestions": 43,
+  "total_gaps": 14,
   "skipped_files": [
     {
       "file": "Android 应用稳定性剖析与优化 - ART 堆内存分布与黑科技扩量：拯救 OOM 的利器.md",
