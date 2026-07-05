@@ -2,8 +2,8 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: "ready-for-review"
-pipeline_stage: "task9_pending"
+status: ready-for-review
+pipeline_stage: task6_pending
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
 tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
 confidence: "medium"
@@ -20,15 +20,15 @@ created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
 last_task2b_at: "2026-07-06T02:50:00+08:00"
 last_task2b_by: "openclaw-task2b-main"
-task2b_result: "fixed"
+task2b_result: fixed
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: "fixed"
-task9_result: "needs-rework"
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task9_result: needs-rework
 task9_reviewed_date: "2026-07-06"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-05T22:31:37"
+last_task9_at: "2026-07-06T04:21:00+08:00"
 last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
 last_task9_audit: "2026-07-05T20:20:00+08:00"
@@ -44,6 +44,7 @@ last_deepseek_cn_review_at: "2026-06-12"
 last_task9_audit_log: "logs/deep-review/2026-07-05-22-deep-review.md"
 task9_review_summary: "发现 P0 源码命令错误、P1 版本差异覆盖不完整、P2 数据缺失等问题，已写入 queue.json 和 suggestions.md"
 last_task2b_lite_at: "2026-07-05"
+last_task9_autofix_at: "2026-07-06"
 ---
 
 # 14.8 GPU 图形调试与分析工具
@@ -274,14 +275,14 @@ data_sources {
   config {
     name: "gpu.counters"
     gpu_counter_config {
-      counters: [1, 2, 3, ...]         # 先用设备暴露的 counter 列表确认具体 ID（android-17.0.0_r1 规范字段名）
+      counter_ids: [1, 2, 3, ...]     # 先用设备暴露的 counter 列表确认具体 ID（android-17.0.0_r1 字段名）
       counter_period_ns: 1000000    # 1 ms 采样间隔
     }
   }
 }
 ```
 
-`gpu_counter_config` 的字段定义在 AOSP `android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto`。注意 android-17.0.0_r1 中该字段为 `counters`（旧版本中曾使用 `counter_ids`），对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时，先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出，再回填这些 ID；不同 GPU 的编号和含义都不通用。
+`gpu_counter_config` 的字段定义在 AOSP `android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 是 `gpu_counter_config` 的 `repeated uint32` 字段（field number 2），对应设备 producer 返回的 `GpuCounterSpec`；注意这里的 `counter_ids` 是 `gpu_counter_config` 消息内的字段，与 Perfetto 数据源名 `gpu.counters` 不同。自己手写 Trace Config 时，先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出，再回填这些 ID；不同 GPU 的编号和含义都不通用。
 
 ### 关键 GPU 指标
 

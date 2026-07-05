@@ -49,7 +49,9 @@
       "section_title": "GPU 图形调试与分析工具",
       "priority": 95,
       "reason": "[Deep Tech Review] AOSP源码路径错误",
-      "material_paths": ["intake/suggestions.md"],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
       "review_issues": [
         {
           "type": "源码错误",
@@ -60,7 +62,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-06T04:21:00+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-06T04:50:00+08:00",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "fixed: counter_ids field name restored (AOSP android-17.0.0_r1 uses counter_ids, not counters)"
     },
     {
       "section": "ch01-architecture",
