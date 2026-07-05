@@ -25,12 +25,12 @@ task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
 task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-06-12"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-12T18:20:00+08:00"
+task9_reviewed_date: 2026-07-05
+task9_reviewed_by: openclaw-task9
+last_task9_at: 2026-07-05T18:29:27+08:00
 last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
-last_task9_audit: "2026-06-25T16:24:00+0800"
+last_task9_audit: 2026-07-05T18:29:27+08:00
 queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
 last_task6_at: "2026-07-05T18:17:09+08:00"
 task6_reviewed_at: "2026-07-05T18:17:09+08:00"
@@ -174,7 +174,7 @@ adb shell settings put global angle_gl_driver_selection_values angle
 
 部分新系统镜像还会把同样的动作封成 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时,改从 Settings / Graphics Driver Preferences 进入。
 
-5. **Vulkan 应用需要启用 AGI 的 Vulkan Layer 完成帧捕获**。AGI 官方 quickstart 要求 Vulkan 应用启用 Vulkan validation layers;若应用未自行启用,需要通过 `adb shell settings put global enable_gpu_debug_layers 1` 和 `adb shell settings put global gpu_debug_layers <agi_layer_name>` 注入 AGI APK 中的 layer。AGI Frame Profiler 的定位是 draw call / shader / render target 分析,不用于测量真实帧率。如果讨论应用自带调试 validation layer 的性能扰动,需要另起一句说明,但不要覆盖 AGI 必需的 layer 配置。
+5. **Vulkan 应用需要注入 AGI 的捕获 Layer 完成帧捕获**。AGI Frame Profiler 通过 Vulkan Layer 机制拦截 GPU 命令;若应用未自行加载 AGI 的捕获 Layer,需要通过 `adb shell settings put global enable_gpu_debug_layers 1` 和 `adb shell settings put global gpu_debug_layers <agi_layer_name>` 注入 AGI APK 中的捕获 Layer。这里注入的是 AGI 自带的帧捕获 Layer,不是 Khronos 标准 Vulkan Validation Layer(VK_LAYER_KHRONOS_validation),两者功能不同。AGI Frame Profiler 的定位是 Draw Call / Shader / Render Target 分析,不用于测量真实帧率。
 
 使用步骤:
 
