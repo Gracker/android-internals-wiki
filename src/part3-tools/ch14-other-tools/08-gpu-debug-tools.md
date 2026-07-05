@@ -2,8 +2,8 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, APA 要求 Android 12+, Sokatoa 要求 Android 13+)"
 tags: ["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]
 confidence: "medium"
@@ -18,13 +18,14 @@ related_chapters: ["2.10", "2.14", "13.3", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
-last_task2b_at: "2026-06-12T16:50:00+08:00"
-task2b_result: "fixed-lite"
+last_task2b_at: "2026-07-05T18:53:25+08:00"
+last_task2b_by: "openclaw-task2b"
+task2b_result: "fixed"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
-task9_result: "pass-tech-review"
+task9_result: "needs-recheck"
 task9_reviewed_date: 2026-07-05
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-07-05T18:29:27+08:00
@@ -35,8 +36,8 @@ queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
 last_task6_at: "2026-07-05T18:17:09+08:00"
 task6_reviewed_at: "2026-07-05T18:17:09+08:00"
 task6_reviewed_by: "openclaw-task6"
-finalized_date: "2026-07-05"
-finalized_by: "openclaw-task6-auto-promote"
+finalized_date: ""
+finalized_by: ""
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-12"
 last_task9_audit_log: "logs/deep-review/2026-06-12-16-audit.md"
@@ -211,6 +212,25 @@ AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。Syst
 Android 15 开始,ANGLE 已经有了更明确的系统开关和每应用切换入口。到 Android 16 的新设备,ANGLE 覆盖范围继续扩大;Android 17 的新设备再转到 denylist 策略,默认大多数应用经由 ANGLE,兼容性例外回退到原生 GLES 驱动。AGI 的帧分析沿着这条迁移线工作:它会用自定义 ANGLE 构建把 GLES 命令翻译为 Vulkan 再做追踪。
 
 排查时先确认设备当前走的是哪条 driver 路径,再决定怎么解读 Draw Call 和 Shader 时间。开发阶段常用的固定方法有两类:用前面的 `settings put global angle_gl_driver_selection_*`,或在带 gpu shell 封装的系统镜像上用 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时,改从 Settings / Graphics Driver Preferences 进入。
+
+**Android 17 denylist 下的确认流程**。Android 17 新设备默认走 denylist 策略:绝大多数 GLES 应用已由 ANGLE 接管,只有 denylist 上列出的例外才回退到原生 GLES。排查 GPU 帧分析结果前,先确认设备的实际 driver 路径:
+
+```bash
+# 1. 确认系统是否已启用 denylist 模式
+adb shell settings get global angle_gl_driver_all_angle
+# Android 17 新设备默认返回 1(denylist 已生效);旧设备升级可能返回 null
+
+# 2. 确认当前 app 是否在 denylist 中(被排除使用 ANGLE)
+adb shell settings get global angle_gl_driver_selection_pkgs
+# 如果包名在列表中且对应 selection_values 为 "native",该 app 走原生 GLES
+# 解读 AGI 帧分析结果时,走 ANGLE→Vulkan 和走原生 GLES 的 Shader/Draw Call 时间特征不同
+
+# 3. 在 denylist 设备上把 app 强制拉回原生 GLES(对比调试用)
+adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
+adb shell settings put global angle_gl_driver_selection_values native
+```
+
+**allowlist 与 denylist 的语义反转**。Android 15-16 新设备的 ANGLE 机制是 allowlist(允许列表):`angle_gl_driver_selection_pkgs` 中列出的应用走 ANGLE,其余走原生 GLES。Android 17 新设备反转为 denylist(拒绝列表):列表中的应用反而被排除在 ANGLE 之外、走原生 GLES,不在列表中的应用默认通过 ANGLE 运行。同一条 `settings put` 指令在两种模式下语义相反——allowlist 设备上是"把我加进去走 ANGLE",denylist 设备上是"把我排除掉走原生 GLES"。排查前必须先用 `angle_gl_driver_all_angle` 确认模式,否则可能误判 driver 路径。
 
 ## Perfetto 中的 GPU 分析能力
 
@@ -570,11 +590,43 @@ GAPID(Graphics API Debugger)是 Google 早期的图形调试工具,定位偏向�
 
 Android 15 开始,ANGLE 已经从"可选实验路径"走到"系统内可显式切换的兼容层"。Android 16 的新设备继续扩大默认覆盖,Android 17 的新设备转到 denylist 策略,默认大多数 GLES 应用经由 ANGLE。
 
-这对 GPU 帧分析的影响:
+**允许列表与拒绝列表的策略差异**。这是理解整套 ANGLE 行为的关键转折点:
+
+| 维度 | allowlist(Android 15-16 新设备) | denylist(Android 17 新设备) |
+|------|-------------------------------|---------------------------|
+| 默认路径 | 原生 GLES 驱动 | ANGLE → Vulkan |
+| `angle_gl_driver_selection_pkgs` 含义 | 列表内走 ANGLE | 列表内被排除、走原生 GLES |
+| 配置动机 | "我要为哪些 app 开启 ANGLE?" | "哪些 app 例外不走 ANGLE?" |
+| 对 GPU 帧分析的影响 | 大部分 GLES app 不走 ANGLE,帧捕获走原生 GLES 路径 | 大部分 GLES app 默认走 ANGLE,帧分析变成 GLES → ANGLE → Vulkan 两层翻译 |
+
+**Android 17 denylist 开发者确认命令**:
+
+```bash
+# 确认 denylist 模式是否已生效
+adb shell settings get global angle_gl_driver_all_angle
+# 返回 1 → denylist 模式;返回 null → 非 denylist(旧设备或旧版本)
+
+# 查看当前 denylist 中的包名(即被排除不走 ANGLE 的 app)
+adb shell settings get global angle_gl_driver_selection_pkgs
+
+# 将 app 加入 denylist(强制走原生 GLES)
+adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
+adb shell settings put global angle_gl_driver_selection_values native
+```
+
+**AGI / RenderDoc 的帧分析路线受到影响**。在 denylist 设备上,不在排除列表中的 GLES 应用实际执行路径为 `GLES app → ANGLE → Vulkan driver`。AGI Frame Profiler 捕获的 GPU 命令流是 Vulkan 命令(而不是原始 GLES 命令),Draw Call 数量、Shader 绑定方式和 CPU-GPU 时间对应关系都与原生 GLES 路径不同。对比 allowlist 设备上同一 GLES app 的帧分析数据时,这些差异需要纳入解读框架。
+
+**开发者迁移指引**:
+
+- **确认版本前提**:`adb shell getprop ro.build.version.sdk` 确认设备 API Level(≥37 为 Android 17);旧设备升级到 Android 17 不受 denylist 强制约束,`angle_gl_driver_all_angle` 返回 null 时按 allowlist 逻辑处理
+- **帧分析工作流调整**:Android 17 新设备上优先用 `angle_gl_driver_all_angle` 确认模式,再决定 AGI 的抓帧策略;如果 app 不在 denylist 中,AGI 帧分析看到的是 ANGLE 翻译后的 Vulkan 命令
+- **对比测试建议**:同一 GLES app 在 Android 16(allowlist)和 Android 17(denylist)上分别做 GPU 帧分析,确认 ANGLE 翻译是否引入了额外的性能差异
+
+**这对 GPU 帧分析的版本级影响总结**:
 
 - **Android 15**:开发者已经可以在系统设置或 adb 中强制指定应用走 ANGLE,排查时要先确认真实 driver 选择
-- **Android 16 新设备**:ANGLE 覆盖范围继续扩大,很多新机型上的 GLES 工作负载已经更接近 GLES-over-Vulkan
-- **Android 17 新设备**:默认大多数应用走 ANGLE,只有 denylist 例外回退到原生 GLES
+- **Android 16 新设备**:ANGLE 覆盖范围继续扩大,很多新机型上的 GLES 工作负载已经更接近 GLES-over-Vulkan;仍为 allowlist 模式
+- **Android 17 新设备**:默认大多数应用走 ANGLE,通过 `angle_gl_driver_all_angle` 启用 denylist;名单上的例外回退到原生 GLES
 - **旧设备升级场景**:系统版本升上去,不等于所有旧设备都立刻切到同一条 ANGLE 策略,结论仍要和设备实测一致
 
 ### APA 发布(2026 年 5 月)
