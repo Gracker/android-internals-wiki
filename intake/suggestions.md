@@ -340,3 +340,23 @@
   4. SQLite 性能 — 已充分覆盖（14 files >5 mentions，含 3 个专节 80+97 mentions）
   5. Android System Intelligence — 素材1×相关1×需求2×时效4 = 8（偏应用层智能，非系统性能核心）
 - **评估结果**: 0 个 ≥14 分新候选，连续 23 轮覆盖饱和
+
+## 2026-07-05 08:23 知识缺口挖掘检查记录（Round 24）
+
+- **检查方向**:
+  1. 全书空 draft 扫描（0 个空 draft）
+  2. Task2B backlog = 0（允许挖掘）
+  3. source-index.json 无 quality≥16 且 unmapped 的条目
+  4. research-feeds 近期文件（Perfetto v54 等）已映射
+  5. 对照 Clippings 三本参考书章节结构（108 篇全文扫描）
+     - 《Android 应用稳定性剖析与优化》15 篇 → 全部已有对应章节
+     - 《Android 性能优化》16 篇 → 15/16 已覆盖（插件化包体积因技术淘汰跳过）
+     - 《线上疑难问题》59 篇 → 核心主题已覆盖
+  6. AOSP 框架服务覆盖审计：AMS/WMS/PMS/NotificationManager/PowerManager/Sensor/Location/Connectivity/JobScheduler/InputManager/DisplayManager 全部已有专节
+  7. Android 17 新特性覆盖审计：AppFlow/LMKD/AppHibernation/JobScheduler5维节流/FGS类型/16KB Page/MTE/Staged Install 全部已覆盖
+  8. 评估 ch27.2 线程优先级与 CPU 核心绑定 → 12/20（ch5 调度理论 + ch27.1 线程池已覆盖，素材不足 3 篇）
+  9. 评估 ch21.17 启动内存峰值与 LMK 协同 → 12/20（ch16.8 AppFlow 系统侧 + ch21.6 延迟初始化 + ch21.7 多进程已覆盖；AppFlow 仅为研究原型未进入 AOSP 主线）
+- **新检查候选**:
+  1. 线程优先级调度实战 — 素材3×相关4×需求3×时效2 = 12（已有 ch05 调度理论覆盖，ch27.1 线程池 draft 覆盖）
+  2. 启动内存峰值控制 — 素材2×相关4×需求3×时效3 = 12（AppFlow 为研究原型，ch16.8 已系统侧覆盖）
+- **评估结果**: 0 个 ≥14 分新候选，连续 24 轮覆盖饱和
