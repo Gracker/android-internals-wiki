@@ -403,10 +403,13 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-06T03:32:22.510082",
-      "status": "pending",
+      "status": "completed",
       "completed_at": "2026-07-05T16:54:29+00:00",
       "completed_by": "openclaw-task2b-main",
-      "completed_reason": "stale duplicate: already fixed by openclaw-task2b-rework (2026-07-05T22:51:24+08:00); all angle_gl_driver_enabled references verified correct"
+      "completed_reason": "stale duplicate: already fixed by openclaw-task2b-rework (2026-07-05T22:51:24+08:00); all angle_gl_driver_enabled references verified correct",
+      "fixed_by": "openclaw-task2b-lite",
+      "fixed_at": "2026-07-06T03:37:31+08:00",
+      "fixed_reason": "queue status sync: item had completion metadata but status was pending; Lite confirmed chapter 14.8 already fixed and in task9_pending pipeline"
     },
     {
       "section": "14.8",
