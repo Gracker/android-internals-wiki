@@ -1,7 +1,7 @@
 {
   "total": 583,
-  "draft": 24,
-  "ready_for_review": 198,
+  "draft": 23,
+  "ready_for_review": 199,
   "finalized": 342,
   "last_updated": "2026-07-06",
   "task2b": {
@@ -598,6 +598,13 @@
       "status": "reviewed",
       "reviewed_at": "2026-07-06T05:05:00+08:00",
       "note": "Task 2B counter_ids fix verified; 2 L1/L2 小修; awaiting Task 9 re-review"
+    },
+    {
+      "section": "13.26",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-06T06:04:00+08:00",
+      "note": "android.os.Trace API: 6 anchors + 1 extension. beginSection/endSection/asyncSection/setCounter底层调用链、TLS缓存、trace_marker fd、ATRACE_TAG分类、Compose Recomposition Trace、Perfetto SDK对比、SQL P50/P90查询、begin/end不匹配陷阱"
     }
   ],
   "review_history": [
@@ -763,10 +770,10 @@
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
   "deprecated": 15,
   "stats": {
-    "last_review_date": "2026-07-04",
-    "last_review_by": "openclaw-task6",
-    "drafted": 21,
-    "ready_for_review": 195,
+    "last_review_date": "2026-07-06",
+    "last_review_by": "openclaw-task2a",
+    "drafted": 23,
+    "ready_for_review": 199,
     "finalized": 336,
     "ready_to_publish": 0,
     "total": 550
@@ -852,12 +859,14 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-06T05:06:57.198034+08:00",
-    "last_section": "none",
-    "result": "no-candidates",
-    "fix_count": 0,
-    "last_sections": [],
-    "note": "Gap mining round 32: 0 candidates ≥14. Coverage saturated (32nd consecutive). 2 new DeepResearch files (GPU debug tools → §14.8, background audio LE Audio → §25.17) both map to existing chapters. Daily-info topics all <14 or already covered. No new Clippings in 7+ days."
+    "last_run": "2026-07-06T06:04:00+08:00",
+    "last_section": "13.26",
+    "result": "content-processed",
+    "fix_count": 1,
+    "last_sections": [
+      "13.26"
+    ],
+    "note": "android.os.Trace API 深度解析: 6 anchors (API演进/底层实现/应用最佳实践/Perfetto SDK对比/SQL查询/陷阱) + 1 extension. AOSP android-17.0.0_r1 源码验证."
   },
   "last_task9_review": {
     "at": "2026-07-03T19:20:00+08:00",

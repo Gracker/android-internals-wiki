@@ -46,6 +46,8 @@ task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-21 Task6 复审（revisiting→reviewed）：L1 小修 1 处（applicable_versions 补 Android 17），锚点 5/5 覆盖，无 L3/L4 回炉项。Task9 auto-fixed 已完成，queue 无 pending，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-21"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 ---
 
 # 应用稳定性全景
@@ -71,7 +73,7 @@ last_task9_autofix_at: "2026-06-21"
 
 ## Crash / ANR / OOM：三类稳定性问题的分类体系
 
-从观测口径看，Crash、ANR 和 OOM 不应混成同一种“进程被杀”。Java / Native Crash 通常以异常或信号终止进程；LMK / OOM 以资源不足触发回收或抛出 `OutOfMemoryError`；ANR 是系统发现主线程或组件回调超时后的干预流程，可能弹窗、记录 trace、等待用户选择，也可能在后台以 silent ANR 形式被记录。
+从工程角度，Crash、ANR 和 OOM 不应笼统归为“进程被杀”——虽然最终表现都是退出或卡死，但触发链路和治理手段从根源上不同。Java / Native Crash 通常以异常或信号终止进程；LMK / OOM 以资源不足触发回收或抛出 `OutOfMemoryError`；ANR 是系统发现主线程或组件回调超时后的干预流程，可能弹窗、记录 trace、等待用户选择，也可能在后台以 silent ANR 形式被记录。
 
 ### Java Crash
 

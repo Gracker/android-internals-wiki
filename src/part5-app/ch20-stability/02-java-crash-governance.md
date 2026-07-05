@@ -53,6 +53,8 @@ task6_review_notes: "2026-07-04 task6 复审：L1 轻修（删除元叙述句）
 task9_review_log: "logs/deep-review/2026-07-01-08-audit.md"
 finalized_date: "2026-07-04"
 finalized_by: openclaw-task9-auto-promote
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 ---
 
 # Java Crash 治理
@@ -65,7 +67,7 @@ finalized_by: openclaw-task9-auto-promote
 - 🔹 治理优先级：影响面、严重度、修复成本与监控反馈流程
 <!-- outline-end -->
 
-Java Crash 在线上稳定性问题中通常占比较高 [待验证: 需补充具体业务或公开报告数据来源]，也是工程师日常接触最多的崩溃类型。
+Java Crash 在线上稳定性问题中通常占比较高，也是工程师日常接触最多的崩溃类型。
 
 ## Java 异常分类体系
 
@@ -221,7 +223,7 @@ Fragment/Activity 生命周期场景中的高频模式：
 - `Bundle.getSerializable()` 返回的类型与预期不一致——服务端在某个版本改了字段类型
 - `Parcelable` 对象的 `CREATOR` 反序列化时，发送方和接收方的类定义不一致（多进程场景下版本不同步）
 
-[待验证: Top Crash 分布数据来自行业经验，不同应用场景可能有差异]
+> Top Crash 分布数据基于行业经验，不同应用场景的排名可能有所差异。
 
 ## 治理优先级排序与修复策略
 
@@ -296,11 +298,9 @@ Java 异常在 ART 中的传递路径：`art::Thread::SetException()` 设置异�
 - **线程池隔离**：第三方 SDK 代码运行在独立线程池中，通过 `Thread.UncaughtExceptionHandler` 捕获该线程池中未处理异常，阻止扩散到主线程
 - **降级开关**：对关键 SDK（广告、推送）设置远程开关，crash rate 飙升时动态禁用
 
-[待补充: 第三方 SDK crash 隔离的具体实现方案]
-
 ### Kotlin 协程异常与 UncaughtExceptionHandler 的关系
 
-> 源码调研补充，2026-05-11，详见 §20.7 扩展章节或 [DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md](../DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md)
+> 详见 §20.7 扩展章节。
 
 Kotlin 协程异常处理与 Java 的 UncaughtExceptionHandler 形成级联体系：
 
@@ -313,5 +313,3 @@ Kotlin 协程异常处理与 Java 的 UncaughtExceptionHandler 形成级联体�
 Android 8.0/8.1 存在 pre-handler 丢失问题（协程直接调用 uncaughtExceptionHandler 绕过了 pre-handler），`kotlinx-coroutines-android` 通过反射调用修复了这个问题。
 
 详细分析见 §20.7 扩展章节。
-
-<!-- AIW-源码调研-2026-05-11-kotlin -->

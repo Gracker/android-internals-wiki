@@ -345,3 +345,64 @@ profilingManager.addProfilingTriggers(
 
 [已验证: AOSP android-17.0.0_r1 + google/perfetto master 分支时间线推断]
 
+<!-- AIW-源码调研-2026-07-06 -->
+
+<!-- AIW-源码调研-2026-07-06 -->
+
+## Android 17 GPU 调试与性能优化工具链（源码级发现）
+
+通过 Android 17 源码深度调研，发现了完整的 GPU 图形调试与性能优化工具链：
+
+### 核心架构组件
+
+#### 1. SurfaceFlinger GPU 调试系统
+- 调试属性控制：`debug.sf.enable_gl_backpressure`、`debug.sf.luma_sampling` 等
+- GPU 回压控制：基于 `mBackpressureGpuComposition` 变量
+- 客户端合成缓存控制：`debug.sf.disable_client_composition_cache`
+
+#### 2. 分层 FPS 监控系统
+- **FPSReporter**：监听器管理 + 任务 ID 分层
+- **调度机制**：500ms 最小调度间隔，避免频繁调用
+- **层级遍历**：LayerHierarchy 遍历，提取任务分类
+
+#### 3. Jank 卡顿检测系统
+- **JankTracker**：静态监听器管理 + 异步数据处理
+- **批处理**：50 个数据批次收集，后台处理
+- **线程策略**：BackgroundExecutor 低优先级执行
+
+#### 4. FrameTracer 帧追踪系统
+- **Perfetto 集成**：跨进程帧追踪数据源
+- **数据源注册**：`FrameTracerDataSource::Register()`
+- **层追踪**：`traceNewLayer()` 支持分层命名追踪
+
+#### 5. TimeStats 时间统计系统
+- **帧时间直方图**：自动排序统计
+- **性能分析**：最大桶数量限制，避免内存爆炸
+- **时间戳管理**：精确的帧时间戳收集
+
+#### 6. GPU 资源使用转换
+- **grallocusage 转换**：v0 到 v1 用法映射
+- **生产者/消费者分离**：GPU 渲染目标 vs GPU 纹理分离
+
+### 性能影响分析
+
+#### 开销控制策略
+1. **异步处理**：所有性能监控使用后台线程
+2. **调度限制**：FPS 监控 500ms 最小间隔
+3. **条件判断**：避免空载数据收集
+4. **批处理**：Jank 数据 50 个一批次处理
+
+#### 内存优化
+1. **延迟加载**：Perfetto 初始化使用 `std::call_once`
+2. **智能映射**：基于任务 ID 的分层监听
+3. **限制统计**：TimeStats 直方图桶数量上限
+
+### 实际应用价值
+
+这套工具链为开发者提供了：
+- **实时性能监控**：FPS、Jank、帧时间统计
+- **跨进程追踪**：Perfetto 集成的帧追踪
+- **GPU 调试能力**：SurfaceFlinger 级别的调试开关
+- **资源使用分析**：grallocusage 的 GPU 资源统计
+
+**注**：此发现基于 Android 17 / API 37 源码（android-17.0.0_r1），涵盖了 SurfaceFlinger、GPU 驱动、性能监控等核心组件的源级实现。
