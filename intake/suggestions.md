@@ -1,13 +1,44 @@
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：源码引用准确性
+- **位置**：API演进描述段落
+- **问题**：章节中包含已弃用的GAPID引用，应更新为AGI并明确演进关系
+- **建议**：将GAPID替换为AGI，并添加从GAPID到AGI的功能演进说明
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异覆盖
+- **位置**：Android 17 ANGLE策略描述
+- **问题**：缺少Android 17 denylist与旧版allowlist策略的根本对比说明
+- **建议**：添加allowlist vs denylist的详细对比表格和开发者迁移指南
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异覆盖
+- **位置**：APA System Profiler功能介绍
+- **问题**：APA在不同Android版本(12-17)的支持范围和功能演进不完整
+- **建议**：按版本补充APA System Profiler的具体功能差异和支持特性
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：数据支撑
+- **位置**：性能基准数据章节
+- **问题**：缺少具体的GPU性能基准数据和优化效果量化
+- **建议**：添加不同GPU厂商(Adreno/Mali/PowerVR)的典型FPS、Draw Call数量、带宽等基准值
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：交叉引用一致性
+- **位置**：BufferQueue相关描述
+- **问题**：提到BufferQueue管理问题但缺少与§2.13的具体内容关联
+- **建议**：明确引用§2.13中BufferQueue分析的相关内容
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：交叉引用一致性
+- **位置**：Android Studio Profiler关系描述
+- **问题**：与Android Studio Profiler的关系描述不够清晰
+- **建议**：明确说明Android Studio Profiler GPU分析与专业工具的差异和互补性
+
 ## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-07-05
 - **类型**：源码准确性
 - **位置**：CameraMetadataNative 释放路径描述段落
 - **问题**：文中称"未看到 NativeAllocationRegistry / Cleaner 迁移"，但此结论需要基于 android-17.0.0_r1 再次确认，可能在 Android 17 中已实现
 - **建议**：验证 frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java 在 android-17.0.0_r1 中的实现，更新内存管理机制描述
-
-## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-07-05
-- **类型**：版本差异覆盖
-- **位置**：Camera2 API vs CameraX API 的性能差异章节
-- **问题**：文中提到 CameraX"冷启动阶段多一层 capability 解析、UseCase 绑定和默认配置收敛"，但未明确说明不同 Android 版本（12-17）中 CameraX 内部实现的变化和性能优化演进
 
 ## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
 - **类型**：版本差异覆盖
@@ -105,3 +136,26 @@
 - **位置**：GPU 上下文切换
 - **问题**：GPU 上下文切换开销问题未强调
 - **建议**：补充 GPU 上下文切换开销优化策略
+
+## [Task2A Gap Mining 2026-07-06 02:11] 已检查方向（无 ≥14 分候选）
+
+### 检查范围
+1. **AOSP 核心服务覆盖**：ActivityManager ✓, WindowManager ✓, TelephonyManager ✓, ConnectivityManager ✓, PowerManager ✓, NotificationManager ✓, SensorManager ✓, InputManager ✓, JobScheduler ✓, AudioManager ✓, CameraManager ✓, PackageManager ✓, ContentProvider ✓, AlarmManager ✓, LocationManager ✓, Bluetooth ✓
+2. **官方文档性能主题**：FrameMetrics, Macrobenchmark, ProfilingManager, Android Vitals, ADPF, Baseline Profiles — 全部已有对应章节
+3. **研究素材 (research-feeds)**：9 个文件，全部已映射到现有章节
+4. **每日信息 (daily-info)**：2026-07-03 ~ 2026-07-05，无未覆盖的新热点
+5. **source-index.json 高分未映射**：0 篇（所有 ≥16 分素材均已映射）
+6. **research-gaps.md**：10 个盲区条目，全部是对现有章节的扩展建议（非新章节候选）
+7. **Clippings 参考书覆盖**：
+   - 《Android 应用稳定性剖析与优化》：25/25 篇已扫描，全部映射
+   - 《Android 性能优化》：16/21 篇已扫描，剩余 5 篇（虚拟内存/资源优化/插件化）均有对应章节
+   - 《线上疑难问题》：0/59 篇已扫描（预检标题，59 篇主题均已被现有章节覆盖）
+8. **AOSP 新组件**：pKVM ✓, Rust System Services ✓, EEVDF Scheduler ✓, AppFlow ✓, SDM ✓
+9. **Android 17 新特性**：16KB Page Size ✓, MTE ✓, Staged Install ✓, ML Scheduler ✓, Binder Priority ✓, MemoryLimiter ✓, ANR Warning ✓, App Hibernation ✓, Low Power Standby ✓
+
+### 结论
+全书 583 个小节已形成高密度覆盖。本轮未发现评分 ≥14 的知识缺口。
+建议后续方向：
+- 加速《线上疑难问题》59 篇的扫描与知识点提取（current book 3, 0/59）
+- 对 thin drafts 进行内容加工（17-startup-insights-api-observability.md 30行, 30-impeller-shader-compilation-flutter.md 32行, 09-soc-specific-power-optimization.md 36行, 27-macrobenchmark-automation-gate.md 37行）
+- 探索跨章节的综合性主题（如"大型 App 性能架构演进案例"）
