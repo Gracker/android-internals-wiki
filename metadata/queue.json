@@ -560,6 +560,46 @@
       "completed_at": "2026-07-05T18:53:00+08:00",
       "completed_by": "openclaw-task2b",
       "completed_reason": "已补全 Android 17 ANGLE denylist 配置命令、allowlist→denylist 策略对比表和开发者迁移指引"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] AGI Frame Profiler版本要求描述不准确",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "AGI 的两种模式与适用场景章节",
+          "detail": "章节提到'目标API最低要求Android 11 (API 30)'，但AGI Frame Profiler实际要求Android 12+才能完整支持GLES over Vulkan分析路径，Android 11仅支持部分功能",
+          "suggestion": "修正为'AGI Frame Profiler完整功能要求Android 12+ (API 31)，Android 11仅支持部分功能'"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T02:20:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Perfetto GPU counter配置字段描述与AOSP android-17.0.0_r1不完全一致",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Perfetto 中的GPU分析能力章节",
+          "detail": "章节中使用counter_ids字段，但在AOSP android-17.0.0_r1中该字段已更名为counters，配置字段名不一致可能导致开发者配置错误",
+          "suggestion": "更新为counters字段，并注明这是android-17.0.0_r1的规范"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T02:20:00",
+      "status": "pending"
     }
   ],
   "entries": [
