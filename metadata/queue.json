@@ -641,6 +641,25 @@
       "completed_at": "2026-07-05T18:53:20.112136+00:00",
       "completed_by": "openclaw-task2b-main",
       "completed_reason": "fixed: counter_ids → counters (android-17.0.0_r1 规范字段名); 补充了版本差异说明"
+    },
+    {
+      "section": "20.9",
+      "section_title": "稳定性治理案例集",
+      "priority": 70,
+      "reason": "[Task6抽检-版本边界] 全文4处[已验证]标签引用android-16.0.0_r1，需按版本基线重新验证为android-17.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "版本边界合规",
+          "location": "全文验证标注（4处）+ frontmatter last_verified_against",
+          "detail": "所有[已验证]标签引用android-16.0.0_r1，需按AIW_ANDROID_VERSION_BASELINE_2026_06_27重新验证这些路径在android-17.0.0_r1中是否仍然适用",
+          "suggestion": "Task 9 重新对照android-17.0.0_r1验证：1)art/runtime/thread.cc CreateNativeThread 2)system/core/debuggerd handler 3)ActivityThread.handleBindApplication/installContentProviders 4)ComputerEngine.queryContentProviders"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-06T04:05:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-06-04-audit.md"
     }
   ],
   "entries": [
