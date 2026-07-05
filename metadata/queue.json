@@ -216,7 +216,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.887549+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T18:54:16.591704+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 DNS resolution blocked）"
     },
     {
       "section": "ch01-architecture",
@@ -258,7 +260,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.888688+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T18:54:16.591704+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 DNS resolution blocked）"
     },
     {
       "section": "ch10-memory-perf",
@@ -278,7 +282,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.889215+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T18:54:16.591704+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 DNS resolution blocked）"
     },
     {
       "section": "ch15-methodology",
@@ -298,7 +304,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.889481+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T18:54:16.591704+00:00",
+      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 DNS resolution blocked）"
     },
     {
       "section": "1.55",
