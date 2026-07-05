@@ -3,7 +3,7 @@ title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI 要求 Android 11+, APA 要求 Android 12+, Sokatoa 要求 Android 13+)"
 tags: ["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]
 confidence: "medium"
@@ -22,8 +22,8 @@ last_task2b_at: "2026-07-05T18:53:25+08:00"
 last_task2b_by: "openclaw-task2b"
 task2b_result: "fixed"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
-task9_state: "pending"
+task6_state: "reviewed"
+task9_state: "recheck-pending"
 task2b_state: "fixed"
 task9_result: "needs-recheck"
 task9_reviewed_date: 2026-07-05
@@ -33,8 +33,8 @@ last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
 last_task9_audit: 2026-07-05T18:29:27+08:00
 queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
-last_task6_at: "2026-07-05T18:17:09+08:00"
-task6_reviewed_at: "2026-07-05T18:17:09+08:00"
+last_task6_at: "2026-07-05T19:14:56+08:00"
+task6_reviewed_at: "2026-07-05T19:14:56+08:00"
 task6_reviewed_by: "openclaw-task6"
 finalized_date: ""
 finalized_by: ""
@@ -358,7 +358,7 @@ AGI 和 RenderDoc 都是捕获一帧来分析。这在问题稳定复现时够�
 
 Sokatoa 基于 LunarG 的 GFXReconstruct 引擎构建。GFXReconstruct 的工作方式是拦截应用的 Vulkan API 调用,记录所有命令和参数,然后在离线回放时精确重演。因为记录的是 API 级别的调用,而不是硬件状态,所以回放结果在不同 GPU 架构上仍然确定,在 Adreno 上捕获的 trace 也可以在 Mali 上回放。
 
-Sokatoa 支持 Exynos/Xclipse(基于 AMD RDNA 架构)、Qualcomm Adreno、ARM Mali 和 PowerVR。它原生只支持 Vulkan 应用,对于 GLES 应用,需要先通过 ANGLE 转换为 Vulkan。目标设备要求 Android 13 or later,且需要 debuggable APK 或 rooted device 才能注入 GFXReconstruct/Sokatoa Vulkan layers。
+Sokatoa 支持 Exynos/Xclipse(基于 AMD RDNA 架构)、Qualcomm Adreno、ARM Mali 和 PowerVR。它原生只支持 Vulkan 应用,对于 GLES 应用,需要先通过 ANGLE 转换为 Vulkan。目标设备要求 Android 13 及以上,且需要 debuggable APK 或 rooted device 才能注入 GFXReconstruct/Sokatoa Vulkan layers。
 
 ### 开源计划
 
