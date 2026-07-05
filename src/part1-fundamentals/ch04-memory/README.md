@@ -34,4 +34,9 @@ Android 内存管理是一个跨层协作的系统。从 App 视角看，内存�
 - 摘要：Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运行的系统稳定性。新机制采用分层管理策略，对频繁分配释放的热点...
 - 入库时间：2026-07-04
 - 评分：14/20
-
+### Android 17 ART LargeObjectSpace 512M 突破与 mSponge 技术
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-art-largeobjectspace-msponge-512m-bypass.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 源码定位 Heap::num_bytes_allocated_（Atomic<size_t>）与 LargeObjectMapSpace::Alloc 的双路计数汇总链路（LOS 自身 + Heap::AddBytesAllocated）。分析 mSponge 通过 ELF symtab 定位符号、mprotect 修改 bss 段、fetch_sub 扣减 LOS 字节以绕过 512M 软阻塞的技术可行性，以及 SELinux、ART 完整性检查、并发 GC 误触发等风险面。
+- 注入时间：2026-07-06
+- 价值：为内存优化实战提供 LOS 突破方案的源码级可行性边界与风险评估，是 ch23.6 大内存策略的重要参考

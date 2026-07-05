@@ -56,6 +56,15 @@ gap_source: "研究素材/知识盲区"
 ### 🔸 SoC 演进趋势与功耗策略前瞻
 - 3nm/2nm 工艺节点的 leakage power 挑战
 - 芯片级 NPU 的功耗隔离与电源域管理
+
+
+### Android 17 SoC 厂商电池优化 × IPower HAL × schedutil 闭环
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 源码，深度解析 IPower AIDL 接口（Mode/Boost/HintSession 枚举体系）从 Framework PowerManagerService 到 vendor HAL 再到内核 schedutil governor 的 5 层闭环调用链。对比 Qualcomm RPMh/PDC、MediaTek MTLP/dvfsrc、Samsung ASV/exynos-pmu 三家厂商实现差异，揭示 AOSP 只定义钩子不感知实现细节的合规边界与调试盲区。
+- 注入时间：2026-07-06
+- 价值：把 OEM SoC 功耗优化从抽象描述落到源码级 AIDL 接口定义与驱动调用路径，填补 ch17 厂商差异化实现的可观测性空白
+
 <!-- outline-end -->
 
 > 本节内容待加工。

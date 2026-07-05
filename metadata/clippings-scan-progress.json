@@ -1,6 +1,6 @@
 {
-  "current_book": 1,
-  "current_offset": 16,
+  "current_book": 2,
+  "current_offset": 0,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -37,7 +37,7 @@
     {
       "prefix": "Android 性能优化",
       "total_files": 21,
-      "completed_files": 16,
+      "completed_files": 21,
       "files": [
         "Android 性能优化 - Android 性能优化总结.md",
         "Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md",
@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-05",
-  "total_knowledge_points": 199,
-  "total_suggestions": 43,
+  "last_scan_date": "2026-07-06",
+  "total_knowledge_points": 217,
+  "total_suggestions": 52,
   "total_gaps": 14,
   "skipped_files": [
     {
@@ -163,6 +163,16 @@
       "file": "Android 性能优化 - dex 文件的体积优化实战.md",
       "reason": "文件内容为空（仅有标题，无正文）",
       "date": "2026-07-03"
+    },
+    {
+      "file": "Android 性能优化 - 通过插件化来优化包体积（上）.md",
+      "reason": "文件内容为空（仅有标题，无正文）",
+      "date": "2026-07-06"
+    },
+    {
+      "file": "Android 性能优化 - 通过插件化来优化包体积（下）.md",
+      "reason": "文件内容为空（仅有标题，无正文）",
+      "date": "2026-07-06"
     }
   ]
 }

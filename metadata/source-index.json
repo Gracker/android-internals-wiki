@@ -635,5 +635,47 @@
       "date": "2026-07-06 05:46",
       "scored_at": "2026-07-06T05:46:41.087201"
     }
+  ],
+  "entries": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md",
+      "title": "Android 17 SoC 厂商电池优化 × IPower HAL × schedutil 闭环",
+      "summary": "IPower AIDL 5 层闭环调用链，Qualcomm/MediaTek/Samsung 厂商实现差异，schedutil governor 限频",
+      "chapter": "ch17",
+      "processed_at": "2026-07-06T06:12:51.402781",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-gpu-debug-performance-tools-source.md",
+      "title": "Android 17 SurfaceFlinger GPU 调试与性能工具链源码调研",
+      "summary": "FPSReporter/JankTracker/FrameTracer 源码架构与 Perfetto 集成",
+      "chapter": "ch14",
+      "processed_at": "2026-07-06T06:12:51.402781",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-background-audio-hardening-leaudio-power-source.md",
+      "title": "Android 17 后台音频硬化与蓝牙 LE Audio 功耗治理机制",
+      "summary": "HardeningEnforcer 双源决策、LE Audio LC3 offload、焦点恢复策略",
+      "chapter": "ch25",
+      "processed_at": "2026-07-06T06:12:51.402781",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-art-largeobjectspace-msponge-512m-bypass.md",
+      "title": "Android 17 ART LargeObjectSpace 512M 突破与 mSponge",
+      "summary": "Heap num_bytes_allocated_ 双路计数、mSponge 符号修改绕过 LOS 限制与风险分析",
+      "chapter": "ch04",
+      "processed_at": "2026-07-06T06:12:51.402781",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-perfetto-v57-ai-skill-state-tracks-android-memory.md",
+      "title": "Perfetto v57 AI 技能与状态轨道在 Android 内存调试中的应用",
+      "summary": "v57.1 ai-agents 分支、AI Skill 内存工作流、State Track TYPE_STATE=5",
+      "chapter": "ch13",
+      "processed_at": "2026-07-06T06:12:51.402781",
+      "action": "queue"
+    }
   ]
 }

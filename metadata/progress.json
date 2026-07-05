@@ -1,6 +1,6 @@
 {
-  "total": 583,
-  "draft": 23,
+  "total": 586,
+  "draft": 26,
   "ready_for_review": 199,
   "finalized": 342,
   "last_updated": "2026-07-06",
@@ -605,6 +605,27 @@
       "status": "ready_for_review",
       "ts": "2026-07-06T06:04:00+08:00",
       "note": "android.os.Trace API: 6 anchors + 1 extension. beginSection/endSection/asyncSection/setCounter底层调用链、TLS缓存、trace_marker fd、ATRACE_TAG分类、Compose Recomposition Trace、Perfetto SDK对比、SQL P50/P90查询、begin/end不匹配陷阱"
+    },
+    {
+      "section": "4.22",
+      "action": "task2a-gap-create",
+      "status": "draft-created",
+      "created_at": "2026-07-06T07:18:59+08:00",
+      "note": "知识缺口挖掘创建: AI Agent 内存沙箱化与跨应用数据复用"
+    },
+    {
+      "section": "14.28",
+      "action": "task2a-gap-create",
+      "status": "draft-created",
+      "created_at": "2026-07-06T07:18:59+08:00",
+      "note": "知识缺口挖掘创建: GPU 性能分析进阶"
+    },
+    {
+      "section": "26.24",
+      "action": "task2a-gap-create",
+      "status": "draft-created",
+      "created_at": "2026-07-06T07:18:59+08:00",
+      "note": "知识缺口挖掘创建: heapprofd 生产级部署与权限模型"
     }
   ],
   "review_history": [
