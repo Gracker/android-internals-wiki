@@ -35,7 +35,7 @@ p0: 0
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-04
+last_deepseek_cn_review_at: 2026-07-05
 last_task9_audit_log: "logs/deep-review/2026-07-02-14-audit.md"
 last_task9_autofix_at: "2026-07-02"
 updated_by: openclaw-task9

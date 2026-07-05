@@ -42,6 +42,17 @@
 - `18.22` Android XR 空间 UI 与环境资产渲染性能
 - `18.23` 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
 
+## 参考资料
+
+### Flutter Impeller 着色器编译管线与运行期 PSO 缓存机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-flutter-impeller-shader-compilation-pipeline.md
+- 类型：DeepResearch 调研结果
+- 摘要：Impeller 全 AOT 离线编译策略（GLSL→SPIRV→后端 Shader→FlatBuffers ShaderArchive→C 数组静态链接），运行期零反射加载，Vulkan vk::PipelineCache 落盘 vs GLES 内存表不落盘，消除运行时 shader 编译抖动的架构设计。
+- 注入时间：2026-07-05
+- 价值：补强 ch18 渲染管线中 Flutter Impeller 着色器编译机制的深度技术分析
+
+---
+
 ## 阅读建议
 
 - **新手入门**：先看上面的底层索引，再读 `18.1` 了解全貌，然后进入 `18.2` 到 `18.7`

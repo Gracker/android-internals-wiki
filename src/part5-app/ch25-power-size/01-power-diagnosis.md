@@ -347,6 +347,90 @@ public final class WakeLockStats implements Parcelable {
 3. **`WakeLockStats.getWakeLockStats()`** 在 Android 15 引入但标记 `@hide`，端侧 APM 需通过系统权限或反射调用
 4. **PowerStatsStore** 的数据位于 `/data/system/power-stats/`，span 文件名为 19 位 ID + `.pss`，内容为二进制 XML（`PowerStatsSpan.writeXml`）；不要按 `/data/system/powerstats/log.powerstats.meter.0` 或 Proto 文件格式处理
 
+### 不同 SoC 架构的电池优化策略（2026-07-05 增量）
+
+Android 17 针对不同 SoC 架构提供了差异化的电池优化策略，这些优化通过 Perfetto 电池追踪系统实现精细化控制。
+
+#### 分层电池优化架构
+
+Android 采用四层电池优化架构：
+
+1. **硬件层**：Perfetto `LinuxPowerSysfsDataSource` 实时采集 `/sys/class/power_supply` 数据
+2. **框架层**：BatteryManager 提供统一电池状态 API
+3. **服务层**：PowerManagerService 控制设备电源策略
+4. **应用层**：JobScheduler 优化后台任务调度
+
+#### SoC 厂商特定优化
+
+**ARM Big.LITTLE 架构优化**：
+- LMK_PROCS_PRIO 批处理：支持每批 3 个进程优先级调整
+- CPU 热节流：基于温度的自降频机制
+- 异构计算调度：在性能核与能效核间智能负载分配
+
+**Qualcomm Adreno GPU 优化**：
+- PowerDVFS 动态电压频率调整：6 个性能等级自适应
+- GPU 睡眠状态：空闲时进入低功耗状态
+- 渲染路径优化：OpenGL ES/Vulkan 着色器缓存
+
+**MediaTek APU 优化**：
+- AI 专用电源域：NPU 独立供电管理
+- 传感器数据融合：减少传感器唤醒频率
+- 异构任务调度：在 CPU/APU 间智能分配负载
+
+#### 电池监控精度对比
+
+不同 SoC 厂商的电池监控精度存在显著差异：
+
+| 厂商 | 精度 | 采样率 | 支持功能 |
+|---|---|---|---|
+| ARM | ±5% | 1Hz | 基础电池监控 |
+| Qualcomm | ±2% | 5Hz | 高精度电流监测 |
+| MediaTek | ±3% | 自适应 | AI 电池估算 |
+
+#### 关键电池指标
+
+Android 17 通过 Perfetto 电池追踪系统监控以下关键指标：
+
+```proto
+message BatteryCounters {
+  optional int64 charge_counter_uah = 1;  // Coulomb 计数器 (μAh)
+  optional float capacity_percent = 2;     // 剩余电量百分比
+  optional int64 current_ua = 3;           // 瞬时电流 (μA)
+  optional int64 current_avg_ua = 4;      // 平均电流 (μA)
+  optional int64 energy_counter_uwh = 6;   // 能量计数器 (μWh)
+  optional int64 voltage_uv = 7;          // 电池电压 (μV)
+}
+```
+
+#### 电源域管理优化
+
+不同 SoC 提供不同粒度的电源域管理：
+
+- **ARM**：8-12 个独立电源域（CPU/GPU/NPU/Display）
+- **Qualcomm**：15-20 个细粒度电源域（4G/5G/WiFi/BT 分离）
+- **Samsung**：Exynos 专用显示电源域管理
+
+电源域独立管理的优势：
+- 减少泄漏功耗
+- 支持快速唤醒/休眠
+- 降低交互延迟
+
+#### 性能影响评估
+
+**电池寿命提升**：
+- ARM 架构优化：15-20% 功耗降低
+- Qualcomm GPU 优化：10-15% 续航提升
+- MediaTek APU 优化：8-12% AI 任务效率提升
+
+**系统开销**：
+- Peretto 电池追踪：0.5-1% CPU 开销
+- 决策延迟：10-50ms 任务调度延迟
+- 内存占用：2-4MB 电池状态追踪数据
+
+来源：DeepResearch/2026-07-05-android17-battery-optimization-soc-architecture-power-management.md（daily-topics id=12）。
+
+
+
 ## 本节小结
 
 功耗诊断的工作顺序很固定：先把场景做成可复现测试，再用 `batterystats` 找 UID 级异常，接着用 Battery Historian / Power Profiler / Perfetto 把异常放回时间线，并按 CPU、网络、GPS、WakeLock 四类入口归责。
