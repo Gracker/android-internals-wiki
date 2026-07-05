@@ -2,59 +2,23 @@
 title: "内存优化案例集"
 chapter: "23.8"
 section: "23.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-27"
 last_verified_against: "AOSP android-17.0.0_r1 + Android Developers memory/profileable docs + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化"
 confidence: medium
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
-last_task2b_lite_at: 2026-07-05
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: ready-to-publish
+last_task2b_lite_at: "2026-07-05"
 drafted_date: "2026-05-14"
 drafted_by: openclaw-task2a
 polish_count: 0
-sources:
-  - type: official
-    path: "https://developer.android.com/topic/performance/graphics/load-bitmap"
-  - type: official
-    path: "https://developer.android.com/topic/performance/graphics/manage-memory"
-  - type: official
-    path: "https://developer.android.com/topic/performance/memory"
-  - type: official
-    path: "https://developer.android.com/studio/profile/memory-profiler"
-  - type: official
-    path: "https://developer.android.com/studio/profile/capture-heap-dump"
-  - type: official
-    path: "https://source.android.com/docs/core/tests/debug/native-memory"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
-  - type: official
-    path: "https://developer.android.com/guide/topics/manifest/profileable-element"
-  - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/Bitmap.java @ android-17.0.0_r1"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/Debug.java @ android-17.0.0_r1"
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - Native 内存优化(下):Bitmap 的内存占用优化.md]"
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - Native 内存优化(上):so 库申请的内存优化.md]"
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - 物理内存优化实战:Java Heap 内存优化.md]"
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - 原理:掌握 App 运行时的内存模型.md]"
-  - type: case-study
-    path: "Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md"
+sources:   - type: official
 tags: [case-study, memory, bitmap, native-memory, memory-budget]
 related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_result: fixed
-task2b_state: fixed
-last_task2b_lite_at: "2026-05-27"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
@@ -73,6 +37,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
 last_task6_audit: 2026-07-05
 ---
+
 
 # 内存优化案例集
 
