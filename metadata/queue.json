@@ -84,7 +84,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.665643+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T04:52:23.471280+00:00",
+      "completed_reason": "与章节内容无关，跳过 — ch01-architecture 聚焦系统级架构（Binder/AMS/WMS/SurfaceFlinger），文章主题为应用层 Repository 协程编码实践，非直接关联"
     },
     {
       "section": "ch02-rendering",
@@ -164,7 +166,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.885467+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T04:52:23.471280+00:00",
+      "completed_reason": "URL 不可访问（HTTP 404），跳过"
     },
     {
       "section": "ch04-memory",
@@ -184,7 +188,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.887084+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T04:52:23.471280+00:00",
+      "completed_reason": "URL 不可访问（HTTP 403），跳过"
     },
     {
       "section": "ch01-architecture",
@@ -224,7 +230,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.887871+00:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-05T04:52:23.471280+00:00",
+      "completed_reason": "与章节内容无关，跳过 — ch01-architecture 聚焦系统级架构（Binder/AMS/WMS/SurfaceFlinger），文章主题为应用层 Repository 协程编码实践，非直接关联"
     },
     {
       "section": "ch02-rendering",
