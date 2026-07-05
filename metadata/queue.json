@@ -347,5 +347,26 @@
       "status": "pending",
       "original_review_log": "logs/review/2026-07-05-07-audit.md"
     }
+  ],
+  "entries": [
+    {
+      "section": "23.8",
+      "section_title": "内存优化案例集",
+      "priority": 70,
+      "reason": "[task6抽检] AOSP源码版本标签为android-16.0.0_r1，需更新为android-17.0.0_r1基线",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "版本基线合规",
+          "location": "frontmatter last_verified_against + sources 中两条 AOSP 路径",
+          "detail": "last_verified_against 引用 android-16.0.0_r1；sources 中 Bitmap.java 和 Debug.java 标注 @ android-16.0.0_r1。版本基线规则要求锚定 android-17.0.0_r1",
+          "suggestion": "验证 frameworks/base/graphics/java/android/graphics/Bitmap.java 和 frameworks/base/core/java/android/os/Debug.java 在 android-17.0.0_r1 中路径和 API 是否变化，更新版本标签和 last_verified_against"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-05T10:15:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-05-10-audit.md"
+    }
   ]
 }

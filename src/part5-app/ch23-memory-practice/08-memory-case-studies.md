@@ -65,6 +65,7 @@ last_task6_at: "2026-05-27T21:10:00+08:00"
 last_task2b_at: "2026-05-27T20:50:00+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-15
+last_task6_audit: 2026-07-05
 ---
 
 # 内存优化案例集
