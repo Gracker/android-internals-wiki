@@ -394,46 +394,6 @@
       "status": "pending"
     },
     {
-      "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
-      "priority": 95,
-      "reason": "[Deep Tech Review] ANGLE allowlist/denylist 语义反转解释不完整",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "ANGLE allowlist/denylist 语义解释",
-          "detail": "ANGLE 在 Android 15-16 使用 allowlist 模式，Android 17 反转为 denylist 模式，但章节未明确说明这种语义反转会导致配置指令行为完全相反",
-          "suggestion": "添加对比表说明两种模式下的配置语义差异，并提供针对不同版本的确认命令"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-05T22:28:48",
-      "status": "pending"
-    },
-    {
-      "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Android 12-16 版本特定工具支持差异未覆盖",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "location": "Android 12-16 工具演进路径",
-          "detail": "章节缺少 APA 在 Android 12+ 的具体支持范围和与 AGI System Profiler 的功能对比，影响开发者工具选型决策",
-          "suggestion": "补充 APA System Profiler 在不同 Android 版本的功能差异和推荐使用场景"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-05T22:28:48",
-      "status": "pending"
-    },
-    {
       "section": "14.27",
       "section_title": "Macrobenchmark 框架与自动化性能门禁",
       "priority": 80,
