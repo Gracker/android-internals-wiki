@@ -46,6 +46,8 @@ last_task6_audit: "2026-06-18"
 last_task2b_at: "2026-06-05T04:53:50+08:00"
 
 last_task6_review_log: "logs/review/2026-06-05-06-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-05
 ---
 
 
@@ -98,7 +100,7 @@ last_task6_review_log: "logs/review/2026-06-05-06-review.md"
 
 ## 七类性能后果，与 63 个真实世界因素、82 个综合 taxonomy 因素
 
-论文先在 Google Play、Stack Overflow、GitHub Issues、GitHub Commits 这四组真实世界样本里归纳出 63 个 contributing factors，再和 85 篇文献的结果合并，形成 7 类 performance consequences、82 个 contributing factors 的综合 taxonomy。63 说的是真实世界里真正出现过的因素，82 还包含了文献里讨论但真实世界样本里没有出现的 19 个因素。
+论文先在 Google Play、Stack Overflow、GitHub Issues、GitHub Commits 这四组真实世界样本里归纳出 63 个影响因素（contributing factors），再和 85 篇文献的结果合并，形成 7 类性能后果（performance consequences）、82 个影响因素的分类体系（taxonomy）。63 说的是真实世界里真正出现过的因素，82 还包含了文献里讨论但真实世界样本里没有出现的 19 个因素。
 
 | 一级类目 | 论文里的含义 | 本书里的常见观测入口 |
 |------|------|------|
@@ -241,7 +243,7 @@ Perfetto 里可以按两步确认：App 主线程是否停在 `ioctl(BINDER_WRIT
 
 在启用 cached-app freezer 的设备上，后台缓存进程可能被暂停执行。用户切回 App、前台组件拉起后台进程，或系统服务向被冻结进程投递任务时，进程会先解冻，再处理堆积的消息、Binder reply、广播和 I/O。这个阶段容易出现短时间 CPU 抢占和主线程消息积压，用户感知可能是“切回慢”或“首次点击没反应”。
 
-这属于 Android 版本和设备策略带来的归因维度，不属于论文原始 taxonomy。分析这类现场时，Perfetto 里同时看进程状态变化、主线程 runnable gap、Binder 事件和首帧时间，避免把解冻后的毛刺误判成单个函数耗时。
+这属于 Android 版本和设备策略带来的归因维度，不属于论文原始分类体系。分析这类现场时，Perfetto 里同时看进程状态变化、主线程 runnable gap、Binder 事件和首帧时间，避免把解冻后的毛刺误判成单个函数耗时。
 
 ## 从数据看排查优先级
 
@@ -295,7 +297,7 @@ Perfetto 里可以按两步确认：App 主线程是否停在 `ioctl(BINDER_WRIT
 - issue 和修复 commit 集中在 OOM、泄漏、频繁 GC 时，先把内存治理做成日常工程。
 - 工具没有直接报码时，把 Code Review、Perfetto、`gfxinfo` 和线上日志放在同一张时间线上做交叉验证。
 
-这组实证结果来自跨版本综合观察。它适合帮助我们判断哪类问题更常见，不替代某个 Android 版本、某类机型或某条业务路径的专项基线。
+这组实证结果来自跨版本综合观察，适合帮助我们判断哪类问题更常见。它不替代某个 Android 版本、某类机型、或某条业务路径的专项基线。
 
 ## 参考资料
 

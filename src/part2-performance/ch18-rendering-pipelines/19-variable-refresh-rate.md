@@ -31,6 +31,8 @@ updated_by: openclaw-task9
 task9_review_notes: "2026-06-12 00:20 Task9 idle audit auto-fix: 修正 18.19 源码补充段的版本锚点与两个源码符号名；AOSP android-16.0.0_r4 与官方 ARR/Perfetto 文档复核无新增 P0/P1，回到 Task6 复审。"
 
 last_task6_at: "2026-06-12T04:05:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-05
 ---
 
 <!-- outline-start -->
@@ -222,12 +224,9 @@ LIMIT 20;
 ---
 
 
-<!-- AIW-源码调研-2026-05-31 -->
 **源码锚点补充（android-16.0.0_r4 复核）：**
 - `Scheduler.cpp` 的 `chooseRefreshRateForContent()` 实际通过 `RefreshRateSelector::getRankedFrameRates()` 计算分数
 - `RefreshRateSelector.cpp` 的 `calculateLayerScore()` 中，`FrameRateCategory::NoPreference` 或 `isNoVote()` 的 Layer 直接跳过（关键剪枝逻辑）
 - LayerVote 优先级：ExplicitExact(1.0) > ExplicitGte(0.75f 阈值) > Heuristic(计算 divisor 距离) > Min(跳过)
 - VRR 启用时 `VSYNC-app/sf` 周期动态变化，但 missed deadline **仍表现为 jank**，ARR 只改变目标节拍不补救慢帧
 - `KernelIdleTimerController` / `IdleTimer` 控制 kernel idle timer；`Scheduler.cpp` 里 `FPS_THRESHOLD_FOR_KERNEL_TIMER = 65_Hz`，刷新率 ≤65Hz 时用于降功耗
-
-<!-- AIW-源码调研-2026-05-31 -->

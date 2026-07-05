@@ -58,3 +58,30 @@ Android 17 构建了跨设备的 AI 协同生态：通过 Nearby Share 实现设
 <!-- outline-end -->
 
 > **加工说明**：本章节基于 Clippings 参考书结构参考和 Android 17 源码（packages/modules/NnApi、hardware/interfaces/nn）进行深度加工，确保符合 Android 版本边界（API 37），并严格遵守版权铁律，仅做结构参考，未直接搬运原文段落。
+<!-- AIW-源码调研-2026-07-05 -->
+### 🔹 AI Agent 沙箱内存管理技术实现
+
+基于 Android 17 源码深度分析，AI Agent 沙箱内存管理通过以下机制实现：
+
+**沙箱 UID 空间设计**：
+- 采用虚拟 UID (1090) 和独立进程空间 (20000-29999) 实现双重隔离
+- `Process.java` 中的 `isSdkSandboxUid()` 和 UID 映射函数提供精细控制
+- 每个沙箱进程有独立的 OOM 调度等级 (HEAVY_WEIGHT_APP_ADJ=100)
+
+**进程生命周期管理**：
+- `SdkSandboxManagerService` 通过 `startSdkSandboxIfNeeded()` 启动沙箱
+- 沙箱死亡时触发 `killAppOnSandboxDeathIfNeededLocked()` 清理客户端进程
+- `ActivityManagerLocal.startSdkSandboxService()` 提供系统级 API
+
+**内存隔离与数据复用平衡**：
+- 通过进程状态 (PROCESS_STATE_HEAVY_WEIGHT) 与内存重要性 (PROC_MEM_IMPORTANT) 关联
+- 跨进程数据传输采用 Binder IPC，但存在序列化开销
+- 沙箱进程命名采用 `processName + SANDBOX_PROCESS_NAME_SUFFIX` 确保唯一性
+
+**核心挑战**：
+- IPC 开销：跨进程数据传输导致延迟增加
+- 内存碎片：频繁进程创建销毁产生内存碎片  
+- 启动延迟：沙箱初始化增加冷启动时间
+
+该架构在安全隔离与性能开销之间实现了平衡，但未专门针对 AI Agent 的 LLM 特性进行优化。
+<!-- AIW-源码调研-2026-07-05 结束 -->

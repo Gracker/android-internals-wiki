@@ -308,6 +308,94 @@ GC 是结果，不是根因。AOSP 里 `ConcurrentGCTask` 是 `ShouldConcurrentG
 
 Heap dump 适合看某一刻还活着的对象，抖动里的临时对象可能已经被回收。要定位抖动，需要 allocation recording 或 Perfetto Java allocation profiling，看对象在时间轴上的生成速度和调用栈。
 
+
+
+<!-- AIW-源码调研-2026-07-05 -->
+
+## 附：Android 17 ART HeapTask 体系源码级补充（android-17.0.0_r1）
+
+§23.5 主体正文已简述 HeapTaskDaemon → TaskProcessor 入口。本节给 §23.5 补充 7 种 HeapTask 子类的源码级全景，方便做 GC 抑制方案选型时直接对照。
+
+### 7 种 HeapTask 子类总览
+
+| 子类 | 文件 | 触发 API | 关键行为 |
+|---|---|---|---|
+| `ConcurrentGCTask` | `art/runtime/gc/heap.cc:4113` | `Heap::RequestConcurrentGC()` | `Heap::ConcurrentGC` + `continuous_gc_mode_` 时 `usleep(1'000)` 追加 |
+| `CollectorTransitionTask` | `art/runtime/gc/heap.cc:4211` | `Heap::RequestCollectorTransition()` | `DoPendingCollectorTransition` + 去重 `UpdateTargetRunTime` |
+| `HeapTrimTask` | `art/runtime/gc/heap.cc:4259` | `Heap::RequestTrim()` | `Heap::Trim` + `madvise(MADV_PAGEOUT)`；去重逻辑在 `pending_task_lock_` |
+| `ClearedReferenceTask` | `art/runtime/gc/reference_processor.cc:364` | `ReferenceProcessor::CollectClearedReferences()` | `java.lang.ref.ReferenceQueue.add` 异步入队（`kAsyncReferenceQueueAdd=true`） |
+| `StartupCompletedTask` | `art/runtime/startup_completed_task.cc:42` | `VMRuntime.notifyStartupCompleted()` | `DeleteStartupDexCaches` + `RuntimeImage::WriteImageToDisk` |
+| `TriggerPostForkCCGcTask` | `art/runtime/gc/heap.cc:5050` | `Heap::PostForkChildAction()` | 若 `GetCurrentGcNum() == initial_gc_num_` 才触发 GC，**Android 17 新增** |
+| `ReduceTargetFootprintTask` | `art/runtime/gc/heap.cc:5069` | `Heap::PostForkChildAction()` | `CompareAndSetStrongRelaxed(target_footprint_, new_target_sz_)` 渐进收缩，**Android 17 新增** |
+
+### 任务队列数据结构
+
+```cpp
+// art/runtime/gc/task_processor.h:86-91 (android-17.0.0_r1)
+mutable Mutex lock_ DEFAULT_MUTEX_ACQUIRED_AFTER;
+ConditionVariable cond_ GUARDED_BY(lock_);
+bool is_running_ GUARDED_BY(lock_);
+std::multiset<HeapTask*, CompareByTargetRunTime> tasks_ GUARDED_BY(lock_);
+Thread* running_thread_ GUARDED_BY(lock_);
+```
+
+`std::multiset` 按 `target_run_time_` 升序，`GetTask()` 用 `CondVar::TimedWait(target_run_time - now)` 精确等待；写入路径仅 `tasks_.insert` + `cond_.Signal()`。Android 17 把历史 FIFO 链表改为按到期时间排序后的 multiset 是为了在 `CollectorTransitionTask` 等延迟任务存在时仍能优先执行最近到期的 GC 任务。
+
+### PostForkChildAction 的 3 段式收缩
+
+`Heap::PostForkChildAction`（heap.cc:5113-5161）在 zygote fork 后入队 3 个 HeapTask：
+
+```cpp
+// 1) 第一次收缩：延迟 kPostForkMaxHeapDurationMS（≈2s），目标 = max(growth_limit_/4, initial_heap_size_)
+GetTaskProcessor()->AddTask(
+    self, new ReduceTargetFootprintTask(last_adj_time, first_shrink_size, starting_gc_num));
+
+// 2) 第二次收缩（可选）：再延 4 × kPostForkMaxHeapDurationMS，目标 = initial_heap_size_
+GetTaskProcessor()->AddTask(
+    self, new ReduceTargetFootprintTask(last_adj_time, initial_heap_size_, starting_gc_num));
+
+// 3) 后置 GC：4 × kPostForkMaxHeapDurationMS + 伪随机偏移（基于 getuid 0-19999ms）
+GetTaskProcessor()->AddTask(self,
+                            new TriggerPostForkCCGcTask(post_fork_gc_time, starting_gc_num));
+```
+
+`GetPseudoRandomFromUid()`（heap.cc:5077-5082）使用 `std::default_random_engine(getuid())` + `std::uniform_int_distribution(0, 19999)`，目的是 **避免大量应用在同一时刻触发 GC 形成「GC 风暴」**。
+
+### 守门条件
+
+```cpp
+// heap.cc:4143-4148
+static bool CanAddHeapTask(Thread* self) {
+  Runtime* runtime = Runtime::Current();
+  return runtime != nullptr && runtime->IsFinishedStarting() && !runtime->IsShuttingDown(self)
+      && !self->IsHandlingStackOverflow<kNativeStackType>();
+}
+```
+
+任何 HeapTask 入队前都过这道关：runtime 未启动完成、正在 shutdown、native 栈溢出 三种情形拒绝入队。**业务侧通过 native hook 替换 `Run` 函数指针来抑制 GC 在 Android 17 上仍然可行**——`CanAddHeapTask` 不检查 hook 状态。但要警惕 `TriggerPostForkCCGcTask` 会在 fork 后 10s 内强制触发 GC，抑制窗口被严格限制。
+
+### 与 §23.5 主体「GC 抑制」小节的联动
+
+§23.5 主体指出「业务应用不要通过 native hook 阻塞 `HeapTaskDaemon`」。本节补充源码级边界：
+- **可阻塞但风险升高**：Hook `ConcurrentGCTask::Run` 让并发 GC 不执行，会让 `ShouldConcurrentGCForJava` 持续判定需要 GC 但无人响应，最终触发 native 分配失败或 `ConcurrentGC` 抢占主线程。
+- **不可阻塞**：`TriggerPostForkCCGcTask` 是启动后的「保底 GC」，阻塞它会导致 zygote fork 垃圾长期驻留，`usleep(1'000)` 间隔的连续请求会让 task_processor 队列堆积。
+- **完全不可控**：`HeapTrimTask` 的 `madvise(MADV_PAGEOUT)` 与 HeapTaskDaemon 主循环解耦——即使阻塞 HeapTaskDaemon，`Heap::RequestTrim` 仍可能被其他代码路径触发。
+
+结论：参考书提到的「GC 抑制」方案在 Android 17 上仍是「能跑通但不能工程化」的边界技巧，不应作为通用应用优化手段。生产环境的 GC 治理应回到 §23.5 的三条主线：减少分配、及时清理、增加可用 Java Heap（详见 §23.4）。
+
+### 源码索引（android-17.0.0_r1）
+
+- `libcore/libart/src/main/java/java/lang/Daemons.java:58-63, 743-768`
+- `libcore/libart/src/main/java/dalvik/system/VMRuntime.java:871, 877, 883, 905`
+- `art/runtime/gc/task_processor.cc` 全文 156 行
+- `art/runtime/gc/task_processor.h` 全文 96 行
+- `art/runtime/gc/heap.cc:4113-4141, 4158, 4211-4257, 4259-4302, 5050-5161`
+- `art/runtime/gc/reference_processor.cc:364-404`
+- `art/runtime/startup_completed_task.cc:42-72`
+- `art/runtime/native/dalvik_system_VMRuntime.cc:339-340, 591`
+
+相关深度报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop.md`
+
 ## 参考资料
 
 ### AOSP 源码

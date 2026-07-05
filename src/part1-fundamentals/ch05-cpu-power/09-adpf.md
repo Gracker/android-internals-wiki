@@ -75,6 +75,8 @@ last_task9_autofix_at: "2026-07-03"
 p0: 0
 p1: 0
 p2: 2
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-05
 ---
 # 5.9 ADPF 自适应性能框架
 
@@ -156,7 +158,7 @@ Java 层还有 `sendHint()` 及 `CPU_LOAD_*` / `GPU_LOAD_*` 这类即时 hint �
 
 ### Android 16 的 Headroom API
 
-Android 16 新增的是 `SystemHealthManager#getCpuHeadroom(@Nullable CpuHeadroomParams)` 和 `getGpuHeadroom(@Nullable GpuHeadroomParams)` 等 API。传 `null` 使用默认参数。它们返回 available CPU / GPU capacity headroom，用来回答一个更具体的问题：在当前负载下，离容量上限还剩多少余量。
+Android 16 新增的是 `SystemHealthManager#getCpuHeadroom(@Nullable CpuHeadroomParams)` 和 `getGpuHeadroom(@Nullable GpuHeadroomParams)` 等 API。传 `null` 使用默认参数。返回的是当前负载下 CPU / GPU 的可用容量余量，用来回答：离容量上限还剩多少。
 
 这组 API 适合做较低频的策略判断，比如场景切换、画质挡位调整、后台调优线程的周期性采样。它不适合塞进 frame loop。官方文档明确写到，每次调用至少会触发一次同步 Binder，单次调用可能超过 1 ms，不建议在 critical thread 上等待结果。实际用法应该放在 worker thread，并遵守 `getCpuHeadroomMinIntervalMillis()` / `getGpuHeadroomMinIntervalMillis()` 暴露的最小轮询间隔。
 
@@ -166,7 +168,7 @@ Android 16 的 NDK 侧还提供了 `AThermal_HeadroomCallback` 这类 thermal he
 
 ### 公开 API 边界：`setPreferIdle`
 
-有调研素材提到 API 37 可能在 `PerformanceHintManager.Session` 上引入 `setPreferIdle(boolean)`，语义比 `setPreferPowerEfficiency` 更偏向"任务可以暂停"。但当前 Android Developers API 37 参考文档和 NDK `performance_hint.h` 中均未找到该方法。如果该 API 存在，可能是 preview/vendor SDK 的一部分，不属于公开 SDK。
+API 37 的 `PerformanceHintManager.Session` 公开面未确认存在 `setPreferIdle(boolean)` 方法。当前 Android Developers API 37 参考文档和 NDK `performance_hint.h` 中均未找到该方法；如果该 API 存在，可能是 preview/vendor SDK 的一部分，不属于公开 SDK。
 
 能效模式的公开入口仍然是 `setPreferPowerEfficiency(boolean)`（API 35 已确认可用），建议以它为优先选择。
 
@@ -367,15 +369,11 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 
 ### OEM 对 ADPF 的定制
 
-不同 SoC 厂商对 ADPF 的实现策略存在差异，这是分析 ADPF 效果时需要考虑的变量。
+不同 SoC 厂商对 ADPF 的实现策略存在差异，直接影响到“掉帧后补频能否挽回当前帧”。
 
 高通平台通过 PowerHint HAL 将 ADPF 的 Hint 信号映射到 PerfLock 请求，触发 CPU/GPU 频率调整和核心分配。联发科平台通过 Perfservice 接收 ADPF Hint，结合自己的调度策略做频率决策。Google Tensor 平台有自己的 DVFS 调度策略，与 ADPF 的集成方式也可能不同。
 
-同一款游戏在不同设备上的 ADPF 响应速度和效果可能不同。在做竞品分析（§15.4）或跨设备性能对比时，需要把 OEM 的 ADPF 定制策略纳入考量。
-
-**OEM ADPF 响应差异**：不同 SoC 厂商对 ADPF Hint 的响应延迟存在显著差异，直接影响“掉帧后补频能否挽回当前帧”。120 fps 下一帧只有 8.33 ms，响应延迟超过 4 ms 就意味着近半帧预算耗在等待上。
-
-跨设备调优策略不能一刀切。响应延迟较快的设备上，ADPF 可以做帧级补救；响应延迟接近半帧预算的设备上，ADPF 更适合做趋势性调频（提前告诉系统“接下来几帧都需要高性能”），而不是等掉帧后再补救。
+同一款游戏在不同设备上的 ADPF 响应速度和效果可能不同。120 fps 下一帧只有 8.33 ms，如果某设备从 App 上报到系统响应超过 4 ms，近半帧预算就已经耗在等待上了。在做竞品分析（§15.4）或跨设备性能对比时，需要把 OEM 的 ADPF 定制策略纳入考量：响应延迟较快的设备上，ADPF 可以做帧级补救；响应延迟接近半帧预算的设备上，ADPF 更适合做趋势性调频（提前告诉系统“接下来几帧都需要高性能”），而不是等掉帧后再补救。
 
 ## 参考资料
 
@@ -384,5 +382,5 @@ ADPF 不能突破硬件的物理上限。如果 SoC 在最高频率下仍然无�
 - Android Developers：`PowerManager` thermal API reference，覆盖 thermal status、thermal headroom 与预测采样边界。
 - Android Developers：`SystemHealthManager` API reference，覆盖 CPU / GPU headroom 的调用入口和低频采样要求。
 - AOSP：`frameworks/base/core/java/android/os/PerformanceHintManager.java`，用于核对 Java API surface、flagged API 与 session 状态机。
-- DeepResearch：`PerformanceHintManager.Session.setThreads()` IPC 链路与 Android 16+ FlaggedApi 全景分析 — 拆解 setThreads 的同步 Binder 调用链（IHintManager → IHintSession）、AIDL oneway/sync 区分、Android 16+ 全部 @FlaggedApi 标记全景，以及 error code 映射规则（EINVAL→IllegalArgumentException, EPERM→SecurityException）。
+- AOSP IPC 链路分析：`PerformanceHintManager.Session.setThreads()` 同步 Binder 调用链（IHintManager → IHintSession）、AIDL oneway/sync 区分、Android 16+ `@FlaggedApi` 标记与 error code 映射（EINVAL→IllegalArgumentException, EPERM→SecurityException）。
 - AOSP：`frameworks/base/native/android/performance_hint.cpp` 与 NDK `performance_hint.h`，用于核对 native workload hint 接入边界。

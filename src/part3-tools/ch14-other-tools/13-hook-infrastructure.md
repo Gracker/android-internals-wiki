@@ -33,7 +33,7 @@ drafted_date: '2026-04-21'
 gap_source: AOSP结构+官方文档+研究素材
 last_task2b_at: '2026-06-24'
 last_task9_at: '2026-06-24'
-last_task9_audit: '2026-06-24'
+last_task9_audit: '2026-07-05'
 path: https://github.com/KwaiAppTeam/KOOM
 pipeline_stage: ready-to-publish
 polish_by: task2b-polish
