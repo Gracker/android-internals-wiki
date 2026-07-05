@@ -796,6 +796,13 @@
       "pipeline_stage": "ready-to-publish",
       "last_task6_at": "2026-07-04T12:08:00+08:00",
       "review_log": "logs/review/2026-07-04-12-review.md"
+    },
+    "14.8": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-07-05T18:17:09+08:00",
+      "finalized_date": "2026-07-05",
+      "finalized_by": "openclaw-task6-auto-promote"
     }
   },
   "task2a": {
