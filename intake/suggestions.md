@@ -159,3 +159,33 @@
 - 加速《线上疑难问题》59 篇的扫描与知识点提取（current book 3, 0/59）
 - 对 thin drafts 进行内容加工（17-startup-insights-api-observability.md 30行, 30-impeller-shader-compilation-flutter.md 32行, 09-soc-specific-power-optimization.md 36行, 27-macrobenchmark-automation-gate.md 37行）
 - 探索跨章节的综合性主题（如"大型 App 性能架构演进案例"）
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：原理链完整性
+- **位置**：AGI 对 GLES 应用的分析路径章节
+- **问题**：ANGLE driver切换机制原理说明不够完整，只说明了设置命令，未解释ANGLE切换的实际影响机制和性能特征差异
+- **建议**：补充ANGLE切换对GPU分析和性能的具体影响说明，包括切换后的性能特征差异和GPU分析结果的变化
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异覆盖
+- **位置**：整个章节的版本覆盖描述
+- **问题**：Android 17 ANGLE denylist策略影响未充分说明，章节提到Android 17的denylist，但未充分说明这对GLES应用GPU分析结果的具体影响
+- **建议**：在"Perfetto 中的GPU分析能力"和"AGI 对 GLES 应用的分析路径"章节增加Android 17的特殊说明，详细说明denylist对GPU分析结果的影响
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异覆盖
+- **位置**：APA System Profiler 的版本覆盖与演进章节
+- **问题**：APA vs AGI的版本迁移路径不清晰，说明了APA支持Android 12+，但未明确不同版本的具体能力差异
+- **建议**：按Android版本详细说明APA能力的渐进增强，包括Android 12、13、14、15、16中的具体功能差异和推荐使用场景
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异覆盖
+- **位置**：Sokatoa:多帧GPU分析的新范式章节
+- **问题**：Sokatoa的Android版本支持边界不明确，提到"目标设备要求Android 13及以上"，但未说明Android 13和14+的具体功能差异
+- **建议**：补充Sokatoa在不同Android版本上的能力差异说明，明确各版本的功能限制和特性
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：数据与案例支撑
+- **位置**：GPU 性能分析的核心指标章节
+- **问题**：Draw Call数量阈值缺乏数据支撑，提到"UI渲染:通常<100个Draw Call"等阈值，但未提供数据来源
+- **建议**：补充这些阈值的实际测试数据或引用权威来源，增加阈值设置的科学依据
