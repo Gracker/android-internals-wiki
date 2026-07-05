@@ -4,8 +4,8 @@ chapter: "20.9"
 section: "20.9"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-28"
-last_verified_against: "AOSP android-16.0.0_r1 ActivityThread/ComputerEngine；signal handler async-signal-safety audit"
+last_verified: "2026-07-06"
+last_verified_against: "AOSP android-17.0.0_r1 ActivityThread/ComputerEngine；signal handler async-signal-safety audit"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
@@ -24,9 +24,9 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
@@ -37,7 +37,8 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-28"
 last_task9_at: "2026-05-28T03:32:12+08:00"
 last_task9_audit: "2026-06-17"
-task2b_result: "fixed"
+task2b_result: "fixed-lite"
+last_task2b_lite_at: "2026-07-06"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
 last_task9_autofix_at: "2026-05-28"
@@ -113,7 +114,7 @@ FDSize: 342
 - 运行 20 分钟后增长到 387
 - 增长模式：每隔 30-60 秒新增 3-5 个线程，旧线程不退出
 
-`[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc CreateNativeThread]`
+`[已验证: AOSP android-17.0.0_r1, art/runtime/thread.cc CreateNativeThread]`
 
 查看线程名称，大部分是空字符串或默认的 `Thread-N` 格式——没有设置 `Thread.setName()`。这种"匿名线程"的治理在 20.7 节的异常架构设计中已经建立了监控体系。本案例中，问题出在一个第三方推送 SDK：
 
@@ -204,7 +205,7 @@ Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。�
 - SDK A 重新注册 SIGSEGV 处理器（例如在 `SIGPIPE` 恢复后重新初始化），此时 `oldact` 保存的是 B 的处理器
 - 链路变成：A → B → A → ... 循环调用，或者某一方丢失了 `oldact`
 
-`[已验证: AOSP android-16.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp; bionic/linker/linker_debuggerd_android.cpp]`
+`[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp; bionic/linker/linker_debuggerd_android.cpp]`
 
 ### 追踪：确认信号处理器覆盖
 
@@ -360,7 +361,7 @@ void register_unified_handler() {
 
 ### 追踪：ContentProvider 的初始化机制
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java；frameworks/base/services/core/java/com/android/server/pm/ComputerEngine.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java；frameworks/base/services/core/java/com/android/server/pm/ComputerEngine.java]
 
 `ActivityThread.handleBindApplication` 在应用启动时按以下顺序执行：
 
@@ -478,7 +479,7 @@ override fun onCreate(): Boolean {
 }
 ```
 
-`[已验证: AOSP android-16.0.0_r1, ActivityThread.installContentProviders；ComputerEngine.queryContentProviders / sProviderInitOrderSorter]`
+`[已验证: AOSP android-17.0.0_r1, ActivityThread.installContentProviders；ComputerEngine.queryContentProviders / sProviderInitOrderSorter]`
 
 ### 验证
 

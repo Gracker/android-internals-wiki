@@ -773,8 +773,11 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-06T04:05:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-06-04-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-06-04-audit.md",
+      "completed_at": "2026-07-06T07:38:53+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 (5 refs: frontmatter + 4 [已验证] tags)"
     }
   ],
   "entries": [
