@@ -32,7 +32,7 @@ task6_reviewed_date: "2026-05-09"
 review_round: 4
 repaired_date: "2026-05-09"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-05-09T12:43:00+08:00"
+last_task2b_at: "2026-05-15T03:17:00+08:00"
 status: "finalized"
 pipeline_stage: ready-to-publish
 task9_result: "auto-fixed"
@@ -40,18 +40,17 @@ task9_reviewed_date: "2026-06-09"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-09T14:20:00+08:00"
 task2b_state: "fixed"
-last_task2b_at: "2026-05-15T03:17:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-09-14-audit.md"
 task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Choreographer API 名 `AChoreographer_vsyncCallback`；AOSP android-16.0.0_r1 header 已复核，Android 17 tag 当前未在 android.googlesource 公开，章节 Android 17 内容保留待验证边界。P0 1（已修）/ P1 0 / P2 1（既有 suggestions，不重复）。"
 task2b_result: "fixed"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
-last_task6_audit: "2026-07-06"
+last_task6_audit: "2026-07-07"
+last_task6_at: "2026-07-07T05:06:00+08:00"
 task9_state: "reviewed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"
 last_task9_autofix_at: "2026-06-09"
-last_task6_audit: "2026-07-06"
 ---
 
 # VSync 机制
