@@ -60,7 +60,7 @@ last_task6_review_log: "logs/review/2026-05-09-06-review.md"
 task6_review_notes: "2026-05-09 Task6 06:05：Task2B 修复后写作复审；轻修 8 处（结构性元叙述、主观标题、模糊/口号化表达、无条件量化表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-06-16-audit.md"
 task9_review_notes: "2026-06-06 Task9 闲时抽检 auto-fix：Android 17 行为变更已公开 MessageQueue lock-free 实现；补齐版本差异并将 master AOSP 参考锚点降到 android-16.0.0_r1，回到 Task6 复审。"
-last_task6_audit: "2026-05-26"
+last_task6_audit: "2026-07-07"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-27
 last_task9_autofix_at: "2026-06-06"
