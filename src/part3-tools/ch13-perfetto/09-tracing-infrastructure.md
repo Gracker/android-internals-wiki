@@ -1,44 +1,45 @@
 ---
-title: "\"Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理\""
-chapter: "\"13.9\""
-section: "\"13.9\""
+
+title: "Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理"
+chapter: 13.9
+section: 13.9
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: "pass-light-edit"
 task6_reviewed_by: openclaw-task6
-task6_reviewed_date: "\"2026-05-08\""
+task6_reviewed_date: 2026-05-08
 task6_reviewed_at: "2026-06-29T21:07:00+08:00"
-last_task6_at: "\"2026-06-07T04:12:51+08:00\""
+last_task6_at: 2026-06-07T04:12:51+08:00
 task6_review_notes: "2026-06-29 Task6 revisiting review: pass-light-edit；修复 L1/L2 问题，L3/L4 无新增；自动晋升 finalized。"
-applicable_versions: "\"Android 8.0 (API 26) - Android 17 (API 37)\""
-tags: ["[tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]"]
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 confidence: "medium"
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1, frameworks/base/core/jni/android_os_Trace.cpp, frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp, frameworks/native/cmds/atrace/atrace.cpp, system/core/libcutils/{trace-dev.cpp,include/cutils/trace.h}, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,tracefs.cc,tracefs.h}, external/perfetto/perfetto.rc, external/perfetto/src/profiling/perf/perf_producer.cc, frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp}"
-drafted_date: "\"2026-04-08\""
-drafted_by: "\"openclaw-task2a\""
+drafted_date: 2026-04-08
+drafted_by: openclaw-task2a
 reviewed_date: "2026-06-07"
-reviewed_by: "\"openclaw-task6\""
-path: "\"intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md\""
-related_chapters: "\"[\\\"13.1\\\", \\\"13.2\\\", \\\"13.5\\\", \\\"14.10\\\", \\\"1.5\\\"]\""
+reviewed_by: openclaw-task6
+path: intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md
+related_chapters: [13.1, 13.2, 13.5, 14.10, 1.5]
 task2b_state: "fixed"
-last_task2b_rerun_at: "\"2026-05-08T16:50:00+08:00\""
+last_task2b_rerun_at: 2026-05-08T16:50:00+08:00
 task9_result: "auto-fixed"
 task2b_result: "fixed"
-rework_date: "\"2026-04-25\""
+rework_date: 2026-04-25
 rework_by: "openclaw-task2b"
-last_task9_at: "\"2026-06-07T04:33:40+08:00\""
+last_task9_at: 2026-06-07T04:33:40+08:00
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "\"2026-06-07\""
-last_task2b_at: "\"2026-06-06T22:50:00+08:00\""
+task9_reviewed_date: 2026-06-07
+last_task2b_at: 2026-06-06T22:50:00+08:00
 repaired_by: "openclaw-task2b"
-repaired_date: "\"2026-04-26\""
+repaired_date: 2026-04-26
 updated_by: "openclaw-task2b"
-updated_date: "\"2026-06-06\""
-task2b_fix_notes: "\"2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_marker 单路径→双路径(libtracing_perfetto TrackEvent 分支),移除 AOSP main 锚点引用,更新数据流图;C/C++ ATRACE 仍走 trace_marker 路径单独说明。\""
+updated_date: 2026-06-06
+task2b_fix_notes: "2026-06-06 Task2B main: 修复 Task9 P0 Android 15+ trace_marker 单路径→双路径(libtracing_perfetto TrackEvent 分支),移除 AOSP main 锚点引用,更新数据流图;C/C++ ATRACE 仍走 trace_marker 路径单独说明。"
 task9_state: "reviewed"
-last_task6_audit: "2026-07-05"
+last_task6_audit: "2026-07-07"
 deepseek_polish_state: "done"
 last_deepseek_polish_at: "2026-05-27"
 last_task9_audit: "2026-06-29"
@@ -46,6 +47,7 @@ last_task9_autofix_at: "2026-06-29"
 deepseek_cn_review_state: "done"
 last_deepseek_cn_review_at: "2026-06-07"
 ---
+
 
 
 # 13.9 Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理
