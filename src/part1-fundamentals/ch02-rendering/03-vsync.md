@@ -51,6 +51,7 @@ task9_state: "reviewed"
 last_task9_audit: "2026-06-09"
 last_task9_audit_log: "logs/deep-review/2026-06-09-14-audit.md"
 last_task9_autofix_at: "2026-06-09"
+last_task6_audit: "2026-07-06"
 ---
 
 # VSync 机制
