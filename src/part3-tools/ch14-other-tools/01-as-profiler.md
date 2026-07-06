@@ -41,7 +41,7 @@ task9_reviewed_date: "2026-05-28"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-11"
 last_task6_at: "2026-05-28T12:10:00+08:00"
-last_task6_audit: "2026-06-19"
+last_task6_audit: "2026-07-06"
 task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 1 处，将绝对化排查建议改为优先级表达；无 L3/L4 回炉项，送 Task9 技术复审。"
 task9_review_notes: "2026-05-19 12:20 Task9 复审：needs-rework。P0 0 / P1 4 / P2 0；Network Inspector 入口/timeline、profileable Java Method Trace、Power Profiler ODPM app 归因、APP_FULLY_DRAWN 语义仍需回炉。2026-05-28 Task2B Lite 已做局部修复，回流 Task6。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。"
 last_task6_review_log: "logs/review/2026-05-28-12-review.md"
@@ -114,41 +114,41 @@ CPU、Memory 与 Power 视图适合按同一操作窗口做交叉排查；网络
 
 ## CPU Profiler：三种分析模式的深度对比
 
-CPU Profiler 是日常性能分析中使用频率最高的模块。它提供三种分析模式，选模式前要先区分精度和开销——选错模式，要么数据不准确，要么 App 直接卡死。
+CPU 分析器是日常性能分析中使用频率最高的模块。它提供三种分析模式，选模式前要先区分精度和开销——选错模式，要么数据不准确，要么 App 直接卡死。
 
 ### System Trace（系统追踪）
 
-System Trace 是 CPU Profiler 中开销最低的模式。它的底层就是 Perfetto（在 Android 10 之前是 Systrace），通过 atrace 机制采集系统预埋的 TracePoint 以及通过 `android.os.Trace` 自定义的标记。
+系统追踪模式是 CPU 分析器中开销最低的模式。它的底层就是 Perfetto（在 Android 10 之前是 Systrace），通过 atrace 机制采集系统预埋的 TracePoint 以及通过 `android.os.Trace` 自定义的标记。
 
-每个 TracePoint 的开销大约 5μs，对于一般的分析方法来说完全可以忽略。抓取 System Trace 时，App 的运行表现和正常使用几乎没有差别——这是它最大的优势。因为开销低，所以数据可信度高，适合分析 UI 卡顿、帧渲染耗时、线程调度等需要"接近真实环境"的场景。
+每个 TracePoint 的开销大约 5μs，对于一般的分析方法来说完全可以忽略。抓取系统追踪时，App 的运行表现和正常使用几乎没有差别——这是它最大的优势。因为开销低，所以数据可信度高，适合分析 UI 卡顿、帧渲染耗时、线程调度等需要"接近真实环境"的场景。
 
 System Trace 的局限是：它只能看到系统预埋的和手动标记的 TracePoint，无法看到每个 Java 方法的调用耗时。如果卡顿的原因在某个具体方法内部（比如一个耗时的排序算法），System Trace 只能定位到大概范围，需要更精细的工具来进一步分析。
 
-在 Profiler 中选择 "System Trace Recording" 即可开始抓取。抓取完成后，数据可以导出为 `.perfetto-trace` 文件，在 Perfetto UI（ui.perfetto.dev）中打开做更深入的分析——因此，Profiler 的 System Trace 和命令行抓取的 Perfetto Trace 是完全兼容的。
+在分析器中选择 "System Trace Recording" 即可开始抓取。抓取完成后，数据可以导出为 `.perfetto-trace` 文件，在 Perfetto UI（ui.perfetto.dev）中打开做更深入的分析——因此，系统追踪模式和命令行抓取的 Perfetto Trace 是完全兼容的。
 
 [已验证: 官方文档, developer.android.com/studio/profile/cpu-profiler]
 
 ### Java Method Trace（方法追踪）
 
-Java Method Trace 是最"精确"但也最"重"的模式。它通过在虚拟机层面插桩（instrumentation），记录每一个 Java/Kotlin 方法的进入和退出时间戳。理论上，它能揭示每一个方法的精确执行时间。
+Java 方法追踪是最"精确"但也最"重"的模式。它通过在虚拟机层面插桩（instrumentation），记录每一个 Java/Kotlin 方法的进入和退出时间戳。理论上，它能揭示每一个方法的精确执行时间。
 
-但精确的代价是巨大的运行时开销。插桩会在每个方法的入口和出口添加额外的记录逻辑，这不仅拖慢了方法本身的执行速度，还改变了 CPU 缓存的行为和 JIT 的优化决策。一个在正常执行时只需 5ms 的方法，在 Method Trace 模式下可能显示为 50ms 甚至 130ms——10 倍以上的膨胀是很常见的。
+但精确的代价是巨大的运行时开销。插桩会在每个方法的入口和出口添加额外的记录逻辑，这不仅拖慢了方法本身的执行速度，还改变了 CPU 缓存的行为和 JIT 的优化决策。一个在正常执行时只需 5ms 的方法，在方法追踪模式下可能显示为 50ms 甚至 130ms——10 倍以上的膨胀是很常见的。
 
-Method Trace 给出的时间数据不能直接当真。它更适合用来理解"方法的调用顺序和层级关系"，而不是"方法到底执行了多久"。当需要确认"某段代码到底调用了哪些子方法、调用链有多深"时，Method Trace 的全量记录能力是其他模式无法替代的。
+方法追踪给出的时间数据不能直接当真。它更适合用来理解"方法的调用顺序和层级关系"，而不是"方法到底执行了多久"。当需要确认"某段代码到底调用了哪些子方法、调用链有多深"时，方法追踪的全量记录能力是其他模式无法替代的。
 
-实际使用中，建议将 Method Trace 的录制时间控制在 5 秒以内。超过 5 秒，一方面数据量会非常庞大导致 Profiler 界面卡顿，另一方面长时间的开销累积会使数据的失真更加严重。
+实际使用中，建议将方法追踪的录制时间控制在 5 秒以内。超过 5 秒，一方面数据量会非常庞大导致分析器界面卡顿，另一方面长时间的开销累积会使数据的失真更加严重。
 
-一个直观的例子来自社区对比测试：同一个 `onBindViewHolder` 方法，Callstack Sample 报告约 10ms，Java Method Trace 报告约 130ms，而用 Systrace（System Trace）测量只有约 5.5ms。这个差距足以说明 Method Trace 的插桩开销有多严重。
+一个直观的例子来自社区对比测试：同一个 `onBindViewHolder` 方法，调用栈采样报告约 10ms，Java 方法追踪报告约 130ms，而用 Systrace（系统追踪）测量只有约 5.5ms。这个差距足以说明方法追踪的插桩开销有多严重。
 
 ### Callstack Sample（调用栈采样）
 
-Callstack Sample 是在精度和开销之间取得平衡的模式。它不是记录每一个方法的调用，而是以固定的时间间隔（通常几毫秒）对线程的调用栈进行"快照"，统计每个方法出现在调用栈上的频率。
+调用栈采样是在精度和开销之间取得平衡的模式。它不是记录每一个方法的调用，而是以固定的时间间隔（通常几毫秒）对线程的调用栈进行"快照"，统计每个方法出现在调用栈上的频率。
 
-因为不需要插桩，Callstack Sample 的开销比 Method Trace 低得多，App 的运行表现更加接近真实。但采样的本质决定了它有一个固有的局限：执行时间短于采样间隔的方法很可能被完全遗漏。如果有一个方法只执行了 1ms，而采样间隔是 10ms，那么这个方法有 90% 的概率不会出现在结果中。
+因为不需要插桩，调用栈采样的开销比方法追踪低得多，App 的运行表现更加接近真实。但采样的本质决定了它有一个固有的局限：执行时间短于采样间隔的方法很可能被完全遗漏。如果有一个方法只执行了 1ms，而采样间隔是 10ms，那么这个方法有 90% 的概率不会出现在结果中。
 
-Callstack Sample 最适合找"CPU 热点"——那些长时间占用 CPU 的方法。对于一个耗时 200ms 的排序方法，无论采样间隔怎么设，它都会被反复命中。但对于一个快速但被频繁调用的小方法（比如 `String.charAt()`），它可能完全不出现在采样结果中，即使它被调用了一万次、累计耗时可能很可观。
+调用栈采样最适合找"CPU 热点"——那些长时间占用 CPU 的方法。对于一个耗时 200ms 的排序方法，无论采样间隔怎么设，它都会被反复命中。但对于一个快速但被频繁调用的小方法（比如 `String.charAt()`），它可能完全不出现在采样结果中，即使它被调用了一万次、累计耗时可能很可观。
 
-在 Android Studio Meerkat (2024.3) 及后续版本中，Google 持续改进采样引擎的准确性，降低 debug profiling 时的误报率，使 Callstack Sample 在 debug 构建中的数据更加可靠。[待验证: 具体版本对应的采样引擎改进细节]
+在 Android Studio Meerkat (2024.3) 及后续版本中，Google 持续改进采样引擎的准确性，降低 debug 分析时的误报率，使调用栈采样在 debug 构建中的数据更加可靠。[待验证: 具体版本对应的采样引擎改进细节]
 
 ### 三种模式的选择决策
 
@@ -162,15 +162,15 @@ System Trace 定位到大致范围后，如果需要进一步看某个方法内�
 
 | 模式 | 底层工具 | 开销 | 精度 | 适用场景 |
 |------|---------|------|------|---------|
-| System Trace | Perfetto/atrace | ~5μs/事件 | 事件级 | UI 卡顿、线程调度、渲染管线 |
-| Callstack Sample | Simpleperf | 中等 | 统计级 | CPU 热点定位 |
-| Java Method Trace | ART 插桩 | 很高 | 方法级 | 调用链全量分析 |
+| 系统追踪 | Perfetto/atrace | ~5μs/事件 | 事件级 | UI 卡顿、线程调度、渲染管线 |
+| 调用栈采样 | Simpleperf | 中等 | 统计级 | CPU 热点定位 |
+| Java 方法追踪 | ART 插桩 | 很高 | 方法级 | 调用链全量分析 |
 
 [已验证: 官方文档, developer.android.com/studio/profile/cpu-profiler]
 
 ## Memory Profiler：从实时曲线到堆快照
 
-Memory Profiler 是排查内存问题的主力工具。它的界面顶部是一条实时内存曲线，展示 Java 堆、Native 堆、Graphics、Stack、Code 等各类内存的变化趋势。当反复操作一个功能，看到这条曲线只涨不降、像楼梯一样一步一步往上走时，基本就可以判断存在内存泄漏。
+内存分析器是排查内存问题的主力工具。它的界面顶部是一条实时内存曲线，展示 Java 堆、Native 堆、Graphics、Stack、Code 等各类内存的变化趋势。当反复操作一个功能，看到这条曲线只涨不降、像楼梯一样一步一步往上走时，基本就可以判断存在内存泄漏。
 
 ### 实时内存曲线
 
@@ -184,46 +184,46 @@ Android Studio Memory Profiler 的分配追踪数据通路基于 device 端的 *
 
 ### Heap Dump（堆快照）
 
-当实时曲线暗示有泄漏时，下一步就是抓 Heap Dump。点击 Memory Profiler 中的 "Capture Heap Dump" 按钮（或者选择 "Analyze Memory Usage" 任务），Profiler 会冻结当前时刻的 Java 堆，记录下所有存活对象的信息：类名、实例数量、Shallow Size（对象自身占用的内存）、Retained Size（对象及其引用链持有的总内存）。
+当实时曲线暗示有泄漏时，下一步就是抓取堆转储。点击内存分析器中的 "Capture Heap Dump" 按钮（或者选择 "Analyze Memory Usage" 任务），分析器会冻结当前时刻的 Java 堆，记录下所有存活对象的信息：类名、实例数量、Shallow Size（对象自身占用的内存）、Retained Size（对象及其引用链持有的总内存）。
 
 Heap Dump 的分析有两个关键视角。第一个是按类名查看：找到实例数量异常多的类，比如 `MainActivity` 在堆中出现了 5 个实例——正常情况应该只有 1 个。第二个是按引用链查看：选中一个可疑对象，Profiler 会展示它的 GC Root 引用链，指明是哪条引用阻止了对象被回收——这是定位泄漏根因的关键信息。
 
 Profiler 还提供了自动检测 Activity 和 Fragment 泄漏的功能。它会标记出那些已经调用了 `onDestroy()` 但仍然在堆中存活的 Activity/Fragment 实例，帮助快速定位最常见的一类泄漏。
 
-抓取 Heap Dump 的瞬间会暂停应用（stop-the-world），所以不要在生产环境或性能测试期间使用。
+抓取堆转储的瞬间会暂停应用（stop-the-world），所以不要在生产环境或性能测试期间使用。
 
 ### Allocation Tracking（分配追踪）
 
-Allocation Tracking 关注另一个问题："谁在频繁分配"。当在 Perfetto 中看到 GC 事件特别密集，或者 Memory Profiler 的实时曲线上出现锯齿状的快速波动，说明有大量的短生命周期对象被频繁创建和销毁——这就是内存抖动（Memory Churn）。
+分配追踪关注另一个问题："谁在频繁分配"。当在 Perfetto 中看到 GC 事件特别密集，或者内存分析器的实时曲线上出现锯齿状的快速波动，说明有大量的短生命周期对象被频繁创建和销毁——这就是内存抖动（Memory Churn）。
 
-点击 "Track Memory Consumption"（Java/Kotlin Allocations）任务，Profiler 会开始记录每个对象的分配事件：在哪个线程上、通过哪个调用栈、分配了多大的内存。这些信息会直接指向产生抖动的代码位置。
+点击 "Track Memory Consumption"（Java/Kotlin Allocations）任务，分析器会开始记录每个对象的分配事件：在哪个线程上、通过哪个调用栈、分配了多大的内存。这些信息会直接指向产生抖动的代码位置。
 
-Allocation Tracking 有两种模式：Full 和 Sampled。Full 模式记录所有分配事件，数据完整但开销较大；Sampled 模式按间隔采样，开销更低但可能遗漏。对于内存抖动这种"大量重复分配"的场景，Sampled 模式通常就足够了——因为抖动的来源是高频重复的模式，采样不会错过它。
+分配追踪有两种模式：Full 和 Sampled。Full 模式记录所有分配事件，数据完整但开销较大；Sampled 模式按间隔采样，开销更低但可能遗漏。对于内存抖动这种"大量重复分配"的场景，Sampled 模式通常就足够了——因为抖动的来源是高频重复的模式，采样不会错过它。
 
-如果 App 包含 Native 代码（C/C++），还可以使用 Native Allocation Tracking 来追踪 `malloc()`/`new` 的分配情况。这在分析 Native 层的内存增长问题时非常有用。[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
+如果 App 包含 Native 代码（C/C++），还可以使用 Native 分配追踪来追踪 `malloc()`/`new` 的分配情况。这在分析 Native 层的内存增长问题时非常有用。[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
 ## 各 Profiler 模式的性能开销与适用场景
 
-理解每种分析模式的开销，是正确使用 Profiler 的核心前提。一个引入了 10 倍开销的工具，它给出的数据本身就是失真的——如果不知道这一点，就会在错误的方向上浪费时间。
+理解每种分析模式的开销，是正确使用分析器的核心前提。一个引入了 10 倍开销的工具，它给出的数据本身就是失真的——如果不知道这一点，就会在错误的方向上浪费时间。
 
-CPU 的三种模式已经按 System Trace、Callstack Sample、Java Method Trace 分开说明。
+CPU 的三种模式已经按系统追踪、调用栈采样、Java 方法追踪分开说明。
 
-Memory 方面也有开销边界。实时内存曲线的监控开销很低，可以长期开启。Heap Dump 会触发一次 stop-the-world 暂停，时间取决于堆的大小——对于几百 MB 的堆，暂停可能达到几百毫秒。Allocation Tracking 的 Full 模式在对象分配密集的场景下会有明显的性能影响，建议优先使用 Sampled 模式。
+Memory 方面也有开销边界。实时内存曲线的监控开销很低，可以长期开启。堆转储会触发一次 stop-the-world 暂停，时间取决于堆的大小——对于几百 MB 的堆，暂停可能达到几百毫秒。分配追踪的 Full 模式在对象分配密集的场景下会有明显的性能影响，建议优先使用 Sampled 模式。
 
-一个重要的实践建议是：使用 `profileable` 构建类型（而非 `debuggable`）来 profiling。从 Android 10（API 29）开始，Android 支持 `profileable` 标志，它允许 Profiler 进行基本的性能分析，同时避开 debug 构建中的额外检查和 hook，profiling 数据也更接近真实发布版本的表现。
+一个重要的实践建议是：使用 `profileable` 构建类型（而非 `debuggable`）来进行分析。从 Android 10（API 29）开始，Android 支持 `profileable` 标志，它允许分析器进行基本的性能分析，同时避开 debug 构建中的额外检查和 hook，分析数据也更接近真实发布版本的表现。
 
 两种构建类型的能力边界：
 
 | 能力 | `profileable` | `debuggable` |
 |------|:---:|:---:|
-| System Trace / CPU Trace | ✅ | ✅ |
-| Callstack Sample | ✅ | ✅ |
-| Java Method Trace | [待验证: 依 Android Studio / 平台版本确认] | ✅ |
-| Java/Kotlin Allocation Recording | ❌ | ✅ |
-| Heap Dump | ❌ | ✅ |
-| Native Allocation Tracking | ✅ | ✅ |
+| 系统追踪 / CPU 追踪 | ✅ | ✅ |
+| 调用栈采样 | ✅ | ✅ |
+| Java 方法追踪 | [待验证: 依 Android Studio / 平台版本确认] | ✅ |
+| Java/Kotlin 分配记录 | ❌ | ✅ |
+| 堆转储 | ❌ | ✅ |
+| Native 分配追踪 | ✅ | ✅ |
 
-需要 Heap Dump 或 Java/Kotlin Allocation Recording 时，仍然要使用 `debuggable` 构建。
+需要堆转储或 Java/Kotlin 分配记录时，仍然要使用 `debuggable` 构建。
 
 在 Android Studio 中，可以通过在 Manifest 中添加 `<profileable android:shell="true"/>` 来启用。推荐在 release 构建的基础上加上 `profileable` 标志来做性能分析，这样得到的数据最有参考价值。
 
@@ -231,32 +231,32 @@ Memory 方面也有开销边界。实时内存曲线的监控开销很低，可�
 
 ## Profiler 与 Perfetto 的互补关系
 
-Perfetto（第 13 章）在全书工具篇中篇幅最大，但 Android Studio Profiler 与它并非替代关系——两者覆盖不同的分析场景。
+Perfetto（第 13 章）在全书工具篇中篇幅最大，但 Android Studio 分析器与它并非替代关系——两者覆盖不同的分析场景。
 
-Profiler 的优势在于"App 开发者的日常工具"。它集成在 IDE 中，不需要额外安装，不需要命令行操作，点击几下就能开始分析。它的时间轴和源码编辑器在同一个窗口中，发现一个耗时方法后可以直接跳转到对应的代码文件。对于 App 开发者来说，这种"在开发流程中随时可以用的工具"才是最高频使用的。
+分析器的优势在于"App 开发者的日常工具"。它集成在 IDE 中，不需要额外安装，不需要命令行操作，点击几下就能开始分析。它的时间轴和源码编辑器在同一个窗口中，发现一个耗时方法后可以直接跳转到对应的代码文件。对于 App 开发者来说，这种"在开发流程中随时可以用的工具"才是最高频使用的。
 
 Perfetto 的优势在于"系统级全局视野"。它能同时展示多个进程、CPU 所有核心的调度情况、内核事件、SurfaceFlinger 的合成过程——这些是 Profiler 看不到的。当怀疑性能问题的根源不在 App 自身，而在系统调度、其他进程的干扰、或者 GPU 合成过程时，Perfetto 是唯一能给出答案的工具。
 
 
-Profiler 的 System Trace 模式底层就是 Perfetto。在 Profiler 中抓取的 System Trace 可以导出为 `.perfetto-trace` 文件，直接在 Perfetto UI 中打开。在 Profiler 中完成第一轮快速分析、定位大致问题范围后，导出 Trace 到 Perfetto UI 做系统级深入分析——这个工作流在实践中非常高效。
+Profiler 的 System Trace 模式底层就是 Perfetto。在分析器中抓取的系统追踪可以导出为 `.perfetto-trace` 文件，直接在 Perfetto UI 中打开。在分析器中完成第一轮快速分析、定位大致问题范围后，导出追踪到 Perfetto UI 做系统级深入分析——这个工作流在实践中非常高效。
 
-实操中更稳的顺序是：先用 Profiler 的 System Trace 做快速扫描，判断问题在 App 内部还是外部。内部问题（某个方法慢、内存持续增长）直接在 Profiler 中切换到 Callstack Sample 或 Memory Profiler 做精细分析；外部问题（CPU 被其他进程抢占、VSync 信号延迟、SurfaceFlinger 合成慢）导出 Trace 到 Perfetto UI 做系统级分析。
+实操中更稳的顺序是：先用分析器的系统追踪做快速扫描，判断问题在 App 内部还是外部。内部问题（某个方法慢、内存持续增长）直接在分析器中切换到调用栈采样或内存分析器做精细分析；外部问题（CPU 被其他进程抢占、VSync 信号延迟、SurfaceFlinger 合成慢）导出追踪到 Perfetto UI 做系统级分析。
 
 ## Power Profiler（Android Studio Hedgehog+）
 
-从 Android Studio Hedgehog（2023.1）开始，原来的 Energy Profiler 升级为 Power Profiler。两者的核心区别是：Energy Profiler 只能估算功耗（基于 CPU 使用率、网络活动等的模型推算），而 Power Profiler 能直接测量设备各子系统的实际功耗。
+从 Android Studio Hedgehog（2023.1）开始，原来的 Energy 分析器升级为 Power 分析器。两者的核心区别是：Energy 分析器只能估算功耗（基于 CPU 使用率、网络活动等的模型推算），而 Power 分析器能直接测量设备各子系统的实际功耗。
 
-Power Profiler 的数据来源是设备上的 ODPM（On-Device Power Rails Monitor），它把设备级功耗按子系统分割成多条 Power Rail：CPU 大核、中核、小核、GPU、Display、Camera、Cellular、WLAN、GPS、UFS（存储）、Memory 等。它适合把 App 操作时间窗与设备功耗变化做相关分析，但 ODPM 不是 app-specific 归因数据，其他活跃进程也可能贡献噪声。
+Power 分析器的数据来源是设备上的 ODPM（On-Device Power Rails Monitor），它把设备级功耗按子系统分割成多条 Power Rail：CPU 大核、中核、小核、GPU、Display、Camera、Cellular、WLAN、GPS、UFS（存储）、Memory 等。它适合把 App 操作时间窗与设备功耗变化做相关分析，但 ODPM 不是 app-specific 归因数据，其他活跃进程也可能贡献噪声。
 
-举个例子：如果在 Power Profiler 中看到 Cellular 的 Power Rail 在 App 启动后持续高消耗，就可以推断出启动期间的网络请求过于密集，可能需要延迟或者合并请求。
+举个例子：如果在 Power 分析器中看到 Cellular 的 Power Rail 在 App 启动后持续高消耗，就可以推断出启动期间的网络请求过于密集，可能需要延迟或者合并请求。
 
-Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 Pixel 设备、且系统为 Android 10（API 29）及以上才支持 ODPM 数据。其他设备只能使用传统的 Coulomb Counter 数据，粒度要粗得多。[已验证: 官方文档, developer.android.com/studio/profile/power-profiler]
+Power 分析器的设备要求比较严格：目前只有 Pixel 6 及以后的 Pixel 设备、且系统为 Android 10（API 29）及以上才支持 ODPM 数据。其他设备只能使用传统的 Coulomb Counter 数据，粒度要粗得多。[已验证: 官方文档, developer.android.com/studio/profile/power-profiler]
 
-## 使用 Profiler API 在代码中触发 profiling
+## 使用分析器 API 在代码中触发分析
 
-在某些场景下，profiling 需要由特定条件自动触发。Android 15（API 35）引入了 `ProfilingManager` 的基础能力，Android 16（API 36）扩展了可用的触发器类型。
+在某些场景下，分析需要由特定条件自动触发。Android 15（API 35）引入了 `ProfilingManager` 的基础能力，Android 16（API 36）扩展了可用的触发器类型。
 
-`ProfilingManager` 允许 App 注册系统级的 profiling 触发器。Android 16 API 36 中公开的触发器类型包括：
+`ProfilingManager` 允许 App 注册系统级的分析触发器。Android 16 API 36 中公开的触发器类型包括：
 
 - `ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN`：cold start 中 `Activity.reportFullyDrawn()` 被调用后触发，系统提供 running system trace snapshot
 - `ProfilingTrigger.TRIGGER_TYPE_ANR`：发生 ANR 时触发
@@ -288,19 +288,19 @@ profilingManager.addProfilingTriggers(
 
 [已验证: Android 16 API 36, android.os.ProfilingManager — addProfilingTriggers / registerForAllProfilingResults]
 
-这种系统触发的 profiling 方式对于捕获难以复现的问题特别有价值——很多 ANR 问题在手动测试中很难复现，但在线上用户的环境中时有发生。通过 ProfilingManager 注册触发器，可以在问题发生时自动收集数据，无需用户干预。
+这种系统触发的分析方式对于捕获难以复现的问题特别有价值——很多 ANR 问题在手动测试中很难复现，但在线上用户的环境中时有发生。通过 ProfilingManager 注册触发器，可以在问题发生时自动收集数据，无需用户干预。
 
 ## 常见问题与误区
 
-**"Method Trace 报告的方法耗时就是真实的耗时。"** 不是。Method Trace 的插桩开销非常大，对于短方法（< 10ms）可能导致耗时膨胀 10 倍以上。只有 System Trace 给出的时间数据接近真实情况。Method Trace 的价值在于看调用关系，不是看绝对时间。
+**"方法追踪报告的方法耗时就是真实的耗时。"** 不是。方法追踪的插桩开销非常大，对于短方法（< 10ms）可能导致耗时膨胀 10 倍以上。只有系统追踪给出的时间数据接近真实情况。方法追踪的价值在于看调用关系，不是看绝对时间。
 
-**"Profileable 构建不能做性能分析。"** 不是。Google 官方推荐使用 profileable 构建来做性能分析。它比 debuggable 构建更接近真实发布版。限制是 profileable 构建不能做 Java/Kotlin Allocation Recording 和 Heap Dump；Java Method Trace 需按 Android Studio / 平台版本复核。System Trace、Callstack Sample 和 Native Allocation Tracking 都支持。需要这些高级内存分析能力时切换到 debuggable 构建。
+**"Profileable 构建不能做性能分析。"** 不是。Google 官方推荐使用 profileable 构建来做性能分析。它比 debuggable 构建更接近真实发布版。限制是 profileable 构建不能做 Java/Kotlin 分配记录和堆转储；Java 方法追踪需按 Android Studio / 平台版本复核。系统追踪、调用栈采样和 Native 分配追踪都支持。需要这些高级内存分析能力时切换到 debuggable 构建。
 
-**"Profiler 能分析系统性能问题。"** Profiler 的视角是 App-centric 的，它主要展示单个 App 的 CPU、内存、网络数据。要分析系统级的性能问题（如调度延迟、多进程竞争、SurfaceFlinger 合成慢），需要使用 Perfetto 的全局视图。
+**"分析器能分析系统性能问题。"** 分析器的视角是 App-centric 的，它主要展示单个 App 的 CPU、内存、网络数据。要分析系统级的性能问题（如调度延迟、多进程竞争、SurfaceFlinger 合成慢），需要使用 Perfetto 的全局视图。
 
-**"Memory Profiler 发现不了的问题就不是内存问题。"** Memory Profiler 能检测 Java 堆上的泄漏，但 Native 内存泄漏（通过 `malloc` 分配但未释放的内存）需要使用 Native Allocation Tracking 或者 `heapprofd`（Perfetto 的原生内存分析工具，见 §13.5）来排查。
+**"内存分析器发现不了的问题就不是内存问题。"** 内存分析器能检测 Java 堆上的泄漏，但 Native 内存泄漏（通过 `malloc` 分配但未释放的内存）需要使用 Native 分配追踪或者 `heapprofd`（Perfetto 的原生内存分析工具，见 §13.5）来排查。
 
-**"CPU Profiler 的三种模式可以随便选。"** 选错模式会导致数据完全不可用。在需要"真实性能数据"的场景下用 Method Trace，或者在高频调用的方法上用 Callstack Sample 期望看到精确耗时，都会得到误导性的结果。
+**"CPU 分析器的三种模式可以随便选。"** 选错模式会导致数据完全不可用。在需要"真实性能数据"的场景下用方法追踪，或者在高频调用的方法上用调用栈采样期望看到精确耗时，都会得到误导性的结果。
 
 ## 参考资料
 

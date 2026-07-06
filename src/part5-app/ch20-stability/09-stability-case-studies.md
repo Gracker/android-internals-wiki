@@ -24,20 +24,20 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
-task9_result: revisiting
+task9_result: pass-tech-review
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-06"
-last_task9_at: "2026-05-28T03:32:12+08:00"
-last_task9_audit: "2026-06-17"
+last_task9_at: "2026-07-06T14:26:00+08:00"
+last_task9_audit: "2026-07-06"
 last_task2b_lite_at: "2026-07-06"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
@@ -53,6 +53,8 @@ last_task6_audit: "2026-07-06"
 last_task6_review_log: "logs/review/2026-05-28-03-review.md"
 task6_l1_l2_fixes: 6
 task6_l3_l4_issues: 0
+finalized_date: "2026-07-06"
+finalized_by: "openclaw-task9-auto-promote"
 ---
 
 # 稳定性治理案例集

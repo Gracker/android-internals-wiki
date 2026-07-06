@@ -1,9 +1,9 @@
 {
-  "total": 594,
-  "draft": 34,
+  "total": 598,
+  "draft": 38,
   "ready_for_review": 199,
   "finalized": 342,
-  "last_updated": "2026-07-06",
+  "last_updated": "2026-07-06T15:47:43.725228+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -1077,5 +1077,21 @@
     "total_fixed": 1,
     "last_run": "2026-07-05T15:35:00+08:00",
     "last_chapter": "23.8"
+  },
+  "task2b_verifier_latest": {
+    "run_at": "2026-07-06T15:26:28+08:00",
+    "verified_sections": [
+      "14.8",
+      "20.9",
+      "14.1",
+      "03-vsync",
+      "10.7",
+      "18.17"
+    ],
+    "status_corrections": 0,
+    "blocked_items": 1,
+    "blocked_section": "21.2",
+    "result": "no-change",
+    "log_file": "logs/rework/task2b-verifier-2026-07-06.log"
   }
 }
