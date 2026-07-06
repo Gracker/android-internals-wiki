@@ -292,7 +292,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-06T19:26:08.986724",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-06T19:40:17+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: PowerStatsAggregator 路径版本限定修正（'已确认迁至'→'Android 16 源码迁至，17 未验证'），Battery Historian gcr.io 镜像名明确化"
     }
   ]
 }
