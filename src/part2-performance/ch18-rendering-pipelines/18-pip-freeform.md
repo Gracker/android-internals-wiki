@@ -1,9 +1,10 @@
 ---
+
 title: "PIP 与自由窗口渲染"
 chapter: "18.18"
 section: "18.18"
 section_title: "PIP 与自由窗口渲染"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "AOSP ViewRootImpl / Choreographer / DisplayEventReceiver / BLASTBufferQueue / TaskOrganizer / WindowContainerTransaction / PipTaskOrganizer；Android Picture-in-Picture / Multi-Window / SurfaceView 官方文档"
@@ -34,24 +35,25 @@ tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 reviewed_date: 2026-04-24
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_task9_at: "2026-04-24T03:39:00+08:00"
-last_task9_audit: "2026-07-05"
+last_task9_audit: "2026-07-07"
 last_task9_audit_log: "logs/deep-review/2026-07-01-04-audit.md"
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
-task9_result: pass-tech-review
 last_task6_audit: "2026-06-27"
 review_round: 1
 task2b_result: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
+review_notes: '2026-07-07 Task2B Verifier: task9_result 重复键修正（pass-tech-review → needs-rework），status finalized → ready-for-review'
 ---
 
 <!-- outline-start -->
