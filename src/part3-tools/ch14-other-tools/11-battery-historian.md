@@ -44,7 +44,7 @@ task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_rerun_at: '2026-07-07T02:53:56+08:00'
-last_task2b_lite_at: '2026-07-06'
+last_task2b_lite_at: 2026-07-07
 last_task2b_at: '2026-07-07T02:53:56+08:00'
 task9_result: needs-rework
 last_task9_at: '2026-07-07T02:20:00+08:00'

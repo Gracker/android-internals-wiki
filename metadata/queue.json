@@ -16,7 +16,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-07T03:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-07T03:38:48",
+      "completed_by": "task2b-lite",
+      "completion_note": "fixed-lite: TaskOrganizer 版本限定修正（Android 12+ 引入），版本演进表补充 TaskOrganizer 条目"
     },
     {
       "section": "14.11",
@@ -345,7 +348,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-07T00:00:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-07T03:38:48",
+      "completed_by": "task2b-lite",
+      "completion_note": "verified-already-fixed: 3 项 P95 源码/版本问题均已在 Task9 audit (2026-06-19) auto-fix 中修正，本次 Lite 确认通过"
     }
   ]
 }
