@@ -36,7 +36,7 @@ last_task9_audit_log: logs/deep-review/2026-06-20-16-audit.md
 task9_review_notes: "2026-06-20 Task9 idle audit AUTO-FIX: 修正 Android 17 bionic malloc_debug/malloc_hooks 源码锚点；无新增 queue pending，回到 Task6 复审。"
 last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
 last_task6_at: "2026-06-20T20:11:02+08:00"
-last_task6_audit: "2026-06-20"
+last_task6_audit: "2026-07-06"
 task6_reviewed_date: "2026-06-20"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: logs/review/2026-05-30-01-review.md

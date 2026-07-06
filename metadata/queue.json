@@ -988,5 +988,35 @@
       "completed_at": "2026-07-05T22:51:24+08:00",
       "completed_by": "openclaw-task2b-rework"
     }
+  ],
+  "queue": [
+    {
+      "path": "part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-引入了全新的任务调度器通.md",
+      "priority": 80,
+      "reason": "新创建的知识缺口章节",
+      "created_at": "2026-07-06T15:45:50.441987+08:00",
+      "score": 18
+    },
+    {
+      "path": "part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-引入了全新的任务调度器通.md",
+      "priority": 80,
+      "reason": "新创建的知识缺口章节",
+      "created_at": "2026-07-06T15:47:43.726355+08:00",
+      "score": 18
+    },
+    {
+      "path": "part1-fundamentals/ch4-memory/4.36-Phoronix---Linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调.md",
+      "priority": 80,
+      "reason": "新创建的知识缺口章节",
+      "created_at": "2026-07-06T15:47:43.726355+08:00",
+      "score": 17
+    },
+    {
+      "path": "part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md",
+      "priority": 80,
+      "reason": "新创建的知识缺口章节",
+      "created_at": "2026-07-06T15:47:43.726355+08:00",
+      "score": 15
+    }
   ]
 }
