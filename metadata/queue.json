@@ -379,6 +379,50 @@
       "completed_at": "2026-07-07T04:52:56+08:00",
       "completed_by": "task2b-main",
       "completed_reason": "fixed: 版本边界声明与版本基线更新至 android-17.0.0_r1"
+    },
+    {
+      "section": "20.19",
+      "section_title": "Android 17 信号处理架构迁移与 debuggerd bionic/linker 重构",
+      "priority": 80,
+      "reason": "task2a gap-mining: score 18/20, 素材+研究盲区驱动",
+      "material_paths": [
+        "intake/research-gaps.md"
+      ],
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-07T06:18:43.841086+08:00"
+    },
+    {
+      "section": "4.35",
+      "section_title": "Android 17 CPU 缓存局部性与 PSS 内存核算源码机制",
+      "priority": 80,
+      "reason": "task2a gap-mining: score 15/20, source-index score=20",
+      "material_paths": [],
+      "status": "pending",
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-07T06:18:43.841086+08:00"
+    }
+  ],
+  "pending": [
+    {
+      "section": "ch02-rendering",
+      "section_title": "ch02-rendering",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7618433588125007923"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "你可能还不知道 Compose Pager 有多强大 — Compose Pager 的完整实战指南，覆盖 PagerState 管理、自定义 PageSize、SnapPosition 对齐、contentPadding 窥探效果、负间距重叠、graphi...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-07T05:33:21.905195",
+      "status": "pending"
     }
   ]
 }
