@@ -352,6 +352,24 @@
       "completed_at": "2026-07-07T03:38:48",
       "completed_by": "task2b-lite",
       "completion_note": "verified-already-fixed: 3 项 P95 源码/版本问题均已在 Task9 audit (2026-06-19) auto-fix 中修正，本次 Lite 确认通过"
+    },
+    {
+      "section": "14.7",
+      "section_title": "ProfilingManager",
+      "priority": 95,
+      "reason": "[闲时抽检] 版本边界标注缺失",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "版本边界",
+          "location": "main/master 资料标注",
+          "detail": "章节缺少对 main/master 资料的版本边界标注，未明确说明非 android-17.0.0_r1 的资料为未进入 Android 17 且不得作为正文结论",
+          "suggestion": "在章节开头或参考资料部分明确标注：凡涉及非 android-17.0.0_r1 的资料，必须标注未进入 Android 17 且不得作为正文结论的依据"
+        }
+      ],
+      "added_by": "task9-idle-audit",
+      "added_at": "2026-07-07T04:29:35",
+      "status": "pending"
     }
   ]
 }
