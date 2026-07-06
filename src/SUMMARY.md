@@ -19,6 +19,10 @@
   - [1.46 Android 17 ResourcesManager 与 Configuration 变更性能](part1-fundamentals/ch01-architecture/1.46-resourcesmanager-configuration-performance.md)
   - [1.53 Android 17 Binder IPC 优先级继承与异步批处理流水线](part1-fundamentals/ch01-architecture/1-53-android17-binder-ipc-优先级继承与异步批处理流水线.md)
 
+- [第 2 章：渲染管线](part2-performance/ch02-rendering/README.md)
+  - [2.1 GPU 渲染管线架构演进](part2-performance/ch02-rendering/2.1-gpu-rendering-pipeline-evolution.md)
+  - [2.3 GPU 调试性能工具链源码调研](part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md)
+
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
   - [4.5 Android 17 LMKD 与 AppFlow 兼容性方案](part1-fundamentals/ch04-memory/4.5-appflow-lmkd-compatibility.md)
 
@@ -47,6 +51,7 @@
   - [8.1 响应速度原理](src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
   - [8.2 App 启动全流程](src/part2-performance/ch08-responsiveness/02-app-launch.md)
   - [8.3 启动优化策略](src/part2-performance/ch08-responsiveness/03-launch-optimization.md)
+  - [8.3 Android 17 Startup Insights 缺口分析](src/part1-fundamentals/ch08-startup/8.3-startup-insights-gaps.md)
   - [8.6 Kotlin Coroutine 性能实践](src/part2-performance/ch08-responsiveness/06-coroutine-performance.md)
   - [8.7 Baseline Profiles 与编译优化实践](src/part2-performance/ch08-responsiveness/07-baseline-profiles.md)
   - [8.11 Native 库加载与动态链接性能](src/part2-performance/ch08-responsiveness/11-native-library-loading-dynamic-linker.md)
@@ -89,6 +94,7 @@
   - [22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性](part5-app/ch22-rendering-practice/30-impeller-shader-compilation-flutter.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
+  - [4.23 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.23-android17-ai-agent-memory.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
   - [26.24 heapprofd 生产级部署与权限模型](part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md)
 

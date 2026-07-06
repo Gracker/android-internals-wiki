@@ -662,6 +662,39 @@
       "completed_at": "2026-07-06T11:40:07",
       "completed_by": "openclaw-task2b-lite",
       "completed_reason": "fixed-lite: Android 17 signal handling changes, thread affinity, and monitoring APIs补充"
+    },
+    {
+      "section": "4.23",
+      "section_title": "Android 17 AI Agent 内存沙箱化与跨应用数据复用",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-06T14:15:48.033386",
+      "status": "pending"
+    },
+    {
+      "section": "2.3",
+      "section_title": "GPU 调试性能工具链源码调研",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-06T14:15:48.033392",
+      "status": "pending"
+    },
+    {
+      "section": "8.3",
+      "section_title": "Android 17 Startup Insights 缺口分析",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "material_paths": [],
+      "review_issues": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-06T14:15:48.033393",
+      "status": "pending"
     }
   ],
   "items": [

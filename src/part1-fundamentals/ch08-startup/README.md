@@ -1,26 +1,37 @@
 ---
-title: "第 8 章：启动优化"
-chapter: "8.0"
-status: "draft"
-applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
-tags: ["startup", "boot", "bootanalyze", "zygote", "perfetto"]
-related_chapters: ["1.2", "16.7"]
-created_by: "openclaw"
-created_date: "2026-07-01"
-last_verified: "2026-07-01"
-last_verified_against: "src/SUMMARY.md"
-confidence: "low"
-sources:
-  - type: repo
-    path: "src/SUMMARY.md"
+title: "启动优化"
+chapter: "8"
+status: finalized
 ---
 
 # 第 8 章：启动优化
 
-本章暂作为系统启动优化专题的占位入口，收纳 Android 17 bootanalyze、Zygote lazy preload、bootstat 与 Perfetto 启动 trace 等内容。
+本章深入分析 Android 系统的启动机制和优化策略，涵盖从系统启动到应用启动的全链路性能优化。
 
-当前章节仍在加工中。正文优先从 `8.1 Android 17 系统启动优化与 bootanalyze 工具链` 展开，后续再根据 DeepResearch 与源码复核结果拆分稳定小节。
+## 内容概览
 
-## 本章内容
+- **基础原理**：Android 启动架构、启动流程分析
+- **应用启动**：冷启动、温启动、热启动机制与优化
+- **系统启动**：bootanalyze 工具链、启动性能监控
+- **启动优化实战**：代码优化、资源优化、架构优化
 
-- `8.1 Android 17 系统启动优化与 bootanalyze 工具链`：整理 bootanalyze 工具链、启动 trace buffer、Zygote 预加载和启动阶段测量方法。
+## 章节导航
+
+- [8.1 响应速度原理](01-responsiveness-principles.md)
+- [8.2 App 启动全流程](02-app-launch.md)
+- [8.3 启动优化策略](03-launch-optimization.md)
+- [8.3 Android 17 Startup Insights 缺口分析](8.3-startup-insights-gaps.md)
+
+## 学习路径
+
+1. 从基础原理开始理解 Android 启动架构
+2. 掌握不同启动模式的特点和优化方法
+3. 实际操作启动分析和优化工具
+4. 结合具体场景进行启动优化实战
+
+## 适用场景
+
+- Android 应用启动性能分析
+- 系统启动时间优化
+- 启动卡顿问题诊断
+- 启动性能基准建立

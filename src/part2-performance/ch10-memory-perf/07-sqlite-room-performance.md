@@ -72,7 +72,7 @@ last_task9_review_log: "logs/deep-review/2026-06-29-20-deep-review.md"
 last_task9_audit: "2026-06-29"
 last_task9_autofix_at: "2026-06-29"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-28
+last_deepseek_cn_review_at: 2026-07-06
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
@@ -99,7 +99,7 @@ task9_p2_issues: 0
 
 ### 1.1 WAL 模式 vs 回滚日志模式
 
-SQLite 默认使用回滚日志（rollback journal）模式：每次写操作前先把将被修改的数据页复制到独立的回滚日志文件，再写入新数据。这个模式的代价很直接：**写操作期间数据库整体被锁定，读写互相阻塞**。
+SQLite 默认使用回滚日志（rollback journal）模式：每次写操作前先把将被修改的数据页复制到独立的回滚日志文件，再写入新数据。代价是**写操作期间数据库整体被锁定，读写互相阻塞**。
 
 WAL（Write-Ahead Logging）模式反转了这个模型。写操作不再直接修改数据库文件，而是将变更追加到一个独立的 WAL 文件（`.db-wal`）中。读操作可以从数据库文件和 WAL 文件中同时读取，但看到的是各自一致的快照。这样，一个写者可以持续追加变更，多个读者也能同时读取，读写不再互斥。
 
@@ -110,7 +110,7 @@ WAL（Write-Ahead Logging）模式反转了这个模型。写操作不再直接�
 PRAGMA journal_mode=WAL;
 ```
 
-WAL 的收益来自两条底层改进。
+WAL 的收益主要体现在两个方面。
 
 其一，事务提交路径里的 `fsync()` 次数通常更少。回滚日志模式先回写原页再提交事务，WAL 把改动追加到 `-wal` 文件，检查点再把脏页并回主库。具体收益受文件系统、闪存控制器、检查点策略和事务大小影响，不宜用固定倍数概括。
 
@@ -152,7 +152,7 @@ public SQLiteConnection acquireConnection(String sql, int connectionFlags,
 }
 ```
 
-要分清两个层次。`mLock` 保护的是连接池元数据，让线程进入等待的位置是 `waitForConnection()`；长事务、独占写连接或连接池规模过小，都会让后续线程在这里排队。Perfetto 和 ANR trace 里更值得找的是 `beginTransaction`、`executeForCursorWindow()`、`waitForConnection()` 这条链。
+要分清两个层次：`mLock` 保护的是连接池元数据，真正让线程等待的位置是 `waitForConnection()`；长事务、独占写连接或连接池规模过小，都会让后续线程在这里排队。Perfetto 和 ANR trace 里更值得找的是 `beginTransaction`、`executeForCursorWindow()`、`waitForConnection()` 这条链。
 
 `SQLiteOpenHelper` 的数据库打开路径仍然是串行的。`getWritableDatabase()` 会把 `onCreate()`、`onUpgrade()`、`onDowngrade()` 串在一次 open 流程里，所以慢 Migration 一样会把后续打开者挡在门外。这里的阻塞点更接近 helper open 和 connection acquisition。
 
@@ -447,16 +447,16 @@ PRAGMA busy_timeout=3000;
 
 在 WAL 模式下，读操作可以与写操作并发执行，因此读操作的线程池可以适当增加并发度。但写操作仍然推荐串行化。
 
-### 6.2 把排查路径收成一个真实场景
+### 6.2 实战排查路径
 
-假设首页冷启动后立即查消息列表，主线程在 `ContentResolver.query()` 等 Binder reply，Provider 侧同时在做一次大 Migration。这个场景里，排查顺序通常是：
+以首页冷启动后查消息列表为例：主线程在 `ContentResolver.query()` 等 Binder reply，Provider 侧同时在做一次大 Migration。排查顺序通常是：
 
 1. 先确认数据库 first open / Migration 落在哪个线程。
 2. 再看 Provider 侧有没有长事务、`CREATE INDEX` 或大 projection 导致 `executeForCursorWindow()` 太慢。
 3. 如果列表使用 Room + Paging 3，确认 DAO SQL 到底是 `LIMIT / OFFSET` 还是业务自定义 Keyset，不要把 Paging 3 的框架名当成性能担保。
 4. 再回到数据设计：projection 是否过宽、BLOB 是否外置、写操作是否串行化、跨进程查询是否真的有必要。
 
-按这个顺序排查，前面各节的建议会对应到具体动作：同步 DAO 避免进主线程，批量写入放进事务，长 Migration 提前预热，深翻页场景改成稳定排序键 + Keyset，跨进程 Cursor 缩小窗口压力。回到 ANR / Perfetto 场景时，读者可以直接拿这套路径排查，而不是只对着清单打勾。
+按这个顺序排查，前面各节的建议会对应到具体动作：同步 DAO 避免进主线程，批量写入放进事务，长 Migration 提前预热，深翻页场景改成稳定排序键 + Keyset，跨进程 Cursor 缩小窗口压力。回到 ANR / Perfetto 场景时，可以直接按这套路径逐层排查。
 
 ## 扩展
 

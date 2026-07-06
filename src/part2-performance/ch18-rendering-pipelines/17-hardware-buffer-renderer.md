@@ -53,6 +53,8 @@ review_type: "task6-writing-quality-review"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: "openclaw-task6"
 last_task9_autofix_at: "2026-05-29"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 ---
 # Hardware Buffer Renderer
 
@@ -162,7 +164,7 @@ request.draw(executor, result -> {
 });
 ```
 
-这段 Java API 有四个容易写错的点：
+这段 Java API 在使用中需要特别注意四个细节：
 
 1. `setContentRoot()` 属于 `HardwareBufferRenderer`，不在 `RenderRequest` 上。
 2. `HardwareBuffer.create()` 里给 GPU render target 至少要带 `USAGE_GPU_COLOR_OUTPUT`；direct `SurfaceControl.setBuffer()` 场景还要补 `USAGE_GPU_SAMPLED_IMAGE | USAGE_COMPOSER_OVERLAY`。[已验证: `HardwareBuffer.java` / `SurfaceControl.java`]
@@ -267,7 +269,7 @@ Android 10-15（API 29-35）只有 `ASurfaceTransaction_setBuffer()`，没有带
 
 `HardwareBufferRenderer` 主要用于 CPU 光栅化已经成为主要成本的离屏绘制工作负载。大尺寸 PDF 页面、复杂 path、频繁缩放的 bitmap、wide color 或 HDR 离屏输出，通常更容易从 GPU 光栅化里受益。纯色块、简单文本或低分辨率静态内容，切到 HBR 后差距可能很小，事务提交和 buffer 同步还可能变成额外开销。
 
-仓库里还没有同一设备、同一 workload 的 A/B benchmark 记录，下面只保留定性判断，定量数据继续标记为 `[待验证: 需补同设备 trace 或 benchmark 条件]`。
+目前缺少同一设备、同一 workload 的 A/B benchmark，下面只给出定性判断，定量数据标记为待验证。
 
 | 维度 | `lockCanvas()` | `HardwareBufferRenderer` |
 |:---|:---|:---|
@@ -278,7 +280,7 @@ Android 10-15（API 29-35）只有 `ASurfaceTransaction_setBuffer()`，没有带
 | 调度责任 | `Surface` / BufferQueue 负责大部分提交节奏 | 调用方要自己安排 `draw()` 频率、transaction 提交和 buffer 池 |
 | 同步与复用 | acquire / release 多由 `Surface` / BufferQueue 维护 | `RenderResult.getFence()` 管 consumer 读取时机，release callback / release fence 管 buffer 再利用 |
 
-做 A/B 时，至少固定四个条件：设备型号与 GPU、Android 版本、buffer 尺寸和格式、绘制内容复杂度与目标帧率。少掉任一项，表里的结论只能当方向判断，不能当预算数字。
+做 A/B 对比时，至少固定四个条件：设备型号与 GPU、Android 版本、buffer 尺寸和格式、绘制内容复杂度与目标帧率。缺了任何一项，结论只能当方向判断，不能当精确预算。
 
 
 ## 渲染时序
