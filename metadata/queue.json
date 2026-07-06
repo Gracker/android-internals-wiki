@@ -267,6 +267,32 @@
       "added_at": "2026-07-06T19:19:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-07-06-19-audit.md"
+    },
+    {
+      "section": "14.11",
+      "section_title": "Battery Historian 与功耗分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码引用准确性和重要信息缺失问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Android 16/17 PowerStatsAggregator 路径描述",
+          "detail": "章节提到 PowerStatsAggregator 在 Android 16+ 已迁移至新路径，但未在 android-17.0.0_r1 中验证该路径存在。具体引用 PowerStatsAggregator 的源码路径需要重新确认，确保开发者能够正确定位到 Android 17 中的实际实现位置。",
+          "suggestion": "验证 PowerStatsAggregator 在 android-17.0.0_r1 中的实际路径，如已迁移到 power/stats/processor/，需明确说明路径变化并提供完整的文件路径。如果路径未发生变化，则移除迁移说明避免误导。"
+        },
+        {
+          "type": "重要缺失",
+          "location": "Battery Historian 维护状态描述",
+          "detail": "章节未明确说明 Battery Historian 官方镜像已长期不维护的现状，仍使用过时的描述方式。Google gcr.io 镜像已停止维护，社区镜像成为主流，但章节未包含这一重要信息更新。",
+          "suggestion": "补充 Battery Historian 维护状态说明：1) 明确官方 gcr.io 镜像已停止维护，2) 详细介绍社区镜像的使用方法，3) 说明 Battery Historian 当前更适合的场景（离线回顾而非日常开发），4) 提供镜像选择建议。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T19:26:08.986724",
+      "status": "pending"
     }
   ]
 }

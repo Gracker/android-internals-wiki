@@ -5,6 +5,12 @@
 - **建议**：修正 API 版本边界，补充准确的版本信息：ProfilingManager 实际从 Android 14 (API 34) 开始可用；ProfilingTrigger 在 Android 16 (API 35) 引入，并提供具体的源码路径验证。
 ---
 
+## [Task9 Idle Audit] 15 Android 性能优化研究方法论 — 2026-07-06
+- **类型**：源码准确性
+- **位置**：第3.4节 VSync 组件描述
+- **问题**：VSyncTracker 描述过于简化，实际涉及多组件协作
+- **建议**：补充 VSyncTracker、VSyncModulator、VSyncDispatch 的协作关系说明，与实际 AOSP 实现保持一致
+
 ## [Task2B 回炉修复] 20.9 稳定性治理案例集 — 2026-07-06 12:50
 
 来源：frontmatter backlog fallback（task9_result: needs-rework → 2026-07-06 deep-review）
@@ -97,3 +103,40 @@
 - **位置**：AGI 最低支持版本
 - **问题**：章节中提到的 AGI 最低支持版本标注为 Android 11，但 AOSP android-17.0.0_r1 中 AGI 的最低支持版本实际为 Android 10
 - **建议**：修正为 Android 10+
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：源码准确性
+- **位置**：PowerStatsAggregator 路径描述
+- **问题**：文中提到 PowerStatsAggregator 在 Android 16/17 中迁移到新路径，但未在 android-17.0.0_r1 中验证该路径存在，可能导致开发者找不到对应源码
+- **建议**：验证 PowerStatsAggregator 在 Android 17 中的实际存在路径，如已迁移需要更新说明
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：源码准确性
+- **位置**：BatteryUsageStats 系列类路径
+- **问题**：BatteryUsageStats、BatteryUsageStatsQuery、BatteryConsumer、BatteryStatsHistory 等类的引用路径在 android-17.0.0_r1 中均无法找到，说明统一归因 API 在 Android 17 中可能重大重构
+- **建议**：重新验证这些核心类的路径和 API 在 Android 17 中的实际存在性，如不存在需要重新组织内容说明
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：数据支撑
+- **位置**：ADPF Power Efficiency Mode 与 PowerMonitor 协作章节
+- **问题**：协作方案缺乏具体的使用案例和验证步骤，开发者难以理解和应用
+- **建议**：补充具体的代码示例、验证步骤和预期效果对比，帮助开发者理解和应用协作方案
+
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：版本差异
+- **位置**：PowerMonitor API 适用版本描述
+- **问题**：章节提到 Android 15 (API 35) 开放了 PowerMonitor API，但未说明 API 29 的 Macrobenchmark PowerMetric 兼容性要求和 API 35 的具体变化，导致开发者对适用范围判断不清晰
+- **建议**：补充 PowerMonitor API 版本兼容性说明：1) 明确 API 35 是应用层开放时间，2) 说明 API 29 Macrobenchmark PowerMetric 的基础能力，3) 列出 API 35 相比之前版本的具体新增功能，4) 提供版本兼容性检查建议
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：数据支撑
+- **位置**：ADPF Power Efficiency Mode 效果描述
+- **问题**：章节提到 "功耗降低 15-30%" 但缺少具体测试数据、基准参考或实际案例支撑，这一数字缺乏可验证性
+- **建议**：补充 "功耗降低 15-30%" 的具体测试背景和数据来源：1) 提供测试设备和环境描述，2) 给出具体的基准对比数据表格，3) 说明测试用例和持续时间，4) 提供其他研究或厂商报告的交叉验证
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：知识盲区
+- **位置**：ADPF + PowerMonitor 协作方案
+- **问题**：章节描述了 ADPF + PowerMonitor 协作的理论机制，但缺少实际应用案例和最佳实践指导，开发者难以理解如何在实际项目中落地
+- **建议**：补充 ADPF + PowerMonitor 的实际应用案例：1) 提供完整的代码示例展示协作流程，2) 说明常见的使用场景和适用条件，3) 给出配置调优的最佳实践，4) 列出常见问题和解决方案
