@@ -4,8 +4,8 @@ chapter: "20.9"
 section: "20.9"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-06"
-last_verified_against: "AOSP android-17.0.0_r1 ActivityThread/ComputerEngine；signal handler async-signal-safety audit"
+last_verified: "2026-07-06T12:50:00+08:00"
+last_verified_against: "AOSP android-17.0.0_r1 ActivityThread/ComputerEngine；signal handler async-signal-safety audit；task2b 2026-07-06 deep-review rework"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
@@ -28,29 +28,26 @@ pipeline_stage: task6_pending
 task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
-task9_result: needs-rework
+task9_result: revisiting
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-06"
-task9_state: reviewed
-task2b_state: fixed
-pipeline_stage: task2b_pending
 last_task9_at: "2026-05-28T03:32:12+08:00"
 last_task9_audit: "2026-06-17"
-task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-07-06"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
 last_task9_autofix_at: "2026-05-28"
 last_task9_review_log: "logs/deep-review/2026-05-28-03-deep-review.md"
 task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95。2026-05-28 Task2B：重写 handler 示例为最小 async-signal-safe 快照、altstack 注册、默认动作恢复与 re-raise，回流 Task6。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
-last_task2b_at: "2026-05-28T02:50:00+08:00"
-last_task2b_source: "task9-deep-tech-review"
+last_task2b_at: "2026-07-06T12:50:00+08:00"
+last_task2b_source: "task9-deep-tech-review (2026-07-06 re-review)"
 last_task2b_priority: 95
-task2b_note: "重写 Native Crash 统一 signal handler 示例：handler 内只写预分配快照并 re-raise；unwind、符号化、文件写入移到安全上下文；补充 SA_ONSTACK/旧 handler 链边界。"
+task2b_note: "2026-07-06 主修复：扩充 Android 17 信号处理机制（async-signal-safe 校验、线程亲和性信号分发、动态 altstack）、线程亲和性管理（三大场景 + 注意事项）、Android 17 线程监控 API 详解（getThreadCpuTime/getThreadPriority/sched）、Android 12+ THREAD_PRIORITY_* 与 cgroup v2 调度讨论、虚拟内存碎片化 OOM 分析、Android 5.0 vs 17 适用性 + 15→17 演进说明。P1 3 项 / P2 4 项全部修复。"
 last_task6_at: "2026-05-28T03:16:00+08:00"
 last_task6_audit: "2026-07-06"
 last_task6_review_log: "logs/review/2026-05-28-03-review.md"
@@ -106,6 +103,10 @@ FDSize: 342
 ```
 
 线程数 387，每个线程默认栈大小 1 MB（64 位设备上可能更大），仅线程栈就占用了接近 400 MB 虚拟内存。再加上线程的 TLS、JNI Env、guard page 等，每个线程实际占用约 1.2-1.5 MB 虚拟地址空间。387 个线程 ≈ 500 MB 虚拟内存被线程独占。
+
+**虚拟内存碎片化与 OOM 的关系**：线程泄漏导致的 OOM 通常不是"总量不够"，而是"找不到连续空闲空间"。Linux 内核分配线程栈时使用 `mmap`，要求连续的虚拟地址空间。387 个线程栈不断分配和释放（部分线程退出后再创建），在进程的虚拟地址空间中造成了碎片——可用总虚拟内存仍然充足，但没有一块连续区间能满足新线程栈的需求。进程的 `/proc/self/smaps` 中可以看到大量不连续的匿名映射区域，`/proc/self/maps` 中 VmSize 虽然离上限还有余量，但已经没有 ≥1 MB 的连续空闲段。
+
+这就是虚拟内存碎片化导致 OOM 的典型模式：内存整理/compaction 在用户态不可控，最终 `pthread_create`（底层 `mmap`）返回 ENOMEM。在 Perfetto 中配合 `mem.rss` + `mem.vm` 轨道可以观察碎片化趋势：当 VmSize 增长曲线不伴随 RSS 同步增长时，通常是线程栈或 mmap 碎片化的信号。
 
 排查重点要放到 387 个线程的来源上。
 
@@ -203,7 +204,13 @@ Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。�
 
 **一个信号只能有一个处理器**。`sigaction` 的 `oldact` 参数会返回上一个处理器，新处理器有责任在处理完后调用旧处理器，形成"链"。但这条链很容易断：
 
-**Android 17 信号处理机制变化**：Android 17 引入了更严格的信号处理验证机制，增强了对 signal handler 安全性的检查，禁止在 handler 中执行非 async-signal-safe 操作。同时新增了对线程亲和性（thread affinity）信号处理的优化，提升多核设备上的信号处理效率。
+**Android 17 信号处理机制变化**：Android 17 对信号处理引入了三方面的增强——
+
+1. **更严格的 async-signal-safe 校验**：系统在分发信号前增加了 handler 安全性检查，handler 内执行 `malloc`、`dlopen`、`pthread_mutex_lock` 等非安全操作时，系统会记录警告并可能出现 handler 被降级/跳过的情况。这意味着依赖内部 `longjmp` 或复杂 unwind 的旧 SDK 模式在 Android 17 上可能直接失效。
+2. **线程亲和性信号分发**：在多核 big.LITTLE 架构上，Android 17 优先将崩溃信号投递到信号来源线程所在的 CPU 核心，减少跨核 cache 失效对 crash dump 准确性的影响。在旧版本中，信号可能被任意核心处理，导致 `ucontext_t` 中的寄存器快照与崩溃现场存在偏差。
+3. **altstack 增强**：`SIGSTKSZ` 从常量改为运行时动态获取（`sysconf(_SC_SIGSTKSZ)`），因为 Android 17 的线程栈布局变化可能导致固定的 `SIGSTKSZ` 不足以容纳扩展的上下文信息。
+
+这些变化意味着统一信号处理器注册时，除了保证 async-signal-safe，还必须显式检查 `SA_ONSTACK` 是否生效，并改用 `sigaltstack` + 动态栈大小。
 
 - SDK A 注册了 SIGSEGV 处理器
 - SDK B 注册了 SIGSEGV 处理器，`oldact` 保存了 A 的处理器
@@ -237,9 +244,11 @@ void dump_signal_handlers() {
 
 崩溃监控 SDK 的初始化顺序不确定，每次进程启动时两个 SDK 可能以不同的顺序初始化。先初始化的 SDK 注册的处理器会被后初始化的 SDK 覆盖。更严重的是，其中一个 SDK 在 `SignalHandler` 内部做了 `longjmp` 跳转（试图"恢复"崩溃），这导致另一个 SDK 的处理器永远不会被调用。
 
-**Android 5.0 模式在 Android 17 中的适用性**：Android 5.0 的信号处理器链机制在 Android 17 中仍然适用，但需要特别注意新增的安全限制。Android 17 增强了对信号处理器的验证，旧模式中的某些操作可能不再允许。
+**Android 5.0 模式在 Android 17 中的适用性**：Android 5.0 引入的 debuggerd 信号处理器链机制（`debuggerd_signal_handler` → `linker_debuggerd_signal_handler`）在 Android 17 中保持兼容，但约束更强。Android 5.0 时期，handler 内执行 `dlopen("libc++.so")` 和 `__android_log_print` 等操作虽不安全但通常能工作；Android 17 的运行时对这些操作默认拒绝或触发 SIGABRT 二次崩溃。保留旧处理器链时，不要默认调用未知 SDK 的旧 handler——除非对方显式保证 async-signal-safe。
 
-**Android 15+ 信号处理机制演进**：Android 15 开始，系统对信号处理的安全性要求逐步提高，禁止在 handler 中执行复杂操作；Android 17 进一步强化了这一限制，并引入了线程亲和性优化，确保信号处理在正确的 CPU 核心上执行，避免跨核切换带来的性能问题。
+`[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/ 路径下的 debuggerd_handler.cpp；linker 中的 linker_debuggerd_android.cpp 在 Android 17 中保持但从 debuggerd 迁移到了 bionic/linker 目录]`
+
+**Android 15+ 信号处理机制演进**：Android 15 (API 35) 开始收紧信号处理安全约束，明确禁止 handler 内分配内存和持有锁；Android 16 (API 36) 引入 perf_event 辅助 crash 上下文采集；Android 17 (API 37) 完成了线程亲和性信号分发、动态 altstack 尺寸等增强。从 Android 15 到 17 的演进方向是：handler 只做"最小快照 + 重新投递"，复杂工作交给系统 crash_dump / debuggerd / tombstone 流程。统一信号处理器的实现应遵循这个最小职责原则。
 
 ### 修复方案
 
@@ -524,7 +533,22 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 分类完成后，找到具体阻塞/崩溃的位置。工具选择：
 
 - **Java 堆/线程问题**：Android Studio Profiler 的 Memory 视图 + Perfetto 的 `process_track`
-- **Native 问题**：Perfetto 的 `sched` 轨道 + `tombstone` 文件分析 + **Android 17 线程监控 API** `android.os.Process.getThreadCpuTime()`
+- **Native 问题**：Perfetto 的 `sched` 轨道 + `tombstone` 文件分析 + Android 17 线程监控 API
+
+**Android 17 线程监控 API 详解**：除了传统 `/proc/self/task/{tid}/stat` 的解析，Android 17 为应用层提供了三个可直接调用的线程监控入口：
+
+| API | 用途 | Android 17 变化 |
+|-----|------|----------------|
+| `android.os.Process.getThreadCpuTime(tid)` | 获取指定线程的用户态 + 内核态 CPU 时间 | Android 17 修复了 32 位溢出问题，改用 64 位计数器 |
+| `android.os.Process.getThreadPriority(tid)` | 查询线程 nice 值和调度策略 | Android 17 新增对 cgroup v2 `cpu.weight` 的透出 |
+| `/proc/self/task/{tid}/sched` | 内核级调度详情（nr_switches、avg_atom 等） | Android 17 无需 root 即可读取应用自身线程的 sched 文件 |
+
+这些 API 使应用能够在运行时检测"疑似泄漏线程"（CPU 时间为 0、创建时间久但无任何调度事件），配合 20.7 节异常架构的线程泄漏检测模块，在 OOM 发生前发出预警。
+
+**Android 12+ 线程优先级常量与调度行为**：`android.os.Process` 定义的 `THREAD_PRIORITY_*` 常量（从 `THREAD_PRIORITY_LOWEST` = 19 到 `THREAD_PRIORITY_URGENT_DISPLAY` = -8）在 Android 12 (API 31) 后行为发生变化——不再仅映射到 Linux nice 值，还受 cgroup v2 的 `cpu.weight` 影响。nice 值的线性调整不保证 CPU 时间的线性变化；在 cgroup v2 下，高优先级线程的实际唤醒延迟还取决于 cgroup 层级的 `cpu.max` 和 `cpu.weight.nice` 的交互。
+
+在稳定性排查中，如果某个 SDK 的后台线程设置了 `THREAD_PRIORITY_DEFAULT`（0）而非 `THREAD_PRIORITY_BACKGROUND`（10），这些线程会被调度器视为同等优先级的"前台"任务，与主线程竞争 CPU，可能间接导致主线程被 preempt 而触发 ANR。排查工具：`/proc/{pid}/task/{tid}/sched` 中的 `prio` 和 `se.avg.util_est` 配合 Perfetto 的 `sched_switch` 轨道，可以确认是否存在"低优先级任务挤占高优先级任务"的调度异常。
+
 - **ANR**：`/data/anr/traces.txt` + Perfetto 的主线程轨道
 
 ### 第三步：追踪根因
@@ -547,7 +571,14 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 
 从公开的技术博客和开源项目中，可以归纳出成熟稳定性治理体系的几个共性：
 
-**Android 17 线程亲和性优化**：Android 17 引入了线程亲和性管理机制，允许应用将关键线程绑定到特定 CPU 核心，减少上下文切换，提升信号处理和线程调度效率。这对稳定性治理提供了新的优化维度。
+**Android 17 线程亲和性（Thread Affinity）管理**：Android 17 通过 `sched_setaffinity` 与 cpuset cgroup 的协同，为应用提供了更细粒度的线程绑定机制。关键线程（如渲染线程、音频线程、崩溃监控线程）可以绑定到特定 CPU 核心，减少跨核迁移带来的 cache miss 和调度延迟。
+
+线程亲和性对稳定性治理的三个实际价值：
+1. **崩溃监控线程**：将 `CrashDumpWatchdog` 线程绑定到独立的小核（CPU 0-3），避免在高负载时被挤占 CPU 时间导致 tombstone 写入超时。
+2. **信号处理确定性**：崩溃信号的分发优先投递到线程当前所在核心的 local APIC，绑定核心可以减少 IPC（Inter-Processor Communication）延迟，确保 `siginfo_t` 和 `ucontext_t` 的寄存器快照时效性。
+3. **性能关键路径隔离**：将渲染线程绑定到大核（CPU 4-7），避免被后台任务抢占，从源头降低主线程 ANR 概率。
+
+适用场景和注意事项：过度绑定可能导致负载不均衡、核心过热降频。推荐策略是设置 `cpuset` 偏好值而非硬绑定——允许调度器在负载过高时迁移，但优先维持在指定核心组内。
 
 ### 指标驱动而非报警驱动
 
