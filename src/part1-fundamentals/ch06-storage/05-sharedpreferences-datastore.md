@@ -39,7 +39,7 @@ task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
 last_task9_audit: "2026-07-01"
-last_task6_audit: "2026-07-01"
+last_task6_audit: "2026-07-07"
 last_task9_audit_log: "logs/deep-review/2026-07-01-02-audit.md"
 last_task9_autofix_at: "2026-07-01"
 task9_review_notes: "2026-07-01 Task9 idle audit auto-fix: AOSP anchors refreshed to android-17.0.0_r1; corrected DataStore native library packaging from nonexistent datastore-multiprocess artifact to datastore-core-android AAR and removed stale ShadowSharedCounter fallback snippet. No open P0/P1 after fix."
@@ -729,7 +729,7 @@ if (DEBUG || mNumSync % 1024 == 0 || fsyncDuration > MAX_FSYNC_DURATION_MILLIS) 
 
 把上述路径串起来，`apply()` 的 ANR 根因可以总结为：
 
-> `apply()` 看似异步（`QueuedWork.queue` 在 `queued-work-looper` 线程 fsync），但 ActivityThread 在 `handleStopActivity`（行 6430）会调用 `QueuedWork.waitToFinish()`，**把 queued-work-looper 上未完成的 fsync 同步搬到主线程等待**。如果上一次 apply 的 fsync 因 UFS 抖动跑到 1s+，下一次 Activity 跳转就会直接卡 1s+（5s+ 即 ANR）。这是 `apply()` "看起来不阻塞、实际上仍能 ANR" 的根因，与 DataStore 无关——DataStore 写也走 FileChannel + fsync，但写完即返回、无 waitToFinish 同步点。
+> `apply()` 看似异步（`QueuedWork.queue` 在 `queued-work-looper` 线程 fsync），但 ActivityThread 在 `handleStopActivity`（行 6430）会调用 `QueuedWork.waitToFinish()`，**把 queued-work-looper 上未完成的 fsync 同步搬到主线程等待**。如果上一次 apply 的 fsync 因 UFS 抖动跑到 1s+，下一次 Activity 跳转就会直接卡 1s+（5s+ 即 ANR）。这是 `apply()` "看起来不阻塞、但仍能 ANR" 的根因，与 DataStore 无关——DataStore 写也走 FileChannel + fsync，但写完即返回、无 waitToFinish 同步点。
 
 **6. 官方 javadoc 软废弃声明（Android 17 重写）**
 
@@ -822,7 +822,7 @@ internal class MultiProcessCoordinator(
 
 **三个观察点**：
 - `inMemoryMutex`（`kotlinx.coroutines.sync.Mutex`）只在本进程内有效——fcntl 不支持递归独占锁，本进程并发 lock 会死锁，所以用协程 Mutex 串行化。
-- `.lock` 后缀文件承担跨进程排他锁（用于 `apply` 写盘临界区），`.version` 后缀文件承担跨进程版本号（4 字节 mmap）。
+- `.lock` 后缀文件负责跨进程排他锁（用于 `apply` 写盘临界区），`.version` 后缀文件负责跨进程版本号（4 字节 mmap）。
 - `getVersion/incrementAndGetVersion` 都不切线程（注释明确：atomic load 不需要 IO 切换），lazy 初始化只触发一次磁盘 IO。
 
 **3. mmap 版本计数器（C++ 层）**
@@ -967,7 +967,7 @@ SP `MODE_MULTI_PROCESS` 是**过时且不可靠**的轮询机制：进程 A 写�
 
 > `MultiProcessDataStoreFactory` 依赖三层内核 IPC：fcntl 文件锁（互斥）、mmap 4 字节 atomic uint32（版本号）、FileObserver MOVED_TO（rename 通知）。三层在不同进程视角独立运行，并通过进程内 Kotlin Mutex 防止同进程递归死锁。要使用此 API，依赖链必须包含打包 `libdatastore_shared_counter.so` 的 `androidx.datastore:datastore-core-android` AAR；Robolectric 上不能替代真机验证 JNI / mmap / fcntl 路径。写入流程走 atomic rename 而非 inot-place 修改，所以监听 `MOVED_TO` 而非 `MODIFY`。
 
-**10. 写入-通知-校验完整链路**
+**10. 写入-通知-校验完整流程**
 
 ```
 进程 A:                                                进程 B:
