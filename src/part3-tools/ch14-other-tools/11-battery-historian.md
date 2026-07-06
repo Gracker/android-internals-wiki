@@ -31,8 +31,8 @@ gap_score: 15/20
 drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
 path: https://source.android.com/docs/core/power/power-stats-hal
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-07-06'
@@ -47,17 +47,18 @@ review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审
   方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回
   Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2
   全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。'
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
-task2b_result: fixed-lite
+task2b_result: fixed
 last_task2b_rerun_at: '2026-07-06T18:50:00+08:00'
 last_task2b_lite_at: '2026-07-06'
+last_task2b_at: '2026-07-06T20:45:00+08:00'
 last_task2b_at: '2026-05-08T17:58:58+08:00'
 task9_result: needs-rework  # P0 2处 / P1 4处需修复
 last_task9_at: '2026-07-06'
 last_task9_audit: '2026-07-06'
 last_task9_autofix_at: '2026-06-19'
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-19'
 last_task9_review_log: logs/deep-review/2026-06-19-18-audit.md
@@ -421,8 +422,8 @@ systemHealthManager.getPowerMonitorReadings(
     executor,
     object : OutcomeReceiver<PowerMonitorReadings, RuntimeException> {
         override fun onSuccess(result: PowerMonitorReadings) {
-            val energy = result.getConsumedEnergy(selectedMonitor) // 微焦耳（μJ）
-            val ts = result.getTimestampMillis(selectedMonitor)    // 毫秒
+            val energy = result.getConsumedEnergy() // 微焦耳（μJ）
+            val ts = result.getTimestampMillis()    // 毫秒
         }
         override fun onError(error: RuntimeException) { ... }
     }
@@ -433,8 +434,8 @@ systemHealthManager.getPowerMonitorReadings(
 
 封装一次功耗快照，提供两个方法：
 
-- `getConsumedEnergy(PowerMonitor)`：设备启动以来累计能耗，单位微焦耳（μJ），重启清零
-- `getTimestampMillis(PowerMonitor)`：快照采集时基于 `SystemClock.elapsedRealtime()` 的时间戳
+- `getConsumedEnergy()`：设备启动以来累计能耗，单位微焦耳（μJ），重启清零
+- `getTimestampMillis()`：快照采集时基于 `SystemClock.elapsedRealtime()` 的时间戳
 
 注意返回值是**累计值**而非瞬时功率，要计算瞬时功率需要取两次快照的差值。
 
@@ -543,7 +544,7 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 
 - `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` — `frameworks/base/core/java/android/os/PerformanceHintManager.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径可能已变更]
 - `APerformanceHint_setPreferPowerEfficiency()` — `frameworks/native/include/android/performance_hint.h` [已验证: android-15.0.0_r1；NDK 头文件在 android-17.0.0_r1 NDK r28+ 中路径可能已重组]
-- `PowerMonitorReadings.getConsumedEnergy(PowerMonitor)` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径可能已变更]
+- `PowerMonitorReadings.getConsumedEnergy()` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径可能已变更]
 
 **两个关键约束**：
 
@@ -625,7 +626,7 @@ public static final int PROCESS_STATE_CACHED = 4;
 
 ### 服务端封装与 statsd 拉取
 
-`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-15.0.0_r1`，行 1061–1145）：
+`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-15.0.0_r1`，行 1061–1145；android-17.0.0_r1 中该路径未重新验证，可能已迁出 `server/am/` 目录）：
 
 ```java
 public List<BatteryUsageStats> getBatteryUsageStats(List<BatteryUsageStatsQuery> queries) {
@@ -698,7 +699,7 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
   - [Measure power with Macrobenchmark](https://developer.android.com/topic/performance/power/measuring) — Macrobenchmark 功耗测试
 
 - **AOSP 源码路径**：
-  - `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java` — 电池统计服务
+  - `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径未重新验证，可能已迁出 `server/am/` 目录] — 电池统计服务
   - `frameworks/base/core/java/android/os/BatteryStats.java` — 电池统计 API
   - `hardware/interfaces/power/stats/` — Power Stats HAL 接口定义
 
