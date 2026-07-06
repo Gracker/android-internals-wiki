@@ -1,6 +1,24 @@
 {
   "items": [
     {
+      "section": "18.18",
+      "section_title": "PIP 与自由窗口渲染",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 闲时抽检发现版本差异覆盖不完整",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "TaskOrganizer版本历史描述",
+          "detail": "文中提到“Android 8.0，PiP正式进入平台，多窗口内容开始经常以小窗形态参与合成”时提及TaskOrganizer，但TaskOrganizer实际在Android 12+才引入，与Android 8.0时间差4个版本。这导致读者对窗口管理机制的历史演进产生错误理解。",
+          "suggestion": "修正TaskOrganizer的历史描述，明确其在Android 12+引入，Android 8.0时期的窗口管理主要通过WindowManagerService的传统机制实现。补充说明TaskOrganizer在Android 12+带来的窗口容器管理能力提升。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-07T03:20:00+08:00",
+      "status": "pending"
+    },
+    {
       "section": "14.11",
       "section_title": "Battery Historian 与功耗分析工具",
       "priority": 95,
@@ -164,8 +182,8 @@
         {
           "type": "源码错误",
           "location": "AGI 的两种模式与适用场景章节",
-          "detail": "章节提到'目标API最低要求Android 11 (API 30)'，但AGI Frame Profiler实际要求Android 12+才能完整支持GLES over Vulkan分析路径，Android 11仅支持部分功能",
-          "suggestion": "修正为'AGI Frame Profiler完整功能要求Android 12+ (API 31)，Android 11仅支持部分功能'"
+          "detail": "章节提到“目标API最低要求Android 11 (API 30)”，但AGI Frame Profiler实际要求Android 12+才能完整支持GLES over Vulkan分析路径，Android 11仅支持部分功能",
+          "suggestion": "修正为“AGI Frame Profiler完整功能要求Android 12+ (API 31)，Android 11仅支持部分功能”"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -295,39 +313,39 @@
       "status": "completed",
       "completed_at": "2026-07-06T19:40:17+08:00",
       "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: PowerStatsAggregator 路径版本限定修正（'已确认迁至'→'Android 16 源码迁至，17 未验证'），Battery Historian gcr.io 镜像名明确化"
+      "completion_reason": "fixed-lite: PowerStatsAggregator 路径版本限定修正（“已确认迁至”→“Android 16 源码迁至，17 未验证”），Battery Historian gcr.io 镜像名明确化"
+    },
+    {
+      "section": "14.11",
+      "section_title": "Battery Historian 与功耗分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] API版本映射错误和源码引用问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "API版本映射错误",
+          "detail": "章节提到“Android 15 (API 35)”将 PowerMonitor API 开放到应用层，但表述方式易混淆。Android 15对应API 35，Android 17对应API 37。这种版本数字描述方式违反了清晰的版本映射规则。",
+          "suggestion": "修正版本映射表述，明确 Android 15 ↔ API 35，Android 17 ↔ API 37 的对应关系。"
+        },
+        {
+          "type": "源码错误",
+          "location": "PowerMonitorReadings.getConsumedEnergy() 方法验证缺失",
+          "detail": "章节提到 PowerMonitorReadings.getConsumedEnergy() 方法返回累计能耗，但未在 android-17.0.0_r1 中验证该方法的确切签名和返回类型。API 35 的 PowerMonitor 系列接口在 Android 17 中的支持状态需要确认。",
+          "suggestion": "确认 PowerMonitor API 在 Android 17 中的支持状态和 API 签名，如存在则明确标注，如不存在需调整内容描述。"
+        },
+        {
+          "type": "源码错误",
+          "location": "NDK performance_hint.h 路径变更描述不完整",
+          "detail": "章节提到 NDK performance_hint.h 在 r28+ 重组，但未说明完整路径变更细节和 API 签名变化。开发者无法确定具体的文件位置和兼容性要求。",
+          "suggestion": "补充 NDK performance_hint.h 在 Android 17 中的完整路径变更说明和 API 签名兼容性信息。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-07T00:00:00+08:00",
+      "status": "pending"
     }
-  ],
-  "14.11": {
-    "section": "14.11",
-    "section_title": "Battery Historian 与功耗分析工具",
-    "priority": 95,
-    "reason": "[Deep Tech Review] API版本映射错误和源码引用问题",
-    "material_paths": [
-      "intake/suggestions.md"
-    ],
-    "review_issues": [
-      {
-        "type": "源码错误",
-        "location": "API版本映射错误",
-        "detail": "章节提到「Android 15 (API 35)」将 PowerMonitor API 开放到应用层，但表述方式易混淆。Android 15对应API 35，Android 17对应API 37。这种版本数字描述方式违反了清晰的版本映射规则。",
-        "suggestion": "修正版本映射表述，明确 Android 15 ↔ API 35，Android 17 ↔ API 37 的对应关系。"
-      },
-      {
-        "type": "源码错误",
-        "location": "PowerMonitorReadings.getConsumedEnergy() 方法验证缺失",
-        "detail": "章节提到 PowerMonitorReadings.getConsumedEnergy() 方法返回累计能耗，但未在 android-17.0.0_r1 中验证该方法的确切签名和返回类型。API 35 的 PowerMonitor 系列接口在 Android 17 中的支持状态需要确认。",
-        "suggestion": "确认 PowerMonitor API 在 Android 17 中的支持状态和 API 签名，如存在则明确标注，如不存在需调整内容描述。"
-      },
-      {
-        "type": "源码错误",
-        "location": "NDK performance_hint.h 路径变更描述不完整",
-        "detail": "章节提到 NDK performance_hint.h 在 r28+ 重组，但未说明完整路径变更细节和 API 签名变化。开发者无法确定具体的文件位置和兼容性要求。",
-        "suggestion": "补充 NDK performance_hint.h 在 Android 17 中的完整路径变更说明和 API 签名兼容性信息。"
-      }
-    ],
-    "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-07T00:00:00+08:00",
-    "status": "pending"
-  }
+  ]
 }
