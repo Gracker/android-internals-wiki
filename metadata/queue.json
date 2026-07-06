@@ -302,29 +302,32 @@
     "section": "14.11",
     "section_title": "Battery Historian 与功耗分析工具",
     "priority": 95,
-    "reason": "[Deep Tech Review] 源码引用准确性问题",
+    "reason": "[Deep Tech Review] PowerMonitor API层面冲突和源码路径验证缺失问题",
     "material_paths": [
       "intake/suggestions.md"
     ],
     "review_issues": [
       {
         "type": "源码错误",
-        "location": "PowerMonitorReadings.getConsumedEnergy(PowerMonitor) 调用",
-        "detail": "方法签名错误：应为 getConsumedEnergy() 无参数，非 getConsumedEnergy(PowerMonitor)",
-        "suggestion": "修正方法调用为 result.getConsumedEnergy()，仅传入 PowerMonitor 对象作为 getSupportedPowerMonitors 的返回值"
+        "location": "PowerMonitor API 层面冲突",
+        "detail": "章节提到「Android 15 (API 35)」将 PowerMonitor API 开放到应用层，但 applicable_versions 标注为 Android 5.0-Android 17 (API 21-37)。API 35 实际对应 Android 15，Android 17 是 API 37。这种版本数字混淆违反了 Android 版本边界规则。",
+        "suggestion": "修正版本标注一致性和范围，明确 API 35 对应 Android 15，Android 17 是 API 37，避免版本数字混淆。"
       },
       {
         "type": "源码错误",
-        "location": "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java",
-        "detail": "Android 17.0.0_r1 中该路径可能已变更，需确认实际模块归属",
-        "suggestion": "在 android-17.0.0_r1 源码中搜索 BatteryStatsService 类确认正确路径，或标注路径待验证"
+        "location": "源码路径验证缺失",
+        "detail": "章节中列出的多个 frameworks/base/ 源码文件路径均标记为「android-17.0.0_r1 中路径可能已变更」，但未实际验证 android-17.0.0_r1 中的实际路径。特别是 BatteryStatsService.java 在 android-17.0.0_r1 中可能已迁出 server/am/ 目录，需要确认具体位置。",
+        "suggestion": "重新验证 BatteryStatsService 在 Android 17 中的实际存在路径，如不存在需重新组织内容或标注实验性状态。"
+      },
+      {
+        "type": "重要缺失",
+        "location": "ADPF PowerMonitor 协作原理链断裂",
+        "detail": "章节提到「PowerMonitor 采样 → 分析能耗特征 → 判断是否启用 power efficiency mode」的协作方案，但缺少了关键的技术细节：如何从 PowerMonitor 的累计能耗数据推导出具体的能耗特征，以及判断逻辑的具体实现机制。这造成了原理链的断裂。",
+        "suggestion": "补充从 PowerMonitor 累计能耗数据推导具体能耗特征的技术细节，以及判断逻辑的具体实现机制，完善原理链。"
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "added_at": "2026-07-06T20:25:19.044439+08:00",
-    "status": "completed",
-    "completed_at": "2026-07-06T20:55:29.562292+08:00",
-    "completed_by": "openclaw-task2b-main",
-    "completed_reason": "fixed: PowerMonitorReadings.getConsumedEnergy() 方法签名修正（移除参数）+ BatteryStatsService.java 路径标注 android-17.0.0_r1 版本边界"
+    "added_at": "2026-07-06T21:30:00+08:00",
+    "status": "pending"
   }
 }
