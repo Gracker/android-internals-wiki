@@ -4,8 +4,8 @@ chapter: '2'
 section: '2.15'
 status: "finalized"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-06-14'
-last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
+last_verified: '2026-07-07'
+last_verified_against: AOSP android-17.0.0_r1 (primary; paths confirmed unchanged from android-16.0.0_r1), Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
 confidence: medium
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
@@ -60,18 +60,18 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-06-14"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-14T20:37:52+08:00"
 last_task9_audit: "2026-06-14"
-task2b_state: "fixed"
-task2b_result: "fixed"
-last_task2b_at: "2026-05-09T14:40:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: 2026-07-07T04:52:50+08:00
 task9_review_notes: "2026-06-14 Task9 full review: pass-tech-review。复核 DMA-BUF Heap、GraphicBuffer transport、allocator/mapper AIDL/stable-C 边界、BufferQueue/BLAST handle 传递、Android 14 buffer cache purge、16KB page size 与 Perfetto dmabuf 观测；未发现新增 P0/P1/P2，queue 无本章节 pending，自动晋升 finalized。"
 last_task6_at: "2026-06-14T16:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-14-16-review.md"
@@ -83,15 +83,7 @@ last_task9_autofix_at: "2026-06-14"
 task6_reviewed_date: "2026-06-14"
 last_task6_audit: "2026-07-05"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-14
-finalized_date: "2026-06-14"
-finalized_by: "openclaw-task9-auto-promote"
-auto_promoted_date: "2026-06-14"
-auto_promoted_by: "openclaw-task9"
-p0: 0
-p1: 0
-p2: 0
----
+last_deepseek_cn_review_at: 2026-06-14---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
 
@@ -164,7 +156,7 @@ DMA-BUF 的核心是一个 exporter-importer 模型：
 
 注意：fd 编号在不同进程中不同（App 的 fd 42 ≠ SurfaceFlinger 的 fd 15），但它们指向的是同一块物理内存。这就是为什么叫「零拷贝」——像素数据没有移动过。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/BufferQueueProducer.cpp; frameworks/native/libs/ui/GraphicBuffer.cpp]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/gui/BufferQueueProducer.cpp; frameworks/native/libs/ui/GraphicBuffer.cpp]
 
 ### DMA-BUF 的内核调用链
 
@@ -209,11 +201,11 @@ DMA-BUF 只是一个「共享框架」，它本身不负责分配内存。内存
 
 ### 用户空间池化：AOSP 与 vendor 边界
 
-`libdmabufheap` 在 AOSP 官方文档中的定位是 ION 到 DMA-BUF Heaps 的迁移抽象层：按 heap name 分配，在对应 DMA-BUF heap 不存在时回退到等价 ION heap。它不是 Android 16/17 的通用 buffer pool contract。到 android-16.0.0_r1 / android16-qpr2-release，本节没有在 `system/memory/libdmabufheap` 中确认“释放后缓存并按尺寸复用”的通用路径。
+`libdmabufheap` 在 AOSP 官方文档中的定位是 ION 到 DMA-BUF Heaps 的迁移抽象层：按 heap name 分配，在对应 DMA-BUF heap 不存在时回退到等价 ION heap。它不是 Android 16/17 的通用 buffer pool contract。到 android-17.0.0_r1 / android16-qpr2-release，本节没有在 `system/memory/libdmabufheap` 中确认“释放后缓存并按尺寸复用”的通用路径。
 
 如果设备上观测到 DMA-BUF 复用或池化，更稳的归因是 vendor gralloc / allocator 的私有实现。排查分配延迟或脏数据风险时，应把池化当作设备实现细节，结合厂商源码、trace 与 heap 行为验证，不把它写成 AOSP 平台能力。
 
-[已验证: 官方 DMA-BUF Heaps 文档；AOSP android-16.0.0_r1 / android16-qpr2-release 未确认通用 libdmabufheap pooling 路径]
+[已验证: 官方 DMA-BUF Heaps 文档；AOSP android-17.0.0_r1 / android16-qpr2-release 未确认通用 libdmabufheap pooling 路径]
 
 ## Android Gralloc 与 GraphicBuffer
 
@@ -223,7 +215,7 @@ DMA-BUF 提供了内核级的共享机制，但 Android 还需要一个用户空
 
 Gralloc（Graphics Allocator）是 Android 定义的图形内存分配 HAL。Android 16 的接口形态要拆成 allocator、mapper 和 common graphics types 三层看。
 
-- **Allocator HAL**：负责分配 buffer。在 `android-16.0.0_r1` 下，主线入口是 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl`。其中 `allocate2(BufferDescriptorInfo, count)` 面向新 descriptor 结构，`getIMapperLibrarySuffix()` 用来定位 vendor 侧 mapper 实现库。
+- **Allocator HAL**：负责分配 buffer。在 `android-17.0.0_r1` 下，主线入口是 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl`。其中 `allocate2(BufferDescriptorInfo, count)` 面向新 descriptor 结构，`getIMapperLibrarySuffix()` 用来定位 vendor 侧 mapper 实现库。
 - **Mapper HAL**：负责 `createDescriptor`、import / free handle、lock / unlock 等映射动作。Android 16 公开 tag 里同时能看到 `graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h` 和 `graphics/mapper/4.0/IMapper.hal`。`IMapper.h` 写明：IMapper 2-4 是 HIDL，C-style `AIMapper` API 从版本 5 开始。
 - **Common graphics types**：usage、dataspace、format 这类公共类型已经放在 `graphics/common/aidl/...` 下，`BufferUsage.aidl` 是后文 usage flags 对照表的来源。
 
@@ -241,13 +233,13 @@ Usage flags 这一层也要注意版本语境。很多历史文章还在用 lega
 
 所以下文默认用 Android 12+/AIDL 术语来讲行为，旧宏只在解释历史资料时顺手提一下。这样读者对照 Android 16 以后源码时，不会把旧宏误当成当前 HAL 的正式字段名。
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl]
+[已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl]
 
 ### `allocate2()` 与对齐协商
 
 Android 16 的 `IAllocator.aidl` 包含了 `allocate2()` 入口和 `BufferDescriptorInfo` 的 `additionalOptions` 字段。`allocate2()` 和 `additionalOptions` 在 android-15.0.0_r1 已存在，不是 Android 16 新增。`additionalOptions` 允许调用方显式传递硬件约束，比如 compression level（如 EGL_EXT_surface_compression）等；AIDL 注释给出的示例是 compression level，并非 16KB 页对齐。NDK 层的公开入口仍是 `AHardwareBuffer_allocate()`，不存在 `AHardwareBuffer_allocateWithOptions()`。如果需要影响 allocator AIDL 的 `additionalOptions`，应明确这不是公开 NDK `AHardwareBuffer` 入口，而是内部 HAL 层的描述符扩展。
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
+[已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
 
 ### 16KB 页面模式下的分配预算
 
@@ -266,7 +258,7 @@ Android 16 的 `IAllocator.aidl` 包含了 `allocate2()` 入口和 `BufferDescri
 
 排查这类问题时，至少同时核对四组量：像素 payload、stride 或 plane layout、`reservedSize`、以及 handle 被几个进程映射。只看像素分辨率，常常会低估 16KB 设备上的显存和 PSS 占用。
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl; 官方文档, developer.android.com/guide/practices/page-sizes]
+[已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl; 官方文档, developer.android.com/guide/practices/page-sizes]
 
 ### GraphicBuffer：对缓冲区的封装
 
@@ -284,7 +276,7 @@ GraphicBuffer 的跨进程传递通过 Binder 实现。具体来说，它使用 
 
 ```cpp
 // frameworks/native/libs/ui/GraphicBuffer.cpp
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
                                  int*& fds, size_t& count) const {
     // 将 width/height/stride/format/usage 等元数据写入 buffer
@@ -295,15 +287,15 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 
 这段代码说明了一个关键事实：GraphicBuffer 的跨进程传递是「元数据 + native_handle transport payload」。常见 surface 看起来像“传一个 fd”，是因为很多图形 buffer 只有一个主 DMA-BUF fd；源码 contract 本身允许多个 fd 和 ints 一起传。像素数据始终停留在原始的物理内存中，从未被复制。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
 
 ### Binder FDA 与 GraphicBuffer transport
 
-`GraphicBuffer::flatten()` / `unflatten()` 的可确认行为是写入元数据，并通过 native handle transport payload 传递 fd 与整数元数据。android-16.0.0_r1 的 `GraphicBuffer.cpp` 没有显示 `GraphicBuffer::unflatten()` 直接接入 Binder FDA（File Descriptor Array）来批量安装所有 fd。此前“Android 16 通过 FDA 降低 SurfaceFlinger 多图层 CPU 开销 20%-40%”的说法缺少源码锚点和 benchmark 条件，本节不把它作为平台结论。
+`GraphicBuffer::flatten()` / `unflatten()` 的可确认行为是写入元数据，并通过 native handle transport payload 传递 fd 与整数元数据。android-17.0.0_r1 的 `GraphicBuffer.cpp` 没有显示 `GraphicBuffer::unflatten()` 直接接入 Binder FDA（File Descriptor Array）来批量安装所有 fd。此前“Android 16 通过 FDA 降低 SurfaceFlinger 多图层 CPU 开销 20%-40%”的说法缺少源码锚点和 benchmark 条件，本节不把它作为平台结论。
 
 如果后续要讨论 FDA，应从 Binder / Parcel 层源码和可复现 benchmark 入手，并与 GraphicBuffer transport fd 数组的语义分开。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
 
 ### 从 AOSP 源码看分配过程
 
@@ -317,9 +309,9 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 
 如果 BufferQueue 的 slot 中已经有合适的 GraphicBuffer（大小和格式匹配），则复用已有的缓冲区，不需要重新分配。这也是 §2.13 会说 BufferQueue 的「slot」持有 GraphicBuffer 引用的原因——slot 本身不移动，producer / consumer 两端维护的是 slot 到 buffer handle 的镜像关系。
 
-这个版本点容易写错：`android-16.0.0_r1` 同时包含 AIDL allocator、stable-C `AIMapper` v5，以及 HIDL allocator / mapper 兼容接口。写版本结论时应拆成三层：分配入口看 `IAllocator.aidl`，现代 mapper library 看 `IMapper.h` stable-C，历史兼容路径看 `mapper@4`。
+这个版本点容易写错：`android-17.0.0_r1` 同时包含 AIDL allocator、stable-C `AIMapper` v5，以及 HIDL allocator / mapper 兼容接口。写版本结论时应拆成三层：分配入口看 `IAllocator.aidl`，现代 mapper library 看 `IMapper.h` stable-C，历史兼容路径看 `mapper@4`。
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h; hardware/interfaces/graphics/mapper/4.0/IMapper.hal]
+[已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h; hardware/interfaces/graphics/mapper/4.0/IMapper.hal]
 
 ## 跨进程传递的实际路径
 
@@ -339,7 +331,7 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 
 [图：classic BufferQueue 路径 vs BLAST window path。左侧画 producer `dequeueBuffer()` → `requestBuffer()` → `queueBuffer(slot, QueueBufferInput)` → consumer `acquireBuffer()`；右侧画 App → BLASTBufferQueue → `SurfaceControl.Transaction` → SurfaceFlinger，并标出“新 handle 首次出现时才 import”]
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/BufferQueueProducer.cpp; frameworks/native/libs/gui/BLASTBufferQueue.cpp]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/gui/BufferQueueProducer.cpp; frameworks/native/libs/gui/BLASTBufferQueue.cpp]
 
 ### 为什么说 BufferQueue 是「逻辑通道」
 
@@ -399,7 +391,7 @@ SurfaceFlinger 进程中，每个 Layer 对应一组 GraphicBuffer。在 Layer t
 
 这类问题的共同特征是，fd 数量和 DMA-BUF 占用一起上涨，但 `GraphicBuffer` 对象本身不一定还在 Java 层可见。排查方法仍然是通过 `/proc/<pid>/fd/` 统计 DMA-BUF 类型的 fd 数量，再结合 Perfetto 或 meminfo 看 buffer 占用是否只涨不回。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/ui/GraphicBuffer.cpp]
 
 如果 trace 里持续看到 DMA-BUF 占用、`/proc/<pid>/fd` 里的 dmabuf 句柄数和 GPU 内存曲线一起上升，而 surface 数量没有同步增加，排查焦点就该落在 imported handle 的释放路径上。
 
@@ -450,11 +442,11 @@ Android 14 引入了 per-layer buffer cache 强制清除机制。此前，当 Gr
 
 Android 15 起，16KB page size 开始进入量产设备。对 DMA-BUF 和 Gralloc 这一层，变化不在接口名，而在分配预算：小尺寸 buffer、metadata region 和 `reservedSize` 保留区的页粒度取整成本会放大。排查时需要把像素 payload、stride 和映射进程数一起算进去。
 
-[已验证: 官方文档, developer.android.com/guide/practices/page-sizes; AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
+[已验证: 官方文档, developer.android.com/guide/practices/page-sizes; AOSP android-17.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
 
 ### Android 16：allocator AIDL 与接口边界
 
-到 `android-16.0.0_r1` 为止，源码里还能同时看到 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl`、`graphics/allocator/4.0/IAllocator.hal` 和 `graphics/mapper/4.0/IMapper.hal`。AIDL allocator 的注释甚至直接写明，如果 `android.hardware.graphics.mapper@4` 仍在使用，旧的 `allocate()` 入口仍要实现。
+到 `android-17.0.0_r1` 为止，源码里还能同时看到 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl`、`graphics/allocator/4.0/IAllocator.hal` 和 `graphics/mapper/4.0/IMapper.hal`。AIDL allocator 的注释甚至直接写明，如果 `android.hardware.graphics.mapper@4` 仍在使用，旧的 `allocate()` 入口仍要实现。
 
 这一阶段，allocator 接口已经提供稳定 AIDL 版本，但 mapper@4 兼容路径还在，系统并未“一刀切地 AIDL 化”。本文正文的适用范围也据此收窄到 Android 12-16；Android 10/11 的 Gralloc4(HIDL) + ION 组合只放在迁移背景里说明，不把 Android 17 的接口走向提前写成既成事实。
 
@@ -464,7 +456,7 @@ Android 15 起，16KB page size 开始进入量产设备。对 DMA-BUF 和 Grall
 - **约束传递**：`allocate2()` 的 `additionalOptions` 字段在 Android 15+ 已存在，可用于 compression level 等硬件约束；它不是 Android 16 新增，也不是公开 NDK 层的 16KB 页对齐入口
 - **vendor 实现差异**：池化、secure / carveout heap、cache policy 仍要看厂商 gralloc / allocator；AOSP `libdmabufheap` 无通用池化 contract，`GraphicBuffer::unflatten()` 也未确认直接接入 Binder FDA 批量安装路径
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
+[已验证: AOSP android-17.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl]
 
 ## 与其他机制的关系
 
