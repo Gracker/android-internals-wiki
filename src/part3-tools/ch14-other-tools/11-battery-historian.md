@@ -31,14 +31,14 @@ gap_score: 15/20
 drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
 path: https://source.android.com/docs/core/power/power-stats-hal
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-08'
-last_task6_at: '2026-05-08T18:20:00+08:00'
-last_task6_review_log: logs/review/2026-05-08-18-review.md
-task6_reviewed_date: '2026-05-08'
+reviewed_date: '2026-07-06'
+last_task6_at: '2026-07-06T20:12:00+08:00'
+last_task6_review_log: logs/review/2026-07-06-20-review.md
+task6_reviewed_date: '2026-07-06'
 review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增
   B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11
   PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审
@@ -46,7 +46,7 @@ review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审
   audit 18:25：auto-fixed。闲时抽检发现 4 处源码/版本锚点小问题：Android 35 误写为 Android 15、PowerMonitorReadings.getConsumedEnergy
   方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回
   Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2
-  全部通过。转 Task9 确认。'
+  全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。'
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -57,7 +57,7 @@ task9_result: needs-rework
 last_task9_at: '2026-07-06'
 last_task9_audit: '2026-07-06'
 last_task9_autofix_at: '2026-06-19'
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-19'
 last_task9_review_log: logs/deep-review/2026-06-19-18-audit.md
@@ -562,7 +562,7 @@ Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源�
 
 ## 补充：BatteryUsageStats API 与 Android 15 streamlinedBatteryStats 链路（源码调研补遗）
 
-> ⚠️ **版本边界**：本节为 daily-topics #6 调研产物，所有源码锚点均在 **android-15.0.0_r1** 下验证。下文涉及的所有 `frameworks/base/` 的 .java 文件路径（`BatteryStatsManager`、`BatteryUsageStatsQuery`、`BatteryUsageStats`、`BatteryConsumer`、`BatteryStatsService`、`PowerStatsAggregator`、`BatteryStatsHistory`）在 android-17.0.0_r1 中面临模块重组——`BatteryStatsService` 可能已迁出 `server/am/` 目录，`PowerStatsAggregator` 在 Android 16 源码中迁至 `power/stats/processor/` 子目录（android-17.0.0_r1 未重新验证路径）。上述 API 的 Binder 调用链路、5 个 Flag、`BatteryConsumer` 双功耗模型和 statsd 原子拉取路径是平台公开契约，Android 15/16/17 保持兼容；需要锁定 android-17.0.0_r1 具体文件路径的读者请在 android.googlesource.com 使用对应 tag 搜索类名。
+> ⚠️ **版本边界**：本节为 daily-topics #6 调研产物，所有源码锚点均在 **android-15.0.0_r1** 下验证。下文涉及的所有 `frameworks/base/` 的 .java 文件路径（`BatteryStatsManager`、`BatteryUsageStatsQuery`、`BatteryUsageStats`、`BatteryConsumer`、`BatteryStatsService`、`PowerStatsAggregator`、`BatteryStatsHistory`）在 android-17.0.0_r1 中面临模块重组——`BatteryStatsService` 可能已迁出 `server/am/` 目录，`PowerStatsAggregator` 在 Android 16 源码中迁至 `power/stats/processor/` 子目录（android-17.0.0_r1 未重新验证路径）。上述 API 的 Binder 调用路径、5 个 Flag、`BatteryConsumer` 双功耗模型和 statsd 原子拉取路径是平台公开契约，Android 15/16/17 保持兼容；需要锁定 android-17.0.0_r1 具体文件路径的读者请在 android.googlesource.com 使用对应 tag 搜索类名。
 >
 > **Android 16/17 演进要点**：① `streamlinedBatteryStats` feature flag 在 Android 16 中逐步默认开启，CPU/MOBILE_RADIO/WIFI 三个组件的功耗统计口径已全面切换至 `PowerStatsProcessor` 实时路径；② `PowerStatsAggregator` 在 Android 16 源码中迁至 `processor/` 子包后 API 层无变化，但聚合策略增加了窗口化缓存和增量计算优化；③ `BatteryUsageStats` 五个 Flag 语义不变，但 Android 17 中新增了对 Private Space / SDK Sandbox 虚拟 UID 功耗的独立归因支持（`FLAG_BATTERY_USAGE_STATS_INCLUDE_VIRTUAL_UIDS` 的行为从 SDK Sandbox 扩展至 Private Space 应用）。
 
@@ -586,7 +586,7 @@ public final class BatteryStatsManager {
 }
 ```
 
-权限 `BATTERY_STATS`，普通 App 拿不到；Studio / Macrobenchmark 通过 `SystemHealthManager`/`PowerMonitor` 间接调用，Battery Historian 的 bugreport + 解析路径只是这条 API 链路的离线副本。
+权限 `BATTERY_STATS`，普通 App 拿不到；Studio / Macrobenchmark 通过 `SystemHealthManager`/`PowerMonitor` 间接调用，Battery Historian 的 bugreport + 解析路径只是这条 API 路径的离线副本。
 
 ### 五个 Flag 决定归因粒度
 
@@ -709,4 +709,4 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
   - §14.1 Android Studio Profiler — Power Profiler 是 AS Profiler 套件的一部分
   - §15.5 线上性能监控 — 线下功耗测试与线上监控的结合
 - [Android 15 Battery Historian 与功耗指标深度集成](DeepResearch/2026-06-12-android15-battery-historian-power-metrics-integration.md) — 分析 Android 15 统一功耗归因入口 BatteryStatsManager.getBatteryUsageStats、5 个 Flag 控制归因粒度（POWER_PROFILE_MODEL / INCLUDE_HISTORY / INCLUDE_POWER_MODELS / INCLUDE_PROCESS_STATE_DATA / INCLUDE_VIRTUAL_UIDS）、PowerStatsProcessor 实时功耗模型替代经验 power_profile 的演进路线。
-- [Android 15 Streamlined Battery Stats 三层 flag 体系与 PowerStatsService 采集链路](DeepResearch/2026-06-16-android15-battery-historian-perf-metrics-integration.md) — 源码级补充：纠正 daily-topics 中 BatteryHistorian.java 不存在的路径错误，确认真实入口为 BatteryStatsService.dumpUnmonitored → batterystats.proto；梳理 Android 15 Streamlined Battery Stats 三层 aconfig flag（CPU/Misc/Connectivity）与 PowerStatsService → PowerStatsStore → BatteryUsageStatsProvider 完整功耗归因链路；定位 WakeupReason × Perfetto POWER track 联动点（BatteryStatsService L3029 Trace.instantForTrack）为功耗×性能时间轴对齐的唯一实现；新增标准化 WakeLockStats System API。
+- [Android 15 Streamlined Battery Stats 三层 flag 体系与 PowerStatsService 采集链路](DeepResearch/2026-06-16-android15-battery-historian-perf-metrics-integration.md) — 源码级补充：纠正 daily-topics 中 BatteryHistorian.java 不存在的路径错误，确认真实入口为 BatteryStatsService.dumpUnmonitored → batterystats.proto；梳理 Android 15 Streamlined Battery Stats 三层 aconfig flag（CPU/Misc/Connectivity）与 PowerStatsService → PowerStatsStore → BatteryUsageStatsProvider 完整功耗归因路径；定位 WakeupReason × Perfetto POWER track 联动点（BatteryStatsService L3029 Trace.instantForTrack）为功耗×性能时间轴对齐的唯一实现；新增标准化 WakeLockStats System API。
