@@ -847,6 +847,32 @@
       "completed_at": "2026-07-06T07:38:53+08:00",
       "completed_by": "task2b-lite",
       "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 (5 refs: frontmatter + 4 [已验证] tags)"
+    },
+    {
+      "section": "21.2",
+      "section_title": "启动框架设计与任务编排",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Source code references need verification in android-17.0.0_r1",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "§21.2.5.6 Android 17 Startup Insights 源码级分析",
+          "detail": "引用的 SystemHealthManager.java 和 ApplicationStartInfo.java 需要在 android-17.0.0_r1 中验证实际存在",
+          "suggestion": "验证这两个类在 Android 17 中的实际存在性和 API 签名，如果不存在则移除相关内容或标注为实验性功能"
+        },
+        {
+          "type": "源码错误",
+          "location": "§21.2.5 Android 17 Startup Insights（ApplicationStartInfo）源码级补充",
+          "detail": "ApplicationStartInfo 相关的源码引用需要在 android-17.0.0_r1 中确认",
+          "suggestion": "确认 ApplicationStartInfo 在 Android 17 中的完整 API 定义和使用方式"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T15:29:52.237612+08:00",
+      "status": "pending"
     }
   ],
   "entries": [
