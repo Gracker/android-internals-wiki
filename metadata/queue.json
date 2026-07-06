@@ -626,6 +626,39 @@
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-07-06T07:18:59+08:00",
       "status": "pending"
+    },
+    {
+      "section": "20.9",
+      "section_title": "稳定性治理案例集",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 发现重要知识盲区和版本差异覆盖问题",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "信号处理和线程优化章节",
+          "detail": "缺少 Android 17 中信号处理机制变化、线程亲和性应用、新增线程监控 API 的讨论",
+          "suggestion": "建议补充 Android 17 新特性研究和应用指导"
+        },
+        {
+          "type": "版本差异",
+          "location": "信号处理器章节",
+          "detail": "引用 Android 5.0 行为模式，未明确说明在 Android 17 中的适用性",
+          "suggestion": "明确说明历史模式在 Android 17 中的适用性或替代方案"
+        },
+        {
+          "type": "版本差异",
+          "location": "信号处理器章节",
+          "detail": "缺少 Android 15+ 信号处理机制变化说明",
+          "suggestion": "补充 Android 15+ 信号处理机制变化说明"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T08:31:28.478802",
+      "status": "pending"
     }
   ],
   "items": [

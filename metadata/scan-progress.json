@@ -28,8 +28,8 @@
   ],
   "total_issues": 58,
   "indexed_links": 468,
-  "skipped_links": 343,
-  "fetch_failures": 282,
+  "skipped_links": 1088,
+  "fetch_failures": 280,
   "attempted_issues": [
     6,
     7,
@@ -50,6 +50,6 @@
     23
   ],
   "last_attempted_issue": 23,
-  "last_attempt_date": "2026-07-05",
-  "access_issues_count": 149
+  "last_attempt_date": "2026-07-06",
+  "access_issues_count": 147
 }
