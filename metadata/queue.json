@@ -4,60 +4,60 @@
       "section": "ch04-memory",
       "section_title": "Chapter ch04-memory",
       "priority": 68,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Android Developers Blog - Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少... — Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少 30%。新调度器采用机器学习模型预测用户行为，优先启动高频使用的应用。同时，系统资源分配更加智能，",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "Android Developers Blog - Android 17 \u5f15\u5165\u4e86\u5168\u65b0\u7684\u4efb\u52a1\u8c03\u5ea6\u5668\uff0c\u901a\u8fc7\u667a\u80fd\u4f18\u5148\u7ea7\u7b97\u6cd5\u548c\u5ef6\u8fdf\u542f\u52a8\u673a\u5236\uff0c\u5e94\u7528\u542f\u52a8\u65f6\u95f4\u5e73\u5747\u51cf\u5c11... \u2014 Android 17 \u5f15\u5165\u4e86\u5168\u65b0\u7684\u4efb\u52a1\u8c03\u5ea6\u5668\uff0c\u901a\u8fc7\u667a\u80fd\u4f18\u5148\u7ea7\u7b97\u6cd5\u548c\u5ef6\u8fdf\u542f\u52a8\u673a\u5236\uff0c\u5e94\u7528\u542f\u52a8\u65f6\u95f4\u5e73\u5747\u51cf\u5c11 30%\u3002\u65b0\u8c03\u5ea6\u5668\u91c7\u7528\u673a\u5668\u5b66\u4e60\u6a21\u578b\u9884\u6d4b\u7528\u6237\u884c\u4e3a\uff0c\u4f18\u5148\u542f\u52a8\u9ad8\u9891\u4f7f\u7528\u7684\u5e94\u7528\u3002\u540c\u65f6\uff0c\u7cfb\u7edf\u8d44\u6e90\u5206\u914d\u66f4\u52a0\u667a\u80fd\uff0c",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.663894+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T00:51:13.507937+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de blocked/private IP error\uff09"
     },
     {
       "section": "ch04-memory",
       "section_title": "Chapter ch04-memory",
       "priority": 66,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Phoronix - Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运... — Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运行的系统稳定性。新机制采用分层管理策略，对频繁分配释放的热点区域进行重点优化。测试显示，在高负载服务",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "Phoronix - Linux 6.10 \u5185\u6838\u5f15\u5165\u4e86\u521b\u65b0\u7684\u5185\u5b58\u788e\u7247\u6574\u7406\u673a\u5236\uff0c\u901a\u8fc7\u667a\u80fd\u9884\u5206\u914d\u548c\u52a8\u6001\u8c03\u6574\u7b56\u7565\uff0c\u5927\u5e45\u63d0\u5347\u957f\u671f\u8fd0... \u2014 Linux 6.10 \u5185\u6838\u5f15\u5165\u4e86\u521b\u65b0\u7684\u5185\u5b58\u788e\u7247\u6574\u7406\u673a\u5236\uff0c\u901a\u8fc7\u667a\u80fd\u9884\u5206\u914d\u548c\u52a8\u6001\u8c03\u6574\u7b56\u7565\uff0c\u5927\u5e45\u63d0\u5347\u957f\u671f\u8fd0\u884c\u7684\u7cfb\u7edf\u7a33\u5b9a\u6027\u3002\u65b0\u673a\u5236\u91c7\u7528\u5206\u5c42\u7ba1\u7406\u7b56\u7565\uff0c\u5bf9\u9891\u7e41\u5206\u914d\u91ca\u653e\u7684\u70ed\u70b9\u533a\u57df\u8fdb\u884c\u91cd\u70b9\u4f18\u5316\u3002\u6d4b\u8bd5\u663e\u793a\uff0c\u5728\u9ad8\u8d1f\u8f7d\u670d\u52a1",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.664923+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T00:51:13.508255+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de blocked/private IP error\uff09"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] AOSP源码路径错误",
+      "reason": "[Deep Tech Review] AOSP\u6e90\u7801\u8def\u5f84\u9519\u8bef",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "Perfetto GPU counter配置部分",
-          "detail": "文中引用android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto中的counters字段，但在实际AOSP版本中，该字段应为counter_ids，新版本才改为counters",
-          "suggestion": "修正gpu_counter_config.proto中的字段名引用，添加版本兼容性说明"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "Perfetto GPU counter\u914d\u7f6e\u90e8\u5206",
+          "detail": "\u6587\u4e2d\u5f15\u7528android-17.0.0_r1 protos/perfetto/config/gpu/gpu_counter_config.proto\u4e2d\u7684counters\u5b57\u6bb5\uff0c\u4f46\u5728\u5b9e\u9645AOSP\u7248\u672c\u4e2d\uff0c\u8be5\u5b57\u6bb5\u5e94\u4e3acounter_ids\uff0c\u65b0\u7248\u672c\u624d\u6539\u4e3acounters",
+          "suggestion": "\u4fee\u6b63gpu_counter_config.proto\u4e2d\u7684\u5b57\u6bb5\u540d\u5f15\u7528\uff0c\u6dfb\u52a0\u7248\u672c\u517c\u5bb9\u6027\u8bf4\u660e"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -71,280 +71,280 @@
       "section": "ch01-architecture",
       "section_title": "Chapter ch01-architecture",
       "priority": 61,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7623242804392247305"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "1. UseCase 越多，项目越烂 — Clean Architecture 落地误区 — 作者从真实代码 review 总结出无业务逻辑的纯转发 UseCase 是架构负担，给出三条存在标准：多数据源聚合、业务规则校验、数据源屏蔽。延伸到 Compose 时代 MVI 契约设计和 KMP ",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "1. UseCase \u8d8a\u591a\uff0c\u9879\u76ee\u8d8a\u70c2 \u2014 Clean Architecture \u843d\u5730\u8bef\u533a \u2014 \u4f5c\u8005\u4ece\u771f\u5b9e\u4ee3\u7801 review \u603b\u7ed3\u51fa\u65e0\u4e1a\u52a1\u903b\u8f91\u7684\u7eaf\u8f6c\u53d1 UseCase \u662f\u67b6\u6784\u8d1f\u62c5\uff0c\u7ed9\u51fa\u4e09\u6761\u5b58\u5728\u6807\u51c6\uff1a\u591a\u6570\u636e\u6e90\u805a\u5408\u3001\u4e1a\u52a1\u89c4\u5219\u6821\u9a8c\u3001\u6570\u636e\u6e90\u5c4f\u853d\u3002\u5ef6\u4f38\u5230 Compose \u65f6\u4ee3 MVI \u5951\u7ea6\u8bbe\u8ba1\u548c KMP ",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.665308+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T00:51:13.508259+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de blocked/private IP error\uff09"
     },
     {
       "section": "ch01-architecture",
       "section_title": "Chapter ch01-architecture",
       "priority": 61,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7650074080125599790"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "2. Repository 应暴露 suspend fun 而非内部 launch — 从结构化并发角度分析 Repository 内部 launch 导致生命周期失控、异常传播断裂、取消能力削弱。核心原则：suspend 表达能力，launch 表达任务归属。withContext 只",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "2. Repository \u5e94\u66b4\u9732 suspend fun \u800c\u975e\u5185\u90e8 launch \u2014 \u4ece\u7ed3\u6784\u5316\u5e76\u53d1\u89d2\u5ea6\u5206\u6790 Repository \u5185\u90e8 launch \u5bfc\u81f4\u751f\u547d\u5468\u671f\u5931\u63a7\u3001\u5f02\u5e38\u4f20\u64ad\u65ad\u88c2\u3001\u53d6\u6d88\u80fd\u529b\u524a\u5f31\u3002\u6838\u5fc3\u539f\u5219\uff1asuspend \u8868\u8fbe\u80fd\u529b\uff0claunch \u8868\u8fbe\u4efb\u52a1\u5f52\u5c5e\u3002withContext \u53ea",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.665643+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T04:52:23.471280+00:00",
-      "completed_reason": "与章节内容无关，跳过 — ch01-architecture 聚焦系统级架构（Binder/AMS/WMS/SurfaceFlinger），文章主题为应用层 Repository 协程编码实践，非直接关联"
+      "completed_reason": "\u4e0e\u7ae0\u8282\u5185\u5bb9\u65e0\u5173\uff0c\u8df3\u8fc7 \u2014 ch01-architecture \u805a\u7126\u7cfb\u7edf\u7ea7\u67b6\u6784\uff08Binder/AMS/WMS/SurfaceFlinger\uff09\uff0c\u6587\u7ae0\u4e3b\u9898\u4e3a\u5e94\u7528\u5c42 Repository \u534f\u7a0b\u7f16\u7801\u5b9e\u8df5\uff0c\u975e\u76f4\u63a5\u5173\u8054"
     },
     {
       "section": "ch02-rendering",
       "section_title": "Chapter ch02-rendering",
       "priority": 65,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7618433588125007923"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "3. Compose Pager 从基础到高级动画 — 系统教程覆盖 PagerState、自定义 PageSize、SnapPosition、负间距堆叠、Paging 3 集成和 graphicsLayer 3D 旋转变换。currentPageOffs",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "3. Compose Pager \u4ece\u57fa\u7840\u5230\u9ad8\u7ea7\u52a8\u753b \u2014 \u7cfb\u7edf\u6559\u7a0b\u8986\u76d6 PagerState\u3001\u81ea\u5b9a\u4e49 PageSize\u3001SnapPosition\u3001\u8d1f\u95f4\u8ddd\u5806\u53e0\u3001Paging 3 \u96c6\u6210\u548c graphicsLayer 3D \u65cb\u8f6c\u53d8\u6362\u3002currentPageOffs",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.666398+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T06:51:06.527457+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de blocked/private IP error\uff09"
     },
     {
       "section": "ch10-memory-perf",
       "section_title": "Chapter ch10-memory-perf",
       "priority": 65,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7617108607432736778"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "4. Room 3.0 破坏性变化与迁移路径 — Room 3.0 四大变化：新包名 androidx.room3、仅生成 Kotlin 代码、仅支持 KSP、禁止同步 DAO 必须 suspend 或 Flow。跨平台新增 JS/WASM 支持，通",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "4. Room 3.0 \u7834\u574f\u6027\u53d8\u5316\u4e0e\u8fc1\u79fb\u8def\u5f84 \u2014 Room 3.0 \u56db\u5927\u53d8\u5316\uff1a\u65b0\u5305\u540d androidx.room3\u3001\u4ec5\u751f\u6210 Kotlin \u4ee3\u7801\u3001\u4ec5\u652f\u6301 KSP\u3001\u7981\u6b62\u540c\u6b65 DAO \u5fc5\u987b suspend \u6216 Flow\u3002\u8de8\u5e73\u53f0\u65b0\u589e JS/WASM \u652f\u6301\uff0c\u901a",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.666924+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T06:51:06.527457+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de blocked/private IP error\uff09"
     },
     {
       "section": "ch15-methodology",
       "section_title": "Chapter ch15-methodology",
       "priority": 65,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7614897667961143347"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "5. Google Android Bench：AI 编码能力评测方法论 — 拆解 Android Bench 的两阶段评测架构（推理+评估分离），七项公正性机制包括 Docker 隔离沙箱、git apply 排除测试文件防篡改、fail_to_pass + pass_to_",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "5. Google Android Bench\uff1aAI \u7f16\u7801\u80fd\u529b\u8bc4\u6d4b\u65b9\u6cd5\u8bba \u2014 \u62c6\u89e3 Android Bench \u7684\u4e24\u9636\u6bb5\u8bc4\u6d4b\u67b6\u6784\uff08\u63a8\u7406+\u8bc4\u4f30\u5206\u79bb\uff09\uff0c\u4e03\u9879\u516c\u6b63\u6027\u673a\u5236\u5305\u62ec Docker \u9694\u79bb\u6c99\u7bb1\u3001git apply \u6392\u9664\u6d4b\u8bd5\u6587\u4ef6\u9632\u7be1\u6539\u3001fail_to_pass + pass_to_",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:35:08.667195+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T06:51:06.527457+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de blocked/private IP error\uff09"
     },
     {
       "section": "ch04-memory",
       "section_title": "Chapter ch04-memory",
       "priority": 68,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Android Developers Blog - Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少... — Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少 30%。新调度器采用机器学习模型预测用户行为，优先启动高频使用的应用。同时，系统资源分配更加智能，",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "Android Developers Blog - Android 17 \u5f15\u5165\u4e86\u5168\u65b0\u7684\u4efb\u52a1\u8c03\u5ea6\u5668\uff0c\u901a\u8fc7\u667a\u80fd\u4f18\u5148\u7ea7\u7b97\u6cd5\u548c\u5ef6\u8fdf\u542f\u52a8\u673a\u5236\uff0c\u5e94\u7528\u542f\u52a8\u65f6\u95f4\u5e73\u5747\u51cf\u5c11... \u2014 Android 17 \u5f15\u5165\u4e86\u5168\u65b0\u7684\u4efb\u52a1\u8c03\u5ea6\u5668\uff0c\u901a\u8fc7\u667a\u80fd\u4f18\u5148\u7ea7\u7b97\u6cd5\u548c\u5ef6\u8fdf\u542f\u52a8\u673a\u5236\uff0c\u5e94\u7528\u542f\u52a8\u65f6\u95f4\u5e73\u5747\u51cf\u5c11 30%\u3002\u65b0\u8c03\u5ea6\u5668\u91c7\u7528\u673a\u5668\u5b66\u4e60\u6a21\u578b\u9884\u6d4b\u7528\u6237\u884c\u4e3a\uff0c\u4f18\u5148\u542f\u52a8\u9ad8\u9891\u4f7f\u7528\u7684\u5e94\u7528\u3002\u540c\u65f6\uff0c\u7cfb\u7edf\u8d44\u6e90\u5206\u914d\u66f4\u52a0\u667a\u80fd\uff0c",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.885467+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T04:52:23.471280+00:00",
-      "completed_reason": "URL 不可访问（HTTP 404），跳过"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff08HTTP 404\uff09\uff0c\u8df3\u8fc7"
     },
     {
       "section": "ch04-memory",
       "section_title": "Chapter ch04-memory",
       "priority": 66,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Phoronix - Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运... — Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运行的系统稳定性。新机制采用分层管理策略，对频繁分配释放的热点区域进行重点优化。测试显示，在高负载服务",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "Phoronix - Linux 6.10 \u5185\u6838\u5f15\u5165\u4e86\u521b\u65b0\u7684\u5185\u5b58\u788e\u7247\u6574\u7406\u673a\u5236\uff0c\u901a\u8fc7\u667a\u80fd\u9884\u5206\u914d\u548c\u52a8\u6001\u8c03\u6574\u7b56\u7565\uff0c\u5927\u5e45\u63d0\u5347\u957f\u671f\u8fd0... \u2014 Linux 6.10 \u5185\u6838\u5f15\u5165\u4e86\u521b\u65b0\u7684\u5185\u5b58\u788e\u7247\u6574\u7406\u673a\u5236\uff0c\u901a\u8fc7\u667a\u80fd\u9884\u5206\u914d\u548c\u52a8\u6001\u8c03\u6574\u7b56\u7565\uff0c\u5927\u5e45\u63d0\u5347\u957f\u671f\u8fd0\u884c\u7684\u7cfb\u7edf\u7a33\u5b9a\u6027\u3002\u65b0\u673a\u5236\u91c7\u7528\u5206\u5c42\u7ba1\u7406\u7b56\u7565\uff0c\u5bf9\u9891\u7e41\u5206\u914d\u91ca\u653e\u7684\u70ed\u70b9\u533a\u57df\u8fdb\u884c\u91cd\u70b9\u4f18\u5316\u3002\u6d4b\u8bd5\u663e\u793a\uff0c\u5728\u9ad8\u8d1f\u8f7d\u670d\u52a1",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.887084+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T04:52:23.471280+00:00",
-      "completed_reason": "URL 不可访问（HTTP 403），跳过"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff08HTTP 403\uff09\uff0c\u8df3\u8fc7"
     },
     {
       "section": "ch01-architecture",
       "section_title": "Chapter ch01-architecture",
       "priority": 61,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7623242804392247305"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "1. UseCase 越多，项目越烂 — Clean Architecture 落地误区 — 作者从真实代码 review 总结出无业务逻辑的纯转发 UseCase 是架构负担，给出三条存在标准：多数据源聚合、业务规则校验、数据源屏蔽。延伸到 Compose 时代 MVI 契约设计和 KMP ",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "1. UseCase \u8d8a\u591a\uff0c\u9879\u76ee\u8d8a\u70c2 \u2014 Clean Architecture \u843d\u5730\u8bef\u533a \u2014 \u4f5c\u8005\u4ece\u771f\u5b9e\u4ee3\u7801 review \u603b\u7ed3\u51fa\u65e0\u4e1a\u52a1\u903b\u8f91\u7684\u7eaf\u8f6c\u53d1 UseCase \u662f\u67b6\u6784\u8d1f\u62c5\uff0c\u7ed9\u51fa\u4e09\u6761\u5b58\u5728\u6807\u51c6\uff1a\u591a\u6570\u636e\u6e90\u805a\u5408\u3001\u4e1a\u52a1\u89c4\u5219\u6821\u9a8c\u3001\u6570\u636e\u6e90\u5c4f\u853d\u3002\u5ef6\u4f38\u5230 Compose \u65f6\u4ee3 MVI \u5951\u7ea6\u8bbe\u8ba1\u548c KMP ",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.887549+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T18:54:16.591704+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 DNS resolution blocked）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de DNS resolution blocked\uff09"
     },
     {
       "section": "ch01-architecture",
       "section_title": "Chapter ch01-architecture",
       "priority": 61,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7650074080125599790"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "2. Repository 应暴露 suspend fun 而非内部 launch — 从结构化并发角度分析 Repository 内部 launch 导致生命周期失控、异常传播断裂、取消能力削弱。核心原则：suspend 表达能力，launch 表达任务归属。withContext 只",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "2. Repository \u5e94\u66b4\u9732 suspend fun \u800c\u975e\u5185\u90e8 launch \u2014 \u4ece\u7ed3\u6784\u5316\u5e76\u53d1\u89d2\u5ea6\u5206\u6790 Repository \u5185\u90e8 launch \u5bfc\u81f4\u751f\u547d\u5468\u671f\u5931\u63a7\u3001\u5f02\u5e38\u4f20\u64ad\u65ad\u88c2\u3001\u53d6\u6d88\u80fd\u529b\u524a\u5f31\u3002\u6838\u5fc3\u539f\u5219\uff1asuspend \u8868\u8fbe\u80fd\u529b\uff0claunch \u8868\u8fbe\u4efb\u52a1\u5f52\u5c5e\u3002withContext \u53ea",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.887871+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T04:52:23.471280+00:00",
-      "completed_reason": "与章节内容无关，跳过 — ch01-architecture 聚焦系统级架构（Binder/AMS/WMS/SurfaceFlinger），文章主题为应用层 Repository 协程编码实践，非直接关联"
+      "completed_reason": "\u4e0e\u7ae0\u8282\u5185\u5bb9\u65e0\u5173\uff0c\u8df3\u8fc7 \u2014 ch01-architecture \u805a\u7126\u7cfb\u7edf\u7ea7\u67b6\u6784\uff08Binder/AMS/WMS/SurfaceFlinger\uff09\uff0c\u6587\u7ae0\u4e3b\u9898\u4e3a\u5e94\u7528\u5c42 Repository \u534f\u7a0b\u7f16\u7801\u5b9e\u8df5\uff0c\u975e\u76f4\u63a5\u5173\u8054"
     },
     {
       "section": "ch02-rendering",
       "section_title": "Chapter ch02-rendering",
       "priority": 65,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7618433588125007923"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "3. Compose Pager 从基础到高级动画 — 系统教程覆盖 PagerState、自定义 PageSize、SnapPosition、负间距堆叠、Paging 3 集成和 graphicsLayer 3D 旋转变换。currentPageOffs",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "3. Compose Pager \u4ece\u57fa\u7840\u5230\u9ad8\u7ea7\u52a8\u753b \u2014 \u7cfb\u7edf\u6559\u7a0b\u8986\u76d6 PagerState\u3001\u81ea\u5b9a\u4e49 PageSize\u3001SnapPosition\u3001\u8d1f\u95f4\u8ddd\u5806\u53e0\u3001Paging 3 \u96c6\u6210\u548c graphicsLayer 3D \u65cb\u8f6c\u53d8\u6362\u3002currentPageOffs",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.888688+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T18:54:16.591704+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 DNS resolution blocked）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de DNS resolution blocked\uff09"
     },
     {
       "section": "ch10-memory-perf",
       "section_title": "Chapter ch10-memory-perf",
       "priority": 65,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7617108607432736778"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "4. Room 3.0 破坏性变化与迁移路径 — Room 3.0 四大变化：新包名 androidx.room3、仅生成 Kotlin 代码、仅支持 KSP、禁止同步 DAO 必须 suspend 或 Flow。跨平台新增 JS/WASM 支持，通",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "4. Room 3.0 \u7834\u574f\u6027\u53d8\u5316\u4e0e\u8fc1\u79fb\u8def\u5f84 \u2014 Room 3.0 \u56db\u5927\u53d8\u5316\uff1a\u65b0\u5305\u540d androidx.room3\u3001\u4ec5\u751f\u6210 Kotlin \u4ee3\u7801\u3001\u4ec5\u652f\u6301 KSP\u3001\u7981\u6b62\u540c\u6b65 DAO \u5fc5\u987b suspend \u6216 Flow\u3002\u8de8\u5e73\u53f0\u65b0\u589e JS/WASM \u652f\u6301\uff0c\u901a",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.889215+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T18:54:16.591704+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 DNS resolution blocked）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de DNS resolution blocked\uff09"
     },
     {
       "section": "ch15-methodology",
       "section_title": "Chapter ch15-methodology",
       "priority": 65,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://juejin.cn/post/7614897667961143347"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "5. Google Android Bench：AI 编码能力评测方法论 — 拆解 Android Bench 的两阶段评测架构（推理+评估分离），七项公正性机制包括 Docker 隔离沙箱、git apply 排除测试文件防篡改、fail_to_pass + pass_to_",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "5. Google Android Bench\uff1aAI \u7f16\u7801\u80fd\u529b\u8bc4\u6d4b\u65b9\u6cd5\u8bba \u2014 \u62c6\u89e3 Android Bench \u7684\u4e24\u9636\u6bb5\u8bc4\u6d4b\u67b6\u6784\uff08\u63a8\u7406+\u8bc4\u4f30\u5206\u79bb\uff09\uff0c\u4e03\u9879\u516c\u6b63\u6027\u673a\u5236\u5305\u62ec Docker \u9694\u79bb\u6c99\u7bb1\u3001git apply \u6392\u9664\u6d4b\u8bd5\u6587\u4ef6\u9632\u7be1\u6539\u3001fail_to_pass + pass_to_",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-04T21:36:17.889481+00:00",
       "status": "completed",
       "completed_at": "2026-07-05T18:54:16.591704+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 DNS resolution blocked）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de DNS resolution blocked\uff09"
     },
     {
       "section": "1.55",
-      "section_title": "Android 17 Binder IPC 优先级继承与内核缓冲池新特性",
+      "section_title": "Android 17 Binder IPC \u4f18\u5148\u7ea7\u7ee7\u627f\u4e0e\u5185\u6838\u7f13\u51b2\u6c60\u65b0\u7279\u6027",
       "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "reason": "[DeepResearch \u6ce8\u5165] \u65b0\u589e\u9ad8\u4ef7\u503c\u8c03\u7814\u6750\u6599\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md"
       ],
       "review_issues": [
         {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 Binder 4MB 内核侧缓冲池上限与事务优先级算法源码级闭环 — 源码级分析 Binder 驱动 mmap 上限从 SZ_1M 到 SZ_4M 的演化、50% async space 配额、binder_transaction_priority() 的 min(cl",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+          "type": "\u65b0\u589e\u53c2\u8003\u6750\u6599",
+          "location": "\u53c2\u8003\u8d44\u6599/\u5ef6\u4f38\u9605\u8bfb",
+          "detail": "Android 17 Binder 4MB \u5185\u6838\u4fa7\u7f13\u51b2\u6c60\u4e0a\u9650\u4e0e\u4e8b\u52a1\u4f18\u5148\u7ea7\u7b97\u6cd5\u6e90\u7801\u7ea7\u95ed\u73af \u2014 \u6e90\u7801\u7ea7\u5206\u6790 Binder \u9a71\u52a8 mmap \u4e0a\u9650\u4ece SZ_1M \u5230 SZ_4M \u7684\u6f14\u5316\u300150% async space \u914d\u989d\u3001binder_transaction_priority() \u7684 min(cl",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u8865\u5145\u4e3a\u7ae0\u8282\u53c2\u8003\u8d44\u6599\u3001\u5ef6\u4f38\u9605\u8bfb\u6216\u6b63\u6587\u4e2d\u7684\u80cc\u666f\u6750\u6599"
         }
       ],
       "added_by": "task-deepresearch-injector",
@@ -353,18 +353,18 @@
     },
     {
       "section": "14.1",
-      "section_title": "Perfetto heapprofd 生产环境部署与权限配置",
+      "section_title": "Perfetto heapprofd \u751f\u4ea7\u73af\u5883\u90e8\u7f72\u4e0e\u6743\u9650\u914d\u7f6e",
       "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "reason": "[DeepResearch \u6ce8\u5165] \u65b0\u589e\u9ad8\u4ef7\u503c\u8c03\u7814\u6750\u6599\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-heapprofd-production-deployment-permissions.md"
       ],
       "review_issues": [
         {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 Perfetto heapprofd 生产环境部署模式与权限配置 — 三层权限模型（uid 范围/安装者过滤/SESSION_INITIATOR_TRUSTED_SYSTEM 绕过）、双 Producer 并行架构（Native+Java）、init.rc 服务配置、连",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+          "type": "\u65b0\u589e\u53c2\u8003\u6750\u6599",
+          "location": "\u53c2\u8003\u8d44\u6599/\u5ef6\u4f38\u9605\u8bfb",
+          "detail": "Android 17 Perfetto heapprofd \u751f\u4ea7\u73af\u5883\u90e8\u7f72\u6a21\u5f0f\u4e0e\u6743\u9650\u914d\u7f6e \u2014 \u4e09\u5c42\u6743\u9650\u6a21\u578b\uff08uid \u8303\u56f4/\u5b89\u88c5\u8005\u8fc7\u6ee4/SESSION_INITIATOR_TRUSTED_SYSTEM \u7ed5\u8fc7\uff09\u3001\u53cc Producer \u5e76\u884c\u67b6\u6784\uff08Native+Java\uff09\u3001init.rc \u670d\u52a1\u914d\u7f6e\u3001\u8fde",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u8865\u5145\u4e3a\u7ae0\u8282\u53c2\u8003\u8d44\u6599\u3001\u5ef6\u4f38\u9605\u8bfb\u6216\u6b63\u6587\u4e2d\u7684\u80cc\u666f\u6750\u6599"
         }
       ],
       "added_by": "task-deepresearch-injector",
@@ -373,9 +373,9 @@
     },
     {
       "section": "4.21",
-      "section_title": "ART HeapTask 调度管线与 Android 17 新增子类",
+      "section_title": "ART HeapTask \u8c03\u5ea6\u7ba1\u7ebf\u4e0e Android 17 \u65b0\u589e\u5b50\u7c7b",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "material_paths": [
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop.md"
       ],
@@ -386,42 +386,42 @@
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] Android 17 ANGLE denylist 命令错误",
+      "reason": "[Deep Tech Review] Android 17 ANGLE denylist \u547d\u4ee4\u9519\u8bef",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "Android 17 ANGLE denylist 配置段落",
-          "detail": "章节中的 `adb shell settings get global angle_gl_driver_all_angle` 命令在 AOSP android-17.0.0_r1 中实际路径为 `adb shell settings get global angle_gl_driver_enabled`，此错误会导致开发者无法正确判断设备的 ANGLE 模式状态",
-          "suggestion": "修正 adb 命令为正确的版本，并补充该命令的返回值含义说明"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "Android 17 ANGLE denylist \u914d\u7f6e\u6bb5\u843d",
+          "detail": "\u7ae0\u8282\u4e2d\u7684 `adb shell settings get global angle_gl_driver_all_angle` \u547d\u4ee4\u5728 AOSP android-17.0.0_r1 \u4e2d\u5b9e\u9645\u8def\u5f84\u4e3a `adb shell settings get global angle_gl_driver_enabled`\uff0c\u6b64\u9519\u8bef\u4f1a\u5bfc\u81f4\u5f00\u53d1\u8005\u65e0\u6cd5\u6b63\u786e\u5224\u65ad\u8bbe\u5907\u7684 ANGLE \u6a21\u5f0f\u72b6\u6001",
+          "suggestion": "\u4fee\u6b63 adb \u547d\u4ee4\u4e3a\u6b63\u786e\u7684\u7248\u672c\uff0c\u5e76\u8865\u5145\u8be5\u547d\u4ee4\u7684\u8fd4\u56de\u503c\u542b\u4e49\u8bf4\u660e"
         },
         {
-          "type": "源码错误",
-          "location": "Perfetto 配置中的 proto 路径",
-          "detail": "protos/perfetto/config/gpu/gpu_counter_config.proto 应该是 android-17.0.0_r1/protos/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto",
-          "suggestion": "更新为正确的 AOSP android-17.0.0_r1 路径结构"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "Perfetto \u914d\u7f6e\u4e2d\u7684 proto \u8def\u5f84",
+          "detail": "protos/perfetto/config/gpu/gpu_counter_config.proto \u5e94\u8be5\u662f android-17.0.0_r1/protos/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto",
+          "suggestion": "\u66f4\u65b0\u4e3a\u6b63\u786e\u7684 AOSP android-17.0.0_r1 \u8def\u5f84\u7ed3\u6784"
         },
         {
-          "type": "源码错误",
-          "location": "ANGLE 驱动选择命令验证",
-          "detail": "adb shell settings 命令输出解释在 denylist/allowlist 两种模式下语义相反，缺少验证逻辑",
-          "suggestion": "添加模式检测和相应命令输出解释指南"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "ANGLE \u9a71\u52a8\u9009\u62e9\u547d\u4ee4\u9a8c\u8bc1",
+          "detail": "adb shell settings \u547d\u4ee4\u8f93\u51fa\u89e3\u91ca\u5728 denylist/allowlist \u4e24\u79cd\u6a21\u5f0f\u4e0b\u8bed\u4e49\u76f8\u53cd\uff0c\u7f3a\u5c11\u9a8c\u8bc1\u903b\u8f91",
+          "suggestion": "\u6dfb\u52a0\u6a21\u5f0f\u68c0\u6d4b\u548c\u76f8\u5e94\u547d\u4ee4\u8f93\u51fa\u89e3\u91ca\u6307\u5357"
         },
         {
-          "type": "版本差异覆盖",
-          "location": "Android 17 ANGLE 策略",
-          "detail": "denylist vs allowlist 模式下的命令输出差异未充分说明",
-          "suggestion": "补充完整的模式检测和命令解释指南"
+          "type": "\u7248\u672c\u5dee\u5f02\u8986\u76d6",
+          "location": "Android 17 ANGLE \u7b56\u7565",
+          "detail": "denylist vs allowlist \u6a21\u5f0f\u4e0b\u7684\u547d\u4ee4\u8f93\u51fa\u5dee\u5f02\u672a\u5145\u5206\u8bf4\u660e",
+          "suggestion": "\u8865\u5145\u5b8c\u6574\u7684\u6a21\u5f0f\u68c0\u6d4b\u548c\u547d\u4ee4\u89e3\u91ca\u6307\u5357"
         },
         {
-          "type": "版本差异覆盖",
-          "location": "GPU 厂商计数器映射",
-          "detail": "Adreno/Mali/PowerVR 各 GPU 厂商的计数器 ID 定义不统一",
-          "suggestion": "添加各厂商计数器映射表和注意事项"
+          "type": "\u7248\u672c\u5dee\u5f02\u8986\u76d6",
+          "location": "GPU \u5382\u5546\u8ba1\u6570\u5668\u6620\u5c04",
+          "detail": "Adreno/Mali/PowerVR \u5404 GPU \u5382\u5546\u7684\u8ba1\u6570\u5668 ID \u5b9a\u4e49\u4e0d\u7edf\u4e00",
+          "suggestion": "\u6dfb\u52a0\u5404\u5382\u5546\u8ba1\u6570\u5668\u6620\u5c04\u8868\u548c\u6ce8\u610f\u4e8b\u9879"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -436,18 +436,18 @@
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 85,
-      "reason": "[Deep Tech Review] Android 12-16 工具演进差异未充分覆盖",
+      "reason": "[Deep Tech Review] Android 12-16 \u5de5\u5177\u6f14\u8fdb\u5dee\u5f02\u672a\u5145\u5206\u8986\u76d6",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "版本差异",
-          "location": "Android 12-16 工具演进路径",
-          "detail": "章节缺少 APA (Android Performance Analyzer) 在不同 Android 版本 (12-16) 的具体支持范围和功能演进路径，影响开发者在不同版本上的工具选型决策",
-          "suggestion": "补充 APA System Profiler 在 Android 12、13、14、15、16 中的功能差异、支持特性和推荐使用场景"
+          "type": "\u7248\u672c\u5dee\u5f02",
+          "location": "Android 12-16 \u5de5\u5177\u6f14\u8fdb\u8def\u5f84",
+          "detail": "\u7ae0\u8282\u7f3a\u5c11 APA (Android Performance Analyzer) \u5728\u4e0d\u540c Android \u7248\u672c (12-16) \u7684\u5177\u4f53\u652f\u6301\u8303\u56f4\u548c\u529f\u80fd\u6f14\u8fdb\u8def\u5f84\uff0c\u5f71\u54cd\u5f00\u53d1\u8005\u5728\u4e0d\u540c\u7248\u672c\u4e0a\u7684\u5de5\u5177\u9009\u578b\u51b3\u7b56",
+          "suggestion": "\u8865\u5145 APA System Profiler \u5728 Android 12\u300113\u300114\u300115\u300116 \u4e2d\u7684\u529f\u80fd\u5dee\u5f02\u3001\u652f\u6301\u7279\u6027\u548c\u63a8\u8350\u4f7f\u7528\u573a\u666f"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -455,22 +455,22 @@
       "status": "completed",
       "completed_at": "2026-07-05T16:54:29+00:00",
       "completed_by": "openclaw-task2b-main",
-      "completed_reason": "fixed: 新增 APA System Profiler 版本覆盖章节 (Android 12-17 逐版本说明)，补充 AGI vs APA 9维对比表和按场景迁移建议"
+      "completed_reason": "fixed: \u65b0\u589e APA System Profiler \u7248\u672c\u8986\u76d6\u7ae0\u8282 (Android 12-17 \u9010\u7248\u672c\u8bf4\u660e)\uff0c\u8865\u5145 AGI vs APA 9\u7ef4\u5bf9\u6bd4\u8868\u548c\u6309\u573a\u666f\u8fc1\u79fb\u5efa\u8bae"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] Android 12-16 版本特定工具支持差异未覆盖",
+      "reason": "[Deep Tech Review] Android 12-16 \u7248\u672c\u7279\u5b9a\u5de5\u5177\u652f\u6301\u5dee\u5f02\u672a\u8986\u76d6",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "版本差异",
-          "location": "Android 12-16 工具演进路径",
-          "detail": "章节缺少 APA 在 Android 12+ 的具体支持范围和与 AGI System Profiler 的功能对比，影响开发者工具选型决策",
-          "suggestion": "补充 APA System Profiler 在不同 Android 版本的功能差异和推荐使用场景"
+          "type": "\u7248\u672c\u5dee\u5f02",
+          "location": "Android 12-16 \u5de5\u5177\u6f14\u8fdb\u8def\u5f84",
+          "detail": "\u7ae0\u8282\u7f3a\u5c11 APA \u5728 Android 12+ \u7684\u5177\u4f53\u652f\u6301\u8303\u56f4\u548c\u4e0e AGI System Profiler \u7684\u529f\u80fd\u5bf9\u6bd4\uff0c\u5f71\u54cd\u5f00\u53d1\u8005\u5de5\u5177\u9009\u578b\u51b3\u7b56",
+          "suggestion": "\u8865\u5145 APA System Profiler \u5728\u4e0d\u540c Android \u7248\u672c\u7684\u529f\u80fd\u5dee\u5f02\u548c\u63a8\u8350\u4f7f\u7528\u573a\u666f"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -478,13 +478,13 @@
       "status": "completed",
       "completed_at": "2026-07-05T16:54:29+00:00",
       "completed_by": "openclaw-task2b-main",
-      "completed_reason": "fixed: merged with P85 APA coverage; 新增 AGI vs APA System Profiler 详细对比表 (9维) 和按场景迁移建议"
+      "completed_reason": "fixed: merged with P85 APA coverage; \u65b0\u589e AGI vs APA System Profiler \u8be6\u7ec6\u5bf9\u6bd4\u8868 (9\u7ef4) \u548c\u6309\u573a\u666f\u8fc1\u79fb\u5efa\u8bae"
     },
     {
       "section": "14.27",
-      "section_title": "Macrobenchmark 框架与自动化性能门禁",
+      "section_title": "Macrobenchmark \u6846\u67b6\u4e0e\u81ea\u52a8\u5316\u6027\u80fd\u95e8\u7981",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "material_paths": [],
       "review_issues": [],
       "added_by": "task2a-knowledge-gap",
@@ -493,9 +493,9 @@
     },
     {
       "section": "13.26",
-      "section_title": "android.os.Trace API 深度解析与应用级自定义追踪",
+      "section_title": "android.os.Trace API \u6df1\u5ea6\u89e3\u6790\u4e0e\u5e94\u7528\u7ea7\u81ea\u5b9a\u4e49\u8ffd\u8e2a",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "material_paths": [],
       "review_issues": [],
       "added_by": "task2a-knowledge-gap",
@@ -504,9 +504,9 @@
     },
     {
       "section": "21.17",
-      "section_title": "Startup Insights API 与启动性能可观测性",
+      "section_title": "Startup Insights API \u4e0e\u542f\u52a8\u6027\u80fd\u53ef\u89c2\u6d4b\u6027",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "material_paths": [],
       "review_issues": [],
       "added_by": "task2a-knowledge-gap",
@@ -515,9 +515,9 @@
     },
     {
       "section": "17.9",
-      "section_title": "SoC 特异性功耗优化策略：高通/联发科/三星",
+      "section_title": "SoC \u7279\u5f02\u6027\u529f\u8017\u4f18\u5316\u7b56\u7565\uff1a\u9ad8\u901a/\u8054\u53d1\u79d1/\u4e09\u661f",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "material_paths": [],
       "review_issues": [],
       "added_by": "task2a-knowledge-gap",
@@ -526,9 +526,9 @@
     },
     {
       "section": "22.30",
-      "section_title": "Impeller Shader 编译性能与 Flutter 渲染稳定性",
+      "section_title": "Impeller Shader \u7f16\u8bd1\u6027\u80fd\u4e0e Flutter \u6e32\u67d3\u7a33\u5b9a\u6027",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "material_paths": [],
       "review_issues": [],
       "added_by": "task2a-knowledge-gap",
@@ -539,38 +539,38 @@
       "section": "ch04-memory",
       "section_title": "04.memory",
       "priority": 62,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "[\u7d20\u6750\u6ce8\u5165] \u65b0\u589e\u53c2\u8003\u6587\u7ae0\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
       ],
       "review_issues": [
         {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Android 17 性能优化：新调度器减少 30% 启动时间 — Android 17引入全新任务调度器，通过机器学习预测用户行为，应用启动时间平均减少30%，低端设备性能提升可达40%。系统资源分配更加智能，后台应用内存占用优化25%。",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+          "type": "\u65b0\u589e\u53c2\u8003",
+          "location": "\u53c2\u8003\u8d44\u6599\u5c0f\u8282",
+          "detail": "Android 17 \u6027\u80fd\u4f18\u5316\uff1a\u65b0\u8c03\u5ea6\u5668\u51cf\u5c11 30% \u542f\u52a8\u65f6\u95f4 \u2014 Android 17\u5f15\u5165\u5168\u65b0\u4efb\u52a1\u8c03\u5ea6\u5668\uff0c\u901a\u8fc7\u673a\u5668\u5b66\u4e60\u9884\u6d4b\u7528\u6237\u884c\u4e3a\uff0c\u5e94\u7528\u542f\u52a8\u65f6\u95f4\u5e73\u5747\u51cf\u5c1130%\uff0c\u4f4e\u7aef\u8bbe\u5907\u6027\u80fd\u63d0\u5347\u53ef\u8fbe40%\u3002\u7cfb\u7edf\u8d44\u6e90\u5206\u914d\u66f4\u52a0\u667a\u80fd\uff0c\u540e\u53f0\u5e94\u7528\u5185\u5b58\u5360\u7528\u4f18\u531625%\u3002",
+          "suggestion": "\u5224\u65ad\u662f\u5426\u9002\u5408\u4f5c\u4e3a\u7ae0\u8282\u53c2\u8003\uff0c\u5982\u9002\u5408\u8bf7\u8865\u5145"
         }
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-06T05:31:34.985435",
       "status": "completed",
       "completed_at": "2026-07-05T22:53:20.488895+00:00",
-      "completed_reason": "URL 不可访问，跳过（web_fetch 返回 blocked/private IP error）"
+      "completed_reason": "URL \u4e0d\u53ef\u8bbf\u95ee\uff0c\u8df3\u8fc7\uff08web_fetch \u8fd4\u56de blocked/private IP error\uff09"
     },
     {
       "section": "25.17",
-      "section_title": "后台音频硬化与蓝牙 LE Audio 功耗治理机制",
+      "section_title": "\u540e\u53f0\u97f3\u9891\u786c\u5316\u4e0e\u84dd\u7259 LE Audio \u529f\u8017\u6cbb\u7406\u673a\u5236",
       "priority": 85,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "reason": "[DeepResearch \u6ce8\u5165] \u65b0\u589e\u9ad8\u4ef7\u503c\u8c03\u7814\u6750\u6599\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-background-audio-hardening-leaudio-power-source.md"
       ],
       "review_issues": [
         {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 后台音频硬化与 LE Audio 功耗治理源码调研 — 基于 android-17.0.0_r1 深度解析 HardeningEnforcer 双源决策矩阵（Java + C++ AudioFlinger）、LE Audio LC3 codec offload 与 ADSP 协商路径、MediaFocusControl 音频焦点恢复策略",
-          "suggestion": "章节已 finalized，建议判断是否需要补充音频硬化状态机模型、LE Audio 功耗治理链路、焦点恢复策略等内容，或仅作为参考资料追加"
+          "type": "\u65b0\u589e\u53c2\u8003\u6750\u6599",
+          "location": "\u53c2\u8003\u8d44\u6599/\u5ef6\u4f38\u9605\u8bfb",
+          "detail": "Android 17 \u540e\u53f0\u97f3\u9891\u786c\u5316\u4e0e LE Audio \u529f\u8017\u6cbb\u7406\u6e90\u7801\u8c03\u7814 \u2014 \u57fa\u4e8e android-17.0.0_r1 \u6df1\u5ea6\u89e3\u6790 HardeningEnforcer \u53cc\u6e90\u51b3\u7b56\u77e9\u9635\uff08Java + C++ AudioFlinger\uff09\u3001LE Audio LC3 codec offload \u4e0e ADSP \u534f\u5546\u8def\u5f84\u3001MediaFocusControl \u97f3\u9891\u7126\u70b9\u6062\u590d\u7b56\u7565",
+          "suggestion": "\u7ae0\u8282\u5df2 finalized\uff0c\u5efa\u8bae\u5224\u65ad\u662f\u5426\u9700\u8981\u8865\u5145\u97f3\u9891\u786c\u5316\u72b6\u6001\u673a\u6a21\u578b\u3001LE Audio \u529f\u8017\u6cbb\u7406\u94fe\u8def\u3001\u7126\u70b9\u6062\u590d\u7b56\u7565\u7b49\u5185\u5bb9\uff0c\u6216\u4ec5\u4f5c\u4e3a\u53c2\u8003\u8d44\u6599\u8ffd\u52a0"
         }
       ],
       "added_by": "task-deepresearch-injector",
@@ -579,18 +579,18 @@
     },
     {
       "section": "13.23",
-      "section_title": "Perfetto v57 AI 技能与状态轨道在 Android 内存调试中的应用",
+      "section_title": "Perfetto v57 AI \u6280\u80fd\u4e0e\u72b6\u6001\u8f68\u9053\u5728 Android \u5185\u5b58\u8c03\u8bd5\u4e2d\u7684\u5e94\u7528",
       "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "reason": "[DeepResearch \u6ce8\u5165] \u65b0\u589e\u9ad8\u4ef7\u503c\u8c03\u7814\u6750\u6599\uff0c\u5efa\u8bae\u8865\u5145\u5230\u7ae0\u8282",
       "material_paths": [
         "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-perfetto-v57-ai-skill-state-tracks-android-memory.md"
       ],
       "review_issues": [
         {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Perfetto v57 AI 技能与状态轨道 — v57.1 引入 ai-agents 分支与 AI Skill（heap_dump/heap_dump_caching_optimizer 等 6 个工作流），状态轨道 TYPE_STATE=5 作为一等公民轨道类型，形成 AI 读→SQL 取→状态轨道证三段闭环",
-          "suggestion": "ch13 README 已 finalized，建议在 13.20-13.23 系列章节中补充 Perfetto v57 AI 技能安装与内存调试工作流内容，或作为延伸阅读追加"
+          "type": "\u65b0\u589e\u53c2\u8003\u6750\u6599",
+          "location": "\u53c2\u8003\u8d44\u6599/\u5ef6\u4f38\u9605\u8bfb",
+          "detail": "Perfetto v57 AI \u6280\u80fd\u4e0e\u72b6\u6001\u8f68\u9053 \u2014 v57.1 \u5f15\u5165 ai-agents \u5206\u652f\u4e0e AI Skill\uff08heap_dump/heap_dump_caching_optimizer \u7b49 6 \u4e2a\u5de5\u4f5c\u6d41\uff09\uff0c\u72b6\u6001\u8f68\u9053 TYPE_STATE=5 \u4f5c\u4e3a\u4e00\u7b49\u516c\u6c11\u8f68\u9053\u7c7b\u578b\uff0c\u5f62\u6210 AI \u8bfb\u2192SQL \u53d6\u2192\u72b6\u6001\u8f68\u9053\u8bc1\u4e09\u6bb5\u95ed\u73af",
+          "suggestion": "ch13 README \u5df2 finalized\uff0c\u5efa\u8bae\u5728 13.20-13.23 \u7cfb\u5217\u7ae0\u8282\u4e2d\u8865\u5145 Perfetto v57 AI \u6280\u80fd\u5b89\u88c5\u4e0e\u5185\u5b58\u8c03\u8bd5\u5de5\u4f5c\u6d41\u5185\u5bb9\uff0c\u6216\u4f5c\u4e3a\u5ef6\u4f38\u9605\u8bfb\u8ffd\u52a0"
         }
       ],
       "added_by": "task-deepresearch-injector",
@@ -599,9 +599,9 @@
     },
     {
       "section": "14.28",
-      "section_title": "GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析",
+      "section_title": "GPU \u6027\u80fd\u5206\u6790\u8fdb\u9636 \u2014 \u8de8\u5382\u5546\u8ba1\u6570\u5668\u6807\u51c6\u5316\u4e0e\u5de5\u4f5c\u8d1f\u8f7d\u5256\u6790",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "file_path": "src/part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md",
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-07-06T07:18:59+08:00",
@@ -609,9 +609,9 @@
     },
     {
       "section": "26.24",
-      "section_title": "heapprofd 生产级部署与权限模型",
+      "section_title": "heapprofd \u751f\u4ea7\u7ea7\u90e8\u7f72\u4e0e\u6743\u9650\u6a21\u578b",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "file_path": "src/part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md",
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-07-06T07:18:59+08:00",
@@ -619,9 +619,9 @@
     },
     {
       "section": "4.22",
-      "section_title": "AI Agent 内存沙箱化与跨应用数据复用",
+      "section_title": "AI Agent \u5185\u5b58\u6c99\u7bb1\u5316\u4e0e\u8de8\u5e94\u7528\u6570\u636e\u590d\u7528",
       "priority": 80,
-      "reason": "[task2a-knowledge-gap] 新建章节，待加工内容",
+      "reason": "[task2a-knowledge-gap] \u65b0\u5efa\u7ae0\u8282\uff0c\u5f85\u52a0\u5de5\u5185\u5bb9",
       "file_path": "src/part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md",
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-07-06T07:18:59+08:00",
@@ -629,51 +629,54 @@
     },
     {
       "section": "20.9",
-      "section_title": "稳定性治理案例集",
+      "section_title": "\u7a33\u5b9a\u6027\u6cbb\u7406\u6848\u4f8b\u96c6",
       "priority": 85,
-      "reason": "[Deep Tech Review] 发现重要知识盲区和版本差异覆盖问题",
+      "reason": "[Deep Tech Review] \u53d1\u73b0\u91cd\u8981\u77e5\u8bc6\u76f2\u533a\u548c\u7248\u672c\u5dee\u5f02\u8986\u76d6\u95ee\u9898",
       "material_paths": [
         "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "知识盲区",
-          "location": "信号处理和线程优化章节",
-          "detail": "缺少 Android 17 中信号处理机制变化、线程亲和性应用、新增线程监控 API 的讨论",
-          "suggestion": "建议补充 Android 17 新特性研究和应用指导"
+          "type": "\u77e5\u8bc6\u76f2\u533a",
+          "location": "\u4fe1\u53f7\u5904\u7406\u548c\u7ebf\u7a0b\u4f18\u5316\u7ae0\u8282",
+          "detail": "\u7f3a\u5c11 Android 17 \u4e2d\u4fe1\u53f7\u5904\u7406\u673a\u5236\u53d8\u5316\u3001\u7ebf\u7a0b\u4eb2\u548c\u6027\u5e94\u7528\u3001\u65b0\u589e\u7ebf\u7a0b\u76d1\u63a7 API \u7684\u8ba8\u8bba",
+          "suggestion": "\u5efa\u8bae\u8865\u5145 Android 17 \u65b0\u7279\u6027\u7814\u7a76\u548c\u5e94\u7528\u6307\u5bfc"
         },
         {
-          "type": "版本差异",
-          "location": "信号处理器章节",
-          "detail": "引用 Android 5.0 行为模式，未明确说明在 Android 17 中的适用性",
-          "suggestion": "明确说明历史模式在 Android 17 中的适用性或替代方案"
+          "type": "\u7248\u672c\u5dee\u5f02",
+          "location": "\u4fe1\u53f7\u5904\u7406\u5668\u7ae0\u8282",
+          "detail": "\u5f15\u7528 Android 5.0 \u884c\u4e3a\u6a21\u5f0f\uff0c\u672a\u660e\u786e\u8bf4\u660e\u5728 Android 17 \u4e2d\u7684\u9002\u7528\u6027",
+          "suggestion": "\u660e\u786e\u8bf4\u660e\u5386\u53f2\u6a21\u5f0f\u5728 Android 17 \u4e2d\u7684\u9002\u7528\u6027\u6216\u66ff\u4ee3\u65b9\u6848"
         },
         {
-          "type": "版本差异",
-          "location": "信号处理器章节",
-          "detail": "缺少 Android 15+ 信号处理机制变化说明",
-          "suggestion": "补充 Android 15+ 信号处理机制变化说明"
+          "type": "\u7248\u672c\u5dee\u5f02",
+          "location": "\u4fe1\u53f7\u5904\u7406\u5668\u7ae0\u8282",
+          "detail": "\u7f3a\u5c11 Android 15+ \u4fe1\u53f7\u5904\u7406\u673a\u5236\u53d8\u5316\u8bf4\u660e",
+          "suggestion": "\u8865\u5145 Android 15+ \u4fe1\u53f7\u5904\u7406\u673a\u5236\u53d8\u5316\u8bf4\u660e"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-06T08:31:28.478802",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-06T11:40:07",
+      "completed_by": "openclaw-task2b-lite",
+      "completed_reason": "fixed-lite: Android 17 signal handling changes, thread affinity, and monitoring APIs\u8865\u5145"
     }
   ],
   "items": [
     {
       "section": "2.15",
-      "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "section_title": "DMA-BUF\u3001Gralloc \u4e0e\u8de8\u8fdb\u7a0b\u56fe\u5f62\u5185\u5b58\u5171\u4eab",
       "priority": 60,
-      "reason": "[task6抽检] 版本基线 android-17.0.0_r1 待验证：当前 last_verified_against 和全部 [已验证] 标注均为 android-16.0.0_r1",
+      "reason": "[task6\u62bd\u68c0] \u7248\u672c\u57fa\u7ebf android-17.0.0_r1 \u5f85\u9a8c\u8bc1\uff1a\u5f53\u524d last_verified_against \u548c\u5168\u90e8 [\u5df2\u9a8c\u8bc1] \u6807\u6ce8\u5747\u4e3a android-16.0.0_r1",
       "material_paths": [],
       "review_issues": [
         {
-          "type": "需验证",
-          "location": "全文所有 [已验证] 标注 + frontmatter last_verified_against",
-          "detail": "AIW 版本基线要求 android-17.0.0_r1，但本章验证标注全部指向 android-16.0.0_r1。需 Task 9 重新核对源码引用是否在 android-17.0.0_r1 中仍然成立，并更新验证标注。",
-          "suggestion": "Task 9 重新验证后更新 last_verified_against 和正文 [已验证] 标注"
+          "type": "\u9700\u9a8c\u8bc1",
+          "location": "\u5168\u6587\u6240\u6709 [\u5df2\u9a8c\u8bc1] \u6807\u6ce8 + frontmatter last_verified_against",
+          "detail": "AIW \u7248\u672c\u57fa\u7ebf\u8981\u6c42 android-17.0.0_r1\uff0c\u4f46\u672c\u7ae0\u9a8c\u8bc1\u6807\u6ce8\u5168\u90e8\u6307\u5411 android-16.0.0_r1\u3002\u9700 Task 9 \u91cd\u65b0\u6838\u5bf9\u6e90\u7801\u5f15\u7528\u662f\u5426\u5728 android-17.0.0_r1 \u4e2d\u4ecd\u7136\u6210\u7acb\uff0c\u5e76\u66f4\u65b0\u9a8c\u8bc1\u6807\u6ce8\u3002",
+          "suggestion": "Task 9 \u91cd\u65b0\u9a8c\u8bc1\u540e\u66f4\u65b0 last_verified_against \u548c\u6b63\u6587 [\u5df2\u9a8c\u8bc1] \u6807\u6ce8"
         }
       ],
       "added_by": "task6-audit",
@@ -683,16 +686,16 @@
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] 闲时抽检发现源码基线违规和版本差异问题",
+      "reason": "[Deep Tech Review] \u95f2\u65f6\u62bd\u68c0\u53d1\u73b0\u6e90\u7801\u57fa\u7ebf\u8fdd\u89c4\u548c\u7248\u672c\u5dee\u5f02\u95ee\u9898",
       "material_paths": [],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "frontmatter last_verified_against + 文中源码引用",
-          "detail": "章节引用 android-16.0.0_r1 AOSP 源码，但 AIW 版本基线要求锚定 android-17.0.0_r1。 violates android version boundary rule.",
-          "suggestion": "重新验证 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto 在 android-17.0.0_r1 中的路径和API变更，更新所有版本标注为 android-17.0.0_r1"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "frontmatter last_verified_against + \u6587\u4e2d\u6e90\u7801\u5f15\u7528",
+          "detail": "\u7ae0\u8282\u5f15\u7528 android-16.0.0_r1 AOSP \u6e90\u7801\uff0c\u4f46 AIW \u7248\u672c\u57fa\u7ebf\u8981\u6c42\u951a\u5b9a android-17.0.0_r1\u3002 violates android version boundary rule.",
+          "suggestion": "\u91cd\u65b0\u9a8c\u8bc1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto \u5728 android-17.0.0_r1 \u4e2d\u7684\u8def\u5f84\u548cAPI\u53d8\u66f4\uff0c\u66f4\u65b0\u6240\u6709\u7248\u672c\u6807\u6ce8\u4e3a android-17.0.0_r1"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -700,20 +703,20 @@
       "status": "completed",
       "completed_at": "2026-07-05T17:39:34+08:00",
       "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 更新，proto 路径未变"
+      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 \u2192 android-17.0.0_r1 \u66f4\u65b0\uff0cproto \u8def\u5f84\u672a\u53d8"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] 闲时抽检发现源码基线违规和版本差异问题",
+      "reason": "[Deep Tech Review] \u95f2\u65f6\u62bd\u68c0\u53d1\u73b0\u6e90\u7801\u57fa\u7ebf\u8fdd\u89c4\u548c\u7248\u672c\u5dee\u5f02\u95ee\u9898",
       "material_paths": [],
       "review_issues": [
         {
-          "type": "源码错误",
+          "type": "\u6e90\u7801\u9519\u8bef",
           "location": "Perfetto GPU counter config section",
-          "detail": "引用 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto 路径和配置需在 android-17.0.0_r1 中重新验证，确保计数器ID和字段定义未发生重大变更",
-          "suggestion": "验证 android-17.0.0_r1 中 Perfetto GPU counter 配置的兼容性，更新 counter_ids 和 counter_period_ns 字段说明"
+          "detail": "\u5f15\u7528 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto \u8def\u5f84\u548c\u914d\u7f6e\u9700\u5728 android-17.0.0_r1 \u4e2d\u91cd\u65b0\u9a8c\u8bc1\uff0c\u786e\u4fdd\u8ba1\u6570\u5668ID\u548c\u5b57\u6bb5\u5b9a\u4e49\u672a\u53d1\u751f\u91cd\u5927\u53d8\u66f4",
+          "suggestion": "\u9a8c\u8bc1 android-17.0.0_r1 \u4e2d Perfetto GPU counter \u914d\u7f6e\u7684\u517c\u5bb9\u6027\uff0c\u66f4\u65b0 counter_ids \u548c counter_period_ns \u5b57\u6bb5\u8bf4\u660e"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -721,20 +724,20 @@
       "status": "completed",
       "completed_at": "2026-07-05T17:39:34+08:00",
       "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 更新，proto 路径未变"
+      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 \u2192 android-17.0.0_r1 \u66f4\u65b0\uff0cproto \u8def\u5f84\u672a\u53d8"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 85,
-      "reason": "[Deep Tech Review] 闲时抽检发现版本差异覆盖不完整",
+      "reason": "[Deep Tech Review] \u95f2\u65f6\u62bd\u68c0\u53d1\u73b0\u7248\u672c\u5dee\u5f02\u8986\u76d6\u4e0d\u5b8c\u6574",
       "material_paths": [],
       "review_issues": [
         {
-          "type": "版本差异",
-          "location": "Android 17 ANGLE 策略描述段落",
-          "detail": "章节提到 Android 17 的 ANGLE denylist 策略，但缺少具体配置命令、实际影响分析和与旧版本策略的根本性差异对比。开发者在升级到 Android 17 后无法准确判断工具配置变化。",
-          "suggestion": "补充 Android 17 ANGLE denylist 的具体配置命令、实际影响分析、与旧版本策略对比，以及开发者迁移指南"
+          "type": "\u7248\u672c\u5dee\u5f02",
+          "location": "Android 17 ANGLE \u7b56\u7565\u63cf\u8ff0\u6bb5\u843d",
+          "detail": "\u7ae0\u8282\u63d0\u5230 Android 17 \u7684 ANGLE denylist \u7b56\u7565\uff0c\u4f46\u7f3a\u5c11\u5177\u4f53\u914d\u7f6e\u547d\u4ee4\u3001\u5b9e\u9645\u5f71\u54cd\u5206\u6790\u548c\u4e0e\u65e7\u7248\u672c\u7b56\u7565\u7684\u6839\u672c\u6027\u5dee\u5f02\u5bf9\u6bd4\u3002\u5f00\u53d1\u8005\u5728\u5347\u7ea7\u5230 Android 17 \u540e\u65e0\u6cd5\u51c6\u786e\u5224\u65ad\u5de5\u5177\u914d\u7f6e\u53d8\u5316\u3002",
+          "suggestion": "\u8865\u5145 Android 17 ANGLE denylist \u7684\u5177\u4f53\u914d\u7f6e\u547d\u4ee4\u3001\u5b9e\u9645\u5f71\u54cd\u5206\u6790\u3001\u4e0e\u65e7\u7248\u672c\u7b56\u7565\u5bf9\u6bd4\uff0c\u4ee5\u53ca\u5f00\u53d1\u8005\u8fc1\u79fb\u6307\u5357"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -742,22 +745,22 @@
       "status": "completed",
       "completed_at": "2026-07-05T18:53:00+08:00",
       "completed_by": "openclaw-task2b",
-      "completed_reason": "已补全 Android 17 ANGLE denylist 配置命令、allowlist→denylist 策略对比表和开发者迁移指引"
+      "completed_reason": "\u5df2\u8865\u5168 Android 17 ANGLE denylist \u914d\u7f6e\u547d\u4ee4\u3001allowlist\u2192denylist \u7b56\u7565\u5bf9\u6bd4\u8868\u548c\u5f00\u53d1\u8005\u8fc1\u79fb\u6307\u5f15"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] AGI Frame Profiler版本要求描述不准确",
+      "reason": "[Deep Tech Review] AGI Frame Profiler\u7248\u672c\u8981\u6c42\u63cf\u8ff0\u4e0d\u51c6\u786e",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "AGI 的两种模式与适用场景章节",
-          "detail": "章节提到'目标API最低要求Android 11 (API 30)'，但AGI Frame Profiler实际要求Android 12+才能完整支持GLES over Vulkan分析路径，Android 11仅支持部分功能",
-          "suggestion": "修正为'AGI Frame Profiler完整功能要求Android 12+ (API 31)，Android 11仅支持部分功能'"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "AGI \u7684\u4e24\u79cd\u6a21\u5f0f\u4e0e\u9002\u7528\u573a\u666f\u7ae0\u8282",
+          "detail": "\u7ae0\u8282\u63d0\u5230'\u76ee\u6807API\u6700\u4f4e\u8981\u6c42Android 11 (API 30)'\uff0c\u4f46AGI Frame Profiler\u5b9e\u9645\u8981\u6c42Android 12+\u624d\u80fd\u5b8c\u6574\u652f\u6301GLES over Vulkan\u5206\u6790\u8def\u5f84\uff0cAndroid 11\u4ec5\u652f\u6301\u90e8\u5206\u529f\u80fd",
+          "suggestion": "\u4fee\u6b63\u4e3a'AGI Frame Profiler\u5b8c\u6574\u529f\u80fd\u8981\u6c42Android 12+ (API 31)\uff0cAndroid 11\u4ec5\u652f\u6301\u90e8\u5206\u529f\u80fd'"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -765,22 +768,22 @@
       "status": "completed",
       "completed_at": "2026-07-05T18:53:20.112136+00:00",
       "completed_by": "openclaw-task2b-main",
-      "completed_reason": "fixed: AGI Frame Profiler 最低版本更正为 Android 12+ (API 31)，GLES over Vulkan 完整分析路径说明"
+      "completed_reason": "fixed: AGI Frame Profiler \u6700\u4f4e\u7248\u672c\u66f4\u6b63\u4e3a Android 12+ (API 31)\uff0cGLES over Vulkan \u5b8c\u6574\u5206\u6790\u8def\u5f84\u8bf4\u660e"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 85,
-      "reason": "[Deep Tech Review] Perfetto GPU counter配置字段描述与AOSP android-17.0.0_r1不完全一致",
+      "reason": "[Deep Tech Review] Perfetto GPU counter\u914d\u7f6e\u5b57\u6bb5\u63cf\u8ff0\u4e0eAOSP android-17.0.0_r1\u4e0d\u5b8c\u5168\u4e00\u81f4",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "Perfetto 中的GPU分析能力章节",
-          "detail": "章节中使用counter_ids字段，但在AOSP android-17.0.0_r1中该字段已更名为counters，配置字段名不一致可能导致开发者配置错误",
-          "suggestion": "更新为counters字段，并注明这是android-17.0.0_r1的规范"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "Perfetto \u4e2d\u7684GPU\u5206\u6790\u80fd\u529b\u7ae0\u8282",
+          "detail": "\u7ae0\u8282\u4e2d\u4f7f\u7528counter_ids\u5b57\u6bb5\uff0c\u4f46\u5728AOSP android-17.0.0_r1\u4e2d\u8be5\u5b57\u6bb5\u5df2\u66f4\u540d\u4e3acounters\uff0c\u914d\u7f6e\u5b57\u6bb5\u540d\u4e0d\u4e00\u81f4\u53ef\u80fd\u5bfc\u81f4\u5f00\u53d1\u8005\u914d\u7f6e\u9519\u8bef",
+          "suggestion": "\u66f4\u65b0\u4e3acounters\u5b57\u6bb5\uff0c\u5e76\u6ce8\u660e\u8fd9\u662fandroid-17.0.0_r1\u7684\u89c4\u8303"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -788,20 +791,20 @@
       "status": "completed",
       "completed_at": "2026-07-05T18:53:20.112136+00:00",
       "completed_by": "openclaw-task2b-main",
-      "completed_reason": "fixed: counter_ids → counters (android-17.0.0_r1 规范字段名); 补充了版本差异说明"
+      "completed_reason": "fixed: counter_ids \u2192 counters (android-17.0.0_r1 \u89c4\u8303\u5b57\u6bb5\u540d); \u8865\u5145\u4e86\u7248\u672c\u5dee\u5f02\u8bf4\u660e"
     },
     {
       "section": "20.9",
-      "section_title": "稳定性治理案例集",
+      "section_title": "\u7a33\u5b9a\u6027\u6cbb\u7406\u6848\u4f8b\u96c6",
       "priority": 70,
-      "reason": "[Task6抽检-版本边界] 全文4处[已验证]标签引用android-16.0.0_r1，需按版本基线重新验证为android-17.0.0_r1",
+      "reason": "[Task6\u62bd\u68c0-\u7248\u672c\u8fb9\u754c] \u5168\u65874\u5904[\u5df2\u9a8c\u8bc1]\u6807\u7b7e\u5f15\u7528android-16.0.0_r1\uff0c\u9700\u6309\u7248\u672c\u57fa\u7ebf\u91cd\u65b0\u9a8c\u8bc1\u4e3aandroid-17.0.0_r1",
       "material_paths": [],
       "review_issues": [
         {
-          "type": "版本边界合规",
-          "location": "全文验证标注（4处）+ frontmatter last_verified_against",
-          "detail": "所有[已验证]标签引用android-16.0.0_r1，需按AIW_ANDROID_VERSION_BASELINE_2026_06_27重新验证这些路径在android-17.0.0_r1中是否仍然适用",
-          "suggestion": "Task 9 重新对照android-17.0.0_r1验证：1)art/runtime/thread.cc CreateNativeThread 2)system/core/debuggerd handler 3)ActivityThread.handleBindApplication/installContentProviders 4)ComputerEngine.queryContentProviders"
+          "type": "\u7248\u672c\u8fb9\u754c\u5408\u89c4",
+          "location": "\u5168\u6587\u9a8c\u8bc1\u6807\u6ce8\uff084\u5904\uff09+ frontmatter last_verified_against",
+          "detail": "\u6240\u6709[\u5df2\u9a8c\u8bc1]\u6807\u7b7e\u5f15\u7528android-16.0.0_r1\uff0c\u9700\u6309AIW_ANDROID_VERSION_BASELINE_2026_06_27\u91cd\u65b0\u9a8c\u8bc1\u8fd9\u4e9b\u8def\u5f84\u5728android-17.0.0_r1\u4e2d\u662f\u5426\u4ecd\u7136\u9002\u7528",
+          "suggestion": "Task 9 \u91cd\u65b0\u5bf9\u7167android-17.0.0_r1\u9a8c\u8bc1\uff1a1)art/runtime/thread.cc CreateNativeThread 2)system/core/debuggerd handler 3)ActivityThread.handleBindApplication/installContentProviders 4)ComputerEngine.queryContentProviders"
         }
       ],
       "added_by": "task6-audit",
@@ -810,22 +813,22 @@
       "original_review_log": "logs/review/2026-07-06-04-audit.md",
       "completed_at": "2026-07-06T07:38:53+08:00",
       "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 (5 refs: frontmatter + 4 [已验证] tags)"
+      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 \u2192 android-17.0.0_r1 (5 refs: frontmatter + 4 [\u5df2\u9a8c\u8bc1] tags)"
     }
   ],
   "entries": [
     {
       "section": "23.8",
-      "section_title": "内存优化案例集",
+      "section_title": "\u5185\u5b58\u4f18\u5316\u6848\u4f8b\u96c6",
       "priority": 70,
-      "reason": "[task6抽检] AOSP源码版本标签为android-16.0.0_r1，需更新为android-17.0.0_r1基线",
+      "reason": "[task6\u62bd\u68c0] AOSP\u6e90\u7801\u7248\u672c\u6807\u7b7e\u4e3aandroid-16.0.0_r1\uff0c\u9700\u66f4\u65b0\u4e3aandroid-17.0.0_r1\u57fa\u7ebf",
       "material_paths": [],
       "review_issues": [
         {
-          "type": "版本基线合规",
-          "location": "frontmatter last_verified_against + sources 中两条 AOSP 路径",
-          "detail": "last_verified_against 引用 android-16.0.0_r1；sources 中 Bitmap.java 和 Debug.java 标注 @ android-16.0.0_r1。版本基线规则要求锚定 android-17.0.0_r1",
-          "suggestion": "验证 frameworks/base/graphics/java/android/graphics/Bitmap.java 和 frameworks/base/core/java/android/os/Debug.java 在 android-17.0.0_r1 中路径和 API 是否变化，更新版本标签和 last_verified_against"
+          "type": "\u7248\u672c\u57fa\u7ebf\u5408\u89c4",
+          "location": "frontmatter last_verified_against + sources \u4e2d\u4e24\u6761 AOSP \u8def\u5f84",
+          "detail": "last_verified_against \u5f15\u7528 android-16.0.0_r1\uff1bsources \u4e2d Bitmap.java \u548c Debug.java \u6807\u6ce8 @ android-16.0.0_r1\u3002\u7248\u672c\u57fa\u7ebf\u89c4\u5219\u8981\u6c42\u951a\u5b9a android-17.0.0_r1",
+          "suggestion": "\u9a8c\u8bc1 frameworks/base/graphics/java/android/graphics/Bitmap.java \u548c frameworks/base/core/java/android/os/Debug.java \u5728 android-17.0.0_r1 \u4e2d\u8def\u5f84\u548c API \u662f\u5426\u53d8\u5316\uff0c\u66f4\u65b0\u7248\u672c\u6807\u7b7e\u548c last_verified_against"
         }
       ],
       "added_by": "task6-audit",
@@ -834,22 +837,22 @@
       "original_review_log": "logs/review/2026-07-05-10-audit.md",
       "completed_at": "2026-07-05T15:37:57+08:00",
       "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: 版本基线标签 android-16.0.0_r1 → android-17.0.0_r1"
+      "completion_reason": "fixed-lite: \u7248\u672c\u57fa\u7ebf\u6807\u7b7e android-16.0.0_r1 \u2192 android-17.0.0_r1"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] Perfetto 配置示例中的字段名错误",
+      "reason": "[Deep Tech Review] Perfetto \u914d\u7f6e\u793a\u4f8b\u4e2d\u7684\u5b57\u6bb5\u540d\u9519\u8bef",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "Perfetto GPU counter配置部分",
-          "detail": "文中显示 `counter_ids: [1, 2, 3, ...]` 应为 `counter_ids: 1, 2, 3, ...`（repeated字段在proto中不需要方括号）",
-          "suggestion": "修正Perfetto配置示例中的字段名格式，移除方括号"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "Perfetto GPU counter\u914d\u7f6e\u90e8\u5206",
+          "detail": "\u6587\u4e2d\u663e\u793a `counter_ids: [1, 2, 3, ...]` \u5e94\u4e3a `counter_ids: 1, 2, 3, ...`\uff08repeated\u5b57\u6bb5\u5728proto\u4e2d\u4e0d\u9700\u8981\u65b9\u62ec\u53f7\uff09",
+          "suggestion": "\u4fee\u6b63Perfetto\u914d\u7f6e\u793a\u4f8b\u4e2d\u7684\u5b57\u6bb5\u540d\u683c\u5f0f\uff0c\u79fb\u9664\u65b9\u62ec\u53f7"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -857,22 +860,22 @@
       "status": "completed",
       "completed_at": "2026-07-06T05:38:45",
       "completed_by": "openclaw-task2b-lite",
-      "completed_reason": "fixed-lite: proto3 repeated 字段语法修正"
+      "completed_reason": "fixed-lite: proto3 repeated \u5b57\u6bb5\u8bed\u6cd5\u4fee\u6b63"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 85,
-      "reason": "[Deep Tech Review] AGI ANGLE配置命令在新版本中已废弃",
+      "reason": "[Deep Tech Review] AGI ANGLE\u914d\u7f6e\u547d\u4ee4\u5728\u65b0\u7248\u672c\u4e2d\u5df2\u5e9f\u5f03",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "版本差异",
-          "location": "AGI ANGLE配置命令段落",
-          "detail": "章节中的 `adb shell cmd gpu set-graphics-driver` 命令在 Android 17+ 设备上可能不可用，应使用 settings 命令替代",
-          "suggestion": "补充 settings 命令的替代方案，并说明不同版本下的命令差异"
+          "type": "\u7248\u672c\u5dee\u5f02",
+          "location": "AGI ANGLE\u914d\u7f6e\u547d\u4ee4\u6bb5\u843d",
+          "detail": "\u7ae0\u8282\u4e2d\u7684 `adb shell cmd gpu set-graphics-driver` \u547d\u4ee4\u5728 Android 17+ \u8bbe\u5907\u4e0a\u53ef\u80fd\u4e0d\u53ef\u7528\uff0c\u5e94\u4f7f\u7528 settings \u547d\u4ee4\u66ff\u4ee3",
+          "suggestion": "\u8865\u5145 settings \u547d\u4ee4\u7684\u66ff\u4ee3\u65b9\u6848\uff0c\u5e76\u8bf4\u660e\u4e0d\u540c\u7248\u672c\u4e0b\u7684\u547d\u4ee4\u5dee\u5f02"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -880,20 +883,20 @@
       "status": "completed",
       "completed_at": "2026-07-06T05:38:45",
       "completed_by": "openclaw-task2b-lite",
-      "completed_reason": "fixed-lite: 版本差异说明补充"
+      "completed_reason": "fixed-lite: \u7248\u672c\u5dee\u5f02\u8bf4\u660e\u8865\u5145"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] ANGLE denylist 配置命令错误",
+      "reason": "[Deep Tech Review] ANGLE denylist \u914d\u7f6e\u547d\u4ee4\u9519\u8bef",
       "material_paths": [],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "Android 17 ANGLE denylist 部分的 adb 命令",
-          "detail": "章节中的 `adb shell settings get global angle_gl_driver_all_angle` 命令在 AOSP android-17.0.0_r1 中实际路径为 `adb shell settings get global angle_gl_driver_enabled`，命令错误可能导致开发者误判 ANGLE 模式状态",
-          "suggestion": "修正 adb 命令为正确的 `adb shell settings get global angle_gl_driver_enabled`，并补充该命令的返回值含义说明"
+          "type": "\u6e90\u7801\u9519\u8bef",
+          "location": "Android 17 ANGLE denylist \u90e8\u5206\u7684 adb \u547d\u4ee4",
+          "detail": "\u7ae0\u8282\u4e2d\u7684 `adb shell settings get global angle_gl_driver_all_angle` \u547d\u4ee4\u5728 AOSP android-17.0.0_r1 \u4e2d\u5b9e\u9645\u8def\u5f84\u4e3a `adb shell settings get global angle_gl_driver_enabled`\uff0c\u547d\u4ee4\u9519\u8bef\u53ef\u80fd\u5bfc\u81f4\u5f00\u53d1\u8005\u8bef\u5224 ANGLE \u6a21\u5f0f\u72b6\u6001",
+          "suggestion": "\u4fee\u6b63 adb \u547d\u4ee4\u4e3a\u6b63\u786e\u7684 `adb shell settings get global angle_gl_driver_enabled`\uff0c\u5e76\u8865\u5145\u8be5\u547d\u4ee4\u7684\u8fd4\u56de\u503c\u542b\u4e49\u8bf4\u660e"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -901,20 +904,20 @@
       "status": "completed",
       "completed_at": "2026-07-05T22:51:24+08:00",
       "completed_by": "openclaw-task2b-rework",
-      "completed_reason": "fixed: angle_gl_driver_all_angle → angle_gl_driver_enabled (6处), frontmatter malformed line 修复"
+      "completed_reason": "fixed: angle_gl_driver_all_angle \u2192 angle_gl_driver_enabled (6\u5904), frontmatter malformed line \u4fee\u590d"
     },
     {
       "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
+      "section_title": "GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u5206\u6790\u5de5\u5177",
       "priority": 95,
-      "reason": "[Deep Tech Review] Perfetto 配置路径错误",
+      "reason": "[Deep Tech Review] Perfetto \u914d\u7f6e\u8def\u5f84\u9519\u8bef",
       "material_paths": [],
       "review_issues": [
         {
-          "type": "源码错误",
+          "type": "\u6e90\u7801\u9519\u8bef",
           "location": "Perfetto GPU counter config section",
-          "detail": "章节引用 `external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto` 路径，但实际在 AOSP android-17.0.0_r1 中正确路径为 `protos/perfetto/config/gpu/gpu_counter_config.proto`。路径错误导致开发者无法找到对应配置文件。",
-          "suggestion": "修正 Perfetto GPU counter config 路径为正确路径，确保与 AOSP android-17.0.0_r1 文件结构一致"
+          "detail": "\u7ae0\u8282\u5f15\u7528 `external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto` \u8def\u5f84\uff0c\u4f46\u5b9e\u9645\u5728 AOSP android-17.0.0_r1 \u4e2d\u6b63\u786e\u8def\u5f84\u4e3a `protos/perfetto/config/gpu/gpu_counter_config.proto`\u3002\u8def\u5f84\u9519\u8bef\u5bfc\u81f4\u5f00\u53d1\u8005\u65e0\u6cd5\u627e\u5230\u5bf9\u5e94\u914d\u7f6e\u6587\u4ef6\u3002",
+          "suggestion": "\u4fee\u6b63 Perfetto GPU counter config \u8def\u5f84\u4e3a\u6b63\u786e\u8def\u5f84\uff0c\u786e\u4fdd\u4e0e AOSP android-17.0.0_r1 \u6587\u4ef6\u7ed3\u6784\u4e00\u81f4"
         }
       ],
       "added_by": "task9-deep-tech-review",
