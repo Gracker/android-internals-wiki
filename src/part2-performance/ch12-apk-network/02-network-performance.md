@@ -61,6 +61,8 @@ p0: 0
 p1: 0
 p2: 0
 task9_review_notes: "2026-05-28 Task9 auto-fix: 修正 OkHttp EventListener connect/TTFB 指标口径，并收窄 ADPF setPreferPowerEfficiency 调度语义，回到 Task6 复审。 | 2026-05-28 06 Task9复审: pass-tech-review；无 P0/P1/P2；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 ---
 # 12.2 网络性能优化
 
@@ -80,13 +82,6 @@ task9_review_notes: "2026-05-28 Task9 auto-fix: 修正 OkHttp EventListener conn
 - 🔸 CDN 策略对 Android 客户端的影响
 - 🔸 图片加载的网络优化（渐进式加载、缩略图策略）
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么要关注网络性能
@@ -116,7 +111,7 @@ DNS 查询 → TCP 连接 → TLS 握手 → 发送请求头 → 发送请求体
 
 **首字节时间（Time To First Byte, TTFB）**：从发送请求到收到服务端返回的第一个字节的时间。这个指标反映了服务端处理速度和网络往返延迟的综合影响。TTFB 是判断"问题在客户端还是服务端"的关键分水岭——如果 DNS 和连接都很快但 TTFB 高，问题几乎一定在服务端。
 
-为什么这三个指标如此重要？因为它们各自对应不同的优化方向。DNS 慢 → 用 DNS 预解析或 HTTPDNS；连接慢 → 用连接复用或预连接；TTFB 慢 → 优化服务端或用 CDN。如果我们在做性能优化时不拆分指标，只是简单地看到"请求花了 2 秒"，就无从下手。
+为什么这三个指标如此重要？因为它们各自对应不同的优化方向。DNS 慢 → 用 DNS 预解析或 HTTPDNS；连接慢 → 用连接复用或预连接；TTFB 慢 → 优化服务端或用 CDN。不做指标拆分，只看"请求花了 2 秒"，根本无从下手。
 
 [已验证: Square OkHttp EventListener 官方文档 / Android ConnectivityManager 官方文档]
 
@@ -152,7 +147,7 @@ HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个�
 
 **连接迁移**：QUIC 使用 Connection ID 而不是四元组（源 IP、源端口、目标 IP、目标端口）来标识连接。当用户的网络从 Wi-Fi 切换到 4G/5G 时（IP 地址改变），QUIC 连接可以无缝迁移，不需要重新建立连接。在 HTTP/2 下，这种网络切换会导致所有正在进行的请求失败并需要重试。
 
-实际性能数据也印证了 HTTP/3 在移动场景下的优势。Google 报告 YouTube 在移动设备上缓冲时间减少了 15%；Uber 在 Android/iOS 上采用 QUIC 后尾部延迟降低了 10-30%；Meta 在 Instagram 上观察到请求错误率降低 6%、尾部延迟降低 20%。 [已验证: 来源见 Uber Engineering Blog (eng.uber.com), Google Chromium Blog]
+业界数据也能说明 HTTP/3 在移动场景下的价值：Google 报告 YouTube 移动端缓冲时间减少约 15%，Uber 采用 QUIC 后尾部延迟降低 10-30%，Meta 在 Instagram 上看到请求错误率降低约 6%、尾部延迟降低约 20%。[已验证: Uber Engineering Blog, Google Chromium Blog]
 
 ### 在 Android 上的选择
 
@@ -160,7 +155,7 @@ HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个�
 
 因此，“引入 Cronet 会让 APK 增加 1-2MB”不是通用结论。体积、更新路径和可用性要分开看。GMS 设备更看重 provider 是否已经安装、版本是否满足要求；非 GMS 设备更看重包体积、ABI 覆盖和发布节奏。生产实践里通常会先探测 Play Services provider，可用时优先走 Cronet；探测失败时回退到 bundled Cronet 或 OkHttp/HTTP/2。这样才能把性能收益、包体积和设备覆盖率放在同一个决策框架里。
 
-16KB 分页对 Cronet 冷启动的影响要按 provider 与设备实测。`libcronet.so` 是大型 native 库，4KB 分页下页表条目更多，page fault 与重定位成本更容易出现在冷启动路径；16KB page size 可能降低页表项数量和部分 fault 成本，但不能直接推出固定百分比收益。若要把 Cronet 初始化放进启动阶段的预连接策略，建议用同一设备、同一 ABI、同一 Cronet provider 版本，对比 4KB / 16KB 环境下 `dlopen`、provider install、首次请求发出三个时间点。
+16KB page size 对 Cronet 冷启动的影响需要按设备和 provider 实测。`libcronet.so` 是大型 native 库，4KB 分页下页表条目更多，page fault 和重定位成本更容易出现在冷启动阶段；16KB 页可能减少页表项数量，但收益不是固定百分比。如果要把 Cronet 初始化放进启动预连接策略，建议在相同设备、相同 ABI、相同 provider 版本下，对比 4KB 与 16KB 环境的 `dlopen`、provider install 和首次请求发出三个时间点。
 
 [已验证: Android Developers Cronet 文档 / Google Play services CronetProviderInstaller]
 
