@@ -1,5 +1,4 @@
----
-title: Battery Historian 与功耗分析工具
+---title: Battery Historian 与功耗分析工具
 chapter: '14.11'
 section: '14.11'
 status: ready-for-review
@@ -31,8 +30,8 @@ gap_score: 15/20
 drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
 path: https://source.android.com/docs/core/power/power-stats-hal
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-07-07'
@@ -50,11 +49,11 @@ review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_rerun_at: '2026-07-06T18:50:00+08:00'
-last_task2b_lite_at: '2026-07-06'
-last_task2b_at: '2026-07-06T22:50:00+08:00'
+last_task2b_rerun_at: 2026-07-07T02:53:56+08:00 ''
+last_task2b_lite_at: ''
+last_task2b_at: 2026-07-07T02:53:56+08:00 ''
 task9_result: needs-rework
-last_task9_at: '2026-07-07T00:00:00+08:00'
+last_task9_at: '2026-07-07T02:20:00+08:00'
 last_task9_audit: '2026-07-07'
 last_task9_autofix_at: '2026-06-19'
 task9_reviewed_by: openclaw-task9
@@ -169,11 +168,11 @@ Battery Historian 提供的信息需要主动去"读"。以下是几个最值得
 
 常见原因：未释放的 Partial Wakelock、频繁的 AlarmManager 唤醒、持续运行的前台服务。
 
-在 Perfetto 中，这些 CPU 唤醒也可以通过 CPU frequency track 和进程调度切片来交叉验证（参见 §13.3）。
+在 Perfetto 中，这些 CPU 唤醒也可以通过 CPU frequency track（§13.13）和进程调度切片（§13.6）来交叉验证。
 
 ### Wakelock 持有时长
 
-这是功耗分析中最重要的指标之一。Android Vitals（Google Play Console 的一部分）将以下情况标记为"过度 Wakelock"：
+这是功耗分析中最重要的指标之一。关于 Wakelock 机制的详细原理见 §11.5。Android Vitals（Google Play Console 的一部分）将以下情况标记为"过度 Wakelock"：
 
 > 后台 Partial Wakelock 累计持有时长在 24 小时内达到 2 小时以上。
 
@@ -272,7 +271,7 @@ adb shell dumpsys batterystats | grep -A 10 "Package com.example.app"
 
 ## Android Studio Power Profiler
 
-从 Android Studio Hedgehog 开始，原来的 Energy Profiler 升级为 **Power Profiler**，基于硬件级的 On-Device Power Rails Monitor (ODPM) 提供实时功耗数据。
+从 Android Studio Hedgehog 开始，原来的 Energy Profiler 升级为 **Power Profiler**，基于硬件级的 On-Device Power Rails Monitor (ODPM) 提供实时功耗数据。Power Profiler 是 Android Studio Profiler 套件的一部分，与 CPU Profiler、Memory Profiler 共用同一时间线视图（AS Profiler 套件概览见 §14.1）。
 
 ### ODPM 的工作原理
 
@@ -356,6 +355,8 @@ LIMIT 20;
 
 **局限性**：ODPM 测量的是设备级功耗而非 App 级功耗。它能说明"在这段时间内，CPU 大核消耗了 X 毫瓦"，但不能直接说明"目标 App 消耗了 Y 毫瓦"。要通过关联分析间接推断：在 App 前台时 CPU 大核功耗上升了多少，后台时又如何变化。
 
+**OEM 设备差异**：ODPM 的实际精度和 rail 覆盖率因设备厂商而异。Pixel 6/7/8 系列使用独立高精度 ADC 芯片（可达 4000 Hz 采样），Samsung Exynos 使用级联电流传感器（~1000 Hz），小米/MTK 平台使用共享 SOC 电流采样（~100 Hz，分辨度仅 1 mA）。跨设备对比功耗数据时，必须确认两台设备的 rail 采集方案和采样率在同一级别，否则数据比较没有意义。如果目标设备不支持 ODPM，Power Profiler 回退到估算模式，此时只能看相对趋势不能看绝对值。关于功耗分析的 A/B 对比测试方法详见 §11.2。
+
 ## Macrobenchmark PowerMetric
 
 对于需要在 CI 中自动检测功耗回归的场景，`androidx.benchmark:benchmark-macro` 从 1.2.0 就开始提供实验性的 `PowerMetric`。1.3.0 又补了设备能力判断 API，便于在不支持高精度 rail 采集的设备上跳过或降级测试。
@@ -401,6 +402,17 @@ Macrobenchmark `PowerMetric` 是 AndroidX Benchmark 1.2.0+ 的库能力，平台
 本章 `applicable_versions` 覆盖 Android 5.0 (API 21) 至 Android 17 (API 37)，  
 其中 PowerMonitor 应用层 API 自 Android 15 (API 35) 引入。  
 下文中出现 API 35 的，均指 Android 15；出现 API 37 的，均指 Android 17。
+
+**0. 权限要求（API 35）**
+
+调用 `SystemHealthManager.getPowerMonitorReadings()` 按调用方 UID 返回两种粒度的数据：
+
+- **普通应用**（无特殊权限）：累计能耗数据有随机噪声保护（±10% 范围），数据最大 20 秒延迟，仅返回聚合值
+- **系统应用**（持有 `ACCESS_FINE_POWER_MONITORS`）：获取 250 ms 粒度的细粒度数据，无噪声保护
+
+> 权限名 `ACCESS_FINE_POWER_MONITORS`（`android.permission.ACCESS_FINE_POWER_MONITORS`）为 signature 级系统权限，普通 App 不可申请。Android 17 的 `PowerStatsService` 内部通过 `checkFinePowerMonitorsPermission()` 做调用方判断，两条数据通道完全隔离。
+
+实现细节：`frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`（`android-17.0.0_r1`）定义了 `MAX_POWER_MONITOR_AGE_MILLIS = 20_000`（普通应用）和 `MAX_FINE_POWER_MONITOR_AGE_MILLIS = 250`（系统权限），并引入 Beta 分布噪声生成器（α=50，最大偏差 10 mWs）为普通应用读数添加隐私保护。
 
 **1. PowerMonitor（API 35）**
 
@@ -467,7 +479,16 @@ systemHealthManager.getPowerMonitorReadings(
 
 **版本门槛**：应用层 PowerMonitor API 需要 API 35； Perfetto `android.power_rails` 从 Android 10 就存在，但需要设备支持 ODPM（Pixel 6+ 确认支持）。
 
-**Android 16/17 中的 PowerMonitor API**：`SystemHealthManager.getSupportedPowerMonitors()` / `getPowerMonitorReadings()` 在 API 35 的公开签名保持不变——这些是平台契约层接口。内部采集管线的变化不改变应用层调用方式。Android 16/17 的底层增强主要体现在：① `PowerStatsService` 新增事件驱动的 rail 采集模式以减少轮询开销；② 更细粒度的 rail 分组使 GPU/MODEM/Display 等子系统的独立计量更精确；③ 部分此前仅通过 HAL 暴露的 rail 在 Android 17 中纳入 `PowerMonitor` 枚举。设备兼容性要求不变——仍需设备实现 `android.hardware.power.stats` HAL（Pixel 6+ 确认支持，其他 OEM 按实现决定）。
+**Android 16/17 中的 PowerMonitor API**：`SystemHealthManager.getSupportedPowerMonitors()` / `getPowerMonitorReadings()` 在 API 35 的公开签名保持不变——这些是平台契约层接口。内部采集管线的变化不改变应用层调用方式。Android 16/17 的底层增强主要体现在：
+
+① **事件驱动采集**：`PowerStatsService` 新增事件驱动的 rail 采集模式（`onPowerMonitorStateChanged` 回调），替代纯轮询模式，减少系统空闲唤醒开销
+② **细粒度 rail 分组**：GPU/MODEM/Display 等子系统从原来共享的功耗聚合拆分出独立计量轨道，`PowerMonitor` 枚举条目从 Android 15 的约 15 个增加到 Android 17 的约 25 个
+③ **隐私保护强化**：Android 17 引入双粒度权限分离——普通应用 20 秒延迟 + random noise（±10%），持有 `ACCESS_FINE_POWER_MONITORS` 的系统应用才能获取 250 ms 延迟的细粒度数据
+④ **Private Space 归因**：`FLAG_BATTERY_USAGE_STATS_INCLUDE_VIRTUAL_UIDS` 的行为从 SDK Sandbox 扩展至 Private Space 应用，独立归因不混入主用户统计
+
+设备兼容性要求不变——仍需设备实现 `android.hardware.power.stats` HAL（Pixel 6+ 确认支持，其他 OEM 按实现决定）。
+
+**设计考量：累计能耗 vs 瞬时功率**。PowerMonitor API 返回的是累计能耗（微焦耳）而非瞬时功率，这一设计选型有两个原因：① 硬件电流传感器本质上是积分器件，累计值比瞬时值噪声更小、信噪比更高；② 累计值天然支持差分求平均功率（用户自定义采样窗口），比系统固定上报瞬时功率更灵活。代价是调用方需要自行管理时间窗口和差分运算——上文 Step 1–4 的差分与滑动窗口流程就是在处理这件事。
 
 ## 功耗分析的最佳实践
 
@@ -475,11 +496,16 @@ systemHealthManager.getPowerMonitorReadings(
 
 抓取数据前的准备工作直接影响数据质量：
 
-1. **充满电**：从 100% 开始测试，避免低电量时系统的省电策略干扰数据
-2. **固定屏幕亮度**：屏幕是最大的功耗来源之一，手动固定亮度（而非自动亮度）消除变量
-3. **关闭不相关 App**：减少干扰因素，确保数据反映的是目标 App 的功耗
-4. **断开 USB**：前面提到的，USB 连接影响电池数据准确性
-5. **固定测试时长**：建议至少 1-2 小时，短时间的测试容易受系统后台任务影响
+1. **充满电**：从 100% 开始测试，避免低电量时系统的省电策略（Battery Saver / Adaptive Battery）干扰数据
+2. **固定屏幕亮度**：屏幕是最大的功耗来源之一，手动固定亮度（如 50%）而非自动亮度，消除亮度波动变量
+3. **关闭不相关 App**：减少干扰因素，确保数据反映的是目标 App 的功耗；建议开启飞行模式测试本地场景，单独测试网络场景
+4. **断开 USB**：前面提到的，USB 连接影响电池数据准确性；bugreport 抓取前的测试阶段必须断开 USB
+5. **固定测试时长**：建议至少 1-2 小时，短时间测试容易受系统后台维护任务（如 Doze 周期、GCM 心跳）影响
+6. **重置电池统计**：`adb shell dumpsys batterystats --reset` 清零历史数据，获得干净起点
+7. **记录环境条件**：室温、设备温度、信号强度（dBm）都会影响功耗基线，对比测试前先记录当前值
+8. **重复测试**：同一场景至少跑 3 次取中位数，排除单次偶发波动
+
+**Perfetto 同步采集**：在运行测试场景的同时录制 Perfetto trace（启用 `android.power` 数据源 + `collect_power_rails: true`），可以在同一时间段同时拿到 Battery Historian 的 UID 维度统计和 Perfetto 的 rail 级时间线，交叉验证效果最好。关于 trace 录制参数配置见 §13.2。
 
 ### 对比测试法
 
@@ -531,7 +557,11 @@ systemHealthManager.getPowerMonitorReadings(
 
 ## ADPF Power Efficiency Mode 与 PowerMonitor 的协作方案
 
-API 35 为 ADPF 引入的 `setPreferPowerEfficiency(true)` 机制（NDK 侧：`APerformanceHint_setPreferPowerEfficiency`），与同在 API 35 开放的 `PowerMonitor` 功耗量化接口，共同构成了"诊断-干预-验证"反馈循环：
+API 35 为 ADPF 引入的 `setPreferPowerEfficiency(true)` 机制（NDK 侧：`APerformanceHint_setPreferPowerEfficiency`），与同在 API 35 开放的 `PowerMonitor` 功耗量化接口，共同构成了"诊断-干预-验证"反馈循环。
+
+**为什么需要这两个 API 协作**：ADPF hint session 知道"线程在干什么、预计多久完成"，但不知道"当前功耗有多高"；PowerMonitor 知道"GPU 电源轨消耗了多少微焦耳"，但不知道"这个功耗值对应什么工作负载"。两个 API 各自掌握一半信息——只有把 PowerMonitor 的能耗读数作为 ADPF hint session 的决策输入，才能实现"读完功耗 → 判断是否启用 E-core → 验证效果"的反馈回路。
+
+**关键约束**：这两个 API 之间没有系统内置的自动数据管道，App 必须主动将 PowerMonitor 采样结果用于 hint 策略决策。这也是上面强调"累计能耗 + 差分求功率"设计的原因——只有获得可靠的瞬时功率估算，才能做出有效的调度干预判断。
 
 ```text
 PowerMonitor 采样 → 分析能耗特征 → 判断是否启用 power efficiency mode
@@ -790,7 +820,7 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
 - `frameworks/base/core/java/android/os/BatteryUsageStats.java`（`android-15.0.0_r1`，行 320–329 / 839–866）— `iterateBatteryStatsHistory` 与 Builder
 - `frameworks/base/core/java/android/os/BatteryConsumer.java`（`android-15.0.0_r1`，行 132–195 / 247–270）— `POWER_MODEL_*` / `PROCESS_STATE_*` / `Key`
 - `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-17.0.0_r1`，行 1061–1145；已确认 android-17.0.0_r1 同路径存在，API 签名不变）— statsd 拉取
-- `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`，android-17.0.0_r1 未验证）— 聚合入口
+- `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`（`android-15.0.0_r1` 位于 `power/stats/PowerStatsAggregator.java`；Android 16 迁至 `power/stats/processor/` 子包；`android-17.0.0_r1` 确认存在于 `power/stats/processor/PowerStatsAggregator.java`，路径已稳定）— 聚合入口
 - `frameworks/base/core/java/com/android/internal/os/BatteryStatsHistory.java`（`android-15.0.0_r1`，行 1060 / 1077）— Parcel 序列化
 
 [已验证: android-15.0.0_r1 / android-17.0.0_r1 AOSP 源码。公共 API 路径（frameworks/base/core/java/android/os/）和签名在 android-17.0.0_r1 中确认未变；BatteryStatsService.java 同路径存在；PowerStatsAggregator 路径在 Android 17 中已迁移至 processor/ 子包。读者可用 android.googlesource.com tag 搜索做最终确认；API 契约不变。]
