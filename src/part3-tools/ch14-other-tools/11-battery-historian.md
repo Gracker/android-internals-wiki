@@ -2,7 +2,7 @@
 title: Battery Historian 与功耗分析工具
 chapter: '14.11'
 section: '14.11'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-04-20'
 last_verified_against: Android 17 (API 37)
@@ -49,13 +49,15 @@ review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审
   全部通过。转 Task9 确认。'
 task9_state: pending
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
 last_task2b_rerun_at: '2026-07-06T18:50:00+08:00'
+last_task2b_lite_at: '2026-07-06'
 last_task2b_at: '2026-05-08T17:58:58+08:00'
 task9_result: needs-rework
 last_task9_at: '2026-07-06'
 last_task9_audit: '2026-07-06'
 last_task9_autofix_at: '2026-06-19'
+pipeline_stage: task6_pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-19'
 last_task9_review_log: logs/deep-review/2026-06-19-18-audit.md
@@ -139,7 +141,7 @@ cd battery-historian
 # 上传 bugreport 到 https://bathist.ef.lc/（第三方托管，注意数据安全）
 ```
 
-Google 仓库仍然保留了 Battery Historian 源码，但官方 gcr.io 镜像已经长期不维护，实操里常见情况是镜像拉取失败，或者前端依赖过旧导致页面资源加载异常。只要目标是把 bugreport 跑起来，直接切到社区镜像更省时间。Battery Historian 现在更适合做离线回顾和长时间趋势分析；日常开发阶段的实时观测，优先用 Power Profiler、Perfetto 和 Macrobenchmark。
+Google 仓库仍然保留了 Battery Historian 源码，但官方 `gcr.io/battery-historian` 镜像已停止维护，实操里常见情况是镜像拉取失败，或者前端依赖过旧导致页面资源加载异常。只要目标是把 bugreport 跑起来，直接切到社区镜像更省时间。Battery Historian 现在更适合做离线回顾和长时间趋势分析；日常开发阶段的实时观测，优先用 Power Profiler、Perfetto 和 Macrobenchmark。
 
 ### 时间线视图解读
 
@@ -560,9 +562,9 @@ Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源�
 
 ## 补充：BatteryUsageStats API 与 Android 15 streamlinedBatteryStats 链路（源码调研补遗）
 
-> ⚠️ **版本边界**：本节为 daily-topics #6 调研产物，所有源码锚点均在 **android-15.0.0_r1** 下验证。下文涉及的所有 `frameworks/base/` 的 .java 文件路径（`BatteryStatsManager`、`BatteryUsageStatsQuery`、`BatteryUsageStats`、`BatteryConsumer`、`BatteryStatsService`、`PowerStatsAggregator`、`BatteryStatsHistory`）在 android-17.0.0_r1 中面临模块重组——`BatteryStatsService` 可能已迁出 `server/am/` 目录，`PowerStatsAggregator` 在 Android 16+ 已确认迁至 `power/stats/processor/` 子目录。上述 API 的 Binder 调用链路、5 个 Flag、`BatteryConsumer` 双功耗模型和 statsd 原子拉取路径是平台公开契约，Android 15/16/17 保持兼容；需要锁定 android-17.0.0_r1 具体文件路径的读者请在 android.googlesource.com 使用对应 tag 搜索类名。
+> ⚠️ **版本边界**：本节为 daily-topics #6 调研产物，所有源码锚点均在 **android-15.0.0_r1** 下验证。下文涉及的所有 `frameworks/base/` 的 .java 文件路径（`BatteryStatsManager`、`BatteryUsageStatsQuery`、`BatteryUsageStats`、`BatteryConsumer`、`BatteryStatsService`、`PowerStatsAggregator`、`BatteryStatsHistory`）在 android-17.0.0_r1 中面临模块重组——`BatteryStatsService` 可能已迁出 `server/am/` 目录，`PowerStatsAggregator` 在 Android 16 源码中迁至 `power/stats/processor/` 子目录（android-17.0.0_r1 未重新验证路径）。上述 API 的 Binder 调用链路、5 个 Flag、`BatteryConsumer` 双功耗模型和 statsd 原子拉取路径是平台公开契约，Android 15/16/17 保持兼容；需要锁定 android-17.0.0_r1 具体文件路径的读者请在 android.googlesource.com 使用对应 tag 搜索类名。
 >
-> **Android 16/17 演进要点**：① `streamlinedBatteryStats` feature flag 在 Android 16 中逐步默认开启，CPU/MOBILE_RADIO/WIFI 三个组件的功耗统计口径已全面切换至 `PowerStatsProcessor` 实时路径；② `PowerStatsAggregator` 迁至 `processor/` 子包后 API 层无变化，但聚合策略增加了窗口化缓存和增量计算优化；③ `BatteryUsageStats` 五个 Flag 语义不变，但 Android 17 中新增了对 Private Space / SDK Sandbox 虚拟 UID 功耗的独立归因支持（`FLAG_BATTERY_USAGE_STATS_INCLUDE_VIRTUAL_UIDS` 的行为从 SDK Sandbox 扩展至 Private Space 应用）。
+> **Android 16/17 演进要点**：① `streamlinedBatteryStats` feature flag 在 Android 16 中逐步默认开启，CPU/MOBILE_RADIO/WIFI 三个组件的功耗统计口径已全面切换至 `PowerStatsProcessor` 实时路径；② `PowerStatsAggregator` 在 Android 16 源码中迁至 `processor/` 子包后 API 层无变化，但聚合策略增加了窗口化缓存和增量计算优化；③ `BatteryUsageStats` 五个 Flag 语义不变，但 Android 17 中新增了对 Private Space / SDK Sandbox 虚拟 UID 功耗的独立归因支持（`FLAG_BATTERY_USAGE_STATS_INCLUDE_VIRTUAL_UIDS` 的行为从 SDK Sandbox 扩展至 Private Space 应用）。
 
 本节为 daily-topics #6 调研产物（落盘 `DeepResearch/2026-06-12-android15-battery-historian-power-metrics-integration.md`）的浓缩版，补 §14.11 现有"打 bugreport + 上传 Battery Historian"描述与平台层 BatteryUsageStats 统一 API 之间的链路缺口。
 
@@ -652,7 +654,7 @@ public List<BatteryUsageStats> getBatteryUsageStats(List<BatteryUsageStatsQuery>
 
 `BatteryStatsService.java`（行 615–645 / 709 / 1070–1072 / 3129）通过 `Flags.streamlinedBatteryStats()` 把 CPU / MOBILE_RADIO / WIFI 三个 component 切到实时 `PowerStatsProcessor` 路径，统计口径从「power_profile 平均功率 × 时长」迁移为「PowerStats HAL rail + 状态机」。这是 Power Profiler 数据可信度从「估算」走向「rail 校准估算」的关键拐点。
 
-对应实现入口 `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16/17 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`）：在 `BatteryStatsHistory` 上做事件流回放，每个 component 用各自 `PowerStatsProcessor` 累计出 `AggregatedPowerStats`，`BatteryUsageStatsProvider` 再按 query 维度切片返回。
+对应实现入口 `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`，android-17.0.0_r1 路径未重新验证）：在 `BatteryStatsHistory` 上做事件流回放，每个 component 用各自 `PowerStatsProcessor` 累计出 `AggregatedPowerStats`，`BatteryUsageStatsProvider` 再按 query 维度切片返回。
 
 ### 历史线嵌入
 
@@ -683,7 +685,7 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
 - `frameworks/base/core/java/android/os/BatteryUsageStats.java`（`android-15.0.0_r1`，行 320–329 / 839–866）— `iterateBatteryStatsHistory` 与 Builder
 - `frameworks/base/core/java/android/os/BatteryConsumer.java`（`android-15.0.0_r1`，行 132–195 / 247–270）— `POWER_MODEL_*` / `PROCESS_STATE_*` / `Key`
 - `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-15.0.0_r1`，行 1061–1145）— statsd 拉取
-- `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16/17 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`）— 聚合入口
+- `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`，android-17.0.0_r1 未验证）— 聚合入口
 - `frameworks/base/core/java/com/android/internal/os/BatteryStatsHistory.java`（`android-15.0.0_r1`，行 1060 / 1077）— Parcel 序列化
 
 [已验证: android-15.0.0_r1 / android-14.0.0_r1 源码 cs.android.com 同源路径。android-17.0.0_r1 中上述文件的模块归属可能已变更，请以 android.googlesource.com tag 搜索为准；API 契约不变。]
