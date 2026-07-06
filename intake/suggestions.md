@@ -56,3 +56,44 @@
 - **位置**：Android 17 线程监控 API
 - **问题**：缺少对 android.os.Process.getThreadCpuTime() 等新 API 的具体使用示例
 - **建议**：增加线程监控 API 的使用示例和最佳实践
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：源码路径修正
+- **位置**：Perfetto GPU 配置 proto 路径引用
+- **问题**：引用路径 `protos/perfetto/config/gpu/gpu_counter_config.proto` 与实际 AOSP android-17.0.0_r1 结构不符
+- **建议**：更新为正确路径 `system/perfetto/protos/gpu_config.proto`
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异
+- **位置**：Android 17 ANGLE denylist 影响
+- **问题**：denylist 模式下 AGI Frame Profiler 对 GLES 应用的分析路径差异描述不完整
+- **建议**：补充 denylist 设备上 AGI 的特殊处理逻辑和结果解读指南
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：源码准确性
+- **位置**：debuggerd 路径引用
+- **问题**：未体现 Android 17 debuggerd 架构迁移，路径引用过时
+- **建议**：更新路径为 `bionic/linker/linker_debuggerd_android.cpp` 并说明架构变化
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：知识盲区
+- **位置**：线程监控 API
+- **问题**：未详细说明 Android 17 新增的 `Process.getThreadCpuTime()` 64位计数器修复
+- **建议**：补充 API 使用示例、性能对比数据以及与旧版本 32位计数的差异说明
+
+## [Task9 Deep Review] 14.8 GPU图形调试与分析工具 — 2026-07-06
+- **类型**：源码路径修正
+- **位置**：Perfetto GPU 配置 proto 路径引用
+- **问题**：引用路径 `protos/perfetto/config/gpu/gpu_counter_config.proto` 与实际 AOSP android-17.0.0_r1 结构不符
+- **建议**：更新为正确路径 `system/perfetto/protos/gpu_config.proto`
+
+## [Task9 Deep Review] 14.8 GPU图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异
+- **位置**：Android 17 ANGLE denylist 影响
+- **问题**：denylist 模式下 AGI Frame Profiler 对 GLES 应用的分析路径差异描述不完整
+- **建议**：补充 denylist 设备上 AGI 的特殊处理逻辑和结果解读指南
+
+## [Task9 Deep Review] 14.8 GPU图形调试与分析工具 — 2026-07-06
+- **类型**：知识盲区
+- **位置**：AGI 最低支持版本
+- **问题**：章节中提到的 AGI 最低支持版本标注为 Android 11，但 AOSP android-17.0.0_r1 中 AGI 的最低支持版本实际为 Android 10
+- **建议**：修正为 Android 10+

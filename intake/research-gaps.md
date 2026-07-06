@@ -37,6 +37,43 @@ GPU计数器的跨设备标准化问题未充分覆盖，不同GPU厂商对相�
 - §14.1 Android Studio Profiler
 - §14.8 GPU图形调试与分析工具
 
+## [2026-07-06] 14.8 GPU图形调试与分析工具 — Android 17 GPU工具链演进研究缺口
+
+### 盲区描述
+Android 17 引入了 APA System Profiler 并重构了 AGI 的功能定位，但两者的具体功能边界、API兼容性迁移路径以及未来 roadmap 未充分明确。开发者缺乏清晰的决策指南来选择何时使用哪个工具。
+
+### 重要程度
+高
+
+### 建议研究方向
+- APA System Profiler 与 AGI System Profiler 的功能对比分析
+- GPU counter 采集在不同 Android 版本的能力差异研究
+- AGI Frame Profiler 在 Android 17 ANGLE denylist 下的特殊处理机制
+- 多帧 GPU 分析工具 Sokatoa 与现有工具的集成方案
+
+### 关联章节
+- §2.10 GPU渲染深入
+- §14.1 Android Studio Profiler
+- §14.8 GPU图形调试与分析工具
+
+## [2026-07-06] 20.9 稳定性治理案例集 — Android 17信号处理机制深度研究
+
+### 盲区描述
+Android 17 对信号处理机制进行了重要重构，包括 debuggerd 架构迁移、信号线程亲和性分发、动态 altstack 尺寸等，这些变化对 Native Crash 监控 SDK 的实现策略有直接影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- debuggerd 从 system/core/debuggerd/ 迁移到 bionic/linker/ 的架构变化研究
+- Android 17 信号线程亲和性对 crash dump 准确性的影响分析
+- 动态 altstack 尺寸在不同设备配置下的行为差异
+- 信号处理器链在 Android 17 下的兼容性保障机制
+
+### 关联章节
+- §20.3 Native Crash治理
+- §20.9 稳定性治理案例集
+
 ---
 
 ## [2026-07-05] 21.2 启动框架设计与任务编排 — 知识盲区
@@ -382,3 +419,23 @@ GPU工具在不同GPU架构（Adreno/Mali/PowerVR/Xclipse）上的性能计数�
 
 ### 关联章节
 20.3 Native Crash 治理、20.5 OOM 治理、20.6 指标体系
+
+
+## [2026-07-06] 14.8 GPU图形调试与分析工具 — Android 17 GPU工具链演进研究缺口
+
+### 盲区描述
+Android 17 引入了 APA System Profiler 并重构了 AGI 的功能定位，但两者的具体功能边界、API兼容性迁移路径以及未来 roadmap 未充分明确。开发者缺乏清晰的决策指南来选择何时使用哪个工具。
+
+### 重要程度
+高
+
+### 建议研究方向
+- APA System Profiler 与 AGI System Profiler 的功能对比分析
+- GPU counter 采集在不同 Android 版本的能力差异研究
+- AGI Frame Profiler 在 Android 17 ANGLE denylist 下的特殊处理机制
+- 多帧 GPU 分析工具 Sokatoa 与现有工具的集成方案
+
+### 关联章节
+- §2.10 GPU渲染深入
+- §14.1 Android Studio Profiler
+- §14.8 GPU图形调试与分析工具
