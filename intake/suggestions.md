@@ -140,3 +140,22 @@
 - **位置**：ADPF + PowerMonitor 协作方案
 - **问题**：章节描述了 ADPF + PowerMonitor 协作的理论机制，但缺少实际应用案例和最佳实践指导，开发者难以理解如何在实际项目中落地
 - **建议**：补充 ADPF + PowerMonitor 的实际应用案例：1) 提供完整的代码示例展示协作流程，2) 说明常见的使用场景和适用条件，3) 给出配置调优的最佳实践，4) 列出常见问题和解决方案
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：源码准确性
+- **位置**：ADPF 与 PowerMonitor 协作机制说明
+- **问题**：未说明如何在代码层面将 PowerMonitor 数据用于 setPreferPowerEfficiency 决策，缺少具体的代码示例和数据流转说明
+- **建议**：补充从 PowerMonitor 采样 → 分析能耗特征 → 调用 setPreferPowerEfficiency → 再次采样的完整代码示例，说明如何判断何时启用 power efficiency mode
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：数据支撑
+- **位置**：功耗对比数据部分
+- **问题**：缺少实际功耗对比数据（如优化前后的 CPU rail 功耗下降百分比）和典型设备的功耗基准数据
+- **建议**：添加 Pixel 6/7/8 各子系统（CPU、GPU、Display、Network）的典型功耗范围数据，以及常见优化场景（如网络请求合并、GPS 优化）的功耗改善百分比案例
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
+- **类型**：版本差异
+- **位置**：Android 17 PowerMonitor API 新功能说明
+- **问题**：Android 17 中新增的细粒度 rail 分组特性未展开说明，读者无法了解新版本的具体增强
+- **建议**：补充 Android 17 中 PowerMonitor 新增的细粒度 rail 分组功能说明，包括新增的 rail 类型、精度提升、以及相应的代码适配建议
+

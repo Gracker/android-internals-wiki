@@ -47,13 +47,13 @@ review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审
   方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回
   Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2
   全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。'
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_rerun_at: '2026-07-06T18:50:00+08:00'
 last_task2b_lite_at: '2026-07-06'
 last_task2b_at: '2026-05-08T17:58:58+08:00'
-task9_result: needs-rework
+task9_result: needs-rework  # P0 2处 / P1 4处需修复
 last_task9_at: '2026-07-06'
 last_task9_audit: '2026-07-06'
 last_task9_autofix_at: '2026-06-19'

@@ -439,3 +439,23 @@ Android 17 引入了 APA System Profiler 并重构了 AGI 的功能定位，但�
 - §2.10 GPU渲染深入
 - §14.1 Android Studio Profiler
 - §14.8 GPU图形调试与分析工具
+
+## [2026-07-06] 14.11 Battery Historian 与功耗分析工具 — 知识盲区
+
+### 盲区描述
+PowerMonitor 数据采集的实际精度和限制未详细说明，不同设备（Pixel 6/7/8 vs 其他 OEM 机型）的 rail 采样频率、分辨率、误差范围存在显著差异，影响功耗分析的可靠性判断。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研主流设备（Pixel 6/7/8、Samsung S23、小米14）的 Power Stats HAL 实现差异
+- 测量各设备的 rail 采样频率、时间戳精度、误差范围
+- 建立设备兼容性分级标准，指导开发者选择合适精度的分析方法
+- 分析低精度设备下 PowerMonitor 数据的适用场景和限制
+
+### 关联章节
+- 14.11 Battery Historian 与功耗分析工具
+- 11.1 功耗模型
+- 15.5 线上性能监控
+
