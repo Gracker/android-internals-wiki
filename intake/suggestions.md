@@ -189,3 +189,31 @@
 - **问题**：章节适用的 Android 版本范围标注为 Android 5.0-17，但需要在全书的 SUMMARY.md 中确认这个范围与实际章节内容的一致性
 - **建议**：检查并确保 SUMMARY.md 中 14.11 章节适用的 Android 版本范围与实际章节内容保持一致，更新 if necessary
 
+
+
+---
+
+## [2026-07-06] Task 2A 质量审查发现 — 9 个空 draft 全部异常
+
+### 问题清单
+
+1. **大纲 copy-paste 错误（3 个）**：4.33、5.27、23.5 的 outline 内容是 GPU 调试工具（来自 ch02.1），与各自标题完全不匹配
+2. **疑似 AI 幻觉（1 个）**：4.23 声称的 MemoryDomain、SandboxedHeap 等类在整个知识库中无任何佐证
+3. **主题重复（1 个）**：8.3 与 21.17 + 26.13 严重重复
+4. **非规范目录（4 个）**：chchXX-fundamentals 目录不符合命名规范，且主题均有对应正规章节
+
+### 已执行操作
+
+- 3 个 outline 错误 → status: outline-broken
+- 1 个疑似幻觉 → status: needs-verification  
+- 5 个重复/异常 → status: deprecated
+
+### 建议后续行动
+
+- [ ] 审查 4.23 的 MemoryDomain/SandboxedHeap 是否有真实技术依据
+- [ ] 清理 chchXX-fundamentals 目录
+- [ ] 在 gap-mining 流程中增加：大纲生成后检查类名是否在 AOSP 中真实存在
+- [ ] 在 gap-mining 流程中增加：新候选与现有章节的去重检查
+- [ ] 考虑为 4.33、5.27、23.5 重新生成匹配标题的大纲
+
+详细诊断报告：`OpenClaw定时任务/知识加工/2026-07-06-22-知识加工(新).md`
