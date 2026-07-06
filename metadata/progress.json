@@ -1,9 +1,9 @@
 {
-  "total": 605,
-  "draft": 40,
+  "total": 603,
+  "draft": 38,
   "ready_for_review": 204,
   "finalized": 342,
-  "last_updated": "2026-07-06T23:08:59+08:00",
+  "last_updated": "2026-07-07T03:09:51+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -756,6 +756,13 @@
       "status": "no-candidates",
       "ts": "2026-07-07T02:04:00+08:00",
       "note": "Gap mining round 33: 0 candidates ≥14. Coverage saturated (33rd consecutive). No new DeepResearch/Clippings/daily-info since round 32. source-index: 0 unmapped high-quality. All research-gaps/suggestions map to existing chapters."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-07T03:09:51+08:00",
+      "note": "Gap mining round 34: 0 candidates ≥14. Coverage saturated (34th consecutive). Deprecated §4.35 (dup of §1.43) and §4.36 (dup of §6.19) RSS-derived stubs. No new DeepResearch/Clippings/daily-info material. source-index: 0 items. All research-gaps/suggestions map to existing chapters."
     }
   ],
   "review_history": [
@@ -935,15 +942,15 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 19,
+  "deprecated": 21,
   "stats": {
     "last_review_date": "2026-07-06",
     "last_review_by": "openclaw-task2a",
-    "drafted": 24,
+    "drafted": 38,
     "ready_for_review": 199,
     "finalized": 336,
     "ready_to_publish": 0,
-    "total": 550,
+    "total": 603,
     "last_task9_review_date": "2026-07-06",
     "last_task9_review_by": "openclaw-task9"
   },
@@ -1039,12 +1046,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-07T02:04:00+08:00",
+    "last_run": "2026-07-07T03:09:51+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 33: 0 candidates ≥14. Coverage saturated (33rd consecutive). No new material."
+    "note": "Gap mining round 34: 0 candidates ≥14. Coverage saturated (34th consecutive). Deprecated §4.35 and §4.36 as duplicates."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",
@@ -1169,6 +1176,20 @@
       "path": "src/part1-fundamentals/ch04-memory/4.23-android17-ai-agent-memory.md",
       "reason": "Duplicate of §4.22. Contains suspected AI hallucination (MemoryDomain/SandboxedHeap not found in AOSP). Needs-verification status confirmed as unreliable.",
       "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "4.35",
+      "path": "src/part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-引入了全新的任务调度器通.md",
+      "reason": "Duplicate of §1.43 (Android 17 ML Scheduler, 215 lines, ready-for-review). §4.35 is an RSS-derived stub with no unique content. Same topic: ML-driven task scheduler reducing app launch time.",
+      "deprecated_at": "2026-07-07T03:09:51+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "4.36",
+      "path": "src/part1-fundamentals/ch4-memory/4.36-Phoronix---Linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调.md",
+      "reason": "Duplicate of §6.19 (Linux 6.10 memory compaction, 126 lines with source code analysis). §4.36 is an RSS-derived stub with no unique content. Same topic: Linux 6.10 proactive compaction mechanism.",
+      "deprecated_at": "2026-07-07T03:09:51+08:00",
       "deprecated_by": "task2a-cleanup"
     }
   ]

@@ -41,11 +41,12 @@ last_task9_audit: "2026-06-16"
 last_task9_audit_at: "2026-06-16T11:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-16-11-audit.md"
 last_task9_audit_result: "auto-fixed-p0-source-enum"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-07
 ---
 
 -
 # 18.10 SurfaceControl API 深入
-
 
 <!-- outline-start -->
 
@@ -67,21 +68,21 @@ last_task9_audit_result: "auto-fixed-p0-source-enum"
 
 <!-- outline-end -->
 
-`ASurfaceControl`（Android 10/Q 引入，API 29）是 Android NDK 中面向 SurfaceFlinger 的原生图层控制接口。它允许 App 在 View 树之外创建或管理子 Layer，并把 Buffer、几何属性、层级关系等变更作为一次事务提交给系统合成器。[已验证: Android NDK surface_control 文档] 对浏览器、视频容器、自绘引擎这类需要自己组织合成结构的场景，它提供了比普通 View / Surface 更细的控制粒度。[待验证: 具体性能收益需结合目标设备的 HWC 能力与合成策略评估]
+`ASurfaceControl`（Android 10/Q 引入，API 29）是 Android NDK 中面向 SurfaceFlinger 的原生图层控制接口。它允许 App 在 View 树之外创建或管理子 Layer，并把 Buffer、几何属性、层级关系等变更作为一次事务提交给系统合成器。 对浏览器、视频容器、自绘引擎这类需要自己组织合成结构的场景，它提供了比普通 View / Surface 更细的控制粒度。（具体性能收益取决于目标设备的 HWC 能力与合成策略，需按设备实测）
 
 ## 核心概念
 
 ### ASurfaceControl
 
-`ASurfaceControl` 代表一个可被事务修改的 SurfaceFlinger Layer 句柄。[已验证: Android NDK surface_control 文档] 从 SurfaceFlinger 的组织方式看，常见表现有三类：- **Buffer Layer**：显示实际像素内容，通过 `setBuffer` 绑定 `AHardwareBuffer`
+`ASurfaceControl` 代表一个可被事务修改的 SurfaceFlinger Layer 句柄。 从 SurfaceFlinger 的组织方式看，常见表现有三类：- **Buffer Layer**：显示实际像素内容，通过 `setBuffer` 绑定 `AHardwareBuffer`
 - **Color Layer**：显示纯色内容，通过 `setColor` 指定颜色
 - **Container Layer**：只承担父子关系和 Z 轴组织，不直接携带像素内容
 
-和 Java 层的 `SurfaceControl` 相比，NDK 侧直接暴露了创建子 Layer、reparent、buffer 提交等能力。App 不必依赖完整的 View 树，就可以把多个图层作为一棵独立子树交给 SurfaceFlinger 管理。[已验证: Android NDK surface_control 文档]
+和 Java 层的 `SurfaceControl` 相比，NDK 侧直接暴露了创建子 Layer、reparent、buffer 提交等能力。App 不必依赖完整的 View 树，就可以把多个图层作为一棵独立子树交给 SurfaceFlinger 管理。
 
 ### ASurfaceTransaction
 
-`ASurfaceTransaction` 代表一组原子提交的 Layer 属性更新。应用可以一次性修改多个 `ASurfaceControl` 的 Buffer、位置、裁剪区域、Z-Order、可见性，再通过 `apply()` 把这组更新作为统一快照送给系统。[已验证: Android NDK surface_control 文档]
+`ASurfaceTransaction` 代表一组原子提交的 Layer 属性更新。应用可以一次性修改多个 `ASurfaceControl` 的 Buffer、位置、裁剪区域、Z-Order、可见性，再通过 `apply()` 把这组更新作为统一快照送给系统。
 
 原子提交主要解决三类问题：- Buffer 更新和几何属性可以在同一个提交边界里生效，减少中间态被用户看到的机会
 - 多个 Layer 的变化可以作为一个快照出现，不必担心前一层已经移动、后一层还没跟上的错位
@@ -89,24 +90,24 @@ last_task9_audit_result: "auto-fixed-p0-source-enum"
 
 ## 与 BLAST 的关系
 
-NDK 的 SurfaceControl API 和 BLAST 共享同一套 Transaction + Buffer 协同更新模型，但两者不是同一个概念。[已验证: Android 10+ 图形栈文档]
+NDK 的 SurfaceControl API 和 BLAST 共享同一套 Transaction + Buffer 协同更新模型，但两者不是同一个概念。
 
 - **BLAST**：围绕 Buffer 提交、几何属性变更和提交边界同步的一套底层机制，常见实现形态是 BLASTBufferQueue
 - **ASurfaceControl / ASurfaceTransaction**：应用可以直接调用的 NDK 接口，用来创建 Layer、设置属性、提交事务
 
-当 App 用 `ASurfaceTransaction` 同时提交 buffer 和几何属性时，SurfaceFlinger 会在同一个事务边界里处理它们。是否真的落到 BLASTBufferQueue、是否还包着 legacy 兼容层，取决于组件类型和 Android 版本。[待验证: 具体内部类名与调用路径需按目标版本源码确认]
+当 App 用 `ASurfaceTransaction` 同时提交 buffer 和几何属性时，SurfaceFlinger 会在同一个事务边界里处理它们。是否真的落到 BLASTBufferQueue、是否还包着 legacy 兼容层，取决于组件类型和 Android 版本。（内部类名与调用路径因版本而异，需按目标版本源码确认）
 
 ### Sync 语义
 
-Transaction 只是在提交点声明“这组属性和这个 buffer 应一起生效”。latch / present 的生效时机仍由 acquire fence、VSync、SurfaceFlinger 调度和 HWC 合成窗口共同决定。[已验证: SurfaceFlinger transaction + sync fence 模型] `apply()` 返回，只能说明事务已经送出，不能说明这一帧已经上屏。[已验证: NDK transaction apply 语义]
+Transaction 只是在提交点声明“这组属性和这个 buffer 应一起生效”。latch / present 的生效时机仍由 acquire fence、VSync、SurfaceFlinger 调度和 HWC 合成窗口共同决定。 `apply()` 返回，只能说明事务已经送出，不能说明这一帧已经上屏。
 
 ## 典型使用流程
 
 ### 步骤 1：创建 SurfaceControl
 
-NDK 侧的根节点通常来自 Java 层已经创建好的 `SurfaceView` / `Surface`。常见桥接方式有两种：Java 层把 `Surface` 传进 JNI，native 侧用 `ANativeWindow_fromSurface()` 拿到 `ANativeWindow*`，再调用 `ASurfaceControl_createFromWindow()` 把这块 native window 变成 Layer 树的挂接点。[已验证: `android/native_window_jni.h` + Android NDK surface_control 文档]
+NDK 侧的根节点通常来自 Java 层已经创建好的 `SurfaceView` / `Surface`。常见桥接方式有两种：Java 层把 `Surface` 传进 JNI，native 侧用 `ANativeWindow_fromSurface()` 拿到 `ANativeWindow*`，再调用 `ASurfaceControl_createFromWindow()` 把这块 native window 变成 Layer 树的挂接点。
 
-Android 14（API 34）以后，如果 Java 层已经持有 `android.view.SurfaceControl`，native 侧可以包含 `android/surface_control_jni.h`，调用 `ASurfaceControl_fromJava(JNIEnv*, jobject)` 取得 `ASurfaceControl*`；调用者取得所有权，后续必须配对 `ASurfaceControl_release()`。API 29-33 或只持有 `Surface` 的场景，仍走 `ANativeWindow_fromSurface()` → `ASurfaceControl_createFromWindow()` 路径；纯 `surface_control.h` 本身不提供这个 JNI 桥接函数。[已验证: Android NDK native-activity reference，`ASurfaceControl_fromJava` API 34]
+Android 14（API 34）以后，如果 Java 层已经持有 `android.view.SurfaceControl`，native 侧可以包含 `android/surface_control_jni.h`，调用 `ASurfaceControl_fromJava(JNIEnv*, jobject)` 取得 `ASurfaceControl*`；调用者取得所有权，后续必须配对 `ASurfaceControl_release()`。API 29-33 或只持有 `Surface` 的场景，仍走 `ANativeWindow_fromSurface()` → `ASurfaceControl_createFromWindow()` 路径；纯 `surface_control.h` 本身不提供这个 JNI 桥接函数。
 
 ```java
 Surface surface = surfaceView.getHolder().getSurface();
@@ -115,10 +116,10 @@ nativeAttach(surface);
 
 ```c
 void nativeAttach(JNIEnv* env, jobject surface) {
-    ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
-    ASurfaceControl* root = ASurfaceControl_createFromWindow(window, "RootLayer");
-    //... 基于 root 创建子 Layer
-    ANativeWindow_release(window);
+ ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+ ASurfaceControl* root = ASurfaceControl_createFromWindow(window, "RootLayer");
+ //... 基于 root 创建子 Layer
+ ANativeWindow_release(window);
 }
 ```
 
@@ -126,7 +127,7 @@ void nativeAttach(JNIEnv* env, jobject surface) {
 ASurfaceControl* child = ASurfaceControl_create(parent, "MyOverlay");
 ```
 
-创建出来的 child layer 默认还没有可见内容；后续还要通过 transaction 设置 buffer、位置、Z 序，再 `apply()` 提交。`ANativeWindow_fromSurface()` 会拿一个额外引用，使用结束后要配对 `ANativeWindow_release()`。[已验证: `android/native_window_jni.h` 所有权说明]
+创建出来的 child layer 默认还没有可见内容；后续还要通过 transaction 设置 buffer、位置、Z 序，再 `apply()` 提交。`ANativeWindow_fromSurface()` 会拿一个额外引用，使用结束后要配对 `ANativeWindow_release()`。
 
 ### 步骤 2：配置 Transaction
 
@@ -141,8 +142,8 @@ ARect crop = {0, 0, bufferWidth, bufferHeight};
 ASurfaceTransaction_setCrop(transaction, child, &crop);
 ASurfaceTransaction_setPosition(transaction, child, x, y);
 ASurfaceTransaction_setScale(transaction, child,
-    (float)targetWidth / bufferWidth,
-    (float)targetHeight / bufferHeight);
+ (float)targetWidth / bufferWidth,
+ (float)targetHeight / bufferHeight);
 
 // API 29: 层级、可见性、buffer alpha
 ASurfaceTransaction_setZOrder(transaction, child, 10);
@@ -150,7 +151,7 @@ ASurfaceTransaction_setVisibility(transaction, child, ASURFACE_TRANSACTION_VISIB
 ASurfaceTransaction_setBufferAlpha(transaction, child, 0.8f);
 ```
 
-NDK 公开头文件里没有 `ASurfaceTransaction_setSize()` 和 `ASurfaceTransaction_setAlpha()`。目标区域的控制要拆成 crop、position、scale；透明度要落在 `ASurfaceTransaction_setBufferAlpha()`。如果业务已经在 Java 层持有 `SurfaceControl.Transaction`，绝对目标矩形也可以交给 Java 封装层处理。[已验证: `android/surface_control.h` 函数签名与 API level 注释]
+NDK 公开头文件里没有 `ASurfaceTransaction_setSize()` 和 `ASurfaceTransaction_setAlpha()`。目标区域的控制要拆成 crop、position、scale；透明度要落在 `ASurfaceTransaction_setBufferAlpha()`。如果业务已经在 Java 层持有 `SurfaceControl.Transaction`，绝对目标矩形也可以交给 Java 封装层处理。
 
 ### 步骤 3：提交 Transaction
 
@@ -158,27 +159,27 @@ NDK 公开头文件里没有 `ASurfaceTransaction_setSize()` 和 `ASurfaceTransa
 ASurfaceTransaction_apply(transaction);
 ```
 
-这一步会把打包好的事务发送给 SurfaceFlinger 侧的 composer client。提交是异步的，`apply()` 不等待 SurfaceFlinger 完成处理就返回。[已验证: Android NDK surface_control 文档]
+这一步会把打包好的事务发送给 SurfaceFlinger 侧的 composer client。提交是异步的，`apply()` 不等待 SurfaceFlinger 完成处理就返回。
 
 ### 完整时序
 
 ```mermaid
 sequenceDiagram
-    participant App as App Thread
-    participant SC as ASurfaceControl
-    participant SF as SurfaceFlinger
-    participant HWC as HWC
+ participant App as App Thread
+ participant SC as ASurfaceControl
+ participant SF as SurfaceFlinger
+ participant HWC as HWC
 
-    App->>SC: ASurfaceControl_create(parent, "overlay")
-    App->>App: ASurfaceTransaction_create()
-    App->>App: setBuffer / setPosition / setZOrder
-    App->>SC: ASurfaceTransaction_apply()
+ App->>SC: ASurfaceControl_create(parent, "overlay")
+ App->>App: ASurfaceTransaction_create()
+ App->>App: setBuffer / setPosition / setZOrder
+ App->>SC: ASurfaceTransaction_apply()
 
-    SC->>SF: Binder IPC (Transaction)
-    Note over SF: 等待合适的 latch / present 时机
-    SF->>SF: Apply Geometry + Latch Buffer
-    SF->>HWC: validate / present
-    HWC->>HWC: Composite / Scanout
+ SC->>SF: Binder IPC (Transaction)
+ Note over SF: 等待合适的 latch / present 时机
+ SF->>SF: Apply Geometry + Latch Buffer
+ SF->>HWC: validate / present
+ HWC->>HWC: Composite / Scanout
 ```
 
 ## 关键 API 详解
@@ -187,19 +188,19 @@ sequenceDiagram
 
 ```c
 ASurfaceTransaction_setBuffer(
-    transaction,
-    sc,                      // ASurfaceControl*
-    hardwareBuffer,          // AHardwareBuffer*
-    fence_fd                 // acquire fence
+ transaction,
+ sc, // ASurfaceControl*
+ hardwareBuffer, // AHardwareBuffer*
+ fence_fd // acquire fence
 );
 ```
 
-`setBuffer` / `setBufferWithRelease` 把 `AHardwareBuffer` 和 acquire fence 绑定到某个 Layer 上。[已验证: Android NDK surface_control 文档] acquire fence 表示“生产者对这个 buffer 的写入何时完成”；SurfaceFlinger 只有在 fence signal 后才会读取它。[已验证: Android sync fence 文档]
+`setBuffer` / `setBufferWithRelease` 把 `AHardwareBuffer` 和 acquire fence 绑定到某个 Layer 上。 acquire fence 表示“生产者对这个 buffer 的写入何时完成”；SurfaceFlinger 只有在 fence signal 后才会读取它。
 
-- **`AHardwareBuffer` 来源与 usage 约束**：可以来自 `AHardwareBuffer_allocate()`、Vulkan Image 导出、MediaCodec 输出 buffer，或者其他本地图形组件。传给 `setBuffer` 的 buffer 至少需要包含 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE` usage flag——SurfaceFlinger 用 GPU 采样 buffer 内容时依赖这个标记。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBuffer()` 的注释] 如果生产端还需要 CPU 写入（调试预览）、Vulkan 渲染或 MediaCodec 编码，按生产端叠加对应 usage
-- **release callback 的作用**：`ASurfaceTransaction_setBufferWithRelease()` 从 API 36 可用。它会在 buffer 可复用时触发 `ASurfaceTransaction_OnBufferRelease` 回调，回调给出的 release fence fd 由调用方负责等待并关闭；这条路径适合直接接 buffer pool 回收逻辑。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的 API level 注释]
-- **Android 10-15 的处理方式**：API 29 起已经可以在 `ASurfaceTransaction_setOnComplete()` 回调里，通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取到“上一块 buffer 何时释放”的 per-layer release fence。`OnComplete` 只是回调边界，是否能复用上一块 buffer 仍要看这个 fd；若返回值大于等于 0，需要等待 signal 并关闭，返回 `-1` 才表示上一块 buffer 已可直接复用。[已验证: `android/surface_control.h` 中 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 的 API level 注释]
-- **不要把 `apply()` 当成释放信号**：只调用 `setBuffer` 时，`apply()` 返回不能代表 buffer 已经安全可写。[已验证: Android NDK transaction apply 语义]
+- **`AHardwareBuffer` 来源与 usage 约束**：可以来自 `AHardwareBuffer_allocate()`、Vulkan Image 导出、MediaCodec 输出 buffer，或者其他本地图形组件。传给 `setBuffer` 的 buffer 至少需要包含 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE` usage flag——SurfaceFlinger 用 GPU 采样 buffer 内容时依赖这个标记。 如果生产端还需要 CPU 写入（调试预览）、Vulkan 渲染或 MediaCodec 编码，按生产端叠加对应 usage
+- **release callback 的作用**：`ASurfaceTransaction_setBufferWithRelease()` 从 API 36 可用。它会在 buffer 可复用时触发 `ASurfaceTransaction_OnBufferRelease` 回调，回调给出的 release fence fd 由调用方负责等待并关闭；这条路径适合直接接 buffer pool 回收逻辑。
+- **Android 10-15 的处理方式**：API 29 起已经可以在 `ASurfaceTransaction_setOnComplete()` 回调里，通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取到“上一块 buffer 何时释放”的 per-layer release fence。`OnComplete` 只是回调边界，是否能复用上一块 buffer 仍要看这个 fd；若返回值大于等于 0，需要等待 signal 并关闭，返回 `-1` 才表示上一块 buffer 已可直接复用。
+- **不要把 `apply()` 当成释放信号**：只调用 `setBuffer` 时，`apply()` 返回不能代表 buffer 已经安全可写。
 
 ### Hierarchy Management
 
@@ -216,9 +217,9 @@ ASurfaceTransaction_reparent(transaction, sc, newParent);
 
 `reparent` 默认在当前进程持有的 `ASurfaceControl` 句柄范围内完成。同进程内把子 Layer 从一个父节点移到另一个父节点，不需要任何额外序列化。#### 跨进程 Layer 共享
 
-跨进程共享 `SurfaceControl` 时，公开入口分成 Java Parcelable 和 API 34 JNI bridge 两层。`android.view.SurfaceControl` 自 API 29 起实现 Parcelable，`writeToParcel()` 把 SurfaceFlinger 侧的 layer handle / client binder 写入 `Parcel`，目标进程 `readFromParcel()` 后得到新的 Java `SurfaceControl` 本地引用。Framework native 内部对应 `frameworks/native/libs/gui/include/gui/SurfaceControl.h` 的 `SurfaceControl::writeToParcel()` / `SurfaceControl::readFromParcel()`。[已验证: Android Framework `SurfaceControl` Parcelable 文档；AOSP `libs/gui/include/gui/SurfaceControl.h`]
+跨进程共享 `SurfaceControl` 时，公开入口分成 Java Parcelable 和 API 34 JNI bridge 两层。`android.view.SurfaceControl` 自 API 29 起实现 Parcelable，`writeToParcel()` 把 SurfaceFlinger 侧的 layer handle / client binder 写入 `Parcel`，目标进程 `readFromParcel()` 后得到新的 Java `SurfaceControl` 本地引用。Framework native 内部对应 `frameworks/native/libs/gui/include/gui/SurfaceControl.h` 的 `SurfaceControl::writeToParcel()` / `SurfaceControl::readFromParcel()`。
 
-公开 NDK C API 侧没有 `ASurfaceControl_writeToParcel()` / `ASurfaceControl_readFromParcel()` 这类函数（AOSP android-16.0.0_r1 的 `include/android/surface_control.h` 未暴露）。API 34 起，native 代码可以在目标进程拿到 Java `SurfaceControl` 后，包含 `android/surface_control_jni.h` 并调用 `ASurfaceControl_fromJava(JNIEnv*, jobject)` 转成 `ASurfaceControl*`；调用方取得所有权，用完后必须 `ASurfaceControl_release()`。因此完整路径是：Java / Binder 负责跨进程序列化，NDK 在本进程继续提交 Transaction；不能把 `ASurfaceControl*` 当作可直接写入 Binder 的裸指针。[已验证: Android NDK `ASurfaceControl_fromJava` 文档；AOSP android-16.0.0_r1 `surface_control.h` 公开符号复核]
+公开 NDK C API 侧没有 `ASurfaceControl_writeToParcel()` / `ASurfaceControl_readFromParcel()` 这类函数（AOSP android-16.0.0_r1 的 `include/android/surface_control.h` 未暴露）。API 34 起，native 代码可以在目标进程拿到 Java `SurfaceControl` 后，包含 `android/surface_control_jni.h` 并调用 `ASurfaceControl_fromJava(JNIEnv*, jobject)` 转成 `ASurfaceControl*`；调用方取得所有权，用完后必须 `ASurfaceControl_release()`。因此完整路径是：Java / Binder 负责跨进程序列化，NDK 在本进程继续提交 Transaction；不能把 `ASurfaceControl*` 当作可直接写入 Binder 的裸指针。
 
 普通应用跨进程操作 Layer 树时，通常走以下几条路径之一：1. **系统托管**：WindowManager / Shell transition 负责跨进程 Layer 树的调整（如画中画、分屏），应用只需提交内容 buffer
 2. **Java Parceling + NDK bridge**：持有 `android.view.SurfaceControl` 的一方通过 `writeToParcel()` / `readFromParcel()` 序列化句柄，目标进程再用 `ASurfaceControl_fromJava()` 接回 native 渲染代码
@@ -229,33 +230,33 @@ ASurfaceTransaction_reparent(transaction, sc, newParent);
 ```c
 // API 29: 直接设置背景色层的颜色、alpha 和 dataspace
 ASurfaceTransaction_setColor(
-    transaction,
-    sc,
-    r,
-    g,
-    b,
-    alpha,
-    ADATASPACE_SRGB
+ transaction,
+ sc,
+ r,
+ g,
+ b,
+ alpha,
+ ADATASPACE_SRGB
 );
 ```
 
-`setColor()` 直接写入背景色层的 `r/g/b/alpha/dataspace`。`dataspace` 决定颜色解释方式，普通 SDR UI 一般用 `ADATASPACE_SRGB`；如果 Layer 需要和 HDR 或广色域内容混合，dataspace 要和上游 buffer 的色域保持一致。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setColor()` 的真实签名] Buffer Layer 的色域解释则要单独通过 `ASurfaceTransaction_setBufferDataSpace()` 设置，不要把 `setColor()` 的规则直接套到带 `AHardwareBuffer` 的 Layer 上。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferDataSpace()` 的函数声明]
+`setColor()` 直接写入背景色层的 `r/g/b/alpha/dataspace`。`dataspace` 决定颜色解释方式，普通 SDR UI 一般用 `ADATASPACE_SRGB`；如果 Layer 需要和 HDR 或广色域内容混合，dataspace 要和上游 buffer 的色域保持一致。 Buffer Layer 的色域解释则要单独通过 `ASurfaceTransaction_setBufferDataSpace()` 设置，不要把 `setColor()` 的规则直接套到带 `AHardwareBuffer` 的 Layer 上。
 
 ### Callback
 
 ```c
 // sc 是本次提交目标 Layer
 ASurfaceTransaction_setOnComplete(transaction, context,
-    [](void* context, ASurfaceTransactionStats* stats) {
-        int previousReleaseFenceFd =
-                ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc);
-        if (previousReleaseFenceFd >= 0) {
-            // 等待 fence signal 后回收上一帧 buffer，并关闭 fd
-        }
-    });
+ [](void* context, ASurfaceTransactionStats* stats) {
+ int previousReleaseFenceFd =
+ ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc);
+ if (previousReleaseFenceFd >= 0) {
+ // 等待 fence signal 后回收上一帧 buffer，并关闭 fd
+ }
+ });
 ```
 
-`OnComplete` 里主要看两类信息：present 相关统计和 previous release fence。API 29-35 回收上一块 buffer 时，要从 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 取 per-layer release fence；API 36 起再按 `setBufferWithRelease()` 的专用 callback 接 buffer pool 更顺手。[已验证: `android/surface_control.h` 中 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 与 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
+`OnComplete` 里主要看两类信息：present 相关统计和 previous release fence。API 29-35 回收上一块 buffer 时，要从 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 取 per-layer release fence；API 36 起再按 `setBufferWithRelease()` 的专用 callback 接 buffer pool 更顺手。
 
 `ASurfaceTransactionStats_getAcquireTime()` 已被标记 deprecated。排查 acquire 时序时，更稳妥的做法是回到应用自己持有的 acquire fence，或回到 GPU / codec 生产端时间线看 signal 时刻。## Layer 层级管理
 
@@ -265,20 +266,20 @@ SurfaceControl 的核心能力之一，是把一组图层组织成一棵可动�
 App Main Window (SurfaceControl from SurfaceView)
 ├── UI Background (Container Layer)
 ├── Video Content (Buffer Layer)
-│   └── Subtitle Overlay (Buffer Layer, Z-Order above video)
+│ └── Subtitle Overlay (Buffer Layer, Z-Order above video)
 ├── Controls Container (Container Layer)
-│   ├── Play Button (Buffer Layer)
-│   └── ProgressBar (Buffer Layer)
+│ ├── Play Button (Buffer Layer)
+│ └── ProgressBar (Buffer Layer)
 └── Debug Overlay (Color Layer, semi-transparent)
 ```
 
 ### Layer 数量与性能
 
 Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独立的 buffer layer，SurfaceFlinger 都要多做一次 `latchBuffer`、可见性判断和合成策略选择。常见的性能压力主要来自三类：1. **SurfaceFlinger 侧工作量增加**：独立 buffer layer 越多，遍历、latch、合成决策的成本越高
-2. **HWC 直合成名额有限**：可直接交给 HWC 的 overlay 名额通常只有少数几个，超出后会退回 GPU 合成；精确上限强依赖 SoC、分辨率、旋转、HDR、裁剪和 OEM 策略。[待验证: 目标设备实测]
+2. **HWC 直合成名额有限**：可直接交给 HWC 的 overlay 名额通常只有少数几个，超出后会退回 GPU 合成；精确上限强依赖 SoC、分辨率、旋转、HDR、裁剪和 OEM 策略。（精确上限因 SoC、分辨率、旋转、合成策略而异，需按目标设备实测）
 3. **buffer 占用增长**：每个 buffer layer 都可能对应独立的 GraphicBuffer / AHardwareBuffer 池
 
-实战里不建议给出“5 个以内”这种固定阈值。更稳妥的做法是：先用 `dumpsys SurfaceFlinger` 和 Perfetto 看当前场景到底需要几个独立 buffer layer，再判断哪些层必须异步更新，哪些层可以并回同一个 buffer，或者改成只承担结构关系的 Container Layer。[已验证: SurfaceFlinger 合成决策思路；待验证: 具体阈值需按目标设备验证]
+实战里不建议给出“5 个以内”这种固定阈值。更稳妥的做法是：先用 `dumpsys SurfaceFlinger` 和 Perfetto 看当前场景到底需要几个独立 buffer layer，再判断哪些层必须异步更新，哪些层可以并回同一个 buffer，或者改成只承担结构关系的 Container Layer。
 
 如果要把“Layer 变多了，SurfaceFlinger 变重了”这句话落到可复查证据，最小证据可以这样抓：1. `adb shell dumpsys SurfaceFlinger --list`，确认父子 Layer 数量和命名有没有明显增加
 2. Perfetto 里看 `setTransactionState`、`latchBuffer` 是否在 child layer 增多后变密
@@ -287,51 +288,51 @@ Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独�
 
 这四步连起来，才知道瓶颈是在 Layer 数量、合成策略，还是仍然在 App 自己的绘制路径上。## FrameTimeline API（完整 NDK 用法需 Android 13+）
 
-Android 12 把 FrameTimeline 机制带进了 SurfaceFlinger 和 Perfetto，但 NDK 侧可用的两步接口，`AChoreographer_postVsyncCallback()` 和 `ASurfaceTransaction_setFrameTimeline()`，都在 API 33 才公开。[已验证: `android/choreographer.h`、`android/surface_control.h` API level 注释] 对 native-only 应用来说，完整的“拿 callbackData → 选 timeline → 把 vsyncId 绑进 transaction”流程从 Android 13 才成立。Android 12 上可以观察 FrameTimeline 结果，也可以继续使用 `ASurfaceTransaction_setDesiredPresentTime()`（API 29），但如果要在 NDK 侧主动传入 `vsyncId`，还需要 Java 层或引擎层做额外桥接。### 核心 API
+Android 12 把 FrameTimeline 机制带进了 SurfaceFlinger 和 Perfetto，但 NDK 侧可用的两步接口，`AChoreographer_postVsyncCallback()` 和 `ASurfaceTransaction_setFrameTimeline()`，都在 API 33 才公开。 对 native-only 应用来说，完整的“拿 callbackData → 选 timeline → 把 vsyncId 绑进 transaction”流程从 Android 13 才成立。Android 12 上可以观察 FrameTimeline 结果，也可以继续使用 `ASurfaceTransaction_setDesiredPresentTime()`（API 29），但如果要在 NDK 侧主动传入 `vsyncId`，还需要 Java 层或引擎层做额外桥接。### 核心 API
 
 ```c
 typedef struct {
-    ASurfaceTransaction* transaction;
-    int64_t desiredPresentTimeNanos;
+ ASurfaceTransaction* transaction;
+ int64_t desiredPresentTimeNanos;
 } FrameContext;
 
 static size_t chooseFrameTimeline(
-        const AChoreographerFrameCallbackData* data,
-        int64_t desiredPresentTimeNanos) {
-    size_t count = AChoreographerFrameCallbackData_getFrameTimelinesLength(data);
-    size_t preferred =
-            AChoreographerFrameCallbackData_getPreferredFrameTimelineIndex(data);
+ const AChoreographerFrameCallbackData* data,
+ int64_t desiredPresentTimeNanos) {
+ size_t count = AChoreographerFrameCallbackData_getFrameTimelinesLength(data);
+ size_t preferred =
+ AChoreographerFrameCallbackData_getPreferredFrameTimelineIndex(data);
 
-    for (size_t i = preferred; i < count; ++i) {
-        int64_t expected =
-                AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(
-                        data, i);
-        if (expected >= desiredPresentTimeNanos) {
-            return i;
-        }
-    }
-    return count - 1;
+ for (size_t i = preferred; i < count; ++i) {
+ int64_t expected =
+ AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(
+ data, i);
+ if (expected >= desiredPresentTimeNanos) {
+ return i;
+ }
+ }
+ return count - 1;
 }
 
 static void onVsync(const AChoreographerFrameCallbackData* data, void* userData) {
-    FrameContext* ctx = (FrameContext*)userData;
-    size_t index = chooseFrameTimeline(data, ctx->desiredPresentTimeNanos);
-    AVsyncId vsyncId =
-            AChoreographerFrameCallbackData_getFrameTimelineVsyncId(data, index);
-    int64_t expectedPresentTime =
-            AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(
-                    data, index);
-    int64_t deadline =
-            AChoreographerFrameCallbackData_getFrameTimelineDeadlineNanos(data, index);
+ FrameContext* ctx = (FrameContext*)userData;
+ size_t index = chooseFrameTimeline(data, ctx->desiredPresentTimeNanos);
+ AVsyncId vsyncId =
+ AChoreographerFrameCallbackData_getFrameTimelineVsyncId(data, index);
+ int64_t expectedPresentTime =
+ AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(
+ data, index);
+ int64_t deadline =
+ AChoreographerFrameCallbackData_getFrameTimelineDeadlineNanos(data, index);
 
-    // 用 expectedPresentTime 推进动画时钟，用 deadline 判断本帧是否来得及。
-    ASurfaceTransaction_setFrameTimeline(ctx->transaction, vsyncId);
-    ASurfaceTransaction_setDesiredPresentTime(ctx->transaction, expectedPresentTime);
-    ASurfaceTransaction_apply(ctx->transaction);
+ // 用 expectedPresentTime 推进动画时钟，用 deadline 判断本帧是否来得及。
+ ASurfaceTransaction_setFrameTimeline(ctx->transaction, vsyncId);
+ ASurfaceTransaction_setDesiredPresentTime(ctx->transaction, expectedPresentTime);
+ ASurfaceTransaction_apply(ctx->transaction);
 }
 ```
 
-实际接入时，还要先在带 `ALooper` 的线程上调用 `AChoreographer_getInstance()`，再用 `AChoreographer_postVsyncCallback(choreographer, onVsync, &frameContext)` 注册下一帧回调。连续渲染场景通常会在 `onVsync()` 末尾再次注册回调。上面这组接口的最小 API level 都是明确的：`AChoreographer_postVsyncCallback()`、`AChoreographerFrameCallbackData_*()`、`ASurfaceTransaction_setFrameTimeline()` 是 API 33；`ASurfaceTransaction_setDesiredPresentTime()` 是 API 29。[已验证: `android/choreographer.h`、`android/surface_control.h`]
+实际接入时，还要先在带 `ALooper` 的线程上调用 `AChoreographer_getInstance()`，再用 `AChoreographer_postVsyncCallback(choreographer, onVsync, &frameContext)` 注册下一帧回调。连续渲染场景通常会在 `onVsync()` 末尾再次注册回调。上面这组接口的最小 API level 都是明确的：`AChoreographer_postVsyncCallback()`、`AChoreographerFrameCallbackData_*()`、`ASurfaceTransaction_setFrameTimeline()` 是 API 33；`ASurfaceTransaction_setDesiredPresentTime()` 是 API 29。
 
 ### 工作原理
 
@@ -339,23 +340,23 @@ static void onVsync(const AChoreographerFrameCallbackData* data, void* userData)
 2. `deadlineNanos`，应用最晚需要在这个时间前把内容准备好
 3. `vsyncId`，提交给 `ASurfaceTransaction_setFrameTimeline()` 的标识符
 
-平台会给出一个 preferred timeline，它对应当前调度器默认希望应用追上的那一拍。应用如果只是尽快提交下一帧，直接用 preferred index 就够了。应用如果有自己的目标节奏，例如 24fps 视频、30fps 阅读器、或主动降帧的省电模式，就要先根据 `desiredPresentTime` 选择一个 `expectedPresentTime` 不早于目标时间的 timeline，再把这条 timeline 的 `vsyncId` 填进 transaction。[已验证: `AChoreographerFrameCallbackData_getFrameTimelinesLength()`、`getPreferredFrameTimelineIndex()`、`getFrameTimelineExpectedPresentationTimeNanos()`、`getFrameTimelineDeadlineNanos()`、`getFrameTimelineVsyncId()` 的头文件注释]
+平台会给出一个 preferred timeline，它对应当前调度器默认希望应用追上的那一拍。应用如果只是尽快提交下一帧，直接用 preferred index 就够了。应用如果有自己的目标节奏，例如 24fps 视频、30fps 阅读器、或主动降帧的省电模式，就要先根据 `desiredPresentTime` 选择一个 `expectedPresentTime` 不早于目标时间的 timeline，再把这条 timeline 的 `vsyncId` 填进 transaction。
 
 `setDesiredPresentTime()` 和 `setFrameTimeline()` 负责的是两个不同层面的信息。前者描述“应用希望这帧何时展示”，后者描述“这帧绑定到哪一个候选显示节拍”。二者一起使用时，SurfaceFlinger 才能区分“应用主动晚一点交帧”和“应用错过了原本该赶上的节拍”。```mermaid
 sequenceDiagram
-    participant App
-    participant Choreo as AChoreographer(API 33)
-    participant SC as SurfaceControl
-    participant SF as SurfaceFlinger
+ participant App
+ participant Choreo as AChoreographer(API 33)
+ participant SC as SurfaceControl
+ participant SF as SurfaceFlinger
 
-    Choreo->>App: callbackData{preferred + candidate timelines}
-    App->>App: 结合 desiredPresentTime 选择 timeline index
-    App->>SC: setFrameTimeline(vsyncId[index])
-    App->>SC: setDesiredPresentTime(expectedPresentTime[index])
-    App->>SC: apply()
+ Choreo->>App: callbackData{preferred + candidate timelines}
+ App->>App: 结合 desiredPresentTime 选择 timeline index
+ App->>SC: setFrameTimeline(vsyncId[index])
+ App->>SC: setDesiredPresentTime(expectedPresentTime[index])
+ App->>SC: apply()
 
-    SC->>SF: Transaction(vsyncId, desiredPresentTime)
-    SF->>SF: 按绑定的 timeline 决定 latch / present
+ SC->>SF: Transaction(vsyncId, desiredPresentTime)
+ SF->>SF: 按绑定的 timeline 决定 latch / present
 ```
 
 ### 性能优势
@@ -370,7 +371,7 @@ sequenceDiagram
 
 ## Fence 处理与生命周期
 
-Fence 处理最容易踩坑，因为这里同时有 acquire fence、release fence 和 buffer 生命周期三件事。它们描述的是不同阶段的同步边界。[已验证: Android sync fence 文档]
+Fence 处理最容易踩坑，因为这里同时有 acquire fence、release fence 和 buffer 生命周期三件事。它们描述的是不同阶段的同步边界。
 
 ### acquire fence 与 release fence
 
@@ -378,8 +379,8 @@ Fence 处理最容易踩坑，因为这里同时有 acquire fence、release fenc
 - **release fence**：消费者用完这块 buffer 之前，生产者不能复写
 - **buffer 生命周期**：只有拿到 release callback，或拿到明确的 release fence，应用才知道这块 buffer 可以回收到池里。API 29-35 这条 release fence 入口就在 `OnComplete` 回调里的 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()`。这三者一旦混淆，常见结果就是 SurfaceFlinger 长时间等 fence、应用过早复写 buffer，或者 buffer 池越来越大却回不来。### 常见错误
 
-1. **传了 acquire fence，又在应用侧把同一个 fd 再关一次**：传给 NDK API 的 acquire fence fd 不应该再被应用复用或二次关闭。[已验证: Android sync fence fd ownership 约定]
-2. **把 `OnComplete` 当成立刻可复用的信号，却不看 previous release fence**：API 29-35 期间，回调本身还不够，仍要看 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 返回的 fd 有没有 signal。[已验证: `android/surface_control.h` 中 previous release fence 语义]
+1. **传了 acquire fence，又在应用侧把同一个 fd 再关一次**：传给 NDK API 的 acquire fence fd 不应该再被应用复用或二次关闭。
+2. **把 `OnComplete` 当成立刻可复用的信号，却不看 previous release fence**：API 29-35 期间，回调本身还不够，仍要看 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 返回的 fd 有没有 signal。
 3. **CPU 写 buffer 却挂了一个永远不 signal 的 fence**：SurfaceFlinger 会一直卡在 `latchBuffer` 等待
 4. **buffer 池既没接 API 36 的 release callback，也没处理 API 29-35 的 previous release fence**：应用只能靠保守延迟或额外同步保护自己，最终把内存和延迟一起抬高
 
@@ -392,46 +393,46 @@ ASurfaceControl* sc = ASurfaceControl_create(parent, "layer");
 ASurfaceControl_release(sc);
 ```
 
-`ASurfaceControl_release()` 只释放调用方持有的本地引用，不等于把 Layer 从显示树删除。结束显示时，先用 transaction 把目标节点 `reparent` 到 `nullptr` 或隐藏，等待事务边界生效，再释放本地句柄；否则父节点仍显示时，surface 及其子节点可能继续留在屏幕上。[已验证: AOSP android-16.0.0_r1 `surface_control.h` release 注释]
+`ASurfaceControl_release()` 只释放调用方持有的本地引用，不等于把 Layer 从显示树删除。结束显示时，先用 transaction 把目标节点 `reparent` 到 `nullptr` 或隐藏，等待事务边界生效，再释放本地句柄；否则父节点仍显示时，surface 及其子节点可能继续留在屏幕上。
 
-不处理显示树移除和本地引用释放的边界，长时间运行后会表现为 Layer 树越来越大，排查时 `dumpsys SurfaceFlinger --list` 里会看到同类节点不断累积。[已验证: Android NDK surface_control 文档]
+不处理显示树移除和本地引用释放的边界，长时间运行后会表现为 Layer 树越来越大，排查时 `dumpsys SurfaceFlinger --list` 里会看到同类节点不断累积。
 
 ### AHardwareBuffer 生命周期
 
-如果应用自己管理 `AHardwareBuffer` 池，API 36 起可以把“何时可复用”直接绑定到 `ASurfaceTransaction_setBufferWithRelease()` 的 release callback。回调拿到的 release fence fd 如果大于等于 0，表示这块 buffer 还没有释放完成；调用方负责等待并关闭这个 fd。返回 `-1` 时，buffer 已经可直接复用。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
+如果应用自己管理 `AHardwareBuffer` 池，API 36 起可以把“何时可复用”直接绑定到 `ASurfaceTransaction_setBufferWithRelease()` 的 release callback。回调拿到的 release fence fd 如果大于等于 0，表示这块 buffer 还没有释放完成；调用方负责等待并关闭这个 fd。返回 `-1` 时，buffer 已经可直接复用。
 
 Android 10-15 没有专用的 NDK release callback，但仍然有官方回收路径。做法是继续用 `ASurfaceTransaction_setBuffer()` 提交，再在 `OnComplete` 里通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取回上一块 buffer 的 release fence。拿到 fd 后的处理规则和 API 36 一样：大于等于 0 就等待并关闭，返回 `-1` 表示可直接复用。实际工程里通常不会在 callback 里立刻销毁 buffer，而是把它归还到 buffer pool。这样既能保证时序安全，也能避免频繁分配 / 释放硬件 buffer 带来的额外抖动。## 实战场景
 
 ### WebView Out-of-process Rasterization
 
-WebView 并不是每次都走独立 SurfaceControl 子 Layer。普通页面仍可能走 GL Functor 或其他宿主参与度更高的模式；只有 provider、feature 和场景条件满足时，Chromium 才会把网页合成结果放到独立的 child layer，再由宿主窗口在对应区域留出透明占位。[已验证: Chromium WebView 架构文档对多种渲染模式的划分；待验证: 具体 feature flag 和默认启用条件按 provider 版本而异]
+WebView 并不是每次都走独立 SurfaceControl 子 Layer。普通页面仍可能走 GL Functor 或其他宿主参与度更高的模式；只有 provider、feature 和场景条件满足时，Chromium 才会把网页合成结果放到独立的 child layer，再由宿主窗口在对应区域留出透明占位。
 
-这个模式把网页重绘和宿主窗口绘制拆开。信息流页面最常见的现象，是顶部原生 Toolbar 和底部原生输入条都很轻，但页面主体是复杂 H5。只要网页里有大面积重排、Canvas 动画或视频贴片，宿主 App 的 RenderThread 就会跟着被拖慢。若 WebView 仍在宿主绘制过程中同步执行那一大段网页绘制，原生按钮和网页会一起掉帧。把网页内容放进独立 SurfaceControl layer 后，宿主窗口只保留原生控件和透明占位，网页内容由 Chromium 自己的合成线程按自己的节奏产出 buffer，SurfaceFlinger 在合成阶段把两边拼在一起。[已确认: 与 §18.13 WebView 渲染模式对 WebView 多模式的描述一致]
+这个模式把网页重绘和宿主窗口绘制拆开。信息流页面最常见的现象，是顶部原生 Toolbar 和底部原生输入条都很轻，但页面主体是复杂 H5。只要网页里有大面积重排、Canvas 动画或视频贴片，宿主 App 的 RenderThread 就会跟着被拖慢。若 WebView 仍在宿主绘制过程中同步执行那一大段网页绘制，原生按钮和网页会一起掉帧。把网页内容放进独立 SurfaceControl layer 后，宿主窗口只保留原生控件和透明占位，网页内容由 Chromium 自己的合成线程按自己的节奏产出 buffer，SurfaceFlinger 在合成阶段把两边拼在一起。
 
 排查时，重点看三处证据。第一，看 `dumpsys SurfaceFlinger`，宿主窗口下面是否多出一个属于 WebView 的 child layer。第二，看 Perfetto，是否能看到 Viz / Compositor 相关线程在提交独立 buffer，而不是所有网页绘制都堆在宿主 RenderThread 的 `DrawFrame` 里。第三，看 SurfaceFlinger 侧的 `setTransactionState`、`latchBuffer` 和 FrameTimeline，如果网页内容单独更新，宿主窗口的产帧节奏和网页 layer 的产帧节奏通常不会完全重合。如果要把“宿主 RenderThread 变轻了”这句话说得可复查，至少补齐这条最小证据链：- `dumpsys SurfaceFlinger --list` 能看到宿主窗口下面新增 WebView child layer
 - Perfetto 里，宿主 `RenderThread` 主要留下原生 UI 的 `DrawFrame`，网页 raster / 合成活动转移到 Chromium Viz / Compositor 线程
 - SurfaceFlinger 侧能看到对应 child layer 的 `setTransactionState`、`latchBuffer` 与网页更新拍点保持一致
 - `dumpsys SurfaceFlinger` 的 layer dump 或厂商图形调试面板能说明该 layer 最终走 HWC 还是 GPU 合成
 
-这组证据不成立时，不能直接把收益归因到独立 SurfaceControl。这个场景里的常见瓶颈也很典型。如果 Chromium 提交 Transaction 的频率高于显示侧能稳定消费的频率，SurfaceFlinger 侧会出现事务堆积；如果网页内容依赖 GPU 结果，acquire fence 没及时 signal，就会在 `latchBuffer` 上等待；如果这个 child layer 还叠了圆角、alpha、缩放或视频，HWC 可能接不了，只能退回 GPU 合成。[待验证: 目标设备的 HWC 约束和 provider 实现差异]
+这组证据不成立时，不能直接把收益归因到独立 SurfaceControl。这个场景里的常见瓶颈也很典型。如果 Chromium 提交 Transaction 的频率高于显示侧能稳定消费的频率，SurfaceFlinger 侧会出现事务堆积；如果网页内容依赖 GPU 结果，acquire fence 没及时 signal，就会在 `latchBuffer` 上等待；如果这个 child layer 还叠了圆角、alpha、缩放或视频，HWC 可能接不了，只能退回 GPU 合成。（精确结论需结合目标设备的 HWC 约束和 provider 实现差异验证）
 
 因此，WebView 场景里要比较的是两件事：宿主 RenderThread 的工作有没有明显减轻，以及 SurfaceFlinger 侧是否换来了更可控的独立 layer 合成。如果宿主仍要在每一帧里同步做网页绘制，问题还在 App 侧；如果宿主已经解耦，但 SurfaceFlinger 组合过重，问题就转到 Layer 数量、fence 和合成策略上了。[图：WebView 独立合成示意图。宿主窗口只绘制原生控件和透明占位，Chromium 独立提交 Web 内容 buffer，SurfaceFlinger 在同一帧里合成两者。]
 
 ### 画中画（Picture-in-Picture）
 
-PiP 是 SurfaceControl 最适合观察的系统场景之一。进入小窗时，同一块视频内容需要在新的父节点、位置和裁剪范围下继续显示。系统侧并不想让应用在每一步动画里重画整棵 View 树，它更倾向于拿着已经存在的视频 layer，配合 `reparent`、位置、裁剪和 alpha 这类 Transaction 做连续动画。[已验证: WMS / SurfaceControl 动画模型]
+PiP 是 SurfaceControl 最适合观察的系统场景之一。进入小窗时，同一块视频内容需要在新的父节点、位置和裁剪范围下继续显示。系统侧并不想让应用在每一步动画里重画整棵 View 树，它更倾向于拿着已经存在的视频 layer，配合 `reparent`、位置、裁剪和 alpha 这类 Transaction 做连续动画。
 
-分析 PiP 卡顿时，可以把问题拆成两段。第一段是窗口几何变化是否比内容更新更快。若 WindowManager 先把小窗边界改了，应用的新尺寸内容还没准备好，SurfaceFlinger 就可能短暂看到旧 buffer 配新边界，表现为黑边、拉伸或一帧空洞。第二段是视频 layer 本身是否稳定供帧。PiP 期间 decoder、渲染线程和 SurfaceFlinger 仍然要保持稳定节奏；只要 acquire fence 或 decoder 输出迟到，小窗动画也会显得顿挫。Perfetto 里可以沿着这个顺序看：WindowManager / shell transition 发起 PiP 进入，SurfaceFlinger 收到几何 Transaction，随后 `latchBuffer` 是否顺利跟上；如果 `latchBuffer` 之前有明显等待，通常是内容准备慢；如果几何变换很顺，但合成时间突然上升，通常是小窗的圆角、阴影或额外 overlay 让 HWC 直合成失败，掉回 GPU 合成。[待验证: 具体回退条件按设备而异]
+分析 PiP 卡顿时，可以把问题拆成两段。第一段是窗口几何变化是否比内容更新更快。若 WindowManager 先把小窗边界改了，应用的新尺寸内容还没准备好，SurfaceFlinger 就可能短暂看到旧 buffer 配新边界，表现为黑边、拉伸或一帧空洞。第二段是视频 layer 本身是否稳定供帧。PiP 期间 decoder、渲染线程和 SurfaceFlinger 仍然要保持稳定节奏；只要 acquire fence 或 decoder 输出迟到，小窗动画也会显得顿挫。Perfetto 里可以沿着这个顺序看：WindowManager / shell transition 发起 PiP 进入，SurfaceFlinger 收到几何 Transaction，随后 `latchBuffer` 是否顺利跟上；如果 `latchBuffer` 之前有明显等待，通常是内容准备慢；如果几何变换很顺，但合成时间突然上升，通常是小窗的圆角、阴影或额外 overlay 让 HWC 直合成失败，掉回 GPU 合成。（具体回退条件按设备而异）
 
 PiP 场景给 SurfaceControl API 的启示：已有内容层尽量复用，几何变化尽量放在事务里完成，避免每次状态切换都回到“应用整页重绘”这条更重的路径。需要跨进程挂接时，公开 NDK C API 不能单独把 `ASurfaceControl*` 写入 Binder；系统 PiP 容器通常仍由 WindowManager / shell 持有 Java / Binder 侧句柄，并在目标进程按需桥接到 native。### 自绘引擎
 
-浏览器内核、视频编辑器、游戏引擎或其他自绘系统，经常已经有自己的合成器和 buffer 池。对这类系统，SurfaceControl 负责把更新节奏不同的内容拆开交给系统合成，例如把主画面、字幕、HUD、调试层分别做成少量独立 layer，再用一个 transaction 同时提交 buffer、位置和透明度。这种做法在两类场景里很有用。一类是主画面更新频率高，叠加层更新频率低，例如游戏画面 60fps，字幕和调试面板只在状态变化时更新；另一类是不同内容来源本来就在不同线程或不同进程里生产，例如视频轨和贴纸轨由不同模块生成。独立 layer 能减少“为了改一行字幕，整帧场景都重画一遍”的额外开销。把每个按钮、每个装饰元素都做成独立 layer，SurfaceFlinger 的工作量会快速上升，HWC 名额也更容易耗尽。更稳妥的做法，是只把需要异步更新、有独立生命周期的部分拆出来，其余结构层继续留在同一个 buffer 或用 Container Layer 表示层级关系。[待验证: 目标设备上独立 layer 的合成成本]
+浏览器内核、视频编辑器、游戏引擎或其他自绘系统，经常已经有自己的合成器和 buffer 池。对这类系统，SurfaceControl 负责把更新节奏不同的内容拆开交给系统合成，例如把主画面、字幕、HUD、调试层分别做成少量独立 layer，再用一个 transaction 同时提交 buffer、位置和透明度。这种做法在两类场景里很有用。一类是主画面更新频率高，叠加层更新频率低，例如游戏画面 60fps，字幕和调试面板只在状态变化时更新；另一类是不同内容来源本来就在不同线程或不同进程里生产，例如视频轨和贴纸轨由不同模块生成。独立 layer 能减少“为了改一行字幕，整帧场景都重画一遍”的额外开销。把每个按钮、每个装饰元素都做成独立 layer，SurfaceFlinger 的工作量会快速上升，HWC 名额也更容易耗尽。更稳妥的做法，是只把需要异步更新、有独立生命周期的部分拆出来，其余结构层继续留在同一个 buffer 或用 Container Layer 表示层级关系。（精确合成成本需在目标设备上验证）
 
 判断拆分是否过度，Perfetto 很直观。如果应用自己的渲染线程已经很稳定，但 SurfaceFlinger 侧的 `setTransactionState`、`latchBuffer`、合成耗时同步变重，通常是 layer 切得过细；如果合成耗时稳定，却频繁卡在 acquire / release fence，问题多半出在 buffer 池管理和生产者节奏上。[图：自绘引擎把主画面、字幕、HUD 分成三层的示意图，标出哪一层高频更新，哪一层低频更新。]
 
 ## Trace 视角
 
-具体 slice 名称会随 Android 版本和 trace 配置变化。这里列出常见观察点；抓不到完全同名的 slice 时，要回到线程、Layer 和 buffer 提交关系来判断。[待验证: 不同版本命名差异]
+具体 slice 名称会随 Android 版本和 trace 配置变化。这里列出常见观察点；抓不到完全同名的 slice 时，要回到线程、Layer 和 buffer 提交关系来判断。（具体 slice 名称随版本变化，以实际 trace 为准）
 
 ### 识别 SurfaceControl 路径
 
@@ -468,7 +469,6 @@ adb shell dumpsys SurfaceFlinger | grep -A 20 "<package>"
 # 结合 Layer 数量、父子关系和 Composition Type 一起看
 ```
 
-
 ## 附录：图形缓冲体系对象边界与 BufferQueue 流转链（源码级）
 
 > 本附录用于明确 Surface / ANativeWindow / HardwareBuffer / GraphicBuffer / Gralloc / HWC 的对象边界与流转路径。### 对象边界总览
@@ -491,15 +491,15 @@ Android 图形缓冲有三种典型消费路径，混在一起容易产生误解
 
 ```
 App / HWUI (Surface.lockCanvas() / ThreadedRenderer.draw() / native producer)
-  ↓
+ ↓
 ANativeWindow (Surface.cpp 持有 IGraphicBufferProducer)
-  ↓ dequeueBuffer() / queueBuffer()
+ ↓ dequeueBuffer() / queueBuffer()
 BufferQueueCore slot pool
-  ↓
-  ├─ Legacy: IGraphicBufferConsumer 在 SurfaceFlinger 进程
-  │     → SurfaceFlinger latchBuffer() → HWC 合成
-  └─ BLAST: BLASTBufferItemConsumer 在 App 进程
-        → acquire buffer → Transaction.apply() → SurfaceFlinger
+ ↓
+ ├─ Legacy: IGraphicBufferConsumer 在 SurfaceFlinger 进程
+ │ → SurfaceFlinger latchBuffer() → HWC 合成
+ └─ BLAST: BLASTBufferItemConsumer 在 App 进程
+ → acquire buffer → Transaction.apply() → SurfaceFlinger
 ```
 
 SurfaceFlinger 收到 buffer 后由 HWC 决定合成类型：- DEVICE：HWC overlay 直接合成
@@ -509,23 +509,23 @@ SurfaceFlinger 收到 buffer 后由 HWC 决定合成类型：- DEVICE：HWC over
 
 ```
 App (Camera / Video 解码器 / EGL Producer)
-  ↓
+ ↓
 BufferQueueCore
-  ↓
+ ↓
 GLConsumer (SurfaceTexture)
-  → updateTexImage() 把 buffer 转为 GL 纹理
-  → 不进入 SurfaceFlinger latchBuffer
+ → updateTexImage() 把 buffer 转为 GL 纹理
+ → 不进入 SurfaceFlinger latchBuffer
 ```
 
 GLConsumer 消费 buffer 后转为 GPU 纹理，供 App 自己渲染使用，不直接进入 SurfaceFlinger 的合成管线。**③ BLAST 模式（Android 11+）**
 
 ```
 App 进程内 BLASTBufferQueue
-  → BLASTBufferItemConsumer acquire buffer
-  → 构造 SurfaceControl.Transaction
-     (setBuffer + setGeometry + setAcquireFence)
-  → Transaction.apply() 原子提交到 SurfaceFlinger
-  → SurfaceFlinger 收到完整帧后 latchBuffer + HWC 合成
+ → BLASTBufferItemConsumer acquire buffer
+ → 构造 SurfaceControl.Transaction
+ (setBuffer + setGeometry + setAcquireFence)
+ → Transaction.apply() 原子提交到 SurfaceFlinger
+ → SurfaceFlinger 收到完整帧后 latchBuffer + HWC 合成
 ```
 
 ### buffer_handle_t 本质
@@ -533,10 +533,10 @@ App 进程内 BLASTBufferQueue
 `buffer_handle_t`（定义于 `system/core/libcutils/include/cutils/native_handle.h`）是 gralloc 返回的 opaque handle，实际结构是 `native_handle_t`：包含一个或多个 fd（通常是 dmabuf fd）以及厂商私有整数元数据：```c
 // system/core/libcutils/include/cutils/native_handle.h
 typedef struct native_handle {
-    int version;   /* sizeof(native_handle_t) */
-    int numFds;
-    int numInts;
-    int data[0];   /* fd[numFds] + int[numInts] */
+ int version; /* sizeof(native_handle_t) */
+ int numFds;
+ int numInts;
+ int data[0]; /* fd[numFds] + int[numInts] */
 } native_handle_t;
 
 typedef const native_handle_t* buffer_handle_t;
@@ -554,13 +554,13 @@ Mapper 的核心操作：`importBuffer`（导入进程地址空间）、`lock`�
 
 `HwcCompositionType`（`surfaceflinger_layers.proto`）定义：```protobuf
 enum HwcCompositionType {
-  HWC_TYPE_UNSPECIFIED = 0;
-  HWC_TYPE_CLIENT = 1;              // SurfaceFlinger 合成到 client target buffer
-  HWC_TYPE_DEVICE = 2;              // HWC 用硬件 Overlay 直接合成
-  HWC_TYPE_SOLID_COLOR = 3;
-  HWC_TYPE_CURSOR = 4;              // 类似 DEVICE，但位置可异步设置
-  HWC_TYPE_SIDEBAND = 5;            // HWC 通过 sideband stream 直接合成
-  HWC_TYPE_DISPLAY_DECORATION = 6;  // 显示装饰硬件路径
+ HWC_TYPE_UNSPECIFIED = 0;
+ HWC_TYPE_CLIENT = 1; // SurfaceFlinger 合成到 client target buffer
+ HWC_TYPE_DEVICE = 2; // HWC 用硬件 Overlay 直接合成
+ HWC_TYPE_SOLID_COLOR = 3;
+ HWC_TYPE_CURSOR = 4; // 类似 DEVICE，但位置可异步设置
+ HWC_TYPE_SIDEBAND = 5; // HWC 通过 sideband stream 直接合成
+ HWC_TYPE_DISPLAY_DECORATION = 6; // 显示装饰硬件路径
 }
 ```
 
