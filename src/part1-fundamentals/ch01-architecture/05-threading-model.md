@@ -2,9 +2,9 @@
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
-status: finalized
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+status: ready-for-review
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-26"
@@ -14,8 +14,8 @@ last_task6_audit: '2026-06-14'
 task6_reviewed_date: "2026-05-26"
 review_round: 10
 task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（元叙述、禁用/高频词、直接提示语、Perfetto 观察句）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: pending
+task9_result: pending
 task9_reviewed_date: "2026-05-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-26T01:27:00+08:00"
@@ -26,8 +26,9 @@ last_task9_audit_log: "logs/deep-review/2026-07-05-15-audit.md"
 last_task9_audit_result: "p1-issue-found"
 task9_audit_notes: "2026-07-05 Task9 idle audit: 发现 P1 版本覆盖不匹配问题。章节声明适用 Android 5.0 - Android 17，但源码引用基于 android-16.0.0_r1，与 Android 17 (android-17.0.0_r1) 存在版本差异。已写入 suggestions.md 建议修正版本覆盖声明。"
 task2b_state: "fixed"
-task2b_result: "fixed"
-last_task2b_at: '2026-05-12T19:36:00+08:00'
+task2b_result: "fixed-lite"
+last_task2b_lite_at: '2026-07-07'
+last_task2b_at: '2026-07-07T07:36:00+08:00'
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 last_verified: '2026-04-24'
 last_verified_against: AOSP android-17.0.0_r1, Android SDK android-Baklava stubs
@@ -142,7 +143,7 @@ last_deepseek_cn_review_at: 2026-05-30
 
 ```java
 // frameworks/base/core/java/android/app/ActivityThread.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 public static void main(String[] args) {
     // 1. 创建主线程的 Looper 和 MessageQueue
     Looper.prepareMainLooper();
@@ -196,7 +197,7 @@ public static void loop() {
 }
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java]
 
 `msg.target` 就是发送这条消息的 Handler——这条消息的发送者。因此，同一条 MessageQueue 可以被多个 Handler 共享。不同 Handler 发送的消息都会进入同一个队列，但每条消息都会被自己的 Handler 处理。主线程上，ActivityThread 的内部类 `H` 就是最核心的 Handler，它处理 BIND_APPLICATION、CREATE_SERVICE、RECEIVER、BIND_SERVICE 等消息，驱动四大组件的生命周期。
 
@@ -211,7 +212,7 @@ public static void loop() {
 2. 有 Native 层的定时消息到期
 3. 有 native 层通过 `Looper.addFd()` 注册的 fd 变为可读状态（Input 事件 socket fd、VSync 信号 fd 等在 JNI/native 层通过 `messageQueue->getLooper()->addFd(...)` 注册到同一个 epoll 实例）；App 自定义 fd 可通过 `MessageQueue.addOnFileDescriptorEventListener()` 接入
 
-这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池通过 binder driver 的 `BINDER_WRITE_READ` ioctl 等待和处理跨进程事务（`IPCThreadState::joinThreadPool()` 循环调用 `getAndExecuteCommand()`，最终在 `talkWithDriver()` 里通过 `ioctl(mDriverFD, BINDER_WRITE_READ, &bwr)` 阻塞交互），没有独立的 epoll 循环。需要和 MessageQueue/nativePollOnce 的 `epoll_wait` 路径分开观察。[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp]
+这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池通过 binder driver 的 `BINDER_WRITE_READ` ioctl 等待和处理跨进程事务（`IPCThreadState::joinThreadPool()` 循环调用 `getAndExecuteCommand()`，最终在 `talkWithDriver()` 里通过 `ioctl(mDriverFD, BINDER_WRITE_READ, &bwr)` 阻塞交互），没有独立的 epoll 循环。需要和 MessageQueue/nativePollOnce 的 `epoll_wait` 路径分开观察。[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp]
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md]
 
@@ -255,7 +256,7 @@ RenderThread 不是在进程创建时就初始化的。它采用懒加载策略�
 
 ```java
 // frameworks/base/core/java/android/view/ViewRootImpl.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 mAttachInfo.mThreadedRenderer.initializeIfNeeded(
     mWidth, mHeight, mAttachInfo, mSurface, surfaceInsets);
 ```
@@ -269,7 +270,7 @@ mAttachInfo.mThreadedRenderer.initializeIfNeeded(
 
 ```java
 // frameworks/base/graphics/java/android/graphics/HardwareRenderer.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 ```
 
@@ -530,9 +531,9 @@ Android Framework 对线程数量的控制体现在多个层面。Binder 这里�
 
 - AOSP 源码路径：
   - `frameworks/base/core/java/android/os/Looper.java` — Looper 核心，消息循环引擎
-  - `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java` — android-16 中保留经典链式语义的 MessageQueue 实现
-  - `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java` — android-16 并存的 MessageQueue 实现之一
-  - `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` — android-16 并存的 MessageQueue 实现之一
+  - `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java` — 经典链式语义的 MessageQueue 实现（android-16 引入，android-17.0.0_r1 保留）
+  - `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java` — 并存的 MessageQueue 实现之一（android-16 引入，android-17.0.0_r1 保留）
+  - `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` — 并存的 MessageQueue 实现之一（android-16 引入，android-17.0.0_r1 保留）
   - `frameworks/base/core/java/android/os/Handler.java` — Handler，消息发送与处理
   - `frameworks/base/core/java/android/app/ActivityThread.java` — 主线程入口，四大组件消息处理
   - `frameworks/base/graphics/java/android/graphics/HardwareRenderer.java` — `syncAndDrawFrame()` Java 入口
