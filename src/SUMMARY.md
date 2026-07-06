@@ -25,7 +25,6 @@
   - [2.51 Android 17 GPU 调试性能工具链](part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)
 
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
-  - [4.5 Android 17 LMKD 与 AppFlow 兼容性方案](part1-fundamentals/ch04-memory/4.5-appflow-lmkd-compatibility.md)  - [Android 17 智能任务调度器：机器学习驱动的应用启动优化](part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-引入了全新的任务调度器通.md)  - [Android 17 智能任务调度器：机器学习驱动的应用启动优化](part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-引入了全新的任务调度器通.md)  - [Linux 6.10 内存碎片整理机制](part1-fundamentals/ch4-memory/4.36-Phoronix---Linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调.md)
 
 
   - [4.9 Android 17 ARM MTE 内存标签扩展实战](part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)

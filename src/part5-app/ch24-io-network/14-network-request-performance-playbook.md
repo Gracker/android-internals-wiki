@@ -73,6 +73,8 @@ sources:
     path: "src/part5-app/ch24-io-network/05-protocol-optimization.md"
   - type: local
     path: "src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-07
 ---
 
 # 24.14 网络请求分段优化与弱网治理
@@ -116,7 +118,7 @@ App 侧策略入口聚焦本地拆段、降级和指标埋点；线上接入层�
 
 移动端网络优化不能只盯一个慢接口。一次请求从域名解析到响应解析，中间会经过 DNS、建连、TLS、写请求、首字节、读响应、业务解码；任何一段抖动，页面都会变慢。App 侧要做的是把这些等待段拆清楚，再按场景选择网络栈、缓存、降级和监控策略。
 
-App 侧可执行的策略主要落在请求分段、网络栈选型、弱网治理、后台约束和指标采集。DNS 与连接池细节见 24.4、24.10，HTTP/2、HTTP/3、QUIC 与 gRPC 见 24.5，线上网络质量观测见 26.17。参考书用于组织写作顺序：网络基础、弱网特征、网络库选型、监控与流量指标；正文不使用参考书原文和代码。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md] [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
+App 侧可执行的策略主要落在请求分段、网络栈选型、弱网治理、后台约束和指标采集。DNS 与连接池细节见 24.4、24.10，HTTP/2、HTTP/3、QUIC 与 gRPC 见 24.5，线上网络质量观测见 26.17。
 
 ## 先把一次请求拆成七段
 
@@ -132,7 +134,7 @@ App 侧可执行的策略主要落在请求分段、网络栈选型、弱网治�
 | response read | 带宽低、大响应体、单连接限速 | body bytes、read timeout、吞吐估算 | 分页、断点续传、媒体自适应码率 |
 | decode/render | JSON/Proto 解码、图片解码、主线程阻塞 | 业务耗时、CPU trace、主线程任务 | 后台解码、缓存、减少首屏字段 |
 
-OkHttp 的 `EventListener` 文档提供了 DNS、connect、secureConnect、request/response header/body 等事件，可用于把请求耗时拆到具体阶段。 [已验证: 官方文档, https://square.github.io/okhttp/features/events/] 如果使用 Cronet，优先使用 public Cronet API 的完成回调和指标能力；不要依赖 Android framework 里未公开或版本漂移的 `android.net.http` 内部指标类。
+OkHttp 的 `EventListener` 文档提供了 DNS、connect、secureConnect、request/response header/body 等事件，可用于把请求耗时拆到具体阶段。 如果使用 Cronet，优先使用 public Cronet API 的完成回调和指标能力；不要依赖 Android framework 里未公开或版本漂移的 `android.net.http` 内部指标类。
 
 ## 速度、弱网、安全和功耗分开设计
 
@@ -158,9 +160,9 @@ OkHttp 的 `EventListener` 文档提供了 DNS、connect、secureConnect、reque
 | Android `HttpEngine` | Android 平台内的 Cronet 风格 HTTP stack 能力 | 旧系统兼容和第三方分发一致性 | API level、模块版本、QUIC/Brotli/cache 开关 |
 | 自研长连接 / Mars 类方案 | IM、推送、弱网保活、跨端 socket 层策略 | 通用 HTTP API 的完整替代 | 心跳、重连、前后台状态、服务端接入层协同 |
 
-Android Developers 的 Cronet 文档说明，Cronet 是面向 Android App 的 Chromium network stack，目标是降低延迟、提高吞吐；它原生支持 HTTP、HTTP/2、HTTP/3 over QUIC，请求默认异步，并支持缓存和 Brotli 压缩。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/cronet]
+Android Developers 的 Cronet 文档说明，Cronet 是面向 Android App 的 Chromium network stack，目标是降低延迟、提高吞吐；它原生支持 HTTP、HTTP/2、HTTP/3 over QUIC，请求默认异步，并支持缓存和 Brotli 压缩。
 
-`android-17.0.0_r1` 中的 `android.net.http.HttpEngine.Builder` 也能看到相同方向的能力：`setEnableQuic()` 默认启用 QUIC，`setEnableHttp2()` 默认启用 HTTP/2，`setEnableBrotli()` 开启后会在 `Accept-Encoding` 中声明 Brotli，`setEnableHttpCache()` 可缓存 HTTP 数据和 QUIC server information，`addQuicHint()` 可提示某个 host 支持 QUIC，并说明跨 session 的 0-RTT 需要 disk HTTP cache。 [已验证: android-17.0.0_r1, NetworkStack, android/net/http/HttpEngine.java]
+`android-17.0.0_r1` 中的 `android.net.http.HttpEngine.Builder` 也能看到相同方向的能力：`setEnableQuic()` 默认启用 QUIC，`setEnableHttp2()` 默认启用 HTTP/2，`setEnableBrotli()` 开启后会在 `Accept-Encoding` 中声明 Brotli，`setEnableHttpCache()` 可缓存 HTTP 数据和 QUIC server information，`addQuicHint()` 可提示某个 host 支持 QUIC，并说明跨 session 的 0-RTT 需要 disk HTTP cache。
 
 Cronet 不能让所有请求直接变快。接入前要用灰度实验回答四个问题：QUIC 建连成功率是否足够高；失败后回退到 TCP/TLS 的尾延迟是否可控；缓存和 Brotli 是否降低首屏字节数；业务层的重试、鉴权、trace id、日志脱敏能否迁移。
 
@@ -168,7 +170,7 @@ Cronet 不能让所有请求直接变快。接入前要用灰度实验回答四�
 
 DNS 优化解决的是“连到哪里”，连接池解决的是“少建几次连接”，协议升级解决的是“同一连接上怎么承载请求”。三者不要混在一个拦截器里。
 
-HTTPDNS 的同步接入边界见 24.10：OkHttp `Dns.lookup()` 位于 route 生成路径，返回前请求无法进入 connect；把实时 HTTPDNS 请求放进 `lookup()` 会把弱网 HTTP 请求塞进建连前置路径。更稳的模型是后台异步刷新，`lookup()` 只读缓存，缓存缺失或过期时回退系统 DNS。 [已验证: 本地章节, src/part5-app/ch24-io-network/10-httpdns-okhttp-dns-boundary.md]
+HTTPDNS 的同步接入边界见 24.10：OkHttp `Dns.lookup()` 位于 route 生成路径，返回前请求无法进入 connect；把实时 HTTPDNS 请求放进 `lookup()` 会把弱网 HTTP 请求塞进建连前置路径。更稳的模型是后台异步刷新，`lookup()` 只读缓存，缓存缺失或过期时回退系统 DNS。
 
 建连策略按风险分层：
 
@@ -177,7 +179,7 @@ HTTPDNS 的同步接入边界见 24.10：OkHttp `Dns.lookup()` 位于 route 生�
 - IPv6/IPv4 fallback 要记录尝试顺序和失败原因，不能只上报最终成功 IP。
 - HTTP/2 connection coalescing 会让不同域名复用同一条 TLS 连接，证书 SAN、DNS 结果、IP 和 host 策略要一起验证，不能只按域名统计连接数。
 
-Android 的网络切换事件不要用同步查询补状态。`ConnectivityManager.NetworkCallback` 文档说明，`onAvailable()` 从 Android O 起会紧跟 `onCapabilitiesChanged()` 与 `onLinkPropertiesChanged()`，并明确不要在 callback 中调用 `getNetworkCapabilities()` 或 `getLinkProperties()` 等同步方法，因为结果可能过期或为空。 [已验证: android-17.0.0_r1, android/net/ConnectivityManager.java]
+Android 的网络切换事件不要用同步查询补状态。`ConnectivityManager.NetworkCallback` 文档说明，`onAvailable()` 从 Android O 起会紧跟 `onCapabilitiesChanged()` 与 `onLinkPropertiesChanged()`，并明确不要在 callback 中调用 `getNetworkCapabilities()` 或 `getLinkProperties()` 等同步方法，因为结果可能过期或为空。
 
 ## 弱网治理：先收敛失败，再谈加速
 
@@ -195,7 +197,7 @@ Android 的网络切换事件不要用同步查询补状态。`ConnectivityManag
 
 ## 压缩、缓存和预取要用请求形态验证
 
-Cronet 和 Android `HttpEngine` 都暴露了 Brotli 开关，HTTP cache 还能缓存 HTTP 数据和 QUIC server information。 [已验证: android-17.0.0_r1, NetworkStack, android/net/http/HttpEngine.java] 压缩和缓存的收益要按请求形态看。
+Cronet 和 Android `HttpEngine` 都暴露了 Brotli 开关，HTTP cache 还能缓存 HTTP 数据和 QUIC server information。 压缩和缓存的收益要按请求形态看。
 
 | 请求形态 | 优先策略 | 容易误判的点 |
 |---|---|---|
@@ -205,13 +207,13 @@ Cronet 和 Android `HttpEngine` 都暴露了 Brotli 开关，HTTP cache 还能�
 | 图片/视频 | CDN、尺寸协商、AVIF/WebP、ABR | HTTP API 的结论不能直接套到媒体栈 |
 | 日志上报 | 批量、压缩、充电/Wi-Fi 约束 | 失败重试容易放大后台移动数据 |
 
-Android 官方 network access optimization 文档把无线电状态机作为省电依据：每次创建新网络连接都会让 radio 进入高功耗状态，频繁小传输会让 radio 长时间停在高功耗；批量传输和预取可以减少独立传输会话，降低 radio 激活次数，同时改善延迟和下载时间。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/network-access-optimization]
+Android 官方 network access optimization 文档把无线电状态机作为省电依据：每次创建新网络连接都会让 radio 进入高功耗状态，频繁小传输会让 radio 长时间停在高功耗；批量传输和预取可以减少独立传输会话，降低 radio 激活次数，同时改善延迟和下载时间。
 
 预取要有退出条件：只预取用户下一步大概率会用到的数据；网络切到计费、受限、后台或低电量时停止；缓存命中率、废弃率和预取字节数必须上报。预取命中率低于业务阈值时，省下的等待会被浪费的流量和电量抵消。
 
 ## 后台网络要按电量和 Vitals 指标约束
 
-后台网络任务不能复用前台的“越快越好”策略。Android power 文档把网络请求与电量消耗直接关联；Android Vitals 的 excessive mobile network usage 页面说明，后台移动网络会唤醒 CPU 和 radio，反复执行会消耗电量，Play Console 会对后台移动网络使用过多给出提醒。 [已验证: 官方文档, https://developer.android.com/topic/performance/power/network/index.html] [已验证: 官方文档, https://developer.android.com/topic/performance/vitals/bg-network-usage]
+后台网络任务不能复用前台的“越快越好”策略。Android power 文档把网络请求与电量消耗直接关联；Android Vitals 的 excessive mobile network usage 页面说明，后台移动网络会唤醒 CPU 和 radio，反复执行会消耗电量，Play Console 会对后台移动网络使用过多给出提醒。
 
 工程上把后台网络拆成三类：
 
@@ -219,7 +221,7 @@ Android 官方 network access optimization 文档把无线电状态机作为省�
 - 用户不可感知：埋点、日志、模型配置、AB 配置。批量上报，限制移动网络和失败重试。
 - 业务保活：IM、推送、实时协作。单独设计心跳和退避，不能和普通 API 共享重试器。
 
-`TrafficStats` 可作为 App 侧流量基线：android-17.0.0_r1 文档说明它提供发送/接收字节和包数，范围包括所有接口、移动接口和 per-UID；统计值重启后清零，Android N 起查询其他 UID 会因隐私限制返回 `UNSUPPORTED`，历史网络统计应使用 `NetworkStatsManager`。 [已验证: android-17.0.0_r1, android/net/TrafficStats.java]
+`TrafficStats` 可作为 App 侧流量基线：android-17.0.0_r1 文档说明它提供发送/接收字节和包数，范围包括所有接口、移动接口和 per-UID；统计值重启后清零，Android N 起查询其他 UID 会因隐私限制返回 `UNSUPPORTED`，历史网络统计应使用 `NetworkStatsManager`。
 
 ## 指标采集要覆盖客户端、接入层和业务层
 
@@ -235,11 +237,11 @@ Android 官方 network access optimization 文档把无线电状态机作为省�
 | 接入层 | region、IDC/CDN、upstream latency、5xx、限流、重试 | 区分客户端网络与服务端问题 |
 | 业务层 | 页面阶段、接口优先级、缓存命中、降级状态 | 判断用户是否真的变快 |
 
-参考书提到插桩、Native Hook、TrafficStats、接入层监控这些方向。当前章节不建议把 Hook 当成默认方案：Aspect/OkHttp interceptor 适合统一自家网络层；Native Hook 能覆盖更底层 socket，但兼容性、稳定性和隐私风险更高，适合 APM SDK 或实验环境。常规业务 App 先把网络库事件和 TrafficStats 做准。 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md]
+参考书提到插桩、Native Hook、TrafficStats、接入层监控这些方向。当前章节不建议把 Hook 当成默认方案：Aspect/OkHttp interceptor 适合统一自家网络层；Native Hook 能覆盖更底层 socket，但兼容性、稳定性和隐私风险更高，适合 APM SDK 或实验环境。常规业务 App 先把网络库事件和 TrafficStats 做准。
 
 ## 不同场景不要套同一套网络结论
 
-普通 API、WebView、Media3/ExoPlayer、文件下载和 IM 长连接使用的网络栈可能不同。Cronet integration 文档说明 Cronet 可以与 ExoPlayer、gRPC、OkHttp、Glide、Dart 等库集成；这说明网络栈有机会统一，但不代表所有库天然共用同一套连接池和指标。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/cronet/integration]
+普通 API、WebView、Media3/ExoPlayer、文件下载和 IM 长连接使用的网络栈可能不同。Cronet integration 文档说明 Cronet 可以与 ExoPlayer、gRPC、OkHttp、Glide、Dart 等库集成；这说明网络栈有机会统一，但不代表所有库天然共用同一套连接池和指标。
 
 场景拆分建议：
 
