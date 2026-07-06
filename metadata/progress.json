@@ -671,6 +671,13 @@
       "drafted_at": "2026-07-06T11:04:00+08:00",
       "note": "Created from knowledge gap mining (Modular startup)",
       "gap_source": "AOSP结构"
+    },
+    {
+      "section": "ch02.1",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-06T12:19:38+08:00",
+      "note": "SurfaceFlinger GPU 性能监控子系统: FPSReporter/JankTracker/FrameTracer/TimeStats 四子系统源码架构 + 调试属性系统 + gralloc 转换 + 开销分析矩阵"
     }
   ],
   "review_history": [
@@ -954,14 +961,14 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-06T06:04:00+08:00",
-    "last_section": "13.26",
+    "last_run": "2026-07-06T12:19:38+08:00",
+    "last_section": "ch02.1",
     "result": "content-processed",
     "fix_count": 1,
     "last_sections": [
-      "13.26"
+      "ch02.1"
     ],
-    "note": "android.os.Trace API 深度解析: 6 anchors (API演进/底层实现/应用最佳实践/Perfetto SDK对比/SQL查询/陷阱) + 1 extension. AOSP android-17.0.0_r1 源码验证."
+    "note": "SurfaceFlinger GPU 性能监控子系统源码解析: 7 anchors (调试属性/FPSReporter/JankTracker/FrameTracer/TimeStats/gralloc转换/开销分析) + 3 extensions (Vulkan/厂商计数器/开销量化). AOSP android-17.0.0_r1 源码验证."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",
