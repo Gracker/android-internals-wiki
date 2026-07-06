@@ -328,6 +328,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-07-06T21:30:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-07-06T22:50:00+08:00",
+    "completed_by": "openclaw-task2b-main",
+    "completed_reason": "fixed: 版本映射说明 + 源码路径全量验证更新 + ADPF-PowerMonitor协作流程详解"
   }
 }
