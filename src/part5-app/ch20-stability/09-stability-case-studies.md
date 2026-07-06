@@ -55,6 +55,8 @@ task6_l1_l2_fixes: 6
 task6_l3_l4_issues: 0
 finalized_date: "2026-07-06"
 finalized_by: "openclaw-task9-auto-promote"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 ---
 
 # 稳定性治理案例集
@@ -81,7 +83,6 @@ finalized_by: "openclaw-task9-auto-promote"
 
 ### 分类：虚拟内存不足型 OOM
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
 
 OOM 分两大类：Java 堆限制和虚拟内存不足。前者的特征是堆栈出现在 `Heap::AllocObjectWithAllocator` → `AllocateInternalWithGc` 路径上（详见 20.5 节）。后者的特征是崩溃点在 `malloc`、`pthread_create`、`mmap` 等 Native 分配路径上，Java 堆有余量。
 
@@ -119,8 +120,6 @@ FDSize: 342
 - 应用启动时线程数约 40（正常）
 - 运行 20 分钟后增长到 387
 - 增长模式：每隔 30-60 秒新增 3-5 个线程，旧线程不退出
-
-`[已验证: AOSP android-17.0.0_r1, art/runtime/thread.cc CreateNativeThread]`
 
 查看线程名称，大部分是空字符串或默认的 `Thread-N` 格式——没有设置 `Thread.setName()`。这种"匿名线程"的治理在 20.7 节的异常架构设计中已经建立了监控体系。本案例中，问题出在一个第三方推送 SDK：
 
@@ -200,7 +199,6 @@ public void onMethodEnter() {
 
 ### 背景：信号处理器的工作方式
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]
 
 Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。当进程收到 SIGSEGV、SIGABRT 等信号时，内核把控制权交给注册的处理器，处理器负责 dump 调用栈和寄存器状态。
 
@@ -219,7 +217,6 @@ Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。�
 - SDK A 重新注册 SIGSEGV 处理器（例如在 `SIGPIPE` 恢复后重新初始化），此时 `oldact` 保存的是 B 的处理器
 - 链路变成：A → B → A → ... 循环调用，或者某一方丢失了 `oldact`
 
-`[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp; bionic/linker/linker_debuggerd_android.cpp]`
 
 ### 追踪：确认信号处理器覆盖
 
@@ -248,7 +245,6 @@ void dump_signal_handlers() {
 
 **Android 5.0 模式在 Android 17 中的适用性**：Android 5.0 引入的 debuggerd 信号处理器链机制（`debuggerd_signal_handler` → `linker_debuggerd_signal_handler`）在 Android 17 中保持兼容，但约束更强。Android 5.0 时期，handler 内执行 `dlopen("libc++.so")` 和 `__android_log_print` 等操作虽不安全但通常能工作；Android 17 的运行时对这些操作默认拒绝或触发 SIGABRT 二次崩溃。保留旧处理器链时，不要默认调用未知 SDK 的旧 handler——除非对方显式保证 async-signal-safe。
 
-`[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/ 路径下的 debuggerd_handler.cpp；linker 中的 linker_debuggerd_android.cpp 在 Android 17 中保持但从 debuggerd 迁移到了 bionic/linker 目录]`
 
 **Android 15+ 信号处理机制演进**：Android 15 (API 35) 开始收紧信号处理安全约束，明确禁止 handler 内分配内存和持有锁；Android 16 (API 36) 引入 perf_event 辅助 crash 上下文采集；Android 17 (API 37) 完成了线程亲和性信号分发、动态 altstack 尺寸等增强。从 Android 15 到 17 的演进方向是：handler 只做"最小快照 + 重新投递"，复杂工作交给系统 crash_dump / debuggerd / tombstone 流程。统一信号处理器的实现应遵循这个最小职责原则。
 
@@ -348,7 +344,6 @@ void register_unified_handler() {
 
 **禁止 SDK 的 longjmp 恢复**：在信号处理器中执行 `longjmp` 会跳过 RAII 析构、锁释放等清理步骤，导致死锁或内存损坏。正确做法是记录最小快照、恢复默认动作、重新投递信号，让进程按系统 crash 流程终止。
 
-`[已验证: POSIX async-signal-safe 约束；handler 内只保留 write/sigaction/sigprocmask/raise/_exit 等安全动作，unwind/符号化/文件写入移出 handler]`
 
 ### 验证
 
@@ -379,7 +374,6 @@ void register_unified_handler() {
 
 ### 追踪：ContentProvider 的初始化机制
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java；frameworks/base/services/core/java/com/android/server/pm/ComputerEngine.java]
 
 `ActivityThread.handleBindApplication` 在应用启动时按以下顺序执行：
 
@@ -497,7 +491,6 @@ override fun onCreate(): Boolean {
 }
 ```
 
-`[已验证: AOSP android-17.0.0_r1, ActivityThread.installContentProviders；ComputerEngine.queryContentProviders / sProviderInitOrderSorter]`
 
 ### 验证
 
