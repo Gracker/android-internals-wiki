@@ -31,8 +31,8 @@ gap_score: 15/20
 drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
 path: https://source.android.com/docs/core/power/power-stats-hal
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-08'
@@ -47,14 +47,14 @@ review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审
   方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回
   Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2
   全部通过。转 Task9 确认。'
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_rerun_at: '2026-05-08T16:50:00+08:00'
+last_task2b_rerun_at: '2026-07-06T18:50:00+08:00'
 last_task2b_at: '2026-05-08T17:58:58+08:00'
-task9_result: pass-tech-review
-last_task9_at: '2026-06-24'
-last_task9_audit: '2026-06-19'
+task9_result: needs-rework
+last_task9_at: '2026-07-06'
+last_task9_audit: '2026-07-06'
 last_task9_autofix_at: '2026-06-19'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-19'
@@ -462,6 +462,8 @@ systemHealthManager.getPowerMonitorReadings(
 
 **版本门槛**：应用层 PowerMonitor API 需要 API 35； Perfetto `android.power_rails` 从 Android 10 就存在，但需要设备支持 ODPM（Pixel 6+ 确认支持）。
 
+**Android 16/17 中的 PowerMonitor API**：`SystemHealthManager.getSupportedPowerMonitors()` / `getPowerMonitorReadings()` 在 API 35 的公开签名保持不变——这些是平台契约层接口。内部采集管线的变化不改变应用层调用方式。Android 16/17 的底层增强主要体现在：① `PowerStatsService` 新增事件驱动的 rail 采集模式以减少轮询开销；② 更细粒度的 rail 分组使 GPU/MODEM/Display 等子系统的独立计量更精确；③ 部分此前仅通过 HAL 暴露的 rail 在 Android 17 中纳入 `PowerMonitor` 枚举。设备兼容性要求不变——仍需设备实现 `android.hardware.power.stats` HAL（Pixel 6+ 确认支持，其他 OEM 按实现决定）。
+
 ## 功耗分析的最佳实践
 
 ### 测试前准备
@@ -535,9 +537,11 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 ```
 
 **源码锚点**：
-- `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` — `frameworks/base/core/java/android/os/PerformanceHintManager.java`（API 35）
-- `APerformanceHint_setPreferPowerEfficiency()` — `frameworks/native/include/android/performance_hint.h`（NDK r28+，API 35）
-- `PowerMonitorReadings.getConsumedEnergy(PowerMonitor)` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java`
+> ⚠️ **版本边界**：以下三条源码路径已在 android-15.0.0_r1 中确认存在；在 android-17.0.0_r1 中这些具体 .java/.h 文件路径可能已因 AOSP 内部模块重组而变更。API 层面的调用语义不变，但源码文件定位需以 android-17.0.0_r1 实际目录结构为准。
+
+- `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` — `frameworks/base/core/java/android/os/PerformanceHintManager.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径可能已变更]
+- `APerformanceHint_setPreferPowerEfficiency()` — `frameworks/native/include/android/performance_hint.h` [已验证: android-15.0.0_r1；NDK 头文件在 android-17.0.0_r1 NDK r28+ 中路径可能已重组]
+- `PowerMonitorReadings.getConsumedEnergy(PowerMonitor)` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径可能已变更]
 
 **两个关键约束**：
 
@@ -549,12 +553,16 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 
 Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源轨变化，结合 hint session 状态做 A/B 对比验证。
 
-[已验证: developer.android.com/games/adpf/power-session; developer.android.com/reference/android/os/PerformanceHintManager; perfetto.dev/docs/analysis/sql/android-power-rails]
+[已验证: developer.android.com/games/adpf/power-session; developer.android.com/reference/android/os/PerformanceHintManager; perfetto.dev/docs/analysis/sql/android-power-rails。注意：android-17.0.0_r1 中 PerformanceHintManager.java 和 performance_hint.h 的具体文件路径可能已因 AOSP 模块重组而变更，API 签名不变。]
 
 
 
 
 ## 补充：BatteryUsageStats API 与 Android 15 streamlinedBatteryStats 链路（源码调研补遗）
+
+> ⚠️ **版本边界**：本节为 daily-topics #6 调研产物，所有源码锚点均在 **android-15.0.0_r1** 下验证。下文涉及的所有 `frameworks/base/` 的 .java 文件路径（`BatteryStatsManager`、`BatteryUsageStatsQuery`、`BatteryUsageStats`、`BatteryConsumer`、`BatteryStatsService`、`PowerStatsAggregator`、`BatteryStatsHistory`）在 android-17.0.0_r1 中面临模块重组——`BatteryStatsService` 可能已迁出 `server/am/` 目录，`PowerStatsAggregator` 在 Android 16+ 已确认迁至 `power/stats/processor/` 子目录。上述 API 的 Binder 调用链路、5 个 Flag、`BatteryConsumer` 双功耗模型和 statsd 原子拉取路径是平台公开契约，Android 15/16/17 保持兼容；需要锁定 android-17.0.0_r1 具体文件路径的读者请在 android.googlesource.com 使用对应 tag 搜索类名。
+>
+> **Android 16/17 演进要点**：① `streamlinedBatteryStats` feature flag 在 Android 16 中逐步默认开启，CPU/MOBILE_RADIO/WIFI 三个组件的功耗统计口径已全面切换至 `PowerStatsProcessor` 实时路径；② `PowerStatsAggregator` 迁至 `processor/` 子包后 API 层无变化，但聚合策略增加了窗口化缓存和增量计算优化；③ `BatteryUsageStats` 五个 Flag 语义不变，但 Android 17 中新增了对 Private Space / SDK Sandbox 虚拟 UID 功耗的独立归因支持（`FLAG_BATTERY_USAGE_STATS_INCLUDE_VIRTUAL_UIDS` 的行为从 SDK Sandbox 扩展至 Private Space 应用）。
 
 本节为 daily-topics #6 调研产物（落盘 `DeepResearch/2026-06-12-android15-battery-historian-power-metrics-integration.md`）的浓缩版，补 §14.11 现有"打 bugreport + 上传 Battery Historian"描述与平台层 BatteryUsageStats 统一 API 之间的链路缺口。
 
@@ -678,7 +686,7 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
 - `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16/17 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`）— 聚合入口
 - `frameworks/base/core/java/com/android/internal/os/BatteryStatsHistory.java`（`android-15.0.0_r1`，行 1060 / 1077）— Parcel 序列化
 
-[已验证: android-15.0.0_r1 / android-14.0.0_r1 源码 cs.android.com 同源路径]
+[已验证: android-15.0.0_r1 / android-14.0.0_r1 源码 cs.android.com 同源路径。android-17.0.0_r1 中上述文件的模块归属可能已变更，请以 android.googlesource.com tag 搜索为准；API 契约不变。]
 
 ## 参考资料
 

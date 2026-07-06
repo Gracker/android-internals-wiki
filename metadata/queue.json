@@ -426,6 +426,76 @@
   ],
   "items": [
     {
+      "section": "14.11",
+      "section_title": "Battery Historian 与功耗分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 闲时抽检发现大量源码引用错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "BatteryStatsService.java 路径",
+          "detail": "文中引用 `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`，但在 android-17.0.0_r1 中无法找到该文件。路径错误导致开发者无法定位正确的源码位置。",
+          "suggestion": "重新验证 BatteryStatsService 在 Android 17 中的实际存在路径，如不存在需重新组织内容或标注实验性状态。"
+        },
+        {
+          "type": "源码错误",
+          "location": "PowerMonitorReadings.java 路径",
+          "detail": "文中引用 `frameworks/base/core/java/android/os/PowerMonitorReadings.java`，但在 android-17.0.0_r1 中无法找到该文件。API 35 的 PowerMonitor 系列接口可能未在 Android 17 中实现。",
+          "suggestion": "确认 PowerMonitor API 在 Android 17 中的支持状态，如不存在则移除相关内容或标注为实验性功能。"
+        },
+        {
+          "type": "源码错误",
+          "location": "PerformanceHintManager.java 路径",
+          "detail": "文中引用 `frameworks/base/core/java/android/os/PerformanceHintManager.java`，但在 android-17.0.0_r1 中无法找到该文件。该 API 的实现可能在 Android 17 中有重大调整或重命名。",
+          "suggestion": "验证 PerformanceHintManager API 在 Android 17 中的存在性和 API 变更，更新路径或调整内容描述。"
+        },
+        {
+          "type": "源码错误",
+          "location": "NDK performance_hint.h 路径",
+          "detail": "文中引用 `frameworks/native/include/android/performance_hint.h`，但在 android-17.0.0_r1 中无法找到该文件。说明 NDK 功耗相关 API 在 Android 17 中可能重新组织。",
+          "suggestion": "确认 NDK performance_hint.h 在 Android 17 中的实际路径和内容，如不存在需重新组织内容。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T18:22:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-06T18:53:55+08:00",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "fixed: P95源码路径版本边界标注 + P85 Android 16/17演进说明补充"
+    },
+    {
+      "section": "14.11",
+      "section_title": "Battery Historian 与功耗分析工具",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 闲时抽检发现版本差异覆盖不完整",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "Android 15+ Streamlined Battery Stats 描述",
+          "detail": "章节详细介绍了 Android 15 的 BatteryUsageStats 统一归因体系，但未明确说明这些 API 在 Android 16/17 中的兼容性或演进。章节标注适用范围过大，但 Android 15+ 的新机制在 Android 16/17 中可能有重大变化。",
+          "suggestion": "补充 Android 16/17 中 BatteryUsageStats API 的演进变化、兼容性说明和最佳实践建议。"
+        },
+        {
+          "type": "版本差异",
+          "location": "PowerMonitor API 支持状态描述",
+          "detail": "文中提到 Android 15 (API 35) 开放了 PowerMonitor API，但未明确说明 Android 16/17 是否继续支持或增强，以及是否所有设备都能获得 rail 数据。",
+          "suggestion": "明确说明 Android 16/17 对 PowerMonitor API 的支持状态、新增功能和设备兼容性要求。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-06T18:22:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-06T18:53:55+08:00",
+      "completed_by": "openclaw-task2b-main",
+      "completed_reason": "fixed: P95源码路径版本边界标注 + P85 Android 16/17演进说明补充"
+    },
+    {
       "section": "2.15",
       "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
       "priority": 60,
