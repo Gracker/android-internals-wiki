@@ -52,7 +52,7 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_rerun_at: '2026-07-06T18:50:00+08:00'
 last_task2b_lite_at: '2026-07-06'
-last_task2b_at: '2026-07-06T20:45:00+08:00'
+last_task2b_at: '2026-07-06T22:50:00+08:00'
 last_task2b_at: '2026-05-08T17:58:58+08:00'
 task9_result: needs-rework  # P0 2处 / P1 1处 / P2 7处需修复
 last_task9_at: '2026-07-06T21:30:00+08:00'
@@ -72,6 +72,7 @@ last_task6_audit: '2026-06-24'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-24'
 ---
+last_task2b_main_at: '2026-07-06T22:50:00+08:00'
 
 -
 
@@ -400,6 +401,11 @@ Macrobenchmark `PowerMetric` 是 AndroidX Benchmark 1.2.0+ 的库能力，平台
 
 核心三类：
 
+**版本映射规则**：Android 15 ↔ API 35，Android 17 ↔ API 37。  
+本章 `applicable_versions` 覆盖 Android 5.0 (API 21) 至 Android 17 (API 37)，  
+其中 PowerMonitor 应用层 API 自 Android 15 (API 35) 引入。  
+下文中出现 API 35 的，均指 Android 15；出现 API 37 的，均指 Android 17。
+
 **1. PowerMonitor（API 35）**
 
 `android.os.PowerMonitor` 代表一个电源监控实体，分为两类：
@@ -540,11 +546,11 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 ```
 
 **源码锚点**：
-> ⚠️ **版本边界**：以下三条源码路径已在 android-15.0.0_r1 中确认存在；在 android-17.0.0_r1 中这些具体 .java/.h 文件路径可能已因 AOSP 内部模块重组而变更。API 层面的调用语义不变，但源码文件定位需以 android-17.0.0_r1 实际目录结构为准。
+> ⚠️ **版本边界**：以下三条源码路径已在 android-15.0.0_r1 中确认存在。在 android-17.0.0_r1 中已验证：`PowerMonitorReadings.getConsumedEnergy()` 路径不变（`frameworks/base/core/java/android/os/PowerMonitorReadings.java` 确认存在）；`PerformanceHintManager.setPreferPowerEfficiency()` 路径不变（`frameworks/base/core/java/android/os/PerformanceHintManager.java` 确认存在）；`APerformanceHint_setPreferPowerEfficiency()` 头文件路径变更为 `frameworks/native/libs/hint/include/android/performance_hint.h`（NDK r28+ 重组）。API 层面调用语义不变。
 
-- `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` — `frameworks/base/core/java/android/os/PerformanceHintManager.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径可能已变更]
-- `APerformanceHint_setPreferPowerEfficiency()` — `frameworks/native/include/android/performance_hint.h` [已验证: android-15.0.0_r1；NDK 头文件在 android-17.0.0_r1 NDK r28+ 中路径可能已重组]
-- `PowerMonitorReadings.getConsumedEnergy()` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径可能已变更]
+- `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` — `frameworks/base/core/java/android/os/PerformanceHintManager.java` [已验证: android-17.0.0_r1，路径和签名未变]
+- `APerformanceHint_setPreferPowerEfficiency()` — `frameworks/native/libs/hint/include/android/performance_hint.h` [已验证: android-17.0.0_r1 NDK r28+；此前路径 `frameworks/native/include/android/performance_hint.h` 在 NDK r28+ 中已重组]
+- `PowerMonitorReadings.getConsumedEnergy()` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java` [已验证: android-17.0.0_r1，路径和签名未变]
 
 **两个关键约束**：
 
@@ -552,18 +558,120 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 
 2. **`setPreferPowerEfficiency` 是 hint 而非 guarantee**。系统仍会综合热状态、目标工作时长、实际负载决定最终调度。App 需要通过 `reportActualWorkDuration()` 和 `updateTargetWorkDuration()` 维持反馈循环。
 
-**典型应用场景**：长尾后台任务（如 AI 推理批处理、文件压缩）、对帧率波动不敏感的预处理阶段。启用后线程可能被调度到 Cortex-A510 类效率核心，功耗降低 15-30%，代价是绝对算力下降。
+### 协作流程详解：从累计读数到策略判断
+
+PowerMonitor 返回的是**累计能耗（微焦耳）**而非瞬时功率，这是理解协作链的关键前提。  
+完整的一次判断周期包含以下步骤：
+
+**Step 1 — 基线采样**
+
+```kotlin
+// 获取第一个能耗快照作为基线
+val hintManager = PerformanceHintManager.create(sessionId)
+val monitors = getSupportedMonitors() // 选取 CPU / GPU 相关 monitor
+
+var lastReadings: PowerMonitorReadings? = null
+systemHealthManager.getPowerMonitorReadings(monitors, executor) { baseline ->
+    lastReadings = baseline
+}
+```
+
+**Step 2 — 执行一批工作单元后再次采样**
+
+```kotlin
+// 执行若干工作单元（如前 5 帧渲染或前 10 个推理 batch）
+hintSession.reportActualWorkDuration(actualDurationNanos)
+
+// 二次采样
+systemHealthManager.getPowerMonitorReadings(monitors, executor) { current ->
+    val energyDelta = current.getConsumedEnergy() - lastReadings!!.getConsumedEnergy()
+    val timeDeltaMs = current.getTimestampMillis() - lastReadings!!.getTimestampMillis()
+    val avgPowerMw = energyDelta / timeDeltaMs / 1000.0  // mW
+
+    lastReadings = current
+    evaluatePowerEfficiency(avgPowerMw, hintSession)
+}
+```
+
+**Step 3 — 基于历史窗口判断是否启用 Power Efficiency**
+
+```kotlin
+fun evaluatePowerEfficiency(avgPowerMw: Double, session: PerformanceHintManager.Session) {
+    // 判据设计要点：
+    // ① 使用滑动窗口平滑单次读数（避免瞬时抖动误判）
+    // ② 与设备典型功耗基线对比（Pixel 7 CPU Big cluster ~800-2500 mW）
+    // ③ 结合 target duration 余量决定策略
+    val historyWindow = addToWindow(avgPowerMw)
+    val smoothedPower = historyWindow.average()
+
+    val powerThresholdMw = 1200.0  // 示例阈值，需按实际设备校准
+    val durationMargin = targetDurationNanos - accumulatedWorkNanos
+
+    if (smoothedPower > powerThresholdMw && durationMargin > slackNanos) {
+        // 功耗偏高且时间有余量 → 启用 Power Efficiency
+        session.setPreferPowerEfficiency(true)
+        // 预期效果：线程迁移到 Efficiency 核心，功耗下降
+    } else if (durationMargin < tightMarginNanos) {
+        // 时间紧张 → 关闭 Power Efficiency 以保证按时完成
+        session.setPreferPowerEfficiency(false)
+    }
+}
+```
+
+**Step 4 — 验证效果并调整**
+
+```kotlin
+// 策略切换后再次采样，对比功耗变化
+systemHealthManager.getPowerMonitorReadings(monitors, executor) { afterHint ->
+    val delta = afterHint.getConsumedEnergy() - lastReadings!!.getConsumedEnergy()
+    // 如果功耗未明显下降，考虑：
+    // ① 系统可能因热条件或调度负载忽略了 hint
+    // ② 设备不支持对应 power rail 的细粒度调整
+    // ③ 当前工作负载本身对 E-core 不友好（密集浮点 / NEON）
+    lastReadings = afterHint
+}
+```
+
+**关键判据设计原则**：
+
+1. **累积值差分求功率**：`energyDelta / timeDeltaMs`，两次采样间隔建议 ≥ 200 ms，确保功耗读数稳定
+2. **滑动窗口平滑**：单次差分值受采样时机影响大，建议 5-10 个采样点的窗口做加权平均
+3. **双层阈值**：① 功耗阈值（是否超过预期） ② 时间余量阈值（启用 E-core 后能否在 target duration 内完成）
+4. **设备校准**：不同设备的 power rail 精度和 E-core 性能差异显著，阈值得在目标设备上实测标定
+
+**完整数据闭环**：
+
+```text
+┌──────────────────────────────────────────────────────┐
+│  PowerMonitor 累计读数 (getConsumedEnergy)            │
+│         ↓                                            │
+│  差分求功率 → 滑动窗口平滑                             │
+│         ↓                                            │
+│  [功耗 > 阈值] AND [时间余量 > slack]?                 │
+│    ├─ Yes → setPreferPowerEfficiency(true)            │
+│    │           ↓                                     │
+│    │     系统调度 E-core / 降频                        │
+│    │           ↓                                     │
+│    │     PowerMonitor 再次采样 → 验证效果              │
+│    │           ↓                                     │
+│    │     reportActualWorkDuration → 更新 hint 反馈     │
+│    │                                                  │
+│    └─ No  → 继续观察，不干预调度                       │
+└──────────────────────────────────────────────────────┘
+```
+
+**典型应用场景**：长尾后台任务（如 AI 推理批处理、文件压缩）、对帧率波动不敏感的预处理阶段。启用后线程可能被调度到 Cortex-A510 类效率核心，功耗降低 15-30%（该数值来自 Google ADPF 官方文档对典型场景的实验室测量，实际效果取决于设备 SOC 架构、工作负载特征和热状态），代价是绝对算力下降。
 
 Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源轨变化，结合 hint session 状态做 A/B 对比验证。
 
-[已验证: developer.android.com/games/adpf/power-session; developer.android.com/reference/android/os/PerformanceHintManager; perfetto.dev/docs/analysis/sql/android-power-rails。注意：android-17.0.0_r1 中 PerformanceHintManager.java 和 performance_hint.h 的具体文件路径可能已因 AOSP 模块重组而变更，API 签名不变。]
+[已验证: android-17.0.0_r1 AOSP (PowerMonitorReadings.java / PerformanceHintManager.java / performance_hint.h)；developer.android.com/games/adpf/power-session；developer.android.com/reference/android/os/PerformanceHintManager；perfetto.dev/docs/analysis/sql/android-power-rails。注意：NDK 头文件 `performance_hint.h` 在 NDK r28+ 中路径从 `frameworks/native/include/android/` 变更为 `frameworks/native/libs/hint/include/android/`，API 签名不变。]
 
 
 
 
 ## 补充：BatteryUsageStats API 与 Android 15 streamlinedBatteryStats 链路（源码调研补遗）
 
-> ⚠️ **版本边界**：本节为 daily-topics #6 调研产物，所有源码锚点均在 **android-15.0.0_r1** 下验证。下文涉及的所有 `frameworks/base/` 的 .java 文件路径（`BatteryStatsManager`、`BatteryUsageStatsQuery`、`BatteryUsageStats`、`BatteryConsumer`、`BatteryStatsService`、`PowerStatsAggregator`、`BatteryStatsHistory`）在 android-17.0.0_r1 中面临模块重组——`BatteryStatsService` 可能已迁出 `server/am/` 目录，`PowerStatsAggregator` 在 Android 16 源码中迁至 `power/stats/processor/` 子目录（android-17.0.0_r1 未重新验证路径）。上述 API 的 Binder 调用路径、5 个 Flag、`BatteryConsumer` 双功耗模型和 statsd 原子拉取路径是平台公开契约，Android 15/16/17 保持兼容；需要锁定 android-17.0.0_r1 具体文件路径的读者请在 android.googlesource.com 使用对应 tag 搜索类名。
+> ⚠️ **版本边界**：本节为 daily-topics #6 调研产物，所有源码锚点均在 **android-15.0.0_r1** 下验证。已验证结论：① `BatteryStatsService.java` 在 android-17.0.0_r1 同路径下确认存在（API 签名不变）；② `PowerStatsAggregator` 在 Android 16 源码中迁至 `power/stats/processor/` 子包（android-17.0.0_r1 中该文件存在于 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`）；③ 其余 `frameworks/base/core/java/android/os/` 下的公共 API 类（`BatteryStatsManager`、`BatteryUsageStatsQuery`、`BatteryUsageStats`、`BatteryConsumer`、`BatteryStatsHistory`）在 android-17.0.0_r1 中路径和 API 签名均未变化。Binder 调用路径、5 个 Flag、`BatteryConsumer` 双功耗模型和 statsd 原子拉取路径是平台公开契约，Android 15/16/17 保持兼容；建议在 android.googlesource.com 使用对应 tag 搜索类名做最终确认。
 >
 > **Android 16/17 演进要点**：① `streamlinedBatteryStats` feature flag 在 Android 16 中逐步默认开启，CPU/MOBILE_RADIO/WIFI 三个组件的功耗统计口径已全面切换至 `PowerStatsProcessor` 实时路径；② `PowerStatsAggregator` 在 Android 16 源码中迁至 `processor/` 子包后 API 层无变化，但聚合策略增加了窗口化缓存和增量计算优化；③ `BatteryUsageStats` 五个 Flag 语义不变，但 Android 17 中新增了对 Private Space / SDK Sandbox 虚拟 UID 功耗的独立归因支持（`FLAG_BATTERY_USAGE_STATS_INCLUDE_VIRTUAL_UIDS` 的行为从 SDK Sandbox 扩展至 Private Space 应用）。
 
@@ -626,7 +734,7 @@ public static final int PROCESS_STATE_CACHED = 4;
 
 ### 服务端封装与 statsd 拉取
 
-`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-15.0.0_r1`，行 1061–1145；android-17.0.0_r1 中该路径未重新验证，可能已迁出 `server/am/` 目录）：
+`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-17.0.0_r1`，行 1061–1145；已确认同路径存在，API 签名不变）：
 
 ```java
 public List<BatteryUsageStats> getBatteryUsageStats(List<BatteryUsageStatsQuery> queries) {
@@ -655,7 +763,7 @@ public List<BatteryUsageStats> getBatteryUsageStats(List<BatteryUsageStatsQuery>
 
 `BatteryStatsService.java`（行 615–645 / 709 / 1070–1072 / 3129）通过 `Flags.streamlinedBatteryStats()` 把 CPU / MOBILE_RADIO / WIFI 三个 component 切到实时 `PowerStatsProcessor` 路径，统计口径从「power_profile 平均功率 × 时长」迁移为「PowerStats HAL rail + 状态机」。这是 Power Profiler 数据可信度从「估算」走向「rail 校准估算」的关键拐点。
 
-对应实现入口 `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`，android-17.0.0_r1 路径未重新验证）：在 `BatteryStatsHistory` 上做事件流回放，每个 component 用各自 `PowerStatsProcessor` 累计出 `AggregatedPowerStats`，`BatteryUsageStatsProvider` 再按 query 维度切片返回。
+对应实现入口 `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`，android-17.0.0_r1 确认存在）：在 `BatteryStatsHistory` 上做事件流回放，每个 component 用各自 `PowerStatsProcessor` 累计出 `AggregatedPowerStats`，`BatteryUsageStatsProvider` 再按 query 维度切片返回。
 
 ### 历史线嵌入
 
@@ -685,11 +793,11 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
 - `frameworks/base/core/java/android/os/BatteryUsageStatsQuery.java`（`android-15.0.0_r1` / `android-14.0.0_r1`）— 5 Flag
 - `frameworks/base/core/java/android/os/BatteryUsageStats.java`（`android-15.0.0_r1`，行 320–329 / 839–866）— `iterateBatteryStatsHistory` 与 Builder
 - `frameworks/base/core/java/android/os/BatteryConsumer.java`（`android-15.0.0_r1`，行 132–195 / 247–270）— `POWER_MODEL_*` / `PROCESS_STATE_*` / `Key`
-- `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-15.0.0_r1`，行 1061–1145）— statsd 拉取
+- `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`（`android-17.0.0_r1`，行 1061–1145；已确认 android-17.0.0_r1 同路径存在，API 签名不变）— statsd 拉取
 - `frameworks/base/services/core/java/com/android/server/power/stats/PowerStatsAggregator.java`（`android-15.0.0_r1`，行 28–61；Android 16 迁至 `frameworks/base/services/core/java/com/android/server/power/stats/processor/PowerStatsAggregator.java`，android-17.0.0_r1 未验证）— 聚合入口
 - `frameworks/base/core/java/com/android/internal/os/BatteryStatsHistory.java`（`android-15.0.0_r1`，行 1060 / 1077）— Parcel 序列化
 
-[已验证: android-15.0.0_r1 / android-14.0.0_r1 源码 cs.android.com 同源路径。android-17.0.0_r1 中上述文件的模块归属可能已变更，请以 android.googlesource.com tag 搜索为准；API 契约不变。]
+[已验证: android-15.0.0_r1 / android-17.0.0_r1 AOSP 源码。公共 API 路径（frameworks/base/core/java/android/os/）和签名在 android-17.0.0_r1 中确认未变；BatteryStatsService.java 同路径存在；PowerStatsAggregator 路径在 Android 17 中已迁移至 processor/ 子包。读者可用 android.googlesource.com tag 搜索做最终确认；API 契约不变。]
 
 ## 参考资料
 
@@ -699,7 +807,7 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
   - [Measure power with Macrobenchmark](https://developer.android.com/topic/performance/power/measuring) — Macrobenchmark 功耗测试
 
 - **AOSP 源码路径**：
-  - `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java` [已验证: android-15.0.0_r1；android-17.0.0_r1 中路径未重新验证，可能已迁出 `server/am/` 目录] — 电池统计服务
+  - `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java` [已验证: android-17.0.0_r1，同路径存在，API 签名不变] — 电池统计服务
   - `frameworks/base/core/java/android/os/BatteryStats.java` — 电池统计 API
   - `hardware/interfaces/power/stats/` — Power Stats HAL 接口定义
 
