@@ -2,8 +2,8 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
 tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
 confidence: "medium"
@@ -22,7 +22,7 @@ last_task2b_at: "2026-07-06T02:50:00+08:00"
 last_task2b_by: "openclaw-task2b-main"
 task2b_result: fixed
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: pass-tech-review
@@ -33,12 +33,12 @@ last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
 last_task9_audit: "2026-07-05T20:20:00+08:00"
 queue_entry: "task9-audit-20260612-14.8-apa-system-profiler-boundary"
-last_task6_at: "2026-07-06T05:05:00+08:00"
+last_task6_at: "2026-07-06T12:12:00+08:00"
 task6_reviewed_date: "2026-07-06"
-task6_reviewed_at: "2026-07-06T05:05:00+08:00"
+task6_reviewed_at: "2026-07-06T12:12:00+08:00"
 task6_reviewed_by: "openclaw-task6"
-finalized_date: "2026-07-05"
-finalized_by: "openclaw-task2b-auto-promote"
+finalized_date: "2026-07-06"
+finalized_by: "openclaw-task6-auto-promote"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-06
 last_task9_audit_log: "logs/deep-review/2026-07-05-22-deep-review.md"
@@ -145,7 +145,7 @@ System Profiler 的使用比较直观:
 
 AGI 支持的 GPU 计数器因 GPU 厂商而异:
 
-- **Qualcomm Adreno**:ALU 利用率、纹理读取带宽、L2 cache 命中率
+- **Qualcomm Adreno**:ALU 利用率、纹理读取带宽、L2 缓存命中率
 - **ARM Mali**:Fragment 线程活跃数、Vertex 线程活跃数、内存带宽
 - **PowerVR**:Tiler 利用率、Renderer 利用率、Shader 处理量
 
@@ -371,7 +371,7 @@ AGI 和 RenderDoc 都是捕获一帧来分析。这在问题稳定复现时够�
 这种间歇性卡顿的常见原因:
 
 - **Shader 编译尖刺**:运行时遇到新的 Shader 变体,驱动需要即时编译,这一帧的 GPU 时间就暴涨
-- **GPU Cache Thrash**:某些帧的工作集超出 GPU Cache 容量,导致频繁的显存访问
+- **GPU 缓存 Thrash**:某些帧的工作集超出 GPU 缓存容量,导致频繁的显存访问
 - **渲染状态变化**:每隔一段时间切换到一个使用不同渲染路径的场景
 
 单帧捕获很可能正好捕获到正常帧,错过了异常帧。Sokatoa 的多帧分析可以同时查看连续数十帧的 GPU 行为,精确定位哪个帧异常、异常帧有什么共同特征。

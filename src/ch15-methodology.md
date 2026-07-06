@@ -35,6 +35,7 @@ last_idle_audit_at: "2026-07-02T17:27:39+08:00"
 last_task6_audit: 2026-07-04
 last_task9_audit: "2026-07-06"
 last_idle_audit_at: "2026-07-06T09:23:00+08:00"
+last_task6_audit: 2026-07-06
 last_task9_audit: "2026-07-06"
 last_task9_audit_log: "logs/deep-review/2026-07-06-10-audit.md"
 deepseek_cn_review_state: done

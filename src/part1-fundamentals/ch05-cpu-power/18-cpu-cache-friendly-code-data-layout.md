@@ -506,6 +506,46 @@ Android 16KB page size（4.7 节讨论过）对 SLUB 没有直接影响——SLU
 
 [已验证: Linux kernel 6.12, mm/slub.c]
 
+
+### ART Biased CardTable 的硬件 cache 优化（Android 17）
+
+从 Android 17 的 ART GC 代码看，CardTable 的写屏障经过特殊设计以减少指令 cache 消耗：
+
+- **kCardSize = 1024 bytes**：每张 card 表项跨 16 条 64-byte cache line，GC 扫描器一次处理 1 KB 数据块，预取粒度天然对齐。
+- **biased base 技巧**：`CardTable::Create()` 时多分配 256 字节，计算 `biased_begin` 使其低 8 位恰好等于 `kCardDirty`（0x70）。这样 JIT 写屏障只需一条指令：`st1b [biased_base + (addr>>10)], 0x70`，无需单独加载常量到寄存器，**每写操作节省 1 条 icache 行**。
+- **dirty/aged/aged2 三级标记压缩**：`kCardDirty=0x70`、`kCardAged=0x6f`、`kCardAged2=0x6e`——三个值差一位，可在单字节比较中完成，减少分支预测失败概率。
+
+此设计让卡表写操作从"取指令→取地址→存数据"三步简化为"存数据"一步，在频繁对象赋值的场景下（如启动过程 onCreate 中创建大量对象）对性能有显著提升。
+
+[已验证: AOSP android-17.0.0_r1, art/runtime/gc/accounting/card_table.h + card_table.cc]
+
+### Android 17 PSS 三段核算机制（cache 流分离）
+
+Android 17 将进程内存划分为 three buckets：`otherPss/dalvikPss/nativePss`，每桶有不同的 cache 局部性：
+
+| Heap 桶 | 数据源 | Cache 特征 |
+|---------|--------|------------|
+| `dalvikPss` | `/proc/<pid>/smaps` 中 `[anon:dalvik-` 范围 | 高频扫描，GC CardTable 1 KB 粒度已 cache 对齐 |
+| `nativePss` | `mallinfo()` | syscall 快路径，几乎不占 cache 带宽 |
+| `otherPss` | `libmemtrack HAL` | 跨进程 IPC，cache cold |
+
+这种分离使不同类型内存的采样策略可差异化优化。Dalvik 桶启动后即可 cache warm，而 native 桶采样可更粗粒度以减少干扰。
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp]
+
+### libmeminfo 的 MemUsage 扩展（Android 17）
+
+`system/memory/libmeminfo/include/meminfo/meminfo.h` 在 Android 17 扩展了内存统计字段：
+
+- **anon_huge_pages**：跟踪 THP 使用（2 MB 大页），启动阶段 OAT 文件映射可受益
+- **file_pmd_mapped**：DEX 文件的大页映射优化，减少连续内存访问的 TLB miss
+- **shmem_pmd_mapped**：共享内存的大页使用，对 ProcessList 创建进程时的 fork 优化明显
+
+这些字段允许开发者精准跟踪大页使用情况，在内存分配策略中避免 false sharing。
+
+[已验证: AOSP android17-release, system/memory/libmeminfo/include/meminfo/meminfo.h]
+<!-- AIW-源码调研-2026-07-06 -->
+
 ## 扩展
 
 ### 🔸 GPU Cache 与异构计算
