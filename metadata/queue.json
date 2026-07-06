@@ -402,6 +402,29 @@
       "status": "pending",
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-07-07T06:18:43.841086+08:00"
+    },
+    {
+      "section": "1.5",
+      "section_title": "线程模型",
+      "priority": 85,
+      "reason": "[Task9 idle audit] 源码版本锚点 android-16.0.0_r1 与版本基线 android-17.0.0_r1 不匹配",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本边界",
+          "location": "全文源码引用标注（5处 // @ AOSP + 2处 [已验证]）",
+          "detail": "章节源码版本锚点标注为 android-16.0.0_r1，与 AIW 版本基线 android-17.0.0_r1 不匹配。正文已包含 android-16→17 演进说明，但标注未更新。",
+          "suggestion": "更新全部源码版本标注为 android-17.0.0_r1，参考资料补充版本限定"
+        }
+      ],
+      "added_by": "task9-idle-audit",
+      "added_at": "2026-07-07T07:36:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-07T07:36:00+08:00",
+      "completed_by": "task2b-lite",
+      "completion_note": "fixed-lite: 5处源码标注 + 2处[已验证] + 3处参考资料描述更新至 android-17.0.0_r1"
     }
   ],
   "pending": []
