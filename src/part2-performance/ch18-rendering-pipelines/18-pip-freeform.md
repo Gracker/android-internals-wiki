@@ -37,7 +37,7 @@ created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -45,8 +45,8 @@ last_task2b_lite_at: 2026-07-07
 reviewed_date: 2026-04-24
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task9_at: "2026-04-24T03:39:00+08:00"
-last_task9_audit: "2026-07-07"
+last_task9_at: 2026-07-07T04:24:36
+last_task9_audit: 2026-07-07
 last_task9_audit_log: "logs/deep-review/2026-07-01-04-audit.md"
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
