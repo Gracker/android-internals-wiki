@@ -35,11 +35,13 @@ tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: 2026-07-07
 reviewed_date: 2026-04-24
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -106,7 +108,7 @@ App 调用 `enterPictureInPictureMode()` 后，WindowManager / Shell 会先改�
 
 ### Shell 控制面与渲染边界
 
-进入 PiP、拖拽小窗、退出 PiP 这几类操作，现代 Android 往往还要经过 Shell 控制面。`TaskOrganizer` 负责接管任务级窗口容器，`WindowContainerTransaction` 描述 bounds、层级和 windowing mode 的变化，PiP 场景常见的是 `PipTaskOrganizer` 参与协调。它们负责“窗口树怎么改”；到了内容提交阶段，`SurfaceControl.Transaction` 和 BLAST 再负责“哪一帧带着哪块 buffer 生效”。排查时把这两层分开看，更容易定位问题。[已验证: AOSP `frameworks/base/core/java/android/window/TaskOrganizer.java`、`frameworks/base/core/java/android/window/WindowContainerTransaction.java`、`frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java`]
+进入 PiP、拖拽小窗、退出 PiP 这几类操作，Android 12+ 的设备往往还要经过 Shell 控制面。`TaskOrganizer`（Android 12 引入）负责接管任务级窗口容器，`WindowContainerTransaction` 描述 bounds、层级和 windowing mode 的变化，PiP 场景常见的是 `PipTaskOrganizer` 参与协调。它们负责“窗口树怎么改”；到了内容提交阶段，`SurfaceControl.Transaction` 和 BLAST 再负责“哪一帧带着哪块 buffer 生效”。排查时把这两层分开看，更容易定位问题。[已验证: AOSP `frameworks/base/core/java/android/window/TaskOrganizer.java`、`frameworks/base/core/java/android/window/WindowContainerTransaction.java`、`frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java`]
 
 ### 持续渲染、BufferQueue 和内存占用
 
@@ -166,7 +168,7 @@ Android 12+，PiP transition 和 shell transition 的控制面继续完善，窗
 | Android 8.0 | PiP 正式进入平台，多窗口内容开始经常以小窗形态参与合成 | 进入 / 退出小窗时要同时看窗口几何变化和内容供帧 |
 | Android 10 | Multi-resume 更常见，多窗口并发活跃度上升 | 同一 display 上的主线程 Traversal 串行竞争更容易暴露 |
 | Android 11 | `BLASTBufferQueue` 进入主窗口路径 | resize 排查要把 `queueBuffer()`、BLAST transaction merge、`latchBuffer` 摆到同一条时间线上 |
-| Android 12+ | PiP / shell transition 控制面继续打磨，FrameTimeline 可观测性更好 | 进入小窗、拖拽、回退时可以把 WM / Shell transition 和实际呈现结果直接对照 |
+| Android 12+ | `TaskOrganizer` / Shell transition 控制面引入并持续打磨，FrameTimeline 可观测性更好 | 进入小窗、拖拽、回退时可以把 WM / Shell transition 和实际呈现结果直接对照 |
 
 ### Trace 定位
 
