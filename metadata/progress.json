@@ -1,9 +1,9 @@
 {
   "total": 605,
-  "draft": 40,
-  "ready_for_review": 204,
+  "draft": 39,
+  "ready_for_review": 205,
   "finalized": 342,
-  "last_updated": "2026-07-07T06:18:43.841086+08:00",
+  "last_updated": "2026-07-07T07:10:32.492972+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -770,6 +770,13 @@
       "status": "no-candidates",
       "ts": "2026-07-07T05:07:41.708391+08:00",
       "note": "Gap mining round 35: 0 candidates ≥14. Coverage saturated (35th consecutive). No new DeepResearch/Clippings since last round. daily-info 2026-07-07: all 5 topics map to existing chapters (§6.19, §1.43, §8.17, §2.52) or score <14 (architecture/UseCase, Repository suspend). source-index: 0 unmapped high-quality."
+    },
+    {
+      "section": "20.19",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-07T07:10:32.492972+08:00",
+      "note": "Android 17 debuggerd/linker 集成源码级分析: 7 anchors (linker早期wiring/pseudothread clone+mmap栈/SA_EXPOSE_TAGBITS MTE/Wire Protocol v4/Permissive MTE+GWP-ASan Recoverable/SDK适配要点/ART SignalChain边界) + 2 extensions (检查清单/性能基准). 勘误3项错误叙事. AOSP android-17.0.0_r1 源码逐行验证."
     }
   ],
   "review_history": [
@@ -1053,12 +1060,14 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-07T05:07:41.708391+08:00",
-    "last_section": "none",
-    "result": "no-candidates",
-    "fix_count": 0,
-    "last_sections": [],
-    "note": "Gap mining round 35: 0 candidates ≥14. Coverage saturated (35th consecutive)."
+    "last_run": "2026-07-07T07:10:32.492972+08:00",
+    "last_section": "20.19",
+    "result": "drafted",
+    "fix_count": 1,
+    "last_sections": [
+      "20.19"
+    ],
+    "note": "§20.19 signal handler/debuggerd: 7 anchors + 2 extensions, corrected 3 false claims with source-verified analysis"
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",

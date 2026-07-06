@@ -732,5 +732,52 @@
       ],
       "scored_at": "2026-07-07T05:46:34.773672"
     }
+  ],
+  "entries": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-gpu-debug-tools-deep-dive.md",
+      "title": "Android 17 GPU 图形调试与性能优化工具链 — 源码级深挖补丁",
+      "summary": "深度分析 FrameTracer 三段式调用链（Layer→FrameTracer→Perfetto）、TimeStats statsd pull atom 双通道、JankTracker 批量分派机制，以及 GPU counter 跨设备标准化的双模式设计。",
+      "chapter_mapping": "ch14.8",
+      "processed_at": "2026-07-07T06:21:48.637571",
+      "processed_by": "task-deepresearch-injector",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-linker-debuggerd-init-wiring-source.md",
+      "title": "Android 17 linker 与 debuggerd 集成 — 重构「bionic/linker 内化」误解",
+      "summary": "用源码链路修正 debuggerd 迁移叙事，实际只新增 3 个薄文件，既存代码仍在 system/core/。linker_main 极早期调用 init，8 页 pseudothread stack via clone()。",
+      "chapter_mapping": "ch20.19",
+      "processed_at": "2026-07-07T06:21:48.637571",
+      "processed_by": "task-deepresearch-injector",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-cpu-cache-locality-pss-accounting.md",
+      "title": "Android 17 CPU 缓存局部性与 PSS 内存核算源码机制",
+      "summary": "三段式 PSS 核算 cache 局部性差异、Debug.MemoryInfo 新增字段、ART biased card table 指令级优化、Scudo 16KB page 对齐策略。",
+      "chapter_mapping": "ch04.35",
+      "processed_at": "2026-07-07T06:21:48.637571",
+      "processed_by": "task-deepresearch-injector",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-art-heaptask-concurrent-gc-suppression.md",
+      "title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制",
+      "summary": "6 个 HeapTask 子类共享 multiset 调度器、三条 GC 抑制护栏、mSponge 黑科技绕过 concurrent_start_bytes_ 阈值的源码级分析。",
+      "chapter_mapping": "ch04.34",
+      "processed_at": "2026-07-07T06:21:48.637571",
+      "processed_by": "task-deepresearch-injector",
+      "type": "DeepResearch"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md",
+      "title": "Android 17 SoC 厂商电池优化 × IPower HAL × schedutil 闭环",
+      "summary": "建立 SoC 级电池优化 5 层闭环模型，分析 Qualcomm/MediaTek/Samsung 三大厂商 Power HAL 实现差异与 schedutil governor 交互。",
+      "chapter_mapping": "ch17.21",
+      "processed_at": "2026-07-07T06:21:48.637571",
+      "processed_by": "task-deepresearch-injector",
+      "type": "DeepResearch"
+    }
   ]
 }
