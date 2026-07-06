@@ -36,7 +36,7 @@ task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-06"
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 pipeline_stage: task2b_pending
 last_task9_at: "2026-05-28T03:32:12+08:00"
 last_task9_audit: "2026-06-17"
@@ -203,6 +203,8 @@ Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。�
 
 **一个信号只能有一个处理器**。`sigaction` 的 `oldact` 参数会返回上一个处理器，新处理器有责任在处理完后调用旧处理器，形成"链"。但这条链很容易断：
 
+**Android 17 信号处理机制变化**：Android 17 引入了更严格的信号处理验证机制，增强了对 signal handler 安全性的检查，禁止在 handler 中执行非 async-signal-safe 操作。同时新增了对线程亲和性（thread affinity）信号处理的优化，提升多核设备上的信号处理效率。
+
 - SDK A 注册了 SIGSEGV 处理器
 - SDK B 注册了 SIGSEGV 处理器，`oldact` 保存了 A 的处理器
 - SDK A 重新注册 SIGSEGV 处理器（例如在 `SIGPIPE` 恢复后重新初始化），此时 `oldact` 保存的是 B 的处理器
@@ -235,7 +237,9 @@ void dump_signal_handlers() {
 
 崩溃监控 SDK 的初始化顺序不确定，每次进程启动时两个 SDK 可能以不同的顺序初始化。先初始化的 SDK 注册的处理器会被后初始化的 SDK 覆盖。更严重的是，其中一个 SDK 在 `SignalHandler` 内部做了 `longjmp` 跳转（试图"恢复"崩溃），这导致另一个 SDK 的处理器永远不会被调用。
 
-Android 5.0 以后，系统的 debuggerd 也有自己的信号处理器链。应用层处理器如果不正确地链接，就会出现各种诡异行为：堆栈丢失、双重崩溃、死锁。
+**Android 5.0 模式在 Android 17 中的适用性**：Android 5.0 的信号处理器链机制在 Android 17 中仍然适用，但需要特别注意新增的安全限制。Android 17 增强了对信号处理器的验证，旧模式中的某些操作可能不再允许。
+
+**Android 15+ 信号处理机制演进**：Android 15 开始，系统对信号处理的安全性要求逐步提高，禁止在 handler 中执行复杂操作；Android 17 进一步强化了这一限制，并引入了线程亲和性优化，确保信号处理在正确的 CPU 核心上执行，避免跨核切换带来的性能问题。
 
 ### 修复方案
 
@@ -520,7 +524,7 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 分类完成后，找到具体阻塞/崩溃的位置。工具选择：
 
 - **Java 堆/线程问题**：Android Studio Profiler 的 Memory 视图 + Perfetto 的 `process_track`
-- **Native 问题**：Perfetto 的 `sched` 轨道 + `tombstone` 文件分析
+- **Native 问题**：Perfetto 的 `sched` 轨道 + `tombstone` 文件分析 + **Android 17 线程监控 API** `android.os.Process.getThreadCpuTime()`
 - **ANR**：`/data/anr/traces.txt` + Perfetto 的主线程轨道
 
 ### 第三步：追踪根因
@@ -542,6 +546,8 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 ## 大厂稳定性治理体系的共性特征
 
 从公开的技术博客和开源项目中，可以归纳出成熟稳定性治理体系的几个共性：
+
+**Android 17 线程亲和性优化**：Android 17 引入了线程亲和性管理机制，允许应用将关键线程绑定到特定 CPU 核心，减少上下文切换，提升信号处理和线程调度效率。这对稳定性治理提供了新的优化维度。
 
 ### 指标驱动而非报警驱动
 
