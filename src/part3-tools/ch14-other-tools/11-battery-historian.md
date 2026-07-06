@@ -32,7 +32,7 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
 path: https://source.android.com/docs/core/power/power-stats-hal
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-07-06'
@@ -47,18 +47,16 @@ review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审
   方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回
   Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2
   全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。 | 2026-07-06 Task6 revisit：pass-light-edit。完成写作层再次复审；小幅优化表达清晰度，无新增 B 类回炉项；转入 Task9 复审。'}
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_rerun_at: '2026-07-06T18:50:00+08:00'
 last_task2b_lite_at: '2026-07-06'
 last_task2b_at: '2026-07-06T22:50:00+08:00'
-last_task2b_at: '2026-05-08T17:58:58+08:00'
-task9_result: needs-rework  # P0 2处 / P1 1处 / P2 7处需修复
+task9_result: needs-rework
 last_task9_at: '2026-07-06T21:30:00+08:00'
 last_task9_audit: '2026-07-06'
 last_task9_autofix_at: '2026-06-19'
-pipeline_stage: task6_pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-19'
 last_task9_review_log: logs/deep-review/2026-06-19-18-audit.md
