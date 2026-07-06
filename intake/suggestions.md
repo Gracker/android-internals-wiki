@@ -3,6 +3,7 @@
 - **位置**：ProfilingManager 和 ProfilingTrigger 版本边界描述
 - **问题**：章节中提到的 API 版本引入时间与实际 AOSP android-17.0.0_r1 源码存在差异。ProfilingManager 在 Android 14 (API 34) 已引入，章节误标为 Android 15 (API 35)；ProfilingTrigger 在 android-16.0.0_r1 中已存在，章节误标为 Android 16 (API 36) 才加入。
 - **建议**：修正 API 版本边界，补充准确的版本信息：ProfilingManager 实际从 Android 14 (API 34) 开始可用；ProfilingTrigger 在 Android 16 (API 35) 引入，并提供具体的源码路径验证。
+
 ---
 
 ## [Task9 Idle Audit] 15 Android 性能优化研究方法论 — 2026-07-06
@@ -28,225 +29,39 @@
 状态：pipeline_stage → task6_pending，task9_result → revisiting，等待 Task6 复审
 
 ## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
-- **类型**：源码准确性
-- **位置**：AGI System Profiler 与 APA System Profiler 对比表格
-- **问题**：AGI 的最低支持版本标注为 Android 11，但 AOSP android-17.0.0_r1 中 AGI 的最低支持版本实际为 Android 10
-- **建议**：修正为 Android 10+
 
-## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+[223 more lines in file]
+
+---
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-07
+
+### [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-07
+- **类型**：源码准确性
+- **位置**：API版本映射描述
+- **问题**：章节提到"Android 15 (API 35)"将 PowerMonitor API 开放到应用层，但表述方式易混淆。Android 15对应API 35，Android 17对应API 37。这种版本数字描述方式违反了清晰的版本映射规则。
+- **建议**：修正版本映射表述，明确 Android 15 ↔ API 35，Android 17 ↔ API 37 的对应关系，避免版本数字混淆。
+
+### [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-07
+- **类型**：源码准确性
+- **位置**：PowerMonitorReadings.getConsumedEnergy() 方法描述
+- **问题**：章节提到 PowerMonitorReadings.getConsumedEnergy() 方法返回累计能耗，但未在 android-17.0.0_r1 中验证该方法的确切签名和返回类型。API 35 的 PowerMonitor 系列接口在 Android 17 中的支持状态需要确认。
+- **建议**：确认 PowerMonitor API 在 Android 17 中的支持状态和 API 签名，如存在则明确标注，如不存在需调整内容描述。
+
+### [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-07
+- **类型**：源码准确性
+- **位置**：NDK performance_hint.h 路径描述
+- **问题**：章节提到 NDK performance_hint.h 在 r28+ 重组，但未说明完整路径变更细节和 API 签名变化。开发者无法确定具体的文件位置和兼容性要求。
+- **建议**：补充 NDK performance_hint.h 在 Android 17 中的完整路径变更说明和 API 签名兼容性信息。
+
+### [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-07
+- **类型**：原理链完整性
+- **位置**：ADPF PowerMonitor 协作方案
+- **问题**：章节提到"PowerMonitor 采样 → 分析能耗特征 → 判断是否启用 power efficiency mode"的协作方案，但缺少了关键的技术细节：如何从 PowerMonitor 的累计能耗数据推导出具体的能耗特征，以及判断逻辑的具体实现机制。
+- **建议**：补充从 PowerMonitor 累计能耗数据推导具体能耗特征的技术细节，以及判断逻辑的具体实现机制，完善原理链。
+
+### [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-07
 - **类型**：版本差异覆盖
-- **位置**：Android 17 ANGLE 策略说明
-- **问题**：缺少对 Android 15-16 的 allowlist 策略与 Android 17 denylist 策略的对比说明
-- **建议**：补充两种策略的具体差异和迁移指导
-
-## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
-- **类型**：知识盲区
-- **位置**：GPU Profiling 应用场景
-- **问题**：缺少对游戏开发中 GPU Profiling 的特殊考虑，如 Shader 变体预热、Pipeline Cache 优化等
-- **建议**：增加游戏开发专属章节，涵盖游戏行业最佳实践
-
-## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
-- **类型**：源码准确性
-- **位置**：ComputerEngine.java 路径引用
-- **问题**：在 AOSP android-17.0.0_r1 中的路径引用需要更新
-- **建议**：验证并更新正确的 AOSP 路径
-
-## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
-- **类型**：源码准确性
-- **位置**：debuggerd_handler.cpp 路径引用
-- **问题**：Android 17 中 debuggerd_handler.cpp 已迁移到 bionic/linker/linker_debuggerd_android.cpp
-- **建议**：更新路径引用并说明迁移背景
-
-## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
-- **类型**：知识盲区
-- **位置**：Android 17 线程监控 API
-- **问题**：缺少对 android.os.Process.getThreadCpuTime() 等新 API 的具体使用示例
-- **建议**：增加线程监控 API 的使用示例和最佳实践
-## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
-- **类型**：源码路径修正
-- **位置**：Perfetto GPU 配置 proto 路径引用
-- **问题**：引用路径 `protos/perfetto/config/gpu/gpu_counter_config.proto` 与实际 AOSP android-17.0.0_r1 结构不符
-- **建议**：更新为正确路径 `system/perfetto/protos/gpu_config.proto`
-
-## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
-- **类型**：版本差异
-- **位置**：Android 17 ANGLE denylist 影响
-- **问题**：denylist 模式下 AGI Frame Profiler 对 GLES 应用的分析路径差异描述不完整
-- **建议**：补充 denylist 设备上 AGI 的特殊处理逻辑和结果解读指南
-
-## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
-- **类型**：源码准确性
-- **位置**：debuggerd 路径引用
-- **问题**：未体现 Android 17 debuggerd 架构迁移，路径引用过时
-- **建议**：更新路径为 `bionic/linker/linker_debuggerd_android.cpp` 并说明架构变化
-
-## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
-- **类型**：知识盲区
-- **位置**：线程监控 API
-- **问题**：未详细说明 Android 17 新增的 `Process.getThreadCpuTime()` 64位计数器修复
-- **建议**：补充 API 使用示例、性能对比数据以及与旧版本 32位计数的差异说明
-
-## [Task9 Deep Review] 14.8 GPU图形调试与分析工具 — 2026-07-06
-- **类型**：源码路径修正
-- **位置**：Perfetto GPU 配置 proto 路径引用
-- **问题**：引用路径 `protos/perfetto/config/gpu/gpu_counter_config.proto` 与实际 AOSP android-17.0.0_r1 结构不符
-- **建议**：更新为正确路径 `system/perfetto/protos/gpu_config.proto`
-
-## [Task9 Deep Review] 14.8 GPU图形调试与分析工具 — 2026-07-06
-- **类型**：版本差异
-- **位置**：Android 17 ANGLE denylist 影响
-- **问题**：denylist 模式下 AGI Frame Profiler 对 GLES 应用的分析路径差异描述不完整
-- **建议**：补充 denylist 设备上 AGI 的特殊处理逻辑和结果解读指南
-
-## [Task9 Deep Review] 14.8 GPU图形调试与分析工具 — 2026-07-06
-- **类型**：知识盲区
-- **位置**：AGI 最低支持版本
-- **问题**：章节中提到的 AGI 最低支持版本标注为 Android 11，但 AOSP android-17.0.0_r1 中 AGI 的最低支持版本实际为 Android 10
-- **建议**：修正为 Android 10+
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：源码准确性
-- **位置**：PowerStatsAggregator 路径描述
-- **问题**：文中提到 PowerStatsAggregator 在 Android 16/17 中迁移到新路径，但未在 android-17.0.0_r1 中验证该路径存在，可能导致开发者找不到对应源码
-- **建议**：验证 PowerStatsAggregator 在 Android 17 中的实际存在路径，如已迁移需要更新说明
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：源码准确性
-- **位置**：BatteryUsageStats 系列类路径
-- **问题**：BatteryUsageStats、BatteryUsageStatsQuery、BatteryConsumer、BatteryStatsHistory 等类的引用路径在 android-17.0.0_r1 中均无法找到，说明统一归因 API 在 Android 17 中可能重大重构
-- **建议**：重新验证这些核心类的路径和 API 在 Android 17 中的实际存在性，如不存在需要重新组织内容说明
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：数据支撑
-- **位置**：ADPF Power Efficiency Mode 与 PowerMonitor 协作章节
-- **问题**：协作方案缺乏具体的使用案例和验证步骤，开发者难以理解和应用
-- **建议**：补充具体的代码示例、验证步骤和预期效果对比，帮助开发者理解和应用协作方案
-
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：版本差异
-- **位置**：PowerMonitor API 适用版本描述
-- **问题**：章节提到 Android 15 (API 35) 开放了 PowerMonitor API，但未说明 API 29 的 Macrobenchmark PowerMetric 兼容性要求和 API 35 的具体变化，导致开发者对适用范围判断不清晰
-- **建议**：补充 PowerMonitor API 版本兼容性说明：1) 明确 API 35 是应用层开放时间，2) 说明 API 29 Macrobenchmark PowerMetric 的基础能力，3) 列出 API 35 相比之前版本的具体新增功能，4) 提供版本兼容性检查建议
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：数据支撑
-- **位置**：ADPF Power Efficiency Mode 效果描述
-- **问题**：章节提到 "功耗降低 15-30%" 但缺少具体测试数据、基准参考或实际案例支撑，这一数字缺乏可验证性
-- **建议**：补充 "功耗降低 15-30%" 的具体测试背景和数据来源：1) 提供测试设备和环境描述，2) 给出具体的基准对比数据表格，3) 说明测试用例和持续时间，4) 提供其他研究或厂商报告的交叉验证
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：知识盲区
-- **位置**：ADPF + PowerMonitor 协作方案
-- **问题**：章节描述了 ADPF + PowerMonitor 协作的理论机制，但缺少实际应用案例和最佳实践指导，开发者难以理解如何在实际项目中落地
-- **建议**：补充 ADPF + PowerMonitor 的实际应用案例：1) 提供完整的代码示例展示协作流程，2) 说明常见的使用场景和适用条件，3) 给出配置调优的最佳实践，4) 列出常见问题和解决方案
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：源码准确性
-- **位置**：ADPF 与 PowerMonitor 协作机制说明
-- **问题**：未说明如何在代码层面将 PowerMonitor 数据用于 setPreferPowerEfficiency 决策，缺少具体的代码示例和数据流转说明
-- **建议**：补充从 PowerMonitor 采样 → 分析能耗特征 → 调用 setPreferPowerEfficiency → 再次采样的完整代码示例，说明如何判断何时启用 power efficiency mode
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：数据支撑
-- **位置**：功耗对比数据部分
-- **问题**：缺少实际功耗对比数据（如优化前后的 CPU rail 功耗下降百分比）和典型设备的功耗基准数据
-- **建议**：添加 Pixel 6/7/8 各子系统（CPU、GPU、Display、Network）的典型功耗范围数据，以及常见优化场景（如网络请求合并、GPS 优化）的功耗改善百分比案例
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：版本差异
-- **位置**：Android 17 PowerMonitor API 新功能说明
-- **问题**：Android 17 中新增的细粒度 rail 分组特性未展开说明，读者无法了解新版本的具体增强
-- **建议**：补充 Android 17 中 PowerMonitor 新增的细粒度 rail 分组功能说明，包括新增的 rail 类型、精度提升、以及相应的代码适配建议
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：数据支撑
-- **位置**：PowerMonitor 量化数据描述
-- **问题**：章节提到「功耗降低 15-30%」但没有提供具体的测试数据或基准来支撑这个数值，缺少定量分析
-- **建议**：补充 PowerMonitor 量化数据的测试背景和数据来源，包括测试设备、环境、基准对比数据和持续时间，增强数据的可验证性
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：知识盲区
-- **位置**：电池统计采集性能章节
-- **问题**：章节提到单次 getBatteryUsageStats 典型耗时 50–300ms，但没有深入讨论在高频调用场景下对系统性能的影响，以及如何优化调用策略
-- **建议**：补充电池统计采集的性能影响分析，包括高频调用的性能开销、优化策略、以及如何平衡数据采集准确性和系统性能
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：知识盲区
-- **位置**：多设备功耗差异章节
-- **问题**：章节主要关注 Pixel 6+ 等支持 ODPM 的设备，但对其他 OEM 设备的功耗测量差异和兼容性问题覆盖不足
-- **建议**：补充不同 OEM 设备的功耗测量差异分析，包括 ODPM 支持状态、数据精度差异、以及针对不同设备的功耗分析策略建议
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：交叉引用
-- **位置**：Wakelock 机制引用
-- **问题**：章节提到「详见 §11.5 Wakelock 机制与功耗分析」，但在当前章节中关于 Wakelock 的描述与 §11.5 的内容存在术语不一致（如本章使用「持有时长」，§11.5 可能使用「占用时间」）
-- **建议**：统一术语使用，确保与 §11.5 章节在 Wakelock 相关术语上的一致性，避免给读者造成混淆
-
-## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-07-06
-- **类型**：版本范围一致性
-- **位置**：章节版本标注与 SUMMARY.md
-- **问题**：章节适用的 Android 版本范围标注为 Android 5.0-17，但需要在全书的 SUMMARY.md 中确认这个范围与实际章节内容的一致性
-- **建议**：检查并确保 SUMMARY.md 中 14.11 章节适用的 Android 版本范围与实际章节内容保持一致，更新 if necessary
-
-
-
----
-
-## [2026-07-06] Task 2A 质量审查发现 — 9 个空 draft 全部异常
-
-### 问题清单
-
-1. **大纲 copy-paste 错误（3 个）**：4.33、5.27、23.5 的 outline 内容是 GPU 调试工具（来自 ch02.1），与各自标题完全不匹配
-2. **疑似 AI 幻觉（1 个）**：4.23 声称的 MemoryDomain、SandboxedHeap 等类在整个知识库中无任何佐证
-3. **主题重复（1 个）**：8.3 与 21.17 + 26.13 严重重复
-4. **非规范目录（4 个）**：chchXX-fundamentals 目录不符合命名规范，且主题均有对应正规章节
-
-### 已执行操作
-
-- 3 个 outline 错误 → status: outline-broken
-- 1 个疑似幻觉 → status: needs-verification  
-- 5 个重复/异常 → status: deprecated
-
-### 建议后续行动
-
-- [ ] 审查 4.23 的 MemoryDomain/SandboxedHeap 是否有真实技术依据
-- [ ] 清理 chchXX-fundamentals 目录
-- [ ] 在 gap-mining 流程中增加：大纲生成后检查类名是否在 AOSP 中真实存在
-- [ ] 在 gap-mining 流程中增加：新候选与现有章节的去重检查
-- [ ] 考虑为 4.33、5.27、23.5 重新生成匹配标题的大纲
-
-详细诊断报告：`OpenClaw定时任务/知识加工/2026-07-06-22-知识加工(新).md`
-
-
----
-
-## [Task 2A] 知识缺口挖掘 Round 33 — 2026-07-06T23:10:14+08:00
-
-### 检查方向
-
-1. **source-index.json 未映射高质量素材**: 0 篇
-2. **Clippings 三本参考书**: 108 篇全部已映射（稳定性 24 篇→ch20, 性能优化 16 篇→ch21-25, 线上疑难 59 篇→ch26+各章补充）
-3. **research-feeds**: 最近文件 2026-05-04，无新素材
-4. **daily-info**: 2026-07-06 已消费，主题为架构设计/协程/Compose 性能（非系统性能缺口）
-5. **AOSP 服务覆盖**: 35 个核心服务中 31 个已覆盖，4 个未覆盖（VibratorService/KeychainService/HardwarePropertiesManagerService/NetworkManagementService）均评分 < 14
-6. **Android 17 特性**: 605 篇文件涉及 Android 17，覆盖面已饱和
-
-### 结果
-
-- 候选缺口: 0 个（≥14 分）
-- 连续无候选轮次: 第 33 轮
-- 覆盖饱和状态: 确认
-
-### 清理动作
-
-本轮额外执行了质量清理：
-- 废弃 4 个异常章节: §4.23（疑似 AI 幻觉）、§4.33（§4.22 重复）、§5.27（标题损坏+主题已覆盖）、§23.5（§4.34 重复）
-- SUMMARY.md 移除 4 个废弃条目
-- progress.json 废弃计数: 15→19
-
-### 建议后续方向
-
-- [ ] 清理 chchXX-fundamentals 非规范目录（来自之前批量创建的低质量章节）
-- [ ] 关注 Clippings 是否有新增文章
-- [ ] 关注 Android 18 预览版发布后的新特性（但版本基线仍锚定 android-17.0.0_r1）
+- **位置**：Android 17功耗隐私保护机制
+- **问题**：章节仅在源码调研部分提到Android 17的功耗隐私保护机制，但未在正文中充分说明这些机制对普通应用的限制影响。普通应用最大20秒数据延迟，250ms粒度需要系统权限，这对功耗分析的准确性有重要影响。
+- **建议**：在正文中补充Android 17功耗隐私保护机制对普通应用的限制说明，包括数据粒度差异和权限要求。
