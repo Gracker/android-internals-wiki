@@ -1,6 +1,6 @@
 {
-  "total": 586,
-  "draft": 26,
+  "total": 591,
+  "draft": 31,
   "ready_for_review": 199,
   "finalized": 342,
   "last_updated": "2026-07-06",
@@ -626,6 +626,51 @@
       "status": "draft-created",
       "created_at": "2026-07-06T07:18:59+08:00",
       "note": "知识缺口挖掘创建: heapprofd 生产级部署与权限模型"
+    },
+    {
+      "section": "2.1",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-06T11:04:00+08:00",
+      "drafted_at": "2026-07-06T11:04:00+08:00",
+      "note": "Created from knowledge gap mining (GPU debugging tools)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "section": "2.3",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-06T11:04:00+08:00",
+      "drafted_at": "2026-07-06T11:04:00+08:00",
+      "note": "Created from knowledge gap mining (Battery optimization)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "section": "4.1",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-06T11:04:00+08:00",
+      "drafted_at": "2026-07-06T11:04:00+08:00",
+      "note": "Created from knowledge gap mining (AI Agent memory)",
+      "gap_source": "素材驱动"
+    },
+    {
+      "section": "5.1",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-06T11:04:00+08:00",
+      "drafted_at": "2026-07-06T11:04:00+08:00",
+      "note": "Created from knowledge gap mining (Audio hardening)",
+      "gap_source": "研究素材"
+    },
+    {
+      "section": "8.1",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-06T11:04:00+08:00",
+      "drafted_at": "2026-07-06T11:04:00+08:00",
+      "note": "Created from knowledge gap mining (Modular startup)",
+      "gap_source": "AOSP结构"
     }
   ],
   "review_history": [
@@ -682,6 +727,22 @@
         "1.4"
       ],
       "log": "logs/review/2026-07-02-01-review.md"
+    },
+    {
+      "date": "2026-07-06",
+      "time": "08:26",
+      "task": "task9",
+      "chapters": [
+        "20.9"
+      ],
+      "results": {
+        "20.9": "needs-rework"
+      },
+      "p0": 0,
+      "p1": 3,
+      "p2": 4,
+      "auto_promoted": [],
+      "log": "logs/deep-review/2026-07-06-08-deep-review.md"
     }
   ],
   "review_logs": [
@@ -797,7 +858,9 @@
     "ready_for_review": 199,
     "finalized": 336,
     "ready_to_publish": 0,
-    "total": 550
+    "total": 550,
+    "last_task9_review_date": "2026-07-06",
+    "last_task9_review_by": "openclaw-task9"
   },
   "last_task6_review": "2026-07-02T21:14:40+08:00",
   "last_task6_reviewed_sections": [
@@ -878,6 +941,14 @@
       "pipeline_stage": "ready-to-publish",
       "last_task6_review": "2026-07-06T03:20:00+08:00",
       "task2b_verifier_note": "2026-07-06 auto-promoted by verifier"
+    },
+    "20.9": {
+      "status": "ready-for-review",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-07-06T08:32:18.662157",
+      "review_log": "logs/deep-review/2026-07-06-08-deep-review.md"
     }
   },
   "task2a": {
@@ -891,22 +962,16 @@
     "note": "android.os.Trace API 深度解析: 6 anchors (API演进/底层实现/应用最佳实践/Perfetto SDK对比/SQL查询/陷阱) + 1 extension. AOSP android-17.0.0_r1 源码验证."
   },
   "last_task9_review": {
-    "at": "2026-07-03T19:20:00+08:00",
+    "at": "2026-07-06T08:32:18.662163",
     "sections": [
-      "21.2",
-      "24.14",
-      "20.3"
+      "20.9"
     ],
-    "result": "pass-tech-review",
+    "result": "needs-rework",
     "p0": 0,
-    "p1": 1,
-    "p2": 0,
-    "auto_promoted": [
-      "21.2",
-      "24.14",
-      "20.3"
-    ],
-    "log": "logs/deep-review/2026-07-03-19-deep-review.md"
+    "p1": 3,
+    "p2": 4,
+    "auto_promoted": [],
+    "log": "logs/deep-review/2026-07-06-08-deep-review.md"
   },
   "section-13.21": {
     "last_task2b_main": "2026-07-03T16:53:22+08:00",

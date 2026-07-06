@@ -7070,5 +7070,133 @@
     "date": "2020-11-03",
     "reason": "fetch_blocked",
     "attempted_at": "2026-05-04T09:08:42.797290"
+  },
+  {
+    "title": "Android Native | 内存问题的终极武器 ——MTE",
+    "path": "AndroidWeekly/#23/Android Native | 内存问题的终极武器 ——MTE",
+    "source_url": "https://juejin.cn/post/7013595058125406238",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "Android R 常见 GC 类型与问题案例",
+    "path": "AndroidWeekly/#23/Android R 常见 GC 类型与问题案例",
+    "source_url": "https://mp.weixin.qq.com/s/J6pYzVcOUHCt8zCqZLaD3w",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "探索 Flutter 中线程模型 / 消息循环的底层逻辑",
+    "path": "AndroidWeekly/#23/探索 Flutter 中线程模型 / 消息循环的底层逻辑",
+    "source_url": "https://zhuanlan.zhihu.com/p/414582899",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "得物 App ANR 监控平台设计",
+    "path": "AndroidWeekly/#23/得物 App ANR 监控平台设计",
+    "source_url": "https://juejin.cn/post/7009297034440081422",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "kotlin Android Interview Questions",
+    "path": "AndroidWeekly/#23/kotlin Android Interview Questions",
+    "source_url": "https://anandharajramasamydev.medium.com/kotlin-android-interview-questions-412332d1106e",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "Duolingo refactors on Android with MVVM and Jetpack libraries",
+    "path": "AndroidWeekly/#23/Duolingo refactors on Android with MVVM and Jetpack libraries",
+    "source_url": "https://developer.android.com/stories/apps/duolingo-excellence",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "Unidirectional Data Flow for Android UIs",
+    "path": "AndroidWeekly/#23/Unidirectional Data Flow for Android UIs",
+    "source_url": "https://dev.to/j1c1m1b1/unidirectional-data-flow-for-android-uis-2807",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "重新理解为什么 Handler 可能导致内存泄露？",
+    "path": "AndroidWeekly/#23/重新理解为什么 Handler 可能导致内存泄露？",
+    "source_url": "https://mp.weixin.qq.com/s/4duyUKTjJmV_66kZm2MQPg",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
+    "path": "AndroidWeekly/#23/Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
+    "source_url": "https://www.cnblogs.com/houser0323/p/15115623.html",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "更高级的 Android 启动 任务调度库",
+    "path": "AndroidWeekly/#23/更高级的 Android 启动 任务调度库",
+    "source_url": "https://mp.weixin.qq.com/s/ZEcdAeyLNJXSZNJYOEUBiw",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "Now in Android #48",
+    "path": "AndroidWeekly/#23/Now in Android #48",
+    "source_url": "https://medium.com/androiddevelopers/now-in-android-48-c499493bb83",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "Android 资源溢出崩溃轻松解",
+    "path": "AndroidWeekly/#23/Android 资源溢出崩溃轻松解",
+    "source_url": "https://zhuanlan.zhihu.com/p/420726913",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "A Comprehensive Guide to Android 12's Splash Screen API",
+    "path": "AndroidWeekly/#23/A Comprehensive Guide to Android 12's Splash Screen API",
+    "source_url": "https://medium.com/@rackadev/a-comprehensive-guide-to-android-12s-splash-screen-api-644609c811fa",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "Android12 系统源码分析 NativeTombstoneManager",
+    "path": "AndroidWeekly/#23/Android12 系统源码分析 NativeTombstoneManager",
+    "source_url": "https://mp.weixin.qq.com/s/YPnQX1OSWhvXEuibCiCQPg",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "Android Module 依赖关系的 可视化实现",
+    "path": "AndroidWeekly/#23/Android Module 依赖关系的 可视化实现",
+    "source_url": "https://zhuanlan.zhihu.com/p/421286744",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
+  },
+  {
+    "title": "图解 Compose Modifier 实现原理",
+    "path": "AndroidWeekly/#23/图解 Compose Modifier 实现原理",
+    "source_url": "https://mp.weixin.qq.com/s/f5KZJN_4G4LFBlEBQ_se3g",
+    "weekly_issue": "#23",
+    "weekly_date": "2021-10-15",
+    "reason": "fetch_failed"
   }
 ]

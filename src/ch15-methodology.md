@@ -35,6 +35,8 @@ last_idle_audit_at: "2026-07-02T17:27:39+08:00"
 last_task6_audit: 2026-07-04
 last_task9_audit: "2026-07-06"
 last_idle_audit_at: "2026-07-06T09:23:00+08:00"
+last_task9_audit: "2026-07-06"
+last_task9_audit_log: "logs/deep-review/2026-07-06-10-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
