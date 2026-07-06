@@ -1,6 +1,6 @@
 {
   "current_book": 2,
-  "current_offset": 0,
+  "current_offset": 4,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -65,7 +65,7 @@
     {
       "prefix": "线上疑难问题该如何排查和跟踪",
       "total_files": 59,
-      "completed_files": 0,
+      "completed_files": 4,
       "files": [
         "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md",
         "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md",
@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-06",
-  "total_knowledge_points": 217,
-  "total_suggestions": 52,
+  "last_scan_date": "2026-07-07",
+  "total_knowledge_points": 247,
+  "total_suggestions": 67,
   "total_gaps": 14,
   "skipped_files": [
     {
