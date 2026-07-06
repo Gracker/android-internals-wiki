@@ -61,6 +61,7 @@ related_chapters:
   - "5.1"
   - "5.8"
 task2b_state: fixed
+task2b_result: auto-fixed
 task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
