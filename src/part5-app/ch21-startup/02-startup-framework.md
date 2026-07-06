@@ -6,10 +6,10 @@ status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-03"
 last_verified_against: "AOSP android-17.0.0_r1, Jetpack App Startup 1.2.0 sources, alibaba/alpha 04fe7f2 (artifact 1.0.0.1)"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-07-03"
-task9_reviewed_by: "openclaw-task9"
-last_task9_audit: "2026-07-05"
+task9_result: fixed
+task9_reviewed_date: "2026-07-06"
+task9_reviewed_by: "openclaw-task9-idle-audit"
+last_task9_audit: "2026-07-06"
 pipeline_stage: ready-to-publish
 confidence: medium
 drafted_date: "2026-05-12"
@@ -38,7 +38,8 @@ task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-li
 task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean. L2 pass. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
 task9_state: reviewed
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-07-06"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-21
 task6_result: pass-light-edit
