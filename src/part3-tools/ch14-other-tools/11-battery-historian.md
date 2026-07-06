@@ -32,12 +32,12 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
 path: https://source.android.com/docs/core/power/power-stats-hal
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-07-06'
-last_task6_at: '2026-07-06T20:12:00+08:00'
-last_task6_review_log: logs/review/2026-07-06-20-review.md
+last_task6_at: '2026-07-06T21:09:00+08:00'
+last_task6_review_log: logs/review/2026-07-06-21-review.md
 task6_reviewed_date: '2026-07-06'
 review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增
   B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11
@@ -46,7 +46,7 @@ review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审
   audit 18:25：auto-fixed。闲时抽检发现 4 处源码/版本锚点小问题：Android 35 误写为 Android 15、PowerMonitorReadings.getConsumedEnergy
   方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回
   Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2
-  全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。'
+  全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。 | 2026-07-06 Task6 revisit：pass-light-edit。完成写作层再次复审；小幅优化表达清晰度，无新增 B 类回炉项；转入 Task9 复审。'}
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -79,7 +79,7 @@ last_deepseek_cn_review_at: '2026-06-24'
 
 ## 为什么需要专门的功耗分析工具
 
-电池续航是用户对手机最直接的感知之一。一个 App 是否"耗电"，用户不需要看数据——拿在手里发热、电量肉眼可见往下掉，反馈比任何性能指标都真实。
+电池续航是用户对手机最直接的感知之一。一个 App 是否"耗电"，用户不需要看数据——拿在手里发热、电量肉眼可见往下掉，这种反馈比任何性能指标都真实。
 
 但对开发者来说，从"感觉耗电"到"定位根因"之间有一道巨大的鸿沟。功耗问题的特殊性在于它几乎没有单一来源：一次网络请求、一个忘记释放的 Wakelock、一段频繁唤醒的后台任务，都可能独立看来微不足道，叠加起来却让电量条加速下降。没有工具，只能猜。
 
@@ -98,7 +98,7 @@ Android 提供了从系统级到应用级的一整套功耗分析工具链，覆
 
 ### 生成 bugreport
 
-Battery Historian 的输入是 Android 系统的 bugreport 文件。这个文件包含了系统状态、日志、电池统计等几乎所有诊断信息。抓取流程：
+Battery Historian 的输入是 Android 系统的 bugreport 文件。这个文件包含了系统状态、日志、电池统计等几乎所有诊断信息。抓取流程如下：
 
 ```bash
 # 1. 重置电池统计（清除历史数据，获得干净的采集起点）
@@ -124,7 +124,7 @@ bugreport 文件中与功耗直接相关的部分包括：
 
 ### Battery Historian 的部署
 
-Battery Historian 是一个 Go 语言编写的 Web 工具，接收 bugreport 文件后在浏览器中呈现交互式功耗时间线。当前更稳妥的部署顺序如下：
+Battery Historian 是一个 Go 语言编写的 Web 工具，接收 bugreport 文件后在浏览器中呈现交互式功耗时间线。当前更稳妥的部署方法如下：
 
 ```bash
 # 方式 1：社区维护镜像（当前最省事）
@@ -142,7 +142,7 @@ cd battery-historian
 # 上传 bugreport 到 https://bathist.ef.lc/（第三方托管，注意数据安全）
 ```
 
-Google 仓库仍然保留了 Battery Historian 源码，但官方 `gcr.io/battery-historian` 镜像已停止维护，实操里常见情况是镜像拉取失败，或者前端依赖过旧导致页面资源加载异常。只要目标是把 bugreport 跑起来，直接切到社区镜像更省时间。Battery Historian 现在更适合做离线回顾和长时间趋势分析；日常开发阶段的实时观测，优先用 Power Profiler、Perfetto 和 Macrobenchmark。
+Google 仓库仍然保留了 Battery Historian 源码，但官方 `gcr.io/battery-historian` 镜像已停止维护，实操中常见情况是镜像拉取失败，或者前端依赖过旧导致页面资源加载异常。只要目标是把 bugreport 跑起来，直接切到社区镜像更省时间。Battery Historian 现在更适合做离线回顾和长时间趋势分析；日常开发阶段的实时观测，优先用 Power Profiler、Perfetto 和 Macrobenchmark。
 
 ### 时间线视图解读
 
