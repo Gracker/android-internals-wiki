@@ -9,6 +9,7 @@ updated_date: "2026-05-30"
 task6_result: pass-light-edit
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-30"
+last_task6_at: "2026-05-30T00:00:00+08:00"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)(system-triggered 触发器覆盖 Android 16 / version 36.1 / Android 17)"
 sources:
   - type: official
@@ -53,19 +54,17 @@ last_task9_review_log: "logs/deep-review/2026-06-30-20-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 task6_state: reviewed
-last_task6_audit: "2026-06-29"
 task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
-last_task6_audit: "2026-07-03"
-last_task6_audit_result: "l1-translation-style-verbs-fixed"
+last_task6_audit: "2026-07-06"
+last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"
 ---
--
 
 # 14.7 ProfilingManager
 
-ProfilingManager 解决量产设备上"问题发生时没有开工具"的取证空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 补齐系统事件触发。本章讲透显式请求、trigger 版本边界、结果接收三个环节,帮你实现线上取证闭环。
+ProfilingManager 解决量产设备上"问题发生时没有开工具"的取证空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 补齐系统事件触发。本章讲透显式请求、trigger 版本边界、结果接收三个环节,帮你在量产设备上完成线上取证。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -220,7 +219,7 @@ W/ProfilingCaseRepo: result failed, case=scroll-jank-20260419-01, trigger=TRIGGE
 | ProfilingManager | 量产设备、线上回归、系统事件触发 | 受版本、extension、rate limit 约束 |
 | Android Studio Profiler | 开发机上的交互式分析 | 很难覆盖真实用户现场 |
 | adb / Perfetto CLI | 实验室里的压测、脚本化采集 | 线上设备接入成本高 |
-| 第三方 APM SDK | 业务指标、崩溃路径、埋点体系 | 采样能力和隐私责任要自己兜住 |
+| 第三方 APM SDK | 业务指标、崩溃路径、埋点体系 | 采样能力和隐私责任需要自行把控 |
 
 ## 上线前检查清单
 
