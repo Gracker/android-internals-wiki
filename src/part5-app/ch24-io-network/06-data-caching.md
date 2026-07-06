@@ -53,6 +53,8 @@ task9_reviewed_date: "2026-06-30"
 last_task9_at: "2026-06-30T22:26:27+08:00"
 last_task9_audit: "2026-06-30"
 last_task9_autofix_at: "2026-06-30"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 ---
 
 # 数据压缩与缓存策略
@@ -76,7 +78,7 @@ last_task9_autofix_at: "2026-06-30"
 > **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
 > **扩展**视素材丰富程度选择性深入。
 > 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 可**就地插入**最相关的锚点之后，并用 `` 标注，方便后续 review。
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
@@ -84,22 +86,22 @@ last_task9_autofix_at: "2026-06-30"
 
 网络慢不一定要从连接层解决。24.4 已经讲过连接池、DNS 和弱网调度，12.2 也讲过一次 HTTP 请求的耗时拆分。App 侧还会遇到另一类更贴近业务的数据问题：同一份数据能不能少传、能不能少解析、能不能复用已有结果、离线时能不能继续读。
 
-压缩和缓存的收益都来自一次少做一点工作。压缩减少传输字节，缓存减少网络、磁盘、序列化和 UI 等待。代价也很直接：压缩会吃 CPU，缓存会吃内存和存储，还会引入过期、一致性和隐私边界。工程上不要把“加缓存”当成默认答案，先确认这份数据是否会被重复访问、过期成本有多高、命中率能不能被量化。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+压缩和缓存的收益都来自一次少做一点工作。压缩减少传输字节，缓存减少网络、磁盘、序列化和 UI 等待。代价也很直接：压缩会吃 CPU，缓存会吃内存和存储，还会引入过期、一致性和隐私边界。工程上不要把“加缓存”当成默认答案，先确认这份数据是否会被重复访问、过期成本有多高、命中率能不能被量化。
 
 ## 请求 / 响应数据压缩（gzip / brotli）
 
-HTTP 压缩由客户端和服务端共同决定。客户端通过 `Accept-Encoding` 声明可接收的编码，服务端用 `Content-Encoding` 标明响应体使用的编码。RFC 9110 把 `gzip` 定义为标准内容编码；Brotli 对文本类响应通常有更高压缩率，但需要客户端和服务端同时支持。[已验证: RFC 9110, Section 8.4 / 12.5.3]
+HTTP 压缩由客户端和服务端共同决定。客户端通过 `Accept-Encoding` 声明可接收的编码，服务端用 `Content-Encoding` 标明响应体使用的编码。RFC 9110 把 `gzip` 定义为标准内容编码；Brotli 对文本类响应通常有更高压缩率，但需要客户端和服务端同时支持。
 
-在 Android App 里，响应压缩通常交给网络库处理，不要在业务层手动包一层解压逻辑。OkHttp 5 的 `CompressionInterceptor` 文档说明，它会生成类似 `Accept-Encoding: br, gzip` 的请求头，并根据响应编码做透明解压；`okhttp-brotli` 的 `BrotliInterceptor` 会添加 `Accept-Encoding: br`，并处理 `Content-Encoding: br` 响应。[已验证: OkHttp 5.x CompressionInterceptor / BrotliInterceptor]
+在 Android App 里，响应压缩通常交给网络库处理，不要在业务层手动包一层解压逻辑。OkHttp 5 的 `CompressionInterceptor` 文档说明，它会生成类似 `Accept-Encoding: br, gzip` 的请求头，并根据响应编码做透明解压；`okhttp-brotli` 的 `BrotliInterceptor` 会添加 `Accept-Encoding: br`，并处理 `Content-Encoding: br` 响应。
 
 压缩选型按数据形态判断：
 
-- 文本响应：JSON、HTML、XML、GraphQL 这类重复字段多的文本适合 gzip / brotli。服务端需要同时返回正确的 `Content-Encoding` 和 `Vary: Accept-Encoding`，否则 CDN 或中间缓存可能把某个编码版本误发给不支持的客户端。[已验证: RFC 9110]
+- 文本响应：JSON、HTML、XML、GraphQL 这类重复字段多的文本适合 gzip / brotli。服务端需要同时返回正确的 `Content-Encoding` 和 `Vary: Accept-Encoding`，否则 CDN 或中间缓存可能把某个编码版本误发给不支持的客户端。
 - 已压缩资源：JPEG、WebP、AVIF、MP4、ZIP、protobuf 里已经压缩过的大字段，二次 gzip 收益很低，还会增加 CPU 和耗电。图片和视频应优先从编码格式、尺寸、码率、分片下载等方向处理，详见 24.5 和 12.2 节。
 - 小响应：几十到几百字节的响应不适合强行压缩。压缩头、字典初始化和解压 CPU 可能抵消传输收益。
 - 请求体：客户端上传压缩需要服务端明确支持请求 `Content-Encoding`。日志、埋点批量上报、大 JSON 上传可以评估压缩；普通表单、小 POST 请求不建议默认压缩。
 
-压缩上线前要记录四个指标：原始字节数、线上传输字节数、解压耗时、端到端请求耗时。只看压缩率容易误判，低端机上的解压 CPU 占用、主线程上的解压或解析、重试放大的流量，都会把省下的网络时间还回去。[已验证: Android Developers Optimize network access]
+压缩上线前要记录四个指标：原始字节数、线上传输字节数、解压耗时、端到端请求耗时。只看压缩率容易误判，低端机上的解压 CPU 占用、主线程上的解压或解析、重试放大的流量，都会把省下的网络时间还回去。
 
 ## 多级缓存设计：内存 / 磁盘 / 网络
 
@@ -112,7 +114,7 @@ HTTP 压缩由客户端和服务端共同决定。客户端通过 `Accept-Encodi
 | HTTP 缓存 | OkHttp `Cache`、CDN、代理缓存 | 带 `Cache-Control` / `ETag` / `Last-Modified` 的 GET 响应 | RFC 9111 freshness 与 revalidation | 服务端头配置错误会导致过期数据 |
 | 业务缓存 | Room、DataStore、文件索引 | 用户可见数据、离线数据、同步状态 | 业务版本、用户、租户、分页游标、服务端版本 | 一致性和冲突处理成本高 |
 
-AOSP `Context.getCacheDir()` 文档明确写到，系统会在设备空间不足时自动删除该目录文件，并且建议 App 控制在 `StorageManager.getCacheQuotaBytes()` 返回的配额以下；`StorageManager` 还提供 `setCacheBehaviorGroup()` 和 `setCacheBehaviorTombstone()`，用于把一组互相依赖的缓存文件按组处理，或在系统清理时保留零长度墓碑文件。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/Context.java, frameworks/base/core/java/android/os/storage/StorageManager.java]
+AOSP `Context.getCacheDir()` 文档明确写到，系统会在设备空间不足时自动删除该目录文件，并且建议 App 控制在 `StorageManager.getCacheQuotaBytes()` 返回的配额以下；`StorageManager` 还提供 `setCacheBehaviorGroup()` 和 `setCacheBehaviorTombstone()`，用于把一组互相依赖的缓存文件按组处理，或在系统清理时保留零长度墓碑文件。
 
 这段代码展示 OkHttp 磁盘 HTTP 缓存的最小接入方式。这里需要确认两点：缓存目录放在 `cacheDir`，容量有明确上限。
 
@@ -127,9 +129,7 @@ val client = OkHttpClient.Builder()
     .build()
 ```
 
-OkHttp 文档把缓存命中分为直接命中、未命中和条件命中。条件命中会向服务端发起验证请求，如果服务端返回 `304 Not Modified`，客户端继续使用本地响应体，只更新响应元数据。[已验证: OkHttp Caching docs]
-
-[自动发现] 缓存命中率要接入埋点；只有缓存层代码，不代表线上有有效命中。可以按“命中次数 / 读取次数”记录图片、接口响应、Room 查询、预取列表四类指标。命中率低时，从访问模式查起：一次性大图、临时活动页、短期热榜，可能会挤掉首页头像、会话列表、配置项这类更高复用价值的数据。[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+OkHttp 文档把缓存命中分为直接命中、未命中和条件命中。条件命中会向服务端发起验证请求，如果服务端返回 `304 Not Modified`，客户端继续使用本地响应体，只更新响应元数据。缓存命中率要接入埋点；只有缓存层代码，不代表线上有有效命中。可以按“命中次数 / 读取次数”记录图片、接口响应、Room 查询、预取列表四类指标。命中率低时，从访问模式查起：一次性大图、临时活动页、短期热榜，可能会挤掉首页头像、会话列表、配置项这类更高复用价值的数据。
 
 ## 缓存失效策略与一致性
 
@@ -142,7 +142,7 @@ HTTP 层使用服务端头做主判断：
 - `Last-Modified` 配合 `If-Modified-Since` 做时间验证，精度和可靠性弱于 `ETag`，但兼容性好。
 - `no-store` 用于禁止存储，适合令牌、隐私数据、一次性凭证这类不该落盘的数据。
 
-RFC 9111 规定，缓存可以用新鲜度和验证机制判断存储响应是否可复用；验证请求中应带上已有的实体标签，`ETag` 优先级高于只依赖修改时间。[已验证: RFC 9111]
+RFC 9111 规定，缓存可以用新鲜度和验证机制判断存储响应是否可复用；验证请求中应带上已有的实体标签，`ETag` 优先级高于只依赖修改时间。
 
 业务层要把缓存键设计清楚。一个安全的缓存键通常至少包含接口名、用户 ID、租户或环境、参数摘要、分页游标、数据版本。对多账号 App，缺少用户维度会串数据；对灰度接口，缺少实验分组会串策略；对分页接口，缺少游标会把不同页覆盖到同一份缓存里。
 
@@ -157,7 +157,7 @@ RFC 9111 规定，缓存可以用新鲜度和验证机制判断存储响应是�
 
 ## 离线数据同步
 
-离线能力不等于把所有接口结果落盘。Android Developers 的离线优先文档把本地数据源放在 UI 和网络之间：UI 读取本地数据，仓库负责和网络数据源同步；网络不可用时，本地数据源可能落后于服务端，网络恢复后再同步。[已验证: Android Developers Offline-first]
+离线能力不等于把所有接口结果落盘。Android Developers 的离线优先文档把本地数据源放在 UI 和网络之间：UI 读取本地数据，仓库负责和网络数据源同步；网络不可用时，本地数据源可能落后于服务端，网络恢复后再同步。
 
 离线同步在这里作为缓存边界处理，冲突解决和乐观更新详见 24.7 节。
 
@@ -178,7 +178,7 @@ Network API
 - 调度路径：周期同步、约束网络类型、充电状态、指数退避重试，交给 WorkManager 这类持久后台任务；网络连通性变化只负责唤醒，不要在回调里直接跑大量同步逻辑。
 - 合并路径：同一资源的多次本地写入要能合并，例如连续修改草稿、批量点赞、重复上报日志，避免网络恢复后一口气打爆服务端。
 
-Android 的网络优化文档建议把可预取的数据集中传输，减少无线电被频繁唤醒的次数；也建议在发起请求前检查连接状态，网络不可用时把请求延后。[已验证: Android Developers Optimize network access]
+Android 的网络优化文档建议把可预取的数据集中传输，减少无线电被频繁唤醒的次数；也建议在发起请求前检查连接状态，网络不可用时把请求延后。
 
 离线同步的失败处理要能回到用户动作。缓存层只能回答“本地有什么”，不能回答“这次写入有没有被服务端接受”。待同步表至少记录资源 ID、操作类型、幂等键、payload 摘要、创建时间、重试次数、上次错误。没有这些字段，线上排查只能看到“数据不一致”，很难还原是哪一次写入卡住。
 
@@ -193,12 +193,12 @@ Android 的网络优化文档建议把可预取的数据集中传输，减少无
 
 ## 参考与验证
 
-- [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
-- [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
-- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/Context.java]
-- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/storage/StorageManager.java]
-- [已验证: 官方文档, developer.android.com/training/data-storage/app-specific]
-- [已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/network-access-optimization]
-- [已验证: 官方文档, developer.android.com/topic/architecture/data-layer/offline-first]
-- [已验证: OkHttp 5.x docs, Caching / CompressionInterceptor / BrotliInterceptor]
-- [已验证: RFC 9110 / RFC 9111]
+-
+-
+-
+-
+-
+-
+-
+-
+-

@@ -233,6 +233,47 @@ adb shell cat /proc/$(adb shell pidof com.example.app:editor)/smaps_rollup
 
 <!-- AIW-源码调研-2026-07-05 -->
 
+<!-- AIW-源码调研-2026-07-06：HeapTask 并发与 GC 抑制源码级机制 -->
+
+## 附 2：HeapTask 调度与 GC 抑制护栏（android-17.0.0_r1）
+
+承接 mSponge 黑科技边界分析，本节向上溯源到 HeapTask 调度层，把"为什么 fetch_sub 一下 num_bytes_allocated_ 就能抑制 GC"在源码上闭环。ART 的并发 GC 调度统一收敛到 `Heap::RequestConcurrentGC()` 一个入口，6 个 `HeapTask` 子类共用同一按 `target_run_time` 排序的 `std::multiset`（`art/runtime/gc/task_processor.h:33-46`、`task_processor.cc:41-46`）。
+
+### 6 种 HeapTask 子类
+
+源码锚点 `art/runtime/gc/heap.cc`：
+
+| 子类 | 行号 | 触发源 | 是否自递归 |
+|---|---|---|---|
+| `ConcurrentGCTask` | 4113 | `RequestConcurrentGC`，`num_bytes_allocated_ >= concurrent_start_bytes_` 触发 | ✅ 在 `continuous_gc_mode_` 下递归 + 1ms `usleep` 节流 |
+| `CollectorTransitionTask` | 4211 | `RequestCollectorTransition`，前后台 collector 切换 | ❌ |
+| `HeapTrimTask` | 4259 | `RequestTrim`，`onTrimMemory` 回调 | ❌ |
+| `TimeBasedGcThresholdCheckTask` | 4385 | `RequestTimeBasedGcThresholdCheck`，每 ≥10ms 节流重排 | ✅ 每次 Run 末尾再 AddTask |
+| `TriggerPostForkCCGcTask` | 5050 | `PostForkChildAction`，zygote fork 后 | ❌ |
+| `ReduceTargetFootprintTask` | 5069 | `PostForkChildAction`，延迟 shrink | ❌ |
+
+`TimeBasedGcThresholdCheck` 在 Android 17 引入 `time_based_gc_triggering_via_integral` 累积量分支（heap.cc:4436-4440），替代旧版"字节×时间"乘法避免溢出，并通过 `pending_time_based_gc_threshold_check_` 指针 + `UpdateTargetRunTime` 复用同一 task 对象，**不产生新 HeapTask**——这是 mSponge 不直接命中、但生产环境最常见的 GC 节流机制。
+
+### 三层 GC 抑制护栏
+
+| 护栏 | 源码位置 | 作用 | mSponge 是否影响 |
+|---|---|---|---|
+| `CanAddHeapTask()` | heap.cc:4137-4143 | 守 Runtime 生命周期（未启动/已关闭/栈溢出） | ❌ 无关 |
+| `pending_*` + `UpdateTargetRunTime` | heap.cc:4222-4240、4398-4416 | 复用同一 HeapTask 对象，不新增 | ❌ 无关 |
+| `max_gc_requested_.compare_exchange_weak` | heap.cc:4148-4173 | 序列号守门防 ConcurrentGCTask 递归风暴 | ❌ 无关 |
+
+关键发现：**mSponge 的 fetch_sub 不影响任何一条护栏**。它绕过的是护栏之上的"是否要触发 GC"判断——`concurrent_start_bytes_`（heap.h:1518-1525）就是用 `num_bytes_allocated_` 与阈值比较的，LOS 字节被人为压低后永远不达阈，于是 RequestConcurrentGC 根本不被调用，三层护栏都用不上。
+
+### 与 §23.6 决策表的关联
+
+对实战决策表的语义补强：
+
+- **拆进程** vs **mSponge**：拆进程走 `ActivityManager` fork 路径，每次 fork 触发 `PostForkChildAction`（heap.cc:5118-5163），自动重置 `time_based_gc_threshold_ = 0` 并按 `kPostForkMaxHeapDurationMS`（源码实测默认）排定 `ReduceTargetFootprintTask` 与 `TriggerPostForkCCGcTask` 双守护。这是 Android 17 给的"安全大内存路径"，**优先于** mSponge 类的 fetch_sub 绕过方案。
+- **largeHeap 评估**：本质仍是调整 `concurrent_start_bytes_` 与 `target_footprint_`（heap.h:1518-1525），调用 `SetDefaultConcurrentStartBytesLocked` 重算阈值（heap.cc:5084）。若同时启用 mSponge，largeHeap 阈值被 fetch_sub 进一步压低，反而误导后续 GC 调度。
+- **native GC 触发**：heap.cc:4587 的 `kGcCauseForNativeAlloc` 路径用 `force_full=true` 入队，**绕过 mSponge 干扰**——这是 mSponge 在 Android 17 收益收窄的另一原因：native 路径直接 full GC。
+
+
+
 ## 小结
 
 大内存策略的安全顺序是：先定位 OOM 类型，再缩小对象和线程的常驻面，随后用多进程隔离高峰值任务，再评估 largeHeap。64 位迁移适合解决地址空间瓶颈，但不能替代预算管理。每一种方案都要用 PSS、Java Heap、Native / Graphics、线程数、GC 停顿和 LMKD 结果复测，避免把一个进程里的 OOM 转移成整机内存压力。
