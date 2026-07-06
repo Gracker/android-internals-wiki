@@ -124,3 +124,53 @@
 全书 599 个文件，Part 5 已有 120+ 节，覆盖了 Android 17 性能优化的绝大多数主题。
 Clippings 三本参考书的知识点已被现有章节充分消化。
 下一轮可探索 Book 2（线上疑难问题 59 篇）的深度扫描，看是否有新的知识点缺口。
+
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：版本差异覆盖
+- **位置**：信号处理器章节
+- **问题**：章节引用 Android 5.0 的 debuggerd 行为模式，但未明确说明这些模式在 Android 17 中的适用性
+- **建议**：补充说明 Android 5.0 行为模式在 Android 17 中的变化，或明确标注哪些模式已不适用
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：版本差异覆盖  
+- **位置**：信号处理器章节
+- **问题**：缺少 Android 15+ 中的信号处理机制变化说明（如 signal-fast-handlers 等）
+- **建议**：补充 Android 15+ 信号处理机制变化，特别是 SA_RESTART、SA_RESETHAND 等标志的影响
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：数据缺失
+- **位置**：OOM案例
+- **问题**：缺少虚拟内存碎片化对 OOM 影响的分析
+- **建议**：补充虚拟内存碎片化（mmap碎片）导致分配失败的案例分析，增加相应的检测工具和优化建议
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：知识盲区
+- **位置**：章节整体
+- **问题**：缺少 Android 12+ 的 Process.THREAD_PRIORITY_* 常量对线程调度的影响讨论
+- **建议**：补充 Android 12+ 线程优先级常量的实际应用案例和性能影响分析
+
+
+## [Task2A 知识缺口挖掘] 方向记录 — 2026-07-06 09:22
+本轮已检查方向（未发现 ≥14 分候选，避免下轮重复）：
+1. **source-index.json 高质量未映射素材**：仅 5 条，0 条高质量未映射 → 无候选
+2. **Research feeds (最近 5 篇)**：全部为 Perfetto v53/v54 + FrameTimeline 主题，已被 ch13/ch02 充分覆盖
+3. **Clippings 三本参考书**：
+   - 《Android 应用稳定性剖析与优化》(25 篇)：Crash/OOM/ANR/Binder/FD/Thread 监控 → 全部映射到 ch20
+   - 《Android 性能优化》(21 篇)：CPU/内存/虚拟内存/包体积/缓存/GC/启动 → 全部映射到对应章节
+   - 《线上疑难问题》(59 篇)：提取 127 个 H2 主题，全部映射到现有章节覆盖范围
+4. **AOSP 系统服务**：ActivityManagerService、WindowManagerService、PackageManagerService、PowerManagerService、SensorService、InputManagerService、JobSchedulerService、AlarmManagerService、ThermalService、LocationManagerService、ConnectivityService、NotificationManagerService → 全部有对应章节
+5. **全书 tag 扫描 (1219 tags)**：Compose、PredictiveBack、PhotoPicker、IME、R8、Vulkan、NNAPI、WorkManager、JobScheduler、Thermal、Doze、WakeLock、Alarm、AppStandby、ForegroundService、GenAI、CredentialManager、DataStore、Tracing → 全部覆盖
+6. **具体候选评估**（均因已有覆盖或评分不足未创建）：
+   - CPU Cache 友好代码 → 已有 ch05/18-cpu-cache-friendly-code-data-layout.md ✅
+   - 锁竞争与同步性能 → 已有 ch01/14-lock-contention.md ✅
+   - Compose Snapshot 系统开销 → 评分 12/20（素材 3+相关性 3+需求 2+时效 4），低于阈值
+   - Compose Material3 Expressive 性能 → 评分 13/20，低于阈值
+   - Rust AOSP 迁移性能影响 → 评分 13/20，系统级非应用级
+   - 计算着色器性能 → 评分 12/20，素材不足
+   - Edge-to-Edge 渲染开销 → 评分 12/20，素材不足
+   - JVMTI Agent 性能监控 → 评分 11/20，已有 Hook 基础设施章节覆盖
+7. **Android 14-17 新特性**：逐版本检查 API 34-37 性能相关特性，全部有对应章节
+8. **Part 5 全部章节**：ch20(19files)、ch21(17)、ch22(31)、ch23(17)、ch24(21)、ch25(22)、ch26(25) — 覆盖充分
+
+**结论**：全书 586 节、1219 个唯一标签，已全面覆盖 Android 17 性能优化知识域。本轮缺口挖掘未发现评分 ≥14 的合格新章节候选。Queue 中已有 14 条 pending 条目（priority 80-85）待加工，建议后续轮次聚焦于加工这些已有 draft 章节。
