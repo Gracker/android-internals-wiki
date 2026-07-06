@@ -14,24 +14,24 @@ review_notes: "2026-05-16 task6 review: pass-light-edit。Task2B 回炉后复审
 task6_result: pass-light-edit
 polish_count: 0
 sources:
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java (handleBindApplication, installContentProviders, callApplicationOnCreate)"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/ZygoteProcess.java (startViaZygote)"
-  - type: official
-    path: "https://developer.android.com/guide/components/processes-and-threads"
-  - type: official
-    path: "https://developer.android.com/topic/performance/vitals/launch-time"
-  - type: official
-    path: "https://developer.android.com/topic/libraries/app-startup"
-  - type: clippings-structure-ref
-    path: "Clippings/Android 性能优化 - 虚拟内存优化(上):线程+多进程优化.md"
-  - type: clippings-structure-ref
-    path: "Clippings/Android 性能优化 - 原理:重新认识应用的速度优化.md"
-  - type: clippings-structure-ref
-    path: "Clippings/Android 性能优化 - CPU 优化(上):合理使用线程池,提升 CPU 利用率.md"
-  - type: clippings-structure-ref
-    path: "Clippings/Android 性能优化 - 任务调度优化:线程+CPU,提升任务调度优先级.md"
+ - type: aosp
+ path: "frameworks/base/core/java/android/app/ActivityThread.java (handleBindApplication, installContentProviders, callApplicationOnCreate)"
+ - type: aosp
+ path: "frameworks/base/core/java/android/os/ZygoteProcess.java (startViaZygote)"
+ - type: official
+ path: "https://developer.android.com/guide/components/processes-and-threads"
+ - type: official
+ path: "https://developer.android.com/topic/performance/vitals/launch-time"
+ - type: official
+ path: "https://developer.android.com/topic/libraries/app-startup"
+ - type: clippings-structure-ref
+ path: "Clippings/Android 性能优化 - 虚拟内存优化(上):线程+多进程优化.md"
+ - type: clippings-structure-ref
+ path: "Clippings/Android 性能优化 - 原理:重新认识应用的速度优化.md"
+ - type: clippings-structure-ref
+ path: "Clippings/Android 性能优化 - CPU 优化(上):合理使用线程池,提升 CPU 利用率.md"
+ - type: clippings-structure-ref
+ path: "Clippings/Android 性能优化 - 任务调度优化:线程+CPU,提升任务调度优先级.md"
 tags: [multiprocess, startup, process-priority, ipc, app-startup]
 related_chapters: ["21.1", "1.3", "5.8"]
 task2b_state: fixed
@@ -54,6 +54,8 @@ last_task9_autofix_at: "2026-06-30"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 ---
 
 # 多进程启动优化
@@ -70,10 +72,6 @@ task9_p2_issues: 0
 - 🔹 多进程启动的观测清单:按进程名、启动原因、Binder ready、TTID/TTFD、PSS/RSS 和失败率拆分观测。
 - 🔹 小结:确认是否需要离开主进程,再决定何时拉起、初始化多少、如何验证收益。
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> 涉及源码/API/版本口径时,Task 6 只标注风险,不做最终技术裁决。
 <!-- outline-end -->
 
 多进程能把 WebView、地图、音视频、图片解码、上传下载、插件容器这类高风险模块隔离出去,也能缓解 32 位设备上的虚拟地址压力。但它不会让启动天然变快。每拉起一个新进程,系统都要创建进程、准备运行时、实例化 `Application`,再执行该进程内的初始化代码。
@@ -83,16 +81,16 @@ task9_p2_issues: 0
 
 ## 多进程 App 的启动开销分析
 
-Android 官方文档对进程的描述是:当某个组件启动且应用还没有运行中的进程时,系统会为应用启动一个新的 Linux 进程,并创建一条主线程;默认情况下,同一应用的组件运行在同一个进程和主线程中,也可以通过 manifest 的 `android:process` 把组件放到其他进程。换成启动优化视角,就是每个子进程都有自己的冷启动成本。[已验证: 官方文档, developer.android.com/guide/components/processes-and-threads]
+Android 官方文档对进程的描述是:当某个组件启动且应用还没有运行中的进程时,系统会为应用启动一个新的 Linux 进程,并创建一条主线程;默认情况下,同一应用的组件运行在同一个进程和主线程中,也可以通过 manifest 的 `android:process` 把组件放到其他进程。换成启动优化视角,就是每个子进程都有自己的冷启动成本。
 
 子进程启动成本可以拆成四类:
 
-1. **进程创建成本**:系统侧经由 Zygote 创建应用进程,准备 UID/GID、运行时参数、ABI、数据目录等启动参数。AOSP `ZygoteProcess.startViaZygote()` 是应用进程通过 Zygote 创建的关键入口。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/ZygoteProcess.java]
-2. **运行时与类加载成本**:每个进程都有独立 VM,`Application`、ClassLoader、静态单例、线程池、native 库状态不会和主进程共享。[已验证: 官方文档, developer.android.com/guide/components/fundamentals]
-3. **组件初始化成本**:AOSP `ActivityThread.handleBindApplication()` 中会先构造应用对象,安装该进程的 ContentProvider,再调用 `Application.onCreate()`。结果是 provider 初始化和 `Application.onCreate()` 都可能在子进程重复执行。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
+1. **进程创建成本**:系统侧经由 Zygote 创建应用进程,准备 UID/GID、运行时参数、ABI、数据目录等启动参数。AOSP `ZygoteProcess.startViaZygote()` 是应用进程通过 Zygote 创建的关键入口。
+2. **运行时与类加载成本**:每个进程都有独立 VM,`Application`、ClassLoader、静态单例、线程池、native 库状态不会和主进程共享。
+3. **组件初始化成本**:AOSP `ActivityThread.handleBindApplication()` 中会先构造应用对象,安装该进程的 ContentProvider,再调用 `Application.onCreate()`。结果是 provider 初始化和 `Application.onCreate()` 都可能在子进程重复执行。
 4. **跨进程通信成本**:模块拆到子进程后,主进程不能再直接读写内存对象,状态同步要走 Binder、ContentProvider、文件或数据库。启动阶段的同步 IPC 会把子进程冷启动耗时传回主进程。
 
-多进程适合解决"主进程背不动"的问题,不适合替代主进程启动治理。对启动场景来说,先问三个问题:这个模块是否参与首屏;它是否能在首帧后再启动;它移出主进程后节省的主进程 TTID/TTFD,是否大于子进程冷启动和 IPC 等待增加的成本。[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
+多进程适合解决"主进程背不动"的问题,不适合替代主进程启动治理。对启动场景来说,先问三个问题:这个模块是否参与首屏;它是否能在首帧后再启动;它移出主进程后节省的主进程 TTID/TTFD,是否大于子进程冷启动和 IPC 等待增加的成本。
 
 一个可执行的评估表如下:
 
@@ -105,7 +103,7 @@ Android 官方文档对进程的描述是:当某个组件启动且应用还没�
 
 ## 进程拉起时序控制
 
-多进程启动优化的第一条规则:主进程冷启动期间不要顺手拉起所有子进程。主进程正在争取首帧,任何额外进程都会抢 CPU、I/O、页缓存和 Binder 调度机会。Android 启动文档建议把非首屏必要的重操作延后,并用 Macrobenchmark、Perfetto、Android Studio Profiler 观察启动过程。[已验证: 官方文档, developer.android.com/topic/performance/appstartup/analysis-optimization]
+多进程启动优化的第一条规则:主进程冷启动期间不要顺手拉起所有子进程。主进程正在争取首帧,任何额外进程都会抢 CPU、I/O、页缓存和 Binder 调度机会。Android 启动文档建议把非首屏必要的重操作延后,并用 Macrobenchmark、Perfetto、Android Studio Profiler 观察启动过程。
 
 推荐把子进程拉起分成四档:
 
@@ -114,22 +112,22 @@ Android 官方文档对进程的描述是:当某个组件启动且应用还没�
 3. **路径预测**:用户进入某个页面后,大概率会继续打开子进程业务。用页面曝光、tab 切换、搜索结果命中等信号触发预热。
 4. **后台任务**:与用户当前操作无关。使用系统推荐的后台任务机制,不用主进程启动阶段主动拉起。
 
-ContentProvider 是多进程启动里最容易被漏掉的成本。很多 SDK 依靠 provider 自动初始化;如果 provider 配在默认进程,它会进入主进程冷启动;如果 provider 配在子进程,它又会在子进程创建时执行。AndroidX App Startup 的官方定位是用一个 provider 管理多个初始化器,并显式声明初始化顺序;对于不需要启动即执行的组件,可以关闭自动初始化,改成手动懒加载。[已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
+ContentProvider 是多进程启动里最容易被漏掉的成本。很多 SDK 依靠 provider 自动初始化;如果 provider 配在默认进程,它会进入主进程冷启动;如果 provider 配在子进程,它又会在子进程创建时执行。AndroidX App Startup 的官方定位是用一个 provider 管理多个初始化器,并显式声明初始化顺序;对于不需要启动即执行的组件,可以关闭自动初始化,改成手动懒加载。
 
 多进程 App 的 `Application.onCreate()` 必须按进程名分支。不要让支付 SDK、Push SDK、图片库、日志上报、WebView 预热在每个进程无差别执行。一个常见写法是:
 
 ```kotlin
 class App : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        val process = currentProcessName()
-        when (process) {
-            packageName -> initMainProcessOnly()
-            "$packageName:web" -> initWebProcessOnly()
-            "$packageName:upload" -> initUploadProcessOnly()
-            else -> initMinimal(process)
-        }
-    }
+ override fun onCreate() {
+ super.onCreate()
+ val process = currentProcessName()
+ when (process) {
+ packageName -> initMainProcessOnly()
+ "$packageName:web" -> initWebProcessOnly()
+ "$packageName:upload" -> initUploadProcessOnly()
+ else -> initMinimal(process)
+ }
+ }
 }
 ```
 
@@ -147,7 +145,7 @@ class App : Application() {
 - 主进程通过 Binder/Provider 发送请求,并设置超时、取消和降级路径。
 - 启动阶段只做握手,不做大批量数据同步。
 
-内存态数据不能假设跨进程一致。`Context.MODE_MULTI_PROCESS` 在 API 23 已废弃，`SharedPreferences` API 文档也写明不支持跨进程使用——在部分 Android 版本上行为不可靠，且无法协调跨进程并发修改。跨进程数据应使用明确的数据管理机制，例如 ContentProvider。这个结论对启动也适用：不要用 SharedPreferences 的"多进程模式"当启动依赖同步方案。[已验证: Context#MODE_MULTI_PROCESS deprecated API 23; SharedPreferences API reference 跨进程不支持; Task9 复核结论 — developer.android.com/reference/android/content/Context#MODE_MULTI_PROCESS]
+内存态数据不能假设跨进程一致。`Context.MODE_MULTI_PROCESS` 在 API 23 已废弃，`SharedPreferences` API 文档也写明不支持跨进程使用——在部分 Android 版本上行为不可靠，且无法协调跨进程并发修改。跨进程数据应使用明确的数据管理机制，例如 ContentProvider。这个结论对启动也适用：不要用 SharedPreferences 的"多进程模式"当启动依赖同步方案。
 
 进程间初始化可以按下面的状态机处理:
 

@@ -18,15 +18,15 @@ reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task9_state: reviewed
 sources: 
-  - type: official
-  - type: official
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: material
-  - type: material
+ - type: official
+ - type: official
+ - type: aosp
+ - type: aosp
+ - type: aosp
+ - type: aosp
+ - type: aosp
+ - type: material
+ - type: material
 path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md"
 tags: [perfetto, bufferqueue, frametimeline, jank, surfaceflinger, rendering]
 related_chapters: ["2.13", "2.16", "7.15", "18.20"]
@@ -36,10 +36,10 @@ gap_source: "素材驱动/章节深挖"
 gap_score: 19
 material_count: 4
 source_refs: 
-  - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-jank-perfetto.md
-  - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md
-  - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueProducer.cpp
-  - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueConsumer.cpp
+ - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-jank-perfetto.md
+ - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md
+ - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueProducer.cpp
+ - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueConsumer.cpp
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_at: "2026-05-28T09:20:00+08:00"
@@ -63,40 +63,12 @@ updated_date: "2026-05-28"
 last_task9_at: "2026-05-28T09:20:00+08:00"
 task9_review_notes: "2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 last_task9_audit: "2026-06-19"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 ---
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 从 FrameTimeline 定位 Buffer Stuffing
-说明 `actual_frame_timeline_slice`、`jank_type = BufferStuffing`、surface token、layer name 与 App/SF 帧的对应关系。
-
-### 🔹 RenderThread 上的 dequeueBuffer 阻塞特征
-整理 `dequeueBuffer` slice 变长、waitForFreeSlotThenRelock、futex/condition wait、调用栈采样的组合判断。
-
-### 🔹 BLASTBufferQueue 与 QueuedBuffer 轨道
-解释 Android 12+ BLAST 路径中 QueuedBuffer 计数变化和 release callback 对 App 侧的影响。
-
-### 🔹 Producer / Consumer 两端的因果链
-把 App queueBuffer、SurfaceFlinger latch、HWC present、releaseBuffer 串成可验证时间线。
-
-### 🔹 视频列表与 SurfaceView 的场景化判断
-给出播放器、CameraX、SurfaceView/TextureView 混用场景下的典型 trace 形态。
-
-### 🔹 误判边界与排查顺序
-区分 BufferQueue 阻塞、GPU fence 等待、主线程布局耗时、Binder 回调阻塞。
-
-## 扩展
-
-### 🔸 Android 16+/main BUFFER_RELEASE_CHANNEL 待验证
-区分传统条件变量唤醒与 release channel 分支的版本边界。
-
-### 🔸 Perfetto SQL 模板
-整理 FrameTimeline + thread_state + slice 关联查询。
-
-<!-- outline-end -->
 
 Perfetto 里出现 `Buffer Stuffing` 时,不能直接下结论说 App 绘制超时。这个标签描述的是队列状态:App 仍在提交新帧,但前一批 buffer 还没有按时 present,BufferQueue 内部已经产生积压。结果可能是帧率看起来还平稳,触摸到上屏的延迟却越来越长。
 
@@ -104,7 +76,7 @@ Perfetto 里出现 `Buffer Stuffing` 时,不能直接下结论说 App 绘制超�
 
 ## 从 FrameTimeline 定位 Buffer Stuffing
 
-Android 12 之后,FrameTimeline 会在 App 和 SurfaceFlinger 两侧各生成 Expected / Actual Timeline。App 侧 `Actual Timeline` slice 的起点对应 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始执行,终点取 GPU 完成时间与 post 到 SurfaceFlinger 时间的较晚者。Perfetto 文档把 `Buffer Stuffing` 定义为:App 在前一帧尚未 present 前继续向 SurfaceFlinger 发送新帧,内部 BufferQueue 被尚待显示的 buffer 填满,由此增加输入延迟。[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
+Android 12 之后,FrameTimeline 会在 App 和 SurfaceFlinger 两侧各生成 Expected / Actual Timeline。App 侧 `Actual Timeline` slice 的起点对应 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始执行,终点取 GPU 完成时间与 post 到 SurfaceFlinger 时间的较晚者。Perfetto 文档把 `Buffer Stuffing` 定义为:App 在前一帧尚未 present 前继续向 SurfaceFlinger 发送新帧,内部 BufferQueue 被尚待显示的 buffer 填满,由此增加输入延迟。
 
 现场判读时,先看四个字段:
 
@@ -115,11 +87,11 @@ Android 12 之后,FrameTimeline 会在 App 和 SurfaceFlinger 两侧各生成 Ex
 | `jank_type` | Perfetto UI 可能显示 `Buffer Stuffing`,SQL 结果也可能按版本呈现为无空格枚举名 | 识别队列积压状态 |
 | `layer_name` | 产生该帧的 Layer / Surface 名称 | 在多 Surface 场景中区分主窗口、视频、Camera、WebView |
 
-这里的诊断顺序是:先找 `jank_type`,再按 `layer_name` 缩小到具体 Surface,再用 token 追 App 帧和 SF display frame 的对应关系。只看红色或黄色 slice 容易误判,因为 `Buffer Stuffing` 也可能表现为高延迟状态;Perfetto 文档把浅绿色定义为帧率平稳但延迟增加的状态。[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
+这里的诊断顺序是:先找 `jank_type`,再按 `layer_name` 缩小到具体 Surface,再用 token 追 App 帧和 SF display frame 的对应关系。只看红色或黄色 slice 容易误判,因为 `Buffer Stuffing` 也可能表现为高延迟状态;Perfetto 文档把浅绿色定义为帧率平稳但延迟增加的状态。
 
 ## RenderThread 上的 dequeueBuffer 阻塞特征
 
-`Buffer Stuffing` 是结果标签,RenderThread 上的 `dequeueBuffer` 等待才是 App 侧可观察的背压入口。`BufferQueueProducer::dequeueBuffer()` 会进入 `waitForFreeSlotThenRelock()` 查找可用 slot;没有空闲 slot,或内部队列超过 `maxBufferCount` 时,producer 会等待 buffer release。android14-release / android15-release 的已复核路径仍按 `mDequeueCondition.wait()` / `wait_for()` 这类条件变量等待理解;`BUFFER_RELEASE_CHANNEL` 只作为 Android 16+/main 分支待验证差异,不写成 Android 14/15 设备通用机制。[已验证: AOSP android14-release, frameworks/native/libs/gui/BufferQueueProducer.cpp] [待验证: BUFFER_RELEASE_CHANNEL 在 Android 16+/main 的启用条件]
+`Buffer Stuffing` 是结果标签,RenderThread 上的 `dequeueBuffer` 等待才是 App 侧可观察的背压入口。`BufferQueueProducer::dequeueBuffer()` 会进入 `waitForFreeSlotThenRelock()` 查找可用 slot;没有空闲 slot,或内部队列超过 `maxBufferCount` 时,producer 会等待 buffer release。android14-release / android15-release 的已复核路径仍按 `mDequeueCondition.wait()` / `wait_for()` 这类条件变量等待理解;`BUFFER_RELEASE_CHANNEL` 只作为 Android 16+/main 分支待验证差异,不写成 Android 14/15 设备通用机制。
 
 Trace 中可以按组合证据判断,而不是只盯一个 slice 名称:
 
@@ -149,25 +121,25 @@ Perfetto 中常见的 `QueuedBuffer - <layer>` 轨道可以用来判断 App 侧�
 
 ```text
 App / RenderThread
-  dequeueBuffer -> 绘制或提交 GPU 命令 -> queueBuffer
-        ↓
+ dequeueBuffer -> 绘制或提交 GPU 命令 -> queueBuffer
+  ↓
 BLASTBufferQueue / BufferQueue
-  queued buffer 等待 SF latch
-        ↓
+ queued buffer 等待 SF latch
+  ↓
 SurfaceFlinger
-  acquireBuffer -> latch -> composition -> present
-        ↓
+ acquireBuffer -> latch -> composition -> present
+  ↓
 HWC / Display
-  present fence signal
-        ↓
+ present fence signal
+  ↓
 SurfaceFlinger / Consumer
-  releaseBuffer,slot 回到 free 列表
-        ↓
+ releaseBuffer,slot 回到 free 列表
+  ↓
 App / Producer
-  下一次 dequeueBuffer 解除等待
+ 下一次 dequeueBuffer 解除等待
 ```
 
-这条线可以给每个判断找到对应证据:App 侧看 `queueBuffer` 和 `dequeueBuffer`;SF 侧看 latch、composition、present;显示侧看 present fence;回到 App 侧看 release 后下一次 dequeue 是否恢复。AOSP `BufferQueueConsumer::releaseBuffer()` 会把 slot 状态释放,并通过条件变量或 release 通知唤醒等待 producer;`BufferQueueCore` 维护 `mFreeSlots`、`mFreeBuffers`、`mActiveBuffers`、`mQueue` 这些状态集合。[已验证: AOSP android14-release, frameworks/native/libs/gui/BufferQueueConsumer.cpp; frameworks/native/libs/gui/include/gui/BufferQueueCore.h]
+这条线可以给每个判断找到对应证据:App 侧看 `queueBuffer` 和 `dequeueBuffer`;SF 侧看 latch、composition、present;显示侧看 present fence;回到 App 侧看 release 后下一次 dequeue 是否恢复。AOSP `BufferQueueConsumer::releaseBuffer()` 会把 slot 状态释放,并通过条件变量或 release 通知唤醒等待 producer;`BufferQueueCore` 维护 `mFreeSlots`、`mFreeBuffers`、`mActiveBuffers`、`mQueue` 这些状态集合。
 
 排查时可以按时间窗做反证:如果 `dequeueBuffer` 长,但 SF 对应帧很快 present 且 release 及时,原因可能不是 BufferQueue 积压,而是 release fence 未 signal、线程调度延迟或应用层锁等待。如果 `queueBuffer` 之后很久才被 SF latch,且 `QueuedBuffer` 高位,才更接近 BufferQueue 背压。
 
@@ -198,9 +170,7 @@ BufferQueue 背压和另外四类问题很像,排查时按下面顺序剥离:
 
 ## Android 16+/main BUFFER_RELEASE_CHANNEL 待验证
 
-Task 9 复核口径是:android14-release 与 android15-release 的 `BufferQueueProducer.cpp` 未命中 `BUFFER_RELEASE_CHANNEL`,该 flag 属于 Android 16+/main 分支待验证差异。android14-release 只能作为传统 `mDequeueCondition.notify_all()` / 条件变量等待路径的锚点,不能支撑"Android 14 引入 release channel"的结论。[来源: logs/deep-review/2026-05-17-01-deep-review.md]
-
-本节保留为待复核项:当前已核对到传统条件变量等待与 release 唤醒机制,`BUFFER_RELEASE_CHANNEL` 的具体分支、启用范围和 Android 16/17 行为仍需在 AOSP main / 对应 release tag 逐行确认。[待验证: BUFFER_RELEASE_CHANNEL 在目标 release tag 的启用条件]
+Task 9 复核口径是:android14-release 与 android15-release 的 `BufferQueueProducer.cpp` 未命中 `BUFFER_RELEASE_CHANNEL`,该 flag 属于 Android 16+/main 分支待验证差异。android14-release 只能作为传统 `mDequeueCondition.notify_all()` / 条件变量等待路径的锚点,不能支撑"Android 14 引入 release channel"的结论。本节保留为待复核项:当前已核对到传统条件变量等待与 release 唤醒机制,`BUFFER_RELEASE_CHANNEL` 的具体分支、启用范围和 Android 16/17 行为仍需在 AOSP main / 对应 release tag 逐行确认。
 
 对 Perfetto 判读的影响可以先按保守口径处理:
 
@@ -214,19 +184,19 @@ SQL 的用途是把 UI 里的红黄绿 slice 变成可复查的证据表。下�
 
 ```sql
 SELECT
-  afts.ts,
-  afts.dur,
-  afts.surface_frame_token AS app_token,
-  afts.display_frame_token AS sf_token,
-  afts.jank_type,
-  afts.on_time_finish,
-  afts.present_type,
-  afts.layer_name,
-  process.name AS process_name
+ afts.ts,
+ afts.dur,
+ afts.surface_frame_token AS app_token,
+ afts.display_frame_token AS sf_token,
+ afts.jank_type,
+ afts.on_time_finish,
+ afts.present_type,
+ afts.layer_name,
+ process.name AS process_name
 FROM actual_frame_timeline_slice AS afts
 LEFT JOIN process USING (upid)
 WHERE afts.jank_type IN ('Buffer Stuffing', 'BufferStuffing')
-   OR afts.jank_type LIKE '%Buffer%Stuff%'
+ OR afts.jank_type LIKE '%Buffer%Stuff%'
 ORDER BY afts.ts;
 ```
 
@@ -236,41 +206,41 @@ ORDER BY afts.ts;
 
 ```sql
 WITH stuffing AS (
-  SELECT
-    ts,
-    dur,
-    surface_frame_token AS app_token,
-    display_frame_token AS sf_token,
-    layer_name,
-    upid
-  FROM actual_frame_timeline_slice
-  WHERE jank_type IN ('Buffer Stuffing', 'BufferStuffing')
-     OR jank_type LIKE '%Buffer%Stuff%'
+ SELECT
+ ts,
+ dur,
+ surface_frame_token AS app_token,
+ display_frame_token AS sf_token,
+ layer_name,
+ upid
+ FROM actual_frame_timeline_slice
+ WHERE jank_type IN ('Buffer Stuffing', 'BufferStuffing')
+  OR jank_type LIKE '%Buffer%Stuff%'
 ), rt_slice AS (
-  SELECT
-    slice.ts,
-    slice.dur,
-    slice.name,
-    thread.name AS thread_name,
-    process.name AS process_name
-  FROM slice
-  JOIN thread_track ON slice.track_id = thread_track.id
-  JOIN thread USING (utid)
-  LEFT JOIN process USING (upid)
-  WHERE slice.name GLOB '*dequeueBuffer*'
-     OR slice.name GLOB '*DequeueBuffer*'
+ SELECT
+ slice.ts,
+ slice.dur,
+ slice.name,
+ thread.name AS thread_name,
+ process.name AS process_name
+ FROM slice
+ JOIN thread_track ON slice.track_id = thread_track.id
+ JOIN thread USING (utid)
+ LEFT JOIN process USING (upid)
+ WHERE slice.name GLOB '*dequeueBuffer*'
+  OR slice.name GLOB '*DequeueBuffer*'
 )
 SELECT
-  stuffing.layer_name,
-  stuffing.app_token,
-  stuffing.sf_token,
-  rt_slice.process_name,
-  rt_slice.thread_name,
-  rt_slice.name AS blocking_slice,
-  rt_slice.dur / 1000000.0 AS dur_ms
+ stuffing.layer_name,
+ stuffing.app_token,
+ stuffing.sf_token,
+ rt_slice.process_name,
+ rt_slice.thread_name,
+ rt_slice.name AS blocking_slice,
+ rt_slice.dur / 1000000.0 AS dur_ms
 FROM stuffing
 JOIN rt_slice
-  ON rt_slice.ts BETWEEN stuffing.ts - 30000000 AND stuffing.ts + stuffing.dur + 30000000
+ ON rt_slice.ts BETWEEN stuffing.ts - 30000000 AND stuffing.ts + stuffing.dur + 30000000
 ORDER BY stuffing.ts, rt_slice.dur DESC;
 ```
 
@@ -280,18 +250,18 @@ ORDER BY stuffing.ts, rt_slice.dur DESC;
 
 ```sql
 SELECT
-  thread.name AS thread_name,
-  process.name AS process_name,
-  thread_state.ts,
-  thread_state.dur / 1000000.0 AS dur_ms,
-  thread_state.state,
-  thread_state.io_wait,
-  thread_state.blocked_function
+ thread.name AS thread_name,
+ process.name AS process_name,
+ thread_state.ts,
+ thread_state.dur / 1000000.0 AS dur_ms,
+ thread_state.state,
+ thread_state.io_wait,
+ thread_state.blocked_function
 FROM thread_state
 JOIN thread USING (utid)
 LEFT JOIN process USING (upid)
 WHERE thread.name IN ('RenderThread', 'hwuiTask1', 'hwuiTask2')
-  AND thread_state.dur > 5000000
+ AND thread_state.dur > 5000000
 ORDER BY thread_state.ts;
 ```
 
@@ -304,4 +274,4 @@ BufferQueue 阻塞的判据不是某个 slice 名字，而是一组时间上闭�
 ## 参考资料与延伸阅读
 
 - **Android Triple Buffer 机制与 BufferQueue 缓冲区管理**：源码调研，详细分析 Triple Buffer 的 producer-consumer 流水线机制、MIN_UNDEQUEUED_BUFFERS=2 的阻塞条件、dequeueBuffer/acquireBuffer/releaseBuffer 完整流程
-  `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-triple-buffer-bufferqueue-mechanism.md`
+ `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-triple-buffer-bufferqueue-mechanism.md`
