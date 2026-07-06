@@ -38,14 +38,14 @@ related_chapters:
   - "15.5"
   - "9.1"
   - "8.2"
-pipeline_stage: "ready-to-publish"
-task9_state: "reviewed"
+pipeline_stage: task6_pending
+task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-30"
 
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_at: "2026-05-18T15:23:37+08:00"
+task2b_result: fixed
+last_task2b_at: 2026-07-07T04:52:50+08:00
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
 last_task9_at: 2026-07-07T04:29:44
@@ -53,16 +53,17 @@ task9_review_notes: "2026-05-18 13:20 Task9 闲时抽检:needs-rework。P0 1 / P
 last_task9_review_log: "logs/deep-review/2026-06-30-20-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
-task6_state: reviewed
+task6_state: revisiting
 task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
 last_task6_audit: "2026-07-06"
-last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"
----
+last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"---
 
 # 14.7 ProfilingManager
+
+> **📌 版本边界声明**：本章正文结论均以 Android 17 (API 37, `android-17.0.0_r1`) 为技术基线。非 `android-17.0.0_r1` 资料的引用（如 developer.android.com 通用文档、Perfetto 官网文档等）仅作为背景参考或接口速查，不得脱离 AOSP 版本验证独立作为正文中的技术结论。ProfilingManager 作为 Mainline 模块可通过 Google Play system update 独立更新，设备端实际行为可能与 AOSP tag 存在差异。
 
 ProfilingManager 解决量产设备上"问题发生时没有开工具"的取证空档。Android 15 起,应用可主动请求 system trace、heap dump、heap profile、stack sampling;Android 16 补齐系统事件触发。本章讲透显式请求、trigger 版本边界、结果接收三个环节,帮你在量产设备上完成线上取证。
 
