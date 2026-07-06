@@ -366,3 +366,19 @@ GPU工具在不同GPU架构（Adreno/Mali/PowerVR/Xclipse）上的性能计数�
 
 ### 关联章节
 2.10, 2.14, 13.3, 14.1
+
+## [2026-07-06] 20.9 稳定性治理案例集 — 知识盲区
+
+### 盲区描述
+章节在三个重要领域存在知识盲区，这些盲区会影响 Android 17 环境下的稳定性治理效果。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 17 信号处理机制变化研究：调查 signal-fast-handlers、SA_RESTART 等在 Android 17 中的行为变化
+- 线程亲和性（affinity）与 CPU core binding 的性能优化研究：分析在多核设备上如何通过线程绑定优化性能
+- Android 17 新增线程监控 API 研究：调查 Thread.getStackTrace() 性能优化、Process.THREAD_PRIORITY_* 常量的实际影响
+
+### 关联章节
+20.3 Native Crash 治理、20.5 OOM 治理、20.6 指标体系

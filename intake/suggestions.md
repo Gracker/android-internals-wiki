@@ -20,3 +20,39 @@
 - 修复 frontmatter 重复 key（task2b_state ×2、pipeline_stage 冲突、task2b_result 重复）
 
 状态：pipeline_stage → task6_pending，task9_result → revisiting，等待 Task6 复审
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：源码准确性
+- **位置**：AGI System Profiler 与 APA System Profiler 对比表格
+- **问题**：AGI 的最低支持版本标注为 Android 11，但 AOSP android-17.0.0_r1 中 AGI 的最低支持版本实际为 Android 10
+- **建议**：修正为 Android 10+
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：版本差异覆盖
+- **位置**：Android 17 ANGLE 策略说明
+- **问题**：缺少对 Android 15-16 的 allowlist 策略与 Android 17 denylist 策略的对比说明
+- **建议**：补充两种策略的具体差异和迁移指导
+
+## [Task9 Deep Review] 14.8 GPU 图形调试与分析工具 — 2026-07-06
+- **类型**：知识盲区
+- **位置**：GPU Profiling 应用场景
+- **问题**：缺少对游戏开发中 GPU Profiling 的特殊考虑，如 Shader 变体预热、Pipeline Cache 优化等
+- **建议**：增加游戏开发专属章节，涵盖游戏行业最佳实践
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：源码准确性
+- **位置**：ComputerEngine.java 路径引用
+- **问题**：在 AOSP android-17.0.0_r1 中的路径引用需要更新
+- **建议**：验证并更新正确的 AOSP 路径
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：源码准确性
+- **位置**：debuggerd_handler.cpp 路径引用
+- **问题**：Android 17 中 debuggerd_handler.cpp 已迁移到 bionic/linker/linker_debuggerd_android.cpp
+- **建议**：更新路径引用并说明迁移背景
+
+## [Task9 Deep Review] 20.9 稳定性治理案例集 — 2026-07-06
+- **类型**：知识盲区
+- **位置**：Android 17 线程监控 API
+- **问题**：缺少对 android.os.Process.getThreadCpuTime() 等新 API 的具体使用示例
+- **建议**：增加线程监控 API 的使用示例和最佳实践
