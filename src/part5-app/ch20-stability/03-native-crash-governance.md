@@ -134,6 +134,48 @@ SignalChain 的拦截发生在 `sigaction()` 调用时：应用通过 JNI 调用
 5. `crash_dump` 通过 `/data/system/ndebugsocket` 通知 **ActivityManagerService** 中的 `NativeCrashListener`，再由 AMS 的 `handleApplicationCrashInner()` 处理（不经过 Java 层的 `UncaughtExceptionHandler`——Native Crash 走的是 AMS → CrashDialog / kill 进程路径）
 
 `ptrace` + 独立进程的设计是关键：崩溃进程的内存空间可能已经损坏，如果在进程内部做堆栈回溯，可能二次崩溃。`crash_dump` 通过 `ptrace` 从外部读取，安全性更高。pseudothread 机制保证崩溃线程在 fork+exec 期间不会阻塞在信号处理上下文中。
+<!-- AIW-源码调研-2026-07-07：Android 17 linker 与 debuggerd 集成 -->
+
+### Android 17 linker 启动期 wiring（勘误）
+
+> 直连 AOSP `android-17.0.0_r1` tag 源码，本节修正 2026-07-06 报告中「debuggerd 从 system/core 迁到 bionic/linker」的说法。
+
+实际改动只是一组 3 个薄适配文件（约 100 行）：
+
+- `bionic/linker/linker_debuggerd.h`：仅声明 `linker_debuggerd_init()` 与 `extern "C" bool debuggerd_handle_signal(...)` 两个符号
+- `bionic/linker/linker_debuggerd_android.cpp`：定义 `get_process_info()` 从 `__libc_shared_globals()` 取 `abort_msg / fdsan_table / gwp_asan_state / scudo_stack_depot / crash_detail_page`；`linker_debuggerd_init()` 把它和 `notify_gdb_of_libraries` 一起塞进 `debuggerd_callbacks_t`，调用既存的 `debuggerd_init(&callbacks)`
+- `bionic/linker/linker_debuggerd_stub.cpp`：`linux_bionic` / host 构建的 noop 实现，保证同一 ABI
+
+`system/core/debuggerd/handler/debuggerd_handler.cpp`（880+ 行）**仍在 system/core/ 下完整维护**，并未整体迁移。下表给出"信号处理起点"的真实位置：
+
+| 步骤 | 源码位置 | 触发时机 |
+|------|---------|---------|
+| 进入 linker | `bionic/linker/arch/<arch>/crtbegin.cpp:_start` | 进程 _start 立即转入 |
+| `linker_main()` 启动 | `bionic/linker/linker_main.cpp:296` | 同上 |
+| **`linker_debuggerd_init()` 调用** | **`bionic/linker/linker_main.cpp:313`** | 在 `__system_properties_init()` 之后、LD_DEBUG 与 soinfo 初始化之前 |
+| `debuggerd_init(callbacks)` 真正注册 SA | `system/core/debuggerd/handler/debuggerd_handler.cpp:892` | 单次 mmap 8 页 + `sigaction(SIGSEGV/BUS/FPE/ILL/SYS/TRAP/ABRT/STKFLT/BIONIC_SIGNAL_DEBUGGER, ...)` |
+
+调用关系：
+
+```text
+_start → linker::_start → linker_main()
+                              ├ __system_properties_init()
+                              ├ linker_debuggerd_init()           ← ① 安保 signal handler 第一时间就位
+                              │    └ debuggerd_init(cb)            ← ② 既存逻辑，未迁移
+                              │         ├ mmap 8 页 pseudothread stack (mmap 10 页, 头尾 PROT_NONE)
+                              │         ├ sigaction(SIGSEGV, {SA_SIGINFO|SA_RESTART|SA_ONSTACK|SA_EXPOSE_TAGBITS}, ...)
+                              │         └ sigaction(BIONIC_SIGNAL_DEBUGGER, ...)
+                              ├ load_executable + soinfo 初始化
+                              └ 转入用户程序入口
+```
+
+**与 2026-07-06 报告的差异**：
+- ✗ "debuggerd 从 system/core/debuggerd/ 迁移到 bionic/linker/"：源码不存在整体迁移
+- ✗ "动态 altstack 尺寸自适应"：`thread_stack_pages = 8` 是编译期常量，无 `sysconf(_SC_SIGSTKSZ)` 调整路径
+- ✗ "线程亲和性分发"：`debuggerd_signal_handler()` 内未出现 `sched_setaffinity` / `CPU_SET` 调用；该断言**未经一手验证**
+- ✓ "SA_EXPOSE_TAGBITS / SEGV_MTE 软崩溃 / GWP-ASan recoverable / wire protocol v4" 均为可在源码中验证的真实新机制
+
+
 
 
 ## Tombstone 结构解读

@@ -204,13 +204,19 @@ Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。�
 
 **一个信号只能有一个处理器**。`sigaction` 的 `oldact` 参数会返回上一个处理器，新处理器有责任在处理完后调用旧处理器，形成"链"。但这条链很容易断：
 
-**Android 17 信号处理机制变化**：Android 17 对信号处理引入了三方面的增强——
+**Android 17 信号处理机制变化（基于 AOSP `android-17.0.0_r1` 源码校核）**：经 `bionic/linker/linker_main.cpp:312-313` 与 `system/core/debuggerd/handler/debuggerd_handler.cpp:892-927` 直接验证：
 
-1. **更严格的 async-signal-safe 校验**：系统在分发信号前增加了 handler 安全性检查，handler 内执行 `malloc`、`dlopen`、`pthread_mutex_lock` 等非安全操作时，系统会记录警告并可能出现 handler 被降级/跳过的情况。这意味着依赖内部 `longjmp` 或复杂 unwind 的旧 SDK 模式在 Android 17 上可能直接失效。
-2. **线程亲和性信号分发**：在多核 big.LITTLE 架构上，Android 17 优先将崩溃信号投递到信号来源线程所在的 CPU 核心，减少跨核 cache 失效对 crash dump 准确性的影响。在旧版本中，信号可能被任意核心处理，导致 `ucontext_t` 中的寄存器快照与崩溃现场存在偏差。
-3. **altstack 增强**：`SIGSTKSZ` 从常量改为运行时动态获取（`sysconf(_SC_SIGSTKSZ)`），因为 Android 17 的线程栈布局变化可能导致固定的 `SIGSTKSZ` 不足以容纳扩展的上下文信息。
+1. **linker 启动期 wiring**：`bionic/linker/linker_main.cpp:313` 的 `linker_debuggerd_init()` 是新增触发点 —— 在 `__system_properties_init()` 之后立即调用 `debuggerd_init(&callbacks)`。**debuggerd 本身并未迁入 linker**，只是多了 3 个薄适配文件（`linker_debuggerd.h` / `linker_debuggerd_android.cpp` / `linker_debuggerd_stub.cpp`）。`system/core/debuggerd/` 仍保留完整 880+ 行的 `debuggerd_handler.cpp`。
+2. **`SA_EXPOSE_TAGBITS` 新 flag**：`debuggerd_handler.cpp:917` 在原来的 `SA_RESTART | SA_SIGINFO | SA_ONSTACK` 基础上增加 `SA_EXPOSE_TAGBITS`，让 arm64 MTE tag 信息上送到 `ucontext_t`，用于诊断 `SEGV_MTEAERR / SEGV_MTESERR` fault。
+3. **altstack 实际是 mmap + clone_thread，不是 sigaltstack 128 KB**：`debuggerd_handler.cpp:897-913` 调用 `mmap(NULL, getpagesize() * (8+2), PROT_NONE, ...)`，再 `mprotect` 中间 8 页 `PROT_READ|PROT_WRITE`，头尾两页保留 `PROT_NONE` 作 stack guard。最后 `clone(debuggerd_dispatch_pseudothread, pseudothread_stack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM ...)` 派生同进程线程。`SA_ONSTACK` 是兜底，正常情况下用 `clone` 自己的栈。**`thread_stack_pages = 8` 是编译期常量，未见运行时 `sysconf(_SC_SIGSTKSZ)` 自适应路径**。
+4. **wire protocol v4**：`debuggerd_handler.cpp:527-560`，动态可执行文件（fdsan_table != nullptr）调用 `get_process_info()` 把 `debugger_process_info` 通过 pipe 传给 `crash_dump`（version=4）。Static exe 仍走 v1（仅 abort_msg 指针）。
 
-这些变化意味着统一信号处理器注册时，除了保证 async-signal-safe，还必须显式检查 `SA_ONSTACK` 是否生效，并改用 `sigaltstack` + 动态栈大小。
+**截至 android-17.0.0_r1 tag 源码，下列内容未经一手验证，建议从口径中删除**：
+- ❌ "线程亲和性信号分发"：signal handler 内未出现 `sched_setaffinity` / `CPU_SET`，崩溃线程本身就是信号接收者，谈不上"跨核分发"。
+- ❌ "动态 altstack 尺寸自适应"：handler 用的是 `mmap(8+2 pages)` 固定值，没有 `sysconf(_SC_SIGSTKSZ)` 调用。
+- ❌ "async-signal-safe 校验 / handler 降级"：handler 内只有 `pthread_mutex_lock(&crash_mutex)` 等本身就 async-signal-safe 的操作，未发现"校验并降级"的代码路径。
+
+可保留且有源码支撑的 17 增强：MTE permissive mode（`debuggerd_handler.cpp:723-749`）、GWP-ASan recoverable crash（`debuggerd_handler.cpp:929-961`）、`BIONIC_SIGNAL_DEBUGGER` 主动 dump 通道（`handler.h:78`）。
 
 - SDK A 注册了 SIGSEGV 处理器
 - SDK B 注册了 SIGSEGV 处理器，`oldact` 保存了 A 的处理器
@@ -242,6 +248,11 @@ void dump_signal_handlers() {
 ### 根因定位
 
 崩溃监控 SDK 的初始化顺序不确定，每次进程启动时两个 SDK 可能以不同的顺序初始化。先初始化的 SDK 注册的处理器会被后初始化的 SDK 覆盖。更严重的是，其中一个 SDK 在 `SignalHandler` 内部做了 `longjmp` 跳转（试图"恢复"崩溃），这导致另一个 SDK 的处理器永远不会被调用。
+
+
+<!-- AIW-源码调研-2026-07-07 勘误 follow-up：debuggerd/handler 链路未被「整体迁移」，仅 linker_main 增加了 wiring 调用 -->
+
+> 上方 ch09 第一处勘误的反向印证：在 `android-17.0.0_r1` 中，`debuggerd_signal_handler → linker_debuggerd_signal_handler` 的「Android 5.0 模式」并非 linker 化迁移的产物 —— `linker_debuggerd_signal_handler` 在源码树中**未独立存在**。真正的 linker 侧入口只有 `linker_debuggerd_init()`（一个 4 行的 symbol），其余逻辑（signal handler 主体、GWP-ASan/MTE 异常分支、wire protocol）全部在 `system/core/debuggerd/handler/` 目录下未迁移。
 
 **Android 5.0 模式在 Android 17 中的适用性**：Android 5.0 引入的 debuggerd 信号处理器链机制（`debuggerd_signal_handler` → `linker_debuggerd_signal_handler`）在 Android 17 中保持兼容，但约束更强。Android 5.0 时期，handler 内执行 `dlopen("libc++.so")` 和 `__android_log_print` 等操作虽不安全但通常能工作；Android 17 的运行时对这些操作默认拒绝或触发 SIGABRT 二次崩溃。保留旧处理器链时，不要默认调用未知 SDK 的旧 handler——除非对方显式保证 async-signal-safe。
 

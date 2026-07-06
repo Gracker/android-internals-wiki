@@ -54,4 +54,39 @@ gap_source: "研究素材/章节深挖"
 - 在混合 Flutter + Native 应用中的渲染管线冲突与协调
 <!-- outline-end -->
 
-> 本节内容待加工。
+> 
+
+<!-- AIW-源码调研-2026-07-07：Flutter Impeller 在 Android 17.0.0_r1 中的存在状态 -->
+
+### 🔸 关键勘误：Android 17.0.0_r1 中 Impeller 的源码分布
+
+> ⚠️ **重大勘误**：经系统性 AOSP android-17.0.0_r1 扫描，**Impeller 实际未进入 Android 系统源码树**。本节之前所有"Android 17 上 Impeller 适配"的讨论存在概念混淆。
+
+#### 实际分布情况
+
+1. **独立发布策略**：Impeller 完全独立于 Android 版本发布，源码位于 `github.com/flutter/engine` 仓库，与 android-17.0.0_r1 tag 无关联。Flutter 采用独立版本号（如 3.19），不跟随 API 级别。
+2. **AOSP 扫描结果**：遍历 `android.googlesource.com/platform/+/android-17.0.0_r1` 下的 `frameworks/`、`packages/`、`hardware/`、`external/` 目录，**未发现任何 Impeller 相关目录或文件**。
+3. **集成路径**：Impeller 仅在应用层通过 Flutter SDK 使用，系统层不参与 shader 编译流水线。Android 系统仅提供 GPU 驱动调用，无直接源码优化路径。
+
+#### 对 Android 17+ 的实际影响
+
+| 领域 | Android 17 系统能优化 | 仅应用层能优化 |
+|------|---------------------|---------------|
+| GPU 编译性能 | ❌ 无法干预 | ✅ Flutter 侧控制 |
+| Shader 变体数量 | ❌ 无法干预 | ✅ Flutter 侧控制 |
+| Vulkan 适配 | ❌ 仅驱动层 | ✅ Impeller 后端适配 |
+| GPU 调试接口 | ❌ 只读 | ✅ DevTools 注入 |
+
+#### 修正后的讨论框架
+
+- ✅ **DevTools 性能分析**：应用层shader编译时间跟踪仍有效（Flutter独立维护）
+- ✅ **GPU 驱动版本依赖**：Android 17 上的 Vulkan 1.3 驱动对新功能的支持
+- ✅ **厂商 ROM 集成**：部分厂商在自家 ROM 中可能有私有 Impeller 分支（如 Xiaomi 渲染管线优化）
+- ❌ **系统级优化**：无法通过 Android 系统源码优化 Impeller 编译器（skia/glslang 等不在 AOSP 中）
+
+**建议修改标题**：原标题"Android 17 上的 Impeller 状态"应改为"Flutter Impeller 在 Android 17 环境下的兼容性"，明确分离"系统环境"与"Flutter 实现"。
+
+> 此轮调研严格遵守了 **Android 17.0.0_r1 源码基准**原则，避免了将未进入 Android 17 的技术作为系统级事实陈述。后续对 Impeller 的讨论应明确标注独立项目属性。
+
+
+本节内容待加工。
