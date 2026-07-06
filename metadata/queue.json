@@ -297,5 +297,31 @@
       "completed_by": "task2b-lite",
       "completion_reason": "fixed-lite: PowerStatsAggregator 路径版本限定修正（'已确认迁至'→'Android 16 源码迁至，17 未验证'），Battery Historian gcr.io 镜像名明确化"
     }
-  ]
+  ],
+  "14.11": {
+    "section": "14.11",
+    "section_title": "Battery Historian 与功耗分析工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 源码引用准确性问题",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "PowerMonitorReadings.getConsumedEnergy(PowerMonitor) 调用",
+        "detail": "方法签名错误：应为 getConsumedEnergy() 无参数，非 getConsumedEnergy(PowerMonitor)",
+        "suggestion": "修正方法调用为 result.getConsumedEnergy()，仅传入 PowerMonitor 对象作为 getSupportedPowerMonitors 的返回值"
+      },
+      {
+        "type": "源码错误",
+        "location": "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java",
+        "detail": "Android 17.0.0_r1 中该路径可能已变更，需确认实际模块归属",
+        "suggestion": "在 android-17.0.0_r1 源码中搜索 BatteryStatsService 类确认正确路径，或标注路径待验证"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-06T20:25:19.044439+08:00",
+    "status": "pending"
+  }
 }
