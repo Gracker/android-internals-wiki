@@ -2,8 +2,8 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
+pipeline_stage: task6_pending
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
 tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
 confidence: "medium"
@@ -22,8 +22,8 @@ last_task2b_at: "2026-07-06T02:50:00+08:00"
 last_task2b_by: "openclaw-task2b-main"
 task2b_result: fixed
 task6_result: "pass-light-edit"
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-07-06"

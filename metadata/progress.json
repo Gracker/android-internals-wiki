@@ -932,15 +932,15 @@
       "review_log": "logs/review/2026-07-04-12-review.md"
     },
     "14.8": {
-      "status": "finalized",
+      "status": "ready-for-review",
       "task2b_result": "fixed",
       "task6_result": "pass-light-edit",
       "task6_reviewed_at": "2026-07-06T03:20:00+08:00",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task6_pending",
       "last_task6_review": "2026-07-06T03:20:00+08:00",
-      "task2b_verifier_note": "2026-07-06 auto-promoted by verifier"
+      "task2b_verifier_note": "2026-07-06 reflux verification corrected status"
     },
     "20.9": {
       "status": "ready-for-review",
