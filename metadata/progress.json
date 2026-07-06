@@ -3,7 +3,7 @@
   "draft": 41,
   "ready_for_review": 203,
   "finalized": 342,
-  "last_updated": "2026-07-06T21:15:00+08:00",
+  "last_updated": "2026-07-06T23:08:59+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -928,7 +928,7 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 15,
+  "deprecated": 19,
   "stats": {
     "last_review_date": "2026-07-06",
     "last_review_by": "openclaw-task2a",
@@ -1136,5 +1136,35 @@
     "blocked_section": "21.2",
     "result": "no-change",
     "log_file": "logs/rework/task2b-verifier-2026-07-06.log"
-  }
+  },
+  "deprecations": [
+    {
+      "chapter": "4.33",
+      "path": "src/part1-fundamentals/ch04-memory/4.33-android17-ai-agent-memory-sandboxed-data-reuse.md",
+      "reason": "Duplicate of §4.22 (same title, §4.22 has 220 lines ready-for-review). Outline was copy-paste broken.",
+      "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "5.27",
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.27-ondevice-llm-inference-energy-efficiency.md",
+      "reason": "Title corrupted (frontmatter says CPU cache locality, SUMMARY says MoE/quantization). Topic already covered by §5.11/§5.13/§5.14. Outline broken with GPU content.",
+      "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "23.5",
+      "path": "src/part5-app/ch23-memory-practice/23.5-art-heaptask-system-7-subclasses.md",
+      "reason": "Duplicate of §4.34 (same topic: ART HeapTask 7 subclasses). §4.21 also covers HeapTask scheduling pipeline. Outline was copy-paste broken.",
+      "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "4.23",
+      "path": "src/part1-fundamentals/ch04-memory/4.23-android17-ai-agent-memory.md",
+      "reason": "Duplicate of §4.22. Contains suspected AI hallucination (MemoryDomain/SandboxedHeap not found in AOSP). Needs-verification status confirmed as unreliable.",
+      "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
+    }
+  ]
 }
