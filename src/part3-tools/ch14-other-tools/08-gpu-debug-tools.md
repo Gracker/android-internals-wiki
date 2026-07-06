@@ -39,8 +39,8 @@ task6_reviewed_at: "2026-07-06T05:05:00+08:00"
 task6_reviewed_by: "openclaw-task6"
 finalized_date: "2026-07-05"
 finalized_by: "openclaw-task2b-auto-promote"
-deepseek_cn_review_state: "done"
-last_deepseek_cn_review_at: "2026-06-12"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-06
 last_task9_audit_log: "logs/deep-review/2026-07-05-22-deep-review.md"
 task9_review_summary: "发现 P0 源码命令错误、P1 版本差异覆盖不完整、P2 数据缺失等问题，已写入 queue.json 和 suggestions.md"
 last_task2b_lite_at: "2026-07-05"
@@ -54,19 +54,19 @@ last_task9_autofix_at: "2026-07-06"
 
 ### 锚点(必须覆盖)
 
-- 🔹 **GPU 工具分层与选型**:[已验证:developer.android.com/agi,perfetto.dev/docs/data-sources/gpu,renderdoc.org]
+- 🔹 **GPU 工具分层与选型**:
   先区分系统级追踪、帧级分析和厂商专用工具,再按"先确认 GPU 是否是瓶颈,再定位具体环节"的路径选工具。
 
-- 🔹 **AGI 的两种模式与适用场景**:[已验证:developer.android.com/agi]
+- 🔹 **AGI 的两种模式与适用场景**:
   System Profiler 用来观察 GPU 利用率、频率、计数器和进程级 GPU 时间;Frame Profiler 用来定位单帧中的慢 Draw Call、Shader 和资源热点。
 
-- 🔹 **Perfetto 中的 GPU 观察点**:[已验证:perfetto.dev/docs/data-sources/gpu]
+- 🔹 **Perfetto 中的 GPU 观察点**:
   `gpu.counters` 用来观察频率、利用率、带宽,`gpu.renderstages` 用来记录 CPU 提交和 GPU 执行时间,适合作为 GPU 分析入口。
 
-- 🔹 **RenderDoc 与 Sokatoa 的角色差异**:[已验证:renderdoc.org,github.com/sarc-acl/sokatoa]
+- 🔹 **RenderDoc 与 Sokatoa 的角色差异**:
   RenderDoc 适合单帧图形调试和状态检查,Sokatoa 适合多帧对比和间歇性 GPU 卡顿定位,两者与 AGI 互补。
 
-- 🔹 **GPU 瓶颈判断指标**:[来源:Cubox/移动平台的GPU性能分析-2024-12-07.md,Cubox/基于gpu counters数据的性能优化-2025-02-27.md]
+- 🔹 **GPU 瓶颈判断指标**:
   重点看 GPU 时间、Draw Call 数量、Overdraw、显存带宽、Shader 复杂度与 ALU 利用率,并结合具体场景判断是 GPU bound、CPU bound 还是 buffer/backpressure 问题。
 
 ### 扩展(可选深入)
@@ -118,7 +118,6 @@ Android 平台上的 GPU 分析工具大致分三层,对应的定位也不同:
 3. **偶发性 GPU 卡顿(间歇性掉帧)?** → Sokatoa 多帧分析
 4. **Mali GPU 深度分析?** → ARM Streamline
 5. **游戏实时性能监控?** → PerfDog
-
 
 ## Android GPU Inspector (AGI)
 
@@ -196,13 +195,12 @@ AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。Syst
 
 2026 年 5 月,Google 发布了 **Android Performance Analyzer (APA)**,这是一个基于 Perfetto 的新一代 system profiling 工具,覆盖 CPU、GPU、Memory 和 power 分析。APA System Profiler 已经 open beta,官方在 AGI 文档中建议开发者向 APA 迁移。
 
-当前工具分工如下:
+APA 发版后,工具分工变得更清晰:
 
 - **system profiling**(GPU counter、进程级 GPU 时间、长时间 trace):首选 **APA System Profiler**;AGI System Profiler 保留为可用兼容路径,Perfetto GPU counter 作为快速入口
 - **frame profiling**(单帧 GPU 命令、Draw Call、Shader / Render Pass 定位):用 **AGI Frame Profiler** 或 RenderDoc
 - **frame profiling / debugging 后续方向**:APA 官方博客提到 upcoming frame profiling/debugging 将由 **GFXReconstruct** 支撑,未列入当前公开 beta 范围
 - **多帧 GPU 分析**:优先看 **Sokatoa**,基于 GFXReconstruct 且已公开实现路径
-
 
 ### APA System Profiler 的版本覆盖与演进
 
@@ -236,14 +234,13 @@ APA 基于 Perfetto 构建，因此在不同 Android 版本上的能力差异主
 - **Android 11 设备**：APA 不可用，AGI System Profiler 是唯一的官方 system profiling 选项。
 - **帧级分析**：APA 当前不提供帧级 GPU 命令分析。单帧调试仍用 AGI Frame Profiler 或 RenderDoc。
 
-
 ### AGI 对 GLES 应用的分析路径
 
 Android 15 开始,ANGLE 已经有了更明确的系统开关和每应用切换入口。到 Android 16 的新设备,ANGLE 覆盖范围继续扩大;Android 17 的新设备再转到 denylist 策略,默认大多数应用经由 ANGLE,兼容性例外回退到原生 GLES 驱动。AGI 的帧分析沿着这条迁移线工作:它会用自定义 ANGLE 构建把 GLES 命令翻译为 Vulkan 再做追踪。
 
 排查时先确认设备当前走的是哪条 driver 路径,再决定怎么解读 Draw Call 和 Shader 时间。开发阶段常用的固定方法有两类:用前面的 `settings put global angle_gl_driver_selection_*`,或在带 gpu shell 封装的系统镜像上用 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时,改从 Settings / Graphics Driver Preferences 进入。
 
-**Android 17 denylist 下的确认流程**。Android 17 新设备默认走 denylist 策略:绝大多数 GLES 应用已由 ANGLE 接管,只有 denylist 上列出的例外才回退到原生 GLES。排查 GPU 帧分析结果前,先确认设备的实际 driver 路径:
+**Android 17 denylist 下的确认流程**。前面已经讲过 denylist 的语义:绝大多数 GLES 应用默认走 ANGLE,denylist 上的例外回退原生 GLES。排查前先确认设备实际的 driver 路径:
 
 ```bash
 # 1. 确认系统是否已启用 denylist 模式
@@ -654,7 +651,7 @@ adb shell settings put global angle_gl_driver_selection_values native
 
 ### AGI 2025-2026 演进
 
-公开文档已经明确的是 System Profiler / Frame Profiler 两条产品线会继续增强。APA 发版后,AGI System Profiler 的重心可能逐步转向兼容维护,但 Frame Profiler 仍然在单帧分析领域保持唯一官方工具的定位。
+APA 发版后,AGI System Profiler 的重心逐步转向兼容维护,但 Frame Profiler 仍然是官方唯一的单帧分析工具。
 
 ## 参考资料
 
@@ -676,9 +673,3 @@ adb shell settings put global angle_gl_driver_selection_values native
 ### 进阶阅读
 - 移动平台 GPU 性能分析(知乎):https://zhuanlan.zhihu.com/p/560738175
 - 基于 GPU Counters 数据的性能优化(Cubox 收藏)：GPU 工具链方法论参考
-### Android 17 SurfaceFlinger GPU 调试系统与性能工具链源码调研
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-gpu-debug-performance-tools-source.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 锚定 SurfaceFlinger GPU 调试开关系统（debug.sf.* 属性体系）、FPSReporter 分层 FPS 监控架构、JankTracker 异步卡顿检测（BackgroundExecutor 低优先级批处理 50 条批次）、FrameTracer 与 Perfetto 集成的帧追踪管线。附 grallocusage 转换与 GPU 回压控制源码路径。
-- 注入时间：2026-07-06
-- 价值：补充 GPU 工具链的 AOSP 源码级实现细节，超越官方文档层面，对工具开发者与性能分析师有直接参考价值

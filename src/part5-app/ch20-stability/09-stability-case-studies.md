@@ -32,9 +32,12 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-28"
+task9_reviewed_date: "2026-07-06"
+task9_state: reviewed
+task2b_state: pending
+pipeline_stage: task2b_pending
 last_task9_at: "2026-05-28T03:32:12+08:00"
 last_task9_audit: "2026-06-17"
 task2b_result: "fixed-lite"
