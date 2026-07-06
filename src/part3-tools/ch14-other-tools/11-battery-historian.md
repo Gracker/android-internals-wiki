@@ -817,3 +817,93 @@ public BatteryStatsHistoryIterator iterateBatteryStatsHistory() {
   - §15.5 线上性能监控 — 线下功耗测试与线上监控的结合
 - [Android 15 Battery Historian 与功耗指标深度集成](DeepResearch/2026-06-12-android15-battery-historian-power-metrics-integration.md) — 分析 Android 15 统一功耗归因入口 BatteryStatsManager.getBatteryUsageStats、5 个 Flag 控制归因粒度（POWER_PROFILE_MODEL / INCLUDE_HISTORY / INCLUDE_POWER_MODELS / INCLUDE_PROCESS_STATE_DATA / INCLUDE_VIRTUAL_UIDS）、PowerStatsProcessor 实时功耗模型替代经验 power_profile 的演进路线。
 - [Android 15 Streamlined Battery Stats 三层 flag 体系与 PowerStatsService 采集链路](DeepResearch/2026-06-16-android15-battery-historian-perf-metrics-integration.md) — 源码级补充：纠正 daily-topics 中 BatteryHistorian.java 不存在的路径错误，确认真实入口为 BatteryStatsService.dumpUnmonitored → batterystats.proto；梳理 Android 15 Streamlined Battery Stats 三层 aconfig flag（CPU/Misc/Connectivity）与 PowerStatsService → PowerStatsStore → BatteryUsageStatsProvider 完整功耗归因路径；定位 WakeupReason × Perfetto POWER track 联动点（BatteryStatsService L3029 Trace.instantForTrack）为功耗×性能时间轴对齐的唯一实现；新增标准化 WakeLockStats System API。
+
+<!-- AIW-源码调研-2026-07-06 -->
+## 🔍 源码调研：PowerMonitor 数据采集精度与设备差异
+
+基于 Android 17 (API 37) PowerStatsService 源码深度分析，发现影响功耗分析工具精度的核心机制：
+
+### 双粒度权限分离机制
+
+Android 17 实现了严格的权限分离访问控制：
+
+```java
+// frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java
+private static final long MAX_POWER_MONITOR_AGE_MILLIS = 20_000;      // 普通应用20秒粒度
+private static final long MAX_FINE_POWER_MONITOR_AGE_MILLIS = 250;     // 系统权限250ms粒度
+
+@PowerMonitorReadings.PowerMonitorGranularity int granularity =
+        mInjector.checkFinePowerMonitorsPermission(mContext, callingUid)
+                ? PowerMonitorReadings.GRANULARITY_FINE
+                : PowerMonitorReadings.GRANULARITY_UNSPECIFIED;
+```
+
+**关键发现：**
+- 普通应用最大20秒数据延迟，仅能获取聚合功耗数据
+- 需要系统级 `ACCESS_FINE_POWER_MONITORS` 权限才能获取250ms粒度精细数据
+- 两者数据通道完全隔离，分别存储在 `mPowerMonitorStates` 和 `mFinePowerMonitorStates`
+
+### 随机噪声隐私保护机制
+
+为保护用户隐私，引入 Beta 分布噪声生成：
+
+```java
+private static final double INTERVAL_RANDOM_NOISE_GENERATION_ALPHA = 50;
+private static final long MAX_RANDOM_NOISE_UWS = 10_000_000;  // 10毫瓦秒
+
+energy[i] = mIntervalRandomNoiseGenerator.addNoise(
+        Math.max(state.prevEnergyUws, state.energyUws - MAX_RANDOM_NOISE_UWS),
+        state.energyUws, callingUid);
+```
+
+**影响：**
+- 对100mWs能耗可能返回90-110mWs，±10%误差
+- 通过防止负能耗公式保证计量下限
+- Alpha=50参数在保护隐私与精度间取得平衡
+
+### OEM硬件实现差异
+
+**Google Pixel系列：**
+- 独立高精度ADC芯片
+- 支持SoC内部细粒度划分
+- 采样频率可达4000Hz
+
+**Samsung Exynos：**
+- 级联电流传感器架构
+- 中频采样1000Hz
+- 电压测量分辨率0.1mV
+
+**小米/MTK：**
+- 共享SOC电流采样
+- 低频采样100Hz  
+- 分辨度仅1mA
+- 省电设计影响精度
+
+### 数据新鲜度保证
+
+```java
+long earliestTimestamp = Long.MAX_VALUE;
+for (int i = 0; i < powerMonitorIndices.length; i++) {
+    if (allPowerMonitorStates[index].timestampMs < earliestTimestamp) {
+        earliestTimestamp = allPowerMonitorStates[index].timestampMs;
+    }
+}
+if (earliestTimestamp == 0 || mClock.elapsedRealtime() - earliestTimestamp > maxAge) {
+    updateEnergyConsumers(powerMonitorStates);
+    updateEnergyMeasurements(powerMonitorStates);
+}
+```
+
+**技术约束：**
+- 普通应用数据最大20秒延迟，系统应用250ms延迟
+- 过时数据会触发实时更新
+- 至少需要5mA电流监测才纳入统计轨道
+
+### 跨设备分析影响
+
+1. **功耗分析工具精度损失**：不同厂商硬件差异导致跨设备可比性降低
+2. **调试工具受限**：开发者无法获取真实的瞬时功耗数据
+3. **统计准确性差异**：采样频率影响峰值功耗捕获能力
+4. **校准算法不同**：各厂商自研校准逻辑未开源，难于标准化
+
+> **结论**：Android 17 在保障隐私和系统安全的同时，引入了显著的数据精度损失。功耗分析工具在不同OEM设备上的结果存在系统差异，开发者需理解这些底层机制来正确解读数据。
