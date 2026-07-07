@@ -60,6 +60,7 @@ last_task9_audit: "2026-06-18"
 task6_reviewed_date: "2026-06-19"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（cpu_freq linux.cpu.frequency cpu_frequency_counters 修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过（两处模板引导语属于代码块用途句，不算元叙述）。outline 8/8 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
 last_task6_review_log: "logs/review/2026-06-19-04-review.md"
+last_task6_audit: "2026-07-07"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-28
 ---
@@ -244,7 +245,7 @@ ORDER BY dur_ms DESC;
 | 调查域 | 触发条件 | 起手证据 | 下一跳 | 常见误判 |
 |---|---|---|---|---|
 | CPU | 主线程或 RenderThread 长耗时，`Running` / `Runnable` 占比高 | `thread_state`、`sched`、CPU frequency、同 CPU 其他线程 | 查调度延迟、频率、IRQ、是否跑在慢核 | 把 `Runnable` 当成 App 正在计算 |
-| Graphics | 掉帧、首帧慢、GPU 内存高、Surface 提交异常 | FrameTimeline、RenderThread slice、`gpu_mem_total`、graphics allocation | 对齐 App / SF frame token，查 `texture_upload`、`eglSwapBuffers`、BufferQueue | 只看 App 红帧，不查 SF 与 HWC |
+| Graphics | 掉帧、首帧慢、GPU 内存高、Surface 提交异常 | FrameTimeline、RenderThread slice、`gpu_mem_total`、graphics allocation | 匹配 App / SF frame token，查 `texture_upload`、`eglSwapBuffers`、BufferQueue | 只看 App 红帧，不查 SF 与 HWC |
 | I/O | D-state、冷启动首轮慢、page fault 密集 | `thread_state.state = 'D'`、`blocked_function`、page fault、kworker | 查 dm-verity、page cache、block I/O、相关 kworker 唤醒 | 把 I/O 等待写成 CPU 耗时 |
 | IPC | 客户端等待、Binder 调用密集、跨进程依赖明显 | Binder slice / table、flow、server process、server duration | 查服务端线程状态、慢方法、Binder storm | 停在“客户端等 Binder”，不追服务端 |
 | Memory | LMK、swap 上升、kswapd 活跃、图形内存异常 | memory counters、LMK event、PSI、dmabuf / dma_heap | 查进程 RSS、swap、GPU buffer、bitmap、heap graph | 只看 Java heap，漏掉 native / graphics |
@@ -373,7 +374,7 @@ Perfetto SQL 模板不能假设所有 trace 都来自最新 Pixel。Android 10 �
 - **Android 标准库层**：如 `android.startup.startups`、`android.frames.timeline`、Binder、memory 相关模块。Android 12+ trace 才能稳定使用 FrameTimeline 口径；Android 10/11 需要回退到 UI/RenderThread/SF slice 和自定义 marker。
 - **厂商扩展层**：如 MTK / vendor display、thermal、power、scheduler 轨道。只能按设备和 ROM 建词典，不能写成通用结论。
 
-报告中的可信度要和这三层绑定。如果问题依赖 FrameTimeline，但 trace 来自字段不完整的旧版本或厂商裁剪 ROM，结论只能写 medium 或 low，并给出补采或手工 UI 对齐建议。
+报告中的可信度要和这三层绑定。如果问题依赖 FrameTimeline，但 trace 来自字段不完整的旧版本或厂商裁剪 ROM，结论只能写 medium 或 low，并给出补采或手工 UI 比对建议。
 
 ## SQL 模板测试集
 
