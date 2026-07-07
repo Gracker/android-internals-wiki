@@ -22,13 +22,15 @@ sources:
   path: https://perfdog.qq.com/
 - type: official
   path: https://perfdog.qq.com/help/faq
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 last_task6_audit: '2026-07-03'
 task6_result: pass-light-edit
-task9_state: reviewed
+task6_review_notes: "2026-07-08 Task6 复审:pass-light-edit。Task9 auto-fix 后文稿复查：L1/L2 无新增问题；outline 10/10 覆盖。Task9 result 为 auto-fixed，送 Task9 终审。"
+last_task6_at: "2026-07-08T04:05:00+08:00"
+task9_state: pending
 task2b_state: fixed
 task9_result: auto-fixed
 task9_reviewed_date: '2026-07-08'

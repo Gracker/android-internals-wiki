@@ -9,13 +9,13 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 last_task2b_at: '2026-05-27T10:50:00+08:00'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "reviewed"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-16"
-task6_reviewed_date: "2026-06-16"
+reviewed_date: "2026-07-08"
+task6_reviewed_date: "2026-07-08"
 task6_result: "pass-light-edit"
 last_task9_at: "2026-07-08T02:33:03+08:00"
 task9_result: "auto-fixed"
@@ -24,8 +24,8 @@ last_task2b_lite_at: '2026-05-27'
 task9_reviewed_date: "2026-07-08"
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。| 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。| 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。| 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。| 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。| 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 API 34 `ASurfaceControl_fromJava()`、API 36 release callback、FramebufferSurface client target 边界、FrameTimeline API level 与跨进程 SurfaceControl 共享路径；无 P0/P1，queue 无 pending，自动晋升 finalized。| 2026-06-16 11 Task9 idle audit AUTO-FIX：修正 Perfetto surfaceflinger_layers.proto 中 HwcCompositionType 枚举名与 DISPLAY_DECORATION=6 缺失问题；证据为 AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/trace/android/surfaceflinger_layers.proto；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。 | 2026-06-16 17 Task9 deep-review AUTO-FIX: 修正 SurfaceControl/BLAST 概念边界、FrameTimeline 示例漏调用 setFrameTimeline、fence 同步边界、WebView 独立 layer 条件与 BLAST/FramebufferSurface 流转描述；证据为 AOSP android-16.0.0_r1 surface_control/choreographer/FramebufferSurface/BLAST 源码；回到 Task6 复审。 | 2026-06-17 01 Task9 deep-review PASS: 复核 2026-06-16 auto-fix 后源码锚点与版本边界；无 P0/P1，queue 无 pending，Task6 已 pass-light-edit，自动晋升 finalized / ready-to-publish。 | 2026-07-08 02 Task9 idle audit AUTO-FIX：将正文源码基准从 AOSP android-16.0.0_r1 更新为 android-17.0.0_r1；复核 surface_control.h、surface_control_jni.h、choreographer.h、GraphicBufferMapper.cpp、surfaceflinger_layers.proto 在 android-17.0.0_r1 下的 API 与路径；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。"
-last_task6_at: "2026-06-16T22:15:00+08:00"
-task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。| 2026-05-27 08:07 Task6：pass-light-edit。补正文 H1，删除填充修饰词；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。| 2026-05-27 09:16 Task6：pass-light-edit。清理重复分隔线和代码标识符间距；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。| 2026-05-27 10:05 Task6：pass-light-edit。复扫 API 34 ASurfaceControl_fromJava 桥接修正后的文稿；L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，未满足自动晋升 finalized 条件，送 Task9 复审。| 2026-05-27 11:10 Task6：pass-light-edit。复扫 Task2B 修正后的文稿；清理评价性表达与元叙述；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，送 Task9 复审。"
+last_task6_at: "2026-07-08T04:05:00+08:00"
+task6_review_notes: "2026-07-08 Task6 复审:pass-light-edit。Task9 auto-fix 后文稿复查：清理 stray H1 标记和 4 处句号后多余空格。L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 终审。"
 last_task9_review_log: "logs/deep-review/2026-06-17-01-deep-review.md"
 review_notes: "2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface"
 task6_reviewed_by: "openclaw-task6"
@@ -46,7 +46,6 @@ task2b_verifier_result: "status-corrected-ready-for-task6"
 task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
 ---
 
--
 # 18.10 SurfaceControl API 深入
 
 <!-- outline-start -->
@@ -69,13 +68,13 @@ task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for
 
 <!-- outline-end -->
 
-`ASurfaceControl`（Android 10/Q 引入，API 29）是 Android NDK 中面向 SurfaceFlinger 的原生图层控制接口。它允许 App 在 View 树之外创建或管理子 Layer，并把 Buffer、几何属性、层级关系等变更作为一次事务提交给系统合成器。 对浏览器、视频容器、自绘引擎这类需要自己组织合成结构的场景，它提供了比普通 View / Surface 更细的控制粒度。（具体性能收益取决于目标设备的 HWC 能力与合成策略，需按设备实测）
+`ASurfaceControl`（Android 10/Q 引入，API 29）是 Android NDK 中面向 SurfaceFlinger 的原生图层控制接口。它允许 App 在 View 树之外创建或管理子 Layer，并把 Buffer、几何属性、层级关系等变更作为一次事务提交给系统合成器。对浏览器、视频容器、自绘引擎这类需要自己组织合成结构的场景，它提供了比普通 View / Surface 更细的控制粒度。（具体性能收益取决于目标设备的 HWC 能力与合成策略，需按设备实测）
 
 ## 核心概念
 
 ### ASurfaceControl
 
-`ASurfaceControl` 代表一个可被事务修改的 SurfaceFlinger Layer 句柄。 从 SurfaceFlinger 的组织方式看，常见表现有三类：- **Buffer Layer**：显示实际像素内容，通过 `setBuffer` 绑定 `AHardwareBuffer`
+`ASurfaceControl` 代表一个可被事务修改的 SurfaceFlinger Layer 句柄。从 SurfaceFlinger 的组织方式看，常见表现有三类：- **Buffer Layer**：显示实际像素内容，通过 `setBuffer` 绑定 `AHardwareBuffer`
 - **Color Layer**：显示纯色内容，通过 `setColor` 指定颜色
 - **Container Layer**：只承担父子关系和 Z 轴组织，不直接携带像素内容
 
@@ -198,7 +197,7 @@ ASurfaceTransaction_setBuffer(
 
 `setBuffer` / `setBufferWithRelease` 把 `AHardwareBuffer` 和 acquire fence 绑定到某个 Layer 上。 acquire fence 表示“生产者对这个 buffer 的写入何时完成”；SurfaceFlinger 只有在 fence signal 后才会读取它。
 
-- **`AHardwareBuffer` 来源与 usage 约束**：可以来自 `AHardwareBuffer_allocate()`、Vulkan Image 导出、MediaCodec 输出 buffer，或者其他本地图形组件。传给 `setBuffer` 的 buffer 至少需要包含 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE` usage flag——SurfaceFlinger 用 GPU 采样 buffer 内容时依赖这个标记。 如果生产端还需要 CPU 写入（调试预览）、Vulkan 渲染或 MediaCodec 编码，按生产端叠加对应 usage
+- **`AHardwareBuffer` 来源与 usage 约束**：可以来自 `AHardwareBuffer_allocate()`、Vulkan Image 导出、MediaCodec 输出 buffer，或者其他本地图形组件。传给 `setBuffer` 的 buffer 至少需要包含 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE` usage flag——SurfaceFlinger 用 GPU 采样 buffer 内容时依赖这个标记。如果生产端还需要 CPU 写入（调试预览）、Vulkan 渲染或 MediaCodec 编码，按生产端叠加对应 usage
 - **release callback 的作用**：`ASurfaceTransaction_setBufferWithRelease()` 从 API 36 可用。它会在 buffer 可复用时触发 `ASurfaceTransaction_OnBufferRelease` 回调，回调给出的 release fence fd 由调用方负责等待并关闭；这条路径适合直接接 buffer pool 回收逻辑。
 - **Android 10-15 的处理方式**：API 29 起已经可以在 `ASurfaceTransaction_setOnComplete()` 回调里，通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取到“上一块 buffer 何时释放”的 per-layer release fence。`OnComplete` 只是回调边界，是否能复用上一块 buffer 仍要看这个 fd；若返回值大于等于 0，需要等待 signal 并关闭，返回 `-1` 才表示上一块 buffer 已可直接复用。
 - **不要把 `apply()` 当成释放信号**：只调用 `setBuffer` 时，`apply()` 返回不能代表 buffer 已经安全可写。
@@ -289,7 +288,7 @@ Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独�
 
 这四步连起来，才知道瓶颈是在 Layer 数量、合成策略，还是仍然在 App 自己的绘制路径上。## FrameTimeline API（完整 NDK 用法需 Android 13+）
 
-Android 12 把 FrameTimeline 机制带进了 SurfaceFlinger 和 Perfetto，但 NDK 侧可用的两步接口，`AChoreographer_postVsyncCallback()` 和 `ASurfaceTransaction_setFrameTimeline()`，都在 API 33 才公开。 对 native-only 应用来说，完整的“拿 callbackData → 选 timeline → 把 vsyncId 绑进 transaction”流程从 Android 13 才成立。Android 12 上可以观察 FrameTimeline 结果，也可以继续使用 `ASurfaceTransaction_setDesiredPresentTime()`（API 29），但如果要在 NDK 侧主动传入 `vsyncId`，还需要 Java 层或引擎层做额外桥接。### 核心 API
+Android 12 把 FrameTimeline 机制带进了 SurfaceFlinger 和 Perfetto，但 NDK 侧可用的两步接口，`AChoreographer_postVsyncCallback()` 和 `ASurfaceTransaction_setFrameTimeline()`，都在 API 33 才公开。对 native-only 应用来说，完整的“拿 callbackData → 选 timeline → 把 vsyncId 绑进 transaction”流程从 Android 13 才成立。Android 12 上可以观察 FrameTimeline 结果，也可以继续使用 `ASurfaceTransaction_setDesiredPresentTime()`（API 29），但如果要在 NDK 侧主动传入 `vsyncId`，还需要 Java 层或引擎层做额外桥接。### 核心 API
 
 ```c
 typedef struct {
