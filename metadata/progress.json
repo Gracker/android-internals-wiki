@@ -3,7 +3,7 @@
   "draft": 62,
   "ready_for_review": 207,
   "finalized": 342,
-  "last_updated": "2026-07-07",
+  "last_updated": "2026-07-07T19:31:15+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -900,7 +900,7 @@
     }
   ],
   "task2b_verifier": {
-    "last_run": "2026-07-02T19:34:00+08:00",
+    "last_run": "2026-07-07T19:31:15+08:00",
     "last_action": "status correction: finalized→ready-for-review, pipeline_stage: ready-to-publish→task6_pending",
     "chapters_fixed": [
       "1.2",
@@ -919,7 +919,7 @@
       "20.2",
       "26.10"
     ],
-    "last_result": "ready-for-task6",
+    "last_result": "status-corrections-5",
     "last_fixed_count": 6,
     "last_blocked_count": 0,
     "remaining_pending": 8
@@ -1224,6 +1224,45 @@
       "blocked_section": "21.2",
       "result": "no-change",
       "log_file": "logs/rework/task2b-verifier-2026-07-06.log"
+    },
+    {
+      "timestamp": "2026-07-07T19:31:15+08:00",
+      "action": "verify",
+      "result": "status-corrections",
+      "chapters": [
+        {
+          "chapter": "1.5",
+          "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+          "fix": "promote-finalized",
+          "reason": "both reviews passed, queue clear"
+        },
+        {
+          "chapter": "16.3",
+          "path": "src/part4-system/ch16-aosp/03-aosp-build.md",
+          "fix": "status-to-ready-for-review",
+          "reason": "task9 auto-fixed, waiting task6 re-review"
+        },
+        {
+          "chapter": "19",
+          "path": "src/part3-tools/ch19-apm/16-profiling-manager.md",
+          "fix": "status-to-ready-for-review",
+          "reason": "task9 auto-fixed, waiting task6 re-review"
+        },
+        {
+          "chapter": "2.20",
+          "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
+          "fix": "status-to-ready-for-review",
+          "reason": "task9 auto-fixed, waiting task6 re-review"
+        },
+        {
+          "chapter": "20.9",
+          "path": "src/part5-app/ch20-stability/09-stability-case-studies.md",
+          "fix": "promote-finalized",
+          "reason": "both reviews done (auto-fixed+pass-light-edit), queue clear"
+        }
+      ],
+      "status_corrections": 5,
+      "blocked": 0
     }
   ],
   "deprecations": [

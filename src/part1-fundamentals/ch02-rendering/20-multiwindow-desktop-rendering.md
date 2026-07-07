@@ -2,7 +2,7 @@
 title: 多窗口与桌面模式渲染性能
 chapter: '2.20'
 section: '2.20'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 last_verified: '2026-06-24'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java

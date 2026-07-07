@@ -2,7 +2,7 @@
 title: "稳定性治理案例集"
 chapter: "20.9"
 section: "20.9"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-07T13:10:07+08:00"
 last_verified_against: "AOSP android-17.0.0_r1 debuggerd_handler/linker_main/Process.java/ActivityThread/ComputerEngine；task9 2026-07-07 Android 17 boundary auto-fix"
@@ -24,7 +24,7 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed

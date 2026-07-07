@@ -1,7 +1,7 @@
 ---
 title: "AOSP 源码编译与调试环境"
 chapter: "16.3"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-01"
