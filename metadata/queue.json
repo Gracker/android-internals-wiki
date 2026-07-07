@@ -193,6 +193,26 @@
       "status": "completed"
     },
     {
+      "section": "4.15 / 23.6",
+      "section_title": "PSI/LMKD 架构 / 大内存多进程",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "DeepResearch/2026-07-06-android17-art-heaptask-concurrent-gc-suppression.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制 — ART GC 触发统一收敛到 TaskProcessor::AddTask()，6 个 HeapTask 子类共享排序队列。抑制 GC 三条护栏：CanAddHeapTask()、pending_*防重复、compare_exchange_weak 防递归。",
+          "suggestion": "目标章节 ch04/03-art-memory.md (finalized) 和 ch23/06-large-heap-multiprocess.md (finalized) 均已锁定，建议在下次章节修订时补充为参考资料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-08T06:13:27.622422",
+      "status": "pending"
+    },
+    {
       "path": "src/part2-rendering/ch02-rendering/2.30-android17-frametimeline.md",
       "section": "2.30",
       "section_title": "Android 17 FrameTimeline GPU/CPU 合成边界判定机制",
@@ -237,7 +257,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-08T06:30:34+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-08T06:57:16+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "task9 deep tech review 5 项问题全部修复：源码锚点重写为 Scheduler/FrameTimeline、proto 定义改为 GraphicsFrameEvent+FrameTimelineEvent、gpu_composition 判定按 Layer::onCompositionPresented+SurfaceFlinger::onCompositionPresented 双路径重写、删除 getIntervalNanos()、SQL 表名改为 _frame_timeline_slice"
     }
   ],
   "entries": [
