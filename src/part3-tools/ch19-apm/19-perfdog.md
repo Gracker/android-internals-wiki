@@ -22,24 +22,24 @@ sources:
   path: https://perfdog.qq.com/
 - type: official
   path: https://perfdog.qq.com/help/faq
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 last_task6_audit: '2026-07-03'
 task6_result: pass-light-edit
 task6_review_notes: "2026-07-08 Task6 复审:pass-light-edit。Task9 auto-fix 后文稿复查：L1/L2 无新增问题；outline 10/10 覆盖。Task9 result 为 auto-fixed，送 Task9 终审。"
 last_task6_at: "2026-07-08T04:05:00+08:00"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed
-task9_reviewed_date: '2026-07-08'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-07-08T03:28:36+08:00'
+task9_reviewed_date: "2026-07-08"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-07-08T04:34:07+08:00"
 last_task9_audit: '2026-07-08'
-last_task9_autofix_at: '2026-07-08'
+last_task9_autofix_at: "2026-07-08"
 last_task9_audit_log: 'logs/deep-review/2026-07-08-03-audit.md'
-task9_review_notes: '2026-07-08 Task9 idle audit auto-fix: 修正 Thermal AIDL 方法、SurfaceFlinger --latency 数据源、Restricted Settings 特殊访问入口；AOSP 锚定 android-17.0.0_r1，回到 Task6 复审。'
+task9_review_notes: "2026-07-08 Task9 idle audit auto-fix: 修正 Thermal AIDL 方法、SurfaceFlinger --latency 数据源、Restricted Settings 特殊访问入口；AOSP 锚定 android-17.0.0_r1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 SurfaceFlinger --latency 数据链路与 Android 12 ThermalManagerService 版本表述；证据锚定 AOSP android-17.0.0_r1，回到 Task6 复审。"
 task2b_result: fixed
 rework_count: 1
 rework_date: "2026-04-27"
@@ -50,6 +50,7 @@ last_deepseek_polish_at: 2026-05-26
 last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
 task2b_verifier_result: "status-corrected-ready-for-task6"
 task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
+last_task9_review_log: "logs/deep-review/2026-07-08-04-deep-review.md"
 ---
 
 
@@ -321,13 +322,13 @@ PerfDog Service 需要的某些敏感权限会受到 Android 13+ Restricted Sett
 PerfDog 的数据采集调用链：
 1. **能耗/功率**：`adb shell dumpsys powerstats` → PowerStatsService → PowerStats HAL → 硬件驱动
 2. **温度/散热**：`adb shell dumpsys thermal` → ThermalService → Thermal HAL → 温度传感器
-3. **帧时间**：`adb shell dumpsys SurfaceFlinger --latency` → SurfaceFlinger → FrameTracer → BufferQueue
+3. **帧时间**：`adb shell dumpsys SurfaceFlinger --latency` → `SurfaceFlinger::dumpStats()` → `Layer::dumpFrameStats()` / `Layer::getFrameStats()`；Perfetto FrameTimeline / FrameTracer 可用于交叉核验
 4. **GPU 统计**：`adb shell dumpsys gfxinfo` → GraphicsStatsService → 图形统计模块
 
 ### 版本适配说明
 
 - **Android 11 (API 30)**：引入 PowerStats HAL 2.0，支持能耗细分
-- **Android 12 (API 31)**：重构 Thermal HAL，移除旧版 ThermalManagerService
+- **Android 12 (API 31)**：Thermal HAL 开始转向 AIDL，framework 侧 `ThermalManagerService` 仍存在并负责对接系统服务和应用 API；旧 HAL 兼容路径是否启用取决于设备实现
 - **Android 13 (API 33)**：增强 FrameTracer，集成 Perfetto 跨进程追踪
 - **当前限制**：部分芯片厂商可能不完全实现 HAL 接口（此为行业普遍现象，非 Android 17 特有）
 
