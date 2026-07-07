@@ -235,8 +235,11 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-08T03:07:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-08-03-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-08-03-audit.md",
+      "completed_at": "2026-07-08T03:36:50+08:00",
+      "completed_by": "task2b-lite",
+      "completion_note": "7处 android-35 → android-17.0.0_r1 版本基线替换"
     }
   ]
 }
