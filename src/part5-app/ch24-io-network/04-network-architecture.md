@@ -2,13 +2,13 @@
 title: "\"网络架构与连接管理\""
 chapter: "\"24.4\""
 section: "\"24.4\""
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 confidence: "medium"
 last_verified: "\"2026-06-03\""
-last_verified_against: "\"Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-35 SDK sources\""
+last_verified_against: "\"Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-17.0.0_r1 SDK sources\""
 drafted_date: "\"2026-05-14\""
 reviewed_date: "\"2026-06-03\""
 reviewed_by: "openclaw-task6"
@@ -164,7 +164,7 @@ class HttpDns(
 }
 ```
 
-DNS 结果还要跟 Android 网络状态结合。`NetworkCapabilities` 文档写明,`NET_CAPABILITY_INTERNET` 只表示网络配置上可访问互联网;`NET_CAPABILITY_VALIDATED` 表示系统最近一次确认过实际互联网可达;`NET_CAPABILITY_NOT_METERED` 表示网络不按字节计费,适合推迟大下载到该能力出现时再执行。 [已验证: 官方文档, https://developer.android.com/reference/android/net/NetworkCapabilities] [已验证: AOSP android-35, /Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java]
+DNS 结果还要跟 Android 网络状态结合。`NetworkCapabilities` 文档写明,`NET_CAPABILITY_INTERNET` 只表示网络配置上可访问互联网;`NET_CAPABILITY_VALIDATED` 表示系统最近一次确认过实际互联网可达;`NET_CAPABILITY_NOT_METERED` 表示网络不按字节计费,适合推迟大下载到该能力出现时再执行。 [已验证: 官方文档, https://developer.android.com/reference/android/net/NetworkCapabilities] [已验证: AOSP android-17.0.0_r1, /Users/gracker/Android/sources/android-17.0.0_r1/android/net/NetworkCapabilities.java]
 
 ```kotlin
 fun NetworkCapabilities.isUsableForApi(): Boolean {
@@ -178,7 +178,7 @@ fun NetworkCapabilities.isGoodForBulkDownload(): Boolean {
 }
 ```
 
-不要用 "Wi-Fi 就一定适合大下载、蜂窝网络就一定不适合" 这种判断。AOSP 注释也提示,是否计费应看 `NET_CAPABILITY_NOT_METERED`,不要直接看 transport;可能存在计费 Wi-Fi,也可能存在不计费蜂窝连接。 [已验证: AOSP android-35, /Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java]
+不要用 "Wi-Fi 就一定适合大下载、蜂窝网络就一定不适合" 这种判断。AOSP 注释也提示,是否计费应看 `NET_CAPABILITY_NOT_METERED`,不要直接看 transport;可能存在计费 Wi-Fi,也可能存在不计费蜂窝连接。 [已验证: AOSP android-17.0.0_r1, /Users/gracker/Android/sources/android-17.0.0_r1/android/net/NetworkCapabilities.java]
 
 OkHttp 5 的 `fastFallback(true)` 默认开启,它会并发尝试多个 TCP 连接并保留最先成功的连接,用来平衡 IPv6/IPv4 或多 IP 场景下的连接延迟和资源浪费。HTTPDNS 返回多 IP 时,不要只返回一个"看起来最优"的地址;保留候选列表,才能让连接层有回退空间。 [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/fast-fallback.html]
 
@@ -231,7 +231,7 @@ fun cancelPageCalls(client: OkHttpClient, pageScope: PageScope) {
 | 服务端慢 | 已连上但 TTFB 高 | 服务端容量、CDN、缓存、接口拆分,不在客户端盲目重试 |
 | 大响应慢 | headers 已到,body 下载慢 | 分页、压缩、断点续传、图片降级;详见 24.6 节 |
 
-Android 要求网络操作离开主线程。官方文档说明,在主线程执行网络操作会抛出 `NetworkOnMainThreadException`;AOSP `StrictMode` 中 `detectNetwork()` 对应 `BlockGuard.Policy.onNetwork()`,在启用网络检测并设置 death penalty 时会抛出同一异常。弱网下更要避免任何同步网络调用进入主线程,否则一次 DNS 或连接超时就可能拖住 UI。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/connecting] [已验证: AOSP android-35, /Users/gracker/Android/sources/android-35/android/os/StrictMode.java]
+Android 要求网络操作离开主线程。官方文档说明,在主线程执行网络操作会抛出 `NetworkOnMainThreadException`;AOSP `StrictMode` 中 `detectNetwork()` 对应 `BlockGuard.Policy.onNetwork()`,在启用网络检测并设置 death penalty 时会抛出同一异常。弱网下更要避免任何同步网络调用进入主线程,否则一次 DNS 或连接超时就可能拖住 UI。 [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/connecting] [已验证: AOSP android-17.0.0_r1, /Users/gracker/Android/sources/android-17.0.0_r1/android/os/StrictMode.java]
 
 重试只适合幂等请求,且必须有上限和退避。GET、HEAD、部分可安全重试的查询接口可以做指数退避加随机抖动;POST/支付/下单/写操作必须依赖服务端幂等键,客户端不能因为超时就无条件重发。
 
