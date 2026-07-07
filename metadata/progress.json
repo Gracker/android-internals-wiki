@@ -833,6 +833,13 @@
       "status": "no-candidates",
       "ts": "2026-07-08T03:06:44.405936+08:00",
       "note": "Gap mining round 40: 0 candidates ≥14 (40th consecutive). Coverage saturated. No new material since round 39 (7h ago). No new DeepResearch/Clippings/daily-info. source-index: 0 unmapped high-quality. 55 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-08T05:09:21+08:00",
+      "note": "Gap mining round 41: 0 candidates ≥14 (41st consecutive). Coverage saturated. 4 new DeepResearch files all map to existing chapters."
     }
   ],
   "review_history": [
@@ -1127,12 +1134,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-08T03:06:44.405936+08:00",
+    "last_run": "2026-07-08T05:09:21+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 40: 0 candidates ≥14 (40th consecutive). Coverage saturated. No new material."
+    "note": "Gap mining round 41: 0 candidates ≥14 (41st consecutive). Coverage saturated. 4 new DeepResearch files all map to existing chapters (AGI→§14.8, PowerStats HAL→§14.11, LMKD PSI→ch04, Binder ThreadPool→ch01)."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",

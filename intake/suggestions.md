@@ -182,3 +182,21 @@
 - 55 个 draft 章节全部有实质内容（>15 行）
 
 **总结**：覆盖率 87%（549/626），缺口挖掘连续 40 轮无新候选。全书在 Android 性能领域已达到饱和覆盖密度。
+
+
+## [Task2A 知识缺口挖掘] 已检查方向记录 — 2026-07-08 05:09
+
+**本轮结论**：全书 626 个小节，0 个空 draft，Task2B backlog = 0。这是第 41 轮连续挖掘，无新素材驱动候选。前 40 轮已系统性检查 13+ 大方向 / 140+ 细分主题。
+
+**本轮状态**：
+- 4 个新 DeepResearch 文件（2026-07-07/08），全部映射到现有章节：
+  1. `android17-agi-frame-profiler-gapii-spy-architecture` → §14.8/§2.51（GPU 调试工具，已有 105+341 行覆盖）
+  2. `android17-power-stats-hal-impl-variations` → §14.11/§17.21（Power Stats HAL/OEM 功耗，已有多节覆盖）
+  3. `android17-lmkd-userspace-migration-psi` → ch04（LMKD/PSI，已有 30+ 篇覆盖）
+  4. `android17-binder-thread-pool-implementation` → ch01（Binder IPC 线程池，已有 10+ 篇覆盖）
+- 无新 Clippings 文件（7+ 天无更新）
+- 无新 daily-info（2026-07-07 已消费）
+- source-index: 0 未映射高质量素材
+- 55 个 draft 章节全部有实质内容（>15 行）
+
+**总结**：覆盖率 87%（549/626），缺口挖掘连续 41 轮无新候选。全书在 Android 性能领域已达到饱和覆盖密度。新 DeepResearch 素材均为既有章节的深度补充，不构成新章节候选。
