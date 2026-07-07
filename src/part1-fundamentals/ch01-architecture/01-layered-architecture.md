@@ -40,9 +40,9 @@ review_notes: >-
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-08"
+task9_reviewed_date: "2026-07-07"
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
@@ -55,12 +55,12 @@ last_task6_audit_log: "logs/review/2026-06-25-10-audit.md"
 task6_review_notes: "2026-07-07 Task6 复审：pass-light-edit。Task9 已 pass-tech-review，queue 无 pending，自动晋升 finalized。L1/L2 无新增问题。"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
 last_task9_audit: "2026-06-08"
-task9_review_log: "logs/deep-review/2026-06-08-20-audit.md"
+task9_review_log: "logs/deep-review/2026-07-07-05-deep-review.md"
 reviewed_at: "2026-05-18T08:31:45+08:00"
 task6_reviewed_date: "2026-07-07"
 finalized_date: "2026-07-07"
 finalized_by: "openclaw-task6-auto-promote"
-last_task9_review_log: "logs/deep-review/2026-06-08-20-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-07-05-deep-review.md"
 last_task2b_at: 2026-07-07T04:52:50+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
