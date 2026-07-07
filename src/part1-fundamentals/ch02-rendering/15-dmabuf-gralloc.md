@@ -2,7 +2,7 @@
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2'
 section: '2.15'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-07-07'
 last_verified_against: AOSP android-17.0.0_r1 (primary; paths confirmed unchanged from android-16.0.0_r1), Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
@@ -60,11 +60,11 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: pending
+task9_state: reviewed
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-14"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-07T08:21:00+08:00"
@@ -73,8 +73,9 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-07-07T04:52:50+08:00
 task9_review_notes: "2026-07-07 Task9 review: pass-tech-review。复核源码引用准确性、原理链完整性、版本差异覆盖。发现 2 处 P2 建议改进：1) Binder FDA 描述需更精确；2) 16KB page size 对 metadata region 影响可补充。写入 suggestions.md。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task6_at: "2026-06-14T16:05:00+08:00"
+last_task6_at: "2026-07-07T13:30:00+08:00"
 last_task6_review_log: "logs/review/2026-06-14-16-review.md"
+task6_review_notes: "2026-07-07 Task6 复审：pass-light-edit。修正 task9 frontmatter 一致性（task9_result 从 pending 更正为 pass-tech-review）。L1/L2 无新增问题。自动晋升 finalized。"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 2 处（补齐 outline 块；禁用词“落地”替换为“确认”）。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review，未自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-06-14-20-deep-review.md"
 last_task2b_verifier_at: "2026-06-14T19:31:17"

@@ -784,6 +784,13 @@
       "status": "no-candidates",
       "ts": "2026-07-07T09:11:35.692153+08:00",
       "note": "Gap mining round 36: 0 candidates ≥14. Coverage saturated (36th consecutive). 3 new DeepResearch files: audio-hardening→§25.17, flutter-impeller-absence→§18.12, LLM-J-Lens→not Android (AI paper). No new Clippings (7+ days). source-index: 0 unmapped high-quality. 27 drafts all have content >15 lines. daily-info topics all map to existing chapters or <14."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-07T13:12:53.137391+08:00",
+      "note": "Gap mining round 37: 0 candidates ≥14. Coverage saturated (37th consecutive). No new DeepResearch/Clippings/daily-info material since round 36. source-index: 0 unmapped high-quality. All 34 drafts have content >15 lines. Task2B backlog: 0."
     }
   ],
   "review_history": [
@@ -1076,12 +1083,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-07T09:11:35.692153+08:00",
+    "last_run": "2026-07-07T13:12:53.137391+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 36: 0 candidates ≥14 (36th consecutive). Coverage saturated."
+    "note": "Gap mining round 37: 0 candidates ≥14 (37th consecutive). Coverage saturated."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",
