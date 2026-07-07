@@ -108,6 +108,8 @@
   - [26.24 heapprofd 生产级部署与权限模型](part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md)
   - [20.19 Android 17 信号处理架构迁移与 debuggerd bionic/linker 重构](part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md)
 
-# 附录
+#   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
+  - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)
+附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)

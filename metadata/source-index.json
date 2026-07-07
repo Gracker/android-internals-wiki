@@ -731,53 +731,293 @@
         "厂商优化"
       ],
       "scored_at": "2026-07-07T05:46:34.773672"
-    }
-  ],
-  "entries": [
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-gpu-debug-tools-deep-dive.md",
-      "title": "Android 17 GPU 图形调试与性能优化工具链 — 源码级深挖补丁",
-      "summary": "深度分析 FrameTracer 三段式调用链（Layer→FrameTracer→Perfetto）、TimeStats statsd pull atom 双通道、JankTracker 批量分派机制，以及 GPU counter 跨设备标准化的双模式设计。",
-      "chapter_mapping": "ch14.8",
-      "processed_at": "2026-07-07T06:21:48.637571",
-      "processed_by": "task-deepresearch-injector",
-      "type": "DeepResearch"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-linker-debuggerd-init-wiring-source.md",
-      "title": "Android 17 linker 与 debuggerd 集成 — 重构「bionic/linker 内化」误解",
-      "summary": "用源码链路修正 debuggerd 迁移叙事，实际只新增 3 个薄文件，既存代码仍在 system/core/。linker_main 极早期调用 init，8 页 pseudothread stack via clone()。",
-      "chapter_mapping": "ch20.19",
-      "processed_at": "2026-07-07T06:21:48.637571",
-      "processed_by": "task-deepresearch-injector",
-      "type": "DeepResearch"
+      "title": "Improving App Performance with Baseline Profiles",
+      "path": "AndroidWeekly/#28/Improving App Performance with Baseline Profiles",
+      "source_url": "https://android-developers.googleblog.com/2022/01/improving-app-performance-with-baseline.html",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [],
+      "summary": "Improving App Performance with... (评分:11/20)",
+      "scored_at": "2026-07-07T09:14:52.600800"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-cpu-cache-locality-pss-accounting.md",
-      "title": "Android 17 CPU 缓存局部性与 PSS 内存核算源码机制",
-      "summary": "三段式 PSS 核算 cache 局部性差异、Debug.MemoryInfo 新增字段、ART biased card table 指令级优化、Scudo 16KB page 对齐策略。",
-      "chapter_mapping": "ch04.35",
-      "processed_at": "2026-07-07T06:21:48.637571",
-      "processed_by": "task-deepresearch-injector",
-      "type": "DeepResearch"
+      "title": "Android Architecture Pattern",
+      "path": "AndroidWeekly/#28/Android Architecture Pattern",
+      "source_url": "https://medium.com/team-pratilipi/android-architecture-pattern-82aa0cf7e236",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [],
+      "summary": "Android Architecture Pattern (评分:14/20)",
+      "scored_at": "2026-07-07T09:14:52.600809"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-art-heaptask-concurrent-gc-suppression.md",
-      "title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制",
-      "summary": "6 个 HeapTask 子类共享 multiset 调度器、三条 GC 抑制护栏、mSponge 黑科技绕过 concurrent_start_bytes_ 阈值的源码级分析。",
-      "chapter_mapping": "ch04.34",
-      "processed_at": "2026-07-07T06:21:48.637571",
-      "processed_by": "task-deepresearch-injector",
-      "type": "DeepResearch"
+      "title": "向工程腐化开炮 | proguard治理",
+      "path": "AndroidWeekly/#28/向工程腐化开炮 | proguard治理",
+      "source_url": "https://xie.infoq.cn/article/8f418027b1033043b7a7d5e91",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [],
+      "summary": "技术文章内容...",
+      "scored_at": "2026-07-07T09:24:43.584281"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md",
-      "title": "Android 17 SoC 厂商电池优化 × IPower HAL × schedutil 闭环",
-      "summary": "建立 SoC 级电池优化 5 层闭环模型，分析 Qualcomm/MediaTek/Samsung 三大厂商 Power HAL 实现差异与 schedutil governor 交互。",
-      "chapter_mapping": "ch17.21",
-      "processed_at": "2026-07-07T06:21:48.637571",
-      "processed_by": "task-deepresearch-injector",
-      "type": "DeepResearch"
+      "title": "Jetpack DragAndDrop 库------拖放操作如此轻松！",
+      "path": "AndroidWeekly/#28/Jetpack DragAndDrop 库------拖放操作如此轻松！",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=Mzk0NDIwMTExNw==&mid=2247508535&idx=1&sn=62e83062e97649a85c52a59620a22af9",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "微信公众号技术文章，关于线上故障分析和性能优化...",
+      "scored_at": "2026-07-07T09:24:43.584289"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化之理论和工具篇",
+      "path": "AndroidWeekly/#28/抖音 Android 性能优化系列：启动优化之理论和工具篇",
+      "source_url": "http://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247491335&idx=1&sn=e3eabd9253ab2f83925af974db3f3072",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "微信公众号技术文章，关于线上故障分析和性能优化...",
+      "scored_at": "2026-07-07T09:24:43.584291"
+    },
+    {
+      "title": "android-inline-hook",
+      "path": "AndroidWeekly/#28/android-inline-hook",
+      "source_url": "https://github.com/bytedance/android-inline-hook/blob/main/README.zh-CN.md",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [],
+      "summary": "GitHub开源项目文档，android-inline-hook库的README...",
+      "scored_at": "2026-07-07T09:24:43.584293"
+    },
+    {
+      "title": "Jetpack Compose 1.1 is now stable!",
+      "path": "AndroidWeekly/#28/Jetpack Compose 1.1 is now stable!",
+      "source_url": "https://android-developers.googleblog.com/2022/02/jetpack-compose-11-now-stable.html",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Google Android官方博客文章，关于App性能优化技术...",
+      "scored_at": "2026-07-07T09:24:43.584294"
+    },
+    {
+      "title": "Improving App Performance with Baseline Profiles - Android Developers",
+      "path": "AndroidWeekly/#28/Improving App Performance with Baseline Profiles - Android Developers",
+      "source_url": "https://android-developers.googleblog.com/2022/01/improving-app-performance-with-baseline.html",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Google Android官方博客文章，关于App性能优化技术...",
+      "scored_at": "2026-07-07T09:24:43.584295"
+    },
+    {
+      "title": "Android Architecture Pattern - Medium",
+      "path": "AndroidWeekly/#28/Android Architecture Pattern - Medium",
+      "source_url": "https://medium.com/team-pratilipi/android-architecture-pattern-82aa0cf7e236",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [],
+      "summary": "Medium技术文章，讨论Android架构模式...",
+      "scored_at": "2026-07-07T09:24:43.584297"
+    },
+    {
+      "title": "向工程腐化开炮 | proguard治理 - InfoQ",
+      "path": "AndroidWeekly/#28/向工程腐化开炮 | proguard治理 - InfoQ",
+      "source_url": "https://xie.infoq.cn/article/8f418027b1033043b7a7d5e91",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [],
+      "summary": "技术文章内容...",
+      "scored_at": "2026-07-07T09:24:43.584298"
+    },
+    {
+      "title": "Jetpack DragAndDrop 库------拖放操作如此轻松！ - WeChat",
+      "path": "AndroidWeekly/#28/Jetpack DragAndDrop 库------拖放操作如此轻松！ - WeChat",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=Mzk0NDIwMTExNw==&mid=2247508535&idx=1&sn=62e83062e97649a85c52a59620a22af9",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "微信公众号技术文章，关于线上故障分析和性能优化...",
+      "scored_at": "2026-07-07T09:24:43.584299"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化之理论和工具篇 - WeChat",
+      "path": "AndroidWeekly/#28/抖音 Android 性能优化系列：启动优化之理论和工具篇 - WeChat",
+      "source_url": "http://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247491335&idx=1&sn=e3eabd9253ab2f83925af974db3f3072",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "微信公众号技术文章，关于线上故障分析和性能优化...",
+      "scored_at": "2026-07-07T09:24:43.584301"
+    },
+    {
+      "title": "android-inline-hook - GitHub",
+      "path": "AndroidWeekly/#28/android-inline-hook - GitHub",
+      "source_url": "https://github.com/bytedance/android-inline-hook/blob/main/README.zh-CN.md",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [],
+      "summary": "GitHub开源项目文档，android-inline-hook库的README...",
+      "scored_at": "2026-07-07T09:24:43.584302"
+    },
+    {
+      "title": "Jetpack Compose 1.1 is now stable! - Android Developers",
+      "path": "AndroidWeekly/#28/Jetpack Compose 1.1 is now stable! - Android Developers",
+      "source_url": "https://android-developers.googleblog.com/2022/02/jetpack-compose-11-now-stable.html",
+      "weekly_issue": "#28",
+      "weekly_date": "2022-02-14",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Google Android官方博客文章，关于App性能优化技术...",
+      "scored_at": "2026-07-07T09:24:43.584303"
     }
   ]
 }
