@@ -1,9 +1,9 @@
 {
-  "total": 630,
-  "draft": 61,
+  "total": 626,
+  "draft": 57,
   "ready_for_review": 208,
   "finalized": 342,
-  "last_updated": "2026-07-07T22:10:42.981126+08:00",
+  "last_updated": "2026-07-08T00:12:38.580947+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -812,6 +812,13 @@
       "status": "no-candidates",
       "ts": "2026-07-07T20:06:25+08:00",
       "note": "Gap mining round 39: 0 candidates ≥14 (39th consecutive). Coverage saturated. No new material. 54 drafts all >15 lines. Task2B backlog: 0. Queue: 0 pending."
+    },
+    {
+      "section": "none",
+      "action": "task2a-cleanup-deprecation",
+      "status": "deprecated-4-duplicates",
+      "ts": "2026-07-08T00:12:38.580947+08:00",
+      "note": "Deprecated 4 orphan empty drafts (04.41/04.42/08.38/17.22) as duplicates of already-covered chapters. All created by DeepResearch injection, not in SUMMARY.md."
     }
   ],
   "review_history": [
@@ -991,15 +998,15 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 21,
+  "deprecated": 25,
   "stats": {
     "last_review_date": "2026-07-07",
     "last_review_by": "openclaw-task2a",
-    "drafted": 38,
+    "drafted": 34,
     "ready_for_review": 201,
     "finalized": 336,
     "ready_to_publish": 0,
-    "total": 630,
+    "total": 626,
     "last_task9_review_date": "2026-07-06",
     "last_task9_review_by": "openclaw-task9"
   },
@@ -1313,6 +1320,34 @@
       "path": "src/part1-fundamentals/ch4-memory/4.36-Phoronix---Linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调.md",
       "reason": "Duplicate of §6.19 (Linux 6.10 memory compaction, 126 lines with source code analysis). §4.36 is an RSS-derived stub with no unique content. Same topic: Linux 6.10 proactive compaction mechanism.",
       "deprecated_at": "2026-07-07T03:09:51+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "04.41",
+      "path": "src/part1-fundamentals/ch04-memory/04.41-ai-agent-memory-sandboxing.md",
+      "reason": "Duplicate of §4.22 (AI Agent 内存沙箱化与跨应用数据复用, 351 lines, ready-for-review). Orphan stub not in SUMMARY.md.",
+      "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "04.42",
+      "path": "src/part1-fundamentals/ch04-memory/04.42-art-heaptask-advanced-scheduling.md",
+      "reason": "Duplicate of §4.34/§4.21 (ART HeapTask topics already covered). Orphan stub not in SUMMARY.md.",
+      "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "08.38",
+      "path": "src/part1-fundamentals/ch08-startup/08.38-startup-insights-application-profiling.md",
+      "reason": "Duplicate of §8.31/§8.32/§8.36 (Startup Insights topics). Orphan stub not in SUMMARY.md.",
+      "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "17.22",
+      "path": "src/part4-system/ch17-oem/17.22-soc-vendor-power-optimization.md",
+      "reason": "Duplicate of §17.21/§09-soc (SoC power optimization). Orphan stub not in SUMMARY.md.",
+      "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
       "deprecated_by": "task2a-cleanup"
     }
   ],
