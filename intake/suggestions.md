@@ -62,3 +62,58 @@
 - **位置**：16KB page size 对 buffer allocation 的影响
 - **问题**：章节提到 16KB page size 对像素 payload、stride 和映射进程数的影响，但 metadata region 和 reservedSize 在 16KB page size 下的页粒度取整成本放大效应可以补充更具体的分析
 - **建议**：补充 metadata region、reservedSize 在 16KB 设备上的分配预算影响案例，包括小尺寸 buffer、图标 atlas 的实际内存成本计算示例
+
+
+## [Task2A 知识缺口挖掘] 已检查方向记录 — 2026-07-07 12:00
+
+**本轮结论**：全书 607 个小节，0 个空 draft，Task2B backlog = 0。本轮在 08:00 挖掘基础上进行了 80+ 个细分主题的补充扫描，仍未发现评分 ≥ 14 的知识缺口。
+
+**新增检查方向（本轮补充）**：
+
+9. **Clippings 参考书交叉比对** — 逐篇检查三本参考书（15+16+59=90 篇）的知识点，全部已有对应章节覆盖：
+   - 稳定性（Java Crash / Native Crash / OOM / Binder / FD / Thread / ASM / Native Hook / Backtrace）→ ch20
+   - 性能优化（CPU 线程池 / Native 内存 / 体积优化 / GC 抑制 / 虚拟内存 / 缓存优化 / 任务调度）→ ch05/ch23/ch25/ch27
+   - 线上疑难排查（APM 平台 / 内存监控 / 启动监控 / 网络监控 / 包体积监控 / 编译插桩 / 动态调试）→ ch19/ch26
+
+10. **Android 17 新 API 普查** — 对照官方 behavior changes 和新 API：
+    - ✅ Gemini Nano / AICore → 已有 9 篇覆盖（16-gpu-npu, 20-genai-app, 14-ml-runtime）
+    - ✅ Desktop windowing → 已有 10 篇覆盖
+    - ✅ Predictive Back → 已有 14 篇覆盖
+    - ✅ 16KB page size → 已有 80 篇覆盖
+    - ✅ Photo Picker → 已有 7 篇覆盖
+    - ✅ Edge-to-edge → 已有 7 篇覆盖
+    - ✅ Credential Manager / passkey → 已有 5 篇覆盖
+
+11. **AOSP 子系统普查** — 检查 frameworks/base 核心服务：
+    - ✅ Accessibility → 19-accessibility-manager-performance
+    - ✅ WindowManager → ch08-window-manager 多节
+    - ✅ NotificationManager → 14-push-notification-pipeline-performance
+    - ✅ TaskSnapshot → 29-tasksnapshot-recents-rendering
+    - ✅ SurfaceFlinger → 208 篇提及，深度覆盖
+
+12. **底层存储与内存机制** — 
+    - ✅ f2fs → 17 篇覆盖
+    - ✅ ZRAM/swap → 30 篇覆盖
+    - ✅ SparseArray/ArrayMap → 28 篇覆盖
+    - ✅ StrictMode → 32 篇覆盖（含 23-strictmode-performance-diagnostics）
+
+13. **构建与工具链性能** —
+    - ✅ Gradle build → 41 篇覆盖
+    - ✅ R8/ProGuard → ch25 多节
+    - ✅ K2 compiler → 10 篇覆盖
+    - ✅ Macrobenchmark → 140 篇覆盖
+    - ✅ Baseline Profiles → 58 篇覆盖
+
+14. **未覆盖但评分不足的候选**（< 14 分）：
+    - Bubble API 性能（8/20）— 小众通知特性，性能影响有限
+    - KSP2/K2 构建性能（9/20）— 构建期而非运行时性能
+    - App Cloning 性能（7/20）— 小众多用户特性
+    - Health Connect 性能（5/20）— 健康数据 API，非性能核心
+    - React Native 性能（9/20）— 跨平台框架，仅 2 篇 Flutter 存在但 AIW 聚焦原生
+    - VNDK 隔离性能影响（10/20）— 08:00 已评估
+
+**两轮挖掘汇总（08:00 + 12:00）**：共检查 14 个方向、80+ 个细分主题，全书 607 个小节已达到极高覆盖密度。下一阶段建议聚焦：
+- 跟踪 Android 17 QPR1/QPR2 可能引入的新性能相关 API
+- 关注 Jetpack Compose 1.9+ 运行时的重大变更
+- 监控 Game SDK / AGDK 的版本更新
+- 新兴 AI Agent 应用的性能 profiling 实战案例积累
