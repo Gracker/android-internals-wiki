@@ -64,9 +64,9 @@ p0: 0
 p1: 0
 p2: 0
 task2b_state: "fixed"
-last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
+last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 task2b_verifier_result: "ready-for-task6"
-status: "finalized"
+status: ready-for-review
 pipeline_stage: "task6_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
