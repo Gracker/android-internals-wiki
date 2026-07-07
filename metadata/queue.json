@@ -212,5 +212,31 @@
       "added_at": "2026-07-07T19:09:00+08:00",
       "status": "pending"
     }
+  ],
+  "items": [
+    {
+      "section": "24.4",
+      "section_title": "网络架构与连接管理",
+      "priority": 90,
+      "reason": "[task6-audit] 版本基线违规：7处 android-35 引用需更新为 android-17.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "版本基线违规",
+          "locations": [
+            "frontmatter: last_verified_against",
+            "L167: NetworkCapabilities 验证标注 (2处)",
+            "L181: NetworkCapabilities 验证标注 (2处)",
+            "L234: StrictMode 验证标注 (2处)"
+          ],
+          "detail": "7 处引用 android-35 SDK 源路径，违反版本基线规则。需更新为 android-17.0.0_r1 对应路径。",
+          "suggestion": "Task 9 先验证 android-17.0.0_r1 中 NetworkCapabilities.java 和 StrictMode.java 的路径和内容差异，确认 API 无变化后由 Task 2B 统一替换"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-08T03:07:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-08-03-audit.md"
+    }
   ]
 }
