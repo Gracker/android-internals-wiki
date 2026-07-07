@@ -36,13 +36,13 @@ related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-07-07
-reviewed_date: 2026-04-24
+reviewed_date: 2026-07-07
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_task9_at: 2026-07-07T04:24:36
@@ -55,7 +55,7 @@ review_round: 1
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
 review_notes: '2026-07-07 Task2B Verifier: task9_result 重复键修正（pass-tech-review → needs-rework），status finalized → ready-for-review | 2026-07-07 Task6 复审：pass-light-edit。修复 frontmatter 重复键 task2b_result（fixed-lite 正确）；无新增 B 类回炉项；转 Task9 复审。'
-last_task6_at: 2026-07-07T04:11:55+08:00
+last_task6_at: 2026-07-07T12:15:00+08:00
 last_task6_review_log: logs/review/2026-07-07-04-review.md
 ---
 
@@ -77,7 +77,7 @@ last_task6_review_log: logs/review/2026-07-07-04-review.md
 
 ## 为什么多窗口的渲染值得关注
 
-在 SurfaceFlinger（下文简称 SF）侧，多窗口只是更多 Layer 同时参与合成。真正的难点是：同一时刻要管理更多窗口的几何信息、buffer 和合成时序。
+在 SurfaceFlinger（下文简称 SF）侧，多窗口只是更多 Layer 同时参与合成。难点是：同一时刻要管理更多窗口的几何信息、buffer 和合成时序。
 
 拖拽 Freeform 边框或进入 PiP 时，窗口 bounds 往往先变，App 的新尺寸内容后到。只要几何更新和内容更新落在不同帧，画面就可能出现黑边、拉伸或一帧空洞。这类错拍现象，是多窗口渲染分析里最常见的一类问题。[已验证: AOSP WindowManagerService]
 
@@ -201,7 +201,7 @@ Android 12+，PiP transition 和 shell transition 的控制面继续完善，窗
 2. 把 App Main Thread 的 `Choreographer#doFrame` 和 `performTraversals` 摆在一起，判断是主线程 relayout 先慢，还是后面的提交流程更慢。
 3. 把 RenderThread 或 producer 线程的 `dequeueBuffer()`、`queueBuffer()` 摆在一起，判断 buffer 是不是被旧帧占住了。
 4. 找 `QueuedBuffer - <window>BLAST#<id>`，确认 BLAST 收到这帧的时间。
-5. 在 SF / FrameTimeline 侧看 `latchBuffer` 和 actual present，算清楚这帧是在第几次合成周期里真正出现的。
+5. 在 SF / FrameTimeline 侧看 `latchBuffer` 和 actual present，算清楚这帧是在第几次合成周期里上屏的。
 
 ### 正常与异常的文字样例
 

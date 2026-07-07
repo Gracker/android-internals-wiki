@@ -32,11 +32,11 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
 path: https://source.android.com/docs/core/power/power-stats-hal
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: '2026-07-07'
-last_task6_at: 2026-07-07T04:11:55+08:00
+reviewed_date: 2026-07-07
+last_task6_at: 2026-07-07T12:15:00+08:00
 last_task6_review_log: logs/review/2026-07-07-04-review.md
 task6_reviewed_date: '2026-07-07'
 review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。 | 2026-06-19 Task9 audit 18:25：auto-fixed。闲时抽检发现 4 处源码/版本锚点小问题：Android 35 误写为 Android 15、PowerMonitorReadings.getConsumedEnergy 方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回 Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2 全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。 | 2026-07-06 Task6 revisit：pass-light-edit。完成写作层再次复审；小幅优化表达清晰度，无新增 B 类回炉项；转入 Task9 复审。 | 2026-07-07 Task6 复审：pass-light-edit。L1 修正 4 处禁用词（3×链路→路径/衔接缺口, 1×闭环→回路）；修正 frontmatter 孤立字段 last_task2b_main_at 归位；无新增 B 类回炉项；转 Task9 复审。 | 2026-07-07 Task2B Verifier: frontmatter 重建（commit 80759fd88 破坏了 YAML frontmatter，已从 git 历史恢复） | 2026-07-07 Task6 复审：pass-light-edit。修复全文重复（1856→925行）；L1 修正禁用词「对齐」→「同步」（参考链接描述）；无新增 B 类回炉项；转 Task9 复审。'
@@ -476,7 +476,7 @@ systemHealthManager.getPowerMonitorReadings(
 
 设备兼容性要求不变——仍需设备实现 `android.hardware.power.stats` HAL（Pixel 6+ 确认支持，其他 OEM 按实现决定）。
 
-**设计考量：累计能耗 vs 瞬时功率**。PowerMonitor API 返回的是累计能耗（微焦耳）而非瞬时功率，这一设计选型有两个原因：① 硬件电流传感器本质上是积分器件，累计值比瞬时值噪声更小、信噪比更高；② 累计值天然支持差分求平均功率（用户自定义采样窗口），比系统固定上报瞬时功率更灵活。代价是调用方需要自行管理时间窗口和差分运算——上文 Step 1–4 的差分与滑动窗口流程就是在处理这件事。
+**设计考量：累计能耗 vs 瞬时功率**。PowerMonitor API 返回的是累计能耗（微焦耳）而非瞬时功率，这一设计选型有两个原因：① 硬件电流传感器是积分器件，累计值比瞬时值噪声更小、信噪比更高；② 累计值天然支持差分求平均功率（用户自定义采样窗口），比系统固定上报瞬时功率更灵活。代价是调用方需要自行管理时间窗口和差分运算——上文 Step 1–4 的差分与滑动窗口流程就是在处理这件事。
 
 ## 功耗分析的最佳实践
 

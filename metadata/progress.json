@@ -1053,10 +1053,10 @@
       "task6_state": "reviewed",
       "task9_state": "pending",
       "pipeline_stage": "ready-to-publish",
-      "last_task6_review": "2026-07-06T03:20:00+08:00",
+      "last_task6_review": "2026-07-07",
       "task2b_verifier_note": "2026-07-06 reflux verification corrected status",
       "task9_result": "pass-tech-review",
-      "finalized_date": "2026-07-06"
+      "finalized_date": "2026-07-07"
     },
     "20.9": {
       "status": "ready-for-review",
@@ -1065,6 +1065,14 @@
       "pipeline_stage": "task2b_pending",
       "last_task9_at": "2026-07-06T08:32:18.662157",
       "review_log": "logs/deep-review/2026-07-06-08-deep-review.md"
+    },
+    "14.11": {
+      "last_task6_review": "2026-07-07",
+      "task6_result": "pass-light-edit"
+    },
+    "18.18": {
+      "last_task6_review": "2026-07-07",
+      "task6_result": "pass-light-edit"
     }
   },
   "task2a": {
@@ -1214,5 +1222,13 @@
       "deprecated_at": "2026-07-07T03:09:51+08:00",
       "deprecated_by": "task2a-cleanup"
     }
-  ]
+  ],
+  "review_stats": {
+    "last_task6_at": "2026-07-07T12:15:00+08:00",
+    "last_task6_sections": [
+      "14.8",
+      "14.11",
+      "18.18"
+    ]
+  }
 }
