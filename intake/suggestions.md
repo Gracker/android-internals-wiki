@@ -49,3 +49,16 @@
 - 新发布的 Android 17 后续季度更新特性
 - 新兴交叉领域（如 AI Agent 性能沙箱的深入实战）
 - 与游戏引擎/Flutter/跨平台框架的最新版本适配
+
+
+## [Task9 Deep Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-07-07
+- **类型**：源码准确性
+- **位置**：关于 Binder FDA 的描述
+- **问题**：文中提到"Android 16 通过 FDA 降低 SurfaceFlinger 多图层 CPU 开销 20%-40%"的说法缺少源码锚点和 benchmark 条件，未在 GraphicBuffer.cpp 中确认直接接入 Binder FDA 批量安装路径
+- **建议**：如需讨论 FDA，应从 Binder / Parcel 层源码和可复现 benchmark 入手，并与 GraphicBuffer transport fd 数组的语义分开
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-07-07
+- **类型**：知识盲区
+- **位置**：16KB page size 对 buffer allocation 的影响
+- **问题**：章节提到 16KB page size 对像素 payload、stride 和映射进程数的影响，但 metadata region 和 reservedSize 在 16KB page size 下的页粒度取整成本放大效应可以补充更具体的分析
+- **建议**：补充 metadata region、reservedSize 在 16KB 设备上的分配预算影响案例，包括小尺寸 buffer、图标 atlas 的实际内存成本计算示例
