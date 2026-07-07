@@ -717,3 +717,31 @@ if (pages_freed > 0) {
 - 摘要：基于 android-17.0.0_r1 主线源码实测（lmkd.cpp 4218 行/lmkd.h/ProcessList.java 6193 行/CachedAppOptimizer.java 3092 行），对 2026-07-03 调研中的 AOSPA fork 特定声明做事实校正：LMK_PROCS_PRIO 主线单批上限是 3 不是 32，主线无 io_uring 关键字，cmd_procs_prio 是同步串行。同时明确"Memory Reclaim Priority"和"Adaptive Background Activity Manager"在主线没有统一类，而是由 oom_score_adj+PSI+per_app_memcg / CachedAppOptimizer+ProcessList+BackgroundStartPrivileges 三套机制协同实现。包络矩阵表（主线 vs fork vs 调研声明）作为事实边界参考。
 - 注入时间：2026-07-04
 - 价值：明确 LMK_PROCS_PRIO 在 AOSP 17 主线的真实形态（不是 io_uring 异步），避免读者把 AOSPA fork 能力误认为平台默认；给出 soft_limit_mult 阶梯的完整表（含 LAUNCHER 的 oom_adj_score 强制重设到 200 这条容易被忽略的事实）；确认"启动期文件页保护"在主线不可行的边界（thrashing_limit 没有进程级覆盖属性）
+<!-- AIW-源码调研-2026-07-07 -->
+### 6. LMKD 用户态迁移 + PSI 协同机制（新增 2026-07-07）
+
+**6.1 代码库迁移**（`system/core/lmkd/` → `system/memory/lmkd/`）：Android 17 中，LMKD 从 `system/core/lmkd/` 迁移至 `system/memory/lmkd/`，标志着 memory management 作为独立模块的地位提升。`system/core/init/lmkd_service.cpp` 仍保留，作为 init 客户端与 LMKD 通信。
+
+**6.2 PSI 监听完整实现**（`lmkd.cpp:3561-3650`）：`init_psi_monitors()` → `init_mp_psi()` → `init_psi_monitor()` 三级初始化链路，基于 epoll 事件驱动模型。`psi_thresholds[VMPRESS_LEVEL_MEDIUM].threshold_ms = psi_partial_stall_ms`（默认 70ms low-ram, 100ms 其他），`psi_complete_stall_ms`（默认 700ms）。PSI 监听间隔分为 `PSI_POLL_PERIOD_SHORT_MS=10`（高压力）和 `PSI_POLL_PERIOD_LONG_MS=100`（低压力），远优于传统轮询。
+
+**6.3 Memevents BPF Ring Buffer**（`lmkd.cpp:3540-3694`）：Android 17 全面采用 BPF ring buffer 替代传统轮询。`init_memevent_listener_monitoring()` 注册五类事件：`MEM_EVENT_DIRECT_RECLAIM_BEGIN/END`（直接回收）、`MEM_EVENT_KSWAPD_WAKE/SLEEP`（kswapd 状态）、`MEM_EVENT_VENDOR_LMK_KILL`（厂商扩展）。通过 `memevent_listener->getMemEvents(mem_events)` 批量拉取事件，显著降低延迟。
+
+**6.4 三维决策模型**（`__mp_event_psi:2713+`）：PSI 事件处理融合 `zone_watermarks`（基于 `/proc/zoneinfo`）、`thrashing`（workingset refault）、`swap_utilization`（换出率）三个维度。新增逻辑：`if (mem_pressure > downgrade_pressure && get_free_swap(&mi) >= mi.field.total_swap * swap_free_low_percentage / 100)` 内存充足时忽略压力。
+
+**6.5 pidfd 等待机制**：`is_waiting_for_kill()`（`lmkd.cpp:2330`）通过 `last_kill_pid_or_fd != -1` 判断 kill 状态，`kill_timeout_ms`（默认 100ms）控制超时，取代传统信号量机制。`kill_done_handler` 和 `kill_fail_handler` 通过 reaper_comm_fd 通信管道异步处理 kill 结果。
+
+**6.6 Kill 策略增强**：`update_props()`（`lmkd.cpp:4088+`）新增 `kill_heaviest_task` 属性（默认 false），支持选择最大 RSS 任务而非 adj 最小进程。`find_and_kill_process()` 中 `bool choose_heaviest_task = kill_heaviest_task` 控制策略切换。
+
+**6.7 主循环架构**（`mainloop:3980+`）：epoll 事件驱动支持四类监听源：
+- 控制套接字：AMS/init 注册进程（LMK_PROCPRIO 协议）
+- PSI 监听器：内存压力事件
+- Memevents：BPF ring buffer 事件
+- Kill 通知：pidfd kill 确认
+
+**对 AppFlow 的边界声明**：PSI 协同机制在主线完整实现，但 AppFlow 的"启动期文件页保护"诉求与现有 `thrashing_limit`（无进程级覆盖）存在底层冲突。LMKD 的 `PSI_POLL_PERIOD_SHORT_MS=10ms` 提供了比传统轮询更低的响应延迟，但 AppFlow 的 128KB 文件页保护语义仍需厂商 kernel 层扩展。
+
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-lmkd-userspace-migration-psi.md
+- 类型：DeepResearch 调研结果  
+- 摘要：基于 android-17.0.0_r1 主线源码实测（lmkd.cpp 4218 行），确认 LMKD 从 system/core/ 迁移至 system/memory/，PSI 监听替代 vmpressure，memevents BPF ring buffer 成为主流事件源，pidfd 取代 kill 信号量，新增 kill_heaviest_task 策略。主循环采用 epoll 事件驱动，支持 PSI + memevents + 控制套接字 + kill 通知四类监听源。为 AppFlow 提供了低延迟响应基础（10ms PSI 间隔），但"启动期文件页保护"仍与现有 thrashing_limit 机制存在底层冲突。
+- 注入时间：2026-07-07
+- 价值：明确 LMKD 在 Android 17 中的完整技术栈演进，为理解内存管理底层机制提供源码级细节
