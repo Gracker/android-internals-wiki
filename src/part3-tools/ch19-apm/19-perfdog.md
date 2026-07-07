@@ -6,9 +6,9 @@ status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-24'
-last_verified_against: PerfDog official site
-confidence: medium
+last_verified: '2026-07-08'
+last_verified_against: PerfDog official site + AOSP android-17.0.0_r1 PowerStats/Thermal/SurfaceFlinger source anchors
+confidence: medium-high
 tags:
 - apm
 - perfdog
@@ -22,19 +22,22 @@ sources:
   path: https://perfdog.qq.com/
 - type: official
   path: https://perfdog.qq.com/help/faq
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 last_task6_audit: '2026-07-03'
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
-task9_result: pass-tech-review
-task9_reviewed_date: '2026-04-24'
+task9_result: auto-fixed
+task9_reviewed_date: '2026-07-08'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-24T20:44:37+08:00'
-last_task9_audit: '2026-06-25'
+last_task9_at: '2026-07-08T03:28:36+08:00'
+last_task9_audit: '2026-07-08'
+last_task9_autofix_at: '2026-07-08'
+last_task9_audit_log: 'logs/deep-review/2026-07-08-03-audit.md'
+task9_review_notes: '2026-07-08 Task9 idle audit auto-fix: 修正 Thermal AIDL 方法、SurfaceFlinger --latency 数据源、Restricted Settings 特殊访问入口；AOSP 锚定 android-17.0.0_r1，回到 Task6 复审。'
 task2b_result: fixed
 rework_count: 1
 rework_date: "2026-04-27"
@@ -242,10 +245,10 @@ PerfDog 这类工具最好和自动化脚本结合。人工滑动或操作的波
 
 源码路径：`frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`
 
-PerfDog 通过 `dumpsys powerstats` 获取的能耗数据来自 PowerStats HAL，该 HAL 分为两个版本：
+外部工具可通过 `dumpsys powerstats` 交叉核验的能耗数据来自 PowerStats HAL。Android 17 的 `PowerStatsHALWrapper` 会优先绑定 AIDL `android.hardware.power.stats.IPowerStats/default`，不可用时回退到旧 HAL 1.0 JNI wrapper。
 
-- **HAL 2.0**：通过 AIDL 接口调用 `android.hardware.power.stats.IPowerStats`，支持 `PowerEntity`、`EnergyConsumer`、`EnergyMeter` 三大数据类型
-- **HAL 1.0**：通过 JNI 调用 native 方法，提供基础的功率统计能力
+- **AIDL / HAL 2.0 wrapper**：调用 `android.hardware.power.stats.IPowerStats`，支持 `PowerEntity`、`EnergyConsumer`、`EnergyMeter` 三类数据
+- **HAL 1.0 wrapper**：通过 JNI native 方法提供兼容路径
 
 关键数据类型：
 ```java
@@ -259,16 +262,17 @@ EnergyConsumer[] getEnergyConsumerInfo();
 Channel[] getEnergyMeterInfo();
 ```
 
-### Thermal HAL 2.0 - 温度和散热监控
+### Thermal AIDL HAL - 温度和散热监控
 
 源码路径：`hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl`
 
-PerfDog 的温度数据来自 Thermal HAL 2.0，接口定义：
+外部工具可通过 `dumpsys thermal` 核验的温度数据最终来自 Thermal HAL。Android 17 的 AIDL 接口定义如下；降频状态不是单独的 `getThrottlingStatus()` 方法，而是 `Temperature` 数据结构里的字段：
 ```aidl
 interface IThermal {
-    Temperature[] getTemperatures();              // 各类传感器温度
-    CoolingDevice[] getCoolingDevices();          // 散热设备状态
-    ThrottlingStatus[] getThrottlingStatus();     // 降频状态
+    Temperature[] getTemperatures();
+    Temperature[] getTemperaturesWithType(in TemperatureType type);
+    CoolingDevice[] getCoolingDevices();
+    CoolingDevice[] getCoolingDevicesWithType(in CoolingType type);
 }
 ```
 
@@ -285,30 +289,27 @@ enum TemperatureType {
 
 源码路径：`frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.h`
 
-PerfDog 通过 `dumpsys SurfaceFlinger --latency` 获取的帧时间数据来自 SurfaceFlinger 的帧追踪系统：
+手工核验 `dumpsys SurfaceFlinger --latency` 时，Android 17 的路径是 `SurfaceFlinger::dumpStats()` → `Layer::dumpFrameStats()` → `Layer::getFrameStats()`，输出 desired / actual / ready 三列帧时间。`FrameTracer` 同时记录 dequeue / queue / latch / present fence 等事件并进入 Perfetto，但不是 `--latency` 输出的直接数据源：
 
 ```cpp
-// 帧追踪器记录每个 Buffer 的时间戳和类型
-void traceTimestamp(int32_t layerId, uint64_t bufferID, uint64_t frameNumber,
-                    nsecs_t timestamp, FrameEvent::BufferEventType type);
-
-// 帧围栏信号追踪
-void traceFence(int32_t layerId, uint64_t bufferID, uint64_t frameNumber,
-                const std::shared_ptr<FenceTime>& fence, FrameEvent::BufferEventType type);
-
-// Mini dump 提供帧统计摘要
-std::string miniDump();
+void SurfaceFlinger::dumpStats(const DumpArgs& args, std::string& result) const;
+void Layer::dumpFrameStats(std::string& result) const;
+void Layer::getFrameStats(FrameStats* outStats) const;
+void FrameTracer::traceTimestamp(...);
+void FrameTracer::traceFence(...);
 ```
 
-帧追踪数据与 Perfetto FrameTimeline 集成，支持跨进程帧时间监控。
+因此报告中的帧率、长帧和 Perfetto FrameTimeline 可以互相校验，但不能把 `--latency` 三列数据直接等同于 FrameTracer 事件。
 
-### RestrictedSettings - 高级性能配置
+### Restricted Settings 与特殊访问授权
 
-源码位置：`frameworks/base/core/java/android/provider/Settings.java` 及相关实现
+源码位置：`frameworks/base/core/java/android/provider/Settings.java` 及 Settings / PermissionController 相关实现
 
-PerfDog Service 需要的某些敏感权限通过 RestrictedSettings 管理，尤其是 Android 13+ 对侧载 APK 的限制。这些设置通常包括：
-- `android.settings.action.REQUEST_MANAGE_SPECIAL_APP_ACCESS`
-- 辅助功能、通知访问、DUMP 权限的高级管理
+PerfDog Service 需要的某些敏感权限会受到 Android 13+ Restricted Settings 和特殊访问页面约束。Android 17 的 `Settings.java` 没有 `android.settings.action.REQUEST_MANAGE_SPECIAL_APP_ACCESS` 这个公开 action，实际要按权限类型进入对应入口：
+- `Settings.ACTION_ACCESSIBILITY_SETTINGS`
+- `Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS`
+- `Settings.ACTION_MANAGE_OVERLAY_PERMISSION`
+- `android.permission.DUMP` 按官方指引通过 ADB 或设备授权流程处理
 
 ### 数据采集流程
 
