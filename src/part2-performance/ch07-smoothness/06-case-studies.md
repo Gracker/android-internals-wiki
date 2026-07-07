@@ -80,7 +80,7 @@ review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
 task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。 | 2026-07-08 01 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（禁用词"链路"→"调用链"）；outline 锚点全覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
+last_deepseek_cn_review_at: 2026-07-08
 last_task9_audit: "2026-07-07"
 last_task6_audit: "2026-07-01"
 task6_result: "pass-light-edit"
@@ -402,7 +402,7 @@ RenderThread 相关卡顿的 Perfetto 特征:
 
 #### Lottie 与 AVD 的 Perfetto 特征对比
 
-案例四讨论的是 AVD（AnimatedVectorDrawable）的积压问题，但生产环境里 Lottie 动画库的卡顿特征与 AVD 完全不同,两者的排查思路也要区分:
+案例四讨论的是 AVD 的积压问题。生产环境中的 Lottie 动画库也很常见，它的卡顿特征与 AVD 完全不同，排查思路也要区分：
 
 | 特征 | AVD | Lottie(复杂 JSON) |
 |------|-----|-------------------|
@@ -416,9 +416,9 @@ RenderThread 相关卡顿的 Perfetto 特征:
 
 排查 Lottie 卡顿的入口:先用 Perfetto 确认瓶颈在主线程还是 RenderThread。如果是主线程 JSON 解析耗时长,考虑预加载(后台线程解析后缓存 `LottieComposition`)、简化 JSON 或改用序列帧。如果是渲染侧,检查 Lottie 的 RenderMode:SOFTWARE 路径走内部位图渲染,绘制由主线程完成;HARDWARE 路径走 GPU,mask/matte/merge path 会增加纹理上传和 GPU 工作量。切换 RenderMode 前后用 Perfetto 对比 `draw` slice 和 GPU `textureUpload` 来确认瓶颈归属。
 
-### 补充:AnimatedVectorDrawable 线程退化机制(源码级)
+### AnimatedVectorDrawable 线程退化机制（源码级）
 
-本节案例四涉及 AnimatedVectorDrawable 的线程模型，下面从 AOSP 源码角度补充其退化机制。
+本节案例四涉及 AnimatedVectorDrawable 的线程模型，以下从 AOSP 源码角度分析其退化机制。
 
 #### AVD 线程模型双轨架构
 

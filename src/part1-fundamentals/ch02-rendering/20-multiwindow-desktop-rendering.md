@@ -90,7 +90,7 @@ p2: 0
 last_task2b_verifier_at: '2026-06-14T19:31:17'
 task2b_verifier_result: task9-state-reset-ready-for-task9
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-06-15'
+last_deepseek_cn_review_at: 2026-07-08
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
@@ -154,21 +154,19 @@ task9_p2_issues: 0
 
 多 display 真正的「分屏」发生在 DisplayManagerService（DMS），不在 SurfaceFlinger。SurfaceFlinger 拿到的是「已经定型」的 display 列表；多 display 的 display 角色、主从关系、拓扑关系由 DMS 在 `android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java` 维护。
 
-<!-- AIW-源码调研-2026-06-24 -->
-
-下面把 `android-17.0.0_r1` 上看得到的几条主线写下来，方便排查时直接定位。
+以下梳理 `android-17.0.0_r1` 上的几条关键主线，方便排查时直接定位。
 
 ### 一把 `SyncRoot` 锁守住所有 display 状态
 
 `DisplayManagerService` 内部用 `DisplayManagerService.SyncRoot`（一个 `static final` 类）做全局锁。DisplayAdapter 的 `registerLocked()`、`LogicalDisplayMapper.updateLogicalDisplaysLocked()`、`ExternalDisplayPolicy.handleExternalDisplayConnectedLocked()`、每个 `DisplayPowerController` 的 lead 切换全部在这把锁上同步（`DisplayManagerService.java` 行 285–537，构造与字段定义；行 696–770 子模块装配；行 783–797 `onStart`）。
 
-这把锁在 Android 17 仍未拆分。foldable 展开 + external display 接入同时发生（dock 设备）时，`mSyncRoot` 持锁时间偏长是已知瓶颈。**不能把 Android 17 的 `DeliQueue` 优化（`android.os.MessageQueue` 无锁）外推到 DMS 的 `SyncRoot` 隔离**——两者是不同对象。
+Android 17 仍未拆分这把锁。折叠屏展开同时外接显示器接入（dock 设备）时，`mSyncRoot` 持锁时间偏长是已知瓶颈。**不能把 Android 17 的 `DeliQueue` 优化（`android.os.MessageQueue` 无锁）外推到 DMS 的 `SyncRoot` 隔离**——两者是不同对象。
 
 ### 物理 display 怎么被发现
 
 `LocalDisplayAdapter.registerLocked()` 在 `onStart` 后由 `MSG_REGISTER_DEFAULT_DISPLAY_ADAPTERS` 触发（`DisplayManagerService.java` 行 2543–2551），它会枚举 `SurfaceControl.getPhysicalDisplayIds()` 并对每个 physical id 调 `tryConnectDisplayLocked()`。第一次发现的 display 走 `DISPLAY_DEVICE_EVENT_ADDED`，后续 hotplug 走 `DISPLAY_DEVICE_EVENT_CHANGED`（`LocalDisplayAdapter.java` 行 121–200）。
 
-`isFirstDisplay`（`mDevices.size() == 0`）决定这块 display 是否作为设备的主 display，写进 `DisplayDeviceInfo.flags`，后续 `LogicalDisplayMapper` 拿来挑 `DEFAULT_DISPLAY`（displayId=0）对应的物理 display。
+`mDevices.size() == 0` 时 `isFirstDisplay` 为 true，这块 display 就是设备的主 display。它会写进 `DisplayDeviceInfo.flags`，后续 `LogicalDisplayMapper` 据此决定 `DEFAULT_DISPLAY`（displayId=0）对应哪块物理 display。
 
 `OverlayDisplayAdapter` 和 `WifiDisplayAdapter` 在 `MSG_REGISTER_ADDITIONAL_DISPLAY_ADAPTERS` 且 `!mSafeMode` 时才注册（行 2564–2591）。Miracast 设备在 Android 17 仍走 `WifiDisplayAdapter` 路径。
 
@@ -236,7 +234,6 @@ SurfaceFlinger hotplug
 - `frameworks/base/services/core/java/com/android/server/display/DisplayAdapter.java`
 - `frameworks/base/services/core/java/com/android/server/display/ExternalDisplayPolicy.java`
 
-<!-- /AIW-源码调研-2026-06-24 -->
 
 ## SurfaceFlinger 在多窗口下多了什么工作
 

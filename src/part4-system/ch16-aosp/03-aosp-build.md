@@ -50,7 +50,7 @@ section: "16.3"
 tags: ['aosp', 'build', 'soong', 'ninja', 'emulator', 'cuttlefish', 'debug']
 related_chapters: ["16.1", "16.2", "15.7", "14.7"]
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-27
+last_deepseek_cn_review_at: 2026-07-08
 last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-08-00-deep-review.md"
 finalized_date: "2026-07-08"
@@ -153,7 +153,7 @@ emulator -avd <avd_name> -system <path/to/system.img>
 
 Cuttlefish 是 Google 推荐的 AOSP 测试方案。它是一个运行在 Linux 主机上的虚拟 Android 设备，使用 KVM 硬件加速，对 AOSP 源码改动有更好的支持。
 
-与 Android Emulator（基于 QEMU）不同，Cuttlefish 基于 **crosvm**（Google 自研的 VMM）和 **virtio** 设备模型。crosvm 是一个轻量级虚拟机监视器，专门为 Chrome OS / Android 虚拟化场景设计；virtio 提供了标准化且低开销的半虚拟化 I/O 接口（网络、块设备、输入设备等）。这套架构使 Cuttlefish 比 QEMU 更轻量、启动更快，也因此被 AOSP CI 和 Android 仪表盘选作标准测试平台。Host 侧通过 WebRTC 暴露交互界面（浏览器 `https://localhost:8443`），同时通过 ADB 提供命令行访问。
+Cuttlefish 基于 Google 自研的 **crosvm** 虚拟机和 **virtio** 设备模型。crosvm 是 Chrome OS / Android 场景专用的轻量级 VMM；virtio 提供了低开销的半虚拟化 I/O 接口（网络、块设备、输入设备等）。相比 QEMU，这套架构启动更快、开销更小，被 AOSP CI 和 Android 仪表盘选作标准测试平台。Host 侧通过 WebRTC 暴露交互界面（浏览器 `https://localhost:8443`），同时通过 ADB 提供命令行访问。
 
 
 Cuttlefish 的设置流程（以 AOSP 编译产物路径为例）：
@@ -308,7 +308,7 @@ adb shell setprop persist.debug.hwui.profile true
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/configuration/add-system-properties]
 
-Android 17 基线下，Google 推荐在新增 Framework 调试开关时使用 Sysprop API（通过 `.sysprop` 文件定义），而非直接调用 `SystemProperties.get()`。Sysprop API 会生成类型安全的 Java/C++/Rust 接口，减少运行时的类型转换错误。
+Android 17 基线推荐用 Sysprop API（`.sysprop` 文件）定义新的 Framework 调试开关，而不是直接调 `SystemProperties.get()`。Sysprop API 会生成类型安全的 Java/C++/Rust 接口，避免运行时的类型转换错误。
 
 ### dumpsys
 
