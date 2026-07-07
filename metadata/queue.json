@@ -191,6 +191,53 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-07T15:34:35+08:00",
       "status": "completed"
+    },
+    {
+      "path": "src/part2-rendering/ch02-rendering/2.30-android17-frametimeline.md",
+      "section": "2.30",
+      "section_title": "Android 17 FrameTimeline GPU/CPU 合成边界判定机制",
+      "priority": 95,
+      "stage": "task2b_pending",
+      "reason": "[Deep Tech Review] Android 17 FrameTimeline 源码锚点与核心方法/事件模型多处不符，需要按 android-17.0.0_r1 重新校准",
+      "material_paths": [
+        "src/part2-rendering/ch02-rendering/2.30-android17-frametimeline.md",
+        "logs/deep-review/2026-07-08-06-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources；正文第 61/72/87/103/422-431 行 FrameTracer/FrameTimeline 源码锚点与方法名",
+          "detail": "Android 17 tag 下 SurfaceFlinger FrameTracer 实际路径是 frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.cpp，FrameTimeline 实际路径是 frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp；frameworks/base/core/java/android/view/FrameTimeline.java 不存在，App 侧 FrameTimeline 是 Choreographer.java 内部类。正文引用的 FrameTimeline::onFramePresent、onFrameCompositorTx、setDisplayFrame、finalizeStats 在 android-17.0.0_r1 中未找到。",
+          "suggestion": "按 android-17.0.0_r1 重写源码锚点：SurfaceFlinger 侧使用 Scheduler/FrameTimeline.{h,cpp} 的 createSurfaceFrameForToken、setSfWakeUp、setSfPresent、onCommitNotComposited、finalizeCurrentDisplayFrame；App 侧使用 Choreographer.FrameData / Choreographer.FrameTimeline 内部类。删除不存在的 FrameTimeline.java 与旧方法名。"
+        },
+        {
+          "type": "源码错误/原理断裂",
+          "location": "第 59-87 行 FrameTracer 六类 Trace 事件、FrameTimeline 五类子消息",
+          "detail": "android-17.0.0_r1 的 external/perfetto graphics_frame_event.proto 定义的是 GraphicsFrameEvent.BufferEventType：DEQUEUE、QUEUE、POST、ACQUIRE_FENCE、LATCH、HWC_COMPOSITION_QUEUED、FALLBACK_COMPOSITION、PRESENT_FENCE、RELEASE_FENCE 等；FrameTimelineEvent proto 是 Expected/Actual DisplayFrameStart、Expected/Actual SurfaceFrameStart 与 FrameEnd。正文列出的 BufferQueuePosts、App BufferDropped、SF Composing、SF Presenting、GPU Composition、HWC Composition 以及 VSYNC-app/VSYNC-sf/Display Present 五类子消息，不能作为 AOSP Android 17 的 proto/事件定义。",
+          "suggestion": "把本节改为 proto 结构和 trace_processor 表结构两层：GraphicsFrameEvent 用于 buffer/fence 事件，FrameTimelineEvent 用于 DisplayFrame/SurfaceFrame expected/actual slice；UI 展示名只能作为 Perfetto UI 观察层描述，不能写成源码定义。"
+        },
+        {
+          "type": "原理断裂/源码错误",
+          "location": "第 148-173 行 gpu_composition 判定与 HWC_COMPOSITION_QUEUED 流程",
+          "detail": "正文把 gpu_composition 简化为 composite() 后检查 RenderEngine::drawLayers()，并把 HWC_COMPOSITION_QUEUED 写成 Output::present() -> HWC2::Display::present() 直接发射。Android 17 实际链路中，Layer::onCompositionPresented() 在 outputLayer->requiresClientComposition() 时写 FALLBACK_COMPOSITION 并对 SurfaceFrame 调 setGpuComposition()；DisplayFrame 的 gpu_composition 由 SurfaceFlinger::onCompositionPresented() 传入的 pacesetter GPU composition done fence 判断（mGpuFence != FenceTime::NO_FENCE）。HWC_COMPOSITION_QUEUED 是 GraphicsFrameEvent 枚举之一，本轮未在上述 present 路径复核到正文所写的直接发射点。",
+          "suggestion": "重写 GPU/CPU 合成边界：用 CompositionEngine::Output::present/finishFrame/composeSurfaces 说明 client composition，用 Layer::onCompositionPresented 与 FrameTimeline::DisplayFrame::traceActuals 分别说明 SurfaceFrame/DisplayFrame 的 gpu_composition 写入，不要把它简化为 drawLayers() 布尔检查。"
+        },
+        {
+          "type": "API 签名错误",
+          "location": "第 281-284 行 Choreographer.FrameData API 列表",
+          "detail": "android-17.0.0_r1 的 Choreographer.FrameTimeline 内部类提供 getVsyncId()、getExpectedPresentationTimeNanos()、getDeadlineNanos()；FrameData 提供 getFrameTimeNanos()、getFrameTimelines()、getPreferredFrameTimeline()。本轮在 Choreographer.java 中未找到 getIntervalNanos()。",
+          "suggestion": "删除 getIntervalNanos() 或明确改为通过相邻 timeline / DisplayMode 刷新周期推导；同时把 getDeadlineNanos() 归属到 Choreographer.FrameTimeline，而不是直接写成 FrameData 顶层 API。"
+        },
+        {
+          "type": "数据缺失/API 示例错误",
+          "location": "第 330-375 行 Perfetto SQL 示例",
+          "detail": "Perfetto 官方 FrameTimeline 文档使用 expected_frame_timeline_slice / actual_frame_timeline_slice；本节 SQL 写成 expected_frame_timeline / actual_frame_timeline，并引用 present_to_display 字段。本轮查询官方文档未发现 present_to_display 字段。",
+          "suggestion": "用 Android 17 对应 Perfetto trace_processor schema 重新生成可运行 SQL；至少改为 *_frame_timeline_slice 表，并用 dur、ts、present_type、jank_type 等实际字段表达延迟与归因。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-08T06:30:34+08:00",
+      "status": "pending"
     }
   ],
   "entries": [
