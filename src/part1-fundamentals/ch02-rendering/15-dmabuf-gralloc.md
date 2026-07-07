@@ -2,7 +2,7 @@
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2'
 section: '2.15'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-07-07'
 last_verified_against: AOSP android-17.0.0_r1 (primary; paths confirmed unchanged from android-16.0.0_r1), Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
@@ -60,23 +60,23 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: auto-fixed
+task9_state: reviewed
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-07-08"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-08T04:34:07+08:00"
+last_task9_at: "2026-07-08T05:25:42+08:00"
 last_task9_audit: 2026-07-08
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-07-07T04:52:50+08:00
-task9_review_notes: "2026-07-08 Task9 idle audit:auto-fixed。将 Android 16 语境残留收敛到 android-17.0.0_r1 / Android 12-17 基准；源码锚点复核无 P0/P1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 16KB page size 下 DMA-BUF 尾部空洞与多进程 import/PSS 归因边界；共享 buffer 不会因 import 物理复制多份，回到 Task6 复审。"
+task9_review_notes: "2026-07-08 Task9 idle audit:auto-fixed。将 Android 16 语境残留收敛到 android-17.0.0_r1 / Android 12-17 基准；源码锚点复核无 P0/P1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 16KB page size 下 DMA-BUF 尾部空洞与多进程 import/PSS 归因边界；共享 buffer 不会因 import 物理复制多份，回到 Task6 复审。 | 2026-07-08 05 Task9 终审: pass-tech-review。复核上一轮 16KB page size / DMA-BUF import 归因 auto-fix 与 Task6 pass-light-edit；AOSP android-17.0.0_r1 源码锚点成立，queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-07-08T05:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-14-16-review.md"
 task6_review_notes: "2026-07-08 05:06 Task6 复审(revisiting→reviewed):pass-light-edit。Task9 auto-fix 后文稿复查：L1 禁用词/高频词全清（正文「对齐」为内存 alignment 技术语，非黑话）；L2 结构/节奏/可读性通过；outline 6/6 覆盖。修复 frontmatter 重复 task6_review_notes 键。L3 观察：版本演进段可补 trace 观察引导。task9_result=auto-fixed，回 Task9 终审。"
-last_task9_review_log: "logs/deep-review/2026-07-08-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-08-05-deep-review.md"
 last_task9_autofix_at: "2026-07-08"
 task6_reviewed_date: "2026-06-14"
 last_task6_audit: "2026-07-05"
