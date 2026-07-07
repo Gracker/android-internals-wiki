@@ -9,7 +9,7 @@ last_verified_against: AOSP android-17.0.0_r1 (primary; paths confirmed unchange
 confidence: medium
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-27"
+reviewed_date: "2026-07-08"
 reviewed_by: "openclaw-task6"
 sources:
 - type: aosp
@@ -60,10 +60,10 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-14"
 task9_reviewed_by: "openclaw-task9"
@@ -73,9 +73,9 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-07-07T04:52:50+08:00
 task9_review_notes: "2026-07-08 Task9 idle audit:auto-fixed。将 Android 16 语境残留收敛到 android-17.0.0_r1 / Android 12-17 基准；源码锚点复核无 P0/P1，回到 Task6 复审。"
-last_task6_at: "2026-07-07T13:30:00+08:00"
+last_task6_at: "2026-07-08T04:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-14-16-review.md"
-task6_review_notes: "2026-07-07 Task6 复审:pass-light-edit。修正 task9 frontmatter 一致性(task9_result 从 pending 更正为 pass-tech-review)。L1/L2 无新增问题。自动晋升 finalized。"
+task6_review_notes: "2026-07-08 Task6 复审:pass-light-edit。Task9 auto-fix 后文稿复查：修正 outline 半角括号、5 处正文半角冒号。L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 终审。"
 task6_review_notes: "2026-05-27 Task6 05:14:pass-light-edit。L1/L2 小修 2 处(补齐 outline 块;禁用词"落地"替换为"确认")。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review,未自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-07-08-02-audit.md"
 last_task9_autofix_at: 2026-07-08
@@ -93,14 +93,14 @@ task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for
 <!-- outline-start -->
 ## 本节要点大纲
 
-### 锚点(必须覆盖)
+### 锚点（必须覆盖）
 
 - 🔹 DMA-BUF 与 Gralloc 解决跨进程图形内存零拷贝的问题
 - 🔹 DMA-BUF exporter / importer、fd 传递与 DMA-BUF Heap 的关系
 - 🔹 Gralloc Allocator / Mapper / GraphicBuffer 的接口边界与 Android 12-17 版本差异
 - 🔹 BufferQueue / BLASTBufferQueue 路径下 handle 首次传递、slot 复用与 import 时机
 - 🔹 Perfetto、dmabuf_heap ftrace 与 `/proc/<pid>/fd` 中的排查方法
-- 🔹 常见问题:fd 泄漏、分配延迟、Camera 带宽竞争、版本演进
+- 🔹 常见问题：fd 泄漏、分配延迟、Camera 带宽竞争、版本演进
 
 <!-- outline-end -->
 
@@ -139,7 +139,7 @@ DMA-BUF 的核心是一个 exporter-importer 模型:
 - **Exporter(导出方)**:拥有这块内存的组件。它负责分配物理内存,在内核里通过 `dma_buf_export()` 导出为 DMA-BUF fd;在 Android 图形栈里,这个 fd 通常再由 Gralloc 包装进 `buffer_handle_t` / native handle。这个 handle 可以携带多个 fd 和 ints;常见图形 buffer 往往只带一个主 DMA-BUF fd。
 - **Importer(导入方)**:需要访问这块内存的组件。它拿到 handle 后,通过其中的 fd 把物理内存映射到自己的地址空间,或者通过 `dma_buf_attach()` + `dma_buf_map_attachment()` 让硬件设备直接访问。
 
-整个过程的关键点在于:跨 Binder 传递的是 native handle 里的 fd 数组和整数元数据。fd 本身只是整数,通过 `BINDER_TYPE_FD` 在目标进程里创建新的引用;物理内存在整个生命周期中只存在一份。
+整个过程的关键点在于：跨 Binder 传递的是 native handle 里的 fd 数组和整数元数据。fd 本身只是整数,通过 `BINDER_TYPE_FD` 在目标进程里创建新的引用;物理内存在整个生命周期中只存在一份。
 
 [已验证: Linux kernel 6.12, drivers/dma-buf/dma-buf.c]
 
@@ -220,7 +220,7 @@ Gralloc(Graphics Allocator)是 Android 定义的图形内存分配 HAL。Android
 - **Mapper HAL**:负责 `createDescriptor`、import / free handle、lock / unlock 等映射动作。`android-17.0.0_r1` 公开 tag 里同时能看到 `graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h` 和 `graphics/mapper/4.0/IMapper.hal`。`IMapper.h` 写明:IMapper 2-4 是 HIDL,C-style `AIMapper` API 从版本 5 开始。
 - **Common graphics types**:usage、dataspace、format 这类公共类型已经放在 `graphics/common/aidl/...` 下,`BufferUsage.aidl` 是后文 usage flags 对照表的来源。
 
-工程上可以这样记:分配入口看 Stable AIDL `IAllocator`,现代 mapper library 看 stable-C `AIMapper` v5,`mapper@4` 仍是历史兼容路径。只写"Mapper 还是 HIDL 4.0"会低估 Android 17 基准下的新接口形态;只写"整套 Gralloc 已经 AIDL 化"也会忽略 stable-C mapper 这条主线。
+工程上可以这样记：分配入口看 Stable AIDL `IAllocator`,现代 mapper library 看 stable-C `AIMapper` v5,`mapper@4` 仍是历史兼容路径。只写"Mapper 还是 HIDL 4.0"会低估 Android 17 基准下的新接口形态;只写"整套 Gralloc 已经 AIDL 化"也会忽略 stable-C mapper 这条主线。
 
 Usage flags 这一层也要注意版本语境。很多历史文章还在用 legacy `GRALLOC_USAGE_HW_*` 宏,但 Android 12+ 的主线术语已经落在 `graphics/common/aidl/.../BufferUsage.aidl` 里。对照起来更清楚:
 
