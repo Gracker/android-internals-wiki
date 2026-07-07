@@ -32,19 +32,19 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+pipeline_stage: "task9_pending"
 task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-06-14"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
-last_task6_at: "2026-06-14T08:08:21+08:00"
+last_task6_at: "2026-07-08T01:15:53+08:00"
 last_task6_audit: "2026-06-14"
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 review_round: 3
 task2b_result: "fixed"
 task9_reviewed_by: "openclaw-task9"
@@ -56,10 +56,10 @@ repaired_by: "openclaw-task2b"
 last_task9_audit: "2026-07-07"
 last_task9_audit_log: "logs/deep-review/2026-07-07-22-audit.md"
 task9_review_notes: "2026-05-20 task9 idle audit: needs-rework. P0 3 / P1 1 / P2 0 / P3 0. P0: Android 15 0-RTT anti-replay 已验证断言缺官方依据；AAPM 强制 ECH+DoH3 与当前文档冲突；DoH/DoT 不能隐藏 SNI。P1: Android 17 domainEncryption opportunistic 枚举疑似过期。2026-05-28 Task2B fallback 已修复上述 4 项，回流 Task6/Task9。 2026-05-28 Task9 deep-review: auto-fixed。P1 1：修正 Android 17 ECH enabled 模式下“协商失败必然回退普通 TLS”的过宽断言，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 2。AUTO-FIX: 删除 ECH CPU 固定比例无源断言，替换 CT Policy stale 待验证注记，回到 Task6 复审。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；复核 Android 17 ECH/CT、HPKE SPI、cleartext 默认策略、DNS 加密传输边界；无 P0/P1。 自动晋升 finalized。 | 2026-06-14 06 Task9 idle audit: auto-fixed。P0 2 / P1 0 / P2 0 / P3 1。AUTO-FIX: 修正 Android 10 TLS 1.3 已验证链接（旧 /about/versions/10/security 404 -> /about/versions/10/features#tls-1.3）；修正 Android CT Policy 参考资料链接（旧 source.android.com/docs/security/cert-transparency 404 -> developer.android.com/privacy-and-security/certificate-transparency-policy）；同步规范化 Conscrypt Security Provider 重定向链接。回到 Task6 复审。 | 2026-06-14 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 Android 17 ECH/domainEncryption、CT 默认启用、Android CT Policy、Android 10 TLS 1.3、HPKE SPI 与 cleartext 默认策略；无阻断问题，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-07 22 Task9 idle audit: auto-fixed。P0 1 / P1 0 / P2 0 / P3 0。AUTO-FIX: 修正 DoH 版本锚点；AOSP android-11.0.0_r1 DnsResolver 未见 DoH 集成路径，android-13.0.0_r1 已出现 setDoh/dohQuery，android-17.0.0_r1 仍保留 DoH/DoT 路径。回到 Task6 复审。"
-last_task6_review_log: "logs/review/2026-06-14-08-review.md"
+last_task6_review_log: "logs/review/2026-07-08-01-review.md"
 task6_l3_l4_issues: 0
 task6_l1_l2_fixes: 0
-task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
+task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit；L1/L2 小修 0 处；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。 | 2026-07-08 01 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（重复句删除）；outline 5/5 覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
 last_task9_review_log: "logs/deep-review/2026-07-07-22-audit.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-07-07"
@@ -189,7 +189,7 @@ CT 验证的具体耗时取决于设备型号、Android 版本、证书链长度
 
 ## 从 HTTP 到 HTTPS：迁移中的延迟陷阱
 
-Android 对明文流量的限制逐代收紧。当前能从官方文档稳定确认的边界是：API 23 引入 `usesCleartextTraffic`，API 24 引入 Network Security Configuration，targetSdkVersion >= 28 默认禁止明文流量。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。
+Android 对明文流量的限制逐代收紧。当前能从官方文档稳定确认的边界是：API 23 引入 `usesCleartextTraffic`，API 24 引入 Network Security Configuration，targetSdkVersion >= 28 默认禁止明文流量。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。
 
 ### 弃用时间线
 
