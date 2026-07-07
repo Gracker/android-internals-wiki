@@ -6,8 +6,8 @@ status: "finalized"
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
-last_verified: "2026-06-14"
-last_verified_against: "developer.android ProfilingManager / ProfilingTrigger / ProfilingResult + tracing/profiling-manager docs + AndroidX Profiling reference + Build.VERSION_CODES_FULL / Android 16 minor SDK guidance"
+last_verified: "2026-07-07"
+last_verified_against: "AOSP android-17.0.0_r1 packages/modules/Profiling (ProfilingService / ProfilingManager / ProfilingTrigger / ProfilingResult) + developer.android ProfilingManager / ProfilingTrigger / ProfilingResult + AndroidX Profiling reference"
 confidence: medium
 tags: [apm, profiling, perfetto]
 related_chapters: ["19.11", "19.12", "19.13", "15.5", "13.1", "9.1", "8.2"]
@@ -32,20 +32,30 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+  - type: aosp
+    path: "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java (android-17.0.0_r1)"
+  - type: aosp
+    path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java (android-17.0.0_r1)"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: fixed
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-14"
 last_task6_at: "2026-06-14T11:12:23+08:00"
 last_task6_audit: "2026-06-20"
 last_task6_review_log: "logs/review/2026-06-14-11-review.md"
 task6_review_notes: "2026-05-31 19: Task6 revisiting review: pass-light-edit；完成 4 处 L1/L2 措辞小修，锚点覆盖完整；无新增 Task2B 回炉项，送 Task9 复核。"
-last_task9_at: "2026-06-14T16:20:00+08:00"
-last_task9_audit: "2026-06-14"
-task9_review_notes: "2026-06-14 Task9 deep review：pass-tech-review。复核 ProfilingManager API35、ProfilingTrigger API36/36.1/API37、SDK_INT_FULL/BAKLAVA_1、AndroidX Profiling builder 与限流/结果目录口径；无 P0/P1，queue 无 pending，Task6 已通过，自动晋升 finalized。"
+last_task9_at: "2026-07-07T19:25:41+08:00"
+last_task9_audit: "2026-07-07"
+last_task9_audit_log: "logs/deep-review/2026-07-07-19-audit.md"
+task9_audit_notes: "2026-07-07 Task9 idle audit：auto-fixed。P0 1：android-17.0.0_r1 ProfilingService 输出 Java heap dump 后缀为 .perfetto-java-heap-dump，正文原写 .hprof 已修正。"
+task9_review_notes: "2026-06-14 Task9 deep review：pass-tech-review。复核 ProfilingManager API35、ProfilingTrigger API36/36.1/API37、SDK_INT_FULL/BAKLAVA_1、AndroidX Profiling builder 与限流/结果目录口径；无 P0/P1，queue 无 pending，Task6 已通过，自动晋升 finalized。 | 2026-07-07 Task9 idle audit：auto-fixed。P0 1：将 Java heap dump 产物后缀从 .hprof 修正为 android-17.0.0_r1 ProfilingService 实际输出 .perfetto-java-heap-dump，回到 Task6 复审。"
 task2b_result: fixed
 last_task2b_at: "2026-05-31T18:50:00+08:00"
 task2b_fixed_at: "2026-05-31T18:50:00+08:00"
@@ -60,7 +70,7 @@ last_task9_review_log: "logs/deep-review/2026-06-14-16-deep-review.md"
 task6_reviewed_date: "2026-06-14"
 last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
-last_task9_autofix_at: "2026-06-14"
+last_task9_autofix_at: "2026-07-07"
 task6_review_notes: "2026-06-14 Task6 revisiting review: pass-light-edit；terminology 一致性修复 artifact→产物 (5处)；Task9 auto-fix SDK_INT_FULL 已验证正确；无新增 Task2B 回炉项。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
@@ -105,7 +115,7 @@ last_deepseek_cn_review_at: 2026-06-27
 | 请求类型 | 结果形态 | 适合回答的问题 | 不适合 |
 |---|---|---|---|
 | `SystemTraceRequestBuilder` | `.perfetto-trace` | 启动慢、卡顿、ANR 前后线程时序、Binder / I/O / 调度问题 | 直接看对象引用链 |
-| `JavaHeapDumpRequestBuilder` | `.hprof` | 哪些对象还活着、谁把 Java heap 顶满了 | 观察一段时间里的分配波动 |
+| `JavaHeapDumpRequestBuilder` | `.perfetto-java-heap-dump`（导入工具后按 Java heap dump 解析） | 哪些对象还活着、谁把 Java heap 顶满了 | 观察一段时间里的分配波动 |
 | `HeapProfileRequestBuilder` | heap profile trace | 哪类分配一直涨、分配热点在哪 | 直接确认 GC root |
 | `StackSamplingRequestBuilder` | stack samples trace | CPU 时间主要花在哪段调用栈 | 看完整系统时间线 |
 
@@ -242,7 +252,7 @@ metadata 至少要带这些字段：
 
 ## Heap Dump 的敏感数据风险
 
-Java heap dump（`.hprof`）包含进程内所有 Java 对象的快照。如果用户已登录，堆中会包含：
+ProfilingManager 返回的 Java heap dump 产物（Android 17 服务端后缀为 `.perfetto-java-heap-dump`，导入工具后按 Java heap dump 解析）包含进程内所有 Java 对象的快照。如果用户已登录，堆中会包含：
 
 - 登录 Token / Session ID / OAuth Refresh Token
 - 手机号、邮箱、用户昵称等 PII
@@ -288,3 +298,5 @@ Java heap dump（`.hprof`）包含进程内所有 Java 对象的快照。如果�
    https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected
 9. **AndroidX Reference, `androidx.core.os.Profiling` / `ProfilingRequest`**  
    https://developer.android.com/reference/androidx/core/os/Profiling
+10. **AOSP android-17.0.0_r1, `ProfilingService.java`**  
+   `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`
