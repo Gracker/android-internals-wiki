@@ -3,15 +3,14 @@ title: "InputFlinger Rust 组件与自适应刷新率协同"
 chapter: "3.8"
 section: "3.8"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_state: fixed
 last_task9_at: "2026-07-07T17:20:00+08:00"
 last_task9_audit: "2026-07-07"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-07"
 task9_result: auto-fixed
-task9_state: reviewed
-
+task9_state: pending
 drafted_date: "2026-05-16"
 drafted_by: openclaw-task2a
 applicable_versions: "Android 15-QPR1 (API 35) - Android 17 (API 37)"
@@ -20,7 +19,6 @@ last_verified_against: "AOSP android-17.0.0_r1:frameworks/native/services/inputf
 confidence: medium
 sources:
 - type: research
-
 - type: aosp
 - type: aosp
 - type: aosp
@@ -44,31 +42,25 @@ related_chapters: ["3.1", "3.3", "3.4", "2.18", "2.19"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/AOSP结构"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-07-07"
 reviewed_by: "openclaw-task6"
-task9_state: reviewed
-pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-07-07"
 task2b_result: fixed-lite
-last_task6_at: "2026-06-04T11:05:00+08:00"
+last_task6_at: "2026-07-07T18:11:00+08:00"
 version_boundary_note: "Android 17/API 37 已基于 android-17.0.0_r1 验证;Android 15/16 作为历史演进对照"
 last_task9_autofix_at: "2026-07-07"
 last_task9_review_log: "logs/deep-review/2026-07-07-17-deep-review.md"
 task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim. | 2026-06-05 Task9 深度复审:pass-tech-review。P0 0 / P1 0 / P2 0;InputFlinger Rust filter 边界、KeyEvent/MotionEvent 分流、ARR touch hint 与 Android 17 非结论边界复核通过,满足自动晋升 finalized 条件。 | 2026-07-07 Task9 闲时抽检:needs-rework。P1 版本/源码基准问题:Android 17 基准已要求 android-17.0.0_r1,但章节仍以 android-16.0.0_r1 为主锚点,并写明未核到 Android 17 tag;已写入 queue.json。 | 2026-07-07 Task9 auto-fix: based on android-17.0.0_r1 sticky_keys_filter.rs, corrected StickyKeysFilter device/source boundary; returned to Task6 revisiting."
 task6_reviewed_date: 2026-07-07
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-07-07T17:06:00+08:00"
-task6_review_notes: "2026-06-04 Task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词0/元叙述0/结构性元叙述0)。无B类大问题。代码路径和验证标注完整,[已验证] tags与AOSP锚点一一对应。task9 auto-fix后回到task6复审,写作质量无回退。"
+task6_review_notes: "2026-07-07 Task6 revisiting-review (round 2): pass-light-edit。Task9 auto-fix修正StickyKeysFilter device/source边界后,正文描述准确清晰。L1全部通过(禁用词0/AI套话0/高频词0/元叙述0)。L2通过(开头直接、结构清晰、小结简洁)。frontmatter清理重复字段(task9_state/pipeline_stage/last_task6_at)。无B类大问题。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
 task2b_rework_source: "logs/deep-review/2026-07-07-15-audit.md"
 task2b_rework_notes: "Task2B Lite 修复：已将所有源码锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1；版本边界表已修正为 Android 17/API 37 基准；Android 15/16 作为历史演进对照。"
 ---
----
----
-
 
 
 # 3.8 InputFlinger Rust 组件与自适应刷新率协同
