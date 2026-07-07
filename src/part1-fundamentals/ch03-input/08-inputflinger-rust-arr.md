@@ -57,7 +57,7 @@ task6_reviewed_date: 2026-07-07
 task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-07-07 Task6 revisiting-review (round 2): pass-light-edit。Task9 auto-fix修正StickyKeysFilter device/source边界后,正文描述准确清晰。L1全部通过(禁用词0/AI套话0/高频词0/元叙述0)。L2通过(开头直接、结构清晰、小结简洁)。frontmatter清理重复字段(task9_state/pipeline_stage/last_task6_at)。无B类大问题。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
+last_deepseek_cn_review_at: 2026-07-07
 task2b_rework_source: "logs/deep-review/2026-07-07-15-audit.md"
 task2b_rework_notes: "Task2B Lite 修复：已将所有源码锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1；版本边界表已修正为 Android 17/API 37 基准；Android 15/16 作为历史演进对照。"
 ---
@@ -99,7 +99,7 @@ task2b_rework_notes: "Task2B Lite 修复：已将所有源码锚点从 android-1
 
 InputFlinger Rust 和 ARR 经常被放在同一个"输入系统重构"的话题里,但它们不在同一条事件处理路径上。Rust 进入的是 InputFlinger 里的辅助功能输入过滤层,当前主要处理键盘类 KeyEvent;ARR 的触摸升频路径走的是 user activity / power boost / SurfaceFlinger Scheduler。把这两件事分开,才能判断一次输入延迟到底发生在按键过滤、事件分发,还是显示刷新节奏变化上。
 
-这里按已核到源码和官方文档的边界展开:InputReader、InputProcessor、InputDispatcher 仍是 C++ 主体;Rust 组件是 InputFilter 的实现之一;触摸事件不会因为 Rust filter 多走一遍。ARR 侧要看 SurfaceFlinger Scheduler 和 View / RecyclerView / Compose 的帧率投票,不能把 `DisplayPolicy.onUserActivityEventTouch()` 写成刷新率选择入口。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp]
+下面按已核到源码的边界展开:InputReader、InputProcessor、InputDispatcher 仍是 C++ 主体;Rust 组件是 InputFilter 的实现之一;触摸事件不会因为 Rust filter 多走一遍。ARR 侧要看 SurfaceFlinger Scheduler 和 View / RecyclerView / Compose 的帧率投票,不能把 `DisplayPolicy.onUserActivityEventTouch()` 写成刷新率选择入口。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp]
 
 [图:InputFlinger Rust 与 ARR 两条路径对照图。左侧为 KeyEvent:InputReader → UnwantedInteractionBlocker → InputFilter(C++ wrapper) → Rust bounce/slow/sticky filters → InputDispatcher。右侧为 Touch:InputDispatcher 标记 USER_ACTIVITY_EVENT_TOUCH → PowerManagerService 发送 Boost.INTERACTION → SurfaceFlinger.notifyPowerBoost → Scheduler.onTouchHint → RefreshRateSelector / FrameRate vote。]
 
@@ -203,7 +203,7 @@ AOSP ARR 文档还给出硬件条件:Android 15 引入 ARR,OEM 需要支持 kern
 | Android 16 / API 36 | `hasArrSupport()`、`getSuggestedFrameRate(int)`、`getSupportedRefreshRates()` 提供 App 查询入口;RecyclerView 1.4 支持部分滚动 ARR 场景 | 查询 API 只说明显示能力和建议,不等于本帧一定切到某个刷新率 |
 | Android 17 / API 37 | 已基于 `android-17.0.0_r1` 验证 InputFilter Rust、RefreshRateSelector 等关键路径;Android 15/16 作为历史演进对照 |
 
-写源码分析时,最稳的表述是:Android 15/16 的 InputFlinger 已引入 Rust 组件承载 accessibility input filters;触摸驱动的 ARR 协同在 power boost、SurfaceFlinger Scheduler 和 FrameRate vote 侧完成。两者同属输入体验优化,但不在同一段代码路径里。
+Android 15/16 的 InputFlinger 已引入 Rust 组件承载 accessibility input filters;触摸驱动的 ARR 协同在 power boost、SurfaceFlinger Scheduler 和 FrameRate vote 侧完成。两者同属输入体验优化,但不在同一段代码路径里。
 
 ## 辅助功能输入过滤对延迟的影响
 

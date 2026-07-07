@@ -1323,5 +1323,29 @@
       "14.11",
       "18.18"
     ]
-  }
+  },
+  "task6_reviews": [
+    {
+      "section": "19.16",
+      "date": "2026-07-07T20:13:05+08:00",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-07-20-review.md"
+    },
+    {
+      "section": "2.20",
+      "date": "2026-07-07T20:13:05+08:00",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-07-20-review.md"
+    },
+    {
+      "section": "16.3",
+      "date": "2026-07-07T20:13:05+08:00",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-07-20-review.md"
+    }
+  ],
+  "last_task6_run": "2026-07-07T20:13:05+08:00"
 }
