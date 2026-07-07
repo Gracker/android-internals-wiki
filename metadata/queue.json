@@ -1,431 +1,173 @@
 {
-  "items": [
+  "version": 1,
+  "queue": [
     {
-      "section": "18.18",
-      "section_title": "PIP 与自由窗口渲染",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 闲时抽检发现版本差异覆盖不完整",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "location": "TaskOrganizer版本历史描述",
-          "detail": "文中提到“Android 8.0，PiP正式进入平台，多窗口内容开始经常以小窗形态参与合成”时提及TaskOrganizer，但TaskOrganizer实际在Android 12+才引入，与Android 8.0时间差4个版本。这导致读者对窗口管理机制的历史演进产生错误理解。",
-          "suggestion": "修正TaskOrganizer的历史描述，明确其在Android 12+引入，Android 8.0时期的窗口管理主要通过WindowManagerService的传统机制实现。补充说明TaskOrganizer在Android 12+带来的窗口容器管理能力提升。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-07T03:20:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-07T03:38:48",
-      "completed_by": "task2b-lite",
-      "completion_note": "fixed-lite: TaskOrganizer 版本限定修正（Android 12+ 引入），版本演进表补充 TaskOrganizer 条目"
-    },
-    {
-      "section": "14.11",
-      "section_title": "Battery Historian 与功耗分析工具",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 闲时抽检发现大量源码引用错误",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "BatteryStatsService.java 路径",
-          "detail": "文中引用 `frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java`，但在 android-17.0.0_r1 中无法找到该文件。路径错误导致开发者无法定位正确的源码位置。",
-          "suggestion": "重新验证 BatteryStatsService 在 Android 17 中的实际存在路径，如不存在需重新组织内容或标注实验性状态。"
-        },
-        {
-          "type": "源码错误",
-          "location": "PowerMonitorReadings.java 路径",
-          "detail": "文中引用 `frameworks/base/core/java/android/os/PowerMonitorReadings.java`，但在 android-17.0.0_r1 中无法找到该文件。API 35 的 PowerMonitor 系列接口可能未在 Android 17 中实现。",
-          "suggestion": "确认 PowerMonitor API 在 Android 17 中的支持状态，如不存在则移除相关内容或标注为实验性功能。"
-        },
-        {
-          "type": "源码错误",
-          "location": "PerformanceHintManager.java 路径",
-          "detail": "文中引用 `frameworks/base/core/java/android/os/PerformanceHintManager.java`，但在 android-17.0.0_r1 中无法找到该文件。该 API 的实现可能在 Android 17 中有重大调整或重命名。",
-          "suggestion": "验证 PerformanceHintManager API 在 Android 17 中的存在性和 API 变更，更新路径或调整内容描述。"
-        },
-        {
-          "type": "源码错误",
-          "location": "NDK performance_hint.h 路径",
-          "detail": "文中引用 `frameworks/native/include/android/performance_hint.h`，但在 android-17.0.0_r1 中无法找到该文件。说明 NDK 功耗相关 API 在 Android 17 中可能重新组织。",
-          "suggestion": "确认 NDK performance_hint.h 在 Android 17 中的实际路径和内容，如不存在需重新组织内容。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-06T18:22:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-06T18:53:55+08:00",
-      "completed_by": "openclaw-task2b-main",
-      "completed_reason": "fixed: P95源码路径版本边界标注 + P85 Android 16/17演进说明补充"
-    },
-    {
-      "section": "14.11",
-      "section_title": "Battery Historian 与功耗分析工具",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 闲时抽检发现版本差异覆盖不完整",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "location": "Android 15+ Streamlined Battery Stats 描述",
-          "detail": "章节详细介绍了 Android 15 的 BatteryUsageStats 统一归因体系，但未明确说明这些 API 在 Android 16/17 中的兼容性或演进。章节标注适用范围过大，但 Android 15+ 的新机制在 Android 16/17 中可能有重大变化。",
-          "suggestion": "补充 Android 16/17 中 BatteryUsageStats API 的演进变化、兼容性说明和最佳实践建议。"
-        },
-        {
-          "type": "版本差异",
-          "location": "PowerMonitor API 支持状态描述",
-          "detail": "文中提到 Android 15 (API 35) 开放了 PowerMonitor API，但未明确说明 Android 16/17 是否继续支持或增强，以及是否所有设备都能获得 rail 数据。",
-          "suggestion": "明确说明 Android 16/17 对 PowerMonitor API 的支持状态、新增功能和设备兼容性要求。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-06T18:22:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-06T18:53:55+08:00",
-      "completed_by": "openclaw-task2b-main",
-      "completed_reason": "fixed: P95源码路径版本边界标注 + P85 Android 16/17演进说明补充"
-    },
-    {
-      "section": "2.15",
-      "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
-      "priority": 60,
-      "reason": "[task6抽检] 版本基线 android-17.0.0_r1 待验证：当前 last_verified_against 和全部 [已验证] 标注均为 android-16.0.0_r1",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "需验证",
-          "location": "全文所有 [已验证] 标注 + frontmatter last_verified_against",
-          "detail": "AIW 版本基线要求 android-17.0.0_r1，但本章验证标注全部指向 android-16.0.0_r1。需 Task 9 重新核对源码引用是否在 android-17.0.0_r1 中仍然成立，并更新验证标注。",
-          "suggestion": "Task 9 重新验证后更新 last_verified_against 和正文 [已验证] 标注"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-05T07:06:00+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-05-07-audit.md",
-      "completed_at": "2026-07-07T04:52:56+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "fixed: 版本边界声明与版本基线更新至 android-17.0.0_r1"
-    },
-    {
-      "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 闲时抽检发现源码基线违规和版本差异问题",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "frontmatter last_verified_against + 文中源码引用",
-          "detail": "章节引用 android-16.0.0_r1 AOSP 源码，但 AIW 版本基线要求锚定 android-17.0.0_r1。 violates android version boundary rule.",
-          "suggestion": "重新验证 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto 在 android-17.0.0_r1 中的路径和API变更，更新所有版本标注为 android-17.0.0_r1"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-05T17:22:36.377490+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-05T17:39:34+08:00",
-      "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 更新，proto 路径未变"
-    },
-    {
-      "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 闲时抽检发现源码基线违规和版本差异问题",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "Perfetto GPU counter config section",
-          "detail": "引用 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto 路径和配置需在 android-17.0.0_r1 中重新验证，确保计数器ID和字段定义未发生重大变更",
-          "suggestion": "验证 android-17.0.0_r1 中 Perfetto GPU counter 配置的兼容性，更新 counter_ids 和 counter_period_ns 字段说明"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-05T17:22:36.377490+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-05T17:39:34+08:00",
-      "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 更新，proto 路径未变"
-    },
-    {
-      "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 闲时抽检发现版本差异覆盖不完整",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "location": "Android 17 ANGLE 策略描述段落",
-          "detail": "章节提到 Android 17 的 ANGLE denylist 策略，但缺少具体配置命令、实际影响分析和与旧版本策略的根本性差异对比。开发者在升级到 Android 17 后无法准确判断工具配置变化。",
-          "suggestion": "补充 Android 17 ANGLE denylist 的具体配置命令、实际影响分析、与旧版本策略对比，以及开发者迁移指南"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-05T17:22:36.377490+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-05T18:53:00+08:00",
-      "completed_by": "openclaw-task2b",
-      "completed_reason": "已补全 Android 17 ANGLE denylist 配置命令、allowlist→denylist 策略对比表和开发者迁移指引"
-    },
-    {
-      "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
-      "priority": 95,
-      "reason": "[Deep Tech Review] AGI Frame Profiler版本要求描述不准确",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "AGI 的两种模式与适用场景章节",
-          "detail": "章节提到“目标API最低要求Android 11 (API 30)”，但AGI Frame Profiler实际要求Android 12+才能完整支持GLES over Vulkan分析路径，Android 11仅支持部分功能",
-          "suggestion": "修正为“AGI Frame Profiler完整功能要求Android 12+ (API 31)，Android 11仅支持部分功能”"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-06T02:20:00",
-      "status": "completed",
-      "completed_at": "2026-07-05T18:53:20.112136+00:00",
-      "completed_by": "openclaw-task2b-main",
-      "completed_reason": "fixed: AGI Frame Profiler 最低版本更正为 Android 12+ (API 31)，GLES over Vulkan 完整分析路径说明"
-    },
-    {
-      "section": "14.8",
-      "section_title": "GPU 图形调试与分析工具",
-      "priority": 85,
-      "reason": "[Deep Tech Review] Perfetto GPU counter配置字段描述与AOSP android-17.0.0_r1不完全一致",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "Perfetto 中的GPU分析能力章节",
-          "detail": "章节中使用counter_ids字段，但在AOSP android-17.0.0_r1中该字段已更名为counters，配置字段名不一致可能导致开发者配置错误",
-          "suggestion": "更新为counters字段，并注明这是android-17.0.0_r1的规范"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-06T02:20:00",
-      "status": "completed",
-      "completed_at": "2026-07-05T18:53:20.112136+00:00",
-      "completed_by": "openclaw-task2b-main",
-      "completed_reason": "fixed: counter_ids → counters (android-17.0.0_r1 规范字段名); 补充了版本差异说明"
-    },
-    {
-      "section": "20.9",
-      "section_title": "稳定性治理案例集",
-      "priority": 70,
-      "reason": "[Task6抽检-版本边界] 全文4处[已验证]标签引用android-16.0.0_r1，需按版本基线重新验证为android-17.0.0_r1",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "版本边界合规",
-          "location": "全文验证标注（4处）+ frontmatter last_verified_against",
-          "detail": "所有[已验证]标签引用android-16.0.0_r1，需按AIW_ANDROID_VERSION_BASELINE_2026_06_27重新验证这些路径在android-17.0.0_r1中是否仍然适用",
-          "suggestion": "Task 9 重新对照android-17.0.0_r1验证：1)art/runtime/thread.cc CreateNativeThread 2)system/core/debuggerd handler 3)ActivityThread.handleBindApplication/installContentProviders 4)ComputerEngine.queryContentProviders"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-06T04:05:00+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-06-04-audit.md",
-      "completed_at": "2026-07-06T07:38:53+08:00",
-      "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: version baseline android-16.0.0_r1 → android-17.0.0_r1 (5 refs: frontmatter + 4 [已验证] tags)"
-    },
-    {
-      "section": "21.2",
-      "section_title": "启动框架设计与任务编排",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Source code references need verification in android-17.0.0_r1",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "§21.2.5.6 Android 17 Startup Insights 源码级分析",
-          "detail": "引用的 SystemHealthManager.java 和 ApplicationStartInfo.java 需要在 android-17.0.0_r1 中验证实际存在",
-          "suggestion": "验证这两个类在 Android 17 中的实际存在性和 API 签名，如果不存在则移除相关内容或标注为实验性功能"
-        },
-        {
-          "type": "源码错误",
-          "location": "§21.2.5 Android 17 Startup Insights（ApplicationStartInfo）源码级补充",
-          "detail": "ApplicationStartInfo 相关的源码引用需要在 android-17.0.0_r1 中确认",
-          "suggestion": "确认 ApplicationStartInfo 在 Android 17 中的完整 API 定义和使用方式"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-06T15:29:52.237612+08:00",
-      "status": "completed",
-      "fixed_at": "2026-07-06",
-      "fixed_by": "task2b-lite",
-      "fix_notes": "Lite fix: verified AOSP source code paths and marked as fixed"
-    },
-    {
-      "section": "1.1",
-      "section_title": "Android 分层架构",
-      "priority": 60,
-      "reason": "[task6-audit] SystemServer 代码引用版本标注为 android-16.0.0_r1，版本基线要求锚定 android-17.0.0_r1；last_verified_against 未包含 android-17 验证",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "SystemServer 代码块（// @ AOSP android-16.0.0_r1）",
-          "detail": "版本基线 AIW_ANDROID_VERSION_BASELINE_2026_06_27 要求源码链接锚定 android-17.0.0_r1，当前标注为 android-16.0.0_r1",
-          "suggestion": "Task 9 核实 SystemServer.java 在 android-17.0.0_r1 中是否有变更，确认后更新版本标注"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-06T19:19:00+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-06-19-audit.md",
-      "completed_at": "2026-07-07T04:52:56+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "fixed: 版本边界声明与版本基线更新至 android-17.0.0_r1"
-    },
-    {
-      "section": "14.11",
-      "section_title": "Battery Historian 与功耗分析工具",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码引用准确性和重要信息缺失问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "Android 16/17 PowerStatsAggregator 路径描述",
-          "detail": "章节提到 PowerStatsAggregator 在 Android 16+ 已迁移至新路径，但未在 android-17.0.0_r1 中验证该路径存在。具体引用 PowerStatsAggregator 的源码路径需要重新确认，确保开发者能够正确定位到 Android 17 中的实际实现位置。",
-          "suggestion": "验证 PowerStatsAggregator 在 android-17.0.0_r1 中的实际路径，如已迁移到 power/stats/processor/，需明确说明路径变化并提供完整的文件路径。如果路径未发生变化，则移除迁移说明避免误导。"
-        },
-        {
-          "type": "重要缺失",
-          "location": "Battery Historian 维护状态描述",
-          "detail": "章节未明确说明 Battery Historian 官方镜像已长期不维护的现状，仍使用过时的描述方式。Google gcr.io 镜像已停止维护，社区镜像成为主流，但章节未包含这一重要信息更新。",
-          "suggestion": "补充 Battery Historian 维护状态说明：1) 明确官方 gcr.io 镜像已停止维护，2) 详细介绍社区镜像的使用方法，3) 说明 Battery Historian 当前更适合的场景（离线回顾而非日常开发），4) 提供镜像选择建议。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-06T19:26:08.986724",
-      "status": "completed",
-      "completed_at": "2026-07-06T19:40:17+08:00",
-      "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: PowerStatsAggregator 路径版本限定修正（“已确认迁至”→“Android 16 源码迁至，17 未验证”），Battery Historian gcr.io 镜像名明确化"
-    },
-    {
-      "section": "14.11",
-      "section_title": "Battery Historian 与功耗分析工具",
-      "priority": 95,
-      "reason": "[Deep Tech Review] API版本映射错误和源码引用问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "API版本映射错误",
-          "detail": "章节提到“Android 15 (API 35)”将 PowerMonitor API 开放到应用层，但表述方式易混淆。Android 15对应API 35，Android 17对应API 37。这种版本数字描述方式违反了清晰的版本映射规则。",
-          "suggestion": "修正版本映射表述，明确 Android 15 ↔ API 35，Android 17 ↔ API 37 的对应关系。"
-        },
-        {
-          "type": "源码错误",
-          "location": "PowerMonitorReadings.getConsumedEnergy() 方法验证缺失",
-          "detail": "章节提到 PowerMonitorReadings.getConsumedEnergy() 方法返回累计能耗，但未在 android-17.0.0_r1 中验证该方法的确切签名和返回类型。API 35 的 PowerMonitor 系列接口在 Android 17 中的支持状态需要确认。",
-          "suggestion": "确认 PowerMonitor API 在 Android 17 中的支持状态和 API 签名，如存在则明确标注，如不存在需调整内容描述。"
-        },
-        {
-          "type": "源码错误",
-          "location": "NDK performance_hint.h 路径变更描述不完整",
-          "detail": "章节提到 NDK performance_hint.h 在 r28+ 重组，但未说明完整路径变更细节和 API 签名变化。开发者无法确定具体的文件位置和兼容性要求。",
-          "suggestion": "补充 NDK performance_hint.h 在 Android 17 中的完整路径变更说明和 API 签名兼容性信息。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-07T00:00:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-07T03:38:48",
-      "completed_by": "task2b-lite",
-      "completion_note": "verified-already-fixed: 3 项 P95 源码/版本问题均已在 Task9 audit (2026-06-19) auto-fix 中修正，本次 Lite 确认通过"
-    },
-    {
-      "section": "14.7",
-      "section_title": "ProfilingManager",
-      "priority": 95,
-      "reason": "[闲时抽检] 版本边界标注缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "版本边界",
-          "location": "main/master 资料标注",
-          "detail": "章节缺少对 main/master 资料的版本边界标注，未明确说明非 android-17.0.0_r1 的资料为未进入 Android 17 且不得作为正文结论",
-          "suggestion": "在章节开头或参考资料部分明确标注：凡涉及非 android-17.0.0_r1 的资料，必须标注未进入 Android 17 且不得作为正文结论的依据"
-        }
-      ],
-      "added_by": "task9-idle-audit",
-      "added_at": "2026-07-07T04:29:35",
-      "status": "completed",
-      "completed_at": "2026-07-07T04:52:56+08:00",
-      "completed_by": "task2b-main",
-      "completed_reason": "fixed: 版本边界声明与版本基线更新至 android-17.0.0_r1"
-    },
-    {
-      "section": "20.19",
-      "section_title": "Android 17 信号处理架构迁移与 debuggerd bionic/linker 重构",
+      "path": "src/part1-fundamentals/ch08-startup/8.33-android17-modular-task-scheduler.md",
       "priority": 80,
-      "reason": "task2a gap-mining: score 18/20, 素材+研究盲区驱动",
-      "material_paths": [
-        "intake/research-gaps.md"
-      ],
-      "status": "done",
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-07T06:18:43.841086+08:00",
-      "completed_at": "2026-07-07T07:10:32.492972+08:00"
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第1个候选"
     },
     {
-      "section": "4.35",
-      "section_title": "Android 17 CPU 缓存局部性与 PSS 内存核算源码机制",
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.18-android17-cpu-cache-locality-pss-accounting.md",
       "priority": 80,
-      "reason": "task2a gap-mining: score 15/20, source-index score=20",
-      "material_paths": [],
-      "status": "pending",
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-07T06:18:43.841086+08:00"
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第2个候选"
     },
     {
-      "section": "1.5",
-      "section_title": "线程模型",
-      "priority": 85,
-      "reason": "[Task9 idle audit] 源码版本锚点 android-16.0.0_r1 与版本基线 android-17.0.0_r1 不匹配",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本边界",
-          "location": "全文源码引用标注（5处 // @ AOSP + 2处 [已验证]）",
-          "detail": "章节源码版本锚点标注为 android-16.0.0_r1，与 AIW 版本基线 android-17.0.0_r1 不匹配。正文已包含 android-16→17 演进说明，但标注未更新。",
-          "suggestion": "更新全部源码版本标注为 android-17.0.0_r1，参考资料补充版本限定"
-        }
-      ],
-      "added_by": "task9-idle-audit",
-      "added_at": "2026-07-07T07:36:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-07T07:36:00+08:00",
-      "completed_by": "task2b-lite",
-      "completion_note": "fixed-lite: 5处源码标注 + 2处[已验证] + 3处参考资料描述更新至 android-17.0.0_r1"
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第3个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.34-android17-art-heaptask-system-7-subclasses.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第4个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.35-android17-ai-agent-memory-sandboxed-reuse.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第5个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/1.44-android17-binder-sz4m-kernel-buffer-pool.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第6个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第7个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.31-android17-startup-insights-gaps.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第8个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.32-android17-application-start-info.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第9个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch11-power/11.1-android17-background-audio-hardening.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第10个候选"
+    },
+    {
+      "path": "src/part3-tools/ch14-profiling/14.1-android17-heapprofd-production-deployment.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第11个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.36-android17-lmkd-procs-prio-batch.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第12个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch23-debugging/23.1-android17-signal-debuggerd-architecture.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第13个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.34-android17-modular-startup-framework.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第14个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch15-power-management/15.1-android17-pms-cpuidle-schedutil.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第15个候选"
+    },
+    {
+      "path": "src/part3-tools/ch14-profiling/14.2-android17-perfetto-v57-ai-skills.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第16个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.37-android17-ai-agent-memory-management.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第17个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.38-android17-largeobjectspace-msponge.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第18个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.35-android17-official-blog-task-scheduler.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第19个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.39-linux-6.10-memory-fragmentation.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第20个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.36-android17-startup-insights.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第21个候选"
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.52-compose-pager-advanced-animation.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第22个候选"
+    },
+    {
+      "path": "src/part5-app/ch26-database/26.1-room-30-breaking-changes.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第23个候选"
+    },
+    {
+      "path": "src/part5-app/ch26-methodology/26.1-google-android-bench-ai-coding-evaluation.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-07",
+      "notes": "知识缺口挖掘创建，第24个候选"
     }
-  ],
-  "pending": []
+  ]
 }

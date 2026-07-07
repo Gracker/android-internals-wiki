@@ -93,7 +93,7 @@ last_task9_review_log: "logs/deep-review/2026-05-26-01-deep-review.md"
 last_task6_review_log: "logs/review/2026-07-07-08-review.md"
 review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Binder ioctl、硬件加速版本边界、MessageQueue 观察点复核通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-30
+last_deepseek_cn_review_at: 2026-07-07
 ---
 
 # 线程模型
@@ -127,11 +127,11 @@ last_deepseek_cn_review_at: 2026-05-30
 
 ## 为什么要了解 Android 的线程模型
 
-打开 Perfetto，我们会看到每个 App 进程下都有好几个线程在活动。其中最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。在滑动列表的时候，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧地把画面推到屏幕上。
+打开 Perfetto，每个 App 进程下都有好几个线程在活动。最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。滑动列表时，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧把画面推到屏幕上。
 
-做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程负责几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，先要搞清楚主线程是怎么运转的。主线程会不断地从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
+做卡顿分析、ANR 排查或启动速度优化，必须理解这套线程模型。主线程负责几乎所有与用户交互相关的工作：处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项阻塞了主线程，用户就会感知到卡顿甚至 ANR。而要理解主线程为什么被阻塞、阻塞在哪里，先要搞清楚主线程是怎么运转的——它不断从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
 
-同时，从 Android 5.0 开始，渲染工作被分离到了独立的 RenderThread。理解主线程和 RenderThread 之间的分工和同步机制，是在 Perfetto 中正确解读渲染性能数据的前提。
+同时，从 Android 5.0 开始，渲染工作被分离到独立的 RenderThread。理解主线程和 RenderThread 的分工与同步机制，是在 Perfetto 中正确解读渲染性能数据的前提。
 
 ## 主线程的职责与消息循环
 
@@ -353,15 +353,15 @@ AsyncTask 是最早的官方异步方案，它封装了 Handler + Thread 的使�
 
 Java 的 Executor 框架提供了更灵活的线程池管理。`Executors.newFixedThreadPool()`、`Executors.newCachedThreadPool()` 等工厂方法可以快速创建线程池。在 Android 中推荐使用 `Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())` 来避免创建过多线程，并通过 `Process.setThreadPriority()` 给工作线程设置合适优先级。
 
-### Kotlin Coroutine：现代的异步方案
+### Coroutine 的核心概念
 
-Kotlin Coroutine 是目前 Android 官方推荐的异步编程方案。它通过编译器变换将异步代码写成同步的样子，避免了回调地狱，同时提供了结构化并发（structured concurrency）来管理协程的生命周期。
+Coroutine 是 Android 官方推荐的异步方案。它通过编译器变换把异步代码写成同步的样子，避免了回调嵌套，同时用结构化并发管理协程生命周期。
 
-Coroutine 的核心概念是 **Dispatcher**——它决定了协程在哪个线程（或线程池）上执行：
+核心概念是 **Dispatcher**——决定协程在哪个线程或线程池上执行：
 
-- `Dispatchers.Main`：主线程，用于 UI 操作
-- `Dispatchers.IO`：IO 线程池（默认最多 64 个线程），用于网络、数据库、文件操作
-- `Dispatchers.Default`：CPU 密集型线程池（线程数等于 CPU 核心数），用于排序、解析等计算
+- `Dispatchers.Main`：主线程，UI 操作
+- `Dispatchers.IO`：IO 线程池（默认最多 64 线程），网络、数据库、文件操作
+- `Dispatchers.Default`：CPU 密集型线程池（线程数等于 CPU 核心数），排序、解析等计算
 - `Dispatchers.Unconfined`：不指定线程，在调用者所在线程执行
 
 ```kotlin
@@ -426,7 +426,7 @@ WorkManager 底层根据 Android 版本选择不同的执行引擎：API 23+ 使
 
 ## ThreadLocal 在 Looper 和 Choreographer 中的应用
 
-前面对 Looper 的「一个线程一个 Looper」设计，还留下一个底层问题：Looper 是怎么保证每个线程拿到的是属于自己的实例？答案是 ThreadLocal。它是 Java 中实现线程本地存储的机制——每个线程都有自己独立的变量副本，互不干扰。Android Framework 中，ThreadLocal 的两个最关键用途就是 Looper 和 Choreographer。
+前面的"一个线程一个 Looper"设计还留下一个问题：Looper 怎么保证每个线程拿到的是属于自己的实例？答案是 ThreadLocal——Java 的线程本地存储机制，每个线程有自己独立的变量副本，互不干扰。Framework 中最关键的两个 ThreadLocal 用途就是 Looper 和 Choreographer。
 
 ### Looper 中的 ThreadLocal
 
@@ -464,10 +464,10 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 
 - **主线程（UI Thread）**：通常显示为进程包名或 `CrBrowserMain`（WebView 场景），处理 Input、Animation、Traversal 和所有 Handler 消息。
 - **RenderThread**：App 进程下的渲染线程，执行 GPU 渲染命令。它的活动紧跟在主线程的 `syncAndDrawFrame` 之后。
-- **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间的 CPU 活动，说明 App 在响应跨进程调用。
-- **FinalizerDaemon**：执行对象 finalize 方法的守护线程。如果这个线程频繁活动，说明有大量对象在被 GC 回收时需要执行 finalize，这可能导致 GC 暂停时间变长。
+- **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间 CPU 活动，说明 App 在响应跨进程调用。
+- **FinalizerDaemon**：执行对象 finalize 的守护线程。如果频繁活动，说明有大量对象在 GC 回收时需要执行 finalize，可能导致 GC 暂停时间变长。
 - **DefaultDispatcher-worker-\***：Kotlin Coroutine 的默认线程池线程。
-- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下的 `MQ.Delivered` 计数器，记录 MessageQueue 中消息的投递频率。`LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三种实现都会记录该计数器，不能用它区分队列实现。区分队列实现的可靠信号：① targetSdk 37 + `USE_NEW_MESSAGEQUEUE` compat change 标志（新队列启用边界）；② `mMessages` 在新实现下恒为 null 的兼容性行为；③ MessageQueue monitor contention 是否消失（新队列消除了 `mMessages` 锁争用）；④ FrameTimeline / jank_type 与 Looper dispatch 片段在同一时间窗内对照。
+- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下的 `MQ.Delivered` 计数器，记录 MessageQueue 消息投递频率。三种实现（`LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue`）都会记录该计数器，不能靠它区分队列实现。区分队列实现的可靠信号：① targetSdk 37 + `USE_NEW_MESSAGEQUEUE` compat change 标志（新队列启用边界）；② `mMessages` 在新实现下恒为 null 的兼容性行为；③ MessageQueue monitor contention 是否消失（新队列消除了 `mMessages` 锁争用）；④ FrameTimeline / jank_type 与 Looper dispatch 片段在同一时间窗内对照。
 
 ### 主线程状态解读
 

@@ -2,10 +2,10 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
-tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
+tags: ["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]
 confidence: "medium"
 last_verified: "2026-07-07"
 last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-17.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto"
@@ -21,7 +21,7 @@ gap_source: "AOSP结构+官方文档+研究素材"
 last_task2b_by: "openclaw-task2b-main"
 task2b_result: fixed
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed
@@ -41,16 +41,16 @@ last_task2b_at: "2026-07-06T12:50:00+08:00"
 last_task2b_source: "task9-deep-tech-review (2026-07-06 re-review)"
 last_task2b_priority: 95
 task2b_note: "2026-07-06 Task2B 修复：APA System Profiler 版本覆盖与演进段落扩充、AGI与APA对比表修正、Android 17 ANGLE denylist 确认流程补充。源码调研内容整合。"
-last_task6_at: 2026-07-07T12:15:00+08:00
+last_task6_at: 2026-07-07T15:10:00+08:00
 task6_reviewed_date: "2026-07-06"
 task6_reviewed_at: "2026-07-06T12:12:00+08:00"
 task6_reviewed_by: "openclaw-task6"
-task6_l1_l2_fixes: 6
+task6_l1_l2_fixes: 7
 task6_l3_l4_issues: 0
 finalized_date: 2026-07-07
 finalized_by: openclaw-task6-auto-promote
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-06
+last_deepseek_cn_review_at: 2026-07-07
 last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 ---
 # 14.8 GPU 图形调试与分析工具
@@ -83,34 +83,34 @@ last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 
 ## 为什么要用专门的 GPU 分析工具
 
-在 Perfetto 中看到一帧的渲染时间超标,我们通常先看 CPU 侧:主线程是不是被什么阻塞了,RenderThread 的 draw 操作是不是太重。如果 CPU 侧一切正常,主线程闲着,RenderThread 也没有长时间阻塞,但帧时间还是超了 16.6 ms,这时候瓶颈大概率在 GPU。
+在 Perfetto 中看到一帧渲染时间超标，通常先看 CPU 侧：主线程有没有被阻塞，RenderThread 的 draw 操作是不是太重。如果 CPU 侧一切正常，主线程空闲、RenderThread 也没有长时间阻塞，但帧时间还是超了 16.6ms，这时候瓶颈大概率在 GPU。
 
-Perfetto 能告诉我们"GPU 在忙",但它看不到 GPU 内部发生了什么。GPU 是不是在等显存带宽?Shader 太复杂了导致 ALU 打满?还是 Draw Call 数量太多,驱动开销成了瓶颈?这些问题的答案,CPU profiling 工具给不了。
+Perfetto 能告诉我们"GPU 在忙"，但看不到 GPU 内部在忙什么——是在等显存带宽，还是 Shader 太复杂打满了 ALU，还是 Draw Call 太多导致驱动开销成了瓶颈。这些问题的答案，CPU profiling 工具看不到。
 
-这就是 GPU 专用分析工具存在的意义。它们能深入 GPU 内部,告诉我们每一帧的 GPU 时间花在了哪里:哪个 Draw Call 最耗时,哪个 Shader 吃掉了最多的 ALU 周期,显存带宽是不是被 Overdraw 吃光了。
+这就是 GPU 专用分析工具的工作范围：深入 GPU 内部，定位每一帧的 GPU 时间花在哪个 Draw Call、哪个 Shader，显存带宽是不是被 Overdraw 吃光了。
 
-GPU 分析工具和 CPU 分析工具不是替代关系,是互补关系。先用 Perfetto 定位"问题在 GPU",再用 GPU 工具找到"GPU 的哪个环节慢"。两者配合,才能完成一次完整的渲染性能分析。
+CPU 和 GPU 分析工具是互补的：先用 Perfetto 确认"问题在 GPU"，再用 GPU 工具定位"GPU 的哪个环节慢"，两步走才能完成一次完整的渲染性能分析。
 
-不同场景对 GPU 分析的需求也不同:游戏开发者需要逐 Draw Call 的帧分析,UI 渲染优化关注带宽利用率和 Overdraw,视频解码关注 GPU 编解码单元的利用率。本章介绍的工具覆盖了这些场景。
+不同场景的需求也不一样：游戏开发要用逐 Draw Call 的帧分析，UI 渲染优化关注带宽和 Overdraw，视频解码关注 GPU 编解码单元的利用率。本章介绍的工具覆盖了这些场景。
 
 ## GPU 分析工具全景
 
-Android 平台上的 GPU 分析工具大致分三层,对应的定位也不同:
+Android 平台上的 GPU 分析工具大致分三层，对应的定位也不同：
 
-**系统级追踪工具**:不分析单帧的 Draw Call 细节,而是看 GPU 在时间轴上的整体行为。适合回答"GPU 是不是瓶颈""GPU 利用率如何""显存带宽够不够"这类问题。
+**系统级追踪工具**：不分析单帧的 Draw Call 细节，而是看 GPU 在时间轴上的整体行为。适合回答"GPU 是不是瓶颈"、"GPU 利用率如何"、"显存带宽够不够"这类问题。
 
-- **Perfetto GPU counter track**:Perfetto 自带的 GPU 计数器,无需额外安装,抓 Trace 时顺便就能采集。精度有限但最方便。
+- **Perfetto GPU counter track**：Perfetto 自带的 GPU 计数器，无需额外安装，抓 Trace 时顺便就能采集。精度有限但最方便。
 - **APA System Profiler**:Android Performance Analyzer 的系统级模式,2026 年 5 月发布,是当前官方推荐的 system profiling 工具。覆盖 CPU/GPU/Memory/power,基于 Perfetto,Android 12+ 提供最佳体验。后续 frame profiling/debugging 由 GFXReconstruct 支撑。
-- **AGI System Profiler**:Android GPU Inspector 的系统级模式,数据比 Perfetto 更详细,支持 Adreno/Mali/PowerVR 三大移动 GPU。APA 发版后被官方建议向 APA 迁移,但仍有设备兼容和功能覆盖价值。
+- **AGI System Profiler**：Android GPU Inspector 的系统级模式，数据比 Perfetto 更详细，支持 Adreno/Mali/PowerVR 三大移动 GPU。APA 发版后被官方建议向 APA 迁移，但仍有设备兼容和功能覆盖价值。
 - **PerfDog**:腾讯出品的跨平台性能监控工具,不深入 GPU 内部,但可以实时显示 GPU 利用率、帧率、温度等宏观指标。
 
-**帧级分析工具**:捕获一帧的所有 GPU 命令,逐 Draw Call 分析。适合"已经确定 GPU 是瓶颈,需要知道具体哪个渲染 Pass 或 Shader 拖慢了这一帧"。
+**帧级分析工具**：捕获一帧的所有 GPU 命令，逐 Draw Call 分析。适合"已经确定 GPU 是瓶颈，需要知道具体哪个渲染 Pass 或 Shader 拖慢了这一帧"。
 
 - **AGI Frame Profiler**:Google 官方工具,支持 Vulkan 和 OpenGL ES 的帧捕获和分析。
 - **RenderDoc**:开源图形调试器,功能最全面的单帧分析工具。Arm、Samsung、Meta 都维护了自己的 fork。
 - **Sokatoa**:Samsung 2026 年发布的多帧 GPU profiler,基于 GFXReconstruct,计划 2026 年底开源,是唯一支持多帧分析的工具。
 
-**厂商专用工具**:针对特定 GPU 提供更深度的分析。
+**厂商专用工具**：针对特定 GPU 提供更深度的分析。
 
 - **ARM Streamline Performance Analyzer**:Mali GPU 的官方分析工具,集成 CPU/GPU/内存的联合分析。
 - **Snapdragon Profiler**:高通 Adreno GPU 的专用分析工具,提供 Adreno 微架构级别的深度性能计数器和实时性能监控,与 AGI 互补。
@@ -197,27 +197,27 @@ Frame Profiler 的核心视图:
 
 ### AGI 的近期演进与 APA 的出现
 
-AGI 继续围绕 System Profiler 和 Frame Profiler 两条线完善功能。System Profiler 负责长时间 trace、GPU counter 和进程级 GPU 时间;Frame Profiler 负责单帧命令、shader 和 render target 的深入查看。
+AGI 围绕 System Profiler 和 Frame Profiler 两条线各自完善：System Profiler 负责长时间 trace、GPU counter 和进程级 GPU 时间；Frame Profiler 负责单帧命令、shader 和 render target 的深入分析。
 
-2026 年 5 月,Google 发布了 **Android Performance Analyzer (APA)**,这是一个基于 Perfetto 的新一代 system profiling 工具,覆盖 CPU、GPU、Memory 和 power 分析。APA System Profiler 已经 open beta,官方在 AGI 文档中建议开发者向 APA 迁移。
+2026 年 5 月，Google 发布了 **Android Performance Analyzer (APA)**——基于 Perfetto 的新一代 system profiling 工具，覆盖 CPU、GPU、Memory 和 power。APA System Profiler 已进入 open beta，AGI 官方文档建议开发者向 APA 迁移。
 
-APA 发版后,工具分工变得更清晰:
+APA 发版后，工具分工更明确：
 
-- **system profiling**(GPU counter、进程级 GPU 时间、长时间 trace):首选 **APA System Profiler**;AGI System Profiler 保留为可用兼容路径,Perfetto GPU counter 作为快速入口
-- **frame profiling**(单帧 GPU 命令、Draw Call、Shader / Render Pass 定位):用 **AGI Frame Profiler** 或 RenderDoc
-- **frame profiling / debugging 后续方向**:APA 官方博客提到 upcoming frame profiling/debugging 将由 **GFXReconstruct** 支撑,未列入当前公开 beta 范围
-- **多帧 GPU 分析**:优先看 **Sokatoa**,基于 GFXReconstruct 且已公开实现路径
+- **system profiling**(GPU counter、进程级 GPU 时间、长时间 trace)：首选 **APA System Profiler**；AGI System Profiler 仍作为兼容路径保留；Perfetto GPU counter 适合快速入口
+- **frame profiling**(单帧 GPU 命令、Draw Call、Shader / Render Pass 定位)：用 **AGI Frame Profiler** 或 RenderDoc
+- **frame profiling / debugging 后续方向**：APA 官方博客提到 upcoming 阶段的 frame profiling/debugging 由 **GFXReconstruct** 支撑，尚未进入公开 beta
+- **多帧 GPU 分析**：优先看 **Sokatoa**，基于 GFXReconstruct 且有公开实现路径
 
 ### APA System Profiler 的版本覆盖与演进
 
-APA 基于 Perfetto 构建，因此在不同 Android 版本上的能力差异主要由 Perfetto 的底层版本演进决定（详见本章"版本演进"章节的 profileable 增强路径）：
+APA 基于 Perfetto 构建，不同 Android 版本上的能力差异主要由 Perfetto 底层版本演进决定（详见本章"版本演进"章节 profileable 增强路径）：
 
-- **Android 12-13**：APA System Profiler 的基准支持线。核心功能（CPU tracing、GPU counter）可用，但 GPU counter 采集通常依赖 `debuggable` 应用或 root 权限，`profileable` 包的 GPU 数据采集能力有限。
-- **Android 14+**：关键分水岭。`profileable` 应用的 Perfetto GPU counter 采集能力大幅增强——这也是 APA 最重要的版本能力跃迁。从此版本开始，profileable Release 包即可通过 APA 获取 GPU 频率、利用率和带宽等关键计数器，不再强制要求 debuggable 或 root。
-- **Android 15-16**：Perfetto 内核数据源逐步丰富，APA 可以覆盖更细粒度的内存分配追踪和功耗细分指标。长时间 trace 的稳定性和数据压缩能力持续提升。
-- **Android 17**：APA 与 denylist ANGLE 策略配合工作。当系统默认通过 ANGLE → Vulkan 运行时，APA 的 GPU counter 数据反映的是 Vulkan 驱动层的实际执行情况，在解读时需与原生 GLES 设备的 Perfetto 数据进行对比校准。
+- **Android 12-13**：APA 基准支持线。核心的 CPU tracing 和 GPU counter 可用，但 GPU counter 采集通常需要 `debuggable` 应用或 root 权限，`profileable` 包能拿到的 GPU 数据有限。
+- **Android 14+**：关键分水岭。`profileable` 应用的 Perfetto GPU counter 采集能力大幅增强——profileable Release 包即可获取 GPU 频率、利用率和带宽，不再强制 debuggable 或 root。
+- **Android 15-16**：Perfetto 内核数据源持续丰富，APA 覆盖更细的内存分配追踪和功耗细分指标，长时间 trace 的稳定性和数据压缩能力也更好。
+- **Android 17**：APA 与 denylist ANGLE 策略配合工作。系统默认通过 ANGLE → Vulkan 运行时，APA 的 GPU counter 数据反映 Vulkan 驱动层的实际执行情况，解读时需与原生 GLES 设备数据对照。
 
-**版本选型建议**：目标设备运行 Android 14+ 时，APA 可在 profileable Release 包上完成完整的 GPU system profiling，推荐作为首选 system profiling 工具。Android 12-13 设备上 APA 仍可做 CPU profiling，但 GPU 深度分析需 debuggable 包或搭配 AGI System Profiler。
+**选型建议**：目标设备跑 Android 14+ 时，APA 可以在 profileable Release 包上完成完整的 GPU system profiling，作为首选。Android 12-13 设备上 APA 仍能做 CPU profiling，但 GPU 深度分析需 debuggable 包或搭配 AGI System Profiler。
 
 #### AGI System Profiler 与 APA System Profiler 对比
 
@@ -246,24 +246,24 @@ Android 15 开始,ANGLE 已经有了更明确的系统开关和每应用切换�
 
 排查时先确认设备当前走的是哪条 driver 路径,再决定怎么解读 Draw Call 和 Shader 时间。开发阶段常用的固定方法有两类:用前面的 `settings put global angle_gl_driver_selection_*`,或在带 gpu shell 封装的系统镜像上用 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时,改从 Settings / Graphics Driver Preferences 进入。
 
-**Android 17 denylist 下的确认流程**。前面已经讲过 denylist 的语义:绝大多数 GLES 应用默认走 ANGLE,denylist 上的例外回退原生 GLES。排查前先确认设备实际的 driver 路径:
+**Android 17 denylist 下的确认流程**。denylist 的语义：绝大多数 GLES 应用默认走 ANGLE，只有 denylist 上的例外回退原生 GLES。排查前先确认设备实际走的 driver 路径：
 
 ```bash
 # 1. 确认系统是否已启用 denylist 模式
 adb shell settings get global angle_gl_driver_enabled
-# Android 17 新设备默认返回 1(denylist 已生效);旧设备升级可能返回 null
+# Android 17 新设备默认返回 1（denylist 已生效）；旧设备升级可能返回 null
 
-# 2. 确认当前 app 是否在 denylist 中(被排除使用 ANGLE)
+# 2. 确认当前 app 是否在 denylist 中（被排除使用 ANGLE）
 adb shell settings get global angle_gl_driver_selection_pkgs
-# 如果包名在列表中且对应 selection_values 为 "native",该 app 走原生 GLES
-# 解读 AGI 帧分析结果时,走 ANGLE→Vulkan 和走原生 GLES 的 Shader/Draw Call 时间特征不同
+# 包名在列表中且 selection_values 为 "native" → 该 app 走原生 GLES
+# 走 ANGLE→Vulkan 和原生 GLES 的 Shader/Draw Call 时间特征不同，解读要区别对待
 
-# 3. 在 denylist 设备上把 app 强制拉回原生 GLES(对比调试用)
+# 3. 在 denylist 设备上强制拉回原生 GLES（对比调试用）
 adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
 adb shell settings put global angle_gl_driver_selection_values native
 ```
 
-**allowlist 与 denylist 的语义反转**。Android 15-16 新设备的 ANGLE 机制是 allowlist(允许列表):`angle_gl_driver_selection_pkgs` 中列出的应用走 ANGLE,其余走原生 GLES。Android 17 新设备反转为 denylist(拒绝列表):列表中的应用反而被排除在 ANGLE 之外、走原生 GLES,不在列表中的应用默认通过 ANGLE 运行。同一条 `settings put` 指令在两种模式下语义相反——allowlist 设备上是"把我加进去走 ANGLE",denylist 设备上是"把我排除掉走原生 GLES"。排查前必须先用 `angle_gl_driver_enabled` 确认模式,否则可能误判 driver 路径。
+**allowlist 与 denylist 的语义反转**。Android 15-16 新设备使用 allowlist（允许列表）：`angle_gl_driver_selection_pkgs` 列出走 ANGLE 的应用，其余走原生 GLES。Android 17 新设备反转为 denylist（拒绝列表）：列表中的应用反而是被排除在 ANGLE 之外的例外，走原生 GLES；不在列表中的应用默认通过 ANGLE 运行。同一条 `settings put` 指令在两种模式下含义相反——allowlist 上是"把我加进去走 ANGLE"，denylist 上是"把我排除掉走原生 GLES"。必须先通过 `angle_gl_driver_enabled` 确认模式，否则可能误判 driver 路径。
 
 ## Perfetto 中的 GPU 分析能力
 
