@@ -6,10 +6,8 @@ section: '7.6'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-05-03'
-last_verified_against: AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI
-  / Android 14 cached process freezing / ComponentCallbacks2 / Lottie vs AVD Perfetto
-  特征
+last_verified: '2026-07-07'
+last_verified_against: "AOSP android-17.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI / Android 14 cached process freezing / ComponentCallbacks2 / Lottie vs AVD Perfetto 特征"
 polish_count: 1
 polish_date: '2026-04-04'
 polish_by: task2b-polish
@@ -55,12 +53,13 @@ task2b_result: "fixed"
 task2b_rework_date: "2026-05-25T11:23:10+08:00"
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
 last_task2b_at: "2026-05-27T06:51:00+08:00"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-27"
-last_task9_at: "2026-05-27T08:22:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-27-08-deep-review.md"
-task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；案例六仍把 5 个 Layer 超过 4 个 Overlay Plane 写成确定根因，需改成有实机 HWC/Layer trace 证据的条件判断。 | 2026-05-27 08:22 Task9 deep-review：pass-tech-review。P0 0 / P1 0 / P2 0；案例六 HWC 降级已改为设备证据条件判断，7 个案例的数据占位均有明确待验证边界；自动晋升 finalized。"
+task9_reviewed_date: "2026-07-07"
+last_task9_at: "2026-07-07T21:20:00+08:00"
+last_task9_autofix_at: "2026-07-07"
+last_task9_review_log: "logs/deep-review/2026-07-07-21-audit.md"
+task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；案例六仍把 5 个 Layer 超过 4 个 Overlay Plane 写成确定根因，需改成有实机 HWC/Layer trace 证据的条件判断。 | 2026-05-27 08:22 Task9 deep-review：pass-tech-review。P0 0 / P1 0 / P2 0；案例六 HWC 降级已改为设备证据条件判断，7 个案例的数据占位均有明确待验证边界；自动晋升 finalized。 | 2026-07-07 21:20 Task9 idle audit auto-fix：将源码基准重锚到 android-17.0.0_r1；复核 AVD fallback、View hardware layer、SF CLIENT 合成链路、PowerManager thermal API 与 cached app freezer；P0 0 / P1 1（已修复） / P2 0。"
 p0: 0
 p1: 0
 p2: 0
@@ -68,11 +67,11 @@ task2b_state: "fixed"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-27T07:11:00+08:00"
@@ -82,7 +81,7 @@ task9_state: reviewed
 task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
-last_task9_audit: "2026-06-14"
+last_task9_audit: "2026-07-07"
 last_task6_audit: "2026-07-01"
 ---
 # 案例集
@@ -351,13 +350,13 @@ Perfetto 中同时观察主线程和 RenderThread。示例 trace 的现象是:
 
 **第二步:先判断 RenderThread 积压。** 多个 AnimatedVectorDrawable 同时播放时,向量路径、裁剪、alpha 或变换会让 DisplayList 更频繁地重录制,RenderThread 需要重新执行绘制指令并提交给 GPU。如果 RenderThread 还在处理上一帧的向量栅格化、tessellation 或 overdraw,主线程会在 `syncFrameState()` 阶段等待。AVD 是向量动画,不能把这个现象直接写成 GPU 纹理反复上传;只有 trace 中出现 `UploadTexture`、`glTexImage2D` 或同类证据时,才能单独讨论纹理上传。
 
-**第三步:单独判断 AVD UI fallback。** API 25+ 的 AVD 可以走 `VectorDrawableAnimatorRT`。在 AOSP android-16.0.0_r1 中,`fallbackOntoUI()` 的主要触发条件是 Software Canvas 下仍有 pending animation action,或代码主动走 `forceAnimationOnUI()`。RT 不支持的属性通常在 RT animator 构建阶段跳过或抛错,不能描述成运行中自动退回 UI 线程。
+**第三步:单独判断 AVD UI fallback。** API 25+ 的 AVD 可以走 `VectorDrawableAnimatorRT`。在 AOSP android-17.0.0_r1 中,`fallbackOntoUI()` 的主要触发条件是 Software Canvas 下仍有 pending animation action,或代码主动走 `forceAnimationOnUI()`。RT 不支持的属性通常在 RT animator 构建阶段跳过或抛错,不能描述成运行中自动退回 UI 线程。
 
 **第四步:把两类问题分开归因。** 主线程动画推进、`invalidateSelf()` 频繁出现,更像 UI fallback;RenderThread 的 `DrawFrame` 拉长、主线程停在 `syncAndDrawFrame`,更像 RT 积压。两者可能叠加,但修复手段不同,trace 里要分开标注。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md - RenderThread 自身耗时导致主线程 sync 被阻塞]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md - 微信对话框有多个动态表情时出现 buildDrawingCache 耗时]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java - `fallbackOntoUI()` 负责 AVD 退化到 UI 线程]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java - `fallbackOntoUI()` 负责 AVD 退化到 UI 线程]
 
 ### 根因
 
@@ -381,7 +380,7 @@ fun onViewHolderDetached(holder: EmojiViewHolder) {
 }
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java - LAYER_TYPE_HARDWARE 在硬件加速开启时将 View 缓存为 GPU 纹理]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java - LAYER_TYPE_HARDWARE 在硬件加速开启时将 View 缓存为 GPU 纹理]
 
 ### 效果对比
 
@@ -467,7 +466,7 @@ public void draw(Canvas canvas) {
 
 当 AVD 退化到 UI 线程运行时,动画推进和 View invalidation 都会回到主线程;没有 fallback 但同屏向量动画过多时,RenderThread 仍可能在 `DrawFrame` 中积压。Perfetto 里要分开看:主线程动画 slice / Choreographer 动画回调增多,指向 UI fallback;RenderThread `DrawFrame` 拉长且主线程停在 `syncAndDrawFrame`,指向 RT 积压。
 
-**源码文件**:`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`(AOSP android-16.0.0_r1)
+**源码文件**:`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`(AOSP android-17.0.0_r1)
 
 ---
 
@@ -531,7 +530,7 @@ App 开发者无法直接解决系统内存不足的问题,但可以减少自身
 1. **减少自身内存占用**:优化 Bitmap 大小、使用内存缓存策略、避免内存泄漏
 2. **响应 `onTrimMemory`**:在系统回调时主动释放非必要资源
 
-Android 14+ 的缓存进程冻结会影响 `onTrimMemory` 的执行窗口。App 进入 cached 状态后,系统可能在 10-30 秒内冻结进程;冻结期间 Java/Kotlin 代码不会继续执行,排队的异步清理任务也会拖到解冻后才跑。因此:
+Android 14+ 的缓存进程冻结会影响 `onTrimMemory` 的执行窗口。App 进入 cached 状态后,主线行为是在约 10 秒后冻结进程；厂商实现可能通过配置调整窗口。冻结期间 Java/Kotlin 代码不会继续执行,排队的异步清理任务也会拖到解冻后才跑。因此:
 
 - **核心清理逻辑必须同步且极简**:在 `onTrimMemory` 回调内只做轻量释放(清空缓存引用、释放 Bitmap pool),耗时操作不能依赖这个窗口
 - **关键资源前移到 `onStop`**:`onStop()` 是前台转后台后最可靠的执行窗口,图片缓存、可重建的 UI 资源、临时大对象要在 `onStop()` 中同步释放,不要等 `onTrimMemory`
@@ -611,7 +610,7 @@ Overlay Plane 数量因 SoC、显示控制器、屏幕配置和厂商 HWC 实现
 
 **第四步:确认 FrameTimeline 证据。** `FrameTimeline` 轨道中,SF 的帧从 `predicted` 变成 `missed`,预测误差与 `composeSurfaces()` 拉长的帧一一对应。
 
-[已验证: AOSP android-16.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` - `SurfaceFlinger::composite()` 调用 `CompositionEngine` 链路: `Output::present()` → `composeSurfaces()` → `RenderEngine::drawLayers()` 对 CLIENT 类型 Layer 执行 GPU 渲染]
+[已验证: AOSP android-17.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` - `SurfaceFlinger::composite()` 调用 `CompositionEngine` 链路: `Output::present()` → `composeSurfaces()` → `RenderEngine::drawLayers()` 对 CLIENT 类型 Layer 执行 GPU 渲染]
 
 ### 根因
 
@@ -713,7 +712,7 @@ powerManager?.addThermalStatusListener(object : PowerManager.OnThermalStatusChan
 })
 ```
 
-[已验证: AOSP android-16.0.0_r1, `frameworks/base/core/java/android/os/PowerManager.java` — `addThermalStatusListener()` / `OnThermalStatusChangedListener` / `THERMAL_STATUS_*` 常量均定义在 PowerManager 中，PowerManager 通过 `IThermalService` 获取热状态]
+[已验证: AOSP android-17.0.0_r1, `frameworks/base/core/java/android/os/PowerManager.java` — `addThermalStatusListener()` / `OnThermalStatusChangedListener` / `THERMAL_STATUS_*` 常量均定义在 PowerManager 中，PowerManager 通过 `IThermalService` 获取热状态]
 [已验证: developer.android.com — 应用侧热状态 API 入口是 `PowerManager.addThermalStatusListener()`]
 
 ### 效果对比
@@ -744,7 +743,7 @@ OPPO 在 ColorOS 中引入了"极光引擎",核心思路是将渲染管线从串
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_OPPO_ColorOS_极光引擎_并行绘制架构.md]
 
-[待验证: 极光引擎在 Android 16 上是否仍是独立实现,还是已部分融入 AOSP]
+[待验证: 极光引擎在 Android 17 上是否仍是独立实现,还是已部分融入 AOSP]
 
 ### vivo X200 系列:多维度性能优化
 
