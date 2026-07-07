@@ -4,8 +4,8 @@ chapter: '14.11'
 section: '14.11'
 status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
-last_verified: '2026-04-20'
-last_verified_against: Android 17 (API 37)
+last_verified: "2026-07-07"
+last_verified_against: "AOSP android-17.0.0_r1 PowerMonitorReadings.java / PowerStatsService.java / PerformanceHintManager.java / frameworks/native/include/android/performance_hint.h"
 confidence: medium
 sources:
 - path: https://source.android.com/docs/core/power/power-stats-hal
@@ -32,7 +32,7 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
 path: https://source.android.com/docs/core/power/power-stats-hal
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-07
@@ -40,25 +40,24 @@ last_task6_at: 2026-07-07T12:15:00+08:00
 last_task6_review_log: logs/review/2026-07-07-04-review.md
 task6_reviewed_date: '2026-07-07'
 review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。 | 2026-06-19 Task9 audit 18:25：auto-fixed。闲时抽检发现 4 处源码/版本锚点小问题：Android 35 误写为 Android 15、PowerMonitorReadings.getConsumedEnergy 方法归属、NDK performance_hint.h AOSP 根路径、Android 16/17 PowerStatsAggregator 迁移路径；已局部修正并退回 Task6 复审。 | 2026-06-24 Task6 复审：pass-light-edit。Task9 auto-fix 后文稿写作层无新增问题；L1/L2 全部通过。转 Task9 确认。 | 2026-07-06 Task6 复审：pass-light-edit。Task2B lite 修复后文稿复审；L1 修正 3 处禁用词「链路」→「路径」（均在补充段）；无新增 B 类回炉项；转 Task9 复审。 | 2026-07-06 Task6 revisit：pass-light-edit。完成写作层再次复审；小幅优化表达清晰度，无新增 B 类回炉项；转入 Task9 复审。 | 2026-07-07 Task6 复审：pass-light-edit。L1 修正 4 处禁用词（3×链路→路径/衔接缺口, 1×闭环→回路）；修正 frontmatter 孤立字段 last_task2b_main_at 归位；无新增 B 类回炉项；转 Task9 复审。 | 2026-07-07 Task2B Verifier: frontmatter 重建（commit 80759fd88 破坏了 YAML frontmatter，已从 git 历史恢复） | 2026-07-07 Task6 复审：pass-light-edit。修复全文重复（1856→925行）；L1 修正禁用词「对齐」→「同步」（参考链接描述）；无新增 B 类回炉项；转 Task9 复审。'
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_rerun_at: '2026-07-07T02:53:56+08:00'
 last_task2b_lite_at: 2026-07-07
 last_task2b_at: '2026-07-07T02:53:56+08:00'
-task9_result: pending
-last_task9_at: 2026-07-07T04:24:36
+task9_result: auto-fixed
+last_task9_at: "2026-07-07T12:33:06+08:00"
 last_task9_audit: 2026-07-07
-last_task9_autofix_at: '2026-06-19'
+last_task9_autofix_at: "2026-07-07"
 task9_reviewed_by: openclaw-task9
-task9_review_notes: 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor
+task9_review_notes: "2026-07-07 Task9 AUTO-FIX：修正 PowerMonitorReadings Android 17 API 签名（需传入 PowerMonitor / OutcomeReceiver.onResult）、μW·s/ms→mW 公式、PerformanceHintManager.createHintSession 示例、performance_hint.h AOSP 路径；回到 Task6 复审。"
 task9_reviewed_date: '2026-07-07'
-last_task9_review_log: logs/deep-review/2026-06-19-18-audit.md
+last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-24'
 last_task6_audit: '2026-06-24'
 ---
-
 # 14.11 Battery Historian 与功耗分析工具
 
 ## 为什么需要专门的功耗分析工具
@@ -423,9 +422,9 @@ systemHealthManager.getPowerMonitorReadings(
     listOf(selectedMonitor),
     executor,
     object : OutcomeReceiver<PowerMonitorReadings, RuntimeException> {
-        override fun onSuccess(result: PowerMonitorReadings) {
-            val energy = result.getConsumedEnergy() // 微焦耳（μJ）
-            val ts = result.getTimestampMillis()    // 毫秒
+        override fun onResult(result: PowerMonitorReadings) {
+            val energy = result.getConsumedEnergy(selectedMonitor) // 微瓦秒（μW·s）
+            val ts = result.getTimestampMillis(selectedMonitor)    // 毫秒
         }
         override fun onError(error: RuntimeException) { ... }
     }
@@ -436,8 +435,8 @@ systemHealthManager.getPowerMonitorReadings(
 
 封装一次功耗快照，提供两个方法：
 
-- `getConsumedEnergy()`：设备启动以来累计能耗，单位微焦耳（μJ），重启清零
-- `getTimestampMillis()`：快照采集时基于 `SystemClock.elapsedRealtime()` 的时间戳
+- `getConsumedEnergy(powerMonitor)`：指定 monitor 自设备启动以来的累计能耗，单位微瓦秒（μW·s），重启清零
+- `getTimestampMillis(powerMonitor)`：指定 monitor 快照采集时基于 `SystemClock.elapsedRealtime()` 的时间戳
 
 注意返回值是**累计值**而非瞬时功率，要计算瞬时功率需要取两次快照的差值。
 
@@ -560,11 +559,11 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 ```
 
 **源码锚点**：
-> ⚠️ **版本边界**：以下三条源码路径已在 android-15.0.0_r1 中确认存在。在 android-17.0.0_r1 中已验证：`PowerMonitorReadings.getConsumedEnergy()` 路径不变（`frameworks/base/core/java/android/os/PowerMonitorReadings.java` 确认存在）；`PerformanceHintManager.setPreferPowerEfficiency()` 路径不变（`frameworks/base/core/java/android/os/PerformanceHintManager.java` 确认存在）；`APerformanceHint_setPreferPowerEfficiency()` 头文件路径变更为 `frameworks/native/libs/hint/include/android/performance_hint.h`（NDK r28+ 重组）。API 层面调用语义不变。
+> ⚠️ **版本边界**：以下三条源码路径已在 android-15.0.0_r1 中确认存在。在 android-17.0.0_r1 中已验证：`PowerMonitorReadings.getConsumedEnergy(PowerMonitor)` 路径不变（`frameworks/base/core/java/android/os/PowerMonitorReadings.java` 确认存在）；`PerformanceHintManager.setPreferPowerEfficiency()` 路径不变（`frameworks/base/core/java/android/os/PerformanceHintManager.java` 确认存在）；`APerformanceHint_setPreferPowerEfficiency()` 头文件路径为 `frameworks/native/include/android/performance_hint.h`。API 层面调用语义不变。
 
 - `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` — `frameworks/base/core/java/android/os/PerformanceHintManager.java` [已验证: android-17.0.0_r1，路径和签名未变]
-- `APerformanceHint_setPreferPowerEfficiency()` — `frameworks/native/libs/hint/include/android/performance_hint.h` [已验证: android-17.0.0_r1 NDK r28+；此前路径 `frameworks/native/include/android/performance_hint.h` 在 NDK r28+ 中已重组]
-- `PowerMonitorReadings.getConsumedEnergy()` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java` [已验证: android-17.0.0_r1，路径和签名未变]
+- `APerformanceHint_setPreferPowerEfficiency()` — `frameworks/native/include/android/performance_hint.h` [已验证: android-17.0.0_r1，路径和签名未变]
+- `PowerMonitorReadings.getConsumedEnergy(PowerMonitor)` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java` [已验证: android-17.0.0_r1，路径和签名未变]
 
 **两个关键约束**：
 
@@ -581,13 +580,25 @@ PowerMonitor 返回的是**累计能耗（微焦耳）**而非瞬时功率，这
 
 ```kotlin
 // 获取第一个能耗快照作为基线
-val hintManager = PerformanceHintManager.create(sessionId)
+val hintManager = context.getSystemService(PerformanceHintManager::class.java)
+val hintSession = hintManager.createHintSession(
+    intArrayOf(Process.myTid()),
+    targetDurationNanos,
+) ?: return
 val monitors = getSupportedMonitors() // 选取 CPU / GPU 相关 monitor
+val monitor = monitors.first()       // 示例：对单个目标 monitor 做差分
 
 var lastReadings: PowerMonitorReadings? = null
-systemHealthManager.getPowerMonitorReadings(monitors, executor) { baseline ->
-    lastReadings = baseline
-}
+systemHealthManager.getPowerMonitorReadings(
+    monitors,
+    executor,
+    object : OutcomeReceiver<PowerMonitorReadings, RuntimeException> {
+        override fun onResult(baseline: PowerMonitorReadings) {
+            lastReadings = baseline
+        }
+        override fun onError(error: RuntimeException) { ... }
+    },
+)
 ```
 
 **Step 2 — 执行一批工作单元后再次采样**
@@ -597,14 +608,21 @@ systemHealthManager.getPowerMonitorReadings(monitors, executor) { baseline ->
 hintSession.reportActualWorkDuration(actualDurationNanos)
 
 // 二次采样
-systemHealthManager.getPowerMonitorReadings(monitors, executor) { current ->
-    val energyDelta = current.getConsumedEnergy() - lastReadings!!.getConsumedEnergy()
-    val timeDeltaMs = current.getTimestampMillis() - lastReadings!!.getTimestampMillis()
-    val avgPowerMw = energyDelta / timeDeltaMs / 1000.0  // mW
+systemHealthManager.getPowerMonitorReadings(
+    monitors,
+    executor,
+    object : OutcomeReceiver<PowerMonitorReadings, RuntimeException> {
+        override fun onResult(current: PowerMonitorReadings) {
+            val energyDelta = current.getConsumedEnergy(monitor) - lastReadings!!.getConsumedEnergy(monitor)
+            val timeDeltaMs = current.getTimestampMillis(monitor) - lastReadings!!.getTimestampMillis(monitor)
+            val avgPowerMw = energyDelta.toDouble() / timeDeltaMs  // μW·s / ms = mW
 
-    lastReadings = current
-    evaluatePowerEfficiency(avgPowerMw, hintSession)
-}
+            lastReadings = current
+            evaluatePowerEfficiency(avgPowerMw, hintSession)
+        }
+        override fun onError(error: RuntimeException) { ... }
+    },
+)
 ```
 
 **Step 3 — 基于历史窗口判断是否启用 Power Efficiency**
@@ -636,14 +654,21 @@ fun evaluatePowerEfficiency(avgPowerMw: Double, session: PerformanceHintManager.
 
 ```kotlin
 // 策略切换后再次采样，对比功耗变化
-systemHealthManager.getPowerMonitorReadings(monitors, executor) { afterHint ->
-    val delta = afterHint.getConsumedEnergy() - lastReadings!!.getConsumedEnergy()
-    // 如果功耗未明显下降，考虑：
-    // ① 系统可能因热条件或调度负载忽略了 hint
-    // ② 设备不支持对应 power rail 的细粒度调整
-    // ③ 当前工作负载本身对 E-core 不友好（密集浮点 / NEON）
-    lastReadings = afterHint
-}
+systemHealthManager.getPowerMonitorReadings(
+    monitors,
+    executor,
+    object : OutcomeReceiver<PowerMonitorReadings, RuntimeException> {
+        override fun onResult(afterHint: PowerMonitorReadings) {
+            val delta = afterHint.getConsumedEnergy(monitor) - lastReadings!!.getConsumedEnergy(monitor)
+            // 如果功耗未明显下降，考虑：
+            // ① 系统可能因热条件或调度负载忽略了 hint
+            // ② 设备不支持对应 power rail 的细粒度调整
+            // ③ 当前工作负载本身对 E-core 不友好（密集浮点 / NEON）
+            lastReadings = afterHint
+        }
+        override fun onError(error: RuntimeException) { ... }
+    },
+)
 ```
 
 **关键判据设计原则**：
@@ -657,7 +682,7 @@ systemHealthManager.getPowerMonitorReadings(monitors, executor) { afterHint ->
 
 ```text
 ┌──────────────────────────────────────────────────────┐
-│  PowerMonitor 累计读数 (getConsumedEnergy)            │
+│  PowerMonitor 累计读数 (getConsumedEnergy(monitor))   │
 │         ↓                                            │
 │  差分求功率 → 滑动窗口平滑                             │
 │         ↓                                            │
@@ -678,7 +703,7 @@ systemHealthManager.getPowerMonitorReadings(monitors, executor) { afterHint ->
 
 Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源轨变化，结合 hint session 状态做 A/B 对比验证。
 
-[已验证: android-17.0.0_r1 AOSP (PowerMonitorReadings.java / PerformanceHintManager.java / performance_hint.h)；developer.android.com/games/adpf/power-session；developer.android.com/reference/android/os/PerformanceHintManager；perfetto.dev/docs/analysis/sql/android-power-rails。注意：NDK 头文件 `performance_hint.h` 在 NDK r28+ 中路径从 `frameworks/native/include/android/` 变更为 `frameworks/native/libs/hint/include/android/`，API 签名不变。]
+[已验证: android-17.0.0_r1 AOSP (PowerMonitorReadings.java / PerformanceHintManager.java / frameworks/native/include/android/performance_hint.h)；developer.android.com/games/adpf/power-session；developer.android.com/reference/android/os/PerformanceHintManager；perfetto.dev/docs/analysis/sql/android-power-rails。]
 
 
 
