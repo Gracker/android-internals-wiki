@@ -2,8 +2,8 @@
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
-status: ready-for-review
-pipeline_stage: "task9_pending"
+status: finalized
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6

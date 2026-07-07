@@ -2,7 +2,7 @@
 title: "ProfilingManager"
 chapter: "19"
 section: "19.16"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
