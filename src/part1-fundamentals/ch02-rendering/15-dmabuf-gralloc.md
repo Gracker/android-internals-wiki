@@ -2,7 +2,7 @@
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2'
 section: '2.15'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-07-07'
 last_verified_against: AOSP android-17.0.0_r1 (primary; paths confirmed unchanged from android-16.0.0_r1), Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
@@ -78,13 +78,14 @@ last_task6_review_log: "logs/review/2026-06-14-16-review.md"
 task6_review_notes: "2026-07-07 Task6 复审:pass-light-edit。修正 task9 frontmatter 一致性(task9_result 从 pending 更正为 pass-tech-review)。L1/L2 无新增问题。自动晋升 finalized。"
 task6_review_notes: "2026-05-27 Task6 05:14:pass-light-edit。L1/L2 小修 2 处(补齐 outline 块;禁用词"落地"替换为"确认")。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review,未自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-07-08-02-audit.md"
-last_task2b_verifier_at: "2026-06-14T19:31:17"
-task2b_verifier_result: "task9-state-reset-ready-for-task9"
 last_task9_autofix_at: 2026-07-08
 task6_reviewed_date: "2026-06-14"
 last_task6_audit: "2026-07-05"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
+last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
+task2b_verifier_result: "status-corrected-ready-for-task6"
+task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享

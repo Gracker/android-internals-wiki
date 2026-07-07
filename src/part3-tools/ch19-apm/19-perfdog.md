@@ -2,7 +2,7 @@
 title: PerfDog
 chapter: '19'
 section: '19.19'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -45,6 +45,9 @@ rework_by: "task2b-rework"
 last_task2b_at: "2026-04-27T07:58:00+08:00"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-26
+last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
+task2b_verifier_result: "status-corrected-ready-for-task6"
+task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
 ---
 
 
