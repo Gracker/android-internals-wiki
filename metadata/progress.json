@@ -3,7 +3,7 @@
   "draft": 55,
   "ready_for_review": 210,
   "finalized": 342,
-  "last_updated": "2026-07-08T01:10:07.232621+08:00",
+  "last_updated": "2026-07-08T03:06:44.405936+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -826,6 +826,13 @@
       "status": "ready_for_review",
       "ts": "2026-07-08T00:24:25.354652+08:00",
       "note": "Macrobenchmark framework + CI/CD gate: 6 anchors (framework arch/startup metrics/frame metrics/TraceMetric/PowerMetric/BaselineProfile gen+validation) + CI/CD gate architecture + Perfetto synergy + Android 17 new features (PowerMetric cluster-level, Cloud Profile validation, Compose recomposition) + production practice. Cross-ref S8.7/S13.21/S16.1/S17.9/S19.x. Also deprecated 4 orphan empty drafts (04.41/04.42/08.38/17.22)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-08T03:06:44.405936+08:00",
+      "note": "Gap mining round 40: 0 candidates ≥14 (40th consecutive). Coverage saturated. No new material since round 39 (7h ago). No new DeepResearch/Clippings/daily-info. source-index: 0 unmapped high-quality. 55 drafts all >15 lines. Task2B backlog: 0."
     }
   ],
   "review_history": [
@@ -1120,14 +1127,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-08T00:24:25.354652+08:00",
-    "last_section": "14.27",
-    "result": "processed",
-    "fix_count": 1,
-    "last_sections": [
-      "14.27"
-    ],
-    "note": "Processed ch14.27 Macrobenchmark (draft -> ready-for-review). Deprecated 4 orphan empty drafts (04.41/04.42/08.38/17.22) as duplicates."
+    "last_run": "2026-07-08T03:06:44.405936+08:00",
+    "last_section": "none",
+    "result": "no-candidates",
+    "fix_count": 0,
+    "last_sections": [],
+    "note": "Gap mining round 40: 0 candidates ≥14 (40th consecutive). Coverage saturated. No new material."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",
