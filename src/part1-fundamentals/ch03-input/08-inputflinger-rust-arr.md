@@ -5,12 +5,12 @@ section: "3.8"
 status: ready-for-review
 pipeline_stage: task6_pending
 task2b_state: fixed
-last_task9_at: "2026-07-07T15:34:35+08:00"
+last_task9_at: "2026-07-07T17:20:00+08:00"
 last_task9_audit: "2026-07-07"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-07"
-task9_result: needs-rework
-task9_state: pending
+task9_result: auto-fixed
+task9_state: reviewed
 
 drafted_date: "2026-05-16"
 drafted_by: openclaw-task2a
@@ -22,35 +22,21 @@ sources:
 - type: research
 
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
 - type: aosp
-
+- type: aosp
 - type: official
-
 - type: official
-
 - type: official
 path: "https://source.android.com/docs/core/graphics/arr"
 tags: [inputflinger, rust, arr, refresh-rate, input, accessibility]
@@ -60,17 +46,20 @@ created_date: "2026-05-16"
 gap_source: "研究素材/AOSP结构"
 task6_state: revisiting
 task6_result: pass-light-edit
-reviewed_date: "2026-06-04"
+reviewed_date: "2026-07-07"
 reviewed_by: "openclaw-task6"
+task9_state: reviewed
+pipeline_stage: task6_pending
 last_task2b_lite_at: "2026-07-07"
 task2b_result: fixed-lite
 last_task6_at: "2026-06-04T11:05:00+08:00"
 version_boundary_note: "Android 17/API 37 已基于 android-17.0.0_r1 验证;Android 15/16 作为历史演进对照"
-last_task9_autofix_at: "2026-06-04"
-last_task9_review_log: "logs/deep-review/2026-07-07-15-audit.md"
-task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim. | 2026-06-05 Task9 深度复审:pass-tech-review。P0 0 / P1 0 / P2 0;InputFlinger Rust filter 边界、KeyEvent/MotionEvent 分流、ARR touch hint 与 Android 17 非结论边界复核通过,满足自动晋升 finalized 条件。 | 2026-07-07 Task9 闲时抽检:needs-rework。P1 版本/源码基准问题:Android 17 基准已要求 android-17.0.0_r1,但章节仍以 android-16.0.0_r1 为主锚点,并写明未核到 Android 17 tag;已写入 queue.json。"
-task6_reviewed_date: 2026-06-04
+last_task9_autofix_at: "2026-07-07"
+last_task9_review_log: "logs/deep-review/2026-07-07-17-deep-review.md"
+task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim. | 2026-06-05 Task9 深度复审:pass-tech-review。P0 0 / P1 0 / P2 0;InputFlinger Rust filter 边界、KeyEvent/MotionEvent 分流、ARR touch hint 与 Android 17 非结论边界复核通过,满足自动晋升 finalized 条件。 | 2026-07-07 Task9 闲时抽检:needs-rework。P1 版本/源码基准问题:Android 17 基准已要求 android-17.0.0_r1,但章节仍以 android-16.0.0_r1 为主锚点,并写明未核到 Android 17 tag;已写入 queue.json。 | 2026-07-07 Task9 auto-fix: based on android-17.0.0_r1 sticky_keys_filter.rs, corrected StickyKeysFilter device/source boundary; returned to Task6 revisiting."
+task6_reviewed_date: 2026-07-07
 task6_reviewed_by: openclaw-task6
+last_task6_at: "2026-07-07T17:06:00+08:00"
 task6_review_notes: "2026-06-04 Task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词0/元叙述0/结构性元叙述0)。无B类大问题。代码路径和验证标注完整,[已验证] tags与AOSP锚点一一对应。task9 auto-fix后回到task6复审,写作质量无回退。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
@@ -130,11 +119,11 @@ AOSP `InputManager.cpp` 里的事件流注释给了这条 Native 管线:`InputRe
 
 这给出三个边界:
 
-1. Rust filter 是 InputFilter wrapper 下的辅助功能过滤实现,不是 InputFlinger 全部迁移到 Rust。
-2. C++ wrapper 只在 `isFilterEnabled()` 返回 true 时把 KeyEvent 交给 Rust;未启用时直接把事件传给下一层 listener。
-3. `notifyMotion()` 在 C++ `InputFilter` 里直接透传,触摸类 MotionEvent 不进入当前 Rust bounce / slow / sticky 过滤器。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp]
+1. Rust filter 是 InputFilter wrapper 下的辅助功能过滤实现，不是 InputFlinger 全部迁移到 Rust。
+2. C++ wrapper 只在 `isFilterEnabled()` 返回 true 时把 KeyEvent 交给 Rust；未启用时直接把事件传给下一层 listener。
+3. `notifyMotion()` 在 C++ `InputFilter` 里直接透传，触摸类 MotionEvent 不进入当前 Rust bounce / slow / sticky 过滤器。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp]
 
-第三点对性能分析很有用。滑动不跟手、触摸后刷新率没有拉高、FrameTimeline 异常这些问题,优先看 InputDispatcher、PowerManager、SurfaceFlinger 和 App 渲染侧。Rust accessibility filter 更可能影响外接键盘、实体键盘或辅助功能按键场景。
+第三点对性能分析很有用。滑动不跟手、触摸后刷新率没有拉高、FrameTimeline 异常这些问题，优先看 InputDispatcher、PowerManager、SurfaceFlinger 和 App 渲染侧。Rust accessibility filter 更可能影响外接键盘、实体键盘或辅助功能按键场景。
 
 ## bounce / slow / sticky keys filter 在做什么
 
@@ -142,7 +131,7 @@ Rust 侧的入口在 `frameworks/native/services/inputflinger/rust/lib.rs`。C++
 
 Rust `input_filter.rs` 里定义了 `Filter` trait,事件处理入口是 `notify_key()`,设备列表变化入口是 `notify_devices_changed()`。配置变化时,Rust 会重建一条 filter chain:
 
-```text
+```rust
 BaseFilter
   ↑ StickyKeysFilter(stickyKeysEnabled)
   ↑ SlowKeysFilter(slowKeysThresholdNs > 0)
@@ -232,7 +221,7 @@ Bounce Keys 和 Sticky Keys 对延迟的影响较小:前者按阈值丢弃重复
 
 ## 桌面模式和外接输入设备的刷新率策略
 
-外接键盘、鼠标、触控板会让输入类型更复杂。生效范围需要拆开描述:Bounce / Slow Keys 受 supported keyboard devices 与 `Source::KEYBOARD` 限制;Sticky Keys 的实现不同--`StickyKeysFilter.notify_key()` 不检查 `supported_devices` 或 `Source`,而是按 `KeyEvent` 的 modifier keycode 维护 `down_key_map`、`modifier_state`、`locked_modifier_state`,因此作用范围比前两者更广。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/rust/sticky_keys_filter.rs] 鼠标移动、触控板 pointer motion、触摸屏滑动仍走 motion event 路径。刷新率策略取决于可见 Layer 的 frame rate vote、交互 boost、设备支持的 ARR / MRR 能力,而不是某个输入设备是否经过 Rust filter。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp]
+外接键盘、鼠标、触控板会让输入类型更复杂。生效范围需要拆开描述:Bounce / Slow Keys 受 supported keyboard devices 与 `Source::KEYBOARD` 限制;Sticky Keys 的实现不同--`StickyKeysFilter.notify_key()` 会先检查 `supported_devices`,但不像 Bounce / Slow Keys 那样同时要求 `Source::KEYBOARD`。它的设备集合只保留非虚拟的 alphabetic keyboard,后续再按 `KeyEvent` 的 modifier keycode 维护 `down_key_map`、`modifier_state`、`locked_modifier_state`,因此差异主要在 Source 判断和修饰键状态维护,不是覆盖更宽的设备范围。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/rust/sticky_keys_filter.rs] 鼠标移动、触控板 pointer motion、触摸屏滑动仍走 motion event 路径。刷新率策略取决于可见 Layer 的 frame rate vote、交互 boost、设备支持的 ARR / MRR 能力,而不是某个输入设备是否经过 Rust filter。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp]
 
 桌面模式或多显示器下还要看 pacesetter display、display group、WindowManager 对不同显示的策略。当前章节只覆盖默认显示和主输入路径;外接显示刷新率仲裁建议放到 2.18 / 2.19 的多显示扩展里继续核源码。[待补充]
 
