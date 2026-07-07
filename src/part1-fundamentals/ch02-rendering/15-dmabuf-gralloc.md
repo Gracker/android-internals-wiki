@@ -60,10 +60,10 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task9_reviewed_date: "2026-07-08"
 task9_reviewed_by: "openclaw-task9"
@@ -73,10 +73,9 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-07-07T04:52:50+08:00
 task9_review_notes: "2026-07-08 Task9 idle audit:auto-fixed。将 Android 16 语境残留收敛到 android-17.0.0_r1 / Android 12-17 基准；源码锚点复核无 P0/P1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 16KB page size 下 DMA-BUF 尾部空洞与多进程 import/PSS 归因边界；共享 buffer 不会因 import 物理复制多份，回到 Task6 复审。"
-last_task6_at: "2026-07-08T04:05:00+08:00"
+last_task6_at: "2026-07-08T05:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-14-16-review.md"
-task6_review_notes: "2026-07-08 Task6 复审:pass-light-edit。Task9 auto-fix 后文稿复查：修正 outline 半角括号、5 处正文半角冒号。L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 终审。"
-task6_review_notes: "2026-05-27 Task6 05:14:pass-light-edit。L1/L2 小修 2 处(补齐 outline 块;禁用词"落地"替换为"确认")。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review,未自动晋升 finalized。"
+task6_review_notes: "2026-07-08 05:06 Task6 复审(revisiting→reviewed):pass-light-edit。Task9 auto-fix 后文稿复查：L1 禁用词/高频词全清（正文「对齐」为内存 alignment 技术语，非黑话）；L2 结构/节奏/可读性通过；outline 6/6 覆盖。修复 frontmatter 重复 task6_review_notes 键。L3 观察：版本演进段可补 trace 观察引导。task9_result=auto-fixed，回 Task9 终审。"
 last_task9_review_log: "logs/deep-review/2026-07-08-04-deep-review.md"
 last_task9_autofix_at: "2026-07-08"
 task6_reviewed_date: "2026-06-14"

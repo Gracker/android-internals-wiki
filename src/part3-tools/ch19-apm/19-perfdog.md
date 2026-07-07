@@ -22,15 +22,15 @@ sources:
   path: https://perfdog.qq.com/
 - type: official
   path: https://perfdog.qq.com/help/faq
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 last_task6_audit: '2026-07-03'
 task6_result: pass-light-edit
-task6_review_notes: "2026-07-08 Task6 复审:pass-light-edit。Task9 auto-fix 后文稿复查：L1/L2 无新增问题；outline 10/10 覆盖。Task9 result 为 auto-fixed，送 Task9 终审。"
-last_task6_at: "2026-07-08T04:05:00+08:00"
-task9_state: reviewed
+task6_review_notes: "2026-07-08 05:06 Task6 复审(revisiting→reviewed):pass-light-edit。Task9 auto-fix 后文稿复查：L1 禁用词/高频词全清；L2 结构/节奏/可读性通过；outline 10/10 覆盖。L3 观察：「一手源码数据源底层实现」段落偏百科参考风格，与全文 engineer-to-engineer 叙述有落差，记入观察不阻断。task9_result=auto-fixed，回 Task9 终审。"
+last_task6_at: "2026-07-08T05:06:00+08:00"
+task9_state: pending
 task2b_state: fixed
 task9_result: auto-fixed
 task9_reviewed_date: "2026-07-08"
