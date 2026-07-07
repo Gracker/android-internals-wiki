@@ -31,6 +31,7 @@ review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB �
 last_task9_audit: "2026-07-04"
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
+last_idle_audit_at: "2026-07-07T11:21:00+08:00"
 last_idle_audit_at: "2026-07-02T17:27:39+08:00"
 last_task6_audit: 2026-07-04
 last_task9_audit: "2026-07-06"
