@@ -174,7 +174,7 @@
       "section": "3.8",
       "section_title": "InputFlinger Rust 组件与自适应刷新率协同",
       "priority": 85,
-      "stage": "task2b_pending",
+      "stage": "completed",
       "reason": "fixed-lite",
       "material_paths": [
         "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
