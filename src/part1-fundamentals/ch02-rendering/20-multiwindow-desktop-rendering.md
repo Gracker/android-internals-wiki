@@ -57,7 +57,7 @@ drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
 pipeline_stage: "task9_pending"
 task6_state: "reviewed"
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 reviewed_date: '2026-07-07'

@@ -2,7 +2,7 @@
 title: "Android 网络安全与 TLS 性能优化"
 chapter: "12.4"
 section: "12.4"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
@@ -71,6 +71,7 @@ task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T09:06:00+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
+last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
