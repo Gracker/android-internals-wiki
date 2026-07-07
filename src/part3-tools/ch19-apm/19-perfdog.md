@@ -2,7 +2,7 @@
 title: PerfDog
 chapter: '19'
 section: '19.19'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -22,7 +22,7 @@ sources:
   path: https://perfdog.qq.com/
 - type: official
   path: https://perfdog.qq.com/help/faq
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
@@ -30,16 +30,16 @@ last_task6_audit: '2026-07-03'
 task6_result: pass-light-edit
 task6_review_notes: "2026-07-08 05:06 Task6 复审(revisiting→reviewed):pass-light-edit。Task9 auto-fix 后文稿复查：L1 禁用词/高频词全清；L2 结构/节奏/可读性通过；outline 10/10 覆盖。L3 观察：「一手源码数据源底层实现」段落偏百科参考风格，与全文 engineer-to-engineer 叙述有落差，记入观察不阻断。task9_result=auto-fixed，回 Task9 终审。"
 last_task6_at: "2026-07-08T05:06:00+08:00"
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-07-08"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-08T04:34:07+08:00"
+last_task9_at: "2026-07-08T05:25:42+08:00"
 last_task9_audit: '2026-07-08'
 last_task9_autofix_at: "2026-07-08"
 last_task9_audit_log: 'logs/deep-review/2026-07-08-03-audit.md'
-task9_review_notes: "2026-07-08 Task9 idle audit auto-fix: 修正 Thermal AIDL 方法、SurfaceFlinger --latency 数据源、Restricted Settings 特殊访问入口；AOSP 锚定 android-17.0.0_r1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 SurfaceFlinger --latency 数据链路与 Android 12 ThermalManagerService 版本表述；证据锚定 AOSP android-17.0.0_r1，回到 Task6 复审。"
+task9_review_notes: "2026-07-08 Task9 idle audit auto-fix: 修正 Thermal AIDL 方法、SurfaceFlinger --latency 数据源、Restricted Settings 特殊访问入口；AOSP 锚定 android-17.0.0_r1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 SurfaceFlinger --latency 数据链路与 Android 12 ThermalManagerService 版本表述；证据锚定 AOSP android-17.0.0_r1，回到 Task6 复审。 | 2026-07-08 05 Task9 终审: pass-tech-review。复核上一轮 Thermal AIDL、SurfaceFlinger --latency、Restricted Settings auto-fix 与 Task6 pass-light-edit；AOSP android-17.0.0_r1 源码锚点成立，queue 无 pending，自动晋升 finalized。"
 task2b_result: fixed
 rework_count: 1
 rework_date: "2026-04-27"
@@ -50,7 +50,7 @@ last_deepseek_polish_at: 2026-05-26
 last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
 task2b_verifier_result: "status-corrected-ready-for-task6"
 task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
-last_task9_review_log: "logs/deep-review/2026-07-08-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-08-05-deep-review.md"
 ---
 
 
