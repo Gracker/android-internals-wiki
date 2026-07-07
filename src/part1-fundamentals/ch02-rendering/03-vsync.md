@@ -44,7 +44,7 @@ last_task9_review_log: "logs/deep-review/2026-06-09-14-audit.md"
 task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Choreographer API 名 `AChoreographer_vsyncCallback`；AOSP android-16.0.0_r1 header 已复核，Android 17 tag 当前未在 android.googlesource 公开，章节 Android 17 内容保留待验证边界。P0 1（已修）/ P1 0 / P2 1（既有 suggestions，不重复）。"
 task2b_result: "fixed"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
+last_deepseek_cn_review_at: 2026-07-07
 last_task6_audit: "2026-07-07"
 last_task6_at: "2026-07-07T05:06:00+08:00"
 task9_state: "reviewed"
@@ -232,13 +232,13 @@ bool VSyncPredictor::addVsyncTimestamp(nsecs_t timestamp) {
 
 Present Fence 也走同一套入口。`VSyncReactor::addPresentFence()` 在 fence signal 后同样会调用 `mTracker.addVsyncTimestamp(time)`,所以现代架构里"硬件采样"和"present fence 校正"最终都落到同一个预测器里。
 
-把流程拉直来看,可以分成三步:
+整体来看，模型经历了三个阶段：
 
-**1)学习**:`VSyncReactor` 接收 HW_VSYNC 或 Present Fence 时间戳,把样本交给 `VSyncPredictor`。模型初建、刷新率切换或校正失败时,`needsMoreSamples()` 会保持为 true,系统继续打开硬件采样。
+**1) 学习**：`VSyncReactor` 接收 HW_VSYNC 或 Present Fence 时间戳,把样本交给 `VSyncPredictor`。模型初建、刷新率切换或校正失败时,`needsMoreSamples()` 会保持为 true,系统继续打开硬件采样。
 
-**2)预测**:样本足够后,`VSyncPredictor::nextAnticipatedVSyncTimeFrom()` 会从当前时间点推算未来的 VSync 时间。SurfaceFlinger 和 App 侧分发使用这个预测结果,通常不等待每一拍真实中断。
+**2) 预测**：样本足够后,`VSyncPredictor::nextAnticipatedVSyncTimeFrom()` 会从当前时间点推算未来的 VSync 时间。SurfaceFlinger 和 App 侧分发使用这个预测结果,通常不等待每一拍真实中断。
 
-**3)校正**:一旦硬件真实时间和预测结果偏差变大,`validate()` 会失败,或者 `VSyncReactor` 在刷新率切换、Present Fence 异常时重新进入采样模式。Perfetto 里短暂出现 HW_VSYNC 开启,表示系统正在重新收集样本；模型稳定后仍回到软件预测和定时分发。
+**3) 校正**：一旦硬件真实时间和预测结果偏差变大,`validate()` 会失败,或者 `VSyncReactor` 在刷新率切换、Present Fence 异常时重新进入采样模式。Perfetto 里短暂出现 HW_VSYNC 开启,表示系统正在重新收集样本；模型稳定后仍回到软件预测和定时分发。
 
 `[已验证: AOSP android-16.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp + 官方文档 implement-vsync]`
 
@@ -701,7 +701,7 @@ Offset 过小会导致 App 或 SF 来不及完成工作,错过 VSync 窗口,反�
 <!-- AIW-源码调研-2026-04-24 -->
 ## 十二、VSyncPredictor 线性回归算法详解（Android 14+ 源码补充）
 
-前面第三章讲 DispSync 时，关注的是系统"用模型预测 VSync"的整体思路。如果你需要深入到预测算法的具体实现——比如模型怎么从历史样本算出下一次 VSync 时间、异常样本怎么被过滤、VRR 下怎么适应变化的刷新率——下面这部分是对 android-16.0.0_r1 源码的逐段分析，可以作为第三章的源码级对照阅读。
+前文讲 DispSync 时，关注的是系统"用模型预测 VSync"的整体思路。如果需要深入预测算法的具体实现——模型怎么从历史样本算出下一次 VSync 时间、异常样本怎么被过滤、VRR 下怎么适应变化的刷新率——下面是对 android-16.0.0_r1 源码的逐段分析，可以配合前文的 DispSync 概述一起阅读。
 
 
 AOSP mainline 的 `VSyncPredictor.cpp`（路径 `services/surfaceflinger/Scheduler/VSyncPredictor.cpp`）实现了基于**简单线性回归**的软件 VSync 周期预测算法，替代了早期 DispSync 使用的简单平均方法。
@@ -849,3 +849,7 @@ Choreographer#doFrame() / SurfaceFlinger 合成消息
 ```
 
 VSync Offset 在当前实现中的落点是 `VsyncConfig { workDuration, readyDuration }` 和分发队列的触发时间。它不再表现为一个单独写死的纳秒偏移值；调度器根据预测时间、工作时长和准备时长算出 App 与 SurfaceFlinger 各自的回调时间。
+
+---
+
+**小结**：VSync 从解决画面撕裂的简单信号，演进到今天的三级虚拟化架构、自适应刷新率和线性回归预测，核心没有变——让每一帧在正确的时间出发。理解了这三层信号和 Phase Offset 的决策逻辑，再看 Perfetto，VSYNC 竖线就不再是装饰，而是整个渲染管线的时基。

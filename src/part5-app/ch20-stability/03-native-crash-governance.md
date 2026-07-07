@@ -59,7 +59,7 @@ last_task9_review_log: "logs/deep-review/2026-07-02-19-deep-review.md"
 task9_review_notes: "2026-07-02 Task9 normal deep-review AUTO-FIX：对照 AOSP android-17.0.0_r1 libunwindstack Unwinder::FormatFrame() 的 BuildId 输出格式，修正 addr2line 排查段中 Build ID 与 Build fingerprint 混淆；回到 Task6 复审。"
 last_task9_autofix_at: "2026-07-02"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
+last_deepseek_cn_review_at: 2026-07-07
 last_task9_audit: "2026-06-21"
 last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
 task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
@@ -69,9 +69,9 @@ task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-fo
 
 Native Crash 与 Java Crash 的区别：Java Crash 的异常信息由 ART 虚拟机在进程内部生成，调用栈完整、格式统一；Native Crash 由 Linux 信号触发，堆栈解析依赖独立的崩溃收集机制，排查路径更长。
 
-在 Perfetto 分析或线上故障排查时，我们经常遇到这样的情况：一个应用突然崩溃，但 ANR（应用无响应）堆栈只有一行 `SIGSEGV`，或者 Native 代码抛出的异常在 Java 层完全看不到痕迹。如果不知道 Native Crash 的收集机制和解读方法，这些崩溃就像黑盒一样，很难定位问题原因。
+在 Perfetto 分析或线上故障排查时，我们经常遇到这样的情况：一个应用突然崩溃，但 ANR（应用无响应）堆栈只有一行 `SIGSEGV`，或者 Native 代码抛出的异常在 Java 层完全看不到痕迹。如果不了解 Native Crash 的收集机制和解读方法，这些崩溃就像黑盒，很难定位原因。
 
-分析 Native Crash 时，四条线最容易影响定位效率：信号怎么产生、tombstone 怎么读、堆栈怎么还原到源码行号、线上监控怎么搭。掌握这几条线，排查时就不必只盯着系统生成的 tombstone 文件。
+排查 Native Crash 时，四条线最关键：信号怎么来、tombstone 怎么读、堆栈怎么还原到源码行号、线上监控怎么搭。掌握这几条线，排查时就不必只盯着系统生成的 tombstone 文件。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -136,11 +136,9 @@ SignalChain 的拦截发生在 `sigaction()` 调用时：应用通过 JNI 调用
 `ptrace` + 独立进程的设计是关键：崩溃进程的内存空间可能已经损坏，如果在进程内部做堆栈回溯，可能二次崩溃。`crash_dump` 通过 `ptrace` 从外部读取，安全性更高。pseudothread 机制保证崩溃线程在 fork+exec 期间不会阻塞在信号处理上下文中。
 <!-- AIW-源码调研-2026-07-07：Android 17 linker 与 debuggerd 集成 -->
 
-### Android 17 linker 启动期 wiring（勘误）
+### Android 17 linker 启动期 wiring
 
-> 直连 AOSP `android-17.0.0_r1` tag 源码，本节修正 2026-07-06 报告中「debuggerd 从 system/core 迁到 bionic/linker」的说法。
-
-实际改动只是一组 3 个薄适配文件（约 100 行）：
+Android 17 在 bionic/linker 中新增了 3 个薄适配文件（约 100 行），用于在 linker 启动早期接入 debuggerd：
 
 - `bionic/linker/linker_debuggerd.h`：仅声明 `linker_debuggerd_init()` 与 `extern "C" bool debuggerd_handle_signal(...)` 两个符号
 - `bionic/linker/linker_debuggerd_android.cpp`：定义 `get_process_info()` 从 `__libc_shared_globals()` 取 `abort_msg / fdsan_table / gwp_asan_state / scudo_stack_depot / crash_detail_page`；`linker_debuggerd_init()` 把它和 `notify_gdb_of_libraries` 一起塞进 `debuggerd_callbacks_t`，调用既存的 `debuggerd_init(&callbacks)`
@@ -169,11 +167,11 @@ _start → linker::_start → linker_main()
                               └ 转入用户程序入口
 ```
 
-**与 2026-07-06 报告的差异**：
-- ✗ "debuggerd 从 system/core/debuggerd/ 迁移到 bionic/linker/"：源码不存在整体迁移
-- ✗ "动态 altstack 尺寸自适应"：`thread_stack_pages = 8` 是编译期常量，无 `sysconf(_SC_SIGSTKSZ)` 调整路径
-- ✗ "线程亲和性分发"：`debuggerd_signal_handler()` 内未出现 `sched_setaffinity` / `CPU_SET` 调用；该断言**未经一手验证**
-- ✓ "SA_EXPOSE_TAGBITS / SEGV_MTE 软崩溃 / GWP-ASan recoverable / wire protocol v4" 均为可在源码中验证的真实新机制
+几点需要澄清的事实：
+- `debuggerd_handler.cpp`（880+ 行）仍在 `system/core/debuggerd/handler/` 下完整维护，并非整体迁移到 bionic/linker。
+- `thread_stack_pages = 8` 是编译期常量，不存在通过 `sysconf(_SC_SIGSTKSZ)` 动态调整的路径。
+- `debuggerd_signal_handler()` 内未出现 `sched_setaffinity` 或 `CPU_SET` 调用。
+- 以下机制是可在源码中直接验证的：`SA_EXPOSE_TAGBITS`、`SEGV_MTE` 软崩溃、GWP-ASan recoverable、wire protocol v4。
 
 
 
