@@ -210,6 +210,69 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-07T19:09:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-08T05:39:34+08:00",
+      "completed_by": "task2b-lite",
+      "completion_note": "删除文末\"技术演进总结\"段（正确的废话），前面版本演进表已充分覆盖"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "内存",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://arxiv.org/abs/2605.27761"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "AndroidDaily：面向闭源应用的 GUI 代理基准 — 提出了 AndroidDaily 基准（350 任务/94 闭源应用）和 GRADE 过程感知评估框架。GRADE 通过三层外部准则（操作义务/输出质量/负面约束）实现无需内部状态的自动评估，与人类一",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-08T05:36:48.067242",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://arxiv.org/abs/2511.06186"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 构建失败诊断与修复实证研究 — 对 200 个开源 Android 项目的构建失败进行了系统性实证分析。67.5% 项目初始构建失败，根因分为四类：环境问题（45%）、依赖/Gradle 错误（42%）、配置错误（8%）、语法/AP",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-08T05:36:48.068882",
+      "status": "pending"
+    },
+    {
+      "section": "ch12-apk-network",
+      "section_title": "网络",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://arxiv.org/abs/2507.02110"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "内部代码指标预测应用受欢迎程度 — 研究了 446 个 F-Droid+Google Play 配对的 Android 应用，使用系统级、类级、方法级代码指标（1167 个特征）预测应用评分和下载量。回归模型因数据偏斜表现差，但二分类任",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-08T05:36:48.069382",
       "status": "pending"
     }
   ],
