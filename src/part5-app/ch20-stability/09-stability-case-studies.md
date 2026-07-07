@@ -4,9 +4,9 @@ chapter: "20.9"
 section: "20.9"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-06T12:50:00+08:00"
-last_verified_against: "AOSP android-17.0.0_r1 ActivityThread/ComputerEngine；signal handler async-signal-safety audit；task2b 2026-07-06 deep-review rework"
-confidence: medium
+last_verified: "2026-07-07T13:10:07+08:00"
+last_verified_against: "AOSP android-17.0.0_r1 debuggerd_handler/linker_main/Process.java/ActivityThread/ComputerEngine；task9 2026-07-07 Android 17 boundary auto-fix"
+confidence: high
 drafted_date: "2026-05-11"
 polish_count: 0
 sources:
@@ -26,28 +26,28 @@ tags: [case-study, stability, crash-investigation, oom, native-crash, anr, gover
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-06"
-last_task9_at: "2026-07-06T14:26:00+08:00"
+task9_reviewed_date: "2026-07-07"
+last_task9_at: "2026-07-07T13:10:07+08:00"
 last_task9_audit: "2026-07-06"
 last_task2b_lite_at: "2026-07-06"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
-last_task9_autofix_at: "2026-05-28"
-last_task9_review_log: "logs/deep-review/2026-05-28-03-deep-review.md"
-task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95。2026-05-28 Task2B：重写 handler 示例为最小 async-signal-safe 快照、altstack 注册、默认动作恢复与 re-raise，回流 Task6。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
+last_task9_autofix_at: "2026-07-07"
+last_task9_review_log: "logs/deep-review/2026-07-07-13-deep-review.md"
+task9_review_notes: "2026-05-28 Task9：auto-fix ContentProvider initOrder 顺序口径；发现 Native signal handler 示例在 handler 内执行 dlopen/dladdr/write_crash_report 等非 async-signal-safe 工作，已写入 queue P95。2026-05-28 Task2B：重写 handler 示例为最小 async-signal-safe 快照、altstack 注册、默认动作恢复与 re-raise，回流 Task6。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。 | 2026-07-07 Task9：auto-fix Android 17 版本边界错误；移除/改写未进入 android-17.0.0_r1 的信号线程亲和性、动态 altstack、perf_event crash 上下文、getThreadCpuTime(tid)、cgroup v2 cpu.weight 透出口径；回到 Task6 复审。"
 last_task2b_at: "2026-07-06T12:50:00+08:00"
 last_task2b_source: "task9-deep-tech-review (2026-07-06 re-review)"
 last_task2b_priority: 95
-task2b_note: "2026-07-06 主修复：扩充 Android 17 信号处理机制（async-signal-safe 校验、线程亲和性信号分发、动态 altstack）、线程亲和性管理（三大场景 + 注意事项）、Android 17 线程监控 API 详解（getThreadCpuTime/getThreadPriority/sched）、Android 12+ THREAD_PRIORITY_* 与 cgroup v2 调度讨论、虚拟内存碎片化 OOM 分析、Android 5.0 vs 17 适用性 + 15→17 演进说明。P1 3 项 / P2 4 项全部修复。"
+task2b_note: "2026-07-06 Task2B 回流后，2026-07-07 Task9 auto-fix 删除未进入 android-17.0.0_r1 的信号线程亲和性、动态 altstack、perf_event crash 上下文、getThreadCpuTime(tid) 与 cgroup v2 cpu.weight 透出口径；保留虚拟内存碎片化 OOM、ContentProvider initOrder、debuggerd SA_EXPOSE_TAGBITS/MTE/GWP-ASan 等已验证内容。"
 last_task6_at: "2026-05-28T03:16:00+08:00"
 last_task6_audit: "2026-07-06"
 last_task6_review_log: "logs/review/2026-05-28-03-review.md"
@@ -206,7 +206,7 @@ Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。�
 
 **Android 17 信号处理机制变化（基于 AOSP `android-17.0.0_r1` 源码校核）**：经 `bionic/linker/linker_main.cpp:312-313` 与 `system/core/debuggerd/handler/debuggerd_handler.cpp:892-927` 直接验证：
 
-1. **linker 启动期 wiring**：`bionic/linker/linker_main.cpp:313` 的 `linker_debuggerd_init()` 是新增触发点 —— 在 `__system_properties_init()` 之后立即调用 `debuggerd_init(&callbacks)`。**debuggerd 本身并未迁入 linker**，只是多了 3 个薄适配文件（`linker_debuggerd.h` / `linker_debuggerd_android.cpp` / `linker_debuggerd_stub.cpp`）。`system/core/debuggerd/` 仍保留完整 880+ 行的 `debuggerd_handler.cpp`。
+1. **linker 启动期 wiring**：`bionic/linker/linker_main.cpp:313` 的 `linker_debuggerd_init()` 是可确认触发点 —— 在 `__system_properties_init()` 之后立即调用 `debuggerd_init(&callbacks)`。**debuggerd 本身并未迁入 linker**，只是多了 3 个薄适配文件（`linker_debuggerd.h` / `linker_debuggerd_android.cpp` / `linker_debuggerd_stub.cpp`）。`system/core/debuggerd/` 仍保留完整 880+ 行的 `debuggerd_handler.cpp`。
 2. **`SA_EXPOSE_TAGBITS` 新 flag**：`debuggerd_handler.cpp:917` 在原来的 `SA_RESTART | SA_SIGINFO | SA_ONSTACK` 基础上增加 `SA_EXPOSE_TAGBITS`，让 arm64 MTE tag 信息上送到 `ucontext_t`，用于诊断 `SEGV_MTEAERR / SEGV_MTESERR` fault。
 3. **altstack 实际是 mmap + clone_thread，不是 sigaltstack 128 KB**：`debuggerd_handler.cpp:897-913` 调用 `mmap(NULL, getpagesize() * (8+2), PROT_NONE, ...)`，再 `mprotect` 中间 8 页 `PROT_READ|PROT_WRITE`，头尾两页保留 `PROT_NONE` 作 stack guard。最后 `clone(debuggerd_dispatch_pseudothread, pseudothread_stack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM ...)` 派生同进程线程。`SA_ONSTACK` 是兜底，正常情况下用 `clone` 自己的栈。**`thread_stack_pages = 8` 是编译期常量，未见运行时 `sysconf(_SC_SIGSTKSZ)` 自适应路径**。
 4. **wire protocol v4**：`debuggerd_handler.cpp:527-560`，动态可执行文件（fdsan_table != nullptr）调用 `get_process_info()` 把 `debugger_process_info` 通过 pipe 传给 `crash_dump`（version=4）。Static exe 仍走 v1（仅 abort_msg 指针）。
@@ -254,10 +254,10 @@ void dump_signal_handlers() {
 
 > 上方 ch09 第一处勘误的反向印证：在 `android-17.0.0_r1` 中，`debuggerd_signal_handler → linker_debuggerd_signal_handler` 的「Android 5.0 模式」并非 linker 化迁移的产物 —— `linker_debuggerd_signal_handler` 在源码树中**未独立存在**。真正的 linker 侧入口只有 `linker_debuggerd_init()`（一个 4 行的 symbol），其余逻辑（signal handler 主体、GWP-ASan/MTE 异常分支、wire protocol）全部在 `system/core/debuggerd/handler/` 目录下未迁移。
 
-**Android 5.0 模式在 Android 17 中的适用性**：Android 5.0 引入的 debuggerd 信号处理器链机制（`debuggerd_signal_handler` → `linker_debuggerd_signal_handler`）在 Android 17 中保持兼容，但约束更强。Android 5.0 时期，handler 内执行 `dlopen("libc++.so")` 和 `__android_log_print` 等操作虽不安全但通常能工作；Android 17 的运行时对这些操作默认拒绝或触发 SIGABRT 二次崩溃。保留旧处理器链时，不要默认调用未知 SDK 的旧 handler——除非对方显式保证 async-signal-safe。
+**Android 5.0 模式在 Android 17 中的适用性**：旧资料里常把 debuggerd signal handler 与 linker 侧入口混在一起。`android-17.0.0_r1` 下，linker 只负责启动期 `linker_debuggerd_init()` wiring，真正的 signal handler 主体仍在 `system/core/debuggerd/handler/`。应用或 SDK 侧只需要关心自己注册的 `sigaction` 链路是否保留旧 handler、是否遵守 async-signal-safe 约束；不要把 `linker_debuggerd_signal_handler` 写成 Android 17 的实际入口。
 
 
-**Android 15+ 信号处理机制演进**：Android 15 (API 35) 开始收紧信号处理安全约束，明确禁止 handler 内分配内存和持有锁；Android 16 (API 36) 引入 perf_event 辅助 crash 上下文采集；Android 17 (API 37) 完成了线程亲和性信号分发、动态 altstack 尺寸等增强。从 Android 15 到 17 的演进方向是：handler 只做"最小快照 + 重新投递"，复杂工作交给系统 crash_dump / debuggerd / tombstone 流程。统一信号处理器的实现应遵循这个最小职责原则。
+**Android 15+ 信号处理机制演进**：本节只保留 `android-17.0.0_r1` 已确认的变化：linker 启动期调用 `linker_debuggerd_init()`，debuggerd handler 使用固定 8 页 mmap stack、`SA_EXPOSE_TAGBITS`、MTE permissive mode 与 GWP-ASan recoverable crash 路径。没有源码证据支持“线程亲和性信号分发”“动态 altstack 尺寸自适应”或“perf_event 辅助 crash 上下文采集”。应用侧统一处理器仍应遵循最小快照、恢复默认动作、重新投递的原则。
 
 ### 修复方案
 
@@ -539,19 +539,11 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 分类完成后，找到具体阻塞/崩溃的位置。工具选择：
 
 - **Java 堆/线程问题**：Android Studio Profiler 的 Memory 视图 + Perfetto 的 `process_track`
-- **Native 问题**：Perfetto 的 `sched` 轨道 + `tombstone` 文件分析 + Android 17 线程监控 API
+- **Native 问题**：Perfetto 的 `sched` 轨道 + `tombstone` 文件分析 + `/proc/self/task` 线程采样
 
-**Android 17 线程监控 API 详解**：除了传统 `/proc/self/task/{tid}/stat` 的解析，Android 17 为应用层提供了三个可直接调用的线程监控入口：
+**线程排查入口（Android 17 口径）**：`android.os.Process.getThreadPriority(int tid)` 在 Android 17 仍返回 Linux nice priority；`Process.java` 中可以看到 `getExclusiveCores()` 和隐藏的 `getSchedAffinity(int)`，但不能写成普通应用可直接依赖的公开监控 API。应用侧可稳定使用 `/proc/self/status` 的 `Threads` 字段、枚举 `/proc/self/task/{tid}`，并结合 Perfetto `sched_switch` 判断线程生命周期和调度状态。需要按线程统计 CPU 时间时，应解析 `/proc/self/task/{tid}/stat` 或使用 profiler / trace，而不是引用不存在的 `getThreadCpuTime(tid)` 平台 API。
 
-| API | 用途 | Android 17 变化 |
-|-----|------|----------------|
-| `android.os.Process.getThreadCpuTime(tid)` | 获取指定线程的用户态 + 内核态 CPU 时间 | Android 17 修复了 32 位溢出问题，改用 64 位计数器 |
-| `android.os.Process.getThreadPriority(tid)` | 查询线程 nice 值和调度策略 | Android 17 新增对 cgroup v2 `cpu.weight` 的透出 |
-| `/proc/self/task/{tid}/sched` | 内核级调度详情（nr_switches、avg_atom 等） | Android 17 无需 root 即可读取应用自身线程的 sched 文件 |
-
-这些 API 使应用能够在运行时检测"疑似泄漏线程"（CPU 时间为 0、创建时间久但无任何调度事件），配合 20.7 节异常架构的线程泄漏检测模块，在 OOM 发生前发出预警。
-
-**Android 12+ 线程优先级常量与调度行为**：`android.os.Process` 定义的 `THREAD_PRIORITY_*` 常量（从 `THREAD_PRIORITY_LOWEST` = 19 到 `THREAD_PRIORITY_URGENT_DISPLAY` = -8）在 Android 12 (API 31) 后行为发生变化——不再仅映射到 Linux nice 值，还受 cgroup v2 的 `cpu.weight` 影响。nice 值的线性调整不保证 CPU 时间的线性变化；在 cgroup v2 下，高优先级线程的实际唤醒延迟还取决于 cgroup 层级的 `cpu.max` 和 `cpu.weight.nice` 的交互。
+`THREAD_PRIORITY_*` 常量仍是 Linux nice priority 语义：`THREAD_PRIORITY_LOWEST` = 19，`THREAD_PRIORITY_BACKGROUND` = 10，`THREAD_PRIORITY_URGENT_DISPLAY` = -8。实际调度延迟会受 cgroup、cpuset、负载和热状态影响，但 `getThreadPriority(int)` 不透出 cgroup v2 `cpu.weight`；排查时应把 nice 值、线程所在 cgroup、Perfetto `sched_switch` 和 `/proc/{pid}/task/{tid}/sched` 放在一起看。
 
 在稳定性排查中，如果某个 SDK 的后台线程设置了 `THREAD_PRIORITY_DEFAULT`（0）而非 `THREAD_PRIORITY_BACKGROUND`（10），这些线程会被调度器视为同等优先级的"前台"任务，与主线程竞争 CPU，可能间接导致主线程被 preempt 而触发 ANR。排查工具：`/proc/{pid}/task/{tid}/sched` 中的 `prio` 和 `se.avg.util_est` 配合 Perfetto 的 `sched_switch` 轨道，可以确认是否存在"低优先级任务挤占高优先级任务"的调度异常。
 
@@ -577,14 +569,7 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 
 从公开的技术博客和开源项目中，可以归纳出成熟稳定性治理体系的几个共性：
 
-**Android 17 线程亲和性（Thread Affinity）管理**：Android 17 通过 `sched_setaffinity` 与 cpuset cgroup 的协同，为应用提供了更细粒度的线程绑定机制。关键线程（如渲染线程、音频线程、崩溃监控线程）可以绑定到特定 CPU 核心，减少跨核迁移带来的 cache miss 和调度延迟。
-
-线程亲和性对稳定性治理的三个实际价值：
-1. **崩溃监控线程**：将 `CrashDumpWatchdog` 线程绑定到独立的小核（CPU 0-3），避免在高负载时被挤占 CPU 时间导致 tombstone 写入超时。
-2. **信号处理确定性**：崩溃信号的分发优先投递到线程当前所在核心的 local APIC，绑定核心可以减少 IPC（Inter-Processor Communication）延迟，确保 `siginfo_t` 和 `ucontext_t` 的寄存器快照时效性。
-3. **性能关键路径隔离**：将渲染线程绑定到大核（CPU 4-7），避免被后台任务抢占，从源头降低主线程 ANR 概率。
-
-适用场景和注意事项：过度绑定可能导致负载不均衡、核心过热降频。推荐策略是设置 `cpuset` 偏好值而非硬绑定——允许调度器在负载过高时迁移，但优先维持在指定核心组内。
+**线程调度与亲和性的边界**：Android 17 源码中可以看到 `Process.getExclusiveCores()` 和隐藏的 `getSchedAffinity(int)`，但这不是稳定性治理中通用、公开的“线程亲和性管理 API”。应用侧不要把崩溃监控线程硬绑核当作默认策略，尤其不能把崩溃信号写成“按当前核心 local APIC 分发”。稳定性治理更稳的做法是控制线程数量、线程优先级、阻塞点和后台任务隔离；确需调整亲和性时，应以厂商环境和实测 trace 为准。
 
 ### 指标驱动而非报警驱动
 
