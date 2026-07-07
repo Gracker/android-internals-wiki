@@ -9,21 +9,21 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 last_task2b_at: '2026-05-27T10:50:00+08:00'
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
 task6_reviewed_date: "2026-06-16"
 task6_result: "pass-light-edit"
-last_task9_at: "2026-06-17T01:27:53+08:00"
-task9_result: "pass-tech-review"
+last_task9_at: "2026-07-08T02:33:03+08:00"
+task9_result: "auto-fixed"
 task2b_result: fixed
 last_task2b_lite_at: '2026-05-27'
-task9_reviewed_date: "2026-06-17"
+task9_reviewed_date: "2026-07-08"
 task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。| 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。| 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。| 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。| 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。| 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 API 34 `ASurfaceControl_fromJava()`、API 36 release callback、FramebufferSurface client target 边界、FrameTimeline API level 与跨进程 SurfaceControl 共享路径；无 P0/P1，queue 无 pending，自动晋升 finalized。| 2026-06-16 11 Task9 idle audit AUTO-FIX：修正 Perfetto surfaceflinger_layers.proto 中 HwcCompositionType 枚举名与 DISPLAY_DECORATION=6 缺失问题；证据为 AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/trace/android/surfaceflinger_layers.proto；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。 | 2026-06-16 17 Task9 deep-review AUTO-FIX: 修正 SurfaceControl/BLAST 概念边界、FrameTimeline 示例漏调用 setFrameTimeline、fence 同步边界、WebView 独立 layer 条件与 BLAST/FramebufferSurface 流转描述；证据为 AOSP android-16.0.0_r1 surface_control/choreographer/FramebufferSurface/BLAST 源码；回到 Task6 复审。 | 2026-06-17 01 Task9 deep-review PASS: 复核 2026-06-16 auto-fix 后源码锚点与版本边界；无 P0/P1，queue 无 pending，Task6 已 pass-light-edit，自动晋升 finalized / ready-to-publish。"
+task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。| 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。| 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。| 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。| 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。| 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 API 34 `ASurfaceControl_fromJava()`、API 36 release callback、FramebufferSurface client target 边界、FrameTimeline API level 与跨进程 SurfaceControl 共享路径；无 P0/P1，queue 无 pending，自动晋升 finalized。| 2026-06-16 11 Task9 idle audit AUTO-FIX：修正 Perfetto surfaceflinger_layers.proto 中 HwcCompositionType 枚举名与 DISPLAY_DECORATION=6 缺失问题；证据为 AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/trace/android/surfaceflinger_layers.proto；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。 | 2026-06-16 17 Task9 deep-review AUTO-FIX: 修正 SurfaceControl/BLAST 概念边界、FrameTimeline 示例漏调用 setFrameTimeline、fence 同步边界、WebView 独立 layer 条件与 BLAST/FramebufferSurface 流转描述；证据为 AOSP android-16.0.0_r1 surface_control/choreographer/FramebufferSurface/BLAST 源码；回到 Task6 复审。 | 2026-06-17 01 Task9 deep-review PASS: 复核 2026-06-16 auto-fix 后源码锚点与版本边界；无 P0/P1，queue 无 pending，Task6 已 pass-light-edit，自动晋升 finalized / ready-to-publish。 | 2026-07-08 02 Task9 idle audit AUTO-FIX：将正文源码基准从 AOSP android-16.0.0_r1 更新为 android-17.0.0_r1；复核 surface_control.h、surface_control_jni.h、choreographer.h、GraphicBufferMapper.cpp、surfaceflinger_layers.proto 在 android-17.0.0_r1 下的 API 与路径；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。"
 last_task6_at: "2026-06-16T22:15:00+08:00"
 last_task2b_verifier_at: "2026-06-16T23:28:12+08:00"
 task2b_verifier_notes: "2026-06-16 Task2B Verifier: state reconciliation — task9_state reviewed→pending; Task6 已 pass-light-edit，需 Task9 复审 auto-fixed 内容"
@@ -33,14 +33,14 @@ review_notes: "2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-27-11-review.md"
 review_type: "task6-writing-quality-review"
-last_task9_autofix_at: "2026-06-16"
+last_task9_autofix_at: "2026-07-08"
 p0: 0
 p1: 0
 p2: 0
-last_task9_audit: "2026-06-16"
-last_task9_audit_at: "2026-06-16T11:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-16-11-audit.md"
-last_task9_audit_result: "auto-fixed-p0-source-enum"
+last_task9_audit: "2026-07-08"
+last_task9_audit_at: "2026-07-08T02:33:03+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-08-02-audit.md"
+last_task9_audit_result: "auto-fixed-p0-android17-baseline"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
 ---
@@ -219,7 +219,7 @@ ASurfaceTransaction_reparent(transaction, sc, newParent);
 
 跨进程共享 `SurfaceControl` 时，公开入口分成 Java Parcelable 和 API 34 JNI bridge 两层。`android.view.SurfaceControl` 自 API 29 起实现 Parcelable，`writeToParcel()` 把 SurfaceFlinger 侧的 layer handle / client binder 写入 `Parcel`，目标进程 `readFromParcel()` 后得到新的 Java `SurfaceControl` 本地引用。Framework native 内部对应 `frameworks/native/libs/gui/include/gui/SurfaceControl.h` 的 `SurfaceControl::writeToParcel()` / `SurfaceControl::readFromParcel()`。
 
-公开 NDK C API 侧没有 `ASurfaceControl_writeToParcel()` / `ASurfaceControl_readFromParcel()` 这类函数（AOSP android-16.0.0_r1 的 `include/android/surface_control.h` 未暴露）。API 34 起，native 代码可以在目标进程拿到 Java `SurfaceControl` 后，包含 `android/surface_control_jni.h` 并调用 `ASurfaceControl_fromJava(JNIEnv*, jobject)` 转成 `ASurfaceControl*`；调用方取得所有权，用完后必须 `ASurfaceControl_release()`。因此完整路径是：Java / Binder 负责跨进程序列化，NDK 在本进程继续提交 Transaction；不能把 `ASurfaceControl*` 当作可直接写入 Binder 的裸指针。
+公开 NDK C API 侧没有 `ASurfaceControl_writeToParcel()` / `ASurfaceControl_readFromParcel()` 这类函数（AOSP android-17.0.0_r1 的 `include/android/surface_control.h` 未暴露）。API 34 起，native 代码可以在目标进程拿到 Java `SurfaceControl` 后，包含 `android/surface_control_jni.h` 并调用 `ASurfaceControl_fromJava(JNIEnv*, jobject)` 转成 `ASurfaceControl*`；调用方取得所有权，用完后必须 `ASurfaceControl_release()`。因此完整路径是：Java / Binder 负责跨进程序列化，NDK 在本进程继续提交 Transaction；不能把 `ASurfaceControl*` 当作可直接写入 Binder 的裸指针。
 
 普通应用跨进程操作 Layer 树时，通常走以下几条路径之一：1. **系统托管**：WindowManager / Shell transition 负责跨进程 Layer 树的调整（如画中画、分屏），应用只需提交内容 buffer
 2. **Java Parceling + NDK bridge**：持有 `android.view.SurfaceControl` 的一方通过 `writeToParcel()` / `readFromParcel()` 序列化句柄，目标进程再用 `ASurfaceControl_fromJava()` 接回 native 渲染代码
@@ -548,7 +548,7 @@ Gralloc HAL 分为 Allocator（分配物理内存）和 Mapper（导入进程地
 |:---|:---|:---|
 | Android 10 / 11 | Gralloc 3 / 4 | HIDL 接口，Allocator 3.x / Mapper 4.x |
 | Android 12+ | 逐步引入 stable-C / mapper 4 | 开始向 AIDL 过渡 |
-| Android 16 | Gralloc 5 / AIDL | Framework 侧 `GraphicBufferMapper` 优先尝试 `Gralloc5Mapper`（AIDL），再 fallback 到 `Gralloc4Mapper`、`Gralloc3Mapper`（HIDL） |
+| Android 16 / 17 | Gralloc 5 / AIDL | Framework 侧 `GraphicBufferMapper` 优先尝试 `Gralloc5Mapper`（AIDL），再 fallback 到 `Gralloc4Mapper`、`Gralloc3Mapper`（HIDL） |
 
 Mapper 的核心操作：`importBuffer`（导入进程地址空间）、`lock`（映射供 CPU 访问）、`flush`/`invalidate`（缓存同步）、`freeBuffer`（释放）。Framework 层入口是 `GraphicBufferMapper`（`libs/ui/GraphicBufferMapper.cpp`），App 层面操作 buffer 时不会直接调用它，但它是 CPU 访问 graphic buffer 的必经之路。### HWC 合成类型判断
 
@@ -579,7 +579,7 @@ Legacy 模式：BufferQueue Consumer 在 SurfaceFlinger 进程侧的 Layer 路�
 
 ### 源码文件索引
 
-以下路径基于 AOSP android-16.0.0_r1；旧版本部分路径可能不同，已标注。| 文件 | 关键内容 |
+以下路径基于 AOSP android-17.0.0_r1；旧版本部分路径可能不同，已标注。| 文件 | 关键内容 |
 |:---|:---|
 | `frameworks/native/libs/gui/Surface.cpp` | ANativeWindow 实现，`dequeueBuffer`/`queueBuffer` |
 | `frameworks/native/libs/gui/BufferQueue.cpp` | `createBufferQueue()` 工厂方法 |
