@@ -4,20 +4,22 @@ chapter: "16.3"
 status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-01"
+reviewed_date: '2026-07-07'
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_review_notes: "2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix 已验证；L1 修 1 处物理动作动词(收紧→受限)；章节无 outline 块(历史遗留)；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。"
+last_task6_at: "2026-07-07T20:11:24+08:00"
+task6_state: reviewed
 last_task6_audit: "2026-06-22"
 task9_state: reviewed
 task9_result: auto-fixed
 last_task9_autofix_at: "2026-07-07"
 last_task9_at: "2026-05-01T08:27:00+08:00"
-task9_reviewed_date: "2026-05-01"
+task9_reviewed_date: '2026-07-07'
 task9_reviewed_by: openclaw-task9
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-07-07"
 last_verified_against: "AOSP android-17.0.0_r1 + source.android.com"
@@ -414,7 +416,7 @@ fastboot flashall -w
 
 **「全量编译每次都要等几小时」**。Ninja 的增量编译在 AOSP 上非常高效。修改一个 Java 文件后，`m framework` 通常只需 30 秒到 2 分钟。只有修改了 `Android.bp` 构建描述文件或触发了全量依赖重建时，才需要较长的编译时间。善用模块级编译（`m <module>`）而非全量编译（`m`），可以大幅缩短调试循环。
 
-**「刷 Pixel 就能跑自编译 AOSP」**。这条经验在新旧机型上的成立条件不同。Pixel 的 factory image 和 driver binaries 页面仍在更新，真机验证通道没有消失；收紧的是部分设备树、硬件仓库和公开提交历史。对刷机和回归验证，先核对三样东西：当前 branch 有没有可用的 lunch target、drivers page 有没有对应 vendor image、factory images page 有没有同版本基线。缺一项时，Cuttlefish 往往更稳。
+**「刷 Pixel 就能跑自编译 AOSP」**。这条经验在新旧机型上的成立条件不同。Pixel 的 factory image 和 driver binaries 页面仍在更新，真机验证通道没有消失；受限的是部分设备树、硬件仓库和公开提交历史。对刷机和回归验证，先核对三样东西：当前 branch 有没有可用的 lunch target、drivers page 有没有对应 vendor image、factory images page 有没有同版本基线。缺一项时，Cuttlefish 往往更稳。
 
 ## 与其他章节的关系
 

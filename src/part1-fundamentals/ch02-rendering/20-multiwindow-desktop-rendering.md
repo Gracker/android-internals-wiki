@@ -55,12 +55,12 @@ related_chapters:
 - '3.3'
 drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
-reviewed_date: '2026-06-14'
+reviewed_date: '2026-07-07'
 finalized_date: '2026-06-14'
 finalized_by: openclaw-task9-auto-promote
 auto_promoted_date: '2026-06-14'
@@ -68,7 +68,7 @@ auto_promoted_by: openclaw-task9
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed-lite
-task9_reviewed_date: '2026-06-14'
+task9_reviewed_date: '2026-07-07'
 last_task9_at: '2026-06-14T20:37:52+08:00'
 last_task2b_at: '2026-05-09T17:20:00+08:00'
 task9_reviewed_by: openclaw-task9
@@ -78,7 +78,7 @@ last_task9_audit_log: "logs/deep-review/2026-07-07-16-audit.md"
 last_task2b_lite_at: '2026-05-31'
 last_task6_at: '2026-06-14T16:05:00+08:00'
 last_task6_review_log: logs/review/2026-06-14-16-review.md
-task6_review_notes: 2026-06-14 Task6 16:05：Task9 auto-fixed 后写作复审。L1 禁用词/高频词/翻译腔扫描全干净。L2
+task6_review_notes: "2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix recreateOnConfigChanges 已验证正确；L1 修 1 处禁用词(落地→生效)；锚点 5/5 覆盖；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。"
   修 1 处空标题（Android 16 桌面模式公开边界段落归位）。锚点 5/5 覆盖。无 L3/L4 回炉项。task9_result=auto-fixed
   非 pass-tech-review，未自动晋升。
 last_task9_review_log: logs/deep-review/2026-06-14-20-deep-review.md
@@ -181,7 +181,7 @@ task9_p2_issues: 0
 3. 调 `shouldDeviceBeWoken` / `shouldDeviceBePutToSleep` 决定是否联动 `PowerManager.wakeUp(WAKE_REASON_UNFOLD_DEVICE, "server.display:unfold")` 或 `goToSleep(GO_TO_SLEEP_REASON_DEVICE_FOLD)`（行 626–666）。这就是 §2.20 中 `wakeup` / `goToSleep` trace slice 的来源。
 4. 派发 `MSG_TRANSITION_TO_PENDING_DEVICE_STATE` 延迟消息作为兜底超时（行 667）。如果 `finishStateTransitionLocked()` 回调没到，强制切到目标状态。
 
-`onBootCompleted()` 之前所有状态变化都被缓存在 `mDeviceStateToBeAppliedAfterBoot` 里，boot 完才落地（行 670–681）。这是为什么冷启动过程中观察不到 fold/unfold trace 的原因。
+`onBootCompleted()` 之前所有状态变化都被缓存在 `mDeviceStateToBeAppliedAfterBoot` 里，boot 完才生效（行 670–681）。这是为什么冷启动过程中观察不到 fold/unfold trace 的原因。
 
 ### 逻辑 display → DisplayPowerController 一一对应
 

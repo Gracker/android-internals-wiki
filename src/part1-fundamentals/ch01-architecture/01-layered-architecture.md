@@ -298,6 +298,101 @@ Binder 是 Android 高频 IPC 的主要通道，Framework 服务调用、App 与
 > 源码：`kernel/common/security/selinux/hooks.c` — `selinux_binder_transaction()`；`security/selinux/avc.c` — `avc_has_perm()`。**[来源: AOSP kernel/common SELinux hooks.c, mainline Linux AVC]**
 
 
+### Binder 线程池：容量、调度与诊断
+
+Binder 跨层调用的实际承载者是进程内**线程池**。Android 17 的线程池由 `libbinder`（用户态） + `/dev/binder` 驱动（内核态）两套独立但严格耦合的机制协同。理解这套机制是定位"binder 卡顿"类问题的前置条件。
+
+**关键源码**：`frameworks/native/libs/binder/ProcessState.cpp`（android-17.0.0_r1），`IPCThreadState.cpp`、`kernel/common/drivers/android/binder.c`（android-17-6.18-2026-04_r1，对应 17 内核 tag）。
+
+**池结构与默认值**（`ProcessState.cpp` line 48-49, 605-620）：
+
+```cpp
+#define BINDER_VM_SIZE ((1 * 1024 * 1024) - sysconf(_SC_PAGE_SIZE) * 2)
+#define DEFAULT_MAX_BINDER_THREADS 15
+// mMaxThreads(DEFAULT_MAX_BINDER_THREADS)  ← 进程内上限
+// mThreadPoolStarted(false)              ← 池是否启动
+// mExecutingThreadsCount(0)              ← 正在 execute 命令的线程数
+// mCurrentThreads(0)                     ← 已 join 池的线程数
+// mKernelStartedThreads(0)               ← 已 spawn 给内核的累计数
+```
+
+`BINDER_VM_SIZE` 是每个进程一次性 mmap 的 transaction 共享内存（约 1MB - 2 个保护页）。`DEFAULT_MAX_BINDER_THREADS = 15` 是 `system_server`、普通 App 进程的默认值。
+
+**启动入口**（`ProcessState.cpp` line 218-232）：
+
+```cpp
+void ProcessState::startThreadPool() {
+    std::unique_lock<std::mutex> _l(mLock);
+    if (!mThreadPoolStarted) {
+        if (mMaxThreads == 0) {
+            ALOGW("Extra binder thread started, but 0 threads requested.");
+        }
+        mThreadPoolStarted = true;
+        spawnPooledThread(true);  // isMain=true 启动第一个线程
+    }
+}
+```
+
+线程入口在 `PoolThread::threadLoop()`，调用 `IPCThreadState::self()->joinThreadPool(mIsMain)`。`isMain=true` 走 `BC_ENTER_LOOPER`（main 线程，不参与 spawn 计数）；`isMain=false` 走 `BC_REGISTER_LOOPER`。
+
+**内核 spawn 守门**（`binder.c` line 5397-5411）：
+
+```c
+if (force_spawn || (proc->requested_threads == 0 &&
+    list_empty(&thread->proc->waiting_threads) &&
+    proc->requested_threads_started < proc->max_threads &&
+    (thread->looper & (BINDER_LOOPER_STATE_REGISTERED | BINDER_LOOPER_STATE_ENTERED)))) {
+    proc->requested_threads++;
+    if (put_user(BR_SPAWN_LOOPER, (uint32_t __user *)buffer))
+        return -EFAULT;
+}
+```
+
+四个守门条件：①没有已请求但未注册的新线程；②没有进程级等待中的目标线程；③已注册线程累计数 < 用户态上限；④当前线程是真实 binder 工作线程。任意一条不满足就跳过 spawn。`BC_REGISTER_LOOPER` 减 `requested_threads` 并加 `requested_threads_started`，`BC_ENTER_LOOPER` 不动计数。
+
+**调优入口**（`ProcessState.cpp` line 451-462）：
+
+```cpp
+status_t ProcessState::setThreadPoolMaxThreadCount(size_t maxThreads) {
+    LOG_ALWAYS_FATAL_IF(mThreadPoolStarted && maxThreads < mMaxThreads,
+           "Binder threadpool cannot be shrunk after starting");
+    if (ioctl(mDriverFD, BINDER_SET_MAX_THREADS, &maxThreads) != -1) {
+        mMaxThreads = maxThreads;
+    }
+    ...
+}
+```
+
+**关键不变量**：调高可以，调低会 `LOG_ALWAYS_FATAL` 直接 abort。必须在 `startThreadPool()` 之前调用。
+
+**诊断信号**（`IPCThreadState.cpp` line 760-820）：
+
+```cpp
+if (newThreadsCount >= mProcess->mMaxThreads) {
+    auto expected = ProcessState::never();
+    mProcess->mStarvationStartTime.compare_exchange_strong(expected, ...);
+}
+// ... 退出 execute 时若饥饿 >100ms
+if (starvationTime > 100ms) {
+    ALOGE("binder thread pool (%zu threads) starved for %" PRId64 " ms",
+          maxThreads, to_ms(starvationTime));
+}
+```
+
+所有线程都忙超过 100ms 时 `ALOGE` 报警，这是 Android 17 唯一对外暴露的 binder 池饥饿诊断信号。Perfetto 看到大量 `BR_SPAWN_LOOPER` + 主线程长时间 Runnable + logcat 出现该 ALOGE 三件套，可基本定位"binder 池容量不足或存在长事务"。
+
+**调度优先级**：`flat_binder_object.flags` 中的 `FLAT_BINDER_FLAG_INHERIT_RT` 允许 RT 进程调用普通优先级 binder 服务时，临时把服务线程拉到 RT 优先级（`binder_set_priority` / `binder_restore_priority` 在 `binder.c` line 717-820）。这是 audio HAL 这类延迟敏感路径的保障机制。
+
+**容量规划经验值**：
+- 普通 App：`mMaxThreads = 4-8` 足够。
+- 系统服务：保留 15 默认值。
+- 高频服务（`surfaceflinger`、`audioserver`）：实测后调高到 30-50，**必须**在 `startThreadPool()` 前调用 `setThreadPoolMaxThreadCount`。
+
+[已验证: 一手源码, frameworks/native/libs/binder + kernel/common/drivers/android/binder.c]
+
+<!-- AIW-源码调研-2026-07-07 -->
+
+
 
 [已验证: 官方文档 + 社区测量数据, https://androidperformance.com]
 
