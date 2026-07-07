@@ -67,22 +67,23 @@ task2b_state: "fixed"
 last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 task2b_verifier_result: "ready-for-task6"
 status: ready-for-review
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
-last_task6_at: "2026-05-27T07:11:00+08:00"
-last_task6_review_log: "logs/review/2026-05-27-07-review.md"
+last_task6_at: "2026-07-08T01:15:53+08:00"
+last_task6_review_log: "logs/review/2026-07-08-01-review.md"
 review_type: "task6-writing-quality-review"
-task9_state: reviewed
-task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。"
+task9_state: "pending"
+task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。 | 2026-07-08 01 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（禁用词"链路"→"调用链"）；outline 锚点全覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
 last_task9_audit: "2026-07-07"
 last_task6_audit: "2026-07-01"
+task6_result: "pass-light-edit"
 ---
 # 案例集
 
@@ -610,7 +611,7 @@ Overlay Plane 数量因 SoC、显示控制器、屏幕配置和厂商 HWC 实现
 
 **第四步:确认 FrameTimeline 证据。** `FrameTimeline` 轨道中,SF 的帧从 `predicted` 变成 `missed`,预测误差与 `composeSurfaces()` 拉长的帧一一对应。
 
-[已验证: AOSP android-17.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` - `SurfaceFlinger::composite()` 调用 `CompositionEngine` 链路: `Output::present()` → `composeSurfaces()` → `RenderEngine::drawLayers()` 对 CLIENT 类型 Layer 执行 GPU 渲染]
+[已验证: AOSP android-17.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` - `SurfaceFlinger::composite()` 经由 `CompositionEngine` 调用链: `Output::present()` → `composeSurfaces()` → `RenderEngine::drawLayers()` 对 CLIENT 类型 Layer 执行 GPU 渲染]
 
 ### 根因
 
