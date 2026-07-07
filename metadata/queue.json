@@ -168,6 +168,29 @@
       "stage": "draft",
       "added_date": "2026-07-07",
       "notes": "知识缺口挖掘创建，第24个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+      "section": "3.8",
+      "section_title": "InputFlinger Rust 组件与自适应刷新率协同",
+      "priority": 85,
+      "stage": "task2b_pending",
+      "reason": "[Deep Tech Review] Android 17 源码基准过期：章节仍以 android-16.0.0_r1 为主锚点，并写明未核到 android-17.0.0_r1。",
+      "material_paths": [
+        "src/part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md",
+        "logs/deep-review/2026-07-07-15-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码锚点",
+          "location": "frontmatter last_verified_against/version_boundary_note + 正文多处 [已验证: AOSP android-16.0.0_r1] + 版本边界表 Android 17 行",
+          "detail": "当前任务基准要求 AIW 主线结论和源码链接锚定 android-17.0.0_r1。该章节仍以 android-16.0.0_r1 作为 InputFlinger、PowerManagerService、SurfaceFlinger、RefreshRateSelector 等主源码锚点，并写明“Android 17/API 37 未核到公开 android-17.0.0_r1”。本轮抽检已确认 android-17.0.0_r1 可访问，且关键路径/符号存在。",
+          "suggestion": "按 android-17.0.0_r1 重新复核 InputFilter Rust filter、MotionEvent 透传、PowerManager Boost.INTERACTION、SurfaceFlinger Scheduler touch hint、RefreshRateSelector HighHint/ExplicitDefault 逻辑；把正文 [已验证] 锚点和版本边界表改到 Android 17/API 37，旧 android-15/android-16 仅保留为历史演进对照。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-07T15:34:35+08:00",
+      "status": "pending"
     }
   ]
 }

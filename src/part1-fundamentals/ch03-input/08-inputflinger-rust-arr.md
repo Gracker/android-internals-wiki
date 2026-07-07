@@ -6,14 +6,14 @@
 title: "InputFlinger Rust 组件与自适应刷新率协同"
 chapter: "3.8"
 section: "3.8"
-status: finalized
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-last_task9_at: "2026-06-05T17:24:00+08:00"
-last_task9_audit: "2026-06-15"
+status: ready-for-review
+pipeline_stage: task2b_pending
+task2b_state: pending
+last_task9_at: "2026-07-07T15:34:35+08:00"
+last_task9_audit: "2026-07-07"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-05"
-task9_result: pass-tech-review
+task9_reviewed_date: "2026-07-07"
+task9_result: needs-rework
 task9_state: reviewed
 drafted_date: "2026-05-16"
 drafted_by: openclaw-task2a
@@ -70,13 +70,15 @@ task2b_result: fixed-lite
 last_task6_at: "2026-06-04T11:05:00+08:00"
 version_boundary_note: "Android 17/API 37 未核到公开 android-17.0.0_r1，本节不写 Android 17-only 结论"
 last_task9_autofix_at: "2026-06-04"
-last_task9_review_log: "logs/deep-review/2026-06-05-17-deep-review.md"
-task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim. | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；InputFlinger Rust filter 边界、KeyEvent/MotionEvent 分流、ARR touch hint 与 Android 17 非结论边界复核通过，满足自动晋升 finalized 条件。"
+last_task9_review_log: "logs/deep-review/2026-07-07-15-audit.md"
+task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim. | 2026-06-05 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；InputFlinger Rust filter 边界、KeyEvent/MotionEvent 分流、ARR touch hint 与 Android 17 非结论边界复核通过，满足自动晋升 finalized 条件。 | 2026-07-07 Task9 闲时抽检：needs-rework。P1 版本/源码基准问题：Android 17 基准已要求 android-17.0.0_r1，但章节仍以 android-16.0.0_r1 为主锚点，并写明未核到 Android 17 tag；已写入 queue.json。"
 task6_reviewed_date: 2026-06-04
 task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-06-04 Task6 revisiting-review: pass-light-edit。L1/L2 全部通过（禁用词0/AI套话0/高频词0/元叙述0/结构性元叙述0）。无B类大问题。代码路径和验证标注完整，[已验证] tags与AOSP锚点一一对应。task9 auto-fix后回到task6复审，写作质量无回退。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
+task2b_rework_source: "logs/deep-review/2026-07-07-15-audit.md"
+task2b_rework_notes: "Task9 闲时抽检发现 Android 17 基准过期：正文仍以 android-16.0.0_r1 为主源码锚点，并写明未核到 android-17.0.0_r1；需按 Android 17/API 37 重新核源与改写版本边界。"
 ---
 
 
