@@ -158,3 +158,14 @@
 - 新兴交叉领域（AI Agent 性能沙箱实战深化）
 - 游戏引擎性能分析深化（ch19 仅 1 节，但属长尾需求）
 - 音视频深度性能分析（ch12 仅 2 节，但参考书覆盖有限）
+
+## DeepSeek 中文读者终审建议 — 2026-07-07
+
+**章节：** `src/part3-tools/ch14-other-tools/11-battery-historian.md`
+
+**问题：** 章末三段（ADPF 协作方案、BatteryUsageStats 补充、PowerMonitor 精度调研）存在内容叠加——PowerMonitor 的精度机制在 ADPF 节和「源码调研」节分别展开，对中文读者形成阅读负担。
+
+**建议：** Task2B 回炉时考虑将三节整合为两节：一节讲 API 层（BatteryUsageStats 归因 + PowerMonitor 查询），一节讲底层机制（精度差异 + ADPF 协作），减少重复定义。
+
+**严重程度：** 低（本轮已清理编辑过程语言，不影响可读性；结构优化属于锦上添花）
+

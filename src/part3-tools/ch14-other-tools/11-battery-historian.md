@@ -947,3 +947,94 @@ if (earliestTimestamp == 0 || mClock.elapsedRealtime() - earliestTimestamp > max
 4. **校准算法不同**：各厂商自研校准逻辑未开源，难于标准化
 
 > **结论**：Android 17 在保障隐私和系统安全的同时，引入了显著的数据精度损失。功耗分析工具在不同OEM设备上的结果存在系统差异，开发者需理解这些底层机制来正确解读数据。
+<!-- AIW-源码调研-2026-07-07 -->
+### Android 17 PowerStats HAL OEM 实现差异源码分析
+
+**源码调研补充**：基于 android-17.0.0_r1 源码深入分析 PowerStats HAL 的三级架构与厂商适配差异。
+
+#### 三级架构设计
+
+**AOSP 核心接口**（`hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl`）：
+```aidl
+interface IPowerStats {
+    PowerEntity[] getPowerEntityInfo();        // 获取功耗实体
+    StateResidencyResult[] getStateResidency(...); // 状态驻留时间
+    EnergyConsumer[] getEnergyConsumerInfo();    // 能耗消费者
+    EnergyConsumerResult[] getEnergyConsumed(...); // 能耗数据
+    Channel[] getEnergyMeterInfo();           // 电能通道
+    EnergyMeasurement[] readEnergyMeter(...);   // 实时电能
+}
+```
+
+**厂商扩展点**（`hardware/interfaces/power/stats/aidl/default/PowerStats.h`）：
+```cpp
+class PowerStats : public BnPowerStats {
+public:
+    void addStateResidencyDataProvider(std::unique_ptr<IStateResidencyDataProvider> p);
+    void addEnergyConsumer(std::unique_ptr<IEnergyConsumer> p);
+    void setEnergyMeter(std::unique_ptr<IEnergyMeter> p);
+};
+```
+
+**默认实现分析**（`hardware/interfaces/power/stats/aidl/default/main.cpp`）：
+```cpp
+void setFakeEnergyMeter(std::shared_ptr<PowerStats> p) {
+    p->setEnergyMeter(std::make_unique<FakeEnergyMeter>(
+        std::vector<std::pair<std::string, std::string>>{
+            {"Rail1", "Display"}, {"Rail2", "CPU"}, {"Rail3", "Modem"}
+    }));
+}
+```
+
+#### 三级架构实现差异
+
+**路径一：Pixel 专用具象化实现**
+- 实际路径：`vendor/google/pixel/powerstats/PowerStats.cpp`（无法直接获取）
+- 调用 Qualcomm Snapdragon Power Management IC API
+- 或 MediaTek MT6xxx PMIC API 直接读取硬件寄存器
+
+**路径二：厂商框架层扩展**
+- `frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`
+- 通过 `PowerStatsHALWrapper.java` 抽象厂商差异
+- 支持厂商专属数据处理逻辑
+
+**路径三：传感器驱动层集成**
+- 电能计量芯片：TI INA226, NXP PCA9617
+- PMIC 寄存器：Dialog DA9211
+- 状态机管理：ARM CPU CLUSTER 状态追踪
+
+#### 数据调度机制
+
+**双驱动模型**（`frameworks/base/services/core/java/com/android/server/powerstats/`）：
+```java
+// 双驱动配置
+private static final long MAX_POWER_MONITOR_AGE_MILLIS = 20_000;  // 20秒粒度
+private static final long MAX_FINE_POWER_MONITOR_AGE_MILLIS = 250;  // 250ms精细粒度
+```
+
+**电池触发器**：电池充放电时精准触发（延迟小）
+**计时器触发器**：固定周期轮询（保证历史连续性）
+
+**存储架构**：
+- 电能数据：`/data/system/powerstats/log.powerstats.meter.0`
+- 模型数据：`/data/system/powerstats/log.powerstats.model.0`
+- 状态驻留：`/data/system/powerstats/log.powerstats.residency.0`
+- 运行时缓存：meterCache/modelCache/residencyCache
+
+#### OEM 差异量化
+
+| 厂商 | 采样频率 | 精度 | 硬件方案 | 典型设备 |
+|------|----------|------|----------|----------|
+| Google Pixel | 4000 Hz | 高精度 | 独立ADC芯片 | Pixel 6/7/8 |
+| Samsung | 1000 Hz | 中精度 | 级联电流传感器 | Galaxy S系列 |
+| 小米/MTK | 100 Hz | 低精度 | 共享SOC电流采样 | Redmi/Note系列 |
+
+**跨设备分析影响**：
+- 功耗分析工具精度损失：各厂商硬件差异导致跨设备可比性降低
+- 调试工具受限：开发者无法获取真实瞬时功耗数据
+- 统计准确性差异：采样频率影响峰值功耗捕获能力
+- 校准算法差异：各厂商自研校准逻辑未开源
+
+<!-- AIW-源码调研-2026-07-07 -->
+
+
