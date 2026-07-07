@@ -3,20 +3,20 @@ title: 线程模型
 chapter: '1.5'
 section: '1.5'
 status: ready-for-review
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-26"
+reviewed_date: "2026-07-07"
 reviewed_at: "2026-05-26T01:12:00+08:00"
-last_task6_at: "2026-05-26T01:12:00+08:00"
+last_task6_at: "2026-07-07T08:10:16+08:00"
 last_task6_audit: '2026-06-14'
-task6_reviewed_date: "2026-05-26"
-review_round: 10
-task6_review_notes: "2026-05-26 01:12 Task6：Task2B 修复后写作复审；小修 12 处（元叙述、禁用/高频词、直接提示语、Perfetto 观察句）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
+task6_reviewed_date: "2026-07-07"
+review_round: 11
+task6_review_notes: "2026-07-07 08:10 Task6：Task2B lite 修复后重审（版本引用已更新至 android-17.0.0_r1）；L1 小修 4 处（承担→中性动词 ×2、对齐→对照、结构性元叙述 ×1）；无新增 L3/L4 回炉项；转 Task9 复核 P1 版本修复。"
 task9_state: pending
 task9_result: pending
-task9_reviewed_date: "2026-05-26"
+task9_reviewed_date: "2026-07-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-26T01:27:00+08:00"
 task9_review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Binder ioctl、硬件加速版本边界、MessageQueue 观察点复核通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
@@ -90,7 +90,7 @@ polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 last_task9_review_log: "logs/deep-review/2026-05-26-01-deep-review.md"
-last_task6_review_log: "logs/review/2026-05-26-01-review.md"
+last_task6_review_log: "logs/review/2026-07-07-08-review.md"
 review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Binder ioctl、硬件加速版本边界、MessageQueue 观察点复核通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
@@ -129,7 +129,7 @@ last_deepseek_cn_review_at: 2026-05-30
 
 打开 Perfetto，我们会看到每个 App 进程下都有好几个线程在活动。其中最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。在滑动列表的时候，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧地把画面推到屏幕上。
 
-做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，先要搞清楚主线程是怎么运转的。主线程会不断地从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
+做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程负责几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，先要搞清楚主线程是怎么运转的。主线程会不断地从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
 
 同时，从 Android 5.0 开始，渲染工作被分离到了独立的 RenderThread。理解主线程和 RenderThread 之间的分工和同步机制，是在 Perfetto 中正确解读渲染性能数据的前提。
 
@@ -212,7 +212,7 @@ public static void loop() {
 2. 有 Native 层的定时消息到期
 3. 有 native 层通过 `Looper.addFd()` 注册的 fd 变为可读状态（Input 事件 socket fd、VSync 信号 fd 等在 JNI/native 层通过 `messageQueue->getLooper()->addFd(...)` 注册到同一个 epoll 实例）；App 自定义 fd 可通过 `MessageQueue.addOnFileDescriptorEventListener()` 接入
 
-这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池通过 binder driver 的 `BINDER_WRITE_READ` ioctl 等待和处理跨进程事务（`IPCThreadState::joinThreadPool()` 循环调用 `getAndExecuteCommand()`，最终在 `talkWithDriver()` 里通过 `ioctl(mDriverFD, BINDER_WRITE_READ, &bwr)` 阻塞交互），没有独立的 epoll 循环。需要和 MessageQueue/nativePollOnce 的 `epoll_wait` 路径分开观察。[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp]
+这种设计让主线程的 Looper 同时充当 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池通过 binder driver 的 `BINDER_WRITE_READ` ioctl 等待和处理跨进程事务（`IPCThreadState::joinThreadPool()` 循环调用 `getAndExecuteCommand()`，最终在 `talkWithDriver()` 里通过 `ioctl(mDriverFD, BINDER_WRITE_READ, &bwr)` 阻塞交互），没有独立的 epoll 循环。需要和 MessageQueue/nativePollOnce 的 `epoll_wait` 路径分开观察。[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp]
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md]
 
@@ -467,7 +467,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 - **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间的 CPU 活动，说明 App 在响应跨进程调用。
 - **FinalizerDaemon**：执行对象 finalize 方法的守护线程。如果这个线程频繁活动，说明有大量对象在被 GC 回收时需要执行 finalize，这可能导致 GC 暂停时间变长。
 - **DefaultDispatcher-worker-\***：Kotlin Coroutine 的默认线程池线程。
-- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下的 `MQ.Delivered` 计数器，记录 MessageQueue 中消息的投递频率。`LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三种实现都会记录该计数器，不能用它区分队列实现。区分队列实现的可靠信号：① targetSdk 37 + `USE_NEW_MESSAGEQUEUE` compat change 标志（新队列启用边界）；② `mMessages` 在新实现下恒为 null 的兼容性行为；③ MessageQueue monitor contention 是否消失（新队列消除了 `mMessages` 锁争用）；④ FrameTimeline / jank_type 与 Looper dispatch 片段同窗对齐。
+- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下的 `MQ.Delivered` 计数器，记录 MessageQueue 中消息的投递频率。`LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三种实现都会记录该计数器，不能用它区分队列实现。区分队列实现的可靠信号：① targetSdk 37 + `USE_NEW_MESSAGEQUEUE` compat change 标志（新队列启用边界）；② `mMessages` 在新实现下恒为 null 的兼容性行为；③ MessageQueue monitor contention 是否消失（新队列消除了 `mMessages` 锁争用）；④ FrameTimeline / jank_type 与 Looper dispatch 片段在同一时间窗内对照。
 
 ### 主线程状态解读
 
@@ -522,7 +522,7 @@ Android Framework 对线程数量的控制体现在多个层面。Binder 这里�
 
 - **1.2 系统启动全流程**：Zygote fork 出进程后，通过 ActivityThread.main() 初始化主线程消息循环
 - **1.4 Binder IPC 机制与性能影响**：Binder 线程池是 App 进程中另一组重要线程，处理跨进程调用
-- **1.13 MessageQueue 机制与 DeliQueue 无锁优化**：本章先用经典 Looper / Handler 理解方式讲清主线，android-16 以后队列内部实现的演进在 1.13 展开
+- **1.13 MessageQueue 机制与 DeliQueue 无锁优化**：android-16 以后队列内部实现（CombinedMessageQueue、ConcurrentMessageQueue）的演进和锁策略变化在 1.13 展开
 - **2.4 Choreographer 与渲染流水线**：Choreographer 通过主线程的 Handler 监听 VSync 信号，驱动每帧的渲染
 - **2.5 MainThread 与 RenderThread 协作**：本章的 RenderThread 部分在 2.5 中有更详细的工作流程分析
 - **5.1 Linux 进程调度基础**：nice 值、cgroup、调度策略的底层原理在 CPU 章节中深入展开

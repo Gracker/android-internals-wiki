@@ -60,7 +60,7 @@ task6_reviewed_date: "2026-05-27"
 last_task9_review_log: "logs/deep-review/2026-06-08-20-audit.md"
 last_task2b_at: 2026-07-07T04:52:50+08:00
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-28
+last_deepseek_cn_review_at: 2026-07-07
 last_task9_autofix_at: "2026-06-08"
 ---
 
@@ -262,9 +262,7 @@ Project Mainline 在 Android 16 上已经覆盖到 ART、Media、Network Stack �
 
 ### 16 KB Page Size 的版本边界和兼容性影响
 
-> **版本澄清**：16 KB Page Size 特性由 **Android 15** 引入（Android 16 继续完善）。Android 16 的主要变化是要求部分设备必须支持 16 KB Page Size，而非重新引入该特性。
-
-Android 15 开始，AOSP 支持构建 16 KB page-size 的 Android；Android 16 继续补齐构建期和设备侧校验，例如 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true` 可在构建时检查 prebuilt ELF 对齐，`ro.product.page_size` / `ro.product.cpu.pagesize.max` 等属性可用于判断设备配置。Google Play 的要求又是另一层：自 2025-11-01 起，提交到 Google Play、面向 Android 15+ 设备的新应用和更新需要支持 16 KB page size。这三件事分别属于 AOSP 构建能力、设备配置校验和应用发布兼容性，不能混成“Android 16 强制所有设备切到 16 KB”。
+16 KB Page Size 是 Android 15 引入的特性（Android 16 继续完善，要求部分设备必须支持），并非 Android 16 新引入的功能。Android 15 开始，AOSP 支持构建 16 KB page-size 的 Android；Android 16 继续补齐构建期和设备侧校验，例如 `PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true` 可在构建时检查 prebuilt ELF 对齐，`ro.product.page_size` / `ro.product.cpu.pagesize.max` 等属性可用于判断设备配置。Google Play 的要求又是另一层：自 2025-11-01 起，提交到 Google Play、面向 Android 15+ 设备的新应用和更新需要支持 16 KB page size。这三件事分别属于 AOSP 构建能力、设备配置校验和应用发布兼容性，不能混成“Android 16 强制所有设备切到 16 KB”。
 
 更大的页会减少页表项数量，通常有利于 TLB 命中和大块连续内存访问；代价是小块 `mmap` / 文件映射 / native 堆分配更容易产生页内浪费。Android Developers 兼容性页给出的初始测试数据包括：内存压力下应用启动平均降低 3.16%，启动过程功耗平均降低 4.56%，系统启动时间平均改善 8%（约 950 ms）。这些数字来自 Google 初始测试，设备、工作负载和内核配置会影响结果；正文不再把未给出清晰来源的“内存开销约 9%”写成稳定结论。排查时用 `adb shell getconf PAGE_SIZE` 确认运行页大小，用 `zipalign -c -P 16 -v 4 APK_NAME.apk` 和 ELF alignment 检查确认应用侧兼容性。
 
@@ -290,7 +288,7 @@ Binder 是 Android 高频 IPC 的主要通道，Framework 服务调用、App 与
 > 
 > 对性能的影响取决于 **AVC（Access Vector Cache）** 命中率：首次未知请求需完整策略评估（~1-10 μs），后续命中仅 O(1) 缓存查找（~50-200 ns）。Binder 的高频调用特征使 AVC 命中率极高，稳态下 SELinux 开销可忽略不计。
 > 
-> Android 8+ Treble 引入 `/dev/binder`（框架）、`/dev/vndbinder`（vendor）、`/dev/hwbinder`（HAL）三路隔离。三路 binder 设备各有独立的 Context Manager 和 binder context，通过 SELinux type / 权限边界限制跨域访问。但 SELinux AVC 本身是全局访问向量缓存，缓存键为 ssid/tsid/tclass/perm，不按 binder 设备拆成独立实例。因此，三路隔离降低的是跨域误用风险，并不减少 SELinux 检查次数——每条 Binder transaction 仍走相同的 `avc_has_perm()` 路径。
+> Android 8+ Treble 引入 `/dev/binder`（框架）、`/dev/vndbinder`（vendor）、`/dev/hwbinder`（HAL）三路隔离。三路 binder 设备各有独立的 Context Manager 和 binder context，通过 SELinux type 和对应的权限边界限制跨域访问。但 SELinux AVC 本身是全局访问向量缓存，缓存键为 ssid/tsid/tclass/perm，不按 binder 设备拆成独立实例。因此，三路隔离降低的是跨域误用风险，并不减少 SELinux 检查次数——每条 Binder transaction 仍走相同的 `avc_has_perm()` 路径。
 > 
 > enforcing 与 permissive 的差异仅体现在拒绝路径：两者均执行完整检查，但 enforcing 额外执行拒绝操作。对于正常放行的请求，两种模式路径几乎相同。
 > 
@@ -407,6 +405,10 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 此外，Binder 在内核层面实现了线程池管理——目标进程不需要自己管理接收线程，内核会在 Binder 请求到来时唤醒一个空闲的 Binder 线程。这让系统服务的并发处理变得非常高效。
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/kernel]
+
+---
+
+**回到分层视角**：以上分析始终围绕一个主题——理解分层的职责边界，才能拆开 Trace 里的彩色方块，定位瓶颈到底在哪一层。下面补充 VNDK 这个与分层紧密相关的隔离机制。
 
 ## Vendor VNDK 隔离对 native 库加载的影响
 

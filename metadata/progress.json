@@ -3,7 +3,7 @@
   "draft": 39,
   "ready_for_review": 205,
   "finalized": 342,
-  "last_updated": "2026-07-07T07:10:32.492972+08:00",
+  "last_updated": "2026-07-07",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -981,7 +981,8 @@
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "pipeline_stage": "task9_pending",
-      "task9_state": "pending"
+      "task9_state": "pending",
+      "task6_reviewed_date": "2026-07-07"
     },
     "21.2": {
       "status": "finalized",
