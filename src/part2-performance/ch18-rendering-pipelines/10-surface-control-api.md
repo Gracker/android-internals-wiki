@@ -2,31 +2,31 @@
 title: SurfaceControl API 深入
 chapter: '18.10'
 section: '18.10'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags: 
 related_chapters: 
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 last_task2b_at: '2026-05-27T10:50:00+08:00'
-pipeline_stage: "task9_pending"
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
-task9_state: "pending"
+task9_state: reviewed
 task2b_state: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-07-08"
 task6_reviewed_date: "2026-07-08"
 task6_result: "pass-light-edit"
-last_task9_at: "2026-07-08T02:33:03+08:00"
-task9_result: "auto-fixed"
+last_task9_at: "2026-07-08T04:34:07+08:00"
+task9_result: pass-tech-review
 task2b_result: fixed
 last_task2b_lite_at: '2026-05-27'
 task9_reviewed_date: "2026-07-08"
 task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。| 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。| 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。| 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。| 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。| 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 API 34 `ASurfaceControl_fromJava()`、API 36 release callback、FramebufferSurface client target 边界、FrameTimeline API level 与跨进程 SurfaceControl 共享路径；无 P0/P1，queue 无 pending，自动晋升 finalized。| 2026-06-16 11 Task9 idle audit AUTO-FIX：修正 Perfetto surfaceflinger_layers.proto 中 HwcCompositionType 枚举名与 DISPLAY_DECORATION=6 缺失问题；证据为 AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/trace/android/surfaceflinger_layers.proto；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。 | 2026-06-16 17 Task9 deep-review AUTO-FIX: 修正 SurfaceControl/BLAST 概念边界、FrameTimeline 示例漏调用 setFrameTimeline、fence 同步边界、WebView 独立 layer 条件与 BLAST/FramebufferSurface 流转描述；证据为 AOSP android-16.0.0_r1 surface_control/choreographer/FramebufferSurface/BLAST 源码；回到 Task6 复审。 | 2026-06-17 01 Task9 deep-review PASS: 复核 2026-06-16 auto-fix 后源码锚点与版本边界；无 P0/P1，queue 无 pending，Task6 已 pass-light-edit，自动晋升 finalized / ready-to-publish。 | 2026-07-08 02 Task9 idle audit AUTO-FIX：将正文源码基准从 AOSP android-16.0.0_r1 更新为 android-17.0.0_r1；复核 surface_control.h、surface_control_jni.h、choreographer.h、GraphicBufferMapper.cpp、surfaceflinger_layers.proto 在 android-17.0.0_r1 下的 API 与路径；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。"
+task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。| 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。| 2026-05-27 08:22 Task9 auto-fix：附录普通 App Layer 流转链中的无效 `HBR.draw()` 锚点改为 `ThreadedRenderer.draw()` / native producer；回到 Task6 复审。| 2026-05-27 09:40 Task9 auto-fix：补充 API 34 `ASurfaceControl_fromJava()` / `surface_control_jni.h` 桥接路径，修正“无 Java SurfaceControl 到 NDK 句柄桥接”的旧口径；回到 Task6 复审。| 2026-05-27 10:50 Task2B：修正 FramebufferSurface 为显示输出 / client target 路径，补齐 Java Parcelable + API 34 `ASurfaceControl_fromJava()` 的跨进程共享边界；回到 Task6 复审。| 2026-05-27 14:20 Task9 deep-review：pass-tech-review。复核 API 34 `ASurfaceControl_fromJava()`、API 36 release callback、FramebufferSurface client target 边界、FrameTimeline API level 与跨进程 SurfaceControl 共享路径；无 P0/P1，queue 无 pending，自动晋升 finalized。| 2026-06-16 11 Task9 idle audit AUTO-FIX：修正 Perfetto surfaceflinger_layers.proto 中 HwcCompositionType 枚举名与 DISPLAY_DECORATION=6 缺失问题；证据为 AOSP android-16.0.0_r1 external/perfetto/protos/perfetto/trace/android/surfaceflinger_layers.proto；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。 | 2026-06-16 17 Task9 deep-review AUTO-FIX: 修正 SurfaceControl/BLAST 概念边界、FrameTimeline 示例漏调用 setFrameTimeline、fence 同步边界、WebView 独立 layer 条件与 BLAST/FramebufferSurface 流转描述；证据为 AOSP android-16.0.0_r1 surface_control/choreographer/FramebufferSurface/BLAST 源码；回到 Task6 复审。 | 2026-06-17 01 Task9 deep-review PASS: 复核 2026-06-16 auto-fix 后源码锚点与版本边界；无 P0/P1，queue 无 pending，Task6 已 pass-light-edit，自动晋升 finalized / ready-to-publish。 | 2026-07-08 02 Task9 idle audit AUTO-FIX：将正文源码基准从 AOSP android-16.0.0_r1 更新为 android-17.0.0_r1；复核 surface_control.h、surface_control_jni.h、choreographer.h、GraphicBufferMapper.cpp、surfaceflinger_layers.proto 在 android-17.0.0_r1 下的 API 与路径；未发现 Android 18/API 38+ 越界内容，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review PASS: 复核 android-17.0.0_r1 下 surface_control.h、surface_control_jni.h、choreographer.h、GraphicBufferMapper.cpp、surfaceflinger_layers.proto、FramebufferSurface 边界；无 P0/P1，queue 无 pending，Task6 已 pass-light-edit，自动晋升 finalized / ready-to-publish。"
 last_task6_at: "2026-07-08T04:05:00+08:00"
 task6_review_notes: "2026-07-08 Task6 复审:pass-light-edit。Task9 auto-fix 后文稿复查：清理 stray H1 标记和 4 处句号后多余空格。L1/L2 通过；outline 9/9 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 终审。"
-last_task9_review_log: "logs/deep-review/2026-06-17-01-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-08-04-deep-review.md"
 review_notes: "2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-27-11-review.md"

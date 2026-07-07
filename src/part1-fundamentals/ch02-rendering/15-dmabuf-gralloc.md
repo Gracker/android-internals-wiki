@@ -60,25 +60,25 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: auto-fixed
-task9_reviewed_date: "2026-06-14"
+task9_reviewed_date: "2026-07-08"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-08T02:24:51+08:00"
+last_task9_at: "2026-07-08T04:34:07+08:00"
 last_task9_audit: 2026-07-08
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-07-07T04:52:50+08:00
-task9_review_notes: "2026-07-08 Task9 idle audit:auto-fixed。将 Android 16 语境残留收敛到 android-17.0.0_r1 / Android 12-17 基准；源码锚点复核无 P0/P1，回到 Task6 复审。"
+task9_review_notes: "2026-07-08 Task9 idle audit:auto-fixed。将 Android 16 语境残留收敛到 android-17.0.0_r1 / Android 12-17 基准；源码锚点复核无 P0/P1，回到 Task6 复审。 | 2026-07-08 04 Task9 deep-review AUTO-FIX: 修正 16KB page size 下 DMA-BUF 尾部空洞与多进程 import/PSS 归因边界；共享 buffer 不会因 import 物理复制多份，回到 Task6 复审。"
 last_task6_at: "2026-07-08T04:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-14-16-review.md"
 task6_review_notes: "2026-07-08 Task6 复审:pass-light-edit。Task9 auto-fix 后文稿复查：修正 outline 半角括号、5 处正文半角冒号。L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 终审。"
 task6_review_notes: "2026-05-27 Task6 05:14:pass-light-edit。L1/L2 小修 2 处(补齐 outline 块;禁用词"落地"替换为"确认")。无新增 L3/L4 回炉。Task9 结果不是 pass-tech-review,未自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-07-08-02-audit.md"
-last_task9_autofix_at: 2026-07-08
+last_task9_review_log: "logs/deep-review/2026-07-08-04-deep-review.md"
+last_task9_autofix_at: "2026-07-08"
 task6_reviewed_date: "2026-06-14"
 last_task6_audit: "2026-07-05"
 deepseek_cn_review_state: done
@@ -246,7 +246,7 @@ Usage flags 这一层也要注意版本语境。很多历史文章还在用 lega
 
 Android 15+ 设备如果跑在 16KB page size 环境，GraphicBuffer 的内存开销不能只看 `width × height × bytesPerPixel`。allocator 提交的 `BufferDescriptorInfo` 除了宽高、format、usage，还有 `reservedSize` 等保留字段——这些落到内核映射时，都要按页粒度取整。
 
-页大小从 4KB 变成 16KB 之后，小尺寸 buffer、图标 atlas、metadata buffer，或者只带少量 `reservedSize` 的 handle，更容易出现尾部空洞。同一个 handle 被 App、SurfaceFlinger、Camera 或编解码进程分别 import 以后，这些空洞会在 PSS 里叠加放大。
+页大小从 4KB 变成 16KB 之后，小尺寸 buffer、图标 atlas、metadata buffer，或者只带少量 `reservedSize` 的 handle，更容易出现尾部空洞。这个尾部空洞属于同一块共享 DMA-BUF 的实际分配成本，不会因为 App、SurfaceFlinger、Camera 或编解码进程分别 import 就物理复制多份；做 PSS / meminfo 归因时，重点是按页取整后的共享 buffer 大小，以及避免把多个进程看到的同一 handle 重复相加。
 
 用一组具体数据对照：
 
