@@ -47,6 +47,7 @@ last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
 task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。InputFilter/InputMonitor/Accessibility 注入与 Android 16/17 版本边界复核通过；P0 0 / P1 0 / P2 0，queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-06-19"
 last_task9_audit_log: "logs/deep-review/2026-06-19-14-audit.md"
+last_task6_audit: "2026-07-07"
 last_task2b_lite_at: '2026-06-01'
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
