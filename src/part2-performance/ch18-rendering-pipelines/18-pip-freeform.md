@@ -4,10 +4,10 @@ title: "PIP 与自由窗口渲染"
 chapter: "18.18"
 section: "18.18"
 section_title: "PIP 与自由窗口渲染"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "AOSP ViewRootImpl / Choreographer / DisplayEventReceiver / BLASTBufferQueue / TaskOrganizer / WindowContainerTransaction / PipTaskOrganizer；Android Picture-in-Picture / Multi-Window / SurfaceView 官方文档"
+last_verified: "2026-07-07"
+last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl / Choreographer / DisplayEventReceiver / BLASTBufferQueue / TaskOrganizer / WindowContainerTransaction / PipTaskOrganizer；Android Picture-in-Picture / Multi-Window / SurfaceView 官方文档"
 sources:
   - type: official
     path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
@@ -35,21 +35,21 @@ tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-07-07
 reviewed_date: 2026-07-07
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task9_at: 2026-07-07T04:24:36
+last_task9_at: "2026-07-07T12:33:06+08:00"
 last_task9_audit: 2026-07-07
 last_task9_audit_log: "logs/deep-review/2026-07-01-04-audit.md"
-task9_reviewed_date: 2026-04-24
-task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-07-07"
+task9_reviewed_by: "openclaw-task9"
 last_task6_audit: "2026-06-27"
 review_round: 1
 deepseek_cn_review_state: done
@@ -57,8 +57,11 @@ last_deepseek_cn_review_at: 2026-06-25
 review_notes: '2026-07-07 Task2B Verifier: task9_result 重复键修正（pass-tech-review → needs-rework），status finalized → ready-for-review | 2026-07-07 Task6 复审：pass-light-edit。修复 frontmatter 重复键 task2b_result（fixed-lite 正确）；无新增 B 类回炉项；转 Task9 复审。'
 last_task6_at: 2026-07-07T12:15:00+08:00
 last_task6_review_log: logs/review/2026-07-07-04-review.md
+last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
+task9_review_notes: "2026-07-07 Task9 deep-review：复核 TaskOrganizer Android 12+ 版本限定、BLASTBufferQueue Android 17 源码锚点与 Perfetto 定位路径；P0/P1/P2 0，queue 无 pending，自动晋升 finalized。"
+finalized_date: "2026-07-07"
+finalized_by: "openclaw-task9-auto-promote"
 ---
-
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
