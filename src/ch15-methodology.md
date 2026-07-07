@@ -575,3 +575,22 @@ CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心�
 ### 延伸阅读
 - [Android Performance Patterns (YouTube)](https://www.youtube.com/playlist?list=PLWz5rJ2EKKc8j2Bd8Bd9-2O9V1zr-hBFY) — Google 官方性能模式视频系列
 - [Android Vitals](https://developer.android.com/topic/performance/vitals) — Google Play 的 ANR/启动/帧率评分体系
+
+<!-- AIW-源码调研-2026-07-07 -->
+### 最新源码进展：Android 17 Power HAL AIDL v7 电池架构
+
+通过源码分析发现，Android 17 的电池优化相比传统 `PowerManager` 有重大架构升级：
+
+**三层统一管理模型**：
+1. **Power HAL AIDL v7 层**：提供 `IPower.aidl` 标准接口，23 个 AIDL 文件定义 Boost/Mode/SessionTag 枚举。关键突破是通过 `SupportInfo` 机制兼容不同厂商实现，消除高通/联发科/三星的差异。
+2. **HintManagerService 层**：实时 `getCpuHeadroom/getGpuHeadroom` 计算，支持 50ms-10000ms 可调窗口。`SessionTag` (HWUI/GAME/SYSUI) 实现应用类型与电池策略映射，如游戏进程映射到 SESSION_MODE_GRAPHICS_PIPELINE。
+3. **BatteryStatsService 层**：采用 `POWER_COMPONENT_CPU/WIFI/BT` 统一电量模型，通过 `EnergyConsumerPowerStatsCollector` 抽象 SoC 能量消耗。
+
+**关键代码发现**：
+- `HintManagerService.java` 第 1560-1627 行：CPU Headroom 缓存机制减少 HAL 调用开销，`mSupportInfo.headroom.cpuMaxTidCount` 限制 TID 数量
+- `updateSessionTag()` 函数（第2021行）：系统应用优先 Launcher → SYSUI，普通应用按 ApplicationInfo.category 映射 GAME/APP
+- Linux kernel `schedutil` 双守门：`rate_limit_us` 默认 10ms 控制频率下发，与 AIDL 形成双层架构
+
+这个统一架构为跨厂商 SoC 电池优化建立了标准化基线，解决了不同厂商 HAL 实现差异问题。
+<!-- AIW-源码调研-2026-07-07 结束 -->
+

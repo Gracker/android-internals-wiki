@@ -2,8 +2,8 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
 tags: "["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]"
 confidence: "medium"
@@ -11,18 +11,17 @@ last_verified: "2026-07-06"
 last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-17.0.0_r1 system/perfetto/protos/gpu_config.proto"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-07-06"
-reviewed_by: "openclaw-task6"
+reviewed_date: 2026-07-07
+reviewed_by: openclaw-task6
 path: "Cubox/基于gpu counters数据的性能优化-2025-02-27.md"
 related_chapters: ["2.10", "2.14", "13.3", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "AOSP结构+官方文档+研究素材"
-last_task2b_at: "2026-07-06T02:50:00+08:00"
 last_task2b_by: "openclaw-task2b-main"
 task2b_result: fixed
-task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: pass-tech-review
@@ -41,15 +40,15 @@ task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审�
 last_task2b_at: "2026-07-06T12:50:00+08:00"
 last_task2b_source: "task9-deep-tech-review (2026-07-06 re-review)"
 last_task2b_priority: 95
-task2b_note: "2026-07-06 主修复：扩充 Android 17 信号处理机制（async-signal-safe 校验、线程亲和性信号分发、动态 altstack）、线程亲和性管理（三大场景 + 注意事项）、Android 17 线程监控 API 详解（getThreadCpuTime/getThreadPriority/sched）、Android 12+ THREAD_PRIORITY_* 与 cgroup v2 调度讨论、虚拟内存碎片化 OOM 分析、Android 5.0 vs 17 适用性 + 15→17 演进说明。P1 3 项 / P2 4 项全部修复。"
-last_task6_at: "2026-07-06T12:12:00+08:00"
+task2b_note: "2026-07-06 Task2B 修复：APA System Profiler 版本覆盖与演进段落扩充、AGI与APA对比表修正、Android 17 ANGLE denylist 确认流程补充。源码调研内容整合。"
+last_task6_at: 2026-07-07T12:15:00+08:00
 task6_reviewed_date: "2026-07-06"
 task6_reviewed_at: "2026-07-06T12:12:00+08:00"
 task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: 6
 task6_l3_l4_issues: 0
-finalized_date: "2026-07-06"
-finalized_by: "openclaw-task6-auto-promote"
+finalized_date: 2026-07-07
+finalized_by: openclaw-task6-auto-promote
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-06
 ---
