@@ -24,14 +24,15 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md"
 tags: [case-study, stability, crash-investigation, oom, native-crash, anr, governance]
 related_chapters: ["20.1", "20.2", "20.3", "20.4", "20.5", "20.6", "20.7", "20.8"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
+task6_review_notes: "2026-07-07 Task6 复审：pass-light-edit。L1 修正 12 处禁用词（5×链路→路径/调用链, 4×可以看到→会看到/能观察到/存在, 3×问题是→核心疑问是/直接删除/本身）。无 L3/L4 回炉项。Task9 result 为 auto-fixed，需 Task9 最终确认。"
 task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
 task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
@@ -61,7 +62,7 @@ last_deepseek_cn_review_at: 2026-07-06
 
 # 稳定性治理案例集
 
-前面八节分别讲了稳定性全景（20.1）、Java Crash 治理（20.2）、Native Crash 治理（20.3）、ANR 治理（20.4）、OOM 治理（20.5）、指标体系（20.6）、异常架构设计（20.7）和崩溃聚合（20.8）。这一节把这些知识落到具体案例上——用三个真实的崩溃/ANR 场景，演示从"收到报警"到"确认修复上线"的完整排查链路。
+前面八节分别讲了稳定性全景（20.1）、Java Crash 治理（20.2）、Native Crash 治理（20.3）、ANR 治理（20.4）、OOM 治理（20.5）、指标体系（20.6）、异常架构设计（20.7）和崩溃聚合（20.8）。这一节把这些知识落到具体案例上——用三个真实的崩溃/ANR 场景，演示从"收到报警"到"确认修复上线"的完整排查路径。
 
 三个案例分别对应三类典型问题：
 
@@ -86,7 +87,7 @@ last_deepseek_cn_review_at: 2026-07-06
 
 OOM 分两大类：Java 堆限制和虚拟内存不足。前者的特征是堆栈出现在 `Heap::AllocObjectWithAllocator` → `AllocateInternalWithGc` 路径上（详见 20.5 节）。后者的特征是崩溃点在 `malloc`、`pthread_create`、`mmap` 等 Native 分配路径上，Java 堆有余量。
 
-本案例的错误信息 `pthread_create (... stack) failed` 明确指向线程创建失败。要回答的问题是：为什么线程创建会失败？
+本案例的错误信息 `pthread_create (... stack) failed` 明确指向线程创建失败。核心疑问是：为什么线程创建会失败？
 
 ### 追踪：从 FD 和线程数入手
 
@@ -107,7 +108,7 @@ FDSize: 342
 
 线程数 387，每个线程默认栈大小 1 MB（64 位设备上可能更大），仅线程栈就占用了接近 400 MB 虚拟内存。再加上线程的 TLS、JNI Env、guard page 等，每个线程实际占用约 1.2-1.5 MB 虚拟地址空间。387 个线程 ≈ 500 MB 虚拟内存被线程独占。
 
-**虚拟内存碎片化与 OOM 的关系**：线程泄漏导致的 OOM 通常不是"总量不够"，而是"找不到连续空闲空间"。Linux 内核分配线程栈时使用 `mmap`，要求连续的虚拟地址空间。387 个线程栈不断分配和释放（部分线程退出后再创建），在进程的虚拟地址空间中造成了碎片——可用总虚拟内存仍然充足，但没有一块连续区间能满足新线程栈的需求。进程的 `/proc/self/smaps` 中可以看到大量不连续的匿名映射区域，`/proc/self/maps` 中 VmSize 虽然离上限还有余量，但已经没有 ≥1 MB 的连续空闲段。
+**虚拟内存碎片化与 OOM 的关系**：线程泄漏导致的 OOM 通常不是"总量不够"，而是"找不到连续空闲空间"。Linux 内核分配线程栈时使用 `mmap`，要求连续的虚拟地址空间。387 个线程栈不断分配和释放（部分线程退出后再创建），在进程的虚拟地址空间中造成了碎片——可用总虚拟内存仍然充足，但没有一块连续区间能满足新线程栈的需求。进程的 `/proc/self/smaps` 中会看到大量不连续的匿名映射区域，`/proc/self/maps` 中 VmSize 虽然离上限还有余量，但已经没有 ≥1 MB 的连续空闲段。
 
 这就是虚拟内存碎片化导致 OOM 的典型模式：内存整理/compaction 在用户态不可控，最终 `pthread_create`（底层 `mmap`）返回 ENOMEM。在 Perfetto 中配合 `mem.rss` + `mem.vm` 轨道可以观察碎片化趋势：当 VmSize 增长曲线不伴随 RSS 同步增长时，通常是线程栈或 mmap 碎片化的信号。
 
@@ -115,7 +116,7 @@ FDSize: 342
 
 ### 根因定位：匿名线程泄漏
 
-用 Perfetto 抓取线程创建 trace。Perfetto 的 `sched_process_free` 和 `process_track` 轨道可以看到线程生命周期。在 30 分钟的 trace 中观察到：
+用 Perfetto 抓取线程创建 trace。Perfetto 的 `sched_process_free` 和 `process_track` 轨道能观察到线程生命周期。在 30 分钟的 trace 中观察到：
 
 - 应用启动时线程数约 40（正常）
 - 运行 20 分钟后增长到 387
@@ -221,7 +222,7 @@ Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。�
 - SDK A 注册了 SIGSEGV 处理器
 - SDK B 注册了 SIGSEGV 处理器，`oldact` 保存了 A 的处理器
 - SDK A 重新注册 SIGSEGV 处理器（例如在 `SIGPIPE` 恢复后重新初始化），此时 `oldact` 保存的是 B 的处理器
-- 链路变成：A → B → A → ... 循环调用，或者某一方丢失了 `oldact`
+- 调用链变成：A → B → A → ... 循环调用，或者某一方丢失了 `oldact`
 
 
 ### 追踪：确认信号处理器覆盖
@@ -250,11 +251,11 @@ void dump_signal_handlers() {
 崩溃监控 SDK 的初始化顺序不确定，每次进程启动时两个 SDK 可能以不同的顺序初始化。先初始化的 SDK 注册的处理器会被后初始化的 SDK 覆盖。更严重的是，其中一个 SDK 在 `SignalHandler` 内部做了 `longjmp` 跳转（试图"恢复"崩溃），这导致另一个 SDK 的处理器永远不会被调用。
 
 
-<!-- AIW-源码调研-2026-07-07 勘误 follow-up：debuggerd/handler 链路未被「整体迁移」，仅 linker_main 增加了 wiring 调用 -->
+<!-- AIW-源码调研-2026-07-07 勘误 follow-up：debuggerd/handler 路径未被「整体迁移」，仅 linker_main 增加了 wiring 调用 -->
 
 > 上方 ch09 第一处勘误的反向印证：在 `android-17.0.0_r1` 中，`debuggerd_signal_handler → linker_debuggerd_signal_handler` 的「Android 5.0 模式」并非 linker 化迁移的产物 —— `linker_debuggerd_signal_handler` 在源码树中**未独立存在**。真正的 linker 侧入口只有 `linker_debuggerd_init()`（一个 4 行的 symbol），其余逻辑（signal handler 主体、GWP-ASan/MTE 异常分支、wire protocol）全部在 `system/core/debuggerd/handler/` 目录下未迁移。
 
-**Android 5.0 模式在 Android 17 中的适用性**：旧资料里常把 debuggerd signal handler 与 linker 侧入口混在一起。`android-17.0.0_r1` 下，linker 只负责启动期 `linker_debuggerd_init()` wiring，真正的 signal handler 主体仍在 `system/core/debuggerd/handler/`。应用或 SDK 侧只需要关心自己注册的 `sigaction` 链路是否保留旧 handler、是否遵守 async-signal-safe 约束；不要把 `linker_debuggerd_signal_handler` 写成 Android 17 的实际入口。
+**Android 5.0 模式在 Android 17 中的适用性**：旧资料里常把 debuggerd signal handler 与 linker 侧入口混在一起。`android-17.0.0_r1` 下，linker 只负责启动期 `linker_debuggerd_init()` wiring，真正的 signal handler 主体仍在 `system/core/debuggerd/handler/`。应用或 SDK 侧只需要关心自己注册的 `sigaction` 调用链是否保留旧 handler、是否遵守 async-signal-safe 约束；不要把 `linker_debuggerd_signal_handler` 写成 Android 17 的实际入口。
 
 
 **Android 15+ 信号处理机制演进**：本节只保留 `android-17.0.0_r1` 已确认的变化：linker 启动期调用 `linker_debuggerd_init()`，debuggerd handler 使用固定 8 页 mmap stack、`SA_EXPOSE_TAGBITS`、MTE permissive mode 与 GWP-ASan recoverable crash 路径。没有源码证据支持“线程亲和性信号分发”“动态 altstack 尺寸自适应”或“perf_event 辅助 crash 上下文采集”。应用侧统一处理器仍应遵循最小快照、恢复默认动作、重新投递的原则。
@@ -349,7 +350,7 @@ void register_unified_handler() {
 
 策略一：在 `Application.attachBaseContext()` 阶段注册，此时第三方 SDK 还没有初始化，统一处理器最先入链。风险是后续 SDK 可能覆盖它。
 
-策略二：在所有第三方 SDK 初始化完毕后注册总 handler，用 `sigaction(oldact)` 捕获已有链路。风险是不规范 SDK 可能在初始化后再次注册，绕过统一处理器。
+策略二：在所有第三方 SDK 初始化完毕后注册总 handler，用 `sigaction(oldact)` 捕获已有调用链。风险是不规范 SDK 可能在初始化后再次注册，绕过统一处理器。
 
 两种策略都无法 100% 保证覆盖所有 SDK 的信号注册行为。工程上推荐策略二，并在 APM SDK 中增加信号处理器监控，定期检查目标信号是否仍指向统一处理器，被覆盖时报警。
 
@@ -553,7 +554,7 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 
 定位到阻塞点后，往回追——这个位置为什么会阻塞/崩溃？追踪方向：
 
-- **时间维度**：问题是首次出现还是回归？如果是回归，定位到引入问题的 commit
+- **时间维度**：是首次出现还是回归？如果是回归，定位到引入问题的 commit
 - **空间维度**：问题出现在所有设备还是特定机型/系统版本？
 - **频率维度**：偶发还是必现？偶发问题需要更多 trace 采样
 
@@ -569,7 +570,7 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 
 从公开的技术博客和开源项目中，可以归纳出成熟稳定性治理体系的几个共性：
 
-**线程调度与亲和性的边界**：Android 17 源码中可以看到 `Process.getExclusiveCores()` 和隐藏的 `getSchedAffinity(int)`，但这不是稳定性治理中通用、公开的“线程亲和性管理 API”。应用侧不要把崩溃监控线程硬绑核当作默认策略，尤其不能把崩溃信号写成“按当前核心 local APIC 分发”。稳定性治理更稳的做法是控制线程数量、线程优先级、阻塞点和后台任务隔离；确需调整亲和性时，应以厂商环境和实测 trace 为准。
+**线程调度与亲和性的边界**：Android 17 源码中存在 `Process.getExclusiveCores()` 和隐藏的 `getSchedAffinity(int)`，但这不是稳定性治理中通用、公开的“线程亲和性管理 API”。应用侧不要把崩溃监控线程硬绑核当作默认策略，尤其不能把崩溃信号写成“按当前核心 local APIC 分发”。稳定性治理更稳的做法是控制线程数量、线程优先级、阻塞点和后台任务隔离；确需调整亲和性时，应以厂商环境和实测 trace 为准。
 
 ### 指标驱动而非报警驱动
 
@@ -581,7 +582,7 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 
 ### 防护前置
 
-修复问题是事后动作。成熟的体系把防护动作前移到开发阶段：
+修复本身是事后动作。成熟的体系把防护动作前移到开发阶段：
 
 - **编译期检查**：Lint 规则检测主线程 I/O、网络请求
 - **CI 阶段**：Monkey 测试 + 稳定性回归基线
