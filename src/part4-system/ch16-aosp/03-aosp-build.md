@@ -7,34 +7,41 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-01"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 last_task6_audit: "2026-06-22"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
+last_task9_autofix_at: "2026-07-07"
 last_task9_at: "2026-05-01T08:27:00+08:00"
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-04-21"
-last_verified_against: "AOSP android-16.0.0_r1 + source.android.com"
+last_verified: "2026-07-07"
+last_verified_against: "AOSP android-17.0.0_r1 + source.android.com"
 confidence: medium
-last_task9_audit: "2026-06-15"
-last_task9_audit_at: "2026-06-15T10:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-15-10-audit.md"
+last_task9_audit: "2026-07-07"
+last_task9_audit_at: "2026-07-07T11:27:49+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-07-11-audit.md"
 sources:
   - type: official
-    path: "source.android.com/docs/setup"
+    path: "source.android.com/docs/setup/start/requirements"
   - type: official
     path: "source.android.com/docs/setup/build"
   - type: official
-    path: "source.android.com/docs/setup/create/avd"
+    path: "source.android.com/docs/devices/cuttlefish/get-started"
   - type: official
-    path: "source.android.com/docs/setup/build/downloading"
+    path: "source.android.com/docs/devices/cuttlefish/webrtc"
   - type: official
-    path: "https://android.googlesource.com/platform/packages/modules/adb/+/main/docs/user/adb.1.md"
+    path: "source.android.com/docs/setup/download"
+  - type: official
+    path: "https://android.googlesource.com/platform/packages/modules/adb/+/android-17.0.0_r1/docs/user/adb.1.md"
+  - type: official
+    path: "source.android.com/docs/core/architecture/configuration/add-system-properties"
+  - type: official
+    path: "source.android.com/docs/core/architecture/configuration/sysprops-apis"
   - type: official
     path: "https://developers.google.com/android/drivers"
 section: "16.3"
@@ -52,11 +59,11 @@ last_deepseek_cn_review_at: 2026-05-27
 
 编译 AOSP 需要一台性能足够的工作站。Google 内部使用 72 核、64 GB RAM 的机器，全量编译大约 40 分钟。对个人开发者来说，16 核 CPU、64 GB RAM、500 GB 以上 SSD 是比较现实的起步配置。磁盘空间至少预留 400 GB——源码 checkout 约 250 GB，编译产物另需 150 GB。
 
-[已验证: 官方文档, source.android.com/docs/setup/build/requirements]
+[已验证: 官方文档, source.android.com/docs/setup/start/requirements]
 
-**操作系统方面，Linux 是唯一官方支持的编译平台。**Ubuntu 20.04 LTS 和 22.04 LTS 都可以正常编译 Android 11+（包括 Android 16）。macOS 自 2021 年起（Android 11+）已不再官方支持作为 AOSP 编译平台。即使通过 case-sensitive APFS 卷做 workaround，也经常会遇到路径大小写敏感性问题。如果主力机是 Mac，推荐用 Ubuntu 虚拟机或远程 Linux 服务器来编译。
+**操作系统方面，Linux 是唯一官方支持的编译平台。**Ubuntu 20.04 LTS 和 22.04 LTS 都可以正常编译 Android 11+（包括 Android 17）。macOS 自 2021 年起（Android 11+）已不再官方支持作为 AOSP 编译平台。即使通过 case-sensitive APFS 卷做 workaround，也经常会遇到路径大小写敏感性问题。如果主力机是 Mac，推荐用 Ubuntu 虚拟机或远程 Linux 服务器来编译。
 
-Ubuntu 上需要安装一系列编译依赖包。Android 16 的编译环境要求可以通过以下命令一次性安装：
+Ubuntu 上需要安装一系列编译依赖包。Android 17 基线下的 Ubuntu 编译依赖可以通过以下命令一次性安装：
 
 ```bash
 sudo apt-get install git-core gnupg flex bison build-essential \
@@ -70,15 +77,15 @@ sudo apt-get install git-core gnupg flex bison build-essential \
 ```bash
 # 初始化 manifest
 repo init -u https://android.googlesource.com/platform/manifest \
-  -b android-latest-release
+  -b android-17.0.0_r1
 
 # 并行同步（-j 后跟 CPU 核心数的 2-4 倍通常效果最好）
 repo sync -j32
 ```
 
-`-b android-latest-release` 指向当前最新稳定分支（Android 16 发布后即为 android-16 分支）。从 2026 年开始，Google 调整了 AOSP 发布节奏，改为每年两次（Q2 和 Q4）公开发布源码，推荐使用 `android-latest-release` 而非 `aosp-main`，后者正在向内部开发模式过渡。首次同步大约需要 50-100 GB 的网络流量，耗时取决于网速。
+本书主线结论固定在 `android-17.0.0_r1`，因此示例直接 pin 到 Android 17 release tag。从 2026 年开始，Google 调整了 AOSP 发布节奏，改为每年两次（Q2 和 Q4）公开发布源码；官方面向普通构建/贡献者仍推荐 `android-latest-release`，它会跟随最近一次推送到 AOSP 的 release。本书复现时不要用它替代固定 tag，避免后续移动到更高版本口径。首次同步大约需要 50-100 GB 的网络流量，耗时取决于网速。
 
-[已验证: 官方文档, source.android.com/docs/setup/build/downloading]
+[已验证: 官方文档, source.android.com/docs/setup/download]
 
 AOSP 的构建系统由三层组成：Soong、Kati 和 Ninja。Soong 解析 `Android.bp` 文件（声明式模块描述），生成 Ninja 构建清单；Kati 将遗留的 `Android.mk` 文件翻译为 Ninja 清单；Ninja 作为执行引擎负责实际的编译调度。Google 曾计划将构建系统迁移到 Bazel，但该迁移已于 2024 年中止。了解这三层的关系，有助于理解为什么修改一个 `.bp` 文件后需要先跑 `m nothing` 来验证构建描述是否正确。
 
@@ -166,7 +173,7 @@ HOME=$PWD ./bin/launch_cvd --daemon
 
 对于不编译 AOSP 的场景（CI 预编译镜像路径），从 Android CI 下载 `cvd-host_package.tar.gz` 和目标设备 image，解压后用 `./bin/launch_cvd` 启动。`sudo apt install -y cuttlefish-common` 在干净 Ubuntu 上不保证具备可复现性，因为 `cuttlefish-common` 包的版本可能与当前 AOSP 分支不匹配。
 
-[已验证: source.android.com/docs/setup/create/avd, AOSP device/google/cuttlefish README]
+[已验证: source.android.com/docs/devices/cuttlefish/get-started, source.android.com/docs/devices/cuttlefish/webrtc, AOSP android-17.0.0_r1 device/google/cuttlefish README]
 
 启动后，Cuttlefish 默认提供一个 Web 界面（`https://localhost:8443`），可以直接在浏览器里看到虚拟设备的画面。同时可以通过 ADB 连接：
 
@@ -190,7 +197,7 @@ Framework 调试的核心是修改代码，然后验证效果。调试循环如�
 - `frameworks/base/services/core/java/com/android/server/am/` — AMS 进程管理
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/ 结构]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/ 结构]
 
 **第二步：增量编译并推送。** 修改完 Java 文件后，增量编译只需要针对修改的模块：
 
@@ -214,7 +221,7 @@ ADB man page 里的 `sync` 只接受 `all`、`data`、`odm`、`oem`、`product`�
 adb push out/target/product/<device>/system/framework/framework.jar /system/framework/
 ```
 
-[已验证: 官方文档, https://android.googlesource.com/platform/packages/modules/adb/+/main/docs/user/adb.1.md]
+[已验证: 官方文档, https://android.googlesource.com/platform/packages/modules/adb/+/android-17.0.0_r1/docs/user/adb.1.md]
 
 `stop` / `start` 会重启 Java 层的 System Server 进程（zygote 会重新 fork），所有 App 进程也会随之重启。这比完整的 `adb reboot` 快得多，通常几秒钟就能回到桌面。
 
@@ -291,9 +298,9 @@ adb shell setprop debug.hwui.profile true
 adb shell setprop persist.debug.hwui.profile true
 ```
 
-[已验证: 官方文档, source.android.com/docs/core/properties]
+[已验证: 官方文档, source.android.com/docs/core/architecture/configuration/add-system-properties]
 
-Android 16 中，Google 推荐在新增 Framework 调试开关时使用 Sysprop API（通过 `.sysprop` 文件定义），而非直接调用 `SystemProperties.get()`。Sysprop API 会生成类型安全的 Java/C++/Rust 接口，减少运行时的类型转换错误。
+Android 17 基线下，Google 推荐在新增 Framework 调试开关时使用 Sysprop API（通过 `.sysprop` 文件定义），而非直接调用 `SystemProperties.get()`。Sysprop API 会生成类型安全的 Java/C++/Rust 接口，减少运行时的类型转换错误。
 
 ### dumpsys
 
@@ -385,7 +392,7 @@ adb reboot bootloader
 fastboot flashall -w
 ```
 
-[已验证: 官方文档, source.android.com/docs/setup/build/downloading]
+[已验证: 官方文档, source.android.com/docs/setup/download]
 
 真机验证至少要分三条资源线看：
 
@@ -415,13 +422,13 @@ fastboot flashall -w
 
 ## 参考资料
 
-- AOSP 构建要求：source.android.com/docs/setup/build/requirements
-- 下载 AOSP 源码：source.android.com/docs/setup/build/downloading
+- AOSP 构建要求：source.android.com/docs/setup/start/requirements
+- 下载 AOSP 源码：source.android.com/docs/setup/download
 - 构建系统概览：source.android.com/docs/setup/build
-- Cuttlefish 设置：source.android.com/docs/setup/create/avd
+- Cuttlefish 设置：source.android.com/docs/devices/cuttlefish/get-started
 - adb 与 fastboot：source.android.com/docs/setup/build/adb
-- SystemProperties：source.android.com/docs/core/properties
+- SystemProperties：source.android.com/docs/core/architecture/configuration/add-system-properties
 - dumpsys 参考：developer.android.com/studio/command-line/dumpsys
 - Android Log API：developer.android.com/reference/android/util/Log
 - Pixel 驱动二进制：developers.google.com/android/drivers
-- Sysprop API：source.android.com/docs/core/properties/sysprop
+- Sysprop API：source.android.com/docs/core/architecture/configuration/sysprops-apis
