@@ -1071,7 +1071,9 @@
       "task9_result": "needs-rework",
       "pipeline_stage": "task2b_pending",
       "last_task9_at": "2026-07-06T08:32:18.662157",
-      "review_log": "logs/deep-review/2026-07-06-08-deep-review.md"
+      "review_log": "logs/deep-review/2026-07-06-08-deep-review.md",
+      "last_task6": "2026-07-07",
+      "task6_result": "pass-light-edit"
     },
     "14.11": {
       "last_task6_review": "2026-07-07",
@@ -1237,5 +1239,6 @@
       "14.11",
       "18.18"
     ]
-  }
+  },
+  "last_review": "2026-07-07T13:30:00+08:00"
 }
