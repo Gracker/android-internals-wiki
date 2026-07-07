@@ -55,11 +55,11 @@ related_chapters:
 - '3.3'
 drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: fixed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task2b_state: "fixed"
 reviewed_date: '2026-06-14'
 finalized_date: '2026-06-14'
 finalized_by: openclaw-task9-auto-promote
@@ -72,9 +72,9 @@ task9_reviewed_date: '2026-06-14'
 last_task9_at: '2026-06-14T20:37:52+08:00'
 last_task2b_at: '2026-05-09T17:20:00+08:00'
 task9_reviewed_by: openclaw-task9
-last_task9_audit: '2026-06-14'
-last_task9_audit_at: '2026-06-14T14:20:00+08:00'
-last_task9_audit_log: logs/deep-review/2026-06-14-14-audit.md
+last_task9_audit: "2026-07-07"
+last_task9_audit_at: "2026-07-07T16:36:08+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-07-16-audit.md"
 last_task2b_lite_at: '2026-05-31'
 last_task6_at: '2026-06-14T16:05:00+08:00'
 last_task6_review_log: logs/review/2026-06-14-16-review.md
@@ -82,17 +82,18 @@ task6_review_notes: 2026-06-14 Task6 16:05：Task9 auto-fixed 后写作复审。
   修 1 处空标题（Android 16 桌面模式公开边界段落归位）。锚点 5/5 覆盖。无 L3/L4 回炉项。task9_result=auto-fixed
   非 pass-tech-review，未自动晋升。
 last_task9_review_log: logs/deep-review/2026-06-14-20-deep-review.md
-last_task9_autofix_at: '2026-06-14'
-task9_review_notes: '2026-06-14 Task9 full review: pass-tech-review。复核 Android 16/17
-  大屏行为、recreateOnConfigChanges、multi-resume、connected display、Perfetto SurfaceFlinger
-  schema 与 FrameTimeline jank 名称；未发现新增 P0/P1/P2，queue 无本章节 pending，自动晋升 finalized。'
-p0: '0'
-p1: '0'
-p2: '0'
+last_task9_autofix_at: "2026-07-07"
+task9_review_notes: "2026-07-07 Task9 idle audit auto-fix: AOSP android-17.0.0_r1 attrs_manifest.xml 与 Android R.attr 文档确认 recreateOnConfigChanges 不包含 uiMode/desk mode；已删除 4 处错误边界，回到 Task6 复审。"
+p0: 1
+p1: 0
+p2: 0
 last_task2b_verifier_at: '2026-06-14T19:31:17'
 task2b_verifier_result: task9-state-reset-ready-for-task9
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: '2026-06-15'
+task9_p0_issues: 1
+task9_p1_issues: 0
+task9_p2_issues: 0
 ---
 
 # 2.20 多窗口与桌面模式渲染性能
@@ -113,7 +114,7 @@ last_deepseek_cn_review_at: '2026-06-15'
   多窗口先增加可见 layer，再提高 HWC 选择和 GPU composition 的概率。外接显示器还会把 display pipeline 再加一份。
 
 - 🔹 **`recreateOnConfigChanges` 是显式请求重建的补充开关**：[已验证: AOSP `frameworks/base/core/res/res/values/attrs_manifest.xml`, Android Developers `android.R.attr#recreateOnConfigChanges`]
-  这个属性用于声明哪些配置变化仍应触发 Activity 重建。Android O 口径主要覆盖 `mcc|mnc`，API 37 又覆盖 keyboard、navigation、touchscreen、colorMode、部分 uiMode 等默认不再重建的变化；它仍不能当成窗口尺寸和方向变化的通用处理方案。
+  这个属性用于声明哪些配置变化仍应触发 Activity 重建。Android O 口径主要覆盖 `mcc|mnc`，API 37 又覆盖 touchscreen、keyboard、keyboardHidden、navigation、colorMode 这些默认不再重建的变化；它仍不能当成窗口尺寸和方向变化的通用处理方案。
 
 - 🔹 **Android 10 之后，multi-resume 改写了优化边界**：[已验证: Android Developers multi-window support]
   多窗口下多个可见 Activity 可以同时停留在 `RESUMED`。失去焦点不等于进入 `onStop()`，独占资源和高频渲染要参考 `onTopResumedActivityChanged()`。
@@ -279,7 +280,7 @@ Android 15 起 AOSP 支持 16KB page size，Google Play 从 2025-11-01 要求 ta
 
 `recreateOnConfigChanges` 的方向和 `android:configChanges` 相反。`configChanges` 表示“这类变化由 App 自己处理，系统不要重建 Activity”；`recreateOnConfigChanges` 表示“即使系统默认不重建，这类变化仍要按完整 Activity 生命周期重走一遍”。
 
-这个属性的公开语义不是“所有配置变化的通用重启开关”。Android O 之后，`mcc|mnc` 默认不再触发 Activity 重建，应用可以用 `recreateOnConfigChanges` 显式要求这两类变化重建。API 37 又把 keyboard、keyboardHidden、navigation、touchscreen、colorMode，以及切入 / 切出 desk 模式这类 `uiMode` 变化纳入默认不重建范围；依赖完整重建加载资源的应用，需要在 manifest 中显式声明。
+这个属性的公开语义不是“所有配置变化的通用重启开关”。Android O 之后，`mcc|mnc` 默认不再触发 Activity 重建，应用可以用 `recreateOnConfigChanges` 显式要求这两类变化重建。API 37 又把 touchscreen、keyboard、keyboardHidden、navigation、colorMode 变化纳入默认不重建范围；依赖完整重建加载资源的应用，需要在 manifest 中显式声明。
 
 窗口尺寸变化、方向变化、screen layout 变化这类多窗口场景里的高频变化，仍要回到 `android:configChanges`、`onConfigurationChanged()`、状态保存和系统实际生命周期回调。把 `recreateOnConfigChanges` 写成“折叠屏或桌面模式尺寸变化开关”，会把大屏适配的判断带偏。
 
@@ -303,7 +304,7 @@ Android 16（API 36）进一步把大屏规则扩展到 `sw >= 600dp`。对 `tar
 
 这会改变 `android:configChanges` 的风险边界。应用仍然可以声明某些配置变化自行处理，但大屏上窗口被拉伸、旋转、进入分屏或桌面窗口时，系统给出的形态约束已经变少，Activity 更容易收到连续的尺寸、方向、screen layout 变化。声明了 `configChanges` 的应用也要真的更新资源、布局和渲染目标；没有声明或声明不完整时，系统仍可能走 Activity 重建路径。
 
-API 37 的 `recreateOnConfigChanges` 要和这条大屏规则分开读。它面向 keyboard、keyboardHidden、navigation、touchscreen、colorMode、部分 desk `uiMode` 变化，用来恢复“发生这些变化时重建 Activity”的旧行为；它不会让 `screenOrientation`、宽高比或 resizability 限制重新生效。对应到渲染分析，大屏和外接显示器上的窗口尺寸变化，会更频繁地触发 relayout、buffer 重新分配和 `performTraversals()`。保存 UI state，把窗口尺寸变化当成常态输入，不要把它当成少见异常。
+API 37 的 `recreateOnConfigChanges` 要和这条大屏规则分开读。它面向 touchscreen、keyboard、keyboardHidden、navigation、colorMode 变化，用来恢复“发生这些变化时重建 Activity”的旧行为；它不会让 `screenOrientation`、宽高比或 resizability 限制重新生效。对应到渲染分析，大屏和外接显示器上的窗口尺寸变化，会更频繁地触发 relayout、buffer 重新分配和 `performTraversals()`。保存 UI state，把窗口尺寸变化当成常态输入，不要把它当成少见异常。
 
 ## Multi-resume 把“失去焦点”和“停止可见”拆开了
 
@@ -406,7 +407,7 @@ FrameTimeline 里，App 侧和 SurfaceFlinger 侧至少要分成三类：
 
 ### 误区 2：`recreateOnConfigChanges` 能处理折叠屏和窗口尺寸变化
 
-这个属性只声明“哪些默认不重建的配置变化仍要重建”。折叠屏展开、窗口缩放、横竖屏切换这些场景，还是查 `android:configChanges`、`onConfigurationChanged()`、状态保存，以及系统是否触发 Activity 重建。API 37 对 keyboard、navigation、touchscreen、colorMode、部分 desk `uiMode` 的处理，不应外推成窗口尺寸变化的通用方案。
+这个属性只声明“哪些默认不重建的配置变化仍要重建”。折叠屏展开、窗口缩放、横竖屏切换这些场景，还是查 `android:configChanges`、`onConfigurationChanged()`、状态保存，以及系统是否触发 Activity 重建。API 37 对 touchscreen、keyboard、keyboardHidden、navigation、colorMode 的处理，不应外推成窗口尺寸变化的通用方案。
 
 ### 误区 3：多窗口掉帧一定是 App 的问题
 
