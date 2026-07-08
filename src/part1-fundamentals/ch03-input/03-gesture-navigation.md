@@ -14,7 +14,7 @@ review_round: 3
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-29"
-last_task6_audit: "2026-06-14"
+last_task6_audit: "2026-07-08"
 last_task9_audit: "2026-07-02"
 last_task9_audit_log: "logs/deep-review/2026-07-02-06-audit.md"
 last_task9_autofix_at: "2026-07-02"
