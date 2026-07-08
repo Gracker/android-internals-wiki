@@ -3,7 +3,7 @@
   "draft": 71,
   "ready_for_review": 212,
   "finalized": 344,
-  "last_updated": "2026-07-09T00:25:10.418523+08:00",
+  "last_updated": "2026-07-09T01:08:16.963741+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -1106,6 +1106,13 @@
       "status": "no-candidates",
       "ts": "2026-07-09T00:25:10.418523+08:00",
       "note": "Gap mining round 46: 0 candidates >=14 (46th consecutive). Coverage saturated. 8 new DeepResearch files (2026-07-08): VNDK isolation->1.1 sup (9/20), GPU counter standardization->14.8/14.28 sup (8/20), debuggerd signal->20.19 sup (8/20), GPU profiling source->14.8 sup (8/20), PowerStats HAL->25.18 sup (8/20), GPU power DVFS->5.x sup (7/20), LMKD migration->4.37/4.43 sup (8/20), EdgeBench->not Android (6/20). No new Clippings in 14+ days. No new daily-info since 07-08. 46 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-09T01:08:16.963741+08:00",
+      "note": "Gap mining round 47: 0 candidates >=14 (47th consecutive). Coverage saturated. No new material since round 46. No new DeepResearch/Clippings/daily-info. source-index: 0 unmapped high-quality. 46 drafts all >15 lines. Task2B backlog: 0. Queue: 0 pending."
     }
   ],
   "review_history": [
@@ -1399,12 +1406,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-08T12:16:48.216499+08:00",
+    "last_run": "2026-07-09T01:08:16.963741+08:00",
     "last_section": "none",
     "result": "no-candidates",
     "fix_count": 0,
     "last_sections": [],
-    "note": "Gap mining round 43: 0 candidates ≥14. Coverage saturated (43rd consecutive)."
+    "note": "Gap mining round 47: 0 candidates >=14 (47th consecutive). Coverage saturated. No new material since round 46 (40min ago). No new DeepResearch/Clippings/daily-info. source-index: 0 unmapped high-quality. 46 drafts all >15 lines. Task2B backlog: 0."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",
