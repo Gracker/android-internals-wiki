@@ -261,6 +261,41 @@
       "completed_at": "2026-07-08T06:57:16+08:00",
       "completed_by": "task2b-main",
       "completion_note": "task9 deep tech review 5 项问题全部修复：源码锚点重写为 Scheduler/FrameTimeline、proto 定义改为 GraphicsFrameEvent+FrameTimelineEvent、gpu_composition 判定按 Layer::onCompositionPresented+SurfaceFlinger::onCompositionPresented 双路径重写、删除 getIntervalNanos()、SQL 表名改为 _frame_timeline_slice"
+    },
+    {
+      "path": "src/part2-performance/ch11-power/05-wakelock.md",
+      "section": "11.5",
+      "section_title": "Wakelock 机制与功耗分析",
+      "priority": 95,
+      "stage": "task2b_pending",
+      "reason": "[Deep Tech Review] Wakelock 章节 Android 17 源码锚点、restricted wakelock 口径与 IPowerStats API 需按 android-17.0.0_r1 重新校准",
+      "material_paths": [
+        "src/part2-performance/ch11-power/05-wakelock.md",
+        "logs/deep-review/2026-07-08-08-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "frontmatter last_verified_against；正文第153/191/334/501/678行验证标注；参考资料第913-923行 AOSP 源码路径",
+          "detail": "章节仍以 AOSP android-17-beta3 作为验证基准，且多处源码路径不符合 android-17.0.0_r1：AlarmManager.java 位于 frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java，AlarmManagerService.java 位于 frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java，SystemSuspend.cpp 位于 system/hardware/interfaces/suspend/aidl/default/SystemSuspend.cpp；旧 frameworks/base/core/java/android/app/AlarmManager.java、frameworks/base/services/core/java/com/android/server/AlarmManagerService.java、system/hardware/interfaces/suspend/1.0/default/SystemSuspend.cpp 在 Android 17 tag 下为 404。",
+          "suggestion": "按 android-17.0.0_r1 重新校准所有 AOSP 验证标注和参考路径；beta3 只可作为历史材料，不应作为正文主线验证基准。"
+        },
+        {
+          "type": "源码错误/原理断裂",
+          "location": "第241-247行 App Standby Bucket 对 wakelock 的限制",
+          "detail": "正文写 RESTRICTED bucket 通过 enforceWakeLockTimeout() 强制单次持锁最长约 1 分钟，并称 RESTRICTED_WAKELOCK_MAX_TIMEOUT 是单次超时限制。本轮在 android-17.0.0_r1 的 PowerManagerService.java 中未找到 enforceWakeLockTimeout、RESTRICTED_WAKELOCK_MAX_TIMEOUT、restricted wakelock timeout 等符号；AppStandbyController.java 的 restricted 逻辑也未呈现直接 wakelock timeout 入口。该段把旧调研结论写成 Android 17 主线机制，存在误导。",
+          "suggestion": "删除或重写 RESTRICTED_WAKELOCK_MAX_TIMEOUT/enforceWakeLockTimeout 口径；以 android-17.0.0_r1 的 PowerManagerService、DeviceIdle/AppStandby、Alarm/Job quota 源码重新描述“wakelock 无直接累计配额，主要受 Doze 与后台入口间接约束”的边界。"
+        },
+        {
+          "type": "API 签名错误",
+          "location": "第857-865行 IPowerStats HAL 核心 API",
+          "detail": "正文写 IPowerStats HAL 核心 API 为 getRailInfo() 和 getEnergyData()。android-17.0.0_r1 的 hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl 实际接口是 getEnergyMeterInfo() 与 readEnergyMeter(in int[] channelIds)，未找到 getRailInfo/getEnergyData。",
+          "suggestion": "将 IPowerStats HAL API 名称更新为 getEnergyMeterInfo()/readEnergyMeter()；若需要讲旧接口，必须放到历史演进对照中并标注不作为 Android 17 主线。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-08T08:31:08+08:00",
+      "status": "pending"
     }
   ],
   "entries": [
