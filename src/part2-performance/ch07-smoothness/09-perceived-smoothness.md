@@ -7,8 +7,8 @@ section: "7.9"
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-16"
-last_verified_against: "AOSP android-16.0.0_r1; Android 17 public tag unavailable"
+last_verified: "2026-07-09"
+last_verified_against: "AOSP android-17.0.0_r1 OverScroller / Choreographer / AnimationUtils / InputConsumer / AppJankStats / RelativeFrameTimeHistogram; Perfetto FrameTimeline docs"
 task6_reviewed_date: "2026-06-16"
 last_task6_audit: "2026-06-16"
 review_type: "task6-writing-quality-review"
@@ -23,16 +23,16 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-17"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-17T01:27:53+08:00"
-task9_review_notes: "2026-06-16 Task9 idle audit: AUTO-FIX P1 version anchor. InputConsumer resampling constants were labeled AOSP mainline; verified against android-16.0.0_r1 and updated the source anchor. No Android 18/API 38 material used; Android 17 public AOSP tag unavailable. | 2026-06-16 17 Task9 deep-review AUTO-FIX: 修正 SplineOverScroller 状态边界、FrameTimeline/AppJankStats 说明、输入重采样 5ms latency 边界与 EMA 建议；证据为 AOSP android-16.0.0_r1 OverScroller/InputConsumer/Choreographer 与官方 Perfetto/NDK 文档；回到 Task6 复审。 | 2026-06-17 01 Task9 deep-review PASS: 复核 2026-06-16 auto-fix 后源码锚点与版本边界；无 P0/P1，queue 无 pending，Task6 已 pass-light-edit，自动晋升 finalized / ready-to-publish。"
+last_task9_at: "2026-07-09T02:31:12+08:00"
+task9_review_notes: "2026-07-09 Task9 idle audit AUTO-FIX: 以 android-17.0.0_r1 复核 OverScroller / Choreographer / AnimationUtils / InputConsumer / AppJankStats / RelativeFrameTimeHistogram；修正 Choreographer lockAnimationClock 签名、InputConsumer RESAMPLE_LATENCY 源码表达和源码基准，回到 Task6 复审。历史记录见 logs/deep-review/2026-06-16-10-audit.md / 2026-06-16-17-deep-review.md / 2026-06-17-01-deep-review.md。"
 review_notes: "2026-06-16 Task6：修正 outline 块格式问题，L1/L2 通过，送回 Task9 处理技术项。"
-last_task9_audit: "2026-06-16"
+last_task9_audit: "2026-07-09"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
@@ -45,11 +45,11 @@ task2b_verifier_notes: "2026-06-16 Task2B Verifier: state reconciliation — tas
 last_task6_review_log: "logs/review/2026-05-24-01-review.md"
 task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 5 处（压低否定-纠正式句式、移除 AIW 编辑注释、把新增 Buffer Stuffing Recovery 段移到参考资料前）。无新增 Task6 回炉；InputConsumer DEBUG tag 已由 Task2B 修复，等待 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-17-01-deep-review.md"
-last_task9_audit_at: "2026-06-16T10:28:38+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-16-10-audit.md"
-last_task9_audit_result: "auto-fixed-p1-version-anchor"
-task9_audit_notes: "2026-06-16 Task9 idle audit: auto-fixed unversioned AOSP mainline anchor for InputConsumer constants to android-16.0.0_r1; sent back to Task6."
-last_task9_autofix_at: "2026-06-16"
+last_task9_audit_at: "2026-07-09T02:31:12+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-09-02-audit.md"
+last_task9_audit_result: "auto-fixed-p0-android17-source-anchor"
+task9_audit_notes: "2026-07-09 Task9 idle audit: auto-fixed Android 17 source baseline. Choreographer lockAnimationClock signature and InputConsumer RESAMPLE_LATENCY source expression corrected to android-17.0.0_r1; sent back to Task6."
+last_task9_autofix_at: "2026-07-09"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
 ---
@@ -136,11 +136,9 @@ switch (mState) {
 
 `SplineOverScroller.update()` 在 `SPLINE` 状态下不会按 `position = start + velocity * time - friction * time^2` 直接算位移。它先把 `currentTime / mSplineDuration` 映射到样条进度 `t`，不能拿来代表整段 fling。会受 8ms / 9ms 交替影响的是样条进度 `t` 的采样点，以及由此得到的 `distanceCoef` / `velocityCoef`。在高速段，样条表相邻采样点之间的位移差更大，所以 1ms 量化更容易变成肉眼可见的步幅抖动。### 成因三：Choreographer 把时间同步到 VSync，但精度仍停在毫秒
 
-OverScroller 并没有完全绕开 `Choreographer`。`Choreographer.doFrame()` 在执行本帧回调前，会把当前线程的动画时钟锁到这一帧的 `frameTimeNanos`，同时记录期望呈现时间。```java
+OverScroller 并没有完全绕开 `Choreographer`。`Choreographer.doFrame()` 在执行本帧回调前，会把当前线程的动画时钟锁到这一帧的 `frameTimeNanos` 对应毫秒值。```java
 // frameworks/base/core/java/android/view/Choreographer.java
-AnimationUtils.lockAnimationClock(
-        frameTimeNanos / TimeUtils.NANOS_PER_MS,
-        timeline.mExpectedPresentationTimeNanos);
+AnimationUtils.lockAnimationClock(frameTimeNanos / TimeUtils.NANOS_PER_MS);
 ```
 
 ```java
@@ -242,13 +240,13 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 缩短动画时间只改变了动画的总时长，不改变步幅的均匀性。一个 200ms 的动画和一个 300ms 的动画，如果每帧的位移分布都不均匀，用户感知到的不流畅程度是相似的。问题不在动画跑多快，而在相邻两帧的位移差了多少。## 输入重采样（Motion Resampling）对跟手滑动的影响
 
-> 输入重采样直接影响跟手滑动的触摸坐标质量,是步幅波动在输入侧的关联问题。更完整的触摸响应分析见 §3.2。**机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心流程在 `frameworks/native/libs/input/InputConsumer.cpp` 中：`consume()` → `consumeBatch()` 计算采样时间点 → `updateTouchState()` 更新历史样本 → `resampleTouchState()` 执行插值/外推。声明位于 `frameworks/native/include/input/InputConsumer.h`。**关键常量**（AOSP android-16.0.0_r1）：- `RESAMPLE_LATENCY = 5 * NANOS_PER_MS`（5ms 预期延迟，用于减少误预测影响）
+> 输入重采样直接影响跟手滑动的触摸坐标质量,是步幅波动在输入侧的关联问题。更完整的触摸响应分析见 §3.2。**机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心流程在 `frameworks/native/libs/input/InputConsumer.cpp` 中：`consume()` → `consumeBatch()` 计算采样时间点 → `updateTouchState()` 更新历史样本 → `resampleTouchState()` 执行插值/外推。声明位于 `frameworks/native/include/input/InputConsumer.h`。**关键常量**（AOSP android-17.0.0_r1）：- `const std::chrono::duration RESAMPLE_LATENCY = 5ms`（5ms 预期延迟，用于减少误预测影响）
 - `RESAMPLE_MIN_DELTA = 2 * NANOS_PER_MS`（最小采样间隔，2ms）
 - `RESAMPLE_MAX_PREDICTION = 8 * NANOS_PER_MS`（最大预测窗口，8ms）
 
-**算法原理**：1. `consumeBatch()` 计算采样时间点：`sampleTime = frameTime - RESAMPLE_LATENCY`，其中 `frameTime` 是目标 VSync 时间，`RESAMPLE_LATENCY = 5ms` 是重采样延迟补偿。2. `updateTouchState()` 将原始触摸事件记录为历史样本（next/history 两个样本窗口，保存 timestamp、x、y）。3. 当历史样本间的时间差 `>= RESAMPLE_MIN_DELTA`（2ms）时，`resampleTouchState()` 进入重采样逻辑：若 `sampleTime` 在两个历史样本之间，执行线性插值（Interpolation）；若 `sampleTime` 超出最新样本，执行外推（Extrapolation），外推量不超过 `RESAMPLE_MAX_PREDICTION`（8ms）。4. 重采样后的坐标同步到 VSync 时间点，确保渲染新帧时使用的是同步后的坐标。**设计意图**：解决触摸采样率（通常 100-240Hz）与显示刷新率（60/90/120Hz）不同步导致的坐标跳跃。`RESAMPLE_LATENCY` 的 5ms 是重采样算法的延迟补偿参数，不代表固定最坏响应增量；它控制的是采样时间点相对于目标 VSync 的回退量，使得插值/外推有足够的历史数据支撑，降低误预测概率。**性能影响**：`RESAMPLE_LATENCY = 5ms` 表示重采样点相对目标 VSync 回退 5ms，可能增加跟手延迟感，但不能等同为端到端触摸响应固定或最坏增加 5ms；它的收益是降低采样率与刷新率不同步造成的帧内坐标抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.resampling=0` 系统属性禁用重采样。**配置接口**：`ro.input.resampling` 系统属性（`1` 启用 / `0` 禁用，定义于 `InputConsumer.cpp` 中的 `PROPERTY_RESAMPLING_ENABLED`）；DEBUG 开关 `log.tag.InputTransportResampling=DEBUG`（user build 需重启生效，userdebug/debuggable build 可即时生效）
+**算法原理**：1. `consumeBatch()` 计算采样时间点：`sampleTime -= std::chrono::nanoseconds(RESAMPLE_LATENCY).count()`，其中 `frameTime` 是目标 VSync 时间，`RESAMPLE_LATENCY = 5ms` 是重采样延迟补偿。2. `updateTouchState()` 将原始触摸事件记录为历史样本（next/history 两个样本窗口，保存 timestamp、x、y）。3. 当历史样本间的时间差 `>= RESAMPLE_MIN_DELTA`（2ms）时，`resampleTouchState()` 进入重采样逻辑：若 `sampleTime` 在两个历史样本之间，执行线性插值（Interpolation）；若 `sampleTime` 超出最新样本，执行外推（Extrapolation），外推量不超过 `RESAMPLE_MAX_PREDICTION`（8ms）。4. 重采样后的坐标同步到 VSync 时间点，确保渲染新帧时使用的是同步后的坐标。**设计意图**：解决触摸采样率（通常 100-240Hz）与显示刷新率（60/90/120Hz）不同步导致的坐标跳跃。`RESAMPLE_LATENCY` 的 5ms 是重采样算法的延迟补偿参数，不代表固定最坏响应增量；它控制的是采样时间点相对于目标 VSync 的回退量，使得插值/外推有足够的历史数据支撑，降低误预测概率。**性能影响**：`RESAMPLE_LATENCY = 5ms` 表示重采样点相对目标 VSync 回退 5ms，可能增加跟手延迟感，但不能等同为端到端触摸响应固定或最坏增加 5ms；它的收益是降低采样率与刷新率不同步造成的帧内坐标抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.resampling=0` 系统属性禁用重采样。**配置接口**：`ro.input.resampling` 系统属性（`1` 启用 / `0` 禁用，定义于 `InputConsumer.cpp` 中的 `PROPERTY_RESAMPLING_ENABLED`）；DEBUG 开关 `log.tag.InputTransportResampling=DEBUG`（user build 需重启生效，userdebug/debuggable build 可即时生效）
 
-**关键源码文件**：- `frameworks/native/include/input/InputConsumer.h` — InputConsumer 类声明
+**关键源码文件**（AOSP android-17.0.0_r1）：- `frameworks/native/include/input/InputConsumer.h` — InputConsumer 类声明
 - `frameworks/native/libs/input/InputConsumer.cpp` — `consume()` / `consumeBatch()` 事件消费、`resampleTouchState()` 重采样算法、`updateTouchState()` 历史样本更新
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — 事件分发与 stale event 判定
 
@@ -294,7 +292,7 @@ private long mLastNoOffsetFrameTimeNanos;
 
 Buffer Stuffing Recovery 解决的是**供给侧阻塞**导致的帧节拍错位，与本节讨论的需求侧（OverScroller 时间精度）形成互补。两类问题都会导致"不掉帧但感觉卡"的现象，需要分别从 Buffer 队列状态和动画时间源两个方向排查。## 参考资料
 
-- AOSP 源码路径：- `frameworks/base/core/java/android/widget/OverScroller.java`（`computeScrollOffset()`、`SplineOverScroller.update()`）
+- AOSP 源码路径（android-17.0.0_r1）：- `frameworks/base/core/java/android/widget/OverScroller.java`（`computeScrollOffset()`、`SplineOverScroller.update()`）
   - `frameworks/base/core/java/android/view/Choreographer.java`（`doFrame()`、`postVsyncCallback()`）
   - `frameworks/base/core/java/android/view/animation/AnimationUtils.java`（`lockAnimationClock()`、`currentAnimationTimeMillis()`）
 - 官方文档：- Choreographer VsyncCallback: https://developer.android.com/reference/android/view/Choreographer#postVsyncCallback(android.view.Choreographer.VsyncCallback)
