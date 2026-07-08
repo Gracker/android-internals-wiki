@@ -1,7 +1,7 @@
 ---
 title: Trace 抓取
 chapter: '13.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - tools
@@ -12,22 +12,27 @@ polish_by: task2b-polish
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_review_notes: "2026-07-09 Task6 re-review (post-Task9 auto-fix): L1 3 fixes (banned word 对齐→匹配, 2x version pinning 当前主干→Android 17). L2 minor. All 6 anchors + 2 extensions covered. No B-class issues. No banned words remaining."
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 last_task6_audit: 2026-07-09
 task2b_result: fixed
 task2b_fix_date: 2026-07-08
 task2b_fix_notes: "2026-07-08 Task2B main rework: P0 token merge fix (20+ commands/APIs), version baseline update (android-17.0.0_r1 verified), FrameTimeline/linux.perf anchor correction, P1 data source selection flow, P2 unverifiable % removal. Based on deep-review 2026-07-08-21 and audit 2026-07-08-20."
 task2b_state: fixed
-task9_state: "pending"
-task9_result: auto-fixed
-last_task9_at: 2026-07-09T00:37:21+08:00
-task9_review_notes: "2026-07-09 Task9 deep-review auto-fix: P0=4 P1=0 P2=2. 修正 Android17 DataSourceConfig 新增数据源口径、FrameTimeline/linux.perf Android17 源码锚点与旧伪代码、linux.perf 版本验证矛盾、unsupported profiling overhead 百分比；回到 Task6 复审。"
+task9_state: reviewed
+task9_result: "pass-tech-review"
+last_task9_at: "2026-07-09T05:38:15+08:00"
+task9_review_notes: "2026-07-09 Task9 deep-review auto-fix: P0=4 P1=0 P2=2. 修正 Android17 DataSourceConfig 新增数据源口径、FrameTimeline/linux.perf Android17 源码锚点与旧伪代码、linux.perf 版本验证矛盾、unsupported profiling overhead 百分比；回到 Task6 复审。 | 2026-07-09 05:38 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；按 android-17.0.0_r1 复核源码锚点、版本边界和交叉引用；Task6 已 pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 last_task9_autofix_at: 2026-07-09
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-09
 last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: task9_state reviewed→pending; Task6 re-reviewed post-auto-fix (pass-light-edit), pipeline task9_pending correct, task9_state was stale reviewed."
+task9_reviewed_date: "2026-07-09"
+task9_reviewed_by: "openclaw-task9"
+last_task9_review_log: "logs/deep-review/2026-07-09-05-deep-review.md"
+updated_by: "openclaw-task9"
+updated_date: "2026-07-09"
 ---
 
 # Trace 抓取
