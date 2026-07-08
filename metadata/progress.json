@@ -1505,26 +1505,45 @@
     "last_chapter": "23.8"
   },
   "task2b_verifier_latest": {
-    "run_at": "2026-07-07T15:27:00+08:00",
+    "run_at": "2026-07-09T03:31:40+08:00",
     "verified_sections": [
-      "2.11",
-      "18.12",
-      "19.26",
-      "16.5",
-      "25.1",
-      "25.22"
+      "14.4",
+      "16.4",
+      "7.9",
+      "13.2",
+      "8.1"
     ],
-    "status_corrections": 0,
+    "status_corrections": 5,
     "blocked_items": 0,
     "blocked_sections": [],
     "result": "ready-for-task6",
-    "log_file": "logs/rework/task2b-verifier-2026-07-07.log",
-    "verification_summary": {
-      "total_verified": 6,
-      "passed": 6,
-      "blocked": 0,
-      "fixed": 0
-    }
+    "details": [
+      {
+        "section": "14.4",
+        "fix": "status: finalized→ready-for-review",
+        "reason": "Task9 idle audit auto-fixed, status stale"
+      },
+      {
+        "section": "16.4",
+        "fix": "status: finalized→ready-for-review",
+        "reason": "Task9 idle audit auto-fixed, status stale"
+      },
+      {
+        "section": "7.9",
+        "fix": "status: finalized→ready-for-review",
+        "reason": "Task9 idle audit auto-fixed, status stale"
+      },
+      {
+        "section": "13.2",
+        "fix": "task9_state: reviewed→pending",
+        "reason": "Task6 re-reviewed post-auto-fix, task9_state stale"
+      },
+      {
+        "section": "8.1",
+        "fix": "task9_state: reviewed→pending",
+        "reason": "Task6 re-reviewed post-auto-fix, task9_state stale"
+      }
+    ]
   },
   "task2b_verifier_history": [
     {
@@ -1731,6 +1750,31 @@
     "pipeline_stage": "task9_pending",
     "last_task6_review": "2026-07-08T23:27:22+08:00",
     "task2b_result": "fixed",
-    "task2b_state": "fixed"
+    "task2b_state": "fixed",
+    "task9_state": "pending",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+  },
+  "section-14.4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+  },
+  "section-16.4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+  },
+  "section-7.9": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+  },
+  "section-8.1": {
+    "task9_state": "pending",
+    "pipeline_stage": "task9_pending",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
   }
 }

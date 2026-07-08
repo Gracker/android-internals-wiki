@@ -19,11 +19,15 @@ task2b_result: fixed
 task2b_fix_date: 2026-07-08
 task2b_fix_notes: "2026-07-08 Task2B main rework: P0 token merge fix (20+ commands/APIs), version baseline update (android-17.0.0_r1 verified), FrameTimeline/linux.perf anchor correction, P1 data source selection flow, P2 unverifiable % removal. Based on deep-review 2026-07-08-21 and audit 2026-07-08-20."
 task2b_state: fixed
-task9_state: reviewed
+task9_state: "pending"
 task9_result: auto-fixed
 last_task9_at: 2026-07-09T00:37:21+08:00
 task9_review_notes: "2026-07-09 Task9 deep-review auto-fix: P0=4 P1=0 P2=2. 修正 Android17 DataSourceConfig 新增数据源口径、FrameTimeline/linux.perf Android17 源码锚点与旧伪代码、linux.perf 版本验证矛盾、unsupported profiling overhead 百分比；回到 Task6 复审。"
 last_task9_autofix_at: 2026-07-09
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-09
+last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
+task2b_verifier_notes: "2026-07-09 Task2B Verifier: task9_state reviewed→pending; Task6 re-reviewed post-auto-fix (pass-light-edit), pipeline task9_pending correct, task9_state was stale reviewed."
 ---
 
 # Trace 抓取
@@ -48,11 +52,10 @@ last_task9_autofix_at: 2026-07-09
 ### OpenClaw 加工指引
 
 
-<!-- AIW-源码调研-2026-06-07 -->
 
-### 🔸 源码深度补充
+### 🔸 linux.perf 与 FrameTimeline 数据源实现细节
 
-基于本次源码调研，补充 linux.perf 和 android.surfaceflinger.frametimeline 两个关键数据源在 Android 17 中的实现细节：
+以下是 `linux.perf` 和 `android.surfaceflinger.frametimeline` 两个关键数据源在 Android 17 中的实现细节：
 
 #### Linux.perf 数据源实现
 - **守护进程**: `traced_perf` 通过 `ANDROID_SOCKET_traced_perf` 继承 socket 连接到 traced 服务
@@ -67,7 +70,7 @@ last_task9_autofix_at: 2026-07-09
 - **跨进程追踪**: 通过 surface_frame_token 和 display_frame_token 关联应用与 SurfaceFlinger 帧
 
 #### Android 17 版本兼容性
-两个数据源在 Android 17 (API 37) 中保持与 Android 12+ 相同的配置方式，源码实现稳定。以下源码锚点均基于 AOSP `android-17.0.0_r1`（Android 17 / API 37）验证。
+两个数据源在 Android 17 (API 37) 中保持与 Android 12+ 相同的配置方式，源码实现稳定。以下源码锚点均基于 AOSP `android-17.0.0_r1`。
 
 **运行时要求**: userdebug/eng 构建支持大多数进程采样；user 构建需要目标应用声明 `android:profileable="true"`。
 
@@ -80,8 +83,7 @@ last_task9_autofix_at: 2026-07-09
 
 
 
-<!-- AIW-源码调研-2026-06-08 补充 -->
-### 🔸 2026-06-08 源码锚点强化与 Linux.Perf 完整调用链
+### 🔸 FrameTimeline 与 Linux.Perf 源码锚点强化
 
 #### FrameTimeline 架构细节（基于 android-17.0.0_r1）
 
@@ -169,7 +171,7 @@ PerfettoTrace 有几种常见抓取方式，从命令行到 Perfetto UI、从系
 
 最基础的抓取方式是直接在设备上运行 `perfetto` 命令。Perfetto 从 Android 10（API 29）开始作为系统级追踪工具内置在设备中，我们只需要通过 `adb shell` 就可以调用它。
 
-> **Android 17 源码状态** [已验证: Perfetto 官方文档 + AOSP `external/perfetto` android-17.0.0_r1]：以下数据源在 Android 10–17 范围内均保持可用，已通过 AOSP `android-17.0.0_r1` 源码验证关键文件可访问：
+> **Android 17 源码状态** [已验证]：以下数据源在 Android 10–17 范围内均保持可用：
 > - `linux.ftrace`、`linux.process_stats`、`linux.sys_stats`：Android 10+ 可用
 > - `android.heapprofd`：Android 10+ 可用
 > - `android.java_hprof`：Android 11+ 可用
@@ -298,7 +300,7 @@ duration_ms : 10000    # 10 秒
 - `linux.process_stats`：进程和线程信息
 - `linux.sys_stats`：系统级统计（CPU、内存、I/O）
 - `android.log`：logcat 日志
-- `android.surfaceflinger.frametimeline`：帧时间线数据（仅 Android 12+，API 31+）。经验证，此数据源在 Android 17 (API 37) 中持续可用，配置方式不变。
+- `android.surfaceflinger.frametimeline`：帧时间线数据（仅 Android 12+，API 31+）。此数据源在 Android 17 (API 37) 中持续可用，配置方式与 Android 12+ 一致。
 - `android.gpu.memory`：GPU 内存使用
 
 我们可以同时启用多个数据源，只需要在 TraceConfig 中添加多个 `data_sources` 块即可。
@@ -1006,7 +1008,7 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 ## 参考资料
 
 
-- **FrameMetrics 与 Perfetto 集成**：FrameMetricsAPI 底层通过 FrameInfo 结构体收集数据，Perfetto 基于相同数据源。C++ 层 FrameMetricsObserver 有两种模式：不等待 presenttime（公共 API）和等待 presenttime（Perfetto 系统级分析）。FrameMetrics 是 Perfetto 数据的上层包装。详见相关 DeepResearch 调研。
+
 1. Perfetto 官方文档 - Quickstart : AndroidTracing : https://perfetto.dev/docs/quickstart/android-tracing
 2. Perfetto 官方文档 - TraceConfig 配置: https://perfetto.dev/docs/concepts/config
 3. Perfetto 官方文档 - Native Heap Profiler : https://perfetto.dev/docs/data-sources/native-heap-profiler
@@ -1018,48 +1020,27 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 9. 高爷博客 - Android Perfetto 系列 4：使用命令行在本地打开超大 Trace: https://www.androidperformance.com/2025/02/08/Android-Perfetto-04-Open-Big-Trace-With-Command-Line/
 10. **PerfettoAPM 工具链演进（Android 14→16）**：Android 14 至 16 累计新增 15 个 datasource（Nextid 123→138），APM 端侧三件套（cpu_per_uid_config / app_wakelock_config / kernel_wakelocks_config），traced_probes readtracefs 权限升级，traced.rcperfetto_trace_on_boot 新增。详见 DeepResearch：[2026-06-09-android17-tracekit-perfetto-apm-toolchain.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md)
 
-以下为两个核心数据源的关键源码锚点，基于 AOSP `android-17.0.0_r1`（Android 17 / API 37）源码验证：
+**核心数据源源码锚点**（全部基于 AOSP `android-17.0.0_r1`）：
 
-**linux.perf**（Android 12+）：
-- 数据源名定义：`external/perfetto/src/profiling/perf/perf_producer.cc :81` — `kDataSourceName = "linux.perf"`
-- 守护进程：`external/perfetto/src/profiling/perf/traced_perf.cc`
-- SELinux 策略：`external/perfetto/traced_perf.rc` — 通过 `persist.traced_perf.enable` 和 `sys.init.perf_lsm_hooks` 控制启动
-- 配置协议：`external/perfetto/protos/perfetto/config/profiling/perf_event_config.proto`
+- `linux.perf`：`perf_producer.cc:81`（数据源名定义）、`traced_perf.cc`（守护进程）、`perf_event_config.proto`（配置协议）
+- `android.surfaceflinger.frametimeline`：`FrameTimeline.h:656`（数据源名定义）、`FrameTimeline.cpp:1351-1354`（注册入口）、`SurfaceFlinger.cpp:820`（SF 集成点）
 
-**android.surfaceflinger.frametimeline**（Android 12+）：
-- 数据源名定义：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h:656` — `kFrameTimelineDataSource = "android.surfaceflinger.frametimeline"`
-- 注册入口：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp:1351-1354` — `FrameTimeline::registerDataSource()`
-- SF 集成点：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp:820` — 调用 `mFrameTimeline->onBootFinished()`
+完整源码路径和行号已在前文「源码深度补充」和「FrameTimeline 与 Linux.Perf 源码锚点强化」小节给出。
 
-两个数据源均已通过 AOSP `android-17.0.0_r1`（Android 17 / API 37）源码复核，上述行号和 API 口径与已公开源码一致。
 
-<!-- AIW-源码调研-2026-06-06 -->
+## 附录：源码验证记录（2026-06-06）
 
-## 源码验证更新（2026-06-06）
+以下为历史验证记录，正文结论已整合到前文对应小节。
 
-基于深度源码调研，更新以下核心结论：
+### 版本对照记录
 
-### 数据源标识符验证结果
+关键标识符在各 Android 版本的源码行号（`linux.perf` 的 `perf_producer.cc`）：
+- Android 12.0.0_r1: line 77
+- Android 15.0.0_r1: line 81
+- Android 16.0.0_r1: line 80
+- Android 17.0.0_r1: line 81（当前主线）
 
-**linux.perf** 源码位置修正：
-- Android 12.0.0_r1: `external/perfetto/src/profiling/perf/perf_producer.cc :77`
-- Android 16.0.0_r1: `external/perfetto/src/profiling/perf/perf_producer.cc:80`
-- Android 15.0.0_r1: `external/perfetto/src/profiling/perf/perf_producer.cc:81`
-- Android 17.0.0_r1: `external/perfetto/src/profiling/perf/perf_producer.cc:81`
-- **修正原章节 "line81" 引用**：Android 17 主线使用 `android-17.0.0_r1` 的 line 81；Android 16 line 80 仅作历史对照。
-
-**android.surfaceflinger.frametimeline** 源码位置（android-17.0.0_r1）：
-- 数据源名定义：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h:656`
-- 注册入口：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp:1351-1354`
-- SF 集成点：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp:820`
-
-### Android 17 源码验证确认
-
-本节源码锚点已基于 AOSP `android-17.0.0_r1`（Android 17 / API 37）通过 Gitiles 复核：
-- `external/perfetto`：关键文件（`perf_producer.cc`、`traced_perf.cc`、`traced_perf.rc`、proto 定义）已核对
-- `frameworks/native`：`FrameTimeline.{h,cpp}`、`SurfaceFlinger.cpp` 已核对
-- `frameworks/base`：`android/os/Trace.java` 已核对
-- 本章节所有 Android 17 正文结论均基于上述源码锚点
+数据源标识符和核心注册路径在所有版本中保持一致，正文所有结论均基于 `android-17.0.0_r1`。
 
 ### FrameTimelineEvent 协议增强（Android 16）
 
@@ -1106,11 +1087,10 @@ AOSP simpleperf (`system/extras/simpleperf/`) 与 Perfetto linux.perf 为不同�
 
 
 
-<!-- AIW-源码调研-2026-06-09 -->
 
-## 源码验证更新（2026-06-09）
+## 附录：APM 工具链演进记录（2026-06-09）
 
-基于 Android 16.0.0_r4 一手源码保留 Android 14 → Android 16 Perfetto APM 工具链演进对照。Android 17 主线结论必须以上文 `android-17.0.0_r1` 复核结果为准；本小节只作为历史演进材料，不把 Android 16 锚点外推为 Android 17 事实。
+以下基于 Android 16.0.0_r4 源码保留 Android 14 → Android 16 Perfetto APM 工具链演进对照。Android 17 主线结论必须以上文 `android-17.0.0_r1` 复核结果为准；本小节只作为历史演进材料，不把 Android 16 锚点外推为 Android 17 事实。
 
 ### DataSourceConfig 协议版本演进
 

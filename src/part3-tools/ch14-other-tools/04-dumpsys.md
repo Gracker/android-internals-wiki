@@ -42,7 +42,7 @@ repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
 last_task9_audit: "2026-07-09"
 last_task9_audit_log: "logs/deep-review/2026-07-09-01-audit.md"
-status: "finalized"
+status: ready-for-review
 task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_result: "fixed"
@@ -61,12 +61,13 @@ updated_by: "openclaw-task9"
 updated_date: "2026-07-09"
 deepseek_cn_review_state: done
 last_task6_audit: "2026-06-10"
-last_deepseek_cn_review_at: 2026-06-22
+last_deepseek_cn_review_at: 2026-07-09
 p0: 1
 p1: 0
 p2: 0
-last_task2b_verifier_at: "2026-07-05T03:26:57+0800"
+last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 last_task6_audit: "2026-07-06"
+task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for-review; Task9 idle audit auto-fixed (P0 1), pipeline task6_pending + task6_state revisiting correct, status was stale finalized."
 ---
 
 # dumpsys 系列命令
@@ -103,9 +104,9 @@ last_task6_audit: "2026-07-06"
 
 dumpsys 的工作方式是：遍历系统中所有注册到 ServiceManager 的系统服务，依次调用每个服务的 `dump()` 方法，把内部状态以文本形式输出到终端。
 
-每个系统服务都实现了自己的 `dump()` 方法，因此 dumpsys 的输出覆盖了 Android 系统的多个关键面向，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
+每个系统服务都实现了自己的 `dump()` 方法，因此 dumpsys 的输出覆盖了 Android 系统的多个关键维度，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
 
-`adb shell dumpsys -l` 可以列出所有子命令。下面聚焦性能分析中最常用的六个，分别讲它们的用途、输出结构、关键指标含义，以及在实际分析中怎么用。
+`adb shell dumpsys -l` 可以列出所有子命令。下面聚焦性能分析中最常用的六个，逐个介绍用途、关键指标和实战用法。
 
 [已验证: AOSP android-17.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]
 
@@ -124,7 +125,7 @@ dumpsys 的工作方式是：遍历系统中所有注册到 ServiceManager 的�
 
 当我们怀疑某个场景的卡顿或 ANR 与 Activity 生命周期有关时，Activity 栈是第一手线索。执行 `adb shell dumpsys activity activities` 后，输出会按照 Task 分组，每个 Task 下列出从底到顶的 Activity 栈。关键的几个字段：
 
-- `Task`（旧版资料中常写作 `TaskRecord`）中的 `affinity` 和 `taskId` 告诉我们这个 Task 属于哪个应用
+- `Task`（早期资料常写作 `TaskRecord`）中的 `affinity` 和 `taskId` 告诉我们这个 Task 属于哪个应用
 - `ActivityRecord` 中的 `state` 表示 Activity 当前状态（resumed、paused、stopped 等）
 - `dumpsys activity activities` 会打印 `topDisplayFocusedRootTask` 和各 TaskDisplayArea 的 `Resumed:` Activity；窗口焦点本身要回到 `dumpsys window displays` 的 `mCurrentFocus` / `mFocusedApp` 交叉确认
 
@@ -576,13 +577,3 @@ MTK/高通等厂商的定制系统服务中广泛使用了这个机制。例如 
 - 官方文档：[Profile GPU Rendering](https://developer.android.com/studio/profile/dev-options-rendering)
 - 官方文档：[Battery Historian](https://developer.android.com/studio/profile/battery-historian)
 - 官方文档：[SurfaceFlinger and WindowManager](https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager)
-
-### 为什么 Android 不用接口做 Activity 通信？
-- 来源：https://juejin.cn/post/7638897090145075246
-- 类型：技术文章
-- 摘要：深度剖析 Android Activity 为什么不用接口而用 onActivityResult 做通信。表面原因（生命周期不稳、内存泄漏）都是现象层，本质是 Android 系统架构选择：三大通信基石（Intent、Binder、Bundle）都是消息而非引用。Android 系统的组件由 AMS 管理，A 活着与否不由开发者决定，因此不能共享对象引用，必须用序列化数据 + 系统 Token 中转。onActivityResult 本质是系统分发事件，不是函数回调；requestCode 是无状态设计的关键。现代 registerForActivityResult 只是体验优化，底层仍是 requestCode + 系统分发。理解了这一点，就知道为什么 ViewModel + Flow 是应用内通信的最佳答案。
-- **推荐映射章节**：ch09
-- **内容类型**：技术文章
-- **相关标签**：#Framework #Activity #生命周期
-- 入库时间：2026-06-26
-- 评分：14/20

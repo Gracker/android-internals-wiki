@@ -2,7 +2,7 @@
 title: "Android 17 + Kernel 6.12 系统级性能优化"
 section: "16.4"
 chapter: "16.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-16"
@@ -22,8 +22,8 @@ last_task9_audit_result: auto-fixed-p0-source-anchor-p1-version-drift
 task9_audit_notes: "2026-07-09 Task9 idle audit: AUTO-FIX P0 1 / P1 1; 修正 DeliQueue Android 17 tag 源码锚点为 CombinedMessageQueue/MessageQueue.java,同步 android17-6.18 Makefile 6.18.24 与 AFDO profile 6.18.21 边界,回到 Task6 复审。"
 last_task2b_at: "2026-06-16T08:51:39+08:00"
 last_task6_at: 2026-06-16T22:15:00+08:00
-last_task2b_verifier_at: "2026-06-16T23:28:12+08:00"
-task2b_verifier_notes: "2026-06-16 Task2B Verifier: state reconciliation — task9_state reviewed→pending; Task6 已 pass-light-edit，需 Task9 复审 auto-fixed 内容"
+last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
+task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for-review; Task9 idle audit auto-fixed (P0 1/P1 1), pipeline task6_pending + task6_state revisiting correct, status was stale finalized."
 last_task6_audit: "2026-06-16"
 last_task6_audit_log: "logs/review/2026-05-24-23-audit.md"
 last_task6_audit_notes: "idle audit: 补充缺失 outline 大纲;L1 禁用词正文未命中;frontmatter 完整;outline 锚点覆盖 9/9;无回炉项。"
