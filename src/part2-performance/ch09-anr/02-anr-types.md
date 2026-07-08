@@ -7,8 +7,8 @@ status: finalized
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-22"
-last_verified_against: "AOSP android-14.0.0_r1, Android Developers ANR vitals / JobService / foreground service docs"
+last_verified: "2026-07-09"
+last_verified_against: "AOSP android-17.0.0_r1, Android Developers ANR vitals / JobService / foreground service docs"
 confidence: high
 sources:
   - type: aosp
@@ -18,11 +18,13 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastConstants.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/BroadcastProcessQueue.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/utils/AnrTimer.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: official
@@ -46,26 +48,27 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-06T07:51:16+08:00"
 task9_reviewed_date: "2026-05-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-24T07:40:43+08:00"
+last_task9_autofix_at: "2026-07-09"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "Task9 Deep Tech Review 回炉修复（4项源码/版本/命令错误）"
-task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 闲时抽检：auto-fixed。修正 Android 17 源码锚点、Broadcast ANR 路径、Input ANR logcat 口径与源码映射行号，回到 Task6 复审。"
 last_task6_at: "2026-05-06T08:15:00+08:00"
 last_task6_audit: 2026-07-06
 auto_promoted: true
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理重复 DeepResearch 注入块与引用元信息；Task9 复审已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-06-18"
-last_task9_audit_log: "logs/deep-review/2026-06-18-18-audit.md"
+last_task9_audit: "2026-07-09"
+last_task9_audit_log: "logs/deep-review/2026-07-09-06-audit.md"
 last_task9_review_log: "logs/deep-review/2026-05-24-07-deep-review.md"
 p0: 0
 p1: 0
@@ -121,7 +124,7 @@ Input ANR 的检测不在 Java 层，而是在 Native 层的 InputDispatcher 中
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
-// @ AOSP android-14.0.0_r1
+// @ AOSP android-17.0.0_r1
 // 实际实现使用 std::chrono，并通过 HwTimeoutMultiplier 缩放
 static constexpr std::chrono::nanoseconds DEFAULT_INPUT_DISPATCHING_TIMEOUT =
     std::chrono::milliseconds(
@@ -136,12 +139,11 @@ static constexpr std::chrono::nanoseconds DEFAULT_INPUT_DISPATCHING_TIMEOUT =
 
 ```logcat
 E/ActivityManager: ANR in com.example.app (PID: 12345)
-Reason: Input dispatching timed out (Waiting to send non-key event because the
-        touched window has not finished processing certain input events that were
-        delivered to it over 500.0ms ago. Wait queue length: 33. Wait queue head age: 6178.1ms.)
+Reason: Input dispatching timed out: com.example.app/.MainActivity is not responding.
+        Waited 6178ms for MotionEvent(action=ACTION_DOWN, ...)
 ```
 
-关键信息：**"Input dispatching timed out"** 明确标识这是 Input ANR；**"Wait queue length"** 说明主线程事件积压程度；**"Wait queue head age"** 说明头部事件已等待超过阈值。
+关键信息：**"Input dispatching timed out"** 明确标识这是 Input ANR；**"Waited ...ms"** 对应 Android 17 `InputDispatcher::onAnrLocked()` 中 oldest entry 从 `deliveryTime` 到触发时的等待时间；事件描述用于判断卡住的是按键、触摸还是无焦点窗口链路。
 
 ### 特殊情况：无焦点窗口的 Input ANR
 
@@ -157,9 +159,9 @@ Broadcast ANR 的判断要同时看前后台优先级、同步还是异步 recei
 
 `goAsync()` 不会重置这段窗口。同步 receiver 要在 `onReceive()` 内返回；异步 receiver 要在同一窗口内调用 `PendingResult.finish()`。如果广播拉起了冷启动进程，进程启动和 `Application` 初始化时间也会算进这次超时。
 
-### 检测机制：BroadcastQueue 的超时 Handler
+### 检测机制：BroadcastQueueImpl 的超时计时器
 
-Broadcast ANR 的入口仍然是 `BroadcastQueue.broadcastTimeoutLocked()` 这一层。沿 AOSP 继续往下追时，要同时看 `BroadcastQueueImpl` 和 `BroadcastQueueModernImpl`：前者保留传统广播队列实现，后者承接新的分发状态机，设备具体走哪条路径取决于系统配置和场景。
+Android 17 主线源码中，Broadcast ANR 不再以旧版 `BroadcastQueue.broadcastTimeoutLocked()` 或 `BroadcastQueueModernImpl` 作为锚点。当前路径是 `BroadcastQueueImpl.startDeliveryTimeoutLocked()` 通过 `BroadcastAnrTimer` 启动软超时；命中后进入 `deliveryTimeoutLocked()`，随后在 `finishReceiverActiveLocked()` 中构造 `TimeoutRecord.forBroadcastReceiver()` 并调用 `mService.appNotResponding()`。
 
 做 App 侧排障时，判断边界比“ordered / parallel”更直接：
 
@@ -195,7 +197,7 @@ Service ANR 的超时阈值在所有类型中跨度最大：前台 Service 是 *
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java
-// @ AOSP android-14.0.0_r1
+// @ AOSP android-17.0.0_r1
 private static final long DEFAULT_SERVICE_TIMEOUT =
         20 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
 private static final long DEFAULT_SERVICE_BACKGROUND_TIMEOUT =
@@ -223,7 +225,7 @@ Reason: executing service com.example.app/com.example.app.MyService
 
 - **Android 8.0：** AOSP `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT = 5 * 1000`，宽限期 5 秒
 - **Android 9-12：** AOSP 把这条宽限期提升到 10 秒
-- **Android 13-14+：** 默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS`，默认 30 秒，对应运行时字段 `mServiceStartForegroundTimeoutMs`
+- **Android 13-17：** 默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS`，默认 30 秒，对应运行时字段 `mServiceStartForegroundTimeoutMs`
 
 超时后的后果取决于哪条超时链被触发，这里要把两条路径分开看。
 
@@ -267,8 +269,8 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 | 类型 | 超时阈值 | 检测位置 | 触发条件 | 用户感知 |
 |------|---------|---------|---------|---------|
 | Input Dispatching | 5s | InputDispatcher (Native) | 主线程未消费输入事件 | 直接感知，界面冻结 |
-| Broadcast (前台) | Android 13 及以下 10s；Android 14+ 10-20s | BroadcastQueue (AMS) | `onReceive()` 未返回，或 `goAsync()` 后未 `finish()` | 可能无感知 |
-| Broadcast (后台) | Android 13 及以下 60s；Android 14+ 60-120s | BroadcastQueue (AMS) | 同上；冷启动时间也可能计入窗口 | 无感知 |
+| Broadcast (前台) | Android 13 及以下 10s；Android 14+ 10-20s | BroadcastQueueImpl / BroadcastAnrTimer (AMS) | `onReceive()` 未返回，或 `goAsync()` 后未 `finish()` | 可能无感知 |
+| Broadcast (后台) | Android 13 及以下 60s；Android 14+ 60-120s | BroadcastQueueImpl / BroadcastAnrTimer (AMS) | 同上；冷启动时间也可能计入窗口 | 无感知 |
 | Service (前台) | 20s | ActiveServices (AMS) | `onCreate()` / `onStartCommand()` / `onBind()` 未完成 | 可能无感知 |
 | Service (后台) | 200s | ActiveServices (AMS) | `onCreate()` / `onStartCommand()` / `onBind()` 未完成 | 无感知 |
 | ContentProvider | 10s | AMS | Provider 未在时间内 publish | 间接感知（阻塞启动） |
@@ -298,6 +300,8 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 **Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 类型，各自类型在后台 24 小时窗口内累计运行时间限制为 6 小时（`dataSync` 与 `mediaProcessing` 同类型服务共享配额，AOSP `ActivityManagerConstants` 中两者超时常量一致）。`dataSync` 和 `mediaProcessing` 的累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。这意味着开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
 
 **Android 16（API 36）：** `AnrTimer` 在 Android 15 已引入的基础上进一步扩展覆盖范围。传统 Handler 计时受 AMS 主线程负载影响：如果 AMS 主线程在处理其他事务（比如同时处理多个应用的 ANR dump），超时消息可能延迟投递，导致 ANR 检测不准时。`AnrTimer` 在独立线程中运行，不受 Java 层调度抖动影响，计时精度更高。调试时可在 `adb shell dumpsys activity` 的完整输出中查找 `AnrTimer` dump 段（AOSP `AnrTimer.dump(pw, false)` 会输出当前活跃的 ANR 计时器状态），具体过滤命令需以目标版本的 `dumpsys activity` 输出格式为准。
+
+**Android 17（API 37）：** Broadcast ANR 的源码锚点收敛在 `BroadcastQueueImpl`、`BroadcastAnrTimer` 与 `AnrTimer`；`BroadcastQueueModernImpl.java` 不在 `android-17.0.0_r1` 源码树中，不能作为 Android 17 主线结论的引用路径。
 
 ## JobService callback ANR 与 job 超时的边界 [扩展]
 
@@ -366,18 +370,18 @@ adb shell cat /data/anr/anr_* | tail -200
 
 | ANR 类型 | 触发源 | 关键源码 | 阈值 |
 |---------|--------|---------|------|
-| **Input 派发超时** | `InputDispatcher::onAnrLocked(connection)` @ `InputDispatcher.cpp:6546` | mAnrTracker.firstTimeout() 命中 | `UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000` × HwTimeoutMultiplier |
-| **无焦点窗口** | `InputDispatcher::onAnrLocked(application)` @ `InputDispatcher.cpp:6581` | mNoFocusedWindowTimeoutTime 到期 | 同上 |
-| **Watchdog (system_server hang)** | `Watchdog.java:getCompletionStateLocked()` @ line 320 | 60s default / 15s pre-watchdog | `PRE_WATCHDOG_TIMEOUT_RATIO = 4` |
-| **Provider 超时** | `AMS.appNotRespondingViaProvider` @ `ActivityManagerService.java:7152` | `mCpHelper.appNotRespondingViaProvider(connection)` | 沿用 AnrHelper 流程 |
-| **Broadcast / Service 超时** | `ActiveServices.scheduleServiceTimeoutLocked` / `BroadcastQueue` | mAnrHelper.appNotResponding 经 mAmInternal | 详见各模块 |
+| **Input 派发超时** | `InputDispatcher::onAnrLocked(connection)` @ `InputDispatcher.cpp:6792` | mAnrTracker.firstTimeout() 命中 | `UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000` × HwTimeoutMultiplier |
+| **无焦点窗口** | `InputDispatcher::onAnrLocked(application)` @ `InputDispatcher.cpp:6835` | mNoFocusedWindowTimeoutTime 到期 | 同上 |
+| **Watchdog (system_server hang)** | `Watchdog.java:getCompletionStateLocked()` @ line 336 | 60s default / 15s pre-watchdog | `PRE_WATCHDOG_TIMEOUT_RATIO = 4` |
+| **Provider 超时** | `AMS.appNotRespondingViaProvider` @ `ActivityManagerService.java:7939` | `mCpHelper.appNotRespondingViaProvider(connection)` | 沿用 AnrHelper 流程 |
+| **Broadcast / Service 超时** | `ActiveServices.scheduleServiceTimeoutLocked` / `BroadcastQueueImpl.startDeliveryTimeoutLocked`、`deliveryTimeoutLocked` | Service 侧经 `ServiceAnrTimer`，Broadcast 侧经 `BroadcastAnrTimer` 后进入 `appNotResponding` | 详见各模块 |
 
 **Input 派发超时细分**：
 
 - **Connection ANR**（App 进程无响应）：waitQueue 头元素 `deliveryTime` 超 threshold → `connection->responsive = false` → `cancelEventsForAnrLocked` 清空后续事件。
 - **No Focused Window ANR**（启动期无窗口）：focusedApplicationHandle 存在但 focusedWindowHandle 为空 → 启动超时 → 等待焦点窗口出现；若超时则归咎 application 而非窗口。
 
-**关键 ANR 路径在 `AnrHelper` 内有 4 类 skip**（`AnrHelper.java:118-181`）：
+**关键 ANR 路径在 `AnrHelper` 内有 4 类 skip**（`AnrHelper.java:117-180`）：
 
 1. zero pid（zygote 等极端）
 2. mProcessingPid 命中（同一 pid 重复处理）
@@ -386,7 +390,7 @@ adb shell cat /data/anr/anr_* | tail -200
 
 **`isContinuousAnr=true` 触发条件**：CONSECUTIVE_ANR_TIME_MS = 2min 内同一应用再次 ANR，AppNotRespondingDialog 文案会带 "持续无响应" 提示。
 
-**Dropbox tag 命名规则**（`AMS.addErrorToDropBox` @ `ActivityManagerService.java:9806-9840`）：
+**Dropbox tag 命名规则**（`AMS.addErrorToDropBox` @ `ActivityManagerService.java:10537-10681`）：
 
 - `dropboxTag = processClass(process) + "_" + eventType`
 - `processClass(process)` 返回值：`system_server`（PID=system_server）/ `system_app`（system UID）/ `data_app`（其他）
