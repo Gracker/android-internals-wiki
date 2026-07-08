@@ -243,6 +243,51 @@
       "completed_at": "2026-07-08T08:52:28+08:00",
       "completed_by": "task2b-main",
       "completion_note": "task9 deep tech review 3 项问题全部修复：AOSP 源码路径校准 android-17.0.0_r1、App Standby Bucket wakelock 限制口径重写（移除 enforceWakeLockTimeout/RESTRICTED_WAKELOCK_MAX_TIMEOUT）、IPowerStats HAL API 更新为 getEnergyMeterInfo/readEnergyMeter"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/1.54-binder-thread-pool-implementation/1.54-binder-thread-pool-implementation.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "知识缺口挖掘创建，第1个候选",
+      "section": "1.54",
+      "section_title": "Android 17 Binder 线程池实现机制与调优参数"
+    },
+    {
+      "path": "src/part2-implementation/ch02-rendering/2.6-ebpf-observability-enhancement/2.6-ebpf-observability-enhancement.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "知识缺口挖掘创建，第2个候选",
+      "section": "2.6",
+      "section_title": "Android 17 eBPF观测增强"
+    },
+    {
+      "path": "src/part2-implementation/ch02-rendering/2.7-gpu-debug-performance-tools-chain/2.7-gpu-debug-performance-tools-chain.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "知识缺口挖掘创建，第3个候选",
+      "section": "2.7",
+      "section_title": "Android 17 GPU 图形调试与性能优化工具链"
+    },
+    {
+      "path": "src/part3-optimization/ch04-memory/4.37-lmkd-userspace-migration-psi/4.37-lmkd-userspace-migration-psi.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "知识缺口挖掘创建，第4个候选",
+      "section": "4.37",
+      "section_title": "Android 17 LMKD 用户态迁移 + PSI 协同机制"
+    },
+    {
+      "path": "src/part5-practical/ch25-power-optimization/25.18-power-stats-hal-oem-implementation/25.18-power-stats-hal-oem-implementation.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "知识缺口挖掘创建，第5个候选",
+      "section": "25.18",
+      "section_title": "Android 17 Power Stats HAL OEM厂商功耗统计实现差异"
     }
   ],
   "entries": [
