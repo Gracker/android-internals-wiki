@@ -6,8 +6,8 @@ chapter: "1.1"
 section: "1.1"
 status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-07"
-last_verified_against: "AOSP android-17.0.0_r1 SystemServer.java (primary); AOSP android-15.0.0_r1/android-16.0.0_r1 SurfaceFlinger.cpp; developer.android.com 16 KB page-size compatibility; source.android.com 16 KB page-size architecture; source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
+last_verified: "2026-07-08"
+last_verified_against: "AOSP android-17.0.0_r1 SystemServer.java; AOSP android-17.0.0_r1 bionic linker namespace files; AOSP android-15.0.0_r1/android-16.0.0_r1 SurfaceFlinger.cpp; developer.android.com 16 KB page-size compatibility; source.android.com 16 KB page-size architecture; source.android.com HAL/AIDL/VINTF/Mainline/lmkd docs"
 confidence: high
 sources:
   - type: official
@@ -37,24 +37,24 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-07-07"
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-07T05:20:00+08:00"
-task9_review_notes: "2026-07-07 Task9 deep review：P1知识盲区3处写入research-gaps.md，P2建议改进5处写入suggestions.md，无P0/P1需queue.json，技术评分3.8/5"
+task9_review_notes: "2026-07-08 Task9 idle audit auto-fix：复核 AOSP android-17.0.0_r1 bionic linker namespace 源码，移除 VNDK 性能百分比固定结论，将未锚定说明改为 Android 17 锚定说明；回到 Task6 复审。"
 last_task6_at: "2026-07-07T13:30:00+08:00"
 last_task6_audit: "2026-07-06"
 last_task6_review_log: "logs/review/2026-05-27-05-review.md"
 last_task6_audit_log: "logs/review/2026-06-25-10-audit.md"
 task6_review_notes: "2026-07-07 Task6 复审：pass-light-edit。Task9 已 pass-tech-review，queue 无 pending，自动晋升 finalized。L1/L2 无新增问题。"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L2 小修 1 处（SELinux/Treble 三路隔离段落去重复并压实因果）。无新增 L3/L4 回炉。Task9 未重新通过，未自动晋升 finalized。"
-last_task9_audit: "2026-06-08"
+last_task9_audit: "2026-07-08"
 task9_review_log: "logs/deep-review/2026-07-07-05-deep-review.md"
 reviewed_at: "2026-05-18T08:31:45+08:00"
 task6_reviewed_date: "2026-07-07"
@@ -64,7 +64,8 @@ last_task9_review_log: "logs/deep-review/2026-07-07-05-deep-review.md"
 last_task2b_at: 2026-07-07T04:52:50+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
-last_task9_autofix_at: "2026-06-08"
+last_task9_autofix_at: "2026-07-08"
+last_task9_audit_log: "logs/deep-review/2026-07-08-18-audit.md"
 ---
 
 
@@ -582,7 +583,7 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 <!-- AIW-源码调研-2026-07-08 -->
 ## VNDK 隔离与 Self-contained HALs 的源码级性能影响
 
-Android 17 中 VNDK 隔离通过 `android_namespace_t::is_accessible()` 实现五级检查算法，每次 dlopen() 调用需执行多层路径验证，增加 15-25% native 库加载开销。
+Android 17 的 linker namespace 访问控制仍以 `android_namespace_t::is_accessible()` 为核心：隔离命名空间会依次检查 `allowed_libs_`、`ld_library_paths_`、`default_library_paths_` 和 `permitted_paths_`。这能解释 VNDK / VNDK-less 路径下 `dlopen()` 前的访问校验成本，但当前没有可复现实测数据支撑固定百分比结论。
 
 ### VNDK 隔离的核心机制
 
@@ -698,28 +699,17 @@ std::string Config::get_vndk_version_string(const char delimiter) {
 }
 ```
 
-### 性能影响量化
+### 性能影响验证边界
 
-**库加载开销增加：**
-- 每次 dlopen() 需执行 1-5 次 `is_accessible()` 检查
-- basename() 调用增加文件名解析开销  
-- 路径匹配涉及多次文件系统检查
-- 在高通 8 Gen 2 设备上增加约 15-25% 的 native 库加载时间
+**可由 android-17.0.0_r1 源码确认：**
+- `is_accessible()` 会在隔离命名空间中执行 allowed libs 与路径白名单检查。
+- `get_ld_config_file_vndk_path()` 会优先读取 `ro.vndk.lite`，否则回退到带 `ro.vndk.version` 后缀的 linker config。
+- `android_namespace_link_t` 维护 linked namespace 与可共享 soname 集合，决定跨命名空间符号可见性。
 
-**内存使用变化：**
-- VNDK 隔离模式下每个命名空间维护独立的 `soinfo_list_`
-- VNDK-less 模式下共享库直接加载到 vendor 分区，减少内存复制
-- 在大型应用启动场景中减少约 8-12% 的峰值内存使用
-
-**启动时间影响：**
-- Vendor 进程启动：SP-HAL 库加载时间增加 20-30ms
-- Framework 初始化：LLNDK 链接检查增加 10-15ms  
-- 系统启动时间增加约 3-5%（旗舰设备上约 200-300ms）
-
-**版本演进对比：**
-- **Android 14 及以下：** 使用 VNDK APEX 包，`ro.vndk.version` 属性有效
-- **Android 15+：** `ro.vndk.lite=true` 启用，VNDK 库直接安装到 vendor/product 分区
-- **配置文件变化：** 从 `/system/etc/ld.config.vndk.{version}.txt` → `/system/etc/ld.config.vndk_lite.txt`
+**仍需实测的数据：**
+- `dlopen()` 访问校验对 native 库加载时间的比例影响。
+- VNDK-less 对 vendor 进程峰值内存、系统启动耗时的收益或代价。
+- SP-HAL / LLNDK 场景中 namespace 初始化和链接检查的可观测耗时。
 
 ### 实际影响场景
 
@@ -729,5 +719,5 @@ std::string Config::get_vndk_version_string(const char delimiter) {
 
 **Vendor 进程启动：** 多个独立 namespace 的初始化增加了启动复杂度，`create_namespace()` 调用链延长。
 
-> **版本说明**：以上源码分析基于 `main` 分支，未锚定 android-17.0.0_r1 tag，需要进一步验证在正式 release 中的具体实现差异。
+> **版本说明**：以上源码结构已在 AOSP `android-17.0.0_r1` 的 `bionic/linker/linker_namespaces.cpp`、`linker_namespaces.h`、`linker.cpp` 复核；性能影响仍需设备实测，不写成 Android 17 固定结论。
 
