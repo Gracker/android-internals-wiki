@@ -444,3 +444,20 @@ Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
 2. 极度niche的系统服务（不够评分阈值）
 3. 过于新/文档不足的 Android 17 API
 建议下一轮转向 Part 5 现有章节的内容加深。
+
+## [2026-07-09 03:07] 知识缺口挖掘 — 已检查方向记录（Round 48）
+
+**本轮结论**：全书 661 个小节，0 个空 draft，Task2B backlog = 0。本轮为第 48 次连续无合格候选（≥14 分）的挖掘。
+
+**新增检查内容**：
+1. **DeepResearch 2026-07-09**：`android17-ebpf-observability-matrix-verified.md` — 对 §14.25 四个 eBPF 程序的源码级验证（cyclePerUid/dmabufIter/kernelWakelockDuration/bpfLockContention），属于现有章节的素材补充，非新章节候选
+2. **daily-info 2026-07-09**：5 篇 RSS 条目全部评分 <14：
+   - Android 15 GC 改进 → 已有 §4.34/§23.6 覆盖，且为旧闻
+   - Linux 6.10 scheduler → 内核层面，非 Android 17 API（评分 8）
+   - Gradle 8.5 构建性能 → 构建工具，非运行时性能（历史评分 13）
+   - Linux KSM 安全 → 内核安全，非 Android 性能（评分 7）
+   - AI Android 优化 → 通用概述，无具体新 API（评分 6）
+3. **Clippings**：7+ 天无新增
+4. **source-index.json**：0 条未映射高质量素材
+
+**结论**：全书覆盖已达饱和。建议关注点继续转向提升现有 draft 章节内容质量（当前 71 个 draft）。
