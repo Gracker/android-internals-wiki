@@ -1,7 +1,7 @@
 ---
 title: "Android 17 CPU 缓存局部性与 PSS 内存核算源码机制"
 chapter: "ch04/ch05.05.06"
-status: draft
+status: quarantined
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ["Android-17", "ch04/ch05", "源码分析", "性能优化"]
 related_chapters: ["ch04/ch05"]
@@ -10,6 +10,13 @@ created_date: "2026-07-08"
 gap_source: "AOSP结构"
 gap_score: "19/20"
 ---
+<!-- 
+[QUARANTINE NOTICE — 2026-07-08]
+原因：outline 模板错误：标题为 CPU 缓存局部性/PSS 核算，但大纲内容全部是 LMKD/PSI（copy-paste 错误）。
+处理：本章由 task2a-knowledge-gap 自动创建，但 outline 模板存在 copy-paste 错误。
+如需恢复，请手动修正 outline 后将 status 改回 draft。
+-->
+
 
 # 05.06 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制
 

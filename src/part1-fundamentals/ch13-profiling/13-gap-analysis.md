@@ -1,7 +1,7 @@
 ---
 title: "Android 17 eBPF观测增强"
 chapter: "ch13/ch13.13"
-status: draft
+status: quarantined
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ["Android-17", "ch13/ch13", "源码分析", "性能优化"]
 related_chapters: ["ch13/ch13"]
@@ -10,6 +10,13 @@ created_date: "2026-07-08"
 gap_source: "素材驱动"
 gap_score: "19/20"
 ---
+<!-- 
+[QUARANTINE NOTICE — 2026-07-08]
+原因：outline 模板错误：标题为 eBPF 观测增强，但大纲内容全部是 LMKD/PSI（copy-paste 错误）。
+处理：本章由 task2a-knowledge-gap 自动创建，但 outline 模板存在 copy-paste 错误。
+如需恢复，请手动修正 outline 后将 status 改回 draft。
+-->
+
 
 # 13 Android 17 eBPF观测增强
 

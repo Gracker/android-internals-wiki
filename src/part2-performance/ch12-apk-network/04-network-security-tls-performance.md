@@ -70,13 +70,13 @@ p2: 0
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T09:06:00+08:00"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
+last_deepseek_cn_review_at: 2026-07-08
 last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
 
-一次 API 请求只有几 KB，首包却要多等上百毫秒，瓶颈通常在连接建立阶段的 TLS 握手。Android 近几代持续收紧网络安全默认值：TLS 1.3 成为常态，Certificate Transparency 与 Encrypted Client Hello 开始进入平台配置面，明文流量也被逐步收紧。平台还单独公开了 HPKE 这类加密能力 API，用来覆盖端到端加密等场景。网络延迟和安全策略需要放在一起评估。
+一次 API 请求的 payload 可能只有几 KB，首包却要多等上百毫秒——瓶颈通常在连接建立阶段的 TLS 握手。Android 近几代持续收紧网络安全默认值：TLS 1.3 成为常态，Certificate Transparency 与 Encrypted Client Hello 开始进入平台配置面，明文流量也被逐步收紧。平台还单独公开了 HPKE 这类加密能力 API，用来覆盖端到端加密等场景。网络延迟和安全策略需要一起评估。
 
 这一节关注两个问题：Android 平台上的安全机制会怎样影响网络性能，以及怎样在安全和连接成本之间做判断。
 
@@ -95,11 +95,10 @@ TLS 握手是网络请求延迟中最容易被忽视的一环。对于一个小�
 
 ### TLS 1.2 vs TLS 1.3：握手次数的质变
 
-TLS 1.2 的完整握手需要 2 个 RTT（Round-Trip Time）。客户端先发 ClientHello，服务器回 ServerHello + Certificate + ServerHelloDone，客户端再发 ClientKeyExchange + ChangeCipherSpec + Finished，服务器最后回 ChangeCipherSpec + Finished。在移动网络下，一个 RTT 通常在 50-200ms（4G 网络），完整的 TLS 1.2 握手会额外增加 100-400ms 延迟。
+TLS 1.2 的完整握手需要 2 个 RTT（Round-Trip Time）。客户端先发 ClientHello；服务器回复 ServerHello + Certificate + ServerHelloDone；客户端再发 ClientKeyExchange + ChangeCipherSpec + Finished；服务器最后回复 ChangeCipherSpec + Finished。在移动网络下，一个 RTT 通常在 50-200ms（4G 网络），完整的 TLS 1.2 握手会额外增加 100-400ms 延迟。
 
 TLS 1.3 把这个流程压缩到了 1-RTT。核心变化在于密钥交换机制：客户端在第一次握手时就带上 KeyShare，服务器可以在第一次回复时就推导出会话密钥并发送加密数据。相比 TLS 1.2，连接建立时间减少约 50%。
 
-[图：TLS 1.2 vs TLS 1.3 握手时序对比。左栏 TLS 1.2：ClientHello → ServerHello+Cert+ServerHelloDone → ClientKeyExchange+ CCS + Finished → CCS + Finished（2-RTT）。右栏 TLS 1.3：ClientHello+KeyShare → ServerHello+KeyShare+Cert+Finished（1-RTT）。标出每段 RTT 和关键差异]
 
 Google 在 Android 10（API 29）上默认启用 TLS 1.3 后报告，相比 TLS 1.2 有最高 40% 的速度提升。
 
@@ -119,7 +118,6 @@ Session ID 方式下，服务器在握手时分配一个 session ID，客户端�
 
 在实际应用中，session resumption 是降低 TLS 开销最有效的手段之一。一个良好的实践是确保连接池（ConnectionPool）的 keep-alive 时间足够长（OkHttp 默认 5 分钟），这样 TCP 连接保持期间内复用连接完全不需要 TLS 握手。只有连接断开后重新建立时，session resumption 才发挥作用。
 
-[图：Perfetto 中 TLS 握手耗时的观测示意，标出 DNS、TCP connect、TLS 握手与首包返回的时间段]
 
 ### Android 各版本的 TLS 默认行为
 
@@ -137,13 +135,13 @@ Android 的 TLS 实现由 Conscrypt 安全提供者（基于 BoringSSL）负责�
 
 ## Encrypted Client Hello (ECH) 的性能影响
 
-TLS 握手中有一个长期隐私缺陷：ClientHello 中的 SNI（Server Name Indication）字段是明文传输的。即使 TLS 加密了后续所有通信，网络中间人（ISP、企业网关）仍然可以知道你在访问哪个域名。
+TLS 握手长期存在一个隐私缺陷：ClientHello 中的 SNI（Server Name Indication）字段是明文传输的。即使 TLS 加密了后续所有通信，网络中间人（ISP、企业网关）仍然可以知道你在访问哪个域名。
 
 Encrypted Client Hello（ECH，RFC 9849）的目的是加密 TLS ClientHello 中的敏感字段，SNI 是最常见的一项。ECH 的握手内部会用到 HPKE，但协议本身和 HPKE 不是同一个规范。
 
 ### Android 17 的 ECH 支持
 
-Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供配置面。官方文档公开的枚举为 `mode="enabled"` 和 `mode="disabled"`，默认行为是 enabled。ECH 是否生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。按照 Network Security Config 的 `enabled` 语义，有 ECHConfig 时会强制 ECH；没有 ECHConfig 时启用 ECH GREASE。ECH 协商失败时的具体行为取决于网络库和服务端配置，不能一概视为普通 TLS 回退。
+Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供配置面。官方文档公开的枚举是 `mode="enabled"` 和 `mode="disabled"`，默认启用。ECH 是否生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。按照 Network Security Config 的 `enabled` 语义，有 ECHConfig 时会强制 ECH；没有 ECHConfig 时启用 ECH GREASE。ECH 协商失败后的行为取决于网络库和服务端配置，不能简单等同于回退到普通 TLS。
 
 ECH 配置通常通过 DNS 的 HTTPS/SVCB 记录分发。解析过程可以走传统 DNS，也可以走 DoH/DoT；DoH/DoT 只是 DNS 传输层的实现方式，不是 ECH 协商本身的前提。做性能分析时，要把“拿到 ECH 配置的 DNS 成本”和“TLS 握手里执行 ECH 的成本”拆开看。
 
@@ -161,13 +159,12 @@ Android 17 的 Advanced Protection Mode 主要面向设备安全策略，例如 
 
 **ECH 的 CPU 开销**：ECH 握手会多一次 HPKE 封装 / 解封装路径，成本集中在握手阶段，连接建立后不再出现。对高频短连接场景（如消息轮询、推送心跳），需要按 ECHConfig 获取方式、KEM / AEAD suite、SoC 加速能力和网络库实现做同设备 A/B 测试才能得出可用数字。
 
-[图：ECH 在 TLS 握手中的位置。标出正常 TLS（SNI 明文）vs ECH 模式（SNI 加密，经 DNS HTTPS/SVCB 获取 ECH 配置）的流程差异，重点展示 DNS 解析阶段与 TLS 握手阶段的分界]
 
 ## Certificate Transparency 的开销
 
 在 TLS 握手过程中，客户端验证服务器证书合法性——但"合法"不等于"可信"。一个被 CA 秘密签发的证书也能通过常规验证。Certificate Transparency（CT，RFC 6962）解决的就是这个问题：它要求 CA 把每一张签发的证书登记到公开可审计的日志中，客户端在握手时检查证书里有没有这个登记记录（SCT，Signed Certificate Timestamp）。
 
-对性能工程师来说，CT 验证本身的开销通常不是首要耗时项，性能排查更常遇到的是兼容性风险：如果服务器证书缺少足够的 SCT，Android 17 的默认验证会让连接直接失败。
+CT 验证本身的开销通常不是性能工程师的首要关注点，性能排查更常遇到的是兼容性风险：如果服务器证书缺少足够的 SCT，Android 17 的默认验证会让连接直接失败。
 
 ### Android 17 默认启用
 
@@ -209,13 +206,12 @@ Android 对明文流量（HTTP）的限制是一个渐进过程：
 
 2. **HTTP→HTTPS 重定向**：如果服务端只是做了 301/302 重定向，客户端先发 HTTP 请求再被重定向到 HTTPS，等于额外增加了 1-2 个 RTT 的延迟。正确的做法是在客户端直接使用 HTTPS URL。
 
-[图：HTTP→HTTPS 重定向的额外延迟示意。标出：客户端发 HTTP → 服务器回 301/302 → 客户端发 HTTPS ClientHello → TLS 握手 → 首包。对比直接 HTTPS 的路径，标出浪费的 RTT]
 
-3. **证书链过长**：如果服务器配置了过长的证书链（超过 4-5 层），TLS 握手时传输的证书数据量增加，在高延迟网络下会增加握手时间。服务端只发送必要的中间证书即可。
+3. **证书链过长**：如果服务器配置了过长的证书链（超过 4-5 层），TLS 握手时传输的证书数据量增加，在高延迟网络下会增加握手时间。服务端只需发送必要的中间证书。
 
 ### Network Security Configuration 的性能配置
 
-Network Security Configuration 是 Android 推荐的网络安全管理方式，能比 `usesCleartextTraffic` 更细地控制域名、信任锚和明文策略。从性能角度，有几个和性能直接相关的配置：
+Network Security Configuration 是 Android 推荐的网络安全管理方式，能比 `usesCleartextTraffic` 更细地控制域名、信任锚和明文策略。有几个配置项和性能直接相关：
 
 ```xml
 <!-- res/xml/network_security_config.xml -->

@@ -69,7 +69,7 @@ p1: 1
 p2: 0
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSchedule/VSyncPredictor/VSyncDispatchTimerQueue/Scheduler/RefreshRateSelector 与 ARR/FrameTimeline 官方文档；未发现 P0/P1，自动晋升 finalized。；2026-07-08 17:49 Task9 idle audit：AUTO-FIX。android-17.0.0_r1 复核 FrameTimeline/VSyncPredictor/VSyncReactor；修正 jank bitmask 数量 13→15、VSyncPredictor 离群容差 10%→20%；queue 无新增，回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
+last_deepseek_cn_review_at: 2026-07-08
 last_task9_autofix_at: "2026-07-08"
 last_task9_audit: "2026-07-08"
 last_task9_audit_at: "2026-07-08T17:49:54+08:00"
@@ -113,7 +113,7 @@ task9_audit_notes: "2026-07-08 Task9 idle audit: AUTO-FIX。按 Android 17(andro
 
 ## 为什么这一节要单独拆出来
 
-2.3 节已经解释 VSync 的基本模型：硬件给出节拍，App 和 SurfaceFlinger 分别按 VSYNC-app、VSYNC-sf 工作。本节补上工程排障更常用的一层：SurfaceFlinger 里的 Scheduler 怎么把硬件时间戳变成回调，怎么把刷新率请求折成一个显示模式，Perfetto 里又该按哪条时间线判断异常。
+2.3 节已经解释 VSync 的基本模型：硬件给出节拍，App 和 SurfaceFlinger 分别按 VSYNC-app、VSYNC-sf 工作。本节补上工程排障更常用的一层：SurfaceFlinger 的 Scheduler 怎么把硬件时间戳转成回调、怎么把多路刷新率请求折成一个显示模式、Perfetto 里该按哪条时间线判断异常。
 
 这部分容易混在一起的概念有三个：内容帧率、渲染目标帧率、显示刷新率。视频源可能是 24fps，游戏可能把目标帧率限制在 60fps，屏幕可能运行在 120Hz 或 ARR 的离散步进上。三者相等只是少数场景，系统调度的工作正是让它们在功耗、延迟和稳定性之间取得可接受的结果。
 
@@ -157,7 +157,7 @@ wakeupTime    = readyTime - workDuration
 
 `workDuration` 是这条 callback 自己需要的执行时间，`readyDuration` 是给下一阶段预留的时间。App 侧的 callback 要给主线程、RenderThread 和 buffer 提交留空间；SF 侧的 callback 要给 latch、compose 和 HWC present 留空间。同一个 target VSync 下，App 通常更早醒，SurfaceFlinger 晚一点醒，这就是 VSYNC-app 与 VSYNC-sf 在 Perfetto 中错开的来源。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp]
 
-这套模型解释了一个排障细节：Perfetto 里看到 App 收到 VSync 早，不代表 App 有更多预算。高刷设备上周期变短，120Hz 只有约 8.33ms；如果 work duration 没变，wakeup 到 deadline 之间的余量会明显变少。offset 只是移动开工时刻，不会凭空增加 CPU/GPU 能力。
+这套模型解释了一个排障细节：Perfetto 里看到 App 收到 VSync 早，不代表 App 有更多时间余量。高刷设备上周期变短，120Hz 只有约 8.33ms；如果 work duration 没变，wakeup 到 deadline 之间的余量会明显变少。offset 只是调整开工时刻，不会凭空增加 CPU/GPU 算力。
 
 ## 三、VSyncPredictor：从样本到下一次 deadline
 
@@ -193,7 +193,7 @@ App VSync 提早，输入到首帧绘制的延迟可能下降；SF VSync 提早�
 
 ## 五、DisplayFrameRate 请求怎样进入 SurfaceFlinger
 
-Android 11 起，应用可以通过 `Surface.setFrameRate()` 告诉平台某个 Surface 的期望帧率。官方文档给了清晰边界：调用只是 hint，调度器会结合多 Surface、系统策略、电量模式、是否允许无缝切换等因素决定显示刷新率；应用仍要能处理系统没有切到请求刷新率的情况。[已验证: 官方文档, developer.android.com/media/optimize/performance/frame-rate]
+Android 11 起，应用可以通过 `Surface.setFrameRate()` 告诉平台某个 Surface 的期望帧率。官方文档给了清晰边界：调用只是 hint，调度器会结合多 Surface、系统策略、电量模式、是否允许无缝切换等因素决定显示刷新率；应用需要能处理系统未切换到请求刷新率的情况。[已验证: 官方文档, developer.android.com/media/optimize/performance/frame-rate]
 
 普通 UI 的入口在 Android 15+ 又多了一层。ARR 文档建议 View 层通过 `View.setRequestedFrameRate()` 表达类别或具体帧率，滚动组件通过 `setFrameContentVelocity()` 传递内容速度，Window 层还可控制 touch boost 和 power-savings balanced 策略。SurfaceView / TextureView 明确设置的帧率会作为有效输入传递到低层 layer。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
@@ -205,7 +205,7 @@ SurfaceFlinger 侧，`SurfaceFlinger.cpp` 会把前端 snapshot 中的 `frameRat
 
 Android 15 引入 ARR，官方定义是：显示刷新率可用离散 VSync step 跟随内容帧率。ARR 面板上，display VSync rate 和 refresh rate 解耦；面板可以按 TE 信号的整倍数展示新帧。文档里的例子是 TE 对应 240Hz，而最大刷新率对应 120Hz，帧可以在满足 `minFrameIntervalNs` 后落到某个 VSync step 上。[已验证: 官方文档, source.android.com/docs/core/graphics/arr]
 
-这带来三个术语边界：
+这里需要区分三个术语边界：
 
 - 内容帧率：视频源或游戏逻辑想生产多少帧，例如 24fps、30fps、60fps。
 - 渲染目标帧率：App / View / Surface 给系统的偏好或限制，可能来自 `setFrameRate()`、`setRequestedFrameRate()`、Game Mode。
@@ -230,9 +230,9 @@ GameManager 的帧率干预又是另一条线。官方 frame pacing 文档说明
 
 ARR 设备上，VSYNC 间隔变长不等于卡顿。滚动结束后降到 60Hz 或更低，是省电策略的一部分；视频 24fps 在 120Hz 上按 5:1 展示，也会让内容帧和显示刷新频率不同。异常判断应落到“目标帧是否错过自己的 expected present time”，而不是“本帧是否等于 60Hz 周期”。[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline] [已验证: 官方文档, developer.android.com/media/optimize/performance/frame-rate]
 
-## 七点五、FrameTracer / FrameTimeline 数据源细节（Android 12+，Android 17 沿用）
+## 补充：FrameTracer / FrameTimeline 数据源细节（Android 12+，Android 17 沿用）
 
-光看 Perfetto 里的 `FrameTimeline` track 名称还不够，本节把 Android 17 中产出这条 track 的两个数据源和它们的判定阈值串起来。
+Perfetto 里的 `FrameTimeline` track 背后有两个数据源，本节把它们和各自的判定阈值一起梳理。
 
 ### FrameTracer（buffer-level，2019 至今）
 
@@ -335,7 +335,6 @@ ScheduleResult VSyncDispatchTimerQueueEntry::schedule(VSyncDispatch::ScheduleTim
 | `jank_severity` 分数 | 0~1，分数越高越严重 | 同一 layer 连续几帧 Partial → Full 表示雪球效应 |
 | `app deadline missed` 与 `app resynced jitter` 区分 | App 是否在 deadline 内提交 | 看到 `AppResyncedJitter` 多为 RenderThread 与主线程相位滑移 |
 
-<!-- AIW-源码调研-2026-06-20 -->
 
 ## 八、版本边界：DispSync、VSyncPredictor 与 ARR
 
@@ -362,11 +361,8 @@ SurfaceFlinger 的 VSync Scheduler 不是单纯转发硬件中断。它用 `VSyn
 
 ---
 
-<!-- AIW-源码调研-2026-06-21 -->
 
-## 附：2026-06-21 Android 17 源码调研补强
-
-> 本节由每日源码调研任务自动追加。来源：`DeepResearch/2026-06-21-surfaceflinger-vsync-scheduler-android17.md`
+## 附：Android 17 源码调研补强
 
 ### A1. 关键架构事实：DispSync 已彻底退场
 
@@ -454,15 +450,8 @@ Choreographer → 应用 UI 线程
 | Android 16 (Baklava) | 多窗口场景下「同屏多 frameRate」策略完善 |
 | **Android 17 (API 37)** | **DispSync.cpp/.h 已从源码树移除**；VSync* 接口稳定 |
 
-### A7. 与本章节的关系
+### A7. 与正文的关系
 
-本章节（02.23）已在 Android 16 验证，覆盖了 Scheduler 总体架构与 ARR 策略。本节补强：
-
-1. **Android 17 特有事实**：DispSync 完全退场，源码中已无该类。
-2. **VSyncPredictor 的 OLS 实现细节**：包括异常值过滤、kScalingFactor、render rate phase 对齐。
-3. **VSyncReactor 的 10% 容差机制**：ARR 切换期间预测不可用窗口的来源。
-4. **完整调用链的源码级证据**：从 setFrameRate 到 Choreographer 的可逐行追踪路径。
-
-报告与本节内容保持一致；未来如需调研 `VsyncModulator`、`EventThread::onVSync`、`SurfaceControl.setFrameRate()` 等子主题，可基于本次建立的源码阅读基线继续深入。
+正文已基于 Android 16 源码覆盖 Scheduler 架构与 ARR 策略。本次调研在 Android 17 上补充了四项事实：DispSync 已从源码树移除、VSyncPredictor 的 OLS 实现参数、VSyncReactor 的 10% 容差窗口、以及 `setFrameRate()` 到 `Choreographer` 的完整调用链。这些内容已合并到相应小节，不再单独展开。
 
 <!-- /AIW-源码调研-2026-06-21 -->
