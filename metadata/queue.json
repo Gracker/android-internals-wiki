@@ -347,6 +347,46 @@
       "completed_at": "2026-07-08T20:58:22+08:00",
       "completed_by": "task2b-main",
       "completion_note": "拉丁字符空格腐蚀批量修复：690行修复，2处禁用词修正"
+    },
+    {
+      "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+      "section": "13.2",
+      "section_title": "Trace 抓取",
+      "priority": 95,
+      "stage": "task2b_pending",
+      "reason": "[Deep Tech Review] Android 17 基线与 Perfetto 抓取示例存在 P0/P1 技术问题：正文仍称 android-17.0.0_r1 tag 未公开/仅 Android16 锚定，且多处 adb/perfetto/record_android_trace/Java/C 示例 token 合并，命令和代码不可执行。",
+      "material_paths": [
+        "logs/deep-review/2026-07-08-21-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码基线违规",
+          "location": "L63, L164-L166, L184-L190, L829, L1014-L1027, L1050-L1054, L1105, L1203-L1207",
+          "detail": "章节仍把 android-17.0.0_r1 描述为 tag 未公开，并以 android-16.0.0_r3/r4 或 LineageOS-22.2 作为主线源码锚点。2026-06-27 基线要求 AIW 主线结论必须锚定 android-17.0.0_r1；本轮已复核 android-17.0.0_r1 中 external/perfetto 与 frameworks/native 相关文件可访问。",
+          "suggestion": "将主线证据全部重锚到 android-17.0.0_r1；Android 12/14/15/16 仅保留为历史演进对照。删除“tag 未公开”“未进入 Android 17”等过期断语，或改为仅说明具体未验证资料不得作为 Android 17 结论。"
+        },
+        {
+          "type": "源码路径/符号锚点错误",
+          "location": "L81-L166, L829-L900, L1016-L1027, L1037-L1046, L1135-L1166",
+          "detail": "FrameTimeline 与 linux.perf 的源码锚点混用旧路径、旧行号和旧调研块。android-17.0.0_r1 中 linux.perf 数据源名在 external/perfetto/src/profiling/perf/perf_producer.cc:81；PerfEventConfig 在 perf_event_config.proto 中；traced_perf.rc 包含 readtracefs/shared_kallsyms；FrameTimeline 数据源在 frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h:656，注册在 Scheduler/FrameTimeline.cpp:1351-1354，SurfaceFlinger onBootFinished 调用在 SurfaceFlinger.cpp:820。",
+          "suggestion": "按上述 Android 17 锚点重写两个源码补充块和参考资料源码锚点；删除不可编译的伪 C++ 片段，保留路径/符号/行为摘要即可。"
+        },
+        {
+          "type": "命令/API 示例错误",
+          "location": "L195-L231, L302, L466, L521-L543, L552, L596, L607-L667, L796, L999-L1012 等",
+          "detail": "大量命令和代码 token 被空格修复后继续合并或错误分隔，例如 adbshellperfetto、adbpull、adbpushconfig.pbtxt、catconfig.pbtxt、python3record_android_trace、chmodu+xrecord_android_trace、importandroid.os.Trace、intcookie、#include < android/trace.h >、https :// 等。这些不是文风问题，而是命令/API 级事实错误，读者复制后无法运行。",
+          "suggestion": "统一修复为可执行形式：adb shell perfetto、adb pull、adb push config.pbtxt、cat config.pbtxt | adb shell perfetto、python3 record_android_trace、chmod u+x record_android_trace、import android.os.Trace、int cookie、#include <android/trace.h>、标准 URL；同时把 category 列表改为空格或列表分隔。"
+        },
+        {
+          "type": "原理链断裂",
+          "location": "L748-L900 Heap/Java/CPU sampling 与 L918-L976 综合配置",
+          "detail": "正文讲 heapprofd、android.java_hprof、linux.perf 的配置，但没有把 build type/profileable、目标过滤、buffer 容量、unwinder 队列和 TraceConfig 多数据源开销串成抓取决策链；同时旧源码补充块与正文版本边界互相冲突。",
+          "suggestion": "补一段“按问题选择数据源”的决策链：常规 jank 用 ftrace/FrameTimeline；Native 分配用 android.heapprofd；Java 存留快照用 android.java_hprof；CPU 热点用 linux.perf，并分别写清 user/userdebug 权限和开销边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-08T21:27:49+08:00",
+      "status": "pending"
     }
   ],
   "entries": [

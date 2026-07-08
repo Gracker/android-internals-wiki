@@ -11,12 +11,15 @@ tags:
 polish_by: task2b-polish
 task6_state: revisiting
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 reviewed_by: openclaw-task6
 last_task6_audit: 2026-07-08
 task2b_result: fixed
-task2b_state: fixed
-task9_state: pending
+task2b_state: pending
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: 2026-07-08T21:27:49+08:00
+task9_review_notes: "2026-07-08 Task9 deep-review: needs-rework. P0=3, P1=1, P2=1. Android 17 基线仍写 tag 未公开/Android16 锚点；adb/perfetto/record_android_trace/Java/C 示例多处 token 合并不可执行；FrameTimeline/linux.perf 锚点需按 android-17.0.0_r1 重校；详见 logs/deep-review/2026-07-08-21-deep-review.md。"
 ---
 
 # Trace 抓取
