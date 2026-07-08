@@ -363,3 +363,9 @@
 - **位置**：L1069、L1090
 - **问题**：旧源码调研块写“分析精度提升约 20%”“处理效率提升约 15%”，未给出 trace、benchmark、设备条件或 AOSP 代码可推导依据。
 - **建议**：删除固定百分比，或补充可复现的 Android 17 设备/trace_processor 查询/采样条件；在没有实测前只保留“能力增强/字段扩展”这类源码可验证结论。
+
+
+## [Task2B 回炉完成] 13.2 Trace 抓取 — 2026-07-08 22:55
+- **来源**：Task9 deep-review (2026-07-08-21) + Task6 audit (2026-07-08-20) + frontmatter fallback
+- **修复内容**：P0 token merging (20+ 处命令/API 修复)、P0 版本基线更新 (android-17.0.0_r1 验证)、P0 FrameTimeline/linux.perf 锚点修正、P1 数据源选择闭环、P2 无法验证百分比移除
+- **状态**：章节 → ready-for-review (task6_pending)，等待 Task6 复审
