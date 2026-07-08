@@ -461,3 +461,33 @@ Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
 4. **source-index.json**：0 条未映射高质量素材
 
 **结论**：全书覆盖已达饱和。建议关注点继续转向提升现有 draft 章节内容质量（当前 71 个 draft）。
+
+## [Task2A 知识缺口挖掘] 已检查方向记录 — 2026-07-09 05:00
+
+**本轮结论**：全书 661 个小节，0 个空 draft，Task2B backlog = 0。第 49 轮缺口挖掘，未发现评分 ≥ 14 的知识缺口。
+
+**本轮检查方向（增量）**：
+
+11. **Android Virtualization Framework (AVF) / pKVM** — 已有 ch01.32 覆盖（virtualization-framework-pkvm-performance）
+12. **Compose Material 3 性能** — 已有 ch22 多节覆盖（03/14/15/22/27 等）
+13. **WorkManager 性能** — 已有 ch05.10 + ch25.04/13 覆盖
+14. **Predictive Back 性能** — 已有 ch22.13 覆盖
+15. **Foldable/多屏适配性能** — 已有 ch22.14/27 + ch02.20 覆盖
+16. **Privacy Sandbox** — 已有 ch21.10 + ch12.07 + ch05.24 覆盖
+17. **ADPF/Thermal** — 已有 ch17.03/05/09 覆盖
+18. **Scudo 分配器** — 已有 ch16.10 + ch23.03/07/08 覆盖
+19. **KSM/内存去重** — 已有 ch01.32 + ch23.24 提及
+20. **LE Audio** — 已有 ch05.22 + ch12.33 + ch25.17 多节覆盖
+21. **Compose Lazy Prefetch** — 已有 ch22.22 覆盖
+22. **Camera2/CameraX 性能** — 已有 ch02.31/32 + ch24.18 覆盖
+23. **Compose Navigation 性能** — 已有 ch22.23 覆盖
+24. **Network Quota/Restricted Networking** — 已有 ch24.20 覆盖
+25. **Doze/App Hibernation 演进** — 已有 ch05.24 + ch25.02/13 覆盖
+26. **Ariadne 论文（ZRAM 热感知压缩）** — 已有 ch04.12 扩展点引用（arXiv 2502.12826）
+27. **Git 历史确认**：前 48 轮连续无 ≥14 分缺口，本轮为第 49 轮
+
+**总结论**：全书 661 节，finalized 344 + ready-for-review 213 = 557 节已完成（84.3%），draft 70 节。知识覆盖已达饱和密度。后续缺口挖掘可持续关注：
+- Android 17 QPR1/QPR2 新增特性（待官方发布）
+- 新兴交叉领域（AI Agent 性能沙箱实战深化）
+- 游戏引擎性能分析深化
+- 音视频深度性能分析
