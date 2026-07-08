@@ -50,9 +50,9 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-04"
 last_task9_at: "2026-05-04T10:37:13+08:00"
 last_task2b_at: "2026-04-27T14:50:00+08:00"
-last_task9_audit: "2026-06-17"
-last_task9_audit_log: "logs/deep-review/2026-06-17-07-audit.md"
-last_task9_audit_notes: "idle audit: no P0/P1; AOSP android-16.0.0_r1 source paths and official Game Mode/ADPF API version guards rechecked; existing P2 guards remain for FileProvider attachInfo, Thermal thresholds, Game State API."
+last_task9_audit: "2026-07-08"
+last_task9_audit_log: "logs/deep-review/2026-07-08-14-audit.md"
+last_task9_audit_notes: "idle audit: no P0/P1; android-17.0.0_r1 source paths rechecked; GameManager/PowerManager API version guards rechecked; existing P2 guards remain for FileProvider attachInfo, Thermal thresholds, Game State API."
 review_notes: "2026-04-28 task9 deep-review: pass-tech-review；无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3。核心 API 与案例链路可通过；仅有 Thermal thresholds API 版本守卫、FileProvider 插桩细节、折叠屏多窗口数据支撑三处 P2。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
