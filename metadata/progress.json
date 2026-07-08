@@ -1,9 +1,9 @@
 {
   "total": 661,
-  "draft": 70,
+  "draft": 69,
   "ready_for_review": 212,
-  "finalized": 345,
-  "last_updated": "2026-07-09T05:07:00+08:00",
+  "finalized": 346,
+  "last_updated": "2026-07-09T06:13:08+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -1134,6 +1134,13 @@
       "status": "finalized",
       "ts": "2026-07-09T05:07:00+08:00",
       "note": "Task6 re-review: 4 L1/L2 fixes (本质上, 拆解x2, 元叙述), auto-promote finalized"
+    },
+    {
+      "section": "2.6",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-09T06:13:08+08:00",
+      "note": "Android 17 eBPF观测增强: 4 anchors (cyclePerUid/dmabufIter/kernelWakelockDuration/locks 四程序源码级分析 + tracepoints机制 + 三层数据流架构 + 四大应用场景) + 3 extensions (Perfetto协同双窗口设计/bpftrace开发工具链/企业级部署隐私安全). AOSP android-17.0.0_r1 源码描述交叉验证. 版本演进时间线 Android 12→17."
     }
   ],
   "review_history": [
@@ -1325,10 +1332,9 @@
     "last_task9_review_date": "2026-07-06",
     "last_task9_review_by": "openclaw-task9"
   },
-  "last_task6_review": "2026-07-08T08:07:00+08:00",
+  "last_task6_review": "2026-07-09T06:08:00+08:00",
   "last_task6_reviewed_sections": [
-    "2.30",
-    "24.4"
+    "16.4"
   ],
   "sections": {
     "15": {
@@ -1730,9 +1736,17 @@
       "auto_promoted": [
         "2.30"
       ]
+    },
+    {
+      "section": "16.4",
+      "date": "2026-07-09",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-09-06-review.md",
+      "auto_promoted": true
     }
   ],
-  "last_task6_run": "2026-07-08T08:07:00+08:00",
+  "last_task6_run": "2026-07-09T06:08:00+08:00",
   "task2b_verifier_runs": [
     {
       "timestamp": "2026-07-07T23:28:46+08:00",
@@ -1777,10 +1791,12 @@
     "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
   },
   "section-16.4": {
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "revisiting",
-    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-07-09T06:08:00+08:00"
   },
   "section-7.9": {
     "status": "ready-for-review",
