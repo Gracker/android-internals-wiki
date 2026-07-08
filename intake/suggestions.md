@@ -369,3 +369,10 @@
 - **来源**：Task9 deep-review (2026-07-08-21) + Task6 audit (2026-07-08-20) + frontmatter fallback
 - **修复内容**：P0 token merging (20+ 处命令/API 修复)、P0 版本基线更新 (android-17.0.0_r1 验证)、P0 FrameTimeline/linux.perf 锚点修正、P1 数据源选择闭环、P2 无法验证百分比移除
 - **状态**：章节 → ready-for-review (task6_pending)，等待 Task6 复审
+
+## [Task6 Review] 13.2 Trace 抓取 — 2026-07-08
+- **类型**：需确认
+- **位置**：2026-06-09 源码验证更新章节，"Android 17.0.0_r1tag 公开未发布" 一段
+- **问题**：该段称 android-17.0.0_r1 tag 公开未发布，与正文其他多处（如 frontmatter 验证声明、源码锚点验证段）声称已通过 Gitiles 复核该 tag 的结论矛盾。两处口径不统一，读者无法判断哪些锚点真正经过验证。
+- **建议**：Task 9 确认 android-17.0.0_r1 tag 在 AOSP Gitiles 上的可访问性。如可访问，删除"公开未发布"的错误声明；如不可访问，修正所有声称已验证的锚点为"基于 android-16.0.0_r4 延续性推断"。
+- **review 日志**：logs/review/2026-07-08-23-review.md

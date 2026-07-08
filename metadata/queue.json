@@ -382,11 +382,157 @@
           "location": "L748-L900 Heap/Java/CPU sampling 与 L918-L976 综合配置",
           "detail": "正文讲 heapprofd、android.java_hprof、linux.perf 的配置，但没有把 build type/profileable、目标过滤、buffer 容量、unwinder 队列和 TraceConfig 多数据源开销串成抓取决策链；同时旧源码补充块与正文版本边界互相冲突。",
           "suggestion": "补一段“按问题选择数据源”的决策链：常规 jank 用 ftrace/FrameTimeline；Native 分配用 android.heapprofd；Java 存留快照用 android.java_hprof；CPU 热点用 linux.perf，并分别写清 user/userdebug 权限和开销边界。"
+        },
+        {
+          "type": "需确认",
+          "location": "2026-06-09 源码验证更新章节",
+          "detail": "android-17.0.0_r1 tag 可用性与正文验证声明矛盾",
+          "suggestion": "Task 9 统一口径"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-08T21:27:49+08:00",
       "status": "pending"
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.9-android17-gpu-debug-performance-tools-source.md",
+      "section": "2.9",
+      "section_title": "Android 17 GPU Debug Performance Tools Source",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (GPU debugging tools)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.10-android17-startup-insights-gaps.md",
+      "section": "2.10",
+      "section_title": "Android 17 Startup Insights Gaps",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Startup insights)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.11-android17-battery-optimization-soc-architecture-power-management.md",
+      "section": "2.11",
+      "section_title": "Android 17 Battery Optimization SOC Architecture Power Management",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Battery optimization)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.12-android17-startup-insights-application-start-info.md",
+      "section": "2.12",
+      "section_title": "Android 17 Startup Insights Application Start Info",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Startup insights)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.13-android17-perfetto-v57-ai-skill-state-tracks-android-memory.md",
+      "section": "2.13",
+      "section_title": "Android 17 Perfetto V57 AI Skill State Tracks Android Memory",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Perfetto AI)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.14-android17-signal-debuggerd-architecture.md",
+      "section": "2.14",
+      "section_title": "Android 17 Signal Processing Mechanism and debuggerd Architecture Migration",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Signal processing)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory-sandboxed-data-reuse.md",
+      "section": "4.46",
+      "section_title": "Android 17 AI Agent Memory Sandboxed Data Reuse",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (AI Agent memory)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.47-ai-agent-memory-management.md",
+      "section": "4.47",
+      "section_title": "AI Agent Memory Management",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (AI Agent memory)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.48-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md",
+      "section": "4.48",
+      "section_title": "Android 17 LMKD Procs Prio Batch Thrashing Mainline Fork",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (LMKD)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.22-android17-soc-vendor-power-hal-schedutil-loop.md",
+      "section": "5.22",
+      "section_title": "Android 17 SOC 厂商电池优化 × IPower HAL × schedutil 闭环",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (SOC vendor power)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.23-android17-background-audio-hardening-leaudio-power-source.md",
+      "section": "5.23",
+      "section_title": "Android 17 Background Audio Hardening LE Audio Power Source",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Audio hardening)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.24-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup.md",
+      "section": "5.24",
+      "section_title": "Android 17 Binder SZ4M Kernel Buffer Pool Priority Set Called Dedup",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Binder SZ4M)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-framework-dependency-graph.md",
+      "section": "8.33",
+      "section_title": "Android 17 Modular Startup Framework Dependency Graph",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Modular startup)",
+      "gap_source": "AOSP结构"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/15.11-google-android-bench-ai-coding-evaluation-methodology.md",
+      "section": "15.11",
+      "section_title": "Google Android Bench: AI Coding Evaluation Methodology",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-08",
+      "notes": "Created from knowledge gap mining (Android Bench AI)",
+      "gap_source": "AOSP结构"
     }
   ],
   "entries": [

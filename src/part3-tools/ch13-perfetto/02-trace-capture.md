@@ -9,9 +9,10 @@ tags:
 - trace
 - capture
 polish_by: task2b-polish
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
+task6_review_notes: "2026-07-08 Task6 re-review (post-Task2B fix): 23:25 L1 code formatting fixes (30+ token merges in C++/protobuf/rc blocks, URL spacing, text-level merges). L2 minor. 1 B-class: android-17.0.0_r1 tag contradiction in 2026-06-09 appendix. All 6 anchors covered. No banned words."
+pipeline_stage: task9_pending
 reviewed_by: openclaw-task6
 last_task6_audit: 2026-07-08
 task2b_result: fixed
@@ -86,40 +87,40 @@ task9_review_notes: "2026-07-08 Task9 deep-review: needs-rework. P0=3, P1=1, P2=
 1. **数据源注册**：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp:1351-1354`（android-17.0.0_r1）
    ```cpp
    void FrameTimeline::onBootFinished() {
-       perfetto :: TracingInitArgsargs ;
-       args.backends = perfetto :: kSystemBackend ;
-       perfetto :: Tracing :: Initialize(args);
+       perfetto::TracingInitArgs args;
+       args.backends = perfetto::kSystemBackend;
+       perfetto::Tracing::Initialize(args);
        registerDataSource();
    }
-   voidFrameTimeline:: registerDataSource() {
-       perfetto :: DataSourceDescriptordsd ;
+   void FrameTimeline::registerDataSource() {
+       perfetto::DataSourceDescriptor dsd;
        dsd.set_name(kFrameTimelineDataSource);  // "android.surfaceflinger.frametimeline"
-       FrameTimelineDataSource:: Register(dsd);
+       FrameTimelineDataSource::Register(dsd);
    }
    ```
 
 2. **SurfaceFrameJank 分类逻辑**：`FrameTimeline.cpp :600-680`
    ```cpp
-   uint32_tSurfaceFrame:: classifyJankLocked() {
+   uint32_t SurfaceFrame::classifyJankLocked() {
        // 基础状态：OnTimePresent = None
-       if (frame-> frameStateFlags & PresentState:: OnTimePresent) {
-           returnJankType:: None;
+       if (frame->frameStateFlags & PresentState::OnTimePresent) {
+           return JankType::None;
        }
        // 晚期 present 的分类逻辑
-       if (frame-> presentStateFlags & PresentState:: LatePresent) {
+       if (frame->presentStateFlags & PresentState::LatePresent) {
            if (mPredictions.endTime <= mLastLatchTime) {
-               returnJankType:: BufferStuffing ;
+               return JankType::BufferStuffing;
            }
-           if (!frame-> gpuFenceValid) {
-               returnJankType:: SurfaceFlingerCpuDeadlineMissed ;
+           if (!frame->gpuFenceValid) {
+               return JankType::SurfaceFlingerCpuDeadlineMissed;
            }
-           returnJankType:: AppDeadlineMissed ;
+           return JankType::AppDeadlineMissed;
        }
    }
    ```
 
 3. **TraceCookie 机制**：`FrameTimeline.h :122-130`
-   - `mTraceCookie = std :: atomic < int64_t >`（单 FrameTimeline 实例）
+   - `mTraceCookie = std::atomic<int64_t>`（单 FrameTimeline 实例）
    - `getCookieForTracing()` 返回唯一标识符，用于精确定位 start/endpacket 对
 
 4. **FeatureFlag 机制**：`frameworks/native/services/surfaceflinger/common/FlagManager.cpp :150,251`
@@ -133,23 +134,23 @@ task9_review_notes: "2026-07-08 Task9 deep-review: needs-rework. P0=3, P1=1, P2=
 
 1. **Socket 继承机制**：`external/perfetto/src/profiling/perf/traced_perf.cc :24-50`
    ```cpp
-   staticconstexprcharkTracedPerfSocketEnvVar [] = "ANDROID_SOCKET_traced_perf";
-   intGetRawInheritedListeningSocket() {
-       constchar* sock_fd = getenv(kTracedPerfSocketEnvVar);
-       if (sock_fd == nullptr) PERFETTO_FATAL("Didnotinheritsocketfrominit.");
+   static constexpr char kTracedPerfSocketEnvVar[] = "ANDROID_SOCKET_traced_perf";
+   int GetRawInheritedListeningSocket() {
+       const char* sock_fd = getenv(kTracedPerfSocketEnvVar);
+       if (sock_fd == nullptr) PERFETTO_FATAL("Did not inherit socket from init.");
    }
    ```
 
 2. **Producer 注册**：`external/perfetto/src/profiling/perf/perf_producer.cc :50-51`
    ```cpp
-   constexprcharkProducerName[] = "perfetto.traced_perf";
-   constexprcharkDataSourceName[] = "linux.perf";
+   constexpr char kProducerName[] = "perfetto.traced_perf";
+   constexpr char kDataSourceName[] = "linux.perf";
    ```
 
 3. **进程过滤实现**：`perf_producer.cc :80-103`
    ```cpp
-   boolShouldRejectDueToFilter(pid_tpid, constTargetFilter& filter) {
-       std :: stringcmdline;
+   bool ShouldRejectDueToFilter(pid_t pid, const TargetFilter& filter) {
+       std::string cmdline;
        if (GetCmdlineForPID(pid, &cmdline)) {
            // 白名单检查或黑名单匹配
            reject_cmd = (filter.cmdlines.size() && !filter.cmdlines.count(cmdline)) ||
@@ -162,7 +163,7 @@ task9_review_notes: "2026-07-08 Task9 deep-review: needs-rework. P0=3, P1=1, P2=
 
 4. ** execve 保护延迟**：`perf_producer.cc :47`
    ```cpp
-   constexpr uint32_t kProcDescriptorsAndroidDelayMs = 50;  // 防止 execve 期间 signaldisposition 默认 terminate
+   constexpr uint32_t kProcDescriptorsAndroidDelayMs = 50;  // 防止 execve 期间 signal disposition 默认 terminate
    ```
 
 #### Android 17 源码验证
@@ -301,7 +302,7 @@ buffers {
 ```
 
 - `size_kb`：buffer 大小，单位 KB。常见的值是 32768（32MB）到 131072（128MB）。buffer 太小会导致数据被覆盖或丢失，太大会占用过多内存。对于 10-30 秒的常规 Trace，64MB 通常是够用的。如果开启了调用栈采样或 Heap Profiling，需要更大的 buffer。
-- `fill_policy`：满时的策略。`DISCARD` 表示 buffer 满后丢弃新事件（Stopwhenfull），适合确定性抓取；`RING_BUFFER` 表示环形覆盖，旧数据被新数据覆盖，适合长时间监控。
+- `fill_policy`：满时的策略。`DISCARD` 表示 buffer 满后丢弃新事件（Stop when full），适合确定性抓取；`RING_BUFFER` 表示环形覆盖，旧数据被新数据覆盖，适合长时间监控。
 
 ### duration 配置
 
@@ -492,7 +493,7 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 
 - **sched**：CPU 调度事件，包括线程的唤醒、切换、阻塞原因。这是 Perfetto 中最重要的 category——没有 `sched`，我们看不到每个线程在什么时候运行、什么时候被挂起、为什么被挂起。几乎所有性能分析场景都应该选上 `sched`。
 - **freq**：CPU 频率变化事件。配合 `sched` 使用，可以看出线程在什么频率的 CPU 核心上运行，判断是否存在频率爬升慢导致的性能问题。
-- **idle**：CPUidle 状态事件。可以观察 CPU 是否进入了深度睡眠，以及被唤醒的原因。
+- **idle**：CPU idle 状态事件。可以观察 CPU 是否进入了深度睡眠，以及被唤醒的原因。
 
 ### Binder 与 IPC
 
@@ -529,11 +530,11 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 ### 获取脚本
 
 ```bash
-curl -O https ://raw.githubusercontent.com/google/perfetto/main/tools/record_android_trace
-chmodu+xrecord_android_trace
+curl -O https://raw.githubusercontent.com/google/perfetto/main/tools/record_android_trace
+chmod +x record_android_trace
 ```
 
-> ⚠️ 在中国大陆网络环境下，访问 GitHubraw 域名可能需要代理。也可以从 Perfetto 发布页（< https ://github.com/google/perfetto/releases >）下载对应版本的脚本。
+> ⚠️ 在中国大陆网络环境下，访问 GitHubraw 域名可能需要代理。也可以从 Perfetto 发布页（< https://github.com/google/perfetto/releases >）下载对应版本的脚本。
 
 ### 基本用法
 
@@ -546,11 +547,11 @@ python3 record_android_trace -o trace.perfetto-trace
 如果不传 `-t`，脚本会持续抓取，直到我们手动停止。更多时候，我们会显式给出时长、buffer 大小和 atrace categories：
 
 ```bash
-python3 record_android_trace -o trace.perfetto-trace -t20s -b64mb \
+python3 record_android_trace -o trace.perfetto-trace -t20s -b 64mb \
   sched freq idle am wm gfx view binder_driver hal dalvik input res memory
 ```
 
-这里 `-t20s` 表示 20 秒，`-b64mb` 表示 64 MB buffer，后面的参数是 atrace category 列表。`-t`、`-b`、`-a` 这一组 short options 只适用于不带 `-c/--config` 的快速抓取。
+这里 `-t20s` 表示 20 秒，`-b 64mb` 表示 64 MB buffer，后面的参数是 atrace category 列表。`-t`、`-b`、`-a` 这一组 short options 只适用于不带 `-c/--config` 的快速抓取。
 
 ### 为什么推荐这个脚本
 
@@ -581,9 +582,9 @@ Perfetto UI（<https://ui.perfetto.dev>）不仅是一个 Trace 分析工具，�
 Perfetto UI 把配置分成了几个直观的 Tab：
 
 **Buffer 模式选择**（在 "Recording mode" 区域）：
-- **Stopwhenfull**：buffer 满了就停止（默认，最常用）。适合确定性时长抓取。
-- **Ringbuffer**：环形覆盖，新数据覆盖旧数据。适合不确定何时复现的问题。
-- **Longtrace**：持续写入文件。适合长时间追踪（几分钟到几小时）。
+- **Stop when full**：buffer 满了就停止（默认，最常用）。适合确定性时长抓取。
+- **Ring buffer**：环形覆盖，新数据覆盖旧数据。适合不确定何时复现的问题。
+- **Long trace**：持续写入文件。适合长时间追踪（几分钟到几小时）。
 
 **数据源选择**（在各个 Tab 页中）：
 - **CPU**：包括 CPU 调度、频率、idle 状态、调用栈采样。性能分析基本都要选。
@@ -641,7 +642,7 @@ try {
 
 最基本的要求是 `beginSection` 和 `endSection` 必须**严格配对、嵌套调用**——不能交叉嵌套，也不能在一个线程中 `beginSection` 然后在另一个线程中 `endSection`。`Trace.endSection()` 不需要传入标签名，它自动关闭最近一次 `beginSection` 对应的区域，和栈的 push/pop 机制一样。正因为这个栈式设计，如果 `endSection` 调用次数和 `beginSection` 不匹配，后续所有标记都会错位。
 
-`Trace.beginSection` 的 section name 上限是 127 个 Unicode code unit。Java public API 对过长名字会抛出 `IllegalArgumentException`；native 侧也受 ATrace 消息长度和 ftrace `trace_marker` 写入格式约束。这个限制来自一条 tracemarker 消息要同时容纳事件类型、线程信息和 sectionname，名字过长会增加 tracebuffer 压力，也会让 Perfetto UI 难以阅读。建议使用简洁但足够描述性的标签名，比如 `"HomeFragment.loadData"`，不要把请求 URL、JSON 片段或用户标识塞进 sectionname。
+`Trace.beginSection` 的 section name 上限是 127 个 Unicode code unit。Java public API 对过长名字会抛出 `IllegalArgumentException`；native 侧也受 ATrace 消息长度和 ftrace `trace_marker` 写入格式约束。这个限制来自一条 trace_marker 消息要同时容纳事件类型、线程信息和 section name，名字过长会增加 trace buffer 压力，也会让 Perfetto UI 难以阅读。建议使用简洁但足够描述性的标签名，比如 `"HomeFragment.loadData"`，不要把请求 URL、JSON 片段或用户标识塞进 section name。
 
 另外，`beginSection`/`endSection` 只能在同一线程中使用。跨线程操作要改用异步 API。
 
@@ -676,11 +677,11 @@ ATrace_beginSection("nativeInit");
 ATrace_endSection();
 ```
 
-这组 API 和 `android.os.Trace` 一样，底层都走 apptracingtag，抓取时仍然需要把目标包名放进 `atrace_apps` 或 `record_android_trace -a`。
+这组 API 和 `android.os.Trace` 一样，底层都走 app tracing tag，抓取时仍然需要把目标包名放进 `atrace_apps` 或 `record_android_trace -a`。
 
-如果代码运行在平台内部模块里，AOSP 代码里还会看到 `< cutils/trace.h >` 和 `ATRACE_BEGIN` / `ATRACE_END`。这套头文件不面向普通 App / NDK 工程，这里只把它当作 framework / systemcode 的实现路径，不把它当成通用示例。
+如果代码运行在平台内部模块里，AOSP 代码里还会看到 `< cutils/trace.h >` 和 `ATRACE_BEGIN` / `ATRACE_END`。这套头文件不面向普通 App / NDK 工程，这里只把它当作 framework / system code 的实现路径，不把它当成通用示例。
 
-如果要讲 PerfettoSDK，则是另一条集成路径。PerfettoSDK 通过头文件注入的方式集成，需要在项目的 `CMakeLists.txt` 或 `Android.bp` 中添加 SDK 源码依赖，然后使用 `TRACE_EVENT` 宏来标记自定义事件。集成方式详见 Perfetto 官方文档的 [ InstrumentationSDK](https ://perfetto.dev/docs/instrumentation/tracing-sdk) 章节。[待补充: 完整的 CMake 集成示例]
+如果要讲 PerfettoSDK，则是另一条集成路径。PerfettoSDK 通过头文件注入的方式集成，需要在项目的 `CMakeLists.txt` 或 `Android.bp` 中添加 SDK 源码依赖，然后使用 `TRACE_EVENT` 宏来标记自定义事件。集成方式详见 Perfetto 官方文档的 [ InstrumentationSDK](https://perfetto.dev/docs/instrumentation/tracing-sdk) 章节。[待补充: 完整的 CMake 集成示例]
 
 ### 在 Perfetto 中的表现
 
@@ -803,7 +804,7 @@ data_sources {
 
 在 Perfetto UI 中，Heap Profiling 数据显示为火焰图（Flamegraph）和分配详情表，可以直接看到哪些调用路径分配了最多的内存。
 
-**权限边界**：heapprofd 在 `userdebug`/`eng` 构建上可采样大多数 App 和系统服务；在 `user` 构建上只能采样 manifest 中声明了 `android:profileable="true"` 或 `android:debuggable="true"` 的 App。未满足条件的目标进程会得到空 profile 或采样失败。官方文档见 [ perfetto.dev — HeapProfiler](https ://perfetto.dev/docs/data-sources/native-heap-profiler)。
+**权限边界**：heapprofd 在 `userdebug`/`eng` 构建上可采样大多数 App 和系统服务；在 `user` 构建上只能采样 manifest 中声明了 `android:profileable="true"` 或 `android:debuggable="true"` 的 App。未满足条件的目标进程会得到空 profile 或采样失败。官方文档见 [ perfetto.dev — HeapProfiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)。
 
 ### JavaHeapSampling（Android 12+）
 
@@ -855,7 +856,7 @@ duration_ms : 10000
 
 Perfetto 还可以在 Trace 中集成 CPU 调用栈采样。这对分析 CPU 密集型瓶颈（如某段计算代码占用大量 CPU）非常有用。
 
-**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 12 (API 31) 起可用。源码证据：`external/perfetto/src/profiling/perf/perf_producer.cc :81` 定义 `kDataSourceName = "linux.perf"`，`traced_perf.cc` 完整实现；`external/perfetto/protos/perfetto/config/data_source_config.proto` 在 android-12.0.0_r1 与 android-16.0.0_r3 中都有 `linux.perf` 配置入口。`android-17.0.0_r1` tag 已验证可访问，不能写成 Android 17 已源码验证；Android 17 已基于 android-17.0.0_r1 复核。运行条件取决于构建类型：`userdebug`/`eng` 构建可采样大多数进程；`user` 构建上目标 App 必须声明 `android:profileable="true"` 或 `android:debuggable="true"`，二者满足其一即可。非符合条件的目标进程会被跳过，trace 中无采样数据。官方 quickstart 见 [ perfetto.dev — CPUProfiling](https ://perfetto.dev/docs/quickstart/callstack-profiling)。
+**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 12 (API 31) 起可用。源码证据：`external/perfetto/src/profiling/perf/perf_producer.cc :81` 定义 `kDataSourceName = "linux.perf"`，`traced_perf.cc` 完整实现；`external/perfetto/protos/perfetto/config/data_source_config.proto` 在 android-12.0.0_r1 与 android-16.0.0_r3 中都有 `linux.perf` 配置入口。`android-17.0.0_r1` tag 已验证可访问，不能写成 Android 17 已源码验证；Android 17 已基于 android-17.0.0_r1 复核。运行条件取决于构建类型：`userdebug`/`eng` 构建可采样大多数进程；`user` 构建上目标 App 必须声明 `android:profileable="true"` 或 `android:debuggable="true"`，二者满足其一即可。非符合条件的目标进程会被跳过，trace 中无采样数据。官方 quickstart 见 [ perfetto.dev — CPUProfiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
 
 ```textproto
 data_sources {
@@ -902,21 +903,21 @@ data_sources {
 
 ```protobuf
 // 节选自 protos/perfetto/config/profiling/perf_event_config.proto
-messagePerfEventConfig {
-  optionalPerfEvents.Timebasetimebase = 15;
-  optionalCallstack Samplingcallstack_sampling = 16;
-  repeatedFollowerEvent followers = 19;
-  optionaluint32ring_buffer_pages = 3;
-  optionaluint32ring_buffer_read_period_ms = 8;
-  optionaluint64max_enqueued_footprint_kb = 17;
-  optionaluint32max_daemon_memory_kb = 13;
+message PerfEventConfig {
+  optional PerfEvents.Timebase timebase = 15;
+  optional CallstackSampling callstack_sampling = 16;
+  repeated FollowerEvent followers = 19;
+  optional uint32 ring_buffer_pages = 3;
+  optional uint32 ring_buffer_read_period_ms = 8;
+  optional uint64 max_enqueued_footprint_kb = 17;
+  optional uint32 max_daemon_memory_kb = 13;
   repeated uint32 target_cpu = 20;
 }
 
-messageCallstack Sampling {
-  optionalScopescope = 1;
-  optionalboolkernel_frames = 2;
-  optionalUnwindModeuser_frames = 3;
+message CallstackSampling {
+  optional Scope scope = 1;
+  optional bool kernel_frames = 2;
+  optional UnwindMode user_frames = 3;
 }
 ```
 
@@ -1029,10 +1030,10 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 
 
 - **FrameMetrics 与 Perfetto 集成**：FrameMetricsAPI 底层通过 FrameInfo 结构体收集数据，Perfetto 基于相同数据源。C++ 层 FrameMetricsObserver 有两种模式：不等待 presenttime（公共 API）和等待 presenttime（Perfetto 系统级分析）。FrameMetrics 是 Perfetto 数据的上层包装。详见相关 DeepResearch 调研。
-1. Perfetto 官方文档 - Quickstart : AndroidTracing : https ://perfetto.dev/docs/quickstart/android-tracing
-2. Perfetto 官方文档 - TraceConfig 配置: https ://perfetto.dev/docs/concepts/config
-3. Perfetto 官方文档 - NativeHeapProfiler : https ://perfetto.dev/docs/data-sources/native-heap-profiler
-4. Perfetto 官方文档 - TraceConfigProtoReference（PerfEventConfig）: https ://perfetto.dev/docs/reference/trace-config-proto#perfeventconfig
+1. Perfetto 官方文档 - Quickstart : AndroidTracing : https://perfetto.dev/docs/quickstart/android-tracing
+2. Perfetto 官方文档 - TraceConfig 配置: https://perfetto.dev/docs/concepts/config
+3. Perfetto 官方文档 - NativeHeapProfiler : https://perfetto.dev/docs/data-sources/native-heap-profiler
+4. Perfetto 官方文档 - TraceConfigProtoReference（PerfEventConfig）: https://perfetto.dev/docs/reference/trace-config-proto#perfeventconfig
 5. PerfettoAOSPProto - JavaHprofConfig : external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
 6. AndroidDevelopers - TraceAPI : https://developer.android.com/reference/android/os/Trace
 7. AOSPTrace.java 源码: frameworks/base/core/java/android/os/Trace.java
@@ -1086,11 +1087,11 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 
 在 `external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto` 中新增：
 ```
-messageActualSurfaceFrameStart {
+message ActualSurfaceFrameStart {
   optional JankSeverityType jank_severity_type = 12;  // field11 → 12
 }
 
-messageActualDisplayFrameStart {
+message ActualDisplayFrameStart {
   optional JankSeverityType jank_severity_type = 9;   // field8 → 9  
 }
 ```
@@ -1101,7 +1102,7 @@ messageActualDisplayFrameStart {
 
 Android 16.0.0_r1 配置变化：
 ```rc
-groupnobodyreadprocreadtracefs          # 新增 readtracefs
+group nobody readproc readtracefs          # 新增 readtracefs
 task_profilesProcessCapacityHigh          # 新增任务配置
 shared_kallsyms                           # 新增共享符号访问
 ```
@@ -1147,16 +1148,16 @@ AOSPsimpleperf (`system/extras/simpleperf/`) 与 Perfettolinux.perf 为不同实
 
 - **`android.cpu_per_uid`**：`external/perfetto/protos/perfetto/config/android/cpu_per_uid_config.proto`（Copyright 2025）
   ```protobuf
-  messageCpuPerUidConfig {
-    optionaluint32poll_ms = 1;
+  message CpuPerUidConfig {
+    optional uint32 poll_ms = 1;
   }
   ```
 - **`android.app_wakelocks`**：`external/perfetto/protos/perfetto/config/android/app_wakelock_config.proto`（Copyright 2025）
   ```protobuf
-  messageAppWakelocksConfig {
-    optionalint32write_delay_ms = 1;     // 建议 5000ms
-    optionalint32filter_duration_below_ms = 2;
-    optionalbooldrop_owner_pid = 3;
+  message AppWakelocksConfig {
+    optional int32 write_delay_ms = 1;     // 建议 5000ms
+    optional int32 filter_duration_below_ms = 2;
+    optional bool drop_owner_pid = 3;
   }
   ```
 - **`android.kernel_wakelocks`**：`external/perfetto/protos/perfetto/config/android/kernel_wakelocks_config.proto`
@@ -1166,29 +1167,29 @@ AOSPsimpleperf (`system/extras/simpleperf/`) 与 Perfettolinux.perf 为不同实
 源码：`external/perfetto/traced_perf.rc`（android-16.0.0_r4）
 
 ```rc
-servicetraced_perf /system/bin/traced_perf
-    classlate_start
+service traced_perf /system/bin/traced_perf
+    class late_start
     disabled
-    sockettraced_perfstream0666rootroot
-    usernobody
-    groupnobodyreadprocreadtracefs
-    capabilitiesKILLDAC_READ_SEARCH
-    task_profilesProcessCapacityHigh
+    socket traced_perf stream 0666 root root
+    user nobody
+    group nobody readproc readtracefs
+    capabilities KILL DAC_READ_SEARCH
+    task_profiles ProcessCapacityHigh
     shared_kallsyms
 ```
 
 `traced_probes.rc`（同版本）：
 
 ```rc
-servicetraced_probes /system/bin/traced_probes
-    classlate_start
+service traced_probes /system/bin/traced_probes
+    class late_start
     disabled
-    usernobody
-    groupnobodyreadproclogreadtracefs
-    task_profilesProcessCapacityHigh
-    onrestartexec_background - nobodyshell -- /system/bin/traced_probes --cleanup-after-crash
-    file /dev/kmsgw
-    capabilitiesDAC_READ_SEARCHSYS_NICE
+    user nobody
+    group nobody readproc log readtracefs
+    task_profiles ProcessCapacityHigh
+    onrestart exec_background -nobody shell -- /system/bin/traced_probes --cleanup-after-crash
+    file /dev/kmsg w
+    capabilities DAC_READ_SEARCH SYS_NICE
     shared_kallsyms
 ```
 
@@ -1208,8 +1209,8 @@ servicetraced_probes /system/bin/traced_probes
 源码：`external/perfetto/protos/perfetto/config/ftrace/ftrace_config.proto`（android-16.0.0_r4，Nextid : 36）
 
 ```protobuf
-repeatedstringatrace_categories_prefer_sdk = 28;
-optionalboolatrace_userspace_only = 34;   // perfettov52+
+repeated string atrace_categories_prefer_sdk = 28;
+optional bool atrace_userspace_only = 34;   // Perfetto v52+
 ```
 
 `atrace_userspace_only = true` 关闭 vendor-specificftrace 事件注入；`atrace_categories_prefer_sdk` 让混合路径切到纯 perfettoSDKtrack_event。
@@ -1220,11 +1221,11 @@ optionalboolatrace_userspace_only = 34;   // perfettov52+
 
 ```cpp
 SharedMemoryArbiter* MaybeSharedMemoryArbiter() override;
-boolIsShmemProvidedByProducer() constoverride;
-voidOnConnectionInitialized(boolconnection_succeeded,
-                             boolusing_shmem_provided_by_producer,
-                             booldirect_smb_patching_supported,
-                             booluse_shmem_emulation);
+bool IsShmemProvidedByProducer() const override;
+void OnConnectionInitialized(bool connection_succeeded,
+                             bool using_shmem_provided_by_producer,
+                             bool direct_smb_patching_supported,
+                             bool use_shmem_emulation);
 ```
 
 `direct_smb_patching_supported` 决定 producer→traced 是否走 SMB 直接 patch，APMSDK 在 Android 16+ 可借此减少一次数据拷贝。
