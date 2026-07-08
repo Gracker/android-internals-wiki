@@ -9,12 +9,12 @@ reviewed_date: 2026-07-09
 reviewed_by: openclaw-task6
 task6_review_date: "2026-06-16"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: "reviewed"
 task9_result: "auto-fixed"
-last_task9_at: "2026-06-17T00:29:18+08:00"
-task9_reviewed_date: "2026-06-17"
+last_task9_at: "2026-07-09T05:56:16+08:00"
+task9_reviewed_date: "2026-07-09"
 task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-06-17 Task9 deep-review: pass-tech-review after 2026-06-16 AutoFDO auto-fix return; P0 0 / P1 0 / P2 0; Task6 pass-light-edit and queue has no pending entry, auto-promoted finalized."
+task9_review_notes: "2026-07-09 05:56 Task9 deep-review: auto-fixed P0 1 (AutoFDO 官方博客引用 URL 404 -> 编码后正确地址); P1 0 / P2 1; 已写入 suggestions,回到 Task6 复审。"
 last_task9_audit: 2026-07-09
 last_task9_audit_at: "2026-07-09T03:26:14+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-09-03-audit.md"
@@ -44,18 +44,18 @@ sources:
   - type: kernel
     path: "AOSP kernel/common android17-6.18"
 review_notes: "2026-04-27 Task2B:修正 EEVDF 版本分界,拆开 Android 17/API37 与 android16-6.12 GKI branch,补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论;2026-04-28 task9 deep-review: needs-rework。P1 1(AutoFDO 量化数据需回源限定)。;2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号;AutoFDO 量化数据仍需回源限定。;2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径;2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修:修正禁用词、表格格式、边界措辞;B 类问题:sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。 | 2026-05-06 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0;sched_ext 路径/符号/sysfs 与 android16-6.12 不匹配,MGLRU 量化数据仍需回源。 | 2026-05-07 Task9 00:20:needs-rework。P0 2 / P1 1 / P2 0;DSQ enum 摘录、F2FS checkpoint_merge/fsync 口径、MGLRU 与 LMKD 协同需回炉。 | 2026-05-07 Task9 02:20:pass-tech-review。P0 0 / P1 0 / P2 1;DSQ/F2FS/MGLRU 已处理,Perfetto dm-verity 观察口径写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。 | 2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2;sched_ext dsq_insert 版本边界残留说明与 AutoFDO 官方链接写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-09-05-deep-review.md"
 last_task6_review_log: logs/review/2026-07-09-04-review.md
 task6_review_notes: "2026-07-09 04:09 Task6 revisiting review: pass-light-edit。修复 155 处半角逗号→全角逗号（与全书风格统一）；删除 sched_ext 引入段的冗余重复（两段连续说了同一件事）。L1/L2 通过，outline 9/9 覆盖。Task9 idle audit auto-fixed (DeliQueue 源码锚点 + kernel 版本漂移) 已验证。无 B 类回炉项，送 Task9 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
-last_task9_autofix_at: 2026-07-09
+last_task9_autofix_at: "2026-07-09"
 task2b_result: "verified"
 task2b_state: "fixed"
 task2b_fixed_at: "2026-06-16T08:51:39+08:00"
 task2b_fixed_by: "task2b-main"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/README.md 原文，正文 AutoFDO benchmark 数据准确。清除版本演进表 [需确认] 标注，补充 Binder benchmark 多次运行最佳结果取值限定。"
 ---
 
@@ -409,7 +409,7 @@ MGLRU 优化页面回收策略，让内核更准确地决定回收哪些页面�
 
 ## 参考资料
 
-- [Google Android Developers Blog: Boosting Android Performance - AutoFDO for GKI Kernel](https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html)
+- [Google Android Developers Blog: Boosting Android Performance - AutoFDO for GKI Kernel](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)
 - [GKI Kernel 架构文档](https://source.android.com/docs/core/architecture/kernel/generic-kernel-image)
 - [AOSP GKI Kernel android15-6.6 分支](https://android.googlesource.com/kernel/common/+/refs/heads/android15-6.6)
 - [AOSP GKI Kernel android16-6.12 分支](https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12)

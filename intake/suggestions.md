@@ -491,3 +491,9 @@ Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
 - 新兴交叉领域（AI Agent 性能沙箱实战深化）
 - 游戏引擎性能分析深化
 - 音视频深度性能分析
+
+## [Task9 Deep Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-07-09
+- **类型**：数据缺失
+- **位置**：`dm-verity multi-buffer hashing：ARM64 吞吐提升 35%`
+- **问题**：源码可核验 `android16-6.12/drivers/md/dm-verity-target.c` 中 `verity_hash_mb()` 与 `crypto_shash_finup_mb()` 路径，但正文的 35% 量化收益目前只引用泛化的 lore 首页，缺少精确 patch thread、测试平台、块大小与 cold-cache 条件。
+- **建议**：Task2B 后续回源补 exact lore/kernel commit/benchmark 条件；若无法补齐，将固定 35% 改为方向性结论。
