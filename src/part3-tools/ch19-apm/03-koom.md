@@ -39,7 +39,7 @@ task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-13T10:20:00+08:00"
 last_task9_audit: "2026-06-13"
-last_task6_audit: 2026-06-13
+last_task6_audit: 2026-07-08
 last_deepseek_polish_at: 2026-05-25
 deepseek_polish_state: done
 last_task9_autofix_at: "2026-06-13"
@@ -182,7 +182,7 @@ KOOM 的 fork dump 思路缓解了主进程卡顿，但不等于 dump 没成本�
 
 ## Hprof 裁剪和引用链摘要
 
-完整 Hprof 通常不适合直接上传。书稿级平台里更常见的做法是把 Hprof 处理成两层数据：
+完整 Hprof 通常不适合直接上传。线上平台里更常见的做法是把 Hprof 处理成两层数据：
 
 - **主事件**：版本、机型、进程、页面、heap 使用率、触发原因、摘要 id。
 - **分析附件**：引用链、最大对象类型、可疑 GC Root、对象数量、裁剪后的 Hprof 或 Shark/自研解析结果。
