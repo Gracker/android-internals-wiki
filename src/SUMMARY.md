@@ -29,7 +29,12 @@
 
 
   - [2.6 Android 17 eBPF观测增强](part1-fundamentals/ch01-architecture/2.6-ebpf-observability-enhancement.md)
-  - [2.7 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch01-architecture/2.7-gpu-debug-performance-tools-chain.md)
+  - [2.7 Android 17 GPU 图形调试与性能优化工具链]
+  - [2.10 Android 17 Startup Insights Gaps](part2-performance/ch02-rendering/2.10-android17-startup-insights-gaps.md)
+  - [2.12 Android 17 Startup Insights Application Start Info](part2-performance/ch02-rendering/2.12-android17-startup-insights-application-start-info.md)
+  - [2.14 Android 17 信号处理机制与debuggerd架构迁移](part2-performance/ch02-rendering/2.14-android17-signal-debuggerd-architecture.md)
+  - [2.9 Android 17 GPU Debug Performance Tools Source](part2-performance/ch02-rendering/2.9-android17-gpu-debug-performance-tools-source.md)
+(part1-fundamentals/ch01-architecture/2.7-gpu-debug-performance-tools-chain.md)
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)  - [4.43 Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研](part1-fundamentals/ch04-memory/04.43-gap-analysis.md)  - [4.44 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/04.44-gap-analysis.md)  - [4.45 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch05-cpu-power/06-gap-analysis.md)
 
 
@@ -41,7 +46,11 @@
 - [4.34 Android 17 ART HeapTask 系统的 7 个子类实现](part1-fundamentals/ch04-memory/4.34-android17-art-heaptask-system-7-subclasses.md)
   - [4.35 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md)
 
-  - [4.9 Android 17 ARM MTE 内存标签扩展实战](part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)- [第 6 章：存储性能](part1-fundamentals/ch06-storage/README.md)
+  - [4.9 Android 17 ARM MTE 内存标签扩展实战]
+  - [4.46 Android 17 AI Agent Memory Sandboxed Data Reuse](part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory-sandboxed-data-reuse.md)
+  - [4.47 AI Agent Memory Management](part1-fundamentals/ch04-memory/4.47-ai-agent-memory-management.md)
+  - [4.48 Android 17 LMKD Procs Prio Batch Thrashing Mainline Fork](part1-fundamentals/ch04-memory/4.48-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md)
+(part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)- [第 6 章：存储性能](part1-fundamentals/ch06-storage/README.md)
   - [6.2 Android 17 SharedPreferencesImpl ANR 机制](part1-fundamentals/ch06-storage/6.2-sharedpreferences-anr-optimization.md)
   - [6.4 Android 17 SharedPreferencesImpl ANR 真因分析与迁移方案](part1-fundamentals/ch06-architecture/6-4-android17-sharedpreferencesimpl-anr-真因分析与迁移方案.md)
   - [4.11 Android 17 AppFlow 与 LMKD v2 内存联合调度协作机制](part1-fundamentals/ch04-architecture/4-11-android17-appflow-与-lmkd-v2-内存联合调度协作机制.md)
@@ -63,7 +72,9 @@
 
   - [9.10 Android 17 ANR 预警回调与类型枚举](part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
   - [14.24 Android 17 simpleperf 微架构级性能采样与工作流增强](part3-tools/ch14-other-tools/24-android17-simpleperf-microarch-profiling.md)
-  - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展](part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md)
+  - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展]
+  - [8.33 Android 17 Modular Startup Framework Dependency Graph](part1-fundamentals/ch08-startup/8.33-android17-modular-startup-framework-dependency-graph.md)
+(part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md)
 - [第 8 章：响应速度优化](src/part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
   - [8.2 App 启动全流程](src/part2-performance/ch08-responsiveness/02-app-launch.md)
