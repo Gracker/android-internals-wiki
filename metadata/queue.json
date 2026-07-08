@@ -324,6 +324,25 @@
       "notes": "知识缺口挖掘创建，第8个候选",
       "section": "25.19",
       "section_title": "Android 17 Power Stats HAL OEM 厂商功耗统计实现差异"
+    },
+    {
+      "section": "13.2",
+      "section_title": "Trace 抓取",
+      "priority": 90,
+      "reason": "[review抽检回炉] 全文拉丁字符间存在大量异常空格腐蚀（624行受影响），如 T r a c e / p e r f etto / a tr a c e 等，导致正文几乎不可读。前次审计(2026-07-02)仅修49行，剩余624行未修。需批量修复全文拉丁字符空格问题。",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文（624行）",
+          "detail": "拉丁字符间异常空格腐蚀，如 perfetto → p e r f etto, Trace → T r a c e, Android → A ndroid, sched → sch e d 等。影响标题、正文、代码块、frontmatter。",
+          "suggestion": "使用脚本批量去除拉丁字符间的异常空格，同时保留正常的中英文间距和代码缩进。修复后需全文校验。"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-08T20:15:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-08-20-audit.md"
     }
   ],
   "entries": [
