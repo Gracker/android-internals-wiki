@@ -39,30 +39,30 @@ sources:
 reviewed_at: "2026-05-11T19:05:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-08"
-last_task9_at: "2026-07-08T08:31:08+08:00"
+last_task9_at: "2026-07-08T09:31:05+08:00"
 last_task2b_at: "2026-07-08T08:52:28+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。 | 2026-06-16 Task9 闲时抽检 auto-fix：将 Android common kernel wakeup source 参考锚点统一为 `kernel/common/kernel/power/wakelock.c` 与 `kernel/common/drivers/base/power/wakeup.c`；P0 0 / P1 0 / P2 1，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。 | 2026-07-08 Task9 闲时抽检: needs-rework。P0 2 / P1 1 / P2 0；Android 17 r1 源码路径、restricted wakelock timeout 口径与 IPowerStats API 签名需回炉；详见 logs/deep-review/2026-07-08-08-audit.md。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。 | 2026-06-16 Task9 闲时抽检 auto-fix：将 Android common kernel wakeup source 参考锚点统一为 `kernel/common/kernel/power/wakelock.c` 与 `kernel/common/drivers/base/power/wakeup.c`；P0 0 / P1 0 / P2 1，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。 | 2026-07-08 Task9 闲时抽检: needs-rework。P0 2 / P1 1 / P2 0；Android 17 r1 源码路径、restricted wakelock timeout 口径与 IPowerStats API 签名需回炉；详见 logs/deep-review/2026-07-08-08-audit.md。 | 2026-07-08 Task9 auto-fix：校正 android-17.0.0_r1 下 PowerManagerService WakeLock/acquireWakeLockInternal 行号与 DIRTY_* 常量数量（16 个，line 210-240）；P0 1 / P1 0 / P2 1，回到 Task6 复审。"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。 | 2026-07-08 Task6：revisiting 写作复审通过；修复 3 处 L1/L2（代码围栏断裂导致 PMS 内部段渲染为纯文本、HTML 编辑残留、第二段调用链缺失围栏开标记）；锚点 7/7+3/3；无 L3/L4 回炉项，转 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-07-08-08-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-08-09-deep-review.md"
 status: "ready-for-review"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-08"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: "needs-rework"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed-2026-07-08"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 last_task6_at: "2026-07-08T09:12:00+08:00"
 last_task6_review_log: "logs/review/2026-07-08-09-review.md"
 task6_l1_l2_fixes: 3
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-07-08 Task6：Task2B 修复回流后写作复审（review round 8）；修复 3 处 L1/L2 问题（代码围栏断裂、HTML 编辑残留、缺失代码围栏）；L1 禁用词扫描全部通过；锚点覆盖 7/7 + 3/3 扩展；无 L3/L4 回炉项，转 Task9 复审。"
 review_round: 8
-last_task9_autofix_at: "2026-06-16"
+last_task9_autofix_at: "2026-07-08"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 last_task9_audit: "2026-07-08"
@@ -150,7 +150,7 @@ wl.release();
 
 要区分两个角色：客户端 `WakeLock` 的 `mToken` 在客户端创建后传入服务端；服务端的 `WakeLock`（PMS 内部类）才是 PMS 持有的记录，它对客户端传入的 IBinder 执行 linkToDeath()，从而在客户端进程死亡时自动清理记录。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java WakeLock 类构造函数；frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java WakeLock 内部类（line 5383-5438）+ acquireWakeLockInternal（line 1615-1659）]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java WakeLock 类（class line 4260，mToken line 4285，acquireLocked/acquireWakeLock line 4354-4369）；frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java WakeLock 内部类（line 5937-5974）+ acquireWakeLockInternal（line 1740-1808）]
 
 ### 引用计数模式：一个常见的坑
 
@@ -413,7 +413,7 @@ App: PowerManager.newWakeLock(PARTIAL_WAKE_LOCK).acquire()
 
 ### PMS 内部状态机:DIRTY 位与 updatePowerStateLocked
 
-`PowerManagerService.java` (android-17.0.0_r1) 用 17 个 `DIRTY_*` 位掩码追踪需要更新的电源状态子集 (line 210-237), `mDirty` 是状态机的核心:
+`PowerManagerService.java` (android-17.0.0_r1) 用 16 个 `DIRTY_*` 位掩码追踪需要更新的电源状态子集 (line 210-240), `mDirty` 是状态机的核心:
 
 ```java
 private static final int DIRTY_WAKE_LOCKS = 1 << 0;     // mWakeLocks 变化
