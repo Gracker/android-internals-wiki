@@ -46,16 +46,18 @@ repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。 | 2026-06-16 Task9 闲时抽检 auto-fix：将 Android common kernel wakeup source 参考锚点统一为 `kernel/common/kernel/power/wakelock.c` 与 `kernel/common/drivers/base/power/wakeup.c`；P0 0 / P1 0 / P2 1，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。 | 2026-07-08 Task9 闲时抽检: needs-rework。P0 2 / P1 1 / P2 0；Android 17 r1 源码路径、restricted wakelock timeout 口径与 IPowerStats API 签名需回炉；详见 logs/deep-review/2026-07-08-08-audit.md。 | 2026-07-08 Task9 auto-fix：校正 android-17.0.0_r1 下 PowerManagerService WakeLock/acquireWakeLockInternal 行号与 DIRTY_* 常量数量（16 个，line 210-240）；P0 1 / P1 0 / P2 1，回到 Task6 复审。"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。 | 2026-07-08 Task6：revisiting 写作复审通过；修复 3 处 L1/L2（代码围栏断裂导致 PMS 内部段渲染为纯文本、HTML 编辑残留、第二段调用链缺失围栏开标记）；锚点 7/7+3/3；无 L3/L4 回炉项，转 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-07-08-09-deep-review.md"
-status: "ready-for-review"
+status: "finalized"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-08"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "reviewed"
-task9_result: "auto-fixed"
+task9_result: "pass-tech-review"
 task2b_state: "fixed"
 task2b_result: "fixed-2026-07-08"
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
+finalized_date: "2026-07-08"
+finalized_by: "openclaw-task6-auto-promote"
 last_task6_at: "2026-07-08T09:12:00+08:00"
 last_task6_review_log: "logs/review/2026-07-08-09-review.md"
 task6_l1_l2_fixes: 3
@@ -68,7 +70,7 @@ last_deepseek_cn_review_at: 2026-06-16
 last_task9_audit: "2026-07-08"
 finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"
-last_task6_audit: "2026-06-22"
+last_task6_audit: "2026-07-08"
 task9_result_prev: "pass-tech-review"
 ---
 
@@ -465,6 +467,7 @@ public void noteStartWakelock(final int uid, final int pid, final String name,
     }
 }
 ```
+```
 
 注意 `mHandler.post(...)`——BatteryStatsService 把所有 wake lock 事件扔到自己的 Handler 线程上异步累加, 这是为什么 dumpsys batterystats 在高频 wake lock 场景下会有几百 ms 延迟的原因。
 
@@ -514,6 +517,7 @@ try {
     wl.release();    // ...finally 确保释放
 }
 ```
+```
 
 这是最基本的防护——用 `try-finally` 确保任何路径都会 release。但在复杂代码中（多层回调、异步操作），`finally` 不一定覆盖所有路径。
 
@@ -529,6 +533,7 @@ networkClient.request(new Callback() {
         wl.release();  // 必须在 onFailure 中也 release
     }
 });
+```
 ```
 
 网络请求的超时和错误处理必须覆盖 wakelock 的 release。

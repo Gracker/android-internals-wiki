@@ -1,6 +1,6 @@
 {
-  "total": 631,
-  "draft": 49,
+  "total": 639,
+  "draft": 57,
   "ready_for_review": 210,
   "finalized": 344,
   "last_updated": "2026-07-08",
@@ -893,6 +893,78 @@
       "status": "draft",
       "drafted_at": "2026-07-08T10:04:00+08:00",
       "note": "Created from knowledge gap mining (25.18 Android 17 Power Stats HAL OEM厂商功耗统计实现差异)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "1.33",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-08",
+      "drafted_at": "2026-07-08",
+      "note": "Created from knowledge gap mining (1.33 Android 17 Binder 线程池实现机制与调优参数)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "2.11",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-08",
+      "drafted_at": "2026-07-08",
+      "note": "Created from knowledge gap mining (2.11 Android 17 GPU 图形调试与性能优化工具链)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "2.13",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-08",
+      "drafted_at": "2026-07-08",
+      "note": "Created from knowledge gap mining (2.13 Android 17 eBPF观测增强)",
+      "gap_source": "daily-info + source-index"
+    },
+    {
+      "section": "4.43",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-08",
+      "drafted_at": "2026-07-08",
+      "note": "Created from knowledge gap mining (4.43 Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "4.44",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-08",
+      "drafted_at": "2026-07-08",
+      "note": "Created from knowledge gap mining (4.44 Android 17 AI Agent 内存沙箱化与跨应用数据复用)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "5.6",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-08",
+      "drafted_at": "2026-07-08",
+      "note": "Created from knowledge gap mining (5.6 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "23.4.46",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-08",
+      "drafted_at": "2026-07-08",
+      "note": "Created from knowledge gap mining (23.4.46 Android 17 ART HeapTask 并发与 GC 抑制源码级机制)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "25.19",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-08",
+      "drafted_at": "2026-07-08",
+      "note": "Created from knowledge gap mining (25.19 Android 17 Power Stats HAL OEM 厂商功耗统计实现差异)",
       "gap_source": "daily-info + research-gaps"
     }
   ],
