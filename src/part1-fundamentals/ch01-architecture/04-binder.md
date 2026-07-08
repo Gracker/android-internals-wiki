@@ -7,6 +7,7 @@ pipeline_stage: ready-to-publish
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 confidence: "medium"
+sources: "[obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md, obsidian/Blog/Blog/source/_posts/Android-Systrace-Binder.md, obsidian/Cubox/Binder 驱动中的流程详解-2024-07-12.md, AOSP android-17.0.0_r1, DeepResearch/2026-06-07~2026-06-24 Binder系列]"
 last_verified: "2026-06-09"
 last_verified_against: "AOSP android-17.0.0_r1 (framework/base/perfetto主线) / kernel android16-6.12 (非Android17基线,可查上限历史参照) / source.android / developer.android"
 drafted_date: "2026-05-13"
@@ -29,7 +30,7 @@ last_task9_audit_log: "logs/deep-review/2026-06-09-01-audit.md"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-07-01"
 last_task6_at: 2026-07-02T01:10:00+08:00
-last_task6_audit: "2026-07-02"
+last_task6_audit: "2026-07-08"
 task6_review_log: "logs/review/2026-07-01-07-review.md"
 auto_promoted_at: "2026-05-13T19:10:00+08:00"
 deepseek_cn_review_state: done
