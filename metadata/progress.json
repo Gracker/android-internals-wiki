@@ -966,6 +966,20 @@
       "drafted_at": "2026-07-08",
       "note": "Created from knowledge gap mining (25.19 Android 17 Power Stats HAL OEM 厂商功耗统计实现差异)",
       "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-08T12:16:48.216499+08:00",
+      "note": "Gap mining round 43: 0 candidates ≥14 (43rd consecutive). Coverage saturated. 3 new DeepResearch files (2026-07-08): AGI Frame Profiler→§14.8 supplement, debuggerd signal→§20.19 supplement, VNDK isolation→§1.1 supplement (scored 9/20, below threshold). Task14 suggestions for §6.1/§6.5/§26.16 are existing chapter supplements. No new Clippings in 7+ days. 54 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-08T13:07:27.452822+08:00",
+      "note": "Gap mining round 44: 0 candidates ≥14 (44th consecutive). Coverage saturated. 2 new DeepResearch files (VNDK isolation→§1.1 supplement scored 9/20, debuggerd signal→§20.19 supplement). Ariadne ZRAM paper (HPCA 2025) scored 9/20 — kernel-level research, not Android 17 API. Task14 suggestions for §6.1/§6.5/§26.16 are existing chapter supplements. No new Clippings in 14+ days. 54 drafts all >15 lines. Task2B backlog: 0."
     }
   ],
   "review_history": [
@@ -1259,14 +1273,12 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-08T09:12:00+08:00",
-    "last_section": "5.18",
-    "result": "content-processed + cleanup",
-    "fix_count": 1,
-    "last_sections": [
-      "5.18"
-    ],
-    "note": "Processed §5.18 (CPU cache locality × PSS accounting). Deprecated 9 duplicate queue stubs."
+    "last_run": "2026-07-08T12:16:48.216499+08:00",
+    "last_section": "none",
+    "result": "no-candidates",
+    "fix_count": 0,
+    "last_sections": [],
+    "note": "Gap mining round 43: 0 candidates ≥14. Coverage saturated (43rd consecutive)."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",
