@@ -1,9 +1,9 @@
 {
   "total": 661,
   "draft": 70,
-  "ready_for_review": 213,
-  "finalized": 344,
-  "last_updated": "2026-07-09T04:05:00+08:00",
+  "ready_for_review": 212,
+  "finalized": 345,
+  "last_updated": "2026-07-09T05:07:00+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -1127,6 +1127,13 @@
       "status": "ready_for_review",
       "ts": "2026-07-09T04:05:00+08:00",
       "note": "Binder 线程池实现机制与调优参数: 8 anchors (ProcessState 5核心状态量/BINDER_VM_SIZE+fork安全/BR_SPAWN_LOOPER 四条件守门/BC_REGISTER vs BC_ENTER 计数语义/joinThreadPool 退出语义/blockUntilThreadAvailable 条件变量/setThreadPoolMaxThreadCount 单向调升/100ms饥饿检测源码+FLAT_BINDER_FLAG) + 3 extensions (可调参数澄清/进程配置差异/版本演进). 源码级分析区分于 §1.38 性能场景视角. AOSP android-17.0.0_r1 源码逐行验证. 纠正大纲4个不存在参数."
+    },
+    {
+      "section": "8.1",
+      "action": "task6-review-auto-promote",
+      "status": "finalized",
+      "ts": "2026-07-09T05:07:00+08:00",
+      "note": "Task6 re-review: 4 L1/L2 fixes (本质上, 拆解x2, 元叙述), auto-promote finalized"
     }
   ],
   "review_history": [

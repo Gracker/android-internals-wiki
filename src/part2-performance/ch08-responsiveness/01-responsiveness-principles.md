@@ -2,8 +2,8 @@
 title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - responsiveness
@@ -17,18 +17,18 @@ last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; web.dev RAIL"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: '2026-06-16'
+reviewed_date: "2026-07-09"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 path: "https://web.dev/articles/rail"
 related_chapters: "[\"2.3\", \"2.4\", \"3.1\", \"7.1\", \"8.2\", \"9.1\", \"15.3\", \"15.5\", \"15.9\"]"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task2b_state: "fixed"
 task2b_result: fixed
-task6_reviewed_date: '2026-07-09'
+task6_reviewed_date: "2026-07-09"
 task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-07-09"
@@ -41,10 +41,10 @@ task9_reviewed_date: "2026-07-09"
 last_task9_at: "2026-07-09T04:33:12+08:00"
 last_task9_autofix_at: "2026-07-09"
 last_task9_audit: "2026-07-08"
-last_task6_at: "2026-07-09T01:15:00+08:00"
+last_task6_at: "2026-07-09T05:07:00+08:00"
 task2b_fixed_date: "2026-06-06"
-finalized_date: "2026-06-16"
-finalized_by: "openclaw-task9-auto-promote"
+finalized_date: "2026-07-09"
+finalized_by: "openclaw-task6-auto-promote"
 last_task9_audit_result: auto-fixed
 last_task9_audit_log: "logs/deep-review/2026-07-08-20-audit.md"
 deepseek_cn_review_state: done
@@ -89,7 +89,7 @@ last_task9_review_log: "logs/deep-review/2026-07-09-04-deep-review.md"
 
 用户也许无法区分 500ms 和 600ms 的启动时间，但对触摸响应的延迟极其敏感。一个设备启动再快，如果触摸之后画面纹丝不动，用户会觉得这台机器"卡"。这就是为什么 Google 认为，在性能优先级排序中，**UI 渲染管线的流畅性高于一切**——包括应用启动速度。
 
-从用户体验角度看，响应速度和流畅性本质上是同一类问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢就是同一条体验路径上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
+从用户体验角度看，响应速度和流畅性是同一类问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢就是同一条体验路径上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
 
 搞清楚响应速度的完整路径之后，在 Perfetto 里定位延迟就有了方向——延迟可能出在 Input 分发、App 主线程处理或渲染合成三个阶段。每一种瓶颈的优化方向完全不同，先确认"慢在哪里"是解决问题的第一步。
 
@@ -113,7 +113,7 @@ last_task9_review_log: "logs/deep-review/2026-07-09-04-deep-review.md"
 
 ## RAIL 模型与 Android 性能目标
 
-RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 Web 前端，但其基本理念同样适用于 Android。RAIL 将用户交互拆解为四个阶段，每个阶段都有明确的性能目标。[已验证: 官方文档, web.dev/articles/rail]
+RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 Web 前端，但其基本理念同样适用于 Android。RAIL 将用户交互分为四个阶段，每个阶段都有明确的性能目标。[已验证: 官方文档, web.dev/articles/rail]
 
 ### Response——响应（< 100ms）
 
@@ -144,7 +144,7 @@ Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的�
 
 ## 系统级响应路径：从触摸到像素
 
-理解响应速度的关键，是搞清楚用户一次触摸操作经历了哪些环节。我们从头到尾拆解这条路径。
+理解响应速度的关键，是搞清楚用户一次触摸操作经历了哪些环节。我们从头到尾梳理这条路径。
 
 ### 第一步：Input 事件的捕获与分发
 
@@ -229,7 +229,7 @@ ANR 是响应速度问题的极端表现。当主线程被阻塞超过一定时�
 
 ## 感知速度 vs 实际速度
 
-这一节讨论的可能是整个响应速度优化中最实用的一个观点：**用户感觉到的"快"，和处理速度快不是一回事。**
+**用户感觉到的"快"，和处理速度快不是一回事**——这可能是整个响应速度优化中最实用的一个判断。
 
 ### 为什么感知速度更重要
 
