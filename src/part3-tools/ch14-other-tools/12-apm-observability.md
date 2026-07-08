@@ -49,8 +49,8 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"

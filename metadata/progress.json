@@ -1,6 +1,6 @@
 {
-  "total": 639,
-  "draft": 55,
+  "total": 647,
+  "draft": 63,
   "ready_for_review": 212,
   "finalized": 344,
   "last_updated": "2026-07-08",
@@ -1581,5 +1581,6 @@
       ],
       "result": "state-aligned"
     }
-  ]
+  ],
+  "last_task2b_verifier_run": "2026-07-08T19:28:09+08:00"
 }

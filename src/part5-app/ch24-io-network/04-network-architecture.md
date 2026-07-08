@@ -2,8 +2,8 @@
 title: "网络架构与连接管理"
 chapter: "24.4"
 section: "24.4"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 confidence: "medium"
