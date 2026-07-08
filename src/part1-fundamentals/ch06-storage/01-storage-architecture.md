@@ -58,7 +58,7 @@ task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-15
+last_deepseek_cn_review_at: 2026-07-08
 ---
 
 <!-- outline-start -->
@@ -142,7 +142,7 @@ UFS 4.0 还引入了 **MCQ(Multi-Circular Queue,多命令队列)**。在 UFS 3.x
 
 ### 怎么用这个知识?
 
-在做性能分析时,如果我们发现 I/O 延迟异常高,先要确认设备使用的是什么存储器件。不同档位的手机使用不同规格的存储芯片,旗舰机常见 UFS 4.0,中端机可能是 UFS 3.1,入门机还可能停留在 eMMC 5.1。同一份代码在这些器件上的 I/O 基线差异很大,所以判断 Trace 之前先要知道设备档位。在 Perfetto 里,可以把 `block` 相关 slice 和设备规格一起看。UFS 4.0 的随机读基线通常会明显短于 eMMC 5.1;如果高端设备上已经接近毫秒级延迟,问题往往不只在芯片本身,还要继续往调度器、文件系统和后台写入看。
+在做性能分析时,如果我们发现 I/O 延迟异常高,先要确认设备使用的是什么存储器件。不同档位的手机使用不同规格的存储芯片：旗舰机常见 UFS 4.0，中端机可能是 UFS 3.1，入门机还可能停留在 eMMC 5.1。同一份代码在这些器件上的 I/O 基线差异很大,所以判断 Trace 之前先要知道设备档位。在 Perfetto 里,可以把 `block` 相关 slice 和设备规格一起看。UFS 4.0 的随机读基线通常会明显短于 eMMC 5.1;如果高端设备上已经接近毫秒级延迟,问题往往不只在芯片本身,还要继续往调度器、文件系统和后台写入看。
 
 ## 块设备层:I/O 调度与设备映射
 
@@ -241,7 +241,7 @@ Android 10 之前,App 只要获得了 `READ_EXTERNAL_STORAGE` 或 `WRITE_EXTERNA
 1. App 只能直接访问自己的专属目录(`Android/data/<package_name>/` 和 `Android/media/<package_name>/`),不需要任何权限
 2. 要访问其他 App 创建的媒体文件,需要通过 MediaStore API 并获得相应权限
 3. 要访问非媒体文件(如 PDF、文档),需要通过 Storage Access Framework(SAF)让用户手动选择
-4. `/sdcard` 根目录不再对 App 直接可写
+4. App 不再能直接写入 `/sdcard` 根目录
 
 ### FUSE 层的性能开销
 
@@ -287,7 +287,7 @@ Android 的存储加密经历了从全盘加密(Full-Disk Encryption,FDE)到文�
 
 ### metadata encryption、FBE 与 `/metadata` 的分工
 
-把"存储加密"三个不同层级揉在一起。`/metadata` 是独立小分区,作用是保存保护 metadata encryption key 的 KeyMint blobs;metadata encryption 工作在 userdata block device 这一层,保护目录项、inode、文件长度这类文件系统 metadata,现代设备常见实现是 `dm-default-key` 配合 inline crypto / blk-crypto;FBE 则建立在文件系统之上,由 `vold` 在 `/data` 可挂载之后安装 DE/CE key,再由 `fscrypt` 把策略应用到不同目录。
+容易把"存储加密"的三个层级混在一起。`/metadata` 是独立小分区,作用是保存保护 metadata encryption key 的 KeyMint blobs;metadata encryption 工作在 userdata block device 这一层,保护目录项、inode、文件长度这类文件系统 metadata,现代设备常见实现是 `dm-default-key` 配合 inline crypto / blk-crypto;FBE 则建立在文件系统之上,由 `vold` 在 `/data` 可挂载之后安装 DE/CE key,再由 `fscrypt` 把策略应用到不同目录。
 
 换成启动顺序看会更清楚。系统先挂载 `/metadata`,让 `vold` 能取到保护 metadata encryption key 的 key material;随后 `wait_for_keymaster` 与 `mount_all` 协作,让 `/data` 进入可挂载状态;等文件系统已经可用,`vold` 才继续安装 System DE、User DE、User CE key。`dm-default-key` 管的是 `/data` block device 的 metadata 保护,不是 FBE 的别名。
 
@@ -370,7 +370,7 @@ NAND 闪存有一个物理限制:每个存储单元的擦写次数是有限的�
 
 写入放大是一个长期累积效应。新手机上存储空间充裕,GC 压力小,WAF 接近 1。但随着使用时间增长,存储碎片化加剧,可用空间减少,GC 频率上升,WAF 逐渐增大。这就是为什么很多用户感觉"手机用了一年之后变慢了"--存储性能的退化是真实存在的,不是心理作用。
 
-从性能优化的角度,减少写入放大最有效的方法是**减少不必要的写入**。这包括:避免频繁的小量同步写入(如 SharedPreferences 的 `apply()` 替代 `commit()`)、使用 f2fs 的 CoW 机制减少就地更新、以及在 App 层面做好数据缓存策略,避免每次操作都触发磁盘写入。
+从性能优化角度看，减少写入放大最有效的方法是**减少不必要的写入**。这包括:避免频繁的小量同步写入(如 SharedPreferences 的 `apply()` 替代 `commit()`)、使用 f2fs 的 CoW 机制减少就地更新、以及在 App 层面做好数据缓存策略,避免每次操作都触发磁盘写入。
 
 ## 常见问题与误区
 
