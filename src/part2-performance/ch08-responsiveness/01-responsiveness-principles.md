@@ -2,7 +2,7 @@
 title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: "task6_pending"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [[responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]]
