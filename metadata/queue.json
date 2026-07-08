@@ -161,7 +161,7 @@
       "section": "2.30",
       "section_title": "Android 17 FrameTimeline GPU/CPU 合成边界判定机制",
       "priority": 95,
-      "stage": "task2b_pending",
+      "stage": "completed",
       "reason": "[Deep Tech Review] Android 17 FrameTimeline 源码锚点与核心方法/事件模型多处不符，需要按 android-17.0.0_r1 重新校准",
       "material_paths": [
         "src/part2-rendering/ch02-rendering/2.30-android17-frametimeline.md",
@@ -211,7 +211,7 @@
       "section": "11.5",
       "section_title": "Wakelock 机制与功耗分析",
       "priority": 95,
-      "stage": "task2b_pending",
+      "stage": "completed",
       "reason": "[Deep Tech Review] Wakelock 章节 Android 17 源码锚点、restricted wakelock 口径与 IPowerStats API 需按 android-17.0.0_r1 重新校准",
       "material_paths": [
         "src/part2-performance/ch11-power/05-wakelock.md",
