@@ -22,8 +22,8 @@ sources:
     path: "https://square.github.io/leakcanary/recipes/"
   - type: official
     path: "https://square.github.io/leakcanary/ui-tests/"
-pipeline_stage: task6_pending
-task6_state: "revisiting"
+pipeline_stage: ready-to-publish
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"

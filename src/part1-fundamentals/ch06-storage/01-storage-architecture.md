@@ -34,8 +34,8 @@ last_task6_audit: 2026-06-15
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task9_result: auto-fixed
 task2b_result: fixed

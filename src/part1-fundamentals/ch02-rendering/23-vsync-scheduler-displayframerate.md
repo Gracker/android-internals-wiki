@@ -44,8 +44,8 @@ created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/AOSP结构"
 gap_score: 16
 material_count: 4
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-20
 task6_result: pass-light-edit
