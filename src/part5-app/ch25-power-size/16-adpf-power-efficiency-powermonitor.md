@@ -532,3 +532,12 @@ Android 15 起 Power HAL AIDL 已提供 `getSessionChannel()`，Android 16 的�
 ## 小结
 
 ADPF Power Efficiency Mode 的价值在于把长期周期任务的 deadline 余量告诉系统。`setPreferPowerEfficiency(true)` 负责表达偏好，`PowerMonitorReadings` 和 Perfetto power rails 负责验证，线上灰度负责守住尾部耗时和失败率。没有稳定线程、稳定周期和能耗数据，这个能力就不该写成优化结论。
+
+## 延伸阅读
+
+### Android 17 Power Stats HAL OEM 厂商功耗统计实现差异
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-power-stats-hal-impl-variations.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 通过 PowerStats HAL（AIDL）标准化功耗数据采集，提供 PowerEntity/EnergyConsumer/Channel 三层抽象，9 种预定义 EnergyConsumerType。默认 fake 实现，Pixel 专版具象化硬件适配，厂商需覆盖 addStateResidencyDataProvider/addEnergyConsumer/setEnergyMeter 三个扩展点。Framework 层 BatteryTrigger + TimerTrigger 双驱动，20s/250ms 双老化策略，形成「标准接口+厂商适配+框架调度」三级架构。
+- 注入时间：2026-07-08
+- 价值：补全 ch25 关于功耗数据源头的 PowerStats HAL 接口定义与 OEM 厂商定制扩展点的源码级分析

@@ -1,8 +1,8 @@
 {
   "total": 626,
   "draft": 55,
-  "ready_for_review": 209,
-  "finalized": 343,
+  "ready_for_review": 208,
+  "finalized": 344,
   "last_updated": "2026-07-08",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
@@ -1038,11 +1038,10 @@
     "last_task9_review_date": "2026-07-06",
     "last_task9_review_by": "openclaw-task9"
   },
-  "last_task6_review": "2026-07-02T21:14:40+08:00",
+  "last_task6_review": "2026-07-08T08:07:00+08:00",
   "last_task6_reviewed_sections": [
-    "1.14",
-    "1.24",
-    "1.25"
+    "2.30",
+    "24.4"
   ],
   "sections": {
     "15": {
@@ -1170,7 +1169,11 @@
     "last_task2b_main": "2026-07-03T16:53:22+08:00",
     "task2b_result": "fixed",
     "task2b_state": "fixed",
-    "pipeline_stage": "task6_pending"
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-07-08T08:07:00+08:00"
   },
   "task2b_lite_completed": [
     {
@@ -1380,11 +1383,10 @@
     }
   ],
   "review_stats": {
-    "last_task6_at": "2026-07-07T12:15:00+08:00",
+    "last_task6_at": "2026-07-08T08:07:00+08:00",
     "last_task6_sections": [
-      "14.8",
-      "14.11",
-      "18.18"
+      "2.30",
+      "24.4"
     ]
   },
   "task6_reviews": [
@@ -1408,9 +1410,21 @@
       "result": "pass-light-edit",
       "mode": "revisiting",
       "log": "logs/review/2026-07-07-20-review.md"
+    },
+    {
+      "date": "2026-07-08T08:07:00+08:00",
+      "sections": [
+        "2.30",
+        "24.4"
+      ],
+      "result": "2.30 finalized, 24.4 pass-light-edit",
+      "fixes": 3,
+      "auto_promoted": [
+        "2.30"
+      ]
     }
   ],
-  "last_task6_run": "2026-07-07T20:13:05+08:00",
+  "last_task6_run": "2026-07-08T08:07:00+08:00",
   "task2b_verifier_runs": [
     {
       "timestamp": "2026-07-07T23:28:46+08:00",

@@ -359,3 +359,12 @@ memcg v2 迁移影响更大的是 per-app 内存归因和 `dumpsys meminfo` 的�
 在低内存设备上，主动释放的效果比被动等 lmkd kill 好得多——lmkd kill 是 SIGKILL，进程没有机会做清理；MemoryAdvice 回调允许 App 在被杀之前主动缩减内存占用。
 
 [适用版本: Android 11+ — Memory Advice API 通过 Jetpack 分发]
+
+## 延伸阅读
+
+### Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-lmkd-userspace-migration-psi.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 LMKD 从 system/core 迁移至 system/memory/lmkd/，全面采用 PSI（Pressure Stall Information）替代 vmpressure。通过 BPF ring buffer 实时监听 direct reclaim/kswapd/vendor kill 事件，基于 zone watermarks、thrashing 和 swap utilization 三维决策模型选择 kill 目标。pidfd 等待取代传统信号量，PSI 监听间隔分 10ms（高压力）和 100ms（低压力），通过 epoll 事件驱动高效响应。
+- 注入时间：2026-07-08
+- 价值：补全 ch04 关于 LMKD PSI 监听机制和内存压力三维决策模型的源码级盲区
