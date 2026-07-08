@@ -23,17 +23,17 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
-task9_result: "auto-fixed"
-task9_reviewed_date: "2026-06-17"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-07-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-09T02:31:12+08:00"
-task9_review_notes: "2026-07-09 Task9 idle audit AUTO-FIX: 以 android-17.0.0_r1 复核 OverScroller / Choreographer / AnimationUtils / InputConsumer / AppJankStats / RelativeFrameTimeHistogram；修正 Choreographer lockAnimationClock 签名、InputConsumer RESAMPLE_LATENCY 源码表达和源码基准，回到 Task6 复审。历史记录见 logs/deep-review/2026-06-16-10-audit.md / 2026-06-16-17-deep-review.md / 2026-06-17-01-deep-review.md。"
+last_task9_at: "2026-07-09T05:38:15+08:00"
+task9_review_notes: "2026-07-09 Task9 idle audit AUTO-FIX: 以 android-17.0.0_r1 复核 OverScroller / Choreographer / AnimationUtils / InputConsumer / AppJankStats / RelativeFrameTimeHistogram；修正 Choreographer lockAnimationClock 签名、InputConsumer RESAMPLE_LATENCY 源码表达和源码基准，回到 Task6 复审。历史记录见 logs/deep-review/2026-06-16-10-audit.md / 2026-06-16-17-deep-review.md / 2026-06-17-01-deep-review.md。 | 2026-07-09 05:38 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；按 android-17.0.0_r1 复核源码锚点、版本边界和交叉引用；Task6 已 pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 review_notes: "2026-06-16 Task6：修正 outline 块格式问题，L1/L2 通过，送回 Task9 处理技术项。"
 last_task9_audit: "2026-07-09"
-status: ready-for-review
-pipeline_stage: task9_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: "fixed"
 task2b_result: "fixed"
 reviewed_by: openclaw-task6
@@ -44,7 +44,7 @@ last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for-review; Task9 idle audit auto-fixed (P0 1), pipeline task6_pending + task6_state revisiting correct, status was stale finalized."
 last_task6_review_log: logs/review/2026-07-09-04-review.md
 task6_review_notes: "2026-07-09 04:09 Task6 revisiting review: pass-light-edit。修复 21 处 heading 格式问题（标题与正文挤在同一行）。L1/L2 通过，outline 6/6 覆盖。Task9 idle audit auto-fixed (Choreographer lockAnimationClock 签名 + InputConsumer RESAMPLE_LATENCY) 已验证。无 B 类回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-17-01-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-09-05-deep-review.md"
 last_task9_audit_at: "2026-07-09T02:31:12+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-09-02-audit.md"
 last_task9_audit_result: "auto-fixed-p0-android17-source-anchor"
@@ -52,6 +52,8 @@ task9_audit_notes: "2026-07-09 Task9 idle audit: auto-fixed Android 17 source ba
 last_task9_autofix_at: "2026-07-09"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
+updated_by: "openclaw-task9"
+updated_date: "2026-07-09"
 ---
 -
 
