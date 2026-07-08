@@ -3,7 +3,7 @@ title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
 status: "ready-for-review"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - responsiveness
@@ -13,7 +13,7 @@ tags:
 - input-latency
 - perceived-performance
 confidence: medium
-last_verified: "2026-07-08"
+last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; web.dev RAIL"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
@@ -24,7 +24,7 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 path: "https://web.dev/articles/rail"
 related_chapters: "[\"2.3\", \"2.4\", \"3.1\", \"7.1\", \"8.2\", \"9.1\", \"15.3\", \"15.5\", \"15.9\"]"
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task2b_state: "fixed"
 task2b_result: fixed
@@ -35,11 +35,11 @@ last_task6_audit: "2026-07-09"
 last_task6_audit_type: "idle-audit"
 review_round: 1
 task9_result: "auto-fixed"
-task9_state: "pending"
+task9_state: "reviewed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-08"
-last_task9_at: "2026-07-08T20:27:03+08:00"
-last_task9_autofix_at: "2026-07-08"
+task9_reviewed_date: "2026-07-09"
+last_task9_at: "2026-07-09T04:33:12+08:00"
+last_task9_autofix_at: "2026-07-09"
 last_task9_audit: "2026-07-08"
 last_task6_at: "2026-07-09T01:15:00+08:00"
 task2b_fixed_date: "2026-06-06"
@@ -51,6 +51,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-09
 last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: task9_state reviewed→pending; Task6 re-reviewed post-auto-fix (pass-light-edit), pipeline task9_pending correct, task9_state was stale reviewed."
+last_task9_review_log: "logs/deep-review/2026-07-09-04-deep-review.md"
 ---
 
 # 响应速度原理
@@ -149,7 +150,7 @@ Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的�
 
 当用户触摸屏幕时，硬件产生一个中断，内核的触摸驱动将其转换为输入事件。随后 InputReader（运行在 system_server 的 InputFlinger 线程中）读取这些事件，交给 InputDispatcher 进行分发。
 
-InputDispatcher 通过 InputChannel 将事件发送给目标 App 进程。AOSP android-17.0.0_r1 中，InputDispatcher::publishMotionEvent() 调用 connection.inputPublisher.publishMotionEvent()；InputPublisher 将 MotionEvent 序列化到 InputChannel 的共享消息缓冲区，再通过 Unix domain socket/socketpair 发送通知并传递输入消息。App 侧 NativeInputEventReceiver 监听 fd，InputConsumer 取出事件后封装为 Java 层 MotionEvent，投递到主线程消息队列。Binder 只参与窗口和 InputChannel 的创建、传递阶段，不承载每个 MotionEvent 的分发。
+InputDispatcher 通过 InputChannel 将事件发送给目标 App 进程。AOSP android-17.0.0_r1 中，InputDispatcher::publishMotionEvent() 调用 connection.inputPublisher.publishMotionEvent()；InputPublisher 将 MotionEvent 填入 `InputMessage`，通过 InputChannel 底层 socketpair 的 `send()` 发送；App 侧 `NativeInputEventReceiver` 监听 fd 后，经 `InputChannel::receiveMessage()`/`InputConsumer` 取出消息并封装为 Java 层 `MotionEvent`，再投递到主线程消息队列。Binder 只参与窗口和 InputChannel 的创建、传递阶段，不承载每个 MotionEvent 的分发。
 
 这条路径在 Perfetto 中对应的是 Input Track 和对应 App 主线程上的 Input 事件处理 slice。从 InputDispatcher 发出到 App 收到，通常耗时在 1-2ms；如果主线程被阻塞（比如正在执行长时间的 measure/layout），这个时间会显著增加。
 
@@ -165,10 +166,12 @@ App 主线程收到 Input 事件后，工作按固定顺序展开：事件处理
 
 ### 第三步：渲染与合成
 
-VSync-app 信号到来后，Choreographer.doFrame() 被触发，主线程依次执行：
+VSync-app 信号到来后，Choreographer.doFrame() 被触发，主线程按回调队列依次执行（这里列主路径）：
 - Input callbacks（处理待处理的输入事件）
 - Animation callbacks（更新动画属性值）
+- Insets animation callbacks（Android 17 源码中位于 animation 与 traversal 之间）
 - Traversal callbacks（执行 performTraversals：measure → layout → draw）
+- Commit callbacks（遍历完成后的 post-draw 工作）
 
 在 draw 阶段，主线程生成 DisplayList（绘制命令列表），然后交给 RenderThread（Android 5.0+）进行 GPU 渲染。RenderThread 通过 GPU 将 DisplayList 转换为像素数据，写入 GraphicBuffer。
 
@@ -212,7 +215,7 @@ Android Vitals 区分三种启动类型，并分别设定了"过长"的告警阈
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
-Android Vitals 当前用两个更精细的启动指标描述启动体验：
+Android 启动性能文档用两个更精细的指标描述启动体验；其中 Android Vitals 的过长启动告警使用 TTID，TTFD 需要应用主动调用 `reportFullyDrawn()` 后才会产生：
 
 **TTID（Time To Initial Display）**——从系统收到启动 Intent 到 App 第一帧绘制完成的时间。TTID 由系统自动上报，反映用户从点击图标到看到 App 画面的耗时。
 
