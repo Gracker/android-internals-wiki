@@ -65,20 +65,19 @@ task6_l3_l4_issues: 0
 task6_review_notes: "2026-07-08 Task6：Task2B 修复回流后写作复审（review round 8）；修复 3 处 L1/L2 问题（代码围栏断裂、HTML 编辑残留、缺失代码围栏）；L1 禁用词扫描全部通过；锚点覆盖 7/7 + 3/3 扩展；无 L3/L4 回炉项，转 Task9 复审。"
 review_round: 8
 last_task9_autofix_at: "2026-07-08"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-16
 last_task9_audit: "2026-07-08"
-finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"
 last_task6_audit: "2026-07-08"
 task9_result_prev: "pass-tech-review"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-08
 ---
 
 # 11.5 Wakelock 机制与功耗分析
 
 Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是让 CPU 在需要时保持工作，但使用不当（忘记释放、异常路径泄漏、后台长期持有）就会直接导致电池快速耗尽。
 
-2026 年 3 月起，Play Store 会对 excessive partial wake lock 指标超阈值的 App 影响重要发现入口曝光，并可能在详情页显示耗电警告标签。这个惩罚政策已把 wakelock 优化从"建议"变成了"合规要求"。
+2026 年 3 月起，App 如果在 Play Store 的 excessive partial wake lock 指标上超阈值，会被降低在重要发现入口的曝光度，详情页也可能显示耗电警告标签。这条政策让 wakelock 优化从"建议"变成了"合规要求"。
 
 本节要回答几件事：Wakelock 的底层机制是什么？App 层的 wakelock 怎么映射到内核？出了问题怎么诊断？以及怎么避免 wakelock 变成功耗灾难。
 
@@ -246,7 +245,7 @@ App 的后台执行从 Rare 桶开始受到严格限制，但 **wakelock 本身�
   2. Jobs 配额受限 → 后台工作量减少 → 持锁场景间接减少
   3. App Standby 通过限制 Alarm / Job / 网络等后台入口，间接减少 App 获取和持有 wakelock 的窗口
 
-> 本轮按 android-17.0.0_r1 复核：`PowerManagerService.java` 中未找到 `enforceWakeLockTimeout()` / `RESTRICTED_WAKELOCK_MAX_TIMEOUT` 等符号；`AppStandbyController.java` 中也未发现直接的 restricted bucket wakelock timeout 入口。App Standby 对 wakelock 的约束是间接的——通过限制后台入口（Alarm / Job / 网络）使得 App 无法频繁获取 wakelock，而非给 wakelock 设置累计配额。
+> 按 android-17.0.0_r1 复核：`PowerManagerService.java` 中不存在 `enforceWakeLockTimeout()` / `RESTRICTED_WAKELOCK_MAX_TIMEOUT` 等符号，`AppStandbyController.java` 中也没有直接的 restricted bucket wakelock timeout 入口。App Standby 对 wakelock 的约束是间接的——通过限制后台入口（Alarm / Job / 网络）减少 App 获取 wakelock 的窗口，而非对 wakelock 本身设置累计配额。
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby]
 
@@ -411,6 +410,19 @@ Power HAL 负责向厂商侧电源策略发送性能和模式 hint，和 wakeloc
 ```text
 App: PowerManager.newWakeLock(PARTIAL_WAKE_LOCK).acquire()
   ↓
+PowerManagerService: 更新 WakeLock 记录和 mWakeLockSummary
+  ↓
+acquireSuspendBlockerLocked("PowerManagerService.WakeLocks")
+  ↓
+JNI: nativeAcquireSuspendBlocker("PowerManagerService.WakeLocks")
+  ↓
+hardware/libhardware_legacy/power.cpp: acquire_wake_lock()
+  ↓
+ISystemSuspend.acquireWakeLock(PARTIAL, "PowerManagerService.WakeLocks")
+  ↓
+SystemSuspend: 用户态 wakelock 计数增加
+  ↓
+计数归零之前，autosuspend 线程不会完成 wakeup_count 写回和 /sys/power/state=mem
 ```
 
 ### PMS 内部状态机:DIRTY 位与 updatePowerStateLocked
@@ -683,14 +695,14 @@ AlarmManager 是 wakelock 的一个重要间接来源。当 Alarm 触发时：
 
 ### Play Store 的 Wakelock 惩罚政策
 
-2026 年 3 月正式生效。核心规则（来源：Android Vitals 官方文档）：
+2026 年 3 月正式生效，核心规则如下：
 
 - **阈值**：非豁免 partial wake lock 在 24 小时内累计超过 2 小时，且超过 5% 的用户 session（28 天窗口）
 - **惩罚**：Play Store 重要发现入口曝光受影响（如推荐位）+ App 详情页可能显示「可能加速耗电」警告标签
 - **豁免类型**：音频播放、位置访问、JobScheduler user-initiated APIs；普通后台 Job / WorkManager 任务不能一概视为豁免
 - **开发者工具**：Play Console → Android Vitals → Wake Lock 指标，可看各 wakelock 名称的 P90/P99 时长
 
-这里"非豁免"的含义是：Android Vitals 明确豁免 audio、location、JobScheduler user-initiated APIs。App 自己通过 `PowerManager.WakeLock` 持有的 partial wakelock，以及未命中这些豁免条件的系统代持 wakelock，都要在 Play Console 里继续看 wakelock 名称、affected sessions 和持续时间。
+这里的豁免范围包括 audio、location 和 JobScheduler user-initiated APIs。不在此列的 partial wakelock——无论 App 自己持有的还是系统代持的——都会进入 Play Console 的统计，需要关注 wakelock 名称、affected sessions 和持续时间。
 
 [已验证: developer.android.com/topic/performance/vitals/wakelock（Android Vitals excessive wake lock 定义）；googleblog.com（Play Store 政策公告）]
 

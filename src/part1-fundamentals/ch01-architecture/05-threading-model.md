@@ -21,6 +21,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-07T08:21:00+08:00"
 task9_review_notes: "2026-07-07 Task9 review: pass-tech-review。复核源码引用准确性、原理链完整性、版本差异覆盖。发现 1 处 P2 建议改进：16KB page size 对 metadata region 影响可补充。写入 suggestions.md。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-07-05"
+last_task6_audit: "2026-07-08"
 last_task9_audit_at: "2026-07-05T15:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-05-15-audit.md"
 last_task9_audit_result: "p1-issue-found"

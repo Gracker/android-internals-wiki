@@ -23,17 +23,17 @@ path: ""
 related_chapters: ["24.5", "12.2", "12.3"]
 last_task6_at: "2026-07-08T08:10:41+08:00"
 last_task6_audit: "2026-07-08"
-last_task2b_lite_at: "2026-06-03"
+last_task2b_lite_at: "2026-07-08"
 last_task2a_at: "2026-05-14T09:21:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-03"
 last_task9_at: "2026-06-03T09:20:00+08:00"
 last_task9_autofix_at: "\"2026-06-03\""
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
 task2b_verified_at: "2026-06-26T07:27:19+08:00"
 task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (already finalized)"
 task6_review_notes_round2: "2026-07-08 Task6 revisiting-review round2: pass-light-edit (3 L1 fixes: frontmatter引号清理, Android 35→android-17.0.0_r1, path字段修正)"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-08
 ---
 
 # 网络架构与连接管理
@@ -63,9 +63,9 @@ task6_review_notes_round2: "2026-07-08 Task6 revisiting-review round2: pass-ligh
 
 ## 为什么要了解网络架构与连接管理
 
-网络性能问题很少只由一个接口慢导致。DNS 抖动、连接复用失效、并发请求挤占、弱网重试放大流量,都会把一次页面加载拖成多段等待。12.2 和 12.3 已经讲过网络耗时拆分、TLS 与传输细节;App 架构侧还要回答四个工程问题:客户端该怎样复用连接、怎样接入 DNS/HTTPDNS、怎样给请求排队、怎样在弱网下收敛失败。
+网络性能问题很少只由一个接口慢导致。DNS 抖动、连接复用失效、并发请求挤占、弱网重试放大流量——随便哪个都能把一次页面加载拖成多段等待。第 12 章已经拆解过网络耗时和 TLS 传输细节。落到 App 架构侧，有四个工程问题必须回答：连接怎么复用、DNS/HTTPDNS 怎么接入、请求怎么排队、弱网下怎么收敛失败。
 
-本节判断基于 OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 官方文档,以及本地 android-17.0.0_r1 SDK sources 中 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver` 的源码。
+本节判断基于 OkHttp 5.x 文档、Android Connectivity / NetworkCapabilities / WorkManager 官方文档，以及 android-17.0.0_r1 SDK sources 中 `ConnectivityManager`、`NetworkCapabilities`、`StrictMode` 和 `DnsResolver` 的源码。
 
 ## 网络架构的四个控制面
 
@@ -278,10 +278,7 @@ App 侧要记录 default network、transport、`NET_CAPABILITY_VALIDATED`、`NET
 
 ## OkHttp Dns.lookup() 同步阻塞边界与死锁风险
 
-
-### 核心发现
-
-OkHttp `Dns` 接口的 `lookup(hostname)` 方法是**同步阻塞调用**,发生在建连线程中。如果在 `lookup()` 内发起 HTTPDNS HTTP 请求,且该请求使用同一个 `OkHttpClient`,可能引发死锁:DNS 请求需要从连接池获取 HTTP session,但连接池为空且等待 DNS 结果释放。
+OkHttp `Dns` 接口的 `lookup(hostname)` 方法是**同步阻塞调用**，发生在建连线程中。如果在 `lookup()` 内发起 HTTPDNS HTTP 请求,且该请求使用同一个 `OkHttpClient`,可能引发死锁:DNS 请求需要从连接池获取 HTTP session,但连接池为空且等待 DNS 结果释放。
 
 ### 源码锚点
 
@@ -312,7 +309,7 @@ for (int i = 0, size = addresses.size(); i < size; i++) {
 2. `address.dns().lookup(socketHost)` 在当前建连线程同步执行
 3. 如果 `lookup()` 内部发起网络请求,该线程被阻塞
 
-### 正确工程模式:异步预取 + 两级缓存
+### 正确工程模式：异步预取 + 两级缓存
 
 ```
 [App Startup / Background Thread]
@@ -337,11 +334,7 @@ for (int i = 0, size = addresses.size(); i < size; i++) {
 - **TTL 管理**:缓存 TTL 建议设为 HTTPDNS 服务 TTL 的 80%
 - **失败隔离**:HTTPDNS 不可达时自动 fallback 到 `Dns.SYSTEM`
 
-### 信息源
-
-- [okhttp/okhttp/src/main/kotlin/okhttp3/Dns.kt](https://github.com/square/okhttp/blob/master/okhttp/src/main/kotlin/okhttp3/Dns.kt) - 一手
-- [okhttp/RouteSelector.java L124-L146](https://github.com/square/okhttp/blob/db9c2db40b0b89a1853715fd52e2748463d9cc9c/okhttp/src/main/java/okhttp3/internal/http/RouteSelector.java) - 一手
-- [square.github.io Dns interface docs](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/index.html) - 一手(官方文档)
+**验证依据**：OkHttp `Dns.kt` 接口定义、`RouteSelector.java`（L124-L146）调用路径、[OkHttp 官方 Dns 文档](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/index.html)。
 
 
 ## 工程检查清单
