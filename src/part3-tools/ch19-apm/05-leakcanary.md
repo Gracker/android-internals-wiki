@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "LeakCanary fundamentals, changelog 2.6 ServiceWatcher, recipes / leakcanary-android-instrumentation"
+last_verified: "2026-07-08"
+last_verified_against: "LeakCanary 2.14 fundamentals, changelog 2.6 ServiceWatcher, recipes, UI tests / leakcanary-android-instrumentation"
 confidence: medium
 tags: [apm, memory, leak-detection, debug-tools, shark]
 related_chapters: ["19.0"]
@@ -20,18 +20,22 @@ sources:
     path: "https://square.github.io/leakcanary/changelog/"
   - type: official
     path: "https://square.github.io/leakcanary/recipes/"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+  - type: official
+    path: "https://square.github.io/leakcanary/ui-tests/"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 last_task6_audit: "2026-07-04"
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T23:27:38+08:00"
-last_task9_audit: "2026-06-15"
+last_task9_audit: "2026-07-08"
+last_task9_autofix_at: "2026-07-08"
+task9_review_notes: "2026-07-08 Task9 idle audit auto-fix: 补全 LeakCanary UI test 集成依赖口径；官方文档要求 androidTestImplementation 依赖之外，App 侧仍需 debugImplementation leakcanary-android。"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -252,10 +256,11 @@ LeakCanary 更适合本地修复，但它可以和线上样本组成一条修复
 
 LeakCanary 放进 UI / instrumentation 测试时，先用官方的 `leakcanary-android-instrumentation`，让测试结束后自动检查泄漏。手写 `sleep + retainedObjectCount` 只适合临时验证，因为它容易受主线程空闲、GC 时机和异步任务收尾影响。
 
-Gradle 依赖只放在 `androidTest`：
+测试侧依赖放在 `androidTest`，App 侧仍要包含 LeakCanary 调试依赖：
 
 ```kotlin
 dependencies {
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:<leakcanary_version>")
     androidTestImplementation("com.squareup.leakcanary:leakcanary-android-instrumentation:<leakcanary_version>")
 }
 ```
