@@ -1,7 +1,7 @@
 {
   "total": 626,
-  "draft": 54,
-  "ready_for_review": 209,
+  "draft": 44,
+  "ready_for_review": 210,
   "finalized": 344,
   "last_updated": "2026-07-08",
   "task2b": {
@@ -847,6 +847,13 @@
       "status": "no-candidates",
       "ts": "2026-07-08T06:08:33.711887+08:00",
       "note": "Gap mining round 42: 0 candidates ≥14 (42nd consecutive). Coverage saturated. Daily info 2026-07-08: 4 items all map to existing chapters (eBPF→§14.25, XTrace→§26.23, audio hardening→§12.33/§25.17, Binder thread pool→ch01). source-index: 0 unmapped high-quality. No new Clippings in 7+ days."
+    },
+    {
+      "section": "5.18",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-08T09:12:00+08:00",
+      "note": "CPU 缓存局部性与 PSS 内存核算: 6 anchors (ARM cache hierarchy/TLAB+CardTable缓存设计/PSS三层采样/smaps_rollup源码/Debug.getRss()+FlaggedApi/getProcessMemoryInfo 5min限速+statsd) + 2 extensions (缓存感知分配策略/性能监控工具链). DeepResearch PSS/RSS fastpath 源码验证. 同时清理 9 个重复 queue draft (§4.34/4.35/4.37/4.38/8.31/8.32/8.33b/11.1/23.1)."
     }
   ],
   "review_history": [
@@ -1026,7 +1033,7 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 25,
+  "deprecated": 34,
   "stats": {
     "last_review_date": "2026-07-07",
     "last_review_by": "openclaw-task2a",
@@ -1140,12 +1147,14 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-08T07:05:58.326846+08:00",
-    "last_section": "none",
-    "result": "no-candidates",
-    "fix_count": 0,
-    "last_sections": [],
-    "note": "Gap mining round 43: 0 candidates ≥14 (43rd consecutive). Coverage saturated. 4 new DeepResearch files (LMKD PSI→ch04, PowerStats HAL→ch25, GPU debug→ch02 already has §2.1, ART HeapTask→ch04/ch23) all map to existing chapters. Ariadne ZRAM paper scores 10/20. Task14 suggestions for ch06/ch26.16 are supplements. No new Clippings in 7+ days."
+    "last_run": "2026-07-08T09:12:00+08:00",
+    "last_section": "5.18",
+    "result": "content-processed + cleanup",
+    "fix_count": 1,
+    "last_sections": [
+      "5.18"
+    ],
+    "note": "Processed §5.18 (CPU cache locality × PSS accounting). Deprecated 9 duplicate queue stubs."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",
