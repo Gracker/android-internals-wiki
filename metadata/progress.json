@@ -1141,6 +1141,13 @@
       "status": "ready_for_review",
       "ts": "2026-07-09T06:13:08+08:00",
       "note": "Android 17 eBPF观测增强: 4 anchors (cyclePerUid/dmabufIter/kernelWakelockDuration/locks 四程序源码级分析 + tracepoints机制 + 三层数据流架构 + 四大应用场景) + 3 extensions (Perfetto协同双窗口设计/bpftrace开发工具链/企业级部署隐私安全). AOSP android-17.0.0_r1 源码描述交叉验证. 版本演进时间线 Android 12→17."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-09T07:07:14.223952+08:00",
+      "note": "Gap mining round 49: 0 candidates >=14 (49th consecutive). Coverage saturated. No new material since round 48 (4h ago). No new DeepResearch/Clippings/daily-info. 4 DeepResearch files from 07-08/07-09 already mapped to existing chapters in rounds 46-48. Task14 suggestions (2026-07-09) are all supplements to existing chapters (ch20/ch21/ch24/ch26). source-index: 0 unmapped high-quality. All drafts >15 lines. Task2B backlog: 0."
     }
   ],
   "review_history": [
@@ -1433,14 +1440,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-09T04:05:00+08:00",
-    "last_section": "1.54",
-    "result": "drafted",
-    "fix_count": 1,
-    "last_sections": [
-      "1.54"
-    ],
-    "note": "§1.54 Binder 线程池实现机制与调优参数: 源码级机制分析, 385 lines, AOSP android-17.0.0_r1 验证. 纠正大纲 4 个不存在参数 (priority_threshold/idle_timeout/queue_threshold/starvation_threshold)."
+    "last_run": "2026-07-09T07:07:14.223952+08:00",
+    "last_section": "none",
+    "result": "no-candidates",
+    "note": "Round 49: coverage saturated, no new material."
   },
   "last_task9_review": {
     "at": "2026-07-06T08:32:18.662163",
