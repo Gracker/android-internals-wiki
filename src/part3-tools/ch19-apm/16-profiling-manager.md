@@ -73,7 +73,7 @@ last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 last_task9_autofix_at: "2026-07-07"
 task6_review_notes: "2026-06-14 Task6 revisiting review: pass-light-edit；terminology 一致性修复 artifact→产物 (5处)；Task9 auto-fix SDK_INT_FULL 已验证正确；无新增 Task2B 回炉项。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-27
+last_deepseek_cn_review_at: 2026-07-08
 finalized_date: "2026-07-08"
 finalized_by: openclaw-task9-auto-promote
 auto_promoted_date: "2026-07-08"
@@ -88,17 +88,17 @@ auto_promoted_by: openclaw-task9
 
 ### 锚点（必须覆盖）
 
-- 🔹 `ProfilingManager` 的公开平台 API 从 Android 15（API 35）开始可用，不能写成 Android 8-17 全覆盖
-- 🔹 app-driven profiling 和 system-triggered profiling 是两套能力，回调链也分 request listener 与 global listener 两层
-- 🔹 trigger 版本边界要拆开写：API 36、version 36.1、API 37 不是同一层能力
-- 🔹 `ProfilingResult` 的错误码、限流、并发冲突、磁盘不足要分别处理，不能只写成“失败原因”
-- 🔹 `ProfilingManager` 在排查流程里的位置是“指标发现异常后的重样本取证”，不是常驻指标 SDK
+- - `ProfilingManager` 的公开平台 API 从 Android 15（API 35）开始可用，不能写成 Android 8-17 全覆盖
+- - app-driven profiling 和 system-triggered profiling 是两套能力，回调链也分 request listener 与 global listener 两层
+- - trigger 版本边界要拆开写：API 36、version 36.1、API 37 不是同一层能力
+- - `ProfilingResult` 的错误码、限流、并发冲突、磁盘不足要分别处理，不能只写成“失败原因”
+- - `ProfilingManager` 在排查流程里的位置是“指标发现异常后的重样本取证”，不是常驻指标 SDK
 
 ### 扩展（可选深入）
 
-- 🔸 用 AndroidX `Profiling` / `ProfilingRequest` 包装请求构造
-- 🔸 补一张 request listener / global listener 的结果分发表
-- 🔸 给 trigger 场景补版本对照表和 产物对照表
+- - 用 AndroidX `Profiling` / `ProfilingRequest` 包装请求构造
+- - 补一张 request listener / global listener 的结果分发表
+- - 给 trigger 场景补版本对照表和 产物对照表
 <!-- outline-end -->
 
 ## 适用范围按版本区分
@@ -146,7 +146,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-这段代码说明了一件事：**请求参数、执行过程、结果回传三者是异步分开的**。应用线程负责提交 request，平台负责执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
+这段代码说明了一件事：**请求参数、执行过程、结果回传三者异步分离**。应用线程负责提交 request，平台负责执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
 
 `ProfilingManager` 的结果写入应用私有目录，发起 request 不需要外部存储权限。`<profileable android:shell="true" />` 属于本地 shell、Perfetto、simpleperf、Android Studio Profiler 这类调试工具的可分析配置，不是线上 `requestProfiling()` 成功的前提。发布包接入 `ProfilingManager` 时，重点检查 API 版本、调用频率、结果文件权限、隐私声明和后端接收策略；调试包或内测包若还要配合本地工具排查，再单独确认 `profileable` 与渠道合规要求。
 

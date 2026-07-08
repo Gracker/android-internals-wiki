@@ -1018,6 +1018,147 @@
       ],
       "summary": "Google Android官方博客文章，关于App性能优化技术...",
       "scored_at": "2026-07-07T09:24:43.584303"
+    },
+    {
+      "title": "Android 17 eBPF观测增强",
+      "path": "Cubox/android 17 eBPF可观测增强-2026-07-07.md",
+      "quality_score": 19,
+      "category": "eBPF性能监控",
+      "chapters": [
+        "ch02",
+        "ch13"
+      ],
+      "source": "cubox",
+      "date": "2026-07-07",
+      "tags": [
+        "Android17",
+        "eBPF",
+        "性能监控",
+        "Tracepoints"
+      ],
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "scored_at": "2026-07-08T05:46:41.382473"
+    },
+    {
+      "title": "字节跳动 XTrace 动态 tracing 方案",
+      "path": "Cubox/字节跳动 XTrace 动态 tracing 方案-2026-07-07.md",
+      "quality_score": 14,
+      "category": "动态追踪",
+      "chapters": [
+        "ch13"
+      ],
+      "source": "cubox",
+      "date": "2026-07-07",
+      "tags": [
+        "XTrace",
+        "ByteDance",
+        "动态追踪",
+        "性能监控"
+      ],
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-07-08T05:46:41.382480"
+    },
+    {
+      "title": "Android 17 后台音频硬化与蓝牙LE音频功耗治理",
+      "path": "DeepResearch/2026-07-07-android17-background-audio-hardening-leaudio-power-governance.md",
+      "quality_score": 19,
+      "category": "音频系统",
+      "chapters": [
+        "ch08",
+        "ch11"
+      ],
+      "source": "deepresearch",
+      "date": "2026-07-07",
+      "tags": [
+        "Android17",
+        "音频硬化",
+        "LEAudio",
+        "功耗治理",
+        "Bluetooth"
+      ],
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "scored_at": "2026-07-08T05:46:41.382484"
+    },
+    {
+      "title": "Android 17 Binder 线程池实现机制与调优参数",
+      "path": "DeepResearch/2026-07-07-android17-binder-thread-pool-implementation.md",
+      "quality_score": 20,
+      "category": "IPC机制",
+      "chapters": [
+        "ch01"
+      ],
+      "source": "deepresearch",
+      "date": "2026-07-07",
+      "tags": [
+        "Android17",
+        "Binder",
+        "线程池",
+        "IPC",
+        "性能调优"
+      ],
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "scored_at": "2026-07-08T05:46:41.382485"
+    },
+    {
+      "title": "Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研",
+      "path": "DeepResearch/2026-07-07-android17-lmkd-userspace-migration-psi.md",
+      "category": "内存管理",
+      "chapters": [
+        "ch04"
+      ],
+      "source": "deepresearch",
+      "date": "2026-07-07",
+      "injected_at": "2026-07-08T06:13:27.622422",
+      "injection": "injected"
+    },
+    {
+      "title": "Android 17 Power Stats HAL OEM 厂商功耗统计实现差异",
+      "path": "DeepResearch/2026-07-07-android17-power-stats-hal-impl-variations.md",
+      "category": "功耗",
+      "chapters": [
+        "ch25"
+      ],
+      "source": "deepresearch",
+      "date": "2026-07-07",
+      "injected_at": "2026-07-08T06:13:27.622422",
+      "injection": "injected"
+    },
+    {
+      "title": "Android 17 GPU 图形调试与性能优化工具链",
+      "path": "DeepResearch/2026-07-07-android17-gpu-debug-tools-deep-dive.md",
+      "category": "渲染/GPU",
+      "chapters": [
+        "ch02"
+      ],
+      "source": "deepresearch",
+      "date": "2026-07-07",
+      "injected_at": "2026-07-08T06:13:27.622422",
+      "injection": "injected"
+    },
+    {
+      "title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制",
+      "path": "DeepResearch/2026-07-06-android17-art-heaptask-concurrent-gc-suppression.md",
+      "category": "内存/ART",
+      "chapters": [
+        "ch04",
+        "ch23"
+      ],
+      "source": "deepresearch",
+      "date": "2026-07-06",
+      "injected_at": "2026-07-08T06:13:27.622422",
+      "injection": "queued"
     }
   ]
 }
