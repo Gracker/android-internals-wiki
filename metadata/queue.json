@@ -353,7 +353,7 @@
       "section": "13.2",
       "section_title": "Trace 抓取",
       "priority": 95,
-      "stage": "task2b_pending",
+      "stage": "completed",
       "reason": "[Deep Tech Review] Android 17 基线与 Perfetto 抓取示例存在 P0/P1 技术问题：正文仍称 android-17.0.0_r1 tag 未公开/仅 Android16 锚定，且多处 adb/perfetto/record_android_trace/Java/C 示例 token 合并，命令和代码不可执行。",
       "material_paths": [
         "logs/deep-review/2026-07-08-21-deep-review.md"
@@ -392,7 +392,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-08T21:27:49+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-09T00:37:21+08:00",
+      "completed_by": "task9-deep-tech-review",
+      "completion_note": "Task9 auto-fix/re-review verified and corrected remaining Android 17 source/version issues; section returned to Task6 revisiting."
     },
     {
       "path": "src/part2-performance/ch02-rendering/2.9-android17-gpu-debug-performance-tools-source.md",
