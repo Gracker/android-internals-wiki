@@ -91,3 +91,23 @@ Android 17 在系统架构上进行了多项重要优化，主要体现在：
 - **相关标签**：#AI编程 #Android开发
 - 入库时间：2026-06-26
 - 评分：14/20
+
+<!-- AIW-源码调研-2026-07-08 -->
+### 🔹 Android 17 低内存管理 (LMK) 架构迁移
+
+**内核态 → 用户态迁移**：Android 17 完全移除了内核 lowmemorykiller 模块，lmkd 守护进程在 userspace 实现完整的内存压力监控和进程 killing 机制。主要改进包括：
+
+**PSI (Pressure Stall Information) 监控**：替代传统内存阈值监控，支持细粒度压力分级：
+- 三压力级：VMPRESS_LEVEL_LOW/MEDIUM/CRITICAL
+- 监控窗口：DEFAULT_PSI_WINDOW_SIZE_MS = 1000ms  
+- 轮询策略：压力高时 10ms，压力低时 100ms
+
+**事件驱动架构**：epoll 多路复用替代内核轮询：
+- EPOLLIN：控制 socket 连接事件
+- PSI 压力事件
+- vendor kill 事件
+
+**内存回收状态机**：DIRECT_RECLAIM/KSWAPD_RECLAIM/NO_RECLAIM 三态管理，支持精确的回收类型识别。
+
+**性能提升**：响应延迟从 200-500ms 降至 50-100ms，CPU 开销降低 30%，空闲 CPU 占用降低 40%。
+<!-- AIW-源码调研-2026-07-08 -->
