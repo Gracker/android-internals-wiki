@@ -54,7 +54,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: pass-light-edit
 last_task6_review_log: logs/review/2026-05-14-16-review.md
-last_task6_audit: "2026-05-25"
+last_task6_audit: "2026-07-08"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-30
 last_task9_autofix_at: "2026-06-30"
