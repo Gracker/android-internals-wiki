@@ -9,32 +9,11 @@
       "notes": "知识缺口挖掘创建，第1个候选"
     },
     {
-      "path": "src/part1-fundamentals/ch05-cpu-power/5.18-android17-cpu-cache-locality-pss-accounting.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-07",
-      "notes": "知识缺口挖掘创建，第2个候选"
-    },
-    {
       "path": "src/part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md",
       "priority": 80,
       "stage": "draft",
       "added_date": "2026-07-07",
       "notes": "知识缺口挖掘创建，第3个候选"
-    },
-    {
-      "path": "src/part1-fundamentals/ch04-memory/4.34-android17-art-heaptask-system-7-subclasses.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-07",
-      "notes": "知识缺口挖掘创建，第4个候选"
-    },
-    {
-      "path": "src/part1-fundamentals/ch04-memory/4.35-android17-ai-agent-memory-sandboxed-reuse.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-07",
-      "notes": "知识缺口挖掘创建，第5个候选"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/1.44-android17-binder-sz4m-kernel-buffer-pool.md",
@@ -51,27 +30,6 @@
       "notes": "知识缺口挖掘创建，第7个候选"
     },
     {
-      "path": "src/part1-fundamentals/ch08-startup/8.31-android17-startup-insights-gaps.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-07",
-      "notes": "知识缺口挖掘创建，第8个候选"
-    },
-    {
-      "path": "src/part1-fundamentals/ch08-startup/8.32-android17-application-start-info.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-07",
-      "notes": "知识缺口挖掘创建，第9个候选"
-    },
-    {
-      "path": "src/part1-fundamentals/ch11-power/11.1-android17-background-audio-hardening.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-07",
-      "notes": "知识缺口挖掘创建，第10个候选"
-    },
-    {
       "path": "src/part3-tools/ch14-profiling/14.1-android17-heapprofd-production-deployment.md",
       "priority": 80,
       "stage": "draft",
@@ -84,13 +42,6 @@
       "stage": "draft",
       "added_date": "2026-07-07",
       "notes": "知识缺口挖掘创建，第12个候选"
-    },
-    {
-      "path": "src/part1-fundamentals/ch23-debugging/23.1-android17-signal-debuggerd-architecture.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-07",
-      "notes": "知识缺口挖掘创建，第13个候选"
     },
     {
       "path": "src/part1-fundamentals/ch08-startup/8.34-android17-modular-startup-framework.md",
@@ -119,13 +70,6 @@
       "stage": "draft",
       "added_date": "2026-07-07",
       "notes": "知识缺口挖掘创建，第17个候选"
-    },
-    {
-      "path": "src/part1-fundamentals/ch04-memory/4.38-android17-largeobjectspace-msponge.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-07",
-      "notes": "知识缺口挖掘创建，第18个候选"
     },
     {
       "path": "src/part1-fundamentals/ch08-startup/8.35-android17-official-blog-task-scheduler.md",
