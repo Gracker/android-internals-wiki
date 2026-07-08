@@ -3,9 +3,15 @@ title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-tags: [[responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]]
+tags:
+- responsiveness
+- TTID
+- TTFD
+- RAIL
+- input-latency
+- perceived-performance
 confidence: medium
 last_verified: "2026-07-08"
 last_verified_against: "AOSP android-17.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; web.dev RAIL"
@@ -18,14 +24,14 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 path: "https://web.dev/articles/rail"
 related_chapters: "[\"2.3\", \"2.4\", \"3.1\", \"7.1\", \"8.2\", \"9.1\", \"15.3\", \"15.5\", \"15.9\"]"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task2b_state: "fixed"
 task2b_result: fixed
-task6_reviewed_date: '2026-06-16'
+task6_reviewed_date: '2026-07-09'
 task6_spotcheck_date: "2026-05-15"
 task6_spotcheck_result: pass-light-edit
-last_task6_audit: "2026-06-22"
+last_task6_audit: "2026-07-09"
 last_task6_audit_type: "idle-audit"
 review_round: 1
 task9_result: "auto-fixed"
@@ -35,7 +41,7 @@ task9_reviewed_date: "2026-07-08"
 last_task9_at: "2026-07-08T20:27:03+08:00"
 last_task9_autofix_at: "2026-07-08"
 last_task9_audit: "2026-07-08"
-last_task6_at: "2026-06-16T05:05:00+08:00"
+last_task6_at: "2026-07-09T01:15:00+08:00"
 task2b_fixed_date: "2026-06-06"
 finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"

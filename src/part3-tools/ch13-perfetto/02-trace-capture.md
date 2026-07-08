@@ -9,12 +9,12 @@ tags:
 - trace
 - capture
 polish_by: task2b-polish
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-task6_review_notes: "2026-07-08 Task6 re-review (post-Task2B fix): 23:25 L1 code formatting fixes (30+ token merges in C++/protobuf/rc blocks, URL spacing, text-level merges). L2 minor. 1 B-class: android-17.0.0_r1 tag contradiction in 2026-06-09 appendix. All 6 anchors covered. No banned words."
-pipeline_stage: task6_pending
+task6_review_notes: "2026-07-09 Task6 re-review (post-Task9 auto-fix): L1 3 fixes (banned word 对齐→匹配, 2x version pinning 当前主干→Android 17). L2 minor. All 6 anchors + 2 extensions covered. No B-class issues. No banned words remaining."
+pipeline_stage: task9_pending
 reviewed_by: openclaw-task6
-last_task6_audit: 2026-07-08
+last_task6_audit: 2026-07-09
 task2b_result: fixed
 task2b_fix_date: 2026-07-08
 task2b_fix_notes: "2026-07-08 Task2B main rework: P0 token merge fix (20+ commands/APIs), version baseline update (android-17.0.0_r1 verified), FrameTimeline/linux.perf anchor correction, P1 data source selection flow, P2 unverifiable % removal. Based on deep-review 2026-07-08-21 and audit 2026-07-08-20."
@@ -107,7 +107,7 @@ last_task9_autofix_at: 2026-07-09
 
 3. **TraceCookie 机制**：`FrameTimeline.h:148-156, 677`
    - `TraceCookieCounter::mTraceCookie = std::atomic<int64_t>` 负责生成 Perfetto packet cookie。
-   - `FrameTimeline` 持有 `mTraceCookieCounter`，SurfaceFrame / DisplayFrame 通过该 counter 对齐 start/end packet。
+   - `FrameTimeline` 持有 `mTraceCookieCounter`，SurfaceFrame / DisplayFrame 通过该 counter 匹配 start/end packet。
 
 4. **FeatureFlag 机制**：`frameworks/native/services/surfaceflinger/common/FlagManager.cpp:137,154-155`
    ```cpp
@@ -876,7 +876,7 @@ data_sources {
 
 **PerfEventConfig 字段说明**：
 
-源码锚点在 `protos/perfetto/config/profiling/perf_event_config.proto`。当前主干里的 `PerfEventConfig` 已经把调用栈相关约束收进 `Callstack Sampling` 子消息，字段编号也和早期文章里常见的旧 schema 不同：
+源码锚点在 `protos/perfetto/config/profiling/perf_event_config.proto`。Android 17 的 `PerfEventConfig` 已经把调用栈相关约束收进 `Callstack Sampling` 子消息，字段编号也和早期文章里常见的旧 schema 不同：
 
 ```protobuf
 // 节选自 protos/perfetto/config/profiling/perf_event_config.proto
@@ -904,7 +904,7 @@ message CallstackSampling {
 - `ring_buffer_pages` / `ring_buffer_read_period_ms`：控制 kernel 到 `traced_perf` 的 ringbuffer 容量和读取节奏。
 - `max_enqueued_footprint_kb` / `max_daemon_memory_kb`：限制 unwinder 队列和 `traced_perf` 自身的内存占用，超限后会丢样或停止数据源。
 
-旧资料里常见的顶层 `target_cmdline`、`target_pid`、`kernel_frames` 字段在当前 proto 中已经标成 deprecated。新配置优先写在 `callstack_sampling.scope` 里。
+旧资料里常见的顶层 `target_cmdline`、`target_pid`、`kernel_frames` 字段在 Android 17 的 proto 中已标为 deprecated。新配置优先写在 `callstack_sampling.scope` 里。
 
 **PerfettoSQL 中的 `perf_sample` 表**：linux.perf 采样数据存入 `perf_sample` 表，可通过 Perfetto Trace Processor 查询：
 
