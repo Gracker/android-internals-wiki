@@ -4,8 +4,8 @@ chapter: "6.1"
 section: "6.1"
 status: finalized
 applicable_versions: "Android 9 - Android 17 (API 37)"
-last_verified: "2026-04-14"
-last_verified_against: "Android 16, AOSP dynamic partitions / metadata encryption / system-as-root docs, Android 11 shared storage docs, SQLite compile & WAL docs"
+last_verified: "2026-07-08"
+last_verified_against: "Android 17 (android-17.0.0_r1), AOSP cgroups/task_profiles/init/vold/MediaProvider source, dynamic partitions / metadata encryption / system-as-root docs, Android 11-12 shared storage docs, SQLite compile & WAL docs"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-06"
@@ -34,23 +34,23 @@ last_task6_audit: 2026-06-15
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_result: fixed
 task2b_state: fixed
 task9_reviewed_date: "2026-06-15"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-15T18:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-15-18-deep-review.md"
-last_task9_audit: "2026-06-15"
-last_task9_audit_at: "2026-06-15T16:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-15-16-audit.md"
-task9_review_notes: "2026-06-15 18:20 Task9 final复核：AUTO-FIX。AOSP android-16.0.0_r1 FsCrypt.cpp 中函数名为 fscrypt_prepare_user_storage，正文误写为 fs_prepare_user_storage；已修正源码锚点，回到 Task6 复审。"
+last_task9_at: "2026-07-08T15:31:54+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-08-15-audit.md"
+last_task9_audit: "2026-07-08"
+last_task9_audit_at: "2026-07-08T15:31:54+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-08-15-audit.md"
+task9_review_notes: "2026-06-15 18:20 Task9 final复核：AUTO-FIX。AOSP android-16.0.0_r1 FsCrypt.cpp 中函数名为 fscrypt_prepare_user_storage，正文误写为 fs_prepare_user_storage；已修正源码锚点，回到 Task6 复审。；2026-07-08 15:31 Task9 idle audit：AUTO-FIX。按 Android 17 边界复核 android-17.0.0_r1：libprocessgroup cgroups/task_profiles 仍使用 blkio priority profiles；vold FsCrypt.cpp/Utils.cpp 关键函数路径存在；MediaProvider 仍保留 FUSE passthrough 判断。正文中 android-15/16 锚点已改为 android-17.0.0_r1，版本表补到 Android 17，回到 Task6 复审。"
 
 last_task2b_at: "2026-06-15T16:52:36+08:00"
-last_task9_autofix_at: "2026-06-15"
+last_task9_autofix_at: "2026-07-08"
 last_task6_at: "2026-06-15T18:42:00+08:00"
 last_task6_review_log: "logs/review/2026-06-15-18-review.md"
 task6_review_notes: "2026-06-15 18:42 Task6 final review（自动晋升 finalized）：章节通过四层质检，L1/L2 硬规则通过，L3/L4 内容深度符合要求；2 处 L1/L2 小修已完成；outline 7/7 覆盖；自动晋升条件已满足（Task6 pass-light-edit + Task9 pass-tech-review + 无 pending 条目）。"
@@ -152,7 +152,7 @@ UFS 4.0 还引入了 **MCQ(Multi-Circular Queue,多命令队列)**。在 UFS 3.x
 
 I/O 调度器负责把文件系统提交的 bio 请求按照一定策略排序和合并,然后发给底层存储设备。Android 设备上通常使用 `mq-deadline` 或 `bfq` 调度器。`mq-deadline` 的核心思路是为每个 I/O 请求设置一个截止时间,在截止时间之前尽量合并和排序请求以提高吞吐量,超过截止时间则强制发出,避免饿死。`bfq` 则更注重公平性,会按照进程(cgroup)分配 I/O 带宽,防止后台进程抢占前台 App 的 I/O 资源。
 
-手机场景下,I/O 调度的挑战在于:前台 App(比如用户正在滑动的列表)需要低延迟的随机读,而后台任务(比如系统更新、媒体扫描)在进行大量顺序写。如果调度器不给力,后台的顺序写就会把前台的随机读挤到队列后面,造成卡顿。这也是为什么 Android 通过 task profiles 抽象调度组来实现前后台 I/O 隔离。AOSP android-15/16 的 `cgroups.json` 默认仍挂载 `blkio` 控制器在 `/dev/blkio`;`task_profiles.json` 中 `LowIoPriority` 加入 `blkio/background`,`SCHED_SP_FOREGROUND` / `SCHED_SP_TOP_APP` 聚合 `HighIoPriority` / `MaxIoPriority`。前后台 I/O 隔离效果取决于 kernel、active scheduler、blkio/BFQ 支持和 OEM 配置。cgroup v2 io controller 目前只能作为厂商/内核可选实现,可用 `/proc/cgroups`、`/sys/fs/cgroup`、`/dev/blkio` 确认设备实际配置。
+手机场景下,I/O 调度的挑战在于:前台 App(比如用户正在滑动的列表)需要低延迟的随机读,而后台任务(比如系统更新、媒体扫描)在进行大量顺序写。如果调度器不给力,后台的顺序写就会把前台的随机读挤到队列后面,造成卡顿。这也是为什么 Android 通过 task profiles 抽象调度组来实现前后台 I/O 隔离。AOSP android-17.0.0_r1 的 `cgroups.json` 默认仍挂载 `blkio` 控制器在 `/dev/blkio`;`task_profiles.json` 中 `LowIoPriority` 加入 `blkio/background`,`SCHED_SP_FOREGROUND` / `SCHED_SP_TOP_APP` 聚合 `HighIoPriority` / `MaxIoPriority`。前后台 I/O 隔离效果取决于 kernel、active scheduler、blkio/BFQ 支持和 OEM 配置。cgroup v2 io controller 目前只能作为厂商/内核可选实现,可用 `/proc/cgroups`、`/sys/fs/cgroup`、`/dev/blkio` 确认设备实际配置。
 
 ### device-mapper:虚拟块设备映射层
 
@@ -271,7 +271,7 @@ Scoped Storage 对 App 开发和性能优化有几个直接影响。
 | Android 10 | dynamic partitions + `first-stage init` 成为新设备主路径 | Scoped Storage 引入,允许一部分兼容开关 | 共享存储访问普遍经过 FUSE | 新代码优先 MediaStore / SAF,少依赖裸路径 |
 | Android 11 | `/data` 挂载流程继续沿用 Android 10 | shared media 支持 direct file paths、`File` API、`fopen()` | 仍有 FUSE,但 API 入口多了一条兼容路径 | 媒体库兼容可以用 direct file paths,随机读写仍优先 MediaStore |
 | Android 12 | 挂载模型基本稳定 | API 入口与 Android 11 接近 | launching device + official kernel 可启用 FUSE passthrough | 先确认设备是否支持 passthrough,再判断瓶颈位置 |
-| Android 15 | 挂载与共享存储主模型延续 Android 12+ | MediaStore / direct file path 共存 | FUSE passthrough 仍取决于内核与模块版本 | 大量枚举和跨媒体库访问仍优先 MediaStore,模块侧优化按设备实测确认 |
+| Android 15-17 | 挂载与共享存储主模型延续 Android 12+ | MediaStore / direct file path 共存 | FUSE passthrough 仍取决于内核与 MediaProvider 模块版本 | 大量枚举和跨媒体库访问仍优先 MediaStore,模块侧优化按设备实测确认 |
 
 ## FBE:文件级加密的存储影响
 
@@ -307,7 +307,7 @@ FBE 的密钥管理由 `vold`(Volume Daemon)负责。整个密钥层次如下:
 2. **User DE Key**:每个用户的 DE 密钥,由 `vold` 管理,用于该用户的 Direct Boot 相关数据(如闹钟设置),对应 `/data/user_de/<user_id>/`。
 3. **User CE Key**:每个用户的 CE 密钥,用户解锁后由凭据派生,用于绝大多数 App 数据,对应 `/data/user/<user_id>/`(CE 也包括 `/data/system_ce/<user_id>/`)。
 
-AOSP 中的关键实现路径:
+AOSP android-17.0.0_r1 中的关键实现路径:
 - `system/vold/FsCrypt.cpp`:`fscrypt_prepare_user_storage()` 函数准备 DE/CE 目录并应用 fscrypt policy
 - `system/vold/Utils.cpp`:`BuildDataSystemDePath()`、`BuildDataMiscDePath()`、`BuildDataUserDePath()` 生成 `/data/system_de/<user>`、`/data/misc_de/<user>`、`/data/user_de/<user>` 等路径
 
