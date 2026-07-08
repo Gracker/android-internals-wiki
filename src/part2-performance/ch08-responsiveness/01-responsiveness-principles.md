@@ -35,7 +35,7 @@ last_task6_audit: "2026-07-09"
 last_task6_audit_type: "idle-audit"
 review_round: 1
 task9_result: "auto-fixed"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-08"
 last_task9_at: "2026-07-08T20:27:03+08:00"
@@ -48,7 +48,9 @@ finalized_by: "openclaw-task9-auto-promote"
 last_task9_audit_result: auto-fixed
 last_task9_audit_log: "logs/deep-review/2026-07-08-20-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-22
+last_deepseek_cn_review_at: 2026-07-09
+last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
+task2b_verifier_notes: "2026-07-09 Task2B Verifier: task9_state reviewed→pending; Task6 re-reviewed post-auto-fix (pass-light-edit), pipeline task9_pending correct, task9_state was stale reviewed."
 ---
 
 # 响应速度原理
@@ -82,11 +84,11 @@ last_deepseek_cn_review_at: 2026-06-22
 
 我们在 Perfetto 中看到的那些间隙——从 Input 事件到达 App，到画面最终显示在屏幕上——这段"空白"就是响应速度要解决的问题。
 
-响应速度之所以重要，是因为它直接影响用户对设备质量的第一印象。Google 在 AOSP 官方文档的《Evaluating Performance》中明确指出：**Touch latency is immediately noticeable and significantly contributes to the perception of a device.** [已验证: 官方文档, source.android.google.cn/docs/core/tests/debug/eval_perf]
+响应速度直接影响用户对设备质量的第一印象。AOSP 官方文档《Evaluating Performance》中有一句很直接的评价：触摸延迟会立刻被用户察觉，并且很大程度上决定了用户对这台设备的直觉印象（"Touch latency is immediately noticeable and significantly contributes to the perception of a device"）。[已验证]
 
 用户也许无法区分 500ms 和 600ms 的启动时间，但对触摸响应的延迟极其敏感。一个设备启动再快，如果触摸之后画面纹丝不动，用户会觉得这台机器"卡"。这就是为什么 Google 认为，在性能优先级排序中，**UI 渲染管线的流畅性高于一切**——包括应用启动速度。
 
-从用户体验治理角度看，响应速度和流畅性属于同一类问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢就是同一条体验路径上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
+从用户体验角度看，响应速度和流畅性本质上是同一类问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢就是同一条体验路径上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
 
 搞清楚响应速度的完整路径之后，在 Perfetto 里定位延迟就有了方向——延迟可能出在 Input 分发、App 主线程处理或渲染合成三个阶段。每一种瓶颈的优化方向完全不同，先确认"慢在哪里"是解决问题的第一步。
 
@@ -212,7 +214,7 @@ Android Vitals 区分三种启动类型，并分别设定了"过长"的告警阈
 
 Android Vitals 当前用两个更精细的启动指标描述启动体验：
 
-**TTID（Time To Initial Display）**——从系统收到启动 Intent 到 App 第一帧绘制完成的时间。这个指标由系统自动上报，反映的是用户从点击图标到看到 App 画面的时间。
+**TTID（Time To Initial Display）**——从系统收到启动 Intent 到 App 第一帧绘制完成的时间。TTID 由系统自动上报，反映用户从点击图标到看到 App 画面的耗时。
 
 **TTFD（Time To Full Display）**——从启动到 App 调用 `Activity.reportFullyDrawn()` 的时间。`reportFullyDrawn()` 从 API 19（Android 4.4）起就已存在；这个指标反映的是 App 内容完全加载并可交互的时间。开发者需要主动调用 `reportFullyDrawn()` 来触发上报，如果不调用，TTFD 就不会被记录。[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time；AOSP android-4.4_r1 Activity.reportFullyDrawn() 已存在]
 
@@ -224,7 +226,7 @@ ANR 是响应速度问题的极端表现。当主线程被阻塞超过一定时�
 
 ## 感知速度 vs 实际速度
 
-这一节讨论的可能是整个响应速度优化中最实用的一个观点：**用户感知到的速度，不完全等于具体的执行速度。**
+这一节讨论的可能是整个响应速度优化中最实用的一个观点：**用户感觉到的"快"，和处理速度快不是一回事。**
 
 ### 为什么感知速度更重要
 
@@ -322,6 +324,6 @@ RAIL 的基本思想——根据用户的感知阈值设定性能目标——是
   - `frameworks/base/core/java/android/view/ViewRootImpl.java`（渲染管线入口）
 
 
-> **验证状态**：本节主要内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-17.0.0_r1 源码复核，源码锚点不依赖 main/master。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；ARR 表述限定为支持 HAL/API 的 Android 15 QPR1+ 设备，Android 16 应用侧 API 另行说明；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
+> **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-17.0.0_r1 源码复核。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；ARR 表述限定为支持 HAL/API 的 Android 15 QPR1+ 设备，Android 16 应用侧 API 另行说明；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
 >
 > **术语约定**：全文统一使用"响应速度"（Responsiveness）作为主要术语。"响应延迟"仅在引用外部指标定义时作为时间度量值使用，不作为独立术语。
