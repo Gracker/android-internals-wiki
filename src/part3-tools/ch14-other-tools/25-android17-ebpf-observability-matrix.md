@@ -230,3 +230,180 @@ dmabufIter 能否辅助定位 SurfaceFlinger/Camera HAL 的 DMA-BUF 泄漏，取
 ---
 
 > 本节基于 AOSP `android-17.0.0_r1` 源码基线撰写。新增 eBPF 程序的来源：[来源: intake/daily-info/2026-07-01.md #27-30, #34]；架构分析交叉引用 §14.10（eBPF 工具应用）和 §14.21（bpfloader 架构）。
+
+
+---
+
+<!-- AIW-源码调研-2026-07-09 -->
+
+## 源码级验证补充（android-17.0.0_r1 实读）
+
+> 本节为 2026-07-09 源码调研的补充：直接读取 `platform/system/bpfprogs/+/refs/heads/android17-release` HEAD `238924255acb29e72d0204ca66d4ea0792b84abb` 下的 6 个文件，把上文所有 `[待验证]` 项目**用源码事实**替代。完整报告见 `DeepResearch/2026-07-09-android17-ebpf-observability-matrix-verified.md`。
+
+### 附件 1 — 仓库拓扑与 Android.bp 构建清单
+
+`android17-release` 标签下 `system/bpfprogs/` 的真实目录结构：
+
+```
+Android.bp              # 顶层构建清单（113 行）
+cyclePerUid.c           # 主目录新增
+dmabufIter.c            # 主目录新增
+fuseMedia.c             # 既有（Android 13+）
+timeInState.c           # 既有（Android 12+）
+progs.aconfig           # aconfig flag 定义（23 行）
+locks/                  # 子目录新增
+  ├── Android.bp
+  ├── bpfLockContention.c
+  └── include/locks/
+kernelwakelockduration/ # 子目录新增
+  ├── Android.bp
+  ├── kernelWakelockDuration.c
+  └── TEST_MAPPING
+```
+
+**关键结论（澄清上文 [待验证: 加载路径]）**：所有 4 个新增程序均使用 `libbpf_prog { ... }`（而非老式 `bpf { ... }`），即**走 BTF-enabled CO-RE 路径**，输出 `.bpf` 文件，**不走 `legacyBpfLoader()`**。依赖 BTF 信息意味着**非 GKI 设备可能不支持这些程序**。
+
+| 模块名 | 源码文件 | `relative_install_path` | 启用架构 | 是否 aconfig flag |
+|--------|---------|------------------------|---------|------------------|
+| `timeInState.bpf` | `timeInState.c` | `cputimeinstate` | 全架构 | 否（默认加载） |
+| `fuseMedia.bpf` | `fuseMedia.c` | （默认） | 全架构 | 否（默认加载） |
+| `dmabufIter.bpf` | `dmabufIter.c` | `dmabuf` | 全架构（除 riscv64） | **是**（`load_dmabuf_iterator`） |
+| `cyclePerUid.bpf` | `cyclePerUid.c` | `cpucycleperuid` | **仅 x86_64** | 否（构建时决定） |
+
+`cyclePerUid.bpf` 的 `enabled: false` + `arch: { x86_64: { enabled: true } }` 模式表明：**在 ARM 架构的 Pixel 设备上 cyclePerUid 不会被编译进 system image**。这是因为该程序依赖 x86 TSC（Time Stamp Counter），ARM 平台需要改用 AMU 计数器，路径完全不同。
+
+### 附件 2 — cyclePerUid：attach 类型与 map 结构
+
+**Attach 类型**：`tp_btf/sched_switch`（**BTF-enabled tracepoint**，注意是 `tp_btf/` 而非 `tracepoint/`，使用 BTF 描述的 tracepoint 参数）。
+
+**5 个 map 定义**（源码 `cyclePerUid.c:30-37`）：
+
+| Map 名称 | 类型 | 键 | 值 | 容量 | UID | 用途 |
+|---------|------|----|----|------|-----|------|
+| `last_recorded_cycle_map` | PERCPU_ARRAY | uint32_t | uint64_t | 1 | AID_SYSTEM | 上一次本 CPU 的 TSC 值 |
+| `last_running_pid_map` | PERCPU_ARRAY | uint32_t | pid_t | 1 | AID_SYSTEM | 上一次本 CPU 切换入的 PID（防 suspend/resume 双发） |
+| `uid_cpu_cycle_map` | LRU_PERCPU_HASH | uint32_t (UID) | uint64_t | MAX_TRACKED_UIDS | AID_SYSTEM | **per-UID 累计 cycle 聚合** |
+| `tsc_events` | PERF_EVENT_ARRAY | uint32_t (cpu) | int | MAX_CPUS | AID_SYSTEM | 挂载 TSC 硬件计数器 |
+| `desync_counter` | PERCPU_ARRAY | uint32_t | uint64_t | 1 | AID_SYSTEM | suspend/resume 后 desync 事件计数 |
+
+**澄清上文 [待补充: cyclePerUid 是否同时提供 per-process 分解能力]**：源码 `cyclePerUid.c:108-112` 显示归因键**仅用 `uid = uid_gid & 0xFFFFFFFF`**——cyclePerUid **纯粹 per-UID，不提供 per-process 分解**。要 per-process 必须叠加其他观测手段（如 simpleperf）。
+
+**TSC 溢出判断**（源码注释）：`// The Time Stamp Counter (TSC) is a 64-bit counter. Wraparound is not a practical concern as it would take over 100 years for a 5GHz CPU.` — cycles 维度在 5GHz CPU 上需 100+ 年溢出，可视为单调递增。
+
+### 附件 3 — dmabufIter：iterator 机制与输出字段
+
+**Attach 类型**：`iter/dmabuf`（**BPF iterator**，挂载在内核 `bpf_iter__dmabuf` 钩子）。
+
+**输出字段**（源码 `dmabufIter.c:42`）：每块 dma_buf 输出一行 4 段 →
+
+```
+%lu
+%llu
+%s
+%s
+
+└── inode / size / name / exp_name
+```
+
+注意源码中 `exp_name` 字段是 `dmabuf->exp_name`（DMA-BUF 导出方名字），而 §14.25 上文推测的 `attachment_count` 字段**在源码中并未出现**——dmabufIter 适合做 buffer 数量审计、总占用审计，但不能直接给出 attachment 引用计数。
+
+**字符串清洗**：源码 `dmabufIter.c:24-28` 显式实现 `sanitize_string()`——把 `
+` 替换为空格，避免破坏 seq_file 行分隔。这意味着**用户态解析需按行读，不能简单按字段 split**。
+
+### 附件 4 — locks/bpfLockContention：tracepoint 与聚合算法
+
+**Attach 类型**（澄清上文 [待验证]）：
+- `tp/lock/contention_begin`
+- `tp/lock/contention_end`
+
+注意是 **`contention_begin/end`** 而非上文的 `lock_acquire/release` 推测——`contention_begin` 只在**实际发生竞争等待时**触发，非每次锁获取都触发，**数据量级更低、聚焦真正有性能影响的事件**。
+
+**2 个 HASH map**（4096 entry，AID_SYSTEM）：
+
+| Map | 键 | 值 | 用途 |
+|-----|----|----|------|
+| `contention_start_map` | `{tgid, tid, lock_name}` | uint64_t (起始 ns) | in-flight 跟踪：每个线程 × 每个锁 |
+| `contention_latency_map` | `{tgid, lock_name}` | `{sum, count, max, min, comm}` | 聚合：每个进程 × 每个锁 |
+
+**白名单机制**：源码 `bpfLockContention.c:38-41` 调用 `get_lock_id(lock_addr, task)`——返回 `LOCK_ID_UNKNOWN` 直接 return 0，**只跟踪列入白名单的全局锁**。具体白名单在 `locks/include/locks/bpf_lock_macros.h` 中定义（本次未读取）。
+
+**性能控制**：
+- sum/count 使用 `__sync_fetch_and_add` 原子累加（无锁）
+- min/max 使用「racy but simpler」的非原子更新（源码注释 `// Use racy but simpler updates for min/max`）
+- 不依赖完整 `CONFIG_LOCKDEP`（lockdep 全开有 10-20% 性能开销），仅需 `CONFIG_LOCK_EVENT_COUNTS`——**相对低侵入**
+
+### 附件 5 — kernelWakelockDuration：cec 增量算法与初始化竞态
+
+**Attach 类型**：`raw_tp/wakeup_source_activate` + `raw_tp/wakeup_source_deactivate`（**raw tracepoint**，直接读 `bpf_raw_tracepoint_args->args[]`，跳过 tracepoint 格式化层）。
+
+**关键算法 `initialize()`**（源码 `kernelWakelockDuration.c:88-129`）：
+
+```c
+uint64_t cec_upper = cec >> IN_PROGRESS_BITS;     // 已完成 wakelock 数（高 16 位）
+uint64_t cec_lower = cec & MAX_IN_PROGRESS;       // in-progress wakelock 数（低 16 位）
+uint64_t distance = (kMaxCecUpper + cec_upper - previous_cec_upper) % kMaxCecUpper;
+
+if (((distance == 0) && (previous_cec_lower > cec_lower)) || (distance > (kMaxCecUpper / 2))) {
+    return SKIP_PROCESSING;  // 跳过老事件
+}
+if (distance > 64) {
+    __sync_fetch_and_or(&state_map->program_init, kFullyInitialized);
+}
+```
+
+**cec 字段**：kernel wakelock 子系统用一个**独立的「concurrent event counter (cec)」字段携带状态信息**——高 16 位是「已完成 wakelock 计数」，低 16 位是「in-progress wakelock 数」。**这种设计允许 eBPF 程序在事件丢失时仍能从 cec 增量推断持续时间，是处理「BPF 动态加载 vs 内核事件持续产生」竞态的标准模式**。
+
+**`raw_tp` vs `tp`**：与 cyclePerUid 的 `tp_btf/` 不同，kernelWakelockDuration 使用 `raw_tp/`——直接读 raw args 数组，避免 tracepoint 格式化开销，**路径性能更高**，但需要直接理解内核 tracepoint proto。
+
+### 附件 6 — progs.aconfig 的 3 个 flag
+
+```aconfig
+package: "android.bpfprogs.flags"
+container: "system"
+
+flag { name: "kernel_wakelock_duration"
+       namespace: "pixel_data_engineering"
+       bug: "373519546" }
+
+flag { name: "load_dmabuf_iterator"
+       namespace: "android_kernel"
+       bug: "442596542" }
+
+flag { name: "load_bpf_lock_contention"
+       namespace: "kernel_memory_management"
+       bug: "442017923" }
+```
+
+**注意点**：
+- **3 个 flag 的 namespace 各不相同**（pixel_data_engineering / android_kernel / kernel_memory_management）——说明这是灰度策略，由不同团队/不同 release 节奏控制
+- bug 号在 `373-442` 区间说明这些是 **2024-2025 较新加入**的特性，处于成熟度爬升期
+- **`cyclePerUid` 不在 aconfig 中**——它的启用完全由 `Android.bp` 的 `arch: { x86_64: { enabled: true } }` 决定，是构建时硬编码开关，**Pixel ARM 设备上不可用**
+- 既然是 aconfig flag 控制，理论上可以通过 `adb shell cmd device_config` 灰度开启，但具体 default 值在 `frameworks/proto_logging` 或 `vendor/` 中（本次未读取）
+
+### 附件 7 — 上文 `[待验证]` 解决状态
+
+| §14.25 原 `[待验证]` 项 | 解决状态 | 证据 |
+|------------------------|---------|------|
+| cyclePerUid 的数据来源 | ✅ PMU TSC 计数器 | `tsc_events` map + 源码注释 |
+| cyclePerUid 是否 per-process | ✅ 纯 per-UID | `uid = uid_gid & 0xFFFFFFFF` |
+| dmabufIter 挂载方式 | ✅ BPF iterator（`iter/dmabuf`） | `DEFINE_BPF_PROG("iter/dmabuf", ...)` |
+| dmabufIter 是否能定位泄漏 | ⚠️ 部分（数量/总量审计可，attachment_count 字段**不存在**） | 源码字段列表 |
+| 新增程序的加载路径 | ✅ libbpf 路径（`.bpf` + CO-RE） | `Android.bp` 的 `libbpf_prog { ... }` |
+| kernelWakelockDuration attach | ✅ `raw_tp/wakeup_source_activate` | `DEFINE_BPF_PROG("raw_tp/wakeup_source_activate", ...)` |
+| bpfLockContention attach | ✅ `tp/lock/contention_begin` + `tp/lock/contention_end` | 源码 |
+| 是否依赖 CONFIG_LOCKDEP | ✅ 否，仅需 `CONFIG_LOCK_EVENT_COUNTS` | 源码未引用 lockdep API |
+| 新增程序的 Perfetto data source 对接 | ❌ 未在 `system/bpfprogs/` 中找到证据 | 本次未深入 `platform/packages/modules/Perfetto` |
+
+### 附件 8 — 新增澄清：cpucycleperuid Rust FFI 库
+
+§14.25 上文推测 `libs/cpucycleperuid/lib.rs` 是配套的 Rust FFI 库。**本调研在 `android17-release` 中未找到 `libs/cpucycleperuid/` 目录**。可能的解释：
+
+1. 该目录位于其他仓库（如 `platform/frameworks/base` 或 `platform/packages/modules/Statsd`），后续需交叉验证
+2. cyclePerUid 的用户态 reader 仍在开发中（bug=373-442 区间说明这些特性较新）
+3. §14.25 上文基于多源文章推测，**该推测无源码证据**
+
+> 建议在 §14.25 的「🔹 cpucycleperuid Rust FFI 库」一段标注 `[未验证: 仓库路径]`。
+
+---
+
+> 本节基于 AOSP `android-17.0.0_r1` 源码基线实读，HEAD = `238924255acb29e72d0204ca66d4ea0792b84abb`。所有源码路径均来自 `https://android.googlesource.com/platform/system/bpfprogs/+/refs/heads/android17-release/`。完整报告与对照见 `DeepResearch/2026-07-09-android17-ebpf-observability-matrix-verified.md`。

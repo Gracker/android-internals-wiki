@@ -5,9 +5,9 @@ chapter: '14.4'
 section: '14.4'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-task6_result: "pass-light-edit"
+task6_result: pass-light-edit
 task2b_state: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: task9_pending
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
 last_verified: "2026-07-09"
 last_verified_against: AOSP android-17.0.0_r1
@@ -43,14 +43,14 @@ review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHi
 last_task9_audit: "2026-07-09"
 last_task9_audit_log: "logs/deep-review/2026-07-09-01-audit.md"
 status: ready-for-review
-task6_state: "revisiting"
-task9_state: "reviewed"
+task6_state: reviewed
+task9_state: pending
 task2b_result: "fixed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-29"
-last_task6_at: "2026-05-29T06:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-29-06-review.md"
-task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。正文 L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项，Task9 auto-fixed 不满足自动晋升条件，送 Task9 复审。"
+reviewed_by: openclaw-task6
+reviewed_date: 2026-07-09
+last_task6_at: "2026-07-09T04:09:48+08:00"
+last_task6_review_log: logs/review/2026-07-09-04-review.md
+task6_review_notes: "2026-07-09 04:09 Task6 revisiting review: pass-light-edit。Task9 idle audit auto-fixed (PostProcess Changes enum + android-17 基线标注) 已验证，正文写作质量通过。L1/L2 无新增问题，outline 6/6 覆盖。无 B 类回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-07-09-01-audit.md"
 task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。 | 2026-05-30 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 SurfaceFlinger FrontEnd mainline 锚点与 kMustComposite/tryFastUpdate 边界，回到 Task6 复审。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；复核 dumpsys.cpp、ActivityManagerService exit-info、HWUI FrameInfo/JankTracker/GraphicsStatsService、SurfaceFlinger dump flags 与 FrontEnd 锚点；无阻断技术问题。 | 2026-07-09 01 Task9 idle audit: auto-fixed。P0 1 / P1 0 / P2 0；按 AOSP android-17.0.0_r1 复核 dumpsys / WindowManager / HWUI / SurfaceFlinger，修正 FrontEnd Changes 枚举遗漏 PostProcess 与 android-17 基线标注，回到 Task6 复审。"
 last_task9_autofix_at: "2026-07-09"

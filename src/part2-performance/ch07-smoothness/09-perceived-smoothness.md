@@ -31,19 +31,19 @@ task9_review_notes: "2026-07-09 Task9 idle audit AUTO-FIX: 以 android-17.0.0_r1
 review_notes: "2026-06-16 Task6：修正 outline 块格式问题，L1/L2 通过，送回 Task9 处理技术项。"
 last_task9_audit: "2026-07-09"
 status: ready-for-review
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task9_state: "reviewed"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: "fixed"
 task2b_result: "fixed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-16"
-task6_result: "pass-light-edit"
-last_task6_at: 2026-06-16T22:15:00+08:00
+reviewed_by: openclaw-task6
+reviewed_date: 2026-07-09
+task6_result: pass-light-edit
+last_task6_at: "2026-07-09T04:09:48+08:00"
 last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for-review; Task9 idle audit auto-fixed (P0 1), pipeline task6_pending + task6_state revisiting correct, status was stale finalized."
-last_task6_review_log: "logs/review/2026-05-24-01-review.md"
-task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2 小修 5 处（压低否定-纠正式句式、移除 AIW 编辑注释、把新增 Buffer Stuffing Recovery 段移到参考资料前）。无新增 Task6 回炉；InputConsumer DEBUG tag 已由 Task2B 修复，等待 Task9 复审。"
+last_task6_review_log: logs/review/2026-07-09-04-review.md
+task6_review_notes: "2026-07-09 04:09 Task6 revisiting review: pass-light-edit。修复 21 处 heading 格式问题（标题与正文挤在同一行）。L1/L2 通过，outline 6/6 覆盖。Task9 idle audit auto-fixed (Choreographer lockAnimationClock 签名 + InputConsumer RESAMPLE_LATENCY) 已验证。无 B 类回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-17-01-deep-review.md"
 last_task9_audit_at: "2026-07-09T02:31:12+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-09-02-audit.md"
@@ -88,9 +88,13 @@ last_deepseek_cn_review_at: 2026-06-26
 
 ### 典型场景
 
-最常见的一类感知流畅性场景出现在手势导航窗口动画里。在多任务界面（Recent Apps）上划回桌面时，窗口缩小的动画前期变化速度过快、后期突然变慢。这里更像是动画插值曲线的加速度分布不合理，导致画面位移量在动画开头和结尾差异太大。另一个典型场景是 RecyclerView 的 fling 滚动。手指快速划过后，列表惯性滚动的前几帧位移量往往波动较大，后几帧又趋于平稳。这种"开头猛后面缓"的非线性减速如果不够平滑，就会产生顿挫感。## 步幅波动的技术成因
+最常见的一类感知流畅性场景出现在手势导航窗口动画里。在多任务界面（Recent Apps）上划回桌面时，窗口缩小的动画前期变化速度过快、后期突然变慢。这里更像是动画插值曲线的加速度分布不合理，导致画面位移量在动画开头和结尾差异太大。另一个典型场景是 RecyclerView 的 fling 滚动。手指快速划过后，列表惯性滚动的前几帧位移量往往波动较大，后几帧又趋于平稳。这种"开头猛后面缓"的非线性减速如果不够平滑，就会产生顿挫感。
 
-上面描述的现象在 Trace 中不会标红，在 FrameTimeline 里也不会有 jank 标记，但它会影响用户体验。App 侧时间量化只是其中一类成因。先把 OverScroller 和 Choreographer 的时间模型讲清，再看怎样把它和显示侧、输入侧的问题分开。### 成因一：OverScroller 的毫秒时间量化
+## 步幅波动的技术成因
+
+上面描述的现象在 Trace 中不会标红，在 FrameTimeline 里也不会有 jank 标记，但它会影响用户体验。App 侧时间量化只是其中一类成因。先把 OverScroller 和 Choreographer 的时间模型讲清，再看怎样把它和显示侧、输入侧的问题分开。
+
+### 成因一：OverScroller 的毫秒时间量化
 
 RecyclerView fling 常走 `OverScroller.computeScrollOffset()` 的 `FLING_MODE`。推进位置的是内部 `SplineOverScroller.update()`，它先读取 `AnimationUtils.currentAnimationTimeMillis()`，再按经过的时间推进当前位置。```java
 // frameworks/base/core/java/android/widget/OverScroller.java
@@ -116,7 +120,9 @@ boolean update() {
 | 4 | 33,333,332 | 33ms | 9ms | +8% |
 | 5 | 41,666,665 | 41ms | 8ms | -4% |
 
-`8_333_333 × 4 = 33_333_332`，`floor(33_333_332 / 1_000_000) = 33`，比上一帧多了 9ms。这是因为累积的小数部分在第 4 帧超过了 1ms 阈值。ms 取整之后，时间推进以 8ms 为主、周期性出现 9ms 跳变。高速度 fling 段里，同样的 1ms 跳动会直接反映到位移采样。### 成因二：SplineOverScroller 的样条表精度损失
+`8_333_333 × 4 = 33_333_332`，`floor(33_333_332 / 1_000_000) = 33`，比上一帧多了 9ms。这是因为累积的小数部分在第 4 帧超过了 1ms 阈值。ms 取整之后，时间推进以 8ms 为主、周期性出现 9ms 跳变。高速度 fling 段里，同样的 1ms 跳动会直接反映到位移采样。
+
+### 成因二：SplineOverScroller 的样条表精度损失
 
 `SplineOverScroller.update()` 在 `SPLINE` 状态下不走简单的二次公式,而是从预计算的 `SPLINE_POSITION` 表和相邻采样点的斜率中插值出 `distanceCoef` 与 `velocityCoef`。```java
 // frameworks/base/core/java/android/widget/OverScroller.java
@@ -134,7 +140,9 @@ switch (mState) {
 
 这段代码决定了常规 fling 的主要轨迹。`BALLISTIC` 和 `CUBIC` 只覆盖越界、回弹和 springback 等状态；常规 fling 不能用二次公式代表整段轨迹。
 
-`SplineOverScroller.update()` 在 `SPLINE` 状态下不会按 `position = start + velocity * time - friction * time^2` 直接算位移。它先把 `currentTime / mSplineDuration` 映射到样条进度 `t`，不能拿来代表整段 fling。会受 8ms / 9ms 交替影响的是样条进度 `t` 的采样点，以及由此得到的 `distanceCoef` / `velocityCoef`。在高速段，样条表相邻采样点之间的位移差更大，所以 1ms 量化更容易变成肉眼可见的步幅抖动。### 成因三：Choreographer 把时间同步到 VSync，但精度仍停在毫秒
+`SplineOverScroller.update()` 在 `SPLINE` 状态下不会按 `position = start + velocity * time - friction * time^2` 直接算位移。它先把 `currentTime / mSplineDuration` 映射到样条进度 `t`，不能拿来代表整段 fling。会受 8ms / 9ms 交替影响的是样条进度 `t` 的采样点，以及由此得到的 `distanceCoef` / `velocityCoef`。在高速段，样条表相邻采样点之间的位移差更大，所以 1ms 量化更容易变成肉眼可见的步幅抖动。
+
+### 成因三：Choreographer 把时间同步到 VSync，但精度仍停在毫秒
 
 OverScroller 并没有完全绕开 `Choreographer`。`Choreographer.doFrame()` 在执行本帧回调前，会把当前线程的动画时钟锁到这一帧的 `frameTimeNanos` 对应毫秒值。```java
 // frameworks/base/core/java/android/view/Choreographer.java
@@ -152,16 +160,22 @@ public static long currentAnimationTimeMillis() {
 }
 ```
 
-这说明 `AnimationUtils.currentAnimationTimeMillis()` 读到的是跟当前 VSync 同步过的线程本地动画时钟。Choreographer 内部维护的 `mLastFrameTimeNanos` 仍然是纳秒值，但传给 `AnimationUtils.lockAnimationClock()` 时已经执行了 `frameTimeNanos / NANOS_PER_MS` 这一步 long 整数除法。这里的行为是直接向下截断，不是四舍五入：`8_999_999ns / 1_000_000 = 8ms`，`9_000_001ns / 1_000_000 = 9ms`。两次 VSync 只差 2ns，动画时钟却会跨过完整的 1ms 档位。120Hz 面板上一帧只有 8.33ms，这种跳变会把样条进度和位移量一起放大。## 帧率稳定性与步幅均匀性的关系
+这说明 `AnimationUtils.currentAnimationTimeMillis()` 读到的是跟当前 VSync 同步过的线程本地动画时钟。Choreographer 内部维护的 `mLastFrameTimeNanos` 仍然是纳秒值，但传给 `AnimationUtils.lockAnimationClock()` 时已经执行了 `frameTimeNanos / NANOS_PER_MS` 这一步 long 整数除法。这里的行为是直接向下截断，不是四舍五入：`8_999_999ns / 1_000_000 = 8ms`，`9_000_001ns / 1_000_000 = 9ms`。两次 VSync 只差 2ns，动画时钟却会跨过完整的 1ms 档位。120Hz 面板上一帧只有 8.33ms，这种跳变会把样条进度和位移量一起放大。
+
+## 帧率稳定性与步幅均匀性的关系
 
 这两者常常被混淆，但它们是完全独立的维度。我们可以用一个 2x2 表来理解：| | 步幅均匀 | 步幅不均匀 |
 |---|---|---|
 | **不掉帧** | 运动连续 | 无掉帧卡顿（本章主题） |
 | **掉帧** | 有规律的卡顿 | 最差体验 |
 
-"无掉帧卡顿"（no-jank stutter）是最容易被忽略的象限。传统工具报告"0 frames janky"，但用户仍然不满意。**视觉惯性**是理解这个问题的关键概念。人类的视觉系统对匀速运动有很强的预期。当一个物体开始运动后，大脑会"预测"它在下一帧的位置。如果实际位置与预测位置偏差过大（无论是因为帧率不稳定还是步幅不均匀），大脑就会感知到"不连贯"。这也解释了为什么 VSync 调度优化（如 Frame Pacing Library，见 2.17 节）只能解决帧率稳定性问题，不能解决步幅均匀性问题。Frame Pacing 确保"每一帧在正确的时间点呈现"，但不保证"每一帧的位移量正确"。## 在 Perfetto 中量化步幅波动
+"无掉帧卡顿"（no-jank stutter）是最容易被忽略的象限。传统工具报告"0 frames janky"，但用户仍然不满意。**视觉惯性**是理解这个问题的关键概念。人类的视觉系统对匀速运动有很强的预期。当一个物体开始运动后，大脑会"预测"它在下一帧的位置。如果实际位置与预测位置偏差过大（无论是因为帧率不稳定还是步幅不均匀），大脑就会感知到"不连贯"。这也解释了为什么 VSync 调度优化（如 Frame Pacing Library，见 2.17 节）只能解决帧率稳定性问题，不能解决步幅均匀性问题。Frame Pacing 确保"每一帧在正确的时间点呈现"，但不保证"每一帧的位移量正确"。
 
-FrameTimeline 能回答“这一帧何时计划、何时提交、何时呈现”，但它不直接保存 `scrollY`、`translationX` 或动画值。帧时间均匀，只能说明调度节奏稳定，不能直接推出位移也均匀。### 路径一：在应用侧同步采样位移
+## 在 Perfetto 中量化步幅波动
+
+FrameTimeline 能回答“这一帧何时计划、何时提交、何时呈现”，但它不直接保存 `scrollY`、`translationX` 或动画值。帧时间均匀，只能说明调度节奏稳定，不能直接推出位移也均匀。
+
+### 路径一：在应用侧同步采样位移
 
 最直接的办法是在 `FrameCallback`、动画更新回调或自定义 `RecyclerView.OnScrollListener` 中，同帧记录位移与时间。```kotlin
 // [示意代码] 在同一条动画轨迹上记录 dt 和 displacement
@@ -185,11 +199,17 @@ class StepJitterProbe(
 }
 ```
 
-目标对象可以换成 `translationX`、`RecyclerView.computeVerticalScrollOffset()`、自定义动画值或 layer bounds。要算的是同一段轨迹上的 `位移方差`、`速度方差` 和 `时间方差`。其中 `dt variance` 只是辅助指标，不能替代位移采样。做对照实验时，可以保留同一条插值曲线，只把时间源切成 `frameTimeNanos`：`deltaSeconds = (frameTimeNanos - startNanos) / 1_000_000_000.0`，再用浮点时间推进位移。如果 FrameTimeline 形态不变、位移采样明显收敛，根因就更接近毫秒量化。### 路径二：用 FrameTimeline 判断呈现节奏是否是根因
+目标对象可以换成 `translationX`、`RecyclerView.computeVerticalScrollOffset()`、自定义动画值或 layer bounds。要算的是同一段轨迹上的 `位移方差`、`速度方差` 和 `时间方差`。其中 `dt variance` 只是辅助指标，不能替代位移采样。做对照实验时，可以保留同一条插值曲线，只把时间源切成 `frameTimeNanos`：`deltaSeconds = (frameTimeNanos - startNanos) / 1_000_000_000.0`，再用浮点时间推进位移。如果 FrameTimeline 形态不变、位移采样明显收敛，根因就更接近毫秒量化。
 
-Perfetto 的价值在于分型。Perfetto 文档对 FrameTimeline 的定义很清楚：Android 12(S)+ 才有这组数据；`Expected Timeline` 是调度器分给 App 的渲染窗口，`Actual Timeline` 是 App 实际完成并提交给 SurfaceFlinger 的时间。如果 displacement sample 明显波动，但 `Actual Timeline` 基本贴着 `Expected Timeline`，更像 App 侧的物理模型、插值或时间量化问题。如果位移采样相对平稳，`Actual Timeline` 到 SurfaceFlinger 的实际呈现时间仍有抖动，就要继续看合成、显示模式切换和 present fence。### 路径三：Android 16 的 AppJankStats 与 RelativeFrameTimeHistogram
+### 路径二：用 FrameTimeline 判断呈现节奏是否是根因
 
-Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFrameTimeHistogram`，但它们不是“系统自动收集、零代码侵入”的全局 Trace API。`AppJankStats` 用来描述单个 UI widget 在某个状态下的 jank 统计，`RelativeFrameTimeHistogram` 记录这些帧相对 deadline 的分布。把数据交给系统的入口是 `View.reportAppJankStats(AppJankStats)`。这组 API 更适合 library / widget 插桩，例如列表、播放器控件或复杂动画组件把自己的局部抖动统计上报给系统。它能补齐“哪个 widget 在什么状态下更容易抖”的视角，但不能替代 Perfetto 对整个显示栈的被动追踪。**精度限制**：`RelativeFrameTimeHistogram` 使用预定义毫秒桶（bucket），外侧依次为 5ms、10ms、50ms、100ms 等更粗粒度。输入 `addRelativeFrameTimeMillis(int)` 接受整数毫秒，记录结果落入预定义桶，并不是 1ms 精度的连续采样。-20ms 到 20ms 区间内为 2ms 桶，但输出统计落到对应桶内。同时，该 histogram 记录的是帧时间相对 deadline 的偏差，不包含位移、`scrollY` 或动画值信息，因此不能直接判断步幅波动的大小。对于步幅敏感场景（如列表 fling 滚动、跟手动画），官方统计 API 适合粗粒度的 widget 级帧时间分布画像，不能替代应用侧纳秒级时间 + 位移采样。如果需要检测细粒度步幅波动，仍应回到路径一的应用侧采样方案。### 根因分型：不要把所有“无掉帧卡顿”都归到 OverScroller
+Perfetto 的价值在于分型。Perfetto 文档对 FrameTimeline 的定义很清楚：Android 12(S)+ 才有这组数据；`Expected Timeline` 是调度器分给 App 的渲染窗口，`Actual Timeline` 是 App 实际完成并提交给 SurfaceFlinger 的时间。如果 displacement sample 明显波动，但 `Actual Timeline` 基本贴着 `Expected Timeline`，更像 App 侧的物理模型、插值或时间量化问题。如果位移采样相对平稳，`Actual Timeline` 到 SurfaceFlinger 的实际呈现时间仍有抖动，就要继续看合成、显示模式切换和 present fence。
+
+### 路径三：Android 16 的 AppJankStats 与 RelativeFrameTimeHistogram
+
+Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFrameTimeHistogram`，但它们不是“系统自动收集、零代码侵入”的全局 Trace API。`AppJankStats` 用来描述单个 UI widget 在某个状态下的 jank 统计，`RelativeFrameTimeHistogram` 记录这些帧相对 deadline 的分布。把数据交给系统的入口是 `View.reportAppJankStats(AppJankStats)`。这组 API 更适合 library / widget 插桩，例如列表、播放器控件或复杂动画组件把自己的局部抖动统计上报给系统。它能补齐“哪个 widget 在什么状态下更容易抖”的视角，但不能替代 Perfetto 对整个显示栈的被动追踪。**精度限制**：`RelativeFrameTimeHistogram` 使用预定义毫秒桶（bucket），外侧依次为 5ms、10ms、50ms、100ms 等更粗粒度。输入 `addRelativeFrameTimeMillis(int)` 接受整数毫秒，记录结果落入预定义桶，并不是 1ms 精度的连续采样。-20ms 到 20ms 区间内为 2ms 桶，但输出统计落到对应桶内。同时，该 histogram 记录的是帧时间相对 deadline 的偏差，不包含位移、`scrollY` 或动画值信息，因此不能直接判断步幅波动的大小。对于步幅敏感场景（如列表 fling 滚动、跟手动画），官方统计 API 适合粗粒度的 widget 级帧时间分布画像，不能替代应用侧纳秒级时间 + 位移采样。如果需要检测细粒度步幅波动，仍应回到路径一的应用侧采样方案。
+
+### 根因分型：不要把所有“无掉帧卡顿”都归到 OverScroller
 
 | 现象 | 重点看哪里 | 更像哪类问题 |
 |---|---|---|
@@ -208,13 +228,21 @@ Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态
 
 ### 策略一：App 侧动画使用同一套 VSync 时间基准
 
-当根因落在 `OverScroller` 或自定义动画时，首要目标是让位移计算和显示调度使用同一套时间基准。对可改造的动画逻辑，优先使用 `frameTimeNanos` 或 `VsyncCallback` 提供的 `FrameData`，不要在帧回调里额外采一次毫秒时钟。只有当位移采样已经证明“FrameTimeline 绿色，但 displacement variance 高”时，这类改造才值得做。### 策略二：显示节奏不稳时，先修 SurfaceFlinger 和刷新率切换
+当根因落在 `OverScroller` 或自定义动画时，首要目标是让位移计算和显示调度使用同一套时间基准。对可改造的动画逻辑，优先使用 `frameTimeNanos` 或 `VsyncCallback` 提供的 `FrameData`，不要在帧回调里额外采一次毫秒时钟。只有当位移采样已经证明“FrameTimeline 绿色，但 displacement variance 高”时，这类改造才值得做。
 
-如果 Trace 显示 `Actual Timeline`、display mode 或 present fence 在抖，继续打磨 `OverScroller` 没什么用。这里更有效的是固定刷新率范围、减少 ARR 来回切换、检查 buffer stuffing 恢复，以及确认 SurfaceFlinger 合成负载是否在波动。判断依据是，App 侧位移采样相对平稳，但最终呈现时间不稳。### 策略三：插值器斜率与步幅均匀性
+### 策略二：显示节奏不稳时，先修 SurfaceFlinger 和刷新率切换
 
-步幅敏感场景（如 fling 减速段、回弹动画）中，插值器的控制点斜率会影响位移对时间误差的敏感度。`AccelerateDecelerateInterpolator` 在加速/减速段斜率变化剧烈，`1ms` 的时间误差在高速段会被斜率放大成更大的位移跳动。`PathInterpolator` 允许通过贝塞尔控制点定义更平滑的切线斜率，配合 `Choreographer.FrameData`（API 33+）拿到纳秒级时间戳做时间同步，可以减少插值器本身对时间量化的放大效应。### 策略四：跟手动画要同时看输入采样和位移采样
+如果 Trace 显示 `Actual Timeline`、display mode 或 present fence 在抖，继续打磨 `OverScroller` 没什么用。这里更有效的是固定刷新率范围、减少 ARR 来回切换、检查 buffer stuffing 恢复，以及确认 SurfaceFlinger 合成负载是否在波动。判断依据是，App 侧位移采样相对平稳，但最终呈现时间不稳。
 
-触摸跟手场景里，平滑 `dt` 只是兜底手段。更常见的做法是先对比输入事件时间戳、resampling 后的位置和屏幕上的实际位移。如果问题集中在手指刚按下、即将抬起或快速变向，优先检查 velocity estimate 与 prediction，而不是直接给动画再包一层 EMA。EMA 会减小抖动，但也会带来额外跟手延迟。## 与其他章节的关联
+### 策略三：插值器斜率与步幅均匀性
+
+步幅敏感场景（如 fling 减速段、回弹动画）中，插值器的控制点斜率会影响位移对时间误差的敏感度。`AccelerateDecelerateInterpolator` 在加速/减速段斜率变化剧烈，`1ms` 的时间误差在高速段会被斜率放大成更大的位移跳动。`PathInterpolator` 允许通过贝塞尔控制点定义更平滑的切线斜率，配合 `Choreographer.FrameData`（API 33+）拿到纳秒级时间戳做时间同步，可以减少插值器本身对时间量化的放大效应。
+
+### 策略四：跟手动画要同时看输入采样和位移采样
+
+触摸跟手场景里，平滑 `dt` 只是兜底手段。更常见的做法是先对比输入事件时间戳、resampling 后的位置和屏幕上的实际位移。如果问题集中在手指刚按下、即将抬起或快速变向，优先检查 velocity estimate 与 prediction，而不是直接给动画再包一层 EMA。EMA 会减小抖动，但也会带来额外跟手延迟。
+
+## 与其他章节的关联
 
 步幅波动和以下章节的内容直接相关：- **7.1 卡顿的定义与分类**：传统卡顿定义关注帧率，本章扩展了卡顿的定义维度
 - **7.8 RecyclerView 列表滑动性能深度优化**：RecyclerView 的 fling 行为直接受步幅波动影响
@@ -238,7 +266,9 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 120Hz 减轻了帧率不稳定带来的卡顿感（因为每帧时间更短，偶尔掉一帧影响更小），但反而可能**加重**步幅波动的感知。因为 VSync 周期更短（8.33ms），ms 取整误差的相对占比更大（12% vs 60Hz 下的 6%）。再加上 120Hz 下每帧位移更小，视觉系统对位移变化更敏感。**误区三："把动画时间调短就能解决卡顿"**
 
-缩短动画时间只改变了动画的总时长，不改变步幅的均匀性。一个 200ms 的动画和一个 300ms 的动画，如果每帧的位移分布都不均匀，用户感知到的不流畅程度是相似的。问题不在动画跑多快，而在相邻两帧的位移差了多少。## 输入重采样（Motion Resampling）对跟手滑动的影响
+缩短动画时间只改变了动画的总时长，不改变步幅的均匀性。一个 200ms 的动画和一个 300ms 的动画，如果每帧的位移分布都不均匀，用户感知到的不流畅程度是相似的。问题不在动画跑多快，而在相邻两帧的位移差了多少。
+
+## 输入重采样（Motion Resampling）对跟手滑动的影响
 
 > 输入重采样直接影响跟手滑动的触摸坐标质量,是步幅波动在输入侧的关联问题。更完整的触摸响应分析见 §3.2。**机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心流程在 `frameworks/native/libs/input/InputConsumer.cpp` 中：`consume()` → `consumeBatch()` 计算采样时间点 → `updateTouchState()` 更新历史样本 → `resampleTouchState()` 执行插值/外推。声明位于 `frameworks/native/include/input/InputConsumer.h`。**关键常量**（AOSP android-17.0.0_r1）：- `const std::chrono::duration RESAMPLE_LATENCY = 5ms`（5ms 预期延迟，用于减少误预测影响）
 - `RESAMPLE_MIN_DELTA = 2 * NANOS_PER_MS`（最小采样间隔，2ms）
@@ -250,9 +280,13 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 - `frameworks/native/libs/input/InputConsumer.cpp` — `consume()` / `consumeBatch()` 事件消费、`resampleTouchState()` 重采样算法、`updateTouchState()` 历史样本更新
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — 事件分发与 stale event 判定
 
-**与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本节讨论的步幅波动问题形成跨输入-渲染的完整关联。## Choreographer Buffer Stuffing Recovery（Android 16 新增）
+**与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本节讨论的步幅波动问题形成跨输入-渲染的完整关联。
 
-Android 16 引入 **Buffer Stuffing Recovery** 机制，解决应用端 Buffer Dequeue 阻塞导致的帧节拍错位问题。### 核心组件：BufferStuffingState
+## Choreographer Buffer Stuffing Recovery（Android 16 新增）
+
+Android 16 引入 **Buffer Stuffing Recovery** 机制，解决应用端 Buffer Dequeue 阻塞导致的帧节拍错位问题。
+
+### 核心组件：BufferStuffingState
 
 Choreographer.java 中新增内部类 `BufferStuffingState`：```java
 private static class BufferStuffingState {
@@ -277,20 +311,28 @@ public void onWaitForBufferRelease(long durationNanos) {
 }
 ```
 
-触发条件：客户端阻塞超过半帧周期时设 `isStuffed = true`。### 恢复机制
+触发条件：客户端阻塞超过半帧周期时设 `isStuffed = true`。
+
+### 恢复机制
 
 当 `isStuffed` 为 true 时，Recovery 进入以下两种模式之一：- **OFFSET**：添加负偏移，让下一帧提前，补偿 stuff 导致的延迟累积
 - **DELAY_FRAME**：延迟一帧，等待 Buffer 计数恢复，防止帧时间倒退
 
-`numberWaitsForNextVsync` 统计在 Recovery 期间额外等待的 VSync 次数，防止跳帧扩散。### mLastNoOffsetFrameTimeNanos
+`numberWaitsForNextVsync` 统计在 Recovery 期间额外等待的 VSync 次数，防止跳帧扩散。
+
+### mLastNoOffsetFrameTimeNanos
 
 ```java
 private long mLastNoOffsetFrameTimeNanos;
 ```
 
-保留不含 Buffer Stuffing 偏移的帧时间，用于判断系统是否处于空闲状态。### 与步幅波动的关系
+保留不含 Buffer Stuffing 偏移的帧时间，用于判断系统是否处于空闲状态。
 
-Buffer Stuffing Recovery 解决的是**供给侧阻塞**导致的帧节拍错位，与本节讨论的需求侧（OverScroller 时间精度）形成互补。两类问题都会导致"不掉帧但感觉卡"的现象，需要分别从 Buffer 队列状态和动画时间源两个方向排查。## 参考资料
+### 与步幅波动的关系
+
+Buffer Stuffing Recovery 解决的是**供给侧阻塞**导致的帧节拍错位，与本节讨论的需求侧（OverScroller 时间精度）形成互补。两类问题都会导致"不掉帧但感觉卡"的现象，需要分别从 Buffer 队列状态和动画时间源两个方向排查。
+
+## 参考资料
 
 - AOSP 源码路径（android-17.0.0_r1）：- `frameworks/base/core/java/android/widget/OverScroller.java`（`computeScrollOffset()`、`SplineOverScroller.update()`）
   - `frameworks/base/core/java/android/view/Choreographer.java`（`doFrame()`、`postVsyncCallback()`）
