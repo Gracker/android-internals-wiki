@@ -53,7 +53,7 @@ last_task9_at: '2026-06-29T11:34:21+08:00'
 task9_review_notes: '2026-06-29 Task9 deep-review: auto-fixed。P0/P1 本轮无未闭环项；已修正 Perfetto
   Android 9/10/11 版本边界、perfetto.rc 源码路径和 FrameTimeline 时间线，回到 Task6 复审。'
 last_task6_at: '2026-06-29T13:16:34+08:00'
-last_task6_audit: '2026-05-24'
+last_task6_audit: '2026-07-09'
 task6_reviewed_date: '2026-05-25'
 last_task9_review_log: logs/deep-review/2026-06-29-11-deep-review.md
 last_task9_audit: '2026-06-20'
