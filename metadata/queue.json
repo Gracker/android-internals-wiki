@@ -674,6 +674,25 @@
       "completed_at": "2026-07-08T03:36:50+08:00",
       "completed_by": "task2b-lite",
       "completion_note": "7处 android-35 → android-17.0.0_r1 版本基线替换"
+    },
+    {
+      "section": "25.19",
+      "section_title": "Android Vitals 过度 WakeLock 指标与治理",
+      "priority": 50,
+      "reason": "[Task6抽检] AOSP源码引用锚定 android-16.0.0_r3 / android16-qpr2-release，需按版本基线规范升级至 android-17.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "正文「归因路径」小节末尾两处验证标注 + frontmatter last_verified_against",
+          "detail": "AOSP源码引用使用 android-16.0.0_r3 和 android16-qpr2-release，版本基线要求锚定 android-17.0.0_r1。需 Task 9 确认 PowerManagerService.acquireWakeLockInternal() 和 BatteryStatsService.noteStartWakelock() 在 Android 17 中是否有变化。",
+          "suggestion": "更新源码验证标注至 android-17.0.0_r1，如 API 无变化则更新标签，如有变化则修正正文描述"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-09T07:05:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-09-07-audit.md"
     }
   ],
   "pending": [

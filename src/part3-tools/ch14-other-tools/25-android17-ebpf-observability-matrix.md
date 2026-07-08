@@ -407,3 +407,12 @@ flag { name: "load_bpf_lock_contention"
 ---
 
 > 本节基于 AOSP `android-17.0.0_r1` 源码基线实读，HEAD = `238924255acb29e72d0204ca66d4ea0792b84abb`。所有源码路径均来自 `https://android.googlesource.com/platform/system/bpfprogs/+/refs/heads/android17-release/`。完整报告与对照见 `DeepResearch/2026-07-09-android17-ebpf-observability-matrix-verified.md`。
+
+## 参考资料
+
+### 源码调研：Android 17 eBPF 可观测性矩阵新增程序源码级验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-09-android17-ebpf-observability-matrix-verified.md
+- 类型：DeepResearch 调研结果
+- 摘要：对 Android 17 system/bpfprogs/ 下四个新增 eBPF 程序（cyclePerUid、dmabufIter、kernelWakelockDuration、bpfLockContention）进行了 android-17.0.0_r1 源码实读验证，确认 attach 类型、map 结构、aconfig flag 控制机制及 bpfloader 加载路径。cyclePerUid 仅 x86_64 启用、依赖 TSC 硬件计数器；四个程序均走 libbpf CO-RE 路径；cpucycleperuid Rust FFI 库在 android17-release 仓库中未找到。
+- 注入时间：2026-07-09
+- 价值：直接解决 §14.25 中 5 个 [待验证] 项，提供文件级证据和 Android.bp 构建清单
