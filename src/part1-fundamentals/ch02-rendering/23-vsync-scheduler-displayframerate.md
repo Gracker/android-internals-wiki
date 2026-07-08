@@ -44,18 +44,18 @@ created_date: "2026-05-18"
 gap_source: "研究素材/官方文档/AOSP结构"
 gap_score: 16
 material_count: 4
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-20
 task6_result: pass-light-edit
 task9_state: reviewed
 last_task6_at: "2026-06-20T12:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-12-review.md"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-27T13:20:00+08:00"
+last_task9_at: "2026-07-08T17:49:54+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_lite_at: "2026-05-27"
@@ -63,19 +63,19 @@ task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
 review_type: "task6-writing-quality-review"
 task6_review_notes: "2026-06-20 12:07 Task6 revisiting-review：Task9 idle audit auto-fix（P1: Android 17 VRR 单样本预测模式版本边界）写作质量复审通过；L1 禁用词/高频词/结构性元叙述 0 命中；L2 开头/节奏/结构/读者视角全部通过；outline 8/8 覆盖；无新增 L3/L4 回炉项；task9_result=auto-fixed → pass-tech-review，queue.json 无 pending，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-27-13-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-08-17-audit.md"
 p0: 0
 p1: 1
 p2: 0
-task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSchedule/VSyncPredictor/VSyncDispatchTimerQueue/Scheduler/RefreshRateSelector 与 ARR/FrameTimeline 官方文档；未发现 P0/P1，自动晋升 finalized。"
+task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSchedule/VSyncPredictor/VSyncDispatchTimerQueue/Scheduler/RefreshRateSelector 与 ARR/FrameTimeline 官方文档；未发现 P0/P1，自动晋升 finalized。；2026-07-08 17:49 Task9 idle audit：AUTO-FIX。android-17.0.0_r1 复核 FrameTimeline/VSyncPredictor/VSyncReactor；修正 jank bitmask 数量 13→15、VSyncPredictor 离群容差 10%→20%；queue 无新增，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-20
-last_task9_autofix_at: "2026-06-20"
-last_task9_audit: "2026-06-20"
-last_task9_audit_at: "2026-06-20T11:30:27+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-20-11-audit.md"
-last_task9_audit_result: "auto-fixed-p1-version-difference"
-task9_audit_notes: "2026-06-20 Task9 idle audit: P0 0 / P1 1 / P2 0；AUTO-FIX Android 17 VsyncSchedule VRR + present fence 单样本预测模式版本边界，回到 Task6 复审。"
+last_task9_autofix_at: "2026-07-08"
+last_task9_audit: "2026-07-08"
+last_task9_audit_at: "2026-07-08T17:49:54+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-08-17-audit.md"
+last_task9_audit_result: "auto-fixed-source-accuracy"
+task9_audit_notes: "2026-07-08 Task9 idle audit: AUTO-FIX。按 Android 17(android-17.0.0_r1) 复核 FrameTimeline/VSyncPredictor/VSyncReactor；修正 FrameTimeline jank bitmask 数量 13→15，修正 VSyncPredictor 离群容差 10%→20%，VSyncReactor 10% 周期确认边界保持独立；回到 Task6 复审。"
 ---
 
 # 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略
@@ -277,7 +277,7 @@ struct JankClassificationThresholds {
 ```
 
 - 数据源名：`android.surfaceflinger.frametimeline`，Proto `FrameTimelineEvent`
-- 13 类 jank bitmask（FrameTimeline.cpp `jankTypeBitmaskToProto`）：`DisplayHAL`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`AppDeadlineMissed`、`AppResyncedJitter`、`PredictionError`、`SurfaceFlingerScheduling`、`BufferStuffing`、`Unknown`、`SurfaceFlingerStuffing`、`Dropped`（覆写语义）、`NonAnimating`、`DisplayNotOn`、`DisplayModeChangeInProgress`、`DisplayPowerModeChangeInProgress`
+- 15 类 jank bitmask（FrameTimeline.cpp `jankTypeBitmaskToProto`）：`DisplayHAL`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`AppDeadlineMissed`、`AppResyncedJitter`、`PredictionError`、`SurfaceFlingerScheduling`、`BufferStuffing`、`Unknown`、`SurfaceFlingerStuffing`、`Dropped`（覆写语义）、`NonAnimating`、`DisplayNotOn`、`DisplayModeChangeInProgress`、`DisplayPowerModeChangeInProgress`
 - 严重度：`calculateJankSeverity` 使用 go/refined-jank-metric 公式，输出 0~1 分数 + 4 级 `JankSeverityType { None, Partial, Full, Unknown }`
 - 预测 token：`TokenManager` 默认 120ms TTL，120Hz 下 14.4 个 VSync 周期。`PredictionState::Expired` 表示预测已被冲掉，trace 端需用 `Expired` 标记，避免把"丢失预测"误归类为 jank
 
@@ -379,12 +379,12 @@ Android 17 (`android-17.0.0_r1`，对应 `BlissRoms/platform_frameworks_native@1
 | 多客户端分发 | `VSyncDispatchTimerQueue` + `VSyncDispatchTimerQueueEntry` |
 | 配置 phase offset | `VsyncConfiguration`（按 fps 缓存 PhaseOffsets） |
 
-### A2. VSyncPredictor 的 10% 容差与 Render Rate Phase 对齐
+### A2. VSyncPredictor 的 20% 离群容差与 Render Rate Phase 对齐
 
 源码（`VSyncPredictor.cpp`）确认：
 
 - 拟合用 OLS（普通最小二乘法），缩放因子 `kScalingFactor = 1000` 保证定点精度。
-- 异常值过滤：`|anticipatedPeriod - mIdealPeriod| / mIdealPeriod * 100 >= kOutlierTolerancePercent` 时清空时间戳环重新学习。
+- 异常值过滤：`kOutlierTolerancePercent = 20`；`|anticipatedPeriod - mIdealPeriod| / mIdealPeriod * 100 >= kOutlierTolerancePercent` 时清空时间戳环重新学习。
 - **ARR 渲染率相位对齐**（`nextAnticipatedVSyncTimeFrom`）：当应用通过 `setFrameRate()` 设定的渲染帧率不是显示刷新率整数倍时，VSyncPredictor 通过 `mLastVsyncSequence.seq % divisor == 0` 判定相位，把下一个 vsync 对齐到目标帧率的最近整除位置。
 - 兜底断言 `LOG_ALWAYS_FATAL_IF(prediction < timePoint, "VSyncPredictor: model miscalculation")` —— 预测出比当前时间更早的 vsync 视为模型 bug。
 
