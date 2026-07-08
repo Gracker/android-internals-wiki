@@ -316,7 +316,7 @@
       "section": "ch04-memory",
       "section_title": "内存",
       "priority": 60,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "与章节内容无关，跳过",
       "material_paths": [
         "https://arxiv.org/abs/2605.27761"
       ],
@@ -330,13 +330,15 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-08T05:36:48.067242",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-07-08T10:53:47+08:00",
+      "completed_by": "task2b-rework"
     },
     {
       "section": "ch17-oem",
       "section_title": "OEM",
       "priority": 60,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "与章节内容无关，跳过",
       "material_paths": [
         "https://arxiv.org/abs/2511.06186"
       ],
@@ -350,13 +352,15 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-08T05:36:48.068882",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-07-08T10:53:47+08:00",
+      "completed_by": "task2b-rework"
     },
     {
       "section": "ch12-apk-network",
       "section_title": "网络",
       "priority": 60,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "与章节内容无关，跳过",
       "material_paths": [
         "https://arxiv.org/abs/2507.02110"
       ],
@@ -370,7 +374,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-08T05:36:48.069382",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-07-08T10:53:47+08:00",
+      "completed_by": "task2b-rework"
     }
   ],
   "items": [
