@@ -4,12 +4,12 @@
 title: "Android Vitals 过度 WakeLock 指标与治理"
 chapter: "25.19"
 section: "25.19"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals wake lock metric updated 2026-05"
 last_verified: "2026-05-25"
-last_verified_against: "Android Developers excessive/stuck wake lock docs updated 2026-05, Android Developers Blog 2025-10-02, AOSP android-16.0.0_r3 / android16-qpr2-release"
+last_verified_against: "Android Developers excessive/stuck wake lock docs updated 2026-05, Android Developers Blog 2025-10-02, AOSP android-17.0.0_r1"
 confidence: high
 tags: [power, wakelock, android-vitals, battery, play-console]
 related_chapters: ["11.5", "25.2", "25.3", "25.13", "25.14", "26.3", "26.15"]
@@ -41,7 +41,7 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T06:04:00+08:00"
 task6_state: reviewed
@@ -63,6 +63,11 @@ last_task9_audit: "2026-06-22"
 last_task9_audit_at: "2026-06-22T15:25:24+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-22-15-audit.md"
 last_task9_audit_result: "pass-idle-audit"
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+last_task2b_lite_at: "2026-07-09"
 ---
 
 # 25.19 Android Vitals 过度 WakeLock 指标与治理
@@ -164,7 +169,7 @@ com.example.ble:firmware-transfer
 
 系统和库也会替应用持锁。`AlarmManager` 触发广播时会用调用方归因持锁，WorkManager/JobScheduler 可能出现 `*job*/<package>/androidx.work.impl.background.systemjob.SystemJobService` 这类名称。看到这类 tag 时，不要在代码里搜索同名字符串；应回到对应 API 的任务 id、worker 名称、stop reason、重试次数和约束配置。[已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls]
 
-AOSP 侧的调用路径提供了端侧归因的边界。`PowerManagerService.acquireWakeLockInternal()` 创建或更新服务内的 `WakeLock` 记录，随后在获取内核 wake lock 之后调用 `notifyWakeLockAcquiredLocked()`；释放路径走 `releaseWakeLockInternal()` 删除记录。BatteryStats 记账由 `BatteryStatsService.noteStartWakelock()` / `noteStartWakelockFromSource()` 接收 uid、pid、name、historyName、type 和 WorkSource 信息，再写入统计对象。[已验证: AOSP android-16.0.0_r3, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java#acquireWakeLockInternal][已验证: AOSP android16-qpr2-release, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java#noteStartWakelock]
+AOSP 侧的调用路径提供了端侧归因的边界。`PowerManagerService.acquireWakeLockInternal()` 创建或更新服务内的 `WakeLock` 记录，随后在获取内核 wake lock 之后调用 `notifyWakeLockAcquiredLocked()`；释放路径走 `releaseWakeLockInternal()` 删除记录。BatteryStats 记账由 `BatteryStatsService.noteStartWakelock()` / `noteStartWakelockFromSource()` 接收 uid、pid、name、historyName、type 和 WorkSource 信息，再写入统计对象。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java#acquireWakeLockInternal][已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java#noteStartWakelock]
 
 这条调用路径说明两件事：Vitals 和 batterystats 能看到 tag、UID、WorkSource 和时长；业务上下文、调用堆栈、任务参数、SDK 版本必须由应用侧补采。
 
