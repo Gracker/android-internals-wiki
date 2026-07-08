@@ -83,6 +83,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-06-07T12:12:00+08:00"
+last_task6_audit: "2026-07-08"
 ---
 
 # 进程模型与生命周期管理

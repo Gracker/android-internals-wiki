@@ -40,9 +40,10 @@ task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-07-01'
 last_task6_at: '2026-07-01T08:09:00+08:00'
+last_task6_audit: '2026-07-08'
 task6_review_notes: '2026-07-01 Task6 revisiting re-review: pass-light-edit。L1 小修
   4 处（禁用词"链路"×3 → 路径/序列 + mermaid 箭头中文破折号修正）；无 L2/L3/L4 新增问题。Task9 auto-fix（P0 伪方法名已修正）后写作复审通过。自动晋升
-  finalized。'
+  finalized。2026-07-08 Task6 闲时抽检：L1小修2处，符合规范。'
 last_task9_autofix_at: '2026-06-30'
 last_task9_review_log: logs/deep-review/2026-06-30-16-deep-review.md
 task9_review_notes: '2026-06-30 Task9 复审 auto-fix: 修正源码补充区 readSessionSettingsLocked()
@@ -58,7 +59,7 @@ task2b_rework_notes: "2026-06-30 Task2B main: L3 content depth fixes — replace
 
 # 1.23 Android Staged Install 与安装原子性性能
 
-Android 应用安装要经过签名校验、DEX 编译、文件写入、组件注册多个阶段。任一阶段中断--用户杀进程、系统低内存杀 installd、设备掉电--都可能留下不一致状态:APK 已复制但 DEX 未编译完成,或新版本组件已注册但旧版本资源未清理。
+Android 应用安装要经过签名校验、DEX 编译、文件写入、组件注册多个阶段。任一阶段中断—用户杀进程、系统低内存杀 installd、设备掉电—都可能留下不一致状态:APK 已复制但 DEX 未编译完成,或新版本组件已注册但旧版本资源未清理。
 
 Staged Install（Android 10 / API 29 起，通过 `PackageInstaller.SessionParams#setStaged()` 提供）就是解决这个问题的安装协议。核心思路是把安装拆成"准备"和"生效"两个阶段，中间可以插入一次 reboot，保证最终状态要么完全生效、要么完全回退。
 
