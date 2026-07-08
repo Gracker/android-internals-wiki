@@ -10,16 +10,16 @@ reviewed_by: "openclaw-task6"
 task6_review_date: "2026-06-16"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 last_task9_at: "2026-06-17T00:29:18+08:00"
 task9_reviewed_date: "2026-06-17"
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-06-17 Task9 deep-review: pass-tech-review after 2026-06-16 AutoFDO auto-fix return; P0 0 / P1 0 / P2 0; Task6 pass-light-edit and queue has no pending entry, auto-promoted finalized."
-last_task9_audit: 2026-06-16
-last_task9_audit_at: "2026-06-16T06:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-16-06-audit.md"
-last_task9_audit_result: auto-fixed-p1-source-drift
-task9_audit_notes: "2026-06-16 Task9 idle audit: AUTO-FIX P1 1; android17-6.18 AutoFDO README 已更新到 6.18.21 与新 benchmark 口径,正文已同步后回到 Task6 复审。"
+last_task9_audit: 2026-07-09
+last_task9_audit_at: "2026-07-09T03:26:14+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-09-03-audit.md"
+last_task9_audit_result: auto-fixed-p0-source-anchor-p1-version-drift
+task9_audit_notes: "2026-07-09 Task9 idle audit: AUTO-FIX P0 1 / P1 1; 修正 DeliQueue Android 17 tag 源码锚点为 CombinedMessageQueue/MessageQueue.java,同步 android17-6.18 Makefile 6.18.24 与 AFDO profile 6.18.21 边界,回到 Task6 复审。"
 last_task2b_at: "2026-06-16T08:51:39+08:00"
 last_task6_at: 2026-06-16T22:15:00+08:00
 last_task2b_verifier_at: "2026-06-16T23:28:12+08:00"
@@ -49,13 +49,13 @@ last_task6_review_log: "logs/review/2026-06-16-08-review.md"
 task6_review_notes: "2026-06-16 Task6：Task9 闲时抽检 auto-fix（AutoFDO README 数据同步）回流后写作复审；发现版本演进表中 AutoFDO benchmark 数据与正文不一致（Boot 1.9% vs 1.1%, Cold App launch 3.4% vs 6.6%），已按正文修正并标注 [需确认]；B 类问题 1 项写入 queue，转 Task2B 复核。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
-last_task9_autofix_at: 2026-06-16
+last_task9_autofix_at: 2026-07-09
 task2b_result: "verified"
 task2b_state: "fixed"
 task2b_fixed_at: "2026-06-16T08:51:39+08:00"
 task2b_fixed_by: "task2b-main"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/README.md 原文，正文 AutoFDO benchmark 数据准确。清除版本演进表 [需确认] 标注，补充 Binder benchmark 多次运行最佳结果取值限定。"
 ---
 
@@ -82,7 +82,7 @@ task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/REA
 
 升级系统版本后出现的冷启动、滑动和安装速度改善,常常来自内核与运行时的共同演进。GKI (Generic Kernel Image) 的价值,是把通用内核与 SoC / 板级代码分开:核心内核由 Google 提供 release build,厂商特定能力放进 vendor modules,并通过 stable KMI 约束接口。同一条 LTS / Android 分支内的内核更新更容易独立交付,但某台设备能否收到更新,仍取决于它是否采用兼容的 GKI release build,以及 vendor modules 是否满足对应 KMI 边界。
 
-本节把三类事实分开写。第一类是 ACK / GKI 源码分支事实,例如 `android15-6.6`、`android16-6.12`、`android17-6.18` 中 `kernel/sched/fair.c`、`fs/f2fs/`、`drivers/md/dm-verity-target.c` 的实现变化。第二类是 Android 17 / API 37 平台行为,例如 targetSdk 37 应用启用新的 lock-free `MessageQueue`。第三类是 GKI 分支与 Android 平台版本的对应关系:`android16-6.12` 和 `android17-6.18` 是两条并行的 GKI release branch,后者 Makefile 为 6.18.21,是当前 Android 17 的 common-kernel 分支。不能把 Android 17 / API 37 平台行为与 `android16-6.12` 内核线绑定过紧。
+本节把三类事实分开写。第一类是 ACK / GKI 源码分支事实,例如 `android15-6.6`、`android16-6.12`、`android17-6.18` 中 `kernel/sched/fair.c`、`fs/f2fs/`、`drivers/md/dm-verity-target.c` 的实现变化。第二类是 Android 17 / API 37 平台行为,例如 targetSdk 37 应用启用新的 lock-free `MessageQueue`。第三类是 GKI 分支与 Android 平台版本的对应关系:`android16-6.12` 和 `android17-6.18` 是两条并行的 GKI release branch,后者 Makefile 当前为 6.18.24,其 AFDO profile README 仍锚在 6.18.21 benchmark,是当前 Android 17 的 common-kernel 分支。不能把 Android 17 / API 37 平台行为与 `android16-6.12` 内核线绑定过紧。
 
 调度器、存储栈、编译优化、内存管理是 Kernel 6.12 相关变化的四条主线。凡是缺少官方公开数据或源码采用证据的性能数字,只保留为待验证线索,不写成确定收益。
 
@@ -318,7 +318,7 @@ Android 17 的 ART 运行时引入了两项与性能直接相关的变化。
 
 DeliQueue 属于 Android 17 / API 37 平台行为,不属于 `android16-6.12` 内核分支本身。官方博客给出的适用条件是:targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue` 实现;依赖反射读取 `MessageQueue` 私有字段的代码需要专项验证。
 
-源码锚点在 AOSP `frameworks/base/core/java/android/os/`:历史实现可以看 `LockedMessageQueue/MessageQueue.java`,新实现可以看 `ConcurrentMessageQueue/MessageQueue.java`,`CombinedMessageQueue/MessageQueue.java` 负责兼容选择。博客描述的实现模型是生产者侧 lock-free Treiber stack + Looper 侧 min-heap:多个线程插入消息时不再抢同一把 monitor lock,Looper 仍由单线程维护到期消息的顺序。
+源码锚点在 AOSP `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java`:Android 17 tag 中 legacy 与 concurrent 两套实现收束在同一个 `MessageQueue.java` 文件里,由 `USE_NEW_MESSAGEQUEUE` compat change 与 `Flags.useConcurrentMessageQueueInApps()` 选择。实现模型是生产者侧 Treiber stack + Looper 侧优先队列:多个线程插入消息时不再抢同一把 monitor lock,Looper 仍由单线程维护到期消息的顺序。
 
 官方博客给出的数据来自内部 beta traces,适合写成限定条件下的观测结果:
 
@@ -386,8 +386,8 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度:
 |------|------------|----------|
 | Android 15 相关 GKI | `kernel/common` `android15-6.6/kernel/sched/fair.c` | 已存在 `pick_eevdf()`、`entity_eligible()`、`place_entity()`,不能写成"6.6 仍是纯 CFS 默认"。 |
 | Android 16 相关 GKI | `kernel/common` `android16-6.12/kernel/sched/fair.c`、`kernel/sched/ext.c` | fair scheduler 继续使用 EEVDF 路径;6.12 的明确新增点是 sched_ext 等能力。sched_ext kfunc 使用 `scx_bpf_dispatch()` / `scx_bpf_dispatch_vtime()` 命名。 |
-| Android 17 相关 GKI | `kernel/common` `android17-6.18` Makefile 6.18.21;`kernel/sched/ext.c`;`gki/aarch64/afdo/README.md` | 6.18 分支的 sched_ext kfunc 已重命名为 `scx_bpf_dsq_insert()` / `scx_bpf_dsq_insert_vtime()`;AutoFDO README 公开 preliminary benchmark 数据(Boot 1.1%、Cold App launch 6.6%、Binder-rpc 15%、Binder-addints 23%、Hwbinder 23%，与正文数据一致；Binder 类按多次运行最佳结果取值)。 |
-| Android 17 / API 37 平台行为 | Android 17 release notes / behavior changes;`frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` | DeliQueue / lock-free `MessageQueue` 按 targetSdk 37 等条件生效,属于平台行为层,需和 GKI branch 分开记录。 |
+| Android 17 相关 GKI | `kernel/common` `android17-6.18` Makefile 6.18.24;`kernel/sched/ext.c`;`gki/aarch64/afdo/README.md` profile 6.18.21 | 6.18 分支的 sched_ext kfunc 已重命名为 `scx_bpf_dsq_insert()` / `scx_bpf_dsq_insert_vtime()`;AutoFDO README 公开 preliminary benchmark 数据(Boot 1.1%、Cold App launch 6.6%、Binder-rpc 15%、Binder-addints 23%、Hwbinder 23%，与正文数据一致；Binder 类按多次运行最佳结果取值)。 |
+| Android 17 / API 37 平台行为 | Android 17 release notes / behavior changes;`frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java` | DeliQueue / lock-free `MessageQueue` 按 targetSdk 37 等条件生效,属于平台行为层,需和 GKI branch 分开记录。 |
 
 存储栈优化仍然是累积性的:F2FS folio 化、checkpoint merge、dm-verity multi-buffer hashing、io_uring 新能力分别处在文件系统、块设备验证和系统调用层。某台设备是否具备这些变化,要回到它实际使用的 kernel release、GKI build 和厂商配置。
 
@@ -417,7 +417,7 @@ MGLRU 优化页面回收策略,让内核更准确地决定回收哪些页面。�
 - [AOSP GKI Kernel android16-6.12 分支](https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12)
 - [AOSP GKI Kernel android17-6.18 分支](https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18)
 - [Android Developers Blog: Under the hood - Android 17 lock-free MessageQueue](https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html)
-- [AOSP external/liburing](https://android.googlesource.com/platform/external/liburing/+/refs/heads/main)
+- [AOSP external/liburing android-17.0.0_r1](https://android.googlesource.com/platform/external/liburing/+/refs/tags/android-17.0.0_r1)
 - [Lore.kernel.org: F2FS Checkpoint Merge 补丁系列](https://lore.kernel.org/all/)
 - [Lore.kernel.org: MGLRU 补丁系列](https://lore.kernel.org/all/)
 - [Kernel 6.12 Changelog](https://cdn.kernel.org/pub/linux/kernel/v6.x/ChangeLog-6.12)
