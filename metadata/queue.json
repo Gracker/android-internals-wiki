@@ -299,15 +299,6 @@
       "section_title": "Android 17 Binder 线程池实现机制与调优参数"
     },
     {
-      "path": "src/part1-fundamentals/ch02-rendering/11-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第2个候选",
-      "section": "2.11",
-      "section_title": "Android 17 GPU 图形调试与性能优化工具链"
-    },
-    {
       "path": "src/part1-fundamentals/ch13-profiling/13-gap-analysis.md",
       "priority": 80,
       "stage": "draft",
