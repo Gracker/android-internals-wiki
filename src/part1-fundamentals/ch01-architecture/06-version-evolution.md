@@ -53,11 +53,10 @@ task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-07T04:33:40+08:00"
-status: fixed-lite
 reviewed_date: '2026-06-29'
 reviewed_by: task2b-lite
 last_task6_at: "2026-06-29T13:35:00+08:00"
-last_task6_audit: '2026-05-23'
+last_task6_audit: '2026-07-08'
 last_task6_review_log: logs/review/2026-06-07-04-review.md
 task6_state: reviewed
 task6_result: pass-light-edit
@@ -204,7 +203,9 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **Android 17 / API 37 延续的变化。** Android 17 在 API 36 基础上补充了多项与性能分析直接相关的能力。**MessageQueue lock-free 实现。** 对 targetSdkVersion 37+ 的 App，Android 17 会启用新的 lock-free `android.os.MessageQueue`；低 target App 仍受 compat change 控制，可用 `USE_NEW_MESSAGEQUEUE` 开关测试。新实现让主线程 Looper 的消息分发路径不再依赖传统互斥锁。观察 `Looper.loop()` wall duration 时，Android 17 且已启用该变更的进程中，锁竞争导致的尾部延迟应有所减少。**ProfilingManager 自动触发条件扩展。** API 37 新增 `ProfilingTrigger` 类型，覆盖主要性能异常场景：`TRIGGER_TYPE_OOM`（内存不足）、`TRIGGER_TYPE_ANOMALY`（系统异常）、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`（CPU 过量被杀）、`TRIGGER_TYPE_COLD_START`（冷启动）和 `TRIGGER_TYPE_APP_COMPAT`（兼容性问题）。这些事件发生时系统自动捕获 Trace，App 无需主动请求——对线上性能问题的复现和定位非常实用。
 
-**JobDebugInfo 与后台任务诊断。** Android 17 新增 `JobDebugInfo` API，提供后台 Job 未运行原因、累计 pending 时长和运行时长等聚合信息。排查后台任务性能问题时，可以把 `getPendingJobReasonStats()` / `getPendingJobReasonsHistory()` 与 `JobParameters.getStopReason()`、standby bucket 一起看，区分“尚未满足约束”和“运行后被系统停止”。**16KB 页面：强制关闭兼容模式。** Android 17 允许通过系统属性关闭 16KB backcompat，让不支持 16KB 页面对齐的 binary 直接 abort 而非降级运行，进一步推动开发者在 16KB 设备上正确对齐。## Project Treble → VINTF → GSI → GKI：模块化的完整链条
+**JobDebugInfo 与后台任务诊断。** Android 17 新增 `JobDebugInfo` API，提供后台 Job 未运行原因、累计 pending 时长和运行时长等聚合信息。排查后台任务性能问题时，可以把 `getPendingJobReasonStats()` / `getPendingJobReasonsHistory()` 与 `JobParameters.getStopReason()`、standby bucket 一起看，区分“尚未满足约束”和“运行后被系统停止”。**16KB 页面：强制关闭兼容模式。** Android 17 允许通过系统属性关闭 16KB backcompat，让不支持 16KB 页面对齐的 binary 直接 abort 而非降级运行，进一步推动开发者在 16KB 设备上正确对齐。
+
+## Project Treble → VINTF → GSI → GKI：模块化的完整链条
 
 前面按版本逐个介绍了架构里程碑，但它们之间不是孤立的。Treble、VINTF、GSI、GKI 串起来，形成了一条从 Framework 一直延伸到内核的模块化链条——每层各有边界，但目标一致：**让 Android 的每一层都可以独立更新。**
 
