@@ -50,6 +50,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-05
 task6_result: pass-light-edit
 last_task6_at: "2026-06-05T10:17:00+08:00"
+last_task6_audit: "2026-07-09"
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-05"
@@ -75,7 +76,7 @@ last_task9_audit_result: "pass-idle-audit"
 ### 🔹 豁免边界：audio、location、JobScheduler 用户发起 API
 解释 Android Vitals 对部分有用户收益场景的豁免规则，拆开音频播放、定位、用户发起数据传输、Foreground Service 与手动 `PowerManager.WakeLock` 的责任边界。
 
-### 🔹 归因链路：从 wake lock 名称到代码调用点
+### 🔹 归因路径：从 wake lock 名称到代码调用点
 覆盖 wake lock 命名规范、PII / 混淆导致的 `_UNKNOWN`、第三方 SDK 间接持锁、WorkSource 归因和 BatteryStats 侧记录，说明 Play Console 只能给出问题入口，不能替代端侧堆栈采集。
 
 ### 🔹 本地验证：dumpsys、Batterystats 与 Battery Historian
@@ -149,7 +150,7 @@ Android Vitals 对 audio、location、JobScheduler user-initiated API 有豁免�
 
 Foreground service 只能说明任务对用户可见，不会自动把手动 wake lock 变成合理。官方 best practices 要求 wake lock 使用期间让用户知道设备正在耗电，实际工程上就是 FGS 通知、任务入口和停止入口都可解释。[已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
 
-## 归因链路：Play Console 给 tag，端侧补堆栈
+## 归因路径：Play Console 给 tag，端侧补堆栈
 
 Play Console 的入口通常是 wake lock 名称。命名不稳定时，排查会断在第一步。手动 wake lock tag 应使用固定字符串，保留 package / feature / task 三级信息；不要把邮箱、手机号、用户 id、订单号等 PII 放进 tag；不要把动态计数器或随机 id 放进 tag；不要通过反射或 `Class.getName()` 自动拼接混淆后的类名。官方文档说明 PII 命中后可能显示为 `_UNKNOWN`，动态或唯一 tag 也会破坏聚合。[已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
 
