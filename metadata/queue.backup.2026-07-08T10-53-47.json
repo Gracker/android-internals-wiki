@@ -288,78 +288,6 @@
       "notes": "知识缺口挖掘创建，第5个候选",
       "section": "25.18",
       "section_title": "Android 17 Power Stats HAL OEM厂商功耗统计实现差异"
-    },
-    {
-      "path": "src/part1-fundamentals/ch01-architecture/01.33-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第1个候选",
-      "section": "1.33",
-      "section_title": "Android 17 Binder 线程池实现机制与调优参数"
-    },
-    {
-      "path": "src/part1-fundamentals/ch02-rendering/11-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第2个候选",
-      "section": "2.11",
-      "section_title": "Android 17 GPU 图形调试与性能优化工具链"
-    },
-    {
-      "path": "src/part1-fundamentals/ch13-profiling/13-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第3个候选",
-      "section": "2.13",
-      "section_title": "Android 17 eBPF观测增强"
-    },
-    {
-      "path": "src/part1-fundamentals/ch04-memory/04.43-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第4个候选",
-      "section": "4.43",
-      "section_title": "Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研"
-    },
-    {
-      "path": "src/part1-fundamentals/ch04-memory/04.44-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第5个候选",
-      "section": "4.44",
-      "section_title": "Android 17 AI Agent 内存沙箱化与跨应用数据复用"
-    },
-    {
-      "path": "src/part1-fundamentals/ch05-cpu-power/06-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第6个候选",
-      "section": "5.6",
-      "section_title": "Android 17 CPU 缓存局部性与 PSS 内存核算源码机制"
-    },
-    {
-      "path": "src/part1-fundamentals/ch23-compatibility/04.46-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第7个候选",
-      "section": "23.4.46",
-      "section_title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制"
-    },
-    {
-      "path": "src/part5-practical/ch25-power-optimization/25.19-gap-analysis.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-08",
-      "notes": "知识缺口挖掘创建，第8个候选",
-      "section": "25.19",
-      "section_title": "Android 17 Power Stats HAL OEM 厂商功耗统计实现差异"
     }
   ],
   "entries": [
@@ -388,7 +316,7 @@
       "section": "ch04-memory",
       "section_title": "内存",
       "priority": 60,
-      "reason": "与章节内容无关，跳过",
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
       "material_paths": [
         "https://arxiv.org/abs/2605.27761"
       ],
@@ -402,15 +330,13 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-08T05:36:48.067242",
-      "status": "completed",
-      "completed_date": "2026-07-08T10:53:47+08:00",
-      "completed_by": "task2b-rework"
+      "status": "pending"
     },
     {
       "section": "ch17-oem",
       "section_title": "OEM",
       "priority": 60,
-      "reason": "与章节内容无关，跳过",
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
       "material_paths": [
         "https://arxiv.org/abs/2511.06186"
       ],
@@ -424,15 +350,13 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-08T05:36:48.068882",
-      "status": "completed",
-      "completed_date": "2026-07-08T10:53:47+08:00",
-      "completed_by": "task2b-rework"
+      "status": "pending"
     },
     {
       "section": "ch12-apk-network",
       "section_title": "网络",
       "priority": 60,
-      "reason": "与章节内容无关，跳过",
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
       "material_paths": [
         "https://arxiv.org/abs/2507.02110"
       ],
@@ -446,9 +370,7 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-08T05:36:48.069382",
-      "status": "completed",
-      "completed_date": "2026-07-08T10:53:47+08:00",
-      "completed_by": "task2b-rework"
+      "status": "pending"
     }
   ],
   "items": [
