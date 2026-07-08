@@ -376,3 +376,71 @@
 - **问题**：该段称 android-17.0.0_r1 tag 公开未发布，与正文其他多处（如 frontmatter 验证声明、源码锚点验证段）声称已通过 Gitiles 复核该 tag 的结论矛盾。两处口径不统一，读者无法判断哪些锚点真正经过验证。
 - **建议**：Task 9 确认 android-17.0.0_r1 tag 在 AOSP Gitiles 上的可访问性。如可访问，删除"公开未发布"的错误声明；如不可访问，修正所有声称已验证的锚点为"基于 android-16.0.0_r4 延续性推断"。
 - **review 日志**：logs/review/2026-07-08-23-review.md
+
+## [2026-07-09] 知识缺口挖掘 — 已检查方向记录
+
+本轮未发现评分 ≥ 14 的知识缺口。已检查以下方向：
+
+### 1. Source-index 未映射高分数素材 (24 项)
+- 大部分高分未映射素材（score≥16）已在之前的挖掘轮次中创建对应章节
+- 剩余未映射项多为文件名型条目，实际内容已被现有章节覆盖
+
+### 2. AOSP 框架服务覆盖检查
+- ✅ AccessibilityService (14 files), InputMethodManager (6 files), NotificationManagerService (8.14)
+- ✅ TelephonyManager (8.8), ConnectivityManager (8.9), PowerManager (8.10)
+- ✅ WindowManager (8.6), ActivityManager (8.7), SensorManager (8 files)
+- ✅ StorageManager (7 files), MediaSession (4 files), PackageInstaller (16 files)
+- 边缘 GAP: BackupManager (0 files), PermissionManager (0 files), ClockManager (0 files) — 太过niche，不满足≥14分
+
+### 3. Android 17 新特性覆盖检查
+- ✅ 16KB Page Size, Predictive Back, Adaptive Refresh Rate, Desktop Windowing
+- ✅ SDK Runtime, Photo Picker, App Bundle/Dynamic Feature
+- ✅ ProfilingManager, BatteryStats, Game Mode API, AGP
+- 边缘 GAP: App Intent (0), GenAIExperience (0), Ambient Computing (0) — 太新/文档不足
+
+### 4. Clippings 三本参考书覆盖检查
+- 《Android 应用稳定性剖析与优化》24篇：全部主题已有对应章节
+  - Native Hook → 14.13 (654行, finalized)
+  - ASM 字节码插桩 → 26.21
+  - FD 监控 → 20.14
+  - Binder 监控 → 20.17
+  - OOM 治理 → 20.5
+  - Java/Native Crash → 20.2/20.3
+- 《Android 性能优化》21篇：全部主题已有对应章节
+  - CPU 线程池 → 21.16
+  - 缓存优化冷热分离 → 系统层面覆盖于 4.35/5.18/5.23 (CPU cache locality)
+  - 虚拟内存优化 → 23.13
+  - DEX/SO/资源体积 → 25.6-25.8
+  - GC 抑制 → 21.13
+  - 插件化包体积 → 评分 11/20 (技术成熟度高/趋势下降)
+- 《线上疑难问题》59篇：全部主题已有对应章节
+  - 编译插桩 → 26.21
+  - Native Hook 流派 → 14.13
+  - ASM 强化 → 26.21
+
+### 5. Compose 运行时覆盖检查
+- ✅ Snapshot System (90 files), Recomposition (41 files), Stability (32 files)
+- ✅ DerivedState (16 files), CompositionLocal (10 files), Allocation (3 files)
+- ✅ Compiler Metrics (22.28), Animation Performance (22.21), LazyList (22.22)
+
+### 6. Part 5 实战篇覆盖检查
+- ch20 稳定性: 21 sections (20.1-20.19 + 额外) — 完整
+- ch21 启动: 17 sections (21.1-21.17) — 完整
+- ch22 渲染实战: 32 sections (22.1-22.30) — 完整
+- ch23 内存实战: 17+4 sections — 完整
+- ch24 I/O网络: 22 sections (24.1-24.20) — 完整
+- ch25 功耗包体积: 23 sections (25.1-25.24) — 完整
+- ch26 可观测性: 26 sections (26.1-26.24) — 完整
+
+### 7. 候选评估（接近但未达标）
+- Kotlin K2 编译器迁移与 Android 性能: 15/20 (borderline，但 K2 属于 Kotlin 生态，非 Android 系统内部)
+- WebRTC 实时通信性能: 13/20 (跨切面太广，非核心 Android 内部)
+- 插件化包体积优化: 11/20 (趋势下降)
+- Gradle 构建性能/配置缓存: 13/20 (构建工具，非运行时性能)
+
+### 结论
+Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
+1. 现有章节的深度补充（非新章节创建）
+2. 极度niche的系统服务（不够评分阈值）
+3. 过于新/文档不足的 Android 17 API
+建议下一轮转向 Part 5 现有章节的内容加深。
