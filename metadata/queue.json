@@ -655,5 +655,107 @@
       "completed_by": "task2b-lite",
       "completion_note": "7处 android-35 → android-17.0.0_r1 版本基线替换"
     }
+  ],
+  "pending": [
+    {
+      "section": "ch04-memory",
+      "section_title": "章节 04-memory",
+      "priority": 80,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://example.com/android-15-performance-optimization"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 15 内存管理重大改进......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "pending"
+    },
+    {
+      "section": "ch05-cpu-power",
+      "section_title": "章节 05-cpu-power",
+      "priority": 78,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://example.com/linux-6.10-scheduler"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux 6.10 自适应任务调度器......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "章节 17-oem",
+      "priority": 80,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://example.com/android-gradle-8.5"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Gradle 8.5 构建系统改进......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "pending"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "章节 04-memory",
+      "priority": 78,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://example.com/linux-ksm-security"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux KSM 安全性重要进展......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "pending"
+    },
+    {
+      "section": "ch07-smoothness",
+      "section_title": "章节 07-smoothness",
+      "priority": 78,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://example.com/ai-android-optimization"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "AI 技术进行系统优化......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "pending"
+    }
   ]
 }
