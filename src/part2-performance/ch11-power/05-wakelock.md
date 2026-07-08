@@ -11,7 +11,7 @@ drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 gap_source: "研究素材+AOSP结构+官方文档+读者需求"
 last_verified: "2026-05-28"
-last_verified_against: "AOSP android-17-beta3；Android Developers excessive partial wake locks docs 2026-05-19；Android Developers Blog 2025-10-02"
+last_verified_against: "AOSP android-17.0.0_r1；Android Developers excessive partial wake locks docs 2026-05-19；Android Developers Blog 2025-10-02"
 confidence: medium
 sources:
   - type: official
@@ -21,9 +21,9 @@ sources:
   - type: blog
     path: "intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
+    path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"  # android-17.0.0_r1 路径不变
   - type: aosp
-    path: "frameworks/base/core/java/android/os/PowerManager.java"
+    path: "frameworks/base/core/java/android/os/PowerManager.java"  # android-17.0.0_r1 路径不变
   - type: official
     path: "https://developer.android.com/topic/libraries/workmanager"
   - type: official
@@ -33,29 +33,29 @@ sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/android-power-energy"
   - type: aosp
-    path: "hardware/libhardware_legacy/power.cpp"
+    path: "hardware/libhardware_legacy/power.cpp"  # android-17.0.0_r1 路径不变
   - type: aosp
-    path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
+    path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"  # android-17.0.0_r1 路径不变
 reviewed_at: "2026-05-11T19:05:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-08"
 last_task9_at: "2026-07-08T08:31:08+08:00"
-last_task2b_at: "2026-05-28T00:50:00+08:00"
+last_task2b_at: "2026-07-08T08:52:28+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。；2026-05-15 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；新增问题已写入 queue，等待 Task2B 回炉。；2026-05-16 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；ADPF 非游戏场景中 GameManager/GameState.MODE_CONTENT 与 setPreferPowerEfficiency 语义边界需修正，详见 logs/deep-review/2026-05-16-16-deep-review.md。；2026-05-28 Task2B：已收窄 setPreferPowerEfficiency 与 GameManager/GameState 语义边界，等待 Task6/Task9 复审。；2026-05-28 Task9 auto-fix：收窄 Android Vitals excessive partial wake lock 豁免口径，移除搜索降权和 CPU 全速运行的过度表述；回到 Task6 复审。 | 2026-05-28 Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。 | 2026-06-16 Task9 闲时抽检 auto-fix：将 Android common kernel wakeup source 参考锚点统一为 `kernel/common/kernel/power/wakelock.c` 与 `kernel/common/drivers/base/power/wakeup.c`；P0 0 / P1 0 / P2 1，回到 Task6 复审。 | 2026-06-16 Task9 最终确认: pass-tech-review。P0 0 / P1 0 / P2 0；queue 无 pending；Task6 已通过，自动晋升 finalized。 | 2026-07-08 Task9 闲时抽检: needs-rework。P0 2 / P1 1 / P2 0；Android 17 r1 源码路径、restricted wakelock timeout 口径与 IPowerStats API 签名需回炉；详见 logs/deep-review/2026-07-08-08-audit.md。"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-07-08-08-audit.md"
-status: "finalized"
+status: "ready-for-review"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-16"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
-task2b_result: fixed
-pipeline_stage: "task2b_pending"
+task2b_state: "fixed"
+task2b_result: "fixed-2026-07-08"
+pipeline_stage: "task6_pending"
 last_task6_at: "2026-06-16T08:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-16-08-review.md"
 task6_l1_l2_fixes: 0
@@ -150,7 +150,7 @@ wl.release();
 
 要区分两个角色：客户端 `WakeLock` 的 `mToken` 在客户端创建后传入服务端；服务端的 `WakeLock`（PMS 内部类）才是 PMS 持有的记录，它对客户端传入的 IBinder 执行 linkToDeath()，从而在客户端进程死亡时自动清理记录。
 
-[已验证: AOSP android-17-beta3, frameworks/base/core/java/android/os/PowerManager.java WakeLock 类构造函数；frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java WakeLock 内部类（line 5383-5438）+ acquireWakeLockInternal（line 1615-1659）]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java WakeLock 类构造函数；frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java WakeLock 内部类（line 5383-5438）+ acquireWakeLockInternal（line 1615-1659）]
 
 ### 引用计数模式：一个常见的坑
 
@@ -188,7 +188,7 @@ wl.acquire(10 * 60 * 1000L); // 最多持有 10 分钟
 
 这在系统服务中特别常见：比如 `AlarmManager` 触发了一个 App 的闹钟，系统服务会持有 wakelock，但通过 `WorkSource` 把功耗归因标记为该 App 的 UID。这样在 `dumpsys batterystats` 中，用户能准确看到是哪个 App 导致了耗电。
 
-[已验证: AOSP android-17-beta3, frameworks/base/core/java/android/os/WorkSource.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/WorkSource.java]
 
 ## Android 电源状态机与 Wakelock 的位置
 
@@ -236,15 +236,15 @@ Android 9（API 28）引入了 App Standby Bucket，根据 App 的使用频率�
 - **Rare**：极少使用，Jobs / Alarms 进入更严格配额；wakelock 主要受 Doze 和后台入口间接约束
 - **Restricted**：行为异常的 App，极端限制
 
-从 Rare 桶开始，App 的后台执行受到严格限制，但 **wakelock 本身没有直接配额限制**。关键机制：
+App 的后台执行从 Rare 桶开始受到严格限制，但 **wakelock 本身没有直接配额限制**。关键机制：
 
 - **Jobs / Alarms**：有 `QuotaController` / `AlarmManagerService` 的明确配额系统（RESTRICTED bucket 约 10 分钟/天 Jobs，1 次/天 Alarm）
-- **Wakelock**：**无等效配额机制**，RESTRICTED bucket 的限制主要通过：
-  1. `enforceWakeLockTimeout()` 强制超时（单次持锁最长约 1 分钟，不是累计配额）
-  2. Doze 模式下非白名单 App 的 partial wakelock 会被完全忽略
-  3. Jobs 配额受限 → 后台工作量减少 → 持锁场景间接减少
+- **Wakelock**：无等效配额机制。RESTRICTED bucket 对 wakelock 的限制是间接约束，主要通过以下路径生效：
+  1. Doze 模式下非白名单 App 的 partial wakelock 会被完全忽略
+  2. Jobs 配额受限 → 后台工作量减少 → 持锁场景间接减少
+  3. App Standby 通过限制 Alarm / Job / 网络等后台入口，间接减少 App 获取和持有 wakelock 的窗口
 
-> 源码核对后的结论：App Standby Bucket 对 wakelock 的限制是间接约束，不存在类似 Jobs `QuotaController` 的直接配额系统。`RESTRICTED_WAKELOCK_MAX_TIMEOUT` 是单次超时限制，不是累计配额限制。详见调研报告 `2026-04-22-app-standby-bucket-wakelock-restrictions.md`。
+> 本轮按 android-17.0.0_r1 复核：`PowerManagerService.java` 中未找到 `enforceWakeLockTimeout()` / `RESTRICTED_WAKELOCK_MAX_TIMEOUT` 等符号；`AppStandbyController.java` 中也未发现直接的 restricted bucket wakelock timeout 入口。App Standby 对 wakelock 的约束是间接的——通过限制后台入口（Alarm / Job / 网络）使得 App 无法频繁获取 wakelock，而非给 wakelock 设置累计配额。
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby]
 
@@ -331,7 +331,7 @@ Android 10 之后，PMS 的 suspend blocker 路径由 `SystemSuspend` 服务承�
 - `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`
 - `frameworks/base/services/core/jni/com_android_server_power_PowerManagerService.cpp`
 - `hardware/libhardware_legacy/power.cpp`
-- `system/hardware/interfaces/suspend/1.0/default/SystemSuspend.cpp`
+- `system/hardware/interfaces/suspend/aidl/default/SystemSuspend.cpp`
 
 应用调用 `PowerManager.WakeLock.acquire()` 后，PMS 内部的 `mWakeLockSummary` 会记录所有活跃 WakeLock 的摘要。状态变更时，PMS 持有或释放名为 `PowerManagerService.WakeLocks` 的 suspend blocker：
 
@@ -411,7 +411,7 @@ App: PowerManager.newWakeLock(PARTIAL_WAKE_LOCK).acquire()
   ↓
 
 
-<!-- AIW-源码调研-2026-07-04 补充:PMS 内部 DIRTY 位状态机与 Notifier/BatteryStats 链路 -->
+<!-- AIW-源码调研-2026-07-04 补充:PMS 内部 DIRTY 位状态机与 Notifier/BatteryStats 调用路径 -->
 
 ### PMS 内部状态机:DIRTY 位与 updatePowerStateLocked
 
@@ -432,7 +432,7 @@ private static final int DIRTY_POSTURED_STATE = 1 << 17;
 
 任一 App `acquire()` 都会触发 `mDirty |= DIRTY_WAKE_LOCKS; updatePowerStateLocked();` (line 1797-1798)。`updatePowerStateLocked()` 是 PMS 主线程消息循环上的单入口, 根据 `mDirty` 各 bit 决定本次循环要重算哪些状态子集。这种"位掩码聚合 → 单线程串行执行"模式保证多并发 App wake lock 不会触发多轮冗余刷新。
 
-#### Notifier → BatteryStats 的异步链路
+#### Notifier → BatteryStats 的异步调用路径
 
 `acquireWakeLockInternal()` (line 1750+) 末尾 (line 1806):
 
@@ -858,11 +858,13 @@ PowerMonitorReadings.getTimestampMillis(PowerMonitor) → 快照时刻的 elapse
 
 **源码位置**：`hardware/interfaces/power/stats/`（AOSP）
 
-`IPowerStats HAL` 是底层数据源，替代旧版 `IPower.hal` 的统计功能。核心 API：
-- `getRailInfo()` — 获取功耗轨元信息（名称、测量类型）
-- `getEnergyData()` — 获取自启动以来的累计能耗数据
+`IPowerStats HAL`（AIDL 接口）是底层数据源，替代旧版 `IPower.hal` 的统计功能。核心 API（android-17.0.0_r1 `hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl`）：
+- `getEnergyMeterInfo()` — 获取功耗测量通道元信息（名称、测量类型）
+- `readEnergyMeter(in int[] channelIds)` — 读取指定通道的自启动以来累计能耗（μWs）
 
 主要消费者：Statsd（功耗归因）、Perfetto（`android.power` 数据源）、Batterystats（电池分析）。
+
+> 旧版 `getRailInfo()` / `getEnergyData()` 为历史接口名称，不在 android-17.0.0_r1 的 AIDL 定义中。
 
 #### Perfetto 端到端观测
 
@@ -916,11 +918,11 @@ ADPF 的适用范围包括游戏，也包括视频剪辑、AI 推理、后台批
 - `frameworks/base/core/java/android/os/PowerManager.java` — WakeLock API 定义
 - `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` — 服务端实现
 - `frameworks/base/core/java/android/os/WorkSource.java` — 功耗归因
-- `frameworks/base/core/java/android/app/AlarmManager.java` — `OnAlarmListener` 与 exact alarm 重载（Android 15+ 路径 `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java`）
-- `frameworks/base/services/core/java/com/android/server/AlarmManagerService.java` — Alarm 触发与 wakelock
+- `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java` — `OnAlarmListener` 与 exact alarm 重载（Android 15+ 路径 `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java`）
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java` — Alarm 触发与 wakelock
 - `kernel/common/kernel/power/wakelock.c` — Android common kernel wakelock 实现（旧版）
 - `kernel/common/drivers/base/power/wakeup.c` — Android common kernel wakeup_source 实现（当前）
-- `system/hardware/interfaces/suspend/1.0/default/SystemSuspend.cpp` — `SystemSuspend` 参考实现
+- `system/hardware/interfaces/suspend/aidl/default/SystemSuspend.cpp` — `SystemSuspend` 参考实现
 
 ### 官方文档
 - [PowerManager API Reference](https://developer.android.com/reference/android/os/PowerManager)
