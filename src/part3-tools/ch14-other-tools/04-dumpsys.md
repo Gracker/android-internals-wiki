@@ -7,10 +7,10 @@ drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 task6_result: "pass-light-edit"
 task2b_state: "fixed"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
-last_verified: '2026-05-30'
-last_verified_against: AOSP android-16.0.0_r1
+last_verified: "2026-07-09"
+last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
 - type: aosp
@@ -32,18 +32,18 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 last_task2b_at: "2026-05-28T14:50:00+08:00"
-task9_reviewed_date: "2026-06-22"
+task9_reviewed_date: "2026-07-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-22T16:31:06+08:00"
+last_task9_at: "2026-07-09T01:31:02+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 review_notes: "2026-05-23 task9 idle audit: found P0 source path error (`LayerHierarchyBuilder.h` does not exist; class is defined in `LayerHierarchy.h`); reopened to Task2B."
-last_task9_audit: "2026-06-16"
-last_task9_audit_log: "logs/deep-review/2026-06-16-19-audit.md"
+last_task9_audit: "2026-07-09"
+last_task9_audit_log: "logs/deep-review/2026-07-09-01-audit.md"
 status: "finalized"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
@@ -51,18 +51,18 @@ reviewed_date: "2026-05-29"
 last_task6_at: "2026-05-29T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-06-review.md"
 task6_review_notes: "2026-05-29 06:05 Task6 revisiting review: pass-light-edit。正文 L1/L2 通过；outline 6/6 覆盖；无新增 L3/L4 回炉项，Task9 auto-fixed 不满足自动晋升条件，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-06-22-16-deep-review.md"
-task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。 | 2026-05-30 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 SurfaceFlinger FrontEnd mainline 锚点与 kMustComposite/tryFastUpdate 边界，回到 Task6 复审。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；复核 dumpsys.cpp、ActivityManagerService exit-info、HWUI FrameInfo/JankTracker/GraphicsStatsService、SurfaceFlinger dump flags 与 FrontEnd 锚点；无阻断技术问题。"
-last_task9_autofix_at: "2026-05-30"
+last_task9_review_log: "logs/deep-review/2026-07-09-01-audit.md"
+task9_review_notes: "2026-05-28 Task9 deep review: auto-fixed。P0 0 / P1 1（已修复）/ P2 3（已修复）；修正 Activity 状态/焦点字段、cpuinfo 进程行与 TOTAL 口径、SurfaceFlinger FrontEnd mStateLock 边界、--latency frame_ready_time 口径，回到 Task6 复审。 | 2026-05-29 05 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 Native Heap 与 GraphicBuffer/dma-buf 归因边界，回到 Task6 复审。 | 2026-05-30 Task9 deep-review: auto-fixed。P0 1 / P1 0 / P2 0；修正 SurfaceFlinger FrontEnd mainline 锚点与 kMustComposite/tryFastUpdate 边界，回到 Task6 复审。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；复核 dumpsys.cpp、ActivityManagerService exit-info、HWUI FrameInfo/JankTracker/GraphicsStatsService、SurfaceFlinger dump flags 与 FrontEnd 锚点；无阻断技术问题。 | 2026-07-09 01 Task9 idle audit: auto-fixed。P0 1 / P1 0 / P2 0；按 AOSP android-17.0.0_r1 复核 dumpsys / WindowManager / HWUI / SurfaceFlinger，修正 FrontEnd Changes 枚举遗漏 PostProcess 与 android-17 基线标注，回到 Task6 复审。"
+last_task9_autofix_at: "2026-07-09"
 task6_reviewed_date: "2026-05-29"
 task6_reviewed_by: "openclaw-task6"
-task9_reviewed_at: "2026-06-22T16:31:06+08:00"
+task9_reviewed_at: "2026-07-09T01:31:02+08:00"
 updated_by: "openclaw-task9"
-updated_date: "2026-06-22"
+updated_date: "2026-07-09"
 deepseek_cn_review_state: done
 last_task6_audit: "2026-06-10"
 last_deepseek_cn_review_at: 2026-06-22
-p0: 0
+p0: 1
 p1: 0
 p2: 0
 last_task2b_verifier_at: "2026-07-05T03:26:57+0800"
@@ -107,7 +107,7 @@ dumpsys 的工作方式是：遍历系统中所有注册到 ServiceManager 的�
 
 `adb shell dumpsys -l` 可以列出所有子命令。下面聚焦性能分析中最常用的六个，分别讲它们的用途、输出结构、关键指标含义，以及在实际分析中怎么用。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]
 
 ## dumpsys activity：Activity 栈、进程与 ANR 信息
 
@@ -148,7 +148,7 @@ adb shell dumpsys activity exit-info <package_name>
 
 `dumpsys activity lastanr` 仍可作为遗留兜底：它只保留最近一次 ANR 的文本快照，设备重启、日志轮转或新 ANR 出现后都可能覆盖旧现场。排查线上问题时，`exit-info` 负责确认“这个进程为什么退出”，Perfetto / bugreport / ANR traces 负责还原“退出前线程在等什么”。
 
-[已验证: AOSP android-16.0.0_r1, `frameworks/base/services/core/java/com/android/server/wm/Task.java`、`ActivityRecord.java`；`ActivityManagerService.java` 分发 `exit-info` 到 `mAppExitInfoTracker.dumpHistoryProcessExitInfo()`]
+[已验证: AOSP android-17.0.0_r1, `frameworks/base/services/core/java/com/android/server/wm/Task.java`、`ActivityRecord.java`；`ActivityManagerService.java` 分发 `exit-info` 到 `mProcessList.mAppExitInfoTracker.dumpHistoryProcessExitInfo()`]
 
 ## dumpsys meminfo：系统和进程内存全景
 
@@ -232,7 +232,7 @@ adb shell dumpsys gfxinfo <package_name> reset
 
 不带 `framestats` 参数时，gfxinfo 输出聚合指标。最重要的几个：
 
-**Janky frames** 是超过帧预算的帧数。Android 15/16 的 HWUI 统计同时保留 legacy 判定和 deadline 判定：legacy 主要按固定帧间隔估算，deadline 判定会读取每帧的 `FrameDeadline` / `FrameInterval`，在 90Hz、120Hz、LTPO 自适应刷新率设备上更接近真实渲染预算。聚合输出里如果出现 `Number Frame deadline missed`，优先把它作为 VRR 场景的掉帧入口，再回到 Perfetto 的 FrameTimeline 核对该帧的 deadline。
+**Janky frames** 是超过帧预算的帧数。Android 15-17 的 HWUI 统计同时保留 legacy 判定和 deadline 判定：legacy 主要按固定帧间隔估算，deadline 判定会读取每帧的 `FrameDeadline` / `FrameInterval`，在 90Hz、120Hz、LTPO 自适应刷新率设备上更接近真实渲染预算。聚合输出里如果出现 `Number Frame deadline missed`，优先把它作为 VRR 场景的掉帧入口，再回到 Perfetto 的 FrameTimeline 核对该帧的 deadline。
 
 **90th / 95th / 99th percentile** 是帧耗时的分位值。如果 99th percentile 是 50ms，意味着有 1% 的帧耗时超过 50ms——在 60Hz 设备上这就是连续掉 3 帧，用户能明显感知到卡顿。
 
@@ -300,9 +300,9 @@ adb shell top -H -p <pid>
 
 `dumpsys cpuinfo` 只提供瞬时快照，看不到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 进行持续观察。
 
-如果输出里带有 `minor faults` / `major faults`，跨设备对比时要把 page size 放进测试条件。Android 15/16 已支持 16KB page size，单页覆盖范围变大后，同样访问模式下的 minor faults 次数可能低于 4KB 设备。这个数字下降不一定来自 I/O 或内存访问优化，先用 `adb shell getconf PAGESIZE` 确认页大小，再做同条件对比。
+如果输出里带有 `minor faults` / `major faults`，跨设备对比时要把 page size 放进测试条件。Android 15+ 已支持 16KB page size，单页覆盖范围变大后，同样访问模式下的 minor faults 次数可能低于 4KB 设备。这个数字下降不一定来自 I/O 或内存访问优化，先用 `adb shell getconf PAGESIZE` 确认页大小，再做同条件对比。
 
-[已验证: Android 16 中 dumpsys cpuinfo 仍保留按进程输出 CPU 快照；16KB page size 设备需单独标注 page size 条件]
+[已验证: Android 17 基线下 dumpsys cpuinfo 仍保留按进程输出 CPU 快照；16KB page size 设备需单独标注 page size 条件]
 
 ## dumpsys window：窗口层级与焦点
 
@@ -333,7 +333,7 @@ adb shell dumpsys input | grep -E 'FocusedWindow|FocusedApplication'
 
 `dumpsys window` 的输出还包含 Z-order 信息，窗口从上到下排列。在排查覆盖层问题时（比如 Dialog 没有正确 dismiss 导致遮挡了底下的 Activity），Z-order 列表可以直观看到哪些窗口叠加在目标窗口上面。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java: dump()]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java: dump()]
 
 ## dumpsys batterystats：电池使用与功耗分析
 
@@ -395,11 +395,11 @@ adb shell dumpsys SurfaceFlinger --hwclayers
 adb shell dumpsys SurfaceFlinger --latency <layer_name>
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp: dump()]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp: dump()]
 
 ### Layer 列表与合成方式
 
-`dumpsys SurfaceFlinger` 在 Android 15+ 上不能再按旧资料理解成“默认输出完整 Layer 属性表”。AOSP android-16.0.0_r1 的默认 dump 会输出 `Composition list`、`Input list`、Layer Hierarchy 和 HWC minidump，主要来自 Frontend 计算后的 `LayerSnapshot`；这和旧版从 `Layer` 对象直接展开 Source Crop、Display Frame、Composition Type 的文本格式不同。
+`dumpsys SurfaceFlinger` 在 Android 15+ 上不能再按旧资料理解成“默认输出完整 Layer 属性表”。AOSP android-17.0.0_r1 的默认 dump 会输出 `Composition list`、`Input list`、Layer Hierarchy 和 HWC minidump，主要来自 Frontend 计算后的 `LayerSnapshot`；这和旧版从 `Layer` 对象直接展开 Source Crop、Display Frame、Composition Type 的文本格式不同。
 
 读 Layer 时先分清三个视角：
 
@@ -417,7 +417,7 @@ adb shell dumpsys SurfaceFlinger --latency <layer_name>
 
 从 Android 15（AOSP 15）开始，SurfaceFlinger Frontend 成为默认路径，dump 输出从旧版“逐 Layer 展开属性”转为快照化输出。`Composition list` 按合成顺序组织，`Input list` 按输入命中顺序组织，两者都围绕 `LayerSnapshot` 展开；源码入口在 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp::dumpFrontEnd()` 和 `FrontEnd/LayerSnapshot.h`。
 
-AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`--hwclayers`、`--latency`，没有 `--all-layer`。如果厂商系统或调试资料里出现额外参数，以该设备的 `dumpsys SurfaceFlinger --help` 和对应源码分支为准。
+AOSP android-17.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`--hwclayers`、`--latency`，没有 `--all-layer`。如果厂商系统或调试资料里出现额外参数，以该设备的 `dumpsys SurfaceFlinger --help` 和对应源码分支为准。
 
 在实际调试中，Winscope 工具（Android Studio 集成）更适合查看 Layer 层次结构和跨帧变化。文本 dump 适合取当前快照，Winscope 适合看一段时间内的 transaction、Layer 层级、可见性和输入区域变化。
 
@@ -425,13 +425,13 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 
 ### FrontEnd 架构补充（源码级）
 
-前面讲的是如何使用 `dumpsys SurfaceFlinger` 查看 Layer 列表和合成方式。对于做平台调试或性能分析的读者，以下基于 AOSP android-16.0.0_r1 源码补充了 FrontEnd 的内部机制，可按需阅读。
+前面讲的是如何使用 `dumpsys SurfaceFlinger` 查看 Layer 列表和合成方式。对于做平台调试或性能分析的读者，以下基于 AOSP android-17.0.0_r1 源码补充了 FrontEnd 的内部机制，可按需阅读。
 
 **FrontEnd 组件清单：**
 
 | 组件 | 源码位置 | 核心职责 |
 |------|---------|---------|
-| `RequestedLayerState` | `FrontEnd/RequestedLayerState.h` | 存储客户端请求的层状态，含 21 种 `Changes` 位掩码（Created/Destroyed/Geometry/Buffer 等） |
+| `RequestedLayerState` | `FrontEnd/RequestedLayerState.h` | 存储客户端请求的层状态，含 22 种 `Changes` 位掩码（Created/Destroyed/Geometry/Buffer 等） |
 | `LayerLifecycleManager` | `FrontEnd/LayerLifecycleManager.h` | 管理 RequestedLayerState 的增删改，追踪 Handle 生命周期 |
 | `TransactionHandler` | `FrontEnd/TransactionHandler.h` | 通过 `LocklessQueue` 异步收集事务，按 `ApplyToken` 排序过滤 |
 | `LayerHierarchyBuilder` | `FrontEnd/LayerHierarchy.h` | 将 RequestedLayerState 列表构建为 z-order 层图（graph 结构支持 mirror 共享节点） |
@@ -439,7 +439,7 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 
 **事务收集与状态锁边界：**
 
-`SurfaceFlinger.cpp` 的 `updateLayerSnapshots()` 在 Android 16 中大致按下面顺序协作：
+`SurfaceFlinger.cpp` 的 `updateLayerSnapshots()` 在 Android 17 中大致按下面顺序协作：
 
 ```cpp
 // 1. 收集事务
@@ -462,7 +462,7 @@ applyAndCommitDisplayTransactionStatesLocked(update.transactions);
 mLayerSnapshotBuilder.update(args);
 ```
 
-`mStateLock` 被推迟到事务收集、应用和 hierarchy 更新之后；但 Android 16 的 `LayerSnapshotBuilder.update()` 仍在 `mStateLock` 内执行，不能把 snapshot 生成描述成无锁路径。
+`mStateLock` 被推迟到事务收集、应用和 hierarchy 更新之后；但 Android 17 的 `LayerSnapshotBuilder.update()` 仍在 `mStateLock` 内执行，不能把 snapshot 生成描述成无锁路径。
 
 **`RequestedLayerState::Changes` 位掩码设计：**
 
@@ -489,10 +489,11 @@ enum class Changes : uint32_t {
     BufferSize = 1u << 18,
     GameMode = 1u << 19,
     BufferUsageFlags = 1u << 20,
+    PostProcess = 1u << 21,
 };
 ```
 
-在 android-16.0.0_r1 中，`RequestedLayerState::kMustComposite` 仍包含 `Buffer`；真正决定纯 `Content` / `Buffer` 变更能否少走层级重建的是 `LayerSnapshotBuilder::tryFastUpdate()` 的全局变更掩码判断。
+在 android-17.0.0_r1 中，`RequestedLayerState::kMustComposite` 仍包含 `Buffer` 和 `PostProcess`；真正决定纯 `Content` / `Buffer` 变更能否少走层级重建的是 `LayerSnapshotBuilder::tryFastUpdate()` 的全局变更掩码判断。
 
 **LayerSnapshotBuilder.tryFastUpdate() 快速路径：**
 
@@ -505,12 +506,12 @@ bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
 
 这个设计让"只有画布刷新"的场景少走一部分几何重算路径；具体收益仍要在目标设备上用 trace 或 benchmark 复核。
 
-**源码索引（均来自 AOSP android-16.0.0_r1）：**
+**源码索引（均来自 AOSP android-17.0.0_r1）：**
 
 - `RequestedLayerState.h` — Changes enum + 层状态结构体
 - `LayerLifecycleManager.h` — 生命周期管理接口
 - `TransactionHandler.h` — 无锁事务队列
-- `LayerSnapshotBuilder.h` — 快速路径 + Snapshot 生成
+- `LayerSnapshotBuilder.h/.cpp` — 快速路径 + Snapshot 生成
 - `SurfaceFlinger.cpp` — `updateLayerSnapshots()` / `commit()` 中 FrontEnd 协作代码，约行 2493-2580 / 2691-2783
 
 ### 帧延迟信息
