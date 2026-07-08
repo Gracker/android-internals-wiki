@@ -6,8 +6,8 @@ status: "finalized"
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: "2026-04-25"
-last_verified_against: "Android Developers / AndroidX metrics docs / Firebase docs / GitHub upstream READMEs / external review 2026-04-25"
+last_verified: "2026-07-08"
+last_verified_against: "AOSP android-17.0.0_r1 / Android Developers / AndroidX metrics docs / Firebase docs / GitHub upstream READMEs"
 confidence: medium
 sources:
 - type: official
@@ -16,6 +16,14 @@ sources:
   path: https://developer.android.com/topic/performance/vitals
 - type: official
   path: https://firebase.google.com/docs/perf-mon
+- type: aosp
+  path: "frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java (android-17.0.0_r1)"
+- type: aosp
+  path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java (android-17.0.0_r1)"
+- type: aosp
+  path: "frameworks/base/core/java/android/view/FrameMetrics.java (android-17.0.0_r1)"
+- type: aosp
+  path: "frameworks/base/core/java/android/view/Window.java (android-17.0.0_r1)"
 - type: blog
   path: https://github.com/Tencent/matrix
 - type: blog
@@ -41,39 +49,41 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-05-29"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-07-08"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-29T08:20:00+08:00"
-task2b_state: "fixed"
+last_task9_at: "2026-07-08T18:39:10+08:00"
+task2b_state: fixed
 repaired_date: '2026-05-28'
 repaired_by: openclaw-task2b-main
 task2b_result: fixed
 last_task2b_at: "2026-05-28T12:50:00+08:00"
-task9_review_notes: "2026-05-29 Task9 pass-tech-review: 复核 JankStats / FrameMetrics / ApplicationExitInfo / Matrix AGP 边界 / KOOM / btrace / Measure 选型口径，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-07-08 Task9 idle audit AUTO-FIX: P1 1；AppExitInfoTracker/ApplicationExitInfo/FrameMetrics/Window 源码锚点从 android-16/旧复核口径重锚到 android-17.0.0_r1；正文结论无行为变化，回到 Task6 复审。详见 logs/deep-review/2026-07-08-18-audit.md。 | 2026-05-29 Task9 pass-tech-review: 复核 JankStats / FrameMetrics / ApplicationExitInfo / Matrix AGP 边界 / KOOM / btrace / Measure 选型口径，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-28T14:05:00+08:00"
 last_task6_audit: "2026-06-27"
 last_task6_audit_result: pass-light-edit
 last_task6_audit_log: "logs/review/2026-06-27-03-audit.md"
-last_task9_audit: "2026-06-16"
-last_task9_audit_at: "2026-06-16T16:25:24+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-16-16-audit.md"
-last_task9_audit_result: "pass-source-version-audit"
+last_task9_audit: "2026-07-08"
+last_task9_audit_at: "2026-07-08T18:39:10+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-08-18-audit.md"
+last_task9_audit_result: "auto-fixed-source-anchor"
 last_task9_review_log: "logs/deep-review/2026-05-29-08-deep-review.md"
 task6_reviewed_date: "2026-05-28"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-14-review.md"
 task6_review_notes: "2026-05-28 Task6 14:05：revisiting 写作复审；L1/L2 小修 17 处（禁用句式 1、Markdown 硬换行 16）；无 L3/L4 回炉项，送 Task9 复审。"
-last_task9_autofix_at: "2026-05-28"
+last_task9_autofix_at: "2026-07-08"
 p0: 0
 p1: 0
 p2: 0
+updated_by: "openclaw-task9"
+updated_date: "2026-07-08"
 ---
 
 
@@ -176,7 +186,7 @@ p2: 0
 
 它的版本边界要单独写清：`ApplicationExitInfo` 从 Android 11（API 30）开始可用，API 26-29 不能把它当作基础能力。低版本上的 ANR、crash、low-memory 归因仍要依赖 traces、崩溃回调、前后台状态、进程重启痕迹和服务端会话拼接。接入时也不要在冷启动主线程同步拉取大量历史记录，`ActivityManager.getHistoricalProcessExitReasons()` 经过 `system_server`，适合延后到首帧后或后台线程。
 
-系统侧记录逻辑在 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`。按 android-16.0.0_r1 源码核对，默认持久化文件落在 `/data/system/procexitstore/procexitinfo`，历史条数由 `config_app_exit_info_history_list_size` 控制，android-15/16 默认值是 16。`KillHandler` 也不是单一的 `MSG_PROC_DIED` 主线，它还会处理 `MSG_LMKD_PROC_KILLED`、`MSG_CHILD_PROC_DIED`、`MSG_APP_KILL`、`MSG_APP_RECOVERABLE_CRASH`、`MSG_STATSD_LOG` 等消息。Android 16 的 lmkd 外部来源还会把 `rss_kb` 传入 `onProcDied()`，所以线上平台展示退出原因时，最好保留 reason、status、importance、pss/rss、trace file 和 timestamp 这些字段，不要只存一个“疑似 ANR / OOM”的二值标签。
+系统侧记录逻辑在 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`。按 android-17.0.0_r1 源码核对，默认持久化文件落在 `/data/system/procexitstore/procexitinfo`，历史条数由 `config_app_exit_info_history_list_size` 控制，Android 17 默认值是 16。`KillHandler` 也不是单一的 `MSG_PROC_DIED` 主线，它还会处理 `MSG_LMKD_PROC_KILLED`、`MSG_CHILD_PROC_DIED`、`MSG_APP_KILL`、`MSG_APP_RECOVERABLE_CRASH`、`MSG_STATSD_LOG` 等消息。Android 17 的 lmkd 外部来源仍会把 `rss_kb` 传入 `onProcDied()`，所以线上平台展示退出原因时，最好保留 reason、status、importance、pss/rss、trace file 和 timestamp 这些字段，不要只存一个“疑似 ANR / OOM”的二值标签。
 
 ### Android Vitals：最粗，但也最不能忽视
 
