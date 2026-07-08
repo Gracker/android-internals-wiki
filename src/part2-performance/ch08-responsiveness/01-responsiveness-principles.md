@@ -3,12 +3,12 @@ title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [[responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]]
 confidence: medium
-last_verified: "2026-06-16"
-last_verified_against: "AOSP android-16.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; android-17.0.0_r1 tag unavailable"
+last_verified: "2026-07-08"
+last_verified_against: "AOSP android-17.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; web.dev RAIL"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: '2026-06-16'
@@ -18,7 +18,7 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 path: "https://web.dev/articles/rail"
 related_chapters: "[\"2.3\", \"2.4\", \"3.1\", \"7.1\", \"8.2\", \"9.1\", \"15.3\", \"15.5\", \"15.9\"]"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task2b_state: "fixed"
 task2b_result: fixed
@@ -28,19 +28,19 @@ task6_spotcheck_result: pass-light-edit
 last_task6_audit: "2026-06-22"
 last_task6_audit_type: "idle-audit"
 review_round: 1
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task9_state: "reviewed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-16"
-last_task9_at: "2026-06-16T08:20:00+08:00"
-last_task9_autofix_at: "2026-06-16"
-last_task9_audit: "2026-06-16"
+task9_reviewed_date: "2026-07-08"
+last_task9_at: "2026-07-08T20:27:03+08:00"
+last_task9_autofix_at: "2026-07-08"
+last_task9_audit: "2026-07-08"
 last_task6_at: "2026-06-16T05:05:00+08:00"
 task2b_fixed_date: "2026-06-06"
 finalized_date: "2026-06-16"
 finalized_by: "openclaw-task9-auto-promote"
 last_task9_audit_result: auto-fixed
-last_task9_audit_log: "logs/deep-review/2026-06-16-04-audit.md"
+last_task9_audit_log: "logs/deep-review/2026-07-08-20-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-22
 ---
@@ -141,7 +141,7 @@ Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的�
 
 当用户触摸屏幕时，硬件产生一个中断，内核的触摸驱动将其转换为输入事件。随后 InputReader（运行在 system_server 的 InputFlinger 线程中）读取这些事件，交给 InputDispatcher 进行分发。
 
-InputDispatcher 通过 InputChannel 将事件发送给目标 App 进程。AOSP android-16.0.0_r1 中，InputDispatcher::publishMotionEvent() 调用 connection.inputPublisher.publishMotionEvent()；InputPublisher 将 MotionEvent 序列化到 InputChannel 的共享消息缓冲区，再通过 Unix domain socket/socketpair 发送通知并传递输入消息。App 侧 NativeInputEventReceiver 监听 fd，InputConsumer 取出事件后封装为 Java 层 MotionEvent，投递到主线程消息队列。Binder 只参与窗口和 InputChannel 的创建、传递阶段，不承载每个 MotionEvent 的分发。
+InputDispatcher 通过 InputChannel 将事件发送给目标 App 进程。AOSP android-17.0.0_r1 中，InputDispatcher::publishMotionEvent() 调用 connection.inputPublisher.publishMotionEvent()；InputPublisher 将 MotionEvent 序列化到 InputChannel 的共享消息缓冲区，再通过 Unix domain socket/socketpair 发送通知并传递输入消息。App 侧 NativeInputEventReceiver 监听 fd，InputConsumer 取出事件后封装为 Java 层 MotionEvent，投递到主线程消息队列。Binder 只参与窗口和 InputChannel 的创建、传递阶段，不承载每个 MotionEvent 的分发。
 
 这条路径在 Perfetto 中对应的是 Input Track 和对应 App 主线程上的 Input 事件处理 slice。从 InputDispatcher 发出到 App 收到，通常耗时在 1-2ms；如果主线程被阻塞（比如正在执行长时间的 measure/layout），这个时间会显著增加。
 
@@ -316,6 +316,6 @@ RAIL 的基本思想——根据用户的感知阈值设定性能目标——是
   - `frameworks/base/core/java/android/view/ViewRootImpl.java`（渲染管线入口）
 
 
-> **验证状态**：本节主要内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-16.0.0_r1 源码修正；android-17.0.0_r1 官方源码标签本轮无法取得，未用 main/master 结论外推到 Android 17。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；ARR 表述限定为支持 HAL/API 的 Android 15 QPR1+ 设备，Android 16 应用侧 API 另行说明；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
+> **验证状态**：本节主要内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-17.0.0_r1 源码复核，源码锚点不依赖 main/master。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；ARR 表述限定为支持 HAL/API 的 Android 15 QPR1+ 设备，Android 16 应用侧 API 另行说明；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
 >
 > **术语约定**：全文统一使用"响应速度"（Responsiveness）作为主要术语。"响应延迟"仅在引用外部指标定义时作为时间度量值使用，不作为独立术语。
