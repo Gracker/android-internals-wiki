@@ -61,9 +61,9 @@ task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 Android 
 task6_reviewed_date: "2026-07-01"
 last_task6_at: 2026-07-02T02:11:00+08:00
 task6_review_notes: 06-14 08 Task6 revisiting：pass-light-edit。L1 小修 3 处（3.3.9 形容词+冒号起手式 ×3）；outline 5/5 覆盖。07-01 22 Task6 revisiting：pass-light-edit。L1 小修 2 处（3.3.9 形容词+冒号 ×2：分工很清晰→按固定顺序执行、区分很关键→在trace里直接体现）；outline 5/5 覆盖；Task9 needs-rework P1:1（android-17 源码锚点缺失），待 Task2B 修复。07-02 01 Task6 revisiting：pass-light-edit。L1 小修 4 处（禁用词"落地"×4 → 实现/发布）；Task2B 已补充 android-17.0.0_r1 源码锚点（MessageStack/MessageHeap/CombinedDeliMessageQueue）；outline 5/5 覆盖、2/2 扩展；待 Task9 确认 Task2B 修复后可晋升。
-last_task9_audit: "2026-06-14"
-last_task9_audit_log: "logs/deep-review/2026-06-14-04-audit.md"
-task9_audit_notes: "2026-06-14 Task9 idle audit: auto-fixed。P0 1：将不可定位的 `ConcurrentMessageQueue.java` 文件名修正为 AOSP android-16.0.0_r1 实际路径 `ConcurrentMessageQueue/MessageQueue.java`。"
+last_task9_audit: "2026-07-08"
+last_task9_audit_log: "logs/deep-review/2026-07-08-22-audit.md"
+task9_audit_notes: "2026-06-14 Task9 idle audit: auto-fixed。P0 1：将不可定位的 `ConcurrentMessageQueue.java` 文件名修正为 AOSP android-16.0.0_r1 实际路径 `ConcurrentMessageQueue/MessageQueue.java`。 | 2026-07-08 Task9 idle audit: pass-tech-review。P0 0 / P1 0 / P2 0；复核 android-17.0.0_r1 CombinedDeliMessageQueue/MessageStack/MessageHeap/Message 与 android-16.0.0_r1 rollout 边界；未发现 Android 18/API38+ 或主线源码漂移。"
 last_task9_review_log: "logs/deep-review/2026-07-02-02-deep-review.md"
 p0: 0
 p1: 0
