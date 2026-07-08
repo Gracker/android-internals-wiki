@@ -1,6 +1,6 @@
 {
-  "total": 626,
-  "draft": 44,
+  "total": 631,
+  "draft": 49,
   "ready_for_review": 210,
   "finalized": 344,
   "last_updated": "2026-07-08",
@@ -854,6 +854,46 @@
       "status": "ready_for_review",
       "ts": "2026-07-08T09:12:00+08:00",
       "note": "CPU 缓存局部性与 PSS 内存核算: 6 anchors (ARM cache hierarchy/TLAB+CardTable缓存设计/PSS三层采样/smaps_rollup源码/Debug.getRss()+FlaggedApi/getProcessMemoryInfo 5min限速+statsd) + 2 extensions (缓存感知分配策略/性能监控工具链). DeepResearch PSS/RSS fastpath 源码验证. 同时清理 9 个重复 queue draft (§4.34/4.35/4.37/4.38/8.31/8.32/8.33b/11.1/23.1)."
+    },
+    {
+      "section": "1.54",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-08T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (1.54 Android 17 Binder 线程池实现机制与调优参数)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "2.6",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-08T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (2.6 Android 17 eBPF观测增强)",
+      "gap_source": "daily-info + source-index"
+    },
+    {
+      "section": "2.7",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-08T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (2.7 Android 17 GPU 图形调试与性能优化工具链)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "4.37",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-08T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (4.37 Android 17 LMKD 用户态迁移 + PSI 协同机制)",
+      "gap_source": "daily-info + research-gaps"
+    },
+    {
+      "section": "25.18",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "drafted_at": "2026-07-08T10:04:00+08:00",
+      "note": "Created from knowledge gap mining (25.18 Android 17 Power Stats HAL OEM厂商功耗统计实现差异)",
+      "gap_source": "daily-info + research-gaps"
     }
   ],
   "review_history": [
