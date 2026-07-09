@@ -73,7 +73,7 @@ p0: 0
 p1: 0
 p2: 2
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-31
+last_deepseek_cn_review_at: 2026-07-10
 verifier_checked: 2026-07-09
 task6_reviewed_date: 2026-07-09
 auto_promoted_date: "2026-07-09"
@@ -164,7 +164,7 @@ Broadcast ANR 的判断要同时看前后台优先级、同步还是异步 recei
 
 ### 检测机制：BroadcastQueueImpl 的超时计时器
 
-Android 17 主线源码中，Broadcast ANR 不再以旧版 `BroadcastQueue.broadcastTimeoutLocked()` 或 `BroadcastQueueModernImpl` 作为锚点。当前路径是 `BroadcastQueueImpl.startDeliveryTimeoutLocked()` 通过 `BroadcastAnrTimer` 启动软超时；命中后进入 `deliveryTimeoutLocked()`，随后在 `finishReceiverActiveLocked()` 中构造 `TimeoutRecord.forBroadcastReceiver()` 并调用 `mService.appNotResponding()`。
+Android 17 中 Broadcast ANR 的检测路径是：`BroadcastQueueImpl.startDeliveryTimeoutLocked()` 通过 `BroadcastAnrTimer` 启动软超时计时器；如果超时命中，进入 `deliveryTimeoutLocked()`，最终在 `finishReceiverActiveLocked()` 中构造 `TimeoutRecord.forBroadcastReceiver()` 并调用 `mService.appNotResponding()` 触发 ANR。
 
 做 App 侧排障时，判断边界比“ordered / parallel”更直接：
 
@@ -366,10 +366,7 @@ adb shell cat /data/anr/anr_* | tail -200
 - 研究素材：
   - intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md
 
-<!-- AIW-源码调研-2026-06-15 -->
 ## 源码映射：ANR 类型与 InputDispatcher/AMS 路径
-
-> 关联 DeepResearch：`2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md`
 
 | ANR 类型 | 触发源 | 关键源码 | 阈值 |
 |---------|--------|---------|------|

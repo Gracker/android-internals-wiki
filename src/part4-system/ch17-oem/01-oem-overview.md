@@ -29,7 +29,7 @@ last_task9_at: "2026-07-09T11:31:00+08:00"
 last_task9_audit: "2026-07-09"
 last_task9_audit_log: "logs/deep-review/2026-07-09-11-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-09
+last_deepseek_cn_review_at: 2026-07-10
 last_task9_autofix_at: "2026-07-09"
 p0: 0
 p1: 0
@@ -76,7 +76,7 @@ OEM 的优化方向背后是一类系统性思维：在资源受限的移动设�
 
 ## OEM 优化的五大方向
 
-厂商做系统优化，核心围绕用户体验的五个维度展开。我们可以把这五个维度想象成一个金字塔：底部是稳定性和功耗，这是基本盘；中间是流畅性和启动速度，这是差异化竞争的核心；顶部是温控，它像一个天花板，限制了性能的极限。
+厂商做系统优化，核心围绕用户体验的五个维度展开。这五个维度不是平起平坐的：稳定性和功耗在最底层，决定了手机能不能正常用；温控在最顶层，划定了性能发挥的上限；夹在中间的是流畅性和启动速度——这才是 OEM 竞争真正拉开差距的地方。
 
 **启动速度**是用户对手机的第一印象。冷启动从按下图标到第一帧渲染，中间涉及 Zygote fork、ClassLoader 加载、Application 初始化、Activity 创建到渲染——整段启动路径上的每个环节都是优化点。厂商会在系统层面做预加载（让 Zygote 提前初始化常用类）、dex2oat 编译策略调整，甚至直接在 init 阶段预创建进程。我们在 §8.3 中详细讲过 App 层的启动优化思路，厂商的做法是把同样的思路往系统层推。
 
@@ -162,7 +162,7 @@ Android 的应用进程都是从 Zygote fork 出来的。Zygote 在系统启动�
 
 第二，**预创建进程**。在系统启动阶段直接预创建若干应用进程（已经 fork 了 Zygote，但还没加载 App 代码），当用户点击图标启动 App 时，直接从预创建的进程中选一个，省掉 fork 的开销。这种方法在 Perfetto 中表现为启动 Trace 里没有 Zygote fork 阶段，`StartActivity` 直接进入 `bindApplication`。
 
-AOSP 本身提供了标准化的预热缓存池机制：USAP（Unspecialized App Process）Pool。Zygote 在空闲时预先 fork 一批「空白进程」放入池中（`ZygoteServer.fillUsapPool()`），当 AMS 需要启动新进程时，优先从池中取用而非重新 fork。关键配置属性是 `usap_pool_enabled`（android-17.0.0_r1 中 `ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 仍为 `false`）和 `usap_pool_size_max`（池容量上限）。厂商可以基于这套机制做自己的预热策略——比如根据用户习惯提前填充池、增大池容量、或者在内存紧张时清空池释放资源。
+上面是厂商的定制做法。AOSP 也提供了标准化的预热方案——USAP（Unspecialized App Process）Pool。Zygote 在空闲时预先 fork 一批「空白进程」放入池中（`ZygoteServer.fillUsapPool()`），当 AMS 需要启动新进程时，优先从池中取用而非重新 fork。关键配置属性是 `usap_pool_enabled`（android-17.0.0_r1 中 `ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 仍为 `false`）和 `usap_pool_size_max`（池容量上限）。厂商可以基于这套机制做自己的预热策略——比如根据用户习惯提前填充池、增大池容量、或者在内存紧张时清空池释放资源。
 
 在 Perfetto 中验证 USAP Pool 是否生效的方法：结合 `Zygote` 进程里的 `Zygote:FillUsapPool` / `PostFork` slice 和启动路径判断。Android 17 源码中可稳定锚定的是 `ZygoteServer.fillUsapPool()`、`Zygote.forkUsap()` 与 `Zygote.specializeAppProcess()`，不要把 UI 中偶发的展示名当成源码 API。USAP Pool 有一个限制：目前不支持 App Zygote（Child Zygote）和 `android:useAppZygote` 场景，这类多进程架构的 App 仍走标准 fork 路径。
 
