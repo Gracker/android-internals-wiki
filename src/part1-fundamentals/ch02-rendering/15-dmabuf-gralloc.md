@@ -462,6 +462,42 @@ DMA-BUF 和 Gralloc 是 Android 图形栈的「物理基础设施」,它们与�
 
 DMA-BUF 泄漏影响的是**物理内存**。如果泄漏的是来自 CMA Heap 的物理连续内存,会导致 Camera、Display 等需要物理连续内存的硬件无法分配到足够的缓冲区,直接导致功能异常(Camera 预览黑屏、Display 闪烁等),不仅仅是帧率下降。
 
+<!-- AIW-源码调研-2026-07-09 -->
+## Android 17 GraphicBuffer 内存池化与 BufferQueue slot 复用机制（源码级补充）
+
+> 配套报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-09-android17-graphic-buffer-memory-pool-design.md`
+
+### 三层池化结构（AOSP 框架层边界）
+
+Android 17 在 AOSP 框架层只承诺 **slot-level pool**，**不承诺显存层级回收池**：
+
+1. **`GraphicBufferAllocator` 单例 + `sAllocList`**（`frameworks/native/libs/ui/GraphicBufferAllocator.cpp`）—— 仅作为「已分配 handle 注册表」用于 `getTotalSize()` / `dump()` 统计，**不具备释放后回收复用能力**。底层走 4 个 `Gralloc*Allocator` 实现（v2/v3/v4/v5），由 `mMapper.getMapperVersion()` 决定，跨版本无 cache 共享。
+2. **`BufferQueueCore` 四组 slot 集合**（`frameworks/native/libs/gui/BufferQueueCore.cpp`）—— 真正的 buffer 池：
+   - `mSlots`(vector<BufferSlot>) 容量，**默认上限 `NUM_BUFFER_SLOTS=64`**（`frameworks/native/libs/ui/include/ui/BufferQueueDefs.h`），通过 `mAllowExtendedSlotCount` 可放宽。
+   - `mFreeSlots`（set）、`mFreeBuffers`（set）、`mActiveBuffers`（set）按状态分桶。
+   - `mUnusedSlots`（deque）保存未实例化的 slot 池水。
+   - 默认起始 = `mMaxAcquiredBufferCount(1) + mMaxDequeuedBufferCount(1) + 1(async)` = 3 个 slot。
+3. **`BufferSlot.mGraphicBuffer` 复用判定**（`frameworks/native/libs/gui/BufferQueueProducer.cpp::dequeueBuffer()` 行 462-680）—— `buffer->needsReallocation(w, h, fmt, layer, usage)` 任一变化 → 触发 `BUFFER_NEEDS_REALLOCATION` 走新一轮 allocator。
+
+### 关键澄清：AOSP 不负责显存池化
+
+- `system/memory/libdmabufheap` 没有「释放后缓存并在尺寸匹配时复用」的通用合同 —— 已在上文 line 196 中验证。
+- **任何显存层级的复用策略都在 vendor allocator 服务内部实现**（Qualcomm `kgsl_ioctl_gpumem_alloc` 缓存、Mali `mali_alloc` 句柄回收、PowerVR `PVRSRVAlloc` 等），都不进入 AOSP mainline。
+- `GraphicBufferAllocator.sAllocList` + `clearBufferSlotLocked()` 不释放显存 → SurfaceView 反复创建销毁会留下 GL mtrack 累计。
+
+### 性能与排查
+
+- Fast path（reuse）：60/90/120Hz 稳态下 < 0.1ms。
+- Cold path（reallocate）：dequeue → requestBuffer → allocator HAL → DMA-BUF Heap → vendor allocator 全链，10-50ms 都有现实案例。
+- `dumpsys SurfaceFlinger` 输出 `mFreeBuffers / mActiveBuffers / mFreeSlots / mUnusedSlots` 计数 + `dumpsys meminfo` Graphics/EGL mtrack/GL mtrack 总量 + Perfetto `mem.gralloc.allocations` / `mem.gralloc.buffers` ATRACE 计数器可定位分配热点。
+
+### 未验证项
+
+1. `gralloctypes/Gralloc4.h::allocateWithOptions` vs `allocate2` 的 ABI 兼容性。
+2. `VkRenderEngine` 的 VkDeviceMemory 池化策略（外部依赖 VMA / vendor HAT）。
+3. ANGLE on Vulkan 的 dual-cache 合并机制（需读 `external/angle` 仓库）。
+
+
 ## 参考资料
 
 - AOSP 源码:

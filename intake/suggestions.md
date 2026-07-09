@@ -497,3 +497,69 @@ Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
 - **位置**：`dm-verity multi-buffer hashing：ARM64 吞吐提升 35%`
 - **问题**：源码可核验 `android16-6.12/drivers/md/dm-verity-target.c` 中 `verity_hash_mb()` 与 `crypto_shash_finup_mb()` 路径，但正文的 35% 量化收益目前只引用泛化的 lore 首页，缺少精确 patch thread、测试平台、块大小与 cold-cache 条件。
 - **建议**：Task2B 后续回源补 exact lore/kernel commit/benchmark 条件；若无法补齐，将固定 35% 改为方向性结论。
+
+
+## [Task14 参考书扫描] ch24 I/O与网络 — 2026-07-09
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题...17.md（第14讲 SQLite）]
+- **建议补充**：SQLite 并发优化体系——多进程文件锁（5状态+EXCLUSIVE模式）、多线程连接池（WCDB poolSize=4）、WAL模式读写并发原理；含微信重度用户实践数据（几百万用户DB>1GB）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch24 I/O与网络 — 2026-07-09
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题...17.md（第14讲 SQLite）]
+- **建议补充**：SQLite 查询性能调优——B-tree页结构原理、索引生效规则（BETWEEN/LIKE/OR转换技巧）、page_size 4KB vs 1024Byte性能对比（微信测试5%~10%提升）、cache_size调优
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch24 I/O与网络 — 2026-07-09
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题...17.md（第14讲 SQLite）]
+- **建议补充**：SQLite 损坏与恢复——微信损耗率 1/20000~1/10000 实测数据、SQLCipher加解密性能影响（Create操作高达10倍开销）、WCDB Benchmark 数据
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch26 可观测性 — 2026-07-09
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题...17.md（第14讲 SQLite）]
+- **建议补充**：SQLite 智能监控体系——EXPLAIN QUERY PLAN 本地测试、SQLiteTrace 三接口（busy/损耗/执行耗时）、Matrix SQLiteLint 基于 SQL 语法树分析六大问题（索引不当/select*等）
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch24 I/O与网络 — 2026-07-09
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题...19.md（第16讲 网络优化中）]
+- **建议补充**：网络库深度对比矩阵——OkHttp（不支持跨平台）/ Chromium Cronet（标准库+Google后续优化+弱网络短板）/ 微信Mars（跨平台Socket层+弱网络强项+长连接支持），三者I/O模型/协议支持/并发模型差异
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch24 I/O与网络 — 2026-07-09
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题...19.md（第16讲 网络优化中）]
+- **建议补充**：HTTPDNS 解决 LocalDNS 三大问题——稳定性（UDP无状态致域名劫持，日百万级）、准确性（跨运营商调度）、及时性（TTL被修改生效延迟）；含微信 NEWDNS 与阿里/腾讯云 HTTPDNS 方案
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch20 稳定性治理 — 2026-07-09
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题...2.md（第01讲 崩溃优化上）]
+- **建议补充**：异常率指标体系——超越崩溃率的稳定性度量：UV异常率 = 发生异常退出或崩溃的UV / 登录UV；覆盖ANR、low memory killer、系统强杀、死机断电等非崩溃异常退出；前台/后台异常退出区分；5分钟级崩溃预警机制
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch21 启动优化 — 2026-07-09
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题...2.md（第01讲 崩溃优化上）]
+- **建议补充**：应用"安全模式"启动保护——连续三次异常退出自动清除补丁/回退配置；微信读书/蘑菇街/淘宝等重运营应用实践；启动崩溃对用户伤害最大且热修复无法拯救
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] ch24 I/O与网络 — 2026-07-09
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题...18.md（第15讲 网络优化上）]
+- **过时内容**：原文称"2020年我们也即将迎来5G的商用，理论传输速率可达20Gbps"
+- **建议更新至**：Android 17（2026年）5G已全面商用普及多年，5.5G（5G-Advanced）已在2024-2025年规模部署；应补充5G对移动端网络优化的实际影响
+
+## [Task14 参考书扫描] ch24 I/O与网络 — 2026-07-09
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题...19.md（第16讲 网络优化中）]
+- **过时内容**：原文称"QUIC在国内建连成功率大约在95%左右"、"运营商QoS限速丢包"
+- **建议更新至**：Android 17 时代 QUIC 已成为 HTTP/3 标准，建连成功率与运营商支持已有显著改善；需更新为2026年实际数据
+
+## [Task2A 知识缺口挖掘] 已检查方向 — 2026-07-09
+- **已检查并确认覆盖充分**：F2FS, MGLRU, UFFD, ZRAM, Scudo, GWP-ASan, AV1, Compose Multiplatform, sched_ext, cgroup v2, foldable/multi-window, Jetpack WindowManager, HardwareBuffer, DMA-BUF, Android Auto/TV/Wear, APEX/Mainline, Project Mainline, AICore/GenAI (§5.20), NeuralNetworks HAL (§5.11/§23.24), 16KB Page Size, Material Expressive, Compose Stability
+- **发现缺口并创建**：16.11 ARM64 内核安全缓解机制性能开销（KASLR/KPTI/Spectre/Retpoline/PAC/BTI）— Score 14/20
+- **未达阈值（<14）的候选方向**：Wi-Fi 7 (13), IncFS 增量安装 (13), EnergyEstimator (13), App Cloning (12), VpnService (10), Compose Compiler Stability Config (13)
