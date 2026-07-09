@@ -29,7 +29,7 @@ task9_reviewed_date: "2026-07-06"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-07T12:33:06+08:00"
 last_task9_audit: "2026-07-06"
-last_task2b_lite_at: "2026-07-05"
+last_task2b_lite_at: "2026-07-09"
 last_task9_autofix_at: "2026-07-07"
 last_task6_audit: "2026-06-29"
 last_task6_audit_log: "logs/review/2026-06-29-15-audit.md"
@@ -675,6 +675,7 @@ APA 发版后,AGI System Profiler 的重心逐步转向兼容维护,但 Frame Pr
 - AGI 2025-2026 路线图(本地素材:intake/research-feeds/2026-04-05-11-agi-2026-roadmap-system-frame-profiler.md)
 - Samsung Sokatoa 发布分析(本地素材:intake/research-feeds/2026-04-05-11-samsung-sokatoa-gpu-profiler.md)
 - Android 17 ANGLE/Vulkan 强制路线(本地素材:intake/research-feeds/2026-04-05-11-android17-angle-vulkan14-gles-deprecation.md)
+- Android 17 GPU计数器跨设备标准化问题研究(本地素材:DeepResearch/2026-07-08-android17-gpu-counter-cross-device-standardization.md): Android 17通过Perfetto框架实现GPU计数器跨设备标准化，采用GpuCounterDescriptor与InternedGpuCounterDescriptor双模式设计，支持高通Adreno/联发科Mali/三星Exynos等不同GPU厂商的命名、单位、计算方式差异分析与性能指标映射
 
 ### 进阶阅读
 - 移动平台 GPU 性能分析(知乎):https://zhuanlan.zhihu.com/p/560738175

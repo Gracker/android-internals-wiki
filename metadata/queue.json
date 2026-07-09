@@ -900,7 +900,10 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-09T06:16:23.377753",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-09T17:47:53",
+      "completed_by": "task2b-lite",
+      "completion_note": "DeepResearch材料已添加到参考资料"
     }
   ]
 }
