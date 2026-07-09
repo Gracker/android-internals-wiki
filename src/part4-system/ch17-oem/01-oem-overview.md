@@ -3,37 +3,38 @@ title: "OEM 性能优化的通用思路"
 chapter: "17.1"
 section: "17.1"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [['oem', 'performance', 'freezer', 'preloading', 'background-management']]
 confidence: medium
-last_verified: "2026-06-17"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-07-09"
+last_verified_against: "AOSP android-17.0.0_r1 CachedAppOptimizer/Freezer/Process/ZygoteConfig/ZygoteServer"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-17"
 reviewed_by: openclaw-task6
 path: "developer.android.com/topic/performance/background-optimization"
 related_chapters: "[\"5.1\", \"5.5\", \"5.6\", \"4.4\", \"8.3\", \"17.2\"]"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-06-17"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-07-09"
 task2b_state: "fixed"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task6_reviewed_date: "2026-06-17"
 last_task6_at: "2026-06-17T21:20:00+08:00"
 last_task6_audit: "2026-05-24"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-17T11:27:14+08:00"
-last_task9_audit: "2026-06-17"
-last_task9_audit_log: "logs/deep-review/2026-06-17-11-audit.md"
+last_task9_at: "2026-07-09T11:31:00+08:00"
+last_task9_audit: "2026-07-09"
+last_task9_audit_log: "logs/deep-review/2026-07-09-11-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-17
-last_task9_autofix_at: "2026-06-17"
-p0: 1
+last_task9_autofix_at: "2026-07-09"
+p0: 0
 p1: 0
 p2: 2
+task9_review_notes: "2026-07-09 Task9 idle-audit: auto-fixed。修正 cgroup freezer API 归属：Android 17 中由 CachedAppOptimizer.enableFreezer 管理开关/策略，Freezer.setProcessFrozen 包装 android.os.Process.setProcessFrozen；同步修正 USAP 默认值锚点为 ZygoteConfig.USAP_POOL_ENABLED_DEFAULT=false，并移除 usapReceive 稳定 slice 说法。证据：AOSP android-17.0.0_r1 CachedAppOptimizer.java/Freezer.java/Process.java/ZygoteConfig.java/ZygoteServer.java；回到 Task6 复审。"
 ---
 
 # OEM 性能优化的通用思路
@@ -126,7 +127,7 @@ Android 11 QPR3 引入了基于 cgroup v2 freezer 的 cached apps freezer 机制
 
 cgroup freezer 的工作方式是将目标进程迁移到冻结的 cgroup 中。与 SIGSTOP 的关键区别在于，cgroup freezer 是从 cgroup 层面统一控制一组进程的状态——它不是逐个进程发送信号，而是通过向 cgroup 的 `cgroup.freeze` 文件写入 `1` 来冻结整个组。这样一来，一个 App 的所有进程（主进程、子进程、Content Provider 进程等）可以被原子性地冻结或恢复。
 
-在 AOSP 中，这个机制由 ActivityManager 的 `setProcessFrozen` 和 `enableFreezer` 两个隐藏 API 控制。设备可以通过 `device_config put activity_manager_native_boot use_freezer true` 启用，也可以在开发者选项中通过「Suspend execution for cached apps」开关控制。
+在 AOSP Android 17 中，这个机制由 ActivityManagerService 内部的 `CachedAppOptimizer` 统筹：`enableFreezer()` 管理开关和临时 override，真正冻结/解冻时通过 `Freezer.setProcessFrozen()` 包装 `android.os.Process.setProcessFrozen(pid, uid, frozen)`，并先用 Binder freezer 处理同步事务。设备可以通过 `device_config put activity_manager_native_boot use_freezer true` 启用，也可以在开发者选项中通过「Suspend execution for cached apps」开关控制。
 
 我们可以在 Perfetto 中观察到冻结行为——当后台 App 被冻结后，它的所有线程会从 CPU 调度队列中消失，在 CPU Track 上表现为进程的线程完全没有任何 CPU 活动。验证冻结是否生效的方法是通过 adb：
 
@@ -161,9 +162,9 @@ Android 的应用进程都是从 Zygote fork 出来的。Zygote 在系统启动�
 
 第二，**预创建进程**。在系统启动阶段直接预创建若干应用进程（已经 fork 了 Zygote，但还没加载 App 代码），当用户点击图标启动 App 时，直接从预创建的进程中选一个，省掉 fork 的开销。这种方法在 Perfetto 中表现为启动 Trace 里没有 Zygote fork 阶段，`StartActivity` 直接进入 `bindApplication`。
 
-AOSP 本身提供了标准化的预热缓存池机制：USAP（Unspecialized App Process）Pool。Zygote 在空闲时预先 fork 一批「空白进程」放入池中（`ZygoteServer.fillUsapPool()`），当 AMS 需要启动新进程时，优先从池中取用而非重新 fork。关键配置属性是 `usap_pool_enabled`（默认值因版本而异，AOSP 16 中默认关闭）和 `usap_pool_size_max`（池容量上限）。厂商可以基于这套机制做自己的预热策略——比如根据用户习惯提前填充池、增大池容量、或者在内存紧张时清空池释放资源。
+AOSP 本身提供了标准化的预热缓存池机制：USAP（Unspecialized App Process）Pool。Zygote 在空闲时预先 fork 一批「空白进程」放入池中（`ZygoteServer.fillUsapPool()`），当 AMS 需要启动新进程时，优先从池中取用而非重新 fork。关键配置属性是 `usap_pool_enabled`（android-17.0.0_r1 中 `ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 仍为 `false`）和 `usap_pool_size_max`（池容量上限）。厂商可以基于这套机制做自己的预热策略——比如根据用户习惯提前填充池、增大池容量、或者在内存紧张时清空池释放资源。
 
-在 Perfetto 中验证 USAP Pool 是否生效的方法：观察启动 Trace 中的 `Zygote` 线程 slice，如果出现 `usapReceive` 而非 `forkAndSpecialize`，说明进程来自预热池。USAP Pool 有一个限制：目前不支持 App Zygote（Child Zygote）和 `android:useAppZygote` 场景，这类多进程架构的 App 仍走标准 fork 路径。
+在 Perfetto 中验证 USAP Pool 是否生效的方法：结合 `Zygote` 进程里的 `Zygote:FillUsapPool` / `PostFork` slice 和启动路径判断。Android 17 源码中可稳定锚定的是 `ZygoteServer.fillUsapPool()`、`Zygote.forkUsap()` 与 `Zygote.specializeAppProcess()`，不要把 UI 中偶发的展示名当成源码 API。USAP Pool 有一个限制：目前不支持 App Zygote（Child Zygote）和 `android:useAppZygote` 场景，这类多进程架构的 App 仍走标准 fork 路径。
 
 
 第三，**预编译优化**。调整 dex2oat 的编译策略，让常用 App 在系统空闲时提前完成 AOT 编译，或者使用基于用户使用习惯的 Profile-Guided Optimization（PGO）策略，只编译用户经常用到的代码路径。三星的 App Booster 就是这个思路——它手动对已安装的 App 执行 profile-guided 编译，让代码针对实际使用模式优化。
@@ -281,7 +282,11 @@ OEM 优化策略随 Android 版本的演进经历了几个关键转折点：
 
 ### AOSP 源码路径
 - `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` — cgroup freezer 管理
+- `frameworks/base/services/core/java/com/android/server/am/Freezer.java` — freezer 包装层与 Binder freezer 入口
+- `frameworks/base/core/java/android/os/Process.java` — `setProcessFrozen(pid, uid, frozen)` native 入口
 - `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java` — Zygote 预加载逻辑
+- `frameworks/base/core/java/com/android/internal/os/ZygoteConfig.java` — USAP Pool 配置默认值
+- `frameworks/base/core/java/com/android/internal/os/ZygoteServer.java` — `fillUsapPool()` 预热池维护
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — 进程优先级和 OOM Adj 管理
 - `system/core/init/init.cpp` — 系统启动流程
 - `kernel/sched/` — CPU 调度器实现
