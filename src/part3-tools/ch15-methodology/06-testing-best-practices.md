@@ -43,13 +43,13 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
-last_task6_audit: "2026-07-04"
+last_task6_audit: 2026-07-09
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
@@ -71,9 +71,10 @@ last_task9_autofix_at: "2026-07-09"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-06-18"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
-last_task6_at: "2026-06-18T04:09:00+08:00"
+last_deepseek_cn_review_at: 2026-07-09
+last_task6_at: 2026-07-09T21:10:00+08:00
 verifier_checked: 2026-07-09
+task6_reviewed_date: 2026-07-09
 ---
 
 
@@ -112,7 +113,6 @@ verifier_checked: 2026-07-09
 
 本节先处理比「怎么写一个 benchmark」更前面的事：把测试环境、采样方法和结果解释做对。没有这一步，后面的数据就没有足够的参考价值。
 
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking]
 
 ## 测试环境标准化
 
@@ -199,7 +199,6 @@ adb shell dumpsys display | grep -i "refresh"
 - **模拟网络条件**:如果需要测试网络相关场景,使用 `adb shell svc wifi disable` 关闭 WiFi 后通过代理工具限速(见下一条),或使用 `adb shell cmd connectivity` (Android 9+)管理网络连接状态。`ndc`(Network Daemon Connector)需要 root 权限且参数随版本变化较大,不建议在非 root 环境下依赖
 - **Charles/Proxyman 限速**:通过代理工具模拟 3G/4G/弱网环境,配合预设的测试数据(避免真实网络请求的不确定性)
 
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking]
 
 ## 消除测试干扰
 
@@ -255,11 +254,12 @@ adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq"
 adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
 ```
 
-[已验证: AOSP sysfs 接口, /sys/devices/system/cpu/cpu*/cpufreq/ 路径在 ARM64 内核中通用。具体频率值因 SoC 而异,可通过 `cat scaling_available_frequencies` 查询。]
 
-对性能基准测试来说，先确认系统不在低功耗模式：`adb shell settings put global low_power 0`。`adb shell cmd thermalservice override-status 0` 能把 framework 侧 thermal status 锁在 `THERMAL_STATUS_NONE`。注意：这个命令只覆盖 `ThermalManagerService` 的 `mIsStatusOverride`，也就是 framework 向 App 投递 `ThermalStatusChanged` 回调的那一层——vendor 侧 Thermal HAL、kernel cpufreq/GPU throttling 和 vendor thermal engine 都不受它影响。设备仍然会根据真实温度降频。换句话说，这个命令适合测试 App 自身的 thermal callback 逻辑，不能当作"锁定 CPU/GPU 峰值性能"的手段。性能基准测试的稳定化应优先依靠温度控制(间隔冷却、物理散热、温度门控),再配合 CPU 频率锁定(需要 root)。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控。[已验证: AOSP android-17.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java` 的 `override-status` 只设置 `mIsStatusOverride` 并覆盖 framework thermal status,不影响 HAL/kernel 侧温控]
+> 具体频率值因 SoC 而异，可通过 `cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_available_frequencies` 查询。上述 sysfs 路径在 ARM64 内核中通用，但需要 root 权限。
 
-Macrobenchmark 库在每次测量前也会做自动稳定化：`AndroidBenchmarkRunner` 通过 `IsolationActivity` 降低窗口干扰（接近全屏、固定亮度）；设备支持时还会打开 **sustained performance mode**，通知调度器和 thermal 策略控制频率波动；此外还可以禁用指定后台包、暂停 background dexopt 等。[已验证: AOSP androidx-main, benchmark/benchmark-macro/AndroidBenchmarkRunner, IsolationActivity, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]
+对性能基准测试来说，先确认系统不在低功耗模式：`adb shell settings put global low_power 0`。`adb shell cmd thermalservice override-status 0` 能把 framework 侧 thermal status 锁在 `THERMAL_STATUS_NONE`。注意：这个命令只覆盖 `ThermalManagerService` 的 `mIsStatusOverride`，也就是 framework 向 App 投递 `ThermalStatusChanged` 回调的那一层——vendor 侧 Thermal HAL、kernel cpufreq/GPU throttling 和 vendor thermal engine 都不受它影响。设备仍然会根据真实温度降频。这个命令适合测试 App 自身的 thermal callback 逻辑，不能当作"锁定 CPU/GPU 峰值性能"的手段。性能基准测试的稳定化应优先依靠温度控制(间隔冷却、物理散热、温度门控),再配合 CPU 频率锁定(需要 root)。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控。[已验证: AOSP android-17.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java` 的 `override-status` 只设置 `mIsStatusOverride` 并覆盖 framework thermal status,不影响 HAL/kernel 侧温控]
+
+Macrobenchmark 库在每次测量前也会做自动稳定化：`AndroidBenchmarkRunner` 通过 `IsolationActivity` 降低窗口干扰（接近全屏、固定亮度）；设备支持时还会打开 **sustained performance mode**，通知调度器和 thermal 策略控制频率波动；此外还可以禁用指定后台包、暂停 background dexopt 等。这部分行为来自 `AndroidBenchmarkRunner` 和 `IsolationActivity` 的实现
 
 ### 环境控制的源码锚点
 
@@ -295,7 +295,7 @@ Android 的性能数据天然具有波动性。同一个操作执行多次,每�
 
 ### 采样次数与统计方法
 
-Google 官方建议 Macrobenchmark 的迭代次数至少 **10 次** [已验证: 官方文档, developer.android.com/topic/performance/benchmarking]。实际操作中,不同场景有不同建议:
+Google 官方建议 Macrobenchmark 的迭代次数至少 **10 次**。实际操作中,不同场景有不同建议:
 
 - **启动时间测量**:至少 10 次冷启动,取中位数(median)作为基准值,P90 作为"最差情况"的参考
 - **帧率测量**:至少 5 次完整的滑动场景,每次覆盖相同的滑动距离和内容
@@ -305,7 +305,7 @@ Google 官方建议 Macrobenchmark 的迭代次数至少 **10 次** [已验证: 
 
 同时关注 P90（90 百分位）也很重要。中位数告诉你「一半用户会体验到什么」，P90 告诉你「10% 的用户会体验到最差是什么情况」。对于性能优化来说，降低 P90 往往比降低中位数更有价值——体验最差的那些用户，正是最容易投诉和卸载的。
 
-**分位数的指标方向**：P90 语义对「越小越好」的指标（耗时、延迟、TTID/TTFD）可以直接使用——P90 耗时越高，尾部越慢。对「越大越好」的指标（FPS、吞吐），P90 反而是「最好的 10%」，不表示尾部劣化。FPS 应改用 **P10/P5**（10%/5% 分位的帧率），或直接换用 **frame duration / jank / slow frames** 这类越小越好的指标来衡量尾部体验。[已验证: 统计学定义, AndroidX Metrics / JankStats frame duration 分位用法]
+**分位数的指标方向**：P90 语义对「越小越好」的指标（耗时、延迟、TTID/TTFD）可以直接使用——P90 耗时越高，尾部越慢。对「越大越好」的指标（FPS、吞吐），P90 反而是「最好的 10%」，不表示尾部劣化。FPS 应改用 **P10/P5**（10%/5% 分位的帧率），或直接换用 **frame duration / jank / slow frames** 这类越小越好的指标来衡量尾部体验。
 
 ### Warm-up 轮次
 

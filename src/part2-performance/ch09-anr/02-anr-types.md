@@ -48,9 +48,9 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: "revisiting"
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
@@ -63,8 +63,8 @@ task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "Task9 Deep Tech Review 回炉修复（4项源码/版本/命令错误）"
 task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 闲时抽检：auto-fixed。修正 Android 17 源码锚点、Broadcast ANR 路径、Input ANR logcat 口径与源码映射行号，回到 Task6 复审。"
-last_task6_at: "2026-05-06T08:15:00+08:00"
-last_task6_audit: 2026-07-06
+last_task6_at: 2026-07-09T21:10:00+08:00
+last_task6_audit: 2026-07-09
 auto_promoted: true
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理重复 DeepResearch 注入块与引用元信息；Task9 复审已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-07-09"
@@ -76,6 +76,7 @@ p2: 2
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
 verifier_checked: 2026-07-09
+task6_reviewed_date: 2026-07-09
 ---
 
 # ANR 类型与触发条件
@@ -109,7 +110,7 @@ verifier_checked: 2026-07-09
 
 ### 超时阈值：5 秒
 
-这是开发者最常遇到的 ANR 类型，也是用户最直接能感知到的。当用户触摸屏幕或按下按键时，系统通过 InputDispatcher 将事件分发给对应窗口所在的 App 进程。如果 App 的主线程在 5 秒内没有处理完这个事件（更精确地说，没有"消费"或"丢弃"该事件），InputDispatcher 就会触发 ANR。
+这是开发者最常遇到的 ANR 类型，也是用户最直接能感知到的。当用户触摸屏幕或按下按键时，系统通过 InputDispatcher 将事件分发给对应窗口所在的 App 进程。如果 App 的主线程在 5 秒内没有处理完这个事件（即没有"消费"或"丢弃"该事件），InputDispatcher 就会触发 ANR。
 
 ### 检测机制：从 InputDispatcher 到 AMS
 
@@ -144,7 +145,7 @@ Reason: Input dispatching timed out: com.example.app/.MainActivity is not respon
         Waited 6178ms for MotionEvent(action=ACTION_DOWN, ...)
 ```
 
-关键信息：**"Input dispatching timed out"** 明确标识这是 Input ANR；**"Waited ...ms"** 对应 Android 17 `InputDispatcher::onAnrLocked()` 中 oldest entry 从 `deliveryTime` 到触发时的等待时间；事件描述用于判断卡住的是按键、触摸还是无焦点窗口链路。
+关键信息：**"Input dispatching timed out"** 明确标识这是 Input ANR；**"Waited ...ms"** 对应 Android 17 `InputDispatcher::onAnrLocked()` 中 oldest entry 从 `deliveryTime` 到触发时的等待时间；事件描述用于判断卡住的是按键、触摸还是无焦点窗口路径。
 
 ### 特殊情况：无焦点窗口的 Input ANR
 
@@ -298,7 +299,7 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 
 **Android 14（API 34）：** BroadcastReceiver 的官方诊断口径更新为前台 10-20 秒、后台 60-120 秒，并把 CPU starvation 与 app startup 纳入超时窗口解释。引入 `shortService` 前台 Service 类型，约 3 分钟运行超时，超时后走 `Service.onTimeout()` 回调自救 → 硬杀的两段式语义。targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 超时也会以显式 ANR 上报。`AnrTimer` 已在 AOSP `android-15.0.0_r1` 中存在（`com.android.server.utils.AnrTimer`），`ActiveServices` 中已使用 `ServiceAnrTimer`；Android 16 在此基础上继续完善。
 
-**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 类型，各自类型在后台 24 小时窗口内累计运行时间限制为 6 小时（`dataSync` 与 `mediaProcessing` 同类型服务共享配额，AOSP `ActivityManagerConstants` 中两者超时常量一致）。`dataSync` 和 `mediaProcessing` 的累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。这意味着开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
+**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 类型，各自类型在后台 24 小时窗口内累计运行时间限制为 6 小时（`dataSync` 与 `mediaProcessing` 同类型服务共享配额，AOSP `ActivityManagerConstants` 中两者超时常量一致）。`dataSync` 和 `mediaProcessing` 的累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
 
 **Android 16（API 36）：** `AnrTimer` 在 Android 15 已引入的基础上进一步扩展覆盖范围。传统 Handler 计时受 AMS 主线程负载影响：如果 AMS 主线程在处理其他事务（比如同时处理多个应用的 ANR dump），超时消息可能延迟投递，导致 ANR 检测不准时。`AnrTimer` 在独立线程中运行，不受 Java 层调度抖动影响，计时精度更高。调试时可在 `adb shell dumpsys activity` 的完整输出中查找 `AnrTimer` dump 段（AOSP `AnrTimer.dump(pw, false)` 会输出当前活跃的 ANR 计时器状态），具体过滤命令需以目标版本的 `dumpsys activity` 输出格式为准。
 
