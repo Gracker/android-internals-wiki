@@ -476,6 +476,243 @@ bool IsLc3ConfigMatched(const types::CodecConfigSetting& target_config,
 
 <!-- AIW-源码调研-2026-07-06:end -->
 
+<!-- AIW-源码调研-2026-07-10 -->
+## AIW-源码调研-2026-07-10（HardeningEnforcer / Tracks 双源决策矩阵补全 + shell 命令纠正）
+
+> 本节补全 §25.17.5 / §25.17.6 / §25.17.10 涉及的硬决策源码全文与 Override 同步链，并纠正 §25.17.9 末尾"shell 命令缺失"的判断：以 android-17.0.0_r1 源码为准，`set-hardening` / `clear-hardening` 命令仍然存在。
+>
+> 完整调研报告见 `DeepResearch/2026-07-10-android17-background-audio-hardening-enforcer-decision-matrix.md`。
+
+### 25.17.11 HardeningEnforcer 双源决策矩阵（Java + C++）
+
+后台音频硬化是 **Java AudioService.HardeningEnforcer + C++ AudioFlinger.Tracks.getHardeningDecision()** 双源独立判定、同步下发。两层都从 `IAudioPolicyService.HardeningOverride` 单例读 override，但门控矩阵与触发时机不同。
+
+Java 端决策核心（HardeningEnforcer.java，android-17.0.0_r1）：
+
+- `blockVolumeMethod` / `blockFocusMethod` 三档结果：`ALLOWED=0` / `DENIED_IF_PARTIAL=1` / `DENIED_IF_FULL=2`
+- 方法识别号：`METHOD_AUDIO_MANAGER_SET_STREAM_VOLUME=100` / `ADJUST_VOLUME=101` / `ADJUST_SUGGESTED_STREAM_VOLUME=102` / `ADJUST_STREAM_VOLUME=103` / `SET_RINGER_MODE=200` / `REQUEST_AUDIO_FOCUS=300`
+- 度量计数器：`media_audio.value_audio_focus_gain_*`（4 个 GAIN 类的 grant/denial 各一对，共 8 个 metric）+ `media_audio.value_audio_volume_hardening_allowed` / `*_partial_restriction` / `*_strict_restriction`
+- override 决断顺序：ENABLE/THROW → DISABLE → privileged → USAGE_ALARM + USE_EXACT_ALARM → hardeningPartial 标志 → targetSdk < CINNAMON_BUN(API 37) → 默认 DENIED_IF_FULL
+
+C++ 端决策核心（Tracks.cpp:3730-3780，android-17.0.0_r1）：
+
+```cpp
+static std::pair<AfPlaybackCommon::EnforcementLevel,
+                 media::IAudioManagerNative::HardeningExemptionReason>
+getHardeningDecision(audio_usage_t usage, IAfThreadCallback& cb, uid_t uid) {
+    using enum media::IAudioPolicyService::HardeningOverride;
+    const auto overrided = cb.getHardeningOverride();
+    if (overrided == ENABLE || overrided == THROW)  return {EnforcementLevel::FULL, NONE};
+    if (overrided == DISABLE)                       return {EnforcementLevel::NONE, OVERRIDE};
+
+    if (usage == AUDIO_USAGE_VIRTUAL_SOURCE || media::permission::isSystemUsage(usage)) {
+        return {EnforcementLevel::NONE, SYSTEM_USAGE};
+    }
+
+    const auto& pp = cb.getPermissionProvider();
+    if (pp.checkPermission(PermissionEnum::MODIFY_AUDIO_ROUTING, uid).value_or(false) ||
+        pp.checkPermission(PermissionEnum::MODIFY_PHONE_STATE, uid).value_or(false)) {
+        return {EnforcementLevel::NONE, PRIVILEGED_APP};
+    }
+
+    if (hardening_strict()) {
+        if (hardening_usage()) {
+            if (usage == AUDIO_USAGE_ALARM) {
+                if (pp.checkPermission(PermissionEnum::SCHEDULE_EXACT_ALARM, uid).value_or(false) ||
+                    pp.checkPermission(PermissionEnum::USE_EXACT_ALARM, uid).value_or(false)) {
+                    return {EnforcementLevel::PARTIAL, ALARM};
+                }
+            }
+        } else {
+            if (usage == AUDIO_USAGE_ALARM)               return {EnforcementLevel::PARTIAL, ALARM};
+            if (usage == AUDIO_USAGE_ASSISTANCE_ACCESSIBILITY)
+                return {EnforcementLevel::PARTIAL, SYSTEM_USAGE};
+        }
+        if (pp.checkPermission(PermissionEnum::BLUETOOTH_CONNECT, uid).value_or(false)) {
+            return {EnforcementLevel::PARTIAL, PRIVILEGED_APP};
+        }
+        if (pp.getHighestTargetSdkForUid(uid).value_or(1000) < 37) {
+            return {EnforcementLevel::PARTIAL, TARGET_SDK};
+        }
+        return {EnforcementLevel::FULL, NONE};
+    } else if (hardening_partial()) {
+        return {EnforcementLevel::PARTIAL, FLAG_DISABLED};
+    } else {
+        return {EnforcementLevel::NONE, FLAG_DISABLED};
+    }
+}
+```
+
+**两侧差异（重要）**：
+
+1. **Override 同步链**：Java `mHardeningOverride.set()` → `mAudioPolicy.setHardeningOverride()`（AudioService.java:16794-16797）→ C++ `AudioFlinger::getHardeningOverride()`（AudioFlinger.cpp:2234-2237）→ `cb.getHardeningOverride()`。任一写方都通过同一 AIDL 单例同步。
+2. **权限判定不同**：Java 用 `AppOpsManager.OP_*`（用户态可被 Settings 拒绝），C++ 用 `media::permission::PermissionEnum`（系统级只读权限）。同一 app 在 AppOps 关闭但权限持有的情况下，Java 拦截、C++ 放行，表现为"音量被禁但 Track 仍出声"。
+3. **targetSdk 阈值**：Java `HardeningEnforcer.isPreCinnamonBun = targetSdk < Build.VERSION_CODES.CINNAMON_BUN`（API 37），C++ `pp.getHighestTargetSdkForUid(uid) < 37`。两者一致。
+4. **判定时机**：Java 一次（API 调用点），C++ 每条 Track 创建时独立判定。同一 app 不同 Track 可能落到不同 EnforcementLevel。
+
+### 25.17.12 AppOps 三档触发链路（OP_CONTROL_AUDIO_PARTIAL / OP_CONTROL_AUDIO / OP_TAKE_AUDIO_FOCUS）
+
+AudioService 6 个入口调用点（android-17.0.0_r1 验证）：
+
+| 调用位置 | 入口 | method 常量 |
+| --- | --- | --- |
+| AudioService.java:4289 | `adjustStreamVolume` | `METHOD_AUDIO_MANAGER_ADJUST_STREAM_VOLUME` |
+| AudioService.java:5389 | `setStreamVolume` | `METHOD_AUDIO_MANAGER_SET_STREAM_VOLUME` |
+| AudioService.java:6988 | `setRingerMode` | `METHOD_AUDIO_MANAGER_SET_RINGER_MODE` |
+| AudioService.java:7839 | `adjustVolume`（UI key 转发） | `METHOD_AUDIO_MANAGER_ADJUST_VOLUME` |
+| AudioService.java:7865 | `adjustSuggestedStreamVolume` | `METHOD_AUDIO_MANAGER_ADJUST_SUGGESTED_STREAM_VOLUME` |
+| AudioService.java:12795 | `requestAudioFocus` | `METHOD_AUDIO_MANAGER_REQUEST_AUDIO_FOCUS` |
+
+C++ 端 AppOps 异步校验 + 40ms 广播延迟（Tracks.cpp:3783-3835）：
+
+```cpp
+constexpr auto kBroadcastDelay = std::chrono::milliseconds(40);
+auto thread_wp = wp<IAfThreadBase>::fromExisting(&thread);
+mOpControlPartialSession.emplace(
+        ValidatedAttributionSourceState::createFromTrustedSource(attributionSource),
+        Ops{.attributedOp = OP_CONTROL_AUDIO_PARTIAL},
+        [this, isOffloadOrMmap, thread_wp, kBroadcastDelay](bool isPermitted) {
+            mHasOpControlPartial.store(isPermitted, std::memory_order_release);
+            if (isOffloadOrMmap) {
+                if (const auto thread = thread_wp.promote()) {
+                    thread->asyncBroadcast(kBroadcastDelay);
+                }
+            }
+        });
+```
+
+40ms 延迟只对 Offload / MMap track 生效：partial + full 两条 OP 回调都完成后再唤醒 Thread，避免半路音量调节；普通 PCM 路径直接读 atomic。
+
+硬化事件一次写守门（Tracks.cpp:3841）：
+
+```cpp
+if (!hasOpControlPartial()) {
+    if (!mPlaybackHardeningLogged.exchange(true, std::memory_order_acq_rel)) {
+        am.playbackHardeningEvent(mSelf.uid(), PARTIAL,
+                /* bypassed= */ !isPlaybackRestrictedControl(),
+                mExemptionReason, mSelf.attributes().usage);
+    }
+} else if (!hasOpControlFull()) {
+    if (!mPlaybackHardeningLogged.exchange(true, std::memory_order_acq_rel)) {
+        am.playbackHardeningEvent(mSelf.uid(), FULL,
+                /* bypassed= */ !isPlaybackRestrictedControl(),
+                mExemptionReason, mSelf.attributes().usage);
+    }
+}
+```
+
+`mPlaybackHardeningLogged` 用 `acq_rel` exchange 实现"一次写"守门，防止同一 Track 重复上报。
+
+AudioService 侧硬化事件接收（AudioService.java:988-1024）：
+
+```java
+static final String METRIC_COUNTERS_PLAYBACK_PARTIAL =
+        "media_audio.value_audio_playback_hardening_partial_restriction";
+static final String METRIC_COUNTERS_PLAYBACK_STRICT =
+        "media_audio.value_audio_playback_hardening_strict_would_restrict";
+
+@Override
+public void playbackHardeningEvent(int uid, byte type, boolean bypassed, byte reason,
+        int usage) {
+    if (Binder.getCallingUid() != Process.AUDIOSERVER_UID) return;
+    if (type == HardeningType.PARTIAL) {
+        Counter.logIncrementWithUid(METRIC_COUNTERS_PLAYBACK_PARTIAL, uid);
+    } else if (type == HardeningType.FULL) {
+        Counter.logIncrementWithUid(METRIC_COUNTERS_PLAYBACK_STRICT, uid);
+    } else {
+        Slog.wtf(TAG, "Unexpected hardening type" + type);
+        return;
+    }
+    String msg = "AudioHardening background playback "
+            + (bypassed ? "would be " : "")
+            + "muted for " + getPackageNameForUid(uid) + " (" + uid + "), "
+            + "level: " + (type == HardeningType.PARTIAL ? "partial" : "full")
+            + ", reason: " + reason
+            + ", usage: " + AudioAttributes.usageToString(usage);
+
+    AudioService.this.mHardeningLogger.enqueueAndSlog(msg,
+            bypassed ? EventLogger.Event.ALOGI : EventLogger.Event.ALOGW, TAG);
+    AudioAtomsLog.write(AudioAtomsLog.AUDIO_HARDENING_REPORTED, uid,
+            AUDIO_HARDENING_REPORTED__API_TYPE__AUDIO_HARDENING_API_TYPE_PLAYBACK,
+            type == HardeningType.FULL, !bypassed,
+            HardeningEnforcer.getUsageForProtoLog(usage),
+            HardeningEnforcer.getExemptionReasonForProtoLog(reason));
+}
+```
+
+### 25.17.13 set-hardening / clear-hardening 调试命令定位（纠正 §25.17.9 末段）
+
+**纠正**：§25.17.9 末尾（2026-07-09 补充）"硬化 Shell 命令缺失"的结论以 main 分支为依据，但 android-17.0.0_r1 上 `set-hardening` / `clear-hardening` 命令仍然存在。
+
+**命令定义**（AudioManagerShellCommand.java:182-185，android-17.0.0_r1）：
+
+```
+set-hardening <1|enable|0|disable|throw>
+    Enables (1), disables (0) or throws on audio hardening enforcement
+clear-hardening
+    Clears the hardening override, returning to default behavior
+```
+
+**常量定义**（AudioManager.java:11190-11218）：
+
+```java
+public static final int HARDENING_DEFAULT = IAudioPolicyService.HardeningOverride.DEFAULT;
+public static final int HARDENING_ENABLE  = IAudioPolicyService.HardeningOverride.ENABLE;
+public static final int HARDENING_DISABLE = IAudioPolicyService.HardeningOverride.DISABLE;
+public static final int HARDENING_THROW   = IAudioPolicyService.HardeningOverride.THROW;
+```
+
+**Java setter**（AudioManager.java:11230-11236）：
+
+```java
+@RequiresPermission(android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)
+public void setHardeningOverride(@HardeningMode int hardeningMode) {
+    final IAudioService service = getService();
+    try {
+        service.setHardeningOverride(hardeningMode);
+    } catch (RemoteException e) { throw e.rethrowFromSystemServer(); }
+}
+```
+
+**服务实现 + 双写同步**（AudioService.java:16794-16797）：
+
+```java
+@EnforcePermission(MODIFY_AUDIO_SETTINGS_PRIVILEGED)
+public void setHardeningOverride(int hardeningMode) {
+    super.setHardeningOverride_enforcePermission();
+    mHardeningOverride.set(hardeningMode);                       // Java 缓存
+    mAudioPolicy.setHardeningOverride((byte) hardeningMode);     // 同步给 audioserver
+}
+```
+
+> 注意：`setHardeningOverride` 是 shell + system app 专用接口（`MODIFY_AUDIO_SETTINGS_PRIVILEGED`），普通 adb shell 调用需要 root 或 system UID。测试场景下应使用 `cmd audio set-hardening <enable|disable|throw>` / `cmd audio clear-hardening`。
+
+### 25.17.14 关键源码锚点速查表（2026-07-10 更新）
+
+| 关注点 | 文件 : 行（android-17.0.0_r1） |
+| --- | --- |
+| Java 硬化决策主体（blockVolumeMethod） | HardeningEnforcer.java（default 分支主体） |
+| Java 硬化决策主体（blockFocusMethod） | HardeningEnforcer.java（default 分支主体） |
+| Java 焦点请求 gate | AudioService.java:12795 |
+| Java 音量调节 gate（4 处） | AudioService.java:4289 / 5389 / 6988 / 7839 / 7865 |
+| Java 硬化事件接收 + metric + atom | AudioService.java:988-1024 |
+| Java Override 双写同步 | AudioService.java:16794-16797 |
+| Java mHardeningOverride 初始化 | AudioService.java:1373 |
+| Java HARDENING_* 常量定义 | AudioManager.java:11190-11218 |
+| Java setHardeningOverride（client 端） | AudioManager.java:11230-11236 |
+| Shell set-hardening / clear-hardening 命令定义 | AudioManagerShellCommand.java:182-185 |
+| Shell set-hardening / clear-hardening 实现 | AudioManagerShellCommand.java:517-563 |
+| C++ 硬化决策主体 | Tracks.cpp:3730-3780 |
+| C++ Track OP 异步校验（partial+full） | Tracks.cpp:3783-3835 |
+| C++ 硬化事件一次写守门 | Tracks.cpp:3841-3860 |
+| C++ Track 创建时枚举 decision | Tracks.cpp:3783-3810（AfPlaybackCommon 构造） |
+| C++ 调用 maybeLogPlaybackHardening（4 处） | Threads.cpp:5887 / 6101 / 6929 / 11599 |
+| C++ getHardeningOverride 同步 native | AudioFlinger.cpp:2234-2237（继承 §25.17.10 锚点） |
+| usage → proto log 映射 | HardeningEnforcer.getUsageForProtoLog（14 个分支） |
+| exemptionReason → proto log 映射 | HardeningEnforcer.getExemptionReasonForProtoLog（7 个分支） |
+
+<!-- AIW-源码调研-2026-07-10:end -->
+
 ## 参考资料
 
 - [Background audio hardening | Android Developers](https://developer.android.com/about/versions/17/changes/bg-audio)
