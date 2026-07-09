@@ -3,7 +3,7 @@
 title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -75,6 +75,7 @@ p1: 0
 p2: 2
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-31
+verifier_checked: 2026-07-09
 ---
 
 # ANR 类型与触发条件

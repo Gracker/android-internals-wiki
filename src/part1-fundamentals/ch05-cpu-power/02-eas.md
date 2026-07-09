@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: ready-for-review
 last_task2b_at: '2026-05-09T12:43:00+08:00'
 title: EAS 能量感知调度
 chapter: '5.2'
@@ -72,6 +72,7 @@ updated_date: "2026-07-09"
 p0: 2
 p1: 1
 p2: 0
+verifier_checked: 2026-07-09
 ---
 
 

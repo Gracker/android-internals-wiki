@@ -2,7 +2,7 @@
 title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-09"
@@ -73,6 +73,7 @@ auto_promoted_date: "2026-06-18"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
 last_task6_at: "2026-06-18T04:09:00+08:00"
+verifier_checked: 2026-07-09
 ---
 
 
