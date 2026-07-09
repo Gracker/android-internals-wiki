@@ -2,7 +2,7 @@
 title: "Splash Screen 与感知启动速度"
 chapter: "21.5"
 section: "21.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 confidence: medium
 drafted_date: "2026-05-13"
@@ -28,19 +28,16 @@ tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, w
 related_chapters: ["2.12", "8.3", "21.1"]
 created_by: "task2a-content-processing"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-16"
-task6_reviewed_date: "2026-06-16"
+reviewed_date: "2026-07-10"
+task6_reviewed_date: "2026-07-10"
 task6_result: "pass-light-edit"
 task6_review_notes: "2026-06-16 Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。自动晋升 finalized / ready-to-publish。"
-last_task6_at: "2026-07-09T18:14:16+08:00"
-task6_review_notes: "2026-06-16 01:xx Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。Task9 needs-rework（P0 2/P1 1）已由 Task2B 修复，等待 Task9 复审确认。不自动晋升。"
+last_task6_at: "2026-07-10T01:09:00+08:00"
 last_task6_review_log: "logs/review/2026-06-16-01-review.md"
-last_task6_at: "2026-07-09T18:14:16+08:00"
 
 task2b_result: fixed
 last_task2b_at: "2026-06-16T00:51:53"
 task2b_fixed_date: "2026-06-16"
- | 2026-07-09 23:25 Task2B Verifier：状态修正 Task9 auto-fixed 后 status 仍为 finalized，阻止 Task6 复审。status: finalized→ready-for-review，章节已正确回流 Task6。
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
 last_verified: "2026-07-09"
@@ -48,8 +45,8 @@ last_verified_against: "AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0
 task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-09"
 last_task9_at: "2026-07-09T16:30:36+08:00"

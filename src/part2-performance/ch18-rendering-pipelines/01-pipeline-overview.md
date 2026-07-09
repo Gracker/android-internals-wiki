@@ -2,7 +2,7 @@
 title: "渲染管线分类与选择对照表"
 chapter: "18.1"
 section: "18.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 last_verified_against: "AOSP android-17.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue / HardwareBufferRenderer / HWComposer fence paths + Flutter 3.32 release notes"
 confidence: medium
@@ -15,11 +15,11 @@ task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
 last_task2b_at: "2026-05-05T04:53:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-19"
+reviewed_date: "2026-07-10"
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-06-19"
-last_task6_at: "2026-07-09T18:14:16+08:00"
-last_task6_audit: "2026-06-17T06:07:00+08:00"
+task6_reviewed_date: "2026-07-10"
+last_task6_at: "2026-07-10T01:09:00+08:00"
+last_task6_audit: "2026-07-10"
 last_task9_audit: "2026-07-09"
 last_task9_audit_log: "logs/deep-review/2026-07-09-09-audit.md"
 auto_promoted: true
@@ -27,8 +27,8 @@ last_verified: "2026-07-09"
 task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-09"
 last_task9_at: "2026-07-09T16:30:36+08:00"
@@ -40,7 +40,6 @@ p0: 0
 p1: 0
 p2: 1
 task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 闲时抽检 AUTO-FIX：P0 1 / P1 0 / P2 2；修正 Android 14-16 SurfaceFlinger 源码锚点，`BufferStateLayer.cpp` 限定为 Android 11-13，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。 | 2026-07-09 Task9 闲时抽检 AUTO-FIX：P0 0 / P1 1 / P2 0；将 Android 16 锚点提升到 android-17.0.0_r1，补齐 Android 17 表格与 Layer.cpp/ViewRootImpl/HardwareBufferRenderer 证据，回到 Task6 复审。 | 2026-07-09 16 Task9 deep-review AUTO-FIX：P0 0 / P1 0 / P2 1；补齐 HWC/BufferQueueProducer 验证行的 android-17.0.0_r1 锚点；回 Task6 复审。"
- | 2026-07-09 23:25 Task2B Verifier：状态修正 Task9 auto-fixed 后 status 仍为 finalized，阻止 Task6 复审。status: finalized→ready-for-review，章节已正确回流 Task6。
 ---
 
 <!-- outline-start -->
