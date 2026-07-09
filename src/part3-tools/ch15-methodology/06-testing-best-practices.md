@@ -43,13 +43,13 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 last_task6_audit: 2026-07-09
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
@@ -58,15 +58,15 @@ review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-09"
-last_task9_at: "2026-07-09T16:47:00+08:00"
+last_task9_at: "2026-07-09T21:30:58+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-05-07 Task9 18:28：pass-tech-review。P0 0 / P1 0 / P2 1；Macrobenchmark 分位数与自动稳定化 P1 已闭环，JSON schema 口径 P2 已写入 suggestions。满足 Task6 通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 2（ArtShellCommand 既有 suggestions 不重复；Macrobenchmark 迭代次数官方来源不足写入 suggestions）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 03:20 闲时抽检：P1 2（Android 17 关键变更缺失与源码路径版本边界风险），写入 queue.json。 | 2026-07-09 16:47 Task9 idle-audit auto-fix：按 AOSP android-17.0.0_r1 复核源码锚点；修正 ThermalManagerService 迁移到 power/thermal、后台 dexopt 迁移到 ART Service 的 ArtShellCommand/BackgroundDexoptJob* 路径，并移除 Android 17 待确认口径；回到 Task6 复审。"
+task9_review_notes: "2026-05-07 Task9 18:28：pass-tech-review。P0 0 / P1 0 / P2 1；Macrobenchmark 分位数与自动稳定化 P1 已闭环，JSON schema 口径 P2 已写入 suggestions。满足 Task6 通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：pass-tech-review。P0/P1 0；P2 2（ArtShellCommand 既有 suggestions 不重复；Macrobenchmark 迭代次数官方来源不足写入 suggestions）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 03:20 闲时抽检：P1 2（Android 17 关键变更缺失与源码路径版本边界风险），写入 queue.json。 | 2026-07-09 16:47 Task9 idle-audit auto-fix：按 AOSP android-17.0.0_r1 复核源码锚点；修正 ThermalManagerService 迁移到 power/thermal、后台 dexopt 迁移到 ART Service 的 ArtShellCommand/BackgroundDexoptJob* 路径，并移除 Android 17 待确认口径；回到 Task6 复审。 | 2026-07-09 21:30 Task9 deep-review AUTO-FIX：移除设备存储空间段落中的 lmkilld 错误名称和存储不足直接触发杀进程的过强口径，收敛为 f2fs GC / dex2oat / I/O 波动；回到 Task6 复审。"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-25"
 last_task9_audit: "2026-07-09"
 task9_audit_notes: "2026-07-09 idle audit: AUTO-FIX P0 2 / P1 0; 修正 Android 17 ThermalManagerService 与后台 dexopt 源码路径/版本边界。"
-last_task9_review_log: "logs/deep-review/2026-07-09-16-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-09-21-deep-review.md"
 last_task9_autofix_at: "2026-07-09"
 auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-06-18"
@@ -75,8 +75,9 @@ last_deepseek_cn_review_at: 2026-07-09
 last_task6_at: 2026-07-09T21:10:00+08:00
 verifier_checked: 2026-07-09
 task6_reviewed_date: 2026-07-09
+updated_by: "openclaw-task9"
+updated_date: "2026-07-09"
 ---
-
 
 # 性能测试最佳实践
 
@@ -132,7 +133,7 @@ task6_reviewed_date: 2026-07-09
 
 Google 在官方文档中建议至少使用一台运行 AOSP 系统镜像的 Pixel 设备作为基准测试的参考设备,这样可以在不同团队之间建立统一的比较基准 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]。
 
-另外一个容易被忽略的点:**设备存储空间**。存储空间不足会触发 f2fs 的 GC、影响 dex2oat 编译速度、甚至触发 lmkilld 提前杀进程。测试前确保设备有充足的可用存储空间(至少 20% 以上空闲)。
+另外一个容易被忽略的点:**设备存储空间**。存储空间不足会触发 f2fs 的 GC、影响 dex2oat 编译速度，并把额外 I/O 波动带进启动和安装后首次运行测试。测试前确保设备有充足的可用存储空间(至少 20% 以上空闲)。
 
 ### 温度控制:性能测试的隐形杀手
 
