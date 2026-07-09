@@ -4,8 +4,6 @@ chapter: "21.5"
 section: "21.5"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-06-16"
-last_verified_against: "AOSP android-15.0.0_r1; AndroidX core-splashscreen 1.2.0"
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 0
@@ -28,34 +26,40 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task9_result: auto-fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-16"
-task2b_state: fixed
 created_by: "task2a-content-processing"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-16"
 task6_reviewed_date: "2026-06-16"
 task6_result: "pass-light-edit"
 task6_review_notes: "2026-06-16 Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。自动晋升 finalized / ready-to-publish。"
-last_task9_at: "2026-06-16T12:40:55+08:00"
 last_task6_at: "2026-06-16T16:05:00+08:00"
-pipeline_stage: ready-to-publish
-task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2 / P1 1。core-splashscreen API 下限、兼容模式/退出动画、postSplashScreenTheme 崩溃口径需回炉。 | 2026-06-16 01:20 Task9 复审：pass-tech-review。P0/P1 0；P2 2 已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-16 12:40 Task9：auto-fixed。复核 core-splashscreen 1.2.0 AAR/source，修正 minSdk/API21-22 降级行为、低版本圆形 mask、Perfetto/度量工具名，回 Task6 复审。"
 task6_review_notes: "2026-06-16 01:xx Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。Task9 needs-rework（P0 2/P1 1）已由 Task2B 修复，等待 Task9 复审确认。不自动晋升。"
 last_task6_review_log: "logs/review/2026-06-16-01-review.md"
 last_task6_at: "2026-06-16T01:13:48+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-16-12-deep-review.md"
 
 task2b_result: fixed
 last_task2b_at: "2026-06-16T00:51:53"
 task2b_fixed_date: "2026-06-16"
-last_task9_autofix_at: "2026-06-16"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
+last_verified: "2026-07-09"
+last_verified_against: "AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0"
+task9_result: "auto-fixed"
+task9_state: "reviewed"
+task2b_state: "fixed"
+task6_state: "revisiting"
+pipeline_stage: "task6_pending"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-07-09"
+last_task9_at: "2026-07-09T16:30:36+08:00"
+last_task9_autofix_at: "2026-07-09"
+last_task9_review_log: "logs/deep-review/2026-07-09-16-deep-review.md"
+updated_by: "openclaw-task9"
+updated_date: "2026-07-09"
+p0: 0
+p1: 1
+p2: 1
+task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2 / P1 1。core-splashscreen API 下限、兼容模式/退出动画、postSplashScreenTheme 崩溃口径需回炉。 | 2026-06-16 01:20 Task9 复审：pass-tech-review。P0/P1 0；P2 2 已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish。 | 2026-06-16 12:40 Task9：auto-fixed。复核 core-splashscreen 1.2.0 AAR/source，修正 minSdk/API21-22 降级行为、低版本圆形 mask、Perfetto/度量工具名，回 Task6 复审。 | 2026-07-09 16 Task9 deep-review AUTO-FIX：P0 0 / P1 1 / P2 1；AOSP 锚点由 android-15.0.0_r1 重锚到 android-17.0.0_r1，并修正 SplashScreen 动画时长口径；回 Task6 复审。"
 ---
 # Splash Screen 与感知启动速度
 
@@ -87,7 +91,7 @@ last_deepseek_cn_review_at: 2026-06-27
 
 ## 启动窗口（Starting Window）机制与自定义
 
-[已验证: AOSP android-15.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java]
 
 ### 系统侧在做什么
 
@@ -140,7 +144,7 @@ Android 12 之前，Starting Window 的外观由 App theme 的 `windowBackground
 
 ## SplashScreen API (Android 12+) 适配
 
-[已验证: 官方文档 developer.android.com/develop/ui/views/launch/splash-screen 及 AOSP SplashScreen API 源码]
+[已验证: 官方文档 developer.android.com/develop/ui/views/launch/splash-screen 及 AOSP android-17.0.0_r1 SplashScreen API 源码]
 
 ### 设计思路
 
@@ -173,7 +177,7 @@ implementation "androidx.core:core-splashscreen:1.2.0"
     <item name="windowSplashScreenBackground">@color/brand_background</item>
     <!-- 中央图标，支持 AnimatedVectorDrawable -->
     <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
-    <!-- 图标动画时长，上限 1000ms -->
+    <!-- 图标动画时长，官方建议不超过 1000ms -->
     <item name="windowSplashScreenAnimationDuration">1000</item>
     <!-- 启动画面结束后的 Activity 主题 -->
     <item name="postSplashScreenTheme">@style/Theme.App</item>
@@ -266,9 +270,9 @@ splashScreen.setOnExitAnimationListener { provider ->
 两件事要注意：
 
 1. **必须调用 `provider.remove()`**：动画结束后不调用这个方法，启动画面会一直停留在屏幕上。系统不会自动清理。
-2. **动画时长要克制**：退出动画的时间会叠加到启动耗时里。Google 官方建议不超过 500ms，实际操作中 200-300ms 已经足够传达过渡感。
+2. **动画时长要克制**：退出动画的时间会叠加到启动耗时里。官方示例使用 200ms；实际操作中 200-300ms 已经足够传达过渡感，过长会拖慢体感启动。
 
-[已验证: AOSP android-15.0.0_r1, frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java]
 
 ### 从旧方案迁移
 
