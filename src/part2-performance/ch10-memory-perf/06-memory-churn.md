@@ -9,8 +9,8 @@ polish_by: "task2b-polish"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "AOSP android-17.0.0_r1 / android-16.0.0_r1 / android-15.0.0_r1 / android-14.0.0_r1 / Perfetto native-heap-profiler docs"
+last_verified: "2026-07-10"
+last_verified_against: "AOSP android-17.0.0_r1 / AndroidX androidx-main Composer.kt + SnapshotIntState.kt / Compose Runtime 1.5.0 release notes / Perfetto native-heap-profiler docs"
 verified_note: "Android 17/API 37 分代 CMC 基线已锚定 android-17.0.0_r1；2026-07-09 deep-tech-review 抽检确认 platform/art 与 frameworks/base 均已有 android-17.0.0_r1 tag，关键 CMC/GcWatcher 符号存在"
 confidence: high
 pipeline_stage: "task6_pending"
@@ -29,24 +29,26 @@ task6_reviewed_date: "2026-06-18"
 last_task6_at: "2026-06-18T02:10:00+08:00"
 last_task6_audit: "2026-06-18"
 last_task6_review_log: "logs/review/2026-06-18-02-review.md"
-task9_state: "pending"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-06-18"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-07-10"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-09T22:25:10.682694+08:00"
+last_task9_at: "2026-07-10T00:27:54+08:00"
 last_task9_audit: "2026-07-09"
-task9_review_notes: "2026-07-09 Task9 idle audit: P0 0 / P1 1 / P2 0；发现 Android 17/API 37 基线过期，正文仍称无 android-17 tag 且最高源码锚点停留在 android-16.0.0_r1；已写入 queue.json 交 Task2B 复核。"
+task9_review_notes: "2026-07-09 Task9 idle audit: P0 0 / P1 1 / P2 0；发现 Android 17/API 37 基线过期，正文仍称无 android-17 tag 且最高源码锚点停留在 android-16.0.0_r1；已写入 queue.json 交 Task2B 复核。 | 2026-07-10 00:27 Task9 deep-review AUTO-FIX：按 AndroidX androidx-main Composer.kt/SnapshotIntState.kt 与 Compose Runtime 1.5.0 release notes 修正 Compose primitive state API 名称和 Updater.set 相等性口径；回到 Task6 复审。"
 task2b_state: "fixed"
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-08"
 task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
 last_task2b_at: "2026-07-09T22:52:12+08:00"
 last_task2b_lite_at: 2026-06-22
- | 2026-07-09 23:25 Task2B Verifier：状态修正 status=finalized 与 pipeline_stage=task6_pending 矛盾；Task2B 已修复 (t2b_state=fixed) 但 status 阻止 Task6 拾取。status: finalized→ready-for-review，章节已正确回流 Task6。
-review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-07-09-22-audit.md"
+review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 23:25 Task2B Verifier：状态修正 status=finalized 与 pipeline_stage=task6_pending 矛盾；Task2B 已修复 (t2b_state=fixed) 但 status 阻止 Task6 拾取。status: finalized→ready-for-review，章节已正确回流 Task6。"
+last_task9_review_log: "logs/deep-review/2026-07-10-00-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
+updated_by: "openclaw-task9"
+updated_date: "2026-07-10"
+last_task9_autofix_at: "2026-07-10"
 ---
 
 # 内存抖动与频繁 GC
@@ -554,7 +556,7 @@ internal class RecomposeScopeImpl(...) {
 2. **可压缩分配**（用模式可显著减少）：
    - 用 `Strong skipping`（Compose 1.4+ 编译 flag）+ `@Stable` 类型 → 旧 Lambda 不替换，旧 scope 不重跑；
    - `remember(key1, key2)` 的 key 用稳定 hash 而非可变 list；
-   - `SnapshotIntState.intValue` 替代 `State<Int>.value`，避免 Integer 装箱（API 5.0+ 公开）。
+   - `MutableIntState.intValue` / `mutableIntStateOf(...)` 替代 `MutableState<Int>.value`，避免 Integer 装箱（Compose Runtime 1.5.0+ 公开）。
 
 3. **反模式**（必须避免）：
    - `@Composable fun A() { val list = List(10) { ... } }` —— 每次重组重建；
@@ -626,10 +628,10 @@ public fun <V> set(value: V, block: T.(value: V) -> Unit): Unit =
     }
 ```
 
-**SlotTable 分配的最重要开关**：`rememberedValue() != value` 为 `false` 时，`set` 完全无新分配。所以：
-- `mutableStateOf` 作参数 → 永远 `!=`，每帧都 apply；
-- `@Stable data class` → `equals` 由字段决定，相同输入跳过；
-- `@JvmInline value class`（`Int`/`Long`）→ 走 primitive 数组，无装箱。
+**SlotTable 是否写入的关键开关**：`rememberedValue() != value` 为 `false` 时，`set` 不会调用 `updateRememberedValue()` / `composer.apply(...)`。所以：
+- 每次重组重新创建的可变对象（例如未 `remember` 的 `mutableStateOf(...)`、`List(...)`、Lambda）→ 引用变化，通常会触发 apply；
+- `remember { mutableStateOf(...) }` 返回的同一 `State` 对象 → 对象身份稳定，本身不会因为 `.value` 改变就“永远 !=”；
+- primitive `Int` / `Long` / `Float` / `Double` → Compose 提供 `changed(...)` 专用重载，避免比较过程中的装箱。
 
 #### `removeCurrentGroup` 的 scope 销毁链
 
