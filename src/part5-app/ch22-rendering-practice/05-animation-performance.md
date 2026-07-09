@@ -4,8 +4,8 @@ chapter: "22.5"
 section: "22.5"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-07-10"
+last_verified_against: "AOSP android-17.0.0_r1 ViewPropertyAnimator/RenderEffect/View/TransitionManager/Choreographer; Lottie upstream API names spot-checked"
 confidence: medium
 drafted_date: "2026-05-13"
 task6_result: pass-light-edit
@@ -22,13 +22,13 @@ sources:
   - type: source
     path: "intake/external-resources/blog-gracker-series.md"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/ViewPropertyAnimator.java"
+    path: "frameworks/base/core/java/android/view/ViewPropertyAnimator.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/RenderEffect.java"
+    path: "frameworks/base/graphics/java/android/graphics/RenderEffect.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/View.java"
+    path: "frameworks/base/core/java/android/view/View.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/transition/TransitionManager.java"
+    path: "frameworks/base/core/java/android/transition/TransitionManager.java @ android-17.0.0_r1"
   - type: official
     path: "developer.android.com/develop/ui/views/animations/prop-animation"
   - type: official
@@ -37,17 +37,17 @@ sources:
     path: "github.com/airbnb/lottie-android/LottieAnimationView.java"
 tags: [animation, property-animation, lottie, render-effect, transition, motionlayout]
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-28"
-last_task9_at: "2026-05-28T10:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-28-10-deep-review.md"
-task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 2；scaleX 替代宽高动画示例缺少初始/目标状态，帧动画内存估算和 FrameTimeline 版本边界需补。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；Task2B 已补齐上轮 scaleX 初始状态、帧动画内存口径、FrameTimeline 版本边界；本轮复核未发现 P0/P1。 自动晋升 finalized。"
+task9_reviewed_date: "2026-07-10"
+last_task9_at: "2026-07-10T07:28:29+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-10-07-audit.md"
+task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 0；将 AOSP 验证锚点从 android-16.0.0_r1 升级并固定到 android-17.0.0_r1；复核 ViewPropertyAnimator/RenderEffect/View/TransitionManager/Choreographer 关键行为未变，回到 Task6 复审。详见 logs/deep-review/2026-07-10-07-audit.md。 | 2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 2；scaleX 替代宽高动画示例缺少初始/目标状态，帧动画内存估算和 FrameTimeline 版本边界需补。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；Task2B 已补齐上轮 scaleX 初始状态、帧动画内存口径、FrameTimeline 版本边界；本轮复核未发现 P0/P1。 自动晋升 finalized。"
 last_task2b_lite_at: "2026-05-28"
 last_task6_at: "2026-05-28T10:05:00+08:00"
 last_task6_audit: "2026-07-06"
@@ -64,7 +64,10 @@ p1: 0
 p2: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
-last_task9_audit: "2026-06-19"
+last_task9_audit: "2026-07-10"
+updated_by: openclaw-task9
+updated_date: "2026-07-10"
+last_task9_autofix_at: "2026-07-10"
 ---
 
 # 动画性能优化
@@ -112,7 +115,7 @@ last_task9_audit: "2026-06-19"
 
 AOSP `ViewPropertyAnimator` 的类注释直接说明：同时动画多个 View 属性时，它会把多次属性变化合并到一次 invalidation，而不是让每个属性各自触发一次刷新。这个特性适合做 `alpha`、`translationX/Y`、`scaleX/Y`、`rotation` 这类不改变测量结果的动画。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
 [已验证: 官方文档, developer.android.com/develop/ui/views/animations/prop-animation]
 
 属性动画的安全边界是：动画过程中只更新渲染属性，不更新布局约束。下面这类写法会让每一帧都进入 `requestLayout()`，再触发 measure/layout/draw，代价远高于只更新 RenderNode 变换属性。
@@ -145,7 +148,7 @@ view.animate()
 
 `withLayer()` 会在动画期间临时启用硬件 layer，动画结束后恢复原 layer type。适用对象是内容复杂但动画期间内容不变的 View，例如透明度和位移动画。对每帧内容都变化的 View 开 layer 会反复更新纹理，收益会被纹理重建抵消。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
 
 帧动画的主要风险来自资源侧。30 张 1920×1080 RGBA_8888 图片解码后约 248.8 MB，按二进制单位约 237.3 MiB，计算口径是 `1920 × 1080 × 4 × 30`。压缩包体积、硬件位图、采样缩放和目标纹理格式会改变实际占用，但解码后内存与 GPU 纹理上传压力仍会集中到动画开始后的几帧。帧动画只建议用于小尺寸、短时长、不可用矢量或属性动画表达的视觉效果；长时长动效优先评估矢量、Lottie 或自绘方案。
 
@@ -174,8 +177,8 @@ Lottie 不适合放在 RecyclerView 大量 item 中同时播放。列表里如�
 
 `RenderEffect` 是作用在 `RenderNode` 上的中间渲染步骤。AOSP `RenderEffect.java` 注释说明，它可以配置到 `RenderNode`，也可以通过 `View.setRenderEffect()` 配置到 View 背后的 RenderNode；`View.setRenderEffect()` 内部调用 `mRenderNode.setRenderEffect()` 后触发 `invalidateViewProperty(true, true)`。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java]
 
 RenderEffect 的优化要点是缩小输入内容，而不是只盯着 API 调用本身。全屏 blur、列表背景 blur、滑动过程中不断变化的 blur 半径，都可能让 RenderThread 反复处理大面积纹理。更稳妥的做法是：
 
@@ -257,7 +260,7 @@ ValueAnimator.ofFloat(0f, 1f).apply {
 
 转场动画的问题在于范围容易失控。`TransitionManager.beginDelayedTransition(sceneRoot)` 会捕获 sceneRoot 下 View 层级在下一帧前后的变化，并为差异创建动画。sceneRoot 选得越大，状态捕获、布局变化和动画对象数量就越多。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/transition/TransitionManager.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/transition/TransitionManager.java]
 [已验证: 官方文档, developer.android.com/develop/ui/views/animations/transitions]
 
 转场优化的第一条规则：sceneRoot 只包住变化区域。不要在 Activity 根布局上随手调用 `beginDelayedTransition()`，除非整个页面都要参与转场。
@@ -311,10 +314,10 @@ MotionLayout 的调试重点放在 trace 里每帧成本是否稳定；动画能
 
 ## 参考资料
 
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java]
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/transition/TransitionManager.java]
+- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
+- [已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
+- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java]
+- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/transition/TransitionManager.java]
 - [已验证: github.com/airbnb/lottie-android/lottie/src/main/java/com/airbnb/lottie/LottieAnimationView.java]
 - [引用: developer.android.com/develop/ui/views/animations/prop-animation]
 - [引用: developer.android.com/develop/ui/views/animations/transitions]
