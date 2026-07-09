@@ -57,7 +57,7 @@ last_task9_autofix_at: "2026-07-09"
 last_task9_review_log: "logs/deep-review/2026-07-09-08-deep-review.md"
 task9_review_notes: "2026-07-09 Task9：复核 Android 17/AOSP 与当前 Android Developers 文档；auto-fix JobScheduler/WorkManager tag 版本差异、batterystats checkin 命令和 Play policy beta 旧口径，回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-10
+last_deepseek_cn_review_at: 2026-07-09
 last_task9_audit: "2026-06-22"
 last_task9_audit_at: "2026-06-22T15:25:24+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-22-15-audit.md"
@@ -110,7 +110,7 @@ last_task2b_lite_at: "2026-07-09"
 
 25.3 节已经覆盖 `PowerManager.WakeLock` 和 Alarm 的 API 使用，11.5 节覆盖系统 WakeLock 机制。25.19 只处理一个更窄的工程问题：当 Play Console 报出 excessive partial wake lock 后，团队怎样判断它是否真实影响发布质量，怎样把一个 wake lock tag 找回到业务代码或 SDK 调用点。
 
-Android Vitals 的价值在于外部质量裁决。它按 Google Play 的采集口径统计用户设备上的耗电风险，能告诉团队“哪些 tag 已经越线”，但不会给出完整堆栈、任务上下文、充电状态、业务 trace id 或 SDK 版本。线上治理必须同时依赖 Play 指标和端侧监控。
+Android Vitals 的价值在于它是一套外部质量标准。它按 Google Play 的采集口径统计用户设备上的耗电风险，能告诉团队“哪些 tag 已经越线”，但不会给出完整堆栈、任务上下文、充电状态、业务 trace id 或 SDK 版本。线上治理必须同时依赖 Play 指标和端侧监控。
 
 ## 指标口径：Android Vitals 统计的是非豁免 partial wake lock
 
@@ -139,7 +139,7 @@ Stuck partial wake lock 指单个 partial wake lock 在后台持续持有达到�
 
 ## 豁免边界：用户可感知任务也要保留责任边界
 
-Android Vitals 对 audio、location、JobScheduler user-initiated API 有豁免，是因为这些场景通常存在用户可感知收益或系统托管的任务语义。豁免不代表应用可以任意持锁；它只说明这部分时间不进入 Vitals excessive partial wake lock 的计算。
+Android Vitals 对 audio、location、JobScheduler user-initiated API 有豁免，是因为这些场景通常存在用户可感知收益或系统托管的任务语义。豁免只说明这部分时间不进入 Vitals 的计算，不代表可以任意持锁。
 
 治理时按责任边界拆开：
 
@@ -231,7 +231,7 @@ inline fun <T> PowerManager.WakeLock.useFor(
 
 ## 版本与 Play 分发影响
 
-Google 在 2025-10-02 的 Android Developers Blog 中公告：从 2026-03-01 起，未满足 excessive wake lock 质量阈值的 title 可能被排除在推荐等 prominent discovery surfaces 之外，部分场景还可能在 store listing 展示耗电警告。官方 excessive wake lock 页面当前给出的稳定口径是 28 天内超过 5% 的会话会影响 Play 可见度，因此状态以 Play Console 中对应指标为准；工程门禁应按已执行风险处理。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric][已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock]
+Google 在 2025-10-02 的 Android Developers Blog 中公告：从 2026-03-01 起，未满足 excessive wake lock 质量阈值的 title 可能被排除在推荐等 prominent discovery surfaces 之外，部分场景还可能在 store listing 展示耗电警告。官方 excessive wake lock 页面当前给出的稳定口径是 28 天内超过 5% 的会话会影响 Play 可见度，因此状态以 Play Console 中对应指标为准；工程门禁应按"已生效"对待，不等 Play 窗口关闭再响应。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric][已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock]
 
 | 分发场景 | Vitals 可用性 | 治理策略 |
 | --- | --- | --- |

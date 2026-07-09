@@ -46,7 +46,7 @@ task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清
 last_task9_review_log: "logs/deep-review/2026-07-09-10-audit.md"
 task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 4 处记录在 deep-review/suggestions，不阻塞发布；自动晋升 finalized / ready-to-publish。 | 2026-07-09 10 Task9 idle-audit auto-fix：将 View/RenderNode/RenderProperties 源码锚点升级到 AOSP android-17.0.0_r1；源码行为与既有结论一致，回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-09
+last_deepseek_cn_review_at: 2026-07-09
 last_task9_audit_log: "logs/deep-review/2026-07-09-10-audit.md"
 last_task9_autofix_at: "2026-07-09"
 ---
@@ -92,7 +92,7 @@ Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启
 
 **Hardware Layer** 指的是在硬件加速开启时，把某个 View 子树的绘制结果放进一块离屏 GPU render target，后续以纹理的形式参与合成。官方文档把它描述为 hardware layer 或 hardware texture。它解决的是“同一批绘制结果要被连续复用”的问题，例如 alpha、translation、scale、rotation 这些变换持续发生，但内容本身没有变化的场景。
 
-Hardware Layer 能减少的是 RenderThread 侧对这棵子树 DisplayList 的重复 replay 和光栅化成本——现代 HWUI 是 retained DisplayList/RenderNode 模型，translation、scale、rotation、alpha 等属性动画通常不会让 UI 线程每帧重录 DisplayList。它本身不是 measure/layout 的跳过开关。布局能不能跳过，取决于这一帧有没有新的 layout request、尺寸约束有没有变化；内容一旦 `invalidate()`，layer 缓存仍然会失效并重建。
+Hardware Layer 减少的是 RenderThread 侧对这棵子树 DisplayList 的重复 replay 和光栅化。现代 HWUI 是 retained DisplayList/RenderNode 模型：translation、scale、rotation、alpha 这类属性动画通常不会让 UI 线程每帧重录 DisplayList。Hardware Layer 本身不是 measure/layout 的跳过开关——布局能不能跳过，取决于这一帧有没有新的 layout request、尺寸约束有没有变化。内容一旦 `invalidate()`，layer 缓存仍然会失效并重建。
 
 为了不把几个层级混在一起，可以把三个场景分开看：
 
@@ -178,7 +178,7 @@ animator.start();
 
 ## Hardware Layer 的代价
 
-Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多次"，但缓存本身有代价。
+Hardware Layer 不是万能的。它的收益逻辑是"缓存一次、复用多次"，但缓存本身有代价。
 
 ### 代价一：额外的 GPU 内存
 

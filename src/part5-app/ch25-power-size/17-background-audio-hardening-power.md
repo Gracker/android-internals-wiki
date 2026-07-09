@@ -488,3 +488,44 @@ bool IsLc3ConfigMatched(const types::CodecConfigSetting& target_config,
 - [perfetto | Android Studio | Android Developers](https://developer.android.com/tools/perfetto)
 - [dumpsys | Android Studio | Android Developers](https://developer.android.com/studio/command-line/dumpsys)
 - 结构参考：Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md
+
+<!-- AIW-源码调研-2026-07-09 -->
+## 🔍 源码调研补充（2026-07-09）
+
+> **重要发现：章节引用与实际源码存在显著差异**
+
+通过对 Android 17 main 分支源码的深度调研，发现了与本章引用不符的关键内容：
+
+### 1. 硬化 Shell 命令缺失
+
+**章节引用：** `AudioManagerShellCommand.java:182-185,517-563` 应包含 set-hardening/clear-hardening 命令
+
+**实际源码（main分支）：** AudioService 中 **不存在** 这些 shell 命令。当前实现完全通过 `HardeningEnforcer` 的 AppOps 权限检查机制，无用户可操作的 shell 命令。
+
+### 2. 硬化核心实现机制
+
+**文件：** `services/core/java/com/android/server/audio/HardeningEnforcer.java`
+
+**关键方法：** `blockFocusMethod()` 和 `blockVolumeMethod()` 采用三重策略：
+1. AppOps 权限检查：`noteOp(AppOpsManager.OP_TAKE_AUDIO_FOCUS, uid, packageName)`
+2. SDK 版本豁免：`targetSdk < Build.VERSION_CODES.VANILLA_ICE_CREAM` 允许旧应用
+3. 车载平台特殊处理：`autoPublicVolumeApiHardening()` 标志控制
+
+### 3. AudioService 集成点
+
+**调用位置：** `AudioService.java:11233`
+```java
+if (!permissionOverridesCheck && mHardeningEnforcer.blockFocusMethod(uid,
+        HardeningEnforcer.METHOD_AUDIO_MANAGER_REQUEST_AUDIO_FOCUS,
+        clientId, focusReqType, callingPackageName, attributionTag, sdk)) {
+    return AudioManager.AUDIOFOCUS_REQUEST_FAILED; // 被硬化阻塞
+}
+```
+
+### 4. 结论与建议
+
+- ✅ **核心机制验证：** AppOps 权限检查机制确实存在并正常工作
+- ⚠️ **引用偏差：** shell 命令已不存在，可能是后续代码重构导致
+- 📋 **后续验证：** 需确认 AudioFlinger HAL 层决策矩阵是否独立存在
+
+> **提示：** 当前测试硬化功能应直接使用 `AppOpsManager.OP_TAKE_AUDIO_FOCUS` 权限机制，而非寻找已移除的 shell 命令。

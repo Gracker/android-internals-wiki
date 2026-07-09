@@ -56,7 +56,7 @@ task9_reviewed_date: '2026-07-07'
 last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
-last_task6_audit: '2026-06-24'
+last_task6_audit: '2026-07-09'
 ---
 # 14.11 Battery Historian 与功耗分析工具
 
@@ -288,7 +288,7 @@ Android 15 (API 35) 把这条能力开放到了代码层。入口类是 `android
 - `getSupportedPowerMonitors(executor, consumer)`：异步枚举当前设备暴露的 `PowerMonitor`
 - `getPowerMonitorReadings(monitors, executor, outcomeReceiver)`：异步读取这组 monitor 的累计功耗读数，结果封装在 `PowerMonitorReadings` 中
 
-这组 API 适合自动化测试、实验开关和线上诊断工具。它和 Studio Power Profiler 看到的是同一类底层 monitor 数据，是否能拿到细粒度 rail、采样分辨率有多高，仍然取决于设备有没有实现 Power Stats HAL / ODPM。
+这组 API 适合自动化测试、实验开关和线上诊断工具。它和 Studio Power Profiler 看到的是同一类基础 monitor 数据，是否能拿到细粒度 rail、采样分辨率有多高，仍然取决于设备有没有实现 Power Stats HAL / ODPM。
 
 ### Power Profiler vs Energy Profiler
 
@@ -466,7 +466,7 @@ systemHealthManager.getPowerMonitorReadings(
 
 **版本门槛**：应用层 PowerMonitor API 需要 API 35； Perfetto `android.power_rails` 从 Android 10 就存在，但需要设备支持 ODPM（Pixel 6+ 确认支持）。
 
-**Android 16/17 中的 PowerMonitor API**：`SystemHealthManager.getSupportedPowerMonitors()` / `getPowerMonitorReadings()` 在 API 35 的公开签名保持不变——这些是平台契约层接口。内部采集管线的变化不改变应用层调用方式。Android 16/17 的底层增强主要体现在：
+**Android 16/17 中的 PowerMonitor API**：`SystemHealthManager.getSupportedPowerMonitors()` / `getPowerMonitorReadings()` 在 API 35 的公开签名保持不变——这些是平台契约层接口。内部采集管线的变化不改变应用层调用方式。Android 16/17 的基础增强主要体现在：
 
 ① **事件驱动采集**：`PowerStatsService` 新增事件驱动的 rail 采集模式（`onPowerMonitorStateChanged` 回调），替代纯轮询模式，减少系统空闲唤醒开销
 ② **细粒度 rail 分组**：GPU/MODEM/Display 等子系统从原来共享的功耗聚合拆分出独立计量轨道，`PowerMonitor` 枚举条目从 Android 15 的约 15 个增加到 Android 17 的约 25 个
@@ -718,7 +718,7 @@ Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源�
 
 ### 统一归因入口：`BatteryStatsManager.getBatteryUsageStats`
 
-`frameworks/base/core/java/android/os/BatteryStatsManager.java`（`android-15.0.0_r1`）把面向上层（App、Studio、Macrobenchmark、statsd）的所有功耗归因都收敛到一个 Binder 调用：
+`frameworks/base/core/java/android/os/BatteryStatsManager.java`（`android-15.0.0_r1`）把面向应用层（App、Studio、Macrobenchmark、statsd）的所有功耗归因都收敛到一个 Binder 调用：
 
 ```java
 @SystemApi
@@ -740,7 +740,7 @@ public final class BatteryStatsManager {
 
 `frameworks/base/core/java/android/os/BatteryUsageStatsQuery.java`（`android-15.0.0_r1`，并交叉验证 `android-14.0.0_r1` 已就位）：
 
-| Flag | 值 | 语义 | 上层用途 |
+| Flag | 值 | 语义 | 应用层用途 |
 |------|----|------|----------|
 | `FLAG_BATTERY_USAGE_STATS_POWER_PROFILE_MODEL` | 0x1 | 强制 power_profile 估算，忽略 ODPM | A/B 对比 / 降级设备 |
 | `FLAG_BATTERY_USAGE_STATS_INCLUDE_HISTORY` | 0x2 | 嵌入 `BatteryStatsHistory` | Battery Historian 时间线渲染 |
@@ -946,7 +946,7 @@ if (earliestTimestamp == 0 || mClock.elapsedRealtime() - earliestTimestamp > max
 3. **统计准确性差异**：采样频率影响峰值功耗捕获能力
 4. **校准算法不同**：各厂商自研校准逻辑未开源，难于标准化
 
-> **结论**：Android 17 在保障隐私和系统安全的同时，引入了显著的数据精度损失。功耗分析工具在不同OEM设备上的结果存在系统差异，开发者需理解这些底层机制来正确解读数据。
+> **结论**：Android 17 在保障隐私和系统安全的同时，引入了显著的数据精度损失。功耗分析工具在不同OEM设备上的结果存在系统差异，开发者需理解这些基础机制来正确解读数据。
 <!-- AIW-源码调研-2026-07-07 -->
 ### Android 17 PowerStats HAL OEM 实现差异源码分析
 
