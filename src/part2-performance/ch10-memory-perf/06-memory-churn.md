@@ -2,7 +2,7 @@
 title: "内存抖动与频繁 GC"
 chapter: "10.6"
 section: "10.6"
-status: "finalized"
+status: "ready-for-review"
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
@@ -42,6 +42,7 @@ task2b_rework_date: "2026-05-08"
 task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
 last_task2b_at: "2026-07-09T22:52:12+08:00"
 last_task2b_lite_at: 2026-06-22
+ | 2026-07-09 23:25 Task2B Verifier：状态修正 status=finalized 与 pipeline_stage=task6_pending 矛盾；Task2B 已修复 (t2b_state=fixed) 但 status 阻止 Task6 拾取。status: finalized→ready-for-review，章节已正确回流 Task6。
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-07-09-22-audit.md"
 deepseek_cn_review_state: done
