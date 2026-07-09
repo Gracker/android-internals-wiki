@@ -5,9 +5,9 @@ section: "25.19"
 status: ready-for-review
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals wake lock metric updated 2026-05"
-last_verified: "2026-05-25"
-last_verified_against: "Android Developers excessive/stuck wake lock docs updated 2026-05, Android Developers Blog 2025-10-02, AOSP android-17.0.0_r1"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals wake lock metric checked 2026-07"
+last_verified: "2026-07-09"
+last_verified_against: "Android Developers excessive/stuck/identify wake lock docs checked 2026-07-09, Android Developers Blog 2025-10-02, AOSP android-17.0.0_r1"
 confidence: high
 tags: [power, wakelock, android-vitals, battery, play-console]
 related_chapters: ["11.5", "25.2", "25.3", "25.13", "25.14", "26.3", "26.15"]
@@ -39,22 +39,23 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T06:04:00+08:00"
-task6_state: reviewed
-task9_state: pending
+task6_state: revisiting
+task9_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-07-09
 task6_result: pass-light-edit
 last_task6_at: "2026-07-09T08:07:00+08:00"
 last_task6_audit: "2026-07-09"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T11:24:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
-task9_review_notes: "2026-06-05 Task9：源码/API/版本边界复核无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-07-09"
+last_task9_at: "2026-07-09T08:27:37+08:00"
+last_task9_autofix_at: "2026-07-09"
+last_task9_review_log: "logs/deep-review/2026-07-09-08-deep-review.md"
+task9_review_notes: "2026-07-09 Task9：复核 Android 17/AOSP 与当前 Android Developers 文档；auto-fix JobScheduler/WorkManager tag 版本差异、batterystats checkin 命令和 Play policy beta 旧口径，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-10
 last_task9_audit: "2026-06-22"
@@ -90,7 +91,7 @@ last_task2b_lite_at: "2026-07-09"
 补充端侧采集：申请堆栈、释放堆栈、持锁时长、前后台状态、充电状态、电量、任务类型、SDK 来源，用内部阈值提前发现 Vitals 风险。
 
 ### 🔹 版本与分发影响：2026 Play 质量信号
-整理 2025/2026 Android Vitals wake lock 指标的分发影响、beta 状态、店铺警告风险，以及国内渠道缺少 Vitals 数据时如何用自建指标替代。
+整理 2025/2026 Android Vitals wake lock 指标的分发影响、质量阈值、店铺警告风险，以及国内渠道缺少 Vitals 数据时如何用自建指标替代。
 
 ## 扩展
 
@@ -163,7 +164,7 @@ com.example.media:upload-session
 com.example.ble:firmware-transfer
 ```
 
-系统和库也会替应用持锁。`AlarmManager` 触发广播时会用调用方归因持锁，WorkManager/JobScheduler 可能出现 `*job*/<package>/androidx.work.impl.background.systemjob.SystemJobService` 这类名称。看到这类 tag 时，不要在代码里搜索同名字符串；应回到对应 API 的任务 id、worker 名称、stop reason、重试次数和约束配置。[已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls]
+系统和库也会替应用持锁。`AlarmManager` 触发广播时会用调用方归因持锁；WorkManager/JobScheduler 的 tag 由系统版本和任务类型决定：Android 15 及以下常见 `*job*/<package>/androidx.work.impl.background.systemjob.SystemJobService`，Android 16 QPR2 及以上会区分 `*job*u`、`*job*e`、`*job*r` 并可带 `#<trace_tag>#`。看到这类 tag 时，不要在代码里搜索同名字符串；应回到对应 API 的任务 id、worker 名称、stop reason、重试次数和约束配置。[已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls]
 
 AOSP 侧的调用路径提供了端侧归因的边界。`PowerManagerService.acquireWakeLockInternal()` 创建或更新服务内的 `WakeLock` 记录，随后在获取内核 wake lock 之后调用 `notifyWakeLockAcquiredLocked()`；释放路径走 `releaseWakeLockInternal()` 删除记录。BatteryStats 记账由 `BatteryStatsService.noteStartWakelock()` / `noteStartWakelockFromSource()` 接收 uid、pid、name、historyName、type 和 WorkSource 信息，再写入统计对象。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java#acquireWakeLockInternal][已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java#noteStartWakelock]
 
@@ -181,10 +182,11 @@ adb shell am force-stop com.example.app
 adb shell monkey -p com.example.app 1
 # 触发目标后台任务后熄屏，断开 USB 或确认设备未充电
 adb shell dumpsys batterystats --charged com.example.app > batterystats.txt
+adb shell dumpsys batterystats --checkin com.example.app > batterystats-checkin.csv
 adb bugreport bugreport.zip
 ```
 
-`dumpsys batterystats` 的 checkin 输出中，`wl` 段代表 wake lock，字段包含 full/partial/window 的时间和次数；`kwl` 代表 kernel wake lock，`wr` 代表 wakeup reason。Battery Historian 能把 bugreport 中的电量事件画成时间轴，但它仍然缺少业务堆栈，适合确认“何时持锁、持了多久、屏幕和充电状态如何”。[已验证: 官方文档, developer.android.com/tools/dumpsys][已验证: 官方文档, developer.android.com/topic/performance/power/setup-battery-historian]
+`dumpsys batterystats --checkin` 的输出中，`wl` 段代表 wake lock，字段包含 full/partial/window 的时间和次数；`kwl` 代表 kernel wake lock，`wr` 代表 wakeup reason。Battery Historian 能把 bugreport 中的电量事件画成时间轴，但它仍然缺少业务堆栈，适合确认“何时持锁、持了多久、屏幕和充电状态如何”。[已验证: 官方文档, developer.android.com/tools/dumpsys][已验证: 官方文档, developer.android.com/topic/performance/power/setup-battery-historian]
 
 Perfetto 适合补齐时间线证据。对手动 wake lock 或系统 API 间接持锁，采集时打开 `power:PowerManagement` atrace category，查看 Device State 下的 WakeLocks、Long Wake locks、Jobs、Screen state、Top app。Android 15 (API 35)+ 还可用 `ProfilingManager` 做现场系统 trace 采集，但系统进程和其他应用会被脱敏，线上分析仍要依赖应用侧事件关联。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric]
 
@@ -229,7 +231,7 @@ inline fun <T> PowerManager.WakeLock.useFor(
 
 ## 版本与 Play 分发影响
 
-Google 在 2025-10-02 的 Android Developers Blog 中公告：从 2026-03-01 起，未满足 excessive wake lock 质量阈值的 title 可能被排除在推荐等 prominent discovery surfaces 之外，部分场景还可能在 store listing 展示耗电警告。当前页面同时保留“metric out of beta 后影响可见度”的说明，因此状态以 Play Console 中对应指标为准；工程门禁应按已执行风险处理。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric][已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock]
+Google 在 2025-10-02 的 Android Developers Blog 中公告：从 2026-03-01 起，未满足 excessive wake lock 质量阈值的 title 可能被排除在推荐等 prominent discovery surfaces 之外，部分场景还可能在 store listing 展示耗电警告。官方 excessive wake lock 页面当前给出的稳定口径是 28 天内超过 5% sessions 会影响 Play 可见度，因此状态以 Play Console 中对应指标为准；工程门禁应按已执行风险处理。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric][已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock]
 
 | 分发场景 | Vitals 可用性 | 治理策略 |
 | --- | --- | --- |
