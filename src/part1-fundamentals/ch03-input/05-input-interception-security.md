@@ -1,7 +1,7 @@
 ---
 
 
-status: ready-for-review
+status: "finalized"
 title: 输入事件拦截与安全机制
 chapter: '3.5'
 section: '3.5'
@@ -12,9 +12,9 @@ reviewed_date: "2026-07-10"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: fixed
-pipeline_stage: "task9_pending"
+task9_state: "reviewed"
+task2b_state: "fixed"
+pipeline_stage: "ready-to-publish"
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -38,15 +38,15 @@ related_chapters:
 - '9.2'
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。 | 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；Task9 已通过且 queue 无 pending，自动晋升 finalized。' | Task2B Verifier (2026-07-10T03:34:07+08:00): 状态修正 — status: finalized → ready-for-review, task9_state: reviewed → pending。Task9 auto-fix 后 status 未从 finalized 重置为 ready-for-review，导致 Task6 无法拾取；已修正。
 task2b_result: fixed-lite
-task9_result: auto-fixed
-task9_reviewed_date: "2026-06-02"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-07-10"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-02T00:25:54+08:00"
+last_task9_at: "2026-07-10T04:30:34+08:00"
 last_task6_at: "2026-07-10T04:12:20+08:00"
 last_task6_review_log: "logs/review/2026-07-10-04-review.md"
 task6_review_notes: "2026-07-10 Task6 revisiting-review (round 3): pass-light-edit。Task9 auto-fix(源码锚点升级android-17.0.0_r1, SystemUI back gesture InputMonitorCompat路径, GameManagerService power mode方法名)回流后写作层复审通过；L1 禁用词/高频词/物理动词/元叙述零命中；L2 开头/节奏/结构/读者引导全部通过；outline 5/5 锚点全覆盖；否定-纠正结构1处(限额内)；无 L1/L2 问题，无 L3/L4 回炉项。送 Task9 终审确认。"
-last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
-task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。InputFilter/InputMonitor/Accessibility 注入与 Android 16/17 版本边界复核通过；P0 0 / P1 0 / P2 0，queue 无 pending，自动晋升 finalized。 | 2026-07-10 Task9 idle audit auto-fix：将主线源码锚点切到 android-17.0.0_r1，修正 SystemUI back gesture InputMonitorCompat 源码路径和 GameManagerService power mode 方法名；回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-07-10-04-deep-review.md"
+task9_review_notes: "2026-07-10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 InputFilter/InputMonitor/Accessibility 注入、SystemUI back gesture InputMonitorCompat、GameManagerService power mode 的 android-17.0.0_r1 锚点；Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-07-10-04-deep-review.md。 | 2026-06-02 Task9 deep review: pass-tech-review。InputFilter/InputMonitor/Accessibility 注入与 Android 16/17 版本边界复核通过；P0 0 / P1 0 / P2 0，queue 无 pending，自动晋升 finalized。 | 2026-07-10 Task9 idle audit auto-fix：将主线源码锚点切到 android-17.0.0_r1，修正 SystemUI back gesture InputMonitorCompat 源码路径和 GameManagerService power mode 方法名；回到 Task6 复审。"
 last_task9_audit: "2026-07-10"
 last_task9_audit_log: "logs/deep-review/2026-07-10-01-audit.md"
 last_task9_autofix_at: "2026-07-10"
@@ -61,6 +61,8 @@ p1: 0
 p2: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-02
+updated_by: "openclaw-task9"
+updated_date: "2026-07-10"
 ---
 
 # 输入事件拦截与安全机制
