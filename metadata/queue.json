@@ -750,6 +750,19 @@
       "status": "completed",
       "completed_date": "2026-07-08T10:53:47+08:00",
       "completed_by": "task2b-rework"
+    },
+    {
+      "section": "5.28",
+      "section_title": "Android 17 PELT Boost 回退与 AMU/PMU 微架构感知调频",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 新发现缺口：OSPM 2026 传音 AMU/PMU 方案 + Linux sched/fair boost revert",
+      "material_paths": [
+        "Cubox/一个 Linux 调度器优化，让 Android 多耗 20% 的电，传音工程师如何发现问题？-2026-06-04.md",
+        "Cubox/登顶OSPM2026！传音调度方案亮相Linux内核全球顶会-2026-07-09.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T07:06:00+08:00",
+      "status": "pending"
     }
   ],
   "items": [

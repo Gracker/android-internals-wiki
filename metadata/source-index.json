@@ -1565,6 +1565,308 @@
       "path": "AndroidWeekly/#29/jetpack-compose-1.1-is-now-sta",
       "summary": "Jetpack Compose 1.1 is now stable! - #29技术文章",
       "scored_at": "2026-07-09T09:10:12.866792"
+    },
+    {
+      "title": "Android 17 后台音频硬化与播放功耗治理机制盲区验证",
+      "path": "DeepResearch/2026-07-09-android17-audio-hardening-discrepancy.md",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter_mapping": "ch25",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#音频硬化",
+        "#功耗治理",
+        "#源码分析"
+      ],
+      "summary": "发现Android 17章节引用的set-hardening/clear-hardening shell命令在当前main分支中不存在，实际实现是HardeningEnforcer.java中的AppOps权限检查机制。分析音频焦点阻塞逻辑、车载特殊处理、音频焦点决策矩阵等核心实现，版本差异显示从shell命令驱动变为AppOps权限驱动。",
+      "entry_date": "2026-07-09",
+      "author": "MiniMax-M3",
+      "scored_at": "2026-07-10T05:48:42.282321"
+    },
+    {
+      "title": "Android 17 GraphicBuffer 内存池化与 BufferQueue slot 复用机制",
+      "path": "DeepResearch/2026-07-09-android17-graphic-buffer-memory-pool-design.md",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapter_mapping": "ch02",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#GPU",
+        "#内存池",
+        "#BufferQueue",
+        "#渲染优化"
+      ],
+      "summary": "揭示Android 17三层GraphicBuffer内存池结构：GraphicBufferAllocator单例（仅作为handle注册表）、BufferQueueCore的四组slot集合（复用核心）、BufferSlot中的mGraphicBuffer复用逻辑。分析跨SoC池化实现差异，AOSP框架层只承诺BufferQueueCore这个slot-level pool，任何显存层级的复用策略都在vendor allocator服务内部实现。",
+      "entry_date": "2026-07-09",
+      "author": "MiniMax-M3",
+      "scored_at": "2026-07-10T05:48:42.282329"
+    },
+    {
+      "title": "Android 17不同SoC架构下的电池优化策略与IPower HAL实现",
+      "path": "DeepResearch/2026-07-09-android17-soc-power-hal-schedutil.md",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter_mapping": "ch15",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#电源管理",
+        "#IPower HAL",
+        "#SoC",
+        "#调度"
+      ],
+      "summary": "分析Android 17通过IPower AIDL接口实现的5层闭环分层架构：Framework PowerManager.setMode()统一入口、Java PowerManagerService DIRTY_*位掩码管理、IPower AIDL跨进程通信、Vendor层厂商电源服务实现、Kernel层schedutil governor智能决策。新增HintSession协同机制和CPU/GPU Headroom计算能力。",
+      "entry_date": "2026-07-09",
+      "author": "MiniMax-M3",
+      "scored_at": "2026-07-10T05:48:42.282331"
+    },
+    {
+      "title": "Android 17 trimMemory 回调 API 演进与 ART Heap Trim 链路",
+      "path": "DeepResearch/2026-07-09-android17-trim-memory-callback-api-evolution.md",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapter_mapping": "ch23",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#内存管理",
+        "#trimMemory",
+        "#ART",
+        "#Heap Trim"
+      ],
+      "summary": "揭示Android 17在应用级内存管理API上的演进：TRIM_MEMORY_RUNNING_MODERATE/LOW/CRITICAL与MODERATE/COMPLETE五个级别正式标注@Deprecated，新增Flags.skipBgMemTrimOnFgApp标志使前台进程不再处理TRIM_MEMORY_BACKGROUND级别，避免用户感知到的卡顿。ART端Heap::Trim路径保持异步HeapTrimTask架构。",
+      "entry_date": "2026-07-09",
+      "author": "MiniMax-M3",
+      "scored_at": "2026-07-10T05:48:42.282333"
+    },
+    {
+      "title": "Android 17 VNDK / VNDK-less 路径下 native 库加载的 namespace 校验成本",
+      "path": "DeepResearch/2026-07-09-android17-vndk-linker-namespace-load-cost.md",
+      "score": 20,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapter_mapping": "ch01",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#VNDK",
+        "#native库",
+        "#linker",
+        "#namespace"
+      ],
+      "summary": "分析bionic/linker中VNDK/VNDK-less路径下的dlopen()性能成本：is_accessible()的4层回退检查链、kDefaultLdPaths默认搜索路径数、kLibraryExemptList 13项系统库豁免、dlsym的walk_dependencies_tree广度优先访问、open_library_on_paths的512字节缓冲限制、load_library的页对齐与两次fstat syscall。",
+      "entry_date": "2026-07-09",
+      "author": "MiniMax-M3",
+      "scored_at": "2026-07-10T05:48:42.282334"
+    },
+    {
+      "title": "Android 17 命令行 GPU/SF 调试工具链演进——flatland 与 sfdo 的双重定位",
+      "path": "DeepResearch/2026-07-10-android17-cmdline-gpu-sf-debug-tools-chain.md",
+      "score": 19,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter_mapping": "ch14",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#GPU",
+        "#调试工具",
+        "#SurfaceFlinger",
+        "#flatland"
+      ],
+      "summary": "揭示Android 17调试相关CLI实际分散在cmds/flatland/与cmds/sfdo/两个目录：flatland是2012年起源的GPU 2D合成基准工具，sfdo是2024年新增的Rust重写SF命令行工具。实现从C++ cc_benchmark（基准）+ Rust + AIDL（调试）的分流演进，没有引入新的cmds/gpu/统一入口。",
+      "entry_date": "2026-07-10",
+      "author": "MiniMax-M3",
+      "scored_at": "2026-07-10T05:48:42.282336"
+    },
+    {
+      "title": "登顶OSPM2026！传音调度方案亮相Linux内核全球顶会",
+      "path": "Cubox/登顶OSPM2026！传音调度方案亮相Linux内核全球顶会-2026-07-09.md",
+      "score": 15,
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 3,
+      "chapter_mapping": "ch16",
+      "content_type": "技术新闻",
+      "tags": [
+        "#Linux",
+        "#内核",
+        "#调度",
+        "#电源管理",
+        "#OSPM"
+      ],
+      "summary": "传音软件工程部夏弘彦博士在OSPM2026上宣讲AMU/PMU优化方案，成为手机厂商中唯一在此顶会宣讲的公司。提出微架构感知的频率限制机制，重载游戏场景下实现10%功耗下降。",
+      "entry_date": "2026-07-09",
+      "author": "Cubox抓取",
+      "scored_at": "2026-07-10T05:49:12.975247"
+    },
+    {
+      "title": "Own the Outer Loop - AI Agent 工程实践",
+      "path": "X 文章/2026-07-09-2026-07-09-1243-addyosmani-Own-the-Outer-Loop.md",
+      "score": 16,
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter_mapping": "ch16",
+      "content_type": "技术观点",
+      "tags": [
+        "#AI",
+        "#Agent",
+        "#软件工程",
+        "#质量控制",
+        "#Outer Loop"
+      ],
+      "summary": "深入探讨AI Agent的outer loop概念，提出Quality、Verdict、Answerability三大核心原则。分析AI代码的三种隐藏成本：认知投降、认知债务、编排税。强调人类工程师需要掌握边界决策、约束设定、证据评估等核心能力。",
+      "entry_date": "2026-07-09",
+      "author": "Addy Osmani",
+      "scored_at": "2026-07-10T05:50:27.932441"
+    },
+    {
+      "title": "AOHP：将 Android 改造为 Agent 原生 OS",
+      "path": "每日论文精读（Android）/2026-07-09.md",
+      "score": 18,
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter_mapping": "ch16",
+      "content_type": "论文精读",
+      "tags": [
+        "#Android",
+        "#AI Agent",
+        "#操作系统",
+        "#性能优化",
+        "#清华大学"
+      ],
+      "summary": "清华大学/北京大学/香港大学联合研究AOHP（开源OS级Agent Harness），在AOSP上引入个性化服务组合、高效agent接口、安全信息流三个机制。实验显示完成率提升21.12%，Token消耗减少51.55%，执行时长降低44.21%。",
+      "entry_date": "2026-07-09",
+      "author": "论文精读小组",
+      "scored_at": "2026-07-10T05:50:36.126551"
+    },
+    {
+      "title": "Android 17 后台音频硬化的双源决策矩阵与 HardeningEnforcer / Tracks getHardeningDecision 全链路",
+      "path": "DeepResearch/2026-07-10-android17-background-audio-hardening-enforcer-decision-matrix.md",
+      "score": 18,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter_mapping": "ch12",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#音频",
+        "#功耗",
+        "#HardeningEnforcer",
+        "#后台播放"
+      ],
+      "summary": "揭示 Android 17 后台音频硬化为 Java 层 HardeningEnforcer + C++ 层 Tracks::getHardeningDecision() 双源决策架构，两侧各自从 IAudioPolicyService.HardeningOverride（DEFAULT/ENABLE/DISABLE/THROW 四态）拉取覆盖开关。Java 端以 AppOpsManager 三档",
+      "processed_at": "2026-07-10T06:37:34.361020",
+      "processed_by": "task-deepresearch-injector"
+    },
+    {
+      "title": "Android 17 信号处理机制与 debuggerd 架构迁移",
+      "path": "DeepResearch/2026-07-08-android17-debuggerd-signal-handler-architecture.md",
+      "score": 18,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 4,
+      "chapter_mapping": "ch20",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#稳定性",
+        "#debuggerd",
+        "#信号处理",
+        "#Native Crash"
+      ],
+      "summary": "Android 17 debuggerd 维持 libc linker 注册→handler→ptrace 三段式架构，altstack 按 page-size 自适应（4K→32KiB / 16K→128KiB），SA flags 包含 SA_RESTART|SA_SIGINFO|SA_ONSTACK|SA_EXPOSE_TAGBITS。信号线程亲和性由内核保证，崩溃 handler 在崩溃线程",
+      "processed_at": "2026-07-10T06:37:34.361020",
+      "processed_by": "task-deepresearch-injector"
+    },
+    {
+      "title": "Android 17 VNDK 隔离与 Self-contained HALs 对 native 库加载性能的源码级影响",
+      "path": "DeepResearch/2026-07-08-android17-vndk-isolation-performance.md",
+      "score": 18,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapter_mapping": "ch01",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#VNDK",
+        "#native库",
+        "#linker",
+        "#namespace"
+      ],
+      "summary": "VNDK 隔离通过 is_accessible() 五级检查算法实现：非隔离放行→allowed_libs 白名单→ld_library_paths 匹配→default_library_paths 匹配→permitted_paths 匹配。VNDK-less 模式由 ro.vndk.lite 和 ld.config.vndk_lite.txt 控制，SP-HAL/LLNDK 直接加载到 ven",
+      "processed_at": "2026-07-10T06:37:34.361020",
+      "processed_by": "task-deepresearch-injector"
+    },
+    {
+      "title": "EdgeBench 深度调研：Agent 从真实环境反馈中学习的 Benchmark",
+      "path": "DeepResearch/2026-07-08-EdgeBench-agent-environment-learning-benchmark.md",
+      "score": 15,
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapter_mapping": "ch16",
+      "content_type": "技术调研",
+      "tags": [
+        "#AI",
+        "#Agent",
+        "#benchmark",
+        "#ByteDance",
+        "#environment-learning"
+      ],
+      "summary": "ByteDance Seed 发布的长时程 Agent benchmark，134 个真实任务、约 38,000 小时交互轨迹。Agent 在 12h 窗口内反复试错提交，学习曲线高度符合 log-sigmoid（R²=0.998）。SForge 双容器隔离防偷看 hidden tests。Claude Opus 4.8 居首（51.3），GPT-5.5 次之（48.4）。",
+      "processed_at": "2026-07-10T06:37:34.361020",
+      "processed_by": "task-deepresearch-injector"
+    },
+    {
+      "title": "Android 17 AGI Frame Profiler 与 gapii Spy 架构 — 单帧 GPU 捕获的真实机制",
+      "path": "DeepResearch/2026-07-08-android17-agi-frame-profiler-gapii-spy-architecture.md",
+      "score": 18,
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "chapter_mapping": "ch14",
+      "content_type": "源码调研",
+      "tags": [
+        "#Android",
+        "#GPU",
+        "#AGI",
+        "#gapii",
+        "#Vulkan"
+      ],
+      "summary": "AGI 3.3.3 通过 gapii 动态库以 Vulkan layer/GL interceptor 注入目标进程，使用 debug.agi.procname 属性零侵入挂载。单帧捕获基于 vkQueueSubmit 边界（与 VSync 不同），16MiB chunk 切片防 OOM。与 APA 无源码耦合，通过 Perfetto trace 互补。",
+      "processed_at": "2026-07-10T06:37:34.361020",
+      "processed_by": "task-deepresearch-injector"
     }
   ]
 }

@@ -369,3 +369,11 @@ bionic 保留了一个专用信号 `BIONIC_SIGNAL_DEBUGGER`（通常是一个 re
 - **§20.9** 稳定性治理案例集 — 已同步勘误（第 209-216 行），删除「线程亲和性」和「动态 altstack」未证陈述
 - **§20.13** 16KB Page Size 适配 — page size 对 pseudothread 栈大小的影响
 - **§20.18** Native 堆栈回溯与符号化 — unwind 表与 tombstone 的符号化衔接
+
+
+### Android 17 信号处理机制与 debuggerd 架构迁移
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-android17-debuggerd-signal-handler-architecture.md
+- 类型：DeepResearch 联合调研结果
+- 摘要：Android 17 debuggerd 维持 libc linker 注册→handler→ptrace 三段式架构，altstack 按 page-size 自适应（4K→32KiB / 16K→128KiB），SA flags 包含 SA_RESTART|SA_SIGINFO|SA_ONSTACK|SA_EXPOSE_TAGBITS。信号线程亲和性由内核保证，崩溃 handler 在崩溃线程 altstack 上执行，crash_dump 通过双端 ptrace+clone(CLONE_FILES) 完成 tombstone 落盘。
+- 注入时间：2026-07-10
+- 价值：源码级厘清 altstack 动态尺寸、SA_EXPOSE_TAGBITS MTE 标签解码与 crash_dump 双 clone 路径
