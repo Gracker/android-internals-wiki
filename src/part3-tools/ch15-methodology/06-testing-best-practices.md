@@ -3,6 +3,7 @@ title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
 status: ready-for-review
+task6_reviewed_by: openclaw-task6
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-07-09"
@@ -43,18 +44,18 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-07"
+reviewed_date: 2026-07-09
 last_task6_audit: 2026-07-09
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
 last_task2b_at: "2026-05-26T19:25:19+08:00"
-review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用 P10/慢帧占比）；Macrobenchmark 自动稳定化已改为 IsolationActivity + sustained perf mode 源码级描述。"
+review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用 P10/慢帧占比）；Macrobenchmark 自动稳定化已改为 IsolationActivity + sustained perf mode 源码级描述。 | 2026-07-09 23:13 Task6 revisiting review: pass-light-edit。Task9 auto-fix (lmkilld→f2fs GC/dex2oat/I/O) 写作质量复审通过。L1/L2 小修 7 处（补句号×1、去第二人称×7）。无新增 L3/L4 回炉。task9_result=auto-fixed 未满足自动晋升条件，送 Task9 复审。"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-09"
@@ -72,7 +73,7 @@ auto_promoted_by: "openclaw-task6"
 auto_promoted_date: "2026-06-18"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-09
-last_task6_at: 2026-07-09T21:10:00+08:00
+last_task6_at: 2026-07-09T23:13:00+08:00
 verifier_checked: 2026-07-09
 task6_reviewed_date: 2026-07-09
 updated_by: "openclaw-task9"
@@ -123,7 +124,7 @@ updated_date: "2026-07-09"
 
 测试设备的选择需要考虑两个维度：**市场占有率**和**性能梯度**。
 
-市场占有率决定了我们应该优先测什么设备。如果你的目标用户中 60% 使用的是中端骁龙 7 系处理器设备,那么旗舰机上测出的数据对大多数用户就没有代表性。反之,如果你只测中低端设备,可能无法发现那些只在高端设备上才会暴露的 GPU bound 问题。
+市场占有率决定了我们应该优先测什么设备。如果目标用户中 60% 使用的是中端骁龙 7 系处理器设备,那么旗舰机上测出的数据对大多数用户就没有代表性。反之,如果只测中低端设备,可能无法发现那些只在高端设备上才会暴露的 GPU bound 问题。
 
 性能梯度是指我们至少应该覆盖三个档次:
 
@@ -139,7 +140,7 @@ Google 在官方文档中建议至少使用一台运行 AOSP 系统镜像的 Pix
 
 温度是 Android 性能测试中最大的变量之一。几乎所有现代 SoC 都会根据温度动态调整 CPU 和 GPU 频率——这就是我们常说的 Thermal Throttling（温控降频）。
 
-一个典型的场景:第一次冷启动测试跑出了 450ms 的好成绩,连续跑十次之后变成了 700ms。代码没变,但 SoC 温度从 35°C 升到了 48°C,大核频率从 2.84GHz 降到了 1.8GHz。如果你不控制温度,测试结果就是不可重复的。
+一个典型的场景:第一次冷启动测试跑出了 450ms 的好成绩,连续跑十次之后变成了 700ms。代码没变,但 SoC 温度从 35°C 升到了 48°C,大核频率从 2.84GHz 降到了 1.8GHz。如果不控制温度,测试结果就是不可重复的。
 
 控制温度的实用方法:
 
@@ -192,7 +193,7 @@ adb shell dumpsys display | grep -i "refresh"
 
 ### 网络环境
 
-网络条件对 App 性能测试的影响往往被低估。如果你的 App 在启动时需要拉取配置、预加载内容,网络延迟就会直接体现在启动时间中。
+网络条件对 App 性能测试的影响往往被低估。如果 App 在启动时需要拉取配置、预加载内容,网络延迟就会直接体现在启动时间中。
 
 控制方法:
 
@@ -260,7 +261,7 @@ adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
 
 对性能基准测试来说，先确认系统不在低功耗模式：`adb shell settings put global low_power 0`。`adb shell cmd thermalservice override-status 0` 能把 framework 侧 thermal status 锁在 `THERMAL_STATUS_NONE`。注意：这个命令只覆盖 `ThermalManagerService` 的 `mIsStatusOverride`，也就是 framework 向 App 投递 `ThermalStatusChanged` 回调的那一层——vendor 侧 Thermal HAL、kernel cpufreq/GPU throttling 和 vendor thermal engine 都不受它影响。设备仍然会根据真实温度降频。这个命令适合测试 App 自身的 thermal callback 逻辑，不能当作"锁定 CPU/GPU 峰值性能"的手段。性能基准测试的稳定化应优先依靠温度控制(间隔冷却、物理散热、温度门控),再配合 CPU 频率锁定(需要 root)。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控。[已验证: AOSP android-17.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java` 的 `override-status` 只设置 `mIsStatusOverride` 并覆盖 framework thermal status,不影响 HAL/kernel 侧温控]
 
-Macrobenchmark 库在每次测量前也会做自动稳定化：`AndroidBenchmarkRunner` 通过 `IsolationActivity` 降低窗口干扰（接近全屏、固定亮度）；设备支持时还会打开 **sustained performance mode**，通知调度器和 thermal 策略控制频率波动；此外还可以禁用指定后台包、暂停 background dexopt 等。这部分行为来自 `AndroidBenchmarkRunner` 和 `IsolationActivity` 的实现
+Macrobenchmark 库在每次测量前也会做自动稳定化：`AndroidBenchmarkRunner` 通过 `IsolationActivity` 降低窗口干扰（接近全屏、固定亮度）；设备支持时还会打开 **sustained performance mode**，通知调度器和 thermal 策略控制频率波动；此外还可以禁用指定后台包、暂停 background dexopt 等。这部分行为来自 `AndroidBenchmarkRunner` 和 `IsolationActivity` 的实现。
 
 ### 环境控制的源码锚点
 
@@ -348,7 +349,7 @@ fun startupWithPartialCompilation() = benchmarkRule.measureRepeated(
 
 `SpeedProfile()` 已不在当前公开 API 中。需要表达"先跑几轮再按热点编译"时，用 `CompilationMode.Partial(warmupIterations = N)`。
 
-对比 `DEFAULT`、`Partial(...)` 和 `None()` 可以量化 Baseline Profile 与 warm-up 的收益。具体提升幅度要看你的 App、构建配置和测试设备,不要直接套用固定百分比。
+对比 `DEFAULT`、`Partial(...)` 和 `None()` 可以量化 Baseline Profile 与 warm-up 的收益。具体提升幅度要看 App、构建配置和测试设备,不要直接套用固定百分比。
 
 ### 冷启动 vs 热启动
 
@@ -577,7 +578,7 @@ Firebase Performance Monitoring(FPM)是 Google 提供的线上性能监控服务
 
 ## 在 Perfetto 中的表现
 
-性能测试的数据虽然主要来自 Macrobenchmark 和自定义采集,但 **Perfetto Trace 是验证测试结果的最佳工具**。当你发现某个版本的启动时间退化了 50ms,第一步就是抓一个 Trace 看这 50ms 花在哪里。
+性能测试的数据虽然主要来自 Macrobenchmark 和自定义采集,但 **Perfetto Trace 是验证测试结果的最佳工具**。当发现某个版本的启动时间退化了 50ms,第一步就是抓一个 Trace 看这 50ms 花在哪里。
 
 在 Perfetto 中验证性能测试数据的方法:
 
@@ -605,7 +606,7 @@ Firebase Performance Monitoring(FPM)是 Google 提供的线上性能监控服务
 
 ### "一次测试就够了,多跑几次浪费时间"
 
-单次测试的数据没有任何统计意义。一次冷启动 350ms 的数据不能说明你的启动速度就是 350ms——可能是刚好这次 GC 没有触发、CPU 频率刚好最高、缓存刚好命中。至少 10 次采样、取中位数和尾部分位（耗时类用 P90，帧率类用 P10 或慢帧占比），才能得到有参考价值的数据。
+单次测试的数据没有任何统计意义。一次冷启动 350ms 的数据不能说明启动速度就是 350ms——可能是刚好这次 GC 没有触发、CPU 频率刚好最高、缓存刚好命中。至少 10 次采样、取中位数和尾部分位（耗时类用 P90，帧率类用 P10 或慢帧占比），才能得到有参考价值的数据。
 
 ### "CI 里跑的基准测试和本地跑的不一致,一定是 CI 有问题"
 
