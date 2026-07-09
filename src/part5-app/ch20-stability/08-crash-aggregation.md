@@ -27,7 +27,7 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "\"2026-06-03\""
 last_task9_at: "\"2026-06-03T09:20:00+08:00\""
 last_task6_at: "\"2026-06-03T03:06:00+08:00\""
-last_task6_audit: "2026-07-07"
+last_task6_audit: "2026-07-10"
 last_task9_autofix_at: "\"2026-06-03\""
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
