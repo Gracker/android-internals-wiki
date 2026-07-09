@@ -3,7 +3,7 @@
 title: "InputDispatcher 反压与无响应窗口降级"
 chapter: "3.7"
 section: "3.7"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 confidence: medium
@@ -27,7 +27,7 @@ created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
-last_task6_at: "2026-06-19T01:10:00+08:00"
+last_task6_at: "2026-07-09T18:14:16+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-06-12"
 last_task2b_lite_at: "2026-06-12"
@@ -101,7 +101,7 @@ task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 
 
 这类问题在 trace 里很容易误判。`WaitQueue` 变长只能说明事件已经发给目标连接、还没收到 App 侧 `Finished` 回执；它不能直接等同于 App 主线程 MessageQueue 变长，也不能证明 Binder 调用就是根因。分析时要把 InputDispatcher 的队列状态、App 主线程栈、Binder 线程、CPU 调度和窗口焦点变化放到同一个时间窗口里看。详见 9.3 节。
 
-## 输入通道的反压点
+## 输入通道的天然反压点
 
 InputDispatcher 到 App 的事件面走 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端 channel；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。这里要区分清楚：事件本身的传输走 channel fd，不走 Binder；Binder 主要参与窗口和 channel 的建立、传递与策略回调。详见 1.17 节与 3.1 节。
 

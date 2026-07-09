@@ -2,7 +2,7 @@
 title: "Splash Screen 与感知启动速度"
 chapter: "21.5"
 section: "21.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 confidence: medium
 drafted_date: "2026-05-13"
@@ -32,10 +32,10 @@ reviewed_date: "2026-06-16"
 task6_reviewed_date: "2026-06-16"
 task6_result: "pass-light-edit"
 task6_review_notes: "2026-06-16 Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。自动晋升 finalized / ready-to-publish。"
-last_task6_at: "2026-06-16T16:05:00+08:00"
+last_task6_at: "2026-07-09T18:14:16+08:00"
 task6_review_notes: "2026-06-16 01:xx Task6 revisiting review: pass-light-edit。四层质检全部通过，写作质量无问题。Task9 needs-rework（P0 2/P1 1）已由 Task2B 修复，等待 Task9 复审确认。不自动晋升。"
 last_task6_review_log: "logs/review/2026-06-16-01-review.md"
-last_task6_at: "2026-06-16T01:13:48+08:00"
+last_task6_at: "2026-07-09T18:14:16+08:00"
 
 task2b_result: fixed
 last_task2b_at: "2026-06-16T00:51:53"

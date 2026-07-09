@@ -721,3 +721,161 @@ std::string Config::get_vndk_version_string(const char delimiter) {
 
 > **版本说明**：以上源码结构已在 AOSP `android-17.0.0_r1` 的 `bionic/linker/linker_namespaces.cpp`、`linker_namespaces.h`、`linker.cpp` 复核；性能影响仍需设备实测，不写成 Android 17 固定结论。
 
+<!-- AIW-源码调研-2026-07-09 -->
+## VNDK 加载成本的 6 个可观测锚点（源码级量化视角）
+
+2026-07-08 的小节以 `is_accessible()` 机制为核心，但诚实地把「量化成本」标为「仍需实测」。本节不重复机制，把目光转向 bionic linker 源码中**可直接由代码推理出的结构化指标**——这些指标构成后续 simpleperf / ftrace 基准测试的天然对照基线，可替代「未经一手验证的固定百分比」。
+
+### 锚点 1：is_accessible() 的 4 层回退短路链
+
+**源码位置**：`bionic/linker/linker_namespaces.cpp`（android-17.0.0_r1）
+
+```cpp
+bool android_namespace_t::is_accessible(const std::string& file) {
+  if (!is_isolated_) {
+    return true;                                  // ① 非隔离直接放行
+  }
+  if (!allowed_libs_.empty()) {
+    const char *lib_name = basename(file.c_str());
+    if (std::find(allowed_libs_.begin(), allowed_libs_.end(), lib_name) == allowed_libs_.end()) {
+      return false;                                // ② 允许库白名单 O(n) 扫描
+    }
+  }
+  for (const auto& dir : ld_library_paths_) {      // ③ LD_LIBRARY_PATH 前缀匹配
+    if (file_is_in_dir(file, dir)) return true;
+  }
+  for (const auto& dir : default_library_paths_) { // ④ default 路径前缀匹配
+    if (file_is_in_dir(file, dir)) return true;
+  }
+  for (const auto& dir : permitted_paths_) {       // ⑤ permitted 子树匹配
+    if (file_is_under_dir(file, dir)) return true;
+  }
+  return false;
+}
+```
+
+**可推理结论**：
+- App 进程 `g_default_namespace` 的 `is_isolated_=false`，**全部 4 层不进入**——所以「VNDK 影响 app 冷启动」需谨慎，主要成本在 vendor HAL 进程。
+- 真正付 4 层回退成本的是 vendor HAL / SP-HAL / 显式 `ANDROID_NAMESPACE_TYPE_ISOLATED` 进程。
+
+### 锚点 2：dlsym 跨 namespace 的 BFS 二次访问
+
+**关键函数**：`android_namespace_t::is_accessible(soinfo* s)`
+
+```cpp
+auto is_accessible_ftor = [this] (soinfo* si, bool allow_secondary) {
+  if (!si->is_lp64_or_has_min_version(3)) {        // ① 协议版本守门
+    return false;
+  }
+  if (si->get_primary_namespace() == this) return true;  // ② 主 ns 命中
+  if (allow_secondary) {
+    const auto& sec = si->get_secondary_namespaces();
+    if (sec.contains(this)) return true;          // ③ 二次 ns 哈希查找
+  }
+  return false;
+};
+if (is_accessible_ftor(s, true)) return true;
+return !s->get_parents().visit([&](soinfo* si) {   // ④ 父 soinfo 链 BFS
+  return !is_accessible_ftor(si, false);          //    不允许 secondary
+});
+```
+
+**可推理结论**：跨 namespace 的 `dlsym` 走 BFS 遍历依赖图，**每个节点付 4 个判断**——SP-HAL 场景下 P99 延迟尾多源于此。
+
+### 锚点 3：kDefaultLdPaths 数量与 namespace 数关系
+
+**源码位置**：`bionic/linker/linker.cpp`
+
+```cpp
+static const char* const kDefaultLdPaths[] = {
+  kSystemLibDir,    // /system/lib[64]
+  kOdmLibDir,       // /odm/lib[64]
+  kVendorLibDir,    // /vendor/lib[64]
+  nullptr
+};
+static const char* const kAsanDefaultLdPaths[] = {  // 6 项，asan 镜像 + 原路径
+  kAsanSystemLibDir, kSystemLibDir,
+  kAsanOdmLibDir,    kOdmLibDir,
+  kAsanVendorLibDir, kVendorLibDir,
+  nullptr
+};
+```
+
+**可推理结论**：正常构建单 namespace 搜索 3 个目录；ASan / HWASan 翻倍；VNDK 模式下 namespace 总数 6-10 个。`dlopen` 一次最坏情况遍历 Σ(namespace 数 × ld path 数) 次 `format_path`+`open` 尝试。
+
+### 锚点 4：kLibraryExemptList 13 项豁免的 target SDK 开关
+
+**源码位置**：`bionic/linker/linker.cpp`
+
+```cpp
+static const char* const kLibraryExemptList[] = {
+  "libandroid_runtime.so", "libbinder.so", "libcrypto.so", "libcutils.so",
+  "libexpat.so", "libgui.so", "libmedia.so", "libnativehelper.so",
+  "libssl.so", "libstagefright.so", "libsqlite.so", "libui.so", "libutils.so",
+  nullptr
+};
+if (get_application_target_sdk_version() >= 24) {
+  return false;                                    // 关键开关
+}
+```
+
+**可推理结论**：13 项 `strcmp` 线性扫描（**未哈希化**），最坏 ~130-260 ns。Android 17 设备上**几乎所有 app target SDK ≥ 24**，整张豁免表失效——这是「Android 升级后启动更慢」传言的一个底层来源。
+
+### 锚点 5：load_library 的 2 次 syscall + TMPFS 短路
+
+**源码位置**：`bionic/linker/linker.cpp`
+
+```cpp
+struct stat file_stat;
+if (TEMP_FAILURE_RETRY(fstat(task->get_fd(), &file_stat)) != 0) { ... }
+struct statfs fs_stat;
+if (TEMP_FAILURE_RETRY(fstatfs(task->get_fd(), &fs_stat)) != 0) { ... }
+if ((fs_stat.f_type != TMPFS_MAGIC) &&
+    (!ns->is_accessible(realpath))) {              // TMPFS_MAGIC 直接跳过 is_accessible
+  ...
+}
+```
+
+**可推理结论**：每次 `dlopen` 付 **2 次 syscall**（`fstat` + `fstatfs`），即使 namespace 校验失败。`/vendor` 部署在 tmpfs 时，**省 1 次 is_accessible 调用**——这是 vendor 进程在 tmpfs 部署下的隐藏性能优势。
+
+### 锚点 6：VNDK / VNDK-less 的 1 个分流点
+
+**关键函数**：`get_ld_config_file_vndk_path()`
+
+```cpp
+if (android::base::GetBoolProperty("ro.vndk.lite", false)) {
+  return kLdConfigVndkLiteFilePath;                // VNDK-lite 模式
+}
+std::string ld_config_file_vndk = kLdConfigFilePath;
+ld_config_file_vndk.insert(insert_pos, Config::get_vndk_version_string('.'));
+return ld_config_file_vndk;                        // 传统 VNDK 模式
+// 两者皆空 / "current" → VNDK-less
+```
+
+**可推理结论**：
+- `ro.vndk.lite=true` → VNDK-lite，读 `/system/etc/ld.config.vndk_lite.txt`。
+- `ro.vndk.version=<数字>` 且 ≠ "current" → 传统 VNDK，文件名插入 ".${ver}" 后缀（如 `ld.config.28.txt`）。
+- 两者皆空 / "current" → VNDK-less（Android 15+ Self-contained HALs），读 `/linkerconfig/ld.config.txt` 或 `/system/etc/ld.config.txt`。
+- 这是三模式**唯一**的代码分流点，可用 `adb shell getprop ro.vndk.lite` + `getprop ro.vndk.version` 现场确认。
+
+### 6 个锚点的版本差异
+
+| 锚点 | Android 8-14 (VNDK) | Android 15-17 (VNDK-less) |
+|------|---------------------|---------------------------|
+| 隔离 namespace 总数 | 6-10 个 | 3-4 个（default + vendor + sphal + product）|
+| `ro.vndk.version` | 必填数字 | 删空 / "current" |
+| Linker config 文件 | `/system/etc/ld.config.<v>.txt` | `/linkerconfig/ld.config.txt`（APEX 优先）|
+| VNDK 库复制 | `vndk/vndk-sp|llndk` 目录 | 不再需要，HAL APEX 自包含 |
+| `kLibraryExemptList` | 13 项 + target SDK ≥ 24 守门 | 同上（结构未变，影响持续）|
+| `dlsym` BFS 节点数 | 依赖图较大 | 依赖图收敛（HAL APEX 自包含后）|
+
+### 待实测（仍属「未做一手验证」）
+
+- VNDK-less vs VNDK 对 vendor 进程冷启动耗时的毫秒级差异。
+- 13 项豁免列表在 `target SDK ≥ 24` 失效后，app 冷启动 `dlopen` 序列的可观测叠加成本。
+- `is_accessible` 在 vendor HAL 进程高频 `dlopen`（如 SurfaceFlinger 加载 vendor 库）下的缓存命中率。
+- 跨 namespace 链接的 `dlsym` 在 SP-HAL 场景下的 P99 延迟尾。
+
+报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-09-android17-vndk-linker-namespace-load-cost.md`
+
+

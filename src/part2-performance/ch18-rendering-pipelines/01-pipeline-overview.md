@@ -2,7 +2,7 @@
 title: "渲染管线分类与选择对照表"
 chapter: "18.1"
 section: "18.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 last_verified_against: "AOSP android-17.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue / HardwareBufferRenderer / HWComposer fence paths + Flutter 3.32 release notes"
 confidence: medium
@@ -18,7 +18,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-06-19"
-last_task6_at: "2026-06-19T01:10:00+08:00"
+last_task6_at: "2026-07-09T18:14:16+08:00"
 last_task6_audit: "2026-06-17T06:07:00+08:00"
 last_task9_audit: "2026-07-09"
 last_task9_audit_log: "logs/deep-review/2026-07-09-09-audit.md"
