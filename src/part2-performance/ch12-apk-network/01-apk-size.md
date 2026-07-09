@@ -62,7 +62,7 @@ repaired_by: openclaw-task2b
 last_task2b_at: '2026-05-06T04:41:00+08:00'
 task9_review_notes: "2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；Dynamic Feature Module 仍使用旧 Play Core Library 1.6+ 口径，需更新为 Play Feature Delivery Library 2.1.0+ 并标注 Android 14+ target SDK 版本边界。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 闲时抽检：pass-tech-review。P0 0 / P1 0 / P2 1；官方文档核对未发现 Android 18/API 38 越界；zipalign 16KB 验证命令建议后续从对齐命令改为 -c 校验命令。 | 2026-07-09 Task9 闲时抽检：pass-tech-review。P0 0 / P1 0 / P2 1；复核官方文档未发现 Android 18/API 38 越界；16KB zipalign 仍为既有 P2 建议，未新增队列。"
 last_task6_at: '2026-05-06T05:05:00+08:00'
-last_task6_audit: '2026-07-09T12:12:00+08:00'
+last_task6_audit: '2026-07-10T05:08:00+08:00'
 review_notes: '2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9
   已有 P1/P2 queue pending，等待 Task2B。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2
   结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 05 task9 deep-review:
@@ -115,7 +115,7 @@ last_deepseek_cn_review_at: 2026-06-18
 
 盲目优化是工程上的大忌。在动手之前，我们需要知道 APK 里到底什么最占空间。Android Studio 自带的 **APK Analyzer** 是做这件事的第一选择。
 
-打开方式很简单：在 Android Studio 中选择 **Build → Analyze APK...**，然后选中 release APK 文件。APK Analyzer 会展示一个树状结构，列出每个文件和目录的大小，包括 **Raw Size**（未压缩原始大小）和 **Download Size**（估算的下载大小，考虑了 Google Play 的进一步压缩）。
+在 Android Studio 中选择 **Build → Analyze APK...**，然后选中 release APK 文件。APK Analyzer 会展示一个树状结构，列出每个文件和目录的大小，包括 **Raw Size**（未压缩原始大小）和 **Download Size**（估算的下载大小，考虑了 Google Play 的进一步压缩）。
 
 在 APK Analyzer 的顶部，有几个关键信息：
 
@@ -280,7 +280,7 @@ android {
 }
 ```
 
-如果项目已经切到 App Bundle，体积优化的顺序更稳一些：语言裁剪看 `localeFilters`，ABI / density 交给 Play split，剩下再回到图片、资源表和 native 库本身。
+如果项目已经切到 App Bundle，语言裁剪看 `localeFilters`，ABI / density 交给 Play split，剩下再回到图片、资源表和 native 库本身。
 
 ## Native 库瘦身：ABI 过滤与动态下发
 
@@ -372,7 +372,7 @@ android {
 
 ### App Bundle 解决了什么问题
 
-传统 APK 分发模式的限制很直接：**一个 APK 必须适配所有设备**。结果是，同一个 APK 里同时装着 hdpi 和 xxxhdpi 的图片、arm64 和 x86 的 so 库、中文和斯瓦希里语的字符串。用户在 arm64 设备上下载了这个 APK，其中 70% 的资源对他毫无用处——但他不得不下载。
+传统 APK 分发模式要求**一个 APK 适配所有设备**。结果是，同一个 APK 里同时装着 hdpi 和 xxxhdpi 的图片、arm64 和 x86 的 so 库、中文和斯瓦希里语的字符串。用户在 arm64 设备上下载了这个 APK，其中 70% 的资源对他毫无用处——但他不得不下载。
 
 Android App Bundle（AAB）是 Google 在 2018 年推出的发布格式，它改变了这个模型。开发者上传一个 AAB 到 Google Play，Play 的服务器会根据每个用户的设备配置（屏幕密度、CPU 架构、语言）自动生成一个**最小化的 APK**（称为 Split APK）。结果是：用户只下载他设备实际需要的那部分资源。
 
