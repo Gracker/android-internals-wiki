@@ -13,23 +13,23 @@ related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: task6_pending
 task2b_result: fixed-lite
-task6_state: "reviewed"
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-06-19T04:25:46+08:00"
-task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
-last_task9_at: "2026-06-19T08:26:11+08:00"
+last_task9_at: "2026-07-10T01:28:21+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-19"
+task9_reviewed_date: "2026-07-10"
 sources:
   - type: official
-    path: "https://github.com/android/skills/tree/main/profilers"
+    path: "https://github.com/android/skills/tree/4328beaf36f00265db107eb316f9add6b8764144/profilers"
   - type: official
     path: "https://perfetto.dev/docs/analysis/trace-processor"
   - type: official
@@ -39,24 +39,24 @@ sources:
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md"
   - type: material
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-sql/SKILL.md"
   - type: material
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-trace-analysis/SKILL.md"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-28T08:10:00+08:00"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
-last_task9_review_log: "logs/deep-review/2026-06-19-08-deep-review.md"
-updated_by: "openclaw-task9"
-updated_date: "2026-06-18"
-last_task9_autofix_at: "2026-06-18"
-task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：修正 Perfetto CPU 频率时间区间入口，`cpu_freq` 仅为 CPU/freq 维度表，频率区间应使用 `linux.cpu.frequency` / `cpu_frequency_counters`。 2026-06-19 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核源码/官方文档锚点、版本边界、Perfetto stdlib/API 口径，无新增技术问题；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-07-10-01-audit.md"
+updated_by: openclaw-task9
+updated_date: "2026-07-10"
+last_task9_autofix_at: "2026-07-10"
+task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Perfetto SQL 守卫中不可 include 的 stdlib 模块名，回到 Task6 复审。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：修正 Perfetto CPU 频率时间区间入口，`cpu_freq` 仅为 CPU/freq 维度表，频率区间应使用 `linux.cpu.frequency` / `cpu_frequency_counters`。 2026-06-19 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核源码/官方文档锚点、版本边界、Perfetto stdlib/API 口径，无新增技术问题；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。 2026-07-10 Task9 idle-audit: auto-fixed。P0 1：修正 android/skills profilers 失效本地素材路径，并将 GitHub main 源码锚点固定到 commit 4328beaf36f00265db107eb316f9add6b8764144。"
 p0: 0
 p1: 0
 p2: 0
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-06-19"
-last_task9_audit: "2026-06-18"
+last_task9_audit: "2026-07-10"
 task6_reviewed_date: "2026-06-19"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（cpu_freq linux.cpu.frequency cpu_frequency_counters 修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过（两处模板引导语属于代码块用途句，不算元叙述）。outline 8/8 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
 last_task6_review_log: "logs/review/2026-06-19-04-review.md"
@@ -112,7 +112,7 @@ last_deepseek_cn_review_at: 2026-06-28
 
 Agent 辅助 Perfetto 分析的核心目标是让 trace 调查可以复查。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的分析思路整理为 AIW 的工作协议：输入要收齐，SQL 要先查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
 
-在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，本节聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。[来源: ../DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]
+在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，本节聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]
 
 ## 协议定位：Perfetto 教程之外的调查规范
 
@@ -142,7 +142,7 @@ Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊�
 
 ## Scratchpad 证据链：事实和假设分开
 
-`perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。这个文件不能写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。[已验证: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/SKILL.md]
+`perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。这个文件不能写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。[已验证: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-trace-analysis/SKILL.md]
 
 下面的模板用于约束 scratchpad 内容。排版只是附带要求，每条记录都要能回到一次查询或一次 UI 观察。
 
@@ -170,7 +170,7 @@ Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊�
 
 ## Perfetto SQL 生成守卫：先查 schema，再写查询
 
-Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和时间区间语义。`perfetto-sql` 对 Agent 的约束是：准备 `trace_processor`，检索标准库文档，确认表或视图的 schema，再写查询并执行校验。[已验证: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-sql/SKILL.md]
+Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和时间区间语义。`perfetto-sql` 对 Agent 的约束是：准备 `trace_processor`，检索标准库文档，确认表或视图的 schema，再写查询并执行校验。[已验证: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-sql/SKILL.md]
 
 几条守卫规则应该固定下来：
 
@@ -240,7 +240,7 @@ ORDER BY dur_ms DESC;
 
 ## 六类调查域：把开放问题拆成可执行动作
 
-`perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC、Memory、Power 六类。这里不把它们写成清单，而按“触发条件 → 起手证据 → 下一跳 → 误判边界”组织，便于 Agent 执行。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-研究材料/repo/skills/profilers/perfetto-trace-analysis/references/hints_*.md]
+`perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC、Memory、Power 六类。这里不把它们写成清单，而按“触发条件 → 起手证据 → 下一跳 → 误判边界”组织，便于 Agent 执行。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-trace-analysis/references/hints_cpu.md 等六个 hints 文件]
 
 | 调查域 | 触发条件 | 起手证据 | 下一跳 | 常见误判 |
 |---|---|---|---|---|
