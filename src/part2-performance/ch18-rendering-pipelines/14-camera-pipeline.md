@@ -27,9 +27,9 @@ repaired_date: "2026-06-23"
 repaired_by: "openclaw-task2b"
 last_task9_audit: "\"2026-05-20\""
 last_task9_audit_log: "\"logs/deep-review/2026-05-20-21-audit.md\""
-last_task6_audit: "\"2026-05-21\""
-last_task6_audit_result: "l1-frontmatter-light-edit"
-last_task6_audit_log: "\"logs/review/2026-05-21-16-audit.md\""
+last_task6_audit: "2026-07-09"
+last_task6_audit_result: "l1-light-pass"
+last_task6_audit_log: "logs/review/2026-07-09-19-audit.md"
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
@@ -236,7 +236,7 @@ sequenceDiagram
 
 ## ZSL（Zero Shutter Lag）
 
-ZSL 依赖一条明确的 HAL 能力前置链，缺一个环节就整条链路不可用：
+ZSL 依赖一条明确的 HAL 能力前置链，缺一个环节就整条链条不可用：
 
 1. **设备侧能力声明**：Camera HAL 必须在 `CameraCharacteristics` 中声明重处理能力。`REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING` 对应设备侧的 ZSL reprocessing use case，`REQUEST_AVAILABLE_CAPABILITIES_YUV_REPROCESSING` 对应 `YUV_420_888` 重处理。
 2. **App 侧能力检测**：调用 `CameraCharacteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)` 验证 capability 存在，再通过 `isReprocessingSupported()` 或类似方法确认。
