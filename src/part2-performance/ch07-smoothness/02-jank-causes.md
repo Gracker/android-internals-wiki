@@ -1,8 +1,9 @@
 ---
+
 title: "卡顿原因体系"
 chapter: "7.2"
 section: "7.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-07-10"
 last_verified_against: "AOSP android-17.0.0_r1"
@@ -39,7 +40,7 @@ related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.
 pipeline_stage: task6_pending
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:45+08:00"
@@ -51,7 +52,7 @@ task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / 
 last_task6_at: "2026-06-19T05:08:51+08:00"
 last_task6_audit: "2026-05-24"
 task6_reviewed_date: "2026-05-24"
-review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"
+review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。" | Task2B Verifier (2026-07-10T03:34:07+08:00): 状态修正 — status: finalized → ready-for-review, task9_state: reviewed → pending。Task9 auto-fix 后 status 未从 finalized 重置为 ready-for-review，导致 Task6 无法拾取；已修正。
 last_task9_audit: "2026-07-10"
 last_task9_audit_log: "logs/deep-review/2026-07-10-02-audit.md"
 last_task2b_at: 2026-05-24T19:29:26+08:00

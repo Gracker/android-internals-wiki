@@ -1,5 +1,6 @@
 ---
-status: finalized
+
+status: ready-for-review
 title: 输入事件拦截与安全机制
 chapter: '3.5'
 section: '3.5'
@@ -10,7 +11,7 @@ reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 pipeline_stage: task6_pending
 sources:
@@ -34,7 +35,7 @@ related_chapters:
 - '3.2'
 - '9.1'
 - '9.2'
-review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。 | 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；Task9 已通过且 queue 无 pending，自动晋升 finalized。'
+review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。 | 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；Task9 已通过且 queue 无 pending，自动晋升 finalized。' | Task2B Verifier (2026-07-10T03:34:07+08:00): 状态修正 — status: finalized → ready-for-review, task9_state: reviewed → pending。Task9 auto-fix 后 status 未从 finalized 重置为 ready-for-review，导致 Task6 无法拾取；已修正。
 task2b_result: fixed-lite
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-02"
