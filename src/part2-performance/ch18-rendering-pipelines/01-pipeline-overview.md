@@ -2,7 +2,7 @@
 title: "渲染管线分类与选择对照表"
 chapter: "18.1"
 section: "18.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue / HardwareBufferRenderer / HWComposer fence paths + Flutter 3.32 release notes"
@@ -14,7 +14,7 @@ created_date: "2026-04-09"
 sources: ["AOSP android-17.0.0_r1 frameworks/native/services/surfaceflinger/Layer.cpp", "AOSP android-17.0.0_r1 frameworks/base/core/java/android/view/ViewRootImpl.java", "AOSP android-17.0.0_r1 frameworks/base/graphics/java/android/graphics/HardwareBufferRenderer.java", "Flutter 3.32 release notes"]
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
