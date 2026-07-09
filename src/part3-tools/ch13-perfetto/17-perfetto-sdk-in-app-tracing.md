@@ -52,7 +52,7 @@ task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-19T08:26:11+08:00"
 last_task9_autofix_at: "2026-06-18"
-last_task9_audit: "2026-06-18"
+last_task9_audit: "2026-07-10"
 last_task9_review_log: "logs/deep-review/2026-06-19-08-deep-review.md"
 task9_review_notes: "2026-05-17 10:20 Task9 deep-review: needs-rework。P0 0 / P1 3 / P2 0。Top: startup tracing 仅 kSystemBackend；Perfetto C API/ABI 稳定性未写清；ProfilingManager system trace 是请求进程脱敏结果，不能等同全设备/全进程 trace。 2026-05-28 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。满足 task6_result=pass-light-edit、queue 无 pending、本轮无 P0/P1，自动晋升 finalized。 2026-06-18 21 Task9 idle-audit auto-fixed: AOSP anchor moved from external/perfetto main to android-17.0.0_r1；ProfilingManager / ProfilingTrigger API boundary corrected (requestProfiling API 35, ProfilingTrigger API 36). 2026-06-19 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核源码/官方文档锚点、版本边界、Perfetto stdlib/API 口径，无新增技术问题；满足 task6_result=pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
 task6_l1_l2_fixes: 0
