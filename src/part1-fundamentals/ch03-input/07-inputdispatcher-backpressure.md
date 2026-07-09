@@ -3,7 +3,7 @@
 title: "InputDispatcher 反压与无响应窗口降级"
 chapter: "3.7"
 section: "3.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 last_verified: "2026-07-09"
@@ -28,7 +28,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
 task6_state: revisiting
-task9_state: "reviewed"
+task9_state: pending
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
 last_task6_at: "2026-06-19T01:10:00+08:00"
