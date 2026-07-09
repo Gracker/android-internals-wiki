@@ -2,7 +2,7 @@
 title: "Hardware Layer"
 chapter: "2.7"
 section: "2.7"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
 last_verified: "2026-07-09"
@@ -49,6 +49,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-09
 last_task9_audit_log: "logs/deep-review/2026-07-09-10-audit.md"
 last_task9_autofix_at: "2026-07-09"
+verifier_checked: 2026-07-09
 ---
 
 # Hardware Layer
