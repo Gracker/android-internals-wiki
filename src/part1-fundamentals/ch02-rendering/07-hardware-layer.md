@@ -2,7 +2,7 @@
 title: "Hardware Layer"
 chapter: "2.7"
 section: "2.7"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
 last_verified: "2026-07-09"
@@ -27,9 +27,9 @@ sources:
     path: "AOSP android-17.0.0_r1: frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: "task6_pending"
-task6_result: pass-light-edit
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
@@ -39,7 +39,7 @@ task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-09T10:27:24+08:00"
 last_task9_audit: "2026-07-09"
-last_task6_at: "2026-05-08T21:24:13+08:00"
+last_task6_at: "2026-07-09T20:17:02+08:00"
 last_task6_audit: "2026-06-23"
 last_task6_review_log: "logs/review/2026-05-08-21-review.md"
 task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理 L1/L2 用词 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
@@ -214,7 +214,7 @@ Hardware Layer 不是万能的。它的收益逻辑是"缓存一次、复用多�
 
 **结论：不做内容修改的属性动画，Hardware Layer 性能最优。** 第一帧建立缓存后，后续帧只需要对纹理做变换，几乎零开销。
 
-在 Perfetto 中可以清楚看到：使用 Hardware Layer 时，动画期间全部是绿帧，RenderThread 的 `flush commands` 耗时极短；而不用 LayerType 时，RenderThread 中 `flush commands` 明显耗时更长，出现黄帧。
+Perfetto 中对应的特征是：使用 Hardware Layer 时，动画期间全部是绿帧，RenderThread 的 `flush commands` 耗时极短；而不用 LayerType 时，RenderThread 中 `flush commands` 明显耗时更长，出现黄帧。
 
 ### 场景二：属性动画 + 动态修改内容
 

@@ -3,7 +3,7 @@
 title: "InputDispatcher 反压与无响应窗口降级"
 chapter: "3.7"
 section: "3.7"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 confidence: medium
@@ -25,9 +25,9 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 last_task6_audit: "2026-06-12"
-last_task6_at: "2026-07-09T18:14:16+08:00"
+last_task6_at: "2026-07-09T20:17:02+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-06-12"
 last_task2b_lite_at: "2026-06-12"
@@ -36,7 +36,7 @@ reviewed_by: "openclaw-task6"
 last_task9_audit: "2026-07-09"
 last_task9_audit_log: "logs/deep-review/2026-07-09-13-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-22
+last_deepseek_cn_review_at: 2026-07-09
 task6_reviewed_date: "2026-06-19"
 auto_promoted: true
 last_task2b_verifier_at: "2026-07-05T03:26:57+0800"
@@ -45,8 +45,8 @@ last_verified_against: "AOSP android-17.0.0_r1（主线复核, 2026-07-09）; AO
 task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
-task6_state: "revisiting"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+pipeline_stage: "ready-to-publish"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-09"
 last_task9_at: "2026-07-09T16:30:36+08:00"
