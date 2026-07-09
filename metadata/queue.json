@@ -945,6 +945,72 @@
       "completed_at": "2026-07-09T17:47:53",
       "completed_by": "task2b-lite",
       "completion_note": "DeepResearch材料已添加到参考资料"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Android内存管理",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026-07/android-17-performance-scheduler-memory-management"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android开发者博客 — Android 17带来系统调度革命性改进，通过机器学习用户行为预测算法实现应用启动时间平均减少30%。新调度器能动态识别不同应用类型，优化CPU和内存分配，高端设备冷启动提升45%，低端设备提升28...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-10T05:33:24.146985",
+      "status": "completed",
+      "completed_at": "2026-07-10T06:53:07+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "URL 不可访问，跳过"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Android内存管理",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://www.kernel.org/doc/html/latest/admin-guide/bpf-memory-management.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux内核邮件列表 — Linux 6.10引入革命性内存管理改进，通过BPF技术深度集成实现更细粒度的内存控制。新系统支持基于应用的内存配额动态调整，虚拟化环境内存占用减少40%，实时性优化确保关键任务内存分配优先级，数据...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-10T05:33:24.150185",
+      "status": "completed",
+      "completed_at": "2026-07-10T06:53:07+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "URL 不可访问，跳过"
+    },
+    {
+      "section": "ch16",
+      "section_title": "AOSP / 系统 / AI 扩展",
+      "priority": 70,
+      "reason": "[DeepResearch 注入] 新增 AI Agent benchmark 调研材料，建议补充到 ch16 或附录作为 AI×手机延伸参考",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-EdgeBench-agent-environment-learning-benchmark.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "EdgeBench 深度调研：Agent 从真实环境反馈中学习的 Benchmark — ByteDance Seed 发布的长时程 Agent benchmark，134 个真实任务、约 38,000 小时交互轨迹。Agent 在 12h 窗口内反复试错提交，学习曲线高度符合 log-s",
+          "suggestion": "EdgeBench 是 AI Agent 在真实环境中持续学习的 benchmark 方法论，适合作为端侧 Agent 评估体系参考"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-10T06:37:34.361020",
+      "status": "pending"
     }
   ]
 }
