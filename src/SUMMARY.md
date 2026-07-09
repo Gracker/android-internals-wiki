@@ -27,6 +27,7 @@
 - [2.5 Compose Pager 从基础到高级动画](part2-performance/ch02-rendering/2.5-compose-pager-advanced-animations.md)
   - [2.3 GPU 调试性能工具链源码调研](part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md)
   - [2.51 Android 17 GPU 调试性能工具链](part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)  - [2.11 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/11-gap-analysis.md)  - [2.13 Android 17 eBPF观测增强](part1-fundamentals/ch13-profiling/13-gap-analysis.md)
+  - [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)
 
 
 
