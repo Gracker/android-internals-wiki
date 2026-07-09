@@ -72,7 +72,7 @@ last_task9_autofix_at: "2026-07-09"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-07-10"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-09
+last_deepseek_cn_review_at: 2026-07-10
 last_task6_at: 2026-07-09T23:13:00+08:00
 verifier_checked: 2026-07-09
 task6_reviewed_date: 2026-07-09
@@ -152,7 +152,7 @@ Google 在官方文档中建议至少使用一台运行 AOSP 系统镜像的 Pix
 
 ### 峰值性能和热稳定态分开测
 
-同一个 App 可以有两套性能画像:冷机短时间的峰值表现,以及设备升温后的稳定表现。启动回归、单页面滑动回归更适合看峰值;游戏、视频、直播、长列表连续浏览更适合看热稳定态。两类测试混在一起,报告会把短时间调频收益和长期温控成本混成一个结论。
+温度控制做扎实了之后，下一个问题是测什么状态。同一个 App 有两套性能画像：冷机短时间的峰值表现，以及设备升温后的稳定表现。启动回归、单页面滑动回归更适合看峰值;游戏、视频、直播、长列表连续浏览更适合看热稳定态。两类测试混在一起,报告会把短时间调频收益和长期温控成本混成一个结论。
 
 | 场景 | 测试目标 | 前置状态 | 结束条件 | 报告字段 |
 |------|----------|----------|----------|----------|
@@ -265,7 +265,7 @@ Macrobenchmark 库在每次测量前也会做自动稳定化：`AndroidBenchmark
 
 ### 环境控制的源码锚点
 
-上面每一步控制都对应具体的系统实现。把源码入口一并记录下来，排查脚本失效时可以直接回到实现层核对：
+上面每一项环境控制手段都对应 AOSP 里的具体实现。把这些源码入口记录下来，排查脚本失效时可以直接回到源码核对，比反复试 adb 命令高效得多：
 
 - 刷新率设置:`frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java` 监听 `Settings.System.PEAK_REFRESH_RATE` / `MIN_REFRESH_RATE`,再参与 display mode 选择。
 - 热状态 shell:`frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java` 暴露 `override-status` / `reset` shell 命令,用于实验环境下临时固定 thermal status。

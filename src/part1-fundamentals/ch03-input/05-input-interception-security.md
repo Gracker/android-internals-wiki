@@ -1,5 +1,6 @@
 ---
 
+
 status: ready-for-review
 title: 输入事件拦截与安全机制
 chapter: '3.5'
@@ -7,13 +8,13 @@ section: '3.5'
 drafted_by: openclaw-task
 applicable_versions: Android 10 (API 29) - Android 17 (API 37), 主线源码基准已复核 android-17.0.0_r1, Android 10-16 仅作历史演进参照, 密码输入场景的 InputMonitor 切断暂不作为 AOSP 源码结论
 confidence: medium
-reviewed_date: "2026-06-01"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-task6_state: revisiting
-task9_state: pending
+reviewed_date: "2026-07-10"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -41,9 +42,9 @@ task9_result: auto-fixed
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-02T00:25:54+08:00"
-last_task6_at: "2026-06-01T23:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-23-review.md"
-task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 小修 1 处；保留既有待补充/待验证边界标注，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-07-10T04:12:20+08:00"
+last_task6_review_log: "logs/review/2026-07-10-04-review.md"
+task6_review_notes: "2026-07-10 Task6 revisiting-review (round 3): pass-light-edit。Task9 auto-fix(源码锚点升级android-17.0.0_r1, SystemUI back gesture InputMonitorCompat路径, GameManagerService power mode方法名)回流后写作层复审通过；L1 禁用词/高频词/物理动词/元叙述零命中；L2 开头/节奏/结构/读者引导全部通过；outline 5/5 锚点全覆盖；否定-纠正结构1处(限额内)；无 L1/L2 问题，无 L3/L4 回炉项。送 Task9 终审确认。"
 last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
 task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。InputFilter/InputMonitor/Accessibility 注入与 Android 16/17 版本边界复核通过；P0 0 / P1 0 / P2 0，queue 无 pending，自动晋升 finalized。 | 2026-07-10 Task9 idle audit auto-fix：将主线源码锚点切到 android-17.0.0_r1，修正 SystemUI back gesture InputMonitorCompat 源码路径和 GameManagerService power mode 方法名；回到 Task6 复审。"
 last_task9_audit: "2026-07-10"
