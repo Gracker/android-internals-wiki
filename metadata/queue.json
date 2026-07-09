@@ -801,6 +801,14 @@
       "completed_at": "2026-07-09T07:36:00+08:00",
       "completed_by": "task2b-lite",
       "completion_note": "3处版本锚点 android-16.0.0_r3/android16-qpr2-release → android-17.0.0_r1 替换"
+    },
+    {
+      "chapter": "2.32",
+      "title": "GraphicBuffer 内存池化与 BufferQueue Slot 复用机制",
+      "priority": 80,
+      "status": "pending",
+      "added_date": "2026-07-10",
+      "source": "task2a-gap-mining"
     }
   ],
   "pending": [
