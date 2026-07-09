@@ -663,3 +663,39 @@ Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
 **说明**：July 官方博客评分为 14/20，但其内容（ML scheduler/behavior prediction/30% startup/45% crash）全部属于现有章节覆盖域。正确做法是将 URL 和新数据作为素材补充到 §1.43/§8.35 等现有章节，而非创建新章节。此为 Task2B 域工作。
 
 **结论**：全书 672 节（finalized 348 + ready-for-review 213 = 561，83.5%），draft 47 节。第 51 轮缺口挖掘未发现合格新章节候选。知识覆盖保持饱和状态。
+
+
+## [Task2A 知识缺口挖掘] 已检查方向记录 — 2026-07-10 05:08
+
+**本轮结论**：全书 644 个活跃小节，0 个空 draft（eff<15），Task2B backlog = 0。本轮未发现评分 ≥ 14 的知识缺口。
+
+**距上次运行变化**：无新素材（research-feeds 最新仍 04-14，Clippings 无新增，daily-info 无新增，source-index 无新增）。上一轮 03:09 结论一致。
+
+**本轮检查内容**：
+1. **Clippings 三本参考书全文扫描**（108 篇）：
+   - 稳定性(25篇)：ANR/Java Crash/Native Crash/OOM/FD/线程监控/Binder异常/Hook → 全部已被 ch20/ch23/ch26 覆盖
+   - 性能优化(21篇)：CPU/内存/Native/包体积/缓存/虚拟内存/GC抑制/任务调度 → 全部已被 ch04/ch05/ch08/ch12/ch21/ch22/ch23 覆盖
+   - 线上疑难(59篇)：崩溃/内存/卡顿/启动/I/O/存储/网络/耗电/渲染/UI/包体积/编译插桩/线上排查/跨平台/音视频 → 全部已被对应章节覆盖
+   - 结论：Clippings 参考书的知识点覆盖率达 100%，无结构性缺口
+2. **AOSP source structure check**：
+   - frameworks/base/ 核心服务（AMS/PMS/WMS/SurfaceFlinger/InputDispatcher/NMS/CM/TM/PM/SS）→ 全部覆盖
+   - system/ 组件（vold/netd/lmkd/installd/debuggerd）→ 全部覆盖
+   - packages/modules/（Bluetooth/WiFi/Media）→ 全部覆盖
+3. **Part 5 薄弱章节检查**：
+   - ch23-memory (4 files) + ch23-memory-practice (17 files) → 合并后覆盖充分
+   - ch26-database (1 file, draft) → Room 3.0 已有草稿，§24-02 数据库优化有充分覆盖
+   - ch26-methodology (1 file, draft) → AI 编码评测已有草稿，附录有学习方法
+
+**候选评估**：
+| 候选 | 素材 | 相关性 | 需求 | 时效 | 总分 | 判定 |
+|------|------|--------|------|------|------|------|
+| FD 监控深化 | 2/5 | 3/5 | 2/5 | 2/5 | 9/20 | ❌ ch20 已部分覆盖 |
+| 匿名线程监控 | 2/5 | 2/5 | 2/5 | 2/5 | 8/20 | ❌ ch20 已部分覆盖 |
+| Binder 异常治理 | 2/5 | 3/5 | 2/5 | 2/5 | 9/20 | ❌ ch01/ch20 已覆盖 |
+
+**全书进度**：644 节（finalized 343 + ready-for-review 228 = 571，88.7%），draft 45 节，none 27 节。知识覆盖保持饱和状态。
+
+**下一轮关注**：
+1. Android 17 QPR1 新特性（预计 2026 Q4）
+2. 新增 DeepResearch/Clippings 素材驱动的缺口
+3. draft 章节的 Phase 2 加工（45 节待加工，需 queue 优先级排序）
