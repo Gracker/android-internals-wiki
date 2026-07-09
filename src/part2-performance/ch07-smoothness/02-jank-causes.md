@@ -4,8 +4,8 @@ chapter: "7.2"
 section: "7.2"
 status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-15.0.0_r1"
+last_verified: "2026-07-10"
+last_verified_against: "AOSP android-17.0.0_r1"
 reviewed_date: "2026-05-24"
 reviewed_by: openclaw-task6
 polish_count: 1
@@ -36,24 +36,24 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:45+08:00"
-task9_result: pass-tech-review
-last_task9_at: "2026-06-19T05:28:49+08:00"
+task9_result: auto-fixed
+last_task9_at: "2026-07-10T02:32:17+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-19"
-task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；FrameTimeline 证据字段写成 present_offset/refresh_period/hwc_layer_name 不符合 Perfetto SQL 表，需改为 actual_frame_timeline_slice/expected_frame_timeline_slice 的 jank_type、present_type、layer_name，并用 dumpsys 或 layer snapshot 复核 HWC DEVICE/CLIENT。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；DeliQueue android-17-beta3 源码 tag 与 HWC3 Composition/Overlay plane 数据支撑仅作为 P2 留给后续小修；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 idle-audit: auto-fixed。P0 1：补齐 Android 17 HWC3 Composition.aidl 的 DISPLAY_DECORATION=6，并修正源码索引中 HWC3 Composition 枚举归属；无 P1/P2，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 Android 17 DeliQueue targetSdk 37 生效边界、HWC3 Composition DISPLAY_DECORATION=6 与 FrameTimeline 分析入口，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-07-10"
+task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 1 / P1 0 / P2 1；FrameTimeline 证据字段写成 present_offset/refresh_period/hwc_layer_name 不符合 Perfetto SQL 表，需改为 actual_frame_timeline_slice/expected_frame_timeline_slice 的 jank_type、present_type、layer_name，并用 dumpsys 或 layer snapshot 复核 HWC DEVICE/CLIENT。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；DeliQueue android-17-beta3 源码 tag 与 HWC3 Composition/Overlay plane 数据支撑仅作为 P2 留给后续小修；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 idle-audit: auto-fixed。P0 1：补齐 Android 17 HWC3 Composition.aidl 的 DISPLAY_DECORATION=6，并修正源码索引中 HWC3 Composition 枚举归属；无 P1/P2，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 Android 17 DeliQueue targetSdk 37 生效边界、HWC3 Composition DISPLAY_DECORATION=6 与 FrameTimeline 分析入口，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-10 Task9 idle-audit: auto-fixed。P0 1：将 FrameTimeline `jank_type` 示例对齐为 Android 17 Perfetto 的 `SurfaceFlinger CPU/GPU Deadline Missed`，把 `Late Present` 归回 `present_type`，并将源码验证基准从 android-15.0.0_r1 更新为 android-17.0.0_r1；无 P1/P2，回到 Task6 复审。"
 last_task6_at: "2026-06-19T05:08:51+08:00"
 last_task6_audit: "2026-05-24"
 task6_reviewed_date: "2026-05-24"
 review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"
-last_task9_audit: "2026-06-19"
-last_task9_audit_log: "logs/deep-review/2026-06-19-02-audit.md"
+last_task9_audit: "2026-07-10"
+last_task9_audit_log: "logs/deep-review/2026-07-10-02-audit.md"
 last_task2b_at: 2026-05-24T19:29:26+08:00
 reviewed_at: "2026-05-24T20:14:35+08:00"
 review_round: 2
@@ -62,10 +62,10 @@ task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9
 last_task9_review_log: "logs/deep-review/2026-06-19-05-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-19
-last_task9_autofix_at: "2026-06-19"
+last_task9_autofix_at: "2026-07-10"
 updated_by: "openclaw-task9"
-updated_date: "2026-06-19"
-p0: 0
+updated_date: "2026-07-10"
+p0: 1
 p1: 0
 p2: 0
 ---
@@ -125,7 +125,7 @@ VSync-app 信号到达
 2. **额外内存拷贝**：GPU 显存 → 显示控制器的拷贝开销
 3. **掉帧风险**：如果 CLIENT 比例过高，GPU 帧时间超过 VSync 周期
 
-**Perfetto 中的证据**：通过 `actual_frame_timeline_slice` 表的 `jank_type`（如 `SurfaceFlinger Deadline Missed`、`Buffer Stuffing`、`Late Present`）和 `present_type` 字段定位异常帧，再用 `layer_name` 和 `on_time_finish` 缩小嫌疑 Layer。FrameTimeline 不直接暴露 HWC DEVICE/CLIENT 归因——确认合成降级需要结合 SurfaceFlinger composition trace（`android.surfaceflinger` 轨道）中 `compositionType` slice、RenderEngine 执行耗时，或 `dumpsys SurfaceFlinger` 的 layer dump 输出。
+**Perfetto 中的证据**：通过 `actual_frame_timeline_slice` 表的 `jank_type`（如 `SurfaceFlinger CPU Deadline Missed`、`SurfaceFlinger GPU Deadline Missed`、`Buffer Stuffing`）和 `present_type`（如 `Late Present`）、`layer_name`、`on_time_finish` 字段定位异常帧并缩小嫌疑 Layer。FrameTimeline 不直接暴露 HWC DEVICE/CLIENT 归因——确认合成降级需要结合 SurfaceFlinger composition trace（`android.surfaceflinger` 轨道）中 `compositionType` slice、RenderEngine 执行耗时，或 `dumpsys SurfaceFlinger` 的 layer dump 输出。
 
 **实测建议**：
 - 收集 dumpsys SurfaceFlinger 确认 DEVICE/CLIENT 比例
@@ -315,7 +315,7 @@ SurfaceFlinger 准备每帧 layer state（geometry + buffer）
   → SurfaceFlinger 处理 composition type 变更
 ```
 
-关键源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`（合成主循环）与 `DisplayHardware/HWComposer.cpp`（HWC 封装）。AOSP android-15.0.0\_r1 中未找到 `SurfaceFlinger.prepareImage()` / `HWComposer::prepare()` 方法，现代 HWC2/HWC3 流程通过 `getDeviceCompositionChanges()` + `presentOrValidate()` 协商合成方式。
+关键源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`（合成主循环）与 `DisplayHardware/HWComposer.cpp`（HWC 封装）。AOSP android-17.0.0\_r1 中未找到 `SurfaceFlinger.prepareImage()` / `HWComposer::prepare()` 方法，现代 HWC2/HWC3 流程通过 `getDeviceCompositionChanges()` + `presentOrValidate()` 协商合成方式。
 
 **Qualcomm 私有优化技术：**
 
