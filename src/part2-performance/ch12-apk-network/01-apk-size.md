@@ -62,7 +62,7 @@ repaired_by: openclaw-task2b
 last_task2b_at: '2026-05-06T04:41:00+08:00'
 task9_review_notes: "2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；Dynamic Feature Module 仍使用旧 Play Core Library 1.6+ 口径，需更新为 Play Feature Delivery Library 2.1.0+ 并标注 Android 14+ target SDK 版本边界。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 闲时抽检：pass-tech-review。P0 0 / P1 0 / P2 1；官方文档核对未发现 Android 18/API 38 越界；zipalign 16KB 验证命令建议后续从对齐命令改为 -c 校验命令。"
 last_task6_at: '2026-05-06T05:05:00+08:00'
-last_task6_audit: '2026-07-09'
+last_task6_audit: '2026-07-09T12:12:00+08:00'
 review_notes: '2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9
   已有 P1/P2 queue pending，等待 Task2B。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2
   结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 05 task9 deep-review:
@@ -94,7 +94,7 @@ last_deepseek_cn_review_at: 2026-06-18
 
 **Dex 文件（classes.dex, classes2.dex, ...）** 是编译后的 Dalvik 字节码。所有 Kotlin/Java 代码——包括业务代码、AndroidX 库、第三方 SDK——最终都会编译进 dex 文件。一个中等规模的 App，dex 通常占总大小的 30%-50%。当方法数超过 65536（即一个 dex 文件的理论上限）时，Gradle 会自动进行多 dex 分包，产生 classes2.dex、classes3.dex 等文件。
 
-**resources.arsc** 是资源索引表。把它看成一张总目录更接近实际实现。文件里至少有三层和体积直接相关的字符串池：全局字符串池、每个 `ResTable_package` 下的 Type String Pool（`string`、`layout`、`drawable` 这类资源类型名），以及 Key String Pool（`app_name`、`main_title` 这类 entry 名称）。系统根据资源 ID 定位 package、type、entry 后，再回到这些池和对应的类型块取元数据。AndResGuard 这类工具压缩 `resources.arsc` 时，主要就是缩短 Type String Pool 和 Key String Pool 里的字符串条目，资源表本身和内存映射开销也会跟着下降。
+**resources.arsc** 是资源索引表。把它看成一张总目录更接近实际实现。文件里至少有三层和体积密切相关的字符串池：全局字符串池、每个 `ResTable_package` 下的 Type String Pool（`string`、`layout`、`drawable` 这类资源类型名），以及 Key String Pool（`app_name`、`main_title` 这类 entry 名称）。系统根据资源 ID 定位 package、type、entry 后，再回到这些池和对应的类型块取元数据。AndResGuard 这类工具压缩 `resources.arsc` 时，主要就是缩短 Type String Pool 和 Key String Pool 里的字符串条目，资源表本身和内存映射开销也会跟着下降。
 
 **res/ 目录**包含编译后的二进制资源文件——布局 XML 的二进制编译版、图片资源、颜色值等。Android 构建工具会把 XML 布局文件编译成二进制格式（AXML），这不是普通的文本 XML。得物技术团队曾经通过裁剪二进制 XML 中的冗余字段（如 Namespace 声明、重复的属性名）实现了单个 Layout 文件体积缩减约 40%。
 
@@ -134,13 +134,13 @@ last_deepseek_cn_review_at: 2026-06-18
 
 R8 是 Android 构建工具链中的代码优化器，从 Android Gradle Plugin（AGP）3.4.0 开始取代 ProGuard 成为默认工具。它做四件事：
 
-**代码缩减（Code Shrinking / Tree Shaking）**——通过分析代码的入口点（Activity、Service、ContentProvider 等在 AndroidManifest 中声明的组件），R8 追踪所有可达的代码路径，不可达的类和方法会被直接移除。这对第三方库尤其有效——我们可能只用了 Guava 的 `Strings.isNullOrEmpty()`，但 Guava 的完整 jar 包含几千个方法，R8 会把没用到的那部分全部删掉。
+**代码缩减（Code Shrinking / Tree Shaking）**——通过分析代码的入口点（Activity、Service、ContentProvider 等在 AndroidManifest 中声明的组件），R8 追踪所有可达的代码路径，不可达的类和方法会被移除。这对第三方库尤其有效——我们可能只用了 Guava 的 `Strings.isNullOrEmpty()`，但 Guava 的完整 jar 包含几千个方法，R8 会把没用到的那部分全部删掉。
 
 **资源缩减（Resource Shrinking）**——与代码缩减联动，一旦某个代码被移除，该代码中引用的资源文件（如仅在已删除 Activity 中使用的布局文件）也会被移除。
 
 **代码混淆（Obfuscation）**——把 `com.example.androidperformance.MainActivity` 重命名为 `a.b.c`。这不仅能保护代码，更直接的效果是大幅缩减 dex 文件中的字符串常量池。一个有上千个类名的项目，混淆后 dex 可以减小 10%-20%。
 
-**代码优化（Optimization）**——R8 Full Mode（AGP 8.0+ 默认开启）会执行方法内联、类合并、无用接口移除等更激进的优化。比如如果一个方法只被调用一次，R8 可能会直接把方法体内联到调用点，消除方法调用的开销。
+**代码优化（Optimization）**——R8 Full Mode（AGP 8.0+ 默认开启）会执行方法内联、类合并、无用接口移除等更激进的优化。比如如果一个方法只被调用一次，R8 可能会把方法体内联到调用点，消除方法调用的开销。
 
 ### 怎么开启 R8
 
@@ -163,7 +163,7 @@ android {
 
 两个开关都要打开。`isMinifyEnabled` 控制 R8 的代码缩减和混淆，`isShrinkResources` 控制资源缩减。资源缩减必须依赖代码缩减先运行，因为它需要知道哪些代码还在使用——只有代码层面确认无用的资源，才会被移除。
 
-注意 `proguard-android-optimize.txt` 这个文件名。Android 提供两个默认规则文件：`proguard-android.txt` 是保守配置，`proguard-android-optimize.txt` 包含更多优化选项。对于新项目，直接用 optimize 版本即可。
+注意 `proguard-android-optimize.txt` 这个文件名。Android 提供两个默认规则文件：`proguard-android.txt` 是保守配置，`proguard-android-optimize.txt` 包含更多优化选项。对于新项目，用 optimize 版本即可。
 
 ### Keep 规则：告诉 R8 别删错了
 
@@ -219,7 +219,7 @@ AGP 8.12/8.13 需要手动开启这个开关。AGP 9.0.0 起只要 `isShrinkReso
 
 Android Studio 提供了批量转换功能：右键点击 `res/drawable` 目录，选择 **Convert to WebP...**，可以选择无损或有损模式，还能设置质量参数。对于 4.x 及以上设备（如今基本上是所有设备），WebP 的兼容性已经不是问题。
 
-对于简单的矢量图形（图标、简单形状），直接使用 **VectorDrawable**（SVG 格式）更好。矢量图不依赖屏幕密度，一个文件适配所有分辨率，而且体积通常比同等效果的 PNG 小得多。不过矢量图也有边界——复杂的矢量图在运行时渲染的开销可能比加载一张位图更大，所以不适合用于照片或复杂插图。
+对于简单的矢量图形（图标、简单形状），使用 **VectorDrawable**（SVG 格式）更好。矢量图不依赖屏幕密度，一个文件适配所有分辨率，而且体积通常比同等效果的 PNG 小得多。不过矢量图也有边界——复杂的矢量图在运行时渲染的开销可能比加载一张位图更大，所以不适合用于照片或复杂插图。
 
 ### 资源混淆：AndResGuard
 
@@ -363,7 +363,7 @@ android {
 
 ### 动态下发 so
 
-对于某些大型 native 库（如人脸识别 SDK、地图引擎），最激进的优化方案是**不在 APK 中打包**，而是在用户首次使用相关功能时从服务器下载。这种方式需要自己管理下载、校验、加载的完整流程，实现复杂度较高，但收益明确：主包体积可以减少数十 MB，直接提升安装转化率。
+对于某些大型 native 库（如人脸识别 SDK、地图引擎），最激进的优化方案是**不在 APK 中打包**，而是在用户首次使用相关功能时从服务器下载。这种方式需要自己管理下载、校验、加载的完整流程，实现复杂度较高，但收益明确：主包体积可以减少数十 MB，提升安装转化率。
 
 一个折中方案是使用 Play Feature Delivery Library 的 **on-demand delivery**：将大型 so 库放在 Dynamic Feature Module 中（下一节讨论），用户安装基础 APK 时不包含这些库，只有当用户导航到需要该库的功能页面时才触发下载。
 
@@ -497,11 +497,11 @@ bundletool get-size total --apks=app.apks \
 
 **APK Analyzer / Ruler / Play Console App Size**（依赖审计）：如果需要分析传递依赖对 dex / res / native 体积的贡献，可以使用 Slack 开源的 [Ruler](https://github.com/slackhq/ruler) 或 Play Console 的 App Size 报告。Ruler 在编译期按模块和包名归集体积数据，适合大型多模块项目。
 
-> **关于 AGP 8.12 体积分析**：截至 2026-05，AGP 8.12.0 的 release notes 中与体积依赖分析直接相关的入口仍是 `bundletool` 和 APK Analyzer。Build Analyzer 主要面向构建耗时。如果后续 Android Studio Feature Drop 提供了更细粒度的体积分析面板，以官方文档为准。
+> **关于 AGP 8.12 体积分析**：截至 2026-05，AGP 8.12.0 的 release notes 中与体积依赖分析相关的入口仍是 `bundletool` 和 APK Analyzer。Build Analyzer 主要面向构建耗时。如果后续 Android Studio Feature Drop 提供了更细粒度的体积分析面板，以官方文档为准。
 
 ## 与其他章节的关系
 
-APK 体积优化不是孤立的主题。代码瘦身（R8）不仅减小 dex 体积，还能通过方法内联和类合并提升运行时性能——这与 §8.3 中讨论的启动优化直接相关。Native 库的大小和加载方式影响着冷启动时的 `dlopen` 耗时，可以在 Perfetto 的主线程 track 中观察到。资源优化则和 §4.1 内存管理有关——加载一张 oversized 的图片不仅浪费存储，还浪费运行时内存。
+APK 体积优化不是孤立的主题。代码瘦身（R8）不仅减小 dex 体积，还能通过方法内联和类合并提升运行时性能——这与 §8.3 中讨论的启动优化密切相关。Native 库的大小和加载方式影响着冷启动时的 `dlopen` 耗时，可以在 Perfetto 的主线程 track 中观察到。资源优化则和 §4.1 内存管理有关——加载一张 oversized 的图片不仅浪费存储，还浪费运行时内存。
 
 工具层面，APK Analyzer 的使用技能与 §14.1 中的 Android Studio Profiler 互补。持续集成中的体积门禁，则是 §15.6 自动化监控理念的具体实践。
 
