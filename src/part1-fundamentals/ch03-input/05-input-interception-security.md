@@ -4,15 +4,15 @@ title: 输入事件拦截与安全机制
 chapter: '3.5'
 section: '3.5'
 drafted_by: openclaw-task
-applicable_versions: Android 10 (API 29) - Android 17 (API 37), InputMonitor 部分基于 android-16.0.0_r1 核验, 密码输入场景的 InputMonitor 切断暂不作为 AOSP 源码结论
+applicable_versions: Android 10 (API 29) - Android 17 (API 37), 主线源码基准已复核 android-17.0.0_r1, Android 10-16 仅作历史演进参照, 密码输入场景的 InputMonitor 切断暂不作为 AOSP 源码结论
 confidence: medium
 reviewed_date: "2026-06-01"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -36,7 +36,7 @@ related_chapters:
 - '9.2'
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。 | 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；Task9 已通过且 queue 无 pending，自动晋升 finalized。'
 task2b_result: fixed-lite
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-02T00:25:54+08:00"
@@ -44,9 +44,11 @@ last_task6_at: "2026-06-01T23:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-23-review.md"
 task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 小修 1 处；保留既有待补充/待验证边界标注，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-02-00-deep-review.md"
-task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。InputFilter/InputMonitor/Accessibility 注入与 Android 16/17 版本边界复核通过；P0 0 / P1 0 / P2 0，queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-06-19"
-last_task9_audit_log: "logs/deep-review/2026-06-19-14-audit.md"
+task9_review_notes: "2026-06-02 Task9 deep review: pass-tech-review。InputFilter/InputMonitor/Accessibility 注入与 Android 16/17 版本边界复核通过；P0 0 / P1 0 / P2 0，queue 无 pending，自动晋升 finalized。 | 2026-07-10 Task9 idle audit auto-fix：将主线源码锚点切到 android-17.0.0_r1，修正 SystemUI back gesture InputMonitorCompat 源码路径和 GameManagerService power mode 方法名；回到 Task6 复审。"
+last_task9_audit: "2026-07-10"
+last_task9_audit_log: "logs/deep-review/2026-07-10-01-audit.md"
+last_task9_autofix_at: "2026-07-10"
+last_task9_autofix_log: "logs/deep-review/2026-07-10-01-audit.md"
 last_task6_audit: "2026-07-07"
 last_task2b_lite_at: '2026-06-01'
 task6_l1_l2_fixes: 1
@@ -102,7 +104,7 @@ InputFilter 是 Android 系统提供的一个**全局事件拦截机制**，允�
 
 与 App 层面的事件拦截（如 `ViewGroup.onInterceptTouchEvent()`）不同，InputFilter 是**系统级**的——它拦截的是所有窗口的事件，而不是单个 App 的事件。影响范围覆盖整个系统的输入行为。
 
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.h]
+> [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
 ### InputFilter 的注册流程
 
@@ -171,16 +173,16 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 `InputMonitor` 的注册入口是 `InputManagerService.monitorGestureInput()`，调用方需要持有 `android.permission.MONITOR_INPUT` 权限——这个权限只签发给系统签名应用或 `privileged` 应用。普通 App 和第三方无障碍服务都无法获取。
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
+> [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
 
 ### spy window 与 pilferPointers
 
 `InputMonitor` 创建的输入通道在 InputDispatcher 内部被标记为 **spy window**。spy window 的特点是：
 
 1. **收到事件的副本**，不影响正常分发流程。目标窗口的事件不会因为 spy window 的存在而延迟或丢失。
-2. **可以 pilfer pointers**。`pilferPointers()` 让 spy window 从目标窗口拿走当前 pointer stream。手势导航模式下，SystemUI 的 `EdgeBackGestureHandler` 创建 `InputMonitorCompat("edge-swipe")` 监听边缘滑动，确认为返回手势后调用 `pilferPointers()` 接管触摸流——原始目标窗口收到 `ACTION_CANCEL`。
+2. **可以 pilfer pointers**。`pilferPointers()` 让 spy window 从目标窗口拿走当前 pointer stream。手势导航模式下，SystemUI 的 `DisplayBackGestureHandler` 创建 `InputMonitorCompat("edge-swipe", displayId)` 监听边缘滑动；`EdgeBackGestureHandler` 确认为返回手势后调用 `pilferPointers()` 接管触摸流——原始目标窗口收到 `ACTION_CANCEL`。
 
-> [已验证: AOSP android-16.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java]
+> [已验证: AOSP android-17.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/DisplayBackGestureHandler.kt]
 
 它在 Perfetto 中的表现为：目标窗口的 touch slice 突然中断（`ACTION_CANCEL`），同时系统 UI 进程开始处理手势。如果分析时发现 App 的触摸流被意外中断，可以检查是否存在系统 spy window 在 pilfer。
 
@@ -211,7 +213,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 1. 服务 metadata 中声明 `android:canRequestFilterKeyEvents="true"`，系统据此赋予 `AccessibilityServiceInfo.CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`
 2. 服务运行时把 `AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS` 放进 `AccessibilityServiceInfo.flags`
 
-android-10.0.0_r1 和 android-14.0.0_r1 都是这套做法，所以“Android 10+ 只有系统无障碍服务能用这个 flag”这句话不能保留。
+android-10.0.0_r1、android-14.0.0_r1 和 android-17.0.0_r1 都是这套做法，所以“Android 10+ 只有系统无障碍服务能用这个 flag”这句话不能保留。
 
 触摸事件的情况也不能简单写成“无障碍通过 UI 树间接操作”。`AccessibilityInputFilter.onInputEvent()` 会直接收到 `MotionEvent`，按启用的功能把事件交给 `TouchExplorer`、放大镜相关 handler，或 `MotionEventInjector`。无障碍服务主动产生手势时，再通过 `dispatchGesture()` 走另一条注入流程。
 
@@ -311,7 +313,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 ### 注入事件的权限控制
 
-普通注入入口最终都会过 `InputManagerService.injectInputEventToTarget()` 的权限检查。android-14.0.0_r1 里，这一步调用 `checkCallingPermission(android.Manifest.permission.INJECT_EVENTS, "injectInputEvent()", true)`，没有 `INJECT_EVENTS` 的调用者会抛 `SecurityException`。
+普通注入入口最终都会过 `InputManagerService.injectInputEventToTarget()` 的权限检查。android-17.0.0_r1 里，这一步调用 `checkCallingPermission(android.Manifest.permission.INJECT_EVENTS, "injectInputEvent()", true)`，没有 `INJECT_EVENTS` 的调用者会抛 `SecurityException`。
 
 `Instrumentation` 和 `UiAutomation` 看上去像“绕过了权限”，实际不是。它们用的是系统帮测试框架建立的受控通道，最终仍然落回受权限保护的注入接口。`dispatchGesture()` 又是另一套门禁，它看的是无障碍服务是否通过 `canPerformGestures()` 校验，而不是 `INJECT_EVENTS`。
 
@@ -343,12 +345,11 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 | 版本/来源 | 能直接核对到的结论 | 证据 |
 |-----------|--------------------|------|
 | android-10.0.0_r1 | `canRequestFilterKeyEvents` metadata 会转成 `CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`；运行时用 `FLAG_REQUEST_FILTER_KEY_EVENTS` 打开按键过滤 | `AccessibilityServiceInfo.java` |
-| android-14.0.0_r1 | 按键过滤仍是 capability + 运行时 flag 这套机制，不存在“只有系统无障碍服务可用该 flag”的 AOSP 依据 | `AccessibilityServiceInfo.java` |
-| android-14.0.0_r1 | 标准 `UiAutomation.injectInputEvent()` 会跳过 accessibility input filter；测试 filter 需要 `injectInputEventToInputFilter()` | `UiAutomation.java` |
-| android-14.0.0_r1 | accessibility 注入事件会在 InputDispatcher 中转成 `FLAG_IS_ACCESSIBILITY_EVENT` 供 App 识别 | `InputDispatcher.cpp`、`KeyEvent.java`、`MotionEvent.java` |
-| android-14.0.0_r1 (API 34) | `View.setAccessibilityDataSensitive(ACCESSIBILITY_DATA_SENSITIVE_YES)` 可标记敏感 View；非 `isAccessibilityTool` 的无障碍服务对该 View 的 accessibility interaction 会被限制。这限制的是 `AccessibilityInteractionClient` 的查询/操作通道，不是 InputDispatcher 的原始事件拦截 | `View.java`、`AccessibilityServiceInfo.isAccessibilityTool()` |
-| android-16.0.0_r1 (API 36) | `accessibilityDataSensitive` 执行力度加强：标记后的 View 对非 `isAccessibilityTool` 无障碍服务完全不可见，`AccessibilityInteractionClient` 查询返回空，服务拿不到 View 坐标和尺寸，无法通过 `dispatchGesture()` 构造精准触摸注入 | `View.java`、`AccessibilityInteractionClient.java` |
-| 待验证（未进入 Android 17 正文结论） | 密码输入场景限制非系统级 InputMonitor 副本分发的说法缺少可复核 `android-17.0.0_r1` / source anchor，当前不作为 AOSP 结论 | 待补公开 tag、Beta commit 或官方源码锚点 |
+| android-17.0.0_r1 | 按键过滤仍是 capability + 运行时 flag 这套机制，不存在“只有系统无障碍服务可用该 flag”的 AOSP 依据 | `AccessibilityServiceInfo.java` |
+| android-17.0.0_r1 | 标准 `UiAutomation.injectInputEvent()` 会跳过 accessibility input filter；测试 filter 需要 `injectInputEventToInputFilter()` | `UiAutomation.java` |
+| android-17.0.0_r1 | accessibility 注入事件会在 InputDispatcher 中转成 `FLAG_IS_ACCESSIBILITY_EVENT` 供 App 识别 | `InputDispatcher.cpp`、`KeyEvent.java`、`MotionEvent.java` |
+| android-17.0.0_r1 (API 37；API 34 引入) | `View.setAccessibilityDataSensitive(ACCESSIBILITY_DATA_SENSITIVE_YES)` 可标记敏感 View；非 `isAccessibilityTool` 的无障碍服务对该 View 的 accessibility interaction 会被限制。这限制的是 `AccessibilityInteractionController` 的查询/操作通道，不是 InputDispatcher 的原始事件拦截 | `View.java`、`AccessibilityInteractionController.java`、`AccessibilityServiceInfo.isAccessibilityTool()` |
+| 待验证（未进入 Android 17 正文结论） | 密码输入场景限制非系统级 InputMonitor 副本分发的说法缺少可复核 `android-17.0.0_r1` / source anchor，当前不作为 AOSP 结论 | 待补官方源码锚点、公开变更说明或 Beta commit |
 | Android in-call protections rollout | 通话期间阻塞无障碍授权、首次侧载等高风险安全动作属于 Settings / PermissionController / 安全策略 rollout，不能归因到 InputDispatcher 或 `android-17.0.0_r1` | Google Security Blog / Android 安全策略资料 |
 
 以下结论因缺乏一手证据暂不收录：
@@ -358,13 +359,13 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 
 以上条目待一手证据补全后再纳入版本演进表。
 
-### Android 16/17：从权限控制到物理隔离
+### Android 17 基线：从权限控制到查询通道隔离
 
 表格末尾几项需要单独说明。
 
-**Android 16：敏感视图隔离加强执行力度。** `accessibilityDataSensitive` 在 API 34 引入，Android 16 提升了执行力度。标记后的 View 对非 `isAccessibilityTool` 无障碍服务完全不可见——`AccessibilityInteractionClient` 查询返回空，服务拿不到 View 的坐标和尺寸。没有位置信息，`dispatchGesture()` 就无法构造精准的触摸注入。这层防御做在无障碍查询通道上，不经过 InputDispatcher 的事件拦截链。
+**Android 17 基线中的敏感视图隔离。** `accessibilityDataSensitive` 在 API 34 引入；在 `android-17.0.0_r1` 中，标记后的 View 对非 `isAccessibilityTool` 无障碍服务不可见——`AccessibilityInteractionController` 会按请求方是否为 accessibility tool 和 View 是否敏感来决定是否返回节点。服务拿不到 View 坐标和尺寸时，就无法通过 `dispatchGesture()` 构造精准的触摸注入。这层防御做在无障碍查询通道上，不经过 InputDispatcher 的事件拦截链。
 
-**密码输入时的 InputMonitor 副本限制：待验证。** 公开可核验的 `android-16.0.0_r1` `InputDispatcher.cpp` 能支撑 spy window / monitor / `pilferPointers()` 的通用机制，但不能支撑“密码输入期间暂停所有非系统级 InputMonitor 副本分发”的 Android 17 AOSP 结论。该说法在补到公开 tag、Beta commit 或官方源码锚点前，只作为待验证线索保留。
+**密码输入时的 InputMonitor 副本限制：待验证。** 公开可核验的 `android-17.0.0_r1` `InputDispatcher.cpp` 能支撑 spy window / monitor / `pilferPointers()` 的通用机制，但不能支撑“密码输入期间暂停所有非系统级 InputMonitor 副本分发”的 Android 17 AOSP 结论。该说法在补到官方源码锚点、公开变更说明或 Beta commit 前，只作为待验证线索保留。
 
 **通话中的权限授予封锁。** Google 2025 安全资料支撑的是 in-call protections：通话期间阻止关闭 Play Protect、首次侧载、授予无障碍权限等高风险安全动作。它属于 Settings / PermissionController / 安全策略 rollout，不在 InputDispatcher 的管辖范围，也不能写成 `android-17.0.0_r1` 的源码结论。
 
@@ -424,15 +425,15 @@ AOSP 标准 GameMode 没有公开的“游戏输入优先级提升”路径。�
 
 > [待验证: 各厂商防误触实现的具体位置和方案差异]
 
-## Android 14 时代仍可核对到的权限边界
+## Android 17 基线下仍可核对到的权限边界
 
-关于 Android 14+ 权限限制变化，当前只保留能从 AOSP 或官方文档直接核对的边界。android-14.0.0_r1 里，至少有三条可以直接核对：
+关于 Android 14+ 权限限制变化，当前只保留能从 AOSP 或官方文档直接核对的边界。android-17.0.0_r1 里，至少有三条可以直接核对：
 
 1. **按键过滤仍然依赖 capability + 运行时 flag。** 代码位置在 `AccessibilityServiceInfo.java`，不是某个 `R.string.*` 资源开关。
 2. **手势注入要过无障碍安全检查。** `AccessibilityServiceConnection.dispatchGesture()` 会先看 `mSecurityPolicy.canPerformGestures(this)`，拿到 `MotionEventInjector` 之后才会发事件。
 3. **标准 injected event 和 accessibility injected event 是两回事。** 前者走普通注入入口，后者会在 `MotionEventInjector` / `InputDispatcher` 里补上 accessibility 标记。
 
-如果后续补到 Android 15/16 的一手材料，再单独写版本增量会更稳。没有证据的“14+ 白名单限制变化”描述不放入正文。
+如果后续补到 Android 17 之后的一手材料，再单独写版本增量。没有证据的“14+ 白名单限制变化”描述不放入正文。
 
 ## 在 Perfetto 中分析事件拦截问题
 
@@ -491,7 +492,7 @@ adb shell dumpsys accessibility
 
 ### 误区五：InputFilter 只影响按键事件
 
-不对。android-14.0.0_r1 的 `InputDispatcher` 在 `mInputFilterEnabled` 为真时，会把按键和触摸都送去 `filterInputEvent(...)`。无障碍场景下，`KeyboardInterceptor` 负责按键，`TouchExplorer` 等组件负责触摸，两边都在 filter 这一层工作。
+不对。android-17.0.0_r1 的 `InputDispatcher` 在 `mInputFilterEnabled` 为真时，会把按键和触摸都送去 `filterInputEvent(...)`。无障碍场景下，`KeyboardInterceptor` 负责按键，`TouchExplorer` 等组件负责触摸，两边都在 filter 这一层工作。
 
 ## 参考资料
 
@@ -499,9 +500,12 @@ adb shell dumpsys accessibility
 
 - `frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java` — `setInputFilter()`
 - `frameworks/base/services/core/java/com/android/server/input/InputManagerService.java` — `setInputFilter()`、`injectInputEventToTarget()`、`monitorGestureInput()`
-- `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java` — `InputMonitorCompat("edge-swipe")`、`pilferPointers()` 调用
+- `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/DisplayBackGestureHandler.kt` — `InputMonitorCompat("edge-swipe", displayId)`、`pilferPointers()` 调用
+- `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java` — 返回手势判定后转调 `pilferPointers()`
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — `filterInputEvent()` 调用点、`injectInputEvent()`
 - `frameworks/base/core/java/android/view/InputFilter.java` — `InputFilter` 抽象与 `sendInputEvent()`
+- `frameworks/base/core/java/android/view/View.java` — `accessibilityDataSensitive`
+- `frameworks/base/core/java/android/view/AccessibilityInteractionController.java` — 敏感 View 的无障碍查询过滤
 - `frameworks/base/core/java/android/accessibilityservice/AccessibilityServiceInfo.java` — `CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`、`FLAG_REQUEST_FILTER_KEY_EVENTS`
 - `frameworks/base/services/accessibility/java/com/android/server/accessibility/AccessibilityInputFilter.java` — 无障碍 filter 的 key / motion 入口
 - `frameworks/base/services/accessibility/java/com/android/server/accessibility/KeyboardInterceptor.java` — 按键预处理
@@ -530,7 +534,7 @@ adb shell dumpsys accessibility
 
 ## 扩展：厂商游戏模式输入优先级机制（源码级验证）
 
-> **调研时间**：2026-05-12 | **调研引擎**：AutoResearchClaw | **源码版本**：android-15.0.0_r1
+> **调研时间**：2026-05-12 | **调研引擎**：AutoResearchClaw | **源码版本**：android-17.0.0_r1
 
 ### 核心结论
 
@@ -538,7 +542,7 @@ adb shell dumpsys accessibility
 
 Android 标准 GameMode（GameManagerService + GameServiceController）的核心能力：
 1. **帧率策略控制**：`RefreshRatePolicy` 通过 `LAYER_PRIORITY_*` 影响 SurfaceFlinger 刷新率决策
-2. **功耗模式切换**：`PowerManager.setMode(Mode.GAME, true)` 调整 CPU/GPU 功耗档位
+2. **功耗模式切换**：`PowerManagerInternal.setPowerMode(Mode.GAME, true)` 调整 CPU/GPU 功耗档位
 3. **GameService API**：GameSession/GameServiceProvider 接口用于 OEM 游戏工具集成
 
 ### 关键源码发现
@@ -548,9 +552,9 @@ Android 标准 GameMode（GameManagerService + GameServiceController）的核心
 ```java
 // services/core/java/com/android/server/app/GameManagerService.java
 if (gameMode == GameMode.GAME_MODE_PERFORMANCE) {
-    mPowerManagerInternal.setMode(Mode.GAME, true);  // 只影响功耗档位
+    mPowerManagerInternal.setPowerMode(Mode.GAME, true);  // 只影响功耗档位
 } else {
-    mPowerManagerInternal.setMode(Mode.GAME, false);
+    mPowerManagerInternal.setPowerMode(Mode.GAME, false);
 }
 ```
 
