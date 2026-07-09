@@ -5,8 +5,8 @@ section: "2.7"
 status: "finalized"
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
-last_verified: "2026-04-28"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-07-09"
+last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
 reviewed_date: "2026-05-08"
 review_notes: "2026-05-07 16:08 task6 review (Task2B 修复后复审): pass-light-edit。轻修 4 处（16KB 分配粒度/数据描述/Compose offscreen 用词）；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
@@ -22,32 +22,33 @@ sources:
   - type: official
     path: "developer.android.com/topic/performance/hardware-accel"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/View.java (buildLayer/buildDrawingCache)"
+    path: "AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/View.java (buildLayer/buildDrawingCache)"
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
+    path: "AOSP android-17.0.0_r1: frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 task6_result: pass-light-edit
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-08T20:44:59+08:00"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-08T21:35:11+08:00"
-last_task9_audit: "2026-06-18"
+last_task9_at: "2026-07-09T10:27:24+08:00"
+last_task9_audit: "2026-07-09"
 last_task6_at: "2026-05-08T21:24:13+08:00"
 last_task6_audit: "2026-06-23"
 last_task6_review_log: "logs/review/2026-05-08-21-review.md"
 task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理 L1/L2 用词 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-08-21-deep-review.md"
-task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 4 处记录在 deep-review/suggestions，不阻塞发布；自动晋升 finalized / ready-to-publish。"
+last_task9_review_log: "logs/deep-review/2026-07-09-10-audit.md"
+task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 4 处记录在 deep-review/suggestions，不阻塞发布；自动晋升 finalized / ready-to-publish。 | 2026-07-09 10 Task9 idle-audit auto-fix：将 View/RenderNode/RenderProperties 源码锚点升级到 AOSP android-17.0.0_r1；源码行为与既有结论一致，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
-last_task9_audit_log: "logs/deep-review/2026-06-18-16-audit.md"
+last_task9_audit_log: "logs/deep-review/2026-07-09-10-audit.md"
+last_task9_autofix_at: "2026-07-09"
 ---
 
 # Hardware Layer
@@ -114,11 +115,11 @@ Hardware Layer 能减少的是 RenderThread 侧对这棵子树 DisplayList 的�
 
 设置 `LAYER_TYPE_SOFTWARE` 后，系统会把该 View 渲染成一个 Bitmap 对象缓存起来。注意，这里的"软件"指的是缓存方式——即使 App 开启了硬件加速，Software Layer 仍然用 Bitmap（CPU 侧的像素缓冲区）来缓存 View 内容。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java — buildLayer() 分支]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java — buildLayer() 分支]
 
 ```java
 // frameworks/base/core/java/android/view/View.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 public void buildLayer() {
     if (mLayerType == LAYER_TYPE_NONE) return;
     // 省略与本节无关的 attachInfo、尺寸和缓存状态检查
@@ -269,13 +270,13 @@ Android 开发者选项中有一个"显示硬件层更新"（Show hardware layer
 
 AOSP `frameworks/base/graphics/java/android/graphics/RenderNode.java` 的公开 API 是 `setUseCompositingLayer(boolean forceToLayer, Paint paint)` 和 `getUseCompositingLayer()`。原注释把边界写得很清楚：`RenderNode` 会在“这样更省时”或者 `alpha + hasOverlappingRendering()` 组合需要时，自动提升为 composition layer；`forceToLayer=false` 才是默认且推荐的值。`paint` 只在强制建层时生效，用来给这层额外叠加 blend mode、alpha 和 `ColorFilter`。
 
-RenderNode 的自动升层（compositing layer）条件按版本逐步丰富。Android 10/11 已有 functor 隔离和 alpha+hasOverlappingRendering 的自动升层；Android 12 起可见 ImageFilter、StretchEffect 分支。以 `android-16.0.0_r1` 核验，`RenderProperties::promotedToLayer()` 的当前条件包括：functor 需要隔离、RenderNode 有 ImageFilter、StretchEffect 要求建层、alpha 在 (0,1) 区间（源码条件 `!MathUtils::isZero(mAlpha) && mAlpha < 1`）且 `hasOverlappingRendering()` 为 true，以及尺寸满足 `fitsOnLayer()`。这些条件是确定性的布尔组合，不是绘制指令复杂度评分。满足条件时 HWUI 自动为该 RenderNode 分配离屏缓冲，应用无需手动 `setLayerType`。
+RenderNode 的自动升层（compositing layer）条件按版本逐步丰富。Android 10/11 已有 functor 隔离和 alpha+hasOverlappingRendering 的自动升层；Android 12 起可见 ImageFilter、StretchEffect 分支。以 `android-17.0.0_r1` 核验，`RenderProperties::promotedToLayer()` 的当前条件包括：functor 需要隔离、RenderNode 有 ImageFilter、StretchEffect 要求建层、alpha 在 (0,1) 区间（源码条件 `!MathUtils::isZero(mAlpha) && mAlpha < 1`）且 `hasOverlappingRendering()` 为 true，以及尺寸满足 `fitsOnLayer()`。这些条件是确定性的布尔组合，不是绘制指令复杂度评分。满足条件时 HWUI 自动为该 RenderNode 分配离屏缓冲，应用无需手动 `setLayerType`。
 
-[已验证: AOSP android-16.0.0_r1, RenderProperties::promotedToLayer() 条件；functor + alpha+overlap 条件经 AOSP android-10.0.0_r47 核验存在，ImageFilter/StretchEffect 分支经 android-12.0.0_r1 核验存在]
+[已验证: AOSP android-17.0.0_r1, RenderProperties::promotedToLayer() 条件；functor + alpha+overlap 条件经 AOSP android-10.0.0_r47 核验存在，ImageFilter/StretchEffect 分支经 android-12.0.0_r1 核验存在]
 
 ```java
 // frameworks/base/graphics/java/android/graphics/RenderNode.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 // 这里只保留公开 API 签名，省略实现。
 public boolean setUseCompositingLayer(boolean forceToLayer, @Nullable Paint paint);
 public boolean getUseCompositingLayer();
@@ -283,7 +284,7 @@ public boolean getUseCompositingLayer();
 
 边界可以这样划分：`View.setLayerType()` 是 View 侧 API，操作对象是整个 View 子树；`RenderNode.setUseCompositingLayer(...)` 是更底层的 RenderNode API，用来显式要求中间缓冲并附带合成用的 `Paint`。二者谈的是同一类机制，但现代 HWUI 已经会自己做一部分自动建层，不需要应用把每个动画都手动改成 `LAYER_TYPE_HARDWARE`。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java]
 
 ## 在 Jetpack Compose 中的对应：graphicsLayer
 
@@ -350,7 +351,7 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 | Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer 控制 |
 | Android 10/11 (API 29/30) | `promotedToLayer()` 已包含 functor 隔离、alpha+hasOverlappingRendering 自动升层条件 |
 | Android 12 (API 31) | 自动升层条件扩展 ImageFilter、StretchEffect 分支 |
-| Android 16 (API 36) | 以 `android-16.0.0_r1` 核验当前自动升层条件全貌：functor 隔离、ImageFilter、StretchEffect、alpha+hasOverlappingRendering + fitsOnLayer() |
+| Android 17 (API 37) | 以 `android-17.0.0_r1` 核验当前自动升层条件全貌：functor 隔离、ImageFilter、StretchEffect、alpha+hasOverlappingRendering + fitsOnLayer() |
 | Compose 1.10 | `graphicsLayer` 离屏缓冲池化，纹理复用减少 LazyLayout 滑动场景的 GPU 内存分配开销 |
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)]
@@ -380,8 +381,8 @@ Hardware Layer 占用 GPU 显存。长期保持 `LAYER_TYPE_HARDWARE` 而不释�
 - [来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md]
 - 官方文档：[Hardware acceleration](https://developer.android.com/guide/topics/graphics/hardware-accel)
 - 官方 API：[View.setLayerType()](https://developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint))
-- AOSP 源码：`frameworks/base/core/java/android/view/View.java`（buildLayer、buildDrawingCache 方法）
-- AOSP 源码：`frameworks/base/graphics/java/android/graphics/RenderNode.java`（setUseCompositingLayer/getUseCompositingLayer 方法）
+- AOSP 源码（android-17.0.0_r1）：`frameworks/base/core/java/android/view/View.java`（buildLayer、buildDrawingCache 方法）
+- AOSP 源码（android-17.0.0_r1）：`frameworks/base/graphics/java/android/graphics/RenderNode.java`（setUseCompositingLayer/getUseCompositingLayer 方法）
 - 推荐阅读：[Android硬件加速原理与实现简介](https://www.mtyun.com/library/hardware-accelerate)
 - 推荐阅读：[理解Android硬件加速的小白文](https://juejin.im/post/5a1f7b3e6fb9a0451b0451bb)
 - 实验代码与 Trace 文件：[Android_HardwareLayer_Example (GitHub)](https://github.com/Gracker/Android_HardwareLayer_Example)
