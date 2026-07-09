@@ -23,6 +23,7 @@ task6_state: reviewed
 task6_result: "pass-light-edit"
 task9_state: reviewed
 task2b_state: fixed
+task2b_result: fixed-lite
 task9_result: auto-fixed
 task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-05-28'
@@ -34,7 +35,7 @@ last_task9_at: 2026-06-20T16:26:46+08:00
 last_task9_audit: "2026-06-20"
 last_task9_audit_log: logs/deep-review/2026-06-20-16-audit.md
 task9_review_notes: "2026-06-20 Task9 idle audit AUTO-FIX: 修正 Android 17 bionic malloc_debug/malloc_hooks 源码锚点；无新增 queue pending，回到 Task6 复审。"
-last_task2b_lite_at: '2026-05-28T15:38:00+08:00'
+last_task2b_lite_at: '2026-07-09'
 last_task6_at: "2026-06-20T20:11:02+08:00"
 last_task6_audit: "2026-07-06"
 task6_reviewed_date: "2026-06-20"
