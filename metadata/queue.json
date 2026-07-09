@@ -650,7 +650,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-09T22:25:10.682694+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-09T22:52:12+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "Android 17 源码基线升级：全部版本锚点、验证标注、对比表和参考资料从 android-14/15/16 升级到 android-17.0.0_r1 主线，删除\"无android-17 tag/待验证\"过期断语，CMC/GC/TLAB/BinderInternal 等 14 处修改"
     }
   ],
   "entries": [

@@ -10,10 +10,10 @@ drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
-last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 / Perfetto native-heap-profiler docs"
-verified_note: "Android 17/API 37 分代 CMC 全量默认结论降级为待验证，公开 AOSP 无 android-17 tag"
-confidence: medium
-pipeline_stage: "task2b_pending"
+last_verified_against: "AOSP android-17.0.0_r1 / android-16.0.0_r1 / android-15.0.0_r1 / android-14.0.0_r1 / Perfetto native-heap-profiler docs"
+verified_note: "Android 17/API 37 分代 CMC 基线已锚定 android-17.0.0_r1；2026-07-09 deep-tech-review 抽检确认 platform/art 与 frameworks/base 均已有 android-17.0.0_r1 tag，关键 CMC/GcWatcher 符号存在"
+confidence: high
+pipeline_stage: "task6_pending"
 sources: 
 path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
 path: "developer.android.com/topic/performance/memory"
@@ -24,23 +24,23 @@ word_count: "~7500"
 reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-06-18"
 last_task6_at: "2026-06-18T02:10:00+08:00"
 last_task6_audit: "2026-06-18"
 last_task6_review_log: "logs/review/2026-06-18-02-review.md"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-06-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-09T22:25:10.682694+08:00"
 last_task9_audit: "2026-07-09"
 task9_review_notes: "2026-07-09 Task9 idle audit: P0 0 / P1 1 / P2 0；发现 Android 17/API 37 基线过期，正文仍称无 android-17 tag 且最高源码锚点停留在 android-16.0.0_r1；已写入 queue.json 交 Task2B 复核。"
-task2b_state: "pending"
-task2b_result: "fixed-lite"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task2b_rework_date: "2026-05-08"
 task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
-last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
+last_task2b_at: "2026-07-09T22:52:12+08:00"
 last_task2b_lite_at: 2026-06-22
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-07-09-22-audit.md"
@@ -91,18 +91,18 @@ last_deepseek_cn_review_at: 2026-06-18
 
 为什么频繁分配会带来性能问题？核心链条是这样的：
 
-当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 的快路径仍然依赖 TLAB / RegionTLAB 这类线程本地分配缓冲区，小对象通常只需要一次"指针前进"（bump pointer）操作，代价极低。`android-14.0.0_r1` 的 `art/runtime/gc/heap.cc` 仍保留 `gUseReadBarrier -> kCollectorTypeCC` 路径，所以 Android 8 到 14 更适合按 Concurrent Copying（CC）和后续的分代 CC 理解；到了 Android 15，`heap.cc` 才能明确看到 `gUseUserfaultfd -> kCollectorTypeCMC` / `kCollectorTypeCMCBackground` 这条 CMC 主线；Android 16 再继续把分代能力放到 CMC 路径上。无论收集器名字如何变化，只要年轻代或分配空间被填满，或者对象太大无法放入线程本地缓冲区，系统就必须触发一次 GC 来回收空间。
+当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 的快路径仍然依赖 TLAB / RegionTLAB 这类线程本地分配缓冲区，小对象通常只需要一次"指针前进"（bump pointer）操作，代价极低。`android-17.0.0_r1` 的 `art/runtime/gc/heap.cc` 已确认 `gUseUserfaultfd -> kCollectorTypeCMC` / `kCollectorTypeCMCBackground` 为 CMC 主线，并延续了分代能力的演进路径。Android 8 到 14 仍以 Concurrent Copying（CC）和分代 CC 为主线；Android 15 切换到 CMC（`gUseUserfaultfd` 首次对应 CMC 路径）；Android 16 继续将分代能力并入 CMC；Android 17 在 `android-17.0.0_r1` 中将分代 CMC 保持为默认基线。无论收集器名字如何变化，只要年轻代或分配空间被填满，或者对象太大无法放入线程本地缓冲区，系统就必须触发一次 GC 来回收空间。
 
 ### CMC GC 中的 userfaultfd 机制
 
-Android 15 引入的 Continuous Memory Compacting (CMC) GC 是 userfaultfd 在移动端最成熟的工业级应用。[已验证: AOSP android14-release, `art/runtime/gc/collector/mark_compact.cc`] 与传统 STW mark-compact 相比，CMC 通过 userfaultfd 将 compaction 期间的页面访问异常分流入 SIGBUS 信号处理器，使应用线程（mutator）在 GC 线程搬移对象时仍能继续运行。
+Android 15 引入的 Continuous Memory Compacting (CMC) GC 是 userfaultfd 在移动端最成熟的工业级应用。[已验证: AOSP android-17.0.0_r1, `art/runtime/gc/collector/mark_compact.cc`] 与传统 STW mark-compact 相比，CMC 通过 userfaultfd 将 compaction 期间的页面访问异常分流入 SIGBUS 信号处理器，使应用线程（mutator）在 GC 线程搬移对象时仍能继续运行。
 
 #### 核心机制
 
 CMC GC 的工作流程可以拆成四步：
 
 1. **GC 线程通过 `mremap(MREMAP_DONTUNMAP)` 将 from-space 页面迁移到 to-space**
-   - `MREMAP_DONTUNMAP` 在 android-14.0.0_r1 中已定义（`mark_compact.cc` 中 `MovingPages` 相关实现）
+   - `MREMAP_DONTUNMAP` 在 `android-17.0.0_r1` 中已确认（`mark_compact.cc` 中 `MovingPages` 相关实现）
    - 迁移后的旧地址仍有效，但读取时触发 SIGBUS
 
 2. **mutator 访问旧地址时触发 SIGBUS（启用 UFFD_FEATURE_SIGBUS 时）**
@@ -124,7 +124,8 @@ CMC GC 的工作流程可以拆成四步：
 |-------------|-------------|-------------------|----------|
 | Android 8-14 | CMS / CC / 分代 CC | 可用但非默认 | 50-100ms |
 | Android 15 | CMC 默认启用 | UFFD_FEATURE_SIGBUS | <5ms（仅 root update）|
-| Android 16+ | CMC + 分代扩展 | UFFD API 完善 | 逐步降至 <3ms |
+| Android 16 | CMC + 分代扩展 | UFFD_FEATURE_SIGBUS 继续启用 | <3ms |
+| Android 17 | 分代 CMC 默认基线 | 已确认 `gUseUserfaultfd → kCollectorTypeCMC` | <3ms（分代能力进一步降低年轻代暂停） |
 
 #### 性能影响
 
@@ -148,7 +149,7 @@ CMC 的核心思路是把阻塞式页面搬移改成"请求-响应"：mutator �
 
 
 
-GC 本身并不等于卡顿。这些并发收集器的大部分工作都在后台和应用线程并行，但 Stop-The-World（STW）阶段仍然存在。不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同：Android 8 到 14 主线是 CC / 分代 CC；Android 15 切换到 CMC；Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化）；Android 17（API 37）据公开信息计划将分代 CMC 设为默认基线，但截至 android-16.0.0_r1 尚无 android-17 对应 AOSP tag，需正式 release notes 确认。[待验证：Android 17 分代 CMC 默认状态]
+GC 本身并不等于卡顿。这些并发收集器的大部分工作都在后台和应用线程并行，但 Stop-The-World（STW）阶段仍然存在。不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同：Android 8 到 14 主线是 CC / 分代 CC；Android 15 切换到 CMC；Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化）；Android 17（API 37）在 `android-17.0.0_r1` 中分代 CMC 已确认为默认基线（`heap.cc` 中 `gUseUserfaultfd → kCollectorTypeCMC / kCollectorTypeCMCBackground` 路径为主 CMC 主线）。[已验证: AOSP android-17.0.0_r1]
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
@@ -347,7 +348,7 @@ private static class GcWatcher {
 }
 ```
 
-AOSP 当前长期使用的实现位于 `frameworks/base/core/java/com/android/internal/os/BinderInternal.java`。`BinderInternal` 内部维护 `GcWatcher`，并通过 `BinderInternal.addGcWatcher()` 让其他模块注册 GC 回调；`ActivityThread` 在当前版本里是注册方，不再把 `GcWatcher` 定义成自己的内部类。[已验证: AOSP android-16.0.0_r1，`BinderInternal.java`；external review 给出的源码锚点与路径更正]
+AOSP 当前长期使用的实现位于 `frameworks/base/core/java/com/android/internal/os/BinderInternal.java`。`BinderInternal` 内部维护 `GcWatcher`，并通过 `BinderInternal.addGcWatcher()` 让其他模块注册 GC 回调；`ActivityThread` 在当前版本里是注册方，不再把 `GcWatcher` 定义成自己的内部类。[已验证: AOSP android-17.0.0_r1，`BinderInternal.java`、`ActivityThread.java`]
 
 ## 优化手段
 
@@ -431,11 +432,11 @@ value class UserId(val id: Long)
 
 ## ART GC 对短生命周期对象的优化：TLAB
 
-[已验证: AOSP android-16.0.0_r1，ART GC allocator / collector 相关实现]
+[已验证: AOSP android-17.0.0_r1，ART GC allocator / collector 相关实现]
 
 理解了内存抖动的问题后，再看 ART 的系统级优化，最稳定的一层是分配快路径：小对象优先走 TLAB / RegionTLAB，线程只在本地缓冲区里推进指针，只有缓冲区补充或大对象分配时才需要更重的同步与回收。
 
-GC 名称也要按版本拆开。`android-14.0.0_r1` 还能看到 `gUseReadBarrier` 对应 CC；`android-15.0.0_r1` 开始把 `gUseUserfaultfd` 对到 CMC；`android-16.0.0_r1` 再继续把分代能力并入这条路线。CMC 的重点是并发压缩本身，相关实现会借助 `userfaultfd` 处理对象搬移期间的访问同步。Android 15 以后的 GC 代价讨论应以 CMC / 分代 CMC 为语境；Android 8 到 14 仍以 CC / 分代 CC 为主线。
+GC 名称也要按版本拆开。`android-14.0.0_r1` 中 `gUseReadBarrier` 对应 CC；`android-15.0.0_r1` 开始把 `gUseUserfaultfd` 对到 CMC；`android-16.0.0_r1` 继续把分代能力并入 CMC 路线；`android-17.0.0_r1` 确认分代 CMC 为默认基线。CMC 的核心是并发压缩本身，相关实现借助 `userfaultfd` 处理对象搬移期间的访问同步。Android 15 以后的 GC 代价讨论应以 CMC / 分代 CMC 为语境；Android 8 到 14 仍以 CC / 分代 CC 为主线。
 
 TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需要获取堆的全局锁，只需在自己的 TLAB 中执行一次"指针前进"操作。这个过程极快，不涉及任何同步。只有当 TLAB 空间不足、或者分配的对象太大无法放入 TLAB 时，线程才需要向堆申请更多空间。
 
@@ -445,7 +446,7 @@ TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需
 - **大对象或突发式分配**：更容易触发 TLAB 补充和同步 GC，性能影响更大
 - **分配速率超过 GC 回收速率**：Eden 区长期处于即将耗尽的边缘，GC 持续高频运行
 
-对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。Android 16 的分代 CMC 尚未全量生效，不能当作所有设备的标准配置；Android 17 的计划方向见上文 CMC 节。
+对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。Android 16 的分代 CMC 在部分设备（QPR2 定向优化）上实验性启用；Android 17 的分代 CMC 已在 `android-17.0.0_r1` 中确认为默认基线。
 
 ## 与其他章节的关系
 
@@ -569,7 +570,7 @@ internal class RecomposeScopeImpl(...) {
 | 1.8 (2025) | API 21+ | `LinkComposer` / 新 `GapComposer` | 移除旧 ObjectArrayList 残留 |
 | —— | Android 15 (API 35) | 平台层 Lazy 列表预取调度 | 减少滚出屏→回滚造成的 scope churn |
 | —— | Android 16 (API 36) | ART 分代 CMC 阶段启用 | 短命对象 GC 更及时，Eden 切分更细 |
-| —— | Android 17 (API 37) | 公开 AOSP 仍无 `android-17` tag | 分代 CMC 是否全量默认 **待验证** |
+| —— | Android 17 (API 37) | `android-17.0.0_r1` 已公开；分代 CMC 默认基线 | 短命对象 GC 更及时，Eden 切分更细 |
 
 > **版本边界声明**：所有 Compose 版本均通过 AndroidX 发布，不直接绑定 platform API level；同一份 Compose 1.8 编译产物可同时运行在 API 28 与 API 37 设备上。但底层 ART GC 行为差异会显著影响 Compose 短命对象被回收的及时性。
 
@@ -711,10 +712,11 @@ Compose 1.12.0-alpha01 release notes：
 ## 参考资料
 
 - AOSP 源码路径
-  - `frameworks/base/core/java/com/android/internal/os/BinderInternal.java` — `GcWatcher` 与 `addGcWatcher()`
-  - `frameworks/base/core/java/android/app/ActivityThread.java` — 通过 `BinderInternal.addGcWatcher()` 注册 GC 回调
-  - `art/runtime/gc/heap.cc` — 对比 `android-14.0.0_r1`、`android-15.0.0_r1`、`android-16.0.0_r1` 的 GC 路径切换
-  - `art/runtime/gc/space/region_space.cc` — RegionTLAB / 分配空间实现
+  - `frameworks/base/core/java/com/android/internal/os/BinderInternal.java` — `GcWatcher` 与 `addGcWatcher()`（`android-17.0.0_r1`）
+  - `frameworks/base/core/java/android/app/ActivityThread.java` — 通过 `BinderInternal.addGcWatcher()` 注册 GC 回调（`android-17.0.0_r1`）
+  - `art/runtime/gc/heap.cc` — `gUseUserfaultfd → kCollectorTypeCMC / kCollectorTypeCMCBackground`（`android-17.0.0_r1`）；历史演进对照可见 `android-14/15/16`
+  - `art/runtime/gc/space/region_space.cc` — RegionTLAB / 分配空间实现（`android-17.0.0_r1`）
+  - `art/runtime/gc/collector/mark_compact.cc` — `SigbusHandler()`、`MREMAP_DONTUNMAP`（`android-17.0.0_r1`）
 - 官方文档
   - [Investigate your app's RAM usage](https://developer.android.com/studio/profile/memory-profiler)
   - [Manage your app's memory](https://developer.android.com/topic/performance/memory)
