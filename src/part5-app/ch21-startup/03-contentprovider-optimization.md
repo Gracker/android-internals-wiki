@@ -2,7 +2,7 @@
 title: "ContentProvider 启动治理"
 chapter: "21.3"
 section: "21.3"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-10"
 last_verified_against: "AOSP android-17.0.0_r1 ActivityThread/ViewTreeObserver, Android Developers App Startup / provider manifest docs, AndroidX Startup 1.2.0 source"
@@ -30,7 +30,7 @@ tags: [contentprovider, startup, sdk-init, app-startup]
 related_chapters: ["21.1", "21.2", "1.10"]
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6

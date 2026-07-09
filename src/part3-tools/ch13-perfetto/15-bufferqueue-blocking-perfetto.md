@@ -3,7 +3,7 @@
 title: "BufferQueue 阻塞的 Perfetto 识别"
 chapter: "13.15"
 section: "13.15"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -16,7 +16,7 @@ task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 sources: 
  - type: official
  - type: official
