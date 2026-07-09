@@ -7,12 +7,12 @@ status: "finalized"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-05-17"
-last_verified_against: "Perfetto FrameTimeline docs; AOSP android14-release paths; local AutoResearchClaw reports 2026-05-03"
+last_verified: "2026-07-10"
+last_verified_against: "Perfetto FrameTimeline docs; AOSP android-17.0.0_r1 BufferQueueProducer/Consumer/Core; android-15/16 release comparison for BUFFER_RELEASE_CHANNEL boundary"
 last_task2b_lite_at: "2026-05-30"
 confidence: medium
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
@@ -38,18 +38,20 @@ material_count: 4
 source_refs: 
  - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-jank-perfetto.md
  - OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md
- - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueProducer.cpp
- - https://cs.android.com/android/platform/superproject/+/android14-release:frameworks/native/libs/gui/BufferQueueConsumer.cpp
-task9_result: pass-tech-review
+ - https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/gui/BufferQueueProducer.cpp
+ - https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/gui/BufferQueueConsumer.cpp
+ - https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/gui/BufferQueueCore.cpp
+ - https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/libs/gui/include/gui/BufferQueueCore.h
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_at: "2026-05-28T09:20:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-28-09-deep-review.md"
+task9_reviewed_at: "2026-07-10T06:37:44+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-10-06-audit.md"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-28T08:50:00+08:00"
 rework_date: "2026-05-28"
 rework_by: openclaw-task2b
-review_notes: "2026-05-28 task2b: corrected BUFFER_RELEASE_CHANNEL version boundary to Android 16+/main pending verification and returned to Task6."
+review_notes: "2026-05-28 task2b: corrected BUFFER_RELEASE_CHANNEL version boundary; 2026-07-10 Task9 verified Android 16 flag path and Android 17 release notify path."
 last_task6_at: "2026-05-28T09:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-28-09-review.md"
 last_task6_audit: "2026-06-22"
@@ -59,10 +61,11 @@ task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit;L1/L
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-28T09:06:00+08:00"
 updated_by: openclaw-task9
-updated_date: "2026-05-28"
-last_task9_at: "2026-05-28T09:20:00+08:00"
-task9_review_notes: "2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
-last_task9_audit: "2026-06-19"
+updated_date: "2026-07-10"
+last_task9_at: "2026-07-10T06:36:58+08:00"
+task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 0;修正 BufferQueue release notify 版本边界与源码锚点到 android-17.0.0_r1: Android 16 为 BUFFER_RELEASE_CHANNEL flag 形态,Android 17 保留 waitForBufferRelease/notifyBufferReleased 路径且最终 notify_all;回到 Task6 复审。详见 logs/deep-review/2026-07-10-06-audit.md。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
+last_task9_audit: "2026-07-10"
+last_task9_autofix_at: "2026-07-10"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-06
 ---
@@ -91,7 +94,7 @@ Android 12 之后,FrameTimeline 会在 App 和 SurfaceFlinger 两侧各生成 Ex
 
 ## RenderThread 上的 dequeueBuffer 阻塞特征
 
-`Buffer Stuffing` 是结果标签,RenderThread 上的 `dequeueBuffer` 等待才是 App 侧可观察的背压入口。`BufferQueueProducer::dequeueBuffer()` 会进入 `waitForFreeSlotThenRelock()` 查找可用 slot;没有空闲 slot,或内部队列超过 `maxBufferCount` 时,producer 会等待 buffer release。android14-release / android15-release 的已复核路径仍按 `mDequeueCondition.wait()` / `wait_for()` 这类条件变量等待理解;`BUFFER_RELEASE_CHANNEL` 只作为 Android 16+/main 分支待验证差异,不写成 Android 14/15 设备通用机制。
+`Buffer Stuffing` 是结果标签,RenderThread 上的 `dequeueBuffer` 等待才是 App 侧可观察的背压入口。`BufferQueueProducer::dequeueBuffer()` 会进入 `waitForFreeSlotThenRelock()` 查找可用 slot;没有空闲 slot,或内部队列超过 `maxBufferCount` 时,producer 会等待 buffer release。android-17.0.0_r1 已复核到 `waitForBufferRelease()` / `notifyBufferReleased()` 路径,底层仍通过 `mDequeueCondition.wait()` / `wait_for()` 等待和 `notify_all()` 唤醒;Android 16 的 `BUFFER_RELEASE_CHANNEL` 是 release-notify 路径的中间 flag 形态,不写成 Android 14/15 设备通用机制。
 
 Trace 中可以按组合证据判断,而不是只盯一个 slice 名称:
 
@@ -168,15 +171,15 @@ BufferQueue 背压和另外四类问题很像,排查时按下面顺序剥离:
 
 最终结论要写成带证据的句子,例如:"`TX - playerSurface#0` 连续 6 帧标记为 `Buffer Stuffing`,`QueuedBuffer - playerSurface` 在 3 个 VSync 内保持高位,RenderThread 的 `dequeueBuffer` 等待覆盖 18.4 ms;该窗口内主线程没有长 slice,SF 对应帧 present 晚一帧。" 这种写法比"视频导致卡顿"更容易交给团队复现和修复。
 
-## Android 16+/main BUFFER_RELEASE_CHANNEL 待验证
+## Android 16/17 release notify 路径边界
 
-Task 9 复核口径是:android14-release 与 android15-release 的 `BufferQueueProducer.cpp` 未命中 `BUFFER_RELEASE_CHANNEL`,该 flag 属于 Android 16+/main 分支待验证差异。android14-release 只能作为传统 `mDequeueCondition.notify_all()` / 条件变量等待路径的锚点,不能支撑"Android 14 引入 release channel"的结论。本节保留为待复核项:当前已核对到传统条件变量等待与 release 唤醒机制,`BUFFER_RELEASE_CHANNEL` 的具体分支、启用范围和 Android 16/17 行为仍需在 AOSP main / 对应 release tag 逐行确认。
+Task 9 复核口径是:android-15.0.0_r1 的 `BufferQueueProducer.cpp` 未命中 `BUFFER_RELEASE_CHANNEL`,仍按传统 `mDequeueCondition.wait()` / `wait_for()` 和 `notify_all()` 路径理解;android-16.0.0_r1 存在 `COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(BUFFER_RELEASE_CHANNEL)` 包裹的 `waitForBufferRelease()` / `notifyBufferReleased()`;android-17.0.0_r1 已保留 `waitForBufferRelease()` / `notifyBufferReleased()` 路径,`BufferQueueCore::notifyBufferReleased()` 最终仍调用 `mDequeueCondition.notify_all()`。因此本节把 Android 14/15 作为传统条件变量等待路径,把 Android 16/17 写成 release notify 路径,不把 flag 名称本身当成 Android 17 稳定接口。
 
-对 Perfetto 判读的影响可以先按保守口径处理:
+对 Perfetto 判读的影响可以按保守口径处理:
 
-- 如果设备分支仍走条件变量,`dequeueBuffer` 长等待可能伴随 futex sleep 和全量唤醒后的锁竞争。
-- 如果设备分支使用 release channel,等待解除更依赖具体 buffer release 通知;Trace 上仍应回到 `dequeueBuffer` 时长、release 时刻和 Layer 对齐,不把同步实现差异直接写成用户可感知结论。
-- 性能收益不能脱离设备分支和 trace 证据评估,不能只凭 flag 存在断言"已修复 BufferQueue 阻塞"。
+- Android 14/15 设备上,`dequeueBuffer` 长等待可能伴随 futex sleep 和全量唤醒后的锁竞争。
+- Android 16/17 设备上,等待解除更依赖具体 buffer release 通知;Trace 上仍应回到 `dequeueBuffer` 时长、release 时刻和 Layer 对齐,不把同步实现差异直接写成用户可感知结论。
+- 性能收益不能脱离设备分支和 trace 证据评估,不能只凭 release notify 路径存在断言"已修复 BufferQueue 阻塞"。
 
 ## Perfetto SQL 模板
 
