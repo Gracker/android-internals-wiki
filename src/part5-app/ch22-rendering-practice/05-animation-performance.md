@@ -2,7 +2,7 @@
 title: "动画性能优化"
 chapter: "22.5"
 section: "22.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-10"
 last_verified_against: "AOSP android-17.0.0_r1 ViewPropertyAnimator/RenderEffect/View/TransitionManager/Choreographer; Lottie upstream API names spot-checked"
@@ -39,7 +39,7 @@ tags: [animation, property-animation, lottie, render-effect, transition, motionl
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
 pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
 task9_result: auto-fixed
