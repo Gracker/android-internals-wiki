@@ -1,6 +1,4 @@
 ---
-
-
 title: "Android Vitals 过度 WakeLock 指标与治理"
 chapter: "25.19"
 section: "25.19"
@@ -41,15 +39,15 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T06:04:00+08:00"
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 reviewed_by: "openclaw-task6"
-reviewed_date: 2026-06-05
+reviewed_date: 2026-07-09
 task6_result: pass-light-edit
-last_task6_at: "2026-06-05T10:17:00+08:00"
+last_task6_at: "2026-07-09T08:07:00+08:00"
 last_task6_audit: "2026-07-09"
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
@@ -65,8 +63,6 @@ last_task9_audit_log: "logs/deep-review/2026-06-22-15-audit.md"
 last_task9_audit_result: "pass-idle-audit"
 task2b_result: fixed-lite
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
 last_task2b_lite_at: "2026-07-09"
 ---
 
@@ -190,7 +186,7 @@ adb bugreport bugreport.zip
 
 `dumpsys batterystats` 的 checkin 输出中，`wl` 段代表 wake lock，字段包含 full/partial/window 的时间和次数；`kwl` 代表 kernel wake lock，`wr` 代表 wakeup reason。Battery Historian 能把 bugreport 中的电量事件画成时间轴，但它仍然缺少业务堆栈，适合确认“何时持锁、持了多久、屏幕和充电状态如何”。[已验证: 官方文档, developer.android.com/tools/dumpsys][已验证: 官方文档, developer.android.com/topic/performance/power/setup-battery-historian]
 
-Perfetto 适合补齐时间线证据。对手动 wake lock 或系统 API 间接持锁，采集时打开 `power:PowerManagement` atrace category，查看 Device State 下的 WakeLocks、Long Wake locks、Jobs、Screen state、Top app。Android 15(API 35)+ 还可用 `ProfilingManager` 做现场系统 trace 采集，但系统进程和其他应用会被脱敏，线上分析仍要依赖应用侧事件关联。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric]
+Perfetto 适合补齐时间线证据。对手动 wake lock 或系统 API 间接持锁，采集时打开 `power:PowerManagement` atrace category，查看 Device State 下的 WakeLocks、Long Wake locks、Jobs、Screen state、Top app。Android 15 (API 35)+ 还可用 `ProfilingManager` 做现场系统 trace 采集，但系统进程和其他应用会被脱敏，线上分析仍要依赖应用侧事件关联。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric]
 
 ## 治理策略：少持锁、短持锁、可观测持锁
 
