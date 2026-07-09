@@ -38,6 +38,8 @@ related_chapters:
 pipeline_stage: "ready-to-publish"
 task9_state: "reviewed"
 task2b_state: fixed
+task2b_result: fixed
+last_task2b_lite_at: 2026-07-09
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
