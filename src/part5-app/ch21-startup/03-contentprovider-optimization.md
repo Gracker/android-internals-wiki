@@ -4,14 +4,16 @@ chapter: "21.3"
 section: "21.3"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-12"
-last_verified_against: "AOSP android-16.0.0_r1, Android Developers App Startup / provider manifest docs, AndroidX Startup source"
+last_verified: "2026-07-10"
+last_verified_against: "AOSP android-17.0.0_r1 ActivityThread/ViewTreeObserver, Android Developers App Startup / provider manifest docs, AndroidX Startup 1.2.0 source"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 1
 sources:
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java"
+    path: "AOSP android-17.0.0_r1 frameworks/base/core/java/android/app/ActivityThread.java"
+  - type: aosp
+    path: "AOSP android-17.0.0_r1 frameworks/base/core/java/android/view/ViewTreeObserver.java"
   - type: official
     path: "https://developer.android.com/topic/libraries/app-startup"
   - type: official
@@ -19,28 +21,36 @@ sources:
   - type: official
     path: "https://developer.android.com/guide/topics/providers/content-provider-basics"
   - type: aosp
-    path: "androidx.startup:startup-runtime AppInitializer.java / InitializationProvider.java"
+    path: "androidx.startup:startup-runtime:1.2.0 AppInitializer.java / InitializationProvider.java"
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [contentprovider, startup, sdk-init, app-startup]
 related_chapters: ["21.1", "21.2", "1.10"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-13"
-last_task9_at: 2026-05-13T08:40:35+08:00
+task9_reviewed_date: "2026-07-10"
+last_task9_at: 2026-07-10T05:29:18+08:00
 task6_reviewed_date: "2026-05-13"
 last_task6_audit: "2026-06-21"
-last_task9_audit: "2026-06-19"
+last_task9_audit: "2026-07-10"
+last_task9_autofix_at: "2026-07-10"
+last_task9_review_log: "logs/deep-review/2026-07-10-05-audit.md"
+task9_p0_issues: 0
+task9_p1_issues: 1
+task9_p2_issues: 2
+updated_by: "openclaw-task9"
+updated_date: "2026-07-10"
+task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 2；将本节源码主线基准从 android-16.0.0_r1 收敛到 android-17.0.0_r1；复核 ActivityThread.handleBindApplication() / installContentProviders() / callApplicationOnCreate() 顺序、ViewTreeObserver removeOnDrawListener targetSdk 边界、AndroidX Startup 1.2.0；同时修正 remote Provider 跨进程唤醒条件化表述，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
 ---
@@ -78,7 +88,7 @@ ContentProvider 的系统机制详见 1.10 节。本节不重复 Binder、`Curso
 
 ## ContentProvider 在启动链路中的开销
 
-[已验证: AOSP android-16.0.0_r1, `ActivityThread.handleBindApplication()` → `installContentProviders()` → `mInstrumentation.callApplicationOnCreate(app)`]
+[已验证: AOSP android-17.0.0_r1, `ActivityThread.handleBindApplication()` L8260 → `installContentProviders()` L8293 → `mInstrumentation.callApplicationOnCreate(app)` L8308]
 
 冷启动时，`ActivityThread.handleBindApplication()` 会先创建 `Application` 对象，再安装当前进程需要发布的 ContentProvider，之后才调用 `Application.onCreate()`。AOSP 中的顺序很直接：
 
@@ -102,7 +112,7 @@ ContentProvider 对启动的影响主要有四类：
 | 类加载与反射 | 主线程加载 SDK Provider、反射扫描配置类 | Perfetto 主线程片段、方法采样 | 减少自动 Provider；改为显式初始化 |
 | 磁盘 IO | 读取配置、SharedPreferences、数据库元信息 | StrictMode、Perfetto `ftrace` / `atrace` | 首帧前只读必要配置；大文件延后 |
 | 线程与锁 | Provider 内创建线程池、等待单例锁 | 主线程栈、锁等待采样 | 初始化拆分；耗时任务放到启动框架 |
-| 跨进程唤醒 | 某个 SDK Provider 放在独立进程，启动时拉起子进程 | `ps`、Perfetto process track | 按进程拆初始化；避免主进程触发子进程预热 |
+| 跨进程唤醒 | Remote Provider 被同步访问或目标进程启动时拉起子进程 | `ps`、Perfetto process track | 按进程拆初始化；避免主进程同步访问触发子进程预热 |
 
 这类开销的麻烦点在于“隐式”。业务代码里看不到调用方，SDK 升级后却能多出一个 Provider。启动优化如果只盯 `Application.onCreate()`，很容易把 100ms 的 Provider 初始化误判成系统启动慢。
 
@@ -229,8 +239,8 @@ class MainActivity : Activity() {
 
         val content = window.decorView
         // OnPreDrawListener 可在 onPreDraw 内安全移除自身；
-        // OnDrawListener.onDraw() 内调用 removeOnDrawListener() 在 android-16 上
-        // 会抛 IllegalStateException
+        // OnDrawListener.onDraw() 内调用 removeOnDrawListener() 在 android-17 上
+        // 对 targetSdk >= O 会抛 IllegalStateException
         content.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
             override fun onPreDraw(): Boolean {
                 content.viewTreeObserver.removeOnPreDrawListener(this)
@@ -282,7 +292,7 @@ object ShareSdkHolder {
 ## App Startup 替代方案
 
 [已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
-[已验证: AndroidX Startup source, `InitializationProvider.onCreate()` 调用 `AppInitializer.discoverAndInitialize()`]
+[已验证: AndroidX Startup 1.2.0 source, `InitializationProvider.onCreate()` 调用 `AppInitializer.discoverAndInitialize()`]
 
 Jetpack App Startup 解决的是“多个库各自声明 Provider 自动初始化”的混乱问题。它把自动初始化入口集中到一个 `InitializationProvider`，再通过 `Initializer.dependencies()` 表达依赖关系。
 
@@ -368,7 +378,7 @@ AppInitializer.getInstance(context)
 
 ## 多进程初始化要单独治理
 
-[已验证: AndroidX Startup source, `InitializationProvider.onCreate()` 使用 provider class context 读取 metadata，源码注释提到 multiple processes 场景]
+[已验证: AndroidX Startup 1.2.0 source, `InitializationProvider.onCreate()` 使用 provider class context 读取 metadata，源码注释提到 multiple processes 场景]
 
 ContentProvider 的 `android:process` 会改变初始化发生的位置。主进程启动时安装主进程 Provider，子进程启动时安装子进程 Provider。问题常出在 SDK 没有进程判断：推送进程、WebView 独立进程、下载进程启动后，也执行了一遍主进程才需要的初始化。
 
