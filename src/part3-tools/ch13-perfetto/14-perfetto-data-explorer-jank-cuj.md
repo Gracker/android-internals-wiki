@@ -34,30 +34,30 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-19T08:13:20+08:00"
-task9_result: pass-tech-review
+task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-19T12:32:01+08:00"
+last_task9_at: "2026-07-10T03:29:12+08:00"
 task2b_result: fixed-lite
 task2b_state: "fixed"
-task6_state: "reviewed"
-task9_state: reviewed
-pipeline_stage: ready-to-publish
+task6_state: "revisiting"
+task9_state: "reviewed"
+pipeline_stage: "task6_pending"
 last_task2b_lite_at: "2026-05-28"
 last_task6_review_log: "logs/review/2026-06-19-07-review.md"
 task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-06-19 Task6 revisiting-review (round 4): pass-light-edit。Task9 auto-fix(v55边界收窄)回流后写作层复审通过；L1 禁用词/高频词/物理动词/元叙述零命中；L2 开头/节奏/结构/读者引导全部通过；outline 6/6 锚点全覆盖；验证标注 10已验证/1待验证(9.1%)；否定纠正结构2处(限额内)；无 L1/L2 问题，无 L3/L4 回炉项。task9_result=auto-fixed，送 Task9 终审确认。"
-last_task9_autofix_at: "2026-06-19"
-last_task9_review_log: "logs/deep-review/2026-06-19-12-deep-review.md"
-task9_review_notes: "2026-06-19 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 android.cujs.base / cuj_frame_counters / internal counters / ExplorePage，以及 AOSP android-17.0.0_r1 ViewRootImpl / JankTracker / FrameTracker / stats atoms；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-06-19-12-deep-review.md。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 0；修正 statsd 侧不存在的 `frame_missed` atom 标识，改为 android-17.0.0_r1 `UI_INTERACTION_FRAME_INFO_REPORTED` atom 及 `missed_frames` / `app_missed_frames` / `sf_missed_frames` 字段；回到 Task6 复审。详见 logs/deep-review/2026-06-19-07-deep-review.md。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 2 / P1 0 / P2 0；修正 android-17.0.0_r1 ViewRootImpl traversal 回调源码锚点（TraversalCallback#onVsync）与 JankTracker JankType 判定表（补入 kMissedDeadline / kMissedDeadlineLegacy 边界）；回到 Task6 复审。详见 logs/deep-review/2026-06-19-06-deep-review.md。 | 2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
-p0: 0
+last_task9_autofix_at: "2026-07-10"
+last_task9_review_log: "logs/deep-review/2026-07-10-03-audit.md"
+task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 1 / P1 0 / P2 0；修正 Perfetto v54.0 ExplorePage 执行模型源码锚点：`engine.analyzeStructuredQuery` / `NodePanel.updateQuery()` 不属于当前 v54.0 调用链，改为 summarizer API（`createSummarizer` / `updateSummarizerSpec` / `querySummarizer`）与 `SQLDataSource` 物化表展示路径；回到 Task6 复审。详见 logs/deep-review/2026-07-10-03-audit.md。 | 2026-06-19 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 android.cujs.base / cuj_frame_counters / internal counters / ExplorePage，以及 AOSP android-17.0.0_r1 ViewRootImpl / JankTracker / FrameTracker / stats atoms；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-06-19-12-deep-review.md。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 0；修正 statsd 侧不存在的 `frame_missed` atom 标识，改为 android-17.0.0_r1 `UI_INTERACTION_FRAME_INFO_REPORTED` atom 及 `missed_frames` / `app_missed_frames` / `sf_missed_frames` 字段；回到 Task6 复审。详见 logs/deep-review/2026-06-19-07-deep-review.md。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 2 / P1 0 / P2 0；修正 android-17.0.0_r1 ViewRootImpl traversal 回调源码锚点（TraversalCallback#onVsync）与 JankTracker JankType 判定表（补入 kMissedDeadline / kMissedDeadlineLegacy 边界）；回到 Task6 复审。详见 logs/deep-review/2026-06-19-06-deep-review.md。 | 2026-06-18 Task9 idle-audit auto-fix：修正 android-17.0.0_r1 ViewRootImpl 行号、JankTracker 方法名、JankInfo/Cuj 源码锚点、Perfetto v54 CUJ counter 进程过滤和 weighted jank metric 转换口径；回到 Task6 复审。 | 2026-05-28 Task9 auto-fix：修正 android.cujs.base 源码路径、FrameTimeline/JankStats 版本表和 FrameTimeline trace data source 配置口径；回到 Task6 复审。 | 2026-05-28 06 Task9 auto-fix: 修正 JankStats API 级别，收窄 Perfetto v54.0 weighted_missed_frames 字段版本边界，回到 Task6 复审。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 Perfetto v54.0 DataGrid、CUJ counter metrics、android.cujs.* 与 FrameTimeline/JankStats 版本边界，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-19 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 0；Perfetto v55.0 DataExplorer 只保留为非 Android 17 范围边界，移除 v55 操作建议，正文结论收窄到 v54.0 / Android 17；回到 Task6 复审。详见 logs/deep-review/2026-06-19-05-deep-review.md。"
+p0: 1
 p1: 0
 p2: 0
 task9_reviewed_at: "2026-06-19T12:32:01+08:00"
 last_task6_audit: "2026-07-02"
 updated_by: "openclaw-task9"
-updated_date: "2026-06-19"
+updated_date: "2026-07-10"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
 last_task9_audit: "2026-06-18"
@@ -512,12 +512,12 @@ v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.
 
 ### 2. 两阶段执行模型
 
-`QueryExecutionService`（`query_builder/query_execution_service.ts`）定义两阶段：
+`QueryExecutionService`（`query_builder/query_execution_service.ts`）负责把节点图同步给 Trace Processor summarizer，并在需要时触发物化查询：
 
-- **Phase 1 Analysis**：`NodePanel.updateQuery()` → `service.processNode({ manual: false })` → `engine.analyzeStructuredQuery` 验证并返回 `{sql, textproto, modules, preambles, columns}`，不执行查询。
-- **Phase 2 Execution**：把 `modules + preambles + query.sql` 物化成 `_exp_materialized_{sanitizedNodeId}` 表，再通过 `SQLDataSource` 提供 server-side 分页、过滤和排序。
+- **自动执行路径**：`NodeExplorer.updateQuery()` → `service.processNode({ manual: false })` → `createSummarizer()` / `updateSummarizerSpec()` 同步 `PerfettoSqlStructuredQuery` 图，再通过 `querySummarizer()` 取回 `sql`、`textproto`、`standaloneSql`、物化表名、行数和列信息。
+- **DataGrid 展示路径**：`Builder` 使用 Trace Processor 返回的物化表名创建 `SQLDataSource`，由 DataGrid 做 server-side 分页、过滤和排序；调试时应以返回的 `tableName` 为准，不把物化表命名规则当稳定接口。
 
-这个模型说明节点图编辑器不是新的分析口径，而是把 PerfettoSQL 查询拆成可视化节点和可检查的中间表。技术结论仍应落回 SQL、标准库和 trace 数据。
+这个模型说明节点图编辑器不是新的分析口径，而是把 PerfettoSQL 查询拆成可视化节点、结构化查询和可检查的中间表。技术结论仍应落回 SQL、标准库和 trace 数据。
 
 ### 3. 与 DataGrid / 手写 SQL 的关系
 
