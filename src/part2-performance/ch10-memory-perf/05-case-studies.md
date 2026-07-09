@@ -4,8 +4,8 @@ chapter: "10.5"
 section: "10.5"
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-27"
-last_verified_against: "AOSP android-16.0.0_r1; Android Developers ProfilingManager/ProfilingTrigger API reference"
+last_verified: "2026-07-09"
+last_verified_against: "AOSP android-17.0.0_r1（ComponentCallbacks2.java、RenderProperties.h、RenderNode.cpp、packages/modules/Profiling/ProfilingTrigger.java、lmkd.cpp）; Android Developers ProfilingManager/ProfilingTrigger API reference"
 confidence: medium
 sources:
   - type: blog
@@ -24,6 +24,12 @@ sources:
   - type: official
     path: "https://source.android.com/docs/core/perf/lmkd"
     note: "userspace lmkd 与 PSI / vmpressure 机制"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/RenderProperties.h"
+  - type: aosp
+    path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
 tags: ['case-study', 'memory-leak', 'native-memory', 'low-memory', 'oom', 'cache', 'gc']
 polish_count: 1
 polish_date: "2026-04-09"
@@ -39,19 +45,22 @@ task2b_rework_date: "2026-04-30"
 task2b_fixed_at: "2026-04-30T01:40:00+08:00"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-27T07:24:00+08:00"
-task9_result: "pass-tech-review"
-last_task9_audit: "2026-06-18"
+task9_result: "auto-fixed"
+last_task9_audit: "2026-07-09"
+last_task9_audit_at: "2026-07-09T15:27:48+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-09-15-audit.md"
+last_task9_audit_result: "auto-fixed"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task9_review_log: "logs/deep-review/2026-05-27-07-deep-review.md"
-last_task9_autofix_at: "2026-05-27"
-task9_review_notes: "2026-05-27 Task9 05:28：auto-fixed。修正案例四 ProfilingManager / ProfilingTrigger API 35/36/36.1/37 版本边界：API35 为 app-driven requestProfiling，API36 起提供 trigger 注册，API37 OOM trigger 是事后 Java heap dump，不能替代业务侧内存突增阈值探针。回到 Task6 复审。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 lmkd/PSI、ComponentCallbacks2、HWUI alpha layer、ProfilingManager/ProfilingTrigger 版本边界，无 P0/P1；既有效果量化占位保留为 P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_autofix_at: "2026-07-09"
+task9_review_notes: "2026-05-27 Task9 05:28：auto-fixed。修正案例四 ProfilingManager / ProfilingTrigger API 35/36/36.1/37 版本边界：API35 为 app-driven requestProfiling，API36 起提供 trigger 注册，API37 OOM trigger 是事后 Java heap dump，不能替代业务侧内存突增阈值探针。回到 Task6 复审。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 lmkd/PSI、ComponentCallbacks2、HWUI alpha layer、ProfilingManager/ProfilingTrigger 版本边界，无 P0/P1；既有效果量化占位保留为 P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 idle-audit AUTO-FIX：P0 1 / P1 0 / P2 0。将 ComponentCallbacks2、HWUI alpha 自动建层、ProfilingTrigger 的源码锚点从 android-16.0.0_r1 收敛到 android-17.0.0_r1；View.java 参考改为直接锚定 RenderProperties.h；回到 Task6 复审。详见 logs/deep-review/2026-07-09-15-audit.md。"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-27T07:11:00+08:00"
@@ -61,6 +70,8 @@ task9_state: "reviewed"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。 | 2026-05-27 07:11 Task6：pass-light-edit。Task9 修正 ProfilingManager / ProfilingTrigger 版本边界后复审通过；L1/L2 未发现新增问题；既有效果量化占位按待补充/P2 保留。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
+updated_by: "openclaw-task9"
+updated_date: "2026-07-09"
 ---
 
 # 案例集
@@ -154,7 +165,7 @@ last_deepseek_cn_review_at: 2026-06-18
 
 API 34+ 的 App 可靠回调级别主要是 `TRIM_MEMORY_UI_HIDDEN`（20）和 `TRIM_MEMORY_BACKGROUND`（40）。系统级内存压力判断应回到 `meminfo` 轨道、`lmkd` 指标和 PSI 信号，而非依赖已废弃的 trim level。
 
-[已验证: AOSP frameworks/base/core/java/android/content/ComponentCallbacks2.java; API 34+ ComponentCallbacks2 变更]
+[已验证: AOSP android-17.0.0_r1 frameworks/base/core/java/android/content/ComponentCallbacks2.java; API 34+ ComponentCallbacks2 变更]
 
 ### 举一反三
 
@@ -363,7 +374,8 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 - [谁动了我的内存，揭秘 OOM 崩溃下降 90% 的秘密 — ByteCode 公众号](https://mp.weixin.qq.com/s?__biz=MzAwNDgwMzU4Mw==&mid=2247486738)
 - [抖音 renderD128 系统级疑难 OOM 分析与解决 — 字节跳动技术团队](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247514363)
 - [MemoryThrashing：抖音直播解决内存抖动实践 — 字节跳动技术团队](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247496677)
-- [AOSP frameworks/base/core/java/android/content/ComponentCallbacks2.java — onTrimMemory 级别常量定义](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/content/ComponentCallbacks2.java)
+- [AOSP frameworks/base/core/java/android/content/ComponentCallbacks2.java — onTrimMemory 级别常量定义](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/content/ComponentCallbacks2.java)
 - [Android Developers ProfilingManager API reference](https://developer.android.com/reference/android/os/ProfilingManager)
 - [Android Developers ProfilingTrigger API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)
-- [AOSP frameworks/base/core/java/android/view/View.java — setAlpha 与硬件加速离屏缓冲区](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/view/View.java)
+- [AOSP packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java — Android 17 触发器常量](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java)
+- [AOSP frameworks/base/libs/hwui/RenderProperties.h — promotedToLayer 与 alpha 自动建层条件](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/libs/hwui/RenderProperties.h)
