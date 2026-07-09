@@ -1,9 +1,9 @@
 {
   "total": 670,
-  "draft": 78,
+  "draft": 44,
   "ready_for_review": 212,
   "finalized": 346,
-  "last_updated": "2026-07-09T19:07:19.871535+08:00",
+  "last_updated": "2026-07-09T20:06:37.845486+08:00",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -1228,6 +1228,13 @@
       "status": "no-candidates",
       "ts": "2026-07-09T19:07:19.871535+08:00",
       "note": "Gap mining round 52: 0 candidates ≥14 (52nd consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 VNDK linker namespace load cost) maps to existing §1.55 supplement (scored 10/20). All 44 drafts have >15 effective lines. Task2B backlog: 0. source-index: 0 unmapped high-quality. No new Clippings (16+ days)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-09T20:06:37.845486+08:00",
+      "note": "Gap mining round 53: 0 candidates ≥14 (53rd consecutive). Coverage saturated. No new material since round 52 (1h ago). No new DeepResearch (last 2026-07-09 17:53 VNDK linker→§1.55 sup). No Clippings dir contents. daily-info 2026-07-09 already consumed. research-feeds last 2026-04-14. source-index: 0 unmapped high-quality. All 44 drafts >15 lines. Task2B backlog: 0. Queue: 0 pending."
     }
   ],
   "review_history": [
