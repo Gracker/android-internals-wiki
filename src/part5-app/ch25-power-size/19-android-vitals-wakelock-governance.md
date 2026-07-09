@@ -39,15 +39,15 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
-pipeline_stage: task6_pending
+pipeline_stage: ready-for-promotion
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T06:04:00+08:00"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-07-09
 task6_result: pass-light-edit
-last_task6_at: "2026-07-09T08:07:00+08:00"
+last_task6_at: "2026-07-09T09:11:00+08:00"
 last_task6_audit: "2026-07-09"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
@@ -114,15 +114,15 @@ Android Vitals 的价值在于外部质量裁决。它按 Google Play 的采集�
 
 ## 指标口径：Android Vitals 统计的是非豁免 partial wake lock
 
-Android Vitals 对 excessive partial wake lock 的判定基于四个条件：`PARTIAL_WAKE_LOCK`、非豁免、熄屏、应用在后台或处于 foreground service。统计窗口是 24 小时内所有符合条件 wake lock 的累计时长，达到 2 小时及以上就进入 excessive 判定；如果 28 天内超过 5% 的 app sessions 命中该问题，Play 质量信号可能影响推荐面和店铺提示。[已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock][已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric]
+Android Vitals 对 excessive partial wake lock 的判定基于四个条件：`PARTIAL_WAKE_LOCK`、非豁免、熄屏、应用在后台或处于 foreground service。统计窗口是 24 小时内所有符合条件 wake lock 的累计时长，达到 2 小时及以上就进入 excessive 判定；如果 28 天内超过 5% 的应用会话命中该问题，Play 质量信号可能影响推荐面和店铺提示。[已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock][已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric]
 
 | 维度 | Android Vitals excessive 口径 | 本地排查口径 |
 | --- | --- | --- |
 | WakeLock 类型 | 非豁免 partial wake lock | 所有 partial wake lock 都可纳入排查 |
 | 应用状态 | 后台或 foreground service，且屏幕关闭 | 前台、后台、FGS、屏幕状态都记录 |
 | 时间窗口 | 24 小时累计 >= 2 小时 | 单次时长、累计时长、任务维度、版本维度 |
-| 发布阈值 | 28 天 sessions 占比 > 5% 可能影响 Play 可见度 | 内部阈值通常应低于 Play 阈值 |
-| 证据粒度 | wake lock 名称、受影响 sessions、持续时间 | 堆栈、trace id、任务类型、SDK、版本、设备、电量 |
+| 发布阈值 | 28 天会话占比 > 5% 可能影响 Play 可见度 | 内部阈值通常应低于 Play 阈值 |
+| 证据粒度 | wake lock 名称、受影响会话、持续时间 | 堆栈、trace id、任务类型、SDK、版本、设备、电量 |
 
 这个口径不能直接等同于“所有 WakeLock 都违规”。音频播放、定位、JobScheduler 用户发起任务等场景有明确用户收益，Android Vitals 会对部分系统或 API 创建的 wake lock 做豁免；但本地监控仍要记录它们的时长，原因是 OEM 省电策略、国内渠道和用户投诉不会完全按 Play 的豁免表执行。[已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock]
 
@@ -231,14 +231,14 @@ inline fun <T> PowerManager.WakeLock.useFor(
 
 ## 版本与 Play 分发影响
 
-Google 在 2025-10-02 的 Android Developers Blog 中公告：从 2026-03-01 起，未满足 excessive wake lock 质量阈值的 title 可能被排除在推荐等 prominent discovery surfaces 之外，部分场景还可能在 store listing 展示耗电警告。官方 excessive wake lock 页面当前给出的稳定口径是 28 天内超过 5% sessions 会影响 Play 可见度，因此状态以 Play Console 中对应指标为准；工程门禁应按已执行风险处理。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric][已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock]
+Google 在 2025-10-02 的 Android Developers Blog 中公告：从 2026-03-01 起，未满足 excessive wake lock 质量阈值的 title 可能被排除在推荐等 prominent discovery surfaces 之外，部分场景还可能在 store listing 展示耗电警告。官方 excessive wake lock 页面当前给出的稳定口径是 28 天内超过 5% 的会话会影响 Play 可见度，因此状态以 Play Console 中对应指标为准；工程门禁应按已执行风险处理。[已验证: 官方博客, developer.android.com/blog/posts/optimize-your-app-battery-using-android-vitals-wake-lock-metric][已验证: 官方文档, developer.android.com/topic/performance/vitals/excessive-wakelock]
 
 | 分发场景 | Vitals 可用性 | 治理策略 |
 | --- | --- | --- |
 | Google Play | 可看 Android Vitals wake lock dashboard | 用 Vitals 做外部门禁，用内部监控补现场 |
 | 国内应用商店 | 通常拿不到 Play Vitals | 自建后台耗电指标，叠加 OEM 投诉和用户反馈 |
 | 企业分发 / 预装 | Play 指标不完整 | 按厂商后台资源规则、bugreport 和实验室待机测试评估 |
-| 小流量灰度 | 28 天 sessions 不稳定 | 内部 P90/P99、单次 stuck、累计时长更可信 |
+| 小流量灰度 | 28 天会话数据不稳定 | 内部 P90/P99、单次 stuck、累计时长更可信 |
 
 ## Alarm、Wi-Fi scan、background network 要放在同一套规则里
 
@@ -248,13 +248,13 @@ WakeLock 很少单独出现。后台 Alarm 会唤醒 CPU，任务执行期间可
 
 ## 厂商后台限制与 Play 阈值的差异
 
-OEM 省电策略通常比 Play Vitals 更短周期、更强硬。Play 关注 28 天 sessions 占比；厂商策略可能在单设备、单晚待机、白名单状态和后台启动权限上做限制。国内渠道缺少 Vitals 数据时，用户投诉、系统耗电榜、厂商后台限制弹窗和实验室待机耗电要进入同一张问题单。
+OEM 省电策略通常比 Play Vitals 更短周期、更强硬。Play 关注 28 天会话占比；厂商策略可能在单设备、单晚待机、白名单状态和后台启动权限上做限制。国内渠道缺少 Vitals 数据时，用户投诉、系统耗电榜、厂商后台限制弹窗和实验室待机耗电要进入同一张问题单。
 
 处理厂商冲突时保留三类证据：bugreport / batterystats 的系统时间线、应用侧 wake lock 事件、业务任务说明。确有用户收益的 FGS 或定位任务，要给产品侧明确展示和停止入口；无用户收益的后台轮询、保活、频繁拉取，按删除或系统调度改造处理。
 
 ## 发布门禁清单
 
-- Play Console：确认 excessive partial wake lock sessions 占比、top tag、版本和设备分布。
+- Play Console：确认 excessive partial wake lock 会话占比、top tag、版本和设备分布。
 - 本地复现：未充电、熄屏、后台/FGS 状态下采集 batterystats、bugreport、Perfetto。
 - 代码约束：手动 wake lock 统一封装，必须带 timeout、`finally` 和稳定 tag。
 - 任务约束：WorkManager/JobScheduler 记录 stop reason、retry、约束和 job id。
