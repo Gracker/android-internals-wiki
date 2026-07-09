@@ -136,6 +136,7 @@
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
   - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)
+  - [16.11 Android 17 ARM64 内核安全缓解机制性能开销与调优](part4-system/ch16-aosp/11-arm64-kernel-security-mitigation-performance.md)
 附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)
