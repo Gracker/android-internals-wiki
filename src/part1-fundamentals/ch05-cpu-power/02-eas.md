@@ -5,8 +5,8 @@ title: EAS 能量感知调度
 chapter: '5.2'
 section: '5.2'
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-04-29'
-last_verified_against: Linux kernel 6.6, Documentation/scheduler/sched-energy.rst
+last_verified: '2026-07-09'
+last_verified_against: Android 17 android-17.0.0_r1 platform source, Android common kernel android17-6.18, Linux 6.6/6.12 scheduler docs
 confidence: high
 sources:
 - type: blog
@@ -38,9 +38,9 @@ reviewed_date: "2026-06-19"
 last_task6_audit: '2026-06-20'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 review2_date: '2026-04-06'
 review2_by: openclaw-task6
 polish_count: 1
@@ -50,27 +50,27 @@ task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-19"
-last_task9_at: "2026-06-19T05:28:49+08:00"
-task9_result: pass-tech-review
+last_task9_at: "2026-07-09T18:20:00+08:00"
+task9_result: auto-fixed
 review_notes: '2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。'
-last_task9_audit: "2026-06-18"
+last_task9_audit: "2026-07-09"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态闭环。"
 last_task6_at: '2026-06-19T05:08:51+08:00'
 last_task6_review_log: "logs/review/2026-06-19-02-review.md"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 auto-fix（fits_capacity 20% margin、load_balance/misfit 与 EAS 分界修正）回流后写作层复审通过；L1/L2 无需小修；无 L3/L4 回炉项，送 Task9 终审。"
 last_task9_review_log: "logs/deep-review/2026-06-19-05-deep-review.md"
-task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：EAS 示例未体现 fits_capacity 约 20% margin；P1 1：运行时负载均衡误写为 EAS 参与，已改为 CFS load_balance/misfit 路径并由 overutilized 分界。回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 Linux 6.6/6.12 EAS overutilized、fits_capacity、compute_energy 与 uclamp max/bucket 边界，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-24 task9 idle-audit: needs-rework。P0：android16-6.12 overutilized 仍在 select_task_rq_fair callsite 跳过 find_energy_efficient_cpu，正文写成仍会尝试能量估算。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 idle-audit: auto-fixed。P0 1：EAS 示例未体现 fits_capacity 约 20% margin；P1 1：运行时负载均衡误写为 EAS 参与，已改为 CFS load_balance/misfit 路径并由 overutilized 分界。回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 Linux 6.6/6.12 EAS overutilized、fits_capacity、compute_energy 与 uclamp max/bucket 边界，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 idle-audit: auto-fixed。P0 2 / P1 1 / P2 0；修正 EAS 阈值表述、Android 17 JNI profile 调用名，并补齐 android17-6.18 同步唤醒 fast path 与 UClamp max/bucket 边界。回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-19
-last_task9_audit_at: "2026-06-18T10:29:11+08:00"
-last_task9_autofix_at: "2026-06-18"
-last_task9_audit_log: "logs/deep-review/2026-06-18-10-audit.md"
+last_task9_audit_at: "2026-07-09T18:20:00+08:00"
+last_task9_autofix_at: "2026-07-09"
+last_task9_audit_log: "logs/deep-review/2026-07-09-18-audit.md"
 last_task9_audit_result: "auto-fixed"
 updated_by: "openclaw-task9"
-updated_date: "2026-06-19"
-p0: 0
-p1: 0
+updated_date: "2026-07-09"
+p0: 2
+p1: 1
 p2: 0
 ---
 
@@ -260,7 +260,7 @@ Linux mainline 的 EAS 文档建立在 PELT 及其 frequency / CPU invariance �
 - 根据新的 utilization 查询 EM,确定目标 CPU 需要运行在哪个 OPP
 - 计算整个系统的能耗变化(不仅仅是目标 CPU,还要考虑被迁出 CPU 的能耗下降)
 
-**第四步:选择总能耗最低的候选 CPU。** 但有一个安全阀：如果“能耗最优”的候选与“性能最优”的候选之间的能耗差异很小(在一个阈值范围内),EAS 会倾向于选择性能更好的那个,避免为了省微不足道的电量而牺牲用户体验。
+**第四步:选择总能耗最低的候选 CPU。** 这里不是“能耗差异落在某个阈值内就选性能核”。在 Linux 6.6/6.12 以及 Android 17 的 `android17-6.18` 中，`find_energy_efficient_cpu()` 的核心比较是候选 CPU 是否更 fit，以及相对 `prev_cpu` 的 `compute_energy()` 增量是否更低；如果都 fit 但能耗增量没有更低，通常保持 `prev_cpu`。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - find_energy_efficient_cpu identifies highest spare capacity and estimates energy]
 
@@ -290,8 +290,9 @@ overutilized 对 EAS 的影响随内核版本有差异:
 
 - **Linux 6.6 及更早**：`find_energy_efficient_cpu()` 入口处检查 `rd->overutilized`，如果系统已 overutilized，直接跳过能量估算，回到传统选核路径。
 - **Linux 6.12 / GKI 6.12（Android 16）**：overutilized 的短路检查从 `find_energy_efficient_cpu()` 函数入口移到了调用点 `select_task_rq_fair()`。效果不变——系统 overutilized 时唤醒路径仍然跳过能量估算、回到传统选核；只是检查位置从被调函数内部挪到了调用方。overutilized 标志同时影响负载均衡判断（`load_balance()`、misfit migration 等路径），在高负载下触发更激进的性能优先迁移。
+- **Android 17 / `android17-6.18`**：调用点仍通过 `is_rd_overutilized(this_rq()->rd)` 包住 `find_energy_efficient_cpu()`，overutilized 时继续跳过能量估算；额外变化是 `find_energy_efficient_cpu()` 带 `sync` 参数并增加同步唤醒 fast path。
 
-因此无论 6.6 还是 6.12，overutilized 时唤醒路径都会跳过能量估算。区别只是短路位置不同：6.6 在 `find_energy_efficient_cpu()` 内部检查，6.12 在 `select_task_rq_fair()` 调用点检查。排查时要按内核版本区分，不要把 6.6 的行为外推到 6.12。
+因此无论 6.6、6.12 还是 Android 17 的 6.18，overutilized 时唤醒路径都会跳过能量估算。区别是短路位置和额外 fast path：6.6 在 `find_energy_efficient_cpu()` 内部检查，6.12/6.18 在 `select_task_rq_fair()` 调用点检查；Android 17 还要额外看同步唤醒是否命中当前 CPU fast path。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst - overutilized flag disables EAS energy-awareness]
 
@@ -313,13 +314,13 @@ overutilized 对 EAS 的影响随内核版本有差异:
 
 ### Android 中的 uclamp 使用
 
-在 Android 里，调度提示不是应用自己去写 cgroup 文件。AMS / OomAdjuster 先根据进程状态给进程或线程分配 sched group，随后 `android.os.Process.setThreadGroup()`、`setThreadGroupAndCpuset()`、`setProcessGroup()` 进 JNI，JNI 再调用 `SetTaskProfiles()` / `SetProcessProfiles()`。libprocessgroup 读取 `system/core/libprocessgroup/profiles/task_profiles.json`，把 profile 展开成“加入哪个 cgroup”和“往哪个属性文件写值”两类动作。
+在 Android 里，调度提示不是应用自己去写 cgroup 文件。AMS / OomAdjuster 先根据进程状态给进程或线程分配 sched group，随后 `android.os.Process.setThreadGroup()`、`setThreadGroupAndCpuset()`、`setProcessGroup()` 进 JNI。Android 17 的 `android_util_Process.cpp` 中，线程分组路径调用 `SetTaskProfiles()`，进程分组路径调用 `SetProcessProfilesCached()`；冻结 / 解冻等进程 profile 路径才直接调用 `SetProcessProfiles()`。libprocessgroup 读取 `system/core/libprocessgroup/profiles/task_profiles.json`，把 profile 展开成“加入哪个 cgroup”和“往哪个属性文件写值”两类动作。
 
 ### UClamp 聚合方式的演进
 
-主线内核（Linux 5.3 至 6.12）的 UClamp 聚合始终采用 max/bucket 策略：`kernel/sched/core.c` 的 clamp bucket 逻辑追踪每个 rq 上请求的最大 clamp 值。三个 UCLAMP_MIN=200 的后台任务跑在同一个 CPU 上时，调度器只按 200 来调频和选核。多任务并发时,如果各任务的真实负载之和远大于单任务的 clamp 值,频率预测会系统性偏低。
+主线内核（Linux 5.3 起）以及 Android 17 `android17-6.18` 这条公共内核线的 UClamp 聚合仍采用 max/bucket 策略：`kernel/sched/core.c` 的 clamp bucket 逻辑追踪每个 rq 上请求的最大 clamp 值。三个 UCLAMP_MIN=200 的后台任务跑在同一个 CPU 上时，调度器只按 200 来调频和选核。多任务并发时,如果各任务的真实负载之和远大于单任务的 clamp 值,频率预测会系统性偏低。
 
-社区和部分厂商分支曾探索将聚合方式从 max 改为 sum，理论上能更准确反映多任务总负载。但截至 android16-6.12（GKI 6.12），公开源码中 `uclamp_rq_util_with()` 仍走 max 路径，sum 聚合尚未合入主线。如果某个厂商内核切换到了 sum 聚合，排查时要结合具体 kernel tree 和 commit 确认。
+社区和部分厂商分支曾探索将聚合方式从 max 改为 sum，理论上能更准确反映多任务总负载。但截至 Android 17 的 `android17-6.18`，公开源码中 `uclamp_rq_util_with()` 仍是 max 聚合，`kernel/sched/core.c` 仍用 bucket 维护 rq clamp；sum 聚合尚未进入这条 Android 17 公共内核线。如果某个厂商内核切换到了 sum 聚合，排查时要结合具体 kernel tree 和 commit 确认。
 
 在 Android 10、11、12 各版本中，排查路径应分层检查:
 
@@ -335,7 +336,7 @@ overutilized 对 EAS 的影响随内核版本有差异:
 
 把这条控制链看完整,就能解释同一条 RenderThread 为什么在 top-app 状态被推到大核,而切回后台后又被压回小核。
 
-[已验证: AOSP, `platform/system/core/libprocessgroup/profiles/task_profiles.json` @ android10-release/android11-release/android12-release;`frameworks/base/core/jni/android_util_Process.cpp` @ android12-release]
+[已验证: AOSP, `platform/system/core/libprocessgroup/profiles/task_profiles.json` @ `android-17.0.0_r1`（历史对比 android10/11/12-release）；`frameworks/base/core/jni/android_util_Process.cpp` @ `android-17.0.0_r1`]
 
 ## EAS 在 Perfetto 中的观察
 
@@ -436,7 +437,7 @@ ORDER BY cpu, idle;
 
 ### EAS 与 CFS（5.1 节）
 
-EAS 建立在 CFS 之上。它不替换 CFS，而是接管了 CFS 的唤醒选核逻辑。overutilized 时唤醒路径始终跳过能量估算——Linux 6.6 在 `find_energy_efficient_cpu()` 入口短路，android16-6.12 把同一个检查移到 `select_task_rq_fair()` 调用点。overutilized 同时影响负载均衡和迁移策略（详见本文「负载均衡与任务迁移」小节）。
+EAS 建立在 CFS 之上。它不替换 CFS，而是接管了 CFS 的唤醒选核逻辑。overutilized 时唤醒路径始终跳过能量估算——Linux 6.6 在 `find_energy_efficient_cpu()` 入口短路，android16-6.12 和 Android 17 `android17-6.18` 把同一个检查放在 `select_task_rq_fair()` 调用点。Android 17 的同步唤醒还可能命中 `find_energy_efficient_cpu()` 内部 fast path，直接返回当前 CPU。overutilized 同时影响负载均衡和迁移策略（详见本文「负载均衡与任务迁移」小节）。
 
 ### EAS 与大小核架构（5.3 节）
 
@@ -486,7 +487,8 @@ EAS 看的是"有效 util 信号 + capacity + EM"。SchedTune 或 uclamp 只是�
 | AOSP 用户态 | Android 11 | `cpu.uclamp.min/max` 命名到位,默认 profile 仍保留 `schedtune` 分组 | 同时核对 `schedtune` 与 `cpu.uclamp.*` |
 | AOSP 用户态 | Android 12+ | 默认 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接进入 `cpu/{background,foreground,top-app}`,cpuset 继续控制可运行 CPU 集 | top-app / foreground / background 的默认提示链更直观 |
 | GKI 内核 | GKI 6.12 (Android 16) | overutilized 短路位置从 `find_energy_efficient_cpu()` 内部移到 `select_task_rq_fair()` 调用点；效果不变 | 排查时注意 6.6 和 6.12 的检查位置不同，但短路行为一致 |
-| GKI 内核 | GKI 6.12 (Android 16) | UClamp 聚合仍为 max/bucket,sum 聚合为厂商分支/社区探索方向 | 排查时需按具体 kernel tree 确认聚合策略 |
+| GKI 内核 | Android 17 / `android17-6.18` | `find_energy_efficient_cpu()` 增加 `sync` 参数；同步唤醒且当前 CPU 只有当前任务运行、任务 cpumask 允许并通过 `task_fits_cpu()` 时，可直接返回当前 CPU | Android 17 排查唤醒选核时，除 overutilized 外还要检查同步唤醒 fast path |
+| GKI 内核 | Android 17 / `android17-6.18` | UClamp 聚合仍为 max/bucket,sum 聚合为厂商分支/社区探索方向 | 排查时需按具体 kernel tree 确认聚合策略 |
 | 设备实现 | 厂商分支 | WALT、Power HAL boost、额外迁核策略按 SoC / kernel tree 变化 | Trace 结论必须落回具体设备 |
 
 ## 参考资料
@@ -498,9 +500,9 @@ EAS 看的是"有效 util 信号 + capacity + EM"。SchedTune 或 uclamp 只是�
 - Linux 内核文档:[Operating Performance Points (OPP)](https://docs.kernel.org/power/opp.html)
 - Perfetto 官方文档:[CPU Scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - Perfetto 官方文档:[Perfetto stdlib docs](https://perfetto.dev/docs/analysis/stdlib-docs)
-- AOSP 源码：`platform/system/core/libprocessgroup/profiles/task_profiles.json`（android10/11/12-release）
-- AOSP 源码：`frameworks/base/core/jni/android_util_Process.cpp`（`SetTaskProfiles()` / `SetProcessProfiles()` 调用链）
-- AOSP 源码：`kernel/sched/fair.c`（`find_energy_efficient_cpu()`）
-- AOSP 源码：`kernel/power/energy_model.c`（EM 框架）
+- AOSP 源码：`platform/system/core/libprocessgroup/profiles/task_profiles.json`（`android-17.0.0_r1`；历史对比:android10/11/12-release）
+- AOSP 源码：`frameworks/base/core/jni/android_util_Process.cpp`（`android-17.0.0_r1`，`SetTaskProfiles()` / `SetProcessProfilesCached()` 调用链）
+- Android common kernel：`kernel/sched/fair.c`（`android17-6.18`，`find_energy_efficient_cpu()` / overutilized）
+- Android common kernel：`kernel/power/energy_model.c`（`android17-6.18`，EM 框架）
 - [高爷 - Android Perfetto 系列 9:CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
 - ARM 社区:[EAS 设计与实现](https://www.linuxplumbersconf.org/event/2/contributions/133/)
