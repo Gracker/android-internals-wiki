@@ -6,8 +6,8 @@ section: "3.7"
 status: finalized
 drafted_date: "2026-05-16"
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
-last_verified: "2026-06-18"
-last_verified_against: "AOSP android-16.0.0_r1（主线）; AOSP android-17.0.0_r1（版本边界抽检, 2026-06-18）"
+last_verified: "2026-07-09"
+last_verified_against: "AOSP android-17.0.0_r1（主线抽检, 2026-07-09）; AOSP android-16.0.0_r1（历史差异参照）"
 confidence: medium
 sources:
   - type: aosp
@@ -27,42 +27,42 @@ related_chapters: ["3.1", "3.2", "3.5", "9.2", "9.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/源码结构"
-task6_state: reviewed
+task6_state: revisiting
 task9_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-12"
 last_task6_at: "2026-06-19T01:10:00+08:00"
 task2b_result: fixed
 task2b_state: fixed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 last_task2b_at: "2026-06-12"
 last_task2b_lite_at: "2026-06-12"
 reviewed_date: "2026-06-19"
 reviewed_by: "openclaw-task6"
-task9_result: "pass-tech-review"
-task9_reviewed_date: "2026-06-22"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-07-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-22T16:31:06+08:00"
-last_task9_autofix_at: "2026-06-18"
-task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。 | 2026-05-25 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；版本边界已收窄到 Android 13-16，Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点复核 android-16.0.0_r1，版本边界保持 Android 13-16；Task6 未通过，未自动晋升。 | 2026-06-18 Task9 闲时抽检 auto-fix：P0 0 / P1 1 / P2 0；AOSP android-17.0.0_r1 已发布，修正“Android 17 tag 未发布”的过期版本边界，并标注 no focused window ANR 状态在 Android 17 改为 mNoFocusedWindowAnrState，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 AOSP android-16.0.0_r1/17.0.0_r1 InputDispatcher.cpp；Android 17 no focused window ANR 状态差异已在版本边界中标注，正文未越过 API 37。"
-last_task9_audit: "2026-06-18"
-last_task9_audit_log: "logs/deep-review/2026-06-18-17-audit.md"
+last_task9_at: "2026-07-09T13:34:24+08:00"
+last_task9_autofix_at: "2026-07-09"
+task9_review_notes: "2026-05-16 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；满足 Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；applicable_versions 覆盖 Android 10-17，但正文按 Android 16 的 mAnrTracker/processAnrsLocked/shouldPruneInboundQueueLocked/canReceiveForegroundTouches 讲主线，未交代 Android 10-12 的实现差异和 Android 17 未验证边界。 | 2026-05-25 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；版本边界已收窄到 Android 13-16，Task6 pass 且 queue 无 pending，自动晋升 finalized。 | 2026-06-12 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码锚点复核 android-16.0.0_r1，版本边界保持 Android 13-16；Task6 未通过，未自动晋升。 | 2026-06-18 Task9 闲时抽检 auto-fix：P0 0 / P1 1 / P2 0；AOSP android-17.0.0_r1 已发布，修正“Android 17 tag 未发布”的过期版本边界，并标注 no focused window ANR 状态在 Android 17 改为 mNoFocusedWindowAnrState，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 AOSP android-16.0.0_r1/17.0.0_r1 InputDispatcher.cpp；Android 17 no focused window ANR 状态差异已在版本边界中标注，正文未越过 API 37。 | 2026-07-09 13 Task9 闲时抽检 auto-fix：P0 0 / P1 1 / P2 0；Android 17 基准抽检发现正文仍以 android-16.0.0_r1 为主线，已重锚到 android-17.0.0_r1，并将 no focused window ANR 主线字段改为 mNoFocusedWindowAnrState；回 Task6 复审。"
+last_task9_audit: "2026-07-09"
+last_task9_audit_log: "logs/deep-review/2026-07-09-13-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-22-16-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-22
 task6_reviewed_date: "2026-06-19"
 auto_promoted: true
 updated_by: "openclaw-task9"
-updated_date: "2026-06-22"
+updated_date: "2026-07-09"
 p0: 0
-p1: 0
+p1: 1
 p2: 0
 last_task2b_verifier_at: "2026-07-05T03:26:57+0800"
 ---
 
 # 3.7 InputDispatcher 反压与无响应窗口降级
 
-> **版本边界说明**：本章主线以 AOSP android-16.0.0_r1 为准。涉及的关键机制不在同一版本引入——`mAnrTracker` 和 `shouldPruneInboundQueueLocked` 始于 Android 11，`processConnectionResponsiveLocked` 始于 Android 12，`canReceiveForegroundTouches` 始于 Android 13。Android 10 的 InputDispatcher 仍在 `services/inputflinger/InputDispatcher.cpp`（未迁入 `dispatcher/` 子目录），ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`，与正文主线差异较大。Android 17 的 AOSP tag 已发布，但本章尚未按 android-17.0.0_r1 全量复核；已确认相关锚点仍在 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`，但 no focused window ANR 状态从 `mAwaitedFocusedApplication` / `mNoFocusedWindowTimeoutTime` 改为 `mNoFocusedWindowAnrState`，不要把 Android 16 的字段名直接套到 Android 17。排查旧版本或 Android 17 时优先确认源码路径和 ANR 等待模型。
+> **版本边界说明**：本章主线以 AOSP android-17.0.0_r1 为准。涉及的关键机制不在同一版本引入——`mAnrTracker` 和 `shouldPruneInboundQueueLocked` 始于 Android 11，`processConnectionResponsiveLocked` 始于 Android 12，`canReceiveForegroundTouches` 始于 Android 13。Android 17 的相关锚点位于 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`；no focused window ANR 主线状态为 `mNoFocusedWindowAnrState`，内部保存等待中的 application、event id、`timeoutDuration`、`timeoutEndTime` 和 pre-ANR 标记。Android 16 及更早版本使用 `mAwaitedFocusedApplication` / `mNoFocusedWindowTimeoutTime` 等字段；Android 10 的 InputDispatcher 仍在 `services/inputflinger/InputDispatcher.cpp`（未迁入 `dispatcher/` 子目录），ANR 等待走 `mInputTargetWaitCause` / `mInputTargetWaitTimeoutTime` / `onANRLocked()`。排查旧版本时先确认源码路径和 ANR 等待模型，不要把 Android 17 字段名直接套回旧源码。
 
 <!-- outline-start -->
 ## 要点
@@ -105,7 +105,7 @@ last_task2b_verifier_at: "2026-07-05T03:26:57+0800"
 
 InputDispatcher 到 App 的事件面走 `InputChannel`。窗口连接建立时，服务端和客户端各持有一端 channel；事件分发阶段，`InputDispatcher::publishMotionEvent()` / `publishKeyEvent()` 经 `InputPublisher` 写入目标连接。这里要区分清楚：事件本身的传输走 channel fd，不走 Binder；Binder 主要参与窗口和 channel 的建立、传递与策略回调。详见 1.17 节与 3.1 节。
 
-AOSP android-16.0.0_r1 的 `InputDispatcher::startDispatchCycleLocked()` 在写入失败时会检查返回码。返回 `WOULD_BLOCK` 时，代码分两种情况处理：
+AOSP android-17.0.0_r1 的 `InputDispatcher::startDispatchCycleLocked()` 在写入失败时会检查返回码。返回 `WOULD_BLOCK` 时，代码分两种情况处理：
 
 - `waitQueue` 为空却写不进去，说明 channel 状态异常，系统会走 `abortBrokenDispatchCycleLocked()`，把连接标为 broken，并通知策略层清理。
 - `waitQueue` 非空时，说明 App 侧还有已交付事件没有完成，channel 缓冲也被顶住。InputDispatcher 停止继续向该连接写入，等待 App 消费并回执。
@@ -141,7 +141,7 @@ ANR 计时绑定在 `waitQueue` 条目上。事件写给目标连接后，`deliv
 
 输入反压最影响体验的场景，是用户已经不想等当前 App，转而点击另一个 App 或系统区域。InputDispatcher 对这种情况有专门的裁剪逻辑。
 
-在 no focused window 等待路径中，系统会记录 `mAwaitedFocusedApplication` 和超时时间。如果用户此时按下新的触摸点，`shouldPruneInboundQueueLocked()` 会命中测试触摸位置：目标窗口属于另一个 application token，或存在可响应的 spy window 时，InputDispatcher 将当前新事件标为 `mNextUnblockedEvent`。后续调度会把这个事件之前的部分 focus-dispatched 事件按 `DropReason::BLOCKED` 丢弃，直到队列推进到新的可放行事件。
+在 no focused window 等待路径中，Android 17 通过 `mNoFocusedWindowAnrState` 记录等待中的应用、事件 id、超时时长和 `timeoutEndTime`。如果用户此时按下新的触摸点，`shouldPruneInboundQueueLocked()` 会命中测试触摸位置：目标窗口属于另一个 application token，或存在可响应的 spy window 时，InputDispatcher 将当前新事件标为 `mNextUnblockedEvent`。后续调度会把这个事件之前的部分 focus-dispatched 事件按 `DropReason::BLOCKED` 丢弃，直到队列推进到新的可放行事件。
 
 这不是“丢掉所有触摸”。源码只在特定条件下剪掉阻塞在前面的旧事件：触发点是新的 pointer down，目标是另一个应用或可响应的 spy window，目的在于避免旧应用迟迟没有焦点窗口时继续拖住新目标。对于正在进行的 pointer gesture，系统还会保留必要的状态，不会粗暴切断所有后续事件。
 
@@ -158,7 +158,7 @@ ANR 计时绑定在 `waitQueue` 条目上。事件写给目标连接后，`deliv
 - 目标 connection 的 `OutboundQueue` / `WaitQueue` 长度和 age：确认事件卡在写入前，还是写入后等 ACK。
 - `Input Dispatcher State at time of last ANR`：确认 ANR reason 与当时的队列快照。
 
-Perfetto 侧看 ATRACE counter。AOSP android-16.0.0_r1 里 `traceInboundQueueLengthLocked()` 写 `iq`，`traceOutboundQueueLength()` 写 `oq:<channel>`，`traceWaitQueueLength()` 写 `wq:<channel>`。这些是 counter，不是 slice。`wq` 持续上升说明 ACK 回路被压住；`oq` 上升更接近 channel 写入受限或 waitQueue 未释放；`iq` 上升可能是 dispatcher 前端积压、焦点等待或策略等待。
+Perfetto 侧看 ATRACE counter。AOSP android-17.0.0_r1 里 `traceInboundQueueLengthLocked()` 写 `iq`，`traceOutboundQueueLength()` 写 `oq:<channel>`，`traceWaitQueueLength()` 写 `wq:<channel>`。这些是 counter，不是 slice。`wq` 持续上升说明 ACK 回路被压住；`oq` 上升更接近 channel 写入受限或 waitQueue 未释放；`iq` 上升可能是 dispatcher 前端积压、焦点等待或策略等待。
 
 判读时不要把 `wq` 当成 MotionEvent batching 的直接证据。batching 和重采样主要在 App 侧 `InputConsumer` / `ViewRootImpl` 时序里观察，InputDispatcher 的 `wq` 只说明已交付事件没有完成回执。详见 3.2 节。
 
@@ -198,8 +198,8 @@ InputDispatcher 反压由 channel 可写性、`outboundQueue`、`waitQueue`、`m
 
 ## References
 
-- AOSP: `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（android-16.0.0_r1）
-- AOSP: `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（android-17.0.0_r1，用于版本边界抽检）
+- AOSP: `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（android-17.0.0_r1，主线）
+- AOSP: `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`（android-16.0.0_r1，历史差异参照）
 - AOSP docs: `frameworks/native/services/inputflinger/docs/anr.md`
 - Android Developers: [ANRs](https://developer.android.com/topic/performance/vitals/anr)
 - Android Developers: [dumpsys](https://developer.android.com/tools/dumpsys)
