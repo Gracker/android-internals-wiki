@@ -592,6 +592,42 @@
       "gap_source": "素材驱动",
       "total_score": 15,
       "sources_count": 2
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-09",
+      "notes": "知识缺口挖掘创建，VNDK隔离性能影响",
+      "section": "1.55",
+      "section_title": "Android 17 VNDK 隔离与 native 库加载性能影响",
+      "gap_source": "DeepResearch + research-gaps",
+      "total_score": 16,
+      "sources_count": 2
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.49-android17-trim-memory-api-evolution.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-09",
+      "notes": "知识缺口挖掘创建，trimMemory API演进",
+      "section": "4.49",
+      "section_title": "Android 17 trimMemory 回调 API 演进与 ART Heap Trim 链路",
+      "gap_source": "DeepResearch",
+      "total_score": 18,
+      "sources_count": 1
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/14.29-android17-agi-frame-profiler-gapii-spy.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-09",
+      "notes": "知识缺口挖掘创建，AGI Frame Profiler",
+      "section": "14.29",
+      "section_title": "Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制",
+      "gap_source": "DeepResearch + research-gaps",
+      "total_score": 16,
+      "sources_count": 2
     }
   ],
   "entries": [

@@ -58,7 +58,7 @@ last_task6_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_at: "2026-05-28T18:20:12+08:00"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-18-review.md"
-last_task6_audit: "2026-06-25"
+last_task6_audit: "2026-07-09"
 task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；修复启动拆解表格被 blockquote 截断、Python SDK 示例 config 省略占位；L1/L2 通过；outline 15/15 覆盖；无 L3/L4 回炉项。task9_result=needs-rework，未自动晋升。"
 p0: 0
 p1: 0
@@ -137,7 +137,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **预览卡顿的波动指标**：30fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，TextureView 路径的外部纹理采样和 View 树合成可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
 
-**拍照延迟**指的是从用户点击快门到照片拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，我们可以用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
+**拍照延迟**指的是从用户点击快门到照片拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
 
 **拍照延迟的典型值**：普通拍照通常需要 200-800ms，包含 ISP 处理时间、曝光等待、多帧合成等环节。ZSL 技术可以减少到 50-100ms，但会持续消耗内存和功耗。
 

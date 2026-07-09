@@ -21,8 +21,10 @@
 
 
   - [1.54 Android 17 Binder 线程池实现机制与调优参数](part1-fundamentals/ch01-architecture/1.54-binder-thread-pool-implementation.md)
+  - [1.55 Android 17 VNDK 隔离与 native 库加载性能影响](part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md)
 - [第 2 章：渲染管线](part2-performance/ch02-rendering/README.md)
   - [2.1 GPU 渲染管线架构演进](part2-performance/ch02-rendering/2.1-gpu-rendering-pipeline-evolution.md)  - [Compose Pager 从基础到高级动画](part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md)
+- [2.5 Compose Pager 从基础到高级动画](part2-performance/ch02-rendering/2.5-compose-pager-advanced-animations.md)
   - [2.3 GPU 调试性能工具链源码调研](part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md)
   - [2.51 Android 17 GPU 调试性能工具链](part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)  - [2.11 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/11-gap-analysis.md)  - [2.13 Android 17 eBPF观测增强](part1-fundamentals/ch13-profiling/13-gap-analysis.md)
 
@@ -50,7 +52,8 @@
   - [4.46 Android 17 AI Agent Memory Sandboxed Data Reuse](part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [4.47 AI Agent Memory Management](part1-fundamentals/ch04-memory/4.47-ai-agent-memory-management.md)
   - [4.48 Android 17 LMKD Procs Prio Batch Thrashing Mainline Fork](part1-fundamentals/ch04-memory/4.48-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md)
-(part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)- [第 6 章：存储性能](part1-fundamentals/ch06-storage/README.md)
+(part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)  - [4.49 Android 17 trimMemory 回调 API 演进与 ART Heap Trim 链路](part1-fundamentals/ch04-memory/4.49-android17-trim-memory-api-evolution.md)
+- [第 6 章：存储性能](part1-fundamentals/ch06-storage/README.md)
   - [6.2 Android 17 SharedPreferencesImpl ANR 机制](part1-fundamentals/ch06-storage/6.2-sharedpreferences-anr-optimization.md)
   - [6.4 Android 17 SharedPreferencesImpl ANR 真因分析与迁移方案](part1-fundamentals/ch06-architecture/6-4-android17-sharedpreferencesimpl-anr-真因分析与迁移方案.md)
   - [4.11 Android 17 AppFlow 与 LMKD v2 内存联合调度协作机制](part1-fundamentals/ch04-architecture/4-11-android17-appflow-与-lmkd-v2-内存联合调度协作机制.md)
@@ -58,6 +61,7 @@
 
 - [第 8 章：启动优化](part1-fundamentals/ch08-startup/README.md)
   - [8.1 Android 17 系统启动优化与 bootanalyze 工具链](part1-fundamentals/ch08-startup/8.1-bootanalyze-optimization-toolchain.md)
+- [8.1 Android 17 任务调度器优化](part1-fundamentals/ch08-startup/8.1-android17-task-scheduler-optimization.md)
   - [8.31 Android 17 启动流程深度洞察](part1-fundamentals/ch08-startup/8.31-android17-startup-insights-gaps.md)
   - [8.32 Android 17 应用启动信息分析](part1-fundamentals/ch08-startup/8.32-android17-application-start-info.md)
 
@@ -72,7 +76,7 @@
 
   - [9.10 Android 17 ANR 预警回调与类型枚举](part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
   - [14.24 Android 17 simpleperf 微架构级性能采样与工作流增强](part3-tools/ch14-other-tools/24-android17-simpleperf-microarch-profiling.md)
-  - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展]
+  - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展](part3-tools/ch14-other-tools/14.25-android17-ebpf-observability-enhancement.md)
   - [8.33 Android 17 Modular Startup Framework Dependency Graph](part1-fundamentals/ch08-startup/8.33-android17-modular-startup-framework-dependency-graph.md)
 (part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md)
 - [第 8 章：响应速度优化](src/part2-performance/ch08-responsiveness/README.md)
@@ -126,6 +130,7 @@
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
+  - [14.29 Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制](part3-tools/ch14-other-tools/14.29-android17-agi-frame-profiler-gapii-spy.md)
   - [26.24 heapprofd 生产级部署与权限模型](part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md)
   - [20.19 Android 17 信号处理架构迁移与 debuggerd bionic/linker 重构](part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md)
 

@@ -74,7 +74,7 @@ task6_reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-07-01'
 task6_state: reviewed
 last_task6_at: '2026-07-01'
-last_task6_audit: '2026-07-04'
+last_task6_audit: '2026-07-09'
 task9_result: pass-tech-review
 task9_review_date: '2026-06-24'
 task9_reviewer: openclaw-task9
@@ -257,7 +257,7 @@ ELF 动态链接中，外部函数调用不直接跳转到目标地址，而是�
 
 xHook 的 Hook 流程就是：
 
-1. 解析目标 .so 的 ELF 文件结构，定位其 `.got` 或 `.got.plt` section。
+1. 解析目标 .so 的 ELF 文件结构，定位该 `.got` 或 `.got.plt` section。
 2. 在符号表中查找目标函数对应的 GOT 表项索引。
 3. 将 GOT 表项的值替换为 Hook 函数的地址，同时保存原始地址用于回调。
 
@@ -288,7 +288,7 @@ xHook 的局限在于：如果代码通过 `dlsym` 获取函数地址后直接�
 
 ### 3. Matrix（腾讯）— TraceCanary 的 Hook 实现
 
-Matrix 是腾讯开源的 APM 框架，其 TraceCanary 模块通过 PLT Hook 实现对主线程调度和帧渲染的监控。
+Matrix 是腾讯开源的 APM 框架，该 TraceCanary 模块通过 PLT Hook 实现对主线程调度和帧渲染的监控。
 
 **TraceCanary 的 Hook 注册流程** [已验证: Tencent/matrix matrix-android/matrix-trace-canary]：
 
@@ -391,7 +391,7 @@ ART Mainline 的库路径变化是一个典型例子。Android 12 之前，libar
 
 1. **库路径变化**：Mainline 模块的 .so 从 `/system/lib64/` 迁移到 `/apex/com.android.xxx/lib64/`，Hook 框架的库定位逻辑需要适配 APEX 路径。
 2. **版本碎片化**：同一台设备上，Mainline 模块的版本可能与系统分区不一致。Hook 框架拦截同一个系统 API 时，在不同进程中可能对应不同版本的实现——一个进程用 APEX 版本，另一个用系统分区版本。
-3. **APEX 的只读挂载**：APEX 模块以只读文件系统挂载，其 .so 的代码段天然不可写。这本身不阻止 PLT Hook（GOT 在进程的私有映射中），但限制了对 APEX 库做 inline hook 的可行性。
+3. **APEX 的只读挂载**：APEX 模块以只读文件系统挂载，该 .so 的代码段天然不可写。这本身不阻止 PLT Hook（GOT 在进程的私有映射中），但限制了对 APEX 库做 inline hook 的可行性。
 4. **独立更新窗口**：Mainline 模块可以绕过 OTA 独立更新。今天测试通过的 Hook 偏移量，下次 Mainline 更新后可能失效。
 
 处理 Mainline 模块的 Hook，一条实用策略：用 PLT Hook 拦截接口层（GOT 表跨 APEX 仍然生效），避免 inline hook 直接修改 APEX 内部实现；需要接入具体逻辑时，通过 linker namespace 可视化确认目标 .so 的确切加载路径。
@@ -430,7 +430,7 @@ Dalvik VM（Android 4.4 及之前）和 ART（Android 5+）在执行模型上的
 
 Android App 常运行在多进程架构中（主进程 + WebView 进程 + 推送进程等）。每个进程有独立的虚拟地址空间，Hook 在进程间不会自动传播：
 
-1. **地址空间隔离**：每个进程有自己的 `/proc/pid/maps`，即使是同一个 .so 映射到两个进程，它在两个进程中的加载基址也可能不同。PLT Hook 修改的是当前进程 GOT 表中的指针，其他进程不受影响。
+1. **地址空间隔离**：每个进程有自己的 `/proc/pid/maps`，即使是同一个 .so 映射到两个进程，该 .so 在两个进程中的加载基址也可能不同。PLT Hook 修改的是当前进程 GOT 表中的指针，其他进程不受影响。
 2. **zygote 派生窗口**：App 进程由 zygote fork 而来。fork 发生在 `ZygoteInit.preload()` 之后，意味着父进程已加载的系统库（libc、libutils 等）在子进程中共享同一份页表映射。如果在 preload 阶段完成 Hook，子进程自动继承——但 preload 阶段没有 App 上下文，只能 Hook 系统库。
 3. **android:process 声明的新进程**：通过 `android:process=":remote"` 声明的进程由 `ActivityManagerService` 请求 zygote 重新 fork，走的也是 zygote 派生路径。但进程创建时 Application 尚未初始化，Hook 必须在 `ContentProvider.onCreate()` 或 `Application.attachBaseContext()` 阶段尽早执行。
 4. **Native 进程（.so 加载的进程）**：通过 `Runtime.exec()` 启动的 native 进程不经过 zygote，地址空间从零开始。自建 Hook 需要在这些进程中单独注册，且受 SELinux domain 限制（`untrusted_app` vs `isolated_app`）。
