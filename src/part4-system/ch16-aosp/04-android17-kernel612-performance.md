@@ -48,7 +48,7 @@ last_task9_review_log: "logs/deep-review/2026-07-09-05-deep-review.md"
 last_task6_review_log: logs/review/2026-07-09-06-review.md
 task6_review_notes: "2026-07-09 04:09 Task6 revisiting review: pass-light-edit。修复 155 处半角逗号→全角逗号（与全书风格统一）；删除 sched_ext 引入段的冗余重复（两段连续说了同一件事）。L1/L2 通过，outline 9/9 覆盖。Task9 idle audit auto-fixed (DeliQueue 源码锚点 + kernel 版本漂移) 已验证。无 B 类回炉项，送 Task9 复审。 | 2026-07-09 06:08 Task6 revisiting review (post-Task9-autofix): pass-light-edit。修复 21 处半角分号→全角分号；删除 3 处"真的"冗余确认副词。L1 禁用词全文未命中。Task9 idle audit auto-fixed (AutoFDO URL + DeliQueue 源码锚点 + kernel 版本漂移) 写作层面验证通过。Outline 9/9 覆盖。无 B 类回炉项。task9_result=auto-fixed (P0 1/P1 0/P2 1 已处理)，queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-25
+last_deepseek_cn_review_at: 2026-07-09
 last_task9_autofix_at: "2026-07-09"
 task2b_result: "verified"
 task2b_state: "fixed"
@@ -80,11 +80,13 @@ task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/REA
 
 ## 为什么要了解 Android 17 + Kernel 6.12 的性能变化
 
-升级系统版本后出现的冷启动、滑动和安装速度改善，常常来自内核与运行时的共同演进。GKI (Generic Kernel Image) 的价值，是把通用内核与 SoC / 板级代码分开:核心内核由 Google 提供 release build，厂商特定能力放进 vendor modules，并通过 stable KMI 约束接口。同一条 LTS / Android 分支内的内核更新更容易独立交付，但某台设备能否收到更新，仍取决于它是否采用兼容的 GKI release build，以及 vendor modules 是否满足对应 KMI 边界。
+每次 Android 大版本升级，总有一些冷启动变快、滑动更顺、安装更快的体感改善。这些改善很难归给单一改动——它们通常是内核与运行时多条线并行演进的结果。本节把涉及 Kernel 6.12 / 6.18 相关变化的四条主线拆开来讲：调度器、存储栈、编译优化、内存管理。每一条线说清楚改了什么、哪些有可核验的数据、哪些还停留在方向性判断。
 
-本节把三类事实分开写。第一类是 ACK / GKI 源码分支事实，例如 `android15-6.6`、`android16-6.12`、`android17-6.18` 中 `kernel/sched/fair.c`、`fs/f2fs/`、`drivers/md/dm-verity-target.c` 的实现变化。第二类是 Android 17 / API 37 平台行为，例如 targetSdk 37 应用启用新的 lock-free `MessageQueue`。第三类是 GKI 分支与 Android 平台版本的对应关系:`android16-6.12` 和 `android17-6.18` 是两条并行的 GKI release branch，后者 Makefile 当前为 6.18.24，其 AFDO profile README 仍锚在 6.18.21 benchmark，是当前 Android 17 的 common-kernel 分支。不能把 Android 17 / API 37 平台行为与 `android16-6.12` 内核线绑定过紧。
+先交代一个容易混淆的背景。GKI（Generic Kernel Image）把通用内核和 SoC / 板级代码拆开了：核心内核由 Google 提供 release build，厂商能力放在 vendor modules 里，通过 stable KMI 约束接口。同一条分支内的内核更新可以独立交付，但某台设备能不能收到更新，取决于它是否采用兼容的 GKI release build，以及 vendor modules 是否满足对应的 KMI 边界。
 
-调度器、存储栈、编译优化、内存管理是 Kernel 6.12 相关变化的四条主线。凡是缺少官方公开数据或源码采用证据的性能数字，只保留为待验证线索，不写成确定收益。
+本节有三类事实需要区分清楚。第一类是 ACK / GKI 源码分支事实：`android15-6.6`、`android16-6.12`、`android17-6.18` 中 `kernel/sched/fair.c`、`fs/f2fs/`、`drivers/md/dm-verity-target.c` 的实现变化。第二类是 Android 17 / API 37 平台行为：例如 targetSdk 37 应用启用新的 lock-free `MessageQueue`。第三类是 GKI 分支与 Android 平台版本的对应关系：`android16-6.12` 和 `android17-6.18` 是两条并行的 GKI release branch，后者 Makefile 当前为 6.18.24，AFDO profile README 仍锚在 6.18.21 benchmark，是当前 Android 17 的 common-kernel 分支。不要把 Android 17 / API 37 平台行为与 `android16-6.12` 内核线绑在一起读。
+
+以下凡是缺少官方公开数据或源码采用证据的性能数字，只保留为待验证线索，不写成确定收益。
 
 ## Kernel 6.12 的性能全景
 
@@ -219,7 +221,7 @@ EEVDF 继续使用虚拟时间体系，但调度决策从"vruntime 最小"转向
 
 ## 存储栈三项优化
 
-Kernel 6.12 对 Android 存储栈引入了三项相互配合的优化:减少重复 checkpoint、提高完整性校验吞吐、扩展异步 I/O 能力。
+下面三项存储栈优化分别落在不同层级，但方向是一致的：减少重复 checkpoint 写入、提高完整性校验吞吐、以及扩展异步 I/O 能力。
 
 ### F2FS Checkpoint Merge:减少重复 checkpoint 写入
 
@@ -391,9 +393,9 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度:
 
 ## 常见问题与误区
 
-**误区 1:"Kernel 6.12 的优化只影响新设备"**
+**误区 1："Kernel 6.12 的优化只影响新设备"**
 
-不准确。6.12 的优化先落在对应的 GKI release branch 上，再由兼容这条 branch 的设备去接收。能否看到收益，取决于设备是否采用对应的 GKI 内核、vendor modules 是否满足 stable KMI 约束，以及 OEM 是否把这条 release build 交付到量产版本。把"GKI 支持独立更新"理解成"所有 Android 12+ 设备都会自动收到同一条 6.12 更新"，是错误的。
+不准确。6.12 的优化先落在对应的 GKI release branch 上，再由兼容这条 branch 的设备去接收。把"GKI 支持独立更新"理解成"所有 Android 12+ 设备都会自动收到同一条 6.12 更新"，是错误的。
 
 **误区 2:"EEVDF 进入 fair scheduler 是因为 CFS 有 bug"**
 

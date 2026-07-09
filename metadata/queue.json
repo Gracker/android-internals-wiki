@@ -556,6 +556,42 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-09T06:16:23.377753",
       "status": "pending"
+    },
+    {
+      "chapter": "14.25",
+      "section_title": "Android 17 eBPF 可观测性增强",
+      "file_path": "src/14.25-android17-ebpf-observability-enhancement.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-09",
+      "notes": "知识缺口挖掘创建，第1个候选",
+      "gap_source": "AOSP结构",
+      "total_score": 18,
+      "sources_count": 3
+    },
+    {
+      "chapter": "8.1",
+      "section_title": "Android 17 任务调度器优化",
+      "file_path": "src/8.1-android17-task-scheduler-optimization.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-09",
+      "notes": "知识缺口挖掘创建，第2个候选",
+      "gap_source": "素材驱动",
+      "total_score": 17,
+      "sources_count": 3
+    },
+    {
+      "chapter": "2.5",
+      "section_title": "Compose Pager 从基础到高级动画",
+      "file_path": "src/2.5-compose-pager-advanced-animations.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-09",
+      "notes": "知识缺口挖掘创建，第3个候选",
+      "gap_source": "素材驱动",
+      "total_score": 15,
+      "sources_count": 2
     }
   ],
   "entries": [
@@ -726,7 +762,7 @@
       "section": "ch05-cpu-power",
       "section_title": "章节 05-cpu-power",
       "priority": 78,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "URL 不可访问 (example.com 占位地址)，跳过",
       "material_paths": [
         "https://example.com/linux-6.10-scheduler"
       ],
@@ -740,7 +776,8 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-09T05:43:35",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-09T08:56:49+08:00"
     },
     {
       "section": "ch17-oem",
@@ -792,7 +829,7 @@
       "section": "ch07-smoothness",
       "section_title": "章节 07-smoothness",
       "priority": 78,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "reason": "URL 不可访问 (example.com 占位地址)，跳过",
       "material_paths": [
         "https://example.com/ai-android-optimization"
       ],
@@ -806,7 +843,8 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-09T05:43:35",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-09T08:56:49+08:00"
     },
     {
       "section": "14.8",
