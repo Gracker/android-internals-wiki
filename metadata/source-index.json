@@ -1412,6 +1412,159 @@
       "score": 80,
       "type": "DeepResearch",
       "action": "queue"
+    },
+    {
+      "title": "Improving App Performance with Baseline Profiles",
+      "url": "https://android-developers.googleblog.com/2022/01/improving-app-performance-with-baseline.html",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "path": "AndroidWeekly/#29/improving-app-performance-with",
+      "summary": "Improving App Performance with Baseline Profiles - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866770"
+    },
+    {
+      "title": "Android Architecture Pattern",
+      "url": "https://medium.com/team-pratilipi/android-architecture-pattern-82aa0cf7e236",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "path": "AndroidWeekly/#29/android-architecture-pattern",
+      "summary": "Android Architecture Pattern - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866782"
+    },
+    {
+      "title": "向工程腐化开炮 | proguard治理",
+      "url": "https://xie.infoq.cn/article/8f418027b1033043b7a7d5e91",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "path": "AndroidWeekly/#29/向工程腐化开炮---proguard治理",
+      "summary": "向工程腐化开炮 | proguard治理 - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866784"
+    },
+    {
+      "title": "Jetpack DragAndDrop 库——拖放操作如此轻松！",
+      "url": "https://mp.weixin.qq.com/s?__biz=Mzk0NDIwMTExNw==&mid=2247508535&idx=1&sn=62e83062e97649a85c52a59620a22af9",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "path": "AndroidWeekly/#29/jetpack-draganddrop-库——拖放操作如此轻",
+      "summary": "Jetpack DragAndDrop 库——拖放操作如此轻松！ - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866786"
+    },
+    {
+      "title": "High performance with idiomatic Kotlin",
+      "url": "https://magdamiu.medium.com/high-performance-with-idiomatic-kotlin-d52e099d0df0",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "path": "AndroidWeekly/#29/high-performance-with-idiomati",
+      "summary": "High performance with idiomatic Kotlin - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866787"
+    },
+    {
+      "title": "What's new in Android 12",
+      "url": "https://medium.com/huawei-developers/whats-new-in-android-12-for-users-2c5031bc86ae",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "path": "AndroidWeekly/#29/what's-new-in-android-12",
+      "summary": "What's new in Android 12 - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866788"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化之理论和工具篇",
+      "url": "http://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247491335&idx=1&sn=e3eabd9253ab2f83925af974db3f3072",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 11,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "path": "AndroidWeekly/#29/抖音-android-性能优化系列：启动优化之理论和工具篇",
+      "summary": "抖音 Android 性能优化系列：启动优化之理论和工具篇 - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866790"
+    },
+    {
+      "title": "android-inline-hook",
+      "url": "https://github.com/bytedance/android-inline-hook/blob/main/README.zh-CN.md",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 1
+      },
+      "path": "AndroidWeekly/#29/android-inline-hook",
+      "summary": "android-inline-hook - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866791"
+    },
+    {
+      "title": "Jetpack Compose 1.1 is now stable!",
+      "url": "https://android-developers.googleblog.com/2022/02/jetpack-compose-11-now-stable.html",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "path": "AndroidWeekly/#29/jetpack-compose-1.1-is-now-sta",
+      "summary": "Jetpack Compose 1.1 is now stable! - #29技术文章",
+      "scored_at": "2026-07-09T09:10:12.866792"
     }
   ]
 }

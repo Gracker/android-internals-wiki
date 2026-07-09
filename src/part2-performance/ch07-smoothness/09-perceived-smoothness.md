@@ -51,7 +51,7 @@ last_task9_audit_result: "auto-fixed-p0-android17-source-anchor"
 task9_audit_notes: "2026-07-09 Task9 idle audit: auto-fixed Android 17 source baseline. Choreographer lockAnimationClock signature and InputConsumer RESAMPLE_LATENCY source expression corrected to android-17.0.0_r1; sent back to Task6."
 last_task9_autofix_at: "2026-07-09"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-26
+last_deepseek_cn_review_at: 2026-07-09
 updated_by: "openclaw-task9"
 updated_date: "2026-07-09"
 ---
@@ -82,7 +82,7 @@ updated_date: "2026-07-09"
 > 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
 > 扩展内容视素材完整度决定是否展开，无法确认的技术细节保留 `[待验证]`，不要硬写结论。<!-- outline-end -->
 
-在 Android 性能优化的日常工作中，我们习惯用"掉帧"作为衡量流畅性的关键指标。FrameTimeline 标红了就是 jank，没标红就默认流畅。但实际开发中还有一个更隐蔽的问题：FrameTimeline 显示所有帧都在 VSync 预算内完成，没有任何一帧超时，用户却反馈"感觉有点卡"。用户的感觉没有错，我们衡量流畅性的维度少看了一项。传统的 jank 检测关注"这一帧有没有在规定时间内完成"，但用户的视觉系统更在意"相邻两帧之间的画面变化是否均匀"。本节讨论的就是这个被传统工具忽略的维度：**步幅波动（step-size jitter）**。即使不掉帧，帧与帧之间位移量不均匀，也会导致视觉上的不连贯。排查这类问题时，先确认成因，再量化位移采样，之后选择对应的优化方向。
+在 Android 性能优化的日常工作中，我们习惯用"掉帧"作为衡量流畅性的关键指标。FrameTimeline 标红了就是 jank，没标红就默认流畅。但实际开发中还有一个更隐蔽的问题：FrameTimeline 显示所有帧都在 VSync 预算内完成，没有任何一帧超时，用户却反馈"感觉有点卡"。问题不在用户，在于我们衡量流畅性的维度少看了一项：传统的 jank 检测关注"这一帧有没有在规定时间内完成"，但用户的视觉系统更在意"相邻两帧之间的画面变化是否均匀"。本节讨论的就是这个被传统工具忽略的维度：**步幅波动（step-size jitter）**——即使不掉帧，帧与帧之间的位移量不均匀，也会导致视觉上的不连贯。排查路径分三步：先确认成因、再量化位移采样、最后选择对应的优化方向。
 
 ## 无掉帧卡顿的本质：帧率稳定 ≠ 步幅均匀
 
@@ -90,7 +90,11 @@ updated_date: "2026-07-09"
 
 ### 典型场景
 
-最常见的一类感知流畅性场景出现在手势导航窗口动画里。在多任务界面（Recent Apps）上划回桌面时，窗口缩小的动画前期变化速度过快、后期突然变慢。这里更像是动画插值曲线的加速度分布不合理，导致画面位移量在动画开头和结尾差异太大。另一个典型场景是 RecyclerView 的 fling 滚动。手指快速划过后，列表惯性滚动的前几帧位移量往往波动较大，后几帧又趋于平稳。这种"开头猛后面缓"的非线性减速如果不够平滑，就会产生顿挫感。
+感知流畅性问题最容易在两个场景中暴露。
+
+第一是手势导航的窗口动画。在多任务界面上划回桌面时，窗口缩放动画的前半段变化太快、后半段突然变慢——位移量在动画首尾差异过大，肉眼能直接感到节奏不对。这里的根因通常不在帧率，而在插值曲线的加速度分布。
+
+第二是 RecyclerView 的 fling 滚动。手指快速划过后，列表惯性滚动的前几帧位移量波动明显、后几帧趋于平稳。这种"开头猛、后面缓"的非线性减速如果不够平滑，就会在滑动末尾产生一顿一顿的拖拽感。两帧之间位移差了 3-5 像素，Perfetto 不会标红，但手指在屏幕上能感觉到。
 
 ## 步幅波动的技术成因
 
@@ -272,7 +276,9 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 ## 输入重采样（Motion Resampling）对跟手滑动的影响
 
-> 输入重采样直接影响跟手滑动的触摸坐标质量,是步幅波动在输入侧的关联问题。更完整的触摸响应分析见 §3.2。**机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心流程在 `frameworks/native/libs/input/InputConsumer.cpp` 中：`consume()` → `consumeBatch()` 计算采样时间点 → `updateTouchState()` 更新历史样本 → `resampleTouchState()` 执行插值/外推。声明位于 `frameworks/native/include/input/InputConsumer.h`。**关键常量**（AOSP android-17.0.0_r1）：- `const std::chrono::duration RESAMPLE_LATENCY = 5ms`（5ms 预期延迟，用于减少误预测影响）
+输入重采样直接影响跟手滑动的触摸坐标质量——它是步幅波动在输入侧的关联问题。更完整的触摸响应分析见 §3.2。
+
+**机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心流程在 `frameworks/native/libs/input/InputConsumer.cpp` 中：`consume()` → `consumeBatch()` 计算采样时间点 → `updateTouchState()` 更新历史样本 → `resampleTouchState()` 执行插值/外推。声明位于 `frameworks/native/include/input/InputConsumer.h`。**关键常量**（AOSP android-17.0.0_r1）：- `const std::chrono::duration RESAMPLE_LATENCY = 5ms`（5ms 预期延迟，用于减少误预测影响）
 - `RESAMPLE_MIN_DELTA = 2 * NANOS_PER_MS`（最小采样间隔，2ms）
 - `RESAMPLE_MAX_PREDICTION = 8 * NANOS_PER_MS`（最大预测窗口，8ms）
 
@@ -286,7 +292,7 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 ## Choreographer Buffer Stuffing Recovery（Android 16 新增）
 
-Android 16 引入 **Buffer Stuffing Recovery** 机制，解决应用端 Buffer Dequeue 阻塞导致的帧节拍错位问题。
+前面讨论的步幅波动来自动画时间源和插值模型——属于"需求侧"问题：调度节奏稳定，但位移算得不准。Android 16 引入的 **Buffer Stuffing Recovery** 处理的是另一侧：Buffer 供应不上，帧节拍本身被打乱。两类问题都会造成"不掉帧但感觉卡"，排查时要分开看。
 
 ### 核心组件：BufferStuffingState
 

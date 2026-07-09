@@ -51,6 +51,8 @@ last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
 task2b_verifier_result: "status-corrected-ready-for-task6"
 task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
 last_task9_review_log: "logs/deep-review/2026-07-08-05-deep-review.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-09
 ---
 
 
@@ -242,10 +244,9 @@ PerfDog 这类工具最好和自动化脚本结合。人工滑动或操作的波
 外部工具只给现象。内部原因要么来自逆向分析，要么只能作为假设。
 
 
-<!-- AIW-源码调研-2026-06-24 -->
-## 一手源码数据源底层实现
+## PerfDog 底层依赖的系统接口
 
-根据 AOSP 源码调研，PerfDog 的 Android 平台性能数据采集依赖四大底层系统接口，这些是 PerfDog 能测到数据的技术基础：
+PerfDog 在 Android 上的性能数据采集依赖下面四组系统接口。了解这些接口对两个场景有帮助：一是 PerfDog 数据显示异常时，可以用 `dumpsys` 或 Perfetto 交叉核验；二是不同设备上同一指标的数据完整度不同，根源往往就落在 HAL 实现差异上。
 
 ### PowerStats HAL - 核心能耗和功率统计
 
@@ -333,4 +334,3 @@ PerfDog 的数据采集调用链：
 - **当前限制**：部分芯片厂商可能不完全实现 HAL 接口（此为行业普遍现象，非 Android 17 特有）
 
 这些源码分析验证了 PerfDog 能够采集 Android 底层性能数据的理论依据，也为理解不同设备间的数据差异提供了技术解释。
-<!-- /AIW-源码调研-2026-06-24 -->
