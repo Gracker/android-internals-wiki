@@ -4,16 +4,16 @@ chapter: "18.1"
 section: "18.1"
 status: finalized
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
-last_verified: "2026-06-17"
-last_verified_against: "AOSP android-16.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue + HardwareBufferRenderer API + Flutter 3.32 release notes"
+last_verified: "2026-07-09"
+last_verified_against: "AOSP android-17.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue / HardwareBufferRenderer / HWComposer fence paths + Flutter 3.32 release notes"
 confidence: medium
 tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "TextureView", "Vulkan", "OpenGL ES", "HardwareBufferRenderer"]
 related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-sources: ["AOSP frameworks/native/services/surfaceflinger", "AOSP frameworks/base/core/java/android/view", "Android 16 Developer Preview 文档", "Flutter 3.32 release notes"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+sources: ["AOSP android-17.0.0_r1 frameworks/native/services/surfaceflinger/Layer.cpp", "AOSP android-17.0.0_r1 frameworks/base/core/java/android/view/ViewRootImpl.java", "AOSP android-17.0.0_r1 frameworks/base/graphics/java/android/graphics/HardwareBufferRenderer.java", "Flutter 3.32 release notes"]
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
@@ -26,20 +26,20 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-06-19"
 last_task6_at: "2026-06-19T01:10:00+08:00"
 last_task6_audit: "2026-06-17T06:07:00+08:00"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: openclaw-task9
-task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 闲时抽检 AUTO-FIX：P0 1 / P1 0 / P2 2；修正 Android 14-16 SurfaceFlinger 源码锚点，`BufferStateLayer.cpp` 限定为 Android 11-13，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。"
+task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 闲时抽检 AUTO-FIX：P0 1 / P1 0 / P2 2；修正 Android 14-16 SurfaceFlinger 源码锚点，`BufferStateLayer.cpp` 限定为 Android 11-13，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。 | 2026-07-09 Task9 闲时抽检 AUTO-FIX：P0 0 / P1 1 / P2 0；将 Android 16 锚点提升到 android-17.0.0_r1，补齐 Android 17 表格与 Layer.cpp/ViewRootImpl/HardwareBufferRenderer 证据，回到 Task6 复审。"
 p0: 0
-p1: 0
+p1: 1
 p2: 0
-last_task9_audit: "2026-06-17"
-last_task9_audit_log: "logs/deep-review/2026-06-17-08-audit.md"
+last_task9_audit: "2026-07-09"
+last_task9_audit_log: "logs/deep-review/2026-07-09-09-audit.md"
 last_task9_review_log: "logs/deep-review/2026-06-19-01-deep-review.md"
 auto_promoted: true
-last_task9_autofix_at: "2026-06-17"
+last_task9_autofix_at: "2026-07-09"
 updated_by: "openclaw-task9"
-updated_date: "2026-06-19"
+updated_date: "2026-07-09"
 ---
 
 <!-- outline-start -->
@@ -68,18 +68,18 @@ Android 图形栈在过去几年经历了系统性重构。理解版本差异是
 
 | Android 版本 | 常见主管线 | 主要特性 |
 |:---|:---|:---|
-| **Android 16** (API 36) | BLAST + 持续演进的 FrameTimeline / ARR / AVP 能力 | ARR 能力查询与现代图形 API 继续扩展 [已验证: Android 16 Developer Preview 文档] |
+| **Android 16-17** (API 36-37) | BLAST + 持续演进的 FrameTimeline / SurfaceControl / HWC fence 路径 | Android 17 仍以 `ViewRootImpl` + `BLASTBufferQueue`、SurfaceFlinger `Layer.cpp` 为主线；`HardwareBufferRenderer` 支持无 Window 的 RenderNode 到 HardwareBuffer 输出 [已验证: AOSP android-17.0.0_r1] |
 | **Android 14-15** (API 34-35) | BLAST + 成熟的 SurfaceControl / FrameTimeline 体系 | HardwareBufferRenderer、FrameTimeline、现代图层事务接口继续完善 |
 | **Android 12-13** (API 31-33) | BLAST 稳定期 | FrameTimeline 成为常用观测入口，Transaction / 合成可观测性更完整 |
 | **Android 11** (API 30) | App View 默认 BLAST 提交流程 | `BLASTBufferQueue` 进入 AOSP 主线，ViewRootImpl 默认通过 `SurfaceControl.Transaction` 提交 buffer 与窗口状态 |
 | **Android 10** (API 29) | 过渡期，App View 仍以 Legacy BufferQueue 为主 | `SurfaceControl` / Transaction 能力扩展，部分系统侧窗口场景开始向新提交流程过渡 |
 | **Android 9 及以下** | Legacy BufferQueue | `queueBuffer` / `IGraphicBufferProducer` 是常态，App 侧看不到 BLAST 相关 slice |
 
-**关键转折点**：BLAST 改的是提交通道，不是消费位置。Android 11 之后，App 侧的 ViewRootImpl / RenderThread 会把绘制好的 buffer 和图层几何状态封装进 `SurfaceControl.Transaction`，再通过 `apply()` 交给 SurfaceFlinger。Android 11-13 的 SurfaceFlinger 侧可沿 `BufferStateLayer.cpp` 追 buffer 状态；Android 14-16 的同类逻辑已收敛到 `Layer.cpp`，重点看 `Layer::setBuffer()`、`Layer::latchBufferImpl()` 和 release callback。App 还是 producer，SurfaceFlinger 还是 consumer。
+**关键转折点**：BLAST 改的是提交通道，不是消费位置。Android 11 之后，App 侧的 ViewRootImpl / RenderThread 会把绘制好的 buffer 和图层几何状态封装进 `SurfaceControl.Transaction`，再通过 `apply()` 交给 SurfaceFlinger。Android 11-13 的 SurfaceFlinger 侧可沿 `BufferStateLayer.cpp` 追 buffer 状态；Android 14-17 的同类逻辑已收敛到 `Layer.cpp`，重点看 `Layer::setBuffer()`、`Layer::latchBufferImpl()` 和 release callback。App 还是 producer，SurfaceFlinger 还是 consumer。
 
 放到 Trace 里看，App 进程新增的 `BLASTBufferQueue` slice 代表本地打包 transaction；消费与合成仍然发生在 SurfaceFlinger 进程里。Android 10 的 Trace 处在过渡期，很多 App View 场景仍然更像 Legacy BufferQueue。
 
-[已验证: external review archive + 2.5 节 BLAST 验证记录 + AOSP android-16.0.0_r1 `frameworks/native/services/surfaceflinger/Layer.cpp`；Android 11-13 旧锚点为 `frameworks/native/services/surfaceflinger/BufferStateLayer.cpp`]
+[已验证: external review archive + 2.5 节 BLAST 验证记录 + AOSP android-17.0.0_r1 `frameworks/native/services/surfaceflinger/Layer.cpp`、`frameworks/base/core/java/android/view/ViewRootImpl.java`、`frameworks/base/graphics/java/android/graphics/HardwareBufferRenderer.java`；Android 11-13 旧锚点为 `frameworks/native/services/surfaceflinger/BufferStateLayer.cpp`]
 
 ## 典型模式对比
 
