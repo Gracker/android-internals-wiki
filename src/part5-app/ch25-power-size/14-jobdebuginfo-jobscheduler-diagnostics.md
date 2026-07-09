@@ -45,6 +45,7 @@ reviewed_by: openclaw-task6
 reviewed_date: 2026-06-05
 task6_result: pass-light-edit
 last_task6_at: "2026-06-05T13:11:00+08:00"
+last_task6_audit: "2026-07-10"
 task9_result: auto-fixed
 task2b_state: fixed
 task9_reviewed_by: openclaw-task9
