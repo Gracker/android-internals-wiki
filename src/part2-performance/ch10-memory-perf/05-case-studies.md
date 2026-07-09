@@ -37,36 +37,36 @@ polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
 last_task6_audit: "2026-06-08"
 review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-07 Task9 01:20：pass-tech-review。无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2：ProfilingTrigger API37 版本边界、案例效果量化占位仍建议补。"
-task9_reviewed_date: "2026-05-27"
-task2b_state: "fixed"
+task9_reviewed_date: "2026-07-09"
+task2b_state: fixed
 task2b_result: fixed
 rework_fixed_at: "2026-05-06T21:43:37+08:00"
 task2b_rework_date: "2026-04-30"
 task2b_fixed_at: "2026-04-30T01:40:00+08:00"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-27T07:24:00+08:00"
-task9_result: "auto-fixed"
+last_task9_at: "2026-07-09T21:30:58+08:00"
+task9_result: auto-fixed
 last_task9_audit: "2026-07-09"
 last_task9_audit_at: "2026-07-09T15:27:48+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-09-15-audit.md"
 last_task9_audit_result: "auto-fixed"
 last_task2b_verifier_at: "2026-05-27T03:37:00+08:00"
 task2b_verifier_result: "ready-for-task6"
-last_task9_review_log: "logs/deep-review/2026-05-27-07-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-09-21-deep-review.md"
 last_task9_autofix_at: "2026-07-09"
-task9_review_notes: "2026-05-27 Task9 05:28：auto-fixed。修正案例四 ProfilingManager / ProfilingTrigger API 35/36/36.1/37 版本边界：API35 为 app-driven requestProfiling，API36 起提供 trigger 注册，API37 OOM trigger 是事后 Java heap dump，不能替代业务侧内存突增阈值探针。回到 Task6 复审。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 lmkd/PSI、ComponentCallbacks2、HWUI alpha layer、ProfilingManager/ProfilingTrigger 版本边界，无 P0/P1；既有效果量化占位保留为 P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 idle-audit AUTO-FIX：P0 1 / P1 0 / P2 0。将 ComponentCallbacks2、HWUI alpha 自动建层、ProfilingTrigger 的源码锚点从 android-16.0.0_r1 收敛到 android-17.0.0_r1；View.java 参考改为直接锚定 RenderProperties.h；回到 Task6 复审。详见 logs/deep-review/2026-07-09-15-audit.md。"
+task9_review_notes: "2026-05-27 Task9 05:28：auto-fixed。修正案例四 ProfilingManager / ProfilingTrigger API 35/36/36.1/37 版本边界：API35 为 app-driven requestProfiling，API36 起提供 trigger 注册，API37 OOM trigger 是事后 Java heap dump，不能替代业务侧内存突增阈值探针。回到 Task6 复审。 | 2026-05-27 07:24 Task9 deep-review：pass-tech-review。复核 lmkd/PSI、ComponentCallbacks2、HWUI alpha layer、ProfilingManager/ProfilingTrigger 版本边界，无 P0/P1；既有效果量化占位保留为 P2，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 Task9 idle-audit AUTO-FIX：P0 1 / P1 0 / P2 0。将 ComponentCallbacks2、HWUI alpha 自动建层、ProfilingTrigger 的源码锚点从 android-16.0.0_r1 收敛到 android-17.0.0_r1；View.java 参考改为直接锚定 RenderProperties.h；回到 Task6 复审。详见 logs/deep-review/2026-07-09-15-audit.md。 | 2026-07-09 21:30 Task9 deep-review AUTO-FIX：按 AOSP android-17.0.0_r1 的 RenderProperties::promotedToLayer / RenderNode::pushLayerUpdate 修正源码参考句，避免把 alpha 自动建层误写成纯 Shader 级处理；回到 Task6 复审。"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task6_reviewed_date: 2026-07-09
 task6_reviewed_by: "openclaw-task6"
 last_task6_at: 2026-07-09T21:10:00+08:00
 last_task6_review_log: "logs/review/2026-05-27-07-review.md"
 review_type: "task6-writing-quality-review"
-task9_state: pending
+task9_state: reviewed
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。 | 2026-05-27 07:11 Task6：pass-light-edit。Task9 修正 ProfilingManager / ProfilingTrigger 版本边界后复审通过；L1/L2 未发现新增问题；既有效果量化占位按待补充/P2 保留。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
@@ -74,7 +74,6 @@ updated_by: "openclaw-task9"
 updated_date: "2026-07-09"
 verifier_checked: 2026-07-09
 ---
-
 # 案例集
 
 <!-- outline-start -->
@@ -277,7 +276,7 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 **效果**：修复后，renderD128 相关的 OOM 崩溃率下降至基线水平（[待补充：具体降幅百分比]），发版熔断事件未再发生。
 
-> **源码参考**：alpha 合成的自动建层条件在 `RenderProperties::promotedToLayer()`：alpha ∈ (0,1) 且 `hasOverlappingRendering()` 为 true 时触发；`RenderNode::pushLayerUpdate()` / `CanvasContext::createOrUpdateLayer()` 负责实际的 layer 创建与更新。`computeOrderingImpl` 处理子节点排序和投影，不是该条件判断的入口。Alpha 合成与硬件层（LAYER_TYPE_HARDWARE）的 FBO 机制是独立的：前者是渲染管线的 Shader 级处理，后者是 Buffer 级隔离。
+> **源码参考**：alpha 合成的自动建层条件在 `RenderProperties::promotedToLayer()`：alpha ∈ (0,1) 且 `hasOverlappingRendering()` 为 true 时触发；`RenderNode::pushLayerUpdate()` / `CanvasContext::createOrUpdateLayer()` 负责实际的 layer 创建与更新。`computeOrderingImpl` 处理子节点排序和投影，不是该条件判断的入口。自动 alpha 建层与显式硬件层（LAYER_TYPE_HARDWARE）的 FBO 机制是两条入口：前者由 `promotedToLayer()` 在满足 alpha 和重叠绘制条件时临时创建 RenderLayer / 离屏缓冲区，后者由 `setLayerType(LAYER_TYPE_HARDWARE)` 显式要求缓存层；两者都可能落到缓冲区隔离，不能把 `LAYER_TYPE_NONE` 当作规避 alpha 离屏缓冲的手段。
 
 [来源: Personal-Knowlodge/source/2026-03-06_wechat_抖音renderD128系统级疑难OOM分析与解决.md]
 
