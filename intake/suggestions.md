@@ -607,3 +607,59 @@ Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
 - Android 17 QPR 新特性
 - 新增 DeepResearch 素材驱动的缺口
 - 现有 draft 章节的内容加工质量提升
+
+## [Task2A 知识缺口挖掘] 已检查方向记录 — 2026-07-10 01:04
+
+**本轮结论**：全书 672 个小节，0 个空 draft，Task2B backlog = 0。本轮未发现评分 ≥ 14 的知识缺口。
+
+**与前一轮差异**：无新 DeepResearch 素材、无新 daily-info、source-index 无变化。前一轮（00:14）刚创建 §2.32 GraphicBuffer 内存池化。
+
+**本轮新检查方向（在前一轮基础上扩展）**：
+- ADPF / PerformanceHintManager → 478 mentions / 39 files，覆盖充分（§5.9 等）
+- Frame Timeline / JankTracker → 1060+ mentions / 104 files，覆盖充分（§2.30 等）
+- Game Mode API / GameManager → 98+ mentions / 15 files，覆盖充分（§8.9 等）
+- Memory Advice API → 51 mentions / 5 files，覆盖充分（§23.10 等）
+- OnBackInvokedCallback / BackAnimation → 47 mentions / 7 files，覆盖充分（§3.12 等）
+- Jetpack Adaptive Performance → 无提及，但属边缘 Jetpack 库，非系统级核心，评分不足
+- DMA-BUF Heaps → 部分覆盖于渲染/BufferQueue 章节，与 §2.32 重叠
+- Android Common Kernel (ACK/GKI) → 55+178 mentions，覆盖充分
+- ART 编译管线（dex2oat/Profman/DEXPREOPT/baseline profile）→ 281/41/18/520 mentions，覆盖充分
+- ART GC 内部（ConcurrentCopying/card table/write barrier/read barrier/Generational）→ 全部有覆盖
+- 系统 Services（AttentionManager/PeopleService/SafetyCenter/RoleManager/SensorPrivacyManager）→ 均非性能核心主题，超出全书范围
+- Wireless Debugging / App Link Verification → 开发工具/应用层配置，非性能核心
+
+**评估**：
+| 候选 | 素材 | 相关性 | 需求 | 时效 | 总分 | 判定 |
+|------|------|--------|------|------|------|------|
+| Jetpack Adaptive Performance 库 | 2/5 | 2/5 | 2/5 | 3/5 | 9/20 | ❌ |
+| DMA-BUF Heaps 独立章节 | 2/5 | 3/5 | 2/5 | 3/5 | 10/20 | ❌ 与 §2.32 重叠 |
+| Android HVF / Hypervisor Framework | 1/5 | 2/5 | 1/5 | 3/5 | 7/20 | ❌ |
+
+**总结**：全书覆盖已达饱和（83.0%，557/672），核心性能主题（渲染/内存/启动/CPU/功耗/工具链/调试/ANR/网络/游戏/稳定性/数据库）均有充分覆盖。后续缺口挖掘应关注：
+1. Android 17 QPR 新特性（预计 2026 Q4）
+2. 新增 DeepResearch 素材驱动的缺口
+3. Clippings 参考书扫描发现的结构性缺口（Part 5 ch20-ch26）
+
+
+## [Task2A 知识缺口挖掘] 已检查方向记录 — 2026-07-10 03:09
+
+**本轮结论**：全书 672 个小节，0 个空 draft，Task2B backlog = 0。本轮未发现评分 ≥ 14 的知识缺口。
+
+**本轮检查内容**：
+1. **daily-info 2026-07-10（新）**：2 篇 RSS 条目
+   - Android 17 系统性能优化深度解析（July 官方博客新文）→ 主题已被 §1.43/§8.35/§4.34-4.49 等 28+ 章节覆盖；July 博客 URL 未被现有章节引用，但内容与 June 博客高度重叠（行为预测、30%启动减少、45%崩溃减少均为已有指标），属现有章节素材更新非新章节
+   - Linux 6.10 BPF 内存管理 → BPF×内存管理组合主题未被覆盖，但属内核基础设施层面（评分 9/20），且与 §14.25 eBPF 可观测性 / §4.39 Linux 6.10 碎片整理的覆盖域有交集
+2. **source-index.json**：无新增（上次更新 07-09）
+3. **research-feeds**：无新增（最新仍为 04-14）
+4. **Clippings**：无新增（最新仍为 06-23 ANR 治理 + 05-30 MUSCHED）
+5. **research-gaps.md**：无新增（上次更新 07-07）
+
+**候选评估**：
+| 候选 | 素材 | 相关性 | 需求 | 时效 | 总分 | 判定 |
+|------|------|--------|------|------|------|------|
+| July'26 官方博客素材更新 | 2/5 | 4/5 | 3/5 | 5/5 | 14/20 | ⚠️ 素材更新非新章节 |
+| BPF×Memory Management | 2/5 | 2/5 | 2/5 | 3/5 | 9/20 | ❌ 低于阈值 |
+
+**说明**：July 官方博客评分为 14/20，但其内容（ML scheduler/behavior prediction/30% startup/45% crash）全部属于现有章节覆盖域。正确做法是将 URL 和新数据作为素材补充到 §1.43/§8.35 等现有章节，而非创建新章节。此为 Task2B 域工作。
+
+**结论**：全书 672 节（finalized 348 + ready-for-review 213 = 561，83.5%），draft 47 节。第 51 轮缺口挖掘未发现合格新章节候选。知识覆盖保持饱和状态。
