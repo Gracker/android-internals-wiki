@@ -1,25 +1,25 @@
 {
-  "last_check": "2026-07-03T02:00:00+08:00",
-  "check_id": "freshness-2026-07-03-02-00",
+  "last_check": "2026-07-10T02:00:00+08:00",
+  "check_id": "freshness-2026-07-10-02-00",
   "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
   "summary": {
-    "total_files_scanned": 592,
-    "files_with_metadata": 557,
-    "files_with_issues": 295,
-    "total_issues": 295,
+    "total_files_scanned": 737,
+    "files_with_metadata": 690,
+    "files_with_issues": 107,
+    "total_issues": 107,
     "issues_by_severity": {
-      "high": 207,
-      "medium": 88,
+      "high": 95,
+      "medium": 12,
       "low": 0
     },
     "risk_distribution": {
-      "high_risk": 207,
-      "medium_risk": 88,
+      "high_risk": 95,
+      "medium_risk": 12,
       "low_risk": 0
     },
     "android_18_violations": 0,
-    "metadata_coverage_percent": 94.1,
-    "issue_rate_percent": 49.8
+    "metadata_coverage_percent": 93.6,
+    "issue_rate_percent": 14.5
   },
   "external_sources_status": {
     "android_developers_blog": "blocked",
@@ -40,98 +40,23 @@
     "aosp_source_days": 180,
     "version_evolution_days": 30
   },
-  "high_risk_files_count": 207,
-  "medium_risk_files_count": 88,
-  "queue_updates": {
-    "new_items_added": 34,
-    "priorities": {
-      "p90_plus": "high_risk_90plus_days",
-      "p80": "high_risk_60_to_90_days",
-      "p70": "medium_risk_metadata_issues"
+  "key_findings": {
+    "baseline_migration_needed": {
+      "count": 95,
+      "description": "Files using android-16.0.0_r1 as baseline, need migration to android-17.0.0_r1",
+      "severity": "high"
+    },
+    "missing_android17_coverage": {
+      "count": 12,
+      "description": "Files with applicable_versions not covering Android 17/API 37",
+      "severity": "medium"
     }
   },
-  "known_priority_files": [
-    {
-      "file": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
-      "days_old": 80,
-      "severity": "high",
-      "status": "already_in_queue_p90"
-    },
-    {
-      "file": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
-      "days_old": 68,
-      "severity": "high",
-      "status": "already_in_queue_p70"
-    },
-    {
-      "file": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
-      "days_old": 31,
-      "severity": "high",
-      "status": "already_in_queue_p70"
-    }
-  ],
-  "top_outdated_files": [
-    {
-      "file": "part2-performance/ch07-smoothness/03-jank-methodology.md",
-      "days_old": 94,
-      "severity": "high"
-    },
-    {
-      "file": "part1-fundamentals/ch04-memory/02-linux-memory.md",
-      "days_old": 94,
-      "severity": "high"
-    },
-    {
-      "file": "part1-fundamentals/ch03-input/02-touch-performance.md",
-      "days_old": 94,
-      "severity": "high"
-    },
-    {
-      "file": "part2-performance/ch08-responsiveness/06-coroutine-performance.md",
-      "days_old": 92,
-      "severity": "high"
-    },
-    {
-      "file": "part2-performance/ch10-memory-perf/02-memory-leak.md",
-      "days_old": 92,
-      "severity": "high"
-    },
-    {
-      "file": "part2-performance/ch10-memory-perf/03-memory-growth.md",
-      "days_old": 92,
-      "severity": "high"
-    },
-    {
-      "file": "part3-tools/ch13-perfetto/06-thread-cpu-states.md",
-      "days_old": 91,
-      "severity": "high"
-    },
-    {
-      "file": "part2-performance/ch12-apk-network/02-network-performance.md",
-      "days_old": 91,
-      "severity": "high"
-    },
-    {
-      "file": "part3-tools/ch15-methodology/01-philosophy.md",
-      "days_old": 90,
-      "severity": "high"
-    },
-    {
-      "file": "part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "days_old": 89,
-      "severity": "high"
-    }
-  ],
-  "metadata_issues": {
-    "missing_last_verified": 78,
-    "invalid_date_format": 10,
-    "total_medium_risk": 88
-  },
-  "next_check_scheduled": "2026-07-05T02:00:00+08:00",
+  "next_check_scheduled": "2026-07-13T02:00:00+08:00",
   "recommendations": [
-    "Prioritize tool class chapters (ch13-perfetto, ch14-other-tools, ch19-apm) for batch updates",
-    "Focus on version evolution chapters with 90+ day staleness first",
-    "Complete metadata for 88 medium-risk files to improve tracking accuracy",
-    "Restore external source access for next scan to validate against latest Android updates"
+    "Priority 1: Migrate 95 files from android-16.0.0_r1 to android-17.0.0_r1 baseline",
+    "Priority 2: Add Android 17/API 37 to applicable_versions in 12 files",
+    "Priority 3: Restore external source access for next scan",
+    "Priority 4: Continue tracking Android 17 changes via AOSP commits"
   ]
 }
