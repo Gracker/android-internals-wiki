@@ -628,6 +628,29 @@
       "gap_source": "DeepResearch + research-gaps",
       "total_score": 16,
       "sources_count": 2
+    },
+    {
+      "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
+      "section": "10.6",
+      "section_title": "内存抖动与频繁 GC",
+      "priority": 85,
+      "stage": "pending",
+      "reason": "[Deep Tech Review] Android 17/API 37 源码基线过期，需要按 android-17.0.0_r1 重新校准",
+      "material_paths": [
+        "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
+        "logs/deep-review/2026-07-09-22-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码锚点",
+          "location": "frontmatter last_verified_against/verified_note；正文 CMC GC 版本差异表、ART GC TLAB 段、Compose 版本矩阵、参考资料 AOSP 源码路径",
+          "detail": "AIW 当前主线基准要求源码锚定 android-17.0.0_r1。本轮抽检用 git ls-remote 确认 platform/art 与 frameworks/base 均已有 android-17.0.0_r1 tag；并抽查确认 art/runtime/gc/heap.cc、art/runtime/gc/collector/mark_compact.cc、art/runtime/gc/space/region_space.cc、frameworks/base/core/java/com/android/internal/os/BinderInternal.java、frameworks/base/core/java/android/app/ActivityThread.java 在该 tag 下可访问，关键 CMC/GcWatcher 符号存在。章节仍写“公开 AOSP 无 android-17 tag”“截至 android-16.0.0_r1 尚无 android-17 对应 AOSP tag”，且 last_verified_against 停在 android-14/15/16，主线源码锚点已低于 Android 17 基线。",
+          "suggestion": "按 android-17.0.0_r1 重新复核并更新 ART GC/CMC、RegionTLAB、BinderInternal.GcWatcher、ActivityThread 注册链路；删除“无 android-17 tag/待 release notes 确认”的过期说法。Android 14-16 内容只保留为历史演进对照；Compose/AndroidX main 或 release notes 需明确属于 AndroidX 发布轨道，不能替代 Android 17 平台源码结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-09T22:25:10.682694+08:00",
+      "status": "pending"
     }
   ],
   "entries": [
