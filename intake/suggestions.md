@@ -563,3 +563,47 @@ Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
 - **已检查并确认覆盖充分**：F2FS, MGLRU, UFFD, ZRAM, Scudo, GWP-ASan, AV1, Compose Multiplatform, sched_ext, cgroup v2, foldable/multi-window, Jetpack WindowManager, HardwareBuffer, DMA-BUF, Android Auto/TV/Wear, APEX/Mainline, Project Mainline, AICore/GenAI (§5.20), NeuralNetworks HAL (§5.11/§23.24), 16KB Page Size, Material Expressive, Compose Stability
 - **发现缺口并创建**：16.11 ARM64 内核安全缓解机制性能开销（KASLR/KPTI/Spectre/Retpoline/PAC/BTI）— Score 14/20
 - **未达阈值（<14）的候选方向**：Wi-Fi 7 (13), IncFS 增量安装 (13), EnergyEstimator (13), App Cloning (12), VpnService (10), Compose Compiler Stability Config (13)
+
+
+## [Task2A 知识缺口挖掘] 已检查方向记录 — 2026-07-10 00:14
+
+**本轮结论**：全书 671→672 个小节，0 个空 draft，Task2B backlog = 0。本轮发现 1 个评分 ≥ 14 的知识缺口，已创建。
+
+**本轮主要工作**：
+1. **空 draft 扫描**：45 个 draft 章节全部有实质内容（≥15 行），无空 draft 可加工
+2. **Task2B backlog 检查**：0 个 pending，允许进入 Phase 1 挖掘
+3. **source-index.json 评估**：4 条高质量未映射素材中，3 条已有对应章节（GPU profiling 工具链、GPU counter 标准化、LMKD 迁移），1 条为 GPU 功耗 DVFS（评分 15 但与 §5.4/§5.16 部分重叠）
+4. **daily-info 最近 3 天**：RSS 内容为通用技术新闻（Android 15 GC、Linux 6.10 scheduler、Gradle 8.5），无新缺口
+5. **research-gaps.md 评估**：
+   - GPU 内存管理优化策略（§14.8 三条盲区延伸）→ **发现新 DeepResearch 素材（2026-07-09），评分 14/20，已创建 §2.32**
+   - GPU DVFS 调优策略 → 评分 15/20 但与 §5.4/§5.16 重叠度高
+   - CPU-GPU 同步瓶颈 → 评分 13/20，低于阈值
+   - Ariadne ZRAM 热感知压缩 → 评分 11/20（学术方案非 AOSP 实现），低于阈值
+6. **DeepResearch 新素材评估**（2026-07-09 新增 6 篇）：
+   - `graphic-buffer-memory-pool-design` (15.5KB) → **§2.32 新建** ✅
+   - `trim-memory-callback-api-evolution` → 已有 §4.49 覆盖
+   - `vndk-linker-namespace-load-cost` → 已有 §1.55 覆盖
+   - `soc-power-hal-schedutil` → 已有 §17.21 覆盖
+   - `ebpf-observability-matrix-verified` → 已有 §14.25 覆盖
+   - `audio-hardening-discrepancy` → §25.17 现有章节的验证修复（Task2B 域）
+7. **历史挖掘对比**：前 49 轮（07-07~07-09）连续无合格候选。本轮因 2026-07-09 新增的 GraphicBuffer DeepResearch 素材而发现 1 个缺口。
+
+**候选评估详情**：
+
+| 候选 | 素材 | 相关性 | 需求 | 时效 | 总分 | 判定 |
+|------|------|--------|------|------|------|------|
+| GraphicBuffer 内存池化与 Slot 复用 | 3/5 | 4/5 | 2/5 | 5/5 | **14/20** | ✅ 已创建 §2.32 |
+| GPU 功耗监控与 DVFS 调优 | 3/5 | 4/5 | 3/5 | 5/5 | 15/20 | 与 §5.4/§5.16 重叠，暂缓 |
+| Ariadne 热感知 ZRAM 压缩 | 2/5 | 4/5 | 2/5 | 3/5 | 11/20 | ❌ 低于阈值 |
+| CPU-GPU 线程同步瓶颈 | 2/5 | 4/5 | 4/5 | 3/5 | 13/20 | ❌ 低于阈值 |
+
+**§2.32 创建详情**：
+- 文件：`src/part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md`
+- 大纲：6 锚点 + 3 扩展点
+- 素材来源：DeepResearch 2026-07-09（android-17.0.0_r1 源码级验证）
+- Git commit: eb2695bce
+
+**总结**：全书 672 节，finalized 344 + ready-for-review 213 = 557 节已完成（83.0%），draft 47 节。知识覆盖接近饱和。后续关注：
+- Android 17 QPR 新特性
+- 新增 DeepResearch 素材驱动的缺口
+- 现有 draft 章节的内容加工质量提升
