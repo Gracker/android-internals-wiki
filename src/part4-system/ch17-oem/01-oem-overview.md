@@ -2,7 +2,7 @@
 title: "OEM 性能优化的通用思路"
 chapter: "17.1"
 section: "17.1"
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: "task6_pending"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [['oem', 'performance', 'freezer', 'preloading', 'background-management']]
@@ -35,6 +35,7 @@ p0: 0
 p1: 0
 p2: 2
 task9_review_notes: "2026-07-09 Task9 idle-audit: auto-fixed。修正 cgroup freezer API 归属：Android 17 中由 CachedAppOptimizer.enableFreezer 管理开关/策略，Freezer.setProcessFrozen 包装 android.os.Process.setProcessFrozen；同步修正 USAP 默认值锚点为 ZygoteConfig.USAP_POOL_ENABLED_DEFAULT=false，并移除 usapReceive 稳定 slice 说法。证据：AOSP android-17.0.0_r1 CachedAppOptimizer.java/Freezer.java/Process.java/ZygoteConfig.java/ZygoteServer.java；回到 Task6 复审。"
+ | 2026-07-09 23:25 Task2B Verifier：状态修正 Task9 auto-fixed 后 status 仍为 finalized，阻止 Task6 复审。status: finalized→ready-for-review，章节已正确回流 Task6。
 ---
 
 # OEM 性能优化的通用思路

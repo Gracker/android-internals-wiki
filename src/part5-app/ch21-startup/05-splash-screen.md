@@ -2,7 +2,7 @@
 title: "Splash Screen 与感知启动速度"
 chapter: "21.5"
 section: "21.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 confidence: medium
 drafted_date: "2026-05-13"
@@ -40,6 +40,7 @@ last_task6_at: "2026-07-09T18:14:16+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-06-16T00:51:53"
 task2b_fixed_date: "2026-06-16"
+ | 2026-07-09 23:25 Task2B Verifier：状态修正 Task9 auto-fixed 后 status 仍为 finalized，阻止 Task6 复审。status: finalized→ready-for-review，章节已正确回流 Task6。
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
 last_verified: "2026-07-09"
