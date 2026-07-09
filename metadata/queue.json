@@ -634,7 +634,7 @@
       "section": "10.6",
       "section_title": "内存抖动与频繁 GC",
       "priority": 85,
-      "stage": "pending",
+      "stage": "completed",
       "reason": "[Deep Tech Review] Android 17/API 37 源码基线过期，需要按 android-17.0.0_r1 重新校准",
       "material_paths": [
         "src/part2-performance/ch10-memory-perf/06-memory-churn.md",

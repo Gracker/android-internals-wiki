@@ -2,7 +2,7 @@
 title: "Android Vitals 过度 WakeLock 指标与治理"
 chapter: "25.19"
 section: "25.19"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-25"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals wake lock metric checked 2026-07"
@@ -39,7 +39,7 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
-pipeline_stage: ready-for-promotion
+pipeline_stage: ready-to-publish
 task2a_result: draft-ready-for-review
 last_task2a_at: "2026-05-25T06:04:00+08:00"
 task6_state: reviewed

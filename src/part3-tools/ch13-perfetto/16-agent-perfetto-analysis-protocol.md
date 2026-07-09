@@ -13,9 +13,9 @@ related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed-lite
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
