@@ -589,6 +589,46 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-10T06:37:34.361020",
       "status": "pending"
+    },
+    {
+      "section": "04.memory",
+      "section_title": "04.memory",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026/07/android-17-performance-scheduler-memory-management"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android开发者博客 - 2026-07-11 — Android 17 带来了系统调度的革命性改进，通过基于机器学习的用户行为预测算法，实现了应用启动时间平均减少30%。新调度器能够动态识别不同应用类型，为前台交互应用分配更多CPU资源，同时优化后台...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-11T05:36:55.619853",
+      "status": "pending"
+    },
+    {
+      "section": "04.memory",
+      "section_title": "04.memory",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://www.kernel.org/doc/html/latest/admin-guide/bpf-memory-management.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux内核邮件列表 - 2026-07-11 — Linux 6.10 引入了革命性的内存管理改进，通过 BPF (Berkeley Packet Filter) 技术的深度集成，实现了更细粒度的内存控制。新系统支持基于应用的内存配额动态调整，能够根...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-11T05:36:55.621996",
+      "status": "pending"
     }
   ],
   "chapters": []

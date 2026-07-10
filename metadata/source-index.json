@@ -2083,6 +2083,99 @@
       ],
       "summary": "Jetpack Compose 1.1版本发布，达到稳定状态，标志着UI开发的新时代。",
       "scored_at": "2026-07-10T09:32:24.958346"
+    },
+    {
+      "title": "Android 17 卫星 / NTN 网络的传输层与受限能力源码级实现",
+      "path": "DeepResearch/2026-07-10-android17-satellite-ntn-transport-source-investigation.md",
+      "quality": "high",
+      "score": 20,
+      "mapping": "ch24",
+      "tags": [
+        "#Android",
+        "#卫星网络",
+        "#NTN",
+        "#网络传输",
+        "#Android17"
+      ],
+      "scored_at": "2026-07-11T05:47:09.279607"
+    },
+    {
+      "title": "Android 17 SoC 跨厂商电池优化策略——Power HAL AIDL v7 × PowerStats AIDL v2 × Kernel cpufreq_schedutil 三层闭环",
+      "path": "DeepResearch/2026-07-10-android17-soc-vendor-power-hal-stats-schedutil-closedloop.md",
+      "quality": "high",
+      "score": 20,
+      "mapping": "ch15",
+      "tags": [
+        "#Android",
+        "#电源管理",
+        "#PowerHAL",
+        "#SoC",
+        "#电池优化",
+        "#Android17"
+      ],
+      "scored_at": "2026-07-11T05:47:09.279614"
+    },
+    {
+      "title": "Android 17 启动框架与任务编排 — ApplicationStartInfo 与 AppStartInfoTracker",
+      "path": "DeepResearch/2026-07-10-android17-startup-applicationstartinfo-tracker.md",
+      "quality": "high",
+      "score": 20,
+      "mapping": "ch21",
+      "tags": [
+        "#Android",
+        "#启动框架",
+        "#ApplicationStartInfo",
+        "#AppStartInfoTracker",
+        "#Android17"
+      ],
+      "scored_at": "2026-07-11T05:47:09.279617"
+    },
+    {
+      "title": "Flutter Impeller Pipeline 创建反馈 + 异步管线构建 + 磁盘缓存持久化机制",
+      "path": "DeepResearch/2026-07-10-flutter-impeller-pipeline-creation-feedback-async-cache-persist.md",
+      "quality": "high",
+      "score": 19,
+      "mapping": "ch02",
+      "tags": [
+        "#Android",
+        "#渲染",
+        "#Flutter",
+        "#Impeller",
+        "#GPU",
+        "#Pipeline"
+      ],
+      "scored_at": "2026-07-11T05:47:09.279618"
+    },
+    {
+      "title": "线程亲和性 (thread affinity) 与 CPU 绑定",
+      "path": "DeepResearch/2026-07-10-thread-affinity.md",
+      "quality": "high",
+      "score": 19,
+      "mapping": "ch05",
+      "tags": [
+        "#Android",
+        "#线程管理",
+        "#CPU绑定",
+        "#调度策略",
+        "#Android17"
+      ],
+      "scored_at": "2026-07-11T05:47:09.279624"
+    },
+    {
+      "title": "Android 17 GPU功耗管理策略与DVFS调优机制研究",
+      "path": "DeepResearch/2026-07-11-android17-gpu-power-hal-dvfs-headroom.md",
+      "quality": "high",
+      "score": 20,
+      "mapping": "ch14",
+      "tags": [
+        "#Android",
+        "#GPU",
+        "#功耗管理",
+        "#DVFS",
+        "#PowerHAL",
+        "#Android17"
+      ],
+      "scored_at": "2026-07-11T05:47:09.279626"
     }
   ]
 }
