@@ -930,8 +930,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-10T13:30:33+08:00",
-      "status": "pending",
-      "original_review_log": "logs/deep-review/2026-07-10-13-deep-review.md"
+      "status": "completed",
+      "original_review_log": "logs/deep-review/2026-07-10-13-deep-review.md",
+      "completed_at": "2026-07-10T13:35:00+08:00",
+      "completed_by": "task2b-lite",
+      "completion_note": "fixed-lite: P0 Session 生命周期(三态机→native指针) + P0 线程ID示例(getId→Process.myTid). 剩余3个问题(API年表/服务路径迁移/未验证断言)留主Task2B."
     }
   ],
   "pending": [
