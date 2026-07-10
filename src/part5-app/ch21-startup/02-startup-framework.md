@@ -206,10 +206,114 @@ Android 17 中 BootAnalyzer 通过新的启动指标计算公式提升分析精�
 2. 跨应用启动依赖分析：应用间启动依赖关系的传递机制
 3. 启动异常自动检测算法的实现细节
 
-> 本节内容基于 android-17.0.0_r1 源码调研，补充了 Startup Insights 机制的源码级实现细节。
 <!-- AIW-源码调研-2026-07-06 -->
 
+#### 🔹 (2026-07-10 勘误/补全) ApplicationStartInfo 与 AppStartInfoTracker 源码级事实更正
+
+> **本节为 2026-07-10 调研追加**，用于修正上文 §21.2.5.6 中与 android-17.0.0_r1 源码不符的虚构代码片段。所有论断均可通过列出的源文件 + 常量名一一对照。
+
+**1) `ApplicationStartInfo` 的真实字段表**（`frameworks/base/core/java/android/app/ApplicationStartInfo.java`，android-17.0.0_r1）：
+
+| 字段 | 类型 | 含义 |
+|---|---|---|
+| `mStartupState` | `@StartupState int` | `STARTED(0)` / `ERROR(1)` / `FIRST_FRAME_DRAWN(2)` |
+| `mReason` | `@StartReason int` | 12 档：`ALARM(0)/BACKUP(1)/BOOT_COMPLETE(2)/BROADCAST(3)/CONTENT_PROVIDER(4)/JOB(5)/LAUNCHER(6)/LAUNCHER_RECENTS(7)/OTHER(8)/PUSH(9)/SERVICE(10)/START_ACTIVITY(11)` |
+| `mStartType` | `@StartType int` | `UNSET(0)/COLD(1)/WARM(2)/HOT(3)` |
+| `mLaunchMode` | `@LaunchMode int` | 5 档 STANDARD / SINGLE_TOP / SINGLE_INSTANCE / SINGLE_TASK / SINGLE_INSTANCE_PER_TASK |
+| `mStartupTimestampsNs` | `ArrayMap<Integer, Long>` | 系统保留 `[0, 20]`、开发者可用 `(20, 30]` |
+| `mRealUid / mPackageUid / mDefiningUid / mPid` | `int` | 进程运行 UID / 安装 UID / 外部 BIND 服务 UID / 进程 ID |
+| `mWasForceStopped` | `boolean` | 上次 force-stop 后第一次启动为 true，提醒 app 重新注册 Job/Alarm |
+| `mStartComponent` | `@StartComponent int` | 五元组（`ACTIVITY=1 / BROADCAST=2 / CONTENT_PROVIDER=3 / SERVICE=4 / OTHER=5`），**受 `android.app.Flags.appStartInfoComponent()` 特性开关管控** |
+
+> ⚠️ 之前 §21.2.5.6 中描述的 `startupPhase`、`metrics` Bundle 字段、`< 1ms runtime / 8KB memory / 50% protobuf` 等数字，在 AOSP `ApplicationStartInfo.java` 中**均无对应实现**，属无据断言。
+
+**2) 客户端公开 API 真实签名**（`frameworks/base/core/java/android/app/ActivityManager.java`）：
+
+```java
+// 历史查询（应用自检，仅返回调用方 uid 的记录）
+public List<ApplicationStartInfo> getHistoricalProcessStartReasons(@IntRange(from = 0) int maxNum);
+
+// 历史查询（按 package 过滤，需 DUMP 权限）
+@SystemApi @RequiresPermission(Manifest.permission.DUMP)
+public List<ApplicationStartInfo> getExternalHistoricalProcessStartReasons(
+    @NonNull String packageName, @IntRange(from = 0) int maxNum);
+
+// 完成回调（oneway binder + Executor 异步，仅触发一次）
+public void addApplicationStartInfoCompletionListener(
+    @NonNull Executor executor,
+    @NonNull Consumer<ApplicationStartInfo> listener);
+public void removeApplicationStartInfoCompletionListener(
+    @NonNull Consumer<ApplicationStartInfo> listener);
+
+// 开发者私有时间戳（必须落在 [21, 30]）
+public void addStartInfoTimestamp(
+    @IntRange(from = START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START,
+              to = START_TIMESTAMP_RESERVED_RANGE_DEVELOPER) int key,
+    long timestampNs);
+```
+
+背后 IPC 契约为 `core/java/android/app/IApplicationStartInfoCompleteListener.aidl`：
+```aidl
+oneway interface IApplicationStartInfoCompleteListener {
+    void onApplicationStartInfoComplete(in ApplicationStartInfo applicationStartInfo);
+}
+```
+注意 `oneway` 关键字：system_server **不阻塞**等待 client 端 binder 队列；异常启动（STARTUP_STATE_ERROR）**不会**触发回调。
+
+**3) 服务侧环形缓冲**（`frameworks/base/services/core/java/com/android/server/am/AppStartInfoTracker.java`）：
+
+```java
+static final int MAX_IN_PROGRESS_RECORDS = 5;
+static final long APP_START_INFO_HISTORY_LENGTH_MS = TimeUnit.DAYS.toMillis(14);       // 14 天滚动过期
+private static final long APP_START_INFO_PERSIST_INTERVAL = TimeUnit.MINUTES.toMillis(30); // 30 min batch 落盘
+static final String APP_START_STORE_DIR = "procstartstore";
+static final String APP_START_INFO_FILE = "procstartinfo";
+// 持久化路径：/data/system/procstartstore/procstartinfo
+```
+
+三件套数据结构：
+- `ProcessMap<AppStartInfoContainer> mData` — per-uid 环形缓冲，上限来自资源项 `config_app_start_info_history_list_size`
+- `SparseArray<ArrayList<ApplicationStartInfoCompleteCallback>> mCallbacks` — UID-key 化的完成监听
+- `ArrayMap<Long, ApplicationStartInfo> mInProgressRecords` — 以 ActivityMetricsLaunchObserver 的 launch timestamp 为 key 的未完成队列
+
+**4) 服务侧采集入口**：
+
+| 入口方法 | `START_REASON_*` | `START_COMPONENT_*`（flag 开时） |
+|---|---|---|
+| `onActivityLaunched(launchTimeNs, uid, pid, isColdStart)` | `LAUNCHER` 或 `START_ACTIVITY` | `ACTIVITY` |
+| `handleProcessServiceStart(...)` | `JOB`（若 `permission` 含 `BIND_JOB_SERVICE`）否则 `SERVICE` | `SERVICE` |
+| `handleProcessBroadcastStart(..., isAlarm)` | `ALARM`（isAlarm=true）否则 `BROADCAST` | `BROADCAST` |
+| `handleProcessContentProviderStart(...)` | `CONTENT_PROVIDER` | `CONTENT_PROVIDER` |
+| `handleProcessBackupStart(..., cold)` | `BACKUP` | `OTHER` |
+| `onReportFullyDrawn(...)` | 写入 `START_TIMESTAMP_FULLY_DRAWN` 并触发回调 | — |
+| `onActivityFinished(...)` | 转 `STARTUP_STATE_FIRST_FRAME_DRAWN` | — |
+
+**5) First-Frame 时间戳落点**（`frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java`）：
+
+```java
+mLoggerHandler.post(() -> mSupervisor.mService.mWindowManager.mAmInternal
+    .addStartInfoTimestamp(ApplicationStartInfo.START_TIMESTAMP_FIRST_FRAME,
+        timestampNs, infoSnapshot.uid, pid, infoSnapshot.userId));
+```
+⚠️ `mLoggerHandler.post(...)` 是**异步派发**，first-frame 时间戳存在 1–5ms 量级的 Looper 调度抖动；极短启动回归（< 30ms）需考虑此抖动。
+
+**6) 商用 AOSP 可见性提示**：
+
+- 默认编译下 `android.app.Flags.appStartInfoComponent()` **可能为 false**，所有记录的 `getStartComponent()` 返回 0；调用方应先判定 `info.getStartComponent() != 0` 再做组件维度聚合，避免误判为"只有 Activity 启动"
+- `START_REASON_LAUNCHER` 与 `START_REASON_START_ACTIVITY` 在 launcher intent 直启时并存，目前 AMS 以 Activity 路径优先
+- 14 天滚动过期受 `MonotonicClock` 保护，避免设备重启引入时间基准漂移；最近一次 persist 之后的记录在重启时会丢失（被认作 dirty window）
+
+**7) §21.2.5.6 原内容处置建议**：
+
+原文中关于 `SystemHealthManager.STARTUP_INFO_COLLECTOR`、`STATS_APPLICATION_START_INFO`、`PHASE_PROCESS_START` 等常量，`ApplicationStartInfo.startupPhase`/`metrics` Bundle 字段，`IActivityManager.startupTiming()`/`registerStartupMonitor()` 接口，以及「< 1ms / 8KB / 50% protobuf」三个数字，均为**无源断言**。建议后续 Task6 复审时将该段替换为本勘误的字段表，或在原段顶部加 `(DEPRECATED: 2026-07-10; 参见后文 §21.2.5.6-2026-07-10)` 提示。
+
+详细事实链与对比表参见 DeepResearch 报告：`2026-07-10-android17-startup-applicationstartinfo-tracker.md`。
+
+<!-- AIW-源码调研-2026-07-10 -->
+
 <!-- outline-end -->
+
+
 
 
 <!-- outline-end -->

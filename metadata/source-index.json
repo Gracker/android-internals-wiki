@@ -1867,6 +1867,222 @@
       "summary": "AGI 3.3.3 通过 gapii 动态库以 Vulkan layer/GL interceptor 注入目标进程，使用 debug.agi.procname 属性零侵入挂载。单帧捕获基于 vkQueueSubmit 边界（与 VSync 不同），16MiB chunk 切片防 OOM。与 APA 无源码耦合，通过 Perfetto trace 互补。",
       "processed_at": "2026-07-10T06:37:34.361020",
       "processed_by": "task-deepresearch-injector"
+    },
+    {
+      "title": "Improving App Performance with Baseline Profiles",
+      "path": "AndroidWeekly/#29/Improving-App-Performance-with-Baseline-Profiles",
+      "source_url": "https://android-developers.googleblog.com/2022/01/improving-app-performance-with-baseline.html",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Google发布新的Baseline Profile库，帮助开发者主动生成性能优化配置，减少启动阶段的JIT编译。",
+      "scored_at": "2026-07-10T09:32:24.958328"
+    },
+    {
+      "title": "Android Architecture Pattern",
+      "path": "AndroidWeekly/#29/Android-Architecture-Pattern",
+      "source_url": "https://medium.com/team-pratilipi/android-architecture-pattern-82aa0cf7e236",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍Android App架构模式，包括Single Activity Architecture、Clean Architecture、Modularisation等。",
+      "scored_at": "2026-07-10T09:32:24.958336"
+    },
+    {
+      "title": "向工程腐化开炮 | proguard治理",
+      "path": "AndroidWeekly/#29/向工程腐化开炮-proguard治理",
+      "source_url": "https://xie.infoq.cn/article/8f418027b1033043b7a7d5e91",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "优酷架构团队分享Java代码Proguard治理方案，解决App迭代过程中的工程腐化问题。",
+      "scored_at": "2026-07-10T09:32:24.958339"
+    },
+    {
+      "title": "Jetpack DragAndDrop 库——拖放操作如此轻松！",
+      "path": "AndroidWeekly/#29/Jetpack-DragAndDrop-库拖放操作如此轻松",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=Mzk0NDIwMTExNw==&mid=2247508535&idx=1&sn=62e83062e97649a85c52a59620a22af9",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍Alpha阶段的Jetpack DragAndDrop库，帮助应用更轻松地处理拖放数据操作。",
+      "scored_at": "2026-07-10T09:32:24.958340"
+    },
+    {
+      "title": "High performance with idiomatic Kotlin",
+      "path": "AndroidWeekly/#29/High-performance-with-idiomatic-Kotlin",
+      "source_url": "https://magdamiu.medium.com/high-performance-with-idiomatic-kotlin-d52e099d0df0",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "探讨如何通过惯用的Kotlin代码编写高性能、可维护的软件产品，涵盖性能测量和优化。",
+      "scored_at": "2026-07-10T09:32:24.958341"
+    },
+    {
+      "title": "What's new in Android 12",
+      "path": "AndroidWeekly/#29/Whats-new-in-Android-12",
+      "source_url": "https://medium.com/huawei-developers/whats-new-in-android-12-for-users-2c5031bc86ae",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍Android 12的新特性和改进，不过此时Android 13已经发布。",
+      "scored_at": "2026-07-10T09:32:24.958343"
+    },
+    {
+      "title": "抖音 Android 性能优化系列：启动优化之理论和工具篇",
+      "path": "AndroidWeekly/#29/抖音-Android-性能优化系列启动优化之理论和工具篇",
+      "source_url": "http://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247491335&idx=1&sn=e3eabd9253ab2f83925af974db3f3072",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "抖音Android团队分享启动性能优化理论和工具，基于数亿用户验证的AB测试方法论。",
+      "scored_at": "2026-07-10T09:32:24.958344"
+    },
+    {
+      "title": "Jetpack Compose 1.1 is now stable!",
+      "path": "AndroidWeekly/#29/Jetpack-Compose-11-is-now-stable",
+      "source_url": "https://android-developers.googleblog.com/2022/02/jetpack-compose-11-now-stable.html",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-架构",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch02-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Jetpack Compose 1.1版本发布，达到稳定状态，标志着UI开发的新时代。",
+      "scored_at": "2026-07-10T09:32:24.958346"
     }
   ]
 }
