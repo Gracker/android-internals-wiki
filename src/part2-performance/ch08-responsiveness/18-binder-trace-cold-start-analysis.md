@@ -5,6 +5,9 @@ status: ready-for-review
 drafted_date: "2026-07-02"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-02"
+task2b_result: fixed
+task2b_state: fixed
+task2b_fixed_at: 2026-07-11T00:51:53+08:00
 last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), Perfetto mainline (binder_tracker.cc / binder.sql), kernel android17-6.12 binder driver tracepoints"
 confidence: high
 sources:
@@ -19,9 +22,9 @@ sources:
   - type: perfetto
     path: "external/perfetto/src/trace_processor/importers/ftrace/binder_tracker.cc (TxnFrame state machine)"
   - type: perfetto
-    path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql (android_binder_txns PERFETTO TABLE)"
+    path: "external/perfetto/src/trace_processor/sql/stdlib/android/binder.sql (android_binder_txns PERFETTO TABLE)"
   - type: perfetto
-    path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql (_binder_reason, client_breakdown)"
+    path: "external/perfetto/src/trace_processor/sql/stdlib/android/binder_breakdown.sql (_binder_reason, client_breakdown)"
   - type: obsidian
     path: "DeepResearch/2026-04-29-binder-transaction-trace-analysis-perfetto.md"
   - type: obsidian
@@ -46,7 +49,7 @@ gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
 pipeline_stage: "task6_pending"
-task6_state: pending
+task6_state: revisiting
 task9_state: pending
 ---
 
@@ -240,7 +243,7 @@ PerfettoTrace.beginSection("Application.bindApplication:start");
 
 ### 3.1 三段延迟的语义
 
-> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` PERFETTO TABLE 定义] 同步事务的客户端总等待时间 `client_dur` 由三段组成：
+> [已验证: Perfetto mainline, src/trace_processor/sql/stdlib/android/binder.sql — `android_binder_txns` PERFETTO TABLE 定义] 同步事务的客户端总等待时间 `client_dur` 由三段组成：
 
 | 字段 | 含义 | 数学表达 |
 |------|------|---------|
@@ -256,7 +259,7 @@ client_dur ≈ dispatch_dur + server_dur + small overhead
 
 ### 3.2 归因决策树
 
-> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql — `_binder_reason()` 把 thread_state + slice_name 映射为语义化延迟原因] 根据三段长度的相对关系，可以快速判断瓶颈位置：
+> [已验证: Perfetto mainline, src/trace_processor/sql/stdlib/android/binder_breakdown.sql — `_binder_reason()` 把 thread_state + slice_name 映射为语义化延迟原因] 根据三段长度的相对关系，可以快速判断瓶颈位置：
 
 | `dispatch_dur` vs `server_dur` | 现象 | 根因层级 |
 |------------------------------|------|---------|
@@ -267,7 +270,7 @@ client_dur ≈ dispatch_dur + server_dur + small overhead
 | `dispatch_dur` 高且 `server_dur` 也很高 | 服务端线程池欠 + 业务重，可叠加 | 复合瓶颈 |
 | `dispatch_dur` 接近 0 但 `client_dur` 持续高位 | 客户端在等 reply 时被抢占 | CPU 调度 / cgroup / freezer |
 
-> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` 表携带 `is_sync`、`client_oom_score`、`server_oom_score`、`client_monotonic_dur` 等字段，使归因判断可以在 SQL 内直接完成] 单一字段判断容易误判；推荐同时跑几条 SQL 把三段延迟按 server_process + aidl_name 分组聚合。
+> [已验证: Perfetto mainline, src/trace_processor/sql/stdlib/android/binder.sql — `android_binder_txns` 表携带 `is_sync`、`client_oom_score`、`server_oom_score`、`client_monotonic_dur` 等字段，使归因判断可以在 SQL 内直接完成] 单一字段判断容易误判；推荐同时跑几条 SQL 把三段延迟按 server_process + aidl_name 分组聚合。
 
 ### 3.3 Frozen Reply 干扰的识别
 
@@ -304,7 +307,7 @@ LIMIT 20;
 
 冷启动阶段 App 进程会向 PackageManager（PKMS）发起多条元数据查询：`getPackageInfo`、`getApplicationInfo`、`getProviderInfo`。这些事务每笔 `client_dur` 通常 5-15ms，但**频次高**——一次冷启动可能发 8-12 次。
 
-> [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java — PKMS 提供锁化的元数据缓存，但读路径依然走 binder IPC] 单笔优化空间有限，建议的应用层对策：
+> [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/server/pm/PackageManagerService.java — PKMS 提供锁化的元数据缓存，但读路径依然走 binder IPC] 单笔优化空间有限，建议的应用层对策：
 > - 缓存 PackageInfo 到内存，避免每次 onCreate 都查；
 > - 合并多个 `getXxxInfo` 调用为单次 parcel 批量查询（仅 AOSP 实现层次，应用层无法做到）。
 
@@ -323,7 +326,7 @@ LIMIT 20;
 2. WMS → App 进程：`relayout()` 回调（~5-15ms）
 3. App → WMS：`donerelayout()` reply 后渲染第一帧
 
-[已验证: AOSP frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java — `addWindow()` + `relayoutWindow()` 链路] 单笔无法压缩；缩短路径的手段只有：
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/server/wm/WindowManagerService.java — `addWindow()` + `relayoutWindow()` 链路] 单笔无法压缩；缩短路径的手段只有：
 - 在 `SplashScreen` API 触发 stage ready 之前提前发出 `addView`（参见 §21.5 SplashScreen）；
 - 把应用内首屏布局的 `onCreate` inflate 异步化（参见 §21.6）。
 
@@ -599,8 +602,8 @@ ORDER BY transaction_count DESC;
 ## 参考资料
 
 - [Perfetto 官方：Analyzing Binder Transactions](https://perfetto.dev/docs/analysis/binder) — `android.binder` 标准库官方指南 **[一手：官方文档]**
-- [Perfetto 源码：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`](https://cs.android.com) — `android_binder_txns` PERFETTO TABLE 定义
-- [Perfetto 源码：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql`](https://cs.android.com) — `_binder_reason()` 延迟归因 + breakdown 表
+- [Perfetto 源码：`external/perfetto/src/trace_processor/sql/stdlib/android/binder.sql`](https://cs.android.com) — `android_binder_txns` PERFETTO TABLE 定义
+- [Perfetto 源码：`external/perfetto/src/trace_processor/sql/stdlib/android/binder_breakdown.sql`](https://cs.android.com) — `_binder_reason()` 延迟归因 + breakdown 表
 - [Perfetto 源码：`external/perfetto/src/trace_processor/importers/ftrace/binder_tracker.cc`](https://cs.android.com) — BinderTracker 状态机、TxnFrame 8 状态枚举
 - [Android Kernel：`drivers/android/binder_trace.h`](https://cs.android.com) — `TRACE_EVENT(binder_transaction)` 等内核 tracepoint
 - [Android Kernel：`drivers/android/binder.c`](https://cs.android.com) — `binder_transaction()` 函数 trace 触发路径
