@@ -12,7 +12,7 @@ last_verified_against: "Android Developers Baseline/Startup/ProfileVerifier/Prof
 reviewed_date: "2026-05-27"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 confidence: medium
 sources:
 - type: official
@@ -35,29 +35,30 @@ tags:
 - dexopt
 - startup
 - performance
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
 review_round: 6
-task9_reviewed_date: "2026-06-20"
+task9_reviewed_date: "2026-07-10"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-20T04:27:08+08:00"
+last_task9_at: "2026-07-10T16:36:38+08:00"
 last_task6_audit: '2026-06-11'
 last_task2b_at: '2026-04-24T19:36:54+08:00'
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
-task9_review_notes: "2026-06-20 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3；Android Developers Baseline/Startup/ProfileVerifier/Profileable 文档与 AOSP android-17.0.0_r1 ART Service 源码锚点复核通过；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-06-19"
+task9_review_notes: "2026-06-20 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3；Android Developers Baseline/Startup/ProfileVerifier/Profileable 文档与 AOSP android-17.0.0_r1 ART Service 源码锚点复核通过；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-10 16:35 Task9 idle audit auto-fix：将 Android 17 源码锚点统一为 AOSP android-17.0.0_r1；版本边界复核通过，回到 Task6 复审。"
+last_task9_audit: "2026-07-10"
 last_task2b_verifier_at: "2026-06-20T03:32:38+08:00"
 task2b_verifier_result: "ready-for-task6"
 last_task6_at: "2026-06-20T01:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-01-review.md"
 task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 处；无新增 L3/L4 回炉。Task9 仍为 needs-rework/pending，未自动晋升 finalized。 | 2026-06-20 01:07 Task6 revisiting re-review：pass-light-edit。Task2B 修复 + Task9 auto-fix 后内容无新增 L1/L2 问题；无 L3/L4 回炉项。Task9 为 auto-fixed（非 pass-tech-review），未满足自动晋升条件。"
-last_task9_review_log: "logs/deep-review/2026-06-20-04-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-10-16-audit.md"
+last_task9_audit_log: "logs/deep-review/2026-07-10-16-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-20
-last_task9_autofix_at: "2026-06-19"
+last_task9_autofix_at: "2026-07-10"
 auto_promoted: true
 finalized_date: "2026-06-20"
 finalized_by: "openclaw-task9-auto-promote"
@@ -292,7 +293,7 @@ Startup Profile 的 DEX layout 优化从 AGP 8.1 可用、8.3 默认启用。它
 
 ### Android 17 与 R8 的适配边界
 
-到 Android 17，应用侧 Baseline Profiles 的消费路径没有换轨。公开文档和 android-17-beta3 交叉核对后，release 包里仍然是 `baseline.prof`，设备端仍然生成 `speed-profile` 对应的 OAT 产物。Android 14 之后更多 dexopt 调度转到 ART Service，但验证入口还是 `ProfileVerifier` 和 `dumpsys package dexopt`。
+到 Android 17，应用侧 Baseline Profiles 的消费路径没有换轨。公开文档和 AOSP `android-17.0.0_r1` 交叉核对后，release 包里仍然是 `baseline.prof`，设备端仍然生成 `speed-profile` 对应的 OAT 产物。Android 14 之后更多 dexopt 调度转到 ART Service，但验证入口还是 `ProfileVerifier` 和 `dumpsys package dexopt`。
 
 R8 会影响收益，但影响点在 release 产物的代码形态和启动路径命中率，不是把 Baseline Profiles 机制改掉。官方生成文档明确要求按 release build 或基于 release 的 variant 生成 profile，product flavor 也要分别产出。实操里把下面四件事固定下来，命中率会稳定很多：
 
