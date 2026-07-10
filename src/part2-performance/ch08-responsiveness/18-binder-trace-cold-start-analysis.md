@@ -51,13 +51,13 @@ gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
 last_task6_at: "2026-07-11T03:14:43+08:00"
 task9_state: pending
-task9_result: pass-tech-review
+task9_result: needs-rework
 last_task9_at: "2026-07-11T03:30:46+08:00"
 last_task6_review_notes: "revisiting→reviewed(re-round): L1×2(锁化术语→锁保护/blockquote格式修复); L1×1(拆解→分解); 已修复; 无新增L3/L4问题; 待Task9复审"
 last_task9_review_notes: "P0: Perfetto stdlib path/schema dispatch_dur/metrics view; AOSP services paths; kernel android17-6.18 branch; Android17 binder fields/flags; P1: frozen reply attribution needs multi-signal validation"
