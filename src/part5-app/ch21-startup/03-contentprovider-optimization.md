@@ -59,7 +59,7 @@ updated_by: "openclaw-task6"
 updated_date: "2026-07-10"
 task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 2；将本节源码主线基准从 android-16.0.0_r1 收敛到 android-17.0.0_r1；复核 ActivityThread.handleBindApplication() / installContentProviders() / callApplicationOnCreate() 顺序、ViewTreeObserver removeOnDrawListener targetSdk 边界、AndroidX Startup 1.2.0；同时修正 remote Provider 跨进程唤醒条件化表述，回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-27
+last_deepseek_cn_review_at: 2026-07-10
 ---
 
 # ContentProvider 启动治理
@@ -89,15 +89,14 @@ last_deepseek_cn_review_at: 2026-06-27
 
 ## 本节定位
 
-21.1 节已经把冷启动拆成进程创建、`Application` 初始化、`Activity` 创建和首帧绘制几个阶段。21.2 节讲的是启动任务编排。本节只聚焦一件事：**manifest 里的 ContentProvider 为什么在 `Application.onCreate()` 之前执行，以及怎么把三方 SDK 借 ContentProvider 偷跑的初始化收回来**。
+21.1 节已经把冷启动拆成进程创建、`Application` 初始化、`Activity` 创建和首帧绘制几个阶段，21.2 节讲启动任务编排。本节只聚焦一件事：**manifest 里的 ContentProvider 为什么在 `Application.onCreate()` 之前执行，以及怎么把三方 SDK 借 ContentProvider 偷跑的初始化收回来**。
 
 ContentProvider 的系统机制详见 1.10 节。本节不重复 Binder、`CursorWindow`、CRUD 和 ANR 机制，只看 App 启动治理：怎么发现、怎么量化、怎么迁移、怎么避免改完后丢初始化依赖。
 
 ## ContentProvider 在启动路径中的开销
 
-[已验证: AOSP android-17.0.0_r1, `ActivityThread.handleBindApplication()` L8260 → `installContentProviders()` L8293 → `mInstrumentation.callApplicationOnCreate(app)` L8308]
 
-冷启动时，`ActivityThread.handleBindApplication()` 会先创建 `Application` 对象，再安装当前进程需要发布的 ContentProvider，之后才调用 `Application.onCreate()`。AOSP 中的顺序很直接：
+冷启动时，`ActivityThread.handleBindApplication()` 会先创建 `Application` 对象，再安装当前进程需要发布的 ContentProvider，之后才调用 `Application.onCreate()`。AOSP 中的调用顺序：
 
 ```text
 ActivityThread.handleBindApplication()
@@ -106,9 +105,8 @@ ActivityThread.handleBindApplication()
   mInstrumentation.callApplicationOnCreate(app)
 ```
 
-这段顺序的含义很直接：只要 `<provider>` 被安装到主进程，它的 `onCreate()` 耗时就会进入冷启动关键路径。它甚至早于很多团队在 `Application.onCreate()` 里写的启动埋点，所以启动监控如果只包住 `Application.onCreate()`，会漏掉这部分耗时。
+这段顺序的含义很清楚：只要 `<provider>` 被安装到主进程，它的 `onCreate()` 耗时就会进入冷启动关键路径。它甚至早于很多团队在 `Application.onCreate()` 里写的启动埋点——启动监控如果只包住 `Application.onCreate()`，会漏掉这部分耗时。
 
-[已验证: 官方文档, developer.android.com/guide/topics/manifest/provider-element]
 
 ### 开销来自哪里
 
@@ -147,7 +145,7 @@ for provider in app.findall("provider"):
     print(f"{name}\t{authorities}\t{process}\tinitOrder={init_order}\texported={exported}")
 ```
 
-这段脚本只做审计，不改 manifest。跑完之后把结果整理成启动 Provider 清单：来源库、是否主进程、`onCreate()` 是否有 IO、是否首屏必需、是否能移除自动初始化。
+这段脚本只做审计，不改 manifest。跑完之后把结果整理成启动 Provider 清单，列出来源库、是否主进程、`onCreate()` 是否有 IO、是否首屏必需、是否能移除自动初始化。
 
 自有 Provider 可以直接包 trace：
 
@@ -165,11 +163,11 @@ class AppInitProvider : ContentProvider() {
 }
 ```
 
-这段 trace 会出现在 Perfetto 主线程轨道里。它和 `bindApplication`、`Application.onCreate()` 的相对位置能说明 Provider 是否挤占了冷启动关键路径。
+这段 trace 会出现在 Perfetto 主线程轨道里，它和 `bindApplication`、`Application.onCreate()` 的相对位置直接说明 Provider 是否挤占了冷启动关键路径。
 
 ## 三方 SDK ContentProvider 审计与治理
 
-三方 SDK 用 ContentProvider 做自动初始化，原因通常很现实：SDK 不想让接入方手写初始化代码，也不想依赖宿主在 `Application.onCreate()` 里按顺序调用。代价是所有接入方都在启动阶段支付初始化成本，即使首屏用不到这个 SDK。
+三方 SDK 用 ContentProvider 做自动初始化，原因很现实：SDK 不想让接入方手写初始化代码，也不想依赖宿主在 `Application.onCreate()` 里按顺序调用。代价是所有接入方都在启动阶段支付初始化成本——即使首屏根本用不到这个 SDK。
 
 ### 审计清单
 
@@ -185,7 +183,7 @@ class AppInitProvider : ContentProvider() {
 | 耗时量级 | P50 / P90 / P99 | Perfetto、启动埋点、采样 trace |
 | 移除方式 | `tools:node="remove"`、关闭 SDK 自动初始化、迁移到 App Startup | SDK 文档和本地验证 |
 
-判断一个 Provider 能不能留在启动路径，只看两个条件：首帧前是否要用它的结果；移走后是否会破坏 crash、合规、安全、登录态这类基础能力。埋点、广告、推送、预加载、远程配置拉取，大多不应该堵在 Provider `onCreate()` 里。
+判断一个 Provider 能不能留在启动路径，只看两条：首帧前是否要用它的结果；移走后会不会破坏 crash、合规、安全、登录态这类基础能力。埋点、广告、推送、预加载、远程配置拉取，大多不应该堵在 Provider `onCreate()` 里。
 
 ### 分级治理
 
@@ -201,7 +199,7 @@ class AppInitProvider : ContentProvider() {
 
 ### manifest 移除要做双重验证
 
-下面是移除某个三方 Provider 的常见写法。示例里的 Provider 名只表示写法，实际类名要以合并 manifest 为准。
+下面是移除某个三方 Provider 的常见写法。示例里的 Provider 名只是示意，实际类名要以合并 manifest 为准。
 
 ```xml
 <provider
@@ -215,7 +213,7 @@ class AppInitProvider : ContentProvider() {
 - **构建验证**：release / debug / 多渠道包的合并 manifest 都不再包含该 Provider。
 - **运行验证**：冷启动、登录、推送、crash 上报、埋点、后台任务都跑一遍；如果 SDK 有远程开关，要验证关闭自动初始化后仍能通过显式 API 初始化。
 
-不要只在 debug 包验证。很多 Provider 来自 release-only 依赖或渠道依赖，debug 包正常不代表线上包正常。
+不要只在 debug 包验证——很多 Provider 来自 release-only 依赖或渠道依赖，debug 包正常不代表线上包正常。
 
 ## 延迟初始化与按需注册
 
@@ -223,18 +221,18 @@ ContentProvider 启动治理要把初始化挪到更合适的时机。时机分�
 
 ### 首帧前只留最小集合
 
-首帧前只保留满足下面条件的任务：
+首帧前只保留满足以下条件的任务：
 
 - 没有它 App 不能显示首屏。
 - 它的同步部分足够小，通常 < 5ms。
-- 它没有磁盘大文件读取、网络请求、数据库升级、批量反射扫描。
+- 它不涉及磁盘大文件读取、网络请求、数据库升级、批量反射扫描。
 - 它失败时有明确降级路径。
 
 例如 crash 捕获器的最小初始化可以保留：设置 `UncaughtExceptionHandler`、准备进程名、记录版本信息。符号表上传、远程配置、历史日志整理都应该延后。
 
 ### 首帧后初始化
 
-首帧后任务适合放到启动框架的 LOW / NORMAL 队列，或者挂到首帧回调之后。它们可以在用户看到页面后继续执行，避免阻塞 TTID。
+首帧后任务适合放到启动框架的 LOW / NORMAL 队列，或者挂到首帧回调之后——在用户看到页面后继续执行，避免阻塞 TTID。
 
 下面是一种首帧绘制后调度的写法。它只表达时机，线程池和任务依赖应交给 21.2 节的启动框架处理。
 
@@ -265,7 +263,7 @@ class MainActivity : Activity() {
 
 ### 首次使用时初始化
 
-低频能力适合按需初始化，例如分享、地图、支付、广告、客服、相机滤镜。按需初始化要处理三个问题：
+低频能力适合按需初始化，例如分享、地图、支付、广告、客服、相机滤镜。按需初始化要处理好三个问题：
 
 1. **并发安全**：多个入口同时触发初始化时，只能执行一次。
 2. **超时和降级**：初始化失败不能卡住用户操作。
@@ -294,16 +292,14 @@ object ShareSdkHolder {
 }
 ```
 
-这类代码不要放回 Provider。它的价值在于把成本绑定到真实使用场景：用户没进分享页，就不支付分享 SDK 的启动成本。
+这类代码不要放回 Provider——它的价值在于把成本绑定到真实使用场景：用户没进分享页，就不支付分享 SDK 的启动成本。
 
 ## App Startup 替代方案
 
-[已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
-[已验证: AndroidX Startup 1.2.0 source, `InitializationProvider.onCreate()` 调用 `AppInitializer.discoverAndInitialize()`]
 
 Jetpack App Startup 解决的是“多个库各自声明 Provider 自动初始化”的混乱问题。它把自动初始化入口集中到一个 `InitializationProvider`，再通过 `Initializer.dependencies()` 表达依赖关系。
 
-`InitializationProvider` 本身就是 ContentProvider，所以自动初始化仍然发生在 `Application.onCreate()` 之前。App Startup 不会消灭 Provider 的启动成本——它只是把多个 Provider 合并成一个入口，把依赖顺序从 manifest 里的隐式顺序改成显式依赖图。
+`InitializationProvider` 本身就是 ContentProvider，所以自动初始化仍然发生在 `Application.onCreate()` 之前。App Startup 不会消灭 Provider 的启动成本——它只是把多个 Provider 合并成一个入口，把依赖顺序从 manifest 的隐式排列改成显式依赖图。
 
 ### 适合迁入 App Startup 的任务
 
@@ -315,11 +311,11 @@ Jetpack App Startup 解决的是“多个库各自声明 Provider 自动初始�
 | 低频功能 SDK | 不适合自动初始化 | 应按需初始化 |
 | 多进程功能 | 谨慎 | 要确认每个进程是否都需要初始化 |
 
-App Startup 的 `AppInitializer` 源码里会检查循环依赖：初始化中的组件再次进入时抛出 `Cycle detected` 异常。这个机制比 `android:initOrder` 更可靠，因为依赖写在 `Initializer.dependencies()` 里，框架能在运行时发现环。
+`AppInitializer` 会在运行时检查循环依赖：初始化中的组件再次进入时直接抛 `Cycle detected` 异常。这比 `android:initOrder` 更可靠——依赖关系写在 `Initializer.dependencies()` 里，框架能在运行时发现环。
 
 ### 从多 Provider 迁移到 App Startup
 
-迁移流程建议这样走：
+迁移流程：
 
 1. 从合并 manifest 中列出所有 SDK Provider。
 2. 对每个 Provider 判断首屏必要性和耗时。
@@ -327,7 +323,7 @@ App Startup 的 `AppInitializer` 源码里会检查循环依赖：初始化中�
 4. 首屏不必要的任务关闭自动初始化，改成首帧后或按需初始化。
 5. 用 Perfetto 对比迁移前后的 `bindApplication` 到 `Application.onCreate()` 时间。
 
-下面是一个 App Startup 初始化器示例。重点看 `dependencies()`，它表达初始化顺序，不依赖 manifest 中 Provider 的排列。
+下面是一个 App Startup 初始化器示例。重点看 `dependencies()`：它表达初始化顺序，不依赖 manifest 中 Provider 的排列。
 
 ```kotlin
 class CrashInitializer : Initializer<CrashClient> {
@@ -379,15 +375,13 @@ AppInitializer.getInstance(context)
     .initializeComponent(ShareInitializer::class.java)
 ```
 
-[已验证: 官方文档, App Startup lazy initialization]
 
 这套写法适合把“自动初始化”和“按需初始化”拆开。自动初始化只保留首屏前必要的轻量任务，其他任务由业务入口或启动框架显式触发。
 
 ## 多进程初始化要单独治理
 
-[已验证: AndroidX Startup 1.2.0 source, `InitializationProvider.onCreate()` 使用 provider class context 读取 metadata，源码注释提到 multiple processes 场景]
 
-ContentProvider 的 `android:process` 会改变初始化发生的位置。主进程启动时安装主进程 Provider，子进程启动时安装子进程 Provider。问题常出在 SDK 没有进程判断：推送进程、WebView 独立进程、下载进程启动后，也执行了一遍主进程才需要的初始化。
+ContentProvider 的 `android:process` 决定了初始化发生在哪个进程。主进程启动时安装主进程 Provider，子进程启动时安装子进程 Provider。问题常出在 SDK 没有进程判断——推送进程、WebView 独立进程、下载进程启动后，也跑了一遍主进程才需要的初始化。
 
 治理规则：
 
@@ -396,7 +390,7 @@ ContentProvider 的 `android:process` 会改变初始化发生的位置。主进
 - 跨进程共享状态不要依赖静态单例，改用进程安全的持久化或 Binder 服务。
 - Perfetto 里主进程和子进程分开看，不要只看主进程的启动指标。
 
-进程判断可以使用 `Application.getProcessName()`（API 28+）。低版本用 `/proc/self/cmdline` 兜底时要封装在统一工具里，避免每个 SDK 各读一次文件。
+进程判断可以用 `Application.getProcessName()`（API 28+）。低版本用 `/proc/self/cmdline` 兜底时，要封装在统一工具里——避免每个 SDK 各读一次文件。
 
 ## 验收标准
 
@@ -411,4 +405,4 @@ ContentProvider 启动治理完成后，不以“删了几个 Provider”作为�
 | 多进程 | 子进程没有执行主进程专属初始化 |
 | 可观测性 | 保留的 Provider 和 initializer 都有 trace 名称和耗时上报 |
 
-如果迁移后 TTID 没变，也不代表工作无效。很多 Provider 的成本在 `Application.onCreate()` 之前，过去监控没覆盖到；迁移后至少能把隐式成本变成可追踪、可编排、可按需触发的启动任务。
+如果迁移后 TTID 没变，也不代表工作白做了。很多 Provider 的成本在 `Application.onCreate()` 之前，过去监控根本没覆盖到；迁移后至少能把隐式成本变成可追踪、可编排、可按需触发的启动任务。

@@ -197,3 +197,116 @@ App 适配时建议把“平台能力”和“运营商策略”分开配置：�
 ## 小结
 
 卫星与低带宽适配的落点是资源预算：哪些请求能发、一次发多少、失败后等多久、什么时候回放、怎么确认降级有效。Android 16 QPR2 / Android 17 给了 constrained satellite networks 的平台入口，App 侧要把它接到请求调度、缓存、协议、离线队列和监控门禁里。
+
+
+<!-- AIW-源码调研-2026-07-10 -->
+## A. 源码级补充（android-17.0.0_r1 验证）
+
+> 完整调研报告：`DeepResearch/2026-07-10-android17-satellite-ntn-transport-source-investigation.md`
+
+### A.1 Transport 类型新增：`TRANSPORT_SATELLITE = 10`
+
+`packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java` (line 1422) 在 Android 17 (API 37) 引入：
+
+```java
+@FlaggedApi(Flags.FLAG_SUPPORT_TRANSPORT_SATELLITE)
+public static final int TRANSPORT_SATELLITE = 10;
+public static final int MAX_TRANSPORT = TRANSPORT_SATELLITE;
+```
+
+- App 侧判定当前是否在卫星链路：`nc.getTransportTypes()` 返回位图第 10 位为 1
+- 由 `Flags.FLAG_SUPPORT_TRANSPORT_SATELLITE` 特性开关管控；商用 AOSP 构建可能默认关闭，需在 `aconfig` 阶段由 OEM 决策
+- 这结束了 Android 14/15/16 期间"卫星网络必须借道 `TRANSPORT_CELLULAR` + 多个 `NET_CAPABILITY_*` 位组合"的不规范局面
+
+### A.2 受限能力位：`NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED = 37`
+
+`NetworkCapabilities.java` (line 778-780)：
+
+```java
+@FlaggedApi(Flags.FLAG_NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED)
+public static final int NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED = 37;
+```
+
+文档（Javadoc 同段）明确指出：
+- 从 VANILLA_ICE_CREAM (API 35) 起，`NetworkRequest` **默认** 就包含 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED`
+- 缺失此能力位 = 受限网络（卫星、IoT NB-IoT、漫游计费链路）
+- **App 想要访问卫星链路必须显式 `networkRequest.removeCapability(NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED)`，否则 ConnectivityService 不会把受限网络分配给该 App**
+- 系统在受限网络上可能主动禁用非前台 App 的网络访问
+
+### A.3 RTC/OTT 优先级能力位
+
+`NetworkCapabilities.java` (lines 729-745)：
+
+```java
+public static final int NET_CAPABILITY_PRIORITIZE_LATENCY = 34;
+public static final int NET_CAPABILITY_PRIORITIZE_BANDWIDTH = 35;
+@FlaggedApi(com.android.tethering.flags.Flags.FLAG_NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS)
+public static final int NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS = 38;
+private static final int MAX_NET_CAPABILITY = NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS;
+```
+
+- 目标 SDK 34 (UPSIDE_DOWN_CAKE) 及以上 App 在 `requestNetwork` 中请求这些能力位时，需在 self-certified network capabilities 中声明
+- 卫星网络默认无延迟/带宽优先级；需要 App 显式请求
+
+### A.4 NTN 状态判定：`ServiceState.isUsingNonTerrestrialNetwork()`
+
+`frameworks/base/telephony/java/android/telephony/ServiceState.java`：
+
+```java
+public boolean isUsingNonTerrestrialNetwork() {
+    synchronized (mNetworkRegistrationInfos) {
+        for (NetworkRegistrationInfo nri : mNetworkRegistrationInfos) {
+            if (nri.isNonTerrestrialNetwork()) return true;
+        }
+    }
+    return false;
+}
+```
+
+- 遍历 `mNetworkRegistrationInfos` 列表（CS / PS 域 × WWAN 传输）
+- App 判定当前是否在 NTN 链路的一手平台方法
+- 与 `mArfcnRsrpBoost` (LTE/NR 频点号增强) 配合可进一步判定链路质量
+
+### A.5 `TelephonyManager` 卫星 Handoff Extras
+
+`frameworks/base/telephony/java/android/telephony/TelephonyManager.java` (lines 1223-1231)：
+
+```java
+public static final String EXTRA_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE =
+        "android.telephony.extra.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE";
+public static final String EXTRA_EMERGENCY_CALL_TO_SATELLITE_LAUNCH_INTENT =
+        "android.telephony.extra.EMERGENCY_CALL_TO_SATELLITE_LAUNCH_INTENT";
+```
+
+- 紧急通话转卫星消息场景的 Broadcast extras
+- Hysteresis 由 `CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT` 控制
+- OEM 可通过 overlay `config_oem_enabled_satellite_handover_app` 替换默认 App
+
+### A.6 `SatelliteManager` 关键公共 API 集合
+
+`frameworks/base/telephony/java/android/telephony/satellite/SatelliteManager.java` (206KB) 提供四族 API：
+
+| 族 | 代表方法 | 用途 |
+|---|---|---|
+| Attach / Provision | `isSatelliteAttachSupported(subId)`、`requestAttachEnabledForCarrier(...)`、`isSatelliteEntitlementSupported(subId)`、`getSatelliteEntitlementServerUrl(subId)` | carrier 开通 / 鉴权 |
+| Visibility / Signal | `requestNtnSignalStrength(Executor, Consumer)`、`requestTimeForNextSatelliteVisibility(...)` | 信号强度回调 + 卫星可见时间预测 |
+| Configuration / Policy | `setDeviceAlignedWithSatellite(boolean)`、`getSatelliteDataOptimizedApps()`、`getSatelliteDataSupportMode(subId)`、`getPlmnSatelliteConfig(subId, plmn)` | 对齐状态 / 白名单 / PLMN 配置 |
+| Datagram | `registerForIncomingDatagram(callback)` + `unregisterForIncomingDatagram(callback)` | 卫星 IM / SMS 异步接收 |
+
+**App 侧推荐使用**：`getSatelliteDataOptimizedApps()` 读取平台白名单列表判断自身是否在白名单内，决定是否启用卫星特定优化策略。
+
+**错误码体系**：`SATELLITE_RESULT_*` 30 个枚举（0=SUCCESS, 1-30=各类失败），覆盖 modem/network/positioning/emergency call 状态等场景。
+
+**Feature Flag 体系**：
+- `Flags.FLAG_SATELLITE_SYSTEM_APIS` — 仅系统 App
+- `Flags.FLAG_SATELLITE_UPSELL` — 运营商 upsell 流程
+- `Flags.FLAG_SATELLITE_UPSELL_26Q4` — 26Q4 季度新加
+- `Flags.FLAG_SATELLITE_26Q2_APIS` — 26Q2 季度新加
+
+### A.7 与本章其他节的关系
+
+- "网络能力识别与降级开关" 节应补充 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED` 的默认开启行为（App 不显式声明就拿不到卫星链路）
+- "协议与传输选型" 节应补充 `TRANSPORT_SATELLITE` 直接判定的源码依据
+- "请求调度、超时与重试退避" 节可引用 `requestNtnSignalStrength` 的异步回调模式
+- "可观测性与灰度门禁" 节可引用 `getSatelliteDisallowedReasons()` 收集禁用原因
+

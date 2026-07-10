@@ -39,6 +39,11 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12"
 tags: ["sched-ext", "bpf", "oem", "scheduler", "kernel-6.12"]
 related_chapters: ["5.1", "5.2", "5.7", "14.10", "17.2"]
+last_task9_audit: "2026-07-10"
+last_task9_audit_at: "2026-07-10T19:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-10-19-audit.md"
+last_task9_audit_result: "pass-idle-audit"
+last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；Android common android16-6.12 sched_ext paths/constants/sysfs 和 OPPO hmbird proc 控制面口径一致；无 P0/P1 问题，符合 Android 17 版本边界要求。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
 task6_state: reviewed
