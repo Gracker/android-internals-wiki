@@ -1,6 +1,6 @@
 {
-  "total": 688,
-  "draft": 61,
+  "total": 689,
+  "draft": 62,
   "ready_for_review": 208,
   "finalized": 351,
   "last_updated": "2026-07-10",
@@ -1324,6 +1324,13 @@
       "status": "no-candidates",
       "ts": "2026-07-10T09:21:57.679174+08:00",
       "note": "Gap mining round 58: 0 candidates ≥14 (58th consecutive). Coverage saturated. No new material since round 57 (08:10). No new DeepResearch (last 2026-07-10 06:37). No new Clippings (17+ days, last 2026-06-23). daily-info 2026-07-10 fully consumed in round 57. source-index: 0 unmapped high-quality. All 46 drafts >15 lines. Task2B backlog: 0. Queue: 0 pending."
+    },
+    {
+      "section": "8.37",
+      "action": "task2a-draft",
+      "status": "ready-for-review",
+      "drafted_at": "2026-07-10T11:11:16+08:00",
+      "note": "Android 13+ PerformanceHintManager 实战：API 演进、Java/NDK 双端架构、Android 17 新行为、可观测性、反模式"
     }
   ],
   "review_history": [

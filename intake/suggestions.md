@@ -699,3 +699,78 @@ Wiki 已达 661 节、729 文件的成熟度。剩余缺口主要为：
 1. Android 17 QPR1 新特性（预计 2026 Q4）
 2. 新增 DeepResearch/Clippings 素材驱动的缺口
 3. draft 章节的 Phase 2 加工（45 节待加工，需 queue 优先级排序）
+
+## [Task2A 知识缺口挖掘] 已检查方向记录 — 2026-07-10 06:34
+
+**本轮结论**：全书 672 个小节，0 个空 draft，Task2B backlog = 0。本轮未发现评分 ≥ 14 的知识缺口。
+
+**与前一轮差异**：前一轮（05:08）已确认覆盖饱和。本轮新增 2 篇 DeepResearch（HardeningEnforcer 决策矩阵、flatland/sfdo CLI 工具链）+ 1 篇 Cubox（传音 OSPM2026 AMU/PMU），全部映射到现有章节或评分不足。
+
+**本轮新检查方向**：
+14. **传音 OSPM2026 AMU/PMU 微架构感知频率限制** — ARM AMU（Activity Monitor Unit）硬件计数器驱动 cpufreq 决策，重载游戏场景 10% 功耗下降
+    - 评分：素材 2 + 相关 3 + 需求 2 + 时效 4 = **11/20** ❌
+    - 理由：SoC 内核工程师级主题，应用开发者几乎不涉及；ARM AMU 文档+1 篇 Cubox 报道素材有限
+15. **HardeningEnforcer 双源决策矩阵**（新 DeepResearch 21KB）→ 映射到现有 §12.33 draft（Task2B 域素材补充）
+16. **flatland/sfdo CLI 调试工具链**（新 DeepResearch 16.7KB）→ 映射到现有 §14.8（已覆盖）
+
+**总结**：全书 672 节（finalized 348 + ready-for-review 213 = 561，83.5%），draft 45 节。第 52 轮缺口挖掘未发现合格新章节候选。知识覆盖保持饱和状态（连续第 4 轮）。
+
+
+## [Task14 参考书扫描] 11.5 Wakelock 机制与功耗分析 — 2026-07-10
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md（第19讲 耗电优化下）]
+- **建议补充**：Java Hook 监控 WakeLock（ProxyHook PowerManagerService）和 Alarm（AlarmManagerService）的实践代码示例，以及耗电监控规则设计表（包含 Alarm wakeup、WakeLock、WiFi scans、Network 等规则阈值）
+- **参考书覆盖深度**：中等（有代码示例和规则表，但基于 Android P 时代）
+
+## [Task14 参考书扫描] 26 可观测性 — 2026-07-10
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md（第19讲 耗电优化下）]
+- **建议补充**：耗电监控规则设计的实践方法论——如何抽象监控内容（系统关心什么就监控什么）、收集现场信息（堆栈、充电状态、电量水平、前后台时间）、提炼监控规则
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] 11.1 功耗模型 — 2026-07-10
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md（第18讲 耗电优化上）]
+- **建议补充**：Battery Historian 工具的实践使用流程（adb bugreport + python historian.py），以及 power_profile.xml 的手工提取方法（反编译 framework-res.apk）
+- **参考书覆盖深度**：概述（仅有操作步骤，无深入原理）
+
+## [Task14 参考书扫描] 11.1 功耗模型 — 2026-07-10
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 21.md（第18讲 耗电优化上）]
+- **过时内容**：参考书描述 Android 耗电演进止步于 Android 9.0（App Standby Buckets / 后台限制），且提到"Android Q 也会推出更多的优化措施"
+- **建议更新至**：Android 17（API 37）已有更完善的功耗治理：TARE 经济模型、后台 FGTS 超时机制、Android 17 后台音频硬化等，AIW ch11-power 已覆盖
+
+## [Task14 参考书扫描] 11.5 Wakelock 机制与功耗分析 — 2026-07-10
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 22.md（第19讲 耗电优化下）]
+- **过时内容**：参考书描述 Android Vitals 耗电监控规则基于 Android P（每小时 wakeup > 10 次等），且提到 Java Hook 在 Android P 后部分不支持
+- **建议更新至**：Android 17 的 Vitals 规则已演进，且 Hook 方案需考虑 Android 17 的隐藏 API 限制和 SELinux 策略
+
+## [Task14 参考书扫描] 11.1 网络性能优化 — 2026-07-10
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 20.md（第17讲 网络监控）]
+- **过时内容**：参考书描述通过 /proc/net/xt_qtaguid/stats 直接读取流量数据，文中提到"Android 7.0 之后系统已经不让我们直接去读取 stats 文件"
+- **建议更新至**：Android 17 使用 NetworkStatsManager API + eBPF 流量统计，TrafficStats 仍可用但精度有限；PLT Hook connect/send/recv 方案需考虑 Android 17 SELinux 和 Play Console 政策限制
+
+## 2026-07-10 — Task 2A 知识缺口挖掘发现
+
+### 待清理：5 个孤立的 orphan 空 draft（Phase 0 识别）
+
+Phase 0 在 2026-07-10 11:04 识别出 5 个 `status: draft` 但正文 < 15 行的 buggy 章节，均为今日（2026-07-10）由早期 Task 2A 运行创建的孤立文件：
+
+| 文件 | 占位章节 | 主题冲突来源（已有完整章节） |
+|------|----------|------------------------------|
+| `part1-fundamentals/ch01-architecture/1.01-binder线程池实现机制与ipc性能调优.md` | 1.1 | 1.33、1.54（同主题已有 ready-for-review 内容） |
+| `part1-fundamentals/ch01-architecture/1.01-gpu工具链架构演进与性能分析.md` | 1.1 | 2.3、2.51、2.52、2.9 |
+| `part2-performance/ch02-rendering/2.01-信号处理架构迁移与崩溃治理优化.md` | 2.1 | 2.14、20.19 |
+| `part2-performance/ch02-rendering/2.01-ebpf可观测性增强与性能监控实践.md` | 2.1 | 14.25、14.28 |
+| `part1-fundamentals/ch04-memory/4.01-ai-agent内存沙箱化与跨应用数据复用.md` | 4.1 | 4.22、4.40、4.41、4.42、4.46、4.47 |
+
+**问题特征**：
+1. 占用 `1.1 / 2.1 / 4.1` 编号槽位，但已有完整非空章节（如 `01-layered-architecture.md` 占用 1.1）
+2. 主题与已有高编号小节（4.40+ 等）实质重复
+3. 文件正文仅含 5 条通用"核心机制概述"占位锚点，无实质大纲
+
+**建议**：下一次 cleanup cron 任务执行 — 直接删除这 5 个文件，并清理 `src/SUMMARY.md` 中 15 条对应的 `[1.0 ...]` / `[2.0 ...]` / `[4.0 ...]` 重复条目。
+
+> Task 2A 已在 2026-07-10 11:04 选择跳过这 5 个 orphan，转而基于 AOSP+官方文档的真实缺口创建 8.37 PerformanceHintManager 实战。

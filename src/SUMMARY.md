@@ -97,6 +97,7 @@
   - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展](part3-tools/ch14-other-tools/14.25-android17-ebpf-observability-enhancement.md)
   - [8.33 Android 17 Modular Startup Framework Dependency Graph](part1-fundamentals/ch08-startup/8.33-android17-modular-startup-framework-dependency-graph.md)
 (part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md)
+  - [8.37 Android 13+ PerformanceHintManager 实战：从 NDK hintUntilFrame 到 Java 集成](part1-fundamentals/ch08-startup/8.37-android17-performance-hint-manager.md)
 - [第 8 章：响应速度优化](src/part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
   - [8.2 App 启动全流程](src/part2-performance/ch08-responsiveness/02-app-launch.md)
