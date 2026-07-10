@@ -2,8 +2,8 @@
 title: "InputFlinger Rust 组件与自适应刷新率协同"
 chapter: "3.8"
 section: "3.8"
-status: "ready-for-review"
-pipeline_stage: "task6_pending"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task2b_state: fixed
 last_task9_at: "2026-07-07T18:27:05+08:00"
 last_task9_audit: "2026-07-07"
@@ -42,13 +42,13 @@ related_chapters: ["3.1", "3.3", "3.4", "2.18", "2.19"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/AOSP结构"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 reviewed_date: "2026-07-07"
 reviewed_by: "openclaw-task6"
 last_task2b_lite_at: "2026-07-07"
 task2b_result: fixed-lite
-last_task6_at: "2026-07-07T18:11:00+08:00"
+last_task6_at: 2026-07-10T13:12:19+08:00
 version_boundary_note: "Android 17/API 37 已基于 android-17.0.0_r1 验证;Android 15/16 作为历史演进对照"
 last_task9_autofix_at: "2026-07-07"
 last_task9_review_log: "logs/deep-review/2026-07-07-18-deep-review.md"
@@ -56,6 +56,7 @@ task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anch
 task6_reviewed_date: 2026-07-07
 task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-07-07 Task6 revisiting-review (round 2): pass-light-edit。Task9 auto-fix修正StickyKeysFilter device/source边界后,正文描述准确清晰。L1全部通过(禁用词0/AI套话0/高频词0/元叙述0)。L2通过(开头直接、结构清晰、小结简洁)。frontmatter清理重复字段(task9_state/pipeline_stage/last_task6_at)。无B类大问题。"
+task6_review_notes_round3: "2026-07-10 Task6 revisiting-review (round 3): pass-light-edit。L1全部通过。L2通过。task9_result=pass-tech-review + queue无pending + 无B类问题 → 自动晋升finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
 task2b_rework_source: "logs/deep-review/2026-07-07-15-audit.md"
