@@ -101,7 +101,7 @@ updated_by: "openclaw-task9"
 updated_date: "2026-06-07"
 task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-07 21 Task9 idle audit: auto-fixed。将 App Archiving 源码锚点从 AOSP mainline 改为 android-15/16 tag；未使用 Android 18/API 38+ 内容。"
 last_deepseek_polish_at: 2026-06-08
-last_task6_audit: "2026-06-14"
+last_task6_audit: "2026-07-10"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
 
