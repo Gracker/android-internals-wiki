@@ -1736,7 +1736,24 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-11T03:30:46+08:00",
-      "status": "pending"
+      "status": "pending",
+      "lite_partial_fix": {
+        "fixed_at": "2026-07-11T03:43:37+08:00",
+        "fixed_by": "task2b-lite",
+        "fixed_issues": [
+          0,
+          3,
+          4
+        ],
+        "fixed_description": "Perfetto stdlib path (7 occ), PKMS/WMS services/core path (2 occ), kernel branch android17-6.12→6.18 (10 occ)",
+        "remaining_issues": [
+          1,
+          2,
+          5,
+          6
+        ],
+        "remaining_description": "dispatch_dur SQL field rewrite, transaction_count view field, is_merged/frozen_reply/parent_txn_id + TF_UPDATE_TXN_FROZEN removal, frozen reply attribution logic"
+      }
     }
   ],
   "entries": [
