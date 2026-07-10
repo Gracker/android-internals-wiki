@@ -62,7 +62,7 @@ last_task9_at: "2026-06-05T12:27:00+08:00"
 last_task9_audit: "2026-06-22"
 last_task9_audit_result: pass-idle-audit
 last_task9_audit_log: "logs/deep-review/2026-06-22-17-audit.md"
-last_task6_audit: "2026-06-05"
+last_task6_audit: "2026-07-11"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-29
 ---
