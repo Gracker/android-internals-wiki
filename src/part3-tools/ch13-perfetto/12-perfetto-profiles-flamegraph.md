@@ -3,12 +3,12 @@ title: "\"Perfetto Profile 导入与 Flamegraph 分析\""
 chapter: "\"13.12\""
 section: "\"13.12\""
 status: "finalized"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)（Simpleperf 导入）；Android 15 (API 35) - Android 17 (API 37)（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）\""
 tags: ["perfetto", "simpleperf", "pprof", "flamegraph", "profiling", "trace"]
 confidence: "high"
-last_verified: "\"2026-05-15\""
-last_verified_against: "\"Perfetto v53/v54 release notes, perfetto.dev profiling/import/symbolization docs, Android simpleperf public docs snippets\""
+last_verified: "2026-07-11"
+last_verified_against: "Perfetto v53/v54 release notes; Perfetto v54.0 cpu-profiling/other-formats docs; Perfetto v54.0 traceconv/main.cc and trace_enrichment.cc; Android simpleperf public docs snippets"
 drafted_date: "\"2026-05-15\""
 drafted_by: "\"openclaw-task2a\""
 reviewed_date: "\"2026-05-15\""
@@ -20,17 +20,26 @@ created_date: "\"2026-05-15\""
 gap_source: "\"研究素材/官方发布说明\""
 deepseek_polish_state: "done"
 last_deepseek_polish_at: "\"2026-05-26\""
-task6_state: "\"reviewed\""
+task6_state: "revisiting"
 last_task6_at: "'2026-05-15T14:12:00+08:00'"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
-task9_reviewed_date: "\"2026-05-18\""
+task9_reviewed_date: "2026-07-11"
 task9_reviewed_by: "\"openclaw-task9\""
-last_task9_at: "\"2026-05-18T15:25:00+08:00\""
-last_task9_audit: 2026-06-28
+last_task9_at: "2026-07-11T04:28:06+08:00"
+last_task9_audit: "2026-07-11"
+last_task9_autofix_at: "2026-07-11"
+task9_reviewed_at: "2026-07-11T04:28:06+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-11-04-audit.md"
+p0: 1
+p1: 0
+p2: 0
+updated_by: "openclaw-task9"
+updated_date: "2026-07-11"
+task9_review_notes: "2026-07-11 Task9 idle-audit AUTO-FIX: P0 1 / P1 0 / P2 0；修正 Perfetto v54.0 `traceconv bundle` 示例中不存在的 `--proguard-map` CLI 参数，改为 v54 源码支持的 `PERFETTO_PROGUARD_MAP` + `--symbol-paths` 路径，并将外部格式/CPU profiling/traceconv 参考锚定到 v54.0。回到 Task6 复审。详见 logs/deep-review/2026-07-11-04-audit.md。"
 ---
 
 # 13.12 Perfetto Profile 导入与 Flamegraph 分析
@@ -179,18 +188,18 @@ v53 支持在 pprof flamegraph 中区分 inline functions。这个能力对 Andr
 
 [已验证: Perfetto v53 Release Notes]
 
-v54 新增 R8 retracing during deobfuscation。配合 `traceconv bundle`，Perfetto 可以在打包 trace 时自动寻找 Gradle 标准路径下的 mapping 文件，也可以显式指定包名与 mapping：
+v54 新增 R8 retracing during deobfuscation。配合 `traceconv bundle`，Perfetto 可以在打包 trace 时收集 native 符号和 deobfuscation 数据；v54.0 的 `bundle` 命令支持 `--symbol-paths` / `--no-auto-symbol-paths` / `--verbose`，没有 `--proguard-map` 参数。显式指定 R8 mapping 时，用 `PERFETTO_PROGUARD_MAP` 传入包名和 mapping 文件：
 
 ```bash
 # 目标：把 native 符号和 R8 mapping 打进 enriched trace，便于 UI 与 trace_processor_shell 读取
+PERFETTO_PROGUARD_MAP=com.example.app=/path/to/mapping.txt \
 traceconv bundle \
   --symbol-paths /path/to/unstripped-symbols \
-  --proguard-map com.example.app=/path/to/mapping.txt \
   raw-trace.perfetto-trace \
   enriched-trace
 ```
 
-`traceconv bundle` 会校验 Build ID；符号文件和线上包不匹配时，即使路径存在也不会用于还原。Java/Kotlin 的 mapping 也必须来自同一构建产物，否则 retracing 会把同名短符号还原到错误类。[已验证: Perfetto symbolization/deobfuscation docs + v54 Release Notes]
+`traceconv bundle` 会按 Build ID 校验 native 符号；符号文件和线上包不匹配时，即使路径存在也不会用于还原。Java/Kotlin 的 mapping 可来自 `PERFETTO_PROGUARD_MAP` 或 Gradle 标准路径自动发现，但必须对应同一构建产物，否则 retracing 会把同名短符号还原到错误类。[已验证: Perfetto v54.0 `traceconv/main.cc`、`trace_enrichment.cc` + v54 Release Notes]
 
 阅读混合栈时按这个顺序排查：native 地址是否已符号化，APK/JAR mapping 是否还原，inline frame 是否展开，再判断热点属于 Java/Kotlin、JNI 边界、native library 还是系统库。不要在符号缺失时急着下结论；缺符号的火焰图只能说明“某个映射里有热点”，还不能说明是哪段代码。
 
@@ -276,8 +285,9 @@ Profile 与 system trace 的结合点在时间窗。FrameTimeline 给出异常�
 
 - [已验证: 官方文档, Perfetto v53.0 Release Notes](https://github.com/google/perfetto/releases/tag/v53.0)
 - [已验证: 官方文档, Perfetto v54.0 Release Notes](https://github.com/google/perfetto/releases/tag/v54.0)
-- [已验证: 官方文档, Perfetto external trace formats](https://raw.githubusercontent.com/google/perfetto/main/docs/getting-started/other-formats.md)
-- [已验证: 官方文档, Perfetto CPU profiling](https://raw.githubusercontent.com/google/perfetto/main/docs/getting-started/cpu-profiling.md)
-- [已验证: 官方文档, Perfetto symbolization and deobfuscation](https://raw.githubusercontent.com/google/perfetto/main/docs/learning-more/symbolization.md)
+- [已验证: 官方文档, Perfetto external trace formats](https://raw.githubusercontent.com/google/perfetto/v54.0/docs/getting-started/other-formats.md)
+- [已验证: 官方文档, Perfetto CPU profiling](https://raw.githubusercontent.com/google/perfetto/v54.0/docs/getting-started/cpu-profiling.md)
+- [已验证: 源码, Perfetto v54.0 traceconv bundle CLI](https://github.com/google/perfetto/blob/v54.0/src/traceconv/main.cc)
+- [已验证: 源码, Perfetto v54.0 trace enrichment ProGuard map discovery](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/util/trace_enrichment/trace_enrichment.cc)
 - [来源: intake/research-feeds/2026-04-14-07-perfetto-v53-rust-sdk-pprof-simpleperf-custom-sorting.md]
 - [来源: intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md]
