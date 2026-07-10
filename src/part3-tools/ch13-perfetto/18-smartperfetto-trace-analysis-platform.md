@@ -18,14 +18,14 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
@@ -37,7 +37,7 @@ task9_review_notes: "2026-07-10 Task9 idle-audit: needs-rework。P0 0 / P1 1 / P
 last_task2b_at: 2026-07-10T10:50:00+08:00
 task2b_fixed_by: openclaw-task2b
 last_task2b_lite_at: 2026-06-19
-last_task6_at: "2026-06-19T17:12:15+08:00"
+last_task6_at: "2026-07-10T12:20:00+08:00"
 last_task6_review_log: "logs/review/2026-06-19-17-review.md"
 last_task9_audit: "2026-07-10"
 last_task6_audit: "2026-07-01"
@@ -262,10 +262,10 @@ echo $SMARTPERFETTO_ENTERPRISE
 
 ### 修复方案
 
-#### 迁移闭环方案
+#### 迁移完整性方案
 当前 SmartPerfetto `main` 的 `cutover` 阶段以 DB 为权威读路径（`readAuthority=db`、`writeFilesystem=false`），`readTraceMetadataForContext()` 在企业模式下只按 `trace_assets` + RequestContext scope 读取，不存在 DB 失败后透明回退 `./uploads/traces` 的逻辑——这属于迁移设计语义，不是代码缺陷。
 
-正确的修复方向是**迁移前置校验 + rollback 闭环**，而不是在 cutover 读路径上加 filesystem fallback：
+正确的修复方向是**迁移前置校验 + rollback 完整路径**，而不是在 cutover 读路径上加 filesystem fallback：
 1. **cutover 前 dry-run 校验**：snapshot trace_assets、scoped local_path 与文件搬运完整性，确保所有 trace 元数据已正确迁移到 DB
 2. **发现缺失时 rollback 到 dual-write**：通过官方 rollback helper 切回 `SMARTPERFETTO_ENTERPRISE_MIGRATION_PHASE=dual-write`，保留 DB snapshot 后修复迁移数据再重新 cutover
 3. **不要在 `readTraceMetadataForContext()` 中加透明 fallback**：这会绕过当前 `trace_assets` scope 和 RequestContext owner guard 的权威路径，导致 DB 与文件系统状态不一致时更难定位根因

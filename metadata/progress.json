@@ -2063,7 +2063,12 @@
   },
   "summary": {
     "finalized": 7,
-    "total": 12
+    "total": 12,
+    "status_counts": {
+      "ready-for-review": 3,
+      "finalized": 7,
+      "unknown": 2
+    }
   },
   "verifier_runs": [
     {
