@@ -57,7 +57,7 @@ task6_review_notes: "2026-05-27 Task6 04:06：pass-light-edit。L1/L2 小修 5 �
 last_task9_review_log: "logs/deep-review/2026-07-10-16-audit.md"
 last_task9_audit_log: "logs/deep-review/2026-07-10-16-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
+last_deepseek_cn_review_at: 2026-07-10
 last_task9_autofix_at: "2026-07-10"
 auto_promoted: true
 finalized_date: "2026-06-20"
@@ -65,29 +65,29 @@ finalized_by: "openclaw-task9-auto-promote"
 ---
 # 8.7 Baseline Profiles 与编译优化实践
 
-ART 的编译策略经历过几次大的调整：Android 5.0 走全量 AOT，Android 7.0 换成解释执行 + JIT，再到后来的 Profile-Guided 编译。每次调整都在安装时间、运行性能和磁盘占用之间做新的取舍。但有一个问题始终没变：**应用首次安装后的冷启动性能**。
+ART 的编译策略经历了几次大调整：Android 5.0 走全量 AOT，Android 7.0 切到解释执行 + JIT，再到后续的 Profile-Guided 编译。每次调整本质都是在安装时间、运行性能和磁盘占用之间重新平衡。但有一个问题始终没解决：**应用首次安装后的冷启动**。
 
-在这个时间窗口内，ART 还没有收集到足够的运行时 profile 数据，无法知道哪些方法是热点。结果是大量关键代码只能解释执行，冷启动速度比经过优化的状态慢 30% 甚至更多。
+在首装和首更这段时间里，ART 还没有收集到足够的运行时 profile，不知道哪些方法是热点。结果是大量关键代码只能解释执行，冷启动比优化后的状态慢 30% 甚至更多。
 
-Baseline Profiles 的作用是让开发者在 APK 中预置一份"热点方法清单"，并在设备端的安装期或后续 Profile 编译阶段优先告诉 dex2oat 哪些代码需要先编译为机器码。这样即使没有任何用户使用数据，首次启动也更容易接近稳态性能。
+Baseline Profiles 的思路很简单：开发者在 APK 中预置一份"热点方法清单"，设备在安装期或后续 Profile 编译阶段优先告诉 dex2oat 哪些代码要先编成机器码。这样即使没有任何用户数据，首次启动也能更接近稳态性能。
 <!-- outline-start -->
 ## 本节要点大纲
 
 ### 锚点（必须覆盖）
 
-- 🔹 **Android 7 与 Android 9 的编译时间线要分开写**：[已验证: 1.7 节 + 官方 Baseline Profiles 文档]
+- 🔹 **Android 7 与 Android 9 的编译时间线要分开写**：
   Android 7 引入 JIT、本地 Profile 和后台 `dex2oat`；Android 9 起 Google Play 才能分发 Cloud Profiles。
 
-- 🔹 **HRF 文本、二进制产物、安装后 OAT 目录是三件事**：[已验证: create/debug docs]
+- 🔹 **HRF 文本、二进制产物、安装后 OAT 目录是三件事**：
   `baseline-prof.txt` 位于 `src/<variant>/generated/baselineProfiles/`，构建后得到 `baseline.prof`；APK 看 `/assets/dexopt/baseline.prof`，AAB 看 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`，安装后的 `base.odex` 在 `/data/app/.../oat/arm64/`。
 
-- 🔹 **安装来源会改变 Profile 的消费时机**：[已验证: debug docs + ProfileInstaller/ProfileVerifier 文档]
+- 🔹 **安装来源会改变 Profile 的消费时机**：
   Google Play、Android Studio/Gradle、其他 installer + `ProfileInstaller` 的行为不同，`verify` 只表示当前还没看到已编译产物，不等于 APK 或 AAB 里没有 Baseline Profile。
 
-- 🔹 **验证路径先看编译状态，再看启动收益**：[已验证: debug docs + Macrobenchmark docs]
+- 🔹 **验证路径先看编译状态，再看启动收益**：
   编译状态用 `ProfileVerifier`（Android 9+）或 `dumpsys package dexopt`，收益用 Macrobenchmark 的 TTID / TTFD 对比 `CompilationMode.None()` 与 `CompilationMode.Partial()`。
 
-- 🔹 **`<profileable>` 与 OEM dexpreopt 要分开写**：[已验证: manifest docs + AOSP build 资料]
+- 🔹 **`<profileable>` 与 OEM dexpreopt 要分开写**：
   `<profileable>` 元素和 `android:shell` 都从 API 29 开始可用；API 30 新增的是 `android:enabled`。`WITH_DEXPREOPT_*` 属于系统镜像 preopt 开关，和应用侧 Baseline Profiles 不是一套机制。
 
 ### 扩展（可选深入）
@@ -107,13 +107,13 @@ Baseline Profiles 的作用是让开发者在 APK 中预置一份"热点方法�
 
 ### ART 编译策略的演变
 
-Android 5.x 的 ART 走的是全量 AOT。安装时 `dex2oat` 会把整包 DEX 尽量编成机器码，运行时体验稳定，但安装时间、OTA 后首开时间和磁盘占用都很重。
+Android 5.x 的 ART 走全量 AOT。安装时 `dex2oat` 把整包 DEX 尽量编成机器码，运行时体验稳定，代价是安装时间长、OTA 后首开慢、磁盘占用大。
 
-Android 7.0 把策略换成了混合编译。安装阶段以 `verify` 或 `quicken` 这一类轻量模式为主，运行期再由 JIT 收集热点方法，并把本地 Profile 持久化到 `/data/misc/profiles/cur/0/<package>/primary.prof`。设备空闲、充电时，后台 `bg-dexopt` 再按这些 Profile 做 `speed-profile` 编译。这一版才是 Android 把 profile-guided 编译正式放进 ART 主路径的起点，和 1.7 节的时间线一致。
+Android 7.0 换成了混合编译。安装阶段以 `verify` 或 `quicken` 这类轻量模式为主，运行期由 JIT 收集热点方法，将本地 Profile 持久化到 `/data/misc/profiles/cur/0/<package>/primary.prof`。设备空闲充电时，后台 `bg-dexopt` 再按这些 Profile 做 `speed-profile` 编译。这是 Android 把 profile-guided 编译正式放进 ART 主路径的起点，和 1.7 节的时间线一致。
 
-Android 9.0 在这套本地 Profile 之上又补了一层 **Cloud Profiles**。Google Play 可以把聚合后的热点方法分发给安装端，帮助新版本更早拿到 `speed-profile` 编译收益。Cloud Profiles 只覆盖 Android 9+，也只存在于 Google Play 分发路径里。
+Android 9.0 在本地 Profile 之上又加了一层 **Cloud Profiles**：Google Play 把聚合后的热点方法分发给安装端，让新版本更早拿到 `speed-profile` 的编译收益。Cloud Profiles 只覆盖 Android 9+，且只在 Google Play 分发路径里生效。
 
-Baseline Profiles 的价值落在这两条时间线之间。它不替代 Android 7 之后的本地 Profile，也不等 Google Play 的 Cloud Profiles 慢慢收敛，而是把开发者已经确认的启动路径和核心 CUJ 直接随包分发，让首装和首更阶段少走解释执行与 JIT 热身。
+Baseline Profiles 的价值就在这两条时间线之间。它不替代 Android 7 之后的本地 Profile，也不等 Google Play 的 Cloud Profiles 慢慢收敛，而是把开发者确认过的启动路径和核心 CUJ 直接随包分发，让首装和首更阶段少走解释执行和 JIT 热身。
 
 ### Baseline Profiles 的定位
 
@@ -125,7 +125,7 @@ Baseline Profiles 的价值落在这两条时间线之间。它不替代 Android
 | Baseline Profiles | 开发者 / CI | 安装包生成时 | 把启动路径和核心 CUJ 提前交给 ART |
 | Cloud Profiles | Google Play | 新版本分发一段时间后 | 用真实用户数据补齐开发者没覆盖到的热点 |
 
-因此，Baseline Profiles 解决的是 Day-0 和 Day-1 的冷启动问题，Cloud Profiles 解决的是规模化分发后的热点补全，本地 JIT Profile 解决的是单设备的持续收敛。三者能合并使用，但触发时机和来源不同。
+总结：Baseline Profiles 解决 Day-0 / Day-1 的冷启动，Cloud Profiles 解决规模化分发后的热点补全，本地 JIT Profile 解决单设备持续收敛。三者可以叠加，但触发时机和数据来源不同。
 
 **版本覆盖表：**
 
@@ -141,21 +141,21 @@ Android 7/8 是"有开发者 Baseline Profile 但无 Cloud Profile"的关键边�
 
 ### 实测效果
 
-Baseline Profiles 的性能收益有大量公开数据支撑：
+Baseline Profiles 的性能收益有不少公开数据可以参考：
 
-Google 的通用结论是 **15-30% 的启动速度提升**，实际公开案例包括：
+Google 给出的通用结论是 **15-30% 的启动速度提升**，下面是一些公开案例：
 - **Reddit**（2024.12）：Baseline Profiles + R8 full mode → median 启动时间缩短 **51%**
 - **Duolingo**：Macrobenchmark 测试显示 **25-40%** 的启动速度增益
 - **Android Calendar**：启动时间 **~20%** 提升
 - **Now in Android** 示例应用：有 profiles 时 229.0ms，无编译时 324.8ms（**~30%**）
 - 某手机应用：median startup 提升 **23%**（328ms），Wear OS 应用 **14%**（267ms）
 
-收益差异主要来自应用的代码结构和 profile 覆盖完整度。大量使用 Jetpack 和 Compose 库的应用收益通常更高，因为这些库的初始化路径长、方法调用密集。
+收益差异主要来自代码结构和 profile 覆盖完整度。大量使用 Jetpack 和 Compose 库的应用通常收益更高——这些库的初始化路径长，方法调用密集。
 ## Baseline Profiles 的工作机制
 
 ### Profile 格式与打包
 
-开发阶段最先看到的是 Human-Readable Format（HRF）文本文件，通常名为 `baseline-prof.txt`。使用 AGP 或 Baseline Profile plugin 生成时，结果会复制到 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`。这个文件适合进版本库，也适合人工审阅。
+开发阶段最先产生的是 Human-Readable Format（HRF）文本文件，通常叫 `baseline-prof.txt`。用 AGP 或 Baseline Profile plugin 生成后，结果会复制到 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`。这个文件适合进版本库，也方便人工审阅。
 
 构建阶段，AGP 会把 HRF 转成 ART 能直接消费的二进制 `baseline.prof`，同时生成伴随的元数据文件 `baseline.profm`（Profile Metadata）。检查打包结果时要把 AAB 和 APK 分开看：
 
@@ -164,11 +164,11 @@ Google 的通用结论是 **15-30% 的启动速度提升**，实际公开案例�
 
 `.profm` 文件存储的是 profile 规则与 DEX 编译单元的映射关系。手动 sideload 验证或生成 `.dm`（Dex Metadata）包时，`baseline.profm` 会被重命名为 `primary.profm`，需要和 `baseline.prof` 一起处理。
 
-这两个路径说的是构建产物里的位置。应用安装到设备后，编译产物不会再留在这些目录里，而是表现为 `/data/app/.../oat/arm64/base.odex` 一类 OAT / VDEX 文件。运行期和后台任务收集到的 Profile 数据则继续放在 `/data/misc/profiles/...` 下。
+这两个路径是构建产物的位置。应用安装到设备后，编译产物不再留在这些目录里，而是变成 `/data/app/.../oat/arm64/base.odex` 这类 OAT / VDEX 文件。运行期和后台任务收集到的 Profile 数据则继续放在 `/data/misc/profiles/...` 下。
 
 ### 安装时的编译流程
 
-同一份 `baseline.prof`，到了不同安装来源，消费时机并不完全一样。按官方调试文档，实操里至少要分这几条主路径：
+同一份 `baseline.prof`，不同安装来源的消费时机并不相同。按官方调试文档，实操中至少分这几条路径：
 
 | 安装来源 | Profile 来源 | 常见触发时机 | 观察入口 |
 |----------|--------------|--------------|----------|
@@ -200,7 +200,7 @@ adb shell dumpsys package dexopt | grep -A 2 com.example.app
 
 如果要模拟系统稍后会不会吃到 profile，`-r bg-dexopt` 更贴近后台任务语义；如果只是线下确认当前包能不能按 Profile 编译，`-m speed-profile -f` 更直接。
 
-`dumpsys` 输出里常见的几个字段要这样读：
+`dumpsys` 输出里几个常见字段的读法：
 
 - `status = speed-profile`：已存在按 Profile 编译的产物
 - `status = verify`：当前还没有看到编译产物，常见原因是还在排队、安装来源没有触发编译，或者包里没有 profile
@@ -211,7 +211,7 @@ adb shell dumpsys package dexopt | grep -A 2 com.example.app
 
 ### Cloud Profiles 的配合
 
-Cloud Profiles 用真实用户数据补齐 Baseline Profiles 没覆盖到的热点。它们只对 Android 9+、并且通过 Google Play 分发的安装路径有效。实际运行时，ART 会把安装包自带的 Baseline Profile 和 Play 下发的 Cloud Profile 一起作为 `speed-profile` 的输入，所以文中更适合把它写成叠加关系。
+Cloud Profiles 用真实用户数据补齐 Baseline Profiles 没覆盖到的热点。它们只在 Android 9+ 且通过 Google Play 分发的设备上生效。实际运行时，ART 把安装包自带的 Baseline Profile 和 Play 下发的 Cloud Profile 一起作为 `speed-profile` 的输入——两者是叠加关系。
 
 ### [待验证] Android 16 的云端预编译分发
 
@@ -226,7 +226,7 @@ Cloud Profiles 用真实用户数据补齐 Baseline Profiles 没覆盖到的热�
 
 ### 使用 Macrobenchmark 生成
 
-官方推荐的主路径仍然是 Jetpack Macrobenchmark 配合 `BaselineProfileRule`。生成器的职责只有一件事，按真实用户路径把需要的类和方法跑一遍，让 Gradle 把这段执行轨迹转成 HRF 规则。
+官方推荐的主路径是 Jetpack Macrobenchmark 配合 `BaselineProfileRule`。生成器只做一件事：按真实用户路径把需要的类和方法跑一遍，Gradle 再把执行轨迹转成 HRF 规则。
 
 ```kotlin
 @RunWith(AndroidJUnit4::class)
@@ -285,7 +285,7 @@ Startup Profile 的 DEX layout 优化从 AGP 8.1 可用、8.3 默认启用。它
 
 16KB page-size 兼容是另一套机制：NDK r28+ 默认生成 16KB ELF 对齐的 .so、AGP 8.5.1+ 使用未压缩 shared libraries、zipalign `-P 16` / bundletool 验证 ZIP entry 对齐。它与 Startup Profile / DEX layout 优化是两个独立的构建能力，不要混在一起判断。
 
-项目治理上，关注三件事就够了：
+项目治理上关注三件事就够了：
 
 - 生成任务是否覆盖所有核心 CUJ
 - `baseline-prof.txt` 是否随变更一起进仓
@@ -293,9 +293,9 @@ Startup Profile 的 DEX layout 优化从 AGP 8.1 可用、8.3 默认启用。它
 
 ### Android 17 与 R8 的适配边界
 
-到 Android 17，应用侧 Baseline Profiles 的消费路径没有换轨。公开文档和 AOSP `android-17.0.0_r1` 交叉核对后，release 包里仍然是 `baseline.prof`，设备端仍然生成 `speed-profile` 对应的 OAT 产物。Android 14 之后更多 dexopt 调度转到 ART Service，但验证入口还是 `ProfileVerifier` 和 `dumpsys package dexopt`。
+到 Android 17，应用侧 Baseline Profiles 的消费路径没有换轨。release 包里仍然是 `baseline.prof`，设备端仍然生成 `speed-profile` 对应的 OAT 产物。Android 14 之后更多 dexopt 调度转到 ART Service，但验证入口仍然是 `ProfileVerifier` 和 `dumpsys package dexopt`。
 
-R8 会影响收益，但影响点在 release 产物的代码形态和启动路径命中率，不是把 Baseline Profiles 机制改掉。官方生成文档明确要求按 release build 或基于 release 的 variant 生成 profile，product flavor 也要分别产出。实操里把下面四件事固定下来，命中率会稳定很多：
+R8 会影响收益，但影响的是 release 产物的代码形态和启动路径命中率，不是改 Baseline Profiles 机制本身。官方生成文档明确要求按 release build（或基于 release 的 variant）生成 profile，product flavor 也要分别产出。实操中把下面四件事固定下来，命中率会稳定很多：
 
 - Profile 生成、打包和 Macrobenchmark 都对准 release 或 release-like variant，不拿 debug 产物代替
 - 打开 R8 full mode、调整 keep 规则、做大规模包结构改动后，重新生成 `baseline-prof.txt`
@@ -308,7 +308,7 @@ Baseline Profiles 和 AutoFDO 都属于 Profile-Guided Optimization，但它们�
 
 **Baseline Profiles** 针对的是 ART 管理的 Java/Kotlin 代码。输入是开发者定义的热点路径，输出是安装端 `speed-profile` AOT 编译覆盖范围。我们关心的是“哪些方法要提前编”。
 
-**AutoFDO** 针对的是内核和系统 native binary 的机器码质量。Android ARM64 设备的主采样路径通常来自 ETM / CoreSight 一类硬件分支追踪，用户态常见入口是 `simpleperf record` 和后续的 `branch-list` 转换。LBR 是 x86 平台常见术语，不适合直接拿来描述 Android 的主实现。
+**AutoFDO** 针对内核和系统 native binary 的机器码质量。Android ARM64 设备的主采样路径通常来自 ETM / CoreSight 这类硬件分支追踪，用户态常见入口是 `simpleperf record` 和后续的 `branch-list` 转换。LBR 是 x86 平台的术语，不要直接拿来描述 Android 的主实现。
 
 | 维度 | AutoFDO | Baseline Profiles |
 |------|---------|-------------------|
@@ -318,7 +318,7 @@ Baseline Profiles 和 AutoFDO 都属于 Profile-Guided Optimization，但它们�
 | 产物 | `*.afdo` / 更优的 native binary | `baseline.prof` / `oat` 编译产物 |
 | 观测入口 | simpleperf、构建日志、内核基准 | `ProfileVerifier`、`dumpsys package dexopt`、Macrobenchmark |
 
-对 OEM 来说，两者可以同时使用，但要分开写。AutoFDO 属于 GKI / native build 体系，Baseline Profiles 属于 APK / ART 编译体系。把 LBR、`WITH_DEXPREOPT_*`、`baseline.prof` 放进同一段，读者很容易把三套机制混成一套。
+对 OEM 来说，两者可以同时用，但要分开理解。AutoFDO 属于 GKI / native build 体系，Baseline Profiles 属于 APK / ART 编译体系。把 LBR、`WITH_DEXPREOPT_*`、`baseline.prof` 放进同一段，读者很容易把三套机制当成一套。
 
 ## 验证是否生效：先看编译状态，再看启动收益
 
@@ -344,7 +344,7 @@ adb shell dumpsys package dexopt | grep -A 2 com.example.app
 
 ### 3. 再测启动收益
 
-收益验证更适合交给 Macrobenchmark。常见做法是对同一条冷启动路径分别跑 `CompilationMode.None()` 和 `CompilationMode.Partial()`，再对比 TTID / TTFD。Baseline Profiles 解决的是编译覆盖率问题，Macrobenchmark 刚好能把这部分差异转成稳定的启动时间数据。
+收益验证更适合交给 Macrobenchmark。常见做法是对同一条冷启动路径分别跑 `CompilationMode.None()` 和 `CompilationMode.Partial()`，对比 TTID / TTFD。Baseline Profiles 解决的是编译覆盖率问题，Macrobenchmark 能把这部分差异转成稳定的启动数据。
 
 Perfetto 仍然有用，但更适合做补充观察：
 
@@ -359,7 +359,7 @@ Perfetto 仍然有用，但更适合做补充观察：
 
 一个常见误区是“profile 越大越好”。profile 中列出的每个方法都需要 dex2oat 编译。如果 profile 列了数千个方法，安装时的编译时间反而会成为瓶颈——用户看到的"安装优化中..."提示会持续很久。
 
-最佳实践是**只覆盖启动和核心 CUJ 的代码路径**，而不是整个应用的方法列表。Google 建议保持 profile 在合理的行数范围内（通常不超过几千条规则）。
+正确的做法是**只覆盖启动和核心 CUJ 的代码路径**，不要列整个应用的方法表。Google 建议 profile 保持在合理行数（通常不超过几千条规则）。
 
 ### 多 DEX 文件的 Profile 管理
 
@@ -388,14 +388,14 @@ AAB 里的 `BUNDLE-METADATA` 是构建产物视角，安装到设备后不会原
 
 ### Profile 生成失败或收益回落时怎么查
 
-常见的失败形态有四种：
+常见的失败形态：
 
 - 构建产物里没有 `baseline.prof`：生成任务没跑到目标 variant，或者 CI 只产出了 debug 包
 - 设备一直停在 `status = verify`：侧载路径只完成了 profile 入队，`bg-dexopt` 还没跑
 - 切到新的 R8 / Startup Profile 配置后收益消失：旧的 HRF 文件还在，但启动路径已经变了
 - Macrobenchmark 几乎没差异：测试拿的不是同一 release 包，或者对比模式不是 `None()` / `Partial()`
 
-排查顺序也固定下来：
+排查顺序：
 
 1. 检查 APK / AAB 里有没有 `baseline.prof`
 2. Android 9+ 用 `ProfileVerifier`，所有版本用 `dumpsys package dexopt` 看设备是否进入 `speed-profile`
@@ -406,20 +406,20 @@ AAB 里的 `BUNDLE-METADATA` 是构建产物视角，安装到设备后不会原
 
 ### Library 的 Baseline Profiles 与 App 的合并
 
-Jetpack 和其他 Google 库会自带 Baseline Profiles。当应用依赖这些库时，AGP 会自动将库的 profile 与应用自身的 profile 合并。开发者不需要手动管理库的 profile——这是 AGP 的默认行为。
+Jetpack 和其他 Google 库自带 Baseline Profiles。当应用依赖这些库时，AGP 会自动把库的 profile 和应用的 profile 合并。开发者不需要手动管库的 profile——AGP 默认就做合并。
 
-Compose 运行时（`androidx.compose.*`）自带了大量的 Baseline Profiles 规则，覆盖了组合（composition）、布局（layout）、绘制（drawing）的完整管线。使用 Compose 的应用即使不生成自己的 profile，也能从库的 profile 中获得一部分收益。
+Compose 运行时（`androidx.compose.*`）自带大量 Baseline Profiles 规则，覆盖了组合（composition）、布局（layout）、绘制（drawing）的完整管线。使用 Compose 的应用即使自己不生成 profile，也能从库的 profile 中获得一部分收益。
 
 ## Jetpack Compose 与 Baseline Profiles
 
-Compose 运行时对 Baseline Profiles 的依赖程度比传统 View 系统高得多。原因是 Compose 的组合阶段（composition）涉及大量 Kotlin 编译器生成的辅助方法——这些方法在 Compose 的 compiler plugin 生成的代码中，路径长、调用频率高，如果没有 AOT 编译，冷启动时的解释执行开销会非常明显。
+Compose 运行时对 Baseline Profiles 的依赖程度比传统 View 系统高得多。原因是 Compose 的组合阶段（composition）涉及大量 Kotlin 编译器生成的辅助方法——这些方法由 Compose compiler plugin 生成，路径长、调用频率高，如果没有 AOT 编译，冷启动时的解释执行开销会非常明显。
 
 Google 在 Compose 的每个 release 中都附带了预生成的 Baseline Profiles。具体来说：
 - `androidx.compose.runtime` 的 profile 覆盖了 `ComposerImpl` 的核心方法
 - `androidx.compose.ui` 的 profile 覆盖了布局和绘制管线的关键路径
 - `androidx.compose.foundation` 的 profile 覆盖了 LazyColumn/Row 的测量和布局逻辑
 
-使用 Compose 的应用**强烈建议**生成自己的 Baseline Profiles，而不仅仅依赖库的 profile。因为库的 profile 不知道应用的具体组合树结构——它只知道库内部的方法是热点，但不知道应用层的 `@Composable` 函数调用链。应用层的 profile 和库的 profile 合并后，才能覆盖完整的渲染路径。
+使用 Compose 的应用**强烈建议**生成自己的 Baseline Profiles，不能只依赖库的 profile。库的 profile 不知道应用的具体组合树结构——它只知道库内部的方法是热点，但不知道应用层 `@Composable` 函数的调用链。应用层的 profile 和库的 profile 合并后，才能覆盖完整渲染路径。
 
 这也解释了为什么 Compose 应用添加 Baseline Profiles 后的收益通常比传统 View 应用更明显。
 ## 扩展
