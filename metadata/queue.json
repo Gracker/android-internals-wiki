@@ -1680,6 +1680,63 @@
       "stage": "draft",
       "added_date": "2026-07-11",
       "notes": "知识缺口挖掘创建 — GPU DVFS Headroom + PowerAdvisor — 评分 18/20"
+    },
+    {
+      "section": "8.18",
+      "section_title": "Binder Trace 驱动的 Activity 冷启动性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Perfetto/AOSP/Kernel 源码锚点与 SQL 字段多处不符合 Android 17 基准",
+      "material_paths": [
+        "src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md",
+        "logs/deep-review/2026-07-11-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/路径错误",
+          "location": "frontmatter sources L27-L29；§3.1 验证标注；参考资料 Perfetto 源码路径",
+          "detail": "android-17.0.0_r1 的 external/perfetto 标准库路径是 src/trace_processor/perfetto_sql/stdlib/android/binder.sql 与 binder_breakdown.sql；正文使用的 src/trace_processor/sql/stdlib/android/*.sql 在该 tag 下 404。",
+          "suggestion": "把 Perfetto SQL 标准库路径统一改为 src/trace_processor/perfetto_sql/stdlib/android/{binder.sql,binder_breakdown.sql}，源码链接锚定 android-17.0.0_r1。"
+        },
+        {
+          "type": "SQL 字段错误",
+          "location": "§1.2、§3.1-§3.3、§6.4、§7.4 中所有 dispatch_dur 用法",
+          "detail": "android-17.0.0_r1 的 android_binder_txns 表字段包含 client_ts/client_dur/server_ts/server_dur/is_sync/is_main_thread 等，但没有 dispatch_dur。当前 SQL SELECT dispatch_dur 会直接执行失败，正文把它写成标准字段也不准确。",
+          "suggestion": "改为在 CTE 中显式计算 server_ts - client_ts AS dispatch_dur_ns（并处理 server_ts 为空的失败/异步事务），或正文改称“派生调度等待时间”，不要写成表字段。"
+        },
+        {
+          "type": "SQL 字段错误",
+          "location": "§6.5 进程画像 SQL",
+          "detail": "android_binder_metrics_by_process 在 android-17.0.0_r1 中只有 process_name、pid、slice_name、event_count 四列；正文 ORDER BY transaction_count DESC 字段不存在，标题中的“平均延迟”也不是该 view 能给出的指标。",
+          "suggestion": "若只看次数，用 ORDER BY event_count DESC；若要平均延迟，改用 android_binder_txns 按 client_process/server_process 聚合 AVG(client_dur) 或 AVG(server_dur)。"
+        },
+        {
+          "type": "源码路径错误",
+          "location": "§4.1 PackageManagerService 与 §4.3 WindowManagerService 验证标注",
+          "detail": "android-17.0.0_r1 中 PackageManagerService.java 与 WindowManagerService.java 位于 frameworks/base/services/core/java/com/android/server/{pm,wm}/，正文写成 frameworks/base/core/java/com/android/server/{pm,wm}/，该路径在 tag 下 404。",
+          "suggestion": "改为 frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java 和 frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java。"
+        },
+        {
+          "type": "版本/源码锚点错误",
+          "location": "frontmatter last_verified_against、sources；正文版本基准与 §2.1 内核 tracepoint 表",
+          "detail": "AOSP kernel/common 当前可验证的 Android 17 分支是 android17-6.18；android17-6.12 分支不存在。android17-6.18 下 binder.c/binder_trace.h 位于 drivers/android/，但 binder_trace.h 不包含 binder_lock/binder_locked/binder_unlock tracepoints。",
+          "suggestion": "把内核锚点更新为 android17-6.18 drivers/android/binder.c 与 drivers/android/binder_trace.h；删除或改写 binder_lock/binder_locked/binder_unlock 这组 Android 17 不存在的 tracepoint。"
+        },
+        {
+          "type": "API/字段错误",
+          "location": "§3.3 版本差异表；扩展“Android 17 Binder Layer 追踪增强”",
+          "detail": "android-17.0.0_r1 的 binder.sql 不含 is_merged、frozen_reply、parent_txn_id 字段；android17-6.18 的 binder uapi 有 TF_UPDATE_TXN，但没有 TF_UPDATE_TXN_FROZEN。正文把这些写成 Android 17 可见字段/标志位，超出可验证源码。",
+          "suggestion": "删除这些字段/标志位的 Android 17 结论，或明确标注“未进入 Android 17/仅为草案”，并把正文分析改回 Android 17 已存在的字段和 TF_UPDATE_TXN。"
+        },
+        {
+          "type": "原理断裂/过度归因",
+          "location": "§3.3、§6.4 Frozen Reply 识别",
+          "detail": "正文把 server_dur = 0 等价为 BR_FROZEN_REPLY 特征，但 Android 17 的 android_binder_txns 表不暴露 frozen_reply 字段；失败事务、缺失服务端 slice、异步/未完成事务都可能让单看 server_dur 产生误判。",
+          "suggestion": "把 server_dur = 0 降级为候选信号，并要求结合 binder_return 中 BR_FROZEN_REPLY / BR_TRANSACTION_PENDING_FROZEN、client/server slice、thread_state 时间窗共同确认。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-11T03:30:46+08:00",
+      "status": "pending"
     }
   ],
   "entries": [
