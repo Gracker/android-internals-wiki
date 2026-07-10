@@ -4,8 +4,8 @@ chapter: "20.6"
 section: "20.6"
 status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-19"
-last_verified_against: "AOSP android-17.0.0_r1, developer.android.com, Google Play Console"
+last_verified: "2026-07-10"
+last_verified_against: "AOSP android-17.0.0_r1 RuntimeInit/ActivityManagerConstants/BroadcastConstants/ContentResolver/ContentProviderClient/ContentProviderHelper/ApplicationExitInfo/InputDispatcher; developer.android.com Android Vitals/ANR/FGS docs; Google Play Console"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 1
@@ -18,38 +18,40 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
-task9_reviewed_date: "2026-06-19"
+task9_reviewed_date: "2026-07-10"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-19T17:26:51+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-19-17-deep-review.md"
-task9_result: "pass-tech-review"
-task9_review_notes: "2026-05-17 Task9 11: needs-rework。P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 1；Android Vitals 官方 URL 从 answer/9844476 修正为 answer/9844486，回到 Task6 复审。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；Google Play Vitals 阈值和 User-Perceived ANR 仅计 input dispatching timed out 的边界与官方文档一致；无 P0/P1。 自动晋升 finalized。 | 2026-06-19 13 Task9 idle audit: auto-fixed。P1 1（已修复）/ P0 0 / P2 0；FGS 超时版本边界修正：Android 14 仅 shortService ANR，Android 15+ dataSync/mediaProcessing 为 6h/24h 后台运行限额且超时通常 RemoteServiceException，不再写成 Android 14+ 一组 ANR 阈值。 | 2026-06-19 17 Task9 final review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 13 点 FGS 超时版本边界 auto-fix 与 Task6 复审结果；queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-07-10T10:35:06+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-10-10-audit.md"
+task9_result: "auto-fixed"
+task9_review_notes: "2026-07-10 10 Task9 idle audit AUTO-FIX: P0 0 / P1 1 / P2 0；修正 ContentProvider ANR 阈值口径：Android 17 中 10 秒是 provider 发布等待超时，超时按初始化失败移除进程；远端 provider 调用阻塞 ANR 超时由 ContentProviderClient.setDetectNotResponding() 调用方指定；回到 Task6 复审。详见 logs/deep-review/2026-07-10-10-audit.md。 | 2026-05-17 Task9 11: needs-rework。P1 3：Crash-Free 示例计算仍错；ANR 超时表仍把系统阈值/内部目标/Android 14+ soft-hard timeout 混在一起；Vitals/Firebase/行业阈值来源仍不闭合。P2 1：官方 URL 需修正。 已写入 logs/deep-review/2026-05-17-11-deep-review.md。 | 2026-05-28 Task9 deep-review: auto-fixed。P0 0 / P1 0 / P2 1；Android Vitals 官方 URL 从 answer/9844476 修正为 answer/9844486，回到 Task6 复审。 | 2026-05-28 10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 1；Google Play Vitals 阈值和 User-Perceived ANR 仅计 input dispatching timed out 的边界与官方文档一致；无 P0/P1。 自动晋升 finalized。 | 2026-06-19 13 Task9 idle audit: auto-fixed。P1 1（已修复）/ P0 0 / P2 0；FGS 超时版本边界修正：Android 14 仅 shortService ANR，Android 15+ dataSync/mediaProcessing 为 6h/24h 后台运行限额且超时通常 RemoteServiceException，不再写成 Android 14+ 一组 ANR 阈值。 | 2026-06-19 17 Task9 final review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 13 点 FGS 超时版本边界 auto-fix 与 Task6 复审结果；queue 无 pending，自动晋升 finalized。"
 rework_notes: "Task 2B 回炉修复: P0 User-Perceived ANR Rate 定义修正(Vitals 只计 Input dispatching timed out), P1 行业对标值改为匿名经验区间, P1 示例计算补 Session 分母, P1 ANR 阈值表补 Android 14+ soft/hard 超时, P2 Native Crash 采集描述修正, P2 26.1 引用改指向 15.3"
 last_task2b_at: "2026-05-23T11:17:28+08:00"
 p0: 0
-p1: 0
+p1: 1
 p2: 0
 last_task6_at: "2026-06-19T17:12:15+08:00"
 task6_review_notes: "2026-06-19 17 Task6 复审（Task9 idle audit auto-fix 后）：L1/L2 全部通过；FGS 超时版本边界修正写作质量合格；无 L3/L4 回炉项；送 Task9 最终确认。"
 last_task2b_verifier_at: "2026-05-27T23:28:16+08:00"
 task2b_verifier_note: "queue 无 pending 且正文充分，回流 Task6 复审；仅修正状态流转。"
-last_task9_autofix_at: "2026-06-19"
+last_task9_autofix_at: "2026-07-10"
 last_task6_review_log: "logs/review/2026-06-19-17-review.md"
 task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-06-19"
-last_task9_audit: "2026-06-19"
+last_task9_audit: "2026-07-10"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
+updated_by: "openclaw-task9"
+updated_date: "2026-07-10"
 ---
 
 # 稳定性度量与指标体系
@@ -154,7 +156,7 @@ Google Play 的阈值是面向所有开发者的底线。团队内部度量 ANR�
 | Input dispatching | 5 秒 | 全版本一致 [AOSP `InputDispatcher.cpp`] |
 | 前台 Service / FGS | `startForegroundService()` 后必须在短时间内调用 `startForeground()`；普通 Service 执行超时默认约 20 秒；shortService FGS 约 3 分钟后触发 ANR | Android 14 引入 shortService 超时；Android 15+ 对 dataSync / mediaProcessing FGS 增加 6 小时 / 24 小时后台运行限额（mediaProcessing 类型 Android 15 加入），超时未停止通常是 `RemoteServiceException` 崩溃，不计作 ANR 触发阈值 [developer.android.com FGS troubleshooting/timeout; AOSP `ActivityManagerConstants.java`] |
 | 前台 Broadcast | fg ~10 秒 / bg ~60 秒 | Android 14+ 引入 soft/hard 两级超时: soft timeout 更短，超过后广播排队等待; hard timeout 到达才触发 ANR [AOSP `BroadcastQueue.java`] |
-| ContentProvider | 10 秒 | 全版本一致 [AOSP `ActivityManagerService.java`] |
+| ContentProvider 发布等待 / 调用阻塞 | 发布等待超时为 10 秒；远端 provider 调用阻塞的 ANR 超时由 `ContentProviderClient.setDetectNotResponding()` 调用方指定 | Android 17 中 10 秒发布等待来自 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`，超时后按 `REASON_INITIALIZATION_FAILURE` 移除进程，不等价于通用 provider 调用 ANR；调用阻塞型 ANR 走 `ContentProviderClient` / `ContentProviderHelper.appNotRespondingViaProvider()` [AOSP `ContentResolver.java` / `ContentProviderClient.java` / `ContentProviderHelper.java`] |
 
 **团队内部监控目标（示例）**
 
