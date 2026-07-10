@@ -887,6 +887,51 @@
       "status": "pending",
       "added_date": "2026-07-10",
       "source": "task2a-gap-mining"
+    },
+    {
+      "section": "8.37",
+      "section_title": "Android 13+ PerformanceHintManager 实战：Java/NDK 集成与 Android 17 源码校准",
+      "priority": 95,
+      "reason": "[Deep Tech Review] PerformanceHintManager API 年表、Session 生命周期和示例线程 ID 口径与 Android 17 / 官方 API 不一致",
+      "material_paths": [
+        "logs/deep-review/2026-07-10-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 版本错误",
+          "location": "L126-L143、L167-L193",
+          "detail": "官方 API 页显示 Java PerformanceHintManager/createHintSession/reportActualWorkDuration(long)/updateTargetWorkDuration 为 API 31；WorkDuration 重载和 setPreferPowerEfficiency 为 API 35；setThreads 为 API 34。NDK performance_hint.h 中基础 C API 为 __ANDROID_API_T(API 33)。正文把 Java/NDK 基础能力统一写成 Android 13 引入，并把 reportActualWorkDuration(long) 写成 API 34。",
+          "suggestion": "重写 API 演进表：Java 公共 API 与 NDK C API 分开；用 API 31/33/34/35/36/37 分别标注，Android 17 只写已验证状态，不写成引入点。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L157-L165",
+          "detail": "android-17.0.0_r1 的 PerformanceHintManager.Session 没有 CREATED/ACTIVE/DESTROYED State 枚举；源码主要通过 mNativeSessionPtr 与 close()/finalize() 管理 native session 指针。",
+          "suggestion": "删除“三态机”说法，改成 public Session 生命周期：createHintSession 返回 Session；update/report/setThreads 操作 native session；close 后 mNativeSessionPtr 归零且不可继续调用。"
+        },
+        {
+          "type": "API 示例错误",
+          "location": "L236-L257",
+          "detail": "createHintSession 需要应用线程组内的 Linux tid。示例使用 workerThread.getId()，这是 Java Thread ID，不是内核 tid；executorService.getWorkerTids() 也不是标准 Java/Android API。",
+          "suggestion": "示例应展示在线程内部用 Process.myTid() 记录 tid，或 native 侧用 gettid()/pthread 绑定后传入；自定义线程池需要显式维护 tid 列表。"
+        },
+        {
+          "type": "版本差异错误",
+          "location": "L84-L88、L136-L143、L274-L281",
+          "detail": "AOSP android-13.0.0_r1 到 android-17.0.0_r1 均存在 frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java，未发现正文所说 Android 17 才从 performance.hint 迁至 power.hint 的版本变化。",
+          "suggestion": "把该点改为“Android 17 源码确认服务位于 power/hint”，不要写成 Android 17 新迁移；如需历史对比，必须找出更早 tag 中的实际差异。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L70、L298-L304、L351-L356",
+          "detail": "正文把 hint session 写成 Adjc/TaskScheduler 决策输入，并给出比值失效、创建耗时 5-15ms 等具体判断，但本轮未在 android-17.0.0_r1 的 PerformanceHintManager/HintManagerService/Power HAL 路径中找到相应一手证据。",
+          "suggestion": "删除或降级这些未经验证的调度和耗时断言；只保留官方文档可支撑的 core placement/frequency advisory 语义，性能数字需要 trace/benchmark 证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-10T13:30:33+08:00",
+      "status": "pending",
+      "original_review_log": "logs/deep-review/2026-07-10-13-deep-review.md"
     }
   ],
   "pending": [
