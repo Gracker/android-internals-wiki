@@ -1673,6 +1673,13 @@
       "completed_at": "2026-07-11T03:00:00+08:00",
       "completed_by": "task2b-main",
       "completion_note": "Fixed 2 issues: kernel path + perfetto version"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.29-android17-gpu-dvfs-headroom-power-advisor.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-11",
+      "notes": "知识缺口挖掘创建 — GPU DVFS Headroom + PowerAdvisor — 评分 18/20"
     }
   ],
   "entries": [

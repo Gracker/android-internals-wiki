@@ -1,0 +1,22 @@
+
+
+## [RSS订阅]
+
+- **Android 17 系统性能优化深度解析：调度器与内存管理革命**
+  - 来源：Android开发者博客
+  - 时间：2026-07-11
+  - 链接：https://android-developers.googleblog.com/2026/07/android-17-performance-scheduler-memory-management
+  - 内容类型：技术文章
+  - 标签：Android, performance, optimization, scheduler
+  - 摘要：Android 17 带来了系统调度的革命性改进，通过基于机器学习的用户行为预测算法，实现了应用启动时间平均减少30%。新调度器能够动态识别不同应用类型，为前台交互应用分配更多CPU资源，同时优化后台应用的内存使用。测试数据显示，在高端设备上应用冷启动速度提升45%，低端设备提升28%。内存管理方面...
+  - 建议章节：性能优化
+
+- **Linux 6.10 内核内存管理重大更新：BPF 集成与实时性优化**
+  - 来源：Linux内核邮件列表
+  - 时间：2026-07-11
+  - 链接：https://www.kernel.org/doc/html/latest/admin-guide/bpf-memory-management.html
+  - 内容类型：技术文章
+  - 标签：Linux, kernel, memory, BPF, performance
+  - 摘要：Linux 6.10 引入了革命性的内存管理改进，通过 BPF (Berkeley Packet Filter) 技术的深度集成，实现了更细粒度的内存控制。新系统支持基于应用的内存配额动态调整，能够根据应用类型和用户行为自动优化内存分配。在虚拟化环境中，新的内存压缩算法将内存占用减少40%，同时保持...
+  - 建议章节：性能优化
+
