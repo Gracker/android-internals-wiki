@@ -722,7 +722,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-10T12:30:03+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-10T12:54:48+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "task9 deep tech review 3 项问题全部修复：① 源码路径校准（HintManagerService / performance_hint.h）；② Java API 方法名修正（移除 startTimer/setPreferredUpdateRateNanos，替换为 updateTargetWorkDuration/setThreads）；③ 删除未核验的 ThermalHint 自动联动、期望耗时翻倍、PELT 回退等声明；④ 重写可观测性节（移除未核验的 atrace/ftrace 事件名，改用 HintManagerService.dump + Power HAL trace + stats atom）"
     }
   ],
   "entries": [
