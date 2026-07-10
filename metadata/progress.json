@@ -1,9 +1,9 @@
 {
   "total": 714,
   "draft": 0,
-  "ready_for_review": 3,
+  "ready_for_review": 4,
   "finalized": 7,
-  "last_updated": "2026-07-10T17:19:00+08:00",
+  "last_updated": "2026-07-10T18:12:00.030049+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -1424,6 +1424,13 @@
       "drafted_at": "2026-07-10T14:04:00+08:00",
       "note": "Created from knowledge gap mining (Android 17 CPU cache locality)",
       "gap_source": "素材驱动"
+    },
+    {
+      "section": "2.15",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-10T18:12:00.030049+08:00",
+      "note": "GPU 调试工具链管线集成架构: 5 anchors (三层可观测性模型/flatland+sfdo CLI/AGI双模+Sokatoa/瓶颈归因FrameTimeline+counter/实时监控DVFS+ADPF/异常诊断GPU reset+HWC切换) + 2 extensions (Vulkan Layers+GFXReconstruct/游戏引擎ADPF+GameMode+Swappy). 交叉引用 §2.10 §2.17 §2.52 §14.8 §19.1. AOSP android-17.0.0_r1 源码验证."
     }
   ],
   "review_history": [
