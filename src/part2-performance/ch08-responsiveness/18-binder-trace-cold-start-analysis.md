@@ -50,16 +50,16 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
-last_task6_at: "2026-07-11T02:15:00+08:00"
+last_task6_at: "2026-07-11T03:14:43+08:00"
 task9_state: pending
 task9_result: issue-found
 last_task9_at: "2026-07-11T02:20:00+08:00"
-last_task6_review_notes: "revisiting→reviewed: L1×1(关键问题是), L2×3(措辞/SQL免责/语气); 6个L3/L4技术存疑写入queue"
+last_task6_review_notes: "revisiting→reviewed(re-round): L1×2(锁化术语→锁保护/blockquote格式修复); L1×1(拆解→分解); 已修复; 无新增L3/L4问题; 待Task9复审"
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
@@ -253,7 +253,7 @@ PerfettoTrace.beginSection("Application.bindApplication:start");
 
 ## 三、Binder 事务耗时归因分析
 
-采集到 binder trace 后，需要拆解每笔事务的延迟：主线程等了多少，延迟归因到哪个阶段。Perfetto SQL 标准库的 `android.binder` 模块给出三段延迟分解：
+采集到 binder trace 后，需要分解每笔事务的延迟：主线程等了多少，延迟归因到哪个阶段。Perfetto SQL 标准库的 `android.binder` 模块给出三段延迟分解：
 
 ### 3.1 三段延迟的语义
 
@@ -331,7 +331,9 @@ LIMIT 20;
 
 冷启动阶段 App 进程会向 PackageManager（PKMS）发起多条元数据查询：`getPackageInfo`、`getApplicationInfo`、`getProviderInfo`。这些事务每笔 `client_dur` 通常 2-8ms（Android 17 中由于 PKMS 分阶段缓存和预加载机制，延迟已较早期版本降低），但**频次高**——一次冷启动可能发 8-12 次。
 
-> [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/server/pm/PackageManagerService.java — PKMS 提供锁化的元数据缓存，但读路径依然走 binder IPC] > **Android 17 PKMS 改进**：Android 17 中 PackageManagerService 引入分阶段元数据缓存与预加载机制，冷启动期间 PKMS 查询次数从早期版本的 8-12 次降低到典型 3-5 次。该优化对 App 端透明——`getPackageInfo` / `getApplicationInfo` 首次调用时 PKMS 从内存缓存直接返回，不再走磁盘 XML 解析路径。但 SDK 侧若绕过标准 API 直接构造 parcel 查询，仍可能触发完整 IPC。
+> [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/server/pm/PackageManagerService.java — PKMS 提供锁保护的元数据缓存，但读路径依然走 binder IPC]
+>
+> **Android 17 PKMS 改进**：Android 17 中 PackageManagerService 引入分阶段元数据缓存与预加载机制，冷启动期间 PKMS 查询次数从早期版本的 8-12 次降低到典型 3-5 次。该优化对 App 端透明——`getPackageInfo` / `getApplicationInfo` 首次调用时 PKMS 从内存缓存直接返回，不再走磁盘 XML 解析路径。但 SDK 侧若绕过标准 API 直接构造 parcel 查询，仍可能触发完整 IPC。
 
 单笔优化空间有限，建议的应用层对策：
 > - 缓存 PackageInfo 到内存，避免每次 onCreate 都查；
