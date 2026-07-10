@@ -39,7 +39,7 @@ task2b_result: fixed
 last_task2b_at: "2026-06-16T00:51:53"
 task2b_fixed_date: "2026-06-16"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-27
+last_deepseek_cn_review_at: 2026-07-11
 last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0"
 task9_result: "auto-fixed"
@@ -61,7 +61,7 @@ task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2 / P1 1。core-splash
 ---
 # Splash Screen 与感知启动速度
 
-冷启动的客观耗时和用户体感之间有一段可操作的空间。系统 Starting Window 在 App 进程完成首帧之前给用户视觉反馈；SplashScreen API（Android 12+）统一了这段反馈的配置方式；骨架屏、预渲染、退出动画则让这段过渡更平滑。本节讲这三层工具怎么用、各自的版本边界和 Perfetto 上的观察点。
+用户点击图标之后、App 首帧真正画出来之前，系统可以做很多事来缩短体感等待时间。Starting Window 在 App 进程就绪前先给视觉反馈；SplashScreen API（Android 12+）把这段反馈统一成可配置样式；骨架屏、预渲染和退出动画再让过渡更平滑。本节讲这三层工具各自怎么用、版本边界在哪、Perfetto 上怎么看。
 
 关于 Starting Window 的系统侧工作机制（ATMS 决策、Shell starting-surface 组件创建流程、TaskSnapshot 路径），详见 2.12 节。本节聚焦 App 侧的配置、适配和感知优化策略。
 
@@ -93,7 +93,7 @@ task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2 / P1 1。core-splash
 
 ### 系统侧在做什么
 
-冷启动时，Launcher 把点击事件交给 system_server，ATMS 判断目标 App 进程不存在，走冷启动路径。在 fork 进程、初始化运行时、执行 `Application.onCreate()` 这整段时间里，用户的屏幕上没有任何来自 App 的视觉内容。Starting Window 的作用就是在这段空白期给用户一个反馈——它的创建和绘制由系统完成，不依赖 App 进程。
+冷启动时，Launcher 把点击事件交给 system_server，ATMS 判断目标 App 进程不存在，走冷启动路径。从 fork 进程到初始化运行时再到 `Application.onCreate()`，这整段时间里屏幕上看不到 App 的任何内容。Starting Window 的作用就是在这段空白期给用户一个反馈——它的创建和绘制由系统完成，不依赖 App 进程。
 
 Android 12 之后，Starting Window 的决策和创建分在两侧：ATMS/WMS 判断是否需要 starting surface，`StartingSurfaceController` 生成 starting data；WM Shell 的 starting-surface 组件（`SplashscreenWindowCreator.java` / `StartingSurfaceDrawer.java`）负责创建窗口并挂到对应 Task 上。App 进程完成首帧后，`reportDrawFinished` 信号传回服务端，再由 `removeStartingWindow` 通知 Shell 移除 starting surface。
 
@@ -289,7 +289,7 @@ splashScreen.setOnExitAnimationListener { provider ->
 
 SplashScreen 解决的是"点击到 App 首帧"这段时间的系统侧反馈。但 SplashScreen 消失之后、App 内容完全加载出来之前，用户可能面对一个半成品的页面——空白的列表、未加载的图片、loading indicator 满天飞。
 
-感知优化要解决的就是这个阶段的问题：让用户在内容加载完成之前就感受到"App 已经准备好了"。
+感知优化针对的就是这个阶段：在内容加载完成之前，让用户觉得"App 已经准备好了"。
 
 ### 骨架屏（Skeleton Screen）
 
@@ -339,7 +339,7 @@ SplashScreen 解决的是"点击到 App 首帧"这段时间的系统侧反馈。
 
 ### 预渲染策略
 
-预渲染是在 App 进程启动后、用户看到首帧之前，提前把一部分 UI 结构准备好，减少首帧绘制时的 inflate 和 measure 开销。
+预渲染的思路是：在用户看到首帧之前，提前准备一部分 UI 结构，省掉首帧绘制时的 inflate 和 measure 开销。
 
 常见的预渲染场景：
 

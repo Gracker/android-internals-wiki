@@ -49,15 +49,16 @@ gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
 pipeline_stage: "task6_pending"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
-last_task6_at: "2026-07-11T01:07:00+08:00"
+last_task6_at: "2026-07-11T02:15:00+08:00"
 task9_state: pending
 task9_result: needs-rework
 last_task9_reviewed_at: "2026-07-11T01:20:00+08:00"
 last_task2b_lite_at: 2026-07-11
+last_task6_review_notes: "revisiting→reviewed: L1×1(关键问题是), L2×3(措辞/SQL免责/语气); 6个L3/L4技术存疑写入queue"
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
@@ -246,7 +247,7 @@ PerfettoTrace.beginSection("Application.bindApplication:start");
 
 ## 三、Binder 事务耗时归因分析
 
-采集到 binder trace 后，关键问题是「这一笔 binder 主线程等了多少，这个延迟归因到哪个阶段」。Perfetto SQL 标准库的 `android.binder` 模块给出三段延迟分解：
+采集到 binder trace 后，需要拆解每笔事务的延迟：主线程等了多少，延迟归因到哪个阶段。Perfetto SQL 标准库的 `android.binder` 模块给出三段延迟分解：
 
 ### 3.1 三段延迟的语义
 
@@ -399,7 +400,7 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 [已验证: AOSP frameworks/native/libs/binder/IPCThreadState.cpp + §1.18] App 从后台切回前台时，前台 system_server 可能已经因 frozen reply 把 app 标记为 cached pool 状态，frozen 期间发起的 IPC 一律返 `BR_FROZEN_REPLY`。
 
 诊断特征：
-- `client_dur` 正常甚至很低（< 1ms）但 client_dur 内部看到 trace 里有 `client process 在 frozen pool` 的 sched state；
+- `client_dur` 正常甚至很低（< 1ms），但该时间段内 thread_state 表显示客户端进程处于 frozen pool 的 sched state；
 - 客户端没有被冻却发生 `BR_FROZEN_REPLY` 时——通常发生在 system_server worker 正在 frozen 时（罕见）。
 
 ### 5.6 主线程阻塞路径：Slice → State → Lock
@@ -478,6 +479,8 @@ WHERE sp.boundary_name GLOB '*cold*start*';
 ```
 
 > [已验证: Perfetto mainline, §8 SPAN_JOIN + experiment module §3] 用 `EXPERIMENTAL_SPAN_JOIN` 把 `Choreographer#doFrame` slice（VSync 边界）与 binder transaction slice 在主线程上做窗口化关联，可量化「冷启动期间每个 VSync 周期的主线程 IPC 开销」。
+>
+> ⚠️ 上方 SQL 为伪代码模板，`...` 和 `PARTITIONED` 子句需要根据实际 Perfetto trace_processor 版本调整。生产使用时建议参考 [Perfetto SPAN_JOIN 文档](https://perfetto.dev/docs/analysis/tables#span-join) 编写完整 JOIN 语法。
 
 ### 6.4 Frozen Reply 业务影响统计
 
@@ -527,7 +530,7 @@ ORDER BY transaction_count DESC;
 
 判定标准：`事务影响 UI 显示` + `不需要等待结果` → 适合 oneway；反例：必须等结果才能继续下一步的事务。
 
-把同步转异步时务必守住两个不变量：
+把同步转异步时要守住两个约束：
 - **不要在新事务返回前再发起下一个同步 binder**（事务嵌套 + 内层失败会污染 stack）；
 - **oneway 不能用于确认操作成功**（参见 §1.4 §「oneway 语义」）。
 

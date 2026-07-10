@@ -61,7 +61,7 @@ last_task6_audit: "2026-07-02"
 updated_by: "openclaw-task9"
 updated_date: "2026-07-10"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-26
+last_deepseek_cn_review_at: 2026-07-11
 last_task9_audit: "2026-06-18"
 ---
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
@@ -532,7 +532,7 @@ v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.
 | 可视化程度 | 纯文本 | 表格 + pivot | 节点图 + 表格 |
 | 跨会话复用 | 保存 SQL 文件 | 保存 permalink | 保存 permalink + 节点图 JSON |
 
-**结论**：Android 17 / Perfetto v54.0 范围内，不能说「v54 完全没有节点式数据流」。准确说法是：v54.0 已有基础 ExplorePage 节点图编辑器；后续版本的命名和扩展节点不进入本节结论。
+**结论**：Android 17 / Perfetto v54.0 已提供基础节点图编辑器 ExplorePage，可以支撑 CUJ 和卡顿 trace 的探索式筛选。后续版本的命名和功能扩展不在本节讨论范围内。
 
 ---
 
