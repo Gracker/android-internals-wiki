@@ -47,7 +47,7 @@ task9_result: auto-fixed
 task2b_state: fixed
 last_task9_autofix_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
-task2b_result: auto-fixed
+task2b_result: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-08
 ---

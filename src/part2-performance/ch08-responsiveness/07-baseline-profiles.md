@@ -35,8 +35,8 @@ tags:
 - dexopt
 - startup
 - performance
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed

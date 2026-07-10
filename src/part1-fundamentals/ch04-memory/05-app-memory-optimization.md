@@ -59,7 +59,7 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
-task2b_result: reworked
+task2b_result: fixed
 last_task2b_at: "2026-06-04T04:55:01"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
