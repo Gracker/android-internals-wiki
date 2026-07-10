@@ -1745,6 +1745,26 @@
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-07-10T07:06:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "8.18",
+      "section_title": "Binder Trace 驱动的 Activity 冷启动性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Frozen reply检测逻辑与Android 17行为不符",
+      "material_paths": [
+        "src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Section 3.3 \"Frozen Reply 干扰的识别\"",
+          "detail": "SQL查询条件  在Android 17中不完全等同于frozen reply。服务端线程池饱和时也会出现，因为服务端可能来不及处理事务就被调度器抢占。",
+          "suggestion": "更新SQL查询逻辑，增加线程池饱和的排除条件："
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-11T01:22:50.156404",
+      "status": "pending"
     }
   ],
   "items": [
