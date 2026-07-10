@@ -69,7 +69,7 @@ review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
 task6_review_notes: "2026-05-27 Task6 05:14：pass-light-edit。L1/L2 小修 6 处（去第一人称、删除虚假引导语）。无新增 L3/L4 回炉；既有效果量化占位按待补充/P2 保留。Task9 未重新通过，未自动晋升 finalized。 | 2026-05-27 07:11 Task6：pass-light-edit。Task9 修正 ProfilingManager / ProfilingTrigger 版本边界后复审通过；L1/L2 未发现新增问题；既有效果量化占位按待补充/P2 保留。Task9 为 auto-fixed，未满足自动晋升 finalized 的 pass-tech-review 条件，送 Task9 复审。 | 2026-07-09 23:13 Task6 revisiting review: pass-light-edit。Task9 auto-fix (RenderProperties::promotedToLayer / RenderNode::pushLayerUpdate 源码锚点修正) 写作质量复审通过。L1/L2 无新增问题（对齐×2 为技术术语 page alignment 非禁用词）。既有效果量化占位 [待补充] 按待补充/P2 保留。task9_result=auto-fixed 未满足自动晋升条件，送 Task9 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
+last_deepseek_cn_review_at: 2026-07-10
 updated_by: "openclaw-task9"
 updated_date: "2026-07-10"
 verifier_checked: 2026-07-09
@@ -214,9 +214,8 @@ API 34+ 的 App 可靠回调级别主要是 `TRIM_MEMORY_UI_HIDDEN`（20）和 `
 
 **效果**：上线优化后，该 App 的 Java OOM 崩溃率在两个版本周期内下降了约 **80%**。其中收益最大的改动是 LruCache 替换 HashMap，贡献了约 60% 的降幅。
 
-[来源: Personal-Knowlodge/source/2026-03-09_wechat_字节跳动应用性能监控帮助客户Java_OOM崩溃率下降80.md]
 
-### 从案例中带走
+### 可复用的经验
 
 Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**。当 OOM 崩溃堆栈分散在看似随机的代码路径中时，不应该在崩溃点逐个排查——先看 Java 堆的整体分布，找到那个"看不见的大象"。线上 Hprof 抓取方案虽然有一定的性能开销，但对于定位这类问题几乎是不可替代的。
 
@@ -280,9 +279,8 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 > **源码参考**：alpha 合成的自动建层条件在 `RenderProperties::promotedToLayer()`：alpha ∈ (0,1) 且 `hasOverlappingRendering()` 为 true 时触发；`RenderNode::pushLayerUpdate()` / `CanvasContext::createOrUpdateLayer()` 负责实际的 layer 创建与更新。`computeOrderingImpl` 处理子节点排序和投影，不是该条件判断的入口。自动 alpha 建层与显式硬件层（LAYER_TYPE_HARDWARE）的 FBO 机制是两条入口：前者由 `promotedToLayer()` 在满足 alpha 和重叠绘制条件时临时创建 RenderLayer / 离屏缓冲区，后者由 `setLayerType(LAYER_TYPE_HARDWARE)` 显式要求缓存层；两者都可能落到缓冲区隔离，不能把 `LAYER_TYPE_NONE` 当作规避 alpha 离屏缓冲的手段。
 
-[来源: Personal-Knowlodge/source/2026-03-06_wechat_抖音renderD128系统级疑难OOM分析与解决.md]
 
-### 从案例中带走
+### 可复用的经验
 
 这个案例给出三条可复用的排查经验：
 
@@ -334,9 +332,8 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 **效果**：MemoryThrashing 方案上线后，直播场景的 OOM 崩溃率明显下降（[待补充：具体降幅百分比]）。这个工具还让团队第一次能够在线上"看到"内存突增的现场，将 OOM 问题的平均定位时间从天级缩短到小时级。对于 Android 15+ 设备，`ProfilingManager` 可作为触发后的采集后端降低运行时开销。
 
-[来源: Personal-Knowlodge/source/2026-03-08_wechat_MemoryThrashing_抖音直播解决内存抖动实践_1.md]
 
-### 从案例中带走
+### 可复用的经验
 
 **内存问题至少要区分两类：泄漏，以及短时间内的过度分配。**
 

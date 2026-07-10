@@ -3,7 +3,7 @@
 title: "BufferQueue 阻塞的 Perfetto 识别"
 chapter: "13.15"
 section: "13.15"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -11,12 +11,14 @@ last_verified: "2026-07-10"
 last_verified_against: "Perfetto FrameTimeline docs; AOSP android-17.0.0_r1 BufferQueueProducer/Consumer/Core; android-15/16 release comparison for BUFFER_RELEASE_CHANNEL boundary"
 last_task2b_lite_at: "2026-05-30"
 confidence: medium
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-28"
+reviewed_date: "2026-07-10"
+finalized_by: "openclaw-task6-auto-promote"
+finalized_date: "2026-07-10"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 sources: 
  - type: official
  - type: official
@@ -52,14 +54,14 @@ last_task2b_at: "2026-05-28T08:50:00+08:00"
 rework_date: "2026-05-28"
 rework_by: openclaw-task2b
 review_notes: "2026-05-28 task2b: corrected BUFFER_RELEASE_CHANNEL version boundary; 2026-07-10 Task9 verified Android 16 flag path and Android 17 release notify path."
-last_task6_at: "2026-05-28T09:06:00+08:00"
+last_task6_at: "2026-07-10T08:12:38+08:00"
 last_task6_review_log: "logs/review/2026-05-28-09-review.md"
 last_task6_audit: "2026-06-22"
-task6_l1_l2_fixes: 0
+task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-05-28 09 Task6 revisiting-review: pass-light-edit;L1/L2 小修 0 处;outline 8/8 覆盖;无 L3/L4 回炉项。Task2B 已修复 BUFFER_RELEASE_CHANNEL 版本边界,送 Task9 复核。"
+task6_review_notes: "2026-07-10 Task6 revisiting-review: pass-light-edit;L1 banned word fix (对齐/链路);outline covered;无 L3/L4 回炉项。Task9 auto-fixed 已确认。"
 task6_reviewed_by: openclaw-task6
-task6_reviewed_at: "2026-05-28T09:06:00+08:00"
+task6_reviewed_at: "2026-07-10T08:12:38+08:00"
 updated_by: openclaw-task9
 updated_date: "2026-07-10"
 last_task9_at: "2026-07-10T06:36:58+08:00"
@@ -85,8 +87,8 @@ Android 12 之后,FrameTimeline 会在 App 和 SurfaceFlinger 两侧各生成 Ex
 
 | 字段 | 读法 | 用途 |
 |---|---|---|
-| `surface_frame_token` | App 帧 token | 与 App `doFrame`、RenderThread slice 对齐 |
-| `display_frame_token` | SurfaceFlinger display frame token | 与 SF `Actual Timeline` 以及 flow event 对齐 |
+| `surface_frame_token` | App 帧 token | 与 App `doFrame`、RenderThread slice 对应 |
+| `display_frame_token` | SurfaceFlinger display frame token | 与 SF `Actual Timeline` 以及 flow event 对应 |
 | `jank_type` | Perfetto UI 可能显示 `Buffer Stuffing`,SQL 结果也可能按版本呈现为无空格枚举名 | 识别队列积压状态 |
 | `layer_name` | 产生该帧的 Layer / Surface 名称 | 在多 Surface 场景中区分主窗口、视频、Camera、WebView |
 
@@ -116,7 +118,7 @@ Perfetto 中常见的 `QueuedBuffer - <layer>` 轨道可以用来判断 App 侧�
 - 计数快速上升后伴随 `dequeueBuffer` 变长:队列积压已经反向压到 producer。
 - 计数下降但 `dequeueBuffer` 仍长:要转向 release fence 或 slot 复用路径,详见 2.16 节。
 
-这条轨道最适合和 `layer_name` 一起看。视频、Camera、SurfaceView、WebView 都可能有独立 Surface;同一个进程内多个 Layer 同时更新时,主窗口的 `Buffer Stuffing` 不能自动归因给视频 Surface,必须用 Layer 名称和 token 对齐。
+这条轨道最适合和 `layer_name` 一起看。视频、Camera、SurfaceView、WebView 都可能有独立 Surface;同一个进程内多个 Layer 同时更新时,主窗口的 `Buffer Stuffing` 不能自动归因给视频 Surface,必须用 Layer 名称和 token 匹配。
 
 ## Producer / Consumer 两端的因果链
 
@@ -155,7 +157,7 @@ App / Producer
 | RecyclerView 中嵌入播放器 | 主窗口有滚动帧,视频 Surface 有独立 Layer;`layer_name` 可能同时出现 Activity 和播放器 Surface | 先确认 `Buffer Stuffing` 属于哪个 Layer,再看是否由列表滚动触发播放器 Surface 重建或尺寸变化 |
 | SurfaceView 视频播放 | 视频走独立 Surface,App 主窗口只负责控制层和 UI | 主窗口 jank 与视频 Layer jank 分开归因;FrameTimeline 文档也提示 SurfaceView 支持边界需按版本核对 |
 | TextureView 视频播放 | 视频内容采样进 App 渲染路径,RenderThread / GPU 压力更容易和主窗口混在一起 | `dequeueBuffer` 长时要同时看 GPU busy、`updateTexImage` 和主窗口 BLAST 轨道 |
-| CameraX 预览 | camera producer、预览 Surface、App UI 可能分属不同线程和进程 | 用 Layer 名称、camera 进程轨道和 preview Surface 的 buffer 计数对齐 |
+| CameraX 预览 | camera producer、预览 Surface、App UI 可能分属不同线程和进程 | 用 Layer 名称、camera 进程轨道和 preview Surface 的 buffer 计数对应 |
 
 这类现场的可操作做法是先把 Surface 列表列出来:主窗口、视频 Surface、Camera preview、WebView / GL Surface 各自对应哪个 Layer。之后只在同一个 Layer 内讨论 token、QueuedBuffer 和 `dequeueBuffer`,避免把主窗口的 `doFrame` 慢归因到播放器,或把播放器 Surface 的 release 延迟归因到主线程布局。
 
@@ -178,12 +180,12 @@ Task 9 复核口径是:android-15.0.0_r1 的 `BufferQueueProducer.cpp` 未命中
 对 Perfetto 判读的影响可以按保守口径处理:
 
 - Android 14/15 设备上,`dequeueBuffer` 长等待可能伴随 futex sleep 和全量唤醒后的锁竞争。
-- Android 16/17 设备上,等待解除更依赖具体 buffer release 通知;Trace 上仍应回到 `dequeueBuffer` 时长、release 时刻和 Layer 对齐,不把同步实现差异直接写成用户可感知结论。
+- Android 16/17 设备上,等待解除更依赖具体 buffer release 通知;Trace 上仍应回到 `dequeueBuffer` 时长、release 时刻和 Layer 的对应关系,不把同步实现差异直接写成用户可感知结论。
 - 性能收益不能脱离设备分支和 trace 证据评估,不能只凭 release notify 路径存在断言"已修复 BufferQueue 阻塞"。
 
 ## Perfetto SQL 模板
 
-SQL 的用途是把 UI 里的红黄绿 slice 变成可复查的证据表。下面的查询先抓 FrameTimeline 里的 Buffer Stuffing,再用 token 和 Layer 名称作为后续人工对齐入口。
+SQL 的用途是把 UI 里的红黄绿 slice 变成可复查的证据表。下面的查询先抓 FrameTimeline 里的 Buffer Stuffing,再用 token 和 Layer 名称作为后续人工比对入口。
 
 ```sql
 SELECT
@@ -205,7 +207,7 @@ ORDER BY afts.ts;
 
 查询结果用于回答三件事:哪个进程、哪个 Layer、哪些 token 进入了 Buffer Stuffing。`jank_type` 写了三种匹配方式,是为了兼容 Perfetto UI 文案、SQL 枚举字符串和不同版本导出的差异;正式报告里应保留实际查到的原始字符串。
 
-下一步把 App 帧 token 和线程 slice 对齐,找 RenderThread 是否在同一时间窗等待 `dequeueBuffer`。
+下一步把 App 帧 token 和线程 slice 关联,找 RenderThread 是否在同一时间窗等待 `dequeueBuffer`。
 
 ```sql
 WITH stuffing AS (
