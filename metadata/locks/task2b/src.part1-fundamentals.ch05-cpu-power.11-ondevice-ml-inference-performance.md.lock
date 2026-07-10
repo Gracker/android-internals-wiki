@@ -1,0 +1,10 @@
+lock_type: task2b-lite
+claimed_at: 2026-07-10T11:50:00+08:00
+claimed_by: task2b-lite
+chapter: src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md
+processing_started: 2026-07-10T11:50:00+08:00
+processing_completed: 2026-07-10T11:55:00+08:00
+actual_processing_duration: 5min
+notes: Task2B Lite high-confidence fixes - source code baseline update
+result: fixed-lite
+fixes_applied: 2 (version baseline updates)
