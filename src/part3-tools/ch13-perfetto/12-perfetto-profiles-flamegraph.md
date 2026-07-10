@@ -2,7 +2,7 @@
 title: "\"Perfetto Profile 导入与 Flamegraph 分析\""
 chapter: "\"13.12\""
 section: "\"13.12\""
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: "task6_pending"
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)（Simpleperf 导入）；Android 15 (API 35) - Android 17 (API 37)（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）\""
 tags: ["perfetto", "simpleperf", "pprof", "flamegraph", "profiling", "trace"]

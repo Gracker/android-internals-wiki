@@ -1,5 +1,5 @@
 ---
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: '19'
 confidence: high
