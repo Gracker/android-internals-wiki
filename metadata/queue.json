@@ -686,6 +686,13 @@
       "completed_at": "2026-07-10T10:51:23+08:00",
       "completed_by": "task2b-main",
       "completion_note": "P1 企业迁移 404 长期修复段落重写：从透明 filesystem fallback 改为 cutover 前置 dry-run + rollback 闭环，对齐 SmartPerfetto main 1508f99 源码行为；监控指标替换为迁移完整性校验"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.37-android17-performance-hint-manager.md",
+      "priority": 70,
+      "stage": "ready-for-review",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘：Phase 1 跳过 5 个重复 orphan，转向 AOSP+官方文档发现的 PerformanceHintManager 真实缺口"
     }
   ],
   "entries": [
