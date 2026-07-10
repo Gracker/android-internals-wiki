@@ -13,7 +13,7 @@ pipeline_stage: ready-to-publish
 last_task2b_lite_at: 2026-06-28
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-29
-last_task6_audit: 2026-06-29
+last_task6_audit: 2026-07-10
 last_task9_autofix_at: 2026-06-28
 last_task9_audit: 2026-06-28
 drafted_date: 2026-05-19
