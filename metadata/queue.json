@@ -1643,6 +1643,36 @@
       "completed_at": "2026-07-11T00:51:53+08:00",
       "completed_by": "task2b-main",
       "completion_note": "task9 deep tech review: AOSP源码路径已由auto-fix修正，补充修复Perfetto路径perfetto_sql→sql（7处）"
+    },
+    {
+      "section": "8.18",
+      "section_title": "Binder Trace 驱动的 Activity 冷启动性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 17 内核源码路径错误与 Perfetto 模块版本依赖未说明",
+      "material_paths": [
+        "src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md",
+        "logs/deep-review/2026-07-11-02-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources；正文第2.1节内核 binder tracepoints",
+          "detail": "`kernel/common/drivers/android/binder.c` 在 Android 17 中实际路径是 `kernel/common/drivers/android/binder/binder.c` 或 `drivers/staging/android/binder/binder.c`，当前引用的路径不存在",
+          "suggestion": "将内核源码路径更正为 Android 17 实际路径：`kernel/common/drivers/android/binder/binder.c`"
+        },
+        {
+          "type": "版本差异",
+          "location": "2.2节 Perfetto 采集配置",
+          "detail": "文中 `INCLUDE PERFETTO MODULE android.binder` 假设该模块在所有 Android 14+ 系统上都可用，但实际需要 Android 15+ 或更高版本的 Perfetto",
+          "suggestion": "在采集配置中注明 android.binder 模块需要 Android 15+ 或更高版本的 Perfetto 支持"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-11T02:24:17.866657+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-11T03:00:00+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "Fixed 2 issues: kernel path + perfetto version"
     }
   ],
   "entries": [
@@ -1794,7 +1824,10 @@
       ],
       "added_by": "task9-deep-tech-review+task6-review",
       "added_at": "2026-07-11T02:15:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-11T03:00:00+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "Fixed 6 issues: data source, addView path, Choreographer color, monitor_contention, scan_sleep_name, frozen reply versions"
     }
   ],
   "items": [
