@@ -26,7 +26,7 @@ created_date: '2026-04-09'
 task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
-last_task6_audit: "2026-06-14"
+last_task6_audit: "2026-07-10"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task6_result: pass-light-edit
 review_round: 1
