@@ -11,10 +11,10 @@ last_task6_at: "2026-05-31T20:10:00+08:00"
 last_task6_audit: "2026-06-19T21:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-31-20-review.md"
 last_task9_at: "2026-05-31T21:20:00+08:00"
-last_task9_audit: "2026-06-21"
+last_task9_audit: "2026-07-11"
 last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
 last_verified: '2026-04-24'
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 related_chapters:
 - '19.0'
 - '19.08'
@@ -45,14 +45,19 @@ task2b_state: "fixed"
 task6_result: "pass-light-edit"
 task6_reviewed_at: "2026-05-31T20:10:00+08:00"
 task6_reviewed_by: openclaw-task6
-task6_state: reviewed
-task9_result: "pass-tech-review"
+task6_state: "revisiting"
+task9_result: "auto-fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-31"
 task9_state: "reviewed"
 title: 网络 APM 底层捕获原理
-task9_review_notes: "2026-05-31 Task9 deep review: 复核 OkHttp EventListener attempt/exchange 建模、responseBodyEnd 应用消费边界、AGP Instrumentation API、Cronet/eBPF/QUIC 边界，无 P0/P1，自动晋升 finalized。"
+task9_review_notes: "2026-05-31 Task9 deep review: 复核 OkHttp EventListener attempt/exchange 建模、responseBodyEnd 应用消费边界、AGP Instrumentation API、Cronet/eBPF/QUIC 边界，无 P0/P1，自动晋升 finalized。 2026-07-11 Task9 idle audit auto-fixed: OkHttp requestHeadersEnd 版本下限从 3.11+ 修正为 3.9+；依据 OkHttp parent-3.9.0 EventListener.java 已具备 requestHeadersEnd(Call, Request)，parent-3.8.0 仍是旧签名。无 P0/P1，回 Task6 复审。"
 task6_review_notes: "2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；既有 Task9 P0 queue pending（activeExchange 状态机），Task6 不裁决，等待 Task2B。 | 2026-05-18 12:26 Task6：revisiting 文稿复审；L1/L2 小修 1 处，承接 Task9 技术边界项 1 个，已在正文标注并并入 queue.json，等待 Task2B/Task9。 | 2026-05-31 20:10 Task6：Task2B fixed-lite 后复审，L1/L2 clean，无新增回炉项，送 Task9 复核。"
+last_task9_audit_at: "2026-07-11T07:27:51+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-11-07-audit.md"
+last_task9_audit_result: "auto-fixed-idle-audit"
+last_task9_audit_notes: "idle audit: 维度1/3 复核发现 OkHttp EventListener 版本限定小错，已将 requestHeadersEnd 版本下限 3.11+ 修正为 3.9+；无 P0/P1。"
+last_task9_autofix_at: "2026-07-11"
 ---
 # 网络 APM 底层捕获原理
 
@@ -266,7 +271,7 @@ private class NetworkMetricEventListener(
         currentAttempt().activeExchange().requestHeadersStartNs = clock()
     }
 
-    // OkHttp 3.11+ 提供 requestHeadersEnd 回调，用于精确分隔 header 写入与 body 写入
+    // OkHttp 3.9+ 的稳定 EventListener API 提供 requestHeadersEnd 回调，用于精确分隔 header 写入与 body 写入
     override fun requestHeadersEnd(call: Call, request: Request) {
         currentAttempt().activeExchange().requestHeadersEndNs = clock()
     }
