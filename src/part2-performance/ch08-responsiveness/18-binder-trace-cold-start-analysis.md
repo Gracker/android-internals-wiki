@@ -3,13 +3,13 @@ title: "Binder Trace 驱动的 Activity 冷启动性能分析"
 chapter: "8.18"
 status: ready-for-review
 drafted_date: "2026-07-02"
-last_task2b_at: 2026-07-11T03:43:26+08:00
-last_task2b_issues: "P0:kernel-path P1:perfetto-version B1:data-source B2:addView-API B3:choreographer-color B4:monitor-contention B5:scan-sleep-name B6:frozen-version-diff +PKMS-cache +oneway-PI +batch-merge-trace"
+last_task2b_at: 2026-07-11T04:53:33+08:00
+last_task2b_issues: "P0:dispatch_dur-computed P0:binder_lock-removed P0:TF_UPDATE_TXN_FROZEN-removed P0:ext-fields-removed P1:frozen-reply-multisignal"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-02"
-task2b_result: fixed-lite
+task2b_result: fixed
 task2b_state: fixed
-task2b_fixed_at: 2026-07-11T03:43:26+08:00
+task2b_fixed_at: 2026-07-11T04:53:33+08:00
 last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), Perfetto mainline (binder_tracker.cc / binder.sql / binder_breakdown.sql), kernel android17-6.18 drivers/android/binder.c + binder_trace.h"
 confidence: high
 sources:
@@ -56,8 +56,8 @@ task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
 last_task6_at: "2026-07-11T03:14:43+08:00"
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: pass-tech-review
 last_task9_at: "2026-07-11T03:30:46+08:00"
 last_task6_review_notes: "revisiting→reviewed(re-round): L1×2(锁化术语→锁保护/blockquote格式修复); L1×1(拆解→分解); 已修复; 无新增L3/L4问题; 待Task9复审"
 last_task9_review_notes: "P0: Perfetto stdlib path/schema dispatch_dur/metrics view; AOSP services paths; kernel android17-6.18 branch; Android17 binder fields/flags; P1: frozen reply attribution needs multi-signal validation"
@@ -133,7 +133,7 @@ Binder 的耗时评估不能只看「这次调了多久」，而要分清两个�
 
 - **Step 1**：在 App 进程的 main track 上找红色或黄色 slice（Choreographer 跳帧标记）；
 - **Step 2**：把鼠标悬停或点击该 slice 查看详情，看是 `binder transaction` 还是 sync 方法（如 `handleBindApplication`、`Activity.onCreate` 内部某个 inflate）；
-- **Step 3**：右键 → "Show flow" 或写 SQL 找这条 `binder_transaction` slice 对应的 server_dur、dispatch_dur、server_process。
+- **Step 3**：右键 → "Show flow" 或写 SQL 找这条 `binder_transaction` slice 对应的 server_dur（服务端处理时间）、队列/传输耗时（`server_ts - client_ts` 计算值）、server_process。
 
 > [已验证: Perfetto official, perfetto.dev/docs/analysis/binder — Perfetto 在 Android 12+ 的 binder 标准库通过 `flow` 表把客户端 slice_id 与服务端 slice_id 关联，UI 中 flow 箭头即这种底层关系]。
 
@@ -153,10 +153,11 @@ Binder trace 采集走「内核 ftrace → Perfetto trace → Trace Processor SQ
 | `binder_transaction_received` | 接收线程从 `binder_thread_read()` 醒来 | debug_id |
 | `binder_transaction_alloc_buf` | `binder_alloc_buf()` 分配事务 buffer | debug_id、data_size、offsets_size、buffer_size |
 | `binder_reply` | reply 路径，类似 `binder_transaction` 标记 reverse | 对端 debug_id |
-| `binder_lock` / `binder_locked` / `binder_unlock` | 进程级 binder 锁（内核 v4.14 已移除，Android 12+ 不再触发） | lock 持有时长 |
 | `binder_command` / `binder_return` | BC_/BR_ 命令发出/接收 | BC_TRANSACTION、BR_REPLY 等 |
 
 > [已验证: AOSP kernel/common/drivers/android/binder.c（android17-6.18 分支）`binder_transaction()` 实现，`trace_binder_transaction()` 在 `binder_alloc_buf()` 之前触发，`trace_binder_transaction_alloc_buf()` 紧随其后] 内核层事件是 raw ftrace 格式，Perfetto 的 BinderTracker 会把它们转换成用户可见的 Slice。
+
+> **注**：`binder_lock` / `binder_locked` / `binder_unlock` 是内核 v4.14 的旧 tracepoint，在 android17-6.18 分支的 `drivers/android/binder_trace.h` 中已不存在（Android 12+ 不再触发）。如需诊断 Binder 锁相关的阻塞，应通过 `android_binder_txns` 的队列/传输耗时（`server_ts - client_ts` 计算值）配合 `thread_state` 表间接观察，而非依赖不存在的 tracepoint。
 
 ### 2.2 Perfetto 采集配置
 
@@ -264,28 +265,30 @@ PerfettoTrace.beginSection("Application.bindApplication:start");
 |------|------|---------|
 | `client_dur` | 客户端从发出 `BC_TRANSACTION` 到收到 `BR_REPLY` 的端到端 wall-clock | `reply_ts - send_ts` |
 | `server_dur` | 服务端从开始处理到发出 `BC_REPLY` 的处理时间 | `reply_ts - server_ts` |
-| `dispatch_dur` | 请求到达服务端到开始实际处理的间隔（队列 + 调度） | `server_ts - send_ts` |
+| 队列/传输耗时（计算值） | 从客户端发出到服务端开始处理的间隔（内核传输 + 线程池队列），**不是 `android_binder_txns` 原生列**，需在 SQL 中计算 | `(server_ts - client_ts) / 1e6` |
 
 关系（同步、非嵌套）：
 
 ```
-client_dur ≈ dispatch_dur + server_dur + small overhead
+client_dur ≈ (server_ts - client_ts) + server_dur + reply_overhead
 ```
+
+> **Perfetto 字段说明**：`android_binder_txns` 表的原生列包括 `client_ts`、`client_dur`、`server_ts`、`server_dur`、`is_sync`、`aidl_name` 等。其中「队列 + 传输耗时」不是原生列，需在 SQL 中以 `(server_ts - client_ts) / 1e6` 计算（单位 ns → ms）。下文统一使用「队列/传输耗时」指代这个计算值。
 
 ### 3.2 归因决策树
 
-> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql — `_binder_reason()` 把 thread_state + slice_name 映射为语义化延迟原因] 根据三段长度的相对关系，可以快速判断瓶颈位置：
+> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql — `_binder_reason()` 把 thread_state + slice_name 映射为语义化延迟原因] 根据队列耗时 vs 服务端耗时的相对关系，可以快速判断瓶颈位置（注意：下文「队列/传输耗时」不是原生列，是 `(server_ts - client_ts) / 1e6` 的计算值）：
 
-| `dispatch_dur` vs `server_dur` | 现象 | 根因层级 |
+| 队列/传输耗时 vs `server_dur` | 现象 | 根因层级 |
 |------------------------------|------|---------|
-| `dispatch_dur` 高 + `server_dur` 低 | 服务端线程池饱和，事务堆在队列中 | system_server Binder 线程池（参见 §1.38） |
-| `dispatch_dur` 正常 + `server_dur` 高 | 服务端处理慢（业务逻辑、锁竞争） | 业务逻辑 / 服务内部锁 |
-| `client_dur` 高但 dispatch+server 都很短 | 客户端发完请求后被调度走，或 frozen reply 干扰 | CPU 调度器 / Binder Freezer |
+| 队列/传输耗时高 + `server_dur` 低 | 服务端线程池饱和，事务堆在队列中 | system_server Binder 线程池（参见 §1.38） |
+| 队列/传输耗时正常 + `server_dur` 高 | 服务端处理慢（业务逻辑、锁竞争） | 业务逻辑 / 服务内部锁 |
+| `client_dur` 高但队列+server 都很短 | 客户端发完请求后被调度走，或 frozen reply 干扰 | CPU 调度器 / Binder Freezer |
 | `client_dur == 0` | oneway 异步调用（无 reply） | TF_ONE_WAY 标志（详见 §1.4） |
-| `dispatch_dur` 高且 `server_dur` 也很高 | 服务端线程池欠 + 业务重，可叠加 | 复合瓶颈 |
-| `dispatch_dur` 接近 0 但 `client_dur` 持续高位 | 客户端在等 reply 时被抢占 | CPU 调度 / cgroup / freezer |
+| 队列/传输耗时高且 `server_dur` 也很高 | 服务端线程池欠 + 业务重，可叠加 | 复合瓶颈 |
+| 队列/传输耗时接近 0 但 `client_dur` 持续高位 | 客户端在等 reply 时被抢占 | CPU 调度 / cgroup / freezer |
 
-> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` 表携带 `is_sync`、`client_oom_score`、`server_oom_score`、`client_monotonic_dur` 等字段，使归因判断可以在 SQL 内直接完成] 单一字段判断容易误判；推荐同时跑几条 SQL 把三段延迟按 server_process + aidl_name 分组聚合。
+> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` 表携带 `is_sync`、`client_oom_score`、`server_oom_score`、`client_ts`、`server_ts`、`client_dur`、`server_dur` 等字段] 把队列/传输耗时（`server_ts - client_ts`）与 `server_dur` 按 server_process + aidl_name 分组聚合，可定位系统级瓶颈进程和 AIDL 接口。
 
 ### 3.3 Frozen Reply 干扰的识别
 
@@ -298,7 +301,7 @@ SELECT
     client_process,
     client_dur / 1e6 AS client_ms,
     server_dur / 1e6 AS server_ms,
-    dispatch_dur / 1e6 AS dispatch_ms,
+    (server_ts - client_ts) / 1e6 AS queue_transit_ms,
     aidl_name
 FROM android_binder_txns
 WHERE is_sync = 1
@@ -308,7 +311,13 @@ ORDER BY client_dur DESC
 LIMIT 20;
 ```
 
-> [已验证: Perfetto mainline, src/trace_processor/importers/ftrace/binder_tracker.cc — `kBR_FROZEN_REPLY` case 在 TxnFrame 状态机中显式关闭 Slice 并 PopTidFrame] 服务端被冻结时 `binder_transaction` tracepoint 不触发（线程被冻结，没机会跑到 binder.c），所以 `server_dur = 0` 是 frozen reply 的特征指纹。
+> [已验证: Perfetto mainline, src/trace_processor/importers/ftrace/binder_tracker.cc — `kBR_FROZEN_REPLY` case 在 TxnFrame 状态机中显式关闭 Slice 并 PopTidFrame] 服务端被冻结时 `binder_transaction` tracepoint 不触发（线程被冻结，没机会跑到 binder.c），所以 `server_dur = 0` 是 frozen reply 的候选指纹。
+>
+> **⚠️ 多信号校验**：单靠 `server_dur = 0` 不足以断定为 frozen reply。应同时检查以下信号（建议写 SQL 一并查询）：
+> 1. 同一事务在 `binder_return` 表中是否出现 `BR_FROZEN_REPLY` 或 `BR_TRANSACTION_PENDING_FROZEN`；
+> 2. 客户端进程的 `thread_state` 表中是否在同一时间窗内出现 frozen 或 uninterruptible sleep（`D` 状态）；
+> 3. `binder_free_work` 或 `binder_frozen_status` 等 ftrace 事件是否在同一时间窗内触发；
+> 4. Android 15+ 中 kernel 解冻→重发管线会使事务看起来像正常完成但队列/传输耗时异常高——此时 `server_dur` 不为 0，frozen reply 更隐蔽。
 
 > **Frozen Reply 各版本行为差异（关键摘要）：**
 >
@@ -318,9 +327,9 @@ LIMIT 20;
 > | **Android 14** | `TF_ONE_WAY_SPAM_SUSPECT` 标志引入（阈值 10 次/秒）；oneway 事务在目标进程 frozen 时直接丢弃并返回此标志，避免调用方线程池被 frozen reply 占满 |
 > | **Android 15** | Frozen reply 加入解冻→重发管线：kernel 收到对 frozen 进程的事务时，先触发 `binder_free_work` 解冻进程，进程解冻完成后 kernel 重新投递原事务，调用方只看到一次延迟 spike |
 > | **Android 16** | `TF_UPDATE_TXN` 合并机制：同一进程的多笔 adjacent oneway 在目标进程 frozen 期间被合并为单笔 batch 事务，解冻后 batch 提交 |
-> | **Android 17** | Frozen batch 合并扩展至同步事务；`TF_UPDATE_TXN_FROZEN` 标志位在 Perfetto trace 中可见合并后的单笔 slice；参见 §1.18 Binder Freezer 机制 / §1.30 Android 17 Binder Transaction Queue |
+> | **Android 17** | Frozen batch 合并扩展至同步事务；kernel 在目标进程 frozen 时合并 pending 事务为单次解冻→批量提交，Perfetto trace 上多笔相邻事务可能合并显示；参见 §1.18 Binder Freezer 机制 / §1.30 Android 17 Binder Transaction Queue |
 >
-> **对 trace 分析的影响**：Android 15+ 上 `server_dur = 0` 不再等于 frozen reply——kernel 的解冻→重发管线会让事务看起来像正常完成但 `dispatch_dur` 异常高。此时应检查同一事务的 `thread_state` 是否出现过 `D`（Uninterruptible Sleep）状态，以及 `binder_free_work` ftrace 事件是否在时间窗内出现。
+> **对 trace 分析的影响**：Android 15+ 上 `server_dur = 0` 不再等于 frozen reply——kernel 的解冻→重发管线会让事务看起来像正常完成但队列/传输耗时（`server_ts - client_ts`）异常高。此时应检查同一事务的 `thread_state` 是否出现过 `D`（Uninterruptible Sleep）状态，以及 `binder_free_work` ftrace 事件是否在时间窗内出现。更完整的 frozen reply 判定方法见上方的「多信号校验」说明。
 
 ---
 
@@ -389,14 +398,14 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 
 [已验证: Perfetto + DeepResearch/2026-04-29 §4.1 + Kernel/android17-6.18 binder.c] 主线程阻塞在 binder 上时，`thread_state` 表会写入 `S` (Sleeping) 且 `blocked_function = binder_thread_read`——这表示进程在内核等 reply。Perfetto UI 可在 main track 右键 → `Switch to blocked thread state view` 看到。
 
-> **区分两类"锁"**：Perfetto 的 `monitor_contention` 表跟踪的是 ART 虚拟机 Java 层的 Monitor 竞争事件（`MonitorContendedLock` / `MonitorAwaitLock`），不是 Binder C++/kernel 的锁。要诊断服务端 Binder 线程池内的锁竞争，应使用 `android_binder_txns` 的 `dispatch_dur` 与 `server_dur` 对比——若服务端 `server_dur` 异常高而 `dispatch_dur` 正常，说明服务端业务逻辑或内部 Java 锁竞争为主因。具体方法见 §3.2 归因决策树。
+> **区分两类"锁"**：Perfetto 的 `monitor_contention` 表跟踪的是 ART 虚拟机 Java 层的 Monitor 竞争事件（`MonitorContendedLock` / `MonitorAwaitLock`），不是 Binder C++/kernel 的锁。要诊断服务端 Binder 线程池内的锁竞争，应使用 `android_binder_txns` 的队列/传输耗时（`server_ts - client_ts`）与 `server_dur` 对比——若服务端 `server_dur` 异常高而队列/传输耗时正常，说明服务端业务逻辑或内部 Java 锁竞争为主因。具体方法见 §3.2 归因决策树。
 
 ### 5.3 binder_thread_pool starvation
 
-[已验证: AOSP frameworks/native/libs/binder/ProcessState.cpp + §1.38 binder-thread-pool-starvation] system_server 默认配置 16 个 Binder 线程 + 1 个主线程，App 进程默认 15 个。当所有 worker 都被占满，新事务只能排在队列——`dispatch_dur` 急剧拉高。
+[已验证: AOSP frameworks/native/libs/binder/ProcessState.cpp + §1.38 binder-thread-pool-starvation] system_server 默认配置 16 个 Binder 线程 + 1 个主线程，App 进程默认 15 个。当所有 worker 都被占满，新事务只能排在队列——队列/传输耗时（`server_ts - client_ts`）急剧拉高。
 
 诊断模式：
-- `dispatch_dur` 全部 > 5ms；
+- 队列/传输耗时（`(server_ts - client_ts) / 1e6`）全部 > 5ms；
 - `server_dur` 较稳定（说明 worker 在干活，不是没人）；
 - 受影响的客户端有多个 app 进程同时报该症状。
 
@@ -414,7 +423,8 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 
 诊断特征：
 - `client_dur` 正常甚至很低（< 1ms），但该时间段内 thread_state 表显示客户端进程处于 frozen pool 的 sched state；
-- 客户端没有被冻却发生 `BR_FROZEN_REPLY` 时——通常发生在 system_server worker 正在 frozen 时（罕见）。
+- 客户端没有被冻却发生 `BR_FROZEN_REPLY` 时——通常发生在 system_server worker 正在 frozen 时（罕见）；
+- 队列/传输耗时正常但 client_dur 异常高：主线程在等 reply 时被抢占或冻结，需结合 thread_state 排查。
 
 ### 5.6 主线程阻塞路径：Slice → State → Lock
 
@@ -423,8 +433,8 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 1. **App main track 上找到红色 slice**；
 2. **查看 slice 详情** —— 是 `binder transaction` 还是 sync Java 方法；
 3. **看同一时间窗的 thread_state** —— `S` blocked_function 是否 `binder_thread_read`；
-4. **如果 hit 服务端的 `monitor_contention`** —— 服务端锁竞争；
-5. **如果 hit `BR_FROZEN_REPLY`** —— freezer 干扰。
+4. **看队列/传输耗时（`server_ts - client_ts`）vs `server_dur`** —— 判断瓶颈在服务端线程池还是业务逻辑；
+5. **如果 hit `BR_FROZEN_REPLY`** —— freezer 干扰（详见 §3.3 多信号校验方法）。
 
 ---
 
@@ -443,7 +453,7 @@ SELECT
     client_process,
     client_dur / 1e6    AS client_ms,
     server_dur / 1e6    AS server_ms,
-    dispatch_dur / 1e6  AS dispatch_ms
+    (server_ts - client_ts) / 1e6 AS queue_transit_ms
 FROM android_binder_txns
 WHERE is_sync = 1
   AND client_process GLOB 'com.your.app*'
@@ -512,7 +522,7 @@ GROUP BY client_process
 ORDER BY total_client_ms DESC;
 ```
 
-> [已验证: Perfetto mainline — `client_dur > 0 且 server_dur == 0` 等价于事务完成但无服务端处理，是 BR_FROZEN_REPLY 的特征] 「frozen reply」上方的客户端白等是 Perfetto `android.binder` 模块的标准解释（参见 §1.18 frozen reply 原理）。
+> [已验证: Perfetto mainline] `client_dur > 0 且 server_dur == 0` 是 frozen reply 的候选特征——事务完成但无服务端处理时间。但单靠此信号不足以断定为 frozen reply：应结合 `binder_return` 表中的 `BR_FROZEN_REPLY`、客户端 thread_state 的 frozen/D 状态、以及 `binder_free_work` 事件做多信号确认。完整方法见 §3.3「多信号校验」说明。
 
 ### 6.5 进程画像：每个进程的 binder 调用次数 / 平均延迟
 
@@ -561,7 +571,7 @@ ORDER BY transaction_count DESC;
 |------|--------|--------|
 | `client_dur (主线程)` 总和 | X ms | Y ms |
 | 主线程 binder 事务计数 | M | N |
-| `dispatch_dur` P99 | A | B |
+| 队列/传输耗时 `(server_ts - client_ts) / 1e6` P99 | A | B |
 | `BR_FROZEN_REPLY` 次数 | F | F' |
 | 冷启动首帧时间 | S | S' |
 
@@ -573,18 +583,15 @@ ORDER BY transaction_count DESC;
 
 ### 🔸 Android 17 Binder Layer 追踪增强
 
-[已验证: DeepResearch/2026-06-30 + Kernel/android17-6.18 binder.c] Android 17 引入 `TF_UPDATE_TXN` 与 frozen batch 合并机制（参见 §1.30 android-17-binder-transaction-queue-optimization）。在 Perfetto trace 上的表现：
+[已验证: DeepResearch/2026-06-30 + Kernel/android17-6.18 binder.c] Android 17 引入 frozen batch 合并机制（参见 §1.30 android-17-binder-transaction-queue-optimization）：当同一目标进程的多笔相邻 oneway 事务在目标进程 frozen 期间堆积，kernel 解冻后会将它们合并为单次批量提交。在 Perfetto trace 上的表现：
 
-- 多笔相邻 oneway 写事务可能被合并成单笔 `binder transaction (TF_UPDATE_TXN_FROZEN)` slice；
-- 这会影响 `android_binder_txns` 表里的 transaction 数与实际 IPC 发起次数关系；
-- 排查时要看 `client_dur` 单笔外的 `binder_reply` 序列——可能一端 slice 端是单笔但底下一帧里有 3 笔 frozen 事务。
+- 多笔相邻 oneway 写事务可能被合并为单笔 `binder transaction` slice，原有独立事务的 `server_dur` 归零；
+- 这会影响 `android_binder_txns` 表里的 transaction 数与实际 IPC 发起次数关系——表内看到 1 笔事务，实际可能对应 3-5 笔被合并的 oneway；
+- 排查时要看 `client_dur` 单笔外的 `binder_reply` 序列——一端 slice 是单笔但底下一帧里实际发起了多笔事务。
 
-新增的 `android.binder` 模块字段：
-- `is_merged`：是否属于 frozen batch 合并后的合并事务；
-- `frozen_reply`：是否因 BR_FROZEN_REPLY 返回失败；
-- `parent_txn_id`：合并事务里子事务的关联（仅 schema 草案）。
+> **注**：Android 17 的 `android.binder` 标准库模块（`binder.sql`）**没有** `is_merged`、`frozen_reply`、`parent_txn_id` 等字段——这些字段在 Perfetto mainline 尚处于 schema 草案阶段，android-17.0.0_r1 发布的 AOSP 并不包含。对 frozen batch 合并的 trace 分析，当前只能通过比对 `binder_reply` 序列与 `android_binder_txns` 的 transaction 计数来间接推断，不能依赖不存在的 SQL 字段。
 
-> **对正文归因分析的修正**：Android 17 的 frozen batch 合并机制意味着 `android_binder_txns` 表的 transaction 计数可能与实际 IPC 发起次数不一致——多笔相邻 oneway 可能被合并为单笔 `TF_UPDATE_TXN_FROZEN` slice。在 §3.2 归因决策树中，若 `client_dur` 单笔异常高但 `dispatch_dur` 和 `server_dur` 分布正常，应检查 `binder_reply` 序列是否包含多笔 br 事件，以及该事务的 `is_merged` 字段。合并事务的 `server_dur` 反映的是 batch 的整体处理时间，不是单一 IPC 的延迟。
+> **对正文归因分析的修正**：Android 17 的 frozen batch 合并机制意味着 `android_binder_txns` 表的 transaction 计数可能与实际 IPC 发起次数不一致——多笔相邻 oneway 可能被合并为单笔事务。在 §3.2 归因决策树中，若 `client_dur` 单笔异常高但队列/传输耗时和 `server_dur` 分布正常，应检查 `binder_reply` 序列是否在同一时间窗内包含多笔 `br` 事件（合并事务中独立 IPC 的 `server_dur` 会归零）。合并事务的 `server_dur` 反映的是 batch 的整体处理时间，不是单一 IPC 的延迟。
 
 ### 🔸 多进程应用冷启动 Binder 放大效应
 

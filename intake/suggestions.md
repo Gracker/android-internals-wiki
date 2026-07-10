@@ -167,3 +167,11 @@ Coverage remains saturated (60th consecutive round). No new knowledge gaps ≥14
 - **问题**：标记了「frozen reply 在 Android 14/15/16/17 各版本的行为差异」待补充，但未展开
 - **建议**：从 DeepResearch/2026-06-13 补充关键差异，或明确声明本节不展开并给出理由
 - **review 日志**：logs/review/2026-07-11-02-review.md
+
+### [Task2B 回炉完成] 8.18 Binder Trace 驱动的 Activity 冷启动性能分析 — 2026-07-11 04:54
+
+**来源**：frontmatter backlog fallback（Task 9 deep-review 2026-07-11-03 重新审查发现新 P0 问题）
+
+**修复**：P0 × 6（dispatch_dur 计算化、binder_lock tracepoint 移除、TF_UPDATE_TXN_FROZEN 改写、扩展字段降级为 schema 草案）+ P1 × 2（frozen reply 多信号校验、版本表 Android 17 行改写）
+
+**状态**：pipeline_stage → task6_pending、task9_result → pass-tech-review，等待 Task 6 复审。
