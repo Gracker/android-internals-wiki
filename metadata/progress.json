@@ -1338,6 +1338,13 @@
       "status": "deprecated-5-duplicate-stubs",
       "ts": "2026-07-10T12:24:14.979081+08:00",
       "note": "Deprecated 5 generic auto-generated stubs (1.01-binder×3, 1.01-gpu×3, 4.01-ai-agent×3, 2.01-ebpf×3, 2.01-signal×3) as duplicates of already-covered chapters. Cleaned SUMMARY.md (removed 15 triplicated entries). Cleaned queue.json chapters array."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-10T12:25:44.051180+08:00",
+      "note": "Gap mining round 58: 0 candidates ≥14 (58th consecutive). Coverage saturated. 2 new DeepResearch files (2026-07-10): SoC PowerHAL/PowerStats/schedutil closedloop→§15.1/§17.21/§5.21 supplement, ApplicationStartInfo/AppStartInfoTracker→§21.2/§8.36 supplement. daily-info 2026-07-10: all items map to existing chapters or supplements. Clippings: no new files (17+ days). 52 drafts all >15 lines. Task2B backlog: 0. Prior action: deprecated 5 duplicate auto-generated stubs and cleaned SUMMARY.md."
     }
   ],
   "review_history": [
