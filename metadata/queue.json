@@ -1,6 +1,62 @@
 {
-  "version": 1,
+  "version": 2,
   "queue": [
+    {
+      "path": "src/part1-fundamentals/ch02-rendering/2.15-android17-gpu-debug-tools.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘创建，第1个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.45-linux610-memory-fragmentation.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘创建，第2个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘创建，第3个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.47-android17-arm-mte.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘创建，第4个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.25-android17-cpu-cache-locality.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘创建，第5个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.38-android17-task-scheduler-optimization.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘创建，第6个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.39-android17-heapprofd-production-deployment.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘创建，第7个候选"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.40-android17-modular-startup-framework.md",
+      "priority": 80,
+      "stage": "draft",
+      "added_date": "2026-07-10",
+      "notes": "知识缺口挖掘创建，第8个候选"
+    },
     {
       "path": "src/part1-fundamentals/ch08-startup/8.33-android17-modular-task-scheduler.md",
       "priority": 80,

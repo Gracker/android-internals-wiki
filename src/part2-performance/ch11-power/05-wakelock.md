@@ -70,7 +70,7 @@ finalized_by: "openclaw-task9-auto-promote"
 last_task6_audit: "2026-07-08"
 task9_result_prev: "pass-tech-review"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-08
+last_deepseek_cn_review_at: 2026-07-10
 updated_by: "openclaw-task9"
 updated_date: "2026-07-10"
 ---
@@ -166,7 +166,7 @@ wl.release();  // 计数 = 1，wakelock 仍然持有
 wl.release();  // 计数 = 0，wakelock 释放
 ```
 
-如果调用 `release()` 时计数已经为 0，会抛出 `RuntimeException`。这个设计的本意是方便同一 wakelock 在多个代码路径中分别 acquire/release 而不互相干扰。但在实际开发中，它经常成为 bug 来源——比如在异常分支中多调用了一次 `release()`，或者在 `finally` 块中无条件 release 而没有判断是否已经 release 过。
+如果调用 `release()` 时计数已经为 0，会抛出 `RuntimeException`。这个设计让同一 wakelock 在多个代码路径中分别 acquire/release 时可以互不干扰，但在实际开发中常常变成 bug 来源——比如在异常分支中多调用了一次 `release()`，或者在 `finally` 块中无条件 release 而没判断 wakelock 是否还持有着。
 
 如果不需要引用计数行为，可以关闭：
 
@@ -679,7 +679,7 @@ AlarmManager 是 wakelock 的一个重要间接来源。当 Alarm 触发时：
 
 > If the exact alarm is set using an `OnAlarmListener` object, the `SCHEDULE_EXACT_ALARM` permission isn't required.
 
-这条例外成立的前提，正是 `OnAlarmListener` 只做进程内回调。系统不用替应用保管 `PendingIntent`，也不会在进程已经死亡时冷启动 `Receiver` / `Service`。因此，它适合"进程活着就回调，进程死了就算了"的精确定时；提醒、闹钟、日程这类要求持久化和冷启动的场景，仍然应该使用 `PendingIntent` 版本。
+这条例外的依据是 `OnAlarmListener` 只做进程内回调。系统不用替应用保管 `PendingIntent`，也不会在进程已经死亡时冷启动 `Receiver` / `Service`。因此，它适合"进程活着就回调，进程死了就算了"的精确定时；提醒、闹钟、日程这类要求持久化和冷启动的场景，仍然应该使用 `PendingIntent` 版本。
 
 `setExactAndAllowWhileIdle(int, long, String, Executor, WorkSource, OnAlarmListener)` 在 Android 14/17 仍是 `@SystemApi`，面向系统应用，普通 App 不能直接调用。它把 `allowWhileIdle` 和 `OnAlarmListener` 放在同一个重载里，但约束没有变化：回调仍然发生在存活进程内。
 

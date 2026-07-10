@@ -58,7 +58,7 @@ task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-07-07 Task6 revisiting-review (round 2): pass-light-edit。Task9 auto-fix修正StickyKeysFilter device/source边界后,正文描述准确清晰。L1全部通过(禁用词0/AI套话0/高频词0/元叙述0)。L2通过(开头直接、结构清晰、小结简洁)。frontmatter清理重复字段(task9_state/pipeline_stage/last_task6_at)。无B类大问题。"
 task6_review_notes_round3: "2026-07-10 Task6 revisiting-review (round 3): pass-light-edit。L1全部通过。L2通过。task9_result=pass-tech-review + queue无pending + 无B类问题 → 自动晋升finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
+last_deepseek_cn_review_at: 2026-07-10
 task2b_rework_source: "logs/deep-review/2026-07-07-15-audit.md"
 task2b_rework_notes: "Task2B Lite 修复：已将所有源码锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1；版本边界表已修正为 Android 17/API 37 基准；Android 15/16 作为历史演进对照。"
 p0: 0
@@ -101,9 +101,9 @@ p2: 0
 
 ## 为什么要把这两个话题放在一起
 
-InputFlinger Rust 和 ARR 经常被放在同一个"输入系统重构"的话题里,但它们不在同一条事件处理路径上。Rust 进入的是 InputFlinger 里的辅助功能输入过滤层,当前主要处理键盘类 KeyEvent;ARR 的触摸升频路径走的是 user activity / power boost / SurfaceFlinger Scheduler。把这两件事分开,才能判断一次输入延迟到底发生在按键过滤、事件分发,还是显示刷新节奏变化上。
+InputFlinger Rust 和 ARR 不在同一条事件处理路径上。Rust 进入的是 InputFlinger 里的辅助功能输入过滤层,当前主要处理键盘类 KeyEvent;ARR 的触摸升频路径走的是 user activity / power boost / SurfaceFlinger Scheduler。把这两件事分开,才能判断一次输入延迟到底发生在按键过滤、事件分发,还是显示刷新节奏变化上。
 
-下面按已核到源码的边界展开:InputReader、InputProcessor、InputDispatcher 仍是 C++ 主体;Rust 组件是 InputFilter 的实现之一;触摸事件不会因为 Rust filter 多走一遍。ARR 侧要看 SurfaceFlinger Scheduler 和 View / RecyclerView / Compose 的帧率投票,不能把 `DisplayPolicy.onUserActivityEventTouch()` 写成刷新率选择入口。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp]
+InputReader、InputProcessor、InputDispatcher 仍是 C++ 主体;Rust 组件是 InputFilter 的实现之一;触摸事件不会因为 Rust filter 多走一遍。ARR 侧要看 SurfaceFlinger Scheduler 和 View / RecyclerView / Compose 的帧率投票,不能把 `DisplayPolicy.onUserActivityEventTouch()` 当成刷新率选择入口。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp]
 
 [图:InputFlinger Rust 与 ARR 两条路径对照图。左侧为 KeyEvent:InputReader → UnwantedInteractionBlocker → InputFilter(C++ wrapper) → Rust bounce/slow/sticky filters → InputDispatcher。右侧为 Touch:InputDispatcher 标记 USER_ACTIVITY_EVENT_TOUCH → PowerManagerService 发送 Boost.INTERACTION → SurfaceFlinger.notifyPowerBoost → Scheduler.onTouchHint → RefreshRateSelector / FrameRate vote。]
 
@@ -113,13 +113,13 @@ AOSP `InputManager.cpp` 里的事件流注释给了这条 Native 管线:`InputRe
 
 `InputManager` 构造时创建 `mInputFlingerRust`,并把 C++ `InputFilter` wrapper 固定插入 listener 管线。`InputFilter` 内部通过 `isFilterEnabled()` 查询 Rust 侧状态:启用时 KeyEvent 进入 Rust filter,未启用时直接透传到下一层 listener。`InputFilter` wrapper 的注释写明,它是围绕 Rust 实现的一层 C++ 包装。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputManager.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.h]
 
-这给出三个边界:
+由此可以得出三个边界:
 
 1. Rust filter 是 InputFilter wrapper 下的辅助功能过滤实现，不是 InputFlinger 全部迁移到 Rust。
 2. C++ wrapper 只在 `isFilterEnabled()` 返回 true 时把 KeyEvent 交给 Rust；未启用时直接把事件传给下一层 listener。
 3. `notifyMotion()` 在 C++ `InputFilter` 里直接透传，触摸类 MotionEvent 不进入当前 Rust bounce / slow / sticky 过滤器。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp]
 
-第三点对性能分析很有用。滑动不跟手、触摸后刷新率没有拉高、FrameTimeline 异常这些问题，优先看 InputDispatcher、PowerManager、SurfaceFlinger 和 App 渲染侧。Rust accessibility filter 更可能影响外接键盘、实体键盘或辅助功能按键场景。
+第三条对性能分析最有指导意义：滑动不跟手、触摸后刷新率没有拉高、FrameTimeline 异常这些问题，优先看 InputDispatcher、PowerManager、SurfaceFlinger 和 App 渲染侧。Rust accessibility filter 更可能影响外接键盘、实体键盘或辅助功能按键场景。
 
 ## bounce / slow / sticky keys filter 在做什么
 
@@ -166,7 +166,7 @@ Rust BaseFilter::notify_key()
 
 ## 触摸事件怎么影响 ARR
 
-触摸带来的刷新率提升不走 Rust InputFilter。AOSP `InputDispatcher.cpp` 里,motion event 如果满足 `MotionEvent::isTouchEvent(source, action)`,会被归类为 `USER_ACTIVITY_EVENT_TOUCH`。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
+触摸驱动的刷新率提升不走 Rust InputFilter。AOSP `InputDispatcher.cpp` 里,motion event 如果满足 `MotionEvent::isTouchEvent(source, action)`,会被归类为 `USER_ACTIVITY_EVENT_TOUCH`。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
 PowerManagerService 收到 user activity 后,在 `userActivityNoUpdateLocked()` 中发 `Boost.INTERACTION`。SurfaceFlinger 的 `notifyPowerBoost()` 收到 `Boost::INTERACTION` 后调用 `mScheduler->onTouchHint()`;Scheduler 里这个方法会 reset touch timer,并重置 pacesetter display 的 kernel idle timer。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp]
 
@@ -219,7 +219,7 @@ Bounce Keys 和 Sticky Keys 对延迟的影响较小:前者按阈值丢弃重复
 
 外接键盘、鼠标、触控板会让输入类型更复杂。生效范围需要拆开描述:Bounce / Slow Keys 受 supported keyboard devices 与 `Source::KEYBOARD` 限制;Sticky Keys 的实现不同--`StickyKeysFilter.notify_key()` 会先检查 `supported_devices`,但不像 Bounce / Slow Keys 那样同时要求 `Source::KEYBOARD`。它的设备集合只保留非虚拟的 alphabetic keyboard,后续再按 `KeyEvent` 的 modifier keycode 维护 `down_key_map`、`modifier_state`、`locked_modifier_state`,因此差异主要在 Source 判断和修饰键状态维护,不是覆盖更宽的设备范围。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/rust/sticky_keys_filter.rs] 鼠标移动、触控板 pointer motion、触摸屏滑动仍走 motion event 路径。刷新率策略取决于可见 Layer 的 frame rate vote、交互 boost、设备支持的 ARR / MRR 能力,而不是某个输入设备是否经过 Rust filter。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/rust/bounce_keys_filter.rs] [已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/InputFilter.cpp]
 
-桌面模式或多显示器下还要看 pacesetter display、display group、WindowManager 对不同显示的策略。当前章节只覆盖默认显示和主输入路径;外接显示刷新率仲裁建议放到 2.18 / 2.19 的多显示扩展里继续核源码。[待补充]
+桌面模式和多显示器场景还要考虑 pacesetter display、display group、WindowManager 对不同显示的策略。当前章节只覆盖默认显示和主输入路径;外接显示刷新率仲裁建议在 2.18 / 2.19 的多显示扩展里继续追踪。[待补充]
 
 ## 小结
 
