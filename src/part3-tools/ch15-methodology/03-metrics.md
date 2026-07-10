@@ -49,8 +49,9 @@ task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
+last_task6_at: "2026-04-25T00:00:00+08:00"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-06-14"
+last_task6_audit: "2026-07-10T23:10:51+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -299,7 +300,7 @@ Google Play 设定的不良行为阈值:
 
 [已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844476]
 
-Crash rate 和 ANR rate 的治理方法也不同。Crash 更适合按错误簇、版本、堆栈聚类;ANR 更依赖线程状态、等待链路和系统负载背景。
+Crash rate 和 ANR rate 的治理方法也不同。Crash 更适合按错误簇、版本、堆栈聚类;ANR 更依赖线程状态、等待路径和系统负载背景。
 
 ### 进程退出原因分析(ApplicationExitInfo)
 
@@ -467,7 +468,7 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 | 指标 | 线下更关注 | 线上更关注 |
 |---|---|---|
 | Frame Time | 具体帧、具体阶段、具体 trace | P90/P99、机型差异、版本回归 |
-| TTID / TTFD | 单次启动链路和阶段耗时 | 中位数、P95、冷温热分布 |
+| TTID / TTFD | 单次启动路径和阶段耗时 | 中位数、P95、冷温热分布 |
 | ANR / Crash | 复现条件和线程状态 | 受影响用户比例、机型 / 版本趋势 |
 | PSS / Java Heap | 场景峰值和增长曲线 | 分布、异常版本、设备聚类 |
 
