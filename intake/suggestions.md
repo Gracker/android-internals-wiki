@@ -105,3 +105,31 @@ Coverage remains saturated (59th consecutive round). No new knowledge gaps ≥14
 - **位置**：整体章节
 - **问题**：内存压力下的Binder性能降级机制和跨进程Binder事务的CPU核心亲和性两个重要领域未覆盖
 - **建议**：补充Android系统在内存紧张时的Binder降级策略，以及现代架构中的CPU核心绑定对IPC性能的影响
+## [Task2A Round 60] 知识缺口挖掘 — 2026-07-11 02:08
+
+### 已检查方向（本轮）
+- ✅ Phase 0 重检：发现 6 个"空 draft"但全部为重复/错位文件（substantive content = 0）
+  - 01.56/01.57 trimMemory → §4.49 已覆盖（ready-for-review, 144 行）
+  - 01.58 flatland/sfdo → §2.16/§14.8/§2.15 已覆盖
+  - 01.59 AGI Frame Profiler → §14.29 已覆盖（ready-for-review）
+  - 04.45 ai-agent-memory-management → §4.40/§4.46 已覆盖，且文件在错误目录(ch04/ 而非 ch04-memory/)
+  - 08.1 modular-startup-framework-dependency-graph → §8.33/§8.34 已覆盖
+- ✅ 建议清理这 6 个重复 stub 文件（非 Task2A 职责，记录待人工处理）
+- ✅ source-index: 8 个 unmapped high-quality 但全部已被现有章节实质覆盖（mapping 未填）
+- ✅ DeepResearch: 2026-07-10 后无新文件
+- ✅ Clippings: 无新文件（last 2026-06-23）
+- ✅ research-feeds: 无新文件（last 2026-04-14）
+- ✅ daily-info 2026-07-10: 已被 round 58/59 消费
+- ✅ AOSP/官方文档: 前 59 轮已全面覆盖
+
+### 结论
+Coverage remains saturated (60th consecutive round). No new knowledge gaps ≥14 identified.
+6 个重复 stub 文件待清理。
+
+### 待清理文件清单（建议人工删除或合并）
+1. \`src/part1-fundamentals/ch01-architecture/01.56-Android-17-trimMemory-回调-API-演进与-ART-Heap-Trim-链路.md\` → dup of §4.49
+2. \`src/part1-fundamentals/ch01-architecture/01.57-Android-17-trimMemory-回调-API-演进与-ART-Heap-Trim-链路.md\` → dup of §4.49
+3. \`src/part1-fundamentals/ch01-architecture/01.58-Android-17-命令行-GPUSF-调试工具链演进flatland-与-sfdo-的双重定位.md\` → covered by §2.16/§14.8
+4. \`src/part1-fundamentals/ch01-architecture/01.59-Android-17-AGI-Frame-Profiler-与-gapii-Spy-架构--单帧-GPU-捕获的真实机制.md\` → dup of §14.29
+5. \`src/part1-fundamentals/ch04/04.45-2026-07-04-ai-agent-memory-management.md\` → dup of §4.40, wrong dir
+6. \`src/part1-fundamentals/ch08/08.1-2026-07-04-android17-modular-startup-framework-dependency-graph.md\` → covered by §8.34
