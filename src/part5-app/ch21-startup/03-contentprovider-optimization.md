@@ -2,7 +2,7 @@
 title: "ContentProvider 启动治理"
 chapter: "21.3"
 section: "21.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-10"
 last_verified_against: "AOSP android-17.0.0_r1 ActivityThread/ViewTreeObserver, Android Developers App Startup / provider manifest docs, AndroidX Startup 1.2.0 source"
@@ -28,19 +28,26 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [contentprovider, startup, sdk-init, app-startup]
 related_chapters: ["21.1", "21.2", "1.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task6_l1_l2_fixes: 2
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
+reviewed_date: "2026-07-10"
+finalized_by: "openclaw-task6-auto-promote"
+finalized_date: "2026-07-10"
 task6_result: pass-light-edit
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-10"
+finalized_by: "openclaw-task6-auto-promote"
+finalized_date: "2026-07-10"
 last_task9_at: 2026-07-10T05:29:18+08:00
-task6_reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-07-10"
+finalized_by: "openclaw-task6-auto-promote"
+finalized_date: "2026-07-10"
 last_task6_audit: "2026-06-21"
 last_task9_audit: "2026-07-10"
 last_task9_autofix_at: "2026-07-10"
@@ -48,7 +55,7 @@ last_task9_review_log: "logs/deep-review/2026-07-10-05-audit.md"
 task9_p0_issues: 0
 task9_p1_issues: 1
 task9_p2_issues: 2
-updated_by: "openclaw-task9"
+updated_by: "openclaw-task6"
 updated_date: "2026-07-10"
 task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 2；将本节源码主线基准从 android-16.0.0_r1 收敛到 android-17.0.0_r1；复核 ActivityThread.handleBindApplication() / installContentProviders() / callApplicationOnCreate() 顺序、ViewTreeObserver removeOnDrawListener targetSdk 边界、AndroidX Startup 1.2.0；同时修正 remote Provider 跨进程唤醒条件化表述，回到 Task6 复审。"
 deepseek_cn_review_state: done
@@ -62,7 +69,7 @@ last_deepseek_cn_review_at: 2026-06-27
 
 ### 锚点（必须覆盖）
 
-- 🔹 ContentProvider 在启动链路中的开销
+- 🔹 ContentProvider 在启动路径中的开销
 - 🔹 三方 SDK ContentProvider 审计与治理
 - 🔹 延迟初始化与按需注册
 - 🔹 App Startup 替代方案
@@ -86,7 +93,7 @@ last_deepseek_cn_review_at: 2026-06-27
 
 ContentProvider 的系统机制详见 1.10 节。本节不重复 Binder、`CursorWindow`、CRUD 和 ANR 机制，只看 App 启动治理：怎么发现、怎么量化、怎么迁移、怎么避免改完后丢初始化依赖。
 
-## ContentProvider 在启动链路中的开销
+## ContentProvider 在启动路径中的开销
 
 [已验证: AOSP android-17.0.0_r1, `ActivityThread.handleBindApplication()` L8260 → `installContentProviders()` L8293 → `mInstrumentation.callApplicationOnCreate(app)` L8308]
 

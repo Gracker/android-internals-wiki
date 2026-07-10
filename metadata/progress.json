@@ -1,9 +1,9 @@
 {
   "total": 673,
   "draft": 46,
-  "ready_for_review": 211,
-  "finalized": 348,
-  "last_updated": "2026-07-10T08:10:37.659913+08:00",
+  "ready_for_review": 208,
+  "finalized": 351,
+  "last_updated": "2026-07-10",
   "task2b": {
     "last_run": "2026-07-02T20:58:27+08:00",
     "last_section": "19.26",
@@ -1407,6 +1407,16 @@
       ],
       "result": "pass-light-edit",
       "log_file": "logs/review/2026-07-09-21-review.md"
+    },
+    {
+      "date": "2026-07-10",
+      "log": "logs/review/2026-07-10-08-review.md",
+      "sections": [
+        "13.15",
+        "22.5",
+        "21.3"
+      ],
+      "type": "task6-revisiting"
     }
   ],
   "task2b_verifier": {
@@ -1918,6 +1928,33 @@
       "result": "pass-light-edit",
       "mode": "revisiting",
       "log": "logs/review/2026-07-09-06-review.md",
+      "auto_promoted": true
+    },
+    {
+      "section": "13.15",
+      "date": "2026-07-10",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-10-08-review.md",
+      "fixes": 7,
+      "auto_promoted": true
+    },
+    {
+      "section": "22.5",
+      "date": "2026-07-10",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-10-08-review.md",
+      "fixes": 0,
+      "auto_promoted": true
+    },
+    {
+      "section": "21.3",
+      "date": "2026-07-10",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-10-08-review.md",
+      "fixes": 2,
       "auto_promoted": true
     }
   ],

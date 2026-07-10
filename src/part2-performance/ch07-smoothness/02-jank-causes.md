@@ -63,7 +63,7 @@ last_task6_review_log: "logs/review/2026-07-10-04-review.md"
 task6_review_notes: "2026-07-10 Task6 revisiting-review (round 3): pass-light-edit。Task9 auto-fix(FrameTimeline jank_type对齐Android 17 Perfetto SurfaceFlinger CPU/GPU Deadline Missed, Late Present归回present_type, 源码基准升级android-17.0.0_r1)回流后写作层复审通过；L1 禁用词/高频词/物理动词/元叙述零命中；L2 开头/节奏/结构/读者引导全部通过；outline 6/6 锚点全覆盖；否定-纠正结构0处；无 L1/L2 问题，无 L3/L4 回炉项。送 Task9 终审确认。"
 last_task9_review_log: "logs/deep-review/2026-07-10-04-deep-review.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-19
+last_deepseek_cn_review_at: 2026-07-10
 last_task9_autofix_at: "2026-07-10"
 updated_by: "openclaw-task9"
 updated_date: "2026-07-10"
@@ -453,7 +453,7 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 **规避方案。** 研究 Choreographer 源码后发现，系统额外注入的伪造 VSync 信号只处理 `CALLBACK_ANIMATION` 类型的回调。因此可以通过反射调用 `Choreographer.postCallback` 并指定为 `CALLBACK_TRAVERSAL` 类型来替代 `postFrameCallback` 和 `View.postOnAnimation`。测试表明，`CALLBACK_TRAVERSAL` 类型的回调在真实 VSync 信号时触发，且顺序始终在 View 的 Layout&Draw 之前——与原生系统的行为一致。
 
-这个案例带来的启示是：**当我们在 Perfetto 中看到主线程的 doFrame 时序异常，但 App 代码和 AOSP 源码都找不到合理解释时，需要考虑 OEM 框架修改的可能性。** 不同厂商对 Choreographer、SurfaceFlinger、InputDispatcher 等关键组件的修改程度不同，有些修改不会体现在官方文档中，只能通过实际抓 Trace 对比 AOSP 行为来发现。
+从这个案例可以看到：**当 Perfetto 中主线程的 doFrame 时序异常，但 App 代码和 AOSP 源码都找不到合理解释时，需要考虑 OEM 框架修改的可能性。** 不同厂商对 Choreographer、SurfaceFlinger、InputDispatcher 等关键组件的修改程度不同，有些修改不会体现在官方文档中，只能通过实际抓 Trace 对比 AOSP 行为来发现。
 
 [待验证: 该问题在 HarmonyOS NEXT（纯鸿蒙系统）中是否仍然存在]
 

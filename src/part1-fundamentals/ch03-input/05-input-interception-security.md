@@ -60,7 +60,7 @@ p0: 0
 p1: 0
 p2: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-02
+last_deepseek_cn_review_at: 2026-07-10
 updated_by: "openclaw-task9"
 updated_date: "2026-07-10"
 ---
@@ -153,7 +153,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 ### InputFilter 的事件处理模型
 
-`InputFilter` 的 Java 合同很直接，`onInputEvent(InputEvent event, int policyFlags)` 默认马上调用 `sendInputEvent(event, policyFlags)` 放行。自定义 filter 可以消费事件，也可以构造替代事件再调用 `sendInputEvent()` 重新发布。
+`InputFilter` 的 Java 接口约定很明确，`onInputEvent(InputEvent event, int policyFlags)` 默认马上调用 `sendInputEvent(event, policyFlags)` 放行。自定义 filter 可以消费事件，也可以构造替代事件再调用 `sendInputEvent()` 重新发布。
 
 更准确的理解是“拦下原事件，再决定要不要发出另一个事件”，不是在原地改一块共享状态。`InputFilter` 文档也强调了事件一致性，如果 filter 自己重组了一串 `MotionEvent`，它要保证 down/move/up 序列仍然合法，不然下游窗口会收到不成对的事件。
 
@@ -373,7 +373,6 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 
 **通话中的权限授予封锁。** Google 2025 安全资料支撑的是 in-call protections：通话期间阻止关闭 Play Protect、首次侧载、授予无障碍权限等高风险安全动作。它属于 Settings / PermissionController / 安全策略 rollout，不在 InputDispatcher 的管辖范围，也不能写成 `android-17.0.0_r1` 的源码结论。
 
-[来源: external-review 2026-04-28-ch03-05-input-interception-security]
 
 ## 事件拦截对性能的影响
 
@@ -536,9 +535,7 @@ adb shell dumpsys accessibility
 - 9.2 无障碍服务的安全风险与审计 — 无障碍能力的安全侧分析
 
 
-## 扩展：厂商游戏模式输入优先级机制（源码级验证）
-
-> **调研时间**：2026-05-12 | **调研引擎**：AutoResearchClaw | **源码版本**：android-17.0.0_r1
+## 扩展：厂商游戏模式输入优先级机制
 
 ### 核心结论
 
