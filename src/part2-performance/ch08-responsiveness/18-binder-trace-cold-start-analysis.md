@@ -50,7 +50,7 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
