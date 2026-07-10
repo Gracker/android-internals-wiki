@@ -1766,8 +1766,10 @@
       "task6_result": "pass-light-edit"
     },
     "18.18": {
-      "last_task6_review": "2026-07-07",
-      "task6_result": "pass-light-edit"
+      "last_task6_review": "2026-07-11",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending"
     }
   },
   "task2a": {

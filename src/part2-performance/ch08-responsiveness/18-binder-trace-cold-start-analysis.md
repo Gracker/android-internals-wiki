@@ -48,8 +48,12 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-07-11"
+last_task6_at: "2026-07-11T01:07:00+08:00"
 task9_state: pending
 ---
 
@@ -67,7 +71,7 @@ task9_state: pending
 ### 🔹 冷启动关键 Binder 瓶颈模式
 ### 🔹 Binder 等待与主线程阻塞的因果分析
 ### 🔹 Perfetto SQL 分析实战
-### 🔹 优化策略与验证闭环
+### 🔹 优化策略与验证
 
 ## 扩展
 
@@ -81,7 +85,7 @@ task9_state: pending
 
 ## 一、冷启动中的 Binder IPC 全景
 
-冷启动耗时中相当部分是「串行等待 system_server 完成 IPC」的开销——典型 P50 冷启动 800ms 里，IPC 等待往往占到 250-450ms。要把这部分拆开定位，必须先把整条 IPC 链路完整识别出来。
+冷启动耗时中相当部分是「串行等待 system_server 完成 IPC」的开销——典型 P50 冷启动 800ms 里，IPC 等待往往占到 250-450ms。要把这部分拆开定位，必须先把整条 IPC 调用链完整识别出来。
 
 冷启动从用户点击到首帧上屏，跨越三个进程（Launcher、system_server、目标 App），Binder 事务按时间顺序大致如下：
 
@@ -122,7 +126,7 @@ Binder 的耗时评估不能只看「这次调了多久」，而要分清两个�
 冷启动 trace 横跨 Launcher / system_server / App 三个进程。要找到「主线程 IPC 死锁在哪个事务」，三步走：
 
 - **Step 1**：在 App 进程的 main track 上找红色或黄色 slice（Choreographer 跳帧标记）；
-- **Step 2**：把鼠标悬停或点击该 slice 下钻，看是 `binder transaction` 还是 sync 方法（如 `handleBindApplication`、`Activity.onCreate` 内部某个 inflate）；
+- **Step 2**：把鼠标悬停或点击该 slice 查看详情，看是 `binder transaction` 还是 sync 方法（如 `handleBindApplication`、`Activity.onCreate` 内部某个 inflate）；
 - **Step 3**：右键 → "Show flow" 或写 SQL 找这条 `binder_transaction` slice 对应的 server_dur、dispatch_dur、server_process。
 
 > [已验证: Perfetto official, perfetto.dev/docs/analysis/binder — Perfetto 在 Android 12+ 的 binder 标准库通过 `flow` 表把客户端 slice_id 与服务端 slice_id 关联，UI 中 flow 箭头即这种底层关系]。
@@ -213,7 +217,7 @@ adb shell am start -W -S com.your.app/.MainActivity
 adb shell atrace --async_stop > trace.html
 ```
 
-atrace 启用 `binder_driver` 类别会激活全部 binder tracepoints；`-c am wm dalvik sched` 把应用相关切片的频率给齐。**缺点**：atrace 落地为 HTML，Perfetto UI 不能复盘 SQL；建议优先用 Perfetto。
+atrace 启用 `binder_driver` 类别会激活全部 binder tracepoints；`-c am wm dalvik sched` 把应用相关切片的频率给齐。**缺点**：atrace 输出为 HTML，Perfetto UI 不能复盘 SQL；建议优先用 Perfetto。
 
 ### 2.4 Perfetto SDK 应用层插桩关联
 
@@ -233,7 +237,7 @@ Trace.endSection();
 PerfettoTrace.beginSection("Application.bindApplication:start");
 ```
 
-[已验证: Perfetto 官方, developer.android.com/topic/performance/tracing-tables — `androidx.tracing.Trace` 编译期插入切片的开销 < 2%] 这类自定义 slice 会出现在 trace 的 main thread track 上，便于和 binder_transaction slice 在时间上对齐。
+[已验证: Perfetto 官方, developer.android.com/topic/performance/tracing-tables — `androidx.tracing.Trace` 编译期插入切片的开销 < 2%] 这类自定义 slice 会出现在 trace 的 main thread track 上，便于和 binder_transaction slice 按时间对应。
 
 ---
 
@@ -326,7 +330,7 @@ LIMIT 20;
 2. WMS → App 进程：`relayout()` 回调（~5-15ms）
 3. App → WMS：`donerelayout()` reply 后渲染第一帧
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/server/wm/WindowManagerService.java — `addWindow()` + `relayoutWindow()` 链路] 单笔无法压缩；缩短路径的手段只有：
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/server/wm/WindowManagerService.java — `addWindow()` + `relayoutWindow()` 调用链] 单笔无法压缩；缩短路径的手段只有：
 - 在 `SplashScreen` API 触发 stage ready 之前提前发出 `addView`（参见 §21.5 SplashScreen）；
 - 把应用内首屏布局的 `onCreate` inflate 异步化（参见 §21.6）。
 
@@ -346,7 +350,7 @@ LIMIT 20;
 
 ## 五、Binder 等待与主线程阻塞的因果分析
 
-Binder trace 上「主线程等多久」与「为什么等」是两个问题。这一节讲解如何把 trace 上的现象与 root cause 对齐。
+Binder trace 上「主线程等多久」与「为什么等」是两个问题。这一节讲解如何把 trace 上的现象与 root cause 关联起来。
 
 ### 5.1 主线程 `binder transaction` slice 的识别特征
 
@@ -395,12 +399,12 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 - `client_dur` 正常甚至很低（< 1ms）但 client_dur 内部看到 trace 里有 `client process 在 frozen pool` 的 sched state；
 - 客户端没有被冻却发生 `BR_FROZEN_REPLY` 时——通常发生在 system_server worker 正在 frozen 时（罕见）。
 
-### 5.6 主线程阻塞链路：Slice → State → Lock
+### 5.6 主线程阻塞路径：Slice → State → Lock
 
 综合上面所有信号，定位冷启动主线程阻塞的因果链：
 
 1. **App main track 上找到红色 slice**；
-2. **下钻到 slice 详情** —— 是 `binder transaction` 还是 sync Java 方法；
+2. **查看 slice 详情** —— 是 `binder transaction` 还是 sync Java 方法；
 3. **看同一时间窗的 thread_state** —— `S` blocked_function 是否 `binder_thread_read`；
 4. **如果 hit 服务端的 `monitor_contention`** —— 服务端锁竞争；
 5. **如果 hit `BR_FROZEN_REPLY`** —— freezer 干扰。
@@ -503,7 +507,7 @@ ORDER BY transaction_count DESC;
 
 ---
 
-## 七、优化策略与验证闭环
+## 七、优化策略与验证
 
 诊断完成之后，热启动优化通常落在这几条主线上：
 
@@ -574,7 +578,7 @@ ORDER BY transaction_count DESC;
 
 ### 🔸 真实案例分析
 
-[自动发现] 微信 / Tinker 冷启动 binder 调用优化实践（来源：[结构参考: Cubox/AndroidWeekly/2021-10-15 #23 binder-trace-Activity冷启动 — 微信/Tinker 团队公开分享。该源为已发布的二手工程实践，已通过 AOSP 链路交叉验证]）：
+[自动发现] 微信 / Tinker 冷启动 binder 调用优化实践（来源：[结构参考: Cubox/AndroidWeekly/2021-10-15 #23 binder-trace-Activity冷启动 — 微信/Tinker 团队公开分享。该源为已发布的二手工程实践，已通过 AOSP 源码交叉验证]）：
 
 - **现象**：无明显重 widget 加载，但冷启动 1.4s，TTFD 1.6s；
 - **trace 特征**：`client_dur (主线程)` 累加 ~380ms，95% 来自 `IPackageManager.getPackageInfo`、`IWindowManager.addView`、`IContentProvider.query`；
