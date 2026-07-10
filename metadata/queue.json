@@ -782,6 +782,47 @@
       "completed_at": "2026-07-10T12:54:48+08:00",
       "completed_by": "task2b-main",
       "completion_note": "task9 deep tech review 3 项问题全部修复：① 源码路径校准（HintManagerService / performance_hint.h）；② Java API 方法名修正（移除 startTimer/setPreferredUpdateRateNanos，替换为 updateTargetWorkDuration/setThreads）；③ 删除未核验的 ThermalHint 自动联动、期望耗时翻倍、PELT 回退等声明；④ 重写可观测性节（移除未核验的 atrace/ftrace 事件名，改用 HintManagerService.dump + Power HAL trace + stats atom）"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.37-android17-performance-hint-manager.md",
+      "section": "8.37",
+      "section_title": "Android 13+ PerformanceHintManager 实战：Java/NDK 集成与 Android 17 源码校准",
+      "priority": 95,
+      "stage": "pending",
+      "reason": "[Deep Tech Review] PerformanceHintManager 当前稿仍存在 Android 17/API 37 API 年表、系统服务获取路径与调度/可观测性断言错误",
+      "material_paths": [
+        "src/part1-fundamentals/ch08-startup/8.37-android17-performance-hint-manager.md",
+        "logs/deep-review/2026-07-10-14-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 版本错误",
+          "location": "L64-L68、L133-L147、L176-L197",
+          "detail": "官方 API 页显示 Java PerformanceHintManager、createHintSession、updateTargetWorkDuration、reportActualWorkDuration(long) 均为 API 31；NDK performance_hint.h 基础 C API 为 __ANDROID_API_T(API 33)，setThreads 为 U/API 34，setPreferPowerEfficiency 与 WorkDuration 路径为 V/API 35。正文仍写成 Android 13 引入 Java 基础能力、Android 14 新增 reportActualWorkDuration(long)，且公共方法列表写了不存在的 closeSession()。",
+          "suggestion": "重写 Java/NDK 分离的 API 年表；public Session 关闭方法改为 close()；WorkDuration 重载说明为 CPU/GPU 分项耗时路径，不写成批量数组路径。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L160 系统服务获取路径",
+          "detail": "android-17.0.0_r1 的 SystemServiceRegistry 注册 Context.PERFORMANCE_HINT_SERVICE 时调用 PerformanceHintManager.create()；PerformanceHintManager.java 中没有 getService()，SDK 侧通过 nativeAcquireManager() 持有 APerformanceHintManager 指针，而不是正文写的 PerformanceHintManager.getService() -> ServiceManager.getService(\"performance_hint\")。",
+          "suggestion": "改为 SystemServiceRegistry -> PerformanceHintManager.create() -> native APerformanceHintManager/libandroid -> system_server HintManagerService 的路径。"
+        },
+        {
+          "type": "版本差异错误",
+          "location": "L68、L89-L93、L143-L147、L280-L287",
+          "detail": "AOSP android-12.0.0_r1 到 android-17.0.0_r1 均存在 frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java，未找到 Android 17 才从 performance.hint 迁至 power.hint 的证据。",
+          "suggestion": "正文只写“Android 17 tag 确认服务位于 com.android.server.power.hint”，不要写成 Android 17 新迁移；若要写历史迁移，必须给出旧 tag 的实际路径差异。"
+        },
+        {
+          "type": "原理断裂/数据缺失",
+          "location": "L75、L268、L310、L331-L340、L357-L362、L370-L376",
+          "detail": "正文把 hint session 写成 Adjc/TaskScheduler 决策输入，给出 actual/target 比值 >3x、0.8-1.5 推荐区间、createHintSession 5-15ms 等具体判断，并称 Perfetto power 数据源记录 session 创建/更新/关闭、stats atom 为 performance_hint_session_report。android-17.0.0_r1 可核到的是 core placement/frequency advisory 语义、HintManagerService.dump()、FrameworkStatsLog.PERFORMANCE_HINT_SESSION_REPORTED 与 ADPF_SESSION_SNAPSHOT；未核到这些阈值、耗时和 Perfetto 专用表。",
+          "suggestion": "删除或降级未验证调度/耗时断言；可观测性改为 dumpsys performance_hint、statsd 的 PERFORMANCE_HINT_SESSION_REPORTED/ADPF_SESSION_SNAPSHOT，以及 sched/freq trace 间接对比。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-10T14:39:11+08:00",
+      "status": "pending"
     }
   ],
   "entries": [
