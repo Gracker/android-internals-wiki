@@ -629,6 +629,26 @@
       "added_by": "task8-classifier",
       "added_at": "2026-07-11T05:36:55.621996",
       "status": "pending"
+    },
+    {
+      "section": "14.11",
+      "section_title": "Battery Historian 与功耗分析工具",
+      "priority": 75,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-powermonitor-data-accuracy-device-differences.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "PowerMonitor 数据采集精度和设备差异 — Android 17 Power Stats HAL 双粒度数据采集（20s/250ms）、Beta 分布随机噪声（α=50，最大 10Ws）、Pixel/Samsung/小米 OEM 轨道路径与采样频率差异",
+          "suggestion": "判断是否适合补充为章节参考资料，特别关注双粒度采集机制与 OEM 差异部分"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-11T06:19:39.148381",
+      "status": "pending"
     }
   ],
   "chapters": []
