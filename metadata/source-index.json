@@ -2176,6 +2176,46 @@
         "#Android17"
       ],
       "scored_at": "2026-07-11T05:47:09.279626"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-apa-agi-system-profiler-angle-denylist.md",
+      "title": "APA System Profiler vs AGI System Profiler + Android 17 ANGLE denylist 处理机制",
+      "summary": "GpuService FeatureOverrideParser、feature_config_vk.binarypb 配置、toggleAngleAsSystemDriver() API、GpuStats ANGLE 统计增强",
+      "chapter": "ch14.8",
+      "processed_at": "2026-07-11T06:20:05.635403",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-06-powermonitor-data-accuracy-device-differences.md",
+      "title": "PowerMonitor 数据采集精度和设备差异",
+      "summary": "双粒度数据采集（20s/250ms）、Beta 分布噪声隐私保护、Pixel/Samsung/小米 OEM 采样差异",
+      "chapter": "ch14.11",
+      "processed_at": "2026-07-11T06:20:05.635403",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-soc-vendor-battery-optimization.md",
+      "title": "Android 17 不同 SoC 架构下的电池优化策略",
+      "summary": "Power HAL AIDL v7、HintManagerService、SessionTag 分类、schedutil rate_limit_us 双守门架构",
+      "chapter": "ch05.22",
+      "processed_at": "2026-07-11T06:20:05.635403",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-09-android17-ebpf-observability-matrix-verified.md",
+      "title": "Android 17 eBPF 可观测性矩阵新增程序源码级验证",
+      "summary": "cyclePerUid/dmabufIter/kernelWakelockDuration/bpfLockContention 四程序 attach 类型、map 结构、aconfig flag 验证",
+      "chapter": "ch14.25",
+      "processed_at": "2026-07-11T06:20:05.635403",
+      "action": "index-update (already injected 2026-07-09)"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-android17-powerstats-hal-oem-implementation.md",
+      "title": "Android 17 Power Stats HAL 架构与 OEM 实现差异",
+      "summary": "HIDL V1→AIDL V2 演进、IPowerStats.aidl 五个 RPC、EnergyConsumerType 枚举、BatteryTrigger+TimerTrigger 双触发器",
+      "chapter": "ch25.18",
+      "processed_at": "2026-07-11T06:20:05.635403",
+      "action": "index-update (already injected 2026-07-09)"
     }
   ]
 }
