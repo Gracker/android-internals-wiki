@@ -1,6 +1,6 @@
 {
   "total": 689,
-  "draft": 62,
+  "draft": 57,
   "ready_for_review": 208,
   "finalized": 351,
   "last_updated": "2026-07-10",
@@ -1331,6 +1331,13 @@
       "status": "ready-for-review",
       "drafted_at": "2026-07-10T11:11:16+08:00",
       "note": "Android 13+ PerformanceHintManager 实战：API 演进、Java/NDK 双端架构、Android 17 新行为、可观测性、反模式"
+    },
+    {
+      "section": "none",
+      "action": "task2a-cleanup-deprecation",
+      "status": "deprecated-5-duplicate-stubs",
+      "ts": "2026-07-10T12:24:14.979081+08:00",
+      "note": "Deprecated 5 generic auto-generated stubs (1.01-binder×3, 1.01-gpu×3, 4.01-ai-agent×3, 2.01-ebpf×3, 2.01-signal×3) as duplicates of already-covered chapters. Cleaned SUMMARY.md (removed 15 triplicated entries). Cleaned queue.json chapters array."
     }
   ],
   "review_history": [
@@ -2011,7 +2018,7 @@
   ],
   "last_task2b_verifier_run": "2026-07-08T19:28:09+08:00",
   "quarantined": 5,
-  "superseded": 1,
+  "superseded": 6,
   "section-13.2": {
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",

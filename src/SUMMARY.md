@@ -12,12 +12,6 @@
 # 第一部分：Android 系统运行机制
 
 - [第 1 章：系统架构全景](part1-fundamentals/ch01-architecture/README.md)
-  - [1.0 Binder线程池实现机制与IPC性能调优](part1-fundamentals/ch01-architecture/1.01-binder线程池实现机制与ipc性能调优.md)
-  - [1.0 GPU工具链架构演进与性能分析](part1-fundamentals/ch01-architecture/1.01-gpu工具链架构演进与性能分析.md)
-  - [1.0 Binder线程池实现机制与IPC性能调优](part1-fundamentals/ch01-architecture/1.01-binder线程池实现机制与ipc性能调优.md)
-  - [1.0 GPU工具链架构演进与性能分析](part1-fundamentals/ch01-architecture/1.01-gpu工具链架构演进与性能分析.md)
-  - [1.0 Binder线程池实现机制与IPC性能调优](part1-fundamentals/ch01-architecture/1.01-binder线程池实现机制与ipc性能调优.md)
-  - [1.0 GPU工具链架构演进与性能分析](part1-fundamentals/ch01-architecture/1.01-gpu工具链架构演进与性能分析.md)
   - [1.1 Android 分层架构](part1-fundamentals/ch01-architecture/01-layered-architecture.md)
   - [1.43 Android 17 机器学习驱动任务调度器](part1-fundamentals/ch01-architecture/1.43-android17-ml-scheduler.md)
   - [1.44 Android 17 Binder IPC 优先级继承与内核批处理流水线](part1-fundamentals/ch01-architecture/1.44-binder-ipc-priority-inheritance.md)
@@ -29,18 +23,11 @@
   - [1.54 Android 17 Binder 线程池实现机制与调优参数](part1-fundamentals/ch01-architecture/1.54-binder-thread-pool-implementation.md)
   - [1.55 Android 17 VNDK 隔离与 native 库加载性能影响](part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md)
 - [第 2 章：渲染管线](part2-performance/ch02-rendering/README.md)
-  - [2.0 信号处理架构迁移与崩溃治理优化](part2-performance/ch02-rendering/2.01-信号处理架构迁移与崩溃治理优化.md)
-  - [2.0 eBPF可观测性增强与性能监控实践](part2-performance/ch02-rendering/2.01-ebpf可观测性增强与性能监控实践.md)
-  - [2.0 信号处理架构迁移与崩溃治理优化](part2-performance/ch02-rendering/2.01-信号处理架构迁移与崩溃治理优化.md)
-  - [2.0 eBPF可观测性增强与性能监控实践](part2-performance/ch02-rendering/2.01-ebpf可观测性增强与性能监控实践.md)
-  - [2.0 信号处理架构迁移与崩溃治理优化](part2-performance/ch02-rendering/2.01-信号处理架构迁移与崩溃治理优化.md)
-  - [2.0 eBPF可观测性增强与性能监控实践](part2-performance/ch02-rendering/2.01-ebpf可观测性增强与性能监控实践.md)
   - [2.1 GPU 渲染管线架构演进](part2-performance/ch02-rendering/2.1-gpu-rendering-pipeline-evolution.md)  - [Compose Pager 从基础到高级动画](part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md)
 - [2.5 Compose Pager 从基础到高级动画](part2-performance/ch02-rendering/2.5-compose-pager-advanced-animations.md)
   - [2.3 GPU 调试性能工具链源码调研](part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md)
   - [2.51 Android 17 GPU 调试性能工具链](part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)  - [2.11 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/11-gap-analysis.md)  - [2.13 Android 17 eBPF观测增强](part1-fundamentals/ch13-profiling/13-gap-analysis.md)
   - [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)
-
 
 
   - [2.6 Android 17 eBPF观测增强](part1-fundamentals/ch01-architecture/2.6-ebpf-observability-enhancement.md)
@@ -51,12 +38,6 @@
   - [2.9 Android 17 GPU Debug Performance Tools Source](part2-performance/ch02-rendering/2.9-android17-gpu-debug-performance-tools-source.md)
 (part1-fundamentals/ch01-architecture/2.7-gpu-debug-performance-tools-chain.md)
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)  - [4.43 Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研](part1-fundamentals/ch04-memory/04.43-gap-analysis.md)  - [4.44 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/04.44-gap-analysis.md)  - [4.45 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch05-cpu-power/06-gap-analysis.md)
-  - [4.0 AI Agent内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.01-ai-agent内存沙箱化与跨应用数据复用.md)
-  - [4.0 AI Agent内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.01-ai-agent内存沙箱化与跨应用数据复用.md)
-  - [4.0 AI Agent内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.01-ai-agent内存沙箱化与跨应用数据复用.md)
-
-
-
 
 
   - [4.9 Android 17 ARM MTE 内存标签扩展实战](part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)

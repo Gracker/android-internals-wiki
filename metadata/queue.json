@@ -1058,41 +1058,5 @@
       "status": "pending"
     }
   ],
-  "chapters": [
-    {
-      "path": "part1-fundamentals/ch01-architecture/1.01-gpu工具链架构演进与性能分析.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-10",
-      "notes": "知识缺口挖掘创建，第5个候选"
-    },
-    {
-      "path": "part1-fundamentals/ch01-architecture/1.01-binder线程池实现机制与ipc性能调优.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-10",
-      "notes": "知识缺口挖掘创建，第5个候选"
-    },
-    {
-      "path": "part1-fundamentals/ch04-memory/4.01-ai-agent内存沙箱化与跨应用数据复用.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-10",
-      "notes": "知识缺口挖掘创建，第5个候选"
-    },
-    {
-      "path": "part2-performance/ch02-rendering/2.01-ebpf可观测性增强与性能监控实践.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-10",
-      "notes": "知识缺口挖掘创建，第5个候选"
-    },
-    {
-      "path": "part2-performance/ch02-rendering/2.01-信号处理架构迁移与崩溃治理优化.md",
-      "priority": 80,
-      "stage": "draft",
-      "added_date": "2026-07-10",
-      "notes": "知识缺口挖掘创建，第5个候选"
-    }
-  ]
+  "chapters": []
 }
