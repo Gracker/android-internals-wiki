@@ -1,6 +1,6 @@
 {
-  "total": 689,
-  "draft": 57,
+  "total": 705,
+  "draft": 73,
   "ready_for_review": 208,
   "finalized": 351,
   "last_updated": "2026-07-10",
@@ -1352,6 +1352,78 @@
       "status": "no-candidates",
       "ts": "2026-07-10T13:07:31.140452+08:00",
       "note": "Gap mining round 59: 0 candidates ≥14 (59th consecutive). Coverage saturated. No new material since round 58 (12:25). suggestions.md modified at 12:30 with Task14 reference book scan items (wakelock/power/network monitoring → all supplements to existing ch11/ch26 chapters) and Task9 deep review for §10.6 (data verification, existing chapter). All items are existing-chapter supplements, not new chapter candidates. 46 drafts all >15 lines. Task2B backlog: 0. source-index: 0 unmapped high-quality."
+    },
+    {
+      "section": "8.38",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-10T14:04:00+08:00",
+      "drafted_at": "2026-07-10T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (Android 17 task scheduler optimization)",
+      "gap_source": "素材驱动"
+    },
+    {
+      "section": "4.45",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-10T14:04:00+08:00",
+      "drafted_at": "2026-07-10T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (Linux 6.10 memory fragmentation)",
+      "gap_source": "素材驱动"
+    },
+    {
+      "section": "8.39",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-10T14:04:00+08:00",
+      "drafted_at": "2026-07-10T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (Android 17 heapprofd production deployment)",
+      "gap_source": "素材驱动"
+    },
+    {
+      "section": "8.40",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-10T14:04:00+08:00",
+      "drafted_at": "2026-07-10T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (Android 17 modular startup framework)",
+      "gap_source": "素材驱动"
+    },
+    {
+      "section": "2.15",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-10T14:04:00+08:00",
+      "drafted_at": "2026-07-10T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (Android 17 GPU debug tools)",
+      "gap_source": "素材驱动"
+    },
+    {
+      "section": "4.46",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-10T14:04:00+08:00",
+      "drafted_at": "2026-07-10T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (Android 17 AI Agent memory)",
+      "gap_source": "素材驱动"
+    },
+    {
+      "section": "4.47",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-10T14:04:00+08:00",
+      "drafted_at": "2026-07-10T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (Android 17 ARM MTE)",
+      "gap_source": "素材驱动"
+    },
+    {
+      "section": "5.25",
+      "action": "task2a-knowledge-gap",
+      "status": "draft",
+      "created_at": "2026-07-10T14:04:00+08:00",
+      "drafted_at": "2026-07-10T14:04:00+08:00",
+      "note": "Created from knowledge gap mining (Android 17 CPU cache locality)",
+      "gap_source": "素材驱动"
     }
   ],
   "review_history": [
@@ -2104,5 +2176,6 @@
       "completed_by": "task2b-main",
       "source": "task9-deep-tech-review"
     }
-  ]
+  ],
+  "last_task2a_gap_create": "2026-07-10T14:04:00+08:00"
 }

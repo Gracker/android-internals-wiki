@@ -25,6 +25,7 @@
 - [第 2 章：渲染管线](part2-performance/ch02-rendering/README.md)
   - [2.1 GPU 渲染管线架构演进](part2-performance/ch02-rendering/2.1-gpu-rendering-pipeline-evolution.md)  - [Compose Pager 从基础到高级动画](part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md)
 - [2.5 Compose Pager 从基础到高级动画](part2-performance/ch02-rendering/2.5-compose-pager-advanced-animations.md)
+  - [2.15 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/2.15-android17-gpu-debug-tools.md)
   - [2.3 GPU 调试性能工具链源码调研](part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md)
   - [2.51 Android 17 GPU 调试性能工具链](part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)  - [2.11 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/11-gap-analysis.md)  - [2.13 Android 17 eBPF观测增强](part1-fundamentals/ch13-profiling/13-gap-analysis.md)
   - [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)
@@ -41,6 +42,9 @@
 
 
   - [4.9 Android 17 ARM MTE 内存标签扩展实战](part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)
+  - [4.45 Linux 6.10 内存碎片整理机制](part1-fundamentals/ch04-memory/4.45-linux610-memory-fragmentation.md)
+  - [4.46 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory.md)
+  - [4.47 Android 17 ARM Memory Tagging Extensions (MTE)](part1-fundamentals/ch04-memory/4.47-android17-arm-mte.md)
   - [4.37 Android 17 LMKD 用户态迁移 + PSI 协同机制](part1-fundamentals/ch01-architecture/4.37-lmkd-userspace-migration-psi.md)
 - [4.34 Android 17 ART HeapTask 系统的 7 个子类实现](part1-fundamentals/ch04-memory/4.34-android17-art-heaptask-system-7-subclasses.md)
   - [4.35 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md)
@@ -58,12 +62,16 @@
 
 - [第 8 章：启动优化](part1-fundamentals/ch08-startup/README.md)
   - [8.1 Android 17 系统启动优化与 bootanalyze 工具链](part1-fundamentals/ch08-startup/8.1-bootanalyze-optimization-toolchain.md)
+  - [8.38 Android 17 任务调度器优化](part1-fundamentals/ch08-startup/8.38-android17-task-scheduler-optimization.md)
+  - [8.39 Android 17 heapprofd 生产环境部署](part1-fundamentals/ch08-startup/8.39-android17-heapprofd-production-deployment.md)
+  - [8.40 Android 17 模块化启动框架](part1-fundamentals/ch08-startup/8.40-android17-modular-startup-framework.md)
 - [8.1 Android 17 任务调度器优化](part1-fundamentals/ch08-startup/8.1-android17-task-scheduler-optimization.md)
   - [8.31 Android 17 启动流程深度洞察](part1-fundamentals/ch08-startup/8.31-android17-startup-insights-gaps.md)
   - [8.32 Android 17 应用启动信息分析](part1-fundamentals/ch08-startup/8.32-android17-application-start-info.md)
 
 - [26.23 生产级 ART 动态方法追踪 — XTrace 架构与实战](part5-app/ch26-observability/26.23-xtrace-art-dynamic-method-tracing.md)
 - [5.21 Android 17 SoC 厂商电池优化架构](part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md)
+  - [5.25 Android 17 CPU 缓存局部性与 PSS 内存核算](part1-fundamentals/ch05-cpu-power/5.25-android17-cpu-cache-locality.md)
 
   - [5.28 PELT Boost 回退与 AMU/PMU 微架构感知调频](part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)
 
