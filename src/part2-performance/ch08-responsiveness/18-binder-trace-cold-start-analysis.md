@@ -8,7 +8,7 @@ last_task2b_issues: "P0:kernel-path P1:perfetto-version B1:data-source B2:addVie
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-02"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task2b_fixed_at: 2026-07-11T02:54:22+08:00
 last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), Perfetto mainline (binder_tracker.cc / binder.sql / binder_breakdown.sql), kernel android17-6.12 drivers/android/binder.c + binder_trace.h"
 confidence: high
@@ -50,16 +50,17 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
 last_task6_at: "2026-07-11T03:14:43+08:00"
-task9_state: pending
-task9_result: issue-found
-last_task9_at: "2026-07-11T02:20:00+08:00"
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: "2026-07-11T03:30:46+08:00"
 last_task6_review_notes: "revisiting→reviewed(re-round): L1×2(锁化术语→锁保护/blockquote格式修复); L1×1(拆解→分解); 已修复; 无新增L3/L4问题; 待Task9复审"
+last_task9_review_notes: "P0: Perfetto stdlib path/schema dispatch_dur/metrics view; AOSP services paths; kernel android17-6.12 branch; Android17 binder fields/flags; P1: frozen reply attribution needs multi-signal validation"
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
