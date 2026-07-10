@@ -22,7 +22,7 @@ last_task9_at: "2026-06-05T16:21:00+08:00"
 task2b_state: fixed
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 last_verified: '2026-06-04'
-last_verified_against: Android API reference API 37 preview + developer.android.com + ai.google.dev/edge/litert; AOSP android-17.0.0_r1 tag not published
+last_verified_against: Android API reference API 37 + developer.android.com + ai.google.dev/edge/litert; AOSP android-17.0.0_r1
 confidence: high
 sources:
 - type: official
@@ -130,7 +130,7 @@ Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engi
 
 Android 17 正式引入 NPU 硬件特性声明机制，将 NPU 访问从透明可用变为显式声明。
 
-**`FEATURE_NEURAL_PROCESSING_UNIT`** 是 `PackageManager` 中的 Java 常量，其字符串值为 `android.hardware.npu`，Android API reference 标记为 Android 17 / API 37 新增。源码锚点应等 `android-17.0.0_r1` tag 发布后再固定；本轮 `android-16.0.0_r1` 中尚不存在该常量。
+**`FEATURE_NEURAL_PROCESSING_UNIT`** 是 `PackageManager` 中的 Java 常量，其字符串值为 `android.hardware.npu`，Android API reference 标记为 Android 17 / API 37 新增。源码锚点已锚定 android-17.0.0_r1；该常量在 android-17.0.0_r1 中已确认存在。
 
 Android 17 Beta 2 官方博客明确要求：
 
@@ -149,7 +149,7 @@ targetSdkVersion 37（Android 17）及以上的应用如需直接访问 NPU，�
 - 对应 HAL / AIDL service 是否可用
 - 系统资源调度策略是否限制了 NPU 使用
 
-[已验证: developer.android.com API reference / Android 17 Beta 2 blog；AOSP android-16.0.0_r1 未包含该常量，android-17.0.0_r1 tag 未发布]
+[已验证: developer.android.com API reference / Android 17 Beta 2 blog；AOSP android-17.0.0_r1 已确认包含该常量]
 
 ### GPU 推理
 
