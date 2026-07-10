@@ -5,12 +5,12 @@ section: "3.8"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 task2b_state: fixed
-last_task9_at: "2026-07-07T18:27:05+08:00"
+last_task9_at: "2026-07-10T13:30:33+08:00"
 last_task9_audit: "2026-07-07"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-07"
-task9_result: pass-tech-review
-task9_state: "pending"
+task9_reviewed_date: "2026-07-10"
+task9_result: "pass-tech-review"
+task9_state: "reviewed"
 drafted_date: "2026-05-16"
 drafted_by: openclaw-task2a
 applicable_versions: "Android 15-QPR1 (API 35) - Android 17 (API 37)"
@@ -51,8 +51,8 @@ task2b_result: fixed-lite
 last_task6_at: 2026-07-10T13:12:19+08:00
 version_boundary_note: "Android 17/API 37 已基于 android-17.0.0_r1 验证;Android 15/16 作为历史演进对照"
 last_task9_autofix_at: "2026-07-07"
-last_task9_review_log: "logs/deep-review/2026-07-07-18-deep-review.md"
-task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim. | 2026-06-05 Task9 深度复审:pass-tech-review。P0 0 / P1 0 / P2 0;InputFlinger Rust filter 边界、KeyEvent/MotionEvent 分流、ARR touch hint 与 Android 17 非结论边界复核通过,满足自动晋升 finalized 条件。 | 2026-07-07 Task9 闲时抽检:needs-rework。P1 版本/源码基准问题:Android 17 基准已要求 android-17.0.0_r1,但章节仍以 android-16.0.0_r1 为主锚点,并写明未核到 Android 17 tag;已写入 queue.json。 | 2026-07-07 Task9 auto-fix: based on android-17.0.0_r1 sticky_keys_filter.rs, corrected StickyKeysFilter device/source boundary; returned to Task6 revisiting. | 2026-07-07 Task9 回流复审:pass-tech-review。P0 0 / P1 0 / P2 0;复核 android-17.0.0_r1 下 InputFilter/Rust filter chain、StickyKeys 修复结果、PowerManager Boost.INTERACTION、SurfaceFlinger Scheduler touch hint 与 RefreshRateSelector HighHint/ExplicitDefault 链路通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-07-10-13-deep-review.md"
+task9_review_notes: "2026-06-04 Task9 auto-fix: replaced unversioned source anchors with android-16.0.0_r1, narrowed verified Android 17 scope, and corrected InputFilter enablement claim. | 2026-06-05 Task9 深度复审:pass-tech-review。P0 0 / P1 0 / P2 0;InputFlinger Rust filter 边界、KeyEvent/MotionEvent 分流、ARR touch hint 与 Android 17 非结论边界复核通过,满足自动晋升 finalized 条件。 | 2026-07-07 Task9 闲时抽检:needs-rework。P1 版本/源码基准问题:Android 17 基准已要求 android-17.0.0_r1,但章节仍以 android-16.0.0_r1 为主锚点,并写明未核到 Android 17 tag;已写入 queue.json。 | 2026-07-07 Task9 auto-fix: based on android-17.0.0_r1 sticky_keys_filter.rs, corrected StickyKeysFilter device/source boundary; returned to Task6 revisiting. | 2026-07-07 Task9 回流复审:pass-tech-review。P0 0 / P1 0 / P2 0;复核 android-17.0.0_r1 下 InputFilter/Rust filter chain、StickyKeys 修复结果、PowerManager Boost.INTERACTION、SurfaceFlinger Scheduler touch hint 与 RefreshRateSelector HighHint/ExplicitDefault 链路通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。 | 2026-07-10 Task9 回流复审: pass-tech-review。P0 0 / P1 0 / P2 0；抽查 android-17.0.0_r1 下 InputFilter/Rust filter、touch hint 与 RefreshRateSelector 关键路径通过；queue 无 pending，保持 finalized。"
 task6_reviewed_date: 2026-07-07
 task6_reviewed_by: openclaw-task6
 task6_review_notes: "2026-07-07 Task6 revisiting-review (round 2): pass-light-edit。Task9 auto-fix修正StickyKeysFilter device/source边界后,正文描述准确清晰。L1全部通过(禁用词0/AI套话0/高频词0/元叙述0)。L2通过(开头直接、结构清晰、小结简洁)。frontmatter清理重复字段(task9_state/pipeline_stage/last_task6_at)。无B类大问题。"
@@ -61,6 +61,9 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
 task2b_rework_source: "logs/deep-review/2026-07-07-15-audit.md"
 task2b_rework_notes: "Task2B Lite 修复：已将所有源码锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1；版本边界表已修正为 Android 17/API 37 基准；Android 15/16 作为历史演进对照。"
+p0: 0
+p1: 0
+p2: 0
 ---
 
 
