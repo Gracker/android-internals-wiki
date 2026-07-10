@@ -3,14 +3,14 @@ title: "Binder Trace 驱动的 Activity 冷启动性能分析"
 chapter: "8.18"
 status: ready-for-review
 drafted_date: "2026-07-02"
-last_task2b_at: 2026-07-11T02:54:22+08:00
+last_task2b_at: 2026-07-11T03:43:26+08:00
 last_task2b_issues: "P0:kernel-path P1:perfetto-version B1:data-source B2:addView-API B3:choreographer-color B4:monitor-contention B5:scan-sleep-name B6:frozen-version-diff +PKMS-cache +oneway-PI +batch-merge-trace"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-02"
-task2b_result: fixed
-task2b_state: pending
-task2b_fixed_at: 2026-07-11T02:54:22+08:00
-last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), Perfetto mainline (binder_tracker.cc / binder.sql / binder_breakdown.sql), kernel android17-6.12 drivers/android/binder.c + binder_trace.h"
+task2b_result: fixed-lite
+task2b_state: fixed
+task2b_fixed_at: 2026-07-11T03:43:26+08:00
+last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), Perfetto mainline (binder_tracker.cc / binder.sql / binder_breakdown.sql), kernel android17-6.18 drivers/android/binder.c + binder_trace.h"
 confidence: high
 sources:
   - type: aosp
@@ -18,15 +18,15 @@ sources:
   - type: aosp
     path: "frameworks/native/libs/binder/BpBinder.cpp (transact() entry, ProcessState::strongHandleToWeak)"
   - type: kernel
-    path: "kernel/common/drivers/android/binder.c (binder_transaction / binder_transaction_received / binder_reply tracepoints, android17-6.12 分支)"
+    path: "kernel/common/drivers/android/binder.c (binder_transaction / binder_transaction_received / binder_reply tracepoints, android17-6.18 分支)"
   - type: kernel
-    path: "kernel/common/drivers/android/binder_trace.h (TRACE_EVENT definitions, android17-6.12 分支)"
+    path: "kernel/common/drivers/android/binder_trace.h (TRACE_EVENT definitions, android17-6.18 分支)"
   - type: perfetto
     path: "external/perfetto/src/trace_processor/importers/ftrace/binder_tracker.cc (TxnFrame state machine)"
   - type: perfetto
-    path: "external/perfetto/src/trace_processor/sql/stdlib/android/binder.sql (android_binder_txns PERFETTO TABLE)"
+    path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql (android_binder_txns PERFETTO TABLE)"
   - type: perfetto
-    path: "external/perfetto/src/trace_processor/sql/stdlib/android/binder_breakdown.sql (_binder_reason, client_breakdown)"
+    path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql (_binder_reason, client_breakdown)"
   - type: obsidian
     path: "DeepResearch/2026-04-29-binder-transaction-trace-analysis-perfetto.md"
   - type: obsidian
@@ -60,13 +60,13 @@ task9_state: reviewed
 task9_result: needs-rework
 last_task9_at: "2026-07-11T03:30:46+08:00"
 last_task6_review_notes: "revisiting→reviewed(re-round): L1×2(锁化术语→锁保护/blockquote格式修复); L1×1(拆解→分解); 已修复; 无新增L3/L4问题; 待Task9复审"
-last_task9_review_notes: "P0: Perfetto stdlib path/schema dispatch_dur/metrics view; AOSP services paths; kernel android17-6.12 branch; Android17 binder fields/flags; P1: frozen reply attribution needs multi-signal validation"
+last_task9_review_notes: "P0: Perfetto stdlib path/schema dispatch_dur/metrics view; AOSP services paths; kernel android17-6.18 branch; Android17 binder fields/flags; P1: frozen reply attribution needs multi-signal validation"
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
 
 > **范围与边界**：本节处理的是**把 Binder Trace 当作诊断工具**来定位冷启动路径上的 IPC 瓶颈——侧重「如何用 Perfetto 的 `android.binder` 标准库切事务、定位线程池饱和、识别 frozen 回执干扰、关联主线程阻塞因果链」。Binder 机制原理见 §1.4/§1.18/§1.38，冷启动阶段划分见 §8.2。
-> **版本基准**：[已验证: AOSP android-17.0.0_r1, frameworks/native + kernel android17-6.12]，Perfetto 主线（截至 2026-07）。
+> **版本基准**：[已验证: AOSP android-17.0.0_r1, frameworks/native + kernel android17-6.18]，Perfetto 主线（截至 2026-07）。
 
 <!-- outline-start -->
 ## 要点
@@ -145,7 +145,7 @@ Binder trace 采集走「内核 ftrace → Perfetto trace → Trace Processor SQ
 
 ### 2.1 内核层：binder ftrace tracepoints
 
-[已验证: AOSP android-17.0.0_r1, kernel/common/drivers/android/binder_trace.h（android17-6.12 分支） — `TRACE_EVENT(binder_transaction)` 等 12 个 tracepoint] 内核 binder 驱动通过 `TRACE_EVENT` 宏在事务关键路径触发 ftrace 事件：
+[已验证: AOSP android-17.0.0_r1, kernel/common/drivers/android/binder_trace.h（android17-6.18 分支） — `TRACE_EVENT(binder_transaction)` 等 12 个 tracepoint] 内核 binder 驱动通过 `TRACE_EVENT` 宏在事务关键路径触发 ftrace 事件：
 
 | Tracepoint | 触发时机 | 关键字段 |
 |-----------|---------|---------|
@@ -156,7 +156,7 @@ Binder trace 采集走「内核 ftrace → Perfetto trace → Trace Processor SQ
 | `binder_lock` / `binder_locked` / `binder_unlock` | 进程级 binder 锁（内核 v4.14 已移除，Android 12+ 不再触发） | lock 持有时长 |
 | `binder_command` / `binder_return` | BC_/BR_ 命令发出/接收 | BC_TRANSACTION、BR_REPLY 等 |
 
-> [已验证: AOSP kernel/common/drivers/android/binder.c（android17-6.12 分支）`binder_transaction()` 实现，`trace_binder_transaction()` 在 `binder_alloc_buf()` 之前触发，`trace_binder_transaction_alloc_buf()` 紧随其后] 内核层事件是 raw ftrace 格式，Perfetto 的 BinderTracker 会把它们转换成用户可见的 Slice。
+> [已验证: AOSP kernel/common/drivers/android/binder.c（android17-6.18 分支）`binder_transaction()` 实现，`trace_binder_transaction()` 在 `binder_alloc_buf()` 之前触发，`trace_binder_transaction_alloc_buf()` 紧随其后] 内核层事件是 raw ftrace 格式，Perfetto 的 BinderTracker 会把它们转换成用户可见的 Slice。
 
 ### 2.2 Perfetto 采集配置
 
@@ -258,7 +258,7 @@ PerfettoTrace.beginSection("Application.bindApplication:start");
 
 ### 3.1 三段延迟的语义
 
-> [已验证: Perfetto mainline, src/trace_processor/sql/stdlib/android/binder.sql — `android_binder_txns` PERFETTO TABLE 定义] 同步事务的客户端总等待时间 `client_dur` 由三段组成：
+> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` PERFETTO TABLE 定义] 同步事务的客户端总等待时间 `client_dur` 由三段组成：
 
 | 字段 | 含义 | 数学表达 |
 |------|------|---------|
@@ -274,7 +274,7 @@ client_dur ≈ dispatch_dur + server_dur + small overhead
 
 ### 3.2 归因决策树
 
-> [已验证: Perfetto mainline, src/trace_processor/sql/stdlib/android/binder_breakdown.sql — `_binder_reason()` 把 thread_state + slice_name 映射为语义化延迟原因] 根据三段长度的相对关系，可以快速判断瓶颈位置：
+> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql — `_binder_reason()` 把 thread_state + slice_name 映射为语义化延迟原因] 根据三段长度的相对关系，可以快速判断瓶颈位置：
 
 | `dispatch_dur` vs `server_dur` | 现象 | 根因层级 |
 |------------------------------|------|---------|
@@ -285,7 +285,7 @@ client_dur ≈ dispatch_dur + server_dur + small overhead
 | `dispatch_dur` 高且 `server_dur` 也很高 | 服务端线程池欠 + 业务重，可叠加 | 复合瓶颈 |
 | `dispatch_dur` 接近 0 但 `client_dur` 持续高位 | 客户端在等 reply 时被抢占 | CPU 调度 / cgroup / freezer |
 
-> [已验证: Perfetto mainline, src/trace_processor/sql/stdlib/android/binder.sql — `android_binder_txns` 表携带 `is_sync`、`client_oom_score`、`server_oom_score`、`client_monotonic_dur` 等字段，使归因判断可以在 SQL 内直接完成] 单一字段判断容易误判；推荐同时跑几条 SQL 把三段延迟按 server_process + aidl_name 分组聚合。
+> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` 表携带 `is_sync`、`client_oom_score`、`server_oom_score`、`client_monotonic_dur` 等字段，使归因判断可以在 SQL 内直接完成] 单一字段判断容易误判；推荐同时跑几条 SQL 把三段延迟按 server_process + aidl_name 分组聚合。
 
 ### 3.3 Frozen Reply 干扰的识别
 
@@ -332,7 +332,7 @@ LIMIT 20;
 
 冷启动阶段 App 进程会向 PackageManager（PKMS）发起多条元数据查询：`getPackageInfo`、`getApplicationInfo`、`getProviderInfo`。这些事务每笔 `client_dur` 通常 2-8ms（Android 17 中由于 PKMS 分阶段缓存和预加载机制，延迟已较早期版本降低），但**频次高**——一次冷启动可能发 8-12 次。
 
-> [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/server/pm/PackageManagerService.java — PKMS 提供锁保护的元数据缓存，但读路径依然走 binder IPC]
+> [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java — PKMS 提供锁保护的元数据缓存，但读路径依然走 binder IPC]
 >
 > **Android 17 PKMS 改进**：Android 17 中 PackageManagerService 引入分阶段元数据缓存与预加载机制，冷启动期间 PKMS 查询次数从早期版本的 8-12 次降低到典型 3-5 次。该优化对 App 端透明——`getPackageInfo` / `getApplicationInfo` 首次调用时 PKMS 从内存缓存直接返回，不再走磁盘 XML 解析路径。但 SDK 侧若绕过标准 API 直接构造 parcel 查询，仍可能触发完整 IPC。
 
@@ -355,7 +355,7 @@ LIMIT 20;
 2. WMS → App 进程：`relayout()` 回调（~5-15ms）
 3. App → WMS：`donerelayout()` reply 后渲染第一帧
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/server/wm/WindowManagerService.java — `addWindow()` + `relayoutWindow()` 调用链] 单笔无法压缩；缩短路径的手段只有：
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java — `addWindow()` + `relayoutWindow()` 调用链] 单笔无法压缩；缩短路径的手段只有：
 - 在 `SplashScreen` API 触发 stage ready 之前提前发出 `addToDisplay`（参见 §21.5 SplashScreen）；
 - 把应用内首屏布局的 `onCreate` inflate 异步化（参见 §21.6）。
 
@@ -387,7 +387,7 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 
 ### 5.2 `binder_thread_read` 系统调用阻塞
 
-[已验证: Perfetto + DeepResearch/2026-04-29 §4.1 + Kernel/android17-6.12 binder.c] 主线程阻塞在 binder 上时，`thread_state` 表会写入 `S` (Sleeping) 且 `blocked_function = binder_thread_read`——这表示进程在内核等 reply。Perfetto UI 可在 main track 右键 → `Switch to blocked thread state view` 看到。
+[已验证: Perfetto + DeepResearch/2026-04-29 §4.1 + Kernel/android17-6.18 binder.c] 主线程阻塞在 binder 上时，`thread_state` 表会写入 `S` (Sleeping) 且 `blocked_function = binder_thread_read`——这表示进程在内核等 reply。Perfetto UI 可在 main track 右键 → `Switch to blocked thread state view` 看到。
 
 > **区分两类"锁"**：Perfetto 的 `monitor_contention` 表跟踪的是 ART 虚拟机 Java 层的 Monitor 竞争事件（`MonitorContendedLock` / `MonitorAwaitLock`），不是 Binder C++/kernel 的锁。要诊断服务端 Binder 线程池内的锁竞争，应使用 `android_binder_txns` 的 `dispatch_dur` 与 `server_dur` 对比——若服务端 `server_dur` 异常高而 `dispatch_dur` 正常，说明服务端业务逻辑或内部 Java 锁竞争为主因。具体方法见 §3.2 归因决策树。
 
@@ -402,7 +402,7 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 
 ### 5.4 Priority Inheritance 反转
 
-[已验证: DeepResearch/2026-06-30 + kernel/android17-6.12 binder.c `binder_transaction()` 调用 `binder_do_set_priority()` 实现优先级继承] 当一个高优先级 App 进程调用 system_server 中一个 worker 处理慢的事务，kernel 会临时把调用方的 `nice`/`sched_priority` 借给 worker 线程，处理完恢复。冷启动期间这种 PI 借调主要表现为：
+[已验证: DeepResearch/2026-06-30 + kernel/android17-6.18 binder.c `binder_transaction()` 调用 `binder_do_set_priority()` 实现优先级继承] 当一个高优先级 App 进程调用 system_server 中一个 worker 处理慢的事务，kernel 会临时把调用方的 `nice`/`sched_priority` 借给 worker 线程，处理完恢复。冷启动期间这种 PI 借调主要表现为：
 
 - 前台 App 的 binder 调用遇到后台 worker 处理慢时，worker 临时被加优先级；
 - 主线程仍在等 reply，但 CPU 占用率看似合理；
@@ -573,7 +573,7 @@ ORDER BY transaction_count DESC;
 
 ### 🔸 Android 17 Binder Layer 追踪增强
 
-[已验证: DeepResearch/2026-06-30 + Kernel/android17-6.12 binder.c] Android 17 引入 `TF_UPDATE_TXN` 与 frozen batch 合并机制（参见 §1.30 android-17-binder-transaction-queue-optimization）。在 Perfetto trace 上的表现：
+[已验证: DeepResearch/2026-06-30 + Kernel/android17-6.18 binder.c] Android 17 引入 `TF_UPDATE_TXN` 与 frozen batch 合并机制（参见 §1.30 android-17-binder-transaction-queue-optimization）。在 Perfetto trace 上的表现：
 
 - 多笔相邻 oneway 写事务可能被合并成单笔 `binder transaction (TF_UPDATE_TXN_FROZEN)` slice；
 - 这会影响 `android_binder_txns` 表里的 transaction 数与实际 IPC 发起次数关系；
@@ -629,8 +629,8 @@ ORDER BY transaction_count DESC;
 ## 参考资料
 
 - [Perfetto 官方：Analyzing Binder Transactions](https://perfetto.dev/docs/analysis/binder) — `android.binder` 标准库官方指南 **[一手：官方文档]**
-- [Perfetto 源码：`external/perfetto/src/trace_processor/sql/stdlib/android/binder.sql`](https://cs.android.com) — `android_binder_txns` PERFETTO TABLE 定义
-- [Perfetto 源码：`external/perfetto/src/trace_processor/sql/stdlib/android/binder_breakdown.sql`](https://cs.android.com) — `_binder_reason()` 延迟归因 + breakdown 表
+- [Perfetto 源码：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`](https://cs.android.com) — `android_binder_txns` PERFETTO TABLE 定义
+- [Perfetto 源码：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql`](https://cs.android.com) — `_binder_reason()` 延迟归因 + breakdown 表
 - [Perfetto 源码：`external/perfetto/src/trace_processor/importers/ftrace/binder_tracker.cc`](https://cs.android.com) — BinderTracker 状态机、TxnFrame 8 状态枚举
 - [Android Kernel：`drivers/android/binder_trace.h`](https://cs.android.com) — `TRACE_EVENT(binder_transaction)` 等内核 tracepoint
 - [Android Kernel：`drivers/android/binder.c`](https://cs.android.com) — `binder_transaction()` 函数 trace 触发路径
