@@ -5,7 +5,7 @@ status: ready-for-review
 drafted_date: "2026-07-02"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-02"
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_state: fixed
 task2b_fixed_at: 2026-07-11T00:51:53+08:00
 last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), Perfetto mainline (binder_tracker.cc / binder.sql), kernel android17-6.12 binder driver tracepoints"
@@ -48,13 +48,16 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: "task9_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
 last_task6_at: "2026-07-11T01:07:00+08:00"
 task9_state: pending
+task9_result: needs-rework
+last_task9_reviewed_at: "2026-07-11T01:20:00+08:00"
+last_task2b_lite_at: 2026-07-11
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
@@ -104,7 +107,7 @@ task9_state: pending
    - `IContentProvider.query()` 用于 ContentProvider 初始化
    - `ISharedPreferencesImpl`/`IDataStore` 的 IPC sync 调用（参见 §6.2）
 
-冷启动期间典型 Binder 事务数量级（Android 16/17 中等应用）：**Launcher→ATMS 3 次、ATMS→App 5-8 次、App→PKMS 8-12 次、App→WMS 6-10 次、App→Providers 2-5 次**，总同步事务 25-45 次，oneway 10-20 次。其中**主线程发起的同步事务 > 70%**——这正是第 1 章反复强调的「主线程 IPC 是冷启动第一杀手」（[已验证: AOSP frameworks/base + Perfetto binder.sql]，参见 §1.4 Binder IPC 基础 / §8.2 App 启动阶段划分）。
+冷启动期间典型 Binder 事务数量级（Android 16/17 中等应用）：**Launcher→ATMS 3 次、ATMS→App 5-8 次、App→PKMS 8-12 次、App→WMS 6-10 次、App→Providers 2-5 次**，总同步事务 25-45 次，oneway 10-20 次。其中**主线程发起的同步事务 > 70%**——这正是第 1 章反复强调的「主线程 IPC 是冷启动第一杀手」（[已验证: AOSP frameworks/base + Perfetto binder.sql]，参见 §1.4 Binder IPC 基础（特别是 §1.4「Binder 事务数据结构与 oneway 语义」） / §8.2 App 启动阶段划分）。
 
 > [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp L854 `IPCThreadState::transact()`] 同步 Binder 调用主线程在 `waitForResponse()` 内阻塞，直到收到 `BR_TRANSACTION_COMPLETE`+`BR_REPLY` 才返回——这意味着 trace 中 app 进程的 main 线程 slice 颜色与等待时长直接反映主线程被 Binder 拖了多少 ms。
 
