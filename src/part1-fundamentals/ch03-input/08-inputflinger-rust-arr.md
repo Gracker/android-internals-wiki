@@ -2,15 +2,15 @@
 title: "InputFlinger Rust 组件与自适应刷新率协同"
 chapter: "3.8"
 section: "3.8"
-status: finalized
-pipeline_stage: ready-to-publish
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
 task2b_state: fixed
 last_task9_at: "2026-07-07T18:27:05+08:00"
 last_task9_audit: "2026-07-07"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-07"
 task9_result: pass-tech-review
-task9_state: reviewed
+task9_state: "pending"
 drafted_date: "2026-05-16"
 drafted_by: openclaw-task2a
 applicable_versions: "Android 15-QPR1 (API 35) - Android 17 (API 37)"
@@ -42,7 +42,7 @@ related_chapters: ["3.1", "3.3", "3.4", "2.18", "2.19"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"
 gap_source: "研究素材/AOSP结构"
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
 reviewed_date: "2026-07-07"
 reviewed_by: "openclaw-task6"

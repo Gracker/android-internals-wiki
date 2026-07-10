@@ -3,7 +3,7 @@
 title: "SmartPerfetto 与可复用 Trace 分析平台"
 chapter: "13.18"
 section: "13.18"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-05-18"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；Perfetto trace schema / stdlib 能力按工具版本降级"
@@ -18,15 +18,15 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: task6_pending
+pipeline_stage: "task6_pending"
 task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-06-19"
@@ -57,7 +57,7 @@ sources:
     path: "src/part5-app/ch26-observability/03-performance-collection.md"
   - type: internal
     path: "src/part5-app/ch26-observability/14-performance-experiment-statistics.md"
-last_task9_autofix_at: "2026-06-19"
+last_task9_autofix_at: "2026-07-10"
 updated_date: 2026-07-10
 updated_by: openclaw-task2b
 p0: 0
@@ -262,16 +262,7 @@ echo $SMARTPERFETTO_ENTERPRISE
 
 ### 修复方案
 
-#### 立即修复（临时方案）
-```bash
-# 方案1：回退到 dual-write 阶段
-export SMARTPERFETTO_ENTERPRISE_MIGRATION_PHASE=dual-write
-
-# 方案2：临时禁用企业功能
-export SMARTPERFETTO_ENTERPRISE=false
-```
-
-#### 长期修复（迁移闭环）
+#### 迁移闭环方案
 当前 SmartPerfetto `main` 的 `cutover` 阶段以 DB 为权威读路径（`readAuthority=db`、`writeFilesystem=false`），`readTraceMetadataForContext()` 在企业模式下只按 `trace_assets` + RequestContext scope 读取，不存在 DB 失败后透明回退 `./uploads/traces` 的逻辑——这属于迁移设计语义，不是代码缺陷。
 
 正确的修复方向是**迁移前置校验 + rollback 闭环**，而不是在 cutover 读路径上加 filesystem fallback：
