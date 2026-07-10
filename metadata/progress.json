@@ -2087,5 +2087,15 @@
       "blocked": [],
       "result": "ready-for-task6"
     }
+  ],
+  "rework_log": [
+    {
+      "section": "8.37",
+      "title": "Android 13+ PerformanceHintManager 实战",
+      "status": "fixed",
+      "completed_at": "2026-07-10T12:54:48+08:00",
+      "completed_by": "task2b-main",
+      "source": "task9-deep-tech-review"
+    }
   ]
 }
