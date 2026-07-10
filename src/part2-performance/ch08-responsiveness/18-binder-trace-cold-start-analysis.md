@@ -50,16 +50,16 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
-last_task6_at: "2026-07-11T03:14:43+08:00"
+last_task6_at: "2026-07-11T05:10:00+08:00"
 task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-07-11T03:30:46+08:00"
-last_task6_review_notes: "revisiting→reviewed(re-round): L1×2(锁化术语→锁保护/blockquote格式修复); L1×1(拆解→分解); 已修复; 无新增L3/L4问题; 待Task9复审"
+last_task6_review_notes: "revisiting→reviewed(re-round2): L1×1(BF_ONEWAY→TF_ONE_WAY 术语一致性修复); Task2B P0/P1修复已验证完整; 无新增L3/L4问题; task9_result=needs-rework, 不满足自动晋升条件"
 last_task9_review_notes: "P0: Perfetto stdlib path/schema dispatch_dur/metrics view; AOSP services paths; kernel android17-6.18 branch; Android17 binder fields/flags; P1: frozen reply attribution needs multi-signal validation"
 ---
 
@@ -149,7 +149,7 @@ Binder trace 采集走「内核 ftrace → Perfetto trace → Trace Processor SQ
 
 | Tracepoint | 触发时机 | 关键字段 |
 |-----------|---------|---------|
-| `binder_transaction` | `binder_transaction()` 函数内，写入 `mOut` 之前 | debug_id、target_proc、target_thread、code、flags（BF_ONEWAY 等） |
+| `binder_transaction` | `binder_transaction()` 函数内，写入 `mOut` 之前 | debug_id、target_proc、target_thread、code、flags（TF_ONE_WAY 等） |
 | `binder_transaction_received` | 接收线程从 `binder_thread_read()` 醒来 | debug_id |
 | `binder_transaction_alloc_buf` | `binder_alloc_buf()` 分配事务 buffer | debug_id、data_size、offsets_size、buffer_size |
 | `binder_reply` | reply 路径，类似 `binder_transaction` 标记 reverse | 对端 debug_id |
