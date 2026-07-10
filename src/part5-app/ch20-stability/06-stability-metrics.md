@@ -18,8 +18,8 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: fixed
