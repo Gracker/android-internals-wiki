@@ -1619,6 +1619,30 @@
       "type": "draft",
       "created_date": "2026-07-10",
       "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "section": "8.18",
+      "section_title": "Binder Trace 驱动的 Activity 冷启动性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] AOSP源码路径错误，需要按 android-17.0.0_r1 重新校准",
+      "material_paths": [
+        "src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md",
+        "logs/deep-review/2026-07-11-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "正文 PackageManagerService.java 和 WindowManagerService.java 源码路径",
+          "detail": "Android 17 中这些类已从 frameworks/base/services/ 重构到 frameworks/base/core/java/com/android/server/。错误的路径会导致读者无法在 AOSP 中找到对应源码。",
+          "suggestion": "更新源码路径为 android-17.0.0_r1 正确路径：frameworks/base/core/java/com/android/server/pm/PackageManagerService.java 和 frameworks/base/core/java/com/android/server/wm/WindowManagerService.java"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-11T00:22:09.323105+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-11T00:51:53+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "task9 deep tech review: AOSP源码路径已由auto-fix修正，补充修复Perfetto路径perfetto_sql→sql（7处）"
     }
   ],
   "entries": [
