@@ -46,6 +46,8 @@ gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
 pipeline_stage: "task6_pending"
+task6_state: pending
+task9_state: pending
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
