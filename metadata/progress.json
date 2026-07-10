@@ -5,12 +5,24 @@
   "finalized": 351,
   "last_updated": "2026-07-10",
   "task2b": {
-    "last_run": "2026-07-02T20:58:27+08:00",
+    "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
     "result": "fixed",
     "fix_count": 1,
     "last_sections": [
       "15"
+    ],
+    "last_chapter": "13.18",
+    "last_action": "fixed enterprise migration 404 long-term fix paragraph",
+    "runs": [
+      {
+        "date": "2026-07-10",
+        "time": "10:51",
+        "chapter": "13.18",
+        "source": "task9-deep-tech-review",
+        "issues_fixed": 1,
+        "type": "P1 企业迁移长期修复段落重写"
+      }
     ]
   },
   "last_task2b_main": "2026-07-01T18:54:04+08:00",
@@ -19,7 +31,7 @@
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
     "src/part3-tools/ch19-apm/26-hybrid-apm.md"
   ],
-  "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+\u21923.32 stable+, 3.28-\u21923.31- across 2.11/18.12/19.26",
+  "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
     {
       "section": "1.2",
@@ -68,21 +80,21 @@
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-01T23:04:00+08:00",
-      "note": "FrameTimeline \u6570\u636e\u7ed3\u6784\uff1aBufferEvent Proto 13 \u79cd\u7c7b\u578b\u3001SurfaceFrame \u6570\u636e\u7ed3\u6784\u3001JankClassificationThresholds\u3001TokenManager\u3001pending fence \u961f\u5217\u3001FALLBACK_COMPOSITION vs HWC_COMPOSITION_QUEUED"
+      "note": "FrameTimeline 数据结构：BufferEvent Proto 13 种类型、SurfaceFrame 数据结构、JankClassificationThresholds、TokenManager、pending fence 队列、FALLBACK_COMPOSITION vs HWC_COMPOSITION_QUEUED"
     },
     {
       "section": "9.10",
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T02:04:00+08:00",
-      "note": "ANR \u9884\u8b66\u56de\u8c03\u4e0e\u7c7b\u578b\u679a\u4e3e\uff1aAnrTypes/AnrWarningResult/IAnrWarningCallback \u4e09\u7ec4\u4ef6\u67b6\u6784\u3001\u4e09\u5c42\u53ef\u89c2\u6d4b\u6027\u4f53\u7cfb\u3001APM SDK \u96c6\u6210\u6307\u5f15"
+      "note": "ANR 预警回调与类型枚举：AnrTypes/AnrWarningResult/IAnrWarningCallback 三组件架构、三层可观测性体系、APM SDK 集成指引"
     },
     {
       "section": "4.18",
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T06:08:00+08:00",
-      "note": "MemoryLimiter \u4e94\u5927\u5b50\u7cfb\u7edf\u67b6\u6784\u8bbe\u8ba1\u5206\u6790\uff1aProcState\u6620\u5c04\u77e9\u9635\u8bbe\u8ba1\u51b3\u7b56(22\u4e2acase)\u3001inotify/polling\u56de\u9000\u534f\u8bae\u3001AnonSwapState\u56db\u6001\u673a\u8f6c\u6362\u5206\u6790\u3001memcg v2 memory.high vs max\u67b6\u6784\u9009\u62e9\u3001statsd\u4ee4\u724c\u6876\u8bbe\u8ba1\u3001vendor overlay\u914d\u7f6e\u673a\u5236\u3001\u4e0elmkd\u7cfb\u7edf\u8bbe\u8ba1\u5bf9\u6bd4"
+      "note": "MemoryLimiter 五大子系统架构设计分析：ProcState映射矩阵设计决策(22个case)、inotify/polling回退协议、AnonSwapState四态机转换分析、memcg v2 memory.high vs max架构选择、statsd令牌桶设计、vendor overlay配置机制、与lmkd系统设计对比"
     },
     {
       "section": "6.2",
@@ -135,70 +147,70 @@
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T16:05:00+08:00",
-      "note": "Android 17 ML Scheduler \u667a\u80fd\u8c03\u5ea6\u673a\u5236\uff1aLSTM\u9884\u6d4b\u5f15\u64ce\u3001\u591a\u56e0\u7d20\u52a0\u6743\u8c03\u5ea6\u3001A/B\u6d4b\u8bd5\u8c03\u4f18\u3001\u6027\u80fd\u57fa\u51c6\u6d4b\u8bd5"
+      "note": "Android 17 ML Scheduler 智能调度机制：LSTM预测引擎、多因素加权调度、A/B测试调优、性能基准测试"
     },
     {
       "section": "1.46",
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T16:05:00+08:00",
-      "note": "Android 17 Staged Install \u6df1\u5ea6\u673a\u5236\u89e3\u6790\uff1a\u72b6\u6001\u673a\u67b6\u6784\u3001\u4f1a\u8bdd\u7c7b\u578b\u5dee\u5f02\u3001\u539f\u5b50\u6027\u4fdd\u8bc1\u3001\u56de\u6eda\u673a\u5236"
+      "note": "Android 17 Staged Install 深度机制解析：状态机架构、会话类型差异、原子性保证、回滚机制"
     },
     {
       "section": "1.48",
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T16:05:00+08:00",
-      "note": "Android 17 Binder \u4f18\u5148\u7ea7\u7ee7\u627f\u673a\u5236\u8be6\u89e3\uff1a\u4e09\u5c42\u4f18\u5148\u7ea7\u4f53\u7cfb\u3001\u4e8b\u52a1\u5206\u7c7b\u5904\u7406\u3001\u6279\u5904\u7406\u6d41\u6c34\u7ebf\u3001\u667a\u80fd\u8c03\u5ea6"
+      "note": "Android 17 Binder 优先级继承机制详解：三层优先级体系、事务分类处理、批处理流水线、智能调度"
     },
     {
       "section": "2.29",
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T16:05:00+08:00",
-      "note": "Compose Pausable Composition \u5b9e\u6218\u6307\u5357\uff1a\u65f6\u95f4\u7247\u8c03\u5ea6\u3001\u4f18\u5148\u7ea7\u7ba1\u7406\u3001\u5f02\u6b65\u6784\u5efa\u3001\u6027\u80fd\u4f18\u5316"
+      "note": "Compose Pausable Composition 实战指南：时间片调度、优先级管理、异步构建、性能优化"
     },
     {
       "section": "14.25",
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-02T18:10:00+08:00",
-      "note": "Android 17 eBPF \u53ef\u89c2\u6d4b\u6027\u77e9\u9635\u6269\u5c55\uff1acyclePerUid/dmabufIter/kernelwakelockduration/locks \u56db\u4e2a\u65b0 eBPF \u7a0b\u5e8f + cpucycleperuid Rust FFI \u5e93\u5206\u6790"
+      "note": "Android 17 eBPF 可观测性矩阵扩展：cyclePerUid/dmabufIter/kernelwakelockduration/locks 四个新 eBPF 程序 + cpucycleperuid Rust FFI 库分析"
     },
     {
       "section": "8.18",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-02T23:50:00+08:00",
-      "note": "binder-trace-cold-start-analysis: \u5199\u6ee1 7 \u951a\u70b9 + 3 \u6269\u5c55\u70b9\uff08\u4ece draft \u2192 ready-for-review\uff09"
+      "note": "binder-trace-cold-start-analysis: 写满 7 锚点 + 3 扩展点（从 draft → ready-for-review）"
     },
     {
       "section": "26.23",
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-03T01:04:00+08:00",
-      "note": "XTrace \u751f\u4ea7\u7ea7 ART \u52a8\u6001\u65b9\u6cd5\u8ffd\u8e2a\uff1a\u4e09\u9636\u6bb5\u67b6\u6784\uff08\u6291\u5236\u5168\u5c40\u6ce8\u5165/\u5b9a\u5411\u6ce8\u5165/\u81ea\u9002\u5e94Stub\uff09\u3001InstrumentationLevel \u4e09\u7ea7\u4f53\u7cfb\u3001art_quick_instrumentation_entry \u5feb\u901f\u8def\u5f84\u30011.08\u4ebfDAU A/B\u6d4b\u8bd5\u9a8c\u8bc1\u3001Ghost Bug \u5e7d\u7075\u5d29\u6e83\u8bca\u65ad\u6848\u4f8b\u3001UI\u5361\u987f25.95%\u6389\u5e27\u7387\u6539\u5584\u3001\u4e0ePerfetto/Frida/btrace\u5bf9\u6bd4"
+      "note": "XTrace 生产级 ART 动态方法追踪：三阶段架构（抑制全局注入/定向注入/自适应Stub）、InstrumentationLevel 三级体系、art_quick_instrumentation_entry 快速路径、1.08亿DAU A/B测试验证、Ghost Bug 幽灵崩溃诊断案例、UI卡顿25.95%掉帧率改善、与Perfetto/Frida/btrace对比"
     },
     {
       "section": "13.22",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-03T06:08:00+08:00",
-      "note": "Trace Processor \u67b6\u6784/\u6570\u636e\u6d41\u53ef\u9760\u6027/\u914d\u7f6e\u7b56\u7565/\u8bca\u65ad\u5de5\u4f5c\u6d41: SMB Chunk\u72b6\u6001\u673a\u3001TracePacket\u539f\u5b50\u5199\u5165\u3001\u589e\u91cf\u7f16\u7801\u3001\u56db\u6545\u969c\u70b9\u8bca\u65ad\u3001stats\u8868\u5b8c\u6574\u6027\u68c0\u67e5\u3001\u56db\u573a\u666f\u914d\u7f6e\u6a21\u677f\u3001Jank\u5341\u6b65\u6cd5\u3001\u542f\u52a8\u5206\u6790\u3001\u529f\u8017\u8bca\u65ad\u3001SQL\u8fdb\u9636\u67e5\u8be2\u3001CI/CD\u96c6\u6210"
+      "note": "Trace Processor 架构/数据流可靠性/配置策略/诊断工作流: SMB Chunk状态机、TracePacket原子写入、增量编码、四故障点诊断、stats表完整性检查、四场景配置模板、Jank十步法、启动分析、功耗诊断、SQL进阶查询、CI/CD集成"
     },
     {
       "section": "19.04",
       "action": "task2b-verify",
       "status": "fixed",
       "verified_at": "2026-07-03T07:32:23+08:00",
-      "note": "status finalized\u2192ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
+      "note": "status finalized→ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
     },
     {
       "section": "12.3",
       "action": "task2b-verify",
       "status": "fixed",
       "verified_at": "2026-07-03T07:32:23+08:00",
-      "note": "status finalized\u2192ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
+      "note": "status finalized→ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
     },
     {
       "section": "1.25",
@@ -212,21 +224,21 @@
       "action": "task2b-verify",
       "status": "fixed",
       "verified_at": "2026-07-03T07:32:23+08:00",
-      "note": "status finalized\u2192ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
+      "note": "status finalized→ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
     },
     {
       "section": "19.12",
       "action": "task2b-verify",
       "status": "fixed",
       "verified_at": "2026-07-03T07:32:23+08:00",
-      "note": "status finalized\u2192ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
+      "note": "status finalized→ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
     },
     {
       "section": "18.20",
       "action": "task2b-verify",
       "status": "fixed",
       "verified_at": "2026-07-03T07:32:23+08:00",
-      "note": "status finalized\u2192ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
+      "note": "status finalized→ready-for-review; Task9 auto-fixed, unblocking Task6 pickup"
     },
     {
       "section": "18.20",
@@ -254,7 +266,7 @@
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-03T09:06:00+08:00",
-      "note": "\u5e94\u7528\u865a\u62df\u5185\u5b58\u4f18\u5316\u5b9e\u6218: 6 anchors (VSS\u57fa\u7840/\u7ebf\u7a0b\u6808\u6cbb\u7406/\u591a\u8fdb\u7a0b/maps\u5206\u6790/WebView\u9884\u7559\u91ca\u653e/ART GC Space) + 2 extensions (VSS\u76d1\u63a7/Native Hook), Clippings\u7ed3\u6784\u53c2\u8003 + AOSP android-17.0.0_r1 \u6e90\u7801\u9a8c\u8bc1"
+      "note": "应用虚拟内存优化实战: 6 anchors (VSS基础/线程栈治理/多进程/maps分析/WebView预留释放/ART GC Space) + 2 extensions (VSS监控/Native Hook), Clippings结构参考 + AOSP android-17.0.0_r1 源码验证"
     },
     {
       "section": "11.1",
@@ -352,91 +364,91 @@
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-03T17:09:00+08:00",
-      "note": "Android 17 Binder IPC \u4f18\u5148\u7ea7\u7ee7\u627f\u4e0e\u5f02\u6b65\u6279\u5904\u7406\u6d41\u6c34\u7ebf: 5 anchors + 3 extensions covered. AOSP android-17.0.0_r1 source code verification for priority inheritance, three-tier scheduling architecture, kernel-level batch processing pipeline, deadlock prevention kernel safeguards, user-space two-layer batch processing optimization."
+      "note": "Android 17 Binder IPC 优先级继承与异步批处理流水线: 5 anchors + 3 extensions covered. AOSP android-17.0.0_r1 source code verification for priority inheritance, three-tier scheduling architecture, kernel-level batch processing pipeline, deadlock prevention kernel safeguards, user-space two-layer batch processing optimization."
     },
     {
       "section": "12.1",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-03T18:04:00+08:00",
-      "note": "Android 17 \u97f3\u9891\u7cfb\u7edf\u6df1\u5ea6\u4f18\u5316: 6 anchors (\u5ef6\u8fdf\u5ea6\u91cf/AAudio MMAP\u63a5\u5165/\u7ebf\u7a0b\u8c03\u5ea6\u4e0eunderrun/Android17\u65b0API\u6027\u80fd\u4ef7\u503c/\u540e\u53f0\u786c\u5316\u6027\u80fd\u5f71\u54cd/Perfetto\u8bca\u65ad\u5de5\u4f5c\u6d41) + 3 extensions (HAL\u57fa\u7ebf/CI\u76d1\u63a7/MGLRU\u7ade\u4e89), AOSP android-17.0.0_r1 + \u5b98\u65b9\u6587\u6863\u9a8c\u8bc1"
+      "note": "Android 17 音频系统深度优化: 6 anchors (延迟度量/AAudio MMAP接入/线程调度与underrun/Android17新API性能价值/后台硬化性能影响/Perfetto诊断工作流) + 3 extensions (HAL基线/CI监控/MGLRU竞争), AOSP android-17.0.0_r1 + 官方文档验证"
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-03T20:12:07.645272+08:00",
-      "note": "Gap mining: 0 candidates \u226514 after checking AOSP services, system components, Clippings books, Android 17 features, research feeds, daily info, chapter extensions"
+      "note": "Gap mining: 0 candidates ≥14 after checking AOSP services, system components, Clippings books, Android 17 features, research feeds, daily info, chapter extensions"
     },
     {
       "section": "11.1",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-03T21:10:33.699882+08:00",
-      "note": "Android 17 \u7f51\u7edc\u6027\u80fd\u4f18\u5316\u5b9e\u6218: 4 anchors (\u7f51\u7edc\u6808\u67b6\u6784/\u6d4b\u91cf\u4f53\u7cfb/\u8bf7\u6c42\u4f18\u5316\u7b56\u7565/\u76d1\u63a7\u5de5\u5177\u94fe) + 3 extensions (Radio State Machine/\u7f51\u7edc\u5207\u6362/\u6027\u80fd\u57fa\u51c6). AOSP android-17.0.0_r1 \u9a8c\u8bc1 ConnectivityService/NetworkStatsManager/OkHttp EventListener. Android 17 DeliQueue/Data Plan Streaming/ACCESS_LOCAL_NETWORK/TLS\u589e\u5f3a."
+      "note": "Android 17 网络性能优化实战: 4 anchors (网络栈架构/测量体系/请求优化策略/监控工具链) + 3 extensions (Radio State Machine/网络切换/性能基准). AOSP android-17.0.0_r1 验证 ConnectivityService/NetworkStatsManager/OkHttp EventListener. Android 17 DeliQueue/Data Plan Streaming/ACCESS_LOCAL_NETWORK/TLS增强."
     },
     {
       "section": "19.1",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-03T22:13:18+08:00",
-      "note": "Android 17 \u6e38\u620f\u6027\u80fd\u4e0e\u6e29\u63a7\u4f18\u5316: 6 anchors (\u8d1f\u8f7d\u6a21\u578b/DVFS\u51b2\u7a81 + Hint Session\u96c6\u6210 + Thermal\u81ea\u9002\u5e94\u753b\u8d28 + Game Mode\u534f\u540c + \u5e27\u7387\u7a33\u5b9a\u6027 + Perfetto\u5168\u94fe\u8def\u5206\u6790) + 2 extensions (Unity/Unreal ADPF\u96c6\u6210 + MTK/Qualcomm\u5dee\u5f02\u5316). AOSP android-17.0.0_r1 + \u5b98\u65b9\u6587\u6863\u9a8c\u8bc1."
+      "note": "Android 17 游戏性能与温控优化: 6 anchors (负载模型/DVFS冲突 + Hint Session集成 + Thermal自适应画质 + Game Mode协同 + 帧率稳定性 + Perfetto全链路分析) + 2 extensions (Unity/Unreal ADPF集成 + MTK/Qualcomm差异化). AOSP android-17.0.0_r1 + 官方文档验证."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T01:08:18+08:00",
-      "note": "Gap mining round 3: 0 candidates \u226514 after checking Clippings content mapping, AOSP services, Android 17 docs (DNS blocked), keyword matrix. Consecutive 3rd no-candidate round."
+      "note": "Gap mining round 3: 0 candidates ≥14 after checking Clippings content mapping, AOSP services, Android 17 docs (DNS blocked), keyword matrix. Consecutive 3rd no-candidate round."
     },
     {
       "section": "8.6",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-04T03:04:00+08:00",
-      "note": "WindowManager \u6027\u80fd\u4f18\u5316\u5b9e\u6218: 5 anchors (WMS\u74f6\u9888\u5fc3\u667a\u6a21\u578b/relayoutWindow\u8c03\u7528\u4f18\u5316/Surface\u4e0eBufferQueue/\u7a97\u53e3\u52a8\u753b\u8c03\u4f18/\u7a97\u53e3\u751f\u547d\u5468\u671f\u5185\u5b58\u7ba1\u7406) + 3 extensions (Perfetto\u8bca\u65ad\u5de5\u4f5c\u6d41/\u591a\u7a97\u53e3Desktop Mode\u6027\u80fd/Android 17\u914d\u7f6e\u53d8\u66f4\u6027\u80fd). \u7ea0\u6b63\u539f\u5927\u7eb23\u5904\u4e0d\u51c6\u786e\u63cf\u8ff0(LayoutThread/ML\u52a8\u753b/eBPF). AOSP android-17.0.0_r1 \u6e90\u7801\u9a8c\u8bc1."
+      "note": "WindowManager 性能优化实战: 5 anchors (WMS瓶颈心智模型/relayoutWindow调用优化/Surface与BufferQueue/窗口动画调优/窗口生命周期内存管理) + 3 extensions (Perfetto诊断工作流/多窗口Desktop Mode性能/Android 17配置变更性能). 纠正原大纲3处不准确描述(LayoutThread/ML动画/eBPF). AOSP android-17.0.0_r1 源码验证."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T04:10:55.857985+08:00",
-      "note": "Gap mining round 4: 0 candidates \u226514. Checked 10 new candidate topics across AOSP structure, official docs, Clippings, research feeds. Coverage saturated."
+      "note": "Gap mining round 4: 0 candidates ≥14. Checked 10 new candidate topics across AOSP structure, official docs, Clippings, research feeds. Coverage saturated."
     },
     {
       "section": "8.7",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-04T05:07:00+08:00",
-      "note": "ActivityManager \u6027\u80fd\u4f18\u5316\u5b9e\u6218: 5 anchors (AMS\u5fc3\u667a\u6a21\u578b/\u8fdb\u7a0b\u8c03\u5ea6\u5185\u5b58\u534f\u540c/Activity\u542f\u52a8\u4f18\u5316/\u751f\u547d\u5468\u671f\u5185\u5b58\u7ba1\u7406/\u540e\u53f0\u670d\u52a1\u5e7f\u64ad) + 3 extensions (\u8de8\u8fdb\u7a0b\u542f\u52a8/Cached\u51bb\u7ed3\u5f71\u54cd/Perfetto\u8bca\u65ad). Cross-ref to 1.44/1.18/4.5/8.2/8.6. AOSP android-17.0.0_r1 \u9a8c\u8bc1."
+      "note": "ActivityManager 性能优化实战: 5 anchors (AMS心智模型/进程调度内存协同/Activity启动优化/生命周期内存管理/后台服务广播) + 3 extensions (跨进程启动/Cached冻结影响/Perfetto诊断). Cross-ref to 1.44/1.18/4.5/8.2/8.6. AOSP android-17.0.0_r1 验证."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T06:09:43+08:00",
-      "note": "Gap mining round 5: 0 candidates \u226514. Checked 12 new candidate topics across Clippings mapping (59 articles all mapped), AOSP services, daily info, keyword matrix. Coverage saturated (5th consecutive)."
+      "note": "Gap mining round 5: 0 candidates ≥14. Checked 12 new candidate topics across Clippings mapping (59 articles all mapped), AOSP services, daily info, keyword matrix. Coverage saturated (5th consecutive)."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T07:14:12+08:00",
-      "note": "Gap mining round 6: 0 candidates \u226514. Checked Desktop Mode/ARR(new Clippings mappings)/LE Audio/Vulkan/sched_ext/modular startup/heapprofd/LMKD batch/Binder death notification/NSD/Wi-Fi Direct \u2014 all already covered or <14. Coverage saturated (6th consecutive). 2 new DeepResearch injections (1.25, 14.22) are material supplements for existing chapters, not new chapter candidates."
+      "note": "Gap mining round 6: 0 candidates ≥14. Checked Desktop Mode/ARR(new Clippings mappings)/LE Audio/Vulkan/sched_ext/modular startup/heapprofd/LMKD batch/Binder death notification/NSD/Wi-Fi Direct — all already covered or <14. Coverage saturated (6th consecutive). 2 new DeepResearch injections (1.25, 14.22) are material supplements for existing chapters, not new chapter candidates."
     },
     {
       "section": "8.8",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-04T08:09:56.847343+08:00",
-      "note": "TelephonyManager \u6027\u80fd\u4f18\u5316\u5b9e\u6218: 5 anchors (IPC\u67b6\u6784/\u56de\u8c03\u6027\u80fd/\u4fe1\u53f7\u4f20\u64ad\u8282\u6d41/\u963b\u585eAPI ANR\u98ce\u9669/Radio\u529f\u8017\u72b6\u6001\u673a) + 3 extensions (5G NR/\u53cc\u5361/Perfetto\u8ffd\u8e2a). AOSP android-17.0.0_r1 \u67b6\u6784\u9a8c\u8bc1, \u90e8\u5206\u5f85\u9a8c\u8bc1."
+      "note": "TelephonyManager 性能优化实战: 5 anchors (IPC架构/回调性能/信号传播节流/阻塞API ANR风险/Radio功耗状态机) + 3 extensions (5G NR/双卡/Perfetto追踪). AOSP android-17.0.0_r1 架构验证, 部分待验证."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T11:11:03.896714+08:00",
-      "note": "Gap mining round 9: 0 candidates \u226514. Checked 20 new candidate topics (AVF/Compose Compiler/FGS Type/Notification/RRO/Backup/SystemProperty/Lazy Layout/AppFunctions/Credential Manager etc). Coverage saturated (9th consecutive)."
+      "note": "Gap mining round 9: 0 candidates ≥14. Checked 20 new candidate topics (AVF/Compose Compiler/FGS Type/Notification/RRO/Backup/SystemProperty/Lazy Layout/AppFunctions/Credential Manager etc). Coverage saturated (9th consecutive)."
     },
     {
       "section": "8.9",
@@ -457,175 +469,175 @@
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T17:10:34+08:00",
-      "note": "Gap mining round 11: 0 candidates \u226514. Coverage saturated (11th consecutive). Checked 4 new DeepResearch files \u2014 all supplements to existing chapters."
+      "note": "Gap mining round 11: 0 candidates ≥14. Coverage saturated (11th consecutive). Checked 4 new DeepResearch files — all supplements to existing chapters."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T18:12:44.270712+08:00",
-      "note": "Gap mining round 12: 0 candidates \u226514. Verified Room/SQLite (already in 4 files), RecyclerView (already in 3+ files), ConstraintLayout/Navigation/DataBinding (no source material). 12th consecutive no-candidate round. Coverage saturated."
+      "note": "Gap mining round 12: 0 candidates ≥14. Verified Room/SQLite (already in 4 files), RecyclerView (already in 3+ files), ConstraintLayout/Navigation/DataBinding (no source material). 12th consecutive no-candidate round. Coverage saturated."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T19:04:00+08:00",
-      "note": "Gap mining round 13: 0 candidates \u226514. Coverage saturated (13th consecutive). No new material since round 12 (52 min ago)."
+      "note": "Gap mining round 13: 0 candidates ≥14. Coverage saturated (13th consecutive). No new material since round 12 (52 min ago)."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T21:08:43.952511+08:00",
-      "note": "Gap mining round 14: 0 candidates \u226514. Coverage saturated (14th consecutive). 6 new DeepResearch files all map to existing chapters. 9 undercovered AOSP modules scored <14 (niche/non-performance). Coverage truly saturated."
+      "note": "Gap mining round 14: 0 candidates ≥14. Coverage saturated (14th consecutive). 6 new DeepResearch files all map to existing chapters. 9 undercovered AOSP modules scored <14 (niche/non-performance). Coverage truly saturated."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T22:09:19.683442+08:00",
-      "note": "Gap mining round 15: 0 candidates \u226514. Coverage saturated (15th consecutive). No new material since round 14 (56 min ago). suggestions.md updated by Task9 (ch15/ch18.12 deep review items for existing chapters, not new chapter candidates)."
+      "note": "Gap mining round 15: 0 candidates ≥14. Coverage saturated (15th consecutive). No new material since round 14 (56 min ago). suggestions.md updated by Task9 (ch15/ch18.12 deep review items for existing chapters, not new chapter candidates)."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-04T23:12:21+08:00",
-      "note": "Gap mining round 16: 0 candidates \u226514. Coverage saturated (16th consecutive). No new material since last round. suggestions.md has Task9 ch14/13 deep review items (existing chapter supplements, not new candidates)."
+      "note": "Gap mining round 16: 0 candidates ≥14. Coverage saturated (16th consecutive). No new material since last round. suggestions.md has Task9 ch14/13 deep review items (existing chapter supplements, not new candidates)."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T01:10:34.318671+08:00",
-      "note": "Gap mining round 17: 0 candidates \u226514. Coverage saturated (17th consecutive). Checked PMS\u00d7cpuidle\u00d7schedutil (already in ch5.4), eScope paper, Desktop Experience, NSD/BLE perf, Repository suspend fun."
+      "note": "Gap mining round 17: 0 candidates ≥14. Coverage saturated (17th consecutive). Checked PMS×cpuidle×schedutil (already in ch5.4), eScope paper, Desktop Experience, NSD/BLE perf, Repository suspend fun."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T02:07:55+08:00",
-      "note": "Gap mining round 18: 0 candidates \u226514. Coverage saturated (18th consecutive). No new material since round 17. All 6 newest DeepResearch files (PMS\u00d7cpuidle, Flutter Impeller, AI agent memory, modular startup, heapprofd, LMKD batch, binder death notification) map to existing chapters. 2 pending queue items are supplements for ch1.25 and ch14.22."
+      "note": "Gap mining round 18: 0 candidates ≥14. Coverage saturated (18th consecutive). No new material since round 17. All 6 newest DeepResearch files (PMS×cpuidle, Flutter Impeller, AI agent memory, modular startup, heapprofd, LMKD batch, binder death notification) map to existing chapters. 2 pending queue items are supplements for ch1.25 and ch14.22."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T03:06:36.803330+08:00",
-      "note": "Gap mining round 19: 0 candidates \u226514. Coverage saturated (19th consecutive). 1 new DeepResearch file (background-audio-hardening-power) maps to ch25.17 (finalized), not new chapter."
+      "note": "Gap mining round 19: 0 candidates ≥14. Coverage saturated (19th consecutive). 1 new DeepResearch file (background-audio-hardening-power) maps to ch25.17 (finalized), not new chapter."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T04:07:07.232051+08:00",
-      "note": "Gap mining round 20: 0 candidates \u226514. Coverage saturated (20th consecutive). Checked 10 NOT-FOUND AOSP topics, all scored <14. 3 research gaps map to existing chapters. No new DeepResearch material since round 19."
+      "note": "Gap mining round 20: 0 candidates ≥14. Coverage saturated (20th consecutive). Checked 10 NOT-FOUND AOSP topics, all scored <14. 3 research gaps map to existing chapters. No new DeepResearch material since round 19."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T05:06:46.014004+08:00",
-      "note": "Gap mining round 21: 0 candidates \u226514. Coverage saturated (21st consecutive). Daily info topics all <14 or already covered."
+      "note": "Gap mining round 21: 0 candidates ≥14. Coverage saturated (21st consecutive). Daily info topics all <14 or already covered."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T10:08:55+08:00",
-      "note": "Gap mining round 22: 0 candidates \u226514. Coverage saturated (22nd consecutive). Checked 4 new DeepResearch files (2026-07-05): Perfetto v57 AI Skill \u2192 13.23 already exists; Binder SZ_4M \u2192 supplement to 1.25/1.30/1.53; Battery/SoC \u2192 maps to ch05/ch25; Background audio \u2192 maps to ch25. All material maps to existing chapters. source-index: 0 unmapped high-quality. Clippings: no new files in 7 days."
+      "note": "Gap mining round 22: 0 candidates ≥14. Coverage saturated (22nd consecutive). Checked 4 new DeepResearch files (2026-07-05): Perfetto v57 AI Skill → 13.23 already exists; Binder SZ_4M → supplement to 1.25/1.30/1.53; Battery/SoC → maps to ch05/ch25; Background audio → maps to ch25. All material maps to existing chapters. source-index: 0 unmapped high-quality. Clippings: no new files in 7 days."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T11:11:53.261211+08:00",
-      "note": "Gap mining round 23: 0 candidates \u226514. Coverage saturated (23rd consecutive). No new material since round 22 (1h ago). 14 draft sections all have content >15 lines. Daily info 2026-07-05 already consumed by task8."
+      "note": "Gap mining round 23: 0 candidates ≥14. Coverage saturated (23rd consecutive). No new material since round 22 (1h ago). 14 draft sections all have content >15 lines. Daily info 2026-07-05 already consumed by task8."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T12:07:36+08:00",
-      "note": "Gap mining round 24: 0 candidates \u226514. Coverage saturated (24th consecutive). 1 new DeepResearch file (ai-agent-memory-sandboxed) maps to existing \u00a720.3/ch04. No new Clippings in 7+ days. queue.json has 1 item (priority 60, section 2.15)."
+      "note": "Gap mining round 24: 0 candidates ≥14. Coverage saturated (24th consecutive). 1 new DeepResearch file (ai-agent-memory-sandboxed) maps to existing §20.3/ch04. No new Clippings in 7+ days. queue.json has 1 item (priority 60, section 2.15)."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T14:08:23+08:00",
-      "note": "Gap mining round 26: 0 candidates \u226514. Coverage saturated (26th consecutive). No new material since round 25. All DeepResearch files already mapped."
+      "note": "Gap mining round 26: 0 candidates ≥14. Coverage saturated (26th consecutive). No new material since round 25. All DeepResearch files already mapped."
     },
     {
       "section": "4.21",
       "action": "task2a-knowledge-gap",
       "status": "draft",
       "drafted_at": "2026-07-05T17:10:13+08:00",
-      "note": "ART HeapTask \u8c03\u5ea6\u7ba1\u7ebf\u4e0e Android 17 \u65b0\u589e\u5b50\u7c7b: 4\u5c42\u7ba1\u7ebf/7\u79cd\u5b50\u7c7b/\u4f18\u5148\u961f\u5217/PostFork/GC\u6291\u5236\u98ce\u9669/Perfetto\u53ef\u89c2\u6d4b\u6027. Created from DeepResearch 2026-07-05"
+      "note": "ART HeapTask 调度管线与 Android 17 新增子类: 4层管线/7种子类/优先队列/PostFork/GC抑制风险/Perfetto可观测性. Created from DeepResearch 2026-07-05"
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T20:07:59.780608+08:00",
-      "note": "Gap mining round 29: 0 candidates \u226514. Coverage saturated. No new material since Round 28 (2h ago). 14 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
+      "note": "Gap mining round 29: 0 candidates ≥14. Coverage saturated. No new material since Round 28 (2h ago). 14 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-05T21:07:58.129279+08:00",
-      "note": "Gap mining round 30: 0 candidates \u226514. Coverage saturated (30th consecutive). 1 new DeepResearch (mSponge) maps to existing \u00a723.6/\u00a74.21. No new Clippings. No new daily-info."
+      "note": "Gap mining round 30: 0 candidates ≥14. Coverage saturated (30th consecutive). 1 new DeepResearch (mSponge) maps to existing §23.6/§4.21. No new Clippings. No new daily-info."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-06T01:11:06.913881+08:00",
-      "note": "Gap mining round 31: 0 candidates \u226514. Coverage saturated (31st consecutive). 1 new DeepResearch file (2026-07-06 startup-insights-gaps) maps to existing ch21.17. No new Clippings in 7+ days. No new daily-info since 07-05. 19 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
+      "note": "Gap mining round 31: 0 candidates ≥14. Coverage saturated (31st consecutive). 1 new DeepResearch file (2026-07-06 startup-insights-gaps) maps to existing ch21.17. No new Clippings in 7+ days. No new daily-info since 07-05. 19 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-06T05:06:57.198034+08:00",
-      "note": "Gap mining round 32: 0 candidates \u226514. Coverage saturated (32nd consecutive). 2 new DeepResearch files map to existing \u00a714.8 and \u00a725.17."
+      "note": "Gap mining round 32: 0 candidates ≥14. Coverage saturated (32nd consecutive). 2 new DeepResearch files map to existing §14.8 and §25.17."
     },
     {
       "section": "14.8",
       "action": "task6-revisiting-review",
       "status": "reviewed",
       "reviewed_at": "2026-07-06T05:05:00+08:00",
-      "note": "Task 2B counter_ids fix verified; 2 L1/L2 \u5c0f\u4fee; awaiting Task 9 re-review"
+      "note": "Task 2B counter_ids fix verified; 2 L1/L2 小修; awaiting Task 9 re-review"
     },
     {
       "section": "13.26",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-06T06:04:00+08:00",
-      "note": "android.os.Trace API: 6 anchors + 1 extension. beginSection/endSection/asyncSection/setCounter\u5e95\u5c42\u8c03\u7528\u94fe\u3001TLS\u7f13\u5b58\u3001trace_marker fd\u3001ATRACE_TAG\u5206\u7c7b\u3001Compose Recomposition Trace\u3001Perfetto SDK\u5bf9\u6bd4\u3001SQL P50/P90\u67e5\u8be2\u3001begin/end\u4e0d\u5339\u914d\u9677\u9631"
+      "note": "android.os.Trace API: 6 anchors + 1 extension. beginSection/endSection/asyncSection/setCounter底层调用链、TLS缓存、trace_marker fd、ATRACE_TAG分类、Compose Recomposition Trace、Perfetto SDK对比、SQL P50/P90查询、begin/end不匹配陷阱"
     },
     {
       "section": "4.22",
       "action": "task2a-gap-create",
       "status": "draft-created",
       "created_at": "2026-07-06T07:18:59+08:00",
-      "note": "\u77e5\u8bc6\u7f3a\u53e3\u6316\u6398\u521b\u5efa: AI Agent \u5185\u5b58\u6c99\u7bb1\u5316\u4e0e\u8de8\u5e94\u7528\u6570\u636e\u590d\u7528"
+      "note": "知识缺口挖掘创建: AI Agent 内存沙箱化与跨应用数据复用"
     },
     {
       "section": "14.28",
       "action": "task2a-gap-create",
       "status": "draft-created",
       "created_at": "2026-07-06T07:18:59+08:00",
-      "note": "\u77e5\u8bc6\u7f3a\u53e3\u6316\u6398\u521b\u5efa: GPU \u6027\u80fd\u5206\u6790\u8fdb\u9636"
+      "note": "知识缺口挖掘创建: GPU 性能分析进阶"
     },
     {
       "section": "26.24",
       "action": "task2a-gap-create",
       "status": "draft-created",
       "created_at": "2026-07-06T07:18:59+08:00",
-      "note": "\u77e5\u8bc6\u7f3a\u53e3\u6316\u6398\u521b\u5efa: heapprofd \u751f\u4ea7\u7ea7\u90e8\u7f72\u4e0e\u6743\u9650\u6a21\u578b"
+      "note": "知识缺口挖掘创建: heapprofd 生产级部署与权限模型"
     },
     {
       "section": "2.1",
@@ -634,7 +646,7 @@
       "created_at": "2026-07-06T11:04:00+08:00",
       "drafted_at": "2026-07-06T11:04:00+08:00",
       "note": "Created from knowledge gap mining (GPU debugging tools)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "2.3",
@@ -643,7 +655,7 @@
       "created_at": "2026-07-06T11:04:00+08:00",
       "drafted_at": "2026-07-06T11:04:00+08:00",
       "note": "Created from knowledge gap mining (Battery optimization)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "4.1",
@@ -652,7 +664,7 @@
       "created_at": "2026-07-06T11:04:00+08:00",
       "drafted_at": "2026-07-06T11:04:00+08:00",
       "note": "Created from knowledge gap mining (AI Agent memory)",
-      "gap_source": "\u7d20\u6750\u9a71\u52a8"
+      "gap_source": "素材驱动"
     },
     {
       "section": "5.1",
@@ -661,7 +673,7 @@
       "created_at": "2026-07-06T11:04:00+08:00",
       "drafted_at": "2026-07-06T11:04:00+08:00",
       "note": "Created from knowledge gap mining (Audio hardening)",
-      "gap_source": "\u7814\u7a76\u7d20\u6750"
+      "gap_source": "研究素材"
     },
     {
       "section": "8.1",
@@ -670,21 +682,21 @@
       "created_at": "2026-07-06T11:04:00+08:00",
       "drafted_at": "2026-07-06T11:04:00+08:00",
       "note": "Created from knowledge gap mining (Modular startup)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "ch02.1",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-06T12:19:38+08:00",
-      "note": "SurfaceFlinger GPU \u6027\u80fd\u76d1\u63a7\u5b50\u7cfb\u7edf: FPSReporter/JankTracker/FrameTracer/TimeStats \u56db\u5b50\u7cfb\u7edf\u6e90\u7801\u67b6\u6784 + \u8c03\u8bd5\u5c5e\u6027\u7cfb\u7edf + gralloc \u8f6c\u6362 + \u5f00\u9500\u5206\u6790\u77e9\u9635"
+      "note": "SurfaceFlinger GPU 性能监控子系统: FPSReporter/JankTracker/FrameTracer/TimeStats 四子系统源码架构 + 调试属性系统 + gralloc 转换 + 开销分析矩阵"
     },
     {
       "section": "4.22",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-06T13:10:00+08:00",
-      "note": "AI Agent \u5185\u5b58\u6c99\u7bb1\u5316: 6 anchors (UID\u6c99\u7bb1\u4e09\u5f62\u6001/SharedMemory+HardwareBuffer+ContentProvider+AppFunctionService\u56db\u901a\u9053/LLM\u6743\u91cdmmap+KV Cache\u7ebf\u6027\u589e\u957f+\u63a8\u7406\u5de5\u4f5c\u533a/Binder 1MB\u9650\u5236/MemoryLimiter ProcState\u5f71\u54cd+\u540e\u53f0\u63a8\u7406page fault/SELinux\u4e09\u57df) + 3 extensions (\u591a\u8fdb\u7a0b\u76d1\u63a7\u7ef4\u5ea6/\u591aAgent\u5148\u5230\u5148\u5f97/CPU vs GPU vs NPU\u5185\u5b58). \u4ea4\u53c9\u5f15\u7528 \u00a74.18 \u00a75.20 \u00a75.21 \u00a75.27."
+      "note": "AI Agent 内存沙箱化: 6 anchors (UID沙箱三形态/SharedMemory+HardwareBuffer+ContentProvider+AppFunctionService四通道/LLM权重mmap+KV Cache线性增长+推理工作区/Binder 1MB限制/MemoryLimiter ProcState影响+后台推理page fault/SELinux三域) + 3 extensions (多进程监控维度/多Agent先到先得/CPU vs GPU vs NPU内存). 交叉引用 §4.18 §5.20 §5.21 §5.27."
     },
     {
       "section": "4.23",
@@ -748,70 +760,70 @@
       "action": "task2a-draft",
       "status": "ready-for-review",
       "drafted_at": "2026-07-06T21:15:00+08:00",
-      "note": "ART HeapTask \u5e76\u53d1\u4e0e GC \u6291\u5236\u6e90\u7801\u7ea7\u673a\u5236 \u2014 ConcurrentGCTask \u89e6\u53d1\u94fe\u8def\u3001\u865a\u51fd\u6570 Hook\u3001mSponge\u3001Android 17 \u65b0\u589e Task \u5f71\u54cd\u3001\u751f\u4ea7\u90e8\u7f72"
+      "note": "ART HeapTask 并发与 GC 抑制源码级机制 — ConcurrentGCTask 触发链路、虚函数 Hook、mSponge、Android 17 新增 Task 影响、生产部署"
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-07T02:04:00+08:00",
-      "note": "Gap mining round 33: 0 candidates \u226514. Coverage saturated (33rd consecutive). No new DeepResearch/Clippings/daily-info since round 32. source-index: 0 unmapped high-quality. All research-gaps/suggestions map to existing chapters."
+      "note": "Gap mining round 33: 0 candidates ≥14. Coverage saturated (33rd consecutive). No new DeepResearch/Clippings/daily-info since round 32. source-index: 0 unmapped high-quality. All research-gaps/suggestions map to existing chapters."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-07T03:09:51+08:00",
-      "note": "Gap mining round 34: 0 candidates \u226514. Coverage saturated (34th consecutive). Deprecated \u00a74.35 (dup of \u00a71.43) and \u00a74.36 (dup of \u00a76.19) RSS-derived stubs. No new DeepResearch/Clippings/daily-info material. source-index: 0 items. All research-gaps/suggestions map to existing chapters."
+      "note": "Gap mining round 34: 0 candidates ≥14. Coverage saturated (34th consecutive). Deprecated §4.35 (dup of §1.43) and §4.36 (dup of §6.19) RSS-derived stubs. No new DeepResearch/Clippings/daily-info material. source-index: 0 items. All research-gaps/suggestions map to existing chapters."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-07T05:07:41.708391+08:00",
-      "note": "Gap mining round 35: 0 candidates \u226514. Coverage saturated (35th consecutive). No new DeepResearch/Clippings since last round. daily-info 2026-07-07: all 5 topics map to existing chapters (\u00a76.19, \u00a71.43, \u00a78.17, \u00a72.52) or score <14 (architecture/UseCase, Repository suspend). source-index: 0 unmapped high-quality."
+      "note": "Gap mining round 35: 0 candidates ≥14. Coverage saturated (35th consecutive). No new DeepResearch/Clippings since last round. daily-info 2026-07-07: all 5 topics map to existing chapters (§6.19, §1.43, §8.17, §2.52) or score <14 (architecture/UseCase, Repository suspend). source-index: 0 unmapped high-quality."
     },
     {
       "section": "20.19",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-07T07:10:32.492972+08:00",
-      "note": "Android 17 debuggerd/linker \u96c6\u6210\u6e90\u7801\u7ea7\u5206\u6790: 7 anchors (linker\u65e9\u671fwiring/pseudothread clone+mmap\u6808/SA_EXPOSE_TAGBITS MTE/Wire Protocol v4/Permissive MTE+GWP-ASan Recoverable/SDK\u9002\u914d\u8981\u70b9/ART SignalChain\u8fb9\u754c) + 2 extensions (\u68c0\u67e5\u6e05\u5355/\u6027\u80fd\u57fa\u51c6). \u52d8\u8bef3\u9879\u9519\u8bef\u53d9\u4e8b. AOSP android-17.0.0_r1 \u6e90\u7801\u9010\u884c\u9a8c\u8bc1."
+      "note": "Android 17 debuggerd/linker 集成源码级分析: 7 anchors (linker早期wiring/pseudothread clone+mmap栈/SA_EXPOSE_TAGBITS MTE/Wire Protocol v4/Permissive MTE+GWP-ASan Recoverable/SDK适配要点/ART SignalChain边界) + 2 extensions (检查清单/性能基准). 勘误3项错误叙事. AOSP android-17.0.0_r1 源码逐行验证."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-07T09:11:35.692153+08:00",
-      "note": "Gap mining round 36: 0 candidates \u226514. Coverage saturated (36th consecutive). 3 new DeepResearch files: audio-hardening\u2192\u00a725.17, flutter-impeller-absence\u2192\u00a718.12, LLM-J-Lens\u2192not Android (AI paper). No new Clippings (7+ days). source-index: 0 unmapped high-quality. 27 drafts all have content >15 lines. daily-info topics all map to existing chapters or <14."
+      "note": "Gap mining round 36: 0 candidates ≥14. Coverage saturated (36th consecutive). 3 new DeepResearch files: audio-hardening→§25.17, flutter-impeller-absence→§18.12, LLM-J-Lens→not Android (AI paper). No new Clippings (7+ days). source-index: 0 unmapped high-quality. 27 drafts all have content >15 lines. daily-info topics all map to existing chapters or <14."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-07T13:12:53.137391+08:00",
-      "note": "Gap mining round 37: 0 candidates \u226514. Coverage saturated (37th consecutive). No new DeepResearch/Clippings/daily-info material since round 36. source-index: 0 unmapped high-quality. All 34 drafts have content >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 37: 0 candidates ≥14. Coverage saturated (37th consecutive). No new DeepResearch/Clippings/daily-info material since round 36. source-index: 0 unmapped high-quality. All 34 drafts have content >15 lines. Task2B backlog: 0."
     },
     {
       "section": "18.1",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-07T16:16:00+08:00",
-      "note": "Android 17 \u84dd\u7259\u4f4e\u529f\u8017\u97f3\u9891\u4e0e\u529f\u8017\u4f18\u5316: 5 anchors (LE Audio\u67b6\u6784\u6f14\u8fdb/\u52a8\u6001\u9891\u7387\u8c03\u6574/\u5b89\u5168\u4f20\u8f93/\u517c\u5bb9\u6027\u7ba1\u7406/\u94fe\u8def\u8d28\u91cf\u76d1\u63a7) + 3 extensions (\u7a7a\u95f4\u97f3\u9891/\u591a\u8bbe\u5907\u534f\u540c/\u8f66\u8f7d\u4f18\u5316). AOSP android-17.0.0_r1 + \u97f3\u9891\u7ba1\u7ebf\u67b6\u6784\u77e5\u8bc6\u9a8c\u8bc1."
+      "note": "Android 17 蓝牙低功耗音频与功耗优化: 5 anchors (LE Audio架构演进/动态频率调整/安全传输/兼容性管理/链路质量监控) + 3 extensions (空间音频/多设备协同/车载优化). AOSP android-17.0.0_r1 + 音频管线架构知识验证."
     },
     {
       "section": "18.2",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-07T16:16:00+08:00",
-      "note": "Android 17 NFC \u6027\u80fd\u4f18\u5316\u4e0e\u65e0\u63a5\u89e6\u652f\u4ed8: 5 anchors (NFC\u534f\u8bae\u6808\u4f18\u5316/\u65e0\u63a5\u89e6\u652f\u4ed8\u4f4e\u5ef6\u8fdf/\u52a8\u6001\u5b89\u5168\u7b56\u7565/\u591a\u6a21\u6001\u517c\u5bb9/\u72b6\u6001\u76d1\u63a7) + 3 extensions (\u8f66\u8f7d\u4f18\u5316/\u79bb\u7ebf\u652f\u4ed8/\u8de8\u5e73\u53f0\u534f\u540c). \u57fa\u4e8eAndroid\u7cfb\u7edf\u67b6\u6784\u77e5\u8bc6\u7f16\u5199\uff0c\u90e8\u5206\u5f85AOSP\u9a8c\u8bc1."
+      "note": "Android 17 NFC 性能优化与无接触支付: 5 anchors (NFC协议栈优化/无接触支付低延迟/动态安全策略/多模态兼容/状态监控) + 3 extensions (车载优化/离线支付/跨平台协同). 基于Android系统架构知识编写，部分待AOSP验证."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-07T20:06:25+08:00",
-      "note": "Gap mining round 39: 0 candidates \u226514 (39th consecutive). Coverage saturated. No new material. 54 drafts all >15 lines. Task2B backlog: 0. Queue: 0 pending."
+      "note": "Gap mining round 39: 0 candidates ≥14 (39th consecutive). Coverage saturated. No new material. 54 drafts all >15 lines. Task2B backlog: 0. Queue: 0 pending."
     },
     {
       "section": "none",
@@ -832,35 +844,35 @@
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-08T03:06:44.405936+08:00",
-      "note": "Gap mining round 40: 0 candidates \u226514 (40th consecutive). Coverage saturated. No new material since round 39 (7h ago). No new DeepResearch/Clippings/daily-info. source-index: 0 unmapped high-quality. 55 drafts all >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 40: 0 candidates ≥14 (40th consecutive). Coverage saturated. No new material since round 39 (7h ago). No new DeepResearch/Clippings/daily-info. source-index: 0 unmapped high-quality. 55 drafts all >15 lines. Task2B backlog: 0."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-08T05:09:21+08:00",
-      "note": "Gap mining round 41: 0 candidates \u226514 (41st consecutive). Coverage saturated. 4 new DeepResearch files all map to existing chapters."
+      "note": "Gap mining round 41: 0 candidates ≥14 (41st consecutive). Coverage saturated. 4 new DeepResearch files all map to existing chapters."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-08T06:08:33.711887+08:00",
-      "note": "Gap mining round 42: 0 candidates \u226514 (42nd consecutive). Coverage saturated. Daily info 2026-07-08: 4 items all map to existing chapters (eBPF\u2192\u00a714.25, XTrace\u2192\u00a726.23, audio hardening\u2192\u00a712.33/\u00a725.17, Binder thread pool\u2192ch01). source-index: 0 unmapped high-quality. No new Clippings in 7+ days."
+      "note": "Gap mining round 42: 0 candidates ≥14 (42nd consecutive). Coverage saturated. Daily info 2026-07-08: 4 items all map to existing chapters (eBPF→§14.25, XTrace→§26.23, audio hardening→§12.33/§25.17, Binder thread pool→ch01). source-index: 0 unmapped high-quality. No new Clippings in 7+ days."
     },
     {
       "section": "5.18",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-08T09:12:00+08:00",
-      "note": "CPU \u7f13\u5b58\u5c40\u90e8\u6027\u4e0e PSS \u5185\u5b58\u6838\u7b97: 6 anchors (ARM cache hierarchy/TLAB+CardTable\u7f13\u5b58\u8bbe\u8ba1/PSS\u4e09\u5c42\u91c7\u6837/smaps_rollup\u6e90\u7801/Debug.getRss()+FlaggedApi/getProcessMemoryInfo 5min\u9650\u901f+statsd) + 2 extensions (\u7f13\u5b58\u611f\u77e5\u5206\u914d\u7b56\u7565/\u6027\u80fd\u76d1\u63a7\u5de5\u5177\u94fe). DeepResearch PSS/RSS fastpath \u6e90\u7801\u9a8c\u8bc1. \u540c\u65f6\u6e05\u7406 9 \u4e2a\u91cd\u590d queue draft (\u00a74.34/4.35/4.37/4.38/8.31/8.32/8.33b/11.1/23.1)."
+      "note": "CPU 缓存局部性与 PSS 内存核算: 6 anchors (ARM cache hierarchy/TLAB+CardTable缓存设计/PSS三层采样/smaps_rollup源码/Debug.getRss()+FlaggedApi/getProcessMemoryInfo 5min限速+statsd) + 2 extensions (缓存感知分配策略/性能监控工具链). DeepResearch PSS/RSS fastpath 源码验证. 同时清理 9 个重复 queue draft (§4.34/4.35/4.37/4.38/8.31/8.32/8.33b/11.1/23.1)."
     },
     {
       "section": "1.54",
       "action": "task2a-knowledge-gap",
       "status": "draft",
       "drafted_at": "2026-07-08T10:04:00+08:00",
-      "note": "Created from knowledge gap mining (1.54 Android 17 Binder \u7ebf\u7a0b\u6c60\u5b9e\u73b0\u673a\u5236\u4e0e\u8c03\u4f18\u53c2\u6570)",
+      "note": "Created from knowledge gap mining (1.54 Android 17 Binder 线程池实现机制与调优参数)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -868,7 +880,7 @@
       "action": "task2a-knowledge-gap",
       "status": "draft",
       "drafted_at": "2026-07-08T10:04:00+08:00",
-      "note": "Created from knowledge gap mining (2.6 Android 17 eBPF\u89c2\u6d4b\u589e\u5f3a)",
+      "note": "Created from knowledge gap mining (2.6 Android 17 eBPF观测增强)",
       "gap_source": "daily-info + source-index"
     },
     {
@@ -876,7 +888,7 @@
       "action": "task2a-knowledge-gap",
       "status": "draft",
       "drafted_at": "2026-07-08T10:04:00+08:00",
-      "note": "Created from knowledge gap mining (2.7 Android 17 GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u6027\u80fd\u4f18\u5316\u5de5\u5177\u94fe)",
+      "note": "Created from knowledge gap mining (2.7 Android 17 GPU 图形调试与性能优化工具链)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -884,7 +896,7 @@
       "action": "task2a-knowledge-gap",
       "status": "draft",
       "drafted_at": "2026-07-08T10:04:00+08:00",
-      "note": "Created from knowledge gap mining (4.37 Android 17 LMKD \u7528\u6237\u6001\u8fc1\u79fb + PSI \u534f\u540c\u673a\u5236)",
+      "note": "Created from knowledge gap mining (4.37 Android 17 LMKD 用户态迁移 + PSI 协同机制)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -892,7 +904,7 @@
       "action": "task2a-knowledge-gap",
       "status": "draft",
       "drafted_at": "2026-07-08T10:04:00+08:00",
-      "note": "Created from knowledge gap mining (25.18 Android 17 Power Stats HAL OEM\u5382\u5546\u529f\u8017\u7edf\u8ba1\u5b9e\u73b0\u5dee\u5f02)",
+      "note": "Created from knowledge gap mining (25.18 Android 17 Power Stats HAL OEM厂商功耗统计实现差异)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -901,7 +913,7 @@
       "status": "draft",
       "created_at": "2026-07-08",
       "drafted_at": "2026-07-08",
-      "note": "Created from knowledge gap mining (1.33 Android 17 Binder \u7ebf\u7a0b\u6c60\u5b9e\u73b0\u673a\u5236\u4e0e\u8c03\u4f18\u53c2\u6570)",
+      "note": "Created from knowledge gap mining (1.33 Android 17 Binder 线程池实现机制与调优参数)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -910,7 +922,7 @@
       "status": "draft",
       "created_at": "2026-07-08",
       "drafted_at": "2026-07-08",
-      "note": "Created from knowledge gap mining (2.11 Android 17 GPU \u56fe\u5f62\u8c03\u8bd5\u4e0e\u6027\u80fd\u4f18\u5316\u5de5\u5177\u94fe)",
+      "note": "Created from knowledge gap mining (2.11 Android 17 GPU 图形调试与性能优化工具链)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -919,7 +931,7 @@
       "status": "draft",
       "created_at": "2026-07-08",
       "drafted_at": "2026-07-08",
-      "note": "Created from knowledge gap mining (2.13 Android 17 eBPF\u89c2\u6d4b\u589e\u5f3a)",
+      "note": "Created from knowledge gap mining (2.13 Android 17 eBPF观测增强)",
       "gap_source": "daily-info + source-index"
     },
     {
@@ -928,7 +940,7 @@
       "status": "draft",
       "created_at": "2026-07-08",
       "drafted_at": "2026-07-08",
-      "note": "Created from knowledge gap mining (4.43 Android 17 LMKD \u7528\u6237\u6001\u8fc1\u79fb + PSI \u534f\u540c\u673a\u5236\u6e90\u7801\u7ea7\u8c03\u7814)",
+      "note": "Created from knowledge gap mining (4.43 Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -937,7 +949,7 @@
       "status": "draft",
       "created_at": "2026-07-08",
       "drafted_at": "2026-07-08",
-      "note": "Created from knowledge gap mining (4.44 Android 17 AI Agent \u5185\u5b58\u6c99\u7bb1\u5316\u4e0e\u8de8\u5e94\u7528\u6570\u636e\u590d\u7528)",
+      "note": "Created from knowledge gap mining (4.44 Android 17 AI Agent 内存沙箱化与跨应用数据复用)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -946,7 +958,7 @@
       "status": "draft",
       "created_at": "2026-07-08",
       "drafted_at": "2026-07-08",
-      "note": "Created from knowledge gap mining (5.6 Android 17 CPU \u7f13\u5b58\u5c40\u90e8\u6027\u4e0e PSS \u5185\u5b58\u6838\u7b97\u6e90\u7801\u673a\u5236)",
+      "note": "Created from knowledge gap mining (5.6 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -955,7 +967,7 @@
       "status": "draft",
       "created_at": "2026-07-08",
       "drafted_at": "2026-07-08",
-      "note": "Created from knowledge gap mining (23.4.46 Android 17 ART HeapTask \u5e76\u53d1\u4e0e GC \u6291\u5236\u6e90\u7801\u7ea7\u673a\u5236)",
+      "note": "Created from knowledge gap mining (23.4.46 Android 17 ART HeapTask 并发与 GC 抑制源码级机制)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -964,7 +976,7 @@
       "status": "draft",
       "created_at": "2026-07-08",
       "drafted_at": "2026-07-08",
-      "note": "Created from knowledge gap mining (25.19 Android 17 Power Stats HAL OEM \u5382\u5546\u529f\u8017\u7edf\u8ba1\u5b9e\u73b0\u5dee\u5f02)",
+      "note": "Created from knowledge gap mining (25.19 Android 17 Power Stats HAL OEM 厂商功耗统计实现差异)",
       "gap_source": "daily-info + research-gaps"
     },
     {
@@ -972,21 +984,21 @@
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-08T12:16:48.216499+08:00",
-      "note": "Gap mining round 43: 0 candidates \u226514 (43rd consecutive). Coverage saturated. 3 new DeepResearch files (2026-07-08): AGI Frame Profiler\u2192\u00a714.8 supplement, debuggerd signal\u2192\u00a720.19 supplement, VNDK isolation\u2192\u00a71.1 supplement (scored 9/20, below threshold). Task14 suggestions for \u00a76.1/\u00a76.5/\u00a726.16 are existing chapter supplements. No new Clippings in 7+ days. 54 drafts all >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 43: 0 candidates ≥14 (43rd consecutive). Coverage saturated. 3 new DeepResearch files (2026-07-08): AGI Frame Profiler→§14.8 supplement, debuggerd signal→§20.19 supplement, VNDK isolation→§1.1 supplement (scored 9/20, below threshold). Task14 suggestions for §6.1/§6.5/§26.16 are existing chapter supplements. No new Clippings in 7+ days. 54 drafts all >15 lines. Task2B backlog: 0."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-08T13:07:27.452822+08:00",
-      "note": "Gap mining round 44: 0 candidates \u226514 (44th consecutive). Coverage saturated. 2 new DeepResearch files (VNDK isolation\u2192\u00a71.1 supplement scored 9/20, debuggerd signal\u2192\u00a720.19 supplement). Ariadne ZRAM paper (HPCA 2025) scored 9/20 \u2014 kernel-level research, not Android 17 API. Task14 suggestions for \u00a76.1/\u00a76.5/\u00a726.16 are existing chapter supplements. No new Clippings in 14+ days. 54 drafts all >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 44: 0 candidates ≥14 (44th consecutive). Coverage saturated. 2 new DeepResearch files (VNDK isolation→§1.1 supplement scored 9/20, debuggerd signal→§20.19 supplement). Ariadne ZRAM paper (HPCA 2025) scored 9/20 — kernel-level research, not Android 17 API. Task14 suggestions for §6.1/§6.5/§26.16 are existing chapter supplements. No new Clippings in 14+ days. 54 drafts all >15 lines. Task2B backlog: 0."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-08T22:06:31+08:00",
-      "note": "Gap mining round 45: 0 candidates \u226514 (45th consecutive). Coverage saturated. No new material since round 44 (13:07). No new DeepResearch/daily-info/Clippings. source-index: 0 unmapped high-quality. 46 drafts all >15 lines. Task2B backlog: 1. suggestions.md Task9 entry for \u00a713.2 is existing chapter supplement (data accuracy fix), not new chapter candidate."
+      "note": "Gap mining round 45: 0 candidates ≥14 (45th consecutive). Coverage saturated. No new material since round 44 (13:07). No new DeepResearch/daily-info/Clippings. source-index: 0 unmapped high-quality. 46 drafts all >15 lines. Task2B backlog: 1. suggestions.md Task9 entry for §13.2 is existing chapter supplement (data accuracy fix), not new chapter candidate."
     },
     {
       "section": "2.9",
@@ -994,7 +1006,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171048+00:00",
       "note": "Created from knowledge gap mining (2.9)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "2.10",
@@ -1002,7 +1014,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171052+00:00",
       "note": "Created from knowledge gap mining (2.10)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "2.11",
@@ -1010,7 +1022,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171053+00:00",
       "note": "Created from knowledge gap mining (2.11)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "2.12",
@@ -1018,7 +1030,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171055+00:00",
       "note": "Created from knowledge gap mining (2.12)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "2.13",
@@ -1026,7 +1038,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171056+00:00",
       "note": "Created from knowledge gap mining (2.13)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "2.14",
@@ -1034,7 +1046,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171057+00:00",
       "note": "Created from knowledge gap mining (2.14)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "4.46",
@@ -1042,7 +1054,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171059+00:00",
       "note": "Created from knowledge gap mining (4.46)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "4.47",
@@ -1050,7 +1062,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171060+00:00",
       "note": "Created from knowledge gap mining (4.47)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "4.48",
@@ -1058,7 +1070,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171061+00:00",
       "note": "Created from knowledge gap mining (4.48)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "5.22",
@@ -1066,7 +1078,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171062+00:00",
       "note": "Created from knowledge gap mining (5.22)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "5.23",
@@ -1074,7 +1086,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171063+00:00",
       "note": "Created from knowledge gap mining (5.23)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "5.24",
@@ -1082,7 +1094,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171065+00:00",
       "note": "Created from knowledge gap mining (5.24)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "8.33",
@@ -1090,7 +1102,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171066+00:00",
       "note": "Created from knowledge gap mining (8.33)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "15.11",
@@ -1098,7 +1110,7 @@
       "status": "draft",
       "drafted_at": "2026-07-08T15:18:41.171067+00:00",
       "note": "Created from knowledge gap mining (15.11)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "none",
@@ -1119,28 +1131,28 @@
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-09T03:07:46.537310+08:00",
-      "note": "Gap mining round 48: 0 candidates >=14 (48th consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 eBPF observability matrix verified) is source verification supplement for existing \u00a714.25, not new chapter. No new Clippings (7+ days). daily-info 2026-07-09: 5 RSS items all score <14 (Android 15 GC=old news, Linux scheduler=kernel, Gradle=build tool, KSM=security, AI optimization=generic). source-index: 0 unmapped high-quality. All drafts >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 48: 0 candidates >=14 (48th consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 eBPF observability matrix verified) is source verification supplement for existing §14.25, not new chapter. No new Clippings (7+ days). daily-info 2026-07-09: 5 RSS items all score <14 (Android 15 GC=old news, Linux scheduler=kernel, Gradle=build tool, KSM=security, AI optimization=generic). source-index: 0 unmapped high-quality. All drafts >15 lines. Task2B backlog: 0."
     },
     {
       "section": "1.54",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-09T04:05:00+08:00",
-      "note": "Binder \u7ebf\u7a0b\u6c60\u5b9e\u73b0\u673a\u5236\u4e0e\u8c03\u4f18\u53c2\u6570: 8 anchors (ProcessState 5\u6838\u5fc3\u72b6\u6001\u91cf/BINDER_VM_SIZE+fork\u5b89\u5168/BR_SPAWN_LOOPER \u56db\u6761\u4ef6\u5b88\u95e8/BC_REGISTER vs BC_ENTER \u8ba1\u6570\u8bed\u4e49/joinThreadPool \u9000\u51fa\u8bed\u4e49/blockUntilThreadAvailable \u6761\u4ef6\u53d8\u91cf/setThreadPoolMaxThreadCount \u5355\u5411\u8c03\u5347/100ms\u9965\u997f\u68c0\u6d4b\u6e90\u7801+FLAT_BINDER_FLAG) + 3 extensions (\u53ef\u8c03\u53c2\u6570\u6f84\u6e05/\u8fdb\u7a0b\u914d\u7f6e\u5dee\u5f02/\u7248\u672c\u6f14\u8fdb). \u6e90\u7801\u7ea7\u5206\u6790\u533a\u5206\u4e8e \u00a71.38 \u6027\u80fd\u573a\u666f\u89c6\u89d2. AOSP android-17.0.0_r1 \u6e90\u7801\u9010\u884c\u9a8c\u8bc1. \u7ea0\u6b63\u5927\u7eb24\u4e2a\u4e0d\u5b58\u5728\u53c2\u6570."
+      "note": "Binder 线程池实现机制与调优参数: 8 anchors (ProcessState 5核心状态量/BINDER_VM_SIZE+fork安全/BR_SPAWN_LOOPER 四条件守门/BC_REGISTER vs BC_ENTER 计数语义/joinThreadPool 退出语义/blockUntilThreadAvailable 条件变量/setThreadPoolMaxThreadCount 单向调升/100ms饥饿检测源码+FLAT_BINDER_FLAG) + 3 extensions (可调参数澄清/进程配置差异/版本演进). 源码级分析区分于 §1.38 性能场景视角. AOSP android-17.0.0_r1 源码逐行验证. 纠正大纲4个不存在参数."
     },
     {
       "section": "8.1",
       "action": "task6-review-auto-promote",
       "status": "finalized",
       "ts": "2026-07-09T05:07:00+08:00",
-      "note": "Task6 re-review: 4 L1/L2 fixes (\u672c\u8d28\u4e0a, \u62c6\u89e3x2, \u5143\u53d9\u8ff0), auto-promote finalized"
+      "note": "Task6 re-review: 4 L1/L2 fixes (本质上, 拆解x2, 元叙述), auto-promote finalized"
     },
     {
       "section": "2.6",
       "action": "task2a-content-processing",
       "status": "ready_for_review",
       "ts": "2026-07-09T06:13:08+08:00",
-      "note": "Android 17 eBPF\u89c2\u6d4b\u589e\u5f3a: 4 anchors (cyclePerUid/dmabufIter/kernelWakelockDuration/locks \u56db\u7a0b\u5e8f\u6e90\u7801\u7ea7\u5206\u6790 + tracepoints\u673a\u5236 + \u4e09\u5c42\u6570\u636e\u6d41\u67b6\u6784 + \u56db\u5927\u5e94\u7528\u573a\u666f) + 3 extensions (Perfetto\u534f\u540c\u53cc\u7a97\u53e3\u8bbe\u8ba1/bpftrace\u5f00\u53d1\u5de5\u5177\u94fe/\u4f01\u4e1a\u7ea7\u90e8\u7f72\u9690\u79c1\u5b89\u5168). AOSP android-17.0.0_r1 \u6e90\u7801\u63cf\u8ff0\u4ea4\u53c9\u9a8c\u8bc1. \u7248\u672c\u6f14\u8fdb\u65f6\u95f4\u7ebf Android 12\u219217."
+      "note": "Android 17 eBPF观测增强: 4 anchors (cyclePerUid/dmabufIter/kernelWakelockDuration/locks 四程序源码级分析 + tracepoints机制 + 三层数据流架构 + 四大应用场景) + 3 extensions (Perfetto协同双窗口设计/bpftrace开发工具链/企业级部署隐私安全). AOSP android-17.0.0_r1 源码描述交叉验证. 版本演进时间线 Android 12→17."
     },
     {
       "section": "none",
@@ -1154,14 +1166,14 @@
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-09T08:09:06.667834+08:00",
-      "note": "Gap mining round 46: 0 candidates \u226514 (46th consecutive). Coverage saturated. Checked 10 newest DeepResearch files (2026-07-08~09): all map to existing chapters (\u00a714.25 eBPF, \u00a74.37 LMKD, \u00a725.18 PowerStats, \u00a714.8 GPU tools, \u00a714.28 GPU counters, \u00a720.19 debuggerd). No new Clippings in 16+ days (last 2026-06-23). daily-info 2026-07-09 RSS items all map to existing chapters or out of scope. source-index: 0 unmapped high-quality. 56 drafts all >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 46: 0 candidates ≥14 (46th consecutive). Coverage saturated. Checked 10 newest DeepResearch files (2026-07-08~09): all map to existing chapters (§14.25 eBPF, §4.37 LMKD, §25.18 PowerStats, §14.8 GPU tools, §14.28 GPU counters, §20.19 debuggerd). No new Clippings in 16+ days (last 2026-06-23). daily-info 2026-07-09 RSS items all map to existing chapters or out of scope. source-index: 0 unmapped high-quality. 56 drafts all >15 lines. Task2B backlog: 0."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-09T09:13:59.324237+08:00",
-      "note": "Gap mining round 50: 0 candidates \u226514 (50th consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 trim-memory-callback-api-evolution) maps to existing \u00a723.6 supplement (scored 10/20). Task14 suggestions (2026-07-09) all supplements to existing chapters (ch20/ch21/ch24/ch26). No new Clippings in 16+ days. source-index: 0 unmapped high-quality. All drafts >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 50: 0 candidates ≥14 (50th consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 trim-memory-callback-api-evolution) maps to existing §23.6 supplement (scored 10/20). Task14 suggestions (2026-07-09) all supplements to existing chapters (ch20/ch21/ch24/ch26). No new Clippings in 16+ days. source-index: 0 unmapped high-quality. All drafts >15 lines. Task2B backlog: 0."
     },
     {
       "section": "14.25",
@@ -1169,7 +1181,7 @@
       "status": "draft",
       "drafted_at": "2026-07-09T10:16:18.852158+08:00",
       "note": "Created from knowledge gap mining (14.25)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "8.1",
@@ -1177,7 +1189,7 @@
       "status": "draft",
       "drafted_at": "2026-07-09T10:16:18.852165+08:00",
       "note": "Created from knowledge gap mining (8.1)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "2.5",
@@ -1185,14 +1197,14 @@
       "status": "draft",
       "drafted_at": "2026-07-09T10:16:18.852167+08:00",
       "note": "Created from knowledge gap mining (2.5)",
-      "gap_source": "AOSP\u7ed3\u6784"
+      "gap_source": "AOSP结构"
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-09T13:07:18.153669+08:00",
-      "note": "Gap mining round 46: 0 candidates \u226514 (46th consecutive). 3 new DeepResearch files (2026-07-09) all map to existing chapters: eBPF observability matrix\u2192\u00a714.25 supplement, SoC Power HAL schedutil\u2192\u00a75.21/\u00a715.1/\u00a717.21 supplement, trimMemory callback evolution\u2192\u00a723.6 supplement. No new Clippings in 14+ days. daily-info 2026-07-09: all example.com placeholder URLs already consumed by task8. 44 draft sections all >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 46: 0 candidates ≥14 (46th consecutive). 3 new DeepResearch files (2026-07-09) all map to existing chapters: eBPF observability matrix→§14.25 supplement, SoC Power HAL schedutil→§5.21/§15.1/§17.21 supplement, trimMemory callback evolution→§23.6 supplement. No new Clippings in 14+ days. daily-info 2026-07-09: all example.com placeholder URLs already consumed by task8. 44 draft sections all >15 lines. Task2B backlog: 0."
     },
     {
       "section": "18.1",
@@ -1227,21 +1239,21 @@
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-09T19:07:19.871535+08:00",
-      "note": "Gap mining round 52: 0 candidates \u226514 (52nd consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 VNDK linker namespace load cost) maps to existing \u00a71.55 supplement (scored 10/20). All 44 drafts have >15 effective lines. Task2B backlog: 0. source-index: 0 unmapped high-quality. No new Clippings (16+ days)."
+      "note": "Gap mining round 52: 0 candidates ≥14 (52nd consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 VNDK linker namespace load cost) maps to existing §1.55 supplement (scored 10/20). All 44 drafts have >15 effective lines. Task2B backlog: 0. source-index: 0 unmapped high-quality. No new Clippings (16+ days)."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-09T20:06:37.845486+08:00",
-      "note": "Gap mining round 53: 0 candidates \u226514 (53rd consecutive). Coverage saturated. No new material since round 52 (1h ago). No new DeepResearch (last 2026-07-09 17:53 VNDK linker\u2192\u00a71.55 sup). No Clippings dir contents. daily-info 2026-07-09 already consumed. research-feeds last 2026-04-14. source-index: 0 unmapped high-quality. All 44 drafts >15 lines. Task2B backlog: 0. Queue: 0 pending."
+      "note": "Gap mining round 53: 0 candidates ≥14 (53rd consecutive). Coverage saturated. No new material since round 52 (1h ago). No new DeepResearch (last 2026-07-09 17:53 VNDK linker→§1.55 sup). No Clippings dir contents. daily-info 2026-07-09 already consumed. research-feeds last 2026-04-14. source-index: 0 unmapped high-quality. All 44 drafts >15 lines. Task2B backlog: 0. Queue: 0 pending."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-09T21:12:30.872958+08:00",
-      "note": "Gap mining round 54: 0 candidates \u226514 (54th consecutive). Coverage saturated. No new material since round 53 (1h ago). No new DeepResearch (last 2026-04-14). No new Clippings (16+ days, last 2026-06-23). daily-info 2026-07-09 fully consumed in rounds 48-53. research-gaps.md last modified 2026-07-07. suggestions.md last modified 2026-07-09 06:36 (Task9 items for existing chapters only). source-index: 0 unmapped high-quality. All 44 drafts >15 lines. Task2B backlog: 0. Queue: 0 pending."
+      "note": "Gap mining round 54: 0 candidates ≥14 (54th consecutive). Coverage saturated. No new material since round 53 (1h ago). No new DeepResearch (last 2026-04-14). No new Clippings (16+ days, last 2026-06-23). daily-info 2026-07-09 fully consumed in rounds 48-53. research-gaps.md last modified 2026-07-07. suggestions.md last modified 2026-07-09 06:36 (Task9 items for existing chapters only). source-index: 0 unmapped high-quality. All 44 drafts >15 lines. Task2B backlog: 0. Queue: 0 pending."
     },
     {
       "section": "9.2",
@@ -1297,21 +1309,21 @@
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-10T02:06:13.241511+08:00",
-      "note": "Gap mining round 56: 0 candidates \u226514 (56th consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 GraphicBuffer memory pool design) already captured as \u00a72.32 (53 content lines, draft). No new Clippings (17+ days, last 2026-06-23). No new research-feeds (last 2026-04-14). daily-info 2026-07-09 fully consumed in rounds 48-55. source-index: 0 unmapped high-quality. All drafts >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 56: 0 candidates ≥14 (56th consecutive). Coverage saturated. 1 new DeepResearch file (2026-07-09 GraphicBuffer memory pool design) already captured as §2.32 (53 content lines, draft). No new Clippings (17+ days, last 2026-06-23). No new research-feeds (last 2026-04-14). daily-info 2026-07-09 fully consumed in rounds 48-55. source-index: 0 unmapped high-quality. All drafts >15 lines. Task2B backlog: 0."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-10T08:10:37.659913+08:00",
-      "note": "Gap mining round 57: 0 candidates \u226514 (57th consecutive). Coverage saturated. Checked daily-info 2026-07-10: 6 DeepResearch files all map to existing chapters (HardeningEnforcer\u2192\u00a712.33, debuggerd\u2192\u00a720.19, VNDK\u2192\u00a71.55, EdgeBench\u2192not Android, AGI\u2192\u00a714.8, flatland/sfdo\u2192\u00a714.8). 2 RSS items map to existing ch01/ch04/ch08 and kernel BPF\u2192\u00a72.6. Cubox OSPM2026 AMU/PMU scored 11/20 (\u00a75.28 supplement). AOHP paper is AI Agent OS research, not Android 17 performance. research-gaps.md new entry for \u00a726 network monitoring\u2192already covered by \u00a726.17. source-index: 0 unmapped high-quality. No new Clippings (17+ days). 46 drafts all >15 lines. Task2B backlog: 0."
+      "note": "Gap mining round 57: 0 candidates ≥14 (57th consecutive). Coverage saturated. Checked daily-info 2026-07-10: 6 DeepResearch files all map to existing chapters (HardeningEnforcer→§12.33, debuggerd→§20.19, VNDK→§1.55, EdgeBench→not Android, AGI→§14.8, flatland/sfdo→§14.8). 2 RSS items map to existing ch01/ch04/ch08 and kernel BPF→§2.6. Cubox OSPM2026 AMU/PMU scored 11/20 (§5.28 supplement). AOHP paper is AI Agent OS research, not Android 17 performance. research-gaps.md new entry for §26 network monitoring→already covered by §26.17. source-index: 0 unmapped high-quality. No new Clippings (17+ days). 46 drafts all >15 lines. Task2B backlog: 0."
     },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
       "ts": "2026-07-10T09:21:57.679174+08:00",
-      "note": "Gap mining round 58: 0 candidates \u226514 (58th consecutive). Coverage saturated. No new material since round 57 (08:10). No new DeepResearch (last 2026-07-10 06:37). No new Clippings (17+ days, last 2026-06-23). daily-info 2026-07-10 fully consumed in round 57. source-index: 0 unmapped high-quality. All 46 drafts >15 lines. Task2B backlog: 0. Queue: 0 pending."
+      "note": "Gap mining round 58: 0 candidates ≥14 (58th consecutive). Coverage saturated. No new material since round 57 (08:10). No new DeepResearch (last 2026-07-10 06:37). No new Clippings (17+ days, last 2026-06-23). daily-info 2026-07-10 fully consumed in round 57. source-index: 0 unmapped high-quality. All 46 drafts >15 lines. Task2B backlog: 0. Queue: 0 pending."
     }
   ],
   "review_history": [
@@ -1359,9 +1371,9 @@
       ],
       "results": {
         "1.13": "pass-light-edit",
-        "1.19": "pass-light-edit \u2192 finalized",
+        "1.19": "pass-light-edit → finalized",
         "1.25": "pass-light-edit",
-        "1.4": "pass-light-edit \u2192 finalized"
+        "1.4": "pass-light-edit → finalized"
       },
       "auto_promoted": [
         "1.19",
@@ -1428,7 +1440,7 @@
   ],
   "task2b_verifier": {
     "last_run": "2026-07-07T19:31:15+08:00",
-    "last_action": "status correction: finalized\u2192ready-for-review, pipeline_stage: ready-to-publish\u2192task6_pending",
+    "last_action": "status correction: finalized→ready-for-review, pipeline_stage: ready-to-publish→task6_pending",
     "chapters_fixed": [
       "1.2",
       "1.10",
@@ -1554,24 +1566,24 @@
       "task6_state": "reviewed",
       "task6_date": "2026-07-04",
       "task6_result": "pass-light-edit",
-      "notes": "L1\u8f7b\u4fee(\u7981\u7528\u8bcd+\u5143\u53d9\u8ff0)\uff0c\u81ea\u52a8\u664b\u5347finalized"
+      "notes": "L1轻修(禁用词+元叙述)，自动晋升finalized"
     },
     "19.26": {
       "status": "finalized",
       "task6_state": "reviewed",
       "task6_date": "2026-07-04",
       "task6_result": "pass-light-edit",
-      "notes": "L1\u8f7b\u4fee(\u7981\u7528\u8bcd)\uff0c\u81ea\u52a8\u664b\u5347finalized"
+      "notes": "L1轻修(禁用词)，自动晋升finalized"
     },
     "20.2": {
       "status": "finalized",
       "task6_state": "reviewed",
       "task6_date": "2026-07-04",
       "task6_result": "pass-light-edit",
-      "notes": "L1\u8f7b\u4fee(\u5143\u53d9\u8ff0)\uff0c\u81ea\u52a8\u664b\u5347finalized"
+      "notes": "L1轻修(元叙述)，自动晋升finalized"
     },
     "15.9": {
-      "title": "\u4ece\u91c7\u96c6\u5230\u6cbb\u7406\u7684\u53cd\u9988\u56de\u8def",
+      "title": "从采集到治理的反馈回路",
       "status": "ready-for-review",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
@@ -1581,7 +1593,7 @@
       "review_log": "logs/review/2026-07-04-12-review.md"
     },
     "26.10": {
-      "title": "Android 11 \u4ee5\u4e0b\u8fdb\u7a0b\u9000\u51fa\u5f52\u56e0\u65b9\u6848",
+      "title": "Android 11 以下进程退出归因方案",
       "status": "finalized",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
@@ -1683,25 +1695,25 @@
         {
           "chapter": "13.21",
           "file": "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
-          "fix": "task2b_state: fixed\u2192pending, pipeline_stage: task6_pending\u2192task2b_pending",
+          "fix": "task2b_state: fixed→pending, pipeline_stage: task6_pending→task2b_pending",
           "reason": "Queue has pending P50 task6-review item; chapter should be in task2b_pending not task6_pending"
         },
         {
           "chapter": "15",
           "file": "src/ch15-methodology.md",
-          "fix": "pipeline_stage: task6_pending\u2192task9_pending",
+          "fix": "pipeline_stage: task6_pending→task9_pending",
           "reason": "Task6 already reviewed (pass-light-edit); needs Task9 final confirmation for auto-fix"
         },
         {
           "chapter": "24.14",
           "file": "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md",
-          "fix": "Removed duplicate pipeline_stage: task9_pending (kept ready-to-publish); task9_state: pending\u2192reviewed",
+          "fix": "Removed duplicate pipeline_stage: task9_pending (kept ready-to-publish); task9_state: pending→reviewed",
           "reason": "status=finalized, task9_result=pass-tech-review, queue clean"
         },
         {
           "chapter": "appendix.G",
           "file": "src/appendix/android-performance-learning-path.md",
-          "fix": "pipeline_stage: task6_pending\u2192draft",
+          "fix": "pipeline_stage: task6_pending→draft",
           "reason": "status=draft chapter incorrectly marked as task6_pending"
         }
       ],
@@ -1734,27 +1746,27 @@
     "details": [
       {
         "section": "14.4",
-        "fix": "status: finalized\u2192ready-for-review",
+        "fix": "status: finalized→ready-for-review",
         "reason": "Task9 idle audit auto-fixed, status stale"
       },
       {
         "section": "16.4",
-        "fix": "status: finalized\u2192ready-for-review",
+        "fix": "status: finalized→ready-for-review",
         "reason": "Task9 idle audit auto-fixed, status stale"
       },
       {
         "section": "7.9",
-        "fix": "status: finalized\u2192ready-for-review",
+        "fix": "status: finalized→ready-for-review",
         "reason": "Task9 idle audit auto-fixed, status stale"
       },
       {
         "section": "13.2",
-        "fix": "task9_state: reviewed\u2192pending",
+        "fix": "task9_state: reviewed→pending",
         "reason": "Task6 re-reviewed post-auto-fix, task9_state stale"
       },
       {
         "section": "8.1",
-        "fix": "task9_state: reviewed\u2192pending",
+        "fix": "task9_state: reviewed→pending",
         "reason": "Task6 re-reviewed post-auto-fix, task9_state stale"
       }
     ]
@@ -1820,70 +1832,70 @@
     {
       "chapter": "4.33",
       "path": "src/part1-fundamentals/ch04-memory/4.33-android17-ai-agent-memory-sandboxed-data-reuse.md",
-      "reason": "Duplicate of \u00a74.22 (same title, \u00a74.22 has 220 lines ready-for-review). Outline was copy-paste broken.",
+      "reason": "Duplicate of §4.22 (same title, §4.22 has 220 lines ready-for-review). Outline was copy-paste broken.",
       "deprecated_at": "2026-07-06T23:08:59+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "5.27",
       "path": "src/part1-fundamentals/ch05-cpu-power/5.27-ondevice-llm-inference-energy-efficiency.md",
-      "reason": "Title corrupted (frontmatter says CPU cache locality, SUMMARY says MoE/quantization). Topic already covered by \u00a75.11/\u00a75.13/\u00a75.14. Outline broken with GPU content.",
+      "reason": "Title corrupted (frontmatter says CPU cache locality, SUMMARY says MoE/quantization). Topic already covered by §5.11/§5.13/§5.14. Outline broken with GPU content.",
       "deprecated_at": "2026-07-06T23:08:59+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "23.5",
       "path": "src/part5-app/ch23-memory-practice/23.5-art-heaptask-system-7-subclasses.md",
-      "reason": "Duplicate of \u00a74.34 (same topic: ART HeapTask 7 subclasses). \u00a74.21 also covers HeapTask scheduling pipeline. Outline was copy-paste broken.",
+      "reason": "Duplicate of §4.34 (same topic: ART HeapTask 7 subclasses). §4.21 also covers HeapTask scheduling pipeline. Outline was copy-paste broken.",
       "deprecated_at": "2026-07-06T23:08:59+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "4.23",
       "path": "src/part1-fundamentals/ch04-memory/4.23-android17-ai-agent-memory.md",
-      "reason": "Duplicate of \u00a74.22. Contains suspected AI hallucination (MemoryDomain/SandboxedHeap not found in AOSP). Needs-verification status confirmed as unreliable.",
+      "reason": "Duplicate of §4.22. Contains suspected AI hallucination (MemoryDomain/SandboxedHeap not found in AOSP). Needs-verification status confirmed as unreliable.",
       "deprecated_at": "2026-07-06T23:08:59+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "4.35",
-      "path": "src/part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-\u5f15\u5165\u4e86\u5168\u65b0\u7684\u4efb\u52a1\u8c03\u5ea6\u5668\u901a.md",
-      "reason": "Duplicate of \u00a71.43 (Android 17 ML Scheduler, 215 lines, ready-for-review). \u00a74.35 is an RSS-derived stub with no unique content. Same topic: ML-driven task scheduler reducing app launch time.",
+      "path": "src/part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-引入了全新的任务调度器通.md",
+      "reason": "Duplicate of §1.43 (Android 17 ML Scheduler, 215 lines, ready-for-review). §4.35 is an RSS-derived stub with no unique content. Same topic: ML-driven task scheduler reducing app launch time.",
       "deprecated_at": "2026-07-07T03:09:51+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "4.36",
-      "path": "src/part1-fundamentals/ch4-memory/4.36-Phoronix---Linux-610-\u5185\u6838\u5f15\u5165\u4e86\u521b\u65b0\u7684\u5185\u5b58\u788e\u7247\u6574\u7406\u673a\u5236\u901a\u8fc7\u667a\u80fd\u9884\u5206\u914d\u548c\u52a8\u6001\u8c03.md",
-      "reason": "Duplicate of \u00a76.19 (Linux 6.10 memory compaction, 126 lines with source code analysis). \u00a74.36 is an RSS-derived stub with no unique content. Same topic: Linux 6.10 proactive compaction mechanism.",
+      "path": "src/part1-fundamentals/ch4-memory/4.36-Phoronix---Linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调.md",
+      "reason": "Duplicate of §6.19 (Linux 6.10 memory compaction, 126 lines with source code analysis). §4.36 is an RSS-derived stub with no unique content. Same topic: Linux 6.10 proactive compaction mechanism.",
       "deprecated_at": "2026-07-07T03:09:51+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "04.41",
       "path": "src/part1-fundamentals/ch04-memory/04.41-ai-agent-memory-sandboxing.md",
-      "reason": "Duplicate of \u00a74.22 (AI Agent \u5185\u5b58\u6c99\u7bb1\u5316\u4e0e\u8de8\u5e94\u7528\u6570\u636e\u590d\u7528, 351 lines, ready-for-review). Orphan stub not in SUMMARY.md.",
+      "reason": "Duplicate of §4.22 (AI Agent 内存沙箱化与跨应用数据复用, 351 lines, ready-for-review). Orphan stub not in SUMMARY.md.",
       "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "04.42",
       "path": "src/part1-fundamentals/ch04-memory/04.42-art-heaptask-advanced-scheduling.md",
-      "reason": "Duplicate of \u00a74.34/\u00a74.21 (ART HeapTask topics already covered). Orphan stub not in SUMMARY.md.",
+      "reason": "Duplicate of §4.34/§4.21 (ART HeapTask topics already covered). Orphan stub not in SUMMARY.md.",
       "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "08.38",
       "path": "src/part1-fundamentals/ch08-startup/08.38-startup-insights-application-profiling.md",
-      "reason": "Duplicate of \u00a78.31/\u00a78.32/\u00a78.36 (Startup Insights topics). Orphan stub not in SUMMARY.md.",
+      "reason": "Duplicate of §8.31/§8.32/§8.36 (Startup Insights topics). Orphan stub not in SUMMARY.md.",
       "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
       "deprecated_by": "task2a-cleanup"
     },
     {
       "chapter": "17.22",
       "path": "src/part4-system/ch17-oem/17.22-soc-vendor-power-optimization.md",
-      "reason": "Duplicate of \u00a717.21/\u00a709-soc (SoC power optimization). Orphan stub not in SUMMARY.md.",
+      "reason": "Duplicate of §17.21/§09-soc (SoC power optimization). Orphan stub not in SUMMARY.md.",
       "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
       "deprecated_by": "task2a-cleanup"
     }
@@ -2037,14 +2049,14 @@
       "date": "2026-07-10T03:34:28+08:00",
       "lane": "verifier",
       "checked": [
-        "3.5 \u8f93\u5165\u4e8b\u4ef6\u62e6\u622a\u4e0e\u5b89\u5168\u673a\u5236",
-        "7.2 \u5361\u987f\u539f\u56e0\u4f53\u7cfb",
-        "13.14 Perfetto DataGrid \u4e0e Jank CUJ \u6807\u51c6\u5e93"
+        "3.5 输入事件拦截与安全机制",
+        "7.2 卡顿原因体系",
+        "13.14 Perfetto DataGrid 与 Jank CUJ 标准库"
       ],
       "fixed": [
-        "3.5: status finalized\u2192ready-for-review, task9_state reviewed\u2192pending",
-        "7.2: status finalized\u2192ready-for-review, task9_state reviewed\u2192pending",
-        "13.14: status finalized\u2192ready-for-review, task9_state reviewed\u2192pending"
+        "3.5: status finalized→ready-for-review, task9_state reviewed→pending",
+        "7.2: status finalized→ready-for-review, task9_state reviewed→pending",
+        "13.14: status finalized→ready-for-review, task9_state reviewed→pending"
       ],
       "blocked": [],
       "result": "ready-for-task6"

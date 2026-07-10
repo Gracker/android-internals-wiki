@@ -1,4 +1,5 @@
 ---
+
 title: "SmartPerfetto 与可复用 Trace 分析平台"
 chapter: "13.18"
 section: "13.18"
@@ -17,23 +18,23 @@ created_date: "2026-05-18"
 gap_source: "每日信息/素材驱动/章节深挖"
 gap_score: 17
 material_count: 4
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-19"
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-task9_state: "reviewed"
-task9_result: "needs-rework"
-task2b_state: "pending"
-task2b_result: fixed-lite
+task9_state: pending
+task9_result: needs-rework
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_date: "2026-06-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-19T17:26:51+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-19-17-deep-review.md"
 task9_review_notes: "2026-07-10 Task9 idle-audit: needs-rework。P0 0 / P1 1 / P2 0；复核 SmartPerfetto main 1508f99788bfcf18cc861e4bf4f8b472e84240c3，cutover 阶段 readAuthority=db，readTraceMetadataForContext() 在企业模式下按 trace_assets scope 读取且无 filesystem fallback；正文 L273-L290 把“DB 失败后回退文件系统”写成长期修复和监控目标，与当前企业迁移/权限边界冲突，已写入 queue.json。详见 logs/deep-review/2026-07-10-09-audit.md。 | 2026-05-28 11 Task9 auto-fix: 协调 SmartPerfetto main 标准对比指标列表与回填能力边界；回到 Task6 复审。 | 2026-05-28 12 Task9 复审：pass-tech-review。P0 0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-19 15 Task9 闲时抽检：发现 SmartPerfetto main 运行时边界已从双运行时扩展为四类 runtime/provider 路径，写入 P1 回炉。 | 2026-06-19 16 Task9 deep-review: auto-fixed。P0 0 / P1 1（已修复）/ P2 0；标准回填能力按 SmartPerfetto main c4884fa73f98 明确为 startup.total_ms、scrolling.avg_fps、scrolling.frame_count、scrolling.jank_count、scrolling.jank_rate_pct，回到 Task6 复审。 | 2026-06-19 17 Task9 final review: pass-tech-review。P0 0 / P1 0 / P2 0；复核 16 点 SmartPerfetto 运行时/provider 边界与标准回填键 auto-fix、Task6 复审结果；queue 无 pending，自动晋升 finalized。"
-last_task2b_at: "2026-05-28T10:50:00+08:00"
+last_task2b_at: 2026-07-10T10:50:00+08:00
 task2b_fixed_by: openclaw-task2b
 last_task2b_lite_at: 2026-06-19
 last_task6_at: "2026-06-19T17:12:15+08:00"
@@ -57,14 +58,14 @@ sources:
   - type: internal
     path: "src/part5-app/ch26-observability/14-performance-experiment-statistics.md"
 last_task9_autofix_at: "2026-06-19"
-updated_date: "2026-07-10"
-updated_by: "openclaw-task9"
+updated_date: 2026-07-10
+updated_by: openclaw-task2b
 p0: 0
 p1: 1
 p2: 0
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-06-19"
----
+----
 
 # 13.18 SmartPerfetto 与可复用 Trace 分析平台
 
@@ -270,13 +271,18 @@ export SMARTPERFETTO_ENTERPRISE_MIGRATION_PHASE=dual-write
 export SMARTPERFETTO_ENTERPRISE=false
 ```
 
-#### 长期修复（代码优化）
-在 `readTraceMetadataForContext` 函数中增加回退机制，先尝试企业数据库读取，失败后回退到文件系统读取。
+#### 长期修复（迁移闭环）
+当前 SmartPerfetto `main` 的 `cutover` 阶段以 DB 为权威读路径（`readAuthority=db`、`writeFilesystem=false`），`readTraceMetadataForContext()` 在企业模式下只按 `trace_assets` + RequestContext scope 读取，不存在 DB 失败后透明回退 `./uploads/traces` 的逻辑——这属于迁移设计语义，不是代码缺陷。
+
+正确的修复方向是**迁移前置校验 + rollback 闭环**，而不是在 cutover 读路径上加 filesystem fallback：
+1. **cutover 前 dry-run 校验**：snapshot trace_assets、scoped local_path 与文件搬运完整性，确保所有 trace 元数据已正确迁移到 DB
+2. **发现缺失时 rollback 到 dual-write**：通过官方 rollback helper 切回 `SMARTPERFETTO_ENTERPRISE_MIGRATION_PHASE=dual-write`，保留 DB snapshot 后修复迁移数据再重新 cutover
+3. **不要在 `readTraceMetadataForContext()` 中加透明 fallback**：这会绕过当前 `trace_assets` scope 和 RequestContext owner guard 的权威路径，导致 DB 与文件系统状态不一致时更难定位根因
 
 #### 迁移策略优化
-1. **渐进式迁移**：保持 dual-write 阶段直到所有 trace 完成迁移
-2. **数据一致性检查**：迁移前后对比文件系统和数据库中的 trace 记录
-3. **监控告警**：设置 trace 访问 404 率的监控阈值
+1. **dry-run 先行**：cutover 前对 trace_assets、scoped local_path 与文件搬运完整性做 snapshot 校验，确认全部 trace 元数据已入库后再切 readAuthority
+2. **rollback 路径明确**：cutover 后发现数据库缺失时，通过官方 rollback helper 切回 `dual-write`（保留 DB snapshot），修复缺失数据后再重新 cutover
+3. **监控告警**：设置 trace 访问 404 率的监控阈值，同时监控迁移完整性校验结果
 
 ### 最佳实践
 
@@ -287,7 +293,7 @@ export SMARTPERFETTO_ENTERPRISE=false
 - trace 访问成功率（目标 >99.5%）
 - 404 错误率（目标 <0.5%）
 - 数据库查询响应时间
-- 文件系统回退请求频率
+- 迁移数据完整性校验通过率（dry-run / snapshot 校验）
 
 ### 故障排查清单
 
