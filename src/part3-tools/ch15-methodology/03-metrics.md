@@ -51,7 +51,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 last_task6_at: "2026-04-25T00:00:00+08:00"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-10T23:10:51+08:00"
+last_task6_audit: "2026-07-11"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -126,7 +126,7 @@ task2b_verifier_result: "status-fix-ready-for-task6"
 
 ### FPS(每秒帧数)
 
-FPS 是最直觉的流畅性指标:一秒钟内屏幕上成功渲染了多少帧。60Hz 屏幕的理论上限是 60 FPS,120Hz 屏幕是 120 FPS。在 Perfetto 中,你可以通过统计 RenderThread 和 SurfaceFlinger 的工作周期来计算实际 FPS。
+FPS 是最直觉的流畅性指标:一秒钟内屏幕上成功渲染了多少帧。60Hz 屏幕的理论上限是 60 FPS,120Hz 屏幕是 120 FPS。在 Perfetto 中,可以通过统计 RenderThread 和 SurfaceFlinger 的工作周期来计算实际 FPS。
 
 但 FPS 的问题也很明显:它是平均值。平均值看起来漂亮,不代表体验稳定。
 
@@ -157,7 +157,7 @@ Window.OnFrameMetricsAvailableListener listener = (window, frameMetrics, dropCou
 window.addOnFrameMetricsAvailableListener(listener, handler);
 ```
 
-这段代码注册了帧时间监听器,每帧回调一次。`TOTAL_DURATION` 给出从 VSync-app 到帧提交的完整耗时,你可以把它收集起来计算分位数。
+这段代码注册了帧时间监听器,每帧回调一次。`TOTAL_DURATION` 给出从 VSync-app 到帧提交的完整耗时,可以把它收集起来计算分位数。
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics; developer.android.com/reference/androidx/core/app/FrameMetricsAggregator]
 
@@ -192,7 +192,7 @@ Macrobenchmark 的 `FrameTimingMetric` 会同时输出两类信号:
 
 冻帧(Frozen Frame)是慢帧的极端形态:渲染耗时超过 700ms 的帧。当一帧超过 700ms 时,用户会感觉 App 卡死了将近一秒--在这段时间内,屏幕完全不动,触摸事件也无法响应。在 Android Vitals 中,冻帧是独立于慢帧之外单独统计的核心指标。
 
-冻帧几乎总是由主线程上的长阻塞操作造成:同步 I/O(如直接在 UI 线程读文件或数据库)、锁竞争(等另一个线程释放 synchronized 块)、或者在前台执行了大量的序列化/反序列化操作。如果你在 Perfetto 中看到一段超过 700ms 的主线程连续运行(没有 Sleep/Blocked 状态切换),那大概率是冻帧的候选对象。
+冻帧几乎总是由主线程上的长阻塞操作造成:同步 I/O(如直接在 UI 线程读文件或数据库)、锁竞争(等另一个线程释放 synchronized 块)、或者在前台执行了大量的序列化/反序列化操作。如果在 Perfetto 中看到一段超过 700ms 的主线程连续运行(没有 Sleep/Blocked 状态切换),那大概率是冻帧的候选对象。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
@@ -214,7 +214,7 @@ ActivityManager: Displayed com.example.app/.MainActivity: +1s234ms
 
 从 Android 12 开始,SplashScreen API 让系统默认在 TTID 之前就显示一个启动画面,使得用户感知的等待时间变短--但 TTID 本身的度量起点仍然是进程创建,这个不会变。
 
-Google Play 的 Android Vitals 将 TTID 作为核心启动指标之一。冷启动 TTID 的不良行为阈值是:超过 5 秒。如果你的 App 冷启动 TTID 中位数超过 2 秒,就应该认真优化了。
+Google Play 的 Android Vitals 将 TTID 作为核心启动指标之一。冷启动 TTID 的不良行为阈值是:超过 5 秒。如果 App 冷启动 TTID 中位数超过 2 秒,就应该认真优化了。
 
 [已验证: 官方文档, developer.android.com/topic/performance/launch-time]
 
@@ -251,7 +251,7 @@ TTID 和 TTFD 的治理分工也应分开:
 
 Click-to-Display 是一个端到端的延迟指标:从用户手指触碰屏幕的那一刻,到屏幕上显示对应的视觉反馈,经历了多少毫秒。这个指标覆盖了完整的事件路径:触摸中断 → InputDispatcher 分发 → App 主线程处理事件 → UI 更新 → RenderThread 渲染 → SurfaceFlinger 合成 → 显示硬件输出。
 
-在 Perfetto 中,一次 Click-to-Display 的完整路径跨越多个 Track:从 `Input` track 上的触摸事件,到主线程的 `Choreographer.doFrame`,再到 `RenderThread` 的绘制和 `SurfaceFlinger` 的合成。你可以在这些 Track 之间手动量取时间差来估算这个延迟。
+在 Perfetto 中,一次 Click-to-Display 的完整路径跨越多个 Track:从 `Input` track 上的触摸事件,到主线程的 `Choreographer.doFrame`,再到 `RenderThread` 的绘制和 `SurfaceFlinger` 的合成。可以在这些 Track 之间手动量取时间差来估算这个延迟。
 
 这个指标在线上很难直接采集(需要硬件辅助或特殊测量工具),但它对用户感知的影响非常直接。Google 在内部测试中使用的标准是:触摸响应延迟应控制在 100ms 以内,超过 200ms 用户会明显感到迟钝。
 
@@ -294,7 +294,7 @@ Google Play 设定的不良行为阈值:
 - **全机型不良行为**:用户感知崩溃率 ≥ 1.09%
 - **单机型不良行为**:用户感知崩溃率 ≥ 8%
 
-注意这两个指标的分子定义:崩溃次数不等于受影响用户比例(前者按次数计,后者按会话占比计)。这个定义更贴近用户体验--一个用户一天崩溃 10 次和一个用户崩溃 1 次,在 Crash Rate 中都是"1 个受影响用户"。但如果你要评估严重程度,需要同时看崩溃次数和受影响用户数。
+注意这两个指标的分子定义:崩溃次数不等于受影响用户比例(前者按次数计,后者按会话占比计)。这个定义更贴近用户体验--一个用户一天崩溃 10 次和一个用户崩溃 1 次,在 Crash Rate 中都是"1 个受影响用户"。但要评估严重程度,需要同时看崩溃次数和受影响用户数。
 
 采集崩溃数据的方式主要有三种:Google Play Console 自动收集(Java 崩溃和 Native 崩溃都能捕获)、Firebase Crashlytics(支持实时上报和聚合分析)、自建监控 SDK(可以采集更丰富的上下文信息如内存状态、线程堆栈)。
 
@@ -344,7 +344,7 @@ PSS 是 Android 上度量 App 真实物理内存占用的标准指标。它的�
 
 这种统计方式的好处是:把系统上所有进程的 PSS 加总,约等于实际使用的物理内存总量。PSS 适合做进程占用归因,但不要把它写成 lmkd 的杀进程优先级。现代 lmkd 先由 PSI / vmpressure 等信号判断内存压力,再用 `oom_score_adj` 限定可杀进程范围;具体目标还受 `ro.lmk.kill_heaviest_task` 等策略影响。PSS / RSS 能帮助估算回收收益,不是单独的优先级规则。
 
-你可以通过 `dumpsys meminfo <package_name>` 获取 App 的详细内存分布:
+可以通过 `dumpsys meminfo <package_name>` 获取 App 的详细内存分布:
 
 ```
 ** MEMINFO in pid 12345 [com.example.app] **
@@ -360,7 +360,7 @@ PSS 是 Android 上度量 App 真实物理内存占用的标准指标。它的�
         TOTAL   45,678   22,528    8,192      640   40,960   36,352    4,608
 ```
 
-这个输出中最值得关注的几个维度:Native Heap(Native 层分配)、.art mmap(ART 运行时堆)、.so mmap(共享库映射)、.dex mmap(DEX 代码映射)。如果某个维度异常偏高,就是你接下来排查的方向。
+这个输出中最值得关注的几个维度:Native Heap(Native 层分配)、.art mmap(ART 运行时堆)、.so mmap(共享库映射)、.dex mmap(DEX 代码映射)。如果某个维度异常偏高,就是接下来排查的方向。
 
 [已验证: 官方文档, developer.android.com/studio/profile/memory]
 
@@ -384,7 +384,7 @@ Perfetto 里看到 `rss_stat` 抬升时,不要直接拿它和 PSS 门禁阈值�
 
 Java Heap 是 ART 虚拟机管理的堆内存,App 中所有 Java/Kotlin 对象分配都在这里。每个 App 的 Java Heap 有一个上限(由 `dalvik.vm.heapsize` 系统属性决定,不同设备从 128MB 到 512MB 不等),超过上限就会抛出 `OutOfMemoryError`。
 
-Java Heap Usage 在 Perfetto 中可以通过 `Memory` track 观察。在 Android Studio 的 Memory Profiler 中,你能看到实时堆使用曲线和 GC 事件。频繁的 GC(特别是 Young GC)通常是内存抖动的信号--大量短命对象被反复创建和回收,导致主线程暂停。
+Java Heap Usage 在 Perfetto 中可以通过 `Memory` track 观察。在 Android Studio 的 Memory Profiler 中,能看到实时堆使用曲线和 GC 事件。频繁的 GC(特别是 Young GC)通常是内存抖动的信号--大量短命对象被反复创建和回收,导致主线程暂停。
 
 线上监控 Java Heap 的推荐方式是通过 `Runtime.getRuntime().totalMemory()` 和 `Runtime.getRuntime().freeMemory()` 定期采样,或者使用 `android.os.Debug.getMemoryInfo()` 获取更详细的内存分类数据。
 
@@ -396,7 +396,7 @@ Java Heap Usage 在 Perfetto 中可以通过 `Memory` track 观察。在 Android
 
 OOM(OutOfMemoryError)率度量的是 App 因内存不足而崩溃的频率。在 Android 8.0 之前,OOM 主要由 Java Heap 超限引起;8.0 之后,大部分 Bitmap 像素数据移到了 Native 堆,Java Heap 的压力有所缓解,但 Native OOM 的风险增加了。
 
-OOM Rate 的计算通常是:OOM 崩溃次数 / 总会话数。在线上监控中,你需要区分两种 OOM:Java 层的 `java.lang.OutOfMemoryError`(可以通过 Crashlytics 等工具捕获)和 Native 层的分配失败(通常表现为 SIGABRT 或 malloc 返回 NULL)。
+OOM Rate 的计算通常是:OOM 崩溃次数 / 总会话数。在线上监控中,需要区分两种 OOM:Java 层的 `java.lang.OutOfMemoryError`(可以通过 Crashlytics 等工具捕获)和 Native 层的分配失败(通常表现为 SIGABRT 或 malloc 返回 NULL)。
 
 ## 功耗指标
 
@@ -437,9 +437,9 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 
 线上指标(Online Metrics)和线下指标(Offline Metrics)的定位完全不同,不能互相替代。
 
-线下指标的核心价值是**精确诊断**。你在 Perfetto 里能看到每一帧的详细耗时、每一次 GC 的暂停时长、每一个线程的状态变化。这种精度是线上指标做不到的--线上你不可能给每个用户开一个 Perfetto trace。线下指标的局限在于:它是你在实验室环境采集的,不能代表真实用户的设备分布、网络条件和使用习惯。
+线下指标的核心价值是**精确诊断**。在 Perfetto 里能看到每一帧的详细耗时、每一次 GC 的暂停时长、每一个线程的状态变化。这种精度是线上指标做不到的--线上不可能给每个用户开一个 Perfetto trace。线下指标的局限在于:它是你在实验室环境采集的,不能代表真实用户的设备分布、网络条件和使用习惯。
 
-线上指标的核心价值是**趋势监控和回归发现**。你通过 SDK 采集线上用户的聚合数据(分位数、P90、P99),能发现新版本发布后某项指标有没有劣化、某个机型上是不是特别差。线上指标的局限在于精度低--你拿不到每帧的详细堆栈,只能看到聚合后的数字。
+线上指标的核心价值是**趋势监控和回归发现**。通过 SDK 采集线上用户的聚合数据(分位数、P90、P99),能发现新版本发布后某项指标有没有劣化、某个机型上是不是特别差。线上指标的局限在于精度低--拿不到每帧的详细堆栈,只能看到聚合后的数字。
 
 一个成熟的性能团队通常这样搭配使用:线上指标发现异常("P90 帧时间从 12ms 涨到了 18ms"),线下指标定位原因(在 Perfetto 中找到具体哪一步变慢了)。
 
@@ -457,7 +457,7 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 
 还有一个重要问题:为什么我们反复强调用分位数(P50/P90/P99)而不是均值(Average/Mean)?
 
-均值的问题在于它会被极端值拉偏。假设你有一组帧时间数据:[8, 8, 8, 8, 8, 8, 8, 8, 8, 200],均值是 27.2ms,看起来不差。但 P50 是 8ms(很好),P90 是 8ms(也不错),P99 是 200ms(有一个极端长帧)。P99 暴露了均值完全掩盖的尾部问题。
+均值的问题在于它会被极端值拉偏。假设有一组帧时间数据:[8, 8, 8, 8, 8, 8, 8, 8, 8, 200],均值是 27.2ms,看起来不差。但 P50 是 8ms(很好),P90 是 8ms(也不错),P99 是 200ms(有一个极端长帧)。P99 暴露了均值完全掩盖的尾部问题。
 
 在性能领域,更该关注的是最差体验,而非平均体验--因为用户离开的原因通常是那一次最差的体验,而不是平均表现。所以 P90 和 P99 在性能监控中的价值远高于均值。
 
@@ -543,9 +543,9 @@ Android Vitals 的核心指标(Core Vitals)包括:
 
 **"启动时间只要 TTID 够快就行"**--TTID 快只说明启动画面出来得快,如果 TTFD 慢(内容加载了 3 秒才出来),用户看到的是一个空壳页面转圈。同时优化 TTID 和 TTFD 才是完整的启动体验优化。
 
-**"ANR 率低就不用担心主线程"**--ANR 的阈值是 5 秒,但主线程上 500ms 的阻塞就会造成明显的冻帧。即使你的 ANR 率为零,也可能存在大量影响用户体验的主线程卡顿。
+**"ANR 率低就不用担心主线程"**--ANR 的阈值是 5 秒,但主线程上 500ms 的阻塞就会造成明显的冻帧。即使 ANR 率为零,也可能存在大量影响用户体验的主线程卡顿。
 
-**"内存指标只要不 OOM 就行"**--PSS 过高的 App 会挤压系统中其他 App 的可用内存,增加 LMK 杀进程的概率。当用户切换回你的 App 时发现它被杀了需要重新启动,这就是"内存性能差"的间接表现。
+**"内存指标只要不 OOM 就行"**--PSS 过高的 App 会挤压系统中其他 App 的可用内存,增加 LMK 杀进程的概率。当用户切换回 App 时发现它被杀了需要重新启动,这就是"内存性能差"的间接表现。
 
 **"线上监控加个均值就够了"**--均值无法反映尾部延迟。一个 P50=10ms、P99=500ms 的指标和 P50=10ms、P99=12ms 的指标,均值可能差不多,但前者意味着每 100 次操作有一次严重卡顿,用户体验完全不同。
 
