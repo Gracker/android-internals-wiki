@@ -80,6 +80,7 @@
 
   - [5.28 PELT Boost 回退与 AMU/PMU 微架构感知调频](part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)
 - [5.29 Android 17 GPU DVFS Headroom 与 SurfaceFlinger PowerAdvisor 链路](part1-fundamentals/ch05-cpu-power/5.29-android17-gpu-dvfs-headroom-power-advisor.md)
+  - [5.30 Android 17 OnDeviceIntelligence 框架性能：FoundationModelManager 推理调度与资源隔离](part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md)
 
   - [Android 17 Binder IPC 优先级继承机制与内核批处理流水线](part1-fundamentals/ch01-architecture/1.9-binder-ipc-优先级继承内核批处理流水线-draft.md)
 
