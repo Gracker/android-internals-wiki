@@ -1,7 +1,7 @@
 ---
 title: Trace 抓取
 chapter: '13.2'
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - tools
