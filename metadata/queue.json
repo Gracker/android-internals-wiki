@@ -689,10 +689,40 @@
     },
     {
       "path": "src/part1-fundamentals/ch08-startup/8.37-android17-performance-hint-manager.md",
-      "priority": 70,
-      "stage": "ready-for-review",
+      "priority": 95,
+      "stage": "pending",
       "added_date": "2026-07-10",
-      "notes": "知识缺口挖掘：Phase 1 跳过 5 个重复 orphan，转向 AOSP+官方文档发现的 PerformanceHintManager 真实缺口"
+      "notes": "知识缺口挖掘：Phase 1 跳过 5 个重复 orphan，转向 AOSP+官方文档发现的 PerformanceHintManager 真实缺口",
+      "section": "8.37",
+      "section_title": "Android 13+ PerformanceHintManager 实战：从 NDK hintUntilFrame 到 Java 集成",
+      "reason": "[Deep Tech Review] PerformanceHintManager 章节 Android 17 源码路径、Java/NDK API 签名与可观测性口径多处不符，需要按 android-17.0.0_r1 回炉",
+      "material_paths": [
+        "src/part1-fundamentals/ch08-startup/8.37-android17-performance-hint-manager.md",
+        "logs/deep-review/2026-07-10-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 签名错误",
+          "location": "frontmatter sources；正文 L138-L190、L152-L157、L163-L180、L257",
+          "detail": "android-17.0.0_r1 中服务端实现为 frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java，JNI 为 services/core/jni/com_android_server_hint_HintManagerService.cpp；正文引用的 frameworks/base/services/core/java/com/android/server/performance/hint/PerformanceHintManagerService.java 与 com_android_server_performance_hint_PerformanceHintManagerService.cpp 不存在。NDK 头文件实际位于 frameworks/native/include/android/performance_hint.h，不是 system/core/libcutils/include/android/performance_hint.h。Java 公共 API 是 createHintSession(int[], long)、updateTargetWorkDuration(long)、reportActualWorkDuration(long)、setThreads(int[])、setPreferPowerEfficiency(boolean) 与 WorkDuration 重载；正文列出的 startTimer、setPreferredUpdateRateNanos、reportActualWorkDuration(long[]) 与 NDK APerformanceHintManager_createSession/APerformanceHint_setTargetWorkDuration 均不符合 Android 17 代码。",
+          "suggestion": "按 android-17.0.0_r1 重新校准 Java/NDK/API 表与源码锚点：frameworks/base/core/java/android/os/PerformanceHintManager.java、core/jni/android_os_PerformanceHintManager.cpp、frameworks/native/include/android/performance_hint.h、services/core/java/com/android/server/power/hint/HintManagerService.java。"
+        },
+        {
+          "type": "原理断裂/版本差异",
+          "location": "正文 L40-L45、L66-L70、L229-L236、L267-L271、L288-L289、L313-L316",
+          "detail": "章节把 ThermalHint 自动联动、tempLevel=TWARNING 自动进入 powerEfficiency、期望耗时翻倍上报、GKI 16KB Page Size 影响 PerformanceHint binder 结构、PELT 回退读取 hint session、Startup Insights 自动收集每帧 report 等写成 Android 17 主线行为；本轮在 PerformanceHintManager.java、HintManagerService.java 与 performance_hint.h 中未找到这些机制入口。它们不能作为 Android 17 正文结论。",
+          "suggestion": "删除或降级为待验证研究点；正文主线只保留 Android 17 可核验的 HintManagerService/Power HAL session、SessionMode.POWER_EFFICIENCY、WorkDuration、ASessionCreationConfig、dumpsys HintManagerService 等链路。"
+        },
+        {
+          "type": "源码错误/可观测性口径",
+          "location": "正文 L72-L76、L240-L265",
+          "detail": "正文写 atrace category performance_hint、ftrace_events performance_hint_*、performance_hint_session_create/update/close 事件族与 dumpsys performance_hint 输出字段，但 android-17.0.0_r1 的核心源码中未核到这些 ftrace/TRACE_EVENT 名称；服务端 dump 入口来自 HintManagerService，输出 Active Sessions、HintSessionPreferredRate 等，而不是正文列出的 last reported duration/preferredUpdateRateNanos/powerEfficiencyFlag 稳定格式。",
+          "suggestion": "用 android-17.0.0_r1 HintManagerService.dump、stats atom 与 Perfetto/Power HAL 可实际观察项重写可观测性小节；没有一手 trace schema 支撑的事件名不要写成稳定接口。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-10T12:30:03+08:00",
+      "status": "pending"
     }
   ],
   "entries": [

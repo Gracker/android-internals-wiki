@@ -774,3 +774,9 @@ Phase 0 在 2026-07-10 11:04 识别出 5 个 `status: draft` 但正文 < 15 行�
 **建议**：下一次 cleanup cron 任务执行 — 直接删除这 5 个文件，并清理 `src/SUMMARY.md` 中 15 条对应的 `[1.0 ...]` / `[2.0 ...]` / `[4.0 ...]` 重复条目。
 
 > Task 2A 已在 2026-07-10 11:04 选择跳过这 5 个 orphan，转而基于 AOSP+官方文档的真实缺口创建 8.37 PerformanceHintManager 实战。
+
+## [Task9 Deep Review] 10.6 内存抖动与频繁 GC — 2026-07-10
+- **类型**：数据缺失
+- **位置**：CMC/GC 性能影响段（STW 50-100ms、CMC <3/<5ms、SIGBUS handler 0.5-2μs、LOS stall 降低约 15%）以及 Compose 量化经验段
+- **问题**：章节已正确锚定 android-17.0.0_r1 的 CMC/GcWatcher 源码，但多个性能数字仍缺少可复核的一手 benchmark、设备条件和 trace 片段；Compose 量化段虽标注“未经一手 benchmark”，但仍需要后续验证闭环。
+- **建议**：补一组 Macrobenchmark + Perfetto/ART GC 日志样例，标明设备、刷新率、堆大小、GC 类型、样本窗口和 trace_processor 查询；没有实测前保留为经验区间，不作为 Android 17 主线性能结论。

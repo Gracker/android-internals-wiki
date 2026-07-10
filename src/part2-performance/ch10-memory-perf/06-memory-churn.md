@@ -2,7 +2,7 @@
 title: "内存抖动与频繁 GC"
 chapter: "10.6"
 section: "10.6"
-status: "ready-for-review"
+status: "finalized"
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
@@ -13,7 +13,7 @@ last_verified: "2026-07-10"
 last_verified_against: "AOSP android-17.0.0_r1 / AndroidX androidx-main Composer.kt + SnapshotIntState.kt / Compose Runtime 1.5.0 release notes / Perfetto native-heap-profiler docs"
 verified_note: "Android 17/API 37 分代 CMC 基线已锚定 android-17.0.0_r1；2026-07-09 deep-tech-review 抽检确认 platform/art 与 frameworks/base 均已有 android-17.0.0_r1 tag，关键 CMC/GcWatcher 符号存在"
 confidence: high
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 sources:
   - "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
   - "developer.android.com/topic/performance/memory"
@@ -24,18 +24,18 @@ word_count: "~7500"
 reviewed_date: "2026-07-10"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"  # 2026-07-10 revisiting review pass
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_reviewed_date: "2026-07-10"
 last_task6_at: "2026-07-10T01:09:00+08:00"
 last_task6_audit: "2026-07-10"
 last_task6_review_log: "logs/review/2026-07-10-01-review.md"
-task9_state: "pending"
-task9_result: "auto-fixed"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-07-10"
-task9_reviewed_by: "openclaw-task6"
-last_task9_at: "2026-07-10T00:27:54+08:00"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-07-10T12:30:03+08:00"
 last_task9_audit: "2026-07-09"
-task9_review_notes: "2026-07-10 Task6 revisiting review: pass-light-edit。Task9 auto-fix 后 CMC/GC 源码锚点和 Compose API 名称已修正。四层质检通过，无 L3/L4 回炉项。task9 pass + queue 无 pending，自动晋升 finalized。 | "2026-07-09 Task9 idle audit: P0 0 / P1 1 / P2 0；发现 Android 17/API 37 基线过期，正文仍称无 android-17 tag 且最高源码锚点停留在 android-16.0.0_r1；已写入 queue.json 交 Task2B 复核。 | 2026-07-10 00:27 Task9 deep-review AUTO-FIX：按 AndroidX androidx-main Composer.kt/SnapshotIntState.kt 与 Compose Runtime 1.5.0 release notes 修正 Compose primitive state API 名称和 Updater.set 相等性口径；回到 Task6 复审。"
+task9_review_notes: "2026-07-10 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；ART CMC/GcWatcher 与 heapprofd 主线复核通过；量化性能数据作为 P2 建议补一手 benchmark；queue 无 pending，自动晋升 finalized。"
 task2b_state: "fixed"
 task2b_result: "fixed"
 task2b_rework_date: "2026-05-08"
@@ -43,12 +43,14 @@ task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
 last_task2b_at: "2026-07-09T22:52:12+08:00"
 last_task2b_lite_at: 2026-06-22
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。 | 2026-05-08 Task9 05:27：pass-tech-review。P0 0 / P1 0 / P2 3；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-09 23:25 Task2B Verifier：状态修正 status=finalized 与 pipeline_stage=task6_pending 矛盾；Task2B 已修复 (t2b_state=fixed) 但 status 阻止 Task6 拾取。status: finalized→ready-for-review，章节已正确回流 Task6。"
-last_task9_review_log: "logs/deep-review/2026-07-10-00-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-10-12-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
 updated_by: "openclaw-task9"
 updated_date: "2026-07-10"
 last_task9_autofix_at: "2026-07-10"
+finalized_date: "2026-07-10"
+finalized_by: "openclaw-task9-auto-promote"
 ---
 
 # 内存抖动与频繁 GC
