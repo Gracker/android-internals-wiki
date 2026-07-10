@@ -46,8 +46,10 @@ last_task6_at: "2026-05-14T13:06:00+08:00"
 last_task6_audit: "2026-06-06"
 last_task6_review_log: logs/review/2026-05-14-13-review.md
 task6_review_notes: "2026-05-14 Task6：四层质检通过；吸收 Task9 P2 的示例代码接入边界，轻修术语和无数据基线的批量窗口表述。满足 Task6/Task9 通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_audit: "2026-06-20"
-last_task9_audit_log: "logs/deep-review/2026-06-20-20-audit.md"
+last_task9_audit: "2026-07-10"
+last_task9_audit_log: "logs/deep-review/2026-07-10-22-audit.md"
+last_task9_audit_result: "pass-idle-audit"
+last_task9_audit_notes: "idle audit: 维度1（官方来源/示例 API）和维度3（Android 10-17 版本边界）快速复核通过；offline-first、Room、WorkManager、Paging RemoteMediator 口径仍与 Android Developers 文档一致；无 Android 18/API 38+ 内容，无 P0/P1。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-14
 ---
