@@ -18,7 +18,7 @@ sources:
   - type: aosp
     path: "frameworks/native/libs/binder/BpBinder.cpp (transact() entry, ProcessState::strongHandleToWeak)"
   - type: kernel
-    path: "kernel/common/drivers/android/binder.c (binder_transaction / binder_transaction_received / binder_reply tracepoints, android17-6.18 分支)"
+    path: "kernel/common/drivers/android/binder.c (binder_transaction / binder_transaction_received / binder_command / binder_return tracepoints, android17-6.18 分支)"
   - type: kernel
     path: "kernel/common/drivers/android/binder_trace.h (TRACE_EVENT definitions, android17-6.18 分支)"
   - type: perfetto
@@ -50,17 +50,18 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
 last_task6_at: "2026-07-11T05:10:00+08:00"
-task9_state: pending
-task9_result: needs-rework
-last_task9_at: "2026-07-11T03:30:46+08:00"
+task9_state: reviewed
+task9_result: auto-fixed
+last_task9_at: "2026-07-11T05:33:35+08:00"
 last_task6_review_notes: "revisiting→reviewed(re-round2): L1×1(BF_ONEWAY→TF_ONE_WAY 术语一致性修复); Task2B P0/P1修复已验证完整; 无新增L3/L4问题; task9_result=needs-rework, 不满足自动晋升条件"
-last_task9_review_notes: "P0: Perfetto stdlib path/schema dispatch_dur/metrics view; AOSP services paths; kernel android17-6.18 branch; Android17 binder fields/flags; P1: frozen reply attribution needs multi-signal validation"
+last_task9_review_notes: "AUTO-FIX: Android17 Binder freezer/TF_UPDATE_TXN semantics; android_binder_metrics_by_process event_count; kernel trace events (no binder_reply); system_server binder max threads=31; ContentProvider API names; SP/DataStore non-Binder waits; androidx.startup; Android17 anchored source links"
+last_task9_autofix_at: 2026-07-11
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
@@ -107,8 +108,8 @@ last_task9_review_notes: "P0: Perfetto stdlib path/schema dispatch_dur/metrics v
 4. **App 进程 → system_server**
    - `IActivityManager.getApplicationInfo()` 等元数据查询
    - `IWindowSession.addToDisplay()`、`relayout()` 注册首帧窗口
-   - `IContentProvider.query()` 用于 ContentProvider 初始化
-   - `ISharedPreferencesImpl`/`IDataStore` 的 IPC sync 调用（参见 §6.2）
+   - `IContentProvider.query()` 用于 Provider 数据访问，Provider 获取路径走 `IActivityManager.getContentProvider()` / `refContentProvider()`
+   - `SharedPreferences` / `DataStore` 的同步等待不是 Binder IPC，应从 Binder 预算中剥离（参见 §6.2）
 
 冷启动期间典型 Binder 事务数量级（Android 16/17 中等应用）：**Launcher→ATMS 3 次、ATMS→App 5-8 次、App→PKMS 8-12 次、App→WMS 6-10 次、App→Providers 2-5 次**，总同步事务 25-45 次，oneway 10-20 次（经验估算，基于 Android 16/17 中等复杂度应用 Perfetto `android_binder_txns` 聚合统计）。其中**主线程发起的同步事务 > 70%**——这正是第 1 章反复强调的「主线程 IPC 是冷启动第一杀手」（[已验证: AOSP frameworks/base + Perfetto binder.sql]，参见 §1.4.2 Binder 事务数据结构 / §1.4.3 oneway 语义与 TF_ONE_WAY 标志 / §8.2 App 启动阶段划分）。
 
@@ -125,7 +126,7 @@ Binder 的耗时评估不能只看「这次调了多久」，而要分清两个�
 
 「频次高 × 单次低」往往比「频次低 × 单次高」问题更隐蔽——前者散落在多个系统服务调用里，统计困难，需要 Perfetto SQL 聚类。
 
-[适用版本: Android 9+ — Perfetto 替代 Systrace 后才有 `android_binder_txns` 接口]
+[适用版本: Android 9+ 可采集 Perfetto / ftrace；`android_binder_txns` 取决于分析侧 `trace_processor` 是否包含 `android.binder` 标准库，见 §2.2]
 
 ### 1.2 三个进程 trace 的时间轴观察点
 
@@ -135,7 +136,7 @@ Binder 的耗时评估不能只看「这次调了多久」，而要分清两个�
 - **Step 2**：把鼠标悬停或点击该 slice 查看详情，看是 `binder transaction` 还是 sync 方法（如 `handleBindApplication`、`Activity.onCreate` 内部某个 inflate）；
 - **Step 3**：右键 → "Show flow" 或写 SQL 找这条 `binder_transaction` slice 对应的 server_dur（服务端处理时间）、队列/传输耗时（`server_ts - client_ts` 计算值）、server_process。
 
-> [已验证: Perfetto official, perfetto.dev/docs/analysis/binder — Perfetto 在 Android 12+ 的 binder 标准库通过 `flow` 表把客户端 slice_id 与服务端 slice_id 关联，UI 中 flow 箭头即这种底层关系]。
+> [已验证: Perfetto android-17.0.0_r1, `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql` + `binder_tracker.cc` — `android_binder_txns` 通过 `flow` 把客户端 `binder_txn_id` 与服务端 `binder_reply_id` 关联，UI 中的 flow 箭头来自这条关联关系]。
 
 ---
 
@@ -145,17 +146,17 @@ Binder trace 采集走「内核 ftrace → Perfetto trace → Trace Processor SQ
 
 ### 2.1 内核层：binder ftrace tracepoints
 
-[已验证: AOSP android-17.0.0_r1, kernel/common/drivers/android/binder_trace.h（android17-6.18 分支） — `TRACE_EVENT(binder_transaction)` 等 12 个 tracepoint] 内核 binder 驱动通过 `TRACE_EVENT` 宏在事务关键路径触发 ftrace 事件：
+[已验证: AOSP android-17.0.0_r1, kernel/common/drivers/android/binder_trace.h（android17-6.18 分支） — `binder_transaction` / `binder_return` 等多组 tracepoint] 内核 binder 驱动通过 `TRACE_EVENT` 宏在事务关键路径触发 ftrace 事件：
 
 | Tracepoint | 触发时机 | 关键字段 |
 |-----------|---------|---------|
-| `binder_transaction` | `binder_transaction()` 函数内，写入 `mOut` 之前 | debug_id、target_proc、target_thread、code、flags（TF_ONE_WAY 等） |
+| `binder_transaction` | `binder_transaction()` 中调用 `binder_alloc_new_buf()` 之前 | debug_id、target_node、to_proc、to_thread、code、flags（TF_ONE_WAY 等） |
 | `binder_transaction_received` | 接收线程从 `binder_thread_read()` 醒来 | debug_id |
-| `binder_transaction_alloc_buf` | `binder_alloc_buf()` 分配事务 buffer | debug_id、data_size、offsets_size、buffer_size |
-| `binder_reply` | reply 路径，类似 `binder_transaction` 标记 reverse | 对端 debug_id |
+| `binder_transaction_alloc_buf` | `binder_alloc_new_buf()` 分配事务 buffer 后 | debug_id、data_size、offsets_size、buffer_size |
+| `binder_transaction`（`reply=1`） | reply 路径复用 `binder_transaction` tracepoint | debug_id、reply、code、flags |
 | `binder_command` / `binder_return` | BC_/BR_ 命令发出/接收 | BC_TRANSACTION、BR_REPLY 等 |
 
-> [已验证: AOSP kernel/common/drivers/android/binder.c（android17-6.18 分支）`binder_transaction()` 实现，`trace_binder_transaction()` 在 `binder_alloc_buf()` 之前触发，`trace_binder_transaction_alloc_buf()` 紧随其后] 内核层事件是 raw ftrace 格式，Perfetto 的 BinderTracker 会把它们转换成用户可见的 Slice。
+> [已验证: AOSP kernel/common/drivers/android/binder.c（android17-6.18 分支）`binder_transaction()` 实现，`trace_binder_transaction()` 在 `binder_alloc_new_buf()` 之前触发，`trace_binder_transaction_alloc_buf()` 紧随其后] 内核层事件是 raw ftrace 格式，Perfetto 的 BinderTracker 会把它们转换成用户可见的 Slice。
 
 > **注**：`binder_lock` / `binder_locked` / `binder_unlock` 是内核 v4.14 的旧 tracepoint，在 android17-6.18 分支的 `drivers/android/binder_trace.h` 中已不存在（Android 12+ 不再触发）。如需诊断 Binder 锁相关的阻塞，应通过 `android_binder_txns` 的队列/传输耗时（`server_ts - client_ts` 计算值）配合 `thread_state` 表间接观察，而非依赖不存在的 tracepoint。
 
@@ -163,9 +164,9 @@ Binder trace 采集走「内核 ftrace → Perfetto trace → Trace Processor SQ
 
 冷启动 trace 需要同时打开 ftrace 与 process_stats，并指定 binder 事件类别。以下是 Android 17 上验证可用的最小配置片段。
 
-> ⚠️ **Perfetto 版本依赖**：`INCLUDE PERFETTO MODULE android.binder` 标准库需要 **Android 15+ 或 Perfetto trace_processor v45+**。Android 14 设备采集的 trace 仍可导入 `trace_processor` 分析，但 `android.binder` SQL 模块不可用；此时可通过 `android.binder_tracker` 旧表或手动关联 ftrace 事件来替代。本节所有 SQL 模板标注的"Android 14+ 适用"是指在采集侧 trace 格式正确的前提下，由 `trace_processor` 版本决定模块可用性。
+> ⚠️ **Perfetto 版本依赖**：`INCLUDE PERFETTO MODULE android.binder` 取决于分析侧 `trace_processor` 是否包含 `android.binder` 标准库，而不是只看采集设备版本。Android 14 设备采集的 trace 可以交给 Android 17 或更新的 `trace_processor` 分析；如果分析侧没有该模块，则需要退回到 raw ftrace / `slice` / `flow` 手动关联。
 >
-> [已验证: Perfetto mainline, perfetto.dev/docs/analysis/binder；android.binder 模块引入于 Perfetto v45（2024-Q3），随 Android 15 AOSP 发布]
+> [已验证: Perfetto android-17.0.0_r1, `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql` — `android_binder_txns` 与 `android_binder_metrics_by_process` 已在 Android 17 源码中定义]
 
 ```protobuf
 # /data/local/tmp/binder-trace.pbtxt
@@ -176,7 +177,8 @@ data_sources {
       ftrace_events: "binder/binder_transaction"
       ftrace_events: "binder/binder_transaction_received"
       ftrace_events: "binder/binder_transaction_alloc_buf"
-      ftrace_events: "binder/binder_reply"
+      ftrace_events: "binder/binder_command"
+      ftrace_events: "binder/binder_return"
       ftrace_events: "sched/sched_switch"
       ftrace_events: "sched/sched_wakeup"
     }
@@ -292,7 +294,7 @@ client_dur ≈ (server_ts - client_ts) + server_dur + reply_overhead
 
 ### 3.3 Frozen Reply 干扰的识别
 
-Android 11+ 引入的 Cached Apps Freezer 在 Android 17 已经默认开启（参见 §1.18）。当 system_server 内部某个进程处于 frozen 状态时，binder 事务可能在 kernel 层返回 `BR_TRANSACTION_PENDING_FROZEN`，Client 端 `client_dur` 被延长，但 `server_dur` 为 0：
+Android 11+ 引入的 Cached Apps Freezer 在 Android 17 仍是冷启动回路径分析里的高风险因素（参见 §1.18）。在 android17-6.18 内核里，同步与异步事务的返回语义不同：同步事务打到 frozen 目标进程时，`binder_proc_transaction()` 返回 `BR_FROZEN_REPLY`；oneway 事务打到 frozen 目标进程时，可以进入目标 node 的 `async_todo` 队列，调用方收到 `BR_TRANSACTION_PENDING_FROZEN`。
 
 ```sql
 INCLUDE PERFETTO MODULE android.binder;
@@ -311,25 +313,24 @@ ORDER BY client_dur DESC
 LIMIT 20;
 ```
 
-> [已验证: Perfetto mainline, src/trace_processor/importers/ftrace/binder_tracker.cc — `kBR_FROZEN_REPLY` case 在 TxnFrame 状态机中显式关闭 Slice 并 PopTidFrame] 服务端被冻结时 `binder_transaction` tracepoint 不触发（线程被冻结，没机会跑到 binder.c），所以 `server_dur = 0` 是 frozen reply 的候选指纹。
+> [已验证: kernel/common android17-6.18, `drivers/android/binder.c` `binder_proc_transaction()` + Perfetto android-17.0.0_r1 `binder_tracker.cc`] `server_dur = 0` 只能作为 frozen reply 候选信号。同步 frozen reply 要结合同一时间窗内的 `binder_return` ftrace 事件是否为 `BR_FROZEN_REPLY` 来确认；`BR_TRANSACTION_PENDING_FROZEN` 是 oneway pending 的返回信号，不应混入同步事务归因。
 >
 > **⚠️ 多信号校验**：单靠 `server_dur = 0` 不足以断定为 frozen reply。应同时检查以下信号（建议写 SQL 一并查询）：
-> 1. 同一事务在 `binder_return` 表中是否出现 `BR_FROZEN_REPLY` 或 `BR_TRANSACTION_PENDING_FROZEN`；
-> 2. 客户端进程的 `thread_state` 表中是否在同一时间窗内出现 frozen 或 uninterruptible sleep（`D` 状态）；
-> 3. `binder_free_work` 或 `binder_frozen_status` 等 ftrace 事件是否在同一时间窗内触发；
-> 4. Android 15+ 中 kernel 解冻→重发管线会使事务看起来像正常完成但队列/传输耗时异常高——此时 `server_dur` 不为 0，frozen reply 更隐蔽。
+> 1. 同一时间窗的 `binder_return` ftrace 事件是否出现 `BR_FROZEN_REPLY`；oneway 场景另查 `BR_TRANSACTION_PENDING_FROZEN`；
+> 2. 客户端线程的 `thread_state` 是否在等待窗口内阻塞在 `binder_thread_read` 或出现不可中断睡眠；
+> 3. 是否存在 `binder_netlink_report` 等内核侧错误/冻结上报事件；
+> 4. 对 oneway pending 场景，`client_dur` 不是等待 reply 的耗时，不能与同步事务的主线程等待直接相加。
 
-> **Frozen Reply 各版本行为差异（关键摘要）：**
+> **Android 17 可验证行为边界：**
 >
-> | 版本 | 行为特征 |
-> |------|---------|
-> | **Android 11-13** | Cached Apps Freezer 初版；frozen reply 仅影响 cached pool 进程，`BR_FROZEN_REPLY` 返回到调用方后需手动重试；无自动解冻重发机制 |
-> | **Android 14** | `TF_ONE_WAY_SPAM_SUSPECT` 标志引入（阈值 10 次/秒）；oneway 事务在目标进程 frozen 时直接丢弃并返回此标志，避免调用方线程池被 frozen reply 占满 |
-> | **Android 15** | Frozen reply 加入解冻→重发管线：kernel 收到对 frozen 进程的事务时，先触发 `binder_free_work` 解冻进程，进程解冻完成后 kernel 重新投递原事务，调用方只看到一次延迟 spike |
-> | **Android 16** | `TF_UPDATE_TXN` 合并机制：同一进程的多笔 adjacent oneway 在目标进程 frozen 期间被合并为单笔 batch 事务，解冻后 batch 提交 |
-> | **Android 17** | Frozen batch 合并扩展至同步事务；kernel 在目标进程 frozen 时合并 pending 事务为单次解冻→批量提交，Perfetto trace 上多笔相邻事务可能合并显示；参见 §1.18 Binder Freezer 机制 / §1.30 Android 17 Binder Transaction Queue |
+> | 行为 | Android 17 源码结论 |
+> |------|------------------|
+> | 同步事务打到 frozen 目标 | `binder_proc_transaction()` 直接返回 `BR_FROZEN_REPLY`，libbinder 在 `waitForResponse()` 中映射为 `FROZEN_OBJECT` 或 `FAILED_TRANSACTION` |
+> | oneway 事务打到 frozen 目标 | 事务可排入 `node->async_todo`，调用方收到 `BR_TRANSACTION_PENDING_FROZEN` |
+> | `TF_UPDATE_TXN` | 只在两笔事务都带 `TF_ONE_WAY | TF_UPDATE_TXN` 且目标/代码/flags/发送方等一致时，替换旧的 pending async 事务 |
+> | 同步事务 batch 合并 | android17-6.18 未显示同步事务合并机制；同步 frozen 目标仍走 `BR_FROZEN_REPLY` |
 >
-> **对 trace 分析的影响**：Android 15+ 上 `server_dur = 0` 不再等于 frozen reply——kernel 的解冻→重发管线会让事务看起来像正常完成但队列/传输耗时（`server_ts - client_ts`）异常高。此时应检查同一事务的 `thread_state` 是否出现过 `D`（Uninterruptible Sleep）状态，以及 `binder_free_work` ftrace 事件是否在时间窗内出现。更完整的 frozen reply 判定方法见上方的「多信号校验」说明。
+> **对 trace 分析的影响**：Android 17 上 `server_dur = 0` 不等于 frozen reply。同步场景要找 `BR_FROZEN_REPLY`；oneway 场景要单独看 `BR_TRANSACTION_PENDING_FROZEN` 与 `TF_UPDATE_TXN` 替换行为，不能把 oneway pending 计入主线程同步等待。
 
 ---
 
@@ -339,11 +340,11 @@ LIMIT 20;
 
 ### 4.1 PackageManager.getPackageInfo 系列（高频、分散）
 
-冷启动阶段 App 进程会向 PackageManager（PKMS）发起多条元数据查询：`getPackageInfo`、`getApplicationInfo`、`getProviderInfo`。这些事务每笔 `client_dur` 通常 2-8ms（Android 17 中由于 PKMS 分阶段缓存和预加载机制，延迟已较早期版本降低），但**频次高**——一次冷启动可能发 8-12 次。
+冷启动阶段 App 进程会向 PackageManager（PKMS）发起多条元数据查询：`getPackageInfo`、`getApplicationInfo`、`getProviderInfo`。这些事务单笔 `client_dur` 常见于数毫秒级，命中缓存时更低、遇到锁或冷路径时更高；真正的次数与耗时必须以 `android_binder_txns` 聚合为准。
 
 > [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java — PKMS 提供锁保护的元数据缓存，但读路径依然走 binder IPC]
 >
-> **Android 17 PKMS 改进**：Android 17 中 PackageManagerService 引入分阶段元数据缓存与预加载机制，冷启动期间 PKMS 查询次数从早期版本的 8-12 次降低到典型 3-5 次。该优化对 App 端透明——`getPackageInfo` / `getApplicationInfo` 首次调用时 PKMS 从内存缓存直接返回，不再走磁盘 XML 解析路径。但 SDK 侧若绕过标准 API 直接构造 parcel 查询，仍可能触发完整 IPC。
+> **Android 17 PKMS 观察点**：android-17.0.0_r1 中 `PackageManagerService` 使用 `snapshotComputer()` 与 PackageInfo / ApplicationInfo 缓存失效机制，读路径可能命中内存快照；但冷启动期间 PKMS binder 次数是否下降，必须以 `android_binder_txns` 按 `aidl_name` / `method_name` 聚合后的 trace 结果为准，不能只从源码缓存机制推导固定次数。
 
 单笔优化空间有限，建议的应用层对策：
 > - 缓存 PackageInfo 到内存，避免每次 onCreate 都查；
@@ -370,7 +371,7 @@ LIMIT 20;
 
 ### 4.4 ContentProvider 初始化的隐性 IPC
 
-[已验证: AOSP frameworks/base + 8.2 App launch 阶段描述] `bindApplication` 之后会触发 ContentProvider 装配：App 进程 `ContentResolver.acquireProvider()` 跨进程查询每个声明的 provider，每条都走 IActivityManager.contentProviderAcquire。
+[已验证: AOSP android-17.0.0_r1, `ActivityThread.acquireProvider()` + `IActivityManager.aidl`] `bindApplication` 之后会触发 ContentProvider 装配：App 进程 `ContentResolver.acquireProvider()` / `ActivityThread.acquireProvider()` 跨进程调用 `IActivityManager.getContentProvider()`，引用计数变化再走 `refContentProvider()`。
 
 观察方法：app 进程 `acquireProvider` slice 出现连续 5-10 条，每次 `client_dur` 2-5ms，看似不严重——但**主线程并发**会增加延迟。最佳实践：
 - 利用 `androidx.startup` 把非关键 ContentProvider 延后；
@@ -378,7 +379,7 @@ LIMIT 20;
 
 ### 4.5 SharedPreferences 与 DataStore 的同步等待
 
-[已验证: AOSP frameworks/base + §6.2 SharedPreferencesImpl ANR 机制] 同步 SP/Datastore 调用在第一次 commit 时经过 `QueuedWork.waitForFlush()`，间接走 system_server 上的 IQueuedWorkListener。冷启动主线程如果显式等待 SP commit 完成，会以 binder round-trip 形式阻塞 30-100ms。建议在 App 端禁用同步等待。
+[已验证: AOSP android-17.0.0_r1, `SharedPreferencesImpl.apply()` + `QueuedWork.waitToFinish()`] SharedPreferences 的 `apply()`/`commit()` 等待主要是应用进程内的磁盘写入与 `QueuedWork` finisher；DataStore 默认也是应用侧文件 I/O / coroutine 调度，不属于 Binder 事务。冷启动 trace 中如果它们与 Binder 等待出现在同一时间窗，应分开归因：Binder 耗时看 `android_binder_txns`，本地 I/O 等待看 `thread_state`、磁盘与 coroutine/Java slice。
 
 ---
 
@@ -402,7 +403,7 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 
 ### 5.3 binder_thread_pool starvation
 
-[已验证: AOSP frameworks/native/libs/binder/ProcessState.cpp + §1.38 binder-thread-pool-starvation] system_server 默认配置 16 个 Binder 线程 + 1 个主线程，App 进程默认 15 个。当所有 worker 都被占满，新事务只能排在队列——队列/传输耗时（`server_ts - client_ts`）急剧拉高。
+[已验证: AOSP android-17.0.0_r1, `SystemServer.java` `sMaxBinderThreads = 31` + `ProcessState.cpp` `DEFAULT_MAX_BINDER_THREADS = 15`] system_server 在启动时把 Binder 线程上限提高到 31；普通 App 进程默认上限是 15。当所有 worker 都被占满，新事务只能排在队列——队列/传输耗时（`server_ts - client_ts`）急剧拉高。
 
 诊断模式：
 - 队列/传输耗时（`(server_ts - client_ts) / 1e6`）全部 > 5ms；
@@ -522,7 +523,7 @@ GROUP BY client_process
 ORDER BY total_client_ms DESC;
 ```
 
-> [已验证: Perfetto mainline] `client_dur > 0 且 server_dur == 0` 是 frozen reply 的候选特征——事务完成但无服务端处理时间。但单靠此信号不足以断定为 frozen reply：应结合 `binder_return` 表中的 `BR_FROZEN_REPLY`、客户端 thread_state 的 frozen/D 状态、以及 `binder_free_work` 事件做多信号确认。完整方法见 §3.3「多信号校验」说明。
+> [已验证: Perfetto android-17.0.0_r1 + kernel/common android17-6.18] `client_dur > 0 且 server_dur == 0` 是 frozen reply 的候选特征，但不能单独定性。同步事务需结合 raw ftrace `binder_return` 中的 `BR_FROZEN_REPLY`、客户端 `thread_state` 等信号确认；`BR_TRANSACTION_PENDING_FROZEN` 只用于 oneway pending 场景。完整方法见 §3.3「多信号校验」说明。
 
 ### 6.5 进程画像：每个进程的 binder 调用次数 / 平均延迟
 
@@ -531,7 +532,7 @@ INCLUDE PERFETTO MODULE android.binder;
 
 SELECT * FROM android_binder_metrics_by_process
 WHERE process_name GLOB '*system_server*' OR process_name GLOB 'com.your.app*'
-ORDER BY transaction_count DESC;
+ORDER BY event_count DESC;
 ```
 
 ---
@@ -553,7 +554,7 @@ ORDER BY transaction_count DESC;
 
 判定标准：`事务影响 UI 显示` + `不需要等待结果` → 适合 oneway；反例：必须等结果才能继续下一步的事务。
 
-> **Android 17 oneway 优先级继承**：Android 17 引入 oneway 事务的优先级继承机制——高优先级进程（如前台 App）发起的 oneway 调用，kernel 会在目标服务端 worker 线程上临时提升调度优先级（类似同步事务的 PI 机制），确保 oneway 事务不被后台低优先级 worker 饿死。这对冷启动有正面影响：oneway 调用（如生命周期通知）不会再因 worker 优先级低而被延迟。参见 §1.4.3 oneway 语义 / §1.30 Android 17 Binder Transaction Queue。
+> **Android 17 oneway 优先级边界**：android17-6.18 的 `binder_proc_transaction()` 只有在已经选中目标 Binder 线程时才调用 `binder_transaction_priority()`；如果 oneway 事务因为 pending async 或 frozen 目标进入 `node->async_todo`，此时还没有服务端 worker 可被临时提权。oneway 的优化价值主要是避免客户端等待 reply，而不是保证所有 oneway 都立即获得优先级继承。参见 §1.4.3 oneway 语义 / §1.30 Android 17 Binder Transaction Queue。
 
 把同步转异步时要守住两个约束：
 - **不要在新事务返回前再发起下一个同步 binder**（事务嵌套 + 内层失败会污染 stack）；
@@ -561,7 +562,7 @@ ORDER BY transaction_count DESC;
 
 ### 7.3 Startup Task 编排
 
-[已验证: AOSP frameworks/base + §21.2 Startup Task] 利用 `androidx.appsearch.startup` 或 `AppStartup` 在 `attachBaseContext` 之前先把 `Application.onCreate` 拆分成「critical path」与「deferred path」，把低优先级 binder 调用挪到第一个 Activity 显示后再触发。
+[已验证: AndroidX App Startup + §21.2 Startup Task] 利用 `androidx.startup` / `AppInitializer` 把 `Application.onCreate` 拆分成「critical path」与「deferred path」，把低优先级 binder 调用挪到第一个 Activity 显示后再触发。
 
 ### 7.4 A/B 对比验证
 
@@ -583,15 +584,13 @@ ORDER BY transaction_count DESC;
 
 ### 🔸 Android 17 Binder Layer 追踪增强
 
-[已验证: DeepResearch/2026-06-30 + Kernel/android17-6.18 binder.c] Android 17 引入 frozen batch 合并机制（参见 §1.30 android-17-binder-transaction-queue-optimization）：当同一目标进程的多笔相邻 oneway 事务在目标进程 frozen 期间堆积，kernel 解冻后会将它们合并为单次批量提交。在 Perfetto trace 上的表现：
+[已验证: kernel/common android17-6.18 `drivers/android/binder.c` + `include/uapi/linux/android/binder.h`] Android 17 可验证的是 pending async 更新机制，而不是同步事务 batch 合并：当目标进程 frozen 且同一 node 的 async 队列里已有旧事务时，新的 oneway 事务只有同时带 `TF_ONE_WAY | TF_UPDATE_TXN`，并且目标、code、flags、发送方 pid、target node/cookie 都一致，才会替换旧的 pending async 事务。
 
-- 多笔相邻 oneway 写事务可能被合并为单笔 `binder transaction` slice，原有独立事务的 `server_dur` 归零；
-- 这会影响 `android_binder_txns` 表里的 transaction 数与实际 IPC 发起次数关系——表内看到 1 笔事务，实际可能对应 3-5 笔被合并的 oneway；
-- 排查时要看 `client_dur` 单笔外的 `binder_reply` 序列——一端 slice 是单笔但底下一帧里实际发起了多笔事务。
+- 这会影响 `android_binder_txns` 表里的 oneway 事务计数与应用侧发起次数关系：旧的 pending async 可能在被目标进程处理前已经被新事务替换；
+- 该机制不适用于同步事务；同步事务打到 frozen 目标仍返回 `BR_FROZEN_REPLY`；
+- 排查时应结合 raw ftrace 的 `binder_return` / `binder_netlink_report` 与 `android_binder_txns` 计数，不要把 oneway pending 替换解释成同步等待的 batch 合并。
 
-> **注**：Android 17 的 `android.binder` 标准库模块（`binder.sql`）**没有** `is_merged`、`frozen_reply`、`parent_txn_id` 等字段——这些字段在 Perfetto mainline 尚处于 schema 草案阶段，android-17.0.0_r1 发布的 AOSP 并不包含。对 frozen batch 合并的 trace 分析，当前只能通过比对 `binder_reply` 序列与 `android_binder_txns` 的 transaction 计数来间接推断，不能依赖不存在的 SQL 字段。
-
-> **对正文归因分析的修正**：Android 17 的 frozen batch 合并机制意味着 `android_binder_txns` 表的 transaction 计数可能与实际 IPC 发起次数不一致——多笔相邻 oneway 可能被合并为单笔事务。在 §3.2 归因决策树中，若 `client_dur` 单笔异常高但队列/传输耗时和 `server_dur` 分布正常，应检查 `binder_reply` 序列是否在同一时间窗内包含多笔 `br` 事件（合并事务中独立 IPC 的 `server_dur` 会归零）。合并事务的 `server_dur` 反映的是 batch 的整体处理时间，不是单一 IPC 的延迟。
+> **注**：Android 17 的 `android.binder` 标准库模块（`binder.sql`）**没有** `is_merged`、`frozen_reply`、`parent_txn_id` 等字段；android-17.0.0_r1 发布的 AOSP 也没有同步事务 batch 合并字段。对 pending async 更新的 trace 分析，当前只能通过 ftrace 返回事件、事务计数变化和业务侧发起点间接推断，不能依赖不存在的 SQL 字段。
 
 ### 🔸 多进程应用冷启动 Binder 放大效应
 
@@ -611,7 +610,7 @@ ORDER BY transaction_count DESC;
 [自动发现] 微信 / Tinker 冷启动 binder 调用优化实践（来源：[结构参考: Cubox/AndroidWeekly/2021-10-15 #23 binder-trace-Activity冷启动 — 微信/Tinker 团队公开分享。该源为已发布的二手工程实践，已通过 AOSP 源码交叉验证]）：
 
 - **现象**：无明显重 widget 加载，但冷启动 1.4s，TTFD 1.6s；
-- **trace 特征**：`client_dur (主线程)` 累加 ~380ms，95% 来自 `IPackageManager.getPackageInfo`、`IWindowManager.addView`、`IContentProvider.query`；
+- **trace 特征**：`client_dur (主线程)` 累加 ~380ms，95% 来自 `IPackageManager.getPackageInfo`、`IWindowSession.addToDisplay` / `relayout`、`IContentProvider.query`；
 - **优化**：
   1. 把 `getPackageInfo` 结果缓存到内存，启动期不再查；
   2. 把 5 个 SDK 的 `onAppInit` 借 AppStartup 推到第一帧后；
@@ -635,13 +634,12 @@ ORDER BY transaction_count DESC;
 
 ## 参考资料
 
-- [Perfetto 官方：Analyzing Binder Transactions](https://perfetto.dev/docs/analysis/binder) — `android.binder` 标准库官方指南 **[一手：官方文档]**
-- [Perfetto 源码：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`](https://cs.android.com) — `android_binder_txns` PERFETTO TABLE 定义
-- [Perfetto 源码：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql`](https://cs.android.com) — `_binder_reason()` 延迟归因 + breakdown 表
-- [Perfetto 源码：`external/perfetto/src/trace_processor/importers/ftrace/binder_tracker.cc`](https://cs.android.com) — BinderTracker 状态机、TxnFrame 8 状态枚举
-- [Android Kernel：`drivers/android/binder_trace.h`](https://cs.android.com) — `TRACE_EVENT(binder_transaction)` 等内核 tracepoint
-- [Android Kernel：`drivers/android/binder.c`](https://cs.android.com) — `binder_transaction()` 函数 trace 触发路径
-- [AOSP：`frameworks/native/libs/binder/IPCThreadState.cpp`](https://cs.android.com) — `transact()` / `flushCommands()` 实现
+- [Perfetto 源码：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql) — `android_binder_txns` 与 `android_binder_metrics_by_process` 定义 **[AOSP android-17.0.0_r1]**
+- [Perfetto 源码：`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql) — `_binder_reason()` 延迟归因 + breakdown 表 **[AOSP android-17.0.0_r1]**
+- [Perfetto 源码：`external/perfetto/src/trace_processor/importers/ftrace/binder_tracker.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/binder_tracker.cc) — BinderTracker 状态机、frozen reply 处理 **[AOSP android-17.0.0_r1]**
+- [Android Kernel：`drivers/android/binder_trace.h`](https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18/drivers/android/binder_trace.h) — `binder_transaction` / `binder_return` 等内核 tracepoint **[android17-6.18]**
+- [Android Kernel：`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18/drivers/android/binder.c) — `binder_transaction()`、`binder_proc_transaction()`、`TF_UPDATE_TXN` pending async 更新路径 **[android17-6.18]**
+- [AOSP：`frameworks/native/libs/binder/IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp) — `transact()` / `waitForResponse()` 实现 **[AOSP android-17.0.0_r1]**
 - [高爷《Android-Perfetto》系列：binder 主题文章](https://androidperformance.com) — 二手机构经验，经源码交叉验证
 - 相关章节：§1.4 Binder IPC / §1.18 Binder Freezer / §1.38 Binder 线程池 / §1.30 Android 17 Binder Transaction Queue / §8.2 App 启动全流程 / §6.2 SharedPreferencesImpl ANR / §21.x 启动优化策略组
 
