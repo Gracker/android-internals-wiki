@@ -9,10 +9,10 @@ tags:
 - trace
 - capture
 polish_by: task2b-polish
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 task6_review_notes: "2026-07-09 Task6 re-review (post-Task9 auto-fix): L1 3 fixes (banned word 对齐→匹配, 2x version pinning 当前主干→Android 17). L2 minor. All 6 anchors + 2 extensions covered. No B-class issues. No banned words remaining."
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 reviewed_by: openclaw-task6
 last_task6_audit: 2026-07-10
 task2b_result: fixed
@@ -20,19 +20,20 @@ task2b_fix_date: 2026-07-08
 task2b_fix_notes: "2026-07-08 Task2B main rework: P0 token merge fix (20+ commands/APIs), version baseline update (android-17.0.0_r1 verified), FrameTimeline/linux.perf anchor correction, P1 data source selection flow, P2 unverifiable % removal. Based on deep-review 2026-07-08-21 and audit 2026-07-08-20."
 task2b_state: fixed
 task9_state: "reviewed"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 last_task9_at: "2026-07-09T05:38:15+08:00"
-task9_review_notes: "2026-07-09 Task9 deep-review auto-fix: P0=4 P1=0 P2=2. 修正 Android17 DataSourceConfig 新增数据源口径、FrameTimeline/linux.perf Android17 源码锚点与旧伪代码、linux.perf 版本验证矛盾、unsupported profiling overhead 百分比；回到 Task6 复审。 | 2026-07-09 05:38 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；按 android-17.0.0_r1 复核源码锚点、版本边界和交叉引用；Task6 已 pass-light-edit 且 queue 无 pending，自动晋升 finalized。"
-last_task9_autofix_at: 2026-07-09
+task9_review_notes: "2026-07-09 Task9 deep-review auto-fix: P0=4 P1=0 P2=2. 修正 Android17 DataSourceConfig 新增数据源口径、FrameTimeline/linux.perf Android17 源码锚点与旧伪代码、linux.perf 版本验证矛盾、unsupported profiling overhead 百分比；回到 Task6 复审。 | 2026-07-09 05:38 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；按 android-17.0.0_r1 复核源码锚点、版本边界和交叉引用；Task6 已 pass-light-edit 且 queue 无 pending，自动晋升 finalized。 | 2026-07-11 06:25 Task9 idle audit auto-fix: 将 record_android_trace 获取命令从 Perfetto GitHub main 改为 AOSP android-17.0.0_r1 Gitiles 锚点；回到 Task6 复审。"
+last_task9_autofix_at: 2026-07-11
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-09
 last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: task9_state reviewed→pending; Task6 re-reviewed post-auto-fix (pass-light-edit), pipeline task9_pending correct, task9_state was stale reviewed."
 task9_reviewed_date: "2026-07-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_review_log: "logs/deep-review/2026-07-09-05-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-11-06-audit.md"
 updated_by: "openclaw-task9"
-updated_date: "2026-07-09"
+updated_date: "2026-07-11"
+last_task9_audit: 2026-07-11
 ---
 
 # Trace 抓取
@@ -514,11 +515,13 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 ### 获取脚本
 
 ```bash
-curl -O https://raw.githubusercontent.com/google/perfetto/main/tools/record_android_trace
+curl -L 'https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/record_android_trace?format=TEXT' \
+  | python3 -c 'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.buffer.read()))' \
+  > record_android_trace
 chmod +x record_android_trace
 ```
 
-> ⚠️ 在中国大陆网络环境下，访问 GitHubraw 域名可能需要代理。也可以从 Perfetto 发布页（< https://github.com/google/perfetto/releases >）下载对应版本的脚本。
+> 上述命令锚定 AOSP `android-17.0.0_r1` 的脚本版本。Perfetto GitHub `main` 上也有更新脚本，但它不作为本文 Android 17 技术结论的依据。
 
 ### 基本用法
 
