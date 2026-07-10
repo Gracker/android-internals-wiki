@@ -1749,21 +1749,51 @@
     {
       "section": "8.18",
       "section_title": "Binder Trace 驱动的 Activity 冷启动性能分析",
-      "priority": 95,
+      "priority": 90,
       "reason": "[Deep Tech Review] Frozen reply检测逻辑与Android 17行为不符",
       "material_paths": [
         "src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md"
       ],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "Section 3.3 \"Frozen Reply 干扰的识别\"",
-          "detail": "SQL查询条件  在Android 17中不完全等同于frozen reply。服务端线程池饱和时也会出现，因为服务端可能来不及处理事务就被调度器抢占。",
-          "suggestion": "更新SQL查询逻辑，增加线程池饱和的排除条件："
+          "type": "需确认",
+          "location": "§1 全景段落",
+          "detail": "「典型 P50 冷启动 800ms」和 Binder 事务数量级估算（25-45次同步/10-20次oneway）缺少数据来源。建议补充测量条件或标注为经验估算",
+          "suggestion": "添加来源标注或改为范围引用"
+        },
+        {
+          "type": "需确认",
+          "location": "§4.3 WindowManager.addView 与 relayout",
+          "detail": "IWindowManager.addView() API 路径可能不准确——App 端通常通过 ViewRootImpl → IWindowSession.relayout() 与 WMS 交互，而非直接调 IWindowManager.addView",
+          "suggestion": "交 Task 9 核实 AOSP android-17.0.0_r1 中 addView 的真实 IPC 路径"
+        },
+        {
+          "type": "需确认",
+          "location": "§5.1 主线程 binder transaction slice 的识别特征",
+          "detail": "「track 颜色跟 Choreographer 颜色一致（绿/黄/红），因为 Choreographer 内部也是同步 binder」——Choreographer 的 VSync 回调通过 DisplayEventReceiver 走 socket 而非 binder，此因果关系可能有误",
+          "suggestion": "交 Task 9 核实 Choreographer VSync 注册的底层 IPC 机制"
+        },
+        {
+          "type": "需确认",
+          "location": "§5.2 monitor_contention 表",
+          "detail": "声称 monitor_contention 表保存 binder 内部锁（binder_lock/mOut_lock/mLock），但 monitor_contention 实际跟踪的是 Java 层 Monitor 锁竞争（MonitorContendedLock/MonitorAwaitLock），不是 binder 内部 C++/kernel 锁",
+          "suggestion": "交 Task 9 区分 Java monitor contention 与 binder 内核锁，更正或删除该 SQL 示例"
+        },
+        {
+          "type": "需确认",
+          "location": "§2.2 Perfetto 采集配置",
+          "detail": "process_stats_config 中的 scan_sleep_name 字段在 Perfetto mainline 中可能不存在或已废弃，需要核实",
+          "suggestion": "交 Task 9 验证 perfetto 配置 schema"
+        },
+        {
+          "type": "需补充",
+          "location": "§3.3 Frozen Reply",
+          "detail": "[待补充：frozen reply 在 Android 14/15/16/17 各版本的行为差异]——已有的待标记，Task 2B 应考虑是否可从 DeepResearch/2026-06-13 补充或明确标注为暂不展开",
+          "suggestion": "补充版本差异或改为明确声明本节不展开"
         }
       ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-11T01:22:50.156404",
+      "added_by": "task9-deep-tech-review+task6-review",
+      "added_at": "2026-07-11T02:15:00",
       "status": "pending"
     }
   ],

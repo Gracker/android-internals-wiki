@@ -133,3 +133,37 @@ Coverage remains saturated (60th consecutive round). No new knowledge gaps ≥14
 4. \`src/part1-fundamentals/ch01-architecture/01.59-Android-17-AGI-Frame-Profiler-与-gapii-Spy-架构--单帧-GPU-捕获的真实机制.md\` → dup of §14.29
 5. \`src/part1-fundamentals/ch04/04.45-2026-07-04-ai-agent-memory-management.md\` → dup of §4.40, wrong dir
 6. \`src/part1-fundamentals/ch08/08.1-2026-07-04-android17-modular-startup-framework-dependency-graph.md\` → covered by §8.34
+
+
+## [Task6 Review] 8.18 Binder Trace 驱动的 Activity 冷启动性能分析 — 2026-07-11
+
+### B1 需确认：§1 P50 冷启动 800ms 缺数据来源
+- **位置**：§一 全景段落第一段
+- **问题**：「典型 P50 冷启动 800ms 里，IPC 等待往往占到 250-450ms」——这个数据没有标注来源（是经验估算？特定设备测量？还是引用自某篇分享？）
+- **建议**：补充来源标注，或改为「中等应用的经验范围」并交代测量条件
+
+### B2 需确认：§4.3 IWindowManager.addView() API 路径
+- **位置**：§四 4.3 WindowManager.addView 与 relayout
+- **问题**：文中描述 App → WMS 的调用路径为 `IWindowManager.addView()`，但 AOSP 中 App 端通过 `WindowManagerImpl → WindowManagerGlobal → ViewRootImpl`，最终通过 `IWindowSession.relayout()` 与 WMS 交互，不是直接调 `IWindowManager.addView()`
+- **建议**：交 Task 9 核实 `android-17.0.0_r1` 中 `addView()` 的真实 IPC 路径
+
+### B3 需确认：§5.1 Choreographer 颜色与 binder 因果关系
+- **位置**：§5.1 主线程 binder transaction slice 的识别特征
+- **问题**：声称「track 颜色跟 Choreographer 颜色一致（绿/黄/红），因为 Choreographer 内部也是同步 binder」——Choreographer 的 VSync 注册通过 `DisplayEventReceiver` 走 native SurfaceFlinger 的 socket 通道（`BitTube`），不是 Binder IPC
+- **建议**：修正因果关系描述，binder transaction slice 的颜色与 Choreographer 无直接关联
+
+### B4 需确认：§5.2 monitor_contention 表跟踪范围
+- **位置**：§5.2 自动发现段落
+- **问题**：声称 `monitor_contention` 表保存 binder 内部的锁（`binder_lock`、`mOut_lock`、`mLock`），但 Perfetto 的 `monitor_contention` 实际跟踪的是 ART 虚拟机的 Java Monitor 锁竞争事件（`MonitorContendedLock` / `MonitorAwaitLock`），不是 binder C++/kernel 层的锁
+- **建议**：删除或大幅修改该 SQL 示例，或改为正确的 art_monitor_contention 用法
+
+### B5 需确认：§2.2 scan_sleep_name 配置字段
+- **位置**：§2.2 Perfetto 采集配置 protobuf
+- **问题**：`process_stats_config.scan_sleep_name: "binder"` 这个字段在 Perfetto mainline 的 `ProcessStatsConfig` proto 中可能不存在
+- **建议**：交 Task 9 验证，如不存在则删除该行
+
+### B6 需补充：§3.3 Frozen Reply 各版本差异
+- **位置**：§3.3 末尾 [待补充] 标记
+- **问题**：标记了「frozen reply 在 Android 14/15/16/17 各版本的行为差异」待补充，但未展开
+- **建议**：从 DeepResearch/2026-06-13 补充关键差异，或明确声明本节不展开并给出理由
+- **review 日志**：logs/review/2026-07-11-02-review.md
