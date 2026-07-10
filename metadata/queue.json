@@ -661,6 +661,28 @@
       "stage": "draft",
       "added_date": "2026-07-09",
       "notes": "知识缺口挖掘创建 — ARM64 内核安全缓解(KASLR/KPTI/Spectre/PAC/BTI)性能开销"
+    },
+    {
+      "path": "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+      "section": "13.18",
+      "section_title": "SmartPerfetto 与可复用 Trace 分析平台",
+      "priority": 85,
+      "reason": "[Deep Tech Review] SmartPerfetto 企业迁移 cutover 读路径与正文长期修复建议冲突",
+      "material_paths": [
+        "src/part3-tools/ch13-perfetto/18-smartperfetto-trace-analysis-platform.md",
+        "logs/deep-review/2026-07-10-09-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码行为",
+          "location": "L273-L290「长期修复（代码优化）」与监控指标",
+          "detail": "SmartPerfetto main 1508f99788bfcf18cc861e4bf4f8b472e84240c3 当前企业迁移实现中，enterprise 模式未显式配置阶段时默认 cutover；cutover 的 readAuthority 为 db、writeFilesystem=false、legacyReadOnly=true，readTraceMetadataForContext() 在 enterpriseTraceStoreEnabled() 时只按 trace_assets + RequestContext scope 读取 DB 元数据，没有在 DB 读取失败后回退 ./uploads/traces 的逻辑。正文把“先尝试企业数据库读取，失败后回退到文件系统读取”写成长期代码修复，并把“文件系统回退请求频率”列为监控指标，与当前 P-B/P-C DB 权威迁移设计和资源归属隔离边界冲突。",
+          "suggestion": "回炉时把长期修复改为迁移闭环：在 cutover 前用 dry-run/snapshot 校验 trace_assets、scoped local_path 与文件搬迁完整性；发现缺失时按官方 rollback helper 回到 dual-write 或修复迁移数据；不要建议在 cutover 的 readTraceMetadataForContext() 中透明 filesystem fallback。如需保留 fallback 字样，应限定为 legacy/dual-write/rollback 语境。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-10T09:44:12+08:00",
+      "status": "pending"
     }
   ],
   "entries": [
