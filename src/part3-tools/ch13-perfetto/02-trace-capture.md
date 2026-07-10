@@ -14,7 +14,7 @@ task6_result: pass-light-edit
 task6_review_notes: "2026-07-09 Task6 re-review (post-Task9 auto-fix): L1 3 fixes (banned word 对齐→匹配, 2x version pinning 当前主干→Android 17). L2 minor. All 6 anchors + 2 extensions covered. No B-class issues. No banned words remaining."
 pipeline_stage: "ready-to-publish"
 reviewed_by: openclaw-task6
-last_task6_audit: 2026-07-09
+last_task6_audit: 2026-07-10
 task2b_result: fixed
 task2b_fix_date: 2026-07-08
 task2b_fix_notes: "2026-07-08 Task2B main rework: P0 token merge fix (20+ commands/APIs), version baseline update (android-17.0.0_r1 verified), FrameTimeline/linux.perf anchor correction, P1 data source selection flow, P2 unverifiable % removal. Based on deep-review 2026-07-08-21 and audit 2026-07-08-20."
@@ -168,7 +168,7 @@ updated_date: "2026-07-09"
 
 而且，Trace 抓取不是只有一种方式。不同场景需要不同的抓取策略：快速复现一个卡顿问题，用 `record_android_trace` 脚本几行命令就能搞定；分析启动性能，需要在 App 代码中插入自定义标记来精确度量各个阶段；排查内存泄漏，则需要额外开启 Heap Profiling。了解这些方式的差异和适用场景，能让我们在最短时间内拿到最有价值的 Trace 数据。
 
-PerfettoTrace 有几种常见抓取方式，从命令行到 Perfetto UI、从系统级到 App 内自定义标记，各有适用场景。最后会给出一份覆盖常见分析场景的推荐配置。
+PerfettoTrace 有几种常见抓取方式，从命令行到 Perfetto UI、从系统级到 App 内自定义标记，各有适用场景。文末附有覆盖常见分析场景的推荐配置。
 
 ## 命令行抓取：perfetto 命令
 
