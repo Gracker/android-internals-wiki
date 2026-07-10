@@ -29,6 +29,8 @@
   - [2.3 GPU 调试性能工具链源码调研](part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md)
   - [2.51 Android 17 GPU 调试性能工具链](part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)  - [2.11 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/11-gap-analysis.md)  - [2.13 Android 17 eBPF观测增强](part1-fundamentals/ch13-profiling/13-gap-analysis.md)
   - [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)
+  - [2.16 Android 17 GPU 调试与性能优化工具链](part2-performance/ch02-rendering/2.16-android17-gpu-debugging-tools-chain.md)
+
 
 
   - [2.6 Android 17 eBPF观测增强](part1-fundamentals/ch01-architecture/2.6-ebpf-observability-enhancement.md)
@@ -39,6 +41,9 @@
   - [2.9 Android 17 GPU Debug Performance Tools Source](part2-performance/ch02-rendering/2.9-android17-gpu-debug-performance-tools-source.md)
 (part1-fundamentals/ch01-architecture/2.7-gpu-debug-performance-tools-chain.md)
 - [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)  - [4.43 Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研](part1-fundamentals/ch04-memory/04.43-gap-analysis.md)  - [4.44 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/04.44-gap-analysis.md)  - [4.45 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch05-cpu-power/06-gap-analysis.md)
+  - [4.37 Android 17 LMKD 用户态迁移 + PSI 协同机制](part1-fundamentals/ch04-memory/4.37-android17-lmkd-userspace-migration.md)
+  - [4.46 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory.md)
+
 
 
   - [4.9 Android 17 ARM MTE 内存标签扩展实战](part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)
@@ -148,3 +153,4 @@
 附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)
+  - [25.18 Android 17 Power Stats HAL 架构与 OEM 实现差异](part1-fundamentals/ch25-power/25.18-android17-power-stats-hal.md)

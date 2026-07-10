@@ -826,6 +826,799 @@
       "completed_at": "2026-07-10T14:52:55+08:00",
       "completed_by": "task2b",
       "resolution": "fixed-all-4-issues"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "章节 04-memory",
+      "priority": 80,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://example.com/android-15-performance-optimization"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 15 内存管理重大改进......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "completed",
+      "completed_at": "2026-07-09T06:50:51+08:00",
+      "completed_by": "task2b-rework",
+      "completion_note": "URL不可访问(example.com占位)，跳过"
+    },
+    {
+      "section": "ch05-cpu-power",
+      "section_title": "章节 05-cpu-power",
+      "priority": 78,
+      "reason": "URL 不可访问 (example.com 占位地址)，跳过",
+      "material_paths": [
+        "https://example.com/linux-6.10-scheduler"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux 6.10 自适应任务调度器......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "completed",
+      "completed_at": "2026-07-09T08:56:49+08:00"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "章节 17-oem",
+      "priority": 80,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://example.com/android-gradle-8.5"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Gradle 8.5 构建系统改进......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "completed",
+      "completed_at": "2026-07-09T06:50:51+08:00",
+      "completed_by": "task2b-rework",
+      "completion_note": "URL不可访问(example.com占位)，跳过"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "章节 04-memory",
+      "priority": 78,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://example.com/linux-ksm-security"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux KSM 安全性重要进展......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "completed",
+      "completed_at": "2026-07-09T06:50:51+08:00",
+      "completed_by": "task2b-rework",
+      "completion_note": "URL不可访问(example.com占位)，跳过"
+    },
+    {
+      "section": "ch07-smoothness",
+      "section_title": "章节 07-smoothness",
+      "priority": 78,
+      "reason": "URL 不可访问 (example.com 占位地址)，跳过",
+      "material_paths": [
+        "https://example.com/ai-android-optimization"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "AI 技术进行系统优化......",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-09T05:43:35",
+      "status": "completed",
+      "completed_at": "2026-07-09T08:56:49+08:00"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 图形调试与分析工具",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-android17-gpu-counter-cross-device-standardization.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "GPU计数器跨设备标准化问题研究 — Android 17通过Perfetto框架实现GPU计数器跨设备标准化，采用GpuCounterDescriptor vs InternedGpuCounterDescriptor双模式设计，高通Adreno/联发科Mali/三星Exynos的命名、单位、计算方式差异分析",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-09T06:16:23.377753",
+      "status": "completed",
+      "completed_at": "2026-07-09T17:47:53",
+      "completed_by": "task2b-lite",
+      "completion_note": "DeepResearch材料已添加到参考资料"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Android内存管理",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026-07/android-17-performance-scheduler-memory-management"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android开发者博客 — Android 17带来系统调度革命性改进，通过机器学习用户行为预测算法实现应用启动时间平均减少30%。新调度器能动态识别不同应用类型，优化CPU和内存分配，高端设备冷启动提升45%，低端设备提升28...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-10T05:33:24.146985",
+      "status": "completed",
+      "completed_at": "2026-07-10T06:53:07+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "URL 不可访问，跳过"
+    },
+    {
+      "section": "ch04-memory",
+      "section_title": "Android内存管理",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://www.kernel.org/doc/html/latest/admin-guide/bpf-memory-management.html"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux内核邮件列表 — Linux 6.10引入革命性内存管理改进，通过BPF技术深度集成实现更细粒度的内存控制。新系统支持基于应用的内存配额动态调整，虚拟化环境内存占用减少40%，实时性优化确保关键任务内存分配优先级，数据...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-10T05:33:24.150185",
+      "status": "completed",
+      "completed_at": "2026-07-10T06:53:07+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "URL 不可访问，跳过"
+    },
+    {
+      "section": "ch16",
+      "section_title": "AOSP / 系统 / AI 扩展",
+      "priority": 70,
+      "reason": "[DeepResearch 注入] 新增 AI Agent benchmark 调研材料，建议补充到 ch16 或附录作为 AI×手机延伸参考",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-EdgeBench-agent-environment-learning-benchmark.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "EdgeBench 深度调研：Agent 从真实环境反馈中学习的 Benchmark — ByteDance Seed 发布的长时程 Agent benchmark，134 个真实任务、约 38,000 小时交互轨迹。Agent 在 12h 窗口内反复试错提交，学习曲线高度符合 log-s",
+          "suggestion": "EdgeBench 是 AI Agent 在真实环境中持续学习的 benchmark 方法论，适合作为端侧 Agent 评估体系参考"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-10T06:37:34.361020",
+      "status": "pending"
+    },
+    {
+      "section": "24.4",
+      "section_title": "网络架构与连接管理",
+      "priority": 90,
+      "reason": "[task6-audit] 版本基线违规：7处 android-35 引用需更新为 android-17.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "版本基线违规",
+          "locations": [
+            "frontmatter: last_verified_against",
+            "L167: NetworkCapabilities 验证标注 (2处)",
+            "L181: NetworkCapabilities 验证标注 (2处)",
+            "L234: StrictMode 验证标注 (2处)"
+          ],
+          "detail": "7 处引用 android-35 SDK 源路径，违反版本基线规则。需更新为 android-17.0.0_r1 对应路径。",
+          "suggestion": "Task 9 先验证 android-17.0.0_r1 中 NetworkCapabilities.java 和 StrictMode.java 的路径和内容差异，确认 API 无变化后由 Task 2B 统一替换"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-08T03:07:00",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-08-03-audit.md",
+      "completed_at": "2026-07-08T03:36:50+08:00",
+      "completed_by": "task2b-lite",
+      "completion_note": "7处 android-35 → android-17.0.0_r1 版本基线替换"
+    },
+    {
+      "section": "25.19",
+      "section_title": "Android Vitals 过度 WakeLock 指标与治理",
+      "priority": 50,
+      "reason": "[Task6抽检] AOSP源码引用锚定 android-16.0.0_r3 / android16-qpr2-release，需按版本基线规范升级至 android-17.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "正文「归因路径」小节末尾两处验证标注 + frontmatter last_verified_against",
+          "detail": "AOSP源码引用使用 android-16.0.0_r3 和 android16-qpr2-release，版本基线要求锚定 android-17.0.0_r1。需 Task 9 确认 PowerManagerService.acquireWakeLockInternal() 和 BatteryStatsService.noteStartWakelock() 在 Android 17 中是否有变化。",
+          "suggestion": "更新源码验证标注至 android-17.0.0_r1，如 API 无变化则更新标签，如有变化则修正正文描述"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-09T07:05:00+08:00",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-09-07-audit.md",
+      "completed_at": "2026-07-09T07:36:00+08:00",
+      "completed_by": "task2b-lite",
+      "completion_note": "3处版本锚点 android-16.0.0_r3/android16-qpr2-release → android-17.0.0_r1 替换"
+    },
+    {
+      "chapter": "2.32",
+      "title": "GraphicBuffer 内存池化与 BufferQueue Slot 复用机制",
+      "priority": 80,
+      "status": "pending",
+      "added_date": "2026-07-10",
+      "source": "task2a-gap-mining"
+    },
+    {
+      "section": "8.37",
+      "section_title": "Android 13+ PerformanceHintManager 实战：Java/NDK 集成与 Android 17 源码校准",
+      "priority": 95,
+      "reason": "[Deep Tech Review] PerformanceHintManager API 年表、Session 生命周期和示例线程 ID 口径与 Android 17 / 官方 API 不一致",
+      "material_paths": [
+        "logs/deep-review/2026-07-10-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 版本错误",
+          "location": "L126-L143、L167-L193",
+          "detail": "官方 API 页显示 Java PerformanceHintManager/createHintSession/reportActualWorkDuration(long)/updateTargetWorkDuration 为 API 31；WorkDuration 重载和 setPreferPowerEfficiency 为 API 35；setThreads 为 API 34。NDK performance_hint.h 中基础 C API 为 __ANDROID_API_T(API 33)。正文把 Java/NDK 基础能力统一写成 Android 13 引入，并把 reportActualWorkDuration(long) 写成 API 34。",
+          "suggestion": "重写 API 演进表：Java 公共 API 与 NDK C API 分开；用 API 31/33/34/35/36/37 分别标注，Android 17 只写已验证状态，不写成引入点。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L157-L165",
+          "detail": "android-17.0.0_r1 的 PerformanceHintManager.Session 没有 CREATED/ACTIVE/DESTROYED State 枚举；源码主要通过 mNativeSessionPtr 与 close()/finalize() 管理 native session 指针。",
+          "suggestion": "删除“三态机”说法，改成 public Session 生命周期：createHintSession 返回 Session；update/report/setThreads 操作 native session；close 后 mNativeSessionPtr 归零且不可继续调用。"
+        },
+        {
+          "type": "API 示例错误",
+          "location": "L236-L257",
+          "detail": "createHintSession 需要应用线程组内的 Linux tid。示例使用 workerThread.getId()，这是 Java Thread ID，不是内核 tid；executorService.getWorkerTids() 也不是标准 Java/Android API。",
+          "suggestion": "示例应展示在线程内部用 Process.myTid() 记录 tid，或 native 侧用 gettid()/pthread 绑定后传入；自定义线程池需要显式维护 tid 列表。"
+        },
+        {
+          "type": "版本差异错误",
+          "location": "L84-L88、L136-L143、L274-L281",
+          "detail": "AOSP android-13.0.0_r1 到 android-17.0.0_r1 均存在 frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java，未发现正文所说 Android 17 才从 performance.hint 迁至 power.hint 的版本变化。",
+          "suggestion": "把该点改为“Android 17 源码确认服务位于 power/hint”，不要写成 Android 17 新迁移；如需历史对比，必须找出更早 tag 中的实际差异。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L70、L298-L304、L351-L356",
+          "detail": "正文把 hint session 写成 Adjc/TaskScheduler 决策输入，并给出比值失效、创建耗时 5-15ms 等具体判断，但本轮未在 android-17.0.0_r1 的 PerformanceHintManager/HintManagerService/Power HAL 路径中找到相应一手证据。",
+          "suggestion": "删除或降级这些未经验证的调度和耗时断言；只保留官方文档可支撑的 core placement/frequency advisory 语义，性能数字需要 trace/benchmark 证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-10T13:30:33+08:00",
+      "status": "completed",
+      "original_review_log": "logs/deep-review/2026-07-10-13-deep-review.md",
+      "completed_at": "2026-07-10T13:35:00+08:00",
+      "completed_by": "task2b-lite",
+      "completion_note": "fixed-lite: P0 Session 生命周期(三态机→native指针) + P0 线程ID示例(getId→Process.myTid). 剩余3个问题(API年表/服务路径迁移/未验证断言)留主Task2B."
+    },
+    {
+      "section": "android-17-trimmemory-回调-api-演进与-art-heap-trim-链路",
+      "section_title": "Android 17 trimMemory 回调 API 演进与 ART Heap Trim 链路",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 20/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 20,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-命令行-gpu/sf-调试工具链演进——flatland-与-sfdo-的双重定位",
+      "section_title": "Android 17 命令行 GPU/SF 调试工具链演进——flatland 与 sfdo 的双重定位",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 20/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 20,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-agi-frame-profiler-与-gapii-spy-架构-—-单帧-gpu-捕获的真实机制",
+      "section_title": "Android 17 AGI Frame Profiler 与 gapii Spy 架构 — 单帧 GPU 捕获的真实机制",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 20/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 20,
+      "sources_count": 1
+    },
+    {
+      "section": "2026-07-04-ai-agent-memory-management",
+      "section_title": "2026-07-04-ai-agent-memory-management",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 19/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 19,
+      "sources_count": 1,
+      "chapter": "ch04"
+    },
+    {
+      "section": "2026-07-04-android17-modular-startup-framework-dependency-graph",
+      "section_title": "2026-07-04-android17-modular-startup-framework-dependency-graph",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 19/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 19,
+      "sources_count": 1,
+      "chapter": "ch08"
+    },
+    {
+      "section": "2026-07-05-android17-ai-agent-memory-sandboxed-data-reuse",
+      "section_title": "2026-07-05-android17-ai-agent-memory-sandboxed-data-reuse",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 19/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 19,
+      "sources_count": 1,
+      "chapter": "ch04"
+    },
+    {
+      "section": "2026-07-05-android17-battery-optimization-soc-architecture-power-management",
+      "section_title": "2026-07-05-android17-battery-optimization-soc-architecture-power-management",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 19/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 19,
+      "sources_count": 1,
+      "chapter": "ch02"
+    },
+    {
+      "section": "2026-07-05-android17-startup-insights-application-start-info",
+      "section_title": "2026-07-05-android17-startup-insights-application-start-info",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 19/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 19,
+      "sources_count": 1,
+      "chapter": "ch02"
+    },
+    {
+      "section": "2026-07-05-perfetto-v57-ai-skill-state-tracks-android-memory",
+      "section_title": "2026-07-05-perfetto-v57-ai-skill-state-tracks-android-memory",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 19/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 19,
+      "sources_count": 1,
+      "chapter": "ch02"
+    },
+    {
+      "section": "2026-07-06-android17-gpu-debug-performance-tools-source",
+      "section_title": "2026-07-06-android17-gpu-debug-performance-tools-source",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 19/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 19,
+      "sources_count": 1,
+      "chapter": "ch02"
+    },
+    {
+      "section": "2026-07-06-android17-startup-insights-gaps",
+      "section_title": "2026-07-06-android17-startup-insights-gaps",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 19/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 19,
+      "sources_count": 1,
+      "chapter": "ch02"
+    },
+    {
+      "section": "android-17-(api-37)-cpu-缓存局部性与-pss-内存核算源码机制",
+      "section_title": "Android 17 (API 37) CPU 缓存局部性与 PSS 内存核算源码机制",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 17/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 17,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-soc-厂商电池优化-×-ipower-hal-×-schedutil-闭环",
+      "section_title": "Android 17 SoC 厂商电池优化 × IPower HAL × schedutil 闭环",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 17/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 17,
+      "sources_count": 1
+    },
+    {
+      "section": "源码调研：android-17-gpu-图形调试与分析工具链源码级研究",
+      "section_title": "源码调研：Android 17 GPU 图形调试与分析工具链源码级研究",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 17/20",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-android17-gpu-profiling-tools-source-investigation.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 17,
+      "sources_count": 1
+    },
+    {
+      "section": "源码调研：android-17-gpu计数器跨设备标准化",
+      "section_title": "源码调研：Android 17 GPU计数器跨设备标准化",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 17/20",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-android17-gpu-counter-cross-device-standardization.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 17,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17不同soc架构下的电池优化策略与ipower-hal实现",
+      "section_title": "Android 17不同SoC架构下的电池优化策略与IPower HAL实现",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 17/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 17,
+      "sources_count": 1
+    },
+    {
+      "section": "2026-07-04-android17-pms-cpuidle-schedutil-closed-loop",
+      "section_title": "2026-07-04-android17-pms-cpuidle-schedutil-closed-loop",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 16/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 16,
+      "sources_count": 1,
+      "chapter": "ch16"
+    },
+    {
+      "section": "2026-07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup",
+      "section_title": "2026-07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 16/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 16,
+      "sources_count": 1,
+      "chapter": "ch05"
+    },
+    {
+      "section": "2026-07-06-android17-background-audio-hardening-leaudio-power-source",
+      "section_title": "2026-07-06-android17-background-audio-hardening-leaudio-power-source",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 16/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 16,
+      "sources_count": 1,
+      "chapter": "ch05"
+    },
+    {
+      "section": "android-17-vndk-隔离与-self-contained-hals-对-native-库加载性能的源码级影响",
+      "section_title": "Android 17 VNDK 隔离与 Self-contained HALs 对 native 库加载性能的源码级影响",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 16/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 16,
+      "sources_count": 1
+    },
+    {
+      "section": "android-developers-blog---android-17-引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少...",
+      "section_title": "Android Developers Blog - Android 17 引入了全新的任务调度器，通过智能优先级算法和延迟启动机制，应用启动时间平均减少...",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 15/20",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026/06/android-17-performance-optimization"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 15,
+      "sources_count": 1
+    },
+    {
+      "section": "2026-07-04-android17-lmkd-procs-prio-batch-thrashing-mainline-fork",
+      "section_title": "2026-07-04-android17-lmkd-procs-prio-batch-thrashing-mainline-fork",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 15/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 15,
+      "sources_count": 1,
+      "chapter": "ch04"
+    },
+    {
+      "section": "own-the-outer-loop---ai-agent-工程实践",
+      "section_title": "Own the Outer Loop - AI Agent 工程实践",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 15/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 15,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-art-heaptask-并发与-gc-抑制源码级机制",
+      "section_title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17信号处理机制与debuggerd架构迁移",
+      "section_title": "Android 17信号处理机制与debuggerd架构迁移",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "section": "源码调研：android-17-lmk-从内核态到用户态迁移",
+      "section_title": "源码调研：Android 17 LMK 从内核态到用户态迁移",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-android17-lmkd-kernel-to-userspace-migration.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "section": "源码调研：android-17-power-stats-hal-架构与-oem-实现差异",
+      "section_title": "源码调研：Android 17 Power Stats HAL 架构与 OEM 实现差异",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-android17-powerstats-hal-oem-implementation.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-后台音频硬化与播放功耗治理机制盲区验证",
+      "section_title": "Android 17 后台音频硬化与播放功耗治理机制盲区验证",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-graphicbuffer-内存池化与-bufferqueue-slot-复用机制",
+      "section_title": "Android 17 GraphicBuffer 内存池化与 BufferQueue slot 复用机制",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-vndk-/-vndk-less-路径下-native-库加载的-namespace-校验成本",
+      "section_title": "Android 17 VNDK / VNDK-less 路径下 native 库加载的 namespace 校验成本",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-后台音频硬化的双源决策矩阵与-hardeningenforcer-/-tracks-gethardeningdecision-全链路",
+      "section_title": "Android 17 后台音频硬化的双源决策矩阵与 HardeningEnforcer / Tracks getHardeningDecision 全链路",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "section": "android-17-信号处理机制与-debuggerd-架构迁移",
+      "section_title": "Android 17 信号处理机制与 debuggerd 架构迁移",
+      "priority": 80,
+      "reason": "[task2a-knowledge-gap] 高质量候选缺口评分 14/20",
+      "material_paths": [
+        ""
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-10T16:10:00+08:00",
+      "status": "pending",
+      "total_score": 14,
+      "sources_count": 1
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.16-android17-gpu-debugging-tools-chain.md",
+      "priority": 80,
+      "type": "draft",
+      "created_date": "2026-07-10",
+      "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.37-android17-lmkd-userspace-migration.md",
+      "priority": 80,
+      "type": "draft",
+      "created_date": "2026-07-10",
+      "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory.md",
+      "priority": 80,
+      "type": "draft",
+      "created_date": "2026-07-10",
+      "created_by": "task2a-knowledge-gap"
+    },
+    {
+      "path": "src/part1-fundamentals/ch25-power/25.18-android17-power-stats-hal.md",
+      "priority": 80,
+      "type": "draft",
+      "created_date": "2026-07-10",
+      "created_by": "task2a-knowledge-gap"
     }
   ],
   "entries": [
