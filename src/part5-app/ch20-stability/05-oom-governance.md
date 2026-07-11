@@ -13,6 +13,10 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
   - type: aosp
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.h"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap-inl.h"
+  - type: aosp
     path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
   - type: blog
     path: "Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md"
@@ -22,10 +26,10 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md"
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.3", "23.4", "23.6", "4.3", "4.4"]
-review_count: 3
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
+review_count: 4
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 created_by: "task2a"
 reviewed_date: "2026-07-12"
@@ -38,11 +42,11 @@ task9_result: auto-fixed
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task2b_lite_at: "2026-06-01"
-last_task9_at: "2026-07-12T04:28:18+08:00"
+last_task9_at: "2026-07-12T05:27:04+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-12"
-last_task9_review_log: "logs/deep-review/2026-07-12-04-deep-review.md"
-task9_review_notes: "2026-07-12 Task9 deep-review auto-fix：按 AOSP android-17.0.0_r1 复核 OOM 机制；修正 heap growth limit 来源、VmSize 判读边界和 OOM handler 示例中的再分配风险，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-07-12-05-deep-review.md"
+task9_review_notes: "2026-07-12 Task9 final-check auto-fix：按 AOSP android-17.0.0_r1 复核 OOM 机制；修正 Heap::AllocObjectWithAllocator 源码锚点到 heap.h/heap-inl.h，并补齐 API 34+ 不再通知的 RUNNING_MODERATE/RUNNING_CRITICAL trim level，回到 Task6 复审。"
 last_task9_autofix_at: "2026-07-12"
 last_task9_audit: "2026-07-12"
 last_task9_audit_at: "2026-07-12T00:25:03+08:00"
@@ -105,7 +109,7 @@ giving up on allocation because <1% of heap free after GC.
 
 ### 产生路径
 
-Java 层的 `new` 操作符进入 ART 后走到 `Heap::AllocObjectWithAllocator`（`art/runtime/gc/heap.cc`）。分配失败时，ART 发起一次强力 GC（`AllocateInternalWithGc`），如果 GC 后仍然分配不了，进入 `Heap::ThrowOutOfMemoryError`：
+Java 层的 `new` 操作符进入 ART 后走到 `Heap::AllocObjectWithAllocator`（声明在 `art/runtime/gc/heap.h`，内联实现位于 `art/runtime/gc/heap-inl.h`）。常规快路径分配失败后，`heap-inl.h` 会调用 `AllocateInternalWithGc`（`art/runtime/gc/heap.cc`）触发 GC；如果 GC 后仍然分配不了，进入 `Heap::ThrowOutOfMemoryError`：
 
 ```cpp
 // art/runtime/gc/heap.cc 简化逻辑
@@ -404,13 +408,15 @@ static void* pthread_wrapper(void* arg) {
 
 **`onTrimMemory` 分级响应**
 
-`ComponentCallbacks2.onTrimMemory(level)` 是系统通知应用释放内存的回调，不同 level 对应不同的释放策略。Android 14（API 34）以后，AOSP 已把 `TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 标记为 deprecated，并注明应用不再收到这些 level；面向 Android 17 的治理代码不能依赖它们触发，只能作为兼容旧系统的兜底分支。
+`ComponentCallbacks2.onTrimMemory(level)` 是系统通知应用释放内存的回调，不同 level 对应不同的释放策略。Android 14（API 34）以后，AOSP 已把 `TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 标记为 deprecated，并注明应用不再收到这些 level；面向 Android 17 的治理代码不能依赖它们触发，只能作为兼容旧系统的兜底分支。
 
 | Level | Android 17 边界 | 含义 | 建议动作 |
 |-------|-----------------|------|----------|
 | `TRIM_MEMORY_UI_HIDDEN` | 仍会通知 | UI 不可见 | 释放 UI 相关缓存（图片、布局缓存） |
 | `TRIM_MEMORY_BACKGROUND` | 仍可作为后台水位 | 进程进入后台 LRU | 释放可快速重建的数据 |
-| `TRIM_MEMORY_RUNNING_LOW` | API 34+ 不再通知应用 | 内存开始紧张 | 仅兼容旧系统，释放非关键缓存 |
+| `TRIM_MEMORY_RUNNING_MODERATE` | API 34+ 不再通知应用 | 运行中轻度内存压力 | 仅兼容旧系统，释放低成本缓存 |
+| `TRIM_MEMORY_RUNNING_LOW` | API 34+ 不再通知应用 | 运行中较高内存压力 | 仅兼容旧系统，释放非关键缓存 |
+| `TRIM_MEMORY_RUNNING_CRITICAL` | API 34+ 不再通知应用 | 运行中极高内存压力 | 仅兼容旧系统，释放更多可重建资源 |
 | `TRIM_MEMORY_MODERATE` | API 34+ 不再通知应用 | 后台应用，内存中等压力 | 仅兼容旧系统，释放可重建的数据 |
 | `TRIM_MEMORY_COMPLETE` | API 34+ 不再通知应用 | 后台应用，内存极度紧张 | 仅兼容旧系统，释放所有可释放的资源 |
 
