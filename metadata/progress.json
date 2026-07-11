@@ -3,7 +3,7 @@
   "draft": 0,
   "ready_for_review": 8,
   "finalized": 9,
-  "last_updated": "2026-07-11T14:08:00+08:00",
+  "last_updated": "2026-07-11T15:04:00+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "8.39",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-11T15:04:00+08:00",
+      "note": "Android 17 heapprofd 生产环境部署（启动场景视角）: 5 anchors (双Producer架构/heapprofd.rc启动延迟激活/白名单模式 vs all=true 崩溃风险/连接退避/PID重扫/三层权限模型/packages.list校验/SELinux/Perfetto协同/CI-CD告警) + 3 extensions (Guardrails资源守护/企业部署/优化建议). 聚焦启动阶段差异，交叉引用 §14.1 §26.24 §23.6 §13.22. AOSP android-17.0.0_r1 源码验证."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
