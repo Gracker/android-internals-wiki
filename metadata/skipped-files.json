@@ -7198,5 +7198,12 @@
     "weekly_issue": "#23",
     "weekly_date": "2021-10-15",
     "reason": "fetch_failed"
+  },
+  {
+    "title": "Kotlin Android Interview Questions",
+    "url": "https://anandharajramasamydev.medium.com/kotlin-android-interview-questions-412332d1106e",
+    "reason": "面试题集，技术深度不足(1分)，总分9分<10分阈值",
+    "weekly_issue": "#23",
+    "score": 9
   }
 ]
