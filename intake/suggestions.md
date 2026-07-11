@@ -281,3 +281,15 @@ All input sources fully consumed and map to existing chapters.
 - **位置**：章节开头 API 声明部分 + 版本兼容性说明
 - **问题**：Android 17 EyeDropper API 官方文档可能未完全公开，引用缺乏可验证性；版本兼容性说明不够具体
 - **建议**：1. 明确标注 API 状态（预览版/正式版），提供可验证的官方文档路径；2. 补充 Android 17 实现完整性说明和未来版本兼容性考量
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-07-11
+- **类型**：源码引用准确性
+- **位置**：BufferQueue acquireBuffer 方法签名
+- **问题**：章节中引用了两个不同的 acquireBuffer 方法签名，一个来自 android-16.0.0_r1，另一个来自 android16-release，版本标注不一致
+- **建议**：统一版本引用锚点，建议全部使用 android-17.0.0_r1 作为主锚点，保持源码引用的一致性
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-07-11
+- **类型**：版本差异
+- **位置**：Vulkan CDD 要求说明
+- **问题**：章节标注的 applicable_versions 包含 Android 17，但 Vulkan 1.1/1.3 要求引用的是 Android 16 CDD，需要明确说明这些要求在 Android 17 中的延续性或变化
+- **建议**：补充说明 Android 17 中 Vulkan 版本基线要求的延续性，明确引用 Android 17 CDD 中相应的 Vulkan 规范要求

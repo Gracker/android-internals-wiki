@@ -146,6 +146,7 @@
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
   - [14.29 Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制](part3-tools/ch14-other-tools/14.29-android17-agi-frame-profiler-gapii-spy.md)
+  - [14.30 GpuService GPU 内存可观测性架构：GpuMem eBPF 追踪 / GpuMemTracer Perfetto 桥接 / GpuStats statsd 归因](part3-tools/ch14-other-tools/14.30-android17-gpuservice-gpu-memory-observability.md)
   - [26.24 heapprofd 生产级部署与权限模型](part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md)
   - [20.19 Android 17 信号处理架构迁移与 debuggerd bionic/linker 重构](part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md)
 

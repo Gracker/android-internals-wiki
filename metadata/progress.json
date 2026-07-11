@@ -1,9 +1,9 @@
 {
-  "total": 716,
-  "draft": 0,
+  "total": 717,
+  "draft": 1,
   "ready_for_review": 8,
   "finalized": 9,
-  "last_updated": "2026-07-11T16:13:18.973778+08:00",
+  "last_updated": "2026-07-11T18:09:44.682143",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",

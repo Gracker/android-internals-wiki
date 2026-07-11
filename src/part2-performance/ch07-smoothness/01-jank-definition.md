@@ -83,7 +83,7 @@ last_task6_review_log: "logs/review/2026-07-11-13-review.md"
 last_task6_audit: "2026-07-04"
 review_notes: "2026-07-11 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 0；修正 Android 17 VsyncConfiguration 源码锚点：实际调用为 sysprop::vsync_event_phase_offset_ns(1000000) / sysprop::vsync_sf_event_phase_offset_ns(1000000)，不是零参数调用；回到 Task6 复审。详见 logs/deep-review/2026-07-11-12-deep-review.md。 | 2026-07-11 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix(VSync phase源码锚点修正)回流后写作层复审通过；L1禁用词/高频词/物理动词/元叙述零命中；L2开头/节奏/结构/读者引导全部通过；outline 6/6锚点全覆盖；否定-纠正结构2处(限额内)；无L1/L2问题, 无L3/L4回炉项。送Task9终审确认。 | 2026-07-11 Task9 idle-audit AUTO-FIX: P0 1 / P1 0 / P2 0；修正 VSync phase 源码锚点：Android 17 使用 VsyncConfiguration.cpp 中的 sysprop::vsync_event_phase_offset_ns(1000000) / sysprop::vsync_sf_event_phase_offset_ns(1000000) 与 ro.surface_flinger.* 属性，不再写成不存在的 VSYNC_EVENT_PHASE_OFFSET_NS / SF_VSYNC_EVENT_PHASE_OFFSET_NS；回到 Task6 复审。详见 logs/deep-review/2026-07-11-11-audit.md。 | 2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 task6 revisit: pass-light-edit。清理重复 frontmatter 并复审 Task2B 修复后的 Binder SQL 段；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 1 / P1 0 / P2 0；7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。 | 2026-06-20 Task9 闲时抽检：auto-fixed。Android 17/API 37 公开 tag 已可核验；FrameTimeline.cpp 在 Android 17 移至 Scheduler/FrameTimeline.cpp，JankInfo.h 新增 NonAnimating/AppResyncedJitter/DisplayNotOn/DisplayModeChangeInProgress/DisplayPowerModeChangeInProgress；已修正源码锚点、版本边界和旧待验证枚举口径，回到 Task6 复审。 | 2026-06-21 Task9 00:25：pass-tech-review。P0/P1/P2 0；复核 Android 17 FrameTimeline/JankInfo、Perfetto android.frames.timeline/android.binder SQL 列、Android vitals/JankStats 官方口径；queue 无 pending，基于 task6_result=pass-light-edit 自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-21
+last_deepseek_cn_review_at: 2026-07-11
 last_task9_autofix_at: "2026-07-11"
 last_task9_audit_at: "2026-07-11T11:28:55+08:00"
 last_task9_audit_result: "auto-fixed"
@@ -129,11 +129,11 @@ last_task9_review_notes: "2026-07-11 Task9 deep-review: pass-tech-review。P0/P1
 
 ## 为什么要先把"卡"说清楚
 
-很多性能问题，一开始就输在定义上。
+很多性能问题一开始就输在定义上。
 
-用户说"这页面有点卡"，开发说"我这里能跑到 60fps"，测试说"偶发掉帧"，平台说"这个版本 jank rate 没超阈值"。四个人都在说卡，但说的不是同一件事。如果这一层不先统一口径，后面再看 trace、看指标、定责任方，结论很容易各说各话。
+用户说"这页面有点卡"，开发说"我这里能跑到 60fps"，测试说"偶发掉帧"，平台说"这个版本 jank rate 没超阈值"——四个人都在说卡，说的不是同一件事。这一层不先统一口径，后面再看 trace、看指标、定责任方，结论很容易各说各话。
 
-本节把"卡"拆开，讲清楚哪些属于渲染问题，哪些属于响应问题，哪些已经进入 ANR。只有定义清楚，后面的分析路径才会稳定。
+本节把"卡"拆开：哪些属于渲染问题，哪些属于响应问题，哪些已经进入 ANR。只有定义清楚，后面的分析路径才会稳定。
 
 ## 先把"广义流畅性"和"狭义 jank"分开
 
@@ -180,7 +180,7 @@ VSync 是渲染管线的基本时钟，每一帧必须在分配给自己的 VSyn
 
 举个极端的例子：一秒内渲染了 50 帧。如果这 50 帧是均匀分布的（每 20ms 一帧），用户看到的是稳定的 50fps 体验，虽然不是最流畅，但不会觉得"卡"。但如果前 200ms 只渲染了 1 帧，后 800ms 突然渲染了 49 帧，FPS 同样是 50，但用户会感受到明显的卡顿——因为那 200ms 的空白期打破了视觉惯性。
 
-腾讯音乐技术团队在分析里特别强调过这一点：**帧率不能直接代表是否卡顿**。Google 之所以把重点放在"每一帧是否按时到达"，而不是"平均帧率是多少"，原因就在这里。用户感知到的，是节奏稳定不稳定，而不是统计意义上的总产量。
+这里的关键是：**帧率不能直接代表是否卡顿**。Google 之所以把重点放在"每一帧是否按时到达"而不是"平均帧率是多少"，原因就在这里。用户感知的是节奏的稳定性，不是统计意义上的总产量。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
 
@@ -438,7 +438,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 ### 视觉惯性与帧率稳定性
 
-用户对流畅度的感知不仅取决于帧率的高低，更取决于帧率的**稳定性**。这涉及到一个概念叫"视觉惯性"——当用户持续看到 60fps 的画面时，潜意识里预期下一帧也是同样的节奏。如果突然有一帧延迟了，打破了这种惯性，用户就会感知到"卡了一下"。
+用户对流畅度的感知，帧率的高低只占一半，另一半是帧率的**稳定性**。这就是"视觉惯性"：用户持续看到 60fps 画面后，潜意识里会预期下一帧也按这个节奏来。一旦某一帧延迟，惯性被打破，用户就会感到"卡了一下"。
 
 这就是为什么稳定的 40fps 可能比在 60fps 和 30fps 之间来回跳变的体验更好——稳定低帧率让用户建立了新的视觉惯性，而不稳定的帧率不断打破惯性。
 
@@ -446,7 +446,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 ### 延迟感知的阈值
 
-研究表明，用户对延迟的感知有几个常用阈值：
+工程上常用的用户延迟感知阈值：
 
 - **< 100ms**：用户感觉系统是"即时响应"的。Jakob Nielsen 的研究表明，100ms 是用户感觉"系统在直接响应我的操作"的极限。在这个范围内，用户认为操作和结果是直接关联的。
 - **100ms - 300ms**：用户能感知到延迟，但仍然觉得在"可接受"范围内。此时用户能感觉到操作和结果之间有轻微的间隔。
@@ -483,19 +483,19 @@ JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直
 
 ## 常见问题与误区
 
-### 误区 1：「FPS 高就等于流畅」
+### 误区 1："FPS 高就等于流畅"
 
 这是最常见的误解。FPS 衡量的是帧的产量，不是帧的节奏。一秒内 50 帧全部挤在后半段，FPS 数值依然好看，但用户感受到的是前半段的"冻住"。正确的做法是关注 Jank 率和帧时间标准差，而不是盯着 FPS 不放。
 
-### 误区 2：「Jank 都是 App 的问题」
+### 误区 2："Jank 都是 App 的问题"
 
 从本节的分类可以看出，Jank 可能来自 App（AppDeadlineMissed）、SurfaceFlinger（SurfaceFlingerCpuDeadlineMissed）、甚至 Display HAL。在着手优化之前，先在 Perfetto 的 FrameTimeline 中确认 JankType，避免在错误的方向上浪费时间。
 
-### 误区 3：「掉帧率必须做到 0%」
+### 误区 3："掉帧率必须做到 0%"
 
 工程上要清理的是稳定重现的 jank 峰值、Frozen Frame 和高延迟状态，不是盯着一个抽象的 0%。列表高速滑动、复杂动画、启动首帧、高刷设备，容忍区间都不同。把所有场景压成一个全局掉帧率数字，既不利于定位，也不利于版本回归。更实用的做法是按交互路径、刷新率和统计窗口分别设预算。
 
-### 误区 4：「120Hz 设备不需要优化，因为帧预算变小了」
+### 误区 4："120Hz 设备不需要优化，因为帧预算变小了"
 
 120Hz 设备的帧预算只有 8.33ms，比 60Hz 的 16.67ms 紧了一半。原本在 60Hz 设备上刚好达标的渲染耗时，到了 120Hz 设备上可能就成了 Jank。高刷新率设备对渲染效率的要求更高，不是更低。
 

@@ -69,7 +69,7 @@ last_task9_review_log: "logs/deep-review/2026-07-11-12-deep-review.md"
 auto_promoted_by: openclaw-task9
 auto_promoted_date: "2026-07-11"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
+last_deepseek_cn_review_at: 2026-07-11
 last_task9_autofix_at: "2026-07-11"
 updated_by: openclaw-task9
 updated_date: "2026-07-11"
@@ -500,10 +500,6 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
 
 ## 参考资料
 
-### Kotlin 协程 ANR 治理与 Dispatchers 性能开销
-
-> 协程 ANR 的核心陷阱：Dispatchers.IO 不等于切换线程，Handler 关闭后存在降级传播链。对 withContext 和 CoroutineScheduler 线程模型的深度分析，详见参考资料。
-
 
 - AOSP 源码路径：
   - `frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java`
@@ -519,16 +515,7 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
   - [钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498818)
   - Android 16/17 ProfilingManager 系统触发式追踪（[ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)、[ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger)、[Android 17 features](https://developer.android.com/about/versions/17/features)）
 
-### Android 17 ANR 输入事件超时检测机制深度解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-input-anr-mechanism.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 ANR 检测采用双层预警：Native InputDispatcher 实时监控输入超时并触发 pre-ANR 通知（超时前50%窗口），Java 层 InputManagerService 区分无焦点窗口 ANR 和窗口无响应 ANR。完整流程含事件生成→派发监控→超时判定→跨进程回调→ANR 触发五环节。
-- 注入时间：2026-07-03
-- 价值：ch03/ch09 交叉领域源码级补强：pre-ANR 双层预警 + InputDispatcher 超时判定完整路径
-
 ## 源码级补充：Android 14-17 ANR 检测路径（InputDispatcher → AMS → AnrHelper → ProcessErrorStateRecord）
-
-> 关联 DeepResearch：`2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md`
 
 ### 默认派发超时阈值
 
@@ -663,12 +650,3 @@ mAnrRecords.add(AnrRecord) → startAnrConsumerIfNeeded → AnrConsumerThread �
 | Android 16/17 (API 36/37) | BroadcastQueueModernImpl 更名为 BroadcastQueueImpl，并接入 AnrTimer；mTempDumpedPids 防止 preDump 与 queue 同 pid 竞争；currentPid != r.mPid 防止陈旧 ANR；mDropboxRateLimiter rate-limit |
 
 ---
-
-
-
-### Android 14-17 ANR 检测路径与 InputDispatcher 超时机制源码深度解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 IInputConstants.aidl 到 AnrHelper.appNotResponding 的完整 ANR 检测路径源码解析。核心发现：(1) input 派发超时 = 5000ms × ro.hw_timeout_multiplier；(2) processAnrsLocked 每轮检测 mAnrTracker 并组装 mLastAnrState 诊断快照；(3) AnrController 的 pending focus 归因逻辑解决焦点切换误报；(4) AnrHelper 异步 trace dump 编排（AnrConsumerThread 单线程消费），drop 重复/zero-pid/pre-dumped；(5) isSilentAnr 控制后台 ANR 静默 kill；(6) Watchdog 在 Android 15+ 进入 15s 预 dump + 60s 超时杀 system_server 口径。覆盖 Android 14-17 版本演进。
-- 注入时间：2026-06-16
-- 价值：把 AIW ch09 ANR 章节从架构级描述推进到源码级验证，特别是 Android 16/17 的 BroadcastQueueImpl / AnrTimer、mTempDumpedPids 防竞争、mDropboxRateLimiter 等机制在 AIW 中尚未覆盖；pending focus 归因逻辑作为 Android 14-17 均可见的边界保留。

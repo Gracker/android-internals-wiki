@@ -1,3 +1,45 @@
+
+## [Task2A Round 68] 知识缺口挖掘 — 2026-07-11 18:10
+
+### 已检查方向（本轮）
+- ✅ Phase 0: 0 个空 draft 章节（49 个 draft 全部 >15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 0 个 unmapped high-quality 条目（全部已映射）
+- ✅ DeepResearch 新增文件 1 个（本轮新发现）:
+  - 2026-07-11-android17-gpu-memory-tracking-pool-defrag.md (17:59 创建, 265 行)
+    → 核心发现 GpuService 三层 GPU 内存可观测性架构（GpuMem/GpuMemTracer/GpuStats）
+    → §10.8 "GPU/图形内存统计"（ready-for-review, 80 行）完全未覆盖 GpuMem/GpuMemTracer/GpuStats/GpuService
+    → §14.25/§14.28 仅有零散引用（1-4 处 mention），无系统阐述
+    → 评分 15/20 ≥ 14 → 创建新章节 §14.30
+- ✅ Clippings: 无新文件（最后更新 2026-06-23，18 天无更新）
+- ✅ research-feeds: 无新文件（最后 2026-04-14）
+- ✅ daily-info 2026-07-11: 2 项 RSS + 1 篇论文（WOOTdroid eBPF）
+  - 调度器/内存 → §1.43/§4.x 已覆盖
+  - Linux BPF → §14.25/§4.45 已覆盖
+  - WOOTdroid 全系统 eBPF 追踪论文 → §14.25 已覆盖（学术研究，非 AOSP 特性，评分 10/20）
+- ✅ queue.json: 已更新
+- ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 67 轮已全面覆盖
+
+### 评估细节
+| 候选 | 素材丰富度 | 相关性 | 读者需求 | 时效性 | 总分 | 结论 |
+|------|-----------|--------|---------|--------|------|------|
+| GpuService GPU 内存可观测性架构独立成节 | 4 | 4 | 3 | 4 | 15/20 | ✅ 合格，已创建 §14.30 |
+| WOOTdroid eBPF 全系统追踪论文 | 2 | 3 | 2 | 3 | 10/20 | §14.25 已覆盖，学术研究非新缺口 |
+
+### 合格缺口（≥14 分，且无已有章节覆盖）
+1. ✅ **§14.30 GpuService GPU 内存可观测性架构** — 评分 15/20
+   - 素材: DeepResearch 265 行 AOSP 源码级调研（GpuMem.cpp/GpuMemTracer.cpp/GpuStats.cpp）
+   - 现有覆盖盲区: §10.8 80 行但完全未覆盖 GpuService 子系统；§14.25 仅 GpuMem 简要引用；§14.28 draft 104 行有 GpuMem/GpuService 各 1 处 mention
+   - 新增内容: GpuService 服务架构 / GpuMem eBPF 追踪 / GpuMemTracer Perfetto 桥接 / GpuStats statsd 归因 / dumpsys 查询路径 / 三层协作模型
+
+### 创建动作
+- 新增文件: 1 个 (`src/part3-tools/ch14-other-tools/14.30-android17-gpuservice-gpu-memory-observability.md`)
+- SUMMARY.md 已更新 (+1 条)
+- progress.json 已更新 (total: 716→717, draft: 0→1)
+- queue.json 已添加 (1 条, priority: 80)
+
+### 结论
+1 个新知识缺口（§14.30, 15/20）已创建并录入。Coverage extends to GpuService GPU memory observability architecture.
 **研究方向**: 需要分析 Android 17 binder IPCThreadState.cpp 中的优先级继承实现机制
 
 
@@ -237,3 +279,37 @@ All input sources (DeepResearch, Clippings, research-feeds, daily-info, source-i
 ### 结论
 Coverage remains saturated (66th consecutive round). No new knowledge gaps ≥14 identified.
 All 9 new DeepResearch files map to existing chapters. source-index: 0 unmapped high-quality.
+
+
+## [Task2A Round 67] 知识缺口挖掘 — 2026-07-11 17:08
+
+### 已检查方向（本轮）
+- ✅ Phase 0: 0 个空 draft 章节（49 个 draft 全部 >15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 0 个 unmapped high-quality 条目（全部已映射）
+- ✅ DeepResearch 新增文件 2 个（本轮新发现）:
+  - 2026-07-11-android17-cpu-gpu-sync-bottleneck.md (12:04 创建, 222 行)
+    → 核心发现 GPU 计数器标准化，映射到已有 §14.28（draft, 138 行），素材补充而非新缺口
+  - 2026-07-11-android17-gpu-counter-standardization.md (14:56 创建, 210 行)
+    → GpuCounterDescriptor 协议分析 + CDD/CTS 合规路径，映射到已有 §14.28（draft, 138 行），素材补充而非新缺口
+- ✅ Clippings: 无新文件（最后更新 2026-06-23，18 天无更新）
+- ✅ research-feeds: 无新文件（最后 2026-04-14）
+- ✅ daily-info 2026-07-11: 2 项 RSS（调度器/内存→§1.43/§4.x, Linux BPF→§14.25），均已映射
+- ✅ queue.json pending: §2.32/§5.30 — 均为已有章节素材注入
+- ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 66 轮已全面覆盖
+
+### 评估细节
+| 候选 | 素材丰富度 | 相关性 | 读者需求 | 时效性 | 总分 | 结论 |
+|------|-----------|--------|---------|--------|------|------|
+| CPU-GPU 同步瓶颈独立成节 | 4 | 3 | 2 | 3 | 12/20 | §14.28 已覆盖 |
+| GPU 计数器标准化独立成节 | 4 | 4 | 3 | 3 | 14/20 | §14.28 已有 outline 覆盖 |
+
+注：GPU 计数器标准化虽然评分 14，但 §14.28 的 outline 已明确包含「跨厂商 GPU 计数器映射体系」锚点，
+属于已有章节的素材注入（Task 2B 或 Phase 2 加工范畴），不属于 Task 2A 新章节创建。
+
+### 合格缺口（≥14 分，且无已有章节覆盖）
+（无）
+
+### 结论
+Coverage remains saturated (67th consecutive round). No new knowledge gaps ≥14 identified that aren't already covered by existing chapters.
+2 new DeepResearch files provide valuable supplementary material for §14.28 (already draft with 138 lines).
