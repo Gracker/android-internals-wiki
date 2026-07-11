@@ -4,8 +4,8 @@ chapter: "20.5"
 section: "20.5"
 status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-12"
-last_verified_against: "AOSP android-16.0.0_r1, art/runtime/gc/heap.cc"
+last_verified: "2026-07-12"
+last_verified_against: "AOSP android-17.0.0_r1: ART heap/thread/JNI/Unsafe, hwui Bitmap, libutils Looper, ComponentCallbacks2"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 0
@@ -23,8 +23,8 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task9_state: "reviewed"
 task2b_state: "fixed"
 created_by: "task2a"
@@ -34,18 +34,23 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-01T18:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-18-review.md"
 task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。删除虚拟内存治理重复 bullet，收敛口语化“这招”；L1/L2 通过，无新增回炉项，送 Task9 复核。"
-task9_result: "pass-tech-review"
+task9_result: "auto-fixed"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task2b_lite_at: "2026-06-01"
-last_task9_at: "2026-06-01T18:21:00+08:00"
+last_task9_at: "2026-07-12T00:25:03+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-06-01"
-last_task9_review_log: "logs/deep-review/2026-06-01-18-deep-review.md"
-task9_review_notes: "2026-06-01 Task9 18:21：pass-tech-review。复核 Task6 回流后的 OOM 治理；ART OOME 投递、Heap::ThrowOutOfMemoryError、JNI/native alloc、Bitmap native heap、pthread_create 与 heapprofd 边界经 AOSP android-16.0.0_r1 复核，无新增 P0/P1，自动晋升 finalized。"
-last_task9_autofix_at: "2026-06-01"
-last_task9_audit: "2026-06-21"
+task9_reviewed_date: "2026-07-12"
+last_task9_review_log: "logs/deep-review/2026-07-12-00-audit.md"
+task9_review_notes: "2026-07-12 Task9 idle-audit auto-fix：按 AOSP android-17.0.0_r1 复核源码引用与版本差异；补充 Android 14/API 34+ onTrimMemory deprecated level 不再通知应用的边界，回到 Task6 复审。"
+last_task9_autofix_at: "2026-07-12"
+last_task9_audit: "2026-07-12"
+last_task9_audit_at: "2026-07-12T00:25:03+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-12-00-audit.md"
+last_task9_audit_result: "auto-fixed-idle-audit"
+last_task9_audit_notes: "idle audit: 维度1源码引用通过；维度3发现 Android 14/API 34+ ComponentCallbacks2 trim level 行为差异并已 auto-fix，章节回到 Task6 复审。"
 ---
+
 
 # OOM 治理
 
@@ -398,14 +403,15 @@ static void* pthread_wrapper(void* arg) {
 
 **`onTrimMemory` 分级响应**
 
-`ComponentCallbacks2.onTrimMemory(level)` 是系统通知应用释放内存的回调，不同 level 对应不同的释放策略：
+`ComponentCallbacks2.onTrimMemory(level)` 是系统通知应用释放内存的回调，不同 level 对应不同的释放策略。Android 14（API 34）以后，AOSP 已把 `TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 标记为 deprecated，并注明应用不再收到这些 level；面向 Android 17 的治理代码不能依赖它们触发，只能作为兼容旧系统的兜底分支。
 
-| Level | 含义 | 建议动作 |
-|-------|------|----------|
-| `TRIM_MEMORY_UI_HIDDEN` | UI 不可见 | 释放 UI 相关缓存（图片、布局缓存） |
-| `TRIM_MEMORY_RUNNING_LOW` | 内存开始紧张 | 释放非关键缓存 |
-| `TRIM_MEMORY_MODERATE` | 后台应用，内存中等压力 | 释放可重建的数据 |
-| `TRIM_MEMORY_COMPLETE` | 后台应用，内存极度紧张 | 释放所有可释放的资源 |
+| Level | Android 17 边界 | 含义 | 建议动作 |
+|-------|-----------------|------|----------|
+| `TRIM_MEMORY_UI_HIDDEN` | 仍会通知 | UI 不可见 | 释放 UI 相关缓存（图片、布局缓存） |
+| `TRIM_MEMORY_BACKGROUND` | 仍可作为后台水位 | 进程进入后台 LRU | 释放可快速重建的数据 |
+| `TRIM_MEMORY_RUNNING_LOW` | API 34+ 不再通知应用 | 内存开始紧张 | 仅兼容旧系统，释放非关键缓存 |
+| `TRIM_MEMORY_MODERATE` | API 34+ 不再通知应用 | 后台应用，内存中等压力 | 仅兼容旧系统，释放可重建的数据 |
+| `TRIM_MEMORY_COMPLETE` | API 34+ 不再通知应用 | 后台应用，内存极度紧张 | 仅兼容旧系统，释放所有可释放的资源 |
 
 关键点：`onTrimMemory` 在主线程回调，释放操作必须快速。耗时操作（如写磁盘、序列化）放到子线程异步执行。
 
