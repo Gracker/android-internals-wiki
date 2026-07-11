@@ -2,7 +2,7 @@
 title: "ANR 治理策略"
 chapter: "20.4"
 section: "20.4"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-11"
 last_verified_against: "AOSP android-17.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
@@ -76,6 +76,7 @@ last_task9_audit_at: "2026-07-11T20:30:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-11-20-audit.md"
 last_task9_audit_result: "auto-fixed"
 last_task9_audit_notes: "idle audit auto-fix: corrected Android 17 source anchors, ContentProvider timeout constant, BroadcastReceiver path, and cached app freezer source path; returned to Task6 revisiting."
+task2b_verifier_notes: "2026-07-11T23:25 Task2B Verifier: status finalized→ready-for-review (pipeline_stage=task6_pending, task6_state=revisiting but status=finalized blocked Task6 pickup). task9 auto-fix correctly set; chapter ready for Task6 revisiting re-review."
 ---
 
 # ANR 治理策略
