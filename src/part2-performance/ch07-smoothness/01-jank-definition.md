@@ -2,7 +2,7 @@
 title: 卡顿的定义与分类
 section: '7.1'
 chapter: '7.1'
-status: "finalized"
+status: "ready-for-review"
 drafted_date: '2026-03-30'
 drafted_by: openclaw-task2
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
@@ -95,6 +95,8 @@ p1: 0
 p2: 0
 updated_by: "openclaw-task9"
 updated_date: "2026-07-11"
+last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
+task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
 ---
 # 卡顿的定义与分类
 
