@@ -114,6 +114,106 @@ Death notification 的四态机设计解决了 Binder 中唯一的长生命周�
 
 此机制确保了跨进程服务的可靠注销，避免了内存泄漏。
 
+
+## 🔬 源码级深挖（2026-07-11 调研补充）
+
+<!-- AIW-源码调研-2026-07-11 -->
+> 本节基于 `android-17.0.0_r1` + kernel `android17-6.18` 源码深挖，补充 §1.53 原稿未覆盖的内核态优先级状态机与 IPCThreadState 角色定位。
+
+### 🔹 IPCThreadState.cpp 在优先级继承中的真实角色
+
+经全文检索（1869 行），`IPCThreadState.cpp` 在优先级继承链路中**几乎不参与计算**，仅承担 **2 个职责**：
+
+1. **背景调度守门**（IPCThreadState.cpp:431-438）：`gDisableBackgroundScheduling` 原子 bool 决定 Parcel.cpp:288 是否走默认 nice=19
+   ```cpp
+   static std::atomic<bool> gDisableBackgroundScheduling = false;
+   void IPCThreadState::disableBackgroundScheduling(bool disable) { ... }
+   ```
+2. **caller 元数据透传**（IPCThreadState.cpp:1515-1611）：在 BR_TRANSACTION 入口保存 origPid，tr.sender_pid 写入 mCallingPid；恢复时还原。这与调度优先级**正交**，仅服务于 `Binder.getCallingPid()` Java API。
+
+**结论**：所谓"IPCThreadState.cpp 中的优先级继承"实际上**不存在**于该文件，全部优先级逻辑都在 `Parcel.cpp`（用户态编码）+ `kernel binder.c`（内核态决策）双侧。
+
+### 🔹 Parcel.cpp 编码端（frameworks/native/libs/binder/Parcel.cpp:247-326）
+
+`schedPolicyMask(policy, priority)` 把 `mPolicy/mPriority/mInheritRt` 三个独立字段打包进 `flat_binder_object.flags` 低 12 位：
+
+- bit[0..7] = `FLAT_BINDER_FLAG_PRIORITY_MASK`（nice -20..19 或 RT 1..99）
+- bit[9..10] = `FLAT_BINDER_FLAG_SCHED_POLICY_MASK`（仅 4 种 policy：NORMAL/FIFO/RR/BATCH）
+- bit[11] = `FLAT_BINDER_FLAG_INHERIT_RT`（独立位）
+
+`BBinder::setInheritRt()` 不变量守门（Binder.cpp:910-912）：
+```cpp
+LOG_ALWAYS_FATAL_IF(wasParceled(),
+    "setInheritRt() should not be called after a binder object is parceled/sent to another process");
+```
+已 parceled 后再调用直接 LOG_ALWAYS_FATAL——保证 flags 不会被事后篡改。
+
+### 🔹 内核态 prio_state 三态机（kernel/android17-6.18/binder.c:778-862）
+
+binder 驱动维护 `binder_thread->prio_state` 状态机，是**嵌套事务优先级冲突**的根因：
+
+| 状态 | 触发条件 | 行为 |
+|------|---------|------|
+| `BINDER_PRIO_PENDING` | target 正在修改自身优先级（save/restore 过渡） | 新事务到来时标 ABORT |
+| `BINDER_PRIO_SET` | target 当前优先级由 caller 强加 | 处理完毕恢复 saved_priority |
+| `BINDER_PRIO_ABORT` | 嵌套事务打断，放弃恢复 | 新事务直接接管，不恢复 |
+
+**嵌套事务 abort 逻辑**（binder.c:851-862）：
+```c
+spin_lock(&thread->prio_lock);
+if (thread->prio_state == BINDER_PRIO_PENDING) {
+    t->saved_priority = thread->prio_next;
+    thread->prio_state = BINDER_PRIO_ABORT;  // 标记放弃恢复
+    ...
+}
+```
+
+### 🔹 三层合并顺序（binder.c:819-869 binder_transaction_priority）
+
+`binder_transaction_priority()` 在 `binder_set_priority()` 之前的 3 步处理：
+
+1. **RT 降级守门**：`!node->inherit_rt && is_rt_policy(desired.sched_policy)` → 强制 SCHED_NORMAL + nice 0
+2. **node min 优先级仲裁**：`node_prio.prio < desired.prio || (同 prio && SCHED_FIFO)` → node 最低优先级胜出
+3. **saved_priority 保存** + 嵌套事务 abort 处理
+
+注意 SCHED_FIFO 在同优先级时**优先于** SCHED_RR（避免 RR 时间片饿死）
+
+### 🔹 CAP_SYS_NICE 双路径验证（binder.c:723-808 binder_do_set_priority）
+
+- **RT 路径**（verify=true && is_rt_policy && !has_cap_nice）：
+  - `RLIMIT_RTPRIO == 0` → 强制降 SCHED_NORMAL + MIN_NICE
+  - 否则钳位到 rlimit
+- **fair 路径**（verify=true && is_fair_policy && !has_cap_nice）：
+  - 检查 `RLIMIT_NICE`，钳位 nice 上限
+- **`SCHED_RESET_ON_FORK` flag**（binder.c:798）：保证 RT 策略不通过 fork 逃逸到子进程
+- **`verify=false` 路径**（binder_restore_priority）：恢复自己原优先级时跳过 CAP_SYS_NICE 校验
+
+### 🔹 RT 写调用（binder.c:793-800）
+
+```c
+struct sched_param params;
+params.sched_priority = is_rt_policy(policy) ? priority : 0;
+sched_setscheduler_nocheck(task, policy | SCHED_RESET_ON_FORK, &params);
+if (is_fair_policy(policy))
+    set_user_nice(task, priority);
+```
+
+- **RT 走 `sched_setscheduler_nocheck`**：跳过越权检查（caller 已 verify 过）
+- **fair 走 `set_user_nice`**：Linux v6.18 EEVDF 下改为改 `latency_weight` 与 `weight`，不直接改 `vruntime`
+
+### 🔹 完整调用链（同步事务，App → system_server RT 升级场景）
+
+1. App 主线程 `IPCThreadState::transact()` 写 `BC_TRANSACTION`
+2. `talkWithDriver()` ioctl 进驱动；驱动 `binder_transaction()` 复制 caller policy/prio 到 `t->priority`（binder.c:3555-3566）
+3. `binder_select_thread_ilocked()` 从 system_server waiting_threads 选 worker
+4. `binder_transaction_priority()` 执行三层合并
+5. `binder_set_priority()` (verify=true) → `binder_do_set_priority()` → CAP_SYS_NICE 检查 + `sched_setscheduler_nocheck`
+6. system_server worker 处理业务（被临时升级到 RT）
+7. 写 `BC_REPLY`，`binder_restore_priority()` (verify=false) → 恢复 saved_priority
+8. App 端 `talkWithDriver()` 返回
+
+<!-- /AIW-源码调研-2026-07-11 -->
+
 <!-- outline-end -->
 
 > 本节内容基于 AOSP android-17.0.0_r1 源码分析，深入解析了 Binder IPC 的优先级继承与批处理机制。

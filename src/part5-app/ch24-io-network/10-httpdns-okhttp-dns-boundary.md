@@ -34,7 +34,7 @@ last_task9_at: "2026-05-16T16:30:00+08:00"
 last_task9_audit: "2026-06-09"
 last_task9_autofix_at: "2026-06-09"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-24
+last_deepseek_cn_review_at: 2026-07-11
 verifier_promoted: "2026-06-25T19:28 Task2B Verifier: both Task6(pass-light-edit) + Task9(auto-fixed) complete, queue clear, promoted to finalized"
 ---
 
@@ -327,9 +327,7 @@ HTTPDNS 返回结果时不要只给"最优单 IP"。单 IP 看起来减少了尝
 
 
 
-## 源码补充:DnsOverHttps 同步化机制(2026-05-17 验证)
-
-> 以下补充于 2026-05-17 每日源码调研,基于 OkHttp 官方源码验证。
+## DnsOverHttps 内部同步化机制
 
 ### DnsOverHttps 内部 CountDownLatch 同步化
 
@@ -410,9 +408,7 @@ fun interface Dns {
 
 
 
-## 源码补充:ExchangeFinder.findConnection() 与 RealRoutePlanner 同步调用链(2026-05-25 验证)
-
-> 以下补充于 2026-05-25 每日源码调研,基于 square/okhttp commit 19cb19ab4ac31aa789bc94759d13898f64f93ce3 的 ExchangeFinder 源码,以及 OkHttp 5.x source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab 的 RealRoutePlanner 源码验证。
+## ExchangeFinder 与 RealRoutePlanner 同步调用链
 
 ### RealRoutePlanner.planConnect() 阻塞注释
 
@@ -484,5 +480,3 @@ Fast Fallback 可以缓解 DNS 解析慢导致的建连延迟,但无法消除 `l
 - 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-okhttp-dns-lookup-httpdns-engineering.md
 - 类型:DeepResearch 调研结果
 - 摘要:OkHttp Dns.lookup() 同步阻塞,RouteSelector 在建连前调用。HTTPDNS 在 lookup() 内实时请求会递归依赖同一 OkHttpClient 形成死锁。Square 推荐 bootstrap client 独立实例模式。OkHttp 5.0+ 支持 Happy Eyeballs。
-- 注入时间:2026-05-18
-- 价值:源码级分析 OkHttp DNS 调用链与 HTTPDNS 递归依赖陷阱,bootstrap client 最佳实践

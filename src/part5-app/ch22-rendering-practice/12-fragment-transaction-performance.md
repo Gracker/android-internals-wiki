@@ -57,6 +57,8 @@ last_task9_autofix_at: "2026-06-22"
 last_task9_audit: "2026-06-22"
 last_task2b_verifier_at: "2026-06-22T07:30:06+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-22-07-task2b-verifier.md"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-11
 ---
 
 # 22.12 FragmentTransaction 提交链路与页面切换性能
@@ -97,7 +99,7 @@ last_task2b_verifier_log: "logs/rework/2026-06-22-07-task2b-verifier.md"
 
 Fragment 页面切换的耗时，不能只看 `commit()` 调用点。`commit()` 多数时候只把事务放进 `FragmentManager` 的待执行队列；页面是否创建 View、何时触发布局、是否挤占下一帧，取决于后续 `execPendingActions()` 这段主线程工作。做页面切换性能排查时，要把 Fragment 事务、View inflate / layout、动画和帧观测放到同一条时间线上看；Android 12+ 可以用 FrameTimeline，Android 10/11 设备则退回 Choreographer / RenderThread 切片和自定义 trace。
 
-现代应用的 Fragment 性能排查应以 AndroidX Fragment 为准。平台 `android.app.Fragment` 已废弃，不再作为新代码优化对象。速度优化的组织方式参考了《Android 性能优化》中“速度 = CPU 执行、缓存命中、任务调度共同决定”的结构，但正文结论以 AndroidX 源码与官方文档为准。[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
+现代应用的 Fragment 性能排查应以 AndroidX Fragment 为准。平台 `android.app.Fragment` 已废弃，不再作为新代码优化对象。速度优化的组织方式参考了《Android 性能优化》中“速度 = CPU 执行、缓存命中、任务调度共同决定”的结构，但正文结论以 AndroidX 源码与官方文档为准。
 
 ## `commit()` 只排队，事务执行在后一个主线程消息里
 
@@ -338,7 +340,7 @@ private void removeRedundantOperationsAndExecute(
 
 ## 页面切换的 Perfetto 排查清单
 
-页面切换问题可以按“主线程消息 → traversal → RenderThread → SurfaceFlinger”顺序排。这个顺序来自速度优化里的任务调度视角：先确认 CPU 时间花在哪个线程、哪个消息、哪个等待点，再决定是否拆任务或调整优先级。[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
+页面切换问题可以按“主线程消息 → traversal → RenderThread → SurfaceFlinger”顺序排。这个顺序来自速度优化里的任务调度视角：先确认 CPU 时间花在哪个线程、哪个消息、哪个等待点，再决定是否拆任务或调整优先级。
 
 | 观察点 | Trace 里看什么 | 常见根因 | 处理动作 |
 |---|---|---|---|
@@ -366,7 +368,7 @@ private void removeRedundantOperationsAndExecute(
 - **首帧前后任务切分**：首帧前只做构建最小可见 UI 必需的工作；网络请求、数据库预读、图片预热、埋点批量写入放到首帧后，并用生命周期取消。
 - **结果通信**：Fragment Result API 适合轻量结果传递；不要为了传结果把页面保活在内存里。共享 ViewModel 只放同一导航图或同一 Activity 范围内的状态，避免无意延长对象生命周期。
 
-线程和 CPU 优先级排在常规页面切换优化后面。《Android 性能优化》的任务调度章节会讨论主线程、RenderThread 优先级和大核绑定，但这些方案依赖设备、权限和厂商策略，风险比布局拆分、任务延后和事务合并更高。[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+线程和 CPU 优先级排在常规页面切换优化后面。《Android 性能优化》的任务调度章节会讨论主线程、RenderThread 优先级和大核绑定，但这些方案依赖设备、权限和厂商策略，风险比布局拆分、任务延后和事务合并更高。
 
 ## AndroidX 源码锚点怎么读
 
