@@ -50,16 +50,16 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
-last_task6_at: "2026-07-11T09:08:00+08:00"
-task9_state: "reviewed"
+last_task6_at: "2026-07-11T13:06:00+08:00"
+task9_state: "pending"
 task9_result: "auto-fixed"
 last_task9_at: "2026-07-11T12:37:01+08:00"
-last_task6_review_notes: "revisiting→reviewed(re-round4): L1修复2处(热启动→冷启动笔误+这意味着精简); L1禁用词零命中/高频词均≤1; L2结构完整节奏佳; L3论据充分独创性高; L4工程师视角清晰; task9_result=auto-fixed≠pass-tech-review不满足自动晋升; 无B类大问题"
+last_task6_review_notes: "revisiting→reviewed(re-round5): Task9 12:37 auto-fix(IPackageManager/WindowManager/Trace.beginSection/freezer语义)回流后写作层复审通过; L1禁用词零命中/高频词均≤1/物理动词零命中/元叙述零命中; L2开头/节奏/结构/读者引导全部通过; outline 7/7锚点+3/3扩展全覆盖; 否定-纠正0处; task9_result=auto-fixed≠pass-tech-review不满足自动晋升; 无B类大问题, 送Task9终审"
 last_task9_review_notes: "2026-07-11 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 1；将 Binder SQL / binder_tracker / binder_breakdown 证据从未锚定 Perfetto 证据改为 AOSP android-17.0.0_r1 external/perfetto 锚点，并修正启动优化占位引用为 §8.3；回到 Task6 复审。详见 logs/deep-review/2026-07-11-12-deep-review.md。 | AUTO-FIX: IPackageManager getApplicationInfo; Android17 WindowManager addToDisplayAsUser/relayout/finishDrawing; Trace.beginSection; Binder freezer target-process semantics"
 last_task9_autofix_at: "2026-07-11"
 last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
