@@ -30,17 +30,17 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.3", "23.4", "23.6", "4.3", "4.4"]
 review_count: 4
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: fixed
 created_by: "task2a"
 reviewed_date: "2026-07-12"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-last_task6_at: "2026-07-12T06:12:03+08:00"
-last_task6_review_log: "logs/review/2026-07-12-06-review.md"
-task6_review_notes: "2026-07-12 06:12 Task6 re-review (post-Task9-auto-fix): pass-light-edit。L1/L2 全通过，无禁用词、无格式问题、无中英文间距问题，4 个 outline 锚点全部覆盖。task9_result=auto-fixed，不满足自动晋升条件（需 pass-tech-review），回 Task9 做最终确认。"
+last_task6_at: "2026-07-12T07:10:35+08:00"
+last_task6_review_log: "logs/review/2026-07-12-07-review.md"
+task6_review_notes: "2026-07-12 07:10 Task6 re-review (post-Task9-auto-fix #2): pass-light-edit。L1/L2 全通过，禁用词扫描零命中，"不是X而是Y" 仅 1 处（FD FORTIFY 说明，事实性叙述），"真正/确实/其实" 零命中，无物理动作动词。4 个 outline 锚点全部覆盖，正文 174 行有效内容，[待验证] 比例 0%。task9_result=auto-fixed，不满足自动晋升条件（需 pass-tech-review），设 task9_state=pending 路由回 Task9 做最终确认。"
 task9_result: auto-fixed
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
