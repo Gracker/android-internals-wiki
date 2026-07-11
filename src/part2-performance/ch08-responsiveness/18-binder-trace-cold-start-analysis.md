@@ -51,15 +51,15 @@ gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
-last_task6_at: "2026-07-11T06:10:52+08:00"
+last_task6_at: "2026-07-11T09:08:00+08:00"
 task9_state: reviewed
 task9_result: auto-fixed
 last_task9_at: "2026-07-11T08:29:16+08:00"
-last_task6_review_notes: "revisiting→reviewed(re-round3): 四层质检全通过(L1零命中/L2 4✅/L3 5✅/L4✅); 无新增L1/L2问题; Task2B P0/P1修复+Task9 auto-fix已验证; task9_result=auto-fixed≠pass-tech-review, 不满足自动晋升; 无B类大问题"
+last_task6_review_notes: "revisiting→reviewed(re-round4): L1修复2处(热启动→冷启动笔误+这意味着精简); L1禁用词零命中/高频词均≤1; L2结构完整节奏佳; L3论据充分独创性高; L4工程师视角清晰; task9_result=auto-fixed≠pass-tech-review不满足自动晋升; 无B类大问题"
 last_task9_review_notes: "AUTO-FIX: IPackageManager getApplicationInfo; Android17 WindowManager addToDisplayAsUser/relayout/finishDrawing; Trace.beginSection; Binder freezer target-process semantics"
 last_task9_autofix_at: 2026-07-11
 ---
@@ -113,7 +113,7 @@ last_task9_autofix_at: 2026-07-11
 
 冷启动期间典型 Binder 事务数量级（Android 16/17 中等应用）：**Launcher→ATMS 3 次、ATMS→App 5-8 次、App→PKMS 8-12 次、App→WMS 6-10 次、App→Providers 2-5 次**，总同步事务 25-45 次，oneway 10-20 次（经验估算，基于 Android 16/17 中等复杂度应用 Perfetto `android_binder_txns` 聚合统计）。其中**主线程发起的同步事务 > 70%**——这正是第 1 章反复强调的「主线程 IPC 是冷启动第一杀手」（[已验证: AOSP frameworks/base + Perfetto binder.sql]，参见 §1.4.2 Binder 事务数据结构 / §1.4.3 oneway 语义与 TF_ONE_WAY 标志 / §8.2 App 启动阶段划分）。
 
-> [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp L854 `IPCThreadState::transact()`] 同步 Binder 调用主线程在 `waitForResponse()` 内阻塞，直到收到 `BR_TRANSACTION_COMPLETE`+`BR_REPLY` 才返回——这意味着 trace 中 app 进程的 main 线程 slice 颜色与等待时长直接反映主线程被 Binder 拖了多少 ms。
+> [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp L854 `IPCThreadState::transact()`] 同步 Binder 调用主线程在 `waitForResponse()` 内阻塞，直到收到 `BR_TRANSACTION_COMPLETE`+`BR_REPLY` 才返回——trace 中 app 进程的 main 线程 slice 颜色与等待时长直接反映主线程被 Binder 拖了多少 ms。
 
 ### 1.1 Binder 调用统计的二维视图
 
@@ -540,7 +540,7 @@ ORDER BY event_count DESC;
 
 ## 七、优化策略与验证
 
-诊断完成之后，热启动优化通常落在这几条主线上：
+诊断完成之后，冷启动优化通常落在这几条主线上：
 
 ### 7.1 应用层：减少冷启动 binder 频次
 
