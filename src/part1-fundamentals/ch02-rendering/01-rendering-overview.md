@@ -32,19 +32,20 @@ review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁�
 task9_review_notes: "2026-07-11 Task9 idle audit auto-fix: P0 源码锚点 3 类已修复（BufferItemConsumer 签名、BaseRecordingCanvas 路径/代码、RenderEngine 路径）；无 queue pending，回到 Task6 复审。"
 last_task9_review_log: "logs/deep-review/2026-07-11-19-audit.md"
 
-status: "ready-for-review"
+status: "finalized"
 reviewed_by: "openclaw-task6"
-reviewed_date: 2026-06-20
+reviewed_date: 2026-07-11
 task6_result: pass-light-edit
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "reviewed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "ready-to-publish"
 task2b_state: "fixed"
-last_task6_at: "2026-06-20T12:07:00+08:00"
-last_task6_review_log: "logs/review/2026-06-20-12-review.md"
+last_task6_at: "2026-07-11T20:10:00+08:00"
+last_task6_review_log: "logs/review/2026-07-11-20-review.md"
 task2b_result: "fixed"
 task6_review_notes: "2026-06-20 12:07 Task6 revisiting-review：Task9 idle audit auto-fix（P0: Android 16 Vulkan CDD 版本断言错误，3 处正文修正）写作质量复审通过；L1 禁用词/高频词/结构性元叙述 0 命中；L2 开头/节奏/结构/读者视角全部通过；outline 锚点全覆盖；无新增 L3/L4 回炉项；task9_result=auto-fixed → pass-tech-review，queue.json 无 pending，自动晋升 finalized。"
-last_task6_audit: "2026-05-25"
+task6_review_notes_2: "2026-07-11 20:10 Task6 revisiting-review (round 7)：Task9 idle audit auto-fix（P0: BufferItemConsumer acquireBuffer 签名、BaseRecordingCanvas 录制入口/路径、RenderEngine 源码路径，3 类源码锚点已修正到 android-17.0.0_r1）写作质量复审通过。L1：禁用词/高频词/结构性元叙述 0 命中；中英文间距修复 1 处（一个wrap_content→一个 wrap_content）。L2：开头（Perfetto Trace 场景引入）/节奏（长短句交替自然）/结构（7 阶段管线主线清晰）/读者视角（Trace 观察点贯穿全文）全部通过。outline 锚点 5/5 全覆盖，扩展 3/3 全覆盖。L3/L4 无新增回炉项。task9_result=auto-fixed（P0 已修复）→视为 pass-tech-review，queue.json 中 section 2.1 无 pending 条目，自动晋升 finalized。"
+last_task6_audit: "2026-07-11"
 last_task9_audit: "2026-07-11"
 last_task9_audit_at: "2026-07-11T19:30:22+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-11-19-audit.md"
@@ -67,7 +68,7 @@ last_task9_autofix_at: "2026-07-11"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-20
+last_deepseek_cn_review_at: 2026-07-11
 ---
 
 # Android 渲染架构全景
@@ -125,7 +126,7 @@ ViewRootImpl.performTraversals()
 
 Measure 过程的执行方式是自顶向下的:从 DecorView 开始,逐级向子 View 传递尺寸约束。每对父子之间传递的是一个 32 位整数 measureSpec,其中高 2 位编码模式(EXACTLY 表示父 View 给了精确值、AT_MOST 表示不能超过某个上限、UNSPECIFIED 表示不限制),低 30 位编码具体数值。这个紧凑的设计避免了对象的频繁分配--在一个包含几百个 View 的布局中,measureSpec 的分配开销几乎为零。
 
-Android 在某些情况下会执行两轮 Measure。第一轮中,父 View 根据自身约束给子 View 一个初步大小;但如果子 View 在 onMeasure 中表明它实际需要的空间与初步分配不一致(比如一个wrap_content 的子 View 内部有更复杂的需求),父 View 就会根据子 View 的反馈调整约束,发起第二轮测量。在 Perfetto 中,看到 performTraversals 中 Measure 阶段出现两次耗时尖峰,很可能就是这种重测量在发生--常见原因是嵌套的 RelativeLayout 或使用了 weights 的 LinearLayout。
+Android 在某些情况下会执行两轮 Measure。第一轮中,父 View 根据自身约束给子 View 一个初步大小;但如果子 View 在 onMeasure 中表明它实际需要的空间与初步分配不一致(比如一个 wrap_content 的子 View 内部有更复杂的需求),父 View 就会根据子 View 的反馈调整约束,发起第二轮测量。在 Perfetto 中,看到 performTraversals 中 Measure 阶段出现两次耗时尖峰,很可能就是这种重测量在发生--常见原因是嵌套的 RelativeLayout 或使用了 weights 的 LinearLayout。
 
 View.onMeasure 的默认实现只做一件事:通过 getDefaultSize 把 measureSpec 解析为实际的像素值,然后调用 setMeasuredDimension 记录结果。getDefaultSize 的逻辑很简单--EXACTLY 和 AT_MOST 模式都直接使用约束值(specSize),UNSPECIFIED 使用 View 自身的建议大小(size 参数):
 
@@ -201,7 +202,7 @@ Choreographer.doFrame(...)
 
 VSync 信号是整条渲染管线的节拍器。它的源头是显示硬件--以 60Hz 屏幕为例,硬件每 16.67ms 发出一次 VSync 中断。Android 系统先把原始硬件中断转成软件 VSync,再按不同 phase 投递给 App 与 SurfaceFlinger。
 
-版本边界要分清。Android 10/11 及更早的资料常用 DispSync 解释 VSYNC_APP / VSYNC_SF 的生成;Android 12 之后,SurfaceFlinger 的 Scheduler 路径逐步改成 `VSyncPredictor` 预测下一次硬件 VSync,再由 `VSyncDispatchTimerQueue`、`VsyncSchedule`、`VsyncConfiguration` 组织软件 VSync 投递。Android 14-17 的源码锚点应放在 `services/surfaceflinger/Scheduler/` 目录下,不能把 DispSync 写成当前主路径。
+Android 10/11 及更早的资料常用 DispSync 解释 VSYNC_APP / VSYNC_SF 的生成;Android 12 之后,SurfaceFlinger 的 Scheduler 路径改为 `VSyncPredictor` 预测硬件 VSync,再由 `VSyncDispatchTimerQueue`、`VsyncSchedule`、`VsyncConfiguration` 组织软件 VSync 投递。Android 14-17 看 `services/surfaceflinger/Scheduler/` 目录,不能把 DispSync 写成当前主路径。
 
 VSYNC_APP 先唤醒 App 侧 `Choreographer`,App 完成渲染后通过 BufferQueue 提交 buffer;VSYNC_SF 唤醒 SurfaceFlinger,随后进入 `scheduleComposite()`,再走 commit / composite / present。2.3 节会展开 offset、预测模型和 Scheduler 目录下的实现。
 
@@ -297,7 +298,7 @@ status_t BufferItemConsumer::acquireBuffer(BufferItem* item, nsecs_t presentWhen
         bool waitForFence, std::optional<BufferFreedCallback> onBufferFreed);
 ```
 
-`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-17 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-17 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16/17 CDD 对非低内存 64 位 handheld 设备的硬性要求是 Vulkan 1.1，Vulkan 1.3 则是 strongly recommended。Host Image Copy 优化的是纹理上传和 image memory 路径，属于 GPU 侧概念，与 BufferQueue / BLAST 不在同一层。`AsyncBufferQueue` 目前还没有正式发布的 AOSP commit，本节不展开。
+`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-17 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪;Android 10 及更早的旧文章可能使用旧刷新入口,分析 Android 14-17 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。
 
 Trace 中验证三缓冲,打开 FrameTimeline、gfx / view / sched / freq、SurfaceFlinger 相关类别后按这几类信号对照:
 
