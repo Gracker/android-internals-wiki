@@ -50,17 +50,17 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
 last_task6_at: "2026-07-11T06:10:52+08:00"
-task9_state: pending
+task9_state: reviewed
 task9_result: auto-fixed
-last_task9_at: "2026-07-11T05:33:35+08:00"
+last_task9_at: "2026-07-11T08:29:16+08:00"
 last_task6_review_notes: "revisiting→reviewed(re-round3): 四层质检全通过(L1零命中/L2 4✅/L3 5✅/L4✅); 无新增L1/L2问题; Task2B P0/P1修复+Task9 auto-fix已验证; task9_result=auto-fixed≠pass-tech-review, 不满足自动晋升; 无B类大问题"
-last_task9_review_notes: "AUTO-FIX: Android17 Binder freezer/TF_UPDATE_TXN semantics; android_binder_metrics_by_process event_count; kernel trace events (no binder_reply); system_server binder max threads=31; ContentProvider API names; SP/DataStore non-Binder waits; androidx.startup; Android17 anchored source links"
+last_task9_review_notes: "AUTO-FIX: IPackageManager getApplicationInfo; Android17 WindowManager addToDisplayAsUser/relayout/finishDrawing; Trace.beginSection; Binder freezer target-process semantics"
 last_task9_autofix_at: 2026-07-11
 ---
 
@@ -106,8 +106,8 @@ last_task9_autofix_at: 2026-07-11
    - `attachApplication()` 接收子进程就绪通知
    - `bindApplication()` 触发 ContentProvider 装配（含 `IContentProvider` 的 binder lookup，参见 §1.10）
 4. **App 进程 → system_server**
-   - `IActivityManager.getApplicationInfo()` 等元数据查询
-   - `IWindowSession.addToDisplay()`、`relayout()` 注册首帧窗口
+   - `IPackageManager.getApplicationInfo()` / `getPackageInfo()` 等 PackageManager 元数据查询
+   - `IWindowSession.addToDisplayAsUser()`、`relayout()` 注册首帧窗口
    - `IContentProvider.query()` 用于 Provider 数据访问，Provider 获取路径走 `IActivityManager.getContentProvider()` / `refContentProvider()`
    - `SharedPreferences` / `DataStore` 的同步等待不是 Binder IPC，应从 Binder 预算中剥离（参见 §6.2）
 
@@ -245,10 +245,11 @@ List<Bookmark> bm = bookmarkProvider.queryAll();
 Trace.endSection();
 ```
 
-或者应用端主动给 trace 加上一个导引点：
+也可以在关键阶段加一个很短的导引点：
 
 ```java
-PerfettoTrace.beginSection("Application.bindApplication:start");
+Trace.beginSection("Application.bindApplication:start");
+Trace.endSection();
 ```
 
 [已验证: Perfetto 官方, developer.android.com/topic/performance/tracing-tables — `androidx.tracing.Trace` 编译期插入切片的开销 < 2%] 这类自定义 slice 会出现在 trace 的 main thread track 上，便于和 binder_transaction slice 按时间对应。
@@ -352,7 +353,7 @@ LIMIT 20;
 
 ### 4.2 ActivityManager 元数据查询链
 
-`ActivityManager.getApplicationInfo`、`getProcessMemoryInfo`、`getMyMemoryState` 等用于 AMS 自检查或应用健康检测。冷启动高发原因：
+`ActivityManager.getProcessMemoryInfo()`、`ActivityManager.getMyMemoryState()` 等走 `IActivityManager`；应用信息读取则归入 §4.1 的 `PackageManager.getApplicationInfo()` / `IPackageManager.getApplicationInfo()`。冷启动高发原因：
 
 - **[已验证: AOSP frameworks/base + Perfetto SQL 工单]** 第三方 SDK（推送、统计、合规）会自发调用 AMS 接口；
 - 部分 SDK 在 onCreate 早期阶段做「即时活跃度统计」；
@@ -360,13 +361,13 @@ LIMIT 20;
 
 ### 4.3 WindowManager.addView 与 relayout
 
-`IWindowSession.addToDisplay()` 注册首个 Activity 窗口（App 端调用路径：`WindowManagerImpl.addView()` → `WindowManagerGlobal.addView()` → `ViewRootImpl.setView()` → `IWindowSession.addToDisplay()`；WMS 端：`Session.addToDisplay()` → `WindowManagerService.addWindow()`）、对端 layout、Surface 创建触发三段往返：
-1. App 进程 → WMS：`addToDisplay()`（同步，~10-20ms）
-2. WMS → App 进程：`relayout()` 回调（~5-15ms）
-3. App → WMS：`donerelayout()` reply 后渲染第一帧
+Android 17 首个 Activity 窗口注册走 App → WMS 的同步调用链：`WindowManagerImpl.addView()` → `WindowManagerGlobal.addView()` → `ViewRootImpl.setView()` → `IWindowSession.addToDisplayAsUser()`；WMS 端进入 `Session.addToDisplayAsUser()` → `WindowManagerService.addWindow()`。首帧前后还会出现两类相关 IPC：
+1. App 进程 → WMS：`addToDisplayAsUser()`（同步，注册窗口）；
+2. App 进程 → WMS：`relayout()` / `relayoutWindow()`（同步，获取布局、Surface 与可见性结果）；
+3. App 进程 → WMS：`finishDrawing()`（oneway，首帧绘制完成后上报）。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java — `addWindow()` + `relayoutWindow()` 调用链] 单笔无法压缩；缩短路径的手段只有：
-- 在 `SplashScreen` API 触发 stage ready 之前提前发出 `addToDisplay`（参见 §21.5 SplashScreen）；
+[已验证: AOSP android-17.0.0_r1, `ViewRootImpl.setView()` + `IWindowSession.aidl` + `WindowManagerService.addWindow()` / `relayoutWindow()` 调用链] 单笔无法压缩；缩短路径的手段只有：
+- 减少进入 WMS add/relayout 路径之前的应用侧同步阻塞（参见 §21.5 SplashScreen）；
 - 把应用内首屏布局的 `onCreate` inflate 异步化（参见 §21.6）。
 
 ### 4.4 ContentProvider 初始化的隐性 IPC
@@ -420,12 +421,12 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 
 ### 5.5 Binder Freezer 对冷启动回路径的影响
 
-[已验证: AOSP frameworks/native/libs/binder/IPCThreadState.cpp + §1.18] App 从后台切回前台时，前台 system_server 可能已经因 frozen reply 把 app 标记为 cached pool 状态，frozen 期间发起的 IPC 一律返 `BR_FROZEN_REPLY`。
+[已验证: AOSP android-17.0.0_r1 `IPCThreadState.cpp` + kernel/common android17-6.18 `binder_proc_transaction()` + §1.18] `BR_FROZEN_REPLY` 的判定对象是**目标进程或目标线程**：同步事务打到 frozen 目标时被拒绝，调用方在 `waitForResponse()` 中拿到 `FROZEN_OBJECT` 或 `FAILED_TRANSACTION`。因此前台 App 调 system_server 时不应把 `BR_FROZEN_REPLY` 归因成 system_server worker 被冻；更常见的是 system_server 或其他进程调用仍处于 cached/freezer 状态的 App、Provider 或 Service。
 
 诊断特征：
-- `client_dur` 正常甚至很低（< 1ms），但该时间段内 thread_state 表显示客户端进程处于 frozen pool 的 sched state；
-- 客户端没有被冻却发生 `BR_FROZEN_REPLY` 时——通常发生在 system_server worker 正在 frozen 时（罕见）；
-- 队列/传输耗时正常但 client_dur 异常高：主线程在等 reply 时被抢占或冻结，需结合 thread_state 排查。
+- 同步事务出现 `BR_FROZEN_REPLY` 时，优先确认 server/target 进程是否处于 frozen/cached 状态；
+- oneway 场景另查 `BR_TRANSACTION_PENDING_FROZEN` 与 `TF_UPDATE_TXN` pending async 替换，不能与同步等待混算；
+- 队列/传输耗时正常但 `client_dur` 异常高时，再结合 `thread_state` 判断调用方是否在等 reply 期间被抢占或冻结。
 
 ### 5.6 主线程阻塞路径：Slice → State → Lock
 
