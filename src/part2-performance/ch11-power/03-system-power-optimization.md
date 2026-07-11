@@ -83,7 +83,7 @@ repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 last_task6_at: '2026-06-07T21:12:57+08:00'
 last_task6_review_log: logs/review/2026-06-07-21-review.md
-last_task6_audit: '2026-05-24'
+last_task6_audit: '2026-07-11'
 review_notes: '2026-05-13 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 1；厂商功耗策略数据建议写入 suggestions，不阻塞发布；自动晋升 finalized。'
 review_round: 5
 pipeline_stage: ready-to-publish
@@ -204,7 +204,7 @@ Doze 模式解决的是"设备空闲"场景的功耗问题。但很多时候，�
 
 **Android 6-8（API 23-27）** 已经有 App Standby 机制，但只有 idle / active 两个状态：被判定为 idle 的 App，后台网络访问、Job 和 Sync 会被推迟，充电时释放。判定依据是 App 是否有前台进程、是否最近被用过、是否被用户显式豁免。这时的限制相对粗粒度——要么限制，要么不限制。
 
-**Android 9（API 28）** 把二元模型扩展为 App Standby Buckets，根据用户对每个 App 的使用频率，将它们分为五个优先级桶，每个桶拥有不同的后台资源配额。与 Doze 不同，App Standby 不需要设备处于空闲状态，它随时都在工作。API 31 新增了 Restricted 桶，进一步收紧长期不互动 App 的后台配额。
+**Android 9（API 28）** 把二元模型扩展为 App Standby Buckets，根据用户对每个 App 的使用频率，将它们分为五个优先级桶，每个桶拥有不同的后台资源配额。与 Doze 不同，App Standby 不需要设备处于空闲状态，它随时都在工作。API 31 新增了 Restricted 桶，进一步压缩长期不互动 App 的后台配额。
 
 ### 五个桶的定义与调度差异
 
@@ -243,9 +243,9 @@ Adaptive Battery 使用一个运行在本地的机器学习模型来预测用户
 
 ### Bucket、Quota、Power Saver 的归属关系
 
-Android 13 到 Android 16 的功耗策略分散在多个控制器中。排查后台任务问题时，需要先分清是 bucket 降级、quota 耗尽、device idle 触发还是全局 Battery Saver 打开——它们的证据入口各不相同。
+Android 13 到 Android 17 的功耗策略分散在多个控制器中。排查后台任务问题时，需要先分清是 bucket 降级、quota 耗尽、device idle 触发还是全局 Battery Saver 打开——它们的证据入口各不相同。
 
-| 机制 | 控制器 | Android 16 入口 | 开发者验证入口 |
+| 机制 | 控制器 | Android 17 入口 | 开发者验证入口 |
 |------|--------|-----------------|----------------|
 | Doze / Device Idle | `DeviceIdleController` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` | `adb shell dumpsys deviceidle`，再和 Trace 的 `suspend_resume` / `cpu_idle` 对时 |
 | App Standby Bucket 评估 | `AppStandbyController` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` | `adb shell am get-standby-bucket <pkg>`，`adb shell dumpsys usagestats appstandby` |
@@ -332,7 +332,7 @@ Android 14 对前台服务进一步增加了限制：某些类型的前台服务
 - 取消所有已注册的定时任务和通知监听
 - 不再接收 FCM 或厂商推送
 
-开发者不需要为归档做特殊适配——系统保证用户数据不丢、恢复后状态一致。但需要了解归档的存在，因为用户反馈"我的 App 不见了"可能不是卸载而是归档。排查路径是按包名查询 `adb shell pm get-archived-package-metadata <package>`（Android 15+），或用 `adb shell pm list packages -u --show-versioncode` 查看已卸载但保留数据的应用。后者不等于 archived 列表，但能覆盖未安装/保留数据的包。
+开发者不需要为归档做特殊适配——系统保证用户数据不丢、恢复后状态一致。但需要了解归档的存在，因为用户反馈"我的 App 不见了"时，除了卸载，归档也是可能的原因。排查路径是按包名查询 `adb shell pm get-archived-package-metadata <package>`（Android 15+），或用 `adb shell pm list packages -u --show-versioncode` 查看已卸载但保留数据的应用。后者不等于 archived 列表，但能覆盖未安装/保留数据的包。
 
 
 ## 省电模式下的系统行为变化
@@ -346,7 +346,7 @@ Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布�
 在 AOSP 这层，能稳定确认的影响主要有四类：
 
 - **后台执行更保守**：Job、Alarm、网络和同步会把 low power mode、standby bucket、设备是否充电、进程重要性一起算进去。排查时要把这几层分开看。
-- **位置策略会变化**：App 可以用 `PowerManager.getLocationPowerSaveMode()` 查看系统当前采用的节电位置策略。常见模式是屏幕熄灭后限制定位，而不是所有设备都完全关掉定位。
+- **位置策略会变化**：App 可以用 `PowerManager.getLocationPowerSaveMode()` 查看系统当前采用的节电位置策略。常见模式是屏幕熄灭后限制定位；完全关闭定位的行为因设备而异。
 - **App 能收到显式状态信号**：App 可通过 `PowerManager.isPowerSaveMode()` 和 `ACTION_POWER_SAVE_MODE_CHANGED` 调整自己的轮询、上报和动画策略。
 - **厂商可以继续加码**：刷新率、GPU 频率、传感器、Motion Sense、Crash Detection 这类行为取决于设备实现，不能当成 Android 通用基线。
 
