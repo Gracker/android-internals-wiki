@@ -1,16 +1,16 @@
 ---
 title: "Binder Trace 驱动的 Activity 冷启动性能分析"
 chapter: "8.18"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-07-02"
 last_task2b_at: 2026-07-11T04:53:33+08:00
 last_task2b_issues: "P0:dispatch_dur-computed P0:binder_lock-removed P0:TF_UPDATE_TXN_FROZEN-removed P0:ext-fields-removed P1:frozen-reply-multisignal"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-07-02"
+last_verified: "2026-07-11"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "fixed"
 task2b_fixed_at: 2026-07-11T04:53:33+08:00
-last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), Perfetto mainline (binder_tracker.cc / binder.sql / binder_breakdown.sql), kernel android17-6.18 drivers/android/binder.c + binder_trace.h"
+last_verified_against: "AOSP android-17.0.0_r1 (frameworks/base + libbinder), AOSP android-17.0.0_r1 external/perfetto (binder_tracker.cc / binder.sql / binder_breakdown.sql), kernel android17-6.18 drivers/android/binder.c + binder_trace.h"
 confidence: high
 sources:
   - type: aosp
@@ -50,26 +50,34 @@ created_date: "2026-07-02"
 gap_source: "素材驱动+AOSP结构"
 processed_by: "task2a-content-processing"
 processed_date: "2026-07-02"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-11"
 last_task6_at: "2026-07-11T09:08:00+08:00"
-task9_state: pending
-task9_result: auto-fixed
-last_task9_at: "2026-07-11T08:29:16+08:00"
+task9_state: "reviewed"
+task9_result: "auto-fixed"
+last_task9_at: "2026-07-11T12:37:01+08:00"
 last_task6_review_notes: "revisiting→reviewed(re-round4): L1修复2处(热启动→冷启动笔误+这意味着精简); L1禁用词零命中/高频词均≤1; L2结构完整节奏佳; L3论据充分独创性高; L4工程师视角清晰; task9_result=auto-fixed≠pass-tech-review不满足自动晋升; 无B类大问题"
-last_task9_review_notes: "AUTO-FIX: IPackageManager getApplicationInfo; Android17 WindowManager addToDisplayAsUser/relayout/finishDrawing; Trace.beginSection; Binder freezer target-process semantics"
-last_task9_autofix_at: 2026-07-11
+last_task9_review_notes: "2026-07-11 Task9 deep-review AUTO-FIX: P0 1 / P1 0 / P2 1；将 Binder SQL / binder_tracker / binder_breakdown 证据从未锚定 Perfetto 证据改为 AOSP android-17.0.0_r1 external/perfetto 锚点，并修正启动优化占位引用为 §8.3；回到 Task6 复审。详见 logs/deep-review/2026-07-11-12-deep-review.md。 | AUTO-FIX: IPackageManager getApplicationInfo; Android17 WindowManager addToDisplayAsUser/relayout/finishDrawing; Trace.beginSection; Binder freezer target-process semantics"
+last_task9_autofix_at: "2026-07-11"
 last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
 task2b_verifier_notes: "Task6 re-reviewed on 2026-07-11 after Task9 auto-fix (task6_result: pass-light-edit, task6_state: reviewed), but pipeline_stage was not advanced. Corrected to task9_pending for final Task9 tech confirmation."
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-07-11"
+last_task9_review_log: "logs/deep-review/2026-07-11-12-deep-review.md"
+updated_by: openclaw-task9
+updated_date: "2026-07-11"
+p0: 1
+p1: 0
+p2: 0
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
 
 > **范围与边界**：本节处理的是**把 Binder Trace 当作诊断工具**来定位冷启动路径上的 IPC 瓶颈——侧重「如何用 Perfetto 的 `android.binder` 标准库切事务、定位线程池饱和、识别 frozen 回执干扰、关联主线程阻塞因果链」。Binder 机制原理见 §1.4/§1.18/§1.38，冷启动阶段划分见 §8.2。
-> **版本基准**：[已验证: AOSP android-17.0.0_r1, frameworks/native + kernel android17-6.18]，Perfetto 主线（截至 2026-07）。
+> **版本基准**：[已验证: AOSP android-17.0.0_r1, frameworks/native + kernel android17-6.18]，AOSP android-17.0.0_r1 external/perfetto。
 
 <!-- outline-start -->
 ## 要点
@@ -264,7 +272,7 @@ Trace.endSection();
 
 ### 3.1 三段延迟的语义
 
-> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` PERFETTO TABLE 定义] 同步事务的客户端总等待时间 `client_dur` 由三段组成：
+> [已验证: AOSP android-17.0.0_r1 external/perfetto, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` PERFETTO TABLE 定义] 同步事务的客户端总等待时间 `client_dur` 由三段组成：
 
 | 字段 | 含义 | 数学表达 |
 |------|------|---------|
@@ -282,7 +290,7 @@ client_dur ≈ (server_ts - client_ts) + server_dur + reply_overhead
 
 ### 3.2 归因决策树
 
-> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql — `_binder_reason()` 把 thread_state + slice_name 映射为语义化延迟原因] 根据队列耗时 vs 服务端耗时的相对关系，可以快速判断瓶颈位置（注意：下文「队列/传输耗时」不是原生列，是 `(server_ts - client_ts) / 1e6` 的计算值）：
+> [已验证: AOSP android-17.0.0_r1 external/perfetto, src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql — `_binder_reason()` 把 thread_state + slice_name 映射为语义化延迟原因] 根据队列耗时 vs 服务端耗时的相对关系，可以快速判断瓶颈位置（注意：下文「队列/传输耗时」不是原生列，是 `(server_ts - client_ts) / 1e6` 的计算值）：
 
 | 队列/传输耗时 vs `server_dur` | 现象 | 根因层级 |
 |------------------------------|------|---------|
@@ -293,7 +301,7 @@ client_dur ≈ (server_ts - client_ts) + server_dur + reply_overhead
 | 队列/传输耗时高且 `server_dur` 也很高 | 服务端线程池欠 + 业务重，可叠加 | 复合瓶颈 |
 | 队列/传输耗时接近 0 但 `client_dur` 持续高位 | 客户端在等 reply 时被抢占 | CPU 调度 / cgroup / freezer |
 
-> [已验证: Perfetto mainline, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` 表携带 `is_sync`、`client_oom_score`、`server_oom_score`、`client_ts`、`server_ts`、`client_dur`、`server_dur` 等字段] 把队列/传输耗时（`server_ts - client_ts`）与 `server_dur` 按 server_process + aidl_name 分组聚合，可定位系统级瓶颈进程和 AIDL 接口。
+> [已验证: AOSP android-17.0.0_r1 external/perfetto, src/trace_processor/perfetto_sql/stdlib/android/binder.sql — `android_binder_txns` 表携带 `is_sync`、`client_oom_score`、`server_oom_score`、`client_ts`、`server_ts`、`client_dur`、`server_dur` 等字段] 把队列/传输耗时（`server_ts - client_ts`）与 `server_dur` 按 server_process + aidl_name 分组聚合，可定位系统级瓶颈进程和 AIDL 接口。
 
 ### 3.3 Frozen Reply 干扰的识别
 
@@ -444,7 +452,7 @@ Binder trace 上「主线程等多久」与「为什么等」是两个问题。�
 
 ## 六、Perfetto SQL 分析实战
 
-把上面归因逻辑脚本化的关键 SQL 模板（均经过 Perfetto 主线标准库交叉验证，Android 14+ 适用）：
+把上面归因逻辑脚本化的关键 SQL 模板（均经过 AOSP android-17.0.0_r1 external/perfetto 标准库交叉验证，Android 14-17 适用）：
 
 ### 6.1 冷启动期间 Top-N 慢速 binder 事务
 
@@ -505,7 +513,7 @@ JOIN SPAN_JOIN(
 WHERE sp.boundary_name GLOB '*cold*start*';
 ```
 
-> [已验证: Perfetto mainline, §8 SPAN_JOIN + experiment module §3] 用 `EXPERIMENTAL_SPAN_JOIN` 把 `Choreographer#doFrame` slice（VSync 边界）与 binder transaction slice 在主线程上做窗口化关联，可量化「冷启动期间每个 VSync 周期的主线程 IPC 开销」。
+> [已验证: Perfetto 官方 SPAN_JOIN 文档 + AOSP android-17.0.0_r1 external/perfetto android.binder 标准库] 用 span join 语法把 `Choreographer#doFrame` slice（VSync 边界）与 binder transaction slice 在主线程上做窗口化关联，可量化「冷启动期间每个 VSync 周期的主线程 IPC 开销」。
 >
 > ⚠️ 上方 SQL 为伪代码模板，`...` 和 `PARTITIONED` 子句需要根据实际 Perfetto trace_processor 版本调整。生产使用时建议参考 [Perfetto SPAN_JOIN 文档](https://perfetto.dev/docs/analysis/tables#span-join) 编写完整 JOIN 语法。
 
@@ -644,7 +652,7 @@ ORDER BY event_count DESC;
 - [Android Kernel：`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/heads/android17-6.18/drivers/android/binder.c) — `binder_transaction()`、`binder_proc_transaction()`、`TF_UPDATE_TXN` pending async 更新路径 **[android17-6.18]**
 - [AOSP：`frameworks/native/libs/binder/IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp) — `transact()` / `waitForResponse()` 实现 **[AOSP android-17.0.0_r1]**
 - [高爷《Android-Perfetto》系列：binder 主题文章](https://androidperformance.com) — 二手机构经验，经源码交叉验证
-- 相关章节：§1.4 Binder IPC / §1.18 Binder Freezer / §1.38 Binder 线程池 / §1.30 Android 17 Binder Transaction Queue / §8.2 App 启动全流程 / §6.2 SharedPreferencesImpl ANR / §21.x 启动优化策略组
+- 相关章节：§1.4 Binder IPC / §1.18 Binder Freezer / §1.38 Binder 线程池 / §1.30 Android 17 Binder Transaction Queue / §8.2 App 启动全流程 / §6.2 SharedPreferencesImpl ANR / §8.3 启动优化策略
 
 ---
 

@@ -237,3 +237,9 @@ Coverage remains saturated (60th consecutive round). No new knowledge gaps ≥14
 - **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md（第23讲 包体积下）]
 - **建议补充**：Android 默认不压缩文件列表（.jpg/.png/.gif/.mp3/.mp4 等）及原因分析 — 压缩效果不明显 + mmap 直接读取需求 + 内存考虑；extractNativeLibs 属性演进
 - **参考书覆盖深度**：中等（核心原理有效，但 Android 17 可能已调整不压缩列表）
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-07-11
+- **类型**：版本差异
+- **位置**：`Android 15（[待验证]）` 版本差异段
+- **问题**：该段仍以 `[待验证]` 描述 Android 15 `startForeground()` 与前台 Service 类型约束变化，未给出 AOSP / Android Developers 证据锚点；它不影响 ANR 架构主线，但会影响触发条件边界。
+- **建议**：后续补 Android 15 前台服务行为变更的一手资料，或删除该非主线版本判断，避免 finalized 章节保留未验证结论。
