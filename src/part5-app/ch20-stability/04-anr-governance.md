@@ -2,7 +2,7 @@
 title: "ANR 治理策略"
 chapter: "20.4"
 section: "20.4"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-11"
 last_verified_against: "AOSP android-17.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
@@ -48,25 +48,25 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-22"
+reviewed_date: "2026-07-12"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-22T02:07:00+08:00"
-last_task6_audit: "2026-06-18"
-task6_reviewed_date: "2026-06-22"
+last_task6_at: "2026-07-12T01:06:00+08:00"
+last_task6_audit: "2026-07-12"
+task6_reviewed_date: "2026-07-12"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-11T20:30:00+08:00"
-last_task6_review_log: "logs/review/2026-06-22-02-review.md"
+last_task6_review_log: "logs/review/2026-07-12-01-review.md"
 task9_review_notes: "2026-07-11 Task9 idle audit auto-fix：按 android-17.0.0_r1 复核 ANR 阈值、Broadcast/Provider/FGS/Freezer/Binder 源码锚点；修正 ContentProvider timeout 常量、BroadcastReceiver 路径、CachedAppOptimizer freezer 锚点，并更新 AOSP sources 为 Android 17 固定链接。"
 last_task9_review_log: "logs/deep-review/2026-07-11-20-audit.md"
-task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 补充 Android 14+ shortService FGS 计时器后回审；L1/L2 全部通过；applicable_versions 扩展至 Android 17 (API 37)；task9_result 确认 pass-tech-review；queue 无 pending，自动晋升 finalized。"
+task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 补充 Android 14+ shortService FGS 计时器后回审；L1/L2 全部通过；applicable_versions 扩展至 Android 17 (API 37)；task9_result 确认 pass-tech-review；queue 无 pending，自动晋升 finalized。 2026-07-12 Task6 revisiting 复审：Task9 idle audit auto-fix（android-17 源码锚点修正）后回审；L1 修复 4 处（禁用词"链路"→"路径"、冗余副词"真的"、标点前空格、多余空行）；L2 全部通过；task9_result=auto-fixed 已接受；queue 无 pending，自动晋升 finalized。"
 task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-22
@@ -118,7 +118,7 @@ ANR 治理的核心约束是：主线程必须在对应超时窗口内完成系�
 
 上表中的超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。在多数线上治理中，Input dispatch ANR 是优先排查对象，具体占比应以应用自己的 ANR 监控口径为准。
 
-> 注意：上表超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。Android 14+ 的广播超时由 `BroadcastConstants` 管理，窗口可拉长（CPU-starved 、冷启动时间计入等场景），不宜写成固定值。有序广播的超时由 `BroadcastRecord.timeout` 控制，每个接收者独立计时。
+> 注意：上表超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。Android 14+ 的广播超时由 `BroadcastConstants` 管理，窗口可拉长（CPU-starved、冷启动时间计入等场景），不宜写成固定值。有序广播的超时由 `BroadcastRecord.timeout` 控制，每个接收者独立计时。
 
 ## 主线程瘦身策略与异步化
 
@@ -144,7 +144,7 @@ ANR 治理的核心约束是：主线程必须在对应超时窗口内完成系�
 
 **1. Handler + ThreadExecutor 模式**
 
-适用于需要回调主线程更新 UI 的场景。核心是保证"异步执行 → 主线程回调"这条链路上没有意外阻塞：
+适用于需要回调主线程更新 UI 的场景。核心是保证"异步执行 → 主线程回调"这条路径上没有意外阻塞：
 
 ```java
 // 异步执行
@@ -194,7 +194,6 @@ WorkManager.getInstance(context).enqueue(uploadWork)
 - **SharedPreferences 的 commit() → apply() 陷阱**：`apply()` 是异步写磁盘没错，但在 `onPause()` / `onStop()` / `Activity.onSaveInstanceState()` 等生命周期回调里，系统会等待所有 `apply()` 完成后才继续。如果 `apply()` 积压了大量未完成的写操作，这些回调里主线程仍然会被阻塞。解决方案：高频写入场景用内存缓存 + 批量异步落盘，不要每改一个值就 `apply()` 一次。
 - **StrictMode 的价值**：在开发阶段启用 `StrictMode`，它能在主线程 I/O 和网络操作发生时直接抛异常，比线上 ANR 发现成本低两个数量级。
 - **第三方 SDK 的主线程调用**：很多第三方 SDK（广告、推送、统计）在初始化或回调里做磁盘 I/O 或网络请求，而调用时机往往是 `Application.onCreate()` 或 `Activity.onCreate()`——这两个都在主线程。治理手段：SDK 初始化移到子线程（如果 SDK 支持），或者用 `ContentProvider` 的延迟初始化机制（详见后文）。
-
 
 ### Kotlin 协程内部调度与 ANR 关系
 
@@ -315,8 +314,6 @@ suspend fun updateUI() = withContext(Dispatchers.Main) {
 }
 ```
 
-
-
 ## IPC（Binder）调用治理
 
 Binder 是 Android 进程间通信的基础设施。应用通过 Binder 和系统服务（AMS、PMS、WMS）交互，也通过 Binder 和其他应用交互。Binder 调用的特殊性在于：即使调用方在子线程，如果对方进程没有响应，调用方的线程也会被阻塞。而当这个调用发生在主线程时，就有 ANR 风险。
@@ -349,7 +346,6 @@ try {
 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Binder.java]
 
 **监控 Binder 调用耗时。** 在线上环境中，通过 `BinderProxy.transact()` 的 Hook 或者 AOP 方式记录每次 Binder 调用的耗时。微信团队的实践是：在 `BinderProxy.transactNative()` 的入口和出口插桩，统计调用次数和耗时分布，发现异常 Binder 调用后推动对应模块治理。
-
 
 ## 锁竞争与死锁预防
 
@@ -384,7 +380,7 @@ try {
 
 - **锁排序**：所有需要同时持有多把锁的代码，按固定顺序获取锁（比如先 A 后 B），打破循环等待条件。
 - **tryLock 带超时**：用 `ReentrantLock.tryLock(timeout)` 替代 `synchronized`，超时返回 false 后走降级逻辑，避免无限等待。
-- **锁消除**：检查被保护的资源是否真的需要锁。很多场景下用 `ConcurrentHashMap`、`AtomicReference` 或 `volatile` 就够了，不需要显式加锁。
+- **锁消除**：检查被保护的资源是否需要锁。很多场景下用 `ConcurrentHashMap`、`AtomicReference` 或 `volatile` 就够了，不需要显式加锁。
 
 **模式三：synchronized 方法中的 I/O 操作**
 
@@ -541,7 +537,6 @@ Watchdog 检测到主线程阻塞后，上报的数据应该包含：
 - 是否有正在进行的 Binder 调用（通过线程栈采样中 `BinderProxy.transactNative` / `Binder.execTransact` 帧的出现频率间接判断，或在具备权限时用 SIGQUIT / debuggerd 获取完整线程状态）
 
 这些数据聚合后，按堆栈签名聚类，就能看到哪些代码路径是高频的 ANR 嫌疑点。
-
 
 ## ANR 预警与主动发现
 
