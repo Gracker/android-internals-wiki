@@ -3,7 +3,7 @@
   "draft": 1,
   "ready_for_review": 8,
   "finalized": 9,
-  "last_updated": "2026-07-11T21:11:49.126883+08:00",
+  "last_updated": "2026-07-11T22:06:28.505847+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-11T22:06:28.505847+08:00",
+      "note": "Gap mining round 71: 0 candidates ≥14 (71st consecutive). Checked Shepherd-Kanban DeepResearch (21:06) — AI agent infra, not Android. Signal-handler (21:04) already mapped to §20.19. No new Clippings (18+ days). No new research-feeds. source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
