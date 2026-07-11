@@ -62,7 +62,7 @@ task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9
 last_task6_review_log: "logs/review/2026-06-19-04-review.md"
 last_task6_audit: "2026-07-07"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-28
+last_deepseek_cn_review_at: 2026-07-11
 ---
 
 # 13.16 Agent 辅助 Perfetto 分析协议
@@ -110,9 +110,9 @@ last_deepseek_cn_review_at: 2026-06-28
 
 <!-- outline-end -->
 
-Agent 辅助 Perfetto 分析的核心目标是让 trace 调查可以复查。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的分析思路整理为 AIW 的工作协议：输入要收齐，SQL 要先查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
+Agent 辅助 Perfetto 分析的核心目标是让 trace 调查可复查。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的分析思路整理为 AIW 的工作协议：输入要收齐，SQL 要先查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
 
-在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，本节聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md]
+在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，本节聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
 
 ## 协议定位：Perfetto 教程之外的调查规范
 
@@ -138,11 +138,11 @@ Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊�
 
 一个可分析的问题应该写成：“这份 trace 来自 Pixel 8 / Android 15，包名 `com.example.app`，复现冷启动首屏慢，采集包含 `sched`、`freq`、`am`、`wm`、`gfx`、`view`、`binder_driver`，希望确认慢在 App 主线程、系统服务、I/O 还是渲染提交。”这比“帮我看一下为什么慢”少很多歧义。
 
-输入约束还应该反向检查采集质量。缺少 `sched` 时无法分离 wall time 和 CPU time；缺少 FrameTimeline 时 jank 只能退回到 `Choreographer#doFrame`、RenderThread 和 SurfaceFlinger 轨道；缺少 Binder 事件或 flow 时，跨进程等待可能断在客户端。采集规划可回到 13.2 节，线上证据包可回到 26.5 节。[已验证: Perfetto Trace Processor docs, perfetto.dev/docs/analysis/trace-processor]
+输入约束还应该反向检查采集质量。缺少 `sched` 时无法分离 wall time 和 CPU time；缺少 FrameTimeline 时 jank 只能退回到 `Choreographer#doFrame`、RenderThread 和 SurfaceFlinger 轨道；缺少 Binder 事件或 flow 时，跨进程等待可能断在客户端。采集规划可回到 13.2 节，线上证据包可回到 26.5 节。
 
 ## Scratchpad 证据链：事实和假设分开
 
-`perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。这个文件不能写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。[已验证: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-trace-analysis/SKILL.md]
+`perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。这个文件不能写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。
 
 下面的模板用于约束 scratchpad 内容。排版只是附带要求，每条记录都要能回到一次查询或一次 UI 观察。
 
@@ -170,7 +170,7 @@ Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊�
 
 ## Perfetto SQL 生成守卫：先查 schema，再写查询
 
-Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和时间区间语义。`perfetto-sql` 对 Agent 的约束是：准备 `trace_processor`，检索标准库文档，确认表或视图的 schema，再写查询并执行校验。[已验证: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-sql/SKILL.md]
+Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和时间区间语义。`perfetto-sql` 对 Agent 的约束是：准备 `trace_processor`，检索标准库文档，确认表或视图的 schema，再写查询并执行校验。
 
 几条守卫规则应该固定下来：
 
@@ -240,7 +240,7 @@ ORDER BY dur_ms DESC;
 
 ## 六类调查域：把开放问题拆成可执行动作
 
-`perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC、Memory、Power 六类。这里不把它们写成清单，而按“触发条件 → 起手证据 → 下一跳 → 误判边界”组织，便于 Agent 执行。[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Skill/android-skills/profilers/perfetto-trace-analysis/references/hints_cpu.md 等六个 hints 文件]
+`perfetto-trace-analysis` 把调查提示分成 CPU、Graphics、I/O、IPC、Memory、Power 六类。这里不把它们写成清单，而按“触发条件 → 起手证据 → 下一跳 → 误判边界”组织，便于 Agent 执行。
 
 | 调查域 | 触发条件 | 起手证据 | 下一跳 | 常见误判 |
 |---|---|---|---|---|
@@ -255,7 +255,7 @@ ORDER BY dur_ms DESC;
 
 ## Wall time 与 CPU time 必须分离
 
-长 slice 的 `dur` 是 wall time，不等于 CPU time。一个 200ms 的 `bindApplication` slice，可能是 160ms 在 CPU 上计算，也可能是 150ms 在等 Binder 或 I/O——优化方向完全不同。Agent 协议要求每个可疑长 slice 都查 `thread_state`，按状态解释。[已验证: Perfetto Trace Processor docs, perfetto.dev/docs/analysis/trace-processor]
+长 slice 的 `dur` 是 wall time，不等于 CPU time。一个 200ms 的 `bindApplication` slice，可能是 160ms 在 CPU 上计算，也可能是 150ms 在等 Binder 或 I/O——优化方向完全不同。Agent 协议要求每个可疑长 slice 都查 `thread_state`，按状态解释。
 
 判断顺序分五步：
 
@@ -313,7 +313,7 @@ Agent 的最终报告应该是一次工程调查记录，而不是 Perfetto UI �
 |---|---|---|
 | 问题窗口 | trace 名称、设备、版本、包名、时间窗 | 给出 ns / ms 范围 |
 | 结论 | 当前 trace 能支持的判断 | 不超过三条 |
-| 证据表 | SQL 编号、对象、结果、解释 | 每条证据能回到 scratchpad |
+| 证据表 | SQL 编号、对象、结果、解释 | 每条证据能在 scratchpad 中找到对应记录 |
 | 阻塞方 | 如果存在等待，指出等待对象 | Binder / 锁 / I/O / 调度 / GPU |
 | 排除项 | 已查但不解释本问题的方向 | 说明排除依据 |
 | 可信度 | high / medium / low | 和 trace 采集字段绑定 |
@@ -387,7 +387,7 @@ Perfetto SQL 模板一旦进入团队工作流，就要像代码一样测试。�
 - **边界 test**：覆盖空结果、未闭合 slice、跨窗口 overlap、无 FrameTimeline 等情况。
 - **语义 test**：用小 trace 或固定样例验证输出字段含义，例如状态占比之和是否等于目标窗口 overlap。
 
-Perfetto 官方文档说明 Trace Processor 本身大量依赖 diff test：输入 trace、查询或 metric，输出和 golden 文件比较。[已验证: Perfetto Trace Processor docs, perfetto.dev/docs/analysis/trace-processor] AIW 的 SQL 模板不需要一开始就做到同样规模，但至少要把常用启动、帧、Binder、I/O、功耗模板纳入 smoke test。
+Perfetto 官方文档说明 Trace Processor 本身大量依赖 diff test：输入 trace、查询或 metric，输出和 golden 文件比较。 AIW 的 SQL 模板不需要一开始就做到同样规模，但至少要把常用启动、帧、Binder、I/O、功耗模板纳入 smoke test。
 
 ## 源码与 trace 关联
 
