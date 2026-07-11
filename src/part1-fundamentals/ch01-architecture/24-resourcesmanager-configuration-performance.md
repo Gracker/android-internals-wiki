@@ -60,6 +60,8 @@ task9_reviewed_by: "openclaw-task9"
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-07-03"
 ---
+last_task6_audit: "2026-07-11"
+---
 
 # 1.24 ResourcesManager 与 Configuration 变更性能
 
