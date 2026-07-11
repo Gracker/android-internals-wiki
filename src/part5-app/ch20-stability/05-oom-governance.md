@@ -2,7 +2,7 @@
 title: "OOM 治理"
 chapter: "20.5"
 section: "20.5"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "AOSP android-17.0.0_r1: ART heap/thread/JNI/Unsafe, hwui Bitmap, libutils Looper, ComponentCallbacks2"
@@ -25,7 +25,7 @@ related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
 pipeline_stage: "task6_pending"
 task6_state: revisiting
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 created_by: "task2a"
 reviewed_date: "2026-06-01"
