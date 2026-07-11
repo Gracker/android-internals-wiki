@@ -4,7 +4,7 @@
 title: "Perfetto DataGrid 与 Jank CUJ 标准库"
 chapter: "13.14"
 section: "13.14"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-05-16"
 applicable_versions: "Perfetto v54+ / Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-06-19"
@@ -63,6 +63,8 @@ updated_date: "2026-07-11"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-11
 last_task9_audit: "2026-07-11"
+last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
+task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
 ---
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 

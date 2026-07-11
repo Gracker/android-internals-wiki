@@ -45,7 +45,7 @@ repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
-status: "finalized"
+status: "ready-for-review"
 pipeline_stage: "task6_pending"
 task9_result: "auto-fixed"
 task9_state: "reviewed"
@@ -76,6 +76,8 @@ updated_date: "2026-07-11"
 p0: 0
 p1: 0
 p2: 0
+last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
+task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
 ---
 # ANR 设计思想
 
