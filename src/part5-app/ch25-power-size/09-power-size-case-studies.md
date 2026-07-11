@@ -2,7 +2,7 @@
 title: "功耗与包体积案例集"
 chapter: "25.9"
 section: "25.9"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "Android Developers power / vitals / APK size docs + AOSP android-17.0.0_r1 + Clippings structure references"
@@ -11,7 +11,7 @@ drafted_date: "2026-05-14"
 polish_count: 1
 task2b_state: fixed
 task6_state: revisiting
-task9_state: reviewed
+task9_state: pending
 pipeline_stage: task6_pending
 sources:
   - type: official
@@ -81,7 +81,7 @@ last_task9_autofix_at: "2026-07-12"
 last_task9_review_log: "logs/deep-review/2026-05-31-11-deep-review.md"
 task9_review_notes: "2026-05-31 Task9：pass-tech-review。P0 0 / P1 4 / P2 6；原理链完整性需补系统证据到业务归因映射，知识盲区需补厂商差异和Android 17特性，数据支撑需真实案例。自动晋升 finalized条件不满足（有P1问题）。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-01
+last_deepseek_cn_review_at: 2026-07-12
 ---
 
 # 功耗与包体积案例集
@@ -112,9 +112,9 @@ last_deepseek_cn_review_at: 2026-06-01
 
 前面几节已经把功耗诊断、后台限制、WakeLock / Alarm、WorkManager、定位、APK 分析、R8、AAB 分发分别讲完。现在需要把这些工具放进几个完整场景，说明排查顺序、取舍点和发布守门方式。
 
-案例写法保持一个边界：不编造某个项目的真实收益，不把参考书里的例子改头换面放进正文。这里给的是可复现的排查账本和判断模板，项目里的实际数字要用自己的 release 包、bugreport、Perfetto、Play Console Vitals 和灰度数据填进去。
+这里给出的是可复现的排查模板和判断框架。实际数字要用项目自己的 release 包、bugreport、Perfetto、Play Console Vitals 和灰度数据来填充。
 
-《Android 性能优化》把包体积拆成 dex、资源、`.so` 三类产物，再按精简、压缩、动态化处理；这个结构适合迁移到案例复盘里。功耗部分参考它的系统化组织方式，但事实验证以 Android Developers、AOSP 和前面 §25.1-§25.8 已验证内容为准。
+包体积优化通常按 dex、资源、`.so` 三类产物组织，分别走精简、压缩和动态化路线。功耗部分沿用了类似的系统化组织方式，但事实验证以 Android Developers、AOSP 和前面 §25.1–§25.8 已验证内容为准。
 
 ## 后台功耗异常排查实战
 
@@ -155,7 +155,7 @@ adb shell dumpsys batterystats --history > batterystats-history.txt
 
 ## APK 体积从 100 MB 到 50 MB 的优化路径
 
-“100 MB 到 50 MB”不能靠单个开关承诺。更稳妥的做法是先建立体积账本，再按 dex、资源、`.so`、assets、分发形态分别找收益。参考书按 dex / 资源 / `.so` 三类产物组织包体积优化，这个结构适合做第一版账本；现代工程还要补 AAB、dynamic feature、asset pack、16 KB page size 和渠道包边界。
+“100 MB 到 50 MB”不能靠单个开关承诺。更稳妥的做法是先建立体积账本，再按 dex、资源、`.so`、assets、分发形态分别找收益。包体积分析通常按 dex / 资源 / `.so` 三类产物建第一版账本；现代工程还要补 AAB、dynamic feature、asset pack、16 KB page size 和渠道包边界。
 
 体积账本要同时记录 raw file size、download size、安装后占用和功能覆盖范围。APK Analyzer 文档说明它会展示 zipped / raw file size 与 download file size；命令行可以用 `apkanalyzer` 和 `bundletool` 生成 CI 可读结果。
 
