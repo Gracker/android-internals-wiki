@@ -74,6 +74,11 @@ p1: 0
 p2: 1
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-11
+last_task9_audit: "2026-07-11"
+last_task9_audit_at: "2026-07-11T22:29:04+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-11-22-audit.md"
+last_task9_audit_result: "pass-idle-audit"
+last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）复核通过；AOSP android-17.0.0_r1 external/perfetto binder.sql/binder_breakdown/binder_tracker 与 kernel android17-6.18 binder.c/binder_trace.h 语义一致；无 P0/P1，记录 P3: IPCThreadState.cpp 中 transact() 在 android-17.0.0_r1 为 L921（正文 L854 行号漂移），不影响技术结论。"
 ---
 
 # 8.18 Binder Trace 驱动的 Activity 冷启动性能分析
