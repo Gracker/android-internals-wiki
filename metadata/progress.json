@@ -1,9 +1,9 @@
 {
   "total": 717,
   "draft": 1,
-  "ready_for_review": 8,
-  "finalized": 9,
-  "last_updated": "2026-07-12T01:05:43.761605+08:00",
+  "ready_for_review": 7,
+  "finalized": 10,
+  "last_updated": "2026-07-12T01:06:00+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -882,6 +882,15 @@
         "21.3"
       ],
       "type": "task6-revisiting"
+    },
+    {
+      "date": "2026-07-12",
+      "sections": [
+        "20.4"
+      ],
+      "result": "pass-light-edit",
+      "auto_promoted": true,
+      "log": "logs/review/2026-07-12-01-review.md"
     }
   ],
   "task2b_verifier": {
@@ -971,19 +980,19 @@
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
   "deprecated": 34,
   "stats": {
-    "last_review_date": "2026-07-07",
-    "last_review_by": "openclaw-task2a",
+    "last_review_date": "2026-07-12",
+    "last_review_by": "openclaw-task6",
     "drafted": 33,
-    "ready_for_review": 202,
-    "finalized": 336,
+    "ready_for_review": 7,
+    "finalized": 10,
     "ready_to_publish": 0,
     "total": 626,
     "last_task9_review_date": "2026-07-06",
     "last_task9_review_by": "openclaw-task9"
   },
-  "last_task6_review": "2026-07-09T06:08:00+08:00",
+  "last_task6_review": "2026-07-12T01:06:00+08:00",
   "last_task6_reviewed_sections": [
-    "16.4"
+    "20.4"
   ],
   "sections": {
     "15": {
@@ -1081,6 +1090,14 @@
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
       "pipeline_stage": "task9_pending"
+    },
+    "20.4": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_date": "2026-07-12",
+      "last_task6_at": "2026-07-12T01:06:00+08:00"
     }
   },
   "task2a": {
