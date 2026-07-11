@@ -3,7 +3,7 @@
   "draft": 1,
   "ready_for_review": 7,
   "finalized": 10,
-  "last_updated": "2026-07-12T06:08:35.774809+08:00",
+  "last_updated": "2026-07-12T07:06:38.938729+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T07:06:38.938729+08:00",
+      "note": "Gap mining round 79: 0 candidates ≥14 (79th consecutive). No new material since Round 78 (56 min ago). DeepResearch newest still 2026-07-12 05:56 (power-advisor-dvfs-headroom, already mapped to §5.29). No new Clippings (19 days). No new research-feeds (3 months). source-index: 0 unmapped high-quality. 49 drafts all >15 lines. Task2B backlog: 0."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -593,211 +600,6 @@
       "status": "no-candidates",
       "ts": "2026-07-05T02:07:55+08:00",
       "note": "Gap mining round 18: 0 candidates ≥14. Coverage saturated (18th consecutive). No new material since round 17. All 6 newest DeepResearch files (PMS×cpuidle, Flutter Impeller, AI agent memory, modular startup, heapprofd, LMKD batch, binder death notification) map to existing chapters. 2 pending queue items are supplements for ch1.25 and ch14.22."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T03:06:36.803330+08:00",
-      "note": "Gap mining round 19: 0 candidates ≥14. Coverage saturated (19th consecutive). 1 new DeepResearch file (background-audio-hardening-power) maps to ch25.17 (finalized), not new chapter."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T04:07:07.232051+08:00",
-      "note": "Gap mining round 20: 0 candidates ≥14. Coverage saturated (20th consecutive). Checked 10 NOT-FOUND AOSP topics, all scored <14. 3 research gaps map to existing chapters. No new DeepResearch material since round 19."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T05:06:46.014004+08:00",
-      "note": "Gap mining round 21: 0 candidates ≥14. Coverage saturated (21st consecutive). Daily info topics all <14 or already covered."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T10:08:55+08:00",
-      "note": "Gap mining round 22: 0 candidates ≥14. Coverage saturated (22nd consecutive). Checked 4 new DeepResearch files (2026-07-05): Perfetto v57 AI Skill → 13.23 already exists; Binder SZ_4M → supplement to 1.25/1.30/1.53; Battery/SoC → maps to ch05/ch25; Background audio → maps to ch25. All material maps to existing chapters. source-index: 0 unmapped high-quality. Clippings: no new files in 7 days."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T11:11:53.261211+08:00",
-      "note": "Gap mining round 23: 0 candidates ≥14. Coverage saturated (23rd consecutive). No new material since round 22 (1h ago). 14 draft sections all have content >15 lines. Daily info 2026-07-05 already consumed by task8."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T12:07:36+08:00",
-      "note": "Gap mining round 24: 0 candidates ≥14. Coverage saturated (24th consecutive). 1 new DeepResearch file (ai-agent-memory-sandboxed) maps to existing §20.3/ch04. No new Clippings in 7+ days. queue.json has 1 item (priority 60, section 2.15)."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T14:08:23+08:00",
-      "note": "Gap mining round 26: 0 candidates ≥14. Coverage saturated (26th consecutive). No new material since round 25. All DeepResearch files already mapped."
-    },
-    {
-      "section": "4.21",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "drafted_at": "2026-07-05T17:10:13+08:00",
-      "note": "ART HeapTask 调度管线与 Android 17 新增子类: 4层管线/7种子类/优先队列/PostFork/GC抑制风险/Perfetto可观测性. Created from DeepResearch 2026-07-05"
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T20:07:59.780608+08:00",
-      "note": "Gap mining round 29: 0 candidates ≥14. Coverage saturated. No new material since Round 28 (2h ago). 14 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-05T21:07:58.129279+08:00",
-      "note": "Gap mining round 30: 0 candidates ≥14. Coverage saturated (30th consecutive). 1 new DeepResearch (mSponge) maps to existing §23.6/§4.21. No new Clippings. No new daily-info."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-06T01:11:06.913881+08:00",
-      "note": "Gap mining round 31: 0 candidates ≥14. Coverage saturated (31st consecutive). 1 new DeepResearch file (2026-07-06 startup-insights-gaps) maps to existing ch21.17. No new Clippings in 7+ days. No new daily-info since 07-05. 19 non-empty drafts, 0 empty drafts, 0 Task2B backlog."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-06T05:06:57.198034+08:00",
-      "note": "Gap mining round 32: 0 candidates ≥14. Coverage saturated (32nd consecutive). 2 new DeepResearch files map to existing §14.8 and §25.17."
-    },
-    {
-      "section": "14.8",
-      "action": "task6-revisiting-review",
-      "status": "reviewed",
-      "reviewed_at": "2026-07-06T05:05:00+08:00",
-      "note": "Task 2B counter_ids fix verified; 2 L1/L2 小修; awaiting Task 9 re-review"
-    },
-    {
-      "section": "13.26",
-      "action": "task2a-content-processing",
-      "status": "ready_for_review",
-      "ts": "2026-07-06T06:04:00+08:00",
-      "note": "android.os.Trace API: 6 anchors + 1 extension. beginSection/endSection/asyncSection/setCounter底层调用链、TLS缓存、trace_marker fd、ATRACE_TAG分类、Compose Recomposition Trace、Perfetto SDK对比、SQL P50/P90查询、begin/end不匹配陷阱"
-    },
-    {
-      "section": "4.22",
-      "action": "task2a-gap-create",
-      "status": "draft-created",
-      "created_at": "2026-07-06T07:18:59+08:00",
-      "note": "知识缺口挖掘创建: AI Agent 内存沙箱化与跨应用数据复用"
-    },
-    {
-      "section": "14.28",
-      "action": "task2a-gap-create",
-      "status": "draft-created",
-      "created_at": "2026-07-06T07:18:59+08:00",
-      "note": "知识缺口挖掘创建: GPU 性能分析进阶"
-    },
-    {
-      "section": "26.24",
-      "action": "task2a-gap-create",
-      "status": "draft-created",
-      "created_at": "2026-07-06T07:18:59+08:00",
-      "note": "知识缺口挖掘创建: heapprofd 生产级部署与权限模型"
-    },
-    {
-      "section": "2.1",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "created_at": "2026-07-06T11:04:00+08:00",
-      "drafted_at": "2026-07-06T11:04:00+08:00",
-      "note": "Created from knowledge gap mining (GPU debugging tools)",
-      "gap_source": "AOSP结构"
-    },
-    {
-      "section": "2.3",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "created_at": "2026-07-06T11:04:00+08:00",
-      "drafted_at": "2026-07-06T11:04:00+08:00",
-      "note": "Created from knowledge gap mining (Battery optimization)",
-      "gap_source": "AOSP结构"
-    },
-    {
-      "section": "4.1",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "created_at": "2026-07-06T11:04:00+08:00",
-      "drafted_at": "2026-07-06T11:04:00+08:00",
-      "note": "Created from knowledge gap mining (AI Agent memory)",
-      "gap_source": "素材驱动"
-    },
-    {
-      "section": "5.1",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "created_at": "2026-07-06T11:04:00+08:00",
-      "drafted_at": "2026-07-06T11:04:00+08:00",
-      "note": "Created from knowledge gap mining (Audio hardening)",
-      "gap_source": "研究素材"
-    },
-    {
-      "section": "8.1",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "created_at": "2026-07-06T11:04:00+08:00",
-      "drafted_at": "2026-07-06T11:04:00+08:00",
-      "note": "Created from knowledge gap mining (Modular startup)",
-      "gap_source": "AOSP结构"
-    },
-    {
-      "section": "ch02.1",
-      "action": "task2a-content-processing",
-      "status": "ready_for_review",
-      "ts": "2026-07-06T12:19:38+08:00",
-      "note": "SurfaceFlinger GPU 性能监控子系统: FPSReporter/JankTracker/FrameTracer/TimeStats 四子系统源码架构 + 调试属性系统 + gralloc 转换 + 开销分析矩阵"
-    },
-    {
-      "section": "4.22",
-      "action": "task2a-content-processing",
-      "status": "ready_for_review",
-      "ts": "2026-07-06T13:10:00+08:00",
-      "note": "AI Agent 内存沙箱化: 6 anchors (UID沙箱三形态/SharedMemory+HardwareBuffer+ContentProvider+AppFunctionService四通道/LLM权重mmap+KV Cache线性增长+推理工作区/Binder 1MB限制/MemoryLimiter ProcState影响+后台推理page fault/SELinux三域) + 3 extensions (多进程监控维度/多Agent先到先得/CPU vs GPU vs NPU内存). 交叉引用 §4.18 §5.20 §5.21 §5.27."
-    },
-    {
-      "section": "4.23",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "created_at": "2026-07-06T13:10:00+08:00",
-      "note": "Created from knowledge gap mining (AI Agent memory)"
-    },
-    {
-      "section": "2.3",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "created_at": "2026-07-06T13:10:00+08:00",
-      "note": "Created from knowledge gap mining (GPU debugging tools)"
-    },
-    {
-      "section": "8.3",
-      "action": "task2a-knowledge-gap",
-      "status": "draft",
-      "created_at": "2026-07-06T13:10:00+08:00",
-      "note": "Created from knowledge gap mining (Startup Insights)"
-    },
-    {
-      "section": "14.8",
-      "status": "draft",
-      "note": "Created from knowledge gap mining (Android 17 GPU debug tools)",
-      "created_at": "2026-07-06T09:28:15.180250+00:00"
     }
   ],
   "review_history": [
@@ -1129,10 +931,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-12T06:08:35.774809+08:00",
+    "last_run": "2026-07-12T07:06:38.938729+08:00",
     "last_section": "none",
     "result": "no-candidates",
-    "note": "Gap mining round 78: 0 candidates ≥14. Coverage saturated. New DeepResearch power-advisor-dvfs-headroom → §5.29 supplement."
+    "note": "Gap mining round 79: 0 candidates ≥14. Coverage saturated. No new material since Round 78."
   },
   "last_task9_review": {
     "at": "2026-07-11T13:28:01+08:00",

@@ -535,3 +535,40 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 ### 结论
 本轮未发现评分 ≥ 14 的知识缺口（第 78 次连续）。Coverage truly saturated.
 新增 DeepResearch power-advisor-dvfs-headroom 为 §5.29 素材补充，不构成新缺口。
+
+
+## [2026-07-12] [章节待创建] 构建系统与编译工具链 — 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md]
+
+### 知识点
+1. Gradle / Buck / Bazel 三大构建系统对比：统一编译工具、代码组织管理架构（Google Piper / Facebook HG 分布式仓库）、极致性能追求
+2. 编译速度优化全景：Instant Run 机制原理与局限（多进程问题、Split APK 安装、javac/常量全量编译）、Apply Changes 替代方案、增量编译策略、Build Cache 远端缓存
+3. 持续集成/交付管线：自定义代码检查（Findbugs 扩展、编码规范插件）、第三方代码扫描（Coverity、Infer）、Code Review 集成、编译构建平台实践
+
+### 重要程度
+中（AIW 以系统内部机制为主，构建工具链属于工程实践层面，但编译速度直接影响研发效能）
+
+### 建议加工方向
+- 可作为 Part 5 新章节"构建系统与编译优化"的骨架素材
+- 重点提取与 Android 17 相关的更新（AGP 8.x、R8 full mode、App Bundle）
+- 持续集成部分可融入 ch26 方法论章节
+
+## [Task2A Round 79] 知识缺口挖掘 — 2026-07-12 07:06
+
+### 已检查方向（本轮）
+- ✅ Phase 0: 0 个空 draft 章节（49 个 draft 全部 >15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 0 个 unmapped high-quality 条目（全部已映射）
+- ✅ DeepResearch: 0 个新文件（newest 仍是 05:56 power-advisor-dvfs-headroom，Round 78 已检查→§5.29 supplement）
+- ✅ Clippings: 无新文件（最后更新 2026-06-23，19 天无更新）
+- ✅ research-feeds: 无新文件（最后 2026-04-14，3 个月无更新）
+- ✅ daily-info 2026-07-12: AppFlow 论文已在 §16.8 覆盖（85 mentions）
+- ✅ queue.json: 6 条（最高 priority=90），无变化
+- ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 78 轮已全面覆盖
+
+### 结论
+本轮未发现评分 ≥ 14 的知识缺口，跳过。连续第 79 轮无合格候选。Coverage truly saturated.
+
+**研究方向**: 维持 Round 68 建议 — 需要分析 Android 17 binder IPCThreadState.cpp 中的优先级继承实现机制（已有 DeepResearch 2026-07-11 23:58 产出，待 §1.53/§1.54 消化吸收）
