@@ -268,3 +268,9 @@ Coverage remains saturated (60th consecutive round). No new knowledge gaps ≥14
 ### 结论
 Coverage remains saturated (66th consecutive round). No new knowledge gaps ≥14 identified.
 All input sources fully consumed and map to existing chapters.
+
+## [Task9 Deep Review] 8.18 Binder Trace 驱动的 Activity 冷启动性能分析 — 2026-07-11
+- **类型**：源码准确性 / 数据支撑
+- **位置**：§3.3 Frozen Reply 干扰的识别、§6.4 Frozen Reply 业务影响统计
+- **问题**：当前 SQL 以 `android_binder_txns.server_dur = 0` 作为 frozen reply 候选信号；但 Android 17 `binder_tracker.cc` 对 `BR_FROZEN_REPLY` / `BR_TRANSACTION_PENDING_FROZEN` 的失败返回可能只结束客户端 `binder transaction` slice，并不一定形成带 server reply flow 的 `android_binder_txns` 行，因此该查询可能漏掉真实 frozen reply。
+- **建议**：保留 raw ftrace `binder_return` / `binder_command` / `slice` 侧查询作为主判据；正文可补一句说明 `server_dur = 0` 查询只是异常事务辅助筛选，不能作为 frozen reply 完整统计。

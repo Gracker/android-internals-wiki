@@ -1,9 +1,9 @@
 {
   "total": 716,
   "draft": 0,
-  "ready_for_review": 10,
-  "finalized": 7,
-  "last_updated": "2026-07-11T13:06:08.553945+08:00",
+  "ready_for_review": 8,
+  "finalized": 9,
+  "last_updated": "2026-07-11T13:28:01+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -1798,21 +1798,20 @@
     "note": "Created sections: ['14.25', '8.1', '2.5']"
   },
   "last_task9_review": {
-    "at": "2026-07-10T00:27:54+08:00",
+    "at": "2026-07-11T13:28:01+08:00",
     "sections": [
-      "10.5",
-      "10.6",
-      "15.6"
+      "7.1",
+      "8.18"
     ],
-    "result": "auto-fixed-10.6; pass-tech-review-10.5-15.6",
-    "p0": 2,
+    "result": "pass-tech-review; auto-promoted-7.1-8.18; p2-suggestion-8.18",
+    "p0": 0,
     "p1": 0,
-    "p2": 0,
+    "p2": 1,
     "auto_promoted": [
-      "10.5",
-      "15.6"
+      "7.1",
+      "8.18"
     ],
-    "log": "logs/deep-review/2026-07-10-00-deep-review.md"
+    "log": "logs/deep-review/2026-07-11-13-deep-review.md"
   },
   "section-13.21": {
     "last_task2b_main": "2026-07-03T16:53:22+08:00",
