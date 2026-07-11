@@ -69,7 +69,7 @@ last_task9_review_log: "logs/deep-review/2026-07-11-20-audit.md"
 task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 补充 Android 14+ shortService FGS 计时器后回审；L1/L2 全部通过；applicable_versions 扩展至 Android 17 (API 37)；task9_result 确认 pass-tech-review；queue 无 pending，自动晋升 finalized。 2026-07-12 Task6 revisiting 复审：Task9 idle audit auto-fix（android-17 源码锚点修正）后回审；L1 修复 4 处（禁用词"链路"→"路径"、冗余副词"真的"、标点前空格、多余空行）；L2 全部通过；task9_result=auto-fixed 已接受；queue 无 pending，自动晋升 finalized。"
 task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-22
+last_deepseek_cn_review_at: 2026-07-12
 last_task9_autofix_at: "2026-07-11"
 last_task9_audit: "2026-07-11"
 last_task9_audit_at: "2026-07-11T20:30:00+08:00"
@@ -227,7 +227,7 @@ internal object DefaultIoScheduler : ExecutorCoroutineDispatcher(), Executor {
 
 > "This dispatcher and its views share threads with the Default dispatcher, so using `withContext(Dispatchers.IO) { ... }` when already running on the Default dispatcher typically does not lead to an actual switching to another thread."
 
-**ANR 治理启示**：在 Default 线程上用 `withContext(Dispatchers.IO)` 不会发生线程切换，只是改变了 TaskContext（从 NonBlockingContext 变为 BlockingContext）。可观察的线程切换开销来自 blocking 任务释放 CPU 令牌后调度器唤醒/创建新 worker 的开销。
+这意味着在 Default 线程上用 `withContext(Dispatchers.IO)` 不会发生线程切换，只是 TaskContext 从 NonBlockingContext 变成 BlockingContext。线程切换开销来自 blocking 任务释放 CPU 令牌后，调度器唤醒或创建新 worker 的过程。
 
 #### CoroutineScheduler 的 CPU 令牌机制
 
@@ -251,7 +251,7 @@ while (true) {
 }
 ```
 
-**ANR 治理启示**：如果一个 worker 在执行 blocking 任务（TaskContext = BlockingContext）时阻塞（例如无限期等待 I/O），它不会影响持有 CPU 令牌的 worker 处理 CPU 任务。但一旦 blocking 任务占满所有 worker，主线程上的 withContext(Dispatchers.IO) 任务就必须排队等待。
+如果一个 worker 在执行 blocking 任务时阻塞（比如无限期等待 I/O），它不会影响持有 CPU 令牌的 worker 处理 CPU 任务。但一旦 blocking 任务占满所有 worker，主线程上通过 `withContext(Dispatchers.IO)` 投递的任务就必须排队等待。
 
 #### Dispatchers.Main 的 Handler 降级逻辑
 
@@ -271,7 +271,7 @@ private fun cancelOnRejection(context: CoroutineContext, block: Runnable) {
 }
 ```
 
-**降级触发条件**：`handler.post()` 返回 false 的唯一原因是底层 Looper 正在退出（`Looper.quit()` 已调用）。`Dispatchers.Main` 包装的是主线程 Looper，它在正常应用生命周期内不会退出，所以这条降级路径对主线程 ANR 分析来说基本不可达。Handler 降级更多出现在自定义 Handler 关联的子线程 Looper 被 quit() 的场景。
+`handler.post()` 返回 false 的唯一原因是底层 Looper 正在退出。`Dispatchers.Main` 包装的是主线程 Looper，正常应用生命周期内不会退出，所以这条降级路径对主线程 ANR 分析基本不可达。Handler 降级主要出现在子线程 Looper 被 quit() 的场景。
 
 **主线程 ANR 的协程侧成因**：Handler 队列积压。主线程被一个长操作阻塞时，后续通过 `withContext(Dispatchers.Main)` 投递的恢复协程全部排在 Handler 队列后面。这些等待恢复的协程如果持有其他线程需要的资源（锁、信号量、Channel），就会形成跨线程的级联阻塞。阻塞解除后，积压的消息仍需逐个执行，新投递的 Runnable 排在队尾，响应延迟被放大。
 
@@ -290,7 +290,7 @@ val myMongoDbDispatcher = Dispatchers.IO.limitedParallelism(60)
 // Peak: 64 + 100 + 60 threads possible
 ```
 
-**ANR 治理启示**：`limitedParallelism(n)` 通过 worker 计数器严格限制该视图同时向底层调度器投递的任务数，`n` 表示强制并发上限。但线程数仍可能超过 `n`，原因在底层调度器：当视图内的任务在 worker 上执行并进入 BLOCKING 状态，CoroutineScheduler 会释放该 worker 的 CPU 令牌并创建新 worker 服务其他任务。多个视图同时存在阻塞任务时，底层线程数上限是 `MAX_POOL_SIZE`（默认 256），线程调度开销和上下文切换成本会显著上升。
+`limitedParallelism(n)` 通过 worker 计数器限制该视图同时向底层调度器投递的任务数，`n` 是并发上限。但线程数仍可能超过 `n`：当视图内的任务在 worker 上进入 BLOCKING 状态，CoroutineScheduler 释放该 worker 的 CPU 令牌并创建新 worker。多个视图同时有阻塞任务时，底层线程数上限是 `MAX_POOL_SIZE`（默认 256），上下文切换成本会明显上涨。
 
 #### 协程 ANR 的本质
 

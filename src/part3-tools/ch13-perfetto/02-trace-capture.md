@@ -26,7 +26,7 @@ last_task9_at: "2026-07-09T05:38:15+08:00"
 task9_review_notes: "2026-07-09 Task9 deep-review auto-fix: P0=4 P1=0 P2=2. 修正 Android17 DataSourceConfig 新增数据源口径、FrameTimeline/linux.perf Android17 源码锚点与旧伪代码、linux.perf 版本验证矛盾、unsupported profiling overhead 百分比；回到 Task6 复审。 | 2026-07-09 05:38 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；按 android-17.0.0_r1 复核源码锚点、版本边界和交叉引用；Task6 已 pass-light-edit 且 queue 无 pending，自动晋升 finalized。 | 2026-07-11 06:25 Task9 idle audit auto-fix: 将 record_android_trace 获取命令从 Perfetto GitHub main 改为 AOSP android-17.0.0_r1 Gitiles 锚点；回到 Task6 复审。"
 last_task9_autofix_at: 2026-07-11
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-09
+last_deepseek_cn_review_at: 2026-07-12
 last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: task9_state reviewed→pending; Task6 re-reviewed post-auto-fix (pass-light-edit), pipeline task9_pending correct, task9_state was stale reviewed."
 task9_reviewed_date: "2026-07-09"
@@ -88,7 +88,7 @@ last_task9_audit: 2026-07-11
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-
+> **深度扩展**：以下两节面向需要源码级验证或想了解数据源内部实现的读者。如果只需掌握抓取方法，可以直接跳到正文开头。
 
 ### 🔸 FrameTimeline 与 Linux.Perf 源码锚点强化
 
@@ -630,7 +630,7 @@ try {
 
 最基本的要求是 `beginSection` 和 `endSection` 必须**严格配对、嵌套调用**——不能交叉嵌套，也不能在一个线程中 `beginSection` 然后在另一个线程中 `endSection`。`Trace.endSection()` 不需要传入标签名，它自动关闭最近一次 `beginSection` 对应的区域，和栈的 push/pop 机制一样。正因为这个栈式设计，如果 `endSection` 调用次数和 `beginSection` 不匹配，后续所有标记都会错位。
 
-`Trace.beginSection` 的 section name 上限是 127 个 Unicode code unit。Java public API 对过长名字会抛出 `IllegalArgumentException`；native 侧也受 ATrace 消息长度和 ftrace `trace_marker` 写入格式约束。这个限制来自一条 trace_marker 消息要同时容纳事件类型、线程信息和 section name，名字过长会增加 trace buffer 压力，也会让 Perfetto UI 难以阅读。建议使用简洁但足够描述性的标签名，比如 `"HomeFragment.loadData"`，不要把请求 URL、JSON 片段或用户标识塞进 section name。
+底层原因是一条 trace_marker 消息要同时装下事件类型、线程信息和 section name。名字太长会撑大 trace buffer 开销，Perfetto UI 里也不好读。
 
 另外，`beginSection`/`endSection` 只能在同一线程中使用。跨线程操作要改用异步 API。
 
@@ -677,7 +677,7 @@ ATrace_endSection();
 
 [图：Perfetto UI 中自定义 Trace 标记的展示——App 主线程 track 上的 "loadHomePageData" 等自定义切片]
 
-通过自定义标记和系统事件的叠加，我们可以在同一个时间轴上看到业务逻辑耗时和系统级行为（如 VSync、GC、Binder 调用）的完整上下文。这种"业务 + 系统"的双视角，是 Perfetto 分析区别于传统 profiling 工具的核心优势之一。
+自定义标记和系统事件叠在同一时间轴上，业务逻辑的耗时区间和系统行为（VSync、GC、Binder 调用）能直接对照。这是 Perfetto 相比传统 profiler 最实用的特点之一。
 
 此外，Android 设备的开发者选项中内置了**系统追踪**应用，可以直接在设备上配置和启动 Trace 抓取，无需连接电脑。适合在现场复现问题时使用。抓取完成后，Trace 文件保存在设备上，后续可以通过 `adb pull` 导出。入口为"设置 → 开发者选项 → 系统追踪"。
 
@@ -1039,7 +1039,7 @@ Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基�
 
 ## 附录：源码验证记录（2026-06-06）
 
-以下为历史验证记录，正文结论已整合到前文对应小节。
+以下为历史版本对照记录，正文结论均已整合到前文对应小节。仅作归档参考。
 
 ### 版本对照记录
 
