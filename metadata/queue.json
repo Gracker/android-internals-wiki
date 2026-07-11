@@ -608,7 +608,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-11T05:36:55.619853",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-11T16:51:04+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "URL 不可访问，跳过"
     },
     {
       "section": "04.memory",
@@ -628,7 +631,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-11T05:36:55.621996",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-11T16:51:04+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "URL 不可访问，跳过"
     },
     {
       "section": "14.11",
