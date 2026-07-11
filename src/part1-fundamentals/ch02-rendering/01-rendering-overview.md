@@ -1,11 +1,10 @@
 ---
-
 title: "Android 渲染架构全景"
 chapter: "2.1"
 section: "2.1"
 applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"  # 版本演进从 3.0 开始,核心内容覆盖 API 11-37
-last_verified: "2026-06-20"
-last_verified_against: "AOSP android-16.0.0_r1 / android-17.0.0_r1 spot-check; Android 16/17 CDD Vulkan requirements"
+last_verified: "2026-07-11"
+last_verified_against: "AOSP android-17.0.0_r1 spot-check: View/ViewRootImpl/Choreographer, BufferQueueConsumer/BufferItemConsumer, HWUI BaseRecordingCanvas/RenderNode/SkiaPipeline, SurfaceFlinger Scheduler, RenderEngine libs/renderengine; Android 16/17 CDD Vulkan requirements"
 confidence: high
 drafted_date: "2026-03-30"
 polish_count: 2
@@ -23,39 +22,39 @@ sources:
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 review_round: 7
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-20"
+task9_result: "auto-fixed"
+task9_reviewed_date: "2026-07-11"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-20T11:42:39+08:00"
+last_task9_at: "2026-07-11T19:30:22+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁用短语修复 1 处；AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-task9_review_notes: "2026-06-20 Task9 idle audit auto-fix: P0 1（Android 16 Vulkan CDD 要求版本断言错误），已按 Android 16/17 CDD 修正；源码锚点 android-16.0.0_r1 与 android-17.0.0_r1 抽检无阻断差异。"
-last_task9_review_log: "logs/deep-review/2026-06-20-11-audit.md"
+task9_review_notes: "2026-07-11 Task9 idle audit auto-fix: P0 源码锚点 3 类已修复（BufferItemConsumer 签名、BaseRecordingCanvas 路径/代码、RenderEngine 路径）；无 queue pending，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-07-11-19-audit.md"
 
-status: finalized
+status: "ready-for-review"
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-06-20
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: ready-to-publish
-task2b_state: fixed
+task6_state: "revisiting"
+task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task2b_state: "fixed"
 last_task6_at: "2026-06-20T12:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-12-review.md"
 task2b_result: "fixed"
 task6_review_notes: "2026-06-20 12:07 Task6 revisiting-review：Task9 idle audit auto-fix（P0: Android 16 Vulkan CDD 版本断言错误，3 处正文修正）写作质量复审通过；L1 禁用词/高频词/结构性元叙述 0 命中；L2 开头/节奏/结构/读者视角全部通过；outline 锚点全覆盖；无新增 L3/L4 回炉项；task9_result=auto-fixed → pass-tech-review，queue.json 无 pending，自动晋升 finalized。"
 last_task6_audit: "2026-05-25"
-last_task9_audit: "2026-06-20"
-last_task9_audit_at: "2026-06-20T11:42:39+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-20-11-audit.md"
-last_task9_audit_result: "auto-fixed-p0-version-error"
-task9_audit_notes: "2026-06-20 Task9 idle audit auto-fix: 修正 Android 16 Vulkan CDD 设备要求版本断言；硬性要求为 Vulkan 1.1，Vulkan 1.3 为 strongly recommended；AOSP android-16/17 渲染源码锚点抽检通过，回到 Task6 复审。"
-p0: 0
+last_task9_audit: "2026-07-11"
+last_task9_audit_at: "2026-07-11T19:30:22+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-11-19-audit.md"
+last_task9_audit_result: "auto-fixed-p0-source-anchors"
+task9_audit_notes: "2026-07-11 Task9 idle audit auto-fix: 按 android-17.0.0_r1 修正 BufferItemConsumer acquireBuffer 签名、BaseRecordingCanvas 录制入口、RenderEngine 源码路径，并把 SurfaceFlinger/HWUI/BufferQueue 验证锚点更新到 Android 17；回到 Task6 复审。"
+p0: 3
 p1: 0
 p2: 0
 updated_by: "openclaw-task9"
-updated_date: "2026-06-20"
+updated_date: "2026-07-11"
 task2b_fixed_at: "2026-06-01T04:50:00+08:00"
 task2b_fix_notes: "2026-05-31 Task2B main: 修复 Task9 2026-05-26 P1 版本差异；拆开 Android 3.0 早期 HWUI/DisplayList 与 Android 5.0 RenderNode/RenderThread 分工。"
 last_task2b_at: "2026-06-01T04:50:00+08:00"
@@ -64,7 +63,7 @@ task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 task6_new_rework: false
 review_type: "task6-writing-quality-review"
-last_task9_autofix_at: "2026-06-20"
+last_task9_autofix_at: "2026-07-11"
 last_task2b_verifier_at: "2026-06-01T07:30:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-01-07-task2b-verifier.md"
 deepseek_cn_review_state: done
@@ -132,7 +131,7 @@ View.onMeasure 的默认实现只做一件事:通过 getDefaultSize 把 measureS
 
 ```java
 // frameworks/base/core/java/android/view/View.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 public static int getDefaultSize(int size, int measureSpec) {
     int result = size;
     int specMode = MeasureSpec.getMode(measureSpec);
@@ -202,7 +201,7 @@ Choreographer.doFrame(...)
 
 VSync 信号是整条渲染管线的节拍器。它的源头是显示硬件--以 60Hz 屏幕为例,硬件每 16.67ms 发出一次 VSync 中断。Android 系统先把原始硬件中断转成软件 VSync,再按不同 phase 投递给 App 与 SurfaceFlinger。
 
-版本边界要分清。Android 10/11 及更早的资料常用 DispSync 解释 VSYNC_APP / VSYNC_SF 的生成;Android 12 之后,SurfaceFlinger 的 Scheduler 路径逐步改成 `VSyncPredictor` 预测下一次硬件 VSync,再由 `VSyncDispatchTimerQueue`、`VsyncSchedule`、`VsyncConfiguration` 组织软件 VSync 投递。Android 14-16 的源码锚点应放在 `services/surfaceflinger/Scheduler/` 目录下,不能把 DispSync 写成当前主路径。
+版本边界要分清。Android 10/11 及更早的资料常用 DispSync 解释 VSYNC_APP / VSYNC_SF 的生成;Android 12 之后,SurfaceFlinger 的 Scheduler 路径逐步改成 `VSyncPredictor` 预测下一次硬件 VSync,再由 `VSyncDispatchTimerQueue`、`VsyncSchedule`、`VsyncConfiguration` 组织软件 VSync 投递。Android 14-17 的源码锚点应放在 `services/surfaceflinger/Scheduler/` 目录下,不能把 DispSync 写成当前主路径。
 
 VSYNC_APP 先唤醒 App 侧 `Choreographer`,App 完成渲染后通过 BufferQueue 提交 buffer;VSYNC_SF 唤醒 SurfaceFlinger,随后进入 `scheduleComposite()`,再走 commit / composite / present。2.3 节会展开 offset、预测模型和 Scheduler 目录下的实现。
 
@@ -288,17 +287,17 @@ T5: GPU 开始填充缓冲区 1(已经完成上一次填充)
 
 ```cpp
 // frameworks/native/libs/gui/BufferQueueConsumer.cpp
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 status_t BufferQueueConsumer::acquireBuffer(BufferItem* outBuffer,
         nsecs_t expectedPresent, uint64_t maxFrameNumber);
 
 // frameworks/native/libs/gui/BufferItemConsumer.cpp
-// @ android16-release
-status_t BufferItemConsumer::acquireBuffer(BufferItem* item,
-        nsecs_t presentWhen, bool waitForFence);
+// @ AOSP android-17.0.0_r1
+status_t BufferItemConsumer::acquireBuffer(BufferItem* item, nsecs_t presentWhen,
+        bool waitForFence, std::optional<BufferFreedCallback> onBufferFreed);
 ```
 
-`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-16 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 CDD 对非低内存 64 位 handheld 设备的硬性要求是 Vulkan 1.1，Vulkan 1.3 则是 strongly recommended。Host Image Copy 优化的是纹理上传和 image memory 路径，属于 GPU 侧概念，与 BufferQueue / BLAST 不在同一层。`AsyncBufferQueue` 目前还没有正式发布的 AOSP commit，本节不展开。
+`BufferQueueConsumer::acquireBuffer()` 从队列头选择到期的 `BufferItem`,再把 slot、frame number、GraphicBuffer 和 acquire fence 填到 `outBuffer`;`BufferItemConsumer::acquireBuffer()` 在 `waitForFence=true` 时会等待 `item->mFence`。在 BufferQueue 的实现中,三缓冲依赖 buffer slot 数量和 Fence 协同工作:生产者只有拿到空闲 slot 才能继续写入,消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后,buffer 提交和窗口几何变更会放进同一事务节奏,减少 resize 与内容更新错拍。Android 14-17 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口;分析 Android 14-17 Trace 时,入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16/17 CDD 对非低内存 64 位 handheld 设备的硬性要求是 Vulkan 1.1，Vulkan 1.3 则是 strongly recommended。Host Image Copy 优化的是纹理上传和 image memory 路径，属于 GPU 侧概念，与 BufferQueue / BLAST 不在同一层。`AsyncBufferQueue` 目前还没有正式发布的 AOSP commit，本节不展开。
 
 Trace 中验证三缓冲,打开 FrameTimeline、gfx / view / sched / freq、SurfaceFlinger 相关类别后按这几类信号对照:
 
@@ -385,7 +384,7 @@ return releaseFence;
 
 这里的 `signal` 不由 BufferQueue、App 或 SurfaceFlinger 手动调用。Fence 完成事件来自内核同步框架以及 GPU / 显示硬件驱动;生产者和消费者做的是"随 buffer 传递 fence 句柄,并在需要时 wait"。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/BufferQueueProducer.cpp / BufferQueueConsumer.cpp]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/gui/BufferQueueProducer.cpp / BufferQueueConsumer.cpp / BufferItemConsumer.cpp]
 
 ## 软件渲染(Skia CPU)vs 硬件加速渲染(Skia OpenGL/Vulkan)
 
@@ -439,9 +438,9 @@ renderthread/RenderThread.cpp
 
 Vulkan 是比 OpenGL ES 更底层的图形 API。与 OpenGL ES 的隐式状态管理不同,Vulkan 要求开发者显式管理 GPU 资源和同步——这增加了使用复杂度,但换来了更高的 CPU 提交效率和更精细的 GPU 控制,对多线程渲染也更友好。
 
-Android 16 中 HWUI 的 Vulkan 渲染路径位于 Skia Pipeline 架构下,不再有独立的 `VulkanRenderer` 类。可核对的文件是 `frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp`、`SkiaOpenGLPipeline.cpp` 和 `SkiaPipeline.cpp`:OpenGL / Vulkan pipeline 的 `draw` 方法准备目标 surface,再进入共享的 `SkiaPipeline::renderFrame()` / `renderFrameImpl()`,由 Skia 在后端 surface 上执行 RenderNode 绘制。上层 View 代码只接触 Canvas / RenderNode,不直接调用 Vulkan API。
+Android 17 中 HWUI 的 Vulkan 渲染路径位于 Skia Pipeline 架构下,不再有独立的 `VulkanRenderer` 类。可核对的文件是 `frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp`、`SkiaOpenGLPipeline.cpp` 和 `SkiaPipeline.cpp`:OpenGL / Vulkan pipeline 的 `draw` 方法准备目标 surface,再进入共享的 `SkiaPipeline::renderFrame()` / `renderFrameImpl()`,由 Skia 在后端 surface 上执行 RenderNode 绘制。上层 View 代码只接触 Canvas / RenderNode,不直接调用 Vulkan API。
 
-[已验证: AOSP android-16.0.0_r1, `SkiaVulkanPipeline.cpp`、`SkiaOpenGLPipeline.cpp`、`SkiaPipeline.cpp`]
+[已验证: AOSP android-17.0.0_r1, `SkiaVulkanPipeline.cpp`、`SkiaOpenGLPipeline.cpp`、`SkiaPipeline.cpp`]
 
 ### 软件渲染 vs 硬件加速对比
 
@@ -488,16 +487,15 @@ SkiaPipeline (RenderThread 使用 - 回放指令)
 
 #### android.graphics.RecordingCanvas:UI 线程的画布
 
-`android.graphics.RecordingCanvas` 不直接光栅化像素,而是把 `drawXXX` 调用记录到 native DisplayList/RenderNode 指令流。录制阶段仍有 JNI/native 写入和对象状态采样成本--每个 `drawRect()`、`drawText()`、`drawPath()` 调用会做参数/状态检查(如 `paint.nothingToDraw()`),然后通过 `nDraw*` native recorder 把绘制操作写入 `DisplayListData`。与 RenderThread 上 Skia pipeline 的 GPU 光栅化相比,录制开销通常低一个数量级,但不是零--高频复杂绘制(大量 Path/文字/Shader)在 `beginRecording()` 到 `endRecording()` 之间的耗时仍然可以在主线程 Trace 中看到。
+`android.graphics.RecordingCanvas` 不直接光栅化像素,而是把 `drawXXX` 调用记录到 native DisplayList/RenderNode 指令流。Android 17 中常规 `drawRect()`、`drawText()`、`drawPath()` 的录制入口主要落在 `BaseRecordingCanvas`，通过 `mNativeCanvasWrapper` 调用 `nDraw*` native recorder，把绘制操作写入 DisplayList/RenderNode 指令流。与 RenderThread 上 Skia pipeline 的 GPU 光栅化相比,录制开销通常低一个数量级,但不是零--高频复杂绘制(大量 Path/文字/Shader)在 `beginRecording()` 到 `endRecording()` 之间的耗时仍然可以在主线程 Trace 中看到。
 
 ```java
-// frameworks/base/graphics/java/android/graphics/RecordingCanvas.java
-// @ AOSP android-16.0.0_r1
+// frameworks/base/graphics/java/android/graphics/BaseRecordingCanvas.java
+// @ AOSP android-17.0.0_r1
 @Override
-public void drawRect(float left, float top, float right, float bottom, Paint paint) {
-    if (CC_UNLIKELY(paint.nothingToDraw())) return;
-    // 将绘制指令存储到 DisplayList(内部调用 native 方法写入 DisplayListData)
-    nDrawRect(mNativeRecorderWrapper, left, top, right, bottom, paint.getNativeInstance());
+public final void drawRect(float left, float top, float right, float bottom,
+        @NonNull Paint paint) {
+    nDrawRect(mNativeCanvasWrapper, left, top, right, bottom, paint.getNativeInstance());
 }
 ```
 
@@ -511,11 +509,11 @@ public void drawRect(float left, float top, float right, float bottom, Paint pai
 | `SkiaVulkanPipeline.cpp` | `SkiaVulkanPipeline::draw` | 获取 Vulkan-backed surface,调用共享 `renderFrame`,再提交 / 交换 buffer |
 | `SkiaPipeline.cpp` | `SkiaPipeline::renderFrame`、`renderFrameImpl` | 遍历 RenderNode,执行 `root.draw(canvas)`,把 DisplayList 回放到 Skia canvas |
 
-[已验证:AOSP android-16.0.0_r1, `frameworks/base/libs/hwui/pipeline/skia/`]
+[已验证:AOSP android-17.0.0_r1, `frameworks/base/libs/hwui/pipeline/skia/`]
 
 ### RenderNode 架构
 
-RenderNode 与 View 树基本一一对应,但这里直接看源码时,最需要分清的是它的"生效区 / staging 区"分离。android-16.0.0_r1 的 `frameworks/base/libs/hwui/RenderNode.h` / `RenderNode.cpp` 里可以直接对上这几个成员:
+RenderNode 与 View 树基本一一对应,但这里直接看源码时,最需要分清的是它的"生效区 / staging 区"分离。android-17.0.0_r1 的 `frameworks/base/libs/hwui/RenderNode.h` / `RenderNode.cpp` 里可以直接对上这几个成员:
 
 - `RenderProperties mProperties`:当前生效的几何、alpha、裁剪、layer 等渲染属性
 - `DisplayList mDisplayList`:RenderThread 本帧实际回放的指令快照
@@ -572,13 +570,13 @@ HWUI 的一帧主链如下:
 
 这也是 `invalidate()` 能只重录局部节点的原因:改动先落到对应 RenderNode 的 staging 数据,再在下一帧同步,不需要整棵树每次都从头复制。
 
-[已验证:AOSP android-16.0.0_r1,`RenderNode.h`、`RenderNode.cpp`、`RecordingCanvas.h`、`pipeline/skia/`]
+[已验证:AOSP android-17.0.0_r1,`RenderNode.h`、`RenderNode.cpp`、`RecordingCanvas.h`、`BaseRecordingCanvas.java`、`pipeline/skia/`]
 
 ## Vulkan 渲染后端在 Android 上的现状与性能优势
 
 ### Vulkan 在 Android 中的采用
 
-Vulkan 从 Android 7.0 开始被引入作为可选图形 API。HWUI 同时保留 SkiaOpenGLPipeline 和 SkiaVulkanPipeline 两条渲染管线;具体走哪条取决于设备上的 `use_vulkan` 属性、`debug.hwui.renderer` 设置以及 OEM 配置--不是某个 Android 版本统一切过去的平台行为。AOSP `frameworks/base/libs/hwui/Properties.cpp` 中 `peekRenderPipelineType()` 按 `use_vulkan` flag 在 `skiagl` / `skiavk` 间选择。Vulkan API/设备基线的提升(比如 Android 16 CDD 对非低内存 64 位 handheld 设备要求 Vulkan 1.1,并对 Vulkan 1.3 给出 strongly recommended)不等于 HWUI 默认使用 Vulkan 后端。与 OpenGL ES 相比,Vulkan 最核心的设计差异是"显式"--开发者需要自己管理 GPU 资源的分配、同步和生命周期,而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率:OpenGL ES 的驱动层为了自动管理资源,需要在每次 API 调用时进行状态检查和验证,这个开销在复杂场景中可能占去数毫秒的帧时间;而 Vulkan 的显式设计省去了这些检查,CPU 可以用更少的时间提交同样数量的绘制命令。
+Vulkan 从 Android 7.0 开始被引入作为可选图形 API。HWUI 同时保留 SkiaOpenGLPipeline 和 SkiaVulkanPipeline 两条渲染管线;具体走哪条取决于设备上的 `use_vulkan` 属性、`debug.hwui.renderer` 设置以及 OEM 配置--不是某个 Android 版本统一切过去的平台行为。AOSP `frameworks/base/libs/hwui/Properties.cpp` 中 `peekRenderPipelineType()` 按 `use_vulkan` flag 在 `skiagl` / `skiavk` 间选择。Vulkan API/设备基线的提升(比如 Android 16/17 CDD 对非低内存 64 位 handheld 设备要求 Vulkan 1.1,并对 Vulkan 1.3 给出 strongly recommended)不等于 HWUI 默认使用 Vulkan 后端。与 OpenGL ES 相比,Vulkan 最核心的设计差异是"显式"--开发者需要自己管理 GPU 资源的分配、同步和生命周期,而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率:OpenGL ES 的驱动层为了自动管理资源,需要在每次 API 调用时进行状态检查和验证,这个开销在复杂场景中可能占去数毫秒的帧时间;而 Vulkan 的显式设计省去了这些检查,CPU 可以用更少的时间提交同样数量的绘制命令。
 
 Vulkan 还原生支持多线程渲染--不同的线程可以并行构建命令缓冲区(Command Buffer),再统一提交给 GPU 执行。这对 Android 来说尤为重要,因为 HWUI 的架构本身就是多线程的(主线程录制 + RenderThread 回放),Vulkan 的多线程能力可以更好地利用这个架构。此外,Vulkan 提供了对 GPU 资源的更精细控制,减少了不必要的内存拷贝和状态切换。
 
@@ -599,13 +597,13 @@ RenderEngine 和 GPU Composition 是两个经常被混淆的概念。混淆的�
 
 **App 渲染管线(RenderThread + HWUI Skia Pipeline)** 是上面"硬件加速渲染"一节描述的路径:主线程把 View 树录制为 DisplayList 指令,RenderThread 通过 HWUI 的 Skia Pipeline(SkiaOpenGLPipeline 或 SkiaVulkanPipeline)将这些指令转换为 OpenGL/Vulkan API 调用,交给 GPU 执行。这条管线的产出是填充好像素的 GraphicBuffer,通过 queueBuffer() 提交给 BufferQueue。整个过程中 RenderThread 运行在 App 进程内,与 SurfaceFlinger 没有直接交互。
 
-**SurfaceFlinger 合成管线(RenderEngine + GPU Composition)** 是 SurfaceFlinger 在 HWC 无法完成合成时的 GPU 回退路径。RenderEngine (`frameworks/native/services/surfaceflinger/RenderEngine/`) 运行在 SurfaceFlinger 进程中,同样基于 Skia 构建,职责是把多个 Layer 的缓冲区合成到一起,而不是绘制单个 App 的 UI。当 Layer 数量超过 HWC 的处理能力、或者 Layer 使用了 HWC 不支持的混合模式时,SurfaceFlinger 会通过 RenderEngine 调用 GPU 来完成合成--这就是 GPU Composition。
+**SurfaceFlinger 合成管线(RenderEngine + GPU Composition)** 是 SurfaceFlinger 在 HWC 无法完成合成时的 GPU 回退路径。RenderEngine (`frameworks/native/libs/renderengine/`) 由 SurfaceFlinger 进程创建和调用,同样基于 Skia 构建,职责是把多个 Layer 的缓冲区合成到一起,而不是绘制单个 App 的 UI。当 Layer 数量超过 HWC 的处理能力、或者 Layer 使用了 HWC 不支持的混合模式时,SurfaceFlinger 会通过 RenderEngine 调用 GPU 来完成合成--这就是 GPU Composition。
 
 App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制一段文字"),SurfaceFlinger 的 RenderEngine 组的是"所有 App 的画面叠加"("把微信的界面叠在启动器上面,再加一层状态栏")。两者都用到 Skia 和 GPU,但前者服务于 App 进程内的 UI 渲染,后者服务于 SurfaceFlinger 进程内的多 Layer 合成。
 
 在 Perfetto 中,App 渲染管线的耗时体现在 App 进程的 RenderThread track 上(drawFrame slice),SurfaceFlinger 合成管线的耗时体现在 SurfaceFlinger 进程的 commit / composite / present 以及 GPU 活动中。如果 SurfaceFlinger 的合成耗时异常增长,且同时出现 GPU 合成回退迹象,就需要检查 Layer 数量和混合模式是否触发了 RenderEngine 的 GPU 合成路径。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/RenderEngine/]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/renderengine/]
 
 [待验证: Vulkan 官方文档和性能基准测试]
 
@@ -619,7 +617,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 **RenderThread Track**(紧邻主线程的独立线程条):drawFrame 的执行时间在这里体现。主线程完成 Draw 阶段后,会将 DisplayList 同步给 RenderThread,RenderThread 负责将绘制指令交给 GPU 执行。如果 RenderThread 的 drawFrame 耗时异常增长,通常意味着 GPU 成了瓶颈,或者绘制指令过于复杂。
 
-**SurfaceFlinger Track**(SurfaceFlinger 进程):Android 14-16 中重点看 `commit`、`composite`、`present` 以及 HWC validate / present 相关 slice。正常情况下合成应该很快(几毫秒),如果耗时增长,可能是因为 Layer 数量过多或 HWC 合成失败回退到了 GPU 合成。
+**SurfaceFlinger Track**(SurfaceFlinger 进程):Android 14-17 中重点看 `commit`、`composite`、`present` 以及 HWC validate / present 相关 slice。正常情况下合成应该很快(几毫秒),如果耗时增长,可能是因为 Layer 数量过多或 HWC 合成失败回退到了 GPU 合成。
 
 **GPU Track**(Trace 底部的 GPU 条):展示了 GPU 的整体利用率。如果 GPU Track 持续满载,说明 GPU 是性能瓶颈;如果 GPU 大量空闲但帧率仍然上不去,说明瓶颈在 CPU 侧(比如主线程耗时过长)。
 
@@ -629,7 +627,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 本节介绍的是渲染架构的全景图,渲染管线中的每个环节在后续章节中都有深入展开:
 
-- **VSync 机制**(2.3 节)是渲染管线的节拍器,决定了 Measure/Layout/Draw 何时开始。本节只把 VSYNC_APP 和 VSYNC_SF 当作 Trace 观察名;Android 10/11 及更早可结合 DispSync 理解,Android 14-16 要回到 Scheduler、VSyncPredictor、VSyncDispatchTimerQueue 和 VsyncSchedule 路径。
+- **VSync 机制**(2.3 节)是渲染管线的节拍器,决定了 Measure/Layout/Draw 何时开始。本节只把 VSYNC_APP 和 VSYNC_SF 当作 Trace 观察名;Android 10/11 及更早可结合 DispSync 理解,Android 14-17 要回到 Scheduler、VSyncPredictor、VSyncDispatchTimerQueue 和 VsyncSchedule 路径。
 - **Choreographer**(2.4 节)是 VSync 信号到实际渲染工作的桥梁--它接收 VSYNC_APP 信号,依次触发 Input 回调、Animation 回调和 Traversal 回调(即 performTraversals)。理解 Choreographer 的工作机制,是分析主线程调度问题的前提。
 - **MainThread 与 RenderThread 协作**(2.5 节)展开了主线程录制 DisplayList 和 RenderThread 执行 GPU 渲染之间的同步机制,包括 syncFrameState、DrawOp 的传递、帧之间的依赖关系等。
 - **SurfaceFlinger 与合成**(2.6 节)详细讲解了 SurfaceFlinger 的内部工作流程,包括 Layer 管理、HWC 合成策略、GPU 合成回退条件、VSYNC_SF 触发的合成时机等。
@@ -639,7 +637,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 ## 版本演进
 
-上面的全景图是 Android 16 的渲染架构。但这个架构不是一天建成的--它经历了十多年的迭代,每一次重大变更都改变了性能优化的思路。以下是关键里程碑:
+上面的全景图是 Android 17 的渲染架构。但这个架构不是一天建成的--它经历了十多年的迭代,每一次重大变更都改变了性能优化的思路。以下是关键里程碑:
 
 **Android 3.0(Honeycomb,2011)** 引入了硬件加速渲染和 HWUI。在此之前,大多数 View UI 都通过 Skia CPU 路径绘制,应用侧绘制工作主要压在主线程上。Honeycomb 之后,HWUI 开始把 View 的绘制结果录制成 DisplayList,再交给 OpenGLRenderer 执行 GPU 渲染；AOSP android-4.4.4_r2 的 `frameworks/base/libs/hwui/` 仍以 `DisplayList`、`DisplayListRenderer`、`OpenGLRenderer` 这组类为主,还没有 Android 5.0 之后的 `RenderNode` 和 `renderthread` 目录。
 
@@ -678,7 +676,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 - `frameworks/base/libs/hwui/` - HWUI 渲染引擎(RenderThread、RenderNode、DisplayList)
 - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` - `scheduleComposite()`、`commit()`、`composite()`、`present()` 主路径
 - `frameworks/native/services/surfaceflinger/Scheduler/` - `VSyncPredictor`、`VSyncDispatchTimerQueue`、`VsyncSchedule`
-- `frameworks/native/libs/gui/BufferQueue.cpp` - BufferQueue 生产者-消费者实现
+- `frameworks/native/libs/gui/BufferQueue.cpp`、`BufferQueueProducer.cpp`、`BufferQueueConsumer.cpp`、`BufferItemConsumer.cpp` - BufferQueue 生产者-消费者实现
 
 ### 官方文档
 - [Android Graphics Overview](https://developer.android.com/guide/topics/graphics/overview)
