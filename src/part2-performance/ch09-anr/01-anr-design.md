@@ -46,25 +46,25 @@ repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_result: "auto-fixed"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: "fixed"
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-20T14:31:09+08:00"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。 | 2026-05-27 01:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 已有 suggestions 不重复写入（Android 10/13 ANR trace 存储口径需后续补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 14:31 Task9 闲时抽检 auto-fix：修正 ANR 版本口径（BroadcastQueueModernImpl 仅 Android 14/15；Android 16/17 为 BroadcastQueueImpl + AnrTimer；Watchdog 15s pre-watchdog 为 Android 15+；blamePendingFocusRequest 在 Android 14-17 均可见），回到 Task6 复审。 | 2026-07-11 Task9 idle-audit AUTO-FIX: P0 2 / P1 0 / P2 0；修正 Android 17 ContentResolver MIME 查询超时/AMS 方法名口径，以及 ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 产物类型（running system trace snapshot）；回到 Task6 复审。详见 logs/deep-review/2026-07-11-09-audit.md。"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: "pass-light-edit"
 last_task9_audit: "2026-07-11"
 last_task9_audit_at: "2026-07-11T09:29:58+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-11-09-audit.md"
-last_task6_at: "2026-06-20T16:10:45+08:00"
+last_task6_at: "2026-07-11T12:06:00+08:00"
 last_task6_audit: "2026-06-25"
 last_task6_audit_at: "2026-06-25T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-06-25-14-audit.md"
-task6_review_notes: "2026-06-25 Task6：闲时抽检复审；L1/L2 无新增问题（禁用词命中真正×2，未达阈值；高频词达标；版本边界 Android 17 以内）；修复 1 处英文术语未翻译（state→状态）；锚点覆盖完整 5/5；无 L3/L4 问题。"
+last_task6_review_log: "logs/review/2026-07-11-12-review.md"
+task6_review_notes: "2026-07-11 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix(ContentResolver MIME查询超时/AMS方法名口径, ProfilingTrigger KILL_EXCESSIVE_CPU产物类型)回流后写作层复审通过；L1扫描命中'链路'4处(参考资料/附录区域, 链路→路径/流程)已修复；'真正'2处(限额内)；高频词达标；L2开头/节奏/结构/读者引导通过；outline 5/5锚点全覆盖；无L1/L2遗留, 无L3/L4回炉项。送Task9终审确认。 | 2026-06-25 Task6：闲时抽检复审；L1/L2 无新增问题（禁用词命中真正×2，未达阈值；高频词达标；版本边界 Android 17 以内）；修复 1 处英文术语未翻译（state→状态）；锚点覆盖完整 5/5；无 L3/L4 问题。"
 last_task9_review_log: "logs/deep-review/2026-07-11-09-audit.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-27"
@@ -522,11 +522,11 @@ Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%�
 ### Android 17 ANR 输入事件超时检测机制深度解析
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-input-anr-mechanism.md
 - 类型：DeepResearch 调研结果
-- 摘要：Android 17 ANR 检测采用双层预警：Native InputDispatcher 实时监控输入超时并触发 pre-ANR 通知（超时前50%窗口），Java 层 InputManagerService 区分无焦点窗口 ANR 和窗口无响应 ANR。完整链路含事件生成→派发监控→超时判定→跨进程回调→ANR 触发五环节。
+- 摘要：Android 17 ANR 检测采用双层预警：Native InputDispatcher 实时监控输入超时并触发 pre-ANR 通知（超时前50%窗口），Java 层 InputManagerService 区分无焦点窗口 ANR 和窗口无响应 ANR。完整流程含事件生成→派发监控→超时判定→跨进程回调→ANR 触发五环节。
 - 注入时间：2026-07-03
 - 价值：ch03/ch09 交叉领域源码级补强：pre-ANR 双层预警 + InputDispatcher 超时判定完整路径
 
-## 源码级补充：Android 14-17 ANR 检测链路（InputDispatcher → AMS → AnrHelper → ProcessErrorStateRecord）
+## 源码级补充：Android 14-17 ANR 检测路径（InputDispatcher → AMS → AnrHelper → ProcessErrorStateRecord）
 
 > 关联 DeepResearch：`2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md`
 
@@ -666,9 +666,9 @@ mAnrRecords.add(AnrRecord) → startAnrConsumerIfNeeded → AnrConsumerThread �
 
 
 
-### Android 14-17 ANR 检测链路与 InputDispatcher 超时机制源码深度解析
+### Android 14-17 ANR 检测路径与 InputDispatcher 超时机制源码深度解析
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-anr-detection-inputdispatcher-ams-anrhelper-source.md
 - 类型：DeepResearch 调研结果
-- 摘要：从 IInputConstants.aidl 到 AnrHelper.appNotResponding 的完整 ANR 检测链路源码解析。核心发现：(1) input 派发超时 = 5000ms × ro.hw_timeout_multiplier；(2) processAnrsLocked 每轮检测 mAnrTracker 并组装 mLastAnrState 诊断快照；(3) AnrController 的 pending focus 归因逻辑解决焦点切换误报；(4) AnrHelper 异步 trace dump 编排（AnrConsumerThread 单线程消费），drop 重复/zero-pid/pre-dumped；(5) isSilentAnr 控制后台 ANR 静默 kill；(6) Watchdog 在 Android 15+ 进入 15s 预 dump + 60s 超时杀 system_server 口径。覆盖 Android 14-17 版本演进。
+- 摘要：从 IInputConstants.aidl 到 AnrHelper.appNotResponding 的完整 ANR 检测路径源码解析。核心发现：(1) input 派发超时 = 5000ms × ro.hw_timeout_multiplier；(2) processAnrsLocked 每轮检测 mAnrTracker 并组装 mLastAnrState 诊断快照；(3) AnrController 的 pending focus 归因逻辑解决焦点切换误报；(4) AnrHelper 异步 trace dump 编排（AnrConsumerThread 单线程消费），drop 重复/zero-pid/pre-dumped；(5) isSilentAnr 控制后台 ANR 静默 kill；(6) Watchdog 在 Android 15+ 进入 15s 预 dump + 60s 超时杀 system_server 口径。覆盖 Android 14-17 版本演进。
 - 注入时间：2026-06-16
 - 价值：把 AIW ch09 ANR 章节从架构级描述推进到源码级验证，特别是 Android 16/17 的 BroadcastQueueImpl / AnrTimer、mTempDumpedPids 防竞争、mDropboxRateLimiter 等机制在 AIW 中尚未覆盖；pending focus 归因逻辑作为 Android 14-17 均可见的边界保留。
