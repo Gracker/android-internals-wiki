@@ -175,3 +175,65 @@ Coverage remains saturated (60th consecutive round). No new knowledge gaps ≥14
 **修复**：P0 × 6（dispatch_dur 计算化、binder_lock tracepoint 移除、TF_UPDATE_TXN_FROZEN 改写、扩展字段降级为 schema 草案）+ P1 × 2（frozen reply 多信号校验、版本表 Android 17 行改写）
 
 **状态**：pipeline_stage → task6_pending、task9_result → pass-tech-review，等待 Task 6 复审。
+
+
+---
+
+## [Task14 参考书扫描] 第2章 渲染管线 — 2026-07-11
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md（第21讲 UI优化下）]
+- **建议补充**：UI 渲染性能自动化测量方法 — gfxinfo dumpsys 命令的 framestats 参数（最近120帧逐阶段耗时）；SurfaceFlinger 的 Graphic Buffer 三缓冲内存查看方法与退后台回收行为
+- **参考书覆盖深度**：中等（提供实战命令和解读方法，但基于 Android 9.0 时代，Android 17 已有 FrameTimeline/Perfetto 替代）
+- **过时风险**：gfxinfo framestats 在 Android 17 仍可用但已非首选，FrameTimeline API (Android 12+) 提供更精确的数据
+
+## [Task14 参考书扫描] 第2章 渲染管线 — 2026-07-11
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md（第21讲 UI优化下）]
+- **过时内容**：推荐使用 GAPID (Graphics API Debugger) 替代 Tracer for OpenGL ES
+- **建议更新至**：Android 17 推荐 Perfetto GPU tracks + AGI (Android GPU Inspector) + Frame Profiler，GAPID 已并入 AGI
+
+## [Task14 参考书扫描] 第22章 渲染实战 — 2026-07-11
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md（第21讲 UI优化下）]
+- **建议补充**：
+  1. Create View 优化三策略（XML→代码/异步创建替换MessageQueue/View重用缓存池），含微信 View 缓存导致聊天记录错乱的反面案例
+  2. PrecomputedText 异步 measure/layout（Jetpack API，Android 9+）
+  3. UI 优化三层框架：系统框架下优化（布局扁平化/View缓存）→ 利用系统新特性（硬件加速/RenderThread/RenderScript）→ 突破系统限制（Litho 异步布局引擎/Flutter 自有渲染引擎）
+- **参考书覆盖深度**：中等（思路框架仍有价值，但 Litho/Flutter 生态已大幅演进，需更新至 2026 现状）
+- **过时风险**：Litho 在 2026 使用率下降，Flutter Impeller 已替代 Skia，RenderScript 在 Android 12 已废弃
+
+## [Task14 参考书扫描] 第2章 渲染管线 — 2026-07-11
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md（第21讲 UI优化下）]
+- **过时内容**：RenderScript 作为 GPU 计算方案推荐
+- **建议更新至**：Android 17 RenderScript 已在 API 31 废弃，替代方案为 Vulkan Compute / GLSL ES 3.1+ / GPU 通用计算需通过 Vulkan
+
+## [Task14 参考书扫描] 第6章 存储性能 — 2026-07-11
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md（第22讲 包体积上）]
+- **建议补充**：Dex 格式深度解析 — define methods vs reference methods 区别、method id 65536 限制、跨 Dex 调用导致的 string_ids/type_ids/proto_ids 信息冗余、Dex 信息有效率指标（define/referce ratio 应 ≥80%）
+- **参考书覆盖深度**：深入（Dex 格式分析至今有效，Android 17 仍使用相同 Dex 格式）
+
+## [Task14 参考书扫描] 第6章 存储性能 — 2026-07-11
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md（第22讲 包体积上）]
+- **建议补充**：ODEX 生成机制与耗时分析 — Android 5.0/6.0 多 Dex 编译 ODEX 可达分钟级、Android 7.0+ 混合编译改善、Android 8.0 speed 模式约 1 秒/Dex；Facebook oatmeal 工具直接在本进程按 ODEX 格式生成（约 100ms/10MB Dex）
+- **参考书覆盖深度**：深入（ODEX 格式原理仍有参考价值，但 Android 17 ART 编译链已有重大变化，需结合最新 odrefresh/profman）
+
+## [Task14 参考书扫描] 第6章 存储性能 — 2026-07-11
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 25.md（第22讲 包体积上）]
+- **过时内容**：ProGuard 作为主要混淆压缩工具
+- **建议更新至**：Android 17 R8 已完全替代 ProGuard（AGP 7.0+），D8 默认编译器；ReDex 的 StripDebugInfoPass 和 InterDexPass 优化思路仍有参考价值但需评估与 R8 的兼容性
+
+## [Task14 参考书扫描] 第6章 存储性能 — 2026-07-11
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md（第23讲 包体积下）]
+- **建议补充**：Android 资源编译流程详解 — R.java 提前生成 → 代码引用替换为常量(0x7f0c0003) → .ap_ 资源同步编译（resources.arsc/XML处理），以及资源 ID 连续性导致无法简单删除无用资源的技术原因
+- **参考书覆盖深度**：深入（编译流程原理至今有效）
+
+## [Task14 参考书扫描] 第6章 存储性能 — 2026-07-11
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 26.md（第23讲 包体积下）]
+- **建议补充**：Android 默认不压缩文件列表（.jpg/.png/.gif/.mp3/.mp4 等）及原因分析 — 压缩效果不明显 + mmap 直接读取需求 + 内存考虑；extractNativeLibs 属性演进
+- **参考书覆盖深度**：中等（核心原理有效，但 Android 17 可能已调整不压缩列表）

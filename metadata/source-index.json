@@ -2216,6 +2216,401 @@
       "chapter": "ch25.18",
       "processed_at": "2026-07-11T06:20:05.635403",
       "action": "index-update (already injected 2026-07-09)"
+    },
+    {
+      "title": "Android Native | 内存问题的终极武器——MTE",
+      "path": "AndroidWeekly/#23/Android Native MTE内存问题终极武器",
+      "source_url": "https://juejin.cn/post/7013595058125406238",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "MTE(Memory Tagging Extension)用于Android Native层内存安全，解决C/C++内存踩踏/非法访问问题，可被黑客利用的安全漏洞",
+      "scored_at": "2026-07-11T09:16:16.400585"
+    },
+    {
+      "title": "Android R 常见 GC 类型与问题案例",
+      "path": "AndroidWeekly/#23/Android R GC类型与问题案例",
+      "source_url": "https://mp.weixin.qq.com/s/J6pYzVcOUHCt8zCqZLaD3w",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ART虚拟机Heap内存布局、GC相关配置、常见GC类型与问题案例，为应用优化提供思路",
+      "scored_at": "2026-07-11T09:16:16.400592"
+    },
+    {
+      "title": "探索 Flutter 中线程模型 / 消息循环的底层逻辑",
+      "path": "AndroidWeekly/#23/Flutter线程模型消息循环底层逻辑",
+      "source_url": "https://zhuanlan.zhihu.com/p/414582899",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-多线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter线程模型与消息循环(EventLoop/Isolate)底层实现原理分析",
+      "scored_at": "2026-07-11T09:16:16.400594"
+    },
+    {
+      "title": "得物 App ANR 监控平台设计",
+      "path": "AndroidWeekly/#23/得物App ANR监控平台设计",
+      "source_url": "https://juejin.cn/post/7009297034440081422",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-稳定性",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "得物参考业界ANR监控治理方案，设计内部ANR监控平台，介绍服务端实现",
+      "scored_at": "2026-07-11T09:16:16.400596"
+    },
+    {
+      "title": "Duolingo refactors on Android with MVVM and Jetpack libraries",
+      "path": "AndroidWeekly/#23/Duolingo MVVM Jetpack重构",
+      "source_url": "https://developer.android.com/stories/apps/duolingo-excellence",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Duolingo Android端MVVM+Jetpack架构重构实战，提升性能与开发效率",
+      "scored_at": "2026-07-11T09:16:16.400597"
+    },
+    {
+      "title": "Unidirectional Data Flow for Android UIs",
+      "path": "AndroidWeekly/#23/UDF Android UIs",
+      "source_url": "https://dev.to/j1c1m1b1/unidirectional-data-flow-for-android-uis-2807",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android UI单向数据流(UDF)模式介绍，Kotlin/Android架构最佳实践",
+      "scored_at": "2026-07-11T09:16:16.400599"
+    },
+    {
+      "title": "重新理解为什么 Handler 可能导致内存泄露？",
+      "path": "AndroidWeekly/#23/Handler内存泄露",
+      "source_url": "https://mp.weixin.qq.com/s/4duyUKTjJmV_66kZm2MQPg",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-内存",
+          "confidence": "medium"
+        },
+        {
+          "chapter": "ch04-多线程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "深入分析Handler导致内存泄露的真正根因，纠正网上千篇一律的错误解释",
+      "scored_at": "2026-07-11T09:16:16.400600"
+    },
+    {
+      "title": "反编译 APK",
+      "path": "AndroidWeekly/#23/反编译APK工具",
+      "source_url": "https://mp.weixin.qq.com/s/HHXHsLKW8P4esKWkq_qMng",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-编译与构建",
+          "confidence": "low"
+        }
+      ],
+      "summary": "APK反编译工具介绍，每周小技巧系列",
+      "scored_at": "2026-07-11T09:16:16.400601"
+    },
+    {
+      "title": "使用 Kotlin Symbol Processing 1.0 缩短 Kotlin 构建时间",
+      "path": "AndroidWeekly/#23/KSP 1.0缩短构建时间",
+      "source_url": "https://mp.weixin.qq.com/s/_eRbF-c0BzgU_6j1SEYEMw",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-编译与构建",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "KSP 1.0替代KAPT，大幅提升Kotlin项目构建速度，摆脱基于KAPT的注解处理库限制",
+      "scored_at": "2026-07-11T09:16:16.400602"
+    },
+    {
+      "title": "Android11 系统源码分析：从 binder trace 视角看 Activity 冷启动",
+      "path": "AndroidWeekly/#23/Android11 binder trace冷启动",
+      "source_url": "https://www.cnblogs.com/houser0323/p/15115623.html",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 20,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-启动",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android11源码分析，从binder trace视角追踪Activity冷启动全流程：Launcher→ATM",
+      "scored_at": "2026-07-11T09:16:16.400604"
+    },
+    {
+      "title": "更高级的 Android 启动任务调度库",
+      "path": "AndroidWeekly/#23/Android启动任务调度库",
+      "source_url": "https://mp.weixin.qq.com/s/ZEcdAeyLNJXSZNJYOEUBiw",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-启动",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "启动任务调度库2.2版本升级，适用于组件化项目，新增依赖管理和并发调度特性",
+      "scored_at": "2026-07-11T09:16:16.400605"
+    },
+    {
+      "title": "Now in Android #48",
+      "path": "AndroidWeekly/#23/Now in Android 48",
+      "source_url": "https://medium.com/androiddevelopers/now-in-android-48-c499493bb83",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 12,
+      "quality": "low",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch01-概述",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Google官方Android应用最新动态，涵盖最新Jetpack/Android特性资讯",
+      "scored_at": "2026-07-11T09:16:16.400606"
+    },
+    {
+      "title": "Android 资源溢出崩溃轻松解",
+      "path": "AndroidWeekly/#23/Android资源溢出崩溃",
+      "source_url": "https://zhuanlan.zhihu.com/p/420726913",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-稳定性",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android资源溢出导致崩溃的解决方案",
+      "scored_at": "2026-07-11T09:16:16.400608"
+    },
+    {
+      "title": "A Comprehensive Guide to Android 12 Splash Screen API",
+      "path": "AndroidWeekly/#23/Android 12 Splash Screen API",
+      "source_url": "https://medium.com/@rackadev/a-comprehensive-guide-to-android-12s-splash-screen-api-644609c811fa",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android 12 Splash Screen API全面使用指南，涵盖兼容性适配和自定义方案",
+      "scored_at": "2026-07-11T09:16:16.400609"
+    },
+    {
+      "title": "Android12 系统源码分析 NativeTombstoneManager",
+      "path": "AndroidWeekly/#23/Android12 NativeTombstoneManager",
+      "source_url": "https://mp.weixin.qq.com/s/YPnQX1OSWhvXEuibCiCQPg",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-稳定性",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android12系统源码分析NativeTombstoneManager，Native层崩溃 Tombstone 处理机制",
+      "scored_at": "2026-07-11T09:16:16.400611"
+    },
+    {
+      "title": "Android Module 依赖关系可视化",
+      "path": "AndroidWeekly/#23/Module依赖关系可视化",
+      "source_url": "https://zhuanlan.zhihu.com/p/421286744",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 3,
+        "depth": 2,
+        "timeliness": 4,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-编译与构建",
+          "confidence": "low"
+        }
+      ],
+      "summary": "Android Module依赖关系的可视化实现方案",
+      "scored_at": "2026-07-11T09:16:16.400613"
+    },
+    {
+      "title": "图解 Compose Modifier 实现原理",
+      "path": "AndroidWeekly/#23/Compose Modifier实现原理",
+      "source_url": "https://mp.weixin.qq.com/s/f5KZJN_4G4LFBlEBQ_se3g",
+      "weekly_issue": "#23",
+      "weekly_date": "2021-10-15",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "图解Jetpack Compose Modifier实现原理，深入理解Compose UI布局系统底层机制",
+      "scored_at": "2026-07-11T09:16:16.400614"
     }
   ]
 }
