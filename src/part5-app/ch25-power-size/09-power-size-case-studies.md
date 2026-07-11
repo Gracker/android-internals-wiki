@@ -10,7 +10,7 @@ confidence: medium-high
 drafted_date: "2026-05-14"
 polish_count: 1
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 pipeline_stage: task6_pending
 sources:
@@ -61,13 +61,13 @@ related_chapters: ["25.1", "25.2", "25.3", "25.6", "25.7", "25.8", "11.1", "11.2
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-05-31"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-02"
+reviewed_date: "2026-07-12"
 task6_result: pass-light-edit
 task6_reviewed_at: "2026-06-02T07:07:00+08:00"
 task6_reviewed_by: openclaw-task6
-last_task6_at: "2026-06-02T07:07:00+08:00"
+last_task6_at: "2026-07-12T04:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-07-review.md"
-task6_review_notes: "2026-06-02 07:07 Task6：L1/L2 复审通过，未发现新增回炉项；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
+task6_review_notes: "2026-07-12 04:10 Task6 revisiting-review: pass-light-edit。修复禁用词对齐→关联（1处）；L1/L2 通过，无新增回炉项。Task9 result=auto-fixed，不满足自动晋升条件。"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-31"
@@ -126,7 +126,7 @@ last_deepseek_cn_review_at: 2026-07-12
 |------|------|--------------|------------------|
 | 复现场景 | 固定设备、固定版本、息屏 30-60 分钟 | 候选版本是否比基线多唤醒 | 同机、同网络、同亮度、电量区间接近 |
 | 采集系统证据 | `bugreport.zip`、`batterystats.txt`、Perfetto trace | 异常归到 CPU、网络、GPS、WakeLock、Alarm 中哪一类 | UID 级统计或时间线出现明显差异 |
-| 对齐业务事件 | 任务平台日志、网络日志、定位日志、前台服务日志 | 哪个业务动作触发后台活动 | 事件时间与系统功耗信号重合 |
+| 关联业务事件 | 任务平台日志、网络日志、定位日志、前台服务日志 | 哪个业务动作触发后台活动 | 事件时间与系统功耗信号重合 |
 | 修改代码 | 调度约束、重试退避、取消条件、批处理 | 是否减少无用户价值的后台活动 | 候选包复测指标回到基线附近 |
 | 建守门 | nightly / 灰度功耗看板 | 后续版本是否复发 | 指标能按版本、设备、业务负责人拆分 |
 
