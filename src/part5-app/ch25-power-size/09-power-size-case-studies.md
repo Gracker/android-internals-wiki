@@ -2,7 +2,7 @@
 title: "功耗与包体积案例集"
 chapter: "25.9"
 section: "25.9"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "Android Developers power / vitals / APK size docs + AOSP android-17.0.0_r1 + Clippings structure references"
@@ -11,8 +11,8 @@ drafted_date: "2026-05-14"
 polish_count: 1
 task2b_state: fixed
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task6_pending
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/power/setup-battery-historian"
@@ -68,18 +68,18 @@ task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-07-12T04:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-07-review.md"
 task6_review_notes: "2026-07-12 04:10 Task6 revisiting-review: pass-light-edit。修复禁用词对齐→关联（1处）；L1/L2 通过，无新增回炉项。Task9 result=auto-fixed，不满足自动晋升条件。"
-task9_result: auto-fixed
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-31"
-last_task9_at: "2026-07-12T01:24:48+08:00"
+task9_reviewed_date: "2026-07-12"
+last_task9_at: "2026-07-12T04:28:18+08:00"
 last_task9_audit: "2026-07-12"
 last_task9_audit_at: "2026-07-12T01:24:48+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-12-01-audit.md"
 last_task9_audit_result: "auto-fixed"
 last_task9_audit_notes: "idle audit auto-fix: AOSP source anchors updated from android-16.0.0_r1/unversioned paths to android-17.0.0_r1; BatteryStatsService, PowerManagerService, and AlarmManagerService paths verified under Android 17 tag; no queue item added."
 last_task9_autofix_at: "2026-07-12"
-last_task9_review_log: "logs/deep-review/2026-05-31-11-deep-review.md"
-task9_review_notes: "2026-05-31 Task9：pass-tech-review。P0 0 / P1 4 / P2 6；原理链完整性需补系统证据到业务归因映射，知识盲区需补厂商差异和Android 17特性，数据支撑需真实案例。自动晋升 finalized条件不满足（有P1问题）。"
+last_task9_review_log: "logs/deep-review/2026-07-12-04-deep-review.md"
+task9_review_notes: "2026-07-12 Task9 deep-review：pass-tech-review。按 Android 17/API 37 边界复核功耗、WakeLock、Alarm 与包体积案例；AOSP 锚点和官方阈值描述无 P0/P1，queue 无 pending，已自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-12
 ---

@@ -5,15 +5,15 @@ section: "20.5"
 status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
-last_verified_against: "AOSP android-17.0.0_r1: ART heap/thread/JNI/Unsafe, hwui Bitmap, libutils Looper, ComponentCallbacks2"
+last_verified_against: "AOSP android-17.0.0_r1: ART heap/thread/JNI/Unsafe, hwui Bitmap, libutils Looper, ComponentCallbacks2, AndroidRuntime heap properties, ActivityThread largeHeap handling"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 0
 sources:
   - type: aosp
-    path: "art/runtime/gc/heap.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
   - type: aosp
-    path: "art/runtime/thread.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
   - type: blog
     path: "Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md"
   - type: blog
@@ -23,10 +23,10 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: "task6_pending"
-task6_state: reviewed
-task9_state: "pending"
-task2b_state: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
+task2b_state: fixed
 created_by: "task2a"
 reviewed_date: "2026-07-12"
 reviewed_by: openclaw-task6
@@ -34,15 +34,15 @@ task6_result: pass-light-edit
 last_task6_at: "2026-07-12T04:10:00+08:00"
 last_task6_review_log: "logs/review/2026-06-01-18-review.md"
 task6_review_notes: "2026-07-12 04:10 Task6 revisiting-review: pass-light-edit。统一交叉引用格式为 §X.Y（4处）；L1/L2 通过，无新增回炉项。Task9 result=auto-fixed，不满足自动晋升条件。"
-task9_result: "auto-fixed"
+task9_result: auto-fixed
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task2b_lite_at: "2026-06-01"
-last_task9_at: "2026-07-12T00:25:03+08:00"
-task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-07-12T04:28:18+08:00"
+task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-12"
-last_task9_review_log: "logs/deep-review/2026-07-12-00-audit.md"
-task9_review_notes: "2026-07-12 Task9 idle-audit auto-fix：按 AOSP android-17.0.0_r1 复核源码引用与版本差异；补充 Android 14/API 34+ onTrimMemory deprecated level 不再通知应用的边界，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-07-12-04-deep-review.md"
+task9_review_notes: "2026-07-12 Task9 deep-review auto-fix：按 AOSP android-17.0.0_r1 复核 OOM 机制；修正 heap growth limit 来源、VmSize 判读边界和 OOM handler 示例中的再分配风险，回到 Task6 复审。"
 last_task9_autofix_at: "2026-07-12"
 last_task9_audit: "2026-07-12"
 last_task9_audit_at: "2026-07-12T00:25:03+08:00"
@@ -69,7 +69,7 @@ last_task9_audit_notes: "idle audit: 维度1源码引用通过；维度3发现 A
 > 锚点是最低覆盖要求，review 时需要确认每个锚点都有对应正文和验证标注。
 <!-- outline-end -->
 
-Android 应用遇到的 OutOfMemoryError 并不只有"堆内存不够"这一种。按照错误来源，可以分成两类：ART 虚拟机自身的堆限制（256 MB / 512 MB growth_limit），和 Linux 进程层面的虚拟内存、FD、线程数限制。两类 OOM 的约束来源不同，排查路径也不同——归类是治理的第一步。
+Android 应用遇到的 OutOfMemoryError 并不只有"堆内存不够"这一种。按照错误来源，可以分成两类：ART 虚拟机自身由设备属性配置的 Java 堆 growth limit / heap size，和 Linux 进程层面的虚拟内存、FD、线程数限制。两类 OOM 的约束来源不同，排查路径也不同——归类是治理的第一步。
 
 本节从 OOM 的产生路径入手，逐类讲解 Java Heap OOM、Native 内存 OOM、线程数 OOM、FD 泄漏 OOM、虚拟内存空间耗尽的排查思路和治理策略。
 
@@ -97,7 +97,7 @@ giving up on allocation because <1% of heap free after GC.
 
 需要关注的字段：
 
-- **growth limit**：虚拟机为应用设置的堆上限（`Runtime.getRuntime().maxMemory()`），通常 256 MB 或 512 MB，由 `ActivityManager` 在进程启动时通过 `processinfo` 配置。
+- **growth limit**：虚拟机为应用设置的 Java 堆增长上限（`Runtime.getRuntime().maxMemory()` 对普通应用通常反映这个值），来源是设备的 `dalvik.vm.heapgrowthlimit` / `dalvik.vm.heapsize` 等 VM 属性；进程绑定应用时，`ActivityThread.handleBindApplication()` 会根据 `android:largeHeap` 调用 `VMRuntime.clampGrowthLimit()` 或 `clearGrowthLimit()`。
 - **target footprint**：当前堆的目标大小，ART 的 GC 会尽量把堆控制在这个值附近。当 target footprint 等于 growth limit 且空闲内存不够分配时，OOM 产生。
 - **free bytes / until OOM**：当前空闲内存和距 OOM 的余量。单独看 free bytes 大于请求大小不能直接断定碎片化——需要结合下文的 `LogFragmentationAllocFailure` 输出判断。
 - **<1% of heap free after GC**：说明 GC 后堆空闲比例极低，属于整体堆占用饱和，不是碎片化问题。
@@ -183,7 +183,7 @@ Android 8.0 起，普通 Bitmap 的像素数据通过 `calloc` 分配在 Native 
 
 ### 排查手段
 
-1. **`/proc/pid/status` 查看 VmSize / VmRSS**：VmSize 持续增长说明存在 Native 内存泄漏。
+1. **`/proc/pid/status` 查看 VmSize / VmRSS**：VmSize 持续增长说明虚拟地址空间在扩张；要结合 VmRSS、smaps 和 native heap profile 区分 malloc 泄漏、mmap 增长、线程栈增长或文件映射。
 2. **`/proc/pid/smaps` 按内存类型统计**：关注 `[anon:dalvik-...]`、`[anon:libc_malloc]` 段的增长趋势。
 3. **Perfetto Native Heap Profile**（Android 10+）：`heapprofd` 可以抓取 Native 分配调用栈，定位泄漏点；user build 上通常要求应用设置 `debuggable` 或 `profileable`。
 4. **`android.os.Debug.getNativeHeapAllocatedSize()`**：在代码中周期性采样，绘制趋势图。
@@ -347,14 +347,15 @@ int proxy_open(char* path, int flags, int mode) {
 OOM 是 `Error` 不是 `Exception`，默认的 `UncaughtExceptionHandler` 会终止进程。注册自定义 Handler 后，可以拦截 OOM 并做降级处理：
 
 ```kotlin
+val oomMemInfo = Debug.MemoryInfo()
+
 Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
   if (throwable is OutOfMemoryError) {
-    // 预分配 MemoryInfo，避免 OOM 路径再分配
-    val memInfo = Debug.MemoryInfo()
-    Debug.getMemoryInfo(memInfo)
+    // 复用预分配对象，避免 OOM 路径再分配
+    Debug.getMemoryInfo(oomMemInfo)
     val runtime = Runtime.getRuntime()
     logOOMState(runtime.totalMemory(), runtime.freeMemory(),
-                runtime.maxMemory(), memInfo.totalPrivateDirty)
+                runtime.maxMemory(), oomMemInfo.totalPrivateDirty)
     safeExit()
   } else {
     defaultHandler.uncaughtException(thread, throwable)
