@@ -50,8 +50,11 @@ task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-03T01:26:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-03-01-deep-review.md"
-last_task9_audit: "2026-06-22"
-last_task9_audit_log: "logs/deep-review/2026-06-22-01-audit.md"
+last_task9_audit: "2026-07-12"
+last_task9_audit_log: "logs/deep-review/2026-07-12-03-audit.md"
+last_task9_audit_at: "2026-07-12T03:25:18+08:00"
+last_task9_audit_result: "pass-idle-audit"
+last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）与维度3（版本差异覆盖）检查通过；Android 17/API 37 NPU feature、NN HAL HIDL/AIDL 路径、NNAPI deprecation 与 LiteRT/Play AI Pack 分发口径复核通过；无 Android 18/API 38 内容。"
 task9_result: "pass-tech-review"
 task2b_state: fixed
 task2b_result: fixed
