@@ -57,7 +57,7 @@ task6_l3_l4_issues: 0
 finalized_date: "2026-07-06"
 finalized_by: "openclaw-task9-auto-promote"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-06
+last_deepseek_cn_review_at: 2026-07-11
 ---
 
 # 稳定性治理案例集
@@ -87,7 +87,7 @@ last_deepseek_cn_review_at: 2026-07-06
 
 OOM 分两大类：Java 堆限制和虚拟内存不足。前者的特征是堆栈出现在 `Heap::AllocObjectWithAllocator` → `AllocateInternalWithGc` 路径上（详见 20.5 节）。后者的特征是崩溃点在 `malloc`、`pthread_create`、`mmap` 等 Native 分配路径上，Java 堆有余量。
 
-本案例的错误信息 `pthread_create (... stack) failed` 明确指向线程创建失败。核心疑问是：为什么线程创建会失败？
+本案例的错误信息 `pthread_create (... stack) failed` 明确指向线程创建失败。问题是：线程创建为什么会失败？
 
 ### 追踪：从 FD 和线程数入手
 
@@ -251,9 +251,6 @@ void dump_signal_handlers() {
 崩溃监控 SDK 的初始化顺序不确定，每次进程启动时两个 SDK 可能以不同的顺序初始化。先初始化的 SDK 注册的处理器会被后初始化的 SDK 覆盖。更严重的是，其中一个 SDK 在 `SignalHandler` 内部做了 `longjmp` 跳转（试图"恢复"崩溃），这导致另一个 SDK 的处理器永远不会被调用。
 
 
-<!-- AIW-源码调研-2026-07-07 勘误 follow-up：debuggerd/handler 路径未被「整体迁移」，仅 linker_main 增加了 wiring 调用 -->
-
-> 上方 ch09 第一处勘误的反向印证：在 `android-17.0.0_r1` 中，`debuggerd_signal_handler → linker_debuggerd_signal_handler` 的「Android 5.0 模式」并非 linker 化迁移的产物 —— `linker_debuggerd_signal_handler` 在源码树中**未独立存在**。真正的 linker 侧入口只有 `linker_debuggerd_init()`（一个 4 行的 symbol），其余逻辑（signal handler 主体、GWP-ASan/MTE 异常分支、wire protocol）全部在 `system/core/debuggerd/handler/` 目录下未迁移。
 
 **Android 5.0 模式在 Android 17 中的适用性**：旧资料里常把 debuggerd signal handler 与 linker 侧入口混在一起。`android-17.0.0_r1` 下，linker 只负责启动期 `linker_debuggerd_init()` wiring，真正的 signal handler 主体仍在 `system/core/debuggerd/handler/`。应用或 SDK 侧只需要关心自己注册的 `sigaction` 调用链是否保留旧 handler、是否遵守 async-signal-safe 约束；不要把 `linker_debuggerd_signal_handler` 写成 Android 17 的实际入口。
 
@@ -566,6 +563,7 @@ P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
 
 ---
 
+> **后记**：以下案例四涉及线程调度与亲和性，属于较深层的调度问题，排查依赖系统级 trace 和厂商环境，通用性不如前三个案例。读者可根据团队实际需求选择性阅读。
 
 ## 案例四：线程亲和性配置不当导致前台任务卡顿
 
@@ -754,8 +752,6 @@ public class ThreadAffinityMonitor {
 4. **监控能力**：建立线程调度状态监控，及时发现问题
 5. **适配多样性**：不同芯片厂商的调度实现存在差异，需要针对性优化
 
-<!-- AIW-源码调研-2026-07-10 -->
-
 ## 大厂稳定性治理体系的共性特征
 
 从公开的技术博客和开源项目中，可以归纳出成熟稳定性治理体系的几个共性：
@@ -764,7 +760,7 @@ public class ThreadAffinityMonitor {
 
 ### 指标驱动而非报警驱动
 
-成熟的治理体系不依赖"用户投诉 → 紧急排查"模式。20.6 节定义的 UV 崩溃率、PV 崩溃率、启动崩溃率三个指标构成了日常监控基线。报警阈值基于历史数据统计设定，不是拍脑袋定的"超过 X 就报警"。
+成熟的治理体系不依赖"用户投诉 → 紧急排查"模式。20.6 节定义的 UV 崩溃率、PV 崩溃率、启动崩溃率三个指标构成了日常监控基线。报警阈值基于历史数据统计设定，不是拍脑袋的"超过 X 就报警"。
 
 ### 崩溃归因自动化
 

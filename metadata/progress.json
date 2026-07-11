@@ -2190,13 +2190,14 @@
     "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
   },
   "summary": {
-    "finalized": 7,
+    "finalized": 10,
     "total": 12,
     "status_counts": {
       "ready-for-review": 3,
       "finalized": 7,
       "unknown": 2
-    }
+    },
+    "ready_for_review": 0
   },
   "verifier_runs": [
     {

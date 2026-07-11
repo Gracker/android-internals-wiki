@@ -1,7 +1,7 @@
 ---
 title: Trace 抓取
 chapter: '13.2'
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags:
 - tools
@@ -9,12 +9,12 @@ tags:
 - trace
 - capture
 polish_by: task2b-polish
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task6_review_notes: "2026-07-09 Task6 re-review (post-Task9 auto-fix): L1 3 fixes (banned word 对齐→匹配, 2x version pinning 当前主干→Android 17). L2 minor. All 6 anchors + 2 extensions covered. No B-class issues. No banned words remaining."
-pipeline_stage: "task6_pending"
+task6_review_notes: "2026-07-09 Task6 re-review (post-Task9 auto-fix): L1 3 fixes (banned word 对齐→匹配, 2x version pinning 当前主干→Android 17). L2 minor. All 6 anchors + 2 extensions covered. No B-class issues. No banned words remaining. | 2026-07-11 08:06 Task6 revisiting-review (post-Task9 idle-audit auto-fix): Task9 将 record_android_trace 获取命令从 Perfetto GitHub main 改为 AOSP android-17.0.0_r1 Gitiles 锚点。L1/L2 复审 clean。锚点 6/6 + 扩展覆盖。无 B 类问题。task6_result=pass-light-edit，task9_result=auto-fixed（无P0/P1），queue 无 pending。✅ 自动晋升 finalized。"
+pipeline_stage: "ready-to-publish"
 reviewed_by: openclaw-task6
-last_task6_audit: 2026-07-10
+last_task6_audit: "2026-07-11"
 task2b_result: fixed
 task2b_fix_date: 2026-07-08
 task2b_fix_notes: "2026-07-08 Task2B main rework: P0 token merge fix (20+ commands/APIs), version baseline update (android-17.0.0_r1 verified), FrameTimeline/linux.perf anchor correction, P1 data source selection flow, P2 unverifiable % removal. Based on deep-review 2026-07-08-21 and audit 2026-07-08-20."

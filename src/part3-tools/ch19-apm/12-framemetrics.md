@@ -46,7 +46,7 @@ task9_state: "reviewed"
 pipeline_stage: "ready-to-publish"
 task6_review_notes: "2026-06-01 02:05 Task6 revisiting-review: L1/L2 扫描无新增正文修复；锚点 10/10 覆盖，无新增 Task2B 回炉项，送 Task9 复核。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-29
+last_deepseek_cn_review_at: 2026-07-11
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
@@ -102,7 +102,7 @@ p2: 0
 
 `FrameMetrics` 是 Android 7.0（API 24）加入的平台 API，用来获取 Window 每一帧的耗时分项。它比 JankStats 更接近渲染阶段：输入、动画、布局测量、绘制、同步、GPU 命令提交、buffer 交换、总耗时等。
 
-它适合在高版本设备上回答“慢帧发生在哪一段”。它仍然不是完整的 Trace。看到 `DRAW_DURATION` 高，只能说明 draw 阶段耗时高；要确认是哪棵 View、哪个 Compose 节点或哪段业务代码，还要继续抓 Perfetto 或 Profiler。
+它适合在高版本设备上回答“慢帧发生在哪一段”。它不能替代完整的 Trace。看到 `DRAW_DURATION` 高，只能说明 draw 阶段耗时高；要确认是哪棵 View、哪个 Compose 节点或哪段业务代码，还要继续抓 Perfetto 或 Profiler。
 
 ## 主要指标
 
@@ -235,7 +235,7 @@ val missedDeadline = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 
 ## 聚合时不要保留所有原始帧
 
-FrameMetrics 原始帧数据很密。线上建议按页面和交互状态聚合：
+FrameMetrics 每帧都触发回调，原始数据量很大。线上建议按页面和交互状态聚合：
 
 ```text
 screen=SearchResult
@@ -262,7 +262,7 @@ total_p95_ms=27.8
 - 后台任务定时聚合。
 - Activity 销毁时移除 listener，避免泄漏 Window。
 
-FrameMetrics 采的是每帧数据，任何额外对象分配都会放大。
+FrameMetrics 每帧都触发回调，任何额外对象分配都会被帧率放大。
 
 ## 和 Compose / View 的关系
 
