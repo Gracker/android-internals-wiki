@@ -4,15 +4,15 @@ chapter: "25.9"
 section: "25.9"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-14"
-last_verified_against: "Android Developers power / vitals / APK size docs + AOSP android-16.0.0_r1 + Clippings structure references"
+last_verified: "2026-07-12"
+last_verified_against: "Android Developers power / vitals / APK size docs + AOSP android-17.0.0_r1 + Clippings structure references"
 confidence: medium-high
 drafted_date: "2026-05-14"
 polish_count: 1
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/power/setup-battery-historian"
@@ -43,11 +43,11 @@ sources:
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
   - type: clippings-structure-ref
     path: "Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md"
   - type: clippings-structure-ref
@@ -68,11 +68,16 @@ task6_reviewed_by: openclaw-task6
 last_task6_at: "2026-06-02T07:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-07-review.md"
 task6_review_notes: "2026-06-02 07:07 Task6：L1/L2 复审通过，未发现新增回炉项；Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-31"
-last_task9_at: "2026-05-31T11:20:00+08:00"
-last_task9_audit: "2026-06-21"
+last_task9_at: "2026-07-12T01:24:48+08:00"
+last_task9_audit: "2026-07-12"
+last_task9_audit_at: "2026-07-12T01:24:48+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-12-01-audit.md"
+last_task9_audit_result: "auto-fixed"
+last_task9_audit_notes: "idle audit auto-fix: AOSP source anchors updated from android-16.0.0_r1/unversioned paths to android-17.0.0_r1; BatteryStatsService, PowerManagerService, and AlarmManagerService paths verified under Android 17 tag; no queue item added."
+last_task9_autofix_at: "2026-07-12"
 last_task9_review_log: "logs/deep-review/2026-05-31-11-deep-review.md"
 task9_review_notes: "2026-05-31 Task9：pass-tech-review。P0 0 / P1 4 / P2 6；原理链完整性需补系统证据到业务归因映射，知识盲区需补厂商差异和Android 17特性，数据支撑需真实案例。自动晋升 finalized条件不满足（有P1问题）。"
 deepseek_cn_review_state: done
