@@ -4,35 +4,53 @@ chapter: "20.4"
 section: "20.4"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-02"
-last_verified_against: "AOSP android-16.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
+last_verified: "2026-07-11"
+last_verified_against: "AOSP android-17.0.0_r1, kotlinx-coroutines 1.9.x, developer.android.com"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
 sources:
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityManager.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java"
   - type: aosp
-    path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentResolver.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/Service.java"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/monitor.cc"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/anr"
+  - type: official
+    path: "https://developer.android.com/topic/libraries/architecture/workmanager"
   - type: clippings-structure-ref
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md"
   - type: clippings-structure-ref
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -41,19 +59,23 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-22T02:07:00+08:00"
 last_task6_audit: "2026-06-18"
 task6_reviewed_date: "2026-06-22"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-21T20:36:07+08:00"
+last_task9_at: "2026-07-11T20:30:00+08:00"
 last_task6_review_log: "logs/review/2026-06-22-02-review.md"
-task9_review_notes: "2026-06-21 Task9 idle audit auto-fix：补充 Android 14+ shortService FGS 类型级 ANR 计时器；证据为 AOSP android-14.0.0_r1 至 android-17.0.0_r1 ActivityManagerConstants/ActiveServices 与 Android Developers FGS shortService 文档。"
-last_task9_review_log: "logs/deep-review/2026-06-21-20-audit.md"
+task9_review_notes: "2026-07-11 Task9 idle audit auto-fix：按 android-17.0.0_r1 复核 ANR 阈值、Broadcast/Provider/FGS/Freezer/Binder 源码锚点；修正 ContentProvider timeout 常量、BroadcastReceiver 路径、CachedAppOptimizer freezer 锚点，并更新 AOSP sources 为 Android 17 固定链接。"
+last_task9_review_log: "logs/deep-review/2026-07-11-20-audit.md"
 task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 补充 Android 14+ shortService FGS 计时器后回审；L1/L2 全部通过；applicable_versions 扩展至 Android 17 (API 37)；task9_result 确认 pass-tech-review；queue 无 pending，自动晋升 finalized。"
 task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-22
-last_task9_autofix_at: "2026-06-21"
-last_task9_audit: "2026-06-21"
+last_task9_autofix_at: "2026-07-11"
+last_task9_audit: "2026-07-11"
+last_task9_audit_at: "2026-07-11T20:30:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-11-20-audit.md"
+last_task9_audit_result: "auto-fixed"
+last_task9_audit_notes: "idle audit auto-fix: corrected Android 17 source anchors, ContentProvider timeout constant, BroadcastReceiver path, and cached app freezer source path; returned to Task6 revisiting."
 ---
 
 # ANR 治理策略
@@ -88,7 +110,7 @@ ANR 治理的核心约束是：主线程必须在对应超时窗口内完成系�
 | Input dispatch | 5s（AOSP `DEFAULT_INPUT_DISPATCHING_TIMEOUT`，可通过 per-window/per-application timeout 调整） | InputDispatcher 检测触摸/按键事件在超时窗口内未送达 | 主线程阻塞导致 InputConsumer 无法处理事件 |
 | BroadcastReceiver（前台） | 10s（Android 13 及以下）；10-20s（Android 14+，实际窗口取决于 `BroadcastConstants` 配置） | BroadcastQueue 检测 onReceive() 执行超时 | onReceive() 中执行同步 I/O 或 Binder 调用 |
 | BroadcastReceiver（后台） | 60s（Android 13 及以下）；60-120s（Android 14+，实际窗口取决于 `BroadcastConstants` 配置） | 同上 | 后台广播处理链过长 |
-| ContentProvider publish | 10s（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`） | AMS 检测应用 publish provider 超时 | Application.onCreate() 或 ContentProvider.onCreate() 耗时 |
+| ContentProvider publish | 10s（AOSP `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`） | AMS 检测应用 publish provider 超时 | Application.onCreate() 或 ContentProvider.onCreate() 耗时 |
 | Service（前台） | 20s（`ActivityManagerConstants.SERVICE_TIMEOUT`） | ActiveServices 检测 onCreate()/onStartCommand() 超时 | Service 生命周期回调中执行耗时操作 |
 | Service（后台） | 200s（`ActivityManagerConstants.SERVICE_BACKGROUND_TIMEOUT`） | 同上 | 后台 Service 长时间运行 |
 | FGS shortService（Android 14+） | 3min + 10s ANR 宽限（AOSP `mShortFgsTimeoutDuration` / `mShortFgsAnrExtraWaitDuration` 默认值） | ActiveServices 短 FGS 计时器触发 `SERVICE_SHORT_FGS_ANR_TIMEOUT_MSG` | `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` 未及时 `stopSelf()` / `stopForeground()` |
@@ -162,7 +184,7 @@ val uploadWork = OneTimeWorkRequestBuilder<UploadWorker>()
 WorkManager.getInstance(context).enqueue(uploadWork)
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java]
+[已验证: AndroidX WorkManager 官方文档, developer.android.com/topic/libraries/architecture/workmanager]
 
 ### 主线程瘦身的安全清单
 
@@ -323,7 +345,7 @@ try {
 }
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Binder.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Binder.java]
 
 **监控 Binder 调用耗时。** 在线上环境中，通过 `BinderProxy.transact()` 的 Hook 或者 AOP 方式记录每次 Binder 调用的耗时。微信团队的实践是：在 `BinderProxy.transactNative()` 的入口和出口插桩，统计调用次数和耗时分布，发现异常 Binder 调用后推动对应模块治理。
 
@@ -367,7 +389,7 @@ try {
 
 锁的持有时间取决于锁内代码的执行时间。如果 `synchronized` 方法里包含磁盘 I/O 或网络请求，锁的持有时间会被 I/O 延迟放大。在高负载设备上，一个 `synchronized` 块里的 10ms 文件读取可能变成 500ms，直接导致等待这把锁的主线程 ANR。
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/monitor.cc — ART 的 monitor 实现中，synchronized 块的 entry/exit 通过 monitor enter/exit 指令实现，持有期间其他线程进入 BLOCKED 状态]
+[已验证: AOSP android-17.0.0_r1, art/runtime/monitor.cc — ART 的 monitor 实现中，synchronized 块的 entry/exit 通过 monitor enter/exit 指令实现，持有期间其他线程进入 BLOCKED 状态]
 
 ### 锁治理的工程规范
 
@@ -378,7 +400,7 @@ try {
 
 ## ContentProvider / BroadcastReceiver 超时治理
 
-ContentProvider 的 ANR 超时阈值是 10 秒（publish provider），BroadcastReceiver 的超时根据广播类型和优先级而定（前台广播 10 秒 / 后台广播 60 秒 / 有序广播按每个接收者独立计时）。完整的阈值表见 9.2 节。
+ContentProvider 的 ANR 超时阈值是 10 秒（publish provider）。BroadcastReceiver 的基础超时在 Android 13 及以下是前台 10 秒 / 后台 60 秒；Android 14+ 会在 `BroadcastConstants` 基础值上按 CPU-starved 等场景拉长到前台 10-20 秒、后台 60-120 秒。有序广播按每个接收者独立计时。完整的阈值表见 9.2 节。
 
 这两种 ANR 的治理思路和主线程 ANR 不同：治理重点从单个操作耗时，转向减少系统回调里的工作量。
 
@@ -396,7 +418,7 @@ ContentProvider 的超时发生在 `ActivityManagerService` 等待应用 publish
 - **精简 ContentProvider 数量**：检查 manifest 中声明的 ContentProvider，移除不必要的。很多第三方 SDK 提供了关闭自动初始化的开关（`enable = false`），改用手动初始化。
 - **启动时序优化**：把 ContentProvider 初始化纳入启动框架统一调度（详见 21.2 节），控制并发数和依赖关系。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java]
 
 ### BroadcastReceiver 超时治理
 
@@ -422,7 +444,7 @@ override fun onReceive(context: Context, intent: Intent) {
 }
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/BroadcastReceiver.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/BroadcastReceiver.java]
 
 ### Service 超时补充
 
@@ -584,7 +606,7 @@ ANR 的严重程度取决于触发时应用的状态。前台 ANR 用户可以�
 - **处理系统冻结/解冻**：在 `onStartCommand()` 中检查进程是否刚从冻结状态恢复（通过时间差判断），如果是，跳过非必要操作直接返回。
 - **过滤上报噪声**：后台 ANR 中有大量"系统杀进程导致的假 ANR"——进程已经被杀，但 ANR 日志已经被记录。在 Watchdog 上报时检查 `ActivityManager.getRunningAppProcesses()` 中本进程的状态，过滤掉这类噪声。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java — CachedAppFreezer 实现]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java — cached app freezer 实现]
 
 ## 系统负载导致的 ANR 识别与过滤
 
