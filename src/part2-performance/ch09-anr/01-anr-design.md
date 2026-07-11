@@ -46,31 +46,36 @@ repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
 status: "finalized"
-pipeline_stage: "ready-to-publish"
-task9_result: "pass-tech-review"
+pipeline_stage: "task6_pending"
+task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 task9_reviewed_date: "2026-05-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-20T14:31:09+08:00"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。 | 2026-05-27 01:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 已有 suggestions 不重复写入（Android 10/13 ANR trace 存储口径需后续补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 14:31 Task9 闲时抽检 auto-fix：修正 ANR 版本口径（BroadcastQueueModernImpl 仅 Android 14/15；Android 16/17 为 BroadcastQueueImpl + AnrTimer；Watchdog 15s pre-watchdog 为 Android 15+；blamePendingFocusRequest 在 Android 14-17 均可见），回到 Task6 复审。"
-task6_state: "reviewed"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。；2026-05-25 Task9 闲时抽检：needs-rework。P0 1（Dropbox tag 进程类别边界）；P2 1（Watchdog 60s/30s 半程检查口径）；详见 logs/deep-review/2026-05-25-12-audit.md。 | 2026-05-25 16:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 写入 suggestions（Android 10/13 ANR trace 存储演进口径需补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-26 19:26 Task9 deep-review：needs-rework。P0 1（ProfilingManager 系统触发 API 与 ANR trigger 产物类型写错）；P1 0；P2 0；已写入 queue。 | 2026-05-27 01:22 Task9 deep-review：pass-tech-review。P0/P1 0；P2 1 已有 suggestions 不重复写入（Android 10/13 ANR trace 存储口径需后续补源或去重）；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-20 14:31 Task9 闲时抽检 auto-fix：修正 ANR 版本口径（BroadcastQueueModernImpl 仅 Android 14/15；Android 16/17 为 BroadcastQueueImpl + AnrTimer；Watchdog 15s pre-watchdog 为 Android 15+；blamePendingFocusRequest 在 Android 14-17 均可见），回到 Task6 复审。 | 2026-07-11 Task9 idle-audit AUTO-FIX: P0 2 / P1 0 / P2 0；修正 Android 17 ContentResolver MIME 查询超时/AMS 方法名口径，以及 ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 产物类型（running system trace snapshot）；回到 Task6 复审。详见 logs/deep-review/2026-07-11-09-audit.md。"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-last_task9_audit: "2026-06-20"
-last_task9_audit_at: "2026-06-20T14:31:09+08:00"
-last_task9_audit_log: "logs/deep-review/2026-06-20-14-audit.md"
+last_task9_audit: "2026-07-11"
+last_task9_audit_at: "2026-07-11T09:29:58+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-11-09-audit.md"
 last_task6_at: "2026-06-20T16:10:45+08:00"
 last_task6_audit: "2026-06-25"
 last_task6_audit_at: "2026-06-25T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-25-14-audit.md"
 task6_review_notes: "2026-06-25 Task6：闲时抽检复审；L1/L2 无新增问题（禁用词命中真正×2，未达阈值；高频词达标；版本边界 Android 17 以内）；修复 1 处英文术语未翻译（state→状态）；锚点覆盖完整 5/5；无 L3/L4 问题。"
-last_task9_review_log: "logs/deep-review/2026-06-20-14-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-11-09-audit.md"
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-05-27"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-20
-last_task9_autofix_at: "2026-06-20"
+last_task9_autofix_at: "2026-07-11"
+updated_by: "openclaw-task9"
+updated_date: "2026-07-11"
+p0: 0
+p1: 0
+p2: 0
 ---
 # ANR 设计思想
 
@@ -231,7 +236,7 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 
 **Broadcast ANR**：由 `BroadcastQueue` 检测。`BroadcastQueue.broadcastTimeoutLocked()` 在超时到期时被触发。
 
-**ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒，常量是 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（`frameworks/base/core/java/android/content/ContentResolver.java`），值为 `10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；AMS 侧通过 `ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 消息编号触发超时回调。与 Service/Activity ANR 一样是系统级强制约束。`getProviderMimeType()` 调用有独立的 1 秒超时（API 31+，可通过 `getProviderMimeTypeAsync()` 异步处理），但这个 1 秒超时仅适用于 MIME 类型查询，不是通用的 ContentProvider ANR 阈值。
+**ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒，常量是 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（`frameworks/base/core/java/android/content/ContentResolver.java`），值为 `10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；AMS 侧通过 `ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 消息编号触发超时回调。与 Service/Activity ANR 一样是系统级强制约束。`ContentResolver.getType()` 的 MIME 查询是另一条路径：Android 17 对已连接 provider 调用隐藏 Binder `IContentProvider.getTypeAsync()` 并等待 `CONTENT_PROVIDER_TIMEOUT_MILLIS = 3 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；provider 未直接连接时通过 AMS 的 `getMimeTypeFilterAsync()` 等待 `REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS`。`getProviderMimeTypeAsync()` 只属于 Android 12/13 的 AMS 旧命名，不应作为 Android 17 结论。
 
 
 **startForeground() 宽限期**：这条规则约束的是 `Context.startForegroundService()` 之后多久必须调用 `Service.startForeground()`。版本边界要分开记：Android 8.0 是 5 秒；Android 9-12 是 10 秒；Android 13/14/15 的默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`，运行时字段是 `mServiceStartForegroundTimeoutMs`，设备也可通过 DeviceConfig 覆盖。Android 12 的主要变化是超时后常见 `ForegroundServiceDidNotStartInTimeException`；5 秒只对应 Android 8.0 的初始宽限期。
@@ -433,7 +438,7 @@ Android 14 的 ANR 变化主要落在触发条件和诊断口径上：BroadcastR
 
 Android 16 引入了系统触发式 ProfilingManager 追踪。应用先通过 `new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build()` 构造 ANR 触发器，再调用 `ProfilingManager.addProfilingTriggers(List<ProfilingTrigger>)` 注册；结果只能通过 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 这类全局结果监听接收。`TRIGGER_TYPE_ANR` 的产物口径是 running system trace snapshot，文件会落到应用存储目录，不能写成 Java Heap Dump、Stack Sample、System Trace 三类都自动产出。
 
-Android 17（API 37）把系统触发器扩到更多场景：`TRIGGER_TYPE_COLD_START` 用于冷启动，返回 system trace 和 stack sampling profile；`TRIGGER_TYPE_OOM` 用于 `OutOfMemoryError`，返回 Java Heap Dump；`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 用于过量 CPU 使用导致的进程终止，返回 call stack sample；`TRIGGER_TYPE_ANOMALY` 用于系统检测到的异常资源行为。ANR 触发器仍按 Android 16 的 system trace snapshot 口径理解，不要把 Android 17 其他触发器的产物反推到 ANR 上。
+Android 17（API 37）把系统触发器扩到更多场景：`TRIGGER_TYPE_COLD_START` 用于冷启动，返回 system trace 和 stack sampling profile；`TRIGGER_TYPE_OOM` 用于 `OutOfMemoryError`，返回 Java Heap Dump；`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 用于过量 CPU 使用导致的进程终止，返回 running system trace snapshot；`TRIGGER_TYPE_ANOMALY` 用于系统检测到的异常资源行为。ANR 触发器仍按 Android 16 的 system trace snapshot 口径理解，不要把 Android 17 其他触发器的产物反推到 ANR 上。
 
 这项改进针对 traces.txt 的"刻舟求剑"问题：系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程行为，比单个堆栈快照更接近时间线。`ApplicationStartInfo.getStartComponent()` 的引入也让冷启动追踪更精确：可以知道是哪个组件（Activity / Service / BroadcastReceiver / ContentProvider）触发了启动，从而针对不同启动路径优化。
 
