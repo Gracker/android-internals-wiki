@@ -387,6 +387,15 @@
       "file": "src/part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md",
       "added_date": "2026-07-11",
       "source": "task2a-knowledge-gap Round 61"
+    },
+    {
+      "chapter": "14.30",
+      "title": "GpuService GPU 内存可观测性架构",
+      "path": "src/part3-tools/ch14-other-tools/14.30-android17-gpuservice-gpu-memory-observability.md",
+      "priority": 80,
+      "status": "pending",
+      "source": "task2a-gap-mining-round-68",
+      "created_date": "2026-07-11"
     }
   ],
   "pending": [
