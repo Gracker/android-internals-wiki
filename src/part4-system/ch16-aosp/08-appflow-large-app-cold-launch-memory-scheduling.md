@@ -1,10 +1,11 @@
 ---
 title: "AppFlow：GB 级应用冷启动内存联合调度"
 chapter: "16.8"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-23"
 applicable_versions: "Android 15 - Android 17（研究原型，非 AOSP 主线）"
 last_verified: "2026-05-23"
+last_task9_audit: "2026-07-11"
 last_verified_against: "AppFlow arXiv 2603.17259; AOSP main/system/memory/lmkd; frameworks/base ActivityManager/UsageStats/ApplicationExitInfo; source.android.com lmkd; developer.android.com launch-time/LMK"
 confidence: medium
 sources:
