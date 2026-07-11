@@ -6,7 +6,7 @@ section: "20.5"
 status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
-last_verified_against: "AOSP android-17.0.0_r1: ART heap/thread/JNI/Unsafe, hwui Bitmap, libutils Looper, ComponentCallbacks2, AndroidRuntime heap properties, ActivityThread largeHeap handling"
+last_verified_against: "AOSP android-17.0.0_r1: ART heap/thread/JNI/jdk_internal_misc_Unsafe, hwui Bitmap, libutils Looper, ComponentCallbacks2, AndroidRuntime heap properties, ActivityThread largeHeap handling"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 0
@@ -19,6 +19,8 @@ sources:
     path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap-inl.h"
   - type: aosp
     path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/jdk_internal_misc_Unsafe.cc"
   - type: blog
     path: "Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md"
   - type: blog
@@ -28,9 +30,9 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.3", "23.4", "23.6", "4.3", "4.4"]
 review_count: 4
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: reviewed
 task2b_state: fixed
 created_by: "task2a"
 reviewed_date: "2026-07-12"
@@ -43,11 +45,11 @@ task9_result: auto-fixed
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task2b_lite_at: "2026-06-01"
-last_task9_at: "2026-07-12T05:27:04+08:00"
+last_task9_at: "2026-07-12T06:25:04+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-12"
-last_task9_review_log: "logs/deep-review/2026-07-12-05-deep-review.md"
-task9_review_notes: "2026-07-12 Task9 final-check auto-fix：按 AOSP android-17.0.0_r1 复核 OOM 机制；修正 Heap::AllocObjectWithAllocator 源码锚点到 heap.h/heap-inl.h，并补齐 API 34+ 不再通知的 RUNNING_MODERATE/RUNNING_CRITICAL trim level，回到 Task6 复审。"
+last_task9_review_log: "logs/deep-review/2026-07-12-06-deep-review.md"
+task9_review_notes: "2026-07-12 Task9 deep review auto-fix：按 AOSP android-17.0.0_r1 复核 OOM 机制；修正 Unsafe.allocateMemory native 实现源码锚点，Android 17 位于 art/runtime/native/jdk_internal_misc_Unsafe.cc，章节回到 Task6 复审。"
 last_task9_autofix_at: "2026-07-12"
 last_task9_audit: "2026-07-12"
 last_task9_audit_at: "2026-07-12T00:25:03+08:00"
@@ -171,7 +173,7 @@ if (utf16_length > std::numeric_limits<int32_t>::max()) {
 `sun.misc.Unsafe` 的 `allocateMemory` 底层调用 `malloc`。`malloc` 返回 `nullptr` 时，ART 抛出 `"native alloc"` OOM：
 
 ```cpp
-// art/runtime/native/sun_misc_Unsafe.cc 简化
+// art/runtime/native/jdk_internal_misc_Unsafe.cc 简化
 // 函数名: Unsafe_allocateMemory()
 void* mem = malloc(malloc_bytes);
 if (mem == nullptr) {
