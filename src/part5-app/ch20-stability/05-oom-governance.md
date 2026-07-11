@@ -21,19 +21,19 @@ sources:
   - type: blog
     path: "Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md"
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
-related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
+related_chapters: ["20.1", "23.1", "23.3", "23.4", "23.6", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
 task2b_state: fixed
 created_by: "task2a"
 reviewed_date: "2026-07-12"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task6_at: "2026-07-12T04:10:00+08:00"
-last_task6_review_log: "logs/review/2026-06-01-18-review.md"
-task6_review_notes: "2026-07-12 04:10 Task6 revisiting-review: pass-light-edit。统一交叉引用格式为 §X.Y（4处）；L1/L2 通过，无新增回炉项。Task9 result=auto-fixed，不满足自动晋升条件。"
+last_task6_at: "2026-07-12T05:07:00+08:00"
+last_task6_review_log: "logs/review/2026-07-12-05-review.md"
+task6_review_notes: "2026-07-12 05:07 Task6 re-review (post-Task9-autofix): pass-light-edit。补全 related_chapters（+23.3/23.6）；L1/L2 通过，无新增回炉项。task9_result=auto-fixed，不满足自动晋升条件，回 Task9 做最终确认。"
 task9_result: auto-fixed
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
