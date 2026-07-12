@@ -4,9 +4,8 @@ chapter: '26.17'
 section: '26.17'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-05-22'
-last_verified_against: Android Developers docs 2026-05-22 + local Android SDK sources
-  android-34/android-35 + OkHttp 5.x docs + Clippings structure references
+last_verified: '2026-07-12'
+last_verified_against: Android Developers docs + AOSP android-17.0.0_r1 Connectivity sources + OkHttp 5.x docs + Cronet API 143.7445.0 + Clippings references
 confidence: medium
 sources:
 - type: clippings
@@ -24,13 +23,15 @@ sources:
 - type: official
   path: https://square.github.io/okhttp/5.x/okhttp/okhttp3/-event-listener/
 - type: aosp
-  path: /Users/gracker/Android/sources/android-35/android/net/TrafficStats.java
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework-t/src/android/net/TrafficStats.java
 - type: aosp
-  path: /Users/gracker/Android/sources/android-35/android/net/NetworkCapabilities.java
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java
 - type: aosp
-  path: /Users/gracker/Android/sources/android-35/android/net/ConnectivityManager.java
-- type: aosp
-  path: https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java
+- type: official
+  path: https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo
+- type: library-api
+  path: https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/143.7445.0/cronet-api-143.7445.0.aar
 tags:
 - observability
 - network
@@ -48,20 +49,25 @@ created_by: task2a-knowledge-gap
 created_date: '2026-05-22'
 gap_source: 参考书素材/知识盲区/官方文档/AOSP结构
 last_task2a_at: '2026-05-22T15:04:00+08:00'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-06-04'
 last_task6_at: '2026-06-04T03:10:02+08:00'
 last_task6_review_log: logs/review/2026-05-22-15-review.md
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-04'
-last_task9_at: '2026-06-04T09:20:00+08:00'
-last_task9_audit: '2026-06-22'
-last_task9_audit_log: logs/deep-review/2026-06-22-06-audit.md
+last_task9_at: '2026-07-12T21:39:02+08:00'
+last_task9_audit: '2026-07-12'
+last_task9_audit_log: logs/deep-review/2026-07-12-21-audit.md
+last_task9_audit_at: '2026-07-12T21:39:02+08:00'
+last_task9_audit_result: auto-fixed
+last_task9_audit_notes: 'idle audit auto-fix: source anchors updated from local android-35 SDK / Chromium lkgr to AOSP android-17.0.0_r1 Connectivity sources and versioned Cronet API evidence; no queue item.'
+last_task9_autofix_at: '2026-07-12T21:39:02+08:00'
+last_task9_autofix_log: logs/deep-review/2026-07-12-21-audit.md
 last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
 task9_review_notes: '2026-06-04 Task9 deep review: pass-tech-review。P0/P1 0；HTTP/3/Cronet
   Android 17 指标字段保留为 P3 follow-up，不阻塞发布。'
@@ -72,7 +78,7 @@ task2b_fixed_by: openclaw-task2b
 task2b_fixed_date: '2026-06-03'
 last_task2b_review_log: logs/deep-review/2026-05-22-15-deep-review.md
 updated_by: openclaw-task9
-updated_date: '2026-06-04'
+updated_date: '2026-07-12'
 p0: '0'
 p1: '0'
 p2: '0'
@@ -143,7 +149,7 @@ OkHttp 的 `EventListener` 是 Android 端最常用的阶段采集入口。官�
 
 Cronet 的口径更接近 Chromium 网络栈。公开 Cronet API 的稳定包名是 `org.chromium.net.RequestFinishedInfo`，其中 `Metrics` 提供 DNS、connect、SSL、sending、response 阶段时间戳、socket 复用判断、TTFB、总耗时和传输字节数。采集入口是 `RequestFinishedInfo.Listener` 的 `onRequestFinished(RequestFinishedInfo)` 回调。
 
-需要注意：Android platform 的 `android.net.http.RequestFinishedInfo` 是隐藏/版本化实现细节（android-34 SDK source 中带 `{@hide}` / prototype 注释，android-35 SDK source 中已无该文件），不作为 App 侧稳定 API。App 接入应使用 `org.chromium.net` 包下的 public Cronet API，或通过 AndroidX Cronet wrapper（`androidx.cronet`）。
+需要注意：AOSP `android-17.0.0_r1` 的 `frameworks/base/core/java/android/net/http/` 目录没有 `RequestFinishedInfo` 公共类；不要把早期 SDK 中的隐藏或 prototype `android.net.http.RequestFinishedInfo` 当成 App 侧稳定 API。App 接入应使用 `org.chromium.net` 包下的 public Cronet API，或通过 AndroidX Cronet wrapper（`androidx.cronet`）。
 
 Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cronet 的 OkHttp、`HttpURLConnection` 或 Native 自研协议。
 
@@ -161,7 +167,7 @@ Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cr
 
 ## 流量与网络状态维度
 
-`TrafficStats` 适合记录 App 级流量变化。Android API reference 提供 `getUidRxBytes()`、`getUidTxBytes()`、`getTotalRxBytes()`、`getTotalTxBytes()` 等接口；本地 Android 35 SDK source 中 `getUidRxBytes(int uid)` 和 `getUidTxBytes(int uid)` 仍是 UID 维度读取入口。它能说明“这段时间 App 收发了多少字节”，不能说明某个请求慢在 DNS、TLS 还是服务端等待。
+`TrafficStats` 适合记录 App 级流量变化。Android API reference 提供 `getUidRxBytes()`、`getUidTxBytes()`、`getTotalRxBytes()`、`getTotalTxBytes()` 等接口；AOSP `android-17.0.0_r1` 的 Connectivity module source 中，`getUidRxBytes(int uid)` 和 `getUidTxBytes(int uid)` 仍是 UID 维度读取入口。它能说明“这段时间 App 收发了多少字节”，不能说明某个请求慢在 DNS、TLS 还是服务端等待。
 
 流量指标适合放在三类场景里：
 
@@ -171,7 +177,7 @@ Cronet 适合统一接入 Chromium 网络栈的业务，但不能覆盖绕过 Cr
 
 `NetworkCapabilities` 负责描述当前网络能做什么。Android 官方文档把 `NET_CAPABILITY_VALIDATED` 用于表示系统验证过该网络可访问公共互联网；Captive Portal 登录后网络会获得 `VALIDATED` 并失去 `CAPTIVE_PORTAL`。它还提供 `TRANSPORT_WIFI`、`TRANSPORT_CELLULAR`、`TRANSPORT_VPN` 等传输类型，以及 `NET_CAPABILITY_NOT_METERED`、`NET_CAPABILITY_NOT_ROAMING` 等能力。
 
-网络状态要按“样本发生时”记录，而不是只在 App 启动时读一次。默认网络可能在一次会话中从 Wi-Fi 切到蜂窝，VPN 的 underlying network 也可能变化。`ConnectivityManager.NetworkCallback` 能收到可用性、丢失和能力变化；Android 文档说明 callback 默认运行在 App 的 connectivity thread。采集代码只更新内存态网络快照，不要在 callback 中做同步上报。
+网络状态要按“样本发生时”记录，而不是只在 App 启动时读一次。默认网络可能在一次会话中从 Wi-Fi 切到蜂窝，VPN 的 underlying network 也可能变化。`ConnectivityManager.NetworkCallback` 能收到可用性、丢失和能力变化；Android 17 源码注释说明 callback 默认运行在 framework 创建、位于 App 进程内的线程。采集代码只更新内存态网络快照，不要在 callback 中做同步上报。
 
 ## Native Hook 与统一网络库的边界
 
