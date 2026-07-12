@@ -3,14 +3,14 @@ title: "Native Crash 分析与治理"
 chapter: "20.3"
 section: "20.3"
 section_title: "Native Crash 分析与治理"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-03"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-07-03"
+last_verified: "2026-07-12"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-07-12"
 task9_reviewed_by: "openclaw-task9"
-pipeline_stage: ready-to-publish
-last_verified_against: "AOSP android-17.0.0_r1 (debuggerd/crash_dump, libunwindstack BuildId format, native crash notification chain)"
+pipeline_stage: task6_pending
+last_verified_against: "AOSP android-17.0.0_r1 (debuggerd/crash_dump, tombstoned CrashQueue default 32 tombstone slots, libunwindstack BuildId format, native crash notification chain)"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
@@ -26,6 +26,8 @@ sources:
   - type: aosp
     path: "system/core/debuggerd/libdebuggerd/tombstone.cpp"
   - type: aosp
+    path: "system/core/debuggerd/tombstoned/tombstoned.cpp"
+  - type: aosp
     path: "system/unwinding/libunwindstack/Unwinder.cpp"
   - type: aosp
     path: "external/google-breakpad/src/processor/simple_symbol_supplier.cc"
@@ -33,14 +35,14 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-07-03T19:10:00+08:00"
 last_task6_review_log: "logs/review/2026-07-02-22-review.md"
 task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 clean. L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean (对齐=技术内存对齐, 非黑话). L2 pass. 限制句式×2 at limit. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
 task6_result: pass-light-edit
 task9_state: reviewed
-last_task9_at: "2026-07-03T19:20:00+08:00"
+last_task9_at: "2026-07-12T19:26:24+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-07-02T18:50:00+08:00"
@@ -55,14 +57,18 @@ last_task6_review_log: "logs/review/2026-06-21-20-review.md"
 task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1修复: 链路→流程×3, meta-narrative×1。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
 task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fix: remove banned word. L2 pass. Anchors all covered. No new L3/L4 issues."
 task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。"
-last_task9_review_log: "logs/deep-review/2026-07-02-19-deep-review.md"
-task9_review_notes: "2026-07-02 Task9 normal deep-review AUTO-FIX：对照 AOSP android-17.0.0_r1 libunwindstack Unwinder::FormatFrame() 的 BuildId 输出格式，修正 addr2line 排查段中 Build ID 与 Build fingerprint 混淆；回到 Task6 复审。"
-last_task9_autofix_at: "2026-07-02"
+last_task9_review_log: "logs/deep-review/2026-07-12-19-audit.md"
+task9_review_notes: "2026-07-12 Task9 idle audit AUTO-FIX：对照 AOSP android-17.0.0_r1 tombstoned.cpp，修正 tombstone 默认保留数量旧口径：Android 17 由 tombstoned.max_tombstone_count 控制，默认 32 个槽位，并补充 tombstoned.cpp 源码锚点；回到 Task6 复审。"
+last_task9_autofix_at: "2026-07-12"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
-last_task9_audit: "2026-06-21"
+last_task9_audit: "2026-07-12"
 last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
 task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
+last_task9_audit_at: "2026-07-12T19:26:24+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-12-19-audit.md"
+last_task9_audit_result: "auto-fixed"
+last_task9_audit_notes: "idle audit auto-fix: AOSP android-17.0.0_r1 tombstoned uses tombstoned.max_tombstone_count default 32, not 00-09 ten-slot rotation; added tombstoned.cpp source anchor."
 ---
 
 # Native Crash 分析与治理
@@ -180,7 +186,7 @@ _start → linker::_start → linker_main()
 
 ### 一份完整的 tombstone 长什么样
 
-tombstone 文件位于 `/data/tombstones/`，每个 Native Crash 生成一个，文件名格式 `tombstone_XX`（XX 从 00 到 09 循环覆盖）。一份典型的 tombstone 包含以下部分：
+tombstone 文件位于 `/data/tombstones/`。Android 17 的 `tombstoned` 使用 `tombstone_%02d` 文本文件和 `tombstone_%02d.pb` protobuf 文件命名；保留数量由 `tombstoned.max_tombstone_count` 控制，默认是 32 个槽位，不是旧口径里的 00-09 十个循环槽。一份典型的 tombstone 包含以下部分：
 
 ```text
 *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
