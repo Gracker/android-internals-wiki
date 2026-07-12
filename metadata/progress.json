@@ -3,7 +3,7 @@
   "draft": 0,
   "ready_for_review": 8,
   "finalized": 10,
-  "last_updated": "2026-07-12T10:06:28.858282+08:00",
+  "last_updated": "2026-07-12T12:11:42.678902+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T12:11:42.678906+08:00",
+      "note": "Gap mining round 82: 0 candidates ≥14 (82nd consecutive). No new material since Round 81 (62 min ago). Daily-info AppFlow maps to §4.11. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3+ months stale. 48 drafts all >15 lines. Task2B backlog: 0."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -583,10 +590,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-12T11:06:17.600164+08:00",
+    "last_run": "2026-07-12T12:11:42.678887+08:00",
     "last_section": "none",
     "result": "no-candidates",
-    "note": "Gap mining round 81: 0 candidates ≥14 (81st consecutive). Daily-info AppFlow paper (06:30) maps to existing §4.11. No new Clippings (19 days stale). No new research-feeds (3 months stale). source-index: 0 entries. 48 drafts all >15 effective lines. Task2B backlog: 0. Coverage saturated."
+    "note": "Gap mining round 82: 0 candidates ≥14 (82nd consecutive). No new material since Round 81 (62 min ago). Daily-info AppFlow paper already mapped to §4.11. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 48 drafts all >15 lines. Task2B backlog: 0. Coverage saturated."
   },
   "last_task9_review": {
     "at": "2026-07-11T13:28:01+08:00",
