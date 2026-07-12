@@ -13,22 +13,23 @@ sources:
 - type: official
 path: https://juejin.cn/post/7610233341305389099
 tags: "[android17, api37, behavior-changes, performance, deliqueue, generational-gc, profiling-manager, cloud-compilation]"
-related_chapters: "["1.6", "1.13", "4.8", "5.7", "8.2", "14.7", "16.2", "16.4"]"
+related_chapters: "["1.6", "1.13", "4.8", "5.7", "8.2", "19", "16.2", "16.4"]"
 created_by: task2a-knowledge-gap
 created_date: 2026-04-08
 gap_source: 官方文档+研究素材+AOSP结构+读者需求
 gap_score: 20
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_audit_date: 2026-07-12
 task9_audit_type: idle-audit
 last_task9_at: 2026-07-12T15:24:27+08:00
-task2b_state: pending
-task2b_result: ""
-last_task2b_at: 2026-07-12T14:52:53+08:00
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: 2026-07-12
+last_task2b_at: 2026-07-12T15:37:59+08:00
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-12
 task9_reviewed_by: openclaw-task9
@@ -298,7 +299,7 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 
 排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump、system trace 或采样结果上继续分析。
 
-详见 **14.7 ProfilingManager**。
+详见 **19 ProfilingManager**。
 
 ### 源码级机制补充（2026-06-19 源码调研）
 
@@ -679,7 +680,9 @@ DCL (Dynamic Code Loading) 保护从 DEX/JAR 文件扩展到原生库。通过 `
 - AOSP: `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java`
 - AOSP: `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
 - AOSP: `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java`
-- AOSP: `art/runtime/gc/collector/` 目录下的分代 GC 实现
+- AOSP: `art/runtime/gc/collector/young_mark-compact.cc` — 分代 CMC young generation 回收核心实现
+- AOSP: `art/runtime/gc/collector/mark-compact.cc` — CMC 标记-压缩主逻辑
+- AOSP: `art/runtime/runtime.cc` — 分代 CMC gating 条件判断（`useGenerationalCMC()`）
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现
 
 ## 附录：DeliQueue drain 触发机制与 Generational CMC gating 条件
