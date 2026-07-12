@@ -90,7 +90,7 @@ review_notes: "2026-05-18 task9 idle audit: needs-rework。P1 2(ContentProvider 
 auto_promoted: true
 last_task9_autofix_at: 2026-06-13
 last_task9_audit: 2026-06-13
-last_task6_audit: "2026-06-20"
+last_task6_audit: "2026-07-12"
 last_task9_review_log: logs/deep-review/2026-06-13-01-audit.md
 task9_review_notes: "2026-06-13 Task9 idle audit auto-fix: 修正 ContentProvider WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG 与 setDetectNotResponding 路径混用。P0 1(auto-fixed) / P1 0 / P2 0；回到 Task6 复审。"
 finalized_date: "2026-06-04"
