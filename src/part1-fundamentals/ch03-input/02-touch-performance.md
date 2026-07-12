@@ -4,7 +4,7 @@
 title: "触摸响应的性能分析"
 chapter: "3.2"
 section: "3.2"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -39,25 +39,25 @@ task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-06-06T15:45:10+08:00"
 task9_result: auto-fixed
 
-reviewed_date: "2026-05-08"
+reviewed_date: "2026-07-12"
 reviewed_by: openclaw-task6
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-07-12"
 task2b_lite_note: "版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 路径一致性"
-task6_state: "revisiting"
-task6_result: needs-rework
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: "pending"
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T15:05:00+08:00"
+last_task6_at: "2026-07-12T12:15:00+08:00"
 last_task6_audit: "2026-07-12"
 last_task6_review_log: "logs/review/2026-05-08-15-review.md"
 review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 15:05：自动晋升 finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目；本轮未做重复正文 review。"
 last_task9_review_log: "logs/deep-review/2026-06-06-15-audit.md"
 task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。Task2B 随后修正 ACK 回路方法名，queue 项已 completed，task9_result 更新为 pass-tech-review。 | 2026-06-06 Task9 15:45 闲时抽检：auto-fixed。P0 版本/源码锚点 1 组；16KB page size 起点从 Android 16+ 修正为 Android 15+ AOSP 支持，并把 Resampler.cpp 锚点从 AOSP mainline 改为 android-16.0.0_r1；本轮未使用 Android 18/API 38+ 或 main/master 资料作为正文结论。"
-finalized_date: "2026-05-08"
+finalized_date: "2026-07-12"
 finalized_by: openclaw-task6-auto-promote
-task6_review_notes: "2026-05-08 Task6 15:05：未做重复正文 review；自动晋升检查通过（task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending）。"
+task6_review_notes: "2026-07-12 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述 grep 全部零命中；L2 结构/节奏/读者视角通过；task9 idle audit auto-fixed（P2 版本锚点）等效通过；无新增 L3/L4 回炉项。自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
 last_task9_autofix_at: "2026-06-06"
