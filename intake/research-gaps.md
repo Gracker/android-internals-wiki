@@ -786,3 +786,33 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 Coverage remains saturated (69th consecutive round). No new knowledge gaps ≥14 identified.
 全书 717 个小节，所有输入源（DeepResearch、Clippings、research-feeds、daily-info、source-index）均已完全消费。
 Task14 建议箱中的候选均指向已有章节的内容补充（Task 2B 职责），不是新章节缺口。
+
+
+## [Task2A Round 86] 知识缺口挖掘 — 2026-07-12 19:06
+
+### 已检查方向（本轮）
+- ✅ Phase 0: 0 个空 draft 章节（47 个 draft 全部 >15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 0 个 unmapped high-quality 条目（全部已映射）
+- ✅ DeepResearch 新增文件 1 个（since Round 85 16:07）:
+  - 2026-07-12-lmcache-kv-cache-prefix-hashing-architecture.md (17:55, 190 行)
+    → LLM KV Cache 管理层（LMCache/vLLM），非 Android/Linux 系统相关
+    → 文件本身标注「非 Android 相关，跳过」
+    → 评分 0/20（素材丰富度 N/A + 相关性 0 + 读者需求 0 + 时效性 0）
+- ✅ 其余 DeepResearch（2026-07-12）: 全部已被前序轮次映射
+  - binder-priority-inheritance-ipcthreadstate (11:52) → §1.48 已覆盖 (13/20)
+  - sensor-privacy-service-indicator-gating (09:05) → 隐私主题 (8/20)
+  - power-advisor-dvfs-headroom (05:56) → §5.29 已覆盖
+  - gpuservice-gpu-memory-observability (02:53) → §14.30 已覆盖
+- ✅ Clippings: 无新文件（最后更新 2026-06-23，19 天无更新）
+- ✅ research-feeds: 无新文件（最后 2026-04-14，3 个月+无更新）
+- ✅ daily-info 2026-07-12: AppFlow 论文已在 §16.8/§4.11 覆盖
+- ✅ queue.json: 0 条目（空）
+- ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 85 轮已全面覆盖
+
+### 合格缺口（≥14 分）
+（无）
+
+### 结论
+连续 86 轮未发现新合格缺口。全书 717 个小节覆盖范围充分。
+唯一新增 DeepResearch（LMCache）为 AI 推理基础设施，与 Android 系统性能无关。
