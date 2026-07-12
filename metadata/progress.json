@@ -377,8 +377,8 @@
     }
   ],
   "task2b_verifier": {
-    "last_run": "2026-07-07T19:31:15+08:00",
-    "last_action": "status correction: finalized→ready-for-review, pipeline_stage: ready-to-publish→task6_pending",
+    "last_run": "2026-07-12T11:29:57+08:00",
+    "last_action": "status correction: 25.6 finalized→ready-for-review (Task9 idle-audit auto-fix left status inconsistent)",
     "chapters_fixed": [
       "1.2",
       "1.10",
@@ -388,16 +388,15 @@
       "16.1",
       "26.1",
       "21.2",
-      "20.3"
+      "20.3",
+      "25.6"
     ],
     "remaining_task6_pending": [
-      "16.6",
-      "19",
-      "20.2",
-      "26.10"
+      "22.7",
+      "25.6"
     ],
-    "last_result": "status-corrections-5",
-    "last_fixed_count": 6,
+    "last_result": "status-corrections-1",
+    "last_fixed_count": 1,
     "last_blocked_count": 0,
     "remaining_pending": 8
   },
