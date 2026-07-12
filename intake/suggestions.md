@@ -1,3 +1,20 @@
+## [Task9 Deep Review] 14.1 Android Studio Profiler — 2026-07-13
+
+### [P2] Android Studio Meerkat 采样引擎改进描述
+- **类型**：数据缺失
+- **位置**："调用栈采样"章节末段
+- **问题**："在 Android Studio Meerkat (2024.3) 及后续版本中，Google 持续改进采样引擎的准确性，降低 debug 分析时的误报率" 表述过于模糊
+- **建议**：补充具体的改进内容，如 commit ID、changelog 内容或具体的优化指标，或引用官方文档中的具体改进说明
+
+### [P2] Native 内存泄漏检测细节
+- **类型**：知识盲区
+- **位置**："Memory Profiler：从实时曲线到堆快照"章节 Native 内存泄漏相关段落
+- **问题**：提到"Native 内存泄漏需要使用 Native 分配追踪或者 heapprofd 来排查"，但缺乏具体使用细节
+- **建议**：补充 heapprofd 的具体使用方法、与 Perfetto heapprofd 的对比、以及不同 Android 版本下的兼容性说明
+
+---
+
+## Previous Suggestions (existing content)
 ## [Task9 Deep Review] 16.8 AppFlow：GB 级应用冷启动内存联合调度 — 2026-07-11
 - **类型**：源码准确性
 - **位置**：LMKD_PROCS_PRIO 协议描述章节
@@ -111,3 +128,15 @@
 - ✅ source-index: 0 unmapped high-quality
 - ✅ Clippings: 20 天未更新（stale）
 - ✅ research-feeds: 3+ 月未更新（stale）
+
+## [Task2A Round 88] ch14.9 Camera 性能分析 — 2026-07-13
+- **类型**：内容补充
+- **来源**：DeepResearch 2026-07-13-camera-perfetto-latency-decomposition.md (309 行 AOSP 源码级调研)
+- **建议补充**：
+  1. CameraService::connectHelper() 中 openLatencyMs 的计算与 statsd 上报路径
+  2. SessionStatsBuilder::incCounter() 中 mStartLatencyMs（首帧延迟）的写入逻辑
+  3. CameraLatencyHistogram 10-bin 分箱（100/200/300/400/500/700/900/1300/2100ms）
+  4. CameraServiceProxyWrapper → ICameraServiceProxy → statsd 的完整上报链路
+  5. Perfetto async slice 名称（"frame capture"/"first full buffer"/"still capture"）与 ATRACE 宏的映射
+- **参考书覆盖深度**：无（Clippings 参考书未覆盖 Camera 子系统）
+- **结构参考**：[来源: DeepResearch/2026-07-13-camera-perfetto-latency-decomposition.md]
