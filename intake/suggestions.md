@@ -83,3 +83,13 @@
 - BPF overhead → 10/20, §14.25 已覆盖
 - AOSP 核心服务/模块 → 已覆盖
 - 全部输入源已消费，无新缺口
+
+
+## [Task2A Round 89] 已检查方向 — 2026-07-12 22:11
+- MediaMetrics → 6/20 ❌（过于小众，非性能核心）
+- NFC performance → 7/20 ❌（边缘话题）
+- JobScheduler internals → 10/20 ❌（已有 1414 mentions 覆盖充分）
+- Room database → ch26-database 已有章节
+- Notification cooldown → UX 特性非性能主题
+- Clippings ep40-58 → 概述性内容已有更深入覆盖
+- 全部输入源已消费，无新缺口
