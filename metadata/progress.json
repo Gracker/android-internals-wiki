@@ -3,7 +3,7 @@
   "draft": 0,
   "ready_for_review": 8,
   "finalized": 1,
-  "last_updated": "2026-07-12T18:14:21+08:00",
+  "last_updated": "2026-07-12T19:06:48+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T19:06:48+08:00",
+      "note": "Gap mining round 86: 0 candidates ≥14. LMCache DeepResearch (17:55) is non-Android. All other 2026-07-12 DeepResearch mapped in prior rounds. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 47 drafts all >15 lines. Task2B backlog: 0."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -618,10 +625,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-12T15:08:09.805469+08:00",
+    "last_run": "2026-07-12T19:06:48+08:00",
     "last_section": "none",
     "result": "no-candidates",
-    "note": "Gap mining round 84: 0 candidates ≥14. Binder IPCThreadState user-space identity research scored 13/20 (architecture, not perf core). Coverage saturated (717 sections)."
+    "note": "Gap mining round 86: 0 candidates ≥14. LMCache DeepResearch is non-Android (LLM KV cache). Coverage saturated (717 sections)."
   },
   "last_task9_review": {
     "at": "2026-07-11T13:28:01+08:00",
