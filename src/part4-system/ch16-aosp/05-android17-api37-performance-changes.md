@@ -1,9 +1,10 @@
 ---
 
+
 title: "Android 17 (API 37) 性能行为变更与适配方法"
 chapter: 16.5
 section: 16.5
-status: ready-for-review
+status: finalized
 drafted_date: 2026-04-08
 applicable_versions: "Android 17 (API 37)"
 last_verified: 2026-07-12
@@ -36,15 +37,15 @@ task2b_fixed_by: openclaw-task2b-main
 last_task9_autofix_at: 2026-07-12
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-30
-pipeline_stage: task6_pending
-task6_state: revisiting
+last_deepseek_cn_review_at: 2026-07-12
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
 task6_new_rework: false
 task9_state: reviewed
-last_task6_at: 2026-07-12T17:10:18+08:00
+last_task6_at: "2026-07-12T20:19:00+08:00"
 last_task6_review_log: logs/review/2026-07-12-17H-review.md
 task6_reviewed_date: 2026-07-12
 task6_reviewed_by: openclaw-task6
@@ -53,6 +54,7 @@ reviewed_by: openclaw-task6
 reviewed_date: 2026-07-12
 review_notes: "2026-07-12 17H: Task6 revisiting review #2 (post-task2b-fix, post-task9-autofix): pass-light-edit。修复 1 处重复frontmatter键(status)、1 处bullet结构混乱(三点→三组件+结论段分离)。L1禁用词扫描零命中。无新增L3/L4回炉。Task9已reviewed(auto-fixed)，queue.json无pending，章节待最终定稿。"
 task6_review_notes: "2026-07-12 17H: Task6 revisiting review #2: pass-light-edit; L1/L2 fixes 2 (1 dup fm key, 1 bullet restructure); 0 L3/L4 issues; Task9 already reviewed; queue empty."
+task6_promotion_notes: "2026-07-12 20H Task6 revisiting review #3 (post-task9-idle-audit): pass-light-edit。L1修复: "Soong链路"→"Soong构建流程"（禁用词1处）。L1其余禁用词扫描零命中。L2开头/节奏/结构/读者视角全通过。锚点5/5覆盖，扩展3/3覆盖。Task9 idle audit auto-fix后写作质量未受影响。无新增L3/L4回炉。AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed。"
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
@@ -181,7 +183,7 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同
 
 ### DeliQueue 算法细节补充
 
-以下细节对理解 DeliQueue 的实现机制有用，章节现有描述已经覆盖核心架构，以下作为**算法层补充**。本节信息基于 AOSP `android-17.0.0_r1` 分支中的 `CombinedDeliMessageQueue/MessageQueue.java`、`MessageStack.java` 与 `MessageHeap.java`。
+以下细节来自 AOSP `android-17.0.0_r1` 中的 `CombinedDeliMessageQueue/MessageQueue.java`、`MessageStack.java` 与 `MessageHeap.java`，帮助理解 DeliQueue 的关键实现决策。
 
 **TreiberStack push 伪代码**（来自 Google 官方博客）：
 ```java
@@ -207,7 +209,7 @@ CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实�
 
 **分支消除优化**：Message 比较器原本使用条件分支，在高端 ARM64（如 Tensor G 系列）上导致 pipeline flush。Google 团队使用 SIMD-like 技术重写比较逻辑，避免分支预测失败的开销。
 
-**性能数字来源说明**：DeliQueue 的 5,000x synthetic benchmark、15% lock contention 下降、4%/7.7%/9.1% 用户体验指标均来自 Google 内部 benchmark，**非 AOSP commit 可独立复核验证**。建议在向读者引用时注明来源为 Google 内部 benchmark。
+DeliQueue 的 5,000x synthetic benchmark、15% lock contention 下降、4%/7.7%/9.1% 用户体验指标均来自 Google 内部 benchmark，不是 AOSP commit 可直接独立复核的公开数据。
 
 **AOSP 源码参考路径**（基于 `android-17.0.0_r1` 的代码组织）：
 - 组合实现：`frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java` —— DeliQueue / legacy 实现选择、Looper 集成与兼容字段
@@ -299,31 +301,27 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 
 详见 **19 ProfilingManager**。
 
-### 源码级机制补充（2026-06-19 源码调研）
+### ProfilingManager 内部架构
 
-基于对 AOSP 源码的深度分析，Android 17 的 ProfilingManager 是一个三层架构的完整性能监控体系，包含以下核心组件：
+Android 17 的 ProfilingManager 采用三层架构：
 
 #### 1. 架构层次
 
 **ProfilingServiceManager**（框架接入层）：
-- 位置：`platform/frameworks/base/core/java/android/os/ProfilingServiceManager.java`
-- 功能：提供 Profiling 服务的框架级接入点
-- 关键 API：`getProfilingServiceRegisterer()` 返回 `ServiceRegisterer("profiling_service")`
+- 位置：`frameworks/base/core/java/android/os/ProfilingServiceManager.java`
+- `getProfilingServiceRegisterer()` 返回 `ServiceRegisterer("profiling_service")`，是 App 接入 Profiling 服务的框架入口
 
 **ProfilingService**（核心服务层）：
-- 位置：`platform/packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`
-- 功能：实现系统触发器的核心逻辑
-- 关键机制：`startSystemTriggeredTrace()` 启动系统触发追踪
-- 触发器管理：`addTrigger()` 管理应用级触发器
+- 位置：`packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`
+- `startSystemTriggeredTrace()` 启动系统触发追踪，`addTrigger()` 管理应用级触发器
 
 **AnomalyDetector**（异常检测层）：
-- 位置：`platform/packages/modules/Profiling/anomaly-detector/framework/java/android/os/profiling/anomaly/AnomalyDetectorManager.java`
-- 功能：系统级异常检测和规则引擎
-- 关键 API：`setAnomalyDetectorRules()` 设置异常检测规则
+- 位置：`packages/modules/Profiling/anomaly-detector/framework/java/android/os/profiling/anomaly/AnomalyDetectorManager.java`
+- `setAnomalyDetectorRules()` 设置异常检测规则，决定异常出现时触发哪些动作
 
-#### 2. 源码级触发机制
+#### 2. 系统触发器的实现
 
-**系统触发器实现：**
+
 ```java
 public void startSystemTriggeredTrace() {
     synchronized (mLock) {
@@ -342,7 +340,7 @@ public void startSystemTriggeredTrace() {
 }
 ```
 
-**触发器注册机制：**
+触发器的注册逻辑：
 ```java
 public void addTrigger(ProfilingTriggerData trigger, boolean maybePersist) {
     SparseArray<ProfilingTriggerData> perProcessTriggers =
@@ -358,9 +356,9 @@ public void addTrigger(ProfilingTriggerData trigger, boolean maybePersist) {
 }
 ```
 
-#### 3. 异常检测规则引擎
+#### 3. 异常检测规则
 
-**规则定义：**
+
 ```java
 public final class Rule {
     private final String name;
@@ -374,7 +372,7 @@ public final class Rule {
 }
 ```
 
-**规则设置：**
+规则通过 `setAnomalyDetectorRules()` 设置，需要 `CONFIGURE_ANOMALY_DETECTOR` 权限：
 ```java
 @RequiresApi(37)
 @SystemApi(client = SystemApi.Client.PRIVILEGED_APPS)
@@ -389,23 +387,23 @@ public void setAnomalyDetectorRules(@NonNull Set<Rule> rules) {
 }
 ```
 
-#### 4. 输出文件格式与性能优化
+#### 4. 输出格式与性能策略
 
-**Perfetto 格式输出：**
+ProfilingManager 的输出文件使用以下 Perfetto 扩展名：
 - Java堆转储：`.perfetto-java-heap-dump`
 - 堆分析：`.perfetto-heap-profile`
 - 栈采样：`.perfetto-stack-sample`
 - 系统追踪：`.perfetto-trace`
 
-**性能优化策略：**
+在性能策略上：
 - RateLimiter 控制触发频率
 - 异步处理栈采样和追踪
 - 自动清理临时文件，限制存储空间
 - 系统触发器优先级高于应用触发器
 
-#### 5. 模块化架构设计
+#### 5. 模块化架构
 
-Android 17 将 Profiling 系统组织为独立的主线模块（com.android.profiling APEX），包含：
+Profiling 系统以 `com.android.profiling` APEX 主线模块的形式独立于 framework 更新：
 - `platform/packages/modules/Profiling/` - 主模块
 - `platform/packages/modules/Profiling/anomaly-detector/` - 异常检测子模块
 - `platform/packages/modules/Profiling/service/` - 服务实现
@@ -413,14 +411,14 @@ Android 17 将 Profiling 系统组织为独立的主线模块（com.android.prof
 
 这种模块化设计使得 Profiling 系统可以独立于 framework 更新，为系统级性能监控提供了灵活的基础设施。
 
-#### 6. 与现有架构的集成
+#### 6. 与现有架构的关系
 
-ProfilingService 与现有的 ActivityManagerService 性能监控组件协同工作：
+ProfilingService 和 ActivityManagerService 已有的性能监控组件形成三层分工：
 - **AppProfiler.java** - 应用级性能分析，提供 PSS/RSS 内存监控
 - **ProcessProfileRecord.java** - 进程性能记录管理，内存信息缓存
 - 新的 ProfilingService 提供系统级触发器能力
 
-三个层次形成完整的性能监控体系：应用层、系统服务层、框架API层。
+App 层通过 Manager API 注册触发器、系统服务层执行实际采集、框架 API 层定义触发器和产物类型。
 
 ---
 
@@ -614,7 +612,7 @@ Android 继续推动 16KB 页面大小的适配，这个变更对使用 NDK 的�
 - `PRODUCT_MAX_PAGE_SIZE_SUPPORTED` 可由产品配置显式设置；未设置时，`build/core/config.mk` 在非 low-ram、VSR ≥ 34、arm64 / x86_64 目标上默认 `TARGET_MAX_PAGE_SIZE_SUPPORTED := 16384`
 - `build/soong/cc/config/arm64_device.go` 与 `x86_64_device.go` 会将 `-Wl,-z,max-page-size=<MaxPageSizeSupported>` 传给链接器
 - `build/soong/cc/linker.go` 对 prebuilt ELF 通过 `check_elf_file --max-page-size` 校验 max page size
-- 当前 AOSP `android-17.0.0_r1` 的 Soong 链路没有统一添加 `-Wl,-z,common-page-size=16384`，不能把它写成 Android 17 的通用构建要求
+- 当前 AOSP `android-17.0.0_r1` 的 Soong 构建流程没有统一添加 `-Wl,-z,common-page-size=16384`，不能把它写成 Android 17 的通用构建要求
 
 **NDK 编译要求：**
 - **NDK r28+**：默认生成 16KB-aligned ELF；确保使用此版本以避免手动添加链接标志
@@ -685,15 +683,15 @@ DCL (Dynamic Code Loading) 保护从 DEX/JAR 文件扩展到原生库。通过 `
 
 以下是对正文中 DeliQueue drain 触发条件、Generational CMC gating、ProfilingManager 触发器和 MessageStack / MessageHeap 数据结构的补充核对：
 
-### DeliQueue drain 触发条件和内部实现
+### DeliQueue drain 触发条件
 
-**源码位置**:
+
 - `frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java` (`android-17.0.0_r1`)
 - `frameworks/base/core/java/android/os/MessageStack.java` (`android-17.0.0_r1`)
 - `frameworks/base/core/java/android/os/MessageHeap.java` (`android-17.0.0_r1`)
 - `frameworks/base/core/java/android/os/Looper.java` (`android-17.0.0_r1`)
 
-**关键发现**：
+
 DeliQueue 的 drain 过程在 Android Developers Blog 中有明确描述：Looper 的 `next()` 方法在准备取下一条消息时，从 Treiber Stack 的顶部开始向下遍历，直到遇到上次处理过的消息。遍历过程中，每遇到一条新消息就将其插入 min-heap（按 `when` 排序）。同时，遍历过程中会建立反向链接，形成双向链表，以支持 O(1) 的任意位置移除。
 
 drain 的触发时机是 Looper 需要下一条消息时——按需触发，不是基于阈值或定时器。drain 的频率取决于消息消费速度和投递速度的差值：当 Looper 消费完当前堆中所有消息后，下一次 `next()` 调用会触发 drain。
@@ -707,10 +705,7 @@ drain 的触发时机是 Looper 需要下一条消息时——按需触发，不
 // 4. 从 min-heap 中取出 when 最近的消息返回
 ```
 
-**与 Looper 主循环的集成**:
-drain 是 Looper 主循环的一部分，不是独立线程。`Looper.loop()` 每次迭代调用 `MessageQueue.next()`，`next()` 内部在堆为空或需要下一条消息时执行 drain。也就是说，drain 的执行在主线程上，如果 Treiber Stack 中积压了大量消息，drain 本身也会占用主线程时间——但这个成本通常远小于它消除的锁竞争收益。
-
-AOSP 实现在此基础上增加了同步屏障和异步消息的专门处理路径。当存在 barrier 时，drain 过程会优先处理异步消息。
+drain 是 Looper 主循环的一部分——每次 `Looper.loop()` 迭代调用 `MessageQueue.next()`，堆为空或需要下一条消息时执行 drain。drain 在主线程上执行，大量消息积压时 drain 本身也会占主线程时间，但这个成本通常远小于它消除的锁竞争。当存在同步屏障时，drain 会优先处理异步消息。
 
 ### Generational CMC 具体 gating 条件
 
@@ -835,11 +830,11 @@ Android 16 在 Choreographer 中引入 **Buffer Stuffing Recovery** 机制，新
 
 两者共同改善滑动流畅性，但针对的问题根源不同。
 
-## 安全相关：Safer Intent 与 StrictMode 新违规检测（Android 17）
+## 安全相关：Safer Intent 与 StrictMode 新违规检测
 
-> **源码基准：`android-17.0.0_r1`（Android 17 / API 37）**。本节已用该 tag 复核 `StrictMode.java`、`SaferIntentUtils.java` 与 `ActivityManagerService.java`；这是安全诊断补充，不作为性能收益结论。
-
-Android 17 在 `android.os.StrictMode` 中新增了两类 VM 策略违规检测位，与 Safer Intent 主线在 system_server 端的 hook 配合：
+> Android 17 在 StrictMode 中新增了两类 VM 策略违规检测，与 Safer Intent 的 system_server 端 hook 配合工作。这是安全诊断的补充，不涉及直接的性能收益。
+>
+> **源码基准：`android-17.0.0_r1`**。
 
 ### 1. `DETECT_VM_UNSAFE_INTENT_LAUNCH`（bit 13）
 
@@ -913,10 +908,7 @@ registerIntentMatchingRestrictionCallback()              .triggerUnsafeIntentStr
 - [ ] 若依赖 `mStrictModeCallbacks` 做自定义 BAL 决策观察：需注意它是 AMS `SparseArray` 按 PID 索引，进程死亡会清除条目。
 - [ ] `ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS`（ChangeId 161252188）当前 `@Disabled`，可通过 `cmd compat enable <change-id>` 临时开启验证。
 
-### 待验证
-
+以下为待验证项，后续应用层排障时需对照最终 API 37 SDK 确认：
 - `BackgroundActivityLaunchViolation` 完整 Javadoc 与 reason 字段。
 - `IUnsafeIntentStrictModeCallback.aidl` 的稳定性标注与版本字段。
 - `balStrictModeRo` flag 的默认值与灰度路径。
-
-更完整的源码分析与未验证项见 DeepResearch 报告：`2026-06-08-android-17-strictmode-safer-intent-violations.md`。

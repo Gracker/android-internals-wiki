@@ -1,8 +1,9 @@
 ---
+
 title: "RenderEffect 与 RuntimeShader 性能实践"
 chapter: "22.10"
 section: "22.10"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-12"
@@ -13,11 +14,11 @@ related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
-pipeline_stage: task6_pending
-task6_state: revisiting
-last_task6_at: "2026-06-03T03:06:00+08:00"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+last_task6_at: "2026-07-12T20:19:00+08:00"
 task6_result: pass-light-edit
-reviewed_date: "2026-06-03"
+reviewed_date: 2026-07-12
 reviewed_by: openclaw-task6
 task9_state: reviewed
 last_task6_review_log: "logs/review/2026-06-03-03-review.md"
@@ -71,6 +72,7 @@ last_task9_audit_result: "auto-fixed"
 last_task9_audit_at: "2026-07-12T18:24:52+08:00"
 last_task9_autofix_at: "2026-07-12"
 last_task9_audit_notes: "idle audit auto-fix: 将源码主线锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1；复核 RenderEffect/RuntimeShader/View/RenderNode 在 Android 17 下路径与关键 API 仍成立；章节回到 Task6 复审。"
+task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-audit): pass-light-edit。L1禁用词扫描零命中。L2开头/节奏/结构/读者视角全通过。锚点6/6覆盖，扩展3/3覆盖。Task9 idle audit auto-fix（源码锚点更新为android-17.0.0_r1）后写作质量未受影响。无新增L3/L4回炉。AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=clear。"
 ---
 
 # 22.10 RenderEffect 与 RuntimeShader 性能实践
