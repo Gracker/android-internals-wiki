@@ -64,5 +64,47 @@
   ],
   "notes": "闲时抽检发现 P0/P1 问题，章节状态已更新为 task9_result: pending，pipeline_stage: task6_pending，需 Task6 复审",
   "completed_at": "2026-07-12T14:53:29+08:00",
-  "completed_by": "task2b-main"
+  "completed_by": "task2b-main",
+  "pending": [
+    {
+      "section": "ch04-memory",
+      "section_title": "内存管理",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026-07/android-17-performance-scheduler-memory-management"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 系统性能优化深度解析：调度器与内存管理革命 — Android 17 带来了系统调度的革命性改进，通过基于机器学习的用户行为预测算法，实现了应用启动时间平均减少30%。新调度器能够动态识别不同应用类型，为前台交互应用分配更多CPU资源，同时优化后台",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-13T05:30:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch16-aosp",
+      "section_title": "AOSP源码",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7650074080125599790"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "现代Android官方为什么更推荐Repository暴露suspend fun — 从结构化并发角度论证 Repository 应暴露 suspend fun 而非内部 launch。Repository 内部 launch 会剥夺调用方的生命周期控制权、打断异常传播链、削弱取消能力",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-13T05:30:00",
+      "status": "pending"
+    }
+  ]
 }
