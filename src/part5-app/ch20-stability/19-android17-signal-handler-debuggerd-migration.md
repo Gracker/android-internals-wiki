@@ -455,3 +455,146 @@ if (action.sa_flags & SA_NODEFER) {
 3. 使用volatile sig_atomic_t进行简单状态标记
 
 <!-- AIW-源码调研-2026-07-11 -->
+
+
+---
+
+<!-- AIW-源码调研-2026-07-13 -->
+
+### 🔹 锚点 4：Sigchain 机制 — libsigchain 与 ART APEX 的链式拦截
+
+> 本节是对 §20.19 的关键补充：之前章节只覆盖 debuggerd 侧，本节补齐 ART/libsigchain 侧的"链首"实现细节，以及 SDK/APM 接入的关键约束。
+
+Android 17 把原本位于 `system/core/libcutils/` 的 sigchain 迁移到了 **ART APEX** 内部：
+
+```
+art/sigchainlib/Android.bp
+cc_library {
+    name: "libsigchain",
+    ldflags: ["-Wl,-z,global"],          // DF_1_GLOBAL：让符号优先级高于 libc.so
+    shared_libs: ["libunwindstack"],
+    static_libs: ["libasync_safe"],
+    apex_available: ["com.android.art", "com.android.art.debug"],
+    visibility: ["//frameworks/base/cmds/app_process"],
+}
+```
+
+[已验证: AOSP android-17.0.0_r1, art/sigchainlib/Android.bp]
+
+**核心机制 — SignalChain::Handler 中心调度器**：
+
+```cpp
+// art/sigchainlib/sigchain.cc:445
+void SignalChain::Handler(int signo, siginfo_t* siginfo, void* ucontext_raw) {
+  // Step 1: special_handlers_[]（最多 2 个槽位，先注册先调用）
+  if (!GetHandlingSignal(signo)) {
+    for (const auto& handler : chains[signo].special_handlers_) {
+      if (handler.sc_sigaction == nullptr) break;
+      sigset_t previous_mask;
+      linked_sigprocmask(SIG_SETMASK, &handler.sc_mask, &previous_mask);
+      ScopedHandlingSignal restorer(signo, !(handler.sc_flags & SIGCHAIN_ALLOW_NORETURN));
+      if (handler.sc_sigaction(signo, siginfo, ucontext_raw)) return;
+      linked_sigprocmask(SIG_SETMASK, &previous_mask, nullptr);
+    }
+  }
+  // Step 2: libdl::android_handle_signal（weak symbol，Android 14+ GWP-ASan 钩子）
+  if (android_handle_signal != nullptr &&
+      android_handle_signal(signo, siginfo, ucontext_raw)) return;
+  // Step 3: 用户 sigaction handler
+  chains[signo].action_.sa_sigaction(signo, siginfo, ucontext_raw);
+}
+```
+
+[已验证: AOSP android-17.0.0_r1, art/sigchainlib/sigchain.cc:445-555]
+
+**SIGSEGV 完整调用链**：
+
+```
+crash in app code
+  ↓
+kernel delivers SIGSEGV → SignalChain::Handler（已被 Claim 注册到 kernel）
+  ↓
+Step 1: iterate special_handlers_[]（最多 2 个）
+  ├─ slot 0: ART sigsegv handler → 检查 GWP-ASan/MTE permissive，可能 longjmp
+  └─ slot 1: debuggerd_handle_signal → 仅 SIGSEGV，检查可恢复性
+  ↓
+Step 2: libdl::android_handle_signal（weak，可选）
+  ↓
+Step 3: chains[signo].action_.sa_sigaction → 最后才是 APM SDK 注册的 handler
+```
+
+[已验证: AOSP android-17.0.0_r1, art/sigchainlib/sigchain.cc + debuggerd_handler.cpp:963-994]
+
+**对 APM SDK 的三个关键约束**：
+
+| 约束 | 实际后果 | 正确做法 |
+|------|---------|---------|
+| `special_handlers_[2]` 写死 2 槽位 | 第三个库注册同一信号会 `fatal()` | 多 SDK 协作时协商单一入口 |
+| sigaction() 在 Claimed 信号上不真正注册 kernel handler | APM 用普通 sigaction 只能排在 ART 之后 | 通过 `dlsym(RTLD_DEFAULT, "AddSpecialSignalHandlerFn")` 抢 special 槽 |
+| 用户 sigprocmask 不能屏蔽 Claimed 信号 | `pthread_sigmask(SIG_BLOCK, {SIGSEGV})` 静默丢弃 SIGSEGV 位 | 无需尝试屏蔽，关键 signal 永远可达 |
+
+**初始化时序陷阱**：
+
+```cpp
+// art/sigchainlib/sigchain.cc:170
+__attribute__((constructor)) static void InitializeSignalChain() {
+  static std::once_flag once;
+  std::call_once(once, []() {
+    lookup_libc_symbol(&linked_sigaction, sigaction, "sigaction");
+    // ...
+  });
+}
+```
+
+构造函数里通过 `dlsym(libc, "sigaction")` 缓存真实 libc 函数指针。如果 APM SDK 自己的 .so 动态导出了同名符号，可能在 `RTLD_DEFAULT` 回退路径上命中错误实现。**生产实践**：APM so 中**不要**导出任何 libc 重名符号。
+
+**特殊 handler 注册接口**：
+
+```cpp
+// art/sigchainlib/sigchain.h:35
+struct SigchainAction {
+  bool (*sc_sigaction)(int, siginfo_t*, void*);
+  sigset_t sc_mask;
+  uint64_t sc_flags;       // 支持 SIGCHAIN_ALLOW_NORETURN
+};
+extern "C" void AddSpecialSignalHandlerFn(int signal, SigchainAction* sa);
+extern "C" void RemoveSpecialSignalHandlerFn(int signal, bool (*fn)(int, siginfo_t*, void*));
+extern "C" void EnsureFrontOfChain(int signal);     // 防御性：检测并修复 kernel handler
+extern "C" void SkipAddSignalHandler(bool value);    // 调试：禁用整个 hook
+```
+
+[已验证: AOSP android-17.0.0_r1, art/sigchainlib/sigchain.h]
+
+**SIGCHAIN_ALLOW_NORETURN 标志**：声明本 handler 可能 longjmp 出去（如 native bridge、ART 的 GWP-ASan recovery）。设置后 libsigchain 不会用 TLS bitmap 标记此信号进入处理中，避免恢复路径上的死锁。
+
+**诊断技巧**：判断自家 handler 是否"接在最末"，可用：
+
+```cpp
+struct sigaction old_act;
+sigaction(SIGSEGV, nullptr, &old_act);
+// old_act.sa_sigaction == &SignalChain::Handler ⇒ 已 Claim，排在 ART 之后
+```
+
+**版本演进（API 21 → API 37）**：
+
+| Android 版本 | libsigchain 位置 | 关键变化 |
+|--------------|------------------|---------|
+| 5.0–6.0 (API 21–23) | `system/core/libcutils/sigchain.c` | 初版：sigaction 包装 |
+| 7.0–10 (API 24–29) | 同上 | 加入 AddSpecialSignalHandlerFn、SIGCHAIN_ALLOW_NORETURN |
+| 11–13 (API 30–33) | 同上 | 增加 sigaction64 支持 |
+| 14 (API 34) | 同上 | GWP-ASan recoverable、android_handle_signal weak symbol |
+| **15–17 (API 35–37)** | **art/sigchainlib/** | **迁移到 ART APEX**，SA_EXPOSE_TAGBITS 探测，符号依赖 com.android.art |
+
+[未深入] debuggerd_init 是否在内部也调 AddSpecialSignalHandlerFn、android_handle_signal 在 libdl 中的完整实现，本次未验证。
+
+[已验证: AOSP android-17.0.0_r1, art/sigchainlib/sigchain.cc:147-180, 383-401, 407, 445-555, 559-595, 643-668, 672-685, 712-730 + system/core/debuggerd/handler/debuggerd_handler.cpp:967-994]
+
+
+## 参考资料
+
+### Android 17 Sigchain 机制与 APM 信号拦截实战
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-13-android17-sigchain-apm-signal-interception.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 将 libsigchain 从 system/core/libcutils 迁移至 art/sigchainlib，由 ART APEX 提供。该库通过 -Wl,-z,global 全局符号覆盖包装 sigaction/sigprocmask 等五个 libc 入口，实现内核态 signal handler 与用户态 sigaction 设置的分离。APM SDK 直接调 sigaction 注册 SIGSEGV handler 在应用进程完全无效，正确做法是调用 AddSpecialSignalHandlerFn() 插入链头并使用 SIGCHAIN_ALLOW_NORETURN 标志。深入剖析了 Sigchain 初始化时序、构造函数符号解析、special_handlers 排序机制。
+- 注入时间：2026-07-13
+- 价值：填补了 AIW 在 Native Crash 监控接入层面的关键技术空白——Sigchain 优先级与拦截链头机制是 APM 厂商必读

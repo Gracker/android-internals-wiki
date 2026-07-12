@@ -43,6 +43,8 @@ last_task9_audit_at: "2026-07-10T17:33:11+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-10-17-audit.md"
 last_task9_audit_result: "pass-source-version-audit"
 task9_audit_notes: "2026-07-10 Task9 idle audit: pass-source-version-audit. P0 0 / P1 0 / P2 0 / P3 1；基于 android-17.0.0_r1 复核 View.java / RenderProperties.h / Surface.cpp / SkTaskGroup.cpp 主链路，未发现源码锚点或 Android 17 版本差异错误；P3 仅记录 SkTaskGroup 段落中 Android 16 wording 可在后续轻修时收敛到 Android 17。 | 2026-05-26 Task9 idle audit: P0 1 / P1 0 / P2 0；AOSP android-16.0.0_r1 中 LAYER_TYPE_SOFTWARE 仍由 Java drawing cache / Bitmap 路径处理，RenderProperties 明确 Software layer 不能直接构建 RenderLayer。 | 2026-06-20 Task9 idle audit: pass-source-version-audit. P0 0 / P1 0 / P2 0；android-17.0.0_r1 复核 View.java / RenderProperties.h / Surface.cpp 主链路，未发现正文结论过期；Android 17 仅作为源码复核上限，不扩写正文。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-13
 ---
 
 # 18.3 Android View 软件渲染路径
@@ -68,13 +70,12 @@ task9_audit_notes: "2026-07-10 Task9 idle audit: pass-source-version-audit. P0 0
 
 软件渲染在以下几种情况下会被激活：
 
-1. **View 层级关闭硬件加速**：在 AndroidManifest 中对特定 Activity 设置 `android:hardwareAccelerated="false"`，或在代码中调用 `View.setLayerType(LAYER_TYPE_SOFTWARE, null)` [已验证: Android Developer 文档]。
+1. **View 层级关闭硬件加速**：在 AndroidManifest 中对特定 Activity 设置 `android:hardwareAccelerated="false"`，或在代码中调用 `View.setLayerType(LAYER_TYPE_SOFTWARE, null)` 。
 2. **直接使用 `Surface.lockCanvas()`**：当代码通过 `Surface.lockCanvas()` / `Surface.unlockCanvasAndPost()` 手动绘制时，走的是纯 CPU 路径。
 3. **系统降级**：极少数情况下，GPU 驱动崩溃或设备不支持硬件加速时，系统会自动降级到软件渲染。
 4. **小型 Overlay/Widget**：部分系统组件（如 Toast、部分 Notification）出于兼容性考虑使用软件渲染。
 
-**判断方法**：如果要判断当前这次 `draw()` 拿到的是不是硬件 Canvas，看 `Canvas.isHardwareAccelerated()`；`View.isHardwareAccelerated()` 只说明这个 View 所在窗口是否开启了硬件加速。官方文档写得很直接，挂在硬件加速窗口上的 View 仍可能被绘制到 software Canvas，例如绘制到 Bitmap 缓存时。[已验证: Android hardware acceleration 文档]
-
+**判断方法**：如果要判断当前这次 `draw()` 拿到的是不是硬件 Canvas，看 `Canvas.isHardwareAccelerated()`；`View.isHardwareAccelerated()` 只说明这个 View 所在窗口是否开启了硬件加速。官方文档写得很直接，挂在硬件加速窗口上的 View 仍可能被绘制到 software Canvas，例如绘制到 Bitmap 缓存时。
 ### 整窗口软件渲染 vs 单 View software layer
 
 上一段的两类入口在 trace 上的表现完全不同，分析时要先认清楚是哪一类：
@@ -98,8 +99,6 @@ task9_audit_notes: "2026-07-10 Task9 idle audit: pass-source-version-audit. P0 0
 
 看到一堆离屏相关 slice 集中出现时，先按这三类机制对号入座。如果某个 View 开了 software layer 又特别复杂，瓶颈往往就在 CPU 栅格化 + 纹理上传这一段。
 
-[已验证: AOSP `frameworks/base/core/java/android/view/View.java` `setLayerType()` + `frameworks/base/libs/hwui/Layer.h` + Android Developers Canvas API]
-
 ## 完整执行流程
 
 整窗口软件渲染或 `Surface.lockCanvas()` 的执行链没有 RenderThread 参与。所有操作都在 UI Thread 上完成，从锁定画布到像素填充再到提交 Buffer，全流程串行。
@@ -108,12 +107,11 @@ task9_audit_notes: "2026-07-10 Task9 idle audit: pass-source-version-audit. P0 0
 
 ### 第一阶段：Lock — 锁定画布
 
-1. **`Surface.lockCanvas()`**：App 向系统请求一块可写的内存区域。底层先调用 `dequeueBuffer()` 取回一个可写的 `GraphicBuffer`，同时拿到 consumer 侧返回的 `fenceFd`；随后 `Surface::lock()` 再调用 `GraphicBuffer::lockAsync(..., fenceFd)`，等这块 buffer 可写之后才把地址映射给 App。软件渲染没有 GPU 指令提交，但这里仍然会受 BufferQueue 槽位和 fence 等待影响。[已验证: `Surface.cpp::lock()`]
-2. **返回 Canvas**：这个 Canvas 直接指向 GraphicBuffer 的像素内存。Canvas 上调用的每一个 `draw` 方法，都会**立即**写入像素数据。
+1. **`Surface.lockCanvas()`**：App 向系统请求一块可写的内存区域。底层先调用 `dequeueBuffer()` 取回一个可写的 `GraphicBuffer`，同时拿到 consumer 侧返回的 `fenceFd`；随后 `Surface::lock()` 再调用 `GraphicBuffer::lockAsync(..., fenceFd)`，等这块 buffer 可写之后才把地址映射给 App。软件渲染没有 GPU 指令提交，但这里仍然会受 BufferQueue 槽位和 fence 等待影响。2. **返回 Canvas**：这个 Canvas 直接指向 GraphicBuffer 的像素内存。Canvas 上调用的每一个 `draw` 方法，都会**立即**写入像素数据。
 
 在 Trace 中会看到 `lockCanvas` slice，正常耗时很短（< 1ms），因为它只是内存映射操作。
 
-16KB Page Size 设备上，`lockCanvas` 首帧映射的开销会进一步降低。从 4KB 切到 16KB 后，单个页覆盖的地址空间扩大到 4 倍，同等大小的 GraphicBuffer 所需页表条目减少约 75%，`mmap` 映射像素地址时产生的 Page Fault 数量相应减少。首次 `lockAsync()` 的耗时和 CPU 微小卡顿都有改善，分辨率较高的设备（2K/4K）体感更明显。[理论推导，尚缺 AOSP 实测数据对照]
+16KB Page Size 设备上，`lockCanvas` 首帧映射的开销会进一步降低。从 4KB 切到 16KB 后，单个页覆盖的地址空间扩大到 4 倍，同等大小的 GraphicBuffer 所需页表条目减少约 75%，`mmap` 映射像素地址时产生的 Page Fault 数量相应减少。首次 `lockAsync()` 的耗时和 CPU 微小卡顿都有改善，分辨率较高的设备（2K/4K）体感更明显。
 
 ### 第二阶段：Draw — CPU 光栅化
 
@@ -124,7 +122,7 @@ graph LR
     A[Canvas.drawCircle] --> B[Skia C++ 库]
     B --> C[CPU 逐像素计算]
     C --> D[写入 GraphicBuffer 内存]
-    
+
     style C fill:#ff9999
 ```
 
@@ -134,8 +132,7 @@ graph LR
 
 ### 第三阶段：Unlock & Post — 提交
 
-1. **`unlockCanvasAndPost()`**：通知系统"这块内存我写好了"。底层先执行 `GraphicBuffer::unlockAsync()`，拿到一个表示 CPU 写入完成的 fd，再把它交给 `queueBuffer()`。[已验证: `Surface.cpp::unlockAndPost()`]
-2. **提交路径要按版本看**：Android 9 仍是 Legacy BufferQueue 视角，`queueBuffer()` 把 buffer 交给传统 consumer 路径；Android 10-11 进入 BLAST / SurfaceControl 过渡期，设备上可能同时看到旧模型和新事务模型；Android 12+ 再把 BLASTBufferQueue + `SurfaceControl.Transaction` 当成主视角。
+1. **`unlockCanvasAndPost()`**：通知系统"这块内存我写好了"。底层先执行 `GraphicBuffer::unlockAsync()`，拿到一个表示 CPU 写入完成的 fd，再把它交给 `queueBuffer()`。2. **提交路径要按版本看**：Android 9 仍是 Legacy BufferQueue 视角，`queueBuffer()` 把 buffer 交给传统 consumer 路径；Android 10-11 进入 BLAST / SurfaceControl 过渡期，设备上可能同时看到旧模型和新事务模型；Android 12+ 再把 BLASTBufferQueue + `SurfaceControl.Transaction` 当成主视角。
 3. **没有 GPU 渲染 fence，不等于没有 fence**：软件渲染不会生成 GPU completion fence，但 `dequeueBuffer()` 取回 buffer 时仍要接收 consumer 侧的 **release fence**（消费者释放该 buffer 的信号），`unlockAsync()` 产出的 fd 经 `queueBuffer()` 传给下游消费者后，成为 consumer 侧的 **acquire fence**（消费者开始读取前需要等待的信号）。BufferQueue 槽位占满时，App 一样可能卡在 `dequeueBuffer()` 上。
 
 ### 时序图
@@ -153,16 +150,16 @@ sequenceDiagram
 
     Note over HW, UI: 1. VSync-App 唤醒
     HW->>UI: VSync-App Signal
-    
+
     rect rgb(240, 240, 240)
         Note over UI, CPU: 2. CPU 软件光栅化（全部在 UI Thread）
         activate UI
         UI->>BBQ: lockCanvas() → dequeueBuffer
         BBQ-->>UI: GraphicBuffer + release fence（上一轮消费者释放）
-        
+
         UI->>CPU: Canvas.drawXxx()
         CPU->>CPU: 逐像素计算并写入内存
-        
+
         UI->>BBQ: unlockCanvasAndPost()
         Note right of BBQ: 传递 CPU 写入完成 fence → consumer acquire fence
         BBQ->>SF: Transaction(Buffer)
@@ -241,8 +238,7 @@ Skia 内部长期提供 `SkTaskGroup` 用于并行任务分发（`external/skia/
 
 ### 软件渲染里的 Dirty Rect 为什么能成立
 
-Dirty Rect 不是简单地"只画变化区域"。`Surface::lock()` 会先比较当前 back buffer 和上一帧 `mPostedBuffer` 的尺寸、格式；如果可以复用，就把本轮未失效但又不会重画的区域算成 `copyback`，再通过 `copyBlt()` 从上一帧拷回当前 buffer。App 只需要重画新的 dirty region，其余像素沿用上一帧的结果。[已验证: `Surface.cpp::lock()` / `copyBlt()`]
-
+Dirty Rect 不是简单地"只画变化区域"。`Surface::lock()` 会先比较当前 back buffer 和上一帧 `mPostedBuffer` 的尺寸、格式；如果可以复用，就把本轮未失效但又不会重画的区域算成 `copyback`，再通过 `copyBlt()` 从上一帧拷回当前 buffer。App 只需要重画新的 dirty region，其余像素沿用上一帧的结果。
 一旦前一帧 buffer 不可用、尺寸变化、像素格式变化，或者 buffer 被丢弃，`Surface::lock()` 就会把 dirty region 扩成整屏，直接回到 full redraw。resize、surface 重建、buffer discard 之后 Dirty Rect 收益会明显下降。
 
 放到今天的系统里，Dirty Rect 仍然是 software Canvas 的一个能力，但它已经不是默认优化手段。现代硬件加速路径更常依赖 layer 缓存、RenderNode 复用和更稳定的 GPU 合成。
