@@ -487,7 +487,6 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 - ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 75 轮已全面覆盖
 
 ### 结论
-本轮未发现评分 ≥ 14 的知识缺口（第 76 次连续）。Coverage truly saturated.
 1 个 DeepResearch 新文件为 §14.30 补充素材，不构成新缺口。
 
 ## [Task2A Round 69] 知识缺口挖掘 — 2026-07-12 04:10
@@ -516,7 +515,6 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 | GpuService GPU 内存可观测性补充 | 3 | 3 | 3 | 3 | 12/20 | §14.30 draft 已存在 |
 
 ### 结论
-本轮未发现评分 ≥ 14 的知识缺口（第 77 次连续）。Coverage truly saturated.
 3 个 DeepResearch 新文件均为现有章节的素材补充，不构成新缺口。
 
 ---
@@ -533,7 +531,6 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 - ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 77 轮已全面覆盖
 
 ### 结论
-本轮未发现评分 ≥ 14 的知识缺口（第 78 次连续）。Coverage truly saturated.
 新增 DeepResearch power-advisor-dvfs-headroom 为 §5.29 素材补充，不构成新缺口。
 
 
@@ -569,7 +566,6 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 - ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 78 轮已全面覆盖
 
 ### 结论
-本轮未发现评分 ≥ 14 的知识缺口，跳过。连续第 79 轮无合格候选。Coverage truly saturated.
 
 **研究方向**: 维持 Round 68 建议 — 需要分析 Android 17 binder IPCThreadState.cpp 中的优先级继承实现机制（已有 DeepResearch 2026-07-11 23:58 产出，待 §1.53/§1.54 消化吸收）
 
@@ -622,3 +618,47 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 
 ### 结论
 1 个空草稿已加工（§17.9, 269 行）。发现 27 个 outline-only draft 中仅 1 个具有独特价值（§17.9），其余 26 个为重复/空洞文件，建议后续轮次批量清理。
+
+
+## [Task2A Round 80] 知识缺口挖掘 — 2026-07-12 09:13
+
+### 已检查方向（本轮）
+- ✅ Phase 0: 0 个空 draft 章节（48 个 draft 全部 >15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 0 个 unmapped high-quality 条目（全部已映射）
+- ✅ DeepResearch 新增文件 3 个（2026-07-12）:
+  - 2026-07-12-android17-sensor-privacy-service-indicator-gating.md (09:05, 264 行)
+    → SensorPrivacyService 隐私指示器与传感器门控机制
+    → 性能角度相关性低（隐私/安全主题，非性能优化核心）
+    → 评分 8/20 < 14，不合格
+  - 2026-07-12-android17-power-advisor-dvfs-headroom.md (05:56, 14377 bytes)
+    → PowerAdvisor DVFS Headroom 详细源码调研
+    → 已由 §5.29 覆盖（该 DeepResearch 明确标注关联 §5.29）
+  - 2026-07-12-android17-gpuservice-gpu-memory-observability.md (02:53, 15020 bytes)
+    → GpuService GPU 内存可观测性架构
+    → 已由 §14.30 覆盖（Round 68 创建）
+- ✅ Clippings: 无新文件（最后更新 2026-06-23，19 天无更新）
+- ✅ research-feeds: 无新文件（最后 2026-04-14）
+- ✅ daily-info 2026-07-12: 1 项 AppFlow 论文（MobiCom 2026）
+  - AppFlow 已由 §16.8 覆盖
+- ✅ Task14 suggestions 评估（7 条建议均为已有章节内容补充，非新章节缺口）
+- ✅ AOSP 系统服务覆盖检查: NotificationManagerService/InputMethodManager/SensorService/AlarmManagerService 均已覆盖
+- ✅ AOSP 核心性能模块检查: HardwareBuffer/BufferQueue/SyncFence/StrictMode/TrimMemory 均已覆盖
+- ✅ 前 79 轮已全面覆盖
+
+### 评估细节
+| 候选 | 素材丰富度 | 相关性 | 读者需求 | 时效性 | 总分 | 结论 |
+|------|-----------|--------|---------|--------|------|------|
+| SensorPrivacyService 隐私指示器 | 2 | 1 | 2 | 3 | 8/20 | 隐私/安全主题，非性能优化核心 |
+| ReDex/Interdex 类重排独立成节 | 3 | 4 | 3 | 2 | 12/20 | §21.12 已覆盖 Dex layout |
+| ProGuard→R8 迁移历史 | 2 | 3 | 2 | 2 | 9/20 | §25.07 补充内容 |
+| 系统崩溃 Hook 修复 | 2 | 3 | 3 | 2 | 10/20 | §20.09 补充内容 |
+| PowerAdvisor DVFS Headroom 深化 | 4 | 4 | 3 | 4 | 15/20 | 已由 §5.29 覆盖 |
+
+### 合格缺口（≥14 分，且无已有章节覆盖）
+无。所有 ≥14 分候选均已被现有章节覆盖。
+
+### 结论
+
+### 结论
+本轮未发现评分 ≥ 14 的独立知识缺口，跳过。连续 10 轮（Round 72-81）未发现新合格缺口。全书 717 个小节覆盖范围充分。

@@ -9,3 +9,52 @@
 - **位置**：Android 17 与论文实验平台对比章节
 - **问题**：未充分说明 AppFlow 论文基于 Android 15 实验平台，而本节分析针对 Android 17，可能造成读者误认论文结果直接适用
 - **建议**：增加版本差异说明段落，明确 PSI 阈值、MGLRU 状态机、kill_heaviest_task 等关键组件在 Android 17 的变化
+
+## [Task14 参考书扫描] ch25.7 R8 与资源优化 — 2026-07-12
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md]
+- **建议补充**：ProGuard 完整处理流水线（shrink→optimize→obfuscate→preverify 四阶段），以及 ProGuard→d8→R8 的演进历史。现有 ch25.7 聚焦 R8 full mode，缺少 ProGuard 时代遗留项目的迁移路径和 d8 作为中间过渡的技术决策点
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch21 启动优化 — 2026-07-12
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md]
+- **建议补充**：ReDex Interdex（类重排/文件重排优化冷启动 page fault）和 Oatmeal（100ms 内生成解释执行 Odex，解决 Assets ClassesN.dex 首次 Odex 耗时）的原理和实战效果。参考书提供了微信 Tinker 团队的实际使用经验
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch20.8 崩溃聚合与归因分析 — 2026-07-12
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md]
+- **建议补充**：系统崩溃的系统性解决策略（查找原因→尝试规避→Hook 解决），包含 Toast BadTokenException 的 Hook 点定位实例（代理 mTN handler）。现有 ch20.8 侧重聚合算法，缺少系统崩溃 Hook 修复的实操路径
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch20.9 稳定性治理案例集 — 2026-07-12
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 3.md]
+- **建议补充**：TimeoutException（BinderProxy.finalize() timed out after 10 seconds）的完整解决路径：FinalizerWatchdogDaemon 机制分析→stop() 方法在 Android 6.0 的线程同步问题→替代 Hook 点发现。这是经典的系统崩溃黑科技案例
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch26.21 编译期字节码插桩与监控自动化 — 2026-07-12
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md]
+- **建议补充**：AspectJ 的全面对比（成熟稳定/使用简单 vs 切入点固定/正则匹配/性能较低），以及 ASM 选择 Visitor 模式的技术决策依据。现有 ch26.21 聚焦 ASM 实战，补充 AspectJ 作为选型对比可增强完整性
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch26.21 编译期字节码插桩与监控自动化 — 2026-07-12
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md]
+- **建议补充**：Dalvik 字节码直接操作工具生态（ASMDEX、Dexter、Dexmaker、Soot Jimple 三地址码转换），现有 ch26.21 专注 Java 字节码层面的 ASM 操作，补充 Dalvik 字节码层面工具可覆盖逆向/Dex 修改场景
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] ch26.21 编译期字节码插桩与监控自动化 — 2026-07-12
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 30.md]
+- **建议补充**：Java 字节码 vs Dalvik 字节码格式差异的系统对比（栈实现 vs 寄存器实现、Class 单独常量池 vs Dex 共享常量池、指令精简优化数据）。现有 ch26.21 可增加一段字节码格式背景知识补充
+- **参考书覆盖深度**：中等
+
+## [Task2A Round 80] 已检查方向 — 2026-07-12 09:13
+- SensorPrivacyService → 隐私主题（8/20）
+- ReDex/Oatmeal → §21.12 已覆盖（12/20）
+- ProGuard→R8 → §25.07 补充（9/20）
+- 系统崩溃 Hook → §20.09 补充（10/20）
+- AOSP 核心服务/模块 → 已覆盖
