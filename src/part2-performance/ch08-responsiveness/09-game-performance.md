@@ -7,7 +7,7 @@ status: "finalized"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-27"
+last_verified: "2026-07-13""2026-07-13"
 last_verified_against: "Android Developers Game SDK Performance Tuner + GameActivity text input docs, AOSP GameManagerService, Perfetto gpu.renderstages proto"
 confidence: medium
 sources:
@@ -62,7 +62,7 @@ last_task2b_at: "2026-05-09T08:43:58+08:00"
 review_notes: "2026-05-11 task6 review (revisiting→reviewed): pass-light-edit。L1/L2 修正 4 处，L3/L4 问题 6 个写入 queue.json。"
 last_task6_at: "2026-06-05T09:06:00+08:00"
 last_task6_audit: "2026-07-12"
-last_task2b_lite_at: 2026-06-05
+last_task2b_lite_at: 2026-07-13
 task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1 修正 2 处否定-纠正结构（黑盒式句式、Game Mode 万能开关句式）；无新增 B 类问题。task9_result=auto-fixed，queue 无 pending，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-05"
 last_task9_review_log: logs/deep-review/2026-06-05-07-deep-review.md
@@ -211,7 +211,7 @@ Game Mode 给游戏的第一手信息是用户偏好，不直接控制 CPU 亲�
 
 OEM 还可以在这三层之外叠加自己的实现，例如 downscale、FPS override、ANGLE 驱动替换，或者更激进的频率策略。但这些都属于设备配置，不是 `GameMode` / `GameState` 默认保证的行为。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java]
 
 ## Game State API：细粒度的状态通信
 
@@ -255,7 +255,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 把这几套机制拆开看，职责会清楚很多。
 
 1. `GameManager#getGameMode()` 读取用户偏好，决定游戏自己的画质、刷新率和功耗档位。
-2. `GameManager#setGameState()` 上报当前场景。AOSP android-16.0.0_r1 中能直接看到的系统动作主要是 statsd 记录，以及 PERFORMANCE 模式下 `isLoading=true` 时的 `Mode.GAME_LOADING` boost。
+2. `GameManager#setGameState()` 上报当前场景。AOSP android-17.0.0_r1 中能直接看到的系统动作主要是 statsd 记录，以及 PERFORMANCE 模式下 `isLoading=true` 时的 `Mode.GAME_LOADING` boost。
 3. ADPF `PerformanceHintManager` / Thermal API 负责逐帧预算和热反馈，它解决的是“这一帧要多少 CPU / GPU 时间”。
 4. OEM interventions、ANGLE、downscale、FPS override 是另一套设备配置。游戏声明自己支持 Game Mode 后，平台会优先尊重游戏自己的优化；如果还需要细粒度干预，再单独看 interventions 配置。
 
@@ -551,7 +551,7 @@ OEM 的游戏面板通常会把多种动作绑在一起，例如画质降档、F
 
 ## ADPF Hint Session 与 Kotlin Coroutine 线程迁移
 
-> 这一节把 §5.9 ADPF 的讨论延伸到 Kotlin 协程场景。基于 Android Developers adaptability codelab、NDK Performance Hint API 文档和 AOSP android-16.0.0_r1 `PerformanceHintManager` 复核。
+> 这一节把 §5.9 ADPF 的讨论延伸到 Kotlin 协程场景。基于 Android Developers adaptability codelab、NDK Performance Hint API 文档和 AOSP android-17.0.0_r1 `PerformanceHintManager` 复核。
 
 ### 核心约束：Hint Session 基于线程 TID，而非协程
 
