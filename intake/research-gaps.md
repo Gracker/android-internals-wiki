@@ -972,3 +972,21 @@ Task14 建议箱中的候选均指向已有章节的内容补充（Task 2B 职�
 
 ### 结论
 连续第 94 轮未发现评分 ≥ 14 的知识缺口。所有素材源均处于停滞状态。全书 717 个小节，覆盖已饱和。
+
+### 已检查方向（本轮 Round 95 — 2026-07-13 06:08）
+- ✅ Phase 0: 0 个空 draft 章节（47 drafts 全部 >15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 0 个条目（空）
+- ✅ DeepResearch: 4 个文件（2026-07-12），Round 94 已全部评估：
+  - `binder-priority-inheritance-ipcthreadstate` → 已有 §1.48/§1.53/§1.44 三章节直接覆盖 Binder 优先级继承，评分 12/20
+  - `ftrace-atrace-perfetto-bridge` → 已有 §14.31 直接覆盖，无缺口
+  - `power-advisor-dvfs-headroom` → 已有 §5.29 直接覆盖（163 行），无缺口
+  - `sensor-privacy-service-indicator-gating` → 隐私/安全主题，与本书性能优化目标相关性低，评分 9/20
+- ✅ Daily-info 2026-07-13: 全部已覆盖主题（Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→非Android, Flutter 3.20→existing, Rust 1.80→非Android, 掘金6篇全部架构/实践类非内部性能）
+- ✅ Clippings: 20 天未更新（stale）
+- ✅ research-feeds: 3+ 个月未更新（stale）
+- ✅ queue.json: 0 pending 条目
+- ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 94 轮已全面覆盖
+
+### 结论
+连续第 95 轮未发现评分 ≥ 14 的知识缺口。所有素材源均处于停滞状态。全书 717 个小节，覆盖已饱和。

@@ -3055,6 +3055,140 @@
       ],
       "summary": "全面总结Android卡顿优化，涵盖绘制流程、渲染流程、布局优化和动画优化等方案。",
       "scored_at": "2026-07-12T09:12:31.713595"
+    },
+    {
+      "title": "Android 17 Binder 调用身份与优先级传播机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-12-android17-binder-priority-inheritance-ipcthreadstate.md",
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapping": "ch05",
+      "keywords": [
+        "Android",
+        "Binder",
+        "IPC",
+        "优先级继承",
+        "Android 17",
+        "源码分析"
+      ],
+      "summary": "深度分析 Android 17 binder IPCThreadState.cpp 中的优先级继承实现机制，揭示用户态 WorkSource/CPU priority propagation 代替传统 POSIX 优先级继承的架构设计",
+      "source_directory": "DeepResearch",
+      "scored_at": "2026-07-13T05:46:43.152935"
+    },
+    {
+      "title": "Android 17 FTrace 子系统架构与 atrace/Perfetto 桥接",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-12-android17-ftrace-atrace-perfetto-bridge.md",
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapping": "ch13",
+      "keywords": [
+        "Android",
+        "FTrace",
+        "Perfetto",
+        "atrace",
+        "Linux 内核",
+        "追踪",
+        "Android 17"
+      ],
+      "summary": "全面分析 Android 17 FTrace 三层架构：Linux 内核 tracefs、atrace 用户态包装、Perfetto ftrace probe，以及 compact_sched 编码优化和版本演进",
+      "source_directory": "DeepResearch",
+      "scored_at": "2026-07-13T05:46:50.316642"
+    },
+    {
+      "title": "Android 17 PowerAdvisor 与 DVFS Headroom 优化机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-12-android17-power-advisor-dvfs-headroom.md",
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapping": "ch11",
+      "keywords": [
+        "Android",
+        "PowerAdvisor",
+        "DVFS",
+        "功耗管理",
+        "SurfaceFlinger",
+        "Android 17",
+        "性能优化"
+      ],
+      "summary": "深入分析 Android 17 PowerAdvisor 三层架构：IPower AIDL V6接口、PowerHalController多版本兼容、PowerAdvisor状态机，以及FMQ hint session性能优化",
+      "source_directory": "DeepResearch",
+      "scored_at": "2026-07-13T05:46:57.803534"
+    },
+    {
+      "title": "Android 17 SensorPrivacyService 隐私指示器与传感器门控机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-12-android17-sensor-privacy-service-indicator-gating.md",
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapping": "ch16",
+      "keywords": [
+        "Android",
+        "传感器隐私",
+        "SensorPrivacyService",
+        "隐私保护",
+        "Android 17",
+        "安全"
+      ],
+      "summary": "全面分析 Android 17 传感器隐私控制机制，包括软件/硬件双模式切换、AppOps全局门控、环境光自适应摄像头隐私灯、SystemUI实时指示器三层架构",
+      "source_directory": "DeepResearch",
+      "scored_at": "2026-07-13T05:47:05.588784"
+    },
+    {
+      "title": "Camera 性能分析：Perfetto 与延迟拆解实战",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Camera 性能分析：Perfetto 与延迟拆解实战-2026-07-12.md",
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 3,
+      "total_score": 16,
+      "mapping": "ch13",
+      "keywords": [
+        "Android",
+        "Camera",
+        "Perfetto",
+        "性能分析",
+        "延迟拆解",
+        "相机优化"
+      ],
+      "summary": "实战演练 Camera Open Latency 和 First Frame Latency 的 Perfetto 拆解，涵盖帧率抖动定位、内存占用监控等实用技术",
+      "source_directory": "Cubox",
+      "scored_at": "2026-07-13T05:47:12.803766"
+    },
+    {
+      "title": "UseCase越多项目越烂 - Android Clean Architecture 实践",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-13-76232428-UseCase越多项目越烂.md",
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 16,
+      "mapping": "ch16",
+      "keywords": [
+        "Android",
+        "Clean Architecture",
+        "UseCase",
+        "架构设计",
+        "MVVM",
+        "KMP"
+      ],
+      "summary": "深入探讨 Clean Architecture 落地实践，揭示 UseCase 存在的充分条件、ViewModel 设计原则、KMP 时代分层价值等实用架构经验",
+      "source_directory": "技术文章/source/juejin-android",
+      "scored_at": "2026-07-13T05:47:20.230494"
     }
   ]
 }

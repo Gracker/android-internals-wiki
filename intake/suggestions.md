@@ -140,3 +140,10 @@
   5. Perfetto async slice 名称（"frame capture"/"first full buffer"/"still capture"）与 ATRACE 宏的映射
 - **参考书覆盖深度**：无（Clippings 参考书未覆盖 Camera 子系统）
 - **结构参考**：[来源: DeepResearch/2026-07-13-camera-perfetto-latency-decomposition.md]
+
+### 2026-07-13 Round 95 Gap Mining — 已检查方向
+- ✅ DeepResearch 4 篇（2026-07-12）：binder-priority（§1.48/§1.53/§1.44 已覆盖，12/20）、ftrace-bridge（§14.31 已覆盖）、power-advisor（§5.29 已覆盖）、sensor-privacy（隐私主题非性能，9/20）
+- ✅ Daily-info 2026-07-13: 全部已覆盖或超范围
+- ✅ source-index: 空
+- ✅ Clippings: 20 天 stale
+- ✅ research-feeds: 3+ 月 stale

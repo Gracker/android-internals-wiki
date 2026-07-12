@@ -3,7 +3,7 @@
   "draft": 0,
   "ready_for_review": 5,
   "finalized": 5,
-  "last_updated": "2026-07-13T05:06:55.017735+08:00",
+  "last_updated": "2026-07-13T06:08:15.791997+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T06:08:15.791997+08:00",
+      "note": "Gap mining round 95: 0 candidates ≥14 (95th consecutive). DeepResearch 4 files (2026-07-12) all evaluated in Round 94: binder-priority→§1.48/§1.53/§1.44 (12/20), ftrace-bridge→§14.31 (already covered), power-advisor→§5.29 (already covered), sensor-privacy→privacy topic not performance (9/20). Daily-info 2026-07-13: all recycled topics. source-index: empty. Clippings: 20 days stale. research-feeds: 3+ months stale. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -165,83 +172,6 @@
       "status": "no-candidates",
       "ts": "2026-07-12T02:05:00+08:00",
       "note": "Gap mining round 75: 0 candidates ≥14 (75th consecutive). No new material since Round 74 (1h ago). DeepResearch: 0 new files (newest 2026-07-11 23:58). Clippings: 19 days stale. research-feeds: 3 months stale. daily-info: not yet generated for 2026-07-12. source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0. Coverage truly saturated."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-12T01:05:43.761605+08:00",
-      "note": "Gap mining round 74: 0 candidates ≥14 (74th consecutive). No new material since Round 72 (2h ago). DeepResearch: 0 new files (newest 2026-07-11 23:58). Clippings: 19 days stale. research-feeds: 3 months stale. daily-info: consumed (2026-07-11 last). source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0. Coverage truly saturated."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-11T23:08:40.481618+08:00",
-      "note": "Gap mining round 72: 0 candidates ≥14 (72nd consecutive). No new material since Round 71 (22:06). DeepResearch: 0 new files. Clippings: 18+ days stale. research-feeds: 3 months stale. daily-info: consumed. source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0. Coverage truly saturated."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-11T22:06:28.505847+08:00",
-      "note": "Gap mining round 71: 0 candidates ≥14 (71st consecutive). Checked Shepherd-Kanban DeepResearch (21:06) — AI agent infra, not Android. Signal-handler (21:04) already mapped to §20.19. No new Clippings (18+ days). No new research-feeds. source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-11T21:11:49.126883+08:00",
-      "note": "Gap mining round 70: 0 candidates ≥14 (70th consecutive). 1 new DeepResearch file (signal-handler-sdk-adaptation 21:04) maps to §20.19 supplement (10/20). Coverage saturated. No new Clippings (18 days). No new research-feeds. source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0."
-    },
-    {
-      "section": "8.39",
-      "action": "task2a-content-processing",
-      "status": "ready_for_review",
-      "ts": "2026-07-11T15:04:00+08:00",
-      "note": "Android 17 heapprofd 生产环境部署（启动场景视角）: 5 anchors (双Producer架构/heapprofd.rc启动延迟激活/白名单模式 vs all=true 崩溃风险/连接退避/PID重扫/三层权限模型/packages.list校验/SELinux/Perfetto协同/CI-CD告警) + 3 extensions (Guardrails资源守护/企业部署/优化建议). 聚焦启动阶段差异，交叉引用 §14.1 §26.24 §23.6 §13.22. AOSP android-17.0.0_r1 源码验证."
-    },
-    {
-      "section": "none",
-      "action": "task2a-knowledge-gap-mining",
-      "status": "no-candidates",
-      "ts": "2026-07-11T14:08:00+08:00",
-      "note": "Gap mining round 66: 0 candidates ≥14 (66th consecutive). Coverage saturated. 9 new DeepResearch files (2026-07-10~11) all map to existing chapters: cpu-gpu-sync→§14.8(10/20), gpu-dvfs→§5.29, satellite-ntn→§24.11(9/20), thread-affinity→§20.9(10/20), soc-power-hal→§15.1/§17.21, startup-tracker→§21.17, flutter-impeller→§22.30, audio-hardening→§12.33, ChatGPT-LMCache→not Android. No new Clippings (18+ days). No new research-feeds. source-index: 0 unmapped high-quality. 51 drafts all >15 lines. Task2B backlog: 0."
-    },
-    {
-      "section": "1.2",
-      "action": "task2b-verify",
-      "status": "verified",
-      "verified_at": "2026-07-01T19:35:46.150100",
-      "note": "Boot Process chapter correctly returned to Task6"
-    },
-    {
-      "section": "1.10",
-      "action": "task2b-verify",
-      "status": "verified",
-      "verified_at": "2026-07-01T19:35:46.150105",
-      "note": "ContentProvider chapter correctly returned to Task6"
-    },
-    {
-      "section": "1.13",
-      "action": "task2b-verify",
-      "status": "verified",
-      "verified_at": "2026-07-01T19:35:46.150107",
-      "note": "MessageQueue chapter status corrected and returned to Task6"
-    },
-    {
-      "section": "1.19",
-      "action": "task2b-verify",
-      "status": "verified",
-      "verified_at": "2026-07-01T19:35:46.150108",
-      "note": "Zygote Graphics chapter status corrected and returned to Task6"
-    },
-    {
-      "section": "1.25",
-      "action": "task2b-verify",
-      "status": "verified",
-      "verified_at": "2026-07-01T19:35:46.150109",
-      "note": "Binder IPC chapter status corrected and returned to Task6"
     }
   ],
   "review_history": [
