@@ -664,6 +664,26 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-11T06:19:39.148381",
       "status": "pending"
+    },
+    {
+      "section": "14.8",
+      "section_title": "GPU 调试与性能优化工具链",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-11-android17-cpu-gpu-sync-bottleneck.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 CPU-GPU 同步瓶颈分析与线程调度优化策略 — Android 17 的 CPU-GPU 同步瓶颈本质是 GPU 计数器标准化缺失导致跨设备性能数据无法统一",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-12T06:14:51.621934",
+      "status": "pending"
     }
   ],
   "chapters": []
