@@ -48,7 +48,7 @@ task6_result: pass-light-edit
 task9_state: "reviewed"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T15:05:00+08:00"
-last_task6_audit: "2026-05-26"
+last_task6_audit: "2026-07-12"
 last_task6_review_log: "logs/review/2026-05-08-15-review.md"
 review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 15:05：自动晋升 finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目；本轮未做重复正文 review。"
 last_task9_review_log: "logs/deep-review/2026-06-06-15-audit.md"
@@ -563,7 +563,3 @@ Resampler 位于 App 进程的 `InputConsumer` 内部（`frameworks/native/libs/
 - [已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor]
 - [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
 - [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input]
--
--
--
--
