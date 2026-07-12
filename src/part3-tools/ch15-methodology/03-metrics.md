@@ -51,7 +51,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 last_task6_at: "2026-04-25T00:00:00+08:00"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-12"
+last_task6_audit: "2026-07-12T09:08:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -109,7 +109,7 @@ task2b_verifier_result: "status-fix-ready-for-task6"
 
 所以本节讲清楚：什么数字值得长期盯、什么数字适合拿来诊断、什么数字适合做发布门禁。
 
-## 指标体系的核心是决策接口
+## 指标体系服务于决策
 
 指标体系的价值在于它能不能支持决策。一个好的指标至少要回答下面三个问题中的一个:
 
@@ -189,7 +189,7 @@ Macrobenchmark 的 `FrameTimingMetric` 会同时输出两类信号:
 
 ### Frozen Frame Rate(冻帧率)
 
-冻帧(Frozen Frame)是慢帧的极端形态:渲染耗时超过 700ms 的帧。当一帧超过 700ms 时,用户会感觉 App 卡死了将近一秒--在这段时间内,屏幕完全不动,触摸事件也无法响应。在 Android Vitals 中,冻帧是独立于慢帧之外单独统计的核心指标。
+冻帧(Frozen Frame)是慢帧的极端形态:渲染耗时超过 700ms 的帧。当一帧超过 700ms 时,用户会感觉 App 卡死了将近一秒--在这段时间内,屏幕完全不动,触摸事件也无法响应。在 Android Vitals 中,冻帧是独立于慢帧之外单独统计的重要指标。
 
 冻帧几乎总是由主线程上的长阻塞操作造成:同步 I/O(如直接在 UI 线程读文件或数据库)、锁竞争(等另一个线程释放 synchronized 块)、或者在前台执行了大量的序列化/反序列化操作。如果在 Perfetto 中看到一段超过 700ms 的主线程连续运行(没有 Sleep/Blocked 状态切换),那大概率是冻帧的候选对象。
 
@@ -213,7 +213,7 @@ ActivityManager: Displayed com.example.app/.MainActivity: +1s234ms
 
 从 Android 12 开始,SplashScreen API 让系统默认在 TTID 之前就显示一个启动画面,使得用户感知的等待时间变短--但 TTID 本身的度量起点仍然是进程创建,这个不会变。
 
-Google Play 的 Android Vitals 将 TTID 作为核心启动指标之一。冷启动 TTID 的不良行为阈值是:超过 5 秒。如果 App 冷启动 TTID 中位数超过 2 秒,就应该认真优化了。
+Google Play 的 Android Vitals 将 TTID 作为主要启动指标之一。冷启动 TTID 的不良行为阈值是:超过 5 秒。如果 App 冷启动 TTID 中位数超过 2 秒,就应该认真优化了。
 
 [已验证: 官方文档, developer.android.com/topic/performance/launch-time]
 
@@ -405,7 +405,7 @@ OOM Rate 的计算通常是:OOM 崩溃次数 / 总会话数。在线上监控中
 
 Battery Drain Rate 度量的是 App 在单位时间内的电池消耗量,通常以 mAh/hour 或百分比/hour 表示。线上采集依赖 `BatteryManager` API 读取电池电量变化,线下可以通过 Batterystats 工具(`dumpsys batterystats`)或 Battery Historian 做更详细的分析。
 
-2026 年 3 月起,Google Play 将"过度部分 WakeLock"(Excessive Partial Wake Lock)纳入核心 Android Vitals 指标。如果一个 App 在 24 小时内持有非豁免的部分 WakeLock 累计超过 2 小时,且 28 天内 5% 以上的用户会话达到这个标准,就会被认定为不良行为,面临 Play Store 降权和警告标签的处罚。
+2026 年 3 月起,Google Play 将"过度部分 WakeLock"(Excessive Partial Wake Lock)纳入 Android Vitals 主要指标。如果一个 App 在 24 小时内持有非豁免的部分 WakeLock 累计超过 2 小时,且 28 天内 5% 以上的用户会话达到这个标准,就会被认定为不良行为,面临 Play Store 降权和警告标签的处罚。
 
 非豁免 WakeLock 是指那些没有明确用户收益的后台保活行为--音乐播放、导航、用户主动发起的下载等属于豁免类别。
 
@@ -436,9 +436,9 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 
 线上指标(Online Metrics)和线下指标(Offline Metrics)的定位完全不同,不能互相替代。
 
-线下指标的核心价值是**精确诊断**。在 Perfetto 里能看到每一帧的详细耗时、每一次 GC 的暂停时长、每一个线程的状态变化。这种精度是线上指标做不到的--线上不可能给每个用户开一个 Perfetto trace。线下指标的局限在于:它是你在实验室环境采集的,不能代表真实用户的设备分布、网络条件和使用习惯。
+线下指标的价值在于**精确诊断**。在 Perfetto 里能看到每一帧的详细耗时、每一次 GC 的暂停时长、每一个线程的状态变化。这种精度是线上指标做不到的--线上不可能给每个用户开一个 Perfetto trace。线下指标的局限在于:它是你在实验室环境采集的,不能代表真实用户的设备分布、网络条件和使用习惯。
 
-线上指标的核心价值是**趋势监控和回归发现**。通过 SDK 采集线上用户的聚合数据(分位数、P90、P99),能发现新版本发布后某项指标有没有劣化、某个机型上是不是特别差。线上指标的局限在于精度低--拿不到每帧的详细堆栈,只能看到聚合后的数字。
+线上指标的价值在于**趋势监控和回归发现**。通过 SDK 采集线上用户的聚合数据(分位数、P90、P99),能发现新版本发布后某项指标有没有劣化、某个机型上是不是特别差。线上指标的局限在于精度低--拿不到每帧的详细堆栈,只能看到聚合后的数字。
 
 一个成熟的性能团队通常这样搭配使用:线上指标发现异常("P90 帧时间从 12ms 涨到了 18ms"),线下指标定位原因(在 Perfetto 中找到具体哪一步变慢了)。
 
@@ -475,7 +475,7 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 
 ## Android Vitals 与 Google Play Console
 
-Android Vitals 是 Google Play Console 内置的性能监控面板,它自动采集所有 Play Store 分发的 App 的核心性能数据,不需要开发者额外集成 SDK。
+Android Vitals 是 Google Play Console 内置的性能监控面板,它自动采集所有 Play Store 分发的 App 的性能数据,不需要开发者额外集成 SDK。
 
 Android Vitals 的核心指标(Core Vitals)包括:
 
@@ -483,9 +483,9 @@ Android Vitals 的核心指标(Core Vitals)包括:
 - **用户感知崩溃率**(User-Perceived Crash Rate)
 - **过度部分 WakeLock**(Excessive Partial Wake Locks,2026 年 3 月起新增)
 
-这些核心指标都有明确的不良行为阈值(前文已列出)。超过阈值会直接影响 App 在 Play Store 中的可见度。
+这些指标都有明确的不良行为阈值(前文已列出)。超过阈值会直接影响 App 在 Play Store 中的可见度。
 
-除了核心指标外,Android Vitals 还提供以下诊断数据:
+除了上述指标外,Android Vitals 还提供以下诊断数据:
 
 - **启动时间**(TTID/TTFD)的分布和趋势
 - **慢帧率**和**冻帧率**的按版本和设备分布
@@ -503,7 +503,7 @@ Android Vitals 的核心指标(Core Vitals)包括:
 ### 1. 门禁指标
 
 - 启动预算
-- 核心场景 frame time / jank 阈值
+- 主要场景 frame time / jank 阈值
 - Crash / ANR 红线
 
 ### 2. 诊断指标
