@@ -7,7 +7,7 @@ status: "finalized"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-07-13""2026-07-13"
+last_verified: "2026-07-13"
 last_verified_against: "Android Developers Game SDK Performance Tuner + GameActivity text input docs, AOSP GameManagerService, Perfetto gpu.renderstages proto"
 confidence: medium
 sources:

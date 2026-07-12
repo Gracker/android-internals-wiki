@@ -80,8 +80,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
 task9_result: auto-fixed
-task2b_result: rework-fixed
-last_verified: "2026-07-13""2026-07-13"
+last_verified: "2026-07-13"
 last_verified_against: AOSP android-17.0.0_r1
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-13
