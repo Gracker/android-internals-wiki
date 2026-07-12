@@ -6,8 +6,8 @@ section: 16.5
 status: ready-for-review
 drafted_date: 2026-04-08
 applicable_versions: "Android 17 (API 37)"
-last_verified: 2026-05-29
-last_verified_against: "Android 17 behavior changes all/target 37 pages updated 2026-05-19/2026-05-28, Network Security Configuration domainEncryption schema, ProfilingTrigger API reference"
+last_verified: 2026-07-12
+last_verified_against: "AOSP android-17.0.0_r1 frameworks/base + art + packages/modules/Profiling + build/soong; Android Developers behavior/features references"
 confidence: medium
 reviewed_at: 2026-05-11T19:05:00+08:00
 sources:
@@ -19,32 +19,32 @@ created_by: task2a-knowledge-gap
 created_date: 2026-04-08
 gap_source: 官方文档+研究素材+AOSP结构+读者需求
 gap_score: 20
-task9_result: needs-rework
+task9_result: auto-fixed
 task9_audit_date: 2026-07-12
 task9_audit_type: idle-audit
-last_task9_at: 2026-07-12T15:24:27+08:00
+last_task9_at: "2026-07-12T16:35:02+08:00"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-07-12
 last_task2b_at: 2026-07-12T15:37:59+08:00
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-12
-task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。"
+task9_review_notes: "2026-07-12 16: Task9 auto-fixed android-17.0.0_r1 源码锚点：DeliQueue 路径、ProfilingTrigger 产物、JobScheduler API37 核验、ART generational gating、16KB max-page-size；移除未证实为 Android 17 新增的传感器隐私结论。"
 review_type: task6-writing-quality-review
-last_task9_review_log: logs/deep-review/2026-05-29-07-deep-review.md
+last_task9_review_log: logs/deep-review/2026-07-12-16-deep-review.md
 task2b_fixed_by: openclaw-task2b-main
-last_task9_autofix_at: 2026-05-29
+last_task9_autofix_at: 2026-07-12
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
 status: ready-for-review
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 7
 task6_l3_l4_issues: 0
 task6_new_rework: false
-task9_state: pending
+task9_state: reviewed
 last_task6_at: 2026-07-12T16:10:47+08:00
 last_task6_review_log: logs/review/2026-07-12-16-review.md
 task6_reviewed_date: 2026-07-12
@@ -71,7 +71,7 @@ task6_review_notes: "2026-07-12 16: Task6 revisiting review (post-task2b-fix): p
 
 ### 扩展（可选深入）
 
-- 🔸 DeliQueue drain 触发机制与 ConcurrentMessageQueue 数据结构
+- 🔸 DeliQueue drain 触发机制与 MessageStack / MessageHeap 数据结构
 - 🔸 Generational CMC gating 条件
 - 🔸 Choreographer Buffer Stuffing Recovery
 
@@ -95,7 +95,7 @@ task6_review_notes: "2026-07-12 16: Task6 revisiting review (post-task2b-fix): p
 |:---|:---|:---|:---|
 | MessageQueue | 单锁 + 单链表 | DeliQueue：Treiber Stack + min-heap | 有，见下文的 5,000x synthetic benchmark、15% lock contention 下降、4% / 7.7% / 9.1% 体验指标 |
 | ProfilingManager triggers | 需要手动注册，触发器集合较小；API 36 新增 `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 37 新增 `TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT`、`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 等触发器 | 官方未给统一 benchmark |
-| JobScheduler pending reasons | API 36 已有 `getPendingJobReasons(int)`、`getPendingJobReasonsHistory(int)` 与 `PendingJobReasonsInfo` | API 37 reference 新增 `getPendingJobReasonStats(int)`，聚合 pending reason 时长；AOSP android-16.0.0_r1 未包含，需以 API 37 reference / preview 分支核验 | 官方未给统一 benchmark |
+| JobScheduler pending reasons | API 36 已有 `getPendingJobReasons(int)`、`getPendingJobReasonsHistory(int)` 与 `PendingJobReasonsInfo` | API 37 在 `android-17.0.0_r1` 新增 `getPendingJobReasonStats(int)`，聚合 pending reason 时长 | 官方未给统一 benchmark |
 | 大屏 / 安全配置 / 16KB 页面 | 适配要求已在推进 | targetSdk 37 后约束更强、排障入口更明确 | 官方未给统一 benchmark |
 
 ---
@@ -149,9 +149,9 @@ Android Developers Blog 把公开数字分成三类，它们的测试前提并�
 
 DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化，但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
 
-官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存：`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`，负责兼容层与实现选择；`ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的并发结构。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
+官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在；在 DeliQueue 模式下，它不参与实际队列维护，默认保持 `null`。AOSP `android-17.0.0_r1` 的相关代码不在 `ConcurrentMessageQueue/`，而是拆成：`CombinedDeliMessageQueue/MessageQueue.java` 负责实现选择与 Looper 集成，`MessageStack.java` 负责 Treiber stack / freelist，`MessageHeap.java` 负责同步与异步消息两个 min-heap；`LegacyMessageQueue/MessageQueue.java` 保留旧单锁单链表实现。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
 
-- **Treiber Stack**（无锁栈）：写入端使用 `AtomicReference` + CAS 实现并发入队，任何线程都可以无竞争地 push 消息
+- **Treiber Stack**（无锁栈）：写入端在 `MessageStack.pushMessage()` 中通过 `VarHandle` CAS 更新 `mTopValue`，任何线程都可以无竞争地 push 消息
 - **min-heap**（最小堆）：读取端由 Looper 线程独占访问，按消息的 `when` 排序。博客明确指出这是堆结构，不是 `ConcurrentSkipListSet` 排序集合
 - **tombstoning**（墓碑标记）：移除操作通过 CAS 原子设置移除标记（逻辑移除），物理移除由 Looper 线程延迟完成
 
@@ -161,8 +161,9 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同
 
 源码层可以拆成三点：
 
-- `CombinedMessageQueue/MessageQueue.java` 还保留 legacy 视角下可见的字段和选择逻辑。
-- `ConcurrentMessageQueue/MessageQueue.java` 负责 DeliQueue 的并发结构。
+- `CombinedDeliMessageQueue/MessageQueue.java` 保留 legacy 视角下可见的 `mMessages` / `mLast` 字段，并通过 `USE_NEW_MESSAGEQUEUE` 兼容变更选择 DeliQueue。
+- `MessageStack.java` 负责 Treiber stack、freelist、同步/异步两个 `MessageHeap` 的连接。
+- `MessageHeap.java` 负责按 `when` 和 `insertSeq` 排序的 min-heap。
 - 因此这次变化的实质是"保留兼容字段 + 切换底层实现";不要按"`mMessages` 改名"理解。
 - 同步屏障语义仍按 `MessageQueue` 公共 API 理解。底层换成并发入队和 Looper 侧排序后，`postSyncBarrier()` 与异步消息选择逻辑仍由队列实现维护；业务侧不要依赖旧链表中 barrier 节点的位置做反射判断。
 
@@ -181,7 +182,7 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同
 
 ### DeliQueue 算法细节补充
 
-以下细节对理解 DeliQueue 的实现机制有用，章节现有描述已经覆盖核心架构，以下作为**算法层补充**。本节信息基于 AOSP `android-17.0.0_r1` 分支中 `ConcurrentMessageQueue/MessageQueue.java` 的代码组织（tag 未发布时为对应 preview 分支）。
+以下细节对理解 DeliQueue 的实现机制有用，章节现有描述已经覆盖核心架构，以下作为**算法层补充**。本节信息基于 AOSP `android-17.0.0_r1` 分支中的 `CombinedDeliMessageQueue/MessageQueue.java`、`MessageStack.java` 与 `MessageHeap.java`。
 
 **TreiberStack push 伪代码**（来自 Google 官方博客）：
 ```java
@@ -209,13 +210,14 @@ CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实�
 
 **性能数字来源说明**：DeliQueue 的 5,000x synthetic benchmark、15% lock contention 下降、4%/7.7%/9.1% 用户体验指标均来自 Google 内部 benchmark，**非 AOSP commit 可独立复核验证**。建议在向读者引用时注明来源为 Google 内部 benchmark。
 
-**AOSP 源码参考路径**（基于 android-17.0.0_r1 的代码组织）：
-- 并发实现：`frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` —— DeliQueue 的 Treiber Stack + min-heap 核心逻辑
-- 兼容层：`frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java` —— 负责实现选择与 `mMessages`/`mLast`/`mUseConcurrent` 兼容字段
+**AOSP 源码参考路径**（基于 `android-17.0.0_r1` 的代码组织）：
+- 组合实现：`frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java` —— DeliQueue / legacy 实现选择、Looper 集成与兼容字段
+- 并发栈：`frameworks/base/core/java/android/os/MessageStack.java` —— Treiber stack、freelist、同步/异步 heap 的连接
+- 最小堆：`frameworks/base/core/java/android/os/MessageHeap.java` —— 按 `Message.compareMessages()` 排序的 min-heap
 - 旧实现：`frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java` —— 单锁 + 单链表保留路径
-- Looper 集成：`frameworks/base/core/java/android/os/Looper.java` —— drain 触发位置
+- Looper 集成：`frameworks/base/core/java/android/os/Looper.java` —— 主循环调用 `MessageQueue.next()`
 
-验证源码时直接以上述路径为准，不要用顶层的 `android/os/MessageQueue.java` 抽象路径；后者可能只是版本选择入口。
+验证源码时直接以上述路径为准，不要臆造 `ConcurrentMessageQueue/` 路径。
 
 **Perfetto 诊断**：旧实现锁争用表现为 "monitor contention with MessageQueue" 切片；DeliQueue 启用后此切片应显著减少或消失。可使用 `android_monitor_contention` PerfettoSQL 模块查询。
 
@@ -227,13 +229,12 @@ CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实�
 
 ART 的垃圾回收器经历过多次演进。「Android 8」（Oreo）将 Concurrent Copying (CC) 作为默认 GC，解决了 Compact GC 的长暂停问题。「Android 10」引入了分代 CC (Generational Concurrent Copying)，将堆空间分为 young generation 和 old generation，优先回收存活时间短的 young 对象。
 
-Android 17 进一步将分代思想整合到 **Concurrent Mark-Compact (CMC)** 收集器中。CMC 的特点是：标记和压缩都是并发执行的，应用线程只需要在标记开始和结束时经历极短的暂停。分代 CMC 在此基础上增加了 young generation 的快速回收路径，**但实际启用需要满足多个条件**：
+Android 17 的 ART 源码中，分代逻辑可以落到 Concurrent Copying 或 **Concurrent Mark-Compact (CMC)** 不同 collector；CMC 路径由 `YoungMarkCompact` 承载 young generation 的快速回收。CMC 的特点是标记和压缩并发执行，应用线程只需要在关键阶段经历较短暂停。分代路径**实际启用需要满足多个条件**：
 
-- `generational_cmc_supported` 系统属性检查通过——在 `Runtime::Init()` 阶段评估设备硬件能力，不满足则直接跳过后续检查
-- `gUseUserfaultfd` 系统属性开启（编译期常量，取决于内核是否编译了 userfaultfd 支持）
-- `use_generational_cmc` flag 启用
-- `persist.device_config.runtime_native_boot.use_generational_gc` 设备配置支持
-- AOSP android-16.0.0_r1/main 已存在 `YoungMarkCompact` 和相关 gating 逻辑
+- `Runtime::Init()` 中 `use_generational_gc` 必须同时满足 `(kUseBakerReadBarrier || gUseUserfaultfd)`、`xgc_option.generational_gc` 与 `ShouldUseGenerationalGC()`
+- 若走 userfaultfd / CMC 路径，`mark_compact.cc` 中的 `ShouldUseGenerationalGC()` 还会检查 `use_generational_cmc` flag
+- `persist.device_config.runtime_native_boot.use_generational_gc` 设备配置需要返回 true
+- `Heap` 只有在 `use_generational_gc_` 为 true 时才创建 `YoungMarkCompact` 或 young concurrent copying collector
 
 因此不能简单把分代 CMC 写成 Android 17 的“统一行为”，而是要根据设备配置和 trace 验证具体启用情况。
 
@@ -274,7 +275,7 @@ Android 17 的分代 GC 变化会改变 GC 切片模式和暂停分布。Concurr
 
 ## ProfilingManager 新的系统触发器
 
-> ⚠️ **未进入 Android 17**：android-17.0.0_r1 公开 tag 尚未发布，以下 API reference 内容基于 API 37 预览文档。Features 页面与 API reference 对部分触发器产物类型的描述存在口径差异（见下表标注），最终行为以 release tag 为准。
+> **源码基准：`android-17.0.0_r1`（Android 17 / API 37）**。`ProfilingTrigger.java`、`ProfilingManager.java` 与 `ProfilingService.java` 已在 `packages/modules/Profiling` tag 中核验；`TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT` 的产物仍取决于 anomaly 类型，接入时以 `ProfilingResult` 实际返回为准。
 
 ### 从手动埋点到系统自动触发
 
@@ -289,7 +290,7 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 | `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | call stack sample + system trace | 定位冷启动瓶颈 |
 | `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` | 系统检测到 App 异常行为 | heap dump 或 stack sampling profile，取决于 memory limit breach、Binder spam 等系统判定 | 诊断系统侧异常行为 |
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
-| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | **文档口径不一致**：API reference 写 "running system trace snapshot"；features 页写 "call stack sample"。未进入 Android 17（android-17.0.0_r1 tag 未发布），最终行为以 release tag 为准。接入时按 `ProfilingResult` 返回的实际路径分流处理，不对产物类型做硬编码假设。 | 定位后台 CPU 异常占用 |
+| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死，`ApplicationExitInfo` reason 为 `REASON_EXCESSIVE_RESOURCE_USAGE` | running system trace snapshot | 定位后台 CPU 异常占用 |
 
 ### 注册流程和适配建议
 
@@ -436,7 +437,7 @@ ProfilingService 与现有的 ActivityManagerService 性能监控组件协同工
 |:---|:---|:---|:---|:---|
 | `JobScheduler.getPendingJobReasons(int jobId)` | API 36 | `int[]` | 返回当前可能导致该 job pending 的 reason code | AOSP android-16.0.0_r1 已检出 |
 | `JobScheduler.getPendingJobReasonsHistory(int jobId)` | API 36 | `List<JobScheduler.PendingJobReasonsInfo>` | 返回有限历史视图，包含 reason 变化记录 | AOSP android-16.0.0_r1 已检出 |
-| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 |  |
+| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 | AOSP `android-17.0.0_r1` 已检出（`@FlaggedApi`） |
 
 这几组接口合在一起，才能回答"某个 job 现在为什么没跑"和"过去一段时间主要卡在哪类约束上"。如果项目通过 WorkManager 间接落到 JobScheduler，调试时最好先拿到对应的 jobId，再对照 current reason、history 和聚合时长判断是哪类约束在持续阻塞。
 
@@ -611,10 +612,10 @@ Android 继续推动 16KB 页面大小的适配，这个变更对使用 NDK 的�
 - Google Play 强制要求：2025 年 11 月 1 日起，新 App 和更新必须支持 16KB 页面大小
 
 **AOSP android-17.0.0_r1 构建配置：**
-- 产品配置：`PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`（定义在 `device.mk` / `BoardConfig.mk` 中）
-- 构建系统会根据此变量传递 `-Wl,-z,max-page-size=16384` 给链接器，同时设置 `-Wl,-z,common-page-size=16384`
-- 平台 native 二进制（init、servicemanager、surfaceflinger 等）通过 `cc_defaults` 继承上述链接标志
-- AOSP 的 `build/soong/cc/linker.go` 中 `maxPageSize` / `commonPageSize` 变量控制 ELF segment 的对齐目标——未对齐的 segment 会导致 `.so` 加载时 segment mapping 失败
+- `PRODUCT_MAX_PAGE_SIZE_SUPPORTED` 可由产品配置显式设置；未设置时，`build/core/config.mk` 在非 low-ram、VSR ≥ 34、arm64 / x86_64 目标上默认 `TARGET_MAX_PAGE_SIZE_SUPPORTED := 16384`
+- `build/soong/cc/config/arm64_device.go` 与 `x86_64_device.go` 会将 `-Wl,-z,max-page-size=<MaxPageSizeSupported>` 传给链接器
+- `build/soong/cc/linker.go` 对 prebuilt ELF 通过 `check_elf_file --max-page-size` 校验 max page size
+- 当前 AOSP `android-17.0.0_r1` 的 Soong 链路没有统一添加 `-Wl,-z,common-page-size=16384`，不能把它写成 Android 17 的通用构建要求
 
 **NDK 编译要求：**
 - **NDK r28+**：默认生成 16KB-aligned ELF；确保使用此版本以避免手动添加链接标志
@@ -624,7 +625,7 @@ Android 继续推动 16KB 页面大小的适配，这个变更对使用 NDK 的�
 - Android Studio APK Analyzer：可自动识别未对齐的 .so 文件并标记为 incompatible
 
 **AOSP android-17.0.0_r1 具体要求：**
-- 构建配置中明确启用 16KB 页面大小支持
+- arm64 / x86_64 非低内存、VSR ≥ 34 目标默认使用 16KB max page size；产品配置仍可覆盖
 - 要求 NDK r28+ 以确保 ELF 段对齐正确性
 - 未匹配的 .so 文件在 16KB 页面设备上会抛出 `UnsatisfiedLinkError`
 
@@ -673,23 +674,25 @@ DCL (Dynamic Code Loading) 保护从 DEX/JAR 文件扩展到原生库。通过 `
 - [Google Blog: Android 17 Developer Preview](https://android-developers.googleblog.com/)
 - [Android 17 DeliQueue 解读(掘金)](https://juejin.cn/post/7612812060795093002)
 - [Android 17 适配要点(掘金)](https://juejin.cn/post/7610233341305389099)
-- AOSP: `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java`
-- AOSP: `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
+- AOSP: `frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java`
+- AOSP: `frameworks/base/core/java/android/os/MessageStack.java`
+- AOSP: `frameworks/base/core/java/android/os/MessageHeap.java`
 - AOSP: `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java`
-- AOSP: `art/runtime/gc/collector/young_mark-compact.cc` — 分代 CMC young generation 回收核心实现
-- AOSP: `art/runtime/gc/collector/mark-compact.cc` — CMC 标记-压缩主逻辑
-- AOSP: `art/runtime/runtime.cc` — 分代 CMC gating 条件判断（`useGenerationalCMC()`）
+- AOSP: `art/runtime/gc/collector/mark_compact.cc` / `mark_compact.h` — CMC 与 `YoungMarkCompact` 实现
+- AOSP: `art/runtime/runtime.cc`、`art/runtime/gc/collector/mark_compact.cc` — 分代 GC gating 条件
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现
 
 ## 附录：DeliQueue drain 触发机制与 Generational CMC gating 条件
 
-以下是对正文中 DeliQueue drain 触发条件、Generational CMC gating、ProfilingManager 触发器和 ConcurrentMessageQueue 数据结构的补充核对：
+以下是对正文中 DeliQueue drain 触发条件、Generational CMC gating、ProfilingManager 触发器和 MessageStack / MessageHeap 数据结构的补充核对：
 
 ### DeliQueue drain 触发条件和内部实现
 
 **源码位置**:
-- `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` (android-16.0.0_r1)
-- `frameworks/base/core/java/android/os/Looper.java`
+- `frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java` (`android-17.0.0_r1`)
+- `frameworks/base/core/java/android/os/MessageStack.java` (`android-17.0.0_r1`)
+- `frameworks/base/core/java/android/os/MessageHeap.java` (`android-17.0.0_r1`)
+- `frameworks/base/core/java/android/os/Looper.java` (`android-17.0.0_r1`)
 
 **关键发现**：
 DeliQueue 的 drain 过程在 Android Developers Blog 中有明确描述：Looper 的 `next()` 方法在准备取下一条消息时，从 Treiber Stack 的顶部开始向下遍历，直到遇到上次处理过的消息。遍历过程中，每遇到一条新消息就将其插入 min-heap（按 `when` 排序）。同时，遍历过程中会建立反向链接，形成双向链表，以支持 O(1) 的任意位置移除。
@@ -714,24 +717,24 @@ AOSP 实现在此基础上增加了同步屏障和异步消息的专门处理路
 
 **源码位置**:
 - `art/runtime/runtime.cc`
-- `art/runtime/gc/collector/young_mark-compact.cc`
+- `art/runtime/gc/collector/mark_compact.cc`
+- `art/runtime/gc/collector/mark_compact.h`
 
 **gating 条件验证**：
-通过 AOSP 源码验证，Generational CMC 启用需要同时满足三个条件：
+通过 AOSP `android-17.0.0_r1` 源码验证，`Runtime::useGenerationalCMC()` 这个独立函数不存在；实际 gating 分散在 `runtime.cc` 和 `mark_compact.cc`：
 
 ```cpp
-bool Runtime::useGenerationalCMC() const {
-    // 条件0: 硬件能力检查（Init 阶段评估）
-    bool hw_supported = generational_cmc_supported;
-    
-    // 条件1: userfaultfd 系统调用可用（编译期常量）
-    bool use_userfaultfd = kUseUserfaultfd;
-    
-    // 条件2: 设备配置启用
-    bool device_config_enabled = 
-        device_config::runtime_native_boot_use_generational_gc(false);
-    
-    return hw_supported && use_userfaultfd && device_config_enabled;
+// runtime/runtime.cc
+bool use_generational_gc = (kUseBakerReadBarrier || gUseUserfaultfd)
+    && xgc_option.generational_gc
+    && ShouldUseGenerationalGC();
+
+// runtime/gc/collector/mark_compact.cc
+bool ShouldUseGenerationalGC() {
+  if (gUseUserfaultfd && !com::android::art::flags::use_generational_cmc()) {
+    return false;
+  }
+  return GetBoolProperty("persist.device_config.runtime_native_boot.use_generational_gc", true);
 }
 ```
 
@@ -742,7 +745,7 @@ bool Runtime::useGenerationalCMC() const {
 
 ### ProfilingManager 触发器内部判断逻辑
 
-API 37 公开文档只给出了触发器常量和注册入口，**没有公开服务端内部判断逻辑**。`ProfilingManagerService` 的源码在当前 AOSP preview 中不可直接核验，因此正文保留已确认的 API 口径，不给未验证的内部伪代码。
+API 37 公开文档给出了触发器常量和注册入口；`android-17.0.0_r1` 中 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java` 已可核验服务端入口。正文只保留已核验的 API 与服务调用口径，不把未验证的 anomaly 判定策略写成平台契约。
 
 **已确认的 API 口径**（`android.os.ProfilingTrigger` reference）：
 
@@ -752,43 +755,43 @@ API 37 公开文档只给出了触发器常量和注册入口，**没有公开�
 | `TRIGGER_TYPE_COLD_START` | API 37 | App 冷启动时尽早触发 | call stack sample + system trace |
 | `TRIGGER_TYPE_ANOMALY` | API 37 | 系统检测到 App 异常行为时触发 | memory limit breach 可触发 heap dump，Binder spam 可触发 stack sampling profile |
 | `TRIGGER_TYPE_OOM` | API 37 | App 发生 OOM 时触发 | 内存诊断 |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | call stack sample / system trace snapshot 口径需按 `ProfilingResult` 实际返回判断 |
+| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | running system trace snapshot |
 | `TRIGGER_TYPE_APP_COMPAT` | API 37 | 兼容性问题触发 | 兼容性排查 |
 
-### ConcurrentMessageQueue 实际数据结构
+### MessageStack / MessageHeap 实际数据结构
 
 **源码位置**：
-- `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
+- `frameworks/base/core/java/android/os/MessageStack.java`
+- `frameworks/base/core/java/android/os/MessageHeap.java`
+- `frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java`
 
 **关键数据结构发现**：
-根据 Android Developers Blog 官方描述，DeliQueue 使用 Treiber Stack + min-heap 的混合结构，不是 `ConcurrentSkipListSet` 排序集合：
+根据 AOSP `android-17.0.0_r1` 源码，DeliQueue 使用 `MessageStack` + `MessageHeap` 的混合结构，不是 `ConcurrentSkipListSet` 排序集合，也不存在 `ConcurrentMessageQueue/` 目录：
 
 ```java
-// DeliQueue 核心结构（基于 Android Developers Blog 官方描述）
-// 写入端: Treiber Stack (无锁栈)
-public class TreiberStack<E> {
-    AtomicReference<Node<E>> top = new AtomicReference<Node<E>>();
-    
-    public void push(E item) {
-        Node<E> newHead = new Node<E>(item);
-        Node<E> oldHead;
+public final class MessageStack {
+    private static final VarHandle sTop;
+    private volatile Message mTopValue = null;
+
+    private final MessageHeap mSyncHeap = new MessageHeap();
+    private final MessageHeap mAsyncHeap = new MessageHeap();
+
+    public boolean pushMessage(Message m) {
+        Message current;
         do {
-            oldHead = top.get();
-            newHead.next = oldHead;
-        } while (!top.compareAndSet(oldHead, newHead)); // CAS 入队
+            current = mTopValue;
+            m.next = current;
+        } while (!sTop.weakCompareAndSetRelease(this, current, m));
+        return true;
     }
 }
-
-// 读取端: min-heap (最小堆), 由 Looper 线程独占访问
-// drain 过程: Looper 遍历 Treiber Stack, 将消息插入 deadline-ordered min-heap
-// 移除: tombstoning — CAS 设置移除标记, 物理移除由 Looper 延迟完成
 ```
 
 **性能影响**：
 - 消息入队：O(1) CAS 操作（Treiber Stack push）
 - 消息出队：O(log n)（min-heap extract-min），尾部延迟优于旧单链表的 O(n) 最坏情况
 - 移除操作：O(1) CAS 设置墓碑标记 + Looper 延迟物理移除
-- 内存开销：Treiber Stack 的 Node 对象 + min-heap 数组通常高于旧单链表；具体比例取决于队列长度、消息生命周期和实现细节，需要用同一 workload 下的 heap / trace 数据验证
+- 内存开销：`Message` 上新增的 `prev` / `nextFree` / `heapIndex` 等链接字段 + `MessageHeap` 数组通常高于旧单链表；具体比例取决于队列长度、消息生命周期和实现细节，需要用同一 workload 下的 heap / trace 数据验证
 
 **兼容性影响**：
 `mMessages` 字段保留二进制兼容性，但永远返回 null，反射依赖的测试框架需升级到 Espresso 3.7+ 和 Robolectric 4.17+。
@@ -799,10 +802,10 @@ public class TreiberStack<E> {
 
 | 组件 | Android 16 状态 | Android 17（基于 android-17.0.0_r1）状态 | 适配建议 |
 |------|---------------|--------------------------------------|---------|
-| DeliQueue | 仅限 SystemUI/system processes | targetSdk 37 默认启用 | 测试兼容性，可用 `adb am compat` 开关控制 |
-| Generational CMC | 不可用 | 需满足 gating 条件 | 通过 device_config 验证配置状态 |
-| ProfilingManager | API 36 基础触发器 | API 37 新增 3 个触发器 | 按版本注册不同触发器集合 |
-| ConcurrentMessageQueue | 存在但不默认启用 | 默认启用 | 反射代码需适配 null 值 |
+| DeliQueue | 旧单链表实现仍是主要参照 | targetSdk > Baklava（API 36）默认启用 `USE_NEW_MESSAGEQUEUE`，即 targetSdk 37 默认启用 | 测试兼容性，可用 `adb am compat` 开关控制 |
+| Generational CMC | 已有分代 GC gating 逻辑 | 仍需满足 read barrier / userfaultfd、`xgc_option.generational_gc`、`use_generational_cmc` flag 与 device_config 条件 | 通过 device_config 和 trace 验证实际启用状态 |
+| ProfilingManager | API 36 已有 `TRIGGER_TYPE_APP_FULLY_DRAWN` 等触发器 | API 37 新增 OOM、ANOMALY、KILL_EXCESSIVE_CPU_USAGE、COLD_START、APP_COMPAT | 按版本注册不同触发器集合 |
+| MessageStack / MessageHeap | 不作为旧版本主线结论 | `android-17.0.0_r1` 中承载 DeliQueue 的 Treiber stack + min-heap 实现 | 反射代码需适配 `mMessages` 不再代表实际队列 |
 
 ## 附：Choreographer Buffer Stuffing Recovery（Android 16 新增）
 
@@ -835,13 +838,13 @@ Android 16 在 Choreographer 中引入 **Buffer Stuffing Recovery** 机制，新
 
 ## 安全相关：Safer Intent 与 StrictMode 新违规检测（Android 17）
 
-> ⚠️ **未进入 Android 17**：android-17.0.0_r1 公开 tag 未发布，本节基于 `frameworks/base` 的 `main` 分支 commit 抓取。android.googlesource.com 的 `android-17.0.0_r1` 直接访问返回 `NOT_FOUND`（需要登录后的 `+android-17.0.0_r1` 命名空间路径）。最终行为以 release tag 为准。
+> **源码基准：`android-17.0.0_r1`（Android 17 / API 37）**。本节已用该 tag 复核 `StrictMode.java`、`SaferIntentUtils.java` 与 `ActivityManagerService.java`；这是安全诊断补充，不作为性能收益结论。
 
 Android 17 在 `android.os.StrictMode` 中新增了两类 VM 策略违规检测位，与 Safer Intent 主线在 system_server 端的 hook 配合：
 
 ### 1. `DETECT_VM_UNSAFE_INTENT_LAUNCH`（bit 13）
 
-检测从外部 app 进入并被本进程二次启动的 `Intent`，对应 `Builder.detectUnsafeIntentLaunch()`（`frameworks/base/core/java/android/os/StrictMode.java`，main HEAD l.1137-1138）。三类具体事件通过 `FrameworkStatsLog.UNSAFE_INTENT_EVENT_REPORTED` 原子从 system_server 端 statsd 上报：
+检测从外部 app 进入并被本进程二次启动的 `Intent`，对应 `Builder.detectUnsafeIntentLaunch()`（`frameworks/base/core/java/android/os/StrictMode.java`，`android-17.0.0_r1`）。三类具体事件通过 `FrameworkStatsLog.UNSAFE_INTENT_EVENT_REPORTED` 原子从 system_server 端 statsd 上报：
 
 | 事件类型枚举 | 含义 | StrictMode 消息 |
 |--------------|------|-----------------|
@@ -884,18 +887,17 @@ registerIntentMatchingRestrictionCallback()              .triggerUnsafeIntentStr
 
 ### 关键源码位置
 
-| 项 | 文件 | 关键行（main HEAD） |
+| 项 | 文件 | `android-17.0.0_r1` 关键行 |
 |---|------|---------------------|
-| `DETECT_VM_*` 位定义 | `frameworks/base/core/java/android/os/StrictMode.java` | l.320-322 |
-| Builder API | `StrictMode.java` | l.1137-1186 |
-| 默认启用条件 | `StrictMode.java` | l.914-918 |
-| 回调 Stub | `StrictMode.java` | l.2206-2213 |
-| 事件类型 dispatch | `StrictMode.java` | l.2467-2482 |
-| BAL violation 入口 | `StrictMode.java` | l.2486-2488 |
+| `DETECT_VM_*` 位定义 | `frameworks/base/core/java/android/os/StrictMode.java` | l.328-330 |
+| Builder API | `StrictMode.java` | l.1176-1225 |
+| 默认启用条件 | `StrictMode.java` | l.948-952 |
+| 回调注册与 Stub | `StrictMode.java` | l.2302-2358 |
+| 事件类型 dispatch / BAL violation | `StrictMode.java` | l.2665-2685 |
 | 实体类 | `frameworks/base/core/java/android/os/strictmode/UnsafeIntentLaunchViolation.java` | 完整文件（2021 copyright，扩展） |
-| AMS 注册端点 | `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` | l.9471-9480，`mStrictModeCallbacks` l.719-721 |
-| SaferIntentUtils 上报 | `frameworks/base/services/core/java/com/android/server/pm/SaferIntentUtils.java` | `reportUnsafeIntentEvent` 函数（l.115-150 区段） |
-| Filter mismatch 标记 | `frameworks/base/core/java/android/content/Intent.java` | `EXTENDED_FLAG_FILTER_MISMATCH = 1 << 0`（l.7737） |
+| AMS 注册端点 | `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` | l.10204-10218，`mStrictModeCallbacks` l.829-831 |
+| SaferIntentUtils 上报 | `frameworks/base/services/core/java/com/android/server/pm/SaferIntentUtils.java` | `reportUnsafeIntentEvent` l.127-136；事件上报 l.245-503 |
+| Filter mismatch 标记 | `frameworks/base/core/java/android/content/Intent.java` | `EXTENDED_FLAG_FILTER_MISMATCH = 1 << 0`（l.7999） |
 
 ### 性能与诊断影响
 
@@ -903,7 +905,7 @@ registerIntentMatchingRestrictionCallback()              .triggerUnsafeIntentStr
 - **binder 回调开销**：AMS `mStrictModeCallbacks` 是 `SparseArray` 按 `callingPid` 索引，O(1) 注册。binder Intent 走 Parcel 序列化，频次低。
 - **app 端 penalty**：默认 `PENALTY_LOG`，不杀进程；APM 想截获需开启 `PENALTY_DROPBOX` 或自实现 `OnVmViolationListener`。
 - **APM 序列化约束**：`UnsafeIntentLaunchViolation.mIntent` 标注 `transient`，跨进程上传后 `getIntent()` 返回 null。回放原始 Intent 必须在 app 端序列化。
-- **过滤位持久化**：`Intent.EXTENDED_FLAG_FILTER_MISMATCH` 在 startService / startActivity 调用前由 AMS `removeExtendedFlags` 清掉再 resolve（`ActivityManagerService.java` l.13706, l.13948），可作为 APM 流程的 hook 点。
+- **过滤位持久化**：`Intent.EXTENDED_FLAG_FILTER_MISMATCH` 在 startService / startActivity 调用前由 AMS `removeExtendedFlags` 清掉再 resolve（`ActivityManagerService.java` l.6289、l.14530、l.14770），可作为 APM 流程的 hook 点。
 
 ### 适配清单
 
@@ -915,34 +917,7 @@ registerIntentMatchingRestrictionCallback()              .triggerUnsafeIntentStr
 ### 待验证
 
 - `BackgroundActivityLaunchViolation` 完整 Javadoc 与 reason 字段。
-- `IUnsafeIntentStrictModeCallback.aidl` 的 `@VintfStability` 标注与 version 字段。
-- AMS 端 `mStrictModeCallbacks` 是否在 binder death 时主动清理。
+- `IUnsafeIntentStrictModeCallback.aidl` 的稳定性标注与版本字段。
 - `balStrictModeRo` flag 的默认值与灰度路径。
-- `vmUnsafeIntentLaunchEnabled()` 全局开关的 DeviceConfig 入口与默认值。
 
 更完整的源码分析与未验证项见 DeepResearch 报告：`2026-06-08-android-17-strictmode-safer-intent-violations.md`。
-
-### 传感器隐私指示器与门控机制
-
-Android 17 引入了全新的传感器隐私控制架构，通过以下三层机制实现完整的访问控制：
-
-#### 核心服务组件
-- **SensorPrivacyService**: 主要入口点，管理传感器隐私状态，实现 Binder 接口提供跨进程通信
-- **CameraPrivacyLightController**: 基于环境光传感器自适应调节摄像头隐私灯亮度
-- **SensorPrivacyStateController**: 负责状态持久化到 `sensor_privacy.xml` 文件
-
-#### 双模式切换机制
-- **软件开关** (`TOGGLE_TYPE_SOFTWARE`): 通过 UI 和设置界面控制
-- **硬件开关** (`TOGGLE_TYPE_HARDWARE`): 物理按键控制
-- 统一通过 `setGlobalRestriction()` 函数调用 AppOpsManager 设置全局限制
-
-#### 实时指示器实现
-- **SystemUI PrivacyItemController**: 实时收集隐私状态并驱动UI指示器，支持5秒缓存机制
-- **AppOpsPrivacyItemMonitor**: 监听 `AppOpsManager.OP_CAMERA` 等状态变化
-- 基于Fechner定律的对数空间光感算法，过滤短暂光线变化
-
-**源码位置**: 
-- `services/core/java/com/android/server/sensorprivacy/SensorPrivacyService.java`
-- `packages/SystemUI/src/com/android/systemui/privacy/AppOpsPrivacyItemMonitor.kt`
-
-详细分析见 DeepResearch 报告：`DeepResearch/2026-07-12-android17-sensor-privacy-service-indicator-gating.md`
