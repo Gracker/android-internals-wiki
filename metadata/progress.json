@@ -37,6 +37,13 @@
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
+      "ts": "2026-07-12T15:08:09.805469+08:00",
+      "note": "Gap mining round 84: 0 candidates ≥14. 1 new DeepResearch (binder-ipcthreadstate, 11:52) scored 13/20 — SpGuard/packCallingIdentity/WorkSource propagation is architecture/security topic, not perf optimization core. Existing §1.44/§1.53 cover kernel-level binder priority; user-space identity layer could supplement as Task2B expansion. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 47 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
       "ts": "2026-07-12T14:06:40.557945+08:00",
       "note": "Gap mining round 83: 0 candidates ≥14 (83rd consecutive). No new material since Round 82 (62 min ago). Daily-info AppFlow (06:30) → §4.11/§16.8 already covered. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 41 outline-only drafts all duplicates of finalized/ready-for-review chapters. Task2B backlog: 0. Coverage saturated."
     },
@@ -604,10 +611,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-12T14:06:40.557945+08:00",
+    "last_run": "2026-07-12T15:08:09.805469+08:00",
     "last_section": "none",
     "result": "no-candidates",
-    "note": "Gap mining round 83: 0 candidates ≥14. 83rd consecutive. Coverage saturated (717 sections). All material sources consumed."
+    "note": "Gap mining round 84: 0 candidates ≥14. Binder IPCThreadState user-space identity research scored 13/20 (architecture, not perf core). Coverage saturated (717 sections)."
   },
   "last_task9_review": {
     "at": "2026-07-11T13:28:01+08:00",

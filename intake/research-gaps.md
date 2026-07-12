@@ -678,3 +678,35 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 
 ### 结论
 本轮未发现评分 ≥ 14 的独立知识缺口，跳过。连续 83 轮未发现新合格缺口。全书 717 个小节覆盖范围充分。
+
+
+## [Task2A Round 84] 知识缺口挖掘 — 2026-07-12 15:08
+
+### 已检查方向（本轮）
+- ✅ Phase 0: 0 个空 draft 章节（47 个 draft 全部 >15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 0 个 unmapped high-quality 条目（全部已映射）
+- ✅ DeepResearch 新增文件 1 个（Round 83 遗漏）:
+  - 2026-07-12-android17-binder-priority-inheritance-ipcthreadstate.md (11:52, 190 行)
+    → Binder 用户态调用身份/优先级传播机制（SpGuard/packCallingIdentity/WorkSource）
+    → 现有 §1.44/§1.48/§1.53 覆盖 kernel 层优先级继承，但 0 处覆盖 SpGuard/packCallingIdentity/WorkSource/callingWorkSource
+    → Round 68 research-gaps 曾建议研究方向，现已完成调研
+    → 评分 13/20 < 14，不合格（素材4 + 相关性3 + 读者需求3 + 时效性3 = 13）
+- ✅ Clippings: 无新文件（最后更新 2026-06-23，19 天无更新）
+- ✅ research-feeds: 无新文件（最后 2026-04-14，3 个月+无更新）
+- ✅ daily-info 2026-07-12: AppFlow 论文已在 §4.11/§16.8 覆盖
+- ✅ Task14 suggestions: 7 条均为已有章节内容补充，非新章节缺口
+- ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 83 轮已全面覆盖
+
+### 评估细节
+| 候选 | 素材丰富度 | 相关性 | 读者需求 | 时效性 | 总分 | 结论 |
+|------|-----------|--------|---------|--------|------|------|
+| Binder IPCThreadState 用户态身份/WorkSource 传播 | 4 | 3 | 3 | 3 | 13/20 | ❌ 不合格，偏架构/安全，非性能优化核心 |
+| PowerAdvisor DVFS Headroom 深化 | 4 | 4 | 3 | 4 | 15/20 | 已由 §5.29 覆盖 |
+| GpuService GPU 内存可观测性 | 4 | 4 | 3 | 4 | 15/20 | 已由 §14.30 覆盖 |
+
+### 合格缺口（≥14 分，且无已有章节覆盖）
+无。最高分候选 13/20 < 14。
+
+### 结论
+本轮未发现评分 ≥ 14 的独立知识缺口，跳过。连续 84 轮中 Round 68-84 未发现新合格缺口。DeepResearch Binder 用户态身份传播研究有价值但评分 13/20，可作为 §1.44/§1.53 的扩展内容（Task2B 范畴）。全书 717 个小节覆盖范围充分。
