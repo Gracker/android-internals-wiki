@@ -7,9 +7,18 @@ applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
 last_verified: '2026-06-29'
 last_verified_against: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power), Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)
 confidence: medium
-sources: 
+sources:
+  - obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md
+  - AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power)
+  - kernel/sched/cpufreq_schedutil.c
 path: 'source: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md'
-tags: 
+tags:
+  - dvfs
+  - cpu-frequency
+  - power-management
+  - schedutil
+  - opp
+  - perfetto
 related_chapters: 
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2
@@ -31,7 +40,7 @@ reviewed_by: openclaw-task6
 reviewed_date: '2026-06-07'
 task6_reviewed_date: '2026-06-30'
 last_task6_at: '2026-06-30T04:06:00+08:00'
-last_task6_audit: '2026-05-24'
+last_task6_audit: '2026-07-13'
 last_task2b_at: '2026-06-07T16:50:00+08:00'
 last_task6_review_log: logs/review/2026-05-06-18-review.md
 task6_review_notes: 2026-06-30 Task6 04:06 revisiting pass-light-edit. Task9 auto-fix (android-17.0.0_r1 锚点升级) 后写作复审；L1/L2 全面扫描零命中，无 B 类问题；queue 无 pending，自动晋升 finalized。 | 2026-06-07 Task6 19:14：Task9 auto-fix 后写作复审（revisiting）；L1/L2 全面扫描零命中，无需修复；送 Task9 做最终 pass 确认。 |  2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B
@@ -509,7 +518,7 @@ AOSP android-17.0.0_r1 中，`GameManagerService`（路径：`frameworks/base/se
 - `setGameMode(String packageName, @GameMode int gameMode, int userId)` — 切换游戏模式（标准/性能/省电），更新 game mode interventions
 - `getGameMode()` — 查询当前游戏模式
 
-游戏启动/加载阶段的性能提升路径不经过 `powerHint` / `POWER_HINT_*` 常量。可验证链路是：
+游戏启动/加载阶段的性能提升路径不经过 `powerHint` / `POWER_HINT_*` 常量。可验证调用路径是：
 
 ```
 GameManagerService → PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, isLoading)
@@ -537,7 +546,7 @@ Power HAL 如何把 `Mode.GAME_LOADING` 映射到具体的调频/调压动作，
 
 这些映射逻辑不在 AOSP 主线范围内，不同 SoC 平台和 OEM 的配置差异很大，无法用一条通用调用链覆盖。在 Perfetto 中观察时，可以对比 `power/cpu_frequency` 轨迹与游戏加载区间的时间对齐关系，判断厂商的 GAME_LOADING → 提频映射是否生效，但映射表本身不暴露在 AOSP 的 public API 或 sysfs 标准接口中。
 
-### Android 17 三层协作闭环：PowerManagerService × IPower HAL × schedutil/cpuidle menu
+### Android 17 三层协作：PowerManagerService × IPower HAL × schedutil/cpuidle menu
 
 <!-- AIW-源码调研-2026-07-04 -->
 
@@ -585,7 +594,7 @@ struct sugov_policy {
 };
 ```
 
-调用链 `schedutil_update_util → sugov_get_util → sugov_should_update_freq → sugov_deferred_update → sugov_irq_work → sugov_work → __cpufreq_driver_target`, 其中 `sugov_get_util()` (line 220) 始终从 `scx_cpuperf_target(cpu)` 起算 (sched_ext 性能目标接口, 与 android16-6.12 对齐), 非 scx 独占时叠加 `cpu_util_cfs_boost()`, 走 `effective_cpu_util()` → `sugov_effective_cpu_perf()`。`sugov_should_update_freq()` (line 79-110) 用 `delta_ns >= freq_update_delay_ns` 守门, 这是 vendor hook 临时降 rate_limit_us 到 0 实现"触摸瞬时升频"的接入点。
+调用链 `schedutil_update_util → sugov_get_util → sugov_should_update_freq → sugov_deferred_update → sugov_irq_work → sugov_work → __cpufreq_driver_target`, 其中 `sugov_get_util()` (line 220) 始终从 `scx_cpuperf_target(cpu)` 起算 (sched_ext 性能目标接口, 与 android16-6.12 一致), 非 scx 独占时叠加 `cpu_util_cfs_boost()`, 走 `effective_cpu_util()` → `sugov_effective_cpu_perf()`。`sugov_should_update_freq()` (line 79-110) 用 `delta_ns >= freq_update_delay_ns` 守门, 这是 vendor hook 临时降 rate_limit_us 到 0 实现"触摸瞬时升频"的接入点。
 
 `sugov_iowait_boost()` (line 250+) 实现"连续 IO 唤醒指数提频": 每次 IO 唤醒 `iowait_boost <<= 1`, 封顶 `SCHED_CAPACITY_SCALE`, `delta_ns > TICK_NSEC` 时由 `sugov_iowait_reset()` 重置回 `IOWAIT_BOOST_MIN`。这条逻辑保证"连续 IO 唤醒给强 boost, 偶发 IO 唤醒给弱 boost", 避免长尾抖动。
 
@@ -635,7 +644,7 @@ T+200ms  PowerHAL Boost 超时
          → idle CPU 重新进入 cpuidle, menu governor 预测 idle 时长
 ```
 
-在 Perfetto 里抓这条链路时, 关注三类 slice: (1) `power/wake_lock` 看到 PMS 注册的 suspend blocker 状态; (2) `power/cpu_frequency` 与 wake lock 摘要变更的时间对齐; (3) `sched/cpu_util` 与 `sched/cpu_frequency` 同步轨迹, 看 schedutil 是否在 `freq_update_delay_ns` 内刷新。
+在 Perfetto 里抓这条调用路径时, 关注三类 slice: (1) `power/wake_lock` 看到 PMS 注册的 suspend blocker 状态; (2) `power/cpu_frequency` 与 wake lock 摘要变更的时间对齐; (3) `sched/cpu_util` 与 `sched/cpu_frequency` 同步轨迹, 看 schedutil 是否在 `freq_update_delay_ns` 内刷新。
 
 > ⚠️ 本节源码以 kernel.org mainline v6.x 为参照, ACK android17-6.18-2026-06_r1 在 menu / schedutil 算法上一致, 差异主要在 SoC cpuidle driver (`arm_idle`) 的 state 表与厂商私有 governor hook, 不在 AOSP 主线范围。
 
