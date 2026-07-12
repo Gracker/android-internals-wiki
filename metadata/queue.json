@@ -188,7 +188,32 @@
       "added_at": "2026-07-12T13:16:03",
       "status": "pending",
       "original_review_log": "logs/review/2026-07-12-13-audit.md"
+    },
+    {
+      "section": "8.9",
+      "section_title": "Android 游戏性能与 Game Mode/State API",
+      "priority": 90,
+      "reason": "[抽检回炉] AOSP 源码验证标签引用 android-16.0.0_r1，需按版本基线更新为 android-17.0.0_r1 并验证代码路径",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "3 处 AOSP 版本标签",
+          "detail": "正文中有 3 处 [已验证: AOSP android-16.0.0_r1] 标签（GameManagerService、setGameState 行为描述、PerformanceHintManager 复核），按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 要求，源码链接必须锚定 android-17.0.0_r1",
+          "suggestion": "验证这些代码路径在 android-17.0.0_r1 中是否仍存在且行为一致，更新验证标签"
+        },
+        {
+          "type": "需确认",
+          "location": "outline 锚点与正文标题命名不一致",
+          "detail": "锚点1 '游戏性能与普通 App 的预算差异' vs 正文 '游戏性能的特殊性：持续满帧 vs 按需渲染'；锚点6 '原生游戏工具链' vs 正文 'AGDK 工具链'。内容已覆盖，仅命名不一致",
+          "suggestion": "统一锚点与正文标题措辞，或更新锚点描述以匹配正文"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-12T14:11:16+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-12-14-audit.md"
     }
   ],
-  "updated_at": "2026-07-12T13:16:03"
+  "updated_at": "2026-07-12T14:11:16+08:00"
 }
