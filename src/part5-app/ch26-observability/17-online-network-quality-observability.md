@@ -2,7 +2,7 @@
 title: 线上网络质量监控与接入层协同
 chapter: '26.17'
 section: '26.17'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-12'
 last_verified_against: Android Developers docs + AOSP android-17.0.0_r1 Connectivity sources + OkHttp 5.x docs + Cronet API 143.7445.0 + Clippings references
