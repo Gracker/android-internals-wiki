@@ -40,49 +40,49 @@ sources:
 - type: aosp
   path: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
   title: Input dispatch timeout tracking
-  date: android-16.0.0_r1
+  date: android-17.0.0_r1
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
   title: ANR reporting helper
-  date: android-16.0.0_r1
+  date: android-17.0.0_r1
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java
   title: Service timeout constants
-  date: android-16.0.0_r1
+  date: android-17.0.0_r1
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java
   title: Broadcast timeout record
-  date: android-16.0.0_r1
+  date: android-17.0.0_r1
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
   title: Content provider ANR entry
-  date: android-16.0.0_r1
+  date: android-17.0.0_r1
 - type: aosp
   path: frameworks/base/core/java/android/content/ContentResolver.java
   title: ContentProvider timeout constants
-  date: android-16.0.0_r1
+  date: android-17.0.0_r1
 - type: aosp
   path: frameworks/base/core/java/android/content/ContentProviderClient.java
   title: Provider not-responding detector
-  date: android-16.0.0_r1
+  date: android-17.0.0_r1
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
   title: ContentProvider timeout messages
-  date: android-16.0.0_r1
+  date: android-17.0.0_r1
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
-last_task2b_lite_at: "2026-06-04"
+last_task2b_lite_at: 2026-07-13
 section: '9.7'
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
 task9_result: auto-fixed
 task2b_result: rework-fixed
-last_verified: '2026-04-14'
-last_verified_against: AOSP android-16.0.0_r1
+last_verified: "2026-07-13""2026-07-13"
+last_verified_against: AOSP android-17.0.0_r1
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-13
 last_task9_at: "2026-06-13T01:20:00+08:00"
@@ -135,7 +135,7 @@ ANR 报告把责任先落在"超时的进程"上,这一步只够告诉我们谁�
 - **路径 1：Provider 进程 publish 超时（10s）**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（10s × HW_TIMEOUT_MULTIPLIER）在 `attachApplicationLocked` 中发送 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57`，超时后调用 `ContentProviderHelper.processContentProviderPublishTimedOutLocked` → `removeProcessLocked` + `REASON_INITIALIZATION_FAILURE`（杀进程，**不弹 ANR 对话框**，Perfetto 中只见 `am_proc_died` 无 `am_anr`）。
 - **路径 2：Provider call hang 检测**：仅当具备系统权限的调用方配置 `ContentProviderClient.setDetectNotResponding()` 时开启，`ContentProviderClient.NotRespondingRunnable` 会经 `ContentResolver.appNotRespondingViaProvider()` 进入 `ContentProviderHelper.appNotRespondingViaProvider` → `AnrHelper.appNotResponding`（**真 ANR**；是否弹框取决于后续 ANR 策略）。
 
-**常量定义位置修正**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 等常量定义在 `ContentResolver`（android-16 为 l.788-807），非 `ContentProviderHelper`。`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57` 用于 provider publish 超时；`WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG=73` 只用于等待 provider publish 状态超时，不是 `setDetectNotResponding()` 的 call-hang ANR 消息。
+**常量定义位置修正**：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 等常量定义在 `ContentResolver`（android-17 为 l.788-807），非 `ContentProviderHelper`。`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG=57` 用于 provider publish 超时；`WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG=73` 只用于等待 provider publish 状态超时，不是 `setDetectNotResponding()` 的 call-hang ANR 消息。
 
 **排查入口区分**：若遇到 "Unable to launch app ... for provider ... launching app became null" 或 `REASON_INITIALIZATION_FAILURE`，应查路径 1；若遇到 ANR 对话框且 subject 包含 "ContentProvider not responding"，应查路径 2 + `setDetectNotResponding` 的调用方。
 
@@ -147,7 +147,7 @@ ANR 报告把责任先落在"超时的进程"上,这一步只够告诉我们谁�
 
 ### Input ANR 的真实入口在 inputflinger
 
-Input ANR 的超时检测发生在 native input pipeline。AOSP android-16 的 `InputDispatcher.cpp` 里,默认 budget 来自 `DEFAULT_INPUT_DISPATCHING_TIMEOUT`,调度循环里会周期性执行 `processAnrsLocked()`:
+Input ANR 的超时检测发生在 native input pipeline。AOSP android-17 的 `InputDispatcher.cpp` 里,默认 budget 来自 `DEFAULT_INPUT_DISPATCHING_TIMEOUT`,调度循环里会周期性执行 `processAnrsLocked()`:
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp  (Android 11+)
@@ -159,7 +159,7 @@ const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::mil
 const nsecs_t nextAnrCheck = processAnrsLocked();
 ```
 
-这里的判断对象是输入等待队列，不是某个"AMS 状态不一致"回调。输入事件发出去之后，目标窗口迟迟不给 ack，InputDispatcher 才会把超时上报到 system_server 的 ANR 处理路径。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
+这里的判断对象是输入等待队列，不是某个"AMS 状态不一致"回调。输入事件发出去之后，目标窗口迟迟不给 ack，InputDispatcher 才会把超时上报到 system_server 的 ANR 处理路径。[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
 ### Service、Broadcast、Provider 也都有各自的 timeout record
 
@@ -189,7 +189,7 @@ void appNotRespondingViaProvider(IBinder connection) {
 }
 ```
 
-这些代码足够说明一件事,Service、Broadcast、Provider 的超时都有清晰的系统入口,排查时要顺着真实入口走,不要把全部 ANR 都折叠成"主线程某条 Message 超时"。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java] [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java]
+这些代码足够说明一件事,Service、Broadcast、Provider 的超时都有清晰的系统入口,排查时要顺着真实入口走,不要把全部 ANR 都折叠成"主线程某条 Message 超时"。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java] [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java]
 
 ## 第 2 步:把证据拆成三层
 
