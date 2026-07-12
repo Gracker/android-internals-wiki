@@ -54,7 +54,11 @@ last_task2b_at: "2026-06-03T02:50:00+08:00"
 task2b_fixed_by: openclaw-task2b
 pipeline_stage: ready-to-publish
 last_task9_autofix_at: "2026-06-22"
-last_task9_audit: "2026-06-22"
+last_task9_audit: "2026-07-12"
+last_task9_audit_at: "2026-07-12T20:49:44+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-12-20-audit.md"
+last_task9_audit_result: "pass-idle-audit"
+last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）复核通过；AndroidX 固定 commit f39ca3510efb2347ebfef231e25a3e804922450d 的 FragmentTransaction/FragmentManager 主链路与正文一致；Perfetto FrameTimeline Android 12+ 边界仍准确；AndroidX 1.9.0-alpha02 lifecycle tracing 仅作为后续观察点，不影响当前结论；无 P0/P1。"
 last_task2b_verifier_at: "2026-06-22T07:30:06+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-22-07-task2b-verifier.md"
 deepseek_cn_review_state: done
