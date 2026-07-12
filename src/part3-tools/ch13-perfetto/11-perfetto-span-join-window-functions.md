@@ -55,6 +55,8 @@ last_task2b_main_at: 2026-06-16T02:50:00+08:00
 updated_by: "openclaw-task6"
 updated_date: "2026-06-30"
 last_task6_audit: "2026-06-30"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-12
 ---
 
 # 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
@@ -186,7 +188,7 @@ WHERE COALESCE(next_ts, trace_end()) > ts;
 
 `PARTITIONED` 告诉 `SPAN_JOIN`：只在同一个分区内计算重叠。调度与频率要按 `cpu` 分区，线程状态与 slice 要按 `utid` 分区，帧与进程级事件可以用 `upid` 或自定义整数键。
 
-Perfetto 文档明确写了两个限制：分区列必须是整数；同一表、同一分区内的 span 不能重叠。源码里的 `Query::CursorNext()` 会检查分区列类型，非整数会返回 `SPAN_JOIN: partition is not an INT column`。
+`SPAN_JOIN` 有两个硬限制：分区列必须是整数；同一表、同一分区内的 span 不能重叠。源码里的 `Query::CursorNext()` 会检查分区列类型，非整数会返回 `SPAN_JOIN: partition is not an INT column`。
 
 [已验证: Perfetto Trace Processor docs + AOSP external/perfetto span_join_operator.cc]
 
@@ -223,7 +225,7 @@ Perfetto 标准库的 `thread_executing_span_with_slice.sql` 就展示了这条�
 
 帧耗时高时，单看 `Choreographer#doFrame` 的 `dur` 只能说明主线程这一帧忙了多久。要判断“忙的时候 CPU 频率是否足够”，需要把帧区间、线程运行区间和 CPU 频率区间放到同一条时间轴上。
 
-这个例子用主线程的 `Choreographer#doFrame` slice 作为帧窗口，用 `sched` 找出主线程在各 CPU 上运行的片段，再用 `SPAN_JOIN` 把运行片段与 cpufreq span 关联起来。
+这个例子拿主线程的 `Choreographer#doFrame` slice 作为帧窗口，用 `sched` 找出主线程在各 CPU 上运行的片段，再通过 `SPAN_JOIN` 把运行片段与 cpufreq span 关联起来。
 
 ```sql
 -- 参数：把 com.example.app 换成目标进程名
@@ -489,7 +491,7 @@ CREATE VIRTUAL TABLE outer_result
 USING SPAN_OUTER_JOIN(left_span, right_span);
 ```
 
-Perfetto 文档提到一个特殊情况：参与 outer join 的分区表为空，或者 left join 右侧的分区表为空时，即使另一边非空，也可能没有 slice 输出。这个行为来自 span join 对分区 shadow 的处理，不能完全按普通 SQL 外连接直觉理解。
+需要注意一个边界行为：参与 outer join 的分区表为空,或者 left join 右侧的分区表为空时，即使另一边非空，也可能没有 slice 输出。这个行为来自 span join 对分区 shadow 的处理，不能完全按普通 SQL 外连接直觉理解。
 
 [已验证: Perfetto Trace Processor docs]
 

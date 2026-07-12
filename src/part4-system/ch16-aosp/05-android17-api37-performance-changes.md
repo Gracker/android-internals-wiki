@@ -9,7 +9,7 @@ applicable_versions: "Android 17 (API 37)"
 last_verified: 2026-07-12
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/base + art + packages/modules/Profiling + build/soong; Android Developers behavior/features references"
 confidence: medium
-reviewed_at: 2026-05-11T19:05:00+08:00
+reviewed_at: "2026-07-12T17:09:59+08:00"
 sources:
 - type: official
 path: https://juejin.cn/post/7610233341305389099
@@ -37,23 +37,22 @@ last_task9_autofix_at: 2026-07-12
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
-status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_reviewed
+task6_state: reviewed
 task6_result: pass-light-edit
-task6_l1_l2_fixes: 7
+task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
 task6_new_rework: false
 task9_state: reviewed
-last_task6_at: 2026-07-12T16:10:47+08:00
-last_task6_review_log: logs/review/2026-07-12-16-review.md
+last_task6_at: 2026-07-12T17:10:18+08:00
+last_task6_review_log: logs/review/2026-07-12-17H-review.md
 task6_reviewed_date: 2026-07-12
 task6_reviewed_by: openclaw-task6
-task6_reviewed_at: 2026-07-12T16:10:47+08:00
+task6_reviewed_at: 2026-07-12T17:10:18+08:00
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-12
-review_notes: "2026-07-12 16: Task6 revisiting review after Task2B fix-lite: pass-light-edit。修复 2 处无标签代码块(DeliQueue图+StrictMode调用链)、1 处重复水平线、4 处重复frontmatter键。L1禁用词扫描零命中(对齐均为技术语义)。无新增L3/L4回炉。章节交Task9复核Task2B修复项。"
-task6_review_notes: "2026-07-12 16: Task6 revisiting review (post-task2b-fix): pass-light-edit; L1 fixes 7 (2 bare code blocks, 1 dup hr, 4 dup fm keys); 0 L3/L4 issues; sent to Task9 for re-review of Task2B fixes."
+review_notes: "2026-07-12 17H: Task6 revisiting review #2 (post-task2b-fix, post-task9-autofix): pass-light-edit。修复 1 处重复frontmatter键(status)、1 处bullet结构混乱(三点→三组件+结论段分离)。L1禁用词扫描零命中。无新增L3/L4回炉。Task9已reviewed(auto-fixed)，queue.json无pending，章节待最终定稿。"
+task6_review_notes: "2026-07-12 17H: Task6 revisiting review #2: pass-light-edit; L1/L2 fixes 2 (1 dup fm key, 1 bullet restructure); 0 L3/L4 issues; Task9 already reviewed; queue empty."
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
@@ -159,13 +158,13 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同
 
 从性能复杂度看，旧单链表的头部移除是 O(1) 但最坏插入是 O(n)（需要遍历到正确位置），min-heap 的插入和移除都是 O(log n)，两者各有优劣。DeliQueue 的收益集中在并发侧：写入端通过 lock-free Treiber Stack 消除锁竞争，多线程同时入队时不再相互阻塞，插入是 O(1) 的 CAS 操作；Looper 侧的 drain 和读取是独占操作，不受写入端干扰。博客特别指出，min-heap 在尾部延迟（tail latency）上优于单链表——队列过载时，单链表的 O(n) 插入会让尾部延迟急剧恶化，min-heap 的 O(log n) 更稳定。排障时，Perfetto 中的 lock contention 切片是观察收益的直接入口——如果 `monitor contention with MessageQueue` 切片消失或缩短，说明 DeliQueue 在当前场景下起效了。
 
-源码层可以拆成三点：
+源码层涉及三个核心组件：
 
-- `CombinedDeliMessageQueue/MessageQueue.java` 保留 legacy 视角下可见的 `mMessages` / `mLast` 字段，并通过 `USE_NEW_MESSAGEQUEUE` 兼容变更选择 DeliQueue。
-- `MessageStack.java` 负责 Treiber stack、freelist、同步/异步两个 `MessageHeap` 的连接。
-- `MessageHeap.java` 负责按 `when` 和 `insertSeq` 排序的 min-heap。
-- 因此这次变化的实质是"保留兼容字段 + 切换底层实现";不要按"`mMessages` 改名"理解。
-- 同步屏障语义仍按 `MessageQueue` 公共 API 理解。底层换成并发入队和 Looper 侧排序后，`postSyncBarrier()` 与异步消息选择逻辑仍由队列实现维护；业务侧不要依赖旧链表中 barrier 节点的位置做反射判断。
+- `CombinedDeliMessageQueue/MessageQueue.java`：保留 legacy 视角下可见的 `mMessages` / `mLast` 字段，并通过 `USE_NEW_MESSAGEQUEUE` 兼容变更选择 DeliQueue。
+- `MessageStack.java`：负责 Treiber stack、freelist、同步/异步两个 `MessageHeap` 的连接。
+- `MessageHeap.java`：负责按 `when` 和 `insertSeq` 排序的 min-heap。
+
+这次变化的实质是"保留兼容字段 + 切换底层实现"，不要按"`mMessages` 改名"理解。同步屏障语义仍按 `MessageQueue` 公共 API 理解——底层换成并发入队和 Looper 侧排序后，`postSyncBarrier()` 与异步消息选择逻辑仍由队列实现维护；业务侧不要依赖旧链表中 barrier 节点的位置做反射判断。
 
 如果你的项目中有以下情况，需要检查：
 

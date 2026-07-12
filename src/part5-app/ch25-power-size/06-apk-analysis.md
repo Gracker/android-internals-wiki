@@ -64,7 +64,7 @@ task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 apk
 last_task2b_lite_at: 2026-06-03
 last_task9_autofix_at: "2026-07-12"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
+last_deepseek_cn_review_at: 2026-07-12
 last_task9_audit: "2026-07-12"
 last_task9_audit_log: "logs/deep-review/2026-07-12-09-audit.md"
 last_task9_audit_at: "2026-07-12T09:26:38+08:00"
@@ -102,7 +102,7 @@ finalized_by: openclaw-task6-auto-promote
 
 ## 为什么要了解 APK 体积分析与瘦身
 
-包体积治理先要把体积账算清楚，再决定是否改 Gradle 配置。一个 release 包里通常有 dex、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、`AndroidManifest.xml` 和签名文件；它们进入安装、启动和内存映射路径的方式不同，对应的优化手段也不同。APK 结构、`resources.arsc` 作用、dex / res / lib 三类产物的基础原理，详见 12.1 节。这里处理实战流程：怎么定位体积来源，怎么评估改动收益，怎么把 R8、资源缩减和 ABI 策略纳入发版检查。
+包体积治理的第一步是把体积账算清楚，再决定要不要动 Gradle 配置。一个 release 包里通常有 dex、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、`AndroidManifest.xml` 和签名文件；它们进入安装、启动和内存映射路径的方式不同，对应的优化手段也不同。APK 结构、`resources.arsc` 作用、dex / res / lib 三类产物的基础原理，详见 12.1 节。这里处理实战流程：怎么定位体积来源，怎么评估改动收益，怎么把 R8、资源缩减和 ABI 策略纳入发版检查。
 
 
 ## APK Analyzer 与体积构成分析
@@ -138,7 +138,7 @@ bundletool get-size total --apks=app-release.apks
 
 [已验证: 官方文档, developer.android.com/studio/build/shrink-code]
 
-Android 现在的代码瘦身以 R8 为主。R8 会从 manifest 中声明的 Activity、Service、Provider 等入口出发，构建可达代码图，移除不可达的类和方法；随后执行方法内联、类合并、命名缩短等优化。ProGuard 规则仍然沿用在 R8 配置里，但工程判断要从“开没开混淆”改成“规则有没有过度保留”。
+Android 现在的代码瘦身以 R8 为主。R8 会从 manifest 中声明的 Activity、Service、Provider 等入口出发，构建可达代码图，移除不可达的类和方法；随后执行方法内联、类合并、命名缩短等优化。ProGuard 规则仍然沿用在 R8 配置里，但工程判断的重点也要从“开没开混淆”转到“规则有没有过度保留”。
 
 release 构建至少保留下面这组开关。资源缩减依赖代码缩减，单独打开 `isShrinkResources` 没有意义。
 
@@ -222,7 +222,7 @@ Android 平台安装 native 库时，按设备 primary ABI 查找 `lib/<primary-
 
 ## [自动发现] 体积门禁比一次性瘦身更可靠
 
-包体积优化不能只在版本末期突击处理。更稳的做法是在 CI 中保留基线包，按模块、目录和文件类型记录差异：dex 增长超过阈值时要求说明依赖来源；`res/` 增长超过阈值时要求列出新增图片和多语言资源；`lib/` 增长超过阈值时要求说明 ABI 与符号策略；`assets/` 增长超过阈值时要求说明是否可按需下载。
+包体积优化不适合只在版本末期突击处理。更稳的做法是在 CI 中保留基线包，按模块、目录和文件类型记录差异：dex 增长超过阈值时要求说明依赖来源；`res/` 增长超过阈值时要求列出新增图片和多语言资源；`lib/` 增长超过阈值时要求说明 ABI 与符号策略；`assets/` 增长超过阈值时要求说明是否可按需下载。
 
 门禁记录可以从 `apkanalyzer`、`bundletool get-size total`、APK Analyzer 对比截图和构建产物归档开始。把“这次为什么大了”记录下来，避免下个版本再重复排查同一套 SDK、同一批图片、同一套 ABI 副本。
 

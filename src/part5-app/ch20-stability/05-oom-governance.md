@@ -56,6 +56,8 @@ last_task9_audit_at: "2026-07-12T00:25:03+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-12-00-audit.md"
 last_task9_audit_result: "auto-fixed-idle-audit"
 last_task9_audit_notes: "idle audit: 维度1源码引用通过；维度3发现 Android 14/API 34+ ComponentCallbacks2 trim level 行为差异并已 auto-fix，章节回到 Task6 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-12
 ---
 
 
@@ -84,7 +86,7 @@ Android 应用遇到的 OutOfMemoryError 并不只有"堆内存不够"这一种�
 
 ART 里所有 OutOfMemoryError 最终都经过 `Thread::ThrowOutOfMemoryError`（`art/runtime/thread.cc`）。该函数在 Native 层设置 `tls32_.throwing_OutOfMemoryError` 标志，通过 `ThrowNewException` 构造 `Ljava/lang/OutOfMemoryError;` 对象。线程从 Native 返回 Java 层时检查 pending exception，触发 `UncaughtExceptionHandler`，应用崩溃。
 
-关键细节：如果 OOM 发生在 OOM 构造过程中（递归场景），ART 会使用预分配的 `PreAllocatedOutOfMemoryErrorWhenThrowingOOME` 对象，避免在内存不足时再分配新对象。
+如果 OOM 在 OOM 对象自身的构造过程中触发（递归场景），ART 会切到预分配的 `PreAllocatedOutOfMemoryErrorWhenThrowingOOME` 对象，避免在内存不足时再分配新对象。
 
 [已验证: AOSP art/runtime/thread.cc, Thread::ThrowOutOfMemoryError]
 
@@ -147,7 +149,6 @@ void Heap::ThrowOutOfMemoryError(Thread* self, size_t byte_count,
 
 内存泄漏的具体检测手段（Shark 解析 hprof、GC Root 引用链追踪）详见 §23.1。Java 堆优化策略（减少对象分配、对象池、缓存策略）详见 §23.4。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
 
 ## Native 内存 OOM
 
@@ -197,7 +198,6 @@ Android 8.0 起，普通 Bitmap 的像素数据通过 `calloc` 分配在 Native 
 
 Native 内存管理的详细优化策略详见 §23.3。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
 
 ## 线程数 OOM（pthread_create 失败）
 
@@ -241,12 +241,10 @@ Threads:	387
 
 针对子线程的 Native Crash，`sigsetjmp` / `siglongjmp` 只能作为强约束下的线程级隔离实验：信号处理函数只能执行 async-signal-safe 的最小跳转逻辑，跳回后也不能假定锁、堆、JNI 和业务状态仍然一致。具体实现通过 PLT Hook 拦截 `pthread_create`，替换执行函数实现；命中后应记录最小状态并尽快结束进程，详见扩展小节"OOM 兜底与安全降级"。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - pthread_create 回溯：原来 Native 也有 try catch！.md]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md]
 
 ## FD 泄漏导致的资源型崩溃
 
-Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket，也让后续需要 epoll、pipe 或 socket 的初始化步骤失败——每个 Looper 线程初始化时都会创建 epoll FD 和 eventfd（`system/core/libutils/Looper.cpp`）。这类问题通常表现为 FD 创建失败、Looper/InputChannel 初始化失败或 FORTIFY abort，不等价于 ART 投递的 `OutOfMemoryError`；放在 OOM 治理章，是因为线上内存告警常把 FD、线程、虚拟地址空间一起作为进程资源水位管理。
+Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket。每个 Looper 线程初始化时都会创建 epoll FD 和 eventfd（`system/core/libutils/Looper.cpp`），FD 不够时 Looper/InputChannel 初始化就会失败。这类问题通常表现为 FD 创建失败、Looper/InputChannel 初始化失败或 FORTIFY abort，不等价于 ART 投递的 `OutOfMemoryError`；放在 OOM 治理章，是因为线上内存告警常把 FD、线程、虚拟地址空间一起作为进程资源水位管理。
 
 ### 典型崩溃堆栈
 
@@ -307,7 +305,6 @@ int proxy_open(char* path, int flags, int mode) {
 
 `FD_MAP` 的实现采用分桶锁（类似 `ConcurrentHashMap`），避免多线程环境下锁竞争影响业务性能。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md]
 
 ## 虚拟内存空间耗尽（32 位进程）
 
@@ -431,5 +428,4 @@ static void* pthread_wrapper(void* arg) {
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-oom-art-heap-analysis.md
 - 类型：DeepResearch 调研结果
 - 摘要：ART 多层堆架构（Linear Alloc / Zygote / Active 堆分区）的内存管理机制。黑科技扩量在 OOM 风险时动态扩展堆内存，延长应用存活 2-3 秒为后台任务和内存清理提供缓冲，涉及 GC、内存监控和动态扩展三个模块。
-- 注入时间：2026-05-17
-- 价值：补充 ART 堆分区与 OOM 区域映射关系，以及 OOM 时堆增量技术的实现机制
+- 内容：ART 多层堆架构（Linear Alloc / Zygote / Active 堆分区）的内存管理机制，以及 OOM 时堆增量技术

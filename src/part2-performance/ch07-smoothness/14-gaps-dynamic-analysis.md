@@ -47,6 +47,8 @@ review_notes: "2026-05-05 Task6：补齐 outline 块，修正 frontmatter 结构
 last_task9_audit_at: "2026-06-19T10:27:25+08:00"
 last_task9_audit_log: "logs/deep-review/2026-06-19-10-audit.md"
 last_task9_autofix_at: "2026-06-19"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-12
 ---
 
 # 7.14 GAPS：Android 动态分析目标可达性路径重建
@@ -76,7 +78,7 @@ last_task9_autofix_at: "2026-06-19"
 
 GAPS 处理的是一个很具体的问题：给定一个目标方法，怎样在 Android 应用里尽量稳定地把它跑到。纯 GUI tester 往往只能盲扫界面，静态分析又容易在全程序 call graph 上付出很高代价。GAPS 把两条路线接起来，先从目标方法反向重建可行路径，再把路径翻成运行期可以执行的入口和界面操作。
 
-这篇论文和仓库更适合被当成"目标方法可达性工具链"，不是现成的 Perfetto 性能分析框架。论文验证的是路径重建和方法触达率，性能 trace 只是后续可以外接的观测手段。
+这篇论文和仓库的定位是"目标方法可达性工具链"，不是现成的 Perfetto 性能分析框架。论文验证的是路径重建和方法触达率，性能 trace 只是后续可以外接的观测手段。
 
 ## 要点
 
@@ -116,7 +118,7 @@ GAPS 的论文主线可以按下面这条链理解：
 5. **找不到控件时再交给 Guardian 兜底**
    论文写得很明确，Guardian 是 fallback，不是默认主链。只有当 GAPS 预期的 Activity 或 widget 没出现在当前界面时，才把交互暂时交给 Guardian，等界面回到预期路径后再继续按静态指令执行。
 
-公开仓库当前的 `run` 模式又加入了 built-in LLM agent，会先读取界面层级，再给出点击、输入、返回等动作。这属于仓库后续演进。写论文实验设定时，应以论文 6.3 和对应实现边界为准，不把它写成 Android Instrumentation 或 Perfetto 验证链。
+公开仓库的 `run` 模式后来加入了 built-in LLM agent，会先读取界面层级，再给出点击、输入、返回等动作。这属于仓库后续演进。引用实验设定时，应以论文 6.3 和对应实现边界为准，不把它写成 Android Instrumentation 或 Perfetto 验证链。
 
 ### 🔹 UI 资源 ID 逆向与 GUI 操作序列生成
 
@@ -164,7 +166,7 @@ GAPS 对性能工程有潜在价值，但这部分要按“衍生场景”来写
 
 ### 🔸 GAPS 与 LLM 驱动测试的对比
 
-2026 年 1 月的最新论文将 GAPS 与 Guardian（LLM 驱动的 GUI 测试工具）做了专项对比：
+2026 年 1 月的专项对比论文将 GAPS 与 Guardian（LLM 驱动的 GUI 测试工具）做了对比：
 
 - GAPS 的动态触达率（57.44%）约为 Guardian（17.12%）的 3.4 倍。
 - LLM Agent 在复杂 Activity 状态转换中容易“迷路”：重复点击已访问的界面、跳过需要特定前置条件的入口、在深层嵌套的 Fragment 导航中失去方向。

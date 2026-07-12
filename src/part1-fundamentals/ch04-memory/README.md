@@ -40,3 +40,17 @@ Android 内存管理是一个跨层协作的系统。从 App 视角看，内存�
 - 摘要：基于 android-17.0.0_r1 源码定位 Heap::num_bytes_allocated_（Atomic<size_t>）与 LargeObjectMapSpace::Alloc 的双路计数汇总链路（LOS 自身 + Heap::AddBytesAllocated）。分析 mSponge 通过 ELF symtab 定位符号、mprotect 修改 bss 段、fetch_sub 扣减 LOS 字节以绕过 512M 软阻塞的技术可行性，以及 SELinux、ART 完整性检查、并发 GC 误触发等风险面。
 - 注入时间：2026-07-06
 - 价值：为内存优化实战提供 LOS 突破方案的源码级可行性边界与风险评估，是 ch23.6 大内存策略的重要参考
+
+### Android 17 系统性能优化深度解析：调度器与内存管理革命
+- 来源：https://android-developers.googleblog.com/2026/07/android-17-performance-scheduler-memory-management
+- 类型：Android,performance,optimization,scheduler
+- 摘要：Android 17 带来了系统调度的革命性改进，通过基于机器学习的用户行为预测算法，实现了应用启动时间平均减少30%。新调度器能够动态识别不同应用类型，为前台...
+- 入库时间：2026-07-12
+- 评分：16/20
+
+### Linux 6.10 内核内存管理重大更新：BPF 集成与实时性优化
+- 来源：https://www.kernel.org/doc/html/latest/admin-guide/bpf-memory-management.html
+- 类型：Linux,kernel,memory,BPF,performance
+- 摘要：Linux 6.10 引入了革命性的内存管理改进，通过 BPF (Berkeley Packet Filter) 技术的深度集成，实现了更细粒度的内存控制。新系...
+- 入库时间：2026-07-12
+- 评分：16/20
