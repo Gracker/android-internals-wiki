@@ -51,7 +51,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 last_task6_at: "2026-04-25T00:00:00+08:00"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-13T02:10:18+08:00"
+last_task6_audit: "2026-07-13T03:09:21+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -424,7 +424,7 @@ Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GP
 - **CPU Frequency track**:与 Power track 对照查看,可以确认功耗上升是否对应 CPU 频率提升。
 - **Energy Consumer track**(Android 12+):按子系统(CPU cluster、Display、GPU、Radio 等)报告能量消耗;分析占比时同样按窗口差分计算。
 
-使用方法:在 Perfetto UI 中搜索 `power` 或 `energy`,即可找到相关 Track。将功耗曲线与 CPU/GPU 活动时间对齐,就能看到哪个子系统在什么时间段消耗了最多电量。
+使用方法:在 Perfetto UI 中搜索 `power` 或 `energy`,即可找到相关 Track。将功耗曲线与 CPU/GPU 活动放在同一时间轴上,就能看到哪个子系统在什么时间段消耗了最多电量。
 
 [待补充: Perfetto Power track 截图示例]
 
