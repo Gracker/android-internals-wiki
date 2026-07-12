@@ -1,219 +1,50 @@
 {
-  "items": [
+  "timestamp": "2026-07-12T14:20:00+08:00",
+  "source": "task9-deep-tech-review",
+  "section": "16.5",
+  "chapter": "16.5",
+  "title": "Android 17 (API 37) 性能行为变更与适配方法",
+  "status": "completed",
+  "priority": "95",
+  "issues": [
     {
-      "section": "24.4",
-      "section_title": "网络架构与连接管理",
-      "priority": 90,
-      "reason": "[task6-audit] 版本基线违规：7处 android-35 引用需更新为 android-17.0.0_r1",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "版本基线违规",
-          "locations": [
-            "frontmatter: last_verified_against",
-            "L167: NetworkCapabilities 验证标注 (2处)",
-            "L181: NetworkCapabilities 验证标注 (2处)",
-            "L234: StrictMode 验证标注 (2处)"
-          ],
-          "detail": "7 处引用 android-35 SDK 源路径，违反版本基线规则。需更新为 android-17.0.0_r1 对应路径。",
-          "suggestion": "Task 9 先验证 android-17.0.0_r1 中 NetworkCapabilities.java 和 StrictMode.java 的路径和内容差异，确认 API 无变化后由 Task 2B 统一替换"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-08T03:07:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-08-03-audit.md",
-      "completed_at": "2026-07-08T03:36:50+08:00",
-      "completed_by": "task2b-lite",
-      "completion_note": "7处 android-35 → android-17.0.0_r1 版本基线替换"
+      "type": "P0",
+      "category": "事实错误",
+      "title": "ProfilingManager TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 产物类型描述不准确",
+      "description": "章节描述该触发器的产物类型存在歧义，API reference 与 features 页文档口径差异",
+      "severity": "高 - 直接关系到开发者如何使用该API的诊断能力",
+      "location": "ProfilingManager 新的系统触发器章节",
+      "resolution": "添加'未进入 Android 17'警告，明确标注文档差异"
     },
     {
-      "section": "25.19",
-      "section_title": "Android Vitals 过度 WakeLock 指标与治理",
-      "priority": 50,
-      "reason": "[Task6抽检] AOSP源码引用锚定 android-16.0.0_r3 / android16-qpr2-release，需按版本基线规范升级至 android-17.0.0_r1",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "正文「归因路径」小节末尾两处验证标注 + frontmatter last_verified_against",
-          "detail": "AOSP源码引用使用 android-16.0.0_r3 和 android16-qpr2-release，版本基线要求锚定 android-17.0.0_r1。需 Task 9 确认 PowerManagerService.acquireWakeLockInternal() 和 BatteryStatsService.noteStartWakelock() 在 Android 17 中是否有变化。",
-          "suggestion": "更新源码验证标注至 android-17.0.0_r1，如 API 无变化则更新标签，如有变化则修正正文描述"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-09T07:05:00+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-09-07-audit.md",
-      "completed_at": "2026-07-09T07:36:00+08:00",
-      "completed_by": "task2b-lite",
-      "completion_note": "3处版本锚点 android-16.0.0_r3/android16-qpr2-release → android-17.0.0_r1 替换"
+      "type": "P1",
+      "category": "源码引用不完整",
+      "title": "DeliQueue 算法细节超出原文档覆盖范围",
+      "description": "需要补充 AOSP 源码中 ConcurrentMessageQueue 的实际数据结构描述",
+      "severity": "中等 - 影响开发者对机制的理解",
+      "location": "DeliQueue 算法细节补充章节",
+      "resolution": "补充 frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java 中的实际实现"
     },
     {
-      "chapter": "2.32",
-      "title": "GraphicBuffer 内存池化与 BufferQueue Slot 复用机制",
-      "priority": 80,
-      "status": "pending",
-      "added_date": "2026-07-10",
-      "source": "task2a-gap-mining"
+      "type": "P1",
+      "category": "版本边界不明确",
+      "title": "Android 17 具体版本边界标注不明确",
+      "description": "未明确标注 android-17.0.0_r1 作为源码基准",
+      "severity": "中等 - 可能导致版本边界混淆",
+      "location": "版本兼容性建议章节",
+      "resolution": "明确标注 '基于 android-17.0.0_r1（Android 17 / API 37）'"
     },
     {
-      "section": "8.37",
-      "section_title": "Android 13+ PerformanceHintManager 实战：Java/NDK 集成与 Android 17 源码校准",
-      "priority": 95,
-      "reason": "[Deep Tech Review] PerformanceHintManager API 年表、Session 生命周期和示例线程 ID 口径与 Android 17 / 官方 API 不一致",
-      "material_paths": [
-        "logs/deep-review/2026-07-10-13-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误/API 版本错误",
-          "location": "L126-L143、L167-L193",
-          "detail": "官方 API 页显示 Java PerformanceHintManager/createHintSession/reportActualWorkDuration(long)/updateTargetWorkDuration 为 API 31；WorkDuration 重载和 setPreferPowerEfficiency 为 API 35；setThreads 为 API 34。NDK performance_hint.h 中基础 C API 为 __ANDROID_API_T(API 33)。正文把 Java/NDK 基础能力统一写成 Android 13 引入，并把 reportActualWorkDuration(long) 写成 API 34。",
-          "suggestion": "重写 API 演进表：Java 公共 API 与 NDK C API 分开；用 API 31/33/34/35/36/37 分别标注，Android 17 只写已验证状态，不写成引入点。"
-        },
-        {
-          "type": "源码错误",
-          "location": "L157-L165",
-          "detail": "android-17.0.0_r1 的 PerformanceHintManager.Session 没有 CREATED/ACTIVE/DESTROYED State 枚举；源码主要通过 mNativeSessionPtr 与 close()/finalize() 管理 native session 指针。",
-          "suggestion": "删除“三态机”说法，改成 public Session 生命周期：createHintSession 返回 Session；update/report/setThreads 操作 native session；close 后 mNativeSessionPtr 归零且不可继续调用。"
-        },
-        {
-          "type": "API 示例错误",
-          "location": "L236-L257",
-          "detail": "createHintSession 需要应用线程组内的 Linux tid。示例使用 workerThread.getId()，这是 Java Thread ID，不是内核 tid；executorService.getWorkerTids() 也不是标准 Java/Android API。",
-          "suggestion": "示例应展示在线程内部用 Process.myTid() 记录 tid，或 native 侧用 gettid()/pthread 绑定后传入；自定义线程池需要显式维护 tid 列表。"
-        },
-        {
-          "type": "版本差异错误",
-          "location": "L84-L88、L136-L143、L274-L281",
-          "detail": "AOSP android-13.0.0_r1 到 android-17.0.0_r1 均存在 frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java，未发现正文所说 Android 17 才从 performance.hint 迁至 power.hint 的版本变化。",
-          "suggestion": "把该点改为“Android 17 源码确认服务位于 power/hint”，不要写成 Android 17 新迁移；如需历史对比，必须找出更早 tag 中的实际差异。"
-        },
-        {
-          "type": "原理断裂",
-          "location": "L70、L298-L304、L351-L356",
-          "detail": "正文把 hint session 写成 Adjc/TaskScheduler 决策输入，并给出比值失效、创建耗时 5-15ms 等具体判断，但本轮未在 android-17.0.0_r1 的 PerformanceHintManager/HintManagerService/Power HAL 路径中找到相应一手证据。",
-          "suggestion": "删除或降级这些未经验证的调度和耗时断言；只保留官方文档可支撑的 core placement/frequency advisory 语义，性能数字需要 trace/benchmark 证据。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-10T13:30:33+08:00",
-      "status": "completed",
-      "original_review_log": "logs/deep-review/2026-07-10-13-deep-review.md",
-      "completed_at": "2026-07-10T13:35:00+08:00",
-      "completed_by": "task2b-lite",
-      "completion_note": "fixed-lite: P0 Session 生命周期(三态机→native指针) + P0 线程ID示例(getId→Process.myTid). 剩余3个问题(API年表/服务路径迁移/未验证断言)留主Task2B."
-    },
-    {
-      "section": "5.30",
-      "title": "Android 17 OnDeviceIntelligence 框架性能：FoundationModelManager 推理调度与资源隔离",
-      "status": "pending",
-      "priority": 80,
-      "chapter": "5.30",
-      "file": "src/part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md",
-      "added_date": "2026-07-11",
-      "source": "task2a-knowledge-gap Round 61"
-    },
-    {
-      "chapter": "14.30",
-      "title": "GpuService GPU 内存可观测性架构",
-      "path": "src/part3-tools/ch14-other-tools/14.30-android17-gpuservice-gpu-memory-observability.md",
-      "priority": 80,
-      "status": "pending",
-      "source": "task2a-gap-mining-round-68",
-      "created_date": "2026-07-11"
-    },
-    {
-      "section": "ch15",
-      "section_title": "Android 性能优化研究方法论",
-      "priority": 85,
-      "reason": "[闲时抽检] VSyncTracker 源码引用描述不准确",
-      "material_paths": [
-        "logs/deep-review/2026-07-12-10-idle-audit.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码引用错误",
-          "location": "章节 4.4 \"自适应刷新率场景的帧数据分析\"",
-          "detail": "VSyncTracker 描述为单文件实现，实际是多组件协作",
-          "suggestion": "更新为 VSyncTracker 相关组件描述，明确与 VSyncDispatch、VSyncModulator 的协作关系"
-        }
-      ],
-      "added_by": "task9-idle-audit",
-      "added_at": "2026-07-12T10:26:01.817561+08:00",
-      "status": "completed",
-      "source": "idle-audit",
-      "completed_at": "2026-07-12T10:52:42+08:00",
-      "completed_by": "task2b-main",
-      "completion_note": "P1: VSyncTracker单文件实现→协作组件描述修正（deep-review idle-audit 2026-07-12）"
-    },
-    {
-      "section": "3.2",
-      "section_title": "触摸响应的性能分析",
-      "priority": 70,
-      "reason": "[Task6抽检] 源码版本锚点全部为 android-16.0.0_r1（9处），需升级到 android-17.0.0_r1 基准",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "全文源码引用（共9处 android-16.0.0_r1）+ frontmatter last_verified_against",
-          "detail": "版本基线要求 android-17.0.0_r1，但全文 9 处源码引用均为 android-16.0.0_r1。frontmatter 的 last_verified_against 也标注为 android-16.0.0_r1。需 Task9 重新验证源码路径在 android-17.0.0_r1 是否仍适用，特别是 InputReader.loopOnce()、Resampler.cpp、Choreographer#doFrame() 回调顺序等。",
-          "suggestion": "Task9 对 android-17.0.0_r1 重新验证上述源码片段，更新版本锚点"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-12T11:06:00+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-12-11-audit.md",
-      "completed_by": "task2b-lite",
-      "completed_at": "2026-07-12T03:39:48+00:00",
-      "completion_note": "fixed-lite: 版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter last_verified_against）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 源码路径一致"
-    },
-    {
-      "section": "9.7",
-      "section_title": "ANR 非技术故障诊断",
-      "priority": 70,
-      "reason": "[task6抽检] 源码引用版本基线需从 android-16.0.0_r1 升级到 android-17.0.0_r1（13处引用）",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "版本基线",
-          "location": "全章源码引用（frontmatter sources + 正文代码注释 + 参考资料）",
-          "detail": "13处 android-16.0.0_r1 需升级为 android-17.0.0_r1，符合 AIW_ANDROID_VERSION_BASELINE_2026_06_27 规则",
-          "suggestion": "Task 9 核对 InputDispatcher.cpp、ActivityManagerConstants.java、BroadcastQueueImpl.java、ContentProviderHelper.java 等文件在 android-17.0.0_r1 中路径和内容是否有变化，确认后统一更新"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-12T13:16:03",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-12-13-audit.md"
-    },
-    {
-      "section": "8.9",
-      "section_title": "Android 游戏性能与 Game Mode/State API",
-      "priority": 90,
-      "reason": "[抽检回炉] AOSP 源码验证标签引用 android-16.0.0_r1，需按版本基线更新为 android-17.0.0_r1 并验证代码路径",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "3 处 AOSP 版本标签",
-          "detail": "正文中有 3 处 [已验证: AOSP android-16.0.0_r1] 标签（GameManagerService、setGameState 行为描述、PerformanceHintManager 复核），按 AIW_ANDROID_VERSION_BASELINE_2026_06_27 要求，源码链接必须锚定 android-17.0.0_r1",
-          "suggestion": "验证这些代码路径在 android-17.0.0_r1 中是否仍存在且行为一致，更新验证标签"
-        },
-        {
-          "type": "需确认",
-          "location": "outline 锚点与正文标题命名不一致",
-          "detail": "锚点1 '游戏性能与普通 App 的预算差异' vs 正文 '游戏性能的特殊性：持续满帧 vs 按需渲染'；锚点6 '原生游戏工具链' vs 正文 'AGDK 工具链'。内容已覆盖，仅命名不一致",
-          "suggestion": "统一锚点与正文标题措辞，或更新锚点描述以匹配正文"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-12T14:11:16+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-12-14-audit.md"
+      "type": "P1",
+      "category": "适配信息不完整",
+      "title": "16KB 页面适配要求描述不完整",
+      "description": "缺少 AOSP android-17.0.0_r1 中对 ELF 段对齐的具体要求变化",
+      "severity": "中等 - 对 NDK 开发者适配关键信息缺失",
+      "location": "16KB 页面对原生库的影响章节",
+      "resolution": "补充 AOSP android-17.0.0_r1 构建配置和 NDK 要求的具体信息"
     }
   ],
-  "updated_at": "2026-07-12T14:11:16+08:00"
+  "notes": "闲时抽检发现 P0/P1 问题，章节状态已更新为 task9_result: pending，pipeline_stage: task6_pending，需 Task6 复审",
+  "completed_at": "2026-07-12T14:53:29+08:00",
+  "completed_by": "task2b-main"
 }
