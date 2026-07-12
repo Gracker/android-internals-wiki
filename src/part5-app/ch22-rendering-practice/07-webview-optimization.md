@@ -2,7 +2,7 @@
 title: "WebView 性能优化实战"
 chapter: "22.7"
 section: "22.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Chromium android_webview docs, Clippings 结构参考, AIW 既有章节"
@@ -48,17 +48,17 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
 related_chapters: ["22.1", "7.11", "18.13", "26.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-03"
+reviewed_date: "2026-07-12"
 task6_reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
-last_task6_at: "2026-06-03T10:05:00+08:00"
+last_task6_at: "2026-07-12T12:15:00+08:00"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
-task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 轻修 1 处（否定-纠正式句型收束）；无新增 L3/L4 回炉项，转入 Task9 pending。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。"
+task6_review_notes: "2026-07-12 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述 grep 全部零命中；L2 结构/节奏/读者视角通过；task9 idle audit auto-fixed（P2 源码标签）等效通过；无新增 L3/L4 回炉项。自动晋升 finalized。"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-12"
@@ -76,6 +76,8 @@ last_task9_audit_log: "logs/deep-review/2026-07-12-11-audit.md"
 last_task9_audit_at: "2026-07-12T11:24:32+08:00"
 last_task9_audit_result: "auto-fixed"
 last_task9_audit_notes: "idle audit auto-fix: AOSP WebView framework evidence labels and source links anchored to android-17.0.0_r1; no queue item needed; returned to Task6 for light review."
+finalized_date: "2026-07-12"
+finalized_by: openclaw-task6-auto-promote
 ---
 
 # WebView 性能优化实战

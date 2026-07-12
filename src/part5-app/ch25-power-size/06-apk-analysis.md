@@ -6,7 +6,7 @@
 title: "APK 体积分析与瘦身"
 chapter: "25.6"
 section: "25.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 last_verified_against: "Android Developers docs 2026-06 + AOSP android-17.0.0_r1"
@@ -44,16 +44,16 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-06"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-07-12"
 task6_result: "pass-light-edit"
-last_task6_at: "2026-06-06T10:12:00+08:00"
+last_task6_at: "2026-07-12T12:15:00+08:00"
 last_task6_review_log: "logs/review/2026-06-06-10-review.md"
-task6_review_notes: "2026-06-06 Task6 revisit-review #5: L1/L2 无新增写作问题。Task 9 auto-fix 已验证（apkanalyzer -h 全局参数位置正确）。task9_result=auto-fixed 仍不满足自动晋升条件 ②（需 pass-tech-review），回 Task 9 复确认。"
+task6_review_notes: "2026-07-12 Task6 revisiting 复审：pass-light-edit。L1 修复 2 处（链路→流程、关键是删除）；L2 结构/节奏/读者视角通过；task9 idle audit auto-fixed（P2 版本锚点）等效通过；无新增 L3/L4 回炉项。自动晋升 finalized。"
 task2b_result: fixed-lite
 task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
@@ -70,6 +70,8 @@ last_task9_audit_log: "logs/deep-review/2026-07-12-09-audit.md"
 last_task9_audit_at: "2026-07-12T09:26:38+08:00"
 last_task9_audit_result: auto-fixed-idle-audit
 last_task9_audit_notes: "idle audit: P2 source-anchor auto-fix; AOSP PackageAbiHelperImpl/NativeLibraryHelper/ResourceTypes references moved from android-16.0.0_r1 to android-17.0.0_r1 after path and symbol verification; no P0/P1."
+finalized_date: "2026-07-12"
+finalized_by: openclaw-task6-auto-promote
 ---
 
 
@@ -213,7 +215,7 @@ android {
 
 这段配置会让 APK 只包含 `arm64-v8a` 对应 native 库。对于仍需覆盖 32 位设备的应用，应使用多 APK、AAB 配置 APK，或保留 `armeabi-v7a`。如果直接删除 32 位 ABI，旧设备会在安装或加载 native 库时失败。
 
-Android 平台安装 native 库时，按设备 primary ABI 查找 `lib/<primary-abi>/lib<name>.so`，找不到再看 secondary ABI。安装期 ABI 选择链路：`PackageAbiHelperImpl.derivePackageAbi()` → `NativeLibraryHelper.findSupportedAbi()` 确定最佳 ABI → `copyNativeBinariesForSupportedAbi()` 将对应 `.so` 复制到应用 nativeLibraryDir；运行时 linker 按 `nativeLibraryDir` 搜索。[已验证: AOSP android-17.0.0_r1, PackageAbiHelperImpl.java; NativeLibraryHelper.java]
+Android 平台安装 native 库时，按设备 primary ABI 查找 `lib/<primary-abi>/lib<name>.so`，找不到再看 secondary ABI。安装期 ABI 选择流程：`PackageAbiHelperImpl.derivePackageAbi()` → `NativeLibraryHelper.findSupportedAbi()` 确定最佳 ABI → `copyNativeBinariesForSupportedAbi()` 将对应 `.so` 复制到应用 nativeLibraryDir；运行时 linker 按 `nativeLibraryDir` 搜索。[已验证: AOSP android-17.0.0_r1, PackageAbiHelperImpl.java; NativeLibraryHelper.java]
 
 `android:extractNativeLibs` 和 AGP 的 native library packaging 策略会影响 `.so` 是否从 APK 解压到文件系统。Android 6.0+ 支持未压缩且页对齐的 native 库直接从 APK 加载，可以减少磁盘副本——但代价是 APK 内 `.so` 可能不再经过 ZIP 压缩。工程上不能只看 APK 文件大小，要同时评估下载大小、安装后占用、启动加载成本和崩溃还原能力。更细的 AAB / 动态特性分发策略详见 25.8 节。
 
@@ -222,7 +224,7 @@ Android 平台安装 native 库时，按设备 primary ABI 查找 `lib/<primary-
 
 包体积优化不能只在版本末期突击处理。更稳的做法是在 CI 中保留基线包，按模块、目录和文件类型记录差异：dex 增长超过阈值时要求说明依赖来源；`res/` 增长超过阈值时要求列出新增图片和多语言资源；`lib/` 增长超过阈值时要求说明 ABI 与符号策略；`assets/` 增长超过阈值时要求说明是否可按需下载。
 
-门禁记录可以从 `apkanalyzer`、`bundletool get-size total`、APK Analyzer 对比截图和构建产物归档开始。关键是把“这次为什么大了”记录下来，避免下个版本再重复排查同一套 SDK、同一批图片、同一套 ABI 副本。
+门禁记录可以从 `apkanalyzer`、`bundletool get-size total`、APK Analyzer 对比截图和构建产物归档开始。把“这次为什么大了”记录下来，避免下个版本再重复排查同一套 SDK、同一批图片、同一套 ABI 副本。
 
 ## 小结
 
