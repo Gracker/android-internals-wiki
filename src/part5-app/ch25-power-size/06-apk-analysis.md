@@ -8,7 +8,7 @@ chapter: "25.6"
 section: "25.6"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-29"
+last_verified: "2026-07-12"
 last_verified_against: "Android Developers docs 2026-06 + AOSP android-17.0.0_r1"
 confidence: medium
 drafted_date: "2026-05-14"
@@ -29,11 +29,11 @@ sources:
   - type: official
     path: "https://developer.android.com/tools/bundletool"
   - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/services/core/java/com/android/server/pm/PackageAbiHelperImpl.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageAbiHelperImpl.java"
   - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/core/java/com/android/internal/content/NativeLibraryHelper.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/content/NativeLibraryHelper.java"
   - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h"
   - type: book-structure
     path: "Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md"
   - type: book-structure
@@ -44,8 +44,8 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
@@ -55,18 +55,21 @@ last_task6_at: "2026-06-06T10:12:00+08:00"
 last_task6_review_log: "logs/review/2026-06-06-10-review.md"
 task6_review_notes: "2026-06-06 Task6 revisit-review #5: L1/L2 无新增写作问题。Task 9 auto-fix 已验证（apkanalyzer -h 全局参数位置正确）。task9_result=auto-fixed 仍不满足自动晋升条件 ②（需 pass-tech-review），回 Task 9 复确认。"
 task2b_result: fixed-lite
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-06-06"
 last_task9_at: "2026-06-06T10:21:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-06-06-10-deep-review.md"
 task9_review_notes: "2026-06-06 09:20 Task9 deep-review: auto-fixed。修正 apkanalyzer --human-readable 全局参数位置；证据为 Android Developers apkanalyzer 语法。回 Task6 复审。 | 2026-06-06 10:21 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task2b_lite_at: 2026-06-03
-last_task9_autofix_at: "2026-06-06"
+last_task9_autofix_at: "2026-07-12"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
-last_task9_audit: "2026-06-22"
-last_task9_audit_log: "logs/deep-review/2026-06-22-21-audit.md"
+last_task9_audit: "2026-07-12"
+last_task9_audit_log: "logs/deep-review/2026-07-12-09-audit.md"
+last_task9_audit_at: "2026-07-12T09:26:38+08:00"
+last_task9_audit_result: auto-fixed-idle-audit
+last_task9_audit_notes: "idle audit: P2 source-anchor auto-fix; AOSP PackageAbiHelperImpl/NativeLibraryHelper/ResourceTypes references moved from android-16.0.0_r1 to android-17.0.0_r1 after path and symbol verification; no P0/P1."
 ---
 
 
@@ -179,7 +182,7 @@ AGP 8.12 / 8.13 支持手动开启优化版资源缩减；AGP 9.0 起，在 `isS
 
 动态资源引用要单独列风险清单。`Resources.getIdentifier()`、拼接资源名、主题皮肤包、WebView 与 native 混合页面常把资源引用藏在字符串里；R8 和资源缩减器很难从静态引用图里找到这些资源。处理方式是建立白名单：保留资源名前缀、记录调用点、在 `resources.txt` 中检查缩减结果，并给动态加载路径加回归用例。
 
-资源混淆和 `resources.arsc` 处理属于收益明显但风险较高的优化。资源文件名变短后，`resources.arsc` 中的字符串池会变小；重复图片也可以在资源表层面复用同一份文件路径。AOSP 的 `ResourceTypes.h` 定义了资源表相关结构，能说明 `resources.arsc` 是二进制资源表，不是文本清单。[已验证: AOSP android-16.0.0_r1, frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h]
+资源混淆和 `resources.arsc` 处理属于收益明显但风险较高的优化。资源文件名变短后，`resources.arsc` 中的字符串池会变小；重复图片也可以在资源表层面复用同一份文件路径。AOSP 的 `ResourceTypes.h` 定义了资源表相关结构，能说明 `resources.arsc` 是二进制资源表，不是文本清单。[已验证: AOSP android-17.0.0_r1, frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h]
 
 这一类优化不建议在没有测试覆盖的项目里直接引入。更稳的顺序是：先开 R8 + 官方资源缩减，再处理图片格式和语言 / 密度过滤，再评估资源混淆。资源混淆上线前至少要覆盖启动页、换肤、通知图标、桌面 widget、WebView bridge、动态页面和多语言场景。
 
@@ -210,7 +213,7 @@ android {
 
 这段配置会让 APK 只包含 `arm64-v8a` 对应 native 库。对于仍需覆盖 32 位设备的应用，应使用多 APK、AAB 配置 APK，或保留 `armeabi-v7a`。如果直接删除 32 位 ABI，旧设备会在安装或加载 native 库时失败。
 
-Android 平台安装 native 库时，按设备 primary ABI 查找 `lib/<primary-abi>/lib<name>.so`，找不到再看 secondary ABI。安装期 ABI 选择链路：`PackageAbiHelperImpl.derivePackageAbi()` → `NativeLibraryHelper.findSupportedAbi()` 确定最佳 ABI → `copyNativeBinariesForSupportedAbi()` 将对应 `.so` 复制到应用 nativeLibraryDir；运行时 linker 按 `nativeLibraryDir` 搜索。[已验证: AOSP android-16.0.0_r1, PackageAbiHelperImpl.java; NativeLibraryHelper.java]
+Android 平台安装 native 库时，按设备 primary ABI 查找 `lib/<primary-abi>/lib<name>.so`，找不到再看 secondary ABI。安装期 ABI 选择链路：`PackageAbiHelperImpl.derivePackageAbi()` → `NativeLibraryHelper.findSupportedAbi()` 确定最佳 ABI → `copyNativeBinariesForSupportedAbi()` 将对应 `.so` 复制到应用 nativeLibraryDir；运行时 linker 按 `nativeLibraryDir` 搜索。[已验证: AOSP android-17.0.0_r1, PackageAbiHelperImpl.java; NativeLibraryHelper.java]
 
 `android:extractNativeLibs` 和 AGP 的 native library packaging 策略会影响 `.so` 是否从 APK 解压到文件系统。Android 6.0+ 支持未压缩且页对齐的 native 库直接从 APK 加载，可以减少磁盘副本——但代价是 APK 内 `.so` 可能不再经过 ZIP 压缩。工程上不能只看 APK 文件大小，要同时评估下载大小、安装后占用、启动加载成本和崩溃还原能力。更细的 AAB / 动态特性分发策略详见 25.8 节。
 
