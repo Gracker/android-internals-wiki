@@ -50,7 +50,11 @@ task9_result: pass-tech-review
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_at: "2026-06-05T12:27:00+08:00"
 last_task9_at: "2026-06-05T12:27:00+08:00"
-last_task9_audit: "2026-06-22"
+last_task9_audit_at: "2026-07-12T22:25:07+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-12-22-audit.md"
+last_task9_audit_result: "pass-idle-audit"
+last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；android-17.0.0_r1 packages/modules/Profiling 中 ProfilingManager / ProfilingResult / ProfilingTrigger 源码锚点可用；未发现 Android 18/API 38+ 结论。"
+last_task9_audit: "2026-07-12"
 last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-19
