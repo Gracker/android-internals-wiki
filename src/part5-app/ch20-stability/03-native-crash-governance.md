@@ -1,15 +1,16 @@
 ---
+
 title: "Native Crash 分析与治理"
 chapter: "20.3"
 section: "20.3"
 section_title: "Native Crash 分析与治理"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-07-12"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-07-12"
 task9_reviewed_by: "openclaw-task9"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 last_verified_against: "AOSP android-17.0.0_r1 (debuggerd/crash_dump, tombstoned CrashQueue default 32 tombstone slots, libunwindstack BuildId format, native crash notification chain)"
 confidence: medium
 drafted_date: "2026-05-11"
@@ -35,8 +36,8 @@ sources:
     path: "external/google-breakpad/src/processor/basic_source_line_resolver.cc"
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
-task6_state: revisiting
-last_task6_at: "2026-07-03T19:10:00+08:00"
+task6_state: reviewed
+last_task6_at: "2026-07-12T20:19:00+08:00"
 last_task6_review_log: "logs/review/2026-07-02-22-review.md"
 task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 clean. L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean (对齐=技术内存对齐, 非黑话). L2 pass. 限制句式×2 at limit. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
@@ -47,9 +48,9 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-07-02T18:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 修复 ApplicationExitInfo tombstone protobuf 边界、Breakpad 源码锚点、JNI native resolve 口径、CFI/Java frame、Crashpad handler 与 mooner 安全边界。2026-07-02 Task2B round2: 补充符号服务器架构设计、Native Crash 排查实战思路与分级排查流程。"
-reviewed_by: "openclaw-task6"
-reviewed_date: 2026-06-21
-last_task6_at: "2026-07-02T19:14:49+08:00"
+reviewed_by: openclaw-task6
+reviewed_date: 2026-07-12
+last_task6_at: "2026-07-12T20:19:00+08:00"
 last_task6_audit: "2026-06-09"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
@@ -61,7 +62,7 @@ last_task9_review_log: "logs/deep-review/2026-07-12-19-audit.md"
 task9_review_notes: "2026-07-12 Task9 idle audit AUTO-FIX：对照 AOSP android-17.0.0_r1 tombstoned.cpp，修正 tombstone 默认保留数量旧口径：Android 17 由 tombstoned.max_tombstone_count 控制，默认 32 个槽位，并补充 tombstoned.cpp 源码锚点；回到 Task6 复审。"
 last_task9_autofix_at: "2026-07-12"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
+last_deepseek_cn_review_at: 2026-07-12
 last_task9_audit: "2026-07-12"
 last_task2b_verify_at: "2026-06-21T19:30:09+08:00"
 task2b_verifier_notes: "状态修正：Task9 auto-fix 后 status 应为 ready-for-review，原 finalized 已回退。"
@@ -69,6 +70,7 @@ last_task9_audit_at: "2026-07-12T19:26:24+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-12-19-audit.md"
 last_task9_audit_result: "auto-fixed"
 last_task9_audit_notes: "idle audit auto-fix: AOSP android-17.0.0_r1 tombstoned uses tombstoned.max_tombstone_count default 32, not 00-09 ten-slot rotation; added tombstoned.cpp source anchor."
+task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-audit): pass-light-edit。L1禁用词扫描零命中（"对齐"为技术内存对齐，非黑话）。L2开头/节奏/结构/读者视角全通过。锚点6/6覆盖，扩展2/2覆盖。Task9 idle audit auto-fix（tombstone默认32槽位口径修正）后写作质量未受影响。无新增L3/L4回炉。AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=clear。"
 ---
 
 # Native Crash 分析与治理
@@ -140,7 +142,6 @@ SignalChain 的拦截发生在 `sigaction()` 调用时：应用通过 JNI 调用
 5. `crash_dump` 通过 `/data/system/ndebugsocket` 通知 **ActivityManagerService** 中的 `NativeCrashListener`，再由 AMS 的 `handleApplicationCrashInner()` 处理（不经过 Java 层的 `UncaughtExceptionHandler`——Native Crash 走的是 AMS → CrashDialog / kill 进程路径）
 
 `ptrace` + 独立进程的设计是关键：崩溃进程的内存空间可能已经损坏，如果在进程内部做堆栈回溯，可能二次崩溃。`crash_dump` 通过 `ptrace` 从外部读取，安全性更高。pseudothread 机制保证崩溃线程在 fork+exec 期间不会阻塞在信号处理上下文中。
-<!-- AIW-源码调研-2026-07-07：Android 17 linker 与 debuggerd 集成 -->
 
 ### Android 17 linker 启动期 wiring
 
@@ -173,11 +174,11 @@ _start → linker::_start → linker_main()
                               └ 转入用户程序入口
 ```
 
-几点需要澄清的事实：
-- `debuggerd_handler.cpp`（880+ 行）仍在 `system/core/debuggerd/handler/` 下完整维护，并非整体迁移到 bionic/linker。
-- `thread_stack_pages = 8` 是编译期常量，不存在通过 `sysconf(_SC_SIGSTKSZ)` 动态调整的路径。
+几点值得注意：
+- `debuggerd_handler.cpp`（880+ 行）仍在 `system/core/debuggerd/handler/` 下完整维护，没有整体迁移到 bionic/linker。
+- `thread_stack_pages = 8` 是编译期常量，不存在 `sysconf(_SC_SIGSTKSZ)` 动态调整的路径。
 - `debuggerd_signal_handler()` 内未出现 `sched_setaffinity` 或 `CPU_SET` 调用。
-- 以下机制是可在源码中直接验证的：`SA_EXPOSE_TAGBITS`、`SEGV_MTE` 软崩溃、GWP-ASan recoverable、wire protocol v4。
+- `SA_EXPOSE_TAGBITS`、`SEGV_MTE` 软崩溃、GWP-ASan recoverable、wire protocol v4 均可在源码中直接验证。
 
 
 

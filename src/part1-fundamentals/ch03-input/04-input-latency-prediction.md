@@ -68,7 +68,7 @@ last_task9_at: "2026-07-12T17:26:48+08:00"
 last_task9_audit: "2026-07-12"
 task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-12 Task9 idle audit auto-fixed: 源码锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1；补充 Android 17 DeliQueue 输入延迟口径与 §1.26 交叉引用；AOSP tag 复核 Choreographer/InputConsumer/Resampler/MotionPredictor/InputReader/InputDispatcher 路径与关键 API。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-03
+last_deepseek_cn_review_at: 2026-07-12
 last_task9_audit_at: "2026-07-12T17:26:48+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-12-17-audit.md"
 last_task9_audit_result: "auto-fixed-idle-audit"
@@ -220,7 +220,7 @@ Batching 处理“点太多”的问题，重采样处理“点和帧时间不�
 
 [已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor] [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input] [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input]
 
-android-17.0.0_r1 可见的 Native 实现里，`TfLiteMotionPredictorModel` 会从 system 或 vendor 目录加载模型，公开材料能确认它面向 stylus source 的可用性检查。TCN 架构、NPU 加速、固定 30ms 预测窗口、非 stylus 全量支持这些说法，当前不写成已验证结论。
+android-17.0.0_r1 可见的 Native 实现里，`TfLiteMotionPredictorModel` 会从 system 或 vendor 目录加载模型，公开材料能确认它对 stylus source 的可用性检查。至于 TCN 架构、NPU 加速、固定 30ms 预测窗口、非 stylus 全量支持这些说法，缺少公开验证，不写成确定结论。
 
 ### Framework API 的使用方式
 
@@ -355,7 +355,7 @@ Android 17 的 DeliQueue 属于 MessageQueue / Looper 队列结构变化，已�
 
 ## Android 16/17 的待验证方向
 
-本节内容来源于外部 review 和近期素材，目前只作为后续研究方向的记录，尚未公开核验的内容不写成确定事实。
+以下方向目前缺少可公开引用的 AOSP 调用链确认，只作为后续研究方向的记录：
 
 - `[待验证] ADPF 输入反馈回路`：外部 review 提到 Android 16 可能把输入线程处理时长纳入性能提示回路，接近截止线时触发更积极的线程迁移或提频。当前缺少可公开引用的 AOSP 调用链，后续应查 `PerformanceHintManager`、inputflinger 与 power HAL 交互。
 - `[待验证] HWC actual present 时间线`：外部 review 提到 HWC 4.0 标准化 actual present time，用于软件级量化指尖到像素延迟。当前正文只保留方向，后续应对照 HWC HAL 文档、FrameTimeline 与 present fence 字段。
