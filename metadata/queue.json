@@ -115,6 +115,61 @@
       "file": "src/part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md",
       "added_date": "2026-07-11",
       "source": "task2a-knowledge-gap Round 61"
+    },
+    {
+      "chapter": "14.30",
+      "title": "GpuService GPU 内存可观测性架构",
+      "path": "src/part3-tools/ch14-other-tools/14.30-android17-gpuservice-gpu-memory-observability.md",
+      "priority": 80,
+      "status": "pending",
+      "source": "task2a-gap-mining-round-68",
+      "created_date": "2026-07-11"
+    },
+    {
+      "section": "ch15",
+      "section_title": "Android 性能优化研究方法论",
+      "priority": 85,
+      "reason": "[闲时抽检] VSyncTracker 源码引用描述不准确",
+      "material_paths": [
+        "logs/deep-review/2026-07-12-10-idle-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码引用错误",
+          "location": "章节 4.4 \"自适应刷新率场景的帧数据分析\"",
+          "detail": "VSyncTracker 描述为单文件实现，实际是多组件协作",
+          "suggestion": "更新为 VSyncTracker 相关组件描述，明确与 VSyncDispatch、VSyncModulator 的协作关系"
+        }
+      ],
+      "added_by": "task9-idle-audit",
+      "added_at": "2026-07-12T10:26:01.817561+08:00",
+      "status": "completed",
+      "source": "idle-audit",
+      "completed_at": "2026-07-12T10:52:42+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "P1: VSyncTracker单文件实现→协作组件描述修正（deep-review idle-audit 2026-07-12）"
+    },
+    {
+      "section": "3.2",
+      "section_title": "触摸响应的性能分析",
+      "priority": 70,
+      "reason": "[Task6抽检] 源码版本锚点全部为 android-16.0.0_r1（9处），需升级到 android-17.0.0_r1 基准",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "全文源码引用（共9处 android-16.0.0_r1）+ frontmatter last_verified_against",
+          "detail": "版本基线要求 android-17.0.0_r1，但全文 9 处源码引用均为 android-16.0.0_r1。frontmatter 的 last_verified_against 也标注为 android-16.0.0_r1。需 Task9 重新验证源码路径在 android-17.0.0_r1 是否仍适用，特别是 InputReader.loopOnce()、Resampler.cpp、Choreographer#doFrame() 回调顺序等。",
+          "suggestion": "Task9 对 android-17.0.0_r1 重新验证上述源码片段，更新版本锚点"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-12T11:06:00+08:00",
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-12-11-audit.md",
+      "completed_by": "task2b-lite",
+      "completed_at": "2026-07-12T03:39:48+00:00",
+      "completion_note": "fixed-lite: 版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter last_verified_against）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 源码路径一致"
     }
   ],
   "entries": [
@@ -437,8 +492,11 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-12T11:06:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-12-11-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-12-11-audit.md",
+      "completed_by": "task2b-lite",
+      "completed_at": "2026-07-12T03:39:48+00:00",
+      "completion_note": "fixed-lite: 版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter last_verified_against）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 源码路径一致"
     }
   ],
   "pending": [

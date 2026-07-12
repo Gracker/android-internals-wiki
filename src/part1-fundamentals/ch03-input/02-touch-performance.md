@@ -4,12 +4,12 @@
 title: "触摸响应的性能分析"
 chapter: "3.2"
 section: "3.2"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-03-31"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
 polish_count: 2
 polish_date: "2026-05-08"
@@ -42,10 +42,12 @@ task9_result: auto-fixed
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task2b_state: fixed
-task2b_result: fixed
-task6_state: "reviewed"
-task6_result: pass-light-edit
-task9_state: "reviewed"
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-07-12"
+task2b_lite_note: "版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 路径一致性"
+task6_state: "revisiting"
+task6_result: needs-rework
+task9_state: "pending"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T15:05:00+08:00"
 last_task6_audit: "2026-07-12"
@@ -139,7 +141,7 @@ InputReader 是运行在 `system_server` 进程中的 Native 线程。它从 Eve
 核心循环在 `InputReader.loopOnce()` 中：
 
 ```cpp
-// frameworks/native/services/inputflinger/reader/InputReader.cpp (android-16.0.0_r1)
+// frameworks/native/services/inputflinger/reader/InputReader.cpp (android-17.0.0_r1)
 // 简化伪代码，省略锁细节和边界处理
 void InputReader::loopOnce() {
     // 从 EventHub 获取原始事件
@@ -157,7 +159,7 @@ void InputReader::loopOnce() {
 }
 ```
 
-android-16.0.0_r1 的 `loopOnce()` 已经不再使用旧版 `QueuedListener.flush()` 路径，改为 `processEventsLocked()` 返回 `NotifyArgs` 列表并累积到 `mPendingArgs`，锁外通过 `std::swap` 取出后逐个调用 `mNextListener.notify(args)` 交给 InputDispatcher。`getEvents()` 也改为返回 `std::vector<RawEvent>`，不再使用固定大小的 `mEventBuffer` 数组。一次 `loopOnce` 调用会读取并处理一批事件（一次 MOVE 操作可能产生几十个采样点），所以 InputReader 的处理效率通常不会成为瓶颈。
+android-17.0.0_r1 的 `loopOnce()` 已经不再使用旧版 `QueuedListener.flush()` 路径，改为 `processEventsLocked()` 返回 `NotifyArgs` 列表并累积到 `mPendingArgs`，锁外通过 `std::swap` 取出后逐个调用 `mNextListener.notify(args)` 交给 InputDispatcher。`getEvents()` 也改为返回 `std::vector<RawEvent>`，不再使用固定大小的 `mEventBuffer` 数组。一次 `loopOnce` 调用会读取并处理一批事件（一次 MOVE 操作可能产生几十个采样点），所以 InputReader 的处理效率通常不会成为瓶颈。
 
 ### 4. InputDispatcher 派发
 
@@ -261,7 +263,7 @@ Batching 解决的是“一帧里来了太多点，怎么一起交给应用”�
 
 ### Choreographer 中 Input 的优先级
 
-在 android-16.0.0_r1 的 `Choreographer#doFrame()` 里，回调顺序是：
+在 android-17.0.0_r1 的 `Choreographer#doFrame()` 里，回调顺序是：
 
 1. `CALLBACK_INPUT`
 2. `CALLBACK_ANIMATION`
@@ -407,7 +409,7 @@ Android 系统有 **Input Boost** 这类输入提频机制：在检测到 Input 
 
 ### Android 16 MotionPredictor Native 实现
 
-android-16.0.0_r1 源码中，Native 层的 MotionPredictor 实现包含 TFLite 模型路径。`TfLiteMotionPredictorModel` 从 `/system/etc/motion_predictor_model.tflite` 或 `/vendor/etc/motion_predictor_model.tflite` 加载模型，输入为极坐标序列（r / phi / pressure / tilt / orientation），输出为预测坐标。
+android-17.0.0_r1 源码中，Native 层的 MotionPredictor 实现包含 TFLite 模型路径。`TfLiteMotionPredictorModel` 从 `/system/etc/motion_predictor_model.tflite` 或 `/vendor/etc/motion_predictor_model.tflite` 加载模型，输入为极坐标序列（r / phi / pressure / tilt / orientation），输出为预测坐标。
 
 当前源码能确认的实现细节：
 - 模型加载路径：`TfLiteMotionPredictorModel`，支持 system 和 vendor 两个目录
@@ -520,7 +522,7 @@ Android Native 层实现了 **LegacyResampler**（`frameworks/native/libs/input/
 - `isResampled=true` 标记可供 App 层查询该坐标是否为重采样点（API 35+；低版本无公开接口，需依赖 Trace / 源码判断）
 - 开关：`ro.input.resampling` 系统属性（默认启用）
 
-**调用链（基于 AOSP android-16.0.0_r1）：**
+**调用链（基于 AOSP android-17.0.0_r1）：**
 
 **系统侧：**
 ```text
@@ -544,7 +546,7 @@ Resampler 位于 App 进程的 `InputConsumer` 内部（`frameworks/native/libs/
 - 正面：消除频率差带来的抖动，使触摸轨迹贴近 VSync 边界
 - 负面：5ms 人为延迟，外推在速度突变时可能预测错误
 
-源码：`frameworks/native/libs/input/Resampler.cpp`（android-16.0.0_r1）
+源码：`frameworks/native/libs/input/Resampler.cpp`（android-17.0.0_r1）
 
 ## 参考资料
 
