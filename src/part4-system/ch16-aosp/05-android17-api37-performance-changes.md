@@ -1,4 +1,5 @@
 ---
+
 title: "Android 17 (API 37) 性能行为变更与适配方法"
 chapter: 16.5
 section: 16.5
@@ -18,10 +19,6 @@ created_by: task2a-knowledge-gap
 created_date: 2026-04-08
 gap_source: 官方文档+研究素材+AOSP结构+读者需求
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
-task9_state: pending
 task9_result: needs-rework
 task9_audit_date: 2026-07-12
 task9_audit_type: idle-audit
@@ -30,32 +27,33 @@ task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-07-12
 last_task2b_at: 2026-07-12T15:37:59+08:00
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-12
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-12
-review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
 task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。"
 review_type: task6-writing-quality-review
 last_task9_review_log: logs/deep-review/2026-05-29-07-deep-review.md
-last_task6_at: 2026-07-12T15:12:42+08:00
-last_task6_review_log: logs/review/2026-05-29-08-review.md
 task2b_fixed_by: openclaw-task2b-main
-task6_reviewed_date: 2026-05-29
-task6_reviewed_by: openclaw-task6
-task6_reviewed_at: 2026-05-29T07:07:00+08:00
-task6_review_notes: "2026-05-29 08: Task6 revisiting review: pass-light-edit；L1 禁用句式修复 1 处；无新增 L3/L4 回炉。Task9 为 auto-fixed，未满足自动 finalized 条件。"
-task6_l1_l2_fixes: 1
-task6_l3_l4_issues: 0
 last_task9_autofix_at: 2026-05-29
-task6_new_rework: false
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
-last_task6_review_log: logs/review/2026-07-12-15-review.md
-task6_l1_l2_fixes: 4
+status: ready-for-review
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task6_l1_l2_fixes: 7
 task6_l3_l4_issues: 0
 task6_new_rework: false
+task9_state: pending
+last_task6_at: 2026-07-12T16:10:47+08:00
+last_task6_review_log: logs/review/2026-07-12-16-review.md
+task6_reviewed_date: 2026-07-12
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: 2026-07-12T16:10:47+08:00
+reviewed_by: openclaw-task6
+reviewed_date: 2026-07-12
+review_notes: "2026-07-12 16: Task6 revisiting review after Task2B fix-lite: pass-light-edit。修复 2 处无标签代码块(DeliQueue图+StrictMode调用链)、1 处重复水平线、4 处重复frontmatter键。L1禁用词扫描零命中(对齐均为技术语义)。无新增L3/L4回炉。章节交Task9复核Task2B修复项。"
+task6_review_notes: "2026-07-12 16: Task6 revisiting review (post-task2b-fix): pass-light-edit; L1 fixes 7 (2 bare code blocks, 1 dup hr, 4 dup fm keys); 0 L3/L4 issues; sent to Task9 for re-review of Task2B fixes."
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
@@ -127,7 +125,7 @@ Android 17 为 targetSdk 37 的应用引入了新的 lock-free `MessageQueue`。
 
 工作流程是这样的：当任何线程通过 `Handler` 投递一条消息时，消息被概念性地 push 到 Treiber Stack 中，这是一个 O(1) 的 CAS 操作，不需要获取锁。当 Looper 线程进入 `loop()` 的下一次迭代时，它会将并发入队的消息批量转入 min-heap（drain 操作），然后从 min-heap 中按时间顺序取出下一条消息执行。
 
-```
+```text
 [图:DeliQueue 数据流示意图]
 Thread A ──CAS push──▶ Treiber Stack ──drain──▶ Min-Heap ──poll──▶ Looper.loop()
 Thread B ──CAS push──▶      ↑                         ↑
@@ -423,8 +421,6 @@ ProfilingService 与现有的 ActivityManagerService 性能监控组件协同工
 - 新的 ProfilingService 提供系统级触发器能力
 
 三个层次形成完整的性能监控体系：应用层、系统服务层、框架API层。
-
----
 
 ---
 
@@ -859,7 +855,7 @@ Android 17 在 `android.os.StrictMode` 中新增了两类 VM 策略违规检测�
 
 ### 完整调用链
 
-```
+```text
 [app 进程]                              [system_server]
                                          
 StrictMode.Builder                          SaferIntentUtils
