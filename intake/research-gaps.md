@@ -1,4 +1,36 @@
 
+## [Task2A Round 87] 知识缺口挖掘 + 加工 — 2026-07-12 20:18
+
+### 已检查方向（本轮）
+- ✅ Phase 0: **修正扫描 bug**（outline-end 标记被误认为 outline-start）。修正后发现 24 个真正空 draft（outline 外实质内容 < 15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 2
+- ✅ source-index: 无新增 unmapped high-quality 条目
+- ✅ DeepResearch: 无新增文件（since Round 86 19:06）
+- ✅ Clippings: 无新文件（最后更新 2026-06-23）
+- ✅ research-feeds: 无新文件（最后 2026-04-14）
+- ✅ daily-info: 无新 Android 相关内容
+
+### 重复文件发现
+修正扫描后暴露大量重复空 draft（此前因 bug 被误认为"有内容"）：
+- AI Agent Memory: 4.36/4.37/4.46/04.40 → 重复 4.22 (ready-for-review)
+- LMKD: 4.37 ×2 → 重复 4.4 (finalized) + 4.15 (ready-for-review)
+- Linux 碎片整理: 4.39/4.45 → 重复 6.20 (ready-for-review)
+- ARM MTE: 4.47 → 重复 4.9 (ready-for-review)
+- CPU Cache: 5.23/5.25 → 重复 4.35 (ready-for-review)
+- Task Scheduler: 8.33/8.35/8.38 → 重复 1.51
+- Modular Startup: 8.34/8.40 → 互相重复
+- Startup Insights: 8.36 → 重复 8.31/8.32
+
+### 加工动作
+- ✅ 加工 §13.27 Perfetto v57 AI 技能与状态轨道（唯一非重复高价值空 draft）
+  - v57.1 于 2026-07-02 发布，引入 AI Skill + State Tracks (TYPE_STATE=5)
+  - 验证来源：GitHub release notes + proto 定义交叉验证
+  - 状态：draft → ready-for-review
+  - Git: ea98690df
+
+### 结论
+1 个空 draft 已加工（§13.27）。剩余 23 个空 draft 中，~15 个是重复文件，建议后续批量标记 deprecated。
+
 ## [Task2A Round 68] 知识缺口挖掘 — 2026-07-11 18:10
 
 ### 已检查方向（本轮）
