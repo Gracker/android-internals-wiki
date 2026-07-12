@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: ready-for-review
 title: 输入延迟与预测输入技术
 chapter: '3.4'
 section: '3.4'
