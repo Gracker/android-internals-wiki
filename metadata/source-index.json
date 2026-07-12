@@ -3189,6 +3189,91 @@
       "summary": "深入探讨 Clean Architecture 落地实践，揭示 UseCase 存在的充分条件、ViewModel 设计原则、KMP 时代分层价值等实用架构经验",
       "source_directory": "技术文章/source/juejin-android",
       "scored_at": "2026-07-13T05:47:20.230494"
+    },
+    {
+      "title": "Android 17 Sigchain 机制与 APM 信号拦截实战",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-13-android17-sigchain-apm-signal-interception.md",
+      "quality": "high",
+      "relevance": "high",
+      "technical_depth": "source-level",
+      "timeliness": "2026-07-13",
+      "verifiability": "android-17.0.0_r1",
+      "total_score": 9.0,
+      "mapping": "ch20-stability/19",
+      "keywords": [
+        "sigchain",
+        "signal",
+        "APM",
+        "native crash",
+        "debuggerd",
+        "art"
+      ],
+      "summary": "Android 17 libsigchain 迁移至 art/sigchainlib，全局符号覆盖包装 sigaction。APM 正确接入方式是 AddSpecialSignalHandlerFn()。",
+      "source_directory": "DeepResearch",
+      "scored_at": "2026-07-13T06:10:00+08:00"
+    },
+    {
+      "title": "Camera 性能分析——Perfetto 与延迟拆解实战",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-13-camera-perfetto-latency-decomposition.md",
+      "quality": "high",
+      "relevance": "high",
+      "technical_depth": "source-level",
+      "timeliness": "2026-07-13",
+      "verifiability": "android-17.0.0_r1",
+      "total_score": 8.5,
+      "mapping": "ch14-other-tools/09 (finalized → queue)",
+      "keywords": [
+        "camera",
+        "perfetto",
+        "latency",
+        "open latency",
+        "first frame"
+      ],
+      "summary": "Camera 启动延迟两条官方度量通道，含 Perfetto async slice 映射和 Frame bubble 检测方法论。",
+      "source_directory": "DeepResearch",
+      "scored_at": "2026-07-13T06:10:00+08:00"
+    },
+    {
+      "title": "Android 17 FTrace 子系统架构与 atrace/Perfetto 桥接",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-12-android17-ftrace-atrace-perfetto-bridge.md",
+      "quality": "high",
+      "relevance": "high",
+      "technical_depth": "source-level",
+      "timeliness": "2026-07-12",
+      "verifiability": "android-17.0.0_r1",
+      "total_score": 9.0,
+      "mapping": "ch14-other-tools/14.31",
+      "keywords": [
+        "ftrace",
+        "atrace",
+        "perfetto",
+        "tracefs",
+        "kernel"
+      ],
+      "summary": "FTrace 三层架构：内核 tracefs、atrace 包装层、Perfetto ftrace probe，覆盖 GKI 6.18 和厂商扩展。",
+      "source_directory": "DeepResearch",
+      "scored_at": "2026-07-13T06:10:00+08:00"
+    },
+    {
+      "title": "Android 17 Binder 调用身份与优先级传播机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-12-android17-binder-priority-inheritance-ipcthreadstate.md",
+      "quality": "high",
+      "relevance": "high",
+      "technical_depth": "source-level",
+      "timeliness": "2026-07-12",
+      "verifiability": "android-17.0.0_r1",
+      "total_score": 8.5,
+      "mapping": "ch01-architecture/1.48",
+      "keywords": [
+        "binder",
+        "IPCThreadState",
+        "priority",
+        "worksource",
+        "calling identity"
+      ],
+      "summary": "IPCThreadState 用户态通过 SpGuard/packCallingIdentity/WorkSource 传递身份，kernel 层负责 RT 策略注入。",
+      "source_directory": "DeepResearch",
+      "scored_at": "2026-07-13T06:10:00+08:00"
     }
   ]
 }

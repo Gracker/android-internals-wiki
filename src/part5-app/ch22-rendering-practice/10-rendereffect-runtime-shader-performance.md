@@ -65,7 +65,7 @@ task2b_result: "fixed"
 last_task2b_at: "2026-06-03T00:50:00+08:00"
 task2b_review_notes: "2026-06-03 Task2B fallback 回炉：修正 RuntimeShader uniform 更新后的重绘语义，收敛 GPU counter/GPU Headroom 版本边界，补上 Android 16 源码锚点口径。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-07
+last_deepseek_cn_review_at: 2026-07-13
 last_task9_audit: "2026-07-12"
 last_task9_audit_log: "logs/deep-review/2026-07-12-18-audit.md"
 last_task9_audit_result: "auto-fixed"
@@ -125,7 +125,7 @@ task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-
 
 RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处理：模糊、颜色滤镜、混合、偏移，以及 Android 13（API 33）开始支持的 AGSL 自定义像素处理。它不是“免费特效”。一旦效果需要把节点内容先画进中间层，再读取这块纹理做处理，成本就会落到 RenderThread、GPU 填充率、纹理带宽和 GPU 内存上。
 
-应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用 Trace 和 GPU 工具验证。RenderNode、Hardware Layer、标准 View 渲染管线和 GPU 瓶颈分类分别详见 2.7、18.2、2.10 节。
+应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用 Trace 和 GPU 工具验证。关于渲染管线的基础知识——RenderNode、Hardware Layer、标准 View 渲染路径和 GPU 瓶颈分类——可见 2.7、18.2 和 2.10 节。
 
 ## RenderEffect 的适用场景
 
@@ -171,7 +171,7 @@ fun View.applyBlurEffectIfSupported(
 
 ## HWUI 管线中的成本来源
 
-`RenderEffect` 的成本不只来自 API 调用本身。对 blur 这类效果，AOSP 注释已经给出运行路径：先把目标 RenderNode 的内容绘制到独立 layer，再对这个 layer 做处理。换成性能语言，就是多了一块中间纹理，以及对这块纹理的读写。
+`RenderEffect` 的成本不只来自 API 调用本身。对 blur 这类效果，AOSP 注释已经给出运行路径：先把目标 RenderNode 的内容绘制到独立 layer，再对这个 layer 做处理。换句话说，就是多了一块中间纹理，加上对这块纹理的读写开销。
 
 一块 1080 × 2400、RGBA_8888 格式的全屏中间纹理，理论像素数据约 9.9 MB。实际 GPU 内存还会受到 stride、内存对齐、tile buffer、驱动池化和格式影响，所以这个数字只能当下限估算。做图形内存分析时，可以把 Graphics / GL / EGL mtrack 拆开看：不要只看 Java heap，要同时看 Graphics、GL mtrack、EGL mtrack 和 GPU memory track。
 
@@ -260,7 +260,7 @@ RenderEffect 问题在 Trace 里常见的模式是：UI Thread 很短，RenderTh
 
 1. **先看 FrameTimeline**：找开启效果前后同一交互的 jank 数、actual duration、present 延迟。不要只看平均帧耗时，P90 / P99 更能暴露 blur 和 shader 尖峰。
 2. **再看 UI Thread 与 RenderThread**：UI Thread 短而 RenderThread `DrawFrame` 拉长，通常指向绘制、纹理上传或 GPU 提交；UI Thread 自身很长，则先回到布局、绘制命令和主线程任务排查。
-3. **接着看 GPU 轨道和 counter**：先枚举设备 producer 暴露的 counter name/id；若存在 `gpu_busy` 或类似的利用率 counter 则纳入对照。Android 16 CDD 7.1.4.6 约束声明支持 GPU profiling 的设备输出符合 Perfetto GPU counters / RenderStage 规范的数据，但不标准化 `gpu_busy` 这个名称，也不保证所有设备都有同精度的 GPU 利用率。旧版本按设备厂商查可用 counter。counter 不可用或不稳定时，退回 AGI 或厂商工具拆分 fragment、texture、bandwidth。
+3. **接着看 GPU 轨道和 counter**：先枚举设备 producer 暴露的 counter name/id；若存在 `gpu_busy` 或类似的利用率 counter 则纳入对照。Android 16 CDD 7.1.4.6 要求支持 GPU profiling 的设备输出符合 Perfetto GPU counters / RenderStage 规范的数据，但 `gpu_busy` 不在该规范的标准命名里，不同设备的 GPU 利用率精度也不对齐。旧版本按设备厂商查可用 counter。counter 不可用或不稳定时，退回 AGI 或厂商工具拆分 fragment、texture、bandwidth。
 4. **做开关对照**：同一设备、同一页面、同一脚本分别跑“无效果 / 小半径 / 大半径 / 静态预渲染”，确认变化来自效果本身，而不是网络、数据加载或动画时序。
 
 AGI 适合在开发和预发布阶段做帧级 GPU 分析。官方 AGI 文档把它定位为 Android 图形性能分析工具，支持 OpenGL ES 和 Vulkan，能查看帧分析、GPU 使用和 draw call。线上问题仍应先靠 Perfetto、`dumpsys gfxinfo`、应用埋点和灰度开关定位，复现后再用 AGI 深查。

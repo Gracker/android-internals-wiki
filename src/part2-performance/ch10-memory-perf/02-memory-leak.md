@@ -52,7 +52,8 @@ task9_reviewed_at: "2026-06-20T17:27:45+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-20"
 task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-13
 ---
 
 # 内存泄漏
@@ -90,8 +91,6 @@ task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for
 
 ## 内存泄漏的定义
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory]
-
 所谓内存泄漏，就是：**一个对象已经不再被程序使用了，但由于存在一条从 GC Root 到该对象的引用链，垃圾回收器无法判定它为垃圾，因此不会回收它。**
 
 在 ART 虚拟机中，垃圾回收器判定对象是否存活的方法是"可达性分析"（Reachability Analysis）。从一组被称为 GC Root 的特殊对象出发，沿着引用链向下追踪。如果一个对象到任何一个 GC Root 之间没有任何引用链相连，那这个对象就是不可达的，可以被回收。
@@ -107,23 +106,17 @@ task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for
 
 有了 GC Root 这个起点，内存泄漏可以写成一个更具体的判断：**泄漏就是一条不应该存在的、从 GC Root 到"已死亡"对象的引用链。**
 
-[图：GC Root → 引用链 → 泄漏对象 的示意图]
-
 内存泄漏有两种不同的语境。开发者常说的"内存泄漏"一般是指 Java 堆上的泄漏。而在 Native 层，内存泄漏指的是通过 `malloc`/`new` 分配的内存没有被 `free`/`delete` 释放——这和 GC 无关，纯粹是开发者的手动管理失误。两种泄漏的症状相似（内存持续增长），但排查方法完全不同。
 
 理解泄漏的成因后，下一步是发现时机。在 Java 堆上，开发阶段最常用的工具是 LeakCanary。这个库在开发阶段的内存泄漏检测方面已经接近行业标准，后续不少线上检测方案也沿用了类似思路。
 
 ## LeakCanary：开发阶段的自动检测
 
-[已验证: LeakCanary 2.x 源码, square.github.io/leakcanary]
-[已验证: 来源见 Personal-Knowlodge/source/2026-03-07_wechat_为什么各大厂自研的内存泄漏检测框架都要参考_LeakCanary_因为它是真强啊.md]
-[已验证: 来源见 性能优化日报/2026-03-15-LeakCanary-内存泄漏检测.md]
-
 ### 工作原理：WeakReference + ReferenceQueue
 
 LeakCanary 的检测机制利用了 Java 引用体系中的一个特性：当一个对象只被 WeakReference 引用时，下次 GC 会回收它，同时 JVM 会把这个 WeakReference 对象放入它关联的 ReferenceQueue 中。
 
-Android 17（API 37）引入分代 CMC（Concurrent Mark-Compact），理论上对年轻代 WeakReference 入队延迟有改善空间——分代 GC 允许在 Minor GC 阶段处理年轻代中的弱引用对象，减少等待 Major GC 的概率。但当前缺乏 ART reference processing 的源码提交或官方 benchmark 支撑具体延迟数据；CC collector 在 Android 10+ 已默认 generational，Android 17 分代 CMC 对 ReferenceQueue/WeakReference 处理时机的增量效果尚待验证。（[待验证：Android 17 分代 CMC 是否显著缩短 LeakCanary watchDuration 前后的响应时间]）
+Android 17（API 37）引入分代 CMC（Concurrent Mark-Compact），理论上对年轻代 WeakReference 入队延迟有改善空间——分代 GC 允许在 Minor GC 阶段处理年轻代中的弱引用对象，减少等待 Major GC 的概率。但当前缺乏 ART reference processing 的源码提交或官方 benchmark 支撑具体延迟数据；CC collector 在 Android 10+ 已默认 generational，Android 17 分代 CMC 对 ReferenceQueue/WeakReference 处理时机的增量效果尚待验证。（（Android 17 分代 CMC 是否显著缩短 LeakCanary watchDuration 前后的响应时间））
 
 工作流程：
 
@@ -214,10 +207,6 @@ Fragment 有两个可能泄漏的对象：Fragment 本身和它的 View。`onDes
 
 ## Native 内存泄漏的排查
 
-[已验证: 官方文档, source.android.com/docs/core/tests/debug/native-memory]
-[已验证: Perfetto 文档, perfetto.dev/docs/data-sources/native-heap-profiler]
-[已验证: 来源见 Manus/android_native_memory_leak_report.md]
-
 Native 内存泄漏指的是通过 `malloc`/`new` 分配的内存没有被 `free`/`delete` 释放。排查思路和 Java 完全不同：没有 GC Root 的概念，核心手段是**跟踪 malloc 和 free 的配对关系**。
 
 ### heapprofd：采样式的 Native 堆分析
@@ -249,7 +238,7 @@ adb shell setprop libc.debug.malloc.program com.example.myapp
 
 AddressSanitizer（ASan）和 Hardware ASan（HWASan）是编译期插桩的 Native 内存安全错误检测工具，能检测栈/堆越界读写、heap use-after-free、stack use-after-scope、double/wild free 等；HWASan 通过硬件内存标签（memory tagging）检测 tag-mismatch 类错误。二者**不是** Native malloc 泄漏的一线检测器——泄漏排查仍以 heapprofd、malloc debug、libmemunreachable 为主。ASan/HWASan 通过编译器插桩实现，需要重新编译且增加内存占用和运行开销。
 
-[适用版本]：ASan 从 API 27（Android 8.1）开始支持；HWASan 需要 Android 10+、arm64 架构且硬件与系统镜像同时支持
+ASan 从 API 27（Android 8.1）开始支持；HWASan 需要 Android 10+、arm64 架构且硬件与系统镜像同时支持
 
 Native 泄漏排查依赖系统工具（heapprofd、Malloc Debug），而 Java 泄漏的主要分析手段是 Heap Dump——拿到进程某一时刻的完整堆快照，然后逐层追踪引用链。LeakCanary 在检测到泄漏后会自动触发 Heap Dump，但在生产环境或手动排查时，仍要手动完成这个过程。
 
@@ -275,8 +264,6 @@ Debug.dumpHprofData("/data/local/tmp/dump.hprof")
 
 Shark 可以独立使用，优势在于内存占用低、解析速度快。对于几百 MB 的 Heap Dump，Shark 可以在几秒内完成分析。
 
-[已验证: LeakCanary/Shark 官方文档, square.github.io/leakcanary]
-
 ## 在 Perfetto / 工具中的表现
 
 ### Java 内存泄漏的 Trace 信号
@@ -293,8 +280,6 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 
 火焰图视图能直观展示哪些调用栈贡献了最多的未释放分配。点击火焰图中最大的色块，会展开具体调用栈和对应的源码位置。
 
-[图：Perfetto heapprofd 火焰图示例——Total allocated vs Total freed 的差距持续扩大]
-
 ## 与其他机制的关系
 
 - **§4.1 Android 内存模型全景**：泄漏发生在 Java 堆或 Native 堆，理解内存分区是定位前提
@@ -308,7 +293,7 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 - **Android 8.1（API 27）**：ASan 支持在非 root 设备上通过 wrap.sh 使用
 - **Android 10**：引入 heapprofd，集成在 Perfetto 中
 - **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化。多进程应用、direct boot、instant app 或严格沙箱模式下自动初始化可能受影响——这些边界场景下 ContentProvider 的初始化时机和 Security Context 与普通单进程应用不同。遇到自动初始化问题时，在 `Application.onCreate()` 中显式调用 `AppWatcher.manualInstall(application)` 即可
-- **Android 17 (API 37)**：分代 CMC 引入独立的 Minor GC，年轻代 WeakReference 入队延迟理论上可缩短，但具体增量效果待验证（[待验证：缺乏官方 benchmark 和 ART reference processing 源码提交；CC collector 在 Android 10+ 已默认 generational，分代 CMC 的增量收益需同设备 A/B trace 对照]）
+- **Android 17 (API 37)**：分代 CMC 引入独立的 Minor GC，年轻代 WeakReference 入队延迟理论上可缩短，但具体增量效果待验证（（缺乏官方 benchmark 和 ART reference processing 源码提交；CC collector 在 Android 10+ 已默认 generational，分代 CMC 的增量收益需同设备 A/B trace 对照））
 - **heapprofd Java 堆采样**：Perfetto heapprofd 支持通过 `heaps: "com.android.art"` 配置 Java heap allocations 采样；该能力从 Android 12 起可用，Android 10/11 的 heapprofd 仍按 Native heap profiling 口径使用
 
 ## 常见问题与误区
@@ -321,7 +306,7 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 
 **"LeakCanary 报告的泄漏都需要修复"** — 分为 Application Leaks 和 Library Leaks，Library Leaks 是 Framework 已知问题，开发者通常无法修复。
 
-## [自动发现] Compose 场景的内存泄漏特征
+## Compose 场景的内存泄漏特征
 
 Jetpack Compose 引入了新的泄漏场景：
 
@@ -332,7 +317,7 @@ Jetpack Compose 引入了新的泄漏场景：
 
 排查时除 LeakCanary 外，可借助 Layout Inspector 查看 Composition 树是否正确 dispose。
 
-## [自动发现] 线上内存泄漏的自动检测方案
+## 线上内存泄漏的自动检测方案
 
 线上方案常见思路：
 

@@ -487,6 +487,133 @@ print(f"  [HAL] submitRequest -> first frame: {round(first_buf_ms - submit_ms, 2
 
 前后摄切换和拍照也能按同样的方法拆解。前后摄切换比冷启动多了一个 `disconnect` → `connectDevice` 的过程，拍照则关注 `deliverInputEvent` → `still capture` 的耗时。
 
+
+
+<!-- AIW-源码调研-2026-07-13 -->
+
+## 📈 AOSP 官方延迟度量（Android 17 实测补充）
+
+本节为 2026-07-13 源码调研（id=16）反哺。承接上文「Camera 启动性能的量化拆解」，从 AOSP 源码侧补充 frameworks 提供的官方延迟度量通道，与 Perfetto UI 视角形成完整链路。所有源码引用锚定 `android-17.0.0_r1`。
+
+### Open Latency：设备打开耗时
+
+`frameworks/av/services/camera/libcameraservice/CameraService.cpp` 的 `CameraService::connectHelper()` 是唯一的官方测量点。入口取 `systemTime()`，出口算 `ns2ms` 差值（CameraService.cpp:2573, 2839-2852）：
+
+```cpp
+// connectHelper 入口（API1/API2 共享）
+nsecs_t openTimeNs = systemTime();
+...
+int32_t openLatencyMs = ns2ms(systemTime() - openTimeNs);
+mCameraServiceProxyWrapper->logOpen(cameraId, facing, clientPackageName,
+        effectiveApiLevel, isNonSystemNdk, sharedMode, openLatencyMs);
+```
+
+`CameraServiceProxyWrapper::logOpen()` 把 `latencyMs` 塞进 `CameraSessionStatsWrapper`，调 `sessionStats->onOpen(proxyBinder)` 上报到 `ICameraServiceProxy`（即 cameraserver statsd 守护）。这是 Open 阶段唯一的官方度量，App 侧无法直接读。
+
+### First Frame Latency：StreamStats::mStartLatencyMs
+
+`frameworks/av/services/camera/libcameraservice/utils/SessionStatsBuilder.cpp:107-122` 在每个 stream 收到第一个非 drop 的 capture result 时写入首帧延迟：
+
+```cpp
+void SessionStatsBuilder::incCounter(int id, bool dropped, int32_t captureLatencyMs) {
+    ...
+    if (dropped) {
+        streamStat.mDroppedFrameCount++;
+    } else if (streamStat.mRequestedFrameCount - streamStat.mDroppedFrameCount == 1) {
+        // The capture latency for the first request.
+        streamStat.mStartLatencyMs = captureLatencyMs;   // ← 首帧延迟
+    }
+    streamStat.updateLatencyHistogram(captureLatencyMs);
+}
+```
+
+直方图分箱（SessionStatsBuilder.cpp:33-34）：`[0,100),[100,200),[200,300),[300,400),[400,500),[500,700),[700,900),[900,1300),[1300,2100),[2100,inf)` 共 10 个 bin（`LATENCY_BIN_COUNT = 10`）。
+
+`buildAndReset()` 触发于 `Camera3Device::notify()` 的 idle 路径（Camera3Device.cpp:2055-2084），把 `(mStartLatencyMs, mHistogramBins[], mHistogramCounts[])` 三元组通过 `listener->notifyIdle()` → `CameraStreamStats` 上报，statsd 端可分别查 P50/P95/P99 首帧延迟与整段预览延迟分布。
+
+### Frame Bubble 排查（stats 层特征）
+
+- **单帧 bubble**：`mDroppedFrameCount++` 单次递增，但 `mRequestedFrameCount - mDroppedFrameCount == 1` 持续成立 → 首帧未到但有 drop
+- **持续 bubble**：`mCounterStopped=true`（被 `dropStreamBuffers(true, streamId)` 或 `dropAllStreamBuffers()` 置位），`incCounter` 直接 return
+- **Session 级 bubble**：`Camera3Device::notifyError` 后 `mSessionStatsBuilder.onDeviceError(errorState)`，整段 session 标记为 device error
+- **拍照 bubble**：Camera3Device.cpp:3002-3003 的 `listener->notifyError(ERROR_CAMERA_DEVICE, ...)` 路径
+
+### ProcessCaptureRequest Latency（HAL 入队延迟）
+
+`device3/Camera3Device.cpp` 的 `CameraLatencyHistogram mRequestLatency(kRequestLatencyBinSize)`，`kRequestLatencyBinSize = 40 ms`（Camera3Device.h:1344），10 个 bin 覆盖 `[0,40) ... [360,400) [400,inf)` ms。每帧 `RequestThread::waitForNextRequestBatch` 调用前后 `mRequestLatency.add(tRequestStart, tRequestEnd)`（Camera3Device.cpp:4041-4048）：
+
+```cpp
+nsecs_t tRequestStart = systemTime(SYSTEM_TIME_MONOTONIC);
+submitRequestSuccess = sendRequestsBatch();
+nsecs_t tRequestEnd = systemTime(SYSTEM_TIME_MONOTONIC);
+mRequestLatency.add(tRequestStart, tRequestEnd);
+```
+
+dump 入口在 `Camera3Device::dump()`（Camera3Device.cpp:642），`dumpsys media.camera` 时打印。P95 落在 [80,120) 以上说明 HAL 在等 Buffer 或处理阻塞；只有尾段偏高说明 pipeline 抖动。
+
+### 首帧 Perfetto slice 的源码出处
+
+`device3/Camera3OutputStream.cpp:503-509` 是「Stream N: first full buffer」这个 slice 名称的实际写入位置：
+
+```cpp
+if (mTraceFirstBuffer && (stream_type == CAMERA_STREAM_OUTPUT)) {
+    char traceLog[48];
+    snprintf(traceLog, sizeof(traceLog), "Stream %d: first full buffer\n", mId);
+    ATRACE_NAME(traceLog);
+    mTraceFirstBuffer = false;
+}
+```
+
+`mTraceFirstBuffer` 在 `configureQueueLocked()` / `configureConsumerQueueLocked()`（Camera3OutputStream.cpp:654, 681）重置，每个 stream 重新配置都会触发一次。
+
+注意：`first full buffer` slice 是 framework 把 Buffer queue 给 SurfaceFlinger 的瞬间；`mStartLatencyMs` 是 HAL 把首个 CaptureResult 交付 framework 的瞬间。两者差值 = HAL 出帧到上屏的链路耗时。Perfetto 排查时必须同时看 `mStartLatencyMs` 和 `Stream N: first full buffer` 才能拆出 pipeline bubble。
+
+### 抓取建议
+
+上述所有 ATRACE 点都使用 `ATRACE_TAG_CAMERA`，所以抓 trace 时 atrace category 必须包含 `camera`：
+
+```bash
+adb shell perfetto -c - --txt -o /data/misc/perfetto-traces/cam17.perfetto-trace <<EOF
+buffers: { size_kb: 8960 fill_policy: DISCARD }
+data_sources: {
+    config {
+        name: "linux.ftrace"
+        ftrace_config {
+            atrace_categories: "camera"
+            atrace_categories: "gfx"
+            atrace_categories: "view"
+            atrace_categories: "hwc"
+            atrace_categories: "binder_driver"
+        }
+    }
+}
+duration_ms: 30000
+EOF
+```
+
+### 拆解脚本增量
+
+在原脚本里追加 `ProcessCaptureRequest latency` 直方图查询，量化 HAL 入队耗时：
+
+```sql
+-- 通过 dumpsys 收集不到时，用 atrace 间接观察
+-- 找 RequestThread::sendRequestsBatch 的相邻 frame capture async slice 间隔
+SELECT
+  slice.ts / 1e6 AS ts_ms,
+  slice.name
+FROM slice
+JOIN thread_track ON slice.track_id = thread_track.id
+JOIN thread USING(utid)
+WHERE thread.name LIKE '%RequestThread%'
+  AND slice.name = 'sendRequestsBatch'
+ORDER BY slice.ts ASC
+LIMIT 100
+```
+
+AOSP `android-17.0.0_r1` 中 `CameraService::connectHelper()` / `SessionStatsBuilder` 形态与 `android-16.0.0_r1` 一致；Open Latency 与 First Frame Latency 的度量机制未发生破坏性变更。`flags::analytics_24q3()` 在 `android-17.0.0_r1` 中继续启用（Camera3Device.cpp:3162），`incFpsRequestedCount` 用于按 FPS 区间统计 request 分布，可与首帧延迟联合看"目标帧率 vs 实际帧率"。
+
+<!-- AIW-源码调研-2026-07-13-end -->
+
 ## Camera 功耗优化
 
 Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP 持续处理、GPU 外部纹理持续采样、屏幕持续高亮，这些环节叠在一起，几分钟录像就可能带来几个百分点的耗电。

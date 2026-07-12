@@ -3,7 +3,7 @@
   "draft": 0,
   "ready_for_review": 5,
   "finalized": 5,
-  "last_updated": "2026-07-13T06:08:15.791997+08:00",
+  "last_updated": "2026-07-13T07:10:15+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-cleanup",
+      "status": "deprecated-24-stubs",
+      "ts": "2026-07-13T07:10:15+08:00",
+      "note": "Round 96 cleanup: deprecated 24 orphan/duplicate empty draft stubs. All topics already covered by existing substantial chapters. SUMMARY.md cleaned (11 entries removed)."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -507,10 +514,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-13T05:06:55.017735+08:00",
+    "last_run": "2026-07-13T07:10:15+08:00",
     "last_section": "none",
-    "result": "no-candidates",
-    "note": "Gap mining round 94: 0 candidates ≥14 (94th consecutive). No new material since Round 93 (camera-perfetto-latency-decomposition already mapped to §14.9). DeepResearch: 0 new files since 02:59. Clippings: 20 days stale. research-feeds: 3+ months stale. source-index: 0 unmapped high-quality. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    "result": "cleanup-deprecation",
+    "note": "Round 96: Bulk cleanup - deprecated 24 orphan/duplicate/hallucinated empty draft stubs. All were RSS-derived or gap-mining artifacts that duplicate existing finalized/ready-for-review chapters. Topics already covered: LMKD(§15/§4.36), MTE(§4.9), Linux 6.10(§6.19), AI Agent memory(§4.22), CPU cache(§4.35), ML scheduler(§1.43). 0 legitimate empty drafts remain."
   },
   "last_task9_review": {
     "at": "2026-07-11T13:28:01+08:00",
@@ -770,6 +777,174 @@
       "reason": "Duplicate of §17.21/§09-soc (SoC power optimization). Orphan stub not in SUMMARY.md.",
       "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
       "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/04.40-ai-agent-memory-management.md",
+      "reason": "Orphan stub. AI Agent memory covered by §4.22 (351L).",
+      "chapter": "04.40",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/04.40-art-heaptask-system-deep-dive.md",
+      "reason": "Orphan stub. ART HeapTask covered by §4.21 (342L).",
+      "chapter": "04.40",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.36-android17-ai-agent-memory-sandboxed-data-reuse.md",
+      "reason": "Duplicate of §4.22. File had draft status despite prior deprecation.",
+      "chapter": "4.36",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.37-android17-ai-agent-memory-management.md",
+      "reason": "Orphan stub. AI Agent memory covered by §4.22.",
+      "chapter": "4.37",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.37-android17-lmkd-userspace-migration.md",
+      "reason": "Duplicate of §15-psi-lowmemdetector-lmkd-architecture (370L) and §4.36-lmkd-procs-prio-batch (351L). LMKD userspace since Android 10+.",
+      "chapter": "4.37",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.39-linux-6.10-memory-fragmentation.md",
+      "reason": "Orphan stub. Duplicate of §6.19.",
+      "chapter": "4.39",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.45-linux610-memory-fragmentation.md",
+      "reason": "Duplicate of §6.19.",
+      "chapter": "4.45",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory.md",
+      "reason": "Duplicate of §4.22. Contains hallucination (MemoryDomain/SandboxedHeap not in AOSP).",
+      "chapter": "4.46",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.47-android17-arm-mte.md",
+      "reason": "Duplicate of §4.9-android17-memory-tagging-extension-mte (335L).",
+      "chapter": "4.47",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.48-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md",
+      "reason": "Broken stub: LMKD title but GPU outline. Not in SUMMARY.",
+      "chapter": "4.48",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.22-android17-soc-battery-optimization.md",
+      "reason": "Orphan stub. SoC power covered by §17.21.",
+      "chapter": "5.22",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.23-android17-cpu-cache-locality-pss-accounting.md",
+      "reason": "Orphan stub. CPU cache/PSS covered by §4.35 (330L).",
+      "chapter": "5.23",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.25-android17-cpu-cache-locality.md",
+      "reason": "Duplicate of §4.35-android17-cpu-cache-locality-pss-accounting (330L).",
+      "chapter": "5.25",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.33-android17-modular-task-scheduler.md",
+      "reason": "Orphan stub. ML scheduler covered by §1.43.",
+      "chapter": "8.33",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.34-android17-modular-startup-framework.md",
+      "reason": "Orphan stub. No verifiable feature in AOSP android-17.0.0_r1.",
+      "chapter": "8.34",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.35-android17-official-blog-task-scheduler.md",
+      "reason": "Orphan stub. RSS-derived duplicate of §1.43.",
+      "chapter": "8.35",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.36-android17-startup-insights.md",
+      "reason": "Orphan stub. Startup insights covered by §8.31/§8.32.",
+      "chapter": "8.36",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.38-android17-task-scheduler-optimization.md",
+      "reason": "Duplicate of §1.43 (Android 17 ML scheduler 215L).",
+      "chapter": "8.38",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.40-android17-modular-startup-framework.md",
+      "reason": "No verifiable modular startup framework in AOSP android-17.0.0_r1.",
+      "chapter": "8.40",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch25-power/25.18-android17-power-stats-hal.md",
+      "reason": "Outline contains fabricated features. Topic partially covered by existing power chapters.",
+      "chapter": "25.18",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part3-optimization/ch04-memory/4.37-lmkd-userspace-migration-psi/4.37-lmkd-userspace-migration-psi.md",
+      "reason": "Duplicate of §4.37/§15. Orphan in wrong directory.",
+      "chapter": "4.37",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part3-tools/ch14-profiling/14.2-android17-perfetto-v57-ai-skills.md",
+      "reason": "Orphan stub. Perfetto AI skills not verifiable.",
+      "chapter": "14.2",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part5-app/ch26-database/26.1-room-30-breaking-changes.md",
+      "reason": "Orphan stub. Room 3.0 is app library not Android internal.",
+      "chapter": "26.1",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part5-app/ch26-methodology/26.1-google-android-bench-ai-coding-evaluation.md",
+      "reason": "Orphan stub. AI coding benchmark not Android internals.",
+      "chapter": "26.1",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
     }
   ],
   "review_stats": {
