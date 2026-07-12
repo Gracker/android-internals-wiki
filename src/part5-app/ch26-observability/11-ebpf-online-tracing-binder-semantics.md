@@ -59,9 +59,11 @@ last_task9_review_log: "logs/deep-review/2026-06-05-12-deep-review.md"
 task2b_state: fixed
 task2b_result: fixed
 last_task9_at: "2026-06-05T12:27:00+08:00"
-last_task9_audit: "2026-06-22"
-last_task9_audit_result: pass-idle-audit
-last_task9_audit_log: "logs/deep-review/2026-06-22-17-audit.md"
+last_task9_audit: "2026-07-12"
+last_task9_audit_at: "2026-07-12T21:25:10+08:00"
+last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；android-17.0.0_r1 system/bpf loader 与 kernel/common android16-6.12 Binder uapi/driver 锚点一致；L158 的 android-mainline 待验证标注属 P2 观察，不影响 Android 17 结论。"
+last_task9_audit_result: "pass-idle-audit"
+last_task9_audit_log: "logs/deep-review/2026-07-12-21-audit.md"
 last_task6_audit: "2026-07-11"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-29
