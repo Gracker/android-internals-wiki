@@ -2,27 +2,27 @@
 title: "ApplicationExitInfo 与进程退出归因"
 chapter: "26.9"
 section: "26.9"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-05-15"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers docs + Clippings structure references"
+last_verified: "2026-07-12"
+last_verified_against: "AOSP android-17.0.0_r1 ApplicationExitInfo.java, ActivityManager.java, AppExitInfoTracker.java, NativeTombstoneManager.java, tombstone.proto + Android Developers docs"
 confidence: medium
 polish_count: 0
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-06-04"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-07-12"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-06-04T08:20:00+08:00"
-last_task9_audit: "2026-06-22"
+last_task9_at: "2026-07-12T20:31:20+08:00"
+last_task9_audit: "2026-07-12"
 task2b_state: fixed
 sources:
   - type: research
@@ -46,22 +46,29 @@ sources:
   - type: official
     path: "https://developer.android.com/ndk/guides/debug"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityManager.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
   - type: aosp
-    path: "system/core/debuggerd/proto/tombstone.proto"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/os/NativeTombstoneManager.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
 tags: [applicationexitinfo, observability, crash, anr, oom, lmk]
 related_chapters: ["20.3", "20.4", "20.5", "19.24", "26.2", "26.5"]
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-04"
 last_task6_at: "2026-06-04T04:12:07+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-04-08-deep-review.md"
-task9_review_notes: "2026-06-04 Task9 deep review: pass-tech-review。无 P0/P1；ApplicationExitInfo API 30+/31+ traceInputStream、reason 常量、低版本替代路径和交叉引用抽查通过；queue 无 pending 且 Task6 已通过，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-07-12-20-audit.md"
+task9_review_notes: "2026-07-12 Task9 idle audit AUTO-FIX: 将 AOSP 源码锚点和 last_verified_against 从 android-16/plain path 更新到 android-17.0.0_r1；复核 ApplicationExitInfo reason 常量、traceInputStream ANR/API31 native tombstone、LMK report support 和 AppExitInfoTracker/NativeTombstoneManager 路径，无 Android 18/API 38 内容。回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-18
+last_task9_audit_at: "2026-07-12T20:31:20+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-12-20-audit.md"
+last_task9_audit_result: auto-fixed
+last_task9_audit_notes: "idle audit auto-fix: source anchors pinned to android-17.0.0_r1; API 30/31+/37 boundaries rechecked; no Android 18/API 38 content."
+last_task9_autofix_at: "2026-07-12"
 ---
 
 # 26.9 ApplicationExitInfo 与进程退出归因
