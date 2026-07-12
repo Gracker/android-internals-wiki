@@ -1,5 +1,6 @@
 ---
 
+
 title: Android 性能优化研究方法论
 chapter: "15"
 status: finalized
@@ -24,22 +25,22 @@ task6_review_notes_round7: "2026-07-04 Task6 revisiting-review round7: pass-ligh
 task6_review_notes_round8: "2026-07-04 Task6 revisiting-review round8 (post-Task2B-lite source-path-prefix fix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits (彻底×1=不彻底 legitimate, 真正×1=contrastive legitimate). Restricted patterns: 2 (at limit, stable since round5). Structural meta-narrative: 0. Adjective+colon: 0. Code blocks: all properly tagged (bash/sql). Source path prefixes all verified (external/perfetto/src/...). L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source code anchored to android-17.0.0_r1, original frameworks like 3-tier baseline and 5-Whys walkthrough). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No L1/L2 fixes needed this round. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task2b_result: fixed
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 round7 已通过并发送至 Task9 复审，task9_state 应为 pending"
-last_task2b_at: "2026-07-04T18:52:42+08:00"
+last_task2b_at: 2026-07-12T10:52:42+08:00
 last_task2b_lite_at: 2026-07-04
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
-last_task9_audit: "2026-07-04"
+last_task9_audit: 2026-07-12
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
-last_idle_audit_at: "2026-07-07T11:21:00+08:00"
-last_idle_audit_at: "2026-07-02T17:27:39+08:00"
+last_idle_audit_at: 2026-07-12T10:52:42+08:00
+last_idle_audit_at: 2026-07-12T10:52:42+08:00
 last_task6_audit: 2026-07-04
-last_task9_audit: "2026-07-06"
-last_idle_audit_at: "2026-07-06T09:23:00+08:00"
+last_task9_audit: 2026-07-12
+last_idle_audit_at: 2026-07-12T10:52:42+08:00
 last_task6_audit: 2026-07-06
-last_task9_audit: "2026-07-06"
-last_task9_audit_log: "logs/deep-review/2026-07-06-10-audit.md"
-last_idle_audit_at: "2026-07-06T17:31:00+08:00"
+last_task9_audit: 2026-07-12
+last_task9_audit_log: logs/deep-review/2026-07-12-10-idle-audit.md
+last_idle_audit_at: 2026-07-12T10:52:42+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
@@ -353,7 +354,7 @@ heapprofd 需要在 Perfetto config 中显式开启。**构建类型决定 heapp
 
 **FrameRateOverrides 与 WindowManager 的交互**：FrameRateOverrides 不是独立生效的。当应用或 WindowManager 通过 `WindowManager.LayoutParams.preferredFrameRate` 或 `SurfaceControl.setFrameRate()` 为某个窗口指定帧率后，SurfaceFlinger 会据此调整该窗口的 VSync 序列。但最终的 VSync offset（即 App 收到 VSync 信号到 SurfaceFlinger 提交帧之间的时间窗口）由 SurfaceFlinger 综合所有可见窗口的帧率后统一计算——如果有多个窗口以不同帧率同时可见，offset 会照顾到最高帧率的窗口。因此在分屏或多窗口场景下，低帧率窗口的实际帧预算可能比其目标帧率对应的理论值更大。
 
-**VSync 偏移动态调整**：在 Android 17 中，SurfaceFlinger 会根据当前帧率动态调整 VSync offset——帧率越低，offset 越大，给 App 的主线程留更多渲染时间。VSync 偏移计算涉及 SurfaceFlinger Scheduler 模块（`frameworks/native/services/surfaceflinger/Scheduler/`）中的三个独立组件：`VSyncTracker`（`VSyncTracker.cpp`，单文件实现，跟踪和预测 VSync 周期）、`VSyncModulator`（按 App/SF 两组 phase offset 调制偏移量）、`VSyncDispatch`（管理 VSync 信号的 dispatch 时序）。帧率切换时三者协作重新计算 phase offset 并控制 VSync 信号发出的时机。帧率切换点附近的帧容易出现 deadline miss，因为 offset 调整有延迟——新帧率的 offset 在上一帧的渲染周期已确定，而上一帧的 offset 是基于旧帧率计算的，导致切换后的第一帧或前两帧使用了不匹配的 offset。
+**VSync 偏移动态调整**：在 Android 17 中，SurfaceFlinger 会根据当前帧率动态调整 VSync offset——帧率越低，offset 越大，给 App 的主线程留更多渲染时间。VSync 偏移计算涉及 SurfaceFlinger Scheduler 模块（`frameworks/native/services/surfaceflinger/Scheduler/`）中的三个协作组件：`VSyncTracker`（主要实现在 `VSyncTracker.cpp/h` 及相关文件中，跟踪和预测 VSync 周期）、`VSyncModulator`（按 App/SF 两组 phase offset 调制偏移量）、`VSyncDispatch`（管理 VSync 信号的 dispatch 时序）。三者协作完成 VSync 偏移的动态调整。帧率切换时三者协作重新计算 phase offset 并控制 VSync 信号发出的时机。帧率切换点附近的帧容易出现 deadline miss，因为 offset 调整有延迟——新帧率的 offset 在上一帧的渲染周期已确定，而上一帧的 offset 是基于旧帧率计算的，导致切换后的第一帧或前两帧使用了不匹配的 offset。
 
 Perfetto trace 中的可观测字段：
 
