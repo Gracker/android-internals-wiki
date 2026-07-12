@@ -2,7 +2,7 @@
 title: 线上网络质量监控与接入层协同
 chapter: '26.17'
 section: '26.17'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-07-12'
 last_verified_against: Android Developers docs + AOSP android-17.0.0_r1 Connectivity sources + OkHttp 5.x docs + Cronet API 143.7445.0 + Clippings references
@@ -49,15 +49,16 @@ created_by: task2a-knowledge-gap
 created_date: '2026-05-22'
 gap_source: 参考书素材/知识盲区/官方文档/AOSP结构
 last_task2a_at: '2026-05-22T15:04:00+08:00'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
+task6_review_notes: "2026-07-13 Task6 re-review: pass-light-edit。L1/L2 clean; 而不是 pattern 3→2 fixed; task9_result aligned to pass-tech-review; auto-promoted to finalized。"
 task9_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-06-04'
-last_task6_at: '2026-06-04T03:10:02+08:00'
-last_task6_review_log: logs/review/2026-05-22-15-review.md
-task9_result: auto-fixed
+reviewed_date: '2026-07-13'
+last_task6_at: '2026-07-13T01:10:47+08:00'
+last_task6_review_log: logs/review/2026-07-13-01-review.md
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-06-04'
 last_task9_at: '2026-07-12T21:39:02+08:00'
@@ -259,4 +260,4 @@ QUIC / HTTP/3 会改变传统 TCP/TLS 阶段的含义。HTTP/3 基于 QUIC，连
 
 ## 收束
 
-线上网络质量监控的可用性，取决于样本能否解释差异。客户端保留阶段耗时和网络状态，接入层保留秒级入口事实，二者用 request id / trace id 对账。告警用少量强指标快速发现问题，离线分析再展开地域、运营商、协议、CDN 和机型。排障人员拿到的就是一组可对账的证据，而不是一串互相矛盾的平均耗时。
+线上网络质量监控的可用性，取决于样本能否解释差异。客户端保留阶段耗时和网络状态，接入层保留秒级入口事实，二者用 request id / trace id 对账。告警用少量强指标快速发现问题，离线分析再展开地域、运营商、协议、CDN 和机型。排障人员拿到的就是一组可对账的证据——不再是互相矛盾的平均耗时。
