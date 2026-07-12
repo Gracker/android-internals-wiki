@@ -6,8 +6,8 @@ section: '3.4'
 drafted_date: '2026-05-13'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-05-13'
-last_verified_against: AOSP android-16.0.0_r1 + Android Developers + Perfetto stdlib docs
+last_verified: "2026-07-12"
+last_verified_against: AOSP android-17.0.0_r1 + Android Developers + Perfetto stdlib docs
 confidence: medium
 sources:
 - type: official
@@ -47,8 +47,9 @@ related_chapters:
 - '2.5'
 - '8.1'
 - '13.8'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+- '1.26'
+pipeline_stage: task6_pending
+task6_state: revisiting
 task2b_state: fixed
 task2b_result: fixed
 last_task2a_at: '2026-05-13T19:04:00+08:00'
@@ -60,14 +61,19 @@ task9_state: reviewed
 last_task6_at: "2026-05-13T19:10:00+08:00"
 last_task6_audit: "2026-05-26"
 task6_review_log: "logs/review/2026-05-13-19-review.md"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-13"
+task9_result: auto-fixed
+task9_reviewed_date: "2026-07-12"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-13T19:47:40+08:00"
-last_task9_audit: "2026-06-23"
-task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_at: "2026-07-12T17:26:48+08:00"
+last_task9_audit: "2026-07-12"
+task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-12 Task9 idle audit auto-fixed: 源码锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1；补充 Android 17 DeliQueue 输入延迟口径与 §1.26 交叉引用；AOSP tag 复核 Choreographer/InputConsumer/Resampler/MotionPredictor/InputReader/InputDispatcher 路径与关键 API。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-03
+last_task9_audit_at: "2026-07-12T17:26:48+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-12-17-audit.md"
+last_task9_audit_result: "auto-fixed-idle-audit"
+last_task9_audit_notes: "AUTO-FIX: 源码版本锚点升级到 android-17.0.0_r1，并补充 Android 17 DeliQueue 与输入延迟口径的交叉引用；无 queue pending。"
+last_task9_autofix_at: "2026-07-12"
 ---
 
 # 3.4 输入延迟与预测输入技术
@@ -151,7 +157,7 @@ sequenceDiagram
 
 ### 一帧预算里的输入位置
 
-在 App 侧，输入事件并不是随到随画。普通 MOVE 事件经常先被 batching 到队列里，等下一次 `Choreographer#doFrame` 的输入阶段统一消费。android-16.0.0_r1 中的回调顺序仍是：
+在 App 侧，输入事件并不是随到随画。普通 MOVE 事件经常先被 batching 到队列里，等下一次 `Choreographer#doFrame` 的输入阶段统一消费。android-17.0.0_r1 中的回调顺序仍是：
 
 1. `CALLBACK_INPUT`
 2. `CALLBACK_ANIMATION`
@@ -159,7 +165,7 @@ sequenceDiagram
 4. `CALLBACK_TRAVERSAL`
 5. `CALLBACK_COMMIT`
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java] [交叉引用: §2.4 Choreographer 与渲染流水线]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java] [交叉引用: §2.4 Choreographer 与渲染流水线]
 
 这个顺序给了输入最高的帧内优先级，但也带来一个固定约束：如果输入处理本身吃掉太多时间，后面的动画和 traversal 会被压缩。反过来，如果主线程在 VSync 前已经被长任务占住，输入事件即使已经到达 App，也要等主线程空出来。
 
@@ -196,7 +202,7 @@ Batching 处理“点太多”的问题，重采样处理“点和帧时间不�
 - API 35+ 可通过 `MotionEvent.PointerCoords.isResampled()` 识别重采样坐标。
 - 低版本没有稳定公开 API 判断某个坐标是否来自重采样。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/InputConsumer.cpp + frameworks/native/libs/input/Resampler.cpp] [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/InputConsumer.cpp + frameworks/native/libs/input/Resampler.cpp] [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
 
 这也是 `requestUnbufferedDispatch()` 要谨慎使用的原因。它能让 MOVE 更早送到 App，但会减少系统 batching 和重采样带来的平滑处理。手写、签名、白板这类场景值得尝试；普通列表滑动通常先保留默认策略。
 
@@ -210,11 +216,11 @@ Batching 处理“点太多”的问题，重采样处理“点和帧时间不�
 | --- | --- | --- | --- |
 | Framework API | `android.view.MotionPredictor` | API 34+ | 系统提供预测能力时，App 直接调用 framework API |
 | AndroidX 封装 | `androidx.input:input-motionprediction` | release notes 显示新版本会在系统 API 可用时优先使用系统 API | 需要兼容不同 Android 版本的手写/绘图应用 |
-| Native predictor | AOSP input 侧模型实现 | android-16.0.0_r1 可见 TFLite 模型加载路径 | 系统内部能力，App 只通过公开 API 间接使用 |
+| Native predictor | AOSP input 侧模型实现 | android-17.0.0_r1 可见 TFLite 模型加载路径 | 系统内部能力，App 只通过公开 API 间接使用 |
 
-[已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor] [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input] [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input]
+[已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor] [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input] [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input]
 
-android-16.0.0_r1 可见的 Native 实现里，`TfLiteMotionPredictorModel` 会从 system 或 vendor 目录加载模型，公开材料能确认它面向 stylus source 的可用性检查。TCN 架构、NPU 加速、固定 30ms 预测窗口、非 stylus 全量支持这些说法，当前不写成已验证结论。
+android-17.0.0_r1 可见的 Native 实现里，`TfLiteMotionPredictorModel` 会从 system 或 vendor 目录加载模型，公开材料能确认它面向 stylus source 的可用性检查。TCN 架构、NPU 加速、固定 30ms 预测窗口、非 stylus 全量支持这些说法，当前不写成已验证结论。
 
 ### Framework API 的使用方式
 
@@ -340,6 +346,12 @@ LIMIT 100;
 高采样率缩短的是“下一次采到手指位置”的等待。120Hz 采样的周期约 8.3ms，240Hz 约 4.16ms，480Hz 约 2.08ms。它不会自动缩短 App 主线程、GPU 和 SurfaceFlinger 的耗时。
 
 对普通滚动来说，采样率高于显示帧率后，收益会被 batching 和渲染节奏限制。对手写笔来说，高采样率仍有价值，因为更多真实点能让轨迹重建和预测更稳。要判断设备营销规格是否转成体验收益，还是看 trace：采样点是否稳定到达、App 是否消费历史点、显示帧是否及时 present。
+
+### Android 17 DeliQueue 与输入延迟口径
+
+Android 17 的 DeliQueue 属于 MessageQueue / Looper 队列结构变化，已在 §1.26 单独展开。它可以降低高并发入队时的 MessageQueue 锁竞争，但不改变 InputDispatcher 的 dispatch / ACK 语义，也不是 MotionPredictor 或重采样链路的一部分。分析输入延迟时，应把它归到 App 主线程消息队列竞争这一段。
+
+[已验证: §1.26 DeliQueue 无锁队列源码解析（AOSP android-17.0.0_r1）]
 
 ## Android 16/17 的待验证方向
 
