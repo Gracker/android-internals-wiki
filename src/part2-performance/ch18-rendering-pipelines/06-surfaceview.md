@@ -59,7 +59,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
 task6_reviewed_date: "2026-06-20"
 last_task6_at: "2026-06-20T08:08:00+08:00"
-last_task6_audit: '2026-05-24'
+last_task6_audit: '2026-07-13'
 last_task6_audit_log: 'logs/review/2026-05-24-07-audit.md'
 last_task6_audit_notes: '2026-05-24 闲时抽检：L1 禁用词/高频词 0 命中，锚点 8/8；补齐 frontmatter 来源与验证字段；发现 Task9 needs-rework 状态流转不一致及 SurfaceView BLAST 版本边界残留，已写入 queue P90。'
 review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST
