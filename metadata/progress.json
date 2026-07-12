@@ -3,7 +3,7 @@
   "draft": 0,
   "ready_for_review": 8,
   "finalized": 1,
-  "last_updated": "2026-07-12T19:06:48+08:00",
+  "last_updated": "2026-07-12T19:30:43+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "16.5, 22.10",
+      "action": "task2b-verifier",
+      "status": "fixed",
+      "ts": "2026-07-12T19:30:43+08:00",
+      "note": "State correction: 16.5 task6_state→revisiting, pipeline→task6_pending; 22.10 status→ready-for-review"
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",

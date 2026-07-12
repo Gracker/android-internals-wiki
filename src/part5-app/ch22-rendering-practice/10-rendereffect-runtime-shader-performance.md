@@ -2,7 +2,7 @@
 title: "RenderEffect 与 RuntimeShader 性能实践"
 chapter: "22.10"
 section: "22.10"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-07-12"
