@@ -18,21 +18,21 @@ created_by: task2a-knowledge-gap
 created_date: 2026-04-08
 gap_source: 官方文档+研究素材+AOSP结构+读者需求
 gap_score: 20
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_audit_date: 2026-06-10
+task9_audit_date: 2026-07-12
 task9_audit_type: idle-audit
-last_task9_at: 2026-05-29T07:21:00+08:00
-task2b_state: fixed
+last_task9_at: 2026-07-12T15:24:27+08:00
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: 2026-07-12T14:52:53+08:00
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-12
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-29
+task9_reviewed_date: 2026-07-12
 review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
 task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。"
 review_type: task6-writing-quality-review

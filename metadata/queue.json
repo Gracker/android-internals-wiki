@@ -42,6 +42,24 @@
       "severity": "中等 - 对 NDK 开发者适配关键信息缺失",
       "location": "16KB 页面对原生库的影响章节",
       "resolution": "补充 AOSP android-17.0.0_r1 构建配置和 NDK 要求的具体信息"
+    },
+    {
+      "type": "P0",
+      "category": "源码错误",
+      "title": "DeliQueue 实现路径混淆",
+      "description": "引用 `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java` 等私有实现路径，但开发者实际使用的是 `android/os/MessageQueue.java` 公共API",
+      "severity": "高 - 源码路径错误影响开发者理解",
+      "location": "DeliQueue：MessageQueue 二十年来的首次架构换代章节",
+      "resolution": "明确区分公共API路径和私有实现路径，说明开发者实际使用的入口"
+    },
+    {
+      "type": "P0",
+      "category": "源码引用不准确",
+      "title": "ART GC 源码路径不完整",
+      "description": "仅引用 `art/runtime/gc/collector/` 目录，未指定具体文件如 `art/runtime/gc/collector/young_mark-compact.cc`",
+      "severity": "高 - 影响代码可验证性",
+      "location": "从 Concurrent Copying 到 Generational CMC 章节",
+      "resolution": "补充具体的源码文件路径，确保可验证性"
     }
   ],
   "notes": "闲时抽检发现 P0/P1 问题，章节状态已更新为 task9_result: pending，pipeline_stage: task6_pending，需 Task6 复审",
