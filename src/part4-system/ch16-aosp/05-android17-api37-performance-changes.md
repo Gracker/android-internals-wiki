@@ -18,8 +18,8 @@ created_by: task2a-knowledge-gap
 created_date: 2026-04-08
 gap_source: 官方文档+研究素材+AOSP结构+读者需求
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -30,14 +30,14 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-07-12T14:52:53+08:00
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-29
+reviewed_date: 2026-07-12
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-29
 review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
 task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。"
 review_type: task6-writing-quality-review
 last_task9_review_log: logs/deep-review/2026-05-29-07-deep-review.md
-last_task6_at: 2026-05-29T08:16:26+08:00
+last_task6_at: 2026-07-12T15:12:42+08:00
 last_task6_review_log: logs/review/2026-05-29-08-review.md
 task2b_fixed_by: openclaw-task2b-main
 task6_reviewed_date: 2026-05-29
@@ -51,6 +51,10 @@ task6_new_rework: false
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
+last_task6_review_log: logs/review/2026-07-12-15-review.md
+task6_l1_l2_fixes: 4
+task6_l3_l4_issues: 0
+task6_new_rework: false
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
@@ -216,7 +220,6 @@ CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实�
 
 **Perfetto 诊断**：旧实现锁争用表现为 "monitor contention with MessageQueue" 切片；DeliQueue 启用后此切片应显著减少或消失。可使用 `android_monitor_contention` PerfettoSQL 模块查询。
 
-
 ---
 
 ## ART 分代垃圾回收
@@ -289,7 +292,6 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
 | `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | **文档口径不一致**：API reference 写 "running system trace snapshot"；features 页写 "call stack sample"。未进入 Android 17（android-17.0.0_r1 tag 未发布），最终行为以 release tag 为准。接入时按 `ProfilingResult` 返回的实际路径分流处理，不对产物类型做硬编码假设。 | 定位后台 CPU 异常占用 |
 
-
 ### 注册流程和适配建议
 
 冷启动触发器的文档口径是"app cold start 时尽早触发"，公开产物是 call stack sample 和 system trace。使用时先把它看作采样入口；具体字段名和交付文件形态以 API 37 SDK reference 的 `ProfilingResult` 为准。
@@ -297,9 +299,6 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump、system trace 或采样结果上继续分析。
 
 详见 **14.7 ProfilingManager**。
-
-
-<!-- AIW-源码调研-2026-06-19 -->
 
 ### 源码级机制补充（2026-06-19 源码调研）
 
@@ -742,7 +741,6 @@ bool Runtime::useGenerationalCMC() const {
 - 需要 `persist.device_config.runtime_native_boot.use_generational_gc` 属性设置为 true
 - 必须在编译时启用 `kUseUserfaultfd` 特性
 
-
 ### ProfilingManager 触发器内部判断逻辑
 
 API 37 公开文档只给出了触发器常量和注册入口，**没有公开服务端内部判断逻辑**。`ProfilingManagerService` 的源码在当前 AOSP preview 中不可直接核验，因此正文保留已确认的 API 口径，不给未验证的内部伪代码。
@@ -757,7 +755,6 @@ API 37 公开文档只给出了触发器常量和注册入口，**没有公开�
 | `TRIGGER_TYPE_OOM` | API 37 | App 发生 OOM 时触发 | 内存诊断 |
 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | App 因异常 CPU 占用被杀时触发 | call stack sample / system trace snapshot 口径需按 `ProfilingResult` 实际返回判断 |
 | `TRIGGER_TYPE_APP_COMPAT` | API 37 | 兼容性问题触发 | 兼容性排查 |
-
 
 ### ConcurrentMessageQueue 实际数据结构
 
@@ -808,9 +805,7 @@ public class TreiberStack<E> {
 | ProfilingManager | API 36 基础触发器 | API 37 新增 3 个触发器 | 按版本注册不同触发器集合 |
 | ConcurrentMessageQueue | 存在但不默认启用 | 默认启用 | 反射代码需适配 null 值 |
 
-
 ## 附：Choreographer Buffer Stuffing Recovery（Android 16 新增）
-
 
 Android 16 在 Choreographer 中引入 **Buffer Stuffing Recovery** 机制，新增 `BufferStuffingState` 内部类管理恢复状态，新增 `onWaitForBufferRelease()` @hide API 供图形客户端调用。
 
@@ -838,9 +833,6 @@ Android 16 在 Choreographer 中引入 **Buffer Stuffing Recovery** 机制，新
 - **Buffer Stuffing Recovery**：解决 Buffer Dequeue 阻塞导致的帧节拍错位
 
 两者共同改善滑动流畅性，但针对的问题根源不同。
-
-
-<!-- AIW-源码调研-2026-06-08-strictmode-safer-intent -->
 
 ## 安全相关：Safer Intent 与 StrictMode 新违规检测（Android 17）
 
@@ -931,7 +923,6 @@ registerIntentMatchingRestrictionCallback()              .triggerUnsafeIntentStr
 
 更完整的源码分析与未验证项见 DeepResearch 报告：`2026-06-08-android-17-strictmode-safer-intent-violations.md`。
 
-<!-- AIW-源码调研-2026-07-12 -->
 ### 传感器隐私指示器与门控机制
 
 Android 17 引入了全新的传感器隐私控制架构，通过以下三层机制实现完整的访问控制：
