@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: 输入延迟与预测输入技术
 chapter: '3.4'
 section: '3.4'
@@ -48,19 +48,19 @@ related_chapters:
 - '8.1'
 - '13.8'
 - '1.26'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2a_at: '2026-05-13T19:04:00+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-13"
+reviewed_date: "2026-07-12"
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-07-12"
 task9_state: reviewed
-last_task6_at: "2026-05-13T19:10:00+08:00"
-last_task6_audit: "2026-05-26"
-task6_review_log: "logs/review/2026-05-13-19-review.md"
+last_task6_at: "2026-07-12T18:13:54+08:00"
+last_task6_audit: "2026-07-12"
+task6_review_log: "logs/review/2026-07-12-18-review.md"
 task9_result: auto-fixed
 task9_reviewed_date: "2026-07-12"
 task9_reviewed_by: openclaw-task9
@@ -349,7 +349,7 @@ LIMIT 100;
 
 ### Android 17 DeliQueue 与输入延迟口径
 
-Android 17 的 DeliQueue 属于 MessageQueue / Looper 队列结构变化，已在 §1.26 单独展开。它可以降低高并发入队时的 MessageQueue 锁竞争，但不改变 InputDispatcher 的 dispatch / ACK 语义，也不是 MotionPredictor 或重采样链路的一部分。分析输入延迟时，应把它归到 App 主线程消息队列竞争这一段。
+Android 17 的 DeliQueue 属于 MessageQueue / Looper 队列结构变化，已在 §1.26 单独展开。它可以降低高并发入队时的 MessageQueue 锁竞争，但不改变 InputDispatcher 的 dispatch / ACK 语义，也不是 MotionPredictor 或重采样路径的一部分。分析输入延迟时，应把它归到 App 主线程消息队列竞争这一段。
 
 [已验证: §1.26 DeliQueue 无锁队列源码解析（AOSP android-17.0.0_r1）]
 
