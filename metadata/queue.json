@@ -396,6 +396,30 @@
       "status": "pending",
       "source": "task2a-gap-mining-round-68",
       "created_date": "2026-07-11"
+    },
+    {
+      "section": "ch15",
+      "section_title": "Android 性能优化研究方法论",
+      "priority": 85,
+      "reason": "[闲时抽检] VSyncTracker 源码引用描述不准确",
+      "material_paths": [
+        "logs/deep-review/2026-07-12-10-idle-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码引用错误",
+          "location": "章节 4.4 \"自适应刷新率场景的帧数据分析\"",
+          "detail": "VSyncTracker 描述为单文件实现，实际是多组件协作",
+          "suggestion": "更新为 VSyncTracker 相关组件描述，明确与 VSyncDispatch、VSyncModulator 的协作关系"
+        }
+      ],
+      "added_by": "task9-idle-audit",
+      "added_at": "2026-07-12T10:26:01.817561+08:00",
+      "status": "completed",
+      "source": "idle-audit",
+      "completed_at": "2026-07-12T10:52:42+08:00",
+      "completed_by": "task2b-main",
+      "completion_note": "P1: VSyncTracker单文件实现→协作组件描述修正（deep-review idle-audit 2026-07-12）"
     }
   ],
   "pending": [
