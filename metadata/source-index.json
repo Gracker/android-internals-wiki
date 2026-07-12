@@ -2611,6 +2611,450 @@
       ],
       "summary": "图解Jetpack Compose Modifier实现原理，深入理解Compose UI布局系统底层机制",
       "scored_at": "2026-07-11T09:16:16.400614"
+    },
+    {
+      "title": "2026-07-11-android17-binder-ipc-priority-inheritance-deepdive",
+      "path": "DeepResearch/2026-07-11-android17-binder-ipc-priority-inheritance-deepdive.md",
+      "quality": "",
+      "score": 18,
+      "timestamp": "2026-07-12T05:47:22.745108",
+      "chapter": "ch16",
+      "scored_at": "2026-07-12T05:47:22.786747"
+    },
+    {
+      "title": "2026-07-11-android17-cpu-gpu-sync-bottleneck",
+      "path": "DeepResearch/2026-07-11-android17-cpu-gpu-sync-bottleneck.md",
+      "quality": "",
+      "score": 17,
+      "timestamp": "2026-07-12T05:47:51.237921",
+      "chapter": "ch05",
+      "scored_at": "2026-07-12T05:47:51.277656"
+    },
+    {
+      "title": "2026-07-11-android17-gpu-counter-standardization",
+      "path": "DeepResearch/2026-07-11-android17-gpu-counter-standardization.md",
+      "quality": "",
+      "score": 17,
+      "timestamp": "2026-07-12T05:47:51.331833",
+      "chapter": "ch13",
+      "scored_at": "2026-07-12T05:47:51.371534"
+    },
+    {
+      "title": "2026-07-11-android17-gpu-memory-tracking-pool-defrag",
+      "path": "DeepResearch/2026-07-11-android17-gpu-memory-tracking-pool-defrag.md",
+      "quality": "",
+      "score": 19,
+      "timestamp": "2026-07-12T05:47:51.423433",
+      "chapter": "ch04",
+      "scored_at": "2026-07-12T05:47:51.464499"
+    },
+    {
+      "title": "2026-07-11-android17-signal-handler-sdk-adaptation",
+      "path": "DeepResearch/2026-07-11-android17-signal-handler-sdk-adaptation.md",
+      "quality": "",
+      "score": 17,
+      "timestamp": "2026-07-12T05:47:51.520089",
+      "chapter": "ch16",
+      "scored_at": "2026-07-12T05:47:51.561286"
+    },
+    {
+      "title": "2026-07-12-android17-gpuservice-gpu-memory-observability",
+      "path": "DeepResearch/2026-07-12-android17-gpuservice-gpu-memory-observability.md",
+      "quality": "",
+      "score": 19,
+      "timestamp": "2026-07-12T05:47:51.618159",
+      "chapter": "ch04",
+      "scored_at": "2026-07-12T05:47:51.659235"
+    },
+    {
+      "title": "02-全文翻译",
+      "path": "论文/Android-2026-07-11-WOOTdroid-Whole-System-Tracing/02-全文翻译.md",
+      "quality": "",
+      "score": 13,
+      "timestamp": "2026-07-12T05:47:51.712537",
+      "chapter": "ch16",
+      "scored_at": "2026-07-12T05:47:51.756636"
+    },
+    {
+      "title": "03-精读",
+      "path": "论文/Android-2026-07-11-WOOTdroid-Whole-System-Tracing/03-精读.md",
+      "quality": "",
+      "score": 18,
+      "timestamp": "2026-07-12T05:47:51.820392",
+      "chapter": "ch16",
+      "scored_at": "2026-07-12T05:47:51.867397"
+    },
+    {
+      "title": "OPPO ColorOS 极光引擎 并行绘制架构",
+      "path": "AndroidWeekly/#202516/OPPO ColorOS 极光引擎 并行绘制架构",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzA3MjMwMDIzNg==&mid=2649081051&idx=1&sn=1a2f379bf23af5de78fb6fd2ecda16f3",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 15,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "ColorOS极光引擎采用并行绘制架构，解决传统Android点击不跟手和页面过渡闪跳问题，优化触控响应和功耗。",
+      "scored_at": "2026-07-12T09:12:31.713568"
+    },
+    {
+      "title": "抖音 renderD128 系统级疑难 OOM 分析与解决",
+      "path": "AndroidWeekly/#202516/抖音 renderD128 OOM 分析",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247514363&idx=1&sn=5fd1ee73fdd4caf15c2ce1be6a4b17ce",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        },
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "深入分析抖音renderD128内存激增导致OOM的根因，历经数月排查最终定位并彻底解决，消除发版熔断。",
+      "scored_at": "2026-07-12T09:12:31.713576"
+    },
+    {
+      "title": "Jit/Profile Saver 线程工作流程（基于 Android S ART 源码）",
+      "path": "AndroidWeekly/#202516/JIT Profile Saver 线程工作流程",
+      "source_url": "https://juejin.cn/post/7500899379647643674",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-运行时",
+          "confidence": "high"
+        }
+      ],
+      "summary": "基于Android S ART源码分析JIT线程和Profile Saver线程的工作流程，涵盖编译决策和Profile保存机制。",
+      "scored_at": "2026-07-12T09:12:31.713578"
+    },
+    {
+      "title": "android app 绘制数据的流转",
+      "path": "AndroidWeekly/#202516/Android 绘制数据流转",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzA3MjMwMDIzNg==&mid=2649081071&idx=1&sn=6e64718cec3577682d3496d951611027",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "详解Android绘制数据从DisplayListData到SurfaceFlinger的完整流转，含SkiaRecordingCanvas、RenderNode和OpenGL ES执行流程。",
+      "scored_at": "2026-07-12T09:12:31.713580"
+    },
+    {
+      "title": "经典 Binder 面试题：binder 调用自己进程中的方法时是否会经过 binder 驱动？",
+      "path": "AndroidWeekly/#202516/Binder 同进程调用分析",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzkzOTQ4NDUyNg==&mid=2247490125&idx=1&sn=f191bc593f8e11455d64aaaf02e32c15",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-IPC",
+          "confidence": "high"
+        }
+      ],
+      "summary": "通过源码分析证明Binder同进程调用不经过Binder驱动，详解工作原理和相关代码流程。",
+      "scored_at": "2026-07-12T09:12:31.713581"
+    },
+    {
+      "title": "Android APP 系统渲染管线优化小点",
+      "path": "AndroidWeekly/#202516/系统渲染管线优化",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzA3MjMwMDIzNg==&mid=2649081083&idx=1&sn=cc039a2de0eea9d595563dc6c27fa1dd",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android渲染管线优化实践，涵盖measure优化、GPU频率提升、shader编译持久化等关键优化手段。",
+      "scored_at": "2026-07-12T09:12:31.713582"
+    },
+    {
+      "title": "如何查看项目是否支持最新 Android 16K Page Size",
+      "path": "AndroidWeekly/#202516/Android 16K Page Size",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=Mzg3NTA3MDIxOA==&mid=2247493795&idx=1&sn=d1ce9463dbb831e7a08a4929cf3477dd",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 15,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍多种检测Android 16K Page Size兼容性的方法和工具，含脚本检测和Google Play资源管理器检查。",
+      "scored_at": "2026-07-12T09:12:31.713584"
+    },
+    {
+      "title": "Eliminating Array Bounds Checks（Romain Guy）",
+      "path": "AndroidWeekly/#202516/Eliminating Array Bounds Checks",
+      "source_url": "https://www.romainguy.dev/posts/2025/eliminating-array-bounds-checks/",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-性能优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Kotlin代码消除数组边界检查的ARM64汇编分析，帮助编译器减少冗余检查的具体优化方法。",
+      "scored_at": "2026-07-12T09:12:31.713585"
+    },
+    {
+      "title": "Merge Your Computations（Romain Guy）",
+      "path": "AndroidWeekly/#202516/Merge Your Computations",
+      "source_url": "https://www.romainguy.dev/posts/2025/merge-your-computations/",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-性能优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Jetpack Compose矩阵变换函数合并优化，指令数从1062降至168，减少临时对象分配和重复计算。",
+      "scored_at": "2026-07-12T09:12:31.713586"
+    },
+    {
+      "title": "Android app 虚拟机内存的性能优化思路",
+      "path": "AndroidWeekly/#202516/VM 内存性能优化",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzA3MjMwMDIzNg==&mid=2649081126&idx=1&sn=d95efb99c39e96db31f87e5253b95a54",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "high"
+        }
+      ],
+      "summary": "多维度VM内存优化：class加载顺序JIT优化、帧间隔GC、动态GC阈值、冷热数据压缩等策略。",
+      "scored_at": "2026-07-12T09:12:31.713588"
+    },
+    {
+      "title": "结合 Fresco 源码分析 CloseableReference 内存管理机制",
+      "path": "AndroidWeekly/#202516/Fresco CloseableReference 内存管理",
+      "source_url": "https://juejin.cn/post/7504605073953521679",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "深入分析Fresco的CloseableReference内存管理核心组件，确保Bitmap和PooledByteBuffer的安全分配释放。",
+      "scored_at": "2026-07-12T09:12:31.713589"
+    },
+    {
+      "title": "Android 16 版本系统优化实践",
+      "path": "AndroidWeekly/#202516/Android 16 系统优化实践",
+      "source_url": "https://zhuanlan.zhihu.com/p/1903125264579404598",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-性能优化",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android 16系统级性能优化实践，涵盖Google在新版本中的关键组件性能优化改进。",
+      "scored_at": "2026-07-12T09:12:31.713590"
+    },
+    {
+      "title": "Flutter Platform 和 UI 线程合并后的大坑和变化",
+      "path": "AndroidWeekly/#202516/Flutter 线程合并变化",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=Mzg3NTA3MDIxOA==&mid=2247493579&idx=1&sn=27bd4e51d74b9991b8119d2540f9296b",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 15,
+      "quality": "high",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-性能优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Flutter 3.29合并Platform和UI线程后引入ANR风险和启动延迟，通过kMergeAfterLaunch模式优化启动。",
+      "scored_at": "2026-07-12T09:12:31.713592"
+    },
+    {
+      "title": "GPU 火焰图的探索 iaprof",
+      "path": "AndroidWeekly/#202516/GPU 火焰图 iaprof",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=Mzg3NzkxMjA1MA==&mid=2247485484&idx=1&sn=2ac670fdada4f4224c542cc9988b7610",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-性能优化",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍Intel平台AI火焰图工具，混合CPU和GPU调用栈进行可视化性能分析方法。",
+      "scored_at": "2026-07-12T09:12:31.713593"
+    },
+    {
+      "title": "Android 丨如何解决 CFI 检测报错",
+      "path": "AndroidWeekly/#202516/CFI 检测报错解决",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483960&idx=1&sn=557d57c0546ad89e8c347bc2b1b2b802",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-安全",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "分析Android Clang CFI安全机制的检测报错原因及解决方案，含常见错误示例。",
+      "scored_at": "2026-07-12T09:12:31.713594"
+    },
+    {
+      "title": "卡顿优化总结",
+      "path": "AndroidWeekly/#202516/卡顿优化总结",
+      "source_url": "https://juejin.cn/post/7504658767956639785",
+      "weekly_issue": "#202516",
+      "weekly_date": "2025-05-19",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "全面总结Android卡顿优化，涵盖绘制流程、渲染流程、布局优化和动画优化等方案。",
+      "scored_at": "2026-07-12T09:12:31.713595"
     }
   ]
 }
