@@ -37,6 +37,13 @@
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
       "status": "no-candidates",
+      "ts": "2026-07-12T16:07:59.647366+08:00",
+      "note": "Gap mining round 85: 0 candidates ≥14. All sources stale (DeepResearch 42d, Clippings 72d, research-feeds 90d+). Book has 717 sections, coverage sufficient."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
       "ts": "2026-07-12T15:08:09.805469+08:00",
       "note": "Gap mining round 84: 0 candidates ≥14. 1 new DeepResearch (binder-ipcthreadstate, 11:52) scored 13/20 — SpGuard/packCallingIdentity/WorkSource propagation is architecture/security topic, not perf optimization core. Existing §1.44/§1.53 cover kernel-level binder priority; user-space identity layer could supplement as Task2B expansion. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 47 drafts all >15 lines. Task2B backlog: 0."
     },
