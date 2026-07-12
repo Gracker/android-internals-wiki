@@ -2,10 +2,10 @@
 title: "WebView 性能优化实战"
 chapter: "22.7"
 section: "22.7"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-13"
-last_verified_against: "AOSP android16-release, Android Developers docs, Chromium android_webview docs, Clippings 结构参考, AIW 既有章节"
+last_verified: "2026-07-12"
+last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Chromium android_webview docs, Clippings 结构参考, AIW 既有章节"
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 1
@@ -23,13 +23,15 @@ sources:
   - type: existing-aiw
     path: "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/WebView.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebView.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/WebViewClient.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewFactory.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/WebSettings.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewClient.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebSettings.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/RenderProcessGoneDetail.java"
   - type: official
     path: "https://developer.android.com/develop/ui/views/layout/webapps/webview"
   - type: official
@@ -46,8 +48,8 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
 related_chapters: ["22.1", "7.11", "18.13", "26.2"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -57,20 +59,23 @@ task6_result: pass-light-edit
 last_task6_at: "2026-06-03T10:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-03-07-review.md"
 task6_review_notes: "2026-06-03 Task6：revisiting 复审通过；L1/L2 轻修 1 处（否定-纠正式句型收束）；无新增 L3/L4 回炉项，转入 Task9 pending。 | 2026-06-03 10:05 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述/物理动词 grep 全部零命中；L2 结构/节奏/开头/读者视角均通过；无新增 L3/L4 回炉项。送 Task9 复审。"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-06-05"
-last_task9_at: "2026-06-05T11:24:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-06-05-11-deep-review.md"
-task9_review_notes: "2026-06-05 Task9：源码/API/版本边界复核无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_reviewed_date: "2026-07-12"
+last_task9_at: "2026-07-12T11:24:32+08:00"
+last_task9_review_log: "logs/deep-review/2026-07-12-11-audit.md"
+task9_review_notes: "2026-07-12 Task9 idle audit auto-fix：WebView framework source labels and links updated to android-17.0.0_r1 baseline; no API behavior drift found; Task6 revisiting requested for light review."
 task2b_result: fixed
 last_task2b_at: "2026-06-03T04:50:00+08:00"
 last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束、UA 预热边界、离线包白名单、renderer 退出生命周期 guard 与重试预算。"
-last_task9_autofix_at: "2026-06-03"
+last_task9_autofix_at: "2026-07-12"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-06
-last_task9_audit: "2026-06-22"
-last_task9_audit_log: "logs/deep-review/2026-06-22-14-audit.md"
+last_task9_audit: "2026-07-12"
+last_task9_audit_log: "logs/deep-review/2026-07-12-11-audit.md"
+last_task9_audit_at: "2026-07-12T11:24:32+08:00"
+last_task9_audit_result: "auto-fixed"
+last_task9_audit_notes: "idle audit auto-fix: AOSP WebView framework evidence labels and source links anchored to android-17.0.0_r1; no queue item needed; returned to Task6 for light review."
 ---
 
 # WebView 性能优化实战
@@ -146,8 +151,8 @@ class H5PageTiming(private val pageId: String) {
 
 Perfetto 里常见的现象是：MainThread 上第一次创建 WebView 有较长的 provider 初始化片段，随后出现 `WebViewChromium*`、`CrRendererMain`、`Compositor` 或 `CrGpuMain` 相关线程。第二次打开同类页面时，宿主侧初始化片段会缩短，瓶颈更多转向网络、JS 和渲染。线程名和进程模型的判断详见 7.11 节。
 
-[已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebView.java]
-[已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebViewFactory.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebView.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebViewFactory.java]
 
 ### 预热要放在首帧之后
 
@@ -186,7 +191,7 @@ class WebViewWarmup(private val appContext: Context) {
 这里用 `applicationContext` 是因为这个实例不展示、不弹窗、不参与 Activity 主题。展示态 WebView 仍然要使用 Activity 或带主题的 UI Context，否则文件选择器、窗口 token、Autofill 和主题资源都可能出问题。预热实例如果要复用到真实页面，必须确认 Context、生命周期和页面隔离都可控；大多数业务只用它触发初始化，不直接拿来展示。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/layout/webapps/webview]
-[已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebView.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebView.java]
 
 ### 用轻量 API 做 provider 预装载
 
@@ -470,7 +475,7 @@ fun destroyWebView(webView: WebView?) {
 
 `destroy()` 必须在创建该 WebView 的线程调用；展示态 WebView 通常就是 MainThread。`about:blank` 导航和历史清理也有异步边界，严格清理要等空白页加载完成，或者至少把 `clearHistory()` 放到下一轮消息后执行。只调用 `destroy()` 但没有从父容器移除，或者 Bridge / callback 仍然持有 Activity，都可能让 Activity 无法释放。内存泄漏排查时可以组合使用 LeakCanary、`dumpsys meminfo`、Perfetto 内存计数器和 Chrome DevTools Memory 面板。
 
-[已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebView.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebView.java]
 
 ### Renderer 退出后的恢复
 
@@ -520,8 +525,8 @@ class RecoverableWebViewClient(
 
 多个 WebView 可能关联同一个 renderer；renderer 退出时，系统会对每个受影响的 WebView 分别回调 `onRenderProcessGone()`。每次回调都要移除并销毁参数里的 `view`，不要复用已受影响的实例，也不要把第一轮回调理解成只有这一个实例受影响。重建必须受 Activity/容器生命周期和重试预算约束；如果同一个 URL 模板连续触发 renderer OOM，继续自动重建会形成循环，应该停在错误页或降级页。业务还要记录 `didCrash()`、provider 版本、页面 URL 模板、内存水位、重建结果和预算耗尽原因，这些数据能帮助区分页面内存过高、provider bug 和低内存设备问题。
 
-[已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/WebViewClient.java]
-[已验证: AOSP android16-release, frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebViewClient.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java]
 [已验证: 官方文档, developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone]
 
 ### 32 位进程的 WebView 预留地址空间
