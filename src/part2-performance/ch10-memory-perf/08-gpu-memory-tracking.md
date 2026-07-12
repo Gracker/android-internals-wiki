@@ -185,3 +185,12 @@ GPU 纹理、framebuffer、DMA-BUF 的 PSS 计入方式是按共享比例分摊�
 **AR（ARCore）**：ARCore 的 GPU 内存消耗来自相机帧 buffer、点云数据渲染、平面检测的可视化层。多 AR session 切换时如果没有正确释放前一个 session 的资源，GPU 内存会累积。
 
 **Camera**：Camera2 / CameraX 的 ImageReader 配置直接影响 GPU 内存：每一路输出 surface 都有独立的 BufferQueue，buffer 数量和分辨率决定了 GPU 内存占用。高分辨率 + 多路输出场景（如同时预览 + 录制 + 人脸检测）需要仔细计算 buffer 总量。
+
+## DeepResearch 延伸参考
+
+### Android 17 GPU 内存管理优化与显存池碎片整理技术
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-11-android17-gpu-memory-tracking-pool-defrag.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 AOSP 用户态不做显存分配和碎片整理，实际分配交给 gralloc/HAL 驱动层。AOSP 核心职责是观测：GpuMem 通过 eBPF 追踪 gpu_mem_total tracepoint，GpuMemTracer 推 Perfetto 数据源，GpuStats 通过 statsd pull atom 提供驱动统计。碎片整理是 gralloc 驱动内部职责，AOSP 只观测结果。
+- 注入时间：2026-07-12
+- 价值：纠正了「应用层池化+碎片整理」的常见误解，明确 AOSP GPU 内存管理的观测边界与 gralloc 职责分界

@@ -70,7 +70,7 @@ last_task2b_at: "2026-06-03T04:50:00+08:00"
 last_task2b_notes: "frontmatter fallback：修复 WebView destroy 线程约束、UA 预热边界、离线包白名单、renderer 退出生命周期 guard 与重试预算。"
 last_task9_autofix_at: "2026-07-12"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-06
+last_deepseek_cn_review_at: 2026-07-12
 last_task9_audit: "2026-07-12"
 last_task9_audit_log: "logs/deep-review/2026-07-12-11-audit.md"
 last_task9_audit_at: "2026-07-12T11:24:32+08:00"
@@ -107,11 +107,9 @@ finalized_by: openclaw-task6-auto-promote
 
 ## 为什么要了解 WebView 性能优化实战
 
-WebView 页面慢，用户通常感知到的是白屏、点不动、滑不顺、偶发重载。对客户端来说，这类问题不能只交给前端，也不能只看 Android 的 View 渲染。WebView 打开一个页面时，会同时消耗宿主 Activity 创建、WebView provider 初始化、网络请求、HTML/CSS/JS 解析、Chromium 合成、Android 显示提交几段时间。
+WebView 页面慢的时候，用户的感受是白屏、点不动、滑不顺、偶发重载。这类问题不能只推给前端，也不能只看 Android 自身的 View 渲染——打开一个 WebView 页面，宿主 Activity 创建、provider 初始化、网络请求、HTML/CSS/JS 解析、Chromium 合成、Android 显示提交都在消耗时间。
 
-工程侧治理集中在预热、复用、离线包、资源拦截、JS Bridge 和内存回收这些能落到代码里的动作。WebView 的 Chromium 线程模型、GL Functor、`SurfaceControl` 子 Surface 和 Perfetto 识别方式，详见 7.11 与 18.13 节。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md]
+工程侧的治理动作主要集中在预热、复用、离线包、资源拦截、JS Bridge 和内存回收。这些项目都能落到代码里，效果可以量化。关于 WebView 的 Chromium 线程模型、GL Functor、`SurfaceControl` 子 Surface 和 Perfetto 识别，详见 7.11 与 18.13 节。
 
 ## 先定义 WebView 页面打开时间
 
@@ -190,7 +188,7 @@ class WebViewWarmup(private val appContext: Context) {
 }
 ```
 
-这里用 `applicationContext` 是因为这个实例不展示、不弹窗、不参与 Activity 主题。展示态 WebView 仍然要使用 Activity 或带主题的 UI Context，否则文件选择器、窗口 token、Autofill 和主题资源都可能出问题。预热实例如果要复用到真实页面，必须确认 Context、生命周期和页面隔离都可控；大多数业务只用它触发初始化，不直接拿来展示。
+这里用 `applicationContext`，因为预热实例不展示、不弹窗、不参与 Activity 主题。展示态 WebView 仍然要使用 Activity 或带主题的 UI Context，否则文件选择器、窗口 token、Autofill 和主题资源都可能出问题。预热实例如果要复用到真实页面，必须确认 Context、生命周期和页面隔离都可控；大多数业务只用它触发初始化，不直接拿来展示。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/layout/webapps/webview]
 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebView.java]
@@ -443,8 +441,6 @@ fun WebView.callJsAsync(script: String, onResult: (String?) -> Unit) {
 - Native 注入的运行时信息批量提供，避免 JS 循环调用 Bridge。
 
 这些约束要进入发布前检查，而不是等线上白屏率升高后再人工排查。页面属于运营活动时，客户端还要把离线包版本、前端 bundle 版本和容器版本一起写入埋点。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md]
 
 ## 扩展：WebView 内存泄漏治理
 
