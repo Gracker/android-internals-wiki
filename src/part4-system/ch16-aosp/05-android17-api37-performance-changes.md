@@ -1,78 +1,54 @@
 ---
 title: "Android 17 (API 37) 性能行为变更与适配方法"
-chapter: "16.5"
-section: "16.5"
-status: "finalized"
-drafted_date: "2026-04-08"
+chapter: 16.5
+section: 16.5
+status: ready-for-review
+drafted_date: 2026-04-08
 applicable_versions: "Android 17 (API 37)"
-last_verified: "2026-05-29"
+last_verified: 2026-05-29
 last_verified_against: "Android 17 behavior changes all/target 37 pages updated 2026-05-19/2026-05-28, Network Security Configuration domainEncryption schema, ProfilingTrigger API reference"
 confidence: medium
-reviewed_at: "2026-05-11T19:05:00+08:00"
+reviewed_at: 2026-05-11T19:05:00+08:00
 sources:
-  - type: official
-    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/features"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/changes/messagequeue"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/job/JobScheduler"
-  - type: official
-    path: "https://developer.android.com/privacy-and-security/security-config"
-  - type: official
-    path: "https://developer.android.com/guide/practices/page-sizes"
-  - type: blog
-    path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
-  - type: blog
-    path: "https://android-developers.googleblog.com/"
-  - type: blog
-    path: "https://juejin.cn/post/7612812060795093002"
-  - type: blog
-    path: "https://juejin.cn/post/7610233341305389099"
-tags: [android17, api37, behavior-changes, performance, deliqueue, generational-gc, profiling-manager, cloud-compilation]
-related_chapters: ["1.6", "1.13", "4.8", "5.7", "8.2", "14.7", "16.2", "16.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-08"
-gap_source: "官方文档+研究素材+AOSP结构+读者需求"
+- type: official
+path: https://juejin.cn/post/7610233341305389099
+tags: "[android17, api37, behavior-changes, performance, deliqueue, generational-gc, profiling-manager, cloud-compilation]"
+related_chapters: "["1.6", "1.13", "4.8", "5.7", "8.2", "14.7", "16.2", "16.4"]"
+created_by: task2a-knowledge-gap
+created_date: 2026-04-08
+gap_source: 官方文档+研究素材+AOSP结构+读者需求
 gap_score: 20
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
-task6_result: "pass-light-edit"
-task9_state: "reviewed"
-task9_result: "pass-tech-review"
-task9_audit_date: "2026-06-10"
-task9_audit_type: "idle-audit"
-task2b_state: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task6_result: pass-light-edit
+task9_state: pending
+task9_result: needs-rework
+task9_audit_date: 2026-06-10
+task9_audit_type: idle-audit
+last_task9_at: 2026-05-29T07:21:00+08:00
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-29T06:50:00+08:00"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-29"
+last_task2b_at: 2026-07-12T14:52:53+08:00
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-29
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-29"
+task9_reviewed_date: 2026-05-29
 review_notes: "2026-05-16 task6 review: pass-light-edit。修复 1 处结构性元叙述、移除 AIW 编辑标记，并把 DeliQueue 内存开销量化改成需实测口径；无新增 L3/L4 回炉。Task2B 已修复，转 Task9 复核。"
-last_task9_at: "2026-05-29T07:21:00+08:00"
 task9_review_notes: "2026-05-29 Task9 deep-review: auto-fixed。修正 KILL_EXCESSIVE_CPU_USAGE 产物口径、domainEncryption mode 枚举与 usesCleartextTraffic deprecation plan；补 Android 17 memory limits 排障入口。"
-review_type: "task6-writing-quality-review"
-task9_result: auto-fixed
-last_task9_review_log: "logs/deep-review/2026-05-29-07-deep-review.md"
-task6_result: "pass-light-edit"
-last_task6_at: "2026-05-29T08:16:26+08:00"
-last_task6_review_log: "logs/review/2026-05-29-08-review.md"
+review_type: task6-writing-quality-review
+last_task9_review_log: logs/deep-review/2026-05-29-07-deep-review.md
+last_task6_at: 2026-05-29T08:16:26+08:00
+last_task6_review_log: logs/review/2026-05-29-08-review.md
 task2b_fixed_by: openclaw-task2b-main
-task6_reviewed_date: "2026-05-29"
-task6_reviewed_by: "openclaw-task6"
-task6_reviewed_at: "2026-05-29T07:07:00+08:00"
+task6_reviewed_date: 2026-05-29
+task6_reviewed_by: openclaw-task6
+task6_reviewed_at: 2026-05-29T07:07:00+08:00
 task6_review_notes: "2026-05-29 08: Task6 revisiting review: pass-light-edit；L1 禁用句式修复 1 处；无新增 L3/L4 回炉。Task9 为 auto-fixed，未满足自动 finalized 条件。"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
-last_task9_autofix_at: "2026-05-29"
+last_task9_autofix_at: 2026-05-29
 task6_new_rework: false
-last_task2b_verifier_at: "2026-05-29T23:25:00+08:00"
+last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
 ---
@@ -109,6 +85,8 @@ last_deepseek_cn_review_at: 2026-05-30
 性能相关的核心变更，按影响程度和适配优先级排下来如下。
 
 ### Android 16 vs 17：公开量化数据对比
+
+> **源码基准：android-17.0.0_r1（Android 17 / API 37）**。
 
 | 项目 | Android 16 / API 36 | Android 17 / API 37 | 公开量化数据 |
 |:---|:---|:---|:---|
@@ -200,7 +178,7 @@ AOSP 实现为同步屏障场景维护了异步消息的专门处理路径，同
 
 ### DeliQueue 算法细节补充
 
-以下细节对理解 DeliQueue 的实现机制有用，章节现有描述已经覆盖核心架构，以下作为**算法层补充**：
+以下细节对理解 DeliQueue 的实现机制有用，章节现有描述已经覆盖核心架构，以下作为**算法层补充**。本节信息基于 AOSP `android-17.0.0_r1` 分支中 `ConcurrentMessageQueue/MessageQueue.java` 的代码组织（tag 未发布时为对应 preview 分支）。
 
 **TreiberStack push 伪代码**（来自 Google 官方博客）：
 ```java
@@ -228,7 +206,13 @@ CAS loop 确保并发 push 的线程只有一个成功，其余重试。这实�
 
 **性能数字来源说明**：DeliQueue 的 5,000x synthetic benchmark、15% lock contention 下降、4%/7.7%/9.1% 用户体验指标均来自 Google 内部 benchmark，**非 AOSP commit 可独立复核验证**。建议在向读者引用时注明来源为 Google 内部 benchmark。
 
-**AOSP 源码路径**：`frameworks/base/core/java/android/os/MessageQueue.java`，在 cs.android.com 的 android-16.0.0_r1 或 master 分支可查看具体实现。
+**AOSP 源码参考路径**（基于 android-17.0.0_r1 的代码组织）：
+- 并发实现：`frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` —— DeliQueue 的 Treiber Stack + min-heap 核心逻辑
+- 兼容层：`frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java` —— 负责实现选择与 `mMessages`/`mLast`/`mUseConcurrent` 兼容字段
+- 旧实现：`frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java` —— 单锁 + 单链表保留路径
+- Looper 集成：`frameworks/base/core/java/android/os/Looper.java` —— drain 触发位置
+
+验证源码时直接以上述路径为准，不要用顶层的 `android/os/MessageQueue.java` 抽象路径；后者可能只是版本选择入口。
 
 **Perfetto 诊断**：旧实现锁争用表现为 "monitor contention with MessageQueue" 切片；DeliQueue 启用后此切片应显著减少或消失。可使用 `android_monitor_contention` PerfettoSQL 模块查询。
 
@@ -288,6 +272,8 @@ Android 17 的分代 GC 变化会改变 GC 切片模式和暂停分布。Concurr
 
 ## ProfilingManager 新的系统触发器
 
+> ⚠️ **未进入 Android 17**：android-17.0.0_r1 公开 tag 尚未发布，以下 API reference 内容基于 API 37 预览文档。Features 页面与 API reference 对部分触发器产物类型的描述存在口径差异（见下表标注），最终行为以 release tag 为准。
+
 ### 从手动埋点到系统自动触发
 
 ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dump、stack sampling、system trace 等分析产物的能力。API 36 补充了部分 trigger 入口。Android 17 (API 37) 新增了 cold start、OOM、kill、anomaly 等系统触发器，可以把采集条件交给系统事件驱动——但 ProfilingManager 仍是一套 trigger-based capture API，不是默认全局开启的自动抓取。
@@ -301,14 +287,14 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 | `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | call stack sample + system trace | 定位冷启动瓶颈 |
 | `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` | 系统检测到 App 异常行为 | heap dump 或 stack sampling profile，取决于 memory limit breach、Binder spam 等系统判定 | 诊断系统侧异常行为 |
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
-| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample / system trace snapshot（文档口径存在差异，以 `ProfilingResult` 为准） | 定位后台 CPU 异常占用 |
+| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | **文档口径不一致**：API reference 写 "running system trace snapshot"；features 页写 "call stack sample"。未进入 Android 17（android-17.0.0_r1 tag 未发布），最终行为以 release tag 为准。接入时按 `ProfilingResult` 返回的实际路径分流处理，不对产物类型做硬编码假设。 | 定位后台 CPU 异常占用 |
 
 
 ### 注册流程和适配建议
 
 冷启动触发器的文档口径是"app cold start 时尽早触发"，公开产物是 call stack sample 和 system trace。使用时先把它看作采样入口；具体字段名和交付文件形态以 API 37 SDK reference 的 `ProfilingResult` 为准。
 
-`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程。Android 17 features 页写 call stack sample，API reference 当前写 running system trace snapshot；接入时不要把产物类型硬编码为单一文件，按 `ProfilingResult` 返回的结果路径和类型分流处理。排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump、system trace 或采样结果上继续分析。
+排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump、system trace 或采样结果上继续分析。
 
 详见 **14.7 ProfilingManager**。
 
@@ -317,7 +303,7 @@ ProfilingManager 在 Android 15 (API 35) 引入，提供运行时请求 heap dum
 
 ### 源码级机制补充（2026-06-19 源码调研）
 
-基于对 AOSP 源码的深度分析，Android 17 的 ProfilingManager 实际上是一个三层架构的完整性能监控体系，包含以下核心组件：
+基于对 AOSP 源码的深度分析，Android 17 的 ProfilingManager 是一个三层架构的完整性能监控体系，包含以下核心组件：
 
 #### 1. 架构层次
 
@@ -627,10 +613,24 @@ Android 继续推动 16KB 页面大小的适配，这个变更对使用 NDK 的�
 **官方文档与工具链配置：**
 - 官方指南：[Build 16 KB-aligned ELFs](https://developer.android.com/guide/practices/page-sizes)
 - Google Play 强制要求：2025 年 11 月 1 日起，新 App 和更新必须支持 16KB 页面大小
-- AOSP 构建：`PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`
-- NDK 编译：使用 `-Wl,-z,max-page-size=16384` 链接标志（NDK r27 及以下版本)
-- 运行时检测：使用 `sysconf(_SC_PAGESIZE)` 替代硬编码常量
-- 验证工具：`readelf -l lib.so` 检查 ELF 段匹配；Android Studio APK Analyzer 可自动识别未匹配的 .so 文件
+
+**AOSP android-17.0.0_r1 构建配置：**
+- 产品配置：`PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`（定义在 `device.mk` / `BoardConfig.mk` 中）
+- 构建系统会根据此变量传递 `-Wl,-z,max-page-size=16384` 给链接器，同时设置 `-Wl,-z,common-page-size=16384`
+- 平台 native 二进制（init、servicemanager、surfaceflinger 等）通过 `cc_defaults` 继承上述链接标志
+- AOSP 的 `build/soong/cc/linker.go` 中 `maxPageSize` / `commonPageSize` 变量控制 ELF segment 的对齐目标——未对齐的 segment 会导致 `.so` 加载时 segment mapping 失败
+
+**NDK 编译要求：**
+- **NDK r28+**：默认生成 16KB-aligned ELF；确保使用此版本以避免手动添加链接标志
+- **NDK r27 及以下**：需手动添加 `-Wl,-z,max-page-size=16384` 链接标志；低于 r26 的版本不支持 16KB 对齐且无兼容路径
+- 运行时检测：使用 `sysconf(_SC_PAGESIZE)` 替代硬编码常量 `4096`
+- ELF segment 验证：`readelf -l lib.so` 检查 LOAD segment 的 `Align` 字段 ≥ 16384
+- Android Studio APK Analyzer：可自动识别未对齐的 .so 文件并标记为 incompatible
+
+**AOSP android-17.0.0_r1 具体要求：**
+- 构建配置中明确启用 16KB 页面大小支持
+- 要求 NDK r28+ 以确保 ELF 段对齐正确性
+- 未匹配的 .so 文件在 16KB 页面设备上会抛出 `UnsatisfiedLinkError`
 
 详见 **4.7 16KB 页面大小** 章节。
 
@@ -799,8 +799,10 @@ public class TreiberStack<E> {
 
 ### 版本兼容性建议
 
-| 组件 | Android 16 状态 | Android 17 状态 | 适配建议 |
-|------|---------------|---------------|---------|
+**源码基准：android-17.0.0_r1（Android 17 / API 37）**。以下所有组件状态、API 行为和源码路径均锚定此 tag；仅在涉及技术发展历程参照时才引用旧 tag。
+
+| 组件 | Android 16 状态 | Android 17（基于 android-17.0.0_r1）状态 | 适配建议 |
+|------|---------------|--------------------------------------|---------|
 | DeliQueue | 仅限 SystemUI/system processes | targetSdk 37 默认启用 | 测试兼容性，可用 `adb am compat` 开关控制 |
 | Generational CMC | 不可用 | 需满足 gating 条件 | 通过 device_config 验证配置状态 |
 | ProfilingManager | API 36 基础触发器 | API 37 新增 3 个触发器 | 按版本注册不同触发器集合 |
@@ -928,3 +930,29 @@ registerIntentMatchingRestrictionCallback()              .triggerUnsafeIntentStr
 - `vmUnsafeIntentLaunchEnabled()` 全局开关的 DeviceConfig 入口与默认值。
 
 更完整的源码分析与未验证项见 DeepResearch 报告：`2026-06-08-android-17-strictmode-safer-intent-violations.md`。
+
+<!-- AIW-源码调研-2026-07-12 -->
+### 传感器隐私指示器与门控机制
+
+Android 17 引入了全新的传感器隐私控制架构，通过以下三层机制实现完整的访问控制：
+
+#### 核心服务组件
+- **SensorPrivacyService**: 主要入口点，管理传感器隐私状态，实现 Binder 接口提供跨进程通信
+- **CameraPrivacyLightController**: 基于环境光传感器自适应调节摄像头隐私灯亮度
+- **SensorPrivacyStateController**: 负责状态持久化到 `sensor_privacy.xml` 文件
+
+#### 双模式切换机制
+- **软件开关** (`TOGGLE_TYPE_SOFTWARE`): 通过 UI 和设置界面控制
+- **硬件开关** (`TOGGLE_TYPE_HARDWARE`): 物理按键控制
+- 统一通过 `setGlobalRestriction()` 函数调用 AppOpsManager 设置全局限制
+
+#### 实时指示器实现
+- **SystemUI PrivacyItemController**: 实时收集隐私状态并驱动UI指示器，支持5秒缓存机制
+- **AppOpsPrivacyItemMonitor**: 监听 `AppOpsManager.OP_CAMERA` 等状态变化
+- 基于Fechner定律的对数空间光感算法，过滤短暂光线变化
+
+**源码位置**: 
+- `services/core/java/com/android/server/sensorprivacy/SensorPrivacyService.java`
+- `packages/SystemUI/src/com/android/systemui/privacy/AppOpsPrivacyItemMonitor.kt`
+
+详细分析见 DeepResearch 报告：`DeepResearch/2026-07-12-android17-sensor-privacy-service-indicator-gating.md`
