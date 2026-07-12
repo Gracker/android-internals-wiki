@@ -2,7 +2,7 @@
 title: "ApplicationExitInfo 与进程退出归因"
 chapter: "26.9"
 section: "26.9"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-07-12"
@@ -12,10 +12,10 @@ polish_count: 0
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/官方文档"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-04"
+reviewed_date: "2026-07-12"
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: auto-fixed
@@ -56,10 +56,10 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
 tags: [applicationexitinfo, observability, crash, anr, oom, lmk]
-related_chapters: ["20.3", "20.4", "20.5", "19.24", "26.2", "26.5"]
+related_chapters: ["14.13", "19.24", "20.2", "20.3", "20.4", "20.5", "26.2", "26.5"]
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-04"
-last_task6_at: "2026-06-04T04:12:07+08:00"
+last_task6_at: "2026-07-12T21:10:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-12-20-audit.md"
 task9_review_notes: "2026-07-12 Task9 idle audit AUTO-FIX: 将 AOSP 源码锚点和 last_verified_against 从 android-16/plain path 更新到 android-17.0.0_r1；复核 ApplicationExitInfo reason 常量、traceInputStream ANR/API31 native tombstone、LMK report support 和 AppExitInfoTracker/NativeTombstoneManager 路径，无 Android 18/API 38 内容。回到 Task6 复审。"
 deepseek_cn_review_state: done
@@ -121,7 +121,7 @@ last_task9_autofix_at: "2026-07-12"
 
 ApplicationExitInfo 解决的是稳定性看板里最容易缺的一块：进程没有给 Crash SDK 留下正常回调机会，但系统仍然知道它为什么退出。Android 11 之后，应用可以在下次启动时读取历史退出记录，把 ANR、native crash、LMK、用户强停、包更新、权限变更这类事件纳入同一套归因口径。
 
-Java Crash、Native Crash、ANR 的捕获机制分别详见 20.2、20.3、20.4 和 19.24；这里关注进程结束之后，三类现场如何进入同一份证据包。
+Java Crash 详见 20.2，Native Crash 详见 20.3 和 19.24，ANR 详见 20.4；这里关注进程结束之后，三类现场如何进入同一份证据包。
 
 ## 进程退出归因的观测目标
 
