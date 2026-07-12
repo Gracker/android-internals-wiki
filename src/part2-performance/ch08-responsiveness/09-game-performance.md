@@ -61,6 +61,7 @@ last_task9_at: "2026-06-05T07:20:00+08:00"
 last_task2b_at: "2026-05-09T08:43:58+08:00"
 review_notes: "2026-05-11 task6 review (revisiting→reviewed): pass-light-edit。L1/L2 修正 4 处，L3/L4 问题 6 个写入 queue.json。"
 last_task6_at: "2026-06-05T09:06:00+08:00"
+last_task6_audit: "2026-07-12"
 last_task2b_lite_at: 2026-06-05
 task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1 修正 2 处否定-纠正结构（黑盒式句式、Game Mode 万能开关句式）；无新增 B 类问题。task9_result=auto-fixed，queue 无 pending，自动晋升 finalized。"
 last_task9_autofix_at: "2026-06-05"
