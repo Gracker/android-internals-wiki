@@ -103,3 +103,11 @@
 - MUSCHED Clippings: 已在 §17.08 覆盖
 - 线上疑难问题 ep40-58: 教学/概述性内容，已有更深入覆盖
 - 全部输入源已消费，无新缺口（连续第 4 轮无合格候选）
+
+### 2026-07-13 Round 93 Gap Mining — 已检查方向
+- ✅ DeepResearch `camera-perfetto-latency-decomposition` (2026-07-13): Camera Open Latency / First Frame Latency AOSP 源码级分析 → 映射到已有 §14.9（finalized, 626 行），评分 12/20，**补充建议而非新章节**
+  - 建议：§14.9 下次 Task2B 复审时，将 `CameraService::connectHelper` openLatencyMs 度量路径和 `SessionStatsBuilder::incCounter` 直方图（10 bin）补充到 `camera-launch` 锚点
+- ✅ Daily-info 2026-07-13: Android 17 scheduler → §1.43 已覆盖；Linux 6.10 BPF → §6.19/§14.31 已覆盖；Copilot X/Flutter 3.20/Rust 1.80 → 超出范围
+- ✅ source-index: 0 unmapped high-quality
+- ✅ Clippings: 20 天未更新（stale）
+- ✅ research-feeds: 3+ 月未更新（stale）
