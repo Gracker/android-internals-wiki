@@ -35,8 +35,8 @@ tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batch
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
 task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-08"
-last_task9_at: "2026-06-06T15:45:10+08:00"
+task9_reviewed_date: "2026-07-12"
+last_task9_at: "2026-07-12T12:28:57+08:00"
 task9_result: auto-fixed
 
 reviewed_date: "2026-07-12"
@@ -45,24 +45,24 @@ task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-07-12"
 task2b_lite_note: "版本锚点从 android-16.0.0_r1 更新到 android-17.0.0_r1（6 处正文 + frontmatter）；依据同目录 §3.9、§3.13 已验证 android-17.0.0_r1 路径一致性"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "pending"
+task9_state: reviewed
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-07-12T12:15:00+08:00"
 last_task6_audit: "2026-07-12"
 last_task6_review_log: "logs/review/2026-05-08-15-review.md"
 review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 15:05：自动晋升 finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目；本轮未做重复正文 review。"
-last_task9_review_log: "logs/deep-review/2026-06-06-15-audit.md"
-task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。Task2B 随后修正 ACK 回路方法名，queue 项已 completed，task9_result 更新为 pass-tech-review。 | 2026-06-06 Task9 15:45 闲时抽检：auto-fixed。P0 版本/源码锚点 1 组；16KB page size 起点从 Android 16+ 修正为 Android 15+ AOSP 支持，并把 Resampler.cpp 锚点从 AOSP mainline 改为 android-16.0.0_r1；本轮未使用 Android 18/API 38+ 或 main/master 资料作为正文结论。"
+last_task9_review_log: "logs/deep-review/2026-07-12-12-deep-review.md"
+task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。Task2B 随后修正 ACK 回路方法名，queue 项已 completed，task9_result 更新为 pass-tech-review。 | 2026-06-06 Task9 15:45 闲时抽检：auto-fixed。P0 版本/源码锚点 1 组；16KB page size 起点从 Android 16+ 修正为 Android 15+ AOSP 支持，并把 Resampler.cpp 锚点从 AOSP mainline 改为 android-16.0.0_r1；本轮未使用 Android 18/API 38+ 或 main/master 资料作为正文结论。 | 2026-07-12 Task9 12:28：auto-fixed。P0 1 / P1 0 / P2 0 / P3 1；移除 16KB 页面段落中的 “socketpair mmap” 错误机制（android-17.0.0_r1 `InputChannel::sendMessage()` / `receiveMessage()` 为 Unix socket `send` / `recv`），并把 InputReader Perfetto 观察点从固定 Slice 修正为 inputevent tracing / 线程活动观察。本轮未使用 Android 18/API 38+ 或 main/master 资料作为正文结论。"
 finalized_date: "2026-07-12"
 finalized_by: openclaw-task6-auto-promote
 task6_review_notes: "2026-07-12 Task6 revisiting 复审：pass-light-edit。L1 禁用词/高频词/否定-纠正/元叙述 grep 全部零命中；L2 结构/节奏/读者视角通过；task9 idle audit auto-fixed（P2 版本锚点）等效通过；无新增 L3/L4 回炉项。自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
-last_task9_autofix_at: "2026-06-06"
+last_task9_autofix_at: "2026-07-12"
 last_task9_audit: "2026-06-06"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 ---
 
 # 触摸响应的性能分析
@@ -130,7 +130,7 @@ HCI 领域对触摸延迟的感知研究提供了几个方向性参考。用户�
 
 Android 15+ AOSP 支持配置 16KB 页面大小的设备。更大的页面尺寸提升了 TLB 命中率、减少了缺页异常处理开销，在 app 启动、系统启动、摄像头延迟等宏观指标上有可量化的改善（参见 Android 官方 16KB page size 文档）。
 
-对输入分发包路径的影响，目前公开资料没有给出独立的 benchmark 数据。理论上的收益方向是减少 socketpair mmap 相关的缺页中断、降低 micro-timing jitter，但具体到 InputDispatcher → App 这条路径的收益幅度需要实测验证。如果要做 16KB 相关的触摸延迟分析，建议直接在两种页面大小的设备上对比 Perfetto trace，而不是引用未标明条件的精确百分比。
+对输入分发路径的影响，目前公开资料没有给出独立的 benchmark 数据。android-17.0.0_r1 的 `InputChannel` 仍是 Unix socket `send` / `recv` 路径，不存在“socketpair mmap”这一环节；16KB 页面对输入分发的潜在收益只能宽泛理解为降低内存管理抖动，具体到 InputDispatcher → App 这条路径的收益幅度需要实测验证。如果要做 16KB 相关的触摸延迟分析，建议直接在两种页面大小的设备上对比 Perfetto trace，而不是引用未标明条件的精确百分比。
 
 16KB 页面大小的详细分析见 §4.7。
 
@@ -323,7 +323,7 @@ Batching 解决的是“一帧里来了太多点，怎么一起交给应用”�
 分析触摸响应时，以下 Track 和 Slice 是必须关注的：
 
 **system_server 进程：**
-- **InputReader 线程**：观察事件读取频率是否正常（120Hz 应该每 8.3ms 一个 Slice）
+- **InputReader 线程**：观察原始输入事件和线程活动频率是否接近设备采样率（120Hz 约每 8.3ms 一批输入事件；Android 17 的 InputReader 原始事件通过 inputevent tracing 记录，不应简单理解成固定 Slice）
 - **InputDispatcher 线程**：观察 InboundQueue（iq）、OutboundQueue（oq）、WaitQueue（wq）的长度变化
   - `iq` 堆积 → InputReader 生产过快或 InputDispatcher 处理过慢
   - `oq` 堆积 → 目标窗口的 socket 通道拥塞
