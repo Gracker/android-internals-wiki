@@ -572,3 +572,53 @@ No new material since Round 74 (1h ago). All sources stable at 02:04 CST.
 本轮未发现评分 ≥ 14 的知识缺口，跳过。连续第 79 轮无合格候选。Coverage truly saturated.
 
 **研究方向**: 维持 Round 68 建议 — 需要分析 Android 17 binder IPCThreadState.cpp 中的优先级继承实现机制（已有 DeepResearch 2026-07-11 23:58 产出，待 §1.53/§1.54 消化吸收）
+
+
+## [Task2A Round 69] 知识缺口挖掘 + 空草稿加工 — 2026-07-12 08:14
+
+### 已检查方向（本轮）
+- ✅ Phase 0: 初始扫描发现 0 个空 draft（宽松计数），深度扫描发现 27 个 outline-only draft（实质内容 <15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 0 个 unmapped high-quality 条目（全部已映射）
+- ✅ DeepResearch: 最新文件 2026-07-06（已被 Round 60 消费，但其内容与 §17.9 高度相关）
+- ✅ Clippings: 无新文件（19 天无更新，最后 2026-06-23）
+- ✅ research-feeds: 无新文件（最后 2026-04-14）
+- ✅ daily-info 2026-07-12: AppFlow 论文（arXiv 2603.17259）已在 §16.8 finalized 覆盖
+- ✅ AOSP 系统服务 / Android 17 新特性 / 章节扩展点：前 68 轮已全面覆盖
+
+### 空草稿分析（新发现）
+深度扫描发现 27 个 outline-only draft（仅有大纲 bullet，无实质内容段落）。逐一检查重复性后发现：
+- 大多数（20+ 个）是前几轮 gap-mining 创建的重复文件，与已有 finalized/ready-for-review 章节高度重叠
+- §4.37 LMKD PSI → 被 §4.4 (finalized, 984 行) 完全覆盖
+- §4.39/4.45 Linux 6.10 碎片 → 与 §6.19 (draft, 80 行) 重叠
+- §4.46/4.47 AI Agent/MTE → 被 §4.22 (ready-for-review) 和 §4.9 覆盖
+- §8.33/8.35/8.38 Task Scheduler → 被 §8.1 (ready-for-review) 和 §1.43 (ready-for-review) 覆盖
+- §5.22/5.23/5.25 → 被同章节其他 finalized 章节覆盖
+- §13.27/14.2 Perfetto v57 → 被同目录其他文件覆盖
+
+### 本轮加工：§17.9 SoC 特异性功耗优化策略
+- **选理由**：27 个 outline-only draft 中，§17.9 是唯一具有独特角度且不被其他章节完全覆盖的候选
+  - §17.2 (finalized): 硬件架构差异 → NOT power strategy
+  - §17.21 (draft): Power HAL schedutil 实现 → NOT vendor strategy
+  - §5.21 (draft): 电池优化 Framework 层 → NOT SoC-specific
+  - §17.9 填补：厂商功耗管理策略 + 跨厂商优化实践 + 基准测试方法论
+- **素材来源**：DeepResearch 255 行 AOSP 源码调研 + §17.2 交叉引用
+- **大纲覆盖**：锚点 6/6 全覆盖 | 扩展 2/2 部分覆盖 | 自动发现 3 条
+- **验证结果**：L1 ✓ 6 处（AOSP 源码）| L2 ✓ 2 处（官方文档引用）| 待验证 5 处（厂商闭源实现推断）
+- **产出**：src/part4-system/ch17-oem/09-soc-specific-power-optimization.md（269 行，status → ready-for-review）
+
+### 重复文件清理建议（待后续轮次处理）
+以下 outline-only draft 建议标记为 deprecated 以避免混淆：
+- ch04-memory/04.40-art-heaptask-system-deep-dive.md（与 §4.34 重复）
+- ch04-memory/04.40-ai-agent-memory-management.md（与 §4.22 重复）
+- ch04-memory/4.37-android17-ai-agent-memory-management.md（与 §4.46 重复）
+- ch08-startup/8.33-android17-modular-task-scheduler.md（与 §8.1 重复）
+- ch08-startup/8.34-android17-modular-startup-framework.md（内容空洞）
+- ch08-startup/8.35-android17-official-blog-task-scheduler.md（与 §1.43 重复）
+- ch08-startup/8.36-android17-startup-insights.md（与 §8.31 重复）
+- ch08-startup/8.38-android17-task-scheduler-optimization.md（与 §8.1 重复）
+- ch08-startup/8.40-android17-modular-startup-framework.md（重复）
+- 等 20+ 个文件
+
+### 结论
+1 个空草稿已加工（§17.9, 269 行）。发现 27 个 outline-only draft 中仅 1 个具有独特价值（§17.9），其余 26 个为重复/空洞文件，建议后续轮次批量清理。
