@@ -473,25 +473,11 @@
     }
   ],
   "task2b_verifier": {
-    "last_run": "2026-07-12T11:29:57+08:00",
-    "last_action": "status correction: 25.6 finalized→ready-for-review (Task9 idle-audit auto-fix left status inconsistent)",
-    "chapters_fixed": [
-      "1.2",
-      "1.10",
-      "2.5",
-      "4.8",
-      "7.7",
-      "16.1",
-      "26.1",
-      "21.2",
-      "20.3",
-      "25.6"
-    ],
-    "remaining_task6_pending": [
-      "22.7",
-      "25.6"
-    ],
-    "last_result": "status-corrections-1",
+    "last_run": "2026-07-13T03:27:14+08:00",
+    "last_action": "progress.json stale-entry correction",
+    "chapters_fixed": 3,
+    "remaining_task6_pending": 0,
+    "last_result": "corrected 3 stale progress.json entries",
     "last_fixed_count": 1,
     "last_blocked_count": 0,
     "remaining_pending": 8
@@ -704,7 +690,9 @@
     "last_task2b_main": "2026-07-03T16:53:22+08:00",
     "task2b_result": "fixed",
     "task2b_state": "fixed",
-    "pipeline_stage": "task6_pending"
+    "pipeline_stage": "ready-to-publish",
+    "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
+    "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
   },
   "section-2.30": {
     "last_task2b_main": "2026-07-03T16:53:22+08:00",
@@ -1093,9 +1081,11 @@
   },
   "section-14.4": {
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "revisiting",
-    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
+    "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
+    "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
   },
   "section-16.4": {
     "status": "finalized",
@@ -1107,9 +1097,11 @@
   },
   "section-7.9": {
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "revisiting",
-    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
+    "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
+    "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
   },
   "section-8.1": {
     "task9_state": "pending",
