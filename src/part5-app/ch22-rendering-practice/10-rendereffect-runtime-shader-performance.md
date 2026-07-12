@@ -5,16 +5,16 @@ section: "22.10"
 status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-03"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers docs"
+last_verified: "2026-07-12"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers docs"
 confidence: high
 tags: ["rendereffect", "runtimeshader", "agsl", "hwui", "gpu"]
 related_chapters: ["2.7", "2.10", "18.2", "22.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"
 gap_source: "素材驱动/AOSP结构"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 last_task6_at: "2026-06-03T03:06:00+08:00"
 task6_result: pass-light-edit
 reviewed_date: "2026-06-03"
@@ -24,13 +24,13 @@ last_task6_review_log: "logs/review/2026-06-03-03-review.md"
 task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；无禁用词、无版本越界、锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 sources:
   - type: aosp
-    path: "AOSP android-16.0.0_r1 frameworks/base/graphics/java/android/graphics/RenderEffect.java"
+    path: "AOSP android-17.0.0_r1 frameworks/base/graphics/java/android/graphics/RenderEffect.java"
   - type: aosp
-    path: "AOSP android-16.0.0_r1 frameworks/base/graphics/java/android/graphics/RuntimeShader.java"
+    path: "AOSP android-17.0.0_r1 frameworks/base/graphics/java/android/graphics/RuntimeShader.java"
   - type: aosp
-    path: "AOSP android-16.0.0_r1 frameworks/base/core/java/android/view/View.java"
+    path: "AOSP android-17.0.0_r1 frameworks/base/core/java/android/view/View.java"
   - type: aosp
-    path: "AOSP android-16.0.0_r1 frameworks/base/graphics/java/android/graphics/RenderNode.java"
+    path: "AOSP android-17.0.0_r1 frameworks/base/graphics/java/android/graphics/RenderNode.java"
   - type: official
     path: "https://developer.android.com/reference/android/graphics/RenderEffect"
   - type: official
@@ -53,7 +53,7 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
   - type: clippings
     path: "Clippings/Android 性能优化 - 资源文件的体积优化实战.md"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task2b_state: fixed
 task9_reviewed_date: "2026-06-03"
 task9_reviewed_by: openclaw-task9
@@ -65,9 +65,12 @@ last_task2b_at: "2026-06-03T00:50:00+08:00"
 task2b_review_notes: "2026-06-03 Task2B fallback 回炉：修正 RuntimeShader uniform 更新后的重绘语义，收敛 GPU counter/GPU Headroom 版本边界，补上 Android 16 源码锚点口径。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
-last_task9_audit: "2026-06-22"
-last_task9_audit_log: "logs/deep-review/2026-06-22-02-audit.md"
-last_task9_audit_result: "pass-idle-audit"
+last_task9_audit: "2026-07-12"
+last_task9_audit_log: "logs/deep-review/2026-07-12-18-audit.md"
+last_task9_audit_result: "auto-fixed"
+last_task9_audit_at: "2026-07-12T18:24:52+08:00"
+last_task9_autofix_at: "2026-07-12"
+last_task9_audit_notes: "idle audit auto-fix: 将源码主线锚点从 android-16.0.0_r1 更新为 android-17.0.0_r1；复核 RenderEffect/RuntimeShader/View/RenderNode 在 Android 17 下路径与关键 API 仍成立；章节回到 Task6 复审。"
 ---
 
 # 22.10 RenderEffect 与 RuntimeShader 性能实践
@@ -295,7 +298,7 @@ Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.2 节。�
 
 ## 参考资料
 
-**AOSP 源码（android-16.0.0_r1）：**
+**AOSP 源码（android-17.0.0_r1）：**
 - `frameworks/base/graphics/java/android/graphics/RenderEffect.java`
 - `frameworks/base/graphics/java/android/graphics/RuntimeShader.java`
 - `frameworks/base/core/java/android/view/View.java`
