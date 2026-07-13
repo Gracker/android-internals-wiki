@@ -217,6 +217,27 @@
       "original_review_log": "logs/review/2026-07-13-08-review.md",
       "completed_at": "2026-07-13T08:55:35+08:00",
       "completed_by": "task2b-main"
+    },
+    {
+      "section": "15",
+      "section_title": "Android 性能优化研究方法论",
+      "priority": 70,
+      "reason": "[review回炉] AIW-源码调研-2026-07-07 section at bottom of ch15 reads like raw research notes, needs narrative integration into chapter",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "文末 AIW-源码调研-2026-07-07 section (### 最新源码进展：Android 17 Power HAL AIDL v7 电池架构)",
+          "detail": "该段为研究素材直接粘贴，未融入章节叙述风格。使用笔记式标题（关键代码路径）、裸行号引用（第1560-1627行/第2021行）、列表堆叠。与全章工程师对话式叙述风格断裂。",
+          "suggestion": "将 Power HAL AIDL v7 / HintManagerService / BatteryStatsService 三层模型内容拆解，融入 section 4.1 SoC 分层讨论中；或独立为 section 4.5 并改写为叙述风格；行号引用改为函数名+行为描述。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-07-13T20:14:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-13-20-review.md"
     }
   ],
   "items": [
