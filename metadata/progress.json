@@ -488,6 +488,13 @@
           "fixes": "L1: banned word fix x2, empty heading"
         }
       ]
+    },
+    {
+      "section": "16.9",
+      "timestamp": "2026-07-13T22:54:28+08:00",
+      "lane": "main",
+      "issues_fixed": "P0×11 (虚构代码×8+结构重写+数据来源+Perfetto观测指导)",
+      "entries_consumed": 3
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
