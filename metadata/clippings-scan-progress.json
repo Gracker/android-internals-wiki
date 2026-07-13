@@ -1,6 +1,6 @@
 {
   "current_book": 2,
-  "current_offset": 29,
+  "current_offset": 33,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
@@ -65,7 +65,7 @@
     {
       "prefix": "线上疑难问题该如何排查和跟踪",
       "total_files": 59,
-      "completed_files": 29,
+      "completed_files": 33,
       "files": [
         "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md",
         "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md",
@@ -129,10 +129,10 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-13",
-  "total_knowledge_points": 426,
-  "total_suggestions": 121,
-  "total_gaps": 18,
+  "last_scan_date": "2026-07-14",
+  "total_knowledge_points": 438,
+  "total_suggestions": 126,
+  "total_gaps": 20,
   "skipped_files": [
     {
       "file": "Android 应用稳定性剖析与优化 - ART 堆内存分布与黑科技扩量：拯救 OOM 的利器.md",
@@ -188,6 +188,11 @@
       "file": "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 28.md",
       "reason": "非技术内容（研发效能方法论/个人效率），无知识点可提取",
       "date": "2026-07-12"
+    },
+    {
+      "file": "线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 36.md",
+      "reason": "非技术内容（职业发展方法论/个人成长），无知识点可提取",
+      "date": "2026-07-14"
     }
   ]
 }

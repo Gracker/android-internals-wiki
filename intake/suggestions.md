@@ -336,3 +336,44 @@ class MultiDisplayPerformanceMonitor {
 - **位置**：CPU Profiler > Java Method Trace > "一个直观的例子来自社区对比测试"
 - **问题**：`onBindViewHolder` 耗时对比数据（调用栈采样 10ms / 方法追踪 130ms / 系统追踪 5.5ms）正文中标注为"社区对比测试"，但该数据源自 ProAndroidDev 博客文章 "Can you trust time measurements in Profiler?"（已在参考资料中列出）
 - **建议**：将正文"一个直观的例子来自社区对比测试"改为更具体的溯源表述，如"一个直观的例子来自 Paulina Sadowska 的对比测试（见参考资料 ProAndroidDev 文章）"，增强读者可追溯性
+
+
+---
+
+## [Task14 参考书扫描] ch20 稳定性治理 — 2026-07-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 38.md（第35讲）]
+- **建议补充**：GOT/PLT Hook 的 ELF 格式基础和动态链接懒加载机制——文中对 .plt/.got 节区、PLT 蹦床（Trampoline）、GOT 延迟绑定的原理解释非常清晰，可作为 ch20 Native 监控技术基础原理的补充。ch20/14-thread-fd-resource-monitoring.md 中使用的 Hook 技术 可追溯到此原理。
+- **参考书覆盖深度**：深入
+
+## [Task14 参考书扫描] ch20 稳定性治理 — 2026-07-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 38.md（第35讲）]
+- **建议补充**：Trap Hook 的 ptrace 机制和 SIGPROF 信号采集实践——Facebook Profilo 通过定期发送 SIGPROF 信号实现卡顿监控的方案，可作为 ch20 信号处理机制 和 ch22 帧监控 的补充案例。ch20/19-android17-signal-handler-debuggerd-migration.md 已覆盖 Android 17 信号处理架构迁移，但未涉及利用信号进行应用层监控的实践。
+- **参考书覆盖深度**：中等
+
+## [Task14 参考书扫描] ch20 稳定性治理 — 2026-07-14
+- **类型**：版本更新
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 38.md（第35讲）]
+- **过时内容**：原文 Inline Hook 部分基于 ARMv7 (ARM32/Thumb32) 指令集，提及"ARM64 目前我还没有适配"，并讨论 Thumb16/Thumb32 指令修复。GOT/PLT Hook 开源库引用 Matrix/xHook 为 2019 年版本。
+- **建议更新至**：Android 17（android-17.0.0_r1）以 ARM64 (AArch64) 为主导，Thumb 指令集已不再适用。需以 ARM64 指令集重新阐述 Inline Hook 原理（固定 4 字节指令、不同的跳转指令编码）。开源 Hook 库需更新至 2026 年活跃维护版本。
+
+## [Task14 参考书扫描] ch01 系统架构 — 2026-07-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 37.md（第34讲）]
+- **建议补充**：Hidden API 限制的架构演进动机——原文指出 Hidden API 最初并非出于安全性考虑，而是为了减少每次 Android 版本升级的兼容性适配时间，让发布节奏快起来。这解释了 Android 9.0 (Pie) 引入 Hidden API 限制的架构设计意图。ch01 已有 Android 分层架构内容，可补充此设计决策的背景。
+- **参考书覆盖深度**：概述
+
+## [Task14 参考书扫描] ch22 渲染实战 — 2026-07-14
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 39.md（第36讲）]
+- **建议补充**：浏览器内核渲染管线（HTML→DOM, CSS→CSSOM, JS→JS引擎, 合成 Render Tree）和 Chromium 内核架构（Blink 引擎+ V8 引擎）——ch22/07-webview-optimization.md 可补充此渲染管线基础，帮助读者理解 WebView 性能瓶颈的本质原因。
+- **参考书覆盖深度**：概述
+
+## [Task2A Gap Mining R112] 已检查方向 — 2026-07-14
+- **Daily-info 2022-07-14**: 2 RSS items (Android 17 scheduler, Linux 6.10 BPF) → 已覆盖。ClawFeed 无 Android 相关。掘金 4 篇全为应用架构层面。
+- **Clippings 新增**: Chinasys2026 MUSCHED × 2 → 已有 ch17/08-musched-vip-scheduling-practice.md 覆盖。
+- **AOSP 服务覆盖扫描**: TelephonyManager/ConnectivityManager/NotificationManager/BiometricService/installd/LocationManager/WindowManager/ActivityManager/PackageManager/PowerManager → 全部在 Part 2 各章有对应实战节。
+- **新兴 API**: SafetyCenter (Android 13+) → 安全功能非性能，5/20。AppSearch (Android 12+) → 应用级库非系统机制，7/20。
+- **Research-gaps 新增**: Native Hook 三大流派对比 → 14.13 已 finalized 覆盖。WebView T2 秒开率 → 已有 5 个 WebView 节覆盖。
+- **结论**: 743 节全覆盖，本轮 0 候选 ≥14 分。第 112 轮连续无候选。
