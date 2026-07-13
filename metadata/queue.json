@@ -218,5 +218,36 @@
       "completed_at": "2026-07-13T08:55:35+08:00",
       "completed_by": "task2b-main"
     }
+  ],
+  "items": [
+    {
+      "chapter": "14.9",
+      "title": "Android Camera 性能与 Perfetto 分析",
+      "priority": 90,
+      "status": "pending",
+      "added_by": "task9-deep-tech-review-audit",
+      "source_log": "logs/deep-review/2026-07-13-08-audit.md",
+      "added_at": "2026-07-13T13:40:49",
+      "review_issues": [
+        {
+          "type": "P0-源码版本不一致",
+          "location": "frontmatter last_verified_against vs 正文引用",
+          "detail": "last_verified_against 标注 AOSP android-16.0.0_r1，但正文多处引用 android-17.0.0_r1 内容",
+          "suggestion": "统一锚定 android-17.0.0_r1，更新 last_verified_against"
+        },
+        {
+          "type": "P0-API路径错误",
+          "location": "HAL3 Buffer Management API 版本引用",
+          "detail": "声称需要 CAMERA_DEVICE_API_VERSION_3_6 和 ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5，实际路径在 hardware/interfaces/camera/2.0/ICameraDevice.hal",
+          "suggestion": "修正API版本常量的实际路径和版本对应关系"
+        },
+        {
+          "type": "P1-Android 17 新特性缺失",
+          "location": "版本差异覆盖",
+          "detail": "未覆盖 android-17.0.0_r1 中 Camera Process Priority API、Vendor Performance Hint APIs、Camera Performance Attestation API",
+          "suggestion": "补充 Android 17 Camera 性能相关新 API 说明"
+        }
+      ]
+    }
   ]
 }

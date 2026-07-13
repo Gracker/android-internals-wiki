@@ -1,8 +1,9 @@
 ---
+
 title: Android Camera 性能与 Perfetto 分析
 chapter: '14.9'
 section: '14.9'
-status: "finalized"
+status: "ready-for-review"
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: "openclaw-task6"
@@ -32,18 +33,14 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
 task6_result: "pass-light-edit"
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
   2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework,
   not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed):
   content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9
   re-review needed for auto-promotion.'
-task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
-task9_result: "pass-tech-review"
 last_task9_at: "2026-05-28T18:28:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-28
@@ -51,7 +48,6 @@ repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-28-18-deep-review.md"
 task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 TextureView/SurfaceTexture、HAL buffer management、CameraMetadataNative 与 Perfetto SQL/Python 示例；未发现阻断问题，自动晋升 finalized。"
-last_task9_audit: "2026-06-25"
 task2b_rework_date: '2026-05-19'
 last_task2b_lite_at: "2026-05-28"
 last_task6_at: "2026-05-28T18:20:12+08:00"
@@ -75,7 +71,10 @@ task6_state: revisiting
 pipeline_stage: task6_pending
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
+task2b_lite_notes_2026_07_13: "frontmatter 去重修复: 清理 6 组 duplicate keys (pipeline_stage/task6_state/task9_state/task9_result/last_task9_audit/path-under-sources 误删已恢复); status finalized→ready-for-review (task9_result=needs-rework)"
+last_task2b_lite_at: "2026-07-13"
 ---
+
 
 # 14.9 Android Camera 性能与 Perfetto 分析
 
