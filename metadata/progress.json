@@ -1,9 +1,9 @@
 {
-  "total": 730,
-  "draft": 11,
+  "total": 719,
+  "draft": 0,
   "ready_for_review": 8,
   "finalized": 4,
-  "last_updated": "2026-07-13T20:58:08+08:00",
+  "last_updated": "2026-07-13T21:07:02.371097+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-cleanup",
+      "status": "deprecated-11-broken-stubs",
+      "ts": "2026-07-13T21:07:02.371097+08:00",
+      "note": "Round 102 cleanup: deprecated 11 orphan broken stubs (all created 2026-07-13 by task2a-knowledge-gap). All have identical copy-paste GPU power management outlines that don't match their titles. None in SUMMARY.md. All topics covered by existing chapters: 2.18→§14.29, 2.19→§14.8, 3.15→§4.34/§4.21, 3.16→§4.22, 3.17→fabricated, 5.31→§4.35, 5.32→§17.21, 5.33→§17.21, 12.1→§8.32, 12.2→§8.31, 16.2→not Android internal."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -470,15 +477,15 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 34,
+  "deprecated": 45,
   "stats": {
     "last_review_date": "2026-07-13",
     "last_review_by": "openclaw-task9",
-    "drafted": 33,
+    "drafted": 22,
     "ready_for_review": 5,
     "finalized": 11,
     "ready_to_publish": 0,
-    "total": 717,
+    "total": 706,
     "last_task9_review_date": "2026-07-13",
     "last_task9_review_by": "openclaw-task9"
   },
@@ -616,10 +623,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-13T19:07:08.883026+08:00",
+    "last_run": "2026-07-13T21:07:02.371097+08:00",
     "last_section": "none",
-    "result": "no-candidates",
-    "note": "Gap mining round 101: 0 candidates ≥14 (101st consecutive). All sources stale. 0 empty drafts. Task2B backlog: 0. 717 sections, coverage saturated."
+    "result": "cleanup-deprecated-11-broken-stubs",
+    "note": "Round 102: deprecated 11 orphan broken stubs with copy-paste outlines. 0 genuine empty drafts remain. Task2B backlog: 0. Coverage saturated."
   },
   "task2b_lite": {
     "total_fixed": 1,
@@ -1062,6 +1069,94 @@
       "chapter": "26.1",
       "deprecated_at": "2026-07-13T07:10:15+08:00",
       "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/ch02-rendering/2.18-gpu-agi-frame-profiler/2.18.--agi-frame-profiler-与-gapii-s.md",
+      "chapter": "2",
+      "title": "Android 17 AGI Frame Profiler 与 gapii Spy 架构解析",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch02-rendering/2.19-gpu-sf-debug-tools-evolution/2.19.--命令行--sf-调试工具链演进.md",
+      "chapter": "2",
+      "title": "Android 17 命令行 GPU/SF 调试工具链演进",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch03-memory/3.15-art-heap-task-gc-inhibition/3.15.--art-heaptask-并发与-gc-抑制源码级机制.md",
+      "chapter": "3",
+      "title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch03-memory/3.16-ai-agent-memory-sandbox-reuse/3.16.--ai-agent-内存沙箱数据复用机制.md",
+      "chapter": "3",
+      "title": "Android 17 AI Agent 内存沙箱数据复用机制",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch03-memory/3.17-perfetto-ai-memory-tracking/3.17.perfetto-ai-技能状态跟踪在--内存管理中的应用.md",
+      "chapter": "3",
+      "title": "Perfetto AI 技能状态跟踪在 Android 内存管理中的应用",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch05-cpu-power/5.31-cpu-cache-locality-pss/5.31.--api-37--缓存局部性与-pss-内存核算.md",
+      "chapter": "5",
+      "title": "Android 17 (API 37) CPU 缓存局部性与 PSS 内存核算",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch05-cpu-power/5.32-soc-battery-optimization/5.32.--soc-跨厂商电池优化策略--i-hal--schedu.md",
+      "chapter": "5",
+      "title": "Android 17 SoC 跨厂商电池优化策略 × IPower HAL × schedutil 闭环",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch05-cpu-power/5.33-soc-power-hal-implementation/5.33.--不同-soc-架构下的电池优化策略与-i-hal-实现.md",
+      "chapter": "5",
+      "title": "Android 17 不同 SoC 架构下的电池优化策略与 IPower HAL 实现",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch12-startup/12.1-application-start-info-framework/12.1.--启动框架与任务编排--applicationstarti.md",
+      "chapter": "12",
+      "title": "Android 17 启动框架与任务编排 — ApplicationStartInfo 与 AppStartInfoTracker",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch12-startup/12.2-startup-insights-gaps/12.2.--启动洞察分析与缺口研究.md",
+      "chapter": "12",
+      "title": "Android 17 启动洞察分析与缺口研究",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/ch16-agent-practice/16.2-outer-loop-agent-practice/16.2.own-the-outer-loop---ai-agent-.md",
+      "chapter": "16",
+      "title": "Own the Outer Loop - AI Agent 工程实践",
+      "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
+      "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
+      "deprecated_by": "task2a-cleanup-round102"
     }
   ],
   "review_stats": {
