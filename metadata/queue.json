@@ -238,6 +238,51 @@
       "added_at": "2026-07-13T20:14:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-07-13-20-review.md"
+    },
+    {
+      "section": "16.9",
+      "section_title": "Android 17 SDM 安装编译流程性能",
+      "priority": 90,
+      "reason": "[review回炉] 全篇百科词条式结构+大量疑似虚构代码+§7-10空洞+无Trace指导",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "§2-§6 全部代码块",
+          "detail": "DeviceBasedDexopt/InstallProcessor/BackgroundCompiler/ArtDaemon/InstallSessionOptimizer/DexoptManager/CompilationRequestOptimizer 等类和方法在 AOSP android-17.0.0_r1 中不存在，疑似 AI 编造。需对照真实源码重写或删除。",
+          "suggestion": "逐个代码块对照 AOSP android-17.0.0_r1 源码验证；无法验证的标注[待验证]或删除。交 Task9 做源码核验。"
+        },
+        {
+          "type": "需重写",
+          "location": "全篇结构",
+          "detail": "几乎全篇为 bullet list + 表格，无连贯叙述。违反 writing-guide 叙述为主原则和反面教材'百科词条式'禁令。",
+          "suggestion": "按 writing-guide Type A（机制原理篇）重写，每节补 2-3 段叙述，讲清'为什么存在→怎么工作→怎么观测'。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "§7-§10",
+          "detail": "§7实际应用场景/§8性能监控与调试/§9最佳实践 均为名词罗列无实质内容。§10未来展望为推测性内容。",
+          "suggestion": "§7-8补充具体场景、命令示例、Perfetto Trace观察方法；§9补充Profile编写指导；§10精简或删除。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文",
+          "detail": "缺少 Perfetto/Trace 观测指导。writing-guide 要求讲清'在 Trace 中长什么样'。",
+          "suggestion": "补充'在 Perfetto 中观测 SDM 编译'内容：如何追踪 artd 执行、dex2oat 调度、编译耗时。"
+        },
+        {
+          "type": "需确认",
+          "location": "§2.2 性能数据",
+          "detail": "数据标注'Android 官方公布'但无来源链接。",
+          "suggestion": "补充原始来源链接，或标注为社区测试数据并给出参考。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-07-13T22:10:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-13-22-review.md"
     }
   ],
   "items": [
