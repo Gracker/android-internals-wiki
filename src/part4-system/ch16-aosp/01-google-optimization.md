@@ -15,8 +15,8 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-07-13"
@@ -26,7 +26,7 @@ last_task9_audit: "2026-07-13"
 last_task9_autofix_at: "2026-07-01"
 last_task9_review_log: "logs/deep-review/2026-07-13-17-deep-review.md"
 last_task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题：1) CombinedMessageQueue路径不存在，实际为CombinedDeliMessageQueue；2) Binder线程池描述未说明总并发路径。P0 1 / P1 1 / P2 0；不可自动晋升，需 Task6 复审。P0/P1 问题已写入 queue.json，建议优先修复源码路径错误和并发描述不完整问题。"
-last_task6_at: 2026-07-13T17:17:00+08:00
+last_task6_at: 2026-07-13T18:18:50+08:00
 task2b_state: fixed
 task2b_result: fixed-lite
 task2b_fixed_at: "2026-06-26T11:40:00+08:00"
@@ -34,8 +34,8 @@ last_task2b_at: "2026-06-26T11:40:00+08:00"
 task6_result: pass-light-edit
 last_task6_audit: "2026-07-13"
 last_task6_audit_log: "logs/review/2026-06-30-23-audit.md"
-last_task6_at: 2026-07-13T17:17:00+08:00
-task6_review_notes: "2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。Task9 idle-audit 将 MessageQueue 源码锚点从 master/android-16 刷新到 android-17.0.0_r1，正文实施正确；无新增 L1/L2 问题。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
+last_task6_at: 2026-07-13T18:18:50+08:00
+task6_review_notes: "2026-07-13 Task6 re-review (revisiting after Task9 deep review + Task2B-lite fix): pass-light-edit。Task2B-lite 已修复 P0 CombinedMessageQueue→CombinedDeliMessageQueue（正文/frontmatter 全部正确）和 P1 Binder 16 并发路径描述。L1 禁用词扫描：零命中（对齐仅出现在 ELF segment 对齐技术语境）。L2 可读性通过。无 B 类回炉项。送 Task9 复审确认。"
 last_task2b_lite_at: "2026-07-13"
 sources:
   - type: official
