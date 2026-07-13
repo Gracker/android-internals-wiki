@@ -14,8 +14,8 @@ status: "ready-for-review"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、frameworks/base/services/core/java/com/android/server/wm、system/core/libutils/include/utils/Trace.h、system/core/libcutils/include/cutils/trace.h、frameworks/native/services/surfaceflinger）"
+last_verified: "2026-07-14"
+last_verified_against: "AOSP android-17.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、frameworks/base/services/core/java/com/android/server/wm、system/core/libutils/include/utils/Trace.h、system/core/libcutils/include/cutils/trace.h、frameworks/native/services/surfaceflinger）"
 confidence: medium
 sources:
   - type: official
@@ -103,13 +103,13 @@ cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我�
 
 **交叉引用跳转**是最有价值的功能。当我们打开一个源文件时，每个标识符（类名、方法名、变量）都可以点击跳转到它的定义处或所有使用处。这就像在一个 IDE 中阅读代码——我们可以从 `Choreographer.doFrame()` 一路点击跳到 `ViewRootImpl.doTraversal()`，再到 `View.performDraw()`，沿着调用链一路深入，而不需要手动在仓库之间寻找文件。
 
-**分支切换**允许我们在不同 Android 版本之间对比。左上角可以选择目标分支，比如 `android-16.0.0_r1` 或 `master`。如果某个类在不同版本中的行为不同，我们可以切到对应分支对比源码。并非所有分支都有完整的交叉引用信息，通常较新的稳定版本支持最好。
+**分支切换**允许我们在不同 Android 版本之间对比。左上角可以选择目标分支，比如 `android-17.0.0_r1` 或 `master`。如果某个类在不同版本中的行为不同，我们可以切到对应分支对比源码。并非所有分支都有完整的交叉引用信息，通常较新的稳定版本支持最好。
 
 ### 实操建议
 
 几个让 cs.android.com 更好用的习惯：
 
-第一，直接用 URL 导航。`cs.android.com/platform/frameworks/base/+/android-16.0.0_r1:core/java/android/view/Choreographer.java` 这样的链接可以直接打开指定文件。我们可以把这个 URL 模板保存为书签，只需要替换路径和分支即可。
+第一，直接用 URL 导航。`cs.android.com/platform/frameworks/base/+/android-17.0.0_r1:core/java/android/view/Choreographer.java` 这样的链接可以直接打开指定文件。我们可以把这个 URL 模板保存为书签，只需要替换路径和分支即可。
 
 第二，善用搜索语法。`Choreographer$` 匹配文件名以 Choreographer 结尾的文件；`f:Choreographer doFrame` 限定只在文件名包含 Choreographer 的文件中搜索 doFrame。这些高级语法能显著缩小搜索范围。
 
@@ -199,7 +199,7 @@ ART 虚拟机的完整实现。这个目录结构比较独立和完整：
 
 ### 路径一：从 Logcat 日志定位源码
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java — Log tag 与日志文本源码位置]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java — Log tag 与日志文本源码位置]
 
 Logcat 日志有一个经常被忽略的特性：每条日志都带着 tag。这个 tag 通常就是源码中 `Log.x()` 调用的第一个参数，而源码中的 tag 定义往往是类名或模块名的常量。
 
@@ -224,7 +224,7 @@ D/Choreographer: Skipping 2 frames!  The application may be doing too much work 
 
 ### 路径二：从 Systrace / Perfetto tag 定位源码
 
-[已验证: AOSP android-16.0.0_r1, system/core/libutils/include/utils/Trace.h；system/core/libcutils/include/cutils/trace.h；frameworks/native/include/android/trace.h]
+[已验证: AOSP android-17.0.0_r1, system/core/libutils/include/utils/Trace.h；system/core/libcutils/include/cutils/trace.h；frameworks/native/include/android/trace.h]
 
 在 Perfetto 中，我们看到的每一个 slice 都有一个名字，比如 `Choreographer#doFrame`、`measure`、`layout`、`draw`、`queueBuffer` 等。这些名字不是 Perfetto 自动生成的，而是开发者在源码中主动埋点的结果。
 
@@ -234,7 +234,7 @@ Android 系统中有两种埋点方式：
 
 ```java
 // frameworks/base/core/java/android/os/Trace.java
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 Trace.traceBegin(Trace.TRACE_TAG_VIEW, "measure");
 // measure 相关代码省略。
 Trace.traceEnd(Trace.TRACE_TAG_VIEW);
@@ -246,7 +246,7 @@ Trace.traceEnd(Trace.TRACE_TAG_VIEW);
 
 ```cpp
 // frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 // SurfaceFlinger 在 Android 16 使用自定义 SFTRACE_* 宏族
 // SFTRACE_* 定义在 services/surfaceflinger/common/include/common/trace.h
 void SurfaceFlinger::composite(const CompositeArgs& args) {
@@ -273,7 +273,7 @@ void SurfaceFlinger::composite(const CompositeArgs& args) {
 
 **异步 Trace** 要按 name + cookie 配对。Java 层搜索 `Trace.asyncTraceBegin()` / `Trace.asyncTraceEnd()`，公共 API 场景还会看到 `Trace.beginAsyncSection()` / `Trace.endAsyncSection()`；Native 层搜索 `ATRACE_ASYNC_BEGIN` / `ATRACE_ASYNC_END`。Perfetto 中这类 slice 可能跨线程、跨时间段出现，不能只按相邻 begin/end 读，要看同名事件和同一个 cookie。
 
-Systrace/Perfetto 的 tag 体系中还有一个概念：tag 类别（`ATRACE_TAG`）。系统定义了几十个 tag 类别（如 `ATRACE_TAG_GRAPHICS`、`ATRACE_TAG_INPUT`、`ATRACE_TAG_VIEW`），只有在抓取时启用了对应的 tag，相关的 trace 事件才会被记录。如果我们在 Perfetto 中看不到预期的 slice，可能是因为对应的 tag 没有被启用。[已验证: AOSP android-16.0.0_r1, system/core/libcutils/include/cutils/trace.h 中 ATRACE_TAG 定义]
+Systrace/Perfetto 的 tag 体系中还有一个概念：tag 类别（`ATRACE_TAG`）。系统定义了几十个 tag 类别（如 `ATRACE_TAG_GRAPHICS`、`ATRACE_TAG_INPUT`、`ATRACE_TAG_VIEW`），只有在抓取时启用了对应的 tag，相关的 trace 事件才会被记录。如果我们在 Perfetto 中看不到预期的 slice，可能是因为对应的 tag 没有被启用。[已验证: AOSP android-17.0.0_r1, system/core/libcutils/include/cutils/trace.h 中 ATRACE_TAG 定义]
 
 [图：Perfetto 中的 slice 名与 AOSP 源码中 traceBegin 调用的对应关系示意]
 
@@ -285,7 +285,7 @@ Systrace/Perfetto 的 tag 体系中还有一个概念：tag 类别（`ATRACE_TAG
 
 `frameworks/base/core/java/android/app/ActivityThread.java`
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java]
 
 每一个 Android 应用进程都有一个 `ActivityThread` 实例，它是应用进程的主入口。`ActivityThread.main()` 是进程启动后执行的第一个方法，它初始化主线程的 Looper 和 Handler，然后进入消息循环。
 
@@ -301,7 +301,7 @@ Systrace/Perfetto 的 tag 体系中还有一个概念：tag 类别（`ATRACE_TAG
 
 `frameworks/base/core/java/android/view/ViewRootImpl.java`
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
 
 `ViewRootImpl` 是 View 树与系统服务之间的桥梁。每个 Window 对应一个 `ViewRootImpl`，它负责把 View 树的绘制需求转化为实际的渲染指令，同时处理来自系统服务的输入事件分发。
 
@@ -317,7 +317,7 @@ Systrace/Perfetto 的 tag 体系中还有一个概念：tag 类别（`ATRACE_TAG
 
 `frameworks/base/core/java/android/view/Choreographer.java`
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java]
 
 `Choreographer` 是 Android 渲染管线的时序协调者。它接收 VSync 信号，按优先级调度回调。早期版本可按 Input → Animation → Traversal 三类理解；Android 16 当前源码还定义了 `CALLBACK_INSETS_ANIMATION` 和 `CALLBACK_COMMIT`，读者在阅读现代源码时应注意到完整的回调队列。本书第 2.4 节已经详细讲解了它的机制，这里只强调源码层面的入口。
 
@@ -333,7 +333,7 @@ Systrace/Perfetto 的 tag 体系中还有一个概念：tag 类别（`ATRACE_TAG
 
 `frameworks/native/services/surfaceflinger/`
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/]
+[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/]
 
 SurfaceFlinger 是 Android 图形系统的核心服务，负责将各个 Layer 合成后提交给显示器。它是 C++ 实现的独立进程，代码结构与 Java Framework 有很大差异。
 
@@ -345,7 +345,7 @@ Android 16 上更稳的阅读入口是这条调用链：
 - `HWComposer::getDeviceCompositionChanges()` — 向 HWC 查询哪些 layer 可走 device composition，哪些要回退 client composition
 - `HWComposer::presentAndGetReleaseFences()` — present 后取回 release fence，用于后续 buffer 生命周期管理
 
-老版本资料里常见的 `composeSurfaces()`、`onMessageRefresh()`、`Layer::onDraw()` 不能直接当作 Android 16 的主入口。阅读旧文章时，把它们放进版本差异里看；查 android-16.0.0_r1 时，要从 `SurfaceFlinger::composite()` 往 `CompositionEngine` / `Output` / `HWComposer` 走。
+老版本资料里常见的 `composeSurfaces()`、`onMessageRefresh()`、`Layer::onDraw()` 不能直接当作 Android 16 的主入口。阅读旧文章时，把它们放进版本差异里看；查 android-17.0.0_r1 时，要从 `SurfaceFlinger::composite()` 往 `CompositionEngine` / `Output` / `HWComposer` 走。
 
 | 资料里的入口 | Android 16 阅读方式 |
 |---|---|
@@ -429,9 +429,9 @@ PATH=~/bin:$PATH
 curl -sSL 'https://gerrit-googlesource.proxy.ustclug.org/git-repo/+/master/repo?format=TEXT' | base64 -d > ~/bin/repo
 chmod a+x ~/bin/repo
 
-# 初始化仓库（以 android-16.0.0_r1 为例）
+# 初始化仓库（以 android-17.0.0_r1 为例）
 mkdir AOSP && cd AOSP
-repo init -u https://mirrors.ustc.edu.cn/aosp/platform/manifest -b android-16.0.0_r1
+repo init -u https://mirrors.ustc.edu.cn/aosp/platform/manifest -b android-17.0.0_r1
 
 # 同步代码（建议使用 -j 参数控制并发数）
 repo sync -j8

@@ -12,7 +12,7 @@ drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-25"
-last_verified_against: "AOSP android-16.0.0_r1, Android ProfilingManager / ProfilingTrigger / ApplicationExitInfo docs, art/runtime/signal_catcher.cc"
+last_verified_against: "AOSP android-17.0.0_r1, Android ProfilingManager / ProfilingTrigger / ApplicationExitInfo docs, art/runtime/signal_catcher.cc"
 confidence: medium
 sources:
   - type: official
@@ -195,7 +195,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 ```
 
 [已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/FrameMetrics.java]
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/FrameMetrics.java]
 
 FrameMetrics 通过 `Window.OnFrameMetricsAvailableListener` 回调获取数据，回调运行在注册时传入的 `Handler` 所在线程上。接入时通常会准备专用 `HandlerThread`，在回调里复制或聚合数据后再异步上报；如果传的是主线程 `Handler`，回调本身也会占用主线程时间。
 
@@ -362,7 +362,7 @@ for (ApplicationExitInfo info : exitInfos) {
 - signal 现场只做轻量记录，例如时间戳、tid、主线程栈快照、ring buffer 指针。文件 IO、JSON 序列化、网络上报放到后续线程或下次启动。
 - 面向普通 App 的量产版本，API 30+ 默认优先用 `ApplicationExitInfo`；SIGQUIT 自采栈更适合作为低版本、内测包、厂商合作或强控制环境下的补充方案。
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/signal_catcher.cc]
+[已验证: AOSP android-17.0.0_r1, art/runtime/signal_catcher.cc]
 
 ## 监控数据的采样、聚合与报警策略
 

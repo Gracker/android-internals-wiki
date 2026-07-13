@@ -10,14 +10,14 @@ last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfet
 tags: [performance, methodology, perfetto, profiling, optimization, android]
 task9_result: needs-rework
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-13
-last_task9_at: "2026-07-13T20:22:00+08:00"
+last_task9_at: "2026-07-14T05:20:00+08:00"
 task9_audit_type: deep-review
 last_task9_review_log: logs/deep-review/2026-07-13-20-deep-review.md
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2b_state: fixed
 last_task6_at: 2026-07-14T04:07:00+08:00
 last_task6_review_log: logs/review/2026-07-14-04-review.md
@@ -31,7 +31,7 @@ task6_review_notes_round9: "2026-07-13 Task6 revisiting-review round9: pass-ligh
 task6_review_notes_round10: "2026-07-14 Task6 revisiting-review round10 (post-Task2B SoC narrative integration): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits (彻底×1=不彻底 legitimate, 真正×1=contrastive legitimate). Restricted patterns: 2 (not...而是 at limit, stable since round5). Structural meta-narrative: 0. L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (SoC section 4.1 properly integrated into narrative, source-anchored to android-17.0.0_r1, frameworks like 3-tier baseline and 5-Whys walkthrough intact). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No L1/L2 fixes needed this round. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task2b_result: fixed
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 round7 已通过并发送至 Task9 复审，task9_state 应为 pending"
-last_task2b_at: 2026-07-14T00:53:52+08:00
+last_task2b_at: 2026-07-14T06:54:06+08:00
 last_task2b_lite_at: 2026-07-04
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
@@ -44,12 +44,15 @@ last_task9_audit_log: logs/deep-review/2026-07-12-10-idle-audit.md
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
+task2b_main_round_20260714: "2026-07-14 Task2B 主修复: P1×4(AOSP路径验证澄清+Android 17边界标记+数据来源声明+交叉引用补全)+P2×2(SDM参考+构建系统引用)。子章节15.5/15.7版本基线android-16→android-17.0.0_r1。禁用词修复(底层→实现)。"
 task2b_main_notes: "2026-07-14 AIW 源码调研集成：将文末 AIW-源码调研-2026-07-07 段落中 Power HAL AIDL v7/HintManagerService/BatteryStatsService 三层内容以叙述风格融入 section 4.1 SoC 分层讨论，删除裸行号引用，替换为函数名+行为描述。 | 2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
 ---
 
 # Android 性能优化研究方法论
 
 Android 性能优化的工作质量，取决于前面有没有把问题定义清楚、工具选对、数据采到位、根因追到底。没有这一层，后面的优化方案再漂亮也容易跑偏。
+
+> **数据说明**：本章中出现的数值示例（如"冷启动 P50 1.8s，P99 4.2s"、"doFrame 超过 16ms"、"measure/layout 花了 11ms"等）为方法论教学中的假设性示例，用于展示分析框架和排查思路，不取自特定 App 或特定机型的实测数据。优化实践中应以自身 App 的基准数据为准。
 
 本章把性能优化的完整流程拆成几个阶段——从问题分类、工具选择、数据采集与分析，到根因定位、方案设计与效果验证。每个阶段有对应的决策框架和常见陷阱。
 
@@ -78,7 +81,7 @@ Android 性能优化的工作质量，取决于前面有没有把问题定义清
 - 电量：待机消耗、前台耗电模型、后台网络唤醒
 - 热稳定性：温控降频后的性能衰减曲线
 
-归完之后不要急着看代码。先确认同类问题在当前线上的分布——同一个卡顿 issue，是 80% 的用户都在某个 Activity 遇到，还是千分之一的低端机才有。这个数据决定后面投入的力度。
+归完之后不要急着看代码。先确认同类问题在当前线上的分布——同一个卡顿 issue，是 80% 的用户都在某个 Activity 遇到，还是千分之一的低端机才有。这个数据决定后面投入的力度。分类之后的具体排查工具选型见 [§3 性能分析工具与选择策略](#3-性能分析工具与选择策略)；关于 Handler/MessageQueue 的调度机制在帧预算消耗中的角色见 §1.13。
 
 ## 2. 优化方法体系：问题到验证的完整循环
 
@@ -164,7 +167,7 @@ adb shell perfetto --attach=my_trace --stop
 
 `external/perfetto/src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`external/perfetto/src/traced/service/service.cc` 中 `traced` 只处理 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`，不接受 `-b` 或 `--async`。
 
-**Android 17（API 37）Perfetto 启用方式的变化**：Android 17 的 Perfetto 控制机制在 `persist.traced.enable=1`（AOSP init rc 方式）基础上，通过 DeviceConfig 框架提供了更细粒度的运行时控制能力。DeviceConfig 允许在无需 root 的条件下，按数据源粒度动态开关 Perfetto 的生产者——例如仅在需要分析内存时启用 heapprofd，避免全局 tracing 的持续性能开销。
+**Android 17（API 37）Perfetto 启用方式的变化**：**Android 17（API 37，基于 android-17.0.0_r1）**的 Perfetto 控制机制在 `persist.traced.enable=1`（AOSP init rc 方式）基础上，通过 DeviceConfig 框架提供了更细粒度的运行时控制能力。DeviceConfig 允许在无需 root 的条件下，按数据源粒度动态开关 Perfetto 的生产者——例如仅在需要分析内存时启用 heapprofd，避免全局 tracing 的持续性能开销。
 
 ```bash
 # 查询当前 Perfetto traced 启用状态（兼容多版本）
@@ -227,7 +230,7 @@ adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched
 - 电量：按电池状态和系统状态采集。电量 80% 以上 vs 20% 以下，充电中 vs 未充电，前台 vs 后台——同一个网络请求的功耗成本完全不同。
 - SoC 跨厂商分层：**必须按 SoC 厂商 + 芯片型号分层**，不同厂商的功率优化接口、AIDL 实现、cpufreq governor 路径都不同。
 
-  Android 17 的 SoC 级电池优化分 5 层：① Framework `PowerManager.setMode()` → ② `PowerManagerService.java` 维护 `DIRTY_*` 位掩码 → ③ `IPower` AIDL 跨进到 vendor HAL（厂商必须提供 SO 库） → ④ vendor 服务调内核 cpufreq/devfreq 节点，或在 `setBoost` 路径上调用 CPU/GPU 驱动 → ⑤ 内核 `schedutil` 通过 `sugov_should_update_freq()` 守门 `rate_limit_us` 决定是否下发新频率。源：android-17.0.0_r1，`hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
+  Android 17（API 37，基于 android-17.0.0_r1）的 SoC 级电池优化分 5 层：① Framework `PowerManager.setMode()` → ② `PowerManagerService.java` 维护 `DIRTY_*` 位掩码 → ③ `IPower` AIDL 跨进到 vendor HAL（厂商必须提供 SO 库） → ④ vendor 服务调内核 cpufreq/devfreq 节点，或在 `setBoost` 路径上调用 CPU/GPU 驱动 → ⑤ 内核 `schedutil` 通过 `sugov_should_update_freq()` 守门 `rate_limit_us` 决定是否下发新频率。源：android-17.0.0_r1，`hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
 
   跨厂商差异不在 AIDL 接口层（AOSP 强制统一，`@VintfStability` 跨版本固化），而在**实现层**与**驱动层**：
 
@@ -350,7 +353,7 @@ heapprofd 需要在 Perfetto config 中显式开启。**构建类型决定 heapp
 
 #### 自适应刷新率场景的帧数据分析
 
-前面三条原则适用于固定刷新率场景。在多档刷新率设备上，帧预算本身会随窗口变化——Android 17 的 FrameRateOverrides API 允许应用或 WindowManager 为特定窗口指定目标帧率（例如游戏窗口 120Hz、视频窗口 60Hz、静态内容降到 30Hz）。在支持多档刷新率的设备上，同一个应用的不同窗口可能以不同的帧预算运行——「帧超时」的定义不再固定为 16.6ms。
+前面三条原则适用于固定刷新率场景。在多档刷新率设备上，帧预算本身会随窗口变化——Android 17 的 FrameRateOverrides API 允许应用或 WindowManager 为特定窗口指定目标帧率（例如游戏窗口 120Hz、视频窗口 60Hz、静态内容降到 30Hz）。在支持多档刷新率的设备上，同一个应用的不同窗口可能以不同的帧预算运行——「帧超时」的定义不再固定为 16.6ms。这一能力的实现依赖 SurfaceFlinger 的 VSync 调度机制和 Choreographer 的帧回调管线（见 §2.3 和 §2.6）。
 
 这一变化对数据分析的三个关键影响：
 
@@ -407,7 +410,7 @@ LIMIT 20;
 4. 为什么重复调用？→ RecyclerView item 的动画触发了 parent 重新 measure，而 parent 的布局依赖链没有 cut
 5. 为什么动画会触发 parent 布局？→ item 动画改了 View 的 margin，margin 影响 parent 的测量尺寸
 
-到第五层才定位到 root cause——不是"measure 太慢"，而是一个动画改了不该改的属性，导致布局依赖链被重新触发。每一层"为什么"都对应一个可以独立验证的检查点——查 trace、看调用栈、改代码做对照——而不是在脑子里推导。
+到第五层才定位到 root cause——不是"measure 太慢"，而是一个动画改了不该改的属性，导致布局依赖链被重新触发。每一层"为什么"都对应一个可以独立验证的检查点——查 trace、看调用栈、改代码做对照——而不是在脑子里推导。排查卡顿时如果发现主线程被 Binder 调用阻塞，见 §4.3 的 Perfetto SQL 示例和 §1.13 的 Handler 消息调度机制。
 
 Fishbone（鱼骨图）的用法是从大类到具体线索的穷举框架。排查时按这几个分支列 checklist：人员（改动者、review 流程）、流程（CI 性能回归检查是否跑了、基线是否更新）、代码（最近提交的 diff、重构影响的模块边界）、环境（设备档位、系统版本、网络条件）。每一条线索要么验证通过、要么排除，不能靠感觉选。
 
@@ -443,7 +446,7 @@ Call Stack / Flame Graph 分析：火焰图看宽度——宽的地方就是热�
 
 流畅度优化：减少过度绘制（开发者选项打开 GPU 过度绘制检测，确认红色区域）、硬件加速与软件绘制的边界处理（某些自定义 View 的 `onDraw` 在硬件加速关闭时走到不同路径）、RenderThread 的帧提交时机（VSync offset 配置不当会导致帧延迟一整拍）。
 
-内存优化：引用释放——匿名内部类持有外部 Activity 引用是最常见的泄漏源。数据结构选型——`HashMap` vs `SparseArray` 对 int key 场景的内存差异显著。缓存策略——LRU 的容量不是拍脑袋定，是按"应用在前台期间可能访问到的最大缓存集"反推出来的。
+内存优化：引用释放——匿名内部类持有外部 Activity 引用是最常见的泄漏源。数据结构选型——`HashMap` vs `SparseArray` 对 int key 场景的内存差异显著。缓存策略——LRU 的容量不是拍脑袋定，是按"应用在前台期间可能访问到的最大缓存集"反推出来的。更多内存优化手段（heapprofd 分配追踪、GC 暂停分析）见第四部分内存管理章节。
 
 网络优化：减少请求次数（聚合接口、GraphQL）、协议升级（HTTP/2 多路复用替代 HTTP/1.1 的六连接限制）、头部压缩（HPACK/QPACK）。但协议升级有迁移成本——换 HTTP/2 之前先确认接入层是否支持、客户端的证书链是否兼容。
 
@@ -497,7 +500,7 @@ Call Stack / Flame Graph 分析：火焰图看宽度——宽的地方就是热�
 
 技术方案评审：新增模块的性能评估——引入的新线程数、内存峰值预估、网络请求的频次和时机。如果评估结果是"不确定"，就要求先做一次 prototype profiling 再进入正式开发。
 
-CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心页面帧率、内存峰值——这三个指标的回归检查是 CI 流水线的必过门禁。门禁的阈值不能设得太松（等于没门禁），也不能设得太紧（变成无意义的红灯）。
+CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心页面帧率、内存峰值——这三个指标的回归检查是 CI 流水线的必过门禁。门禁的阈值不能设得太松（等于没门禁），也不能设得太紧（变成无意义的红灯）。SDM（Selective Dexopt Manager）等 Android 17 构建优化机制也可以在 CI 流水线中纳入编译耗时回归检查——SDM 的详细机制见 §16.9。
 
 ### 9.2 发布阶段：灰度是验证，不是仪式
 
