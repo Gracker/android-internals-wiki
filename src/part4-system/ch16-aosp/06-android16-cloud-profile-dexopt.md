@@ -36,10 +36,10 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-29"
 review_type: task6-writing-quality-review
 task6_result: "pass-light-edit"
-last_task6_at: "2026-06-29T20:15:13+08:00"
+last_task6_at: "2026-07-13T18:18:50+08:00"
 last_task6_audit: "2026-06-07"
 last_task6_review_log: "logs/review/2026-06-29-20-review.md"
-review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。 | 2026-06-29 Task6 复审（Task9 auto-fix 后）：pass-light-edit。L1/L2 全部通过；禁用词零命中；SDM 证据边界写法清晰。Task9 auto-fix 涉及的源码锚点重锚（android-16→17.0.0_r1）写作质量合格。无 B 类回炉项，送 Task9 确认。"
+review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。 | 2026-06-29 Task6 复审（Task9 auto-fix 后）：pass-light-edit。L1/L2 全部通过；禁用词零命中；SDM 证据边界写法清晰。Task9 auto-fix 涉及的源码锚点重锚（android-16→17.0.0_r1）写作质量合格。无 B 类回炉项，送 Task9 确认。 | 2026-07-13 Task6 re-review (revisiting after Task9 deep review + Task2B-lite fix): pass-light-edit。Task2B-lite 已修复 P0 DexMetadataHelper 路径 pm/dex/→pm/（正文+frontmatter 共 2 处）。L1 禁用词扫描零命中。L2 可读性通过。修复 frontmatter task9_p1_issues 计数不一致（0→1）。P1 ArtManagerLocal.deleteDexoptArtifacts() 方法引用由 Task2B-lite 审查后仅修复 P0，方法名准确性留待 Task9 复审确认。无 B 类回炉项。"
 last_task9_audit: "2026-07-01"
 last_task9_audit_log: "logs/deep-review/2026-07-01-15-audit.md"
 last_task2b_lite_at: "2026-07-13"
@@ -47,8 +47,8 @@ task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed-lite
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: task9_pending
 last_task9_at: "2026-07-13T17:33:00+08:00"
 last_task9_autofix_at: "2026-07-01"
 last_task9_review_log: "logs/deep-review/2026-07-01-15-audit.md"
@@ -56,9 +56,9 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-01"
 task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题：1) DexMetadataHelper路径错误，已移除dex子目录；2) ArtManagerLocal.deleteDexoptArtifacts()方法已重构。P0 1 / P1 1 / P2 0；不可自动晋升，需 Task6 复审。P0/P1 问题已写入 queue.json，建议优先修复源码路径错误和方法引用过时问题。"
 last_task6_at: 2026-07-13T17:17:00+08:00
-task6_reviewed_date: "2026-06-29"
+task6_reviewed_date: "2026-07-13"
 task9_p0_issues: 1
-task9_p1_issues: 0
+task9_p1_issues: 1
 task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
