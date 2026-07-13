@@ -10,8 +10,8 @@ last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfet
 tags: [performance, methodology, perfetto, profiling, optimization, android]
 task9_result: needs-rework
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-13
 last_task9_at: "2026-07-13T20:22:00+08:00"
