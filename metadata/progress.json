@@ -5,10 +5,10 @@
   "finalized": 4,
   "last_updated": "2026-07-14T06:08:13.412828+08:00",
   "task2b": {
-    "last_run": "2026-07-10T10:51:28+08:00",
-    "last_section": "19.26",
+    "last_run": "2026-07-14T06:54:06+08:00",
+    "last_section": "15",
     "result": "fixed",
-    "fix_count": 1,
+    "fix_count": 2,
     "last_sections": [
       "15"
     ],
@@ -569,6 +569,13 @@
       "lane": "main",
       "issues_fixed": "P0×11 (虚构代码×8+结构重写+数据来源+Perfetto观测指导)",
       "entries_consumed": 3
+    },
+    {
+      "section": "15",
+      "completed_at": "2026-07-14T06:54:06+08:00",
+      "lane": "main",
+      "source": "task9-deep-tech-review",
+      "fixes": "P1×4(AOSP路径验证澄清+Android 17边界标记+数据来源声明+交叉引用§1.13/§2.3/§2.6/§16.9)+P2×2(SDM参考+构建系统引用)+子章节15.5/15.7版本基线android-16→android-17.0.0_r1"
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
@@ -590,14 +597,15 @@
   ],
   "sections": {
     "15": {
-      "status": "ready-for-review",
-      "last_task6_at": "2026-07-13T20:14:00+08:00",
-      "task6_result": "pass-light-edit",
-      "task6_state": "reviewed",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
-      "task6_reviewed_date": "2026-07-07",
-      "last_task6": "2026-07-14"
+      "task9_result": "needs-rework",
+      "task6_result": "pass-light-edit",
+      "last_task2b_main_at": "2026-07-14T06:54:06+08:00",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "task2b_fix_summary": "P1×4+P2×2 + android-16→17 baseline for 15.5/15.7"
     },
     "21.2": {
       "status": "finalized",
