@@ -1,5 +1,4 @@
 ---
-
 title: "Android Studio Profiler"
 chapter: "14.1"
 section: "14.1"
@@ -28,19 +27,19 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: "fixed"
-task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-28"
 task6_result: pass-light-edit
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-05-28"
-task9_reviewed_by: openclaw-task9
+task9_result: needs-rework
+task2b_state: "fixed"
+task2b_result: fixed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_reviewed_date: "2026-07-14"
+task9_reviewed_by: openclaw-task9-audit
 last_task9_at: "2026-06-11"
-last_task9_audit: "2026-07-07"
+last_task9_audit: "2026-07-14"
 last_task6_at: "2026-05-28T12:10:00+08:00"
 last_task6_audit: "2026-07-08"
 task6_review_notes: "2026-05-28 12 Task6 复审：L1/L2 小修 1 处，将绝对化排查建议改为优先级表达；无 L3/L4 回炉项，送 Task9 技术复审。"
@@ -56,9 +55,7 @@ updated_date: "2026-05-28"
 updated_by: openclaw-task9
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-11
-last_task9_audit: "2026-07-13"
 ---
-
 
 # Android Studio Profiler
 
@@ -177,9 +174,9 @@ System Trace 定位到大致范围后，如果需要进一步看某个方法内�
 
 实时曲线是内存状态的"第一眼"概览。曲线上每个突然的跳升对应着一次大的内存分配，每个突然的下降对应着一次 GC。如果 GC 之后内存并没有回到之前的水平，那说明有对象无法被回收——这就是内存泄漏的典型信号。
 
-Android Studio Memory Profiler 的分配追踪数据通路基于 device 端的 **JVMTI agent（`libperfa.so`）**，由 Android Studio 推送到 `/data/local/tmp/perfd/perfd` daemon，再通过 `am attach-agent` 注入目标应用后注册 `JVMTI_EVENT_VM_OBJECT_ALLOC` / `OBJECT_FREE` / `GARBAGE_COLLECTION_START/FINISH` / `CLASS_PREPARE` 四个事件回调获取（`tools/base/profiler/native/perfa/perfa.cc` + `memory/memory_tracking_env.cc`）。JVMTI 接口本身早于 Android 8.0（属 JDK 5 / JSR-163 标准），Google 自 Android Studio 3.0（2017 GA）即使用此机制。<!-- AIW-源码调研-2026-06-25 -->
+Android Studio Memory Profiler 的分配追踪数据通路基于 device 端的 **JVMTI agent（`libperfa.so`）**，由 Android Studio 推送到 `/data/local/tmp/perfd/perfd` daemon，再通过 `am attach-agent` 注入目标应用后注册 `JVMTI_EVENT_VM_OBJECT_ALLOC` / `OBJECT_FREE` / `GARBAGE_COLLECTION_START/FINISH` / `CLASS_PREPARE` 四个事件回调获取（`tools/base/profiler/native/perfa/perfa.cc` + `memory/memory_tracking_env.cc`，位于 Android Studio 源码树 `platform/tools/base`，非 `android-17.0.0_r1` 平台构建 tag）。JVMTI 接口本身早于 Android 8.0（属 JDK 5 / JSR-163 标准），Google 自 Android Studio 3.0（2017 GA）即使用此机制。<!-- AIW-源码调研-2026-06-25 -->
 
-**Android 8.0（API 26）真实的新增项是去除了旧 DDMS 协议 "Java/Kotlin Allocations" 任务的 65535 条记录上限**（见 [官方文档：Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations) "On Android 7.1 and lower, you can record a maximum of 65535 allocations. If your recording session exceeds this limit, only the most recent 65535 allocations are saved in the record. (There is no practical limit on Android 8.0 and higher.)"），并引入 LeakCanary 自动泄漏检测；HPROF 抓取链路则因 Android 8.0 上 ActivityManagerService 的 HPROF fd 关闭 bug 需要在 perfd 端用 `WaitForHeapDumpFinish` 双重校验文件结尾 tag（`heap_dump_manager.cc:34` 注释 "In O+, there is a bug in ActivityManagerService where the file descriptor associated with the dump file does not get closed until the next GC"）。[已验证: AOSP tools/base mirror-goog-studio-main 源码 + 官方文档]
+**Android 8.0（API 26）真实的新增项是去除了旧 DDMS 协议 "Java/Kotlin Allocations" 任务的 65535 条记录上限**（见 [官方文档：Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations) "On Android 7.1 and lower, you can record a maximum of 65535 allocations. If your recording session exceeds this limit, only the most recent 65535 allocations are saved in the record. (There is no practical limit on Android 8.0 and higher.)"），并引入 LeakCanary 自动泄漏检测；HPROF 抓取流程则因 Android 8.0 上 ActivityManagerService 的 HPROF fd 关闭 bug 需要在 perfd 端用 `WaitForHeapDumpFinish` 双重校验文件结尾 tag（`tools/base/profiler/native/perfa/heap_dump_manager.cc:34`（Android Studio 源码树 `platform/tools/base`，非 `android-17.0.0_r1` 平台 tag）注释 "In O+, there is a bug in ActivityManagerService where the file descriptor associated with the dump file does not get closed until the next GC"）。[已验证: Android Studio 源码树 `platform/tools/base`（`tools/base` repo，非 `android-17.0.0_r1` 平台 tag）+ 官方文档]
 
 **Profileable App 限制**：当 App 仅 `android:profileable="true"` 时（无需 debuggable），MEMORY_HEAP_DUMP / MEMORY_JVM_RECORDING / MEMORY_GC / MEMORY_LEAK_WITH_LEAKCANARY 四项 Memory Profiler 功能被禁用（`SupportLevel.kt:39-46` PROFILEABLE 配置 except 列表），只保留实时内存曲线与 Perfetto heapprofd 的 native allocation。这意味着对 release-build 的 Profileable App 而言，**JVMTI 路径不可用**，是 Memory Profiler 在 Android 9 起的硬性约束。
 
@@ -219,7 +216,7 @@ Memory 方面也有开销边界。实时内存曲线的监控开销很低，可�
 |------|:---:|:---:|
 | 系统追踪 / CPU 追踪 | ✅ | ✅ |
 | 调用栈采样 | ✅ | ✅ |
-| Java 方法追踪 | [待验证: 依 Android Studio / 平台版本确认] | ✅ |
+| Java 方法追踪 | ✅（Android 12+ / AS Chipmunk 2021.2.1+）[已验证: developer.android.com/studio/profile/cpu-profiler#method-traces] | ✅ |
 | Java/Kotlin 分配记录 | ❌ | ✅ |
 | 堆转储 | ❌ | ✅ |
 | Native 分配追踪 | ✅ | ✅ |
@@ -295,7 +292,7 @@ profilingManager.addProfilingTriggers(
 
 **"方法追踪报告的方法耗时就是真实的耗时。"** 不是。方法追踪的插桩开销非常大，对于短方法（< 10ms）可能导致耗时膨胀 10 倍以上。只有系统追踪给出的时间数据接近真实情况。方法追踪的价值在于看调用关系，不是看绝对时间。
 
-**"Profileable 构建不能做性能分析。"** 不是。Google 官方推荐使用 profileable 构建来做性能分析。它比 debuggable 构建更接近真实发布版。限制是 profileable 构建不能做 Java/Kotlin 分配记录和堆转储；Java 方法追踪需按 Android Studio / 平台版本复核。系统追踪、调用栈采样和 Native 分配追踪都支持。需要这些高级内存分析能力时切换到 debuggable 构建。
+**"Profileable 构建不能做性能分析。"** 不是。Google 官方推荐使用 profileable 构建来做性能分析。它比 debuggable 构建更接近真实发布版。限制是 profileable 构建不能做 Java/Kotlin 分配记录和堆转储；Java 方法追踪需要 Android 12+ 设备与 AS Chipmunk 2021.2.1+。系统追踪、调用栈采样和 Native 分配追踪都支持。需要这些高级内存分析能力时切换到 debuggable 构建。
 
 **"分析器能分析系统性能问题。"** 分析器的视角是 App-centric 的，它主要展示单个 App 的 CPU、内存、网络数据。要分析系统级的性能问题（如调度延迟、多进程竞争、SurfaceFlinger 合成慢），需要使用 Perfetto 的全局视图。
 
@@ -342,7 +339,7 @@ profilingManager.addProfilingTriggers(
 1. **System Trace 模式**: 底层依赖 Perfetto，在 Android 10 之后完全基于 traced 服务
 2. **Memory Profiler heapprofd 集成**: 仅在 Android 10+ 原生内存可用，API 29 引入
 3. **Profileable App 限制**: Android 9 (API 28) 起 JVMTI 路径对 profileable App 不可用
-4. **数据源可用性**: Profeller 的实时数据源取决于底层 Perftto 组件的版本支持
+4. **数据源可用性**: Profiler 的实时数据源取决于底层 Perfetto 组件的版本支持
 
 [已验证: AOSP android-17.0.0_r1 + google/perfetto master 分支时间线推断]
 
