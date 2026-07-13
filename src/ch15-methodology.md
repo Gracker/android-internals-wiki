@@ -30,7 +30,7 @@ task6_review_notes_round8: "2026-07-04 Task6 revisiting-review round8 (post-Task
 task6_review_notes_round9: "2026-07-13 Task6 revisiting-review round9: pass-light-edit. L1 fix×2 (body text 闭环=banned word removed; frontmatter 6 duplicate keys deduplicated). Banned-word scan: 闭环=0(after fix), 其实=3(within limit), 彻底=4(within limit). High-freq words all within limits. Restricted patterns: 2 (at limit, stable since round5). Structural meta-narrative: 0. AIW-source-research section (bottom): AI-flavored phrasing (通过源码分析发现/关键突破) + raw research-note style = B-class issue sent to Task2B for narrative integration. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task2b_result: fixed
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 round7 已通过并发送至 Task9 复审，task9_state 应为 pending"
-last_task2b_at: 2026-07-12T10:52:42+08:00
+last_task2b_at: 2026-07-14T00:53:52+08:00
 last_task2b_lite_at: 2026-07-04
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
@@ -43,7 +43,7 @@ last_task9_audit_log: logs/deep-review/2026-07-12-10-idle-audit.md
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
-task2b_main_notes: "2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
+task2b_main_notes: "2026-07-14 AIW 源码调研集成：将文末 AIW-源码调研-2026-07-07 段落中 Power HAL AIDL v7/HintManagerService/BatteryStatsService 三层内容以叙述风格融入 section 4.1 SoC 分层讨论，删除裸行号引用，替换为函数名+行为描述。 | 2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
 ---
 
 # Android 性能优化研究方法论
@@ -237,6 +237,12 @@ adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched
   | Samsung Exynos | `libexynos-power.so` | ASV + TMU + `exynos-pmu` | `exynos-cpufreq` |
 
   内核侧统一由 `kernel/sched/cpufreq_schedutil.c` 的 `sugov_should_update_freq()` 做频率守门，`freq_update_delay_ns` 默认值由 `rate_limit_us`（默认 10000μs）驱动。这意味着同一 PowerHAL `setMode(GAME, true)` 行为：高通方案映射到 RPMh wakeup vote；联发科走 `mtk-pmic` 触发 Vcore boost；三星经 TMU 协调 CPU/GPU/CAMERA 三 rail——但最终都汇总到 schedutil 的 10ms 节流闸。要做精确的电池基线，**必须分 SoC 看，不能简单按设备档位（高端 / 中端 / 低端）聚合**。更多细节见 DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md。
+
+  在 AIDL 与 schedutil 之间，还有一层关键的实时反馈机制。`HintManagerService` 对外提供 `getCpuHeadroom` 和 `getGpuHeadroom` 两个实时查询接口，返回当前 SoC 还有多少 CPU/GPU 算力可用。Headroom 的计算不是每次调 HAL——`HintManagerService` 内部维护了一个缓存，通过 `mSupportInfo.headroom.cpuMaxTidCount` 限制同时跟踪的 TID 数量来控制开销，查询窗口可在 50ms 到 10000ms 之间配置。这个设计的意义在于：性能分析工具或游戏引擎可以在帧提交前先问一句"现在还有多少余量"，根据回答决定要不要降画质，而不是撞上 thermal throttle 之后才发现频率已经掉了。
+
+  `HintManagerService` 的另一条职责是通过 `SessionTag` 做应用类型与电池策略的映射。系统应用优先解析 Launcher 或 SYSUI 标签；普通应用则按 `ApplicationInfo.category` 归类为 GAME、APP 等类别，映射到对应的 session mode——例如游戏进程映射到 `SESSION_MODE_GRAPHICS_PIPELINE`，让 Power HAL 知道这个进程的渲染管线需要持续的 CPU/GPU 供给。
+
+  再往上一层，`BatteryStatsService` 采用 `POWER_COMPONENT_CPU`、`POWER_COMPONENT_WIFI`、`POWER_COMPONENT_BT` 等统一电量组件模型做能耗归因。`EnergyConsumerPowerStatsCollector` 从 SoC 的能量消耗计数器中读取各组件功耗，按 UID 归因到具体应用——CPU 功耗归于前台应用、WIFI 功耗归于网络活跃的 UID。理解这一层才能说清楚"为什么后台 Service 的一次网络同步没有直接烧 CPU，但功耗账单上仍然扣了你的应用"。
 
 ### 4.2 基准线的三条腿
 
@@ -576,21 +582,4 @@ CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心�
 - [Android Performance Patterns (YouTube)](https://www.youtube.com/playlist?list=PLWz5rJ2EKKc8j2Bd8Bd9-2O9V1zr-hBFY) — Google 官方性能模式视频系列
 - [Android Vitals](https://developer.android.com/topic/performance/vitals) — Google Play 的 ANR/启动/帧率评分体系
 
-<!-- AIW-源码调研-2026-07-07 -->
-### 最新源码进展：Android 17 Power HAL AIDL v7 电池架构
-
-Android 17 的电池优化相比传统 `PowerManager` 有重大架构升级：
-
-**三层统一管理模型**：
-1. **Power HAL AIDL v7 层**：提供 `IPower.aidl` 标准接口，23 个 AIDL 文件定义 Boost/Mode/SessionTag 枚举。核心机制是通过 `SupportInfo` 机制兼容不同厂商实现，消除高通/联发科/三星的差异。
-2. **HintManagerService 层**：实时 `getCpuHeadroom/getGpuHeadroom` 计算，支持 50ms-10000ms 可调窗口。`SessionTag` (HWUI/GAME/SYSUI) 实现应用类型与电池策略映射，如游戏进程映射到 SESSION_MODE_GRAPHICS_PIPELINE。
-3. **BatteryStatsService 层**：采用 `POWER_COMPONENT_CPU/WIFI/BT` 统一电量模型，通过 `EnergyConsumerPowerStatsCollector` 抽象 SoC 能量消耗。
-
-**关键代码路径**：
-- `HintManagerService.java` 第 1560-1627 行：CPU Headroom 缓存机制减少 HAL 调用开销，`mSupportInfo.headroom.cpuMaxTidCount` 限制 TID 数量
-- `updateSessionTag()` 函数（第2021行）：系统应用优先 Launcher → SYSUI，普通应用按 ApplicationInfo.category 映射 GAME/APP
-- Linux kernel `schedutil` 双守门：`rate_limit_us` 默认 10ms 控制频率下发，与 AIDL 形成双层架构
-
-这个统一架构为跨厂商 SoC 电池优化建立了标准化基线，解决了不同厂商 HAL 实现差异问题。
-<!-- AIW-源码调研-2026-07-07 结束 -->
 

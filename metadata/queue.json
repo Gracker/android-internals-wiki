@@ -236,8 +236,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-07-13T20:14:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-13-20-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-13-20-review.md",
+      "completed_at": "2026-07-14T00:53:52+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "fixed: AIW-源码调研段落以叙述风格融入 section 4.1 SoC 分层讨论，删除裸行号引用"
     },
     {
       "section": "16.9",
@@ -281,8 +284,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-07-13T22:10:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-13-22-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-13-22-review.md",
+      "completed_at": "2026-07-14T00:53:52+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "already-fixed: chapter was already reworked on 2026-07-13 (confirmed in suggestions.md Task2B 回炉完成 entry), queue cleanup only"
     }
   ],
   "items": [
