@@ -66,6 +66,9 @@ p1: "0"
 p2: "0"
 task9_review_notes: "2026-06-03 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task6_reviewed_date: "2026-06-02"
+last_task6_audit: "2026-07-14"
+last_task6_audit_result: "pass-idle-audit"
+last_task6_audit_notes: "idle audit: L1禁用词扫描通过（对齐为技术术语假阳性）；frontmatter完整性通过；outline 6+2锚点全覆盖；验证标注5已验证/1待验证(16.7%<30%)；无Android 18/API 38内容。"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_new_rework: false
