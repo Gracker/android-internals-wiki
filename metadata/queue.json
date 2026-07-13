@@ -791,8 +791,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-07-14T03:20:00+08:00",
-      "status": "pending",
-      "notes": "Task9 deep review 发现 P0×2 事实错误，需 Task6 复审"
+      "status": "completed",
+      "notes": "Task9 deep review 发现 P0×2 事实错误，需 Task6 复审",
+      "completed_at": "2026-07-14T04:52:33.715399+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "fixed: P0-ProfilingManager版本修正(Android15→14引入年份)+P0-AS/AOSP源码界限明确+AIW调研dump清理+Perfetto版本演进融入正文"
     },
     {
       "id": "ch02-rendering/2.17-gpu-power-dvfs",

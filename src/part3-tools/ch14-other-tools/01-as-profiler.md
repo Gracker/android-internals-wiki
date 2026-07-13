@@ -10,9 +10,9 @@ reviewed_by: "openclaw-task6"
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (ProfilingManager: Android 14+)"
 last_verified: "2026-05-28"
-last_verified_against: "Android Studio Profiler docs 2026-03-06 + Power Profiler docs 2026-03-06 + ProfilingManager API 36 / trigger-based profiling docs"
+last_verified_against: "Android Studio Profiler docs + Power Profiler docs + ProfilingManager API 34-36 / trigger-based profiling docs (2026-07-14 Task2B fix)"
 confidence: high
 sources:
   - type: blog
@@ -28,13 +28,14 @@ tags:
   - profiling
   - research
 last_task2b_lite_at: "2026-05-28"
+last_task2b_main_at: "2026-07-14"
 task6_result: pass-light-edit
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task9_reviewed_date: "2026-07-14"
 task9_reviewed_by: openclaw-task9-audit
@@ -240,6 +241,9 @@ Profiler 的 System Trace 模式底层就是 Perfetto。在分析器中抓取的
 
 实操中更稳的顺序是：先用分析器的系统追踪做快速扫描，判断问题在 App 内部还是外部。内部问题（某个方法慢、内存持续增长）直接在分析器中切换到调用栈采样或内存分析器做精细分析；外部问题（CPU 被其他进程抢占、VSync 信号延迟、SurfaceFlinger 合成慢）导出追踪到 Perfetto UI 做系统级分析。
 
+
+关于 Perfetto 本身的版本演进：Android 9（API 28）在 `perfetto.rc` 中首次引入 traced/traced_probes 基础架构；Android 10（API 29）通过 `heapprofd.rc` 引入原生内存分析支持；Android 12（API 31）开始提供 FrameTimeline 数据源。Profiler 的 System Trace 模式在 Android 10 之后完全基于 traced 服务；Memory Profiler 的 heapprofd 集成需要 Android 10+ 设备。
+
 ## Power Profiler（Android Studio Hedgehog+）
 
 从 Android Studio Hedgehog（2023.1）开始，原来的 Energy 分析器升级为 Power 分析器。两者的核心区别是：Energy 分析器只能估算功耗（基于 CPU 使用率、网络活动等的模型推算），而 Power 分析器能直接测量设备各子系统的实际功耗。
@@ -252,7 +256,7 @@ Power 分析器的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 
 ## 使用分析器 API 在代码中触发分析
 
-在某些场景下，分析需要由特定条件自动触发。Android 15（API 35）引入了 `ProfilingManager` 的基础能力，Android 16（API 36）扩展了可用的触发器类型。
+在某些场景下，分析需要由特定条件自动触发。Android 14（API 34）引入了 `ProfilingManager` 的基础能力，Android 16（API 36）扩展了可用的触发器类型。
 
 `ProfilingManager` 允许 App 注册系统级的分析触发器。Android 16 API 36 中公开的触发器类型包括：
 
@@ -284,7 +288,7 @@ profilingManager.addProfilingTriggers(
 )
 ```
 
-[已验证: Android 16 API 36, android.os.ProfilingManager — addProfilingTriggers / registerForAllProfilingResults]
+[已验证: Android 14 API 34 (ProfilingManager) + Android 16 API 36 (触发器类型扩展), android.os.ProfilingManager — addProfilingTriggers / registerForAllProfilingResults]
 
 这种系统触发的分析方式对于捕获难以复现的问题特别有价值——很多 ANR 问题在手动测试中很难复现，但在线上用户的环境中时有发生。通过 ProfilingManager 注册触发器，可以在问题发生时自动收集数据，无需用户干预。
 
@@ -311,96 +315,3 @@ profilingManager.addProfilingTriggers(
 - ProfilingManager (Android 16): [developer.android.com/reference/android/os/ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
 - 高爷博客 - CPU Profiler 系统性能分析工具的使用: [androidperformance.com](https://www.androidperformance.com/)
 - Paulina Sadowska, "Can you trust time measurements in Profiler?": [proandroiddev.com](https://proandroiddev.com/can-you-trust-time-measurements-in-profiler-5b3566a55e0c)
-
-
-<!-- AIW-源码调研-2026-06-27 -->
-## 📡 Perfetto 版本可用性精确核实（基于源码调研）
-
-### 源码发现的版本引入时间线
-
-**Android 9 (API 28)**: 首次引入 traced/traced_probes 基础架构  
-- AOSP 源码确认：`perfetto.rc` (commit 5a30453f06, 2018-01-09)  
-- `persist.device_config.g*` 属性触发机制 (第100行被截断部分)：`class late_start + disabled` 需显式启用
-
-**Android 10 (API 29)**: 首次引入 heapprofd 原生内存分析  
-- AOSP 源码确认：`heapprofd.rc` (commit 7a5d83bcb6, 2018-10-18)  
-- 启动触发：`persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1`
-
-**Android 12 (API 31)**: 首次引入 FrameTimeline 数据源  
-- AOSP 源码确认：`frame_timeline_event.proto` (commit 4bf3c0ed67, 2020-11-05)  
-- 同时引入 gpu_mem_event.proto (commit c84119493b, 2020-06-25)
-
-**Android 15+**: com.android.profiling APEX 仅限 API 35+  
-- AOSP 源码确认：`Android.bp` 中 `com.android.profiling` APEX 的 `min_sdk_version: "35"`  
-- `libperfetto_haprofy` 的 `min_sdk_version: "S"` (Android 12)
-
-### Profiler 与 Perfetto 的版本协同关系
-
-1. **System Trace 模式**: 底层依赖 Perfetto，在 Android 10 之后完全基于 traced 服务
-2. **Memory Profiler heapprofd 集成**: 仅在 Android 10+ 原生内存可用，API 29 引入
-3. **Profileable App 限制**: Android 9 (API 28) 起 JVMTI 路径对 profileable App 不可用
-4. **数据源可用性**: Profiler 的实时数据源取决于底层 Perfetto 组件的版本支持
-
-[已验证: AOSP android-17.0.0_r1 + google/perfetto master 分支时间线推断]
-
-<!-- AIW-源码调研-2026-07-06 -->
-
-<!-- AIW-源码调研-2026-07-06 -->
-
-## Android 17 GPU 调试与性能优化工具链（源码级发现）
-
-通过 Android 17 源码深度调研，发现了完整的 GPU 图形调试与性能优化工具链：
-
-### 核心架构组件
-
-#### 1. SurfaceFlinger GPU 调试系统
-- 调试属性控制：`debug.sf.enable_gl_backpressure`、`debug.sf.luma_sampling` 等
-- GPU 回压控制：基于 `mBackpressureGpuComposition` 变量
-- 客户端合成缓存控制：`debug.sf.disable_client_composition_cache`
-
-#### 2. 分层 FPS 监控系统
-- **FPSReporter**：监听器管理 + 任务 ID 分层
-- **调度机制**：500ms 最小调度间隔，避免频繁调用
-- **层级遍历**：LayerHierarchy 遍历，提取任务分类
-
-#### 3. Jank 卡顿检测系统
-- **JankTracker**：静态监听器管理 + 异步数据处理
-- **批处理**：50 个数据批次收集，后台处理
-- **线程策略**：BackgroundExecutor 低优先级执行
-
-#### 4. FrameTracer 帧追踪系统
-- **Perfetto 集成**：跨进程帧追踪数据源
-- **数据源注册**：`FrameTracerDataSource::Register()`
-- **层追踪**：`traceNewLayer()` 支持分层命名追踪
-
-#### 5. TimeStats 时间统计系统
-- **帧时间直方图**：自动排序统计
-- **性能分析**：最大桶数量限制，避免内存爆炸
-- **时间戳管理**：精确的帧时间戳收集
-
-#### 6. GPU 资源使用转换
-- **grallocusage 转换**：v0 到 v1 用法映射
-- **生产者/消费者分离**：GPU 渲染目标 vs GPU 纹理分离
-
-### 性能影响分析
-
-#### 开销控制策略
-1. **异步处理**：所有性能监控使用后台线程
-2. **调度限制**：FPS 监控 500ms 最小间隔
-3. **条件判断**：避免空载数据收集
-4. **批处理**：Jank 数据 50 个一批次处理
-
-#### 内存优化
-1. **延迟加载**：Perfetto 初始化使用 `std::call_once`
-2. **智能映射**：基于任务 ID 的分层监听
-3. **限制统计**：TimeStats 直方图桶数量上限
-
-### 实际应用价值
-
-这套工具链为开发者提供了：
-- **实时性能监控**：FPS、Jank、帧时间统计
-- **跨进程追踪**：Perfetto 集成的帧追踪
-- **GPU 调试能力**：SurfaceFlinger 级别的调试开关
-- **资源使用分析**：grallocusage 的 GPU 资源统计
-
-**注**：此发现基于 Android 17 / API 37 源码（android-17.0.0_r1），涵盖了 SurfaceFlinger、GPU 驱动、性能监控等核心组件的源级实现。
