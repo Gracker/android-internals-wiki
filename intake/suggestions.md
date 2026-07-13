@@ -100,3 +100,10 @@
 - P1: 补充开发者适配建议（5条实操指南）
 - L1: "链路"5处→全部替换
 状态：已回送 Task6 → Task9 复审 (pipeline_stage: task6_pending)
+
+## [Task2B Verifier] ch15 Android 性能优化研究方法论 — 2026-07-13
+- **类型**：blocked-need-rework-evidence
+- **位置**：全章
+- **问题**：Task9（2026-07-13T20:22）标记 needs-rework，Task6 round9（2026-07-13T20:14）发现 B-class 问题（AIW-source-research section），但 queue.json 中均无对应 pending 条目。task2b_state=fixed 与 task9_result=needs-rework 矛盾。Task9 deep-review log 中 ch15 P1 描述过于泛化，缺乏可操作性。
+- **建议**：Task9 或 Task6 需为 ch15 创建具体 queue.json 条目（含 review_issues 数组、具体位置、可操作 suggestion），以便 Task2B 主修复消费。
+- **来源**：Task2B Verifier 2026-07-13-23
