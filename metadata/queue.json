@@ -691,6 +691,27 @@
       "completed_at": "2026-07-13T22:54:28+08:00",
       "completed_by": "task2b-main",
       "notes": "2026-07-13 重度回炉完成：P0虚构代码全部删除+P1数据来源标注+结构重写。"
+    },
+    {
+      "section": "14.1",
+      "section_title": "Android Studio Profiler",
+      "priority": 90,
+      "reason": "[review回炉] 文末 AIW-源码调研原始研究 dump 两段（2026-06-27 Perfetto 版本 + 2026-07-06 GPU 工具链）未融入正文叙述，保留 AI 口吻/report-style/emoji 标题，需 Task2B 整合或移除",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "文末 <!-- AIW-源码调研-2026-06-27 --> 和 <!-- AIW-源码调研-2026-07-06 --> 两段",
+          "detail": "两段原始研究 dump 使用 emoji 标题（📡）、report-style headers（核心架构组件/性能影响分析/实际应用价值）、AI 口吻（'通过 Android 17 源码深度调研，发现了完整的...'），与正文工程师视角叙述风格完全脱节。Perfetto 版本信息应融入 section 3.2 的版本兼容性段落；GPU 工具链内容如保留应融入 'Profiler 与 Perfetto 的互补关系' 或移至独立附录。",
+          "suggestion": "参考 writing-guide.md 反面教材，将有用信息提取后以叙述风格融入正文对应位置，删除原始 dump 段落。无用的 commit hash 等研究过程痕迹删除。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-07-14T04:10:05.385241+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-14-04-review.md"
     }
   ],
   "queue": [
