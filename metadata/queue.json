@@ -123,6 +123,35 @@
           "type": "新增参考材料",
           "location": "参考资料/延伸阅读",
           "detail": "Camera 性能分析——Perfetto 与延迟拆解实战 — Android 17 cameraserver 中 Camera 启动延迟的两条官方度量通道：Open Latency（CameraService::connectHelper 的 openLatencyMs）和 First Frame Latency（SessionStatsBuilder::incCounter → mStartLatencyMs），含捕获延迟直方图（10 bin）和 Perfetto async slice 映射",
+          "additional_issues": [
+            {
+              "type": "P0",
+              "category": "源码引用错误",
+              "title": "源码版本不一致",
+              "description": "章节声称验证于 android-16.0.0_r1，但实际引用 android-17.0.0_r1 内容，造成版本冲突",
+              "severity": "高 - 影响源码可验证性",
+              "location": "章节 frontmatter 和正文",
+              "resolution": "统一锚定 android-17.0.0_r1，移除 android-16 验证声明"
+            },
+            {
+              "type": "P0",
+              "category": "源码引用错误", 
+              "title": "HAL3 Buffer Management API 路径错误",
+              "description": "引用的 API 常量路径不存在于 claimed 的 AOSP 版本中",
+              "severity": "高 - 直接影响开发者实现",
+              "location": "HAL Buffer 管理策略章节",
+              "resolution": "修正 API 常量实际路径和版本对应关系"
+            },
+            {
+              "type": "P1",
+              "category": "版本差异不完整",
+              "title": "Android 17 新特性缺失",
+              "description": "未覆盖 Camera Process Priority API、Vendor Performance Hint APIs、Camera Performance Attestation API 等 Android 17 关键新特性",
+              "severity": "中等 - 影响开发者适配",
+              "location": "章节适用范围和功能说明",
+              "resolution": "补充 Android 17 中 Camera 性能相关新 API 说明"
+            }
+          ],
           "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
         }
       ],
