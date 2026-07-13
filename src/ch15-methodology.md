@@ -1,6 +1,7 @@
 ---
 
 
+
 title: Android 性能优化研究方法论
 chapter: "15"
 status: ready-for-review
@@ -9,11 +10,11 @@ last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfet
 tags: [performance, methodology, perfetto, profiling, optimization, android]
 task9_result: needs-rework
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 pipeline_stage: task6_pending
 task2b_state: fixed
-last_task6_at: 2026-07-04T19:12:25+08:00
+last_task6_at: 2026-07-13T20:14:00+08:00
 last_task6_review_log: logs/review/2026-07-04-19-review.md
 last_task9_at: "2026-07-04T16:34:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-04-08-deep-review.md"
@@ -23,6 +24,7 @@ task6_review_notes_round5: "2026-07-04 Task6 revisiting-review round5 (post-Task
 task6_review_notes_round6: "2026-07-04 Task6 revisiting-review round6 (post-Task2B-lite source-path-prefix fix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 上分=substring of 线上分布 false positive; 问题是=part of 5W2H framework description false positive). High-freq words all within limits (其实×1, 彻底×1). Restricted patterns: 2 (not...而是 at limit). Structural meta-narrative: 0. Adjective+colon: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source code anchored to android-17.0.0_r1, original frameworks like 3-tier baseline and 5-Whys walkthrough). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). L1 fix: tags field filled [performance, methodology, perfetto, profiling, optimization, android]. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task6_review_notes_round7: "2026-07-04 Task6 revisiting-review round7: pass-light-edit. L1 fix×1 (其实是口水过渡词→删除). Banned-word scan: 链路=0(OK), 其实=0(after fix). High-freq words all within limits. Restricted patterns: 2 (not...而是 at limit). Structural meta-narrative: 0. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task6_review_notes_round8: "2026-07-04 Task6 revisiting-review round8 (post-Task2B-lite source-path-prefix fix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits (彻底×1=不彻底 legitimate, 真正×1=contrastive legitimate). Restricted patterns: 2 (at limit, stable since round5). Structural meta-narrative: 0. Adjective+colon: 0. Code blocks: all properly tagged (bash/sql). Source path prefixes all verified (external/perfetto/src/...). L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source code anchored to android-17.0.0_r1, original frameworks like 3-tier baseline and 5-Whys walkthrough). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No L1/L2 fixes needed this round. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
+task6_review_notes_round9: "2026-07-13 Task6 revisiting-review round9: pass-light-edit. L1 fix×2 (body text 闭环=banned word removed; frontmatter 6 duplicate keys deduplicated). Banned-word scan: 闭环=0(after fix), 其实=3(within limit), 彻底=4(within limit). High-freq words all within limits. Restricted patterns: 2 (at limit, stable since round5). Structural meta-narrative: 0. AIW-source-research section (bottom): AI-flavored phrasing (通过源码分析发现/关键突破) + raw research-note style = B-class issue sent to Task2B for narrative integration. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task2b_result: fixed
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 round7 已通过并发送至 Task9 复审，task9_state 应为 pending"
 last_task2b_at: 2026-07-12T10:52:42+08:00
@@ -33,19 +35,12 @@ last_task9_audit: 2026-07-13
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
 last_idle_audit_at: 2026-07-12T10:52:42+08:00
-last_idle_audit_at: 2026-07-12T10:52:42+08:00
-last_task6_audit: 2026-07-04
-last_task9_audit: 2026-07-12
-last_idle_audit_at: 2026-07-12T10:52:42+08:00
-last_task6_audit: 2026-07-06
-last_task9_audit: 2026-07-12
+last_task6_audit: 2026-07-13
 last_task9_audit_log: logs/deep-review/2026-07-12-10-idle-audit.md
-last_idle_audit_at: 2026-07-12T10:52:42+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
 task2b_main_notes: "2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
-
 ---
 
 # Android 性能优化研究方法论
@@ -228,7 +223,7 @@ adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched
 - 电量：按电池状态和系统状态采集。电量 80% 以上 vs 20% 以下，充电中 vs 未充电，前台 vs 后台——同一个网络请求的功耗成本完全不同。
 - SoC 跨厂商分层：**必须按 SoC 厂商 + 芯片型号分层**，不同厂商的功率优化接口、AIDL 实现、cpufreq governor 路径都不同。
 
-  Android 17 的 SoC 级电池优化分 5 层闭环：① Framework `PowerManager.setMode()` → ② `PowerManagerService.java` 维护 `DIRTY_*` 位掩码 → ③ `IPower` AIDL 跨进到 vendor HAL（厂商必须提供 SO 库） → ④ vendor 服务调内核 cpufreq/devfreq 节点，或在 `setBoost` 路径上调用 CPU/GPU 驱动 → ⑤ 内核 `schedutil` 通过 `sugov_should_update_freq()` 守门 `rate_limit_us` 决定是否下发新频率。源：android-17.0.0_r1，`hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
+  Android 17 的 SoC 级电池优化分 5 层：① Framework `PowerManager.setMode()` → ② `PowerManagerService.java` 维护 `DIRTY_*` 位掩码 → ③ `IPower` AIDL 跨进到 vendor HAL（厂商必须提供 SO 库） → ④ vendor 服务调内核 cpufreq/devfreq 节点，或在 `setBoost` 路径上调用 CPU/GPU 驱动 → ⑤ 内核 `schedutil` 通过 `sugov_should_update_freq()` 守门 `rate_limit_us` 决定是否下发新频率。源：android-17.0.0_r1，`hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
 
   跨厂商差异不在 AIDL 接口层（AOSP 强制统一，`@VintfStability` 跨版本固化），而在**实现层**与**驱动层**：
 
@@ -581,14 +576,14 @@ CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心�
 <!-- AIW-源码调研-2026-07-07 -->
 ### 最新源码进展：Android 17 Power HAL AIDL v7 电池架构
 
-通过源码分析发现，Android 17 的电池优化相比传统 `PowerManager` 有重大架构升级：
+Android 17 的电池优化相比传统 `PowerManager` 有重大架构升级：
 
 **三层统一管理模型**：
-1. **Power HAL AIDL v7 层**：提供 `IPower.aidl` 标准接口，23 个 AIDL 文件定义 Boost/Mode/SessionTag 枚举。关键突破是通过 `SupportInfo` 机制兼容不同厂商实现，消除高通/联发科/三星的差异。
+1. **Power HAL AIDL v7 层**：提供 `IPower.aidl` 标准接口，23 个 AIDL 文件定义 Boost/Mode/SessionTag 枚举。核心机制是通过 `SupportInfo` 机制兼容不同厂商实现，消除高通/联发科/三星的差异。
 2. **HintManagerService 层**：实时 `getCpuHeadroom/getGpuHeadroom` 计算，支持 50ms-10000ms 可调窗口。`SessionTag` (HWUI/GAME/SYSUI) 实现应用类型与电池策略映射，如游戏进程映射到 SESSION_MODE_GRAPHICS_PIPELINE。
 3. **BatteryStatsService 层**：采用 `POWER_COMPONENT_CPU/WIFI/BT` 统一电量模型，通过 `EnergyConsumerPowerStatsCollector` 抽象 SoC 能量消耗。
 
-**关键代码发现**：
+**关键代码路径**：
 - `HintManagerService.java` 第 1560-1627 行：CPU Headroom 缓存机制减少 HAL 调用开销，`mSupportInfo.headroom.cpuMaxTidCount` 限制 TID 数量
 - `updateSessionTag()` 函数（第2021行）：系统应用优先 Launcher → SYSUI，普通应用按 ApplicationInfo.category 映射 GAME/APP
 - Linux kernel `schedutil` 双守门：`rate_limit_us` 默认 10ms 控制频率下发，与 AIDL 形成双层架构
