@@ -55,6 +55,8 @@ last_task6_audit: "2026-07-04"
 last_task9_audit: "2026-07-01"
 last_task9_audit_log: "logs/deep-review/2026-07-01-16-audit.md"
 last_task9_autofix_at: "2026-07-01"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-13
 ---
 # 混合栈与跨平台 APM (WebView / Flutter)
 
@@ -230,6 +232,8 @@ JSBridge 的性能问题通常不在单次调用，而在高频、小粒度、�
 
 Native 调 JS 时，`evaluateJavascript()` 是优先选择。它异步执行并通过回调返回字符串结果，适合替代旧式 `loadUrl("javascript:...")`。JS 调 Native 时，`addJavascriptInterface` 暴露的方法要保持短小，复杂工作转到后台线程；如果方法内部再同步等待主线程，就会形成 WebView 侧和 Android 主线程之间的互相等待。
 
+上面四节针对的是 Android 容器里跑 WebView 的场景。如果容器里跑的不是 H5 而是 Flutter，整套监控思路就需要换一个角度：Flutter 有自己的渲染管线、自己的帧调度和自己的异常体系，Android 的 Choreographer 对它没有直接感知。接下来我们看看怎么把 Flutter 的性能信号纳入 Android APM。
+
 ## 5. Flutter APM：按版本标记线程模型，用 `FrameTiming` 量化帧耗时
 
 Flutter 页面有独立的渲染调度。线程模型因版本而异：Flutter 3.32 stable+ 在 Android 上的主线是 Main(UI+Platform) / Raster / IO——Dart Build/Layout/Paint 与 Platform/插件回调共用宿主主线程；Flutter 3.31- 或定制 Embedder 才按独立 UI 线程（Dart isolate）观察。Raster 线程始终独立，负责把 layer tree 栅格化并提交到 Surface。版本边界以 2.11、18.12 的详细说明为准。Android 的 Choreographer 只能观察宿主视图的帧节奏，无法直接告诉你 Flutter 内部是 build 慢还是 raster 慢。
@@ -314,6 +318,8 @@ Dart 异常也要进入 Native APM。常见接法是设置 `FlutterError.onError
 | `extra` | 指标值、错误码、渲染状态、降采样标记 |
 
 查询时按 session 展开事件序列：Native 容器初始化、WebView URL 加载、FCP、LCP、白屏采样、JSBridge 高耗时、Flutter 帧抖动、网络请求和异常事件都落在同一时间轴上。这样既能定位混合页面"首屏慢在哪里"，也能保留各运行时自己的性能语义。
+
+混合栈 APM 工程上最容易被低估的，不是某一个运行时的指标怎么采，而是三套运行时（Native、WebView、Flutter）的时钟怎么捏在一起、会话怎么不断线、异常怎么不散落。本章的结论可以浓缩成三句话：WebView 性能看容器初始化加前端指标，不能只看 `onPageFinished`；Flutter 帧耗时按版本确认线程模型后，用 `FrameTiming` 的时长指标就够了，raw timestamp 别硬往 Native 时钟上换算；所有样本共享同一个 Session ID，但指标语义各归各的，不合并、不混算。
 
 ## 参考资料
 

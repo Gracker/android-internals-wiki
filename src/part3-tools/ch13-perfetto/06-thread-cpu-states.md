@@ -53,7 +53,7 @@ last_task2b_at: '2026-04-28T01:40:00+08:00'
 task9_review_notes: "2026-06-12 Task9 idle audit:auto-fixed state-code outline and blocked_function availability boundary;no queue entry. 2026-05-19 Task9:复核 6 维度无 P0/P1;queue 无 pending,task6_result=pass-light-edit,自动晋升 finalized。既有 P2 建议已在 intake/suggestions.md,不重复写入。"
 last_task9_review_log: "logs/deep-review/2026-06-12-02-audit.md"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-07-13
 last_task6_at: "2026-06-12T04:05:00+08:00"
 last_task6_audit: "2026-06-15"
 ---
@@ -330,14 +330,14 @@ sched_blocked_reason: pid=30235 iowait=0 caller=get_user_pages_fast+0x34/0x70
 
 定位到具体的内核函数后,需要结合内核源码来理解该函数的行为。以 `get_user_pages_fast` 为例,它会先通过无锁方式 pin 应用侧的 pages,如果失败则走慢速执行路径,需要获取 `mmap_lock`。如果此时锁被其他线程持有(比如另一个线程正在执行 `mmap` 操作),当前线程就会陷入等待。
 
-需要注意,这个补丁未合入 Linux 上游主线,是 Android 内核的独有特性。不同厂商的内核是否包含此补丁需要确认。
+需要注意,这个补丁未合入 Linux 上游主线,是 Android 内核的独有特性。不同厂商的内核不一定包含此补丁，接入前需要确认。
 
 
 ### 系统调度与 D 状态的耦合
 
 有一种比较棘手的情况:线程 A 持有一把锁并处于 D 状态(等待 I/O),线程 B 想要获取同一把锁而进入 D 状态。此时如果线程 A 的 I/O 完成了并被唤醒,但它却长时间处于 Runnable(排不上 CPU),那么线程 B 的等待时间就会进一步拉长。更极端的情况是,即使锁持有的实际时间很短,如果锁持有者在被唤醒后长时间排不上 CPU,等待者感知到的锁等待时间也会很长。
 
-这种调度与锁竞争的耦合问题,是目前 Android 性能优化中的难点之一。不同厂家有不同的解决方案,这也是各厂商核心竞争力的体现。
+这种调度延迟和锁竞争互相放大的问题，是目前 Android 性能优化中比较棘手的场景。不同厂商的调度器和内核补丁策略不同，处理这类问题的路径也不一样。
 
 
 ## 唤醒事件与调度延迟分析

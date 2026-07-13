@@ -70,10 +70,10 @@ task6_l1_l2_fixes: 0
 task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
-last_task9_audit: "2026-06-20"
-last_task9_audit_log: "logs/deep-review/2026-06-20-10-audit.md"
+last_task9_audit: "2026-07-13"
+last_task9_audit_log: "logs/deep-review/2026-07-13-07-audit.md"
 last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_notes: "idle audit: no P0/P1/P2; Android common android16-6.12 sched_ext paths/constants/sysfs and OPPO hmbird proc controls rechecked; upstream mainline-only DSQ bypass constants remain outside Android 17/API 37 conclusions."
+last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；Android common android16-6.12 sched_ext paths/constants/sysfs 和 OPPO hmbird proc 控制面口径一致；无 P0/P1 问题，符合 Android 17 版本边界要求。"
 ---
 
 # 17.4 sched_ext 与 OEM BPF 调度器

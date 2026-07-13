@@ -129,6 +129,63 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-13T06:10:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "13.25",
+      "section_title": "PerfDog 的 Android 平台 GPU/性能采集底层数据源",
+      "priority": 90,
+      "reason": "[review回炉] 全文以列表为主缺少叙述，多处疑似事实错误和可疑验证标注，内容深度严重不足",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文（所有 🔹 锚点）",
+          "detail": "全文 8 个 🔹 锚点均为 3-4 条 bullet point 罗列，缺少连贯叙述。违反 writing-guide.md '叙述为主，列表为辅' 铁律。每个锚点需展开为从'为什么存在→怎么工作→怎么用'的叙述段落。",
+          "suggestion": "参考 writing-guide.md 类型 C（工具使用篇）结构重写，每个锚点至少 2-3 段连贯叙述"
+        },
+        {
+          "type": "需确认",
+          "location": "引言段",
+          "detail": "PerfDog 被描述为'腾讯开源的移动端性能分析工具'。PerfDog 是商业产品，并非开源。需确认准确描述。",
+          "suggestion": "核实 PerfDog 的产品性质（商业/免费/开源），修正描述"
+        },
+        {
+          "type": "需确认",
+          "location": "扩展-GPU 频率调节与 DVFS",
+          "detail": "验证标注 [已验证: AOSP android-17.0.0_r1, system/core/perf/] 中的路径 system/core/perf/ 在 AOSP 中不存在。vendor/qcom/opensource/perf/perfd/ 是高通厂商路径，不属于 AOSP。",
+          "suggestion": "移除虚假验证标注；核实 PerfDog 是否真正通过 sysfs 监控 GPU 频率"
+        },
+        {
+          "type": "需确认",
+          "location": "🔹 Vulkan 驱动层性能数据采集",
+          "detail": "提及 PerfHook 拦截 vkQueueSubmit 等，PerfHook 不是标准 Android/PerfDog 公开 API，需确认其真实性和具体实现。",
+          "suggestion": "核实 PerfHook 是否为 PerfDog 内部 hook 机制，补充证据或删除"
+        },
+        {
+          "type": "需确认",
+          "location": "扩展-GPU 内存泄漏检测",
+          "detail": "'Android 17 中新增了基于机器学习的异常检测算法'——此说法无来源支撑，疑似编造。",
+          "suggestion": "核实 Android 17 是否有 GPU 内存泄漏 ML 检测，如无则删除"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全文",
+          "detail": "标题声称'源码调研'，但全文无实质源码分析（无函数名、无代码片段、无调用链路追踪）。与标题严重不符。",
+          "suggestion": "补充 PerfDog 实际使用的 AOSP 源码路径、关键函数和数据采集机制"
+        },
+        {
+          "type": "需补充素材",
+          "location": "多处",
+          "detail": "ANGLE 在 Android 17 升级到 Vulkan 1.4 标准的说法 [待验证]。OpenGL ES 兼容层数据采集细节空泛。",
+          "suggestion": "核实 ANGLE 在 Android 17 中的版本和 Vulkan 支持等级"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-07-13T08:05:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-13-08-review.md"
     }
   ]
 }
