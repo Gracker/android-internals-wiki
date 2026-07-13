@@ -1,24 +1,25 @@
 ---
 
-title: "Android 17 SDM 安装编译链路性能"
+title: "Android 17 SDM 安装编译流程性能"
 chapter: "16.9"
 status: ready-for-review
 last_task2b_lite_at: 2026-07-13
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-13"
-last_task6_at: "2026-07-13T21:11:36+08:00"
+last_task6_at: "2026-07-13T22:10:00+08:00"
 task9_result: needs-rework
 task9_state: pending
 last_task9_at: "2026-07-13T19:23:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-13"
 task2b_result: fixed-lite
-task2b_state: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task2b_state: pending
+task6_state: reviewed
+pipeline_stage: task2b_pending
 last_task2b_at: "2026-07-13T20:53:00+08:00"
 task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题；2026-07-13 Task2B 回炉修复：P0-DexMetadataHelper 源码锚点补全至 line 44-55(含 PROPERTY_DM_JSON_MANIFEST_REQUIRED / PROPERTY_DM_FSVERITY_REQUIRED 常量定义)+P1-性能数据验证方法补充+P1-SDM 版本演进对比(Android 14→17)。已回送 Task6 复审。"
+task6_review_notes: "2026-07-13T22:10 复审：L1 禁用词(链路)已修 5 处。B 类大问题仍在：(1)§2-6 大量疑似虚构代码(DeviceBasedDexopt/InstallSessionOptimizer/BackgroundCompiler 等类不存在于 AOSP)；(2)全篇百科词条式列表违反 writing-guide 叙述原则；(3)§7-10 内容空洞仅名词罗列；(4)无 Perfetto/Trace 观测指导。退回 Task2B 重加工。"
 review_type: task9-deep-tech-review
 last_task9_review_log: logs/deep-review/2026-07-13-19-deep-review.md
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
@@ -56,7 +57,7 @@ related_chapters: ["16.6", "1.9", "1.23", "21.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-11"
 
-# Android 17 SDM 安装编译链路性能
+# Android 17 SDM 安装编译流程性能
 
 ## 概述
 
@@ -92,15 +93,15 @@ SDM 架构不是 Android 17 一次性引入的，而是在多个版本中逐步�
 |------|-----|-------------|-----------|-----------|
 | Android 14 | 34 | ART Service 上线，`pm.dexopt.*` 系列 system property 接管 dexopt 调度 | 已有，DexMetadataHelper + installd/dexopt.cpp 消费 `.dm` 内的 profile | 不存在 |
 | Android 15 | 35 | App Archiving、Developer Verification 完善，`pm.dexopt.*` 配置细化 | 流程稳定，manifest + fs-verity 校验路径成熟 | 不存在 |
-| Android 16 | 36 | SDM 格式首次出现（`verifySdmSignatures()` 注释明示 "format introduced in Android 16"）；新增 `ArtManagedInstallFileHelper`、`PrimaryDexopter.maybeCreateSdc()`、`artd` 端 `SdcReader`；`cloudCompilationPm()` flag 与 `FLAG_ART_SERVICE_V3` 控制整套 SDM 链路 | 稳定，与 SDM 并行处理 | 首次出现，由安装会话暂存、artd 处理 |
-| Android 17 | 37 | SDM 链路延续 Android 16；预期变化：(a) SDM 写入路径可能扩展到 secondary dex；(b) `cloudCompilationPm()` 默认开启概率较高；(c) `pm art dump` 输出增加 SDM/SDC 状态字段 | 稳定 | 延续 Android 16 机制 |
+| Android 16 | 36 | SDM 格式首次出现（`verifySdmSignatures()` 注释明示 "format introduced in Android 16"）；新增 `ArtManagedInstallFileHelper`、`PrimaryDexopter.maybeCreateSdc()`、`artd` 端 `SdcReader`；`cloudCompilationPm()` flag 与 `FLAG_ART_SERVICE_V3` 控制整套 SDM 机制 | 稳定，与 SDM 并行处理 | 首次出现，由安装会话暂存、artd 处理 |
+| Android 17 | 37 | SDM 机制延续 Android 16；预期变化：(a) SDM 写入路径可能扩展到 secondary dex；(b) `cloudCompilationPm()` 默认开启概率较高；(c) `pm art dump` 输出增加 SDM/SDC 状态字段 | 稳定 | 延续 Android 16 机制 |
 
 > 基于 AOSP android-17.0.0_r1。Android 17 tag 公开未发布部分为延续性推断，标注为"预期变化"。
 
 关键差异点：
 - **Android 14→15**：ART Service 接管了 dexopt 调度权，从 `installd` 单向执行变为 ART Service → artd → dex2oat 的新三层架构
 - **Android 15→16**：引入 SDM / SDC 物理产物，设备侧首次出现"云端编译产物直接写入设备"的路径——不再只是云上的 Profile 聚合，而是编译结果的物理分发
-- **Android 16→17**：SDM 链路稳定化，重点在 secondary dex 扩展和默认开启策略
+- **Android 16→17**：SDM 机制稳定化，重点在 secondary dex 扩展和默认开启策略
 
 ## 2. 云端编译优化
 

@@ -3,7 +3,7 @@
   "draft": 0,
   "ready_for_review": 8,
   "finalized": 4,
-  "last_updated": "2026-07-13T22:07:29.629138+08:00",
+  "last_updated": "2026-07-13T22:10:00+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "16.9",
+      "action": "task6-review-revisiting",
+      "status": "needs-rework",
+      "ts": "2026-07-13T22:10:00+08:00",
+      "note": "复审：L1禁用词(链路)修5处。B类大问题5个退回Task2B：P0-虚构代码(§2-6多个类不存在AOSP)、P1-百科词条式结构违反叙述规范、P1-§7-10空洞、P2-无Trace指导、P2-性能数据无来源。"
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -1422,5 +1429,6 @@
       "task6_state": "revisiting",
       "task9_state": "pending"
     }
-  }
+  },
+  "last_task2b": ""
 }

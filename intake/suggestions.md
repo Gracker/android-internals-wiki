@@ -1,93 +1,88 @@
-## [Task9 Deep Review] 16.1 Google 官方的性能优化思路 — 2026-07-13
-- **类型**：知识盲区
-- **位置**：混合编译策略章节
-- **问题**：未充分说明 JIT+AOT+Profile-Guided 混合编译在不同设备类型（旗舰机/中端机/低端机）上的效果差异
-- **建议**：补充不同设备类型下各编译策略的适用场景、性能收益对比和配置建议
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-07-13
+- **类型**：源码准确性
+- **位置**：从 Concurrent Copying 到 Generational CMC 章节
+- **问题**：章节中分代 GC 的性能数据不够具体，只提到"young GC 速度远快于 full GC"但缺少具体的暂停时间对比数据
+- **建议**：补充典型场景下 young GC 和 full GC 的暂停时间、内存回收量、CPU 占用对比数据
 
-## [Task9 Deep Review] 16.6 Android 16 云端 Profile 与 dexopt 安装优化 — 2026-07-13
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-07-13
 - **类型**：版本差异
-- **位置**：System Dexopt Manager 的分发侧边界章节
-- **问题**：未充分说明 Android 17 中 ART Service 相比 Android 16 的 SDM (Secure Dex Metadata) 完整性校验增强
-- **建议**：补充 Android 17 中 SDM 校验机制的具体变化和对编译行为的影响
+- **位置**：ProfilingManager 新的系统触发器章节
+- **问题**：章节提到新增触发器，但未明确说明这些触发器在 Android 17 中的具体行为和产物格式差异
+- **建议**：补充 ProfilingManager 在 Android 17 中各个触发器的具体行为描述、产物格式和使用建议
 
-## [Task9 Deep Review] 16.6 Android 16 云端 Profile 与 dexopt 安装优化 — 2026-07-13
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-07-13
 - **类型**：知识盲区
-- **位置**：安装耗时和启动收益章节
-- **问题**：未涵盖 Cloud Profile 与 Baseline Profile 在低端设备上的优先级冲突处理
-- **建议**：补充当设备本地 profile 和云端 profile 同时存在时的处理机制、优先级规则和兼容性说明
+- **位置**：16KB 页面对游戏引擎的影响章节
+- **问题**：虽然提到游戏引擎受影响，但缺少具体案例和解决方案
+- **建议**：补充 16KB 页面对常见游戏引擎（如 Unity、Unreal）的具体影响案例和适配方案
 
-## [Task9 Deep Review] 16.6 Android 16 云端 Profile 与 dexopt 安装优化 — 2026-07-13
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-07-13
 - **类型**：数据支撑
-- **位置**：安装耗时和启动收益章节
-- **问题**："评价方案时不要只用'安装快了多少'概括整套 Profile 体系"缺少具体数据支撑
-- **建议**：补充典型场景（游戏/电商/社交应用）的安装耗时、TTID、TTFD 基准数据对比
-## [Task6 Review] ch15 Android 性能优化研究方法论 — 2026-07-13
-- **类型**：需重写
-- **位置**：文末 `<!-- AIW-源码调研-2026-07-07 -->` 标记之间的 section（### 最新源码进展：Android 17 Power HAL AIDL v7 电池架构）
-- **问题**：该段为研究素材直接粘贴，未融入章节叙述风格。具体表现：①笔记式标题和列表堆叠（"关键代码路径"、"三层统一管理模型"），与全章工程师对话式叙述风格断裂；②裸行号引用（"第1560-1627行"、"第2021行"）未转化为函数名+行为描述；③内容与 section 4.1 SoC 分层讨论有重叠但未交叉引用。
-- **建议**：方案A——将 Power HAL AIDL v7 / HintManagerService / BatteryStatsService 三层模型内容融入 section 4.1 的 SoC 讨论中，作为 Android 17 架构升级的补充说明；方案B——独立为 section 4.5 并按 writing-guide 叙述风格重写。行号引用全部改为函数名+行为描述。
-- **review 日志**：logs/review/2026-07-13-20-review.md
+- **位置**：ProfilingManager 触发器开销章节
+- **问题**：缺少系统触发器相对于手动触发的额外开销数据
+- **建议**：补充 ProfilingManager 系统触发器相对于手动触发器的额外 CPU、内存、I/O 开销数据
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-07-13
+- **类型**：交叉引用
+- **位置**：相关章节引用
+- **问题**：正文引用"1.7 ART 编译机制"、"1.12 AutoFDO 优化"等章节，但需要确认这些章节是否确实存在且内容一致
+- **建议**：验证并确认相关章节的准确存在性，确保交叉引用的一致性
+
+## [Task9 Deep Review] 16.9 Android 17 SDM 安装编译链路性能 — 2026-07-13
+- **类型**：数据支撑
+- **位置**：云端编译性能提升章节
+- **问题**：章节中提到的编译时间减少40-60%、安装大小减少15-25%、启动时间减少30-45%等性能数据缺乏具体的测试环境和配置信息
+- **建议**：补充性能数据的测试环境、验证方法和可复现步骤，增加数据的可信度
+
+## [Task9 Deep Review] 16.9 Android 17 SDM 安装编译链路性能 — 2026-07-13
+- **类型**：版本差异
+- **位置**：SDM架构概览章节
+- **问题**：部分Android 17特有的优化机制未与之前的版本做充分对比，容易造成理解偏差
+- **建议**：增加与Android 16及更早版本的详细对比说明，突出Android 17的关键改进点
+
+## [Task9 Deep Review] 16.9 Android 17 SDM 安装编译链路性能 — 2026-07-13
+- **类型**：知识盲区
+- **位置**：并行编译优化章节
+- **问题**：提到多线程并行编译，但缺少具体的线程数优化配置和效果数据
+- **建议**：补充编译线程数的优化配置建议、不同设备配置下的性能效果对比数据
+
+## [Task9 Deep Review] 16.9 Android 17 SDM 安装编译链路性能 — 2026-07-13
+- **类型**：数据支撑
+- **位置**：性能提升数据章节
+- **问题**：提到的40-60%编译时间提升、30-45%启动时间提升等性能数据缺乏具体的验证方法和测试环境信息
+- **建议**：补充性能数据的测试环境说明、验证方法和可复现的具体步骤
+
+## [Task9 Deep Review] 16.9 Android 17 SDM 安装编译链路性能 — 2026-07-13
+- **类型**：交叉引用
+- **位置**：相关章节引用
+- **问题**：章节中涉及的其他章节引用需要确保准确性和一致性
+- **建议**：验证并更新所有相关章节的交叉引用，确保内容的一致性和准确性
 
 ## [Task6 Review] 16.9 Android 17 SDM 安装编译流程性能 — 2026-07-13
 
-### P0: 代码块大规模虚构（§2.1, §3.1, §3.2, §4.2, §5.1, §5.2, §6.1, §6.2）
+### B1 [需重写] §2-§6 大量疑似虚构代码（P0）
+- **位置**：§2.1/§3.1/§3.2/§4.2/§5.1/§5.2/§6.1/§6.2 所有代码块
+- **问题**：DeviceBasedDexopt、InstallProcessor、BackgroundCompiler、ArtDaemon、FileUtils::OptimizeFileAccess、InstallSessionOptimizer、InstallExecutor、DexoptManager、CompilationRequestOptimizer 等类/方法在 AOSP android-17.0.0_r1 中不存在
+- **建议**：全部代码对照 AOSP 真实源码重写，无法验证的删除或标注 [待验证]
 
-- **类型**：需重写
-- **位置**：8处代码块（占全文代码块的89%）
-- **问题**：代码块使用真实AOSP文件路径和行号作为锚点（如 `PrimaryDexopter.java (line 191-225)`），但代码内容完全虚构。具体：
-  - §2.1: `processProfileBasedDexopt()`, `ProfileBasedDexopt`, `applyProfileBasedOptimizations()`, `cacheOptimizationResults()` — 在AOSP中不存在
-  - §3.1: `processPrimaryDexFiles()`, `DeviceBasedDexopt` 类, `applyDeviceBasedOptimizations()`, `storeOptimizationResults()` — 不存在
-  - §3.2: `ArtFileManager` 中的 `optimizeFileAccessPattern()`, `warmUpFileCache()` 方法 — 不存在
-  - §4.2: `ArtManagedInstallFileHelper.processDexMetadataFiles()` 中的 `applyMetadataBasedOptimizations()` — 不存在
-  - §5.1: `ArtDaemon` 类, `InstallProcessor`, `optimizeInstallProcess()`, `BackgroundCompiler`, `optimizeResourceAllocation()` — 全部不存在
-  - §5.2: `FileUtils::OptimizeFileAccess()`, `OptimizeFileAccessPattern()`, `WarmUpFileCache()` — 不存在
-  - §6.1: `InstallSessionOptimizer` 类, `applyInstallOptimizations()`, `InstallExecutor` — 不存在
-  - §6.2: `DexoptManager`, `CompilationRequestOptimizer` — 不存在
-- **建议**：逐个核验AOSP源码，删除所有虚构代码。仅保留经源码验证的真实片段（如§4.1 DexMetadataHelper 已由Task2B验证）。无法验证的标注 `[待验证]` 或删除。
-- **review 日志**：logs/review/2026-07-13-21-review.md
-
-### P0: 第7-10节为空壳padding（§7, §8, §9, §10）
-
-- **类型**：需重写
-- **位置**：§7 实际应用场景、§8 性能监控与调试、§9 最佳实践、§10 未来展望
-- **问题**：四个章节共约60行，全是无技术深度的列表式padding。§7只有6条泛泛建议无案例；§8提到的 `artctl`/`dexoptctl`/`pmctl` 工具需验证；§9是通用建议；§10纯猜测（"AI驱动的编译优化"）。违反writing-guide §五 反面教材第3条"概述式"。
-- **建议**：§7-8需补充真实调试方法和Perfetto观察点（或标注TBD）；§9-10大幅压缩或删除。
-- **review 日志**：logs/review/2026-07-13-21-review.md
-
-### P0: 章节结构违反writing-guide类型A要求（全文结构）
-
-- **类型**：需重写
+### B2 [需重写] 全篇百科词条式结构（P1）
 - **位置**：全文
-- **问题**：章节应遵循writing-guide.md类型A（机制原理篇）结构，但缺失：
-  - "为什么要了解SDM"动机段
-  - "在Perfetto/工具中的表现"段
-  - "与其他机制的关系"段
-  - "常见问题与误区"段
-  - 整体为列表式罗列而非叙述式讲解
-- **建议**：按类型A重组结构。
-- **review 日志**：logs/review/2026-07-13-21-review.md
+- **问题**：违反 writing-guide "叙述为主，列表为辅"原则，属于"百科词条式"反面教材
+- **建议**：按 Type A（机制原理篇）重写，每节补连贯叙述段落
 
-### P1: 性能数据无来源（§2.2）
+### B3 [需补充] §7-§10 内容空洞（P1）
+- **位置**：§7/§8/§9/§10
+- **问题**：仅名词罗列，无实质内容（如 §8.2 仅列工具名无用法）
+- **建议**：补充具体场景、命令示例、操作指导；§10 精简或删除
 
-- **类型**：需补充素材
-- **位置**：§2.2 云端编译性能提升
-- **问题**：编译时间减少40-60%、安装大小减少15-25%、启动时间减少30-45%——无数据来源。Task2B已补充验证方法步骤（改进），但数据本身的出处仍未解决。
-- **建议**：补充来源或标注为"预估值"。
-- **review 日志**：logs/review/2026-07-13-21-review.md
+### B4 [需补充] 缺少 Perfetto/Trace 观测指导（P2）
+- **位置**：全文
+- **问题**：性能章节无 Trace 观测内容
+- **建议**：补充"在 Perfetto 中观测 SDM 编译"小节
 
-### P1: 工具引用需验证（§8.2）
+### B5 [需确认] §2.2 性能数据来源（P2）
+- **位置**：§2.2
+- **问题**：标注"Android 官方公布"但无链接
+- **建议**：补充来源链接或改标"社区测试数据"
 
-- **类型**：需确认
-- **位置**：§8.2 调试工具
-- **问题**：`dexoptctl` 和 `pmctl` 可能是虚构工具名。
-- **建议**：验证工具是否存在；补充实际命令如 `pm art dump`、`dumpsys package dexopt`。
-- **review 日志**：logs/review/2026-07-13-21-review.md
-
-### L1: 禁用词"链路"（标题及正文）
-
-- **类型**：禁用词
-- **位置**：标题(×2)、正文(原4处，已修1处)
-- **问题**：禁用词"链路"出现在章节标题和正文中。
-- **建议**：标题中的"链路"→"流程"，同步更新SUMMARY.md。正文剩余3处（§1.3表格、§10.1列表项）一并修改。
-- **处理状态**：正文已修1处，标题待Task2B处理（涉及SUMMARY.md交叉引用）。
-- **review 日志**：logs/review/2026-07-13-21-review.md
+- **review 日志**：logs/review/2026-07-13-22-review.md
