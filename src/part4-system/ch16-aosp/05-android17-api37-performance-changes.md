@@ -20,20 +20,20 @@ created_by: task2a-knowledge-gap
 created_date: 2026-04-08
 gap_source: 官方文档+研究素材+AOSP结构+读者需求
 gap_score: 20
-task9_result: pass-tech-review
-task9_state: reviewed
+task9_result: needs-rework
+task9_state: pending
 task9_audit_date: 2026-07-13
 task9_audit_type: deep-review
-last_task9_at: "2026-07-12T16:35:02+08:00"
+last_task9_at: "2026-07-13T17:33:00+08:00"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: 2026-07-12
 last_task2b_at: 2026-07-12T15:37:59+08:00
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-07-12
-task9_review_notes: "2026-07-12 16: Task9 auto-fixed android-17.0.0_r1 源码锚点：DeliQueue 路径、ProfilingTrigger 产物、JobScheduler API37 核验、ART generational gating、16KB max-page-size；移除未证实为 Android 17 新增的传感器隐私结论。"
-review_type: task6-writing-quality-review
-last_task9_review_log: logs/deep-review/2026-07-12-16-deep-review.md
+task9_reviewed_date: 2026-07-13
+task9_review_notes: "2026-07-13 Task9 deep review 发现严重 P0/P1 问题：1) young_mark-compact.cc 文件路径错误，实际为 mark_compact.cc 中的 YoungMarkCompact 类；2) 标题出现 Android 18 相关信息违反版本边界规则；3) CombinedDeliMessageQueue 路径描述不准确。P0 2 / P1 1 / P2 0；不可自动晋升，需 Task6 复审。P0/P1 问题已写入 queue.json，建议优先修复源码路径和版本边界违反问题。"
+review_type: task9-deep-tech-review
+last_task9_review_log: logs/deep-review/2026-07-13-17-deep-review.md
 task2b_fixed_by: openclaw-task2b-main
 last_task9_autofix_at: 2026-07-12
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
