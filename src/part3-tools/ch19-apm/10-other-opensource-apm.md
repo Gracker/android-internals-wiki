@@ -38,6 +38,8 @@ task2b_notes: "2026-06-25 Task2B main: Matrix plugin artifact ID added; APM vers
 last_task9_autofix_at: "2026-06-28"
 last_task9_review_log: "logs/deep-review/2026-06-28-13-audit.md"
 task9_review_notes: "2026-06-28 闲时抽检 AUTO-FIX: 修正 Android 14/API 34 误写 ProfilingManager requestProfiling 的版本表；ProfilingManager/requestProfiling 以 API 35 为下限；无遗留 P0/P1。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-13
 ---
 ---
 
@@ -137,6 +139,8 @@ Matrix 的定位容易写歪。Matrix upstream README 的原话是 **plugin styl
 
 决策时别只看"哪个工具功能多"。更关键的是：谁负责端侧采集，谁负责样本治理，谁负责看板与告警，谁负责数据合同。
 
+上面这张表解决的是"不同团队阶段怎么选"的问题。但选型还有另一个维度的约束：你手上的设备都跑什么 Android 版本。Android 每个大版本都会在 APM 可用的系统能力上做加法，版本分布直接决定了你能依赖哪些官方采集通道。
+
 ## Android 版本与 APM 能力演进
 
 Android 版本迭代也意味着 APM 可用的系统级能力在逐步变化。下面这张版本-能力对照表比散落的"XX 版本支持 XX"更有用：
@@ -155,9 +159,11 @@ Android 版本迭代也意味着 APM 可用的系统级能力在逐步变化。�
 
 > **关键分水岭**：Android 15 的 `ProfilingManager` 是 APM 能力从"全靠 SDK 自己采"到"系统帮忙采"的转折点。Android 16 的 system-triggered profiling 进一步解决了"问题发生时没有开启 trace"的空档。Android 17 的 `ANOMALY` 则把采集条件从显式系统事件扩展到了异常行为检测。选型时要按设备版本分布决定能在多大版本上依赖这些能力，不要假设全量用户已经升到 API 37。
 
+版本能力的演进最终要落到团队当下的设备覆盖面上。如果你的 `minSdk` 还是 26，那 `ProfilingManager` 和 `ANOMALY` 触发器对你来说就是未来的事——现在的选型要按现有的系统能力来。下面这张表把前面讨论过的方案按团队现状做了重新归类，更适合直接拿来决策：
+
 ## 轻量方案和商业平台的切换点
 
-下面这张表更适合做实际决策：
+
 
 | 现状 | 更合适的方向 | 原因 |
 |---|---|---|
@@ -258,6 +264,10 @@ CPU / 内存 / 网络聚合"] --> B
 | 看板、告警、权限、跨团队协作 | 平台型 / 商业方案 | 这部分不是轻量库擅长的事 |
 
 `ProfilingManager` 不能写成 Android 8+ 的通用方案。它从 API 35 才可用；Android 14 及以下要走可控的 Perfetto trace config、profileable 构建或内部抓取通道。迁移文档要把版本下限写在命令旁边。
+
+回过头来看，这一章讨论的四个开源工具——AndroidGodEye、Collie、Rabbit、Matrix——它们的共同困境不是功能不够，而是维护节奏跟不上 Android 版本迭代的速度。AGP 8.0 的 Transform API 移除是一个标志性事件：依赖旧构建链的 APM 插件如果不能完成迁移，就不是"好不好用"的问题，而是"能不能用"的问题。
+
+对新项目来说，更安全的路子是分两层走：基础指标用 `JankStats`、`FrameMetrics`、`ApplicationExitInfo`、`ProfilingManager` 这些官方 SDK 或系统能力兜底；专项问题（内存、I/O、启动 trace）再按需引入 Matrix、KOOM 或平台型方案。旧开源项目最大的价值在于设计思路——怎么采信号、怎么控制开销、怎么设计采样开关——而不是把它们的 Gradle 插件直接接进 AGP 8.0+ 工程。
 
 ## 参考资料
 
