@@ -1005,3 +1005,58 @@ Task14 建议箱中的候选均指向已有章节的内容补充（Task 2B 职�
 
 ### 结论
 连续第 96 轮未发现评分 ≥ 14 的知识缺口。所有素材源均处于停滞状态。全书 717 个小节，覆盖已饱和。
+## [2026-07-13] 13.26 android.os.Trace API 深度解析与应用级自定义追踪 — 知识盲区
+
+### 盲区描述
+#### 1. 跨应用追踪实践指导（高优）
+当前章节仅覆盖单应用内的 tracing，缺少跨应用（如 App A → App B）的统一 trace ID 传递和关联机制。在实际的大型应用生态中，经常需要追踪一个请求从启动 App A，通过系统服务（如 Intent/Activity/Binder IPC），最终到达 App B 的完整链路。这涉及：
+- Trace ID 在跨进程 Binder 调用中的传递机制
+- Android 17 中是否支持官方的跨应用 trace ID 传播协议
+- 如何在 SELinux 限制下安全地共享 trace 数据
+- 实际项目中如何构建跨应用 trace 的可视化方案
+
+#### 2. Trace buffer 配置进阶指导（高优）
+章节提到 buffer 大小配置但缺少具体的调优策略：
+- 不同场景（启动/滑动/后台）的 buffer size 优化配置
+- 高频 tracing 时如何避免 buffer 溢出和数据丢失
+- vendor 定制系统中的 buffer 配置差异和兼容性处理
+- buffer size 与 tracing 开销、内存占用的平衡策略
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 Android 17 中是否存在跨应用 trace ID 传播的官方机制
+- 分析大型应用（如微信/淘宝）的跨应用 tracing 实现方案
+- 收集不同厂商系统（Pixel/华为/小米）的 trace buffer 配置差异
+- 提供针对不同使用场景的 buffer size 配置最佳实践
+
+### 关联章节
+13.1, 13.3, 13.5, 13.17, 14.27
+## [Task2A Round 97] 知识缺口挖掘 — 2026-07-13 09:16
+
+### 已检查方向（本轮）
+- ✅ Phase 0: 0 个空 draft 章节（24 个 draft 全部 >15 行）
+- ✅ Phase 0.5: TASK2B_BACKLOG=0，允许进入 Phase 1
+- ✅ source-index: 24 个 unmapped high-quality 条目，全部在先前轮次中评估并映射
+- ✅ DeepResearch 新增文件 2 个（本轮首次评估）:
+  - 2026-07-13 08:55 Binder IPCThreadState 优先级传播 (21061 chars)
+    → 评分 11/20 < 14。IPCThreadState/SpGuard/WorkSource 为安全/身份传播层，非性能优化核心。
+    → 已有 §1.44 (binder-ipc-priority-inheritance), §1.53 (binder-ipc-优先级继承与异步批处理) 覆盖内核优先级传播。
+  - 2026-07-13 05:56 Sigchain 机制与 APM 信号拦截 (16918 chars)
+    → **已在 §20.19 中完整覆盖**（锚点 4: Sigchain 机制, 130 行详细内容包括源码/版本表/APM约束）
+    → 评分：已覆盖，不需要新章节
+  - 2026-07-13 02:59 Camera Perfetto 延迟拆解 (15277 chars)
+    → 评分 12/20 < 14（Round 93 已评估）。Camera 性能已有 §18.03 (draft, 451行) 覆盖 HAL3 Buffer 管理
+- ✅ daily-info 2026-07-13: 全部已回收话题（Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→not Android, Flutter 3.20→existing, Rust 1.80→not Android）
+- ✅ Clippings: 20 天无更新（最后 2026-06-23）
+- ✅ research-feeds: 3+ 月无更新（最后 2026-04-14）
+- ✅ AOSP 结构对比: 全书 730 个 md 文件覆盖 Part1-5 完整结构
+- ✅ 官方文档比对: 无新增未覆盖主题
+- ✅ suggestions.md: 15 条 Task14 ch26 内容补充建议（属 Task2B 范畴，非新章节创建）
+
+### 结论
+Round 97: 0 个评分 ≥ 14 的候选缺口。全书 730 个 md 文件，coverage 已饱和。
+两个新 DeepResearch 文件（Binder IPCThreadState + Sigchain）均不构成新缺口：
+- Binder IPCThreadState 属已有章节的更深维度，非新知识缺口
+- Sigchain 已在 §20.19 中完整覆盖（130 行源码级内容）
