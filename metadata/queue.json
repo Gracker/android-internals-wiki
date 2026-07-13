@@ -224,7 +224,7 @@
       "chapter": "14.9",
       "title": "Android Camera 性能与 Perfetto 分析",
       "priority": 90,
-      "status": "pending",
+      "status": "completed",
       "added_by": "task9-deep-tech-review-audit",
       "source_log": "logs/deep-review/2026-07-13-08-audit.md",
       "added_at": "2026-07-13T13:40:49",
@@ -247,7 +247,9 @@
           "detail": "未覆盖 android-17.0.0_r1 中 Camera Process Priority API、Vendor Performance Hint APIs、Camera Performance Attestation API",
           "suggestion": "补充 Android 17 Camera 性能相关新 API 说明"
         }
-      ]
+      ],
+      "completed_at": "2026-07-13T14:53:11+08:00",
+      "completed_by": "task2b-main"
     }
   ]
 }
