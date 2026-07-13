@@ -3,7 +3,7 @@
   "draft": 0,
   "ready_for_review": 5,
   "finalized": 5,
-  "last_updated": "2026-07-13T10:06:04.081988+08:00",
+  "last_updated": "2026-07-13T13:08:56.363946+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T13:08:56.363276+08:00",
+      "note": "Gap mining round 100: 0 candidates ≥14 (100th consecutive). Evaluated 1 new DeepResearch file: surfaceflinger-perfetto-trace (12:06, 278 lines, 10KB) — scored 13/20, all 7 sections already covered by §2.6 (564L, 28 Perfetto mentions) + §13.14/15/19 (1393L total). binder-priority-inheritance (08:55) already evaluated R97 (11/20). sigchain-apm (05:56) already covered by §20.19. camera-perfetto (02:59) already evaluated R93 (12/20). Daily-info 2026-07-13: all recycled (Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→not Android, Flutter 3.20→existing, Rust 1.80→not Android, Juejin→architecture/practice). Clippings: 20 days stale (108 files, last Jun 23). research-feeds: 3+ months stale. source-index: 188 entries all mapped. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -556,10 +563,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-13T12:14:56+08:00",
+    "last_run": "2026-07-13T13:08:56.363943+08:00",
     "last_section": "none",
     "result": "no-candidates",
-    "note": "Gap mining round 99: 0 candidates ≥14 (99th consecutive). No new material since Round 98 (62 min ago). DeepResearch newest 2026-05-04 (70 days stale). Clippings 20+ days stale. research-feeds 3+ months stale. source-index: 188 entries all mapped. Daily-info 2026-07-13 all recycled. 11 src/ files modified since last round are Task2B/Task6 rework on existing chapters. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    "note": "Gap mining round 100: 0 candidates ≥14 (100th consecutive). Evaluated surfaceflinger-perfetto-trace 13/20 (below 14, covered by §2.6+§13.x). All other DeepResearch already evaluated. Daily-info all recycled. Clippings 20d stale. 0 empty drafts. Task2B backlog: 0. 717 sections, coverage saturated."
   },
   "last_task9_review": {
     "at": "2026-07-11T13:28:01+08:00",
