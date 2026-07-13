@@ -2,7 +2,7 @@
 title: "Android Studio Profiler"
 chapter: "14.1"
 section: "14.1"
-status: finalized
+status: ready-for-review
 polish_count: 1
 drafted_date: "2026-04-03"
 reviewed_date: "2026-05-28"
@@ -31,9 +31,9 @@ last_task2b_lite_at: "2026-05-28"
 task6_result: pass-light-edit
 related_chapters: ["5.4", "13.3", "13.5", "13.7", "14.2", "14.11"]
 task9_result: needs-rework
-task2b_state: "fixed"
-task2b_result: fixed
-pipeline_stage: task6_pending
+task2b_state: pending
+task2b_result: needs-rework
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task9_state: pending
 task9_reviewed_date: "2026-07-14"
