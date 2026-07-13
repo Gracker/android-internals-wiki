@@ -710,8 +710,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-07-14T04:10:05.385241+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-14-04-review.md"
+      "status": "resolved",
+      "original_review_log": "logs/review/2026-07-14-04-review.md",
+      "resolved_by": "task6-review",
+      "resolved_at": "2026-07-14T05:09:02+08:00",
+      "resolution": "Task2B 已清除原始 dump 格式问题（emoji/report-style/AI口吻已移除），有效信息已融入正文。Task6 round3 复审确认修复充分。"
     }
   ],
   "queue": [
