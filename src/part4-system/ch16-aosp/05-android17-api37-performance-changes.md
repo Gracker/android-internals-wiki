@@ -4,7 +4,7 @@
 title: "Android 17 (API 37) 性能行为变更与适配方法"
 chapter: 16.5
 section: 16.5
-status: ready-for-review
+status: finalized
 drafted_date: 2026-04-08
 applicable_versions: "Android 17 (API 37)"
 last_verified: 2026-07-12
@@ -24,16 +24,16 @@ task9_result: needs-rework
 task9_state: pending
 task9_audit_date: 2026-07-13
 task9_audit_type: deep-review
-last_task9_at: "2026-07-13T17:33:00+08:00"
+last_task9_at: "2026-07-13T19:23:00+08:00"
 task2b_state: fixed
 task2b_result: fixed-lite
-last_task2b_lite_at: 2026-07-12
+last_task2b_lite_at: 2026-07-13
 last_task2b_at: 2026-07-12T15:37:59+08:00
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-13
-task9_review_notes: "2026-07-13 Task9 deep review 发现严重 P0/P1 问题：1) young_mark-compact.cc 文件路径错误，实际为 mark_compact.cc 中的 YoungMarkCompact 类；2) 标题出现 Android 18 相关信息违反版本边界规则；3) CombinedDeliMessageQueue 路径描述不准确。P0 2 / P1 1 / P2 0；不可自动晋升，需 Task6 复审。P0/P1 问题已写入 queue.json，建议优先修复源码路径和版本边界违反问题。"
+task9_review_notes: "2026-07-13 Task9 deep review 标记 P0×2 + P1×1。Task2B Lite 复核：P0-1 (young_mark-compact.cc 路径) 正文不存在该引用，已正确使用 mark_compact.cc + YoungMarkCompact，判定为 false-positive；P0-2 (Android 18 版本边界) 正文无 Android 18/API 38 内容，判定为 false-positive；P1-1 (CombinedDeliMessageQueue 版本说明) 已补充 Android 17 新增目录说明及旧版路径。fixed-lite。"
 review_type: task9-deep-tech-review
-last_task9_review_log: logs/deep-review/2026-07-13-17-deep-review.md
+last_task9_review_log: logs/deep-review/2026-07-13-19-deep-review.md
 task2b_fixed_by: openclaw-task2b-main
 last_task9_autofix_at: 2026-07-12
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
@@ -151,7 +151,7 @@ Android Developers Blog 把公开数字分成三类，它们的测试前提并�
 
 DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化，但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
 
-官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在；在 DeliQueue 模式下，它不参与实际队列维护，默认保持 `null`。AOSP `android-17.0.0_r1` 的相关代码不在 `ConcurrentMessageQueue/`，而是拆成：`CombinedDeliMessageQueue/MessageQueue.java` 负责实现选择与 Looper 集成，`MessageStack.java` 负责 Treiber stack / freelist，`MessageHeap.java` 负责同步与异步消息两个 min-heap；`LegacyMessageQueue/MessageQueue.java` 保留旧单锁单链表实现。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
+官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在；在 DeliQueue 模式下，它不参与实际队列维护，默认保持 `null`。AOSP `android-17.0.0_r1` 的相关代码不在 `ConcurrentMessageQueue/`，而是拆成：`CombinedDeliMessageQueue/MessageQueue.java` 负责实现选择与 Looper 集成，`MessageStack.java` 负责 Treiber stack / freelist，`MessageHeap.java` 负责同步与异步消息两个 min-heap；`LegacyMessageQueue/MessageQueue.java` 保留旧单锁单链表实现。`CombinedDeliMessageQueue/` 目录为 Android 17 新增；Android 16 及更早版本的消息队列实现统一位于 `frameworks/base/core/java/android/os/MessageQueue.java`，不存在上述拆分。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
 
 - **Treiber Stack**（无锁栈）：写入端在 `MessageStack.pushMessage()` 中通过 `VarHandle` CAS 更新 `mTopValue`，任何线程都可以无竞争地 push 消息
 - **min-heap**（最小堆）：读取端由 Looper 线程独占访问，按消息的 `when` 排序。博客明确指出这是堆结构，不是 `ConcurrentSkipListSet` 排序集合
