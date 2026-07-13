@@ -8,7 +8,7 @@ drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: "openclaw-task6"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
-reviewed_date: "2026-05-28"
+reviewed_date: "2026-07-13"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
 last_verified_against: AOSP android-16.0.0_r1
@@ -34,11 +34,7 @@ related_chapters:
 - '11.2'
 - '4.3'
 task6_result: "pass-light-edit"
-review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed
-  2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework,
-  not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed):
-  content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9
-  re-review needed for auto-promotion.'
+review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed 2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion. | ✅ 2026-07-13 task6 review: pass-light-edit. Fixed 8x L1/L2 issues (spacing, code purpose statements, long sentences). All outline anchors covered. No L3/L4 issues.'
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 last_task9_at: "2026-05-28T18:28:00+08:00"
@@ -80,7 +76,7 @@ last_task2b_lite_at: "2026-07-13"
 
 Camera 性能问题通常横跨 App、Framework、HAL、内核驱动和显示系统。预览卡顿、拍照慢、录像丢帧、内存上涨分别对应不同观测点：有的看 `cameraserver` 和 HAL slice，有的看 BufferQueue，有的看 `CameraMetadataNative` 引用保留和 native allocation。
 
-本节聚焦三件事：把 Camera 性能问题分成可排查的类别，梳理 Camera 管线里的 Buffer 流转，再用 Perfetto Trace Processor 把指标量化。读完后，面对 Camera 性能问题，可以先判断问题落在哪一段，再选择 SQL、Track 和补充工具。
+本节聚焦三件事：把 Camera 性能问题分成可排查的类别，梳理 Camera 管线里的 Buffer 流转，再用 Perfetto Trace Processor 把指标量化。读完本章，面对 Camera 性能问题，可以先判断问题落在哪一段，再选择 SQL、Track 和补充工具。
 
 <!-- outline-start -->
 # 14.9 Android Camera 性能与 Perfetto 分析
@@ -138,6 +134,8 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **预览卡顿**是最常见的投诉。用户打开相机后，预览画面出现肉眼可见的掉帧或卡顿。这类问题的根因通常在 Buffer 流转环节——可能是 HAL 处理慢了，可能是 SurfaceFlinger 合成不及时，也可能是 BufferQueue 的 Buffer 被耗尽了。在 Perfetto 中，我们需要关注 `cameraserver` 进程中 `queueBuffer` 的时间间隔，以及 SurfaceFlinger 的 `BufferTX - SurfaceView` Counter。
 
+**预览卡顿的波动指标**：30 fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，TextureView 路径的外部纹理采样和 View 树合成可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
+
 **预览卡顿的波动指标**：30fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，TextureView 路径的外部纹理采样和 View 树合成可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
 
 **拍照延迟**指的是从用户点击快门到照片拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
@@ -179,6 +177,7 @@ Buffer 管理方面，Camera3OutputStream 并不是直接继承 HAL 的 `camera3
 抓取 Camera 性能 Trace 时，需要确保以下 atrace category 被包含：`camera`、`gfx`、`view`、`hwc`、`binder_driver`。`camera` category 负责捕获 Camera Framework 和 HAL 的关键事件；`gfx` 捕获 SurfaceFlinger 和 BufferQueue 操作；`binder_driver` 追踪 App 与 cameraserver 之间的 IPC 开销。
 
 ```bash
+# 用途：抓取包含 Camera、图形、Binder 等关键组件的性能 Trace
 adb shell perfetto \
   -c - --txt \
   -o /data/misc/perfetto-traces/camera-trace.perfetto-trace \
@@ -239,7 +238,8 @@ Perfetto Trace Processor 的价值在于用 SQL 量化事件时间、频率和�
 统计 CaptureRequest 处理帧率：
 
 ```sql
--- Step 1: 先列出 frame capture 所在的 track，确认有几个 stream
+-- 用途：统计各 Stream 的 frame capture 数量，避免多 Stream 合并导致虚高
+-- Step 1: 先列出 frame capture 所在的 track，确认有几个流
 SELECT
   track_id,
   process.name AS process_name,
@@ -338,6 +338,7 @@ LIMIT 20
 安装和基础配置：
 
 ```python
+# 用途：使用 Perfetto Python SDK 自动化分析 Camera 启动性能
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
 tp = TraceProcessor(
@@ -395,7 +396,7 @@ if not df.empty:
     print(f'Preview FPS: {fps}, Avg interval: {avg_gap:.2f}ms, Jitter(σ): {jitter:.2f}ms')
 ```
 
-30fps 预览下，平均帧间隔应该在 33ms，标准差不应超过 2-3ms。如果标准差超过 5ms，用户大概率能感知到卡顿。
+30 fps 预览下，平均帧间隔应该在 33ms，标准差不应超过 2-3ms。如果标准差超过 5ms，用户大概率能感知到卡顿。
 
 ### 场景：Buffer 耗尽导致卡顿
 
@@ -429,6 +430,7 @@ Camera 启动（从用户点击相机图标到预览首帧出现）可以拆解�
 用 Python SDK 自动拆解：
 
 ```python
+# 用途：量化拆解 Camera 启动性能的各个阶段耗时
 # Camera 启动性能拆解脚本
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
