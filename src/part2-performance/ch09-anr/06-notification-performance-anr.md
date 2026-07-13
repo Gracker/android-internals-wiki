@@ -6,8 +6,8 @@ status: "finalized"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-13"
-last_verified_against: "AOSP android-16.0.0_r1 / Android 17 Notification.MetricStyle"
+last_verified: "2026-07-14"
+last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
 sources:
   - type: aosp
@@ -34,12 +34,12 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-04
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_result: "fixed-lite"
 task2b_state: fixed
@@ -47,6 +47,7 @@ task9_reviewed_date: 2026-06-04
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T21:20:00+08:00"
 last_task2b_at: "2026-06-04T05:36:00+08:00"
+last_task2b_lite_at: "2026-07-14"
 last_task6_at: "2026-06-05T09:06:00+08:00"
 last_task6_audit: "2026-07-14"
 last_task6_review_log: "logs/review/2026-05-25-16-review.md"
@@ -91,7 +92,7 @@ last_deepseek_cn_review_at: 2026-06-05
 
 [图:App 线程调用 notify(),进入 system_server Binder 入口,NMS 把任务 post 到 Handler,再异步分发给 listener 和 SystemUI]
 
-AOSP android-16 的边界在两处最清楚:
+AOSP android-17 的边界在两处最清楚:
 
 ```java
 // frameworks/base/core/java/android/app/NotificationManager.java
@@ -122,7 +123,7 @@ return true;
 - `INotificationListener` 回调
 - SystemUI 中的 `RemoteViews.apply()`、图片解码和完成上屏
 
-`INotificationListener.aidl` 在 android-16 中声明为 `oneway interface`。SystemUI 和其他通知监听器属于异步消费者,不能把它们的耗时直接记成调用方 `notify()` 的同步阻塞。
+`INotificationListener.aidl` 在 AOSP 中声明为 `oneway interface`。SystemUI 和其他通知监听器属于异步消费者,不能把它们的耗时直接记成调用方 `notify()` 的同步阻塞。
 
 ### ANR 的三种核心触发场景
 
@@ -148,7 +149,7 @@ backgroundExecutor.execute(() -> {
 `NotificationListenerService` 在 `attachBaseContext()` 里把 `MyHandler` 绑到 `getMainLooper()`,`onNotificationPosted()` 也是 `@UiThread`。数据库 I/O、网络请求、复杂解析如果直接放在回调里,会占住监听器进程主线程；只有输入事件在该进程排队并超过输入分发超时,才会表现为监听器进程自己的 Input ANR,不是发布方 `notify()` 一定同步变慢。
 
 **场景三:高频 update 命中 NMS 的更新速率限制。**
-android-16 的 `checkDisqualifyingFeatures()` 走的是包级 update 限流,不是通知渠道限流。命中条件是 `isUpdate && !hasCompletedProgress() && !isAutogroup`,速率来自 `mUsageStats.getAppEnqueueRate(pkg)`,默认阈值是 `DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE = 5f`。下载进度、歌词、导航剩余距离这类场景如果几百毫秒就 `notify()` 一次,很容易被 shed。
+android-17 的 `checkDisqualifyingFeatures()` 走的是包级 update 限流,不是通知渠道限流。命中条件是 `isUpdate && !hasCompletedProgress() && !isAutogroup`,速率来自 `mUsageStats.getAppEnqueueRate(pkg)`,默认阈值是 `DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE = 5f`。下载进度、歌词、导航剩余距离这类场景如果几百毫秒就 `notify()` 一次,很容易被 shed。
 
 还有一类现象容易误判:SystemUI 过载会拉长"通知何时显示给用户"的时间,也会让下拉通知栏更卡。但这件事默认不等于调用方一直卡在 `notify()` 里,结论要回到 Perfetto 的线程状态和 Binder 边界来下。
 
@@ -174,7 +175,7 @@ AOSP 当前实现里,`notify()` 的 Binder 入口会把发布任务 post 到 NMS
 
 速率限制的观察点需要改正两件事。
 
-一是它不是"每个通知渠道单独限流"。android-16 的实现是包级 enqueue rate,比较的是 `mUsageStats.getAppEnqueueRate(pkg)` 和 `mMaxPackageEnqueueRate`。
+一是它不是"每个通知渠道单独限流"。android-17 的实现是包级 enqueue rate,比较的是 `mUsageStats.getAppEnqueueRate(pkg)` 和 `mMaxPackageEnqueueRate`。
 
 二是它主要针对 update path。AOSP 条件是:
 
@@ -195,7 +196,7 @@ if (isUpdate && !r.getNotification().hasCompletedProgress() && !isAutogroup) {
 
 ### 跨进程 inflate 的工作原理
 
-`RemoteViews` 存的不是一棵已经 inflate 好的 View 树,而是"要对哪一个布局做哪些操作"的描述。android-16 的类定义里,动作集合是 `ArrayList<Action> mActions`;应用到目标 View 树上时,走的是 `inflateView()` + `performApply()`。
+`RemoteViews` 存的不是一棵已经 inflate 好的 View 树,而是"要对哪一个布局做哪些操作"的描述。android-17 的类定义里,动作集合是 `ArrayList<Action> mActions`;应用到目标 View 树上时,走的是 `inflateView()` + `performApply()`。
 
 ```java
 // frameworks/base/core/java/android/widget/RemoteViews.java
@@ -333,7 +334,7 @@ SystemUI 忙于锁屏动画、面板刷新或大量图片通知时,用户会感�
 
 ### 可确认的版本边界
 
-能从官方文档或 `android-16.0.0_r1` 直接核对的结论只有三类:Android 13 的通知权限、Android 16 的 `ProgressStyle` / promoted ongoing 相关文档,以及当前 AOSP 下的 NMS / `RemoteViews` 行为。Android 14 并行分发、Android 15 排名优化、Android 17 后台 NLS 限频都缺少足够一手材料,不适合作为固定版本事实。
+能从官方文档或 `android-17.0.0_r1` 直接核对的结论只有三类:Android 13 的通知权限、Android 16 的 `ProgressStyle` / promoted ongoing 相关文档,以及当前 AOSP 下的 NMS / `RemoteViews` 行为。Android 14 并行分发、Android 15 排名优化、Android 17 后台 NLS 限频都缺少足够一手材料,不适合作为固定版本事实。
 
 ### POST_NOTIFICATIONS 在 Android 13,不在 Android 12
 

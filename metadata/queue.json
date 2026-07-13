@@ -306,8 +306,11 @@
       ],
       "added_by": "task6-idle-audit",
       "added_at": "2026-07-14T02:05:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-14-02-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-14-02-audit.md",
+      "completed_at": "2026-07-14T03:39:24+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: 版本基线 android-16 → android-17.0.0_r1 (frontmatter + 6 处正文引用)"
     }
   ],
   "items": [
@@ -735,6 +738,40 @@
       "completed_at": "2026-07-14T02:53:34+08:00",
       "completed_by": "task2b-main",
       "completion_reason": "fixed: P1-JVMTI/堆dump源码路径澄清为Android Studio源码树platform/tools/base + P2-Java方法追踪版本边界明确 + 禁用词链路修复 + frontmatter清理"
+    },
+    {
+      "id": "ch14-tools/14.1-as-profiler-p0-issues",
+      "section": "14.1",
+      "section_title": "Android Studio Profiler",
+      "priority": 95,
+      "reason": "[Deep Tech Review] P0 事实错误：API版本错误和源码引用混淆",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P0",
+          "category": "事实错误",
+          "title": "ProfilingManager API版本错误",
+          "description": "章节声称Android 15（API 35）引入了ProfilingManager的基础能力，但实际API在Android 14（API 34）就已引入。此版本错误误导开发者。",
+          "severity": "高 - 直接关系到开发者如何使用该API",
+          "location": "使用分析器API在代码中触发分析章节",
+          "resolution": "修正版本说明为'Android 14（API 34）引入，Android 16（API 36）扩展触发器类型'"
+        },
+        {
+          "type": "P0",
+          "category": "源码引用混淆",
+          "title": "混淆Android Studio源码和AOSP源码",
+          "description": "章节引用tools/base/profiler/native/perfa/perfa.cc并声称在'Android Studio源码树'，但又在验证部分标注'AOSP android-17.0.0_r1'，混淆了Android Studio源码和AOSP源码的界限，此引用不准确且容易误导读者。",
+          "severity": "高 - 源码引用错误影响开发者理解",
+          "location": "实时内存曲线章节",
+          "resolution": "明确区分Android Studio源码和AOSP源码，避免验证标注误导读者"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-14T03:20:00+08:00",
+      "status": "pending",
+      "notes": "Task9 deep review 发现 P0×2 事实错误，需 Task6 复审"
     },
     {
       "id": "ch02-rendering/2.17-gpu-power-dvfs",
