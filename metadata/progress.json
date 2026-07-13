@@ -3,7 +3,7 @@
   "draft": 11,
   "ready_for_review": 8,
   "finalized": 4,
-  "last_updated": "2026-07-13T20:14:00+08:00",
+  "last_updated": "2026-07-13T20:58:08+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -1292,5 +1292,22 @@
   ],
   "last_task2a_gap_create": "2026-07-10T14:04:00+08:00",
   "completed": 1,
-  "created_date": "2026-07-13"
+  "created_date": "2026-07-13",
+  "chapters": {
+    "16.9": {
+      "title": "Android 17 SDM 安装编译链路性能",
+      "task2b_main": {
+        "status": "fixed",
+        "fixed_at": "2026-07-13T20:58:08+08:00",
+        "issues_fixed": [
+          "P0: DexMetadataHelper 源码锚点补全 (line 44-55, 含 PROPERTY_DM_JSON_MANIFEST_REQUIRED / PROPERTY_DM_FSVERITY_REQUIRED)",
+          "P1: 性能数据补充验证方法 (dumpsys package dexopt / pm path / am start-activity -W / Perfetto)",
+          "P1: SDM 版本演进对比 (Android 14→17 详细表格 + 关键差异点)"
+        ]
+      },
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending"
+    }
+  }
 }

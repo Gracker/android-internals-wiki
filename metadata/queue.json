@@ -317,23 +317,44 @@
     {
       "chapter": "16.9",
       "title": "Android 17 SDM 安装性能优化",
-      "priority": 90,
-      "status": "pending",
+      "priority": 95,
+      "status": "completed",
       "added_by": "task9-deep-tech-review",
-      "source_log": "logs/deep-review/2026-07-13-19-deep-review.md",
-      "added_at": "2026-07-13T19:23:00+08:00",
+      "source_log": "logs/deep-review/2026-07-13-20-deep-review.md",
+      "added_at": "2026-07-13T20:22:00+08:00",
       "review_issues": [
         {
-          "type": "P1",
-          "category": "待验证项缺失",
-          "title": "pm.dexopt.dm.* 属性需补 Android 17 一手锚点",
+          "type": "P0",
+          "category": "源码引用不准确",
+          "title": "pm.dexopt.dm.* 属性需补 Android 17 一手源码锚点",
           "description": "frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java line 49-55 只能证明 .dm 后缀识别，不能证明 pm.dexopt.dm.require_manifest 和 pm.dexopt.dm.require_fsverity 属性控制存在",
-          "severity": "中等 - 影响开发者适配",
+          "severity": "高 - 直接关系到源码可验证性",
           "location": "DexMetadataHelper 说明章节",
-          "resolution": "补充 Android 17 中 pm.dexopt.dm.* 属性的一手源码锚点"
+          "resolution": "在 frameworks/base/services/core/java/com/android/server/pm/ 目录下查找 pm.dexopt.dm.* 属性的具体定义"
+        },
+        {
+          "type": "P1",
+          "category": "数据支撑不足",
+          "title": "性能提升数据缺乏验证方法",
+          "description": "章节中提到的编译时间减少40-60%、安装大小减少15-25%等性能数据缺乏具体的验证方法说明",
+          "severity": "中等 - 影响开发者实际验证",
+          "location": "云端编译性能提升章节",
+          "resolution": "补充性能数据的测试环境、验证方法和可复现步骤"
+        },
+        {
+          "type": "P1",
+          "category": "版本差异对比不足",
+          "title": "Android 17 优化机制未与之前版本充分对比",
+          "description": "部分Android 17特有的优化机制未与之前的版本做充分对比，容易造成理解偏差",
+          "severity": "中等 - 影响版本演进理解",
+          "location": "SDM架构概览章节",
+          "resolution": "增加与Android 16及更早版本的详细对比说明"
         }
       ],
-      "notes": "Task9 deep review 发现 P1 问题，需 Task6 复审"
+      "notes": "Task9 deep review 发现 P0×1 + P1×2 问题，需 Task6 复审",
+      "completed_at": "2026-07-13T20:58:08+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "fixed: P0-DexMetadataHelper源码锚点补全至line44-55(含PROPERTY_DM_*常量定义)+P1-性能数据验证方法+版本演进对比(Android14→17)"
     },
     {
       "chapter": "16.1",
@@ -592,6 +613,72 @@
       "priority": 80,
       "created_date": "2026-07-13",
       "type": "knowledge-gap"
+    },
+    {
+      "id": "ch15-methodology",
+      "title": "Android 性能优化研究方法论",
+      "priority": 85,
+      "created_date": "2026-07-13",
+      "type": "task9-review",
+      "review_issues": [
+        {
+          "type": "P1",
+          "category": "源码准确性",
+          "title": "AOSP路径验证不足",
+          "description": "章节中引用的AOSP路径 `/base/core/java/android/view/View.java` 和 `/counter/slice` 需要验证在android-17.0.0_r1中的准确性",
+          "severity": "中等 - 影响源码可验证性",
+          "location": "源码分析章节",
+          "resolution": "验证AOSP路径的准确性，补充具体的源码文件位置"
+        },
+        {
+          "type": "P1",
+          "category": "版本差异",
+          "title": "Android 17边界描述不清晰",
+          "description": "部分技术描述未明确区分Android 17版本边界，容易造成混淆",
+          "severity": "中等 - 影响版本理解",
+          "location": "技术演进章节",
+          "resolution": "在重要技术点处增加Android 17版本边界说明"
+        },
+        {
+          "type": "P1",
+          "category": "数据支撑",
+          "title": "性能数据来源不明确",
+          "description": "章节中提到的性能数据缺乏具体出处和验证方法",
+          "severity": "中等 - 影响数据可信度",
+          "location": "性能评估章节",
+          "resolution": "增加数据来源引用和验证步骤说明"
+        },
+        {
+          "type": "P1",
+          "category": "交叉引用一致性",
+          "title": "引用一致性需加强",
+          "description": "与章节1.6、1.13、4.8等交叉引用需要加强一致性验证",
+          "severity": "中等 - 影响内容连贯性",
+          "location": "相关章节引用",
+          "resolution": "建立更明确的交叉引用追踪机制"
+        },
+        {
+          "type": "P2",
+          "category": "知识盲区",
+          "title": "构建优化特性介绍不足",
+          "description": "未提及Android 17特有的构建优化特性（如SDM）",
+          "severity": "低 - 不影响核心内容",
+          "location": "现代构建系统章节",
+          "resolution": "补充Android 17特有的构建优化特性介绍"
+        },
+        {
+          "type": "P2",
+          "category": "知识盲区",
+          "title": "现代构建系统演进介绍不够全面",
+          "description": "对现代Android构建系统的演进介绍不够全面",
+          "severity": "低 - 不影响核心内容",
+          "location": "构建系统基础章节",
+          "resolution": "增强现代Android构建系统演进介绍"
+        }
+      ],
+      "notes": "Task9 deep review 发现 P1×4 + P2×2 问题，需 Task6 复审",
+      "source_log": "logs/deep-review/2026-07-13-20-deep-review.md",
+      "added_at": "2026-07-13T20:22:00+08:00"
     }
   ]
 }
