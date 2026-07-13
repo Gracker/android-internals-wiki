@@ -520,6 +520,63 @@
       "completed_at": "2026-07-13T18:01:26+08:00",
       "completed_by": "task2b-lite",
       "completion_reason": "fixed-lite: DexMetadataHelper.java path pm/dex/→pm/ (2 locations)"
+    },
+    {
+      "chapter": "16.5",
+      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 95,
+      "status": "completed",
+      "added_by": "task9-deep-tech-review",
+      "source_log": "logs/deep-review/2026-07-13-21-deep-review.md",
+      "added_at": "2026-07-13T21:20:00+08:00",
+      "review_issues": [
+        {
+          "type": "P0",
+          "category": "源码路径错误",
+          "title": "YoungMarkCompact 文件路径错误",
+          "description": "章节引用 art/runtime/gc/collector/mark_compact.cc 作为 YoungMarkCompact 实现，但实际在 android-17.0.0_r1 中，YoungMarkCompact 实际在 art/runtime/gc/collector/young_mark_compact.cc 中定义",
+          "severity": "高 - 直接关系到源码可验证性",
+          "location": "从 Concurrent Copying 到 Generational CMC 章节",
+          "resolution": "修正源码路径为 art/runtime/gc/collector/young_mark_compact.cc"
+        },
+        {
+          "type": "P0",
+          "category": "源码路径错误",
+          "title": "CombinedMessageQueue 目录不存在",
+          "description": "章节多处提及 ConcurrentMessageQueue/ 目录，但 AOSP android-17.0.0_r1 中实际为 CombinedDeliMessageQueue/ 目录",
+          "severity": "高 - 源码路径错误影响开发者理解",
+          "location": "DeliQueue：MessageQueue 二十年来的首次架构换代章节",
+          "resolution": "修正源码路径为 CombinedDeliMessageQueue/"
+        }
+      ],
+      "notes": "Task9 deep review 发现 P0×2 问题，需 Task6 复审",
+      "completed_reason": "fixed-lite: YoungMarkCompact path corrected (mark_compact.cc → young_mark_compact.cc for YMC impl); ConcurrentMessageQueue P0 = false-positive (chapter already uses CombinedDeliMessageQueue)",
+      "completed_at": "2026-07-13T21:40:29+08:00",
+      "completed_by": "task2b-lite"
+    },
+    {
+      "chapter": "16.9",
+      "title": "Android 17 SDM 安装编译链路性能",
+      "priority": 95,
+      "status": "completed",
+      "added_by": "task9-deep-tech-review",
+      "source_log": "logs/deep-review/2026-07-13-21-deep-review.md",
+      "added_at": "2026-07-13T21:20:00+08:00",
+      "review_issues": [
+        {
+          "type": "P0",
+          "category": "源码引用不准确",
+          "title": "DexMetadataHelper 常量定义位置错误",
+          "description": "章节引用 frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java line 44-55，但实际在 frameworks/base/services/core/java/com/android/server/pm/DexMetadataHelper.java 中定义",
+          "severity": "高 - 直接关系到源码可验证性",
+          "location": "DexMetadataHelper 说明章节",
+          "resolution": "修正源码路径为 frameworks/base/services/core/java/com/android/server/pm/DexMetadataHelper.java"
+        }
+      ],
+      "notes": "Task9 deep review 发现 P0×1 问题，需 Task6 复审",
+      "completed_reason": "false-positive: DexMetadataHelper path frameworks/base/core/java/android/content/pm/dex/ is correct AOSP location; reviewer suggestion of frameworks/base/services/core/ is incorrect",
+      "completed_at": "2026-07-13T21:40:29+08:00",
+      "completed_by": "task2b-lite"
     }
   ],
   "queue": [

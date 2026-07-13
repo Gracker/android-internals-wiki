@@ -3,7 +3,7 @@
 title: "Android 17 SDM 安装编译链路性能"
 chapter: "16.9"
 status: ready-for-review
-last_task2b_lite_at: "2026-06-29"
+last_task2b_lite_at: 2026-07-13
 task6_result: needs-rework
 reviewed_by: openclaw-task6
 reviewed_date: "2026-07-13"
@@ -13,10 +13,10 @@ task9_state: pending
 last_task9_at: "2026-07-13T19:23:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-13"
-task2b_result: needs-rework
-task2b_state: pending
-task6_state: reviewed
-pipeline_stage: task2b_pending
+task2b_result: fixed-lite
+task2b_state: fixed
+task6_state: revisiting
+pipeline_stage: task6_pending
 last_task2b_at: "2026-07-13T20:53:00+08:00"
 task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题；2026-07-13 Task2B 回炉修复：P0-DexMetadataHelper 源码锚点补全至 line 44-55(含 PROPERTY_DM_JSON_MANIFEST_REQUIRED / PROPERTY_DM_FSVERITY_REQUIRED 常量定义)+P1-性能数据验证方法补充+P1-SDM 版本演进对比(Android 14→17)。已回送 Task6 复审。"
 review_type: task9-deep-tech-review

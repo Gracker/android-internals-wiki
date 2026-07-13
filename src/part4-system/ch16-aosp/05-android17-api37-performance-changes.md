@@ -32,7 +32,7 @@ last_task2b_lite_at: 2026-07-13
 last_task2b_at: 2026-07-12T15:37:59+08:00
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-13
-task9_review_notes: "2026-07-13 Task9 deep review 标记 P0×2 + P1×1。Task2B Lite 复核：P0-1 (young_mark-compact.cc 路径) 正文不存在该引用，已正确使用 mark_compact.cc + YoungMarkCompact，判定为 false-positive；P0-2 (Android 18 版本边界) 正文无 Android 18/API 38 内容，判定为 false-positive；P1-1 (CombinedDeliMessageQueue 版本说明) 已补充 Android 17 新增目录说明及旧版路径。fixed-lite。"
+task9_review_notes: "2026-07-13 Task9 deep review (21:20) 再次标记 P0×2。Task2B Lite 二次复核：P0-1 (YoungMarkCompact 路径) — 确认 young_mark_compact.cc 是独立文件，已修正源码引用列表，将 mark_compact.cc 限定为 CMC 基类实现，新增 young_mark_compact.cc 引用；P0-2 (ConcurrentMessageQueue 目录) — 仍为 false-positive，正文已全面使用 CombinedDeliMessageQueue/ 并显式标注 ConcurrentMessageQueue/ 不存在。fixed-lite。"
 review_type: task9-deep-tech-review
 last_task9_review_log: logs/deep-review/2026-07-13-19-deep-review.md
 task2b_fixed_by: openclaw-task2b-main
@@ -41,7 +41,7 @@ last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-12
 pipeline_stage: task6_pending
-task6_state: revising
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
@@ -677,7 +677,8 @@ DCL (Dynamic Code Loading) 保护从 DEX/JAR 文件扩展到原生库。通过 `
 - AOSP: `frameworks/base/core/java/android/os/MessageStack.java`
 - AOSP: `frameworks/base/core/java/android/os/MessageHeap.java`
 - AOSP: `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java`
-- AOSP: `art/runtime/gc/collector/mark_compact.cc` / `mark_compact.h` — CMC 与 `YoungMarkCompact` 实现
+- AOSP: `art/runtime/gc/collector/mark_compact.cc` / `mark_compact.h` — CMC 基类实现
+- AOSP: `art/runtime/gc/collector/young_mark_compact.cc` — `YoungMarkCompact` 实现
 - AOSP: `art/runtime/runtime.cc`、`art/runtime/gc/collector/mark_compact.cc` — 分代 GC gating 条件
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现
 
