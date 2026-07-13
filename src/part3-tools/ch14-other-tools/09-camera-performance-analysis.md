@@ -66,7 +66,7 @@ task9_state: reviewed
 task6_state: reviewed
 pipeline_stage: ready-to-publish
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-13
+last_deepseek_cn_review_at: 2026-07-13
 task2b_lite_notes_2026_07_13: "frontmatter 去重修复: 清理 6 组 duplicate keys (pipeline_stage/task6_state/task9_state/task9_result/last_task9_audit/path-under-sources 误删已恢复); status finalized→ready-for-review (task9_result=needs-rework)"
 last_task2b_lite_at: "2026-07-13"
 ---
@@ -492,11 +492,9 @@ print(f"  [HAL] submitRequest -> first frame: {round(first_buf_ms - submit_ms, 2
 
 
 
-<!-- AIW-源码调研-2026-07-13 -->
-
 ## 📈 AOSP 官方延迟度量（Android 17 实测补充）
 
-本节为 2026-07-13 源码调研（id=16）反哺。承接上文「Camera 启动性能的量化拆解」，从 AOSP 源码侧补充 frameworks 提供的官方延迟度量通道，与 Perfetto UI 视角形成完整链路。所有源码引用锚定 `android-17.0.0_r1`。
+上文的启动性能拆解基于 Perfetto 的 slice 时间戳来度量各个阶段。AOSP frameworks 侧还有一套官方的延迟上报通道——statsd 通过 `CameraServiceProxyWrapper` 和 `SessionStatsBuilder` 收集 Open Latency、首帧延迟及帧间延迟分布，与 Perfetto 观测视角互为补充。下面从 `android-17.0.0_r1` 源码出发，把这条通道串起来。
 
 ### Open Latency：设备打开耗时
 
@@ -573,26 +571,7 @@ if (mTraceFirstBuffer && (stream_type == CAMERA_STREAM_OUTPUT)) {
 
 ### 抓取建议
 
-上述所有 ATRACE 点都使用 `ATRACE_TAG_CAMERA`，所以抓 trace 时 atrace category 必须包含 `camera`：
-
-```bash
-adb shell perfetto -c - --txt -o /data/misc/perfetto-traces/cam17.perfetto-trace <<EOF
-buffers: { size_kb: 8960 fill_policy: DISCARD }
-data_sources: {
-    config {
-        name: "linux.ftrace"
-        ftrace_config {
-            atrace_categories: "camera"
-            atrace_categories: "gfx"
-            atrace_categories: "view"
-            atrace_categories: "hwc"
-            atrace_categories: "binder_driver"
-        }
-    }
-}
-duration_ms: 30000
-EOF
-```
+上述所有 ATRACE 点都使用 `ATRACE_TAG_CAMERA`。抓取时复用前文「在 Perfetto 中分析 Camera 性能」一节的 Perfetto 配置即可——`atrace_categories: "camera"` 已经覆盖了这些埋点，无需额外配置。
 
 ### 拆解脚本增量
 
@@ -614,8 +593,6 @@ LIMIT 100
 ```
 
 AOSP `android-17.0.0_r1` 中 `CameraService::connectHelper()` / `SessionStatsBuilder` 形态与 `android-16.0.0_r1` 一致；Open Latency 与 First Frame Latency 的度量机制未发生破坏性变更。`flags::analytics_24q3()` 在 `android-17.0.0_r1` 中继续启用（Camera3Device.cpp:3162），`incFpsRequestedCount` 用于按 FPS 区间统计 request 分布，可与首帧延迟联合看"目标帧率 vs 实际帧率"。
-
-<!-- AIW-源码调研-2026-07-13-end -->
 
 ## 📋 Android 17 Camera 性能新特性
 

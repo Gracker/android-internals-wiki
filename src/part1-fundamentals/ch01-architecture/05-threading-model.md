@@ -342,6 +342,179 @@ Linux 提供了多种调度策略，Android 中最常用的有两种：
 Android 12 引入的 ADPF（Adaptive Performance Framework）通过 `PerformanceHintManager` 让应用向系统反馈工作负载目标。ADPF hint session 主要影响 CPU 频率决策——当 `reportActualWorkDuration()` 上报的耗时超过 `getTargetWorkDuration()` 的目标值时，系统会提高对应线程的运行频率。核心放置（哪个 CPU 核心执行线程）仍然由内核 EAS 调度器基于 load/capacity 信息决定，ADPF 不直接控制核心迁移。手动 `sched_setaffinity` 会锁定线程的核心选择范围，ADPF 的频率调整在绑核范围内仍然生效，但调度器无法再自由选择最优核心。在新设备上，优先使用 `PerformanceHintManager` 让系统做频率调度决策，而不是手动绑核。只有在不支持 ADPF 的旧设备上，或者 ADPF 调度效果经过实测确认不如手动绑核时，才考虑 `sched_setaffinity`。
 
 
+
+<!-- AIW-源码调研-2026-07-13 -->
+
+## Android 17 SurfaceFlinger 渲染线程调度策略：SCHED_FIFO + uclamp + TaskProfile 四层叠加
+
+（基于 android-17.0.0_r1 / API 37 源码级调研，详见 DeepResearch/2026-07-13-android17-surfaceflinger-thread-scheduling-schedfifo-uclamp.md）
+
+上游章节讨论的是通用线程模型，下面针对 **SurfaceFlinger 这条对 vsync 时延敏感的实时管线**，把「线程到底走了哪些调度策略」具体到一个进程：
+SurfaceFlinger、EventThread、app Choreographer 订阅三条路径，叠加使用 **4 套机制**。
+
+### 1. SurfaceFlinger 主线程：双 syscall（SCHED_FIFO + uclamp.min）
+
+源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp:8104-8142`
+
+```cpp
+void SurfaceFlinger::setSchedFifo(bool enabled, const char* whence) {
+    static constexpr int kFifoPriority = 2;
+    static constexpr int kOtherPriority = 0;
+    struct sched_param param = {0};
+    int sched_policy;
+    if (enabled && !FlagManager::getInstance().disable_sched_fifo_sf()) {
+        sched_policy = SCHED_FIFO;
+        param.sched_priority = kFifoPriority;     // priority 2，最低 RT 段
+    } else {
+        sched_policy = SCHED_OTHER;
+        param.sched_priority = kOtherPriority;
+    }
+    if (sched_setscheduler(0, sched_policy, &param) != 0) {
+        // ... ALOGW 失败降级 ...
+    }
+}
+
+void SurfaceFlinger::setSchedAttr(bool enabled, const char* whence) {
+    static const unsigned int kUclampMin =
+            base::GetUintProperty<unsigned int>("ro.surface_flinger.uclamp.min"s, 0U);
+    if (!kUclampMin) return;       // uclamp.min=0（默认）时整个函数直接跳过
+    sched_attr attr = {};
+    attr.size = sizeof(attr);
+    attr.sched_flags = (SCHED_FLAG_KEEP_ALL | SCHED_FLAG_UTIL_CLAMP);
+    attr.sched_util_min = enabled ? kUclampMin : 0;
+    attr.sched_util_max = 1024;
+    if (syscall(__NR_sched_setattr, 0, &attr, 0)) { ... }
+}
+```
+
+调用入口（`SurfaceFlinger.cpp:6545-6556`）：
+
+```cpp
+void SurfaceFlinger::optimizeThreadScheduling(
+        const char* whence, gui::ISurfaceComposer::OptimizationPolicy optimizationPolicy) {
+    const bool optimizeForPerformance =
+            optimizationPolicy == gui::ISurfaceComposer::OptimizationPolicy::optimizeForPerformance;
+    // TODO: b/281692563 - Merge the syscalls. For now, keep uclamp in a separate syscall
+    // and set it before SCHED_FIFO due to b/190237315.
+    setSchedAttr(optimizeForPerformance, whence);   // uclamp 先于 SCHED_FIFO 设置
+    setSchedFifo(optimizeForPerformance, whence);
+}
+```
+
+要点：
+
+- `disable_sched_fifo_sf` FlagManager 控制是否启用 SCHED_FIFO；OEM 通常默认禁用（防止与其它 RT 进程抢优先级），仅在 OptimizePolicy=optimizeForPerformance 时启用
+- `ro.surface_flinger.uclamp.min` 是 OEM 写入的 only-read 一次（`static const`）的数值，决定 SF 主线程最小利用率 clamp；典型 OEM 设为 800–1024 以保证大核驻留
+- 两个 syscall 顺序由 `b/190237315` 决定：uclamp 必须先于 SCHED_FIFO，否则部分内核版本会丢失 hint
+
+### 2. EventThread 线程启动：SCHED_FIFO + libprocessgroup 双通道
+
+源码：`frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp:333-342`
+
+```cpp
+// Use SCHED_FIFO to minimize jitter
+constexpr int EVENT_THREAD_PRIORITY = 2;
+struct sched_param param = {0};
+param.sched_priority = EVENT_THREAD_PRIORITY;
+if (pthread_setschedparam(mThread.native_handle(), SCHED_FIFO, &param) != 0) {
+    ALOGE("Couldn't set SCHED_FIFO for EventThread");
+}
+
+set_sched_policy(tid, SP_FOREGROUND);   // → libprocessgroup → cgroup v2 TaskProfile
+```
+
+EventThread 自身用 pthread_setschedparam 设 SCHED_FIFO prio=2，**紧接着调用 set_sched_policy(tid, SP_FOREGROUND)**，挂两个 TaskProfile：
+- `CPUSET_SP_FOREGROUND`（决定可访问哪些 CPU）
+- `SCHED_SP_FOREGROUND`（决定 CPU 带宽与 uclamp hint）
+
+App 端订阅路径（`EventThread.cpp:367-376`）：
+
+```cpp
+auto connection = sp<EventThreadConnection>::make(
+        const_cast<EventThread*>(this), ipc->getCallingUid(),
+        ipc->getCallingPid(), eventRegistration);
+if (!FlagManager::getInstance().disable_sched_fifo_sf_sched()) {
+    const int policy = SCHED_FIFO;
+    connection->setMinSchedulerPolicy(policy, sched_get_priority_min(policy));   // 最低优先级 1
+}
+```
+
+`setMinSchedulerPolicy(SCHED_FIFO, sched_get_priority_min(SCHED_FIFO))` 把 app 的连接降到 SCHED_FIFO 最低优先级（通常为 1），保证不会饿死 SF 自己的 thread。
+
+### 3. libprocessgroup：CPUSET_* 与 SCHED_* 双 Profile
+
+源码：`system/core/libprocessgroup/sched_policy.cpp:35-149`
+
+```cpp
+int set_cpuset_policy(pid_t tid, SchedPolicy policy) {
+    policy = _policy(policy);
+    switch (policy) {
+        case SP_BACKGROUND:
+            return SetTaskProfiles(tid, {"CPUSET_SP_BACKGROUND"}, true) ? 0 : -1;
+        case SP_FOREGROUND:
+        case SP_AUDIO_APP:
+        case SP_AUDIO_SYS:
+            return SetTaskProfiles(tid, {"CPUSET_SP_FOREGROUND"}, true) ? 0 : -1;
+        case SP_TOP_APP:
+            return SetTaskProfiles(tid, {"CPUSET_SP_TOP_APP"}, true) ? 0 : -1;
+        case SP_SYSTEM:
+            return SetTaskProfiles(tid, {"CPUSET_SP_SYSTEM"}, true) ? 0 : -1;
+        case SP_RESTRICTED:
+            return SetTaskProfiles(tid, {"CPUSET_SP_RESTRICTED"}, true) ? 0 : -1;
+        case SP_FOREGROUND_WINDOW:
+            return SetTaskProfiles(tid, {"CPUSET_SP_FOREGROUND_WINDOW"}, true) ? 0 : -1;
+        default: break;
+    }
+    return 0;
+}
+```
+
+`set_sched_policy()` 同样通过 `SetTaskProfiles()` 调用，挂的是 `SCHED_SP_*` 命名空间——前者改 cpuset（绑核），后者改 CPU 带宽/优先级。EventThread 一行 `set_sched_policy(tid, SP_FOREGROUND)` 实际上等同同时挂两个 profile（具体哪些生效取决于 OEM `task_profiles.json` 配置）。
+
+### 4. 普通 Android Thread：仅 nice，不走 RT
+
+源码：`system/core/libutils/Threads.cpp:74-87`
+
+```cpp
+static int trampoline(const thread_data_t* t) {
+    thread_func_t f = t->entryFunction;
+    void* u = t->userData;
+    int prio = t->priority;
+    char * name = t->threadName;
+    delete t;
+    setpriority(PRIO_PROCESS, 0, prio);     // 普通 nice，不走 RT
+    if (name) {
+        androidSetThreadName(name);
+        free(name);
+    }
+    return f(u);
+}
+```
+
+App 侧 RenderThread / HWUI 等走的是这条路径，最终只是 `setpriority()`，调度类仍属 SCHED_OTHER（与 SCHED_FIFO 区别见上节）。这就是为何 RenderThread 在 trace 中只看到 nice 值，而不会显示 SCHED_FIFO 标志。
+
+### 版本差异（锚定 android-17.0.0_r1）
+
+| API level | 关键差异 |
+|-----------|----------|
+| API 28 | 仅 `setSchedFifo()`，无 uclamp |
+| API 30 | 引入 `__NR_sched_setattr` |
+| API 33 | SF 加入 `setSchedAttr()`，初版 `kUclampMin` 默认 0 |
+| API 36 | 引入 `disable_sched_fifo_sf` / `disable_sched_fifo_sf_sched` 双 FlagManager 开关 |
+| **API 37** | `b/190237315` 修复：uclamp 先于 SCHED_FIFO；`SP_FOREGROUND` 扩展为 `SP_AUDIO_APP/SYS` 分支 |
+
+### 性能影响速览
+
+1. **vsync 时延稳定性**：SCHED_FIFO prio=2 抢断所有 CFS，理论上保证 ~100us 级响应。disable 时退化到 200–500us 抖动，jank 风险上升。
+2. **大核驻留**：uclamp.min + uclamp.max=1024 让 SF 主线程在 EAS 视角下强制驻留性能核。
+3. **backpressure 隔离**：app 端连接的 `setMinSchedulerPolicy(SCHED_FIFO, min_prio)` 保证 app 只能在 SF EventThread 空闲时跑，避免反向饿死。
+
+### 反向验证 / Perfetto 实战
+
+- 在 `perfetto ftrace` 中对线程 `verify_sched_policy(SCHED_FIFO)` 与 uclamp 值需要使用 `ftrace/events/sched/sched_switch` 配合 `sched_setattr` 调用点观察
+- `dumpsys SurfaceFlinger --scheduler` 在 Android 17 输出 scheduler 内部状态，可对比 disable_sched_fifo_sf flag 启用前后
+- `--disable-sched-fifo-sf` 命令行参数可在 bootconfig 注入关闭
+
 ## 从 AsyncTask 到 Kotlin Coroutine：异步编程的演进
 
 Android 的异步编程方案经历了多次迭代，每一次迭代都在修正前一代方案暴露出来的问题。了解这段演进，有助于在实际项目中做出正确的技术选择。

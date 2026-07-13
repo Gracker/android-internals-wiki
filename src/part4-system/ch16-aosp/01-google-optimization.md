@@ -62,8 +62,7 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-03
-
+last_deepseek_cn_review_at: 2026-07-13
 ---
 
 # Google 官方的性能优化思路
@@ -240,7 +239,7 @@ Google 在 I/O、Codelab 和官方文档里反复强调的原则并不花哨，�
 
 ## 不同设备类型的优化策略差异
 
-性能优化不能只在旗舰机上做判断——同一个结论换到中端机或低端机上常常失效。按设备层级拆开看，每一层的主约束和优化重心都不一样。
+前面的章节主要围绕平台机制和工具链展开，这些方法在不同硬件上的效果差异很大。同一个结论换到中端机或低端机上常常失效。按设备层级拆开看，每一层的主约束和优化重心都不一样。
 
 **旗舰机（8-16 GB RAM，旗舰 SoC）**：CPU 和 GPU 算力通常不是主约束，真正限制体验的往往是调度延迟和渲染管线时序。优化重点应放在主线程阻塞分析、Binder 调用链压缩、RenderThread 负载检查这些方向。Macrobenchmark 冷启动在旗舰机上跑出来的数字可能很漂亮，但要警惕"旗舰机数据掩盖了真实问题"——同一组 benchmark 必须在中端机上复现一遍才算数。
 
@@ -264,8 +263,8 @@ Google 在 I/O、Codelab 和官方文档里反复强调的原则并不花哨，�
 ### "Baseline Profiles 能包治启动慢"
 Baseline Profiles 解决的是"关键代码路径尽早编译成机器码",但启动优化不等于只做编译。如果启动慢的根因是主线程 I/O、同步 Binder、数据库初始化、第三方 SDK 常驻初始化,那它只能缓解一部分,不可能替代架构和线程模型层面的整理。
 
-### "升级 Android 版本,性能自然会整体变好"
-大方向通常是对的,但具体场景仍然要实测。新系统会带来更好的运行时、更好的调度和更好的系统工具,也可能同时带来新的行为限制、更多安全检查或 targetSdk 适配成本。Google 每一版都在优化平台,也每一版都在改平台规则,这两件事是一起发生的。
+### "升级 Android 版本，性能自然会整体变好"
+大方向没错，但具体场景仍然要实测。新系统会带上更好的运行时、调度和系统工具，也可能同时引入新的行为限制、安全检查或 targetSdk 适配成本。Google 每一版都在优化平台，也每一版都在改平台规则——这两件事是一起发生的。
 
 ## 参考资料
 - AOSP / 官方源码路径

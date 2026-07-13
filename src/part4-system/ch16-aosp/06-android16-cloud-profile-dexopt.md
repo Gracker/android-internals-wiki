@@ -61,8 +61,7 @@ task9_p0_issues: 1
 task9_p1_issues: 1
 task9_p2_issues: 0
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-01
-
+last_deepseek_cn_review_at: 2026-07-13
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化
@@ -137,13 +136,13 @@ pm.dexopt.shared=speed
 
 后台任务仍然受设备状态约束。AOSP `BackgroundDexoptJob` 使用 JobScheduler，周期任务要求设备 idle、charging、battery-not-low；这解释了为什么用户安装后马上启动，未必已经拿到后台 dexopt 的收益。线下验证启动收益时，不能只看包里有没有 `baseline.prof`，还要看当前设备的 dexopt 状态。
 
-## Android 16 的 SDM 证据边界
+## Android 16 的 SDM 与云端编译
 
-Android 16 云端编译目前要分两层写：AOSP 里能看到设备端对 SDM 产物的支持；Play 侧如何生成、签名、下发和灰度，公开资料还不完整。
+从 AOSP 来看，Android 16 设备端对 SDM 产物有完整的支持路径。Play 侧的生成、签名、下发和灰度策略，目前公开资料还不完整。
 
 AOSP android-17.0.0_r1 的 `ArtFileManager` 仍然把 SDM 纳入可写与可用产物列表。源码里 `getWritableArtifacts()` 会为 primary dex 构造 `SecureDexMetadataWithCompanionPaths`；`getUsableArtifacts()` 也会识别 `ArtifactsLocation.SDM_DALVIK_CACHE` 和 `ArtifactsLocation.SDM_NEXT_TO_DEX`。这说明 ART Service 的产物管理已经知道“SDM 位置上的编译产物”这一类对象。
 
-`ArtManagerLocal.deleteDexoptArtifacts()` 的注释还把 cloud dexopt artifacts 单列出来，删除范围包括 VDEX、ODEX、ART、SDM、SDC 文件。这能证明设备端已有云端 dexopt 产物的清理路径，但不能推出 Play 商店已经对所有 Android 16 设备启用云端编译。
+`ArtManagerLocal.deleteDexoptArtifacts()` 在注释里把 cloud dexopt artifacts 单列出来，删除范围包括 VDEX、ODEX、ART、SDM、SDC 文件。这说明设备端有云端 dexopt 产物的清理路径。
 
 外部报道把 Android 16 Cloud Compilation 描述为：Play 侧运行 `dex2oat`，再把预编译产物放进 SDM（Secure Dex Metadata）随 APK 下发，设备端避免重复执行本地 `dex2oat`。这条说法和 AOSP 中 SDM 产物管理路径相互印证，但签名绑定、产物适配 ABI、Play 灰度策略、是否对所有包开放，仍缺少官方开发者文档或 AOSP 端到端说明。
 
